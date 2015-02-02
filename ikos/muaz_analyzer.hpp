@@ -102,7 +102,10 @@ namespace ikos
      { 
        basic_block_t b = this->get_cfg().get_node(node);
        StatementAnalyzer<AbsDomain> vis (pre);
-       for (auto &s : b) { s.accept (&vis); }
+       //for (auto &s : b) { s.accept (&vis); }
+       for (basic_block_t::iterator it = b.begin(); it != b.end(); ++it) 
+         it->accept (&vis);
+       
        return vis.inv();
      } 
      
