@@ -128,9 +128,9 @@ namespace analyzer
      { 
        if (runLive)
        {
-         cout << "Liveness=\n";
+         //cout << "Liveness=\n";
          m_live.exec ();
-         cout << m_live << "\n";
+         //cout << m_live << "\n";
        }
      }
      

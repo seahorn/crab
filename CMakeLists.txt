@@ -1,4 +1,4 @@
-project(ikos-core)
+project(IkosCore)
 
 cmake_minimum_required (VERSION 2.8.11)
 
@@ -60,6 +60,18 @@ endif ()
 
 add_subdirectory(ikos/dbm)
 add_subdirectory(tests)
+
+install(DIRECTORY include/
+  DESTINATION ${IkosCore_BINARY_DIR}/run/include
+  FILES_MATCHING
+  PATTERN "*.hpp"
+  PATTERN ".svn" EXCLUDE
+  )
+
+install(DIRECTORY ikos/
+  DESTINATION ${IkosCore_BINARY_DIR}/run/ikos
+  )
+
 
 
 
