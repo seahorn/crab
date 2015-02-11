@@ -2,11 +2,11 @@
 
 This project contains the core of Ikos, a static analyzer based on
 abstract interpretation developed at NASA Ames Research Center. This
-core consists of an implementation of a fixpoint algorithm and some
+core consists of an implementation of a fixpoint algorithm and several
 abstract numerical domains.
 
-To play with the domains and fixpoint a micro language called muAZ for
-modelling arrays and integers is provided.
+The directory include contains a CFG that interfaces with IKOS as well
+as wrappers to execute backward and forward analyses on it.
 
 # License #
 
@@ -15,6 +15,7 @@ Open Source Agreement (NOSA) Version 1.3 or later.
 
 # Prerequisites #
 
+The C++ compiler must support c++11
 Boost and gmp  (if Boost and gmp are installed CMake is usually good at find them).
 
 # Installation #
@@ -24,9 +25,8 @@ mkdir build && cd build  && cmake ../
 
 # Usage #
 
-The tests directory contains some examples of how to build muAZ
-Control Flow Graphs and how to compute invariants using different
-abstract domains.
+The tests directory contains some examples of how to build CFGs and
+how to compute invariants using different abstract domains.
 
 `
 build/tests/prog-1

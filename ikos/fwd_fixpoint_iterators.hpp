@@ -137,7 +137,7 @@ namespace ikos {
       typedef wto_cycle< NodeName, CFG > wto_cycle_t;
       typedef wto< NodeName, CFG > wto_t;
       typedef typename wto_t::wto_nesting_t wto_nesting_t;
-      typedef typename CFG::node_collection_t node_collection_t;
+      //typedef typename CFG::node_collection_t node_collection_t;
       
     private:
       interleaved_iterator_t *_iterator;
@@ -151,12 +151,10 @@ namespace ikos {
 	if (node == this->_iterator->get_cfg().entry()) {
 	  pre = this->_iterator->get_pre(node);
 	} else {
-	  node_collection_t prev_nodes = this->_iterator->_cfg.prev_nodes(node);
+	  auto prev_nodes = this->_iterator->_cfg.prev_nodes(node);
 	  pre = AbstractValue::bottom();
-	  for (typename node_collection_t::iterator it = prev_nodes.begin(); it != prev_nodes.end(); ++it) {
-	    NodeName prev = *it;
+	  for (NodeName prev : prev_nodes) 
 	    pre = pre | this->_iterator->get_post(prev); 
-	  }
 	  this->_iterator->set_pre(node, pre);
 	}
 	this->_iterator->set_post(node, this->_iterator->analyze(node, pre));
@@ -165,10 +163,9 @@ namespace ikos {
       void visit(wto_cycle_t& cycle) {
 	NodeName head = cycle.head();
 	wto_nesting_t cycle_nesting = this->_iterator->_wto.nesting(head);
-	node_collection_t prev_nodes = this->_iterator->_cfg.prev_nodes(head);
+	auto prev_nodes = this->_iterator->_cfg.prev_nodes(head);
 	AbstractValue pre = AbstractValue::bottom();
-	for (typename node_collection_t::iterator it = prev_nodes.begin(); it != prev_nodes.end(); ++it) {
-	  NodeName prev = *it;
+	for (NodeName prev : prev_nodes) {
 	  if (!(this->_iterator->_wto.nesting(prev) > cycle_nesting)) {
 	    pre = pre | this->_iterator->get_post(prev);
 	  }
@@ -181,10 +178,8 @@ namespace ikos {
 	    it->accept(this);
 	  }
 	  AbstractValue new_pre = AbstractValue::bottom();
-	  for (typename node_collection_t::iterator it = prev_nodes.begin(); it != prev_nodes.end(); ++it) {
-	    NodeName prev = *it;
+	  for (NodeName prev : prev_nodes) 
 	    new_pre = new_pre | this->_iterator->get_post(prev);
-	  }
 	  if (new_pre <= pre) {
 	    // Post-fixpoint reached
 	    this->_iterator->set_pre(head, new_pre);
@@ -201,10 +196,8 @@ namespace ikos {
 	    it->accept(this);
 	  }
 	  AbstractValue new_pre = AbstractValue::bottom();
-	  for (typename node_collection_t::iterator it = prev_nodes.begin(); it != prev_nodes.end(); ++it) {
-	    NodeName prev = *it;
+	  for (NodeName prev : prev_nodes) 
 	    new_pre = new_pre | this->_iterator->get_post(prev);
-	  }
 	  if (pre <= new_pre) {
 	    // No more refinement possible (pre == new_pre)
 	    break;

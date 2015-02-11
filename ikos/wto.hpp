@@ -418,9 +418,8 @@ namespace ikos {
 
     wto_cycle_ptr component(CFG& cfg, NodeName vertex) {
       wto_component_list_ptr partition(new wto_component_list_t);
-      typename CFG::node_collection_t next_nodes = cfg.next_nodes(vertex);
-      for (typename CFG::node_collection_t::iterator it = next_nodes.begin(); it != next_nodes.end(); ++it) {
-	NodeName succ = *it;
+      auto next_nodes = cfg.next_nodes(vertex);
+      for (NodeName succ : next_nodes) {
 	if (this->get_dfn(succ) == 0) {
 	  this->visit(cfg, succ, partition);
 	}
@@ -438,9 +437,8 @@ namespace ikos {
       head = this->_num;
       this->set_dfn(vertex, head);
       loop = false;
-      typename CFG::node_collection_t next_nodes = cfg.next_nodes(vertex);
-      for (typename CFG::node_collection_t::iterator it = next_nodes.begin(); it != next_nodes.end(); ++it) {
-	NodeName succ = *it;
+      auto next_nodes = cfg.next_nodes(vertex);
+      for (NodeName succ: next_nodes) {
 	dfn_t succ_dfn = this->get_dfn(succ);
 	if (succ_dfn == 0) {
 	  min = this->visit(cfg, succ, partition);
