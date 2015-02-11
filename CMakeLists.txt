@@ -69,10 +69,6 @@ install(DIRECTORY include/
   PATTERN ".svn" EXCLUDE
   )
 
-install(DIRECTORY ikos/
-  #DESTINATION ${IkosCore_BINARY_DIR}/run/ikos
-  DESTINATION ikos
-  )
 
 
 
