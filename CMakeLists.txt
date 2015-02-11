@@ -62,14 +62,16 @@ add_subdirectory(ikos/dbm)
 add_subdirectory(tests)
 
 install(DIRECTORY include/
-  DESTINATION ${IkosCore_BINARY_DIR}/run/include
+  #DESTINATION ${IkosCore_BINARY_DIR}/run/include
+  DESTINATION include
   FILES_MATCHING
   PATTERN "*.hpp"
   PATTERN ".svn" EXCLUDE
   )
 
 install(DIRECTORY ikos/
-  DESTINATION ${IkosCore_BINARY_DIR}/run/ikos
+  #DESTINATION ${IkosCore_BINARY_DIR}/run/ikos
+  DESTINATION ikos
   )
 
 
