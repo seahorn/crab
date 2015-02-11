@@ -38,7 +38,7 @@ else()
   set(GMPXX_LIB "")
 endif()
 
-include_directories (${CMAKE_SOURCE_DIR})
+include_directories (${IkosCore_SOURCE_DIR}/include)
 
 # check for rt lib. Not needed on OSX.
 find_library(RT_LIB NAMES rt)
@@ -58,7 +58,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
 add_definitions( -Wno-unused-local-typedefs)
 endif ()
 
-add_subdirectory(ikos/dbm)
+add_subdirectory(include/ikos_domains/dbm)
 add_subdirectory(tests)
 
 install(DIRECTORY include/

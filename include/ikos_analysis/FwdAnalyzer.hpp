@@ -1,9 +1,9 @@
 #ifndef FWD_ANALYZER_HPP
 #define FWD_ANALYZER_HPP
 
-#include <include/Cfg.hpp>
-#include <include/VarFactory.hpp>
-#include <include/Liveness.hpp>
+#include <ikos_cfg/Cfg.hpp>
+#include <ikos_cfg/VarFactory.hpp>
+#include <ikos_analysis/Liveness.hpp>
 
 namespace analyzer
 {

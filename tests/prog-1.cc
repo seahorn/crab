@@ -1,14 +1,13 @@
-#include <include/Cfg.hpp>
-#include <include/FwdAnalyzer.hpp>
-#include <include/VarFactory.hpp>
+#include <ikos_cfg/Cfg.hpp>
+#include <ikos_cfg/VarFactory.hpp>
+#include <ikos_analysis/FwdAnalyzer.hpp>
 
-#include <ikos/common.hpp>
-#include <ikos/fwd_fixpoint_iterators.hpp>         
-#include <ikos/linear_constraints.hpp> 
-#include <ikos/intervals.hpp>                      
-#include <ikos/intervals_congruences.hpp>                      
-#include <ikos/octagons.hpp>                      
-#include <ikos/dbm.hpp>                      
+#include <ikos_domains/common.hpp>
+#include <ikos_domains/linear_constraints.hpp> 
+#include <ikos_domains/intervals.hpp>                      
+#include <ikos_domains/intervals_congruences.hpp>                      
+#include <ikos_domains/octagons.hpp>                      
+#include <ikos_domains/dbm.hpp>                      
 
 using namespace std;
 

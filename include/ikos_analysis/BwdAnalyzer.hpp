@@ -1,7 +1,7 @@
 #ifndef BACKWARD_ANALYZER_HPP
 #define BACKWARD_ANALYZER_HPP
 
-#include <ikos/fwd_fixpoint_iterators.hpp>
+#include <ikos_iterators/fwd_fixpoint_iterators.hpp>
 #include <boost/noncopyable.hpp>
 
 namespace analyzer 

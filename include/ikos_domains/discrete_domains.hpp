@@ -7,10 +7,10 @@
 #define IKOS_DISCRETE_DOMAINS_HPP
 
 #include <iostream>
-#include <ikos/common.hpp>
-#include <ikos/patricia_trees.hpp>
-#include <ikos/collections.hpp>
-#include <ikos/separate_domains.hpp>
+#include <ikos_domains/common.hpp>
+#include <ikos_domains/patricia_trees.hpp>
+#include <ikos_domains/collections.hpp>
+#include <ikos_domains/separate_domains.hpp>
 
 namespace ikos {
 

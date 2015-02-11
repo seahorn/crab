@@ -12,13 +12,13 @@
 #define IKOS_INTERVALS_AND_CONGRUENCES_HPP
 
 #include <iostream>
-#include <ikos/common.hpp>
-#include <ikos/numerical_domains_api.hpp>
-#include <ikos/bitwise_operators_api.hpp>
-#include <ikos/division_operators_api.hpp>
-#include <ikos/domain_products.hpp>
-#include <ikos/congruences.hpp>
-#include <ikos/intervals.hpp>
+#include <ikos_domains/common.hpp>
+#include <ikos_domains/numerical_domains_api.hpp>
+#include <ikos_domains/bitwise_operators_api.hpp>
+#include <ikos_domains/division_operators_api.hpp>
+#include <ikos_domains/domain_products.hpp>
+#include <ikos_domains/congruences.hpp>
+#include <ikos_domains/intervals.hpp>
 
 namespace ikos {
 

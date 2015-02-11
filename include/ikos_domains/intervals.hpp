@@ -18,13 +18,13 @@
 #include <set>
 #include <map>
 #include <boost/optional.hpp>
-#include <ikos/common.hpp>
-#include <ikos/bignums.hpp>
-#include <ikos/linear_constraints.hpp>
-#include <ikos/separate_domains.hpp>
-#include <ikos/numerical_domains_api.hpp>
-#include <ikos/bitwise_operators_api.hpp>
-#include <ikos/division_operators_api.hpp>
+#include <ikos_domains/common.hpp>
+#include <ikos_domains/bignums.hpp>
+#include <ikos_domains/linear_constraints.hpp>
+#include <ikos_domains/separate_domains.hpp>
+#include <ikos_domains/numerical_domains_api.hpp>
+#include <ikos_domains/bitwise_operators_api.hpp>
+#include <ikos_domains/division_operators_api.hpp>
 
 namespace ikos {
 

@@ -11,7 +11,7 @@
 
 #include <cstdio>
 #include <iostream>
-#include <ikos/dbm/expr.h>
+#include <ikos_domains/dbm/expr.h>
 
 /* 
  * Header file for differenct logic domain (intended for sparse

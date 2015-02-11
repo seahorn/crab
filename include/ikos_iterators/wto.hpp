@@ -22,8 +22,8 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/container/slist.hpp>
-#include <ikos/common.hpp>
-#include <ikos/intervals.hpp>
+#include <ikos_domains/common.hpp>
+#include <ikos_domains/intervals.hpp>
 
 namespace ikos {
 

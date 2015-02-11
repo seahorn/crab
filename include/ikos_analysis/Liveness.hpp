@@ -3,14 +3,14 @@
 
 /* Liveness analysis */
 
-#include <include/BwdAnalyzer.hpp>
+#include <ikos_analysis/BwdAnalyzer.hpp>
 #include <boost/range/algorithm/copy.hpp>
 
 // set
 #include <set>
 // bitset
 #include <boost/dynamic_bitset.hpp>
-#include <ikos/mergeable_map.hpp>
+#include <ikos_domains/mergeable_map.hpp>
 // sorted vector
 #include <algorithm>
 #include <vector>

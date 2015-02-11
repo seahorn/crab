@@ -10,7 +10,7 @@
 #include <sstream>
 #include <iostream>
 #include <gmpxx.h>
-#include <ikos/common.hpp>
+#include <ikos_domains/common.hpp>
 
 namespace ikos {
   

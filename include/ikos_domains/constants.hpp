@@ -8,9 +8,9 @@
 
 #include <iostream>
 #include <boost/optional.hpp>
-#include <ikos/common.hpp>
-#include <ikos/bignums.hpp>
-#include <ikos/intervals.hpp>
+#include <ikos_domains/common.hpp>
+#include <ikos_domains/bignums.hpp>
+#include <ikos_domains/intervals.hpp>
 
 namespace ikos {
 
