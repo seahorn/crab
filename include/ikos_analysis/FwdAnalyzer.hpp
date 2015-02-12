@@ -121,7 +121,6 @@ namespace analyzer
      void process_pre (BasicBlockLabel node, AbsDomain inv) 
      {
        //cout << "Pre at " << node << ": " << inv << endl; 
-       
        auto it = m_pre_map.find (node);
        if (it == m_pre_map.end())
        {

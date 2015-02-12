@@ -17,6 +17,15 @@
 #include <boost/noncopyable.hpp>
 #include <boost/unordered_set.hpp>
 
+namespace cfg_impl 
+{
+  // To get a basic block label as a string
+  template< typename T >
+  inline std::string get_str(T e);
+
+  template<> inline std::string get_str(std::string e) { return e; }
+} 
+
 namespace cfg 
 {
 
@@ -192,7 +201,7 @@ namespace cfg
         case OP_SUBTRACTION:    { o << "-"; break; }
         case OP_DIVISION:       { o << "/"; break; }
       }
-      o << m_op2 << " " << this->m_live;
+      o << m_op2 ; // << " " << this->m_live;
       return o;
     }
 
@@ -241,7 +250,7 @@ namespace cfg
     
     virtual ostream& write(ostream& o) const
     {
-      o << m_lhs << " = " << m_rhs << " " << this->m_live;
+      o << m_lhs << " = " << m_rhs; // << " " << this->m_live;
       return o;
     }
 
@@ -284,7 +293,7 @@ namespace cfg
         
     virtual ostream& write (ostream & o) const
     {
-      o << "assume (" << m_cst << ")" << " " << this->m_live;
+      o << "assume (" << m_cst << ")"; //  << " " << this->m_live;
       return o;
     }
 
@@ -347,7 +356,7 @@ namespace cfg
      
     ostream& write (ostream& o) const
     {
-      o << m_lhs << " = *" << " " << this->m_live;
+      o << m_lhs << " =*" << " "; // << this->m_live;
       return o;
     }
     
@@ -525,7 +534,7 @@ namespace cfg
     
     ostream& write(ostream& o) const
     {
-      o << m_bb_id << ":\n";	
+      o << cfg_impl::get_str (m_bb_id) << ":\n";	
 
       for (auto const &s: *this)
         o << "  " << s << ";\n"; 
@@ -533,7 +542,7 @@ namespace cfg
       o << "--> [";
 
       for (auto const &n : next_blocks ())
-        o << n << ";";
+        o << cfg_impl::get_str (n) << ";";
 
       o << "]\n";
       
@@ -664,7 +673,7 @@ namespace cfg
         insert (boost::static_pointer_cast< Statement_t, ZAssignment >
                 (ZAssignment_ptr (new ZAssignment (lhs, rhs))));
       }
-        assert(false && "mul operands unexpected");
+      assert (false && "div operands unexpected");
     }
     
     void assign (ZVariable lhs, ZLinearExpression rhs) 
