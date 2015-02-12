@@ -320,6 +320,7 @@ namespace ikos {
   public:
     virtual void visit(wto_vertex_t&) = 0;
     virtual void visit(wto_cycle_t&) = 0;
+    virtual ~wto_component_visitor() {}
 
   }; // class wto_component_visitor
 
