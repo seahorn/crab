@@ -120,7 +120,7 @@ namespace analyzer
      
      void process_pre (BasicBlockLabel node, AbsDomain inv) 
      {
-       cout << "Pre at " << node << ": " << inv << endl; 
+       //cout << "Pre at " << node << ": " << inv << endl; 
        
        auto it = m_pre_map.find (node);
        if (it == m_pre_map.end())
@@ -131,7 +131,8 @@ namespace analyzer
      }
      
      void process_post (BasicBlockLabel node, AbsDomain inv) 
-     { cout << "Post at " << node << ": " << inv << endl; }
+     { //cout << "Post at " << node << ": " << inv << endl; 
+     }
      
     public:
      
@@ -144,10 +145,8 @@ namespace analyzer
      }
      
      void Run (AbsDomain inv) 
-     {       
-       cout << "Running " << inv.getDomainName () << "... \n";
-       this->run (inv); 
-     }
+     { this->run (inv); }      
+     
 
     //! return the invariants that hold at the entry of bb
     AbsDomain operator[] (BasicBlockLabel b) const
