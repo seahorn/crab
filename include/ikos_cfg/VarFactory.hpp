@@ -24,8 +24,6 @@ namespace cfg
       inline std::string get_str(T e);
 
       template<> inline std::string get_str(std::string e) { return e; }
-      //template<> inline std::string get_str(const llvm::Value *v) 
-      //{return v->getName().str();}
     } 
 
     template< class T>
@@ -83,15 +81,6 @@ namespace cfg
           return o;
         }
 
-        // llvm::raw_ostream& write(llvm::raw_ostream& o) {
-        //   o << this->str();
-        //   return o;
-        // }
-                        
-        // friend llvm::raw_ostream& operator<<(llvm::raw_ostream& o, IndexedString s) {
-        //   return s.write(o);
-        // }
-      
         friend size_t hash_value (IndexedString  s)
         {
           boost::hash<index_t> hasher;
@@ -127,27 +116,6 @@ namespace cfg
       }
     }; 
   } // end namespace var_factory_impl
-
-
-  // class LlvmVariableFactory : public boost::noncopyable  
-  // {
-  
-  //   typedef var_factory_impl::VariableFactory< const llvm::Value* > LlvmVariableFactory_t;
-  //   std::unique_ptr< LlvmVariableFactory_t > m_factory; 
-    
-  //  public: 
-
-  //   typedef LlvmVariableFactory_t::variable_t varname_t;
-    
-  //   LlvmVariableFactory(): m_factory (new LlvmVariableFactory_t()){ }
-    
-  //   varname_t operator[](const llvm::Value &v)
-  //   {
-  //     const llvm::Value *V = &v;
-  //     return (*m_factory)[V];			      
-  //   }
-  
-  // }; 
 
 } // end namespace
 

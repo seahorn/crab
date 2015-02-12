@@ -88,12 +88,16 @@ namespace analyzer
 
     private:
 
+     typedef boost::unordered_map< BasicBlockLabel, AbsDomain> invariant_map_t;    
+
      typedef Liveness< BasicBlockLabel, CFG, VariableName> liveness_t;     
      typedef typename liveness_t::live_set_t live_set_t;     
 
      CFG              m_cfg;
      VariableFactory& m_vfac;
      liveness_t       m_live;
+     invariant_map_t  m_pre_map;
+     
 
      //! Using liveness information delete all dead variables from inv
      void prune_dead_variables (BasicBlockLabel node_name, AbsDomain &inv)
@@ -115,23 +119,28 @@ namespace analyzer
      } 
      
      void process_pre (BasicBlockLabel node, AbsDomain inv) 
-     { cout << "Pre at " << node << ": " << inv << endl; }
+     {
+       cout << "Pre at " << node << ": " << inv << endl; 
+       
+       auto it = m_pre_map.find (node);
+       if (it == m_pre_map.end())
+       {
+         prune_dead_variables (node, inv);
+         m_pre_map.insert(typename invariant_map_t::value_type (node, inv));
+       }
+     }
      
      void process_post (BasicBlockLabel node, AbsDomain inv) 
      { cout << "Post at " << node << ": " << inv << endl; }
      
     public:
      
-     FwdAnalyzer (CFG cfg,  VariableFactory &vfac, bool runLive=true): 
+     FwdAnalyzer (CFG cfg,  VariableFactory &vfac, bool runLive=false): 
          fwd_iterator_t (cfg), 
          m_cfg (cfg), m_vfac(vfac), m_live (m_cfg)
      { 
        if (runLive)
-       {
-         //cout << "Liveness=\n";
          m_live.exec ();
-         //cout << m_live << "\n";
-       }
      }
      
      void Run (AbsDomain inv) 
@@ -139,6 +148,16 @@ namespace analyzer
        cout << "Running " << inv.getDomainName () << "... \n";
        this->run (inv); 
      }
+
+    //! return the invariants that hold at the entry of bb
+    AbsDomain operator[] (BasicBlockLabel b) const
+    {
+      auto it = m_pre_map.find (b);
+      if (it == m_pre_map.end ())
+        return AbsDomain::bottom ();
+      else
+        return it->second;
+    }
 
    }; 
 } // end namespace
