@@ -543,7 +543,13 @@ class interval_congruence: public writeable {
       return this->_product.write(o);
     }
 
-  const char* getDomainName () const {return "Intervals+Congruences";}
+    boost::optional<linear_constraint_system_t> to_linear_constraint_system ()
+    {
+      this->reduce();
+      return this->_product.first().to_linear_constraint_system();
+    }
+
+    const char* getDomainName () const {return "Intervals+Congruences";}
 
   }; // class interval_congruence_domain
 

@@ -1319,6 +1319,98 @@ namespace ikos {
       return o;
     } // Maintains normalization. 
 
+
+    boost::optional<linear_constraint_system_t> to_linear_constraint_system ()
+    {
+      normalize();
+
+      if(_is_bottom)
+      {
+        return boost::optional<linear_constraint_system_t>();
+      }
+
+      linear_constraint_system_t csts;
+
+      if(_map.size()== 0) 
+      {
+        return boost::optional<linear_constraint_system_t>(csts);
+      }      
+
+      bound_t lb(0), rb(0);
+      unsigned int idx1(0), idx2(0);
+      for(typename map_t::iterator it=_map.begin(); it!= _map.end(); ++it){
+        idx1= it->second;
+        lb= _dbm(2*idx1- 1, 2*idx1).operator/(-2);
+        rb= _dbm(2*idx1, 2*idx1- 1).operator/(2);
+        // v <= c and v >= c
+        if (lb.is_finite() && rb.is_finite()){
+          if (lb == rb)
+            csts += linear_constraint_t(variable_t(it->first) == *(rb.number())); 
+          else
+          {
+            csts += linear_constraint_t(variable_t(it->first) >= *(lb.number())); 
+            csts += linear_constraint_t(variable_t(it->first) <= *(rb.number())); 
+          }
+        }
+        else if (lb.is_finite())
+        {
+          csts += linear_constraint_t(variable_t(it->first) >= *(lb.number())); 
+        }
+        else if (rb.is_finite())
+        {
+          csts += linear_constraint_t(variable_t(it->first) <= *(rb.number())); 
+        }
+
+        for(typename map_t::iterator it2=it+1; it2!= _map.end(); ++it2){
+          idx2= it2->second;
+          ////
+          // v1 - v2
+          ////
+          lb= _dbm(2*idx2, 2*idx1).operator-();
+          rb= _dbm(2*idx2- 1, 2*idx1- 1);
+          linear_expression_t e1(variable_t(it->first)  - variable_t(it2->first));
+          if (lb.is_finite() && rb.is_finite()){
+            if (lb == rb){
+              csts += linear_constraint_t(e1 == *(rb.number())); 
+            }
+            else{
+              csts += linear_constraint_t(e1 >= *(lb.number())); 
+              csts += linear_constraint_t(e1 <= *(rb.number())); 
+            }
+          }
+          else if (lb.is_finite()){
+            csts += linear_constraint_t(e1 >= *(lb.number())); 
+          }
+          else if (rb.is_finite()){
+            csts += linear_constraint_t(e1 <= *(rb.number())); 
+          }
+          ////
+          // v1 + v2
+          ////
+          lb= _dbm(2*idx2- 1, 2*idx1).operator-();
+          rb= _dbm(2*idx2, 2*idx1- 1);
+          linear_expression_t e2(variable_t(it->first)  + variable_t(it2->first));
+
+          if (lb.is_finite() && rb.is_finite()){
+            if (lb == rb){
+              csts += linear_constraint_t(e2 == *(rb.number())); 
+            }
+            else{
+              csts += linear_constraint_t(e2 >= *(lb.number())); 
+              csts += linear_constraint_t(e2 <= *(rb.number())); 
+            }
+          }
+          else if (lb.is_finite()){
+            csts += linear_constraint_t(e2 >= *(lb.number())); 
+          }
+          else if (rb.is_finite()){
+            csts += linear_constraint_t(e2 <= *(rb.number())); 
+          }
+        }
+      }
+      return boost::optional<linear_constraint_system_t>(csts);
+    }
+
     const char* getDomainName () const {return "Octagons";}
 
   }; // class octagon
