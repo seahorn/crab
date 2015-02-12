@@ -671,7 +671,8 @@ namespace cfg
         insert (boost::static_pointer_cast< Statement_t, ZAssignment >
                 (ZAssignment_ptr (new ZAssignment (lhs, rhs))));
       }
-      assert (false && "div operands unexpected");
+      else
+        assert (false && "div operands unexpected");
     }
     
     void assign (ZVariable lhs, ZLinearExpression rhs) 
