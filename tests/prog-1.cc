@@ -15,6 +15,9 @@ namespace cfg_impl
 {
   using namespace cfg;
 
+  template<> inline std::string get_label_str(std::string e) 
+  { return e; }
+
   class StrVariableFactory : public boost::noncopyable  
   {
     typedef var_factory_impl::VariableFactory< std::string > StrVariableFactory_t;
@@ -111,7 +114,7 @@ int main (int argc, char** argv )
   for (auto &b : cfg)
   {
     interval_domain_t inv = itv_a [b.label ()];
-    std::cout << cfg_impl::get_str (b.label ()) << "=" << inv << "\n";
+    std::cout << cfg_impl::get_label_str (b.label ()) << "=" << inv << "\n";
   }
 
   dbm_domain_t dbm = dbm_domain_t::top ();
@@ -122,7 +125,7 @@ int main (int argc, char** argv )
   for (auto &b : cfg)
   {
     dbm_domain_t inv = dbm_a [b.label ()];
-    std::cout << cfg_impl::get_str (b.label ()) << "=" << inv << "\n";
+    std::cout << cfg_impl::get_label_str (b.label ()) << "=" << inv << "\n";
   }
 
   return 0;

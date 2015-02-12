@@ -19,11 +19,9 @@
 
 namespace cfg_impl 
 {
-  // To get a basic block label as a string
+  // To convert a basic block label to a string
   template< typename T >
-  inline std::string get_str(T e);
-
-  template<> inline std::string get_str(std::string e) { return e; }
+  inline std::string get_label_str(T e);
 } 
 
 namespace cfg 
@@ -534,7 +532,7 @@ namespace cfg
     
     ostream& write(ostream& o) const
     {
-      o << cfg_impl::get_str (m_bb_id) << ":\n";	
+      o << cfg_impl::get_label_str (m_bb_id) << ":\n";	
 
       for (auto const &s: *this)
         o << "  " << s << ";\n"; 
@@ -542,7 +540,7 @@ namespace cfg
       o << "--> [";
 
       for (auto const &n : next_blocks ())
-        o << cfg_impl::get_str (n) << ";";
+        o << cfg_impl::get_label_str (n) << ";";
 
       o << "]\n";
       
