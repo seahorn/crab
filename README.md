@@ -5,7 +5,7 @@ abstract interpretation developed at NASA Ames Research Center. This
 core consists of an implementation of a fixpoint algorithm and several
 abstract numerical domains.
 
-The directory include contains a CFG that interfaces with IKOS as well
+Ikos-core also provides a CFG that interfaces with IKOS as well
 as wrappers to execute backward and forward analyses on it.
 
 # License #
@@ -15,12 +15,12 @@ Open Source Agreement (NOSA) Version 1.3 or later.
 
 # Prerequisites #
 
-The C++ compiler must support c++11
-Boost and gmp  (if Boost and gmp are installed CMake is usually good at find them).
+- The C++ compiler must support c++11
+- Boost and gmp  
 
 # Installation #
 `
-mkdir build && cd build  && cmake ../
+mkdir build && cd build  && cmake -G Ninja ../
 `
 
 # Usage #
@@ -32,9 +32,9 @@ how to compute invariants using different abstract domains.
 build/tests/prog-1
 `
 
-# Some notes for implementing new numerical abstract domains #
+# Notes for implementing new abstract domains #
 
-The main task is to implement the following methods required by the
+The main task is to implement the following API required by the
 fixpoint algorithm:
   
     static AbsDomain top();
@@ -60,7 +60,9 @@ fixpoint algorithm:
     // Narrowing 
     AbsDomain operator&&(AbsDomain o);
     
-In addition, it is also required to implement the api described in
+# Notes for implementing new numerical abstract domains #
+
+In addition to the previous API, for numerical domains it is also required to implement the API described in
 numerical_domains_api.hpp:
 
     typedef linear_expression< Number, VariableName > linear_expression_t;
@@ -84,7 +86,7 @@ numerical_domains_api.hpp:
 
     virtual ~numerical_domain() { }
       
-This api assumes the manipulation of linear expressions and linear
+This API assumes the manipulation of linear expressions and linear
 constraints both defined in linear_constraints.hpp so it is good to be
 familiar with.
 
