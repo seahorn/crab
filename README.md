@@ -6,13 +6,14 @@ core consists of an implementation of a fixpoint algorithm and several
 abstract numerical domains.
 
 Ikos-core also provides a CFG that interfaces with IKOS as well
-as wrappers to execute backward and forward analyses on it.
+as adaptors to execute backward and forward analyses on it.
 
 # License #
 
 This software is released under the terms and conditions of the NASA
 Open Source Agreement (NOSA) Version 1.3 or later.
 
+**TODO**: directories `ikos_cfg` and `ikos_analysis` (the code that provides the CFG and adaptors for using ikos) do not need to be NOSA so they should have a more flexible licence. 
 # Prerequisites #
 
 - The C++ compiler must support c++11
