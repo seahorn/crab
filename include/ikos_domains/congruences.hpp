@@ -606,42 +606,42 @@ namespace ikos{
     }
   }; // end class congruence
 
-  template< typename Number, unsigned int typeSize>
+  template< typename Number, int typeSize>
   inline congruence< Number, typeSize > operator+(Number c, congruence< Number, typeSize > x) {
     return congruence< Number, typeSize >(c) + x;
   }
   
-  template< typename Number, unsigned int typeSize>
+  template< typename Number, int typeSize>
   inline congruence< Number, typeSize > operator+(congruence< Number, typeSize > x, Number c) {
     return x + congruence< Number, typeSize >(c);
   }
 
-  template< typename Number, unsigned int typeSize>
+  template< typename Number, int typeSize>
   inline congruence< Number, typeSize > operator*(Number c, congruence< Number, typeSize > x) {
     return congruence< Number, typeSize >(c) * x;
   }
 
-  template< typename Number, unsigned int typeSize>
+  template< typename Number, int typeSize>
   inline congruence< Number, typeSize > operator*(congruence< Number, typeSize > x, Number c) {
     return x * congruence< Number, typeSize >(c);
   }
 
-  template< typename Number, unsigned int typeSize>
+  template< typename Number, int typeSize>
   inline congruence< Number, typeSize > operator/(Number c, congruence< Number, typeSize > x) {
     return congruence< Number, typeSize >(c) / x;
   }
 
-  template< typename Number, unsigned int typeSize>
+  template< typename Number, int typeSize>
   inline congruence< Number, typeSize > operator/(congruence< Number, typeSize > x, Number c) {
     return x / congruence< Number, typeSize >(c);
   }
 
-  template< typename Number, unsigned int typeSize>
+  template< typename Number, int typeSize>
   inline congruence< Number, typeSize > operator-(Number c, congruence< Number, typeSize > x) {
     return congruence< Number, typeSize >(c) - x;
   }
 
-  template< typename Number, unsigned int typeSize>
+  template< typename Number, int typeSize>
   inline congruence< Number, typeSize > operator-(congruence< Number, typeSize > x, Number c) {
     return x - congruence< Number, typeSize >(c);
   }
