@@ -79,7 +79,7 @@ namespace ikos
       return *this;
     }
 
-    VariableName name() {
+    VariableName name() const {
       return _n;
     }
     
