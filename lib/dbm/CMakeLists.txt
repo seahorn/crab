@@ -5,6 +5,5 @@ add_definitions(-Wno-int-to-pointer-cast)
 add_definitions(-Wno-sign-compare)
 
 install(TARGETS dbm
-  #LIBRARY DESTINATION ${IkosCore_BINARY_DIR}/run/lib
   LIBRARY DESTINATION lib
   )

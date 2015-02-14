@@ -58,11 +58,10 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
 add_definitions( -Wno-unused-local-typedefs)
 endif ()
 
-add_subdirectory(include/ikos_domains/dbm)
+add_subdirectory(lib)
 add_subdirectory(tests)
 
 install(DIRECTORY include/
-  #DESTINATION ${IkosCore_BINARY_DIR}/run/include
   DESTINATION include
   )
 
