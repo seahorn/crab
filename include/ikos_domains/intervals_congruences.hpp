@@ -22,7 +22,7 @@
 
 namespace ikos {
 
-template< typename Number, unsigned int typeSize = -1 >
+template< typename Number, int typeSize = -1 >
 class interval_congruence: public writeable {
 
  public:
@@ -318,7 +318,7 @@ class interval_congruence: public writeable {
 
 }; 
 
-  template< typename Number, typename VariableName, std::size_t max_reduction_cycles = 3, unsigned int typeSize = -1>
+  template< typename Number, typename VariableName, std::size_t max_reduction_cycles = 3, int typeSize = -1>
   class interval_congruence_domain: public writeable, 
                                     public numerical_domain< Number, VariableName >,
                                     public bitwise_operators< Number, VariableName >, 

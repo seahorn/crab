@@ -107,7 +107,7 @@ namespace cfg
 
 
   template< typename VariableName>
-  class StatementVisitor;
+  struct StatementVisitor;
 
   template< class VariableName>
   class Statement

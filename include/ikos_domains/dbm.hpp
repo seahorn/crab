@@ -342,7 +342,7 @@ class DBM: public writeable,
       throw ikos::error("DBM: coefficients can be only 1 or -1");
     if (!(coef_y == 1 || coef_y == -1))
       throw ikos::error("DBM: coefficients can be only 1 or -1");
-    if ((coef_x == coef_y))
+    if (coef_x == coef_y)
       throw ikos::error("DBM: same coefficients");        
 
     add_variable(x.name());

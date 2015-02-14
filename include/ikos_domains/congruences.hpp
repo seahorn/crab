@@ -31,7 +31,7 @@ using namespace std;
 
 namespace ikos{
   
-  template < typename Number , unsigned int typeSize = -1 >
+  template < typename Number , int typeSize = -1 >
   class congruence : public writeable {
   public:
     typedef congruence<Number, typeSize > congruence_t;
@@ -647,7 +647,7 @@ namespace ikos{
   }
 
 
-  template< typename Number, typename VariableName, typename CongruenceCollection, unsigned int typeSize = -1 >
+  template< typename Number, typename VariableName, typename CongruenceCollection, int typeSize = -1 >
   class equality_congruence_solver {
     // TODO: check correctness of the solver. Granger provides a sound
     // and more precise solver for equality linear congruences (see
@@ -773,7 +773,7 @@ namespace ikos{
 
 
 
-  template< typename Number, typename VariableName, unsigned int typeSize = -1 >
+  template< typename Number, typename VariableName, int typeSize = -1 >
   class congruence_domain: public writeable, 
                            public numerical_domain< Number, VariableName >,
                            public bitwise_operators< Number, VariableName >, 
