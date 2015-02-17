@@ -12,20 +12,21 @@
  * - Assume that no overflow/underflow can occur.
  * - Bitwise operations are sound approximations for both signed and
  *   unsigned interpretations of bit strings.
+ * - If typeSize == -1 then the domain assumes that all variables is
+ *   represented with unlimited precision.
  * - If typeSize > -1 then the domain assumes that all variables will
- *   have the same bit width which is unrealistic.
- * 
+ *   have the same bit width.
  ******************************************************************************/
 
 #ifndef IKOS_CONGRUENCES_HPP
 #define IKOS_CONGRUENCES_HPP
 
 #include <iostream>
-#include <ikos_domains/common.hpp>
-#include <ikos_domains/separate_domains.hpp>
-#include <ikos_domains/numerical_domains_api.hpp>
-#include <ikos_domains/bitwise_operators_api.hpp>
-#include <ikos_domains/division_operators_api.hpp>
+#include <ikos/common/types.hpp>
+#include <ikos/domains/separate_domains.hpp>
+#include <ikos/domains/numerical_domains_api.hpp>
+#include <ikos/domains/bitwise_operators_api.hpp>
+#include <ikos/domains/division_operators_api.hpp>
 
 using namespace std;
 
@@ -35,7 +36,9 @@ namespace ikos{
   class congruence : public writeable {
   public:
     typedef congruence<Number, typeSize > congruence_t;
-    static const unsigned int infty = -1;
+
+    bool isUnlimited (int Width)
+    { return Width == -1; }
 
   private:
     bool   _is_bottom;
@@ -428,7 +431,7 @@ namespace ikos{
         return congruence_t::bottom();
       else if (this->is_top())
         return congruence_t::top();
-      else if(typeSize == infty)
+      else if(isUnlimited (typeSize))
         return congruence_t::top();
       else{
         if (typeSize < 32){
@@ -452,7 +455,7 @@ namespace ikos{
         return congruence_t::bottom();
       else if (this->is_top() || o.is_top())
         return congruence_t::top();
-      else if(typeSize == infty)
+      else if (isUnlimited (typeSize))
         return congruence_t::top();
       else{
         // first both numbers are approximated to power of 2
@@ -480,7 +483,7 @@ namespace ikos{
         return congruence_t::bottom();
       else if (this->is_top() || o.is_top())
         return congruence_t::top();
-      else if(typeSize == infty)
+      else if (isUnlimited (typeSize))
         return congruence_t::top();
       else{
         return this->Not().And(o.Not()).Not();
@@ -492,7 +495,7 @@ namespace ikos{
         return congruence_t::bottom();
       else if (this->is_top() || o.is_top())
         return congruence_t::top();
-      else if(typeSize == infty)
+      else if (isUnlimited (typeSize))
         return congruence_t::top();
       else{
         return this->And(o.Not()).Or(this->Not().And(o));
@@ -504,7 +507,7 @@ namespace ikos{
         return congruence_t::bottom();
       else if (this->is_top() || o.is_top())
         return congruence_t::top();
-      else if(typeSize == infty)
+      else if (isUnlimited (typeSize))
         return congruence_t::top();
       else{
         if (o.a == 0){ // singleton
@@ -527,7 +530,7 @@ namespace ikos{
         return congruence_t::bottom();
       else if (this->is_top() || o.is_top())
         return congruence_t::top();
-      else if(typeSize == infty)
+      else if (isUnlimited (typeSize))
         return congruence_t::top();
       else{
         Number t= scanr1(a);

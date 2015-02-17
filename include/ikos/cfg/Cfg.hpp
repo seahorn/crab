@@ -6,9 +6,9 @@
  */
 
 
-#include <ikos_domains/common.hpp>
-#include <ikos_domains/bignums.hpp>
-#include <ikos_domains/linear_constraints.hpp>
+#include <ikos/common/types.hpp>
+#include <ikos/common/bignums.hpp>
+#include <ikos/algorithms/linear_constraints.hpp>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/iterator/indirect_iterator.hpp>

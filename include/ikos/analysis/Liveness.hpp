@@ -3,19 +3,19 @@
 
 /* Liveness analysis */
 
-#include <ikos_analysis/BwdAnalyzer.hpp>
+#include <ikos/analysis/BwdAnalyzer.hpp>
 #include <boost/range/algorithm/copy.hpp>
 
 // set
 #include <set>
 // bitset
 #include <boost/dynamic_bitset.hpp>
-#include <ikos_domains/mergeable_map.hpp>
+#include <ikos/common/mergeable_map.hpp>
 // sorted vector
 #include <algorithm>
 #include <vector>
 // // discrete domain
-// #include <ikos/discrete_domains.hpp>
+// #include <ikos/domains/discrete_domains.hpp>
 
 namespace analyzer 
 {

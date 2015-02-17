@@ -21,15 +21,15 @@
 #include <iostream>
 #include <vector>
 #include <sstream>
-#include <ikos_domains/common.hpp>
-#include <ikos_domains/bignums.hpp>
-#include <ikos_domains/linear_constraints.hpp>
-#include <ikos_domains/numerical_domains_api.hpp>
-#include <ikos_domains/bitwise_operators_api.hpp>
-#include <ikos_domains/division_operators_api.hpp>
-#include <ikos_domains/intervals.hpp>
 #include <boost/container/flat_map.hpp>
 #include <boost/optional.hpp>
+#include <ikos/common/types.hpp>
+#include <ikos/common/bignums.hpp>
+#include <ikos/algorithms/linear_constraints.hpp>
+#include <ikos/domains/numerical_domains_api.hpp>
+#include <ikos/domains/bitwise_operators_api.hpp>
+#include <ikos/domains/division_operators_api.hpp>
+#include <ikos/domains/intervals.hpp>
 
 using namespace boost;
 using namespace std;
