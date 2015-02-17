@@ -7,8 +7,8 @@
 #define IKOS_DOMAIN_PRODUCTS_HPP
 
 #include <iostream>
-#include <ikos_domains/common.hpp>
-#include <ikos_domains/numerical_domains_api.hpp>
+#include <ikos/common/types.hpp>
+#include <ikos/domains/numerical_domains_api.hpp>
 
 namespace ikos {
 

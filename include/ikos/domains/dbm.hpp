@@ -11,16 +11,17 @@
 #ifndef IKOS_DBM_HPP
 #define IKOS_DBM_HPP
 
-#include <ikos_domains/dbm/dbm.h>
-#include <ikos_domains/dbm/expr.h>
-#include <ikos_domains/dbm/dbm_iter.h>
-#include <ikos_domains/mergeable_map.hpp>
-#include <ikos_domains/common.hpp>
-#include <ikos_domains/intervals.hpp>
-#include <ikos_domains/linear_constraints.hpp>
-#include <ikos_domains/numerical_domains_api.hpp>
-#include <ikos_domains/bitwise_operators_api.hpp>
-#include <ikos_domains/division_operators_api.hpp>
+#include <ikos/common/mergeable_map.hpp>
+#include <ikos/common/types.hpp>
+#include <ikos/algorithms/linear_constraints.hpp>
+#include <ikos/domains/dbm/dbm.h>
+#include <ikos/domains/dbm/expr.h>
+#include <ikos/domains/dbm/dbm_iter.h>
+#include <ikos/domains/intervals.hpp>
+#include <ikos/domains/numerical_domains_api.hpp>
+#include <ikos/domains/bitwise_operators_api.hpp>
+#include <ikos/domains/division_operators_api.hpp>
+
 #include <boost/optional.hpp>
 #include <boost/unordered_set.hpp>
 #include <boost/lexical_cast.hpp>

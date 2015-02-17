@@ -7,8 +7,8 @@
 
 #include <iostream>
 #include <boost/optional.hpp>
-#include <ikos_domains/patricia_trees.hpp>
-#include <ikos_domains/common.hpp>
+#include <ikos/algorithms/patricia_trees.hpp>
+#include <ikos/common/types.hpp>
 
 namespace ikos {
 
