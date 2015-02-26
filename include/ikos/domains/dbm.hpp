@@ -883,27 +883,28 @@ class DBM: public writeable,
     }
     else
     {
-      boost::optional<linear_constraint_system_t> inv = to_linear_constraint_system ();
-      assert(inv);
-      o << *inv;
+      linear_constraint_system_t inv = to_linear_constraint_system ();
+      o << inv;
       return o;
     }
   }
 
   const char* getDomainName () const {return "DBM";}
 
-  boost::optional<linear_constraint_system_t> 
+  linear_constraint_system_t
   to_linear_constraint_system ()
   {
 
     dbm_canonical(this->_dbm);
+    linear_constraint_system_t csts;
     
     if(is_bottom ())
     {
-      return boost::optional<linear_constraint_system_t>();
+      csts += linear_constraint_t (linear_expression_t (Number(1)) == 
+                                     linear_expression_t (Number(0)));
+      return csts;
     }
 
-    linear_constraint_system_t csts;
     boost::unordered_set< pair<int,int> > visited; // to only consider half matrix
     for(edge_iter iter=edge_iterator(this->_dbm); !srcs_end(iter); next_src(iter))
     {
@@ -993,7 +994,7 @@ class DBM: public writeable,
         }
       }
     }
-    return boost::optional<linear_constraint_system_t>(csts);
+    return csts;
   }
 
 }; // class DBM

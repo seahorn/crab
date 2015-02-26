@@ -1210,12 +1210,17 @@ namespace ikos {
       return this->_env.write(o);
     }
 
-    boost::optional<linear_constraint_system_t> to_linear_constraint_system ()
+    linear_constraint_system_t to_linear_constraint_system ()
     {
-      if (this->is_bottom())
-        return boost::optional<linear_constraint_system_t>();
-
       linear_constraint_system_t csts;
+      
+      if (this->is_bottom())
+      {
+        csts += linear_constraint_t (linear_expression_t (Number(1)) == 
+                                     linear_expression_t (Number(0)));
+        return csts;
+      }
+
       for (iterator it = this->_env.begin(); it != this->_env.end(); ++it)
       {
         VariableName v = it->first;
@@ -1225,7 +1230,7 @@ namespace ikos {
         if (lb) csts += linear_constraint_t( variable_t(v) >= *lb );
         if (ub) csts += linear_constraint_t( variable_t(v) <= *ub );
       }
-      return boost::optional<linear_constraint_system_t>(csts);
+      return csts;
     }
 
     const char* getDomainName () const {return "Intervals";}

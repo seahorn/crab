@@ -543,7 +543,7 @@ class interval_congruence: public writeable {
       return this->_product.write(o);
     }
 
-    boost::optional<linear_constraint_system_t> to_linear_constraint_system ()
+    linear_constraint_system_t to_linear_constraint_system ()
     {
       this->reduce();
       return this->_product.first().to_linear_constraint_system();

@@ -1320,21 +1320,19 @@ namespace ikos {
     } // Maintains normalization. 
 
 
-    boost::optional<linear_constraint_system_t> to_linear_constraint_system ()
+    linear_constraint_system_t to_linear_constraint_system ()
     {
       normalize();
+      linear_constraint_system_t csts;
 
       if(_is_bottom)
       {
-        return boost::optional<linear_constraint_system_t>();
+        csts += linear_constraint_t (linear_expression_t (Number(1)) == 
+                                     linear_expression_t (Number(0)));
+        return csts;
       }
 
-      linear_constraint_system_t csts;
-
-      if(_map.size()== 0) 
-      {
-        return boost::optional<linear_constraint_system_t>(csts);
-      }      
+      if(_map.size()== 0) return csts;
 
       bound_t lb(0), rb(0);
       unsigned int idx1(0), idx2(0);
@@ -1408,7 +1406,7 @@ namespace ikos {
           }
         }
       }
-      return boost::optional<linear_constraint_system_t>(csts);
+      return csts;
     }
 
     const char* getDomainName () const {return "Octagons";}
