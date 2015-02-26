@@ -152,7 +152,7 @@ namespace analyzer
     {
       auto it = m_pre_map.find (b);
       if (it == m_pre_map.end ())
-        return AbsDomain::bottom ();
+        return AbsDomain::top ();
       else
         return it->second;
     }
