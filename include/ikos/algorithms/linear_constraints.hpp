@@ -13,9 +13,8 @@
 #include <boost/container/flat_map.hpp>
 #include <boost/container/slist.hpp>
 #include <boost/iterator/iterator_facade.hpp>
-#include <ikos_domains/common.hpp>
-#include <ikos_domains/patricia_trees.hpp>
-#include <ikos_domains/collections.hpp>
+#include <ikos/common/types.hpp>
+#include <ikos/algorithms/patricia_trees.hpp>
 
 namespace ikos {
   

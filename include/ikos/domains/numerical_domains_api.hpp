@@ -6,8 +6,8 @@
 #ifndef IKOS_NUMERICAL_DOMAINS_API_HPP
 #define IKOS_NUMERICAL_DOMAINS_API_HPP
 
-#include <ikos_domains/common.hpp>
-#include <ikos_domains/linear_constraints.hpp>
+#include <ikos/common/types.hpp>
+#include <ikos/algorithms/linear_constraints.hpp>
 
 namespace ikos {
   

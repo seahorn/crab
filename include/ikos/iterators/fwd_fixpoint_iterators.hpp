@@ -16,9 +16,9 @@
 #include <iostream>
 #include <map>
 #include <boost/shared_ptr.hpp>
-#include <ikos_domains/common.hpp>
-#include <ikos_iterators/wto.hpp>
-#include <ikos_iterators/fixpoint_iterators_api.hpp>
+#include <ikos/common/types.hpp>
+#include <ikos/iterators/wto.hpp>
+#include <ikos/iterators/fixpoint_iterators_api.hpp>
 
 namespace ikos {
   

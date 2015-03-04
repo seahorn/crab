@@ -5,7 +5,7 @@
 #ifndef DBM_ITER_H__
 #define DBM_ITER_H__
 
-#include <ikos_domains/dbm/dbm.h>
+#include <ikos/domains/dbm/dbm.h>
 
 // SEMANTICS:
 // An edge (i, w, j) represents the constraint [[i - j <= w]]

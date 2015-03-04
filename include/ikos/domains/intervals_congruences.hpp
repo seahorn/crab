@@ -12,13 +12,13 @@
 #define IKOS_INTERVALS_AND_CONGRUENCES_HPP
 
 #include <iostream>
-#include <ikos_domains/common.hpp>
-#include <ikos_domains/numerical_domains_api.hpp>
-#include <ikos_domains/bitwise_operators_api.hpp>
-#include <ikos_domains/division_operators_api.hpp>
-#include <ikos_domains/domain_products.hpp>
-#include <ikos_domains/congruences.hpp>
-#include <ikos_domains/intervals.hpp>
+#include <ikos/common/types.hpp>
+#include <ikos/domains/numerical_domains_api.hpp>
+#include <ikos/domains/bitwise_operators_api.hpp>
+#include <ikos/domains/division_operators_api.hpp>
+#include <ikos/domains/domain_products.hpp>
+#include <ikos/domains/congruences.hpp>
+#include <ikos/domains/intervals.hpp>
 
 namespace ikos {
 
@@ -543,7 +543,7 @@ class interval_congruence: public writeable {
       return this->_product.write(o);
     }
 
-    boost::optional<linear_constraint_system_t> to_linear_constraint_system ()
+    linear_constraint_system_t to_linear_constraint_system ()
     {
       this->reduce();
       return this->_product.first().to_linear_constraint_system();

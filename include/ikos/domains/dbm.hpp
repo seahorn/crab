@@ -11,16 +11,17 @@
 #ifndef IKOS_DBM_HPP
 #define IKOS_DBM_HPP
 
-#include <ikos_domains/dbm/dbm.h>
-#include <ikos_domains/dbm/expr.h>
-#include <ikos_domains/dbm/dbm_iter.h>
-#include <ikos_domains/mergeable_map.hpp>
-#include <ikos_domains/common.hpp>
-#include <ikos_domains/intervals.hpp>
-#include <ikos_domains/linear_constraints.hpp>
-#include <ikos_domains/numerical_domains_api.hpp>
-#include <ikos_domains/bitwise_operators_api.hpp>
-#include <ikos_domains/division_operators_api.hpp>
+#include <ikos/common/mergeable_map.hpp>
+#include <ikos/common/types.hpp>
+#include <ikos/algorithms/linear_constraints.hpp>
+#include <ikos/domains/dbm/dbm.h>
+#include <ikos/domains/dbm/expr.h>
+#include <ikos/domains/dbm/dbm_iter.h>
+#include <ikos/domains/intervals.hpp>
+#include <ikos/domains/numerical_domains_api.hpp>
+#include <ikos/domains/bitwise_operators_api.hpp>
+#include <ikos/domains/division_operators_api.hpp>
+
 #include <boost/optional.hpp>
 #include <boost/unordered_set.hpp>
 #include <boost/lexical_cast.hpp>
@@ -882,27 +883,28 @@ class DBM: public writeable,
     }
     else
     {
-      boost::optional<linear_constraint_system_t> inv = to_linear_constraint_system ();
-      assert(inv);
-      o << *inv;
+      linear_constraint_system_t inv = to_linear_constraint_system ();
+      o << inv;
       return o;
     }
   }
 
   const char* getDomainName () const {return "DBM";}
 
-  boost::optional<linear_constraint_system_t> 
+  linear_constraint_system_t
   to_linear_constraint_system ()
   {
 
     dbm_canonical(this->_dbm);
+    linear_constraint_system_t csts;
     
     if(is_bottom ())
     {
-      return boost::optional<linear_constraint_system_t>();
+      csts += linear_constraint_t (linear_expression_t (Number(1)) == 
+                                     linear_expression_t (Number(0)));
+      return csts;
     }
 
-    linear_constraint_system_t csts;
     boost::unordered_set< pair<int,int> > visited; // to only consider half matrix
     for(edge_iter iter=edge_iterator(this->_dbm); !srcs_end(iter); next_src(iter))
     {
@@ -992,7 +994,7 @@ class DBM: public writeable,
         }
       }
     }
-    return boost::optional<linear_constraint_system_t>(csts);
+    return csts;
   }
 
 }; // class DBM
