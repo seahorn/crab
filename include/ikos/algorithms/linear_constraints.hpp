@@ -443,7 +443,7 @@ namespace ikos {
       return this->_expr;
     }
     
-    bool kind() {
+    kind_t kind() {
       return this->_kind;
     }
 

@@ -24,9 +24,7 @@ namespace ikos {
 
   template< typename Number, typename VariableName >
   class bitwise_operators {
-
    public:
-
     virtual void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width) = 0;
     virtual void apply(conv_operation_t op, VariableName x, Number y, unsigned width) = 0;
     virtual void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) = 0;
