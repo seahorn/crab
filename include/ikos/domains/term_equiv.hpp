@@ -33,9 +33,32 @@
 using namespace boost;
 using namespace std;
 
-// #define VERBOSE 
+#define VERBOSE 
 
 namespace ikos {
+  // Function to call D->normalize only if it exists.
+  // FIXME: Figure out how to abuse SFINAE to do this.
+  /*
+  template<class D>
+  void _normalize(D& elt)
+  { elt->normalize(); }
+  */
+
+  template<class D>
+  void _normalize(D& elt)
+  { }
+
+  // If is_normalized exists, call it. Otherwise, return true.
+  /*
+  template<class D>
+  bool _is_normalized(D& elt)
+  { return elt->is_normalized(); }
+  */
+
+  template<class D>
+  bool _is_normalized(D& elt)
+  { return true; }
+
   template< typename Info >
   class anti_unif: public writeable,
                  public numerical_domain<typename Info::Number, typename Info::VariableName >, 
@@ -49,6 +72,7 @@ namespace ikos {
 
     typedef typename dom_t::variable_t dom_var_t;
     typedef typename Info::Alloc dom_var_alloc_t;
+    typedef patricia_tree_set< dom_var_t > domvar_set_t;
 
     typedef bound<Number> bound_t;
     // typedef interval_domain< Number, VariableName > intervals_t;
@@ -67,8 +91,13 @@ namespace ikos {
     typedef patricia_tree_set< VariableName >  varname_set_t;
      
    private:
+    // typedef typename dom_t::Number                     dom_number;
+    // WARNING: assumes the underlying domain uses the same number type.
+    typedef typename Info::Number                     dom_number;
     typedef typename dom_t::linear_constraint_t        dom_lincst_t;
     typedef typename dom_t::linear_expression_t        dom_linexp_t;
+
+    typedef typename linear_expression_t::component_t linterm_t;
 
     typedef container::flat_map< variable_t, term_id_t > var_map_t;
     typedef container::flat_map< term_id_t, dom_var_t > term_map_t;
@@ -84,19 +113,24 @@ namespace ikos {
     dom_var_alloc_t _alloc;
     var_map_t       _var_map;
     term_map_t      _term_map;
-    bool            _is_normalized;
 
     void set_to_bottom (){
       this->_is_bottom = true;
     }
 
    private:
-    anti_unif(bool is_top): _is_bottom(!is_top), _is_normalized(true) { }
+    anti_unif(bool is_top): _is_bottom(!is_top) { }
+
+    anti_unif(dom_var_alloc_t alloc, var_map_t vm, ttbl_t tbl, term_map_t tmap, dom_t impl)
+      : _is_bottom(false), _ttbl(tbl), _impl(impl), _alloc(alloc), _var_map(vm), _term_map(tmap)
+    { }
 
     // x = y op [lb,ub]
     term_id_t term_of_itv(bound_t lb, bound_t ub)
     {
-      // FIXME: Add special handling for [x, x].
+//      if(lb == ub)
+//        return build_const(lb);
+
       term_id_t t_itv = _ttbl.fresh_var();
       dom_var_t dom_itv = domvar_of_term(t_itv);
       _impl.apply_constraint(dom_itv, true , ub);    // adding  x <=  c
@@ -124,16 +158,18 @@ namespace ikos {
     void apply(operation_t op, VariableName x, VariableName y, bound_t lb, bound_t ub){	
       term_id_t t_x = term_of_expr(op, term_of_var(y), term_of_itv(lb, ub));
       _var_map.insert(std::make_pair(x, t_x));
+      check_terms();
     }
     
-    // check satisfiability of cst using intervals
-    // Only to be used if cst is too hard for octagons
+    /*
     bool check_sat(linear_constraint_t cst)  {
       dom_lincst_t dom_cst(rename_linear_cst(cst));
-      return _impl->check_sat(dom_cst);
+      return _impl.check_sat(dom_cst);
       return (!_is_bottom);
     }
+    */
 
+    /*
     interval_t to_interval(VariableName x, bool requires_normalization) { 
       // projection requires normalization.
       optional<dom_var_t> dom_var(domvar_of_var(x));
@@ -144,15 +180,7 @@ namespace ikos {
         return interval_t::top();
       }
     } //Maintains normalization.
-    
-    void resize(){
-      // _dbm.resize(_map.size());
-    }
-    
-    void is_normalized(bool b){
-      _is_normalized= b;
-    }
-
+    */
     
   public:
     static anti_unif_t top() {
@@ -165,7 +193,7 @@ namespace ikos {
     
   public:
     // Constructs top octagon, represented by a size of 0.
-    anti_unif(): _is_bottom(false), _is_normalized(true) { }
+    anti_unif(): _is_bottom(false) { }
     
     anti_unif(const anti_unif_t& o): 
        writeable(), 
@@ -174,14 +202,15 @@ namespace ikos {
        division_operators< Number, VariableName >(),   
        _is_bottom(o._is_bottom), 
        _ttbl(o._ttbl), _impl(o._impl),
-       _var_map(o._var_map), _term_map(o._term_map), _is_normalized(o._is_normalized)
-    { } 
+       _var_map(o._var_map), _term_map(o._term_map)
+    { check_terms(); } 
 
     anti_unif_t operator=(anti_unif_t o) {
       _is_bottom= o.is_bottom();
       _var_map= o._var_map;
       _term_map= o._term_map;
-      _is_normalized= o._is_normalized;
+      _ttbl = o._ttbl;
+//      check_terms();
       return *this;
     }
     
@@ -194,7 +223,7 @@ namespace ikos {
     }
     
     bool is_normalized(){
-      return _is_normalized;
+      return _is_normalized(_impl);
     }
 
     varname_set_t get_variables() const {
@@ -209,12 +238,7 @@ namespace ikos {
 
     // Compute the strong closure algorithm
     void normalize(){
-      if(_is_normalized){
-        return;
-      }
-
-      fprintf(stderr, "WARNING: ANTI_UNIF::normalize not yet implemented.\n");
-      // _impl->normalize();
+      _normalize(_impl);
     }
 
     // Lattice operations
@@ -227,13 +251,49 @@ namespace ikos {
       } else if(o.is_bottom()) {
         return false;
       } else {
-        BAIL("ANTI-UNIF: <= not yet implemented.");
-        return false;
-      }
-    }  // Maintains normalization.
+        typename ttbl_t::term_map_t gen_map;
 
-    anti_unif_t operator|(anti_unif_t o) { 
+        // Build up the mapping of o onto this, variable by variable.
+        // Assumption: the set of variables in x & o are common.
+        for(auto p : _var_map)
+        {
+          if(!_ttbl.map_leq(o._ttbl, term_of_var(p.first), o.term_of_var(p.first), gen_map))
+            return false;
+        }
+        // We now have a mapping of reachable y-terms to x-terms.
+        // Create copies of _impl and o._impl with a common
+        // variable set.
+        dom_t x_impl(_impl);
+        dom_t y_impl(o._impl);
+
+        // Perform the mapping
+        domvar_set_t xvars;
+        domvar_set_t yvars;
+        for(auto p : gen_map)
+        {
+          dom_var_t vt = _alloc.next();
+          dom_var_t vx = domvar_of_term(p.second); 
+          dom_var_t vy = o.domvar_of_term(p.first);
+
+          xvars += vx;
+          yvars += vy;
+
+          x_impl.assign(vt.name(), dom_linexp_t(vx));
+          y_impl.assign(vt.name(), dom_linexp_t(vy));
+        }
+        for(auto vx : xvars)
+          x_impl -= vx.name();
+        for(auto vy : yvars)
+          y_impl -= vy.name();
+
+        return x_impl <= y_impl;
+      }
+    } 
+
+    anti_unif_t operator|(anti_unif_t o) {
       // Requires normalization of both operands
+//      std::cout << "SIZES: " << _var_map.size() << ", " <<
+//        o._var_map.size() << std::endl;
       normalize();
       o.normalize();
       if (is_bottom()) {
@@ -243,13 +303,64 @@ namespace ikos {
         return *this;
       } 
       else {
-        // FIXME
-        return top();
+        // First, we need to compute the new term table.
+        ttbl_t out_tbl;
+        // Mapping of (term, term) pairs to terms in the join state
+        typename ttbl_t::gener_map_t gener_map;
+        
+        var_map_t out_vmap;
+
+        // For each program variable in state, compute a generalization
+        for(auto p : _var_map)
+        {
+          variable_t v(p.first);
+          term_id_t tx(term_of_var(v));
+          term_id_t ty(o.term_of_var(v));
+
+          term_id_t tz = _ttbl.generalize(o._ttbl, tx, ty, out_tbl, gener_map);
+          out_vmap[v] = tz;
+        }
+
+        // Rename the common terms together
+        dom_t x_impl(_impl);
+        dom_t y_impl(o._impl);
+
+        // Perform the mapping
+        term_map_t out_map;
+        domvar_set_t xvars;
+        domvar_set_t yvars;
+        for(auto p : gener_map)
+        {
+          auto txy = p.first;
+          term_id_t tz = p.second;
+          dom_var_t vt = _alloc.next();
+          out_map.insert(std::make_pair(tz, vt));
+
+          dom_var_t vx = domvar_of_term(txy.first);
+          dom_var_t vy = o.domvar_of_term(txy.second);
+
+          xvars += vx;
+          yvars += vy;
+
+          x_impl.assign(vt.name(), dom_linexp_t(vx));
+          y_impl.assign(vt.name(), dom_linexp_t(vy));
+        }
+//        std::cout << "ren_0(x) = " << x_impl << std::endl;
+//        std::cout << "ren_0(y) = " << y_impl << std::endl;
+        for(auto vx : xvars)
+          x_impl -= vx.name();
+        for(auto vy : yvars)
+          y_impl -= vy.name();
+
+//        std::cout << "ren(x) = " << x_impl << std::endl;
+//        std::cout << "ren(y) = " << y_impl << std::endl;
+        dom_t x_join_y = x_impl|y_impl;
+        return anti_unif(_alloc, out_vmap, out_tbl, out_map, x_join_y);
       }
-    } // Returned matrix is normalized.
+    }
 
     // Widening
-    anti_unif_t operator||(anti_unif_t o) {	
+    anti_unif_t operator||(anti_unif_t o) {
       // The left operand of the widenning cannot be closed, otherwise
       // termination is not ensured. However, if the right operand is
       // close precision may be improved.
@@ -261,14 +372,59 @@ namespace ikos {
         return *this;
       } 
       else {
-        // FIXME
-        return top();
-      }
-    } // Returned matrix is not normalized.
+        // First, we need to compute the new term table.
+        ttbl_t out_tbl;
+        // Mapping of (term, term) pairs to terms in the join state
+        typename ttbl_t::gener_map_t gener_map;
+        
+        var_map_t out_vmap;
+        // For each program variable in state, compute a generalization
+        for(auto p : _var_map)
+        {
+          variable_t v(p.first);
+          term_id_t tx(term_of_var(v));
+          term_id_t ty(o.term_of_var(v));
 
+          term_id_t tz = _ttbl.generalize(o._ttbl, tx, ty, out_tbl, gener_map);
+          out_vmap[v] = tz;
+        }
+
+        // Rename the common terms together
+        dom_t x_impl(_impl);
+        dom_t y_impl(o._impl);
+
+        // Perform the mapping
+        term_map_t out_map;
+        domvar_set_t xvars;
+        domvar_set_t yvars;
+        for(auto p : gener_map)
+        {
+          auto txy = p.first;
+          term_id_t tz = p.second;
+          dom_var_t vt = _alloc.next();
+          out_map.insert(std::make_pair(tz, vt));
+
+          dom_var_t vx = domvar_of_term(txy.first);
+          dom_var_t vy = o.domvar_of_term(txy.second);
+
+          xvars += vx;
+          yvars += vy;
+
+          x_impl.assign(vt.name(), dom_linexp_t(vx));
+          y_impl.assign(vt.name(), dom_linexp_t(vy));
+        }
+        for(auto vx : xvars)
+          x_impl -= vx.name();
+        for(auto vy : yvars)
+          y_impl -= vy.name();
+
+        dom_t x_widen_y = x_impl||y_impl;
+        return anti_unif(_alloc, out_vmap, out_tbl, out_map, x_widen_y);
+      }
+    }
 
     // Meet
-    anti_unif_t operator&(anti_unif_t o) { 
+    anti_unif_t operator&(anti_unif_t o) {
       // Does not require normalization of any of the two operands
       if (is_bottom() || o.is_bottom()) {
         return bottom();
@@ -276,7 +432,7 @@ namespace ikos {
         BAIL("ANTI-UNIF: meet not yet implemented.");
         return top();
       }
-    }	// Returned matrix is not normalized.
+    }
     
     // Narrowing
     anti_unif_t operator&&(anti_unif_t o) {	
@@ -311,15 +467,85 @@ namespace ikos {
       }
     }
 
+    void check_terms(void)
+    {
+      for(auto p : _var_map)
+      {
+        assert(p.second < _ttbl.size());
+      }
+    }
+    template<class T>
+    T check_terms(T& t)
+    {
+      check_terms();
+      return t;
+    }
+
+    void rebind_var(variable_t& x, term_id_t tx)
+    {
+      auto it(_var_map.find(x));
+      if(it != _var_map.end())
+        _var_map.erase(it);
+      _var_map.insert(std::make_pair(x, tx));
+    }
+
     // Build the tree for a linexpr, and ensure that
     // values for the subterms are sustained.
-    term_id_t build_linexpr(dom_linexp_t& e)
+    term_id_t build_const(const Number& n)
     {
-      // FIXME - implement.
-      term_id_t t = _ttbl.fresh_var();
-      dom_var_t v(domvar_of_term(t));
-      _impl.assign(v.name(), e);
+      dom_number dom_n(n);
+      optional<term_id_t> opt_n(_ttbl.find_const(dom_n));
+      if(opt_n)
+      {
+        return *opt_n;
+      } else {
+        term_id_t term_n(_ttbl.make_const(dom_n));
+        dom_var_t v = domvar_of_term(term_n);
+        dom_linexp_t exp(n);
+        _impl.assign(v.name(), exp);
+        return term_n;
+      }
+    }
+
+    term_id_t build_linterm(linterm_t term)
+    {
+      return build_term(OP_MULTIPLICATION,
+          build_const(term.first),
+          term_of_var(term.second));
+    }
+
+    term_id_t build_linexpr(linear_expression_t& e)
+    {
+      typename linear_expression_t::iterator it = e.begin();
+      if(it == e.end())
+      {
+        Number cst = e.constant();
+        return build_const(cst);
+      }
+      term_id_t t(build_linterm((linterm_t) *it));
+      it++;
+      for(; it != e.end(); it++)
+      {
+        t = build_term(OP_ADDITION, t, build_linterm(*it));
+      }
       return t; 
+    }
+
+    term_id_t build_term(operation_t op, term_id_t ty, term_id_t tz)
+    {
+      // Check if the term already exists
+      optional<term_id_t> eopt(_ttbl.find_ftor(op, ty, tz));
+      if(eopt)
+      {
+        return *eopt;
+      } else {
+        // Create the term
+        term_id_t tx = _ttbl.apply_ftor(op, ty, tz);
+        dom_var_t v(domvar_of_term(tx));
+        // Set up the evaluation.
+        _impl.apply(op, v.name(), domvar_of_term(ty).name(), domvar_of_term(tz).name());
+        return tx;
+      }
     }
 
     void assign(VariableName x_name, linear_expression_t e) {
@@ -329,91 +555,55 @@ namespace ikos {
       } else {
         variable_t x(x_name);
 
-        dom_linexp_t dom_e(rename_linear_expr(e));
+//        dom_linexp_t dom_e(rename_linear_expr(e));
         term_id_t tx(build_linexpr(e));
-        _var_map.insert(std::make_pair(x, tx));
 
+        rebind_var(x, tx);
+
+        check_terms();
         return;
       }
-      /*
-      optional<variable_t> v = e.get_variable();
-      if (v && ((*v).name() == x))
-      {
-        return ; 
-      }
-
-      // add x in the matrix if not found
-      typename map_t::iterator it = this->_map.find(x);
-      unsigned int i;
-      if (it == this->_map.end()){
-        i = this->_map.insert(value_type(x,this->_map.size()+ 1)).first->second;
-        this->resize();
-      }
-      else
-        i = it->second;
-
-      this->abstract(x); // call normalize()
-
-      if (e.is_constant()){
-        this->apply_constraint(i, true , bound_t(e.constant()));    // adding  x <=  c
-        this->apply_constraint(i, false, bound_t(-(e.constant()))); // adding -x <= -c
-      }
-      else if (v){
-        VariableName y = (*v).name();
-        typename map_t::iterator itz = this->_map.find(y);        
-        if (itz == this->_map.end()){
-          return; // x has been already abstracted
-        }
-        unsigned int j = itz->second;
-        this->apply_constraint(i, j, true , false , bound_t(0));
-        this->apply_constraint(i, j, false, true  , bound_t(0));       
-      }
-      else
-        throw error("OCTAGON: only supports constant or variable on the rhs of assignment");
-
-      this->is_normalized(false);
-      */
     }
 
     // Apply operations to variables.
 
     // x = y op z
     void apply(operation_t op, VariableName x, VariableName y, VariableName z){	
-      BAIL("ANTI_UNIF::apply not yet implemented");
-      return;
-      /*
-      // Requires normalization.
-
-      typename map_t::iterator itz(_map.find(z));
-      if (itz == this->_map.end())
+      if (this->is_bottom())
       {
-        this->abstract(x);
-        return;
+        return;   
+      } else {
+        variable_t vx(x);
+          
+        term_id_t tx(build_term(op, term_of_var(y), term_of_var(z)));
+        rebind_var(vx, tx);
       }
-      unsigned int n(itz->second);
-
-      if (!(x == y)){
-        assign(x, linear_expression_t(y));
-        apply(op, x, x, _dbm(2*n- 1, 2*n).operator/(-2), _dbm(2*n, 2*n- 1).operator/(2));
-      }
-      else{
-        apply(op, x, y, _dbm(2*n- 1, 2*n).operator/(-2), _dbm(2*n, 2*n- 1).operator/(2));
-      }
-      // Sets state to not normalized.
-      */
+      check_terms();
     }
     
     // x = y op k
     void apply(operation_t op, VariableName x, VariableName y, Number k){	
-      BAIL("ANTI_UNIF::apply not yet implemented");
+      if (this->is_bottom())
+      {
+        return;   
+      } else {
+        variable_t vx(x);
+          
+        term_id_t tx(build_term(op, term_of_var(y), build_const(k)));
+        rebind_var(vx, tx);
+      }
+
+      check_terms();
       return;
-    }	
+    }
 
     term_id_t term_of_var(variable_t v)
     {
       auto it(_var_map.find(v)); 
       if(it != _var_map.end())
       {
+        // assert ((*it).first == v);
+        assert(_ttbl.size() > (*it).second);
         return (*it).second;
       } else {
         // Allocate a fresh term
@@ -445,7 +635,8 @@ namespace ikos {
     // Remap a linear constraint to the domain.
     dom_linexp_t rename_linear_expr(linear_expression_t exp)
     {
-      dom_linexp_t dom_exp;
+      Number cst(exp.constant());
+      dom_linexp_t dom_exp(cst);
       for(auto v : exp.variables())
       {
         dom_exp = dom_exp + exp[v]*domvar_of_var(v);
@@ -461,7 +652,6 @@ namespace ikos {
     void operator+=(linear_constraint_t cst) {  
       dom_lincst_t cst_rn(rename_linear_cst(cst));
       _impl += cst_rn;
-      is_normalized(false); 
       return;
     } // Sets state to not normalized.
     
@@ -487,9 +677,11 @@ namespace ikos {
     }  //Maintains normalization.
     */
     
+    /*
     interval_t operator[](VariableName x) { 
       return to_interval(x, true);
     } 
+    */
 
     void set(VariableName x, interval_t intv){
       typename var_map_t::iterator it = this->_var_map.find(x);
@@ -497,6 +689,7 @@ namespace ikos {
       _impl->set(x, intv);
     }
 
+    /*
     interval_domain_t to_intervals(){
       // Requires normalization.
       if(this->_is_bottom){
@@ -509,11 +702,12 @@ namespace ikos {
         for(typename var_map_t::iterator it=_var_map.begin(); it!= _var_map.end(); ++it){
           variable_t x(it->first.name());
           dom_var_t dx(domvar_of_var(x));
-          itv.set(x, _impl->to_interval(dx));
+          itv.set(x, _impl.to_interval(dx));
         }
         return itv;
       }
     }
+    */
 
     // bitwise_operators_api
     
@@ -691,23 +885,34 @@ namespace ikos {
         return o << "{}";
       }      
 
+      bool first = true;
       o << "{" ;
+      for(auto p : _var_map)
+      {
+        if(first)
+          first = false;
+        else
+          o << ", ";
+        o << p.first << " -> t" << p.second;
+      }
       o << "}";
      
 #ifdef VERBOSE
       /// For debugging purposes     
       { // print intervals
-        interval_domain_t intervals = to_intervals();
-        cout << intervals;
+        //interval_domain_t intervals = to_intervals();
+        // o << intervals;
+        o << _impl;
       }
       { // print internal datastructures
-        cout << endl << "term-table: " << endl;
-        cout << "{";
-        cout << "}" << endl;
+        o << endl << "term-table: " << endl;
+        o << "{";
+        o << _ttbl;
+        o << "}" << endl;
       }
 #endif 
       return o;
-    } // Maintains normalization. 
+    }
 
     const char* getDomainName () const {return "Anti-Unification(T)";}
 

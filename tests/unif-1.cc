@@ -48,17 +48,21 @@ namespace cfg_impl
 
 class StrVarAlloc {
 public:
-  StrVarAlloc(void)
-    : next_id(0)
+  StrVarAlloc()
+    : vfac(new typename cfg_impl::StrVariableFactory), next_id(0)
+  { }
+
+  StrVarAlloc(StrVarAlloc& o)
+    : vfac(o.vfac), next_id(o.next_id)
   { }
    
   cfg_impl::StrVariableFactory::varname_t next(void) {
     std::stringstream ss;
     ss << "x" << next_id++;
-    return vfac[ss.str()];
+    return (*(vfac.get()))[ss.str()];
   }
 protected:
-  cfg_impl::StrVariableFactory vfac;
+  std::shared_ptr<cfg_impl::StrVariableFactory> vfac;
   int next_id;
 };
 
@@ -146,7 +150,7 @@ int main (int argc, char** argv )
   FwdAnalyzer <basic_block_label_t, varname_t, cfg_t, VariableFactory, term_domain_t> 
       term_a (cfg, vfac, run_live);
   term_a.Run (tdom);
-  cout << "Results with DBMs:\n";
+  cout << "Results with term<interval> domain:\n";
   for (auto &b : cfg)
   {
     term_domain_t inv = term_a [b.label ()];
