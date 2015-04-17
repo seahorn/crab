@@ -33,7 +33,8 @@
 using namespace boost;
 using namespace std;
 
-#define VERBOSE 
+// #define VERBOSE 
+// #define DEBUG_JOIN
 
 namespace ikos {
   // Function to call D->normalize only if it exists.
@@ -202,14 +203,18 @@ namespace ikos {
        division_operators< Number, VariableName >(),   
        _is_bottom(o._is_bottom), 
        _ttbl(o._ttbl), _impl(o._impl),
+       _alloc(o._alloc),
        _var_map(o._var_map), _term_map(o._term_map)
     { check_terms(); } 
 
     anti_unif_t operator=(anti_unif_t o) {
       _is_bottom= o.is_bottom();
+      _ttbl = o._ttbl;
+      _impl = o._impl;
+      _alloc = o._alloc;
       _var_map= o._var_map;
       _term_map= o._term_map;
-      _ttbl = o._ttbl;
+
 //      check_terms();
       return *this;
     }
@@ -252,6 +257,7 @@ namespace ikos {
         return false;
       } else {
         typename ttbl_t::term_map_t gen_map;
+        dom_var_alloc_t palloc(_alloc, o._alloc);
 
         // Build up the mapping of o onto this, variable by variable.
         // Assumption: the set of variables in x & o are common.
@@ -271,7 +277,8 @@ namespace ikos {
         domvar_set_t yvars;
         for(auto p : gen_map)
         {
-          dom_var_t vt = _alloc.next();
+          // dom_var_t vt = _alloc.next();
+          dom_var_t vt = palloc.next();
           dom_var_t vx = domvar_of_term(p.second); 
           dom_var_t vy = o.domvar_of_term(p.first);
 
@@ -310,6 +317,8 @@ namespace ikos {
         
         var_map_t out_vmap;
 
+        dom_var_alloc_t palloc(_alloc, o._alloc);
+
         // For each program variable in state, compute a generalization
         for(auto p : _var_map)
         {
@@ -333,7 +342,7 @@ namespace ikos {
         {
           auto txy = p.first;
           term_id_t tz = p.second;
-          dom_var_t vt = _alloc.next();
+          dom_var_t vt = palloc.next();
           out_map.insert(std::make_pair(tz, vt));
 
           dom_var_t vx = domvar_of_term(txy.first);
@@ -345,17 +354,40 @@ namespace ikos {
           x_impl.assign(vt.name(), dom_linexp_t(vx));
           y_impl.assign(vt.name(), dom_linexp_t(vy));
         }
-//        std::cout << "ren_0(x) = " << x_impl << std::endl;
-//        std::cout << "ren_0(y) = " << y_impl << std::endl;
+        
+#ifdef DEBUG_JOIN
+        cout << "============" << "JOIN" << "==================" << endl;
+        cout << *this << endl << "~~~~~~~~~~~~~~~~" << endl;
+        cout << o << endl << "----------------" << endl;
+        std::cout << "x = " << _impl << std::endl;
+        std::cout << "y = " << o._impl << std::endl;
+#endif
+
+#ifdef DEBUG_JOIN
+        std::cout << "ren_0(x) = " << x_impl << std::endl;
+        std::cout << "ren_0(y) = " << y_impl << std::endl;
+#endif
         for(auto vx : xvars)
           x_impl -= vx.name();
         for(auto vy : yvars)
           y_impl -= vy.name();
+        /*
+        std::cout << "ren(x) = " << x_impl << std::endl;
+        std::cout << "ren(y) = " << y_impl << std::endl;
 
-//        std::cout << "ren(x) = " << x_impl << std::endl;
-//        std::cout << "ren(y) = " << y_impl << std::endl;
+        cout << x_impl << endl << "----------------" << endl;
+        */
+        
         dom_t x_join_y = x_impl|y_impl;
-        return anti_unif(_alloc, out_vmap, out_tbl, out_map, x_join_y);
+
+#ifdef DEBUG_JOIN
+        cout << "After elimination:" << endl;
+        cout << x_impl << endl << "~~~~~~~~~~~~~~~~" << endl;
+        cout << y_impl << endl << "----------------" << endl;
+        cout << x_join_y << endl << "================" << endl;
+#endif
+
+        return anti_unif(palloc, out_vmap, out_tbl, out_map, x_join_y);
       }
     }
 
@@ -378,6 +410,9 @@ namespace ikos {
         typename ttbl_t::gener_map_t gener_map;
         
         var_map_t out_vmap;
+
+        dom_var_alloc_t palloc(_alloc, o._alloc);
+
         // For each program variable in state, compute a generalization
         for(auto p : _var_map)
         {
@@ -401,7 +436,7 @@ namespace ikos {
         {
           auto txy = p.first;
           term_id_t tz = p.second;
-          dom_var_t vt = _alloc.next();
+          dom_var_t vt = palloc.next();
           out_map.insert(std::make_pair(tz, vt));
 
           dom_var_t vx = domvar_of_term(txy.first);
@@ -419,7 +454,14 @@ namespace ikos {
           y_impl -= vy.name();
 
         dom_t x_widen_y = x_impl||y_impl;
-        return anti_unif(_alloc, out_vmap, out_tbl, out_map, x_widen_y);
+
+        /*
+        cout << "============" << endl << "WIDENING" << "==================" << endl;
+        cout << x_impl << endl << "~~~~~~~~~~~~~~~~" << endl;
+        cout << y_impl << endl << "----------------" << endl;
+        cout << x_widen_y << endl << "================" << endl;
+        */
+        return anti_unif(palloc, out_vmap, out_tbl, out_map, x_widen_y);
       }
     }
 
@@ -516,18 +558,18 @@ namespace ikos {
 
     term_id_t build_linexpr(linear_expression_t& e)
     {
+      Number cst = e.constant();
+      term_id_t t = build_const(cst);
+
       typename linear_expression_t::iterator it = e.begin();
-      if(it == e.end())
-      {
-        Number cst = e.constant();
-        return build_const(cst);
-      }
-      term_id_t t(build_linterm((linterm_t) *it));
-      it++;
       for(; it != e.end(); it++)
       {
         t = build_term(OP_ADDITION, t, build_linterm(*it));
       }
+      /*
+      cout << "Should have " << domvar_of_term(t).name() << " := " << e << endl;
+      cout << _impl << endl;
+      */
       return t; 
     }
 
@@ -542,8 +584,21 @@ namespace ikos {
         // Create the term
         term_id_t tx = _ttbl.apply_ftor(op, ty, tz);
         dom_var_t v(domvar_of_term(tx));
+
+        dom_var_t y(domvar_of_term(ty));
+        dom_var_t z(domvar_of_term(tz));
+
         // Set up the evaluation.
-        _impl.apply(op, v.name(), domvar_of_term(ty).name(), domvar_of_term(tz).name());
+        /*
+        cout << "Prev:" << endl;
+        cout << _impl << endl;
+        */
+        _impl.apply(op, v.name(), y.name(), z.name());
+        /*
+        cout << "Should have " << v.name() << "|" << v.name().index() << " := " << "op(" <<
+          y.name() << "|" << y.name().index() << "," << z.name() << "|" << z.name().index() << ")" << endl;
+        cout << _impl << endl;
+        */
         return tx;
       }
     }
@@ -893,17 +948,18 @@ namespace ikos {
           first = false;
         else
           o << ", ";
-        o << p.first << " -> t" << p.second;
+        o << p.first << " -> t" << p.second
+          << "[" << domvar_of_term(p.second).name() << "]";
       }
       o << "}";
      
-#ifdef VERBOSE
-      /// For debugging purposes     
-      { // print intervals
+      { // print underlying domain
         //interval_domain_t intervals = to_intervals();
         // o << intervals;
         o << _impl;
       }
+#ifdef VERBOSE
+      /// For debugging purposes     
       { // print internal datastructures
         o << endl << "term-table: " << endl;
         o << "{";
