@@ -190,7 +190,7 @@ namespace ikos {
 
       term_table(const term_table_t& o)
         : free_var(o.free_var), _map(o._map),
-          terms(o.terms), term_refs(o.term_refs),
+          terms(o.terms), _parents(o._parents), // term_refs(o.term_refs),
           free_terms(o.free_terms)
       { }
 
@@ -199,7 +199,8 @@ namespace ikos {
         free_var = o.free_var;
         _map = o._map;
         terms = o.terms;
-        term_refs = o.term_refs;
+//        term_refs = o.term_refs;
+        _parents = o._parents;
         free_terms = o.free_terms;
         return *this;
       }
@@ -261,15 +262,23 @@ namespace ikos {
         return find_ftor(f, ids);
       }
 
+
+      term_t* get_term_ptr(term_id t)
+      {
+        return terms[t].p.get();
+      }
+
       void add_ref(term_id t)
       {
-        term_refs[t]++;
+        // term_refs[t]++;
       }
 
       void deref(term_id t, std::vector<term_id>& forgotten)
       {
 //        fprintf(stdout, "WARNING: term_table::deref not properly implemented.");
         return;
+
+        /*
         assert(term_refs[t]);
         term_refs[t]--;
         if(!term_refs[t])
@@ -284,6 +293,7 @@ namespace ikos {
               deref(c, forgotten);
           }
         }
+        */
       }
 
       // Check if a tx is a generalization of ty, given an existing context.
@@ -378,7 +388,7 @@ namespace ikos {
               std::vector<term_id> xyargs;
               for(unsigned int ii = 0; ii < xargs.size(); ii++)
                 xyargs.push_back(generalize(y, xargs[ii], yargs[ii], out, g_map));
-              ret = apply_ftor(term_ftor(px), xyargs);
+              ret = out.apply_ftor(term_ftor(px), xyargs);
             }
           } while(0);
           
@@ -387,6 +397,10 @@ namespace ikos {
         }
       }
       
+      std::vector<term_id_t>& parents(term_id_t id)
+      {
+        return _parents[id];
+      }
 
       ostream& write(ostream& o) { 
         bool first = true;
@@ -422,12 +436,15 @@ namespace ikos {
           term_id t = free_terms.back();
           free_terms.pop_back();
           terms[t] = ref;
-          term_refs[t] = 0;
+          _parents[t].clear();
+//          term_refs[t] = 0;
           return t;
         } else {
-          term_id t = term_refs.size();
-          term_refs.push_back(0);
+//          term_id t = term_refs.size();
+//          term_refs.push_back(0);
+          term_id t = terms.size();
           terms.push_back(ref);
+          _parents.push_back(std::vector<term_id>());
           return t;
         }
       }
@@ -444,7 +461,10 @@ namespace ikos {
           if(ref.p.get()->kind() == TERM_APP)
           {
             for(term_id c : term_args(ref.p.get()))
-              add_ref(c);
+            {
+              // add_ref(c);
+              _parents[c].push_back(id);
+            }
           }
           assert(_map.size() == id+1);
           return id;
@@ -454,7 +474,8 @@ namespace ikos {
       int free_var;
       std::map<term_ref_t, term_id> _map;
       std::vector<term_ref_t> terms;
-      std::vector<unsigned int> term_refs;
+      std::vector< std::vector<term_id_t> > _parents;
+//      std::vector<unsigned int> term_refs;
       std::vector<term_id> free_terms;
     };
   }

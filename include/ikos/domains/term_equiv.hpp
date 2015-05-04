@@ -35,6 +35,7 @@ using namespace std;
 
 // #define VERBOSE 
 // #define DEBUG_JOIN
+#define DEBUG_WIDEN
 
 namespace ikos {
   // Function to call D->normalize only if it exists.
@@ -124,7 +125,7 @@ namespace ikos {
 
     anti_unif(dom_var_alloc_t alloc, var_map_t vm, ttbl_t tbl, term_map_t tmap, dom_t impl)
       : _is_bottom(false), _ttbl(tbl), _impl(impl), _alloc(alloc), _var_map(vm), _term_map(tmap)
-    { }
+    { check_terms(); }
 
     // x = y op [lb,ub]
     term_id_t term_of_itv(bound_t lb, bound_t ub)
@@ -149,19 +150,49 @@ namespace ikos {
       } else {
         // Otherwise, assign the term, and evaluate.
         term_id_t tx = _ttbl.apply_ftor(op, ty, tz);
-        _impl.assign(op,
-            domvar_of_term(tx),
-            domvar_of_term(ty), domvar_of_term(tz));
+        _impl.apply(op,
+            domvar_of_term(tx).name(),
+            domvar_of_term(ty).name(), domvar_of_term(tz).name());
         return tx;
       }
     }
+
 
     void apply(operation_t op, VariableName x, VariableName y, bound_t lb, bound_t ub){	
       term_id_t t_x = term_of_expr(op, term_of_var(y), term_of_itv(lb, ub));
       _var_map.insert(std::make_pair(x, t_x));
       check_terms();
     }
-    
+
+    // Apply a given functor in the underlying domain.
+    void eval_ftor(dom_t& dom, ttbl_t& tbl, term_id_t t)
+    {
+      // Get the term info.
+      typename ttbl_t::term_t* t_ptr = tbl.get_term_ptr(t); 
+
+      // Only apply functors.
+      if(t_ptr->kind() == term::TERM_APP)
+      {
+        operation_t op = term::term_ftor(t_ptr);
+        
+        std::vector<term_id_t>& args(term::term_args(t_ptr));
+        assert(args.size() == 2);
+        dom.apply(op, domvar_of_term(t).name(),
+            domvar_of_term(args[0]).name(),
+            domvar_of_term(args[1]).name());
+      }
+    }
+
+    dom_t eval_ftor_copy(dom_t& dom, ttbl_t& tbl, term_id_t t)
+    {
+//      cout << "Before tightening:" << endl;
+//      cout << dom << endl;
+      dom_t ret = dom;
+      eval_ftor(ret, tbl, t);
+//      std::cout << "After tightening:" << endl << ret << endl;
+      return ret;
+    }  
+
     /*
     bool check_sat(linear_constraint_t cst)  {
       dom_lincst_t dom_cst(rename_linear_cst(cst));
@@ -208,6 +239,7 @@ namespace ikos {
     { check_terms(); } 
 
     anti_unif_t operator=(anti_unif_t o) {
+      o.check_terms();
       _is_bottom= o.is_bottom();
       _ttbl = o._ttbl;
       _impl = o._impl;
@@ -215,7 +247,7 @@ namespace ikos {
       _var_map= o._var_map;
       _term_map= o._term_map;
 
-//      check_terms();
+      check_terms();
       return *this;
     }
     
@@ -327,6 +359,7 @@ namespace ikos {
           term_id_t ty(o.term_of_var(v));
 
           term_id_t tz = _ttbl.generalize(o._ttbl, tx, ty, out_tbl, gener_map);
+          assert(tz < out_tbl.size());
           out_vmap[v] = tz;
         }
 
@@ -455,12 +488,12 @@ namespace ikos {
 
         dom_t x_widen_y = x_impl||y_impl;
 
-        /*
+#ifdef DEBUG_WIDEN
         cout << "============" << endl << "WIDENING" << "==================" << endl;
         cout << x_impl << endl << "~~~~~~~~~~~~~~~~" << endl;
         cout << y_impl << endl << "----------------" << endl;
         cout << x_widen_y << endl << "================" << endl;
-        */
+#endif
         return anti_unif(palloc, out_vmap, out_tbl, out_map, x_widen_y);
       }
     }
@@ -707,15 +740,38 @@ namespace ikos {
     void operator+=(linear_constraint_t cst) {  
       dom_lincst_t cst_rn(rename_linear_cst(cst));
       _impl += cst_rn;
+      
+      // Possibly tightened some variable in cst
+      for(auto v : cst.expression().variables())
+      {
+        for(term_id_t p : _ttbl.parents(term_of_var(v)))
+          tighten_term(p);
+      }
+
       return;
-    } // Sets state to not normalized.
+    }
+
+    // If the children of t have changed, see if re-applying
+    // the definition of t tightens the domain.
+    void tighten_term(term_id_t t)
+    {
+      dom_t tight = _impl&eval_ftor_copy(_impl, _ttbl, t); 
+      
+      if(!(_impl <= tight))
+      {
+        // Applying the functor has changed the domain
+        _impl = tight;
+        for(term_id_t p : _ttbl.parents(t))
+          tighten_term(p);
+      }
+      check_terms();
+    }
     
-    // Add a system of linear constraints
-    void operator+=(linear_constraint_system_t cst) {  // Does not require normalization.
+    void operator+=(linear_constraint_system_t cst) {
       for(typename linear_constraint_system_t::iterator it=cst.begin(); it!= cst.end(); ++it){
         this->operator+=(*it);
       }
-    } // Sets state to not normalized.
+    }
     
     // abstract the variable
     // GKG: Looks like this returns the index of variable v.
