@@ -26,7 +26,7 @@
 #include <ikos/domains/intervals.hpp>
 #include <boost/container/flat_map.hpp>
 #include <boost/optional.hpp>
-#include <ikos/domains/term_expr.hpp>
+#include <ikos/domains/term/term_expr.hpp>
 
 #define BAIL(x) assert(0 && (x))
 
@@ -489,7 +489,7 @@ namespace ikos {
         dom_t x_widen_y = x_impl||y_impl;
 
 #ifdef DEBUG_WIDEN
-        cout << "============" << endl << "WIDENING" << "==================" << endl;
+        cout << "============" << "WIDENING" << "==================" << endl;
         cout << x_impl << endl << "~~~~~~~~~~~~~~~~" << endl;
         cout << y_impl << endl << "----------------" << endl;
         cout << x_widen_y << endl << "================" << endl;
