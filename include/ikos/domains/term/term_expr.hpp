@@ -19,9 +19,12 @@ namespace ikos {
       typedef std::shared_ptr<term_t> term_ptr;
 
       virtual term_kind kind(void) = 0;
+
       bool operator<(term_t& other);
 
       virtual ostream& write(ostream& o) = 0;
+
+      int depth;
     };
 
     template<class Num, class Ftor>
@@ -54,6 +57,7 @@ namespace ikos {
         : val(_val)
       { }
       term_kind kind(void) { return TERM_CONST; }
+
       ostream& write(ostream& o)
       {
         return (o << "c(" << val << ")");
@@ -191,6 +195,7 @@ namespace ikos {
       term_table(const term_table_t& o)
         : free_var(o.free_var), _map(o._map),
           terms(o.terms), _parents(o._parents), // term_refs(o.term_refs),
+          _depth(o._depth),
           free_terms(o.free_terms)
       { }
 
@@ -201,6 +206,7 @@ namespace ikos {
         terms = o.terms;
 //        term_refs = o.term_refs;
         _parents = o._parents;
+        _depth = o._depth;
         free_terms = o.free_terms;
         return *this;
       }
@@ -418,6 +424,8 @@ namespace ikos {
 
       int size() { return terms.size(); }
 
+      int depth(term_id t) { return _depth[t]; }
+
     protected:
       optional<term_id> find_term(term_ref_t ref)
       {
@@ -437,6 +445,7 @@ namespace ikos {
           free_terms.pop_back();
           terms[t] = ref;
           _parents[t].clear();
+          _depth[t] = 0;
 //          term_refs[t] = 0;
           return t;
         } else {
@@ -445,6 +454,7 @@ namespace ikos {
           term_id t = terms.size();
           terms.push_back(ref);
           _parents.push_back(std::vector<term_id>());
+          _depth.push_back(0);
           return t;
         }
       }
@@ -460,11 +470,14 @@ namespace ikos {
           _map[ref] = id;
           if(ref.p.get()->kind() == TERM_APP)
           {
+            unsigned int c_depth = 0;
             for(term_id c : term_args(ref.p.get()))
             {
               // add_ref(c);
               _parents[c].push_back(id);
+              c_depth = std::max(c_depth, _depth[c]);
             }
+            _depth[id] = 1+c_depth;
           }
           assert(_map.size() == id+1);
           return id;
@@ -475,7 +488,7 @@ namespace ikos {
       std::map<term_ref_t, term_id> _map;
       std::vector<term_ref_t> terms;
       std::vector< std::vector<term_id_t> > _parents;
-//      std::vector<unsigned int> term_refs;
+      std::vector<unsigned int> _depth;
       std::vector<term_id> free_terms;
     };
   }

@@ -17,3 +17,7 @@ target_link_libraries (unif-1 ${GMPXX_LIB} ${GMP_LIB} dbm pthread)
 
 add_executable(unif-2 unif-2.cc)
 target_link_libraries (unif-2 ${GMPXX_LIB} ${GMP_LIB} dbm pthread)
+
+
+add_executable(test-pre test-pre.cc)
+target_link_libraries (test-pre ${GMPXX_LIB} ${GMP_LIB} pthread)

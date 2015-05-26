@@ -25,8 +25,10 @@
 #include <ikos/domains/division_operators_api.hpp>
 #include <ikos/domains/intervals.hpp>
 #include <boost/container/flat_map.hpp>
+#include <boost/container/flat_set.hpp>
 #include <boost/optional.hpp>
 #include <ikos/domains/term/term_expr.hpp>
+#include <ikos/domains/term/inverse.hpp>
 
 #define BAIL(x) assert(0 && (x))
 
@@ -38,28 +40,16 @@ using namespace std;
 #define DEBUG_WIDEN
 
 namespace ikos {
-  // Function to call D->normalize only if it exists.
-  // FIXME: Figure out how to abuse SFINAE to do this.
-  /*
-  template<class D>
-  void _normalize(D& elt)
-  { elt->normalize(); }
-  */
 
+  /*
   template<class D>
   void _normalize(D& elt)
   { }
 
-  // If is_normalized exists, call it. Otherwise, return true.
-  /*
-  template<class D>
-  bool _is_normalized(D& elt)
-  { return elt->is_normalized(); }
-  */
-
   template<class D>
   bool _is_normalized(D& elt)
   { return true; }
+  */
 
   template< typename Info >
   class anti_unif: public writeable,
@@ -103,6 +93,7 @@ namespace ikos {
 
     typedef container::flat_map< variable_t, term_id_t > var_map_t;
     typedef container::flat_map< term_id_t, dom_var_t > term_map_t;
+    typedef container::flat_set< term_id_t > term_set_t;
     // typedef std::map< term_id_t, dom_var_t > term_map_t;
 //    typedef typename map_t::value_type value_type;
     typedef unsigned char BOOL;
@@ -115,6 +106,7 @@ namespace ikos {
     dom_var_alloc_t _alloc;
     var_map_t       _var_map;
     term_map_t      _term_map;
+    term_set_t      changed_terms; 
 
     void set_to_bottom (){
       this->_is_bottom = true;
@@ -183,6 +175,26 @@ namespace ikos {
       }
     }
 
+    void eval_ftor_down(dom_t& dom, ttbl_t& tbl, term_id_t t)
+    {
+      // Get the term info.
+      typename ttbl_t::term_t* t_ptr = tbl.get_term_ptr(t); 
+
+      // Only apply functors.
+      if(t_ptr->kind() == term::TERM_APP)
+      {
+        operation_t op = term::term_ftor(t_ptr);
+        
+        std::vector<term_id_t>& args(term::term_args(t_ptr));
+        assert(args.size() == 2);
+        term::InverseOps<dom_number, VariableName, dom_t>::apply(dom, op,
+            domvar_of_term(t).name(),
+            domvar_of_term(args[0]).name(),
+            domvar_of_term(args[1]).name());
+      }
+    }
+
+
     dom_t eval_ftor_copy(dom_t& dom, ttbl_t& tbl, term_id_t t)
     {
 //      cout << "Before tightening:" << endl;
@@ -235,7 +247,8 @@ namespace ikos {
        _is_bottom(o._is_bottom), 
        _ttbl(o._ttbl), _impl(o._impl),
        _alloc(o._alloc),
-       _var_map(o._var_map), _term_map(o._term_map)
+       _var_map(o._var_map), _term_map(o._term_map),
+       changed_terms(o.changed_terms)
     { check_terms(); } 
 
     anti_unif_t operator=(anti_unif_t o) {
@@ -246,6 +259,7 @@ namespace ikos {
       _alloc = o._alloc;
       _var_map= o._var_map;
       _term_map= o._term_map;
+      changed_terms = o.changed_terms;
 
       check_terms();
       return *this;
@@ -260,7 +274,8 @@ namespace ikos {
     }
     
     bool is_normalized(){
-      return _is_normalized(_impl);
+      return changed_terms.size() == 0;
+      // return _is_normalized(_impl);
     }
 
     varname_set_t get_variables() const {
@@ -271,11 +286,6 @@ namespace ikos {
         vars += v.name();
       }
       return vars;
-    }
-
-    // Compute the strong closure algorithm
-    void normalize(){
-      _normalize(_impl);
     }
 
     // Lattice operations
@@ -532,7 +542,7 @@ namespace ikos {
         _var_map.erase(it); 
 
         std::vector<term_id_t> forgotten;
-        _ttbl.deref(t, forgotten);
+        // _ttbl.deref(t, forgotten);
 
         for(term_id_t ft : forgotten)
         {
@@ -744,13 +754,15 @@ namespace ikos {
       // Possibly tightened some variable in cst
       for(auto v : cst.expression().variables())
       {
-        for(term_id_t p : _ttbl.parents(term_of_var(v)))
-          tighten_term(p);
+        changed_terms.insert(term_of_var(v));
       }
+      // Probably doesn't need to done so eagerly.
+      normalize();
 
       return;
     }
 
+    /*
     // If the children of t have changed, see if re-applying
     // the definition of t tightens the domain.
     void tighten_term(term_id_t t)
@@ -766,7 +778,96 @@ namespace ikos {
       }
       check_terms();
     }
+    */
     
+    void queue_push(vector< vector<term_id_t> >& queue, term_id_t t)
+    {
+      int d = _ttbl.depth(t);
+      while(queue.size() <= d)
+        queue.push_back(vector<term_id_t>());
+      queue[d].push_back(t);
+    }
+
+    // Propagate information from tightened terms to
+    // parents/children.
+    void normalize(){
+      // First propagate down, then up.   
+      vector< vector< term_id_t > > queue;
+
+      for(term_id_t t : changed_terms)
+      {
+        queue_push(queue, t);
+      }
+
+      dom_t d_prime = _impl;
+      // Propagate information to children.
+      // Don't need to propagate level 0, since
+      //
+      for(int d = queue.size()-1; d > 0; d--)
+      {
+        for(term_id_t t : queue[d])
+        {
+          eval_ftor_down(d_prime, _ttbl, t);
+          if(!(_impl <= d_prime))
+          {
+            _impl = d_prime;
+            // Enqueue the args
+            typename ttbl_t::term_t* t_ptr = _ttbl.get_term_ptr(t); 
+            std::vector<term_id_t>& args(term::term_args(t_ptr));
+            for(term_id_t c : args)
+            {
+              if(changed_terms.find(c) == changed_terms.end())
+              {
+                changed_terms.insert(c);
+                queue[_ttbl.depth(c)].push_back(c);
+              }
+            }
+          }
+        }
+      }
+
+      // Collect the parents of changed terms.
+      term_set_t up_terms;
+      vector< vector<term_id_t> > up_queue;
+      for(term_id_t t : changed_terms)
+      {
+        for(term_id_t p : _ttbl.parents(t))
+        {
+          if(up_terms.find(p) == up_terms.end())
+          {
+            up_terms.insert(p);
+            queue_push(up_queue, p);
+          }
+        }
+      }
+
+      // Now propagate up, level by level.
+      assert(up_queue.size() == 0 || up_queue[0].size() == 0);
+      for(int d = 1; d < up_queue.size(); d++)
+      {
+        // up_queue[d] shouldn't change.
+        for(term_id_t t : up_queue[d])
+        {
+          eval_ftor(d_prime, _ttbl, t);
+          if(!(_impl <= d_prime))
+          {
+            _impl = d_prime;
+            for(term_id_t p : _ttbl.parents(t))
+            {
+              if(up_terms.find(p) == up_terms.end())
+              {
+                up_terms.insert(p);
+                queue_push(up_queue, p);
+              }
+            }
+          }
+        }
+      }
+
+      changed_terms.clear();
+    }
+
+
     void operator+=(linear_constraint_system_t cst) {
       for(typename linear_constraint_system_t::iterator it=cst.begin(); it!= cst.end(); ++it){
         this->operator+=(*it);
@@ -794,11 +895,13 @@ namespace ikos {
     } 
     */
 
+    /*
     void set(VariableName x, interval_t intv){
       typename var_map_t::iterator it = this->_var_map.find(x);
       dom_var_t dx(domvar_of_var(x));
       _impl->set(x, intv);
     }
+    */
 
     /*
     interval_domain_t to_intervals(){
