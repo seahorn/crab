@@ -31,25 +31,16 @@
 #include <ikos/domains/term/inverse.hpp>
 
 #define BAIL(x) assert(0 && (x))
+#define WARN(x) fprintf(stderr, "WARNING: %s\n", x)
 
 using namespace boost;
 using namespace std;
 
 // #define VERBOSE 
 // #define DEBUG_JOIN
-#define DEBUG_WIDEN
+// #define DEBUG_WIDEN
 
 namespace ikos {
-
-  /*
-  template<class D>
-  void _normalize(D& elt)
-  { }
-
-  template<class D>
-  bool _is_normalized(D& elt)
-  { return true; }
-  */
 
   template< typename Info >
   class anti_unif: public writeable,
@@ -64,6 +55,7 @@ namespace ikos {
 
     typedef typename dom_t::variable_t dom_var_t;
     typedef typename Info::Alloc dom_var_alloc_t;
+    typedef typename dom_var_alloc_t::varname_t dom_varname_t;
     typedef patricia_tree_set< dom_var_t > domvar_set_t;
 
     typedef bound<Number> bound_t;
@@ -75,18 +67,16 @@ namespace ikos {
     typedef linear_constraint_system< Number, VariableName > linear_constraint_system_t;
     typedef linear_expression< Number, VariableName >        linear_expression_t;
     typedef anti_unif<Info>        anti_unif_t;
-    typedef interval< Number >                               interval_t;
-    typedef interval_domain< Number, VariableName >          interval_domain_t;
 
     typedef term::term_table< Number, operation_t > ttbl_t;
     typedef typename ttbl_t::term_id_t term_id_t;
     typedef patricia_tree_set< VariableName >  varname_set_t;
      
    private:
-    // typedef typename dom_t::Number                     dom_number;
     // WARNING: assumes the underlying domain uses the same number type.
     typedef typename Info::Number                     dom_number;
     typedef typename dom_t::linear_constraint_t        dom_lincst_t;
+    typedef typename dom_t::linear_constraint_system_t dom_linsys_t;
     typedef typename dom_t::linear_expression_t        dom_linexp_t;
 
     typedef typename linear_expression_t::component_t linterm_t;
@@ -94,9 +84,6 @@ namespace ikos {
     typedef container::flat_map< variable_t, term_id_t > var_map_t;
     typedef container::flat_map< term_id_t, dom_var_t > term_map_t;
     typedef container::flat_set< term_id_t > term_set_t;
-    // typedef std::map< term_id_t, dom_var_t > term_map_t;
-//    typedef typename map_t::value_type value_type;
-    typedef unsigned char BOOL;
 
    private:
     bool     _is_bottom;
@@ -122,8 +109,8 @@ namespace ikos {
     // x = y op [lb,ub]
     term_id_t term_of_itv(bound_t lb, bound_t ub)
     {
-//      if(lb == ub)
-//        return build_const(lb);
+      if(lb == ub)
+        return build_const(lb);
 
       term_id_t t_itv = _ttbl.fresh_var();
       dom_var_t dom_itv = domvar_of_term(t_itv);
@@ -187,7 +174,7 @@ namespace ikos {
         
         std::vector<term_id_t>& args(term::term_args(t_ptr));
         assert(args.size() == 2);
-        term::InverseOps<dom_number, VariableName, dom_t>::apply(dom, op,
+        term::InverseOps<dom_number, dom_varname_t, dom_t>::apply(dom, op,
             domvar_of_term(t).name(),
             domvar_of_term(args[0]).name(),
             domvar_of_term(args[1]).name());
@@ -744,7 +731,7 @@ namespace ikos {
 
     dom_lincst_t rename_linear_cst(linear_constraint_t cst)
     {
-      return dom_lincst_t(rename_linear_expr(cst.expression()), cst.kind());
+      return dom_lincst_t(rename_linear_expr(cst.expression()), (typename dom_lincst_t::kind_t) cst.kind());
     }
 
     void operator+=(linear_constraint_t cst) {  
@@ -874,57 +861,17 @@ namespace ikos {
       }
     }
     
-    // abstract the variable
-    // GKG: Looks like this returns the index of variable v.
-    /*
-    boost::optional<typename map_t::iterator> abstract(variable_t v) {	
-      // Requires normalization.
-      BAIL("ANTI-UNIF: abstract not yet fully implemented.");
-      typename map_t::iterator it(_map.find(v));
-      if(it!= _map.end()) {
-        normalize();
-        return boost::optional<typename map_t::iterator>(it);
-      }
-      return boost::optional<typename map_t::iterator>();
-    }  //Maintains normalization.
-    */
-    
-    /*
-    interval_t operator[](VariableName x) { 
-      return to_interval(x, true);
-    } 
-    */
+    linear_constraint_system_t to_linear_constraint_system(void)
+    {
+      // Extract the underlying constraint system
+//      dom_linsys_t dom_sys(_impl.to_linear_constraint_system());
+      dom_linsys_t dom_sys;
 
-    /*
-    void set(VariableName x, interval_t intv){
-      typename var_map_t::iterator it = this->_var_map.find(x);
-      dom_var_t dx(domvar_of_var(x));
-      _impl->set(x, intv);
+      // Now rename it back into the external scope.
+      return dom_sys;
     }
-    */
 
-    /*
-    interval_domain_t to_intervals(){
-      // Requires normalization.
-      if(this->_is_bottom){
-        return interval_domain_t::bottom();
-      }
-      else{
-        interval_domain_t itv = interval_domain_t::top();
-        // we normalize just once
-        normalize();
-        for(typename var_map_t::iterator it=_var_map.begin(); it!= _var_map.end(); ++it){
-          variable_t x(it->first.name());
-          dom_var_t dx(domvar_of_var(x));
-          itv.set(x, _impl.to_interval(dx));
-        }
-        return itv;
-      }
-    }
-    */
 
-    // bitwise_operators_api
-    
     void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width){
       // since reasoning about infinite precision we simply assign and
       // ignore the width.
@@ -939,150 +886,42 @@ namespace ikos {
 
     void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z){
       // Convert to intervals and perform the operation
-      
-      /*
-      interval_t yi = this->operator[](y);
-      interval_t zi = this->operator[](z);
-      interval_t xi = interval_t::bottom();
-      switch (op) {
-        case OP_AND: {
-	xi = yi.And(zi);
-	break;
-        }
-        case OP_OR: {
-	xi = yi.Or(zi);
-	break;
-        }
-        case OP_XOR: {
-	xi = yi.Xor(zi);
-	break;
-        }
-        case OP_SHL: {
-	xi = yi.Shl(zi);
-	break;
-        }
-        case OP_LSHR: {
-          xi = yi.LShr(zi);
-          break;
-        }
-        case OP_ASHR: {
-	xi = yi.AShr(zi);
-	break;
-        }
-        default: 
-          throw error("OCTAGON: unreachable");
-      }
-      this->set(x, xi);
-      */
+      WARN("bitwise operators not yet supported by term domain");
+
+      term_id_t term_x = _ttbl.fresh_var();
+      dom_var_t dvar_x = domvar_of_term(term_x);
+      _impl.apply(op, dvar_x.name(), domvar_of_var(y).name(), domvar_of_var(z).name());
+      _var_map[x] = term_x;
     }
     
     void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k){
-      /*
-      // Convert to intervals and perform the operation
-      interval_t yi = this->operator[](y);
-      interval_t zi(k);
-      interval_t xi = interval_t::bottom();
+      WARN("bitwise operators not yet supported by term domain");
 
-      switch (op) {
-        case OP_AND: {
-	xi = yi.And(zi);
-	break;
-        }
-        case OP_OR: {
-	xi = yi.Or(zi);
-	break;
-        }
-        case OP_XOR: {
-	xi = yi.Xor(zi);
-	break;
-        }
-        case OP_SHL: {
-	xi = yi.Shl(zi);
-	break;
-        }
-        case OP_LSHR: {
-          xi = yi.LShr(zi);
-          break;
-        }
-        case OP_ASHR: {
-	xi = yi.AShr(zi);
-	break;
-        }
-        default: 
-          throw error("OCTAGON: unreachable");
-      }
-      this->set(x, xi);
-      */
-      BAIL("ANTI-UNIF: bitwise operations not yet implemented.");
+      term_id_t term_x = _ttbl.fresh_var();
+      dom_var_t dvar_x = domvar_of_term(term_x);
+      _impl.apply(op, dvar_x.name(), domvar_of_var(y).name(), k);
+      _var_map[x] = term_x;
     }
     
     // division_operators_api
     
     void apply(div_operation_t op, VariableName x, VariableName y, VariableName z){
-      /*
-      if (op == OP_SDIV){
-        apply(OP_DIVISION, x, y, z);
-      }
-      else{
-        // Convert to intervals and perform the operation
-        interval_t yi = this->operator[](y);
-        interval_t zi = this->operator[](z);
-        interval_t xi = interval_t::bottom();
-      
-        switch (op) {
-          case OP_UDIV: {
-            xi = yi.UDiv(zi);
-            break;
-          }
-          case OP_SREM: {
-            xi = yi.SRem(zi);
-            break;
-          }
-          case OP_UREM: {
-            xi = yi.URem(zi);
-            break;
-          }
-          default: 
-            throw error("ANTI-UNIF: unreachable");
-        }
-        this->set(x, xi);
-      }
-      */
-      BAIL("ANTI-UNIF: div not yet implemented.");
+      WARN("div operators not yet supported by term domain");
+
+      term_id_t term_x = _ttbl.fresh_var();
+      dom_var_t dvar_x = domvar_of_term(term_x);
+      _impl.apply(op, dvar_x.name(), domvar_of_var(y).name(), domvar_of_var(z).name());
+      _var_map[x] = term_x;
     }
 
     void apply(div_operation_t op, VariableName x, VariableName y, Number k){
-      /*
-      if (op == OP_SDIV)
-      {
-        apply(OP_DIVISION, x, y, k);
-      }
-      else{
-        // Convert to intervals and perform the operation
-        interval_t yi = this->operator[](y);
-        interval_t zi(k);
-        interval_t xi = interval_t::bottom();
+      WARN("div operators not yet supported by term domain");
+
+      term_id_t term_x = _ttbl.fresh_var();
+      dom_var_t dvar_x = domvar_of_term(term_x);
+      _impl.apply(op, dvar_x.name(), domvar_of_var(y).name(), k);
+      _var_map[x] = term_x;
       
-        switch (op) {
-          case OP_UDIV: {
-            xi = yi.UDiv(zi);
-            break;
-          }
-          case OP_SREM: {
-            xi = yi.SRem(zi);
-            break;
-          }
-          case OP_UREM: {
-            xi = yi.URem(zi);
-            break;
-          }
-          default: 
-            throw error("ANTI-UNIF: unreachable");
-        }
-        this->set(x, xi);
-      }
-      */
-      BAIL("ANTI-UNIF: div not yet implemented.");
     }
     
     // Output function
@@ -1129,7 +968,7 @@ namespace ikos {
       return o;
     }
 
-    const char* getDomainName () const {return "Anti-Unification(T)";}
+    const char* getDomainName () const {return "term(D)";}
 
   }; // class anti_unif
 } // namespace ikos

@@ -115,6 +115,9 @@ int main (int argc, char** argv )
     std::cout << cfg_impl::get_label_str (b.label ()) << "=" << inv << "\n";
   }
 
+  term_domain_t::linear_constraint_system_t cst(tdom.to_linear_constraint_system());
+  cout << "As linear constraints:" << cst << endl;
+
   /*
   dbm_domain_t dbm = dbm_domain_t::top ();
   FwdAnalyzer <basic_block_label_t, varname_t, cfg_t, VariableFactory, dbm_domain_t> 

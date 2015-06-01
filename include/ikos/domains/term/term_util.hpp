@@ -27,10 +27,43 @@ class StrVariableFactory : public boost::noncopyable
   { return (*m_factory)[v];}
 }; 
 
+class IntVariableFactory : public boost::noncopyable  
+{
+ public: 
+  typedef int varname_t;
+
+  IntVariableFactory() { }
+
+  varname_t operator[](int v)
+  { return v; }
+}; 
+
+inline int fresh_colour(int col_x, int col_y)
+{
+  switch(col_x)
+  {
+    case 0:
+    {
+      return col_y == 1 ? 2 : 1;
+    }
+    case 1:
+    {
+      return col_y == 0 ? 2 : 0;
+    }
+    case 2:
+    {
+      return col_y == 0 ? 1 : 0;
+    }
+    default:
+      assert(0 && "Not reachable.");
+      return 0;
+  }
+}
 
 class StrVarAlloc_col {
   static const char** col_prefix;
 public:
+  typedef StrVariableFactory::varname_t varname_t;
   static StrVariableFactory vfac;
 
   StrVarAlloc_col()
@@ -65,34 +98,52 @@ public:
 protected:
   int colour;
   int next_id;
-
-  int fresh_colour(int col_x, int col_y)
-  {
-    switch(col_x)
-    {
-      case 0:
-      {
-        return col_y == 1 ? 2 : 1;
-      }
-      case 1:
-      {
-        return col_y == 0 ? 2 : 0;
-      }
-      case 2:
-      {
-        return col_y == 0 ? 1 : 0;
-      }
-      default:
-        assert(0 && "Not reachable.");
-        return 0;
-    }
-  }
 };
+
 // GKG: This is likely to fail horribly if this header
 //      is included in multiple source files.
 StrVariableFactory StrVarAlloc_col::vfac;
 static const char* col_prefix_data[] = { "_x", "_y", "_z" };
 const char** StrVarAlloc_col::col_prefix = col_prefix_data;
+
+class IntVarAlloc_col {
+public:
+  static IntVariableFactory vfac;
+  typedef int varname_t;
+
+  IntVarAlloc_col()
+    : colour(0), next_id(0)
+  { }
+
+  IntVarAlloc_col(const IntVarAlloc_col& o)
+    : colour(o.colour), next_id(o.next_id)
+  { }
+
+  IntVarAlloc_col(const IntVarAlloc_col& x, const IntVarAlloc_col& y)
+    : colour(fresh_colour(x.colour, y.colour)),
+      next_id(0)
+  {
+    assert(colour != x.colour);
+    assert(colour != y.colour);
+  }
+
+  IntVarAlloc_col& operator=(const IntVarAlloc_col& x)
+  {
+    colour = x.colour;
+    next_id = x.next_id;
+    return *this;
+  }
+
+  IntVariableFactory::varname_t next(void) {
+    int id = next_id++;
+    return 3*id + colour;
+  }
+    
+protected:
+  int colour;
+  int next_id;
+
+};
 
 
 template<class Num, class VName, class Abs>
