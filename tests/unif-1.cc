@@ -115,8 +115,13 @@ int main (int argc, char** argv )
     std::cout << cfg_impl::get_label_str (b.label ()) << "=" << inv << "\n";
   }
 
-  term_domain_t::linear_constraint_system_t cst(tdom.to_linear_constraint_system());
-  cout << "As linear constraints:" << cst << endl;
+  cout << "\n  as linear constraints:\n" << endl;
+  for (auto & b : cfg)
+  {
+    term_domain_t inv = term_a [b.label ()];
+    term_domain_t::linear_constraint_system_t cst(inv.to_linear_constraint_system());
+    std::cout << "  " << cfg_impl::get_label_str (b.label ()) << "=" << cst << "\n";
+  }
 
   /*
   dbm_domain_t dbm = dbm_domain_t::top ();

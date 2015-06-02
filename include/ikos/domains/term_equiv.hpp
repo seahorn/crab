@@ -83,6 +83,7 @@ namespace ikos {
 
     typedef container::flat_map< variable_t, term_id_t > var_map_t;
     typedef container::flat_map< term_id_t, dom_var_t > term_map_t;
+    typedef container::flat_map< dom_var_t, variable_t > rev_map_t;
     typedef container::flat_set< term_id_t > term_set_t;
 
    private:
@@ -520,7 +521,6 @@ namespace ikos {
     }	// Returned matrix is not normalized.
 
     void operator-=(VariableName v) {
-      // BAIL("Anti_UNIF::operator -= not yet implemented.");
       // Remove a variable from the scope
       auto it(_var_map.find(v));
       if(it != _var_map.end())
@@ -529,7 +529,6 @@ namespace ikos {
         _var_map.erase(it); 
 
         std::vector<term_id_t> forgotten;
-        // _ttbl.deref(t, forgotten);
 
         for(term_id_t ft : forgotten)
         {
@@ -749,6 +748,26 @@ namespace ikos {
       return;
     }
 
+    // Assumption: vars(exp) subseteq keys(map)
+    linear_expression_t rename_linear_expr_rev(dom_linexp_t exp, rev_map_t rev_map)
+    {
+      Number cst(exp.constant());
+      linear_expression_t rev_exp(cst);
+      for(auto v : exp.variables())
+      {
+        auto it = rev_map.find(v);
+        assert(it != rev_map.end());
+        variable_t v_out((*it).second);
+        rev_exp = rev_exp + exp[v]*v_out;
+      }
+      return rev_exp;
+    }
+    linear_constraint_t rename_linear_cst_rev(dom_lincst_t cst, rev_map_t rev_map)
+    {
+      return linear_constraint_t(rename_linear_expr_rev(cst.expression(), rev_map),
+          (typename linear_constraint_t::kind_t) cst.kind());
+    }
+
     /*
     // If the children of t have changed, see if re-applying
     // the definition of t tightens the domain.
@@ -865,10 +884,46 @@ namespace ikos {
     {
       // Extract the underlying constraint system
 //      dom_linsys_t dom_sys(_impl.to_linear_constraint_system());
-      dom_linsys_t dom_sys;
+
+      // Collect the visible terms
+      rev_map_t rev_map;
+      std::vector< std::pair<variable_t, variable_t> > equivs;
+      for(auto p : _var_map)
+      {
+        dom_var_t dv = domvar_of_term(p.second);
+        auto it = rev_map.find(dv);
+        if(it == rev_map.end())
+        {
+          // The term has not yet been seen.
+          rev_map.insert(std::make_pair(dv, p.first));
+        } else {
+          // The term is already mapped to (*it).second,
+          // so add an equivalence.
+          equivs.push_back(std::make_pair((*it).second, p.first)); 
+        }
+      }
+
+      // Create a copy of _impl with only visible variables.
+      dom_t d_vis(_impl);
+      for(auto p : _term_map)
+      {
+        dom_var_t dv = p.second;
+        if(rev_map.find(dv) == rev_map.end())
+          d_vis -= dv.name();
+      }
+      // Now build and rename the constraint system, plus equivalences.
+      dom_linsys_t dom_sys(d_vis.to_linear_constraint_system());
+      linear_constraint_system_t out_sys; 
+      for(dom_lincst_t cst : dom_sys)
+        out_sys += rename_linear_cst_rev(cst, rev_map);
+      
+      for(auto p : equivs)
+      {
+        out_sys += (p.first - p.second == 0);
+      }
 
       // Now rename it back into the external scope.
-      return dom_sys;
+      return out_sys;
     }
 
 
