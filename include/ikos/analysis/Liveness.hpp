@@ -952,16 +952,16 @@ namespace analyzer
 
      void exec() { this->run (liveness_domain_t::bottom());  }
 
-     //! return the set of dead variables for block bb
-     live_set_t dead (BasicBlockLabel bb) const
+     //! return the set of dead variables at the exit of block bb
+     live_set_t dead_exit (BasicBlockLabel bb) const
      {
        auto it = m_dead_map.find(bb);
        if (it == m_dead_map.end()) return live_set_t ();
        else return it->second; 
      }
 
-     //! return the set of live variables for block bb. 
-     boost::optional <live_set_t> operator[] (BasicBlockLabel bb) const
+     //! return the set of live variables at the entry of block bb
+     boost::optional <live_set_t> live_entry (BasicBlockLabel bb) const
      {
        auto it = m_live_map.find(bb);
        if (it == m_live_map.end())
@@ -993,10 +993,9 @@ namespace analyzer
        return inv;
      }
 
-     //! Precompute the live and dead sets for each block
      void check_pre (BasicBlockLabel bb, liveness_domain_t pre)
      {
-       // live
+       // Collect live variables at the entry of bb
        live_set_t live_set;
        if (!pre.is_bottom())
        {
@@ -1004,16 +1003,24 @@ namespace analyzer
          { live_set.insert (v); }
        }
        m_live_map.insert (l_binding_t (bb, live_set));
-
-       // dead 
-       live_set_t dead_set;
-       std::set_difference( m_all_vars.begin (), m_all_vars.end (), 
-                            live_set.begin   (), live_set.end (), 
-                            std::inserter (dead_set, dead_set.end()));
-       m_dead_map.insert (l_binding_t (bb, dead_set));
      }
      
-     void check_post (BasicBlockLabel /*bb*/, liveness_domain_t /*pre*/){ }
+     void check_post (BasicBlockLabel bb, liveness_domain_t post)
+     { 
+       // Collect dead variables at the exit of bb
+       live_set_t dead_set;
+       if (!post.is_bottom ())
+       { 
+         live_set_t live_set;
+         for (auto v: boost::make_iterator_range (post.begin (), post.end ()))
+         { live_set.insert (v); }
+         
+         std::set_difference( m_all_vars.begin (), m_all_vars.end (), 
+                              live_set.begin   (), live_set.end (), 
+                              std::inserter (dead_set, dead_set.end()));
+       }
+       m_dead_map.insert (l_binding_t (bb, dead_set));
+     }
      
    }; 
 

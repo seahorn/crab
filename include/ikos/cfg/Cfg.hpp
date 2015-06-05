@@ -392,11 +392,12 @@ namespace cfg
 
    public:
 
-    typedef boost::iterator_range< typename bb_id_set_t::iterator > succ_iterator;
-    typedef boost::iterator_range< typename bb_id_set_t::iterator > pred_iterator;
+    typedef typename bb_id_set_t::iterator succ_iterator;
+    typedef typename bb_id_set_t::const_iterator const_succ_iterator;
+    typedef succ_iterator pred_iterator;
+    typedef const_succ_iterator const_pred_iterator;
+
     typedef boost::indirect_iterator< typename stmt_list_t::iterator > iterator;
-    typedef boost::iterator_range< typename bb_id_set_t::const_iterator > const_succ_iterator;
-    typedef boost::iterator_range< typename bb_id_set_t::const_iterator > const_pred_iterator;
     typedef boost::indirect_iterator< typename stmt_list_t::const_iterator > const_iterator;
 
    private:
@@ -456,10 +457,10 @@ namespace cfg
       for (auto &s : boost::make_iterator_range (begin (), end ()))
         b->m_stmts->push_back (s.clone ()); 
 
-      for (auto id : prev_blocks ()) 
+      for (auto id : boost::make_iterator_range (prev_blocks ())) 
         b->m_prev->push_back (id);
       
-      for (auto id : next_blocks ())
+      for (auto id : boost::make_iterator_range (next_blocks ()))
         b->m_next->push_back (id);
       
       return b;
@@ -474,26 +475,26 @@ namespace cfg
     
     std::size_t size() { return std::distance ( begin (), end ()); }
         
-    succ_iterator next_blocks ()
+    pair<succ_iterator, succ_iterator> next_blocks ()
     { 
-      return boost::make_iterator_range ( m_next->begin (), m_next->end ());
+      return std::make_pair (m_next->begin (), m_next->end ());
     }
     
-    pred_iterator prev_blocks() 
+    pair<pred_iterator, pred_iterator> prev_blocks() 
     { 
-      return boost::make_iterator_range ( m_prev->begin (), m_prev->end ());
+      return std::make_pair (m_prev->begin (), m_prev->end ());
     }
 
-    const_succ_iterator next_blocks () const
+    pair<const_succ_iterator,const_succ_iterator> next_blocks () const
     { 
-      return boost::make_iterator_range ( m_next->begin (), m_next->end ());
+      return std::make_pair (m_next->begin (), m_next->end ());
     }
     
-    const_pred_iterator prev_blocks() const
+    pair<const_pred_iterator,const_pred_iterator> prev_blocks() const
     { 
-      return boost::make_iterator_range ( m_prev->begin (), m_prev->end ());
+      return std::make_pair (m_prev->begin (), m_prev->end ());
     }
-    
+
     void reverse()
     {
       std::swap (m_prev, m_next);
@@ -539,7 +540,7 @@ namespace cfg
       
       o << "--> [";
 
-      for (auto const &n : next_blocks ())
+      for (auto const &n : boost::make_iterator_range (next_blocks ()))
         o << cfg_impl::get_label_str (n) << ";";
 
       o << "]\n";
@@ -738,6 +739,9 @@ namespace cfg
     typedef typename BasicBlock_t::succ_iterator succ_iterator;
     typedef typename BasicBlock_t::pred_iterator pred_iterator;
 
+    typedef boost::iterator_range <succ_iterator> succ_range;
+    typedef boost::iterator_range <pred_iterator> pred_range;
+
    private:
 
     typedef Cfg < BasicBlockLabel, VariableName > cfg_t;
@@ -746,19 +750,34 @@ namespace cfg
     typedef typename BasicBlockMap::value_type Binding;
     typedef boost::shared_ptr< BasicBlockMap > BasicBlockMap_ptr;
 
-    template<typename P, typename R> 
-    struct getSecond : public std::unary_function<P, R>
+    // template<typename P, typename R> 
+    // struct getSecond : public std::unary_function<P, R>
+    // {
+    //   getSecond () { }
+    //   R& operator () (const P &p) const { return *(p.second); }
+    // }; 
+
+    struct getRef : public std::unary_function<Binding, BasicBlock_t>
     {
-      getSecond () { }
-      R& operator () (const P &p) const { return *(p.second); }
+      getRef () { }
+      BasicBlock_t& operator () (const Binding &p) const { return *(p.second); }
+    }; 
+
+    struct getLabel : public std::unary_function<Binding, BasicBlockLabel>
+    {
+      getLabel () { }
+      BasicBlockLabel operator () (const Binding &p) const { return p.second->label(); }
     }; 
 
    public:
 
-    typedef boost::transform_iterator< getSecond< Binding, BasicBlock_t >, 
+    typedef boost::transform_iterator< getRef, 
                                        typename BasicBlockMap::iterator > iterator;
-    typedef boost::transform_iterator< getSecond< Binding, BasicBlock_t >, 
+    typedef boost::transform_iterator< getRef, 
                                        typename BasicBlockMap::const_iterator > const_iterator;
+
+    typedef boost::transform_iterator< getLabel, 
+                                       typename BasicBlockMap::iterator > label_iterator;
 
    private:
 
@@ -777,7 +796,7 @@ namespace cfg
 
       BasicBlock_t &cur = get_node (curId);
       f (cur);
-      for (auto n : cur.next_blocks ())
+      for (auto n : boost::make_iterator_range (cur.next_blocks ()))
         dfs_rec (n, visited, f);
     }
 
@@ -839,20 +858,38 @@ namespace cfg
     BasicBlockLabel entry() const { return m_entry; } 
     
     bool has_exit () const { return m_has_exit; }
+
     BasicBlockLabel exit()  const { assert (has_exit ()); return m_exit; } 
+
     void set_exit (BasicBlockLabel exit) { m_exit = exit; m_has_exit = true;}
-    
-    succ_iterator next_nodes (BasicBlockLabel bb_id) 
+
+    // //! required when wrapped into a transform_iterator
+    // pair<succ_iterator,succ_iterator> succs (BasicBlockLabel bb_id) 
+    // {
+    //   BasicBlock_t& b = get_node(bb_id);
+    //   return b.next_blocks ();
+    // }
+
+    //! required by ikos fixpoint
+    succ_range next_nodes (BasicBlockLabel bb_id) 
     {
       
       BasicBlock_t& b = get_node(bb_id);
-      return b.next_blocks ();
+      return boost::make_iterator_range (b.next_blocks ());
     }
     
-    pred_iterator prev_nodes (BasicBlockLabel bb_id) 
+    // //! required when wrapped into a transform_iterator
+    // pair<pred_iterator,pred_iterator> preds (BasicBlockLabel bb_id) 
+    // {
+    //   BasicBlock_t& b = get_node(bb_id);
+    //   return b.prev_blocks ();
+    // }
+        
+    //! required by ikos fixpoint
+    pred_range prev_nodes (BasicBlockLabel bb_id) 
     {
       BasicBlock_t& b = get_node(bb_id);
-      return b.prev_blocks ();
+      return boost::make_iterator_range (b.prev_blocks ());
     }
     
     BasicBlock_t& insert (BasicBlockLabel bb_id) 
@@ -869,7 +906,7 @@ namespace cfg
     {
       BasicBlock_t& bb = get_node(bb_id) ;
       
-      for (auto id : bb.prev_blocks ())
+      for (auto id : boost::make_iterator_range (bb.prev_blocks ()))
       { 
         if (bb_id != id)
         {
@@ -878,7 +915,7 @@ namespace cfg
         }
       }
       
-      for (auto id : bb.next_blocks ())
+      for (auto id : boost::make_iterator_range (bb.next_blocks ()))
       {
         if (bb_id != id)
         {
@@ -899,29 +936,38 @@ namespace cfg
       return *(it->second);
     }
     
-    
+    //! return a begin iterator of BasicBlock's
     iterator begin() 
     {
-      return boost::make_transform_iterator (m_blocks->begin (), 
-                                             getSecond <Binding, BasicBlock_t> ());
+      return boost::make_transform_iterator (m_blocks->begin (), getRef ());
     }
     
+    //! return an end iterator of BasicBlock's
     iterator end() 
     {
-      return boost::make_transform_iterator (m_blocks->end (), 
-                                             getSecond <Binding, BasicBlock_t> ());
+      return boost::make_transform_iterator (m_blocks->end (), getRef ());
     }
 
     const_iterator begin() const
     {
-      return boost::make_transform_iterator (m_blocks->begin (), 
-                                             getSecond <Binding, BasicBlock_t> ());
+      return boost::make_transform_iterator (m_blocks->begin (), getRef ());
     }
     
     const_iterator end() const
     {
-      return boost::make_transform_iterator (m_blocks->end (), 
-                                             getSecond <Binding, BasicBlock_t> ());
+      return boost::make_transform_iterator (m_blocks->end (), getRef ());
+    }
+
+    //! return a begin iterator of BasicBlockLabel's
+    label_iterator label_begin() 
+    {
+      return boost::make_transform_iterator (m_blocks->begin (), getLabel ());
+    }
+    
+    //! return an end iterator of BasicBlockLabel's
+    label_iterator label_end() 
+    {
+      return boost::make_transform_iterator (m_blocks->end (), getLabel ());
     }
 
     size_t size () const { return std::distance (begin (), end ()); }
@@ -986,28 +1032,28 @@ namespace cfg
     // Helpers
     bool hasOneChild (BasicBlockLabel b)
     {
-      auto It = this->next_nodes (b);
-      return (std::distance (It.begin (), It.end ()) == 1);
+      auto rng = this->next_nodes (b);
+      return (std::distance (rng.begin (), rng.end ()) == 1);
     }
     
     bool hasOneParent (BasicBlockLabel b)
     {
-      auto It = this->prev_nodes (b);
-      return (std::distance (It.begin (), It.end ()) == 1);
+      auto rng = this->prev_nodes (b);
+      return (std::distance (rng.begin (), rng.end ()) == 1);
     }
     
     BasicBlock_t& getChild (BasicBlockLabel b)
     {
       assert (hasOneChild (b));
-      auto It = this->next_nodes (b);
-      return this->get_node (*(It.begin()));
+      auto rng = this->next_nodes (b);
+      return this->get_node (*(rng.begin ()));
     }
     
     BasicBlock_t& getParent (BasicBlockLabel b)
     {
       assert (hasOneParent (b));
-      auto It = this->prev_nodes (b);
-      return this->get_node (*(It.begin()));
+      auto rng = this->prev_nodes (b);
+      return this->get_node (*(rng.begin ()));
     }
     
     void mergeBlocksRec (BasicBlockLabel curId, 
@@ -1039,7 +1085,7 @@ namespace cfg
         }
       }
       
-      for (auto n : cur.next_blocks ())
+      for (auto n : boost::make_iterator_range (cur.next_blocks ()))
         mergeBlocksRec (n, visited);
     }
     

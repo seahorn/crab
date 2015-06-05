@@ -92,7 +92,7 @@ int main (int argc, char** argv )
   cfg.simplify ();
   cout << cfg << endl;
 
-  const bool run_live = true;
+  const bool run_live = false;
   interval_domain_t intervals = interval_domain_t::top ();
   FwdAnalyzer <basic_block_label_t, varname_t, cfg_t, VariableFactory, interval_domain_t> 
       itv_a (cfg, vfac, run_live);

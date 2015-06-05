@@ -1,4 +1,4 @@
-# Ikos-core #
+# (Private) Ikos-core #
 
 This project contains the core of Ikos, a static analyzer based on
 abstract interpretation developed at NASA Ames Research Center. This
@@ -8,12 +8,23 @@ abstract numerical domains.
 Ikos-core also provides a CFG that interfaces with IKOS as well
 as adaptors to execute backward and forward analyses on it.
 
+**NOTES**: This repository is intended to be PRIVATE. A public version
+  is available [here](https://github.com/seahorn/ikos-core). Currently
+  this private repository has more functionality that the public
+  one. Eventually, this repository should be removed only the public
+  one should be used.
+
+
 # License #
 
 This software is released under the terms and conditions of the NASA
 Open Source Agreement (NOSA) Version 1.3 or later.
 
-**TODO**: directories `ikos_cfg` and `ikos_analysis` (the code that provides the CFG and adaptors for using ikos) do not need to be NOSA so they should have a more flexible licence. 
+**TODO**: directories `ikos_cfg` and `ikos_analysis` (the code that
+  provides the CFG and adaptors for using ikos), and some abstract
+  domains (e.g., DBMs and Terms) do not need to be NOSA so they should
+  have a more flexible licence.
+
 # Prerequisites #
 
 - The C++ compiler must support c++11

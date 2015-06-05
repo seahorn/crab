@@ -7,6 +7,9 @@ target_link_libraries (prog-2 ${GMPXX_LIB} ${GMP_LIB} dbm pthread)
 add_executable(prog-3 prog-3.cc)
 target_link_libraries (prog-3 ${GMPXX_LIB} ${GMP_LIB} dbm pthread)
 
+add_executable(prog-4 prog-4.cc)
+target_link_libraries (prog-4 ${GMPXX_LIB} ${GMP_LIB} dbm pthread)
+
 add_executable(unif-0 unif-0.cc)
 target_link_libraries (unif-0 ${GMPXX_LIB} ${GMP_LIB} dbm pthread)
 add_executable(unif-0a   unif-0a.cc)

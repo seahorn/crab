@@ -98,24 +98,20 @@ namespace analyzer
      liveness_t       m_live;
      invariant_map_t  m_pre_map;
      
-
-     //! Using liveness information delete all dead variables from inv
-     void prune_dead_variables (BasicBlockLabel node_name, AbsDomain &inv)
-     {
-       if (inv.is_bottom() || inv.is_top()) return;
-       for (auto v: m_live.dead (node_name)) { inv -= v;  }
-     }
-
      //! Given a basic block and the invariant at the entry it produces
      //! the invariant at the exit of the block.
      AbsDomain analyze (BasicBlockLabel node, AbsDomain pre) 
      { 
-       prune_dead_variables(node, pre);
-
        BasicBlock<BasicBlockLabel, VariableName> &b = m_cfg.get_node (node);
        StatementAnalyzer<VariableName, AbsDomain> vis (pre);
        for (auto &s : b) { s.accept (&vis); }
-       return vis.inv();
+       AbsDomain post = vis.inv ();
+
+       // prune dead variables 
+       if (post.is_bottom() || post.is_top()) return post;
+       for (auto v: m_live.dead_exit (node)) { post -= v;  }
+
+       return post;
      } 
      
      void process_pre (BasicBlockLabel node, AbsDomain inv) 
@@ -123,10 +119,7 @@ namespace analyzer
        //cout << "Pre at " << node << ": " << inv << endl; 
        auto it = m_pre_map.find (node);
        if (it == m_pre_map.end())
-       {
-         prune_dead_variables (node, inv);
          m_pre_map.insert(typename invariant_map_t::value_type (node, inv));
-       }
      }
      
      void process_post (BasicBlockLabel node, AbsDomain inv) 
