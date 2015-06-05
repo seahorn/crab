@@ -864,11 +864,15 @@ namespace ikos {
     linear_constraint_system_t to_linear_constraint_system(void)
     {
       // Extract the underlying constraint system
-//      dom_linsys_t dom_sys(_impl.to_linear_constraint_system());
-      dom_linsys_t dom_sys;
+      // dom_linsys_t dom_sys(_impl.to_linear_constraint_system());
+      //dom_linsys_t dom_sys;
 
       // Now rename it back into the external scope.
-      return dom_sys;
+      //return dom_sys;
+
+      // return true for now.
+      // dom_linsys_t cannot be casted to linear_constraint_system_t
+      return linear_constraint_system_t (linear_expression_t (1) == linear_expression_t (1));
     }
 
 
