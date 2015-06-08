@@ -4,6 +4,7 @@
 #include <ikos/cfg/Cfg.hpp>
 #include <ikos/cfg/VarFactory.hpp>
 #include <ikos/analysis/Liveness.hpp>
+#include <ikos/domains/domain_traits.hpp>
 
 namespace analyzer
 {
@@ -13,19 +14,24 @@ namespace analyzer
   template<typename VariableName, typename NumAbsDomain>
   class StatementAnalyzer: public StatementVisitor <VariableName>
   {
-    NumAbsDomain  m_inv;
+    NumAbsDomain m_inv;
+    TrackedPrecision m_track_prec;
+
+    using typename StatementVisitor<VariableName>::ZLinearExpression;
 
     using typename StatementVisitor<VariableName>::ZBinaryOp;
     using typename StatementVisitor<VariableName>::ZAssignment;
     using typename StatementVisitor<VariableName>::ZAssume;
     using typename StatementVisitor<VariableName>::Havoc_t;
     using typename StatementVisitor<VariableName>::Unreachable_t;
-    using typename StatementVisitor<VariableName>::ZLinearExpression;
+    using typename StatementVisitor<VariableName>::ZArrayStore;
+    using typename StatementVisitor<VariableName>::ZArrayLoad;
 
    public:
     
-    StatementAnalyzer (NumAbsDomain inv): 
-       StatementVisitor<VariableName> (), m_inv (inv)
+    StatementAnalyzer (NumAbsDomain inv, TrackedPrecision track_prec): 
+        StatementVisitor<VariableName> (), m_inv (inv), 
+        m_track_prec (track_prec)
     { }
     
     NumAbsDomain inv() { return m_inv; }
@@ -72,6 +78,37 @@ namespace analyzer
     {
       m_inv = NumAbsDomain::bottom ();
     }
+
+    void visit(ZArrayStore & stmt) 
+    {
+      if (m_track_prec >= MEM){
+
+        if (stmt.index ().get_variable ())
+        {
+          auto arr_out = stmt.array_out ().name ();
+          auto arr_in = stmt.array_in ().name ();
+          auto idx = *(stmt.index ().get_variable ());
+          domain_traits::array_store (m_inv, 
+                                      arr_out, arr_in, 
+                                      idx.name(), 
+                                      stmt.value ());
+        }
+      }
+    }
+
+    void visit(ZArrayLoad & stmt) 
+    {
+      if (m_track_prec >= MEM){
+        if (stmt.index ().get_variable ())
+        {
+          auto idx = *(stmt.index ().get_variable ());
+          domain_traits::array_load (m_inv, 
+                                     stmt.lhs ().name (), 
+                                     stmt.array ().name (), 
+                                     idx.name ());
+        }
+      }
+    }
     
   }; 
 
@@ -103,7 +140,8 @@ namespace analyzer
      AbsDomain analyze (BasicBlockLabel node, AbsDomain pre) 
      { 
        BasicBlock<BasicBlockLabel, VariableName> &b = m_cfg.get_node (node);
-       StatementAnalyzer<VariableName, AbsDomain> vis (pre);
+       StatementAnalyzer<VariableName, AbsDomain> vis (pre, 
+                                                       m_cfg.getTrackedPrecision ());
        for (auto &s : b) { s.accept (&vis); }
        AbsDomain post = vis.inv ();
 
@@ -117,13 +155,15 @@ namespace analyzer
      void process_pre (BasicBlockLabel node, AbsDomain inv) 
      {
        //cout << "Pre at " << node << ": " << inv << endl; 
+
        auto it = m_pre_map.find (node);
        if (it == m_pre_map.end())
          m_pre_map.insert(typename invariant_map_t::value_type (node, inv));
      }
      
      void process_post (BasicBlockLabel node, AbsDomain inv) 
-     { //cout << "Post at " << node << ": " << inv << endl; 
+     { 
+       //cout << "Post at " << node << ": " << inv << endl; 
      }
      
     public:

@@ -5,7 +5,6 @@
  * Build a CFG to interface with IKOS
  */
 
-
 #include <ikos/common/types.hpp>
 #include <ikos/common/bignums.hpp>
 #include <ikos/algorithms/linear_constraints.hpp>
@@ -56,6 +55,9 @@ namespace cfg
     tmp.write (o);
     return o;
   }
+
+  // The values must be such that REG <= PTR <= MEM
+  enum TrackedPrecision { REG = 0, PTR = 1, MEM = 2 };
 
   template< typename VariableName>
   class Live
@@ -125,7 +127,7 @@ namespace cfg
     
     virtual void accept(StatementVisitor< VariableName> *) = 0;
 
-    virtual ostream& write(ostream& o) const = 0 ;
+    virtual void write(ostream& o) const = 0 ;
 
     virtual boost::shared_ptr<Statement <VariableName> > clone () const = 0;
 
@@ -138,6 +140,10 @@ namespace cfg
     }
 
   }; 
+
+  /*
+    Basic Statements
+  */
 
   template< class Number, class VariableName>
   class BinaryOp: public Statement <VariableName>
@@ -169,13 +175,13 @@ namespace cfg
       for (auto v: m_op2.variables()){ this->m_live.addUse (v.name()); }         
     }
 
-    variable_t lhs () { return m_lhs; }
+    variable_t lhs () const { return m_lhs; }
     
-    operation_t op () { return m_op; }
+    operation_t op () const { return m_op; }
     
-    linear_expression_t left () { return m_op1; }
+    linear_expression_t left () const { return m_op1; }
     
-    linear_expression_t right () { return m_op2; }
+    linear_expression_t right () const { return m_op2; }
 
     virtual void accept(StatementVisitor < VariableName> *v) 
     {
@@ -189,7 +195,7 @@ namespace cfg
           (boost::shared_ptr <BinaryOp_t> (new BinaryOp_t(m_lhs, m_op, m_op1, m_op2)));
     }
 
-    virtual ostream& write (ostream& o) const
+    virtual void write (ostream& o) const
     {
       o << m_lhs << " = " << m_op1;
       switch (m_op) 
@@ -200,7 +206,7 @@ namespace cfg
         case OP_DIVISION:       { o << "/"; break; }
       }
       o << m_op2 ; // << " " << this->m_live;
-      return o;
+      return;
     }
 
   }; 
@@ -230,9 +236,9 @@ namespace cfg
         this->m_live.addUse (v.name());
     }
     
-    variable_t lhs () { return m_lhs; }
+    variable_t lhs () const { return m_lhs; }
     
-    linear_expression_t rhs () { return m_rhs; }
+    linear_expression_t rhs () const { return m_rhs; }
 
     virtual void accept(StatementVisitor <VariableName> *v) 
     {
@@ -246,10 +252,10 @@ namespace cfg
           (boost::shared_ptr <Assignment_t> (new Assignment_t(m_lhs, m_rhs)));
     }
     
-    virtual ostream& write(ostream& o) const
+    virtual void write(ostream& o) const
     {
       o << m_lhs << " = " << m_rhs; // << " " << this->m_live;
-      return o;
+      return;
     }
 
   }; 
@@ -275,7 +281,7 @@ namespace cfg
         this->m_live.addUse (v.name()); 
     }
     
-    linear_constraint_t constraint() { return m_cst; }
+    linear_constraint_t constraint() const { return m_cst; }
 
     virtual void accept(StatementVisitor <VariableName> *v) 
     {
@@ -289,14 +295,13 @@ namespace cfg
           (boost::shared_ptr <Assume_t> (new Assume_t(m_cst)));
     }
         
-    virtual ostream& write (ostream & o) const
+    virtual void write (ostream & o) const
     {
       o << "assume (" << m_cst << ")"; //  << " " << this->m_live;
-      return o;
+      return;
     }
 
   }; 
-
 
   template< class VariableName>
   class Unreachable: public Statement< VariableName> 
@@ -317,10 +322,10 @@ namespace cfg
           (boost::shared_ptr <Unreachable_t> (new Unreachable_t()));
     }
     
-    virtual ostream& write(ostream& o) const
+    virtual void write(ostream& o) const
     {
       o << "unreachable";
-      return o;
+      return;
     }
 
   }; 
@@ -338,7 +343,7 @@ namespace cfg
       this->m_live.addDef (m_lhs);
     }
      
-    VariableName variable () { return m_lhs; }
+    VariableName variable () const { return m_lhs; }
      
     virtual void accept (StatementVisitor<VariableName> *v) 
     {
@@ -352,13 +357,136 @@ namespace cfg
           (boost::shared_ptr <Havoc_t> (new Havoc_t(m_lhs)));
     }
      
-    ostream& write (ostream& o) const
+    void write (ostream& o) const
     {
       o << m_lhs << " =*" << " "; // << this->m_live;
-      return o;
+      return;
     }
     
   }; 
+
+  /*
+     Array statements
+  */
+
+  template< class Number, class VariableName>
+  class ArrayStore: public Statement<VariableName>
+  {
+
+   public:
+
+    typedef variable< Number, VariableName >          variable_t;
+    typedef linear_expression< Number, VariableName > linear_expression_t;
+    
+   private:
+
+    variable_t          m_array_out;
+    variable_t          m_array_in;
+    linear_expression_t m_index;
+    linear_expression_t m_value;
+    
+   public:
+
+    ArrayStore (variable_t arr_out, variable_t arr_in,
+                linear_expression_t index, linear_expression_t value): 
+        m_array_out (arr_out), m_array_in (arr_in),
+        m_index (index), m_value (value)
+    {
+      this->m_live.addDef (m_array_out.name());
+      this->m_live.addUse (m_array_in.name());
+      for(auto v: m_index.variables()) 
+        this->m_live.addUse (v.name());
+      for(auto v: m_value.variables()) 
+        this->m_live.addUse (v.name());
+    }
+    
+    variable_t array_in () const { return m_array_in; }
+
+    variable_t array_out () const { return m_array_out; }
+    
+    linear_expression_t index () const { return m_index; }
+
+    linear_expression_t value () const { return m_value; }
+
+    virtual void accept(StatementVisitor <VariableName> *v) 
+    {
+      v->visit(*this);
+    }
+
+    virtual boost::shared_ptr<Statement <VariableName> > clone () const
+    {
+      typedef ArrayStore <Number, VariableName> ArrayStore_t;
+      return boost::static_pointer_cast< Statement <VariableName>, ArrayStore_t >
+          (boost::shared_ptr <ArrayStore_t> (new ArrayStore_t(m_array_out, m_array_in,
+                                                              m_index, m_value)));
+    }
+    
+    virtual void write(ostream& o) const
+    {
+      o << m_array_out << " = " 
+        << "array_store(" << m_array_in << "," << m_index << "," << m_value << ")"; 
+      return;
+    }
+
+  }; 
+
+  template< class Number, class VariableName>
+  class ArrayLoad: public Statement<VariableName>
+  {
+
+   public:
+
+    typedef variable< Number, VariableName >          variable_t;
+    typedef linear_expression< Number, VariableName > linear_expression_t;
+    
+   private:
+
+    variable_t          m_lhs;
+    variable_t          m_array;
+    linear_expression_t m_index;
+    
+   public:
+
+    ArrayLoad (variable_t lhs, variable_t arr, linear_expression_t index): 
+        m_lhs (lhs), m_array (arr), m_index (index)
+    {
+      this->m_live.addDef (lhs.name());
+      this->m_live.addUse (m_array.name());
+      for(auto v: m_index.variables()) 
+        this->m_live.addUse (v.name());
+    }
+    
+    variable_t lhs () const { return m_lhs; }
+
+    variable_t array () const { return m_array; }
+
+    linear_expression_t index () const { return m_index; }
+
+    virtual void accept(StatementVisitor <VariableName> *v) 
+    {
+      v->visit(*this);
+    }
+
+    virtual boost::shared_ptr<Statement <VariableName> > clone () const
+    {
+      typedef ArrayLoad <Number, VariableName> ArrayLoad_t;
+      return boost::static_pointer_cast< Statement <VariableName>, ArrayLoad_t >
+          (boost::shared_ptr <ArrayLoad_t> (new ArrayLoad_t(m_lhs, m_array, m_index)));
+    }
+    
+    virtual void write(ostream& o) const
+    {
+      o << m_lhs << " = " 
+        << "array_load(" << m_array << "," << m_index  << ")"; 
+      return;
+    }
+
+  }; 
+  
+
+  /*
+     Pointer statements
+  */
 
   template< class BasicBlockLabel, class VariableName>
   class Cfg;
@@ -372,7 +500,7 @@ namespace cfg
     
    public:
 
-    // To build statements
+    // helper types to build statements
     typedef z_number                                    ZNumber;
     typedef variable< ZNumber, VariableName >           ZVariable;
     typedef linear_expression< ZNumber, VariableName >  ZLinearExpression;
@@ -383,12 +511,10 @@ namespace cfg
     
    private:
 
-    typedef std::vector< BasicBlockLabel >    bb_id_set_t;
-    typedef boost::shared_ptr< bb_id_set_t >  bb_id_set_ptr;
-    typedef boost::shared_ptr< BasicBlock_t > basic_block_ptr;
-    typedef boost::shared_ptr< Statement_t >  statement_ptr;
-    typedef std::vector< statement_ptr >      stmt_list_t;
-    typedef boost::shared_ptr< stmt_list_t >  stmt_list_ptr;
+    typedef std::vector< BasicBlockLabel >   bb_id_set_t;
+
+    typedef boost::shared_ptr< Statement_t > statement_ptr;
+    typedef std::vector< statement_ptr >     stmt_list_t;
 
    public:
 
@@ -402,50 +528,53 @@ namespace cfg
 
    private:
 
+    /// Kind of statements
+
+    // Basic statements
     typedef BinaryOp< ZNumber, VariableName >  ZBinaryOp;
     typedef Assignment< ZNumber, VariableName> ZAssignment;
     typedef Assume< ZNumber, VariableName >    ZAssume;
     typedef Havoc< VariableName >              Havoc_t;
     typedef Unreachable< VariableName >        Unreachable_t;
+    // Array statements
+    typedef ArrayStore< ZNumber, VariableName> ZArrayStore;
+    typedef ArrayLoad< ZNumber, VariableName>  ZArrayLoad;
 
     typedef boost::shared_ptr< ZBinaryOp >     ZBinaryOp_ptr;
     typedef boost::shared_ptr< ZAssignment >   ZAssignment_ptr;
     typedef boost::shared_ptr< ZAssume >       ZAssume_ptr;
     typedef boost::shared_ptr< Havoc_t >       Havoc_ptr;      
     typedef boost::shared_ptr< Unreachable_t > Unreachable_ptr;      
-    
+    typedef boost::shared_ptr< ZArrayStore >   ZArrayStore_ptr;
+    typedef boost::shared_ptr< ZArrayLoad >    ZArrayLoad_ptr;    
     
     BasicBlockLabel m_bb_id;
-    stmt_list_ptr   m_stmts;
-    bb_id_set_ptr   m_prev, m_next;
+    stmt_list_t m_stmts;
+    bb_id_set_t m_prev, m_next;
     
-    void InsertAdjacent (bb_id_set_ptr c, BasicBlockLabel e)
+    void InsertAdjacent (bb_id_set_t &c, BasicBlockLabel e)
     { 
-      if (std::find(c->begin (), c->end (), e) == c->end ())
-        c->push_back (e);
+      if (std::find(c.begin (), c.end (), e) == c.end ())
+        c.push_back (e);
     }
     
-    void RemoveAdjacent (bb_id_set_ptr c, BasicBlockLabel e)
+    void RemoveAdjacent (bb_id_set_t &c, BasicBlockLabel e)
     {
-      if (std::find(c->begin (), c->end (), e) != c->end ())
-        c->erase (std::remove(c->begin (), c->end (), e), c->end ());
+      if (std::find(c.begin (), c.end (), e) != c.end ())
+        c.erase (std::remove(c.begin (), c.end (), e), c.end ());
     }
     
-    BasicBlock (BasicBlockLabel bb_id): 
-      m_bb_id (bb_id), 
-      m_stmts (stmt_list_ptr (new stmt_list_t)), 
-      m_prev (bb_id_set_ptr (new bb_id_set_t)), 
-      m_next (bb_id_set_ptr (new bb_id_set_t))  
+    BasicBlock (BasicBlockLabel bb_id): m_bb_id (bb_id)
     { }
 
-    static basic_block_ptr Create (BasicBlockLabel bb_id) 
+    static boost::shared_ptr< BasicBlock_t > Create (BasicBlockLabel bb_id) 
     {
-      return basic_block_ptr (new BasicBlock_t (bb_id));
+      return boost::shared_ptr< BasicBlock_t > (new BasicBlock_t (bb_id));
     }
     
     void insert(statement_ptr stmt) 
     {
-      this->m_stmts->push_back(stmt);
+      this->m_stmts.push_back(stmt);
     }
 
    public:
@@ -455,50 +584,50 @@ namespace cfg
       boost::shared_ptr <BasicBlock_t> b (new BasicBlock_t (label ()));
 
       for (auto &s : boost::make_iterator_range (begin (), end ()))
-        b->m_stmts->push_back (s.clone ()); 
+        b->m_stmts.push_back (s.clone ()); 
 
       for (auto id : boost::make_iterator_range (prev_blocks ())) 
-        b->m_prev->push_back (id);
+        b->m_prev.push_back (id);
       
       for (auto id : boost::make_iterator_range (next_blocks ()))
-        b->m_next->push_back (id);
+        b->m_next.push_back (id);
       
       return b;
     }
 
     BasicBlockLabel label () const { return m_bb_id; }
     
-    iterator begin()             { return boost::make_indirect_iterator (m_stmts->begin ()); }
-    iterator end()               { return boost::make_indirect_iterator (m_stmts->end ()); }
-    const_iterator begin() const { return boost::make_indirect_iterator (m_stmts->begin ()); }
-    const_iterator end()   const { return boost::make_indirect_iterator (m_stmts->end ()); }
+    iterator begin()             { return boost::make_indirect_iterator (m_stmts.begin ()); }
+    iterator end()               { return boost::make_indirect_iterator (m_stmts.end ()); }
+    const_iterator begin() const { return boost::make_indirect_iterator (m_stmts.begin ()); }
+    const_iterator end()   const { return boost::make_indirect_iterator (m_stmts.end ()); }
     
     std::size_t size() { return std::distance ( begin (), end ()); }
         
     pair<succ_iterator, succ_iterator> next_blocks ()
     { 
-      return std::make_pair (m_next->begin (), m_next->end ());
+      return std::make_pair (m_next.begin (), m_next.end ());
     }
     
     pair<pred_iterator, pred_iterator> prev_blocks() 
     { 
-      return std::make_pair (m_prev->begin (), m_prev->end ());
+      return std::make_pair (m_prev.begin (), m_prev.end ());
     }
 
     pair<const_succ_iterator,const_succ_iterator> next_blocks () const
     { 
-      return std::make_pair (m_next->begin (), m_next->end ());
+      return std::make_pair (m_next.begin (), m_next.end ());
     }
     
     pair<const_pred_iterator,const_pred_iterator> prev_blocks() const
     { 
-      return std::make_pair (m_prev->begin (), m_prev->end ());
+      return std::make_pair (m_prev.begin (), m_prev.end ());
     }
 
     void reverse()
     {
       std::swap (m_prev, m_next);
-      std::reverse (m_stmts->begin (), m_stmts->end ());
+      std::reverse (m_stmts.begin (), m_stmts.end ());
     }
     
     // Add a cfg edge from *this to b
@@ -518,20 +647,20 @@ namespace cfg
     // insert all statements of other at the front
     void merge_front (const BasicBlock_t &other) 
     {
-      m_stmts->insert (m_stmts->begin (), 
-                       other.m_stmts->begin (), 
-                       other.m_stmts->end ());
+      m_stmts.insert (m_stmts.begin (), 
+                      other.m_stmts.begin (), 
+                      other.m_stmts.end ());
     }
     
     // insert all statements of other at the back
     void merge_back (const BasicBlock_t &other) 
     {
-      m_stmts->insert (m_stmts->end (), 
-                       other.m_stmts->begin (), 
-                       other.m_stmts->end ());
+      m_stmts.insert (m_stmts.end (), 
+                      other.m_stmts.begin (), 
+                      other.m_stmts.end ());
     }
     
-    ostream& write(ostream& o) const
+    void write(ostream& o) const
     {
       o << cfg_impl::get_label_str (m_bb_id) << ":\n";	
 
@@ -545,7 +674,7 @@ namespace cfg
 
       o << "]\n";
       
-      return o;
+      return;
     }
 
     /// To build statements
@@ -700,6 +829,20 @@ namespace cfg
               (Unreachable_ptr (new Unreachable_t ())));
     }
 
+    void array_store (ZVariable arrOut, ZVariable arrIn, 
+                      ZLinearExpression idx, ZLinearExpression val) 
+    {
+      insert(boost::static_pointer_cast< Statement_t, ZArrayStore >
+             (ZArrayStore_ptr(new ZArrayStore(arrOut, arrIn, idx, val))));
+    }
+
+    void array_load (ZVariable lhs, ZVariable arr, ZLinearExpression idx) 
+    {
+      insert(boost::static_pointer_cast< Statement_t, ZArrayLoad >
+             (ZArrayLoad_ptr(new ZArrayLoad(lhs, arr, idx))));
+    }
+
+
     friend ostream& operator<<(ostream &o, const BasicBlock_t &b)
     {
       b.write (o);
@@ -711,19 +854,24 @@ namespace cfg
   template< class VariableName>
   struct StatementVisitor
   {
-    typedef z_number                             ZNumber;
+    typedef z_number ZNumber;
     typedef linear_expression< ZNumber, VariableName > ZLinearExpression;
+
     typedef BinaryOp < ZNumber, VariableName >   ZBinaryOp;
     typedef Assignment < ZNumber, VariableName > ZAssignment;
     typedef Assume < ZNumber, VariableName >     ZAssume;
     typedef Havoc< VariableName >                Havoc_t;
     typedef Unreachable< VariableName >          Unreachable_t;
+    typedef ArrayStore < ZNumber, VariableName > ZArrayStore;
+    typedef ArrayLoad < ZNumber, VariableName >  ZArrayLoad;
     
     virtual void visit (ZBinaryOp&) = 0;
     virtual void visit (ZAssignment&) = 0;
     virtual void visit (ZAssume&) = 0;
     virtual void visit (Havoc_t&) = 0;
     virtual void visit (Unreachable_t&) = 0;
+    virtual void visit (ZArrayStore&) = 0;
+    virtual void visit (ZArrayLoad&) = 0;
 
     virtual ~StatementVisitor () { }
   }; 
@@ -750,13 +898,6 @@ namespace cfg
     typedef typename BasicBlockMap::value_type Binding;
     typedef boost::shared_ptr< BasicBlockMap > BasicBlockMap_ptr;
 
-    // template<typename P, typename R> 
-    // struct getSecond : public std::unary_function<P, R>
-    // {
-    //   getSecond () { }
-    //   R& operator () (const P &p) const { return *(p.second); }
-    // }; 
-
     struct getRef : public std::unary_function<Binding, BasicBlock_t>
     {
       getRef () { }
@@ -775,7 +916,6 @@ namespace cfg
                                        typename BasicBlockMap::iterator > iterator;
     typedef boost::transform_iterator< getRef, 
                                        typename BasicBlockMap::const_iterator > const_iterator;
-
     typedef boost::transform_iterator< getLabel, 
                                        typename BasicBlockMap::iterator > label_iterator;
 
@@ -785,6 +925,7 @@ namespace cfg
     BasicBlockLabel    m_exit;
     bool               m_has_exit;
     BasicBlockMap_ptr  m_blocks;
+    TrackedPrecision   m_track_prec;
 
     typedef boost::unordered_set< BasicBlockLabel > visited_t;
 
@@ -818,24 +959,29 @@ namespace cfg
 
    public:
 
-    Cfg (BasicBlockLabel entry):  
+    Cfg (BasicBlockLabel entry, TrackedPrecision track_prec = REG):  
         m_entry  (entry), 
         m_has_exit (false),
-        m_blocks (BasicBlockMap_ptr (new BasicBlockMap))
+        m_blocks (BasicBlockMap_ptr (new BasicBlockMap)),
+        m_track_prec (track_prec)
     {
       m_blocks->insert (Binding (m_entry, 
                                  BasicBlock_t::Create (m_entry)));
     }
 
-    Cfg (BasicBlockLabel entry, BasicBlockLabel exit):  
+    Cfg (BasicBlockLabel entry, BasicBlockLabel exit, 
+         TrackedPrecision track_prec = REG):  
         m_entry  (entry), 
         m_exit   (exit), 
         m_has_exit (true),
-        m_blocks (BasicBlockMap_ptr (new BasicBlockMap))
+        m_blocks (BasicBlockMap_ptr (new BasicBlockMap)),
+        m_track_prec (track_prec)
     {
       m_blocks->insert (Binding (m_entry, 
                                  BasicBlock_t::Create (m_entry)));
     }
+
+    TrackedPrecision getTrackedPrecision  () const { return m_track_prec; }
 
     //! copy constructor will make shallow copies so use this method
     //! for deep copies.
@@ -981,12 +1127,12 @@ namespace cfg
         p.reverse (); 
     }
 
-    ostream& write (ostream& o) 
+    void write (ostream& o) 
     {
       PrintBlock f (o);
       o << "CFG blocks= " << size () << endl;
       dfs (f);
-      return o;
+      return;
     }
 
     friend ostream& operator<<(ostream &o, 
@@ -1020,6 +1166,8 @@ namespace cfg
       typedef typename StatementVisitor<VariableName>::ZAssume       ZAssume;
       typedef typename StatementVisitor<VariableName>::Havoc_t       Havoc;
       typedef typename StatementVisitor<VariableName>::Unreachable_t Unreachable;
+      typedef typename StatementVisitor<VariableName>::ZArrayStore   ZArrayStore;
+      typedef typename StatementVisitor<VariableName>::ZArrayLoad    ZArrayLoad;
       bool _has_assert;
       HasAssertVisitor (): _has_assert(false) { }
       void visit(ZBinaryOp&){ }  
@@ -1027,6 +1175,8 @@ namespace cfg
       void visit(ZAssume&) { _has_assert = true; }
       void visit(Havoc&) { }
       void visit(Unreachable&){ }
+      void visit(ZArrayStore&){ }
+      void visit(ZArrayLoad&){ }
     };
     
     // Helpers

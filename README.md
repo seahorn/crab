@@ -11,19 +11,22 @@ as adaptors to execute backward and forward analyses on it.
 **NOTES**: This repository is intended to be PRIVATE. A public version
   is available [here](https://github.com/seahorn/ikos-core). Currently
   this private repository has more functionality that the public
-  one. Eventually, this repository should be removed only the public
-  one should be used.
+  one. Eventually, all the functionality of this repository should be
+  moved to the public one.
 
 
 # License #
 
-This software is released under the terms and conditions of the NASA
-Open Source Agreement (NOSA) Version 1.3 or later.
+Some of the software is released under the terms and conditions of the
+NASA Open Source Agreement (NOSA) Version 1.3 or later:
 
-**TODO**: directories `ikos_cfg` and `ikos_analysis` (the code that
-  provides the CFG and adaptors for using ikos), and some abstract
-  domains (e.g., DBMs and Terms) do not need to be NOSA so they should
-  have a more flexible licence.
+- `include\algorithms`
+- `include\common`
+- `include\domains` except:
+  - `dbm`
+  - `term`
+  - `array_graph` 
+- `iterators`
 
 # Prerequisites #
 
@@ -31,9 +34,9 @@ Open Source Agreement (NOSA) Version 1.3 or later.
 - Boost and gmp  
 
 # Installation #
-`
-mkdir build && cd build  && cmake -G Ninja ../
-`
+
+    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_INSTALL=my_install_dir ../
+	cmake --build . --target install 
 
 # Usage #
 

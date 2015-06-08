@@ -42,17 +42,20 @@ namespace cfg
        private:
         boost::shared_ptr< T > _s;
         index_t _id;
-        
+        VariableFactory* _vfac;
+
        private:
         IndexedString();
-        IndexedString(boost::shared_ptr< T > s, index_t id): _s(s), _id(id) { }
+        IndexedString(boost::shared_ptr< T > s, index_t id, VariableFactory *vfac): 
+            _s(s), _id(id), _vfac(vfac) { }
         
        public:
-        IndexedString(const IndexedString& is): _s(is._s), _id(is._id) { }
+        IndexedString(const IndexedString& is): _s(is._s), _id(is._id), _vfac(is._vfac) { }
         
         IndexedString& operator=(IndexedString is) {
           this->_s = is._s;
           this->_id = is._id;
+          this->_vfac = is._vfac;
           return *this;
         }
         
@@ -62,6 +65,8 @@ namespace cfg
         { return indexed_string_impl::get_str< T >(*this->_s); }
 
         T get(){ return *this->_s; }
+
+        VariableFactory& getVarFactory () { return *_vfac; }
 
         bool operator<(IndexedString s)  const 
         { return (this->_id < s._id); }
@@ -107,7 +112,7 @@ namespace cfg
         typename map_t::iterator it = this->_map.find (s);
         if (it == this->_map.end()) 
         {
-          IndexedString is (boost::make_shared<T>(s), this->_next_id++);
+          IndexedString is (boost::make_shared<T>(s), this->_next_id++, this);
           this->_map.insert (typename map_t::value_type (s, is));
           return is;
         }
