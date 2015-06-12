@@ -383,6 +383,39 @@ namespace cfg
   }; 
 
   template< class VariableName>
+  class Undefined: public Statement< VariableName> 
+  {
+
+    VariableName m_lhs;
+    
+   public:
+
+    Undefined (VariableName lhs): m_lhs(lhs) { }
+     
+    VariableName variable () const { return m_lhs; }
+     
+    virtual void accept (StatementVisitor<VariableName> *v) 
+    {
+      v->visit (*this);
+    }
+
+    virtual boost::shared_ptr<Statement <VariableName> > clone () const
+    {
+      typedef Undefined <VariableName> Undefined_t;
+      return boost::static_pointer_cast< Statement <VariableName>, Undefined_t >
+          (boost::shared_ptr <Undefined_t> (new Undefined_t(m_lhs)));
+    }
+     
+    void write (ostream& o) const
+    {
+      o << m_lhs << " = _|_" << " ";
+      return;
+    }
+    
+  }; 
+
+
+  template< class VariableName>
   class CallSite: public Statement<VariableName>
   {
 
@@ -575,8 +608,7 @@ namespace cfg
     linear_expression_t m_index;
     linear_expression_t m_value;
     bool m_is_singleton; //! whether the store writes to a singleton
-                         // cell. Answer this might require static
-                         // analysis. If unknown set to false.
+                         // cell. If unknown set to false.
     
    public:
 
@@ -641,15 +673,11 @@ namespace cfg
     variable_t m_lhs;
     variable_t m_array;
     linear_expression_t m_index;
-    bool m_is_singleton; //! whether the load reads from a singleton
-                         // cell. Answer this might require static
-                         // analysis. If unknown set to false.
 
    public:
 
-    ArrayLoad (variable_t lhs, variable_t arr, linear_expression_t index,
-               bool is_sing): 
-        m_lhs (lhs), m_array (arr), m_index (index), m_is_singleton (is_sing)
+    ArrayLoad (variable_t lhs, variable_t arr, linear_expression_t index): 
+        m_lhs (lhs), m_array (arr), m_index (index)
     {
       this->m_live.addDef (lhs.name());
       this->m_live.addUse (m_array.name());
@@ -663,8 +691,6 @@ namespace cfg
 
     linear_expression_t index () const { return m_index; }
 
-    bool is_singleton () const { return m_is_singleton;}
-
     virtual void accept(StatementVisitor <VariableName> *v) 
     {
       v->visit(*this);
@@ -674,8 +700,7 @@ namespace cfg
     {
       typedef ArrayLoad <Number, VariableName> array_load_t;
       return boost::static_pointer_cast< Statement <VariableName>, array_load_t>
-          (boost::shared_ptr <array_load_t> (new array_load_t (m_lhs, m_array, m_index,
-                                                               m_is_singleton)));
+          (boost::shared_ptr <array_load_t> (new array_load_t (m_lhs, m_array, m_index)));
     }
     
     virtual void write(ostream& o) const
@@ -973,6 +998,7 @@ namespace cfg
     typedef Assume<ZNumber,VariableName> ZAssume;
     typedef Havoc<VariableName> Havoc_t;
     typedef Unreachable<VariableName> Unreachable_t;
+    typedef Undefined<VariableName> Undefined_t;
     // Functions
     typedef CallSite<VariableName> CallSite_t;
     typedef Return<VariableName> Return_t;
@@ -992,6 +1018,7 @@ namespace cfg
     typedef boost::shared_ptr<ZAssume> ZAssume_ptr;
     typedef boost::shared_ptr<Havoc_t> Havoc_ptr;      
     typedef boost::shared_ptr<Unreachable_t> Unreachable_ptr;
+    typedef boost::shared_ptr<Undefined_t> Undefined_ptr;      
     typedef boost::shared_ptr<CallSite_t> CallSite_ptr;      
     typedef boost::shared_ptr<Return_t> Return_ptr;      
     typedef boost::shared_ptr<ZArrayStore> ZArrayStore_ptr;
@@ -1287,6 +1314,12 @@ namespace cfg
               (Unreachable_ptr (new Unreachable_t ())));
     }
 
+    void undefined(VariableName lhs) 
+    {
+      insert (boost::static_pointer_cast< Statement_t, Undefined_t > 
+              (Undefined_ptr (new Undefined_t (lhs))));
+    }
+    
     void callsite (VariableName func, 
                    vector<pair <VariableName,VariableType> > args) 
     {
@@ -1336,12 +1369,11 @@ namespace cfg
                                                 is_singleton))));
     }
 
-    void array_load (ZVariable lhs, ZVariable arr, ZLinearExpression idx,
-                     bool is_singleton = false) 
+    void array_load (ZVariable lhs, ZVariable arr, ZLinearExpression idx) 
     {
       if (m_track_prec == MEM)
         insert(boost::static_pointer_cast< Statement_t, ZArrayLoad >
-               (ZArrayLoad_ptr(new ZArrayLoad(lhs, arr, idx, is_singleton))));
+               (ZArrayLoad_ptr(new ZArrayLoad(lhs, arr, idx))));
     }
 
     void ptr_store (VariableName lhs, VariableName rhs, z_interval size) 
@@ -1398,6 +1430,7 @@ namespace cfg
     typedef Assume <ZNumber,VariableName> ZAssume;
     typedef Havoc<VariableName> Havoc_t;
     typedef Unreachable<VariableName> Unreachable_t;
+    typedef Undefined<VariableName> Undefined_t;
 
     typedef CallSite<VariableName> CallSite_t;
     typedef Return<VariableName> Return_t;
@@ -1418,6 +1451,7 @@ namespace cfg
     virtual void visit (ZAssume&) = 0;
     virtual void visit (Havoc_t&) = 0;
     virtual void visit (Unreachable_t&) = 0;
+    virtual void visit (Undefined_t&) { };
 
     virtual void visit (CallSite_t&) { };
     virtual void visit (Return_t&) { };

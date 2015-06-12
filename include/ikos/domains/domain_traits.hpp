@@ -12,6 +12,7 @@
 #include <ikos/domains/octagons.hpp>
 #include <ikos/domains/dbm.hpp>
 #include <ikos/domains/array_graph.hpp>
+#include <ikos/domains/array_smashing.hpp>
 
 namespace ikos {
 
@@ -36,15 +37,22 @@ namespace domain_traits {
 
 // Default implementation
 template <typename AbsDomain, typename VariableName >
-void array_load (AbsDomain& inv, VariableName lhs, VariableName arr, VariableName idx) {
+void array_load (AbsDomain& inv, VariableName lhs, 
+                 VariableName arr, VariableName idx) {
 }
 
-// (Partial) Specialized version
-template <typename VariableName>
-void array_load (array_graph_domain<DBM <z_number, VariableName>, 
-                                    z_number, 
-                                    VariableName, 
-                                    interval_domain <z_number, VariableName>, false>& inv, 
+/////
+// (Partial) Specialized versions
+/////
+template <typename ScalarDomain, typename WeightDomain, typename VariableName>
+void array_load (array_graph_domain<ScalarDomain, z_number, VariableName, 
+                                    WeightDomain, false>& inv, 
+                 VariableName lhs, VariableName arr, VariableName idx) {
+   inv.load (lhs, arr, idx);
+}
+
+template <typename BaseDomain, typename VariableName>
+void array_load (array_smashing<BaseDomain, z_number, VariableName>& inv, 
                  VariableName lhs, VariableName arr, VariableName idx) {
    inv.load (lhs, arr, idx);
 }
@@ -52,19 +60,45 @@ void array_load (array_graph_domain<DBM <z_number, VariableName>,
 
 // Default implementation
 template <typename AbsDomain, typename VariableName >
-void array_store (AbsDomain& inv, VariableName arr_out, VariableName arr_in, VariableName idx,
-                  typename AbsDomain::linear_expression_t val) {
+void array_store (AbsDomain& inv, VariableName arr_out, 
+                  VariableName arr_in, VariableName idx,
+                  typename AbsDomain::linear_expression_t val,
+                  bool is_singleton) {
 }
 
-// (Partial) Specialized version
-template <typename VariableName>
-void array_store (array_graph_domain<DBM <z_number, VariableName>, 
-                                     z_number, 
-                                     VariableName, 
-                                     interval_domain <z_number, VariableName>, false>& inv, 
+/////
+// (Partial) Specialized versions
+////
+template <typename ScalarDomain, typename WeightDomain, typename VariableName>
+void array_store (array_graph_domain<ScalarDomain, z_number, VariableName, 
+                                     WeightDomain, false>& inv, 
                   VariableName arr_out, VariableName arr_in, VariableName idx,
-                  typename interval_domain <z_number, VariableName>::linear_expression_t val) {
+                  typename ScalarDomain::linear_expression_t val,
+                  bool /*is_singleton*/) {
    inv.store (arr_out, arr_in, idx, val);
+}
+
+template <typename BaseDomain, typename VariableName>
+void array_store (array_smashing<BaseDomain, z_number, VariableName>& inv, 
+                  VariableName arr_out, VariableName arr_in, VariableName idx,
+                  typename BaseDomain::linear_expression_t val,
+                  bool is_singleton) {
+   inv.store (arr_out, arr_in, idx, val, is_singleton);
+}
+
+
+// Default implementation
+template <typename AbsDomain, typename VariableName >
+void undefined (AbsDomain& inv, VariableName v) {
+}
+
+////
+// (Partial) specialized versions
+////
+template <typename BaseDomain, typename VariableName>
+void undefined (array_smashing<BaseDomain,z_number,VariableName>& inv, 
+                VariableName v) {
+  inv.undefined (v);
 }
 
 }

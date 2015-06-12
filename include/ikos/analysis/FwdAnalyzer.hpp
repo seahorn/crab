@@ -24,6 +24,7 @@ namespace analyzer
     using typename StatementVisitor<VariableName>::ZAssume;
     using typename StatementVisitor<VariableName>::Havoc_t;
     using typename StatementVisitor<VariableName>::Unreachable_t;
+    using typename StatementVisitor<VariableName>::Undefined_t;
     using typename StatementVisitor<VariableName>::ZArrayStore;
     using typename StatementVisitor<VariableName>::ZArrayLoad;
 
@@ -78,6 +79,11 @@ namespace analyzer
       m_inv = NumAbsDomain::bottom ();
     }
 
+    void visit(Undefined_t & stmt) 
+    {
+      domain_traits::undefined (m_inv, stmt.variable ());
+    }
+
     void visit(ZArrayStore & stmt) 
     {
       if (stmt.index ().get_variable ())
@@ -88,7 +94,8 @@ namespace analyzer
         domain_traits::array_store (m_inv, 
                                     arr_out, arr_in, 
                                     idx.name(), 
-                                    stmt.value ());
+                                    stmt.value (),
+                                    stmt.is_singleton ());
       }
     }
 

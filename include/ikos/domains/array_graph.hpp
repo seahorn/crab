@@ -11,6 +11,12 @@
  * property w holds for the all elements in the array between [i,j).
  ******************************************************************************/
 
+/*
+  Warning: this implementation is just a proof-of-concept so it is
+  horribly inefficient. I have not tried to make it more efficient
+  yet.
+ */
+
 #ifndef IKOS_ARRAY_GRAPH_HPP
 #define IKOS_ARRAY_GRAPH_HPP
 
@@ -131,7 +137,6 @@ class array_graph: public ikos::writeable{
     if (find_vertex_map(key))
     {
       cerr << key << " already in the vertex map" << endl;
-      assert (false);
       exit (EXIT_FAILURE);
     }
 
@@ -152,7 +157,6 @@ class array_graph: public ikos::writeable{
       return it->second;
 
     cerr << "No vertex with name " << key << " found in the graph\n";
-    assert (false);
     exit (EXIT_FAILURE);
   }
 
@@ -175,7 +179,6 @@ class array_graph: public ikos::writeable{
       if (!b)
       {
         cerr << "edge is already in the graph\n";
-        assert (false);
         exit (EXIT_FAILURE);
       }
 
@@ -356,7 +359,7 @@ class array_graph: public ikos::writeable{
       }
       else
       {
-        assert (false && "unreachable");
+        cerr << "unreachable";
         exit (EXIT_FAILURE);
       }
     } 
@@ -527,7 +530,6 @@ class array_graph: public ikos::writeable{
         else
         {
           cerr << "operator<= with graphs with different adjacency structure\n";
-          assert (false);
           exit (EXIT_FAILURE);
         }
       }
@@ -595,33 +597,6 @@ class array_graph: public ikos::writeable{
     }
   }
   
-  void update_weight (const VertexName &src, const VertexName &dest, 
-                      const Weight &weight)
-  {
-    if (find_vertex_map(src) && find_vertex_map(dest))
-    {
-        vertex_descriptor_t u = lookup_vertex_map(src);
-        vertex_descriptor_t v = lookup_vertex_map(dest);
-        if (edge(u,v,*_graph).second)
-        {
-          edge_descriptor_t e = edge(u,v,*_graph).first;
-          (*_graph)[e].weight = WeightPtr(new Weight(weight));
-        }
-        else
-        {
-          vector<VertexName> vertices;
-          vector<edge_t>     edges;
-          edges.push_back(edge_t(src,dest,weight));
-          add(vertices,edges);
-        }
-    }
-    else
-    {
-      assert (false && "Either src or dest is not in the graph" );
-      exit (EXIT_FAILURE);
-    }
-  }
-  
   void meet_weight (const VertexName &src, const VertexName &dest, 
                     Weight weight)
   {
@@ -645,7 +620,7 @@ class array_graph: public ikos::writeable{
     }
   }
 
-  Weight get_weight (const VertexName &src, const VertexName &dest) 
+  Weight& get_weight (const VertexName &src, const VertexName &dest) 
   {
     if (find_vertex_map(src) && find_vertex_map(dest))
     {
@@ -661,7 +636,7 @@ class array_graph: public ikos::writeable{
     exit (EXIT_FAILURE);
   }
   
-  ostream & write(ostream& o) 
+  ostream& write(ostream& o) 
   {
     if (is_bottom())
       o << "_|_";
@@ -894,36 +869,27 @@ class array_graph_domain:
   }
  
   // model array writes
-  void array_write (VariableName i, Weight w)
+  void array_write (VariableName arr, VariableName i, Weight w)
   {
     if (is_bottom()) return;
       
     //this->reduce();
+
     // strong update
     optional<VariableName> i_succ = get_succ_idx(i);
     if (i_succ)
     {
-      Weight old_w = _g.get_weight(i, *i_succ);
-      if ((old_w | w).is_top())
-      {
-        // If the new weight and the previous one are completely
-        // "separate" we meet them in order to keep both. Otherwise,
-        // we throw away the old one and keep the new. We do this for
-        // cases where we have consecutive assignments to different
-        // arrays.
-        _g.meet_weight(i, *i_succ, w);
-      }
-      else
-        _g.update_weight(i, *i_succ, w);          
+      Weight& old_w = _g.get_weight(i, *i_succ);
+      old_w -= arr;
+      _g.meet_weight(i, *i_succ, w);
     }
     else
     {
       cerr << "There is no successor index associated with " << i << endl;
-      assert (false);
       exit (EXIT_FAILURE);
     }
     
-    w = _g.get_weight(i, *i_succ);
+    Weight new_w = _g.get_weight(i, *i_succ);
     
     // weak update: 
     // An edge (p,q) must be weakened if p <= i <= q and p < q
@@ -945,11 +911,11 @@ class array_graph_domain:
       // p <= i <= q and p < q
       typename array_graph_t::binary_join_op join;
       (*_g._graph)[e].weight = join (weight, 
-                                     typename array_graph_t::WeightPtr (new Weight(w)));
+                                     typename array_graph_t::WeightPtr (new Weight(new_w)));
     }
     _g.canonical();
     // DEBUG
-    // cout << "Array write at " << i << " with weight " << w << " --- " << *this << endl;
+    // cout << "Array write at " << i << " with weight " << new_w << " --- " << *this << endl;
   }
   
   void set_to_bottom()
@@ -1236,9 +1202,13 @@ class array_graph_domain:
   void store (VariableName arr_out, VariableName arr_in, 
               VariableName idx, linear_expression_t val)
   {
+    // TODO
+    assert (arr_out == arr_in);
+    if (! (arr_out == arr_in)) return;
+
     Weight w = Weight::top ();
     w.assign (arr_in, val);
-    array_write (idx, w);
+    array_write (arr_in, idx, w);
   }
     
   ostream& write(ostream& o) 

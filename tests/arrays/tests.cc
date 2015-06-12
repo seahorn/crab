@@ -7,6 +7,7 @@
 #include <ikos/domains/intervals.hpp>                      
 #include <ikos/domains/dbm.hpp>                      
 #include <ikos/domains/array_graph.hpp>                      
+#include <ikos/domains/array_smashing.hpp>                      
 
 using namespace std;
 
@@ -53,6 +54,8 @@ namespace domain_impl
   typedef array_graph_domain<dbm_domain_t,
                              z_number, varname_t,
                              interval_domain_t, false> array_graph_domain_t;
+  typedef array_smashing <dbm_domain_t, z_number, varname_t> array_smashing_t;
+
 } // end namespace
 
 using namespace cfg_impl;
@@ -81,6 +84,7 @@ cfg_t prog1 (VariableFactory &vfac)
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   ////////
+  entry.undefined (a.name ());
   entry.assign(n1, 1);
   entry.assign(i, 0);
   ///////
@@ -116,6 +120,7 @@ cfg_t prog2(VariableFactory &vfac)
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   ////////
+  entry.undefined (a.name ());
   entry.assign(n1, 1);
   entry.assign(i, 0);
   ///////
@@ -167,6 +172,8 @@ cfg_t prog3(VariableFactory &vfac)
   z_var tmp3(vfac["tmp3"]);
   z_var tmp4(vfac["tmp4"]);
 
+  loop1_entry.undefined (a.name ());
+  loop1_entry.undefined (b.name ());
   loop1_entry.assign(n1, 1);
   loop1_entry.assign(i, 0);
   loop1_bb1_t.assume(i <= 9);
@@ -210,6 +217,8 @@ cfg_t prog4(VariableFactory &vfac)
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   ////////
+  entry.undefined (a.name ());
+  entry.undefined (b.name ());
   entry.assign(n1, 1);
   entry.assign(i, 0);
   ///////
@@ -243,6 +252,7 @@ cfg_t prog5(VariableFactory &vfac)
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   ////////
+  entry.undefined (a.name ());
   entry.assume(n >= 1);
   entry.assign(n1, 1);
   entry.assign(i, 0);
@@ -279,6 +289,7 @@ cfg_t prog6(VariableFactory &vfac)
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   ////////
+  entry.undefined (a.name ());
   entry.assign(i, 0);
   entry.assign(c1, 1);
   entry.assign(c5, 5);
@@ -317,6 +328,7 @@ cfg_t prog7(VariableFactory &vfac)
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   ////////
+  entry.undefined (a.name ());
   entry.assume(n >= 2);
   entry.assign(n1, 1);
   entry.assign(i , 0);
@@ -360,6 +372,7 @@ cfg_t prog8(VariableFactory &vfac)
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   ////////
+  entry.undefined (a.name ());
   entry.assume(n >= 1);
   entry.assign(n1, 1);
   entry.assign(n2, 2);
@@ -405,6 +418,7 @@ cfg_t prog9(VariableFactory &vfac)
   bb1_f1 >> bb1_f;   bb1_f2 >> bb1_f; 
   bb1_t >> bb2_a; bb1_t >> bb2_b; bb2_a >> bb1; bb2_b >> bb1; bb1_f >> ret;
   ////////
+  entry.undefined (a.name ());
   entry.assume(n >= 1);
   entry.assign(n1, 1);
   entry.assign(i1, 0);
@@ -428,18 +442,19 @@ cfg_t prog9(VariableFactory &vfac)
 }
 
 
-
-void run(cfg_t cfg, string name, VariableFactory &vfac)
+template <typename ArrayDomain>
+void run(cfg_t cfg, string name, VariableFactory &vfac, string domain_name)
 {
   cout << "--- " << name  << endl;
   cfg.simplify ();
   cout << cfg << endl;
   
   const bool run_live = false;
-  FwdAnalyzer <basic_block_label_t, varname_t, cfg_t, VariableFactory, array_graph_domain_t> 
+  FwdAnalyzer <basic_block_label_t, varname_t, cfg_t, VariableFactory, ArrayDomain> 
       It (cfg, vfac, run_live);
-  It.Run (array_graph_domain_t::top ());
-  cout << "Results with array graph:\n";
+  It.Run (ArrayDomain::top ());
+  cout << "Results with " << domain_name << ":\n";
+
   for (auto &b : cfg)
   {
     // invariants at the entry of the block
@@ -452,60 +467,129 @@ void run(cfg_t cfg, string name, VariableFactory &vfac)
 void test1(){
   VariableFactory vfac;
   cfg_t cfg = prog1(vfac);
-  run(cfg, "Program 1", vfac);
+  run<array_graph_domain_t> (cfg, "Program 1", vfac,  "array graph");
 }
 
 void test2(){
   VariableFactory vfac;
   cfg_t cfg = prog2(vfac);
-  run(cfg, "Program 2", vfac);
+  run<array_graph_domain_t>(cfg, "Program 2", vfac, "array graph");
 }
 
 void test3(){
   VariableFactory vfac;
   cfg_t cfg = prog3(vfac);
-  run(cfg, "Program 3", vfac);
+  run<array_graph_domain_t>(cfg, "Program 3", vfac, "array graph");
 }
 
 void test4(){
   VariableFactory vfac;
   cfg_t cfg = prog4(vfac);
-  run(cfg, "Program 4", vfac);
+  run<array_graph_domain_t>(cfg, "Program 4", vfac, "array graph");
 }
 
 void test5(){
   VariableFactory vfac;
   cfg_t cfg = prog5(vfac);
-  run(cfg, "Program 5", vfac);
+  run<array_graph_domain_t>(cfg, "Program 5", vfac, "array graph");
 }
 
 void test6(){
   VariableFactory vfac;
   cfg_t cfg = prog6(vfac);
-  run(cfg, "Program 6", vfac);
+  run<array_graph_domain_t>(cfg, "Program 6", vfac,"array graph");
 }
 
 void test7(){
   VariableFactory vfac;
   cfg_t cfg = prog7(vfac);
-  run(cfg, "Program 7", vfac);
+  run<array_graph_domain_t>(cfg, "Program 7", vfac,  "array graph");
 }
 
 void test8(){
   VariableFactory vfac;
   cfg_t cfg = prog8(vfac);
-  run(cfg, "Program 8", vfac);
+  run<array_graph_domain_t>(cfg, "Program 8", vfac, "array graph");
 }
 
 
 void test9(){
   VariableFactory vfac;
   cfg_t cfg = prog9(vfac);
-  run(cfg, "Program 9", vfac);
+  run<array_graph_domain_t>(cfg, "Program 9", vfac,  "array graph");
 }
+
+void test10(){
+  VariableFactory vfac;
+  cfg_t cfg = prog1(vfac);
+  run<array_smashing_t>(cfg, "Program 1", vfac, "array smashing");
+}
+
+void test11(){
+  VariableFactory vfac;
+  cfg_t cfg = prog2(vfac);
+  run<array_smashing_t>(cfg, "Program 2", vfac, "array smashing");
+}
+
+void test12(){
+  VariableFactory vfac;
+  cfg_t cfg = prog3(vfac);
+  run<array_smashing_t>(cfg, "Program 3", vfac,"array smashing");
+}
+
+void test13(){
+  VariableFactory vfac;
+  cfg_t cfg = prog4(vfac);
+  run<array_smashing_t>(cfg, "Program 4", vfac, "array smashing");
+}
+
+void test14(){
+  VariableFactory vfac;
+  cfg_t cfg = prog5(vfac);
+  run<array_smashing_t>(cfg, "Program 5", vfac, "array smashing");
+}
+
+void test15(){
+  VariableFactory vfac;
+  cfg_t cfg = prog6(vfac);
+  run<array_smashing_t>(cfg, "Program 6", vfac, "array smashing");
+}
+
+void test16(){
+  VariableFactory vfac;
+  cfg_t cfg = prog7(vfac);
+  run<array_smashing_t>(cfg, "Program 7", vfac, "array smashing");
+}
+
+void test17(){
+  VariableFactory vfac;
+  cfg_t cfg = prog8(vfac);
+  run<array_smashing_t>(cfg, "Program 8", vfac, "array smashing");
+}
+
+
+void test18(){
+  VariableFactory vfac;
+  cfg_t cfg = prog9(vfac);
+  run<array_smashing_t>(cfg, "Program 9", vfac,"array smashing");
+}
+
+
+
 
 int main(int, char **) 
 {
+  // array smashing
+  test10 ();
+  test11 ();
+  test12 ();
+  test13 ();
+  test14 ();
+  test15 ();
+  test16 ();
+  test17 ();
+  test18 ();
+  // array graph
   test1 ();
   test2 ();
   test3 ();
@@ -515,6 +599,7 @@ int main(int, char **)
   test7 ();
   test8 ();
   test9 ();
+  
   return 42;
 }
 
