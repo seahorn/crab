@@ -23,9 +23,9 @@ NASA Open Source Agreement (NOSA) Version 1.3 or later:
 - `include\algorithms`
 - `include\common`
 - `include\domains` except:
-  - `dbm`
-  - `term`
-  - `array_graph` 
+    - `dbm`
+    - `term`
+    - `array_graph` 
 - `iterators`
 
 # Prerequisites #

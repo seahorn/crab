@@ -15,10 +15,10 @@ namespace analyzer
   class StatementAnalyzer: public StatementVisitor <VariableName>
   {
     NumAbsDomain m_inv;
-    TrackedPrecision m_track_prec;
 
     using typename StatementVisitor<VariableName>::ZLinearExpression;
 
+    // Statements
     using typename StatementVisitor<VariableName>::ZBinaryOp;
     using typename StatementVisitor<VariableName>::ZAssignment;
     using typename StatementVisitor<VariableName>::ZAssume;
@@ -29,9 +29,8 @@ namespace analyzer
 
    public:
     
-    StatementAnalyzer (NumAbsDomain inv, TrackedPrecision track_prec): 
-        StatementVisitor<VariableName> (), m_inv (inv), 
-        m_track_prec (track_prec)
+    StatementAnalyzer (NumAbsDomain inv): 
+        StatementVisitor<VariableName> (), m_inv (inv)
     { }
     
     NumAbsDomain inv() { return m_inv; }
@@ -81,35 +80,30 @@ namespace analyzer
 
     void visit(ZArrayStore & stmt) 
     {
-      if (m_track_prec >= MEM){
-
-        if (stmt.index ().get_variable ())
-        {
-          auto arr_out = stmt.array_out ().name ();
-          auto arr_in = stmt.array_in ().name ();
-          auto idx = *(stmt.index ().get_variable ());
-          domain_traits::array_store (m_inv, 
-                                      arr_out, arr_in, 
-                                      idx.name(), 
-                                      stmt.value ());
-        }
+      if (stmt.index ().get_variable ())
+      {
+        auto arr_out = stmt.array_out ().name ();
+        auto arr_in = stmt.array_in ().name ();
+        auto idx = *(stmt.index ().get_variable ());
+        domain_traits::array_store (m_inv, 
+                                    arr_out, arr_in, 
+                                    idx.name(), 
+                                    stmt.value ());
       }
     }
 
     void visit(ZArrayLoad & stmt) 
     {
-      if (m_track_prec >= MEM){
-        if (stmt.index ().get_variable ())
-        {
-          auto idx = *(stmt.index ().get_variable ());
-          domain_traits::array_load (m_inv, 
-                                     stmt.lhs ().name (), 
-                                     stmt.array ().name (), 
-                                     idx.name ());
-        }
+      if (stmt.index ().get_variable ())
+      {
+        auto idx = *(stmt.index ().get_variable ());
+        domain_traits::array_load (m_inv, 
+                                   stmt.lhs ().name (), 
+                                   stmt.array ().name (), 
+                                   idx.name ());
       }
     }
-    
+
   }; 
 
 
@@ -140,8 +134,7 @@ namespace analyzer
      AbsDomain analyze (BasicBlockLabel node, AbsDomain pre) 
      { 
        BasicBlock<BasicBlockLabel, VariableName> &b = m_cfg.get_node (node);
-       StatementAnalyzer<VariableName, AbsDomain> vis (pre, 
-                                                       m_cfg.getTrackedPrecision ());
+       StatementAnalyzer<VariableName, AbsDomain> vis (pre);
        for (auto &s : b) { s.accept (&vis); }
        AbsDomain post = vis.inv ();
 
@@ -153,17 +146,14 @@ namespace analyzer
      } 
      
      void process_pre (BasicBlockLabel node, AbsDomain inv) 
-     {
-       //cout << "Pre at " << node << ": " << inv << endl; 
-
+     {//cout << "Pre at " << node << ": " << inv << endl; 
        auto it = m_pre_map.find (node);
        if (it == m_pre_map.end())
          m_pre_map.insert(typename invariant_map_t::value_type (node, inv));
      }
      
      void process_post (BasicBlockLabel node, AbsDomain inv) 
-     { 
-       //cout << "Post at " << node << ": " << inv << endl; 
+     {//cout << "Post at " << node << ": " << inv << endl; 
      }
      
     public:
@@ -175,20 +165,29 @@ namespace analyzer
        if (runLive)
          m_live.exec ();
      }
-     
+
+     //! Trigger the fixpoint computation 
      void Run (AbsDomain inv) 
      { this->run (inv); }      
      
 
-    //! return the invariants that hold at the entry of bb
-    AbsDomain operator[] (BasicBlockLabel b) const
-    {
-      auto it = m_pre_map.find (b);
-      if (it == m_pre_map.end ())
-        return AbsDomain::top ();
-      else
-        return it->second;
-    }
+     //! Propagate invariants at the statement level
+     template < typename Statement >
+     AbsDomain AnalyzeStmt (Statement stmt, AbsDomain pre) {
+       StatementAnalyzer<VariableName, AbsDomain> vis (pre);
+       vis.visit (stmt);
+       return vis.inv ();
+     }
+
+     //! Return the invariants that hold at the entry of bb
+     AbsDomain operator[] (BasicBlockLabel b) const
+     {
+       auto it = m_pre_map.find (b);
+       if (it == m_pre_map.end ())
+         return AbsDomain::top ();
+       else
+         return it->second;
+     }
 
    }; 
 } // end namespace

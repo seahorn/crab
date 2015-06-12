@@ -1,12 +1,12 @@
-add_executable(prog-1 prog-1.cc)
-target_link_libraries (prog-1 ${GMPXX_LIB} ${GMP_LIB} dbm pthread)
+add_executable(simple_test1 prog-1.cc)
+target_link_libraries (simple_test1 ${GMPXX_LIB} ${GMP_LIB} dbm pthread)
 
-add_executable(prog-2 prog-2.cc)
-target_link_libraries (prog-2 ${GMPXX_LIB} ${GMP_LIB} dbm pthread)
+add_executable(simple_test2 prog-2.cc)
+target_link_libraries (simple_test2 ${GMPXX_LIB} ${GMP_LIB} dbm pthread)
 
-add_executable(prog-3 prog-3.cc)
-target_link_libraries (prog-3 ${GMPXX_LIB} ${GMP_LIB} dbm pthread)
+add_executable(simple_test3 prog-3.cc)
+target_link_libraries (simple_test3 ${GMPXX_LIB} ${GMP_LIB} dbm pthread)
 
-add_executable(prog-4 prog-4.cc)
-target_link_libraries (prog-4 ${GMPXX_LIB} ${GMP_LIB} dbm pthread)
+add_executable(simple_test4 prog-4.cc)
+target_link_libraries (simple_test4 ${GMPXX_LIB} ${GMP_LIB} dbm pthread)
 

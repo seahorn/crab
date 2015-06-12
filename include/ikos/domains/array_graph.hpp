@@ -26,7 +26,6 @@
 #include <ikos/common/mergeable_map.hpp>
 #include <ikos/algorithms/patricia_trees.hpp>
 #include <ikos/domains/numerical_domains_api.hpp>
-#include <ikos/domains/array_operators_api.hpp>
 // add a cyclic dependency
 // #include <ikos/domains/domain_traits.hpp> 
 
@@ -713,8 +712,7 @@ template<typename ScalarNumDomain, typename Number, typename VariableName,
          typename Weight, bool IsDistWeight>
 class array_graph_domain: 
       public ikos::writeable, 
-      public numerical_domain< Number, VariableName>,
-      public array_operators <Number, VariableName>
+      public numerical_domain< Number, VariableName>
 {
 
  public:

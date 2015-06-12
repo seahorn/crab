@@ -5,9 +5,7 @@
  * Build a CFG to interface with IKOS
  */
 
-#include <ikos/common/types.hpp>
-#include <ikos/common/bignums.hpp>
-#include <ikos/algorithms/linear_constraints.hpp>
+#include <stdlib.h> 
 
 #include <boost/shared_ptr.hpp>
 #include <boost/iterator/indirect_iterator.hpp>
@@ -15,6 +13,12 @@
 #include <boost/range/iterator_range.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/unordered_set.hpp>
+
+#include <ikos/common/types.hpp>
+#include <ikos/common/bignums.hpp>
+#include <ikos/algorithms/linear_constraints.hpp>
+#include <ikos/domains/intervals.hpp>
+
 
 namespace cfg_impl 
 {
@@ -58,6 +62,19 @@ namespace cfg
 
   // The values must be such that REG <= PTR <= MEM
   enum TrackedPrecision { REG = 0, PTR = 1, MEM = 2 };
+
+  enum VariableType { INT_TYPE, PTR_TYPE, UNK_TYPE};
+
+  inline std::ostream& operator<< (std::ostream& o, VariableType t)
+  {
+    switch (t)
+    {
+      case INT_TYPE: o << "int"; break;
+      case PTR_TYPE: o << "ptr"; break;
+      default: o << "unknown"; break;
+    }
+    return o;
+  }
 
   template< typename VariableName>
   class Live
@@ -365,6 +382,179 @@ namespace cfg
     
   }; 
 
+  template< class VariableName>
+  class CallSite: public Statement<VariableName>
+  {
+
+    boost::optional<pair<VariableName,VariableType> > m_lhs;
+    VariableName m_func_name;
+    vector<pair<VariableName,VariableType> > m_args;
+
+    typedef typename vector<pair<VariableName,VariableType> >::iterator arg_iterator;
+    typedef typename vector<pair<VariableName,VariableType> >::const_iterator const_arg_iterator;
+    
+   public:
+
+    CallSite (VariableName func_name, 
+              vector<pair<VariableName,VariableType> > args): 
+        m_func_name (func_name)
+    {
+      std::copy (args.begin (), args.end (), std::back_inserter (m_args));
+      for (auto arg:  m_args) { this->m_live.addUse (arg.first); }
+    }
+
+    CallSite (VariableName func_name, vector<VariableName> args): 
+        m_func_name (func_name)
+    {
+      for (auto v : args)
+      {
+        m_args.push_back (make_pair (v, UNK_TYPE));
+        this->m_live.addUse (v);
+      }
+    }
+    
+    CallSite (pair<VariableName,VariableType> lhs, 
+              VariableName func_name, 
+              vector<pair<VariableName,VariableType> > args): 
+        m_lhs (boost::optional<pair<VariableName,VariableType> > (lhs)), 
+        m_func_name (func_name)
+    {
+      std::copy (args.begin (), args.end (), std::back_inserter(m_args));
+      for (auto arg:  m_args) { this->m_live.addUse (arg.first); }
+      this->m_live.addDef ((*m_lhs).first);
+    }
+
+    CallSite (VariableName lhs, 
+              VariableName func_name, 
+              vector<VariableName> args): 
+        m_lhs (boost::optional<pair<VariableName,VariableType> > (lhs, UNK_TYPE)), 
+        m_func_name (func_name)
+    {
+      for (auto v : args)
+      {
+        m_args.push_back (make_pair (v, UNK_TYPE));
+        this->m_live.addUse (v);
+      }
+      this->m_live.addDef ((*m_lhs).first);
+    }
+    
+
+    boost::optional<VariableName> get_lhs_name () const { 
+      if (m_lhs)
+        return boost::optional<VariableName> ((*m_lhs).first);
+      else 
+        return boost::optional<VariableName> ();
+    }
+
+    VariableType get_lhs_type () const {       
+      if (m_lhs) return (*m_lhs).second;
+      else return UNK_TYPE;
+    }
+    
+    VariableName get_func_name () const { 
+      return m_func_name; 
+    }
+
+    unsigned get_num_args () const { return m_args.size (); }
+
+    VariableName get_arg_name (unsigned idx) const { 
+      if (idx >= m_args.size ())
+      {
+        cerr << "Out-of-bound access to call site parameter\n";
+        std::exit (EXIT_FAILURE);
+      }
+      return m_args[idx].first;
+    }
+
+    VariableType get_arg_type (unsigned idx) const { 
+      if (idx >= m_args.size ())
+      {
+        cerr << "Out-of-bound access to call site parameter\n";
+        std::exit (EXIT_FAILURE);
+      }
+      return m_args[idx].second;
+    }
+
+    virtual void accept(StatementVisitor <VariableName> *v) 
+    {
+      v->visit(*this);
+    }
+
+    virtual boost::shared_ptr<Statement <VariableName> > clone () const
+    {
+      typedef CallSite <VariableName> call_site_t;
+      if (m_lhs)
+        return boost::static_pointer_cast< Statement <VariableName>, call_site_t>
+            (boost::shared_ptr <call_site_t> (new call_site_t (*m_lhs, m_func_name, m_args)));
+      else
+        return boost::static_pointer_cast< Statement <VariableName>, call_site_t>
+            (boost::shared_ptr <call_site_t> (new call_site_t (m_func_name, m_args)));
+    }
+    
+    virtual void write(ostream& o) const
+    {
+      if (m_lhs)
+        o << (*m_lhs).first << " = ";
+
+      o << "call " << m_func_name << "(";
+      for (const_arg_iterator It = m_args.begin (), Et=m_args.end (); It!=Et; )
+      {
+        o << It->first;
+        ++It;
+        if (It != Et)
+          o << ",";
+      }
+      o << ")";
+
+      return;
+    }
+
+  }; 
+
+  template< class VariableName>
+  class Return: public Statement<VariableName>
+  {
+
+    VariableName m_var;
+    VariableType m_type;
+
+   public:
+
+    Return (VariableName var, VariableType type = UNK_TYPE): 
+        m_var (var), m_type (type)
+    {
+      this->m_live.addUse (m_var); 
+    }
+        
+    VariableName get_ret_var () const { 
+      return m_var;
+    }
+
+    VariableType get_ret_type () const { 
+      return m_type;
+    }
+
+    virtual void accept(StatementVisitor <VariableName> *v) 
+    {
+      v->visit(*this);
+    }
+
+    virtual boost::shared_ptr<Statement <VariableName> > clone () const
+    {
+      typedef Return <VariableName> return_t;
+      return boost::static_pointer_cast< Statement <VariableName>, return_t>
+          (boost::shared_ptr <return_t> (new return_t (m_var, m_type)));
+    }
+    
+    virtual void write(ostream& o) const
+    {
+      o << "return " << m_var;
+      return;
+    }
+  }; 
+
+
+
   /*
      Array statements
   */
@@ -375,22 +565,26 @@ namespace cfg
 
    public:
 
-    typedef variable< Number, VariableName >          variable_t;
+    typedef variable< Number, VariableName > variable_t;
     typedef linear_expression< Number, VariableName > linear_expression_t;
     
    private:
 
-    variable_t          m_array_out;
-    variable_t          m_array_in;
+    variable_t m_array_out;
+    variable_t m_array_in;
     linear_expression_t m_index;
     linear_expression_t m_value;
+    bool m_is_singleton; //! whether the store writes to a singleton
+                         // cell. Answer this might require static
+                         // analysis. If unknown set to false.
     
    public:
 
     ArrayStore (variable_t arr_out, variable_t arr_in,
-                linear_expression_t index, linear_expression_t value): 
+                linear_expression_t index, linear_expression_t value, 
+                bool is_sing): 
         m_array_out (arr_out), m_array_in (arr_in),
-        m_index (index), m_value (value)
+        m_index (index), m_value (value), m_is_singleton (is_sing)
     {
       this->m_live.addDef (m_array_out.name());
       this->m_live.addUse (m_array_in.name());
@@ -408,6 +602,8 @@ namespace cfg
 
     linear_expression_t value () const { return m_value; }
 
+    bool is_singleton () const { return m_is_singleton;}
+
     virtual void accept(StatementVisitor <VariableName> *v) 
     {
       v->visit(*this);
@@ -415,10 +611,11 @@ namespace cfg
 
     virtual boost::shared_ptr<Statement <VariableName> > clone () const
     {
-      typedef ArrayStore <Number, VariableName> ArrayStore_t;
-      return boost::static_pointer_cast< Statement <VariableName>, ArrayStore_t >
-          (boost::shared_ptr <ArrayStore_t> (new ArrayStore_t(m_array_out, m_array_in,
-                                                              m_index, m_value)));
+      typedef ArrayStore <Number, VariableName> array_store_t;
+      return boost::static_pointer_cast< Statement <VariableName>, array_store_t>
+          (boost::shared_ptr <array_store_t> (new array_store_t (m_array_out, m_array_in,
+                                                                 m_index, m_value, 
+                                                                 m_is_singleton)));
     }
     
     virtual void write(ostream& o) const
@@ -441,14 +638,18 @@ namespace cfg
     
    private:
 
-    variable_t          m_lhs;
-    variable_t          m_array;
+    variable_t m_lhs;
+    variable_t m_array;
     linear_expression_t m_index;
-    
+    bool m_is_singleton; //! whether the load reads from a singleton
+                         // cell. Answer this might require static
+                         // analysis. If unknown set to false.
+
    public:
 
-    ArrayLoad (variable_t lhs, variable_t arr, linear_expression_t index): 
-        m_lhs (lhs), m_array (arr), m_index (index)
+    ArrayLoad (variable_t lhs, variable_t arr, linear_expression_t index,
+               bool is_sing): 
+        m_lhs (lhs), m_array (arr), m_index (index), m_is_singleton (is_sing)
     {
       this->m_live.addDef (lhs.name());
       this->m_live.addUse (m_array.name());
@@ -462,6 +663,8 @@ namespace cfg
 
     linear_expression_t index () const { return m_index; }
 
+    bool is_singleton () const { return m_is_singleton;}
+
     virtual void accept(StatementVisitor <VariableName> *v) 
     {
       v->visit(*this);
@@ -469,9 +672,10 @@ namespace cfg
 
     virtual boost::shared_ptr<Statement <VariableName> > clone () const
     {
-      typedef ArrayLoad <Number, VariableName> ArrayLoad_t;
-      return boost::static_pointer_cast< Statement <VariableName>, ArrayLoad_t >
-          (boost::shared_ptr <ArrayLoad_t> (new ArrayLoad_t(m_lhs, m_array, m_index)));
+      typedef ArrayLoad <Number, VariableName> array_load_t;
+      return boost::static_pointer_cast< Statement <VariableName>, array_load_t>
+          (boost::shared_ptr <array_load_t> (new array_load_t (m_lhs, m_array, m_index,
+                                                               m_is_singleton)));
     }
     
     virtual void write(ostream& o) const
@@ -483,11 +687,244 @@ namespace cfg
 
   }; 
   
-
   /*
      Pointer statements
   */
 
+  template< class Number, class VariableName>
+  class PtrLoad: public Statement<VariableName>
+  {
+    // p = *q
+   public:
+
+    typedef interval <Number> interval_t;
+
+   private:
+
+    VariableName m_lhs;
+    VariableName m_rhs;
+    interval_t   m_size; //! bytes read
+
+   public:
+
+    PtrLoad (VariableName lhs, VariableName rhs, interval_t size): 
+        m_lhs (lhs), m_rhs (rhs), m_size (size)
+    {
+      this->m_live.addUse (lhs);
+      this->m_live.addUse (rhs);
+    }
+    
+    VariableName lhs () const { return m_lhs; }
+
+    VariableName rhs () const { return m_rhs; }
+
+    interval_t size () const { return m_size; }
+
+    virtual void accept(StatementVisitor <VariableName> *v) 
+    {
+      v->visit(*this);
+    }
+
+    virtual boost::shared_ptr<Statement <VariableName> > clone () const
+    {
+      typedef PtrLoad <Number,VariableName> ptr_load_t;
+      return boost::static_pointer_cast< Statement <VariableName>, ptr_load_t >
+          (boost::shared_ptr <ptr_load_t> (new ptr_load_t (m_lhs, m_rhs, m_size)));
+    }
+    
+    virtual void write(ostream& o) const
+    {
+      o << m_lhs << " = "  << "*(" << m_rhs << " + ";
+      interval_t sz (m_size) ; // FIX: write method is not const in ikos domains
+      sz.write (o);
+      o << ")";
+      return;
+    }
+
+  }; 
+
+  template<class Number, class VariableName>
+  class PtrStore: public Statement<VariableName>
+  {
+
+    // *p = q
+   public:
+
+    typedef interval <Number> interval_t;
+
+   private:
+
+    VariableName m_lhs;
+    VariableName m_rhs;
+    interval_t   m_size; //! bytes written
+   
+   public:
+
+    PtrStore (VariableName lhs, VariableName rhs, interval_t size): 
+        m_lhs (lhs), m_rhs (rhs), m_size (size)
+    {
+      this->m_live.addUse (lhs);
+      this->m_live.addUse (rhs);
+    }
+    
+    VariableName lhs () const { return m_lhs; }
+
+    VariableName rhs () const { return m_rhs; }
+
+    interval_t size () const { return m_size; }
+
+    virtual void accept(StatementVisitor <VariableName> *v) 
+    {
+      v->visit(*this);
+    }
+
+    virtual boost::shared_ptr<Statement <VariableName> > clone () const
+    {
+      typedef PtrStore <Number,VariableName> ptr_store_t;
+      return boost::static_pointer_cast< Statement <VariableName>, ptr_store_t >
+          (boost::shared_ptr <ptr_store_t> (new ptr_store_t (m_lhs, m_rhs, m_size)));
+    }
+    
+    virtual void write(ostream& o) const
+    {
+      o << "*(" << m_lhs << " + ";
+      interval_t sz (m_size) ; // FIX: write method is not const in ikos domains
+      sz.write (o);
+      o << ") = "  << m_rhs;
+      return;
+    }
+
+  }; 
+
+  template< class Number, class VariableName>
+  class PtrAssign: public Statement<VariableName>
+  {
+    //! p = q + n
+   public:
+
+    typedef variable< Number, VariableName > variable_t;
+    typedef linear_expression< Number, VariableName > linear_expression_t;
+
+   private:
+
+    VariableName m_lhs;
+    VariableName m_rhs;
+    linear_expression_t m_offset;
+    
+   public:
+
+    PtrAssign (VariableName lhs, VariableName rhs, linear_expression_t offset): 
+        m_lhs (lhs), m_rhs (rhs), m_offset(offset)
+    {
+      this->m_live.addDef (lhs);
+      this->m_live.addUse (rhs);
+    }
+    
+    VariableName lhs () const { return m_lhs; }
+
+    VariableName rhs () const { return m_rhs; }
+
+    linear_expression_t offset () const { return m_offset; }
+
+    virtual void accept(StatementVisitor <VariableName> *v) 
+    {
+      v->visit(*this);
+    }
+
+    virtual boost::shared_ptr<Statement <VariableName> > clone () const
+    {
+      typedef PtrAssign <Number, VariableName> ptr_assign_t;
+      return boost::static_pointer_cast< Statement <VariableName>, ptr_assign_t >
+          (boost::shared_ptr <ptr_assign_t> (new ptr_assign_t (m_lhs, m_rhs, m_offset)));
+    }
+    
+    virtual void write(ostream& o) const
+    {
+      o << m_lhs << " = "  << m_rhs << " + ";
+      linear_expression_t off (m_offset) ; // FIX: write method is not const in ikos 
+      off.write (o);
+      return;
+    }
+
+  }; 
+
+  template<class VariableName>
+  class PtrObject: public Statement<VariableName>
+  {
+    //! lhs = &a;
+    VariableName m_lhs;
+    index_t m_address;
+    
+   public:
+
+    PtrObject (VariableName lhs, index_t address): 
+        m_lhs (lhs), m_address (address)
+    {
+      this->m_live.addDef (lhs);
+    }
+    
+    VariableName lhs () const { return m_lhs; }
+
+    index_t rhs () const { return m_address; }
+
+    virtual void accept(StatementVisitor <VariableName> *v) 
+    {
+      v->visit(*this);
+    }
+
+    virtual boost::shared_ptr<Statement <VariableName> > clone () const
+    {
+      typedef PtrObject <VariableName> ptr_object_t;
+      return boost::static_pointer_cast< Statement <VariableName>, ptr_object_t>
+          (boost::shared_ptr <ptr_object_t> (new ptr_object_t (m_lhs, m_address)));
+    }
+    
+    virtual void write(ostream& o) const
+    {
+      o << m_lhs << " = "  << "&(" << m_address << ")" ;
+      return;
+    }
+
+  }; 
+
+  template<class VariableName>
+  class PtrFunction: public Statement<VariableName>
+  {
+    // lhs = &func;
+    VariableName m_lhs;
+    index_t m_func;
+    
+   public:
+
+    PtrFunction (VariableName lhs, VariableName func): 
+        m_lhs (lhs), m_func (func)
+    {
+      this->m_live.addDef (lhs);
+    }
+    
+    VariableName lhs () const { return m_lhs; }
+
+    index_t rhs () const { return m_func; }
+
+    virtual void accept(StatementVisitor <VariableName> *v) 
+    {
+      v->visit(*this);
+    }
+
+    virtual boost::shared_ptr<Statement <VariableName> > clone () const
+    {
+      typedef PtrFunction <VariableName> ptr_function_t;
+      return boost::static_pointer_cast< Statement <VariableName>, ptr_function_t>
+          (boost::shared_ptr <ptr_function_t> (new ptr_function_t ( lhs (), rhs ())));
+    }
+    
+    virtual void write(ostream& o) const
+    {
+      o << m_lhs << " = "  << "&(" << m_func << ")" ;
+      return;
+    }
+  }; 
+  
   template< class BasicBlockLabel, class VariableName>
   class Cfg;
 
@@ -506,7 +943,7 @@ namespace cfg
     typedef linear_expression< ZNumber, VariableName >  ZLinearExpression;
     typedef linear_constraint< ZNumber, VariableName >  ZLinearConstraint;
 
-    typedef Statement< VariableName>                    Statement_t;
+    typedef Statement< VariableName> Statement_t;
     typedef BasicBlock< BasicBlockLabel, VariableName > BasicBlock_t;
     
    private:
@@ -514,7 +951,7 @@ namespace cfg
     typedef std::vector< BasicBlockLabel >   bb_id_set_t;
 
     typedef boost::shared_ptr< Statement_t > statement_ptr;
-    typedef std::vector< statement_ptr >     stmt_list_t;
+    typedef std::vector< statement_ptr > stmt_list_t;
 
    public:
 
@@ -528,30 +965,48 @@ namespace cfg
 
    private:
 
-    /// Kind of statements
+    typedef interval <ZNumber> z_interval;
 
     // Basic statements
-    typedef BinaryOp< ZNumber, VariableName >  ZBinaryOp;
-    typedef Assignment< ZNumber, VariableName> ZAssignment;
-    typedef Assume< ZNumber, VariableName >    ZAssume;
-    typedef Havoc< VariableName >              Havoc_t;
-    typedef Unreachable< VariableName >        Unreachable_t;
-    // Array statements
-    typedef ArrayStore< ZNumber, VariableName> ZArrayStore;
-    typedef ArrayLoad< ZNumber, VariableName>  ZArrayLoad;
+    typedef BinaryOp<ZNumber,VariableName> ZBinaryOp;
+    typedef Assignment<ZNumber,VariableName> ZAssignment;
+    typedef Assume<ZNumber,VariableName> ZAssume;
+    typedef Havoc<VariableName> Havoc_t;
+    typedef Unreachable<VariableName> Unreachable_t;
+    // Functions
+    typedef CallSite<VariableName> CallSite_t;
+    typedef Return<VariableName> Return_t;
+    // Arrays
+    typedef ArrayStore<ZNumber,VariableName> ZArrayStore;
+    typedef ArrayLoad<ZNumber,VariableName> ZArrayLoad;
+    // Pointers
+    typedef PtrStore<ZNumber,VariableName> PtrStore_t;
+    typedef PtrLoad<ZNumber,VariableName> PtrLoad_t;
+    typedef PtrAssign<ZNumber,VariableName> PtrAssign_t;
+    typedef PtrObject<VariableName> PtrObject_t;
+    typedef PtrFunction<VariableName> PtrFunction_t;
 
-    typedef boost::shared_ptr< ZBinaryOp >     ZBinaryOp_ptr;
-    typedef boost::shared_ptr< ZAssignment >   ZAssignment_ptr;
-    typedef boost::shared_ptr< ZAssume >       ZAssume_ptr;
-    typedef boost::shared_ptr< Havoc_t >       Havoc_ptr;      
-    typedef boost::shared_ptr< Unreachable_t > Unreachable_ptr;      
-    typedef boost::shared_ptr< ZArrayStore >   ZArrayStore_ptr;
-    typedef boost::shared_ptr< ZArrayLoad >    ZArrayLoad_ptr;    
-    
+
+    typedef boost::shared_ptr<ZBinaryOp> ZBinaryOp_ptr;
+    typedef boost::shared_ptr<ZAssignment> ZAssignment_ptr;
+    typedef boost::shared_ptr<ZAssume> ZAssume_ptr;
+    typedef boost::shared_ptr<Havoc_t> Havoc_ptr;      
+    typedef boost::shared_ptr<Unreachable_t> Unreachable_ptr;
+    typedef boost::shared_ptr<CallSite_t> CallSite_ptr;      
+    typedef boost::shared_ptr<Return_t> Return_ptr;      
+    typedef boost::shared_ptr<ZArrayStore> ZArrayStore_ptr;
+    typedef boost::shared_ptr<ZArrayLoad> ZArrayLoad_ptr;    
+    typedef boost::shared_ptr<PtrStore_t> PtrStore_ptr;
+    typedef boost::shared_ptr<PtrLoad_t> PtrLoad_ptr;    
+    typedef boost::shared_ptr<PtrAssign_t> PtrAssign_ptr;
+    typedef boost::shared_ptr<PtrObject_t> PtrObject_ptr;    
+    typedef boost::shared_ptr<PtrFunction_t> PtrFunction_ptr;    
+   
     BasicBlockLabel m_bb_id;
     stmt_list_t m_stmts;
     bb_id_set_t m_prev, m_next;
-    
+    TrackedPrecision m_track_prec;    
+
     void InsertAdjacent (bb_id_set_t &c, BasicBlockLabel e)
     { 
       if (std::find(c.begin (), c.end (), e) == c.end ())
@@ -564,12 +1019,14 @@ namespace cfg
         c.erase (std::remove(c.begin (), c.end (), e), c.end ());
     }
     
-    BasicBlock (BasicBlockLabel bb_id): m_bb_id (bb_id)
+    BasicBlock (BasicBlockLabel bb_id, TrackedPrecision track_prec): 
+        m_bb_id (bb_id), m_track_prec (track_prec)
     { }
 
-    static boost::shared_ptr< BasicBlock_t > Create (BasicBlockLabel bb_id) 
+    static boost::shared_ptr< BasicBlock_t > Create (BasicBlockLabel bb_id, 
+                                                     TrackedPrecision track_prec) 
     {
-      return boost::shared_ptr< BasicBlock_t > (new BasicBlock_t (bb_id));
+      return boost::shared_ptr< BasicBlock_t > (new BasicBlock_t (bb_id, track_prec));
     }
     
     void insert(statement_ptr stmt) 
@@ -581,7 +1038,8 @@ namespace cfg
 
     boost::shared_ptr <BasicBlock_t> clone () const
     {
-      boost::shared_ptr <BasicBlock_t> b (new BasicBlock_t (label ()));
+      boost::shared_ptr <BasicBlock_t> b (new BasicBlock_t (label (), 
+                                                            m_track_prec));
 
       for (auto &s : boost::make_iterator_range (begin (), end ()))
         b->m_stmts.push_back (s.clone ()); 
@@ -829,19 +1287,97 @@ namespace cfg
               (Unreachable_ptr (new Unreachable_t ())));
     }
 
+    void callsite (VariableName func, 
+                   vector<pair <VariableName,VariableType> > args) 
+    {
+        insert(boost::static_pointer_cast< Statement_t, CallSite_t >
+               (CallSite_ptr(new CallSite_t(func, args))));
+    }
+
+    void callsite (VariableName func, vector<VariableName> args) 
+    {
+        insert(boost::static_pointer_cast< Statement_t, CallSite_t >
+               (CallSite_ptr(new CallSite_t(func, args))));
+    }
+
+    void callsite (pair<VariableName,VariableType> lhs, 
+                   VariableName func, 
+                   vector<pair <VariableName,VariableType> > args) 
+    {
+        insert(boost::static_pointer_cast< Statement_t, CallSite_t >
+               (CallSite_ptr(new CallSite_t(lhs, func, args))));
+    }
+
+    void callsite (VariableName lhs, VariableName func, vector<VariableName> args) 
+    {
+        insert(boost::static_pointer_cast< Statement_t, CallSite_t >
+               (CallSite_ptr(new CallSite_t(lhs, func, args))));
+    }
+
+    void ret (VariableName var, VariableType ty) 
+    {
+        insert(boost::static_pointer_cast< Statement_t, Return_t >
+               (Return_ptr(new Return_t(var, ty))));
+    }
+
+    void ret (VariableName var) 
+    {
+        insert(boost::static_pointer_cast< Statement_t, Return_t >
+               (Return_ptr(new Return_t(var))));
+    }
+
     void array_store (ZVariable arrOut, ZVariable arrIn, 
-                      ZLinearExpression idx, ZLinearExpression val) 
+                      ZLinearExpression idx, ZLinearExpression val,
+                      bool is_singleton = false) 
     {
-      insert(boost::static_pointer_cast< Statement_t, ZArrayStore >
-             (ZArrayStore_ptr(new ZArrayStore(arrOut, arrIn, idx, val))));
+      if (m_track_prec == MEM)
+        insert(boost::static_pointer_cast< Statement_t, ZArrayStore >
+               (ZArrayStore_ptr(new ZArrayStore(arrOut, arrIn, idx, val, 
+                                                is_singleton))));
     }
 
-    void array_load (ZVariable lhs, ZVariable arr, ZLinearExpression idx) 
+    void array_load (ZVariable lhs, ZVariable arr, ZLinearExpression idx,
+                     bool is_singleton = false) 
     {
-      insert(boost::static_pointer_cast< Statement_t, ZArrayLoad >
-             (ZArrayLoad_ptr(new ZArrayLoad(lhs, arr, idx))));
+      if (m_track_prec == MEM)
+        insert(boost::static_pointer_cast< Statement_t, ZArrayLoad >
+               (ZArrayLoad_ptr(new ZArrayLoad(lhs, arr, idx, is_singleton))));
     }
 
+    void ptr_store (VariableName lhs, VariableName rhs, z_interval size) 
+    {
+      if (m_track_prec >= PTR)
+        insert(boost::static_pointer_cast< Statement_t, PtrStore_t >
+               (PtrStore_ptr (new PtrStore_t (lhs, rhs, size))));
+    }
+
+    void ptr_load (VariableName lhs, VariableName rhs, z_interval size) 
+    {
+      if (m_track_prec >= PTR)
+        insert(boost::static_pointer_cast< Statement_t, PtrLoad_t >
+               (PtrLoad_ptr (new PtrLoad_t (lhs, rhs, size))));
+    }
+
+    void ptr_assign (VariableName lhs, VariableName rhs, ZLinearExpression offset) 
+    {
+      if (m_track_prec >= PTR)
+        insert(boost::static_pointer_cast< Statement_t, PtrAssign_t >
+               (PtrAssign_ptr (new PtrAssign_t (lhs, rhs, offset))));
+    }
+
+    void new_object (VariableName lhs, index_t address) 
+    {
+      if (m_track_prec >= PTR)
+        insert(boost::static_pointer_cast< Statement_t, PtrObject_t >
+               (PtrObject_ptr (new PtrObject_t (lhs, address))));
+    }
+
+    void new_ptr_func (VariableName lhs, index_t func) 
+    {
+      if (m_track_prec >= PTR)
+        insert(boost::static_pointer_cast< Statement_t, PtrFunction_t >
+               (PtrFunction_ptr (new PtrFunction_t (lhs, func))));
+    }
 
     friend ostream& operator<<(ostream &o, const BasicBlock_t &b)
     {
@@ -857,23 +1393,118 @@ namespace cfg
     typedef z_number ZNumber;
     typedef linear_expression< ZNumber, VariableName > ZLinearExpression;
 
-    typedef BinaryOp < ZNumber, VariableName >   ZBinaryOp;
-    typedef Assignment < ZNumber, VariableName > ZAssignment;
-    typedef Assume < ZNumber, VariableName >     ZAssume;
-    typedef Havoc< VariableName >                Havoc_t;
-    typedef Unreachable< VariableName >          Unreachable_t;
-    typedef ArrayStore < ZNumber, VariableName > ZArrayStore;
-    typedef ArrayLoad < ZNumber, VariableName >  ZArrayLoad;
-    
+    typedef BinaryOp <ZNumber,VariableName> ZBinaryOp;
+    typedef Assignment <ZNumber,VariableName> ZAssignment;
+    typedef Assume <ZNumber,VariableName> ZAssume;
+    typedef Havoc<VariableName> Havoc_t;
+    typedef Unreachable<VariableName> Unreachable_t;
+
+    typedef CallSite<VariableName> CallSite_t;
+    typedef Return<VariableName> Return_t;
+
+    typedef ArrayStore<ZNumber,VariableName> ZArrayStore;
+    typedef ArrayLoad<ZNumber,VariableName> ZArrayLoad;
+
+    typedef PtrStore<ZNumber,VariableName> PtrStore_t;
+    typedef PtrLoad<ZNumber,VariableName> PtrLoad_t;
+    typedef PtrAssign<ZNumber,VariableName> PtrAssign_t;
+    typedef PtrObject<VariableName> PtrObject_t;
+    typedef PtrFunction<VariableName> PtrFunction_t;
+
+    // Only implementation for basic statements is required
+
     virtual void visit (ZBinaryOp&) = 0;
     virtual void visit (ZAssignment&) = 0;
     virtual void visit (ZAssume&) = 0;
     virtual void visit (Havoc_t&) = 0;
     virtual void visit (Unreachable_t&) = 0;
-    virtual void visit (ZArrayStore&) = 0;
-    virtual void visit (ZArrayLoad&) = 0;
+
+    virtual void visit (CallSite_t&) { };
+    virtual void visit (Return_t&) { };
+    virtual void visit (ZArrayStore&) { };
+    virtual void visit (ZArrayLoad&) { };
+    virtual void visit (PtrStore_t&) { };
+    virtual void visit (PtrLoad_t&) { };
+    virtual void visit (PtrAssign_t&) { };
+    virtual void visit (PtrObject_t&) { };
+    virtual void visit (PtrFunction_t&) { };
 
     virtual ~StatementVisitor () { }
+  }; 
+
+  template< class VariableName>
+  class FunctionDecl
+  {
+
+    VariableType m_lhs_type;
+    VariableName m_func_name;
+    vector<pair<VariableName,VariableType> > m_params;
+
+    typedef typename vector<pair<VariableName,VariableType> >::iterator param_iterator;
+    typedef typename vector<pair<VariableName,VariableType> >::const_iterator const_param_iterator;
+    
+   public:
+
+    FunctionDecl (VariableName func_name, vector<VariableName> params): 
+        m_lhs_type (UNK_TYPE), m_func_name (func_name)
+    {
+      for (auto v : params)
+        m_params.push_back (make_pair (v, UNK_TYPE));
+    }
+    
+    FunctionDecl (VariableType lhs_type, VariableName func_name, 
+                  vector<pair<VariableName,VariableType> > params): 
+        m_lhs_type (lhs_type), m_func_name (func_name)
+    {
+      std::copy (params.begin (), params.end (), std::back_inserter (m_params));
+    }
+
+    VariableType get_lhs_type () const { return m_lhs_type; }
+    
+    VariableName get_func_name () const { 
+      return m_func_name; 
+    }
+
+    unsigned get_num_params () const { return m_params.size (); }
+
+    VariableName get_param_name (unsigned idx) const { 
+      if (idx >= m_params.size ())
+      {
+        cerr << "Out-of-bound access to function parameter\n";
+        std::exit (EXIT_FAILURE);
+      }
+      return m_params[idx].first;
+    }
+
+    VariableType get_param_type (unsigned idx) const { 
+      if (idx >= m_params.size ())
+      {
+        cerr << "Out-of-bound access to function parameter\n";
+        std::exit (EXIT_FAILURE);
+      }
+      return m_params[idx].second;
+    }
+    
+    void write(ostream& o) const
+    {
+      o << m_lhs_type << " declare " << m_func_name << "(";
+      for (const_param_iterator It = m_params.begin (), Et=m_params.end (); It!=Et; )
+      {
+        o << It->first << ":" << It->second;
+        ++It;
+        if (It != Et)
+          o << ",";
+      }
+      o << ")";
+
+      return;
+    }
+
+    friend ostream& operator<<(ostream& o, const FunctionDecl<VariableName> &decl)
+    { 
+      decl.write (o);
+      return o;
+    }
   }; 
 
   template< class BasicBlockLabel, class VariableName >
@@ -926,6 +1557,9 @@ namespace cfg
     bool               m_has_exit;
     BasicBlockMap_ptr  m_blocks;
     TrackedPrecision   m_track_prec;
+    //! if Cfg is associated with a function
+    boost::optional<FunctionDecl<VariableName> > m_func_decl; 
+
 
     typedef boost::unordered_set< BasicBlockLabel > visited_t;
 
@@ -966,7 +1600,7 @@ namespace cfg
         m_track_prec (track_prec)
     {
       m_blocks->insert (Binding (m_entry, 
-                                 BasicBlock_t::Create (m_entry)));
+                                 BasicBlock_t::Create (m_entry, m_track_prec)));
     }
 
     Cfg (BasicBlockLabel entry, BasicBlockLabel exit, 
@@ -978,21 +1612,34 @@ namespace cfg
         m_track_prec (track_prec)
     {
       m_blocks->insert (Binding (m_entry, 
-                                 BasicBlock_t::Create (m_entry)));
+                                 BasicBlock_t::Create (m_entry, m_track_prec)));
     }
 
-    TrackedPrecision getTrackedPrecision  () const { return m_track_prec; }
+    Cfg (BasicBlockLabel entry, BasicBlockLabel exit, 
+         FunctionDecl<VariableName> func_decl, 
+         TrackedPrecision track_prec = REG):  
+        m_entry (entry), 
+        m_exit (exit), 
+        m_has_exit (true),
+        m_blocks (BasicBlockMap_ptr (new BasicBlockMap)),
+        m_track_prec (track_prec),
+        m_func_decl (boost::optional<FunctionDecl<VariableName> > (func_decl))
+    {
+      m_blocks->insert (Binding (m_entry, 
+                                 BasicBlock_t::Create (m_entry, m_track_prec)));
+    }
 
     //! copy constructor will make shallow copies so use this method
     //! for deep copies.
     cfg_t clone () const
     {
       cfg_t cfg;
-      cfg.m_entry     = m_entry ;
-      if (m_has_exit)
-        cfg.m_exit      = m_exit ;
-      cfg.m_has_exit  = m_has_exit ;
 
+      cfg.m_entry = m_entry ;
+      if (m_has_exit)
+        cfg.m_exit = m_exit ;
+      cfg.m_has_exit = m_has_exit ;
+      cfg.m_func_decl = m_func_decl;
       for (auto const &BB: boost::make_iterator_range (begin (), end ()))
       {
         boost::shared_ptr <BasicBlock_t> copyBB = BB.clone ();
@@ -1000,14 +1647,26 @@ namespace cfg
       }
       return cfg;
     }
-        
+
+    boost::optional<FunctionDecl<VariableName> > get_func_decl () const { 
+      return m_func_decl; 
+    }
+
     BasicBlockLabel entry() const { return m_entry; } 
     
     bool has_exit () const { return m_has_exit; }
 
-    BasicBlockLabel exit()  const { assert (has_exit ()); return m_exit; } 
+    BasicBlockLabel exit()  const { 
+      if (has_exit ()) return m_exit; 
+      
+      cerr << "Cfg does not have an exit block\n";
+      std::exit (EXIT_FAILURE);
+    } 
 
-    void set_exit (BasicBlockLabel exit) { m_exit = exit; m_has_exit = true;}
+    void set_exit (BasicBlockLabel exit) { 
+      m_exit = exit; 
+      m_has_exit = true;
+    }
 
     // //! required when wrapped into a transform_iterator
     // pair<succ_iterator,succ_iterator> succs (BasicBlockLabel bb_id) 
@@ -1043,7 +1702,7 @@ namespace cfg
       auto it = m_blocks->find (bb_id);
       if (it != m_blocks->end ()) return *(it->second);
 
-      BasicBlock_ptr block = BasicBlock_t::Create (bb_id);
+      BasicBlock_ptr block = BasicBlock_t::Create (bb_id, m_track_prec);
       m_blocks->insert (Binding (bb_id, block));
       return *block;
     }
@@ -1077,8 +1736,11 @@ namespace cfg
     BasicBlock_t& get_node (BasicBlockLabel bb_id) 
     {
       auto it = m_blocks->find (bb_id);
-      assert (it != m_blocks->end () && 
-              "basic block not found in the cfg");
+      if (it == m_blocks->end ())
+      {
+        cerr << "Basic block not found in the CFG\n";
+        std::exit (EXIT_FAILURE);
+      }
       return *(it->second);
     }
     
@@ -1120,7 +1782,11 @@ namespace cfg
         
     void reverse()
     {
-      assert (m_has_exit);     
+      if (!m_has_exit)
+      {
+        cerr << "Cfg cannot be reversed: no exit block found\n";
+        std::exit (EXIT_FAILURE);
+      }
 
       std::swap (m_entry, m_exit);
       for (auto &p: *this) 
@@ -1130,7 +1796,9 @@ namespace cfg
     void write (ostream& o) 
     {
       PrintBlock f (o);
-      o << "CFG blocks= " << size () << endl;
+      if (m_func_decl)
+        o << *m_func_decl << endl;
+      //o << "CFG blocks= " << size () << endl;
       dfs (f);
       return;
     }
@@ -1161,13 +1829,12 @@ namespace cfg
     
     struct HasAssertVisitor: public StatementVisitor<VariableName>
     {
-      typedef typename StatementVisitor<VariableName>::ZBinaryOp     ZBinaryOp;
-      typedef typename StatementVisitor<VariableName>::ZAssignment   ZAssignment;
-      typedef typename StatementVisitor<VariableName>::ZAssume       ZAssume;
-      typedef typename StatementVisitor<VariableName>::Havoc_t       Havoc;
+      typedef typename StatementVisitor<VariableName>::ZBinaryOp ZBinaryOp;
+      typedef typename StatementVisitor<VariableName>::ZAssignment ZAssignment;
+      typedef typename StatementVisitor<VariableName>::ZAssume ZAssume;
+      typedef typename StatementVisitor<VariableName>::Havoc_t Havoc;
       typedef typename StatementVisitor<VariableName>::Unreachable_t Unreachable;
-      typedef typename StatementVisitor<VariableName>::ZArrayStore   ZArrayStore;
-      typedef typename StatementVisitor<VariableName>::ZArrayLoad    ZArrayLoad;
+
       bool _has_assert;
       HasAssertVisitor (): _has_assert(false) { }
       void visit(ZBinaryOp&){ }  
@@ -1175,8 +1842,6 @@ namespace cfg
       void visit(ZAssume&) { _has_assert = true; }
       void visit(Havoc&) { }
       void visit(Unreachable&){ }
-      void visit(ZArrayStore&){ }
-      void visit(ZArrayLoad&){ }
     };
     
     // Helpers

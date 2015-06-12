@@ -20,7 +20,6 @@ namespace ikos
   
   // Numerical type for indexed objects
   typedef uint64_t index_t;
-
   
   // Interface for writeable objects
   class writeable {
