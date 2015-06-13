@@ -416,7 +416,7 @@ namespace cfg
 
 
   template< class VariableName>
-  class CallSite: public Statement<VariableName>
+  class FCallSite: public Statement<VariableName>
   {
 
     boost::optional<pair<VariableName,VariableType> > m_lhs;
@@ -428,15 +428,15 @@ namespace cfg
     
    public:
 
-    CallSite (VariableName func_name, 
-              vector<pair<VariableName,VariableType> > args): 
+    FCallSite (VariableName func_name, 
+               vector<pair<VariableName,VariableType> > args): 
         m_func_name (func_name)
     {
       std::copy (args.begin (), args.end (), std::back_inserter (m_args));
       for (auto arg:  m_args) { this->m_live.addUse (arg.first); }
     }
 
-    CallSite (VariableName func_name, vector<VariableName> args): 
+    FCallSite (VariableName func_name, vector<VariableName> args): 
         m_func_name (func_name)
     {
       for (auto v : args)
@@ -446,9 +446,9 @@ namespace cfg
       }
     }
     
-    CallSite (pair<VariableName,VariableType> lhs, 
-              VariableName func_name, 
-              vector<pair<VariableName,VariableType> > args): 
+    FCallSite (pair<VariableName,VariableType> lhs, 
+               VariableName func_name, 
+               vector<pair<VariableName,VariableType> > args): 
         m_lhs (boost::optional<pair<VariableName,VariableType> > (lhs)), 
         m_func_name (func_name)
     {
@@ -457,9 +457,8 @@ namespace cfg
       this->m_live.addDef ((*m_lhs).first);
     }
 
-    CallSite (VariableName lhs, 
-              VariableName func_name, 
-              vector<VariableName> args): 
+    FCallSite (VariableName lhs, 
+               VariableName func_name, vector<VariableName> args): 
         m_lhs (boost::optional<pair<VariableName,VariableType> > (lhs, UNK_TYPE)), 
         m_func_name (func_name)
     {
@@ -515,7 +514,7 @@ namespace cfg
 
     virtual boost::shared_ptr<Statement <VariableName> > clone () const
     {
-      typedef CallSite <VariableName> call_site_t;
+      typedef FCallSite <VariableName> call_site_t;
       if (m_lhs)
         return boost::static_pointer_cast< Statement <VariableName>, call_site_t>
             (boost::shared_ptr <call_site_t> (new call_site_t (*m_lhs, m_func_name, m_args)));
@@ -1000,7 +999,7 @@ namespace cfg
     typedef Unreachable<VariableName> Unreachable_t;
     typedef Undefined<VariableName> Undefined_t;
     // Functions
-    typedef CallSite<VariableName> CallSite_t;
+    typedef FCallSite<VariableName> CallSite_t;
     typedef Return<VariableName> Return_t;
     // Arrays
     typedef ArrayStore<ZNumber,VariableName> ZArrayStore;
@@ -1432,7 +1431,7 @@ namespace cfg
     typedef Unreachable<VariableName> Unreachable_t;
     typedef Undefined<VariableName> Undefined_t;
 
-    typedef CallSite<VariableName> CallSite_t;
+    typedef FCallSite<VariableName> CallSite_t;
     typedef Return<VariableName> Return_t;
 
     typedef ArrayStore<ZNumber,VariableName> ZArrayStore;
