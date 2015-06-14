@@ -150,6 +150,8 @@ public:
   void assign (VariableName x, linear_expression_t e) 
   {
     _inv.assign (x, e);
+    auto v = e.get_variable ();
+    if (v) _uninit.assign (x, (*v).name ());      
   }
 
   void apply (operation_t op, VariableName x, VariableName y, Number z) 

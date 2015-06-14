@@ -209,12 +209,13 @@ public:
     _env.set(x, _env[y]);
   }
 
-  void assign(VariableName x, vector<VariableName> in) {
+  template<typename Iterator>
+  void assign(VariableName x, Iterator It, Iterator End) {
     if (is_bottom()) return;
     
     std::vector< uninitializedValue > out;
     mkVal f(_env);
-    std::transform(in.begin(), in.end(), back_inserter(out), f);
+    std::transform(It, End, back_inserter(out), f);
     assign(x, out);
   }
 
