@@ -1685,6 +1685,10 @@ namespace cfg
       return m_func_decl; 
     }
 
+    TrackedPrecision get_track_prec () const {
+      return m_track_prec;
+    }
+
     BasicBlockLabel entry() const { return m_entry; } 
     
     bool has_exit () const { return m_has_exit; }
