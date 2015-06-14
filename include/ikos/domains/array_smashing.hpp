@@ -206,6 +206,10 @@ public:
       _uninit.set (arr_out, _uninit [arr_in]);
     }    
   }
+
+  linear_constraint_system_t to_linear_constraint_system (){
+    return _inv.to_linear_constraint_system ();
+  }
     
   ostream& write(ostream& o) 
   {
