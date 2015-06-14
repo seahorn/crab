@@ -84,7 +84,7 @@ cfg_t prog1 (VariableFactory &vfac)
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   ////////
-  entry.undefined (a.name ());
+  entry.array_init (a.name ());
   entry.assign(n1, 1);
   entry.assign(i, 0);
   ///////
@@ -120,7 +120,7 @@ cfg_t prog2(VariableFactory &vfac)
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   ////////
-  entry.undefined (a.name ());
+  entry.array_init (a.name ());
   entry.assign(n1, 1);
   entry.assign(i, 0);
   ///////
@@ -172,8 +172,8 @@ cfg_t prog3(VariableFactory &vfac)
   z_var tmp3(vfac["tmp3"]);
   z_var tmp4(vfac["tmp4"]);
 
-  loop1_entry.undefined (a.name ());
-  loop1_entry.undefined (b.name ());
+  loop1_entry.array_init (a.name ());
+  loop1_entry.array_init (b.name ());
   loop1_entry.assign(n1, 1);
   loop1_entry.assign(i, 0);
   loop1_bb1_t.assume(i <= 9);
@@ -217,8 +217,8 @@ cfg_t prog4(VariableFactory &vfac)
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   ////////
-  entry.undefined (a.name ());
-  entry.undefined (b.name ());
+  entry.array_init (a.name ());
+  entry.array_init (b.name ());
   entry.assign(n1, 1);
   entry.assign(i, 0);
   ///////
@@ -252,7 +252,7 @@ cfg_t prog5(VariableFactory &vfac)
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   ////////
-  entry.undefined (a.name ());
+  entry.array_init (a.name ());
   entry.assume(n >= 1);
   entry.assign(n1, 1);
   entry.assign(i, 0);
@@ -289,7 +289,7 @@ cfg_t prog6(VariableFactory &vfac)
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   ////////
-  entry.undefined (a.name ());
+  entry.array_init (a.name ());
   entry.assign(i, 0);
   entry.assign(c1, 1);
   entry.assign(c5, 5);
@@ -328,7 +328,7 @@ cfg_t prog7(VariableFactory &vfac)
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   ////////
-  entry.undefined (a.name ());
+  entry.array_init (a.name ());
   entry.assume(n >= 2);
   entry.assign(n1, 1);
   entry.assign(i , 0);
@@ -372,7 +372,7 @@ cfg_t prog8(VariableFactory &vfac)
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   ////////
-  entry.undefined (a.name ());
+  entry.array_init (a.name ());
   entry.assume(n >= 1);
   entry.assign(n1, 1);
   entry.assign(n2, 2);
@@ -418,7 +418,7 @@ cfg_t prog9(VariableFactory &vfac)
   bb1_f1 >> bb1_f;   bb1_f2 >> bb1_f; 
   bb1_t >> bb2_a; bb1_t >> bb2_b; bb2_a >> bb1; bb2_b >> bb1; bb1_f >> ret;
   ////////
-  entry.undefined (a.name ());
+  entry.array_init (a.name ());
   entry.assume(n >= 1);
   entry.assign(n1, 1);
   entry.assign(i1, 0);

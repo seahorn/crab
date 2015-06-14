@@ -37,6 +37,20 @@ namespace domain_traits {
 
 // Default implementation
 template <typename AbsDomain, typename VariableName >
+void array_init (AbsDomain& inv, VariableName arr) {
+}
+
+////
+// (Partial) specialized versions
+////
+template <typename BaseDomain, typename VariableName>
+void array_init (array_smashing<BaseDomain,z_number,VariableName>& inv, 
+                 VariableName arr) {
+  inv.array_init (arr);
+}
+
+// Default implementation
+template <typename AbsDomain, typename VariableName >
 void array_load (AbsDomain& inv, VariableName lhs, 
                  VariableName arr, VariableName idx) {
 }
@@ -84,21 +98,6 @@ void array_store (array_smashing<BaseDomain, z_number, VariableName>& inv,
                   typename BaseDomain::linear_expression_t val,
                   bool is_singleton) {
    inv.store (arr_out, arr_in, idx, val, is_singleton);
-}
-
-
-// Default implementation
-template <typename AbsDomain, typename VariableName >
-void undefined (AbsDomain& inv, VariableName v) {
-}
-
-////
-// (Partial) specialized versions
-////
-template <typename BaseDomain, typename VariableName>
-void undefined (array_smashing<BaseDomain,z_number,VariableName>& inv, 
-                VariableName v) {
-  inv.undefined (v);
 }
 
 }

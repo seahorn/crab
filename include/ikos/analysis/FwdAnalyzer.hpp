@@ -24,7 +24,7 @@ namespace analyzer
     using typename StatementVisitor<VariableName>::ZAssume;
     using typename StatementVisitor<VariableName>::Havoc_t;
     using typename StatementVisitor<VariableName>::Unreachable_t;
-    using typename StatementVisitor<VariableName>::Undefined_t;
+    using typename StatementVisitor<VariableName>::ArrayInit_t;
     using typename StatementVisitor<VariableName>::ZArrayStore;
     using typename StatementVisitor<VariableName>::ZArrayLoad;
 
@@ -79,9 +79,9 @@ namespace analyzer
       m_inv = NumAbsDomain::bottom ();
     }
 
-    void visit(Undefined_t & stmt) 
+    void visit(ArrayInit_t & stmt) 
     {
-      domain_traits::undefined (m_inv, stmt.variable ());
+      domain_traits::array_init (m_inv, stmt.variable ());
     }
 
     void visit(ZArrayStore & stmt) 

@@ -383,39 +383,6 @@ namespace cfg
   }; 
 
   template< class VariableName>
-  class Undefined: public Statement< VariableName> 
-  {
-
-    VariableName m_lhs;
-    
-   public:
-
-    Undefined (VariableName lhs): m_lhs(lhs) { }
-     
-    VariableName variable () const { return m_lhs; }
-     
-    virtual void accept (StatementVisitor<VariableName> *v) 
-    {
-      v->visit (*this);
-    }
-
-    virtual boost::shared_ptr<Statement <VariableName> > clone () const
-    {
-      typedef Undefined <VariableName> Undefined_t;
-      return boost::static_pointer_cast< Statement <VariableName>, Undefined_t >
-          (boost::shared_ptr <Undefined_t> (new Undefined_t(m_lhs)));
-    }
-     
-    void write (ostream& o) const
-    {
-      o << m_lhs << " = _|_" << " ";
-      return;
-    }
-    
-  }; 
-
-
-  template< class VariableName>
   class FCallSite: public Statement<VariableName>
   {
 
@@ -590,6 +557,38 @@ namespace cfg
   /*
      Array statements
   */
+
+  template< class VariableName>
+  class ArrayInit: public Statement< VariableName> 
+  {
+
+    VariableName m_arr;
+    
+   public:
+
+    ArrayInit (VariableName arr): m_arr (arr) { }
+     
+    VariableName variable () const { return m_arr; }
+     
+    virtual void accept (StatementVisitor<VariableName> *v) 
+    {
+      v->visit (*this);
+    }
+
+    virtual boost::shared_ptr<Statement <VariableName> > clone () const
+    {
+      typedef ArrayInit <VariableName> ArrayInit_t;
+      return boost::static_pointer_cast< Statement <VariableName>, ArrayInit_t >
+          (boost::shared_ptr <ArrayInit_t> (new ArrayInit_t(m_arr)));
+    }
+     
+    void write (ostream& o) const
+    {
+      o << "array_init (" << m_arr << ")";
+      return;
+    }
+    
+  }; 
 
   template< class Number, class VariableName>
   class ArrayStore: public Statement<VariableName>
@@ -997,11 +996,11 @@ namespace cfg
     typedef Assume<ZNumber,VariableName> ZAssume;
     typedef Havoc<VariableName> Havoc_t;
     typedef Unreachable<VariableName> Unreachable_t;
-    typedef Undefined<VariableName> Undefined_t;
     // Functions
     typedef FCallSite<VariableName> CallSite_t;
     typedef Return<VariableName> Return_t;
     // Arrays
+    typedef ArrayInit<VariableName> ArrayInit_t;
     typedef ArrayStore<ZNumber,VariableName> ZArrayStore;
     typedef ArrayLoad<ZNumber,VariableName> ZArrayLoad;
     // Pointers
@@ -1017,9 +1016,9 @@ namespace cfg
     typedef boost::shared_ptr<ZAssume> ZAssume_ptr;
     typedef boost::shared_ptr<Havoc_t> Havoc_ptr;      
     typedef boost::shared_ptr<Unreachable_t> Unreachable_ptr;
-    typedef boost::shared_ptr<Undefined_t> Undefined_ptr;      
     typedef boost::shared_ptr<CallSite_t> CallSite_ptr;      
     typedef boost::shared_ptr<Return_t> Return_ptr;      
+    typedef boost::shared_ptr<ArrayInit_t> ArrayInit_ptr;
     typedef boost::shared_ptr<ZArrayStore> ZArrayStore_ptr;
     typedef boost::shared_ptr<ZArrayLoad> ZArrayLoad_ptr;    
     typedef boost::shared_ptr<PtrStore_t> PtrStore_ptr;
@@ -1312,12 +1311,6 @@ namespace cfg
       insert (boost::static_pointer_cast< Statement_t, Unreachable_t > 
               (Unreachable_ptr (new Unreachable_t ())));
     }
-
-    void undefined(VariableName lhs) 
-    {
-      insert (boost::static_pointer_cast< Statement_t, Undefined_t > 
-              (Undefined_ptr (new Undefined_t (lhs))));
-    }
     
     void callsite (VariableName func, 
                    vector<pair <VariableName,VariableType> > args) 
@@ -1356,6 +1349,12 @@ namespace cfg
     {
         insert(boost::static_pointer_cast< Statement_t, Return_t >
                (Return_ptr(new Return_t(var))));
+    }
+
+    void array_init(VariableName arr) 
+    {
+      insert (boost::static_pointer_cast< Statement_t, ArrayInit_t > 
+              (ArrayInit_ptr (new ArrayInit_t (arr))));
     }
 
     void array_store (ZVariable arrOut, ZVariable arrIn, 
@@ -1429,11 +1428,11 @@ namespace cfg
     typedef Assume <ZNumber,VariableName> ZAssume;
     typedef Havoc<VariableName> Havoc_t;
     typedef Unreachable<VariableName> Unreachable_t;
-    typedef Undefined<VariableName> Undefined_t;
 
     typedef FCallSite<VariableName> CallSite_t;
     typedef Return<VariableName> Return_t;
 
+    typedef ArrayInit<VariableName> ArrayInit_t;
     typedef ArrayStore<ZNumber,VariableName> ZArrayStore;
     typedef ArrayLoad<ZNumber,VariableName> ZArrayLoad;
 
@@ -1450,10 +1449,10 @@ namespace cfg
     virtual void visit (ZAssume&) = 0;
     virtual void visit (Havoc_t&) = 0;
     virtual void visit (Unreachable_t&) = 0;
-    virtual void visit (Undefined_t&) { };
 
     virtual void visit (CallSite_t&) { };
     virtual void visit (Return_t&) { };
+    virtual void visit (ArrayInit_t&) { };
     virtual void visit (ZArrayStore&) { };
     virtual void visit (ZArrayLoad&) { };
     virtual void visit (PtrStore_t&) { };

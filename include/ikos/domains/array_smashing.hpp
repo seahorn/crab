@@ -167,10 +167,10 @@ public:
     _inv.apply (op, x, k);
   }
 
-  void undefined (VariableName arr)
+  void array_init (VariableName arr)
   {
     // We need to mark an array variable as uninitialized first so
-    // when we do the first store we can at least perform a strong
+    // when we do the first store we can perform a strong
     // update. Otherwise, if we perform a weak update we will get
     // always top since variables are top by default.
     _uninit.set (arr, uninitializedValue::uninitialized ());
