@@ -90,7 +90,7 @@ cfg_t prog1 (VariableFactory &vfac)
   ///////
   bb1_t.assume(i <= 9);
   bb1_f.assume(i >= 10);
-  bb2.array_store(a, a, i, 123456);
+  bb2.array_store(a, i, 123456);
   bb2.add(i, i, n1);
   ret.sub(tmp3, i, n1);
   ret.array_load(tmp5, a, tmp3); // initialized
@@ -126,7 +126,7 @@ cfg_t prog2(VariableFactory &vfac)
   ///////
   bb1_t.assume(i <= 9);
   bb1_f.assume(i >= 10);
-  bb2.array_store (a, a, i, 123456);
+  bb2.array_store (a, i, 123456);
   bb2.assign(tmp1, i);
   bb2.add(tmp2, tmp1, n1);
   bb2.assign(i, tmp2);
@@ -178,14 +178,14 @@ cfg_t prog3(VariableFactory &vfac)
   loop1_entry.assign(i, 0);
   loop1_bb1_t.assume(i <= 9);
   loop1_bb1_f.assume(i >= 10);
-  loop1_bb2.array_store(a, a, i, 123456);
+  loop1_bb2.array_store(a, i, 123456);
   loop1_bb2.add(i, i, n1);
 
   loop2_entry.assign(j, 0);
   loop2_bb1_t.assume(j <= 9);
   loop2_bb1_f.assume(j >= 10);
   loop2_bb2.array_load(tmp1, a, j);    
-  loop2_bb2.array_store(b, b, j, tmp1);
+  loop2_bb2.array_store(b, j, tmp1);
   loop2_bb2.add(j, j, n1);
 
   ret.sub(tmp2, j, n1);
@@ -224,8 +224,8 @@ cfg_t prog4(VariableFactory &vfac)
   ///////
   bb1_t.assume(i <= 9);
   bb1_f.assume(i >= 10);
-  bb2.array_store(a, a, i, 8);
-  bb2.array_store(b, b, i, 5);
+  bb2.array_store(a, i, 8);
+  bb2.array_store(b, i, 5);
   bb2.add(i, i, n1);
   ret.sub(tmp3, i, n1);
   ret.array_load(tmp5, a, tmp3); 
@@ -259,7 +259,7 @@ cfg_t prog5(VariableFactory &vfac)
   ///////
   bb1_t.assume(i <= n - 1);
   bb1_f.assume(i >= n);
-  bb2.array_store(a, a, i, 123456);
+  bb2.array_store(a, i, 123456);
   bb2.add(i, i, n1);
   ret.sub(tmp1, i, n1);
   ret.array_load(tmp2, a, tmp1); // initialized
@@ -299,7 +299,7 @@ cfg_t prog6(VariableFactory &vfac)
   bb1_f.assume(5 <= i);
   bb2.assign(tmp, i);
   bb2.mul(tmp1_offset_2, tmp, c1); // 32
-  bb2.array_store(a, a, tmp1_offset_2, 123456);
+  bb2.array_store(a, tmp1_offset_2, 123456);
   bb2.add(tmp2, i, c1);
   bb2.assign(i, tmp2);
   ret.array_load(tmp4, a, c3);     // 160
@@ -332,7 +332,7 @@ cfg_t prog7(VariableFactory &vfac)
   entry.assume(n >= 2);
   entry.assign(n1, 1);
   entry.assign(i , 0);
-  entry.array_store(a, a, i, 89);
+  entry.array_store(a, i, 89);
   entry.assign(i , 1);
   ///////
   bb1_t.assume(i <= n - 1);
@@ -340,7 +340,7 @@ cfg_t prog7(VariableFactory &vfac)
   ///////
   bb2.sub(tmp1, i, n1);
   bb2.array_load(tmp2, a, tmp1); 
-  bb2.array_store(a, a, i, tmp2);
+  bb2.array_store(a, i, tmp2);
   bb2.add(i, i, n1);
   ///////
   ret.sub(tmp3, n, n1);
@@ -380,11 +380,11 @@ cfg_t prog8(VariableFactory &vfac)
   ///////
   bb1_t.assume(i <= 9);
   bb1_f.assume(i >= 10);
-  bb2.array_store(a, a, i, 123456);
+  bb2.array_store(a, i, 123456);
   // If we comment these two lines then we do only initialization of
   // even positions.
   bb2.add(i1, i, n1);
-  bb2.array_store(a, a, i1, 123);
+  bb2.array_store(a, i1, 123);
   bb2.add(i, i, n2);
   ret.assign(tmp1, 6);
   ret.array_load(tmp2, a, tmp1); // initialized
@@ -428,10 +428,10 @@ cfg_t prog9(VariableFactory &vfac)
   bb1_t.assume(i1 <= n -1);
   bb1_t.assume(i2 <= n -1);
   // if (*)
-  bb2_a.array_store(a, a, i1, 123456);
+  bb2_a.array_store(a, i1, 123456);
   bb2_a.add(i1, i1, n1);
   // else
-  bb2_b.array_store(a, a, i2, 9);
+  bb2_b.array_store(a, i2, 9);
   bb2_b.add(i2, i2, n1);
   // } end while
   bb1_f1.assume(i1 >= n);
@@ -443,7 +443,7 @@ cfg_t prog9(VariableFactory &vfac)
 
 
 template <typename ArrayDomain>
-void run(cfg_t cfg, string name, VariableFactory &vfac, string domain_name)
+void run(cfg_t cfg, string name, VariableFactory &vfac)
 {
   cout << "--- " << name  << endl;
   cfg.simplify ();
@@ -452,8 +452,9 @@ void run(cfg_t cfg, string name, VariableFactory &vfac, string domain_name)
   const bool run_live = false;
   FwdAnalyzer <basic_block_label_t, varname_t, cfg_t, VariableFactory, ArrayDomain> 
       It (cfg, vfac, run_live);
-  It.Run (ArrayDomain::top ());
-  cout << "Results with " << domain_name << ":\n";
+  ArrayDomain inv = ArrayDomain::top ();
+  It.Run (inv);
+  cout << "Results with " << inv.getDomainName () << ":\n";
 
   for (auto &b : cfg)
   {
@@ -467,111 +468,111 @@ void run(cfg_t cfg, string name, VariableFactory &vfac, string domain_name)
 void test1(){
   VariableFactory vfac;
   cfg_t cfg = prog1(vfac);
-  run<array_graph_domain_t> (cfg, "Program 1", vfac,  "array graph");
+  run<array_graph_domain_t> (cfg, "Program 1", vfac);
 }
 
 void test2(){
   VariableFactory vfac;
   cfg_t cfg = prog2(vfac);
-  run<array_graph_domain_t>(cfg, "Program 2", vfac, "array graph");
+  run<array_graph_domain_t>(cfg, "Program 2", vfac);
 }
 
 void test3(){
   VariableFactory vfac;
   cfg_t cfg = prog3(vfac);
-  run<array_graph_domain_t>(cfg, "Program 3", vfac, "array graph");
+  run<array_graph_domain_t>(cfg, "Program 3", vfac);
 }
 
 void test4(){
   VariableFactory vfac;
   cfg_t cfg = prog4(vfac);
-  run<array_graph_domain_t>(cfg, "Program 4", vfac, "array graph");
+  run<array_graph_domain_t>(cfg, "Program 4", vfac);
 }
 
 void test5(){
   VariableFactory vfac;
   cfg_t cfg = prog5(vfac);
-  run<array_graph_domain_t>(cfg, "Program 5", vfac, "array graph");
+  run<array_graph_domain_t>(cfg, "Program 5", vfac);
 }
 
 void test6(){
   VariableFactory vfac;
   cfg_t cfg = prog6(vfac);
-  run<array_graph_domain_t>(cfg, "Program 6", vfac,"array graph");
+  run<array_graph_domain_t>(cfg, "Program 6", vfac);
 }
 
 void test7(){
   VariableFactory vfac;
   cfg_t cfg = prog7(vfac);
-  run<array_graph_domain_t>(cfg, "Program 7", vfac,  "array graph");
+  run<array_graph_domain_t>(cfg, "Program 7", vfac);
 }
 
 void test8(){
   VariableFactory vfac;
   cfg_t cfg = prog8(vfac);
-  run<array_graph_domain_t>(cfg, "Program 8", vfac, "array graph");
+  run<array_graph_domain_t>(cfg, "Program 8", vfac);
 }
 
 
 void test9(){
   VariableFactory vfac;
   cfg_t cfg = prog9(vfac);
-  run<array_graph_domain_t>(cfg, "Program 9", vfac,  "array graph");
+  run<array_graph_domain_t>(cfg, "Program 9", vfac);
 }
 
 void test10(){
   VariableFactory vfac;
   cfg_t cfg = prog1(vfac);
-  run<array_smashing_t>(cfg, "Program 1", vfac, "array smashing");
+  run<array_smashing_t>(cfg, "Program 1", vfac);
 }
 
 void test11(){
   VariableFactory vfac;
   cfg_t cfg = prog2(vfac);
-  run<array_smashing_t>(cfg, "Program 2", vfac, "array smashing");
+  run<array_smashing_t>(cfg, "Program 2", vfac);
 }
 
 void test12(){
   VariableFactory vfac;
   cfg_t cfg = prog3(vfac);
-  run<array_smashing_t>(cfg, "Program 3", vfac,"array smashing");
+  run<array_smashing_t>(cfg, "Program 3", vfac);
 }
 
 void test13(){
   VariableFactory vfac;
   cfg_t cfg = prog4(vfac);
-  run<array_smashing_t>(cfg, "Program 4", vfac, "array smashing");
+  run<array_smashing_t>(cfg, "Program 4", vfac);
 }
 
 void test14(){
   VariableFactory vfac;
   cfg_t cfg = prog5(vfac);
-  run<array_smashing_t>(cfg, "Program 5", vfac, "array smashing");
+  run<array_smashing_t>(cfg, "Program 5", vfac);
 }
 
 void test15(){
   VariableFactory vfac;
   cfg_t cfg = prog6(vfac);
-  run<array_smashing_t>(cfg, "Program 6", vfac, "array smashing");
+  run<array_smashing_t>(cfg, "Program 6", vfac);
 }
 
 void test16(){
   VariableFactory vfac;
   cfg_t cfg = prog7(vfac);
-  run<array_smashing_t>(cfg, "Program 7", vfac, "array smashing");
+  run<array_smashing_t>(cfg, "Program 7", vfac);
 }
 
 void test17(){
   VariableFactory vfac;
   cfg_t cfg = prog8(vfac);
-  run<array_smashing_t>(cfg, "Program 8", vfac, "array smashing");
+  run<array_smashing_t>(cfg, "Program 8", vfac);
 }
 
 
 void test18(){
   VariableFactory vfac;
   cfg_t cfg = prog9(vfac);
-  run<array_smashing_t>(cfg, "Program 9", vfac,"array smashing");
+  run<array_smashing_t>(cfg, "Program 9", vfac);
 }
 
 

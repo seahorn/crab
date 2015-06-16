@@ -495,7 +495,7 @@ private:
         }
         return std::make_pair(addrs, offset);
       }
-      default: { throw error("unreachable"); }
+      default: { IKOS_ERROR("unreachable"); }
     }
   }
 
@@ -532,11 +532,11 @@ private:
             break;
           }
           case OBJECT_REF: {
-            throw error("cannot dereference a memory object");
+            IKOS_ERROR("cannot dereference a memory object");
             break;
           }
           case FUNCTION_REF: {
-            throw error("cannot dereference a function object");
+            IKOS_ERROR("cannot dereference a function object");
             break;
           }
           case PARAM_REF: {
@@ -561,7 +561,7 @@ private:
             }
             break;
           }
-          default: { throw error("unreachable"); }
+          default: { IKOS_ERROR("unreachable"); }
         }
         break;
       }
@@ -585,11 +585,11 @@ private:
             break;
           }
           case OBJECT_REF: {
-            throw error("cannot dereference a memory object");
+            IKOS_ERROR("cannot dereference a memory object");
             break;
           }
           case FUNCTION_REF: {
-            throw error("cannot dereference a function object");
+            IKOS_ERROR("cannot dereference a function object");
             break;
           }
           case PARAM_REF: {
@@ -615,11 +615,11 @@ private:
             }
             break;
           }
-          default: { throw error("unreachable"); }
+          default: { IKOS_ERROR("unreachable"); }
         }
         break;
       }
-      default: { throw error("unreachable"); }
+      default: { IKOS_ERROR("unreachable"); }
     }
   }
 

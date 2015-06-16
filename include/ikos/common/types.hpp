@@ -15,9 +15,16 @@
 #include <boost/container/slist.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 
+#define IKOS_ERROR(msg)                             \
+    do {                                            \
+      std::cout << msg << "\n";                     \
+      exit (EXIT_FAILURE);                          \
+    } while (0)
+
 namespace ikos 
 {
   
+
   // Numerical type for indexed objects
   typedef uint64_t index_t;
   

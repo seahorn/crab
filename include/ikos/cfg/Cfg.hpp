@@ -601,8 +601,7 @@ namespace cfg
     
    private:
 
-    variable_t m_array_out;
-    variable_t m_array_in;
+    variable_t m_arr;
     linear_expression_t m_index;
     linear_expression_t m_value;
     bool m_is_singleton; //! whether the store writes to a singleton
@@ -610,23 +609,19 @@ namespace cfg
     
    public:
 
-    ArrayStore (variable_t arr_out, variable_t arr_in,
-                linear_expression_t index, linear_expression_t value, 
-                bool is_sing): 
-        m_array_out (arr_out), m_array_in (arr_in),
-        m_index (index), m_value (value), m_is_singleton (is_sing)
+    ArrayStore (variable_t arr, linear_expression_t index, 
+                linear_expression_t value, bool is_sing): 
+        m_arr (arr), m_index (index),
+        m_value (value), m_is_singleton (is_sing)
     {
-      this->m_live.addDef (m_array_out.name());
-      this->m_live.addUse (m_array_in.name());
+      this->m_live.addUse (m_arr.name());
       for(auto v: m_index.variables()) 
         this->m_live.addUse (v.name());
       for(auto v: m_value.variables()) 
         this->m_live.addUse (v.name());
     }
     
-    variable_t array_in () const { return m_array_in; }
-
-    variable_t array_out () const { return m_array_out; }
+    variable_t array () const { return m_arr; }
     
     linear_expression_t index () const { return m_index; }
 
@@ -643,15 +638,13 @@ namespace cfg
     {
       typedef ArrayStore <Number, VariableName> array_store_t;
       return boost::static_pointer_cast< Statement <VariableName>, array_store_t>
-          (boost::shared_ptr <array_store_t> (new array_store_t (m_array_out, m_array_in,
-                                                                 m_index, m_value, 
-                                                                 m_is_singleton)));
+          (boost::shared_ptr <array_store_t> (new array_store_t (m_arr, m_index,
+                                                                 m_value, m_is_singleton)));
     }
     
     virtual void write(ostream& o) const
     {
-      o << m_array_out << " = " 
-        << "array_store(" << m_array_in << "," << m_index << "," << m_value << ")"; 
+      o << "array_store(" << m_arr << "," << m_index << "," << m_value << ")"; 
       return;
     }
 
@@ -1357,13 +1350,12 @@ namespace cfg
               (ArrayInit_ptr (new ArrayInit_t (arr))));
     }
 
-    void array_store (ZVariable arrOut, ZVariable arrIn, 
-                      ZLinearExpression idx, ZLinearExpression val,
-                      bool is_singleton = false) 
+    void array_store (ZVariable arr, ZLinearExpression idx, 
+                      ZLinearExpression val, bool is_singleton = false) 
     {
       if (m_track_prec == MEM)
         insert(boost::static_pointer_cast< Statement_t, ZArrayStore >
-               (ZArrayStore_ptr(new ZArrayStore(arrOut, arrIn, idx, val, 
+               (ZArrayStore_ptr(new ZArrayStore(arr, idx, val, 
                                                 is_singleton))));
     }
 

@@ -126,7 +126,7 @@ class DBM: public writeable,
     int k = x.index();
     if (!this->_map[k]){
       if ((unsigned) k >= (this->_sz - 1))
-        throw ikos::error("DBM: need to enlarge the matrix");
+        IKOS_ERROR("DBM: need to enlarge the matrix");
       else
         _map.set(k,x);
     }
@@ -210,7 +210,7 @@ class DBM: public writeable,
   VariableName map_index(index_t k){
     boost::optional<VariableName> v = this->_map[k];
     if (!v)
-      throw ikos::error("DBM: index cannot be mapped to a variable name") ;
+      IKOS_ERROR("DBM: index cannot be mapped to a variable name") ;
     else 
       return *v;
   }
@@ -294,7 +294,7 @@ class DBM: public writeable,
   void add_constraint(int coef_x, variable_t x, Number c, linear_constraint_t cst){
 
     if (!(coef_x == 1 || coef_x == -1))
-      throw ikos::error("DBM: coefficients can be only 1 or -1");
+      IKOS_ERROR("DBM: coefficients can be only 1 or -1");
 
     add_variable(x.name());
     if (coef_x == 1){
@@ -340,11 +340,11 @@ class DBM: public writeable,
   void add_constraint(int coef_x, variable_t x, int coef_y, variable_t y, Number c, linear_constraint_t cst){
 
     if (!(coef_x == 1 || coef_x == -1))
-      throw ikos::error("DBM: coefficients can be only 1 or -1");
+      IKOS_ERROR("DBM: coefficients can be only 1 or -1");
     if (!(coef_y == 1 || coef_y == -1))
-      throw ikos::error("DBM: coefficients can be only 1 or -1");
+      IKOS_ERROR("DBM: coefficients can be only 1 or -1");
     if (coef_x == coef_y)
-      throw ikos::error("DBM: same coefficients");        
+      IKOS_ERROR("DBM: same coefficients");        
 
     add_variable(x.name());
     add_variable(y.name());
@@ -567,7 +567,7 @@ class DBM: public writeable,
       }
     }
     else
-      throw ikos::error("DBM: only supports constant or variable on the rhs of assignment");
+      IKOS_ERROR("DBM: only supports constant or variable on the rhs of assignment");
   }
 
   void apply(operation_t op, VariableName x, VariableName y, VariableName z){	
@@ -590,7 +590,7 @@ class DBM: public writeable,
     }
     else{
       if (x == y && y == z)
-        throw ikos::error("DBM: does not support x := x + x ");
+        IKOS_ERROR("DBM: does not support x := x + x ");
       else
         apply(op, x, y.index(), z.index());
     }
@@ -625,13 +625,12 @@ class DBM: public writeable,
     }
 
     linear_expression_t exp = cst.expression();
-    if (exp.size() > 2){
-      throw ikos::error("DBM supports constraints with at most two variables");
-    }
+    if (exp.size() > 2)
+      IKOS_ERROR("DBM supports constraints with at most two variables");
 
     if (exp.size() == 0){
       cout << cst << endl;
-      throw ikos::error("DBM: bad-formed constraint");
+      IKOS_ERROR("DBM: bad-formed constraint");
     }
       
     Number k = -exp.constant(); 
@@ -757,7 +756,7 @@ class DBM: public writeable,
         break;
       }
       default: 
-        throw ikos::error("DBM: unreachable");
+          IKOS_ERROR("DBM: unreachable");
     }
     this->set(x, xi);
   }
@@ -794,7 +793,7 @@ class DBM: public writeable,
         break;
       }
       default: 
-        throw ikos::error("DBM: unreachable");
+          IKOS_ERROR("DBM: unreachable");
     }
     this->set(x, xi);
   }
@@ -825,7 +824,7 @@ class DBM: public writeable,
           break;
         }
         default: 
-          throw ikos::error("DBM: unreachable");
+            IKOS_ERROR("DBM: unreachable");
       }
       this->set(x, xi);
     }
@@ -855,12 +854,21 @@ class DBM: public writeable,
           break;
         }
         default: 
-          throw ikos::error("DBM: unreachable");
+            IKOS_ERROR("DBM: unreachable");
       }
       this->set(x, xi);
     }
   }
-    
+
+  //! copy of x into a new fresh variable y
+  void expand (VariableName x, VariableName y) {
+    dbm ret = NULL;      
+    ret = dbm_expand(x.index(), y.index (), this->_dbm);
+    add_variable(y);
+    dbm_dealloc(this->_dbm);
+    swap(this->_dbm, ret);
+  }
+
   // Output function
   ostream& write(ostream& o) { 
     dbm_canonical(this->_dbm);
@@ -998,6 +1006,21 @@ class DBM: public writeable,
   }
 
 }; // class DBM
+
+namespace domain_traits {
+
+template <typename Number, typename VariableName>
+void expand (DBM<Number, VariableName>& inv, 
+             VariableName x, VariableName new_x) {
+  inv.expand (x, new_x);
+}
+
+template <typename Number, typename VariableName>
+void normalize(DBM<Number, VariableName>& inv) {
+   inv.normalize();
+}
+
+} // namespace domain_traits
 } // namespace ikos
 
 #endif // IKOS_DBM_HPP

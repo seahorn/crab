@@ -84,7 +84,7 @@ namespace ikos {
       // downsize the matrix
       void operator-=(unsigned int k){
         if (!(k >=1 && k <= this->num_var))
-          throw error("OCTAGON: dbmatrix::operator-= received a wrong value");
+          IKOS_ERROR("OCTAGON: dbmatrix::operator-= received a wrong value");
 
         if (this->num_var == 0)
           return;
@@ -133,7 +133,7 @@ namespace ikos {
           stringstream err;
           err << "OCTAGON: out-of-bounds error accessing internal octagon matrix at [" 
               << i << ", " << j << "] where 2n = " << 2*num_var << ".";
-          throw error(err.str());
+          IKOS_ERROR(err.str());
         }
         return this->matrix[2*this->num_var*(j- 1) + (i- 1)];
       }
@@ -312,7 +312,7 @@ namespace ikos {
           divide_var(x, i, j, lb, ub, i==j);
           break;
         default:
-          throw error("OCTAGON: unsupported arithmetic operation.");
+          IKOS_ERROR("OCTAGON: unsupported arithmetic operation.");
       }
       _norm_vector.at(i- 1)= 0;
       // Result is not normalized.
@@ -881,7 +881,7 @@ namespace ikos {
         this->apply_constraint(i, j, false, true  , bound_t(0));       
       }
       else
-        throw error("OCTAGON: only supports constant or variable on the rhs of assignment");
+        IKOS_ERROR("OCTAGON: only supports constant or variable on the rhs of assignment");
 
       this->is_normalized(false);
     }
@@ -945,7 +945,7 @@ namespace ikos {
             is1_positive= true;
           } 
           else 
-            throw error("OCTAGON: expr contains unexpected coefficient (accepted values are -1, 0, and 1).");
+            IKOS_ERROR("OCTAGON: expr contains unexpected coefficient (accepted values are -1, 0, and 1).");
           i= _map.insert(value_type(it->second,_map.size()+ 1)).first->second;
           v1= true;
         }
@@ -959,14 +959,14 @@ namespace ikos {
             is2_positive= true;
           } 
           else 
-            throw error("OCTAGON: expr contains unexpected coefficient (accepted values are -1, 0, and 1).");
+            IKOS_ERROR("OCTAGON: expr contains unexpected coefficient (accepted values are -1, 0, and 1).");
           j= _map.insert(value_type(it->second,_map.size()+ 1)).first->second;
           v2= true;
         }
         else {
           ostringstream buf;
           buf << "OCTAGON: " << cst << " is not an octagon constraint (> 2 variables).";
-          throw error(buf.str());
+          IKOS_ERROR(buf.str());
         }
       }
       if(!v1){
@@ -975,7 +975,7 @@ namespace ikos {
         }
         ostringstream buf;
         buf << "OCTAGON: " << cst << " contains no variables.";
-        throw error(buf.str());
+        IKOS_ERROR(buf.str());
       }
       resize();
       bound_t constant(cst.constant()), neg_constant(-(cst.constant()));
@@ -1119,7 +1119,7 @@ namespace ikos {
 	break;
         }
         default: 
-          throw error("OCTAGON: unreachable");
+          IKOS_ERROR("OCTAGON: unreachable");
       }
       this->set(x, xi);
     }
@@ -1156,7 +1156,7 @@ namespace ikos {
 	break;
         }
         default: 
-          throw error("OCTAGON: unreachable");
+          IKOS_ERROR("OCTAGON: unreachable");
       }
       this->set(x, xi);
     }
@@ -1187,7 +1187,7 @@ namespace ikos {
             break;
           }
           default: 
-            throw error("OCTAGON: unreachable");
+            IKOS_ERROR("OCTAGON: unreachable");
         }
         this->set(x, xi);
       }
@@ -1218,7 +1218,7 @@ namespace ikos {
             break;
           }
           default: 
-            throw error("OCTAGON: unreachable");
+            IKOS_ERROR("OCTAGON: unreachable");
         }
         this->set(x, xi);
       }
@@ -1412,6 +1412,15 @@ namespace ikos {
     const char* getDomainName () const {return "Octagons";}
 
   }; // class octagon
+
+namespace domain_traits
+{
+  template <typename Number, typename VariableName>
+  void normalize(octagon<Number, VariableName>& inv) {
+    inv.normalize();
+  }
+}
+
 } // namespace ikos
 
 #endif // IKOS_OCTAGONS_HPP

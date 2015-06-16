@@ -32,8 +32,7 @@
 #include <ikos/common/mergeable_map.hpp>
 #include <ikos/algorithms/patricia_trees.hpp>
 #include <ikos/domains/numerical_domains_api.hpp>
-// add a cyclic dependency
-// #include <ikos/domains/domain_traits.hpp> 
+//#include <ikos/domains/domain_traits.hpp>
 
 namespace ikos {
 
@@ -993,10 +992,9 @@ class array_graph_domain:
   {
     if (is_bottom ()) return; 
       
-    // TODO: add a cyclic dependency
     //domain_traits::normalize<ScalarNumDomain>(_scalar);
+    // FIXME
     _scalar.normalize ();
-
 
     if (_scalar.is_bottom() || _g.is_bottom())
       set_to_bottom();
@@ -1199,16 +1197,11 @@ class array_graph_domain:
     _scalar.set (lhs, w [arr]);
   }
 
-  void store (VariableName arr_out, VariableName arr_in, 
-              VariableName idx, linear_expression_t val)
+  void store (VariableName arr, VariableName idx, linear_expression_t val)
   {
-    // TODO
-    assert (arr_out == arr_in);
-    if (! (arr_out == arr_in)) return;
-
     Weight w = Weight::top ();
-    w.assign (arr_in, val);
-    array_write (arr_in, idx, w);
+    w.assign (arr, val);
+    array_write (arr, idx, w);
   }
     
   ostream& write(ostream& o) 
@@ -1230,8 +1223,28 @@ class array_graph_domain:
     return o;
   }
 
+  const char* getDomainName () const {return "Array graph";}
+
 }; // end array_graph_domain
 
+namespace domain_traits
+{
+template <typename ScalarDomain, typename WeightDomain, typename VariableName, typename Number>
+void array_load (array_graph_domain<ScalarDomain, Number, VariableName, 
+                                    WeightDomain, false>& inv, 
+                 VariableName lhs, VariableName arr, VariableName idx) {
+   inv.load (lhs, arr, idx);
+}
+
+template <typename ScalarDomain, typename WeightDomain, typename VariableName, typename Number>
+void array_store (array_graph_domain<ScalarDomain, Number, VariableName, 
+                                     WeightDomain, false>& inv, 
+                  VariableName arr, VariableName idx,
+                  typename ScalarDomain::linear_expression_t val,
+                  bool /*is_singleton*/) {
+   inv.store (arr, idx, val);
+} 
+} // namespace domain_traits
 } // namespace ikos
 
 #endif 

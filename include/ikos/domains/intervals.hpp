@@ -143,7 +143,7 @@ namespace ikos {
       } else if (this->_n == x._n) {
 	return *this;
       } else {
-	throw error("Bound: undefined operation -oo + +oo");
+	IKOS_ERROR("Bound: undefined operation -oo + +oo");
       }
     }
 
@@ -169,7 +169,7 @@ namespace ikos {
     
     bound_t operator/(bound_t x) {
       if (x._n == 0) {
-	throw error("Bound: division by zero");
+	IKOS_ERROR("Bound: division by zero");
       } else if (this->is_finite() && x.is_finite()) {
 	return bound_t(false, _n / x._n);
       } else if (this->is_finite() && x.is_infinite()) {
@@ -1055,7 +1055,7 @@ namespace ikos {
           xi = yi.SExt(width);
           break;
         default: 
-          throw error("unreachable");
+          IKOS_ERROR("unreachable");
       }      
       this->_env.set(x, xi);
     }
@@ -1074,7 +1074,7 @@ namespace ikos {
           xi = yi.SExt(width);
           break;
         default: 
-          throw error("unreachable");
+          IKOS_ERROR("unreachable");
       }      
       this->_env.set(x, xi);
     }
@@ -1109,7 +1109,7 @@ namespace ikos {
 	break;
         }
         default: 
-          throw error("unreachable");
+          IKOS_ERROR("unreachable");
       }
       this->_env.set(x, xi);
     }
@@ -1144,7 +1144,7 @@ namespace ikos {
 	break;
         }
         default: 
-          throw error("unreachable");
+          IKOS_ERROR("unreachable");
       }
       this->_env.set(x, xi);
     }
@@ -1174,7 +1174,7 @@ namespace ikos {
 	break;
         }
         default: 
-          throw error("unreachable");
+          IKOS_ERROR("unreachable");
       }
       this->_env.set(x, xi);
 
@@ -1201,7 +1201,7 @@ namespace ikos {
 	break;
         }
         default: 
-          throw error("unreachable");
+          IKOS_ERROR("unreachable");
       }
       this->_env.set(x, xi);
     }

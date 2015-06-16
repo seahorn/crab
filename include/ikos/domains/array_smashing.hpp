@@ -8,6 +8,7 @@
 #include <ikos/common/types.hpp>
 #include <ikos/domains/uninitialized_domain.hpp>
 #include <ikos/domains/numerical_domains_api.hpp>
+#include <ikos/domains/domain_traits.hpp>
 
 namespace ikos {
 
@@ -180,33 +181,32 @@ public:
 
   void load (VariableName lhs, VariableName arr, VariableName idx)
   {
-    // FIXME: if a relational domain we can be more precise by making
-    // a copy of arr and store it into lhs but *without* establishing
-    // any relationship between lhs and arr (i.e., without using apply).
-    _inv.set (lhs, _inv[arr]);
+    // We need to be careful when assigning a summarized variable arr
+    // into a non-summarized variable lhs. 
+    // 
+    // Simply do _inv.assign (lhs, arr) is wrong.
+    ostringstream b; 
+    b << arr;
+    VariableName arr_prime = arr.getVarFactory ()[b.str() + "___prime"];
+    domain_traits::expand (_inv, arr, arr_prime);
+    _inv.assign (lhs, linear_expression_t (arr_prime));
+    _inv -= arr_prime;
   }
 
 
-  void store (VariableName arr_out, VariableName arr_in, 
-              VariableName /*idx*/, linear_expression_t val,
-              bool is_singleton)
+  void store (VariableName arr, VariableName /*idx*/,
+              linear_expression_t val, bool is_singleton)
   {
 
-    if (is_singleton || _uninit [arr_in].is_uninitialized ())
+    if (is_singleton || _uninit [arr].is_uninitialized ())
     {
-      strong_update (arr_in, val);
-      _uninit.set (arr_in, uninitializedValue::initialized ());
+      strong_update (arr, val);
+      _uninit.set (arr, uninitializedValue::initialized ());
     }
     else
     {
-      weak_update (arr_in, val);
+      weak_update (arr, val);
     }
-
-    if (!(arr_out == arr_in))
-    {
-      _inv.assign (arr_out, linear_expression_t (arr_in));
-      _uninit.set (arr_out, _uninit [arr_in]);
-    }    
   }
 
   linear_constraint_system_t to_linear_constraint_system (){
@@ -218,9 +218,34 @@ public:
     o << _inv;
     return o;
   }
-  
+
+  const char* getDomainName () const {return "Array smashing";}  
+
 }; // end array_smashing
 
+namespace domain_traits
+{
+
+template <typename BaseDomain, typename VariableName, typename Number>
+void array_init (array_smashing<BaseDomain,Number,VariableName>& inv, 
+                 VariableName arr) {
+  inv.array_init (arr);
+}
+
+template <typename BaseDomain, typename VariableName, typename Number>
+void array_load (array_smashing<BaseDomain, Number, VariableName>& inv, 
+                 VariableName lhs, VariableName arr, VariableName idx) {
+   inv.load (lhs, arr, idx);
+}
+
+template <typename BaseDomain, typename VariableName, typename Number>
+void array_store (array_smashing<BaseDomain, Number, VariableName>& inv, 
+                  VariableName arr, VariableName idx,
+                  typename BaseDomain::linear_expression_t val,
+                  bool is_singleton) {
+   inv.store (arr, idx, val, is_singleton);
+}
+} // namespace domain_traits
 } // namespace ikos
 
 #endif 

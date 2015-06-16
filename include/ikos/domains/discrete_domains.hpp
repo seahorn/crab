@@ -157,7 +157,7 @@ namespace ikos {
 
     std::size_t size() {
       if (this->_is_top) {
-	throw error("Size for discrete domain TOP is undefined");
+	IKOS_ERROR("Size for discrete domain TOP is undefined");
       } else {
 	return this->_set.size();
       }
@@ -165,7 +165,7 @@ namespace ikos {
     
     iterator begin() {
       if (this->_is_top) {
-	throw error("Iterator for discrete domain TOP is undefined");
+	IKOS_ERROR("Iterator for discrete domain TOP is undefined");
       } else {
 	return this->_set.begin();
       }
@@ -173,7 +173,7 @@ namespace ikos {
     
     iterator end() {
       if (this->_is_top) {
-	throw error("Iterator for discrete domain TOP is undefined");
+	IKOS_ERROR("Iterator for discrete domain TOP is undefined");
       } else {
 	return this->_set.end();
       }

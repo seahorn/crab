@@ -88,11 +88,10 @@ namespace analyzer
     {
       if (stmt.index ().get_variable ())
       {
-        auto arr_out = stmt.array_out ().name ();
-        auto arr_in = stmt.array_in ().name ();
+        auto arr = stmt.array ().name ();
         auto idx = *(stmt.index ().get_variable ());
         domain_traits::array_store (m_inv, 
-                                    arr_out, arr_in, 
+                                    arr,
                                     idx.name(), 
                                     stmt.value (),
                                     stmt.is_singleton ());

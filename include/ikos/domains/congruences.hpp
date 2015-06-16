@@ -82,7 +82,9 @@ namespace ikos{
 
     Number lcm(Number x, Number y){
       Number tmp = gcd(x, y);
-      if (tmp == 0) throw error("lcm causes division by zero");
+      if (tmp == 0) 
+        IKOS_ERROR("lcm causes division by zero");
+
       return abs(x* y)/tmp;
     }
     
@@ -96,12 +98,13 @@ namespace ikos{
 
       if (typeSize < 32){
         Number tmp = gcd(a, Number(1) << Number(typeSize)); 
-        if (tmp == 0) throw error("weakened causes division by zero");
+        if (tmp == 0) 
+          IKOS_ERROR("weakened causes division by zero");
+
         return congruence_t(tmp, b % tmp);
       }
-      else{
-        throw error("if int is 32 bits shift can only range from 0 to 31");
-      }
+      else
+        IKOS_ERROR("if int is 32 bits shift can only range from 0 to 31");
     }
     
     Number scanr1(Number x){	
@@ -131,9 +134,8 @@ namespace ikos{
         }
         return Number(-1); // to indicate not found, x==0
       }
-      else{
-        throw error("if int is 32 bits shift can only range from 0 to 31");
-      }
+      else
+        IKOS_ERROR("if int is 32 bits shift can only range from 0 to 31");
     }    
   public:
     
@@ -201,16 +203,16 @@ namespace ikos{
         return true;
       } 
       else if(a == 0){ 
-        if (o.a == 0) throw error("operator<= causes division by zero");
+        if (o.a == 0) IKOS_ERROR("operator<= causes division by zero");
         if ((b % o.a < 0 ? (b % o.a)+ o.a : b % o.a) == o.b % o.a) 
           return true;
       } 
       else if(o.a == 0){ 
-        if (a == 0) throw error("operator<= causes division by zero");
+        if (a == 0) IKOS_ERROR("operator<= causes division by zero");
         if (b % a == (o.b % a < 0 ? (o.b % a)+ a : o.b % a))
           return false;
       }
-      if (o.a == 0) throw error("operator<= causes division by zero");
+      if (o.a == 0) IKOS_ERROR("operator<= causes division by zero");
       return (a % o.a == 0) && (b % o.a  == o.b % o.a);
     }
 
@@ -253,7 +255,7 @@ namespace ikos{
       else{
         // pre: a and and o.a != 0
         Number x = gcd(a, o.a);
-        if (x == 0) throw error("operator& causes division by zero");
+        if (x == 0) IKOS_ERROR("operator& causes division by zero");
         if(b % x == (o.b % x)){	
           // the part max(b,o.b) needs to be verified. What we really
           // want is to find b'' such that 
@@ -350,7 +352,7 @@ namespace ikos{
         */
 
         if (o.a == 0){
-          if (o.b == 0) throw error("operator/ causes division by zero");
+          if (o.b == 0) IKOS_ERROR("operator/ causes division by zero");
           if (a % o.b == 0)
             return congruence_t(a/o.b, b/o.b);
           else 
@@ -395,7 +397,7 @@ namespace ikos{
            where N = a'((b-b') div a') + b'
         */
         if (o.a == 0){
-          if (o.b == 0) throw error("operator% causes division by zero");
+          if (o.b == 0) IKOS_ERROR("operator% causes division by zero");
           if (a % o.b == 0){
             return congruence_t(0, b % o.b);
           }
@@ -439,7 +441,7 @@ namespace ikos{
           return congruence_t(gcd(a, two_to_n), -b-1);
         }
         else {
-          throw error("if int is 32 bits shift can only range from 0 to 31");
+          IKOS_ERROR("if int is 32 bits shift can only range from 0 to 31");
         }
       }
       // For simplicity, we don't implement the case when a==0:
@@ -988,7 +990,7 @@ namespace ikos{
           xi = yi.SExt(width);
           break;
         default: 
-          throw error("unreachable");
+          IKOS_ERROR("unreachable");
       }      
       this->_env.set(x, xi);
     }
@@ -1007,7 +1009,7 @@ namespace ikos{
           xi = yi.SExt(width);
           break;
         default: 
-          throw error("unreachable");
+          IKOS_ERROR("unreachable");
       }      
       this->_env.set(x, xi);
     }
@@ -1042,7 +1044,7 @@ namespace ikos{
 	break;
         }
         default: 
-          throw error("unreachable");
+          IKOS_ERROR("unreachable");
       }
       this->_env.set(x, xi);
     }
@@ -1077,7 +1079,7 @@ namespace ikos{
 	break;
         }
         default: 
-          throw error("unreachable");
+          IKOS_ERROR("unreachable");
       }
       this->_env.set(x, xi);
     }
@@ -1107,7 +1109,7 @@ namespace ikos{
 	break;
         }
         default: 
-          throw error("unreachable");
+          IKOS_ERROR("unreachable");
       }
       this->_env.set(x, xi);
 
@@ -1134,7 +1136,7 @@ namespace ikos{
 	break;
         }
         default: 
-          throw error("unreachable");
+          IKOS_ERROR("unreachable");
       }
       this->_env.set(x, xi);
     }

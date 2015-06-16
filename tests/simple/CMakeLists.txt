@@ -10,3 +10,6 @@ target_link_libraries (simple_test3 ${GMPXX_LIB} ${GMP_LIB} dbm pthread)
 add_executable(simple_test4 prog-4.cc)
 target_link_libraries (simple_test4 ${GMPXX_LIB} ${GMP_LIB} dbm pthread)
 
+add_executable(unittests unittests.cc)
+target_link_libraries (unittests ${GMPXX_LIB} ${GMP_LIB} dbm pthread)
+

@@ -790,7 +790,7 @@ dbm dbm_meet(dbm x, dbm y)
   ret->checked = false;
   ret->closed = false;
   */
-  
+
   return ret;
 }
 
@@ -1138,6 +1138,7 @@ dbm dbm_rename(rmap* subs, int slen, dbm x)
   ret->checked = true;
   ret->feasible = true;
   ret->closed = true;
+
   return ret;
 }
 
@@ -2018,4 +2019,18 @@ dbm dbm_apply_dexpr(dexpr con, dbm x)
   }
 }
 
+// copy the variable v to a new one new_v.
+dbm dbm_expand (int v, int new_v, dbm x)
+{
+  if (!x || (x->checked && !x->feasible))
+    return NULL;
 
+  rmap subs[1];
+  subs[0].r_from = v;
+  subs[0].r_to = new_v;
+
+  dbm tmp = dbm_rename (subs, 1, x);
+  dbm res = dbm_meet (x,tmp);
+  dbm_dealloc(tmp);
+  return res;
+}

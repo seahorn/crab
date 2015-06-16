@@ -144,7 +144,7 @@ namespace ikos {
 
     iterator begin() {
       if (this->is_bottom()) {
-	throw error("Separate domain: trying to invoke iterator on bottom");
+	IKOS_ERROR("Separate domain: trying to invoke iterator on bottom");
       } else {
 	return this->_tree.begin();
       }
@@ -152,7 +152,7 @@ namespace ikos {
     
     iterator end() {
       if (this->is_bottom()) {
-	throw error("Separate domain: trying to invoke iterator on bottom");
+	IKOS_ERROR("Separate domain: trying to invoke iterator on bottom");
       } else {
 	return this->_tree.end();
       }
