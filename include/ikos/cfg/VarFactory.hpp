@@ -9,6 +9,7 @@
 #include <boost/unordered_map.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
+#include <boost/lexical_cast.hpp>
 
 namespace cfg 
 {
@@ -46,6 +47,10 @@ namespace cfg
 
        private:
         IndexedString();
+
+        IndexedString(index_t id, VariableFactory *vfac): 
+            _s(0), _id(id), _vfac(vfac) { }
+
         IndexedString(boost::shared_ptr< T > s, index_t id, VariableFactory *vfac): 
             _s(s), _id(id), _vfac(vfac) { }
         
@@ -53,26 +58,35 @@ namespace cfg
         IndexedString(const IndexedString& is): _s(is._s), _id(is._id), _vfac(is._vfac) { }
         
         IndexedString& operator=(IndexedString is) {
-          this->_s = is._s;
-          this->_id = is._id;
-          this->_vfac = is._vfac;
+          _s = is._s;
+          _id = is._id;
+          _vfac = is._vfac;
           return *this;
         }
         
         index_t index() const { return this->_id; }
 
         std::string str() const 
-        { return indexed_string_impl::get_str< T >(*this->_s); }
+        { 
+          if (_s)
+          {  return indexed_string_impl::get_str< T >(*_s);  }
+          else
+          { // unlikely prefix
+            return "__tmpXYZ__ " + boost::lexical_cast<string> (_id);
+          }
+        }
 
-        T get(){ return *this->_s; }
+        //T get(){ return *this->_s; }
+
+        boost::optional<T> get(){ return *_s; }
 
         VariableFactory& getVarFactory () { return *_vfac; }
 
         bool operator<(IndexedString s)  const 
-        { return (this->_id < s._id); }
+        { return (_id < s._id); }
 
         bool operator==(IndexedString s) const 
-        { return (this->_id == s._id);}
+        { return (_id == s._id);}
 
         std::ostream& write(std::ostream& o) 
         {
@@ -106,14 +120,22 @@ namespace cfg
       VariableFactory(): _next_id (1) { }
       
       VariableFactory(index_t start_id): _next_id (start_id) { }
+
+      // for generating temporary variables without being associated
+      // with a particular T: we do not cache tem
+      IndexedString operator()()
+      {
+        IndexedString is (_next_id++, this);
+        return is;
+      }
       
       IndexedString operator[](T s) 
       {
-        typename map_t::iterator it = this->_map.find (s);
-        if (it == this->_map.end()) 
+        typename map_t::iterator it = _map.find (s);
+        if (it == _map.end()) 
         {
-          IndexedString is (boost::make_shared<T>(s), this->_next_id++, this);
-          this->_map.insert (typename map_t::value_type (s, is));
+          IndexedString is (boost::make_shared<T>(s), _next_id++, this);
+          _map.insert (typename map_t::value_type (s, is));
           return is;
         }
         else 

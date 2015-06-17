@@ -15,6 +15,10 @@
   Warning: this implementation is just a proof-of-concept so it is
   horribly inefficient. I have not tried to make it more efficient
   yet.
+
+  FIXME: the function mk_succ_idx assumes that VariableFactory<T> is
+  defined with T as a string. If T is not convertible to a string it
+  won't compile.
  */
 
 #ifndef IKOS_ARRAY_GRAPH_HPP

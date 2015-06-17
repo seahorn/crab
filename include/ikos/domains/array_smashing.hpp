@@ -183,14 +183,12 @@ public:
   {
     // We need to be careful when assigning a summarized variable arr
     // into a non-summarized variable lhs. 
-    // 
     // Simply do _inv.assign (lhs, arr) is wrong.
-    ostringstream b; 
-    b << arr;
-    VariableName arr_prime = arr.getVarFactory ()[b.str() + "___prime"];
+
+    VariableName arr_prime = arr.getVarFactory ()(); /* ask for a temp var */
     domain_traits::expand (_inv, arr, arr_prime);
     _inv.assign (lhs, linear_expression_t (arr_prime));
-    _inv -= arr_prime;
+    _inv -= arr_prime; 
   }
 
 
