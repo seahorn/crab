@@ -36,7 +36,7 @@
 #include <ikos/common/mergeable_map.hpp>
 #include <ikos/algorithms/patricia_trees.hpp>
 #include <ikos/domains/numerical_domains_api.hpp>
-//#include <ikos/domains/domain_traits.hpp>
+#include <ikos/domains/domain_traits_impl.hpp>
 
 namespace ikos {
 
@@ -996,9 +996,7 @@ class array_graph_domain:
   {
     if (is_bottom ()) return; 
       
-    //domain_traits::normalize<ScalarNumDomain>(_scalar);
-    // FIXME
-    _scalar.normalize ();
+    domain_traits::normalize<ScalarNumDomain>(_scalar);
 
     if (_scalar.is_bottom() || _g.is_bottom())
       set_to_bottom();

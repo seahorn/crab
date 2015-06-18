@@ -8,7 +8,7 @@
 #include <ikos/common/types.hpp>
 #include <ikos/domains/uninitialized_domain.hpp>
 #include <ikos/domains/numerical_domains_api.hpp>
-#include <ikos/domains/domain_traits.hpp>
+#include <ikos/domains/domain_traits_impl.hpp>
 
 namespace ikos {
 
@@ -185,7 +185,7 @@ public:
     // into a non-summarized variable lhs. 
     // Simply do _inv.assign (lhs, arr) is wrong.
 
-    VariableName arr_prime = arr.getVarFactory ()(); /* ask for a temp var */
+    VariableName arr_prime = arr.getVarFactory().get(); /* ask for a temp var */
     domain_traits::expand (_inv, arr, arr_prime);
     _inv.assign (lhs, linear_expression_t (arr_prime));
     _inv -= arr_prime; 

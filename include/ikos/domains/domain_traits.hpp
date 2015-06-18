@@ -19,30 +19,22 @@ namespace ikos {
 namespace domain_traits {
 
 template <typename AbsNumDomain >
-void normalize(AbsNumDomain& inv) {
-}
+void normalize(AbsNumDomain& inv); 
 
 template <typename AbsDomain, typename VariableName >
-void expand (AbsDomain& inv, VariableName x, VariableName new_x) {
-  // make a new copy of x but losing precision if relational domain
-  inv.set (new_x , inv [x]);
-}
+void expand (AbsDomain& inv, VariableName x, VariableName new_x);
 
 template <typename AbsDomain, typename VariableName >
-void array_init (AbsDomain& inv, VariableName arr) {
-}
+void array_init (AbsDomain& inv, VariableName arr); 
 
 template <typename AbsDomain, typename VariableName >
 void array_load (AbsDomain& inv, VariableName lhs, 
-                 VariableName arr, VariableName idx) {
-}
+                 VariableName arr, VariableName idx);
 
 template <typename AbsDomain, typename VariableName >
 void array_store (AbsDomain& inv, VariableName arr, 
                   VariableName idx, typename AbsDomain::linear_expression_t val,
-                  bool is_singleton) {
-}
-
+                  bool is_singleton); 
 }
 } // end namespace ikos
 

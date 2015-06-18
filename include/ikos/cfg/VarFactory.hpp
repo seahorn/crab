@@ -72,13 +72,16 @@ namespace cfg
           {  return indexed_string_impl::get_str< T >(*_s);  }
           else
           { // unlikely prefix
-            return "__tmpXYZ__ " + boost::lexical_cast<string> (_id);
+            return "@shadow.var._" + boost::lexical_cast<string> (_id);
           }
         }
 
         //T get(){ return *this->_s; }
 
-        boost::optional<T> get(){ return *_s; }
+        boost::optional<T> get(){ 
+          if (_s) return boost::optional<T>(*_s); 
+          else return boost::optional<T> ();
+        }
 
         VariableFactory& getVarFactory () { return *_vfac; }
 
@@ -112,30 +115,48 @@ namespace cfg
       typedef IndexedString variable_t;
 
      private:
-      typedef boost::unordered_map< T, IndexedString > map_t;      
+      typedef boost::unordered_map< T, IndexedString >   t_map_t;      
+      typedef boost::unordered_map< int, IndexedString > i_map_t;      
+
       index_t _next_id;
-      map_t   _map;
+      t_map_t _map;
+      i_map_t _i_map;
       
      public:
-      VariableFactory(): _next_id (1) { }
+      VariableFactory (): _next_id (1) { }
       
-      VariableFactory(index_t start_id): _next_id (start_id) { }
+      VariableFactory (index_t start_id): _next_id (start_id) { }
 
-      // for generating temporary variables without being associated
-      // with a particular T: we do not cache tem
-      IndexedString operator()()
+      // special purpose: for generating IndexedString's without being
+      // associated with a particular T (w/o caching).
+      IndexedString get ()
       {
         IndexedString is (_next_id++, this);
         return is;
       }
-      
+
+      // special purpose: for generating IndexedString's without being
+      // associated with a particular T (w/ caching).
+      IndexedString get (int key)
+      {
+        auto it = _i_map.find (key);
+        if (it == _i_map.end()) 
+        {
+          IndexedString is (_next_id++, this);
+          _i_map.insert (typename i_map_t::value_type (key, is));
+          return is;
+        }
+        else 
+        return it->second;
+      }
+
       IndexedString operator[](T s) 
       {
-        typename map_t::iterator it = _map.find (s);
+        auto it = _map.find (s);
         if (it == _map.end()) 
         {
           IndexedString is (boost::make_shared<T>(s), _next_id++, this);
-          _map.insert (typename map_t::value_type (s, is));
+          _map.insert (typename t_map_t::value_type (s, is));
           return is;
         }
         else 

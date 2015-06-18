@@ -1024,6 +1024,12 @@ namespace cfg
     stmt_list_t m_stmts;
     bb_id_set_t m_prev, m_next;
     TrackedPrecision m_track_prec;    
+    // Ideally it should be size_t to indicate any position within the
+    // block. For now, we only allow to insert either at front or at
+    // the back (default). Note that if insertions at the front are
+    // very common we should replace stmt_list_t from a vector to a
+    // deque.
+    bool m_insert_point_at_front; 
 
     void InsertAdjacent (bb_id_set_t &c, BasicBlockLabel e)
     { 
@@ -1038,7 +1044,8 @@ namespace cfg
     }
     
     BasicBlock (BasicBlockLabel bb_id, TrackedPrecision track_prec): 
-        m_bb_id (bb_id), m_track_prec (track_prec)
+        m_bb_id (bb_id), m_track_prec (track_prec), 
+        m_insert_point_at_front (false)
     { }
 
     static boost::shared_ptr< BasicBlock_t > Create (BasicBlockLabel bb_id, 
@@ -1049,10 +1056,21 @@ namespace cfg
     
     void insert(statement_ptr stmt) 
     {
-      this->m_stmts.push_back(stmt);
+      if (m_insert_point_at_front)
+      { 
+        m_stmts.insert (m_stmts.begin(), stmt);
+        m_insert_point_at_front = false;
+      }
+      else
+        m_stmts.push_back(stmt);
     }
 
    public:
+
+    //! it will be set to false after the first insertion
+    void set_insert_point_front (){
+      m_insert_point_at_front = true;
+    }
 
     boost::shared_ptr <BasicBlock_t> clone () const
     {
@@ -1181,8 +1199,8 @@ namespace cfg
       else if (op1.is_constant () && op2.is_constant ()) 
       {
         ZLinearExpression rhs(ZNumber(op1.constant () + op2.constant ()));
-        this->insert(boost::static_pointer_cast< Statement_t, ZAssignment >
-                     (ZAssignment_ptr (new ZAssignment (lhs, rhs))));
+        insert(boost::static_pointer_cast< Statement_t, ZAssignment >
+               (ZAssignment_ptr (new ZAssignment (lhs, rhs))));
       }
       else
         assert(false && "add operands unexpected");
@@ -1875,28 +1893,28 @@ namespace cfg
     // Helpers
     bool hasOneChild (BasicBlockLabel b)
     {
-      auto rng = this->next_nodes (b);
+      auto rng = next_nodes (b);
       return (std::distance (rng.begin (), rng.end ()) == 1);
     }
     
     bool hasOneParent (BasicBlockLabel b)
     {
-      auto rng = this->prev_nodes (b);
+      auto rng = prev_nodes (b);
       return (std::distance (rng.begin (), rng.end ()) == 1);
     }
     
     BasicBlock_t& getChild (BasicBlockLabel b)
     {
       assert (hasOneChild (b));
-      auto rng = this->next_nodes (b);
-      return this->get_node (*(rng.begin ()));
+      auto rng = next_nodes (b);
+      return get_node (*(rng.begin ()));
     }
     
     BasicBlock_t& getParent (BasicBlockLabel b)
     {
       assert (hasOneParent (b));
-      auto rng = this->prev_nodes (b);
-      return this->get_node (*(rng.begin ()));
+      auto rng = prev_nodes (b);
+      return get_node (*(rng.begin ()));
     }
     
     void mergeBlocksRec (BasicBlockLabel curId, 
@@ -1906,7 +1924,7 @@ namespace cfg
       if (visited.find (curId) != visited.end ()) return;
       visited.insert (curId);
       
-      BasicBlock_t &cur = this->get_node (curId);
+      BasicBlock_t &cur = get_node (curId);
       
       if (hasOneChild (curId) && hasOneParent (curId))
       {
@@ -1921,7 +1939,7 @@ namespace cfg
         if (!vis._has_assert)
         {
           parent.merge_back (cur);
-          this->remove (curId);
+          remove (curId);
           parent >> child;        
           mergeBlocksRec (child.label (), visited); 
           return;
@@ -1937,7 +1955,7 @@ namespace cfg
     void mergeBlocks ()
     {
       visited_t visited;
-      mergeBlocksRec (this->entry (), visited);
+      mergeBlocksRec (entry (), visited);
     }
     
     // mark reachable blocks from curId
@@ -1955,22 +1973,22 @@ namespace cfg
     void removeUnreachableBlocks ()
     {
       visited_t alive, dead;
-      markAliveBlocks (this->entry (), *this, alive);
+      markAliveBlocks (entry (), *this, alive);
       
       for (auto const &bb : *this) 
         if (!(alive.count (bb.label ()) > 0))
           dead.insert (bb.label ());
       
       for (auto bb_id: dead)
-        this->remove (bb_id);
+        remove (bb_id);
     }
     
     // remove blocks that cannot reach the exit block
     void removeUselessBlocks ()
     {
-      if (!this->has_exit ()) return;
+      if (!has_exit ()) return;
 
-      cfg_t cfg  = this->clone ();
+      cfg_t cfg  = clone ();
       cfg.reverse ();
       
       visited_t useful, useless;
@@ -1981,7 +1999,7 @@ namespace cfg
           useless.insert (bb.label ());
       
       for (auto bb_id: useless)
-        this->remove (bb_id);
+        remove (bb_id);
     }
     
   }; 
@@ -1989,3 +2007,4 @@ namespace cfg
 } // end namespace 
 
 #endif /* CFG_HPP */
+
