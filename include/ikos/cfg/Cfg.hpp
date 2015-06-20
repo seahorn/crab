@@ -3,6 +3,12 @@
 
 /* 
  * Build a CFG to interface with IKOS
+ * 
+ * The CFG can support the modelling of: 
+ * - integers,
+ * - C-like pointers, and 
+ * - arrays as any sequence of contiguous bytes either in the heap or
+ *   stack.
  */
 
 #include <stdlib.h> 
@@ -32,6 +38,11 @@ namespace cfg
   using namespace ikos;
   using namespace std;
 
+  // The values must be such that REG <= PTR <= MEM
+  enum TrackedPrecision { REG = 0, PTR = 1, MEM = 2 };
+
+  enum VariableType { INT_TYPE, PTR_TYPE, ARR_TYPE, UNK_TYPE};
+
   template<typename Number, typename VariableName>
   inline std::ostream& operator<< (std::ostream &o, 
                                    const ikos::variable<Number, VariableName> &v)
@@ -59,17 +70,13 @@ namespace cfg
     return o;
   }
 
-  // The values must be such that REG <= PTR <= MEM
-  enum TrackedPrecision { REG = 0, PTR = 1, MEM = 2 };
-
-  enum VariableType { INT_TYPE, PTR_TYPE, UNK_TYPE};
-
   inline std::ostream& operator<< (std::ostream& o, VariableType t)
   {
     switch (t)
     {
       case INT_TYPE: o << "int"; break;
       case PTR_TYPE: o << "ptr"; break;
+      case ARR_TYPE: o << "arr"; break;
       default: o << "unknown"; break;
     }
     return o;
@@ -158,7 +165,7 @@ namespace cfg
   }; 
 
   /*
-    Basic Statements
+    Basic Statements (INT_TYPE)
   */
 
   template< class Number, class VariableName>
@@ -381,176 +388,8 @@ namespace cfg
     
   }; 
 
-  template< class VariableName>
-  class FCallSite: public Statement<VariableName>
-  {
-
-    boost::optional<pair<VariableName,VariableType> > m_lhs;
-    VariableName m_func_name;
-    vector<pair<VariableName,VariableType> > m_args;
-
-    typedef typename vector<pair<VariableName,VariableType> >::iterator arg_iterator;
-    typedef typename vector<pair<VariableName,VariableType> >::const_iterator const_arg_iterator;
-    
-   public:
-
-    FCallSite (VariableName func_name, 
-               vector<pair<VariableName,VariableType> > args): 
-        m_func_name (func_name)
-    {
-      std::copy (args.begin (), args.end (), std::back_inserter (m_args));
-      for (auto arg:  m_args) { this->m_live.addUse (arg.first); }
-    }
-
-    FCallSite (VariableName func_name, vector<VariableName> args): 
-        m_func_name (func_name)
-    {
-      for (auto v : args)
-      {
-        m_args.push_back (make_pair (v, UNK_TYPE));
-        this->m_live.addUse (v);
-      }
-    }
-    
-    FCallSite (pair<VariableName,VariableType> lhs, 
-               VariableName func_name, 
-               vector<pair<VariableName,VariableType> > args): 
-        m_lhs (boost::optional<pair<VariableName,VariableType> > (lhs)), 
-        m_func_name (func_name)
-    {
-      std::copy (args.begin (), args.end (), std::back_inserter(m_args));
-      for (auto arg:  m_args) { this->m_live.addUse (arg.first); }
-      this->m_live.addDef ((*m_lhs).first);
-    }
-
-    FCallSite (VariableName lhs, 
-               VariableName func_name, vector<VariableName> args): 
-        m_lhs (boost::optional<pair<VariableName,VariableType> > (lhs, UNK_TYPE)), 
-        m_func_name (func_name)
-    {
-      for (auto v : args)
-      {
-        m_args.push_back (make_pair (v, UNK_TYPE));
-        this->m_live.addUse (v);
-      }
-      this->m_live.addDef ((*m_lhs).first);
-    }
-    
-
-    boost::optional<VariableName> get_lhs_name () const { 
-      if (m_lhs)
-        return boost::optional<VariableName> ((*m_lhs).first);
-      else 
-        return boost::optional<VariableName> ();
-    }
-
-    VariableType get_lhs_type () const {       
-      if (m_lhs) return (*m_lhs).second;
-      else return UNK_TYPE;
-    }
-    
-    VariableName get_func_name () const { 
-      return m_func_name; 
-    }
-
-    unsigned get_num_args () const { return m_args.size (); }
-
-    VariableName get_arg_name (unsigned idx) const { 
-      if (idx >= m_args.size ())
-        IKOS_ERROR ("Out-of-bound access to call site parameter");
-
-      return m_args[idx].first;
-    }
-
-    VariableType get_arg_type (unsigned idx) const { 
-      if (idx >= m_args.size ())
-        IKOS_ERROR ("Out-of-bound access to call site parameter");
-      
-      return m_args[idx].second;
-    }
-
-    virtual void accept(StatementVisitor <VariableName> *v) 
-    {
-      v->visit(*this);
-    }
-
-    virtual boost::shared_ptr<Statement <VariableName> > clone () const
-    {
-      typedef FCallSite <VariableName> call_site_t;
-      if (m_lhs)
-        return boost::static_pointer_cast< Statement <VariableName>, call_site_t>
-            (boost::shared_ptr <call_site_t> (new call_site_t (*m_lhs, m_func_name, m_args)));
-      else
-        return boost::static_pointer_cast< Statement <VariableName>, call_site_t>
-            (boost::shared_ptr <call_site_t> (new call_site_t (m_func_name, m_args)));
-    }
-    
-    virtual void write(ostream& o) const
-    {
-      if (m_lhs)
-        o << (*m_lhs).first << " = ";
-
-      o << "call " << m_func_name << "(";
-      for (const_arg_iterator It = m_args.begin (), Et=m_args.end (); It!=Et; )
-      {
-        o << It->first;
-        ++It;
-        if (It != Et)
-          o << ",";
-      }
-      o << ")";
-
-      return;
-    }
-
-  }; 
-
-  template< class VariableName>
-  class Return: public Statement<VariableName>
-  {
-
-    VariableName m_var;
-    VariableType m_type;
-
-   public:
-
-    Return (VariableName var, VariableType type = UNK_TYPE): 
-        m_var (var), m_type (type)
-    {
-      this->m_live.addUse (m_var); 
-    }
-        
-    VariableName get_ret_var () const { 
-      return m_var;
-    }
-
-    VariableType get_ret_type () const { 
-      return m_type;
-    }
-
-    virtual void accept(StatementVisitor <VariableName> *v) 
-    {
-      v->visit(*this);
-    }
-
-    virtual boost::shared_ptr<Statement <VariableName> > clone () const
-    {
-      typedef Return <VariableName> return_t;
-      return boost::static_pointer_cast< Statement <VariableName>, return_t>
-          (boost::shared_ptr <return_t> (new return_t (m_var, m_type)));
-    }
-    
-    virtual void write(ostream& o) const
-    {
-      o << "return " << m_var;
-      return;
-    }
-  }; 
-
-
-
   /*
-     Array statements
+     Array statements (ARR_TYPE)
   */
 
   template< class VariableName>
@@ -699,7 +538,7 @@ namespace cfg
   }; 
   
   /*
-     Pointer statements
+     Pointer statements (PTR_TYPE)
   */
 
   template< class Number, class VariableName>
@@ -932,6 +771,176 @@ namespace cfg
     virtual void write(ostream& o) const
     {
       o << m_lhs << " = "  << "&(" << m_func << ")" ;
+      return;
+    }
+  }; 
+
+  /*
+     Function calls
+  */
+
+  template< class VariableName>
+  class FCallSite: public Statement<VariableName>
+  {
+
+    boost::optional<pair<VariableName,VariableType> > m_lhs;
+    VariableName m_func_name;
+    vector<pair<VariableName,VariableType> > m_args;
+
+    typedef typename vector<pair<VariableName,VariableType> >::iterator arg_iterator;
+    typedef typename vector<pair<VariableName,VariableType> >::const_iterator const_arg_iterator;
+    
+   public:
+
+    FCallSite (VariableName func_name, 
+               vector<pair<VariableName,VariableType> > args): 
+        m_func_name (func_name)
+    {
+      std::copy (args.begin (), args.end (), std::back_inserter (m_args));
+      for (auto arg:  m_args) { this->m_live.addUse (arg.first); }
+    }
+
+    FCallSite (VariableName func_name, vector<VariableName> args): 
+        m_func_name (func_name)
+    {
+      for (auto v : args)
+      {
+        m_args.push_back (make_pair (v, UNK_TYPE));
+        this->m_live.addUse (v);
+      }
+    }
+    
+    FCallSite (pair<VariableName,VariableType> lhs, 
+               VariableName func_name, 
+               vector<pair<VariableName,VariableType> > args): 
+        m_lhs (boost::optional<pair<VariableName,VariableType> > (lhs)), 
+        m_func_name (func_name)
+    {
+      std::copy (args.begin (), args.end (), std::back_inserter(m_args));
+      for (auto arg:  m_args) { this->m_live.addUse (arg.first); }
+      this->m_live.addDef ((*m_lhs).first);
+    }
+
+    FCallSite (VariableName lhs, 
+               VariableName func_name, vector<VariableName> args): 
+        m_lhs (boost::optional<pair<VariableName,VariableType> > (lhs, UNK_TYPE)), 
+        m_func_name (func_name)
+    {
+      for (auto v : args)
+      {
+        m_args.push_back (make_pair (v, UNK_TYPE));
+        this->m_live.addUse (v);
+      }
+      this->m_live.addDef ((*m_lhs).first);
+    }
+    
+
+    boost::optional<VariableName> get_lhs_name () const { 
+      if (m_lhs)
+        return boost::optional<VariableName> ((*m_lhs).first);
+      else 
+        return boost::optional<VariableName> ();
+    }
+
+    VariableType get_lhs_type () const {       
+      if (m_lhs) return (*m_lhs).second;
+      else return UNK_TYPE;
+    }
+    
+    VariableName get_func_name () const { 
+      return m_func_name; 
+    }
+
+    unsigned get_num_args () const { return m_args.size (); }
+
+    VariableName get_arg_name (unsigned idx) const { 
+      if (idx >= m_args.size ())
+        IKOS_ERROR ("Out-of-bound access to call site parameter");
+
+      return m_args[idx].first;
+    }
+
+    VariableType get_arg_type (unsigned idx) const { 
+      if (idx >= m_args.size ())
+        IKOS_ERROR ("Out-of-bound access to call site parameter");
+      
+      return m_args[idx].second;
+    }
+
+    virtual void accept(StatementVisitor <VariableName> *v) 
+    {
+      v->visit(*this);
+    }
+
+    virtual boost::shared_ptr<Statement <VariableName> > clone () const
+    {
+      typedef FCallSite <VariableName> call_site_t;
+      if (m_lhs)
+        return boost::static_pointer_cast< Statement <VariableName>, call_site_t>
+            (boost::shared_ptr <call_site_t> (new call_site_t (*m_lhs, m_func_name, m_args)));
+      else
+        return boost::static_pointer_cast< Statement <VariableName>, call_site_t>
+            (boost::shared_ptr <call_site_t> (new call_site_t (m_func_name, m_args)));
+    }
+    
+    virtual void write(ostream& o) const
+    {
+      if (m_lhs)
+        o << (*m_lhs).first << " = ";
+
+      o << "call " << m_func_name << "(";
+      for (const_arg_iterator It = m_args.begin (), Et=m_args.end (); It!=Et; )
+      {
+        o << It->first;
+        ++It;
+        if (It != Et)
+          o << ",";
+      }
+      o << ")";
+
+      return;
+    }
+
+  }; 
+
+  template< class VariableName>
+  class Return: public Statement<VariableName>
+  {
+
+    VariableName m_var;
+    VariableType m_type;
+
+   public:
+
+    Return (VariableName var, VariableType type = UNK_TYPE): 
+        m_var (var), m_type (type)
+    {
+      this->m_live.addUse (m_var); 
+    }
+        
+    VariableName get_ret_var () const { 
+      return m_var;
+    }
+
+    VariableType get_ret_type () const { 
+      return m_type;
+    }
+
+    virtual void accept(StatementVisitor <VariableName> *v) 
+    {
+      v->visit(*this);
+    }
+
+    virtual boost::shared_ptr<Statement <VariableName> > clone () const
+    {
+      typedef Return <VariableName> return_t;
+      return boost::static_pointer_cast< Statement <VariableName>, return_t>
+          (boost::shared_ptr <return_t> (new return_t (m_var, m_type)));
+    }
+    
+    virtual void write(ostream& o) const
+    {
+      o << "return " << m_var;
       return;
     }
   }; 
