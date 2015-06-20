@@ -19,7 +19,6 @@
 #include <ikos/algorithms/linear_constraints.hpp>
 #include <ikos/domains/intervals.hpp>
 
-
 namespace cfg_impl 
 {
   // To convert a basic block label to a string
@@ -458,19 +457,15 @@ namespace cfg
 
     VariableName get_arg_name (unsigned idx) const { 
       if (idx >= m_args.size ())
-      {
-        cerr << "Out-of-bound access to call site parameter\n";
-        std::exit (EXIT_FAILURE);
-      }
+        IKOS_ERROR ("Out-of-bound access to call site parameter");
+
       return m_args[idx].first;
     }
 
     VariableType get_arg_type (unsigned idx) const { 
       if (idx >= m_args.size ())
-      {
-        cerr << "Out-of-bound access to call site parameter\n";
-        std::exit (EXIT_FAILURE);
-      }
+        IKOS_ERROR ("Out-of-bound access to call site parameter");
+      
       return m_args[idx].second;
     }
 
@@ -1511,19 +1506,15 @@ namespace cfg
 
     VariableName get_param_name (unsigned idx) const { 
       if (idx >= m_params.size ())
-      {
-        cerr << "Out-of-bound access to function parameter\n";
-        std::exit (EXIT_FAILURE);
-      }
+        IKOS_ERROR ("Out-of-bound access to function parameter");
+
       return m_params[idx].first;
     }
 
     VariableType get_param_type (unsigned idx) const { 
       if (idx >= m_params.size ())
-      {
-        cerr << "Out-of-bound access to function parameter\n";
-        std::exit (EXIT_FAILURE);
-      }
+        IKOS_ERROR ("Out-of-bound access to function parameter");
+
       return m_params[idx].second;
     }
     
@@ -1635,7 +1626,8 @@ namespace cfg
 
    public:
 
-    Cfg (BasicBlockLabel entry, TrackedPrecision track_prec = REG):  
+    Cfg (BasicBlockLabel entry, 
+         TrackedPrecision track_prec = REG):  
         m_entry  (entry), 
         m_has_exit (false),
         m_blocks (BasicBlockMap_ptr (new BasicBlockMap)),
@@ -1645,7 +1637,8 @@ namespace cfg
                                  BasicBlock_t::Create (m_entry, m_track_prec)));
     }
 
-    Cfg (BasicBlockLabel entry, BasicBlockLabel exit, 
+    Cfg (BasicBlockLabel entry, 
+         BasicBlockLabel exit, 
          TrackedPrecision track_prec = REG):  
         m_entry  (entry), 
         m_exit   (exit), 
@@ -1657,7 +1650,8 @@ namespace cfg
                                  BasicBlock_t::Create (m_entry, m_track_prec)));
     }
 
-    Cfg (BasicBlockLabel entry, BasicBlockLabel exit, 
+    Cfg (BasicBlockLabel entry, 
+         BasicBlockLabel exit, 
          FunctionDecl<VariableName> func_decl, 
          TrackedPrecision track_prec = REG):  
         m_entry (entry), 
@@ -1705,21 +1699,21 @@ namespace cfg
     BasicBlockLabel exit()  const { 
       if (has_exit ()) return m_exit; 
       
-      cerr << "Cfg does not have an exit block\n";
-      std::exit (EXIT_FAILURE);
+      IKOS_ERROR ("Cfg does not have an exit block");
     } 
 
+    //! set method to mark the exit block after the Cfg has been
+    //! created.
     void set_exit (BasicBlockLabel exit) { 
       m_exit = exit; 
       m_has_exit = true;
     }
 
-    // //! required when wrapped into a transform_iterator
-    // pair<succ_iterator,succ_iterator> succs (BasicBlockLabel bb_id) 
-    // {
-    //   BasicBlock_t& b = get_node(bb_id);
-    //   return b.next_blocks ();
-    // }
+    //! set method to add the function declaration after the Cfg has
+    //! been created.
+    void set_func_decl (FunctionDecl<VariableName> decl) { 
+      m_func_decl  = boost::optional<FunctionDecl<VariableName> > (decl);
+    }
 
     //! required by ikos fixpoint
     succ_range next_nodes (BasicBlockLabel bb_id) 
@@ -1728,14 +1722,7 @@ namespace cfg
       BasicBlock_t& b = get_node(bb_id);
       return boost::make_iterator_range (b.next_blocks ());
     }
-    
-    // //! required when wrapped into a transform_iterator
-    // pair<pred_iterator,pred_iterator> preds (BasicBlockLabel bb_id) 
-    // {
-    //   BasicBlock_t& b = get_node(bb_id);
-    //   return b.prev_blocks ();
-    // }
-        
+            
     //! required by ikos fixpoint
     pred_range prev_nodes (BasicBlockLabel bb_id) 
     {
@@ -1783,10 +1770,8 @@ namespace cfg
     {
       auto it = m_blocks->find (bb_id);
       if (it == m_blocks->end ())
-      {
-        cerr << "Basic block not found in the CFG\n";
-        std::exit (EXIT_FAILURE);
-      }
+        IKOS_ERROR ("Basic block not found in the CFG");
+
       return *(it->second);
     }
     
@@ -1829,10 +1814,7 @@ namespace cfg
     void reverse()
     {
       if (!m_has_exit)
-      {
-        cerr << "Cfg cannot be reversed: no exit block found\n";
-        std::exit (EXIT_FAILURE);
-      }
+        IKOS_ERROR ("Cfg cannot be reversed: no exit block found");
 
       std::swap (m_entry, m_exit);
       for (auto &p: *this) 

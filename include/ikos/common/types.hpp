@@ -18,7 +18,7 @@
 #define IKOS_ERROR(msg)                             \
     do {                                            \
       std::cout << msg << "\n";                     \
-      exit (EXIT_FAILURE);                          \
+      std::exit (EXIT_FAILURE);                     \
     } while (0)
 
 namespace ikos 
