@@ -95,11 +95,11 @@ public:
   array_smashing_t operator|(array_smashing_t other) 
   {
     // Reduction between the numerical and uninitialized domain.
-    // 
+
     // Before we perform the join if an array variable is
     // uninitialized in one of the environments we take the value from
     // the other one.
-    if (!_uninit.is_top () && !_uninit.is_bottom ())
+    if (!_uninit.is_bottom () && !other._uninit.is_bottom ())
     {
       for (auto p : _uninit)
       {
