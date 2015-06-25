@@ -10,6 +10,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/range/iterator_range.hpp>
 
 namespace cfg 
 {
@@ -27,6 +28,13 @@ namespace cfg
       template<> inline std::string get_str(std::string e) { return e; }
     } 
 
+    // This variable factory creates a new variable associated to an
+    // element of type T. It can also create variables that are not
+    // associated to an element of type T. We call them shadow
+    // variables.
+    // 
+    // The factory uses an integer counter to generate variable id's
+    // that always increases.
     template< class T>
     class VariableFactory 
     {
@@ -76,8 +84,6 @@ namespace cfg
           }
         }
 
-        //T get(){ return *this->_s; }
-
         boost::optional<T> get(){ 
           if (_s) return boost::optional<T>(*_s); 
           else return boost::optional<T> ();
@@ -111,27 +117,38 @@ namespace cfg
         
       }; 
 
-     public:
-      typedef IndexedString variable_t;
-
      private:
       typedef boost::unordered_map< T, IndexedString >   t_map_t;      
-      typedef boost::unordered_map< int, IndexedString > i_map_t;      
+      typedef boost::unordered_map< int, IndexedString > shadow_map_t;      
 
       index_t _next_id;
       t_map_t _map;
-      i_map_t _i_map;
-      
+      shadow_map_t _shadow_map;
+      vector<IndexedString> _shadow_vars;
+
+     public:
+      typedef IndexedString variable_t;
+      typedef boost::iterator_range<typename vector<IndexedString>::iterator> var_range;
+      typedef boost::iterator_range<typename vector<IndexedString>::const_iterator> const_var_range;
+
      public:
       VariableFactory (): _next_id (1) { }
       
       VariableFactory (index_t start_id): _next_id (start_id) { }
+
+      // return all the shadow variables created by the factory.
+      const_var_range get_shadow_vars () const 
+      {
+        return boost::make_iterator_range (_shadow_vars.begin (),
+                                           _shadow_vars.end ());
+      }
 
       // special purpose: for generating IndexedString's without being
       // associated with a particular T (w/o caching).
       IndexedString get ()
       {
         IndexedString is (_next_id++, this);
+        _shadow_vars.push_back (is);
         return is;
       }
 
@@ -139,11 +156,12 @@ namespace cfg
       // associated with a particular T (w/ caching).
       IndexedString get (int key)
       {
-        auto it = _i_map.find (key);
-        if (it == _i_map.end()) 
+        auto it = _shadow_map.find (key);
+        if (it == _shadow_map.end()) 
         {
           IndexedString is (_next_id++, this);
-          _i_map.insert (typename i_map_t::value_type (key, is));
+          _shadow_map.insert (typename shadow_map_t::value_type (key, is));
+          _shadow_vars.push_back (is);
           return is;
         }
         else 
