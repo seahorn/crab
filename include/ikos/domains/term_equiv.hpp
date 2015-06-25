@@ -59,7 +59,7 @@ namespace ikos {
     typedef patricia_tree_set< dom_var_t > domvar_set_t;
 
     typedef bound<Number> bound_t;
-    // typedef interval_domain< Number, VariableName > intervals_t;
+    typedef interval<Number> interval_t;
     
    public:
     typedef variable< Number, VariableName >                 variable_t;
@@ -104,19 +104,22 @@ namespace ikos {
     anti_unif(bool is_top): _is_bottom(!is_top) { }
 
     anti_unif(dom_var_alloc_t alloc, var_map_t vm, ttbl_t tbl, term_map_t tmap, dom_t impl)
-      : _is_bottom(false), _ttbl(tbl), _impl(impl), _alloc(alloc), _var_map(vm), _term_map(tmap)
+        : _is_bottom((impl.is_bottom ())? true: false), _ttbl(tbl), _impl(impl), _alloc(alloc), 
+          _var_map(vm), _term_map(tmap)
     { check_terms(); }
 
     // x = y op [lb,ub]
     term_id_t term_of_itv(bound_t lb, bound_t ub)
     {
-      if(lb == ub)
-        return build_const(lb);
+      optional<Number> n_lb = lb.number ();
+      optional<Number> n_ub = ub.number ();
+
+      if (n_lb && n_ub && (*n_lb == *n_ub))
+        return build_const(*n_lb);
 
       term_id_t t_itv = _ttbl.fresh_var();
       dom_var_t dom_itv = domvar_of_term(t_itv);
-      _impl.apply_constraint(dom_itv, true , ub);    // adding  x <=  c
-      _impl.apply_constraint(dom_itv, false, -lb); // adding -x <= -c
+      _impl.set(dom_itv.name (), interval_t (lb, ub));
       return t_itv;
     }
 
@@ -140,7 +143,11 @@ namespace ikos {
 
     void apply(operation_t op, VariableName x, VariableName y, bound_t lb, bound_t ub){	
       term_id_t t_x = term_of_expr(op, term_of_var(y), term_of_itv(lb, ub));
-      _var_map.insert(std::make_pair(x, t_x));
+      // JNL: check with Graeme
+      //      insert only adds an entry if the key does not exist
+      //_var_map.insert(std::make_pair(x, t_x));
+      rebind_var (x, t_x);
+
       check_terms();
     }
 
@@ -185,11 +192,11 @@ namespace ikos {
 
     dom_t eval_ftor_copy(dom_t& dom, ttbl_t& tbl, term_id_t t)
     {
-//      cout << "Before tightening:" << endl;
-//      cout << dom << endl;
+      // cout << "Before tightening:" << endl;
+      // cout << dom << endl;
       dom_t ret = dom;
       eval_ftor(ret, tbl, t);
-//      std::cout << "After tightening:" << endl << ret << endl;
+      // std::cout << "After tightening:" << endl << ret << endl;
       return ret;
     }  
 
@@ -252,7 +259,7 @@ namespace ikos {
       check_terms();
       return *this;
     }
-    
+       
     bool is_bottom() {
       return _is_bottom;
     }
@@ -417,7 +424,6 @@ namespace ikos {
         cout << y_impl << endl << "----------------" << endl;
         cout << x_join_y << endl << "================" << endl;
 #endif
-
         return anti_unif(palloc, out_vmap, out_tbl, out_map, x_join_y);
       }
     }
@@ -528,13 +534,16 @@ namespace ikos {
         term_id_t t = (*it).second;
         _var_map.erase(it); 
 
-        std::vector<term_id_t> forgotten;
-
-        for(term_id_t ft : forgotten)
-        {
-          dom_var_t dom_v(domvar_of_term(ft));
-          _impl -= dom_v.name();
-        }
+        // JNL: check with Graeme
+        //      this code is non-op
+        // std::vector<term_id_t> forgotten;
+        // for(term_id_t ft : forgotten)
+        // {
+        //   dom_var_t dom_v(domvar_of_term(ft));
+        //   _impl -= dom_v.name();
+        // }
+        dom_var_t dom_v(domvar_of_term(t));
+        _impl -= dom_v.name();
       }
     }
 
@@ -588,13 +597,14 @@ namespace ikos {
     term_id_t build_linexpr(linear_expression_t& e)
     {
       Number cst = e.constant();
-      term_id_t t = build_const(cst);
 
+      term_id_t t = build_const(cst);
       typename linear_expression_t::iterator it = e.begin();
       for(; it != e.end(); it++)
       {
         t = build_term(OP_ADDITION, t, build_linterm(*it));
       }
+
       /*
       cout << "Should have " << domvar_of_term(t).name() << " := " << e << endl;
       cout << _impl << endl;
@@ -641,7 +651,6 @@ namespace ikos {
 
 //        dom_linexp_t dom_e(rename_linear_expr(e));
         term_id_t tx(build_linexpr(e));
-
         rebind_var(x, tx);
 
         check_terms();
@@ -749,6 +758,7 @@ namespace ikos {
     }
 
     // Assumption: vars(exp) subseteq keys(map)
+    // JNL: this assumption might not hold
     linear_expression_t rename_linear_expr_rev(dom_linexp_t exp, rev_map_t rev_map)
     {
       Number cst(exp.constant());
@@ -756,12 +766,27 @@ namespace ikos {
       for(auto v : exp.variables())
       {
         auto it = rev_map.find(v);
-        assert(it != rev_map.end());
-        variable_t v_out((*it).second);
-        rev_exp = rev_exp + exp[v]*v_out;
+        
+        //assert(it != rev_map.end());
+        if (it == rev_map.end())
+        {
+          // JNL: it happens sometimes that _impl has some constraints
+          // with variables that are neither in _var_map or
+          // _term_map. Many of these "zombie" variables correspond
+          // always to constant terms
+          optional <Number> n_out = _impl [v].singleton ();
+          assert (n_out);
+          rev_exp = rev_exp + (exp[v]*(*n_out));
+        }
+        else
+        {
+          variable_t v_out((*it).second);
+          rev_exp = rev_exp + exp[v]*v_out;
+        }
       }
       return rev_exp;
     }
+
     linear_constraint_t rename_linear_cst_rev(dom_lincst_t cst, rev_map_t rev_map)
     {
       return linear_constraint_t(rename_linear_expr_rev(cst.expression(), rev_map),
@@ -871,9 +896,32 @@ namespace ikos {
       }
 
       changed_terms.clear();
+
+      if (_impl.is_bottom ())
+        set_to_bottom ();
     }
 
+    interval_t operator[](VariableName x) { 
+      // Needed for accuracy
+      normalize();
 
+      if (is_bottom ()) return interval_t::bottom ();
+
+      variable_t vx (x);
+      auto it = _var_map.find (vx);
+      if (it == _var_map.end ()) 
+        return interval_t::top ();
+      
+      dom_var_t dom_x = domvar_of_term(it->second);
+
+      return _impl[dom_x];
+    } 
+
+    void set (VariableName x, interval_t intv){
+      variable_t vx (x);
+      rebind_var (vx, term_of_itv (intv.lb (), intv.ub ()));
+    }
+    
     void operator+=(linear_constraint_system_t cst) {
       for(typename linear_constraint_system_t::iterator it=cst.begin(); it!= cst.end(); ++it){
         this->operator+=(*it);
@@ -883,7 +931,7 @@ namespace ikos {
     linear_constraint_system_t to_linear_constraint_system(void)
     {
       // Extract the underlying constraint system
-//      dom_linsys_t dom_sys(_impl.to_linear_constraint_system());
+      // dom_linsys_t dom_sys(_impl.to_linear_constraint_system());
 
       // Collect the visible terms
       rev_map_t rev_map;
@@ -891,9 +939,9 @@ namespace ikos {
       for(auto p : _var_map)
       {
         dom_var_t dv = domvar_of_term(p.second);
+
         auto it = rev_map.find(dv);
-        if(it == rev_map.end())
-        {
+        if(it == rev_map.end()){
           // The term has not yet been seen.
           rev_map.insert(std::make_pair(dv, p.first));
         } else {
@@ -911,6 +959,8 @@ namespace ikos {
         if(rev_map.find(dv) == rev_map.end())
           d_vis -= dv.name();
       }
+
+
       // Now build and rename the constraint system, plus equivalences.
       dom_linsys_t dom_sys(d_vis.to_linear_constraint_system());
       linear_constraint_system_t out_sys; 
@@ -946,7 +996,11 @@ namespace ikos {
       term_id_t term_x = _ttbl.fresh_var();
       dom_var_t dvar_x = domvar_of_term(term_x);
       _impl.apply(op, dvar_x.name(), domvar_of_var(y).name(), domvar_of_var(z).name());
-      _var_map[x] = term_x;
+      // JNL: check with Graeme
+      //      insert only adds an entry if the key does not exist
+      //_var_map[x] = term_x;
+      variable_t x_copy (x);
+      rebind_var (x_copy, term_x);
     }
     
     void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k){
@@ -955,7 +1009,11 @@ namespace ikos {
       term_id_t term_x = _ttbl.fresh_var();
       dom_var_t dvar_x = domvar_of_term(term_x);
       _impl.apply(op, dvar_x.name(), domvar_of_var(y).name(), k);
-      _var_map[x] = term_x;
+      // JNL: check with Graeme
+      //      insert only adds an entry if the key does not exist
+      //_var_map[x] = term_x;
+      variable_t x_copy (x);
+      rebind_var (x_copy, term_x);
     }
     
     // division_operators_api
@@ -966,7 +1024,11 @@ namespace ikos {
       term_id_t term_x = _ttbl.fresh_var();
       dom_var_t dvar_x = domvar_of_term(term_x);
       _impl.apply(op, dvar_x.name(), domvar_of_var(y).name(), domvar_of_var(z).name());
-      _var_map[x] = term_x;
+      // JNL: check with Graeme
+      //      insert only adds an entry if the key does not exist
+      //_var_map[x] = term_x;
+      variable_t x_copy (x);
+      rebind_var (x_copy, term_x);
     }
 
     void apply(div_operation_t op, VariableName x, VariableName y, Number k){
@@ -975,8 +1037,11 @@ namespace ikos {
       term_id_t term_x = _ttbl.fresh_var();
       dom_var_t dvar_x = domvar_of_term(term_x);
       _impl.apply(op, dvar_x.name(), domvar_of_var(y).name(), k);
-      _var_map[x] = term_x;
-      
+      // JNL: check with Graeme
+      //      insert only adds an entry if the key does not exist
+      //_var_map[x] = term_x;
+      variable_t x_copy (x);
+      rebind_var (x_copy, term_x);
     }
     
     // Output function
@@ -986,7 +1051,7 @@ namespace ikos {
       // but we force it to display all the relationships.
       normalize();
 
-      if(_is_bottom){
+      if(is_bottom ()){
         return o << "_|_";
       }
       if(_var_map.size()== 0) {
