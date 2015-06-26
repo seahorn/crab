@@ -15,10 +15,6 @@
   Warning: this implementation is just a proof-of-concept so it is
   horribly inefficient. I have not tried to make it more efficient
   yet.
-
-  FIXME: the function mk_succ_idx assumes that VariableFactory<T> is
-  defined with T as a string. If T is not convertible to a string it
-  won't compile.
  */
 
 #ifndef IKOS_ARRAY_GRAPH_HPP
@@ -730,16 +726,10 @@ class array_graph_domain:
     }
   }
   
-  VariableName mk_succ_idx (VariableName x)
-  {
-    ostringstream b; b << x;
-    VariableName x_plus = x.getVarFactory ()["\"" + b.str() + "+" + "\""];
-    return x_plus;
-  }
-  
+    
   optional<VariableName> get_succ_idx (VariableName v) const
   {
-    return _succ_idx_map->operator[](v);
+    return (*_succ_idx_map)[v];
   }
 
   template <typename VariableFactory>
@@ -759,7 +749,7 @@ class array_graph_domain:
   {
     if (is_array_index(v))
     {
-      VariableName v_succ = mk_succ_idx(v);
+      VariableName v_succ = v.getVarFactory().get(v.index ()); /*fresh var*/ 
       _g.insert_vertex(v);
       _g.insert_vertex(v_succ);
       _succ_idx_map->set(v, v_succ);
@@ -811,8 +801,8 @@ class array_graph_domain:
     if (is_bottom()) return;
 
     /// step 1: add x_old in the graph
-    VariableName x_old = x.getVarFactory ()[boost::lexical_cast<string>(x) + "_old"];
-    VariableName x_old_succ = mk_succ_idx(x_old);    
+    VariableName x_old = x.getVarFactory ().get (); /*fresh var*/ 
+    VariableName x_old_succ = x.getVarFactory ().get (); /*fresh var*/
     _g.insert_vertex(x_old);
     _g.insert_vertex(x_old_succ);
     _succ_idx_map->set(x_old, x_old_succ);
@@ -841,7 +831,7 @@ class array_graph_domain:
     /// step 4: delete x_old
     _g -= x_old;
     _g -= x_old_succ;
-    _succ_idx_map->operator-=(x_old);
+    (*_succ_idx_map) -= x_old;
     _scalar -= x_old;
     _scalar -= x_old_succ;
 
@@ -1077,7 +1067,7 @@ class array_graph_domain:
       {
         _scalar -= *var_succ;
         _g -= *var_succ;        
-        _succ_idx_map->operator-=(var);
+        (*_succ_idx_map) -= var;
       }
     }
     else
