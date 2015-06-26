@@ -185,7 +185,7 @@ public:
     // into a non-summarized variable lhs. 
     // Simply do _inv.assign (lhs, arr) is wrong.
 
-    VariableName arr_prime = arr.getVarFactory().get(); /* ask for a temp var */
+    VariableName arr_prime = arr.getVarFactory().get(arr.index()); /* ask for a temp var */
     domain_traits::expand (_inv, arr, arr_prime);
     _inv.assign (lhs, linear_expression_t (arr_prime));
     _inv -= arr_prime; 
