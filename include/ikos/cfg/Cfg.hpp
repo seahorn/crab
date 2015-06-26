@@ -1752,13 +1752,15 @@ namespace cfg
     void remove (BasicBlockLabel bb_id)
     {
       BasicBlock_t& bb = get_node(bb_id) ;
+
+      vector< pair<BasicBlock_t*,BasicBlock_t*> > dead;
       
       for (auto id : boost::make_iterator_range (bb.prev_blocks ()))
       { 
         if (bb_id != id)
         {
           BasicBlock_t& p = get_node(id) ;
-          p -= bb;
+          dead.push_back (make_pair (&p,&bb));
         }
       }
       
@@ -1767,9 +1769,12 @@ namespace cfg
         if (bb_id != id)
         {
           BasicBlock_t& s = get_node(id) ;
-          bb -= s;
+          dead.push_back (make_pair (&bb,&s));
         }
       }
+
+      for (auto p : dead)
+        (*p.first) -= (*p.second);
 
       m_blocks->erase (bb_id);
     }
