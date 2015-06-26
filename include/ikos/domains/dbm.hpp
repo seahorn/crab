@@ -541,11 +541,16 @@ class DBM: public writeable,
     _forget(v.index());
   }
 
-  void operator-=(vector<VariableName> vs) {
-    vector<int> indexes;
-    for(unsigned int i=0;i<vs.size();i++)
-      indexes.push_back((int) vs[i].index());
-    _forget(indexes);
+  template<typename Iterator>
+  void forget (Iterator it, Iterator end) {
+    // transform
+    vector<int> idxs;
+    for(; it!=end; ++it){
+      idxs.push_back((int) (*it).index());
+    }
+    // this is much more efficient than calling operator-= multiple
+    // times.
+    _forget (idxs);
   }
 
   void assign(VariableName x, linear_expression_t e) {
@@ -1016,8 +1021,13 @@ void expand (DBM<Number, VariableName>& inv,
 }
 
 template <typename Number, typename VariableName>
-void normalize(DBM<Number, VariableName>& inv) {
+void normalize (DBM<Number, VariableName>& inv) {
    inv.normalize();
+}
+
+template <typename Number, typename VariableName, typename Iterator >
+void forget (DBM<Number, VariableName>& inv, Iterator it, Iterator end){
+  inv.forget (it, end);
 }
 
 } // namespace domain_traits

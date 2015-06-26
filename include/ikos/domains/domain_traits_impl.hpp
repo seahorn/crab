@@ -21,6 +21,13 @@ template <typename AbsNumDomain >
 void normalize(AbsNumDomain& inv) {
 }
 
+template <typename AbsNumDomain, typename Iterator >
+void forget(AbsNumDomain& inv, Iterator it, Iterator end){
+  for (auto v : boost::make_iterator_range (it,end)){
+    inv -= v; 
+  }
+}
+
 template <typename AbsDomain, typename VariableName >
 void expand (AbsDomain& inv, VariableName x, VariableName new_x) {
   // make a new copy of x but losing precision if relational domain

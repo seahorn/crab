@@ -146,8 +146,9 @@ namespace analyzer
 
        // prune dead variables 
        if (post.is_bottom() || post.is_top()) return post;
-       for (auto v: m_live.dead_exit (node)) { post -= v;  }
 
+       auto dead = m_live.dead_exit (node);
+       domain_traits::forget (post, dead.begin (), dead.end ());
        return post;
      } 
      

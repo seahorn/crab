@@ -18,20 +18,23 @@ namespace ikos {
 
 namespace domain_traits {
 
-template <typename AbsNumDomain >
+template <typename AbsNumDomain>
 void normalize(AbsNumDomain& inv); 
 
-template <typename AbsDomain, typename VariableName >
+template <typename AbsNumDomain, typename Iterator>
+void forget(AbsNumDomain& inv, Iterator begin, Iterator end); 
+
+template <typename AbsDomain, typename VariableName>
 void expand (AbsDomain& inv, VariableName x, VariableName new_x);
 
-template <typename AbsDomain, typename VariableName >
+template <typename AbsDomain, typename VariableName>
 void array_init (AbsDomain& inv, VariableName arr); 
 
-template <typename AbsDomain, typename VariableName >
+template <typename AbsDomain, typename VariableName>
 void array_load (AbsDomain& inv, VariableName lhs, 
                  VariableName arr, VariableName idx);
 
-template <typename AbsDomain, typename VariableName >
+template <typename AbsDomain, typename VariableName>
 void array_store (AbsDomain& inv, VariableName arr, 
                   VariableName idx, typename AbsDomain::linear_expression_t val,
                   bool is_singleton); 
