@@ -1591,6 +1591,8 @@ namespace cfg
                                        typename BasicBlockMap::const_iterator > const_iterator;
     typedef boost::transform_iterator< getLabel, 
                                        typename BasicBlockMap::iterator > label_iterator;
+    typedef boost::transform_iterator< getLabel, 
+                                       typename BasicBlockMap::const_iterator > const_label_iterator;
 
    private:
 
@@ -1604,21 +1606,20 @@ namespace cfg
 
 
     typedef boost::unordered_set< BasicBlockLabel > visited_t;
-
     template<typename T>
-    void dfs_rec (BasicBlockLabel curId, visited_t &visited, T f) 
+    void dfs_rec (BasicBlockLabel curId, visited_t &visited, T f) const
     {
       if (visited.find (curId) != visited.end ()) return;
       visited.insert (curId);
 
-      BasicBlock_t &cur = get_node (curId);
+      const BasicBlock_t &cur = get_node (curId);
       f (cur);
-      for (auto n : boost::make_iterator_range (cur.next_blocks ()))
+      for (auto const n : boost::make_iterator_range (cur.next_blocks ()))
         dfs_rec (n, visited, f);
     }
 
     template<typename T>
-    void dfs (T f) 
+    void dfs (T f) const 
     {
       visited_t visited;
       dfs_rec (m_entry, visited, f);
@@ -1788,6 +1789,15 @@ namespace cfg
 
       return *(it->second);
     }
+
+    const BasicBlock_t& get_node (BasicBlockLabel bb_id) const
+    {
+      auto it = m_blocks->find (bb_id);
+      if (it == m_blocks->end ())
+        IKOS_ERROR ("Basic block not found in the CFG");
+
+      return *(it->second);
+    }
     
     //! return a begin iterator of BasicBlock's
     iterator begin() 
@@ -1823,6 +1833,16 @@ namespace cfg
       return boost::make_transform_iterator (m_blocks->end (), getLabel ());
     }
 
+    const_label_iterator label_begin() const
+    {
+      return boost::make_transform_iterator (m_blocks->begin (), getLabel ());
+    }
+    
+    const_label_iterator label_end() const
+    {
+      return boost::make_transform_iterator (m_blocks->end (), getLabel ());
+    }
+
     size_t size () const { return std::distance (begin (), end ()); }
         
     void reverse()
@@ -1835,18 +1855,17 @@ namespace cfg
         p.reverse (); 
     }
 
-    void write (ostream& o) 
+    void write (ostream& o) const
     {
       PrintBlock f (o);
       if (m_func_decl)
         o << *m_func_decl << endl;
-      //o << "CFG blocks= " << size () << endl;
       dfs (f);
       return;
     }
 
     friend ostream& operator<<(ostream &o, 
-                               Cfg< BasicBlockLabel, VariableName > &cfg)
+                               const Cfg< BasicBlockLabel, VariableName > &cfg)
     {
       cfg.write (o);
       return o;
