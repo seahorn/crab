@@ -50,19 +50,19 @@ namespace analyzer
     template < typename NumInvGen>
     struct GenBasicBlockCons: public StatementVisitor <varname_t> 
     {
-      using typename StatementVisitor<varname_t>::ZBinaryOp;
-      using typename StatementVisitor<varname_t>::ZAssignment;
-      using typename StatementVisitor<varname_t>::ZAssume;
-      using typename StatementVisitor<varname_t>::Havoc_t;
-      using typename StatementVisitor<varname_t>::Unreachable_t;
+      using typename StatementVisitor<varname_t>::z_bin_op_t;
+      using typename StatementVisitor<varname_t>::z_assign_t;
+      using typename StatementVisitor<varname_t>::z_assume_t;
+      using typename StatementVisitor<varname_t>::havoc_t;
+      using typename StatementVisitor<varname_t>::unreach_t;
       
-      using typename StatementVisitor<varname_t>::CallSite_t;
-      using typename StatementVisitor<varname_t>::Return_t;
-      using typename StatementVisitor<varname_t>::PtrLoad_t;
-      using typename StatementVisitor<varname_t>::PtrStore_t;
-      using typename StatementVisitor<varname_t>::PtrAssign_t;
-      using typename StatementVisitor<varname_t>::PtrObject_t;
-      using typename StatementVisitor<varname_t>::PtrFunction_t;
+      using typename StatementVisitor<varname_t>::callsite_t;
+      using typename StatementVisitor<varname_t>::return_t;
+      using typename StatementVisitor<varname_t>::ptr_load_t;
+      using typename StatementVisitor<varname_t>::ptr_store_t;
+      using typename StatementVisitor<varname_t>::ptr_assign_t;
+      using typename StatementVisitor<varname_t>::ptr_object_t;
+      using typename StatementVisitor<varname_t>::ptr_function_t;
       
       typedef FunctionDecl<varname_t> FunctionDecl_t;
       typedef boost::unordered_map< varname_t, pointer_var > pt_var_map_t;
@@ -129,7 +129,7 @@ namespace analyzer
         }
       }
       
-      void visit (CallSite_t & stmt) { 
+      void visit (callsite_t & stmt) { 
         unsigned num_args = stmt.get_num_args ();
         for (unsigned i=0; i<num_args; i++)
         {
@@ -150,7 +150,7 @@ namespace analyzer
         
       }
       
-      void visit (Return_t & stmt) { 
+      void visit (return_t & stmt) { 
         if (stmt.get_ret_type () == PTR_TYPE && (m_func_name))
         {
           pointer_var p = new_pointer_var (stmt.get_ret_var ());
@@ -159,19 +159,19 @@ namespace analyzer
 
       }
       
-      void visit (PtrObject_t & stmt) { 
+      void visit (ptr_object_t & stmt) { 
         pointer_var lhs = new_pointer_var (stmt.lhs ());
         auto ref = ikos::mk_object_ref (stmt.rhs (), zero());
         (*m_cs) += lhs == ref;
       }
       
-      void visit (PtrFunction_t & stmt) { 
+      void visit (ptr_function_t & stmt) { 
         pointer_var lhs = new_pointer_var (stmt.lhs ());
         auto ref = ikos::mk_function_ref (stmt.rhs ());
         (*m_cs) += lhs == ref;
         }
       
-      void visit (PtrAssign_t & stmt) { 
+      void visit (ptr_assign_t & stmt) { 
         pointer_var lhs = new_pointer_var (stmt.lhs ());
         pointer_var rhs = new_pointer_var (stmt.rhs ());
         interval_t  offset = interval_t::top ();
@@ -187,33 +187,33 @@ namespace analyzer
         (*m_cs) += lhs == (rhs + offset );
       }
       
-      void visit (PtrLoad_t & stmt) {
+      void visit (ptr_load_t & stmt) {
         pointer_var lhs = new_pointer_var (stmt.lhs ());
         pointer_var rhs = new_pointer_var (stmt.rhs ());
         interval_t size = stmt.size ();
         (*m_cs) += lhs *= (rhs + size);
       }
       
-      void visit (PtrStore_t & stmt) { 
+      void visit (ptr_store_t & stmt) { 
         pointer_var lhs = new_pointer_var (stmt.lhs ());
         pointer_var rhs = new_pointer_var (stmt.rhs ());
         interval_t size = stmt.size ();
         (*m_cs) += (lhs + size) << rhs;          
         }
       
-      void visit (ZBinaryOp& stmt) 
+      void visit (z_bin_op_t& stmt) 
       { m_inv = m_inv_gen->AnalyzeStmt (stmt, m_inv); }
 
-      void visit (ZAssignment& stmt)
+      void visit (z_assign_t& stmt)
       { m_inv = m_inv_gen->AnalyzeStmt (stmt, m_inv); }
       
-      void visit (ZAssume& stmt)
+      void visit (z_assume_t& stmt)
       { m_inv = m_inv_gen->AnalyzeStmt (stmt, m_inv); }
       
-      void visit (Havoc_t& stmt)
+      void visit (havoc_t& stmt)
       { m_inv = m_inv_gen->AnalyzeStmt (stmt, m_inv); }
       
-      void visit (Unreachable_t& stmt)
+      void visit (unreach_t& stmt)
       { m_inv = m_inv_gen->AnalyzeStmt (stmt, m_inv); }
       
     };

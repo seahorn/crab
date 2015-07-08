@@ -177,7 +177,7 @@ namespace cfg
     
    public:
 
-    typedef variable< Number, VariableName >          variable_t;
+    typedef variable< Number, VariableName > variable_t;
     typedef linear_expression< Number, VariableName > linear_expression_t;
 
    private:
@@ -292,7 +292,7 @@ namespace cfg
 
    public:
 
-    typedef variable< Number, VariableName >          variable_t;
+    typedef variable< Number, VariableName > variable_t;
     typedef linear_constraint< Number, VariableName > linear_constraint_t;
       
    private:
@@ -493,7 +493,7 @@ namespace cfg
 
    public:
 
-    typedef variable< Number, VariableName >          variable_t;
+    typedef variable< Number, VariableName > variable_t;
     typedef linear_expression< Number, VariableName > linear_expression_t;
     
    private:
@@ -961,19 +961,18 @@ namespace cfg
    public:
 
     // helper types to build statements
-    typedef z_number                                    ZNumber;
-    typedef variable< ZNumber, VariableName >           ZVariable;
-    typedef linear_expression< ZNumber, VariableName >  ZLinearExpression;
-    typedef linear_constraint< ZNumber, VariableName >  ZLinearConstraint;
+    typedef variable< z_number, VariableName > z_variable_t;
+    typedef linear_expression< z_number, VariableName > z_lin_exp_t;
+    typedef linear_constraint< z_number, VariableName > z_lin_cst_t;
 
-    typedef Statement< VariableName> Statement_t;
-    typedef BasicBlock< BasicBlockLabel, VariableName > BasicBlock_t;
+    typedef Statement< VariableName> statement_t;
+    typedef BasicBlock< BasicBlockLabel, VariableName > basic_block_t;
     
    private:
 
     typedef std::vector< BasicBlockLabel >   bb_id_set_t;
 
-    typedef boost::shared_ptr< Statement_t > statement_ptr;
+    typedef boost::shared_ptr< statement_t > statement_ptr;
     typedef std::vector< statement_ptr > stmt_list_t;
 
    public:
@@ -988,44 +987,43 @@ namespace cfg
 
    private:
 
-    typedef interval <ZNumber> z_interval;
+    typedef interval <z_number> z_interval;
 
     // Basic statements
-    typedef BinaryOp<ZNumber,VariableName> ZBinaryOp;
-    typedef Assignment<ZNumber,VariableName> ZAssignment;
-    typedef Assume<ZNumber,VariableName> ZAssume;
-    typedef Havoc<VariableName> Havoc_t;
-    typedef Unreachable<VariableName> Unreachable_t;
+    typedef BinaryOp<z_number,VariableName> z_bin_op_t;
+    typedef Assignment<z_number,VariableName> z_assign_t;
+    typedef Assume<z_number,VariableName> z_assume_t;
+    typedef Havoc<VariableName> havoc_t;
+    typedef Unreachable<VariableName> unreach_t;
     // Functions
-    typedef FCallSite<VariableName> CallSite_t;
-    typedef Return<VariableName> Return_t;
+    typedef FCallSite<VariableName> callsite_t;
+    typedef Return<VariableName> return_t;
     // Arrays
-    typedef ArrayInit<VariableName> ArrayInit_t;
-    typedef ArrayStore<ZNumber,VariableName> ZArrayStore;
-    typedef ArrayLoad<ZNumber,VariableName> ZArrayLoad;
+    typedef ArrayInit<VariableName> arr_init_t;
+    typedef ArrayStore<z_number,VariableName> z_arr_store_t;
+    typedef ArrayLoad<z_number,VariableName> z_arr_load_t;
     // Pointers
-    typedef PtrStore<ZNumber,VariableName> PtrStore_t;
-    typedef PtrLoad<ZNumber,VariableName> PtrLoad_t;
-    typedef PtrAssign<ZNumber,VariableName> PtrAssign_t;
-    typedef PtrObject<VariableName> PtrObject_t;
-    typedef PtrFunction<VariableName> PtrFunction_t;
+    typedef PtrStore<z_number,VariableName> ptr_store_t;
+    typedef PtrLoad<z_number,VariableName> ptr_load_t;
+    typedef PtrAssign<z_number,VariableName> ptr_assign_t;
+    typedef PtrObject<VariableName> ptr_object_t;
+    typedef PtrFunction<VariableName> ptr_function_t;
 
-
-    typedef boost::shared_ptr<ZBinaryOp> ZBinaryOp_ptr;
-    typedef boost::shared_ptr<ZAssignment> ZAssignment_ptr;
-    typedef boost::shared_ptr<ZAssume> ZAssume_ptr;
-    typedef boost::shared_ptr<Havoc_t> Havoc_ptr;      
-    typedef boost::shared_ptr<Unreachable_t> Unreachable_ptr;
-    typedef boost::shared_ptr<CallSite_t> CallSite_ptr;      
-    typedef boost::shared_ptr<Return_t> Return_ptr;      
-    typedef boost::shared_ptr<ArrayInit_t> ArrayInit_ptr;
-    typedef boost::shared_ptr<ZArrayStore> ZArrayStore_ptr;
-    typedef boost::shared_ptr<ZArrayLoad> ZArrayLoad_ptr;    
-    typedef boost::shared_ptr<PtrStore_t> PtrStore_ptr;
-    typedef boost::shared_ptr<PtrLoad_t> PtrLoad_ptr;    
-    typedef boost::shared_ptr<PtrAssign_t> PtrAssign_ptr;
-    typedef boost::shared_ptr<PtrObject_t> PtrObject_ptr;    
-    typedef boost::shared_ptr<PtrFunction_t> PtrFunction_ptr;    
+    typedef boost::shared_ptr<z_bin_op_t> z_bin_op_ptr;
+    typedef boost::shared_ptr<z_assign_t> z_assign_ptr;
+    typedef boost::shared_ptr<z_assume_t> z_assume_ptr;
+    typedef boost::shared_ptr<havoc_t> havoc_ptr;      
+    typedef boost::shared_ptr<unreach_t> unreach_ptr;
+    typedef boost::shared_ptr<callsite_t> callsite_ptr;      
+    typedef boost::shared_ptr<return_t> return_ptr;      
+    typedef boost::shared_ptr<arr_init_t> arr_init_ptr;
+    typedef boost::shared_ptr<z_arr_store_t> z_arr_store_ptr;
+    typedef boost::shared_ptr<z_arr_load_t> z_arr_load_ptr;    
+    typedef boost::shared_ptr<ptr_store_t> ptr_store_ptr;
+    typedef boost::shared_ptr<ptr_load_t> ptr_load_ptr;    
+    typedef boost::shared_ptr<ptr_assign_t> ptr_assign_ptr;
+    typedef boost::shared_ptr<ptr_object_t> ptr_object_ptr;    
+    typedef boost::shared_ptr<ptr_function_t> ptr_function_ptr;    
    
     BasicBlockLabel m_bb_id;
     stmt_list_t m_stmts;
@@ -1055,10 +1053,10 @@ namespace cfg
         m_insert_point_at_front (false)
     { }
 
-    static boost::shared_ptr< BasicBlock_t > Create (BasicBlockLabel bb_id, 
+    static boost::shared_ptr< basic_block_t > Create (BasicBlockLabel bb_id, 
                                                      TrackedPrecision track_prec) 
     {
-      return boost::shared_ptr< BasicBlock_t > (new BasicBlock_t (bb_id, track_prec));
+      return boost::shared_ptr< basic_block_t > (new basic_block_t (bb_id, track_prec));
     }
     
     void insert(statement_ptr stmt) 
@@ -1079,9 +1077,9 @@ namespace cfg
       m_insert_point_at_front = true;
     }
 
-    boost::shared_ptr <BasicBlock_t> clone () const
+    boost::shared_ptr <basic_block_t> clone () const
     {
-      boost::shared_ptr <BasicBlock_t> b (new BasicBlock_t (label (), 
+      boost::shared_ptr <basic_block_t> b (new basic_block_t (label (), 
                                                             m_track_prec));
 
       for (auto &s : boost::make_iterator_range (begin (), end ()))
@@ -1132,21 +1130,21 @@ namespace cfg
     }
     
     // Add a cfg edge from *this to b
-    void operator>>(BasicBlock_t& b) 
+    void operator>>(basic_block_t& b) 
     {
       InsertAdjacent (m_next, b.m_bb_id);
       InsertAdjacent (b.m_prev, m_bb_id);
     }
     
     // Remove a cfg edge from *this to b
-    void operator-=(BasicBlock_t &b)
+    void operator-=(basic_block_t &b)
     {
       RemoveAdjacent (m_next, b.m_bb_id);
       RemoveAdjacent (b.m_prev, m_bb_id);       
     }
     
     // insert all statements of other at the front
-    void merge_front (const BasicBlock_t &other) 
+    void merge_front (const basic_block_t &other) 
     {
       m_stmts.insert (m_stmts.begin (), 
                       other.m_stmts.begin (), 
@@ -1154,7 +1152,7 @@ namespace cfg
     }
     
     // insert all statements of other at the back
-    void merge_back (const BasicBlock_t &other) 
+    void merge_back (const basic_block_t &other) 
     {
       m_stmts.insert (m_stmts.end (), 
                       other.m_stmts.begin (), 
@@ -1180,19 +1178,19 @@ namespace cfg
 
     /// To build statements
 
-    void add (ZVariable lhs, ZVariable op1, ZVariable op2) 
+    void add (z_variable_t lhs, z_variable_t op1, z_variable_t op2) 
     {
-      insert(boost::static_pointer_cast< Statement_t, ZBinaryOp >
-             (ZBinaryOp_ptr(new ZBinaryOp(lhs, OP_ADDITION, op1, op2))));
+      insert(boost::static_pointer_cast< statement_t, z_bin_op_t >
+             (z_bin_op_ptr(new z_bin_op_t(lhs, OP_ADDITION, op1, op2))));
     }
     
-    void add (ZVariable lhs, ZVariable op1, ZNumber op2) 
+    void add (z_variable_t lhs, z_variable_t op1, z_number op2) 
     {
-      insert(boost::static_pointer_cast< Statement_t, ZBinaryOp > 
-             (ZBinaryOp_ptr(new ZBinaryOp(lhs, OP_ADDITION, op1,  op2))));
+      insert(boost::static_pointer_cast< statement_t, z_bin_op_t > 
+             (z_bin_op_ptr(new z_bin_op_t(lhs, OP_ADDITION, op1,  op2))));
     }
     
-    void add (ZVariable lhs, ZLinearExpression op1, ZLinearExpression op2) 
+    void add (z_variable_t lhs, z_lin_exp_t op1, z_lin_exp_t op2) 
     {
       if  (op1.get_variable () && op2.get_variable ())
         add (lhs, (*op1.get_variable ()), (*op2.get_variable ()));
@@ -1205,27 +1203,27 @@ namespace cfg
 
       else if (op1.is_constant () && op2.is_constant ()) 
       {
-        ZLinearExpression rhs(ZNumber(op1.constant () + op2.constant ()));
-        insert(boost::static_pointer_cast< Statement_t, ZAssignment >
-               (ZAssignment_ptr (new ZAssignment (lhs, rhs))));
+        z_lin_exp_t rhs(z_number(op1.constant () + op2.constant ()));
+        insert(boost::static_pointer_cast< statement_t, z_assign_t >
+               (z_assign_ptr (new z_assign_t (lhs, rhs))));
       }
       else
         assert(false && "add operands unexpected");
     }
     
-    void sub (ZVariable lhs, ZVariable op1, ZVariable op2) 
+    void sub (z_variable_t lhs, z_variable_t op1, z_variable_t op2) 
     {
-      insert (boost::static_pointer_cast< Statement_t, ZBinaryOp >
-              (ZBinaryOp_ptr (new ZBinaryOp (lhs, OP_SUBTRACTION, op1, op2))));
+      insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
+              (z_bin_op_ptr (new z_bin_op_t (lhs, OP_SUBTRACTION, op1, op2))));
     }
     
-    void sub (ZVariable lhs, ZVariable op1, ZNumber op2) 
+    void sub (z_variable_t lhs, z_variable_t op1, z_number op2) 
     {
-      insert (boost::static_pointer_cast< Statement_t, ZBinaryOp >
-              (ZBinaryOp_ptr (new ZBinaryOp (lhs, OP_SUBTRACTION, op1, op2))));
+      insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
+              (z_bin_op_ptr (new z_bin_op_t (lhs, OP_SUBTRACTION, op1, op2))));
     }
     
-    void sub (ZVariable lhs, ZLinearExpression op1, ZLinearExpression op2) 
+    void sub (z_variable_t lhs, z_lin_exp_t op1, z_lin_exp_t op2) 
     {
       if (op1.get_variable () && op2.get_variable ())
         sub (lhs, (*op1.get_variable ()), (*op2.get_variable ()));
@@ -1235,27 +1233,27 @@ namespace cfg
 
       else if (op1.is_constant () && op2.is_constant ()) 
       {
-        ZLinearExpression rhs (ZNumber (op1.constant () - op2.constant ()));
-        insert (boost::static_pointer_cast< Statement_t, ZAssignment >
-                (ZAssignment_ptr(new ZAssignment (lhs, rhs))));
+        z_lin_exp_t rhs (z_number (op1.constant () - op2.constant ()));
+        insert (boost::static_pointer_cast< statement_t, z_assign_t >
+                (z_assign_ptr(new z_assign_t (lhs, rhs))));
       }
       else
         assert(false && "sub operands unexpected");
     }
     
-    void mul (ZVariable lhs, ZVariable op1, ZVariable op2) 
+    void mul (z_variable_t lhs, z_variable_t op1, z_variable_t op2) 
     {
-      insert(boost::static_pointer_cast< Statement_t, ZBinaryOp >
-             (ZBinaryOp_ptr(new ZBinaryOp (lhs, OP_MULTIPLICATION, op1, op2))));
+      insert(boost::static_pointer_cast< statement_t, z_bin_op_t >
+             (z_bin_op_ptr(new z_bin_op_t (lhs, OP_MULTIPLICATION, op1, op2))));
     }
     
-    void mul (ZVariable lhs, ZVariable op1, ZNumber op2) 
+    void mul (z_variable_t lhs, z_variable_t op1, z_number op2) 
     {
-      insert (boost::static_pointer_cast< Statement_t, ZBinaryOp >
-              (ZBinaryOp_ptr(new ZBinaryOp (lhs, OP_MULTIPLICATION, op1, op2))));
+      insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
+              (z_bin_op_ptr(new z_bin_op_t (lhs, OP_MULTIPLICATION, op1, op2))));
     }
     
-    void mul(ZVariable lhs, ZLinearExpression op1, ZLinearExpression op2) 
+    void mul(z_variable_t lhs, z_lin_exp_t op1, z_lin_exp_t op2) 
     {
       if (op1.get_variable () && op2.get_variable ())
         mul (lhs, (*op1.get_variable ()), (*op2.get_variable ()));
@@ -1268,27 +1266,27 @@ namespace cfg
 
       else if (op1.is_constant () && op2.is_constant ()) 
       {
-        ZLinearExpression rhs(ZNumber(op1.constant () * op2.constant ()));
-        insert(boost::static_pointer_cast< Statement_t, ZAssignment >
-               (ZAssignment_ptr(new ZAssignment (lhs, rhs))));
+        z_lin_exp_t rhs(z_number(op1.constant () * op2.constant ()));
+        insert(boost::static_pointer_cast< statement_t, z_assign_t >
+               (z_assign_ptr(new z_assign_t (lhs, rhs))));
       }
       else
         assert(false && "mul operands unexpected");
     }
     
-    void div (ZVariable lhs, ZVariable op1, ZVariable op2) 
+    void div (z_variable_t lhs, z_variable_t op1, z_variable_t op2) 
     {
-      insert (boost::static_pointer_cast< Statement_t, ZBinaryOp >
-              (ZBinaryOp_ptr(new ZBinaryOp (lhs, OP_DIVISION, op1, op2))));
+      insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
+              (z_bin_op_ptr (new z_bin_op_t (lhs, OP_DIVISION, op1, op2))));
     }
     
-    void div (ZVariable lhs, ZVariable op1, ZNumber op2) 
+    void div (z_variable_t lhs, z_variable_t op1, z_number op2) 
     {
-      insert (boost::static_pointer_cast< Statement_t, ZBinaryOp >
-              (ZBinaryOp_ptr (new ZBinaryOp (lhs, OP_DIVISION, op1, op2))));
+      insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
+              (z_bin_op_ptr (new z_bin_op_t (lhs, OP_DIVISION, op1, op2))));
     }
     
-    void div (ZVariable lhs, ZLinearExpression op1, ZLinearExpression op2) 
+    void div (z_variable_t lhs, z_lin_exp_t op1, z_lin_exp_t op2) 
     {
       if (op1.get_variable () && op2.get_variable ())
         div (lhs, (*op1.get_variable ()), (*op2.get_variable ()));
@@ -1298,135 +1296,135 @@ namespace cfg
 
       else if (op1.is_constant () && op2.is_constant ()) 
       {
-        ZLinearExpression rhs (ZNumber (op1.constant() / op2.constant()));
-        insert (boost::static_pointer_cast< Statement_t, ZAssignment >
-                (ZAssignment_ptr (new ZAssignment (lhs, rhs))));
+        z_lin_exp_t rhs (z_number (op1.constant() / op2.constant()));
+        insert (boost::static_pointer_cast< statement_t, z_assign_t >
+                (z_assign_ptr (new z_assign_t (lhs, rhs))));
       }
       else
         assert (false && "div operands unexpected");
     }
     
-    void assign (ZVariable lhs, ZLinearExpression rhs) 
+    void assign (z_variable_t lhs, z_lin_exp_t rhs) 
     {
-      insert (boost::static_pointer_cast< Statement_t, ZAssignment >
-              (ZAssignment_ptr (new ZAssignment (lhs, rhs))));
+      insert (boost::static_pointer_cast< statement_t, z_assign_t >
+              (z_assign_ptr (new z_assign_t (lhs, rhs))));
     }
     
-    void assume (ZLinearConstraint cst) 
+    void assume (z_lin_cst_t cst) 
     {
-      insert (boost::static_pointer_cast< Statement_t, ZAssume >
-              (ZAssume_ptr (new ZAssume (cst))));
+      insert (boost::static_pointer_cast< statement_t, z_assume_t >
+              (z_assume_ptr (new z_assume_t (cst))));
     }
     
     void havoc(VariableName lhs) 
     {
-      insert (boost::static_pointer_cast< Statement_t, Havoc_t > 
-              (Havoc_ptr (new Havoc_t (lhs))));
+      insert (boost::static_pointer_cast< statement_t, havoc_t > 
+              (havoc_ptr (new havoc_t (lhs))));
     }
     
     void unreachable() 
     {
-      insert (boost::static_pointer_cast< Statement_t, Unreachable_t > 
-              (Unreachable_ptr (new Unreachable_t ())));
+      insert (boost::static_pointer_cast< statement_t, unreach_t > 
+              (unreach_ptr (new unreach_t ())));
     }
     
     void callsite (VariableName func, 
                    vector<pair <VariableName,VariableType> > args) 
     {
-        insert(boost::static_pointer_cast< Statement_t, CallSite_t >
-               (CallSite_ptr(new CallSite_t(func, args))));
+        insert(boost::static_pointer_cast< statement_t, callsite_t >
+               (callsite_ptr (new callsite_t(func, args))));
     }
 
     void callsite (VariableName func, vector<VariableName> args) 
     {
-        insert(boost::static_pointer_cast< Statement_t, CallSite_t >
-               (CallSite_ptr(new CallSite_t(func, args))));
+        insert(boost::static_pointer_cast< statement_t, callsite_t >
+               (callsite_ptr (new callsite_t(func, args))));
     }
 
     void callsite (pair<VariableName,VariableType> lhs, 
                    VariableName func, 
                    vector<pair <VariableName,VariableType> > args) 
     {
-        insert(boost::static_pointer_cast< Statement_t, CallSite_t >
-               (CallSite_ptr(new CallSite_t(lhs, func, args))));
+        insert(boost::static_pointer_cast< statement_t, callsite_t >
+               (callsite_ptr (new callsite_t(lhs, func, args))));
     }
 
     void callsite (VariableName lhs, VariableName func, vector<VariableName> args) 
     {
-        insert(boost::static_pointer_cast< Statement_t, CallSite_t >
-               (CallSite_ptr(new CallSite_t(lhs, func, args))));
+        insert(boost::static_pointer_cast< statement_t, callsite_t >
+               (callsite_ptr (new callsite_t(lhs, func, args))));
     }
 
     void ret (VariableName var, VariableType ty) 
     {
-        insert(boost::static_pointer_cast< Statement_t, Return_t >
-               (Return_ptr(new Return_t(var, ty))));
+        insert(boost::static_pointer_cast< statement_t, return_t >
+               (return_ptr (new return_t(var, ty))));
     }
 
     void ret (VariableName var) 
     {
-        insert(boost::static_pointer_cast< Statement_t, Return_t >
-               (Return_ptr(new Return_t(var))));
+        insert(boost::static_pointer_cast< statement_t, return_t >
+               (return_ptr (new return_t(var))));
     }
 
     void array_init(VariableName arr) 
     {
-      insert (boost::static_pointer_cast< Statement_t, ArrayInit_t > 
-              (ArrayInit_ptr (new ArrayInit_t (arr))));
+      insert (boost::static_pointer_cast< statement_t, arr_init_t > 
+              (arr_init_ptr (new arr_init_t (arr))));
     }
 
-    void array_store (ZVariable arr, ZLinearExpression idx, 
-                      ZLinearExpression val, bool is_singleton = false) 
+    void array_store (z_variable_t arr, z_lin_exp_t idx, 
+                      z_lin_exp_t val, bool is_singleton = false) 
     {
       if (m_track_prec == MEM)
-        insert(boost::static_pointer_cast< Statement_t, ZArrayStore >
-               (ZArrayStore_ptr(new ZArrayStore(arr, idx, val, 
-                                                is_singleton))));
+        insert(boost::static_pointer_cast< statement_t, z_arr_store_t >
+               (z_arr_store_ptr (new z_arr_store_t(arr, idx, val, 
+                                                   is_singleton))));
     }
 
-    void array_load (ZVariable lhs, ZVariable arr, ZLinearExpression idx) 
+    void array_load (z_variable_t lhs, z_variable_t arr, z_lin_exp_t idx) 
     {
       if (m_track_prec == MEM)
-        insert(boost::static_pointer_cast< Statement_t, ZArrayLoad >
-               (ZArrayLoad_ptr(new ZArrayLoad(lhs, arr, idx))));
+        insert(boost::static_pointer_cast< statement_t, z_arr_load_t >
+               (z_arr_load_ptr (new z_arr_load_t(lhs, arr, idx))));
     }
 
     void ptr_store (VariableName lhs, VariableName rhs, z_interval size) 
     {
       if (m_track_prec >= PTR)
-        insert(boost::static_pointer_cast< Statement_t, PtrStore_t >
-               (PtrStore_ptr (new PtrStore_t (lhs, rhs, size))));
+        insert(boost::static_pointer_cast< statement_t, ptr_store_t >
+               (ptr_store_ptr (new ptr_store_t (lhs, rhs, size))));
     }
 
     void ptr_load (VariableName lhs, VariableName rhs, z_interval size) 
     {
       if (m_track_prec >= PTR)
-        insert(boost::static_pointer_cast< Statement_t, PtrLoad_t >
-               (PtrLoad_ptr (new PtrLoad_t (lhs, rhs, size))));
+        insert(boost::static_pointer_cast< statement_t, ptr_load_t >
+               (ptr_load_ptr (new ptr_load_t (lhs, rhs, size))));
     }
 
-    void ptr_assign (VariableName lhs, VariableName rhs, ZLinearExpression offset) 
+    void ptr_assign (VariableName lhs, VariableName rhs, z_lin_exp_t offset) 
     {
       if (m_track_prec >= PTR)
-        insert(boost::static_pointer_cast< Statement_t, PtrAssign_t >
-               (PtrAssign_ptr (new PtrAssign_t (lhs, rhs, offset))));
+        insert(boost::static_pointer_cast< statement_t, ptr_assign_t >
+               (ptr_assign_ptr (new ptr_assign_t (lhs, rhs, offset))));
     }
 
     void new_object (VariableName lhs, index_t address) 
     {
       if (m_track_prec >= PTR)
-        insert(boost::static_pointer_cast< Statement_t, PtrObject_t >
-               (PtrObject_ptr (new PtrObject_t (lhs, address))));
+        insert(boost::static_pointer_cast< statement_t, ptr_object_t >
+               (ptr_object_ptr (new ptr_object_t (lhs, address))));
     }
 
     void new_ptr_func (VariableName lhs, index_t func) 
     {
       if (m_track_prec >= PTR)
-        insert(boost::static_pointer_cast< Statement_t, PtrFunction_t >
-               (PtrFunction_ptr (new PtrFunction_t (lhs, func))));
+        insert(boost::static_pointer_cast< statement_t, ptr_function_t >
+               (ptr_function_ptr (new ptr_function_t (lhs, func))));
     }
 
-    friend ostream& operator<<(ostream &o, const BasicBlock_t &b)
+    friend ostream& operator<<(ostream &o, const basic_block_t &b)
     {
       b.write (o);
       return o;
@@ -1437,46 +1435,44 @@ namespace cfg
   template< class VariableName>
   struct StatementVisitor
   {
-    typedef z_number ZNumber;
-    typedef linear_expression< ZNumber, VariableName > ZLinearExpression;
+    typedef linear_expression< z_number, VariableName > z_lin_exp_t;
+    typedef BinaryOp <z_number,VariableName> z_bin_op_t;
+    typedef Assignment <z_number,VariableName> z_assign_t;
+    typedef Assume <z_number,VariableName> z_assume_t;
+    typedef Havoc<VariableName> havoc_t;
+    typedef Unreachable<VariableName> unreach_t;
 
-    typedef BinaryOp <ZNumber,VariableName> ZBinaryOp;
-    typedef Assignment <ZNumber,VariableName> ZAssignment;
-    typedef Assume <ZNumber,VariableName> ZAssume;
-    typedef Havoc<VariableName> Havoc_t;
-    typedef Unreachable<VariableName> Unreachable_t;
+    typedef FCallSite<VariableName> callsite_t;
+    typedef Return<VariableName> return_t;
 
-    typedef FCallSite<VariableName> CallSite_t;
-    typedef Return<VariableName> Return_t;
+    typedef ArrayInit<VariableName> arr_init_t;
+    typedef ArrayStore<z_number,VariableName> z_arr_store_t;
+    typedef ArrayLoad<z_number,VariableName> z_arr_load_t;
 
-    typedef ArrayInit<VariableName> ArrayInit_t;
-    typedef ArrayStore<ZNumber,VariableName> ZArrayStore;
-    typedef ArrayLoad<ZNumber,VariableName> ZArrayLoad;
-
-    typedef PtrStore<ZNumber,VariableName> PtrStore_t;
-    typedef PtrLoad<ZNumber,VariableName> PtrLoad_t;
-    typedef PtrAssign<ZNumber,VariableName> PtrAssign_t;
-    typedef PtrObject<VariableName> PtrObject_t;
-    typedef PtrFunction<VariableName> PtrFunction_t;
+    typedef PtrStore<z_number,VariableName> ptr_store_t;
+    typedef PtrLoad<z_number,VariableName> ptr_load_t;
+    typedef PtrAssign<z_number,VariableName> ptr_assign_t;
+    typedef PtrObject<VariableName> ptr_object_t;
+    typedef PtrFunction<VariableName> ptr_function_t;
 
     // Only implementation for basic statements is required
 
-    virtual void visit (ZBinaryOp&) = 0;
-    virtual void visit (ZAssignment&) = 0;
-    virtual void visit (ZAssume&) = 0;
-    virtual void visit (Havoc_t&) = 0;
-    virtual void visit (Unreachable_t&) = 0;
+    virtual void visit (z_bin_op_t&) = 0;
+    virtual void visit (z_assign_t&) = 0;
+    virtual void visit (z_assume_t&) = 0;
+    virtual void visit (havoc_t&) = 0;
+    virtual void visit (unreach_t&) = 0;
 
-    virtual void visit (CallSite_t&) { };
-    virtual void visit (Return_t&) { };
-    virtual void visit (ArrayInit_t&) { };
-    virtual void visit (ZArrayStore&) { };
-    virtual void visit (ZArrayLoad&) { };
-    virtual void visit (PtrStore_t&) { };
-    virtual void visit (PtrLoad_t&) { };
-    virtual void visit (PtrAssign_t&) { };
-    virtual void visit (PtrObject_t&) { };
-    virtual void visit (PtrFunction_t&) { };
+    virtual void visit (callsite_t&) { };
+    virtual void visit (return_t&) { };
+    virtual void visit (arr_init_t&) { };
+    virtual void visit (z_arr_store_t&) { };
+    virtual void visit (z_arr_load_t&) { };
+    virtual void visit (ptr_store_t&) { };
+    virtual void visit (ptr_load_t&) { };
+    virtual void visit (ptr_assign_t&) { };
+    virtual void visit (ptr_object_t&) { };
+    virtual void visit (ptr_function_t&) { };
 
     virtual ~StatementVisitor () { }
   }; 
@@ -1560,11 +1556,11 @@ namespace cfg
     typedef BasicBlockLabel basic_block_label_t;
     typedef VariableName varname_t;
 
-    typedef BasicBlock< BasicBlockLabel, VariableName > BasicBlock_t;   
-    typedef Statement < VariableName > Statement_t;
+    typedef BasicBlock< BasicBlockLabel, VariableName > basic_block_t;   
+    typedef Statement < VariableName > statement_t;
 
-    typedef typename BasicBlock_t::succ_iterator succ_iterator;
-    typedef typename BasicBlock_t::pred_iterator pred_iterator;
+    typedef typename basic_block_t::succ_iterator succ_iterator;
+    typedef typename basic_block_t::pred_iterator pred_iterator;
 
     typedef boost::iterator_range <succ_iterator> succ_range;
     typedef boost::iterator_range <pred_iterator> pred_range;
@@ -1572,40 +1568,40 @@ namespace cfg
    private:
 
     typedef Cfg < BasicBlockLabel, VariableName > cfg_t;
-    typedef boost::shared_ptr< BasicBlock_t > BasicBlock_ptr;
-    typedef boost::unordered_map< BasicBlockLabel, BasicBlock_ptr > BasicBlockMap;
-    typedef typename BasicBlockMap::value_type Binding;
-    typedef boost::shared_ptr< BasicBlockMap > BasicBlockMap_ptr;
+    typedef boost::shared_ptr< basic_block_t > basic_block_ptr;
+    typedef boost::unordered_map< BasicBlockLabel, basic_block_ptr > basic_block_map;
+    typedef typename basic_block_map::value_type binding_t;
+    typedef boost::shared_ptr< basic_block_map > basic_block_map_ptr;
 
-    struct getRef : public std::unary_function<Binding, BasicBlock_t>
+    struct getRef : public std::unary_function<binding_t, basic_block_t>
     {
       getRef () { }
-      BasicBlock_t& operator () (const Binding &p) const { return *(p.second); }
+      basic_block_t& operator () (const binding_t &p) const { return *(p.second); }
     }; 
 
-    struct getLabel : public std::unary_function<Binding, BasicBlockLabel>
+    struct getLabel : public std::unary_function<binding_t, BasicBlockLabel>
     {
       getLabel () { }
-      BasicBlockLabel operator () (const Binding &p) const { return p.second->label(); }
+      BasicBlockLabel operator () (const binding_t &p) const { return p.second->label(); }
     }; 
 
    public:
 
     typedef boost::transform_iterator< getRef, 
-                                       typename BasicBlockMap::iterator > iterator;
+                                       typename basic_block_map::iterator > iterator;
     typedef boost::transform_iterator< getRef, 
-                                       typename BasicBlockMap::const_iterator > const_iterator;
+                                       typename basic_block_map::const_iterator > const_iterator;
     typedef boost::transform_iterator< getLabel, 
-                                       typename BasicBlockMap::iterator > label_iterator;
+                                       typename basic_block_map::iterator > label_iterator;
     typedef boost::transform_iterator< getLabel, 
-                                       typename BasicBlockMap::const_iterator > const_label_iterator;
+                                       typename basic_block_map::const_iterator > const_label_iterator;
 
    private:
 
     BasicBlockLabel    m_entry;
     BasicBlockLabel    m_exit;
     bool               m_has_exit;
-    BasicBlockMap_ptr  m_blocks;
+    basic_block_map_ptr  m_blocks;
     TrackedPrecision   m_track_prec;
     //! if Cfg is associated with a function
     boost::optional<FunctionDecl<VariableName> > m_func_decl; 
@@ -1618,7 +1614,7 @@ namespace cfg
       if (visited.find (curId) != visited.end ()) return;
       visited.insert (curId);
 
-      const BasicBlock_t &cur = get_node (curId);
+      const basic_block_t &cur = get_node (curId);
       f (cur);
       for (auto const n : boost::make_iterator_range (cur.next_blocks ()))
         dfs_rec (n, visited, f);
@@ -1635,10 +1631,10 @@ namespace cfg
     {
       ostream &m_o;
       PrintBlock (ostream& o) : m_o (o) { }
-      void operator () (const BasicBlock_t& B){ m_o << B ; }
+      void operator () (const basic_block_t& B){ m_o << B ; }
     };
 
-    Cfg (): m_blocks (BasicBlockMap_ptr (new BasicBlockMap)) { }
+    Cfg (): m_blocks (basic_block_map_ptr (new basic_block_map)) { }
 
    public:
 
@@ -1646,11 +1642,11 @@ namespace cfg
          TrackedPrecision track_prec = REG):  
         m_entry  (entry), 
         m_has_exit (false),
-        m_blocks (BasicBlockMap_ptr (new BasicBlockMap)),
+        m_blocks (basic_block_map_ptr (new basic_block_map)),
         m_track_prec (track_prec)
     {
-      m_blocks->insert (Binding (m_entry, 
-                                 BasicBlock_t::Create (m_entry, m_track_prec)));
+      m_blocks->insert (binding_t (m_entry, 
+                                   basic_block_t::Create (m_entry, m_track_prec)));
     }
 
     Cfg (BasicBlockLabel entry, 
@@ -1659,11 +1655,11 @@ namespace cfg
         m_entry  (entry), 
         m_exit   (exit), 
         m_has_exit (true),
-        m_blocks (BasicBlockMap_ptr (new BasicBlockMap)),
+        m_blocks (basic_block_map_ptr (new basic_block_map)),
         m_track_prec (track_prec)
     {
-      m_blocks->insert (Binding (m_entry, 
-                                 BasicBlock_t::Create (m_entry, m_track_prec)));
+      m_blocks->insert (binding_t (m_entry, 
+                                   basic_block_t::Create (m_entry, m_track_prec)));
     }
 
     Cfg (BasicBlockLabel entry, 
@@ -1673,12 +1669,12 @@ namespace cfg
         m_entry (entry), 
         m_exit (exit), 
         m_has_exit (true),
-        m_blocks (BasicBlockMap_ptr (new BasicBlockMap)),
+        m_blocks (basic_block_map_ptr (new basic_block_map)),
         m_track_prec (track_prec),
         m_func_decl (boost::optional<FunctionDecl<VariableName> > (func_decl))
     {
-      m_blocks->insert (Binding (m_entry, 
-                                 BasicBlock_t::Create (m_entry, m_track_prec)));
+      m_blocks->insert (binding_t (m_entry, 
+                                   basic_block_t::Create (m_entry, m_track_prec)));
     }
 
     //! copy constructor will make shallow copies so use this method
@@ -1694,8 +1690,8 @@ namespace cfg
       cfg.m_func_decl = m_func_decl;
       for (auto const &BB: boost::make_iterator_range (begin (), end ()))
       {
-        boost::shared_ptr <BasicBlock_t> copyBB = BB.clone ();
-        cfg.m_blocks->insert (Binding (copyBB->label (), copyBB));
+        boost::shared_ptr <basic_block_t> copyBB = BB.clone ();
+        cfg.m_blocks->insert (binding_t (copyBB->label (), copyBB));
       }
       return cfg;
     }
@@ -1735,38 +1731,38 @@ namespace cfg
     succ_range next_nodes (BasicBlockLabel bb_id) 
     {
       
-      BasicBlock_t& b = get_node(bb_id);
+      basic_block_t& b = get_node(bb_id);
       return boost::make_iterator_range (b.next_blocks ());
     }
             
     //! required by ikos fixpoint
     pred_range prev_nodes (BasicBlockLabel bb_id) 
     {
-      BasicBlock_t& b = get_node(bb_id);
+      basic_block_t& b = get_node(bb_id);
       return boost::make_iterator_range (b.prev_blocks ());
     }
     
-    BasicBlock_t& insert (BasicBlockLabel bb_id) 
+    basic_block_t& insert (BasicBlockLabel bb_id) 
     {
       auto it = m_blocks->find (bb_id);
       if (it != m_blocks->end ()) return *(it->second);
 
-      BasicBlock_ptr block = BasicBlock_t::Create (bb_id, m_track_prec);
-      m_blocks->insert (Binding (bb_id, block));
+      basic_block_ptr block = basic_block_t::Create (bb_id, m_track_prec);
+      m_blocks->insert (binding_t (bb_id, block));
       return *block;
     }
 
     void remove (BasicBlockLabel bb_id)
     {
-      BasicBlock_t& bb = get_node(bb_id) ;
+      basic_block_t& bb = get_node(bb_id) ;
 
-      vector< pair<BasicBlock_t*,BasicBlock_t*> > dead;
+      vector< pair<basic_block_t*,basic_block_t*> > dead;
       
       for (auto id : boost::make_iterator_range (bb.prev_blocks ()))
       { 
         if (bb_id != id)
         {
-          BasicBlock_t& p = get_node(id) ;
+          basic_block_t& p = get_node(id) ;
           dead.push_back (make_pair (&p,&bb));
         }
       }
@@ -1775,7 +1771,7 @@ namespace cfg
       {
         if (bb_id != id)
         {
-          BasicBlock_t& s = get_node(id) ;
+          basic_block_t& s = get_node(id) ;
           dead.push_back (make_pair (&bb,&s));
         }
       }
@@ -1787,7 +1783,7 @@ namespace cfg
     }
 
     
-    BasicBlock_t& get_node (BasicBlockLabel bb_id) 
+    basic_block_t& get_node (BasicBlockLabel bb_id) 
     {
       auto it = m_blocks->find (bb_id);
       if (it == m_blocks->end ())
@@ -1796,7 +1792,7 @@ namespace cfg
       return *(it->second);
     }
 
-    const BasicBlock_t& get_node (BasicBlockLabel bb_id) const
+    const basic_block_t& get_node (BasicBlockLabel bb_id) const
     {
       auto it = m_blocks->find (bb_id);
       if (it == m_blocks->end ())
@@ -1896,19 +1892,19 @@ namespace cfg
     
     struct HasAssertVisitor: public StatementVisitor<VariableName>
     {
-      typedef typename StatementVisitor<VariableName>::ZBinaryOp ZBinaryOp;
-      typedef typename StatementVisitor<VariableName>::ZAssignment ZAssignment;
-      typedef typename StatementVisitor<VariableName>::ZAssume ZAssume;
-      typedef typename StatementVisitor<VariableName>::Havoc_t Havoc;
-      typedef typename StatementVisitor<VariableName>::Unreachable_t Unreachable;
+      typedef typename StatementVisitor<VariableName>::z_bin_op_t z_bin_op_t;
+      typedef typename StatementVisitor<VariableName>::z_assign_t z_assign_t;
+      typedef typename StatementVisitor<VariableName>::z_assume_t z_assume_t;
+      typedef typename StatementVisitor<VariableName>::havoc_t havoc_t;
+      typedef typename StatementVisitor<VariableName>::unreach_t unreach_t;
 
       bool _has_assert;
       HasAssertVisitor (): _has_assert(false) { }
-      void visit(ZBinaryOp&){ }  
-      void visit(ZAssignment&) { }
-      void visit(ZAssume&) { _has_assert = true; }
-      void visit(Havoc&) { }
-      void visit(Unreachable&){ }
+      void visit(z_bin_op_t&){ }  
+      void visit(z_assign_t&) { }
+      void visit(z_assume_t&) { _has_assert = true; }
+      void visit(havoc_t&) { }
+      void visit(unreach_t&){ }
     };
     
     // Helpers
@@ -1924,14 +1920,14 @@ namespace cfg
       return (std::distance (rng.begin (), rng.end ()) == 1);
     }
     
-    BasicBlock_t& getChild (BasicBlockLabel b)
+    basic_block_t& getChild (BasicBlockLabel b)
     {
       assert (hasOneChild (b));
       auto rng = next_nodes (b);
       return get_node (*(rng.begin ()));
     }
     
-    BasicBlock_t& getParent (BasicBlockLabel b)
+    basic_block_t& getParent (BasicBlockLabel b)
     {
       assert (hasOneParent (b));
       auto rng = prev_nodes (b);
@@ -1945,12 +1941,12 @@ namespace cfg
       if (visited.find (curId) != visited.end ()) return;
       visited.insert (curId);
       
-      BasicBlock_t &cur = get_node (curId);
+      basic_block_t &cur = get_node (curId);
       
       if (hasOneChild (curId) && hasOneParent (curId))
       {
-        BasicBlock_t &parent = getParent (curId);
-        BasicBlock_t &child  = getChild (curId);
+        basic_block_t &parent = getParent (curId);
+        basic_block_t &child  = getChild (curId);
         
         HasAssertVisitor vis;
         for (auto it = cur.begin (); it != cur.end (); ++it)

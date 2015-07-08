@@ -42,7 +42,7 @@ namespace cfg_impl
   typedef variable< z_number, varname_t >      z_var;
   typedef std::string                          basic_block_label_t;
   typedef Cfg< basic_block_label_t, varname_t> cfg_t;
-  typedef cfg_t::BasicBlock_t                  basic_block_t;
+  typedef cfg_t::basic_block_t                 basic_block_t;
 } // end namespace
 
 namespace domain_impl

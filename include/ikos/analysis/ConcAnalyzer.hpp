@@ -22,7 +22,7 @@ namespace conc
    {     
      typedef typename CFG::basic_block_label_t basic_block_label_t;
      typedef typename CFG::varname_t varname_t;
-     typedef typename CFG::BasicBlock_t basic_block_t;
+     typedef typename CFG::basic_block_t basic_block_t;
 
      typedef typename NumFwdAnalyzer<CFG, AbsDomain>::type fwd_analyzer_t;
      typedef ConcSys <basic_block_label_t, varname_t> conc_sys_t;

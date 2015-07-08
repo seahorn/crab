@@ -5,8 +5,10 @@ abstract interpretation developed at NASA Ames Research Center. This
 core consists of an implementation of a fixpoint algorithm and several
 abstract numerical domains.
 
-Ikos-core also provides a CFG that interfaces with IKOS as well
-as adaptors to execute backward and forward analyses on it.
+Ikos-core also provides a CFG that interfaces with IKOS as well as
+adaptors to execute backward and forward analyses on it. This
+repository has been extended with more abstract domains as well as
+capabilities to perform abstract interpretation on concurrent systems.
 
 **NOTES**: This repository is intended to be PRIVATE. A public version
   is available [here](https://github.com/seahorn/ikos-core). Currently
@@ -32,7 +34,7 @@ NASA Open Source Agreement (NOSA) Version 1.3 or later:
 # Prerequisites #
 
 - The C++ compiler must support c++11
-- Boost and gmp  
+- Boost and gmp 
 
 # Installation #
 
@@ -111,3 +113,11 @@ of separate_domains which provides an efficient implementation of a
 fast mergeable integer map based on patricia trees. This map can be
 used to map variable names to abstract values. The implementation of
 intervals and congruences use it.
+
+#People#
+
+* [Arie Gurfinkel](arieg.bitbucket.org)
+* [Jorge Navas](http://ti.arc.nasa.gov/profile/jorge/)
+* [Temesghen Kahsai](http://www.lememta.info/)
+* Graeme Gange (The University of Melbourne)
+

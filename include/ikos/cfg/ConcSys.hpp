@@ -125,7 +125,8 @@ namespace conc
     get_globals (const thread_t *t) const
     {
       auto const it = m_thread_map.find (t);
-      assert (it != m_thread_map.end ());
+      if (it == m_thread_map.end ())
+        IKOS_ERROR ("Thread not found");
 
       auto const &p = it->second;
       return make_pair (p.first.begin (), p.first.end ());
@@ -135,7 +136,8 @@ namespace conc
     get_locals (const thread_t *t) const
     {
       auto const it = m_thread_map.find (t);
-      assert (it != m_thread_map.end ());
+      if (it == m_thread_map.end ())
+        IKOS_ERROR ("Thread not found");
 
       auto const &p = it->second; 
       return make_pair (p.second.begin (), p.second.end ());
