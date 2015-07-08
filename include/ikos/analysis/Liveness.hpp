@@ -890,22 +890,23 @@ namespace analyzer
 // }; 
 // } // end namespace
 
-
-   // live variable analysis
-   template<typename BasicBlockLabel, typename CFG, typename VariableName>
+   //! Live variable analysis
+   template<typename CFG>
    class Liveness: 
-      public backward_fp_iterator< BasicBlockLabel, 
+      public backward_fp_iterator< typename CFG::basic_block_label_t, 
                                    CFG, 
-                                   liveness_set_impl::liveness_domain <VariableName> >
+                                   liveness_set_impl::liveness_domain <typename CFG::varname_t> >
    {
     public:
-     typedef std::set<VariableName> live_set_t;
+     typedef typename CFG::basic_block_label_t basic_block_label_t;
+     typedef typename CFG::varname_t varname_t;
+     typedef std::set<varname_t> live_set_t;
      
     private:
-     typedef liveness_set_impl::liveness_domain<VariableName> liveness_domain_t;
-     typedef boost::unordered_map< BasicBlockLabel, live_set_t > liveness_map_t;
+     typedef liveness_set_impl::liveness_domain<varname_t> liveness_domain_t;
+     typedef boost::unordered_map< basic_block_label_t, live_set_t > liveness_map_t;
      typedef std::pair< liveness_domain_t, liveness_domain_t >   kill_gen_t;
-     typedef boost::unordered_map< BasicBlockLabel, kill_gen_t>  kill_gen_map_t;
+     typedef boost::unordered_map< basic_block_label_t, kill_gen_t>  kill_gen_map_t;
      typedef typename liveness_map_t::value_type l_binding_t;
      typedef typename kill_gen_map_t::value_type kg_binding_t;
 
@@ -914,7 +915,7 @@ namespace analyzer
      liveness_map_t m_dead_map;
      // for internal use
      kill_gen_map_t m_kill_gen_map;
-     live_set_t     m_all_vars;
+     live_set_t m_all_vars;
 
     private:
 
@@ -947,13 +948,13 @@ namespace analyzer
     public:
 
      Liveness (CFG cfg): 
-        backward_fp_iterator<BasicBlockLabel, CFG, liveness_domain_t> (cfg) 
+        backward_fp_iterator<basic_block_label_t, CFG, liveness_domain_t> (cfg) 
      { init(); }
 
      void exec() { this->run (liveness_domain_t::bottom());  }
 
      //! return the set of dead variables at the exit of block bb
-     live_set_t dead_exit (BasicBlockLabel bb) const
+     live_set_t dead_exit (basic_block_label_t bb) const
      {
        auto it = m_dead_map.find(bb);
        if (it == m_dead_map.end()) return live_set_t ();
@@ -961,7 +962,7 @@ namespace analyzer
      }
 
      //! return the set of live variables at the entry of block bb
-     boost::optional <live_set_t> live_entry (BasicBlockLabel bb) const
+     boost::optional <live_set_t> live_entry (basic_block_label_t bb) const
      {
        auto it = m_live_map.find(bb);
        if (it == m_live_map.end())
@@ -983,7 +984,7 @@ namespace analyzer
 
     private:
 
-     liveness_domain_t analyze (BasicBlockLabel bb_id, liveness_domain_t inv)
+     liveness_domain_t analyze (basic_block_label_t bb_id, liveness_domain_t inv)
      {
        auto it = m_kill_gen_map.find (bb_id);
        assert(it != m_kill_gen_map.end ());
@@ -993,7 +994,7 @@ namespace analyzer
        return inv;
      }
 
-     void check_pre (BasicBlockLabel bb, liveness_domain_t pre)
+     void check_pre (basic_block_label_t bb, liveness_domain_t pre)
      {
        // Collect live variables at the entry of bb
        live_set_t live_set;
@@ -1005,7 +1006,7 @@ namespace analyzer
        m_live_map.insert (l_binding_t (bb, live_set));
      }
      
-     void check_post (BasicBlockLabel bb, liveness_domain_t post)
+     void check_post (basic_block_label_t bb, liveness_domain_t post)
      { 
        // Collect dead variables at the exit of bb
        live_set_t dead_set;
@@ -1024,9 +1025,8 @@ namespace analyzer
      
    }; 
 
-   template <typename BasicBlockLabel, typename CFG, typename VariableName >
-   ostream& operator << (ostream& o, 
-                         const Liveness<BasicBlockLabel, CFG, VariableName> &l)
+   template <typename CFG>
+   ostream& operator << (ostream& o, const Liveness<CFG> &l)
    {
      l.write (o);
      return o;

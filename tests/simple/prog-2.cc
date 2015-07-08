@@ -112,10 +112,9 @@ int main (int argc, char** argv )
   cout << cfg << endl;
 
   const bool run_live = true;
-  interval_domain_t intervals = interval_domain_t::top ();
-  FwdAnalyzer <basic_block_label_t, varname_t, cfg_t, VariableFactory, interval_domain_t> itv_a 
-      (cfg, vfac, run_live);
-  itv_a.Run (intervals);
+
+  NumFwdAnalyzer <cfg_t, interval_domain_t>::type itv_a (cfg, run_live);
+  itv_a.Run (interval_domain_t::top ());
   cout << "Results with intervals:\n";
   for (auto &b : cfg)
   {
@@ -123,10 +122,8 @@ int main (int argc, char** argv )
     std::cout << cfg_impl::get_label_str (b.label ()) << "=" << inv << "\n";
   }
 
-  dbm_domain_t dbm = dbm_domain_t::top ();
-  FwdAnalyzer <basic_block_label_t, varname_t, cfg_t, VariableFactory, dbm_domain_t> 
-      dbm_a (cfg, vfac, run_live);
-  dbm_a.Run (dbm);
+  NumFwdAnalyzer <cfg_t, dbm_domain_t>::type dbm_a (cfg, run_live);
+  dbm_a.Run (dbm_domain_t::top ());
   cout << "Results with DBMs:\n";
   for (auto &b : cfg)
   {

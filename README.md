@@ -36,7 +36,7 @@ NASA Open Source Agreement (NOSA) Version 1.3 or later:
 
 # Installation #
 
-    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_INSTALL=my_install_dir ../
+    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=my_install_dir ../
 	cmake --build . --target install 
 
 # Usage #

@@ -139,11 +139,8 @@ int main (int argc, char** argv )
   cout << endl;
 
   const bool run_live = true;
-  FwdAnalyzer <basic_block_label_t, 
-               varname_t, 
-               cfg_t, VariableFactory, 
-               octagon_domain_t> fwd_anal (cfg, vfac, run_live);
-      
+
+  NumFwdAnalyzer <cfg_t, octagon_domain_t>::type fwd_anal (cfg, run_live);
   fwd_anal.Run (octagon_domain_t::top ());
   cout << "Results:\n";
   for (auto &b : cfg)

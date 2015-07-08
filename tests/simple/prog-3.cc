@@ -127,10 +127,8 @@ int main (int argc, char** argv )
   cout << cfg << endl;
 
   const bool run_live = true;
-  interval_domain_t intervals = interval_domain_t::top ();
-  FwdAnalyzer <basic_block_label_t, varname_t, cfg_t, VariableFactory, interval_domain_t> itv_a 
-      (cfg, vfac, run_live);
-  itv_a.Run (intervals);
+  NumFwdAnalyzer <cfg_t, interval_domain_t>::type itv_a (cfg, run_live);
+  itv_a.Run (interval_domain_t::top ());
   cout << "Results with intervals:\n";
   for (auto &b : cfg)
   {

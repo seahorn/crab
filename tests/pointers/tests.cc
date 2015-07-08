@@ -217,10 +217,7 @@ cfg_t bar (VariableFactory &vfac)
 void run (vector<cfg_t> cfgs, VariableFactory& vfac)
 {
 
-  Pointer<basic_block_label_t, 
-          z_number, varname_t, 
-          cfg_t, VariableFactory> pta (vfac);
-
+  Pointer<cfg_t, VariableFactory> pta (vfac);
   for (auto cfg: cfgs)
   {
     cfg.simplify ();

@@ -36,48 +36,49 @@ namespace analyzer
     }
   };
 
-  //! Run a flow-insensitive pointer analysis for the whole program.
-  template<typename BasicBlockLabel, 
-           typename Number, typename VariableName,
-           typename CFG, typename VariableFactory>
+  //! Run a flow-insensitive pointer analysis for a set of CFGs.
+  template<typename CFG, typename VariableFactory>
   class Pointer
   {
-    typedef interval_domain <Number, VariableName> num_domain_t;
-    typedef interval <Number> interval_t;
+    typedef typename CFG::varname_t varname_t;
 
+    typedef interval_domain <z_number, varname_t> num_domain_t;
+    typedef interval <z_number> interval_t;
+
+    //! Generate points-to constraints from statements using
+    //! invariants to resolve offsets.
     template < typename NumInvGen>
-    struct GenBasicBlockCons: public StatementVisitor <VariableName> {
-
-      using typename StatementVisitor<VariableName>::ZBinaryOp;
-      using typename StatementVisitor<VariableName>::ZAssignment;
-      using typename StatementVisitor<VariableName>::ZAssume;
-      using typename StatementVisitor<VariableName>::Havoc_t;
-      using typename StatementVisitor<VariableName>::Unreachable_t;
+    struct GenBasicBlockCons: public StatementVisitor <varname_t> 
+    {
+      using typename StatementVisitor<varname_t>::ZBinaryOp;
+      using typename StatementVisitor<varname_t>::ZAssignment;
+      using typename StatementVisitor<varname_t>::ZAssume;
+      using typename StatementVisitor<varname_t>::Havoc_t;
+      using typename StatementVisitor<varname_t>::Unreachable_t;
       
-      using typename StatementVisitor<VariableName>::CallSite_t;
-      using typename StatementVisitor<VariableName>::Return_t;
-      using typename StatementVisitor<VariableName>::PtrLoad_t;
-      using typename StatementVisitor<VariableName>::PtrStore_t;
-      using typename StatementVisitor<VariableName>::PtrAssign_t;
-      using typename StatementVisitor<VariableName>::PtrObject_t;
-      using typename StatementVisitor<VariableName>::PtrFunction_t;
+      using typename StatementVisitor<varname_t>::CallSite_t;
+      using typename StatementVisitor<varname_t>::Return_t;
+      using typename StatementVisitor<varname_t>::PtrLoad_t;
+      using typename StatementVisitor<varname_t>::PtrStore_t;
+      using typename StatementVisitor<varname_t>::PtrAssign_t;
+      using typename StatementVisitor<varname_t>::PtrObject_t;
+      using typename StatementVisitor<varname_t>::PtrFunction_t;
       
-      typedef FunctionDecl<VariableName> FunctionDecl_t;
-
-      typedef boost::unordered_map< VariableName, pointer_var > pt_var_map_t;
+      typedef FunctionDecl<varname_t> FunctionDecl_t;
+      typedef boost::unordered_map< varname_t, pointer_var > pt_var_map_t;
       
       VariableFactory& m_vfac;
       pta_system* m_cs; 
       num_domain_t m_inv;
       NumInvGen* m_inv_gen; 
       pt_var_map_t*m_pt_map; 
-      boost::optional<VariableName> m_func_name; 
+      boost::optional<varname_t> m_func_name; 
 
       //! Return the interval [0,0]
-      interval <Number> zero() const { return interval <Number> (0,0);}
+      interval <z_number> zero() const { return interval <z_number> (0,0);}
       
       //! Create a pointer variable
-      pointer_var new_pointer_var (VariableName v) {
+      pointer_var new_pointer_var (varname_t v) {
         auto it = m_pt_map->find(v);
         if (it != m_pt_map->end())
           return it->second;
@@ -88,7 +89,7 @@ namespace analyzer
       }
       
       //! Create a new parameter
-      pointer_var new_param_ref (VariableName fname, unsigned param) {
+      pointer_var new_param_ref (varname_t fname, unsigned param) {
         auto par_ref = ikos::mk_param_ref(new_pointer_var(fname), param);
         std::ostringstream buf;
         par_ref->print (buf);
@@ -97,7 +98,7 @@ namespace analyzer
       }
       
       //! Create a new return
-      pointer_var new_return_ref (VariableName fname) {
+      pointer_var new_return_ref (varname_t fname) {
         auto ret_ref = ikos::mk_return_ref(new_pointer_var(fname));
         std::ostringstream buf;
         ret_ref->print (buf);
@@ -110,7 +111,7 @@ namespace analyzer
                          num_domain_t inv, 
                          NumInvGen* inv_gen, 
                          pt_var_map_t* pt_map,
-                         boost::optional<VariableName> func_name): 
+                         boost::optional<varname_t> func_name): 
           m_vfac (vfac), m_cs (cs), m_inv (inv), m_inv_gen (inv_gen), 
           m_pt_map (pt_map), m_func_name (func_name)
       { }
@@ -217,12 +218,12 @@ namespace analyzer
       
     };
 
-    typedef FwdAnalyzer <BasicBlockLabel, VariableName, 
-                         CFG, VariableFactory, num_domain_t>  num_inv_gen_t;
-    typedef typename GenBasicBlockCons < num_inv_gen_t>:: pt_var_map_t pt_var_map_t;
+    typedef NumAbsTransformer <varname_t, num_domain_t> num_abs_tr_t;
+    typedef FwdAnalyzer<CFG, num_abs_tr_t> num_inv_gen_t;
+    typedef typename GenBasicBlockCons < num_inv_gen_t>::pt_var_map_t pt_var_map_t;
 
     //! for external queries
-    typedef boost::unordered_map< VariableName,
+    typedef boost::unordered_map< varname_t,
                                   pair< discrete_domain< PtrAddr >, interval_t > >
     ptr_map_t;
 
@@ -263,13 +264,12 @@ namespace analyzer
         // 1) Run a numerical analysis to infer numerical invariants
         //    about offsets.
         const bool run_live = true;
-        
-        num_inv_gen_t It (cfg, m_vfac, run_live);
+        num_inv_gen_t It (cfg, run_live);
         It.Run (num_domain_t::top ());
         
         // 2) Gen points-to constraints
         auto func_decl = cfg.get_func_decl ();
-        boost::optional<VariableName> func_name;
+        boost::optional<varname_t> func_name;
         if (func_decl)
         {
           gen_bb_cons_t vis (m_vfac, &m_cs, num_domain_t::top (), 
@@ -311,8 +311,8 @@ namespace analyzer
         }
       }
 
-      pair< discrete_domain< VariableName >, 
-            interval_t > operator[] (VariableName p) const
+      pair< discrete_domain< varname_t >, 
+            interval_t > operator[] (varname_t p) const
       {
         return m_ptr_map [p];
       }
@@ -329,12 +329,8 @@ namespace analyzer
       }
    }; 
 
-   template <typename BasicBlockLabel, 
-             typename Number, typename VariableName,
-             typename CFG, typename VariableFactory >
-   ostream& operator << (ostream& o, 
-                         const Pointer<BasicBlockLabel, Number, VariableName, 
-                                       CFG, VariableFactory> &pta)
+   template <typename CFG, typename VariableFactory >
+   ostream& operator << (ostream& o, const Pointer<CFG, VariableFactory> &pta)
    {
      pta.write (o);
      return o;

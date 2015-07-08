@@ -175,8 +175,8 @@ int main (int argc, char** argv )
   inv.assign (vfac ["x"], interval_domain_t::linear_expression_t (0));
   inv.assign (vfac ["y"], interval_domain_t::linear_expression_t (0));
 
-  ConcAnalyzer <basic_block_label_t, varname_t, VariableFactory, interval_domain_t> 
-      analyzer (concSys, vfac, run_live);
+  ConcAnalyzer <basic_block_label_t, varname_t, interval_domain_t> 
+      analyzer (concSys, run_live);
   analyzer.Run (inv);
 
   cout << "Thread 1\n";

@@ -93,10 +93,9 @@ int main (int argc, char** argv )
   cout << cfg << endl;
 
   const bool run_live = false;
-  interval_domain_t intervals = interval_domain_t::top ();
-  FwdAnalyzer <basic_block_label_t, varname_t, cfg_t, VariableFactory, interval_domain_t> 
-      itv_a (cfg, vfac, run_live);
-  itv_a.Run (intervals);
+  typedef NumAbsTransformer <varname_t, interval_domain_t> int_transformer_t;
+  FwdAnalyzer <cfg_t, int_transformer_t> itv_a (cfg, run_live);
+  itv_a.Run (interval_domain_t::top ());
   cout << "Results with intervals:\n";
   for (auto &b : cfg)
   {
@@ -104,10 +103,9 @@ int main (int argc, char** argv )
     std::cout << cfg_impl::get_label_str (b.label ()) << "=" << inv << "\n";
   }
 
-  term_domain_t tdom = term_domain_t::top ();
-  FwdAnalyzer <basic_block_label_t, varname_t, cfg_t, VariableFactory, term_domain_t> 
-      term_a (cfg, vfac, run_live);
-  term_a.Run (tdom);
+  typedef NumAbsTransformer <varname_t, term_domain_t> term_transformer_t;
+  FwdAnalyzer <cfg_t, term_transformer_t> term_a (cfg, run_live);
+  term_a.Run (term_domain_t::top ());
   cout << "Results with term<interval> domain:\n";
   for (auto &b : cfg)
   {
@@ -124,10 +122,10 @@ int main (int argc, char** argv )
   }
 
   /*
-  dbm_domain_t dbm = dbm_domain_t::top ();
-  FwdAnalyzer <basic_block_label_t, varname_t, cfg_t, VariableFactory, dbm_domain_t> 
-      dbm_a (cfg, vfac, run_live);
-  dbm_a.Run (dbm);
+  typedef NumAbsTransformer <varname_t, dbm_domain_t> dbm_transformer_t;
+  FwdAnalyzer <cfg_t, dbm_transformer_t> dom_a (cfg, run_live);
+
+  dbm_a.Run (dbm_domain_t::top ());
   cout << "Results with DBMs:\n";
   for (auto &b : cfg)
   {

@@ -15,33 +15,36 @@ namespace conc
   using namespace std;
 
    // Global fixpoint among the threads
-   template< typename BasicBlockLabel, typename VariableName,
-             typename VariableFactory, typename AbsDomain>
+   template< typename BasicBlockLabel, typename VariableName, typename AbsDomain>
    class ConcAnalyzer
-   {
-     
+   {     
+
      typedef Cfg <BasicBlockLabel,VariableName> cfg_t;
-     typedef FwdAnalyzer<BasicBlockLabel, VariableName, cfg_t, VariableFactory, AbsDomain> fwd_analyzer_t;
+     // TODO: should ConcAnalyzer take an AbsTransformer as template
+     // parameter ?
+     typedef NumAbsTransformer <VariableName, AbsDomain> abs_tr_t;
+     typedef FwdAnalyzer<cfg_t, abs_tr_t> fwd_analyzer_t;
      typedef ConcSys <BasicBlockLabel, VariableName> conc_sys_t;
 
     public:
+
      typedef typename conc_sys_t::thread_t thread_t;
      typedef boost::unordered_map<BasicBlockLabel, AbsDomain> inv_map_t;
 
     private:
+
      typedef boost::shared_ptr<inv_map_t> inv_map_ptr;
      typedef boost::unordered_map<const thread_t*, inv_map_ptr > global_inv_map_t;
 
      conc_sys_t& m_conc_sys;
-     VariableFactory&  m_vfac;
      bool m_run_live;
      global_inv_map_t m_global_inv;
 
 
     public:
 
-     ConcAnalyzer (conc_sys_t& conc_sys,  VariableFactory &vfac, bool runLive=false): 
-         m_conc_sys (conc_sys), m_vfac (vfac), m_run_live (runLive) 
+     ConcAnalyzer (conc_sys_t& conc_sys,  bool runLive=false): 
+         m_conc_sys (conc_sys), m_run_live (runLive) 
      { }
 
      //! Trigger the global fixpoint computation 
@@ -56,7 +59,7 @@ namespace conc
          for (const thread_t* t: m_conc_sys)
          {
            /// --- run the thread separately
-           fwd_analyzer_t thread_analyzer (*t, m_vfac, m_run_live);
+           fwd_analyzer_t thread_analyzer (*t, m_run_live);
            thread_analyzer.Run (inv);
 
            /// --- check if there is a change in the thread invariants

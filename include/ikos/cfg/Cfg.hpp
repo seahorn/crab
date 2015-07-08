@@ -1554,8 +1554,11 @@ namespace cfg
   {
    public:
 
+    typedef BasicBlockLabel basic_block_label_t;
+    typedef VariableName varname_t;
+
     typedef BasicBlock< BasicBlockLabel, VariableName > BasicBlock_t;   
-    typedef Statement < VariableName >                  Statement_t;
+    typedef Statement < VariableName > Statement_t;
 
     typedef typename BasicBlock_t::succ_iterator succ_iterator;
     typedef typename BasicBlock_t::pred_iterator pred_iterator;
