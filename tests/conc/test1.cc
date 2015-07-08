@@ -1,11 +1,7 @@
 #include <ikos/cfg/Cfg.hpp>
 #include <ikos/cfg/VarFactory.hpp>
-#include <ikos/analysis/FwdAnalyzer.hpp>
-#include <ikos/cfg/Cfg.hpp>
-
 #include <ikos/cfg/ConcSys.hpp>
 #include <ikos/analysis/ConcAnalyzer.hpp>
-
 #include <ikos/common/types.hpp>
 #include <ikos/domains/intervals.hpp>                      
 
@@ -71,6 +67,8 @@ cfg_t thread1 (VariableFactory &vfac)
   // Definining program variables
   z_var x (vfac ["x"]);
   z_var y (vfac ["y"]);
+  z_var z (vfac ["z"]);
+  
   // entry and exit block
   cfg_t cfg ("entry","ret");
   // adding blocks
@@ -91,8 +89,10 @@ cfg_t thread1 (VariableFactory &vfac)
   bb3_t >> bb4; bb3_f >> bb4; bb4 >> bb1; 
   bb1_f >> ret;
   // adding statements
+  bb1_t.assume (x <= y-1); // Narrowing cannot infer these constraints (we need thresholds!)
   bb3_t.assume (x <= y-1);
   bb3_t.add (x, x, 1);
+  bb3_t.add (z, z, 1);
   bb3_f.assume (x >= y+ 1);
   return cfg;
 }
@@ -137,6 +137,7 @@ cfg_t thread2 (VariableFactory &vfac)
   bb3_f >> bb6; bb6 >> bb1; 
   bb1_f >> ret;
   // adding statements
+  bb1_t.assume (y <= 102); // Narrowing cannot infer these constraints (we need thresholds!)
   bb3_t.assume (y <= 99);
   bb4_t.assume (z >= 0);
   bb4_t.assign (w, 1);
@@ -154,11 +155,9 @@ int main (int argc, char** argv )
 
   cfg_t t1 = thread1 (vfac);
   t1.simplify ();
-  //cout << t1 << endl;
 
   cfg_t t2 = thread2 (vfac);
   t2.simplify ();
-  //cout << t2 << endl;
 
   conc_sys_t concSys;
   vector<varname_t> shared_vars;
@@ -171,24 +170,25 @@ int main (int argc, char** argv )
   cout << concSys << endl;
 
   const bool run_live = true;
-  auto inv = interval_domain_t::top ();
-  inv.assign (vfac ["x"], interval_domain_t::linear_expression_t (0));
-  inv.assign (vfac ["y"], interval_domain_t::linear_expression_t (0));
+  auto global_inv = interval_domain_t::top ();
+  global_inv.assign (vfac ["x"], interval_domain_t::linear_expression_t (0));
+  global_inv.assign (vfac ["y"], interval_domain_t::linear_expression_t (0));
 
-  ConcAnalyzer <basic_block_label_t, varname_t, interval_domain_t> 
-      analyzer (concSys, run_live);
-  analyzer.Run (inv);
+  typedef ConcAnalyzer <cfg_t, interval_domain_t> conc_analyzer_t;
 
+  conc_analyzer_t a (concSys, run_live);
+  a.Run (global_inv);
+  
   cout << "Thread 1\n";
   {  
-    auto &inv_map = analyzer.getInvariants (&t1);
+    conc_analyzer_t::inv_map_t &inv_map = a.getInvariants (&t1);
     for (auto p : inv_map)
       cout << p.first << ": " << p.second << endl;
   }
 
   cout << "Thread 2\n";
   {  
-    auto &inv_map = analyzer.getInvariants (&t2);
+    conc_analyzer_t::inv_map_t &inv_map = a.getInvariants (&t2);
     for (auto p : inv_map)
       cout << p.first << ": " << p.second << endl;
   }

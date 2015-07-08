@@ -116,13 +116,16 @@ namespace cfg
     const_use_iterator defs_begin() const { return m_defs.begin (); }
     const_use_iterator defs_end()   const { return m_defs.end (); }
 
-    friend std::ostream& operator<<(std::ostream &o, const Live< VariableName> &live )
+    friend std::ostream& operator<<(std::ostream &o, 
+                                    const Live< VariableName> &live )
     {
       o << "Use={"; 
-      for (auto const& v: boost::make_iterator_range (live.uses_begin (), live.uses_end ()))
+      for (auto const& v: boost::make_iterator_range (live.uses_begin (), 
+                                                      live.uses_end ()))
         o << v << ",";
       o << "} Def={"; 
-      for (auto const& v: boost::make_iterator_range (live.defs_begin (), live.defs_end ()))
+      for (auto const& v: boost::make_iterator_range (live.defs_begin (), 
+                                                      live.defs_end ()))
         o << v << ",";
       o << "}";
       return o;
