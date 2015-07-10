@@ -1,4 +1,4 @@
-#include <ikos/cfg/Cfg.hpp>
+#include <ikos/tests/Cfg_impl.hpp>
 #include <ikos/cfg/VarFactory.hpp>
 #include <ikos/analysis/FwdAnalyzer.hpp>
 
@@ -10,40 +10,6 @@
 #include <ikos/domains/dbm.hpp>                      
 
 using namespace std;
-
-namespace cfg_impl
-{
-  using namespace cfg;
-
-  template<> inline std::string get_label_str(std::string e) 
-  { return e; }
-
-  class StrVariableFactory : public boost::noncopyable  
-  {
-    typedef var_factory_impl::VariableFactory< std::string > StrVariableFactory_t;
-    std::unique_ptr< StrVariableFactory_t > m_factory; 
-    
-   public: 
-
-    typedef StrVariableFactory_t::variable_t varname_t;
-
-    StrVariableFactory(): m_factory (new StrVariableFactory_t()){ }
-
-    varname_t operator[](std::string v)
-
-    { return (*m_factory)[v];}
-  }; 
-
-  // A variable factory based on strings
-  typedef StrVariableFactory VariableFactory;
-  typedef typename VariableFactory::varname_t varname_t;
-
-  // CFG
-  typedef variable< z_number, varname_t >      z_var;
-  typedef std::string                          basic_block_label_t;
-  typedef Cfg< basic_block_label_t, varname_t> cfg_t;
-  typedef cfg_t::basic_block_t                 basic_block_t;
-} // end namespace
 
 namespace domain_impl
 {
@@ -107,7 +73,7 @@ int main (int argc, char** argv )
 
   const bool run_live = true;
 
-  NumFwdAnalyzer <cfg_t, interval_domain_t>::type itv_a (cfg, run_live);
+  NumFwdAnalyzer <cfg_t, interval_domain_t, VariableFactory>::type itv_a (cfg,vfac,run_live);
   itv_a.Run (interval_domain_t::top ());
   cout << "Results with intervals:\n";
   for (auto &b : cfg)
@@ -116,7 +82,7 @@ int main (int argc, char** argv )
     std::cout << cfg_impl::get_label_str (b.label ()) << "=" << inv << "\n";
   }
 
-  NumFwdAnalyzer <cfg_t, dbm_domain_t>::type dbm_a (cfg, run_live);
+  NumFwdAnalyzer <cfg_t, dbm_domain_t,VariableFactory>::type dbm_a (cfg,vfac,run_live);
   dbm_a.Run (dbm_domain_t::top ());
   cout << "Results with DBMs:\n";
   for (auto &b : cfg)

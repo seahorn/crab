@@ -19,12 +19,20 @@ class StrVariableFactory : public boost::noncopyable
  public: 
 
   typedef StrVariableFactory_t::variable_t varname_t;
+  typedef StrVariableFactory_t::const_var_range const_var_range;
 
   StrVariableFactory(): m_factory (new StrVariableFactory_t()){ }
 
   varname_t operator[](std::string v)
+  { 
+    return (*m_factory)[v];
+  }
 
-  { return (*m_factory)[v];}
+  const_var_range get_shadow_vars () const 
+  {
+    return m_factory->get_shadow_vars ();
+  }
+
 }; 
 
 class IntVariableFactory : public boost::noncopyable  

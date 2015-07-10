@@ -1,6 +1,6 @@
 #include "boost/tuple/tuple.hpp"
 
-#include <ikos/cfg/Cfg.hpp>
+#include <ikos/tests/Cfg_impl.hpp>
 #include <ikos/cfg/VarFactory.hpp>
 #include <ikos/analysis/FwdAnalyzer.hpp>
 #include <ikos/cfg/CfgBgl.hpp>
@@ -13,40 +13,6 @@
 #include <ikos/domains/dbm.hpp>                      
 
 using namespace std;
-
-namespace cfg_impl
-{
-  using namespace cfg;
-
-  template<> inline std::string get_label_str(std::string e) 
-  { return e; }
-
-  class StrVariableFactory : public boost::noncopyable  
-  {
-    typedef var_factory_impl::VariableFactory< std::string > StrVariableFactory_t;
-    std::unique_ptr< StrVariableFactory_t > m_factory; 
-    
-   public: 
-
-    typedef StrVariableFactory_t::variable_t varname_t;
-
-    StrVariableFactory(): m_factory (new StrVariableFactory_t()){ }
-
-    varname_t operator[](std::string v)
-
-    { return (*m_factory)[v];}
-  }; 
-
-  // A variable factory based on strings
-  typedef StrVariableFactory VariableFactory;
-  typedef typename VariableFactory::varname_t varname_t;
-
-  // CFG
-  typedef variable< z_number, varname_t >      z_var;
-  typedef std::string                          basic_block_label_t;
-  typedef Cfg< basic_block_label_t, varname_t> cfg_t;
-  typedef cfg_t::basic_block_t                 basic_block_t;
-} // end namespace
 
 namespace domain_impl
 {
@@ -140,7 +106,7 @@ int main (int argc, char** argv )
 
   const bool run_live = true;
 
-  NumFwdAnalyzer <cfg_t, octagon_domain_t>::type fwd_anal (cfg, run_live);
+  NumFwdAnalyzer <cfg_t, octagon_domain_t, VariableFactory>::type fwd_anal (cfg,vfac,run_live);
   fwd_anal.Run (octagon_domain_t::top ());
   cout << "Results:\n";
   for (auto &b : cfg)

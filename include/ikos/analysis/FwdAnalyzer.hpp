@@ -14,7 +14,7 @@ namespace analyzer
   using namespace std;
 
   //! Perform a forward flow-sensitive analysis.
-  template< typename CFG, typename AbsTr>
+  template< typename CFG, typename AbsTr, typename VarFactory>
   class FwdAnalyzer: 
       public interleaved_fwd_fixpoint_iterator< typename CFG::basic_block_label_t, 
                                                 CFG, 
@@ -31,6 +31,7 @@ namespace analyzer
     typedef typename liveness_t::live_set_t live_set_t;     
     
     CFG              m_cfg;
+    VarFactory&      m_vfac;
     liveness_t       m_live;
     invariant_map_t  m_pre_map;
     
@@ -55,7 +56,11 @@ namespace analyzer
     {//cout << "Pre at " << node << ": " << inv << endl; 
       auto it = m_pre_map.find (node);
        if (it == m_pre_map.end())
+       {
+         auto shadows = m_vfac.get_shadow_vars ();
+         domain_traits::forget (inv, shadows.begin (), shadows.end ());
          m_pre_map.insert(typename invariant_map_t::value_type (node, inv));
+       }
     }
     
     void process_post (basic_block_label_t node, abs_dom_t inv) 
@@ -64,8 +69,8 @@ namespace analyzer
     
    public:
     
-    FwdAnalyzer (CFG cfg, bool runLive=false): 
-        fwd_iterator_t (cfg), m_cfg (cfg), m_live (m_cfg)
+    FwdAnalyzer (CFG cfg, VarFactory& vfac, bool runLive=false): 
+        fwd_iterator_t (cfg), m_cfg (cfg), m_vfac (vfac), m_live (m_cfg)
     { 
       if (runLive)
          m_live.exec ();
@@ -99,10 +104,10 @@ namespace analyzer
   }; 
 
   //! Specialized type for a numerical forward analyzer
-  template<typename CFG, typename AbsNumDomain>  
+  template<typename CFG, typename AbsNumDomain, typename VarFactory>  
   struct NumFwdAnalyzer {
     typedef NumAbsTransformer <typename CFG::varname_t, AbsNumDomain> num_abs_tr_t;
-    typedef FwdAnalyzer <CFG, num_abs_tr_t> type;
+    typedef FwdAnalyzer <CFG, num_abs_tr_t, VarFactory> type;
   };
 
 } // end namespace

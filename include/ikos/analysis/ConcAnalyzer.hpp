@@ -17,14 +17,14 @@ namespace conc
    //! Global fixpoint among the threads.
    //  It performs a very simple flow-insensitive abstraction `a la`
    //  Mine (VMCAI'14).
-   template< typename CFG, typename AbsDomain>
+   template< typename CFG, typename AbsDomain, typename VarFactory>
    class ConcAnalyzer
    {     
      typedef typename CFG::basic_block_label_t basic_block_label_t;
      typedef typename CFG::varname_t varname_t;
      typedef typename CFG::basic_block_t basic_block_t;
 
-     typedef typename NumFwdAnalyzer<CFG, AbsDomain>::type fwd_analyzer_t;
+     typedef typename NumFwdAnalyzer<CFG, AbsDomain, VarFactory>::type fwd_analyzer_t;
      typedef ConcSys <basic_block_label_t, varname_t> conc_sys_t;
 
     public:
@@ -38,13 +38,14 @@ namespace conc
      typedef boost::unordered_map<const thread_t*, inv_map_ptr > global_inv_map_t;
 
      conc_sys_t& m_conc_sys;
+     VarFactory& m_vfac;
      bool m_run_live;
      global_inv_map_t m_global_inv;
      
     public:
 
-     ConcAnalyzer (conc_sys_t& conc_sys,  bool runLive=false): 
-         m_conc_sys (conc_sys), m_run_live (runLive) 
+     ConcAnalyzer (conc_sys_t& conc_sys, VarFactory& vfac,  bool runLive=false): 
+         m_conc_sys (conc_sys), m_vfac (vfac), m_run_live (runLive) 
      { }
 
      //! Return analysis results
@@ -66,7 +67,7 @@ namespace conc
          for (const thread_t* t: m_conc_sys)
          {
            /// --- run the thread separately
-           fwd_analyzer_t thread_analyzer (*t, m_run_live);
+           fwd_analyzer_t thread_analyzer (*t, m_vfac, m_run_live);
            thread_analyzer.Run (inv);
 
            auto locals = boost::make_iterator_range (m_conc_sys.get_locals (t));

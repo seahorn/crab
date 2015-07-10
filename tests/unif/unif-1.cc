@@ -94,7 +94,7 @@ int main (int argc, char** argv )
 
   const bool run_live = false;
   typedef NumAbsTransformer <varname_t, interval_domain_t> int_transformer_t;
-  FwdAnalyzer <cfg_t, int_transformer_t> itv_a (cfg, run_live);
+  FwdAnalyzer <cfg_t, int_transformer_t, VariableFactory> itv_a (cfg, vfac, run_live);
   itv_a.Run (interval_domain_t::top ());
   cout << "Results with intervals:\n";
   for (auto &b : cfg)
@@ -104,7 +104,7 @@ int main (int argc, char** argv )
   }
 
   typedef NumAbsTransformer <varname_t, term_domain_t> term_transformer_t;
-  FwdAnalyzer <cfg_t, term_transformer_t> term_a (cfg, run_live);
+  FwdAnalyzer <cfg_t, term_transformer_t, VariableFactory> term_a (cfg, vfac, run_live);
   term_a.Run (term_domain_t::top ());
   cout << "Results with term<interval> domain:\n";
   for (auto &b : cfg)
@@ -123,7 +123,7 @@ int main (int argc, char** argv )
 
   /*
   typedef NumAbsTransformer <varname_t, dbm_domain_t> dbm_transformer_t;
-  FwdAnalyzer <cfg_t, dbm_transformer_t> dom_a (cfg, run_live);
+  FwdAnalyzer <cfg_t, dbm_transformer_t, VariableFactory> dom_a (cfg, vfac, run_live);
 
   dbm_a.Run (dbm_domain_t::top ());
   cout << "Results with DBMs:\n";

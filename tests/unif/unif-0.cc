@@ -1,6 +1,5 @@
 #include <ikos/cfg/Cfg.hpp>
 #include <ikos/cfg/VarFactory.hpp>
-#include <ikos/analysis/FwdAnalyzer.hpp>
 
 #include <ikos/common/types.hpp>
 #include <ikos/algorithms/linear_constraints.hpp> 
@@ -43,7 +42,6 @@ namespace domain_impl
 
 using namespace cfg_impl;
 using namespace domain_impl;
-using namespace analyzer;
 
 int main (int argc, char** argv )
 {

@@ -219,7 +219,7 @@ namespace analyzer
     };
 
     typedef NumAbsTransformer <varname_t, num_domain_t> num_abs_tr_t;
-    typedef FwdAnalyzer<CFG, num_abs_tr_t> num_inv_gen_t;
+    typedef FwdAnalyzer<CFG, num_abs_tr_t, VariableFactory> num_inv_gen_t;
     typedef typename GenBasicBlockCons < num_inv_gen_t>::pt_var_map_t pt_var_map_t;
 
     //! for external queries
@@ -264,7 +264,7 @@ namespace analyzer
         // 1) Run a numerical analysis to infer numerical invariants
         //    about offsets.
         const bool run_live = true;
-        num_inv_gen_t It (cfg, run_live);
+        num_inv_gen_t It (cfg, m_vfac, run_live);
         It.Run (num_domain_t::top ());
         
         // 2) Gen points-to constraints

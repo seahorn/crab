@@ -70,9 +70,9 @@ namespace conc
     // [it, end) contains all the global shared variables 
     // read/written by t
     template<typename VariableNameIt>
-    void addThread (thread_t* t, 
-                    VariableNameIt shared_begin, 
-                    VariableNameIt shared_end)
+    void add_thread (thread_t* t, 
+                     VariableNameIt shared_begin, 
+                     VariableNameIt shared_end)
     {
       auto it = m_thread_map.find (t);
       if (it != m_thread_map.end ())

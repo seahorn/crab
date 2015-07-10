@@ -37,7 +37,7 @@ namespace DBM_impl
    int ntoi(Number n);
 
    template<>
-   int ntoi(z_number k){
+   inline int ntoi(z_number k){
      ostringstream buf;
      buf << k;
      return boost::lexical_cast<int>(buf.str());
@@ -47,7 +47,7 @@ namespace DBM_impl
    Number iton(int n);
 
    template<>
-   z_number iton(int n){
+   inline z_number iton(int n){
      return z_number(n);
    }
 }; // end namespace DBM_impl

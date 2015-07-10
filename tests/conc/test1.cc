@@ -1,4 +1,4 @@
-#include <ikos/cfg/Cfg.hpp>
+#include <ikos/tests/Cfg_impl.hpp>
 #include <ikos/cfg/VarFactory.hpp>
 #include <ikos/cfg/ConcSys.hpp>
 #include <ikos/analysis/ConcAnalyzer.hpp>
@@ -6,40 +6,6 @@
 #include <ikos/domains/intervals.hpp>                      
 
 using namespace std;
-
-namespace cfg_impl
-{
-  using namespace cfg;
-
-  template<> inline std::string get_label_str(std::string e) 
-  { return e; }
-
-  class StrVariableFactory : public boost::noncopyable  
-  {
-    typedef var_factory_impl::VariableFactory< std::string > StrVariableFactory_t;
-    std::unique_ptr< StrVariableFactory_t > m_factory; 
-    
-   public: 
-
-    typedef StrVariableFactory_t::variable_t varname_t;
-
-    StrVariableFactory(): m_factory (new StrVariableFactory_t()){ }
-
-    varname_t operator[](std::string v)
-
-    { return (*m_factory)[v];}
-  }; 
-
-  // A variable factory based on strings
-  typedef StrVariableFactory VariableFactory;
-  typedef typename VariableFactory::varname_t varname_t;
-
-  // CFG
-  typedef variable< z_number, varname_t >      z_var;
-  typedef std::string                          basic_block_label_t;
-  typedef Cfg< basic_block_label_t, varname_t> cfg_t;
-  typedef cfg_t::basic_block_t                  basic_block_t;
-} // end namespace
 
 namespace domain_impl
 {
@@ -164,8 +130,8 @@ int main (int argc, char** argv )
   shared_vars.push_back (vfac ["x"]);
   shared_vars.push_back (vfac ["y"]);
 
-  concSys.addThread (&t1, shared_vars.begin (), shared_vars.end ());
-  concSys.addThread (&t2, shared_vars.begin (), shared_vars.end ());
+  concSys.add_thread (&t1, shared_vars.begin (), shared_vars.end ());
+  concSys.add_thread (&t2, shared_vars.begin (), shared_vars.end ());
 
   cout << concSys << endl;
 
@@ -174,9 +140,9 @@ int main (int argc, char** argv )
   global_inv.assign (vfac ["x"], interval_domain_t::linear_expression_t (0));
   global_inv.assign (vfac ["y"], interval_domain_t::linear_expression_t (0));
 
-  typedef ConcAnalyzer <cfg_t, interval_domain_t> conc_analyzer_t;
+  typedef ConcAnalyzer <cfg_t,interval_domain_t,VariableFactory> conc_analyzer_t;
 
-  conc_analyzer_t a (concSys, run_live);
+  conc_analyzer_t a (concSys, vfac, run_live);
   a.Run (global_inv);
   
   cout << "Thread 1\n";
