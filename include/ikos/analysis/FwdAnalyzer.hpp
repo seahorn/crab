@@ -33,7 +33,14 @@ namespace analyzer
     CFG              m_cfg;
     VarFactory&      m_vfac;
     liveness_t       m_live;
+
+    // Preserve invariants at the entry and exit. This might be
+    // expensive in terms of memory. We can always compute the
+    // invariants at the exit by propagating locally from the
+    // invariants at the entry.
+
     invariant_map_t  m_pre_map;
+    invariant_map_t  m_post_map;
     
     //! Given a basic block and the invariant at the entry it produces
     //! the invariant at the exit of the block.
@@ -53,7 +60,7 @@ namespace analyzer
     } 
     
     void process_pre (basic_block_label_t node, abs_dom_t inv) 
-    {//cout << "Pre at " << node << ": " << inv << endl; 
+    {
       auto it = m_pre_map.find (node);
        if (it == m_pre_map.end())
        {
@@ -64,7 +71,14 @@ namespace analyzer
     }
     
     void process_post (basic_block_label_t node, abs_dom_t inv) 
-    {//cout << "Post at " << node << ": " << inv << endl; 
+    {
+      auto it = m_post_map.find (node);
+       if (it == m_post_map.end())
+       {
+         auto shadows = m_vfac.get_shadow_vars ();
+         domain_traits::forget (inv, shadows.begin (), shadows.end ());
+         m_post_map.insert(typename invariant_map_t::value_type (node, inv));
+       }
     }
     
    public:
@@ -81,8 +95,7 @@ namespace analyzer
     { 
       this->run (inv); 
     }      
-     
-    
+         
     //! Propagate invariants at the statement level
     template < typename Statement >
     abs_dom_t AnalyzeStmt (Statement s, abs_dom_t pre) 
@@ -101,6 +114,22 @@ namespace analyzer
       else
         return it->second;
     }
+
+    //! Return the invariants that hold at the exit of b
+    abs_dom_t get_pre (basic_block_label_t b) const { 
+      return this->operator[](b);
+    }
+
+    //! Return the invariants that hold at the exit of b
+    abs_dom_t get_post (basic_block_label_t b) const
+    {
+      auto it = m_post_map.find (b);
+      if (it == m_post_map.end ())
+        return abs_dom_t::top ();
+      else
+        return it->second;
+    }
+
   }; 
 
   //! Specialized type for a numerical forward analyzer
