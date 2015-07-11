@@ -15,9 +15,9 @@ namespace conc
    using namespace std;
 
    //! Global fixpoint among the threads.
-   //  It performs a very simple flow-insensitive abstraction `a la`
-   //  Mine (VMCAI'14).
-   template< typename CFG, typename AbsDomain, typename VarFactory>
+   //  Currently very simple flow-insensitive abstraction `a la` Mine
+   //  (VMCAI'14).
+   template< typename ThreadId, typename CFG, typename AbsDomain, typename VarFactory>
    class ConcAnalyzer
    {     
      typedef typename CFG::basic_block_label_t basic_block_label_t;
@@ -25,17 +25,15 @@ namespace conc
      typedef typename CFG::basic_block_t basic_block_t;
 
      typedef typename NumFwdAnalyzer<CFG, AbsDomain, VarFactory>::type fwd_analyzer_t;
-     typedef ConcSys <basic_block_label_t, varname_t> conc_sys_t;
+     typedef ConcSys <ThreadId, CFG> conc_sys_t;
 
     public:
-
-     typedef typename conc_sys_t::thread_t thread_t;
      typedef boost::unordered_map<basic_block_label_t, AbsDomain> inv_map_t;
 
     private:
 
      typedef boost::shared_ptr<inv_map_t> inv_map_ptr;
-     typedef boost::unordered_map<const thread_t*, inv_map_ptr > global_inv_map_t;
+     typedef boost::unordered_map<ThreadId, inv_map_ptr > global_inv_map_t;
 
      conc_sys_t& m_conc_sys;
      VarFactory& m_vfac;
@@ -49,7 +47,7 @@ namespace conc
      { }
 
      //! Return analysis results
-     inv_map_t& getInvariants (const thread_t* t) 
+     inv_map_t& getInvariants (ThreadId t) 
      {
        return *(m_global_inv [t]);
      }
@@ -64,35 +62,35 @@ namespace conc
        {
          num_iter++;
          change=false;
-         for (const thread_t* t: m_conc_sys)
+         for (auto const p: m_conc_sys)
          {
            /// --- run the thread separately
-           fwd_analyzer_t thread_analyzer (*t, m_vfac, m_run_live);
+           fwd_analyzer_t thread_analyzer (p.second, m_vfac, m_run_live);
            thread_analyzer.Run (inv);
 
-           auto locals = boost::make_iterator_range (m_conc_sys.get_locals (t));
+           auto locals = boost::make_iterator_range (m_conc_sys.get_locals (p.first));
 
            /// --- check if there is a change in the thread invariants
-           auto it = m_global_inv.find (t);
+           auto it = m_global_inv.find (p.first);
            if (it == m_global_inv.end ())
            {
              inv_map_ptr inv_map (new inv_map_t ());             
-             for (auto bb: boost::make_iterator_range (t->label_begin (), 
-                                                       t->label_end ()))
+             for (auto bb: boost::make_iterator_range (p.second.label_begin (), 
+                                                       p.second.label_end ()))
              {
                inv_map->insert (make_pair (bb, thread_analyzer[bb]));
                /// -- flow insensitive abstraction 
                inv = inv | thread_analyzer[bb];
                domain_traits::forget (inv, locals.begin (), locals.end ());
              }
-             m_global_inv [t] = inv_map;
+             m_global_inv [p.first] = inv_map;
              change=true;
            }
            else
            {
              inv_map_ptr inv_map = it->second;
-             for (auto bb: boost::make_iterator_range (t->label_begin (), 
-                                                       t->label_end ()))
+             for (auto bb: boost::make_iterator_range (p.second.label_begin (), 
+                                                       p.second.label_end ()))
              {
                AbsDomain& old_inv = (*inv_map) [bb];           
                AbsDomain new_inv = thread_analyzer [bb];

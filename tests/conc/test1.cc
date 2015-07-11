@@ -11,17 +11,22 @@ namespace domain_impl
 {
   using namespace cfg_impl;
   // Numerical domains
-  typedef interval_domain< z_number, varname_t >             interval_domain_t;
-  typedef DBM< z_number, varname_t >                         dbm_domain_t;
+  typedef interval_domain< z_number, varname_t > interval_domain_t;
+  typedef DBM< z_number, varname_t > dbm_domain_t;
 } // end namespace
+
+namespace conc_impl
+{
+  template<> inline std::string get_thread_id_str(std::string s) 
+  { return s; }
+}
 
 using namespace cfg_impl;
 using namespace domain_impl;
 using namespace analyzer;
 using namespace conc;
 
-typedef ConcSys< basic_block_label_t, varname_t> conc_sys_t;
-typedef conc_sys_t::thread_t thread_t;
+typedef ConcSys< string, cfg_t> conc_sys_t;
 
 cfg_t thread1 (VariableFactory &vfac) 
 {
@@ -130,8 +135,8 @@ int main (int argc, char** argv )
   shared_vars.push_back (vfac ["x"]);
   shared_vars.push_back (vfac ["y"]);
 
-  concSys.add_thread (&t1, shared_vars.begin (), shared_vars.end ());
-  concSys.add_thread (&t2, shared_vars.begin (), shared_vars.end ());
+  concSys.add_thread ("thread1", t1, shared_vars.begin (), shared_vars.end ());
+  concSys.add_thread ("thread2", t2, shared_vars.begin (), shared_vars.end ());
 
   cout << concSys << endl;
 
@@ -140,21 +145,15 @@ int main (int argc, char** argv )
   global_inv.assign (vfac ["x"], interval_domain_t::linear_expression_t (0));
   global_inv.assign (vfac ["y"], interval_domain_t::linear_expression_t (0));
 
-  typedef ConcAnalyzer <cfg_t,interval_domain_t,VariableFactory> conc_analyzer_t;
+  typedef ConcAnalyzer <string, cfg_t,interval_domain_t,VariableFactory> conc_analyzer_t;
 
   conc_analyzer_t a (concSys, vfac, run_live);
   a.Run (global_inv);
   
-  cout << "Thread 1\n";
-  {  
-    conc_analyzer_t::inv_map_t &inv_map = a.getInvariants (&t1);
-    for (auto p : inv_map)
-      cout << p.first << ": " << p.second << endl;
-  }
-
-  cout << "Thread 2\n";
-  {  
-    conc_analyzer_t::inv_map_t &inv_map = a.getInvariants (&t2);
+  for (auto const p: concSys)
+  {
+    cout << "Results " << conc_impl::get_thread_id_str (p.first) << "\n";
+    conc_analyzer_t::inv_map_t &inv_map = a.getInvariants (p.first);
     for (auto p : inv_map)
       cout << p.first << ": " << p.second << endl;
   }
