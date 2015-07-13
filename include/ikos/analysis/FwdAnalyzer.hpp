@@ -30,10 +30,10 @@ namespace analyzer
     typedef Liveness<CFG> liveness_t;     
     typedef typename liveness_t::live_set_t live_set_t;     
     
-    CFG              m_cfg;
-    VarFactory&      m_vfac;
-    liveness_t       m_live;
-
+    CFG m_cfg;
+    VarFactory&  m_vfac;
+    liveness_t m_live;
+    bool m_keep_shadows;
     // Preserve invariants at the entry and exit. This might be
     // expensive in terms of memory. We can always compute the
     // invariants at the exit by propagating locally from the
@@ -64,8 +64,11 @@ namespace analyzer
       auto it = m_pre_map.find (node);
        if (it == m_pre_map.end())
        {
-         auto shadows = m_vfac.get_shadow_vars ();
-         domain_traits::forget (inv, shadows.begin (), shadows.end ());
+         if (!m_keep_shadows)
+         {
+           auto shadows = m_vfac.get_shadow_vars ();
+           domain_traits::forget (inv, shadows.begin (), shadows.end ());
+         }
          m_pre_map.insert(typename invariant_map_t::value_type (node, inv));
        }
     }
@@ -75,16 +78,20 @@ namespace analyzer
       auto it = m_post_map.find (node);
        if (it == m_post_map.end())
        {
-         auto shadows = m_vfac.get_shadow_vars ();
-         domain_traits::forget (inv, shadows.begin (), shadows.end ());
+         if (!m_keep_shadows)
+         {
+           auto shadows = m_vfac.get_shadow_vars ();
+           domain_traits::forget (inv, shadows.begin (), shadows.end ());
+         }
          m_post_map.insert(typename invariant_map_t::value_type (node, inv));
        }
     }
     
    public:
     
-    FwdAnalyzer (CFG cfg, VarFactory& vfac, bool runLive=false): 
-        fwd_iterator_t (cfg), m_cfg (cfg), m_vfac (vfac), m_live (m_cfg)
+    FwdAnalyzer (CFG cfg, VarFactory& vfac, bool runLive, bool keep_shadows=false): 
+        fwd_iterator_t (cfg), m_cfg (cfg), m_vfac (vfac), m_live (m_cfg), 
+        m_keep_shadows (keep_shadows)
     { 
       if (runLive)
          m_live.exec ();
