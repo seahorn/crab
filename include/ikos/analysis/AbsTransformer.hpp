@@ -24,6 +24,7 @@ namespace analyzer
     typedef Assume <z_number,VariableName>     z_assume_t;
     typedef Havoc<VariableName>                havoc_t;
     typedef Unreachable<VariableName>          unreach_t;
+    typedef Select <z_number,VariableName>     z_select_t;
     typedef FCallSite<VariableName>            callsite_t;
     typedef Return<VariableName>               return_t;
     typedef ArrayInit<VariableName>            arr_init_t;
@@ -42,6 +43,7 @@ namespace analyzer
     virtual void exec (z_assume_t&) { }
     virtual void exec (havoc_t&) { }
     virtual void exec (unreach_t&) { }
+    virtual void exec (z_select_t&) { }
     virtual void exec (callsite_t&) { }
     virtual void exec (return_t&) { }
     virtual void exec (arr_init_t&) { }
@@ -60,6 +62,7 @@ namespace analyzer
     void visit (z_assume_t &s) { exec (s); }
     void visit (havoc_t &s) { exec (s); }
     void visit (unreach_t &s) { exec (s); }
+    void visit (z_select_t &s) { exec (s); }
     void visit (callsite_t &s) { exec (s); }
     void visit (return_t &s) { exec (s); }
     void visit (arr_init_t &s) { exec (s); }
@@ -85,6 +88,7 @@ namespace analyzer
     using typename abs_transform_t::z_bin_op_t;
     using typename abs_transform_t::z_assign_t;
     using typename abs_transform_t::z_assume_t;
+    using typename abs_transform_t::z_select_t;
     using typename abs_transform_t::havoc_t;
     using typename abs_transform_t::unreach_t;
     using typename abs_transform_t::arr_init_t;
@@ -122,6 +126,28 @@ namespace analyzer
                      op2.constant ()); 
       }      
     }
+
+    void exec (z_select_t& stmt) 
+    {
+      NumAbsDomain inv1 (m_inv);
+      NumAbsDomain inv2 (m_inv);
+      inv1 += (z_lin_exp_t (stmt.cond().name ()) >= z_lin_exp_t (z_number(1)));
+      inv2 += (z_lin_exp_t (stmt.cond().name ()) <= z_lin_exp_t (z_number(0)));
+
+      if (inv2.is_bottom()) {
+        inv1.assign (stmt.lhs().name (),stmt.left());
+        m_inv = inv1;
+      }
+      else if (inv1.is_bottom ()) {
+        inv2.assign (stmt.lhs().name (),stmt.right());
+        m_inv = inv2;
+      }
+      else {
+        inv1.assign (stmt.lhs().name (),stmt.left());
+        inv2.assign (stmt.lhs().name (),stmt.right());
+        m_inv = inv1 | inv2;
+      }
+    }    
     
     void exec (z_assign_t& stmt) 
     {

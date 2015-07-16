@@ -55,6 +55,7 @@ namespace analyzer
       using typename StatementVisitor<varname_t>::z_assume_t;
       using typename StatementVisitor<varname_t>::havoc_t;
       using typename StatementVisitor<varname_t>::unreach_t;
+      using typename StatementVisitor<varname_t>::z_select_t;
       
       using typename StatementVisitor<varname_t>::callsite_t;
       using typename StatementVisitor<varname_t>::return_t;
@@ -214,6 +215,9 @@ namespace analyzer
       { m_inv = m_inv_gen->AnalyzeStmt (stmt, m_inv); }
       
       void visit (unreach_t& stmt)
+      { m_inv = m_inv_gen->AnalyzeStmt (stmt, m_inv); }
+
+      void visit (z_select_t& stmt) 
       { m_inv = m_inv_gen->AnalyzeStmt (stmt, m_inv); }
       
     };

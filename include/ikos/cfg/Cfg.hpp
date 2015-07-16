@@ -391,6 +391,73 @@ namespace cfg
     
   }; 
 
+  // select x, c, e1, e2:
+  //    if c > 0 then x=e1 else x=e2
+  //
+  // Note that a select instruction is not strictly needed and can be
+  // simulated by splitting blocks. However, frontends like LLVM can
+  // generate many select instructions so we prefer to support
+  // natively to avoid a blow up in the size of the CFG.
+  template< class Number, class VariableName>
+  class Select: public Statement <VariableName>
+  {
+    
+   public:
+
+    typedef variable< Number, VariableName > variable_t;
+    typedef linear_expression< Number, VariableName > linear_expression_t;
+
+   private:
+
+    variable_t          m_lhs;
+    variable_t          m_cond;
+    linear_expression_t m_e1;
+    linear_expression_t m_e2;
+
+   public:
+    
+    Select (variable_t lhs, 
+            variable_t cond, 
+            linear_expression_t e1, 
+            linear_expression_t e2): 
+
+        m_lhs(lhs), m_cond(cond), m_e1(e1), m_e2(e2) 
+    { 
+      this->m_live.addDef (m_lhs.name());
+      this->m_live.addUse (m_cond.name());
+      for (auto v: m_e1.variables()){ this->m_live.addUse (v.name()); }         
+      for (auto v: m_e2.variables()){ this->m_live.addUse (v.name()); }         
+    }
+
+    variable_t lhs () const { return m_lhs; }
+    
+    variable_t cond () const { return m_cond; }
+    
+    linear_expression_t left () const { return m_e1; }
+    
+    linear_expression_t right () const { return m_e2; }
+
+    virtual void accept(StatementVisitor < VariableName> *v) 
+    {
+      v->visit(*this);
+    }
+
+    virtual boost::shared_ptr<Statement <VariableName> > clone () const
+    {
+      typedef Select <Number, VariableName> Select_t;
+      return boost::static_pointer_cast< Statement <VariableName>, Select_t >
+          (boost::shared_ptr <Select_t> (new Select_t(m_lhs, m_cond, m_e1, m_e2)));
+    }
+
+    virtual void write (ostream& o) const
+    {
+      o << m_lhs << " = " 
+        << "(" << m_cond << " ? " << m_e1 << ":" << m_e2 << ")";
+      return;
+    }
+
+  }; 
+
   /*
      Array statements (ARR_TYPE)
   */
@@ -995,6 +1062,7 @@ namespace cfg
     typedef Assume<z_number,VariableName> z_assume_t;
     typedef Havoc<VariableName> havoc_t;
     typedef Unreachable<VariableName> unreach_t;
+    typedef Select<z_number,VariableName> z_select_t;
     // Functions
     typedef FCallSite<VariableName> callsite_t;
     typedef Return<VariableName> return_t;
@@ -1014,6 +1082,7 @@ namespace cfg
     typedef boost::shared_ptr<z_assume_t> z_assume_ptr;
     typedef boost::shared_ptr<havoc_t> havoc_ptr;      
     typedef boost::shared_ptr<unreach_t> unreach_ptr;
+    typedef boost::shared_ptr<z_select_t> z_select_ptr;
     typedef boost::shared_ptr<callsite_t> callsite_ptr;      
     typedef boost::shared_ptr<return_t> return_ptr;      
     typedef boost::shared_ptr<arr_init_t> arr_init_ptr;
@@ -1327,6 +1396,30 @@ namespace cfg
       insert (boost::static_pointer_cast< statement_t, unreach_t > 
               (unreach_ptr (new unreach_t ())));
     }
+
+    void select (z_variable_t lhs, z_variable_t cond, z_number n1, z_number n2) 
+    {
+      insert(boost::static_pointer_cast< statement_t, z_select_t >
+             (z_select_ptr(new z_select_t (lhs, cond, n1, n2))));
+    }
+
+    void select (z_variable_t lhs, z_variable_t cond, z_number n, z_variable_t v) 
+    {
+      insert(boost::static_pointer_cast< statement_t, z_select_t >
+             (z_select_ptr(new z_select_t (lhs, cond, n, v))));
+    }
+
+    void select (z_variable_t lhs, z_variable_t cond, z_variable_t v, z_number n) 
+    {
+      insert(boost::static_pointer_cast< statement_t, z_select_t >
+             (z_select_ptr(new z_select_t (lhs, cond, v, n))));
+    }
+
+    void select (z_variable_t lhs, z_variable_t cond, z_variable_t v1, z_variable_t v2) 
+    {
+      insert(boost::static_pointer_cast< statement_t, z_select_t >
+             (z_select_ptr(new z_select_t (lhs, cond, v1, v2))));
+    }
     
     void callsite (VariableName func, 
                    vector<pair <VariableName,VariableType> > args) 
@@ -1441,6 +1534,7 @@ namespace cfg
     typedef Assume <z_number,VariableName> z_assume_t;
     typedef Havoc<VariableName> havoc_t;
     typedef Unreachable<VariableName> unreach_t;
+    typedef Select<z_number,VariableName> z_select_t;
 
     typedef FCallSite<VariableName> callsite_t;
     typedef Return<VariableName> return_t;
@@ -1462,6 +1556,7 @@ namespace cfg
     virtual void visit (z_assume_t&) = 0;
     virtual void visit (havoc_t&) = 0;
     virtual void visit (unreach_t&) = 0;
+    virtual void visit (z_select_t&) = 0;
 
     virtual void visit (callsite_t&) { };
     virtual void visit (return_t&) { };
@@ -1897,6 +1992,7 @@ namespace cfg
       typedef typename StatementVisitor<VariableName>::z_assume_t z_assume_t;
       typedef typename StatementVisitor<VariableName>::havoc_t havoc_t;
       typedef typename StatementVisitor<VariableName>::unreach_t unreach_t;
+      typedef typename StatementVisitor<VariableName>::z_select_t z_select_t;
 
       bool _has_assert;
       HasAssertVisitor (): _has_assert(false) { }
@@ -1905,6 +2001,7 @@ namespace cfg
       void visit(z_assume_t&) { _has_assert = true; }
       void visit(havoc_t&) { }
       void visit(unreach_t&){ }
+      void visit(z_select_t&){ }
     };
     
     // Helpers

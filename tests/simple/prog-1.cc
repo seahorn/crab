@@ -35,6 +35,8 @@ cfg_t prog (VariableFactory &vfac)
   // Definining program variables
   z_var i (vfac ["i"]);
   z_var k (vfac ["k"]);
+  z_var nd (vfac ["nd"]);
+  z_var inc (vfac ["inc"]);
   // entry and exit block
   cfg_t cfg ("x0","ret");
   // adding blocks
@@ -58,7 +60,9 @@ cfg_t prog (VariableFactory &vfac)
   entry.assign (i, 0);
   bb1_t.assume (i <= 99);
   bb1_f.assume (i >= 100);
-  bb2.add(i, i, 1);
+  bb2.havoc(nd.name());
+  bb2.select(inc,nd,1,2);
+  bb2.add(i, i, inc);
 
   return cfg;
 }
