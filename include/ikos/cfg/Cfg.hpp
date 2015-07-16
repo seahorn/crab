@@ -1397,28 +1397,10 @@ namespace cfg
               (unreach_ptr (new unreach_t ())));
     }
 
-    void select (z_variable_t lhs, z_variable_t cond, z_number n1, z_number n2) 
+    void select (z_variable_t lhs, z_variable_t cond, z_lin_exp_t e1, z_lin_exp_t e2) 
     {
       insert(boost::static_pointer_cast< statement_t, z_select_t >
-             (z_select_ptr(new z_select_t (lhs, cond, n1, n2))));
-    }
-
-    void select (z_variable_t lhs, z_variable_t cond, z_number n, z_variable_t v) 
-    {
-      insert(boost::static_pointer_cast< statement_t, z_select_t >
-             (z_select_ptr(new z_select_t (lhs, cond, n, v))));
-    }
-
-    void select (z_variable_t lhs, z_variable_t cond, z_variable_t v, z_number n) 
-    {
-      insert(boost::static_pointer_cast< statement_t, z_select_t >
-             (z_select_ptr(new z_select_t (lhs, cond, v, n))));
-    }
-
-    void select (z_variable_t lhs, z_variable_t cond, z_variable_t v1, z_variable_t v2) 
-    {
-      insert(boost::static_pointer_cast< statement_t, z_select_t >
-             (z_select_ptr(new z_select_t (lhs, cond, v1, v2))));
+             (z_select_ptr(new z_select_t (lhs, cond, e1, e2))));
     }
     
     void callsite (VariableName func, 
