@@ -1966,8 +1966,10 @@ namespace cfg
     ////
     // Cfg simplifications
     ////
-    
-    struct HasAssertVisitor: public StatementVisitor<VariableName>
+
+    //XXX: this is a bit adhoc. It should be probably a parameter of
+    // simplify().
+    struct DoNotSimplifyVisitor: public StatementVisitor<VariableName>
     {
       typedef typename StatementVisitor<VariableName>::z_bin_op_t z_bin_op_t;
       typedef typename StatementVisitor<VariableName>::z_assign_t z_assign_t;
@@ -1975,12 +1977,14 @@ namespace cfg
       typedef typename StatementVisitor<VariableName>::havoc_t havoc_t;
       typedef typename StatementVisitor<VariableName>::unreach_t unreach_t;
       typedef typename StatementVisitor<VariableName>::z_select_t z_select_t;
+      typedef typename StatementVisitor<VariableName>::z_arr_load_t z_arr_load_t;
 
-      bool _has_assert;
-      HasAssertVisitor (): _has_assert(false) { }
+      bool _do_not_simplify;
+      DoNotSimplifyVisitor (): _do_not_simplify(false) { }
       void visit(z_bin_op_t&){ }  
       void visit(z_assign_t&) { }
-      void visit(z_assume_t&) { _has_assert = true; }
+      void visit(z_assume_t&) { _do_not_simplify = true; }
+      void visit(z_arr_load_t&) { _do_not_simplify = true; }
       void visit(havoc_t&) { }
       void visit(unreach_t&){ }
       void visit(z_select_t&){ }
@@ -2027,12 +2031,11 @@ namespace cfg
         basic_block_t &parent = getParent (curId);
         basic_block_t &child  = getChild (curId);
         
-        HasAssertVisitor vis;
+        DoNotSimplifyVisitor vis;
         for (auto it = cur.begin (); it != cur.end (); ++it)
           it->accept(&vis);
         
-        // we don't merge two blocks with assertions
-        if (!vis._has_assert)
+        if (!vis._do_not_simplify)
         {
           parent.merge_back (cur);
           remove (curId);
