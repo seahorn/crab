@@ -1,7 +1,8 @@
 /*******************************************************************************
- * This domain is a simplified version of the paper "A
- * Partial-Order Approach to Array Content Analysis" by Gange, Navas,
- * Schachte, Sondergaard, and Stuckey
+ * This domain is a simplified version of the paper: 
+ * 
+ * "A Partial-Order Approach to Array Content Analysis" by 
+ *  Gange, Navas, Schachte, Sondergaard, and Stuckey
  * (http://arxiv.org/pdf/1408.1754v1.pdf)
  *
  * It reasons about array contents based on computing all the feasible
@@ -12,9 +13,18 @@
  ******************************************************************************/
 
 /*
-  Warning: this implementation is just a proof-of-concept so it is
-  horribly inefficient. I have not tried to make it more efficient
-  yet.
+  FIXME: this implementation is just a proof-of-concept so it is
+  horribly inefficient. I have not tried to make it more efficient yet
+  or ran with real programs.
+
+  FIXME: assume all array accesses are aligned wrt to the size of the
+  array element (e.g., if the size of the array element is 4 bytes
+  then all array accesses must be multiple of 4). Note this assumption
+  does not hold in real programs!
+
+  FIXME: It also assumes that the size of the array element is always
+  1. Therefore, if the array indexes are incremented or decremented by
+  2,4,... we will lose all the precision.
  */
 
 #ifndef IKOS_ARRAY_GRAPH_HPP
@@ -34,6 +44,9 @@
 #include <ikos/domains/numerical_domains_api.hpp>
 #include <ikos/domains/domain_traits_impl.hpp>
 
+//#define DEBUG
+#include <ikos/common/dbg.hpp>
+
 namespace ikos {
 
 using namespace std;
@@ -50,7 +63,8 @@ using namespace boost;
   - If the both edges from i to j and from j to i are bottom then it
     must be that (i>=j) && (j>=i) = (i==j)
  */
-template< typename VertexName, typename Weight, bool IsDistWeight, typename ScalarNumDomain >
+template< typename VertexName, typename Weight, 
+          bool IsDistWeight, typename ScalarNumDomain >
 class array_graph: public ikos::writeable{
 
   // generic wrapper for using VertexName as key in almost any
@@ -87,7 +101,8 @@ class array_graph: public ikos::writeable{
     }
   }; 
 
-  template < typename Any1, typename Any2, typename Any3, typename Any4, bool Any5> 
+  template < typename Any1, typename Any2, 
+             typename Any3, typename Any4, bool Any5> 
   friend class array_graph_domain;
 
   typedef uint64_t key_t;
@@ -134,10 +149,7 @@ class array_graph: public ikos::writeable{
   void insert_vertex_map (VertexName key, vertex_descriptor_t value)
   {
     if (find_vertex_map(key))
-    {
-      cerr << key << " already in the vertex map" << endl;
-      exit (EXIT_FAILURE);
-    }
+      IKOS_ERROR (key," already in the vertex map");
 
     _vertex_map->insert (make_pair(key.index(), value));
     _vertices_set->insert (key);
@@ -155,8 +167,7 @@ class array_graph: public ikos::writeable{
     if (it != _vertex_map->end())
       return it->second;
 
-    cerr << "No vertex with name " << key << " found in the graph\n";
-    exit (EXIT_FAILURE);
+    IKOS_ERROR ("No vertex with name ",key," found in the graph");
   }
 
   // All methods that add new vertices should call this one.
@@ -176,10 +187,7 @@ class array_graph: public ikos::writeable{
       edge_descriptor_t k; bool b;
       boost::tie(k,b) = add_edge(u, v, *_graph);
       if (!b)
-      {
-        cerr << "edge is already in the graph\n";
-        exit (EXIT_FAILURE);
-      }
+        IKOS_ERROR ("edge is already in the graph");
 
       (*_graph)[k].weight = WeightPtr(new Weight(e.get<2>()));
     }
@@ -228,7 +236,8 @@ class array_graph: public ikos::writeable{
         {
           for (tie(ji, je) = vertices(*_graph); ji != je; ++ji)
           {
-            if (edge(*ii, *ji, (*_graph)).second && edge(*ki, *ji, (*_graph)).second) 
+            if (edge(*ii, *ji, (*_graph)).second && 
+                edge(*ki, *ji, (*_graph)).second) 
             {
               auto e_ij = edge(*ii, *ji, (*_graph)).first;
               auto e_ik = edge(*ii, *ki, (*_graph)).first;
@@ -304,7 +313,8 @@ class array_graph: public ikos::writeable{
     {
       vertex_descriptor_t u = lookup_vertex_map(v);
       out_edge_iterator out_it, out_et;
-      for (tie(out_it, out_et) = out_edges(u, *_graph); out_it != out_et; ++out_it)
+      for (tie(out_it, out_et) = out_edges(u, *_graph); 
+           out_it != out_et; ++out_it)
         (*_graph)[*out_it].weight = WeightPtr( new Weight(weight));
     }
   }
@@ -335,7 +345,8 @@ class array_graph: public ikos::writeable{
 
 
   template<typename Op>
-  void pointwise_binop_helper (array_graph_t &g1, const array_graph_t &g2)
+  void pointwise_binop_helper (array_graph_t &g1, 
+                               const array_graph_t &g2)
   {
     // pre: g1 and g2 have the same adjacency structure
     edge_iterator it_1, et_1;
@@ -357,15 +368,13 @@ class array_graph: public ikos::writeable{
             op((*g1._graph)[e_1].weight, (*g2._graph)[e_2].weight);
       }
       else
-      {
-        cerr << "unreachable";
-        exit (EXIT_FAILURE);
-      }
+        IKOS_ERROR("unreachable");
     } 
   }
 
   template<typename Op>
-  array_graph_t pointwise_binop (array_graph_t g1, array_graph_t g2)
+  array_graph_t pointwise_binop (array_graph_t g1, 
+                                 array_graph_t g2)
   {
     g1.canonical();
     g2.canonical();
@@ -527,10 +536,7 @@ class array_graph: public ikos::writeable{
             return false;
         }
         else
-        {
-          cerr << "operator<= with graphs with different adjacency structure\n";
-          exit (EXIT_FAILURE);
-        }
+          IKOS_ERROR ("operator<= with graphs with different adjacency structure");
       }
       return true;
     }
@@ -631,8 +637,7 @@ class array_graph: public ikos::writeable{
         return *((*_graph)[e].weight);
       }
     }
-    assert (false && "No edge found with given vertices" );
-    exit (EXIT_FAILURE);
+    IKOS_ERROR ("No edge found with given vertices");
   }
   
   ostream& write(ostream& o) 
@@ -756,11 +761,12 @@ class array_graph_domain:
       // all array indexes are non-negative
       // this->_scalar += linear_constraint_t( variable_t(v) >= 0 );
       // forcing "i+" = i + 1
+
+      // FIXME: it assumes that the array element size is 1 byte. 
       _scalar += linear_constraint_t( variable_t(v_succ) == variable_t(v) + 1);
     }
   }
 
- public: /*for testing*/
   void meet_weight (VariableName i, VariableName j, Weight w)
   {
     add_variable (i);
@@ -855,33 +861,24 @@ class array_graph_domain:
     optional<VariableName> i_succ = get_succ_idx(i);
     if (i_succ) 
       return _g.get_weight(i, *i_succ);
-    
-    cerr << "There is no successor index associated with " << i << endl;
-    assert (false);
-    exit (EXIT_FAILURE);
+
+    IKOS_ERROR ("There is no successor index associated with ",i);
   }
  
   // model array writes
   void array_write (VariableName arr, VariableName i, Weight w)
   {
     if (is_bottom()) return;
-      
     //this->reduce();
 
     // strong update
     optional<VariableName> i_succ = get_succ_idx(i);
-    if (i_succ)
-    {
-      Weight& old_w = _g.get_weight(i, *i_succ);
-      old_w -= arr;
-      _g.meet_weight(i, *i_succ, w);
-    }
-    else
-    {
-      cerr << "There is no successor index associated with " << i << endl;
-      exit (EXIT_FAILURE);
-    }
-    
+    if (!i_succ) 
+      IKOS_ERROR ("There is no successor index associated with ",i);
+
+    Weight& old_w = _g.get_weight(i, *i_succ);
+    old_w -= arr;
+    _g.meet_weight(i, *i_succ, w);
     Weight new_w = _g.get_weight(i, *i_succ);
     
     // weak update: 
@@ -907,8 +904,7 @@ class array_graph_domain:
                                      typename array_graph_t::WeightPtr (new Weight(new_w)));
     }
     _g.canonical();
-    // DEBUG
-    // cout << "Array write at " << i << " with weight " << new_w << " --- " << *this << endl;
+
   }
   
   void set_to_bottom()
@@ -980,7 +976,11 @@ class array_graph_domain:
   
   bool is_bottom() { return _is_bottom; }
 
-  bool is_top() { return (_scalar.is_top() || _g.is_top()); }
+  // --- top operation in the graph is expensive because we need to
+  //     traverse the whole graph and check each edge.
+  // bool is_top() { return (_scalar.is_top() && _g.is_top()); }
+    
+  bool is_top() { return (_scalar.is_top()); }
   
   void reduce ()
   {
@@ -1012,8 +1012,10 @@ class array_graph_domain:
     } else if (other.is_bottom ()) {
       return *this;
     } else {
-      succ_index_map_ptr map(new succ_index_map_t(*(_succ_idx_map) | *(other._succ_idx_map)));
-      return array_graph_domain_t(_scalar | other._scalar, _g | other._g, map); 
+      succ_index_map_ptr map(new succ_index_map_t(*(_succ_idx_map) | 
+                                                  *(other._succ_idx_map)));
+      return array_graph_domain_t(_scalar | other._scalar, 
+                                  _g | other._g, map); 
     }
   }
   
@@ -1022,8 +1024,10 @@ class array_graph_domain:
     if (is_bottom () || other.is_bottom ()) {
       return bottom();
     } else {
-      succ_index_map_ptr map(new succ_index_map_t(*(_succ_idx_map) | *(other._succ_idx_map)));
-      return array_graph_domain_t(_scalar & other._scalar, _g & other._g, map);
+      succ_index_map_ptr map(new succ_index_map_t(*(_succ_idx_map) | 
+                                                  *(other._succ_idx_map)));
+      return array_graph_domain_t(_scalar & other._scalar, 
+                                  _g & other._g, map);
     }
   }
   
@@ -1033,10 +1037,11 @@ class array_graph_domain:
     else if (other.is_bottom ())  return *this;
     else 
     {
-      succ_index_map_ptr map (new succ_index_map_t(*(_succ_idx_map) | *(other._succ_idx_map)));
-      array_graph_domain_t widen (_scalar || other._scalar, _g || other._g, map);
-      // DEBUG
-      // cout << "Widening: " << *this << endl;
+      succ_index_map_ptr map (new succ_index_map_t(*(_succ_idx_map) | 
+                                                   *(other._succ_idx_map)));
+      array_graph_domain_t widen (_scalar || other._scalar, 
+                                  _g || other._g, map);
+      IKOS_DEBUG("Widening: ",*this);
       return widen;
     }
   }
@@ -1047,39 +1052,36 @@ class array_graph_domain:
       return bottom();
     else 
     {
-      succ_index_map_ptr map (new succ_index_map_t(*(_succ_idx_map) | *(other._succ_idx_map)));
-      return array_graph_domain_t (_scalar && other._scalar, _g && other._g, map);
+      succ_index_map_ptr map (new succ_index_map_t(*(_succ_idx_map) | 
+                                                   *(other._succ_idx_map)));
+      return array_graph_domain_t (_scalar && other._scalar, 
+                                   _g && other._g, map);
     }
   }
   
   void operator-=(VariableName var)
   {
     if (is_bottom ()) return;
-    
-    // We assume that a variable is either an index in the graph or it
-    // is in the weight but not both.
-    if (is_array_index(var))
+
+    // forget in the scalar domain
+    _scalar -= var;
+    _g -= var;
+    optional<VariableName> var_succ = get_succ_idx(var);
+    if (var_succ)
     {
-      _scalar -= var;
-      _g -= var;
-      optional<VariableName> var_succ = get_succ_idx(var);
-      if (var_succ)
-      {
-        _scalar -= *var_succ;
+      _scalar -= *var_succ;
         _g -= *var_succ;        
         (*_succ_idx_map) -= var;
-      }
     }
-    else
+
+    // forget in the graph domain
+    typename array_graph_t::edge_iterator it, et;
+    for(tie(it,et) = edges(*(_g._graph)); it!= et; ++it)
     {
-      typename array_graph_t::edge_iterator it, et;
-      for(tie(it,et) = edges(*(_g._graph)); it!= et; ++it)
-      {
-        auto e  = *it;
-        auto weight = (*(_g._graph))[e].weight;
-        (*weight) -= var;
-      }      
-    }
+      auto e  = *it;
+      auto weight = (*(_g._graph))[e].weight;
+      (*weight) -= var;
+    }      
     // this->reduce();
   }
   
@@ -1105,17 +1107,13 @@ class array_graph_domain:
     _scalar += csts;
     reduce();
 
-    // DEBUG
-    // cout << "Assume(" << csts << ") --- " << *this << endl;
+    IKOS_DEBUG("Assume(", csts, ") --- ", *this);
   }
 
   void assign (VariableName x, linear_expression_t e) 
   {
     if (is_bottom()) return;
 
-    // DEBUG
-    // cout << "Assign " << x << " := " << e << " --- ";
-      
     if (boost::optional<variable_t> y = e.get_variable())
     {
       if ((*y).name() == x) return;
@@ -1143,57 +1141,61 @@ class array_graph_domain:
       add_variable(x);
     
     reduce();
-    // DEBUG
-    // cout << *this << endl;
+
+    IKOS_DEBUG("Assign ",x," := ",e," ==> ",*this);
   }
 
   void apply (operation_t op, VariableName x, VariableName y, Number z) 
   {
-    // DEBUG
-    // cout << "Apply " << x << " := " << y << " " << op << " " << z << " --- "; 
-
     assign (x, linear_expression_t(y));
     apply_helper<Number> (op, x, z);
-    
-    // DEBUG
-    // cout << *this << endl;
+
+    IKOS_DEBUG("Apply ",x," := ",y," ",op," ",z," ==> ",*this); 
   }
 
   void apply(operation_t op, VariableName x, VariableName y, VariableName z) 
   {
-    // DEBUG
-    // cout << "Apply " << x << " := " << y << " " << op << " " << z << " --- ";
-
     assign (x, linear_expression_t(y));
     apply_helper<VariableName> (op, x, z);
 
-    // DEBUG
-    // cout << *this << endl;
+    IKOS_DEBUG("Apply ",x," := ",y," ",op," ",z," ==> ",*this);
   }
 
   void apply(operation_t op, VariableName x, Number k) 
   {
-    // DEBUG
-    // cout << "Apply " << x << " := " << x << " " << op << " " << k << " --- ";
-
     apply_helper<Number> (op, x, k);
-
-    // DEBUG
-    // cout << *this << endl;
+    IKOS_DEBUG("Apply ",x," := ",x," ",op," ",k," ==> ",*this);
   }
 
   void load (VariableName lhs, VariableName arr, VariableName idx)
   {
     Weight w = array_read (idx);
-    // We are assuming that Weight::operator[] returns an interval.
+    // --- Simplification wrt Gange et. at.:
+    //     Only non-relational invariants are passed from the graph
+    //     domain to the scalar domain.
     _scalar.set (lhs, w [arr]);
+
+    IKOS_DEBUG("Array read ",lhs," := ", arr,"[",idx,"] ==> ", *this);    
   }
 
   void store (VariableName arr, VariableName idx, linear_expression_t val)
   {
+    // --- Simplification wrt Gange et. at.:
+    //     Only non-relational invariants are passed from the scalar
+    //     domain to the graph domain.
     Weight w = Weight::top ();
-    w.assign (arr, val);
+    if (val.is_constant ())
+      w.assign (arr, val);      
+    else if (auto v = val.get_variable ()){
+      w.set (arr, _scalar[(*v).name()]);      
+    }
+    else {
+      // If you see this warning you can switch to intervals.
+      cout << "Warning: scalar domain does not support assignments with arbitrary rhs.\n";
+    }
     array_write (arr, idx, w);
+
+    IKOS_DEBUG("Array write ",arr,"[",idx,"] := ",val, " ==> ", *this);
   }
     
   ostream& write(ostream& o) 
@@ -1221,19 +1223,22 @@ class array_graph_domain:
 
 namespace domain_traits
 {
-template <typename ScalarDomain, typename WeightDomain, typename VariableName, typename Number>
+template <typename ScalarDomain, typename WeightDomain, 
+          typename VariableName, typename Number>
 void array_load (array_graph_domain<ScalarDomain, Number, VariableName, 
                                     WeightDomain, false>& inv, 
-                 VariableName lhs, VariableName arr, VariableName idx) {
+                 VariableName lhs, VariableName arr, 
+                 VariableName idx, ikos::z_number /*n_bytes*/) {
    inv.load (lhs, arr, idx);
 }
 
-template <typename ScalarDomain, typename WeightDomain, typename VariableName, typename Number>
+template <typename ScalarDomain, typename WeightDomain, 
+          typename VariableName, typename Number>
 void array_store (array_graph_domain<ScalarDomain, Number, VariableName, 
                                      WeightDomain, false>& inv, 
                   VariableName arr, VariableName idx,
                   typename ScalarDomain::linear_expression_t val,
-                  bool /*is_singleton*/) {
+                  ikos::z_number /*n_bytes*/, bool /*is_singleton*/) {
    inv.store (arr, idx, val);
 } 
 } // namespace domain_traits
