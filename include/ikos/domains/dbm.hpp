@@ -511,13 +511,20 @@ class DBM: public writeable,
   } 
 
   DBM_t operator||(DBM_t o) {	
-    return DBM_t(dbm_widen(this->_dbm, o._dbm), 
-                 this->_map | o._map,
-                 this->_all_vars | o._all_vars);
+    if (is_bottom())
+      return o;
+    else if (o.is_bottom())
+      return *this;
+    else
+      return DBM_t(dbm_widen(this->_dbm, o._dbm), 
+                   this->_map | o._map,
+                   this->_all_vars | o._all_vars);
   } 
 
   DBM_t operator&(DBM_t o) { 
-    if (is_top())
+    if (is_bottom() || o.is_bottom())
+      return bottom();
+    else if (is_top())
       return o;
     else if (o.is_top())
       return *this;
@@ -525,7 +532,6 @@ class DBM: public writeable,
       return DBM_t(dbm_meet(this->_dbm, o._dbm), 
                    this->_map | o._map,
                    this->_all_vars | o._all_vars);
-                     
     }
   }	
     
