@@ -2,29 +2,46 @@
  * Common types and classes used in IKOS.
  ******************************************************************************/
 
-
 #ifndef IKOS_COMMON_HPP
 #define IKOS_COMMON_HPP
 
 #include <stdint.h>
 #include <string>
 #include <iostream>
+#include <stdarg.h>
+#include <errno.h>
 #include <boost/noncopyable.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/container/slist.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 
-#define IKOS_ERROR(msg)                             \
-    do {                                            \
-      std::cout << msg << "\n";                     \
-      std::exit (EXIT_FAILURE);                     \
+namespace ikos {
+template<typename... ArgTypes>
+inline void print(ArgTypes... args)
+{
+  // trick to expand variadic argument pack without recursion
+  using expand_variadic_pack = int[];
+  // first zero is to prevent empty braced-init-list
+  // void() is to prevent overloaded operator, messing things up
+  // trick is to use the side effect of list-initializer to call a function
+  // on every argument.
+  // (void) is to suppress "statement has no effect" warnings
+  (void)expand_variadic_pack{0, ((std::cerr << args), void(), 0)... };
+}
+
+// TODO: it should be moved to dbg.hpp with the other macros
+#define IKOS_ERROR(...)              \
+    do {                             \
+      print(__VA_ARGS__);            \
+      std::cerr << "\n";             \
+      std::exit (EXIT_FAILURE);      \
     } while (0)
+} // end namespace
 
 namespace ikos 
 {
   
-
   // Numerical type for indexed objects
   typedef uint64_t index_t;
   
