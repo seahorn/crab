@@ -3,28 +3,32 @@
  * 
  * "A Partial-Order Approach to Array Content Analysis" by 
  *  Gange, Navas, Schachte, Sondergaard, and Stuckey
- * (http://arxiv.org/pdf/1408.1754v1.pdf)
+ *  available here http://arxiv.org/pdf/1408.1754v1.pdf.
  *
- * It reasons about array contents based on computing all the feasible
- * partial orderings between array indexes. For each array var we keep
- * a graph where vertices are the array indexes and edges are labelled
- * with weights.  An edge (i,j) with weight w denotes that the
- * property w holds for the all elements in the array between [i,j).
+ * It reasons about array contents and the idea is to compute all the
+ * feasible partial orderings between array indexes. It keeps a single
+ * graph where vertices are the array indexes (potentially all scalar
+ * variables) and edges are labelled with weights (that includes
+ * scalar and array variables).  An edge (i,j) with weight w denotes
+ * that the property w holds for the all elements in the array between
+ * [i,j).
  ******************************************************************************/
 
-/*
-  FIXME: this implementation is just a proof-of-concept so it is
-  horribly inefficient. I have not tried to make it more efficient yet
-  or ran with real programs.
+/* FIXMEs:
 
-  FIXME: assume all array accesses are aligned wrt to the size of the
-  array element (e.g., if the size of the array element is 4 bytes
-  then all array accesses must be multiple of 4). Note this assumption
-  does not hold in real programs!
+  - The implementation is just a proof-of-concept so it is horribly
+  inefficient. I have not tried to make it more efficient yet or ran
+  even with real programs. 
 
-  FIXME: It also assumes that the size of the array element is always
+  - Assume all array accesses are aligned wrt to the size of the array
+  element (e.g., if the size of the array element is 4 bytes then all
+  array accesses must be multiple of 4). Note this assumption does not
+  hold in real programs!
+
+  - It also assumes that the size of the array element is always
   1. Therefore, if the array indexes are incremented or decremented by
   2,4,... we will lose all the precision.
+
  */
 
 #ifndef IKOS_ARRAY_GRAPH_HPP
@@ -64,11 +68,11 @@ using namespace boost;
     must be that (i>=j) && (j>=i) = (i==j)
  */
 template< typename VertexName, typename Weight, 
-          bool IsDistWeight, typename ScalarNumDomain >
+          typename ScalarNumDomain, bool IsDistWeight >
 class array_graph: public ikos::writeable{
 
-  // generic wrapper for using VertexName as key in almost any
-  // container (std::unordered_map/set, mergeable_map, etc)
+  // Wrapper for using VertexName as key in almost any container
+  // (std::unordered_map/set, mergeable_map, etc)
   struct VertexNameKey{
     VertexName _v;
     VertexNameKey(VertexName v):_v(v){ }
@@ -109,11 +113,11 @@ class array_graph: public ikos::writeable{
   typedef boost::shared_ptr<VertexName> VertexNamePtr;
   typedef boost::shared_ptr<Weight>     WeightPtr;
   struct  graph_vertex_t { VertexNamePtr name; };
-  struct  graph_edge_t   { WeightPtr     weight; }; 
+  struct  graph_edge_t   { WeightPtr weight; }; 
   
  public:
-  typedef array_graph<VertexName,Weight,IsDistWeight,ScalarNumDomain > array_graph_t;
-  typedef boost::tuple<VertexName, VertexName, Weight>  edge_t;
+  typedef array_graph<VertexName,Weight,ScalarNumDomain,IsDistWeight> array_graph_t;
+  typedef boost::tuple<VertexName, VertexName, Weight> edge_t;
 
  private:
   typedef adjacency_list<listS,listS,bidirectionalS,graph_vertex_t,graph_edge_t> graph_t;
@@ -138,11 +142,10 @@ class array_graph: public ikos::writeable{
 
   bool _is_bottom;
   graph_ptr  _graph; 
-  vertex_map_ptr _vertex_map;   // map a VertexName to a graph vertex
+  vertex_map_ptr _vertex_map;   //! map a VertexName to a graph vertex
   vertex_names_set_ptr _vertices_set;
 
-  bool find_vertex_map (VertexName v)
-  { 
+  bool find_vertex_map (VertexName v) {
     return (_vertex_map->find(v.index()) != _vertex_map->end()); 
   }
 
@@ -223,7 +226,6 @@ class array_graph: public ikos::writeable{
   ///////////////////////////////////////////////////////////////////////
   bool oneStep()
   {
-    // Floyd-Warshall algorithm
     binary_join_op join;
     binary_meet_op meet;
     vertex_iterator ki, ke, ii, ie, ji, je;
@@ -609,14 +611,32 @@ class array_graph: public ikos::writeable{
     {
       vertex_descriptor_t u = lookup_vertex_map(src);
       vertex_descriptor_t v = lookup_vertex_map(dest);
-      if (edge(u,v,*_graph).second)
-      {
+      if (edge(u,v,*_graph).second) {
         edge_descriptor_t e = edge(u,v,*_graph).first;
         Weight meet = weight & (*(*_graph)[e].weight);
         (*_graph)[e].weight = WeightPtr(new Weight(meet));
       }
-      else
-      {
+      else {
+        vector<VertexName> vertices;
+        vector<edge_t>     edges;
+        edges.push_back(edge_t(src,dest,weight));
+        add(vertices,edges);
+      }
+    }
+  }
+
+  void set_weight (const VertexName &src, const VertexName &dest, 
+                   Weight weight)
+  {
+    if (find_vertex_map(src) && find_vertex_map(dest))
+    {
+      vertex_descriptor_t u = lookup_vertex_map(src);
+      vertex_descriptor_t v = lookup_vertex_map(dest);
+      if (edge(u,v,*_graph).second) {
+        edge_descriptor_t e = edge(u,v,*_graph).first;
+        (*_graph)[e].weight = WeightPtr(new Weight(weight));
+      }
+      else {
         vector<VertexName> vertices;
         vector<edge_t>     edges;
         edges.push_back(edge_t(src,dest,weight));
@@ -652,12 +672,7 @@ class array_graph: public ikos::writeable{
         for (tie(it, et) = vertices(*_graph); it != et; ++it){
           vertex_descriptor_t u = *it;
           VertexNamePtr u_name  = (*_graph)[u].name;          
-#if 0
-          // more verbose mode
-          o << *u_name << " (index=" << (*u_name).index() << ") ";
-#else
           o << *u_name << " ";
-#endif 
         }
         o << "},";
       }
@@ -688,7 +703,7 @@ class array_graph: public ikos::writeable{
   graph.
 */
 template<typename ScalarNumDomain, typename Number, typename VariableName, 
-         typename Weight, bool IsDistWeight>
+         typename WeightDomain, bool IsDistWeight = false>
 class array_graph_domain: 
       public ikos::writeable, 
       public numerical_domain< Number, VariableName>
@@ -701,9 +716,9 @@ class array_graph_domain:
   typedef typename ScalarNumDomain::variable_t variable_t;
 
  private:
-  typedef array_graph< VariableName, Weight, IsDistWeight, ScalarNumDomain > array_graph_t;
-  typedef array_graph_domain<ScalarNumDomain, Number, VariableName, 
-                             Weight, IsDistWeight> array_graph_domain_t;
+  typedef array_graph< VariableName,WeightDomain,ScalarNumDomain,IsDistWeight> array_graph_t;
+  typedef array_graph_domain<ScalarNumDomain,Number,VariableName, 
+                             WeightDomain,IsDistWeight> array_graph_domain_t;
 
   typedef typename array_graph_t::VertexNameKey VariableNameKey;
   typedef mergeable_map<VariableNameKey, VariableName> succ_index_map_t;
@@ -720,13 +735,13 @@ class array_graph_domain:
   {
     if (_g.find_vertex_map(v))
     {
-      _g.set_incoming(v , Weight::top());
-      _g.set_outgoing(v , Weight::top());
+      _g.set_incoming(v , WeightDomain::top());
+      _g.set_outgoing(v , WeightDomain::top());
       optional<VariableName> succ_v = get_succ_idx(v);
       if (succ_v)
       {
-        _g.set_incoming(*succ_v, Weight::top());
-        _g.set_outgoing(*succ_v, Weight::top());
+        _g.set_incoming(*succ_v, WeightDomain::top());
+        _g.set_outgoing(*succ_v, WeightDomain::top());
       }
     }
   }
@@ -760,14 +775,17 @@ class array_graph_domain:
       _succ_idx_map->set(v, v_succ);
       // all array indexes are non-negative
       // this->_scalar += linear_constraint_t( variable_t(v) >= 0 );
-      // forcing "i+" = i + 1
+      
+      /// FIXME: assume that the array element size is 1 byte.
 
-      // FIXME: it assumes that the array element size is 1 byte. 
+      /// --- Enforce: i+ == i+1
       _scalar += linear_constraint_t( variable_t(v_succ) == variable_t(v) + 1);
+      // needed if scalar domain is non-relational:
+      _g.set_weight (v_succ,v,WeightDomain::bottom ());
     }
   }
 
-  void meet_weight (VariableName i, VariableName j, Weight w)
+  void meet_weight (VariableName i, VariableName j, WeightDomain w)
   {
     add_variable (i);
     add_variable (j);
@@ -776,7 +794,7 @@ class array_graph_domain:
   }
 
   template <typename VariableFactory>
-  void meet_weight (Number i, Number j, Weight w, VariableFactory &vfac)
+  void meet_weight (Number i, Number j, WeightDomain w, VariableFactory &vfac)
   {
     _g.meet_weight (add_variable (i, vfac),
                     add_variable (j, vfac) ,
@@ -784,23 +802,32 @@ class array_graph_domain:
     reduce();
   }
 
-  void meet_weight (Number i, VariableName j, Weight w)
+  void meet_weight (Number i, VariableName j, WeightDomain w)
   {
     add_variable (j);
     _g.meet_weight (add_variable(i, j.getVarFactory ()),j,w);
     reduce();
   }
 
-  void meet_weight (VariableName i, Number j, Weight w)
+  void meet_weight (VariableName i, Number j, WeightDomain w)
   {
     add_variable(i);
     _g.meet_weight(i,add_variable(j, i.getVarFactory ()),w);
     reduce();
   }
 
- private:
+  bool IsDefiniteOne (Number x)  { 
+    return x == Number (1); 
+  }
 
+  bool IsDefiniteOne (VariableName x)  { 
+    auto n = _scalar [x].singleton ();
+    if (n) return *n == Number (1); 
+    else return false;
+  }
+  
   // x := x op k 
+  // Most of the magic happens here.
   template<typename VarNum>
   void apply_helper (operation_t op, VariableName x, VarNum k) 
   {
@@ -813,24 +840,69 @@ class array_graph_domain:
     _g.insert_vertex(x_old_succ);
     _succ_idx_map->set(x_old, x_old_succ);
 
-    /// add some constraints in the scalar domain
+    /// --- Enforce the following relationships:
+    ///     { x_old = x, x_old+ = x+, x_old+ = x_old + 1} 
+
+    /// x_old = x
     _scalar.assign(x_old, linear_expression_t(x)); 
+    // needed if scalar domain is non-relational:
+    // enforcing x_old = x
+    _g.set_weight (x_old,x,WeightDomain::bottom ());
+    _g.set_weight (x,x_old,WeightDomain::bottom ());
+
+    /// x_old+ = x_old +1
     _scalar += linear_constraint_t(variable_t(x_old_succ) == variable_t(x_old) + 1);      
+    // needed if scalar domain is non-relational:
+    // enforcing x_old+ < x_old is false
+    _g.set_weight (x_old_succ,x_old,WeightDomain::bottom ());
+    // enforcing x_old+ < x is false
+    _g.set_weight (x_old_succ,x,WeightDomain::bottom ());
+
+    /// x_old+ = x+
     optional<VariableName> x_succ = get_succ_idx(x);
-    if (x_succ)
+    if (x_succ) {
       _scalar += linear_constraint_t( variable_t(x_old_succ) == variable_t(*x_succ));      
-    /* { x_old = x, x_old+ = x+, x_old+ = x_old + 1} */
+      // needed if scalar domain is non-relational:
+      // enforcing x_old + = x+
+      _g.set_weight (x_old_succ,*x_succ,WeightDomain::bottom ());
+      _g.set_weight (*x_succ,x_old_succ,WeightDomain::bottom ());
+      // enforcing x+ < x_old is false
+      _g.set_weight (*x_succ,x_old,WeightDomain::bottom ());
+    }
+    // propagate the scalar constraints to the graph
     reduce();
 
     /// step 2: abstract all incoming/outgoing edges of x
     abstract(x);
 
-    /// step 3: update the graph with the scalar domain after applying x = x op k.
+    /// step 3: update the graph with the scalar domain after applying
+    ///         x = x op k.
     _scalar.apply(op, x, x, k); 
+
+#if 1
+    // This is not needed at all if the scalar domain is relational.
+    // Otherwise, we would like to keep the relationship between
+    // x_old+ and x. We do it in a completely adhoc way but at least
+    // we cover common cases when the array is traversed forward or
+    // backwards one element by one.
+    if (op == OP_ADDITION && IsDefiniteOne (k)) {
+      _g.set_weight (x,x_old_succ,WeightDomain::bottom ());
+      _g.set_weight (x_old_succ,x,WeightDomain::bottom ());  
+    }
+    else if (op == OP_SUBTRACTION && IsDefiniteOne (k)) {
+      _g.set_weight (x_old,*x_succ,WeightDomain::bottom ());
+      _g.set_weight (*x_succ,x_old,WeightDomain::bottom ());  
+    }
+#endif 
+
     if (x_succ){
       _scalar -= *x_succ;
+      /// --- Enforce x+ == x + 1 
       _scalar += linear_constraint_t(variable_t(*x_succ) == variable_t(x) + 1); 
+      // needed if scalar domain is non-relational:
+      _g.set_weight (*x_succ,x,WeightDomain::bottom ());
     }
+
     /* { x = x op k, x+ = x+1} */
     reduce();
 
@@ -844,18 +916,21 @@ class array_graph_domain:
     //this->reduce();
   }
 
-  inline bool is_array_index(VariableName v){ 
+  //! In case we can statically determine which variables should be
+  //  considered array indexes. Note that any subset is sound but it
+  //  might be imprecise. By default we consider all.
+  bool is_array_index(VariableName v) const {  
     return true; 
   }
 
   // model array reads: return the weight from the edge i to i+
-  Weight array_read (VariableName i) 
+  WeightDomain array_read (VariableName i) 
   {
     if (is_bottom()) 
-      return Weight::bottom();
+      return WeightDomain::bottom();
   
     if (!is_array_index(i)) 
-      return Weight::top();
+      return WeightDomain::top();
     
     //this->reduce();
     optional<VariableName> i_succ = get_succ_idx(i);
@@ -866,22 +941,22 @@ class array_graph_domain:
   }
  
   // model array writes
-  void array_write (VariableName arr, VariableName i, Weight w)
+  void array_write (VariableName arr, VariableName i, WeightDomain w)
   {
     if (is_bottom()) return;
     //this->reduce();
 
-    // strong update
+    //--- strong update
     optional<VariableName> i_succ = get_succ_idx(i);
     if (!i_succ) 
       IKOS_ERROR ("There is no successor index associated with ",i);
 
-    Weight& old_w = _g.get_weight(i, *i_succ);
+    WeightDomain& old_w = _g.get_weight(i, *i_succ);
     old_w -= arr;
     _g.meet_weight(i, *i_succ, w);
-    Weight new_w = _g.get_weight(i, *i_succ);
+    WeightDomain new_w = _g.get_weight(i, *i_succ);
     
-    // weak update: 
+    //--- weak update: 
     // An edge (p,q) must be weakened if p <= i <= q and p < q
     typename array_graph_t::edge_iterator it, et;
     for(tie(it,et) = edges(*_g._graph); it!= et; ++it)
@@ -901,7 +976,7 @@ class array_graph_domain:
       // p <= i <= q and p < q
       typename array_graph_t::binary_join_op join;
       (*_g._graph)[e].weight = join (weight, 
-                                     typename array_graph_t::WeightPtr (new Weight(new_w)));
+                                     typename array_graph_t::WeightPtr (new WeightDomain(new_w)));
     }
     _g.canonical();
 
@@ -1063,21 +1138,19 @@ class array_graph_domain:
   {
     if (is_bottom ()) return;
 
-    // forget in the scalar domain
+    // scalar domain
     _scalar -= var;
     _g -= var;
     optional<VariableName> var_succ = get_succ_idx(var);
-    if (var_succ)
-    {
+    if (var_succ) {
       _scalar -= *var_succ;
-        _g -= *var_succ;        
-        (*_succ_idx_map) -= var;
+      _g -= *var_succ;        
+      (*_succ_idx_map) -= var;
     }
 
-    // forget in the graph domain
+    // graph domain
     typename array_graph_t::edge_iterator it, et;
-    for(tie(it,et) = edges(*(_g._graph)); it!= et; ++it)
-    {
+    for(tie(it,et) = edges(*(_g._graph)); it!= et; ++it) {
       auto e  = *it;
       auto weight = (*(_g._graph))[e].weight;
       (*weight) -= var;
@@ -1095,8 +1168,7 @@ class array_graph_domain:
     
     // graph domain: make sure that all the relevant variables
     // (included special "0") are inserted in the graph
-    for (auto cst : csts)
-    {
+    for (auto cst : csts) {
       // TODO
       //Number n = cst.expression().constant();
       //if (n == 0) add_variable(n, vfac);
@@ -1114,7 +1186,7 @@ class array_graph_domain:
   {
     if (is_bottom()) return;
 
-    if (boost::optional<variable_t> y = e.get_variable())
+    if (optional<variable_t> y = e.get_variable())
     {
       if ((*y).name() == x) return;
     }
@@ -1134,7 +1206,10 @@ class array_graph_domain:
       optional<VariableName> x_succ = get_succ_idx(x);      
       if (x_succ){
         _scalar -= *x_succ;
+        /// --- Enforce x+ == x+1
         _scalar += linear_constraint_t( variable_t(*x_succ) == variable_t(x) + 1);        
+        // needed if scalar domain is non-relational:
+        _g.set_weight (*x_succ,x,WeightDomain::bottom ());
       }
     }
     else
@@ -1164,15 +1239,17 @@ class array_graph_domain:
   void apply(operation_t op, VariableName x, Number k) 
   {
     apply_helper<Number> (op, x, k);
+
     IKOS_DEBUG("Apply ",x," := ",x," ",op," ",k," ==> ",*this);
   }
 
   void load (VariableName lhs, VariableName arr, VariableName idx)
   {
-    Weight w = array_read (idx);
-    // --- Simplification wrt Gange et. at.:
+    WeightDomain w = array_read (idx);
+    // --- Simplification wrt Gange et.al.:
     //     Only non-relational invariants are passed from the graph
     //     domain to the scalar domain.
+    //     We use operator[] as the conversion function
     _scalar.set (lhs, w [arr]);
 
     IKOS_DEBUG("Array read ",lhs," := ", arr,"[",idx,"] ==> ", *this);    
@@ -1180,10 +1257,11 @@ class array_graph_domain:
 
   void store (VariableName arr, VariableName idx, linear_expression_t val)
   {
-    // --- Simplification wrt Gange et. at.:
+    // --- Simplification wrt Gange et.al.:
     //     Only non-relational invariants are passed from the scalar
     //     domain to the graph domain.
-    Weight w = Weight::top ();
+    //     We use operator[] as the conversion function
+    WeightDomain w = WeightDomain::top ();
     if (val.is_constant ())
       w.assign (arr, val);      
     else if (auto v = val.get_variable ()){
@@ -1205,9 +1283,9 @@ class array_graph_domain:
     // less verbose: remove the special variables i+ from the scalar
     // domain
     ScalarNumDomain inv (_scalar);
-    for(typename succ_index_map_t::iterator it = _succ_idx_map->begin(); 
-        it != _succ_idx_map->end(); ++it)
-      inv -= it->second;
+    for(auto p : *_succ_idx_map) {
+      inv -= p.second;
+    }
     o << inv;
 #else
     o << _scalar;
