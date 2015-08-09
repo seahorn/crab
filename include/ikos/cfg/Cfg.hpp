@@ -406,32 +406,36 @@ namespace cfg
 
     typedef variable< Number, VariableName > variable_t;
     typedef linear_expression< Number, VariableName > linear_expression_t;
+    typedef linear_constraint< Number, VariableName > linear_constraint_t;
 
    private:
 
     variable_t          m_lhs;
-    variable_t          m_cond;
+    linear_constraint_t m_cond;
     linear_expression_t m_e1;
     linear_expression_t m_e2;
 
    public:
     
     Select (variable_t lhs, 
-            variable_t cond, 
+            linear_constraint_t cond, 
             linear_expression_t e1, 
             linear_expression_t e2): 
 
         m_lhs(lhs), m_cond(cond), m_e1(e1), m_e2(e2) 
     { 
       this->m_live.addDef (m_lhs.name());
-      this->m_live.addUse (m_cond.name());
-      for (auto v: m_e1.variables()){ this->m_live.addUse (v.name()); }         
-      for (auto v: m_e2.variables()){ this->m_live.addUse (v.name()); }         
+      for (auto v: m_cond.variables())
+        this->m_live.addUse (v.name()); 
+      for (auto v: m_e1.variables())
+        this->m_live.addUse (v.name()); 
+      for (auto v: m_e2.variables())
+        this->m_live.addUse (v.name());
     }
 
     variable_t lhs () const { return m_lhs; }
     
-    variable_t cond () const { return m_cond; }
+    linear_constraint_t cond () const { return m_cond; }
     
     linear_expression_t left () const { return m_e1; }
     
@@ -452,7 +456,7 @@ namespace cfg
     virtual void write (ostream& o) const
     {
       o << m_lhs << " = " 
-        << "(" << m_cond << " ? " << m_e1 << ":" << m_e2 << ")";
+        << "ite(" << m_cond << "," << m_e1 << "," << m_e2 << ")";
       return;
     }
 
@@ -462,33 +466,48 @@ namespace cfg
      Array statements (ARR_TYPE)
   */
 
-  template< class VariableName>
+  template< class Number, class VariableName>
   class ArrayInit: public Statement< VariableName> 
   {
-
-    VariableName m_arr;
-    
    public:
 
-    ArrayInit (VariableName arr): m_arr (arr) { }
+    typedef bound <ikos::z_number> bound_t;
+    typedef interval <Number> interval_t;
+
+   private:
+
+    VariableName m_arr; 
+    vector<interval_t> m_values;
+    bound_t m_sz; //! allocated size of the array
+
+   public:
+
+    ArrayInit (VariableName arr, vector<interval_t> values, bound_t sz): 
+        m_arr (arr), m_values (values), m_sz (sz)  { }
      
     VariableName variable () const { return m_arr; }
+
+    vector<interval_t> values () const { return m_values; }
      
-    virtual void accept (StatementVisitor<VariableName> *v) 
-    {
+    bound_t alloc_size () const { return m_sz; }
+
+    virtual void accept (StatementVisitor<VariableName> *v) {
       v->visit (*this);
     }
 
     virtual boost::shared_ptr<Statement <VariableName> > clone () const
     {
-      typedef ArrayInit <VariableName> ArrayInit_t;
+      typedef ArrayInit <Number, VariableName> ArrayInit_t;
       return boost::static_pointer_cast< Statement <VariableName>, ArrayInit_t >
-          (boost::shared_ptr <ArrayInit_t> (new ArrayInit_t(m_arr)));
+          (boost::shared_ptr <ArrayInit_t> (new ArrayInit_t(m_arr, m_values, m_sz)));
     }
      
     void write (ostream& o) const
     {
-      o << "array_init (" << m_arr << ")";
+      o << m_arr << " = array_init (";
+      bound_t b (m_sz); // FIX: write method of bound is not const
+      b.write (o);
+      o << ")";
       return;
     }
     
@@ -508,15 +527,20 @@ namespace cfg
     variable_t m_arr;
     linear_expression_t m_index;
     linear_expression_t m_value;
+    ikos::z_number m_bytes; //! number of bytes written
+
     bool m_is_singleton; //! whether the store writes to a singleton
-                         // cell. If unknown set to false.
-    
+                         //  cell. If unknown set to false.
    public:
 
-    ArrayStore (variable_t arr, linear_expression_t index, 
-                linear_expression_t value, bool is_sing): 
+    ArrayStore (variable_t arr, 
+                linear_expression_t index, 
+                linear_expression_t value, 
+                ikos::z_number n_bytes,
+                bool is_sing): 
         m_arr (arr), m_index (index),
-        m_value (value), m_is_singleton (is_sing)
+        m_value (value), m_bytes (n_bytes), 
+        m_is_singleton (is_sing)
     {
       this->m_live.addUse (m_arr.name());
       for(auto v: m_index.variables()) 
@@ -531,6 +555,8 @@ namespace cfg
 
     linear_expression_t value () const { return m_value; }
 
+    ikos::z_number n_bytes () const { return m_bytes; }
+
     bool is_singleton () const { return m_is_singleton;}
 
     virtual void accept(StatementVisitor <VariableName> *v) 
@@ -543,7 +569,8 @@ namespace cfg
       typedef ArrayStore <Number, VariableName> array_store_t;
       return boost::static_pointer_cast< Statement <VariableName>, array_store_t>
           (boost::shared_ptr <array_store_t> (new array_store_t (m_arr, m_index,
-                                                                 m_value, m_is_singleton)));
+                                                                 m_value, m_bytes, 
+                                                                 m_is_singleton)));
     }
     
     virtual void write(ostream& o) const
@@ -568,11 +595,14 @@ namespace cfg
     variable_t m_lhs;
     variable_t m_array;
     linear_expression_t m_index;
+    ikos::z_number m_bytes; //! number of bytes read
 
    public:
 
-    ArrayLoad (variable_t lhs, variable_t arr, linear_expression_t index): 
-        m_lhs (lhs), m_array (arr), m_index (index)
+    ArrayLoad (variable_t lhs, variable_t arr, 
+               linear_expression_t index, ikos::z_number n_bytes): 
+        m_lhs (lhs), m_array (arr), 
+        m_index (index), m_bytes (n_bytes)
     {
       this->m_live.addDef (lhs.name());
       this->m_live.addUse (m_array.name());
@@ -586,6 +616,8 @@ namespace cfg
 
     linear_expression_t index () const { return m_index; }
 
+    ikos::z_number n_bytes () const { return m_bytes; }
+
     virtual void accept(StatementVisitor <VariableName> *v) 
     {
       v->visit(*this);
@@ -595,7 +627,8 @@ namespace cfg
     {
       typedef ArrayLoad <Number, VariableName> array_load_t;
       return boost::static_pointer_cast< Statement <VariableName>, array_load_t>
-          (boost::shared_ptr <array_load_t> (new array_load_t (m_lhs, m_array, m_index)));
+          (boost::shared_ptr <array_load_t> (new array_load_t (m_lhs, m_array, 
+                                                               m_index, m_bytes)));
     }
     
     virtual void write(ostream& o) const
@@ -1034,6 +1067,8 @@ namespace cfg
 
     typedef Statement< VariableName> statement_t;
     typedef BasicBlock< BasicBlockLabel, VariableName > basic_block_t;
+
+    typedef interval <z_number> z_interval;
     
    private:
 
@@ -1048,13 +1083,10 @@ namespace cfg
     typedef typename bb_id_set_t::const_iterator const_succ_iterator;
     typedef succ_iterator pred_iterator;
     typedef const_succ_iterator const_pred_iterator;
-
     typedef boost::indirect_iterator< typename stmt_list_t::iterator > iterator;
     typedef boost::indirect_iterator< typename stmt_list_t::const_iterator > const_iterator;
 
    private:
-
-    typedef interval <z_number> z_interval;
 
     // Basic statements
     typedef BinaryOp<z_number,VariableName> z_bin_op_t;
@@ -1067,7 +1099,7 @@ namespace cfg
     typedef FCallSite<VariableName> callsite_t;
     typedef Return<VariableName> return_t;
     // Arrays
-    typedef ArrayInit<VariableName> arr_init_t;
+    typedef ArrayInit<z_number,VariableName> z_arr_init_t;
     typedef ArrayStore<z_number,VariableName> z_arr_store_t;
     typedef ArrayLoad<z_number,VariableName> z_arr_load_t;
     // Pointers
@@ -1085,7 +1117,7 @@ namespace cfg
     typedef boost::shared_ptr<z_select_t> z_select_ptr;
     typedef boost::shared_ptr<callsite_t> callsite_ptr;      
     typedef boost::shared_ptr<return_t> return_ptr;      
-    typedef boost::shared_ptr<arr_init_t> arr_init_ptr;
+    typedef boost::shared_ptr<z_arr_init_t> z_arr_init_ptr;
     typedef boost::shared_ptr<z_arr_store_t> z_arr_store_ptr;
     typedef boost::shared_ptr<z_arr_load_t> z_arr_load_ptr;    
     typedef boost::shared_ptr<ptr_store_t> ptr_store_ptr;
@@ -1397,12 +1429,19 @@ namespace cfg
               (unreach_ptr (new unreach_t ())));
     }
 
-    void select (z_variable_t lhs, z_variable_t cond, z_lin_exp_t e1, z_lin_exp_t e2) 
+    void select (z_variable_t lhs, z_variable_t v, z_lin_exp_t e1, z_lin_exp_t e2) 
     {
+      z_lin_cst_t cond = (v >= z_number(1));
       insert(boost::static_pointer_cast< statement_t, z_select_t >
              (z_select_ptr(new z_select_t (lhs, cond, e1, e2))));
     }
     
+    void select (z_variable_t lhs, z_lin_cst_t cond, z_lin_exp_t e1, z_lin_exp_t e2) 
+    {
+      insert(boost::static_pointer_cast< statement_t, z_select_t >
+             (z_select_ptr(new z_select_t (lhs, cond, e1, e2))));
+    }
+
     void callsite (VariableName func, 
                    vector<pair <VariableName,VariableType> > args) 
     {
@@ -1442,26 +1481,33 @@ namespace cfg
                (return_ptr (new return_t(var))));
     }
 
-    void array_init(VariableName arr) 
+    void array_init (VariableName arr, 
+                     const vector<z_interval>& vals,
+                     bound<ikos::z_number> alloc_sz = 
+                     bound<ikos::z_number>::plus_infinity ()) 
     {
-      insert (boost::static_pointer_cast< statement_t, arr_init_t > 
-              (arr_init_ptr (new arr_init_t (arr))));
+      insert (boost::static_pointer_cast< statement_t, z_arr_init_t > 
+              (z_arr_init_ptr (new z_arr_init_t (arr, vals, alloc_sz))));
     }
 
     void array_store (z_variable_t arr, z_lin_exp_t idx, 
-                      z_lin_exp_t val, bool is_singleton = false) 
+                      z_lin_exp_t val, ikos::z_number n_bytes, 
+                      bool is_singleton = false) 
     {
       if (m_track_prec == MEM)
         insert(boost::static_pointer_cast< statement_t, z_arr_store_t >
-               (z_arr_store_ptr (new z_arr_store_t(arr, idx, val, 
+               (z_arr_store_ptr (new z_arr_store_t(arr, idx, 
+                                                   val, n_bytes,
                                                    is_singleton))));
     }
 
-    void array_load (z_variable_t lhs, z_variable_t arr, z_lin_exp_t idx) 
+    void array_load (z_variable_t lhs, z_variable_t arr, 
+                     z_lin_exp_t idx, ikos::z_number n_bytes) 
     {
       if (m_track_prec == MEM)
         insert(boost::static_pointer_cast< statement_t, z_arr_load_t >
-               (z_arr_load_ptr (new z_arr_load_t(lhs, arr, idx))));
+               (z_arr_load_ptr (new z_arr_load_t(lhs, arr, 
+                                                 idx, n_bytes))));
     }
 
     void ptr_store (VariableName lhs, VariableName rhs, z_interval size) 
@@ -1521,7 +1567,7 @@ namespace cfg
     typedef FCallSite<VariableName> callsite_t;
     typedef Return<VariableName> return_t;
 
-    typedef ArrayInit<VariableName> arr_init_t;
+    typedef ArrayInit<z_number, VariableName> z_arr_init_t;
     typedef ArrayStore<z_number,VariableName> z_arr_store_t;
     typedef ArrayLoad<z_number,VariableName> z_arr_load_t;
 
@@ -1542,7 +1588,7 @@ namespace cfg
 
     virtual void visit (callsite_t&) { };
     virtual void visit (return_t&) { };
-    virtual void visit (arr_init_t&) { };
+    virtual void visit (z_arr_init_t&) { };
     virtual void visit (z_arr_store_t&) { };
     virtual void visit (z_arr_load_t&) { };
     virtual void visit (ptr_store_t&) { };

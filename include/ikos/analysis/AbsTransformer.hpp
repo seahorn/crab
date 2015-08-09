@@ -18,6 +18,7 @@ namespace analyzer
     typedef AbsDomain abs_dom_t;
 
     typedef linear_expression< z_number, VariableName > z_lin_exp_t;
+    typedef linear_constraint< z_number, VariableName > z_lin_cst_t;
 
     typedef BinaryOp <z_number,VariableName>   z_bin_op_t;
     typedef Assignment <z_number,VariableName> z_assign_t;
@@ -27,7 +28,7 @@ namespace analyzer
     typedef Select <z_number,VariableName>     z_select_t;
     typedef FCallSite<VariableName>            callsite_t;
     typedef Return<VariableName>               return_t;
-    typedef ArrayInit<VariableName>            arr_init_t;
+    typedef ArrayInit<z_number, VariableName>  z_arr_init_t;
     typedef ArrayStore<z_number,VariableName>  z_arr_store_t;
     typedef ArrayLoad<z_number,VariableName>   z_arr_load_t;
     typedef PtrStore<z_number,VariableName>    z_ptr_store_t;
@@ -46,7 +47,7 @@ namespace analyzer
     virtual void exec (z_select_t&) { }
     virtual void exec (callsite_t&) { }
     virtual void exec (return_t&) { }
-    virtual void exec (arr_init_t&) { }
+    virtual void exec (z_arr_init_t&) { }
     virtual void exec (z_arr_store_t&) { }
     virtual void exec (z_arr_load_t&) { }
     virtual void exec (z_ptr_store_t&) { }
@@ -65,7 +66,7 @@ namespace analyzer
     void visit (z_select_t &s) { exec (s); }
     void visit (callsite_t &s) { exec (s); }
     void visit (return_t &s) { exec (s); }
-    void visit (arr_init_t &s) { exec (s); }
+    void visit (z_arr_init_t &s) { exec (s); }
     void visit (z_arr_store_t &s) { exec (s); }
     void visit (z_arr_load_t &s) { exec (s); }
     void visit (z_ptr_store_t &s) { exec (s); }
@@ -91,7 +92,7 @@ namespace analyzer
     using typename abs_transform_t::z_select_t;
     using typename abs_transform_t::havoc_t;
     using typename abs_transform_t::unreach_t;
-    using typename abs_transform_t::arr_init_t;
+    using typename abs_transform_t::z_arr_init_t;
     using typename abs_transform_t::z_arr_load_t;
     using typename abs_transform_t::z_arr_store_t;
 
@@ -131,8 +132,8 @@ namespace analyzer
     {
       NumAbsDomain inv1 (m_inv);
       NumAbsDomain inv2 (m_inv);
-      inv1 += (z_lin_exp_t (stmt.cond().name ()) >= z_lin_exp_t (z_number(1)));
-      inv2 += (z_lin_exp_t (stmt.cond().name ()) <= z_lin_exp_t (z_number(0)));
+      inv1 += stmt.cond ();
+      inv2 += stmt.cond ().negate ();
 
       if (inv2.is_bottom()) {
         inv1.assign (stmt.lhs().name (),stmt.left());
@@ -169,9 +170,12 @@ namespace analyzer
       m_inv = NumAbsDomain::bottom ();
     }
 
-    void exec (arr_init_t &stmt) 
+    void exec (z_arr_init_t &stmt) 
     {
-      domain_traits::array_init (m_inv, stmt.variable ());
+      domain_traits::array_init (m_inv, 
+                                 stmt.variable (), 
+                                 stmt.values (),
+                                 stmt.alloc_size ());
     }
 
     void exec (z_arr_store_t &stmt) 
@@ -184,6 +188,7 @@ namespace analyzer
                                     arr,
                                     idx.name(), 
                                     stmt.value (),
+                                    stmt.n_bytes (),
                                     stmt.is_singleton ());
       }
     }
@@ -196,7 +201,8 @@ namespace analyzer
         domain_traits::array_load (m_inv, 
                                    stmt.lhs ().name (), 
                                    stmt.array ().name (), 
-                                   idx.name ());
+                                   idx.name (),
+                                   stmt.n_bytes ());
       }
     }
   }; 
