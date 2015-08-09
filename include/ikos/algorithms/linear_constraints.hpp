@@ -470,6 +470,28 @@ namespace ikos {
     variable_set_t variables() {
       return this->_expr.variables();
     }
+
+    linear_constraint_t negate () {
+      if (is_tautology ())
+         return linear_constraint_t ( linear_expression_t (0) >= linear_expression_t (1));
+      else if (is_contradiction ())
+         return linear_constraint_t ( linear_expression_t (1) >= linear_expression_t (0));
+      else {
+        switch (kind ()) {
+          case INEQUALITY: {
+            linear_expression_t e (expression ());
+            e = -(e - 1);
+            return linear_constraint_t (e, INEQUALITY);
+          }
+          case EQUALITY:
+            return linear_constraint_t (expression (), DISEQUATION);
+          case DISEQUATION: 
+            return linear_constraint_t (expression (), EQUALITY);
+          default: ;;             
+        }
+      }
+      assert (false && "unreachable");       
+    }
     
     std::ostream& write(std::ostream& o) {
       if (this->is_contradiction()) {
