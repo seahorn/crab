@@ -484,6 +484,9 @@ namespace cfg
 
     ArrayInit (VariableName arr, vector<interval_t> values, bound_t sz): 
         m_arr (arr), m_values (values), m_sz (sz)  { }
+
+    ArrayInit (VariableName arr, bound_t sz): 
+        m_arr (arr), m_sz (sz)  { }
      
     VariableName variable () const { return m_arr; }
 
@@ -1488,6 +1491,14 @@ namespace cfg
     {
       insert (boost::static_pointer_cast< statement_t, z_arr_init_t > 
               (z_arr_init_ptr (new z_arr_init_t (arr, vals, alloc_sz))));
+    }
+
+    void array_init (VariableName arr, 
+                     bound<ikos::z_number> alloc_sz = 
+                     bound<ikos::z_number>::plus_infinity ()) 
+    {
+      insert (boost::static_pointer_cast< statement_t, z_arr_init_t > 
+              (z_arr_init_ptr (new z_arr_init_t (arr, alloc_sz))));
     }
 
     void array_store (z_variable_t arr, z_lin_exp_t idx, 

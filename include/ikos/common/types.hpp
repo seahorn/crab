@@ -17,8 +17,9 @@
 #include <boost/iterator/iterator_facade.hpp>
 
 namespace ikos {
+
 template<typename... ArgTypes>
-inline void print(ArgTypes... args)
+inline void ___print___(ArgTypes... args)
 {
   // trick to expand variadic argument pack without recursion
   using expand_variadic_pack = int[];
@@ -33,10 +34,11 @@ inline void print(ArgTypes... args)
 // TODO: it should be moved to dbg.hpp with the other macros
 #define IKOS_ERROR(...)              \
     do {                             \
-      print(__VA_ARGS__);            \
+      ___print___(__VA_ARGS__);      \
       std::cerr << "\n";             \
       std::exit (EXIT_FAILURE);      \
     } while (0)
+
 } // end namespace
 
 namespace ikos 
