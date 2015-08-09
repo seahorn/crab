@@ -50,11 +50,7 @@ cfg_t prog1 (VariableFactory &vfac)
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   ////////
-  z_interval_t zero (z_bound_t (0));
-  z_interval_t vals[10] = {zero, zero, zero, zero, zero, zero, zero, zero, zero, zero};
-  entry.array_init (a.name (), 
-                    vector<z_interval_t> (vals, vals + (sizeof(vals) / sizeof(vals[0]))), 
-                    10);
+  entry.assume_array (a.name (), 0);
   /////////
   entry.assign(n1, 1);
   entry.assign(i, 0);
@@ -92,13 +88,7 @@ cfg_t prog2(VariableFactory &vfac)
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   ////////
   // assume array element of 1 byte
-
-  // assume (forall i. a[i] =0);
-  z_interval_t zero (z_bound_t (0));
-  z_interval_t vals[10] = {zero, zero, zero, zero, zero, zero, zero, zero, zero, zero};
-  entry.array_init (a.name (), 
-                    vector<z_interval_t> (vals, vals + (sizeof(vals) / sizeof(vals[0]))), 
-                    10);
+  entry.assume_array (a.name (), 0);
   /////////
   entry.assign(n0, 0); // we need it to be considered as graph node
   entry.assign(n1, 1); 
@@ -138,17 +128,8 @@ cfg_t prog3(VariableFactory &vfac)
   z_var tmp4(vfac["tmp4"]);
 
   // assume array element of 1 byte
-
-  // assume (forall i. a[i] =0);
-  z_interval_t zero (z_bound_t (0));
-  z_interval_t vals[10] = {zero, zero, zero, zero, zero, zero, zero, zero, zero, zero};
-  entry.array_init (a.name (), 
-                    vector<z_interval_t> (vals, vals + (sizeof(vals) / sizeof(vals[0]))), 
-                    10);
-  // assume (forall i. b[i] =0);
-  entry.array_init (b.name (), 
-                    vector<z_interval_t> (vals, vals + (sizeof(vals) / sizeof(vals[0]))), 
-                    10);
+  entry.assume_array (a.name (), 0);
+  entry.assume_array (b.name (), 0);
 
   entry.assign(n1, 1);
   entry.assign(i, 0);
@@ -188,17 +169,8 @@ cfg_t prog4(VariableFactory &vfac)
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
 
   // assume array element of 1 byte
-
-  z_interval_t zero (z_bound_t (0));
-  z_interval_t vals[10] = {zero, zero, zero, zero, zero, zero, zero, zero, zero, zero};
-  // assume (forall i. a[i] =0);
-  entry.array_init (a.name (), 
-                    vector<z_interval_t> (vals, vals + (sizeof(vals) / sizeof(vals[0]))), 
-                    10);
-  // assume (forall i. b[i] =0);
-  entry.array_init (b.name (), 
-                    vector<z_interval_t> (vals, vals + (sizeof(vals) / sizeof(vals[0]))), 
-                    10);
+  entry.assume_array (a.name (), 0);
+  entry.assume_array (b.name (), 0);
 
   entry.assign(n1, 1);
   entry.assign(i, 0);
@@ -234,12 +206,7 @@ cfg_t prog5(VariableFactory &vfac)
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
 
   // assume array element of 1 byte
-
-  // assume (forall i. a[i] =0);
-  z_interval_t zero (z_bound_t (0));
-  z_interval_t vals[1] = {zero};
-  entry.array_init (a.name (), 
-                    vector<z_interval_t> (vals, vals + (sizeof(vals) / sizeof(vals[0]))));
+  entry.assume_array (a.name (), 0);
 
   entry.assume(n >= 1);
   entry.assign(n1, 1);
@@ -274,13 +241,7 @@ cfg_t prog6(VariableFactory &vfac)
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   // assume array element of 4 bytes
-
-  // assume (forall i. a[i] =0);
-  z_interval_t zero (z_bound_t (0));
-  z_interval_t vals[1] = {zero};
-  entry.array_init (a.name (), 
-                    vector<z_interval_t> (vals, vals + (sizeof(vals) / sizeof(vals[0]))));
-
+  entry.assume_array (a.name (), 0);
   entry.assign(i, 0);
   ///////
   bb1_t.assume(i <= 9);
@@ -317,10 +278,7 @@ cfg_t prog7(VariableFactory &vfac)
   // assume array element of 1 byte
 
   // assume (forall i. a[i] =0);
-  z_interval_t zero (z_bound_t (0));
-  z_interval_t vals[1] = {zero};
-  entry.array_init (a.name (), 
-                    vector<z_interval_t> (vals, vals + (sizeof(vals) / sizeof(vals[0]))));
+  entry.assume_array (a.name (), 0);
   //////
   entry.assume(n >= 2);
   entry.assign(n1, 1);
@@ -364,13 +322,7 @@ cfg_t prog8(VariableFactory &vfac)
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   // assume array element of 1 byte
-
-  // assume (forall i. a[i] =0);
-  z_interval_t zero (z_bound_t (0));
-  z_interval_t vals[1] = {zero};
-  entry.array_init (a.name (), 
-                    vector<z_interval_t> (vals, vals + (sizeof(vals) / sizeof(vals[0]))));
-
+  entry.assume_array (a.name (), 0);
   entry.assume(n >= 1);
   entry.assign(n1, 1);
   entry.assign(n2, 2);
@@ -418,13 +370,7 @@ cfg_t prog9(VariableFactory &vfac)
   bb1_f1 >> bb1_f;   bb1_f2 >> bb1_f; 
   bb1_t >> bb2; bb2 >> bb2_a; bb2 >> bb2_b; bb2_a >> bb1; bb2_b >> bb1; bb1_f >> ret;
   // assume array element of 1 byte
-
-  // assume (forall i. a[i] =0);
-  z_interval_t zero (z_bound_t (0));
-  z_interval_t vals[1] = {zero};
-  entry.array_init (a.name (), 
-                    vector<z_interval_t> (vals, vals + (sizeof(vals) / sizeof(vals[0]))));
-
+  entry.assume_array (a.name (), 0);
   entry.assume(n >= 1);
   entry.assign(n1, 1);
   entry.assign(i1, 0);

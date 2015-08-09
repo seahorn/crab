@@ -34,10 +34,17 @@ void expand (AbsDomain& inv, VariableName x, VariableName new_x) {
   inv.set (new_x , inv [x]);
 }
 
-template <typename AbsDomain, typename VariableName, typename Number>
+template <typename AbsDomain, typename VariableName>
 void array_init (AbsDomain& inv, VariableName a,
-                 const vector<interval<Number> >& vals,
-                 bound<ikos::z_number> alloc_sz) {
+                 const vector<ikos::z_number>& vals) {
+}
+
+template <typename AbsDomain, typename VariableName, typename Number>
+void assume_array (AbsDomain& inv, VariableName a, Number val) {
+}
+
+template <typename AbsDomain, typename VariableName, typename Number>
+void assume_array (AbsDomain& inv, VariableName a, interval<Number> val) {
 }
 
 template <typename AbsDomain, typename VariableName >

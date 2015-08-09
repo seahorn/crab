@@ -43,7 +43,7 @@ class array_smashing:
  private:
   typedef mergeable_map<VariableName, VariableName> sz_map_t;
   typedef set<VariableName> varname_set_t;
- 
+  typedef bound <Number> bound_t; 
   //! scalar and array variables        
   NumDomain _inv; 
 
@@ -168,25 +168,21 @@ public:
     _inv.apply (op, x, k);
   }
 
-  // Pre: the caller must ensure that there is no any missing value,
-  // otherwise the information inferred by the analysis will be
-  // unsound. 
   void array_init (VariableName a, 
-                   //! all the initial values of the array
-                   const vector<interval_t>& values, 
-                   //! allocated size in bytes (-oo is unknown)
-                   bound<z_number> alloc_sz) {
-
-    // This is in case that the analysis could not find any
-    // initialization for a.
+                   const vector<ikos::z_number>& values) {
     if (values.empty ()) return;
-
+    
     interval_t init = interval_t::bottom ();
     for (auto const &v: values) {
-      init = init | v;
+      // assume automatic conversion from z_number to bound_t
+      init = init | interval_t (bound_t (v)); 
     }
     _inv.set (a, init);
+  }
 
+  // All the array elements are initialized to val
+  void assume_array (VariableName a, interval_t val) {
+    _inv.set (a, val);
   }
 
   void load (VariableName lhs, VariableName a, 
@@ -234,9 +230,20 @@ namespace domain_traits
 template <typename BaseDomain, typename VariableName, typename Number>
 void array_init (array_smashing<BaseDomain,Number,VariableName>& inv, 
                  VariableName a, 
-                 const vector<interval<z_number> > &values,
-                 bound<z_number> alloc_sz) {
-  inv.array_init (a, values, alloc_sz);
+                 const vector<ikos::z_number> &values) {
+  inv.array_init (a, values);
+}
+
+template <typename BaseDomain, typename VariableName, typename Number>
+void assume_array (array_smashing<BaseDomain,Number,VariableName>& inv, 
+                   VariableName a, Number val) {
+  inv.assume_array (a, interval<Number> (bound <Number> (val)));
+}
+
+template <typename BaseDomain, typename VariableName, typename Number>
+void assume_array (array_smashing<BaseDomain,Number,VariableName>& inv, 
+                   VariableName a, interval<Number> val) {
+  inv.assume_array (a, val);
 }
 
 template <typename BaseDomain, typename VariableName, typename Number>

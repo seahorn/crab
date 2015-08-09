@@ -466,54 +466,88 @@ namespace cfg
      Array statements (ARR_TYPE)
   */
 
-  template< class Number, class VariableName>
+  //! All the initial values of the array are statically known.
+  template<class VariableName>
   class ArrayInit: public Statement< VariableName> 
   {
-   public:
-
-    typedef bound <ikos::z_number> bound_t;
-    typedef interval <Number> interval_t;
-
-   private:
-
     VariableName m_arr; 
-    vector<interval_t> m_values;
-    bound_t m_sz; //! allocated size of the array
+    vector<ikos::z_number> m_values; 
 
    public:
+    ArrayInit (VariableName arr, vector<ikos::z_number> values): 
+        m_arr (arr), m_values (values)  { }
 
-    ArrayInit (VariableName arr, vector<interval_t> values, bound_t sz): 
-        m_arr (arr), m_values (values), m_sz (sz)  { }
-
-    ArrayInit (VariableName arr, bound_t sz): 
-        m_arr (arr), m_sz (sz)  { }
-     
     VariableName variable () const { return m_arr; }
 
-    vector<interval_t> values () const { return m_values; }
+    vector<ikos::z_number> values () const { return m_values; }
      
-    bound_t alloc_size () const { return m_sz; }
-
     virtual void accept (StatementVisitor<VariableName> *v) {
       v->visit (*this);
     }
 
     virtual boost::shared_ptr<Statement <VariableName> > clone () const
     {
-      typedef ArrayInit <Number, VariableName> ArrayInit_t;
+      typedef ArrayInit <VariableName> ArrayInit_t;
       return boost::static_pointer_cast< Statement <VariableName>, ArrayInit_t >
-          (boost::shared_ptr <ArrayInit_t> (new ArrayInit_t(m_arr, m_values, m_sz)));
+          (boost::shared_ptr <ArrayInit_t> (new ArrayInit_t(m_arr, m_values)));
     }
      
     void write (ostream& o) const
     {
-      o << m_arr << " = array_init (";
-      bound_t b (m_sz); // FIX: write method of bound is not const
-      b.write (o);
-      o << ")";
+      o << m_arr << " = array_init ({";
+      for (auto v: m_values)
+        o << v << " ";
+      o << "})";
       return;
     }
     
+  }; 
+
+  //! Assume all the array elements are overapproximated uniformly by
+  //! some interval.
+  template< class Number, class VariableName>
+  class AssumeArray: public Statement< VariableName> 
+  {
+    typedef bound <Number> bound_t;
+
+   public:
+    typedef interval <Number> interval_t;
+
+   private:
+    // forall i \in arr. m_val.lb () <= arr[i]  <= m_val.ub ()
+    VariableName m_arr; 
+    interval_t m_val;
+
+   public:
+
+    AssumeArray (VariableName arr, ikos::z_number val): 
+        m_arr (arr), m_val (bound_t (val))  { }
+
+    AssumeArray (VariableName arr, interval_t val): 
+        m_arr (arr), m_val (val)  { }
+
+    VariableName variable () const { return m_arr; }
+
+    interval_t val () const { return m_val; }
+     
+    virtual void accept (StatementVisitor<VariableName> *v) {
+      v->visit (*this);
+    }
+
+    virtual boost::shared_ptr<Statement <VariableName> > clone () const
+    {
+      typedef AssumeArray <Number, VariableName> AssumeArray_t;
+      return boost::static_pointer_cast< Statement <VariableName>, AssumeArray_t >
+          (boost::shared_ptr <AssumeArray_t> (new AssumeArray_t(m_arr, m_val)));
+    }
+     
+    void write (ostream& o) const
+    {
+      o << "assume (forall l. " << m_arr << "[l]=";
+      val ().write (o);
+      o << ")";          
+      return;
+    }
   }; 
 
   template< class Number, class VariableName>
@@ -1102,7 +1136,8 @@ namespace cfg
     typedef FCallSite<VariableName> callsite_t;
     typedef Return<VariableName> return_t;
     // Arrays
-    typedef ArrayInit<z_number,VariableName> z_arr_init_t;
+    typedef ArrayInit<VariableName> z_arr_init_t;
+    typedef AssumeArray<z_number,VariableName> z_assume_arr_t;
     typedef ArrayStore<z_number,VariableName> z_arr_store_t;
     typedef ArrayLoad<z_number,VariableName> z_arr_load_t;
     // Pointers
@@ -1121,6 +1156,7 @@ namespace cfg
     typedef boost::shared_ptr<callsite_t> callsite_ptr;      
     typedef boost::shared_ptr<return_t> return_ptr;      
     typedef boost::shared_ptr<z_arr_init_t> z_arr_init_ptr;
+    typedef boost::shared_ptr<z_assume_arr_t> z_assume_arr_ptr;
     typedef boost::shared_ptr<z_arr_store_t> z_arr_store_ptr;
     typedef boost::shared_ptr<z_arr_load_t> z_arr_load_ptr;    
     typedef boost::shared_ptr<ptr_store_t> ptr_store_ptr;
@@ -1484,23 +1520,22 @@ namespace cfg
                (return_ptr (new return_t(var))));
     }
 
-    void array_init (VariableName arr, 
-                     const vector<z_interval>& vals,
-                     bound<ikos::z_number> alloc_sz = 
-                     bound<ikos::z_number>::plus_infinity ()) 
-    {
+    void array_init (VariableName a, 
+                     const vector<ikos::z_number>& vals) {
       insert (boost::static_pointer_cast< statement_t, z_arr_init_t > 
-              (z_arr_init_ptr (new z_arr_init_t (arr, vals, alloc_sz))));
+              (z_arr_init_ptr (new z_arr_init_t (a, vals))));
     }
 
-    void array_init (VariableName arr, 
-                     bound<ikos::z_number> alloc_sz = 
-                     bound<ikos::z_number>::plus_infinity ()) 
-    {
-      insert (boost::static_pointer_cast< statement_t, z_arr_init_t > 
-              (z_arr_init_ptr (new z_arr_init_t (arr, alloc_sz))));
+    void assume_array (VariableName a, z_interval val) {
+      insert (boost::static_pointer_cast< statement_t, z_assume_arr_t > 
+              (z_assume_arr_ptr (new z_assume_arr_t (a, val))));
     }
 
+    void assume_array (VariableName a, ikos::z_number val) {
+      insert (boost::static_pointer_cast< statement_t, z_assume_arr_t > 
+              (z_assume_arr_ptr (new z_assume_arr_t (a, val))));
+    }
+    
     void array_store (z_variable_t arr, z_lin_exp_t idx, 
                       z_lin_exp_t val, ikos::z_number n_bytes, 
                       bool is_singleton = false) 
@@ -1578,7 +1613,8 @@ namespace cfg
     typedef FCallSite<VariableName> callsite_t;
     typedef Return<VariableName> return_t;
 
-    typedef ArrayInit<z_number, VariableName> z_arr_init_t;
+    typedef ArrayInit<VariableName> z_arr_init_t;
+    typedef AssumeArray<z_number,VariableName> z_assume_arr_t;
     typedef ArrayStore<z_number,VariableName> z_arr_store_t;
     typedef ArrayLoad<z_number,VariableName> z_arr_load_t;
 
@@ -1600,6 +1636,7 @@ namespace cfg
     virtual void visit (callsite_t&) { };
     virtual void visit (return_t&) { };
     virtual void visit (z_arr_init_t&) { };
+    virtual void visit (z_assume_arr_t&) { };
     virtual void visit (z_arr_store_t&) { };
     virtual void visit (z_arr_load_t&) { };
     virtual void visit (ptr_store_t&) { };

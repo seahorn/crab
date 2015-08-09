@@ -50,7 +50,6 @@ cfg_t prog1 (VariableFactory &vfac)
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   ////////
-  entry.array_init (a.name (), 10);
   entry.assign(n1, 1);
   entry.assign(i, 0);
   ///////
@@ -87,7 +86,6 @@ cfg_t prog2(VariableFactory &vfac)
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   ////////
   // assume array element of 1 byte
-  entry.array_init (a.name (), 10);
   entry.assign(n0, 0); // we need it to be considered as graph node
   entry.assign(n1, 1); 
   entry.assign(n9, 9); // we need it to be considered as graph node
@@ -126,8 +124,6 @@ cfg_t prog3(VariableFactory &vfac)
   z_var tmp4(vfac["tmp4"]);
 
   // assume array element of 1 byte
-  entry.array_init (a.name (), 10);
-  entry.array_init (b.name (), 10);
   entry.assign(n1, 1);
   entry.assign(i, 0);
   bb1_t.assume(i <= 9);
@@ -166,8 +162,6 @@ cfg_t prog4(VariableFactory &vfac)
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   ////////
   // assume array element of 1 byte
-  entry.array_init (a.name (), 10);
-  entry.array_init (b.name (), 10);
   entry.assign(n1, 1);
   entry.assign(i, 0);
   ///////
@@ -202,7 +196,6 @@ cfg_t prog5(VariableFactory &vfac)
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   ////////
   // assume array element of 1 byte
-  entry.array_init (a.name ());
   entry.assume(n >= 1);
   entry.assign(n1, 1);
   entry.assign(i, 0);
@@ -237,7 +230,6 @@ cfg_t prog6(VariableFactory &vfac)
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   ////////
   // assume array element of 4 bytes
-  entry.array_init (a.name (), 40);
   entry.assign(i, 0);
   ///////
   bb1_t.assume(i <= 9);
@@ -273,7 +265,6 @@ cfg_t prog7(VariableFactory &vfac)
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   ////////
   // assume array element of 1 byte
-  entry.array_init (a.name ());
   entry.assume(n >= 2);
   entry.assign(n1, 1);
   entry.assign(i , 0);
@@ -317,7 +308,6 @@ cfg_t prog8(VariableFactory &vfac)
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   ////////
   // assume array element of 1 byte
-  entry.array_init (a.name (), 10);
   entry.assume(n >= 1);
   entry.assign(n1, 1);
   entry.assign(n2, 2);
@@ -366,7 +356,6 @@ cfg_t prog9(VariableFactory &vfac)
   bb1_t >> bb2; bb2 >> bb2_a; bb2 >> bb2_b; bb2_a >> bb1; bb2_b >> bb1; bb1_f >> ret;
   ////////
   // assume array element of 1 byte
-  entry.array_init (a.name ());
   entry.assume(n >= 1);
   entry.assign(n1, 1);
   entry.assign(i1, 0);
