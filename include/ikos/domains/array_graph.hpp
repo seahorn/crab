@@ -185,14 +185,14 @@ class array_graph: public ikos::writeable{
     
     for(auto e: edges)
     {
-      vertex_descriptor_t u =  lookup_vertex_map(e.get<0>());
-      vertex_descriptor_t v =  lookup_vertex_map(e.get<1>());
+      vertex_descriptor_t u =  lookup_vertex_map(e.template get<0>());
+      vertex_descriptor_t v =  lookup_vertex_map(e.template get<1>());
       edge_descriptor_t k; bool b;
       boost::tie(k,b) = add_edge(u, v, *_graph);
       if (!b)
         IKOS_ERROR ("edge is already in the graph");
 
-      (*_graph)[k].weight = WeightPtr(new Weight(e.get<2>()));
+      (*_graph)[k].weight = WeightPtr(new Weight(e.template get<2>()));
     }
 
     canonical();
