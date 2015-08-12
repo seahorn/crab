@@ -191,9 +191,8 @@ public:
     // We need to be careful when assigning a summarized variable a
     // into a non-summarized variable lhs. Simply _inv.assign (lhs,
     // a) is not sound.
-
     /* ask for a temp var */
-    VariableName a_prime = a.getVarFactory().get(a.index()); 
+    VariableName a_prime = a.getVarFactory().get(); 
     domain_traits::expand (_inv, a, a_prime);
     _inv.assign (lhs, linear_expression_t (a_prime));
     _inv -= a_prime; 
@@ -208,6 +207,7 @@ public:
       strong_update (a, val);
     else 
       weak_update (a, val);
+
   }
 
   linear_constraint_system_t to_linear_constraint_system (){

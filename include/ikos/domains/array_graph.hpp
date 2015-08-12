@@ -109,7 +109,7 @@ class array_graph: public ikos::writeable{
              typename Any3, typename Any4, bool Any5> 
   friend class array_graph_domain;
 
-  typedef uint64_t key_t;
+  typedef ikos::index_t key_t;
   typedef boost::shared_ptr<VertexName> VertexNamePtr;
   typedef boost::shared_ptr<Weight>     WeightPtr;
   struct  graph_vertex_t { VertexNamePtr name; };
@@ -769,7 +769,7 @@ class array_graph_domain:
   {
     if (is_array_index(v))
     {
-      VariableName v_succ = v.getVarFactory().get(v.index ()); /*fresh var*/ 
+      VariableName v_succ = v.getVarFactory().get(); /*fresh var*/ 
       _g.insert_vertex(v);
       _g.insert_vertex(v_succ);
       _succ_idx_map->set(v, v_succ);
