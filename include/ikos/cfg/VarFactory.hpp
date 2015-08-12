@@ -5,6 +5,9 @@
  * A factory for variable names
  */
 
+#include <ikos/common/types.hpp>
+//#include <ikos/common/bignums.hpp>
+
 #include <boost/noncopyable.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/shared_ptr.hpp>
@@ -18,14 +21,12 @@ namespace cfg
   namespace var_factory_impl
   {
 
-    typedef uint64_t index_t;
-
     namespace indexed_string_impl 
     {
       template< typename T >
-      inline std::string get_str(T e);
+      inline string get_str(T e);
 
-      template<> inline std::string get_str(std::string e) { return e; }
+      template<> inline string get_str(string e) { return e; }
     } 
 
     // This variable factory creates a new variable associated to an
@@ -33,10 +34,10 @@ namespace cfg
     // associated to an element of type T. We call them shadow
     // variables.
     // 
-    // The factory uses an integer counter to generate variable id's
-    // that always increases.
+    // The factory uses a counter of type index_t to generate variable
+    // id's that always increases.
     template< class T>
-    class VariableFactory 
+    class VariableFactory : public boost::noncopyable
     {
        typedef VariableFactory< T > VariableFactory_t;
 
@@ -47,13 +48,20 @@ namespace cfg
         
         template< typename Any>
         friend class VariableFactory;
+
+       public:
+        typedef ikos::index_t index_t; 
+        // FIXME: we should use some unlimited precision type to avoid
+        // overflow. However, this change is a bit involving since we
+        // need to change the algorithm api's in patricia_trees.hpp because
+        // they assume ikos::index_t.
+        // typedef ikos::z_number index_t;
         
        private:
         boost::shared_ptr< T > _s;
         index_t _id;
         VariableFactory* _vfac;
 
-       private:
         IndexedString();
 
         IndexedString(index_t id, VariableFactory *vfac): 
@@ -63,6 +71,7 @@ namespace cfg
             _s(s), _id(id), _vfac(vfac) { }
         
        public:
+
         IndexedString(const IndexedString& is): _s(is._s), _id(is._id), _vfac(is._vfac) { }
         
         IndexedString& operator=(IndexedString is) {
@@ -74,7 +83,7 @@ namespace cfg
         
         index_t index() const { return this->_id; }
 
-        std::string str() const 
+        string str() const 
         { 
           if (_s)
           {  return indexed_string_impl::get_str< T >(*_s);  }
@@ -85,7 +94,7 @@ namespace cfg
         }
 
         boost::optional<T> get(){ 
-          if (_s) return boost::optional<T>(*_s); 
+          if (_s) return *_s; 
           else return boost::optional<T> ();
         }
 
@@ -97,13 +106,13 @@ namespace cfg
         bool operator==(IndexedString s) const 
         { return (_id == s._id);}
 
-        std::ostream& write(std::ostream& o) 
+        ostream& write(ostream& o) 
         {
           o << str();
           return o;
         }
         
-        friend std::ostream& operator<<(std::ostream& o, IndexedString s) 
+        friend ostream& operator<<(ostream& o, IndexedString s) 
         {
           o << s.str ();
           return o;
@@ -117,9 +126,14 @@ namespace cfg
         
       }; 
 
+     public:
+
+      typedef typename IndexedString::index_t index_t;
+
      private:
+
       typedef boost::unordered_map< T, IndexedString >   t_map_t;      
-      typedef boost::unordered_map< int, IndexedString > shadow_map_t;      
+      typedef boost::unordered_map< index_t, IndexedString > shadow_map_t;      
 
       index_t _next_id;
       t_map_t _map;
@@ -154,7 +168,7 @@ namespace cfg
 
       // special purpose: for generating IndexedString's without being
       // associated with a particular T (w/ caching).
-      IndexedString get (int key)
+      IndexedString get (index_t key)
       {
         auto it = _shadow_map.find (key);
         if (it == _shadow_map.end()) 

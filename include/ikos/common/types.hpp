@@ -110,7 +110,7 @@ namespace ikos
       return _n;
     }
     
-    index_t index() {
+    typename VariableName::index_t index() {
       return _n.index();
     }
 
