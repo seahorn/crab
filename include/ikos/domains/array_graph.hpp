@@ -34,6 +34,9 @@
 #ifndef IKOS_ARRAY_GRAPH_HPP
 #define IKOS_ARRAY_GRAPH_HPP
 
+//#define _IKOS_DEBUG_
+#include <ikos/common/dbg.hpp>
+
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -47,9 +50,6 @@
 #include <ikos/algorithms/patricia_trees.hpp>
 #include <ikos/domains/numerical_domains_api.hpp>
 #include <ikos/domains/domain_traits_impl.hpp>
-
-//#define DEBUG
-#include <ikos/common/dbg.hpp>
 
 namespace ikos {
 
@@ -769,17 +769,17 @@ class array_graph_domain:
   {
     if (is_array_index(v))
     {
-      VariableName v_succ = v.getVarFactory().get(); /*fresh var*/ 
-      _g.insert_vertex(v);
-      _g.insert_vertex(v_succ);
-      _succ_idx_map->set(v, v_succ);
-      // all array indexes are non-negative
-      // this->_scalar += linear_constraint_t( variable_t(v) >= 0 );
-      
-      /// FIXME: assume that the array element size is 1 byte.
+      /*assign to v_succ a fresh var must be always the same*/ 
+      VariableName v_succ = v.getVarFactory().get (v.index()); 
 
-      /// --- Enforce: i+ == i+1
-      _scalar += linear_constraint_t( variable_t(v_succ) == variable_t(v) + 1);
+      _g.insert_vertex (v);
+      _g.insert_vertex (v_succ);
+      _succ_idx_map->set (v, v_succ);
+      
+      /// FIXME: assume that the array element size is 1.
+
+      // --- Enforce: i+ == i+1
+      _scalar += linear_constraint_t( variable_t (v_succ) == variable_t(v) + 1);
       // needed if scalar domain is non-relational:
       _g.set_weight (v_succ,v,WeightDomain::bottom ());
     }

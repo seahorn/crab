@@ -10,14 +10,12 @@
 #ifndef IKOS_ARRAY_SMASHING_HPP
 #define IKOS_ARRAY_SMASHING_HPP
 
+//#define _IKOS_DEBUG_
+#include <ikos/common/dbg.hpp>
+
 #include <ikos/common/types.hpp>
-#include <ikos/domains/uninitialized_domain.hpp>
-#include <ikos/algorithms/patricia_trees.hpp>
 #include <ikos/domains/numerical_domains_api.hpp>
 #include <ikos/domains/domain_traits_impl.hpp>
-#include "boost/range/algorithm/set_algorithm.hpp"
-//#define DEBUG
-#include <ikos/common/dbg.hpp>
 
 namespace ikos {
 
@@ -41,10 +39,10 @@ class array_smashing:
   typedef interval <Number> interval_t;
 
  private:
-  typedef mergeable_map<VariableName, VariableName> sz_map_t;
-  typedef set<VariableName> varname_set_t;
+
   typedef bound <Number> bound_t; 
-  //! scalar and array variables        
+
+  //! scalar and summarized array variables        
   NumDomain _inv; 
 
   array_smashing (NumDomain inv): 
@@ -59,39 +57,6 @@ class array_smashing:
     NumDomain other (_inv);
     other.assign (lhs, rhs);
     _inv = _inv | other;
-  }
-
-  template <typename Set>
-  Set set_union (Set &s1, Set &s2)
-  {
-    Set s3;
-    boost::set_union (s1, s2, std::inserter (s3, s3.end ()));
-    return s3;
-  }
-
-  template <typename Set, typename Elem>
-  void set_insert (Set &s1, Elem e)
-  {
-    Set s2, s3;
-    s2.insert (e);
-    boost::set_union (s1, s2, std::inserter (s3, s3.end ()));
-    std::swap (s3, s1);
-  }
-
-  template <typename Set>
-  void set_difference (Set &s1, Set &s2)
-  {
-    Set s3;
-    boost::set_difference (s1, s2, std::inserter (s3, s3.end ()));
-    std::swap (s3, s1);
-  }
-  
-  template<typename Set>
-  NumDomain project (NumDomain inv, Set all, Set vs) 
-  {
-    set_difference (all, vs);
-    domain_traits::forget (inv, all.begin (), all.end ()); 
-    return inv;
   }
 
 public:
@@ -154,18 +119,26 @@ public:
 
   void assign (VariableName x, linear_expression_t e) {
     _inv.assign (x, e);
+
+    IKOS_DEBUG("apply ", x, " := ", e, *this);
   }
 
   void apply (operation_t op, VariableName x, VariableName y, Number z) {
     _inv.apply (op, x, y, z);
+
+    IKOS_DEBUG("apply ", x, " := ", y, " ", op, " ", z, *this);
   }
 
   void apply(operation_t op, VariableName x, VariableName y, VariableName z) {
     _inv.apply (op, x, y, z);
+
+    IKOS_DEBUG("apply ", x, " := ", y, " ", op, " ", z, *this);
   }
 
   void apply(operation_t op, VariableName x, Number k) {
     _inv.apply (op, x, k);
+
+    IKOS_DEBUG("apply ", x, " := ", x, " ", op, " ", k, *this);
   }
 
   void array_init (VariableName a, 
@@ -178,11 +151,15 @@ public:
       init = init | interval_t (bound_t (v)); 
     }
     _inv.set (a, init);
+
+    IKOS_DEBUG("Array init: ",*this);
   }
 
   // All the array elements are initialized to val
   void assume_array (VariableName a, interval_t val) {
     _inv.set (a, val);
+
+    IKOS_DEBUG("Assume array: ",*this);
   }
 
   void load (VariableName lhs, VariableName a, 
@@ -196,6 +173,8 @@ public:
     domain_traits::expand (_inv, a, a_prime);
     _inv.assign (lhs, linear_expression_t (a_prime));
     _inv -= a_prime; 
+
+    IKOS_DEBUG("Load: ",*this);
   }
 
 
@@ -208,6 +187,7 @@ public:
     else 
       weak_update (a, val);
 
+    IKOS_DEBUG("Store: ",*this);
   }
 
   linear_constraint_system_t to_linear_constraint_system (){

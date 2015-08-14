@@ -3,10 +3,10 @@
 #include <ikos/common/types.hpp>
 
 namespace ikos {
-#ifdef DEBUG
+#ifdef _IKOS_DEBUG_
 #define IKOS_DEBUG(...)              \
     do {                             \
-      print(__VA_ARGS__);            \
+      ___print___(__VA_ARGS__);      \
       std::cerr << "\n";             \
     } while (0)
 #else
