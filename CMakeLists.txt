@@ -60,7 +60,13 @@ add_definitions( -Wno-unused-local-typedefs)
 endif ()
 
 add_subdirectory(lib)
-add_subdirectory(tests)
+
+option (DEVMODE "Enable development mode" OFF)
+
+if (DEVMODE)
+   message (STATUS "Enabled development mode: tests will be compiled")
+   add_subdirectory(tests)
+endif ()
 
 install(DIRECTORY include/
   DESTINATION include

@@ -38,13 +38,17 @@ NASA Open Source Agreement (NOSA) Version 1.3 or later:
 
 # Installation #
 
-    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=my_install_dir ../
+    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=my_install_dir DEVMODE=ON ../
 	cmake --build . --target install 
 
 # Usage #
 
 The tests directory contains some examples of how to build CFGs and
 how to compute invariants using different abstract domains.
+
+*Important* : the option `DEVMODE` must be enabled to compile all the
+ tests.
+
 
 `
 build/tests/prog-1
