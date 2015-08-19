@@ -110,9 +110,9 @@ protected:
 
 // GKG: This is likely to fail horribly if this header
 //      is included in multiple source files.
-StrVariableFactory StrVarAlloc_col::vfac;
-static const char* col_prefix_data[] = { "_x", "_y", "_z" };
-const char** StrVarAlloc_col::col_prefix = col_prefix_data;
+// StrVariableFactory StrVarAlloc_col::vfac;
+// static const char* col_prefix_data[] = { "_x", "_y", "_z" };
+// const char** StrVarAlloc_col::col_prefix = col_prefix_data;
 
 class IntVarAlloc_col {
 public:

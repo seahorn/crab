@@ -4,6 +4,9 @@
 #include <memory>
 #include <boost/optional.hpp>
 
+using namespace std;
+using namespace boost;
+
 // ERGH, make it properly flexible later.
 namespace ikos {
   namespace term {
