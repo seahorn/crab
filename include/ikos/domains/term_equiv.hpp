@@ -9,14 +9,15 @@
 #ifndef IKOS_ANTI_UNIF_HPP
 #define IKOS_ANTI_UNIF_HPP
 
-/**
-
- **/
 #include <utility>
 #include <algorithm>
 #include <iostream>
 #include <vector>
 #include <sstream>
+
+//#define _IKOS_DEBUG_
+#include <ikos/common/dbg.hpp>
+
 #include <ikos/common/types.hpp>
 #include <ikos/common/bignums.hpp>
 #include <ikos/algorithms/linear_constraints.hpp>
@@ -24,11 +25,12 @@
 #include <ikos/domains/bitwise_operators_api.hpp>
 #include <ikos/domains/division_operators_api.hpp>
 #include <ikos/domains/intervals.hpp>
+#include <ikos/domains/term/term_expr.hpp>
+#include <ikos/domains/term/inverse.hpp>
+
 #include <boost/container/flat_map.hpp>
 #include <boost/container/flat_set.hpp>
 #include <boost/optional.hpp>
-#include <ikos/domains/term/term_expr.hpp>
-#include <ikos/domains/term/inverse.hpp>
 
 #define BAIL(x) assert(0 && (x))
 #define WARN(x) fprintf(stderr, "WARNING: %s\n", x)
@@ -36,9 +38,9 @@
 using namespace boost;
 using namespace std;
 
-// #define VERBOSE 
-// #define DEBUG_JOIN
-// #define DEBUG_WIDEN
+//#define VERBOSE 
+//#define DEBUG_JOIN
+//#define DEBUG_WIDEN
 
 namespace ikos {
 
@@ -200,27 +202,6 @@ namespace ikos {
       return ret;
     }  
 
-    /*
-    bool check_sat(linear_constraint_t cst)  {
-      dom_lincst_t dom_cst(rename_linear_cst(cst));
-      return _impl.check_sat(dom_cst);
-      return (!_is_bottom);
-    }
-    */
-
-    /*
-    interval_t to_interval(VariableName x, bool requires_normalization) { 
-      // projection requires normalization.
-      optional<dom_var_t> dom_var(domvar_of_var(x));
-      if(dom_var)
-      {
-        return _impl->check_sat(dom_var);
-      } else {
-        return interval_t::top();
-      }
-    } //Maintains normalization.
-    */
-    
   public:
     static anti_unif_t top() {
       return anti_unif(true);
@@ -336,8 +317,9 @@ namespace ikos {
 
     anti_unif_t operator|(anti_unif_t o) {
       // Requires normalization of both operands
-//      std::cout << "SIZES: " << _var_map.size() << ", " <<
-//        o._var_map.size() << std::endl;
+
+      // std::cout << "SIZES: " << _var_map.size() << ", " <<
+      // o._var_map.size() << std::endl;
       normalize();
       o.normalize();
       if (is_bottom()) {
@@ -420,9 +402,11 @@ namespace ikos {
 
 #ifdef DEBUG_JOIN
         cout << "After elimination:" << endl;
-        cout << x_impl << endl << "~~~~~~~~~~~~~~~~" << endl;
-        cout << y_impl << endl << "----------------" << endl;
-        cout << x_join_y << endl << "================" << endl;
+        //cout << x_impl << endl << "~~~~~~~~~~~~~~~~" << endl;
+        //cout << y_impl << endl << "----------------" << endl;
+        //cout << x_join_y << endl << "================" << endl;
+        anti_unif_t res (anti_unif (palloc, out_vmap, out_tbl, out_map, x_join_y));
+        cout << res << endl;
 #endif
         return anti_unif(palloc, out_vmap, out_tbl, out_map, x_join_y);
       }
@@ -507,7 +491,14 @@ namespace ikos {
       // Does not require normalization of any of the two operands
       if (is_bottom() || o.is_bottom()) {
         return bottom();
-      } else {
+      } 
+      else if (is_top()) {
+        return o;
+      }
+      else if (o.is_top()) {
+        return *this;
+      }
+      else {
         BAIL("ANTI-UNIF: meet not yet implemented.");
         return top();
       }
@@ -524,7 +515,7 @@ namespace ikos {
         anti_unif_t n(*this);
         return n;
       }
-    }	// Returned matrix is not normalized.
+    } // Returned matrix is not normalized.
 
     void operator-=(VariableName v) {
       // Remove a variable from the scope
@@ -533,15 +524,6 @@ namespace ikos {
       {
         term_id_t t = (*it).second;
         _var_map.erase(it); 
-
-        // JNL: check with Graeme
-        //      this code is non-op
-        // std::vector<term_id_t> forgotten;
-        // for(term_id_t ft : forgotten)
-        // {
-        //   dom_var_t dom_v(domvar_of_term(ft));
-        //   _impl -= dom_v.name();
-        // }
         dom_var_t dom_v(domvar_of_term(t));
         _impl -= dom_v.name();
       }
@@ -575,14 +557,14 @@ namespace ikos {
     {
       dom_number dom_n(n);
       optional<term_id_t> opt_n(_ttbl.find_const(dom_n));
-      if(opt_n)
-      {
+      if(opt_n) {
         return *opt_n;
       } else {
         term_id_t term_n(_ttbl.make_const(dom_n));
         dom_var_t v = domvar_of_term(term_n);
         dom_linexp_t exp(n);
         _impl.assign(v.name(), exp);
+
         return term_n;
       }
     }
@@ -590,34 +572,26 @@ namespace ikos {
     term_id_t build_linterm(linterm_t term)
     {
       return build_term(OP_MULTIPLICATION,
-          build_const(term.first),
-          term_of_var(term.second));
+                        build_const(term.first),
+                        term_of_var(term.second));
     }
 
     term_id_t build_linexpr(linear_expression_t& e)
     {
       Number cst = e.constant();
-
       term_id_t t = build_const(cst);
-      typename linear_expression_t::iterator it = e.begin();
-      for(; it != e.end(); it++)
-      {
-        t = build_term(OP_ADDITION, t, build_linterm(*it));
+      for(auto y: e) {
+        t = build_term(OP_ADDITION, t, build_linterm(y));
       }
-
-      /*
-      cout << "Should have " << domvar_of_term(t).name() << " := " << e << endl;
-      cout << _impl << endl;
-      */
-      return t; 
+      IKOS_DEBUG("Should have ", domvar_of_term(t).name(), " := ", e,"\n",_impl);
+      return t;       
     }
 
     term_id_t build_term(operation_t op, term_id_t ty, term_id_t tz)
     {
       // Check if the term already exists
       optional<term_id_t> eopt(_ttbl.find_ftor(op, ty, tz));
-      if(eopt)
-      {
+      if(eopt) {
         return *eopt;
       } else {
         // Create the term
@@ -628,42 +602,58 @@ namespace ikos {
         dom_var_t z(domvar_of_term(tz));
 
         // Set up the evaluation.
-        /*
-        cout << "Prev:" << endl;
-        cout << _impl << endl;
-        */
+        IKOS_DEBUG("Prev: ",_impl);
+
         _impl.apply(op, v.name(), y.name(), z.name());
-        /*
-        cout << "Should have " << v.name() << "|" << v.name().index() << " := " << "op(" <<
-          y.name() << "|" << y.name().index() << "," << z.name() << "|" << z.name().index() << ")" << endl;
-        cout << _impl << endl;
-        */
+
+        IKOS_DEBUG("Should have ", v.name(), "|", v.name().index()," := ", 
+                    op,"(",y.name(), "|", y.name().index(), ",", z.name(), "|", z.name().index(), ")");
+        IKOS_DEBUG(_impl);
+
         return tx;
       }
     }
 
     void assign(VariableName x_name, linear_expression_t e) {
-      if (this->is_bottom())
-      { 
+      if (this->is_bottom()) {
         return;
       } else {
-        variable_t x(x_name);
 
-//        dom_linexp_t dom_e(rename_linear_expr(e));
+        //dom_linexp_t dom_e(rename_linear_expr(e));
         term_id_t tx(build_linexpr(e));
+        variable_t x(x_name);
         rebind_var(x, tx);
 
         check_terms();
+
+        IKOS_DEBUG("Assign ",x_name,":=", e,":", *this);
         return;
       }
     }
+
+    //! copy of x into a new fresh variable y
+    void expand (VariableName x_name, VariableName y_name) {
+      if (is_bottom ()) {
+        return;
+      }
+      else {
+      
+        variable_t x(x_name);
+        variable_t y(y_name);
+        linear_expression_t e(x);
+        term_id_t tx(build_linexpr(e));
+        rebind_var(y, tx);
+
+        check_terms();
+      }
+    }
+
 
     // Apply operations to variables.
 
     // x = y op z
     void apply(operation_t op, VariableName x, VariableName y, VariableName z){	
-      if (this->is_bottom())
-      {
+      if (this->is_bottom()) {
         return;   
       } else {
         variable_t vx(x);
@@ -672,12 +662,12 @@ namespace ikos {
         rebind_var(vx, tx);
       }
       check_terms();
+      IKOS_DEBUG("Apply ", x, ":=", y, " ", op, " ", z, ":", *this);
     }
     
     // x = y op k
     void apply(operation_t op, VariableName x, VariableName y, Number k){	
-      if (this->is_bottom())
-      {
+      if (this->is_bottom()) {
         return;   
       } else {
         variable_t vx(x);
@@ -685,8 +675,8 @@ namespace ikos {
         term_id_t tx(build_term(op, term_of_var(y), build_const(k)));
         rebind_var(vx, tx);
       }
-
       check_terms();
+      IKOS_DEBUG("Apply ", x, ":=", y, " ", op, " ", k, ":", *this);
       return;
     }
 
@@ -709,8 +699,7 @@ namespace ikos {
     dom_var_t domvar_of_term(term_id_t id)
     {
       typename term_map_t::iterator it(_term_map.find(id));
-      if(it != _term_map.end())
-      {
+      if(it != _term_map.end()) {
         return (*it).second;
       } else {
         // Allocate a fresh variable
@@ -739,7 +728,8 @@ namespace ikos {
 
     dom_lincst_t rename_linear_cst(linear_constraint_t cst)
     {
-      return dom_lincst_t(rename_linear_expr(cst.expression()), (typename dom_lincst_t::kind_t) cst.kind());
+      return dom_lincst_t(rename_linear_expr(cst.expression()), 
+                          (typename dom_lincst_t::kind_t) cst.kind());
     }
 
     void operator+=(linear_constraint_t cst) {  
@@ -754,11 +744,11 @@ namespace ikos {
       // Probably doesn't need to done so eagerly.
       normalize();
 
+      IKOS_DEBUG("Added constraint ",cst,":", *this);
       return;
     }
 
     // Assumption: vars(exp) subseteq keys(map)
-    // JNL: this assumption might not hold
     linear_expression_t rename_linear_expr_rev(dom_linexp_t exp, rev_map_t rev_map)
     {
       Number cst(exp.constant());
@@ -766,24 +756,11 @@ namespace ikos {
       for(auto v : exp.variables())
       {
         auto it = rev_map.find(v);
-        
-        //assert(it != rev_map.end());
-        if (it == rev_map.end())
-        {
-          // JNL: it happens sometimes that _impl has some constraints
-          // with variables that are neither in _var_map or
-          // _term_map. Many of these "zombie" variables correspond
-          // always to constant terms
-          optional <Number> n_out = _impl [v].singleton ();
-          assert (n_out);
-          rev_exp = rev_exp + (exp[v]*(*n_out));
-        }
-        else
-        {
-          variable_t v_out((*it).second);
-          rev_exp = rev_exp + exp[v]*v_out;
-        }
+        assert(it != rev_map.end());
+        variable_t v_out((*it).second);
+        rev_exp = rev_exp + exp[v]*v_out;
       }
+
       return rev_exp;
     }
 
@@ -822,6 +799,7 @@ namespace ikos {
     // Propagate information from tightened terms to
     // parents/children.
     void normalize(){
+
       // First propagate down, then up.   
       vector< vector< term_id_t > > queue;
 
@@ -899,6 +877,7 @@ namespace ikos {
 
       if (_impl.is_bottom ())
         set_to_bottom ();
+
     }
 
     interval_t operator[](VariableName x) { 
@@ -963,12 +942,26 @@ namespace ikos {
 
       // Now build and rename the constraint system, plus equivalences.
       dom_linsys_t dom_sys(d_vis.to_linear_constraint_system());
+
       linear_constraint_system_t out_sys; 
-      for(dom_lincst_t cst : dom_sys)
-        out_sys += rename_linear_cst_rev(cst, rev_map);
+      for(dom_lincst_t cst : dom_sys) {
+
+        // JNL:cst can have variables that are not in rev_map (e.g.,
+        // some generated by build_linexpr). If the constraint
+        // contains one then we ignore the constraint.
+        bool is_rev_mapped = true;
+        for(auto v : cst.variables()) {
+          auto it = rev_map.find(v);
+          if (it == rev_map.end())
+            is_rev_mapped = false;
+        }
+
+        if (is_rev_mapped)
+          out_sys += rename_linear_cst_rev(cst, rev_map);
+      }
       
-      for(auto p : equivs)
-      {
+      for(auto p : equivs) {
+        IKOS_DEBUG("Added equivalence ", p.first, "=", p.second);
         out_sys += (p.first - p.second == 0);
       }
 
@@ -1071,19 +1064,12 @@ namespace ikos {
       }
       o << "}";
      
-      { // print underlying domain
-        //interval_domain_t intervals = to_intervals();
-        // o << intervals;
-        o << _impl;
-      }
+      // print underlying domain
+      o << _impl;
+
 #ifdef VERBOSE
       /// For debugging purposes     
-      { // print internal datastructures
-        o << endl << "term-table: " << endl;
-        o << "{";
-        o << _ttbl;
-        o << "}" << endl;
-      }
+      o << " ttbl={" << _ttbl << "}\n";
 #endif 
       return o;
     }
@@ -1091,6 +1077,22 @@ namespace ikos {
     const char* getDomainName () const {return "term(D)";}
 
   }; // class anti_unif
+
+namespace domain_traits {
+
+  template <typename Info, typename VariableName>
+  void expand (anti_unif<Info>& inv, VariableName x, VariableName new_x) {
+    inv.expand (x, new_x);
+  }
+
+  template <typename Info>
+  void normalize (anti_unif<Info>& inv) {
+    inv.normalize();
+  }
+
+} // namespace domain_traits
+
 } // namespace ikos
+
 
 #endif // IKOS_ANTI_UNIF_HPP

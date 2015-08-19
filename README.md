@@ -38,26 +38,22 @@ NASA Open Source Agreement (NOSA) Version 1.3 or later:
 
 # Installation #
 
-    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=my_install_dir DEVMODE=ON ../
+    cmake DEVMODE=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=my_install_dir ../
 	cmake --build . --target install 
 
 # Usage #
 
 The tests directory contains some examples of how to build CFGs and
-how to compute invariants using different abstract domains.
-
-*Important* : the option `DEVMODE` must be enabled to compile all the
- tests.
+how to compute invariants using different abstract domains. E.g., 
 
 `
 build/tests/prog-1
 `
 
-# How to add non-standard abstract operations #
+Important: the option `DEVMODE` must be enabled to compile all the
+tests.
 
-Some abstract domains may need some non-standard abstract operations (e.g., array read/write, expand, etc). The signature of these operations are described in `domain_traits.hpp`. Default implementations are in `domain_traits_impl.hpp`. If an abstract domain needs a different implementation from the default one then it should implement the operation under the namespace `ikos::domain_traits`. The file `domain_traits.hpp`  must also include the header file of the abstract domain (if not already there).
-
-# Notes for implementing new abstract domains #
+# How to implement new abstract domains #
 
 The main task is to implement the following API required by the
 fixpoint algorithm:
@@ -85,7 +81,7 @@ fixpoint algorithm:
     // Narrowing 
     AbsDomain operator&&(AbsDomain o);
     
-# Notes for implementing new numerical abstract domains #
+# How to implement new numerical abstract domains #
 
 In addition to the previous API, for numerical domains it is also required to implement the API described in
 numerical_domains_api.hpp:
@@ -120,6 +116,17 @@ of separate_domains which provides an efficient implementation of a
 fast mergeable integer map based on patricia trees. This map can be
 used to map variable names to abstract values. The implementation of
 intervals and congruences use it.
+
+# How to add non-standard abstract operations #
+
+Some abstract domains may need some non-standard abstract operations
+(e.g., array read/write, expand, etc). The signature of these
+operations are described in `domain_traits.hpp`. Default
+implementations are in `domain_traits_impl.hpp`. If an abstract domain
+needs a different implementation from the default one then it should
+implement the operation under the namespace `ikos::domain_traits`. The
+file `domain_traits.hpp` must also include the header file of the
+abstract domain (if not already there).
 
 #People#
 
