@@ -49,10 +49,13 @@ how to compute invariants using different abstract domains.
 *Important* : the option `DEVMODE` must be enabled to compile all the
  tests.
 
-
 `
 build/tests/prog-1
 `
+
+# How to add a non-standard abstract operations #
+
+Some abstract operations may need some non-standard abstract operations (e.g., array read/write, expand, etc). The signature of these operations are described in `domain_traits.hpp`. Default implementations are in `domain_traits_impl.hpp`. If an abstract domain needs a different implementation from the default one then it should implement the operation under the namespace `ikos::domain_traits`. The file `domain_traits.hpp`  must also include the header file of the abstract domain (if not already there).
 
 # Notes for implementing new abstract domains #
 
@@ -124,4 +127,3 @@ intervals and congruences use it.
 * [Jorge Navas](http://ti.arc.nasa.gov/profile/jorge/)
 * [Temesghen Kahsai](http://www.lememta.info/)
 * Graeme Gange (The University of Melbourne)
-
