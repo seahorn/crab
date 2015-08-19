@@ -1787,8 +1787,10 @@ dbm dbm_assign(int v, exp_t e, dbm x)
             }
           }
         }
+      }
 
-        viter = pred_iterator(ret, v);
+      if(dest_is_live(ret, v)) {
+        edge_iter viter = pred_iterator(ret, v);
         for(; !preds_end(viter); next_pred(viter))
         {
           int k = pred(viter);
@@ -1802,7 +1804,8 @@ dbm dbm_assign(int v, exp_t e, dbm x)
             int sval = rev_iter_val(siter);
             if(s == v)
               continue;
-            if(src_is_live(ret, s) && in_graph(ret, s, v))
+            // if(src_is_live(ret, s) && in_graph(ret, s, v))
+            if(in_graph(ret, s, v))
             {
               ret->mtx[s*x->sz + v].val = std::min(edge_val(ret, s, v), kval + sval);
             } 
