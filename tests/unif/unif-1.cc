@@ -1,3 +1,4 @@
+#include <ikos/tests/Cfg_impl.hpp>
 #include <ikos/cfg/Cfg.hpp>
 #include <ikos/cfg/VarFactory.hpp>
 #include <ikos/analysis/FwdAnalyzer.hpp>
@@ -9,27 +10,8 @@
 #include <ikos/domains/octagons.hpp>                      
 #include <ikos/domains/dbm.hpp>                      
 #include <ikos/domains/term_equiv.hpp>
-#include <ikos/domains/term/term_util.hpp>
 
 using namespace std;
-
-namespace cfg_impl
-{
-  using namespace cfg;
-
-  template<> inline std::string get_label_str(std::string e) 
-  { return e; }
-
-  // A variable factory based on strings
-  typedef ikos::term::StrVariableFactory VariableFactory;
-  typedef typename VariableFactory::varname_t varname_t;
-
-  // CFG
-  typedef variable< z_number, varname_t >      z_var;
-  typedef std::string                          basic_block_label_t;
-  typedef Cfg< basic_block_label_t, varname_t> cfg_t;
-  typedef cfg_t::basic_block_t                 basic_block_t;
-} // end namespace
 
 namespace domain_impl
 {

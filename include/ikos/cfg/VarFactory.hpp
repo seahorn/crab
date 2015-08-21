@@ -2,18 +2,21 @@
 #define VARIABLE_FACTORY_HPP
 
 /*
- * A factory for variable names
+ * Factories for variable names
  */
 
 #include <ikos/common/types.hpp>
 //#include <ikos/common/bignums.hpp>
 
+#include <boost/optional.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/range/iterator_range.hpp>
+
+using namespace std;
 
 namespace cfg 
 {
@@ -195,8 +198,146 @@ namespace cfg
         return it->second;
       }
     }; 
+
+    //! Specialized factory for strings
+    class StrVariableFactory : public boost::noncopyable  
+    {
+      typedef VariableFactory< std::string > StrVariableFactory_t;
+      std::unique_ptr< StrVariableFactory_t > m_factory; 
+      
+     public: 
+      
+      typedef StrVariableFactory_t::variable_t varname_t;
+      typedef StrVariableFactory_t::const_var_range const_var_range;
+    
+      StrVariableFactory(): m_factory (new StrVariableFactory_t()){ }
+      
+      varname_t operator[](std::string v) {
+        return (*m_factory)[v];
+      }
+    
+      const_var_range get_shadow_vars () const  {
+        return m_factory->get_shadow_vars ();
+      }
+    }; 
+
+    //! Specialized factory for integers
+    class IntVariableFactory : public boost::noncopyable  
+    {
+     public: 
+      typedef int varname_t;
+      
+      IntVariableFactory() { }
+      
+      varname_t operator[](int v) { return v; }
+    }; 
+  
+    inline int fresh_colour(int col_x, int col_y) {
+      switch(col_x)
+      {
+        case 0:
+          {
+            return col_y == 1 ? 2 : 1;
+          }
+        case 1:
+          {
+          return col_y == 0 ? 2 : 0;
+          }
+        case 2:
+          {
+            return col_y == 0 ? 1 : 0;
+          }
+        default:
+          assert (false && "Unreachable");
+          return 0;
+      }
+    }
+  
+    //! Three-coloured variable allocation. So the number of variables
+    //  is bounded by 3|Tbl|, rather than always increasing.
+    class StrVarAlloc_col {
+      static const char** col_prefix;
+     public:
+      
+      typedef StrVariableFactory::varname_t varname_t;
+      static StrVariableFactory vfac;
+      
+      StrVarAlloc_col()
+          : colour(0), next_id(0)
+      { }
+      
+      StrVarAlloc_col(const StrVarAlloc_col& o)
+          : colour(o.colour), next_id(o.next_id)
+      { }
+      
+      StrVarAlloc_col(const StrVarAlloc_col& x, const StrVarAlloc_col& y)
+          : colour(fresh_colour(x.colour, y.colour)),
+            next_id(0)
+      {
+        assert(colour != x.colour);
+        assert(colour != y.colour);
+      }
+      
+      StrVarAlloc_col& operator=(const StrVarAlloc_col& x)
+      {
+        colour = x.colour;
+        next_id = x.next_id;
+        return *this;
+      }
+      
+      StrVariableFactory::varname_t next() {
+        std::stringstream ss;
+        ss << col_prefix[colour] << next_id++;
+        return vfac[ss.str()];
+      }
+      
+     protected:
+      int colour;
+      int next_id;
+    };
+  
+
+    class IntVarAlloc_col {
+     public:
+      typedef int varname_t;
+      static IntVariableFactory vfac;
+
+      
+      IntVarAlloc_col()
+          : colour(0), next_id(0)
+      { }
+      
+      IntVarAlloc_col(const IntVarAlloc_col& o)
+          : colour(o.colour), next_id(o.next_id)
+      { }
+      
+      IntVarAlloc_col(const IntVarAlloc_col& x, const IntVarAlloc_col& y)
+          : colour(fresh_colour(x.colour, y.colour)),
+            next_id(0)
+      {
+        assert(colour != x.colour);
+        assert(colour != y.colour);
+      }
+      
+      IntVarAlloc_col& operator=(const IntVarAlloc_col& x)
+      {
+        colour = x.colour;
+        next_id = x.next_id;
+        return *this;
+      }
+      
+      IntVariableFactory::varname_t next() {
+        int id = next_id++;
+        return 3*id + colour;
+      }
+      
+     protected:
+      int colour;
+      int next_id;
+    };
+
   } // end namespace var_factory_impl
 
-} // end namespace
+} // end namespace cfg
 
 #endif 

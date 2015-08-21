@@ -20,6 +20,7 @@
 
 #include <ikos/common/types.hpp>
 #include <ikos/common/bignums.hpp>
+#include <ikos/cfg/VarFactory.hpp>
 #include <ikos/algorithms/linear_constraints.hpp>
 #include <ikos/domains/numerical_domains_api.hpp>
 #include <ikos/domains/bitwise_operators_api.hpp>
@@ -43,6 +44,17 @@ using namespace std;
 //#define DEBUG_WIDEN
 
 namespace ikos {
+
+  namespace term {
+     template<class Num, class VName, class Abs>
+     class TDomInfo {
+      public:
+       typedef Num Number;
+       typedef VName VariableName;
+       typedef cfg::var_factory_impl::StrVarAlloc_col Alloc;
+       typedef Abs domain_t; 
+     };
+  }
 
   template< typename Info >
   class anti_unif: public writeable,
