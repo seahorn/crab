@@ -71,39 +71,7 @@ template< typename VertexName, typename Weight,
           typename ScalarNumDomain, bool IsDistWeight >
 class array_graph: public ikos::writeable{
 
-  // Wrapper for using VertexName as key in almost any container
-  // (std::unordered_map/set, mergeable_map, etc)
-  struct VertexNameKey{
-    VertexName _v;
-    VertexNameKey(VertexName v):_v(v){ }
-    VertexNameKey(const VertexNameKey &other): _v(other._v){ }
-    VertexNameKey& operator=(VertexNameKey other){
-      this->_v = other._v;
-      return *this;
-    }
-    VertexName name() const{ 
-      return this->_v; 
-    }
-    bool operator==(const VertexNameKey &other) const{
-      return (this->index() == other.index());
-    }
-    bool operator<(const VertexNameKey &other) const{
-      return (this->index() < other.index());
-    }
-    index_t index() const {
-      VertexName x(this->_v);
-      return x.index();
-    }
-    ostream& write(ostream& o) const{
-      name().write(o);
-      return o;
-    }
-  }; // end class VertexNameKey
-  struct KeyHasher{ // key hasher for VertexNameKey
-    size_t operator()(const VertexNameKey &a) const{
-      return a.index();
-    }
-  }; 
+  typedef VertexName VertexNameKey;
 
   template < typename Any1, typename Any2, 
              typename Any3, typename Any4, bool Any5> 
@@ -134,7 +102,7 @@ class array_graph: public ikos::writeable{
 
   typedef boost::unordered_map<key_t, vertex_descriptor_t >  vertex_map_t;
 
-  typedef std::set<VertexNameKey> vertex_names_set_t;
+  typedef std::set<VertexName> vertex_names_set_t;
 
   typedef boost::shared_ptr <graph_t> graph_ptr;
   typedef boost::shared_ptr< vertex_map_t > vertex_map_ptr;
@@ -382,16 +350,16 @@ class array_graph: public ikos::writeable{
     g2.canonical();
 
     // if (*(g1._vertices_set) != *(g2._vertices_set)){
-    //   set<VertexNameKey> all_vs;
+    //   set<VertexName> all_vs;
     //   set_union(g1._vertices_set->begin(), g1._vertices_set->end(), 
     //             g2._vertices_set->begin(), g2._vertices_set->end(), inserter(all_vs, all_vs.end()));
-    //   vector<VertexNameKey> new_g1, new_g2;
+    //   vector<VertexName> new_g1, new_g2;
     //   set_difference(all_vs.begin(), all_vs.end(),
     //                  g1._vertices_set->begin(), g1._vertices_set->end(), inserter(new_g1, new_g1.end()));
     //   set_difference(all_vs.begin(), all_vs.end(),
     //                  g2._vertices_set->begin(), g2._vertices_set->end(), inserter(new_g2, new_g2.end()));
-    //   insert_vertices<typename vector<VertexNameKey>::iterator>(g1, new_g1.begin(), new_g1.end());
-    //   insert_vertices<typename vector<VertexNameKey>::iterator>(g2, new_g2.begin(), new_g2.end());
+    //   insert_vertices<typename vector<VertexName>::iterator>(g1, new_g1.begin(), new_g1.end());
+    //   insert_vertices<typename vector<VertexName>::iterator>(g2, new_g2.begin(), new_g2.end());
     // }
 
     // pre: g1 and g2 have the same set of vertices and edges at this
@@ -720,8 +688,7 @@ class array_graph_domain:
   typedef array_graph_domain<ScalarNumDomain,Number,VariableName, 
                              WeightDomain,IsDistWeight> array_graph_domain_t;
 
-  typedef typename array_graph_t::VertexNameKey VariableNameKey;
-  typedef mergeable_map<VariableNameKey, VariableName> succ_index_map_t;
+  typedef mergeable_map<VariableName,VariableName> succ_index_map_t;
   typedef boost::shared_ptr< succ_index_map_t > succ_index_map_ptr;
 
   bool  _is_bottom;
