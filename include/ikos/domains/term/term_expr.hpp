@@ -413,7 +413,7 @@ namespace ikos {
 
       ostream& write(ostream& o) { 
         bool first = true;
-        for(int ti = 0; ti < terms.size(); ti++)
+        for(unsigned int ti = 0; ti < terms.size(); ti++)
         {
           if(first)
             first = false;
