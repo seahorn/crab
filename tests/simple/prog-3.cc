@@ -15,10 +15,10 @@ namespace domain_impl
 {
   using namespace cfg_impl;
   // Numerical domains
-  typedef interval_domain< z_number, varname_t >             interval_domain_t;
-  typedef interval_congruence_domain< z_number, varname_t >  interval_congruences_domain_t;
-  typedef DBM< z_number, varname_t >                         dbm_domain_t;
-  typedef octagon< z_number, varname_t >                     octagon_domain_t;
+  typedef interval_domain< z_number, varname_t > interval_domain_t;
+  typedef interval_congruence_domain< z_number, varname_t > ric_t;
+  typedef DBM<z_number, varname_t> dbm_domain_t;
+  typedef octagon< z_number, varname_t > octagon_domain_t;
 } // end namespace
 
 using namespace cfg_impl;

@@ -16,8 +16,7 @@ namespace domain_impl
 {
   using namespace cfg_impl;
   // Numerical domains
-  typedef interval_domain< z_number, varname_t >             interval_domain_t;
-
+  typedef interval_domain< z_number, varname_t > interval_domain_t;
   typedef ikos::term::TDomInfo<z_number, varname_t, interval_domain_t> dom_info_t;
   typedef anti_unif<dom_info_t>::anti_unif_t term_domain_t;
 } // end namespace

@@ -15,10 +15,10 @@ namespace domain_impl
 {
   using namespace cfg_impl;
   // Numerical domains
-  typedef interval_domain< z_number, varname_t >             interval_domain_t;
-  typedef interval_congruence_domain< z_number, varname_t >  interval_congruences_domain_t;
-  typedef DBM< z_number, varname_t >                         dbm_domain_t;
-  typedef octagon< z_number, varname_t >                     octagon_domain_t;
+  typedef interval_domain< z_number, varname_t > interval_domain_t;
+  typedef interval_congruence_domain< z_number, varname_t > ric_t;
+  typedef DBM<z_number, varname_t> dbm_domain_t;
+  typedef octagon< z_number, varname_t > octagon_domain_t;
 } // end namespace
 
 using namespace cfg_impl;
@@ -75,7 +75,7 @@ int main (int argc, char** argv )
   cfg.simplify ();
   cout << cfg << endl;
 
-  const bool run_live = true;
+  const bool run_live = false;
 
   NumFwdAnalyzer <cfg_t, interval_domain_t, VariableFactory>::type itv_a (cfg,vfac,run_live);
   itv_a.Run (interval_domain_t::top ());

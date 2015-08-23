@@ -1757,7 +1757,7 @@ dbm dbm_assign(int v, exp_t e, dbm x)
     ret->pi[v] = pi;
     verify_potentials(ret);
 
-#if 0
+#if 1
     if(x->closed)
     {
       // We can update the closure by following edges adjacent to v.
@@ -1823,7 +1823,7 @@ dbm dbm_assign(int v, exp_t e, dbm x)
       ret->closed = true;
     }
 #else
-  dbm_canonical(ret);
+    dbm_canonical(ret);
 #endif 
   }
   return ret;
@@ -2033,7 +2033,7 @@ dbm dbm_expand (int v, int new_v, dbm x)
   subs[0].r_to = new_v;
 
   dbm tmp = dbm_rename (subs, 1, x);
-  dbm res = dbm_meet (x,tmp);
+  dbm res = dbm_meet (x,tmp); 
   dbm_dealloc(tmp);
   return res;
 }
