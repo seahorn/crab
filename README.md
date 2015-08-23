@@ -5,18 +5,40 @@ abstract interpretation developed at NASA Ames Research Center. This
 core consists of an implementation of a fixpoint algorithm and several
 abstract numerical domains.
 
-Ikos-core also provides a CFG that interfaces with IKOS as well as
-adaptors to execute backward and forward analyses on it. This
-repository has been extended with more abstract domains as well as
-capabilities to perform abstract interpretation on concurrent systems.
+`Ikos-core` provides a minimal, *language-independent* CFG language that
+interfaces with Ikos as well as some adaptors to execute backward and
+forward analyses on it. In its simplest form, this CFG language
+consists only of:
 
-**NOTES**: This repository is intended to be PRIVATE. A public version
-  is available [here](https://github.com/seahorn/ikos-core). Currently
-  this private repository has more functionality that the public
-  one. Eventually, all the functionality of this repository should be
-  moved to the public one.
+- assume,
+- havoc, 
+- arithmetic operations, and
+- goto instructions
 
+but it also supports other instructions such as
 
+- pointer arithmetic and
+- array reads and writes
+
+This repository also provides with some new abstract domains as well
+as capabilities to perform abstract interpretation on concurrent
+systems.
+
+# General notes #
+
+- This repository is intended to be PRIVATE. A public version is
+  available [here](https://github.com/seahorn/ikos-core). Currently
+  this private repository has (by far) more functionality that the
+  public one. Eventually, all the functionality of this repository
+  should be moved to the public one.
+
+- `Ikos-core` by itself cannot analyze directly a program written in
+  some real programming language (such as C). For that, a translator
+  to the CFG language is needed. For an example of how to translate
+  LLVM-based languages see the project
+  [ikos-llvm](https://github.com/seahorn/ikos-llvm)
+  
+  
 # License #
 
 Some of the software is released under the terms and conditions of the
@@ -31,6 +53,11 @@ NASA Open Source Agreement (NOSA) Version 1.3 or later:
 	- `array_smashing` 
 - `iterators`
 
+The following directories are not under NOSA:
+
+- `analysis`
+- `cfg`
+
 # Prerequisites #
 
 - The C++ compiler must support c++11
@@ -38,17 +65,13 @@ NASA Open Source Agreement (NOSA) Version 1.3 or later:
 
 # Installation #
 
-    cmake DEVMODE=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=my_install_dir ../
+    cmake -DDEVMODE=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=my_install_dir ../
 	cmake --build . --target install 
 
 # Usage #
 
 The tests directory contains some examples of how to build CFGs and
-how to compute invariants using different abstract domains. E.g., 
-
-`
-build/tests/prog-1
-`
+how to compute invariants using different abstract domains.
 
 Important: the option `DEVMODE` must be enabled to compile all the
 tests.
@@ -83,8 +106,8 @@ fixpoint algorithm:
     
 # How to implement new numerical abstract domains #
 
-In addition to the previous API, for numerical domains it is also required to implement the API described in
-numerical_domains_api.hpp:
+In addition to the previous API, for numerical domains it is also
+required to implement the API described in `numerical_domains_api.hpp`:
 
     typedef linear_expression< Number, VariableName > linear_expression_t;
     typedef linear_constraint< Number, VariableName > linear_constraint_t;
@@ -108,7 +131,7 @@ numerical_domains_api.hpp:
     virtual ~numerical_domain() { }
       
 This API assumes the manipulation of linear expressions and linear
-constraints both defined in linear_constraints.hpp so it is good to be
+constraints both defined in `linear_constraints.hpp` so it is good to be
 familiar with.
 
 For non-relational domains it is highly recommend to build on the top
