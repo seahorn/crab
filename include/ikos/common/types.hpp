@@ -239,7 +239,17 @@ namespace ikos
     OP_MULTIPLICATION,
     OP_DIVISION
   } operation_t;
-  
+
+  inline std::ostream& operator<<(std::ostream&o, operation_t op) {
+    switch (op) {
+      case OP_ADDITION: o << "+"; break;
+      case OP_SUBTRACTION: o << "-"; break;
+      case OP_MULTIPLICATION: o << "*"; break;
+      default: o << "/"; break;
+    }
+    return o;
+  }
+
 } // namespace ikos
 
 #endif // IKOS_COMMON_HPP
