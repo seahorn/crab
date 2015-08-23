@@ -490,7 +490,7 @@ namespace ikos {
           default: ;;             
         }
       }
-      assert (false && "unreachable");       
+      IKOS_ERROR("unreachable");       
     }
     
     std::ostream& write(std::ostream& o) {
