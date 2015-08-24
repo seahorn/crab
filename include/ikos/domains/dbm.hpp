@@ -665,10 +665,10 @@ class DBM: public writeable,
   }
 
   void operator-=(VariableName v) {
-    forget (get_dbm_index(v));
-
+    id_t k = get_dbm_index(v);
+    forget (k);
     _var_map.erase (v);
-    _rev_map.erase (get_dbm_index(v));
+    _rev_map.erase (k);
   }
 
   template<typename Iterator>
@@ -682,8 +682,9 @@ class DBM: public writeable,
     forget (idxs);
 
     for (auto v: boost::make_iterator_range (it,et)) {
+      id_t k = get_dbm_index(v);
       _var_map.erase (v);
-      _rev_map.erase (get_dbm_index(v));
+      _rev_map.erase (k);
     }
   }
 
