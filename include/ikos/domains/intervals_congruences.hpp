@@ -2,16 +2,51 @@
  *
  * Reduced product of intervals and congruences.
  *
+ * Author: Jorge A. Navas Laserna (jorge.a.navaslaserna@nasa.gov)
+ *
  * The reduce operator based on "Static Analysis of Arithmetical
  * Congruences" by P. Granger published in International Journal of
  * Computer Mathematics, 1989.
+ *
+ * Notices:
+ *
+ * Copyright (c) 2011 United States Government as represented by the
+ * Administrator of the National Aeronautics and Space Administration.
+ * All Rights Reserved.
+ *
+ * Disclaimers:
+ *
+ * No Warranty: THE SUBJECT SOFTWARE IS PROVIDED "AS IS" WITHOUT ANY WARRANTY OF
+ * ANY KIND, EITHER EXPRESSED, IMPLIED, OR STATUTORY, INCLUDING, BUT NOT LIMITED
+ * TO, ANY WARRANTY THAT THE SUBJECT SOFTWARE WILL CONFORM TO SPECIFICATIONS,
+ * ANY IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
+ * OR FREEDOM FROM INFRINGEMENT, ANY WARRANTY THAT THE SUBJECT SOFTWARE WILL BE
+ * ERROR FREE, OR ANY WARRANTY THAT DOCUMENTATION, IF PROVIDED, WILL CONFORM TO
+ * THE SUBJECT SOFTWARE. THIS AGREEMENT DOES NOT, IN ANY MANNER, CONSTITUTE AN
+ * ENDORSEMENT BY GOVERNMENT AGENCY OR ANY PRIOR RECIPIENT OF ANY RESULTS,
+ * RESULTING DESIGNS, HARDWARE, SOFTWARE PRODUCTS OR ANY OTHER APPLICATIONS
+ * RESULTING FROM USE OF THE SUBJECT SOFTWARE.  FURTHER, GOVERNMENT AGENCY
+ * DISCLAIMS ALL WARRANTIES AND LIABILITIES REGARDING THIRD-PARTY SOFTWARE,
+ * IF PRESENT IN THE ORIGINAL SOFTWARE, AND DISTRIBUTES IT "AS IS."
+ *
+ * Waiver and Indemnity:  RECIPIENT AGREES TO WAIVE ANY AND ALL CLAIMS AGAINST
+ * THE UNITED STATES GOVERNMENT, ITS CONTRACTORS AND SUBCONTRACTORS, AS WELL
+ * AS ANY PRIOR RECIPIENT.  IF RECIPIENT'S USE OF THE SUBJECT SOFTWARE RESULTS
+ * IN ANY LIABILITIES, DEMANDS, DAMAGES, EXPENSES OR LOSSES ARISING FROM SUCH
+ * USE, INCLUDING ANY DAMAGES FROM PRODUCTS BASED ON, OR RESULTING FROM,
+ * RECIPIENT'S USE OF THE SUBJECT SOFTWARE, RECIPIENT SHALL INDEMNIFY AND HOLD
+ * HARMLESS THE UNITED STATES GOVERNMENT, ITS CONTRACTORS AND SUBCONTRACTORS,
+ * AS WELL AS ANY PRIOR RECIPIENT, TO THE EXTENT PERMITTED BY LAW.
+ * RECIPIENT'S SOLE REMEDY FOR ANY SUCH MATTER SHALL BE THE IMMEDIATE,
+ * UNILATERAL TERMINATION OF THIS AGREEMENT.
+ *
  ******************************************************************************/
-
 
 #ifndef IKOS_INTERVALS_AND_CONGRUENCES_HPP
 #define IKOS_INTERVALS_AND_CONGRUENCES_HPP
 
 #include <iostream>
+
 #include <ikos/common/types.hpp>
 #include <ikos/domains/numerical_domains_api.hpp>
 #include <ikos/domains/bitwise_operators_api.hpp>
@@ -22,92 +57,94 @@
 
 namespace ikos {
 
-template< typename Number, int typeSize = -1 >
-class interval_congruence: public writeable {
-
- public:
+template < typename Number, int typeSize = -1 >
+class interval_congruence : public writeable {
+public:
   typedef interval_congruence< Number, typeSize > interval_congruence_t;
 
- private:
-  typedef interval< Number >              interval_t;
-  typedef bound< Number >                 bound_t;
-  typedef congruence< Number, typeSize >  congruence_t;
-  
- private:
-  interval_t   _first;
+private:
+  typedef interval< Number > interval_t;
+  typedef bound< Number > bound_t;
+  typedef congruence< Number, typeSize > congruence_t;
+
+private:
+  interval_t _first;
   congruence_t _second;
 
- private:
+private:
+  interval_congruence(bool is_bottom)
+      : writeable(),
+        _first(is_bottom ? interval_t::bottom() : interval_t::top()),
+        _second(is_bottom ? congruence_t::bottom() : congruence_t::top()) {}
 
-  interval_congruence(bool is_bottom): 
-     writeable(), 
-     _first(is_bottom  ? interval_t::bottom()   : interval_t::top()), 
-     _second(is_bottom ? congruence_t::bottom() : congruence_t::top()){ }
+public:
+  static interval_congruence_t top() { return interval_congruence(false); }
 
- public:
+  static interval_congruence_t bottom() { return interval_congruence(true); }
 
-  static interval_congruence_t top(){
-    return interval_congruence(false);
+private:
+  inline Number abs(Number x) { return x < 0 ? -x : x; }
+
+  // for some reason, operator % can return a negative number
+  // mod(a, b) always returns a positive number
+  inline Number mod(Number a, Number b) {
+    Number m = a % b;
+    if (m < 0)
+      return m + b;
+    else
+      return m;
   }
 
-  static interval_congruence_t bottom(){
-    return interval_congruence(true);
-  }
-
- private:
-  
-  inline Number abs(Number x){
-    return x < 0 ? -x: x;
-  }
-  
   // R(c,a) is the least element of c greater or equal than a
-  inline Number R(congruence_t c, Number a){
+  inline Number R(congruence_t c, Number a) {
     Number m = c.get().first;
     Number p = c.get().second;
-    return a + ((p-a) % abs(m));
+    return a + mod(p - a, abs(m));
   }
-  
+
   // L(c,a) is the greatest element of c smaller or equal than a
-  inline Number L(congruence_t c, Number a){
-    Number m = c.get().first; // modulo
+  inline Number L(congruence_t c, Number a) {
+    Number m = c.get().first;
     Number p = c.get().second;
-    return a - ((p-a) % abs(m));
+    return a - mod(a - p, abs(m));
   }
-  
- public:
 
-  interval_congruence(Number n): _first(interval_t(n)), _second(congruence_t(n)) { }
+public:
+  interval_congruence(Number n)
+      : _first(interval_t(n)), _second(congruence_t(n)) {}
 
-  interval_congruence(interval_t i, congruence_t c): _first(i), _second(c){ 
+  interval_congruence(interval_t i, congruence_t c) : _first(i), _second(c) {
     this->reduce();
   }
 
-  interval_congruence(interval_t i): _first(i), _second(congruence_t::top()){
+  interval_congruence(interval_t i) : _first(i), _second(congruence_t::top()) {
     this->reduce();
   }
 
-  interval_congruence(congruence_t c): _first(interval_t::top()), _second(c){
+  interval_congruence(congruence_t c) : _first(interval_t::top()), _second(c) {
     this->reduce();
   }
 
-  interval_congruence(const interval_congruence &other): 
-     _first(other._first), _second(other._second){ }
-  
-  interval_congruence_t& operator=(interval_congruence_t other){
-    this->_first  = other._first;
+  interval_congruence(const interval_congruence& other)
+      : _first(other._first), _second(other._second) {}
+
+  interval_congruence_t& operator=(interval_congruence_t other) {
+    this->_first = other._first;
     this->_second = other._second;
     return *this;
   }
 
-  interval_t&   first(){
-    return this->_first;
+  bool is_bottom() {
+    return this->_first.is_bottom() || this->_second.is_bottom();
   }
 
-  congruence_t& second(){
-    return this->_second;
-  }
+  bool is_top() { return this->_first.is_top() && this->_second.is_top(); }
 
-  /* 
+  interval_t& first() { return this->_first; }
+
+  congruence_t& second() { return this->_second; }
+
+  /*
      Let (i,c) be a pair of interval and congruence
      if (c.is_bottom() || i.is_bottom()) (bottom(), bottom());
      if (c = 0Z+a and a \notin i)        (bottom(), bottom());
@@ -118,58 +155,62 @@ class interval_congruence: public writeable {
      if (i=[-oo,b])                      ([-oo, L(c,b)], c);
      otherwise                           (i,c)
   */
-  
-  void reduce(){
 
-    interval_t   i = first();
-    congruence_t c = second();
+  void reduce() {
+    interval_t& i = first();
+    congruence_t& c = second();
+
+    if (i.is_bottom() || c.is_bottom()) {
+      i = interval_t::bottom();
+      c = congruence_t::bottom();
+    }
 
     // congruence is top and interval is a singleton
-    if (c.is_top()){
-      boost::optional< Number> n = i.singleton();
-      if (n)
+    if (c.is_top()) {
+      boost::optional< Number > n = i.singleton();
+      if (n) {
         c = congruence_t(*n);
+      }
       return;
     }
-    
+
     Number modulo = c.get().first;
-    if (modulo == 0){
+    if (modulo == 0) {
       // congruence is a singleton so we refine the interval
       interval_t a(c.get().second);
-      if (!(a <= i)){
+      if (!(a <= i)) {
         i = interval_t::bottom();
         c = congruence_t::bottom();
-      }
-      else
+      } else {
         i = a;
-    }
-    else{
+      }
+    } else {
       // refine lower and upper bounds of the interval using
       // congruences
       bound_t lb = i.lb();
       bound_t ub = i.ub();
 
-      if ( (lb.is_finite() && ub.is_finite())){
-        Number x   = R(c,*(lb.number()));
-        Number y   = L(c,*(ub.number()));
-        if (x > y){
+      if (lb.is_finite() && ub.is_finite()) {
+        Number x = R(c, *(lb.number()));
+        Number y = L(c, *(ub.number()));
+        if (x > y) {
           i = interval_t::bottom();
           c = congruence_t::bottom();
-        }
-        else{
+        } else if (x == y) {
+          i = interval_t(x);
+          c = congruence_t(x);
+        } else {
           i = interval_t(bound_t(x), bound_t(y));
         }
+      } else if (lb.is_finite()) {
+        Number x = R(c, *(lb.number()));
+        i = interval_t(bound_t(x), bound_t::plus_infinity());
+      } else if (ub.is_finite()) {
+        Number y = L(c, *(ub.number()));
+        i = interval_t(bound_t::minus_infinity(), bound_t(y));
+      } else {
+        // interval is top
       }
-      else if (lb.is_finite()){
-        Number x   = R(c,*(lb.number()));
-        i = interval_t(bound_t(x),bound_t("+oo"));
-      }
-      else if (ub.is_finite()){
-        Number y   = L(c,*(ub.number()));
-        i = interval_t(bound_t("-oo"), bound_t(y));
-      }
-      else{ // interval is top        
-        }
     }
   }
 
@@ -178,380 +219,336 @@ class interval_congruence: public writeable {
     return o;
   }
 
- public:
+public:
+  interval_congruence_t operator+(interval_congruence_t x) {
+    return interval_congruence_t(this->_first.operator+(x.first()),
+                                 this->_second.operator+(x.second()));
+  }
 
-    interval_congruence_t operator+(interval_congruence_t x) {
-      interval_congruence_t y(this->_first.operator+(x.first()),
-                              this->_second.operator+(x.second()));
-      y.reduce();
-      return y;
-    }
+  interval_congruence_t operator-(interval_congruence_t x) {
+    return interval_congruence_t(this->_first.operator-(x.first()),
+                                 this->_second.operator-(x.second()));
+  }
 
-    interval_congruence_t operator-(interval_congruence_t x) {
-      interval_congruence_t y(this->_first.operator-(x.first()),
-                              this->_second.operator-(x.second()));
-      y.reduce();
-      return y;
-    }
+  interval_congruence_t operator*(interval_congruence_t x) {
+    return interval_congruence_t(this->_first.operator*(x.first()),
+                                 this->_second.operator*(x.second()));
+  }
 
-    interval_congruence_t operator*(interval_congruence_t x) {
-      interval_congruence_t y(this->_first.operator*(x.first()),
-                              this->_second.operator*(x.second()));
-      y.reduce();
-      return y;
-    }
+  interval_congruence_t operator/(interval_congruence_t x) {
+    return interval_congruence_t(this->_first.operator/(x.first()),
+                                 this->_second.operator/(x.second()));
+  }
 
-    interval_congruence_t operator/(interval_congruence_t x) {
-      interval_congruence_t y(this->_first.operator/(x.first()),
-                              this->_second.operator/(x.second()));
-      y.reduce();
-      return y;
-    }
+  interval_congruence_t operator|(interval_congruence_t other) {
+    return interval_congruence_t(this->_first | other._first,
+                                 this->_second | other._second);
+  }
 
-    interval_congruence_t operator|(interval_congruence_t other){
-      return interval_congruence_t(this->_first  | other._first,
-                                   this->_second | other._second);
-    }
+  interval_congruence_t operator&(interval_congruence_t other) {
+    return interval_congruence_t(this->_first & other._first,
+                                 this->_second & other._second);
+  }
 
-    interval_congruence_t operator&(interval_congruence_t other){
-      return interval_congruence_t(this->_first  & other._first,
-                                   this->_second & other._second);
-    }
+public:
+  // division and remainder operations
 
- public:
+  interval_congruence_t SDiv(interval_congruence_t x) {
+    return interval_congruence_t(this->_first.SDiv(x.first()),
+                                 this->_second.SDiv(x.second()));
+  }
 
-    // division and remainder operations
+  interval_congruence_t UDiv(interval_congruence_t x) {
+    return interval_congruence_t(this->_first.UDiv(x.first()),
+                                 this->_second.UDiv(x.second()));
+  }
 
-    interval_congruence_t SDiv(interval_congruence_t x){
-      interval_congruence_t y(this->_first.SDiv(x.first()),
-                              this->_second.SDiv(x.second()));
-      y.reduce();
-      return y;
-    }
+  interval_congruence_t SRem(interval_congruence_t x) {
+    return interval_congruence_t(this->_first.SRem(x.first()),
+                                 this->_second.SRem(x.second()));
+  }
 
-    interval_congruence_t UDiv(interval_congruence_t x){
-      interval_congruence_t y(this->_first.UDiv(x.first()),
-                              this->_second.UDiv(x.second()));
-      y.reduce();
-      return y;
-    }
+  interval_congruence_t URem(interval_congruence_t x) {
+    return interval_congruence_t(this->_first.URem(x.first()),
+                                 this->_second.URem(x.second()));
+  }
 
-    interval_congruence_t SRem(interval_congruence_t x){
-      interval_congruence_t y(this->_first.SRem(x.first()),
-                              this->_second.SRem(x.second()));
-      y.reduce();
-      return y;
-    }
+  // bitwise operations
 
-    interval_congruence_t URem(interval_congruence_t x){
-      interval_congruence_t y(this->_first.URem(x.first()),
-                              this->_second.URem(x.second()));
-      y.reduce();
-      return y;
-    }
-   
-    // bitwise operations
+  interval_congruence_t Trunc(unsigned width) {
+    return interval_congruence_t(this->_first.Trunc(width),
+                                 this->_second.Trunc(width));
+  }
 
-    interval_congruence_t Trunc(unsigned width){
-      interval_congruence_t y(this->_first.Trunc(width),
-                              this->_second.Trunc(width));
-      y.reduce();
-      return y;
-    }
+  interval_congruence_t ZExt(unsigned width) {
+    return interval_congruence_t(this->_first.ZExt(width),
+                                 this->_second.ZExt(width));
+  }
 
-    interval_congruence_t ZExt(unsigned width){
-      interval_congruence_t y(this->_first.ZExt(width),
-                              this->_second.ZExt(width));
-      y.reduce();
-      return y;
-    }
-    
-    interval_congruence_t SExt(unsigned width){
-      interval_congruence_t y(this->_first.SExt(width),
-                              this->_second.SExt(width));
-      y.reduce();
-      return y;
-    }
+  interval_congruence_t SExt(unsigned width) {
+    return interval_congruence_t(this->_first.SExt(width),
+                                 this->_second.SExt(width));
+  }
 
-    interval_congruence_t And(interval_congruence_t x){
-      interval_congruence_t y(this->_first.And(x.first()),
-                              this->_second.And(x.second()));
-      y.reduce();
-      return y;
-    }
+  interval_congruence_t And(interval_congruence_t x) {
+    return interval_congruence_t(this->_first.And(x.first()),
+                                 this->_second.And(x.second()));
+  }
 
-    interval_congruence_t Or(interval_congruence_t x){
-      interval_congruence_t y(this->_first.Or(x.first()),
-                              this->_second.Or(x.second()));
-      y.reduce();
-      return y;
-    }
+  interval_congruence_t Or(interval_congruence_t x) {
+    return interval_congruence_t(this->_first.Or(x.first()),
+                                 this->_second.Or(x.second()));
+  }
 
-    interval_congruence_t Xor(interval_congruence_t x){
-      interval_congruence_t y(this->_first.Xor(x.first()),
-                              this->_second.Xor(x.second()));
-      y.reduce();
-      return y;
-    }
+  interval_congruence_t Xor(interval_congruence_t x) {
+    return interval_congruence_t(this->_first.Xor(x.first()),
+                                 this->_second.Xor(x.second()));
+  }
 
-    
-    interval_congruence_t Shl(interval_congruence_t x){
-      interval_congruence_t y(this->_first.Shl(x.first()),
-                              this->_second.Shl(x.second()));
-      y.reduce();
-      return y;
-    }
+  interval_congruence_t Shl(interval_congruence_t x) {
+    return interval_congruence_t(this->_first.Shl(x.first()),
+                                 this->_second.Shl(x.second()));
+  }
 
-    interval_congruence_t LShr(interval_congruence_t x){
-      interval_congruence_t y(this->_first.LShr(x.first()),
-                              this->_second.LShr(x.second()));
-      y.reduce();
-      return y;
-    }
+  interval_congruence_t LShr(interval_congruence_t x) {
+    return interval_congruence_t(this->_first.LShr(x.first()),
+                                 this->_second.LShr(x.second()));
+  }
 
-    interval_congruence_t AShr(interval_congruence_t x){
-      interval_congruence_t y(this->_first.AShr(x.first()),
-                              this->_second.AShr(x.second()));
-      y.reduce();
-      return y;
-    }
+  interval_congruence_t AShr(interval_congruence_t x) {
+    return interval_congruence_t(this->_first.AShr(x.first()),
+                                 this->_second.AShr(x.second()));
+  }
+};
 
-}; 
+template < typename Number, typename VariableName, int typeSize = -1 >
+class interval_congruence_domain
+    : public writeable,
+      public numerical_domain< Number, VariableName >,
+      public bitwise_operators< Number, VariableName >,
+      public division_operators< Number, VariableName > {
+public:
+  // note that this is assuming that all variables have the same
+  // bit width for the congruence domain which is unrealistic.
+  typedef interval_congruence< Number, typeSize > interval_congruence_t;
+  typedef interval_congruence_domain< Number, VariableName, typeSize >
+      interval_congruence_domain_t;
 
-  template< typename Number, typename VariableName, std::size_t max_reduction_cycles = 3, int typeSize = -1>
-  class interval_congruence_domain: public writeable, 
-                                    public numerical_domain< Number, VariableName >,
-                                    public bitwise_operators< Number, VariableName >, 
-                                    public division_operators< Number, VariableName > {
+public:
+  typedef variable< Number, VariableName > variable_t;
+  typedef patricia_tree_set< variable_t > variable_set_t;
+  typedef interval< Number > interval_t;
+  typedef congruence< Number, typeSize > congruence_t;
+  typedef linear_expression< Number, VariableName > linear_expression_t;
+  typedef linear_constraint< Number, VariableName > linear_constraint_t;
+  typedef linear_constraint_system< Number, VariableName >
+      linear_constraint_system_t;
 
-   public:
-    // note that this is assuming that all variables have the same
-    // bit width for the congruence domain which is unrealistic.
-    typedef interval_congruence< Number, typeSize> interval_congruence_t;
-    typedef interval_congruence_domain< Number, VariableName, max_reduction_cycles, typeSize > 
-                                                             interval_congruence_domain_t;
+private:
+  typedef interval_domain< Number, VariableName > interval_domain_t;
+  typedef congruence_domain< Number, VariableName, typeSize >
+      congruence_domain_t;
+  typedef numerical_domain_product2< Number,
+                                     VariableName,
+                                     interval_domain_t,
+                                     congruence_domain_t > domain_product2_t;
 
-   public:
-    typedef variable< Number, VariableName > variable_t;
-    typedef linear_expression< Number, VariableName >        linear_expression_t;
-    typedef linear_constraint< Number, VariableName >        linear_constraint_t;
-    typedef linear_constraint_system< Number, VariableName > linear_constraint_system_t;
-    
-   private:
-    typedef interval_domain< Number, VariableName> interval_domain_t;
-    typedef congruence_domain< Number, VariableName, typeSize> congruence_domain_t;
-    typedef numerical_domain_product2< Number, VariableName, 
-                                       interval_domain_t, congruence_domain_t > domain_product2_t;
-                                       
-   private:
-    domain_product2_t _product;
+private:
+  domain_product2_t _product;
 
-   private:
-    interval_congruence_domain(domain_product2_t product): _product(product) { }
+private:
+  interval_congruence_domain(const domain_product2_t& product)
+      : _product(product) {}
 
+  void reduce_variable(const VariableName& v) {
+    if (is_bottom())
+      return;
 
-    void reduce() {
+    interval_t i = this->_product.first()[v];
+    congruence_t c = this->_product.second()[v];
+    interval_congruence_t val(i, c);
 
-      interval_domain_t   I = this->_product.first();
-      congruence_domain_t C = this->_product.second();
-
-      if (I.is_bottom() || C.is_bottom()) {
-          _product = domain_product2_t::bottom();
-          return;
+    if (val.is_bottom()) {
+      *this = bottom();
+    } else {
+      if (val.first() != i) {
+        this->_product.first().set(v, val.first());
       }
-
-      // In general, the reduce operation may need a fixpoint.
-      bool change=true;
-      unsigned int num_iters = 0;
-      while (change && (num_iters < max_reduction_cycles)){
-        change=false;
-        num_iters++;
-
-        for(typename interval_domain_t::iterator it = I.begin(); it != I.end(); ++it){
-          VariableName var_name = (*it).first;
-          interval_congruence_t old_val((*it).second, C[var_name]);
-          // An interval can only improve a congruence if the
-          // congruence is top and the interval is a singleton.
-          if (!old_val.first().is_top() && old_val.second().is_top()){
-            interval_congruence_t new_val(old_val);
-            new_val.reduce();
-            change = (new_val.second() != old_val.second());
-            if (change)
-              C[var_name] = new_val.second();
-          }
-        } // end for
-
-        for(typename congruence_domain_t::iterator it = C.begin(); it != C.end(); ++it){
-          VariableName var_name = (*it).first;
-          interval_congruence_t old_val(I[var_name], (*it).second);
-          interval_congruence_t new_val(old_val);
-          new_val.reduce();
-          change = ( new_val.first()!=old_val.first() || new_val.second()!=old_val.second());
-          if (change){
-            I[var_name] = new_val.first();
-            C[var_name] = new_val.second();
-          }
-        } // end for
-      } // end while
+      if (val.second() != c) {
+        this->_product.second().set(v, val.second());
+      }
     }
+  }
 
-   public:
-    static interval_congruence_domain_t top() {
-      return interval_congruence_domain_t(domain_product2_t::top());
+  template < typename Iterator >
+  void reduce_variables(Iterator first, Iterator last) {
+    for (Iterator it = first; !is_bottom() && it != last; ++it) {
+      this->reduce_variable(*it);
     }
-    
-    static interval_congruence_domain_t bottom() {
-      return interval_congruence_domain_t(domain_product2_t::bottom());
-    }
-    
-   public:
+  }
 
-    interval_congruence_domain(): _product() { }
-    
-    interval_congruence_domain(const interval_congruence_domain_t& other): 
-       writeable(), 
-       numerical_domain< Number, VariableName >(), 
-       bitwise_operators< Number, VariableName >(),
-       division_operators< Number, VariableName > (),
-       _product(other._product) { }
-    
-    interval_congruence_domain_t& operator=(interval_congruence_domain_t other) {
-      this->_product = other._product;
-      return *this;
+  void reduce_variables(variable_set_t variables) {
+    for (typename variable_set_t::iterator it = variables.begin();
+         !is_bottom() && it != variables.end();
+         ++it) {
+      this->reduce_variable((*it).name());
     }
+  }
 
-    bool is_bottom() {
-      return this->_product.is_bottom();
-    }
+public:
+  static interval_congruence_domain_t top() {
+    return interval_congruence_domain_t(domain_product2_t::top());
+  }
 
-    bool is_top() {
-      return this->_product.is_top();
-    }
+  static interval_congruence_domain_t bottom() {
+    return interval_congruence_domain_t(domain_product2_t::bottom());
+  }
 
-    interval_domain_t& first() {
-      return this->_product.first();
-    }
+public:
+  interval_congruence_domain() : _product() {}
 
-    congruence_domain_t& second() {
-      return this->_product.second();
-    }
+  interval_congruence_domain(const interval_congruence_domain_t& other)
+      : writeable(),
+        numerical_domain< Number, VariableName >(),
+        bitwise_operators< Number, VariableName >(),
+        division_operators< Number, VariableName >(),
+        _product(other._product) {}
 
-    bool operator<=(interval_congruence_domain_t other) {
-      return (this->_product <= other._product);
-    }
+  interval_congruence_domain_t& operator=(
+      const interval_congruence_domain_t& other) {
+    this->_product = other._product;
+    return *this;
+  }
 
-    bool operator==(interval_congruence_domain_t other) {
-      return (this->_product == other._product);
-    }
+  bool is_bottom() { return this->_product.is_bottom(); }
 
-    interval_congruence_domain_t operator|(interval_congruence_domain_t other) {
-      return interval_congruence_domain_t(this->_product | other._product);
-    }
+  bool is_top() { return this->_product.is_top(); }
 
-    interval_congruence_domain_t operator&(interval_congruence_domain_t other) {
-      return interval_congruence_domain_t(this->_product & other._product);
-    }
+  interval_domain_t& first() { return this->_product.first(); }
 
-    interval_congruence_domain_t operator||(interval_congruence_domain_t other) {
-      return interval_congruence_domain_t(this->_product || other._product);
-    }
+  congruence_domain_t& second() { return this->_product.second(); }
 
-    interval_congruence_domain_t operator&&(interval_congruence_domain_t other) {
-      return interval_congruence_domain_t(this->_product && other._product);
-    }
+  bool operator<=(interval_congruence_domain_t other) {
+    return this->_product <= other._product;
+  }
 
-    // pre: x is already reduced
-    void set(VariableName v, interval_congruence_t x) {
-      this->_product.first().set(v, x.first());
-      this->_product.second().set(v, x.second());
-    }
+  bool operator==(interval_congruence_domain_t other) {
+    return this->_product == other._product;
+  }
 
-    interval_congruence_t operator[](VariableName v) {
-      return interval_congruence_t(this->_product.first()[v], this->_product.second()[v]);
-    }
+  interval_congruence_domain_t operator|(interval_congruence_domain_t other) {
+    return interval_congruence_domain_t(this->_product | other._product);
+  }
 
-    void operator+=(linear_constraint_system_t csts) {
-      this->_product.first() += csts;
-      this->_product.second() += csts;
-      this->reduce();
-    }
+  interval_congruence_domain_t operator&(interval_congruence_domain_t other) {
+    return interval_congruence_domain_t(this->_product & other._product);
+  }
 
-    void operator-=(VariableName v) {
-      this->_product.first() -= v;
-      this->_product.second() -= v;
-    }
+  interval_congruence_domain_t operator||(interval_congruence_domain_t other) {
+    return interval_congruence_domain_t(this->_product || other._product);
+  }
 
-    void assign(VariableName x, linear_expression_t e) {
-      this->_product.first().assign(x, e);
-      this->_product.second().assign(x, e);
-    }
+  interval_congruence_domain_t operator&&(interval_congruence_domain_t other) {
+    return interval_congruence_domain_t(this->_product && other._product);
+  }
 
-    void apply(operation_t op, VariableName x, VariableName y, VariableName z) {
-      this->_product.first().apply(op, x, y, z);
-      this->_product.second().apply(op, x, y, z);
-      this->reduce();
-    }
+  // pre: x is already reduced
+  void set(VariableName v, interval_congruence_t x) {
+    this->_product.first().set(v, x.first());
+    this->_product.second().set(v, x.second());
+  }
 
-    void apply(operation_t op, VariableName x, VariableName y, Number k) {
-      this->_product.first().apply(op, x, y, k);
-      this->_product.second().apply(op, x, y, k);
-      this->reduce();
-    }
+  interval_congruence_t operator[](VariableName v) {
+    return interval_congruence_t(this->_product.first()[v],
+                                 this->_product.second()[v]);
+  }
 
-    // bitwise_operators_api
-    
-    void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width){
-      this->_product.first().apply(op, x, y, width);
-      this->_product.second().apply(op, x, y, width);
-      this->reduce();
-    }
+  void operator+=(linear_constraint_system_t csts) {
+    this->_product += csts;
+    this->reduce_variables(csts.variables());
+  }
 
-    void apply(conv_operation_t op, VariableName x, Number k, unsigned width){
-      this->_product.first().apply(op, x, k, width);
-      this->_product.second().apply(op, x, k, width);
-      this->reduce();
-    }
+  void operator-=(VariableName v) { this->_product -= v; }
 
-    void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z){
-      this->_product.first().apply(op, x, y, z);
-      this->_product.second().apply(op, x, y, z);
-      this->reduce();
+  void operator-=(std::vector< VariableName > vs) {
+    for (typename std::vector< VariableName >::iterator it = vs.begin(),
+                                                        end = vs.end();
+         it != end;
+         ++it) {
+      this->operator-=(*it);
     }
-    
-    void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k){
-      this->_product.first().apply(op, x, y, k);
-      this->_product.second().apply(op, x, y, k);
-      this->reduce();
-    }
-    
-    // division_operators_api
-    
-    void apply(div_operation_t op, VariableName x, VariableName y, VariableName z){
-      this->_product.first().apply(op, x, y, z);
-      this->_product.second().apply(op, x, y, z);
-      this->reduce();
-    }
+  }
 
-    void apply(div_operation_t op, VariableName x, VariableName y, Number k){
-      this->_product.first().apply(op, x, y, k);
-      this->_product.second().apply(op, x, y, k);
-      this->reduce();
+  void assign(VariableName x, linear_expression_t e) {
+    this->_product.assign(x, e);
+    this->reduce_variable(x);
+  }
 
-    }
-    
-    std::ostream& write(std::ostream& o) {
-      return this->_product.write(o);
-    }
+  void apply(operation_t op, VariableName x, VariableName y, VariableName z) {
+    this->_product.apply(op, x, y, z);
+    this->reduce_variable(x);
+  }
 
-    linear_constraint_system_t to_linear_constraint_system ()
-    {
-      this->reduce();
-      return this->_product.first().to_linear_constraint_system();
-    }
+  void apply(operation_t op, VariableName x, VariableName y, Number k) {
+    this->_product.apply(op, x, y, k);
+    this->reduce_variable(x);
+  }
 
-    const char* getDomainName () const {return "Intervals+Congruences";}
+  // bitwise_operators_api
 
-  }; // class interval_congruence_domain
+  void apply(conv_operation_t op,
+             VariableName x,
+             VariableName y,
+             unsigned width) {
+    this->_product.apply(op, x, y, width);
+    this->reduce_variable(x);
+  }
+
+  void apply(conv_operation_t op, VariableName x, Number k, unsigned width) {
+    this->_product.apply(op, x, k, width);
+    this->reduce_variable(x);
+  }
+
+  void apply(bitwise_operation_t op,
+             VariableName x,
+             VariableName y,
+             VariableName z) {
+    this->_product.apply(op, x, y, z);
+    this->reduce_variable(x);
+  }
+
+  void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k) {
+    this->_product.apply(op, x, y, k);
+    this->reduce_variable(x);
+  }
+
+  // division_operators_api
+
+  void apply(div_operation_t op,
+             VariableName x,
+             VariableName y,
+             VariableName z) {
+    this->_product.apply(op, x, y, z);
+    this->reduce_variable(x);
+  }
+
+  void apply(div_operation_t op, VariableName x, VariableName y, Number k) {
+    this->_product.apply(op, x, y, k);
+    this->reduce_variable(x);
+  }
+
+  std::ostream& write(std::ostream& o) { 
+    this->_product.write(o); 
+    return o;
+  }
+
+  linear_constraint_system_t to_linear_constraint_system() {
+    return this->_product.first().to_linear_constraint_system();
+  }
+
+  const char* getDomainName() const { return "Intervals+Congruences"; }
+
+}; // class interval_congruence_domain
 
 } // namespace ikos
 

@@ -1086,7 +1086,12 @@ namespace ikos {
       return o;
     }
 
-    const char* getDomainName () const {return "term(D)";}
+    const char* getDomainName () const { 
+      std::stringstream buf;
+      buf << "term(" << _impl.getDomainName () << ")";
+      std::string name(buf.str());
+      return name.c_str ();
+    }
 
   }; // class anti_unif
 

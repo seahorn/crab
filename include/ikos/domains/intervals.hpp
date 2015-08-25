@@ -2,10 +2,46 @@
  *
  * Standard domain of intervals.
  *
- * The resolution of a system of linear constraints over the domain of
- * intervals is based on W. Harvey & P. J. Stuckey's paper: Improving
- * linear constraint propagation by changing constraint
- * representation, in Constraints, 8(2):173–207, 2003.
+ * Author: Arnaud J. Venet (arnaud.j.venet@nasa.gov)
+ *
+ * Contributors: Alexandre C. D. Wimmers (alexandre.c.wimmers@nasa.gov)
+ *
+ * The resolution of a system of linear constraints over the domain of intervals
+ * is based on W. Harvey & P. J. Stuckey's paper: Improving linear constraint
+ * propagation by changing constraint representation, in Constraints,
+ * 8(2):173–207, 2003.
+ *
+ * Notices:
+ *
+ * Copyright (c) 2011 United States Government as represented by the
+ * Administrator of the National Aeronautics and Space Administration.
+ * All Rights Reserved.
+ *
+ * Disclaimers:
+ *
+ * No Warranty: THE SUBJECT SOFTWARE IS PROVIDED "AS IS" WITHOUT ANY WARRANTY OF
+ * ANY KIND, EITHER EXPRESSED, IMPLIED, OR STATUTORY, INCLUDING, BUT NOT LIMITED
+ * TO, ANY WARRANTY THAT THE SUBJECT SOFTWARE WILL CONFORM TO SPECIFICATIONS,
+ * ANY IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
+ * OR FREEDOM FROM INFRINGEMENT, ANY WARRANTY THAT THE SUBJECT SOFTWARE WILL BE
+ * ERROR FREE, OR ANY WARRANTY THAT DOCUMENTATION, IF PROVIDED, WILL CONFORM TO
+ * THE SUBJECT SOFTWARE. THIS AGREEMENT DOES NOT, IN ANY MANNER, CONSTITUTE AN
+ * ENDORSEMENT BY GOVERNMENT AGENCY OR ANY PRIOR RECIPIENT OF ANY RESULTS,
+ * RESULTING DESIGNS, HARDWARE, SOFTWARE PRODUCTS OR ANY OTHER APPLICATIONS
+ * RESULTING FROM USE OF THE SUBJECT SOFTWARE.  FURTHER, GOVERNMENT AGENCY
+ * DISCLAIMS ALL WARRANTIES AND LIABILITIES REGARDING THIRD-PARTY SOFTWARE,
+ * IF PRESENT IN THE ORIGINAL SOFTWARE, AND DISTRIBUTES IT "AS IS."
+ *
+ * Waiver and Indemnity:  RECIPIENT AGREES TO WAIVE ANY AND ALL CLAIMS AGAINST
+ * THE UNITED STATES GOVERNMENT, ITS CONTRACTORS AND SUBCONTRACTORS, AS WELL
+ * AS ANY PRIOR RECIPIENT.  IF RECIPIENT'S USE OF THE SUBJECT SOFTWARE RESULTS
+ * IN ANY LIABILITIES, DEMANDS, DAMAGES, EXPENSES OR LOSSES ARISING FROM SUCH
+ * USE, INCLUDING ANY DAMAGES FROM PRODUCTS BASED ON, OR RESULTING FROM,
+ * RECIPIENT'S USE OF THE SUBJECT SOFTWARE, RECIPIENT SHALL INDEMNIFY AND HOLD
+ * HARMLESS THE UNITED STATES GOVERNMENT, ITS CONTRACTORS AND SUBCONTRACTORS,
+ * AS WELL AS ANY PRIOR RECIPIENT, TO THE EXTENT PERMITTED BY LAW.
+ * RECIPIENT'S SOLE REMEDY FOR ANY SUCH MATTER SHALL BE THE IMMEDIATE,
+ * UNILATERAL TERMINATION OF THIS AGREEMENT.
  *
  ******************************************************************************/
 
@@ -292,6 +328,12 @@ namespace ikos {
 
   private:
     interval(): _lb(0), _ub(-1) { }
+
+    static Number abs(Number x) { return x < 0 ? -x : x; }
+    
+    static Number max(Number x, Number y) { return x.operator<=(y) ? y : x; }
+    
+    static Number min(Number x, Number y) { return x.operator<(y) ? x : y; }
     
   public:
     interval(bound_t lb, bound_t ub): _lb(lb), _ub(ub) { 
@@ -489,18 +531,30 @@ namespace ikos {
 
     // division and remainder operations
 
-    interval_t UDiv(interval_t /* x */){
-      return interval_t::top();
+    interval_t UDiv(interval_t x ){
+      if (this->is_bottom() || x.is_bottom()) {
+        return this->bottom();
+      } else {
+        return this->top();
+      }
     }
 
-    interval_t SRem(interval_t /* x */){
-      return interval_t::top();
+    interval_t SRem(interval_t x)  {
+      if (this->is_bottom() || x.is_bottom()) {
+        return this->bottom();
+      } else {
+        return this->top();
+      }
     }
 
-    interval_t URem(interval_t /* x */){
-      return interval_t::top();
+    interval_t URem(interval_t x)  {
+      if (this->is_bottom() || x.is_bottom()) {
+        return this->bottom();
+      } else {
+        return this->top();
+      }
     }
-   
+
     // bitwise operations
 
     interval_t Trunc(unsigned /* width */){
@@ -515,43 +569,46 @@ namespace ikos {
       return *this;
     }
 
-    interval_t And(interval_t /* x */){
-      return interval_t::top();
+    interval_t And(interval_t x)  {
+      if (this->is_bottom() || x.is_bottom()) {
+        return this->bottom();
+      } else {
+      return this->top();
+      }
     }
 
-    interval_t Or(interval_t /* x */){
-      return interval_t::top();
+    interval_t Or(interval_t x)  {
+      if (this->is_bottom() || x.is_bottom()) {
+        return this->bottom();
+      } else {
+        return this->top();
+      }
     }
-
-    interval_t Xor(interval_t /* x */){
-      return interval_t::top();
-    }
-
     
-    interval_t Shl(interval_t x){
-      if (this->is_bottom()){
-        return *this;
-      }
-      else{
-        boost::optional< Number > shift = x.singleton();
-        if (shift) {      
-          int factor = 1;
-          for (int i = 0; (*shift) > i; i++) 
-            factor *= 2;
-          return (*this) * Number(factor);
-        }
-        else{
-          return interval_t::top();
-        }
+    interval_t Xor(interval_t x)  { return this->Or(x); }
+    
+    interval_t Shl(interval_t x)  {
+      if (this->is_bottom() || x.is_bottom()) {
+        return this->bottom();
+      } else {
+        return this->top();
       }
     }
 
-    interval_t LShr(interval_t  /* x */){
-      return interval_t::top();
+    interval_t LShr(interval_t  x) {
+      if (this->is_bottom() || x.is_bottom()) {
+        return this->bottom();
+      } else {
+        return this->top();
+      }
     }
 
-    interval_t AShr(interval_t  /* x */){
-      return interval_t::top();
+    interval_t AShr(interval_t  x) {
+      if (this->is_bottom() || x.is_bottom()) {
+        return this->bottom();
+      } else {
+        return this->top();
+      }
     }
     
   };//  class interval
@@ -599,12 +656,192 @@ namespace ikos {
 	return ((l / x) | (u / x) | z_interval(z_number(0)));
       } else {
 	// Neither the dividend nor the divisor contains 0
-	z_interval a = (this->_ub < 0) ? (*this + ((x._ub < 0) ? (x + z_interval(z_number(1))) : (z_interval(z_number(1)) - x))) : *this;
+	z_interval a = (this->_ub < 0) ? 
+              (*this + ((x._ub < 0) ? 
+                        (x + z_interval(z_number(1))) : 
+                        (z_interval(z_number(1)) - x))) : *this;
 	bound_t ll = a._lb / x._lb;
 	bound_t lu = a._lb / x._ub;
 	bound_t ul = a._ub / x._lb;
 	bound_t uu = a._ub / x._ub;
 	return interval_t(bound_t::min(ll, lu, ul, uu), bound_t::max(ll, lu, ul, uu));	
+      }
+    }
+  }
+
+
+  template <>
+  inline interval< z_number > interval< z_number >::
+  SRem(interval< z_number > x) {
+    // note that the sign of the divisor does not matter
+    typedef interval< z_number > z_interval;
+    
+    if (this->is_bottom() || x.is_bottom()) {
+      return this->bottom();
+    } else if (this->singleton() && x.singleton()) {
+      z_number dividend = *this->singleton();
+      z_number divisor = *x.singleton();
+      
+      if (divisor == 0) {
+        return this->bottom();
+      }
+      
+      return interval_t(dividend % divisor);
+    } else if (x.ub().is_finite() && x.lb().is_finite()) {
+      z_number max_divisor = max(abs(*x.lb().number()), 
+                                 abs(*x.ub().number()));
+      
+      if (max_divisor == 0) {
+        return this->bottom();
+      }
+      
+      if (this->lb() < 0) {
+        if (this->ub() > 0) {
+          return interval_t(-(max_divisor - 1), max_divisor - 1);
+        } else {
+          return interval_t(-(max_divisor - 1), 0);
+        }
+      } else {
+        return interval_t(0, max_divisor - 1);
+      }
+    } else {
+      return this->top();
+    }
+  }
+
+  template <>
+  inline interval< z_number > interval< z_number >::
+  URem(interval< z_number > x) {
+    typedef interval< z_number > z_interval;
+    
+    if (this->is_bottom() || x.is_bottom()) {
+      return this->bottom();
+    } else if (this->singleton() && x.singleton()) {
+      z_number dividend = *this->singleton();
+      z_number divisor = *x.singleton();
+      
+      if (divisor < 0) {
+        return this->top();
+      } else if (divisor == 0) {
+        return this->bottom();
+      } else if (dividend < 0) {
+        // dividend is treated as an unsigned integer.
+        // we would need the size to be more precise
+        return interval_t(0, divisor - 1);
+      } else {
+        return interval_t(dividend % divisor);
+      }
+    } else if (x.ub().is_finite() && x.lb().is_finite()) {
+      z_number max_divisor = *x.ub().number();
+      
+      if (x.lb() < 0 || x.ub() < 0) {
+        return this->top();
+      } else if (max_divisor == 0) {
+        return this->bottom();
+      }
+      
+      return interval_t(0, max_divisor - 1);
+    } else {
+      return this->top();
+    }
+  }
+
+  template <>
+  inline interval< z_number > interval< z_number >::
+  And(interval< z_number > x) {
+    if (this->is_bottom() || x.is_bottom()) {
+      return this->bottom();
+    } else {
+      boost::optional< z_number > left_op = this->singleton();
+      boost::optional< z_number > right_op = x.singleton();
+      
+      if (left_op && right_op) {
+        return interval_t((*left_op) & (*right_op));
+      } else if (this->lb() >= 0 || x.lb() >= 0) {
+        return interval_t(0, bound_t::min(this->ub(), x.ub()));
+      } else {
+        return this->top();
+      }
+    }
+  }
+
+  template <>
+  inline interval< z_number > interval< z_number >::
+  Or(interval< z_number > x) {
+    if (this->is_bottom() || x.is_bottom()) {
+      return this->bottom();
+    } else {
+      boost::optional< z_number > left_op = this->singleton();
+      boost::optional< z_number > right_op = x.singleton();
+      
+      if (left_op && right_op) {
+        return interval_t((*left_op) | (*right_op));
+      } else if (this->lb() >= 0 && x.lb() >= 0) {
+        boost::optional< z_number > left_ub = this->ub().number();
+        boost::optional< z_number > right_ub = x.ub().number();
+        
+        if (left_ub && right_ub) {
+          z_number m = (*left_ub > *right_ub ? *left_ub : *right_ub); 
+          return interval_t(0, m.fill_ones());
+        } else {
+          return interval_t(0, bound_t::plus_infinity());
+        }
+      } else {
+        return this->top();
+      }
+    }
+  }
+
+  template <>
+  inline interval< z_number > interval< z_number >::
+  Xor(interval< z_number > x) {
+    if (this->is_bottom() || x.is_bottom()) {
+      return this->bottom();
+    } else {
+      boost::optional< z_number > left_op = this->singleton();
+      boost::optional< z_number > right_op = x.singleton();
+      
+      if (left_op && right_op) {
+        return interval_t((*left_op) ^ (*right_op));
+      } else {
+        return this->Or(x);
+      }
+    }
+  }
+
+  template <>
+  inline interval< z_number > interval< z_number >::
+  Shl(interval< z_number > x) {
+    if (this->is_bottom() || x.is_bottom()) {
+      return this->bottom();
+    } else {
+      boost::optional< z_number > shift = x.singleton();
+      if (shift) {
+        z_number factor = 1;
+        for (int i = 0; (*shift) > i; i++) {
+          factor *= 2;
+        }
+        return (*this) * factor;
+      } else {
+        return this->top();
+      }
+    }
+  }
+
+  template <>
+  inline interval< z_number > interval< z_number >::
+  LShr(interval< z_number > x) {
+    if (this->is_bottom() || x.is_bottom()) {
+      return this->bottom();
+    } else {
+      boost::optional< z_number > shift = x.singleton();
+      
+      if (this->lb() >= 0 && this->ub().is_finite() && shift) {
+        z_number lb = *this->lb().number();
+        z_number ub = *this->ub().number();
+        return interval< z_number >(lb >> *shift, ub >> *shift);
+      } else {
+        return this->top();
       }
     }
   }
@@ -707,7 +944,8 @@ namespace ikos {
     
   private:
     static const std::size_t _large_system_cst_threshold = 3;
-    static const std::size_t _large_system_op_threshold = 27; // cost of one propagation cycle for a dense 3x3 system of constraints 
+    // cost of one propagation cycle for a dense 3x3 system of constraints 
+    static const std::size_t _large_system_op_threshold = 27; 
 
   private:
     void refine(variable_t v, interval_t i, IntervalCollection& env) {
@@ -801,7 +1039,8 @@ namespace ikos {
     
     
   public:
-    linear_interval_solver(linear_constraint_system_t csts, std::size_t max_cycles): _max_cycles(max_cycles), _is_contradiction(false), _is_large_system(false), _op_count(0) {
+    linear_interval_solver(linear_constraint_system_t csts, std::size_t max_cycles): 
+        _max_cycles(max_cycles), _is_contradiction(false), _is_large_system(false), _op_count(0) {
       std::size_t op_per_cycle = 0;
       for (typename linear_constraint_system_t::iterator it = csts.begin(); it != csts.end(); ++it) {
 	linear_constraint_t cst = *it;
@@ -813,11 +1052,15 @@ namespace ikos {
 	} else {
 	  std::size_t cst_size = cst.size();
 	  this->_cst_table.push_back(cst);
-	  op_per_cycle += cst_size * cst_size; // cost of one reduction step on the constraint in terms of accesses to the interval collection
+            // cost of one reduction step on the constraint in terms
+            // of accesses to the interval collection
+	  op_per_cycle += cst_size * cst_size; 
 	}
       }
 
-      this->_is_large_system = (this->_cst_table.size() > _large_system_cst_threshold) || (op_per_cycle > _large_system_op_threshold);
+      this->_is_large_system = (this->_cst_table.size() > 
+                                _large_system_cst_threshold) || 
+          (op_per_cycle > _large_system_op_threshold);
       
       if (!this->_is_contradiction && this->_is_large_system) {
 	this->_max_op = op_per_cycle * max_cycles;
