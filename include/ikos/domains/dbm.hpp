@@ -3,7 +3,7 @@
  * Difference Bounds Matrix domain
  *
  * Based on the paper "Fast and Flexible Difference Constraint
- * Propagation for DPLL(T) by Cotton and Maler.
+ * Propagation for DPLL(T)" by Cotton and Maler.
  *
  * C++ wrapper for a C implementation written by 
  * Graeme Gange (gkgange@unimelb.edu.au)
@@ -15,7 +15,6 @@
 //#define _IKOS_DEBUG_
 #include <ikos/common/dbg.hpp>
 
-#include <ikos/common/mergeable_map.hpp>
 #include <ikos/common/types.hpp>
 #include <ikos/algorithms/linear_constraints.hpp>
 #include <ikos/domains/dbm/dbm.h>
@@ -28,6 +27,7 @@
 
 #include <boost/optional.hpp>
 #include <boost/unordered_set.hpp>
+#include <boost/unordered_map.hpp>
 #include <boost/lexical_cast.hpp>
 
 namespace ikos {
@@ -57,7 +57,9 @@ namespace DBM_impl
 
 }; // end namespace DBM_impl
 
-template< class Number, class VariableName, std::size_t Sz = 300> 
+// Sz should be the maximum number of live variables expected per
+// block (assuming a block is mapped to an abstract state)
+template< class Number, class VariableName, unsigned Sz = 300> 
 class DBM: public writeable,
            public numerical_domain<Number, VariableName >,
            public bitwise_operators<Number,VariableName >,
@@ -78,15 +80,13 @@ class DBM: public writeable,
   typedef interval_domain< Number, VariableName > intervals_t;
 
   typedef int id_t;
-  //! map variable name to id
-  typedef container::flat_map< VariableName, id_t > var_map_t;
+  //! map variable name to id (must be an ordered container)
+  typedef std::map<VariableName, id_t> var_map_t;
   //! map back id to variable name
-  typedef boost::unordered_map < id_t, VariableName> rev_map_t;
-  
- private:
-  
+  typedef boost::unordered_map <id_t, VariableName> rev_map_t;
   dbm _dbm;
   id_t _id;
+  // class invariant: for all variable v. rev_map (var_map(v)) = v
   var_map_t _var_map;
   rev_map_t _rev_map;
 
@@ -94,7 +94,7 @@ class DBM: public writeable,
   bool has_edge(int i, int j) {
     return (src_is_live(_dbm, i) && in_graph(_dbm, i, j));
   }
-                         
+
   // special variables
   inline int get_zero(){ return (int) Sz-1; }
   inline int get_tmp() { return (int) Sz-2; }
@@ -104,6 +104,8 @@ class DBM: public writeable,
                            id_t &id,
                            vector<rmap>& subs_x, 
                            vector<rmap>& subs_y) { 
+
+    assert (id == 0);
 
     // preserve map for special zero variable
     subs_x.push_back (rmap {get_zero (), get_zero ()});
@@ -117,19 +119,25 @@ class DBM: public writeable,
         res.insert (make_pair (x_it->first, id));
         subs_x.push_back (rmap {(*x_it).second, id});
         ++id;
-        y_it++;
+        if (id >= Sz -2)
+          IKOS_ERROR("DBM: need to enlarge the matrix.");
+        x_it++;
       }
       else if ((*y_it).first < (*x_it).first) {
         res.insert (make_pair (y_it->first, id));
         subs_y.push_back (rmap {(*y_it).second, id});
         ++id;
-        x_it++;
+        if (id >= Sz -2)
+          IKOS_ERROR("DBM: need to enlarge the matrix.");
+        y_it++;
       }
       else {
         res.insert (make_pair (x_it->first, id));
         subs_x.push_back (rmap {(*x_it).second, id});
         subs_y.push_back (rmap {(*y_it).second, id});
         ++id;
+        if (id >= Sz -2)
+          IKOS_ERROR("DBM: need to enlarge the matrix.");
         y_it++;
         x_it++;
       }
@@ -143,6 +151,8 @@ class DBM: public writeable,
         res.insert (make_pair (x_it->first, id));
         subs_x.push_back (rmap {(*x_it).second, id});
         ++id;
+        if (id >= Sz -2)
+          IKOS_ERROR("DBM: need to enlarge the matrix.");
       }
     }
     else {
@@ -150,6 +160,8 @@ class DBM: public writeable,
         res.insert (make_pair (y_it->first, id));
         subs_x.push_back (rmap {(*y_it).second, id});
         ++id;
+        if (id >= Sz -2)
+          IKOS_ERROR("DBM: need to enlarge the matrix.");
       }
     }
     return res;
@@ -161,7 +173,7 @@ class DBM: public writeable,
       return it->second;
 
     id_t k = _id++;
-    if (k > (int) (Sz - 2))
+    if (k >= (int) (Sz - 2))
       IKOS_ERROR("DBM: need to enlarge the matrix.");
     
     _var_map.insert (make_pair (x, k));
@@ -175,7 +187,7 @@ class DBM: public writeable,
     if (it!= _rev_map.end ())
       return it->second;
 
-    IKOS_ERROR("DBM: index cannot be mapped to a variable name") ;
+    IKOS_ERROR("DBM: index ", k," cannot be mapped to a variable name") ;
   }
 
   // k is the index of a variable produced by get_dbm_index
@@ -198,7 +210,8 @@ class DBM: public writeable,
       _dbm(dbm), 
       _id (id),
       _var_map(var_map), 
-      _rev_map(rev_map) { }
+      _rev_map(rev_map) 
+  { }
 
  private:
 
@@ -218,7 +231,6 @@ class DBM: public writeable,
 
   // tmp := x
   void assign_tmp(VariableName x) {
-    // pre: forget(get_tmp())
     dexpr e1;     
     e1.args[0] = get_dbm_index(x);
     e1.args[1] = get_tmp();
@@ -262,8 +274,10 @@ class DBM: public writeable,
   }
 
   void set_to_bottom() {
-    dbm_dealloc(_dbm);
-    _dbm = dbm_bottom();
+    dbm_dealloc (_dbm);
+    _dbm = dbm_bottom ();
+    _var_map.clear ();
+    _rev_map.clear ();
   }
 
   void apply(operation_t op, VariableName x, id_t y, id_t z) { 	
@@ -346,7 +360,7 @@ class DBM: public writeable,
                       linear_constraint_t cst) {
 
     if (!(coef_x == 1 || coef_x == -1))
-      IKOS_ERROR("DBM: coefficients can be only 1 or -1");
+      return;
 
     if (coef_x == 1){
       uterm tx = uvar(get_dbm_index (x.name()));
@@ -472,8 +486,7 @@ class DBM: public writeable,
         {
           int k1 = edge_val(_dbm, get_dbm_index(y.name ()), get_dbm_index(x.name ()));
           int k2 = edge_val(_dbm, get_dbm_index(x.name ()), get_dbm_index(y.name ()));
-          if ( (k1 + k2 == 0) && (k1 == DBM_impl::ntoi<Number>(c)))
-          {
+          if ( (k1 + k2 == 0) && (k1 == DBM_impl::ntoi<Number>(c))) {
             set_to_bottom ();
           }
         }
@@ -513,7 +526,11 @@ class DBM: public writeable,
     return *this;
   }
 
-  ~DBM(){ dbm_dealloc(_dbm); }
+  ~DBM(){ 
+    dbm_dealloc(_dbm); 
+    _var_map.clear();
+    _rev_map.clear();
+  }
 
  public:
 
@@ -553,8 +570,9 @@ class DBM: public writeable,
       var_map_t var_map = merge_var_map (_var_map, o._var_map, 
                                          id, subs_x, subs_y);
 
+      // Build the reverse map
       rev_map_t rev_map;
-      for(auto &p: var_map)
+      for(auto p: var_map)
         rev_map.insert (make_pair (p.second, p.first));
 
       dbm dbm_x = NULL;
@@ -578,8 +596,8 @@ class DBM: public writeable,
       dbm_dealloc(dbm_y);
 
       IKOS_DEBUG ("Result join:\n",res);
-      return res;
 
+      return res;
     }
   } 
 
@@ -598,8 +616,9 @@ class DBM: public writeable,
       var_map_t var_map = merge_var_map (_var_map, o._var_map, 
                                          id, subs_x, subs_y);
 
+      // Build the reverse map
       rev_map_t rev_map;
-      for(auto &p: var_map)
+      for(auto p: var_map)
         rev_map.insert (make_pair (p.second, p.first));
 
       dbm dbm_x = NULL;
@@ -615,7 +634,6 @@ class DBM: public writeable,
       dbm_dealloc(dbm_y);
 
       IKOS_DEBUG ("Result widening:\n",res);
-
       return res;
     }
   } 
@@ -629,14 +647,17 @@ class DBM: public writeable,
       return *this;
     else{
 
+      IKOS_DEBUG ("Before meet:\n","DBM 1\n",*this,"\n","DBM 2\n",o);
+
       vector<rmap>  subs_x;
       vector<rmap>  subs_y;
       id_t id = 0;
       var_map_t var_map = merge_var_map (_var_map, o._var_map, 
                                          id, subs_x, subs_y);
 
+      // Build the reverse map
       rev_map_t rev_map;
-      for(auto &p: var_map)
+      for(auto p: var_map)
         rev_map.insert (make_pair (p.second, p.first));
 
       dbm dbm_x = NULL;
@@ -651,12 +672,12 @@ class DBM: public writeable,
       dbm_dealloc(dbm_x);
       dbm_dealloc(dbm_y);
 
+      IKOS_DEBUG ("Result meet:\n",res);
       return res;
     }
   }	
     
   DBM_t operator&&(DBM_t o) {	
-    //return *this & o ;
     IKOS_ERROR ("DBM: narrowing not implemented");
   }	
 
@@ -665,27 +686,29 @@ class DBM: public writeable,
   }
 
   void operator-=(VariableName v) {
-    id_t k = get_dbm_index(v);
-    forget (k);
-    _var_map.erase (v);
-    _rev_map.erase (k);
+    auto it = _var_map.find (v);
+    if (it != _var_map.end ()) {
+      forget (it->second);
+      _var_map.erase (v);
+      _rev_map.erase (it->second);
+    }
   }
 
   template<typename Iterator>
-  void forget (Iterator it, Iterator et) {
-    // transform
-    vector<int> idxs (std::distance (it,et));
-    for(int i=0; it!=et; ++it, ++i)
-      idxs[i] = (int) get_dbm_index(*it);
-    // --- this is more efficient than calling operator-=
-    //     multiple times.
-    forget (idxs);
-
-    for (auto v: boost::make_iterator_range (it,et)) {
-      id_t k = get_dbm_index(v);
-      _var_map.erase (v);
-      _rev_map.erase (k);
+  void forget (Iterator vIt, Iterator vEt) {
+    vector<int> idxs;
+    for (auto v: boost::make_iterator_range (vIt,vEt)) {
+      auto it = _var_map.find (v);
+      if (it != _var_map.end ()) {
+        idxs.push_back  ((int) it->second);
+        _var_map.erase (v);
+        _rev_map.erase (it->second);
+      }
     }
+    
+    // --- forget all at once is more efficient than calling
+    //     operator-= multiple times.
+    forget (idxs);
   }
 
   void assign(VariableName x, linear_expression_t e) {
@@ -697,7 +720,7 @@ class DBM: public writeable,
       exp_t exp = exp_const(DBM_impl::ntoi<Number>(e.constant()));
       assign (x,exp);
     }
-    else if  (boost::optional<variable_t> v = e.get_variable()){
+    else if  (optional<variable_t> v = e.get_variable()){
       VariableName y = (*v).name();
       if (!(x==y)){
         exp_t exp = exp_var (get_dbm_index(y));        
@@ -792,6 +815,8 @@ class DBM: public writeable,
   } 
     
   void operator+=(linear_constraint_system_t csts) {  
+    if(is_bottom()) return;
+
     for(auto cst: csts) {
       operator+=(cst);
     }
@@ -819,8 +844,8 @@ class DBM: public writeable,
     int k = get_dbm_index(x);
       
     if (!intv.is_top()){
-      boost::optional<Number> lb = intv.lb().number();
-      boost::optional<Number> ub = intv.ub().number();
+      optional<Number> lb = intv.lb().number();
+      optional<Number> ub = intv.ub().number();
       if (ub){
         // x - 0 <= ub
         dexpr e;     
@@ -1002,17 +1027,17 @@ class DBM: public writeable,
   // Output function
   ostream& write(ostream& o) { 
 
-    dbm_canonical(_dbm);
+    normalize ();
 
-#if 0
+#ifdef _IKOS_DEBUG_
     cout << "var_map={";
     for (auto &p: _var_map) 
       cout << p.first << "->" << p.second << ";";
     cout << "}\n";
-    // cout << "rev_map={";
-    // for (auto &p: _rev_map) 
-    //   cout << p.first << "->" << p.second << ";";
-    // cout << "}\n";
+    cout << "rev_map={";
+    for (auto &p: _rev_map) 
+      cout << p.first << "->" << p.second << ";";
+    cout << "}\n";
     cout << "matrix:\n";
     dbm_print_to(cout, _dbm);
 #endif 
@@ -1035,7 +1060,8 @@ class DBM: public writeable,
 
   linear_constraint_system_t to_linear_constraint_system () {
 
-    dbm_canonical(_dbm);
+    normalize ();
+
     linear_constraint_system_t csts;
     
     if(is_bottom ()) {
