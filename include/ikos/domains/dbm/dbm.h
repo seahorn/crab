@@ -83,6 +83,7 @@ int dbm_implies(dbm x, dexpr c);
 dbm dbm_join(dbm x, dbm y);
 dbm dbm_meet(dbm x, dbm y);
 dbm dbm_widen(dbm x, dbm y);
+dbm dbm_narrowing(dbm x, dbm y);
 
 void dbm_canonical(dbm x);
  

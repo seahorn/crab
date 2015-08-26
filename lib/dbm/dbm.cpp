@@ -927,6 +927,66 @@ dbm dbm_widen(dbm x, dbm y)
   return ret;
 }
 
+
+// Unlike widening, for DBM narrowing we can close both the left and
+// the right arguments.
+// x is the previous iteration, y is the current.
+dbm dbm_narrowing(dbm x, dbm y)
+{
+  if(!y)
+    return NULL;
+
+  if(!y->checked || !y->closed)
+    dbm_canonical(y);
+
+  if(!y->feasible)
+    return NULL;
+
+  if(!x->checked || !x->closed)
+    dbm_canonical(x);
+
+  if(!x || (x->checked && !x->feasible))
+    return dbm_copy(y);
+
+  dbm ret = dbm_alloc(y->sz);
+  assert(x->sz == y->sz);
+  
+  // Walk through all the edges of y, and choose the edge of y if it
+  // is top in x, otherwise we choose the edge of x.
+  edge_iter yiter = edge_iterator(y);
+  for(; !srcs_end(yiter); next_src(yiter))
+  {
+    int i = src(yiter);
+    // The source should be live in x, assuming
+    // we've been moving up.
+    if(!src_is_live(x, i))
+      continue;
+
+    // Skip past anything 
+    while(!dests_end(yiter) && !in_graph(x, i, dest(yiter)))
+      next_dest(yiter);
+
+    for(; !dests_end(yiter); next_dest(yiter))
+    {
+      int j = dest(yiter);
+      if(!in_graph(x, i, j)){
+        int yval = edge_val(y, i, j);
+        dbm_add_edge(ret, i, j, yval);
+      }
+      else {
+        int xval = edge_val(x, i, j);
+        dbm_add_edge(ret, i, j, xval);
+      }
+    }
+  }
+
+  // force here to normalize and compute the new potential function
+  ret->feasible = true;
+  ret->checked = false;
+  ret->closed = false;
+  return ret;
+}
+
 // Existentially project a variable.
 dbm dbm_forget(int v, dbm x)
 {

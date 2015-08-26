@@ -678,7 +678,38 @@ class DBM: public writeable,
   }	
     
   DBM_t operator&&(DBM_t o) {	
-    IKOS_ERROR ("DBM: narrowing not implemented");
+    if (is_bottom() || o.is_bottom())
+      return bottom();
+    else{
+
+      IKOS_DEBUG ("Before narrowing:\n","DBM 1\n",*this,"\n","DBM 2\n",o);
+
+      vector<rmap>  subs_x;
+      vector<rmap>  subs_y;
+      id_t id = 0;
+      var_map_t var_map = merge_var_map (_var_map, o._var_map, 
+                                         id, subs_x, subs_y);
+
+      // Build the reverse map
+      rev_map_t rev_map;
+      for(auto p: var_map)
+        rev_map.insert (make_pair (p.second, p.first));
+
+      dbm dbm_x = NULL;
+      dbm dbm_y = NULL;
+
+      dbm_x = dbm_rename (&subs_x[0], subs_x.size(), _dbm);
+      dbm_y = dbm_rename (&subs_y[0], subs_y.size(), o._dbm);
+            
+      DBM_t res (dbm_narrowing(dbm_x, dbm_y), 
+                 id, var_map, rev_map); 
+
+      dbm_dealloc(dbm_x);
+      dbm_dealloc(dbm_y);
+
+      IKOS_DEBUG ("Result narrowing:\n",res);
+      return res;
+    }
   }	
 
   void normalize() {
