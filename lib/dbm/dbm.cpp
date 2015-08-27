@@ -1137,8 +1137,6 @@ dbm dbm_rename(rmap* subs, int slen, dbm x)
     return NULL;
 
   int sz = x->sz;
-  dbm ret = dbm_alloc(x->sz);
-
   // Set up the mapping.
   // Abusing _gamma for temporary storage.
   bool changed = false;
@@ -1168,6 +1166,7 @@ dbm dbm_rename(rmap* subs, int slen, dbm x)
       var_flags[vi] = 0;
   }
 
+  dbm ret = dbm_alloc(x->sz);
   memcpy(ret->pi, x->pi, sizeof(int)*sz);
   // Permute the value of reassigned variables.
   for(int si = 0; si < slen; si++)
