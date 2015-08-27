@@ -105,6 +105,7 @@ void dbm_dealloc_ptr(dbm* d);
 
 bool in_graph(dbm x, int i, int j);
 bool src_is_live(dbm abs, int i);
+bool dest_is_live(dbm abs, int i);
 dbm_var_t copy_var(dbm abs, dbm_var_t x);
 void dbm_add_edge(dbm x, int i, int j, int val);
 

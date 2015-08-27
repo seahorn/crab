@@ -57,9 +57,7 @@ namespace DBM_impl
 
 }; // end namespace DBM_impl
 
-// Sz should be the maximum number of live variables expected per
-// block (assuming a block is mapped to an abstract state)
-template< class Number, class VariableName, unsigned Sz = 300> 
+template< class Number, class VariableName, unsigned Sz = 100> 
 class DBM: public writeable,
            public numerical_domain<Number, VariableName >,
            public bitwise_operators<Number,VariableName >,
@@ -80,8 +78,8 @@ class DBM: public writeable,
   typedef interval_domain< Number, VariableName > intervals_t;
 
   typedef int id_t;
-  //! map variable name to id (must be an ordered container)
-  typedef std::map<VariableName, id_t> var_map_t;
+  //! map variable name to id 
+  typedef boost::unordered_map<VariableName, id_t> var_map_t;
   //! map back id to variable name
   typedef boost::unordered_map <id_t, VariableName> rev_map_t;
   dbm _dbm;
@@ -95,75 +93,99 @@ class DBM: public writeable,
     return (src_is_live(_dbm, i) && in_graph(_dbm, i, j));
   }
 
+  bool is_live (dbm x, int i){
+    return (src_is_live(x, i) || dest_is_live (x, i));
+  }
+
   // special variables
   inline int get_zero(){ return (int) Sz-1; }
   inline int get_tmp() { return (int) Sz-2; }
- 
+
+  // void dbm_compact () {
+     
+  //   if (_id < Sz - 10)
+  //     return;
+
+  //   // assign a new id for each variable starting from 0
+  //   id_t id = 0;
+  //   std::set<VariableName> all_live_keys;
+  //   for (auto px: _var_map) {
+  //     if (src_is_live(_dbm, px.second))
+  //       all_live_keys.insert (px.first);
+  //   }
+
+  //   // if majority of the keys are alive we will not compact and raise
+  //   // an error later if maximum size is reached.
+  //   if (all_live_keys.size () >= Sz / 2) {
+  //     return;
+  //   }
+
+  //   var_map_t res;
+  //   for (auto k: all_live_keys)
+  //     res.insert (make_pair (k, id++));
+
+  //   // build the substitution map from the new var map
+  //   vector<rmap> subs_x;
+  //   for (auto const &px: res) {
+  //     subs_x.push_back (rmap {_var_map[px.first], px.second});      
+  //   }
+
+  //   // Update the this' id counter 
+  //   _id = id;
+  //   // Update the this' var map
+  //   _var_map = res;
+  //   // build a new this' reverse map
+  //   _rev_map.clear ();
+  //   for(auto p: _var_map)
+  //     _rev_map.insert (make_pair (p.second, p.first));
+  //   // rename the this' dbm
+  //   dbm ret = NULL;
+  //   ret= dbm_rename (&subs_x[0], subs_x.size(), _dbm);
+  //   dbm_dealloc(_dbm);
+  //   swap(_dbm, ret);
+
+  //   IKOS_DEBUG ("Compacted dbm to size ", _var_map.size (), "\n", *this);
+  // }
+
   var_map_t merge_var_map (var_map_t &x, 
+                           dbm& dbm_x,
                            var_map_t &y, 
+                           dbm& dbm_y,
                            id_t &id,
                            vector<rmap>& subs_x, 
                            vector<rmap>& subs_y) { 
 
-    assert (id == 0);
 
-    // preserve map for special zero variable
-    subs_x.push_back (rmap {get_zero (), get_zero ()});
-    subs_y.push_back (rmap {get_zero (), get_zero ()});
-    
+    // assign a new id for each variable starting from 0
+    id = 0;
+    std::set<VariableName> all_keys;
+    for (auto px: x) {
+      if (is_live(dbm_x, px.second))
+        all_keys.insert (px.first);
+    }
+    for (auto py: y) {
+      if (is_live(dbm_y, py.second))
+        all_keys.insert (py.first);
+    }
+
     var_map_t res;
-    auto x_it = x.begin ();
-    auto y_it = y.begin ();
-    for (;(x_it != x.end () && y_it != y.end());) {
-      if ((*x_it).first < (*y_it).first) {
-        res.insert (make_pair (x_it->first, id));
-        subs_x.push_back (rmap {(*x_it).second, id});
-        ++id;
-        if (id >= Sz -2)
-          IKOS_ERROR("DBM: need to enlarge the matrix.");
-        x_it++;
-      }
-      else if ((*y_it).first < (*x_it).first) {
-        res.insert (make_pair (y_it->first, id));
-        subs_y.push_back (rmap {(*y_it).second, id});
-        ++id;
-        if (id >= Sz -2)
-          IKOS_ERROR("DBM: need to enlarge the matrix.");
-        y_it++;
-      }
-      else {
-        res.insert (make_pair (x_it->first, id));
-        subs_x.push_back (rmap {(*x_it).second, id});
-        subs_y.push_back (rmap {(*y_it).second, id});
-        ++id;
-        if (id >= Sz -2)
-          IKOS_ERROR("DBM: need to enlarge the matrix.");
-        y_it++;
-        x_it++;
-      }
+    for (auto k: all_keys) {
+      if (id >= Sz -2)
+        IKOS_ERROR("DBM: need to enlarge the matrix.");
+      res.insert (make_pair (k, id));
+      ++id;
+    }
+
+    // build the substitution maps
+    for (auto const &px: x) {
+      if (is_live(dbm_x, px.second))
+        subs_x.push_back (rmap {px.second, res[px.first]});      
+    }
+    for (auto const &py: y) {
+      if (is_live(dbm_y, py.second))
+        subs_y.push_back (rmap {py.second, res[py.first]});      
     }
     
-    if (x_it == x.end () && y_it == y.end())
-      return res;
-
-    if (x_it != x.end () && y_it == y.end()) {
-      for ( ; x_it != x.end (); ++x_it) {
-        res.insert (make_pair (x_it->first, id));
-        subs_x.push_back (rmap {(*x_it).second, id});
-        ++id;
-        if (id >= Sz -2)
-          IKOS_ERROR("DBM: need to enlarge the matrix.");
-      }
-    }
-    else {
-      for ( ; y_it != y.end (); ++y_it) {
-        res.insert (make_pair (y_it->first, id));
-        subs_x.push_back (rmap {(*y_it).second, id});
-        ++id;
-        if (id >= Sz -2)
-          IKOS_ERROR("DBM: need to enlarge the matrix.");
-      }
-    }
     return res;
   }
 
@@ -210,8 +232,11 @@ class DBM: public writeable,
       _dbm(dbm), 
       _id (id),
       _var_map(var_map), 
-      _rev_map(rev_map) 
-  { }
+      _rev_map(rev_map) { 
+
+    if (!_dbm)
+      set_to_bottom ();
+  }
 
  private:
 
@@ -245,7 +270,7 @@ class DBM: public writeable,
     apply_dexpr(e2);
   }
 
-  void apply_cond(ucon con) {
+  void apply_cond(ucon con) {    
     dbm ret = NULL;
     ret = dbm_cond(con, _dbm);
     dbm_dealloc(_dbm);
@@ -274,7 +299,8 @@ class DBM: public writeable,
   }
 
   void set_to_bottom() {
-    dbm_dealloc (_dbm);
+    if (_dbm)
+      dbm_dealloc (_dbm);
     _dbm = dbm_bottom ();
     _var_map.clear ();
     _rev_map.clear ();
@@ -547,13 +573,36 @@ class DBM: public writeable,
       return true;
     else if(o.is_bottom())
       return false;
-    else 
-      return dbm_is_leq(_dbm, o._dbm);
-  }  
+    else { 
 
-  bool operator==(DBM_t o){
-    return (*this <= o && o <= *this);
-  }
+      vector<rmap>  subs_x;
+      vector<rmap>  subs_y;
+      id_t id = 0;
+      var_map_t var_map = merge_var_map (_var_map, _dbm, 
+                                         o._var_map, o._dbm,
+                                         id, subs_x, subs_y);
+
+      // Build the reverse map
+      rev_map_t rev_map;
+      for(auto p: var_map)
+        rev_map.insert (make_pair (p.second, p.first));
+
+      dbm dbm_x = NULL;
+      dbm dbm_y = NULL;
+
+      dbm_x = dbm_rename (&subs_x[0], subs_x.size(), _dbm);
+      dbm_y = dbm_rename (&subs_y[0], subs_y.size(), o._dbm);
+            
+      bool res = dbm_is_leq (dbm_x, dbm_y);
+
+      dbm_dealloc(dbm_x);
+      dbm_dealloc(dbm_y);
+
+      return res;
+
+      //return dbm_is_leq(_dbm, o._dbm);
+    }
+  }  
 
   DBM_t operator|(DBM_t o) {
     if (is_bottom())
@@ -561,13 +610,13 @@ class DBM: public writeable,
     else if (o.is_bottom())
       return *this;
     else {
-
       IKOS_DEBUG ("Before join:\n","DBM 1\n",*this,"\n","DBM 2\n",o);
 
       vector<rmap>  subs_x;
       vector<rmap>  subs_y;
       id_t id = 0;
-      var_map_t var_map = merge_var_map (_var_map, o._var_map, 
+      var_map_t var_map = merge_var_map (_var_map, _dbm, 
+                                         o._var_map, o._dbm,
                                          id, subs_x, subs_y);
 
       // Build the reverse map
@@ -581,11 +630,19 @@ class DBM: public writeable,
       dbm_x = dbm_rename (&subs_x[0], subs_x.size(), _dbm);
       dbm_y = dbm_rename (&subs_y[0], subs_y.size(), o._dbm);
 
-#if 0      
+#if 0     
       cout << "After resizing DBMs: \n";
       cout << "DBM 1:\n";
       dbm_print_to(cout, dbm_x);
+      cout << "subs map {";
+      for (auto p: subs_x)
+        cout << "(" << p.r_from << "-" << p.r_to << ");";
+      cout << "}\n";
       cout << "DBM 2:\n";
+      cout << "subs map {";
+      for (auto p: subs_y)
+        cout << "(" << p.r_from << "-" << p.r_to << ");";
+      cout << "}\n";
       dbm_print_to(cout, dbm_y);
 #endif 
       
@@ -613,7 +670,8 @@ class DBM: public writeable,
       vector<rmap>  subs_x;
       vector<rmap>  subs_y;
       id_t id = 0;
-      var_map_t var_map = merge_var_map (_var_map, o._var_map, 
+      var_map_t var_map = merge_var_map (_var_map, _dbm,
+                                         o._var_map, o._dbm,
                                          id, subs_x, subs_y);
 
       // Build the reverse map
@@ -652,7 +710,8 @@ class DBM: public writeable,
       vector<rmap>  subs_x;
       vector<rmap>  subs_y;
       id_t id = 0;
-      var_map_t var_map = merge_var_map (_var_map, o._var_map, 
+      var_map_t var_map = merge_var_map (_var_map, _dbm,
+                                         o._var_map, o._dbm,
                                          id, subs_x, subs_y);
 
       // Build the reverse map
@@ -680,14 +739,16 @@ class DBM: public writeable,
   DBM_t operator&&(DBM_t o) {	
     if (is_bottom() || o.is_bottom())
       return bottom();
+    else if (is_top ())
+      return o;
     else{
-
       IKOS_DEBUG ("Before narrowing:\n","DBM 1\n",*this,"\n","DBM 2\n",o);
 
       vector<rmap>  subs_x;
       vector<rmap>  subs_y;
       id_t id = 0;
-      var_map_t var_map = merge_var_map (_var_map, o._var_map, 
+      var_map_t var_map = merge_var_map (_var_map, _dbm,
+                                         o._var_map, o._dbm,
                                          id, subs_x, subs_y);
 
       // Build the reverse map
@@ -717,6 +778,9 @@ class DBM: public writeable,
   }
 
   void operator-=(VariableName v) {
+    if (is_bottom ())
+      return;
+
     auto it = _var_map.find (v);
     if (it != _var_map.end ()) {
       forget (it->second);
@@ -727,6 +791,8 @@ class DBM: public writeable,
 
   template<typename Iterator>
   void forget (Iterator vIt, Iterator vEt) {
+    if (is_bottom ())
+      return;
     vector<int> idxs;
     for (auto v: boost::make_iterator_range (vIt,vEt)) {
       auto it = _var_map.find (v);
@@ -736,10 +802,11 @@ class DBM: public writeable,
         _rev_map.erase (it->second);
       }
     }
-    
-    // --- forget all at once is more efficient than calling
-    //     operator-= multiple times.
-    forget (idxs);
+    if (!idxs.empty()) {
+      // --- forget all at once is more efficient than calling
+      //     operator-= multiple times.
+      forget (idxs);
+    }
   }
 
   void assign(VariableName x, linear_expression_t e) {
@@ -766,6 +833,9 @@ class DBM: public writeable,
 
   void apply(operation_t op, VariableName x, VariableName y, VariableName z){	
 
+    if(is_bottom())
+      return;
+
     if (x == y){
       // --- ensure lhs does not appear on the rhs
       assign_tmp(y); 
@@ -790,6 +860,9 @@ class DBM: public writeable,
 
     
   void apply(operation_t op, VariableName x, VariableName y, Number k) {	
+
+    if(is_bottom())
+      return;
 
     if (x == y){
       // to make sure that lhs does not appear on the rhs
@@ -816,16 +889,15 @@ class DBM: public writeable,
       set_to_bottom();
       return ;
     }
-
+    
     linear_expression_t exp = cst.expression();
     if (exp.size() > 2)
       IKOS_ERROR("DBM supports constraints with at most two variables");
 
     if (exp.size() == 0)
       IKOS_ERROR("DBM: bad-formed constraint: ", cst);
-      
-    Number k = -exp.constant(); 
 
+    Number k = -exp.constant(); 
     typename linear_expression_t::iterator it=exp.begin();
 
     Number coef_x = it->first;
@@ -872,8 +944,10 @@ class DBM: public writeable,
   }
 
   void set(VariableName x, interval_t intv) {
+    if(is_bottom())
+      return;
+
     int k = get_dbm_index(x);
-      
     if (!intv.is_top()){
       optional<Number> lb = intv.lb().number();
       optional<Number> ub = intv.ub().number();
@@ -1049,6 +1123,9 @@ class DBM: public writeable,
 
   //! copy of x into a new fresh variable y
   void expand (VariableName x, VariableName y) {
+    if(is_bottom())
+      return;
+
     dbm ret = NULL;      
     ret = dbm_expand(get_dbm_index(x), get_dbm_index(y), _dbm);
     dbm_dealloc(_dbm);
@@ -1063,7 +1140,7 @@ class DBM: public writeable,
 #ifdef _IKOS_DEBUG_
     cout << "var_map={";
     for (auto &p: _var_map) 
-      cout << p.first << "->" << p.second << ";";
+      cout << p.first << "(" << p.first.index () << ") " << "->" << p.second << ";";
     cout << "}\n";
     cout << "rev_map={";
     for (auto &p: _rev_map) 
