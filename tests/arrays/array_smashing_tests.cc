@@ -13,6 +13,7 @@ using namespace std;
 namespace domain_impl
 {
   using namespace cfg_impl;
+  typedef linear_constraint_system<z_number, varname_t> z_lin_cst_sys_t;
   // Abstract domains
   typedef interval_domain< z_number, varname_t > interval_domain_t;
   typedef DBM< z_number, varname_t > dbm_domain_t;
@@ -408,7 +409,8 @@ void run(cfg_t cfg, string name, VariableFactory &vfac)
   
   const bool run_live = false;
   typedef NumAbsTransformer <varname_t, ArrayDomain> arr_transformer_t;
-  FwdAnalyzer <cfg_t, arr_transformer_t, VariableFactory> It (cfg,vfac,run_live);
+  FwdAnalyzer <cfg_t, arr_transformer_t, 
+               VariableFactory, z_lin_cst_sys_t> It (cfg,vfac,run_live);
   ArrayDomain inv = ArrayDomain::top ();
   It.Run (inv);
   cout << "Results with " << inv.getDomainName () << ":\n";

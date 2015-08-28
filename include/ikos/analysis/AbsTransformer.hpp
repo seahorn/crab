@@ -19,6 +19,7 @@ namespace analyzer
 
     typedef linear_expression< z_number, VariableName > z_lin_exp_t;
     typedef linear_constraint< z_number, VariableName > z_lin_cst_t;
+    typedef linear_constraint_system< z_number, VariableName > z_lin_cst_sys_t;
 
     typedef BinaryOp <z_number,VariableName>    z_bin_op_t;
     typedef Assignment <z_number,VariableName>  z_assign_t;

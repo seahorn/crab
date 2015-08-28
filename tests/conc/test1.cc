@@ -1,6 +1,7 @@
 #include <ikos/tests/Cfg_impl.hpp>
 #include <ikos/cfg/VarFactory.hpp>
 #include <ikos/cfg/ConcSys.hpp>
+#include <ikos/analysis/InvTable_traits.hpp>
 #include <ikos/analysis/ConcAnalyzer.hpp>
 #include <ikos/common/types.hpp>
 #include <ikos/domains/intervals.hpp>                      
@@ -10,6 +11,7 @@ using namespace std;
 namespace domain_impl
 {
   using namespace cfg_impl;
+  typedef linear_constraint_system<z_number, varname_t> z_lin_cst_sys_t;
   // Numerical domains
   typedef interval_domain< z_number, varname_t > interval_domain_t;
   typedef DBM< z_number, varname_t > dbm_domain_t;
@@ -145,7 +147,9 @@ int main (int argc, char** argv )
   global_inv.assign (vfac ["x"], interval_domain_t::linear_expression_t (0));
   global_inv.assign (vfac ["y"], interval_domain_t::linear_expression_t (0));
 
-  typedef ConcAnalyzer <string, cfg_t,interval_domain_t,VariableFactory> conc_analyzer_t;
+  typedef ConcAnalyzer <string, cfg_t,
+                        interval_domain_t, VariableFactory,
+                        z_lin_cst_sys_t> conc_analyzer_t;
 
   conc_analyzer_t a (concSys, vfac, run_live);
   a.Run (global_inv);

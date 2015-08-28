@@ -4,6 +4,7 @@
 #include <ikos/cfg/Cfg.hpp>
 #include <ikos/cfg/VarFactory.hpp>
 #include <ikos/analysis/FwdAnalyzer.hpp>
+#include <ikos/analysis/InvTable_traits.hpp>
 
 #include <ikos/common/types.hpp>
 #include <ikos/domains/pta.hpp>
@@ -223,8 +224,9 @@ namespace analyzer
     };
 
     typedef NumAbsTransformer <varname_t, num_domain_t> num_abs_tr_t;
-    typedef FwdAnalyzer<CFG, num_abs_tr_t, VariableFactory> num_inv_gen_t;
+    typedef FwdAnalyzer<CFG, num_abs_tr_t, VariableFactory, num_domain_t> num_inv_gen_t;
     typedef typename GenBasicBlockCons < num_inv_gen_t>::pt_var_map_t pt_var_map_t;
+    typedef inv_tbl_traits<num_domain_t,num_domain_t> inv_tbl_tl;
 
     //! for external queries
     typedef boost::unordered_map< varname_t,
@@ -284,7 +286,8 @@ namespace analyzer
 
         for (auto &b : cfg)
         {
-          gen_bb_cons_t vis (m_vfac, &m_cs, It [b.label ()], 
+          gen_bb_cons_t vis (m_vfac, &m_cs, 
+                             inv_tbl_tl::unmarshall (It [b.label ()]), 
                              &It, &m_pt_var_map, func_name);
           for (auto &s: b) { s.accept (&vis); }
         }

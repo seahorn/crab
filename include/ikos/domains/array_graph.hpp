@@ -1262,6 +1262,10 @@ class array_graph_domain:
     return o;
   }
 
+  linear_constraint_system_t to_linear_constraint_system (){
+    IKOS_ERROR ("array_graph: to_linear_constraint_system not implemented");
+  }
+
   const char* getDomainName () const {return "Array graph";}
 
 }; // end array_graph_domain

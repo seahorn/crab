@@ -1,36 +1,57 @@
-#ifndef INVARIANT_TABLE_ENTRIES_TRAITS_HPP
-#define INVARIANT_TABLE_ENTRIES_TRAITS_HPP
+#ifndef INVARIANT_TABLE_VALUES_TRAITS_HPP
+#define INVARIANT_TABLE_VALUES_TRAITS_HPP
+
+#include <type_traits>
+#include <ikos/common/types.hpp>
 
 /* 
-   This class manipulates the values stored in the invariant
-   tables. Invariant tables are how ikos-core communicates with other
-   clients. This class allows clients to determine the type of the
-   table values.
+   This class manipulates the values of the invariant table entries.
+   Invariant tables are how ikos-core communicates with other
+   clients. Clients can choose the type of the entry values (i.e.,
+   invariants).
  */
 
 namespace analyzer {
 
+   using namespace ikos;
+
    template<typename AbsDomain, typename InvTableTy>
    class inv_tbl_traits {
     public:
+     typedef AbsDomain  type_from;
+     typedef InvTableTy type_to;
+
      //! Convert an abstract domain to the format stored in the
      //  invariant tables.
-     // FIXME: should be `const AbsDomain&` but we need to fix first
-     // constness of the abstract domain methods.
-     static InvTableTy marshall (AbsDomain& abs);
+     //  FIXME: should be `const AbsDomain&` but we need to fix first
+     //  constness of the abstract domain methods.
+     static InvTableTy marshall (AbsDomain& abs) {
+       if (!std::is_same<AbsDomain,InvTableTy>::value)
+         IKOS_ERROR ("inv_tbl_traits expect two parameters of same type");
+       return abs;
+     }
      //! Convert from the format stored in the invariant table to an
      //! abstract domain.
-     // FIXME: should be `const InvTableTy&` but we need to fix first
-     // constness of linear_constraint
-     static AbsDomain unmarshall (InvTableTy& inv);
+     static AbsDomain unmarshall (InvTableTy inv) {
+       if (!std::is_same<AbsDomain,InvTableTy>::value)
+         IKOS_ERROR ("inv_tbl_traits expect two parameters of same type");
+       return inv;
+     }
      //! Return true 
-     static InvTableTy top ();
+     static InvTableTy top () {
+       if (!std::is_same<AbsDomain,InvTableTy>::value)
+         IKOS_ERROR ("inv_tbl_traits expect two parameters of same type");
+       return AbsDomain::top ();
+     }
      //! Return false
-     static InvTableTy bot ();
+     static InvTableTy bot () {
+       if (!std::is_same<AbsDomain,InvTableTy>::value)
+         IKOS_ERROR ("inv_tbl_traits expect two parameters of same type");
+       return AbsDomain::bottom ();
+     }
    };
 
-
-   // Default implementation: conjunctive linear constraints
+   // conjunctive linear constraints
    template<typename AbsDomain>
    class inv_tbl_traits <AbsDomain,
                          typename AbsDomain::linear_constraint_system_t>  {
@@ -41,6 +62,9 @@ namespace analyzer {
 
      typedef typename AbsDomain::linear_constraint_t lin_cst_t;
      typedef typename AbsDomain::linear_constraint_system_t lin_cst_sys_t;
+
+     typedef AbsDomain  type_from;
+     typedef lin_cst_sys_t type_to;
 
     private:
 
@@ -58,7 +82,7 @@ namespace analyzer {
        return abs.to_linear_constraint_system ();
      }
 
-     static AbsDomain unmarshall (lin_cst_sys_t& csts) {
+     static AbsDomain unmarshall (lin_cst_sys_t csts) {
        AbsDomain inv = AbsDomain::top ();
        for (auto cst : csts)
          inv += cst;

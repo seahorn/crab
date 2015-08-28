@@ -17,15 +17,17 @@ namespace conc
    //! Global fixpoint among the threads.
    //  Currently very simple flow-insensitive abstraction `a la` Mine
    //  (VMCAI'14).
-   template< typename ThreadId, typename CFG, typename AbsDomain, typename VarFactory>
-   class ConcAnalyzer
-   {     
+   template< typename ThreadId, typename CFG, 
+             typename AbsDomain, typename VarFactory,
+             typename InvTableTy>
+   class ConcAnalyzer {
      typedef typename CFG::basic_block_label_t basic_block_label_t;
      typedef typename CFG::varname_t varname_t;
      typedef typename CFG::basic_block_t basic_block_t;
-
-     typedef typename NumFwdAnalyzer<CFG, AbsDomain, VarFactory>::type fwd_analyzer_t;
+     typedef typename NumFwdAnalyzer<CFG, AbsDomain, VarFactory, InvTableTy>::type fwd_analyzer_t;
      typedef ConcSys <ThreadId, CFG> conc_sys_t;
+
+     typedef inv_tbl_traits <AbsDomain, InvTableTy> inv_tbl_t;
 
     public:
      typedef boost::unordered_map<basic_block_label_t, AbsDomain> inv_map_t;
@@ -43,7 +45,8 @@ namespace conc
 
     public:
 
-     ConcAnalyzer (conc_sys_t& conc_sys, VarFactory& vfac,  bool runLive, bool keep_shadows=false): 
+     ConcAnalyzer (conc_sys_t& conc_sys, VarFactory& vfac,  
+                   bool runLive, bool keep_shadows=false): 
          m_conc_sys (conc_sys), m_vfac (vfac), m_run_live (runLive), 
          m_keep_shadows (keep_shadows) 
      { }
@@ -67,7 +70,8 @@ namespace conc
          for (auto const p: m_conc_sys)
          {
            /// --- run the thread separately
-           fwd_analyzer_t thread_analyzer (p.second, m_vfac, m_run_live, m_keep_shadows);
+           fwd_analyzer_t thread_analyzer (p.second, m_vfac, 
+                                           m_run_live, m_keep_shadows);
            thread_analyzer.Run (inv);
 
            auto locals = boost::make_iterator_range (m_conc_sys.get_locals (p.first));
@@ -80,9 +84,10 @@ namespace conc
              for (auto bb: boost::make_iterator_range (p.second.label_begin (), 
                                                        p.second.label_end ()))
              {
-               inv_map->insert (make_pair (bb, thread_analyzer[bb]));
+               AbsDomain bb_inv = inv_tbl_t::unmarshall (thread_analyzer [bb]);
+               inv_map->insert (make_pair (bb, bb_inv));
                /// -- flow insensitive abstraction 
-               inv = inv | thread_analyzer[bb];
+               inv = inv | bb_inv;
                domain_traits::forget (inv, locals.begin (), locals.end ());
              }
              m_global_inv [p.first] = inv_map;
@@ -95,7 +100,7 @@ namespace conc
                                                        p.second.label_end ()))
              {
                AbsDomain& old_inv = (*inv_map) [bb];           
-               AbsDomain new_inv = thread_analyzer [bb];
+               AbsDomain new_inv = inv_tbl_t::unmarshall (thread_analyzer [bb]);
                if (!(new_inv <= old_inv && old_inv <= new_inv))
                {
                  change=true;

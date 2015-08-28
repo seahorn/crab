@@ -393,7 +393,7 @@ void run(cfg_t cfg, string name, VariableFactory &vfac)
   
   const bool run_live = false;
   typedef NumAbsTransformer <varname_t, ArrayDomain> arr_transformer_t;
-  FwdAnalyzer <cfg_t, arr_transformer_t, VariableFactory> It (cfg,vfac,run_live);
+  FwdAnalyzer <cfg_t, arr_transformer_t, VariableFactory, ArrayDomain> It (cfg,vfac,run_live);
   ArrayDomain inv = ArrayDomain::top ();
   It.Run (inv);
   cout << "Results with " << inv.getDomainName () << ":\n";
