@@ -101,52 +101,58 @@ class DBM: public writeable,
   inline int get_zero(){ return (int) Sz-1; }
   inline int get_tmp() { return (int) Sz-2; }
 
-  // void dbm_compact () {
+  //! Perform some some sort of defragmentation by removing matrix
+  //  indexes which are not alive. A similar process is done by
+  //  merge_var_map.
+  void dbm_compact () {
      
-  //   if (_id < Sz - 10)
-  //     return;
+    if (_id < (int) Sz/2 /*roughly half of the matrix size */)  
+      return;
+    
+    // assign a new id for each variable starting from 0
+    id_t id = 0;
+    std::set<VariableName> all_live_keys;
+    for (auto px: _var_map) {
+      if (is_live(_dbm, px.second))
+        all_live_keys.insert (px.first);
+    }
 
-  //   // assign a new id for each variable starting from 0
-  //   id_t id = 0;
-  //   std::set<VariableName> all_live_keys;
-  //   for (auto px: _var_map) {
-  //     if (src_is_live(_dbm, px.second))
-  //       all_live_keys.insert (px.first);
-  //   }
+    // // if majority of the keys are alive we will not compact and raise
+    // // an error later if maximum size is reached.
+    // if (all_live_keys.size () >= Sz / 2) {
+    //   return;
+    // }
 
-  //   // if majority of the keys are alive we will not compact and raise
-  //   // an error later if maximum size is reached.
-  //   if (all_live_keys.size () >= Sz / 2) {
-  //     return;
-  //   }
+    var_map_t res;
+    for (auto k: all_live_keys)
+      res.insert (make_pair (k, id++));
 
-  //   var_map_t res;
-  //   for (auto k: all_live_keys)
-  //     res.insert (make_pair (k, id++));
+    // build the substitution map from the new var map
+    vector<rmap> subs_x;
+    for (auto const &px: res) {
+      if (is_live (_dbm, _var_map[px.first]))
+        subs_x.push_back (rmap {_var_map[px.first], px.second});      
+    }
 
-  //   // build the substitution map from the new var map
-  //   vector<rmap> subs_x;
-  //   for (auto const &px: res) {
-  //     subs_x.push_back (rmap {_var_map[px.first], px.second});      
-  //   }
+    // Update the this' id counter 
+    _id = id;
+    // Update the this' var map
+    _var_map = res;
+    // build a new this' reverse map
+    _rev_map.clear ();
+    for(auto p: _var_map)
+      _rev_map.insert (make_pair (p.second, p.first));
+    // rename the this' dbm
+    dbm ret = NULL;
+    ret= dbm_rename (&subs_x[0], subs_x.size(), _dbm);
+    dbm_dealloc(_dbm);
+    swap(_dbm, ret);
 
-  //   // Update the this' id counter 
-  //   _id = id;
-  //   // Update the this' var map
-  //   _var_map = res;
-  //   // build a new this' reverse map
-  //   _rev_map.clear ();
-  //   for(auto p: _var_map)
-  //     _rev_map.insert (make_pair (p.second, p.first));
-  //   // rename the this' dbm
-  //   dbm ret = NULL;
-  //   ret= dbm_rename (&subs_x[0], subs_x.size(), _dbm);
-  //   dbm_dealloc(_dbm);
-  //   swap(_dbm, ret);
+    IKOS_DEBUG ("Compacted dbm to size ", _var_map.size (), "\n", *this);
+  }
 
-  //   IKOS_DEBUG ("Compacted dbm to size ", _var_map.size (), "\n", *this);
-  // }
-
+  //! Unify the mappings from two different dbms. It performs also
+  //! some defragmentation.
   var_map_t merge_var_map (var_map_t &x, 
                            dbm& dbm_x,
                            var_map_t &y, 
@@ -154,8 +160,6 @@ class DBM: public writeable,
                            id_t &id,
                            vector<rmap>& subs_x, 
                            vector<rmap>& subs_y) { 
-
-
     // assign a new id for each variable starting from 0
     id = 0;
     std::set<VariableName> all_keys;
@@ -170,7 +174,7 @@ class DBM: public writeable,
 
     var_map_t res;
     for (auto k: all_keys) {
-      if (id >= Sz -2)
+      if (id >= Sz -2) 
         IKOS_ERROR("DBM: need to enlarge the matrix.");
       res.insert (make_pair (k, id));
       ++id;
@@ -189,6 +193,7 @@ class DBM: public writeable,
     return res;
   }
 
+  //! Convert a variable name to a matrix index
   id_t get_dbm_index (VariableName x) {
     auto it = _var_map.find (x);
     if (it != _var_map.end ())
@@ -203,7 +208,7 @@ class DBM: public writeable,
     return k;
   }
 
-  // k is the index of a variable produced by get_dbm_index
+  // Inverse of get_dbm_index
   VariableName get_rev_map (id_t k) {
     auto it = _rev_map.find (k);
     if (it!= _rev_map.end ())
@@ -554,7 +559,7 @@ class DBM: public writeable,
     return *this;
   }
 
-  ~DBM(){ 
+  ~DBM() { 
     dbm_dealloc(_dbm); 
     _var_map.clear();
     _rev_map.clear();
@@ -571,10 +576,17 @@ class DBM: public writeable,
   }
     
   bool operator<=(DBM_t o)  {       
+    // cover all trivial cases to avoid allocating a dbm matrix
     if (is_bottom()) 
       return true;
     else if(o.is_bottom())
       return false;
+    else if (o.is_top ())
+      return true;
+    else if (is_top () && !o.is_top ())
+      return false;
+    else if (is_top () && o.is_top ())
+      return true;
     else { 
 
       vector<rmap>  subs_x;
@@ -607,9 +619,9 @@ class DBM: public writeable,
   }  
 
   DBM_t operator|(DBM_t o) {
-    if (is_bottom())
+    if (is_bottom() || o.is_top ())
       return o;
-    else if (o.is_bottom())
+    else if (is_top () || o.is_bottom())
       return *this;
     else {
       IKOS_DEBUG ("Before join:\n","DBM 1\n",*this,"\n","DBM 2\n",o);
@@ -808,6 +820,7 @@ class DBM: public writeable,
       // --- forget all at once is more efficient than calling
       //     operator-= multiple times.
       forget (idxs);
+      dbm_compact ();
     }
   }
 
@@ -815,6 +828,8 @@ class DBM: public writeable,
 
     if(is_bottom())
       return;
+
+    dbm_compact ();
 
     if (e.is_constant()){
       exp_t exp = exp_const(DBM_impl::ntoi<Number>(e.constant()));
@@ -837,6 +852,8 @@ class DBM: public writeable,
 
     if(is_bottom())
       return;
+
+    dbm_compact ();
 
     if (x == y){
       // --- ensure lhs does not appear on the rhs
@@ -865,6 +882,8 @@ class DBM: public writeable,
 
     if(is_bottom())
       return;
+
+    dbm_compact ();
 
     if (x == y){
       // to make sure that lhs does not appear on the rhs
@@ -898,6 +917,8 @@ class DBM: public writeable,
 
     if (exp.size() == 0)
       IKOS_ERROR("DBM: bad-formed constraint: ", cst);
+
+    dbm_compact ();
 
     Number k = -exp.constant(); 
     typename linear_expression_t::iterator it=exp.begin();

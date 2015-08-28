@@ -992,9 +992,13 @@ dbm dbm_forget(int v, dbm x)
 {
   if(!x)
     return x;
-  dbm_canonical(x);
+
+  if(!x->closed)
+    dbm_canonical(x);
+
   if(!x->feasible)
     return NULL;   
+
   int sz = x->sz;
   dbm ret = dbm_alloc(x->sz);
   memcpy(ret->pi, x->pi, sizeof(int)*sz);
@@ -1037,7 +1041,10 @@ dbm dbm_forget_array(int* vs, int vs_len, dbm x)
 {
   if(!x)
     return x;
-  dbm_canonical(x);
+
+  if (!x->closed)
+    dbm_canonical(x);
+
   if(!x->feasible)
     return NULL;   
 
@@ -1082,7 +1089,10 @@ dbm dbm_extract(int* vs, int vs_len, dbm x)
 {
   if(!x)
     return x;
-  dbm_canonical(x);
+
+  if (!x->closed)
+    dbm_canonical(x);
+
   if(!x->feasible)
     return NULL;   
 
@@ -1132,7 +1142,9 @@ dbm dbm_rename(rmap* subs, int slen, dbm x)
   if(!x)
     return NULL;
 
-  dbm_canonical(x); 
+  if (!x->closed)
+    dbm_canonical(x); 
+
   if(!x || !x->feasible)
     return NULL;
 
@@ -1212,7 +1224,9 @@ dbm dbm_rename_strict(rmap* subs, int slen, dbm x)
   if(!x)
     return NULL;
 
-  dbm_canonical(x); 
+  if (!x->closed)
+    dbm_canonical(x); 
+
   if(!x || !x->feasible)
     return NULL;
 
@@ -1252,8 +1266,10 @@ int dbm_is_top(dbm x)
 int dbm_is_leq(dbm x, dbm y)
 {
   // FIXME: Need to normalize before doing the cutoff.
-  dbm_canonical(x);
-  dbm_canonical(y);
+  if(!x->checked || !x->closed)
+    dbm_canonical(x);
+  if(!y->checked || !y->closed)
+    dbm_canonical(y);
 
   if(dbm_is_bottom(x) || dbm_is_top(y))
     return true;
@@ -1279,7 +1295,9 @@ int dbm_is_leq(dbm x, dbm y)
 // computing the closure.
 int dbm_implies(dbm x, dexpr con)
 {
-  dbm_canonical(x);
+  if (!x->closed)
+    dbm_canonical(x);
+
   if(!x || !x->feasible)
     return true;
 
@@ -1315,8 +1333,8 @@ int dbm_implies(dbm x, dexpr con)
 
 void dbm_print_to(std::ostream &o, dbm x)
 {
-
-  dbm_canonical(x);
+  if (!x->closed)
+    dbm_canonical(x);
 
   if(!x || !x->feasible)
   {
