@@ -543,12 +543,14 @@ class DBM: public writeable,
     _rev_map(o._rev_map) 
   { }
    
-  DBM_t operator=(DBM_t o) {
-    dbm_dealloc(_dbm);
-    _dbm = dbm_copy(o._dbm); 
-    _id = o._id;
-    _var_map = o._var_map;
-    _rev_map = o._rev_map;
+  DBM_t operator=(const DBM_t& o) {
+    if (this != &o) {
+      dbm_dealloc(_dbm);
+      _dbm = dbm_copy(o._dbm); 
+      _id = o._id;
+      _var_map = o._var_map;
+      _rev_map = o._rev_map;
+    }
     return *this;
   }
 
