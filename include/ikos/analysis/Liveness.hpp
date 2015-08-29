@@ -341,7 +341,6 @@ namespace analyzer
      liveness_map_t m_dead_map;
      // for internal use
      kill_gen_map_t m_kill_gen_map;
-     live_set_t m_all_vars;
 
     private:
 
@@ -356,11 +355,9 @@ namespace analyzer
            for (auto d: boost::make_iterator_range (live.defs_begin (), live.defs_end ())) {
              kill += d; 
              gen -= d;
-             m_all_vars.insert (d);
            }
            for (auto u: boost::make_iterator_range (live.uses_begin (), live.uses_end ())) {
              gen  += u; 
-             m_all_vars.insert (u);
            }
          }
          m_kill_gen_map.insert ( kg_binding_t (b.label (), kill_gen_t (kill, gen)));
@@ -418,26 +415,39 @@ namespace analyzer
        return inv;
      }
 
-     void check_pre (basic_block_label_t bb, liveness_domain_t pre) {
+     void check_pre (basic_block_label_t bb, liveness_domain_t live_in) {
        // Collect live variables at the entry of bb
-       live_set_t live_set;
-       if (!pre.is_bottom()) {
-         for (auto v: boost::make_iterator_range (pre.begin (), pre.end ()))
-           live_set.insert (v); 
+       live_set_t live_in_set;
+       if (!live_in.is_bottom()) {
+         for (auto v: boost::make_iterator_range (live_in.begin (), 
+                                                  live_in.end ()))
+           live_in_set.insert (v); 
        }
-       m_live_map.insert (l_binding_t (bb, live_set));
+       m_live_map.insert (l_binding_t (bb, live_in_set));
      }
      
-     void check_post (basic_block_label_t bb, liveness_domain_t post) {
+     void check_post (basic_block_label_t bb, liveness_domain_t live_out) {
+
        // Collect dead variables at the exit of bb
+
        live_set_t dead_set;
-       if (!post.is_bottom ()) {
-         live_set_t live_set;
-         for (auto v: boost::make_iterator_range (post.begin (), post.end ()))
-           live_set.insert (v); 
+       if (!live_out.is_bottom ()) {
+         live_set_t live_out_set;
+         for (auto v: boost::make_iterator_range (live_out.begin (), 
+                                                  live_out.end ()))
+           live_out_set.insert (v); 
          
-         std::set_difference( m_all_vars.begin (), m_all_vars.end (), 
-                              live_set.begin   (), live_set.end (), 
+         // get all used/defined variables in bb
+         live_set_t bb_vars;
+         auto &b = this->get_cfg().get_node (bb);
+         for (auto &s: b) {
+           auto live = s.getLive();
+           bb_vars.insert (live.defs_begin(), live.defs_end ());
+           bb_vars.insert (live.uses_begin(), live.uses_end ());
+         }
+         
+         std::set_difference( bb_vars.begin(), bb_vars.end(), 
+                              live_out_set.begin (), live_out_set.end (), 
                               std::inserter (dead_set, dead_set.end()));
        }
        m_dead_map.insert (l_binding_t (bb, dead_set));
