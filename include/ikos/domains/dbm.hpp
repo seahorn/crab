@@ -203,7 +203,7 @@ class DBM: public writeable,
     id_t k = _id++;
     if (k >= (int) (_max_sz - 2)) {
       // --- This might be possible if Delta is too small
-      IKOS_ERROR("DBM: need to enlarge the matrix. This should not happen!");
+      // IKOS_ERROR("DBM: need to enlarge the matrix. This should not happen!");
       resize (Delta);
     }
     
