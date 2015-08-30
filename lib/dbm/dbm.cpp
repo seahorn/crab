@@ -2114,3 +2114,27 @@ dbm dbm_expand (int v, int new_v, dbm x)
   dbm_dealloc(tmp);
   return res;
 }
+
+dbm dbm_resize(dbm abs, int sz)
+{
+  if(!abs)
+    return NULL;
+  if(abs->checked && !abs->feasible)
+    return NULL;
+
+  dbm ret = dbm_alloc(sz);
+  
+  memcpy(ret->pi, abs->pi, sizeof(int)*sz);
+
+  ret->sz = sz;
+  ret->checked = abs->checked;
+  ret->feasible = abs->feasible;
+  ret->closed = abs->closed;
+
+  edge_iter iter = edge_iterator(abs);
+  for(; !edges_end(iter); next_edge(iter))
+  {
+    dbm_add_edge(ret, src(iter), dest(iter), iter_val(iter));
+  }
+  return ret;
+}

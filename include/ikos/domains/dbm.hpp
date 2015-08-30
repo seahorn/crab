@@ -57,7 +57,8 @@ namespace DBM_impl
 
 }; // end namespace DBM_impl
 
-template< class Number, class VariableName, unsigned Sz = 100> 
+template< class Number, class VariableName, 
+          unsigned Sz = 100, int Delta = 50> 
 class DBM: public writeable,
            public numerical_domain<Number, VariableName >,
            public bitwise_operators<Number,VariableName >,
@@ -87,6 +88,7 @@ class DBM: public writeable,
   // class invariant: for all variable v. rev_map (var_map(v)) = v
   var_map_t _var_map;
   rev_map_t _rev_map;
+  int _max_sz; //maximum allocate size of the dbm matrix
 
   // return true if edge (i,j) exists in the DBM
   bool has_edge(int i, int j) {
@@ -98,16 +100,16 @@ class DBM: public writeable,
   }
 
   // special variables
-  inline int get_zero(){ return (int) Sz-1; }
-  inline int get_tmp() { return (int) Sz-2; }
+  inline int get_zero(){ return (int) _max_sz-1; }
+  inline int get_tmp() { return (int) _max_sz-2; }
 
   //! Perform some some sort of defragmentation by removing matrix
   //  indexes which are not alive. A similar process is done by
-  //  merge_var_map.
-  void dbm_compact () {
+  //  merge_var_map. Return true if the defragmentation took place.
+  bool dbm_compact () {
      
-    if (_id < (int) Sz/2 /*roughly half of the matrix size */)  
-      return;
+    if (_id < (int) _max_sz/2 /*roughly half of the matrix size */)  
+      return true;
     
     // assign a new id for each variable starting from 0
     id_t id = 0;
@@ -117,12 +119,10 @@ class DBM: public writeable,
         all_live_keys.insert (px.first);
     }
 
-    // // if majority of the keys are alive we will not compact and raise
-    // // an error later if maximum size is reached.
-    // if (all_live_keys.size () >= Sz / 2) {
-    //   return;
-    // }
-
+    if (all_live_keys.size () >= _max_sz  -2) {
+      return false;
+    }
+      
     var_map_t res;
     for (auto k: all_live_keys)
       res.insert (make_pair (k, id++));
@@ -149,6 +149,7 @@ class DBM: public writeable,
     swap(_dbm, ret);
 
     IKOS_DEBUG ("Compacted dbm to size ", _var_map.size (), "\n", *this);
+    return true;
   }
 
   //! Unify the mappings from two different dbms. It performs also
@@ -174,8 +175,8 @@ class DBM: public writeable,
 
     var_map_t res;
     for (auto k: all_keys) {
-      if (id >= Sz -2) 
-        IKOS_ERROR("DBM: need to enlarge the matrix.");
+      // --- if id >= _max_sz then the matrix will be resized by the
+      // --- caller.
       res.insert (make_pair (k, id));
       ++id;
     }
@@ -200,8 +201,11 @@ class DBM: public writeable,
       return it->second;
 
     id_t k = _id++;
-    if (k >= (int) (Sz - 2))
-      IKOS_ERROR("DBM: need to enlarge the matrix.");
+    if (k >= (int) (_max_sz - 2)) {
+      // --- This might be possible if Delta is too small
+      IKOS_ERROR("DBM: need to enlarge the matrix. This should not happen!");
+      resize (Delta);
+    }
     
     _var_map.insert (make_pair (x, k));
     _rev_map.insert (make_pair (k, x));
@@ -227,18 +231,18 @@ class DBM: public writeable,
 
  private:
 
-  DBM(bool is_bottom): writeable(), _dbm(dbm_bottom()), _id(0) { 
+  DBM(bool is_bottom): writeable(), _dbm(dbm_bottom()), _id(0), _max_sz (Sz) { 
     if (!is_bottom)
-      _dbm = dbm_top(Sz);
+      _dbm = dbm_top(_max_sz);
   }
 
-  DBM(dbm dbm, id_t id, var_map_t var_map, rev_map_t rev_map): 
+  DBM(dbm dbm, id_t id, var_map_t var_map, rev_map_t rev_map, unsigned max_sz): 
       writeable(), 
       _dbm(dbm), 
       _id (id),
       _var_map(var_map), 
-      _rev_map(rev_map) { 
-
+      _rev_map(rev_map),
+      _max_sz (max_sz) { 
     if (!_dbm)
       set_to_bottom ();
   }
@@ -528,14 +532,45 @@ class DBM: public writeable,
     }
   }
 
-  
+  // Return a new db with all edges of d but new size sz
+  dbm resize (dbm d, int sz) {
+    if (dbm_is_bottom (d))
+      return d;
+
+    if (sz < 3 || !(sz > d->sz))
+      return d;
+
+    IKOS_DEBUG ("Resizing the matrix to ", sz, " ... ");
+
+    dbm x = NULL;      
+    x= dbm_resize (d, sz);
+
+    // rename special variable "0"
+    vector<rmap>  subs;
+    subs.push_back (rmap {d->sz-1,sz-1});
+    dbm ret = NULL;
+    ret= dbm_rename (&subs[0], subs.size(), x);
+
+    dbm_dealloc (x);
+    return ret;
+  }
+
+  // resize this->_dbm to this->_max_size + delta
+  void resize (int delta) {
+    int max_sz = _max_sz + delta;
+    dbm tmp = resize (_dbm, max_sz);
+    dbm_dealloc(_dbm);    
+    swap(_dbm, tmp);
+    _max_sz = max_sz;
+  }
+
  public:
 
   static DBM_t top() { return DBM(false); }
     
   static DBM_t bottom() { return DBM(true); }
     
-  DBM(): writeable(), _dbm(dbm_top(Sz)), _id (0) {}  
+  DBM(): writeable(), _dbm(dbm_top(Sz)), _id (0), _max_sz (Sz) {}  
            
   DBM(const DBM_t& o): 
     writeable(), 
@@ -545,7 +580,8 @@ class DBM: public writeable,
     _dbm(dbm_copy(o._dbm)), 
     _id (o._id),
     _var_map (o._var_map),
-    _rev_map(o._rev_map) 
+    _rev_map(o._rev_map),
+    _max_sz (o._max_sz)
   { }
    
   DBM_t operator=(const DBM_t& o) {
@@ -555,6 +591,7 @@ class DBM: public writeable,
       _id = o._id;
       _var_map = o._var_map;
       _rev_map = o._rev_map;
+      _max_sz = o._max_sz;
     }
     return *this;
   }
@@ -606,15 +643,25 @@ class DBM: public writeable,
 
       dbm_x = dbm_rename (&subs_x[0], subs_x.size(), _dbm);
       dbm_y = dbm_rename (&subs_y[0], subs_y.size(), o._dbm);
-            
-      bool res = dbm_is_leq (dbm_x, dbm_y);
 
+      int max_sz = std::max (_max_sz, o._max_sz);
+      if (max_sz != _max_sz) {
+        dbm tmp = resize (dbm_x, max_sz);
+        dbm_dealloc(dbm_x);    
+        swap(dbm_x, tmp);
+      }
+      if (max_sz != o._max_sz) {
+        dbm tmp = resize (dbm_y, max_sz);
+        dbm_dealloc(dbm_y);    
+        swap(dbm_y, tmp);
+      }
+        
+      assert (dbm_x->sz == dbm_y->sz);            
+      bool res = dbm_is_leq (dbm_x, dbm_y);
       dbm_dealloc(dbm_x);
       dbm_dealloc(dbm_y);
 
       return res;
-
-      //return dbm_is_leq(_dbm, o._dbm);
     }
   }  
 
@@ -660,8 +707,22 @@ class DBM: public writeable,
       dbm_print_to(cout, dbm_y);
 #endif 
       
+      int max_sz = std::max (_max_sz, o._max_sz);
+      if (max_sz != _max_sz) {
+        dbm tmp = resize (dbm_x, max_sz);
+        dbm_dealloc(dbm_x);    
+        swap(dbm_x, tmp);
+      }
+      if (max_sz != o._max_sz) {
+        dbm tmp = resize (dbm_y, max_sz);
+        dbm_dealloc(dbm_y);    
+        swap(dbm_y, tmp);
+      }
+
+      assert (dbm_x->sz == dbm_y->sz);
       DBM_t res (dbm_join(dbm_x, dbm_y), 
-                 id, var_map, rev_map);
+                 id, var_map, rev_map, 
+                 max_sz);
       
       dbm_dealloc(dbm_x);
       dbm_dealloc(dbm_y);
@@ -698,9 +759,24 @@ class DBM: public writeable,
 
       dbm_x = dbm_rename (&subs_x[0], subs_x.size(), _dbm);
       dbm_y = dbm_rename (&subs_y[0], subs_y.size(), o._dbm);
-            
+
+      int max_sz = std::max (_max_sz, o._max_sz);
+      if (max_sz != _max_sz) {
+        dbm tmp = resize (dbm_x, max_sz);
+        dbm_dealloc(dbm_x);    
+        swap(dbm_x, tmp);
+      }
+
+      if (max_sz != o._max_sz) {
+        dbm tmp = resize (dbm_y, max_sz);
+        dbm_dealloc(dbm_y);    
+        swap(dbm_y, tmp);
+      }
+                    
+      assert (dbm_x->sz == dbm_y->sz);
       DBM_t res (dbm_widen(dbm_x, dbm_y), 
-                 id, var_map, rev_map);
+                 id, var_map, rev_map, 
+                 max_sz);
       
       dbm_dealloc(dbm_x);
       dbm_dealloc(dbm_y);
@@ -738,9 +814,24 @@ class DBM: public writeable,
 
       dbm_x = dbm_rename (&subs_x[0], subs_x.size(), _dbm);
       dbm_y = dbm_rename (&subs_y[0], subs_y.size(), o._dbm);
-            
+
+      int max_sz = std::max (_max_sz, o._max_sz);
+      if (max_sz != _max_sz) {
+        dbm tmp = resize (dbm_x, max_sz);
+        dbm_dealloc(dbm_x);    
+        swap(dbm_x, tmp);
+      }
+
+      if (max_sz != o._max_sz) {
+        dbm tmp = resize (dbm_y, max_sz);
+        dbm_dealloc(dbm_y);    
+        swap(dbm_y, tmp);
+      }
+                    
+      assert (dbm_x->sz == dbm_y->sz);
       DBM_t res (dbm_meet(dbm_x, dbm_y), 
-                 id, var_map, rev_map); 
+                 id, var_map, rev_map, 
+                 max_sz); 
 
       dbm_dealloc(dbm_x);
       dbm_dealloc(dbm_y);
@@ -775,9 +866,23 @@ class DBM: public writeable,
 
       dbm_x = dbm_rename (&subs_x[0], subs_x.size(), _dbm);
       dbm_y = dbm_rename (&subs_y[0], subs_y.size(), o._dbm);
+
+      int max_sz = std::max (_max_sz, o._max_sz);
+      if (max_sz != _max_sz) {
+        dbm tmp = resize (dbm_x, max_sz);
+        dbm_dealloc(dbm_x);    
+        swap(dbm_x, tmp);
+      }
+      if (max_sz != o._max_sz) {
+        dbm tmp = resize (dbm_y, max_sz);
+        dbm_dealloc(dbm_y);    
+        swap(dbm_y, tmp);
+      }
             
+      assert (dbm_x->sz == dbm_y->sz);
       DBM_t res (dbm_narrowing(dbm_x, dbm_y), 
-                 id, var_map, rev_map); 
+                 id, var_map, rev_map, 
+                 max_sz); 
 
       dbm_dealloc(dbm_x);
       dbm_dealloc(dbm_y);
@@ -820,7 +925,8 @@ class DBM: public writeable,
       // --- forget all at once is more efficient than calling
       //     operator-= multiple times.
       forget (idxs);
-      dbm_compact ();
+      if (!dbm_compact ())
+        resize (Delta);
     }
   }
 
@@ -829,8 +935,9 @@ class DBM: public writeable,
     if(is_bottom())
       return;
 
-    dbm_compact ();
-
+    if (!dbm_compact ())
+      resize (Delta);
+    
     if (e.is_constant()){
       exp_t exp = exp_const(DBM_impl::ntoi<Number>(e.constant()));
       assign (x,exp);
@@ -853,7 +960,8 @@ class DBM: public writeable,
     if(is_bottom())
       return;
 
-    dbm_compact ();
+    if (!dbm_compact ())
+      resize (Delta);
 
     if (x == y){
       // --- ensure lhs does not appear on the rhs
@@ -883,7 +991,8 @@ class DBM: public writeable,
     if(is_bottom())
       return;
 
-    dbm_compact ();
+    if (!dbm_compact ())
+      resize (Delta);
 
     if (x == y){
       // to make sure that lhs does not appear on the rhs
@@ -918,7 +1027,8 @@ class DBM: public writeable,
     if (exp.size() == 0)
       IKOS_ERROR("DBM: bad-formed constraint: ", cst);
 
-    dbm_compact ();
+    if (!dbm_compact ())
+      resize (Delta);
 
     Number k = -exp.constant(); 
     typename linear_expression_t::iterator it=exp.begin();

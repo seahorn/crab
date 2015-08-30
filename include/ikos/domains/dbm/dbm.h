@@ -110,5 +110,6 @@ dbm_var_t copy_var(dbm abs, dbm_var_t x);
 void dbm_add_edge(dbm x, int i, int j, int val);
 
 dbm dbm_expand(int v, int new_v, dbm x);
+dbm dbm_resize(dbm x, int sz);
 
 #endif
