@@ -12,8 +12,8 @@
 #ifndef IKOS_DBM_HPP
 #define IKOS_DBM_HPP
 
-//#define _IKOS_DEBUG_
-#include <ikos/common/dbg.hpp>
+// Uncomment for enabling debug information
+// #include <ikos/common/dbg.hpp>
 
 #include <ikos/common/types.hpp>
 #include <ikos/algorithms/linear_constraints.hpp>

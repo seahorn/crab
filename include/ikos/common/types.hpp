@@ -68,13 +68,15 @@ inline void ___print___(ArgTypes... args)
   (void)expand_variadic_pack{0, ((std::cerr << args), void(), 0)... };
 }
 
-// TODO: it should be moved to dbg.hpp with the other macros
 #define IKOS_ERROR(...)              \
     do {                             \
       ___print___(__VA_ARGS__);      \
       std::cerr << "\n";             \
       std::exit (EXIT_FAILURE);      \
     } while (0)
+
+// Default definition but it can be redefined by dbg.hpp
+#define IKOS_DEBUG(...)
 
 } // end namespace
 
@@ -89,14 +91,16 @@ namespace ikos
 
   public:
     virtual std::ostream& write(std::ostream& o) = 0;
-
+    
     virtual ~writeable() { }
 
+    friend std::ostream& operator<<(std::ostream& o, writeable& x) {
+      x.write (o);
+      return o;
+    }
+    
   }; // class writeable
 
-  inline std::ostream& operator<<(std::ostream& o, writeable& x) {
-    return (x.write(o));
-  }
 
 
   // Exception for IKOS internal errors
@@ -123,23 +127,26 @@ namespace ikos
   }; // class error
 
 
-  // Container data structure for typed variables
+  // Container for typed variables
   template< typename Type, typename VariableName >
   class variable: public writeable {
     
-  public:
+   public:
     typedef variable< Type, VariableName > variable_t;
+    typedef typename VariableName::index_t index_t;
 
-  public:
+   private:
     VariableName _n;
     
-  public:
-    variable(VariableName n): _n(n) { }
+   public:
+    variable(VariableName n): writeable (), _n(n) { }
 
     variable(const variable_t& v): writeable(), _n(v._n) { }
     
-    variable_t& operator=(variable_t v) {
-      this->_n = v._n;
+    variable_t& operator=(const variable_t &o) {
+      if (this != &o) {
+        this->_n = o._n;
+      }
       return *this;
     }
 
@@ -147,21 +154,32 @@ namespace ikos
       return _n;
     }
     
-    typename VariableName::index_t index() {
+    index_t index() const {
       return _n.index();
     }
 
-    bool operator<(const variable_t& v) const {
-      variable_t v1 = const_cast< variable_t& >(*this);
-      variable_t v2 = const_cast< variable_t& >(v);
-      return v1._n.index() < v2._n.index();
+    bool operator==(const variable_t& o) const {
+      return _n.index () == o._n.index ();
+    }
+
+    bool operator<(const variable_t& o) const {
+      return _n.index () < o._n.index ();
     }
 
     std::ostream& write(std::ostream& o) {
       o << _n;
       return o;
     }
-    
+
+    friend index_t hash_value (variable_t  v) {
+      return v.index ();
+    }
+
+    friend std::ostream& operator<<(std::ostream& o, variable_t  v) {
+      v.write(o);
+      return o;
+    }
+
   }; // class variable
 
   template< typename Element >

@@ -34,8 +34,8 @@
 #ifndef IKOS_ARRAY_GRAPH_HPP
 #define IKOS_ARRAY_GRAPH_HPP
 
-//#define _IKOS_DEBUG_
-#include <ikos/common/dbg.hpp>
+// Uncomment for enabling debug information
+// #include <ikos/common/dbg.hpp>
 
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
