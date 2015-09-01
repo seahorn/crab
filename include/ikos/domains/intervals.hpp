@@ -1223,11 +1223,16 @@ namespace ikos {
     }
     
     void assign(VariableName x, linear_expression_t e) {
-      interval_t r = e.constant();
-      for (typename linear_expression_t::iterator it = e.begin(); it != e.end(); ++it) {
-	r += it->first * this->_env[it->second.name()];
+      if (boost::optional<variable_t> v = e.get_variable ()) {
+        this->_env.set(x, this->_env [(*v).name ()]);
       }
-      this->_env.set(x, r);
+      else {
+        interval_t r = e.constant();
+        for (typename linear_expression_t::iterator it = e.begin(); it != e.end(); ++it) {
+	r += it->first * this->_env[it->second.name()];
+        }
+        this->_env.set(x, r);
+      }
     }
 
     void apply(operation_t op, VariableName x, VariableName y, VariableName z) {
@@ -1475,7 +1480,7 @@ namespace ikos {
       }
       return csts;
     }
-
+    
     const char* getDomainName () const {return "Intervals";}
 
   }; // class interval_domain
