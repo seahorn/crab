@@ -547,8 +547,8 @@ namespace ikos {
         term_id_t t = (*it).second;
         _var_map.erase(it); 
         // GKG: Temporarily disabled. 
-//        dom_var_t dom_v(domvar_of_term(t));
-//        _impl -= dom_v.name();
+        dom_var_t dom_v(domvar_of_term(t));
+        _impl -= dom_v.name();
       }
     }
 
