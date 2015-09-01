@@ -1,7 +1,7 @@
 /*******************************************************************************
  *
- * Anti-unification domain -- lifting a value domain 
- * using term equivalences.
+ * Anti-unification domain -- lifting a value domain using term
+ * equivalences.
  *
  * Author: Graeme Gange (gkgange@unimelb.edu.au)
  ******************************************************************************/
@@ -15,8 +15,8 @@
 #include <vector>
 #include <sstream>
 
-//#define _IKOS_DEBUG_
-#include <ikos/common/dbg.hpp>
+// Uncomment for enabling debug information
+// #include <ikos/common/dbg.hpp>
 
 #include <ikos/common/types.hpp>
 #include <ikos/common/bignums.hpp>
@@ -33,15 +33,12 @@
 #include <boost/container/flat_set.hpp>
 #include <boost/optional.hpp>
 
-#define BAIL(x) assert(0 && (x))
 #define WARN(x) fprintf(stderr, "WARNING: %s\n", x)
 
 using namespace boost;
 using namespace std;
 
 //#define VERBOSE 
-//#define DEBUG_JOIN
-//#define DEBUG_WIDEN
 
 namespace ikos {
 
@@ -95,10 +92,10 @@ namespace ikos {
 
     typedef typename linear_expression_t::component_t linterm_t;
 
-    typedef container::flat_map< variable_t, term_id_t > var_map_t;
     typedef container::flat_map< term_id_t, dom_var_t > term_map_t;
     typedef container::flat_map< dom_var_t, variable_t > rev_map_t;
     typedef container::flat_set< term_id_t > term_set_t;
+    typedef container::flat_map< variable_t, term_id_t > var_map_t;
 
    private:
     bool     _is_bottom;
@@ -303,8 +300,10 @@ namespace ikos {
         dom_t y_impl(o._impl);
 
         // Perform the mapping
-        domvar_set_t xvars;
-        domvar_set_t yvars;
+        vector<dom_var_t> xvars; 
+        vector<dom_var_t> yvars;
+        xvars.reserve (gen_map.size ());
+        yvars.reserve (gen_map.size ());
         for(auto p : gen_map)
         {
           // dom_var_t vt = _alloc.next();
@@ -312,16 +311,14 @@ namespace ikos {
           dom_var_t vx = domvar_of_term(p.second); 
           dom_var_t vy = o.domvar_of_term(p.first);
 
-          xvars += vx;
-          yvars += vy;
+          xvars.push_back (vx);
+          yvars.push_back (vy);
 
           x_impl.assign(vt.name(), dom_linexp_t(vx));
           y_impl.assign(vt.name(), dom_linexp_t(vy));
         }
-        for(auto vx : xvars)
-          x_impl -= vx.name();
-        for(auto vy : yvars)
-          y_impl -= vy.name();
+        for(auto vx : xvars) x_impl -= vx.name();
+        for(auto vy : yvars) y_impl -= vy.name();
 
         return x_impl <= y_impl;
       }
@@ -329,17 +326,15 @@ namespace ikos {
 
     anti_unif_t operator|(anti_unif_t o) {
       // Requires normalization of both operands
-
-      // std::cout << "SIZES: " << _var_map.size() << ", " <<
-      // o._var_map.size() << std::endl;
       normalize();
       o.normalize();
-      if (is_bottom()) {
+
+      if (is_bottom() || o.is_top()) {
         return o;
       } 
-      else if(o.is_bottom()) {
+      else if(o.is_bottom() || is_top ()) {
         return *this;
-      } 
+      }       
       else {
         // First, we need to compute the new term table.
         ttbl_t out_tbl;
@@ -368,8 +363,11 @@ namespace ikos {
 
         // Perform the mapping
         term_map_t out_map;
-        domvar_set_t xvars;
-        domvar_set_t yvars;
+        
+        vector<dom_var_t> xvars; 
+        vector<dom_var_t> yvars;
+        xvars.reserve (gener_map.size ());
+        yvars.reserve (gener_map.size ());
         for(auto p : gener_map)
         {
           auto txy = p.first;
@@ -380,47 +378,33 @@ namespace ikos {
           dom_var_t vx = domvar_of_term(txy.first);
           dom_var_t vy = o.domvar_of_term(txy.second);
 
-          xvars += vx;
-          yvars += vy;
+          xvars.push_back (vx);
+          yvars.push_back (vy);
 
           x_impl.assign(vt.name(), dom_linexp_t(vx));
           y_impl.assign(vt.name(), dom_linexp_t(vy));
         }
         
-#ifdef DEBUG_JOIN
-        cout << "============" << "JOIN" << "==================" << endl;
-        cout << *this << endl << "~~~~~~~~~~~~~~~~" << endl;
-        cout << o << endl << "----------------" << endl;
-        std::cout << "x = " << _impl << std::endl;
-        std::cout << "y = " << o._impl << std::endl;
-#endif
+        IKOS_DEBUG("============","JOIN","==================");
+        // IKOS_DEBUG(*this,"\n","~~~~~~~~~~~~~~~~");
+        // IKOS_DEBUG(o, "\n","----------------");
+        // IKOS_DEBUG("x = ",_impl);
+        // IKOS_DEBUG("y = ",o._impl);
 
-#ifdef DEBUG_JOIN
-        std::cout << "ren_0(x) = " << x_impl << std::endl;
-        std::cout << "ren_0(y) = " << y_impl << std::endl;
-#endif
-        for(auto vx : xvars)
-          x_impl -= vx.name();
-        for(auto vy : yvars)
-          y_impl -= vy.name();
-        /*
-        std::cout << "ren(x) = " << x_impl << std::endl;
-        std::cout << "ren(y) = " << y_impl << std::endl;
+        // IKOS_DEBUG("ren_0(x) = ", x_impl);
+        // IKOS_DEBUG("ren_0(y) = ",  y_impl);
 
-        cout << x_impl << endl << "----------------" << endl;
-        */
+        // TODO: for relational domains we should use
+        // domain_traits::forget which can be more efficient than
+        // removing one by one.
+        for(auto vx : xvars) x_impl -= vx.name();
+        for(auto vy : yvars) y_impl -= vy.name();
         
         dom_t x_join_y = x_impl|y_impl;
-
-#ifdef DEBUG_JOIN
-        cout << "After elimination:" << endl;
-        //cout << x_impl << endl << "~~~~~~~~~~~~~~~~" << endl;
-        //cout << y_impl << endl << "----------------" << endl;
-        //cout << x_join_y << endl << "================" << endl;
         anti_unif_t res (anti_unif (palloc, out_vmap, out_tbl, out_map, x_join_y));
-        cout << res << endl;
-#endif
-        return anti_unif(palloc, out_vmap, out_tbl, out_map, x_join_y);
+
+        //IKOS_DEBUG("After elimination:\n", res);
+        return res;
       }
     }
 
@@ -463,8 +447,10 @@ namespace ikos {
 
         // Perform the mapping
         term_map_t out_map;
-        domvar_set_t xvars;
-        domvar_set_t yvars;
+        vector<dom_var_t> xvars; 
+        vector<dom_var_t> yvars;
+        xvars.reserve (gener_map.size ());
+        yvars.reserve (gener_map.size ());
         for(auto p : gener_map)
         {
           auto txy = p.first;
@@ -475,26 +461,24 @@ namespace ikos {
           dom_var_t vx = domvar_of_term(txy.first);
           dom_var_t vy = o.domvar_of_term(txy.second);
 
-          xvars += vx;
-          yvars += vy;
+          xvars.push_back(vx);
+          yvars.push_back(vy);
 
           x_impl.assign(vt.name(), dom_linexp_t(vx));
           y_impl.assign(vt.name(), dom_linexp_t(vy));
         }
-        for(auto vx : xvars)
-          x_impl -= vx.name();
-        for(auto vy : yvars)
-          y_impl -= vy.name();
+        for(auto vx : xvars) x_impl -= vx.name();
+        for(auto vy : yvars) y_impl -= vy.name();
 
         dom_t x_widen_y = x_impl||y_impl;
+        anti_unif_t res (palloc, out_vmap, out_tbl, out_map, x_widen_y);
 
-#ifdef DEBUG_WIDEN
-        cout << "============" << "WIDENING" << "==================" << endl;
-        cout << x_impl << endl << "~~~~~~~~~~~~~~~~" << endl;
-        cout << y_impl << endl << "----------------" << endl;
-        cout << x_widen_y << endl << "================" << endl;
-#endif
-        return anti_unif(palloc, out_vmap, out_tbl, out_map, x_widen_y);
+        IKOS_DEBUG("============","WIDENING", "==================");
+        // IKOS_DEBUG(x_impl,"\n~~~~~~~~~~~~~~~~");
+        // IKOS_DEBUG(y_impl,"\n----------------");
+        // IKOS_DEBUG(x_widen_y,"\n================");
+
+        return res;
       }
     }
 
@@ -511,8 +495,10 @@ namespace ikos {
         return *this;
       }
       else {
-        BAIL("ANTI-UNIF: meet not yet implemented.");
-        return top();
+        WARN ("ANTI-UNIF: meet not yet implemented.");
+        // If meet is only used to refine instead of narrowing then we
+        // should return the second argument.
+        return o;
       }
     }
     
@@ -522,10 +508,11 @@ namespace ikos {
       if (is_bottom() || o.is_bottom()) {
         return bottom();
       } 
+      else if (is_top ())
+        return o;
       else {
-        BAIL("ANTI-UNIF: narrowing not yet implemented.");
-        anti_unif_t n(*this);
-        return n;
+        WARN ("ANTI-UNIF: narrowing not yet implemented.");
+        return *this; 
       }
     } // Returned matrix is not normalized.
 
@@ -538,15 +525,14 @@ namespace ikos {
         _var_map.erase(it); 
         dom_var_t dom_v(domvar_of_term(t));
         _impl -= dom_v.name();
+        _term_map.erase (t);
       }
     }
 
     void check_terms(void)
     {
       for(auto p : _var_map)
-      {
         assert(p.second < _ttbl.size());
-      }
     }
     template<class T>
     T check_terms(T& t)
@@ -574,9 +560,9 @@ namespace ikos {
       } else {
         term_id_t term_n(_ttbl.make_const(dom_n));
         dom_var_t v = domvar_of_term(term_n);
+
         dom_linexp_t exp(n);
         _impl.assign(v.name(), exp);
-
         return term_n;
       }
     }
@@ -638,7 +624,7 @@ namespace ikos {
 
         check_terms();
 
-        IKOS_DEBUG("Assign ",x_name,":=", e,":", *this);
+        IKOS_DEBUG("*** Assign ",x_name,":=", e,":", *this);
         return;
       }
     }
@@ -674,7 +660,7 @@ namespace ikos {
         rebind_var(vx, tx);
       }
       check_terms();
-      IKOS_DEBUG("Apply ", x, ":=", y, " ", op, " ", z, ":", *this);
+      IKOS_DEBUG("*** Apply ", x, ":=", y, " ", op, " ", z, ":", *this);
     }
     
     // x = y op k
@@ -688,7 +674,7 @@ namespace ikos {
         rebind_var(vx, tx);
       }
       check_terms();
-      IKOS_DEBUG("Apply ", x, ":=", y, " ", op, " ", k, ":", *this);
+      IKOS_DEBUG("*** Apply ", x, ":=", y, " ", op, " ", k, ":", *this);
       return;
     }
 
@@ -756,7 +742,7 @@ namespace ikos {
       // Probably doesn't need to done so eagerly.
       normalize();
 
-      IKOS_DEBUG("Added constraint ",cst,":", *this);
+      IKOS_DEBUG("*** Assume ",cst,":", *this);
       return;
     }
 
@@ -1051,7 +1037,6 @@ namespace ikos {
     
     // Output function
     ostream& write(ostream& o) { 
-
       // Normalization is not enforced in order to maintain accuracy
       // but we force it to display all the relationships.
       normalize();
@@ -1059,7 +1044,7 @@ namespace ikos {
       if(is_bottom ()){
         return o << "_|_";
       }
-      if(_var_map.size()== 0) {
+      if(_var_map.empty ()) {
         return o << "{}";
       }      
 
