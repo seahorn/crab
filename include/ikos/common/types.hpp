@@ -158,9 +158,9 @@ namespace ikos
       return _n.index();
     }
 
-    bool operator==(const variable_t& o) const {
-      return _n.index () == o._n.index ();
-    }
+    // bool operator==(const variable_t& o) const {
+    //   return _n.index () == o._n.index ();
+    // }
 
     bool operator<(const variable_t& o) const {
       return _n.index () < o._n.index ();
