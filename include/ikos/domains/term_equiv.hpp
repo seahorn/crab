@@ -42,6 +42,9 @@ using namespace std;
 //#define VERBOSE 
 //#define DEBUG_JOIN
 //#define DEBUG_WIDEN
+//#define DEBUG_VARMAP
+
+#define USE_TERM_INTERVAL_NORMALIZER
 
 namespace ikos {
 
@@ -56,11 +59,15 @@ namespace ikos {
      };
   }
 
+  template<class Info, class Abs>
+  class TermNormalizer;
+
   template< typename Info >
   class anti_unif: public writeable,
                  public numerical_domain<typename Info::Number, typename Info::VariableName >, 
                  public bitwise_operators< typename Info::Number, typename Info::VariableName >,
                  public division_operators< typename Info::Number, typename Info::VariableName > {
+    friend class TermNormalizer<Info, typename Info::domain_t>;
   private:
     // Underlying (value?) domain.
     typedef typename Info::Number Number;
@@ -166,6 +173,9 @@ namespace ikos {
     }
 
     // Apply a given functor in the underlying domain.
+    // GKG: Looks the current implementation could actually
+    // lose information; as it's not taking the meet with
+    // the current value.
     void eval_ftor(dom_t& dom, ttbl_t& tbl, term_id_t t)
     {
       // Get the term info.
@@ -536,17 +546,20 @@ namespace ikos {
       {
         term_id_t t = (*it).second;
         _var_map.erase(it); 
-        dom_var_t dom_v(domvar_of_term(t));
-        _impl -= dom_v.name();
+        // GKG: Temporarily disabled. 
+//        dom_var_t dom_v(domvar_of_term(t));
+//        _impl -= dom_v.name();
       }
     }
 
     void check_terms(void)
     {
+#ifdef DEBUG_VARMAP
       for(auto p : _var_map)
       {
         assert(p.second < _ttbl.size());
       }
+#endif
     }
     template<class T>
     T check_terms(T& t)
@@ -583,18 +596,33 @@ namespace ikos {
 
     term_id_t build_linterm(linterm_t term)
     {
-      return build_term(OP_MULTIPLICATION,
-                        build_const(term.first),
-                        term_of_var(term.second));
+      if(term.first == 1)
+      {
+        return term_of_var(term.second);
+      } else {
+        return build_term(OP_MULTIPLICATION,
+                          build_const(term.first),
+                          term_of_var(term.second));
+      }
     }
 
     term_id_t build_linexpr(linear_expression_t& e)
     {
       Number cst = e.constant();
-      term_id_t t = build_const(cst);
-      for(auto y: e) {
-        t = build_term(OP_ADDITION, t, build_linterm(y));
+      typename linear_expression_t::iterator it(e.begin());
+      if(it == e.end())
+        return build_const(cst);
+     
+      term_id_t t;
+      if(cst == 0)
+      {
+        t = build_linterm(*it);
+        ++it;
+      } else {
+        t = build_const(cst);
       }
+      for(; it != e.end(); ++it)
+        t = build_term(OP_ADDITION, t, build_linterm(*it));
       IKOS_DEBUG("Should have ", domvar_of_term(t).name(), " := ", e,"\n",_impl);
       return t;       
     }
@@ -630,7 +658,6 @@ namespace ikos {
       if (this->is_bottom()) {
         return;
       } else {
-
         //dom_linexp_t dom_e(rename_linear_expr(e));
         term_id_t tx(build_linexpr(e));
         variable_t x(x_name);
@@ -800,97 +827,9 @@ namespace ikos {
     }
     */
     
-    void queue_push(vector< vector<term_id_t> >& queue, term_id_t t)
-    {
-      int d = _ttbl.depth(t);
-      while(queue.size() <= d)
-        queue.push_back(vector<term_id_t>());
-      queue[d].push_back(t);
-    }
-
     // Propagate information from tightened terms to
     // parents/children.
-    void normalize(){
-
-      // First propagate down, then up.   
-      vector< vector< term_id_t > > queue;
-
-      for(term_id_t t : changed_terms)
-      {
-        queue_push(queue, t);
-      }
-
-      dom_t d_prime = _impl;
-      // Propagate information to children.
-      // Don't need to propagate level 0, since
-      //
-      for(int d = queue.size()-1; d > 0; d--)
-      {
-        for(term_id_t t : queue[d])
-        {
-          eval_ftor_down(d_prime, _ttbl, t);
-          if(!(_impl <= d_prime))
-          {
-            _impl = d_prime;
-            // Enqueue the args
-            typename ttbl_t::term_t* t_ptr = _ttbl.get_term_ptr(t); 
-            std::vector<term_id_t>& args(term::term_args(t_ptr));
-            for(term_id_t c : args)
-            {
-              if(changed_terms.find(c) == changed_terms.end())
-              {
-                changed_terms.insert(c);
-                queue[_ttbl.depth(c)].push_back(c);
-              }
-            }
-          }
-        }
-      }
-
-      // Collect the parents of changed terms.
-      term_set_t up_terms;
-      vector< vector<term_id_t> > up_queue;
-      for(term_id_t t : changed_terms)
-      {
-        for(term_id_t p : _ttbl.parents(t))
-        {
-          if(up_terms.find(p) == up_terms.end())
-          {
-            up_terms.insert(p);
-            queue_push(up_queue, p);
-          }
-        }
-      }
-
-      // Now propagate up, level by level.
-      assert(up_queue.size() == 0 || up_queue[0].size() == 0);
-      for(int d = 1; d < up_queue.size(); d++)
-      {
-        // up_queue[d] shouldn't change.
-        for(term_id_t t : up_queue[d])
-        {
-          eval_ftor(d_prime, _ttbl, t);
-          if(!(_impl <= d_prime))
-          {
-            _impl = d_prime;
-            for(term_id_t p : _ttbl.parents(t))
-            {
-              if(up_terms.find(p) == up_terms.end())
-              {
-                up_terms.insert(p);
-                queue_push(up_queue, p);
-              }
-            }
-          }
-        }
-      }
-
-      changed_terms.clear();
-
-      if (_impl.is_bottom ())
-        set_to_bottom ();
-
-    }
+    void normalize() { TermNormalizer<Info, typename Info::domain_t>::normalize(*this); }
 
     interval_t operator[](VariableName x) { 
       // Needed for accuracy
@@ -1094,6 +1033,247 @@ namespace ikos {
     }
 
   }; // class anti_unif
+  
+// Propagate information from tightened terms to
+// parents/children.
+template<class Info, class Abs>
+class TermNormalizer {
+public:
+  typedef typename anti_unif<Info>::anti_unif_t anti_unif_t;
+  typedef typename anti_unif_t::term_id_t term_id_t;
+  typedef Abs dom_t;
+  typedef typename anti_unif_t::ttbl_t ttbl_t;
+  typedef container::flat_set< term_id_t > term_set_t;
+
+  static void queue_push(ttbl_t& tbl, vector< vector<term_id_t> >& queue, term_id_t t)
+  {
+    int d = tbl.depth(t);
+    while(queue.size() <= d)
+      queue.push_back(vector<term_id_t>());
+    queue[d].push_back(t);
+  }
+
+  static void normalize(anti_unif_t& abs){
+    // First propagate down, then up.   
+    vector< vector< term_id_t > > queue;
+
+    ttbl_t& ttbl(abs._ttbl);
+    dom_t& impl = abs._impl;
+
+    for(term_id_t t : abs.changed_terms)
+    {
+      queue_push(ttbl, queue, t);
+    }
+
+    dom_t d_prime = impl;
+    // Propagate information to children.
+    // Don't need to propagate level 0, since
+    //
+    for(int d = queue.size()-1; d > 0; d--)
+    {
+      for(term_id_t t : queue[d])
+      {
+        abs.eval_ftor_down(d_prime, ttbl, t);
+        if(!(abs._impl <= d_prime))
+        {
+          impl = d_prime;
+
+          // Enqueue the args.
+          typename ttbl_t::term_t* t_ptr = ttbl.get_term_ptr(t); 
+          std::vector<term_id_t>& args(term::term_args(t_ptr));
+          for(term_id_t c : args)
+          {
+            if(abs.changed_terms.find(c) == abs.changed_terms.end())
+            {
+              abs.changed_terms.insert(c);
+              queue[ttbl.depth(c)].push_back(c);
+            }
+          }
+        }
+      }
+    }
+
+    // Collect the parents of changed terms.
+    term_set_t up_terms;
+    vector< vector<term_id_t> > up_queue;
+    for(term_id_t t : abs.changed_terms)
+    {
+      for(term_id_t p : ttbl.parents(t))
+      {
+        if(up_terms.find(p) == up_terms.end())
+        {
+          up_terms.insert(p);
+          queue_push(ttbl, up_queue, p);
+        }
+      }
+    }
+
+    // Now propagate up, level by level.
+    // This may miss inferences; for example with [[x = y - z]]
+    // information about y can propagate to z.
+    assert(up_queue.size() == 0 || up_queue[0].size() == 0);
+    for(int d = 1; d < up_queue.size(); d++)
+    {
+      // up_queue[d] shouldn't change.
+      for(term_id_t t : up_queue[d])
+      {
+        abs.eval_ftor(d_prime, ttbl, t);
+        if(!(impl <= d_prime))
+        {
+          // We need to do a meet here, as
+          // impl and F(stmt)impl may be
+          // incomparable
+          impl = impl&d_prime;
+          // impl = d_prime; // Old code
+          
+          for(term_id_t p : ttbl.parents(t))
+          {
+            if(up_terms.find(p) == up_terms.end())
+            {
+              up_terms.insert(p);
+              queue_push(ttbl, up_queue, p);
+            }
+          }
+        }
+      }
+    }
+
+    abs.changed_terms.clear();
+
+    if (abs._impl.is_bottom ())
+      abs.set_to_bottom ();
+  }
+};
+
+// Specialized implementation for interval domain.
+// GKG: Should modify to work with any independent attribute domain.
+#ifdef USE_TERM_INTERVAL_NORMALIZER
+template<class Info, class Num, class Var>
+class TermNormalizer<Info, interval_domain<Num, Var> > {
+public:
+  typedef typename anti_unif<Info>::anti_unif_t anti_unif_t;
+  typedef typename anti_unif_t::term_id_t term_id_t;
+  typedef interval_domain<Num, Var> dom_t;
+  typedef typename anti_unif_t::dom_var_t var_t;
+
+  typedef typename anti_unif_t::ttbl_t ttbl_t;
+  typedef container::flat_set< term_id_t > term_set_t;
+
+  typedef typename dom_t::interval_t interval_t;
+
+  static void queue_push(ttbl_t& tbl, vector< vector<term_id_t> >& queue, term_id_t t)
+  {
+    int d = tbl.depth(t);
+    while(queue.size() <= d)
+      queue.push_back(vector<term_id_t>());
+    queue[d].push_back(t);
+  }
+
+  static void normalize(anti_unif_t& abs){
+    // First propagate down, then up.
+    vector< vector< term_id_t > > queue;
+
+//    fprintf(stdout, "Specialized for term<interval>\n");
+
+    ttbl_t& ttbl(abs._ttbl);
+    dom_t& impl = abs._impl;
+    if(impl.is_bottom())
+    {
+      abs.set_to_bottom();
+      return;
+    }
+
+    for(term_id_t t : abs.changed_terms)
+    {
+      queue_push(ttbl, queue, t);
+    }
+
+    // Propagate information to children.
+    // Don't need to propagate level 0, since
+    //
+    for(int d = queue.size()-1; d > 0; d--)
+    {
+      for(term_id_t t : queue[d])
+      {
+        typename ttbl_t::term_t* t_ptr = ttbl.get_term_ptr(t);
+        if(t_ptr->kind() != term::TERM_APP)
+          continue;
+
+        std::vector<term_id_t>& args(term::term_args(t_ptr));
+        std::vector<interval_t> arg_intervals;
+        for(term_id_t c : args)
+          arg_intervals.push_back(impl[abs.domvar_of_term(c)]);
+        abs.eval_ftor_down(impl, ttbl, t);
+        
+        // Enqueue the args
+        for(size_t ci  = 0; ci < args.size(); ci++)
+        {
+          term_id_t c(args[ci]);
+          var_t v = abs.domvar_of_term(c);
+          interval_t v_upd(impl[v]);
+          if(!(arg_intervals[ci] <= v_upd))
+          {
+            impl.set(v.name(), arg_intervals[ci]&v_upd);
+            if(abs.changed_terms.find(c) == abs.changed_terms.end())
+            {
+              abs.changed_terms.insert(c);
+              queue[ttbl.depth(c)].push_back(c);
+            }
+          }
+        }
+      }
+    }
+
+    // Collect the parents of changed terms.
+    term_set_t up_terms;
+    vector< vector<term_id_t> > up_queue;
+    for(term_id_t t : abs.changed_terms)
+    {
+      for(term_id_t p : ttbl.parents(t))
+      {
+        if(up_terms.find(p) == up_terms.end())
+        {
+          up_terms.insert(p);
+          queue_push(ttbl, up_queue, p);
+        }
+      }
+    }
+
+    // Now propagate up, level by level.
+    assert(up_queue.size() == 0 || up_queue[0].size() == 0);
+    for(int d = 1; d < up_queue.size(); d++)
+    {
+      // up_queue[d] shouldn't change.
+      for(term_id_t t : up_queue[d])
+      {
+        var_t v = abs.domvar_of_term(t);
+        interval_t v_interval = impl[v];
+
+        abs.eval_ftor(impl, ttbl, t);
+
+        interval_t v_upd = impl[v];
+        if(!(v_interval <= v_upd))
+        {
+          impl.set(v.name(), v_interval&v_upd);
+          for(term_id_t p : ttbl.parents(t))
+          {
+            if(up_terms.find(p) == up_terms.end())
+            {
+              up_terms.insert(p);
+              queue_push(ttbl, up_queue, p);
+            }
+          }
+        }
+      }
+    }
+
+    abs.changed_terms.clear();
+
+    if (impl.is_bottom ())
+      abs.set_to_bottom ();
+  }
+};
+#endif
 
 namespace domain_traits {
 
