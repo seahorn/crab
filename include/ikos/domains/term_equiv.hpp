@@ -409,8 +409,12 @@ namespace ikos {
         // removing one by one.
         for(auto vx : xvars) x_impl -= vx.name();
         for(auto vy : yvars) y_impl -= vy.name();
-        
+
         dom_t x_join_y = x_impl|y_impl;
+
+        for(auto p : out_vmap)
+          out_tbl.add_ref(p.second);
+
         anti_unif_t res (anti_unif (palloc, out_vmap, out_tbl, out_map, x_join_y));
 
         IKOS_DEBUG("After elimination:\n", res);
@@ -481,6 +485,10 @@ namespace ikos {
         for(auto vy : yvars) y_impl -= vy.name();
 
         dom_t x_widen_y = x_impl||y_impl;
+
+        for(auto p : out_vmap)
+          out_tbl.add_ref(p.second);
+
         anti_unif_t res (palloc, out_vmap, out_tbl, out_map, x_widen_y);
 
         IKOS_DEBUG("============","WIDENING", "==================");
@@ -526,6 +534,21 @@ namespace ikos {
       }
     } // Returned matrix is not normalized.
 
+    void deref(term_id_t t)
+    {
+      std::vector<term_id_t> forgotten;
+      _ttbl.deref(t, forgotten);
+      for(term_id_t f : forgotten)
+      {
+        typename term_map_t::iterator it(_term_map.find(f));
+        if(it != _term_map.end())
+        {
+          _impl -= (*it).second.name();
+          _term_map.erase(it);
+        }
+      }
+    }
+    
     void operator-=(VariableName v) {
       // Remove a variable from the scope
       auto it(_var_map.find(v));
@@ -533,10 +556,8 @@ namespace ikos {
       {
         term_id_t t = (*it).second;
         _var_map.erase(it); 
-        // GKG: Temporarily disabled. 
-        dom_var_t dom_v(domvar_of_term(t));
-        _impl -= dom_v.name();
-        _term_map.erase (t);
+
+        deref(t);
       }
     }
 
@@ -556,9 +577,15 @@ namespace ikos {
 
     void rebind_var(variable_t& x, term_id_t tx)
     {
+      _ttbl.add_ref(tx);
+
       auto it(_var_map.find(x));
       if(it != _var_map.end())
+      {
+        deref((*it).second);
         _var_map.erase(it);
+      }
+
       _var_map.insert(std::make_pair(x, tx));
     }
 
@@ -717,6 +744,7 @@ namespace ikos {
         // Allocate a fresh term
         term_id_t id(_ttbl.fresh_var());
         _var_map[v] = id;
+        _ttbl.add_ref(id);
         return id;
       }
     }

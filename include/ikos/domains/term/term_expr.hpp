@@ -197,7 +197,7 @@ namespace ikos {
 
       term_table(const term_table_t& o)
         : free_var(o.free_var), _map(o._map),
-          terms(o.terms), _parents(o._parents), // term_refs(o.term_refs),
+          terms(o.terms), _parents(o._parents), _ref_count(o._ref_count),
           _depth(o._depth),
           free_terms(o.free_terms)
       { }
@@ -207,7 +207,7 @@ namespace ikos {
         free_var = o.free_var;
         _map = o._map;
         terms = o.terms;
-//        term_refs = o.term_refs;
+        _ref_count = o._ref_count;
         _parents = o._parents;
         _depth = o._depth;
         free_terms = o.free_terms;
@@ -279,18 +279,14 @@ namespace ikos {
 
       void add_ref(term_id t)
       {
-        // term_refs[t]++;
+        _ref_count[t]++;
       }
 
       void deref(term_id t, std::vector<term_id>& forgotten)
       {
-//        fprintf(stdout, "WARNING: term_table::deref not properly implemented.");
-        return;
-
-        /*
-        assert(term_refs[t]);
-        term_refs[t]--;
-        if(!term_refs[t])
+        assert(_ref_count[t]);
+        _ref_count[t]--;
+        if(!_ref_count[t])
         {
           forgotten.push_back(t);
           free_terms.push_back(t);
@@ -302,7 +298,6 @@ namespace ikos {
               deref(c, forgotten);
           }
         }
-        */
       }
 
       // Check if a tx is a generalization of ty, given an existing context.
@@ -449,13 +444,12 @@ namespace ikos {
           terms[t] = ref;
           _parents[t].clear();
           _depth[t] = 0;
-//          term_refs[t] = 0;
+          _ref_count[t] = 0;
           return t;
         } else {
-//          term_id t = term_refs.size();
-//          term_refs.push_back(0);
           term_id t = terms.size();
           terms.push_back(ref);
+          _ref_count.push_back(0);
           _parents.push_back(std::vector<term_id>());
           _depth.push_back(0);
           return t;
@@ -476,7 +470,8 @@ namespace ikos {
             unsigned int c_depth = 0;
             for(term_id c : term_args(ref.p.get()))
             {
-              // add_ref(c);
+              assert(c < _ref_count.size());
+              _ref_count[c] += 1;
               _parents[c].push_back(id);
               c_depth = std::max(c_depth, _depth[c]);
             }
@@ -491,6 +486,7 @@ namespace ikos {
       std::map<term_ref_t, term_id> _map;
       std::vector<term_ref_t> terms;
       std::vector< std::vector<term_id_t> > _parents;
+      std::vector<unsigned int> _ref_count;
       std::vector<unsigned int> _depth;
       std::vector<term_id> free_terms;
     };
