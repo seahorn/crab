@@ -441,8 +441,9 @@ namespace ikos {
     }
     
     template < typename Key, typename Value >
-    typename tree< Key, Value >::ptr tree< Key, Value >::insert(typename tree< Key, Value >::ptr t, Key key_, Value value_, 
-								binary_op_t& op, bool combine_left_to_right) {
+    typename tree< Key, Value >::ptr tree< Key, Value >::
+    insert(typename tree< Key, Value >::ptr t, Key key_, Value value_, 
+           binary_op_t& op, bool combine_left_to_right) {
       typedef typename tree< Key, Value >::ptr tree_ptr;
       tree_ptr nil;
       if (t) {
@@ -493,7 +494,10 @@ namespace ikos {
 	  Key key = b.first;
 	  Value value = b.second;
 	  if (key.index() == key_.index()) {
-	    boost::optional< Value > new_value = combine_left_to_right ? op.apply(value, value_) : op.apply(value_, value);
+	    boost::optional< Value > new_value = 
+                  combine_left_to_right ? 
+                  op.apply(value, value_) : 
+                  op.apply(value_, value);
 	    if (new_value) {
 	      if (*new_value == value) {
 		return t;
@@ -521,7 +525,8 @@ namespace ikos {
     }
 
     template < typename Key, typename Value >
-    typename tree< Key, Value >::ptr tree< Key, Value >::transform(typename tree< Key, Value >::ptr t, unary_op_t& op) {
+    typename tree< Key, Value >::ptr tree< Key, Value >::
+    transform(typename tree< Key, Value >::ptr t, unary_op_t& op) {
       typedef typename tree< Key, Value >::ptr tree_ptr;
       tree_ptr nil;
       if (t) {
@@ -616,8 +621,9 @@ namespace ikos {
     }
     
     template < typename Key, typename Value >
-    typename tree< Key, Value >::ptr tree< Key, Value >::merge(typename tree< Key, Value >::ptr s, typename tree< Key, Value >::ptr t, 
-							       binary_op_t& op, bool combine_left_to_right) {
+    typename tree< Key, Value >::ptr tree< Key, Value >::
+    merge(typename tree< Key, Value >::ptr s, typename tree< Key, Value >::ptr t, 
+          binary_op_t& op, bool combine_left_to_right) {
       typedef typename tree< Key, Value >::ptr tree_ptr;
       tree_ptr nil;
       if(s) {
@@ -629,7 +635,10 @@ namespace ikos {
 	    if (op.default_is_absorbing()) {
 	      boost::optional< Value > value = t->lookup(b.first);
 	      if (value) {
-		boost::optional< Value > new_value = combine_left_to_right ? op.apply(b.second, *value) : op.apply(*value, b.second);
+		boost::optional< Value > new_value = 
+                        combine_left_to_right ? 
+                        op.apply(b.second, *value) : 
+                        op.apply(*value, b.second);
 		if (new_value) {
 		  if (*new_value == b.second) {
 		    return s;
@@ -643,14 +652,17 @@ namespace ikos {
 		return nil;
 	      }
 	    } else {
-	      return insert(t, b.first, b.second, op, combine_left_to_right);
+	      return insert(t, b.first, b.second, op, !combine_left_to_right);
 	    }
 	  } else if (t->is_leaf()) {
 	    binding_t b = t->binding();
 	    if (op.default_is_absorbing()) {
 	      boost::optional< Value > value = s->lookup(b.first);
 	      if (value) {
-		boost::optional< Value > new_value = combine_left_to_right ? op.apply(*value, b.second) : op.apply(b.second, *value);
+		boost::optional< Value > new_value = 
+                        combine_left_to_right ? 
+                        op.apply(*value, b.second) : 
+                        op.apply(b.second, *value);
 		if (new_value) {
 		  if (*new_value == b.second) {
 		    return t;
@@ -664,7 +676,7 @@ namespace ikos {
 		return nil;
 	      }	      
 	    } else {
-	      return insert(s, b.first, b.second, op, !combine_left_to_right);
+                return insert(s, b.first, b.second, op, combine_left_to_right);
 	    }
 	  } else {
 	    if (s->branching_bit() == t->branching_bit() && s->prefix() == t->prefix()) {
