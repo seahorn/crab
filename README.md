@@ -1,14 +1,15 @@
-# (Private) Ikos-core #
+# Crab #
 
-This project contains the core of Ikos, a static analyzer based on
-abstract interpretation developed at NASA Ames Research Center. This
-core consists of an implementation of a fixpoint algorithm and several
-abstract numerical domains.
+Crab is a language agnostic framework to perform static analysis using
+abstract interpretation techniques.
 
-`Ikos-core` provides a minimal, *language-independent* CFG language that
-interfaces with Ikos as well as some adaptors to execute backward and
-forward analyses on it. In its simplest form, this CFG language
-consists only of:
+At its core, Crab is a bunch of abstract domains and fixpoint
+iterators. Crab is build on the top of
+[Ikos](http://ti.arc.nasa.gov/opensource/ikos/) (Inference Kernel for
+Open Static Analyzers).  Crab provides a minimal Control Flow Graph
+(CFG) language that interfaces with the abstract domains and iterators
+for generating invariants. The output of Crab is a map from CFG basic
+blocks to invariants. In its simplest form, the CFG consists only of:
 
 - assume,
 - havoc, 
@@ -19,56 +20,26 @@ but it also supports other instructions such as
 
 - pointer arithmetic and
 - array reads and writes
-
-This repository also provides with some new abstract domains as well
-as capabilities to perform abstract interpretation on concurrent
-systems.
-
-# General notes #
-
-- This repository is intended to be PRIVATE. A public version is
-  available [here](https://github.com/seahorn/ikos-core). Currently
-  this private repository has (by far) more functionality that the
-  public one. Eventually, all the functionality of this repository
-  should be moved to the public one.
-
-- `Ikos-core` by itself cannot analyze directly a program written in
-  some real programming language (such as C). For that, a translator
-  to the CFG language is needed. For an example of how to translate
-  LLVM-based languages see the project
-  [ikos-llvm](https://github.com/seahorn/ikos-llvm)
-  
-  
+- function calls and returns
+    
 # License #
 
-Some of the software is released under the terms and conditions of the
-NASA Open Source Agreement (NOSA) Version 1.3 or later:
-
-- `include\algorithms`
-- `include\common`
-- `include\domains` except:
-    - `dbm`
-    - `term`
-    - `array_graph`
-	- `array_smashing` 
-- `iterators`
-
-The following directories are not under NOSA:
-
-- `analysis`
-- `cfg`
+The Ikos part is distributed under NASA Open Source Agreement (NOSA)
+Version 1.3 or later. The rest of Crab needs to be licensed (TBD).
 
 # Prerequisites #
 
+Crab is written in C++ and heavily uses the Boost library.
+
 - The C++ compiler must support c++11
-- Boost and gmp 
+- Boost and Gmp 
 
 # Installation #
 
     cmake -DDEVMODE=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=my_install_dir ../
 	cmake --build . --target install 
 
-# Usage #
+# Examples #
 
 The tests directory contains some examples of how to build CFGs and
 how to compute invariants using different abstract domains.
@@ -147,7 +118,7 @@ Some abstract domains may need some non-standard abstract operations
 operations are described in `domain_traits.hpp`. Default
 implementations are in `domain_traits_impl.hpp`. If an abstract domain
 needs a different implementation from the default one then it should
-implement the operation under the namespace `ikos::domain_traits`. The
+implement the operation under the namespace `crab::domain_traits`. The
 file `domain_traits.hpp` must also include the header file of the
 abstract domain (if not already there).
 
