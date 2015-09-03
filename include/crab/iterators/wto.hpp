@@ -54,8 +54,8 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/container/slist.hpp>
-#include <ikos/common/types.hpp>
-#include <ikos/domains/intervals.hpp>
+#include <crab/common/types.hpp>
+#include <crab/domains/intervals.hpp>
 
 namespace ikos {
 

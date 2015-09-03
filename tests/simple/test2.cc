@@ -1,30 +1,9 @@
-#include <ikos/tests/Cfg_impl.hpp>
-#include <ikos/cfg/VarFactory.hpp>
-#include <ikos/analysis/FwdAnalyzer.hpp>
-
-#include <ikos/common/types.hpp>
-#include <ikos/algorithms/linear_constraints.hpp> 
-#include <ikos/domains/intervals.hpp>                      
-#include <ikos/domains/intervals_congruences.hpp>                      
-#include <ikos/domains/octagons.hpp>                      
-#include <ikos/domains/dbm.hpp>                      
+#include "../common.hpp"
 
 using namespace std;
-
-namespace domain_impl
-{
-  using namespace cfg_impl;
-  // Numerical domains
-  typedef interval_domain< z_number, varname_t > interval_domain_t;
-  typedef interval_congruence_domain< z_number, varname_t > ric_domain_t;
-  typedef DBM<z_number, varname_t> dbm_domain_t;
-  typedef octagon< z_number, varname_t > octagon_domain_t;
-  typedef anti_unif<ikos::term::TDomInfo<z_number, varname_t, interval_domain_t> >::anti_unif_t term_domain_t;
-} // end namespace
-
-using namespace cfg_impl;
-using namespace domain_impl;
-using namespace analyzer;
+using namespace crab::analyzer;
+using namespace crab::cfg_impl;
+using namespace crab::domain_impl;
 
 cfg_t prog (VariableFactory &vfac) 
 {
@@ -84,11 +63,11 @@ int main (int argc, char** argv )
     NumFwdAnalyzer <cfg_t, interval_domain_t,VariableFactory>::type a (cfg,vfac,run_live);
     interval_domain_t inv = interval_domain_t::top ();
     a.Run (inv);
-    cout << "Results with " << inv.getDomainName () << "\n";
+    cout << "Invariants using " << inv.getDomainName () << "\n";
     for (auto &b : cfg)
     {
       auto inv = a [b.label ()];
-      std::cout << cfg_impl::get_label_str (b.label ()) << "=" << inv << "\n";
+      std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
     }
   }
 
@@ -96,11 +75,11 @@ int main (int argc, char** argv )
     NumFwdAnalyzer <cfg_t, dbm_domain_t,VariableFactory>::type a (cfg,vfac,run_live);
     dbm_domain_t inv = dbm_domain_t::top ();
     a.Run (inv);
-    cout << "Results with " << inv.getDomainName () << "\n";
+    cout << "Invariants using " << inv.getDomainName () << "\n";
     for (auto &b : cfg)
     {
       auto inv = a [b.label ()];
-      std::cout << cfg_impl::get_label_str (b.label ()) << "=" << inv << "\n";
+      std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
     }
   }
 
@@ -108,23 +87,11 @@ int main (int argc, char** argv )
     NumFwdAnalyzer <cfg_t, ric_domain_t,VariableFactory>::type a (cfg,vfac,run_live);
     ric_domain_t inv = ric_domain_t::top ();
     a.Run (inv);
-    cout << "Results with " << inv.getDomainName () << "\n";
+    cout << "Invariants using " << inv.getDomainName () << "\n";
     for (auto &b : cfg)
     {
       auto inv = a [b.label ()];
-      std::cout << cfg_impl::get_label_str (b.label ()) << "=" << inv << "\n";
-    }
-  }
-
-  {
-    NumFwdAnalyzer <cfg_t, octagon_domain_t,VariableFactory>::type a (cfg,vfac,run_live);
-    octagon_domain_t inv = octagon_domain_t::top ();
-    a.Run (inv);
-    cout << "Results with " << inv.getDomainName () << "\n";
-    for (auto &b : cfg)
-    {
-      auto inv = a [b.label ()];
-      std::cout << cfg_impl::get_label_str (b.label ()) << "=" << inv << "\n";
+      std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
     }
   }
 
@@ -132,11 +99,11 @@ int main (int argc, char** argv )
     NumFwdAnalyzer <cfg_t, term_domain_t,VariableFactory>::type a (cfg,vfac,run_live);
     term_domain_t inv = term_domain_t::top ();
     a.Run (inv);
-    cout << "Results with " << inv.getDomainName () << "\n";
+    cout << "Invariants using " << inv.getDomainName () << "\n";
     for (auto &b : cfg)
     {
       auto inv = a [b.label ()];
-      std::cout << cfg_impl::get_label_str (b.label ()) << "=" << inv << "\n";
+      std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
     }
   }
 

@@ -1,28 +1,10 @@
-#include <ikos/tests/Cfg_impl.hpp>
-#include <ikos/cfg/Cfg.hpp>
-#include <ikos/cfg/VarFactory.hpp>
-
-#include <ikos/common/types.hpp>
-#include <ikos/algorithms/linear_constraints.hpp> 
-#include <ikos/domains/intervals.hpp>                      
-#include <ikos/domains/intervals_congruences.hpp>                      
-#include <ikos/domains/octagons.hpp>                      
-#include <ikos/domains/dbm.hpp>                      
-#include <ikos/domains/term_equiv.hpp>
+#include "../common.hpp"
 
 using namespace std;
+using namespace crab::analyzer;
+using namespace crab::cfg_impl;
+using namespace crab::domain_impl;
 
-namespace domain_impl
-{
-  using namespace cfg_impl;
-  // Numerical domains
-  typedef interval_domain< z_number, varname_t > interval_domain_t;
-  typedef ikos::term::TDomInfo<z_number, varname_t, interval_domain_t> term_info_t;
-  typedef anti_unif<term_info_t>::anti_unif_t term_domain_t;
-} // end namespace
-
-using namespace cfg_impl;
-using namespace domain_impl;
 
 int main (int argc, char** argv )
 {

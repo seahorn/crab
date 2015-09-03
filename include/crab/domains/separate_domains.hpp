@@ -42,8 +42,8 @@
 #define IKOS_SEPARATE_DOMAINS_HPP
 
 #include <iostream>
-#include <ikos/common/types.hpp>
-#include <ikos/algorithms/patricia_trees.hpp>
+#include <crab/common/types.hpp>
+#include <crab/domains/patricia_trees.hpp>
 
 namespace ikos {
   
@@ -180,17 +180,17 @@ namespace ikos {
 
     iterator begin() {
       if (this->is_bottom()) {
-	IKOS_ERROR("Separate domain: trying to invoke iterator on bottom");
+        CRAB_ERROR("Separate domain: trying to invoke iterator on bottom");
       } else {
-	return this->_tree.begin();
+        return this->_tree.begin();
       }
     }
     
     iterator end() {
       if (this->is_bottom()) {
-	IKOS_ERROR("Separate domain: trying to invoke iterator on bottom");
+        CRAB_ERROR("Separate domain: trying to invoke iterator on bottom");
       } else {
-	return this->_tree.end();
+        return this->_tree.end();
       }
     }
     

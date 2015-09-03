@@ -41,10 +41,10 @@
 #ifndef IKOS_DOMAIN_PRODUCTS_HPP
 #define IKOS_DOMAIN_PRODUCTS_HPP
 
-#include <ikos/common/types.hpp>
-#include <ikos/domains/numerical_domains_api.hpp>
-#include <ikos/domains/bitwise_operators_api.hpp>
-#include <ikos/domains/division_operators_api.hpp>
+#include <crab/common/types.hpp>
+#include <crab/domains/numerical_domains_api.hpp>
+#include <crab/domains/bitwise_operators_api.hpp>
+#include <crab/domains/division_operators_api.hpp>
 
 namespace ikos {
 

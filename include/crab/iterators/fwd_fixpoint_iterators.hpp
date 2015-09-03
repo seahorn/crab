@@ -49,9 +49,9 @@
 #include <iostream>
 #include <map>
 #include <boost/shared_ptr.hpp>
-#include <ikos/common/types.hpp>
-#include <ikos/iterators/wto.hpp>
-#include <ikos/iterators/fixpoint_iterators_api.hpp>
+#include <crab/common/types.hpp>
+#include <crab/iterators/wto.hpp>
+#include <crab/iterators/fixpoint_iterators_api.hpp>
 
 namespace ikos {
   

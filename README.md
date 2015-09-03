@@ -1,15 +1,17 @@
 # Crab #
 
 Crab is a language agnostic framework to perform static analysis using
-abstract interpretation techniques.
+[abstract interpretation](https://en.wikipedia.org/wiki/Abstract_interpretation)
+techniques.
 
 At its core, Crab is a bunch of abstract domains and fixpoint
-iterators. Crab is build on the top of
+iterators. Crab is built on the top of
 [Ikos](http://ti.arc.nasa.gov/opensource/ikos/) (Inference Kernel for
-Open Static Analyzers).  Crab provides a minimal Control Flow Graph
-(CFG) language that interfaces with the abstract domains and iterators
-for generating invariants. The output of Crab is a map from CFG basic
-blocks to invariants. In its simplest form, the CFG consists only of:
+Open Static Analyzers) developed by NASA Ames Research Center.  Crab
+provides a minimal Control Flow Graph (CFG) language that interfaces
+with the abstract domains and iterators for the purpose of generating
+invariants. The output of Crab is a map from CFG basic blocks to
+invariants. In its simplest form, the CFG consists only of:
 
 - assume,
 - havoc, 
@@ -18,18 +20,28 @@ blocks to invariants. In its simplest form, the CFG consists only of:
 
 but it also supports other instructions such as
 
-- pointer arithmetic and
+- pointer arithmetic 
 - array reads and writes
 - function calls and returns
-    
+
+Crab has been designed to have two kind of users:
+
+1.  Analysis/verification tools that want to compute invariants using
+    abstract interpretation.
+
+2.  Researchers on abstract interpretation who would like to
+    experiment with new abstract domains and fixpoint iterators.
+
 # License #
 
-The Ikos part is distributed under NASA Open Source Agreement (NOSA)
-Version 1.3 or later. The rest of Crab needs to be licensed (TBD).
+Ikos is distributed under NASA Open Source Agreement (NOSA)
+Version 1.3 or later.
+
+Crab needs to be licensed (TBD).
 
 # Prerequisites #
 
-Crab is written in C++ and heavily uses the Boost library.
+Crab is written in C++ and uses heavily the Boost library:
 
 - The C++ compiler must support c++11
 - Boost and Gmp 
@@ -46,6 +58,10 @@ how to compute invariants using different abstract domains.
 
 Important: the option `DEVMODE` must be enabled to compile all the
 tests.
+
+# How to integrate Crab in other analysis/verification tools #
+
+TODO
 
 # How to implement new abstract domains #
 
@@ -75,7 +91,7 @@ fixpoint algorithm:
     // Narrowing 
     AbsDomain operator&&(AbsDomain o);
     
-# How to implement new numerical abstract domains #
+## How to implement new numerical abstract domains ##
 
 In addition to the previous API, for numerical domains it is also
 required to implement the API described in `numerical_domains_api.hpp`:

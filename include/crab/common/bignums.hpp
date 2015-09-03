@@ -46,7 +46,7 @@
 #include <sstream>
 #include <iostream>
 #include <gmpxx.h>
-#include <ikos/common/types.hpp>
+#include <crab/common/types.hpp>
 
 namespace ikos {
   

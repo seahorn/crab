@@ -1,32 +1,21 @@
-#include <ikos/tests/Cfg_impl.hpp>
-#include <ikos/cfg/VarFactory.hpp>
-#include <ikos/cfg/ConcSys.hpp>
-#include <ikos/analysis/InvTable_traits.hpp>
-#include <ikos/analysis/ConcAnalyzer.hpp>
-#include <ikos/common/types.hpp>
-#include <ikos/domains/intervals.hpp>                      
+#include "../common.hpp"
+#include <crab/cfg/ConcSys.hpp>
+#include <crab/analysis/InvTable_traits.hpp>
+#include <crab/analysis/ConcAnalyzer.hpp>
 
 using namespace std;
+using namespace crab::analyzer;
+using namespace crab::cfg_impl;
+using namespace crab::domain_impl;
+using namespace crab::conc;
 
-namespace domain_impl
-{
-  using namespace cfg_impl;
-  typedef linear_constraint_system<z_number, varname_t> z_lin_cst_sys_t;
-  // Numerical domains
-  typedef interval_domain< z_number, varname_t > interval_domain_t;
-  typedef DBM< z_number, varname_t > dbm_domain_t;
-} // end namespace
-
-namespace conc_impl
-{
-  template<> inline std::string get_thread_id_str(std::string s) 
-  { return s; }
+namespace crab {
+  namespace conc_impl
+  {
+   template<> inline std::string get_thread_id_str(std::string s) 
+   { return s; }
+  } 
 }
-
-using namespace cfg_impl;
-using namespace domain_impl;
-using namespace analyzer;
-using namespace conc;
 
 typedef ConcSys< string, cfg_t> conc_sys_t;
 
@@ -156,7 +145,7 @@ int main (int argc, char** argv )
   
   for (auto const p: concSys)
   {
-    cout << "Results " << conc_impl::get_thread_id_str (p.first) << "\n";
+    cout << "Results " << crab::conc_impl::get_thread_id_str (p.first) << "\n";
     conc_analyzer_t::inv_map_t &inv_map = a.getInvariants (p.first);
     for (auto p : inv_map)
       cout << p.first << ": " << p.second << endl;

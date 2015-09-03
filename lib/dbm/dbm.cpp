@@ -7,10 +7,10 @@
 #include <algorithm>
 #include <vector>
 
-#include <ikos/domains/dbm/dbm.h>
-#include <ikos/domains/dbm/expr.h>
-#include <ikos/domains/dbm/dbm_iter.h>
-#include <ikos/domains/dbm/util/Heap.h>
+#include <crab/domains/dbm/dbm.h>
+#include <crab/domains/dbm/expr.h>
+#include <crab/domains/dbm/dbm_iter.h>
+#include <crab/domains/dbm/util/Heap.h>
 
 // #define NDEBUG // disable assert's
 

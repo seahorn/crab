@@ -54,13 +54,13 @@
 #include <set>
 #include <map>
 #include <boost/optional.hpp>
-#include <ikos/common/types.hpp>
-#include <ikos/common/bignums.hpp>
-#include <ikos/algorithms/linear_constraints.hpp>
-#include <ikos/domains/separate_domains.hpp>
-#include <ikos/domains/numerical_domains_api.hpp>
-#include <ikos/domains/bitwise_operators_api.hpp>
-#include <ikos/domains/division_operators_api.hpp>
+#include <crab/common/types.hpp>
+#include <crab/common/bignums.hpp>
+#include <crab/domains/linear_constraints.hpp>
+#include <crab/domains/separate_domains.hpp>
+#include <crab/domains/numerical_domains_api.hpp>
+#include <crab/domains/bitwise_operators_api.hpp>
+#include <crab/domains/division_operators_api.hpp>
 
 namespace ikos {
 
@@ -179,7 +179,7 @@ namespace ikos {
       } else if (this->_n == x._n) {
 	return *this;
       } else {
-	IKOS_ERROR("Bound: undefined operation -oo + +oo");
+	CRAB_ERROR("Bound: undefined operation -oo + +oo");
       }
     }
 
@@ -205,7 +205,7 @@ namespace ikos {
     
     bound_t operator/(bound_t x) {
       if (x._n == 0) {
-	IKOS_ERROR("Bound: division by zero");
+	CRAB_ERROR("Bound: division by zero");
       } else if (this->is_finite() && x.is_finite()) {
 	return bound_t(false, _n / x._n);
       } else if (this->is_finite() && x.is_infinite()) {
@@ -1303,7 +1303,7 @@ namespace ikos {
           xi = yi.SExt(width);
           break;
         default: 
-          IKOS_ERROR("unreachable");
+          CRAB_ERROR("unreachable");
       }      
       this->_env.set(x, xi);
     }
@@ -1322,7 +1322,7 @@ namespace ikos {
           xi = yi.SExt(width);
           break;
         default: 
-          IKOS_ERROR("unreachable");
+          CRAB_ERROR("unreachable");
       }      
       this->_env.set(x, xi);
     }
@@ -1357,7 +1357,7 @@ namespace ikos {
 	break;
         }
         default: 
-          IKOS_ERROR("unreachable");
+          CRAB_ERROR("unreachable");
       }
       this->_env.set(x, xi);
     }
@@ -1392,7 +1392,7 @@ namespace ikos {
 	break;
         }
         default: 
-          IKOS_ERROR("unreachable");
+          CRAB_ERROR("unreachable");
       }
       this->_env.set(x, xi);
     }
@@ -1422,7 +1422,7 @@ namespace ikos {
 	break;
         }
         default: 
-          IKOS_ERROR("unreachable");
+          CRAB_ERROR("unreachable");
       }
       this->_env.set(x, xi);
 
@@ -1449,7 +1449,7 @@ namespace ikos {
 	break;
         }
         default: 
-          IKOS_ERROR("unreachable");
+          CRAB_ERROR("unreachable");
       }
       this->_env.set(x, xi);
     }

@@ -47,13 +47,13 @@
 
 #include <iostream>
 
-#include <ikos/common/types.hpp>
-#include <ikos/domains/numerical_domains_api.hpp>
-#include <ikos/domains/bitwise_operators_api.hpp>
-#include <ikos/domains/division_operators_api.hpp>
-#include <ikos/domains/domain_products.hpp>
-#include <ikos/domains/congruences.hpp>
-#include <ikos/domains/intervals.hpp>
+#include <crab/common/types.hpp>
+#include <crab/domains/numerical_domains_api.hpp>
+#include <crab/domains/bitwise_operators_api.hpp>
+#include <crab/domains/division_operators_api.hpp>
+#include <crab/domains/domain_products.hpp>
+#include <crab/domains/congruences.hpp>
+#include <crab/domains/intervals.hpp>
 
 namespace ikos {
 

@@ -1,17 +1,14 @@
 #ifndef __DBG_HPP__
 #define __DBG_HPP__
-#include <ikos/common/types.hpp>
 
-namespace ikos {
+#include <crab/common/types.hpp>
 
-#undef IKOS_DEBUG
+#undef CRAB_DEBUG
 
-#define IKOS_DEBUG(...)              \
+#define CRAB_DEBUG(...)              \
     do {                             \
       ___print___(__VA_ARGS__);      \
       std::cerr << "\n";             \
     } while (0)
-
-} // end namespace
 
 #endif 

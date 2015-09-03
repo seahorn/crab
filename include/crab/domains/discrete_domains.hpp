@@ -42,9 +42,9 @@
 #define IKOS_DISCRETE_DOMAINS_HPP
 
 #include <iostream>
-#include <ikos/common/types.hpp>
-#include <ikos/algorithms/patricia_trees.hpp>
-#include <ikos/domains/separate_domains.hpp>
+#include <crab/common/types.hpp>
+#include <crab/domains/patricia_trees.hpp>
+#include <crab/domains/separate_domains.hpp>
 
 namespace ikos {
 
@@ -192,7 +192,7 @@ namespace ikos {
 
     std::size_t size() {
       if (this->_is_top) {
-	IKOS_ERROR("Size for discrete domain TOP is undefined");
+	CRAB_ERROR("Size for discrete domain TOP is undefined");
       } else {
 	return this->_set.size();
       }
@@ -200,7 +200,7 @@ namespace ikos {
     
     iterator begin() {
       if (this->_is_top) {
-	IKOS_ERROR("Iterator for discrete domain TOP is undefined");
+	CRAB_ERROR("Iterator for discrete domain TOP is undefined");
       } else {
 	return this->_set.begin();
       }
@@ -208,7 +208,7 @@ namespace ikos {
     
     iterator end() {
       if (this->_is_top) {
-	IKOS_ERROR("Iterator for discrete domain TOP is undefined");
+	CRAB_ERROR("Iterator for discrete domain TOP is undefined");
       } else {
 	return this->_set.end();
       }

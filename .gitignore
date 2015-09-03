@@ -1,0 +1,7 @@
+/build/
+/debug/
+/GPATH
+/GRTAGS
+/GTAGS
+*.pyc
+*.pyo

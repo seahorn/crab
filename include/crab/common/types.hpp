@@ -53,8 +53,6 @@
 #include <boost/container/slist.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 
-namespace ikos {
-
 template<typename... ArgTypes>
 inline void ___print___(ArgTypes... args)
 {
@@ -65,20 +63,19 @@ inline void ___print___(ArgTypes... args)
   // trick is to use the side effect of list-initializer to call a function
   // on every argument.
   // (void) is to suppress "statement has no effect" warnings
-  (void)expand_variadic_pack{0, ((std::cerr << args), void(), 0)... };
+    (void)expand_variadic_pack{0, ((std::cerr << args), void(), 0)... };
 }
 
-#define IKOS_ERROR(...)              \
-    do {                             \
-      ___print___(__VA_ARGS__);      \
-      std::cerr << "\n";             \
-      std::exit (EXIT_FAILURE);      \
-    } while (0)
+#define CRAB_ERROR(...)              \
+  do {                               \
+    ___print___(__VA_ARGS__);        \
+    std::cerr << "\n";               \
+    std::exit (EXIT_FAILURE);        \
+  } while (0)
 
 // Default definition but it can be redefined by dbg.hpp
-#define IKOS_DEBUG(...)
+#define CRAB_DEBUG(...)
 
-} // end namespace
 
 namespace ikos 
 {

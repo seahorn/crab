@@ -1,31 +1,9 @@
-#include <ikos/tests/Cfg_impl.hpp>
-#include <ikos/cfg/VarFactory.hpp>
-#include <ikos/analysis/FwdAnalyzer.hpp>
-
-#include <ikos/common/types.hpp>
-#include <ikos/algorithms/linear_constraints.hpp> 
-#include <ikos/domains/intervals.hpp>                      
-#include <ikos/domains/dbm.hpp>                      
-#include <ikos/domains/array_smashing.hpp>                      
+#include "../common.hpp"
 
 using namespace std;
-
-namespace domain_impl
-{
-  using namespace cfg_impl;
-  typedef linear_constraint_system<z_number, varname_t> z_lin_cst_sys_t;
-  // Abstract domains
-  typedef interval_domain< z_number, varname_t > interval_domain_t;
-  typedef DBM< z_number, varname_t > dbm_domain_t;
-  typedef array_smashing <interval_domain_t, z_number, varname_t> array_smashing_t;
-  typedef interval<z_number> z_interval_t;
-  typedef bound<z_number> z_bound_t;
-
-} // end namespace
-
-using namespace cfg_impl;
-using namespace domain_impl;
-using namespace analyzer;
+using namespace crab::analyzer;
+using namespace crab::cfg_impl;
+using namespace crab::domain_impl;
 
 cfg_t prog1 (VariableFactory &vfac) 
 {
@@ -419,7 +397,7 @@ void run(cfg_t cfg, string name, VariableFactory &vfac)
   {
     // invariants at the entry of the block
     auto inv = It [b.label ()];
-    cout << cfg_impl::get_label_str (b.label ()) << "=" << inv << "\n";
+    cout << get_label_str (b.label ()) << "=" << inv << "\n";
   }
   cout << endl;
 }

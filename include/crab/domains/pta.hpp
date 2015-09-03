@@ -59,9 +59,9 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/unordered_map.hpp>
 
-#include <ikos/common/types.hpp>
-#include <ikos/common/bignums.hpp>
-#include <ikos/domains/intervals.hpp>
+#include <crab/common/types.hpp>
+#include <crab/common/bignums.hpp>
+#include <crab/domains/intervals.hpp>
 
 namespace ikos {
 
@@ -532,7 +532,7 @@ private:
         }
         return std::make_pair(addrs, offset);
       }
-      default: { IKOS_ERROR("unreachable"); }
+      default: { CRAB_ERROR("unreachable"); }
     }
   }
 
@@ -569,11 +569,11 @@ private:
             break;
           }
           case OBJECT_REF: {
-            IKOS_ERROR("cannot dereference a memory object");
+            CRAB_ERROR("cannot dereference a memory object");
             break;
           }
           case FUNCTION_REF: {
-            IKOS_ERROR("cannot dereference a function object");
+            CRAB_ERROR("cannot dereference a function object");
             break;
           }
           case PARAM_REF: {
@@ -598,7 +598,7 @@ private:
             }
             break;
           }
-          default: { IKOS_ERROR("unreachable"); }
+          default: { CRAB_ERROR("unreachable"); }
         }
         break;
       }
@@ -622,11 +622,11 @@ private:
             break;
           }
           case OBJECT_REF: {
-            IKOS_ERROR("cannot dereference a memory object");
+            CRAB_ERROR("cannot dereference a memory object");
             break;
           }
           case FUNCTION_REF: {
-            IKOS_ERROR("cannot dereference a function object");
+            CRAB_ERROR("cannot dereference a function object");
             break;
           }
           case PARAM_REF: {
@@ -652,11 +652,11 @@ private:
             }
             break;
           }
-          default: { IKOS_ERROR("unreachable"); }
+          default: { CRAB_ERROR("unreachable"); }
         }
         break;
       }
-      default: { IKOS_ERROR("unreachable"); }
+      default: { CRAB_ERROR("unreachable"); }
     }
   }
 

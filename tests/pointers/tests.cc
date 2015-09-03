@@ -1,15 +1,10 @@
-#include <ikos/tests/Cfg_impl.hpp>
-#include <ikos/cfg/VarFactory.hpp>
-
-#include <ikos/common/types.hpp>
-#include <ikos/analysis/Pointer.hpp>
+#include "../common.hpp"
+#include <crab/analysis/Pointer.hpp>
 
 using namespace std;
-
-using namespace cfg_impl;
-using namespace analyzer;
-
-typedef interval <z_number> z_interval;
+using namespace crab::analyzer;
+using namespace crab::cfg_impl;
+using namespace crab::domain_impl;
 
 cfg_t cfg1 (VariableFactory &vfac) 
 {

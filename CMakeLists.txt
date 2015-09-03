@@ -1,4 +1,4 @@
-project(IkosCore)
+project(Crab)
 
 cmake_minimum_required (VERSION 2.8.11)
 
@@ -17,8 +17,7 @@ if(NOT CMAKE_BUILD_TYPE)
    set(CMAKE_BUILD_TYPE Debug CACHE STRING "Choose the type of build." FORCE)
 endif(NOT CMAKE_BUILD_TYPE)
 
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O3 -Wall")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -Wall")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O3 -Wall")
 
 set (CUSTOM_BOOST_ROOT "" CACHE PATH "Path to custom boost installation.")
 if (CUSTOM_BOOST_ROOT)
@@ -39,7 +38,7 @@ else()
   set(GMPXX_LIB "")
 endif()
 
-include_directories (${IkosCore_SOURCE_DIR}/include)
+include_directories (${Crab_SOURCE_DIR}/include)
 
 # check for rt lib. Not needed on OSX.
 find_library(RT_LIB NAMES rt)
@@ -69,8 +68,8 @@ if (DEVMODE)
 endif ()
 
 install(DIRECTORY include/
-  DESTINATION include
-  )
+  DESTINATION include)
+       
 
 
 

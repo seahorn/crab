@@ -48,8 +48,8 @@
 #include <boost/container/flat_map.hpp>
 #include <boost/container/slist.hpp>
 #include <boost/iterator/iterator_facade.hpp>
-#include <ikos/common/types.hpp>
-#include <ikos/algorithms/patricia_trees.hpp>
+#include <crab/common/types.hpp>
+#include <crab/domains/patricia_trees.hpp>
 
 namespace ikos {
   
@@ -525,7 +525,7 @@ namespace ikos {
           default: ;;             
         }
       }
-      IKOS_ERROR("unreachable");       
+      CRAB_ERROR("unreachable");       
     }
     
     std::ostream& write(std::ostream& o) {

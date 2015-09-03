@@ -50,7 +50,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/optional.hpp>
 #include <boost/iterator/iterator_facade.hpp>
-#include <ikos/common/types.hpp>
+#include <crab/common/types.hpp>
 
 namespace ikos {
   

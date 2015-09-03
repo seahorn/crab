@@ -3,326 +3,324 @@
 
 /* Liveness analysis */
 
-#include <ikos/analysis/BwdAnalyzer.hpp>
-#include <ikos/domains/discrete_domains.hpp>
+#include <crab/analysis/BwdAnalyzer.hpp>
+#include <crab/domains/discrete_domains.hpp>
 
-namespace analyzer 
-{
+namespace crab {
 
-  using namespace std;
-  using namespace cfg;
+  namespace analyzer {
 
-  namespace liveness_discrete_impl{
+    using namespace cfg;
 
-    template< typename Element>
-    class liveness_domain: public ikos::writeable {
+    namespace liveness_discrete_impl{
+    
+       template< typename Element>
+       class liveness_domain: public ikos::writeable {
+         
+        private:
+         typedef liveness_domain< Element > liveness_domain_t;
+         typedef discrete_domain< Element > discrete_domain_t;
+         
+        public:
+         typedef typename discrete_domain_t::iterator iterator;
+         
+        private:
+         discrete_domain_t _inv;
+         
+         liveness_domain(discrete_domain_t inv): 
+             ikos::writeable(), _inv(inv){ }
+         
+        public:
+         static liveness_domain_t top() {
+           return liveness_domain(discrete_domain_t::top());
+         }
+         
+         static liveness_domain_t bottom() {
+           return liveness_domain(discrete_domain_t::bottom());
+         }
+         
+        public:
+         
+         liveness_domain(): _inv(discrete_domain_t::bottom()){ }
+         
+         liveness_domain(Element e): ikos::writeable(), _inv(e) { }
+         
+         liveness_domain(const liveness_domain_t &other): 
+             ikos::writeable(), _inv(other._inv) { }
+         
+         liveness_domain_t& operator=(liveness_domain_t other) {
+           this->_inv = other._inv;
+           return *this;
+         }
+         
+         iterator begin() {
+           return this->_inv.begin();
+         }
+         
+         iterator end() {
+           return this->_inv.end();
+         }
+         
+         unsigned size() {
+           return this->_inv.size();
+         }
+         
+         bool is_bottom() {
+           return this->_inv.is_bottom();
+         }
+         
+         bool is_top() {
+           return this->_inv.is_top();
+         }
+         
+         bool operator<=(liveness_domain_t other) {
+           return (this->_inv <= other._inv);
+         }
+         
+         void operator-=(Element x) {
+           this->_inv -= x;
+         }
+         
+         void operator-=(liveness_domain_t other) {
+           if (!other._inv.is_top()) {
+             for ( auto v : other) 
+               this->_inv -= v; 
+           }
+         }
+         
+         void operator+=(Element x) {
+           this->_inv += x;
+         }
+         
+         void operator+=(liveness_domain_t other) {
+           this->_inv = (this->_inv | other._inv);
+         }
+         
+         liveness_domain_t operator|(liveness_domain_t other) {
+           return (this->_inv | other._inv);
+         }
+         
+         liveness_domain_t operator&(liveness_domain_t other) {
+           return (this->_inv & other._inv);
+         }
+         
+         liveness_domain_t operator||(liveness_domain_t other) {
+           return this->operator|(other);
+         }
       
-     private:
-      typedef liveness_domain< Element > liveness_domain_t;
-      typedef discrete_domain< Element > discrete_domain_t;
-  
-     public:
-      typedef typename discrete_domain_t::iterator iterator;
-      
-     private:
-      discrete_domain_t _inv;
-      
-      liveness_domain(discrete_domain_t inv): 
-          ikos::writeable(), _inv(inv){ }
-      
-     public:
-      static liveness_domain_t top() {
-        return liveness_domain(discrete_domain_t::top());
-      }
-      
-      static liveness_domain_t bottom() {
-        return liveness_domain(discrete_domain_t::bottom());
-      }
-      
-     public:
-      
-      liveness_domain(): _inv(discrete_domain_t::bottom()){ }
-      
-      liveness_domain(Element e): ikos::writeable(), _inv(e) { }
-      
-      liveness_domain(const liveness_domain_t &other): 
-        ikos::writeable(), _inv(other._inv) { }
-      
-      liveness_domain_t& operator=(liveness_domain_t other) {
-        this->_inv = other._inv;
-        return *this;
-      }
-      
-      iterator begin() {
-        return this->_inv.begin();
-      }
-      
-      iterator end() {
-        return this->_inv.end();
-      }
-      
-      unsigned size() {
-        return this->_inv.size();
-      }
-      
-      bool is_bottom() {
-        return this->_inv.is_bottom();
-      }
-      
-      bool is_top() {
-        return this->_inv.is_top();
-      }
-      
-      bool operator<=(liveness_domain_t other) {
-        return (this->_inv <= other._inv);
-      }
-      
-      void operator-=(Element x) {
-        this->_inv -= x;
-      }
-      
-      void operator-=(liveness_domain_t other) {
-        if (!other._inv.is_top()) {
-          for ( auto v : other) 
-            this->_inv -= v; 
-        }
-      }
-      
-      void operator+=(Element x) {
-        this->_inv += x;
-      }
-      
-      void operator+=(liveness_domain_t other) {
-        this->_inv = (this->_inv | other._inv);
-      }
-      
-      liveness_domain_t operator|(liveness_domain_t other) {
-        return (this->_inv | other._inv);
-      }
-      
-      liveness_domain_t operator&(liveness_domain_t other) {
-        return (this->_inv & other._inv);
-      }
-      
-      liveness_domain_t operator||(liveness_domain_t other) {
-        return this->operator|(other);
-      }
-      
-      liveness_domain_t operator&&(liveness_domain_t other) {
-        return this->operator&(other);
-      }
-      
-      ostream& write(ostream& o) {
-        this->_inv.write(o);
-        return o;
-      }  
-      
-     }; 
-   } // end namespace
+         liveness_domain_t operator&&(liveness_domain_t other) {
+           return this->operator&(other);
+         }
+         
+         ostream& write(ostream& o) {
+           this->_inv.write(o);
+           return o;
+         }  
+         
+       }; 
+
+    } // end namespace liveness_discrete_impl
 
 #if 0
-   // The implementation using discrete_domain is significantly faster
-   // than the one using std::set
-   namespace liveness_set_impl
-   {
+    // The implementation using discrete_domain is significantly faster
+    // than the one using std::set
+    namespace liveness_set_impl {
    
-    template< typename Element>
-    class liveness_domain
-    {
-      
-      typedef liveness_domain< Element > liveness_domain_t;
-      typedef std::set<Element> ElemSet;
-      
-     public:
-      
-      typedef typename ElemSet::iterator       iterator;
-      typedef typename ElemSet::const_iterator const_iterator;
-      
-     private:
-      
-      bool       m_is_top;
-      ElemSet m_inv;
-      
-      liveness_domain (ElemSet inv, bool is_top): 
-          m_is_top(is_top), m_inv(inv) {
-        if (m_is_top)
-          m_inv.clear ();
-      }
-      
-     public:
-      
-     static liveness_domain_t top() {
-       return liveness_domain (ElemSet(), true);
-     }
-      
-      static liveness_domain_t bottom() {
-        return liveness_domain (ElemSet(), false);
-      }
-      
-      liveness_domain(): m_is_top (false) { }
-      
-      liveness_domain(Element e): m_is_top(false)  {
-        m_inv.insert(e);
-      }
-      
-      ~liveness_domain() { 
-        //m_inv.clear(); 
-      }
-      
-      liveness_domain (const liveness_domain_t &other): 
-         m_is_top(other.m_is_top), m_inv (other.m_inv) {
-        if (is_top ())
-          m_inv.clear ();
-      }
-      
-      liveness_domain_t& operator=(const liveness_domain_t &other) {
-        if (this != &other) {
-          m_is_top = other.m_is_top;
-          m_inv = other.m_inv;
-        }
-        return *this;
-      }
-      
-      iterator begin()             { return m_inv.begin(); }
-      iterator end()               { return m_inv.end();   }
-      const_iterator begin() const { return m_inv.begin(); }
-      const_iterator end()   const { return m_inv.end();   }
-      
-      unsigned size() const { return m_inv.size (); }
-      
-      bool is_top() const { return m_is_top; }
-      
-      bool is_bottom () const { return (!is_top() && (size() == 0)); }
-      
-      bool operator<=(const liveness_domain_t &other) {
-        if (is_bottom() || other.is_top())    return true;
-        if (is_top()    || other.is_bottom()) return false;
-       
-        return std::includes(m_inv.begin (), m_inv.end (), 
-                             other.m_inv.begin (), other.m_inv.end ());
-      }
-      
-      void operator-=(const liveness_domain_t &other) {
-        if (is_bottom () || is_bottom ()) 
-          return;
-        else if (is_top ())
-          IKOS_ERROR ("not defined set difference if first operand is top");
-        else if (other.is_top ())  {
-          *this = liveness_domain_t::bottom ();
-        }
-        else {
-          for (auto v : other) 
-            m_inv.erase (v); 
-          //m_inv.erase(other.m_inv.begin (), other.m_inv.end ());
-        }
-      }
-      
-      void operator+=(const liveness_domain_t &other) {
-        if (is_top()) 
-          return;
-        else if (is_bottom () || other.is_top())
-          *this = other;
-        else if (other.is_bottom ())
-          return;
-        else {
-          m_inv.insert( other.m_inv.begin (), other.m_inv.end ());
-        }
-      }
-      
-      // Apply kill-gen dataflow equation by composing (inv -= kill ; inv += get)
-      void apply (const liveness_domain_t &kill, const liveness_domain_t &gen){
-        if (is_bottom () || kill.is_bottom ()) {
-          this->operator+= (gen);
-        }
-        else if (is_top ())
-          IKOS_ERROR ("not defined set difference if first operand is top");
-        else if (kill.is_top ()) {
-          *this = gen;
-        }
-        else if (gen.is_top ()) { 
-          *this = liveness_domain_t::top ();
-        }
-        else if (gen.is_bottom ()) {
-          this->operator-= (kill);
-        }
-        else {
-          // minimize the number of deletions
-          ElemSet s;
-          std::set_difference(kill.m_inv.begin (), kill.m_inv.end (), 
-                              gen.m_inv.begin (), gen.m_inv.end (), 
-                              std::inserter (s, s.end()));
-          for (auto &v : s) 
-            m_inv.erase (v); 
-          
-          m_inv.insert( gen.m_inv.begin (), gen.m_inv.end ());
-        }         
-      }
-      
-      
-      liveness_domain_t operator|(const liveness_domain_t &other) {
+      template< typename Element>
+      class liveness_domain {
         
-        if (is_top() || other.is_top())
-          return liveness_domain_t::top();
-        else if (is_bottom())
-          return other;
-        else if (other.is_bottom())
-          return *this;
-        else {
-          ElemSet s(m_inv);
-          s.insert(other.m_inv.begin (), other.m_inv.end ());
-         return liveness_domain_t (s, false);
+        typedef liveness_domain< Element > liveness_domain_t;
+        typedef std::set<Element> ElemSet;
+        
+       public:
+        
+        typedef typename ElemSet::iterator       iterator;
+        typedef typename ElemSet::const_iterator const_iterator;
+        
+       private:
+        
+        bool       m_is_top;
+        ElemSet m_inv;
+        
+        liveness_domain (ElemSet inv, bool is_top): 
+            m_is_top(is_top), m_inv(inv) {
+          if (m_is_top)
+            m_inv.clear ();
         }
-      }
-      
-      liveness_domain_t operator&(const liveness_domain_t &other) {
-        if (is_bottom() || other.is_bottom())
-          return liveness_domain_t::bottom();
-        else if (is_top()) return other;
-        else if (other.is_top()) return *this;
-        else {
-          ElemSet s;
-          std::set_intersection(m_inv.begin (), m_inv.end (), 
-                                other.m_inv.begin (), other.m_inv.end (), 
-                                std::inserter (s, s.end()));
-          return liveness_domain_t (s, false);
+        
+       public:
+        
+        static liveness_domain_t top() {
+          return liveness_domain (ElemSet(), true);
         }
-      }
-      
-      liveness_domain_t operator|| (const liveness_domain_t &other) {
-        return this->operator|(other);
-      }
-      
-      liveness_domain_t operator&& (const liveness_domain_t &other) {
-        return this->operator&(other);
-      }
-      
-      ostream& write(ostream& o) {
-        if (is_top ())  o << "{...}";
-        else if (is_bottom ())   o << "_|_";
-        else 
-        {
-          o << "{";
-          for (iterator it = begin(); it != end(); ) 
-          {
-            o << *it;  ++it;
-           if (it != end()) 
-             o << "; ";
+        
+        static liveness_domain_t bottom() {
+          return liveness_domain (ElemSet(), false);
+        }
+        
+        liveness_domain(): m_is_top (false) { }
+        
+        liveness_domain(Element e): m_is_top(false)  {
+          m_inv.insert(e);
+        }
+        
+        ~liveness_domain() { 
+          //m_inv.clear(); 
+        }
+        
+        liveness_domain (const liveness_domain_t &other): 
+            m_is_top(other.m_is_top), m_inv (other.m_inv) {
+          if (is_top ())
+            m_inv.clear ();
+        }
+        
+        liveness_domain_t& operator=(const liveness_domain_t &other) {
+          if (this != &other) {
+            m_is_top = other.m_is_top;
+            m_inv = other.m_inv;
           }
-          o << "}";
+          return *this;
         }
-        return o;
-      }  
-    }; 
-   } // end namespace
+        
+        iterator begin()             { return m_inv.begin(); }
+        iterator end()               { return m_inv.end();   }
+        const_iterator begin() const { return m_inv.begin(); }
+        const_iterator end()   const { return m_inv.end();   }
+        
+        unsigned size() const { return m_inv.size (); }
+        
+        bool is_top() const { return m_is_top; }
+        
+        bool is_bottom () const { return (!is_top() && (size() == 0)); }
+        
+        bool operator<=(const liveness_domain_t &other) {
+          if (is_bottom() || other.is_top())    return true;
+          if (is_top()    || other.is_bottom()) return false;
+          
+          return std::includes(m_inv.begin (), m_inv.end (), 
+                               other.m_inv.begin (), other.m_inv.end ());
+        }
+        
+        void operator-=(const liveness_domain_t &other) {
+          if (is_bottom () || is_bottom ()) 
+            return;
+          else if (is_top ())
+            CRAB_ERROR ("not defined set difference if first operand is top");
+          else if (other.is_top ())  {
+            *this = liveness_domain_t::bottom ();
+          }
+          else {
+            for (auto v : other) 
+              m_inv.erase (v); 
+            //m_inv.erase(other.m_inv.begin (), other.m_inv.end ());
+          }
+        }
+        
+        void operator+=(const liveness_domain_t &other) {
+          if (is_top()) 
+            return;
+          else if (is_bottom () || other.is_top())
+            *this = other;
+          else if (other.is_bottom ())
+            return;
+          else {
+          m_inv.insert( other.m_inv.begin (), other.m_inv.end ());
+          }
+        }
+        
+        // Apply kill-gen dataflow equation by composing (inv -= kill ; inv += get)
+        void apply (const liveness_domain_t &kill, const liveness_domain_t &gen){
+          if (is_bottom () || kill.is_bottom ()) {
+            this->operator+= (gen);
+          }
+          else if (is_top ())
+            CRAB_ERROR ("not defined set difference if first operand is top");
+          else if (kill.is_top ()) {
+            *this = gen;
+          }
+          else if (gen.is_top ()) { 
+            *this = liveness_domain_t::top ();
+          }
+          else if (gen.is_bottom ()) {
+            this->operator-= (kill);
+          }
+          else {
+            // minimize the number of deletions
+            ElemSet s;
+            std::set_difference(kill.m_inv.begin (), kill.m_inv.end (), 
+                                gen.m_inv.begin (), gen.m_inv.end (), 
+                                std::inserter (s, s.end()));
+            for (auto &v : s) 
+              m_inv.erase (v); 
+            
+            m_inv.insert( gen.m_inv.begin (), gen.m_inv.end ());
+          }         
+        }
+        
+        
+        liveness_domain_t operator|(const liveness_domain_t &other) {
+          
+          if (is_top() || other.is_top())
+            return liveness_domain_t::top();
+          else if (is_bottom())
+            return other;
+          else if (other.is_bottom())
+            return *this;
+          else {
+            ElemSet s(m_inv);
+            s.insert(other.m_inv.begin (), other.m_inv.end ());
+            return liveness_domain_t (s, false);
+          }
+        }
+        
+        liveness_domain_t operator&(const liveness_domain_t &other) {
+          if (is_bottom() || other.is_bottom())
+            return liveness_domain_t::bottom();
+          else if (is_top()) return other;
+          else if (other.is_top()) return *this;
+          else {
+            ElemSet s;
+            std::set_intersection(m_inv.begin (), m_inv.end (), 
+                                  other.m_inv.begin (), other.m_inv.end (), 
+                                  std::inserter (s, s.end()));
+            return liveness_domain_t (s, false);
+          }
+        }
+        
+        liveness_domain_t operator|| (const liveness_domain_t &other) {
+          return this->operator|(other);
+        }
+        
+        liveness_domain_t operator&& (const liveness_domain_t &other) {
+          return this->operator&(other);
+        }
+        
+        ostream& write(ostream& o) {
+          if (is_top ())  o << "{...}";
+          else if (is_bottom ())   o << "_|_";
+          else 
+          {
+            o << "{";
+            for (iterator it = begin(); it != end(); ) 
+            {
+              o << *it;  ++it;
+              if (it != end()) 
+                o << "; ";
+            }
+            o << "}";
+          }
+          return o;
+        }  
+      }; 
+    } // end namespace liveness_set_impl
 #endif 
 
    //! Live variable analysis
    template<typename CFG>
    class Liveness: 
-      public backward_fp_iterator< typename CFG::basic_block_label_t, 
-                                   CFG, 
-                                   liveness_discrete_impl::liveness_domain <typename CFG::varname_t> >
-   {
+        public backward_fp_iterator< typename CFG::basic_block_label_t, 
+                                     CFG, 
+                                     liveness_discrete_impl::liveness_domain <typename CFG::varname_t> > {
     public:
      typedef typename CFG::basic_block_label_t basic_block_label_t;
      typedef typename CFG::varname_t varname_t;
@@ -461,6 +459,8 @@ namespace analyzer
      return o;
    }
 
-} // end namespace 
+  } // end namespace analyzer
+
+} // end namespace crab
 
 #endif 

@@ -60,11 +60,11 @@
 
 #include <iostream>
 
-#include <ikos/common/types.hpp>
-#include <ikos/domains/separate_domains.hpp>
-#include <ikos/domains/numerical_domains_api.hpp>
-#include <ikos/domains/bitwise_operators_api.hpp>
-#include <ikos/domains/division_operators_api.hpp>
+#include <crab/common/types.hpp>
+#include <crab/domains/separate_domains.hpp>
+#include <crab/domains/numerical_domains_api.hpp>
+#include <crab/domains/bitwise_operators_api.hpp>
+#include <crab/domains/division_operators_api.hpp>
 
 namespace ikos {
 
@@ -109,7 +109,7 @@ private:
   static Number lcm(Number x, Number y) {
     Number tmp = gcd(x, y);
     if (tmp == 0)
-      IKOS_ERROR("lcm causes division by zero");
+      CRAB_ERROR("lcm causes division by zero");
     return abs(x * y) / tmp;
   }
 
@@ -124,10 +124,10 @@ private:
     if (typeSize < 32) {
       Number tmp = gcd(_a, Number(1) << Number(typeSize));
       if (tmp == 0)
-        IKOS_ERROR("weakened causes division by zero");
+        CRAB_ERROR("weakened causes division by zero");
       return congruence_t(tmp, _b % tmp);
     } else {
-      IKOS_ERROR("if int is 32 bits shift can only range from 0 to 31");
+      CRAB_ERROR("if int is 32 bits shift can only range from 0 to 31");
     }
   }
 
@@ -158,7 +158,7 @@ private:
       }
       return Number(-1); // to indicate not found, x==0
     } else {
-      IKOS_ERROR("if int is 32 bits shift can only range from 0 to 31");
+      CRAB_ERROR("if int is 32 bits shift can only range from 0 to 31");
     }
   }
 
@@ -215,17 +215,17 @@ public:
       return true;
     } else if (_a == 0) {
       if (o._a == 0)
-        IKOS_ERROR("operator<= causes division by zero");
+        CRAB_ERROR("operator<= causes division by zero");
       if ((_b % o._a < 0 ? (_b % o._a) + o._a : _b % o._a) == o._b % o._a)
         return true;
     } else if (o._a == 0) {
       if (_a == 0)
-        IKOS_ERROR("operator<= causes division by zero");
+        CRAB_ERROR("operator<= causes division by zero");
       if (_b % _a == (o._b % _a < 0 ? (o._b % _a) + _a : o._b % _a))
         return false;
     }
     if (o._a == 0)
-      IKOS_ERROR("operator<= causes division by zero");
+      CRAB_ERROR("operator<= causes division by zero");
     return (_a % o._a == 0) && (_b % o._a == o._b % o._a);
   }
 
@@ -269,7 +269,7 @@ public:
       // pre: a and o.a != 0
       Number x = gcd(_a, o._a);
       if (x == 0)
-        IKOS_ERROR("operator& causes division by zero");
+        CRAB_ERROR("operator& causes division by zero");
       if (_b % x == (o._b % x)) {
         // the part max(b,o.b) needs to be verified. What we really
         // want is to find b'' such that
@@ -371,7 +371,7 @@ public:
 
       if (o._a == 0) {
         if (o._b == 0)
-          IKOS_ERROR("operator/ causes division by zero");
+          CRAB_ERROR("operator/ causes division by zero");
         if (_a % o._b == 0)
           return congruence_t(_a / o._b, _b / o._b);
         else
@@ -417,7 +417,7 @@ public:
       */
       if (o._a == 0) {
         if (o._b == 0)
-          IKOS_ERROR("operator% causes division by zero");
+          CRAB_ERROR("operator% causes division by zero");
         if (_a % o._b == 0) {
           return congruence_t(0, _b % o._b);
         } else {
@@ -433,7 +433,7 @@ public:
         } else if ((_b / n) >= 2) {
           return congruence_t(_b, _b);
         } else {
-          IKOS_ERROR("unreachable");
+          CRAB_ERROR("unreachable");
         }
       }
       /*
@@ -458,7 +458,7 @@ private:
         Number two_to_n = Number(1) << Number(typeSize);
         return congruence_t(gcd(_a, two_to_n), -_b - 1);
       } else {
-        IKOS_ERROR("if int is 32 bits shift can only range from 0 to 31");
+        CRAB_ERROR("if int is 32 bits shift can only range from 0 to 31");
       }
     }
     // For simplicity, we don't implement the case when a==0:
@@ -952,7 +952,7 @@ public:
         xi = yi / zi;
         break;
       }
-      default: { IKOS_ERROR("unreachable"); }
+      default: { CRAB_ERROR("unreachable"); }
     }
     this->_env.set(x, xi);
   }
@@ -979,7 +979,7 @@ public:
         xi = yi / zi;
         break;
       }
-      default: { IKOS_ERROR("unreachable"); }
+      default: { CRAB_ERROR("unreachable"); }
     }
     this->_env.set(x, xi);
   }
@@ -1006,7 +1006,7 @@ public:
         xi = yi.SExt(width);
         break;
       }
-      default: { IKOS_ERROR("unreachable"); }
+      default: { CRAB_ERROR("unreachable"); }
     }
     this->_env.set(x, xi);
   }
@@ -1028,7 +1028,7 @@ public:
         xi = yi.SExt(width);
         break;
       }
-      default: { IKOS_ERROR("unreachable"); }
+      default: { CRAB_ERROR("unreachable"); }
     }
     this->_env.set(x, xi);
   }
@@ -1066,7 +1066,7 @@ public:
         xi = yi.AShr(zi);
         break;
       }
-      default: { IKOS_ERROR("unreachable"); }
+      default: { CRAB_ERROR("unreachable"); }
     }
     this->_env.set(x, xi);
   }
@@ -1101,7 +1101,7 @@ public:
         xi = yi.AShr(zi);
         break;
       }
-      default: { IKOS_ERROR("unreachable"); }
+      default: { CRAB_ERROR("unreachable"); }
     }
     this->_env.set(x, xi);
   }
@@ -1133,7 +1133,7 @@ public:
         xi = yi.URem(zi);
         break;
       }
-      default: { IKOS_ERROR("unreachable"); }
+      default: { CRAB_ERROR("unreachable"); }
     }
     this->_env.set(x, xi);
   }
@@ -1160,7 +1160,7 @@ public:
         xi = yi.URem(zi);
         break;
       }
-      default: { IKOS_ERROR("unreachable"); }
+      default: { CRAB_ERROR("unreachable"); }
     }
     this->_env.set(x, xi);
   }

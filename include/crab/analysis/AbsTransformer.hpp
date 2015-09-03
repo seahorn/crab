@@ -1,11 +1,13 @@
 #ifndef ABSTRACT_TRANSFORMER_HPP
 #define ABSTRACT_TRANSFORMER_HPP
 
-#include <ikos/cfg/Cfg.hpp>
-#include <ikos/domains/domain_traits.hpp>
+#include <crab/cfg/Cfg.hpp>
+#include <crab/domains/domain_traits.hpp>
 
-namespace analyzer
-{
+namespace crab {
+
+  namespace analyzer {
+
   using namespace cfg;
   using namespace std;
 
@@ -218,5 +220,6 @@ namespace analyzer
     }
   }; 
 
+  } // end namespace
 } // end namespace
 #endif 

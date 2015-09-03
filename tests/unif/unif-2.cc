@@ -1,32 +1,9 @@
-#include <ikos/tests/Cfg_impl.hpp>
-#include <ikos/cfg/Cfg.hpp>
-#include <ikos/cfg/VarFactory.hpp>
-#include <ikos/analysis/FwdAnalyzer.hpp>
-
-#include <ikos/common/types.hpp>
-#include <ikos/algorithms/linear_constraints.hpp> 
-#include <ikos/domains/intervals.hpp>                      
-#include <ikos/domains/intervals_congruences.hpp>                      
-#include <ikos/domains/octagons.hpp>                      
-#include <ikos/domains/dbm.hpp>                      
-#include <ikos/domains/term_equiv.hpp>
+#include "../common.hpp"
 
 using namespace std;
-
-namespace domain_impl
-{
-  using namespace cfg_impl;
-  // Numerical domains
-  typedef interval_domain< z_number, varname_t > interval_domain_t;
-  typedef interval_congruence_domain< z_number, varname_t > ric_t;
-  typedef DBM<z_number, varname_t> dbm_domain_t;
-  typedef anti_unif<ikos::term::TDomInfo<z_number, varname_t, interval_domain_t> >::anti_unif_t term_domain_t;
-  typedef anti_unif<ikos::term::TDomInfo<z_number, varname_t, dbm_domain_t> >::anti_unif_t term_dbm_t;
-} // end namespace
-
-using namespace cfg_impl;
-using namespace domain_impl;
-using namespace analyzer;
+using namespace crab::analyzer;
+using namespace crab::cfg_impl;
+using namespace crab::domain_impl;
 
 cfg_t prog (VariableFactory &vfac) 
 {
@@ -90,7 +67,7 @@ int main (int argc, char** argv )
   for (auto &b : cfg)
   {
     interval_domain_t inv = itv_a [b.label ()];
-    std::cout << cfg_impl::get_label_str (b.label ()) << "=" << inv << "\n";
+    std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
   }
 
   term_domain_t tdom = term_domain_t::top ();
@@ -101,7 +78,7 @@ int main (int argc, char** argv )
   for (auto &b : cfg)
   {
     term_domain_t inv = term_a [b.label ()];
-    std::cout << cfg_impl::get_label_str (b.label ()) << "=" << inv << "\n";
+    std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
     auto cst = inv.to_linear_constraint_system();
     std::cout << "  := " << cst << endl;
   }
