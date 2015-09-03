@@ -32,26 +32,27 @@ Crab has been designed to have two kind of users:
 2.  Researchers on abstract interpretation who would like to
     experiment with new abstract domains and fixpoint iterators.
 
-# License #
+## License ##
 
 Ikos is distributed under NASA Open Source Agreement (NOSA)
 Version 1.3 or later.
 
 Crab needs to be licensed (TBD).
 
-# Prerequisites #
+## Installation ##
 
-Crab is written in C++ and uses heavily the Boost library:
+Crab is written in C++ and uses heavily the Boost library. You will
+need:
 
 - The C++ compiler must support c++11
 - Boost and Gmp 
 
-# Installation #
+Then, just type:
 
     cmake -DDEVMODE=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=my_install_dir ../
-	cmake --build . --target install 
+    cmake --build . --target install 
 
-# Examples #
+## Examples ##
 
 The tests directory contains some examples of how to build CFGs and
 how to compute invariants using different abstract domains.
@@ -59,11 +60,11 @@ how to compute invariants using different abstract domains.
 Important: the option `DEVMODE` must be enabled to compile all the
 tests.
 
-# How to integrate Crab in other analysis/verification tools #
+## How to integrate Crab in other analysis/verification tools ##
 
 TODO
 
-# How to implement new abstract domains #
+## How to implement new abstract domains ##
 
 The main task is to implement the following API required by the
 fixpoint algorithm:
@@ -91,7 +92,7 @@ fixpoint algorithm:
     // Narrowing 
     AbsDomain operator&&(AbsDomain o);
     
-## How to implement new numerical abstract domains ##
+### How to implement new numerical abstract domains ###
 
 In addition to the previous API, for numerical domains it is also
 required to implement the API described in `numerical_domains_api.hpp`:
@@ -127,7 +128,7 @@ fast mergeable integer map based on patricia trees. This map can be
 used to map variable names to abstract values. The implementation of
 intervals and congruences use it.
 
-# How to add non-standard abstract operations #
+### How to add non-standard abstract operations ###
 
 Some abstract domains may need some non-standard abstract operations
 (e.g., array read/write, expand, etc). The signature of these
@@ -138,7 +139,7 @@ implement the operation under the namespace `crab::domain_traits`. The
 file `domain_traits.hpp` must also include the header file of the
 abstract domain (if not already there).
 
-#People#
+##People##
 
 * [Arie Gurfinkel](arieg.bitbucket.org)
 * [Jorge Navas](http://ti.arc.nasa.gov/profile/jorge/)
