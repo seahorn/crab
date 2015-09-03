@@ -28,7 +28,7 @@ namespace crab {
         
         bool operator<(term_t& other);
         
-        virtual ostream& write(ostream& o) = 0;
+        virtual void write(ostream& o) = 0;
 
         int depth;
       };
@@ -64,9 +64,9 @@ namespace crab {
         { }
         term_kind kind(void) { return TERM_CONST; }
         
-        ostream& write(ostream& o)
+        void write(ostream& o)
         {
-          return (o << "c(" << val << ")");
+          o << "c(" << val << ")";
         }
         Num val;
       };
@@ -78,9 +78,9 @@ namespace crab {
             : var(_var)
         { }
         term_kind kind(void) { return TERM_VAR; }
-        ostream& write(ostream& o)
+        void write(ostream& o)
         {
-          return (o << "v(" << var << ")");
+          o << "v(" << var << ")";
         }
         var_id var;
       };
@@ -92,7 +92,7 @@ namespace crab {
             : ftor(_f), args(_args)
         { }
         term_kind kind(void) { return TERM_APP; }
-        ostream& write(ostream& o)
+        void write(ostream& o)
         {
           o << "<op>(";
           bool first = true;
@@ -104,7 +104,7 @@ namespace crab {
               o << ", ";
             o << c;
           }
-          return (o << ")");
+          o << ")";
         }
         
         Ftor ftor;
@@ -409,7 +409,7 @@ namespace crab {
           return _parents[id];
         }
         
-        ostream& write(ostream& o) { 
+        void write(ostream& o) { 
           bool first = true;
           for(unsigned int ti = 0; ti < terms.size(); ti++)
           {
@@ -420,7 +420,6 @@ namespace crab {
             term_t* p(terms[ti].p.get());
             o << ti << " -> " << *p;
           }
-          return o;
         }
         
         int size() { return terms.size(); }

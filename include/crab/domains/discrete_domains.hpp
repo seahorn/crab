@@ -80,22 +80,23 @@ namespace ikos {
   public:
     discrete_domain(): _is_top(true) { }
     
-    discrete_domain(const discrete_domain_t& other): writeable(), _is_top(other._is_top), _set(other._set) { }
+    discrete_domain(const discrete_domain_t& other): 
+        writeable(), _is_top(other._is_top), _set(other._set) { }
 
     discrete_domain(Element s): _is_top(false), _set(s) { }
 
     discrete_domain(collection_t c): _is_top(false) {
       for (typename collection_t::iterator it = c.begin(); it != c.end(); ++it) {
-	this->_set += *it;
+        this->_set += *it;
       }
     }
 
     bool is_top() {
       return this->_is_top;
     }
-
+    
     bool is_bottom() {
-      return (!this->_is_top && this->_set.is_empty());
+      return (!this->_is_top && this->_set.empty());
     }
 
     bool operator<=(discrete_domain_t other) {
@@ -108,24 +109,24 @@ namespace ikos {
 
     discrete_domain_t operator|(discrete_domain_t other) {
       if (this->_is_top || other._is_top) {
-	return discrete_domain_t(true);
+        return discrete_domain_t(true);
       } else {
-	return discrete_domain_t(this->_set | other._set);
+        return discrete_domain_t(this->_set | other._set);
       }
     }
     
     discrete_domain_t operator&(discrete_domain_t other) {
       if (this->is_bottom() || other.is_bottom()) {
-	return discrete_domain_t(false);
+        return discrete_domain_t(false);
       } else if (this->_is_top) {
-	return other;
+        return other;
       } else if (other._is_top) {
-	return *this;
+        return *this;
       } else {
-	return discrete_domain_t(this->_set & other._set);
+        return discrete_domain_t(this->_set & other._set);
       }
     }
-
+    
     discrete_domain_t operator||(discrete_domain_t other) {
       return this->operator|(other);
     }
@@ -133,29 +134,29 @@ namespace ikos {
     discrete_domain_t operator&&(discrete_domain_t other) {
       return this->operator&(other);
     }
-
+    
     discrete_domain_t& operator+=(Element s) {
       if (!this->_is_top) {
-	this->_set += s;
+        this->_set += s;
       }
       return *this;
     }
-
+    
     discrete_domain_t& operator+=(collection_t c) {
       if (!this->_is_top) {
-	for (typename collection_t::iterator it = c.begin(); it != c.end(); ++it) {
-	  this->_set += *it;
-	}
+        for (typename collection_t::iterator it = c.begin(); it != c.end(); ++it) {
+          this->_set += *it;
+        }
       }
       return *this;
     }
-
+    
     discrete_domain_t operator+(Element s) {
       discrete_domain_t r(*this);
       r.operator+=(s);
       return r;
     }
-
+    
     discrete_domain_t operator+(collection_t c) {
       discrete_domain_t r(*this);
       r.operator+=(c);
@@ -164,16 +165,16 @@ namespace ikos {
 
     discrete_domain_t& operator-=(Element s) {
       if (!this->_is_top) {
-	this->_set -= s;
+        this->_set -= s;
       }
       return *this;
     }
-
+    
     discrete_domain_t& operator-=(collection_t c) {
       if (!this->_is_top) {
-	for (typename collection_t::iterator it = c.begin(); it != c.end(); ++it) {
-	  this->_set -= *it;
-	}
+        for (typename collection_t::iterator it = c.begin(); it != c.end(); ++it) {
+          this->_set -= *it;
+        }
       }
       return *this;
     }
@@ -183,46 +184,45 @@ namespace ikos {
       r.operator-=(s);
       return r;
     }
-
+    
     discrete_domain_t operator-(collection_t c) {
       discrete_domain_t r(*this);
       r.operator-=(c);
       return r;
     }
-
+    
     std::size_t size() {
       if (this->_is_top) {
-	CRAB_ERROR("Size for discrete domain TOP is undefined");
+        CRAB_ERROR("Size for discrete domain TOP is undefined");
       } else {
-	return this->_set.size();
+        return this->_set.size();
       }
     }
     
     iterator begin() {
       if (this->_is_top) {
-	CRAB_ERROR("Iterator for discrete domain TOP is undefined");
+        CRAB_ERROR("Iterator for discrete domain TOP is undefined");
       } else {
-	return this->_set.begin();
+        return this->_set.begin();
       }
     }
     
     iterator end() {
       if (this->_is_top) {
-	CRAB_ERROR("Iterator for discrete domain TOP is undefined");
+        CRAB_ERROR("Iterator for discrete domain TOP is undefined");
       } else {
-	return this->_set.end();
+        return this->_set.end();
       }
     }
     
-    std::ostream& write(std::ostream& o) {
+    void write(std::ostream& o) {
       if (this->_is_top) {
 	o << "{...}";
-      } else if (this->_set.is_empty()) {
+      } else if (this->_set.empty()) {
 	o << "_|_";
       } else {
 	o << this->_set;
       }
-      return o;
     }
     
   }; // class discrete_domain

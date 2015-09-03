@@ -113,15 +113,18 @@ public:
   interval_congruence(Number n)
       : _first(interval_t(n)), _second(congruence_t(n)) {}
 
-  interval_congruence(interval_t i, congruence_t c) : _first(i), _second(c) {
+  interval_congruence(interval_t i, congruence_t c) : 
+      _first(i), _second(c) {
     this->reduce();
   }
 
-  interval_congruence(interval_t i) : _first(i), _second(congruence_t::top()) {
+  interval_congruence(interval_t i) : 
+      _first(i), _second(congruence_t::top()) {
     this->reduce();
   }
 
-  interval_congruence(congruence_t c) : _first(interval_t::top()), _second(c) {
+  interval_congruence(congruence_t c) : 
+      _first(interval_t::top()), _second(c) {
     this->reduce();
   }
 
@@ -214,9 +217,8 @@ public:
     }
   }
 
-  std::ostream& write(std::ostream& o) {
+  void write(std::ostream& o) {
     o << "(" << this->_first << ", " << this->_second << ")";
-    return o;
   }
 
 public:
@@ -537,9 +539,8 @@ public:
     this->reduce_variable(x);
   }
 
-  std::ostream& write(std::ostream& o) { 
+  void write(std::ostream& o) { 
     this->_product.write(o); 
-    return o;
   }
 
   linear_constraint_system_t to_linear_constraint_system() {

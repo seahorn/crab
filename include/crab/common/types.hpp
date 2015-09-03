@@ -3,7 +3,6 @@
  * Basic type definitions.
  *
  * Author: Arnaud J. Venet (arnaud.j.venet@nasa.gov)
- * Contributors: Jorge A. Navas (jorge.a.navaslaserna@nasa.gov)
  *
  * Notices:
  *
@@ -80,227 +79,183 @@ inline void ___print___(ArgTypes... args)
 namespace ikos 
 {
   
-  // Numerical type for indexed objects
-  typedef uint64_t index_t;
+// Numerical type for indexed objects
+typedef uint64_t index_t;
+
+// Interface for writeable objects
+class writeable {
+public:
+  virtual void write(std::ostream& o) = 0;
+
+  virtual ~writeable() {}
+
+}; // class writeable
+
+inline std::ostream& operator<<(std::ostream& o, writeable& x) {
+  x.write(o);
+  return o;
+}
+
+// Container for typed variables
+template< typename Type, typename VariableName >
+class variable: public writeable {
   
-  // Interface for writeable objects
-  class writeable {
-
-  public:
-    virtual std::ostream& write(std::ostream& o) = 0;
-    
-    virtual ~writeable() { }
-
-    friend std::ostream& operator<<(std::ostream& o, writeable& x) {
-      x.write (o);
-      return o;
-    }
-    
-  }; // class writeable
-
-
-
-  // Exception for IKOS internal errors
-  class error: public writeable {
-    
-  protected:
-    std::string msg;
-    
-  private:
-    error();
-    
-  public:
-    error(std::string msg_): msg(msg_) { }
-    
-    std::string message() {
-      return msg;
-    }
-
-    std::ostream& write(std::ostream& o) {
-      o << message();
-      return o;
-    }
-    
-  }; // class error
-
-
-  // Container for typed variables
-  template< typename Type, typename VariableName >
-  class variable: public writeable {
+ public:
+  typedef variable< Type, VariableName > variable_t;
+  typedef typename VariableName::index_t index_t;
+  
+ private:
+  VariableName _n;
     
    public:
-    typedef variable< Type, VariableName > variable_t;
-    typedef typename VariableName::index_t index_t;
-
-   private:
-    VariableName _n;
-    
-   public:
-    variable(VariableName n): writeable (), _n(n) { }
-
-    variable(const variable_t& v): writeable(), _n(v._n) { }
-    
-    variable_t& operator=(const variable_t &o) {
-      if (this != &o) {
-        this->_n = o._n;
-      }
-      return *this;
+  
+  variable(const VariableName& n): writeable (), _n(n) { }
+  
+  variable(const variable_t& v): writeable(), _n(v._n) { }
+  
+  variable_t& operator=(const variable_t &o) {
+    if (this != &o) {
+      this->_n = o._n;
     }
-
-    VariableName name() const {
-      return _n;
-    }
-    
-    index_t index() const {
-      return _n.index();
-    }
-
-    // bool operator==(const variable_t& o) const {
-    //   return _n.index () == o._n.index ();
-    // }
-
-    bool operator<(const variable_t& o) const {
-      return _n.index () < o._n.index ();
-    }
-
-    std::ostream& write(std::ostream& o) {
-      o << _n;
-      return o;
-    }
-
-    friend index_t hash_value (variable_t  v) {
-      return v.index ();
-    }
-
-    friend std::ostream& operator<<(std::ostream& o, variable_t  v) {
+    return *this;
+  }
+  
+  const VariableName& name() const { return _n; }
+  
+  index_t index() const { return _n.index(); }
+  
+  // bool operator==(const variable_t& o) const {
+  //   return _n.index () == o._n.index ();
+  // }
+  
+  bool operator<(const variable_t& o) const {
+    return _n.index () < o._n.index ();
+  }
+  
+  void write(std::ostream& o) { o << _n; }
+  
+  friend index_t hash_value (const variable_t& v) {
+    return v.index ();
+  }
+  
+  friend std::ostream& operator<<(std::ostream& o, variable_t& v) {
       v.write(o);
       return o;
-    }
-
-  }; // class variable
-
-  template< typename Element >
-  class collection: public writeable {
-
-  public:
-    typedef collection< Element > collection_t;
-
-  private:
-    typedef boost::container::slist< Element > slist_t;
-    typedef boost::shared_ptr< slist_t > slist_ptr;
-    
-  private:
-    slist_ptr _slist;
-
-  public:
-    class iterator: public boost::iterator_facade< iterator
-						   , Element
-						   , boost::forward_traversal_tag
-						   , Element
-						   > {
-      
-      friend class boost::iterator_core_access;
-      
-    private:
-      typename slist_t::iterator _it;
-      slist_ptr _l;
-      
-    public:
-      iterator(slist_ptr l, bool b): _it(b ? l->begin() : l->end()), _l(l) { }
-      
-    private:
-      void increment() { 
-	++(this->_it);
-      }
-      
-      bool equal(const iterator& other) const {
-	return (this->_l == other._l && this->_it == other._it);
-      }
-      
-      Element dereference() const {
-	if (this->_it != this->_l->end()) {
-	  return *(this->_it);
-	} else {
-	  throw error("Collection: trying to dereference an empty iterator");
-	}
-      }
-      
-    }; // class iterator
-
-  public:
-    collection(): _slist(slist_ptr(new slist_t)) { }
-
-    collection(const collection_t& c): writeable(), _slist(c._slist) { }
-    
-    collection_t& operator=(collection_t c) {
-      this->_slist = c._slist;
-      return *this;
-    }
-
-    collection_t& operator+=(Element e) {
-      this->_slist->push_front(e);
-      return *this;
-    }
-
-    collection_t& operator+=(collection_t c) {
-      for (iterator it = c.begin(); it != c.end(); ++it) {
-	this->_slist->push_front(*it);
-      }
-      return *this;
-    }
-
-    collection_t operator+(collection_t c) {
-      collection_t r;
-      r.operator+=(c);
-      r.operator+=(*this);
-      return r;
-    }
-
-    iterator begin() {
-      return iterator(this->_slist, true);
-    }
-
-    iterator end() {
-      return iterator(this->_slist, false);
-    }
-
-    std::size_t size() {
-      return this->_slist->size();
-    }
-    
-    std::ostream& write(std::ostream& o) {
-      o << "{";
-      for (iterator it = this->begin(); it != this->end(); ) {
-	Element e = *it;
-	o << e;
-	++it;
-	if (it != end()) {
-	  o << "; ";
-	}
-      }
-      o << "}";
-      return o;
-    }
-
-  }; // class collection
-
-  // Enumeration type for basic arithmetic operations
-  typedef enum {
-    OP_ADDITION,
-    OP_SUBTRACTION,
-    OP_MULTIPLICATION,
-    OP_DIVISION
-  } operation_t;
-
-  inline std::ostream& operator<<(std::ostream&o, operation_t op) {
-    switch (op) {
-      case OP_ADDITION: o << "+"; break;
-      case OP_SUBTRACTION: o << "-"; break;
-      case OP_MULTIPLICATION: o << "*"; break;
-      default: o << "/"; break;
-    }
-    return o;
   }
+  
+}; // class variable
+
+template < typename Element >
+class collection : public writeable {
+public:
+  typedef collection< Element > collection_t;
+
+private:
+  typedef boost::container::slist< Element > slist_t;
+  typedef boost::shared_ptr< slist_t > slist_ptr;
+
+private:
+  slist_ptr _slist;
+
+public:
+  class iterator
+      : public boost::iterator_facade< iterator,
+                                       const Element,
+                                       boost::forward_traversal_tag > {
+    friend class boost::iterator_core_access;
+
+  private:
+    typename slist_t::const_iterator _it;
+    slist_ptr _l;
+
+  public:
+    iterator(slist_ptr l, bool b) : _it(b ? l->begin() : l->end()), _l(l) {}
+
+  private:
+    void increment() { ++(this->_it); }
+
+    bool equal(const iterator& other) const {
+      return this->_l == other._l && this->_it == other._it;
+    }
+
+    const Element& dereference() const {
+      if (this->_it != this->_l->end()) {
+        return *(this->_it);
+      } else {
+        CRAB_ERROR("Collection: trying to dereference an empty iterator");
+      }
+    }
+
+  }; // class iterator
+
+public:
+  collection() : _slist(slist_ptr(new slist_t)) {}
+
+  collection(const collection_t& c) : writeable(), _slist(c._slist) {}
+
+  collection_t& operator=(const collection_t& c) {
+    this->_slist = c._slist;
+    return *this;
+  }
+
+  collection_t& operator+=(const Element& e) {
+    this->_slist->push_front(e);
+    return *this;
+  }
+
+  collection_t& operator+=(const collection_t& c) {
+    for (iterator it = c.begin(); it != c.end(); ++it) {
+      this->_slist->push_front(*it);
+    }
+    return *this;
+  }
+
+  collection_t operator+(const collection_t& c) const {
+    collection_t r;
+    r.operator+=(c);
+    r.operator+=(*this);
+    return r;
+  }
+
+  iterator begin() const { return iterator(this->_slist, true); }
+
+  iterator end() const { return iterator(this->_slist, false); }
+
+  std::size_t size() const { return this->_slist->size(); }
+
+  void write(std::ostream& o) {
+    o << "{";
+    for (iterator it = this->begin(); it != this->end();) {
+      Element e = *it;
+      o << e;
+      ++it;
+      if (it != end()) {
+        o << "; ";
+      }
+    }
+    o << "}";
+  }
+
+}; // class collection
+
+
+// Enumeration type for basic arithmetic operations
+typedef enum {
+  OP_ADDITION,
+  OP_SUBTRACTION,
+  OP_MULTIPLICATION,
+  OP_DIVISION
+} operation_t;
+
+inline std::ostream& operator<<(std::ostream&o, operation_t op) {
+  switch (op) {
+    case OP_ADDITION: o << "+"; break;
+    case OP_SUBTRACTION: o << "-"; break;
+    case OP_MULTIPLICATION: o << "*"; break;
+    default: o << "/"; break;
+  }
+  return o;
+}
 
 } // namespace ikos
 

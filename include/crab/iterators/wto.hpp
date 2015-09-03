@@ -89,12 +89,10 @@ namespace ikos {
     node_list_ptr _nodes;
     
   public:
-    class iterator: public boost::iterator_facade< iterator
-						   , NodeName&
-						   , boost::forward_traversal_tag
-						   , NodeName&
-						   > {
-      
+    class iterator: public boost::iterator_facade< iterator,
+                                                   NodeName&,
+                                                   boost::forward_traversal_tag,
+                                                   NodeName&> {
       friend class boost::iterator_core_access;
       
     private:
@@ -117,7 +115,7 @@ namespace ikos {
 	if (this->_it != this->_l->end()) {
 	  return *(this->_it);
 	} else {
-	  throw error("WTO nesting: trying to dereference an empty iterator");
+	  CRAB_ERROR("WTO nesting: trying to dereference an empty iterator");
 	}
       }
       
@@ -169,12 +167,14 @@ namespace ikos {
     
     wto_nesting_t operator^(wto_nesting_t other) {
       wto_nesting_t res;
-      for (iterator this_it = this->begin(), other_it = other.begin(); this_it != this->end() && other_it != other.end(); ++this_it, ++other_it) {
-	if (*this_it == *other_it) {
-	  res._nodes->push_back(*this_it);
-	} else {
-	  break;
-	}
+      for (iterator this_it = this->begin(), other_it = other.begin(); 
+           this_it != this->end() && other_it != other.end(); 
+           ++this_it, ++other_it) {
+        if (*this_it == *other_it) {
+          res._nodes->push_back(*this_it);
+        } else {
+          break;
+        }
       }
       return res;
     }
@@ -195,7 +195,7 @@ namespace ikos {
       return this->compare(other) == 1;
     }
     
-    std::ostream& write(std::ostream& o) {
+    void write(std::ostream& o) {
       o << "[";
       for (iterator it = this->begin(); it != this->end(); ) {
 	NodeName n = *it;
@@ -206,7 +206,6 @@ namespace ikos {
 	}
       }
       o << "]";
-      return o;
     }
     
   }; // class nesting
@@ -244,9 +243,8 @@ namespace ikos {
       v->visit(*this);
     }
     
-    std::ostream& write(std::ostream& o) {
+    void write(std::ostream& o) {
       o << this->_node;
-      return o;
     }   
 
   }; // class wto_vertex
@@ -269,14 +267,15 @@ namespace ikos {
     wto_component_list_ptr _wto_components;
     
   private:
-    wto_cycle(NodeName head, wto_component_list_ptr wto_components): _head(head), _wto_components(wto_components) { }
+    wto_cycle(NodeName head, 
+              wto_component_list_ptr wto_components): 
+        _head(head), _wto_components(wto_components) { }
     
   public:
-    class iterator: public boost::iterator_facade< iterator
-						   , wto_component_t&
-						   , boost::forward_traversal_tag
-						   , wto_component_t&
-						   > {
+    class iterator: public boost::iterator_facade< iterator,
+                                                   wto_component_t&,
+                                                   boost::forward_traversal_tag,
+                                                   wto_component_t&> {
       
       friend class boost::iterator_core_access;
       
@@ -285,28 +284,30 @@ namespace ikos {
       wto_component_list_ptr _l;
       
     public:
-      iterator(wto_component_list_ptr l, bool b): _it(b ? l->begin() : l->end()), _l(l) { }
+      iterator(wto_component_list_ptr l, bool b): 
+          _it(b ? l->begin() : l->end()), _l(l) { }
       
-    private:
+     private:
       void increment() { 
-	++(this->_it);
+        ++(this->_it);
       }
       
       bool equal(const iterator& other) const {
-	return (this->_l == other._l && this->_it == other._it);
+        return (this->_l == other._l && this->_it == other._it);
       }
       
       wto_component_t& dereference() const {
-	if (this->_it != this->_l->end()) {
-	  return **(this->_it);
-	} else {
-	  throw error("WTO cycle: trying to dereference an empty iterator");
+        if (this->_it != this->_l->end()) {
+          return **(this->_it);
+        } else {
+          CRAB_ERROR("WTO cycle: trying to dereference an empty iterator");
 	}
       }
       
     }; // class iterator
     
   public:
+
     NodeName head() {
       return this->_head;
     }
@@ -323,7 +324,7 @@ namespace ikos {
       return iterator(this->_wto_components, false);
     }
     
-    std::ostream& write(std::ostream& o) {
+    void write(std::ostream& o) {
       o << "(" << this->_head;
       if (!this->_wto_components->empty()) {
 	o << " ";
@@ -337,7 +338,6 @@ namespace ikos {
 	}
       }
       o << ")";
-      return o;
     }
     
   }; // class wto_cycle
@@ -399,21 +399,22 @@ namespace ikos {
       nesting_table_ptr _nesting_table;
       
     public:
-      nesting_builder(nesting_table_ptr nesting_table): _nesting_table(nesting_table) { }
+      nesting_builder(nesting_table_ptr nesting_table): 
+          _nesting_table(nesting_table) { }
 
       void visit(wto_cycle_t& cycle) {
-	NodeName head = cycle.head();
-	wto_nesting_t previous_nesting = this->_nesting;
-	this->_nesting_table->insert(std::make_pair(head, this->_nesting));
-	this->_nesting += head;
-	for (typename wto_cycle_t::iterator it = cycle.begin(); it != cycle.end(); ++it) {
-	  it->accept(this);
-	}
-	this->_nesting = previous_nesting;
+        NodeName head = cycle.head();
+        wto_nesting_t previous_nesting = this->_nesting;
+        this->_nesting_table->insert(std::make_pair(head, this->_nesting));
+        this->_nesting += head;
+        for (typename wto_cycle_t::iterator it = cycle.begin(); it != cycle.end(); ++it) {
+          it->accept(this);
+        }
+        this->_nesting = previous_nesting;
       }
-
+      
       void visit(wto_vertex_t& vertex) {
-	this->_nesting_table->insert(std::make_pair(vertex.node(), this->_nesting));
+        this->_nesting_table->insert(std::make_pair(vertex.node(), this->_nesting));
       }
       
     }; // class nesting_builder
@@ -422,26 +423,27 @@ namespace ikos {
     dfn_t get_dfn(NodeName n) {
       typename dfn_table_t::iterator it = this->_dfn_table->find(n);
       if (it == this->_dfn_table->end()) {
-	return 0;
+        return 0;
       } else {
-	return it->second;
+        return it->second;
       }
     }
-
+    
     void set_dfn(NodeName n, dfn_t dfn) {
-      std::pair< typename dfn_table_t::iterator, bool > res = this->_dfn_table->insert(std::make_pair(n, dfn));
+      std::pair< typename dfn_table_t::iterator, bool > res = 
+          this->_dfn_table->insert(std::make_pair(n, dfn));
       if (!res.second) {
-	(res.first)->second = dfn;
+        (res.first)->second = dfn;
       }
     }
     
     NodeName pop() {
       if (this->_stack->empty()) {
-	throw error("WTO computation: empty stack");
+        CRAB_ERROR("WTO computation: empty stack");
       } else {
-	NodeName top = this->_stack->back();
-	this->_stack->pop_back();
-	return top;
+        NodeName top = this->_stack->back();
+        this->_stack->pop_back();
+        return top;
       }
     }
 
@@ -453,9 +455,9 @@ namespace ikos {
       wto_component_list_ptr partition(new wto_component_list_t);
       auto next_nodes = cfg.next_nodes(vertex);
       for (NodeName succ : next_nodes) {
-	if (this->get_dfn(succ) == 0) {
-	  this->visit(cfg, succ, partition);
-	}
+        if (this->get_dfn(succ) == 0) {
+          this->visit(cfg, succ, partition);
+        }
       }
       return wto_cycle_ptr(new wto_cycle_t(vertex, partition));
     }
@@ -472,28 +474,30 @@ namespace ikos {
       loop = false;
       auto next_nodes = cfg.next_nodes(vertex);
       for (NodeName succ: next_nodes) {
-	dfn_t succ_dfn = this->get_dfn(succ);
-	if (succ_dfn == 0) {
-	  min = this->visit(cfg, succ, partition);
-	} else {
-	  min = succ_dfn;
-	}
-	if (min <= head) {
-	  head = min;
+        dfn_t succ_dfn = this->get_dfn(succ);
+        if (succ_dfn == 0) {
+          min = this->visit(cfg, succ, partition);
+        } else {
+          min = succ_dfn;
+        }
+        if (min <= head) {
+          head = min;
 	  loop = true;
-	}
+        }
       }
       if (head == this->get_dfn(vertex)) {
-	this->set_dfn(vertex, dfn_t::plus_infinity());
-	element = this->pop();
-	if (loop) {
-	  while (!(element == vertex)) {
-	    this->set_dfn(element, 0);
-	    element = this->pop();
-	  }
-	  partition->push_front(boost::static_pointer_cast< wto_component_t, wto_cycle_t >(this->component(cfg, vertex)));
-	} else {
-	  partition->push_front(boost::static_pointer_cast< wto_component_t, wto_vertex_t >(wto_vertex_ptr(new wto_vertex_t(vertex))));
+        this->set_dfn(vertex, dfn_t::plus_infinity());
+        element = this->pop();
+        if (loop) {
+          while (!(element == vertex)) {
+            this->set_dfn(element, 0);
+            element = this->pop();
+          }
+          partition->push_front(boost::static_pointer_cast< wto_component_t, 
+                                wto_cycle_t >(this->component(cfg, vertex)));
+        } else {
+          partition->push_front(boost::static_pointer_cast< wto_component_t, 
+                                wto_vertex_t >(wto_vertex_ptr(new wto_vertex_t(vertex))));
 	}
       }
       return head;
@@ -502,55 +506,59 @@ namespace ikos {
     void build_nesting() {
       nesting_builder builder(this->_nesting_table);
       for (iterator it = this->begin(); it != this->end(); ++it) {
-	it->accept(&builder);
+        it->accept(&builder);
       }
     }
 
   public:
-    class iterator: public boost::iterator_facade< iterator
-						   , wto_component_t&
-						   , boost::forward_traversal_tag
-						   , wto_component_t&
-						   > {
+    class iterator: public boost::iterator_facade< iterator,
+                                                   wto_component_t&,
+                                                   boost::forward_traversal_tag,
+                                                   wto_component_t&> {
       
       friend class boost::iterator_core_access;
       
-    private:
+     private:
       typename wto_component_list_t::iterator _it;
       wto_component_list_ptr _l;
       
-    public:
-      iterator(wto_component_list_ptr l, bool b): _it(b ? l->begin() : l->end()), _l(l) { }
+     public:
+      iterator(wto_component_list_ptr l, bool b): 
+          _it(b ? l->begin() : l->end()), _l(l) { }
       
     private:
       void increment() { 
-	++(this->_it);
+        ++(this->_it);
       }
       
       bool equal(const iterator& other) const {
-	return (this->_l == other._l && this->_it == other._it);
+        return (this->_l == other._l && this->_it == other._it);
       }
       
       wto_component_t& dereference() const {
-	if (this->_it != this->_l->end()) {
-	  return **(this->_it);
-	} else {
-	  throw error("WTO: trying to dereference an empty iterator");
-	}
+        if (this->_it != this->_l->end()) {
+          return **(this->_it);
+        } else {
+          CRAB_ERROR("WTO: trying to dereference an empty iterator");
+        }
       }
       
     }; // class iterator    
     
   public:
-    wto(CFG& cfg): _wto_components(wto_component_list_ptr(new wto_component_list_t)), _dfn_table(dfn_table_ptr(new dfn_table_t)), 
-		   _num(0), _stack(stack_ptr(new stack_t)), _nesting_table(nesting_table_ptr(new nesting_table_t)) {
+    wto(CFG& cfg): 
+        _wto_components(wto_component_list_ptr(new wto_component_list_t)), 
+        _dfn_table(dfn_table_ptr(new dfn_table_t)), 
+        _num(0), _stack(stack_ptr(new stack_t)), 
+        _nesting_table(nesting_table_ptr(new nesting_table_t)) {
       this->visit(cfg, cfg.entry(), this->_wto_components);
       this->_dfn_table.reset();
       this->_stack.reset();
       this->build_nesting();
     }
 
-    wto(const wto_t& other): _wto_components(other._wto_components), _nesting_table(other._nesting_table) { }
+    wto(const wto_t& other): _wto_components(other._wto_components), 
+                             _nesting_table(other._nesting_table) { }
 
     wto_t& operator=(wto_t other) {
       this->_wto_components = other._wto_components;
@@ -569,30 +577,27 @@ namespace ikos {
     wto_nesting_t nesting(NodeName n) {
       typename nesting_table_t::iterator it = this->_nesting_table->find(n);
       if (it == this->_nesting_table->end()) {
-	std::ostringstream buf;
-	buf << "WTO nesting: node " << n << " not found";
-	throw error(buf.str());
+        CRAB_ERROR("WTO nesting: node ", n," not found");
       } else {
-	return it->second;
+        return it->second;
       }
     }
 
     void accept(wto_component_visitor< NodeName, CFG > *v) {
       for (iterator it = this->begin(); it != this->end(); ++it) {
-	it->accept(v);
+        it->accept(v);
       }
     }
     
-    std::ostream& write(std::ostream& o) {
+    void write(std::ostream& o) {
       for (iterator it = this->begin(); it != this->end(); ) {
-	wto_component_t& c = *it;
-	o << c;
-	++it;
-	if (it != this->end()) {
-	  o << " ";
-	}
+        wto_component_t& c = *it;
+        o << c;
+        ++it;
+        if (it != this->end()) {
+          o << " ";
+        }
       }
-      return o;
     }    
     
   }; // class wto

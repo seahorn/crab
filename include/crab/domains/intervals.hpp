@@ -129,13 +129,13 @@ namespace ikos {
 
     bound(std::string s): _n(1) {
       if (s == "+oo") {
-	this->_is_infinite = true;
+        this->_is_infinite = true;
       } else if (s == "-oo") {
-	this->_is_infinite = true;
-	this->_n = -1;
+        this->_is_infinite = true;
+        this->_n = -1;
       } else {
-	this->_is_infinite = false;
-	this->_n = Number(s);
+        this->_is_infinite = false;
+        this->_n = Number(s);
       }
     }
 
@@ -143,107 +143,109 @@ namespace ikos {
     
     bound(const bound_t& o): writeable(), _is_infinite(o._is_infinite), _n(o._n) { }
     
-    bound_t& operator=(bound_t o){
-      this->_is_infinite = o._is_infinite;
-      this->_n = o._n;
+    bound_t& operator=(const bound_t &o){
+      if (this != &o) {
+        this->_is_infinite = o._is_infinite;
+        this->_n = o._n;
+      }
       return *this;
     }
-
-    bool is_infinite() {
+    
+    bool is_infinite() const {
       return this->_is_infinite;
     }
     
-    bool is_finite() {
+    bool is_finite() const {
       return !this->_is_infinite;
     }
 
-    bool is_plus_infinity() {
+    bool is_plus_infinity() const {
       return (this->is_infinite() && this->_n > 0);
     }
     
-    bool is_minus_infinity() {
+    bool is_minus_infinity() const {
       return (this->is_infinite() && this->_n < 0);
     }
     
-    bound_t operator-() {
+    bound_t operator-() const {
       return bound_t(this->_is_infinite, -this->_n);
     }
     
-    bound_t operator+(bound_t x) {
+    bound_t operator+(bound_t x) const {
       if (this->is_finite() && x.is_finite()) {
-	return bound_t(this->_n + x._n);
+        return bound_t(this->_n + x._n);
       } else if (this->is_finite() && x.is_infinite()) {
-	return x;
+        return x;
       } else if (this->is_infinite() && x.is_finite()) {
-	return *this;
+        return *this;
       } else if (this->_n == x._n) {
-	return *this;
+        return *this;
       } else {
-	CRAB_ERROR("Bound: undefined operation -oo + +oo");
+        CRAB_ERROR("Bound: undefined operation -oo + +oo");
       }
     }
 
-    bound_t& operator+=(bound_t x) {
+    bound_t& operator+=(bound_t x)  {
       return this->operator=(this->operator+(x));
     }
 		
-    bound_t operator-(bound_t x) {
+    bound_t operator-(bound_t x) const {
       return this->operator+(x.operator-());
     }
 		
-    bound_t& operator-=(bound_t x) {
+    bound_t& operator-=(bound_t x)  {
       return this->operator=(this->operator-(x));
     }
     
-    bound_t operator*(bound_t x) {
+    bound_t operator*(bound_t x) const {
       return bound_t(this->_is_infinite || x._is_infinite, this->_n * x._n);
     }
 		
-    bound_t& operator*=(bound_t x) {
+    bound_t& operator*=(bound_t x)  {
       return this->operator=(this->operator*(x));
     }
     
-    bound_t operator/(bound_t x) {
+    bound_t operator/(bound_t x) const {
       if (x._n == 0) {
-	CRAB_ERROR("Bound: division by zero");
+        CRAB_ERROR("Bound: division by zero");
       } else if (this->is_finite() && x.is_finite()) {
-	return bound_t(false, _n / x._n);
+        return bound_t(false, _n / x._n);
       } else if (this->is_finite() && x.is_infinite()) {
-	if (this->_n > 0) {
-	  return x;
-	} else if (this->_n == 0) {
-	  return *this;
-	} else {
-	  return x.operator-();
-	}
+        if (this->_n > 0) {
+          return x;
+        } else if (this->_n == 0) {
+          return *this;
+        } else {
+          return x.operator-();
+        }
       } else if (this->is_infinite() && x.is_finite()) {
-	if (x._n > 0) {
-	  return *this;
-	} else {
-	  return this->operator-();
-	}
+        if (x._n > 0) {
+          return *this;
+        } else {
+          return this->operator-();
+        }
       } else {
-	return bound_t(true, this->_n * x._n);
+        return bound_t(true, this->_n * x._n);
       }
     }
-		
+    
     bound_t& operator/=(bound_t x) {
       return this->operator=(this->operator/(x));
     }
     
-    bool operator<(bound_t x) {
+    bool operator<(bound_t x) const {
       return !this->operator>=(x);
     }
 
-    bool operator>(bound_t x) {
+    bool operator>(bound_t x) const {
       return !this->operator<=(x);
     }
 
-    bool operator==(bound_t x) {
+    bool operator==(bound_t x) const {
       return (this->_is_infinite == x._is_infinite && this->_n == x._n);
     }
     
-    bool operator!=(bound_t x) {
+    bool operator!=(bound_t x) const {
       return !this->operator==(x);
     }
     
@@ -251,51 +253,50 @@ namespace ikos {
      *	results include up to 20% improvements in performance in the octagon domain
      *	over a more naive implementation.
      */
-    bool operator<=(bound_t x) {
+    bool operator<=(bound_t x) const {
       if(this->_is_infinite xor x._is_infinite){
-	if(this->_is_infinite){
-	  return this->_n < 0;
-	}
-	return x._n > 0;
+        if(this->_is_infinite){
+          return this->_n < 0;
+        }
+        return x._n > 0;
       }
       return this->_n <= x._n;
     }
     
-    bool operator>=(bound_t x) {
+    bool operator>=(bound_t x) const {
       if(this->_is_infinite xor x._is_infinite){
-	if(this->_is_infinite){
-	  return this->_n > 0;
-	}
-	return x._n < 0;
+        if(this->_is_infinite){
+          return this->_n > 0;
+        }
+        return x._n < 0;
       }
       return this->_n >= x._n;
     }
-
-    bound_t abs() {
+    
+    bound_t abs() const {
       if (this->operator>=(0)) {
-	return *this;
+        return *this;
       } else {
-	return this->operator-();
+        return this->operator-();
       }
     }
     
-    boost::optional< Number > number() {
+    boost::optional< Number > number() const {
       if (this->is_infinite()) {
-	return boost::optional< Number >();
+        return boost::optional< Number >();
       } else {
-	return boost::optional< Number >(this->_n);
+        return boost::optional< Number >(this->_n);
       }
     }
-
-    std::ostream& write(std::ostream& o) {
+    
+    void write(std::ostream& o) {
       if (this->is_plus_infinity()) {
-	o << "+oo";
+        o << "+oo";
       } else if (this->is_minus_infinity()) {
-	o << "-oo";
+        o << "-oo";
       } else {
-	o << this->_n;
+        o << this->_n;
       }
-      return o;
     }
     
   }; // class bound
@@ -338,15 +339,15 @@ namespace ikos {
   public:
     interval(bound_t lb, bound_t ub): _lb(lb), _ub(ub) { 
       if (lb > ub) {
-	this->_lb = 0;
-	this->_ub = -1;
+        this->_lb = 0;
+        this->_ub = -1;
       }
     }
-
+    
     interval(bound_t b): _lb(b), _ub(b) { 
       if (b.is_infinite()) {
-	this->_lb = 0;
-	this->_ub = -1;	
+        this->_lb = 0;
+        this->_ub = -1;	
       }
     }
 
@@ -354,126 +355,136 @@ namespace ikos {
 
     interval(std::string b): _lb(b), _ub(b) { 
       if (this->_lb.is_infinite()) {
-	this->_lb = 0;
-	this->_ub = -1;	
+        this->_lb = 0;
+        this->_ub = -1;	
       }
     }
 
     interval(const interval_t& i): writeable(), _lb(i._lb), _ub(i._ub) { }
-
+    
     interval_t& operator=(interval_t i){
       this->_lb = i._lb;
       this->_ub = i._ub;
       return *this;
     }
 
-    bound_t lb() {
+    bound_t lb() const {
       return this->_lb;
     }
 
-    bound_t ub() {
+    bound_t ub() const {
       return this->_ub;
     }
 
-    bool is_bottom() {
+    bool is_bottom() const {
       return (this->_lb > this->_ub);
     }
     
-    bool is_top() {
+    bool is_top() const {
       return (this->_lb.is_infinite() && this->_ub.is_infinite());
     }
     
-    interval_t lower_half_line() {
+    interval_t lower_half_line() const {
       return interval_t(bound_t::minus_infinity(), this->_ub);
     }
     
-    interval_t upper_half_line() {
+    interval_t upper_half_line() const {
       return interval_t(this->_lb, bound_t::plus_infinity());
     }
 
-    bool operator==(interval_t x) {
+    bool operator==(interval_t x) const {
       if (is_bottom()) {
-	return x.is_bottom();
+        return x.is_bottom();
       } else {
-	return (this->_lb == x._lb) && (this->_ub == x._ub);
+        return (this->_lb == x._lb) && (this->_ub == x._ub);
       }
     }
-
-    bool operator!=(interval_t x) {
+    
+    bool operator!=(interval_t x) const {
       return !this->operator==(x);
     }
 
-    bool operator<=(interval_t x) {
+    bool operator<=(interval_t x) const {
       if (this->is_bottom()) {
-	return true;
+        return true;
       } else if (x.is_bottom()) {
-	return false;
+        return false;
       } else {
-	return (x._lb <= this->_lb) && (this->_ub <= x._ub);
+        return (x._lb <= this->_lb) && (this->_ub <= x._ub);
       }
     }
 
-    interval_t operator|(interval_t x) {
+    interval_t operator|(interval_t x) const {
+      if (this->is_bottom()) {
+        return x;
+      } else if (x.is_bottom()) {
+        return *this;
+      } else {
+	return interval_t(bound_t::min(this->_lb, x._lb), 
+                            bound_t::max(this->_ub, x._ub));
+      }
+    }
+
+    interval_t operator&(interval_t x) const {
+      if (this->is_bottom() || x.is_bottom()) {
+        return this->bottom();
+      } else {
+        return interval_t(bound_t::max(this->_lb, x._lb), 
+                          bound_t::min(this->_ub, x._ub));
+      }
+    }
+    
+    interval_t operator||(interval_t x) const {
       if (this->is_bottom()) {
 	return x;
       } else if (x.is_bottom()) {
 	return *this;
       } else {
-	return interval_t(bound_t::min(this->_lb, x._lb), bound_t::max(this->_ub, x._ub));
-      }
-    }
-
-    interval_t operator&(interval_t x) {
-      if (this->is_bottom() || x.is_bottom()) {
-	return this->bottom();
-      } else {
-	return interval_t(bound_t::max(this->_lb, x._lb), bound_t::min(this->_ub, x._ub));
+        return interval_t(x._lb < this->_lb ? 
+                          bound_t::minus_infinity() : 
+                          this->_lb, 
+                          this->_ub < x._ub ?
+                          bound_t::plus_infinity() : 
+                          this->_ub);
       }
     }
     
-    interval_t operator||(interval_t x) {
-      if (this->is_bottom()) {
-	return x;
-      } else if (x.is_bottom()) {
-	return *this;
-      } else {
-	return interval_t(x._lb < this->_lb ? bound_t::minus_infinity() : this->_lb, this->_ub < x._ub ? bound_t::plus_infinity() : this->_ub);
-      }
-    }
-    
-    interval_t operator&&(interval_t x) {
+    interval_t operator&&(interval_t x) const {
       if (this->is_bottom() || x.is_bottom()) {
-	return this->bottom();
+        return this->bottom();
       } else {
-	return interval_t(this->_lb.is_infinite() && x._lb.is_finite() ? x._lb : this->_lb, this->_ub.is_infinite() && x._ub.is_finite() ? x._ub : this->_ub);
+        return interval_t(this->_lb.is_infinite() && x._lb.is_finite() ? 
+                          x._lb : this->_lb, 
+                          this->_ub.is_infinite() && x._ub.is_finite() ?
+                          x._ub : this->_ub);
       }
     }
 
-    interval_t operator+(interval_t x) {
+    interval_t operator+(interval_t x) const {
       if (this->is_bottom() || x.is_bottom()) {
-	return this->bottom();
+        return this->bottom();
       } else {
 	return interval_t(this->_lb + x._lb, this->_ub + x._ub);
       }
     }
-
+    
     interval_t& operator+=(interval_t x) {
       return this->operator=(this->operator+(x));
     }
     
-    interval_t operator-() {
+    interval_t operator-() const {
       if (this->is_bottom()) {
-	return this->bottom();
+        return this->bottom();
       } else {
-	return interval_t(-this->_ub, -this->_lb);
+        return interval_t(-this->_ub, -this->_lb);
       }
     }
     
-    interval_t operator-(interval_t x) {
+    interval_t operator-(interval_t x) const {
       if (this->is_bottom() || x.is_bottom()) {
-	return this->bottom();
+        return this->bottom();
       } else {
-	return interval_t(this->_lb - x._ub, this->_ub - x._lb);
+        return interval_t(this->_lb - x._ub, this->_ub - x._lb);
       }
     }
     
@@ -481,57 +492,57 @@ namespace ikos {
       return this->operator=(this->operator-(x));
     }
     
-    interval_t operator*(interval_t x) {
+    interval_t operator*(interval_t x) const {
       if (this->is_bottom() || x.is_bottom()) {
-	return this->bottom();
+        return this->bottom();
       } else {
-      	bound_t ll = this->_lb * x._lb;
-	bound_t lu = this->_lb * x._ub;
-	bound_t ul = this->_ub * x._lb;
-	bound_t uu = this->_ub * x._ub;
-	return interval_t(bound_t::min(ll, lu, ul, uu), bound_t::max(ll, lu, ul, uu));
+        bound_t ll = this->_lb * x._lb;
+        bound_t lu = this->_lb * x._ub;
+        bound_t ul = this->_ub * x._lb;
+        bound_t uu = this->_ub * x._ub;
+        return interval_t(bound_t::min(ll, lu, ul, uu), 
+                          bound_t::max(ll, lu, ul, uu));
       }
     }
-
+    
     interval_t& operator*=(interval_t x) {
       return this->operator=(this->operator*(x));
     }
     
-    interval_t operator/(interval_t x);
+    interval_t operator/(interval_t x) const;
 
     interval_t& operator/=(interval_t x) {
       return this->operator=(this->operator/(x));
     }   
     
-    boost::optional< Number > singleton() {
+    boost::optional< Number > singleton() const {
       if (!this->is_bottom() && this->_lb == this->_ub) {
-	return this->_lb.number();
+        return this->_lb.number();
       } else {
-	return boost::optional< Number >();
+        return boost::optional< Number >();
       }
     }
     
-    bool operator[](Number n) {
+    bool operator[](Number n) const {
       if (this->is_bottom()) {
-	return false;
+        return false;
       } else {
-	bound_t b(n);
-	return (this->_lb <= b) && (b <= this->_ub);
+        bound_t b(n);
+        return (this->_lb <= b) && (b <= this->_ub);
       }
     }
     
-    std::ostream& write(std::ostream& o) {
+    void write(std::ostream& o) {
       if (is_bottom()) {
-	o << "_|_";
+        o << "_|_";
       } else {
-	o << "[" << _lb << ", " << _ub << "]";
+        o << "[" << _lb << ", " << _ub << "]";
       }
-      return o;
     }    
-
+    
     // division and remainder operations
 
-    interval_t UDiv(interval_t x ){
+    interval_t UDiv(interval_t x ) const {
       if (this->is_bottom() || x.is_bottom()) {
         return this->bottom();
       } else {
@@ -539,7 +550,7 @@ namespace ikos {
       }
     }
 
-    interval_t SRem(interval_t x)  {
+    interval_t SRem(interval_t x)  const {
       if (this->is_bottom() || x.is_bottom()) {
         return this->bottom();
       } else {
@@ -547,7 +558,7 @@ namespace ikos {
       }
     }
 
-    interval_t URem(interval_t x)  {
+    interval_t URem(interval_t x)  const {
       if (this->is_bottom() || x.is_bottom()) {
         return this->bottom();
       } else {
@@ -557,27 +568,19 @@ namespace ikos {
 
     // bitwise operations
 
-    interval_t Trunc(unsigned /* width */){
+    interval_t Trunc(unsigned /* width */) const {
       return *this;
     }
 
-    interval_t ZExt(unsigned /* width */){
+    interval_t ZExt(unsigned /* width */) const {
       return *this;
     }
     
-    interval_t SExt(unsigned /* width */){
+    interval_t SExt(unsigned /* width */) const {
       return *this;
     }
 
-    interval_t And(interval_t x)  {
-      if (this->is_bottom() || x.is_bottom()) {
-        return this->bottom();
-      } else {
-      return this->top();
-      }
-    }
-
-    interval_t Or(interval_t x)  {
+    interval_t And(interval_t x) const {
       if (this->is_bottom() || x.is_bottom()) {
         return this->bottom();
       } else {
@@ -585,9 +588,17 @@ namespace ikos {
       }
     }
     
-    interval_t Xor(interval_t x)  { return this->Or(x); }
+    interval_t Or(interval_t x)  const {
+      if (this->is_bottom() || x.is_bottom()) {
+        return this->bottom();
+      } else {
+        return this->top();
+      }
+    }
     
-    interval_t Shl(interval_t x)  {
+    interval_t Xor(interval_t x) const { return this->Or(x); }
+    
+    interval_t Shl(interval_t x) const {
       if (this->is_bottom() || x.is_bottom()) {
         return this->bottom();
       } else {
@@ -595,7 +606,7 @@ namespace ikos {
       }
     }
 
-    interval_t LShr(interval_t  x) {
+    interval_t LShr(interval_t  x) const {
       if (this->is_bottom() || x.is_bottom()) {
         return this->bottom();
       } else {
@@ -603,7 +614,7 @@ namespace ikos {
       }
     }
 
-    interval_t AShr(interval_t  x) {
+    interval_t AShr(interval_t  x) const {
       if (this->is_bottom() || x.is_bottom()) {
         return this->bottom();
       } else {
@@ -614,57 +625,61 @@ namespace ikos {
   };//  class interval
 
   template<>
-  inline interval< q_number > interval< q_number >::operator/(interval< q_number > x) {
+  inline interval< q_number > interval< q_number >::
+  operator/(interval< q_number > x) const {
     if (this->is_bottom() || x.is_bottom()) {
       return this->bottom();
     } else {
       boost::optional< q_number > d = x.singleton();
       if (d && *d == 0) {
-	// [_, _] / 0 = _|_
-	return this->bottom();
+        // [_, _] / 0 = _|_
+        return this->bottom();
       } else if (x[0]) {
-	boost::optional< q_number > n = this->singleton();
-	if (n && *n == 0) {
-	  // 0 / [_, _] = 0
-	  return interval_t(q_number(0));
-	} else {
-	  return this->top();
-	}
+        boost::optional< q_number > n = this->singleton();
+        if (n && *n == 0) {
+          // 0 / [_, _] = 0
+          return interval_t(q_number(0));
+        } else {
+          return this->top();
+        }
       } else {
-	bound_t ll = this->_lb / x._lb;
-	bound_t lu = this->_lb / x._ub;
-	bound_t ul = this->_ub / x._lb;
-	bound_t uu = this->_ub / x._ub;
-	return interval_t(bound_t::min(ll, lu, ul, uu), bound_t::max(ll, lu, ul, uu));
+        bound_t ll = this->_lb / x._lb;
+        bound_t lu = this->_lb / x._ub;
+        bound_t ul = this->_ub / x._lb;
+        bound_t uu = this->_ub / x._ub;
+        return interval_t(bound_t::min(ll, lu, ul, uu), 
+                          bound_t::max(ll, lu, ul, uu));
       }
     }
   }
-  
+
   template<>
-  inline interval< z_number > interval< z_number >::operator/(interval< z_number > x) {
+  inline interval< z_number > interval< z_number >::
+  operator/(interval< z_number > x) const {
     if (this->is_bottom() || x.is_bottom()) {
       return this->bottom();
     } else {
       typedef interval< z_number > z_interval;
       if (x[0]) {
-	z_interval l(x._lb, z_bound(-1));
-	z_interval u(z_bound(1), x._ub);
-	return (this->operator/(l) | this->operator/(u));
+        z_interval l(x._lb, z_bound(-1));
+        z_interval u(z_bound(1), x._ub);
+        return (this->operator/(l) | this->operator/(u));
       } else if (this->operator[](0)) {
-	z_interval l(this->_lb, z_bound(-1));
-	z_interval u(z_bound(1), this->_ub);
-	return ((l / x) | (u / x) | z_interval(z_number(0)));
+        z_interval l(this->_lb, z_bound(-1));
+        z_interval u(z_bound(1), this->_ub);
+        return ((l / x) | (u / x) | z_interval(z_number(0)));
       } else {
-	// Neither the dividend nor the divisor contains 0
-	z_interval a = (this->_ub < 0) ? 
-              (*this + ((x._ub < 0) ? 
-                        (x + z_interval(z_number(1))) : 
-                        (z_interval(z_number(1)) - x))) : *this;
+        // Neither the dividend nor the divisor contains 0
+        z_interval a = (this->_ub < 0) ? 
+            (*this + ((x._ub < 0) ? 
+                      (x + z_interval(z_number(1))) : 
+                      (z_interval(z_number(1)) - x))) : *this;
 	bound_t ll = a._lb / x._lb;
 	bound_t lu = a._lb / x._ub;
 	bound_t ul = a._ub / x._lb;
 	bound_t uu = a._ub / x._ub;
-	return interval_t(bound_t::min(ll, lu, ul, uu), bound_t::max(ll, lu, ul, uu));	
+	return interval_t(bound_t::min(ll, lu, ul, uu), 
+                            bound_t::max(ll, lu, ul, uu));	
       }
     }
   }
@@ -672,7 +687,7 @@ namespace ikos {
 
   template <>
   inline interval< z_number > interval< z_number >::
-  SRem(interval< z_number > x) {
+  SRem(interval< z_number > x) const {
     // note that the sign of the divisor does not matter
     typedef interval< z_number > z_interval;
     
@@ -711,7 +726,7 @@ namespace ikos {
 
   template <>
   inline interval< z_number > interval< z_number >::
-  URem(interval< z_number > x) {
+  URem(interval< z_number > x) const {
     typedef interval< z_number > z_interval;
     
     if (this->is_bottom() || x.is_bottom()) {
@@ -748,7 +763,7 @@ namespace ikos {
 
   template <>
   inline interval< z_number > interval< z_number >::
-  And(interval< z_number > x) {
+  And(interval< z_number > x) const {
     if (this->is_bottom() || x.is_bottom()) {
       return this->bottom();
     } else {
@@ -767,7 +782,7 @@ namespace ikos {
 
   template <>
   inline interval< z_number > interval< z_number >::
-  Or(interval< z_number > x) {
+  Or(interval< z_number > x) const {
     if (this->is_bottom() || x.is_bottom()) {
       return this->bottom();
     } else {
@@ -794,7 +809,7 @@ namespace ikos {
 
   template <>
   inline interval< z_number > interval< z_number >::
-  Xor(interval< z_number > x) {
+  Xor(interval< z_number > x)  const {
     if (this->is_bottom() || x.is_bottom()) {
       return this->bottom();
     } else {
@@ -811,7 +826,7 @@ namespace ikos {
 
   template <>
   inline interval< z_number > interval< z_number >::
-  Shl(interval< z_number > x) {
+  Shl(interval< z_number > x) const {
     if (this->is_bottom() || x.is_bottom()) {
       return this->bottom();
     } else {
@@ -830,7 +845,7 @@ namespace ikos {
 
   template <>
   inline interval< z_number > interval< z_number >::
-  LShr(interval< z_number > x) {
+  LShr(interval< z_number > x) const {
     if (this->is_bottom() || x.is_bottom()) {
       return this->bottom();
     } else {
@@ -884,6 +899,12 @@ namespace ikos {
   template< typename Number >
   inline interval< Number > operator-(interval< Number > x, Number c) {
     return x - interval< Number >(c);
+  }
+
+  template < typename Number >
+  inline std::ostream& operator<<(std::ostream& o, interval< Number > i) {
+    i.write(o);
+    return o;
   }
 
   typedef interval< z_number > z_interval;
@@ -962,9 +983,11 @@ namespace ikos {
       }
     }
 
-    interval_t compute_residual(linear_constraint_t cst, variable_t pivot, IntervalCollection& env) {
+    interval_t compute_residual(linear_constraint_t cst, variable_t pivot, 
+                                IntervalCollection& env) {
       interval_t residual(cst.constant());
-      for (typename linear_constraint_t::iterator it = cst.begin(); it != cst.end(); ++it) {
+      for (typename linear_constraint_t::iterator it = cst.begin(); 
+           it != cst.end(); ++it) {
 	variable_t v = it->second;
 	if (v.index() != pivot.index()) {
 	  residual = residual - (it->first * env[v.name()]);
@@ -975,7 +998,8 @@ namespace ikos {
     }
     
     void propagate(linear_constraint_t cst, IntervalCollection& env) {
-      for (typename linear_constraint_t::iterator it = cst.begin(); it != cst.end(); ++it) {
+      for (typename linear_constraint_t::iterator it = cst.begin(); 
+           it != cst.end(); ++it) {
 	Number c = it->first;
 	variable_t pivot = it->second;
 	interval_t rhs = this->compute_residual(cst, pivot, env) / interval_t(c);
@@ -1009,20 +1033,24 @@ namespace ikos {
     void solve_large_system(IntervalCollection& env) {
       this->_op_count = 0;
       this->_refined_variables.clear();
-      for (typename cst_table_t::iterator it = this->_cst_table.begin(); it != this->_cst_table.end(); ++it) {
+      for (typename cst_table_t::iterator it = this->_cst_table.begin(); 
+           it != this->_cst_table.end(); ++it) {
 	this->propagate(*it, env);
       }
       do {
 	variable_set_t vars_to_process(this->_refined_variables);
 	this->_refined_variables.clear();
-	for (typename variable_set_t::iterator it = vars_to_process.begin(); it != vars_to_process.end(); ++it) {
+	for (typename variable_set_t::iterator it = vars_to_process.begin(); 
+               it != vars_to_process.end(); ++it) {
 	  uint_set_t& csts = this->_trigger_table[*it];
-	  for (typename uint_set_t::iterator cst_it = csts.begin(); cst_it != csts.end(); ++cst_it) {
+	  for (typename uint_set_t::iterator cst_it = csts.begin(); 
+                 cst_it != csts.end(); ++cst_it) {
 	    this->propagate(this->_cst_table.at(*cst_it), env);
 	  }
 	}
       }
-      while (!this->_refined_variables.is_empty() && this->_op_count <= this->_max_op);
+      while (!this->_refined_variables.empty() && 
+             this->_op_count <= this->_max_op);
     }
 
     void solve_small_system(IntervalCollection& env) {
@@ -1030,19 +1058,28 @@ namespace ikos {
       do {
 	++cycle;
 	this->_refined_variables.clear();
-	for (typename cst_table_t::iterator it = this->_cst_table.begin(); it != this->_cst_table.end(); ++it) {
+	for (typename cst_table_t::iterator it = this->_cst_table.begin(); 
+               it != this->_cst_table.end(); ++it) {
 	  this->propagate(*it, env);
 	}
       }
-      while (!this->_refined_variables.is_empty() && cycle <= this->_max_cycles);
+      while (!this->_refined_variables.empty() && 
+             cycle <= this->_max_cycles);
     }
     
     
   public:
-    linear_interval_solver(linear_constraint_system_t csts, std::size_t max_cycles): 
-        _max_cycles(max_cycles), _is_contradiction(false), _is_large_system(false), _op_count(0) {
+
+    linear_interval_solver(linear_constraint_system_t csts, 
+                           std::size_t max_cycles): 
+        _max_cycles(max_cycles), 
+        _is_contradiction(false), 
+        _is_large_system(false), 
+        _op_count(0) {
+
       std::size_t op_per_cycle = 0;
-      for (typename linear_constraint_system_t::iterator it = csts.begin(); it != csts.end(); ++it) {
+      for (typename linear_constraint_system_t::iterator it = csts.begin(); 
+           it != csts.end(); ++it) {
 	linear_constraint_t cst = *it;
 	if (cst.is_contradiction()) {
 	  this->_is_contradiction = true;
@@ -1067,7 +1104,8 @@ namespace ikos {
 	for (unsigned int i = 0; i < this->_cst_table.size(); ++i) {
 	  linear_constraint_t cst = this->_cst_table.at(i);
 	  variable_set_t vars = cst.variables();
-	  for (typename variable_set_t::iterator it = vars.begin(); it != vars.end(); ++it) {
+	  for (typename variable_set_t::iterator it = vars.begin(); 
+                 it != vars.end(); ++it) {
 	    this->_trigger_table[*it].insert(i);
 	  }
 	}
@@ -1076,18 +1114,18 @@ namespace ikos {
     
     void run(IntervalCollection& env) {
       if (this->_is_contradiction) {
-	env.set_to_bottom();
+        env.set_to_bottom();
       } else {
-	try {
-	  if (this->_is_large_system) {
+        try {
+          if (this->_is_large_system) {
 	    this->solve_large_system(env);
-	  } else {
-	    this->solve_small_system(env);
-	  }
-	}
-	catch (bottom_found& e) {
-	  env.set_to_bottom();
-	}
+          } else {
+            this->solve_small_system(env);
+          }
+        }
+        catch (bottom_found& e) {
+          env.set_to_bottom();
+        }
       }
     }
     
@@ -1198,7 +1236,8 @@ namespace ikos {
 
     interval_t operator[](linear_expression_t expr) {
       interval_t r(expr.constant());
-      for (typename linear_expression_t::iterator it = expr.begin(); it != expr.end(); ++it) {
+      for (typename linear_expression_t::iterator it = expr.begin(); 
+           it != expr.end(); ++it) {
 	interval_t c(it->first);
 	r += c * this->_env[it->second.name()];
       }
@@ -1209,7 +1248,8 @@ namespace ikos {
       this->add(csts);
     }
 
-    void add(linear_constraint_system_t csts, std::size_t threshold = max_reduction_cycles) {
+    void add(linear_constraint_system_t csts, 
+             std::size_t threshold = max_reduction_cycles) {
       if (!this->is_bottom()) {
 	solver_t solver(csts, threshold);
 	solver.run(this->_env);
@@ -1228,7 +1268,8 @@ namespace ikos {
       }
       else {
         interval_t r = e.constant();
-        for (typename linear_expression_t::iterator it = e.begin(); it != e.end(); ++it) {
+        for (typename linear_expression_t::iterator it = e.begin(); 
+             it != e.end(); ++it) {
 	r += it->first * this->_env[it->second.name()];
         }
         this->_env.set(x, r);
@@ -1454,8 +1495,8 @@ namespace ikos {
       this->_env.set(x, xi);
     }
 
-    std::ostream& write(std::ostream& o) {
-      return this->_env.write(o);
+    void write(std::ostream& o) {
+      this->_env.write(o);
     }
 
     linear_constraint_system_t to_linear_constraint_system ()

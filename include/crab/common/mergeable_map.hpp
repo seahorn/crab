@@ -111,19 +111,20 @@ namespace crab {
          _tree = patricia_tree_t();
        }
        
-       std::ostream& write(std::ostream& o) {
+       void write(std::ostream& o) {
          o << "{";
          for (auto it = _tree.begin(); it != _tree.end(); ) {
-           it->first.write(o);
+           Key k = it->first;
+           k.write(o);
            o << " -> ";
-           o << it->second;
+           Value v = it->second;
+           o << v;
            ++it;
            if (it != _tree.end()) {
              o << "; ";
            }
          }
          o << "}";
-         return o;
        }    
      }; // class mergeable_map
 

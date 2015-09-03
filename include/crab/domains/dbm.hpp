@@ -1268,10 +1268,9 @@ namespace crab {
       }
 
       // Output function
-      ostream& write(ostream& o) { 
+      void write(ostream& o) { 
 
         normalize ();
-
 #if 0
         cout << "var_map={";
         for (auto &p: _var_map) 
@@ -1287,17 +1286,16 @@ namespace crab {
 
         if(is_bottom()){
           o << "_|_";
-          return o;
+          return;
         }
         else if (is_top()){
           o << "{}";
-          return o;
+          return;
         }
         else
         {
           linear_constraint_system_t inv = to_linear_constraint_system ();
           o << inv;
-          return o;
         }
       }
 

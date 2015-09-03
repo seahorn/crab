@@ -2,13 +2,13 @@
  *
  * Position-sensitive pointer analysis.
  *
- * This analysis operates on a simplified version of the constraint resolution
- * algorithm described in the following paper:
+ * This analysis operates on a simplified version of the constraint
+ * resolution algorithm described in the following paper:
  *
- * Arnaud Venet. A Scalable Nonuniform Pointer Analysis for Embedded Programs.
- * In Proceedings of the International Static Analysis Symposium, SAS 04,
- * Verona, Italy. Lecture Notes in Computer Science, pages 149-164,
- * volume 3148, Springer 2004.
+ * Arnaud Venet. A Scalable Nonuniform Pointer Analysis for Embedded
+ * Programs.  In Proceedings of the International Static Analysis
+ * Symposium, SAS 04, Verona, Italy. Lecture Notes in Computer
+ * Science, pages 149-164, volume 3148, Springer 2004.
  *
  * Author: Arnaud J. Venet (arnaud.j.venet@nasa.gov)
  *
@@ -79,7 +79,7 @@ public:
 public:
   pointer_var(index_t uid) : _uid(uid) {}
 
-  std::string str() {
+  std::string str() const {
     std::stringstream buf;
     buf << "V_" << _uid;
     return buf.str();
@@ -121,15 +121,15 @@ typedef enum {
 
 class pta_ref {
 public:
-  virtual pta_ref_kind kind() = 0;
+  virtual pta_ref_kind kind() const = 0;
 
-  virtual void print(std::ostream&) = 0;
+  virtual void print(std::ostream&) const = 0;
 
   virtual ~pta_ref () {}
 
 }; // class pta_ref
 
-std::ostream& operator<<(std::ostream& o, pta_ref& p) {
+std::ostream& operator<<(std::ostream& o, const pta_ref& p) {
   p.print(o);
   return o;
 }
@@ -143,11 +143,13 @@ public:
   pointer_ref(pointer_var pointer, z_interval offset)
       : _pointer(pointer), _offset(offset) {}
 
-  pta_ref_kind kind() { return POINTER_REF; }
+  pta_ref_kind kind() const { return POINTER_REF; }
 
-  void print(std::ostream& o) { o << this->_pointer << " + " << this->_offset; }
+  void print(std::ostream& o) const { 
+    o << this->_pointer << " + " << this->_offset; 
+  }
 
-  std::string str() { return _pointer.str(); }
+  std::string str() const { return _pointer.str(); }
 
 }; // class pointer_ref
 
@@ -162,11 +164,13 @@ public:
 public:
   function_ref(index_t uid) : _uid(uid) { function_ids.insert(uid); }
 
-  pta_ref_kind kind() { return FUNCTION_REF; }
+  pta_ref_kind kind() const { return FUNCTION_REF; }
 
-  void print(std::ostream& o) { o << "F{" << this->_uid << "}"; }
+  void print(std::ostream& o) const { 
+    o << "F{" << this->_uid << "}"; 
+  }
 
-  std::string str() {
+  std::string str() const {
     std::stringstream buf;
     buf << "F{" << this->_uid << "}";
     return buf.str();
@@ -187,11 +191,13 @@ public:
   object_ref(index_t address, z_interval offset)
       : _address(address), _offset(offset) {}
 
-  pta_ref_kind kind() { return OBJECT_REF; }
+  pta_ref_kind kind() const { return OBJECT_REF; }
 
-  void print(std::ostream& o) { o << this->_address << " + " << this->_offset; }
+  void print(std::ostream& o) const { 
+    o << this->_address << " + " << this->_offset; 
+  }
 
-  std::string str() {
+  std::string str() const {
     std::stringstream buf;
     buf << "O{" << this->_address << "}";
     return buf.str();
@@ -213,13 +219,13 @@ public:
   param_ref(pointer_var fptr, unsigned int param)
       : _fptr(fptr), _param(param) {}
 
-  pta_ref_kind kind() { return PARAM_REF; }
+  pta_ref_kind kind() const { return PARAM_REF; }
 
-  void print(std::ostream& o) {
+  void print(std::ostream& o) const {
     o << "P_" << this->_param << "(" << this->_fptr << ")";
   }
 
-  std::string str(index_t fuid) {
+  std::string str(index_t fuid) const {
     std::ostringstream buf;
     buf << "P_" << this->_param << "(" << fuid << ")";
     return buf.str();
@@ -239,14 +245,14 @@ public:
 public:
   return_ref(pointer_var fptr) : _fptr(fptr) {}
 
-  pta_ref_kind kind() { return RETURN_REF; }
+  pta_ref_kind kind() const { return RETURN_REF; }
 
-  void print(std::ostream& o) {
+  void print(std::ostream& o) const {
     o << "R"
       << "(" << this->_fptr << ")";
   }
 
-  std::string str(index_t fuid) {
+  std::string str(index_t fuid) const {
     std::ostringstream buf;
     buf << "R"
         << "(" << fuid << ")";
@@ -263,15 +269,15 @@ typedef enum { CST_ASSIGN, CST_STORE, CST_LOAD } pta_constraint_kind;
 
 class pta_constraint {
 public:
-  virtual void print(std::ostream& o) = 0;
+  virtual void print(std::ostream& o) const = 0;
 
-  virtual pta_constraint_kind kind() = 0;
+  virtual pta_constraint_kind kind() const = 0;
   
   virtual ~pta_constraint () {}
 
 }; // class pta_constraint
 
-std::ostream& operator<<(std::ostream& o, pta_constraint& c) {
+std::ostream& operator<<(std::ostream& o, const pta_constraint& c) {
   c.print(o);
   return o;
 }
@@ -285,12 +291,12 @@ public:
   pta_assign(pointer_var lhs, boost::shared_ptr< pta_ref > rhs)
       : _lhs(lhs), _rhs(rhs) {}
 
-  void print(std::ostream& o) {
+  void print(std::ostream& o) const {
     pta_ref& rhs = *(this->_rhs);
     o << this->_lhs << " => " << rhs;
   }
 
-  pta_constraint_kind kind() { return CST_ASSIGN; }
+  pta_constraint_kind kind() const { return CST_ASSIGN; }
 
 }; // class pta_assign
 
@@ -328,17 +334,18 @@ public:
   pta_store(boost::shared_ptr< pta_ref > lhs, pointer_var rhs)
       : _lhs(lhs), _rhs(rhs) {}
 
-  void print(std::ostream& o) {
+  void print(std::ostream& o) const {
     pta_ref& lhs = *(this->_lhs);
     o << "*(" << lhs << ") => " << this->_rhs;
   }
 
-  pta_constraint_kind kind() { return CST_STORE; }
+  pta_constraint_kind kind() const { return CST_STORE; }
 
 }; // class pta_store
 
-boost::shared_ptr< pta_constraint > operator<<(boost::shared_ptr< pta_ref > lhs,
-                                               pointer_var rhs) {
+boost::shared_ptr< pta_constraint > 
+operator<<(boost::shared_ptr< pta_ref > lhs,
+           pointer_var rhs) {
   return boost::shared_ptr< pta_store >(new pta_store(lhs, rhs));
 }
 
@@ -351,12 +358,12 @@ public:
   pta_load(pointer_var lhs, boost::shared_ptr< pta_ref > rhs)
       : _lhs(lhs), _rhs(rhs) {}
 
-  void print(std::ostream& o) {
+  void print(std::ostream& o) const {
     pta_ref& rhs = *(this->_rhs);
     o << this->_lhs << " => *(" << rhs << ")";
   }
 
-  pta_constraint_kind kind() { return CST_LOAD; }
+  pta_constraint_kind kind() const { return CST_LOAD; }
 
 }; // class pta_load
 
@@ -440,12 +447,22 @@ private:
   std::size_t iteration;
 
 private:
+
+  address_set get_address_set(const std::string& v) const {
+    address_map::const_iterator it = this->_address_map.find(v);
+    if (it == this->_address_map.end()) {
+      return address_set();
+    } else {
+      return it->second;
+    }
+  }
+
   address_set& get_address_set(const std::string& v) {
     return this->_address_map[v];
   }
 
-  z_interval get_offset(const std::string& v) {
-    offset_map::iterator it = this->_offset_map.find(v);
+  z_interval get_offset(const std::string& v) const {
+    offset_map::const_iterator it = this->_offset_map.find(v);
     if (it == this->_offset_map.end()) {
       return z_interval::bottom();
     } else {
@@ -673,8 +690,8 @@ private:
 public:
   pta_system() {}
 
-  void print(std::ostream& o) {
-    for (std::vector< boost::shared_ptr< pta_constraint > >::iterator
+  void print(std::ostream& o) const {
+    for (std::vector< boost::shared_ptr< pta_constraint > >::const_iterator
              it = this->_csts.begin(),
              et = this->_csts.end();
          it != et;
@@ -705,20 +722,22 @@ public:
     }
   }
 
-  pta_info get(pointer_var p) {
-    return std::make_pair(get_address_set(p.str()), get_offset(p.str()));
+  pta_info get(pointer_var p) const {
+    return std::make_pair(get_address_set(p.str()), 
+                          get_offset(p.str()));
   }
 
 }; // class pta_system
 
-std::ostream& operator<<(std::ostream& o, pta_system s) {
+std::ostream& operator<<(std::ostream& o, const pta_system &s) {
   s.print(o);
   return o;
 }
 
-std::ostream& operator<<(std::ostream& o, pta_info info) {
+std::ostream& operator<<(std::ostream& o, const pta_info &info) {
   o << "({";
-  for (address_set::iterator it = info.first.begin(); it != info.first.end();) {
+  for (address_set::iterator it = info.first.begin(); 
+       it != info.first.end();) {
     o << *it;
     ++it;
     if (it != info.first.end()) {

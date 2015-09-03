@@ -71,23 +71,31 @@ namespace ikos {
   private:
     void canonicalize() {
       if (!this->_is_bottom) {
-	this->_is_bottom = this->_first.is_bottom() || this->_second.is_bottom();
-	if (this->_is_bottom) {
-	  this->_first = Domain1::bottom();
-	  this->_second = Domain2::bottom();      
-	}
+        this->_is_bottom = this->_first.is_bottom() || 
+            this->_second.is_bottom();
+        if (this->_is_bottom) {
+          this->_first = Domain1::bottom();
+          this->_second = Domain2::bottom();      
+        }
       }
     }
 
   public:
-    domain_product2(): _is_bottom(false), _first(Domain1::top()), _second(Domain2::top()) { }
+    domain_product2(): 
+        _is_bottom(false), 
+        _first(Domain1::top()), _second(Domain2::top()) { }
     
-    domain_product2(Domain1 first, Domain2 second): _is_bottom(false), _first(first), _second(second) {
+    domain_product2(Domain1 first, Domain2 second): 
+        _is_bottom(false), 
+        _first(first), _second(second) {
       this->canonicalize();
     }
     
-    domain_product2(const domain_product2_t& other): writeable(), _is_bottom(other._is_bottom), _first(other._first), _second(other._second) { }
-
+    domain_product2(const domain_product2_t& other): 
+        writeable(), 
+        _is_bottom(other._is_bottom), 
+        _first(other._first), _second(other._second) { }
+    
     domain_product2_t& operator=(domain_product2_t other) {
       this->_is_bottom = other._is_bottom;
       this->_first = other._first;
@@ -116,11 +124,12 @@ namespace ikos {
 
     bool operator<=(domain_product2_t other) {
       if (this->is_bottom()) {
-	return true;
+        return true;
       } else if (other.is_bottom()) {
-	return false;
+        return false;
       } else {
-	return (this->_first <= other._first) && (this->_second <= other._second);
+        return (this->_first <= other._first) && 
+            (this->_second <= other._second);
       }
     }
     
@@ -130,47 +139,50 @@ namespace ikos {
     
     domain_product2_t operator|(domain_product2_t other) {
       if (this->is_bottom()) {
-	return other;
+        return other;
       } else if (other.is_bottom()) {
-	return *this;
+        return *this;
       } else {
-	return domain_product2_t(this->_first | other._first, this->_second | other._second);
+        return domain_product2_t(this->_first | other._first, 
+                                 this->_second | other._second);
       }
     }
 
     domain_product2_t operator||(domain_product2_t other) {
       if (this->is_bottom()) {
-	return other;
+        return other;
       } else if (other.is_bottom()) {
-	return *this;
+        return *this;
       } else {
-	return domain_product2_t(this->_first || other._first, this->_second || other._second);
+        return domain_product2_t(this->_first || other._first, 
+                                 this->_second || other._second);
       }
     }
 
     domain_product2_t operator&(domain_product2_t other) {
       if (this->is_bottom() || other.is_bottom()) {
-	return bottom();
+        return bottom();
       } else {
-	return domain_product2_t(this->_first & other._first, this->_second & other._second);
+        return domain_product2_t(this->_first & other._first, 
+                                 this->_second & other._second);
       }
     }
 
     domain_product2_t operator&&(domain_product2_t other) {
       if (this->is_bottom() || other.is_bottom()) {
-	return bottom();
+        return bottom();
       } else {
-	return domain_product2_t(this->_first && other._first, this->_second && other._second);
+        return domain_product2_t(this->_first && other._first, 
+                                 this->_second && other._second);
       }
     }
     
-    std::ostream& write(std::ostream& o) {
+    void write(std::ostream& o) {
       if (this->is_bottom()) {
-	o << "_|_";
+        o << "_|_";
       } else {
-	o << "(" << this->_first << ", " << this->_second << ")";
+        o << "(" << this->_first << ", " << this->_second << ")";
       }
-      return o;
     }
 
   }; // class domain_product2
@@ -203,9 +215,12 @@ namespace ikos {
   public:
     domain_product3(): _product() { }
 
-    domain_product3(Domain1 first, Domain2 second, Domain3 third): _product(first, product23_t(second, third)) { }
+    domain_product3(Domain1 first, Domain2 second, Domain3 third): 
+        _product(first, product23_t(second, third)) { }
 
-    domain_product3(const domain_product3_t& other): writeable(), _product(other._product) { }
+    domain_product3(const domain_product3_t& other): 
+        writeable(), 
+        _product(other._product) { }
     
     domain_product3_t& operator=(domain_product3_t other) {
       this->_product = other._product;
@@ -256,19 +271,22 @@ namespace ikos {
       return domain_product3_t(this->_product && other._product);
     }
 
-    std::ostream& write(std::ostream& o) {
+    void write(std::ostream& o) {
       if (this->is_bottom()) {
-	o << "_|_";
+        o << "_|_";
       } else {
-	o << "(" << this->first() << ", " << this->second() << ", " << this->third() << ")";
+        o << "(" 
+          << this->first() << ", " 
+          << this->second() << ", " 
+          << this->third() << ")";
       }
-      return o;
     }
     
   }; // class domain_product3
 
   template< typename Number, typename VariableName, typename Domain1, typename Domain2 >
-  class numerical_domain_product2: public writeable, numerical_domain< Number, VariableName > {
+  class numerical_domain_product2: 
+      public writeable, numerical_domain< Number, VariableName > {
 
   public:
     typedef numerical_domain_product2< Number, VariableName, Domain1, Domain2 > numerical_domain_product2_t;
@@ -286,8 +304,9 @@ namespace ikos {
     numerical_domain_product2(domain_product2_t product): _product(product) { }
 
     void reduce() {
-      if (this->_product.first().is_bottom() || this->_product.second().is_bottom()) {
-	_product = domain_product2_t::bottom();
+      if (this->_product.first().is_bottom() || 
+          this->_product.second().is_bottom()) {
+        _product = domain_product2_t::bottom();
       }
     }
 
@@ -303,9 +322,13 @@ namespace ikos {
   public:
     numerical_domain_product2(): _product() { }
     
-    numerical_domain_product2(Domain1 first, Domain2 second): _product(domain_product2_t(first, second)) { }
+    numerical_domain_product2(Domain1 first, Domain2 second): 
+        _product(domain_product2_t(first, second)) { }
 
-    numerical_domain_product2(const numerical_domain_product2_t& other): writeable(), numerical_domain< Number, VariableName >(), _product(other._product) { }
+    numerical_domain_product2(const numerical_domain_product2_t& other): 
+        writeable(), 
+        numerical_domain< Number, VariableName >(), 
+        _product(other._product) { }
     
     numerical_domain_product2_t& operator=(numerical_domain_product2_t other) {
       this->_product = other._product;
@@ -323,7 +346,7 @@ namespace ikos {
     Domain1& first() {
       return this->_product.first();
     }
-
+    
     Domain2& second() {
       return this->_product.second();
     }
@@ -371,10 +394,7 @@ namespace ikos {
 
     // bitwise_operators_api
 
-    void apply(conv_operation_t op,
-               VariableName x,
-               VariableName y,
-               unsigned width) {
+    void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width) {
       this->_product.first().apply(op, x, y, width);
       this->_product.second().apply(op, x, y, width);
       this->reduce();
@@ -386,10 +406,7 @@ namespace ikos {
       this->reduce();
     }
     
-    void apply(bitwise_operation_t op,
-               VariableName x,
-               VariableName y,
-               VariableName z) {
+    void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) {
       this->_product.first().apply(op, x, y, z);
       this->_product.second().apply(op, x, y, z);
       this->reduce();
@@ -403,10 +420,7 @@ namespace ikos {
     
     // division_operators_api
     
-    void apply(div_operation_t op,
-               VariableName x,
-               VariableName y,
-               VariableName z) {
+    void apply(div_operation_t op, VariableName x, VariableName y, VariableName z) {
       this->_product.first().apply(op, x, y, z);
       this->_product.second().apply(op, x, y, z);
       this->reduce();
@@ -429,17 +443,21 @@ namespace ikos {
       this->_product.second() -= v;
     }
     
-    std::ostream& write(std::ostream& o) {
-      return this->_product.write(o);
+    void write(std::ostream& o) {
+      this->_product.write(o);
     }
 
   }; // class numerical_domain_product2
 
-  template< typename Number, typename VariableName, typename Domain1, typename Domain2, typename Domain3 >
-  class numerical_domain_product3: public writeable, numerical_domain< Number, VariableName > {
+  template< typename Number, typename VariableName, 
+            typename Domain1, typename Domain2, typename Domain3 >
+  class numerical_domain_product3: 
+      public writeable, numerical_domain< Number, VariableName > {
 
   public:
-    typedef numerical_domain_product3< Number, VariableName, Domain1, Domain2, Domain3 > numerical_domain_product3_t;
+    typedef numerical_domain_product3< Number, VariableName, 
+                                       Domain1, Domain2, Domain3 > 
+    numerical_domain_product3_t;
     typedef linear_expression< Number, VariableName > linear_expression_t;
     typedef linear_constraint< Number, VariableName > linear_constraint_t;
     typedef linear_constraint_system< Number, VariableName > linear_constraint_system_t;
@@ -452,7 +470,8 @@ namespace ikos {
     product123_t _product;
     
   private:
-    numerical_domain_product3(product123_t product): _product(product) { }
+    numerical_domain_product3(product123_t product): 
+        _product(product) { }
     
   public:
     static numerical_domain_product3_t top() {
@@ -466,11 +485,16 @@ namespace ikos {
   public:
     numerical_domain_product3(): _product() { }
     
-    numerical_domain_product3(Domain1 first, Domain2 second, Domain3 third): _product(product123_t(first, product23_t(second, third))) { }
+    numerical_domain_product3(Domain1 first, Domain2 second, Domain3 third): 
+        _product(product123_t(first, product23_t(second, third))) { }
 
-    numerical_domain_product3(const numerical_domain_product3_t& other): writeable(), numerical_domain< Number, VariableName >(), _product(other._product) { }
+    numerical_domain_product3(const numerical_domain_product3_t& other): 
+        writeable(), 
+        numerical_domain< Number, VariableName >(), 
+        _product(other._product) { }
     
-    numerical_domain_product3_t& operator=(numerical_domain_product3_t other) {
+    numerical_domain_product3_t& 
+    operator=(numerical_domain_product3_t other) {
       this->_product = other._product;
       return *this;
     }
@@ -498,24 +522,28 @@ namespace ikos {
     bool operator<=(numerical_domain_product3_t other) {
       return (this->_product <= other._product);
     }
-
+    
     bool operator==(numerical_domain_product3_t other) {
       return (this->_product == other._product);
     }
 
-    numerical_domain_product3_t operator|(numerical_domain_product3_t other) {
+    numerical_domain_product3_t 
+    operator|(numerical_domain_product3_t other) {
       return numerical_domain_product3_t(this->_product | other._product);
     }
 
-    numerical_domain_product3_t operator&(numerical_domain_product3_t other) {
+    numerical_domain_product3_t 
+    operator&(numerical_domain_product3_t other) {
       return numerical_domain_product3_t(this->_product & other._product);
     }
 
-    numerical_domain_product3_t operator||(numerical_domain_product3_t other) {
+    numerical_domain_product3_t 
+    operator||(numerical_domain_product3_t other) {
       return numerical_domain_product3_t(this->_product || other._product);
     }
 
-    numerical_domain_product3_t operator&&(numerical_domain_product3_t other) {
+    numerical_domain_product3_t 
+    operator&&(numerical_domain_product3_t other) {
       return numerical_domain_product3_t(this->_product && other._product);
     }
 
@@ -539,15 +567,15 @@ namespace ikos {
       this->_product -= v;
     }
     
-    std::ostream& write(std::ostream& o) {
+    void write(std::ostream& o) {
       if (this->is_bottom()) {
-	o << "_|_";
+        o << "_|_";
       } else {
-	o << "(" << this->first() << ", " << this->second() << ", " << this->third() << ")";
+        o << "(" << this->first() << ", " << this->second() << ", " << this->third() << ")";
       }
       return o;
     }
-
+    
   }; // class numerical_domain_product3
 
 } // namespace ikos

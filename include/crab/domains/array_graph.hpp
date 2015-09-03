@@ -631,7 +631,7 @@ namespace crab {
          CRAB_ERROR ("No edge found with given vertices");
        }
     
-       ostream& write(ostream& o) 
+       void write(ostream& o) 
        {
          if (is_bottom())
            o << "_|_";
@@ -664,7 +664,6 @@ namespace crab {
              o << "})";
            }
          }
-         return o;
        }
      }; // end class array_graph
 
@@ -1246,7 +1245,7 @@ namespace crab {
         CRAB_DEBUG("Array write ",arr,"[",idx,"] := ",val, " ==> ", *this);
       }
     
-      ostream& write(ostream& o) 
+      void write(ostream& o) 
       {
         o << "(" ;
 #if 1
@@ -1262,7 +1261,6 @@ namespace crab {
 #endif 
         o << "," << _g;
         o << ")";
-        return o;
       }
 
       linear_constraint_system_t to_linear_constraint_system (){

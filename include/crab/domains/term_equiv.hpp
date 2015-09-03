@@ -1004,16 +1004,18 @@ namespace crab {
        }
     
        // Output function
-       ostream& write(ostream& o) { 
+       void write(ostream& o) { 
          // Normalization is not enforced in order to maintain accuracy
          // but we force it to display all the relationships.
          normalize();
 
          if(is_bottom ()){
-           return o << "_|_";
+           o << "_|_";
+           return;
          }
          if(_var_map.empty ()) {
-           return o << "{}";
+           o << "{}";
+           return;
          }      
 
          bool first = true;
@@ -1036,7 +1038,6 @@ namespace crab {
          /// For debugging purposes     
          o << " ttbl={" << _ttbl << "}\n";
 #endif 
-         return o;
        }
 
        const char* getDomainName () const { 

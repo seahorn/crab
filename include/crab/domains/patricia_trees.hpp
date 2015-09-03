@@ -43,1139 +43,1116 @@
 #ifndef IKOS_PATRICIA_TREES_HPP
 #define IKOS_PATRICIA_TREES_HPP
 
-#include <utility>
+#include <algorithm>
 #include <deque>
 #include <iostream>
-#include <algorithm>
+#include <utility>
+
 #include <boost/shared_ptr.hpp>
 #include <boost/optional.hpp>
 #include <boost/iterator/iterator_facade.hpp>
+
 #include <crab/common/types.hpp>
 
 namespace ikos {
-  
-  template < typename Value >
-  class partial_order {
-    
+
+template < typename Value >
+class partial_order {
+public:
+  virtual bool leq(Value, Value) = 0;
+
+  virtual bool default_is_top() = 0; // True if the default value is the top
+                                     // element for the partial order (false if
+                                     // it is bottom)
+
+  virtual ~partial_order() {}
+
+}; // class partial_order
+
+template < typename Value >
+class unary_op {
+public:
+  virtual boost::optional< Value > apply(Value) = 0;
+
+  virtual ~unary_op() {}
+
+}; // class unary_op
+
+template < typename Value >
+class binary_op {
+public:
+  virtual boost::optional< Value > apply(
+      Value, Value) = 0; // The operation is idempotent: apply(x, x) = x
+
+  virtual bool default_is_absorbing() = 0; // True if the default value is
+                                           // absorbing (false if it is neutral)
+
+  virtual ~binary_op() {}
+
+}; // class binary_op
+
+namespace patricia_trees_impl {
+
+inline index_t highest_bit(index_t x, index_t m) {
+  index_t x_ = x & ~(m - 1);
+  index_t m_ = m;
+
+  while (x_ != m_) {
+    x_ = x_ & ~m_;
+    m_ = 2 * m_;
+  }
+  return m_;
+}
+
+inline index_t compute_branching_bit(index_t p0,
+                                       index_t m0,
+                                       index_t p1,
+                                       index_t m1) {
+  return highest_bit(p0 ^ p1, std::max((index_t)1, 2 * std::max(m0, m1)));
+}
+
+inline index_t mask(index_t k, index_t m) {
+  return (k | (m - 1)) & ~m;
+}
+
+inline bool zero_bit(index_t k, index_t m) {
+  return (k & m) == 0;
+}
+
+inline bool match_prefix(index_t k, index_t p, index_t m) {
+  return mask(k, m) == p;
+}
+
+class failed {};
+
+template < typename Key, typename Value >
+class tree {
+public:
+  typedef tree< Key, Value > tree_t;
+  typedef boost::shared_ptr< tree_t > tree_ptr;
+  typedef tree_ptr ptr;
+  typedef unary_op< Value > unary_op_t;
+  typedef binary_op< Value > binary_op_t;
+  typedef partial_order< Value > partial_order_t;
+  struct binding_t {
+    const Key& first;
+    const Value& second;
+    binding_t(const Key& first_, const Value& second_)
+        : first(first_), second(second_) {}
+  };
+
+public:
+  static tree_ptr make_node(index_t, index_t, tree_ptr, tree_ptr);
+  static tree_ptr make_leaf(const Key&, const Value&);
+  static tree_ptr merge(tree_ptr, tree_ptr, binary_op_t&, bool);
+  static tree_ptr join(tree_ptr t0, tree_ptr t1);
+  static tree_ptr insert(
+      tree_ptr, const Key&, const Value&, binary_op_t&, bool);
+  static tree_ptr transform(tree_ptr, unary_op_t&);
+  static tree_ptr remove(tree_ptr, const Key&);
+  static void compare(tree_ptr, tree_ptr, partial_order_t&, bool);
+
+public:
+  virtual std::size_t size() const = 0;
+  virtual bool is_leaf() const = 0;
+  virtual binding_t binding() const = 0;
+  virtual tree_ptr left_branch() const = 0;
+  virtual tree_ptr right_branch() const = 0;
+  virtual index_t prefix() const = 0;
+  virtual index_t branching_bit() const = 0;
+  virtual boost::optional< Value > lookup(const Key&) const = 0;
+
+public:
+  bool is_node() const { return !is_leaf(); }
+
+  virtual ~tree() {}
+
+public:
+  class iterator : public boost::iterator_facade< iterator,
+                                                  binding_t,
+                                                  boost::forward_traversal_tag,
+                                                  binding_t > {
+    friend class boost::iterator_core_access;
+
+  private:
+    typedef std::pair< tree_ptr, int > branching_t;
+    typedef std::deque< branching_t > branching_stack_t;
+
+  private:
+    tree_ptr _current;
+    branching_stack_t _stack;
+
   public:
-    virtual bool leq(Value, Value) = 0;
+    iterator() {}
 
-   // True if the default value is the top element for the partial order
-   // (false if it is bottom)
-    virtual bool default_is_top() = 0; 
+    iterator(tree_ptr t) { this->look_for_next_leaf(t); }
 
-    virtual ~partial_order() { }
-    
-  }; // class partial_order
-  
-  template < typename Value >
-  class unary_op {
-    
-  public:
-    virtual boost::optional< Value > apply(Value) = 0;
-
-    virtual ~unary_op() { }
-    
-  }; // class unary_op
-  
-  template < typename Value >
-  class binary_op {
-    
-  public:
-    virtual boost::optional< Value > apply(Value, Value) = 0; // The operation is idempotent: apply(x, x) = x
-
-    virtual bool default_is_absorbing() = 0; // True if the default value is absorbing (false if it is neutral)
-
-    virtual ~binary_op() { }
-    
-  }; // class binary_op
-  
-  namespace patricia_trees_impl {
-    
-    inline index_t highest_bit(index_t x, index_t m) {
-      index_t x_ = x & ~(m - 1);
-      index_t m_ = m;
-      
-      while (x_ != m_) {
-	x_ = x_ & ~m_;
-	m_ = 2 * m_;
-      }
-      return m_;
-    }
-    
-    inline index_t compute_branching_bit(index_t p0, index_t m0, index_t p1, index_t m1) {
-      return highest_bit(p0 ^ p1, std::max((index_t)1, 2 * std::max(m0, m1)));
-    }
-    
-    inline index_t mask(index_t k, index_t m) {
-      return ((k | (m - 1)) & ~m);
-    }
-    
-    inline bool zero_bit(index_t k, index_t m) {
-      return ((k & m) == 0);
-    }
-    
-    inline bool match_prefix(index_t k, index_t p, index_t m) {
-      return (mask(k, m) == p);
-    }
-
-    class failed { };
-    
-    template < typename Key, typename Value >
-    class tree {
-
-    public:
-      typedef tree< Key, Value > tree_t;
-      typedef boost::shared_ptr< tree_t > tree_ptr;
-      typedef tree_ptr ptr;
-      typedef unary_op< Value > unary_op_t;
-      typedef binary_op< Value > binary_op_t;
-      typedef partial_order< Value > partial_order_t;
-      typedef std::pair< Key, Value > binding_t;
-      
-    public:
-      static tree_ptr make_node(index_t, index_t, tree_ptr, tree_ptr);
-      static tree_ptr make_leaf(Key, Value);
-      static tree_ptr merge(tree_ptr, tree_ptr, binary_op_t&, bool);
-      static tree_ptr join(tree_ptr t0, tree_ptr t1);
-      static tree_ptr insert(tree_ptr, Key, Value, binary_op_t&, bool);
-      static tree_ptr transform(tree_ptr, unary_op_t&);
-      static tree_ptr remove(tree_ptr, Key);
-      static void compare(tree_ptr, tree_ptr, partial_order_t&, bool);
-
-    public:
-      virtual std::size_t size() = 0;
-      virtual bool is_leaf() = 0;
-      virtual binding_t binding() = 0;
-      virtual tree_ptr left_branch() = 0;
-      virtual tree_ptr right_branch() = 0;
-      virtual index_t prefix() = 0;
-      virtual index_t branching_bit() = 0;
-      virtual boost::optional< Value > lookup(Key) = 0;
-
-    public:
-      bool is_node() {
-	return !is_leaf();
-      }
-
-      virtual ~tree() { }
-      
-    public:
-      class iterator: public boost::iterator_facade< iterator
-						     , binding_t
-						     , boost::forward_traversal_tag
-						     , binding_t
-						     > {
-	
-	friend class boost::iterator_core_access;
-	
-      private:
-	typedef std::pair< tree_ptr, int > branching_t;
-	typedef std::deque< branching_t > branching_stack_t;
-      
-      private:
-	tree_ptr _current;
-	branching_stack_t _stack;
-	
-      public:
-	iterator() { }
-	
-	iterator(tree_ptr t) { 
-	  this->look_for_next_leaf(t);
-	}
-
-      private:
-	void look_for_next_leaf(tree_ptr t) {
-	  if (t) {
-	    if (t->is_leaf()) {
-	      this->_current = t;
-	    } else {
-	      branching_t b(t, 0);
-	      this->_stack.push_back(b);
-	      this->look_for_next_leaf(t->left_branch());
-	    }
-	  } else {
-	    if (!this->_stack.empty()) {
-	      branching_t up;
-	      do {
-		up = this->_stack.back();
-		this->_stack.pop_back();
-	      } while (!this->_stack.empty() && up.second == 1);
-	      if (!(this->_stack.empty() && up.second == 1)) {
-		branching_t b(up.first, 1);
-		this->_stack.push_back(b);
-		this->look_for_next_leaf(up.first->right_branch());
-	      }
-	    }
-	  }
-	}
-	
-	void increment() { 
-	  if (this->_current) {
-	    this->_current.reset();
-	    if (!this->_stack.empty()) {
-	      branching_t up;
-	      do {
-		up = this->_stack.back();
-		this->_stack.pop_back();
-	      } while (!this->_stack.empty() && up.second == 1);
-	      if (!(this->_stack.empty() && up.second == 1)) {
-		this->look_for_next_leaf(up.first->right_branch());
-	      }
-	    }
-	  } else {
-	    throw error("Patricia tree: trying to increment an empty iterator");
-	  }
-	}
-	
-	bool equal(const iterator& it) const {
-	  if (this->_current != it._current) {
-	    return false;
-	  }
-	  if (this->_stack.size() != it._stack.size()) {
-	    return false;
-	  }
-	  typename branching_stack_t::const_iterator s_it1, s_it2;	  
-	  s_it1 = this->_stack.begin();
-	  s_it2 = it._stack.begin();
-	  while (s_it1 != this->_stack.end()) {
-	    if (*s_it1 != *s_it2) {
-	      return false;
-	    }
-	    ++s_it1;
-	    ++s_it2;
-	  }
-	  return true;
-	}
-	
-	binding_t dereference() const {
-	  if (this->_current) {
-	    return this->_current->binding();
-	  } else {
-	    throw error("Patricia tree: trying to dereference an empty iterator");
-	  }
-	}
-	
-      }; // class iterator
-      
-    }; // class tree
-    
-    template < typename Key, typename Value >
-    class node: public tree< Key, Value > {
-      
-    private:
-      typedef typename tree< Key, Value >::ptr tree_ptr;
-      typedef typename tree< Key, Value >::binding_t binding_t;
-      typedef node< Key, Value > node_t;
-      
-    private:
-      std::size_t _size;
-      index_t _prefix;
-      index_t _branching_bit;
-      tree_ptr _left_branch;
-      tree_ptr _right_branch;
-      
-    private:
-      node();
-      node(const node_t&);
-      node_t& operator=(const node_t&);
-            
-    public:
-      node(index_t prefix_, index_t branching_bit_, tree_ptr left_branch_, tree_ptr right_branch_):
-	_prefix(prefix_), _branching_bit(branching_bit_), _left_branch(left_branch_), _right_branch(right_branch_) { 
-	this->_size = 0;
-	if (left_branch_) {
-	  this->_size += left_branch_->size();
-	}
-	if (right_branch_) {
-	  this->_size += right_branch_->size();
-	}
-      }
-      
-      std::size_t size() {
-	return this->_size;
-      }
-
-      index_t prefix() {
-	return this->_prefix;
-      }
-      
-      index_t branching_bit() {
-	return this->_branching_bit;
-      }
-      
-      bool is_leaf() {
-	return false;
-      }
-
-      binding_t binding() {
-	throw error("Patricia tree: trying to call binding() on a node");
-      }
-      
-      tree_ptr left_branch() {
-	return this->_left_branch;
-      }
-
-      tree_ptr right_branch() {
-	return this->_right_branch;
-      }
-
-      boost::optional< Value > lookup(Key key) {
-	if (key.index() <= this->_prefix) {
-	  if (this->_left_branch) {
-	    return this->_left_branch->lookup(key);
-	  } else {
-	    return boost::optional< Value >();
-	  }
-	} else {
-	  if (this->_right_branch) {
-	    return this->_right_branch->lookup(key);
-	  } else {
-	    return boost::optional< Value >();
-	  }
-	}
-      }
-      
-    }; // class node
-    
-    template < typename Key, typename Value >
-    class leaf: public tree< Key, Value > {
-      
-    private:
-      typedef typename tree< Key, Value >::ptr tree_ptr;
-      typedef typename tree< Key, Value >::binding_t binding_t;
-      typedef leaf< Key, Value > leaf_t;
-
-    private:
-      Key _key;
-      Value _value;
-      
-    private:
-      leaf();
-      leaf(const leaf_t&);
-      leaf_t& operator=(const leaf_t&);
-      
-    public:
-      leaf(Key key_, Value value_): _key(key_), _value(value_) { }
-      
-      std::size_t size() {
-	return 1;
-      }
-      
-      index_t prefix() {
-	return this->_key.index();
-      }
-      
-      index_t branching_bit() {
-	return 0;
-      }
-      
-      bool is_leaf() {
-	return true;
-      }
-
-      binding_t binding() {
-	return binding_t(this->_key, this->_value);
-      }
-
-      tree_ptr left_branch() {
-	throw error("Patricia tree: trying to call left_branch() on a leaf");
-      }
-
-      tree_ptr right_branch() {
-	throw error("Patricia tree: trying to call right_branch() on a leaf");
-      }
-      
-      boost::optional< Value > lookup(Key key_) {
-	if (this->_key.index() == key_.index()) {
-	  return boost::optional< Value >(this->_value);
-	} else {
-	  return boost::optional< Value >();
-	}
-      }
-
-    }; // class leaf
-    
-    template < typename Key, typename Value >
-    typename tree< Key, Value >::ptr tree< Key, Value >::make_node(index_t prefix, index_t branching_bit,
-								   typename tree< Key, Value >::ptr left_branch,
-								   typename tree< Key, Value >::ptr right_branch) {
-      typedef typename tree< Key, Value >::ptr tree_ptr;
-      tree_ptr n;
-      if (left_branch) {
-	if (right_branch) {
-	  n = tree_ptr(new node< Key, Value >(prefix, branching_bit, left_branch, right_branch));
-	} else {
-	  n = left_branch;
-	}
+  private:
+    void look_for_next_leaf(tree_ptr t) {
+      if (t) {
+        if (t->is_leaf()) {
+          this->_current = t;
+        } else {
+          branching_t b(t, 0);
+          this->_stack.push_back(b);
+          this->look_for_next_leaf(t->left_branch());
+        }
       } else {
-	if (right_branch) {
-	  n = right_branch;
-	} else {
-	  // both branches are empty
-	}
+        if (!this->_stack.empty()) {
+          branching_t up;
+          do {
+            up = this->_stack.back();
+            this->_stack.pop_back();
+          } while (!this->_stack.empty() && up.second == 1);
+          if (!(this->_stack.empty() && up.second == 1)) {
+            branching_t b(up.first, 1);
+            this->_stack.push_back(b);
+            this->look_for_next_leaf(up.first->right_branch());
+          }
+        }
       }
-      return n;
     }
 
-    template < typename Key, typename Value >
-    typename tree< Key, Value >::ptr tree< Key, Value >::make_leaf(Key key, Value value) {
-      typedef typename tree< Key, Value >::ptr tree_ptr;
-      return tree_ptr(new leaf< Key, Value >(key, value));
-    }
-    
-    template < typename Key, typename Value >
-    typename tree< Key, Value >::ptr tree< Key, Value >::join(typename tree< Key, Value >::ptr t0, typename tree< Key, Value >::ptr t1) {
-      typedef typename tree< Key, Value >::ptr tree_ptr;
-      index_t p0 = t0->prefix();
-      index_t p1 = t1->prefix();
-      index_t m = compute_branching_bit(p0, t0->branching_bit(), p1, t1->branching_bit());
-      tree_ptr t;
-      
-      if (zero_bit(p0, m)) {
-	t = make_node(mask(p0, m), m, t0, t1);
+    void increment() {
+      if (this->_current) {
+        this->_current.reset();
+        if (!this->_stack.empty()) {
+          branching_t up;
+          do {
+            up = this->_stack.back();
+            this->_stack.pop_back();
+          } while (!this->_stack.empty() && up.second == 1);
+          if (!(this->_stack.empty() && up.second == 1)) {
+            this->look_for_next_leaf(up.first->right_branch());
+          }
+        }
       } else {
-	t = make_node(mask(p0, m), m, t1, t0);
+        CRAB_ERROR("Patricia tree: trying to increment an empty iterator");
       }
+    }
+
+    bool equal(const iterator& it) const {
+      if (this->_current != it._current) {
+        return false;
+      }
+      if (this->_stack.size() != it._stack.size()) {
+        return false;
+      }
+      typename branching_stack_t::const_iterator s_it1, s_it2;
+      s_it1 = this->_stack.begin();
+      s_it2 = it._stack.begin();
+      while (s_it1 != this->_stack.end()) {
+        if (*s_it1 != *s_it2) {
+          return false;
+        }
+        ++s_it1;
+        ++s_it2;
+      }
+      return true;
+    }
+
+    binding_t dereference() const {
+      if (this->_current) {
+        return this->_current->binding();
+      } else {
+        CRAB_ERROR("Patricia tree: trying to dereference an empty iterator");
+      }
+    }
+
+  }; // class iterator
+
+}; // class tree
+
+template < typename Key, typename Value >
+class node : public tree< Key, Value > {
+private:
+  typedef typename tree< Key, Value >::ptr tree_ptr;
+  typedef typename tree< Key, Value >::binding_t binding_t;
+  typedef node< Key, Value > node_t;
+
+private:
+  std::size_t _size;
+  index_t _prefix;
+  index_t _branching_bit;
+  tree_ptr _left_branch;
+  tree_ptr _right_branch;
+
+private:
+  node();
+  node(const node_t&);
+  node_t& operator=(const node_t&);
+
+public:
+  node(index_t prefix_,
+       index_t branching_bit_,
+       tree_ptr left_branch_,
+       tree_ptr right_branch_)
+      : _prefix(prefix_),
+        _branching_bit(branching_bit_),
+        _left_branch(left_branch_),
+        _right_branch(right_branch_) {
+    this->_size = 0;
+    if (left_branch_) {
+      this->_size += left_branch_->size();
+    }
+    if (right_branch_) {
+      this->_size += right_branch_->size();
+    }
+  }
+
+  std::size_t size() const { return this->_size; }
+
+  index_t prefix() const { return this->_prefix; }
+
+  index_t branching_bit() const { return this->_branching_bit; }
+
+  bool is_leaf() const { return false; }
+
+  binding_t binding() const {
+    CRAB_ERROR("Patricia tree: trying to call binding() on a node");
+  }
+
+  tree_ptr left_branch() const { return this->_left_branch; }
+
+  tree_ptr right_branch() const { return this->_right_branch; }
+
+  boost::optional< Value > lookup(const Key& key) const {
+    if (key.index() <= this->_prefix) {
+      if (this->_left_branch) {
+        return this->_left_branch->lookup(key);
+      } else {
+        return boost::optional< Value >();
+      }
+    } else {
+      if (this->_right_branch) {
+        return this->_right_branch->lookup(key);
+      } else {
+        return boost::optional< Value >();
+      }
+    }
+  }
+
+}; // class node
+
+template < typename Key, typename Value >
+class leaf : public tree< Key, Value > {
+private:
+  typedef typename tree< Key, Value >::ptr tree_ptr;
+  typedef typename tree< Key, Value >::binding_t binding_t;
+  typedef leaf< Key, Value > leaf_t;
+
+private:
+  Key _key;
+  Value _value;
+
+private:
+  leaf();
+  leaf(const leaf_t&);
+  leaf_t& operator=(const leaf_t&);
+
+public:
+  leaf(const Key& key_, const Value& value_) : _key(key_), _value(value_) {}
+
+  std::size_t size() const { return 1; }
+
+  index_t prefix() const { return this->_key.index(); }
+
+  index_t branching_bit() const { return 0; }
+
+  bool is_leaf() const { return true; }
+
+  binding_t binding() const { return binding_t(this->_key, this->_value); }
+
+  tree_ptr left_branch() const {
+    CRAB_ERROR("Patricia tree: trying to call left_branch() on a leaf");
+  }
+
+  tree_ptr right_branch() const {
+    CRAB_ERROR("Patricia tree: trying to call right_branch() on a leaf");
+  }
+
+  boost::optional< Value > lookup(const Key& key_) const {
+    if (this->_key.index() == key_.index()) {
+      return boost::optional< Value >(this->_value);
+    } else {
+      return boost::optional< Value >();
+    }
+  }
+
+}; // class leaf
+
+template < typename Key, typename Value >
+typename tree< Key, Value >::ptr tree< Key, Value >::make_node(
+    index_t prefix,
+    index_t branching_bit,
+    typename tree< Key, Value >::ptr left_branch,
+    typename tree< Key, Value >::ptr right_branch) {
+  typedef typename tree< Key, Value >::ptr tree_ptr;
+  tree_ptr n;
+  if (left_branch) {
+    if (right_branch) {
+      n = tree_ptr(new node< Key, Value >(prefix,
+                                          branching_bit,
+                                          left_branch,
+                                          right_branch));
+    } else {
+      n = left_branch;
+    }
+  } else {
+    if (right_branch) {
+      n = right_branch;
+    } else {
+      // both branches are empty
+    }
+  }
+  return n;
+}
+
+template < typename Key, typename Value >
+typename tree< Key, Value >::ptr tree< Key, Value >::make_leaf(
+    const Key& key, const Value& value) {
+  typedef typename tree< Key, Value >::ptr tree_ptr;
+  return tree_ptr(new leaf< Key, Value >(key, value));
+}
+
+template < typename Key, typename Value >
+typename tree< Key, Value >::ptr tree< Key, Value >::join(
+    typename tree< Key, Value >::ptr t0, typename tree< Key, Value >::ptr t1) {
+  typedef typename tree< Key, Value >::ptr tree_ptr;
+  index_t p0 = t0->prefix();
+  index_t p1 = t1->prefix();
+  index_t m =
+      compute_branching_bit(p0, t0->branching_bit(), p1, t1->branching_bit());
+  tree_ptr t;
+
+  if (zero_bit(p0, m)) {
+    t = make_node(mask(p0, m), m, t0, t1);
+  } else {
+    t = make_node(mask(p0, m), m, t1, t0);
+  }
+  return t;
+}
+
+template < typename Key, typename Value >
+typename tree< Key, Value >::ptr tree< Key, Value >::insert(
+    typename tree< Key, Value >::ptr t,
+    const Key& key_,
+    const Value& value_,
+    binary_op_t& op,
+    bool combine_left_to_right) {
+  typedef typename tree< Key, Value >::ptr tree_ptr;
+  tree_ptr nil;
+  if (t) {
+    if (t->is_node()) {
+      index_t branching_bit = t->branching_bit();
+      index_t prefix = t->prefix();
+      if (match_prefix(key_.index(), prefix, branching_bit)) {
+        if (zero_bit(key_.index(), branching_bit)) {
+          tree_ptr lb = t->left_branch();
+          tree_ptr new_lb;
+          if (lb) {
+            new_lb = insert(lb, key_, value_, op, combine_left_to_right);
+          } else {
+            if (!op.default_is_absorbing()) {
+              new_lb = make_leaf(key_, value_);
+            }
+          }
+          if (new_lb == lb) {
+            return t;
+          } else {
+            return make_node(prefix, branching_bit, new_lb, t->right_branch());
+          }
+        } else {
+          tree_ptr rb = t->right_branch();
+          tree_ptr new_rb;
+          if (rb) {
+            new_rb = insert(rb, key_, value_, op, combine_left_to_right);
+          } else {
+            if (!op.default_is_absorbing()) {
+              new_rb = make_leaf(key_, value_);
+            }
+          }
+          if (new_rb == rb) {
+            return t;
+          } else {
+            return make_node(prefix, branching_bit, t->left_branch(), new_rb);
+          }
+        }
+      } else {
+        if (op.default_is_absorbing()) {
+          return t;
+        } else {
+          return join(make_leaf(key_, value_), t);
+        }
+      }
+    } else {
+      binding_t b = t->binding();
+      const Key& key = b.first;
+      const Value& value = b.second;
+      if (key.index() == key_.index()) {
+        boost::optional< Value > new_value = combine_left_to_right
+                                                 ? op.apply(value, value_)
+                                                 : op.apply(value_, value);
+        if (new_value) {
+          if (*new_value == value) {
+            return t;
+          } else {
+            return make_leaf(key_, *new_value);
+          }
+        } else {
+          return nil;
+        }
+      } else {
+        if (op.default_is_absorbing()) {
+          return t;
+        } else {
+          return join(make_leaf(key_, value_), t);
+        }
+      }
+    }
+  } else {
+    if (op.default_is_absorbing()) {
+      return nil;
+    } else {
+      return make_leaf(key_, value_);
+    }
+  }
+}
+
+template < typename Key, typename Value >
+typename tree< Key, Value >::ptr tree< Key, Value >::transform(
+    typename tree< Key, Value >::ptr t, unary_op_t& op) {
+  typedef typename tree< Key, Value >::ptr tree_ptr;
+  tree_ptr nil;
+  if (t) {
+    if (t->is_node()) {
+      index_t branching_bit = t->branching_bit();
+      index_t prefix = t->prefix();
+      tree_ptr lb = t->left_branch();
+      tree_ptr rb = t->right_branch();
+      tree_ptr new_lb, new_rb;
+      if (lb) {
+        new_lb = transform(lb, op);
+      } else {
+        new_lb = lb;
+      }
+      if (rb) {
+        new_rb = transform(rb, op);
+      } else {
+        new_rb = rb;
+      }
+      if (lb == new_lb && rb == new_rb) {
+        return t;
+      } else {
+        return make_node(prefix, branching_bit, new_lb, new_rb);
+      }
+    } else {
+      binding_t b = t->binding();
+      const Value& value = b.second;
+      boost::optional< Value > new_value = op.apply(value);
+      if (new_value) {
+        if (*new_value == value) {
+          return t;
+        } else {
+          return make_leaf(b.first, *new_value);
+        }
+      } else {
+        return nil;
+      }
+    }
+  } else {
+    return t;
+  }
+}
+
+template < typename Key, typename Value >
+typename tree< Key, Value >::ptr tree< Key, Value >::remove(
+    typename tree< Key, Value >::ptr t, const Key& key_) {
+  typedef typename tree< Key, Value >::ptr tree_ptr;
+  tree_ptr nil;
+  index_t id = key_.index();
+  if (t) {
+    if (t->is_node()) {
+      index_t branching_bit = t->branching_bit();
+      index_t prefix = t->prefix();
+      if (match_prefix(id, prefix, branching_bit)) {
+        if (zero_bit(id, branching_bit)) {
+          tree_ptr lb = t->left_branch();
+          tree_ptr new_lb;
+          if (lb) {
+            new_lb = remove(lb, key_);
+          }
+          if (new_lb == lb) {
+            return t;
+          } else {
+            return make_node(prefix, branching_bit, new_lb, t->right_branch());
+          }
+        } else {
+          tree_ptr rb = t->right_branch();
+          tree_ptr new_rb;
+          if (rb) {
+            new_rb = remove(rb, key_);
+          }
+          if (new_rb == rb) {
+            return t;
+          } else {
+            return make_node(prefix, branching_bit, t->left_branch(), new_rb);
+          }
+        }
+      } else {
+        return t;
+      }
+    } else {
+      binding_t b = t->binding();
+      const Key& key = b.first;
+      if (key.index() == id) {
+        return nil;
+      } else {
+        return t;
+      }
+    }
+  } else {
+    return nil;
+  }
+}
+
+template < typename Key, typename Value >
+typename tree< Key, Value >::ptr tree< Key, Value >::merge(
+    typename tree< Key, Value >::ptr s,
+    typename tree< Key, Value >::ptr t,
+    binary_op_t& op,
+    bool combine_left_to_right) {
+  typedef typename tree< Key, Value >::ptr tree_ptr;
+  tree_ptr nil;
+  if (s) {
+    if (t) {
+      if (s == t) {
+        return s;
+      } else if (s->is_leaf()) {
+        binding_t b = s->binding();
+        if (op.default_is_absorbing()) {
+          boost::optional< Value > value = t->lookup(b.first);
+          if (value) {
+            boost::optional< Value > new_value =
+                combine_left_to_right ? op.apply(b.second, *value)
+                                      : op.apply(*value, b.second);
+            if (new_value) {
+              if (*new_value == b.second) {
+                return s;
+              } else {
+                return make_leaf(b.first, *new_value);
+              }
+            } else {
+              return nil;
+            }
+          } else {
+            return nil;
+          }
+        } else {
+          return insert(t, b.first, b.second, op, !combine_left_to_right);
+        }
+      } else if (t->is_leaf()) {
+        binding_t b = t->binding();
+        if (op.default_is_absorbing()) {
+          boost::optional< Value > value = s->lookup(b.first);
+          if (value) {
+            boost::optional< Value > new_value =
+                combine_left_to_right ? op.apply(*value, b.second)
+                                      : op.apply(b.second, *value);
+            if (new_value) {
+              if (*new_value == b.second) {
+                return t;
+              } else {
+                return make_leaf(b.first, *new_value);
+              }
+            } else {
+              return nil;
+            }
+          } else {
+            return nil;
+          }
+        } else {
+          return insert(s, b.first, b.second, op, combine_left_to_right);
+        }
+      } else {
+        if (s->branching_bit() == t->branching_bit() &&
+            s->prefix() == t->prefix()) {
+          tree_ptr new_lb = merge(s->left_branch(),
+                                  t->left_branch(),
+                                  op,
+                                  combine_left_to_right);
+          tree_ptr new_rb = merge(s->right_branch(),
+                                  t->right_branch(),
+                                  op,
+                                  combine_left_to_right);
+          if (new_lb == s->left_branch() && new_rb == s->right_branch()) {
+            return s;
+          } else if (new_lb == t->left_branch() &&
+                     new_rb == t->right_branch()) {
+            return t;
+          } else {
+            return make_node(s->prefix(), s->branching_bit(), new_lb, new_rb);
+          }
+        } else if (s->branching_bit() > t->branching_bit() &&
+                   match_prefix(t->prefix(), s->prefix(), s->branching_bit())) {
+          if (zero_bit(t->prefix(), s->branching_bit())) {
+            tree_ptr new_lb =
+                merge(s->left_branch(), t, op, combine_left_to_right);
+            tree_ptr new_rb =
+                op.default_is_absorbing() ? nil : s->right_branch();
+            if (new_lb == s->left_branch() && new_rb == s->right_branch()) {
+              return s;
+            } else {
+              return make_node(s->prefix(), s->branching_bit(), new_lb, new_rb);
+            }
+          } else {
+            tree_ptr new_lb =
+                op.default_is_absorbing() ? nil : s->left_branch();
+            tree_ptr new_rb =
+                merge(s->right_branch(), t, op, combine_left_to_right);
+            if (new_lb == s->left_branch() && new_rb == s->right_branch()) {
+              return s;
+            } else {
+              return make_node(s->prefix(), s->branching_bit(), new_lb, new_rb);
+            }
+          }
+        } else if (s->branching_bit() < t->branching_bit() &&
+                   match_prefix(s->prefix(), t->prefix(), t->branching_bit())) {
+          if (zero_bit(s->prefix(), t->branching_bit())) {
+            tree_ptr new_lb =
+                merge(s, t->left_branch(), op, combine_left_to_right);
+            tree_ptr new_rb =
+                op.default_is_absorbing() ? nil : t->right_branch();
+            if (new_lb == t->left_branch() && new_rb == t->right_branch()) {
+              return t;
+            } else {
+              return make_node(t->prefix(), t->branching_bit(), new_lb, new_rb);
+            }
+          } else {
+            tree_ptr new_lb =
+                op.default_is_absorbing() ? nil : t->left_branch();
+            tree_ptr new_rb =
+                merge(s, t->right_branch(), op, combine_left_to_right);
+            if (new_lb == t->left_branch() && new_rb == t->right_branch()) {
+              return t;
+            } else {
+              return make_node(t->prefix(), t->branching_bit(), new_lb, new_rb);
+            }
+          }
+        } else {
+          if (op.default_is_absorbing()) {
+            return nil;
+          } else {
+            return join(s, t);
+          }
+        }
+      }
+    } else {
+      if (op.default_is_absorbing()) {
+        return nil;
+      } else {
+        return s;
+      }
+    }
+  } else {
+    if (op.default_is_absorbing()) {
+      return nil;
+    } else {
       return t;
     }
-    
-    template < typename Key, typename Value >
-    typename tree< Key, Value >::ptr tree< Key, Value >::
-    insert(typename tree< Key, Value >::ptr t, Key key_, Value value_, 
-           binary_op_t& op, bool combine_left_to_right) {
-      typedef typename tree< Key, Value >::ptr tree_ptr;
-      tree_ptr nil;
-      if (t) {
-	if (t->is_node()) {
-	  index_t branching_bit = t->branching_bit();
-	  index_t prefix = t->prefix();
-	  if (match_prefix(key_.index(), prefix, branching_bit)) {
-	    if (zero_bit(key_.index(), branching_bit)) {
-	      tree_ptr lb = t->left_branch();
-	      tree_ptr new_lb;
-	      if (lb) {
-		new_lb = insert(lb, key_, value_, op, combine_left_to_right);
-	      } else {
-		if (!op.default_is_absorbing()) {
-		  new_lb = make_leaf(key_, value_);
-		}
-	      }
-	      if (new_lb == lb) {
-		return t;
-	      } else {
-		return make_node(prefix, branching_bit, new_lb, t->right_branch());
-	      }
-	    } else {
-	      tree_ptr rb = t->right_branch();
-	      tree_ptr new_rb;
-	      if (rb) {
-		new_rb = insert(rb, key_, value_, op, combine_left_to_right);
-	      } else {
-		if (!op.default_is_absorbing()) {
-		  new_rb = make_leaf(key_, value_);
-		}
-	      }
-	      if (new_rb == rb) {
-		return t;
-	      } else {
-		return make_node(prefix, branching_bit, t->left_branch(), new_rb);
-	      }
-	    }
-	  } else {
-	    if (op.default_is_absorbing()) {
-	      return t;
-	    } else {
-	      return join(make_leaf(key_, value_), t);
-	    }
-	  }
-	} else {
-	  binding_t b = t->binding();
-	  Key key = b.first;
-	  Value value = b.second;
-	  if (key.index() == key_.index()) {
-	    boost::optional< Value > new_value = 
-                  combine_left_to_right ? 
-                  op.apply(value, value_) : 
-                  op.apply(value_, value);
-	    if (new_value) {
-	      if (*new_value == value) {
-		return t;
-	      } else {
-		return make_leaf(key_, *new_value);
-	      }
-	    } else {
-	      return nil;
-	    }
-	  } else {
-	    if (op.default_is_absorbing()) {
-	      return t;
-	    } else {
-	      return join(make_leaf(key_, value_), t);
-	    }
-	  }
-	}
-      } else {
-	if (op.default_is_absorbing()) {
-	  return nil;
-	} else {
-	  return make_leaf(key_, value_);
-	}
-      }
-    }
+  }
+}
 
-    template < typename Key, typename Value >
-    typename tree< Key, Value >::ptr tree< Key, Value >::
-    transform(typename tree< Key, Value >::ptr t, unary_op_t& op) {
-      typedef typename tree< Key, Value >::ptr tree_ptr;
-      tree_ptr nil;
-      if (t) {
-	if (t->is_node()) {
-	  index_t branching_bit = t->branching_bit();
-	  index_t prefix = t->prefix();
-	  tree_ptr lb = t->left_branch();
-	  tree_ptr rb = t->right_branch();
-	  tree_ptr new_lb, new_rb;
-	  if (lb) {
-	    new_lb = transform(lb, op);
-	  } else {
-	    new_lb = lb;
-	  }
-	  if (rb) {
-	    new_rb = transform(rb, op);
-	  } else {
-	    new_rb = rb;
-	  }
-	  if (lb == new_lb && rb == new_rb) {
-	    return t;
-	  } else {
-	    return make_node(prefix, branching_bit, new_lb, new_rb);
-	  }
-	} else {
-	  binding_t b = t->binding();
-	  Value value = b.second;
-	  boost::optional< Value > new_value = op.apply(value);
-	  if (new_value) {
-	    if (*new_value ==value) {
-	      return t;
-	    } else {
-	      return make_leaf(b.first, *new_value);
-	    }
-	  } else {
-	    return nil;
-	  }
-	}
-      } else {
-	return t;
+template < typename Key, typename Value >
+void tree< Key, Value >::compare(typename tree< Key, Value >::ptr s,
+                                 typename tree< Key, Value >::ptr t,
+                                 partial_order_t& po,
+                                 bool compare_left_to_right) {
+  if (s) {
+    if (t) {
+      if (s != t) {
+        if (s->is_leaf()) {
+          binding_t b = s->binding();
+          const Key& key = b.first;
+          const Value& value = b.second;
+          boost::optional< Value > value_ = t->lookup(key);
+          if (value_) {
+            Value left = compare_left_to_right ? value : *value_;
+            Value right = compare_left_to_right ? *value_ : value;
+            if (!po.leq(left, right)) {
+              throw failed();
+            }
+          } else {
+            if ((compare_left_to_right && !po.default_is_top()) ||
+                (!compare_left_to_right && po.default_is_top())) {
+              throw failed();
+            }
+          }
+          if (compare_left_to_right && po.default_is_top() && !t->is_leaf()) {
+            throw failed();
+          }
+          if (!compare_left_to_right && !po.default_is_top() && !t->is_leaf()) {
+            throw failed();
+          }
+        } else if (t->is_leaf()) {
+          compare(t, s, po, !compare_left_to_right);
+        } else {
+          if (s->branching_bit() == t->branching_bit() &&
+              s->prefix() == t->prefix()) {
+            compare(s->left_branch(),
+                    t->left_branch(),
+                    po,
+                    compare_left_to_right);
+            compare(s->right_branch(),
+                    t->right_branch(),
+                    po,
+                    compare_left_to_right);
+          } else if (s->branching_bit() > t->branching_bit() &&
+                     match_prefix(t->prefix(),
+                                  s->prefix(),
+                                  s->branching_bit())) {
+            if ((compare_left_to_right && !po.default_is_top()) ||
+                (!compare_left_to_right && po.default_is_top())) {
+              throw failed();
+            }
+            if (zero_bit(t->prefix(), s->branching_bit())) {
+              compare(s->left_branch(), t, po, compare_left_to_right);
+            } else {
+              compare(s->right_branch(), t, po, compare_left_to_right);
+            }
+          } else if (s->branching_bit() < t->branching_bit() &&
+                     match_prefix(s->prefix(),
+                                  t->prefix(),
+                                  t->branching_bit())) {
+            if ((compare_left_to_right && po.default_is_top()) ||
+                (!compare_left_to_right && !po.default_is_top())) {
+              throw failed();
+            }
+            if (zero_bit(s->prefix(), t->branching_bit())) {
+              compare(s, t->left_branch(), po, compare_left_to_right);
+            } else {
+              compare(s, t->right_branch(), po, compare_left_to_right);
+            }
+          } else {
+            throw failed();
+          }
+        }
+      }
+    } else {
+      if ((compare_left_to_right && !po.default_is_top()) ||
+          (!compare_left_to_right && po.default_is_top())) {
+        throw failed();
       }
     }
-    
-    template < typename Key, typename Value >
-    typename tree< Key, Value >::ptr tree< Key, Value >::remove(typename tree< Key, Value >::ptr t, Key key_) {
-      typedef typename tree< Key, Value >::ptr tree_ptr;
-      tree_ptr nil;
-      index_t id = key_.index();
-      if (t) {
-	if (t->is_node()) {
-	  index_t branching_bit = t->branching_bit();
-	  index_t prefix = t->prefix();
-	  if (match_prefix(id, prefix, branching_bit)) {
-	    if (zero_bit(id, branching_bit)) {
-	      tree_ptr lb = t->left_branch();
-	      tree_ptr new_lb;
-	      if (lb) {
-		new_lb = remove(lb, key_);
-	      }
-	      if (new_lb == lb) {
-		return t;
-	      } else {
-		return make_node(prefix, branching_bit, new_lb, t->right_branch());
-	      }
-	    } else {
-	      tree_ptr rb = t->right_branch();
-	      tree_ptr new_rb;
-	      if (rb) {
-		new_rb = remove(rb, key_);
-	      }
-	      if (new_rb == rb) {
-		return t;
-	      } else {
-		return make_node(prefix, branching_bit, t->left_branch(), new_rb);
-	      }
-	    }
-	  } else {
-	    return t;
-	  }
-	} else {
-	  binding_t b = t->binding();
-	  Key key = b.first;
-	  if (key.index() == id) {
-	    return nil;
-	  } else {
-	    return t;
-	  }
-	}
-      } else {
-	return nil;
+  } else {
+    if (t) {
+      if ((compare_left_to_right && po.default_is_top()) ||
+          (!compare_left_to_right && !po.default_is_top())) {
+        throw failed();
       }
+    } else {
+      // s and t are empty
     }
-    
-    template < typename Key, typename Value >
-    typename tree< Key, Value >::ptr tree< Key, Value >::
-    merge(typename tree< Key, Value >::ptr s, typename tree< Key, Value >::ptr t, 
-          binary_op_t& op, bool combine_left_to_right) {
-      typedef typename tree< Key, Value >::ptr tree_ptr;
-      tree_ptr nil;
-      if(s) {
-	if (t) {
-	  if (s == t) {
-	    return s;
-	  } else if (s->is_leaf()) { 
-	    binding_t b = s->binding();
-	    if (op.default_is_absorbing()) {
-	      boost::optional< Value > value = t->lookup(b.first);
-	      if (value) {
-		boost::optional< Value > new_value = 
-                        combine_left_to_right ? 
-                        op.apply(b.second, *value) : 
-                        op.apply(*value, b.second);
-		if (new_value) {
-		  if (*new_value == b.second) {
-		    return s;
-		  } else {
-		    return make_leaf(b.first, *new_value);
-		  }
-		} else {
-		  return nil;
-		}
-	      } else {
-		return nil;
-	      }
-	    } else {
-	      return insert(t, b.first, b.second, op, !combine_left_to_right);
-	    }
-	  } else if (t->is_leaf()) {
-	    binding_t b = t->binding();
-	    if (op.default_is_absorbing()) {
-	      boost::optional< Value > value = s->lookup(b.first);
-	      if (value) {
-		boost::optional< Value > new_value = 
-                        combine_left_to_right ? 
-                        op.apply(*value, b.second) : 
-                        op.apply(b.second, *value);
-		if (new_value) {
-		  if (*new_value == b.second) {
-		    return t;
-		  } else {
-		    return make_leaf(b.first, *new_value);		  
-		  }
-		} else {
-		  return nil;
-		}
-	      } else {
-		return nil;
-	      }	      
-	    } else {
-                return insert(s, b.first, b.second, op, combine_left_to_right);
-	    }
-	  } else {
-	    if (s->branching_bit() == t->branching_bit() && s->prefix() == t->prefix()) {
-	      tree_ptr new_lb = merge(s->left_branch(), t->left_branch(), op, combine_left_to_right);
-	      tree_ptr new_rb = merge(s->right_branch(), t->right_branch(), op, combine_left_to_right);
-	      if (new_lb == s->left_branch() && new_rb == s->right_branch()) {
-		return s;
-	      } else if (new_lb == t->left_branch() && new_rb == t->right_branch()) {
-		return t;
-	      } else {
-		return make_node(s->prefix(), s->branching_bit(), new_lb, new_rb);
-	      }
-	    } else if (s->branching_bit() > t->branching_bit() && match_prefix(t->prefix(), s->prefix(), s->branching_bit())) {
-	      if (zero_bit(t->prefix(), s->branching_bit())) {
-		tree_ptr new_lb = merge(s->left_branch(), t, op, combine_left_to_right);
-		tree_ptr new_rb = op.default_is_absorbing() ? nil : s->right_branch();
-		if (new_lb == s->left_branch() && new_rb == s->right_branch()) {
-		  return s;
-		} else {
-		  return make_node(s->prefix(), s->branching_bit(), new_lb, new_rb);
-		}	 
-	      } else {
-		tree_ptr new_lb = op.default_is_absorbing() ? nil : s->left_branch();
-		tree_ptr new_rb = merge(s->right_branch(), t, op, combine_left_to_right);
-		if (new_lb == s->left_branch() && new_rb == s->right_branch()) {
-		  return s;
-		} else {
-		  return make_node(s->prefix(), s->branching_bit(), new_lb, new_rb);
-		}
-	      }
-	    } else if (s->branching_bit() < t->branching_bit() && match_prefix(s->prefix(), t->prefix(), t->branching_bit())) {
-	      if (zero_bit(s->prefix(), t->branching_bit())) {
-		tree_ptr new_lb = merge(s, t->left_branch(), op, combine_left_to_right);
-		tree_ptr new_rb = op.default_is_absorbing() ? nil : t->right_branch();
-		if (new_lb == t->left_branch() && new_rb == t->right_branch()) {
-		  return t;
-		} else {
-		  return make_node(t->prefix(), t->branching_bit(), new_lb, new_rb);
-		}
-	      } else {
-		tree_ptr new_lb = op.default_is_absorbing() ? nil : t->left_branch();
-		tree_ptr new_rb = merge(s, t->right_branch(), op, combine_left_to_right);
-		if (new_lb == t->left_branch() && new_rb == t->right_branch()) {
-		  return t;
-		} else {		
-		  return make_node(t->prefix(), t->branching_bit(), new_lb, new_rb);
-		}
-	      }
-	    } else {
-	      if (op.default_is_absorbing()) {
-		return nil;
-	      } else {
-		return join(s, t);
-	      }
-	    }
-	  }
-	} else {
-	  if (op.default_is_absorbing()) {
-	    return nil;
-	  } else {
-	    return s;
-	  }
-	}
-      } else {
-	if (op.default_is_absorbing()) {
-	  return nil;
-	} else {
-	  return t;
-	}
-      }
-    }
-    
-    template < typename Key, typename Value >
-    void tree< Key, Value >::compare(typename tree< Key, Value >::ptr s, typename tree< Key, Value >::ptr t, 
-				     partial_order_t& po, bool compare_left_to_right) {
-      if (s) {
-	if (t) {
-	  if (s != t) {
-	    if (s->is_leaf()) {
-	      binding_t b = s->binding();
-	      Key key = b.first;
-	      Value value = b.second;
-	      boost::optional< Value > value_ = t->lookup(key);
-	      if (value_) {
-		Value left = compare_left_to_right ? value : *value_;
-		Value right = compare_left_to_right ? *value_ : value;
-		if (!po.leq(left, right)) {
-		  throw failed();
-		}
-	      } else {
-		if ((compare_left_to_right && !po.default_is_top())
-		    || (!compare_left_to_right && po.default_is_top())) {
-		  throw failed();
-		}
-	      }
-	      if (compare_left_to_right && po.default_is_top() && !t->is_leaf()) {
-		throw failed();
-	      }
-	      if (!compare_left_to_right && !po.default_is_top() && !t->is_leaf()) {
-		throw failed();
-	      }	      
-	    } else if (t->is_leaf()) {
-	      compare(t, s, po, !compare_left_to_right);
-	    } else {
-	      if (s->branching_bit() == t->branching_bit() && s->prefix() == t->prefix()) {
-		compare(s->left_branch(), t->left_branch(), po, compare_left_to_right);
-		compare(s->right_branch(), t->right_branch(), po, compare_left_to_right);
-	      } else if (s->branching_bit() > t->branching_bit() && match_prefix(t->prefix(), s->prefix(), s->branching_bit())) {
-		if ((compare_left_to_right && !po.default_is_top())
-		    || (!compare_left_to_right && po.default_is_top())) {
-		  throw failed();
-		}
-		if (zero_bit(t->prefix(), s->branching_bit())) {
-		  compare(s->left_branch(), t, po, compare_left_to_right);
-		} else {
-		  compare(s->right_branch(), t, po, compare_left_to_right);
-		}
-	      } else if (s->branching_bit() < t->branching_bit() && match_prefix(s->prefix(), t->prefix(), t->branching_bit())) {
-		if ((compare_left_to_right && po.default_is_top())
-		    || (!compare_left_to_right && !po.default_is_top())) {
-		  throw failed();
-		}
-		if (zero_bit(s->prefix(), t->branching_bit())) {
-		  compare(s, t->left_branch(), po, compare_left_to_right);
-		} else {
-		  compare(s, t->right_branch(), po, compare_left_to_right);
-		}
-	      } else {
-		throw failed();
-	      }
-	    }
-	  }
-	} else {
-	  if ((compare_left_to_right && !po.default_is_top())
-	      || (!compare_left_to_right && po.default_is_top())) {
-	    throw failed();
-	  }
-	}
-      } else {
-	if (t) {
-	  if ((compare_left_to_right && po.default_is_top())
-	      || (!compare_left_to_right && !po.default_is_top())) {
-	    throw failed();
-	  }
-	} else {
-	  // s and t are empty
-	}
-      }
-    }
-    
-  } // namespace patricia_trees_impl
+  }
+}
 
-  template < typename Key, typename Value >
-  class patricia_tree {
-    
+} // namespace patricia_trees_impl
+
+template < typename Key, typename Value >
+class patricia_tree {
+private:
+  typedef patricia_trees_impl::tree< Key, Value > tree_t;
+  typedef typename tree_t::ptr tree_ptr;
+  typedef typename tree_t::binding_t binding_t;
+
+public:
+  typedef patricia_tree< Key, Value > patricia_tree_t;
+  typedef typename tree_t::unary_op_t unary_op_t;
+  typedef typename tree_t::binary_op_t binary_op_t;
+  typedef typename tree_t::partial_order_t partial_order_t;
+
+private:
+  tree_ptr _tree;
+
+public:
+  class iterator : public boost::iterator_facade< iterator,
+                                                  binding_t,
+                                                  boost::forward_traversal_tag,
+                                                  binding_t > {
+    friend class boost::iterator_core_access;
+    friend class patricia_tree< Key, Value >;
+
   private:
-    typedef patricia_trees_impl::tree< Key, Value > tree_t;
-    typedef typename tree_t::ptr tree_ptr;
-    typedef typename tree_t::binding_t binding_t;
-    
-  public:
-    typedef patricia_tree< Key, Value > patricia_tree_t;
-    typedef typename tree_t::unary_op_t unary_op_t;
-    typedef typename tree_t::binary_op_t binary_op_t;
-    typedef typename tree_t::partial_order_t partial_order_t;
-    
-  private:
-    tree_ptr _tree;
-    
-  public:
-    class iterator: public boost::iterator_facade< iterator
-						   , binding_t
-						   , boost::forward_traversal_tag
-						   , binding_t
-						   > {
-      
-      friend class boost::iterator_core_access;
-      friend class patricia_tree< Key, Value >;
-      
-    private:
-      typename tree_t::iterator _it;
-      
-    public:
-      iterator() { }
-      
-      iterator(patricia_tree_t pt): _it(pt._tree) { }
-      
-    private:
-      iterator(tree_ptr t): _it(t) { }
-      
-      void increment() { 
-	++this->_it;
-      }
-      
-      bool equal(const iterator& other) const {
-	return (this->_it == other._it);
-      }
-      
-      binding_t dereference() const {
-	return *this->_it;
-      }
-      
-    }; // class iterator
-
-    class insert_op: public binary_op_t {
-      
-      boost::optional< Value > apply(Value /* old_value */, Value new_value) {
-	return boost::optional< Value >(new_value);
-      }
-
-      bool default_is_absorbing() {
-	return false;
-      }
-
-    }; // class insert_op
+    typename tree_t::iterator _it;
 
   public:
-    patricia_tree() { }
+    iterator() {}
 
-    patricia_tree(const patricia_tree_t& t): _tree(t._tree) { }
-
-    patricia_tree_t& operator=(patricia_tree_t t) {
-      this->_tree = t._tree;
-      return *this;
-    }
-    
-    std::size_t size() {
-      if (this->_tree) {
-	return this->_tree->size();
-      } else {
-	return 0;
-      }
-    }
-    
-    iterator begin() {
-      return iterator(this->_tree);
-    }
-    
-    iterator end() {
-      return iterator();
-    }
-    
-    boost::optional< Value > lookup(Key key) {
-      if (this->_tree) {
-	return this->_tree->lookup(key);
-      } else {
-	return boost::optional< Value >();
-      }
-    }
-    
-    void merge_with(patricia_tree_t t, binary_op_t& op) {
-      this->_tree = tree_t::merge(this->_tree, t._tree, op, true);
-    }
-    
-    void insert(Key key, Value value) {
-      insert_op op;
-      this->_tree = tree_t::insert(this->_tree, key, value, op, true);
-    }
-
-    void transform(unary_op_t& op) {
-      this->_tree = tree_t::transform(this->_tree, op);
-    }
-    
-    void remove(Key key) {
-      this->_tree = tree_t::remove(this->_tree, key);
-    }
-
-    void clear() {
-      this->_tree.reset();
-    }
-    
-    bool is_empty() {
-      return !this->_tree;
-    }
-
-    bool leq(patricia_tree_t t, partial_order_t& po) {
-      try {
-	tree_t::compare(this->_tree, t._tree, po, true);
-	return true;
-      }
-      catch (patricia_trees_impl::failed& e) {
-	return false;
-      }
-    }
-    
-  }; // class patricia_tree
-  
-  template < typename Element >
-  class patricia_tree_set: public writeable {
-    
-  private:
-    typedef patricia_tree< Element, bool > patricia_tree_t;
-    
-  public:
-    typedef patricia_tree_set< Element > patricia_tree_set_t;
-    typedef typename patricia_tree_t::unary_op_t unary_op_t;
-    typedef typename patricia_tree_t::binary_op_t binary_op_t;
-    typedef typename patricia_tree_t::partial_order_t partial_order_t;
-    
-  private:
-    patricia_tree_t _tree;
-    
-  public:
-    class iterator: public boost::iterator_facade< iterator
-						   , Element
-						   , boost::forward_traversal_tag
-						   , Element
-						   > {
-      
-      friend class boost::iterator_core_access;
-      friend class patricia_tree_set< Element >;
-      
-    private:
-      typename patricia_tree_t::iterator _it;
-      
-    public:
-      iterator() { }
-      
-      iterator(patricia_tree_set_t ptset): _it(ptset._tree) { }
-      
-    private:
-      iterator(patricia_tree_t t): _it(t) { }
-      
-      void increment() { 
-	++this->_it;
-      }
-      
-      bool equal(const iterator& other) const {
-	return (this->_it == other._it);
-      }
-      
-      Element dereference() const {
-	return this->_it->first;
-      }
-      
-    }; // class iterator
+    iterator(const patricia_tree_t& pt) : _it(pt._tree) {}
 
   private:
-    class union_op: public binary_op_t {
+    iterator(tree_ptr t) : _it(t) {}
 
-      boost::optional< bool > apply(bool /* x */, bool /* y */) {
-	return boost::optional< bool >(true);
-      };
+    void increment() { ++this->_it; }
 
-      bool default_is_absorbing() {
-	return false;
-      }
+    bool equal(const iterator& other) const { return this->_it == other._it; }
 
-    }; // class union_op
+    binding_t dereference() const { return *this->_it; }
 
-    class intersection_op: public binary_op_t {
+  }; // class iterator
 
-      boost::optional< bool > apply(bool /* x */, bool /* y */) {
-	return boost::optional< bool >(true);
-      };
-      
-      bool default_is_absorbing() {
-	return true;
-      }
-
-    }; // class intersection_op
-
-    class subset_po: public partial_order_t {
-      
-      bool leq(bool /* x */, bool /* y */) {
-	return true;
-      };
-      
-      bool default_is_top() {
-	return false;
-      }
-
-    }; // class subset_po
-    
-  private:
-    static patricia_tree_t do_union(patricia_tree_t t1, patricia_tree_t t2) {
-      union_op o;
-      t1.merge_with(t2, o);
-      return t1;
+  class insert_op : public binary_op_t {
+    boost::optional< Value > apply(Value /* old_value */, Value new_value) {
+      return boost::optional< Value >(new_value);
     }
 
-    static patricia_tree_t do_intersection(patricia_tree_t t1, patricia_tree_t t2) {
-      intersection_op o;
-      t1.merge_with(t2, o);
-      return t1;
+    bool default_is_absorbing() { return false; }
+
+  }; // class insert_op
+
+public:
+  patricia_tree() {}
+
+  patricia_tree(const patricia_tree_t& t) : _tree(t._tree) {}
+
+  patricia_tree_t& operator=(const patricia_tree_t& t) {
+    this->_tree = t._tree;
+    return *this;
+  }
+
+  std::size_t size() const {
+    if (this->_tree) {
+      return this->_tree->size();
+    } else {
+      return 0;
     }
+  }
+
+  iterator begin() const { return iterator(this->_tree); }
+
+  iterator end() const { return iterator(); }
+
+  boost::optional< Value > lookup(const Key& key) const {
+    if (this->_tree) {
+      return this->_tree->lookup(key);
+    } else {
+      return boost::optional< Value >();
+    }
+  }
+
+  void merge_with(const patricia_tree_t& t, binary_op_t& op) {
+    this->_tree = tree_t::merge(this->_tree, t._tree, op, true);
+  }
+
+  void insert(const Key& key, const Value& value) {
+    insert_op op;
+    this->_tree = tree_t::insert(this->_tree, key, value, op, true);
+  }
+
+  void transform(unary_op_t& op) {
+    this->_tree = tree_t::transform(this->_tree, op);
+  }
+
+  void remove(const Key& key) {
+    this->_tree = tree_t::remove(this->_tree, key);
+  }
+
+  void clear() { this->_tree.reset(); }
+
+  bool empty() const { return !this->_tree; }
+
+  bool leq(const patricia_tree_t& t, partial_order_t& po) const {
+    try {
+      tree_t::compare(this->_tree, t._tree, po, true);
+      return true;
+    } catch (patricia_trees_impl::failed& e) {
+      return false;
+    }
+  }
+
+}; // class patricia_tree
+
+template < typename Element >
+class patricia_tree_set : public writeable {
+private:
+  typedef patricia_tree< Element, bool > patricia_tree_t;
+
+public:
+  typedef patricia_tree_set< Element > patricia_tree_set_t;
+  typedef typename patricia_tree_t::unary_op_t unary_op_t;
+  typedef typename patricia_tree_t::binary_op_t binary_op_t;
+  typedef typename patricia_tree_t::partial_order_t partial_order_t;
+
+private:
+  patricia_tree_t _tree;
+
+public:
+  class iterator : public boost::iterator_facade< iterator,
+                                                  Element,
+                                                  boost::forward_traversal_tag,
+                                                  Element > {
+    friend class boost::iterator_core_access;
+    friend class patricia_tree_set< Element >;
 
   private:
-    patricia_tree_set(patricia_tree_t t): _tree(t) { }
+    typename patricia_tree_t::iterator _it;
 
   public:
-    patricia_tree_set() { }
+    iterator() {}
 
-    patricia_tree_set(const patricia_tree_set_t& s): writeable(), _tree(s._tree) { }
+    iterator(const patricia_tree_set_t& ptset) : _it(ptset._tree) {}
 
-    patricia_tree_set_t& operator=(patricia_tree_set_t t) {
-      this->_tree = t._tree;
-      return *this;
-    }
-    
-    patricia_tree_set(Element e) {
-      this->_tree.insert(e, true);
-    }
+  private:
+    iterator(patricia_tree_t t) : _it(t) {}
 
-    std::size_t size() {
-      return this->_tree.size();
-    }
-    
-    iterator begin() {
-      return iterator(this->_tree);
-    }
-    
-    iterator end() {
-      return iterator();
-    }
+    void increment() { ++this->_it; }
 
-    bool operator[](Element x) {
-      return (this->_tree.lookup(x));
-    }
+    bool equal(const iterator& other) const { return this->_it == other._it; }
 
-    patricia_tree_set_t operator+(Element e) {
-      patricia_tree_t t = this->_tree;
-      t.insert(e, true);
-      return patricia_tree_set_t(t);
-    }
+    Element dereference() const { return this->_it->first; }
 
-    patricia_tree_set_t& operator+=(Element e) {
-      this->_tree.insert(e, true);
-      return *this;
-    }
+  }; // class iterator
 
-    patricia_tree_set_t operator-(Element e) {
-      patricia_tree_t t = this->_tree;
-      t.remove(e);
-      return patricia_tree_set_t(t);
-    }
+private:
+  class union_op : public binary_op_t {
+    boost::optional< bool > apply(bool /* x */, bool /* y */) {
+      return boost::optional< bool >(true);
+    };
 
-    patricia_tree_set_t& operator-=(Element e) {
-      this->_tree.remove(e);
-      return *this;
-    }
+    bool default_is_absorbing() { return false; }
 
-    patricia_tree_set& clear() {
-      this->_tree.clear();
-      return *this;
-    }
+  }; // class union_op
 
-    bool is_empty() {
-      return this->_tree.is_empty();
-    }
-    
-    patricia_tree_set_t operator|(patricia_tree_set_t s) {
-      patricia_tree_set_t u(do_union(this->_tree, s._tree));
-      return u;
-    }
+  class intersection_op : public binary_op_t {
+    boost::optional< bool > apply(bool /* x */, bool /* y */) {
+      return boost::optional< bool >(true);
+    };
 
-    patricia_tree_set_t& operator|=(patricia_tree_set_t s) {
-      this->_tree = do_union(this->_tree, s._tree);
-      return *this;
-    }
+    bool default_is_absorbing() { return true; }
 
-    patricia_tree_set_t operator&(patricia_tree_set_t s) {
-      patricia_tree_set_t i(do_intersection(this->_tree, s._tree));
-      return i;
-    }
+  }; // class intersection_op
 
-    patricia_tree_set_t& operator&=(patricia_tree_set_t s) {
-      this->_tree = do_intersection(this->_tree, s._tree);
-      return *this;
-    }
+  class subset_po : public partial_order_t {
+    bool leq(bool /* x */, bool /* y */) { return true; };
 
-    bool operator<=(patricia_tree_set_t s) {
-      subset_po po;
-      return this->_tree.leq(s._tree, po);
-    }
+    bool default_is_top() { return false; }
 
-    bool operator>=(patricia_tree_set_t s) {
-      return s.operator<=(*this);
-    }
+  }; // class subset_po
 
-    bool operator==(patricia_tree_set_t s) {
-      return (this->operator<=(s) && s.operator<=(*this));
-    }
-    
-    std::ostream& write(std::ostream& o) {
-      o << "{";
-      for (iterator it = begin(); it != end(); ) {
-	it->write(o);
-	++it;
-	if (it != end()) {
-	  o << "; ";
-	}
+private:
+  static patricia_tree_t do_union(patricia_tree_t t1, patricia_tree_t t2) {
+    union_op o;
+    t1.merge_with(t2, o);
+    return t1;
+  }
+
+  static patricia_tree_t do_intersection(patricia_tree_t t1,
+                                         patricia_tree_t t2) {
+    intersection_op o;
+    t1.merge_with(t2, o);
+    return t1;
+  }
+
+private:
+  patricia_tree_set(patricia_tree_t t) : _tree(t) {}
+
+public:
+  patricia_tree_set() {}
+
+  patricia_tree_set(const patricia_tree_set_t& s)
+      : writeable(), _tree(s._tree) {}
+
+  patricia_tree_set_t& operator=(const patricia_tree_set_t& t) {
+    this->_tree = t._tree;
+    return *this;
+  }
+
+  patricia_tree_set(const Element& e) { this->_tree.insert(e, true); }
+
+  std::size_t size() const { return this->_tree.size(); }
+
+  iterator begin() const { return iterator(this->_tree); }
+
+  iterator end() const { return iterator(); }
+
+  bool operator[](const Element& x) const { return this->_tree.lookup(x); }
+
+  patricia_tree_set_t operator+(const Element& e) const {
+    patricia_tree_t t = this->_tree;
+    t.insert(e, true);
+    return patricia_tree_set_t(t);
+  }
+
+  patricia_tree_set_t& operator+=(const Element& e) {
+    this->_tree.insert(e, true);
+    return *this;
+  }
+
+  patricia_tree_set_t operator-(const Element& e) const {
+    patricia_tree_t t = this->_tree;
+    t.remove(e);
+    return patricia_tree_set_t(t);
+  }
+
+  patricia_tree_set_t& operator-=(const Element& e) {
+    this->_tree.remove(e);
+    return *this;
+  }
+
+  patricia_tree_set& clear() {
+    this->_tree.clear();
+    return *this;
+  }
+
+  bool empty() const { return this->_tree.empty(); }
+
+  patricia_tree_set_t operator|(const patricia_tree_set_t& s) const {
+    patricia_tree_set_t u(do_union(this->_tree, s._tree));
+    return u;
+  }
+
+  patricia_tree_set_t& operator|=(const patricia_tree_set_t& s) {
+    this->_tree = do_union(this->_tree, s._tree);
+    return *this;
+  }
+
+  patricia_tree_set_t operator&(const patricia_tree_set_t& s) const {
+    patricia_tree_set_t i(do_intersection(this->_tree, s._tree));
+    return i;
+  }
+
+  patricia_tree_set_t& operator&=(const patricia_tree_set_t& s) {
+    this->_tree = do_intersection(this->_tree, s._tree);
+    return *this;
+  }
+
+  bool operator<=(const patricia_tree_set_t& s) const {
+    subset_po po;
+    return this->_tree.leq(s._tree, po);
+  }
+
+  bool operator>=(const patricia_tree_set_t& s) const {
+    return s.operator<=(*this);
+  }
+
+  bool operator==(const patricia_tree_set_t& s) const {
+    return (this->operator<=(s) && s.operator<=(*this));
+  }
+
+  void write(std::ostream& o) {
+    o << "{";
+    for (iterator it = begin(); it != end();) {
+      it->write(o);
+      ++it;
+      if (it != end()) {
+        o << "; ";
       }
-      o << "}";
-      return o;
     }
-    
-  }; // class patricia_tree_set
-  
+    o << "}";
+  }
+
+}; // class patricia_tree_set
+
 } // namespace ikos
 
 #endif // IKOS_PATRICIA_TREES_HPP

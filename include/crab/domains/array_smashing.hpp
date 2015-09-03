@@ -194,9 +194,8 @@ namespace crab {
           return _inv.to_linear_constraint_system ();
         }
         
-        ostream& write(ostream& o) {
+        void write(ostream& o) {
           o << _inv;
-          return o;
         }
         
         const char* getDomainName () const {return "Array smashing";}  

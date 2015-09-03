@@ -112,9 +112,8 @@ namespace crab {
            return this->operator&(other);
          }
          
-         ostream& write(ostream& o) {
+         void write(ostream& o) {
            this->_inv.write(o);
-           return o;
          }  
          
        }; 
@@ -295,7 +294,7 @@ namespace crab {
           return this->operator&(other);
         }
         
-        ostream& write(ostream& o) {
+        void write(ostream& o) {
           if (is_top ())  o << "{...}";
           else if (is_bottom ())   o << "_|_";
           else 
@@ -309,7 +308,6 @@ namespace crab {
             }
             o << "}";
           }
-          return o;
         }  
       }; 
     } // end namespace liveness_set_impl
@@ -350,15 +348,18 @@ namespace crab {
          liveness_domain_t kill, gen;
          for (auto &s: b) {
            auto live = s.getLive();
-           for (auto d: boost::make_iterator_range (live.defs_begin (), live.defs_end ())) {
+           for (auto d: boost::make_iterator_range (live.defs_begin (), 
+                                                    live.defs_end ())) {
              kill += d; 
              gen -= d;
            }
-           for (auto u: boost::make_iterator_range (live.uses_begin (), live.uses_end ())) {
+           for (auto u: boost::make_iterator_range (live.uses_begin (), 
+                                                    live.uses_end ())) {
              gen  += u; 
            }
          }
-         m_kill_gen_map.insert ( kg_binding_t (b.label (), kill_gen_t (kill, gen)));
+         m_kill_gen_map.insert ( kg_binding_t (b.label (), 
+                                               kill_gen_t (kill, gen)));
        }
      }
      
@@ -382,7 +383,8 @@ namespace crab {
      }
 
      //! return the set of live variables at the entry of block bb
-     boost::optional <live_set_t> live_entry (basic_block_label_t bb) const {
+     boost::optional <live_set_t> 
+     live_entry (basic_block_label_t bb) const {
        auto it = m_live_map.find(bb);
        if (it == m_live_map.end())
          return boost::optional <live_set_t> ();
@@ -390,19 +392,19 @@ namespace crab {
          return boost::optional <live_set_t> (it->second); 
      }
 
-     ostream& write (ostream &o) const {
+     void write (ostream &o) const {
        for (auto p: m_live_map) {
          o << p.first << " :{";
          for (auto v : p.second)
            o << v << ";" ;
          o << "}\n";
        }
-       return o;
      }
 
     private:
 
-     liveness_domain_t analyze (basic_block_label_t bb_id, liveness_domain_t inv) {
+     liveness_domain_t analyze (basic_block_label_t bb_id, 
+                                liveness_domain_t inv) {
        auto it = m_kill_gen_map.find (bb_id);
        assert(it != m_kill_gen_map.end ());
        kill_gen_t p = it->second;
@@ -413,7 +415,8 @@ namespace crab {
        return inv;
      }
 
-     void check_pre (basic_block_label_t bb, liveness_domain_t live_in) {
+     void check_pre (basic_block_label_t bb, 
+                     liveness_domain_t live_in) {
        // Collect live variables at the entry of bb
        live_set_t live_in_set;
        if (!live_in.is_bottom()) {
@@ -424,7 +427,8 @@ namespace crab {
        m_live_map.insert (l_binding_t (bb, live_in_set));
      }
      
-     void check_post (basic_block_label_t bb, liveness_domain_t live_out) {
+     void check_post (basic_block_label_t bb, 
+                      liveness_domain_t live_out) {
 
        // Collect dead variables at the exit of bb
 

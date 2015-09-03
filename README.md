@@ -39,7 +39,7 @@ Version 1.3 or later.
 
 Crab needs to be licensed (TBD).
 
-## Installation ##
+## Compilation ##
 
 Crab is written in C++ and uses heavily the Boost library. You will
 need:
@@ -63,6 +63,24 @@ tests.
 ## How to integrate Crab in other analysis/verification tools ##
 
 TODO
+
+## How to implement new fixpoint iterators ##
+
+The new fixpoint iterator must follow this API:
+
+    template< typename NodeName, typename CFG, typename AbstractValue >
+    class forward_fixpoint_iterator {
+
+     public:
+     virtual AbstractValue analyze(NodeName, AbstractValue) = 0;
+    
+     virtual void process_pre(NodeName, AbstractValue) = 0;
+    
+     virtual void process_post(NodeName, AbstractValue) = 0;
+    
+     virtual ~forward_fixpoint_iterator() { }
+
+    }; 
 
 ## How to implement new abstract domains ##
 
@@ -144,4 +162,4 @@ abstract domain (if not already there).
 * [Arie Gurfinkel](arieg.bitbucket.org)
 * [Jorge Navas](http://ti.arc.nasa.gov/profile/jorge/)
 * [Temesghen Kahsai](http://www.lememta.info/)
-* Graeme Gange (The University of Melbourne)
+* Graeme Gange 

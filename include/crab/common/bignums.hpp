@@ -46,345 +46,348 @@
 #include <sstream>
 #include <iostream>
 #include <gmpxx.h>
+
+#include <boost/functional/hash.hpp>
+
 #include <crab/common/types.hpp>
 
 namespace ikos {
-  
-  class z_number: public writeable {
-    
-    friend class q_number;
 
-  private:
-    mpz_class _n;
-    
-  private:
-    z_number();
-    z_number(mpz_class n): _n(n) { }
-    
-  public:
-    z_number(std::string s) { 
-      try {
-	this->_n = s;
-      }
-      catch (std::invalid_argument& e) {
-	std::ostringstream buf;
-	buf << "Integer bignum: invalid string in constructor '" << s << "'";
-	throw error(buf.str());
-      }
+class z_number {
+  friend class q_number;
+
+private:
+  mpz_class _n;
+
+private:
+  z_number(mpz_class n) : _n(n) {}
+
+public:
+  static z_number from_ulong(unsigned long n) {
+    mpz_class b(n);
+    return z_number(b);
+  }
+
+public:
+  z_number() : _n(0) {}
+
+  z_number(std::string s) {
+    try {
+      this->_n = s;
+    } catch (std::invalid_argument& e) {
+      CRAB_ERROR ("z_number: invalid string in constructor", s);
     }
+  }
 
-    z_number(int n): _n(n) { }
+  z_number(int n) : _n(n) {}
 
-    z_number operator+(z_number x) {
-      mpz_class r = this->_n + x._n;
-      return z_number(r);
-    }
+  z_number operator+(z_number x) const {
+    mpz_class r = this->_n + x._n;
+    return z_number(r);
+  }
 
-    z_number operator*(z_number x) {
-      mpz_class r = this->_n * x._n;
-      return z_number(r);
-    }
+  z_number operator*(z_number x) const {
+    mpz_class r = this->_n * x._n;
+    return z_number(r);
+  }
 
-    z_number operator-(z_number x) {
-      mpz_class r = this->_n - x._n;
-      return z_number(r);
-    }
+  z_number operator-(z_number x) const {
+    mpz_class r = this->_n - x._n;
+    return z_number(r);
+  }
 
-    z_number operator-() {
-      mpz_class r = -this->_n;
-      return z_number(r);
-    }
+  z_number operator-() const {
+    mpz_class r = -this->_n;
+    return z_number(r);
+  }
 
-    z_number operator/(z_number x) {
+  z_number operator/(z_number x) const {
+    if (x._n == 0) {
+      CRAB_ERROR("z_number: division by zero [1]");
+    } else {
       mpz_class r = this->_n / x._n;
       return z_number(r);
     }
+  }
 
-    z_number operator%(z_number x) {
+  z_number operator%(z_number x) const {
+    if (x._n == 0) {
+      CRAB_ERROR("z_number: division by zero [2]");
+    } else {
       mpz_class r = this->_n % x._n;
       return z_number(r);
     }
-    
-    z_number& operator+=(z_number x) {
-      this->_n += x._n;
-      return *this;
-    }
-    
-    z_number& operator*=(z_number x) {
-      this->_n *= x._n;
-      return *this;
-    }
-    
-    z_number& operator-=(z_number x) {
-      this->_n -= x._n;
-      return *this;
-    }
-    
-    z_number& operator/=(z_number x) {
+  }
+
+  z_number& operator+=(z_number x) {
+    this->_n += x._n;
+    return *this;
+  }
+
+  z_number& operator*=(z_number x) {
+    this->_n *= x._n;
+    return *this;
+  }
+
+  z_number& operator-=(z_number x) {
+    this->_n -= x._n;
+    return *this;
+  }
+
+  z_number& operator/=(z_number x) {
+    if (x._n == 0) {
+      CRAB_ERROR("z_number: division by zero [3]");
+    } else {
       this->_n /= x._n;
       return *this;
     }
+  }
 
-    z_number& operator%=(z_number x) {
+  z_number& operator%=(z_number x) {
+    if (x._n == 0) {
+      CRAB_ERROR("z_number: division by zero [4]");
+    } else {
       this->_n %= x._n;
       return *this;
     }
+  }
 
-    z_number& operator--() {
-      --(this->_n);
-      return *this;
-    }
-    
-    z_number& operator++() {
-      ++(this->_n);
-      return *this;
-    }
+  z_number& operator--() {
+    --(this->_n);
+    return *this;
+  }
 
-    z_number operator++(int) {
-      z_number r(*this);
-      ++(*this);
-      return r;
-    }
+  z_number& operator++() {
+    ++(this->_n);
+    return *this;
+  }
 
-    z_number operator--(int) {
-      z_number r(*this);
-      --(*this);
-      return r;
-    }
-    
-    bool operator==(z_number x) {
-      return (this->_n == x._n);
-    }
+  z_number operator++(int) {
+    z_number r(*this);
+    ++(*this);
+    return r;
+  }
 
-    bool operator!=(z_number x) {
-      return (this->_n != x._n);
-    }
+  z_number operator--(int) {
+    z_number r(*this);
+    --(*this);
+    return r;
+  }
 
-    bool operator<(z_number x) {
-      return (this->_n < x._n);
-    }
+  bool operator==(z_number x) const { return this->_n == x._n; }
 
-    bool operator<=(z_number x) {
-      return (this->_n <= x._n);
-    }
+  bool operator!=(z_number x) const { return this->_n != x._n; }
 
-    bool operator>(z_number x) {
-      return (this->_n > x._n);
-    }
+  bool operator<(z_number x) const { return this->_n < x._n; }
 
-    bool operator>=(z_number x) {
-      return (this->_n >= x._n);
-    }
+  bool operator<=(z_number x) const { return this->_n <= x._n; }
 
-    z_number operator&(z_number x) {    
-      return z_number(this->_n & x._n);
-    }
+  bool operator>(z_number x) const { return this->_n > x._n; }
 
-    z_number operator|(z_number x) {    
-      return z_number(this->_n | x._n);
-    }
+  bool operator>=(z_number x) const { return this->_n >= x._n; }
 
-    z_number operator^(z_number x) {    
-      return z_number(this->_n ^ x._n);
-    }
+  z_number operator&(z_number x) const { return z_number(this->_n & x._n); }
 
-    z_number operator<<(z_number x) {    
-      mpz_t tmp;
-      mpz_init(tmp);
-      mpz_mul_2exp(tmp, this->_n.get_mpz_t(), mpz_get_ui(x._n.get_mpz_t()));
-      mpz_class result(tmp);
-      return z_number(result);
+  z_number operator|(z_number x) const { return z_number(this->_n | x._n); }
+
+  z_number operator^(z_number x) const { return z_number(this->_n ^ x._n); }
+
+  z_number operator<<(z_number x) const {
+    mpz_t tmp;
+    mpz_init(tmp);
+    mpz_mul_2exp(tmp, this->_n.get_mpz_t(), mpz_get_ui(x._n.get_mpz_t()));
+    mpz_class result(tmp);
+    return z_number(result);
+  }
+
+  z_number operator>>(z_number x) const {
+    mpz_class tmp(this->_n);
+    return z_number(tmp.operator>>=(mpz_get_ui(x._n.get_mpz_t())));
+  }
+
+  z_number fill_ones() const {
+    assert(this->_n >= 0);
+    if (this->_n == 0) {
+      return z_number(0);
     }
 
-    z_number operator>>(z_number x) {    
-      mpz_class tmp(this->_n);
-      return z_number(tmp.operator>>=(mpz_get_ui(x._n.get_mpz_t())));
-    }
+    mpz_class result;
+    for (result = 1; result < this->_n; result = 2 * result + 1)
+      ;
+    return z_number(result);
+  }
 
-    z_number fill_ones() {
-      assert(this->_n >= 0);
-      if (this->_n == 0) {
-        return z_number(0);
-      }
-      
-      mpz_class result;
-      for (result = 1; result < this->_n; result = 2 * result + 1)
-        ;
-      return z_number(result);
-    }
+  void write(std::ostream& o) { o << this->_n; }
 
-    std::ostream& write(std::ostream& o) {
-      o << this->_n;
-      return o;
-    }
-    
-  }; // class z_number
+}; // class z_number
 
-  class q_number: public writeable {
-    
-  private:
-    mpq_class _n;
-    
-  private:
-    q_number();
-    q_number(mpq_class n): _n(n) { }
-    
-  public:
-    q_number(std::string s) {
-      try {
-	this->_n = s;
-	this->_n.canonicalize();
-      }
-      catch (std::invalid_argument& e) {
-	std::ostringstream buf;
-	buf << "Rational bignum: invalid string in constructor '" << s << "'";
-	throw error(buf.str());
-      }
-    }
-    
-    q_number(int n): _n(n) { 
+inline std::ostream& operator<<(std::ostream& o, z_number z) {
+  z.write(o);
+  return o;
+}
+
+inline std::size_t hash_value(const z_number& n) {
+  std::ostringstream buf;
+  boost::hash< std::string > hasher;
+  buf << n;
+  return hasher(buf.str());
+}
+
+class q_number {
+private:
+  mpq_class _n;
+
+private:
+  q_number(mpq_class n) : _n(n) {}
+
+public:
+  q_number() : _n(0) {}
+
+  q_number(std::string s) {
+    try {
+      this->_n = s;
       this->_n.canonicalize();
+    } catch (std::invalid_argument& e) {
+      CRAB_ERROR("q_number: invalid string in constructor ",s);
     }
-    
-    q_number(z_number n): _n(n._n) { 
-      this->_n.canonicalize();
-    }
-    
-    q_number(z_number n, z_number d): _n(n._n, d._n) { 
-      this->_n.canonicalize();
-    }
+  }
 
-    q_number operator+(q_number x) {
-      mpq_class r = this->_n + x._n;
-      return q_number(r);
-    }
+  q_number(int n) : _n(n) { this->_n.canonicalize(); }
 
-    q_number operator*(q_number x) {
-      mpq_class r = this->_n * x._n;
-      return q_number(r);
-    }
+  q_number(z_number n) : _n(n._n) { this->_n.canonicalize(); }
 
-    q_number operator-(q_number x) {
-      mpq_class r = this->_n - x._n;
-      return q_number(r);
-    }
+  q_number(z_number n, z_number d) : _n(n._n, d._n) { this->_n.canonicalize(); }
 
-    q_number operator-() {
-      mpq_class r = -this->_n;
-      return q_number(r);
-    }
+  q_number operator+(q_number x) const {
+    mpq_class r = this->_n + x._n;
+    return q_number(r);
+  }
 
-    q_number operator/(q_number x) {
+  q_number operator*(q_number x) const {
+    mpq_class r = this->_n * x._n;
+    return q_number(r);
+  }
+
+  q_number operator-(q_number x) const {
+    mpq_class r = this->_n - x._n;
+    return q_number(r);
+  }
+
+  q_number operator-() const {
+    mpq_class r = -this->_n;
+    return q_number(r);
+  }
+
+  q_number operator/(q_number x) const {
+    if (x._n == 0) {
+      CRAB_ERROR("q_number: division by zero [1]");
+    } else {
       mpq_class r = this->_n / x._n;
       return q_number(r);
     }
+  }
 
-    q_number& operator+=(q_number x) {
-      this->_n += x._n;
-      return *this;
-    }
-    
-    q_number& operator*=(q_number x) {
-      this->_n *= x._n;
-      return *this;
-    }
-    
-    q_number& operator-=(q_number x) {
-      this->_n -= x._n;
-      return *this;
-    }
-    
-    q_number& operator/=(q_number x) {
+  q_number& operator+=(q_number x) {
+    this->_n += x._n;
+    return *this;
+  }
+
+  q_number& operator*=(q_number x) {
+    this->_n *= x._n;
+    return *this;
+  }
+
+  q_number& operator-=(q_number x) {
+    this->_n -= x._n;
+    return *this;
+  }
+
+  q_number& operator/=(q_number x) {
+    if (x._n == 0) {
+      CRAB_ERROR("q_number: division by zero [2]");
+    } else {
       this->_n /= x._n;
       return *this;
     }
+  }
 
-    q_number& operator--() {
-      --(this->_n);
-      return *this;
-    }
-    
-    q_number& operator++() {
-      ++(this->_n);
-      return *this;
-    }
+  q_number& operator--() {
+    --(this->_n);
+    return *this;
+  }
 
-    q_number operator--(int) {
-      q_number r(*this);
-      --(*this);
-      return r;
-    }
-    
-    q_number operator++(int) {
-      q_number r(*this);
-      ++(*this);
-      return r;      
-    }
+  q_number& operator++() {
+    ++(this->_n);
+    return *this;
+  }
 
-    bool operator==(q_number x) {
-      return (this->_n == x._n);
-    }
+  q_number operator--(int) {
+    q_number r(*this);
+    --(*this);
+    return r;
+  }
 
-    bool operator!=(q_number x) {
-      return (this->_n != x._n);
-    }
+  q_number operator++(int) {
+    q_number r(*this);
+    ++(*this);
+    return r;
+  }
 
-    bool operator<(q_number x) {
-      return (this->_n < x._n);
-    }
+  bool operator==(q_number x) const { return this->_n == x._n; }
 
-    bool operator<=(q_number x) {
-      return (this->_n <= x._n);
-    }
+  bool operator!=(q_number x) const { return this->_n != x._n; }
 
-    bool operator>(q_number x) {
-      return (this->_n > x._n);
-    }
+  bool operator<(q_number x) const { return this->_n < x._n; }
 
-    bool operator>=(q_number x) {
-      return (this->_n >= x._n);
-    }
+  bool operator<=(q_number x) const { return this->_n <= x._n; }
 
-    z_number numerator() {
-      return z_number(this->_n.get_num());
+  bool operator>(q_number x) const { return this->_n > x._n; }
+
+  bool operator>=(q_number x) const { return this->_n >= x._n; }
+
+  z_number numerator() const { return z_number(this->_n.get_num()); }
+
+  z_number denominator() const { return z_number(this->_n.get_den()); }
+
+  z_number round_to_upper() const {
+    z_number num = numerator();
+    z_number den = denominator();
+    z_number q = num / den;
+    z_number r = num % den;
+    if (r == 0 || *this < 0) {
+      return q;
+    } else {
+      return q + 1;
     }
-  
-    z_number denominator() {
-      return z_number(this->_n.get_den());
+  }
+
+  z_number round_to_lower() const {
+    z_number num = numerator();
+    z_number den = denominator();
+    z_number q = num / den;
+    z_number r = num % den;
+    if (r == 0 || *this > 0) {
+      return q;
+    } else {
+      return q - 1;
     }
-    
-    z_number round_to_upper() {
-      z_number num = numerator();
-      z_number den = denominator();
-      z_number q = num / den;
-      z_number r = num % den;
-      if (r == 0 || *this < 0) {
-	return q;
-      } else {
-	return (q + 1);
-      }
-    }
-  
-    z_number round_to_lower() {
-      z_number num = numerator();
-      z_number den = denominator();
-      z_number q = num / den;
-      z_number r = num % den;
-      if (r == 0 || *this > 0) {
-	return q;
-      } else {
-	return (q - 1);
-      }
-    }    
-    
-    std::ostream& write(std::ostream& o) {
-      o << this->_n;
-      return o;
-    }
-    
-  }; // class q_number
-  
+  }
+
+  void write(std::ostream& o) { o << this->_n; }
+
+}; // class q_number
+
+inline std::ostream& operator<<(std::ostream& o, q_number q) {
+  q.write(o);
+  return o;
+}
+
+inline std::size_t hash_value(const q_number& n) {
+  std::ostringstream buf;
+  boost::hash< std::string > hasher;
+  buf << n;
+  return hasher(buf.str());
+}
 }
 
 #endif // IKOS_BIGNUMS_HPP
-

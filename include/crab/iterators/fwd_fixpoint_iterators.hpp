@@ -54,7 +54,7 @@
 #include <crab/iterators/fixpoint_iterators_api.hpp>
 
 namespace ikos {
-  
+
   namespace interleaved_fwd_fixpoint_iterator_impl {
     
     template< typename NodeName, typename CFG, typename AbstractValue >
@@ -66,7 +66,8 @@ namespace ikos {
   } // namespace interleaved_fwd_fixpoint_iterator_impl
   
   template< typename NodeName, typename CFG, typename AbstractValue >
-  class interleaved_fwd_fixpoint_iterator: public forward_fixpoint_iterator< NodeName, CFG, AbstractValue > {
+  class interleaved_fwd_fixpoint_iterator: 
+      public forward_fixpoint_iterator< NodeName, CFG, AbstractValue > {
 
     friend class interleaved_fwd_fixpoint_iterator_impl::wto_iterator< NodeName, CFG, AbstractValue >;
 
@@ -84,12 +85,13 @@ namespace ikos {
     
   private:
     void set(invariant_table_ptr table, NodeName node, AbstractValue v) {
-      std::pair< typename invariant_table_t::iterator, bool > res = table->insert(std::make_pair(node, v));
+      std::pair< typename invariant_table_t::iterator, bool > res = 
+          table->insert(std::make_pair(node, v));
       if (!res.second) {
-	(res.first)->second = v;
+        (res.first)->second = v;
       }
     }
-
+    
     void set_pre(NodeName node, AbstractValue v) {
       this->set(this->_pre, node, v);
     }
@@ -101,17 +103,18 @@ namespace ikos {
     AbstractValue get(invariant_table_ptr table, NodeName n) {
       typename invariant_table_t::iterator it = table->find(n);
       if (it != table->end()) {
-	return it->second;
+        return it->second;
       } else {
-	return AbstractValue::bottom();
+        return AbstractValue::bottom();
       }
     }
     
   public:
-    interleaved_fwd_fixpoint_iterator(CFG cfg): _cfg(cfg),
-						_wto(cfg),
-						_pre(invariant_table_ptr(new invariant_table_t)),
-						_post(invariant_table_ptr(new invariant_table_t)) { }
+    interleaved_fwd_fixpoint_iterator(CFG cfg): 
+        _cfg(cfg),
+        _wto(cfg),
+        _pre(invariant_table_ptr(new invariant_table_t)),
+        _post(invariant_table_ptr(new invariant_table_t)) { }
     
     CFG get_cfg() {
       return this->_cfg;
@@ -129,7 +132,8 @@ namespace ikos {
       return this->get(this->_post, node);
     }
     
-    virtual AbstractValue extrapolate(NodeName /* node */, unsigned int iteration, AbstractValue before, AbstractValue after) {
+    virtual AbstractValue extrapolate(NodeName /* node */, unsigned int iteration, 
+                                      AbstractValue before, AbstractValue after) {
       if (iteration == 1) {
 	return before | after; 
       } else {
@@ -137,7 +141,8 @@ namespace ikos {
       }
     }
 
-    virtual AbstractValue refine(NodeName /* node */, unsigned int iteration, AbstractValue before, AbstractValue after) {
+    virtual AbstractValue refine(NodeName /* node */, unsigned int iteration, 
+                                 AbstractValue before, AbstractValue after) {
       if (iteration == 1) {
 	return before & after; 
       } else {
@@ -179,70 +184,70 @@ namespace ikos {
       wto_iterator(interleaved_iterator_t *iterator): _iterator(iterator) { }
       
       void visit(wto_vertex_t& vertex) {
-	AbstractValue pre;
-	NodeName node = vertex.node();
-	if (node == this->_iterator->get_cfg().entry()) {
-	  pre = this->_iterator->get_pre(node);
-	} else {
-	  auto prev_nodes = this->_iterator->_cfg.prev_nodes(node);
-	  pre = AbstractValue::bottom();
-	  for (NodeName prev : prev_nodes) 
-	    pre = pre | this->_iterator->get_post(prev); 
-	  this->_iterator->set_pre(node, pre);
-	}
-	this->_iterator->set_post(node, this->_iterator->analyze(node, pre));
+        AbstractValue pre;
+        NodeName node = vertex.node();
+        if (node == this->_iterator->get_cfg().entry()) {
+          pre = this->_iterator->get_pre(node);
+        } else {
+          auto prev_nodes = this->_iterator->_cfg.prev_nodes(node);
+          pre = AbstractValue::bottom();
+          for (NodeName prev : prev_nodes) 
+            pre = pre | this->_iterator->get_post(prev); 
+          this->_iterator->set_pre(node, pre);
+        }
+        this->_iterator->set_post(node, this->_iterator->analyze(node, pre));
       }
       
       void visit(wto_cycle_t& cycle) {
-	NodeName head = cycle.head();
-	wto_nesting_t cycle_nesting = this->_iterator->_wto.nesting(head);
-	auto prev_nodes = this->_iterator->_cfg.prev_nodes(head);
-	AbstractValue pre = AbstractValue::bottom();
-	for (NodeName prev : prev_nodes) {
-	  if (!(this->_iterator->_wto.nesting(prev) > cycle_nesting)) {
-	    pre = pre | this->_iterator->get_post(prev);
-	  }
-	}
-	for(unsigned int iteration = 1; ; ++iteration) {
-	  // Increasing iteration sequence with widening
-	  this->_iterator->set_pre(head, pre);
-	  this->_iterator->set_post(head, this->_iterator->analyze(head, pre));
-	  for (typename wto_cycle_t::iterator it = cycle.begin(); it != cycle.end(); ++it) {
-	    it->accept(this);
-	  }
-	  AbstractValue new_pre = AbstractValue::bottom();
-	  for (NodeName prev : prev_nodes) 
-	    new_pre = new_pre | this->_iterator->get_post(prev);
-	  if (new_pre <= pre) {
-	    // Post-fixpoint reached
-	    this->_iterator->set_pre(head, new_pre);
-	    pre = new_pre;
-	    break;
-	  } else {
-	    pre = this->_iterator->extrapolate(head, iteration, pre, new_pre);
-	  }
-	}
-	for(unsigned int iteration = 1; ; ++iteration) {
-	  // Decreasing iteration sequence with narrowing
-	  this->_iterator->set_post(head, this->_iterator->analyze(head, pre));
-	  for (typename wto_cycle_t::iterator it = cycle.begin(); it != cycle.end(); ++it) {
-	    it->accept(this);
-	  }
-	  AbstractValue new_pre = AbstractValue::bottom();
-	  for (NodeName prev : prev_nodes) 
-	    new_pre = new_pre | this->_iterator->get_post(prev);
-	  if (pre <= new_pre) {
-	    // No more refinement possible (pre == new_pre)
-	    break;
-	  } else {
-	    pre = this->_iterator->refine(head, iteration, pre, new_pre);
-	    this->_iterator->set_pre(head, pre);
-	  }
-	}
+        NodeName head = cycle.head();
+        wto_nesting_t cycle_nesting = this->_iterator->_wto.nesting(head);
+        auto prev_nodes = this->_iterator->_cfg.prev_nodes(head);
+        AbstractValue pre = AbstractValue::bottom();
+        for (NodeName prev : prev_nodes) {
+          if (!(this->_iterator->_wto.nesting(prev) > cycle_nesting)) {
+            pre = pre | this->_iterator->get_post(prev);
+          }
+        }
+        for(unsigned int iteration = 1; ; ++iteration) {
+          // Increasing iteration sequence with widening
+          this->_iterator->set_pre(head, pre);
+          this->_iterator->set_post(head, this->_iterator->analyze(head, pre));
+          for (typename wto_cycle_t::iterator it = cycle.begin(); it != cycle.end(); ++it) {
+            it->accept(this);
+          }
+          AbstractValue new_pre = AbstractValue::bottom();
+          for (NodeName prev : prev_nodes) 
+            new_pre = new_pre | this->_iterator->get_post(prev);
+          if (new_pre <= pre) {
+            // Post-fixpoint reached
+            this->_iterator->set_pre(head, new_pre);
+            pre = new_pre;
+            break;
+          } else {
+            pre = this->_iterator->extrapolate(head, iteration, pre, new_pre);
+          }
+        }
+        for(unsigned int iteration = 1; ; ++iteration) {
+          // Decreasing iteration sequence with narrowing
+          this->_iterator->set_post(head, this->_iterator->analyze(head, pre));
+          for (typename wto_cycle_t::iterator it = cycle.begin(); it != cycle.end(); ++it) {
+            it->accept(this);
+          }
+          AbstractValue new_pre = AbstractValue::bottom();
+          for (NodeName prev : prev_nodes) 
+            new_pre = new_pre | this->_iterator->get_post(prev);
+          if (pre <= new_pre) {
+            // No more refinement possible (pre == new_pre)
+            break;
+          } else {
+            pre = this->_iterator->refine(head, iteration, pre, new_pre);
+            this->_iterator->set_pre(head, pre);
+          }
+        }
       }
       
     }; // class wto_iterator
-    
+  
     template< typename NodeName, typename CFG, typename AbstractValue >
     class wto_processor: public wto_component_visitor< NodeName, CFG > {
 
@@ -258,22 +263,22 @@ namespace ikos {
       wto_processor(interleaved_iterator_t *iterator): _iterator(iterator) { }
       
       void visit(wto_vertex_t& vertex) {
-	NodeName node = vertex.node();
-	this->_iterator->process_pre(node, this->_iterator->get_pre(node));
-	this->_iterator->process_post(node, this->_iterator->get_post(node));
+        NodeName node = vertex.node();
+        this->_iterator->process_pre(node, this->_iterator->get_pre(node));
+        this->_iterator->process_post(node, this->_iterator->get_post(node));
       }
-
+      
       void visit(wto_cycle_t& cycle) {
-	NodeName head = cycle.head();
-	this->_iterator->process_pre(head, this->_iterator->get_pre(head));
-	this->_iterator->process_post(head, this->_iterator->get_post(head));
-	for (typename wto_cycle_t::iterator it = cycle.begin(); it != cycle.end(); ++it) {
-	  it->accept(this);
-	}	
+        NodeName head = cycle.head();
+        this->_iterator->process_pre(head, this->_iterator->get_pre(head));
+        this->_iterator->process_post(head, this->_iterator->get_post(head));
+        for (typename wto_cycle_t::iterator it = cycle.begin(); it != cycle.end(); ++it) {
+          it->accept(this);
+        }	
       }
       
     }; // class wto_processor
-    
+  
   } // interleaved_fwd_fixpoint_iterator_impl
   
 } // namespace ikos

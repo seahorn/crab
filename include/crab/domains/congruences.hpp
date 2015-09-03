@@ -590,15 +590,15 @@ public:
 
   congruence_t SExt(unsigned width) { return *this; }
 
-  std::ostream& write(std::ostream& o) {
+  void write(std::ostream& o) {
     if (is_bottom()) {
       o << "_|_";
-      return o;
+      return;
     }
 
     if (_a == 0) {
       o << _b;
-      return o;
+      return;
     }
 
     bool positive = true;
@@ -607,7 +607,6 @@ public:
       _b *= -1;
     }
     o << _a << "Z" << ((positive) ? "+ " : "- ") << _b;
-    return o;
   }
 }; // end class congruence
 
@@ -690,7 +689,8 @@ private:
   std::size_t _op_count;
 
 private:
-  void refine(variable_t v, congruence_t i, CongruenceCollection& env) {
+  void refine(variable_t v, congruence_t i, 
+              CongruenceCollection& env) {
     VariableName n = v.name();
     congruence_t old_i = env[n];
     congruence_t new_i = old_i & i;
@@ -756,7 +756,8 @@ private:
            ++it) {
         this->propagate(*it, env);
       }
-    } while (this->_refined_variables.size() > 0 && cycle <= this->_max_cycles);
+    } while (this->_refined_variables.size() > 0 && 
+             cycle <= this->_max_cycles);
   }
 
 public:
@@ -913,7 +914,9 @@ public:
     }
   }
 
-  void operator+=(linear_constraint_system_t csts) { this->add(csts); }
+  void operator+=(linear_constraint_system_t csts) { 
+    this->add(csts); 
+  }
 
   congruence_domain_t operator+(linear_constraint_system_t csts) {
     congruence_domain_t e(this->_env);
@@ -985,11 +988,8 @@ public:
   }
 
   // bitwise_operators_api
-
-  void apply(conv_operation_t op,
-             VariableName x,
-             VariableName y,
-             unsigned width) {
+  
+  void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width) {
     congruence_t yi = this->_env[y];
     congruence_t xi = congruence_t::bottom();
 
@@ -1033,10 +1033,7 @@ public:
     this->_env.set(x, xi);
   }
 
-  void apply(bitwise_operation_t op,
-             VariableName x,
-             VariableName y,
-             VariableName z) {
+  void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) {
     congruence_t yi = this->_env[y];
     congruence_t zi = this->_env[z];
     congruence_t xi = congruence_t::bottom();
@@ -1108,10 +1105,7 @@ public:
 
   // division_operators_api
 
-  void apply(div_operation_t op,
-             VariableName x,
-             VariableName y,
-             VariableName z) {
+  void apply(div_operation_t op, VariableName x, VariableName y, VariableName z) {
     congruence_t yi = this->_env[y];
     congruence_t zi = this->_env[z];
     congruence_t xi = congruence_t::bottom();
@@ -1165,14 +1159,12 @@ public:
     this->_env.set(x, xi);
   }
 
-  std::ostream& write(std::ostream& o) { 
+  void write(std::ostream& o) { 
     this->_env.write(o); 
-    return o;
   }
 
   linear_constraint_system_t to_linear_constraint_system() {
     linear_constraint_system_t csts;
-
     if (is_bottom()) {
       csts += linear_constraint_t(linear_expression_t(Number(1)) ==
                                   linear_expression_t(Number(0)));
