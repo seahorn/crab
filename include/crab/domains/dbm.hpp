@@ -13,7 +13,7 @@
 #define DBM_HPP
 
 // Uncomment for enabling debug information
-// #include <crab/common/dbg.hpp>
+//#include <crab/common/dbg.hpp>
 
 #include <crab/common/types.hpp>
 #include <crab/domains/linear_constraints.hpp>
@@ -90,7 +90,6 @@ namespace crab {
       // class invariant: for all variable v. rev_map (var_map(v)) = v
       var_map_t _var_map;
       rev_map_t _rev_map;
-      int _max_sz; //maximum allocate size of the dbm matrix
 
       // return true if edge (i,j) exists in the DBM
       bool has_edge(int i, int j) {
@@ -102,15 +101,15 @@ namespace crab {
       }
 
       // special variables
-      inline int get_zero(){ return (int) _max_sz-1; }
-      inline int get_tmp() { return (int) _max_sz-2; }
+      inline int get_zero(){ return (int) _dbm->sz-1; }
+      inline int get_tmp() { return (int) _dbm->sz-2; }
 
       //! Perform some some sort of defragmentation by removing matrix
       //  indexes which are not alive. A similar process is done by
       //  merge_var_map. Return true if the defragmentation took place.
       bool dbm_compact () {
      
-        if (_id < (int) _max_sz/2 /*roughly half of the matrix size */)  
+        if (_id < (int) _dbm->sz/2 /*roughly half of the matrix size */)  
           return true;
     
         // assign a new id for each variable starting from 0
@@ -121,7 +120,7 @@ namespace crab {
             all_live_keys.insert (px.first);
         }
 
-        if (all_live_keys.size () >= _max_sz  -2) {
+        if (all_live_keys.size () >= _dbm->sz  -2) {
           return false;
         }
       
@@ -177,7 +176,7 @@ namespace crab {
 
         var_map_t res;
         for (auto k: all_keys) {
-          // --- if id >= _max_sz then the matrix will be resized by the
+          // --- if id >= _dbm->sz then the matrix will be resized by the
           // --- caller.
           res.insert (make_pair (k, id));
           ++id;
@@ -192,7 +191,6 @@ namespace crab {
           if (is_live(dbm_y, py.second))
             subs_y.push_back (rmap {py.second, res[py.first]});      
         }
-    
         return res;
       }
 
@@ -203,7 +201,7 @@ namespace crab {
           return it->second;
 
         id_t k = _id++;
-        if (k >= (int) (_max_sz - 2)) {
+        if (k >= (int) (_dbm->sz - 2)) {
           // --- This might be possible if Delta is too small
           // CRAB_ERROR("DBM: need to enlarge the matrix. This should not happen!");
           resize (Delta);
@@ -233,18 +231,17 @@ namespace crab {
 
      private:
 
-      DBM(bool is_bottom): writeable(), _dbm(dbm_bottom()), _id(0), _max_sz (Sz) { 
+      DBM(bool is_bottom): writeable(), _dbm(dbm_bottom()), _id(0) { 
         if (!is_bottom)
-          _dbm = dbm_top(_max_sz);
+          _dbm = dbm_top(Sz);
       }
 
-      DBM(dbm dbm, id_t id, var_map_t var_map, rev_map_t rev_map, unsigned max_sz): 
+      DBM(dbm dbm, id_t id, var_map_t var_map, rev_map_t rev_map): 
           writeable(), 
           _dbm(dbm), 
           _id (id),
           _var_map(var_map), 
-          _rev_map(rev_map),
-          _max_sz (max_sz) { 
+          _rev_map(rev_map) { 
         if (!_dbm)
           set_to_bottom ();
       }
@@ -259,7 +256,8 @@ namespace crab {
 
       void assign(VariableName x, exp_t exp) {
         dbm ret = NULL;      
-        ret = dbm_assign(get_dbm_index(x), exp, _dbm);
+        id_t i = get_dbm_index(x); 
+        ret = dbm_assign(i, exp, _dbm);
         dbm_dealloc(_dbm);
         swap(_dbm, ret);
         exp_dealloc(exp);
@@ -557,13 +555,12 @@ namespace crab {
         return ret;
       }
 
-      // resize this->_dbm to this->_max_size + delta
+      // resize this->_dbm to this->_dbm->sz + delta
       void resize (int delta) {
-        int max_sz = _max_sz + delta;
+        int max_sz = _dbm->sz + delta;
         dbm tmp = resize (_dbm, max_sz);
         dbm_dealloc(_dbm);    
         swap(_dbm, tmp);
-        _max_sz = max_sz;
       }
 
      public:
@@ -572,7 +569,7 @@ namespace crab {
     
       static DBM_t bottom() { return DBM(true); }
     
-      DBM(): writeable(), _dbm(dbm_top(Sz)), _id (0), _max_sz (Sz) {}  
+      DBM(): writeable(), _dbm(dbm_top(Sz)), _id (0) {}  
            
       DBM(const DBM_t& o): 
           writeable(), 
@@ -582,8 +579,7 @@ namespace crab {
           _dbm(dbm_copy(o._dbm)), 
           _id (o._id),
           _var_map (o._var_map),
-          _rev_map(o._rev_map),
-          _max_sz (o._max_sz)
+          _rev_map(o._rev_map)
       { }
    
       DBM_t operator=(const DBM_t& o) {
@@ -593,7 +589,6 @@ namespace crab {
           _id = o._id;
           _var_map = o._var_map;
           _rev_map = o._rev_map;
-          _max_sz = o._max_sz;
         }
         return *this;
       }
@@ -631,6 +626,7 @@ namespace crab {
           vector<rmap>  subs_x;
           vector<rmap>  subs_y;
           id_t id = 0;
+          // Build the new map
           var_map_t var_map = merge_var_map (_var_map, _dbm, 
                                              o._var_map, o._dbm,
                                              id, subs_x, subs_y);
@@ -640,28 +636,38 @@ namespace crab {
           for(auto p: var_map)
             rev_map.insert (make_pair (p.second, p.first));
 
-          dbm dbm_x = NULL;
-          dbm dbm_y = NULL;
+          dbm dbm_x = dbm_copy (this->_dbm);    
+          dbm dbm_y = dbm_copy (o._dbm);    
 
-          dbm_x = dbm_rename (&subs_x[0], subs_x.size(), _dbm);
-          dbm_y = dbm_rename (&subs_y[0], subs_y.size(), o._dbm);
 
-          int max_sz = std::max (_max_sz, o._max_sz);
-          if (max_sz != _max_sz) {
+          // Resize (if needed) before renaming          
+          int max_sz = std::max (dbm_x->sz, dbm_y->sz);
+          if (id >= max_sz - 2)
+            max_sz = id + Delta;
+
+          if (dbm_x->sz != max_sz) {
             dbm tmp = resize (dbm_x, max_sz);
             dbm_dealloc(dbm_x);    
             swap(dbm_x, tmp);
           }
-          if (max_sz != o._max_sz) {
+
+          if (dbm_y->sz != max_sz) {
             dbm tmp = resize (dbm_y, max_sz);
             dbm_dealloc(dbm_y);    
             swap(dbm_y, tmp);
           }
-        
-          assert (dbm_x->sz == dbm_y->sz);            
-          bool res = dbm_is_leq (dbm_x, dbm_y);
+          assert (dbm_x->sz == dbm_y->sz && dbm_y->sz == max_sz);
+
+          dbm dbm_xx = dbm_rename (&subs_x[0], subs_x.size(), dbm_x);
+          dbm dbm_yy = dbm_rename (&subs_y[0], subs_y.size(), dbm_y);
+
           dbm_dealloc(dbm_x);
           dbm_dealloc(dbm_y);
+
+          bool res = dbm_is_leq (dbm_xx, dbm_yy);
+
+          dbm_dealloc(dbm_xx);
+          dbm_dealloc(dbm_yy);
 
           return res;
         }
@@ -678,25 +684,47 @@ namespace crab {
           vector<rmap>  subs_x;
           vector<rmap>  subs_y;
           id_t id = 0;
+          // Build new map
           var_map_t var_map = merge_var_map (_var_map, _dbm, 
                                              o._var_map, o._dbm,
                                              id, subs_x, subs_y);
-
           // Build the reverse map
           rev_map_t rev_map;
           for(auto p: var_map)
             rev_map.insert (make_pair (p.second, p.first));
 
-          dbm dbm_x = NULL;
-          dbm dbm_y = NULL;
+          dbm dbm_x = dbm_copy (this->_dbm);    
+          dbm dbm_y = dbm_copy (o._dbm);    
+          
+          // Resize before renaming          
+          int max_sz = std::max (dbm_x->sz, dbm_y->sz);
+          if (id >= max_sz - 2)
+            max_sz = id + Delta;
 
-          dbm_x = dbm_rename (&subs_x[0], subs_x.size(), _dbm);
-          dbm_y = dbm_rename (&subs_y[0], subs_y.size(), o._dbm);
+          if (dbm_x->sz != max_sz) {
+            dbm tmp = resize (dbm_x, max_sz);
+            dbm_dealloc(dbm_x);    
+            swap(dbm_x, tmp);
+          }
+
+          if (dbm_y->sz != max_sz) {
+            dbm tmp = resize (dbm_y, max_sz);
+            dbm_dealloc(dbm_y);    
+            swap(dbm_y, tmp);
+          }
+
+          assert (dbm_x->sz == dbm_y->sz && dbm_y->sz == max_sz);
+
+          dbm dbm_xx = dbm_rename (&subs_x[0], subs_x.size(), dbm_x);
+          dbm dbm_yy = dbm_rename (&subs_y[0], subs_y.size(), dbm_y);
+
+          dbm_dealloc(dbm_x);
+          dbm_dealloc(dbm_y);
 
 #if 0     
           cout << "After resizing DBMs: \n";
           cout << "DBM 1:\n";
-          dbm_print_to(cout, dbm_x);
+          dbm_print_to(cout, dbm_xx);
           cout << "subs map {";
           for (auto p: subs_x)
             cout << "(" << p.r_from << "-" << p.r_to << ");";
@@ -706,28 +734,14 @@ namespace crab {
           for (auto p: subs_y)
             cout << "(" << p.r_from << "-" << p.r_to << ");";
           cout << "}\n";
-          dbm_print_to(cout, dbm_y);
-#endif 
-      
-          int max_sz = std::max (_max_sz, o._max_sz);
-          if (max_sz != _max_sz) {
-            dbm tmp = resize (dbm_x, max_sz);
-            dbm_dealloc(dbm_x);    
-            swap(dbm_x, tmp);
-          }
-          if (max_sz != o._max_sz) {
-            dbm tmp = resize (dbm_y, max_sz);
-            dbm_dealloc(dbm_y);    
-            swap(dbm_y, tmp);
-          }
+          dbm_print_to(cout, dbm_yy);
+#endif      
 
-          assert (dbm_x->sz == dbm_y->sz);
-          DBM_t res (dbm_join(dbm_x, dbm_y), 
-                     id, var_map, rev_map, 
-                     max_sz);
-      
-          dbm_dealloc(dbm_x);
-          dbm_dealloc(dbm_y);
+          DBM_t res (dbm_join(dbm_xx, dbm_yy), 
+                     id, var_map, rev_map);
+
+          dbm_dealloc(dbm_xx);
+          dbm_dealloc(dbm_yy);
 
           CRAB_DEBUG ("Result join:\n",res);
 
@@ -741,47 +755,53 @@ namespace crab {
         else if (o.is_bottom())
           return *this;
         else {
-
           CRAB_DEBUG ("Before widening:\n","DBM 1\n",*this,"\n","DBM 2\n",o);
 
           vector<rmap>  subs_x;
           vector<rmap>  subs_y;
           id_t id = 0;
-          var_map_t var_map = merge_var_map (_var_map, _dbm,
+          // Build new map
+          var_map_t var_map = merge_var_map (_var_map, _dbm, 
                                              o._var_map, o._dbm,
                                              id, subs_x, subs_y);
-
           // Build the reverse map
           rev_map_t rev_map;
           for(auto p: var_map)
             rev_map.insert (make_pair (p.second, p.first));
 
-          dbm dbm_x = NULL;
-          dbm dbm_y = NULL;
+          dbm dbm_x = dbm_copy (this->_dbm);    
+          dbm dbm_y = dbm_copy (o._dbm);    
+          
+          // Resize before renaming          
+          int max_sz = std::max (dbm_x->sz, dbm_y->sz);
+          if (id >= max_sz - 2)
+            max_sz = id + Delta;
 
-          dbm_x = dbm_rename (&subs_x[0], subs_x.size(), _dbm);
-          dbm_y = dbm_rename (&subs_y[0], subs_y.size(), o._dbm);
-
-          int max_sz = std::max (_max_sz, o._max_sz);
-          if (max_sz != _max_sz) {
+          if (dbm_x->sz != max_sz) {
             dbm tmp = resize (dbm_x, max_sz);
             dbm_dealloc(dbm_x);    
             swap(dbm_x, tmp);
           }
 
-          if (max_sz != o._max_sz) {
+          if (dbm_y->sz != max_sz) {
             dbm tmp = resize (dbm_y, max_sz);
             dbm_dealloc(dbm_y);    
             swap(dbm_y, tmp);
           }
-                    
-          assert (dbm_x->sz == dbm_y->sz);
-          DBM_t res (dbm_widen(dbm_x, dbm_y), 
-                     id, var_map, rev_map, 
-                     max_sz);
-      
+
+          assert (dbm_x->sz == dbm_y->sz && dbm_y->sz == max_sz);
+
+          dbm dbm_xx = dbm_rename (&subs_x[0], subs_x.size(), dbm_x);
+          dbm dbm_yy = dbm_rename (&subs_y[0], subs_y.size(), dbm_y);
+
           dbm_dealloc(dbm_x);
           dbm_dealloc(dbm_y);
+
+          DBM_t res (dbm_widen(dbm_xx, dbm_yy), 
+                     id, var_map, rev_map);
+
+          dbm_dealloc(dbm_xx);
+          dbm_dealloc(dbm_yy);
 
           CRAB_DEBUG ("Result widening:\n",res);
           return res;
@@ -796,47 +816,52 @@ namespace crab {
         else if (o.is_top())
           return *this;
         else{
-
           CRAB_DEBUG ("Before meet:\n","DBM 1\n",*this,"\n","DBM 2\n",o);
-
           vector<rmap>  subs_x;
           vector<rmap>  subs_y;
           id_t id = 0;
-          var_map_t var_map = merge_var_map (_var_map, _dbm,
+          // Build new map
+          var_map_t var_map = merge_var_map (_var_map, _dbm, 
                                              o._var_map, o._dbm,
                                              id, subs_x, subs_y);
-
           // Build the reverse map
           rev_map_t rev_map;
           for(auto p: var_map)
             rev_map.insert (make_pair (p.second, p.first));
 
-          dbm dbm_x = NULL;
-          dbm dbm_y = NULL;
+          dbm dbm_x = dbm_copy (this->_dbm);    
+          dbm dbm_y = dbm_copy (o._dbm);    
+          
+          // Resize before renaming          
+          int max_sz = std::max (dbm_x->sz, dbm_y->sz);
+          if (id >= max_sz - 2)
+            max_sz = id + Delta;
 
-          dbm_x = dbm_rename (&subs_x[0], subs_x.size(), _dbm);
-          dbm_y = dbm_rename (&subs_y[0], subs_y.size(), o._dbm);
-
-          int max_sz = std::max (_max_sz, o._max_sz);
-          if (max_sz != _max_sz) {
+          if (dbm_x->sz != max_sz) {
             dbm tmp = resize (dbm_x, max_sz);
             dbm_dealloc(dbm_x);    
             swap(dbm_x, tmp);
           }
 
-          if (max_sz != o._max_sz) {
+          if (dbm_y->sz != max_sz) {
             dbm tmp = resize (dbm_y, max_sz);
             dbm_dealloc(dbm_y);    
             swap(dbm_y, tmp);
           }
-                    
-          assert (dbm_x->sz == dbm_y->sz);
-          DBM_t res (dbm_meet(dbm_x, dbm_y), 
-                     id, var_map, rev_map, 
-                     max_sz); 
+
+          assert (dbm_x->sz == dbm_y->sz && dbm_y->sz == max_sz);
+
+          dbm dbm_xx = dbm_rename (&subs_x[0], subs_x.size(), dbm_x);
+          dbm dbm_yy = dbm_rename (&subs_y[0], subs_y.size(), dbm_y);
 
           dbm_dealloc(dbm_x);
           dbm_dealloc(dbm_y);
+
+          DBM_t res (dbm_meet(dbm_xx, dbm_yy), 
+                     id, var_map, rev_map);
+
+          dbm_dealloc(dbm_xx);
+          dbm_dealloc(dbm_yy);
 
           CRAB_DEBUG ("Result meet:\n",res);
           return res;
@@ -850,44 +875,51 @@ namespace crab {
           return o;
         else{
           CRAB_DEBUG ("Before narrowing:\n","DBM 1\n",*this,"\n","DBM 2\n",o);
-
           vector<rmap>  subs_x;
           vector<rmap>  subs_y;
           id_t id = 0;
-          var_map_t var_map = merge_var_map (_var_map, _dbm,
+          // Build new map
+          var_map_t var_map = merge_var_map (_var_map, _dbm, 
                                              o._var_map, o._dbm,
                                              id, subs_x, subs_y);
-
           // Build the reverse map
           rev_map_t rev_map;
           for(auto p: var_map)
             rev_map.insert (make_pair (p.second, p.first));
 
-          dbm dbm_x = NULL;
-          dbm dbm_y = NULL;
+          dbm dbm_x = dbm_copy (this->_dbm);    
+          dbm dbm_y = dbm_copy (o._dbm);    
+          
+          // Resize before renaming          
+          int max_sz = std::max (dbm_x->sz, dbm_y->sz);
+          if (id >= max_sz - 2)
+            max_sz = id + Delta;
 
-          dbm_x = dbm_rename (&subs_x[0], subs_x.size(), _dbm);
-          dbm_y = dbm_rename (&subs_y[0], subs_y.size(), o._dbm);
-
-          int max_sz = std::max (_max_sz, o._max_sz);
-          if (max_sz != _max_sz) {
+          if (dbm_x->sz != max_sz) {
             dbm tmp = resize (dbm_x, max_sz);
             dbm_dealloc(dbm_x);    
             swap(dbm_x, tmp);
           }
-          if (max_sz != o._max_sz) {
+
+          if (dbm_y->sz != max_sz) {
             dbm tmp = resize (dbm_y, max_sz);
             dbm_dealloc(dbm_y);    
             swap(dbm_y, tmp);
           }
-            
-          assert (dbm_x->sz == dbm_y->sz);
-          DBM_t res (dbm_narrowing(dbm_x, dbm_y), 
-                     id, var_map, rev_map, 
-                     max_sz); 
+
+          assert (dbm_x->sz == dbm_y->sz && dbm_y->sz == max_sz);
+
+          dbm dbm_xx = dbm_rename (&subs_x[0], subs_x.size(), dbm_x);
+          dbm dbm_yy = dbm_rename (&subs_y[0], subs_y.size(), dbm_y);
 
           dbm_dealloc(dbm_x);
           dbm_dealloc(dbm_y);
+
+          DBM_t res (dbm_narrowing(dbm_xx, dbm_yy), 
+                     id, var_map, rev_map);
+
+          dbm_dealloc(dbm_xx);
+          dbm_dealloc(dbm_yy);
 
           CRAB_DEBUG ("Result narrowing:\n",res);
           return res;
