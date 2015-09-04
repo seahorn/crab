@@ -95,7 +95,7 @@ namespace crab {
              }
            }
            
-           boost::optional<T> get(){ 
+           boost::optional<T> get() const{ 
              if (_s) return *_s; 
              else return boost::optional<T> ();
            }
