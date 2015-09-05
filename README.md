@@ -35,9 +35,9 @@ Crab has been designed to have two kind of users:
 ## License ##
 
 Ikos is distributed under NASA Open Source Agreement (NOSA)
-Version 1.3 or later.
-
-Crab needs to be licensed (TBD).
+Version 1.3 or later. Crab is distributed under MIT license. See
+[Crab_LICENSE.txt](Crab_LICENSE.txt) and
+[Ikos_LICENSE.pdf](Ikos_LICENSE.pdf) for details.
 
 ## Compilation ##
 
@@ -62,7 +62,13 @@ tests.
 
 ## How to integrate Crab in other analysis/verification tools ##
 
-TODO
+Check [crab-llvm](https://github.com/seahorn/crab-llvm) and
+[SeaHorn](https://github.com/seahorn)
+projects. [crab-llvm](https://github.com/seahorn/crab-llvm)is a
+standalone application that computes invariants from LLVM-based
+languages using crab. [SeaHorn](https://github.com/seahorn) is a
+verification framework that uses crab-llvm to supply invariants to the
+back-end solvers.
 
 ## How to implement new fixpoint iterators ##
 
