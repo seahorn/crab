@@ -47,6 +47,7 @@
 #include <stdarg.h>
 #include <errno.h>
 #include <boost/noncopyable.hpp>
+#include <boost/optional.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/container/slist.hpp>
@@ -106,21 +107,29 @@ class variable: public writeable {
   
  private:
   VariableName _n;
-    
-   public:
+  boost::optional<Type> _ty;
+  
+ public:
   
   variable(const VariableName& n): writeable (), _n(n) { }
+
+  variable(const VariableName& n, const Type& ty): 
+      writeable (), _n(n), _ty (ty) { }
   
-  variable(const variable_t& v): writeable(), _n(v._n) { }
+  variable(const variable_t& v): 
+      writeable(), _n(v._n), _ty (v._ty) { }
   
   variable_t& operator=(const variable_t &o) {
     if (this != &o) {
       this->_n = o._n;
+      this->_ty = o._ty;
     }
     return *this;
   }
   
   const VariableName& name() const { return _n; }
+
+  boost::optional<Type> type() const { return _ty; }
   
   index_t index() const { return _n.index(); }
   
@@ -129,12 +138,19 @@ class variable: public writeable {
   // }
   
   bool operator<(const variable_t& o) const {
+    // ignore type for comparing variables
     return _n.index () < o._n.index ();
   }
   
-  void write(std::ostream& o) { o << _n; }
+  void write(std::ostream& o) { 
+    if (_ty)
+      o << _n << ":" << *_ty; 
+    else
+      o << _n;
+  }
   
   friend index_t hash_value (const variable_t& v) {
+    // ignore type for computing hash value
     return v.index ();
   }
   
