@@ -4,25 +4,10 @@ Crab is a language agnostic framework to perform static analysis using
 [abstract interpretation](https://en.wikipedia.org/wiki/Abstract_interpretation)
 techniques.
 
-At its core, Crab is a bunch of abstract domains and fixpoint
-iterators. Crab is built on the top of
+At its core, Crab consists of a bunch of abstract domains and fixpoint
+iterators built on the top of
 [Ikos](http://ti.arc.nasa.gov/opensource/ikos/) (Inference Kernel for
-Open Static Analyzers) developed by NASA Ames Research Center.  Crab
-provides a minimal Control Flow Graph (CFG) language that interfaces
-with the abstract domains and iterators for the purpose of generating
-invariants. The output of Crab is a map from CFG basic blocks to
-invariants. In its simplest form, the CFG consists only of:
-
-- assume,
-- havoc, 
-- arithmetic operations, and
-- goto instructions
-
-but it also supports other instructions such as
-
-- pointer arithmetic 
-- array reads and writes
-- function calls and returns
+Open Static Analyzers) developed by NASA Ames Research Center.
 
 Crab has been designed to have two kind of users:
 
@@ -44,13 +29,34 @@ Version 1.3 or later. Crab is distributed under MIT license. See
 Crab is written in C++ and uses heavily the Boost library. You will
 need:
 
-- The C++ compiler must support c++11
+- C++ compiler supporting c++11
 - Boost and Gmp 
 
 Then, just type:
 
     cmake -DDEVMODE=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=my_install_dir ../
     cmake --build . --target install 
+
+## Input/Output ##
+
+The input of Crab is a Control Flow Graph (CFG) language that
+interfaces with the abstract domains and iterators for the purpose of
+generating invariants.
+
+In its simplest form, the CFG consists only of:
+
+- assume,
+- havoc, 
+- arithmetic operations, and
+- goto instructions
+
+but it also supports other instructions such as
+
+- pointer: load, store, pointer arithmetic, and function pointers
+- function calls and returns
+
+The output of Crab is a map from CFG basic blocks to invariants. The
+format of the output invariants can be chosen by the client.
 
 ## Examples ##
 
@@ -60,23 +66,23 @@ how to compute invariants using different abstract domains.
 Important: the option `DEVMODE` must be enabled to compile all the
 tests.
 
-## How to integrate Crab in other analysis/verification tools ##
+## How to integrate Crab in other verification tools ##
 
-Check [crab-llvm](https://github.com/seahorn/crab-llvm) and
-[SeaHorn](https://github.com/seahorn)
-projects. [crab-llvm](https://github.com/seahorn/crab-llvm)is a
-standalone application that computes invariants from LLVM-based
-languages using crab. [SeaHorn](https://github.com/seahorn) is a
-verification framework that uses crab-llvm to supply invariants to the
-back-end solvers.
+Check these projects:
+
+- [crab-llvm](https://github.com/seahorn/crab-llvm)is a standalone
+application that computes invariants from LLVM-based languages using
+crab.
+
+- [SeaHorn](https://github.com/seahorn) is a verification framework
+that uses crab-llvm to supply invariants to the back-end solvers.
 
 ## How to implement new fixpoint iterators ##
 
 The new fixpoint iterator must follow this API:
 
-    template< typename NodeName, typename CFG, typename AbstractValue >
+    template< class NodeName, class AbstractValue >
     class forward_fixpoint_iterator {
-
      public:
      virtual AbstractValue analyze(NodeName, AbstractValue) = 0;
     
@@ -85,7 +91,6 @@ The new fixpoint iterator must follow this API:
      virtual void process_post(NodeName, AbstractValue) = 0;
     
      virtual ~forward_fixpoint_iterator() { }
-
     }; 
 
 ## How to implement new abstract domains ##
