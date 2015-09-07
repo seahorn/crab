@@ -963,8 +963,7 @@ namespace crab {
         }
         this->m_live.addDef ((*m_lhs).first);
       }
-      
-      
+            
       boost::optional<VariableName> get_lhs_name () const { 
         if (m_lhs)
           return boost::optional<VariableName> ((*m_lhs).first);
@@ -997,22 +996,27 @@ namespace crab {
         return m_args[idx].second;
       }
       
-      virtual void accept(StatementVisitor <VariableName> *v) 
-      {
+      virtual void accept(StatementVisitor <VariableName> *v) {
         v->visit(*this);
       }
       
       virtual boost::shared_ptr<Statement <VariableName> > clone () const
       {
         typedef FCallSite <VariableName> call_site_t;
-        if (m_lhs)
-          return boost::static_pointer_cast< Statement <VariableName>, call_site_t>
-              (boost::shared_ptr <call_site_t> (new call_site_t (*m_lhs, m_func_name, m_args)));
-        else
-          return boost::static_pointer_cast< Statement <VariableName>, call_site_t>
-              (boost::shared_ptr <call_site_t> (new call_site_t (m_func_name, m_args)));
+        if (m_lhs) {
+          return boost::static_pointer_cast< Statement <VariableName>, 
+                                             call_site_t>
+              (boost::shared_ptr <call_site_t> (
+                  new call_site_t (*m_lhs, m_func_name, m_args)));
+        }
+        else {
+          return boost::static_pointer_cast< Statement <VariableName>, 
+                                             call_site_t>
+              (boost::shared_ptr <call_site_t> (
+                  new call_site_t (m_func_name, m_args)));
+        }
       }
-      
+
       virtual void write(ostream& o) const
       {
         if (m_lhs)
@@ -1091,16 +1095,13 @@ namespace crab {
       typedef variable< z_number, VariableName > z_variable_t;
       typedef linear_expression< z_number, VariableName > z_lin_exp_t;
       typedef linear_constraint< z_number, VariableName > z_lin_cst_t;
-      
       typedef Statement< VariableName> statement_t;
       typedef BasicBlock< BasicBlockLabel, VariableName > basic_block_t;
-      
       typedef interval <z_number> z_interval;
       
      private:
       
-      typedef vector< BasicBlockLabel >   bb_id_set_t;
-      
+      typedef vector< BasicBlockLabel > bb_id_set_t;
       typedef boost::shared_ptr< statement_t > statement_ptr;
       typedef vector< statement_ptr > stmt_list_t;
       
@@ -1113,8 +1114,8 @@ namespace crab {
       typedef boost::indirect_iterator< typename stmt_list_t::iterator > iterator;
       typedef boost::indirect_iterator< typename stmt_list_t::const_iterator > const_iterator;
       
-     private:
-      
+     public:
+
       // Basic statements
       typedef BinaryOp<z_number,VariableName> z_bin_op_t;
       typedef Assignment<z_number,VariableName> z_assign_t;
@@ -1136,7 +1137,9 @@ namespace crab {
       typedef PtrAssign<z_number,VariableName> ptr_assign_t;
       typedef PtrObject<VariableName> ptr_object_t;
       typedef PtrFunction<VariableName> ptr_function_t;
-      
+
+     private:
+
       typedef boost::shared_ptr<z_bin_op_t> z_bin_op_ptr;
       typedef boost::shared_ptr<z_assign_t> z_assign_ptr;
       typedef boost::shared_ptr<z_assume_t> z_assume_ptr;
@@ -1662,14 +1665,13 @@ namespace crab {
                     vector<pair<VariableName,VariableType> > params): 
           m_lhs_type (lhs_type), m_func_name (func_name)
       {
-        std::copy (params.begin (), params.end (), std::back_inserter (m_params));
+        std::copy (params.begin (), params.end (), 
+                   std::back_inserter (m_params));
       }
       
       VariableType get_lhs_type () const { return m_lhs_type; }
       
-      VariableName get_func_name () const { 
-        return m_func_name; 
-      }
+      VariableName get_func_name () const { return m_func_name;  }
       
       unsigned get_num_params () const { return m_params.size (); }
       
@@ -1686,7 +1688,7 @@ namespace crab {
         
         return m_params[idx].second;
       }
-      
+
       void write(ostream& o) const
       {
         o << m_lhs_type << " declare " << m_func_name << "(";
@@ -1708,15 +1710,16 @@ namespace crab {
         return o;
       }
     }; 
-  
+
     template< class BasicBlockLabel, class VariableName >
     class Cfg
     {
+
      public:
       
       typedef BasicBlockLabel basic_block_label_t;
       typedef VariableName varname_t;
-      
+      typedef FunctionDecl<varname_t> fdecl_t;
       typedef BasicBlock< BasicBlockLabel, VariableName > basic_block_t;   
       typedef Statement < VariableName > statement_t;
       
@@ -1733,7 +1736,7 @@ namespace crab {
       typedef boost::unordered_map< BasicBlockLabel, basic_block_ptr > basic_block_map;
       typedef typename basic_block_map::value_type binding_t;
       typedef boost::shared_ptr< basic_block_map > basic_block_map_ptr;
-      
+
       struct getRef : public std::unary_function<binding_t, basic_block_t>
       {
         getRef () { }
@@ -1765,7 +1768,7 @@ namespace crab {
       basic_block_map_ptr  m_blocks;
       TrackedPrecision   m_track_prec;
       //! if Cfg is associated with a function
-      boost::optional<FunctionDecl<VariableName> > m_func_decl; 
+      boost::optional<fdecl_t> m_func_decl; 
       
       
       typedef boost::unordered_set< BasicBlockLabel > visited_t;
@@ -1795,9 +1798,11 @@ namespace crab {
         void operator () (const basic_block_t& B){ m_o << B ; }
       };
       
-      Cfg (): m_blocks (basic_block_map_ptr (new basic_block_map)) { }
       
      public:
+      
+      // --- needed by crab::cg::Function<CFG>
+      Cfg (): m_blocks (basic_block_map_ptr (new basic_block_map)) { }
       
       Cfg (BasicBlockLabel entry, 
            TrackedPrecision track_prec = REG):  
@@ -1823,14 +1828,14 @@ namespace crab {
       
       Cfg (BasicBlockLabel entry, 
            BasicBlockLabel exit, 
-           FunctionDecl<VariableName> func_decl, 
+           fdecl_t func_decl, 
            TrackedPrecision track_prec = REG):  
           m_entry (entry), 
           m_exit (exit), 
           m_has_exit (true),
           m_blocks (basic_block_map_ptr (new basic_block_map)),
           m_track_prec (track_prec),
-          m_func_decl (boost::optional<FunctionDecl<VariableName> > (func_decl)) {
+          m_func_decl (boost::optional<fdecl_t> (func_decl)) {
         m_blocks->insert (binding_t (m_entry, 
                                      basic_block_t::Create (m_entry, m_track_prec)));
       }
@@ -1854,7 +1859,7 @@ namespace crab {
         return cfg;
       }
       
-      boost::optional<FunctionDecl<VariableName> > get_func_decl () const { 
+      boost::optional<fdecl_t> get_func_decl () const { 
         return m_func_decl; 
       }
       
@@ -1881,8 +1886,8 @@ namespace crab {
       
       //! set method to add the function declaration after the Cfg has
       //! been created.
-      void set_func_decl (FunctionDecl<VariableName> decl) { 
-        m_func_decl  = boost::optional<FunctionDecl<VariableName> > (decl);
+      void set_func_decl (fdecl_t decl) { 
+        m_func_decl  = boost::optional<fdecl_t> (decl);
       }
       
       //! required by ikos fixpoint
