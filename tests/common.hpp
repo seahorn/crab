@@ -12,6 +12,10 @@
 #include <crab/domains/dbm.hpp>                      
 #include <crab/domains/array_graph.hpp>                      
 #include <crab/domains/array_smashing.hpp>
+
+#include <crab/domains/var_packing_naive_dbm.hpp>                      
+#include <crab/domains/naive_dbm.hpp>   
+                   
 #include <crab/cfg/CfgBgl.hpp> 
 
 namespace crab {
@@ -48,6 +52,8 @@ namespace crab {
     typedef DBM<z_number, varname_t> dbm_domain_t;
     typedef anti_unif<term::TDomInfo<z_number, varname_t, interval_domain_t> >::anti_unif_t term_domain_t;
     typedef anti_unif<term::TDomInfo<z_number, varname_t, dbm_domain_t> >::anti_unif_t term_dbm_t;
+    typedef naive_dbm <z_number, varname_t> naive_dbm_domain_t;
+    typedef var_packing_naive_dbm <z_number, varname_t> cgs_dbm_domain_t;
     // Array domains
     typedef array_graph_domain<dbm_domain_t,
                                z_number, varname_t,
