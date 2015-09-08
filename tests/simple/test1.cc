@@ -79,6 +79,32 @@ int main (int argc, char** argv )
   }
 
   {
+    NumFwdAnalyzer <cfg_t, naive_dbm_domain_t,VariableFactory>::type a (cfg,vfac,run_live);
+    // Run fixpoint 
+    naive_dbm_domain_t inv = naive_dbm_domain_t::top ();
+    a.Run (inv);
+    // Print invariants
+    cout << "Invariants using " << inv.getDomainName () << "\n";
+    for (auto &b : cfg) {
+      auto inv = a [b.label ()];
+      std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
+    }
+  }
+
+  {
+    NumFwdAnalyzer <cfg_t, cgs_dbm_domain_t,VariableFactory>::type a (cfg,vfac,run_live);
+    // Run fixpoint 
+    cgs_dbm_domain_t inv = cgs_dbm_domain_t::top ();
+    a.Run (inv);
+    // Print invariants
+    cout << "Invariants using " << inv.getDomainName () << "\n";
+    for (auto &b : cfg) {
+      auto inv = a [b.label ()];
+      std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
+    }
+  }
+
+  {
     NumFwdAnalyzer <cfg_t, ric_domain_t,VariableFactory>::type a (cfg,vfac,run_live);
     // Run fixpoint 
     ric_domain_t inv = ric_domain_t::top ();
