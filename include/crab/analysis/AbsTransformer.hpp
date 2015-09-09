@@ -17,10 +17,10 @@ namespace crab {
   using namespace std;
 
   template<typename T>
-  boost::optional<T> convOp (binary_operation_t op); 
+  inline boost::optional<T> convOp (binary_operation_t op); 
 
   template<>
-  boost::optional<ikos::operation_t> 
+  inline boost::optional<ikos::operation_t> 
   convOp (binary_operation_t op) {     
     switch (op) {
       case BINOP_ADD: return OP_ADDITION;
@@ -32,7 +32,7 @@ namespace crab {
   }
   
   template<>
-  boost::optional<ikos::div_operation_t> 
+  inline boost::optional<ikos::div_operation_t> 
   convOp (binary_operation_t op) {     
     switch (op) {
       case BINOP_SDIV: return OP_SDIV;
@@ -44,7 +44,7 @@ namespace crab {
   }
 
   template<>
-  boost::optional<ikos::bitwise_operation_t> 
+  inline boost::optional<ikos::bitwise_operation_t> 
   convOp (binary_operation_t op) {     
     switch (op) {
       case BINOP_AND: return OP_AND;
