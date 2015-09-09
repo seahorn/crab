@@ -29,14 +29,20 @@ namespace crab {
       template<typename NumDomain, typename Number, typename VariableName>
       class array_smashing: 
          public ikos::writeable, 
-         public numerical_domain< Number, VariableName>
-      {
-        
+         public numerical_domain< Number, VariableName>,
+         public bitwise_operators< Number, VariableName >, 
+         public division_operators< Number, VariableName > {
+              
        public:
-        typedef typename NumDomain::linear_constraint_t linear_constraint_t;
-        typedef typename NumDomain::linear_constraint_system_t linear_constraint_system_t;
-        typedef typename NumDomain::linear_expression_t linear_expression_t;
-        typedef typename NumDomain::variable_t variable_t;
+        // WARNING: assumes NumDomain::number_t = Number and
+        // NumDomain::varname_t = VariableName
+        using typename numerical_domain< Number, VariableName>::linear_expression_t;
+        using typename numerical_domain< Number, VariableName>::linear_constraint_t;
+        using typename numerical_domain< Number, VariableName>::linear_constraint_system_t;
+        using typename numerical_domain< Number, VariableName>::variable_t;
+        using typename numerical_domain< Number, VariableName>::number_t;
+        using typename numerical_domain< Number, VariableName>::varname_t;
+
         typedef array_smashing <NumDomain, Number, VariableName> array_smashing_t;
         typedef interval <Number> interval_t;
         
@@ -140,6 +146,40 @@ namespace crab {
           _inv.apply (op, x, k);
           
           CRAB_DEBUG("apply ", x, " := ", x, " ", op, " ", k, *this);
+        }
+
+        // bitwise_operators_api
+        void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width) {
+          _inv.apply (op, x, y, width);
+        }
+        
+        void apply(conv_operation_t op, VariableName x, Number k, unsigned width) {
+          _inv.apply (op, x, k, width);
+        }
+        
+        void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) {
+          _inv.apply (op, x, y, z);
+
+          CRAB_DEBUG("apply ", x, " := ", y, " ", op, " ", z, *this);
+        }
+        
+        void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k) {
+          _inv.apply (op, x, y, k);
+
+          CRAB_DEBUG("apply ", x, " := ", y, " ", op, " ", k, *this);
+        }
+        
+        // division_operators_api
+        void apply(div_operation_t op, VariableName x, VariableName y, VariableName z) {
+          _inv.apply (op, x, y, z);
+
+          CRAB_DEBUG("apply ", x, " := ", y, " ", op, " ", z, *this);
+        }
+        
+        void apply(div_operation_t op, VariableName x, VariableName y, Number k) {
+          _inv.apply (op, x, y, k);
+
+          CRAB_DEBUG("apply ", x, " := ", y, " ", op, " ", k, *this);
         }
         
         void array_init (VariableName a, 

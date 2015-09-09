@@ -71,6 +71,9 @@ namespace ikos {
     typedef linear_expression< Number, VariableName > linear_expression_t;
     typedef linear_constraint< Number, VariableName > linear_constraint_t;
     typedef linear_constraint_system< Number, VariableName > linear_constraint_system_t;
+    typedef variable< Number, VariableName > variable_t;
+    typedef Number number_t;
+    typedef VariableName varname_t;
     
   public:
     virtual void apply(operation_t op, VariableName x, VariableName y, VariableName z) = 0; // x = y op z

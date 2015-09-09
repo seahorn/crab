@@ -1,8 +1,13 @@
 #ifndef ABSTRACT_TRANSFORMER_HPP
 #define ABSTRACT_TRANSFORMER_HPP
 
+#include <boost/optional.hpp>
+
 #include <crab/cfg/Cfg.hpp>
 #include <crab/domains/domain_traits.hpp>
+#include <crab/domains/numerical_domains_api.hpp>
+#include <crab/domains/division_operators_api.hpp>
+#include <crab/domains/bitwise_operators_api.hpp>
 
 namespace crab {
 
@@ -10,6 +15,48 @@ namespace crab {
 
   using namespace cfg;
   using namespace std;
+
+  template<typename T>
+  boost::optional<T> convOp (binary_operation_t op); 
+
+  template<>
+  boost::optional<ikos::operation_t> 
+  convOp (binary_operation_t op) {     
+    switch (op) {
+      case BINOP_ADD: return OP_ADDITION;
+      case BINOP_SUB: return OP_SUBTRACTION;
+      case BINOP_MUL: return OP_MULTIPLICATION;
+      case BINOP_SDIV: return OP_DIVISION;
+      default: return boost::optional<ikos::operation_t> ();
+    }
+  }
+  
+  template<>
+  boost::optional<ikos::div_operation_t> 
+  convOp (binary_operation_t op) {     
+    switch (op) {
+      case BINOP_SDIV: return OP_SDIV;
+      case BINOP_UDIV: return OP_UDIV;
+      case BINOP_SREM: return OP_SREM;
+      case BINOP_UREM: return OP_UREM;
+      default: return boost::optional<ikos::div_operation_t> ();
+    }
+  }
+
+  template<>
+  boost::optional<ikos::bitwise_operation_t> 
+  convOp (binary_operation_t op) {     
+    switch (op) {
+      case BINOP_AND: return OP_AND;
+      case BINOP_OR: return OP_OR;
+      case BINOP_XOR: return OP_XOR;
+      case BINOP_SHL: return OP_SHL;
+      case BINOP_LSHR: return OP_LSHR;
+      case BINOP_ASHR: return OP_ASHR;
+      default: return boost::optional<ikos::bitwise_operation_t> ();
+    }
+  }
+  
 
   //! API abstract transformer
   template<typename VariableName, typename AbsDomain>
@@ -85,11 +132,13 @@ namespace crab {
 
   //! Abstract transformer specialized for a numerical abstract
   //! domain.
-  template<typename VariableName, typename NumAbsDomain>
+  template<typename NumAbsDomain>
   class NumAbsTransformer: 
-      public AbsTransformer <VariableName, NumAbsDomain>
+        public AbsTransformer <typename NumAbsDomain::varname_t, 
+                               NumAbsDomain>
   {
-    typedef AbsTransformer <VariableName, NumAbsDomain> abs_transform_t;
+    typedef typename NumAbsDomain::varname_t varname_t;
+    typedef AbsTransformer <varname_t, NumAbsDomain> abs_transform_t;
 
     using typename abs_transform_t::z_lin_exp_t;
     using typename abs_transform_t::z_bin_op_t;
@@ -104,6 +153,25 @@ namespace crab {
     using typename abs_transform_t::z_arr_store_t;
 
     NumAbsDomain m_inv;
+    
+    template<typename T>
+    void apply (NumAbsDomain& inv, binary_operation_t op,
+                varname_t x, varname_t y, T z) {
+
+      auto op1 = convOp<ikos::operation_t> (op);
+      auto op2 = convOp<ikos::div_operation_t> (op);
+      auto op3 = convOp<ikos::bitwise_operation_t> (op);
+
+      if (op1) 
+        inv.apply (*op1, x, y, z);
+      else if (op2) 
+        inv.apply (*op2, x, y, z);
+      else if (op3)
+        inv.apply (*op3, x, y, z);
+      else
+        CRAB_ERROR("unsupported binary operator", op);
+    }
+    
 
    public:
 
@@ -115,23 +183,25 @@ namespace crab {
     
     void exec (z_bin_op_t& stmt) 
     {
+
+      
       z_lin_exp_t op1 = stmt.left ();
       z_lin_exp_t op2 = stmt.right ();
       
       if (op1.get_variable () && op2.get_variable ())
       {
-        m_inv.apply (stmt.op (), 
-                     stmt.lhs ().name(), 
-                     (*op1.get_variable ()).name(), 
-                     (*op2.get_variable ()).name());
+        apply (m_inv, stmt.op (), 
+               stmt.lhs ().name(), 
+               (*op1.get_variable ()).name(), 
+               (*op2.get_variable ()).name());
       }
       else
       {
         assert ( op1.get_variable () && op2.is_constant ());
-        m_inv.apply (stmt.op (), 
-                     stmt.lhs ().name (), 
-                     (*op1.get_variable ()).name(), 
-                     op2.constant ()); 
+        apply (m_inv, stmt.op (), 
+               stmt.lhs ().name (), 
+               (*op1.get_variable ()).name(), 
+               op2.constant ()); 
       }      
     }
 

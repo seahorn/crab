@@ -285,14 +285,19 @@ namespace ikos {
   }; // class domain_product3
 
   template< typename Number, typename VariableName, typename Domain1, typename Domain2 >
-  class numerical_domain_product2: 
-      public writeable, numerical_domain< Number, VariableName > {
+  class numerical_domain_product2: public writeable,
+                                   public numerical_domain< Number, VariableName >,
+                                   public bitwise_operators< Number, VariableName >, 
+                                   public division_operators< Number, VariableName > {
 
   public:
     typedef numerical_domain_product2< Number, VariableName, Domain1, Domain2 > numerical_domain_product2_t;
-    typedef linear_expression< Number, VariableName > linear_expression_t;
-    typedef linear_constraint< Number, VariableName > linear_constraint_t;
-    typedef linear_constraint_system< Number, VariableName > linear_constraint_system_t;
+    using typename numerical_domain< Number, VariableName >::linear_expression_t;
+    using typename numerical_domain< Number, VariableName >::linear_constraint_t;
+    using typename numerical_domain< Number, VariableName >::linear_constraint_system_t;
+    using typename numerical_domain< Number, VariableName >::variable_t;
+    using typename numerical_domain< Number, VariableName >::number_t;
+    using typename numerical_domain< Number, VariableName >::varname_t;
 
   private:
     typedef domain_product2< Domain1, Domain2 > domain_product2_t;
@@ -452,16 +457,19 @@ namespace ikos {
   template< typename Number, typename VariableName, 
             typename Domain1, typename Domain2, typename Domain3 >
   class numerical_domain_product3: 
-      public writeable, numerical_domain< Number, VariableName > {
+      public writeable, 
+      public numerical_domain< Number, VariableName > {
 
   public:
     typedef numerical_domain_product3< Number, VariableName, 
                                        Domain1, Domain2, Domain3 > 
     numerical_domain_product3_t;
-    typedef linear_expression< Number, VariableName > linear_expression_t;
-    typedef linear_constraint< Number, VariableName > linear_constraint_t;
-    typedef linear_constraint_system< Number, VariableName > linear_constraint_system_t;
-
+    using typename numerical_domain< Number, VariableName >::linear_expression_t;
+    using typename numerical_domain< Number, VariableName >::linear_constraint_t;
+    using typename numerical_domain< Number, VariableName >::linear_constraint_system_t;
+    using typename numerical_domain< Number, VariableName >::variable_t;
+    using typename numerical_domain< Number, VariableName >::number_t;
+    using typename numerical_domain< Number, VariableName >::varname_t;
   private:
     typedef numerical_domain_product2< Number, VariableName, Domain2, Domain3 > product23_t;
     typedef numerical_domain_product2< Number, VariableName, Domain1, product23_t > product123_t;

@@ -6,11 +6,11 @@
  * iterators.
  * 
  * The CFG can support the modelling of: 
- * - integers
+ * - arithmetic operations over integers
  * - C-like pointers
- * - arrays as any sequence of contiguous bytes either in the heap or
- *   stack
- * - callsites
+ * - C-like arrays and in general, any sequence of contiguous bytes
+ *   either in the heap or stack.
+ * - functions 
  */
 
 #include <boost/shared_ptr.hpp>
@@ -42,6 +42,12 @@ namespace crab {
     enum TrackedPrecision { REG = 0, PTR = 1, MEM = 2 };
   
     enum VariableType { INT_TYPE, PTR_TYPE, ARR_TYPE, UNK_TYPE};
+
+    typedef enum { 
+      BINOP_ADD, BINOP_SUB, BINOP_MUL, 
+      BINOP_SDIV, BINOP_UDIV, BINOP_SREM, BINOP_UREM,
+      BINOP_AND, BINOP_OR, BINOP_XOR, BINOP_SHL, BINOP_LSHR, BINOP_ASHR
+    } binary_operation_t;
 
     template<typename Number, typename VariableName>
     inline ostream& operator<< (ostream &o, 
@@ -78,6 +84,26 @@ namespace crab {
         case PTR_TYPE: o << "ptr"; break;
         case ARR_TYPE: o << "arr"; break;
         default: o << "unknown"; break;
+      }
+      return o;
+    }
+
+    inline ostream& operator<<(std::ostream&o, binary_operation_t op) {
+      switch (op) {
+        case BINOP_ADD: o << "+"; break;
+        case BINOP_SUB: o << "-"; break;
+        case BINOP_MUL: o << "*"; break;
+        case BINOP_SDIV: o << "/"; break;
+        case BINOP_UDIV: o << "/_u"; break;
+        case BINOP_SREM: o << "%"; break;
+        case BINOP_UREM: o << "%_u"; break;
+        case BINOP_AND: o << "&"; break;
+        case BINOP_OR: o << "|"; break;
+        case BINOP_XOR: o << "^"; break;
+        case BINOP_SHL: o << "<<"; break;
+        case BINOP_LSHR: o << ">>_l"; break;
+        case BINOP_ASHR: o << ">>_r"; break;
+        default: CRAB_ERROR("unreachable");
       }
       return o;
     }
@@ -183,14 +209,14 @@ namespace crab {
      private:
       
       variable_t          m_lhs;
-      operation_t         m_op;
+      binary_operation_t  m_op;
       linear_expression_t m_op1;
       linear_expression_t m_op2;
       
      public:
       
       BinaryOp (variable_t lhs, 
-                operation_t op, 
+                binary_operation_t op, 
                 linear_expression_t op1, 
                 linear_expression_t op2): 
           
@@ -203,7 +229,7 @@ namespace crab {
       
       variable_t lhs () const { return m_lhs; }
       
-      operation_t op () const { return m_op; }
+      binary_operation_t op () const { return m_op; }
       
       linear_expression_t left () const { return m_op1; }
       
@@ -223,15 +249,7 @@ namespace crab {
       
       virtual void write (ostream& o) const
       {
-        o << m_lhs << " = " << m_op1;
-        switch (m_op) 
-        {
-          case OP_ADDITION:       { o << "+"; break; }
-          case OP_MULTIPLICATION: { o << "*"; break; } 
-          case OP_SUBTRACTION:    { o << "-"; break; }
-          case OP_DIVISION:       { o << "/"; break; }
-        }
-        o << m_op2 ; // << " " << this->m_live;
+        o << m_lhs << " = " << m_op1 << m_op << m_op2;
         return;
       }
     }; 
@@ -1314,13 +1332,13 @@ namespace crab {
       void add (z_variable_t lhs, z_variable_t op1, z_variable_t op2) 
       {
         insert(boost::static_pointer_cast< statement_t, z_bin_op_t >
-               (z_bin_op_ptr(new z_bin_op_t(lhs, OP_ADDITION, op1, op2))));
+               (z_bin_op_ptr(new z_bin_op_t(lhs, BINOP_ADD, op1, op2))));
       }
       
       void add (z_variable_t lhs, z_variable_t op1, z_number op2) 
       {
         insert(boost::static_pointer_cast< statement_t, z_bin_op_t > 
-               (z_bin_op_ptr(new z_bin_op_t(lhs, OP_ADDITION, op1,  op2))));
+               (z_bin_op_ptr(new z_bin_op_t(lhs, BINOP_ADD, op1,  op2))));
       }
       
       void add (z_variable_t lhs, z_lin_exp_t op1, z_lin_exp_t op2) 
@@ -1347,13 +1365,13 @@ namespace crab {
       void sub (z_variable_t lhs, z_variable_t op1, z_variable_t op2) 
       {
         insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
-                (z_bin_op_ptr (new z_bin_op_t (lhs, OP_SUBTRACTION, op1, op2))));
+                (z_bin_op_ptr (new z_bin_op_t (lhs, BINOP_SUB, op1, op2))));
       }
       
       void sub (z_variable_t lhs, z_variable_t op1, z_number op2) 
       {
         insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
-                (z_bin_op_ptr (new z_bin_op_t (lhs, OP_SUBTRACTION, op1, op2))));
+                (z_bin_op_ptr (new z_bin_op_t (lhs, BINOP_SUB, op1, op2))));
       }
       
       void sub (z_variable_t lhs, z_lin_exp_t op1, z_lin_exp_t op2) 
@@ -1377,13 +1395,13 @@ namespace crab {
       void mul (z_variable_t lhs, z_variable_t op1, z_variable_t op2) 
       {
         insert(boost::static_pointer_cast< statement_t, z_bin_op_t >
-               (z_bin_op_ptr(new z_bin_op_t (lhs, OP_MULTIPLICATION, op1, op2))));
+               (z_bin_op_ptr(new z_bin_op_t (lhs, BINOP_MUL, op1, op2))));
       }
       
       void mul (z_variable_t lhs, z_variable_t op1, z_number op2) 
       {
         insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
-                (z_bin_op_ptr(new z_bin_op_t (lhs, OP_MULTIPLICATION, op1, op2))));
+                (z_bin_op_ptr(new z_bin_op_t (lhs, BINOP_MUL, op1, op2))));
       }
       
       void mul(z_variable_t lhs, z_lin_exp_t op1, z_lin_exp_t op2) 
@@ -1410,13 +1428,13 @@ namespace crab {
       void div (z_variable_t lhs, z_variable_t op1, z_variable_t op2) 
       {
         insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
-                (z_bin_op_ptr (new z_bin_op_t (lhs, OP_DIVISION, op1, op2))));
+                (z_bin_op_ptr (new z_bin_op_t (lhs, BINOP_SDIV, op1, op2))));
       }
       
       void div (z_variable_t lhs, z_variable_t op1, z_number op2) 
       {
         insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
-                (z_bin_op_ptr (new z_bin_op_t (lhs, OP_DIVISION, op1, op2))));
+                (z_bin_op_ptr (new z_bin_op_t (lhs, BINOP_SDIV, op1, op2))));
       }
       
       void div (z_variable_t lhs, z_lin_exp_t op1, z_lin_exp_t op2) 

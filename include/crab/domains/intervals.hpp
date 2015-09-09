@@ -1138,11 +1138,13 @@ namespace ikos {
                          public division_operators< Number, VariableName >{
     
   public:
+    using typename numerical_domain< Number, VariableName >::linear_expression_t;
+    using typename numerical_domain< Number, VariableName >::linear_constraint_t;
+    using typename numerical_domain< Number, VariableName >::linear_constraint_system_t;
+    using typename numerical_domain< Number, VariableName >::variable_t;
+    using typename numerical_domain< Number, VariableName >::number_t;
+    using typename numerical_domain< Number, VariableName >::varname_t;
     typedef interval< Number > interval_t;
-    typedef variable< Number, VariableName > variable_t;
-    typedef linear_expression< Number, VariableName > linear_expression_t;
-    typedef linear_constraint< Number, VariableName > linear_constraint_t;
-    typedef linear_constraint_system< Number, VariableName > linear_constraint_system_t;
     typedef interval_domain< Number, VariableName > interval_domain_t;
     
   private:

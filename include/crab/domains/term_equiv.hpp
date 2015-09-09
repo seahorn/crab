@@ -32,8 +32,6 @@
 #include <crab/domains/term/term_expr.hpp>
 #include <crab/domains/term/inverse.hpp>
 
-#define WARN(x) fprintf(stderr, "WARNING: %s\n", x)
-
 using namespace boost;
 using namespace std;
 using namespace ikos;
@@ -81,12 +79,14 @@ namespace crab {
        typedef interval<Number> interval_t;
        
       public:
-       typedef variable< Number, VariableName >                 variable_t;
-       typedef linear_constraint< Number, VariableName >        linear_constraint_t;
-       typedef linear_constraint_system< Number, VariableName > linear_constraint_system_t;
-       typedef linear_expression< Number, VariableName >        linear_expression_t;
+       using typename numerical_domain< Number, VariableName >::linear_expression_t;
+       using typename numerical_domain< Number, VariableName >::linear_constraint_t;
+       using typename numerical_domain< Number, VariableName >::linear_constraint_system_t;
+       using typename numerical_domain< Number, VariableName >::variable_t;
+       using typename numerical_domain< Number, VariableName >::number_t;
+       using typename numerical_domain< Number, VariableName >::varname_t;
+
        typedef anti_unif<Info>        anti_unif_t;
-       
        typedef term::term_table< Number, operation_t > ttbl_t;
        typedef typename ttbl_t::term_id_t term_id_t;
        typedef patricia_tree_set< VariableName >  varname_set_t;
@@ -514,7 +514,7 @@ namespace crab {
            return *this;
          }
          else {
-           WARN ("ANTI-UNIF: meet not yet implemented.");
+           CRAB_WARN ("ANTI-UNIF: meet not yet implemented.");
            // If meet is only used to refine instead of narrowing then we
            // should return the second argument.
            return o;
@@ -530,7 +530,7 @@ namespace crab {
          else if (is_top ())
            return o;
          else {
-           WARN ("ANTI-UNIF: narrowing not yet implemented.");
+           CRAB_WARN ("ANTI-UNIF: narrowing not yet implemented.");
            return *this; 
          }
        } // Returned matrix is not normalized.
@@ -950,7 +950,7 @@ namespace crab {
 
        void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z){
          // Convert to intervals and perform the operation
-         WARN("bitwise operators not yet supported by term domain");
+         CRAB_WARN("bitwise operators not yet supported by term domain");
 
          term_id_t term_x = _ttbl.fresh_var();
          dom_var_t dvar_x = domvar_of_term(term_x);
@@ -963,7 +963,7 @@ namespace crab {
        }
     
        void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k){
-         WARN("bitwise operators not yet supported by term domain");
+         CRAB_WARN("bitwise operators not yet supported by term domain");
 
          term_id_t term_x = _ttbl.fresh_var();
          dom_var_t dvar_x = domvar_of_term(term_x);
@@ -978,7 +978,7 @@ namespace crab {
        // division_operators_api
     
        void apply(div_operation_t op, VariableName x, VariableName y, VariableName z){
-         WARN("div operators not yet supported by term domain");
+         CRAB_WARN("div operators not yet supported by term domain");
 
          term_id_t term_x = _ttbl.fresh_var();
          dom_var_t dvar_x = domvar_of_term(term_x);
@@ -991,7 +991,7 @@ namespace crab {
        }
 
        void apply(div_operation_t op, VariableName x, VariableName y, Number k){
-         WARN("div operators not yet supported by term domain");
+         CRAB_WARN("div operators not yet supported by term domain");
 
          term_id_t term_x = _ttbl.fresh_var();
          dom_var_t dvar_x = domvar_of_term(term_x);

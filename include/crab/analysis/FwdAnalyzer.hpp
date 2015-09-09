@@ -166,7 +166,7 @@ namespace crab {
     template<typename CFG, typename AbsNumDomain, typename VarFactory, 
              typename InvTblValTy = AbsNumDomain>  
     struct NumFwdAnalyzer {
-      typedef NumAbsTransformer <typename CFG::varname_t, AbsNumDomain> num_abs_tr_t;
+      typedef NumAbsTransformer <AbsNumDomain> num_abs_tr_t;
       typedef FwdAnalyzer <CFG, num_abs_tr_t, VarFactory, InvTblValTy> type;
     };
   

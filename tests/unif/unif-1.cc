@@ -78,7 +78,7 @@ int main (int argc, char** argv )
   }
 
   /*
-  typedef NumAbsTransformer <varname_t, dbm_domain_t> dbm_transformer_t;
+  typedef NumAbsTransformer <dbm_domain_t> dbm_transformer_t;
   NumFwdAnalyzer <cfg_t, dbm_transformer_t, VariableFactory>::type dom_a (cfg, vfac, run_live);
 
   dbm_a.Run (dbm_domain_t::top ());
