@@ -49,6 +49,8 @@
 #include <crab/common/mergeable_map.hpp>
 #include <crab/domains/patricia_trees.hpp>
 #include <crab/domains/numerical_domains_api.hpp>
+#include <crab/domains/bitwise_operators_api.hpp>
+#include <crab/domains/division_operators_api.hpp>
 #include <crab/domains/domain_traits_impl.hpp>
 
 using namespace std;
@@ -676,14 +678,20 @@ namespace crab {
              typename WeightDomain, bool IsDistWeight = false>
     class array_graph_domain: 
         public writeable, 
-        public numerical_domain< Number, VariableName>
+        public numerical_domain< Number, VariableName>,
+        public bitwise_operators< Number, VariableName >, 
+        public division_operators< Number, VariableName >
     {
       
      public:
-      typedef typename ScalarNumDomain::linear_constraint_t linear_constraint_t;
-      typedef typename ScalarNumDomain::linear_constraint_system_t linear_constraint_system_t;
-      typedef typename ScalarNumDomain::linear_expression_t linear_expression_t;
-      typedef typename ScalarNumDomain::variable_t variable_t;
+      // WARNING: assumes ScalarNumDomain::number_t = Number and
+      // ScalarNumDomain::varname_t = VariableName
+      using typename numerical_domain< Number, VariableName>::linear_expression_t;
+      using typename numerical_domain< Number, VariableName>::linear_constraint_t;
+      using typename numerical_domain< Number, VariableName>::linear_constraint_system_t;
+      using typename numerical_domain< Number, VariableName>::variable_t;
+      using typename numerical_domain< Number, VariableName>::number_t;
+      using typename numerical_domain< Number, VariableName>::varname_t;
       
      private:
       typedef array_graph< VariableName,WeightDomain,ScalarNumDomain,IsDistWeight> array_graph_t;
@@ -1210,6 +1218,33 @@ namespace crab {
         apply_helper<Number> (op, x, k);
 
         CRAB_DEBUG("Apply ",x," := ",x," ",op," ",k," ==> ",*this);
+      }
+
+
+      // bitwise_operators_api
+      void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width) {
+        assign (x, variable_t (y));
+      }
+      
+      void apply(conv_operation_t op, VariableName x, Number k, unsigned width) {
+        assign (x, k);
+      }
+      
+      void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) {
+        CRAB_WARN ("bitwise operations not implemented in array_graph");
+      }
+      
+      void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k) {
+        CRAB_WARN ("bitwise operations not implemented in array_graph");
+      }
+      
+      // division_operators_api
+      void apply(div_operation_t op, VariableName x, VariableName y, VariableName z) {
+        CRAB_WARN ("division operations not implemented in array_graph");
+      }
+      
+      void apply(div_operation_t op, VariableName x, VariableName y, Number k) {
+        CRAB_WARN ("division operations not implemented in array_graph");
       }
 
       void load (VariableName lhs, VariableName arr, VariableName idx)

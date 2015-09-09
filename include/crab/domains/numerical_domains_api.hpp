@@ -45,6 +45,24 @@
 #include <crab/domains/linear_constraints.hpp>
 
 namespace ikos {
+
+  // Enumeration type for basic arithmetic operations
+  typedef enum {
+    OP_ADDITION,
+    OP_SUBTRACTION,
+    OP_MULTIPLICATION,
+    OP_DIVISION
+  } operation_t;
+
+  inline std::ostream& operator<<(std::ostream&o, operation_t op) {
+    switch (op) {
+      case OP_ADDITION: o << "+"; break;
+      case OP_SUBTRACTION: o << "-"; break;
+      case OP_MULTIPLICATION: o << "*"; break;
+    default: o << "/"; break;
+    }
+    return o;
+  }
   
   template< typename Number, typename VariableName >
   class numerical_domain {
@@ -53,6 +71,9 @@ namespace ikos {
     typedef linear_expression< Number, VariableName > linear_expression_t;
     typedef linear_constraint< Number, VariableName > linear_constraint_t;
     typedef linear_constraint_system< Number, VariableName > linear_constraint_system_t;
+    typedef variable< Number, VariableName > variable_t;
+    typedef Number number_t;
+    typedef VariableName varname_t;
     
   public:
     virtual void apply(operation_t op, VariableName x, VariableName y, VariableName z) = 0; // x = y op z

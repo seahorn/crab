@@ -800,17 +800,18 @@ class congruence_domain : public writeable,
                           public division_operators< Number, VariableName > {
 public:
   typedef congruence< Number, typeSize > congruence_t;
+  // note that this is assuming that all variables have the same bit
+  // width which is unrealistic.
   typedef congruence_domain< Number, VariableName, typeSize >
       congruence_domain_t;
 
 public:
-  // note that this is assuming that all variables have the same bit
-  // width which is unrealistic.
-  typedef variable< Number, VariableName > variable_t;
-  typedef linear_expression< Number, VariableName > linear_expression_t;
-  typedef linear_constraint< Number, VariableName > linear_constraint_t;
-  typedef linear_constraint_system< Number, VariableName >
-      linear_constraint_system_t;
+  using typename numerical_domain< Number, VariableName >::linear_expression_t;
+  using typename numerical_domain< Number, VariableName >::linear_constraint_t;
+  using typename numerical_domain< Number, VariableName >::linear_constraint_system_t;
+  using typename numerical_domain< Number, VariableName >::variable_t;
+  using typename numerical_domain< Number, VariableName >::number_t;
+  using typename numerical_domain< Number, VariableName >::varname_t;
 
 private:
   typedef separate_domain< VariableName, congruence_t > separate_domain_t;

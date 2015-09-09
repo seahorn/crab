@@ -386,7 +386,7 @@ void run(cfg_t cfg, string name, VariableFactory &vfac)
   cout << cfg << endl;
   
   const bool run_live = false;
-  typedef NumAbsTransformer <varname_t, ArrayDomain> arr_transformer_t;
+  typedef NumAbsTransformer <ArrayDomain> arr_transformer_t;
   FwdAnalyzer <cfg_t, arr_transformer_t, 
                VariableFactory, z_lin_cst_sys_t> It (cfg,vfac,run_live);
   ArrayDomain inv = ArrayDomain::top ();

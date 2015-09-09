@@ -73,6 +73,13 @@ inline void ___print___(ArgTypes... args)
     std::exit (EXIT_FAILURE);        \
   } while (0)
 
+#define CRAB_WARN(...)               \
+  do {                               \
+    std::cerr << "WARNING:";         \
+    ___print___(__VA_ARGS__);        \
+    std::cerr << "\n";               \
+  } while (0)
+
 // Default definition but it can be redefined by dbg.hpp
 #define CRAB_DEBUG(...)
 
@@ -253,25 +260,6 @@ public:
   }
 
 }; // class collection
-
-
-// Enumeration type for basic arithmetic operations
-typedef enum {
-  OP_ADDITION,
-  OP_SUBTRACTION,
-  OP_MULTIPLICATION,
-  OP_DIVISION
-} operation_t;
-
-inline std::ostream& operator<<(std::ostream&o, operation_t op) {
-  switch (op) {
-    case OP_ADDITION: o << "+"; break;
-    case OP_SUBTRACTION: o << "-"; break;
-    case OP_MULTIPLICATION: o << "*"; break;
-    default: o << "/"; break;
-  }
-  return o;
-}
 
 } // namespace ikos
 
