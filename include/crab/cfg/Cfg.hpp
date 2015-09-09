@@ -1475,6 +1475,9 @@ namespace crab {
         else if (op1.get_variable () && op2.is_constant ())
           bitwise_and (lhs, (*op1.get_variable ()), op2.constant ());        
         
+        else if (op1.is_constant () && op2.get_variable ())
+          bitwise_and (lhs, (*op2.get_variable ()), op1.constant ());
+
         else if (op1.is_constant () && op2.is_constant ()) 
         {
           z_lin_exp_t rhs (z_number (op1.constant () & op2.constant ()));
@@ -1504,6 +1507,9 @@ namespace crab {
         
         else if (op1.get_variable () && op2.is_constant ())
           bitwise_or (lhs, (*op1.get_variable ()), op2.constant ());        
+
+        else if (op1.is_constant () && op2.get_variable ())
+          bitwise_or (lhs, (*op2.get_variable ()), op1.constant ());
         
         else if (op1.is_constant () && op2.is_constant ()) 
         {
@@ -1534,6 +1540,9 @@ namespace crab {
         
         else if (op1.get_variable () && op2.is_constant ())
           bitwise_xor (lhs, (*op1.get_variable ()), op2.constant ());        
+
+        else if (op1.is_constant () && op2.get_variable ())
+          bitwise_xor (lhs, (*op2.get_variable ()), op1.constant ());
         
         else if (op1.is_constant () && op2.is_constant ()) 
         {
