@@ -1454,6 +1454,96 @@ namespace crab {
         else
           CRAB_ERROR("div operands unexpected");
       }
+
+      void bitwise_and (z_variable_t lhs, z_variable_t op1, z_variable_t op2) 
+      {
+        insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
+                (z_bin_op_ptr (new z_bin_op_t (lhs, BINOP_AND, op1, op2))));
+      }
+      
+      void bitwise_and (z_variable_t lhs, z_variable_t op1, z_number op2) 
+      {
+        insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
+                (z_bin_op_ptr (new z_bin_op_t (lhs, BINOP_AND, op1, op2))));
+      }
+      
+      void bitwise_and (z_variable_t lhs, z_lin_exp_t op1, z_lin_exp_t op2) 
+      {
+        if (op1.get_variable () && op2.get_variable ())
+          bitwise_and (lhs, (*op1.get_variable ()), (*op2.get_variable ()));
+        
+        else if (op1.get_variable () && op2.is_constant ())
+          bitwise_and (lhs, (*op1.get_variable ()), op2.constant ());        
+        
+        else if (op1.is_constant () && op2.is_constant ()) 
+        {
+          z_lin_exp_t rhs (z_number (op1.constant () & op2.constant ()));
+          insert (boost::static_pointer_cast< statement_t, z_assign_t >
+                  (z_assign_ptr(new z_assign_t (lhs, rhs))));
+        }
+        else
+          CRAB_ERROR("and operands unexpected");
+      }
+
+      void bitwise_or (z_variable_t lhs, z_variable_t op1, z_variable_t op2) 
+      {
+        insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
+                (z_bin_op_ptr (new z_bin_op_t (lhs, BINOP_OR, op1, op2))));
+      }
+      
+      void bitwise_or (z_variable_t lhs, z_variable_t op1, z_number op2) 
+      {
+        insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
+                (z_bin_op_ptr (new z_bin_op_t (lhs, BINOP_OR, op1, op2))));
+      }
+      
+      void bitwise_or (z_variable_t lhs, z_lin_exp_t op1, z_lin_exp_t op2) 
+      {
+        if (op1.get_variable () && op2.get_variable ())
+          bitwise_or (lhs, (*op1.get_variable ()), (*op2.get_variable ()));
+        
+        else if (op1.get_variable () && op2.is_constant ())
+          bitwise_or (lhs, (*op1.get_variable ()), op2.constant ());        
+        
+        else if (op1.is_constant () && op2.is_constant ()) 
+        {
+          z_lin_exp_t rhs (z_number (op1.constant () | op2.constant ()));
+          insert (boost::static_pointer_cast< statement_t, z_assign_t >
+                  (z_assign_ptr(new z_assign_t (lhs, rhs))));
+        }
+        else
+          CRAB_ERROR("or operands unexpected");
+      }
+
+      void bitwise_xor (z_variable_t lhs, z_variable_t op1, z_variable_t op2) 
+      {
+        insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
+                (z_bin_op_ptr (new z_bin_op_t (lhs, BINOP_XOR, op1, op2))));
+      }
+      
+      void bitwise_xor (z_variable_t lhs, z_variable_t op1, z_number op2) 
+      {
+        insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
+                (z_bin_op_ptr (new z_bin_op_t (lhs, BINOP_XOR, op1, op2))));
+      }
+      
+      void bitwise_xor (z_variable_t lhs, z_lin_exp_t op1, z_lin_exp_t op2) 
+      {
+        if (op1.get_variable () && op2.get_variable ())
+          bitwise_xor (lhs, (*op1.get_variable ()), (*op2.get_variable ()));
+        
+        else if (op1.get_variable () && op2.is_constant ())
+          bitwise_xor (lhs, (*op1.get_variable ()), op2.constant ());        
+        
+        else if (op1.is_constant () && op2.is_constant ()) 
+        {
+          z_lin_exp_t rhs (z_number (op1.constant () ^ op2.constant ()));
+          insert (boost::static_pointer_cast< statement_t, z_assign_t >
+                  (z_assign_ptr(new z_assign_t (lhs, rhs))));
+        }
+        else
+          CRAB_ERROR("xor operands unexpected");
+      }
       
       void assign (z_variable_t lhs, z_lin_exp_t rhs) 
       {
