@@ -1424,7 +1424,8 @@ namespace crab {
         else
           CRAB_ERROR("mul operands unexpected");
       }
-      
+
+      // signed division
       void div (z_variable_t lhs, z_variable_t op1, z_variable_t op2) 
       {
         insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
@@ -1455,6 +1456,88 @@ namespace crab {
           CRAB_ERROR("div operands unexpected");
       }
 
+      // unsigned division
+      void udiv (z_variable_t lhs, z_variable_t op1, z_variable_t op2) 
+      {
+        insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
+                (z_bin_op_ptr (new z_bin_op_t (lhs, BINOP_UDIV, op1, op2))));
+      }
+      
+      void udiv (z_variable_t lhs, z_variable_t op1, z_number op2) 
+      {
+        insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
+                (z_bin_op_ptr (new z_bin_op_t (lhs, BINOP_UDIV, op1, op2))));
+      }
+      
+      void udiv (z_variable_t lhs, z_lin_exp_t op1, z_lin_exp_t op2) 
+      {
+        if (op1.get_variable () && op2.get_variable ())
+          udiv (lhs, (*op1.get_variable ()), (*op2.get_variable ()));
+        
+        else if (op1.get_variable () && op2.is_constant ())
+          udiv (lhs, (*op1.get_variable ()), op2.constant ());
+        
+        else
+          CRAB_ERROR("udiv operands unexpected");
+      }
+
+      // signed rem
+      void rem (z_variable_t lhs, z_variable_t op1, z_variable_t op2) 
+      {
+        insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
+                (z_bin_op_ptr (new z_bin_op_t (lhs, BINOP_SREM, op1, op2))));
+      }
+      
+      void rem (z_variable_t lhs, z_variable_t op1, z_number op2) 
+      {
+        insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
+                (z_bin_op_ptr (new z_bin_op_t (lhs, BINOP_SREM, op1, op2))));
+      }
+      
+      void rem (z_variable_t lhs, z_lin_exp_t op1, z_lin_exp_t op2) 
+      {
+        if (op1.get_variable () && op2.get_variable ())
+          rem (lhs, (*op1.get_variable ()), (*op2.get_variable ()));
+        
+        else if (op1.get_variable () && op2.is_constant ())
+          rem (lhs, (*op1.get_variable ()), op2.constant ());
+        
+        else if (op1.is_constant () && op2.is_constant ()) 
+        {
+          z_lin_exp_t rhs (z_number (op1.constant() % op2.constant()));
+          insert (boost::static_pointer_cast< statement_t, z_assign_t >
+                  (z_assign_ptr (new z_assign_t (lhs, rhs))));
+        }
+        else
+          CRAB_ERROR("rem operands unexpected");
+      }
+
+      // unsigned rem
+      void urem (z_variable_t lhs, z_variable_t op1, z_variable_t op2) 
+      {
+        insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
+                (z_bin_op_ptr (new z_bin_op_t (lhs, BINOP_UREM, op1, op2))));
+      }
+      
+      void urem (z_variable_t lhs, z_variable_t op1, z_number op2) 
+      {
+        insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
+                (z_bin_op_ptr (new z_bin_op_t (lhs, BINOP_UREM, op1, op2))));
+      }
+      
+      void urem (z_variable_t lhs, z_lin_exp_t op1, z_lin_exp_t op2) 
+      {
+        if (op1.get_variable () && op2.get_variable ())
+          urem (lhs, (*op1.get_variable ()), (*op2.get_variable ()));
+        
+        else if (op1.get_variable () && op2.is_constant ())
+          urem (lhs, (*op1.get_variable ()), op2.constant ());
+        
+        else
+          CRAB_ERROR("urem operands unexpected");
+      }
+
+      
       void bitwise_and (z_variable_t lhs, z_variable_t op1, z_variable_t op2) 
       {
         insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
