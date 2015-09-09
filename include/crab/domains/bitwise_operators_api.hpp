@@ -49,6 +49,15 @@ namespace ikos {
     OP_ZEXT 
   } conv_operation_t;
 
+  inline std::ostream& operator<<(std::ostream&o, conv_operation_t op) {
+    switch (op) {
+      case OP_TRUNC: o << "trunc"; break;
+      case OP_SEXT: o << "sext"; break;
+      default: o << "zext"; break;
+    }
+    return o;
+  }
+
   typedef enum  { 
     OP_AND, 
     OP_OR, 
@@ -57,6 +66,18 @@ namespace ikos {
     OP_LSHR, 
     OP_ASHR
   } bitwise_operation_t;
+
+  inline std::ostream& operator<<(std::ostream&o, bitwise_operation_t op) {
+    switch (op) {
+      case OP_AND: o << "&"; break;
+      case OP_OR: o << "|"; break;
+      case OP_XOR: o << "^"; break;
+      case OP_SHL: o << "<<"; break;
+      case OP_LSHR: o << ">>_l"; break;
+      default: o << ">>_a"; break;
+    }
+    return o;
+  }
 
   template< typename Number, typename VariableName >
   class bitwise_operators {
