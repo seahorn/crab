@@ -573,7 +573,6 @@ namespace ikos {
       } else {
         o << "(" << this->first() << ", " << this->second() << ", " << this->third() << ")";
       }
-      return o;
     }
     
   }; // class numerical_domain_product3
