@@ -97,4 +97,20 @@ namespace ikos {
   
 } // namespace ikos
 
+namespace crab {
+  using namespace ikos;
+
+  template<>
+  inline boost::optional<operation_t> 
+  convOp (binary_operation_t op) {     
+    switch (op) {
+      case BINOP_ADD: return OP_ADDITION;
+      case BINOP_SUB: return OP_SUBTRACTION;
+      case BINOP_MUL: return OP_MULTIPLICATION;
+      case BINOP_SDIV: return OP_DIVISION;
+      default: return boost::optional<operation_t> ();
+    }
+  }
+}
+
 #endif // IKOS_NUMERICAL_DOMAINS_API_HPP
