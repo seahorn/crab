@@ -172,7 +172,7 @@ namespace crab {
 
       
        void apply (dom_t& dom, binary_operation_t op,
-                   varname_t x, varname_t y, varname_t z) {
+                   dom_varname_t x, dom_varname_t y, dom_varname_t z) {
          auto op1 = convOp <operation_t> (op);
          auto op2 = convOp <div_operation_t> (op);
          auto op3 = convOp <bitwise_operation_t> (op);
