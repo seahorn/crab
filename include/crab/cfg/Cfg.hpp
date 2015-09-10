@@ -43,12 +43,6 @@ namespace crab {
   
     enum VariableType { INT_TYPE, PTR_TYPE, ARR_TYPE, UNK_TYPE};
 
-    typedef enum { 
-      BINOP_ADD, BINOP_SUB, BINOP_MUL, 
-      BINOP_SDIV, BINOP_UDIV, BINOP_SREM, BINOP_UREM,
-      BINOP_AND, BINOP_OR, BINOP_XOR, BINOP_SHL, BINOP_LSHR, BINOP_ASHR
-    } binary_operation_t;
-
     template<typename Number, typename VariableName>
     inline ostream& operator<< (ostream &o, 
                                 const ikos::variable<Number, VariableName> &v)
@@ -84,26 +78,6 @@ namespace crab {
         case PTR_TYPE: o << "ptr"; break;
         case ARR_TYPE: o << "arr"; break;
         default: o << "unknown"; break;
-      }
-      return o;
-    }
-
-    inline ostream& operator<<(std::ostream&o, binary_operation_t op) {
-      switch (op) {
-        case BINOP_ADD: o << "+"; break;
-        case BINOP_SUB: o << "-"; break;
-        case BINOP_MUL: o << "*"; break;
-        case BINOP_SDIV: o << "/"; break;
-        case BINOP_UDIV: o << "/_u"; break;
-        case BINOP_SREM: o << "%"; break;
-        case BINOP_UREM: o << "%_u"; break;
-        case BINOP_AND: o << "&"; break;
-        case BINOP_OR: o << "|"; break;
-        case BINOP_XOR: o << "^"; break;
-        case BINOP_SHL: o << "<<"; break;
-        case BINOP_LSHR: o << ">>_l"; break;
-        case BINOP_ASHR: o << ">>_r"; break;
-        default: CRAB_ERROR("unreachable");
       }
       return o;
     }

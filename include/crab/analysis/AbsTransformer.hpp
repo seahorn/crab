@@ -5,9 +5,6 @@
 
 #include <crab/cfg/Cfg.hpp>
 #include <crab/domains/domain_traits.hpp>
-#include <crab/domains/numerical_domains_api.hpp>
-#include <crab/domains/division_operators_api.hpp>
-#include <crab/domains/bitwise_operators_api.hpp>
 
 namespace crab {
 
@@ -15,48 +12,6 @@ namespace crab {
 
   using namespace cfg;
   using namespace std;
-
-  template<typename T>
-  inline boost::optional<T> convOp (binary_operation_t op); 
-
-  template<>
-  inline boost::optional<ikos::operation_t> 
-  convOp (binary_operation_t op) {     
-    switch (op) {
-      case BINOP_ADD: return OP_ADDITION;
-      case BINOP_SUB: return OP_SUBTRACTION;
-      case BINOP_MUL: return OP_MULTIPLICATION;
-      case BINOP_SDIV: return OP_DIVISION;
-      default: return boost::optional<ikos::operation_t> ();
-    }
-  }
-  
-  template<>
-  inline boost::optional<ikos::div_operation_t> 
-  convOp (binary_operation_t op) {     
-    switch (op) {
-      case BINOP_SDIV: return OP_SDIV;
-      case BINOP_UDIV: return OP_UDIV;
-      case BINOP_SREM: return OP_SREM;
-      case BINOP_UREM: return OP_UREM;
-      default: return boost::optional<ikos::div_operation_t> ();
-    }
-  }
-
-  template<>
-  inline boost::optional<ikos::bitwise_operation_t> 
-  convOp (binary_operation_t op) {     
-    switch (op) {
-      case BINOP_AND: return OP_AND;
-      case BINOP_OR: return OP_OR;
-      case BINOP_XOR: return OP_XOR;
-      case BINOP_SHL: return OP_SHL;
-      case BINOP_LSHR: return OP_LSHR;
-      case BINOP_ASHR: return OP_ASHR;
-      default: return boost::optional<ikos::bitwise_operation_t> ();
-    }
-  }
-  
 
   //! API abstract transformer
   template<typename VariableName, typename AbsDomain>

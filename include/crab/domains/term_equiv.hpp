@@ -87,7 +87,7 @@ namespace crab {
        using typename numerical_domain< Number, VariableName >::varname_t;
 
        typedef anti_unif<Info>        anti_unif_t;
-       typedef term::term_table< Number, operation_t > ttbl_t;
+       typedef term::term_table< Number, binary_operation_t > ttbl_t;
        typedef typename ttbl_t::term_id_t term_id_t;
        typedef patricia_tree_set< VariableName >  varname_set_t;
        
@@ -142,34 +142,48 @@ namespace crab {
          return t_itv;
        }
        
-       term_id_t term_of_expr(operation_t op, term_id_t ty, term_id_t tz)
-       {
-         optional<term_id_t> opt_tx = _ttbl.find_ftor(op, ty, tz);
-         if(opt_tx)
-         {
-           // If the term already exists, we can learn nothing.
-           return *opt_tx;
-         } else {
-           // Otherwise, assign the term, and evaluate.
-           term_id_t tx = _ttbl.apply_ftor(op, ty, tz);
-           _impl.apply(op,
-                       domvar_of_term(tx).name(),
-                       domvar_of_term(ty).name(), domvar_of_term(tz).name());
-           return tx;
-         }
-       }
+       // term_id_t term_of_expr(operation_t op, term_id_t ty, term_id_t tz)
+       // {
+       //   optional<term_id_t> opt_tx = _ttbl.find_ftor(op, ty, tz);
+       //   if(opt_tx)
+       //   {
+       //     // If the term already exists, we can learn nothing.
+       //     return *opt_tx;
+       //   } else {
+       //     // Otherwise, assign the term, and evaluate.
+       //     term_id_t tx = _ttbl.apply_ftor(op, ty, tz);
+       //     _impl.apply(op,
+       //                 domvar_of_term(tx).name(),
+       //                 domvar_of_term(ty).name(), domvar_of_term(tz).name());
+       //     return tx;
+       //   }
+       // }
        
        
-       void apply(operation_t op, VariableName x, VariableName y, bound_t lb, bound_t ub){	
-         term_id_t t_x = term_of_expr(op, term_of_var(y), term_of_itv(lb, ub));
-         // JNL: check with Graeme
-         //      insert only adds an entry if the key does not exist
-         //_var_map.insert(std::make_pair(x, t_x));
-         rebind_var (x, t_x);
+       // void apply(operation_t op, VariableName x, VariableName y, bound_t lb, bound_t ub){	
+       //   term_id_t t_x = term_of_expr(op, term_of_var(y), term_of_itv(lb, ub));
+       //   // JNL: check with Graeme
+       //   //      insert only adds an entry if the key does not exist
+       //   //_var_map.insert(std::make_pair(x, t_x));
+       //   rebind_var (x, t_x);
          
-         check_terms();
+       //   check_terms();
+       // }
+
+      
+       void apply (dom_t& dom, binary_operation_t op,
+                   varname_t x, varname_t y, varname_t z) {
+         auto op1 = convOp <operation_t> (op);
+         auto op2 = convOp <div_operation_t> (op);
+         auto op3 = convOp <bitwise_operation_t> (op);
+
+         if (op1) dom.apply (*op1, x, y, z); 
+         else if (op2) dom.apply (*op2, x, y, z);
+         else if (op3) dom.apply (*op3, x, y, z);
+         else CRAB_ERROR("unsupported binary operator", op);
        }
-       
+
+ 
        // Apply a given functor in the underlying domain.
        // GKG: Looks the current implementation could actually
        // lose information; as it's not taking the meet with
@@ -182,13 +196,14 @@ namespace crab {
          // Only apply functors.
          if(t_ptr->kind() == term::TERM_APP)
          {
-           operation_t op = term::term_ftor(t_ptr);
+           binary_operation_t op = term::term_ftor(t_ptr);
            
            std::vector<term_id_t>& args(term::term_args(t_ptr));
            assert(args.size() == 2);
-           dom.apply(op, domvar_of_term(t).name(),
-                     domvar_of_term(args[0]).name(),
-                     domvar_of_term(args[1]).name());
+           apply (dom, op, 
+                  domvar_of_term(t).name(),
+                  domvar_of_term(args[0]).name(),
+                  domvar_of_term(args[1]).name());
          }
        }
        
@@ -200,18 +215,20 @@ namespace crab {
          // Only apply functors.
          if(t_ptr->kind() == term::TERM_APP)
          {
-           operation_t op = term::term_ftor(t_ptr);
-           
+           binary_operation_t op = term::term_ftor(t_ptr);
            std::vector<term_id_t>& args(term::term_args(t_ptr));
            assert(args.size() == 2);
-           term::InverseOps<dom_number, dom_varname_t, dom_t>::apply(dom, op,
-                                                                     domvar_of_term(t).name(),
-                                                                     domvar_of_term(args[0]).name(),
-                                                                     domvar_of_term(args[1]).name());
+
+           if (boost::optional<operation_t> arith_op = convOp <operation_t> (op)) {           
+             term::InverseOps<dom_number, dom_varname_t, dom_t>::
+                 apply(dom, *arith_op,
+                       domvar_of_term(t).name(),
+                       domvar_of_term(args[0]).name(),
+                       domvar_of_term(args[1]).name());
+           }
          }
        }
-       
-       
+              
        dom_t eval_ftor_copy(dom_t& dom, ttbl_t& tbl, term_id_t t)
        {
          // cout << "Before tightening:" << endl;
@@ -221,6 +238,35 @@ namespace crab {
          // std::cout << "After tightening:" << endl << ret << endl;
          return ret;
        }  
+
+       binary_operation_t convToBinOp (operation_t op) {
+         switch (op) {
+           case OP_ADDITION: return BINOP_ADD;
+           case OP_SUBTRACTION: return BINOP_SUB;
+           case OP_MULTIPLICATION: return BINOP_MUL;
+           default: return BINOP_SDIV;
+         }
+       }
+
+       binary_operation_t convToBinOp (div_operation_t op) {
+         switch (op) {
+           case OP_SDIV: return BINOP_SDIV;
+           case OP_UDIV: return BINOP_UDIV;
+           case OP_SREM: return BINOP_SREM;
+           default: return BINOP_UREM;
+         }
+       }
+
+       binary_operation_t convToBinOp (bitwise_operation_t op) {
+         switch (op) {
+           case OP_AND: return BINOP_AND;
+           case OP_OR: return BINOP_OR;
+           case OP_XOR: return BINOP_XOR;
+           case OP_SHL: return BINOP_SHL;
+           case OP_LSHR: return BINOP_LSHR;
+           default: return BINOP_ASHR;
+         }
+       }
        
       public:
        static anti_unif_t top() {
@@ -635,21 +681,25 @@ namespace crab {
          } else {
            t = build_const(cst);
          }
-         for(; it != e.end(); ++it)
+         for(; it != e.end(); ++it) {
            t = build_term(OP_ADDITION, t, build_linterm(*it));
+         }
+
          CRAB_DEBUG("Should have ", domvar_of_term(t).name(), " := ", e,"\n",_impl);
          return t;       
        }
 
-       term_id_t build_term(operation_t op, term_id_t ty, term_id_t tz)
+       template<typename Op> // [operation_t | div_operation_t | bitwise_operation_t]
+       term_id_t build_term(Op op, term_id_t ty, term_id_t tz)
        {
          // Check if the term already exists
-         optional<term_id_t> eopt(_ttbl.find_ftor(op, ty, tz));
+         binary_operation_t binop = convToBinOp (op);
+         optional<term_id_t> eopt(_ttbl.find_ftor(binop, ty, tz));
          if(eopt) {
            return *eopt;
          } else {
            // Create the term
-           term_id_t tx = _ttbl.apply_ftor(op, ty, tz);
+           term_id_t tx = _ttbl.apply_ftor(binop, ty, tz);
            dom_var_t v(domvar_of_term(tx));
 
            dom_var_t y(domvar_of_term(ty));
@@ -661,7 +711,7 @@ namespace crab {
            _impl.apply(op, v.name(), y.name(), z.name());
 
            CRAB_DEBUG("Should have ", v.name(), "|", v.name().index()," := ", 
-                      op,"(",y.name(), "|", y.name().index(), ",", z.name(), "|", z.name().index(), ")");
+                      y.name(), "|", y.name().index(), op , z.name(), "|", z.name().index());
            CRAB_DEBUG(_impl);
 
            return tx;
@@ -690,7 +740,6 @@ namespace crab {
            return;
          }
          else {
-      
            variable_t x(x_name);
            variable_t y(y_name);
            linear_expression_t e(x);
@@ -936,71 +985,75 @@ namespace crab {
        }
 
 
-       void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width){
+       void apply(conv_operation_t /*op*/, VariableName x, VariableName y, unsigned width){
          // since reasoning about infinite precision we simply assign and
          // ignore the width.
          assign(x, linear_expression_t(y));
        }
 
-       void apply(conv_operation_t op, VariableName x, Number k, unsigned width){
+       void apply(conv_operation_t /*op*/, VariableName x, Number k, unsigned width){
          // since reasoning about infinite precision we simply assign
          // and ignore the width.
          assign(x, k);
        }
 
        void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z){
-         // Convert to intervals and perform the operation
-         CRAB_WARN("bitwise operators not yet supported by term domain");
-
-         term_id_t term_x = _ttbl.fresh_var();
-         dom_var_t dvar_x = domvar_of_term(term_x);
-         _impl.apply(op, dvar_x.name(), domvar_of_var(y).name(), domvar_of_var(z).name());
-         // JNL: check with Graeme
-         //      insert only adds an entry if the key does not exist
-         //_var_map[x] = term_x;
-         variable_t x_copy (x);
-         rebind_var (x_copy, term_x);
+         if (this->is_bottom()) {
+           return;   
+         } else {
+           variable_t vx(x);
+          
+           term_id_t tx(build_term(op, term_of_var(y), term_of_var(z)));
+           rebind_var(vx, tx);
+         }
+         check_terms();
+         CRAB_DEBUG("*** Apply ", x, ":=", y, " ", op, " ", z, ":", *this);
        }
     
        void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k){
-         CRAB_WARN("bitwise operators not yet supported by term domain");
+         if (this->is_bottom()) {
+           return;   
+         } else {
+           variable_t vx(x);
+          
+           term_id_t tx(build_term(op, term_of_var(y), build_const(k)));
+           rebind_var(vx, tx);
+         }
 
-         term_id_t term_x = _ttbl.fresh_var();
-         dom_var_t dvar_x = domvar_of_term(term_x);
-         _impl.apply(op, dvar_x.name(), domvar_of_var(y).name(), k);
-         // JNL: check with Graeme
-         //      insert only adds an entry if the key does not exist
-         //_var_map[x] = term_x;
-         variable_t x_copy (x);
-         rebind_var (x_copy, term_x);
+         check_terms();
+         CRAB_DEBUG("*** Apply ", x, ":=", y, " ", op, " ", k, ":", *this);
+         return;
        }
     
        // division_operators_api
     
        void apply(div_operation_t op, VariableName x, VariableName y, VariableName z){
-         CRAB_WARN("div operators not yet supported by term domain");
+         if (this->is_bottom()) {
+           return;   
+         } else {
+           variable_t vx(x);
+          
+           term_id_t tx(build_term(op, term_of_var(y), term_of_var(z)));
+           rebind_var(vx, tx);
+         }
 
-         term_id_t term_x = _ttbl.fresh_var();
-         dom_var_t dvar_x = domvar_of_term(term_x);
-         _impl.apply(op, dvar_x.name(), domvar_of_var(y).name(), domvar_of_var(z).name());
-         // JNL: check with Graeme
-         //      insert only adds an entry if the key does not exist
-         //_var_map[x] = term_x;
-         variable_t x_copy (x);
-         rebind_var (x_copy, term_x);
+         check_terms();
+         CRAB_DEBUG("*** Apply ", x, ":=", y, " ", op, " ", z, ":", *this);
        }
 
        void apply(div_operation_t op, VariableName x, VariableName y, Number k){
-         CRAB_WARN("div operators not yet supported by term domain");
+         if (this->is_bottom()) {
+           return;   
+         } else {
+           variable_t vx(x);
+          
+           term_id_t tx(build_term(op, term_of_var(y), build_const(k)));
+           rebind_var(vx, tx);
+         }
 
-         term_id_t term_x = _ttbl.fresh_var();
-         dom_var_t dvar_x = domvar_of_term(term_x);
-         _impl.apply(op, dvar_x.name(), domvar_of_var(y).name(), k);
-         // JNL: check with Graeme
-         //      insert only adds an entry if the key does not exist
-         //_var_map[x] = term_x;
-         variable_t x_copy (x);
-         rebind_var (x_copy, term_x);
+         check_terms();
+         CRAB_DEBUG("*** Apply ", x, ":=", y, " ", op, " ", k, ":", *this);
+         return;
        }
     
        // Output function

@@ -4,7 +4,7 @@ Crab is a language agnostic framework to perform static analysis using
 [abstract interpretation](https://en.wikipedia.org/wiki/Abstract_interpretation)
 techniques.
 
-At its core, Crab consists of a bunch of abstract domains and fixpoint
+At its core, Crab is a collection of abstract domains and fixpoint
 iterators built on the top of
 [Ikos](http://ti.arc.nasa.gov/opensource/ikos/) (Inference Kernel for
 Open Static Analyzers) developed by NASA Ames Research Center.
@@ -47,12 +47,12 @@ In its simplest form, the CFG consists only of:
 
 - assume,
 - havoc, 
-- arithmetic operations, and
+- arithmetic and bitwise operations, and
 - goto instructions
 
 but it also supports other instructions such as
 
-- pointer: load, store, pointer arithmetic, and function pointers
+- load, store, pointer arithmetic, and function pointers
 - function calls and returns
 
 The output of Crab is a map from CFG basic blocks to invariants. The
@@ -70,7 +70,7 @@ tests.
 
 Check these projects:
 
-- [crab-llvm](https://github.com/seahorn/crab-llvm)is a standalone
+- [crab-llvm](https://github.com/seahorn/crab-llvm) is a standalone
 application that computes invariants from LLVM-based languages using
 crab.
 

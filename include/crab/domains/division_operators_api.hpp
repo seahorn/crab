@@ -50,6 +50,16 @@ namespace ikos {
     OP_UREM
   } div_operation_t;
 
+  inline std::ostream& operator<<(std::ostream&o, div_operation_t op) {
+    switch (op) {
+      case OP_SDIV: o << "/"; break;
+      case OP_UDIV: o << "/_u"; break;
+      case OP_SREM: o << "%"; break;
+      default: o << "%_u"; break;
+    }
+    return o;
+  }
+
   template< typename Number, typename VariableName >
   class division_operators {
 
@@ -62,4 +72,20 @@ namespace ikos {
   
 } // namespace ikos
 
+namespace crab {
+  using namespace ikos;
+
+  template<>
+  inline boost::optional<div_operation_t> 
+  convOp (binary_operation_t op) {     
+    switch (op) {
+      case BINOP_SDIV: return OP_SDIV;
+      case BINOP_UDIV: return OP_UDIV;
+      case BINOP_SREM: return OP_SREM;
+      case BINOP_UREM: return OP_UREM;
+      default: return boost::optional<div_operation_t> ();
+    }
+  }
+
+}
 #endif // IKOS_DIVISION_OPERATORS_API_HPP
