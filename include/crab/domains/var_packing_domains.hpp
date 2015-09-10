@@ -71,12 +71,14 @@ class var_packing_domain : public writeable,
                            public bitwise_operators< Number, VariableName >,
                            public division_operators< Number, VariableName > {
 public:
-  typedef variable< Number, VariableName > variable_t;
+  using typename numerical_domain< Number, VariableName >::linear_expression_t;
+  using typename numerical_domain< Number, VariableName >::linear_constraint_t;
+  using typename numerical_domain< Number, VariableName >::linear_constraint_system_t;
+  using typename numerical_domain< Number, VariableName >::variable_t;
+  using typename numerical_domain< Number, VariableName >::number_t;
+  using typename numerical_domain< Number, VariableName >::varname_t;
+
   typedef patricia_tree_set< variable_t > variable_set_t;
-  typedef linear_expression< Number, VariableName > linear_expression_t;
-  typedef linear_constraint< Number, VariableName > linear_constraint_t;
-  typedef linear_constraint_system< Number, VariableName >
-      linear_constraint_system_t;
   typedef interval< Number > interval_t;
   typedef var_packing_domain< Number, VariableName, Domain >
       var_packing_domain_t;
