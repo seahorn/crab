@@ -446,13 +446,6 @@ namespace crab {
       void add_constraint(int coef_x, variable_t x, int coef_y, variable_t y, 
                           Number c, linear_constraint_t cst) {
 
-        if (!(coef_x == 1 || coef_x == -1))
-          CRAB_ERROR("DBM: coefficients can be only 1 or -1");
-        if (!(coef_y == 1 || coef_y == -1))
-          CRAB_ERROR("DBM: coefficients can be only 1 or -1");
-        if (coef_x == coef_y)
-          CRAB_ERROR("DBM: same coefficients");        
-
         if (coef_x == 1 && coef_y == -1){  
           if (cst.is_inequality()){       // x - y <= c
             dexpr e;     
@@ -493,7 +486,7 @@ namespace crab {
             }
           }
         }      
-        else{ // coef_x == -1 && coef_y == 1
+        else if (coef_x == -1 && coef_y == 1) {
           if (cst.is_inequality()){       // y - x <= c
             dexpr e;     
             e.args[0] = get_dbm_index(y.name());
@@ -531,6 +524,9 @@ namespace crab {
               set_to_bottom(); 
             }
           }
+        }
+        else {
+          CRAB_WARN("DBM coefficients can only be 1 and -1 or -1 and 1");
         }
       }
 
@@ -985,8 +981,10 @@ namespace crab {
             assign (x,exp);
           }
         }
-        else
-          CRAB_ERROR("DBM: only supports constant/variable on the rhs of assignment");
+        else {
+          CRAB_WARN("DBM only supports a cst or var on the rhs of assignment");
+          this->operator-=(x);
+        }
 
         CRAB_DEBUG("---", x, ":=", e,"\n",*this);
       }
@@ -1057,11 +1055,11 @@ namespace crab {
         }
     
         linear_expression_t exp = cst.expression();
-        if (exp.size() > 2)
-          CRAB_ERROR("DBM supports constraints with at most two variables");
-
-        if (exp.size() == 0)
-          CRAB_ERROR("DBM: bad-formed constraint: ", cst);
+        if (exp.size() > 2) {
+          CRAB_WARN("DBM supports constraints with at most two variables");
+          return;
+        }
+        assert (exp.size () > 0);
 
         if (!dbm_compact ())
           resize (Delta);
