@@ -1116,6 +1116,8 @@ namespace crab {
         if(is_bottom())
           return;
 
+        this->operator-=(x);
+
         int k = get_dbm_index(x);
         if (!intv.is_top()){
           optional<Number> lb = intv.lb().number();
