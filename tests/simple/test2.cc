@@ -107,5 +107,18 @@ int main (int argc, char** argv )
     }
   }
 
+  {
+    NumFwdAnalyzer <cfg_t,sym_cst_intv_domain_t,VariableFactory>::type a (cfg,vfac,run_live);
+    // Run fixpoint 
+    sym_cst_intv_domain_t inv = sym_cst_intv_domain_t::top ();
+    a.Run (inv);
+    // Print invariants
+    cout << "Invariants using " << inv.getDomainName () << "\n";
+    for (auto &b : cfg) {
+      auto inv = a [b.label ()];
+      std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
+    }
+  }
+
   return 0;
 }

@@ -549,7 +549,7 @@ public:
     return this->_product.first().to_linear_constraint_system();
   }
 
-  const char* getDomainName() const { return "Intervals+Congruences"; }
+  const char* getDomainName() const { return this->_product.getDomainName (); }
 
 }; // class interval_congruence_domain
 
