@@ -185,6 +185,16 @@ namespace ikos {
       }
     }
 
+    const char* getDomainName () const { 
+       std::stringstream buf;
+       buf << "Product of " 
+           << this->_first.getDomainName () 
+           << " and "
+           << this->_second.getDomainName ();
+       std::string name (buf.str());
+       return name.c_str ();
+    }
+
   }; // class domain_product2
 
   template< typename Domain1, typename Domain2, typename Domain3 >
@@ -450,6 +460,10 @@ namespace ikos {
     
     void write(std::ostream& o) {
       this->_product.write(o);
+    }
+
+    const char* getDomainName () const { 
+      return this->_product.getDomainName ();
     }
 
   }; // class numerical_domain_product2
