@@ -597,7 +597,7 @@ namespace crab {
        for (auto p:_product.second ()) {
          if (boost::optional<linear_expression_t> e = 
              expr_marshal_t::unmarshal (p.second)) {
-           csts += (p.first == *e);
+           csts += (linear_constraint_t (variable_t (p.first) == *e));
          }
        } 
        return csts;
