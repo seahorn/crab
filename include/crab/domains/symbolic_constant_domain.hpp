@@ -1,6 +1,6 @@
 /*******************************************************************************
  *
- * Symbolic Constant Domain 
+ * Symbolic Constant Domain
  *
  * Based on the paper "Symbolic Methods to Enhance the Precision of
  * Numerical Abstract Domains" by A. Mine, VMCAI'06.
@@ -28,6 +28,8 @@
 
 
 namespace crab { 
+
+ namespace domains {
 
    using namespace ikos;
    using namespace std;
@@ -611,6 +613,7 @@ namespace crab {
 
    }; 
 
+ } // end namespace
 } // end namespace
 
 #endif 
