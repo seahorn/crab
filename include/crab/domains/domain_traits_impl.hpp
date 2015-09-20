@@ -23,14 +23,27 @@ namespace crab {
      
         template <typename AbsNumDomain, typename Iterator >
         void forget(AbsNumDomain& inv, Iterator it, Iterator end){
+          // inefficient if after each forget the domain requires
+          // normalization
           for (auto v : boost::make_iterator_range (it,end)){
             inv -= v; 
           }
         }
+
+        template <typename AbsNumDomain, typename Iterator>
+        void project(AbsNumDomain& inv, Iterator begin, Iterator end) {
+          // lose precision if relational domain
+          AbsNumDomain res = AbsNumDomain::top ();
+          for (auto v : boost::make_iterator_range (begin, end)){
+            res.set (v, inv[v]); 
+          }
+          std::swap (inv, res);
+        }
      
+        // make a new copy of x
         template <typename AbsDomain, typename VariableName >
         void expand (AbsDomain& inv, VariableName x, VariableName new_x) {
-          // make a new copy of x but losing precision if relational domain
+          // lose precision if relational domain
           inv.set (new_x , inv [x]);
         }
      

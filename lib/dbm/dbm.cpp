@@ -28,7 +28,7 @@ static int* pi_prime = NULL;
 static int* fwd_dist = NULL;
 
 // Always initialized to 0.
-static char* var_flags = NULL;
+static char * var_flags = NULL;
 
 // Comparator for use with min-heaps.
 typedef struct DistComp {
@@ -486,11 +486,14 @@ void dbm_add_edge(dbm x, int i, int j, int val)
   jlist->elt[jlist->sz] = i;
   jlist->sz++;
 
+#ifdef DEBUG
   for(int xi = 0; xi < x->num_srcs; xi++)
   {
     adjlist* xlist = src_list(x, x->live_srcs[xi]);
     assert(xlist->inv == xi);
   }
+#endif 
+
 }
 
 // Precondition:
@@ -1095,10 +1098,11 @@ dbm dbm_extract(int* vs, int vs_len, dbm x)
 
   if(!x->feasible)
     return NULL;   
-
+  
   // Mark the var flags.
-  for(int vi = 0; vi < vs_len; vi++)
+  for(int vi = 0; vi < vs_len; vi++) {
     var_flags[vs[vi]] = 1;
+  }
 
   int sz = x->sz;
   dbm ret = dbm_alloc(x->sz);
@@ -1117,9 +1121,8 @@ dbm dbm_extract(int* vs, int vs_len, dbm x)
     for(; !dests_end(iter); next_dest(iter))
     {
       int d = dest(iter);
-      if(!var_flags[s] && !var_flags[d])
+      if(!var_flags[s] || !var_flags[d])
         continue;
-
       assert(!src_is_live(ret, s) || !in_graph(ret, s, d));
       dbm_add_edge(ret, s, d, iter_val(iter));
     }

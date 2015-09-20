@@ -23,6 +23,9 @@ namespace crab {
     
       template <typename AbsNumDomain, typename Iterator>
       void forget(AbsNumDomain& inv, Iterator begin, Iterator end); 
+
+      template <typename AbsNumDomain, typename Iterator>
+      void project(AbsNumDomain& inv, Iterator begin, Iterator end); 
     
       template <typename AbsDomain, typename VariableName>
       void expand (AbsDomain& inv, VariableName x, VariableName new_x);

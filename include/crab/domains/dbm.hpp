@@ -309,6 +309,13 @@ namespace crab {
         swap(_dbm, ret);
       }
 
+      void project(vector<int> idxs) {
+        dbm ret = NULL;
+        ret = dbm_extract (&idxs[0], idxs.size(), _dbm);
+        dbm_dealloc(_dbm);
+        swap(_dbm, ret);
+      }
+
       void set_to_bottom() {
         if (_dbm)
           dbm_dealloc (_dbm);
@@ -939,7 +946,8 @@ namespace crab {
           _rev_map.erase (it->second);
         }
       }
-
+      
+      // remove from the dbm the variables [vIt,...,vEt)
       template<typename Iterator>
       void forget (Iterator vIt, Iterator vEt) {
         if (is_bottom ())
@@ -960,6 +968,35 @@ namespace crab {
           if (!dbm_compact ())
             resize (Delta);
         }
+      }
+
+      // dual of forget: remove all variables except [vIt,...vEt)
+      template<typename Iterator>
+      void project (Iterator vIt, Iterator vEt) {
+        if (is_bottom ())
+          return;
+        if (vIt == vEt) 
+          return;
+
+        vector<int> idxs;
+        var_map_t var_map; rev_map_t rev_map;
+        for (auto v: boost::make_iterator_range (vIt,vEt)) {
+          auto it = _var_map.find (v);
+          if (it != _var_map.end ()) {
+            idxs.push_back  ((int) it->second);
+            var_map.insert (make_pair (it->first, it->second));
+            rev_map.insert (make_pair (it->second, it->first));
+          }
+        }
+
+        _var_map.clear ();
+        std::swap (_var_map, var_map);
+        _rev_map.clear ();
+        std::swap (_rev_map, rev_map);
+
+        project (idxs);
+        if (!dbm_compact ())
+          resize (Delta);
       }
 
       void assign(VariableName x, linear_expression_t e) {
@@ -1457,13 +1494,19 @@ namespace crab {
     
        template <typename Number, typename VariableName>
        void normalize (DBM<Number,VariableName>& inv) {
-         inv.normalize();
+         inv.normalize ();
        }
     
        template <typename Number, typename VariableName, typename Iterator >
-       void forget (DBM<Number,VariableName>& inv, Iterator it, Iterator end){
+       void forget (DBM<Number,VariableName>& inv, Iterator it, Iterator end) {
          inv.forget (it, end);
        }
+
+       template <typename Number, typename VariableName, typename Iterator >
+       void project (DBM<Number,VariableName>& inv, Iterator it, Iterator end) {
+         inv.project (it, end);
+       }
+
     } // namespace domain_traits
 
 } // namespace crab
