@@ -324,10 +324,9 @@ namespace crab {
       auto lhs_opt = cs.get_lhs_name ();
       auto ret_opt = summ.get_ret_val ();
       if (lhs_opt && ret_opt) {
-        caller += (z_var_t (*lhs_opt) == z_var_t (*ret_opt));
+        caller.assign(*lhs_opt, z_lin_exp_t (z_var_t (*ret_opt)));
       }
       // --- remove from the summary the callee's parameters
-      //if (std::find(pars.begin(), pars.end(), *ret_opt) != pars.end())
       pars.push_back (*ret_opt);
       domain_traits::forget (caller, pars.begin (), pars.end ());
     }
@@ -366,11 +365,19 @@ namespace crab {
       if (m_sum_tbl->hasSummary (cs)) {
         auto &sum = m_sum_tbl->get (cs);
         auto pars = sum.get_params ();
-        if (pars.size () == cs.get_num_args ())
+        if (pars.size () == cs.get_num_args ()) {
           reuse_summary (this->m_inv, cs, sum);
+          return;
+        }
         else
           CRAB_WARN ("Ignored callsite due to mismatch of caller and callee's parameters");
       }
+      else
+        CRAB_DEBUG ("Summary not found for ", cs);
+      
+      auto lhs_opt = cs.get_lhs_name ();
+      if (lhs_opt) // havoc 
+        this->m_inv -= *lhs_opt;
     }
   }; 
 

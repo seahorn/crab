@@ -5,8 +5,12 @@ set (CRAB_LIBS
   ${GMP_LIB}
   )
 
+
 add_subdirectory (simple)
 add_subdirectory (arrays)
 add_subdirectory (pointers)
 add_subdirectory (unif)
+add_subdirectory (inter)
 add_subdirectory (conc)
+# add_subdirectory (cg)
+
