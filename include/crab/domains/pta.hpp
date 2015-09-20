@@ -410,14 +410,12 @@ class pta_system {
 
   class refine : public binary_op {
   private:
-    std::size_t _threshold;
-
     // This refinement is not a narrowing since it will not ensure
     // convergence. Thus, we need to make sure it is called a finite
     // number of times.
 
   public:
-    refine(std::size_t threshold) : _threshold(threshold) {}
+    refine(std::size_t /*threshold*/)  {}
 
     bool convergence_achieved(z_interval /*before*/,
                               z_interval /*after*/) const {
