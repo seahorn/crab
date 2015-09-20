@@ -11,6 +11,7 @@
  * - C-like arrays and in general, any sequence of contiguous bytes
  *   either in the heap or stack.
  * - functions 
+ * 
  */
 
 #include <boost/shared_ptr.hpp>
@@ -42,6 +43,13 @@ namespace crab {
     enum TrackedPrecision { REG = 0, PTR = 1, MEM = 2 };
   
     enum VariableType { INT_TYPE, PTR_TYPE, ARR_TYPE, UNK_TYPE};
+
+
+    enum StatementCode { UNDEF = 0, 
+                         BIN_OP = 1, ASSIGN = 21, ASSUME = 22, UNREACH = 23, HAVOC = 24, SELECT = 25,
+                         ARR_INIT = 30, ARR_ASSUME = 31, ARR_STORE = 32, ARR_LOAD = 33,
+                         PTR_LOAD = 40, PTR_STORE = 41, PTR_ASSIGN = 42, PTR_OBJECT = 43, PTR_FUNCTION = 44,
+                         CALLSITE = 50, RETURN = 51 }; 
 
     template<typename Number, typename VariableName>
     inline ostream& operator<< (ostream &o, 
@@ -145,6 +153,16 @@ namespace crab {
       
      protected:
       live_t m_live;
+      StatementCode m_stmt_code;
+
+      Statement (StatementCode code = UNDEF): m_stmt_code (code) { }
+
+     public:
+      
+      bool isReturn () const { return m_stmt_code == RETURN; }
+      bool isBinOp () const { return (m_stmt_code >= 1 && m_stmt_code <= 20); }
+      bool isAssign () const { return (m_stmt_code == ASSIGN); }
+      bool isAssume () const { return (m_stmt_code == ASSUME); }
       
      public:
       
@@ -193,7 +211,7 @@ namespace crab {
                 binary_operation_t op, 
                 linear_expression_t op1, 
                 linear_expression_t op2): 
-          
+          Statement <VariableName> (BIN_OP),
           m_lhs(lhs), m_op(op), m_op1(op1), m_op2(op2) 
       { 
         this->m_live.addDef (m_lhs.name());
@@ -245,6 +263,7 @@ namespace crab {
      public:
       
       Assignment (variable_t lhs, linear_expression_t rhs): 
+          Statement <VariableName> (ASSIGN),
           m_lhs(lhs), 
           m_rhs(rhs) 
       {
@@ -292,7 +311,8 @@ namespace crab {
       
      public:
       
-      Assume (linear_constraint_t cst): m_cst(cst) 
+      Assume (linear_constraint_t cst): 
+          Statement <VariableName> (ASSUME), m_cst(cst) 
       { 
         for(auto v: cst.variables())
           this->m_live.addUse (v.name()); 
@@ -324,7 +344,7 @@ namespace crab {
     {
      public:
       
-      Unreachable() { }
+      Unreachable(): Statement <VariableName> (UNREACH) { }
       
       virtual void accept(StatementVisitor <VariableName> *v) 
       {
@@ -354,8 +374,8 @@ namespace crab {
       
      public:
       
-      Havoc (VariableName lhs): m_lhs(lhs) 
-      { 
+      Havoc (VariableName lhs): 
+          Statement <VariableName> (HAVOC), m_lhs(lhs)  {
         this->m_live.addDef (m_lhs);
       }
       
@@ -410,7 +430,7 @@ namespace crab {
               linear_constraint_t cond, 
               linear_expression_t e1, 
               linear_expression_t e2): 
-          
+          Statement <VariableName> (SELECT),
           m_lhs(lhs), m_cond(cond), m_e1(e1), m_e2(e2) 
       { 
         this->m_live.addDef (m_lhs.name());
@@ -463,6 +483,7 @@ namespace crab {
       
      public:
       ArrayInit (VariableName arr, vector<ikos::z_number> values): 
+          Statement <VariableName> (ARR_INIT),
           m_arr (arr), m_values (values)  { }
       
       VariableName variable () const { return m_arr; }
@@ -508,9 +529,11 @@ namespace crab {
      public:
       
       AssumeArray (VariableName arr, ikos::z_number val): 
+          Statement <VariableName> (ARR_ASSUME),
           m_arr (arr), m_val (bound_t (val))  { }
       
       AssumeArray (VariableName arr, interval_t val): 
+          Statement <VariableName> (ARR_ASSUME),
           m_arr (arr), m_val (val)  { }
       
       VariableName variable () const { return m_arr; }
@@ -562,6 +585,7 @@ namespace crab {
                   linear_expression_t value, 
                   ikos::z_number n_bytes,
                   bool is_sing): 
+          Statement <VariableName> (ARR_STORE),
           m_arr (arr), m_index (index),
           m_value (value), m_bytes (n_bytes), 
           m_is_singleton (is_sing)
@@ -624,6 +648,7 @@ namespace crab {
       
       ArrayLoad (variable_t lhs, variable_t arr, 
                  linear_expression_t index, ikos::z_number n_bytes): 
+          Statement <VariableName> (ARR_LOAD),
           m_lhs (lhs), m_array (arr), 
           m_index (index), m_bytes (n_bytes)
       {
@@ -683,6 +708,7 @@ namespace crab {
      public:
       
       PtrLoad (VariableName lhs, VariableName rhs, interval_t size): 
+          Statement <VariableName> (PTR_LOAD),
           m_lhs (lhs), m_rhs (rhs), m_size (size)
       {
         this->m_live.addUse (lhs);
@@ -736,6 +762,7 @@ namespace crab {
      public:
       
       PtrStore (VariableName lhs, VariableName rhs, interval_t size): 
+          Statement <VariableName> (PTR_STORE),
           m_lhs (lhs), m_rhs (rhs), m_size (size)
       {
         this->m_live.addUse (lhs);
@@ -788,6 +815,7 @@ namespace crab {
      public:
       
       PtrAssign (VariableName lhs, VariableName rhs, linear_expression_t offset): 
+          Statement <VariableName> (PTR_ASSIGN),
           m_lhs (lhs), m_rhs (rhs), m_offset(offset)
       {
         this->m_live.addDef (lhs);
@@ -831,6 +859,7 @@ namespace crab {
      public:
       
       PtrObject (VariableName lhs, index_t address): 
+          Statement <VariableName> (PTR_OBJECT),
           m_lhs (lhs), m_address (address)
       {
         this->m_live.addDef (lhs);
@@ -869,6 +898,7 @@ namespace crab {
      public:
       
       PtrFunction (VariableName lhs, VariableName func): 
+          Statement <VariableName> (PTR_FUNCTION),
           m_lhs (lhs), m_func (func)
       {
         this->m_live.addDef (lhs);
@@ -923,6 +953,7 @@ namespace crab {
       }
       
       FCallSite (VariableName func_name, vector<VariableName> args): 
+          Statement <VariableName> (CALLSITE),
           m_func_name (func_name)
       {
         for (auto v : args)
@@ -1039,6 +1070,7 @@ namespace crab {
      public:
       
       Return (VariableName var, VariableType type = UNK_TYPE): 
+          Statement <VariableName> (RETURN),
           m_var (var), m_type (type)
       {
         this->m_live.addUse (m_var); 
@@ -2362,6 +2394,30 @@ namespace crab {
       
     }; 
   
+     // Helper class
+    template<typename CFG>
+    struct CfgHasher {
+      typedef typename CFG::basic_block_t::callsite_t callsite_t;
+      typedef typename CFG::fdecl_t fdecl_t;
+      
+      static size_t hash (callsite_t cs) {
+        size_t res = hash_value (cs.get_func_name ());
+        boost::hash_combine (res, cs.get_lhs_type());
+        auto num_args = cs.get_num_args ();
+        for(unsigned i=0; i<num_args; i++)
+          boost::hash_combine(res, cs.get_arg_type (i));
+        return res;
+      }
+      
+      static size_t hash (fdecl_t d)  {
+        size_t res = hash_value (d.get_func_name ());
+        boost::hash_combine (res, d.get_lhs_type ());
+        for(unsigned i=0; i<d.get_num_params (); i++)
+          boost::hash_combine(res, d.get_param_type (i));
+        return res;
+      }      
+    };
+
   } // end namespace cfg
 }  // end namespace crab
 
