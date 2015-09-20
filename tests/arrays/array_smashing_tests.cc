@@ -386,9 +386,8 @@ void run(cfg_t cfg, string name, VariableFactory &vfac)
   cout << cfg << endl;
   
   const bool run_live = false;
-  typedef NumAbsTransformer <ArrayDomain> arr_transformer_t;
-  FwdAnalyzer <cfg_t, arr_transformer_t, 
-               VariableFactory, z_lin_cst_sys_t> It (cfg,vfac,run_live);
+  typename NumFwdAnalyzer <cfg_t, ArrayDomain, 
+                           VariableFactory, z_lin_cst_sys_t>::type It (cfg,vfac,run_live);
   ArrayDomain inv = ArrayDomain::top ();
   It.Run (inv);
   cout << "Results with " << inv.getDomainName () << ":\n";

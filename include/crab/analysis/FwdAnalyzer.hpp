@@ -1,11 +1,14 @@
 #ifndef FWD_ANALYZER_HPP
 #define FWD_ANALYZER_HPP
 
+#include "boost/range/algorithm/set_algorithm.hpp"
+
 #include <crab/cfg/Cfg.hpp>
 #include <crab/cfg/VarFactory.hpp>
 #include <crab/analysis/Liveness.hpp>
 #include <crab/analysis/AbsTransformer.hpp>
 #include <crab/analysis/InvTable_traits.hpp>
+#include <crab/analysis/InterDS.hpp>
 #include <crab/domains/domain_traits.hpp>
 
 namespace crab {
@@ -13,10 +16,30 @@ namespace crab {
   namespace analyzer {
 
     using namespace cfg;
+  
+    template<typename CFG>
+    inline boost::optional<typename CFG::varname_t> findReturn (CFG cfg)
+    {
+      typedef typename CFG::varname_t varname_t;
 
+      if (cfg.has_exit ()) {
+        auto const & bb = cfg.get_node (cfg.exit ());
+        for (auto const& s : boost::make_iterator_range (bb.begin (),
+                                                         bb.end ())) {
+          if (s.isReturn ()) {                            
+            const Return <varname_t>* ret_stmt = 
+                static_cast< const Return <varname_t> *> (&s);
+            return  ret_stmt->get_ret_var ();
+          }
+        }
+      }
+      return boost::optional<varname_t> ();
+    }
+        
     //! Perform a forward flow-sensitive analysis.
-    template< typename CFG, typename AbsTr, typename VarFactory,
-              typename InvTblValTy>
+    //  AbsTr defines the abstract transfer functions as well as which
+    //  operations are modelled.
+    template< typename CFG, typename AbsTr, typename VarFactory, typename InvTblValTy>
     class FwdAnalyzer: 
         public interleaved_fwd_fixpoint_iterator< typename CFG::basic_block_label_t, 
                                                   CFG, 
@@ -31,33 +54,56 @@ namespace crab {
       typedef boost::unordered_map<basic_block_label_t, InvTblValTy> invariant_map_t;    
       typedef Liveness<CFG> liveness_t;     
       typedef typename liveness_t::live_set_t live_set_t;     
-      
+
+
+     public:
+
+      // datastructure types in case of inter-procedural analysis
+      typedef SummaryTable <CFG, typename AbsTr::summ_abs_domain_t> summ_tbl_t;
+      typedef CallCtxTable <CFG, typename AbsTr::call_abs_domain_t> call_tbl_t;
+
+     private:
+
       CFG m_cfg;
       VarFactory&  m_vfac;
       liveness_t m_live;
+      // datastructures needed to perform interprocedural analysis
+      summ_tbl_t* m_summ_tbl;
+      call_tbl_t* m_call_tbl;
       bool m_keep_shadows;
+      std::set<varname_t> m_formals;
       // Preserve invariants at the entry and exit. This might be
       // expensive in terms of memory. As an alternative, we could
       // compute the invariants at the exit by propagating locally from
       // the invariants at the entry.
       invariant_map_t  m_pre_map;
       invariant_map_t  m_post_map;
-      
-      
+
+      template <typename Set>
+      inline void set_difference2 (Set &s1, Set &s2) {
+        Set s3;
+        boost::set_difference (s1, s2, std::inserter (s3, s3.end ()));
+        std::swap (s3, s1);
+      }
+
+      void prune_dead_variables (abs_dom_t &inv, basic_block_label_t node) {
+        // prune dead variables 
+        if (inv.is_bottom() || inv.is_top()) return;
+        auto dead = m_live.dead_exit (node);       
+
+        set_difference2 (dead, m_formals);
+        domain_traits::forget (inv, dead.begin (), dead.end ());
+      }
+
       //! Given a basic block and the invariant at the entry it produces
       //! the invariant at the exit of the block.
       abs_dom_t analyze (basic_block_label_t node, abs_dom_t pre) 
       { 
         auto &b = m_cfg.get_node (node);
-        AbsTr vis (pre);
+        AbsTr vis (pre, m_summ_tbl, m_call_tbl);
         for (auto &s : b) { s.accept (&vis); }
         abs_dom_t post = vis.inv ();
-        
-        // prune dead variables 
-        if (post.is_bottom() || post.is_top()) return post;
-      
-        auto dead = m_live.dead_exit (node);
-        domain_traits::forget (post, dead.begin (), dead.end ());
+        prune_dead_variables (post, node);
         return post;
       } 
       
@@ -105,14 +151,41 @@ namespace crab {
       
       typedef typename invariant_map_t::iterator iterator;        
       typedef typename invariant_map_t::const_iterator const_iterator;        
-      
-      FwdAnalyzer (CFG cfg, VarFactory& vfac, 
-                   bool runLive, bool keep_shadows=false): 
+
+     public:
+
+      // --- intra-procedural version
+      FwdAnalyzer (CFG cfg, VarFactory& vfac, bool runLive,
+                   bool keep_shadows = false):
           fwd_iterator_t (cfg), m_cfg (cfg), 
           m_vfac (vfac), m_live (m_cfg), 
+          m_summ_tbl (nullptr), m_call_tbl (nullptr),
           m_keep_shadows (keep_shadows) {
-        if (runLive)
+        if (runLive) {
           m_live.exec ();
+        }
+      }
+
+      // --- inter-procedural version
+      FwdAnalyzer (CFG cfg, VarFactory& vfac, bool runLive, 
+                   summ_tbl_t* sum_tbl, call_tbl_t* call_tbl,
+                   bool keep_shadows = false):
+          fwd_iterator_t (cfg), m_cfg (cfg), 
+          m_vfac (vfac), m_live (m_cfg), 
+          m_summ_tbl (sum_tbl), m_call_tbl (call_tbl),
+          m_keep_shadows (keep_shadows) {
+        if (runLive) {
+          m_live.exec ();
+
+          // --- collect formal parameters and return value (if any)
+          auto fdecl = m_cfg.get_func_decl ();
+          assert (fdecl);
+          for (unsigned i=0; i < (*fdecl).get_num_params();i++)
+            m_formals.insert ((*fdecl).get_param_name (i));
+          auto ret_val = findReturn (m_cfg);
+          if (ret_val)
+            m_formals.insert (*ret_val);
+        }
       }
       
       iterator       pre_begin ()       { return m_pre_map.begin(); } 
@@ -133,7 +206,7 @@ namespace crab {
       //! Propagate invariants at the statement level
       template < typename Statement >
       abs_dom_t AnalyzeStmt (Statement s, abs_dom_t pre) {
-        AbsTr vis (pre);
+        AbsTr vis (pre, m_summ_tbl, m_call_tbl); 
         vis.visit (s);
         return vis.inv ();
       }
@@ -165,9 +238,16 @@ namespace crab {
     //! Specialized type for a numerical forward analyzer
     template<typename CFG, typename AbsNumDomain, typename VarFactory, 
              typename InvTblValTy = AbsNumDomain>  
-    struct NumFwdAnalyzer {
-      typedef NumAbsTransformer <AbsNumDomain> num_abs_tr_t;
+    class NumFwdAnalyzer {
+     private:
+
+      typedef NumAbsTransformer <AbsNumDomain,
+                                 SummaryTable<CFG,AbsNumDomain>,
+                                 CallCtxTable<CFG,AbsNumDomain> > num_abs_tr_t; 
+     public:
+
       typedef FwdAnalyzer <CFG, num_abs_tr_t, VarFactory, InvTblValTy> type;
+
     };
   
   } // end namespace

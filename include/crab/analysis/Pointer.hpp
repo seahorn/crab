@@ -1,6 +1,10 @@
 #ifndef POINTER_ANALYSIS_HPP
 #define POINTER_ANALYSIS_HPP
 
+/* 
+   Compute points-to sets from a Cfg 
+ */
+
 #include <crab/cfg/Cfg.hpp>
 #include <crab/cfg/VarFactory.hpp>
 #include <crab/analysis/FwdAnalyzer.hpp>
@@ -213,8 +217,7 @@ namespace crab {
         
       };
       
-      typedef NumAbsTransformer <num_domain_t> num_abs_tr_t;
-      typedef FwdAnalyzer<CFG, num_abs_tr_t, VariableFactory, num_domain_t> num_inv_gen_t;
+      typedef typename NumFwdAnalyzer<CFG,num_domain_t,VariableFactory>::type num_inv_gen_t;
       typedef typename GenBasicBlockCons < num_inv_gen_t>::pt_var_map_t pt_var_map_t;
       typedef inv_tbl_traits<num_domain_t,num_domain_t> inv_tbl_tl;
       
