@@ -1075,7 +1075,11 @@ public:
 
   iterator end() const { return iterator(); }
 
-  bool operator[](const Element& x) const { return this->_tree.lookup(x); }
+  bool operator[](const Element& x) const { 
+    boost::optional<bool> r = this->_tree.lookup(x);
+    if (!r) return false;
+    else return *r;
+  }
 
   patricia_tree_set_t operator+(const Element& e) const {
     patricia_tree_t t = this->_tree;
