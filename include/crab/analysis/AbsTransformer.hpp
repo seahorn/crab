@@ -496,7 +496,8 @@ namespace crab {
       // We could not reuse a summary so we just havoc lhs of the call
       // site
       auto lhs_opt = cs.get_lhs_name ();
-      this->m_inv -= *lhs_opt;
+      if (lhs_opt)
+        this->m_inv -= *lhs_opt;
     }
   }; 
   
