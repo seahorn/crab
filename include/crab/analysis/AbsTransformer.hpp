@@ -327,7 +327,8 @@ namespace crab {
         caller.assign(*lhs_opt, z_lin_exp_t (z_var_t (*ret_opt)));
       }
       // --- remove from the summary the callee's parameters
-      pars.push_back (*ret_opt);
+      if (ret_opt)
+        pars.push_back (*ret_opt);
       domain_traits::forget (caller, pars.begin (), pars.end ());
     }
 
