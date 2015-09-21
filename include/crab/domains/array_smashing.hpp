@@ -119,7 +119,19 @@ namespace crab {
         void operator-=(VariableName var) {
           _inv -= var;
         }
-        
+
+        // remove all variables [begin,...end)
+        template<typename Iterator>
+        void forget (Iterator begin, Iterator end) {
+          crab::domain_traits::forget (_inv, begin, end);
+        }
+
+        // dual of forget: remove all variables except [begin,...end)
+        template<typename Iterator>
+        void project (Iterator begin, Iterator end) {
+          crab::domain_traits::project (_inv, begin, end);
+        }
+
         void operator += (linear_constraint_system_t csts) {
           _inv += csts;
         }
@@ -280,6 +292,19 @@ namespace crab {
                        z_number n_bytes, bool is_singleton) {
        inv.store (a, i, val, n_bytes, is_singleton);
      }
+
+     template <typename BaseDomain, typename VariableName, typename Number, typename Iterator >
+     void forget (array_smashing<BaseDomain, Number,VariableName>& inv, 
+                  Iterator it, Iterator end) {
+       inv.forget (it, end);
+     }
+   
+     template <typename BaseDomain, typename VariableName, typename Number, typename Iterator >
+     void project (array_smashing<BaseDomain,Number, VariableName>& inv, 
+                   Iterator it, Iterator end) {
+       inv.project (it, end);
+     }
+
    } // namespace domain_traits
 }// namespace crab
 #endif 
