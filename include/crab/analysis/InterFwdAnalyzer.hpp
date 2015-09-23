@@ -47,12 +47,13 @@ namespace crab {
 
       typedef boost::shared_ptr <td_analyzer> td_analyzer_ptr;
       typedef boost::unordered_map <std::size_t, td_analyzer_ptr> invariant_map_t;
- 
+
       CG m_cg;
       VarFactory&  m_vfac;
       bool m_live;
       bool m_keep_shadows;
       invariant_map_t m_inv_map;
+      summ_tbl_t m_summ_tbl;
 
      public:
       
@@ -68,7 +69,6 @@ namespace crab {
         std::vector<cg_node_t> rev_order;
         SccGraph <CG> Scc_g (m_cg);
         rev_topo_sort (Scc_g, rev_order);
-        summ_tbl_t summ_tbl;
         call_tbl_t call_tbl;
        
         CRAB_DEBUG ("Bottom-up phase ...");
@@ -85,7 +85,7 @@ namespace crab {
             if (fun_name != "main") {
               CRAB_DEBUG ("--- Analyzing ", (*fdecl).get_func_name ());
               // --- run the analysis
-              bu_analyzer a (cfg, m_vfac, m_live, &summ_tbl, &call_tbl) ; 
+              bu_analyzer a (cfg, m_vfac, m_live, &m_summ_tbl, &call_tbl) ; 
               a.Run (BUAbsDomain::top ());
               // --- build the summary
               std::set<varname_t> formals;
@@ -99,12 +99,10 @@ namespace crab {
               domain_traits::project (inv, formals.begin (), formals.end ());            
               if (ret_val_opt) 
                 formals.erase (*ret_val_opt);
-              summ_tbl.insert (*fdecl, inv, ret_val_opt, formals);
+              m_summ_tbl.insert (*fdecl, inv, ret_val_opt, formals);
             }
           }
         } 
-
-        //cout << summ_tbl << endl;
 
         CRAB_DEBUG ("Top-down phase ...");
         bool is_root = true;
@@ -128,7 +126,7 @@ namespace crab {
             }
             
             td_analyzer_ptr a (new td_analyzer (cfg, m_vfac, m_live, 
-                                                &summ_tbl, &call_tbl)) ;           
+                                                &m_summ_tbl, &call_tbl)) ;           
             if (is_root) {
               a->Run (init);
               is_root = false;
@@ -148,25 +146,49 @@ namespace crab {
       //! Return the invariants that hold at the exit of b in cfg
       InvTblValTy get_pre (const cfg_t &cfg, 
                            typename cfg_t::basic_block_label_t b) const { 
-        auto fdecl = cfg.get_func_decl ();
-        assert (fdecl);
-        auto const it = m_inv_map.find (CfgHasher<cfg_t>::hash(*fdecl));
-        if (it != m_inv_map.end ())
-          return it->second->get_pre (b);
-        else
-          CRAB_ERROR("InterFwdAnalyzer: Cfg not found");
+
+        if (auto fdecl = cfg.get_func_decl ()) {
+          auto const it = m_inv_map.find (CfgHasher<cfg_t>::hash(*fdecl));
+          if (it != m_inv_map.end ())
+            return it->second->get_pre (b);
+        }
+        
+        CRAB_WARN("Invariants at the entry of the block not found");
+        return InvTblValTy::top ();
       }
       
       //! Return the invariants that hold at the exit of b in cfg
       InvTblValTy get_post (const cfg_t &cfg, 
                             typename cfg_t::basic_block_label_t b) const {
-        auto fdecl = cfg.get_func_decl ();
-        assert (fdecl);
-        auto const it = m_inv_map.find (CfgHasher<cfg_t>::hash(*fdecl));
-        if (it != m_inv_map.end ())
-          return it->second->get_post (b);
-        else
-          CRAB_ERROR("InterFwdAnalyzer: Cfg not found");
+        
+        if (auto fdecl = cfg.get_func_decl ()) {
+          auto const it = m_inv_map.find (CfgHasher<cfg_t>::hash(*fdecl));
+          if (it != m_inv_map.end ())
+            return it->second->get_post (b);
+        }
+        
+        CRAB_WARN("Invariants at the exit of the block not found");
+        return InvTblValTy::top ();
+      }
+
+      //! return true if there is a summary for cfg
+      bool has_summary (const cfg_t &cfg) const {
+        if (auto fdecl = cfg.get_func_decl ())
+          return m_summ_tbl.hasSummary (*fdecl);
+        return false;
+      }
+
+      //! Return the summary for cfg
+      BUAbsDomain get_summary(const cfg_t &cfg) const {
+        if (auto fdecl = cfg.get_func_decl ()) {
+          if (m_summ_tbl.hasSummary (*fdecl)) {
+            auto summ = m_summ_tbl.get (*fdecl);
+            return summ.get_sum ();
+          }
+        }
+
+        CRAB_WARN("Summary not found");
+        return BUAbsDomain::top ();
       }
         
     }; 

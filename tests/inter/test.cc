@@ -185,5 +185,16 @@ int main (int argc, char** argv ) {
     cout << "=================================\n";
   }
 
+  // Print summaries
+  for (auto &cfg : cfgs) {
+    if (a.has_summary (cfg)) {
+      auto fdecl_opt = cfg.get_func_decl ();
+      assert (fdecl_opt);
+      cout << "Summary for " << *fdecl_opt << ": "; 
+      auto sum = a.get_summary (cfg);
+      cout << sum << "\n";
+    }
+  }
+
   return 0;
 }

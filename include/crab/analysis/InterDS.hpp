@@ -150,9 +150,21 @@ namespace crab {
         return (it != m_sum_table.end ());
       }
 
+      bool hasSummary (fdecl_t d) const {
+        auto it = m_sum_table.find (CfgHasher<CFG>::hash (d));
+        return (it != m_sum_table.end ());
+      }
+
       // get the summary
       Summary& get (callsite_t cs) const {
         auto it = m_sum_table.find (CfgHasher<CFG>::hash (cs));
+        assert (it != m_sum_table.end ());
+        
+        return *(it->second);
+      }
+
+      Summary& get (fdecl_t d) const {
+        auto it = m_sum_table.find (CfgHasher<CFG>::hash (d));
         assert (it != m_sum_table.end ());
         
         return *(it->second);
