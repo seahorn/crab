@@ -89,17 +89,18 @@ namespace crab {
               bu_analyzer a (cfg, m_vfac, m_live, &m_summ_tbl, &call_tbl) ; 
               a.Run (BUAbsDomain::top ());
               // --- build the summary
-              std::set<varname_t> formals;
+              std::vector<varname_t> formals;
+              formals.reserve ((*fdecl).get_num_params());
               for (unsigned i=0; i < (*fdecl).get_num_params();i++)
-                formals.insert ((*fdecl).get_param_name (i));
+                formals.push_back ((*fdecl).get_param_name (i));
               auto ret_val_opt = findReturn (cfg);
               if (ret_val_opt) 
-                formals.insert (*ret_val_opt);
+                formals.push_back (*ret_val_opt);
               // --- project onto formal parameters and return 
               auto inv = a.get_post (cfg.exit ());
               domain_traits::project (inv, formals.begin (), formals.end ());            
               if (ret_val_opt) 
-                formals.erase (*ret_val_opt);
+                formals.pop_back ();
               m_summ_tbl.insert (*fdecl, inv, ret_val_opt, formals);
             }
           }

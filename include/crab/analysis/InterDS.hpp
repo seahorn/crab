@@ -130,16 +130,12 @@ namespace crab {
       SummaryTable () { }
       
       // insert summary information
-      template<typename Range>
       void insert (fdecl_t d, 
                    AbsDomain sum,
                    boost::optional<varname_t> ret,
-                   const Range& params) {
+                   const std::vector<varname_t>& params) {
 
-        std::vector<varname_t> ps;
-        ps.reserve (std::distance (params.begin (), params.end ()));
-        std::copy (params.begin (), params.end (), std::back_inserter (ps));
-        
+        std::vector<varname_t> ps (params.begin(), params.end ());
         summary_ptr sum_tuple (new Summary (d, sum, ret, ps));
         m_sum_table.insert (std::make_pair (CfgHasher<CFG>::hash (d), sum_tuple));
       }
