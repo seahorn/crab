@@ -31,7 +31,8 @@ namespace crab {
               typename BUAbsDomain, 
               // abstract domain used for the top-down phase
               typename TDAbsDomain,
-              typename InvTblValTy = TDAbsDomain>
+              // type for the persistent invariants 
+              typename InvTblValTy>
     class InterFwdAnalyzer: public boost::noncopyable {
 
       typedef typename CG::node_t cg_node_t;
@@ -152,9 +153,9 @@ namespace crab {
           if (it != m_inv_map.end ())
             return it->second->get_pre (b);
         }
-        
+
         CRAB_WARN("Invariants at the entry of the block not found");
-        return InvTblValTy::top ();
+        return inv_tbl_traits<TDAbsDomain,InvTblValTy>::top ();
       }
       
       //! Return the invariants that hold at the exit of b in cfg
@@ -168,7 +169,7 @@ namespace crab {
         }
         
         CRAB_WARN("Invariants at the exit of the block not found");
-        return InvTblValTy::top ();
+        return inv_tbl_traits<TDAbsDomain,InvTblValTy>::top ();
       }
 
       //! return true if there is a summary for cfg
@@ -179,16 +180,19 @@ namespace crab {
       }
 
       //! Return the summary for cfg
-      BUAbsDomain get_summary(const cfg_t &cfg) const {
+      InvTblValTy get_summary(const cfg_t &cfg) const {
+        typedef inv_tbl_traits<typename summ_tbl_t::abs_domain_t, InvTblValTy> inv_tbl_t;        
+        
         if (auto fdecl = cfg.get_func_decl ()) {
           if (m_summ_tbl.hasSummary (*fdecl)) {
             auto summ = m_summ_tbl.get (*fdecl);
-            return summ.get_sum ();
+            typename summ_tbl_t::abs_domain_t inv = summ.get_sum ();
+            return inv_tbl_t::marshall (inv);
           }
         }
-
+        
         CRAB_WARN("Summary not found");
-        return BUAbsDomain::top ();
+        return inv_tbl_t::top ();
       }
         
     }; 

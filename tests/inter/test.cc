@@ -167,10 +167,8 @@ int main (int argc, char** argv ) {
 
   const bool run_live = false;
 
-  InterFwdAnalyzer<CallGraph<cfg_t>, VariableFactory,
-                   dbm_domain_t, interval_domain_t>
-      a (cg, vfac, run_live);
-
+  InterFwdAnalyzer<CallGraph<cfg_t>,  VariableFactory,
+                   dbm_domain_t, interval_domain_t, z_lin_cst_sys_t> a (cg, vfac, run_live); 
   a.Run ();
   
   // Print invariants
