@@ -491,8 +491,9 @@ namespace crab {
         else 
           CRAB_WARN ("mismatch of parameters between caller and callee");
       }
-      else 
-        CRAB_WARN ("Not summary found");
+      else {
+        // CRAB_WARN ("Not summary found");
+      }
 
       // We could not reuse a summary so we just havoc lhs of the call
       // site
