@@ -86,7 +86,8 @@ namespace crab {
             if (fun_name != "main") {
               CRAB_DEBUG ("--- Analyzing ", (*fdecl).get_func_name ());
               // --- run the analysis
-              bu_analyzer a (cfg, m_vfac, m_live, &m_summ_tbl, &call_tbl) ; 
+              bu_analyzer a (cfg, m_vfac, m_live, &m_summ_tbl, &call_tbl, 
+                             true /*m_keep_shadows*/) ; 
               a.Run (BUAbsDomain::top ());
               // --- build the summary
               std::vector<varname_t> formals;
@@ -128,7 +129,8 @@ namespace crab {
             }
             
             td_analyzer_ptr a (new td_analyzer (cfg, m_vfac, m_live, 
-                                                &m_summ_tbl, &call_tbl)) ;           
+                                                &m_summ_tbl, &call_tbl,
+                                                m_keep_shadows));           
             if (is_root) {
               a->Run (init);
               is_root = false;
