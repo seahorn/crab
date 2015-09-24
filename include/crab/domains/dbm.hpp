@@ -310,6 +310,9 @@ namespace crab {
       }
 
       void project(vector<int> idxs) {
+        // must preserve intervals
+        idxs.push_back (get_zero ());
+
         dbm ret = NULL;
         ret = dbm_extract (&idxs[0], idxs.size(), _dbm);
         dbm_dealloc(_dbm);
