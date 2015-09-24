@@ -1,6 +1,6 @@
 # Crab #
 
-<img src="http://i.imgur.com/IDKhq5h.png" alt="crab logo" width=260 height=200 />
+<img src="http://i.imgur.com/IDKhq5h.png" alt="crab logo" width=280 height=200 />
 
 #About#
 
