@@ -142,12 +142,18 @@ namespace crab {
           
           void visit(callsite_t& cs) { 
             size_t to = CfgHasher<CFG>::hash (cs);
-            add_edge ((*m_vertex_map) [m_from], (*m_vertex_map) [to], *m_cg);
+            auto it_from = m_vertex_map->find (m_from);
+            auto it_to = m_vertex_map->find (to);
+            if (it_from == m_vertex_map->end () || 
+                it_to == m_vertex_map->end ())
+              return;
+            
+            add_edge (it_from->second, it_to->second, *m_cg);
 
             CRAB_DEBUG("Added cg edge ", 
-                       (*m_vertex_map) [m_from], 
+                       it_from->second, 
                        " --> ", 
-                       (*m_vertex_map) [to]);
+                       it_to->second);
           }
           
           void visit(z_bin_op_t&){ }  
