@@ -1,5 +1,9 @@
 # Crab #
 
+![crab-logo](http://i.imgur.com/IDKhq5h.png)
+
+#About#
+
 Crab is a language agnostic framework to perform static analysis using
 [abstract interpretation](https://en.wikipedia.org/wiki/Abstract_interpretation)
 techniques.

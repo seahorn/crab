@@ -6,6 +6,7 @@
  */
 
 #include <boost/optional.hpp>
+#include "boost/range/algorithm/set_algorithm.hpp"
 
 ///Uncomment for enabling debug information
 //#include <crab/common/dbg.hpp>
@@ -94,7 +95,7 @@ namespace crab {
 
 
   //! Abstract transformer specialized for numerical abstract domains
-  //! with arrays.
+  //! with arrays but without pointers.
   template<typename NumAbsDomain, 
            typename SumTable /*unused*/, typename CallCtxTable /*unused*/>
   class NumAbsTransformer: 
@@ -306,30 +307,39 @@ namespace crab {
 
     abs_dom_t inv() const { return this->m_inv; }
 
+    // The code is a bit more complicated because it works even if
+    // callsite and callee's signature variables are not disjoint
     static void reuse_summary (abs_dom_t& caller, 
                                const callsite_t& cs,
                                const typename SumTable::Summary& summ) {
 
-      // --- meet caller's inv with summary
+      // --- meet caller's inv with summ
       caller = caller & summ.get_sum ();
+      CRAB_DEBUG ("--- After meet: ", caller);
       // --- matching formal and actual parameters
       auto pars = summ.get_params ();
       unsigned i=0;
+      std::set<varname_t> actuals, formals;
       for (auto p : pars) {
         auto a = cs.get_arg_name (i);
-        caller += (z_var_t (a) == z_var_t (p));
+        if (!(a == p))
+          caller += (z_var_t (a) == z_var_t (p));
         ++i;
+        actuals.insert (a); formals.insert (p);
       }
       // --- matching callsite's lhs and callee's return value 
       auto lhs_opt = cs.get_lhs_name ();
       auto ret_opt = summ.get_ret_val ();
       if (lhs_opt && ret_opt) {
         caller.assign(*lhs_opt, z_lin_exp_t (z_var_t (*ret_opt)));
+        actuals.insert (*lhs_opt); formals.insert (*ret_opt);
       }
-      // --- remove from the summary the callee's parameters
-      if (ret_opt)
-        pars.push_back (*ret_opt);
-      domain_traits::forget (caller, pars.begin (), pars.end ());
+      CRAB_DEBUG ("--- After matching formals and actuals: ", caller);
+      // --- remove from caller only formal parameters so we can keep
+      //     as much context from the caller as possible
+      std::set<varname_t> s;
+      boost::set_difference (formals, actuals, std::inserter(s, s.end ()));
+      domain_traits::forget (caller, s.begin (), s.end ());
     }
 
    public:
@@ -460,39 +470,50 @@ namespace crab {
         auto pars = sum.get_params ();
 
         if (pars.size () == cs.get_num_args ()) {
-          abs_dom_t call_ctx_inv (this->m_inv);
-          // --- convert this->m_inv to the language of summ_abs_dom_t (sum)
-          summ_abs_domain_t sum_inv = summ_abs_domain_t::top();
-          for (auto cst : this->m_inv.to_linear_constraint_system ())
-            sum_inv += cst;
-          // --- reuse summary to do the continuation
-          bu_abs_transformer_t::reuse_summary (sum_inv, cs, sum);
-          // --- convert back inv to the language of abs_dom_t
-          abs_dom_t inv = abs_dom_t::top();
-          for (auto cst : sum_inv.to_linear_constraint_system ())
-            inv += cst;
-          std::swap (this->m_inv, inv);
-          CRAB_DEBUG ("--- Continuation of ", cs, "=", this->m_inv);
 
+          ///////
+          /// Generate the callee context and store it.
+          ///////
+          abs_dom_t callee_ctx_inv (this->m_inv);
           // --- matching formal and actual parameters
           unsigned i=0;
           for (auto p : pars) {
             auto a = cs.get_arg_name (i);
-            call_ctx_inv += (z_var_t (p) == z_var_t (a));
+            if (!(a == p))
+              callee_ctx_inv += (z_var_t (p) == z_var_t (a));
             ++i;
           }
           // --- project only onto formal parameters
-          domain_traits::project (call_ctx_inv, pars.begin (), pars.end ());
-          // --- record the calling context
-          m_call_tbl->insert (cs, call_ctx_inv);          
+          domain_traits::project (callee_ctx_inv, pars.begin (), pars.end ());
+          // --- store the callee context
+          CRAB_DEBUG ("--- Callee context stored: ", callee_ctx_inv);
+          m_call_tbl->insert (cs, callee_ctx_inv);          
 
+          /////
+          // Generate the continuation at the caller
+          /////
+
+          // --- convert this->m_inv to the language of summ_abs_dom_t (sum)
+          summ_abs_domain_t caller_ctx_inv = summ_abs_domain_t::top();
+          for (auto cst : this->m_inv.to_linear_constraint_system ())
+            caller_ctx_inv += cst;
+          CRAB_DEBUG ("--- Caller context: ", caller_ctx_inv);
+          // --- reuse summary to do the continuation
+          bu_abs_transformer_t::reuse_summary (caller_ctx_inv, cs, sum);
+          CRAB_DEBUG ("--- Caller context after plugin summary: ", caller_ctx_inv);
+          // --- convert back inv to the language of abs_dom_t
+          abs_dom_t inv = abs_dom_t::top();          
+          for (auto cst : caller_ctx_inv.to_linear_constraint_system ())
+            inv += cst;
+          std::swap (this->m_inv, inv);
+          CRAB_DEBUG ("--- Caller continuation after ", cs, "=", this->m_inv);
           return;
         }
         else 
           CRAB_WARN ("mismatch of parameters between caller and callee");
       }
       else {
-        // CRAB_WARN ("Not summary found");
+        // no summary found: do nothing
       }
 
       // We could not reuse a summary so we just havoc lhs of the call
