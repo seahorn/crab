@@ -7,11 +7,8 @@
  * 
  * The CFG can support the modelling of: 
  * - arithmetic operations over integers
- * - C-like pointers
- * - C-like arrays and in general, any sequence of contiguous bytes
- *   either in the heap or stack.
+ * - C-like pointers and arrays
  * - functions 
- * 
  */
 
 #include <boost/shared_ptr.hpp>
@@ -39,8 +36,8 @@ namespace crab {
     using namespace ikos;
     using namespace std;
 
-    // The values must be such that REG <= PTR <= MEM
-    enum TrackedPrecision { REG = 0, PTR = 1, MEM = 2 };
+    // The values must be such that INT <= PTR <= ARR
+    enum TrackedPrecision { INT = 0, PTR = 1, ARR = 2 };
   
     enum VariableType { INT_TYPE, PTR_TYPE, ARR_TYPE, UNK_TYPE};
 
@@ -1739,7 +1736,7 @@ namespace crab {
                         z_lin_exp_t val, ikos::z_number n_bytes, 
                         bool is_singleton = false) 
       {
-        if (m_track_prec == MEM)
+        if (m_track_prec == ARR)
           insert(boost::static_pointer_cast< statement_t, z_arr_store_t >
                  (z_arr_store_ptr (new z_arr_store_t(arr, idx, 
                                                      val, n_bytes,
@@ -1749,7 +1746,7 @@ namespace crab {
       void array_load (z_variable_t lhs, z_variable_t arr, 
                        z_lin_exp_t idx, ikos::z_number n_bytes) 
       {
-        if (m_track_prec == MEM)
+        if (m_track_prec == ARR)
           insert(boost::static_pointer_cast< statement_t, z_arr_load_t >
                  (z_arr_load_ptr (new z_arr_load_t(lhs, arr, 
                                                    idx, n_bytes))));
@@ -2011,7 +2008,7 @@ namespace crab {
       Cfg (): m_blocks (basic_block_map_ptr (new basic_block_map)) { }
       
       Cfg (BasicBlockLabel entry, 
-           TrackedPrecision track_prec = REG):  
+           TrackedPrecision track_prec = INT):  
           m_entry  (entry), 
           m_has_exit (false),
           m_blocks (basic_block_map_ptr (new basic_block_map)),
@@ -2022,7 +2019,7 @@ namespace crab {
       
       Cfg (BasicBlockLabel entry, 
            BasicBlockLabel exit, 
-           TrackedPrecision track_prec = REG):  
+           TrackedPrecision track_prec = INT):  
           m_entry  (entry), 
           m_exit   (exit), 
           m_has_exit (true),
@@ -2035,7 +2032,7 @@ namespace crab {
       Cfg (BasicBlockLabel entry, 
            BasicBlockLabel exit, 
            fdecl_t func_decl, 
-           TrackedPrecision track_prec = REG):  
+           TrackedPrecision track_prec = INT):  
           m_entry (entry), 
           m_exit (exit), 
           m_has_exit (true),

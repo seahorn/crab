@@ -15,7 +15,7 @@ cfg_t prog1 (VariableFactory &vfac)
   z_var tmp5(vfac["tmp5"]);
   z_var tmp6(vfac["tmp6"]);
 
-  cfg_t cfg ("entry","ret", MEM);
+  cfg_t cfg ("entry","ret", ARR);
   basic_block_t& entry = cfg.insert ("entry");
   basic_block_t& bb1   = cfg.insert ("bb1");
   basic_block_t& bb1_t = cfg.insert ("bb1_t");
@@ -45,7 +45,7 @@ cfg_t prog1 (VariableFactory &vfac)
 
 cfg_t prog2(VariableFactory &vfac) 
 {
-  cfg_t cfg("entry","ret",MEM);
+  cfg_t cfg("entry","ret",ARR);
   basic_block_t& entry = cfg.insert("entry");
   basic_block_t& bb1   = cfg.insert("bb1");
   basic_block_t& bb1_t = cfg.insert("bb1_t");
@@ -82,7 +82,7 @@ cfg_t prog2(VariableFactory &vfac)
 
 cfg_t prog3(VariableFactory &vfac) 
 {
-  cfg_t cfg("entry","ret",MEM);
+  cfg_t cfg("entry","ret",ARR);
   basic_block_t& entry = cfg.insert("entry");
   basic_block_t& bb1   = cfg.insert("bb1");
   basic_block_t& bb1_t = cfg.insert("bb1_t");
@@ -121,7 +121,7 @@ cfg_t prog3(VariableFactory &vfac)
 cfg_t prog4(VariableFactory &vfac) 
 {
 
-  cfg_t cfg("entry","ret",MEM);
+  cfg_t cfg("entry","ret",ARR);
   basic_block_t& entry = cfg.insert("entry");
   basic_block_t& bb1   = cfg.insert("bb1");
   basic_block_t& bb1_t = cfg.insert("bb1_t");
@@ -157,7 +157,7 @@ cfg_t prog4(VariableFactory &vfac)
 
 cfg_t prog5(VariableFactory &vfac) 
 {
-  cfg_t cfg("entry","ret",MEM);
+  cfg_t cfg("entry","ret",ARR);
   basic_block_t& entry = cfg.insert("entry");
   basic_block_t& bb1   = cfg.insert("bb1");
   basic_block_t& bb1_t = cfg.insert("bb1_t");
@@ -190,7 +190,7 @@ cfg_t prog5(VariableFactory &vfac)
 
 cfg_t prog6(VariableFactory &vfac) 
 {
-  cfg_t cfg("entry","ret",MEM);
+  cfg_t cfg("entry","ret",ARR);
   basic_block_t& entry = cfg.insert("entry");
   basic_block_t& bb1   = cfg.insert("bb1");
   basic_block_t& bb1_t = cfg.insert("bb1_t");
@@ -223,7 +223,7 @@ cfg_t prog6(VariableFactory &vfac)
 
 cfg_t prog7(VariableFactory &vfac) 
 {
-  cfg_t cfg("entry","ret",MEM);
+  cfg_t cfg("entry","ret",ARR);
   basic_block_t& entry = cfg.insert("entry");
   basic_block_t& bb1   = cfg.insert("bb1");
   basic_block_t& bb1_t = cfg.insert("bb1_t");
@@ -266,7 +266,7 @@ cfg_t prog7(VariableFactory &vfac)
 // Initialize only even positions
 cfg_t prog8(VariableFactory &vfac) 
 {
-  cfg_t cfg("entry","ret", MEM);
+  cfg_t cfg("entry","ret", ARR);
   basic_block_t& entry = cfg.insert("entry");
   basic_block_t& bb1   = cfg.insert("bb1");
   basic_block_t& bb1_t = cfg.insert("bb1_t");
@@ -310,7 +310,7 @@ cfg_t prog8(VariableFactory &vfac)
 // this is the program init_rand from Gange et.al paper.
 cfg_t prog9(VariableFactory &vfac) 
 {
-  cfg_t cfg("entry","ret",MEM);
+  cfg_t cfg("entry","ret",ARR);
   basic_block_t& entry   = cfg.insert("entry");
   basic_block_t& bb1     = cfg.insert("bb1");
   basic_block_t& bb1_t   = cfg.insert("bb1_t");
