@@ -63,12 +63,40 @@ private:
   z_number(mpz_class n) : _n(n) {}
 
 public:
+
   static z_number from_ulong(unsigned long n) {
     mpz_class b(n);
     return z_number(b);
   }
 
+  static z_number from_slong(signed long n) {
+    mpz_class b(n);
+    return z_number(b);
+  }
+
+  // overloaded typecast operators
+  // These typecast operators must be used carefully so we make them explicit.
+  explicit operator long() const { 
+    if (_n.fits_slong_p ()) {
+      return _n.get_si ();
+    }
+   else {
+     CRAB_ERROR("mpz_class", _n, " does not fit into a signed long integer");
+   }
+  } 
+
+  explicit operator int() const { 
+    if (_n.fits_sint_p ()) {
+      // get_si returns a signed long so we cast it to int
+      return (int) _n.get_si ();
+    }
+   else {
+     CRAB_ERROR("mpz_class", _n, " does not fit into a signed integer");
+   }
+  } 
+
 public:
+
   z_number() : _n(0) {}
 
   z_number(std::string s) {
