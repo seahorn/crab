@@ -16,6 +16,7 @@
 //#include <crab/common/dbg.hpp>
 
 #include <crab/common/types.hpp>
+#include <crab/common/bignums.hpp>
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/domains/dbm/dbm.h>
 #include <crab/domains/dbm/expr.h>
@@ -28,7 +29,6 @@
 #include <boost/optional.hpp>
 #include <boost/unordered_set.hpp>
 #include <boost/unordered_map.hpp>
-#include <boost/lexical_cast.hpp>
 
 using namespace boost;
 using namespace std;
@@ -40,23 +40,16 @@ namespace crab {
      using namespace ikos;
 
      namespace DBM_impl {
+       // translate from Number to dbm val_t type
        template<typename Number>
-       int ntoi(Number n);
+       val_t ntov(Number n);
 
        template<>
-       inline int ntoi(z_number k){
-         ostringstream buf;
-         buf << k;
-         return boost::lexical_cast<int>(buf.str());
-       }
-     
-       template<typename Number>
-       Number iton(int n);
-     
-       template<>
-       inline z_number iton(int n){
-         return z_number(n);
-       }
+       inline val_t ntov(z_number k) {
+         // if z_number does not fit into val_t the typecast operator
+         // will complain.
+         return (val_t) k;
+       }     
      }; // end namespace DBM_impl
 
     template< class Number, class VariableName, 
@@ -358,7 +351,7 @@ namespace crab {
       }	
 
       void apply(operation_t op, VariableName x, id_t y, Number k) {	
-        int z = DBM_impl::ntoi<Number>(k);
+        val_t z = DBM_impl::ntov<Number>(k);
         switch(op){
           case OP_ADDITION:
             {
@@ -411,7 +404,7 @@ namespace crab {
 
         if (coef_x == 1){
           uterm tx = uvar(get_dbm_index (x.name()));
-          uterm ty = uconst(DBM_impl::ntoi<Number>(c));
+          uterm ty = uconst(DBM_impl::ntov<Number>(c));
           ucon con;
           if (cst.is_inequality()){       // x <= c
             con = mk_ucon(tx, U_LEQ, ty);
@@ -433,13 +426,13 @@ namespace crab {
             dexpr e;     
             e.args[0] = get_zero();
             e.args[1] = get_dbm_index (x.name());
-            e.konst   = DBM_impl::ntoi<Number>(c);
+            e.konst   = DBM_impl::ntov<Number>(c);
             e.kind    = D_DIFF;
             apply_dexpr(e);
           }
           else if (cst.is_equality()){    // -x == c iff x == -c
             uterm tx = uvar(get_dbm_index (x.name()));
-            uterm tc = uconst(-DBM_impl::ntoi<Number>(c));
+            uterm tc = uconst(-DBM_impl::ntov<Number>(c));
             ucon con = mk_ucon(tx, U_EQ, tc);
             apply_cond(con);
           }
@@ -461,7 +454,7 @@ namespace crab {
             dexpr e;     
             e.args[0] = get_dbm_index(x.name());
             e.args[1] = get_dbm_index(y.name());
-            e.konst   = DBM_impl::ntoi<Number>(c);
+            e.konst   = DBM_impl::ntov<Number>(c);
             e.kind    = D_DIFF;
             apply_dexpr(e);
           }
@@ -469,13 +462,13 @@ namespace crab {
             dexpr e1;     
             e1.args[0] = get_dbm_index(x.name());
             e1.args[1] = get_dbm_index(y.name());
-            e1.konst   = DBM_impl::ntoi<Number>(c);
+            e1.konst   = DBM_impl::ntov<Number>(c);
             e1.kind    = D_DIFF;
             apply_dexpr(e1);
             dexpr e2;     
             e2.args[0] = get_dbm_index(y.name());
             e2.args[1] = get_dbm_index(x.name());
-            e2.konst   = -DBM_impl::ntoi<Number>(c);
+            e2.konst   = -DBM_impl::ntov<Number>(c);
             e2.kind    = D_DIFF;
             apply_dexpr(e2);
           }
@@ -484,9 +477,9 @@ namespace crab {
             if (has_edge(get_dbm_index(x.name ()), get_dbm_index(y.name ())) && 
                 has_edge(get_dbm_index(y.name ()), get_dbm_index(x.name ())))
             {
-              int k1 = edge_val(_dbm, get_dbm_index(x.name ()), get_dbm_index(y.name ()));
-              int k2 = edge_val(_dbm, get_dbm_index(y.name ()), get_dbm_index(x.name ()));
-              if ( (k1 + k2 == 0) && (k1 == DBM_impl::ntoi<Number>(c)))
+              val_t k1 = edge_val(_dbm, get_dbm_index(x.name ()), get_dbm_index(y.name ()));
+              val_t k2 = edge_val(_dbm, get_dbm_index(y.name ()), get_dbm_index(x.name ()));
+              if ( (k1 + k2 == 0) && (k1 == DBM_impl::ntov<Number>(c)))
               {
                 set_to_bottom ();
               }
@@ -501,7 +494,7 @@ namespace crab {
             dexpr e;     
             e.args[0] = get_dbm_index(y.name());
             e.args[1] = get_dbm_index(x.name());
-            e.konst   = DBM_impl::ntoi<Number>(c);
+            e.konst   = DBM_impl::ntov<Number>(c);
             e.kind    = D_DIFF;
             apply_dexpr(e);
           }
@@ -509,13 +502,13 @@ namespace crab {
             dexpr e1;     
             e1.args[0] = get_dbm_index(y.name());
             e1.args[1] = get_dbm_index(x.name());
-            e1.konst   = DBM_impl::ntoi<Number>(c);
+            e1.konst   = DBM_impl::ntov<Number>(c);
             e1.kind    = D_DIFF;
             apply_dexpr(e1);
             dexpr e2;     
             e2.args[0] = get_dbm_index(x.name());
             e2.args[1] = get_dbm_index(y.name());
-            e2.konst   = -DBM_impl::ntoi<Number>(c);
+            e2.konst   = -DBM_impl::ntov<Number>(c);
             e2.kind    = D_DIFF;
             apply_dexpr(e2);
           }
@@ -524,9 +517,9 @@ namespace crab {
             if (has_edge(get_dbm_index(y.name ()), get_dbm_index(x.name ())) && 
                 has_edge(get_dbm_index(x.name ()), get_dbm_index(y.name ())))
             {
-              int k1 = edge_val(_dbm, get_dbm_index(y.name ()), get_dbm_index(x.name ()));
-              int k2 = edge_val(_dbm, get_dbm_index(x.name ()), get_dbm_index(y.name ()));
-              if ( (k1 + k2 == 0) && (k1 == DBM_impl::ntoi<Number>(c))) {
+              val_t k1 = edge_val(_dbm, get_dbm_index(y.name ()), get_dbm_index(x.name ()));
+              val_t k2 = edge_val(_dbm, get_dbm_index(x.name ()), get_dbm_index(y.name ()));
+              if ( (k1 + k2 == 0) && (k1 == DBM_impl::ntov<Number>(c))) {
                 set_to_bottom ();
               }
             }
@@ -1011,7 +1004,7 @@ namespace crab {
           resize (Delta);
     
         if (e.is_constant()){
-          exp_t exp = exp_const(DBM_impl::ntoi<Number>(e.constant()));
+          exp_t exp = exp_const(DBM_impl::ntov<Number>(e.constant()));
           assign (x,exp);
         }
         else if  (optional<variable_t> v = e.get_variable()){
@@ -1111,14 +1104,12 @@ namespace crab {
         variable_t x  = it->second;      
         ++it;
         if (it == exp.end()){
-          add_constraint(DBM_impl::ntoi<Number>(coef_x), x, k, cst);
+          add_constraint((int) coef_x, x, k, cst);
         }
         else {
           Number coef_y = it->first;
           variable_t y  = it->second;      
-          add_constraint(DBM_impl::ntoi<Number>(coef_x), 
-                         x, 
-                         DBM_impl::ntoi<Number>(coef_y), y, k, cst);
+          add_constraint((int) coef_x, x, (int) coef_y, y, k, cst);
         }
 
         CRAB_DEBUG("---", cst, "\n", *this);
@@ -1140,11 +1131,11 @@ namespace crab {
         int k = get_dbm_index(x);
         bound_t lb("-oo");
         if (has_edge(get_zero(), k))
-          lb = bound_t(DBM_impl::iton<Number>(-edge_val(_dbm, get_zero(), k)));
+          lb = bound_t(-edge_val(_dbm, get_zero(), k));
     
         bound_t ub("+oo");
         if (has_edge(k, get_zero()))
-          ub = bound_t(DBM_impl::iton<Number>(edge_val(_dbm, k, get_zero())));
+          ub = bound_t(edge_val(_dbm, k, get_zero()));
     
         interval_t i(lb,ub);
         return i;
@@ -1165,7 +1156,7 @@ namespace crab {
             dexpr e;     
             e.args[0] = k;
             e.args[1] = get_zero();
-            e.konst   = DBM_impl::ntoi<Number>(*ub);
+            e.konst   = DBM_impl::ntov<Number>(*ub);
             e.kind    = D_DIFF;
             apply_dexpr(e);
           }
@@ -1174,7 +1165,7 @@ namespace crab {
             dexpr e;     
             e.args[0] = get_zero();
             e.args[1] = k;
-            e.konst   = -DBM_impl::ntoi<Number>(*lb);
+            e.konst   = -DBM_impl::ntov<Number>(*lb);
             e.kind    = D_DIFF;
             apply_dexpr(e);
           }
@@ -1399,10 +1390,10 @@ namespace crab {
             if (jj == get_tmp()) continue;
             if (visited.find(make_pair(jj,ii)) != visited.end()) continue;
           
-            int k1 = edge_val(_dbm, ii, jj);
+            val_t k1 = edge_val(_dbm, ii, jj);
             if (has_edge (jj,ii))
             {
-              int k2 = edge_val(_dbm, jj, ii);
+              val_t k2 = edge_val(_dbm, jj, ii);
               if ((k1 + k2) == 0)
               {
                 // EQUALITY 

@@ -9,10 +9,12 @@ exp_t exp_var(int var)
   return r;
 }
 
-exp_t exp_const(int val)
+exp_t exp_const(val_t val)
 {
   exp_t r = new exp_data;
   r->kind = E_CONST;
+  // FIXME: sizeof(val_t) cannot be bigger than sizeof (void*)
+  // otherwise it will silently wraparound!
   r->args[0] = (void*) val;
   r->refs = 0;
   return r;
@@ -117,7 +119,7 @@ void linexp_dealloc(linexp lexp)
 */
 
 uterm uvar(int v) { uterm t = { U_VAR, v }; return t; }
-uterm uconst(int c) { uterm t = { U_CONST, c}; return t; }
+uterm uconst(val_t c) { uterm t = { U_CONST, c}; return t; }
 ucon mk_ucon(uterm x, UConT kind, uterm y) {
   ucon c = { kind };
   c.args[0] = x;

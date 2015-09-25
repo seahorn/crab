@@ -13,38 +13,31 @@
 #include <crab/domains/dbm/util/Heap.h>
 
 // #define NDEBUG // disable assert's
-
 #define VAR_MAX ((short) ((1<<(8*sizeof(short)-1))-1))
-
-#define VAL_MAX INT_MAX
-// #define VAL_MIN INT_MIN
-#define VAL_MIN (-INT_MAX) // We need -VAL_MAX = VAL_MIN.
 
 // These are datastructures used by consistency checking and
 // transitive closure. They are global for efficiency.
 static int scratch_sz = 0;
-static int* _gamma = NULL;
-static int* pi_prime = NULL;
-static int* fwd_dist = NULL;
+static val_t* _gamma = NULL;
+static val_t* pi_prime = NULL;
+static val_t* fwd_dist = NULL;
 
 // Always initialized to 0.
-static char * var_flags = NULL;
+static char* var_flags = NULL;
 
 // Comparator for use with min-heaps.
 typedef struct DistComp {
 public:
-  DistComp(int* _A)
+  DistComp(val_t* _A)
     : A(_A)
   { }
   bool operator() (int x, int y) const {
     return A[x] < A[y]; 
   }
-  int* A;
+  val_t* A;
 } DistComp;
 
 static void verify_potentials(dbm abs);
-
-//bool in_graph(dbm x, int i, int j);
 
 adjlist* src_list(dbm abs, int i)
 {
@@ -55,17 +48,17 @@ adjlist* dest_list(dbm abs, int j)
   return (adjlist*) (&(abs->dests[(2 + abs->sz)*j]));
 }
 
-static int var_lb(dbm abs, int x);
-static int var_ub(dbm abs, int x);
+static val_t var_lb(dbm abs, int x);
+static val_t var_ub(dbm abs, int x);
 
 void update_scratch(int sz)
 {
   if(scratch_sz < sz)
   {
     var_flags = (char *) realloc(var_flags, sizeof(char)*sz);
-    fwd_dist = (int *) realloc(fwd_dist, sizeof(int)*sz);
-    _gamma = (int *) realloc(_gamma, sizeof(int)*sz);
-    pi_prime = (int *) realloc(pi_prime, sizeof(int)*sz);
+    fwd_dist = (val_t *) realloc(fwd_dist, sizeof(val_t)*sz);
+    _gamma = (val_t *) realloc(_gamma, sizeof(val_t)*sz);
+    pi_prime = (val_t *) realloc(pi_prime, sizeof(val_t)*sz);
 
     for(; scratch_sz < sz; scratch_sz++)
       var_flags[scratch_sz] = 0;
@@ -183,7 +176,7 @@ dbm dbm_alloc(int sz)
   d->feasible = true;
   d->closed = true;
   
-  d->pi = new int[sz];
+  d->pi = new val_t[sz];
   for(int vi = 0; vi < sz; vi++)
     d->pi[vi] = 0;
   
@@ -292,7 +285,7 @@ dbm dbm_copy(dbm abs)
   // Two options: memcpy, or linear copy.
   // Using memcpy for now, even though it's
   // more or less O(n^2)
-  memcpy(ret->pi, abs->pi, sizeof(int)*sz);
+  memcpy(ret->pi, abs->pi, sizeof(val_t)*sz);
 
   ret->sz = sz;
   ret->checked = abs->checked;
@@ -353,7 +346,7 @@ bool check_feasibility(dbm abs)
       {
         int j = dest(iter);
         
-        int ij_val = iter_val(iter);
+        val_t ij_val = iter_val(iter);
         abs->pi[j] = std::min(abs->pi[j], abs->pi[i] + ij_val);
       }
     }
@@ -365,7 +358,7 @@ bool check_feasibility(dbm abs)
   {
     int i = src(iter);
     int j = dest(iter);
-    int ij_val = edge_val(abs, i, j);
+    val_t ij_val = edge_val(abs, i, j);
     if(abs->pi[j] > abs->pi[i] + ij_val)
     {
       abs->feasible = false;
@@ -381,7 +374,7 @@ bool check_feasibility(dbm abs)
 
 // Update feasibility when a new constraint is added.
 // Perform an incremental consistency checking.
-bool update_feasibility(dbm x, int i, int j, int c)
+bool update_feasibility(dbm x, int i, int j, val_t c)
 {
   // Ensure there's enough scratch space. 
   int sz = x->sz;
@@ -415,7 +408,7 @@ bool update_feasibility(dbm x, int i, int j, int c)
       int ed = dest(iter);
       if(pi_prime[ed] == x->pi[ed])
       {
-        int gnext_ed = pi_prime[es] + iter_val(iter) - pi_prime[ed];
+        val_t gnext_ed = pi_prime[es] + iter_val(iter) - pi_prime[ed];
         if(gnext_ed < _gamma[ed])
         {
           _gamma[ed] = gnext_ed;
@@ -438,7 +431,7 @@ bool update_feasibility(dbm x, int i, int j, int c)
 
 
 // Assumption: (i -> j) does not yet exist.
-void dbm_add_edge(dbm x, int i, int j, int val)
+void dbm_add_edge(dbm x, int i, int j, val_t val)
 {
   if(!x)
     return;
@@ -512,24 +505,24 @@ bool in_graph(dbm abs, int i, int j)
   return (i_inv < iadj->sz) && (iadj->elt[i_inv] == j);
 }
 
-int edge_val(dbm x, int i, int j)
+val_t edge_val(dbm x, int i, int j)
 {
   assert(x);
   return x->mtx[i*x->sz + j].val;
 }
 
-int iter_val(edge_iter& iter)
+val_t iter_val(edge_iter& iter)
 {
   return edge_val(iter.d, src(iter), dest(iter));
 }
 
-int rev_iter_val(edge_iter& iter)
+val_t rev_iter_val(edge_iter& iter)
 {
   return edge_val(iter.d, pred(iter), iter.d->live_dests[iter.si]);
 }
 
 void dijkstra(dbm abs, int svar, 
-              std::vector< std::pair<int, int> >& out)
+              std::vector< std::pair<int, val_t> >& out)
 {
   // fwd_dist contains the new non-negative weights
   // fwd_dist[j] = pi[i] + w(i,j) - pi[j] >= 0
@@ -565,10 +558,10 @@ void dijkstra(dbm abs, int svar,
   while(!heap.empty())
   {
     int es = heap.removeMin();
-    int es_cost = fwd_dist[es] + abs->pi[es];
-    int es_val = es_cost - abs->pi[svar];
+    val_t es_cost = fwd_dist[es] + abs->pi[es];
+    val_t es_val = es_cost - abs->pi[svar];
     if(!in_graph(abs, svar, es) || edge_val(abs, svar, es) > es_val)
-      out.push_back( std::pair<int, int>(es, es_val) );
+      out.push_back( std::pair<int, val_t>(es, es_val) );
 
     if(!src_is_live(abs, es))
       continue;
@@ -577,7 +570,7 @@ void dijkstra(dbm abs, int svar,
     for(; !dests_end(iter); next_dest(iter))
     {
       int ed = dest(iter);
-      int v = es_cost + iter_val(iter) - abs->pi[ed];
+      val_t v = es_cost + iter_val(iter) - abs->pi[ed];
       if(v < fwd_dist[ed])
       {
         fwd_dist[ed] = v;
@@ -596,7 +589,7 @@ void dijkstra(dbm abs, int svar,
 // Single-dest shortest path algorithm.
 // Yes, I should probably templatify it so I can just swap out the iterators.
 // But it's not worth the effort for now.
-void update_closure(dbm x, int ii, int jj, int c)
+void update_closure(dbm x, int ii, int jj, val_t c)
 {
   assert(x);
   assert(x->checked && x->feasible);
@@ -610,7 +603,7 @@ void update_closure(dbm x, int ii, int jj, int c)
     for(; !preds_end(piter); next_pred(piter))
     {
       int se = pred(piter);
-      int sval = rev_iter_val(piter);
+      val_t sval = rev_iter_val(piter);
 
       assert(src_is_live(x, se));
       if(se != jj)
@@ -632,7 +625,7 @@ void update_closure(dbm x, int ii, int jj, int c)
             // We know src_is_live(x, src).
             if(se != de)
             {
-              int val = rev_iter_val(piter) + c + iter_val(siter);
+              val_t val = rev_iter_val(piter) + c + iter_val(siter);
               if(in_graph(x, se, de))
               {
                 x->mtx[se*x->sz + de].val = std::min(edge_val(x, se, de), val);
@@ -652,7 +645,7 @@ void update_closure(dbm x, int ii, int jj, int c)
     for(; !dests_end(siter); next_dest(siter))
     {
       int de = dest(siter);
-      int val = iter_val(siter) + c;
+      val_t val = iter_val(siter) + c;
       if(de != ii)
       {
         if(in_graph(x, ii, de))
@@ -690,22 +683,21 @@ void dbm_canonical(dbm abs)
   // algorithm on each.
   // At this point, abs->pi should be up to date.
   edge_iter iter = edge_iterator(abs);
-  std::vector< std::vector< std::pair<int, int> > > changed;
+  std::vector< std::vector< std::pair<int, val_t> > > changed;
   for(; !srcs_end(iter); next_src(iter))
   {
-    changed.push_back( std::vector< std::pair<int, int> >() );
+    changed.push_back(std::vector< std::pair<int, val_t> >());
     dijkstra(abs, src(iter), changed.back());
   }
   for(int si = 0; si < abs->num_srcs; si++)
   {
     int s = abs->live_srcs[si];
-    std::vector< std::pair<int, int> >& s_changed(changed[si]);
+    std::vector< std::pair<int, val_t> >& s_changed(changed[si]);
     for(unsigned int ei = 0; ei < s_changed.size(); ei++)
     {
       int d = s_changed[ei].first;
-      int v = s_changed[ei].second;
-      if(!in_graph(abs, s, d))
-      {
+      val_t v = s_changed[ei].second;
+      if(!in_graph(abs, s, d)) {
         dbm_add_edge(abs, s, d, v);
       } else {
         abs->mtx[s*abs->sz + d].val = v;
@@ -759,8 +751,8 @@ dbm dbm_meet(dbm x, dbm y)
     if(src_is_live(ret, i) && in_graph(ret, i, j))
     {
       //ret->mtx[i*ret->sz + j].val = std::min(edge_val(ret, i, j), iter_val(yiter));
-      int vx = edge_val(ret, i, j);
-      int vy = iter_val(yiter);
+      val_t vx = edge_val(ret, i, j);
+      val_t vy = iter_val(yiter);
       if(vy < vx)
       {
         xchange = true;
@@ -776,12 +768,12 @@ dbm dbm_meet(dbm x, dbm y)
   
   if((x->closed && !xchange))
   {
-    memcpy(ret->pi, x->pi, sizeof(int)*x->sz);
+    memcpy(ret->pi, x->pi, sizeof(val_t)*x->sz);
     ret->checked = true;
     ret->feasible = true;
     ret->closed = true;
   } else if((y->closed && !ychange)) {
-    memcpy(ret->pi, y->pi, sizeof(int)*y->sz);
+    memcpy(ret->pi, y->pi, sizeof(val_t)*y->sz);
     ret->checked = true;
     ret->feasible = true;
     ret->closed = true;
@@ -822,7 +814,7 @@ dbm dbm_join(dbm x, dbm y)
 
   dbm ret = dbm_alloc(x->sz);
 
-  memcpy(ret->pi, x->pi, sizeof(int)*x->sz);
+  memcpy(ret->pi, x->pi, sizeof(val_t)*x->sz);
   
   edge_iter xiter = edge_iterator(x);
   for(; !srcs_end(xiter); next_src(xiter))
@@ -841,7 +833,7 @@ dbm dbm_join(dbm x, dbm y)
       if(!in_graph(y, i, j))
         continue;
 
-      int ij_val = std::max(iter_val(xiter), edge_val(y, i, j));
+      val_t ij_val = std::max(iter_val(xiter), edge_val(y, i, j));
 
       dbm_add_edge(ret, i, j, ij_val);
     }
@@ -886,7 +878,7 @@ dbm dbm_widen(dbm x, dbm y)
   // Widen is an upper-bound function, so
   // the potential function should still
   // be fine.
-  memcpy(ret->pi, x->pi, sizeof(int)*x->sz);
+  memcpy(ret->pi, x->pi, sizeof(val_t)*x->sz);
   
   // Walk through all the edges of y, and throw
   // away anything that isn't stable in x.
@@ -907,7 +899,7 @@ dbm dbm_widen(dbm x, dbm y)
     {
       int j = dest(yiter);
 
-      int yval = edge_val(y, i, j);
+      val_t yval = edge_val(y, i, j);
 
 //    if(!in_graph(x, i, j))
 //      continue;
@@ -915,7 +907,7 @@ dbm dbm_widen(dbm x, dbm y)
         dbm_add_edge(ret, i, j, yval);
       }
       if(in_graph(x, i, j)){ // FIX 
-        int xval = edge_val(x, i, j);
+        val_t xval = edge_val(x, i, j);
         if(yval <= xval){
           dbm_add_edge(ret, i, j, xval);
         }
@@ -973,11 +965,11 @@ dbm dbm_narrowing(dbm x, dbm y)
     {
       int j = dest(yiter);
       if(!in_graph(x, i, j)){
-        int yval = edge_val(y, i, j);
+        val_t yval = edge_val(y, i, j);
         dbm_add_edge(ret, i, j, yval);
       }
       else {
-        int xval = edge_val(x, i, j);
+        val_t xval = edge_val(x, i, j);
         dbm_add_edge(ret, i, j, xval);
       }
     }
@@ -1004,7 +996,7 @@ dbm dbm_forget(int v, dbm x)
 
   int sz = x->sz;
   dbm ret = dbm_alloc(x->sz);
-  memcpy(ret->pi, x->pi, sizeof(int)*sz);
+  memcpy(ret->pi, x->pi, sizeof(val_t)*sz);
 
   ret->sz = sz;
   ret->checked = true;
@@ -1057,7 +1049,7 @@ dbm dbm_forget_array(int* vs, int vs_len, dbm x)
 
   int sz = x->sz;
   dbm ret = dbm_alloc(x->sz);
-  memcpy(ret->pi, x->pi, sizeof(int)*sz);
+  memcpy(ret->pi, x->pi, sizeof(val_t)*sz);
 
   ret->sz = sz;
   ret->checked = true;
@@ -1106,7 +1098,7 @@ dbm dbm_extract(int* vs, int vs_len, dbm x)
 
   int sz = x->sz;
   dbm ret = dbm_alloc(x->sz);
-  memcpy(ret->pi, x->pi, sizeof(int)*sz);
+  memcpy(ret->pi, x->pi, sizeof(val_t)*sz);
 
   ret->sz = sz;
   ret->checked = true;
@@ -1153,11 +1145,11 @@ dbm dbm_rename(rmap* subs, int slen, dbm x)
 
   int sz = x->sz;
   // Set up the mapping.
-  // Abusing _gamma for temporary storage.
   bool changed = false;
-  for(int vi = 0; vi < sz; vi++)
-  {
-    _gamma[vi] = vi;
+  std::vector<int> renmap;
+  renmap.reserve (sz);
+  for(int vi = 0; vi < sz; vi++) {
+    renmap.push_back (vi);
   }
   for(int si = 0; si < slen; si++)
   {
@@ -1166,7 +1158,7 @@ dbm dbm_rename(rmap* subs, int slen, dbm x)
 
     changed = true;
     var_flags[subs[si].r_to] = 1; // Possibly overwritten
-    _gamma[subs[si].r_from] = subs[si].r_to;
+    renmap[subs[si].r_from] = subs[si].r_to;
   }
   if(!changed)
   {
@@ -1177,12 +1169,12 @@ dbm dbm_rename(rmap* subs, int slen, dbm x)
 
   for(int vi = 0; vi < sz; vi++)
   {
-    if(_gamma[vi] != vi)
+    if(renmap[vi] != vi)
       var_flags[vi] = 0;
   }
 
   dbm ret = dbm_alloc(x->sz);
-  memcpy(ret->pi, x->pi, sizeof(int)*sz);
+  memcpy(ret->pi, x->pi, sizeof(val_t)*sz);
   // Permute the value of reassigned variables.
   for(int si = 0; si < slen; si++)
   {
@@ -1203,7 +1195,7 @@ dbm dbm_rename(rmap* subs, int slen, dbm x)
       if(var_flags[j])
         continue;
 
-      dbm_add_edge(ret, _gamma[i], _gamma[j], iter_val(iter));
+      dbm_add_edge(ret, renmap[i], renmap[j], iter_val(iter));
     }
   }
   for(int vi = 0; vi < sz; vi++)
@@ -1215,6 +1207,83 @@ dbm dbm_rename(rmap* subs, int slen, dbm x)
 
   return ret;
 }
+
+
+// dbm dbm_rename(rmap* subs, int slen, dbm x)
+// {
+//   if(!x)
+//     return NULL;
+
+//   if (!x->closed)
+//     dbm_canonical(x); 
+
+//   if(!x || !x->feasible)
+//     return NULL;
+
+//   int sz = x->sz;
+//   // Set up the mapping.
+//   // Abusing _gamma for temporary storage.
+//   bool changed = false;
+//   for(int vi = 0; vi < sz; vi++)
+//   {
+//     _gamma[vi] = vi;
+//   }
+//   for(int si = 0; si < slen; si++)
+//   {
+//     if(subs[si].r_to == subs[si].r_from)
+//       continue;
+
+//     changed = true;
+//     var_flags[subs[si].r_to] = 1; // Possibly overwritten
+//     _gamma[subs[si].r_from] = subs[si].r_to;
+//   }
+//   if(!changed)
+//   {
+//     for(int vi = 0; vi < sz; vi++)
+//       var_flags[vi] = 0;
+//     return dbm_copy(x);
+//   }
+
+//   for(int vi = 0; vi < sz; vi++)
+//   {
+//     if(_gamma[vi] != vi)
+//       var_flags[vi] = 0;
+//   }
+
+//   dbm ret = dbm_alloc(x->sz);
+//   memcpy(ret->pi, x->pi, sizeof(val_t)*sz);
+//   // Permute the value of reassigned variables.
+//   for(int si = 0; si < slen; si++)
+//   {
+//     ret->pi[subs[si].r_to] = x->pi[subs[si].r_from];
+//   }
+
+//   // Copy edges with var_flags[{source, dest}] = 0.
+//   edge_iter iter = edge_iterator(x);
+//   for(; !srcs_end(iter); next_src(iter))
+//   {
+//     int i = src(iter);
+//     if(var_flags[i])
+//       continue;
+
+//     for(; !dests_end(iter); next_dest(iter))
+//     {
+//       int j = dest(iter);
+//       if(var_flags[j])
+//         continue;
+
+//       dbm_add_edge(ret, _gamma[i], _gamma[j], iter_val(iter));
+//     }
+//   }
+//   for(int vi = 0; vi < sz; vi++)
+//     var_flags[vi] = 0;
+
+//   ret->checked = true;
+//   ret->feasible = true;
+//   ret->closed = true;
+
+//   return ret;
+// }
 
 // As dbm_rename, but:
 // (1) Variables which do not occur as destinations are eliminated
@@ -1236,7 +1305,7 @@ dbm dbm_rename_strict(rmap* subs, int slen, dbm x)
   int sz = x->sz;
   dbm ret = dbm_alloc(x->sz);
 
-  memcpy(ret->pi, x->pi, sizeof(int)*sz);
+  memcpy(ret->pi, x->pi, sizeof(val_t)*sz);
   // Permute the value of reassigned variables.
   for(int si = 0; si < slen; si++)
   {
@@ -1279,9 +1348,6 @@ int dbm_is_leq(dbm x, dbm y)
   if(dbm_is_top(x) || dbm_is_bottom(y))
     return false;
   
-  //  dbm_print_to(std::cout, x);
-  //  dbm_print_to(std::cout, y);
-
   edge_iter yiter = edge_iterator(y);
   for(; !edges_end(yiter); next_edge(yiter))
   {
@@ -1308,7 +1374,7 @@ int dbm_implies(dbm x, dexpr con)
   // Factor this out.
   int i;
   int j;
-  int w;
+  val_t w;
 
   switch(con.kind)
   {
@@ -1374,18 +1440,17 @@ void dbm_print_to(std::ostream &o, dbm x)
 // Preconditions:
 // - x is in canonical form
 // - x is feasible
-static int var_lb(dbm x, int i)
+static val_t var_lb(dbm x, int i)
 {
   int v0 = x->sz - 1;
-  if(src_is_live(x, v0) && in_graph(x, v0, i))
-  {
-    return -1*edge_val(x, v0, i); 
+  if(src_is_live(x, v0) && in_graph(x, v0, i)) {
+    return edge_val(x,v0,i)*-1; 
   } else {
     return VAL_MIN;
   }
 }
 
-static int var_ub(dbm x, int i)
+static val_t var_ub(dbm x, int i)
 {
   int v0 = x->sz - 1;
   if(src_is_live(x, i) && in_graph(x, i, v0))
@@ -1417,15 +1482,15 @@ void exp_collect_vars(exp_t e, std::vector<int>& vs)
 }
 
 typedef struct {
-  int lb;
-  int ub;
+  val_t lb;
+  val_t ub;
 } interval;
 
-int max(int x, int y, int z, int t) {
+val_t max(val_t x, val_t y, val_t z, val_t t) {
   return std::max(x, std::max(y, std::max(z,t)));
 }
 
-int min(int x, int y, int z, int t) {
+val_t min(val_t x, val_t y, val_t z, val_t t) {
   return std::min(x, std::min(y, std::min(z,t)));
 }
 
@@ -1470,7 +1535,7 @@ bool is_singleton(interval i)
   return i.lb == i.ub;
 }
 
-interval mk_interval(int lb, int ub)
+interval mk_interval(val_t lb, val_t ub)
 {
   interval r = { lb, ub };
   return r;
@@ -1509,7 +1574,7 @@ interval trim_zero(interval i)
     return i;
 }
 
-interval i_const(int v)
+interval i_const(val_t v)
 {
   interval r = { v, v };
   return r;
@@ -1533,13 +1598,13 @@ interval i_add(interval x, interval y)
 interval i_mul(interval x, interval y)
 {
 
-  int ll = x.lb * y.lb;
-  int lu = x.lb * y.ub;
-  int ul = x.ub * y.lb;
-  int uu = x.ub * y.ub;
+  val_t ll = x.lb * y.lb;
+  val_t lu = x.lb * y.ub;
+  val_t ul = x.ub * y.lb;
+  val_t uu = x.ub * y.ub;
   
-  int lb = (x.lb == VAL_MIN || y.lb == VAL_MIN) ? VAL_MIN : min(ll,lu,ul,uu);
-  int ub = (x.ub == VAL_MAX || y.ub == VAL_MAX) ? VAL_MAX : max(ll,lu,ul,uu);
+  val_t lb = (x.lb == VAL_MIN || y.lb == VAL_MIN) ? VAL_MIN : min(ll,lu,ul,uu);
+  val_t ub = (x.ub == VAL_MAX || y.ub == VAL_MAX) ? VAL_MAX : max(ll,lu,ul,uu);
   interval r = { lb, ub };
   return r; 
 }
@@ -1552,18 +1617,18 @@ interval i_div(interval x, interval y)
 
   interval y1 = trim_zero(y);
 
-  if ( (!is_singleton(y1)) & (y1.lb <= 0) && (0 <= y1.ub)){
+  if ( (!is_singleton(y1)) & (y1.lb <= 0) && (y1.ub >= 0)){
     // we give up if 0 \in y
     return mk_top();
   }
   else{
-    int ll = x.lb / y1.lb;
-    int lu = x.lb / y1.ub;
-    int ul = x.ub / y1.lb;
-    int uu = x.ub / y1.ub;
+    val_t ll = x.lb / y1.lb;
+    val_t lu = x.lb / y1.ub;
+    val_t ul = x.ub / y1.lb;
+    val_t uu = x.ub / y1.ub;
     
-    int lb = (x.lb == VAL_MIN || y1.lb == VAL_MIN) ? VAL_MIN : min(ll,lu,ul,uu);
-    int ub = (x.ub == VAL_MAX || y1.ub == VAL_MAX) ? VAL_MAX : max(ll,lu,ul,uu);
+    val_t lb = (x.lb == VAL_MIN || y1.lb == VAL_MIN) ? VAL_MIN : min(ll,lu,ul,uu);
+    val_t ub = (x.ub == VAL_MAX || y1.ub == VAL_MAX) ? VAL_MAX : max(ll,lu,ul,uu);
     interval r = { lb, ub };
     return r; 
   }
@@ -1681,51 +1746,49 @@ bool eval_exp(dbm d, int v, exp_t e, linterm& term)
 // }
 
 // Compute a potential value for a freshly introduced variable.
-int eval_pi_rec(dbm x, exp_t e, int v0, int* is_bot)
+val_t eval_pi_rec(dbm x, exp_t e, val_t v0, int* is_bot)
 {
 
   *is_bot = 0;
   switch(e->kind)
   {
     case E_CONST:
-      return ((size_t) e->args[0]);
+      return (val_t) (intptr_t) e->args[0];
     case E_VAR:
       return v0 - x->pi[(size_t) e->args[0]];
     case E_ADD:
       {
         int is_bot1, is_bot2;
-        int pi = eval_pi_rec(x, (exp_t) e->args[0], v0, &is_bot1) 
-            + eval_pi_rec(x, (exp_t) e->args[1], v0, &is_bot2);
+        val_t pi = eval_pi_rec(x, (exp_t) e->args[0], v0, &is_bot1) 
+                   + eval_pi_rec(x, (exp_t) e->args[1], v0, &is_bot2);
         *is_bot = is_bot1 + is_bot2;
         return pi;
       }
     case E_SUB:
       {
         int is_bot1, is_bot2;
-        int pi = eval_pi_rec(x, (exp_t) e->args[0], v0, &is_bot1) 
-            - eval_pi_rec(x, (exp_t) e->args[1], v0, &is_bot2);
+        val_t pi = eval_pi_rec(x, (exp_t) e->args[0], v0, &is_bot1) 
+                 - eval_pi_rec(x, (exp_t) e->args[1], v0, &is_bot2);
         *is_bot = is_bot1 + is_bot2;
         return pi;
       }
     case E_MUL:
       {
         int is_bot1, is_bot2;
-        int pi = eval_pi_rec(x, (exp_t) e->args[0], v0, &is_bot1) 
-            * eval_pi_rec(x, (exp_t) e->args[1], v0, &is_bot2);
+        val_t pi = eval_pi_rec(x, (exp_t) e->args[0], v0, &is_bot1) 
+                   * eval_pi_rec(x, (exp_t) e->args[1], v0, &is_bot2);
         *is_bot = is_bot1 + is_bot2;
         return pi;
       }
     case E_DIV:
       {
-        int d = eval_pi_rec(x, (exp_t) e->args[1], v0, is_bot);
+        val_t d = eval_pi_rec(x, (exp_t) e->args[1], v0, is_bot);
         //assert(d != 0 && "dbm: division by 0 in pi");
-        if (*is_bot || d == 0)
-        {
+        if (*is_bot || d == 0) {
           *is_bot = 1;
           return VAL_MIN;
         }
-        else
-        {
+        else {
           return eval_pi_rec(x, (exp_t) e->args[0], v0, is_bot) / d;
         }
       }
@@ -1735,9 +1798,9 @@ int eval_pi_rec(dbm x, exp_t e, int v0, int* is_bot)
   }
 }
 
-int eval_pi(dbm x, exp_t e, int* is_bot)
+val_t eval_pi(dbm x, exp_t e, int* is_bot)
 {
-  int v0 = x->pi[x->sz - 1];
+  val_t v0 = x->pi[x->sz - 1];
   return v0 - eval_pi_rec(x, e, v0, is_bot);
 }
 
@@ -1775,16 +1838,10 @@ dbm dbm_assign(int v, exp_t e, dbm x)
   if (!x || (x->checked && !x->feasible))
     return NULL;
 
-  // std::cout << "dbm_assign BEGIN: \n";
-  // dbm_print_to(std::cout, x);
-
   dbm ret = dbm_forget(v, x);
   if (!ret)
     return NULL;
 
-  // std::cout << "After forgetting " << v  << std::endl;
-  // dbm_print_to(std::cout, ret);
-      
   std::vector<int> ys;
   exp_collect_vars(e, ys);
 
@@ -1830,16 +1887,12 @@ dbm dbm_assign(int v, exp_t e, dbm x)
     }
   }
 
-  // std::cout << "After applying assignment " << std::endl;
-  // dbm_print_to(std::cout, ret);
-
-
   if(x->checked)
   {
     ret->checked = true;
     ret->feasible = true;
     int is_bot;
-    int pi = eval_pi(x, e, &is_bot);
+    val_t pi = eval_pi(x, e, &is_bot);
     if (is_bot)
     {
       return dbm_bottom ();
@@ -1858,14 +1911,14 @@ dbm dbm_assign(int v, exp_t e, dbm x)
         for(; !dests_end(viter); next_dest(viter))
         {
           int k = dest(viter);
-          int kval = iter_val(viter);
+          val_t kval = iter_val(viter);
           if(!src_is_live(x, k))
             continue;
           edge_iter diter = src_iterator(x, k);
           for(; !dests_end(diter); next_dest(diter))
           {
             int d = dest(diter);
-            int dval = iter_val(diter);
+            val_t dval = iter_val(diter);
             if(v == d)
               continue;
             if(in_graph(ret, v, d))
@@ -1885,14 +1938,14 @@ dbm dbm_assign(int v, exp_t e, dbm x)
         for(; !preds_end(viter); next_pred(viter))
         {
           int k = pred(viter);
-          int kval = rev_iter_val(viter);
+          val_t kval = rev_iter_val(viter);
           if(!dest_is_live(x, k))
               continue;
           edge_iter siter = pred_iterator(x, k);
           for(; !preds_end(siter); next_pred(siter))
           {
             int s = pred(siter);
-            int sval = rev_iter_val(siter);
+            val_t sval = rev_iter_val(siter);
             if(s == v)
               continue;
             // if(src_is_live(ret, s) && in_graph(ret, s, v))
@@ -1907,9 +1960,6 @@ dbm dbm_assign(int v, exp_t e, dbm x)
           }
         }
       }
-      // std::cout << "After transitive closure: \n" << std::endl;
-      // dbm_print_to(std::cout, ret);
-
       verify_potentials(ret);
       ret->closed = true;
     }
@@ -1930,7 +1980,7 @@ dbm dbm_load(int v, int a, uterm i, dbm x)
   return dbm_forget(v, x);
 }
 
-dbm dbm_apply_edge(dbm x, int i, int j, int w)
+dbm dbm_apply_edge(dbm x, int i, int j, val_t w)
 {
   if (!x || (x->checked && !x->feasible))
   {
@@ -2008,9 +2058,8 @@ dbm dbm_cond(ucon con, dbm x)
     }
   }
 
-  int i;
-  int j;
-  int w;
+  int i,j;
+  val_t w;
   
   // assert(con.kind == U_LEQ || con.kind == U_LT);
 
@@ -2028,19 +2077,19 @@ dbm dbm_cond(ucon con, dbm x)
   else if(con.args[0].kind == U_CONST) {
     // C_0 op V
     i = x->sz - 1;
-    j = con.args[1].val;
-    w = -1*con.args[0].val;
+    j = (int) con.args[1].val; // assume it cannot overflow
+    w = con.args[0].val*-1;
   } 
   else if(con.args[1].kind == U_CONST) {
     // V op C_0
-    i = con.args[0].val;
+    i = (int) con.args[0].val; // assume it cannot overflow
     j = x->sz - 1;
     w = con.args[1].val;
   } 
   else {
     // V_1 op V_2
-    i = con.args[0].val;
-    j = con.args[1].val;
+    i = (int) con.args[0].val; // assume it cannot overflow
+    j = (int) con.args[1].val; // assume it cannot overflow
     w = 0;
     if(i == j){
       if(con.kind == U_LEQ)
@@ -2078,9 +2127,8 @@ dbm dbm_apply_dexpr(dexpr con, dbm x)
 
   // Convert the ucon to an edge.
   // Factor this out.
-  int i;
-  int j;
-  int w;
+  int i,j;
+  val_t w;
 
   switch(con.kind)
   {
@@ -2138,7 +2186,7 @@ dbm dbm_resize(dbm abs, int sz)
 
   dbm ret = dbm_alloc(sz);
   
-  memcpy(ret->pi, abs->pi, sizeof(int)*sz);
+  memcpy(ret->pi, abs->pi, sizeof(val_t)*sz);
 
   ret->sz = sz;
   ret->checked = abs->checked;

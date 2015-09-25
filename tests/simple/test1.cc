@@ -32,7 +32,7 @@ cfg_t prog (VariableFactory &vfac)  {
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   // adding statements
-  x0.assign (k, 50);
+  x0.assign (k, 2147483648);
   entry.assign (i, 0);
   bb1_t.assume (i <= 99);
   bb1_f.assume (i >= 100);

@@ -18,21 +18,15 @@
  * matrices)
  * 
  */
-  
-typedef int dbm_val_t;
 
+// unused types  
+typedef val_t dbm_val_t;
 typedef int dbm_var_t;
-
-typedef struct {
-  dbm_val_t v;
-  short next_row;
-  short next_col;
-} node_t;
 
 typedef struct {
   unsigned short i_inv;
   unsigned short j_inv;
-  int val;
+  val_t val;
 } einfo;
 
 typedef struct {
@@ -50,7 +44,7 @@ typedef struct {
   int closed;
 
   // Potential function
-  int* pi;
+  val_t* pi;
 
   // Live sources & dests
   short num_srcs;
@@ -107,7 +101,7 @@ bool in_graph(dbm x, int i, int j);
 bool src_is_live(dbm abs, int i);
 bool dest_is_live(dbm abs, int i);
 dbm_var_t copy_var(dbm abs, dbm_var_t x);
-void dbm_add_edge(dbm x, int i, int j, int val);
+void dbm_add_edge(dbm x, int i, int j, val_t val);
 
 dbm dbm_expand(int v, int new_v, dbm x);
 dbm dbm_resize(dbm x, int sz);
