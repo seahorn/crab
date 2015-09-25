@@ -1789,15 +1789,22 @@ dbm dbm_assign(int v, exp_t e, dbm x)
   exp_collect_vars(e, ys);
 
   linterm term;
-  if (!eval_exp(x, -1, e, term))
-    return ret;
+  if (!eval_exp(x, -1, e, term)) {
+    // Clear the var flags
+    for(unsigned int yi = 0; yi < ys.size(); yi++)
+      var_flags[ys[yi]] = 0;
 
-  if (is_bot (term.coeff) || is_bot (term.konst))
-  {
+    return ret;
+  }
+
+  if (is_bot (term.coeff) || is_bot (term.konst)) {
+    // Clear the var flags
+    for(unsigned int yi = 0; yi < ys.size(); yi++)
+      var_flags[ys[yi]] = 0;
+
     return dbm_bottom ();
   }
-  else
-  {
+  else {
     post_linterm(ret, v, -1, term);
   }
 
@@ -1810,6 +1817,10 @@ dbm dbm_assign(int v, exp_t e, dbm x)
       // v = [c_l, c_u].y + [k_l, k_u]
       if (is_bot (term.coeff) || is_bot (term.konst))
       {
+        // Clear the rest of var flags
+        for(unsigned int ri = yi; ri < ys.size(); ri++)
+          var_flags[ys[ri]] = 0;
+
         return dbm_bottom ();
       }
       else if(term.coeff.lb == 1 && term.coeff.ub == 1)
