@@ -45,6 +45,7 @@
 #include <string>
 #include <sstream>
 #include <iostream>
+#include <climits>
 #include <gmpxx.h>
 
 #include <boost/functional/hash.hpp>
@@ -75,14 +76,13 @@ public:
   }
 
   // overloaded typecast operators
-  // These typecast operators must be used carefully so we make them explicit.
   explicit operator long() const { 
     if (_n.fits_slong_p ()) {
       return _n.get_si ();
     }
-   else {
-     CRAB_ERROR("mpz_class", _n, " does not fit into a signed long integer");
-   }
+    else {
+      CRAB_ERROR("mpz_class", _n, " does not fit into a signed long integer");
+    }
   } 
 
   explicit operator int() const { 
@@ -90,9 +90,9 @@ public:
       // get_si returns a signed long so we cast it to int
       return (int) _n.get_si ();
     }
-   else {
-     CRAB_ERROR("mpz_class", _n, " does not fit into a signed integer");
-   }
+    else {
+      CRAB_ERROR("mpz_class", _n, " does not fit into a signed integer");
+    }
   } 
 
 public:
@@ -107,7 +107,11 @@ public:
     }
   }
 
-  z_number(int n) : _n(n) {}
+  z_number(signed long long int n) : _n((signed long int) n) {
+    if (n > LONG_MAX) {
+      CRAB_ERROR(n, " cannot fit into a signed long int: use another mpz_class constructor");
+    }
+  }
 
   z_number operator+(z_number x) const {
     mpz_class r = this->_n + x._n;

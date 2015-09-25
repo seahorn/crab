@@ -137,7 +137,7 @@ namespace ikos {
     linear_expression(Number n): 
         _map(map_ptr(new map_t)), _cst(n) { }
     
-    linear_expression(int n): 
+    linear_expression(signed long long int n): 
         _map(map_ptr(new map_t)), _cst(Number(n)) { }
     
     linear_expression(variable_t x): 
