@@ -79,11 +79,11 @@ namespace crab {
           for (auto m: scc_mems) {
 
             cfg_t& cfg = m.getCfg ();
-            auto fdecl = cfg.get_func_decl ();
+            auto fdecl = cfg.get_func_decl ();            
             assert (fdecl);
 
             std::string fun_name = boost::lexical_cast<string> ((*fdecl).get_func_name ());
-            if (fun_name != "main") {
+            if (fun_name != "main" && cfg.has_exit ()) {
               CRAB_DEBUG ("--- Analyzing ", (*fdecl).get_func_name ());
               // --- run the analysis
               bu_analyzer a (cfg, m_vfac, m_live, &m_summ_tbl, &call_tbl, 
@@ -157,7 +157,7 @@ namespace crab {
             return it->second->get_pre (b);
         }
 
-        CRAB_WARN("Invariants at the entry of the block not found");
+        //CRAB_WARN("Invariants at the entry of the block not found");
         return inv_tbl_traits<TDAbsDomain,InvTblValTy>::top ();
       }
       
@@ -171,7 +171,7 @@ namespace crab {
             return it->second->get_post (b);
         }
         
-        CRAB_WARN("Invariants at the exit of the block not found");
+        //CRAB_WARN("Invariants at the exit of the block not found");
         return inv_tbl_traits<TDAbsDomain,InvTblValTy>::top ();
       }
 
