@@ -2162,18 +2162,27 @@ dbm dbm_apply_dexpr(dexpr con, dbm x)
 }
 
 // copy the variable v to a new one new_v.
-dbm dbm_expand (int v, int new_v, dbm x)
-{
+dbm dbm_expand (int v, int new_v, dbm x) {
   if (!x || (x->checked && !x->feasible))
     return NULL;
 
-  rmap subs[1];
-  subs[0].r_from = v;
-  subs[0].r_to = new_v;
-
-  dbm tmp = dbm_rename (subs, 1, x);
-  dbm res = dbm_meet (x,tmp); 
-  dbm_dealloc(tmp);
+  dbm res = dbm_copy (x);
+  
+  if(src_is_live(res, v)) {
+    edge_iter viter = src_iterator(res, v);
+    for(; !dests_end(viter); next_dest(viter)) {
+      int k = dest(viter);
+      dbm_add_edge (res, new_v, k, iter_val(viter));
+    }
+  }
+  
+  if(dest_is_live(res, v)) {
+    edge_iter viter = pred_iterator(res, v);
+    for(; !preds_end(viter); next_pred(viter)) {
+      int k = pred(viter);
+      dbm_add_edge (res, k, new_v, rev_iter_val(viter));
+    }
+  }  
   return res;
 }
 
