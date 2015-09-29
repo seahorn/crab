@@ -1003,7 +1003,6 @@ dbm dbm_forget(int v, dbm x)
   ret->feasible = true;
   ret->closed = true;
 
-
   edge_iter iter = edge_iterator(x);
   for(; !srcs_end(iter); next_src(iter))
   {
@@ -1180,7 +1179,6 @@ dbm dbm_rename(rmap* subs, int slen, dbm x)
   {
     ret->pi[subs[si].r_to] = x->pi[subs[si].r_from];
   }
-
   // Copy edges with var_flags[{source, dest}] = 0.
   edge_iter iter = edge_iterator(x);
   for(; !srcs_end(iter); next_src(iter))
@@ -1204,86 +1202,9 @@ dbm dbm_rename(rmap* subs, int slen, dbm x)
   ret->checked = true;
   ret->feasible = true;
   ret->closed = true;
-
   return ret;
 }
 
-
-// dbm dbm_rename(rmap* subs, int slen, dbm x)
-// {
-//   if(!x)
-//     return NULL;
-
-//   if (!x->closed)
-//     dbm_canonical(x); 
-
-//   if(!x || !x->feasible)
-//     return NULL;
-
-//   int sz = x->sz;
-//   // Set up the mapping.
-//   // Abusing _gamma for temporary storage.
-//   bool changed = false;
-//   for(int vi = 0; vi < sz; vi++)
-//   {
-//     _gamma[vi] = vi;
-//   }
-//   for(int si = 0; si < slen; si++)
-//   {
-//     if(subs[si].r_to == subs[si].r_from)
-//       continue;
-
-//     changed = true;
-//     var_flags[subs[si].r_to] = 1; // Possibly overwritten
-//     _gamma[subs[si].r_from] = subs[si].r_to;
-//   }
-//   if(!changed)
-//   {
-//     for(int vi = 0; vi < sz; vi++)
-//       var_flags[vi] = 0;
-//     return dbm_copy(x);
-//   }
-
-//   for(int vi = 0; vi < sz; vi++)
-//   {
-//     if(_gamma[vi] != vi)
-//       var_flags[vi] = 0;
-//   }
-
-//   dbm ret = dbm_alloc(x->sz);
-//   memcpy(ret->pi, x->pi, sizeof(val_t)*sz);
-//   // Permute the value of reassigned variables.
-//   for(int si = 0; si < slen; si++)
-//   {
-//     ret->pi[subs[si].r_to] = x->pi[subs[si].r_from];
-//   }
-
-//   // Copy edges with var_flags[{source, dest}] = 0.
-//   edge_iter iter = edge_iterator(x);
-//   for(; !srcs_end(iter); next_src(iter))
-//   {
-//     int i = src(iter);
-//     if(var_flags[i])
-//       continue;
-
-//     for(; !dests_end(iter); next_dest(iter))
-//     {
-//       int j = dest(iter);
-//       if(var_flags[j])
-//         continue;
-
-//       dbm_add_edge(ret, _gamma[i], _gamma[j], iter_val(iter));
-//     }
-//   }
-//   for(int vi = 0; vi < sz; vi++)
-//     var_flags[vi] = 0;
-
-//   ret->checked = true;
-//   ret->feasible = true;
-//   ret->closed = true;
-
-//   return ret;
-// }
 
 // As dbm_rename, but:
 // (1) Variables which do not occur as destinations are eliminated
@@ -1730,21 +1651,6 @@ bool eval_exp(dbm d, int v, exp_t e, linterm& term)
   return true;
 }
 
-// typedef struct {
-//   int val;
-//   int is_bot;
-// } pi_t;
-
-// pi_t mk_pi(int val){
-//   pi_t r = { val, 0 /*false*/};
-//   return r;
-// }
-
-// pi_t mk_bot_pi(){
-//   pi_t r = { 0 /*any val here*/, 1 /*true*/};
-//   return r;
-// }
-
 // Compute a potential value for a freshly introduced variable.
 val_t eval_pi_rec(dbm x, exp_t e, val_t v0, int* is_bot)
 {
@@ -2163,21 +2069,23 @@ dbm dbm_apply_dexpr(dexpr con, dbm x)
 
 // copy the variable v to a new one new_v.
 dbm dbm_expand (int v, int new_v, dbm x) {
-  if (!x || (x->checked && !x->feasible))
+  if (!x) 
+    return NULL;
+  if (x->checked && !x->feasible)
     return NULL;
 
   dbm res = dbm_copy (x);
   
-  if(src_is_live(res, v)) {
-    edge_iter viter = src_iterator(res, v);
+  if(src_is_live(x, v)) {
+    edge_iter viter = src_iterator(x, v);
     for(; !dests_end(viter); next_dest(viter)) {
       int k = dest(viter);
       dbm_add_edge (res, new_v, k, iter_val(viter));
     }
   }
   
-  if(dest_is_live(res, v)) {
-    edge_iter viter = pred_iterator(res, v);
+  if(dest_is_live(x, v)) {
+    edge_iter viter = pred_iterator(x, v);
     for(; !preds_end(viter); next_pred(viter)) {
       int k = pred(viter);
       dbm_add_edge (res, k, new_v, rev_iter_val(viter));
@@ -2195,7 +2103,9 @@ dbm dbm_resize(dbm abs, int sz)
 
   dbm ret = dbm_alloc(sz);
   
-  memcpy(ret->pi, abs->pi, sizeof(val_t)*sz);
+  assert (sz >= abs->sz); // only size increase
+  memcpy(ret->pi, abs->pi, sizeof(val_t)*abs->sz);
+  //memcpy(ret->pi, abs->pi, sizeof(val_t)*sz);
 
   ret->sz = sz;
   ret->checked = abs->checked;
