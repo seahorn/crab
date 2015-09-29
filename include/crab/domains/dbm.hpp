@@ -194,14 +194,9 @@ namespace crab {
         auto it = _var_map.find (x);
         if (it != _var_map.end ())
           return it->second;
-
         id_t k = _id++;
-        if (k >= (int) (_dbm->sz - 2)) {
-          // --- This might be possible if Delta is too small
-          // CRAB_ERROR("DBM: need to enlarge the matrix. This should not happen!");
-          resize (Delta);
-        }
-    
+        //if (k >= (int) (_dbm->sz - 2))
+        //  resize (Delta);    
         _var_map.insert (make_pair (x, k));
         _rev_map.insert (make_pair (k, x));
         return k;
@@ -243,18 +238,12 @@ namespace crab {
 
      private:
 
-      void swap(dbm& x, dbm& y) {
-        dbm tmp = x;
-        x = y;
-        y = tmp;
-      }
-
       void assign(VariableName x, exp_t exp) {
         dbm ret = NULL;      
         id_t i = get_dbm_index(x); 
         ret = dbm_assign(i, exp, _dbm);
         dbm_dealloc(_dbm);
-        swap(_dbm, ret);
+        std::swap(_dbm, ret);
         exp_dealloc(exp);
       }
 
@@ -278,28 +267,28 @@ namespace crab {
         dbm ret = NULL;
         ret = dbm_cond(con, _dbm);
         dbm_dealloc(_dbm);
-        swap(_dbm, ret);
+        std::swap(_dbm, ret);
       }
 
       void apply_dexpr(dexpr d) {
         dbm ret = NULL;
         ret = dbm_apply_dexpr(d, _dbm);
         dbm_dealloc(_dbm);
-        swap(_dbm, ret);
+        std::swap(_dbm, ret);
       }
 
       void forget(id_t idx) {
         dbm ret = NULL;
         ret = dbm_forget(idx, _dbm);
         dbm_dealloc(_dbm);
-        swap(_dbm, ret);
+        std::swap(_dbm, ret);
       }
     
       void forget(vector<int> idxs) {
         dbm ret = NULL;
         ret = dbm_forget_array(&idxs[0], idxs.size(), _dbm);
         dbm_dealloc(_dbm);
-        swap(_dbm, ret);
+        std::swap(_dbm, ret);
       }
 
       void project(vector<int> idxs) {
@@ -309,7 +298,7 @@ namespace crab {
         dbm ret = NULL;
         ret = dbm_extract (&idxs[0], idxs.size(), _dbm);
         dbm_dealloc(_dbm);
-        swap(_dbm, ret);
+        std::swap(_dbm, ret);
       }
 
       void set_to_bottom() {
@@ -545,23 +534,24 @@ namespace crab {
 
         dbm x = NULL;      
         x= dbm_resize (d, sz);
-
         // rename special variable "0"
         vector<rmap>  subs;
         subs.push_back (rmap {d->sz-1,sz-1});
         dbm ret = NULL;
         ret= dbm_rename (&subs[0], subs.size(), x);
-
         dbm_dealloc (x);
         return ret;
       }
 
       // resize this->_dbm to this->_dbm->sz + delta
       void resize (int delta) {
+        if (dbm_is_bottom (_dbm))
+          return;
+
         int max_sz = _dbm->sz + delta;
         dbm tmp = resize (_dbm, max_sz);
         dbm_dealloc(_dbm);    
-        swap(_dbm, tmp);
+        std::swap(_dbm, tmp);
       }
 
      public:
@@ -649,13 +639,13 @@ namespace crab {
           if (dbm_x->sz != max_sz) {
             dbm tmp = resize (dbm_x, max_sz);
             dbm_dealloc(dbm_x);    
-            swap(dbm_x, tmp);
+            std::swap(dbm_x, tmp);
           }
 
           if (dbm_y->sz != max_sz) {
             dbm tmp = resize (dbm_y, max_sz);
             dbm_dealloc(dbm_y);    
-            swap(dbm_y, tmp);
+            std::swap(dbm_y, tmp);
           }
           assert (dbm_x->sz == dbm_y->sz && dbm_y->sz == max_sz);
 
@@ -705,13 +695,13 @@ namespace crab {
           if (dbm_x->sz != max_sz) {
             dbm tmp = resize (dbm_x, max_sz);
             dbm_dealloc(dbm_x);    
-            swap(dbm_x, tmp);
+            std::swap(dbm_x, tmp);
           }
 
           if (dbm_y->sz != max_sz) {
             dbm tmp = resize (dbm_y, max_sz);
             dbm_dealloc(dbm_y);    
-            swap(dbm_y, tmp);
+            std::swap(dbm_y, tmp);
           }
 
           assert (dbm_x->sz == dbm_y->sz && dbm_y->sz == max_sz);
@@ -781,13 +771,13 @@ namespace crab {
           if (dbm_x->sz != max_sz) {
             dbm tmp = resize (dbm_x, max_sz);
             dbm_dealloc(dbm_x);    
-            swap(dbm_x, tmp);
+            std::swap(dbm_x, tmp);
           }
 
           if (dbm_y->sz != max_sz) {
             dbm tmp = resize (dbm_y, max_sz);
             dbm_dealloc(dbm_y);    
-            swap(dbm_y, tmp);
+            std::swap(dbm_y, tmp);
           }
 
           assert (dbm_x->sz == dbm_y->sz && dbm_y->sz == max_sz);
@@ -841,13 +831,13 @@ namespace crab {
           if (dbm_x->sz != max_sz) {
             dbm tmp = resize (dbm_x, max_sz);
             dbm_dealloc(dbm_x);    
-            swap(dbm_x, tmp);
+            std::swap(dbm_x, tmp);
           }
 
           if (dbm_y->sz != max_sz) {
             dbm tmp = resize (dbm_y, max_sz);
             dbm_dealloc(dbm_y);    
-            swap(dbm_y, tmp);
+            std::swap(dbm_y, tmp);
           }
 
           assert (dbm_x->sz == dbm_y->sz && dbm_y->sz == max_sz);
@@ -899,13 +889,13 @@ namespace crab {
           if (dbm_x->sz != max_sz) {
             dbm tmp = resize (dbm_x, max_sz);
             dbm_dealloc(dbm_x);    
-            swap(dbm_x, tmp);
+            std::swap(dbm_x, tmp);
           }
 
           if (dbm_y->sz != max_sz) {
             dbm tmp = resize (dbm_y, max_sz);
             dbm_dealloc(dbm_y);    
-            swap(dbm_y, tmp);
+            std::swap(dbm_y, tmp);
           }
 
           assert (dbm_x->sz == dbm_y->sz && dbm_y->sz == max_sz);
@@ -938,8 +928,8 @@ namespace crab {
         auto it = _var_map.find (v);
         if (it != _var_map.end ()) {
           forget (it->second);
-          _var_map.erase (v);
           _rev_map.erase (it->second);
+          _var_map.erase (v);
         }
       }
       
@@ -953,8 +943,8 @@ namespace crab {
           auto it = _var_map.find (v);
           if (it != _var_map.end ()) {
             idxs.push_back  ((int) it->second);
-            _var_map.erase (v);
             _rev_map.erase (it->second);
+            _var_map.erase (v);
           }
         }
         if (!idxs.empty()) {
@@ -985,14 +975,13 @@ namespace crab {
           }
         }
 
-        _var_map.clear ();
         std::swap (_var_map, var_map);
-        _rev_map.clear ();
         std::swap (_rev_map, rev_map);
 
         project (idxs);
         if (!dbm_compact ())
           resize (Delta);
+        dbm_compact ();
       }
 
       void assign(VariableName x, linear_expression_t e) {
@@ -1326,10 +1315,9 @@ namespace crab {
         if(is_bottom())
           return;
 
-        dbm ret = NULL;      
-        ret = dbm_expand(get_dbm_index(x), get_dbm_index(y), _dbm);
+        dbm ret = dbm_expand(get_dbm_index(x), get_dbm_index(y), _dbm);
         dbm_dealloc(_dbm);
-        swap(_dbm, ret);
+        std::swap(_dbm, ret);
       }
 
       // Output function
