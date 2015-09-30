@@ -42,14 +42,11 @@ namespace crab {
       VarFactory& m_vfac;
       bool m_run_live;
       global_inv_map_t m_global_inv;
-      bool m_keep_shadows;
       
      public:
       
-      ConcAnalyzer (conc_sys_t& conc_sys, VarFactory& vfac,  
-                    bool runLive, bool keep_shadows=false): 
-          m_conc_sys (conc_sys), m_vfac (vfac), m_run_live (runLive), 
-          m_keep_shadows (keep_shadows) 
+      ConcAnalyzer (conc_sys_t& conc_sys, VarFactory& vfac, bool runLive):  
+          m_conc_sys (conc_sys), m_vfac (vfac), m_run_live (runLive)
       { }
       
       //! Return analysis results
@@ -71,8 +68,7 @@ namespace crab {
           for (auto const p: m_conc_sys)
           {
             /// --- run the thread separately
-            fwd_analyzer_t thread_analyzer (p.second, m_vfac, 
-                                            m_run_live, m_keep_shadows);
+            fwd_analyzer_t thread_analyzer (p.second, m_vfac, m_run_live);
             thread_analyzer.Run (inv);
             
             auto locals = boost::make_iterator_range (m_conc_sys.get_locals (p.first));

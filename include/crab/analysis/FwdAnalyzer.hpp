@@ -70,7 +70,6 @@ namespace crab {
       // datastructures needed to perform interprocedural analysis
       summ_tbl_t* m_summ_tbl;
       call_tbl_t* m_call_tbl;
-      bool m_keep_shadows;
       std::set<varname_t> m_formals;
       // Preserve invariants at the entry and exit. This might be
       // expensive in terms of memory. As an alternative, we could
@@ -111,12 +110,7 @@ namespace crab {
       {
         auto it = m_pre_map.find (node);
         if (it == m_pre_map.end())
-        {
-          if (!m_keep_shadows) {
-            auto shadows = m_vfac.get_shadow_vars ();
-            domain_traits::forget (inv, shadows.begin (), shadows.end ());
-          }
-          
+        {          
           typedef inv_tbl_traits<abs_dom_t,InvTblValTy> inv_tbl_t;
           if (inv.is_bottom ())
             m_pre_map.insert(make_pair (node, inv_tbl_t::bot()));
@@ -132,11 +126,6 @@ namespace crab {
         auto it = m_post_map.find (node);
         if (it == m_post_map.end())
         {
-          if (!m_keep_shadows) {
-            auto shadows = m_vfac.get_shadow_vars ();
-            domain_traits::forget (inv, shadows.begin (), shadows.end ());
-          }
-          
           typedef inv_tbl_traits<abs_dom_t,InvTblValTy> inv_tbl_t;
           if (inv.is_bottom ())
             m_post_map.insert(make_pair (node, inv_tbl_t::bot()));
@@ -155,12 +144,10 @@ namespace crab {
      public:
 
       // --- intra-procedural version
-      FwdAnalyzer (CFG cfg, VarFactory& vfac, bool runLive,
-                   bool keep_shadows = false):
+      FwdAnalyzer (CFG cfg, VarFactory& vfac, bool runLive):
           fwd_iterator_t (cfg), m_cfg (cfg), 
           m_vfac (vfac), m_live (m_cfg), 
-          m_summ_tbl (nullptr), m_call_tbl (nullptr),
-          m_keep_shadows (keep_shadows) {
+          m_summ_tbl (nullptr), m_call_tbl (nullptr) {
         if (runLive) {
           m_live.exec ();
         }
@@ -168,12 +155,10 @@ namespace crab {
 
       // --- inter-procedural version
       FwdAnalyzer (CFG cfg, VarFactory& vfac, bool runLive, 
-                   summ_tbl_t* sum_tbl, call_tbl_t* call_tbl,
-                   bool keep_shadows = false):
+                   summ_tbl_t* sum_tbl, call_tbl_t* call_tbl):
           fwd_iterator_t (cfg), m_cfg (cfg), 
           m_vfac (vfac), m_live (m_cfg), 
-          m_summ_tbl (sum_tbl), m_call_tbl (call_tbl),
-          m_keep_shadows (keep_shadows) {
+          m_summ_tbl (sum_tbl), m_call_tbl (call_tbl) {
         if (runLive) {
           m_live.exec ();
 
@@ -202,27 +187,19 @@ namespace crab {
       void Run (abs_dom_t inv)  {
         this->run (inv); 
       }      
-      
-      //! Propagate invariants at the statement level
-      template < typename Statement >
-      abs_dom_t AnalyzeStmt (Statement s, abs_dom_t pre) {
-        AbsTr vis (pre, m_summ_tbl, m_call_tbl); 
-        vis.visit (s);
-        return vis.inv ();
+            
+      //! Return the invariants that hold at the entry of b
+      InvTblValTy operator[] (basic_block_label_t b) const {
+        return get_pre (b);
       }
       
       //! Return the invariants that hold at the entry of b
-      InvTblValTy operator[] (basic_block_label_t b) const {
+      InvTblValTy get_pre (basic_block_label_t b) const { 
         auto it = m_pre_map.find (b);
         if (it == m_pre_map.end ())
           return inv_tbl_traits<abs_dom_t,InvTblValTy>::top();
         else
           return it->second;
-      }
-      
-      //! Return the invariants that hold at the exit of b
-      InvTblValTy get_pre (basic_block_label_t b) const { 
-        return this->operator[](b);
       }
       
       //! Return the invariants that hold at the exit of b

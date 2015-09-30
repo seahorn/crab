@@ -52,16 +52,13 @@ namespace crab {
       CG m_cg;
       VarFactory&  m_vfac;
       bool m_live;
-      bool m_keep_shadows;
       invariant_map_t m_inv_map;
       summ_tbl_t m_summ_tbl;
 
      public:
       
-      InterFwdAnalyzer (CG cg, VarFactory& vfac, 
-                        bool runLive, bool keep_shadows=false): 
-          m_cg (cg), m_vfac (vfac),
-          m_live (runLive), m_keep_shadows (keep_shadows) {
+      InterFwdAnalyzer (CG cg, VarFactory& vfac, bool runLive): 
+          m_cg (cg), m_vfac (vfac), m_live (runLive) {
       }
       
       //! Trigger the whole analysis
@@ -86,8 +83,7 @@ namespace crab {
             if (fun_name != "main" && cfg.has_exit ()) {
               CRAB_DEBUG ("--- Analyzing ", (*fdecl).get_func_name ());
               // --- run the analysis
-              bu_analyzer a (cfg, m_vfac, m_live, &m_summ_tbl, &call_tbl, 
-                             true /*m_keep_shadows*/) ; 
+              bu_analyzer a (cfg, m_vfac, m_live, &m_summ_tbl, &call_tbl) ; 
               a.Run (BUAbsDomain::top ());
               // --- build the summary
               std::vector<varname_t> formals;
@@ -129,8 +125,7 @@ namespace crab {
             }
             
             td_analyzer_ptr a (new td_analyzer (cfg, m_vfac, m_live, 
-                                                &m_summ_tbl, &call_tbl,
-                                                m_keep_shadows));           
+                                                &m_summ_tbl, &call_tbl));           
             if (is_root) {
               a->Run (init);
               is_root = false;
@@ -147,7 +142,7 @@ namespace crab {
         }
       }
 
-      //! Return the invariants that hold at the exit of b in cfg
+      //! Return the invariants that hold at the entry of b in cfg
       InvTblValTy get_pre (const cfg_t &cfg, 
                            typename cfg_t::basic_block_label_t b) const { 
 
@@ -156,8 +151,6 @@ namespace crab {
           if (it != m_inv_map.end ())
             return it->second->get_pre (b);
         }
-
-        //CRAB_WARN("Invariants at the entry of the block not found");
         return inv_tbl_traits<TDAbsDomain,InvTblValTy>::top ();
       }
       
@@ -170,12 +163,10 @@ namespace crab {
           if (it != m_inv_map.end ())
             return it->second->get_post (b);
         }
-        
-        //CRAB_WARN("Invariants at the exit of the block not found");
         return inv_tbl_traits<TDAbsDomain,InvTblValTy>::top ();
       }
 
-      //! return true if there is a summary for cfg
+      //! Return true if there is a summary for cfg
       bool has_summary (const cfg_t &cfg) const {
         if (auto fdecl = cfg.get_func_decl ())
           return m_summ_tbl.hasSummary (*fdecl);
