@@ -156,10 +156,30 @@ namespace crab {
 
      public:
       
-      bool isReturn () const { return m_stmt_code == RETURN; }
-      bool isBinOp () const { return (m_stmt_code >= 1 && m_stmt_code <= 20); }
-      bool isAssign () const { return (m_stmt_code == ASSIGN); }
-      bool isAssume () const { return (m_stmt_code == ASSUME); }
+      bool isReturn () const { 
+        return m_stmt_code == RETURN; 
+      }
+      bool isBinOp () const { 
+        return (m_stmt_code >= 1 && m_stmt_code <= 20); 
+      }
+      bool isAssign () const { 
+        return (m_stmt_code == ASSIGN); 
+      }
+      bool isAssume () const { 
+        return (m_stmt_code == ASSUME); 
+      }
+      bool isArrRead () const { 
+        return (m_stmt_code == ARR_LOAD);
+      }
+      bool isPtrRead () const {
+        return (m_stmt_code == PTR_LOAD); 
+      }
+      bool isArrWrite () const { 
+        return (m_stmt_code == ARR_STORE); 
+      }
+      bool isPtrWrite () const { 
+        return (m_stmt_code == PTR_STORE); 
+      }
       
      public:
       
