@@ -1136,6 +1136,9 @@ namespace crab {
 
         this->operator-=(x);
 
+        if (!dbm_compact ())
+          resize (Delta);
+
         int k = get_dbm_index(x);
         if (!intv.is_top()){
           optional<Number> lb = intv.lb().number();
@@ -1324,18 +1327,6 @@ namespace crab {
       void write(ostream& o) { 
 
         normalize ();
-#if 0
-        cout << "var_map={";
-        for (auto &p: _var_map) 
-          cout << p.first << "(" << p.first.index () << ") " << "->" << p.second << ";";
-        cout << "}\n";
-        cout << "rev_map={";
-        for (auto &p: _rev_map) 
-          cout << p.first << "->" << p.second << ";";
-        cout << "}\n";
-        cout << "matrix:\n";
-        dbm_print_to(cout, _dbm);
-#endif 
 
         if(is_bottom()){
           o << "_|_";
@@ -1347,6 +1338,19 @@ namespace crab {
         }
         else
         {
+#if 0
+          cout << "var_map={";
+          for (auto &p: _var_map) 
+            cout << p.first << "(" << p.first.index () << ") " << "->" << p.second << ";";
+          cout << "}\n";
+          cout << "rev_map={";
+          for (auto &p: _rev_map) 
+            cout << p.first << "->" << p.second << ";";
+          cout << "}\n";
+          cout << "matrix:\n";
+          dbm_print_to(cout, _dbm);
+#endif 
+
           linear_constraint_system_t inv = to_linear_constraint_system ();
           o << inv;
         }
