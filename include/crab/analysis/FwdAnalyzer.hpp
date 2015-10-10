@@ -204,6 +204,14 @@ namespace crab {
           return it->second;      
       }
 
+      //! Propagate invariants at the statement level
+      template < typename Statement >
+      abs_dom_t AnalyzeStmt (Statement s, abs_dom_t pre) {
+        AbsTr vis (pre, m_summ_tbl, m_call_tbl); 
+        vis.visit (s);
+        return vis.inv ();            
+      }
+
     }; 
 
     //! Specialized type for a numerical forward analyzer
