@@ -22,6 +22,7 @@
 #include <crab/common/bignums.hpp>
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/domains/intervals.hpp>
+#include <crab/domains/discrete_domains.hpp>
 
 namespace crab {
 
@@ -90,19 +91,18 @@ namespace crab {
     template< typename VariableName>
     class Live
     {
-      
       typedef vector < VariableName > live_set_t;
-      
+
      public:
       
       typedef typename live_set_t::const_iterator  const_use_iterator;
       typedef typename live_set_t::const_iterator  const_def_iterator;
       
      private:
-      
+
       live_set_t m_uses;
       live_set_t m_defs;
-      
+
       void add (live_set_t & s, VariableName v)
       {
         auto it = find (s.begin (), s.end (), v);
@@ -120,7 +120,7 @@ namespace crab {
       const_use_iterator uses_end()   const { return m_uses.end (); }
       const_use_iterator defs_begin() const { return m_defs.begin (); }
       const_use_iterator defs_end()   const { return m_defs.end (); }
-      
+
       friend ostream& operator<<(ostream &o, 
                                  const Live< VariableName> &live )
       {
@@ -136,7 +136,6 @@ namespace crab {
         return o;
       }
     };
-
 
     template< typename VariableName>
     struct StatementVisitor;
@@ -1154,6 +1153,7 @@ namespace crab {
       typedef const_succ_iterator const_pred_iterator;
       typedef boost::indirect_iterator< typename stmt_list_t::iterator > iterator;
       typedef boost::indirect_iterator< typename stmt_list_t::const_iterator > const_iterator;
+      typedef discrete_domain <VariableName> live_domain_t;
       
      public:
 
@@ -1209,6 +1209,9 @@ namespace crab {
       // very common we should replace stmt_list_t from a vector to a
       // deque.
       bool m_insert_point_at_front; 
+
+      // set of used/def variables 
+      live_domain_t m_live; 
       
       void InsertAdjacent (bb_id_set_t &c, BasicBlockLabel e)
       { 
@@ -1224,7 +1227,8 @@ namespace crab {
       
       BasicBlock (BasicBlockLabel bb_id, TrackedPrecision track_prec): 
           m_bb_id (bb_id), m_track_prec (track_prec), 
-          m_insert_point_at_front (false)
+          m_insert_point_at_front (false), 
+          m_live (live_domain_t::bottom ())
       { }
       
       static boost::shared_ptr< basic_block_t > Create (BasicBlockLabel bb_id, 
@@ -1242,6 +1246,12 @@ namespace crab {
         }
         else
           m_stmts.push_back(stmt);
+
+        auto ls = stmt->getLive ();
+        for (auto &v : boost::make_iterator_range (ls.uses_begin (), ls.uses_end ()))
+          m_live += v;
+        for (auto &v : boost::make_iterator_range (ls.defs_begin (), ls.defs_end ()))
+          m_live += v;
       }
       
      public:
@@ -1264,7 +1274,8 @@ namespace crab {
         
         for (auto id : boost::make_iterator_range (next_blocks ()))
           b->m_next.push_back (id);
-        
+
+        b->m_live = m_live;
         return b;
       }
 
@@ -1276,7 +1287,11 @@ namespace crab {
       const_iterator end()   const { return boost::make_indirect_iterator (m_stmts.end ()); }
       
       size_t size() { return std::distance ( begin (), end ()); }
-      
+
+      live_domain_t& live () {
+        return m_live;
+      }
+
       pair<succ_iterator, succ_iterator> next_blocks ()
       { 
         return make_pair (m_next.begin (), m_next.end ());
@@ -1323,6 +1338,8 @@ namespace crab {
         m_stmts.insert (m_stmts.begin (), 
                         other.m_stmts.begin (), 
                         other.m_stmts.end ());
+
+        m_live = m_live | other.m_live;
       }
       
       // insert all statements of other at the back
@@ -1331,6 +1348,8 @@ namespace crab {
         m_stmts.insert (m_stmts.end (), 
                         other.m_stmts.begin (), 
                         other.m_stmts.end ());
+
+        m_live = m_live | other.m_live;
       }
       
       void write(ostream& o) const

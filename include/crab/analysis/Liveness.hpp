@@ -13,7 +13,7 @@ namespace crab {
     using namespace cfg;
 
     namespace liveness_discrete_impl{
-    
+
        template< typename Element>
        class liveness_domain: public ikos::writeable {
          
@@ -26,10 +26,12 @@ namespace crab {
          
         private:
          discrete_domain_t _inv;
-         
+
+        public:
+         // hook to speedup check_post in Liveness class
          liveness_domain(discrete_domain_t inv): 
              ikos::writeable(), _inv(inv){ }
-         
+
         public:
          static liveness_domain_t top() {
            return liveness_domain(discrete_domain_t::top());
@@ -319,14 +321,16 @@ namespace crab {
         public backward_fp_iterator< typename CFG::basic_block_label_t, 
                                      CFG, 
                                      liveness_discrete_impl::liveness_domain <typename CFG::varname_t> > {
+
     public:
      typedef typename CFG::basic_block_label_t basic_block_label_t;
      typedef typename CFG::varname_t varname_t;
-     typedef std::set<varname_t> live_set_t;
+     typedef liveness_discrete_impl::liveness_domain<varname_t> liveness_domain_t;
+     typedef liveness_domain_t set_t;
      
     private:
-     typedef liveness_discrete_impl::liveness_domain<varname_t> liveness_domain_t;
-     typedef boost::unordered_map< basic_block_label_t, live_set_t > liveness_map_t;
+     typedef boost::shared_ptr <set_t> set_ptr;
+     typedef boost::unordered_map< basic_block_label_t, set_ptr > liveness_map_t;
      typedef std::pair< liveness_domain_t, liveness_domain_t >   kill_gen_t;
      typedef boost::unordered_map< basic_block_label_t, kill_gen_t>  kill_gen_map_t;
      typedef typename liveness_map_t::value_type l_binding_t;
@@ -366,8 +370,8 @@ namespace crab {
     public:
 
      Liveness (CFG cfg): 
-         backward_fp_iterator<basic_block_label_t, 
-                              CFG, liveness_domain_t> (cfg) {
+         backward_fp_iterator
+         <basic_block_label_t, CFG, liveness_domain_t> (cfg) {
        init(); 
      }
 
@@ -376,21 +380,22 @@ namespace crab {
      }
 
      //! return the set of dead variables at the exit of block bb
-     live_set_t dead_exit (basic_block_label_t bb) const {
+     set_t dead_exit (basic_block_label_t bb) const {
        auto it = m_dead_map.find(bb);
-       if (it == m_dead_map.end()) return live_set_t ();
-       else return it->second; 
+       if (it == m_dead_map.end()) 
+         return set_t ();
+       else 
+         return *(it->second); 
      }
 
-     //! return the set of live variables at the entry of block bb
-     boost::optional <live_set_t> 
-     live_entry (basic_block_label_t bb) const {
-       auto it = m_live_map.find(bb);
-       if (it == m_live_map.end())
-         return boost::optional <live_set_t> ();
-       else
-         return boost::optional <live_set_t> (it->second); 
-     }
+     // //! return the set of live variables at the entry of block bb
+     // set_t live_entry (basic_block_label_t bb) const {
+     //   auto it = m_live_map.find(bb);
+     //   if (it == m_live_map.end())
+     //     return set_t ();
+     //   else
+     //     return *(it->second);
+     // }
 
      void write (ostream &o) const {
        for (auto p: m_live_map) {
@@ -417,44 +422,26 @@ namespace crab {
 
      void check_pre (basic_block_label_t bb, 
                      liveness_domain_t live_in) {
-       // Collect live variables at the entry of bb
-       live_set_t live_in_set;
-       if (!live_in.is_bottom()) {
-         for (auto v: boost::make_iterator_range (live_in.begin (), 
-                                                  live_in.end ()))
-           live_in_set.insert (v); 
-       }
-       m_live_map.insert (l_binding_t (bb, live_in_set));
+
+       // // --- Collect live variables at the entry of bb
+       // if (!live_in.is_bottom()) {
+       //   set_ptr live_in_set = set_ptr (new set_t (live_in));         
+       //   m_live_map.insert (l_binding_t (bb, live_in_set));
+       // }
      }
      
      void check_post (basic_block_label_t bb, 
                       liveness_domain_t live_out) {
 
-       // Collect dead variables at the exit of bb
+       // --- Collect dead variables at the exit of bb
 
-       live_set_t dead_set;
        if (!live_out.is_bottom ()) {
-         live_set_t live_out_set;
-         for (auto v: boost::make_iterator_range (live_out.begin (), 
-                                                  live_out.end ()))
-           live_out_set.insert (v); 
-         
-         // get all used/defined variables in bb
-         live_set_t bb_vars;
-         auto &b = this->get_cfg().get_node (bb);
-         for (auto &s: b) {
-           auto live = s.getLive();
-           bb_vars.insert (live.defs_begin(), live.defs_end ());
-           bb_vars.insert (live.uses_begin(), live.uses_end ());
-         }
-         
-         std::set_difference( bb_vars.begin(), bb_vars.end(), 
-                              live_out_set.begin (), live_out_set.end (), 
-                              std::inserter (dead_set, dead_set.end()));
+         set_ptr dead_set (new set_t (this->get_cfg().get_node (bb).live ()));
+         *dead_set -= live_out;
+         m_dead_map.insert (l_binding_t (bb, dead_set));
        }
-       m_dead_map.insert (l_binding_t (bb, dead_set));
      }
-     
+          
    }; 
 
    template <typename CFG>

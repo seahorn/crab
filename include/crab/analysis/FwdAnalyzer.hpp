@@ -53,7 +53,7 @@ namespace crab {
       typedef typename AbsTr::z_lin_cst_t z_lin_cst_t;
       typedef boost::unordered_map<basic_block_label_t, InvTblValTy> invariant_map_t;    
       typedef Liveness<CFG> liveness_t;     
-      typedef typename liveness_t::live_set_t live_set_t;     
+      typedef typename liveness_t::set_t live_set_t;     
 
 
      public:
@@ -64,13 +64,12 @@ namespace crab {
 
      private:
 
-      CFG m_cfg;
       VarFactory&  m_vfac;
       liveness_t m_live;
       // datastructures needed to perform interprocedural analysis
       summ_tbl_t* m_summ_tbl;
       call_tbl_t* m_call_tbl;
-      std::set<varname_t> m_formals;
+      live_set_t m_formals;
       // Preserve invariants at the entry and exit. This might be
       // expensive in terms of memory. As an alternative, we could
       // compute the invariants at the exit by propagating locally from
@@ -78,19 +77,12 @@ namespace crab {
       invariant_map_t  m_pre_map;
       invariant_map_t  m_post_map;
 
-      template <typename Set>
-      inline void set_difference2 (Set &s1, Set &s2) {
-        Set s3;
-        boost::set_difference (s1, s2, std::inserter (s3, s3.end ()));
-        std::swap (s3, s1);
-      }
-
       void prune_dead_variables (abs_dom_t &inv, basic_block_label_t node) {
         // prune dead variables 
         if (inv.is_bottom() || inv.is_top()) return;
         auto dead = m_live.dead_exit (node);       
 
-        set_difference2 (dead, m_formals);
+        dead -= m_formals;
         domain_traits::forget (inv, dead.begin (), dead.end ());
       }
 
@@ -98,7 +90,7 @@ namespace crab {
       //! the invariant at the exit of the block.
       abs_dom_t analyze (basic_block_label_t node, abs_dom_t pre) 
       { 
-        auto &b = m_cfg.get_node (node);
+        auto &b = this->get_cfg().get_node (node);
         AbsTr vis (pre, m_summ_tbl, m_call_tbl);
         for (auto &s : b) { s.accept (&vis); }
         abs_dom_t post = vis.inv ();
@@ -145,9 +137,10 @@ namespace crab {
 
       // --- intra-procedural version
       FwdAnalyzer (CFG cfg, VarFactory& vfac, bool runLive):
-          fwd_iterator_t (cfg), m_cfg (cfg), 
-          m_vfac (vfac), m_live (m_cfg), 
+          fwd_iterator_t (cfg), 
+          m_vfac (vfac), m_live (cfg), 
           m_summ_tbl (nullptr), m_call_tbl (nullptr) {
+
         if (runLive) {
           m_live.exec ();
         }
@@ -156,20 +149,20 @@ namespace crab {
       // --- inter-procedural version
       FwdAnalyzer (CFG cfg, VarFactory& vfac, bool runLive, 
                    summ_tbl_t* sum_tbl, call_tbl_t* call_tbl):
-          fwd_iterator_t (cfg), m_cfg (cfg), 
-          m_vfac (vfac), m_live (m_cfg), 
+          fwd_iterator_t (cfg), 
+          m_vfac (vfac), m_live (cfg), 
           m_summ_tbl (sum_tbl), m_call_tbl (call_tbl) {
         if (runLive) {
           m_live.exec ();
 
           // --- collect formal parameters and return value (if any)
-          auto fdecl = m_cfg.get_func_decl ();
+          auto fdecl = this->get_cfg ().get_func_decl ();
           assert (fdecl);
           for (unsigned i=0; i < (*fdecl).get_num_params();i++)
-            m_formals.insert ((*fdecl).get_param_name (i));
-          auto ret_val = findReturn (m_cfg);
-          if (ret_val)
-            m_formals.insert (*ret_val);
+            m_formals += (*fdecl).get_param_name (i); 
+
+          if (auto ret_val = findReturn (this->get_cfg ()))
+            m_formals += *ret_val; 
         }
       }
       
@@ -187,7 +180,7 @@ namespace crab {
       void Run (abs_dom_t inv)  {
         this->run (inv); 
       }      
-            
+
       //! Return the invariants that hold at the entry of b
       InvTblValTy operator[] (basic_block_label_t b) const {
         return get_pre (b);
@@ -210,6 +203,7 @@ namespace crab {
         else 
           return it->second;      
       }
+
     }; 
 
     //! Specialized type for a numerical forward analyzer
