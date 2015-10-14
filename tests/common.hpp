@@ -11,6 +11,7 @@
 #include <crab/domains/intervals.hpp>                      
 #include <crab/domains/intervals_congruences.hpp>                      
 #include <crab/domains/dbm.hpp>                      
+#include <crab/domains/boxes.hpp>                      
 #include <crab/domains/array_graph.hpp>                      
 #include <crab/domains/array_smashing.hpp>
 #include <crab/cfg/CfgBgl.hpp> 
@@ -49,6 +50,7 @@ namespace crab {
     typedef DBM<z_number, varname_t> dbm_domain_t;
     typedef anti_unif<term::TDomInfo<z_number, varname_t, interval_domain_t> >::anti_unif_t term_domain_t;
     typedef anti_unif<term::TDomInfo<z_number, varname_t, dbm_domain_t> >::anti_unif_t term_dbm_t;
+    typedef boxes_domain< z_number, varname_t > boxes_domain_t;
     // Array domains
     typedef array_graph_domain<dbm_domain_t,
                                z_number, varname_t,
