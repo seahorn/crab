@@ -95,6 +95,8 @@ public:
     }
   } 
 
+  mpz_class get () const { return _n; }
+
 public:
 
   z_number() : _n(0) {}
