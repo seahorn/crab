@@ -1,6 +1,7 @@
 #ifndef __TESTS_COMMON__
 #define __TESTS_COMMON__
 
+#include <crab/config.h>
 #include <crab/cfg/Cfg.hpp>
 #include <crab/cfg/VarFactory.hpp>
 #include <crab/common/types.hpp>
