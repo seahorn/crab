@@ -1,6 +1,8 @@
+#include <crab/config.h>
+
+#ifdef HAVE_LDD
 #include "../common.hpp"
 #include <crab/domains/ldd/ldd.hpp>
-
 #include <boost/optional.hpp>
 
 using namespace std;
@@ -211,3 +213,4 @@ int main (int argc, char** argv )
   // destroy_ldd_man (ldd);
   return 0;
 }
+#endif 

@@ -92,7 +92,9 @@ if (USE_LDD)
 endif ()
 
 include_directories (${Crab_SOURCE_DIR}/include)
-set_target_properties(ldd PROPERTIES EXCLUDE_FROM_ALL ON)
+if (USE_LDD)
+  set_target_properties(ldd PROPERTIES EXCLUDE_FROM_ALL ON)
+endif ()
 
 # if (IS_DIRECTORY ${CMAKE_SOURCE_DIR}/ldd AND
 #       EXISTS ${CMAKE_SOURCE_DIR}/ldd/src/ldd/lddBoxes.c)

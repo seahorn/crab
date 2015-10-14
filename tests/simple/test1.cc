@@ -104,5 +104,20 @@ int main (int argc, char** argv )
     }
   }
 
+#ifdef HAVE_LDD
+  {
+    NumFwdAnalyzer <cfg_t, boxes_domain_t,VariableFactory>::type a (cfg,vfac,run_live);
+    // Run fixpoint 
+    boxes_domain_t inv = boxes_domain_t::top ();
+    a.Run (inv);
+    // Print invariants
+    cout << "Invariants using " << inv.getDomainName () << "\n";
+    for (auto &b : cfg) {
+      auto inv = a [b.label ()];
+      std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
+    }
+  }
+#endif 
+
   return 0;
 }
