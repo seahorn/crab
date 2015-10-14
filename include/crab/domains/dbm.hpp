@@ -29,6 +29,7 @@
 #include <boost/optional.hpp>
 #include <boost/unordered_set.hpp>
 #include <boost/unordered_map.hpp>
+#include <boost/range/iterator_range_core.hpp>
 
 using namespace boost;
 using namespace std;
