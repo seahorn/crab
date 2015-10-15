@@ -91,6 +91,19 @@ public:
 
 }; // class binary_op
 
+template < typename Key, typename Value >
+class key_binary_op {
+public:
+  virtual boost::optional< Value > apply(
+      Key, Value, Value) = 0; // The operation is idempotent: apply(x, x) = x
+
+  virtual bool default_is_absorbing() = 0; // True if the default value is
+                                           // absorbing (false if it is neutral)
+
+  virtual ~key_binary_op() {}
+
+}; // class binary_op
+
 namespace patricia_trees_impl {
 
 inline index_t highest_bit(index_t x, index_t m) {
@@ -133,6 +146,7 @@ public:
   typedef tree_ptr ptr;
   typedef unary_op< Value > unary_op_t;
   typedef binary_op< Value > binary_op_t;
+  typedef key_binary_op< Key, Value > key_binary_op_t;
   typedef partial_order< Value > partial_order_t;
   struct binding_t {
     const Key& first;
@@ -145,6 +159,7 @@ public:
   static tree_ptr make_node(index_t, index_t, tree_ptr, tree_ptr);
   static tree_ptr make_leaf(const Key&, const Value&);
   static tree_ptr merge(tree_ptr, tree_ptr, binary_op_t&, bool);
+  static tree_ptr key_merge(tree_ptr, tree_ptr, key_binary_op_t&, bool);
   static tree_ptr join(tree_ptr t0, tree_ptr t1);
   static tree_ptr insert(
       tree_ptr, const Key&, const Value&, binary_op_t&, bool);
@@ -764,6 +779,153 @@ typename tree< Key, Value >::ptr tree< Key, Value >::merge(
 }
 
 template < typename Key, typename Value >
+typename tree< Key, Value >::ptr tree< Key, Value >::key_merge(
+    typename tree< Key, Value >::ptr s,
+    typename tree< Key, Value >::ptr t,
+    key_binary_op_t& op,
+    bool combine_left_to_right) {
+  typedef typename tree< Key, Value >::ptr tree_ptr;
+  tree_ptr nil;
+  if (s) {
+    if (t) {
+      if (s == t) {
+        return s;
+      } else if (s->is_leaf()) {
+        binding_t b = s->binding();
+        if (op.default_is_absorbing()) {
+          boost::optional< Value > value = t->lookup(b.first);
+          if (value) {
+            boost::optional< Value > new_value =
+                combine_left_to_right ? op.apply(b.first, b.second, *value)
+                                      : op.apply(b.first, *value, b.second);
+            if (new_value) {
+              if (*new_value == b.second) {
+                return s;
+              } else {
+                return make_leaf(b.first, *new_value);
+              }
+            } else {
+              return nil;
+            }
+          } else {
+            return nil;
+          }
+        } else {
+          return insert(t, b.first, b.second, op, !combine_left_to_right);
+        }
+      } else if (t->is_leaf()) {
+        binding_t b = t->binding();
+        if (op.default_is_absorbing()) {
+          boost::optional< Value > value = s->lookup(b.first);
+          if (value) {
+            boost::optional< Value > new_value =
+                combine_left_to_right ? op.apply(b.first, *value, b.second)
+                                      : op.apply(b.first, b.second, *value);
+            if (new_value) {
+              if (*new_value == b.second) {
+                return t;
+              } else {
+                return make_leaf(b.first, *new_value);
+              }
+            } else {
+              return nil;
+            }
+          } else {
+            return nil;
+          }
+        } else {
+          return insert(s, b.first, b.second, op, combine_left_to_right);
+        }
+      } else {
+        if (s->branching_bit() == t->branching_bit() &&
+            s->prefix() == t->prefix()) {
+          tree_ptr new_lb = key_merge(s->left_branch(),
+                                  t->left_branch(),
+                                  op,
+                                  combine_left_to_right);
+          tree_ptr new_rb = key_merge(s->right_branch(),
+                                  t->right_branch(),
+                                  op,
+                                  combine_left_to_right);
+          if (new_lb == s->left_branch() && new_rb == s->right_branch()) {
+            return s;
+          } else if (new_lb == t->left_branch() &&
+                     new_rb == t->right_branch()) {
+            return t;
+          } else {
+            return make_node(s->prefix(), s->branching_bit(), new_lb, new_rb);
+          }
+        } else if (s->branching_bit() > t->branching_bit() &&
+                   match_prefix(t->prefix(), s->prefix(), s->branching_bit())) {
+          if (zero_bit(t->prefix(), s->branching_bit())) {
+            tree_ptr new_lb =
+                key_merge(s->left_branch(), t, op, combine_left_to_right);
+            tree_ptr new_rb =
+                op.default_is_absorbing() ? nil : s->right_branch();
+            if (new_lb == s->left_branch() && new_rb == s->right_branch()) {
+              return s;
+            } else {
+              return make_node(s->prefix(), s->branching_bit(), new_lb, new_rb);
+            }
+          } else {
+            tree_ptr new_lb =
+                op.default_is_absorbing() ? nil : s->left_branch();
+            tree_ptr new_rb =
+                key_merge(s->right_branch(), t, op, combine_left_to_right);
+            if (new_lb == s->left_branch() && new_rb == s->right_branch()) {
+              return s;
+            } else {
+              return make_node(s->prefix(), s->branching_bit(), new_lb, new_rb);
+            }
+          }
+        } else if (s->branching_bit() < t->branching_bit() &&
+                   match_prefix(s->prefix(), t->prefix(), t->branching_bit())) {
+          if (zero_bit(s->prefix(), t->branching_bit())) {
+            tree_ptr new_lb =
+                key_merge(s, t->left_branch(), op, combine_left_to_right);
+            tree_ptr new_rb =
+                op.default_is_absorbing() ? nil : t->right_branch();
+            if (new_lb == t->left_branch() && new_rb == t->right_branch()) {
+              return t;
+            } else {
+              return make_node(t->prefix(), t->branching_bit(), new_lb, new_rb);
+            }
+          } else {
+            tree_ptr new_lb =
+                op.default_is_absorbing() ? nil : t->left_branch();
+            tree_ptr new_rb =
+                key_merge(s, t->right_branch(), op, combine_left_to_right);
+            if (new_lb == t->left_branch() && new_rb == t->right_branch()) {
+              return t;
+            } else {
+              return make_node(t->prefix(), t->branching_bit(), new_lb, new_rb);
+            }
+          }
+        } else {
+          if (op.default_is_absorbing()) {
+            return nil;
+          } else {
+            return join(s, t);
+          }
+        }
+      }
+    } else {
+      if (op.default_is_absorbing()) {
+        return nil;
+      } else {
+        return s;
+      }
+    }
+  } else {
+    if (op.default_is_absorbing()) {
+      return nil;
+    } else {
+      return t;
+    }
+  }
+}
+
+template < typename Key, typename Value >
 void tree< Key, Value >::compare(typename tree< Key, Value >::ptr s,
                                  typename tree< Key, Value >::ptr t,
                                  partial_order_t& po,
@@ -869,6 +1031,7 @@ public:
   typedef patricia_tree< Key, Value > patricia_tree_t;
   typedef typename tree_t::unary_op_t unary_op_t;
   typedef typename tree_t::binary_op_t binary_op_t;
+  typedef typename tree_t::key_binary_op_t key_binary_op_t;
   typedef typename tree_t::partial_order_t partial_order_t;
 
 private:
@@ -942,6 +1105,9 @@ public:
 
   void merge_with(const patricia_tree_t& t, binary_op_t& op) {
     this->_tree = tree_t::merge(this->_tree, t._tree, op, true);
+  }
+  void merge_with(const patricia_tree_t& t, key_binary_op_t& op) {
+    this->_tree = tree_t::key_merge(this->_tree, t._tree, op, true);
   }
 
   void insert(const Key& key, const Value& value) {

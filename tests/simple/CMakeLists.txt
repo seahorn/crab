@@ -13,3 +13,5 @@ target_link_libraries (test4 ${CRAB_LIBS})
 add_executable(unittests unittests.cc)
 target_link_libraries (unittests ${CRAB_LIBS})
 
+add_executable(sparsegraph sparsegraph.cc)
+target_link_libraries (sparsegraph ${CRAB_LIBS})
