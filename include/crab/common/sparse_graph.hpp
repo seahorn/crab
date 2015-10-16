@@ -118,6 +118,18 @@ class SparseWtGraph : public writeable {
       return mtx[max_sz*x + y];
     }
 
+    void clear_edges(void) {
+      for(vert_id v : verts())
+      {
+        // Make sure the matrix entries are destructed
+        for(vert_id d : succs(v))
+          (&(mtx[max_sz*v + d]))->~Wt();
+
+        preds(v).clear();
+        succs(v).clear();
+      }
+    }
+
     // Number of allocated vertices
     int size(void) const {
       return sz;

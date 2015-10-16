@@ -13,6 +13,8 @@ typedef linear_expression<z_number, varname_t> linear_expression_t;
 
 typedef SparseWtGraph<z_number> graph_t;
 
+typedef GraphOps<z_number> GrOps;
+
 void check_graph(graph_t& g)
 {
   for(int v = 0; v < g.size(); v++)
@@ -57,12 +59,30 @@ int main (int argc, char** argv )
   check_graph(y);
 
   vector<z_number> x_pot(x.size());
-  if(!GraphOps<z_number>::select_potentials(x, x_pot))
+  if(!GrOps::select_potentials(x, x_pot))
     assert(0 && "Should be feasible.");
   cout << "x model: "; write_vec(cout, x_pot); cout << endl;
 
-  graph_t g = GraphOps<z_number>::join(x, y);
+  graph_t g = GrOps::join(x, y);
   cout << g << endl;
+
+  x.clear_edges();
+  x.add_edge(0, -1, 1);
+
+  y.clear_edges();
+  y.add_edge(1, -1, 2);
+
+  // Compute the syntactic meet
+  graph_t gm = GrOps::meet(x, y);
+  vector<z_number> gm_pot(gm.size());
+  GrOps::edge_vector delta;
+
+  // Close
+  GrOps::select_potentials(gm, gm_pot);
+  GrOps::close_after_meet(gm, gm_pot, x, y, delta);
+  GrOps::apply_delta(gm, delta);
+
+  cout << gm << endl;
 
   return 0;
 }

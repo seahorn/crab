@@ -491,6 +491,8 @@ namespace crab {
           // Now perform the widening 
           graph_t widen_g(GraphOps::widen(gx, gy));
           DBM_t res(widen_range, widen_map, widen_g, widen_pot);
+
+          // GKG: need to mark changes so we can restore closure
            
           CRAB_DEBUG ("Result widening:\n",res);
           return res;
@@ -541,6 +543,7 @@ namespace crab {
           graph_t meet_g(GraphOps::meet(gx, gy));
           
           // Compute updated potentials
+          // FIXME: We actually need to correct the potentials to take bounds into account too. 
           vector<Wt> meet_pi(meet_g.size());
           if(!GraphOps::select_potentials(meet_g, meet_pi))
           {
@@ -551,15 +554,31 @@ namespace crab {
           edge_vector delta;
           GraphOps::close_after_meet(meet_g, meet_pi, gx, gy, delta);
           GraphOps::apply_delta(meet_g, delta);
-          for(vert_id v = 0; v < delta.size(); v++)
+
+          for(auto e : delta)
           {
-            for(auto p : delta[v])
+            vert_id s = e.first.first;
+            vert_id d = e.first.second; 
+            Wt w = e.second;
+
+            // d - s <= w --> d <= w + s, s >= d - w
+            // Potentially update ub(d) and lb(s)
+            interval_t b_s0 = meet_range[s];
+            interval_t b_d0 = meet_range[d];
+            if(s0.ub().is_finite())
             {
-              // Update intervals
-                        
+              bound_t ub_d = bound_t(w) + s0.ub();
+              if(ub_d <= b_d0.ub())
+                meet_range.insert(d, interval_t(b_d0.lb(), ub_d))
+            }
+
+            if(d0.lb().is_finite())
+            {
+              bound_t lb_s = bound_t(w) - b_d0.lb();
+              if(b_s0.lb() <= lb_s)
+                meet_range.insert(d, interval_t(lb_s, b_s0.ub()));
             }
           }
-          
           CRAB_DEBUG ("Result meet:\n",res);
           return DBM_t(meet_range, meet_verts, meet_g, meet_pi);
         }

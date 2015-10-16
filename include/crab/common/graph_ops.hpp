@@ -195,13 +195,22 @@ namespace crab {
     typedef DistComp< vector<Wt> > WtComp;
     typedef Heap<WtComp> WtHeap;
 
+    typedef pair<pair< vert_id, vert_id >, Wt> edge_ref;
+
+    //===========================================
+    // Enums used to mark vertices/edges during algorithms
+    //===========================================
+    // Edge colour during chromatic Dijkstra
+    enum CMarkT { E_NONE = 0, E_LEFT = 1, E_RIGHT = 2, E_BOTH = 3 };
+    // Whether a vertex is 'stable' during widening
+    enum SMarkT { V_UNSTABLE = 0, V_STABLE = 1 };
+    // Whether a vertex is in the current SCC/queue for Bellman-Ford.
+    enum QMarkT { BF_NONE = 0, BF_SCC = 1, BF_QUEUED = 2 };
     // ===========================================
     // Scratch space needed by the graph algorithms.
     // Should really switch to some kind of arena allocator, rather
     // than having all these static structures.
     // ===========================================
-    // Used for marking edge colour during meet
-    enum MarkT { E_NONE = 0, E_LEFT = 1, E_RIGHT = 2, E_BOTH = 3 };
     static char* edge_marks;
 
     // Used for Bellman-Ford queueing
@@ -267,7 +276,6 @@ namespace crab {
     static graph_t meet(G1& l, G2& r)
     {
       assert(l.size() == r.size());
-      int sz = l.size();
 
       graph_t g(l); 
       
@@ -387,13 +395,13 @@ namespace crab {
         vert_id* qhead = dual_queue;
         vert_id* qtail = qhead;
 
-        vert_id* next_head = dual_queue+sz;     
+        vert_id* next_head = dual_queue+sz;
         vert_id* next_tail = next_head;
 
         for(vert_id v : scc)
         {
           *qtail = v;
-          vert_marks[v] = 3;
+          vert_marks[v] = BF_SCC|BF_QUEUED;
           qtail++;
         }
 
@@ -402,7 +410,8 @@ namespace crab {
           for(; qtail != qhead; )
           {
             vert_id s = *(--qtail); 
-            vert_marks[s] = 2; 
+            // If it _was_ on the queue, it must be in the SCC
+            vert_marks[s] = BF_SCC; 
             
             Wt s_pot = potentials[s];
 
@@ -412,10 +421,10 @@ namespace crab {
               if(sd_pot < potentials[d])
               {
                 potentials[d] = sd_pot;
-                if(vert_marks[d] == 2)
+                if(vert_marks[d] == BF_SCC)
                 {
                   *next_tail = d;
-                  vert_marks[d] = 3;
+                  vert_marks[d] = (BF_SCC|BF_QUEUED);
                   next_tail++;
                 }
               }
@@ -439,7 +448,7 @@ namespace crab {
             {
               // Cleanup vertex marks
               for(vert_id v : g.verts())
-                vert_marks[v] = 0;
+                vert_marks[v] = BF_NONE;
               return false;
             }
           }
@@ -472,8 +481,8 @@ namespace crab {
       // Partition edges into r-only/rb/b-only.
       for(vert_id s : g.verts())
       {
-        unsigned int g_count = 0;
-        unsigned int r_count = 0;
+//        unsigned int g_count = 0;
+//        unsigned int r_count = 0;
         for(vert_id d : g.succs(s))
         {
           char mark = 0;
@@ -501,40 +510,24 @@ namespace crab {
 
       // We can run the chromatic Dijkstra variant
       // on each source.
-      for(vert_id v = 0; v < sz; v++)
+      vector< pair<vert_id, Wt> > adjs;
+//      for(vert_id v = 0; v < sz; v++)
+      for(vert_id v : g.verts())
       {
-        delta.push_back(); 
-        chrome_dijkstra(g, pots, v, delta.back());
+        adjs.clear();
+        chrome_dijkstra(g, pots, colour_succs, v, adjs);
+
+        for(pair<vert_id, Wt>& p : adjs)
+          delta.push_back( make_pair(make_pair(v, p.first), p.second) );
       }
 
-      // Should actually return this set.
-      for(vert_id v = 0; v < sz; v++)
-      {
-        for(auto p : delta[v])
-        {
-          if(g.elem(v, p.first)) 
-          {
-            g.edge_val(v, p.first) = p.second;
-          } else {
-            g.add_edge(v, p.second, p.first);
-          }
-        }
-      }
     }
 
     static void apply_delta(graph_t& g, edge_vector& delta)
     {
-      for(vert_id v = 0; v < delta.size(); v++)
+      for(pair< pair<vert_id, vert_id>, Wt>& e : delta)
       {
-        for(auto p : delta[v])
-        {
-          if(g.elem(v, p.first))
-          {
-            g.edge_val(v, p.first) = p.second;
-          } else {
-            g.add_dge(v, p.second, p.first);
-          } 
-        }
+        g.set_edge(e.first.first, e.second, e.first.second);
       }
     }
 
@@ -558,7 +551,7 @@ namespace crab {
       WtComp comp(dists);
       WtHeap heap(comp);
 
-      for(vert_id dest : succs(src))
+      for(vert_id dest : g.succs(src))
       {
         dists[dest] = p[src] + g.edge_val(src, dest) - p[dest];
         dist_ts[dest] = ts;
@@ -570,23 +563,20 @@ namespace crab {
       while(!heap.empty())
       {
         int es = heap.removeMin();
-        int es_cost = dists[es] + p[es]; // If it's on the queue, distance is not infinite.
-        int es_val = es_cost - p(src);
+        Wt es_cost = dists[es] + p[es]; // If it's on the queue, distance is not infinite.
+        Wt es_val = es_cost - p[src];
         if(!g.elem(src, es) || g.edge_val(src, es) > es_val)
           out.push_back( make_pair(es, es_val) );
-
-//        if(!src_is_live(abs, es))
-//          continue;
 
         if(vert_marks[es] == (E_LEFT|E_RIGHT))
           continue;
 
         // Pick the appropriate set of successors
         vector<vert_id>& es_succs = (vert_marks[es] == E_LEFT) ?
-          colour_succs[2*es] : colour_succs[2*es+1];
+          colour_succs[2*es+1] : colour_succs[2*es];
         for(vert_id ed : es_succs)
         {
-          int v = es_cost + g.edge_val(es, ed) - p[ed];
+          Wt v = es_cost + g.edge_val(es, ed) - p[ed];
           if(dist_ts[ed] != ts || v < dists[ed])
           {
             dists[ed] = v;
@@ -606,18 +596,96 @@ namespace crab {
       }
     }
 
+    // Run Dijkstra's algorithm, but similar to the chromatic algorithm, avoid expanding
+    // anything that _was_ stable.
+    // GKG: Factor out common elements of this & the previous algorithm.
+    template<class P>
+    static void close_vert_after_widen(graph_t& g, P& p, vert_id src, vector< pair<vert_id, Wt> >& out)
+    {
+      unsigned int sz = g.size();
+      if(sz == 0)
+        return;
+      grow_scratch(sz);
+
+      // Reset all vertices to infty.
+      dist_ts[ts_idx] = ts++;
+      ts_idx = (ts_idx+1) % dists.size();
+
+      dists[src] = Wt(0);
+      dist_ts[src] = ts;
+
+      WtComp comp(dists);
+      WtHeap heap(comp);
+
+      for(vert_id dest : g.succs(src))
+      {
+        dists[dest] = p[src] + g.edge_val(src, dest) - p[dest];
+        dist_ts[dest] = ts;
+
+        vert_marks[dest] = edge_marks[src];
+        heap.insert(dest);
+      }
+
+      while(!heap.empty())
+      {
+        int es = heap.removeMin();
+        Wt es_cost = dists[es] + p[es]; // If it's on the queue, distance is not infinite.
+        Wt es_val = es_cost - p[src];
+        if(!g.elem(src, es) || g.edge_val(src, es) > es_val)
+          out.push_back( make_pair(es, es_val) );
+
+        if(vert_marks[es] == V_STABLE)
+          continue;
+
+        // Pick the appropriate set of successors
+        for(vert_id ed : g.succs(es))
+        {
+          Wt v = es_cost + g.edge_val(es, ed) - p[ed];
+          if(dist_ts[ed] != ts || v < dists[ed])
+          {
+            dists[ed] = v;
+            dist_ts[ed] = ts;
+            vert_marks[ed] = edge_marks[es];
+
+            if(heap.inHeap(ed))
+            {
+              heap.decrease(ed);
+            } else {
+              heap.insert(ed);
+            }
+          } else if(v == dists[ed]) {
+            vert_marks[ed] |= edge_marks[es];
+          }
+        }
+      }
+    }
+
     template<class G, class P>
-    static void close_after_widen(graph_t& g, G& orig, vector< vector< pair<vert_id, Wt> > >& delta)
+    static void close_after_widen(graph_t& g, P& p, G& orig, edge_vector& delta)
     {
       unsigned int sz = g.size();
       assert(orig.size() == sz);
       
       for(vert_id v : g.verts())
       {
-        vert_marks[v] = 0;
+        // We're abusing edge_marks to store _vertex_ flags.
+        // Should really just switch this to allocating regions of a fixed-size buffer.
+        edge_marks[v] = V_UNSTABLE;
         // Assumption: stable iff |G(v)| = |H(v)|.
         if(g.succs(v).size() == orig.succs(v).size())
-          vert_marks[v] = 1;
+          edge_marks[v] = V_STABLE;
+      }
+      
+      vector< pair<vert_id, Wt> > aux;
+      for(vert_id v : g.verts())
+      {
+        if(!edge_marks[v])
+        {
+          aux.clear();
+          close_vert_after_widen(g, p, aux); 
+          for(auto p : aux)
+            delta.push_back( make_pair( make_pair(v, p.first), p.second ) );   
+        }
       }
     }
   };
