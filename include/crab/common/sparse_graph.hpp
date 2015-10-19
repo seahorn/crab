@@ -20,7 +20,8 @@ class SparseWtGraph : public writeable {
       : max_sz(_sz), sz(_sz), growth_rate(_growth_rate),
         fwd_adjs((unsigned int*) malloc(sizeof(unsigned int)*max_sz*(max_sz+1))),
         rev_adjs((unsigned int*) malloc(sizeof(unsigned int)*max_sz*(max_sz+1))),
-        mtx((Wt*) malloc(sizeof(Wt)*max_sz*max_sz))
+        mtx((Wt*) malloc(sizeof(Wt)*max_sz*max_sz)),
+        is_free(_sz, false), free_id()
     {
       for(vert_id v = 0 ; v < sz; v++)
       {
@@ -33,7 +34,8 @@ class SparseWtGraph : public writeable {
       : max_sz(o.max_sz), sz(o.sz), growth_rate(o.growth_rate),
         fwd_adjs((unsigned int*) malloc(sizeof(unsigned int)*max_sz*(max_sz+1))),
         rev_adjs((unsigned int*) malloc(sizeof(unsigned int)*max_sz*(max_sz+1))),
-        mtx((Wt*) malloc(sizeof(Wt)*max_sz*max_sz))
+        mtx((Wt*) malloc(sizeof(Wt)*max_sz*max_sz)),
+        is_free(o.is_free), free_id(o.free_id)
     {
       for(vert_id v = 0 ; v < sz; v++)
       {
@@ -70,6 +72,7 @@ class SparseWtGraph : public writeable {
       {
         v = free_id.back();
         free_id.pop_back();
+        is_free[v] = false;
       } else {
         vert_id v = sz++;
         if(max_sz <= sz)
@@ -85,7 +88,11 @@ class SparseWtGraph : public writeable {
     void forget(vert_id v)
     {
       // FIXME: currently assumes v is not free
+      if(is_free[v])
+        return
+
       free_id.push_back(v); 
+      is_free[v] = true;
       
       // Remove (s -> v) from preds.
       for(vert_id s : succs(v))
@@ -128,6 +135,11 @@ class SparseWtGraph : public writeable {
         preds(v).clear();
         succs(v).clear();
       }
+    }
+
+    void clear(void)
+    {
+      
     }
 
     // Number of allocated vertices
@@ -188,6 +200,8 @@ class SparseWtGraph : public writeable {
     protected:
       vert_id sz; 
     };
+    // FIXME: Verts currently iterates over free vertices,
+    // as well as existing ones
     vert_list verts(void) const { return vert_list(sz); }
 
     class adj_list {
@@ -212,6 +226,14 @@ class SparseWtGraph : public writeable {
         dense()[idx] = v;
         sparse()[v] = idx;
         (*ptr)++;
+      }
+      void remove(unsigned int v) {
+        assert(mem(v));
+        (*ptr)--;
+        unsigned int idx = sparse()[v];
+        unsigned int w = dense()[*ptr];
+        dense()[idx] = w;
+        sparse()[w] = idx;
       }
       void clear() { *ptr = 0; }
 
@@ -313,6 +335,7 @@ class SparseWtGraph : public writeable {
     unsigned int* rev_adjs;
     Wt* mtx;
 
+    std::vector<bool> is_free;
     std::vector<int> free_id;
 };
 

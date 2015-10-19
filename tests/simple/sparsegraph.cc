@@ -42,7 +42,27 @@ void write_vec(ostream& o, V& v)
   o << "]";
 }
 
-int main (int argc, char** argv )
+void test_sdbm(void)
+{
+  VariableFactory vfac;
+
+  varname_t x = vfac["x"];
+  varname_t A = vfac["A"];
+  varname_t x_prime = vfac["x\'"];
+
+  sdbm_domain_t dbm = sdbm_domain_t::top ();
+  // for all i. A[i] >= 0
+  dbm += linear_constraint_t ( linear_expression_t (A) >= z_number (0));
+  // x = A[..];
+  dbm.expand (A, x_prime);
+  dbm.assign (x, z_var (x_prime));
+  dbm -= x_prime;
+  // if (x <= 0)
+  dbm += linear_constraint_t ( linear_expression_t (x) <= z_number (0));
+  cout << dbm << endl;
+}
+
+void test_sgraph(void)
 {
   graph_t x(10);
   x.add_edge(0, -1, 2);
@@ -84,5 +104,11 @@ int main (int argc, char** argv )
 
   cout << gm << endl;
 
+}
+int main (int argc, char** argv )
+{
+  test_sgraph();
+
+  test_sdbm();
   return 0;
 }

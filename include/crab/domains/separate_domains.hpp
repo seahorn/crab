@@ -67,6 +67,7 @@ namespace ikos {
   private:
     class bottom_found { };
     
+  public: // GKG: Check
     class join_op: public binary_op_t {
       
       boost::optional< Value > apply(Value x, Value y) {
