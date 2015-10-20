@@ -163,6 +163,8 @@ public:
   static tree_ptr join(tree_ptr t0, tree_ptr t1);
   static tree_ptr insert(
       tree_ptr, const Key&, const Value&, binary_op_t&, bool);
+  static tree_ptr insert(
+      tree_ptr, const Key&, const Value&, key_binary_op_t&, bool);
   static tree_ptr transform(tree_ptr, unary_op_t&);
   static tree_ptr remove(tree_ptr, const Key&);
   static void compare(tree_ptr, tree_ptr, partial_order_t&, bool);
@@ -533,6 +535,93 @@ typename tree< Key, Value >::ptr tree< Key, Value >::insert(
     }
   }
 }
+
+template < typename Key, typename Value >
+typename tree< Key, Value >::ptr tree< Key, Value >::insert(
+    typename tree< Key, Value >::ptr t,
+    const Key& key_,
+    const Value& value_,
+    key_binary_op_t& op,
+    bool combine_left_to_right) {
+  typedef typename tree< Key, Value >::ptr tree_ptr;
+  tree_ptr nil;
+  if (t) {
+    if (t->is_node()) {
+      index_t branching_bit = t->branching_bit();
+      index_t prefix = t->prefix();
+      if (match_prefix(key_.index(), prefix, branching_bit)) {
+        if (zero_bit(key_.index(), branching_bit)) {
+          tree_ptr lb = t->left_branch();
+          tree_ptr new_lb;
+          if (lb) {
+            new_lb = insert(lb, key_, value_, op, combine_left_to_right);
+          } else {
+            if (!op.default_is_absorbing()) {
+              new_lb = make_leaf(key_, value_);
+            }
+          }
+          if (new_lb == lb) {
+            return t;
+          } else {
+            return make_node(prefix, branching_bit, new_lb, t->right_branch());
+          }
+        } else {
+          tree_ptr rb = t->right_branch();
+          tree_ptr new_rb;
+          if (rb) {
+            new_rb = insert(rb, key_, value_, op, combine_left_to_right);
+          } else {
+            if (!op.default_is_absorbing()) {
+              new_rb = make_leaf(key_, value_);
+            }
+          }
+          if (new_rb == rb) {
+            return t;
+          } else {
+            return make_node(prefix, branching_bit, t->left_branch(), new_rb);
+          }
+        }
+      } else {
+        if (op.default_is_absorbing()) {
+          return t;
+        } else {
+          return join(make_leaf(key_, value_), t);
+        }
+      }
+    } else {
+      binding_t b = t->binding();
+      const Key& key = b.first;
+      const Value& value = b.second;
+      if (key.index() == key_.index()) {
+        boost::optional< Value > new_value = combine_left_to_right
+                                                 ? op.apply(key, value, value_)
+                                                 : op.apply(key, value_, value);
+        if (new_value) {
+          if (*new_value == value) {
+            return t;
+          } else {
+            return make_leaf(key_, *new_value);
+          }
+        } else {
+          return nil;
+        }
+      } else {
+        if (op.default_is_absorbing()) {
+          return t;
+        } else {
+          return join(make_leaf(key_, value_), t);
+        }
+      }
+    }
+  } else {
+    if (op.default_is_absorbing()) {
+      return nil;
+    } else {
+      return make_leaf(key_, value_);
+    }
+  }
+}
+
 
 template < typename Key, typename Value >
 typename tree< Key, Value >::ptr tree< Key, Value >::transform(

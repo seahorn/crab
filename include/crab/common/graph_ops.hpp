@@ -10,7 +10,32 @@ namespace crab {
   // Graph views - for when we want to traverse some mutation
   // of the graph without actually constructing it.
   // ============
-  
+  template<class V>
+  class range_iterator {
+  public:
+    class value_ref {
+    public:
+      value_ref(const V& _v)
+        : v(_v)
+      { }
+      const V& operator*(void) const { return v; }
+      value_ref& operator++(void) { v++; return *this; }
+      bool operator!=(const value_ref& o) const {
+        return v <= o.v;
+      }
+    protected: 
+      V v;
+    };
+    range_iterator(const V& _after)
+      : after(_after)
+    { }
+
+    value_ref begin(void) const { return value_ref((V) 0); }
+    value_ref end(void) const { return value_ref(after); }
+  protected:     
+    V after;
+  };
+ 
   // Processing a graph under a (possibly incomplete)
   // permutation of vertices.
   // We assume perm[x] is unique; otherwise, we'd have
@@ -57,6 +82,9 @@ namespace crab {
       return perm.size();
     }
 
+    typedef range_iterator<vert_id> vert_list;
+    vert_list verts(void) const { return vert_list(perm.size()); }
+
     class adj_iterator {
     public:
       adj_iterator(vector<vert_id>& _inv, vert_id* _v)
@@ -72,7 +100,7 @@ namespace crab {
 
       adj_iterator& operator++(void) {
         ++v;
-        return this;
+        return *this;
       }
 
       bool operator!=(adj_iterator& other)
@@ -86,15 +114,15 @@ namespace crab {
 
     class adj_list {
     public:
-      adj_list(vector<vert_id>& _inv, g_adj_list& _adj)
+      adj_list(vector<vert_id>& _inv, const g_adj_list& _adj)
         : inv(_inv), adj(_adj)
       {
         vert_id* adj_end(adj.end());
         while(adj_end != adj.begin() && inv[adj_end[-1]] < 0)
           --adj_end;
       }
-      adj_iterator begin(void) const { return adj_iterator(adj.begin()); } 
-      adj_iterator end(void) const { return adj_iterator(adj_end); }
+      adj_iterator begin(void) const { return adj_iterator(inv, adj.begin()); } 
+      adj_iterator end(void) const { return adj_iterator(inv, adj_end); }
 
       bool mem(unsigned int v) const {
         if(perm[v] < 0)
@@ -156,6 +184,8 @@ namespace crab {
     }
 
     typedef typename G::adj_list adj_list;
+
+    typename G::vert_list verts(void) const { return g.verts(); }
 
     adj_list succs(vert_id v)
     {
@@ -277,7 +307,7 @@ namespace crab {
     {
       assert(l.size() == r.size());
 
-      graph_t g(l); 
+      graph_t g(graph_t::copy(l)); 
       
       for(vert_id s : r.verts())
       {
@@ -289,6 +319,20 @@ namespace crab {
             g.edge_val(s, d) = min(g.edge_val(s, d), r.edge_val(s, d));
         }
       }
+      return g;
+    }
+
+    template<class G1, class G2>
+    static graph_t widen(G1& l, G2& r)
+    {
+      graph_t g(l.size());
+      /*
+       * FIXME: Implement
+      for(vert_id s : l.verts())
+      {
+          
+      }
+      */
       return g;
     }
 

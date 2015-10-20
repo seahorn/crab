@@ -60,14 +60,15 @@ namespace crab {
       typedef bound<Number>  bound_t;
       // Can't use separate_domain directly, as we need to
       // retrofit some operations onto the join.
-      typedef patricia_tree< VariableName, interval_t > intervals_t;
-      typedef typename intervals_t::key_binary_op_t key_binary_op_t;
+      typedef patricia_tree< VariableName, interval_t > ranges_t;
+      typedef typename ranges_t::key_binary_op_t key_binary_op_t;
       
       // Eventually break this out into a template param
       typedef Number Wt;
       typedef SparseWtGraph<Wt> graph_t;
       typedef typename graph_t::vert_id vert_id;
       typedef boost::container::flat_map<variable_t, vert_id> vert_map_t;
+      typedef typename vert_map_t::value_type vmap_elt_t;
 
       typedef SplitDBM<Number, VariableName> DBM_t;
 
@@ -78,18 +79,20 @@ namespace crab {
       //================
       // Domain data
       //================
-      intervals_t ranges; // Intervals for each variable
+      ranges_t ranges; // Intervals for each variable
       vert_map_t vert_map; // Mapping from variables to vertices
       graph_t g; // The underlying relation graph
       vector<Wt> potential; // Stored potential for the vertex
 
       bool _is_bottom;
 
+//      static int count;
+
    public:
-      SplitDBM(bool is_bottom):
+      SplitDBM(bool is_bottom = false):
         writeable(), _is_bottom(is_bottom)
       {
-
+//        cout << (++count) << " allocated." << endl;
       }
 
       // FIXME: Rewrite to avoid copying if o is _|_
@@ -102,30 +105,40 @@ namespace crab {
           vert_map(o.vert_map),
           g(o.g)
       {
+//        cout << (++count) << " allocated." << endl;
         if(o._is_bottom)
           set_to_bottom();
       }
 
       // We should probably use the magical rvalue ownership semantics stuff.
-      SplitDBM(intervals_t& _ranges, vert_map_t& _vert_map, graph_t& _g, vector<Wt>& _potential)
+      SplitDBM(ranges_t& _ranges, vert_map_t& _vert_map, graph_t& _g, vector<Wt>& _potential)
         : writeable(),
           numerical_domain<Number, VariableName >(),
           bitwise_operators< Number, VariableName >(),
           division_operators< Number, VariableName >(),
           ranges(_ranges), vert_map(_vert_map), g(_g), potential(_potential)
-      { }
+      {
+//        cout << (++count) << " allocated." << endl;
+      }
 
-      SplitDBM& operator=(SplitDBM& o)
+      // FIXME: Add a move constructor
+      SplitDBM& operator=(const SplitDBM& o)
       {
         if(this != &o)
         {
           ranges = o.ranges;
           vert_map = o.vert_map;
           g = o.g;
+          potential = o.potential;
         }
         return *this;
       }
        
+      /*
+      ~SplitDBM(void) {
+        count--;
+      }
+      */
      private:
 
       /*
@@ -219,7 +232,7 @@ namespace crab {
         if (is_bottom()) return false;
 
         auto vars = cst.variables();
-        intervals_t inv;
+        ranges_t inv;
         for(auto v: vars)
           inv.set (v.name(), operator[](v.name));
         inv += cst;
@@ -253,7 +266,7 @@ namespace crab {
         return true;
       }
     
-      bool operator<=(DBM_t o)  {
+      bool operator<=(DBM_t& o)  {
         // cover all trivial cases to avoid allocating a dbm matrix
         if (is_bottom()) 
           return true;
@@ -264,7 +277,8 @@ namespace crab {
         else if (is_top ())
           return false;
         else {
-          if(!(ranges <= o.ranges))
+          interval_po po;
+          if(!ranges.leq(o.ranges, po))
             return false;
 
           // Set up a mapping from o to this.
@@ -281,34 +295,42 @@ namespace crab {
 
           GrPerm g_perm(vert_renaming, g);
           // FIXME: Check incorporation of bounds
-          for(auto e : o.edges())
+          //        (and come up with a more efficient method)
+          for(vert_id ox : o.g.verts())
           {
-            vert_id x = vert_renaming[e.src];
-            vert_id y = vert_renaming[e.dest];
-            // Is the edge implied by ranges?
-            if(ranges[y].ub() - ranges[x].lb() <= bound_t(e.weight))
-              continue;
-            // Edge not present
-            if(!g_perm.mem(e.src, e.dest))
-              return false;
-            if(!(g_perm.get(e.src, e.dest) <= e.weight))
-              return false;
+            vert_id x = vert_renaming[ox];
+            for(vert_id oy : o.g.succs(ox))
+            {
+              vert_id y = vert_renaming[oy];
+              Wt ow = o.g.edge_val(ox, oy);
+              // Is the edge implied by ranges?
+              /*
+               * // FIXME: Map from vertices to variables.
+              if(get_interval(ranges, y).ub() - get_interval(ranges,x).lb() <= bound_t(ow))
+                continue;
+                */
+              // Edge not present
+              if(!g_perm.elem(x, y))
+                return false;
+              if(!(g_perm.edge_val(x, y) <= ow))
+                return false;
+            }
+            return true;
           }
-          return true;
         }
       }
 
       class Wt_max {
       public:
        Wt_max() { } 
-       Wt apply(Wt& x, Wt& y) { return max(x, y); }
+       Wt apply(const Wt& x, const Wt& y) { return max(x, y); }
        bool default_is_absorbing() { return true; }
       };
 
       class Wt_min {
       public:
         Wt_min() { }
-        Wt apply(Wt& x, Wt& y) { return min(x, y); }
+        Wt apply(const Wt& x, const Wt& y) { return min(x, y); }
         bool default_is_absorbing() { return false; }
       };
 
@@ -317,10 +339,10 @@ namespace crab {
       class interval_join_t : public key_binary_op_t {
       public:
         interval_join_t(
-            vector<vert_id>& _lb_up,
-            vector<vert_id>& _lb_down,
-            vector<vert_id>& _ub_up,
-            vector<vert_id>& _ub_down)
+            vector<VariableName>& _lb_up,
+            vector<VariableName>& _lb_down,
+            vector<VariableName>& _ub_up,
+            vector<VariableName>& _ub_down)
           : lb_up(_lb_up), lb_down(_lb_down),
             ub_up(_ub_up), ub_down(_ub_down)
         { }
@@ -351,14 +373,15 @@ namespace crab {
         }
 
         bool default_is_absorbing() { return true; }
-        vector<vert_id>& lb_up;
-        vector<vert_id>& lb_down;
-        vector<vert_id>& ub_up;
-        vector<vert_id>& ub_down;
+        vector<VariableName>& lb_up;
+        vector<VariableName>& lb_down;
+        vector<VariableName>& ub_up;
+        vector<VariableName>& ub_down;
       }; // class binary_op
 
-      typedef typename separate_domain<Number, VariableName>::meet_op interval_meet_t;
-      typedef typename separate_domain<Number, VariableName>::widening_op interval_widen_t;
+      typedef typename separate_domain<VariableName, interval_t>::meet_op interval_meet_t;
+      typedef typename separate_domain<VariableName, interval_t>::widening_op interval_widen_t;
+      typedef typename separate_domain<VariableName, interval_t>::domain_po interval_po;
 
       DBM_t operator|(DBM_t o) {
         if (is_bottom() || o.is_top ())
@@ -369,19 +392,20 @@ namespace crab {
           CRAB_DEBUG ("Before join:\n","DBM 1\n",*this,"\n","DBM 2\n",o);
 
           // First, join the intervals, collecting change directions
-          vector<vert_id> lb_up;
-          vector<vert_id> lb_down;
-          vector<vert_id> ub_up;
-          vector<vert_id> ub_down;
+          vector<VariableName> lb_up;
+          vector<VariableName> lb_down;
+          vector<VariableName> ub_up;
+          vector<VariableName> ub_down;
           interval_join_t join_op(lb_up, lb_down, ub_up, ub_down);
           
-          intervals_t join_range = ranges.key_merge(o.ranges, join_op);
+          ranges_t join_range(ranges);
+          join_range.merge_with(o.ranges, join_op);
 
           // Figure out the common renaming, initializing the
           // resulting potentials as we go.
           vector<vert_id> perm_x;
           vector<vert_id> perm_y;
-          vector<VariableName> perm_inv;
+          vector<variable_t> perm_inv;
 
           vector<Wt> join_pot;
           vert_map_t out_vmap;
@@ -391,7 +415,7 @@ namespace crab {
             // Variable exists in both
             if(it != o.vert_map.end())
             {
-              out_vmap.insert(p.first, perm_x.size());
+              out_vmap.insert(vmap_elt_t(p.first, perm_x.size()));
               join_pot.push_back(potential[p.second]);
               perm_inv.push_back(p.first);
               perm_x.push_back(p.second);
@@ -412,10 +436,10 @@ namespace crab {
             {
               // Assumption: gx.mem(s, d) -> gx.edge_val(s, d) <= ranges[var(s)].ub() - ranges[var(d)].lb()
               // That is, if the relation exists, it's at least as strong as the bounds.
-              if(!gx.mem(s, d))
+              if(!gx.elem(s, d))
               {
                 // Check the bounds implied by o.ranges
-                bound_t b = ranges[perm_inv[d]].ub() - ranges[perm_inv[s]].lb();
+                bound_t b = get_interval(ranges,perm_inv[d]).ub() - get_interval(ranges,perm_inv[s]).lb();
                 if(b.is_finite())
                 {
                   g_ix_ry.add_edge(s, *(b.number()), d);
@@ -438,10 +462,10 @@ namespace crab {
             {
               // Assumption: gx.mem(s, d) -> gx.edge_val(s, d) <= ranges[var(s)].ub() - ranges[var(d)].lb()
               // That is, if the relation exists, it's at least as strong as the bounds.
-              if(!gy.mem(s, d))
+              if(!gy.elem(s, d))
               {
                 // Check the bounds implied by o.ranges
-                bound_t b = o.ranges[perm_inv[d]].ub() - o.ranges[perm_inv[s]].lb();
+                bound_t b = get_interval(o.ranges,perm_inv[d]).ub() - get_interval(o.ranges,perm_inv[s]).lb();
                 if(b.is_finite())
                 {
                   g_rx_iy.add_edge(s, *(b.number()), d);
@@ -457,19 +481,22 @@ namespace crab {
           // We now have the relevant set of relations. Because g_rx and g_ry are closed,
           // the result is also closed.
           Wt_min min_op;
-          graph_t join_g(g_rx, g_ry);
+          graph_t join_g(GrOps::join(g_rx, g_ry));
           // Now reapply the missing independent relations.
+          /*
+          // Need to derive vert_ids from lb_up/lb_down, and make sure the vertices exist
           for(vert_id s : ub_up)
           {
             for(vert_id d : lb_up)
             {
               if(s == d)
                 continue;
-              bound_t b = max(ranges[perm_inv[d]].ub() - ranges[perm_inv[s]].lb(),
-                        o.ranges[perm_inv[d]].ub() - o.ranges[perm_inv[s]].lb());
+              bound_t b = max(get_interval(ranges,perm_inv[d]).ub() - get_interval(ranges,perm_inv[s]).lb(),
+                        get_interval(o.ranges,perm_inv[d]).ub() - get_interval(o.ranges,perm_inv[s]).lb());
               join_g.update_edge(s, *(b.number()), d, min_op);
             }
           }
+          */
           // Conjecture: join_g remains closed.
           
           DBM_t res(join_range, out_vmap, join_g, join_pot);
@@ -487,7 +514,8 @@ namespace crab {
         else {
           CRAB_DEBUG ("Before widening:\n","DBM 1\n",*this,"\n","DBM 2\n",o);
           interval_widen_t widen_op;
-          intervals_t widen_range = ranges.merge(o.ranges, widen_op);
+          ranges_t widen_range(ranges);
+          widen_range.merge_with(o.ranges, widen_op);
           
           // Figure out the common renaming
           vector<vert_id> perm_x;
@@ -500,10 +528,10 @@ namespace crab {
             // Variable exists in both
             if(it != o.vert_map.end())
             {
-              out_vmap.insert(p.first, perm_x.size());
-              widen_pot.push(potential[p.second]);
-              perm_x.push(p.second);
-              perm_y.push((*it).second);
+              out_vmap.insert(vmap_elt_t(p.first, perm_x.size()));
+              widen_pot.push_back(potential[p.second]);
+              perm_x.push_back(p.second);
+              perm_y.push_back((*it).second);
             }
           }
 
@@ -533,7 +561,8 @@ namespace crab {
           CRAB_DEBUG ("Before meet:\n","DBM 1\n",*this,"\n","DBM 2\n",o);
           interval_meet_t meet_op;
 
-          interval_t meet_range = ranges.merge(o.ranges, meet_op);
+          ranges_t meet_range(ranges);
+          meet_range.merge_with(o.ranges, meet_op);
 
           // We map vertices in the left operand onto a contiguous range.
           // This will often be the identity map, but there might be gaps.
@@ -543,7 +572,7 @@ namespace crab {
           for(auto p : vert_map)
           {
             vert_id vv = perm_x.size();
-            meet_verts.insert(p.first, vv);
+            meet_verts.insert(vmap_elt_t(p.first, vv));
             perm_x.push_back(p.second);
             perm_y.push_back(-1);
           }
@@ -558,7 +587,7 @@ namespace crab {
               vert_id vv = perm_y.size();
               perm_y.push_back(p.second);
               perm_x.push_back(-1);
-              meet_verts.insert(p.first, vv);
+              meet_verts.insert(vmap_elt_t(p.first, vv));
             } else {
               perm_y[(*it).second] = p.second;
             }
@@ -592,8 +621,10 @@ namespace crab {
 
             // d - s <= w --> d <= w + s, s >= d - w
             // Potentially update ub(d) and lb(s)
-            interval_t b_s0 = meet_range[s];
-            interval_t b_d0 = meet_range[d];
+            /*
+             * // FIXME: Again, map vertices back to variables
+            interval_t b_s0 = get_interval(meet_range,s);
+            interval_t b_d0 = get_interval(meet_range,d);
             if(b_s0.ub().is_finite())
             {
               bound_t ub_d = bound_t(w) + b_s0.ub();
@@ -607,6 +638,7 @@ namespace crab {
               if(b_s0.lb() <= lb_s)
                 meet_range.insert(d, interval_t(lb_s, b_s0.ub()));
             }
+            */
           }
           CRAB_DEBUG ("Result meet:\n",res);
           return DBM_t(meet_range, meet_verts, meet_g, meet_pi);
@@ -725,7 +757,7 @@ namespace crab {
         if(it != vert_map.end())
           return potential[(*it).second];
 
-        interval_t r(ranges[v]);
+        interval_t r(get_interval(ranges,v));
         if(r.lb().is_finite())
           return (Wt) (*(r.lb().number()));
         if(r.ub().is_finite())
@@ -881,6 +913,17 @@ namespace crab {
         }
       }
 
+      interval_t get_interval(ranges_t& r, variable_t x) {
+        return get_interval(r, x.name());
+      }
+      interval_t get_interval(ranges_t& r, VariableName x) {
+        boost::optional< interval_t > v = r.lookup(x);
+        if(v)
+          return *v;
+        else
+          return interval_t::top();
+      }
+
       interval_t operator[](VariableName x) { 
         if (is_top())    return interval_t::top();
         if (is_bottom()) return interval_t::bottom();
@@ -888,12 +931,7 @@ namespace crab {
         if (this->is_bottom()) {
             return interval_t::bottom();
         } else {
-          boost::optional< interval_t > v = ranges.lookup(x);
-          if (v) {
-            return *v;
-          } else {
-            return interval_t::top();
-          }
+          return get_interval(ranges, x);
         }
 //        return ranges[x];
       }
@@ -1193,6 +1231,8 @@ namespace crab {
 
     }; // class SplitDBM
 
+//    template<class Var, class Num>
+//    int SplitDBM<Var, Num>::count = 0;
   } // namespace domains
 
 

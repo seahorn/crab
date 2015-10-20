@@ -27,30 +27,93 @@ class SparseWtGraph : public writeable {
       {
         succs(v).clear(); preds(v).clear();
       }
+
+      check_adjs();
     }
-        
+
     template<class Wo>
-    SparseWtGraph(SparseWtGraph<Wo>& o)
+    SparseWtGraph(const SparseWtGraph<Wo>& o)
       : max_sz(o.max_sz), sz(o.sz), growth_rate(o.growth_rate),
         fwd_adjs((unsigned int*) malloc(sizeof(unsigned int)*max_sz*(max_sz+1))),
         rev_adjs((unsigned int*) malloc(sizeof(unsigned int)*max_sz*(max_sz+1))),
-        mtx((Wt*) malloc(sizeof(Wt)*max_sz*max_sz)),
-        is_free(o.is_free), free_id(o.free_id)
+        mtx((Wt*) malloc(sizeof(Wt)*max_sz*max_sz))
+        /* , is_free(o.is_free), free_id(o.free_id) */
     {
       for(vert_id v = 0 ; v < sz; v++)
       {
         succs(v).clear(); preds(v).clear();
       }
 
-      /*
-      for(auto e : o.edges())
-      {
-        add_edge(e.src, (Wt) e.weight, e.dest); 
-      }
-      */
-      for(vert_id v = 0; v < o.size(); v++)
+      for(vert_id v : o.verts())
         for(vert_id d : o.succs(v))
           add_edge(v, o.edge_val(v, d), d);
+
+      check_adjs();
+    }
+
+    SparseWtGraph(const SparseWtGraph<Wt>& o)
+      : max_sz(o.max_sz), sz(o.sz), growth_rate(o.growth_rate),
+        fwd_adjs((unsigned int*) malloc(sizeof(unsigned int)*max_sz*(max_sz+1))),
+        rev_adjs((unsigned int*) malloc(sizeof(unsigned int)*max_sz*(max_sz+1))),
+        mtx((Wt*) malloc(sizeof(Wt)*max_sz*max_sz))
+        /* , is_free(o.is_free), free_id(o.free_id) */
+    {
+      for(vert_id v = 0 ; v < sz; v++)
+      {
+        succs(v).clear(); preds(v).clear();
+      }
+
+      for(vert_id v : o.verts())
+        for(vert_id d : o.succs(v))
+          add_edge(v, o.edge_val(v, d), d);
+
+      check_adjs();
+    }
+
+    SparseWtGraph& operator=(const SparseWtGraph<Wt>& o)
+    {
+      if((&o) == this)
+        return *this;  
+      
+      // Make sure the number of vertices matches,
+      // and active adjacency lists are initialized.
+      clear_edges(); 
+      growCap(o.sz);
+      for(; sz < o.sz; sz++)
+      {
+        succs(sz).clear();
+        preds(sz).clear();
+      }
+      sz = o.sz;
+
+      // Now copy the edges
+      for(vert_id s : o.verts())
+      {
+        for(vert_id d : o.succs(s))
+        {
+          add_edge(s, o.edge_val(s, d), d);
+        }
+      }
+
+      // Copy the free vertices
+      free_id = o.free_id;
+      is_free = o.is_free;
+
+      check_adjs();
+
+      return *this;
+    }
+
+    void check_adjs(void)
+    {
+      for(vert_id v : verts())
+      {
+        assert(succs(v).size() <= sz);
+        for(vert_id s : succs(v))
+        {
+          assert(s < sz);
+        }
+      }
     }
 
     ~SparseWtGraph()
@@ -65,6 +128,19 @@ class SparseWtGraph : public writeable {
       free(rev_adjs);
     }
 
+    template<class G> 
+    static graph_t copy(G& g)
+    {
+      graph_t ret(g.size());
+      for(vert_id s : g.verts())
+      {
+        for(vert_id d : g.succs(s))
+        {
+          ret.add_edge(s, g.edge_val(s, d), d);
+        }
+      }
+    }
+
     vert_id new_vertex(void)
     {
       vert_id v;
@@ -74,11 +150,12 @@ class SparseWtGraph : public writeable {
         free_id.pop_back();
         is_free[v] = false;
       } else {
-        vert_id v = sz++;
+        v = sz++;
         if(max_sz <= sz)
         {
           growCap(max_sz*growth_rate);
         }
+        is_free.push_back(false);
       }
       preds(v).clear();
       succs(v).clear();
@@ -170,7 +247,7 @@ class SparseWtGraph : public writeable {
     {
       if(elem(s, d))
       {
-        edge_val(s, d) = op(edge_val(s, d), w);
+        edge_val(s, d) = op.apply(edge_val(s, d), w);
         return;
       }
 
@@ -242,11 +319,11 @@ class SparseWtGraph : public writeable {
       unsigned int* sparseptr;
     };
 
-    adj_list succs(vert_id v)
+    adj_list succs(vert_id v) const
     {
       return adj_list(fwd_adjs + v*(2*max_sz+1), max_sz);
     }
-    adj_list preds(vert_id v)
+    adj_list preds(vert_id v) const
     {
       return adj_list(rev_adjs + v*(2*max_sz+1), max_sz);
     }
@@ -269,7 +346,7 @@ class SparseWtGraph : public writeable {
       unsigned int new_mtxsz = sizeof(Wt)*new_max*new_max;
       unsigned int new_adjsz = sizeof(unsigned int)*(2*new_max+1);
 
-      Wt* new_mtx = malloc(new_mtxsz);
+      Wt* new_mtx = (Wt*) malloc(new_mtxsz);
       unsigned int* new_fwd = (unsigned int*) malloc(new_adjsz);
       unsigned int* new_rev = (unsigned int*) malloc(new_adjsz);
 
@@ -281,6 +358,7 @@ class SparseWtGraph : public writeable {
         {
           _adj_add(new_fwd_ptr, new_max, d);
           new_mtx[v*new_max + d] = mtx[v*max_sz + d];
+          (&(mtx[max_sz*v + d]))->~Wt();
         }
 
         unsigned int* new_rev_ptr = new_rev + v*new_adjsz;
