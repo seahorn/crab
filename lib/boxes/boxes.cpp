@@ -5,7 +5,13 @@
 using namespace crab::domains::ldd;
 namespace crab { 
    namespace domains {
-     LddManager* LddManagerWrapper::m_ldd_man = nullptr;
+
+     // template<typename V>
+     // LddManager* LddManagerWrapper<V>::m_ldd_man = nullptr;
+
+     // template<typename V>
+     // typename LddManagerWrapper<V>::VarMapPtr LddManagerWrapper<V>::m_var_map = nullptr;
+
    } 
 }
 #endif 
