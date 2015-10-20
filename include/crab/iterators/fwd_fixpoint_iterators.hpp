@@ -240,6 +240,24 @@ namespace ikos {
             // No more refinement possible (pre == new_pre)
             break;
           } else {
+            ///////////////////////////////////////////////////////
+            // HOOK: FIXME
+            ///////////////////////////////////////////////////////
+            // Following, "Comparing the Galois Connection and
+            // Widening/Narrowing Approaches to Abstract
+            // Interpretation" the operator lambda x, y -> x is a
+            // narrowing operator and in page 20 refers to it as the
+            // naive narrowing.
+            // 
+            // However, I'm probably missing something here.  Let us
+            // assume x is the post-fixed point and f the abstract
+            // transformer.
+            //
+            // LOOP: x' := f(x) 
+            //       narrowing (x, x') = x
+            //       assume that x is not included in x' then we come back to LOOP.
+            // but this will not terminate!
+            if (iteration > 2) break; // temporary hook!
             pre = this->_iterator->refine(head, iteration, pre, new_pre);
             this->_iterator->set_pre(head, pre);
           }
