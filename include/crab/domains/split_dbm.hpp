@@ -128,10 +128,10 @@ namespace crab {
       {
         if(this != &o)
         {
-          // if(o.is_bottom())
           if(o._is_bottom)
             set_to_bottom();
           else {
+            _is_bottom = false;
             ranges = o.ranges;
             vert_map = o.vert_map;
             g = o.g;

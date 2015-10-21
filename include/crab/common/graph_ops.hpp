@@ -21,7 +21,7 @@ namespace crab {
       const V& operator*(void) const { return v; }
       value_ref& operator++(void) { v++; return *this; }
       bool operator!=(const value_ref& o) const {
-        return v <= o.v;
+        return v < o.v;
       }
     protected: 
       V v;
