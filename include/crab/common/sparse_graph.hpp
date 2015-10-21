@@ -141,6 +141,7 @@ class SparseWtGraph : public writeable {
           ret.add_edge(s, g.edge_val(s, d), d);
         }
       }
+      return ret;
     }
 
     vert_id new_vertex(void)
@@ -329,6 +330,20 @@ class SparseWtGraph : public writeable {
     {
       return adj_list(rev_adjs + v*(2*max_sz+1), max_sz);
     }
+
+    // growTo shouldn't be used after forget
+    void growTo(unsigned int new_sz)
+    {
+      growCap(new_sz);
+      for(; sz < new_sz; sz++)
+      {
+        succs(sz).clear();
+        preds(sz).clear();
+        is_free.push_back(false);
+      }
+      // GKG: Need to be careful about free_ids.
+    }
+
   protected:
     // Allocate new memory, and duplicate 
     // the content.
@@ -377,19 +392,6 @@ class SparseWtGraph : public writeable {
       rev_adjs = new_rev;
     }
 
-    // growTo shouldn't be used after forget
-    void growTo(unsigned int new_sz)
-    {
-      growCap(new_sz);
-      for(; sz < new_sz; sz++)
-      {
-        succs(sz).clear();
-        preds(sz).clear();
-        is_free.push_back(false);
-      }
-      // GKG: Need to be careful about free_ids.
-    }
-       
     void write(std::ostream& o) {
       o << "[|";
       bool first = true;

@@ -48,7 +48,7 @@ namespace crab {
     typedef typename G::adj_list g_adj_list;
 
     GraphPerm(vector<vert_id>& _perm, G& _g) 
-      : perm(_perm), g(_g)
+      : g(_g), perm(_perm)
     {
       vector<vert_id> inv(g.size(), -1);
       for(unsigned int vi = 0; vi < perm.size(); vi++)
@@ -424,8 +424,10 @@ namespace crab {
       // Zero existing potentials.
       // Not strictly necessary, but means we're less
       // likely to run into over/underflow.
+      // (gmp_z won't overflow, but there's a performance penalty
+      // if magnitudes become large)
       //
-      // Though hurts our chances of early cutoff.
+      // Though this hurts our chances of early cutoff.
       for(vert_id v : g.verts())
         potentials[v] = 0;
 
@@ -765,6 +767,9 @@ namespace crab {
       }
     }
 
+    // GKG: I think we can do better here, and avoid the priority queue altogether.
+    // I think we can just sort the edges incident to v, and collect the
+    // transitive edges.
     template<class P>
     static void close_after_assign(graph_t& g, P& p, vert_id v, edge_vector& delta)
     {

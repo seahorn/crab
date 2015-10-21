@@ -164,74 +164,6 @@ namespace crab {
         _is_bottom = true;
       }
 
-      void apply(operation_t op, VariableName x, id_t y, id_t z) {
-        // FIXME: Implement
-        this->operator-=(x);
-        /*
-        switch(op){
-          case OP_ADDITION:
-            {
-              exp_t exp = exp_add(exp_var(y), exp_var(z));
-              assign(x, exp);
-            }
-            break;
-          case OP_SUBTRACTION:
-            {
-              exp_t exp = exp_sub(exp_var(y), exp_var(z));
-              assign(x, exp);
-            }
-            break;
-          case OP_MULTIPLICATION:
-            {
-              exp_t exp = exp_mul(exp_var(y), exp_var(z));
-              assign(x, exp);
-            }
-            break;
-          case OP_DIVISION:
-            {
-              exp_t exp = exp_div(exp_var(y), exp_var(z));
-              assign(x, exp);
-            }
-            break;
-          default:;;
-        }
-        */
-      }
-
-      void apply(operation_t op, VariableName x, id_t y, Number k) {	
-        this->operator-=(x);
-        /*
-        int z = DBM_impl::ntoi<Number>(k);
-        switch(op){
-          case OP_ADDITION:
-            {
-              exp_t exp = exp_add(exp_var(y), exp_const(z));
-              assign(x, exp);
-            }
-            break;
-          case OP_SUBTRACTION:
-            {
-              exp_t exp = exp_sub(exp_var(y), exp_const(z));
-              assign(x, exp);
-            }
-            break;
-          case OP_MULTIPLICATION:
-            {
-              exp_t exp = exp_mul(exp_var(y), exp_const(z));
-              assign(x, exp);
-            }
-            break;
-          case OP_DIVISION:
-            {
-              exp_t exp = exp_div(exp_var(y), exp_const(z));
-              assign(x, exp);          
-            }
-            break;
-          default:;;
-        }
-        */
-      }
-
       // check satisfiability of cst using intervals
       // Only to be used if cst is too hard for dbm
       bool intervals_check_sat(linear_constraint_t cst)  {
@@ -322,8 +254,8 @@ namespace crab {
               if(!(g_perm.edge_val(x, y) <= ow))
                 return false;
             }
-            return true;
           }
+          return true;
         }
       }
 
@@ -783,6 +715,15 @@ namespace crab {
         }
         return v;
       }
+      
+      interval_t eval_interval(linear_expression_t e)
+      {
+        interval_t r = e.constant();
+        for (auto p : e)
+          r += p.first * operator[](p.second.name());
+
+        return r;
+      }
 
       void assign(VariableName x, linear_expression_t e) {
 
@@ -790,7 +731,9 @@ namespace crab {
           return;
 
         // FIXME: Implement
+        interval_t x_int = eval_interval(e);
         this->operator-=(x);
+        set(x, x_int);
         /*
         if (e.is_constant()){
           exp_t exp = exp_const(DBM_impl::ntoi<Number>(e.constant()));
@@ -810,7 +753,7 @@ namespace crab {
         */
 
         // Only need to update potentials and paths for x
-          
+            
 
         CRAB_DEBUG("---", x, ":=", e,"\n",*this);
       }
@@ -847,7 +790,6 @@ namespace crab {
 
     
       void apply(operation_t op, VariableName x, VariableName y, Number k) {	
-
         if(is_bottom())
           return;
 
@@ -924,6 +866,7 @@ namespace crab {
       interval_t get_interval(ranges_t& r, variable_t x) {
         return get_interval(r, x.name());
       }
+
       interval_t get_interval(ranges_t& r, VariableName x) {
         boost::optional< interval_t > v = r.lookup(x);
         if(v)
@@ -941,7 +884,6 @@ namespace crab {
         } else {
           return get_interval(ranges, x);
         }
-//        return ranges[x];
       }
 
       void set(VariableName x, interval_t intv) {
@@ -968,7 +910,7 @@ namespace crab {
       void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) {
         // Convert to intervals and perform the operation
         this->operator-=(x); 
-        /*
+
         interval_t yi = operator[](y);
         interval_t zi = operator[](z);
         interval_t xi = interval_t::bottom();
@@ -1001,7 +943,6 @@ namespace crab {
             CRAB_ERROR("DBM: unreachable");
         }
         set(x, xi);
-        */
       }
     
       void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k) {
@@ -1067,7 +1008,7 @@ namespace crab {
               break;
             }
             default: 
-              CRAB_ERROR("DBM: unreachable");
+              CRAB_ERROR("spDBM: unreachable");
           }
           set(x, xi);
         }
@@ -1161,11 +1102,14 @@ namespace crab {
       // Restore closure after a variable assignment
       // Assumption: x = f(y_1, ..., y_n) cannot induce non-trivial
       // relations between (y_i, y_j)
-      bool close_assign(vert_id v)
+      bool close_after_assign(vert_id v)
       {
         // Run Dijkstra's forward to collect successors of v,
         // and backward to collect predecessors
-        CRAB_ERROR("SparseWtGraph::close_assign not yet implemented."); 
+        edge_vector delta; 
+        if(!GrOps::close_after_assign(g, potential, v, delta))
+          return false;
+        GrOps::apply_delta(g, delta);
         return true; 
       }
 

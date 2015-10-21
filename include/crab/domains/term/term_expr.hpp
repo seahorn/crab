@@ -479,7 +479,8 @@ namespace crab {
               }
               _depth[id] = 1+c_depth;
             }
-            assert(_map.size() == id+1);
+              /* Not true, as we're garbage collecting terms */
+//            assert(_map.size() == id+1);
             return id;
           }
         }
