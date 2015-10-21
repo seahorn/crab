@@ -80,7 +80,8 @@ namespace crab {
       invariant_map_t  m_post_map;
 
       void prune_dead_variables (abs_dom_t &inv, basic_block_label_t node) {
-        // prune dead variables 
+        if (!m_live) return;
+
         if (inv.is_bottom() || inv.is_top()) return;
         auto dead = m_live->dead_exit (node);       
 
