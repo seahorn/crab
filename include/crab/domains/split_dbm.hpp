@@ -13,7 +13,7 @@
 #define SPLIT_DBM_HPP
 
 // Uncomment for enabling debug information
-//#include <crab/common/dbg.hpp>
+#include <crab/common/dbg.hpp>
 
 #include <crab/common/types.hpp>
 #include <crab/common/sparse_graph.hpp>
@@ -103,7 +103,8 @@ namespace crab {
           division_operators< Number, VariableName >(),
           ranges(o.ranges), 
           vert_map(o.vert_map),
-          g(o.g)
+          g(o.g),
+          _is_bottom(false)
       {
 //        cout << (++count) << " allocated." << endl;
         if(o._is_bottom)
@@ -116,7 +117,8 @@ namespace crab {
           numerical_domain<Number, VariableName >(),
           bitwise_operators< Number, VariableName >(),
           division_operators< Number, VariableName >(),
-          ranges(_ranges), vert_map(_vert_map), g(_g), potential(_potential)
+          ranges(_ranges), vert_map(_vert_map), g(_g), potential(_potential),
+          _is_bottom(false)
       {
 //        cout << (++count) << " allocated." << endl;
       }
@@ -126,10 +128,15 @@ namespace crab {
       {
         if(this != &o)
         {
-          ranges = o.ranges;
-          vert_map = o.vert_map;
-          g = o.g;
-          potential = o.potential;
+          // if(o.is_bottom())
+          if(o._is_bottom)
+            set_to_bottom();
+          else {
+            ranges = o.ranges;
+            vert_map = o.vert_map;
+            g = o.g;
+            potential = o.potential;
+          }
         }
         return *this;
       }
@@ -640,8 +647,9 @@ namespace crab {
             }
             */
           }
+          DBM_t res(meet_range, meet_verts, meet_g, meet_pi);
           CRAB_DEBUG ("Result meet:\n",res);
-          return DBM_t(meet_range, meet_verts, meet_g, meet_pi);
+          return res;
         }
       }
     

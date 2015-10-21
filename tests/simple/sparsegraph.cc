@@ -64,13 +64,17 @@ void test_sdbm(void)
 
 void test_sgraph(void)
 {
-  graph_t x(10);
+  graph_t x;
+  x.growTo(10);
+
   x.add_edge(0, -1, 2);
   x.add_edge(1, 5, 2);
   x.add_edge(0, 2, 1);
   x.add_edge(2, 1, 1);
 
-  graph_t y(10);
+  graph_t y;
+  y.growTo(10);
+
   y.add_edge(0, 3, 2);
   y.add_edge(0, 3, 1);
   cout << x << y << endl;

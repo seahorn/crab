@@ -16,19 +16,20 @@ class SparseWtGraph : public writeable {
 
     typedef unsigned int vert_id;
 
-    SparseWtGraph(unsigned int _sz = 10, float _growth_rate = 1.4)
-      : max_sz(_sz), sz(_sz), growth_rate(_growth_rate),
+    SparseWtGraph(unsigned int _maxsz = 10, float _growth_rate = 1.4)
+      : max_sz(_maxsz), sz(0), growth_rate(_growth_rate),
         fwd_adjs((unsigned int*) malloc(sizeof(unsigned int)*max_sz*(max_sz+1))),
         rev_adjs((unsigned int*) malloc(sizeof(unsigned int)*max_sz*(max_sz+1))),
-        mtx((Wt*) malloc(sizeof(Wt)*max_sz*max_sz)),
-        is_free(_sz, false), free_id()
+        mtx((Wt*) malloc(sizeof(Wt)*max_sz*max_sz))
     {
+      /*
       for(vert_id v = 0 ; v < sz; v++)
       {
         succs(v).clear(); preds(v).clear();
       }
 
       check_adjs();
+      */
     }
 
     template<class Wo>
@@ -37,7 +38,7 @@ class SparseWtGraph : public writeable {
         fwd_adjs((unsigned int*) malloc(sizeof(unsigned int)*max_sz*(max_sz+1))),
         rev_adjs((unsigned int*) malloc(sizeof(unsigned int)*max_sz*(max_sz+1))),
         mtx((Wt*) malloc(sizeof(Wt)*max_sz*max_sz))
-        /* , is_free(o.is_free), free_id(o.free_id) */
+        , is_free(o.is_free), free_id(o.free_id)
     {
       for(vert_id v = 0 ; v < sz; v++)
       {
@@ -56,7 +57,7 @@ class SparseWtGraph : public writeable {
         fwd_adjs((unsigned int*) malloc(sizeof(unsigned int)*max_sz*(max_sz+1))),
         rev_adjs((unsigned int*) malloc(sizeof(unsigned int)*max_sz*(max_sz+1))),
         mtx((Wt*) malloc(sizeof(Wt)*max_sz*max_sz))
-        /* , is_free(o.is_free), free_id(o.free_id) */
+        , is_free(o.is_free), free_id(o.free_id)
     {
       for(vert_id v = 0 ; v < sz; v++)
       {
@@ -81,6 +82,7 @@ class SparseWtGraph : public writeable {
       growCap(o.sz);
       for(; sz < o.sz; sz++)
       {
+        // Initialize extra adj_lists
         succs(sz).clear();
         preds(sz).clear();
       }
@@ -290,7 +292,7 @@ class SparseWtGraph : public writeable {
       vert_id* end(void) const { return (vert_id*) (ptr+1+size()); }
       vert_id operator[](unsigned int idx) const { return ptr[1+idx]; }
       unsigned int* sparse(void) const { return sparseptr; }
-      vert_id* dense(void) const { return ptr + 1; }
+      vert_id* dense(void) const { return (vert_id*) (ptr + 1); }
       unsigned int size(void) const { return *ptr; }
 
       bool mem(unsigned int v) const {
@@ -373,6 +375,19 @@ class SparseWtGraph : public writeable {
       mtx = new_mtx;
       fwd_adjs = new_fwd;
       rev_adjs = new_rev;
+    }
+
+    // growTo shouldn't be used after forget
+    void growTo(unsigned int new_sz)
+    {
+      growCap(new_sz);
+      for(; sz < new_sz; sz++)
+      {
+        succs(sz).clear();
+        preds(sz).clear();
+        is_free.push_back(false);
+      }
+      // GKG: Need to be careful about free_ids.
     }
        
     void write(std::ostream& o) {

@@ -159,7 +159,7 @@ namespace crab {
     typedef typename G::Wt Wt;
     typedef typename G::adj_list g_adj_list;
 
-    GraphRev(vector<vert_id>& _perm, G& _g) 
+    GraphRev(G& _g) 
       : g(_g)
     { }
 
@@ -643,12 +643,15 @@ namespace crab {
     // Run Dijkstra's algorithm, but similar to the chromatic algorithm, avoid expanding
     // anything that _was_ stable.
     // GKG: Factor out common elements of this & the previous algorithm.
-    template<class P>
-    static void close_vert_after_widen(graph_t& g, P& p, vert_id src, vector< pair<vert_id, Wt> >& out)
+    template<class G, class P, class S>
+    static void dijkstra_recover(G& g, P& p, const S& is_stable, vert_id src, vector< pair<vert_id, Wt> >& out)
     {
       unsigned int sz = g.size();
       if(sz == 0)
         return;
+      if(is_stable[src])
+        return;
+
       grow_scratch(sz);
 
       // Reset all vertices to infty.
@@ -666,7 +669,7 @@ namespace crab {
         dists[dest] = p[src] + g.edge_val(src, dest) - p[dest];
         dist_ts[dest] = ts;
 
-        vert_marks[dest] = edge_marks[src];
+        vert_marks[dest] = V_UNSTABLE;
         heap.insert(dest);
       }
 
@@ -681,6 +684,8 @@ namespace crab {
         if(vert_marks[es] == V_STABLE)
           continue;
 
+        char es_mark = is_stable[es] ? V_STABLE : V_UNSTABLE;
+
         // Pick the appropriate set of successors
         for(vert_id ed : g.succs(es))
         {
@@ -689,7 +694,7 @@ namespace crab {
           {
             dists[ed] = v;
             dist_ts[ed] = ts;
-            vert_marks[ed] = edge_marks[es];
+            vert_marks[ed] = es_mark;
 
             if(heap.inHeap(ed))
             {
@@ -698,11 +703,38 @@ namespace crab {
               heap.insert(ed);
             }
           } else if(v == dists[ed]) {
-            vert_marks[ed] |= edge_marks[es];
+            vert_marks[ed] |= es_mark;
           }
         }
       }
     }
+
+    class forall_except {
+    public:
+      forall_except(vert_id _v)
+        : v(_v)
+      { }      
+
+      bool operator[](vert_id w) const { return w != v; }
+    protected:
+      vert_id v;
+    };
+
+    /*
+    template<class V>
+    class vec_neg {
+    public:
+      vec_neg(const V& _vec)
+        : vec(_vec)
+      { }
+
+      auto operator[](size_t idx) const { return -(vec[idx]); }
+    protected:
+      const V& vec;
+    };
+    template<class V>
+    vec_neg<V> negate_vec(const V& vec) { return vec_neg<V>(vec); }
+    */
 
     template<class G, class P>
     static void close_after_widen(graph_t& g, P& p, G& orig, edge_vector& delta)
@@ -726,11 +758,27 @@ namespace crab {
         if(!edge_marks[v])
         {
           aux.clear();
-          close_vert_after_widen(g, p, aux); 
+          dijkstra_recover(g, p, edge_marks, aux); 
           for(auto p : aux)
             delta.push_back( make_pair( make_pair(v, p.first), p.second ) );   
         }
       }
+    }
+
+    template<class P>
+    static void close_after_assign(graph_t& g, P& p, vert_id v, edge_vector& delta)
+    {
+      vector< pair<vert_id, Wt> > aux;
+      dijkstra_recover(g, p, forall_except(v), aux);
+      for(auto p : aux)
+         delta.push_back( make_pair( make_pair(v, p.first), p.second ) );   
+
+      aux.clear();
+      GraphRev<graph_t> g_rev(g);
+      // Check potentials are valid for the reversed graph.
+      dijkstra_recover(g_rev, p, forall_except(v), aux);
+      for(auto p : aux)
+        delta.push_back( make_pair( make_pair(p.first, v), p.second ) );
     }
   };
 
