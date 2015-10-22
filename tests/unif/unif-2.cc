@@ -58,10 +58,12 @@ int main (int argc, char** argv )
   cfg.simplify ();
   cout << cfg << endl;
 
-  const bool run_live = true;
+  Liveness<cfg_t> live (cfg);
+  live.exec ();
+
   interval_domain_t intervals = interval_domain_t::top ();
   NumFwdAnalyzer <cfg_t, interval_domain_t, VariableFactory>::type
-      itv_a (cfg, vfac, run_live);
+      itv_a (cfg, vfac, &live);
   itv_a.Run (intervals);
   cout << "Results with intervals:\n";
   for (auto &b : cfg)
@@ -72,7 +74,7 @@ int main (int argc, char** argv )
 
   term_domain_t tdom = term_domain_t::top ();
   NumFwdAnalyzer <cfg_t, term_domain_t, VariableFactory>::type
-      term_a (cfg, vfac, run_live);
+      term_a (cfg, vfac, &live);
   term_a.Run (tdom);
   cout << "Results with term<interval> domain:\n";
   for (auto &b : cfg)
@@ -86,7 +88,7 @@ int main (int argc, char** argv )
   /*
   term_dbm_t t_dbm_dom = term_dbm_t::top ();
   NumFwdAnalyzer <cfg_t, term_dbm_t, VariableFactory>::type
-      term_dbm_a (cfg, vfac, run_live);
+      term_dbm_a (cfg, vfac, &live);
   term_dbm_a.Run (t_dbm_dom);
   cout << "Results with term<dbm> domain:\n";
   for (auto &b : cfg)
@@ -100,7 +102,7 @@ int main (int argc, char** argv )
 
   dbm_domain_t dbm = dbm_domain_t::top ();
   NumFwdAnalyzer <cfg_t, dbm_domain_t, VariableFactory>::type
-      dbm_a (cfg, vfac, run_live);
+      dbm_a (cfg, vfac, &live);
   dbm_a.Run (dbm);
   cout << "Results with DBMs:\n";
   for (auto &b : cfg)

@@ -52,9 +52,15 @@ namespace crab {
       typedef interleaved_fwd_fixpoint_iterator<basic_block_label_t, CFG, abs_dom_t> fwd_iterator_t;
       typedef typename AbsTr::z_lin_cst_t z_lin_cst_t;
       typedef boost::unordered_map<basic_block_label_t, InvTblValTy> invariant_map_t;    
-      typedef Liveness<CFG> liveness_t;     
-      typedef typename liveness_t::set_t live_set_t;     
 
+     public:
+
+      // liveness info
+      typedef Liveness<CFG> liveness_t;     
+
+     private:
+
+      typedef typename liveness_t::set_t live_set_t;     
 
      public:
 
@@ -62,10 +68,13 @@ namespace crab {
       typedef SummaryTable <CFG, typename AbsTr::summ_abs_domain_t> summ_tbl_t;
       typedef CallCtxTable <CFG, typename AbsTr::call_abs_domain_t> call_tbl_t;
 
+      typedef typename invariant_map_t::iterator iterator;        
+      typedef typename invariant_map_t::const_iterator const_iterator;        
+
      private:
 
       VarFactory&  m_vfac;
-      liveness_t m_live;
+      const liveness_t* m_live;
       // datastructures needed to perform interprocedural analysis
       summ_tbl_t* m_summ_tbl;
       call_tbl_t* m_call_tbl;
@@ -78,9 +87,10 @@ namespace crab {
       invariant_map_t  m_post_map;
 
       void prune_dead_variables (abs_dom_t &inv, basic_block_label_t node) {
-        // prune dead variables 
+        if (!m_live) return;
+
         if (inv.is_bottom() || inv.is_top()) return;
-        auto dead = m_live.dead_exit (node);       
+        auto dead = m_live->dead_exit (node);       
 
         dead -= m_formals;
         domain_traits::forget (inv, dead.begin (), dead.end ());
@@ -129,38 +139,30 @@ namespace crab {
       }
       
      public:
-      
-      typedef typename invariant_map_t::iterator iterator;        
-      typedef typename invariant_map_t::const_iterator const_iterator;        
-
-     public:
 
       // --- intra-procedural version
-      FwdAnalyzer (CFG cfg, VarFactory& vfac, bool runLive):
+      // live can be nullptr if no live information is available
+      FwdAnalyzer (CFG cfg, VarFactory& vfac, 
+                   const liveness_t* live):
           fwd_iterator_t (cfg), 
-          m_vfac (vfac), m_live (cfg), 
-          m_summ_tbl (nullptr), m_call_tbl (nullptr) {
-
-        if (runLive) {
-          m_live.exec ();
-        }
-      }
-
+          m_vfac (vfac), m_live (live), 
+          m_summ_tbl (nullptr), m_call_tbl (nullptr) { }
+      
       // --- inter-procedural version
-      FwdAnalyzer (CFG cfg, VarFactory& vfac, bool runLive, 
+      // live can be nullptr if no live information is available
+      FwdAnalyzer (CFG cfg, VarFactory& vfac, 
+                   const liveness_t* live, 
                    summ_tbl_t* sum_tbl, call_tbl_t* call_tbl):
           fwd_iterator_t (cfg), 
-          m_vfac (vfac), m_live (cfg), 
+          m_vfac (vfac), m_live (live), 
           m_summ_tbl (sum_tbl), m_call_tbl (call_tbl) {
-        if (runLive) {
-          m_live.exec ();
-
+        if (live) {
           // --- collect formal parameters and return value (if any)
           auto fdecl = this->get_cfg ().get_func_decl ();
           assert (fdecl);
           for (unsigned i=0; i < (*fdecl).get_num_params();i++)
             m_formals += (*fdecl).get_param_name (i); 
-
+        
           if (auto ret_val = findReturn (this->get_cfg ()))
             m_formals += *ret_val; 
         }

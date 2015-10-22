@@ -61,10 +61,8 @@ int main (int argc, char** argv )
   cfg_t cfg = prog (vfac);
   cfg.simplify (); // this is optional
   cout << cfg << endl;
-  const bool run_live = false;
-
   {
-    NumFwdAnalyzer <cfg_t, interval_domain_t,VariableFactory>::type a (cfg,vfac,run_live);
+    NumFwdAnalyzer <cfg_t, interval_domain_t,VariableFactory>::type a (cfg,vfac,nullptr);
     // Run fixpoint 
     interval_domain_t inv = interval_domain_t::top ();
     a.Run (inv);
@@ -77,7 +75,7 @@ int main (int argc, char** argv )
   }
 
   {
-    NumFwdAnalyzer <cfg_t, dbm_domain_t,VariableFactory>::type a (cfg,vfac,run_live);
+    NumFwdAnalyzer <cfg_t, dbm_domain_t,VariableFactory>::type a (cfg,vfac,nullptr);
     // Run fixpoint 
     dbm_domain_t inv = dbm_domain_t::top ();
     a.Run (inv);
@@ -90,7 +88,7 @@ int main (int argc, char** argv )
   }
 
   {
-    NumFwdAnalyzer <cfg_t, term_domain_t,VariableFactory>::type a (cfg,vfac,run_live);
+    NumFwdAnalyzer <cfg_t, term_domain_t,VariableFactory>::type a (cfg,vfac,nullptr);
     // Run fixpoint 
     term_domain_t inv = term_domain_t::top ();
     a.Run (inv);

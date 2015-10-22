@@ -218,6 +218,7 @@ namespace crab {
       };
       
       typedef typename NumFwdAnalyzer<CFG,num_domain_t,VariableFactory>::type num_inv_gen_t;
+      typedef typename num_inv_gen_t::liveness_t liveness_t;
       typedef typename GenBasicBlockCons < num_inv_gen_t>::pt_var_map_t pt_var_map_t;
       typedef inv_tbl_traits<num_domain_t,num_domain_t> inv_tbl_tl;
       
@@ -260,8 +261,18 @@ namespace crab {
       {
         // 1) Run a numerical analysis to infer numerical invariants
         //    about offsets.
-        const bool run_live = true;
-        num_inv_gen_t It (cfg, m_vfac, run_live);
+        
+        const bool run_live = true; // XXX: make this a parameter
+
+        /// --- run the thread separately
+        liveness_t* live = nullptr;
+        if (run_live) {
+          liveness_t ls (cfg);
+          ls.exec ();
+          live = &ls;
+        }
+
+        num_inv_gen_t It (cfg, m_vfac, live);
         It.Run (num_domain_t::top ());
         
         // 2) Gen points-to constraints

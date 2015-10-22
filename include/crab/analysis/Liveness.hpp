@@ -342,6 +342,13 @@ namespace crab {
      // for internal use
      kill_gen_map_t m_kill_gen_map;
 
+     bool m_has_exec;
+
+     // statistics 
+     unsigned m_max_live;
+     unsigned m_total_live;
+     unsigned m_total_blks;
+
     private:
 
      // precompute use/def sets
@@ -371,12 +378,20 @@ namespace crab {
 
      Liveness (CFG cfg): 
          backward_fp_iterator
-         <basic_block_label_t, CFG, liveness_domain_t> (cfg) {
+         <basic_block_label_t, CFG, liveness_domain_t> (cfg),
+         m_has_exec (false),
+         m_max_live (0), m_total_live (0), m_total_blks (0) {
        init(); 
      }
 
      void exec() { 
+       if (m_has_exec) {
+         CRAB_WARN ("Trying to execute liveness twice!");
+         return;
+       }
+
        this->run (liveness_domain_t::bottom()); 
+       m_has_exec = true;
      }
 
      //! return the set of dead variables at the exit of block bb
@@ -386,6 +401,14 @@ namespace crab {
          return set_t ();
        else 
          return *(it->second); 
+     }
+
+     void get_stats (unsigned& total_live, 
+                     unsigned& max_live_per_blk,
+                     unsigned& avg_live_per_blk)  const {
+       total_live = m_total_live;
+       max_live_per_blk = m_max_live;
+       avg_live_per_blk = (m_total_blks == 0 ? 0 : (int) m_total_live / m_total_blks);
      }
 
      // //! return the set of live variables at the entry of block bb
@@ -439,6 +462,12 @@ namespace crab {
          set_ptr dead_set (new set_t (this->get_cfg().get_node (bb).live ()));
          *dead_set -= live_out;
          m_dead_map.insert (l_binding_t (bb, dead_set));
+
+
+         // update statistics
+         m_total_live += live_out.size ();
+         m_max_live = std::max (m_max_live, live_out.size ());
+         m_total_blks ++;
        }
      }
           

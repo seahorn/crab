@@ -370,8 +370,7 @@ void run(cfg_t cfg, string name, VariableFactory &vfac)
   cfg.simplify ();
   cout << cfg << endl;
   
-  const bool run_live = false;
-  typename NumFwdAnalyzer <cfg_t, ArrayDomain, VariableFactory>::type It (cfg,vfac,run_live);
+  typename NumFwdAnalyzer <cfg_t, ArrayDomain, VariableFactory>::type It (cfg,vfac, nullptr);
   ArrayDomain inv = ArrayDomain::top ();
   It.Run (inv);
   cout << "Results with " << inv.getDomainName () << ":\n";

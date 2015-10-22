@@ -2454,6 +2454,21 @@ namespace crab {
       }      
     };
 
+    // extending boost::hash for Cfg class
+    template< class BB, class VarName >
+    std::size_t hash_value(Cfg<BB,VarName> const& cfg) {
+      auto fdecl = cfg.get_func_decl ();            
+      if (!fdecl)
+        CRAB_ERROR ("cannot hash a cfg because function declaration is missing");
+
+      return CfgHasher< Cfg <BB,VarName> >::hash(*fdecl);
+    }
+
+    template< class BB, class VarName >
+    bool operator==(Cfg<BB,VarName> const& a, Cfg<BB,VarName> const& b) {
+      return hash_value (a) == hash_value (b);
+    }
+
   } // end namespace cfg
 }  // end namespace crab
 
