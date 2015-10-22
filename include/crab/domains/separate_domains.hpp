@@ -64,10 +64,9 @@ namespace ikos {
     bool _is_bottom;
     patricia_tree_t _tree;
     
-  private:
+  public: // GKG: Check
     class bottom_found { };
     
-  public: // GKG: Check
     class join_op: public binary_op_t {
       
       boost::optional< Value > apply(Value x, Value y) {

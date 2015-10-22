@@ -85,6 +85,8 @@ namespace crab {
     typedef range_iterator<vert_id> vert_list;
     vert_list verts(void) const { return vert_list(perm.size()); }
 
+    // GKG: Should probably modify this to handle cases where
+    // the vertex iterator isn't just a vert_id*.
     class adj_iterator {
     public:
       adj_iterator(vector<vert_id>& _inv, vert_id* _v)
@@ -288,7 +290,8 @@ namespace crab {
       assert(l.size() == r.size());
       int sz = l.size();
 
-      graph_t g(sz); 
+      graph_t g;
+      g.growTo(sz);
       
       for(vert_id s : l.verts())
       {
@@ -325,14 +328,22 @@ namespace crab {
     template<class G1, class G2>
     static graph_t widen(G1& l, G2& r)
     {
-      graph_t g(l.size());
+      assert(l.size() == r.size());
+      size_t sz = l.size();
+      graph_t g;
+      g.growTo(sz);
       /*
-       * FIXME: Implement
-      for(vert_id s : l.verts())
+       * GKG: Check correctness
+       */
+      for(vert_id s : r.verts())
       {
-          
+        for(vert_id d : r.succs(s))
+        {
+          if(l.elem(s, d) && l.edge_val(s, d) <= r.edge_val(s, d))
+            g.add_edge(s, l.edge_val(s, d), d);  
+        }      
       }
-      */
+
       return g;
     }
 
@@ -767,21 +778,93 @@ namespace crab {
       }
     }
 
-    // GKG: I think we can do better here, and avoid the priority queue altogether.
-    // I think we can just sort the edges incident to v, and collect the
-    // transitive edges.
+    // Used for sorting successors of some vertex by increasing slack.
+    // operator() may only be called on vertices for which
+    // dists is initialized.
+    template<class P>
+    class AdjCmp {
+    public: 
+      AdjCmp(const P& _p)
+        : p(_p)
+      { }
+
+      bool operator()(vert_id d1, vert_id d2) const {
+       return (dists[d1] - p[d1]) < (dists[d2] - p[d2]);
+      }
+    protected:
+      const P& p;
+    };
+
+    template<class P>
+    static AdjCmp<P> make_adjcmp(const P& p)
+    {
+      return AdjCmp<P>(p);
+    }
+
+    // Compute the transitive closure of edges reachable from v, assuming
+    // (1) the subgraph G \ {v} is closed, and (2) P is a valid model of G.
+    template<class G, class P>
+    static void close_after_assign_fwd(G& g, P& p, vert_id v, vector< pair<vert_id, Wt> >& aux)
+    {
+      // Initialize the queue and distances.
+      vert_marks[v] = BF_QUEUED;
+      dists[v] = Wt(0);
+      vert_id* adj_head = dual_queue;
+      vert_id* adj_tail = adj_head;
+      for(vert_id d : g.succs(v))
+      {
+        vert_marks[d] = BF_QUEUED;
+        dists[d] = g.edge_val(v, d);
+        *adj_tail = d;
+        adj_tail++;
+      }
+
+      // Sort the immediate edges by increasing slack.
+      std::sort(adj_head, adj_tail, make_adjcmp(p));
+
+      vert_id* reach_tail = adj_tail;
+      for(; adj_head < adj_tail; adj_head++)
+      {
+        vert_id d = *adj_head;  
+        
+        Wt d_wt = dists[d];
+        for(vert_id e : g.succs(d))
+        {
+          Wt e_wt = d_wt + g.edge_val(d, e);
+          if(!vert_marks[e])
+          {
+            dists[e] = e_wt;
+            vert_marks[e] = BF_QUEUED;
+            *reach_tail = e;
+            reach_tail++;
+          } else {
+            dists[e] = min(e_wt, dists[e]);
+          }
+        }
+      }
+
+      // Now collect the adjacencies, and clear vertex flags
+      for(adj_head = dual_queue; adj_head < reach_tail; adj_head++)
+      {
+        aux.push_back(make_pair(*adj_head, dists[*adj_head]));
+        vert_marks[*adj_head] = 0;
+      }
+    }
+    
     template<class P>
     static void close_after_assign(graph_t& g, P& p, vert_id v, edge_vector& delta)
     {
-      vector< pair<vert_id, Wt> > aux;
-      dijkstra_recover(g, p, forall_except(v), aux);
-      for(auto p : aux)
-         delta.push_back( make_pair( make_pair(v, p.first), p.second ) );   
+      unsigned int sz = g.size();
+      grow_scratch(sz);
 
-      aux.clear();
+      vector< pair<vert_id, Wt> > aux;
+
+      close_after_assign_fwd(g, p, v, aux);
+      for(auto p : aux)
+        delta.push_back( make_pair( make_pair(v, p.first), p.second ) );   
+
       GraphRev<graph_t> g_rev(g);
-      // Check potentials are valid for the reversed graph.
-      dijkstra_recover(g_rev, p, forall_except(v), aux);
+      close_after_assign_fwd(g_rev, p, v, aux);
       for(auto p : aux)
         delta.push_back( make_pair( make_pair(p.first, v), p.second ) );
     }
