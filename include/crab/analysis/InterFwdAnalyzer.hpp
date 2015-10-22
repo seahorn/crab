@@ -16,6 +16,7 @@
 #include <crab/cg/TopoOrder.hpp>
 #include <crab/domains/domain_traits.hpp>
 #include <crab/analysis/FwdAnalyzer.hpp>
+#include <crab/analysis/Liveness.hpp>
 #include <crab/analysis/InvTable_traits.hpp>
 #include <crab/analysis/InterDS.hpp>
 
@@ -38,7 +39,12 @@ namespace crab {
       typedef typename CG::node_t cg_node_t;
       typedef typename cg_node_t::cfg_t cfg_t;
       typedef typename cfg_t::varname_t varname_t;
+      typedef Liveness<cfg_t> liveness_t;     
 
+     public:
+      typedef boost::unordered_map <cfg_t, const liveness_t*> liveness_map_t;
+
+     private:
       typedef SummaryTable <cfg_t, BUAbsDomain> summ_tbl_t;
       typedef CallCtxTable <cfg_t, TDAbsDomain> call_tbl_t;
       typedef BottomUpSummNumAbsTransformer<summ_tbl_t, call_tbl_t> bu_abs_tr;
@@ -51,14 +57,15 @@ namespace crab {
 
       CG m_cg;
       VarFactory&  m_vfac;
-      bool m_live;
+      liveness_map_t* m_live;
       invariant_map_t m_inv_map;
       summ_tbl_t m_summ_tbl;
 
+
      public:
       
-      InterFwdAnalyzer (CG cg, VarFactory& vfac, bool runLive): 
-          m_cg (cg), m_vfac (vfac), m_live (runLive) {
+      InterFwdAnalyzer (CG cg, VarFactory& vfac, liveness_map_t* live): 
+          m_cg (cg), m_vfac (vfac), m_live (live) {
       }
       
       //! Trigger the whole analysis
@@ -83,7 +90,9 @@ namespace crab {
             if (fun_name != "main" && cfg.has_exit ()) {
               CRAB_DEBUG ("--- Analyzing ", (*fdecl).get_func_name ());
               // --- run the analysis
-              bu_analyzer a (cfg, m_vfac, m_live, &m_summ_tbl, &call_tbl) ; 
+              bu_analyzer a (cfg, m_vfac, 
+                             (m_live) ? (*m_live) [cfg] : nullptr, 
+                             &m_summ_tbl, &call_tbl) ; 
               a.Run (BUAbsDomain::top ());
               // --- build the summary
               std::vector<varname_t> formals;
@@ -124,7 +133,8 @@ namespace crab {
               call_tbl.insert (*fdecl, TDAbsDomain::top ());
             }
             
-            td_analyzer_ptr a (new td_analyzer (cfg, m_vfac, m_live, 
+            td_analyzer_ptr a (new td_analyzer (cfg, m_vfac, 
+                                                (m_live) ? (*m_live) [cfg] : nullptr, 
                                                 &m_summ_tbl, &call_tbl));           
             if (is_root) {
               a->Run (init);

@@ -6,6 +6,7 @@
 #include <crab/common/types.hpp>
 #include <crab/analysis/FwdAnalyzer.hpp>
 #include <crab/analysis/Pointer.hpp>
+#include <crab/analysis/Liveness.hpp>
 #include <crab/domains/linear_constraints.hpp> 
 #include <crab/domains/intervals.hpp>                      
 #include <crab/domains/intervals_congruences.hpp>                      

@@ -71,10 +71,11 @@ int main (int argc, char** argv )
   //cfg.simplify ();
   cout << cfg << endl;
 
-  const bool run_live = true;
+  Liveness<cfg_t> live (cfg);
+  live.exec ();
 
   {
-    NumFwdAnalyzer <cfg_t, interval_domain_t,VariableFactory>::type a (cfg,vfac,run_live);
+    NumFwdAnalyzer <cfg_t, interval_domain_t,VariableFactory>::type a (cfg,vfac,&live);
     interval_domain_t inv = interval_domain_t::top ();
     a.Run (inv);
     cout << "Invariants using " << inv.getDomainName () << "\n";
@@ -86,7 +87,7 @@ int main (int argc, char** argv )
   }
 
   {
-    NumFwdAnalyzer <cfg_t, dbm_domain_t,VariableFactory>::type a (cfg,vfac,run_live);
+    NumFwdAnalyzer <cfg_t, dbm_domain_t,VariableFactory>::type a (cfg,vfac,&live);
     dbm_domain_t inv = dbm_domain_t::top ();
     a.Run (inv);
     cout << "Invariants using " << inv.getDomainName () << "\n";
@@ -98,7 +99,7 @@ int main (int argc, char** argv )
   }
 
   {
-    NumFwdAnalyzer <cfg_t, ric_domain_t,VariableFactory>::type a (cfg,vfac,run_live);
+    NumFwdAnalyzer <cfg_t, ric_domain_t,VariableFactory>::type a (cfg,vfac,&live);
     ric_domain_t inv = ric_domain_t::top ();
     a.Run (inv);
     cout << "Invariants using " << inv.getDomainName () << "\n";
@@ -110,7 +111,7 @@ int main (int argc, char** argv )
   }
 
   {
-    NumFwdAnalyzer <cfg_t, term_domain_t,VariableFactory>::type a (cfg,vfac,run_live);
+    NumFwdAnalyzer <cfg_t, term_domain_t,VariableFactory>::type a (cfg,vfac,&live);
     term_domain_t inv = term_domain_t::top ();
     a.Run (inv);
     cout << "Invariants using " << inv.getDomainName () << "\n";

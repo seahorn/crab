@@ -26,6 +26,7 @@ namespace crab {
       typedef typename CFG::varname_t varname_t;
       typedef typename CFG::basic_block_t basic_block_t;
       typedef typename NumFwdAnalyzer<CFG, AbsDomain, VarFactory, InvTableTy>::type fwd_analyzer_t;
+      typedef typename fwd_analyzer_t::liveness_t liveness_t;
       typedef ConcSys <ThreadId, CFG> conc_sys_t;
       
       typedef inv_tbl_traits <AbsDomain, InvTableTy> inv_tbl_t;
@@ -68,7 +69,15 @@ namespace crab {
           for (auto const p: m_conc_sys)
           {
             /// --- run the thread separately
-            fwd_analyzer_t thread_analyzer (p.second, m_vfac, m_run_live);
+            liveness_t* live = nullptr;
+
+            if (m_run_live) {
+              liveness_t ls (p.second);
+              ls.exec ();
+              live = &ls;
+            }
+              
+            fwd_analyzer_t thread_analyzer (p.second, m_vfac, live);
             thread_analyzer.Run (inv);
             
             auto locals = boost::make_iterator_range (m_conc_sys.get_locals (p.first));
