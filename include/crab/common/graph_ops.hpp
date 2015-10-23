@@ -844,6 +844,7 @@ namespace crab {
       }
 
       // Now collect the adjacencies, and clear vertex flags
+      // FIXME: This collects _all_ edges from x, not just new ones.
       for(adj_head = dual_queue; adj_head < reach_tail; adj_head++)
       {
         aux.push_back(make_pair(*adj_head, dists[*adj_head]));

@@ -13,7 +13,7 @@
 #define SPLIT_DBM_HPP
 
 // Uncomment for enabling debug information
-//#include <crab/common/dbg.hpp>
+#include <crab/common/dbg.hpp>
 
 #include <crab/common/types.hpp>
 #include <crab/common/sparse_graph.hpp>
@@ -76,6 +76,8 @@ namespace crab {
       typedef GraphOps<Wt> GrOps;
       typedef GraphPerm<graph_t> GrPerm;
       typedef typename GrOps::edge_vector edge_vector;
+      // < <x, y>, k> == x - y <= k.
+      typedef pair< pair<VariableName, VariableName>, Wt > diffcst_t;
 
       // Copy a graph, and add a bounds vertex.
       // FIXME: Replace this with a view.
@@ -118,14 +120,10 @@ namespace crab {
 
       bool _is_bottom;
 
-//      static int count;
-
    public:
       SplitDBM(bool is_bottom = false):
         writeable(), _is_bottom(is_bottom)
-      {
-//        cout << (++count) << " allocated." << endl;
-      }
+      { }
 
       // FIXME: Rewrite to avoid copying if o is _|_
       SplitDBM(const DBM_t& o)
@@ -139,7 +137,6 @@ namespace crab {
           g(o.g),
           _is_bottom(false)
       {
-//        cout << (++count) << " allocated." << endl;
         if(o._is_bottom)
           set_to_bottom();
       }
@@ -152,9 +149,7 @@ namespace crab {
           division_operators< Number, VariableName >(),
           ranges(_ranges), vert_map(_vert_map), rev_map(_rev_map), g(_g), potential(_potential),
           _is_bottom(false)
-      {
-//        cout << (++count) << " allocated." << endl;
-      }
+      { }
 
       // FIXME: Add a move constructor
       SplitDBM& operator=(const SplitDBM& o)
@@ -175,11 +170,6 @@ namespace crab {
         return *this;
       }
        
-      /*
-      ~SplitDBM(void) {
-        count--;
-      }
-      */
      private:
 
       /*
@@ -841,51 +831,253 @@ namespace crab {
         return r;
       }
 
-      // Turn an assignment into a set of difference equations.
-      boost::optional<vert_id> diffeqs_of_assign(VariableName x, linear_expression_t exp, edge_vector& edges)
+      // Constraint x - y <= k
+      /*
+      pair< pair<vert_id, vert_id>, Wt> edge_of_diffcst(VariableName x, VariableName y, Wt k)
       {
-        return boost::none;
+        return make_pair(make_pair(get_vertex(y), get_vertex(x)), k);
+      }
+      */
+
+      // Turn an assignment into a set of difference constraints.
+      void diffcsts_of_assign(VariableName x, linear_expression_t exp,
+          vector<pair<VariableName, Wt> >& lb, vector<pair<VariableName,Wt> >& ub)
+      {
+        {
+          // Process upper bounds.
+          optional<VariableName> unbounded_ubvar;
+          Wt exp_ub = exp.constant();
+          vector< pair<VariableName, Wt> > ub_terms;
+          for(auto p : exp)
+          {
+            Wt coeff = p.first;
+            if(p.first < Wt(0))
+            {
+              // Can't do anything with negative coefficients.
+              bound_t y_lb = operator[](p.second.name()).lb();
+              if(y_lb.is_infinite())
+                goto assign_ub_finish;
+              exp_ub += (*(y_lb.number()))*coeff;
+            } else {
+              VariableName y(p.second.name());
+              bound_t y_ub = operator[](y).ub(); 
+              if(y_ub.is_infinite())
+              {
+                if(unbounded_ubvar || coeff != Wt(1))
+                  goto assign_ub_finish;
+                unbounded_ubvar = y;
+              } else {
+                Wt ymax(*(y_ub.number()));
+                exp_ub += ymax*coeff;
+                ub_terms.push_back(make_pair(y, ymax));
+              }
+            }
+          }
+
+          if(unbounded_ubvar)
+          {
+            // There is exactly one unbounded variable. 
+            ub.push_back(make_pair(*unbounded_ubvar, exp_ub));
+          } else {
+            for(auto p : ub_terms)
+            {
+              ub.push_back(make_pair(p.first, exp_ub - p.second));
+            }
+          }
+        }
+      assign_ub_finish:
+
+        {
+          optional<VariableName> unbounded_lbvar;
+          Wt exp_lb = exp.constant();
+          vector< pair<VariableName, Wt> > lb_terms;
+          for(auto p : exp)
+          {
+            Wt coeff = p.first;
+            if(p.first < Wt(0))
+            {
+              // Again, can't do anything with negative coefficients.
+              bound_t y_ub = operator[](p.second.name()).ub();
+              if(y_ub.is_infinite())
+                goto assign_lb_finish;
+              exp_lb += (*(y_ub.number()))*coeff;
+            } else {
+              VariableName y(p.second.name());
+              bound_t y_lb = operator[](y).lb(); 
+              if(y_lb.is_infinite())
+              {
+                if(unbounded_lbvar || coeff != Wt(1))
+                  goto assign_lb_finish;
+                unbounded_lbvar = y;
+              } else {
+                Wt ymin(*(y_lb.number()));
+                exp_lb += ymin*coeff;
+                lb_terms.push_back(make_pair(y, ymin));
+              }
+            }
+          }
+
+          if(unbounded_lbvar)
+          {
+            lb.push_back(make_pair(*unbounded_lbvar, -exp_lb));
+          } else {
+            for(auto p : lb_terms)
+            {
+              lb.push_back(make_pair(p.first, p.second - exp_lb));
+            }
+          }
+        }
+    assign_lb_finish:
+        return;
+      }
+   
+      void diffcsts_of_lin_leq(const linear_expression_t& exp, vector<diffcst_t>& csts)
+      {
+        // Process upper bounds.
+        optional<VariableName> unbounded_lbvar;
+        optional<VariableName> unbounded_ubvar;
+        Wt exp_ub = exp.constant();
+        vector< pair<VariableName, Wt> > pos_terms;
+        vector< pair<VariableName, Wt> > neg_terms;
+        for(auto p : exp)
+        {
+          Wt coeff = p.first;
+          if(p.first < Wt(0))
+          {
+            VariableName y(p.second.name());
+            bound_t y_lb = operator[](y).lb();
+            if(y_lb.is_infinite())
+            {
+              if(unbounded_lbvar || coeff != Wt(1))
+                goto diffcst_finish;
+              unbounded_lbvar = y;
+            } else {
+              Wt ymin = (*(y_lb.number()));
+              // Coeff is negative, so it's still add
+              exp_ub += ymin*coeff;
+              neg_terms.push_back(make_pair(y, ymin));
+            }
+          } else {
+            VariableName y(p.second.name());
+            bound_t y_ub = operator[](y).ub(); 
+            if(y_ub.is_infinite())
+            {
+              if(unbounded_ubvar || coeff != Wt(1))
+                goto diffcst_finish;
+              unbounded_ubvar = y;
+            } else {
+              Wt ymax(*(y_ub.number()));
+              exp_ub += ymax*coeff;
+              pos_terms.push_back(make_pair(y, ymax));
+            }
+          }
+        }
+
+        if(unbounded_lbvar)
+        {
+          VariableName x(*unbounded_lbvar);
+          if(unbounded_ubvar)
+          {
+            VariableName y(*unbounded_ubvar);
+            csts.push_back(make_pair(make_pair(x, y), exp_ub));
+          } else {
+            for(auto p : pos_terms)
+              csts.push_back(make_pair(make_pair(x, p.first), exp_ub - p.second));
+          }
+        } else {
+          if(unbounded_ubvar)
+          {
+            VariableName y(*unbounded_ubvar);
+            for(auto p : neg_terms)
+              csts.push_back(make_pair(make_pair(p.first, y), exp_ub + p.second));
+          } else {
+            for(auto pl : neg_terms)
+              for(auto pu : pos_terms)
+                csts.push_back(make_pair(make_pair(pl.first, pu.first), exp_ub + pl.second - pu.second));
+          }
+        }
+    diffcst_finish:
+        return;
       }
 
+      vert_id get_vertex(VariableName x)
+      {
+        auto it = vert_map.find(x);
+        if(it != vert_map.end())
+          return (*it).second;
+
+        vert_id v = g.new_vertex();
+        assert(v <= rev_map.size());
+        if(v == rev_map.size())
+        {
+          rev_map.push_back(variable_t(x));
+          potential.push_back(pot_value(x));
+        } else {
+          rev_map[v] = variable_t(x);
+          potential[v] = pot_value(x);
+        }
+        return v;
+      }
+ 
+      // Assumption: state is currently feasible.
       void assign(VariableName x, linear_expression_t e) {
 
         if(is_bottom())
           return;
+        CRAB_DEBUG(x, ":=", e);
 
-        // FIXME: Implement
-//        this->operator-=(x);
-//        set(x, x_int);
         // If it's a constant, just assign the interval.
         if (e.is_constant()){
-//          this->operator-=(x);
           set(x, e.constant());
-//          exp_t exp = exp_const(DBM_impl::ntoi<Number>(e.constant()));
-//          assign (x,exp);
-        }
-        /*
-        else if  (optional<variable_t> v = e.get_variable()){
-          VariableName y = (*v).name();
-          if (!(x==y)){
-            exp_t exp = exp_var (get_dbm_index(y));        
-            assign (x,exp);
-          }
-        }
-        */
-        else {
+        } else {
           interval_t x_int = eval_interval(e);
-          edge_vector delta;
-          optional<vert_id> v_opt(diffeqs_of_assign(x, e, delta));
-          if(v_opt)
+          vector<pair<VariableName, Wt> > diffs_lb;
+          vector<pair<VariableName, Wt> > diffs_ub;
+          // Construct difference constraints from the assignment
+          //
+          diffcsts_of_assign(x, e, diffs_lb, diffs_ub);
+          vert_id v;
+          if(diffs_lb.size() > 0 || diffs_ub.size() > 0)
           {
-            vert_id v = *v_opt;
-            potential[v] = eval_expression(e);
+            // Allocate a new vertex for x
+            vert_id v = g.new_vertex();
+            assert(v <= rev_map.size());
+            if(v == rev_map.size())
+            {
+              rev_map.push_back(variable_t(x));
+              potential.push_back(eval_expression(e));
+            } else {
+              potential[v] = eval_expression(e);
+              rev_map[v] = x;
+            }
             
+            edge_vector delta;
+            for(auto diff : diffs_lb)
+            {
+              delta.push_back(make_pair(make_pair(get_vertex(diff.first), v), diff.second));
+            }
+
+            for(auto diff : diffs_ub)
+            {
+              delta.push_back(make_pair(make_pair(v, get_vertex(diff.first)), diff.second));
+            }
+               
+            for(auto diff : delta)
+            {
+              vert_id s = diff.first.first;
+              vert_id d = diff.first.second;
+
+              CRAB_DEBUG("|- ", (*rev_map[s]).name(), "-", (*rev_map[d]).name(), "<=", diff.second);
+            }
             GrOps::apply_delta(g, delta);
             delta.clear();
             GrOps::close_after_assign(g, potential, v, delta);
             GrOps::apply_delta(g, delta);
 
+            // Clear the old x vertex
+            operator-=(x);
             ranges.insert(x, x_int);
+            vert_map.insert(vmap_elt_t(variable_t(x), v));
           } else {
             set(x, x_int);
           }
@@ -1010,14 +1202,63 @@ namespace crab {
 
         CRAB_DEBUG("---", x, ":=", y, op, k,"\n", *this);
       }
-   
-      // Assumption: state is currently feasible.
+      
       bool add_linear_leq(const linear_expression_t& exp)
       {
+        vector<diffcst_t> csts;
+        diffcsts_of_lin_leq(exp, csts);
+
+        for(auto diff : csts)
+        {
+          CRAB_DEBUG(diff.first.first, "-", diff.first.second, "<=", diff.second);
+        }
+
         CRAB_WARN("SplitDBM::add_linear_leq not yet implemented.");
         return true;  
       }
    
+      void add_disequation(linear_expression_t exp)
+      {
+        return;
+        /*
+        // Can only exploit \sum_i c_i x_i \neq k if:
+        // (1) exactly one x_i is unfixed
+        // (2) lb(x_i) or ub(x_i) = k - \sum_i' c_i' x_i'
+        Wt k = exp.constant();
+        auto it = exp.begin();
+        for(; it != exp.end(); ++it)
+        {
+          if(!var_is_fixed((*it).second)) 
+            break;
+          k -= (*it).first*get_value((*it).second);
+        }
+
+        // All variables are fixed
+        if(it == exp.end())
+        {
+          if(k == Wt(0))
+            set_to_bottom();
+          return;
+        }
+
+        // Found one unfixed variable; collect the rest.
+        Wt ucoeff = (*it).first;
+        VariableName uvar((*it).second;
+        interval_t u_int = get_interval(ranges, uvar);
+        // We need at least one side of u to be finite.
+        if(u_int.lb().is_infinite() && u_int.ub().is_infinite())
+          return;
+
+        for(++it; it != exp.end(); ++it)
+        {
+          // Two unfixed variables; nothing we can do.
+          if(!var_is_fixed((*it).second))
+            return;
+          k -= (*it).first*get_value((*it).second);
+        }
+        */
+      }
+
       void operator+=(linear_constraint_t cst) {
         if(is_bottom())
           return;
@@ -1032,22 +1273,22 @@ namespace crab {
 
         if (cst.is_inequality())
         {
-          add_linear_leq(cst.expression());
+          if(!add_linear_leq(cst.expression()))
+            set_to_bottom();
           return;
         }
 
         if (cst.is_equality())
         {
           linear_expression_t exp = cst.expression();
-          if(!add_linear_leq(exp))
-            return;
-          add_linear_leq(-exp);
+          if(!add_linear_leq(exp) || !add_linear_leq(-exp))
+            set_to_bottom();
           return;
         }
 
         if (cst.is_disequation())
         {
-          // FIXME: add handling  
+          add_disequation(cst.expression());
         }
 
         CRAB_WARN("Unhandled constraint in SplitDBM");
