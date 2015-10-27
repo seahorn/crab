@@ -5,7 +5,6 @@
 
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/properties.hpp>
-
 #include <crab/cg/Cg.hpp>
 
 namespace boost {
@@ -37,18 +36,20 @@ namespace boost {
     }    
 
   }; // end class graph_traits
+} // end namespace boost
 
-}
+// XXX: should be boost namespace but for some reason gcc does not
+//      like it
+namespace crab {
+    namespace cg {
 
-namespace crab { namespace cg {
+  // --- Functions for crab::cg::CallGraph<CFG>
 
-   // --- Functions for crab::cg::CallGraph<CFG>
-
-   template<class CFG> 
-   typename graph_traits< crab::cg::CallGraph<CFG> >::vertex_descriptor
-   source (typename graph_traits< crab::cg::CallGraph<CFG> >::edge_descriptor e, 
-             const crab::cg::CallGraph<CFG> &g) {
-     return e.Src (); 
+  template<class CFG> 
+  typename graph_traits< crab::cg::CallGraph<CFG> >::vertex_descriptor
+  source (typename graph_traits< crab::cg::CallGraph<CFG> >::edge_descriptor e, 
+          const crab::cg::CallGraph<CFG> &g) {
+    return e.Src (); 
   } 
 
   template<class CFG>
@@ -108,7 +109,6 @@ namespace crab { namespace cg {
     return g.num_nodes ();
   }
 
-
-} } // end namespaces
-
+  } // end namespace
+} // end namespace
 #endif 

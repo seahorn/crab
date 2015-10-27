@@ -8,30 +8,30 @@ using namespace crab::domain_impl;
 // To test the interface to BGL graphs
 void write (cfg_t g)
 {
-  cout << "Num of vertices: " << boost::num_vertices (g) << "\n";
-  for (auto v: boost::make_iterator_range (boost::vertices (g)))
+  cout << "Num of vertices: " << num_vertices (g) << "\n";
+  for (auto v: boost::make_iterator_range (vertices (g)))
   {
     cout << "Vertex: " << v << endl; 
-    cout << "Num of predecessors=" << boost::in_degree (v, g) << endl;
-    cout << "Num of successors  =" << boost::out_degree (v, g) << endl;
-    cout << "Num of neighbors   =" << boost::degree (v, g) << endl;
+    cout << "Num of predecessors=" << in_degree (v, g) << endl;
+    cout << "Num of successors  =" << out_degree (v, g) << endl;
+    cout << "Num of neighbors   =" << degree (v, g) << endl;
     cout << "Succs={";
     {
-      auto p = boost::out_edges (v, g);
+      auto p = out_edges (v, g);
       auto succIt  = p.first;
       auto succEnd = p.second;
       for(; succIt != succEnd; ++succIt){
-        cout << boost::target (*succIt, g) << ";";
+        cout << target (*succIt, g) << ";";
       }
     }
     cout << "}" << endl;
     cout << "Preds={ ";
     {
-      auto p = boost::in_edges (v, g);
+      auto p = in_edges (v, g);
       auto predIt  = p.first;
       auto predEnd = p.second;
       for(; predIt != predEnd; ++predIt){
-        cout << boost::source (*predIt, g) << ";";
+        cout << source (*predIt, g) << ";";
       }
     }
     cout << "}" << endl;

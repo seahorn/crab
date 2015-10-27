@@ -13,8 +13,9 @@
 
 #include <crab/cfg/Cfg.hpp>
 #include <crab/cfg/VarFactory.hpp>
-#include <crab/cg/TopoOrder.hpp>
 #include <crab/domains/domain_traits.hpp>
+#include <crab/analysis/graphs/Sccg.hpp>
+#include <crab/analysis/graphs/TopoOrder.hpp>
 #include <crab/analysis/FwdAnalyzer.hpp>
 #include <crab/analysis/Liveness.hpp>
 #include <crab/analysis/InvTable_traits.hpp>
@@ -26,6 +27,7 @@ namespace crab {
 
     using namespace cfg;
     using namespace cg;
+    using namespace graph_algo;
 
     template< typename CG, typename VarFactory,
               // abstract domain used for the bottom-up phase
@@ -81,7 +83,7 @@ namespace crab {
 
         std::vector<cg_node_t> rev_order;
         SccGraph <CG> Scc_g (m_cg);
-        rev_topo_sort (Scc_g, rev_order);
+        rev_topo_sort < SccGraph <CG> > (Scc_g, rev_order);
         call_tbl_t call_tbl;
        
         CRAB_DEBUG ("Bottom-up phase ...");

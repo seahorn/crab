@@ -57,11 +57,10 @@ namespace crab {
           
           int index () const { return m_id; }
           
-          varname_t name () const {
+          string name () const {
             auto d_opt = m_cfg.get_func_decl ();
             if (!d_opt) CRAB_ERROR("No function name found");
-            
-            return (*d_opt).get_func_name ();
+            return (*d_opt).get_func_name ().str ();
           }
 
           bool operator==(const CgNode &o) const {
@@ -290,7 +289,7 @@ namespace crab {
           for (auto f: boost::make_iterator_range (nodes ())){
             if (num_succs (f) > 0) {
               for (auto e: boost::make_iterator_range (succs (f)))  {
-                o << e.Src().name () << "--> " << e.Dest().name () << endl;
+                o << e.Src().str () << "--> " << e.Dest().str () << endl;
               }
             }
           }
