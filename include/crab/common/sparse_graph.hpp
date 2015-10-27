@@ -133,7 +133,9 @@ class SparseWtGraph : public writeable {
     template<class G> 
     static graph_t copy(G& g)
     {
-      graph_t ret(g.size());
+      graph_t ret;
+      ret.growTo(g.size());
+
       for(vert_id s : g.verts())
       {
         for(vert_id d : g.succs(s))
@@ -219,7 +221,11 @@ class SparseWtGraph : public writeable {
 
     void clear(void)
     {
-      
+      clear_edges();
+      for(vert_id v : free_id)
+        is_free[v] = false;
+      free_id.clear();
+      sz = 0;
     }
 
     // Number of allocated vertices
@@ -265,13 +271,14 @@ class SparseWtGraph : public writeable {
       { }
       vert_id operator*(void) const { return v; }
       vert_iterator& operator++(void) { ++v; return *this; }
+      vert_iterator& operator--(void) { --v; return *this; }
       bool operator!=(const vert_iterator& o) const { return v != o.v; }
     protected:
       vert_id v;
     };
-    class vert_list {
+    class vert_range {
     public:
-      vert_list(vert_id _sz)
+      vert_range(vert_id _sz)
         : sz(_sz)
       { }
       vert_iterator begin(void) const { return vert_iterator(0); } 
@@ -282,8 +289,9 @@ class SparseWtGraph : public writeable {
     };
     // FIXME: Verts currently iterates over free vertices,
     // as well as existing ones
-    vert_list verts(void) const { return vert_list(sz); }
+    vert_range verts(void) const { return vert_range(sz); }
 
+    typedef vert_id* adj_iterator;
     class adj_list {
     public:
       adj_list(unsigned int* _ptr, unsigned int max_sz)

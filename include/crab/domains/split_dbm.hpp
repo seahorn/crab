@@ -13,7 +13,7 @@
 #define SPLIT_DBM_HPP
 
 // Uncomment for enabling debug information
-#include <crab/common/dbg.hpp>
+//#include <crab/common/dbg.hpp>
 
 #include <crab/common/types.hpp>
 #include <crab/common/sparse_graph.hpp>
@@ -79,34 +79,6 @@ namespace crab {
       // < <x, y>, k> == x - y <= k.
       typedef pair< pair<VariableName, VariableName>, Wt > diffcst_t;
 
-      // Copy a graph, and add a bounds vertex.
-      // FIXME: Replace this with a view.
-      graph_t bound_graph(graph_t& g, vert_map_t& vmap, ranges_t& rs, vert_id& zero_vert)
-      {
-        graph_t g_bound(g);
-        zero_vert = g_bound.new_vertex();
-
-        for(auto p : vmap)
-        {
-          variable_t x = p.first;
-          auto opt_x_int = rs.lookup(x.name());
-          if(opt_x_int)
-          {
-            vert_id v = p.second;
-            interval_t x_int = *opt_x_int;
-            if(x_int.ub().is_finite())
-            {
-              g_bound.add_edge(zero_vert, *(x_int.ub().number()), v);
-            }
-            if(x_int.lb().is_finite())
-            {
-              g_bound.add_edge(v, -(*(x_int.lb().number())), zero_vert);
-            }
-          }
-        }
-        return g_bound;
-      }
-
       protected:
         
       //================
@@ -123,7 +95,11 @@ namespace crab {
    public:
       SplitDBM(bool is_bottom = false):
         writeable(), _is_bottom(is_bottom)
-      { }
+      {
+        g.growTo(1);  // Allocate the zero vector
+        potential.push_back(Wt(0));
+        rev_map.push_back(none);
+      }
 
       // FIXME: Rewrite to avoid copying if o is _|_
       SplitDBM(const DBM_t& o)
@@ -135,10 +111,18 @@ namespace crab {
           vert_map(o.vert_map),
           rev_map(o.rev_map),
           g(o.g),
+          potential(o.potential),
           _is_bottom(false)
       {
         if(o._is_bottom)
           set_to_bottom();
+
+        /*
+        for(vert_id v : g.verts())
+          if(g.succs(v).begin() != g.succs(v).end() || g.preds(v).begin() != g.preds(v).end())
+            if(v != 0)
+              assert(rev_map[v]);
+              */
       }
 
       // We should probably use the magical rvalue ownership semantics stuff.
@@ -186,6 +170,7 @@ namespace crab {
         vert_map.clear();
         rev_map.clear();
         g.clear();
+        potential.clear();
         _is_bottom = true;
       }
 
@@ -257,6 +242,7 @@ namespace crab {
             vert_renaming[p.second] = (*it).second;
           }
 
+          assert(g.size() > 0);
           GrPerm g_perm(vert_renaming, g);
           // FIXME: Check incorporation of bounds
           //        (and come up with a more efficient method)
@@ -369,6 +355,31 @@ namespace crab {
           potential.push_back(v_pot);
           rev_map.push_back(variable_t(v));
         }
+        vert_map.insert(vmap_elt_t(v, vert));
+        return vert;
+      }
+
+      vert_id get_vert(graph_t& g, vert_map_t& vmap, rev_map_t& rmap,
+          ranges_t& ranges, vector<Wt>& pot, VariableName v)
+      {
+        auto it = vmap.find(variable_t(v));
+        if(it != vmap.end())
+          return (*it).second;
+
+        Wt v_pot(pot_value(v, ranges, pot));
+        vert_id vert(g.new_vertex());
+        vmap.insert(vmap_elt_t(variable_t(v), vert)); 
+        // Initialize 
+        assert(vert <= rmap.size());
+        if(vert < rmap.size())
+        {
+          pot[vert] = v_pot;
+          rmap[vert] = v;
+        } else {
+          pot.push_back(v_pot);
+          rmap.push_back(variable_t(v));
+        }
+        vmap.insert(vmap_elt_t(v, vert));
         return vert;
       }
 
@@ -399,6 +410,12 @@ namespace crab {
           vector<Wt> join_pot;
           vert_map_t out_vmap;
           rev_map_t out_revmap;
+          // Add the zero vertex
+          assert(potential.size() > 0);
+          join_pot.push_back(potential[0]);
+          perm_x.push_back(0);
+          perm_y.push_back(0);
+          out_revmap.push_back(none);
           for(auto p : vert_map)
           {
             auto it = o.vert_map.find(p.first); 
@@ -417,16 +434,20 @@ namespace crab {
           unsigned int sz = perm_x.size();
 
           // Build the permuted view of x and y.
+          assert(g.size() > 0);
           GrPerm gx(perm_x, g);
+          assert(o.g.size() > 0);
           GrPerm gy(perm_y, o.g);
 
           // Compute the deferred relations
-          graph_t g_ix_ry(sz);
-          for(vert_id s : gy.verts())
+          graph_t g_ix_ry;
+          g_ix_ry.growTo(sz);
+          SubGraph<GrPerm> gy_excl(gy, 0);
+          for(vert_id s : gy_excl.verts())
           {
-            for(vert_id d : gy.succs(s))
+            for(vert_id d : gy_excl.succs(s))
             {
-              // Assumption: gx.mem(s, d) -> gx.edge_val(s, d) <= ranges[var(s)].ub() - ranges[var(d)].lb()
+              // Assumption: gx.elem(s, d) -> gx.edge_val(s, d) <= ranges[var(s)].ub() - ranges[var(d)].lb()
               // That is, if the relation exists, it's at least as strong as the bounds.
               if(!gx.elem(s, d))
               {
@@ -440,17 +461,19 @@ namespace crab {
             }
           }
           // Apply the deferred relations, and re-close.
-          // Assumption: potential is valid for relations _and bounds_.
-          // GKG: Make sure this is preserved, or fix.
           edge_vector delta;
           graph_t g_rx(GrOps::meet(gx, g_ix_ry));
-          GrOps::close_after_meet(g_rx, potential, gx, g_ix_ry, delta);
-          GrOps::apply_delta(g_rx, delta);          
+          SubGraph<graph_t> g_rx_excl(g_rx, 0);
+          GrOps::close_after_meet(g_rx_excl, potential, gx, g_ix_ry, delta);
+          GrOps::apply_delta(g_rx, delta);
 
-          graph_t g_rx_iy(sz);
-          for(vert_id s : gx.verts())
+          graph_t g_rx_iy;
+          g_rx_iy.growTo(sz);
+
+          SubGraph<GrPerm> gx_excl(gx, 0);
+          for(vert_id s : gx_excl.verts())
           {
-            for(vert_id d : gx.succs(s))
+            for(vert_id d : gx_excl.succs(s))
             {
               // Assumption: gx.mem(s, d) -> gx.edge_val(s, d) <= ranges[var(s)].ub() - ranges[var(d)].lb()
               // That is, if the relation exists, it's at least as strong as the bounds.
@@ -466,8 +489,10 @@ namespace crab {
             }
           }
           delta.clear();
+          // Similarly, should use a SubGraph view.
           graph_t g_ry(GrOps::meet(gy, g_rx_iy));
-          GrOps::close_after_meet(g_ry, o.potential, gy, g_rx_iy, delta);
+          SubGraph<graph_t> g_ry_excl(g_ry, 0);
+          GrOps::close_after_meet(g_ry_excl, o.potential, gy, g_rx_iy, delta);
           GrOps::apply_delta(g_ry, delta);
            
           // We now have the relevant set of relations. Because g_rx and g_ry are closed,
@@ -490,8 +515,8 @@ namespace crab {
 
               bound_t b = max(ud_0 - ls_0, ud_1 - ls_1);
 
-              vert_id s(get_vert(vs));
-              vert_id d(get_vert(vd));
+              vert_id s(get_vert(join_g, out_vmap, out_revmap, join_range, join_pot, vs));
+              vert_id d(get_vert(join_g, out_vmap, out_revmap, join_range, join_pot, vd));
               join_g.update_edge(s, *(b.number()), d, min_op);
             }
           }
@@ -510,8 +535,8 @@ namespace crab {
 
               bound_t b = max(ud_0 - ls_0, ud_1 - ls_1);
 
-              vert_id s(get_vert(vs));
-              vert_id d(get_vert(vd));
+              vert_id s(get_vert(join_g, out_vmap, out_revmap, join_range, join_pot, vs));
+              vert_id d(get_vert(join_g, out_vmap, out_revmap, join_range, join_pot, vd));
               join_g.update_edge(s, *(b.number()), d, min_op);
             }
           }
@@ -542,6 +567,11 @@ namespace crab {
           vert_map_t out_vmap;
           rev_map_t out_revmap;
           vector<Wt> widen_pot;
+          assert(potential.size() > 0);
+          widen_pot.push_back(potential[0]);
+          perm_x.push_back(0);
+          perm_y.push_back(0);
+          out_revmap.push_back(none);
           for(auto p : vert_map)
           {
             auto it = o.vert_map.find(p.first); 
@@ -558,7 +588,9 @@ namespace crab {
           }
 
           // Build the permuted view of x and y.
+          assert(g.size() > 0);
           GrPerm gx(perm_x, g);            
+          assert(o.g.size() > 0);
           GrPerm gy(perm_y, o.g);
          
           // Now perform the widening 
@@ -598,6 +630,9 @@ namespace crab {
 
           vector<vert_id> perm_x;
           vector<vert_id> perm_y;
+          perm_x.push_back(0);
+          perm_y.push_back(0);
+          meet_rev.push_back(none);
           for(auto p : vert_map)
           {
             vert_id vv = perm_x.size();
@@ -627,33 +662,25 @@ namespace crab {
           }
 
           // Build the permuted view of x and y.
+          assert(g.size() > 0);
           GrPerm gx(perm_x, g);
+          assert(o.g.size() > 0);
           GrPerm gy(perm_y, o.g);
 
           // Compute the syntactic meet of the permuted graphs.
           graph_t meet_g(GrOps::meet(gx, gy));
            
           // Compute updated potentials on the zero-enriched graph
-          // FIXME: Avoid all these copies.
-          vert_id zero_vert;
-          graph_t meet_g_bound(bound_graph(g, meet_verts, meet_range, zero_vert));
-          vector<Wt> meet_bound_pi(meet_g_bound.size());
-          if(!GrOps::select_potentials(meet_g_bound, meet_bound_pi))
+          vector<Wt> meet_pi(meet_g.size());
+          if(!GrOps::select_potentials(meet_g, meet_pi))
           {
             // Potentials cannot be selected -- state is infeasible.
             return bottom();
           }
 
-          // Shift the potentials so pi(zero_vertex) = 0.
-          vector<Wt> meet_pi(meet_g.size());
-          Wt zero_pi = meet_bound_pi[zero_vert];
-          for(vert_id v : meet_g.verts())
-          {
-            meet_pi[v] = meet_bound_pi[v] - zero_pi;
-          }
-
           edge_vector delta;
-          GrOps::close_after_meet(meet_g, meet_pi, gx, gy, delta);
+          SubGraph<graph_t> meet_g_excl(meet_g, 0);
+          GrOps::close_after_meet(meet_g_excl, meet_pi, gx, gy, delta);
           GrOps::apply_delta(meet_g, delta);
 
           for(auto e : delta)
@@ -712,39 +739,6 @@ namespace crab {
           for(auto p: var_map)
             rev_map.insert (make_pair (p.second, p.first));
 
-          dbm dbm_x = dbm_copy (this->_dbm);    
-          dbm dbm_y = dbm_copy (o._dbm);    
-          
-          // Resize before renaming          
-          int max_sz = max (dbm_x->sz, dbm_y->sz);
-          if (id >= max_sz - 2)
-            max_sz = id + Delta;
-
-          if (dbm_x->sz != max_sz) {
-            dbm tmp = resize (dbm_x, max_sz);
-            dbm_dealloc(dbm_x);    
-            swap(dbm_x, tmp);
-          }
-
-          if (dbm_y->sz != max_sz) {
-            dbm tmp = resize (dbm_y, max_sz);
-            dbm_dealloc(dbm_y);    
-            swap(dbm_y, tmp);
-          }
-
-          assert (dbm_x->sz == dbm_y->sz && dbm_y->sz == max_sz);
-
-          dbm dbm_xx = dbm_rename (&subs_x[0], subs_x.size(), dbm_x);
-          dbm dbm_yy = dbm_rename (&subs_y[0], subs_y.size(), dbm_y);
-
-          dbm_dealloc(dbm_x);
-          dbm_dealloc(dbm_y);
-
-          DBM_t res (dbm_narrowing(dbm_xx, dbm_yy), 
-                     id, var_map, rev_map);
-
-          dbm_dealloc(dbm_xx);
-          dbm_dealloc(dbm_yy);
           */
            
 
@@ -756,6 +750,7 @@ namespace crab {
       void normalize() {
         // dbm_canonical(_dbm);
         // Always maintained in normal form, except for widening
+        // FIXME: Handle closing after widening
       }
 
       void operator-=(VariableName v) {
@@ -765,7 +760,9 @@ namespace crab {
         ranges.remove(v);
         auto it = vert_map.find (v);
         if (it != vert_map.end ()) {
+          CRAB_DEBUG("Before forget ", it->second, ": ", g);
           g.forget(it->second);
+          CRAB_DEBUG("After: ", g);
           rev_map[it->second] = boost::none;
           vert_map.erase(v);
         }
@@ -811,6 +808,20 @@ namespace crab {
         return ((Wt) 0);
       }
 
+      Wt pot_value(variable_t v, ranges_t& ranges, vector<Wt>& potential)
+      {
+        auto it = vert_map.find(v); 
+        if(it != vert_map.end())
+          return potential[(*it).second];
+
+        interval_t r(get_interval(ranges,v));
+        if(r.lb().is_finite())
+          return (Wt) (*(r.lb().number()));
+        if(r.ub().is_finite())
+          return (Wt) (*(r.ub().number()));
+        return ((Wt) 0);
+      }
+
       // Evaluate an expression under the chosen potentials
       Wt eval_expression(linear_expression_t e)
       {
@@ -830,14 +841,6 @@ namespace crab {
 
         return r;
       }
-
-      // Constraint x - y <= k
-      /*
-      pair< pair<vert_id, vert_id>, Wt> edge_of_diffcst(VariableName x, VariableName y, Wt k)
-      {
-        return make_pair(make_pair(get_vertex(y), get_vertex(x)), k);
-      }
-      */
 
       // Turn an assignment into a set of difference constraints.
       void diffcsts_of_assign(VariableName x, linear_expression_t exp,
@@ -931,44 +934,51 @@ namespace crab {
         return;
       }
    
-      void diffcsts_of_lin_leq(const linear_expression_t& exp, vector<diffcst_t>& csts)
+      // GKG: I suspect there're some sign/bound direction errors in the 
+      // following.
+      void diffcsts_of_lin_leq(const linear_expression_t& exp, vector<diffcst_t>& csts,
+          vector<pair<VariableName, Wt> >& lbs, vector<pair<VariableName, Wt> >& ubs)
       {
         // Process upper bounds.
+        Wt unbounded_lbcoeff;
+        Wt unbounded_ubcoeff;
         optional<VariableName> unbounded_lbvar;
         optional<VariableName> unbounded_ubvar;
-        Wt exp_ub = exp.constant();
-        vector< pair<VariableName, Wt> > pos_terms;
-        vector< pair<VariableName, Wt> > neg_terms;
+        Wt exp_ub = -exp.constant();
+        vector< pair< pair<Wt, VariableName>, Wt> > pos_terms;
+        vector< pair< pair<Wt, VariableName>, Wt> > neg_terms;
         for(auto p : exp)
         {
           Wt coeff = p.first;
-          if(p.first < Wt(0))
+          if(coeff > Wt(0))
           {
             VariableName y(p.second.name());
             bound_t y_lb = operator[](y).lb();
             if(y_lb.is_infinite())
             {
-              if(unbounded_lbvar || coeff != Wt(1))
+              if(unbounded_lbvar);
                 goto diffcst_finish;
               unbounded_lbvar = y;
+              unbounded_lbcoeff = coeff;
             } else {
               Wt ymin = (*(y_lb.number()));
               // Coeff is negative, so it's still add
               exp_ub += ymin*coeff;
-              neg_terms.push_back(make_pair(y, ymin));
+              pos_terms.push_back(make_pair(make_pair(coeff, y), ymin));
             }
           } else {
             VariableName y(p.second.name());
             bound_t y_ub = operator[](y).ub(); 
             if(y_ub.is_infinite())
             {
-              if(unbounded_ubvar || coeff != Wt(1))
+              if(unbounded_ubvar)
                 goto diffcst_finish;
               unbounded_ubvar = y;
+              unbounded_ubcoeff = -coeff;
             } else {
               Wt ymax(*(y_ub.number()));
               exp_ub += ymax*coeff;
-              pos_terms.push_back(make_pair(y, ymax));
+              neg_terms.push_back(make_pair(make_pair(-coeff, y), ymax));
             }
           }
         }
@@ -978,47 +988,44 @@ namespace crab {
           VariableName x(*unbounded_lbvar);
           if(unbounded_ubvar)
           {
+            if(unbounded_lbcoeff != Wt(1) || unbounded_ubcoeff != Wt(1))
+              goto diffcst_finish;
             VariableName y(*unbounded_ubvar);
             csts.push_back(make_pair(make_pair(x, y), exp_ub));
           } else {
-            for(auto p : pos_terms)
-              csts.push_back(make_pair(make_pair(x, p.first), exp_ub - p.second));
+            if(unbounded_lbcoeff == Wt(1))
+            {
+              for(auto p : pos_terms)
+                csts.push_back(make_pair(make_pair(x, p.first.second), exp_ub - p.second));
+            }
+            // Add bounds for x
+            ubs.push_back(make_pair(x, exp_ub/unbounded_lbcoeff));
           }
         } else {
           if(unbounded_ubvar)
           {
             VariableName y(*unbounded_ubvar);
-            for(auto p : neg_terms)
-              csts.push_back(make_pair(make_pair(p.first, y), exp_ub + p.second));
+            if(unbounded_ubcoeff == Wt(1))
+            {
+              for(auto p : neg_terms)
+                csts.push_back(make_pair(make_pair(p.first.second, y), exp_ub + p.second));
+            }
+            // Bounds for y
+            lbs.push_back(make_pair(y, -exp_ub/unbounded_ubcoeff));
           } else {
             for(auto pl : neg_terms)
               for(auto pu : pos_terms)
-                csts.push_back(make_pair(make_pair(pl.first, pu.first), exp_ub + pl.second - pu.second));
+                csts.push_back(make_pair(make_pair(pl.first.second, pu.first.second), exp_ub + pl.second - pu.second));
+            for(auto pl : neg_terms)
+              lbs.push_back(make_pair(pl.first.second, -pl.second - exp_ub/pl.first.first));
+            for(auto pu : pos_terms)
+              ubs.push_back(make_pair(pu.first.second, exp_ub/pu.first.first - pu.second));
           }
         }
     diffcst_finish:
         return;
       }
 
-      vert_id get_vertex(VariableName x)
-      {
-        auto it = vert_map.find(x);
-        if(it != vert_map.end())
-          return (*it).second;
-
-        vert_id v = g.new_vertex();
-        assert(v <= rev_map.size());
-        if(v == rev_map.size())
-        {
-          rev_map.push_back(variable_t(x));
-          potential.push_back(pot_value(x));
-        } else {
-          rev_map[v] = variable_t(x);
-          potential[v] = pot_value(x);
-        }
-        return v;
-      }
- 
       // Assumption: state is currently feasible.
       void assign(VariableName x, linear_expression_t e) {
 
@@ -1034,9 +1041,7 @@ namespace crab {
           vector<pair<VariableName, Wt> > diffs_lb;
           vector<pair<VariableName, Wt> > diffs_ub;
           // Construct difference constraints from the assignment
-          //
           diffcsts_of_assign(x, e, diffs_lb, diffs_ub);
-          vert_id v;
           if(diffs_lb.size() > 0 || diffs_ub.size() > 0)
           {
             // Allocate a new vertex for x
@@ -1054,12 +1059,12 @@ namespace crab {
             edge_vector delta;
             for(auto diff : diffs_lb)
             {
-              delta.push_back(make_pair(make_pair(get_vertex(diff.first), v), diff.second));
+              delta.push_back(make_pair(make_pair(get_vert(diff.first), v), diff.second));
             }
 
             for(auto diff : diffs_ub)
             {
-              delta.push_back(make_pair(make_pair(v, get_vertex(diff.first)), diff.second));
+              delta.push_back(make_pair(make_pair(v, get_vert(diff.first)), diff.second));
             }
                
             for(auto diff : delta)
@@ -1071,7 +1076,8 @@ namespace crab {
             }
             GrOps::apply_delta(g, delta);
             delta.clear();
-            GrOps::close_after_assign(g, potential, v, delta);
+            SubGraph<graph_t> g_excl(g, 0);
+            GrOps::close_after_assign(g_excl, potential, v, delta);
             GrOps::apply_delta(g, delta);
 
             // Clear the old x vertex
@@ -1187,33 +1193,85 @@ namespace crab {
           }
         }
 
-        /*
-        if (x == y){
-          // to make sure that lhs does not appear on the rhs
-          graph_t::vert_id v = g.new_vertex();
-          
-          apply(op, x, get_tmp(), k);
-          forget(get_tmp());
-        }
-        else{
-          apply(op, x, get_dbm_index(y), k);
-        }
-        */
-
         CRAB_DEBUG("---", x, ":=", y, op, k,"\n", *this);
       }
       
       bool add_linear_leq(const linear_expression_t& exp)
       {
+        CRAB_DEBUG("Adding: ", exp);
+        vector< pair<VariableName, Wt> > lbs;
+        vector< pair<VariableName, Wt> > ubs;
         vector<diffcst_t> csts;
-        diffcsts_of_lin_leq(exp, csts);
+        diffcsts_of_lin_leq(exp, csts, lbs, ubs);
+
+        for(auto p : lbs)
+        {
+          CRAB_DEBUG(p.first, ">=", p.second);
+          VariableName x(p.first);
+          auto it = vert_map.find(x);
+          // Vertex already exists; add the edge and repair
+          if(it != vert_map.end())
+          {
+            vert_id v = (*it).second;
+            g.add_edge(v, -p.second, 0); 
+            if(!repair_potential(v, 0))
+            {
+              set_to_bottom();
+              return false;
+            }
+          }
+          // Apply the interval.
+          // GKG: Check for bottom.
+          interval_t x_out = get_interval(ranges, x)&
+            interval_t(p.second, bound_t::plus_infinity());
+          if(x_out.is_bottom())
+          {
+            set_to_bottom(); return false;
+          }
+          ranges.insert(x, x_out);
+        }
+        for(auto p : ubs)
+        {
+          CRAB_DEBUG(p.first, "<=", p.second);
+          VariableName x(p.first);
+          auto it = vert_map.find(x);
+          if(it != vert_map.end())
+          {
+            vert_id v = (*it).second;
+            g.add_edge(0, p.second, v);
+            if(!repair_potential(0, v))
+            {
+              set_to_bottom();
+              return false;
+            }
+          }
+          // Apply the interval.
+          interval_t x_out = get_interval(ranges, x)&
+              interval_t(bound_t::minus_infinity(), p.second);
+          if(x_out.is_bottom())
+          {
+            set_to_bottom(); return false;
+          }
+          ranges.insert(x, x_out);
+        }
 
         for(auto diff : csts)
         {
           CRAB_DEBUG(diff.first.first, "-", diff.first.second, "<=", diff.second);
+
+          vert_id src = get_vert(diff.first.second);
+          vert_id dest = get_vert(diff.first.first);
+          g.add_edge(src, diff.second, dest);
+          if(!repair_potential(src, dest))
+          {
+            set_to_bottom();
+            return false;
+          }
+          
+          close_over_edge(src, dest);
         }
 
-        CRAB_WARN("SplitDBM::add_linear_leq not yet implemented.");
+        // CRAB_WARN("SplitDBM::add_linear_leq not yet implemented.");
         return true;  
       }
    
@@ -1486,55 +1544,65 @@ namespace crab {
         }
       }
 
-      // Restore closure after a single edge addition
-      bool close_over_edge(vert_id ii, vert_id jj)
+      // Resore potential after an edge addition
+      bool repair_potential(vert_id src, vert_id dest)
       {
-        Wt c = edge_val(ii,jj);
+        return GrOps::repair_potential(g, potential, src, dest);
+      }
+
+      // Restore closure after a single edge addition
+      void close_over_edge(vert_id ii, vert_id jj)
+      {
+        assert(ii != 0 && jj != 0);
+        SubGraph<graph_t> g_excl(g, 0);
+
+        Wt c = g_excl.edge_val(ii,jj);
 
         // There may be a cheaper way to do this.
-        for(vert_id se : preds(ii))
+        for(vert_id se : g_excl.preds(ii))
         {
-          Wt wt_sij = edge_val(se,ii) + c;
+          Wt wt_sij = g_excl.edge_val(se,ii) + c;
 
-          assert(preds(se).size() > 0);
+          // assert(g_excl.preds(se).size() > 0);
+          assert(g_excl.preds(se).begin() != g_excl.preds(se).end());
           if(se != jj)
           {
-            if(elem(se, jj))
+            if(g_excl.elem(se, jj))
             {
-              if(edge_val(se,jj) <= wt_sij)
+              if(g_excl.edge_val(se,jj) <= wt_sij)
                 continue;
 
-              edge_val(se,jj) = wt_sij;
+              g_excl.edge_val(se,jj) = wt_sij;
             } else {
-              add_edge(se, jj, wt_sij);
+              g_excl.add_edge(se, wt_sij, jj);
             }
             
-            for(vert_id de : succs(jj))
+            for(vert_id de : g_excl.succs(jj))
             {
               if(se != de)
               {
-                int wt_sijd = wt_sij + edge_val(jj, de);
-                if(elem(ii, jj))
+                Wt wt_sijd = wt_sij + g_excl.edge_val(jj, de);
+                if(g_excl.elem(ii, jj))
                 {
-                  edge_val(se, de) = min(edge_val(se, de), wt_sijd);
+                  g_excl.edge_val(se, de) = min(g_excl.edge_val(se, de), wt_sijd);
                 } else {
-                  add_edge(se, de, wt_sijd);
+                  g_excl.add_edge(se, wt_sijd, de);
                 }
               }
             }
           }
         }
 
-        for(vert_id de : succs(jj))
+        for(vert_id de : g_excl.succs(jj))
         {
-          int wt_ijd = edge_val(jj, de) + c;
+          Wt wt_ijd = g_excl.edge_val(jj, de) + c;
           if(de != ii)
           {
-            if(elem(ii, de))
+            if(g_excl.elem(ii, de))
             {
-              edge_val(ii, de) = min(edge_val(ii, de), wt_ijd);
+              g_excl.edge_val(ii, de) = min(g_excl.edge_val(ii, de), wt_ijd);
             } else {
-              add_edge(ii, de, wt_ijd);
+              g_excl.add_edge(ii, wt_ijd, de);
             }
           }
         }
@@ -1577,6 +1645,24 @@ namespace crab {
       void write(ostream& o) {
 
         normalize ();
+
+#if 0
+        o << "edges={";
+        for(vert_id v : g.verts())
+        {
+          for(vert_id d : g.succs(v))
+          {
+            if(!rev_map[v] || !rev_map[d])
+            {
+              CRAB_WARN("Edge incident to un-mapped vertex.");
+              continue;
+            }
+            o << "(" << (*(rev_map[v])) << "," << (*(rev_map[d])) << ":" << g.edge_val(v,d) << ")";
+          }
+        }
+        o << "}";
+#endif
+
 #if 0
         cout << "var_map={";
         for (auto &p: _var_map) 
@@ -1600,8 +1686,41 @@ namespace crab {
         }
         else
         {
-          linear_constraint_system_t inv = to_linear_constraint_system ();
-          o << inv;
+          // Intervals
+          bool first = true;
+          o << "{";
+          for(auto p : ranges)
+          {
+            if(first)
+              first = false;
+            else
+              o << ", ";
+            o << p.first << " -> " << p.second;
+          }
+         
+          // Extract all the edges
+          SubGraph<graph_t> g_excl(g, 0);
+          for(vert_id s : g_excl.verts())
+          {
+            if(!rev_map[s])
+              continue;
+            variable_t vs = *rev_map[s];
+            for(vert_id d : g_excl.succs(s))
+            {
+              if(!rev_map[d])
+                continue;
+              variable_t vd = *rev_map[d];
+              if(first)
+                first = false;
+              else
+                o << ", ";
+              o << vd << "-" << vs << "<=" << g_excl.edge_val(s, d);
+            }
+          }
+          o << "}";
+
+//          linear_constraint_system_t inv = to_linear_constraint_system ();
+//          o << inv;
         }
       }
 
@@ -1630,17 +1749,18 @@ namespace crab {
         }
 
         // Extract all the edges
-        for(vert_id s : g.verts())
+        SubGraph<graph_t> g_excl(g, 0);
+        for(vert_id s : g_excl.verts())
         {
           if(!rev_map[s])
             continue;
           variable_t vs = *rev_map[s];
-          for(vert_id d : g.succs(s))
+          for(vert_id d : g_excl.succs(s))
           {
             if(!rev_map[d])
               continue;
             variable_t vd = *rev_map[d];
-            csts += linear_constraint_t(linear_expression_t(vd) - linear_expression_t(vs) <= linear_expression_t(g.edge_val(s, d)));
+            csts += linear_constraint_t(linear_expression_t(vd) - linear_expression_t(vs) <= linear_expression_t(g_excl.edge_val(s, d)));
           }
         }
 

@@ -11,7 +11,7 @@ namespace crab {
   // of the graph without actually constructing it.
   // ============
   template<class V>
-  class range_iterator {
+  class num_range {
   public:
     class value_ref {
     public:
@@ -20,13 +20,14 @@ namespace crab {
       { }
       const V& operator*(void) const { return v; }
       value_ref& operator++(void) { v++; return *this; }
+      value_ref& operator--(void) { v--; return *this; }
       bool operator!=(const value_ref& o) const {
         return v < o.v;
       }
     protected: 
       V v;
     };
-    range_iterator(const V& _after)
+    num_range(const V& _after)
       : after(_after)
     { }
 
@@ -48,9 +49,8 @@ namespace crab {
     typedef typename G::adj_list g_adj_list;
 
     GraphPerm(vector<vert_id>& _perm, G& _g) 
-      : g(_g), perm(_perm)
+      : g(_g), perm(_perm), inv(_g.size(), -1)
     {
-      vector<vert_id> inv(g.size(), -1);
       for(unsigned int vi = 0; vi < perm.size(); vi++)
       {
         assert(inv[perm[vi]] == -1);
@@ -60,20 +60,20 @@ namespace crab {
 
     // Check whether an edge is live
     bool elem(vert_id x, vert_id y) const {
-      if(perm[x] < 0 || perm[y] < 0)
+      if(perm[x] > g.size() || perm[y] > g.size())
         return false;
       return g.elem(perm[x], perm[y]);
     }
 
     // Precondition: elem(x, y) is true.
     Wt& edge_val(vert_id x, vert_id y) const {
-      assert(perm[x] >= 0 && perm[y] >= 0);
+      assert(perm[x] < g.size() && perm[y] < g.size());
       return g.edge_val(perm[x], perm[y]);
     }
 
     // Precondition: elem(x, y) is true.
     Wt operator()(vert_id x, vert_id y) const {
-      assert(perm[x] >= 0 && perm[y] >= 0);
+      assert(perm[x] < g.size() && perm[y] < g.size());
       return g(perm[x], perm[y]);
     }
 
@@ -82,8 +82,9 @@ namespace crab {
       return perm.size();
     }
 
-    typedef range_iterator<vert_id> vert_list;
-    vert_list verts(void) const { return vert_list(perm.size()); }
+    typedef num_range<vert_id> vert_range;
+    typedef typename num_range<vert_id>::value_ref vert_iterator;
+    vert_range verts(void) const { return vert_range(perm.size()); }
 
     // GKG: Should probably modify this to handle cases where
     // the vertex iterator isn't just a vert_id*.
@@ -93,10 +94,8 @@ namespace crab {
         : inv(_inv), v(_v)
       { }
 
-      vert_id operator*(void)
+      vert_id operator*(void) const
       {
-        while(inv[*v] < 0)
-          ++v;
         return *v;
       }
 
@@ -105,8 +104,10 @@ namespace crab {
         return *this;
       }
 
-      bool operator!=(adj_iterator& other)
+      bool operator!=(const adj_iterator& other)
       {
+        while(v != other.v && inv[*v] == (-1))
+          ++v;
         return v != other.v;
       }
     protected:
@@ -116,39 +117,188 @@ namespace crab {
 
     class adj_list {
     public:
-      adj_list(vector<vert_id>& _inv, const g_adj_list& _adj)
-        : inv(_inv), adj(_adj)
-      {
-        vert_id* adj_end(adj.end());
-        while(adj_end != adj.begin() && inv[adj_end[-1]] < 0)
-          --adj_end;
+      adj_list(vector<vert_id>& _perm, vector<vert_id>& _inv, const g_adj_list& _adj)
+        : perm(_perm), inv(_inv), adj(_adj)
+      { }
+
+      adj_list(vector<vert_id>& _perm, vector<vert_id>& _inv)
+        : perm(_perm), inv(_inv), adj()
+      { }
+
+      adj_iterator begin(void) const {
+        if(adj)
+          return adj_iterator(inv, (*adj).begin());
+        else
+          return adj_iterator(inv, NULL);
+      } 
+      adj_iterator end(void) const {
+        if(adj)
+          return adj_iterator(inv, (*adj).end());
+        else
+          return adj_iterator(inv, NULL);
       }
-      adj_iterator begin(void) const { return adj_iterator(inv, adj.begin()); } 
-      adj_iterator end(void) const { return adj_iterator(inv, adj_end); }
 
       bool mem(unsigned int v) const {
-        if(perm[v] < 0)
+        if(!adj || perm[v] == (-1))
           return false;
-        return adj.mem(perm[v]); 
+        return (*adj).mem(perm[v]); 
       }
 
     protected:
+      vector<vert_id>& perm;
       vector<vert_id>& inv;
-      g_adj_list adj;
-      vert_id* adj_end;
+      optional<g_adj_list> adj;
     };
 
     adj_list succs(vert_id v)
     {
-      return adj_list(inv, g.succs(perm[v]));
+      if(perm[v] == (-1))
+        return adj_list(perm, inv);
+      else
+        return adj_list(perm, inv, g.succs(perm[v]));
     }
     adj_list preds(vert_id v)
     {
-      return adj_list(inv, g.preds(perm[v]));
-    } 
+      if(perm[v] == (-1))
+        return adj_list(perm, inv);
+      else
+        return adj_list(perm, inv, g.preds(perm[v]));
+    }
     G& g;
     vector<vert_id> perm;
     vector<vert_id> inv;
+  };
+
+  // View of a graph, omitting a given vertex
+  template<class G>
+  class SubGraph {
+  public:
+    typedef typename G::vert_id vert_id;
+    typedef typename G::Wt Wt;
+
+    SubGraph(G& _g, vert_id _v_ex)
+      : g(_g), v_ex(_v_ex)
+    { }
+
+     
+    bool elem(vert_id x, vert_id y) const {
+      return (x != v_ex && y != v_ex && g.elem(x, y));
+    }
+
+    Wt& edge_val(vert_id x, vert_id y) const {
+      return g.edge_val(x, y);  
+    }
+
+    // Precondition: elem(x, y) is true.
+    Wt operator()(vert_id x, vert_id y) const {
+      return g(x, y);
+    }
+
+    void clear_edges(void) { g.clear_edges(); }
+
+    void clear(void)
+    {
+      assert(0 && "SubGraph::clear not implemented.");       
+    }
+
+    // Number of allocated vertices
+    int size(void) const {
+      return g.size();
+    }
+
+    // Assumption: (x, y) not in mtx
+    void add_edge(vert_id x, Wt wt, vert_id y)
+    {
+      assert(x != v_ex && y != v_ex);
+      g.add_edge(x, wt, y);
+    }
+
+    void set_edge(vert_id s, Wt w, vert_id d)
+    {
+      assert(s != v_ex && d != v_ex);
+      g.set_edge(s, w, d);
+    }
+
+    template<class Op>
+    void update_edge(vert_id s, Wt w, vert_id d, Op& op)
+    {
+      assert(s != v_ex && d != v_ex);
+      g.update_edge(s, w, d, op);
+    }
+
+    class vert_iterator {
+    public:
+      vert_iterator(const typename G::vert_iterator& _iG, vert_id _v_ex)
+        : v_ex(_v_ex), iG(_iG)
+      { }
+
+      // Skipping of v_ex is done entirely by !=.
+      // So we _MUST_ test it != verts.end() before dereferencing.
+      vert_id operator*(void) { return *iG; }
+      vert_iterator operator++(void) { ++iG; return *this; } 
+      bool operator!=(const vert_iterator& o) {
+        if(iG != o.iG && (*iG) == v_ex)
+          ++iG;
+        return iG != o.iG;
+      }
+      
+      vert_id v_ex;
+      typename G::vert_iterator iG; 
+    };
+    class vert_range {
+    public:
+      vert_range(const typename G::vert_range& _rG, vert_id _v_ex)
+        : rG(_rG), v_ex(_v_ex)
+      { }
+
+      vert_iterator begin(void) const { return vert_iterator(rG.begin(), v_ex); }
+      vert_iterator end(void) const { return vert_iterator(rG.end(), v_ex); }
+
+      typename G::vert_range rG;
+      vert_id v_ex;
+    };
+    vert_range verts(void) const { return vert_range(g.verts(), v_ex); }
+
+    class adj_iterator {
+    public:
+      adj_iterator(const typename G::adj_iterator& _iG, vert_id _v_ex)
+        : iG(_iG), v_ex(_v_ex)
+      { }
+      vert_id operator*(void) const { return *iG; }
+      adj_iterator& operator++(void) { ++iG; return *this; }
+      bool operator!=(const adj_iterator& o)
+      {
+        if(iG != o.iG && (*iG) == v_ex)
+          ++iG;
+        return iG != o.iG;
+      }
+
+      typename G::adj_iterator iG;
+      vert_id v_ex;
+    };
+    class adj_list {
+    public: 
+      adj_list(const typename G::adj_list& _rG, vert_id _v_ex)
+        : rG(_rG), v_ex(_v_ex)
+      { }
+      adj_iterator begin() const { return adj_iterator(rG.begin(), v_ex); }
+      adj_iterator end() const { return adj_iterator(rG.end(), v_ex); }
+      
+    protected:
+      typename G::adj_list rG;
+      vert_id v_ex;
+    };
+    adj_list succs(vert_id v) {
+      assert(v != v_ex);
+      return adj_list(g.succs(v), v_ex);
+    }
+    adj_list preds(vert_id v) {
+      assert(v != v_ex);
+      return adj_list(g.preds(v), v_ex);
+    }
+
+    G& g;
+    vert_id v_ex;
   };
 
   // Viewing a graph with all edges reversed.
@@ -187,7 +337,7 @@ namespace crab {
 
     typedef typename G::adj_list adj_list;
 
-    typename G::vert_list verts(void) const { return g.verts(); }
+    typename G::vert_range verts(void) const { return g.verts(); }
 
     adj_list succs(vert_id v)
     {
@@ -257,6 +407,7 @@ namespace crab {
     // and ts_idx prevents wraparound problems, in the unlikely
     // circumstance that we have more than 2^sizeof(uint) iterations.
     static vector<Wt> dists;
+    static vector<Wt> dists_alt;
     static vector<unsigned int> dist_ts;
     static unsigned int ts; 
     static unsigned int ts_idx;
@@ -278,6 +429,7 @@ namespace crab {
       while(dists.size() < scratch_sz)
       {
         dists.push_back(Wt());
+        dists_alt.push_back(Wt());
         dist_ts.push_back(ts-1);
       }
     }
@@ -524,8 +676,8 @@ namespace crab {
       return true;
     }
 
-    template<class G1, class G2, class P>
-    static void close_after_meet(graph_t& g, P& pots, G1& l, G2& r, edge_vector& delta)
+    template<class G, class G1, class G2, class P>
+    static void close_after_meet(G& g, P& pots, G1& l, G2& r, edge_vector& delta)
     {
       // We assume the syntactic meet has already been computed,
       // and potentials have been initialized.
@@ -590,8 +742,8 @@ namespace crab {
 
     // P is some vector-alike holding a valid system of potentials.
     // Don't need to clear/initialize 
-    template<class P>
-    static void chrome_dijkstra(graph_t& g, P& p, vector< vector<vert_id> >& colour_succs, vert_id src, vector< pair<vert_id, Wt> >& out)
+    template<class G, class P>
+    static void chrome_dijkstra(G& g, P& p, vector< vector<vert_id> >& colour_succs, vert_id src, vector< pair<vert_id, Wt> >& out)
     {
       unsigned int sz = g.size();
       if(sz == 0)
@@ -748,6 +900,62 @@ namespace crab {
     template<class V>
     vec_neg<V> negate_vec(const V& vec) { return vec_neg<V>(vec); }
     */
+    template<class G, class P>
+    static bool repair_potential(G& g, P& p, vert_id ii, vert_id jj)
+    { 
+      // Ensure there's enough scratch space. 
+      unsigned int sz = g.size();
+//      assert(src < (int) sz && dest < (int) sz);
+      grow_scratch(sz);
+
+      for(vert_id vi : g.verts())
+      {
+        dists[vi] = Wt(0);
+        dists_alt[vi] = p[vi];
+      }
+      dists[jj] = p[ii] + g.edge_val(ii, jj) - p[jj];
+
+      if(dists[jj] >= Wt(0))
+        return true;
+
+      WtComp comp(dists);
+      WtHeap heap(comp);
+
+      heap.insert(jj);
+
+      while(!heap.empty())
+      {
+        int es = heap.removeMin();
+
+        dists_alt[es] = p[es] + dists[es];
+
+        for(vert_id ed : g.succs(es))
+        {
+          if(dists_alt[ed] == p[ed])
+          {
+            Wt gnext_ed = dists_alt[es] + g.edge_val(es, ed) - dists_alt[ed];
+            if(gnext_ed < dists[ed])
+            {
+              dists[ed] = gnext_ed;
+              if(heap.inHeap(ed))
+              {
+                heap.decrease(ed);
+              } 
+              else {
+                heap.insert(ed);
+              }
+            }
+          }
+        }
+      }
+      if(dists[ii] < 0)
+        return false;
+
+      for(vert_id v : g.verts())
+        p[v] = dists_alt[v];
+
+      return true;
+    }
 
     template<class G, class P>
     static void close_after_widen(graph_t& g, P& p, G& orig, edge_vector& delta)
@@ -852,8 +1060,8 @@ namespace crab {
       }
     }
     
-    template<class P>
-    static void close_after_assign(graph_t& g, P& p, vert_id v, edge_vector& delta)
+    template<class G, class P>
+    static void close_after_assign(G& g, P& p, vert_id v, edge_vector& delta)
     {
       unsigned int sz = g.size();
       grow_scratch(sz);
@@ -864,7 +1072,7 @@ namespace crab {
       for(auto p : aux)
         delta.push_back( make_pair( make_pair(v, p.first), p.second ) );   
 
-      GraphRev<graph_t> g_rev(g);
+      GraphRev<SubGraph<graph_t> > g_rev(g);
       close_after_assign_fwd(g_rev, p, v, aux);
       for(auto p : aux)
         delta.push_back( make_pair( make_pair(p.first, v), p.second ) );
@@ -887,6 +1095,8 @@ namespace crab {
 
   template<class Wt>
   vector<Wt> GraphOps<Wt>::dists;
+  template<class Wt>
+  vector<Wt> GraphOps<Wt>::dists_alt;
   template<class Wt>
   vector<unsigned int> GraphOps<Wt>::dist_ts;
   template<class Wt>
