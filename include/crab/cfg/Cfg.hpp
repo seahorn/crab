@@ -1855,7 +1855,8 @@ namespace crab {
       
       friend ostream& operator<<(ostream &o, const basic_block_t &b)
       {
-        b.write (o);
+        //b.write (o);
+        o << cfg_impl::get_label_str (b);
         return o;
       }
       
@@ -2065,7 +2066,7 @@ namespace crab {
       {
         ostream &m_o;
         PrintBlock (ostream& o) : m_o (o) { }
-        void operator () (const basic_block_t& B){ m_o << B ; }
+        void operator () (const basic_block_t& B){ B.write (m_o); }
       };
       
       

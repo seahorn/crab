@@ -5,8 +5,6 @@
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/strong_components.hpp>
 
-#include <crab/cg/Cg.hpp> // for graph_algo_impl namespace
-
 ///Uncomment for enabling debug information
 //#include <crab/common/dbg.hpp>
 
@@ -19,19 +17,6 @@ using namespace boost;
 namespace crab {
    namespace analyzer {
      namespace graph_algo {
-
-      namespace graph_algo_impl {
-        // -- convert a scc graph node to a string label. 
-        template<typename Node>
-        string str (const Node& n) {
-          return crab::cfg_impl::get_label_str (n);
-        }
-        template<typename G> 
-        string str (const typename crab::cg::CallGraph<G>::CgNode& n) { 
-          return n.name ();
-        }
-        template<> string str (const string& n) { return n;}
-      } // end namespace
 
       template< typename G>
       class SccGraph {
@@ -161,9 +146,7 @@ namespace crab {
             vertex_descriptor_t v = add_vertex (*m_sccg);
             (*m_sccg) [v].m_node = p.second;
             m_node_to_vertex_map->insert (std::make_pair (p.second, v));
-            CRAB_DEBUG("Added scc graph node ", 
-                       graph_algo_impl::str (p.second), 
-                       "--- id=", v);
+            CRAB_DEBUG("Added scc graph node ", p.second, "--- id=", v);
           }
           
           // Build the DAG
@@ -179,10 +162,7 @@ namespace crab {
                         *m_sccg);
 
               CRAB_DEBUG("Added scc graph edge ", 
-                         graph_algo_impl::str (m_root_map [u]), 
-                         " --> ",
-                         graph_algo_impl::str (m_root_map [d]));
-
+                         m_root_map [u], " --> ", m_root_map [d]);
             }
           }
 
@@ -257,19 +237,14 @@ namespace crab {
           for (auto f: boost::make_iterator_range (nodes ())){
             if (num_succs (f) > 0) {
               for (auto e: boost::make_iterator_range (succs (f)))  {
-                o << graph_algo_impl::str (e.Src ()) 
-                  << "--> " 
-                  << graph_algo_impl::str (e.Dest ()) << std::endl;
+                o << e.Src () << "--> " << e.Dest () << endl;
               }
             }
           }
           // debugging
           o << "root map: \n";
           for (auto p: m_root_map) {
-            o <<"\t" 
-              << graph_algo_impl::str (p.first) 
-              << " --> " 
-              << graph_algo_impl::str (p.second) << std::endl;
+            o <<"\t" << p.first << " --> " << p.second << endl; 
           }
         }
         

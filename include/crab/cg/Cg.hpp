@@ -72,7 +72,8 @@ namespace crab {
           }
           
           friend ostream& operator<<(ostream& o, CgNode n) {
-            o << n.getCfg ();
+            //o << n.getCfg ();
+            o << n.name ();
             return o;
           }
           
@@ -289,7 +290,7 @@ namespace crab {
           for (auto f: boost::make_iterator_range (nodes ())){
             if (num_succs (f) > 0) {
               for (auto e: boost::make_iterator_range (succs (f)))  {
-                o << e.Src().str () << "--> " << e.Dest().str () << endl;
+                o << e.Src() << "--> " << e.Dest() << endl;
               }
             }
           }
