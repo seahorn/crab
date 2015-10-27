@@ -1153,6 +1153,8 @@ namespace crab {
       typedef const_succ_iterator const_pred_iterator;
       typedef boost::indirect_iterator< typename stmt_list_t::iterator > iterator;
       typedef boost::indirect_iterator< typename stmt_list_t::const_iterator > const_iterator;
+      typedef boost::indirect_iterator< typename stmt_list_t::reverse_iterator > reverse_iterator;
+      typedef boost::indirect_iterator< typename stmt_list_t::const_reverse_iterator > const_reverse_iterator;
       typedef discrete_domain <VariableName> live_domain_t;
       
      public:
@@ -1280,11 +1282,36 @@ namespace crab {
       }
 
       BasicBlockLabel label () const { return m_bb_id; }
-      
-      iterator begin()             { return boost::make_indirect_iterator (m_stmts.begin ()); }
-      iterator end()               { return boost::make_indirect_iterator (m_stmts.end ()); }
-      const_iterator begin() const { return boost::make_indirect_iterator (m_stmts.begin ()); }
-      const_iterator end()   const { return boost::make_indirect_iterator (m_stmts.end ()); }
+
+      string name () const {
+        return cfg_impl::get_label_str (m_bb_id); 
+      }
+
+      iterator begin() { 
+        return boost::make_indirect_iterator (m_stmts.begin ()); 
+      }
+      iterator end() { 
+        return boost::make_indirect_iterator (m_stmts.end ()); 
+      }
+      const_iterator begin() const { 
+        return boost::make_indirect_iterator (m_stmts.begin ()); 
+      }
+      const_iterator end() const {
+        return boost::make_indirect_iterator (m_stmts.end ()); 
+      }
+
+      reverse_iterator rbegin() {            
+        return boost::make_indirect_iterator (m_stmts.rbegin ()); 
+      }
+      reverse_iterator rend() {              
+        return boost::make_indirect_iterator (m_stmts.rend ()); 
+      }
+      const_reverse_iterator rbegin() const {
+        return boost::make_indirect_iterator (m_stmts.rbegin ()); 
+      }
+      const_reverse_iterator rend() const {
+        return boost::make_indirect_iterator (m_stmts.rend ()); 
+      }
       
       size_t size() { return std::distance ( begin (), end ()); }
 
@@ -1958,8 +1985,9 @@ namespace crab {
     {
 
      public:
-      
+
       typedef BasicBlockLabel basic_block_label_t;
+      typedef basic_block_label_t node_t; // for Bgl graphs
       typedef VariableName varname_t;
       typedef FunctionDecl<varname_t> fdecl_t;
       typedef BasicBlock< BasicBlockLabel, VariableName > basic_block_t;   
