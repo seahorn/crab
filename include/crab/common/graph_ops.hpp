@@ -486,15 +486,12 @@ namespace crab {
       size_t sz = l.size();
       graph_t g;
       g.growTo(sz);
-      /*
-       * GKG: Check correctness
-       */
       for(vert_id s : r.verts())
       {
         for(vert_id d : r.succs(s))
         {
-          if(l.elem(s, d) && l.edge_val(s, d) <= r.edge_val(s, d))
-            g.add_edge(s, l.edge_val(s, d), d);  
+          if(l.elem(s, d) && r.edge_val(s, d) <= l.edge_val(s, d))
+            g.add_edge(s, l.edge_val(s, d), d);
         }      
       }
 
@@ -732,6 +729,9 @@ namespace crab {
     {
       for(pair< pair<vert_id, vert_id>, Wt>& e : delta)
       {
+        assert(e.first.first != e.first.second);
+        assert(e.first.first < g.size());
+        assert(e.first.second < g.size());
         g.set_edge(e.first.first, e.second, e.first.second);
       }
     }
@@ -1011,6 +1011,9 @@ namespace crab {
     static void close_after_assign_fwd(G& g, P& p, vert_id v, vector< pair<vert_id, Wt> >& aux)
     {
       // Initialize the queue and distances.
+      for(vert_id u : g.verts())
+        vert_marks[u] = 0;
+
       vert_marks[v] = BF_QUEUED;
       dists[v] = Wt(0);
       vert_id* adj_head = dual_queue;
@@ -1068,6 +1071,7 @@ namespace crab {
       for(auto p : aux)
         delta.push_back( make_pair( make_pair(v, p.first), p.second ) );   
 
+      aux.clear();
       GraphRev<G> g_rev(g);
       close_after_assign_fwd(g_rev, p, v, aux);
       for(auto p : aux)

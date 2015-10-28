@@ -18,8 +18,8 @@ class SparseWtGraph : public writeable {
 
     SparseWtGraph(unsigned int _maxsz = 10, float _growth_rate = 1.4)
       : max_sz(_maxsz), sz(0), growth_rate(_growth_rate),
-        fwd_adjs((unsigned int*) malloc(sizeof(unsigned int)*max_sz*(max_sz+1))),
-        rev_adjs((unsigned int*) malloc(sizeof(unsigned int)*max_sz*(max_sz+1))),
+        fwd_adjs((unsigned int*) malloc(sizeof(unsigned int)*max_sz*(2*max_sz+1))),
+        rev_adjs((unsigned int*) malloc(sizeof(unsigned int)*max_sz*(2*max_sz+1))),
         mtx((Wt*) malloc(sizeof(Wt)*max_sz*max_sz))
     {
       /*
@@ -35,11 +35,12 @@ class SparseWtGraph : public writeable {
     template<class Wo>
     SparseWtGraph(const SparseWtGraph<Wo>& o)
       : max_sz(o.max_sz), sz(o.sz), growth_rate(o.growth_rate),
-        fwd_adjs((unsigned int*) malloc(sizeof(unsigned int)*max_sz*(max_sz+1))),
-        rev_adjs((unsigned int*) malloc(sizeof(unsigned int)*max_sz*(max_sz+1))),
+        fwd_adjs((unsigned int*) malloc(sizeof(unsigned int)*max_sz*(2*max_sz+1))),
+        rev_adjs((unsigned int*) malloc(sizeof(unsigned int)*max_sz*(2*max_sz+1))),
         mtx((Wt*) malloc(sizeof(Wt)*max_sz*max_sz))
         , is_free(o.is_free), free_id(o.free_id)
     {
+      assert(max_sz > sz);
       for(vert_id v = 0 ; v < sz; v++)
       {
         succs(v).clear(); preds(v).clear();
@@ -54,8 +55,8 @@ class SparseWtGraph : public writeable {
 
     SparseWtGraph(const SparseWtGraph<Wt>& o)
       : max_sz(o.max_sz), sz(o.sz), growth_rate(o.growth_rate),
-        fwd_adjs((unsigned int*) malloc(sizeof(unsigned int)*max_sz*(max_sz+1))),
-        rev_adjs((unsigned int*) malloc(sizeof(unsigned int)*max_sz*(max_sz+1))),
+        fwd_adjs((unsigned int*) malloc(sizeof(unsigned int)*max_sz*(2*max_sz+1))),
+        rev_adjs((unsigned int*) malloc(sizeof(unsigned int)*max_sz*(2*max_sz+1))),
         mtx((Wt*) malloc(sizeof(Wt)*max_sz*max_sz))
         , is_free(o.is_free), free_id(o.free_id)
     {
@@ -114,6 +115,13 @@ class SparseWtGraph : public writeable {
         for(vert_id s : succs(v))
         {
           assert(s < sz);
+          assert(preds(s).mem(v));
+        }
+
+        for(vert_id p : preds(v))
+        {
+          assert(p < sz);
+          assert(succs(p).mem(v));
         }
       }
     }
@@ -171,7 +179,7 @@ class SparseWtGraph : public writeable {
     {
       // FIXME: currently assumes v is not free
       if(is_free[v])
-        return
+        return;
 
       free_id.push_back(v); 
       is_free[v] = true;
@@ -246,6 +254,7 @@ class SparseWtGraph : public writeable {
 
     void set_edge(vert_id s, Wt w, vert_id d)
     {
+      assert(s < size() && d < size());
       if(!elem(s, d))
         add_edge(s, w, d);
       else
@@ -311,6 +320,7 @@ class SparseWtGraph : public writeable {
       }
       void add(unsigned int v) {
         assert(!mem(v));
+        assert(dense()+v < sparse());
         unsigned int idx = *ptr;
         dense()[idx] = v;
         sparse()[v] = idx;
@@ -373,8 +383,8 @@ class SparseWtGraph : public writeable {
       unsigned int new_adjsz = sizeof(unsigned int)*(2*new_max+1);
 
       Wt* new_mtx = (Wt*) malloc(new_mtxsz);
-      unsigned int* new_fwd = (unsigned int*) malloc(new_adjsz);
-      unsigned int* new_rev = (unsigned int*) malloc(new_adjsz);
+      unsigned int* new_fwd = (unsigned int*) malloc(new_max*new_adjsz);
+      unsigned int* new_rev = (unsigned int*) malloc(new_max*new_adjsz);
 
       for(vert_id v = 0; v < sz; v++)
       {

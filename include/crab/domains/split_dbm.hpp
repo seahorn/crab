@@ -84,7 +84,8 @@ namespace crab {
       //================
       // Domain data
       //================
-      ranges_t ranges; // Intervals for each variable
+      // GKG: ranges are now maintained in the graph
+//      ranges_t ranges; // Intervals for each variable
       vert_map_t vert_map; // Mapping from variables to vertices
       rev_map_t rev_map;
       graph_t g; // The underlying relation graph
@@ -107,7 +108,7 @@ namespace crab {
           numerical_domain<Number, VariableName >(),
           bitwise_operators< Number, VariableName >(),
           division_operators< Number, VariableName >(),
-          ranges(o.ranges), 
+//          ranges(o.ranges), 
           vert_map(o.vert_map),
           rev_map(o.rev_map),
           g(o.g),
@@ -126,12 +127,12 @@ namespace crab {
       }
 
       // We should probably use the magical rvalue ownership semantics stuff.
-      SplitDBM(ranges_t& _ranges, vert_map_t& _vert_map, rev_map_t& _rev_map, graph_t& _g, vector<Wt>& _potential)
+      SplitDBM(/* ranges_t& _ranges,*/ vert_map_t& _vert_map, rev_map_t& _rev_map, graph_t& _g, vector<Wt>& _potential)
         : writeable(),
           numerical_domain<Number, VariableName >(),
           bitwise_operators< Number, VariableName >(),
           division_operators< Number, VariableName >(),
-          ranges(_ranges), vert_map(_vert_map), rev_map(_rev_map), g(_g), potential(_potential),
+          /* ranges(_ranges),*/ vert_map(_vert_map), rev_map(_rev_map), g(_g), potential(_potential),
           _is_bottom(false)
       { }
 
@@ -144,7 +145,7 @@ namespace crab {
             set_to_bottom();
           else {
             _is_bottom = false;
-            ranges = o.ranges;
+            // ranges = o.ranges;
             vert_map = o.vert_map;
             rev_map = o.rev_map;
             g = o.g;
@@ -166,7 +167,7 @@ namespace crab {
       */
 
       void set_to_bottom() {
-        ranges.clear();
+        // ranges.clear();
         vert_map.clear();
         rev_map.clear();
         g.clear();
@@ -205,8 +206,8 @@ namespace crab {
       bool is_top() {
         if(_is_bottom)
           return false;
-        if(ranges.size() != 0)
-         return false;
+//         if(ranges.size() != 0)
+//          return false;
         // GKG: Come up with a cheaper approach for this
         for(auto p : vert_map)
           if(g.succs(p.second).size() != 0)
@@ -226,12 +227,18 @@ namespace crab {
         else if (is_top ())
           return false;
         else {
-          interval_po po;
-          if(!ranges.leq(o.ranges, po))
+//          interval_po po;
+//           if(!ranges.leq(o.ranges, po))
+//             return false;
+
+//          CRAB_DEBUG("operator<=: ", *this, "<=?", o);
+
+          if(vert_map.size() < o.vert_map.size())
             return false;
 
           // Set up a mapping from o to this.
-          vector<unsigned int> vert_renaming(o.g.size());
+          vector<unsigned int> vert_renaming(o.g.size(),-1);
+          vert_renaming[0] = 0;
           for(auto p : o.vert_map)
           {
             auto it = vert_map.find(p.first);
@@ -242,18 +249,34 @@ namespace crab {
             vert_renaming[p.second] = (*it).second;
           }
 
-          assert(g.size() > 0);
+          assert(g.size() > 1);
           GrPerm g_perm(vert_renaming, g);
-          // FIXME: Check incorporation of bounds
-          //        (and come up with a more efficient method)
+
           for(vert_id ox : o.g.verts())
           {
+            assert(vert_renaming[ox] != -1);
             vert_id x = vert_renaming[ox];
             for(vert_id oy : o.g.succs(ox))
             {
+              assert(vert_renaming[ox] != -1);
               vert_id y = vert_renaming[oy];
               Wt ow = o.g.edge_val(ox, oy);
 
+              /*
+              if(g_perm.elem(x, y))
+              {
+                CRAB_DEBUG(x, " -> ", y, " :: ", g_perm.edge_val(x, y), " <=? ",  ow);
+              }
+              */
+
+              if(g_perm.elem(x, y) && (g_perm.edge_val(x, y) <= ow))
+                continue;
+
+              if(!g_perm.elem(x, 0) || !g_perm.elem(0, y))
+                return false;
+              if(!(g_perm.edge_val(x, 0) + g_perm.edge_val(0, y) <= ow))
+                return false;
+              /*
               // Is the edge implied by ranges?
               if(rev_map[x] && rev_map[y])
               {
@@ -266,6 +289,7 @@ namespace crab {
                 return false;
               if(!(g_perm.edge_val(x, y) <= ow))
                 return false;
+              */
             }
           }
           return true;
@@ -288,6 +312,7 @@ namespace crab {
 
       // Perform a join on intervals, but record which
       // lower/upper bounds move in each direction.
+        /*
       class interval_join_t : public key_binary_op_t {
       public:
         interval_join_t(
@@ -335,6 +360,7 @@ namespace crab {
       typedef typename separate_domain<VariableName, interval_t>::widening_op interval_widen_t;
       typedef typename separate_domain<VariableName, interval_t>::domain_po interval_po;
       typedef typename separate_domain<VariableName, interval_t>::bottom_found bottom_found;
+      */
 
       vert_id get_vert(VariableName v)
       {
@@ -342,17 +368,19 @@ namespace crab {
         if(it != vert_map.end())
           return (*it).second;
 
-        Wt v_pot(pot_value(v));
+//        Wt v_pot(pot_value(v));
         vert_id vert(g.new_vertex());
         vert_map.insert(vmap_elt_t(variable_t(v), vert)); 
         // Initialize 
         assert(vert <= rev_map.size());
         if(vert < rev_map.size())
         {
-          potential[vert] = v_pot;
+//          potential[vert] = v_pot;
+          potential[vert] = Wt(0);
           rev_map[vert] = v;
         } else {
-          potential.push_back(v_pot);
+//          potential.push_back(v_pot);
+          potential.push_back(Wt(0));
           rev_map.push_back(variable_t(v));
         }
         vert_map.insert(vmap_elt_t(v, vert));
@@ -360,23 +388,24 @@ namespace crab {
       }
 
       vert_id get_vert(graph_t& g, vert_map_t& vmap, rev_map_t& rmap,
-          ranges_t& ranges, vector<Wt>& pot, VariableName v)
+          /* ranges_t& ranges,*/ vector<Wt>& pot, VariableName v)
       {
         auto it = vmap.find(variable_t(v));
         if(it != vmap.end())
           return (*it).second;
 
-        Wt v_pot(pot_value(v, ranges, pot));
+//        Wt v_pot(pot_value(v, pot));
         vert_id vert(g.new_vertex());
         vmap.insert(vmap_elt_t(variable_t(v), vert)); 
         // Initialize 
         assert(vert <= rmap.size());
         if(vert < rmap.size())
         {
-          pot[vert] = v_pot;
+          //pot[vert] = v_pot;
+          pot[vert] = Wt(0);
           rmap[vert] = v;
         } else {
-          pot.push_back(v_pot);
+          pot.push_back(Wt(0));
           rmap.push_back(variable_t(v));
         }
         vmap.insert(vmap_elt_t(v, vert));
@@ -391,15 +420,14 @@ namespace crab {
         else {
           CRAB_DEBUG ("Before join:\n","DBM 1\n",*this,"\n","DBM 2\n",o);
 
-          // First, join the intervals, collecting change directions
-          vector<VariableName> lb_up;
-          vector<VariableName> lb_down;
-          vector<VariableName> ub_up;
-          vector<VariableName> ub_down;
+//          return top();
+
+          /*
           interval_join_t join_op(lb_up, lb_down, ub_up, ub_down);
           
           ranges_t join_range(ranges);
           join_range.merge_with(o.ranges, join_op);
+          */
 
           // Figure out the common renaming, initializing the
           // resulting potentials as we go.
@@ -416,6 +444,7 @@ namespace crab {
           perm_x.push_back(0);
           perm_y.push_back(0);
           out_revmap.push_back(none);
+
           for(auto p : vert_map)
           {
             auto it = o.vert_map.find(p.first); 
@@ -447,17 +476,8 @@ namespace crab {
           {
             for(vert_id d : gy_excl.succs(s))
             {
-              // Assumption: gx.elem(s, d) -> gx.edge_val(s, d) <= ranges[var(s)].ub() - ranges[var(d)].lb()
-              // That is, if the relation exists, it's at least as strong as the bounds.
-              if(!gx.elem(s, d))
-              {
-                // Check the bounds implied by o.ranges
-                bound_t b = get_interval(ranges,perm_inv[d]).ub() - get_interval(ranges,perm_inv[s]).lb();
-                if(b.is_finite())
-                {
-                  g_ix_ry.add_edge(s, *(b.number()), d);
-                }
-              }
+              if(gx.elem(s, 0) && gx.elem(0, d))
+                g_ix_ry.add_edge(s, gx.edge_val(s, 0) + gx.edge_val(0, d), d);
             }
           }
           // Apply the deferred relations, and re-close.
@@ -477,6 +497,9 @@ namespace crab {
             {
               // Assumption: gx.mem(s, d) -> gx.edge_val(s, d) <= ranges[var(s)].ub() - ranges[var(d)].lb()
               // That is, if the relation exists, it's at least as strong as the bounds.
+              if(gy.elem(s, 0) && gy.elem(0, d))
+                g_rx_iy.add_edge(s, gy.edge_val(s, 0) + gy.edge_val(0, d), d);
+              /*
               if(!gy.elem(s, d))
               {
                 // Check the bounds implied by o.ranges
@@ -486,64 +509,76 @@ namespace crab {
                   g_rx_iy.add_edge(s, *(b.number()), d);
                 }
               }
+              */
             }
           }
           delta.clear();
           // Similarly, should use a SubGraph view.
           graph_t g_ry(GrOps::meet(gy, g_rx_iy));
           SubGraph<graph_t> g_ry_excl(g_ry, 0);
-          GrOps::close_after_meet(g_ry_excl, o.potential.begin()+1, gy, g_rx_iy, delta);
+          GrOps::close_after_meet(g_ry_excl, o.potential, gy, g_rx_iy, delta);
           GrOps::apply_delta(g_ry, delta);
            
           // We now have the relevant set of relations. Because g_rx and g_ry are closed,
           // the result is also closed.
           Wt_min min_op;
           graph_t join_g(GrOps::join(g_rx, g_ry));
+
           // Now reapply the missing independent relations.
           // Need to derive vert_ids from lb_up/lb_down, and make sure the vertices exist
-          for(VariableName vs : lb_up)
+          vector<vert_id> lb_up;
+          vector<vert_id> lb_down;
+          vector<vert_id> ub_up;
+          vector<vert_id> ub_down;
+
+          for(vert_id v : gx_excl.verts())
           {
-            bound_t ls_0 = get_interval(ranges, vs).lb();  
-            bound_t ls_1 = get_interval(o.ranges, vs).lb();
-            for(VariableName vd : ub_up)
+            if(gx.elem(0, v) && gy.elem(0, v))
             {
-              if(vs == vd)
-                continue;
-
-              bound_t ud_0 = get_interval(ranges, vd).ub();
-              bound_t ud_1 = get_interval(o.ranges, vd).ub();
-
-              bound_t b = max(ud_0 - ls_0, ud_1 - ls_1);
-
-              vert_id s(get_vert(join_g, out_vmap, out_revmap, join_range, join_pot, vs));
-              vert_id d(get_vert(join_g, out_vmap, out_revmap, join_range, join_pot, vd));
-              join_g.update_edge(s, *(b.number()), d, min_op);
+              if(gx.edge_val(0, v) < gy.edge_val(0, v))
+                ub_up.push_back(v);
+              if(gy.edge_val(0, v) < gx.edge_val(0, v))
+                ub_down.push_back(v);
+            }
+            if(gx.elem(v, 0) && gy.elem(v, 0))
+            {
+              if(gx.edge_val(v, 0) < gy.edge_val(v, 0))
+                lb_down.push_back(v);
+              if(gy.edge_val(v, 0) < gx.edge_val(v, 0))
+                lb_up.push_back(v);
             }
           }
 
-          for(VariableName vs : lb_down)
+          for(vert_id s : lb_up)
           {
-            bound_t ls_0 = get_interval(ranges, vs).lb();  
-            bound_t ls_1 = get_interval(o.ranges, vs).lb();
-            for(VariableName vd : ub_down)
+            Wt dx_s = gx.edge_val(s, 0);
+            Wt dy_s = gy.edge_val(s, 0);
+            for(vert_id d : ub_up)
             {
-              if(vs == vd)
+              if(s == d)
                 continue;
 
-              bound_t ud_0 = get_interval(ranges, vd).ub();
-              bound_t ud_1 = get_interval(o.ranges, vd).ub();
+              join_g.update_edge(s, max(dx_s + gx.edge_val(0, d), dy_s + gy.edge_val(0, d)), d, min_op);
+            }
+          }
 
-              bound_t b = max(ud_0 - ls_0, ud_1 - ls_1);
+          for(vert_id s : lb_down)
+          {
+            Wt dx_s = gx.edge_val(s, 0);
+            Wt dy_s = gy.edge_val(s, 0);
+            for(vert_id d : ub_down)
+            {
+              if(s == d)
+                continue;
 
-              vert_id s(get_vert(join_g, out_vmap, out_revmap, join_range, join_pot, vs));
-              vert_id d(get_vert(join_g, out_vmap, out_revmap, join_range, join_pot, vd));
-              join_g.update_edge(s, *(b.number()), d, min_op);
+              join_g.update_edge(s, max(dx_s + gx.edge_val(0, d), dy_s + gy.edge_val(0, d)), d, min_op);
             }
           }
 
           // Conjecture: join_g remains closed.
           
-          DBM_t res(join_range, out_vmap, out_revmap, join_g, join_pot);
+//          DBM_t res(join_range, out_vmap, out_revmap, join_g, join_pot);
+          DBM_t res(out_vmap, out_revmap, join_g, join_pot);
           CRAB_DEBUG ("Result join:\n",res);
            
           return res;
@@ -557,9 +592,11 @@ namespace crab {
           return *this;
         else {
           CRAB_DEBUG ("Before widening:\n","DBM 1\n",*this,"\n","DBM 2\n",o);
+          /*
           interval_widen_t widen_op;
           ranges_t widen_range(ranges);
           widen_range.merge_with(o.ranges, widen_op);
+          */
           
           // Figure out the common renaming
           vector<vert_id> perm_x;
@@ -595,7 +632,7 @@ namespace crab {
          
           // Now perform the widening 
           graph_t widen_g(GrOps::widen(gx, gy));
-          DBM_t res(widen_range, out_vmap, out_revmap, widen_g, widen_pot);
+          DBM_t res(/* widen_range ,*/ out_vmap, out_revmap, widen_g, widen_pot);
 
           // GKG: need to mark changes so we can restore closure
            
@@ -613,6 +650,7 @@ namespace crab {
           return *this;
         else{
           CRAB_DEBUG ("Before meet:\n","DBM 1\n",*this,"\n","DBM 2\n",o);
+          /*
           interval_meet_t meet_op;
 
           ranges_t meet_range(ranges);
@@ -622,6 +660,7 @@ namespace crab {
           catch (bottom_found& exc) {
             return bottom();
           }
+          */
 
           // We map vertices in the left operand onto a contiguous range.
           // This will often be the identity map, but there might be gaps.
@@ -685,13 +724,16 @@ namespace crab {
 
           edge_vector delta;
           SubGraph<graph_t> meet_g_excl(meet_g, 0);
-          GrOps::close_after_meet(meet_g_excl, meet_pi.begin()+1, gx, gy, delta);
+          GrOps::close_after_meet(meet_g_excl, meet_pi, gx, gy, delta);
           GrOps::apply_delta(meet_g, delta);
 
           // Recover updated LBs and UBs.
           delta.clear();
           GrOps::close_after_assign(meet_g, meet_pi, 0, delta);
+//          for(auto e : delta)
+//            CRAB_DEBUG("NEW: ", *rev_map[e.first.second], "-", *rev_map[e.first.first], "<=", e.second);
           GrOps::apply_delta(meet_g, delta);
+          /*
           for(auto e : delta)
           {
             vert_id s = e.first.first;
@@ -715,8 +757,9 @@ namespace crab {
               meet_range.insert(x.name(), x_out);
             }
           }
+          */
            
-          DBM_t res(meet_range, meet_verts, meet_rev, meet_g, meet_pi);
+          DBM_t res(/*meet_range, */ meet_verts, meet_rev, meet_g, meet_pi);
           CRAB_DEBUG ("Result meet:\n",res);
           return res;
         }
@@ -763,7 +806,7 @@ namespace crab {
         if (is_bottom ())
           return;
 
-        ranges.remove(v);
+//        ranges.remove(v);
         auto it = vert_map.find (v);
         if (it != vert_map.end ()) {
           CRAB_DEBUG("Before forget ", it->second, ": ", g);
@@ -806,25 +849,26 @@ namespace crab {
         if(it != vert_map.end())
           return potential[(*it).second];
 
-        interval_t r(get_interval(ranges,v));
-        if(r.lb().is_finite())
-          return (Wt) (*(r.lb().number()));
-        if(r.ub().is_finite())
-          return (Wt) (*(r.ub().number()));
+//        interval_t r(get_interval(ranges,v));
+//        if(r.lb().is_finite())
+//          return (Wt) (*(r.lb().number()));
+//        if(r.ub().is_finite())
+//          return (Wt) (*(r.ub().number()));
         return ((Wt) 0);
       }
 
-      Wt pot_value(variable_t v, ranges_t& ranges, vector<Wt>& potential)
+      //Wt pot_value(variable_t v, ranges_t& ranges, vector<Wt>& potential)
+      Wt pot_value(variable_t v, vector<Wt>& potential)
       {
         auto it = vert_map.find(v); 
         if(it != vert_map.end())
           return potential[(*it).second];
 
-        interval_t r(get_interval(ranges,v));
-        if(r.lb().is_finite())
-          return (Wt) (*(r.lb().number()));
-        if(r.ub().is_finite())
-          return (Wt) (*(r.ub().number()));
+//        interval_t r(get_interval(ranges,v));
+//        if(r.lb().is_finite())
+//          return (Wt) (*(r.lb().number()));
+//        if(r.ub().is_finite())
+//          return (Wt) (*(r.ub().number()));
         return ((Wt) 0);
       }
 
@@ -928,11 +972,11 @@ namespace crab {
 
           if(unbounded_lbvar)
           {
-            lb.push_back(make_pair(*unbounded_lbvar, -exp_lb));
+            lb.push_back(make_pair(*unbounded_lbvar, exp_lb));
           } else {
             for(auto p : lb_terms)
             {
-              lb.push_back(make_pair(p.first, p.second - exp_lb));
+              lb.push_back(make_pair(p.first, exp_lb - p.second));
             }
           }
         }
@@ -1037,6 +1081,7 @@ namespace crab {
 
         if(is_bottom())
           return;
+        CRAB_DEBUG("Before assign: ", *this);
         CRAB_DEBUG(x, ":=", e);
 
         // If it's a constant, just assign the interval.
@@ -1065,12 +1110,12 @@ namespace crab {
             edge_vector delta;
             for(auto diff : diffs_lb)
             {
-              delta.push_back(make_pair(make_pair(get_vert(diff.first), v), diff.second));
+              delta.push_back(make_pair(make_pair(v, get_vert(diff.first)), -diff.second));
             }
 
             for(auto diff : diffs_ub)
             {
-              delta.push_back(make_pair(make_pair(v, get_vert(diff.first)), diff.second));
+              delta.push_back(make_pair(make_pair(get_vert(diff.first), v), diff.second));
             }
                
             for(auto diff : delta)
@@ -1078,7 +1123,7 @@ namespace crab {
               vert_id s = diff.first.first;
               vert_id d = diff.first.second;
 
-              CRAB_DEBUG("|- ", (*rev_map[s]).name(), "-", (*rev_map[d]).name(), "<=", diff.second);
+              CRAB_DEBUG("|- ", (*rev_map[d]).name(),"[",d,"]-", (*rev_map[s]).name(), "[", s, "]<=", diff.second);
             }
             GrOps::apply_delta(g, delta);
             delta.clear();
@@ -1086,9 +1131,22 @@ namespace crab {
             GrOps::close_after_assign(g_excl, potential, v, delta);
             GrOps::apply_delta(g, delta);
 
+            for(auto diff : delta)
+            {
+              vert_id s = diff.first.first;
+              vert_id d = diff.first.second;
+
+              CRAB_DEBUG("|-> ", (*rev_map[d]).name(),"[",d,"]-", (*rev_map[s]).name(), "[", s, "]<=", diff.second);
+            }
+
+
+            if(x_int.lb().is_finite())
+              g.add_edge(v, -(*(x_int.lb().number())), 0);
+            if(x_int.ub().is_finite())
+              g.add_edge(0, *(x_int.ub().number()), v);
             // Clear the old x vertex
             operator-=(x);
-            ranges.insert(x, x_int);
+//            ranges.insert(x, x_int);
             vert_map.insert(vmap_elt_t(variable_t(x), v));
           } else {
             set(x, x_int);
@@ -1124,12 +1182,12 @@ namespace crab {
           // For mul and div, we fall back on intervals.
           case OP_MULTIPLICATION:
           {
-            set(x, get_interval(ranges, y)*get_interval(ranges, z));
+            set(x, get_interval(/*ranges,*/y)*get_interval(/*ranges,*/z));
             break;
           }
           case OP_DIVISION:
           {
-            interval_t xi(get_interval(ranges, y)/get_interval(ranges, z));
+            interval_t xi(get_interval(/*ranges,*/y)/get_interval(/*ranges,*/z));
             if(xi.is_bottom())
               set_to_bottom();
             else
@@ -1183,7 +1241,7 @@ namespace crab {
           // For mul and div, we fall back on intervals.
           case OP_MULTIPLICATION:
           {
-            set(x, get_interval(ranges, y)*k);
+            set(x, get_interval(/*ranges,*/y)*k);
 
             break;
           }
@@ -1193,7 +1251,7 @@ namespace crab {
             if(k == Wt(0))
               set_to_bottom();
             else
-              set(x, get_interval(ranges, y)/k);
+              set(x, get_interval(/*ranges,*/y)/k);
 
             break;
           }
@@ -1204,28 +1262,33 @@ namespace crab {
       
       bool add_linear_leq(const linear_expression_t& exp)
       {
-        CRAB_DEBUG("Adding: ", exp);
+        CRAB_DEBUG("Adding: ", exp, "<= 0");
         vector< pair<VariableName, Wt> > lbs;
         vector< pair<VariableName, Wt> > ubs;
         vector<diffcst_t> csts;
         diffcsts_of_lin_leq(exp, csts, lbs, ubs);
 
+        Wt_min min_op;
         for(auto p : lbs)
         {
           CRAB_DEBUG(p.first, ">=", p.second);
           VariableName x(p.first);
+          /*
           auto it = vert_map.find(x);
           // Vertex already exists; add the edge and repair
           if(it != vert_map.end())
           {
             vert_id v = (*it).second;
-            g.add_edge(v, -p.second, 0); 
+            */
+            vert_id v = get_vert(p.first);
+            g.update_edge(v, -p.second, 0, min_op); 
             if(!repair_potential(v, 0))
             {
               set_to_bottom();
               return false;
             }
-          }
+          /* } */
+          /*
           // Apply the interval.
           // GKG: Check for bottom.
           interval_t x_out = get_interval(ranges, x)&
@@ -1235,23 +1298,28 @@ namespace crab {
             set_to_bottom(); return false;
           }
           ranges.insert(x, x_out);
+          */
         }
         for(auto p : ubs)
         {
           CRAB_DEBUG(p.first, "<=", p.second);
           VariableName x(p.first);
+          /*
           auto it = vert_map.find(x);
           if(it != vert_map.end())
           {
-            vert_id v = (*it).second;
-            g.add_edge(0, p.second, v);
+          */
+            // vert_id v = (*it).second;
+            vert_id v = get_vert(p.first);
+            g.update_edge(0, p.second, v, min_op);
             if(!repair_potential(0, v))
             {
               set_to_bottom();
               return false;
             }
-          }
+          /* } */
           // Apply the interval.
+          /*
           interval_t x_out = get_interval(ranges, x)&
               interval_t(bound_t::minus_infinity(), p.second);
           if(x_out.is_bottom())
@@ -1259,6 +1327,7 @@ namespace crab {
             set_to_bottom(); return false;
           }
           ranges.insert(x, x_out);
+          */
         }
 
         for(auto diff : csts)
@@ -1267,7 +1336,7 @@ namespace crab {
 
           vert_id src = get_vert(diff.first.second);
           vert_id dest = get_vert(diff.first.first);
-          g.add_edge(src, diff.second, dest);
+          g.update_edge(src, diff.second, dest, min_op);
           if(!repair_potential(src, dest))
           {
             set_to_bottom();
@@ -1369,35 +1438,64 @@ namespace crab {
         }
       }
 
-      interval_t get_interval(ranges_t& r, variable_t x) {
-        return get_interval(r, x.name());
+      // interval_t get_interval(ranges_t& r, variable_t x) {
+      interval_t get_interval(variable_t x) {
+        return get_interval(vert_map, g, x);
+      }
+      interval_t get_interval(VariableName x) {
+        return get_interval(vert_map, g, x);
       }
 
-      interval_t get_interval(ranges_t& r, VariableName x) {
+      interval_t get_interval(vert_map_t& m, graph_t& r, variable_t x) {
+        return get_interval(m, r, x.name());
+      }
+
+      // interval_t get_interval(ranges_t& r, VariableName x) {
+      interval_t get_interval(vert_map_t& m, graph_t& r, VariableName x) {
+        auto it = m.find(x);
+        if(it == m.end())
+        {
+          return interval_t::top();
+        }
+        vert_id v = (*it).second;
+        interval_t x_out = interval_t(
+            r.elem(v, 0) ? -r.edge_val(v, 0) : bound_t::minus_infinity(),
+            r.elem(0, v) ? r.edge_val(0, v) : bound_t::plus_infinity());
+        return x_out;
+        /*
         boost::optional< interval_t > v = r.lookup(x);
         if(v)
           return *v;
         else
           return interval_t::top();
+          */
       }
 
       interval_t operator[](VariableName x) { 
-        if (is_top())    return interval_t::top();
+//        if (is_top())    return interval_t::top();
         if (is_bottom()) return interval_t::bottom();
 
         if (this->is_bottom()) {
             return interval_t::bottom();
         } else {
-          return get_interval(ranges, x);
+          //return get_interval(ranges, x);
+          return get_interval(vert_map, g, x);
         }
       }
 
       void set(VariableName x, interval_t intv) {
         if(is_bottom())
           return;
+        if(intv.is_top())
+          return;
 
         this->operator-=(x);
-        ranges.insert(x, intv);
+        vert_id v = get_vert(x);
+        if(intv.lb().is_finite())
+          g.set_edge(v, -*(intv.lb().number()), 0);
+        if(intv.ub().is_finite())
+          g.set_edge(0, *(intv.ub().number()), v);
+//         ranges.insert(x, intv);
       }
 
       // bitwise_operators_api
@@ -1618,6 +1716,7 @@ namespace crab {
       // Restore closure after a variable assignment
       // Assumption: x = f(y_1, ..., y_n) cannot induce non-trivial
       // relations between (y_i, y_j)
+      /*
       bool close_after_assign(vert_id v)
       {
         // Run Dijkstra's forward to collect successors of v,
@@ -1634,6 +1733,7 @@ namespace crab {
         // Full Johnson-style all-pairs shortest path
         CRAB_ERROR("SparseWtGraph::closure not yet implemented."); 
       }
+      */
 
       //! copy of x into a new fresh variable y
       void expand (VariableName x, VariableName y) {
@@ -1695,6 +1795,7 @@ namespace crab {
           // Intervals
           bool first = true;
           o << "{";
+          /*
           for(auto p : ranges)
           {
             if(first)
@@ -1703,9 +1804,26 @@ namespace crab {
               o << ", ";
             o << p.first << " -> " << p.second;
           }
-         
+          */
           // Extract all the edges
           SubGraph<graph_t> g_excl(g, 0);
+          for(vert_id v : g_excl.verts())
+          {
+            if(!rev_map[v])
+              continue;
+            if(!g.elem(0, v) && !g.elem(v, 0))
+             continue; 
+            interval_t v_out = interval_t(
+                g.elem(v, 0) ? -g.edge_val(v, 0) : bound_t::minus_infinity(),
+                g.elem(0, v) ? g.edge_val(0, v) : bound_t::plus_infinity());
+            
+            if(first)
+              first = false;
+            else
+              o << ", ";
+            o << *(rev_map[v]) << " -> " << v_out;
+          }
+
           for(vert_id s : g_excl.verts())
           {
             if(!rev_map[s])
@@ -1742,7 +1860,9 @@ namespace crab {
           return csts;
         }
 
-        // Extract the intervals
+        // Extract all the edges
+
+        /* 
         for(auto p : ranges)
         {
           variable_t x = p.first;
@@ -1753,9 +1873,20 @@ namespace crab {
           if(b.ub().is_finite())
             csts += linear_constraint_t(linear_expression_t(x) <= linear_expression_t(*(b.ub().number())));
         }
+        */
 
-        // Extract all the edges
         SubGraph<graph_t> g_excl(g, 0);
+
+        for(vert_id v : g_excl.verts())
+        {
+          if(!rev_map[v])
+            continue;
+          if(g.elem(v, 0))
+            csts += linear_constraint_t(linear_expression_t(*rev_map[v]) >= -g.edge_val(v, 0));
+          if(g.elem(0, v))
+            csts += linear_constraint_t(linear_expression_t(*rev_map[v]) <= g.edge_val(0, v));
+        }
+
         for(vert_id s : g_excl.verts())
         {
           if(!rev_map[s])
