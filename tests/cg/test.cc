@@ -1,20 +1,19 @@
 #include "../common.hpp"
 
-#include <crab/cg/CgBgl.hpp>
-#include <crab/cfg/Cfg.hpp>
 #include <crab/cg/Cg.hpp>
-#include <crab/cg/Sccg.hpp>
-#include <crab/cg/TopoOrder.hpp>
+#include <crab/cg/CgBgl.hpp>
+#include <crab/analysis/graphs/Sccg.hpp>
+#include <crab/analysis/graphs/TopoOrder.hpp>
 
-
-// #include <boost/graph/depth_first_search.hpp>
 
 using namespace std;
 using namespace crab::analyzer;
-using namespace crab::cfg_impl;
-using namespace crab::domain_impl;
+using namespace crab::analyzer::graph_algo;
 using namespace crab::cfg;
+using namespace crab::cfg_impl;
 using namespace crab::cg;
+using namespace crab::domain_impl;
+
 
 using namespace boost;
 
@@ -166,7 +165,7 @@ int main (int argc, char** argv ) {
 
 #if 1
   // --- SccGraph 
-  SccGraph<CallGraph<cfg_t> > scc_graph(cg);
+  SccGraph< CallGraph<cfg_t> > scc_graph(cg);
   scc_graph.write (std::cout);
   
   std::vector<CallGraph<cfg_t>::node_t> order;

@@ -1,6 +1,8 @@
 #include "../common.hpp"
 
-#include <crab/cg/Cg.hpp>
+#include <crab/cg/CgBgl.hpp>
+#include <crab/analysis/graphs/SccgBgl.hpp>
+
 #include <crab/analysis/InterFwdAnalyzer.hpp>
 
 using namespace std;
