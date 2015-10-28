@@ -57,7 +57,13 @@ namespace crab {
           
           int index () const { return m_id; }
           
-          string name () const {
+          varname_t name () const {
+            auto d_opt = m_cfg.get_func_decl ();
+            if (!d_opt) CRAB_ERROR("No function name found");
+            return (*d_opt).get_func_name ();
+          }
+
+          string str_name () const {
             auto d_opt = m_cfg.get_func_decl ();
             if (!d_opt) CRAB_ERROR("No function name found");
             return (*d_opt).get_func_name ().str ();
@@ -72,8 +78,7 @@ namespace crab {
           }
           
           friend ostream& operator<<(ostream& o, CgNode n) {
-            //o << n.getCfg ();
-            o << n.name ();
+            o << n.str_name ();
             return o;
           }
           
