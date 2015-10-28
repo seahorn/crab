@@ -53,6 +53,8 @@ namespace crab {
     {
       for(unsigned int vi = 0; vi < perm.size(); vi++)
       {
+        if(perm[vi] == -1)
+          continue;
         assert(inv[perm[vi]] == -1);
         inv[perm[vi]] = vi;
       }
@@ -96,7 +98,7 @@ namespace crab {
 
       vert_id operator*(void) const
       {
-        return *v;
+        return inv[*v];
       }
 
       adj_iterator& operator++(void) {
@@ -339,11 +341,11 @@ namespace crab {
 
     typename G::vert_range verts(void) const { return g.verts(); }
 
-    adj_list succs(vert_id v)
+    adj_list succs(vert_id v) 
     {
       return g.preds(v);
     }
-    adj_list preds(vert_id v)
+    adj_list preds(vert_id v) 
     {
       return g.succs(v);
     } 
@@ -584,6 +586,9 @@ namespace crab {
       vector< vector<vert_id> > sccs;
       compute_sccs(g, sccs);
 
+      // Currently trusting the call-site to select reasonable
+      // initial values.
+#if 0
       // Zero existing potentials.
       // Not strictly necessary, but means we're less
       // likely to run into over/underflow.
@@ -593,6 +598,7 @@ namespace crab {
       // Though this hurts our chances of early cutoff.
       for(vert_id v : g.verts())
         potentials[v] = 0;
+#endif
 
       // Run Bellman-ford on each SCC.
       //for(vector<vert_id>& scc : sccs)
@@ -666,18 +672,8 @@ namespace crab {
       return true;
     }
 
-    template<class G, class B, class P>
-    static bool update_bounds(G& g, B& bounds, P& pots)
-    {
-      // We compute upper bounds by running Dijkstra from (the imaginary) v0.
-      // Lower bounds are obtained by reversing the graph (running a single-dest
-      // shortest path problem).
-       
-      return true;
-    }
-
     template<class G, class G1, class G2, class P>
-    static void close_after_meet(G& g, P& pots, G1& l, G2& r, edge_vector& delta)
+    static void close_after_meet(G& g, const P& pots, G1& l, G2& r, edge_vector& delta)
     {
       // We assume the syntactic meet has already been computed,
       // and potentials have been initialized.
@@ -743,7 +739,7 @@ namespace crab {
     // P is some vector-alike holding a valid system of potentials.
     // Don't need to clear/initialize 
     template<class G, class P>
-    static void chrome_dijkstra(G& g, P& p, vector< vector<vert_id> >& colour_succs, vert_id src, vector< pair<vert_id, Wt> >& out)
+    static void chrome_dijkstra(G& g, const P& p, vector< vector<vert_id> >& colour_succs, vert_id src, vector< pair<vert_id, Wt> >& out)
     {
       unsigned int sz = g.size();
       if(sz == 0)
@@ -809,7 +805,7 @@ namespace crab {
     // anything that _was_ stable.
     // GKG: Factor out common elements of this & the previous algorithm.
     template<class G, class P, class S>
-    static void dijkstra_recover(G& g, P& p, const S& is_stable, vert_id src, vector< pair<vert_id, Wt> >& out)
+    static void dijkstra_recover(G& g, const P& p, const S& is_stable, vert_id src, vector< pair<vert_id, Wt> >& out)
     {
       unsigned int sz = g.size();
       if(sz == 0)
@@ -1072,7 +1068,7 @@ namespace crab {
       for(auto p : aux)
         delta.push_back( make_pair( make_pair(v, p.first), p.second ) );   
 
-      GraphRev<SubGraph<graph_t> > g_rev(g);
+      GraphRev<G> g_rev(g);
       close_after_assign_fwd(g_rev, p, v, aux);
       for(auto p : aux)
         delta.push_back( make_pair( make_pair(p.first, v), p.second ) );

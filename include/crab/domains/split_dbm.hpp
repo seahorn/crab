@@ -492,7 +492,7 @@ namespace crab {
           // Similarly, should use a SubGraph view.
           graph_t g_ry(GrOps::meet(gy, g_rx_iy));
           SubGraph<graph_t> g_ry_excl(g_ry, 0);
-          GrOps::close_after_meet(g_ry_excl, o.potential, gy, g_rx_iy, delta);
+          GrOps::close_after_meet(g_ry_excl, o.potential.begin()+1, gy, g_rx_iy, delta);
           GrOps::apply_delta(g_ry, delta);
            
           // We now have the relevant set of relations. Because g_rx and g_ry are closed,
@@ -630,8 +630,10 @@ namespace crab {
 
           vector<vert_id> perm_x;
           vector<vert_id> perm_y;
+          vector<Wt> meet_pi;
           perm_x.push_back(0);
           perm_y.push_back(0);
+          meet_pi.push_back(Wt(0));
           meet_rev.push_back(none);
           for(auto p : vert_map)
           {
@@ -641,6 +643,7 @@ namespace crab {
 
             perm_x.push_back(p.second);
             perm_y.push_back(-1);
+            meet_pi.push_back(potential[p.second] - potential[0]);
           }
 
           // Add missing mappings from the right operand.
@@ -655,6 +658,7 @@ namespace crab {
 
               perm_y.push_back(p.second);
               perm_x.push_back(-1);
+              meet_pi.push_back(o.potential[p.second] - o.potential[0]);
               meet_verts.insert(vmap_elt_t(p.first, vv));
             } else {
               perm_y[(*it).second] = p.second;
@@ -671,7 +675,8 @@ namespace crab {
           graph_t meet_g(GrOps::meet(gx, gy));
            
           // Compute updated potentials on the zero-enriched graph
-          vector<Wt> meet_pi(meet_g.size());
+          //vector<Wt> meet_pi(meet_g.size());
+          // We've warm-started pi with the operand potentials
           if(!GrOps::select_potentials(meet_g, meet_pi))
           {
             // Potentials cannot be selected -- state is infeasible.
@@ -680,36 +685,37 @@ namespace crab {
 
           edge_vector delta;
           SubGraph<graph_t> meet_g_excl(meet_g, 0);
-          GrOps::close_after_meet(meet_g_excl, meet_pi, gx, gy, delta);
+          GrOps::close_after_meet(meet_g_excl, meet_pi.begin()+1, gx, gy, delta);
           GrOps::apply_delta(meet_g, delta);
 
+          // Recover updated LBs and UBs.
+          delta.clear();
+          GrOps::close_after_assign(meet_g, meet_pi, 0, delta);
+          GrOps::apply_delta(meet_g, delta);
           for(auto e : delta)
           {
             vert_id s = e.first.first;
             vert_id d = e.first.second; 
             Wt w = e.second;
-
-            // d - s <= w --> d <= w + s, s >= d - w
-            // Potentially update ub(d) and lb(s)
-            /*
-             * // FIXME: Again, map vertices back to variables
-            interval_t b_s0 = get_interval(meet_range,s);
-            interval_t b_d0 = get_interval(meet_range,d);
-            if(b_s0.ub().is_finite())
+            if(s == 0)
             {
-              bound_t ub_d = bound_t(w) + b_s0.ub();
-              if(ub_d <= b_d0.ub())
-                meet_range.insert(d, interval_t(b_d0.lb(), ub_d));
+              assert(rev_map[d]); 
+              variable_t x(*rev_map[d]);    
+              interval_t x_out = get_interval(meet_range, x)&
+                interval_t(bound_t::minus_infinity(), w);
+              assert(!x_out.is_bottom());
+              meet_range.insert(x.name(), x_out);
+            } else {
+              assert(d == 0);
+              assert(rev_map[s]); 
+              variable_t x(*rev_map[s]);
+              interval_t x_out = get_interval(meet_range, x)&
+                interval_t(w, bound_t::plus_infinity());
+              assert(!x_out.is_bottom());
+              meet_range.insert(x.name(), x_out);
             }
-
-            if(b_d0.lb().is_finite())
-            {
-              bound_t lb_s = bound_t(w) - b_d0.lb();
-              if(b_s0.lb() <= lb_s)
-                meet_range.insert(d, interval_t(lb_s, b_s0.ub()));
-            }
-            */
           }
+           
           DBM_t res(meet_range, meet_verts, meet_rev, meet_g, meet_pi);
           CRAB_DEBUG ("Result meet:\n",res);
           return res;

@@ -236,6 +236,7 @@ class SparseWtGraph : public writeable {
     // Assumption: (x, y) not in mtx
     void add_edge(vert_id x, Wt wt, vert_id y)
     {
+      assert(x != y);
       assert(!elem(x, y));
       succs(x).add(y);
       preds(y).add(x);
