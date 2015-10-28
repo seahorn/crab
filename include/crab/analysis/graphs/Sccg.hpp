@@ -28,7 +28,7 @@ namespace crab {
        private:
 
         /// --- begin internal representation of the SccGraph
-        struct  vertex_t { node_t m_node; };
+        struct  vertex_t { std::size_t m_comp; node_t m_repr;};
         typedef adjacency_list<vecS, vecS, bidirectionalS, 
                                property<vertex_color_t, 
                                         default_color_type, 
@@ -41,11 +41,11 @@ namespace crab {
         typedef typename boost::graph_traits<scc_graph_t>::in_edge_iterator in_edge_iterator;
         /// --- end internal representation of the SccGraph
 
-        typedef boost::unordered_map <node_t, vertex_descriptor_t> node_to_vertex_map_t;
-        typedef boost::shared_ptr <node_to_vertex_map_t> node_to_vertex_map_ptr;
-        typedef boost::unordered_map< node_t, node_t > root_map_t;
-        typedef boost::unordered_map <node_t, std::vector<node_t> > m_comp_members_map_t;
-        typedef boost::shared_ptr <m_comp_members_map_t> m_comp_members_map_ptr;
+        typedef boost::unordered_map< node_t, std::size_t > component_map_t;
+        typedef boost::unordered_map <std::size_t, vertex_descriptor_t> comp_to_vertex_map_t;
+        typedef boost::shared_ptr <comp_to_vertex_map_t> comp_to_vertex_map_ptr;
+        typedef boost::unordered_map <std::size_t, std::vector<node_t> > comp_members_map_t;
+        typedef boost::shared_ptr <comp_members_map_t> comp_members_map_ptr;
 
         // Wrapper for edges
         // XXX: BGL complains if we use std::pair<edge_t,edge_t>
@@ -64,13 +64,19 @@ namespace crab {
             return !(*this == o);
           }
         };
-
+        // input graph 
         G m_g;
+        // if true all members in the same SCC are sorted in
+        // pre-order, otherwise post-order. 
+        bool m_same_scc_order;
+        // output dag
         scc_graph_ptr m_sccg;
-        node_to_vertex_map_ptr m_node_to_vertex_map;
-        root_map_t m_root_map;
-        m_comp_members_map_ptr m_comp_members_map;
-
+        // map each m_g node to a SCC id
+        component_map_t m_comp_map;
+        // map each SCC id to an internal m_sccg's node id
+        comp_to_vertex_map_ptr m_comp_to_vertex_map;
+        // map each SCC id to a vector of m_g's nodes (its members)
+        comp_members_map_ptr m_comp_members_map;
        public:
 
         typedef Edge<node_t> edge_t;
@@ -85,7 +91,7 @@ namespace crab {
           MkNode () { }
           MkNode (scc_graph_ptr g): _g (g) { }
           node_t& operator()(const vertex_descriptor_t& v) const { 
-            return (*_g)[v].m_node; 
+            return (*_g)[v].m_repr; 
           }
         };
         
@@ -97,12 +103,51 @@ namespace crab {
           MkEdge() {}
           MkEdge(scc_graph_ptr g): _g (g) { }
           Edge<node_t> operator()(const edge_descriptor_t& e) const { 
-            node_t& s = (*_g) [boost::source (e, *_g)].m_node;
-            node_t& t = (*_g) [boost::target (e, *_g)].m_node;
+            node_t& s = (*_g) [boost::source (e, *_g)].m_repr;
+            node_t& t = (*_g) [boost::target (e, *_g)].m_repr;
             return Edge<node_t> (s,t); 
           }
         };
-        
+
+        std::size_t get_comp_id (const node_t&n) const {
+          auto it = m_comp_map.find (n);
+          assert (it != m_comp_map.end ());
+          return it->second;
+        }
+
+        struct preorder_visitor: public boost::default_dfs_visitor {
+          vector<node_t> m_order_vs;
+          void discover_vertex(node_t v, G g) { m_order_vs.push_back (v); }
+        };
+
+        struct postorder_visitor: public boost::default_dfs_visitor {
+          vector<node_t> m_order_vs;
+          void finish_vertex(node_t v, G g) { m_order_vs.push_back (v); }
+        };
+
+        template<typename OrderVis>
+        vector<node_t> sort () const {
+          typedef boost::unordered_map< node_t, default_color_type > color_map_t;
+          color_map_t color;
+          for (auto v : boost::make_iterator_range (vertices (m_g))) {
+            color[v] = default_color_type();
+          }
+          boost::associative_property_map< color_map_t > cm (color);
+          
+          // find root 
+          node_t root;
+          for (auto v: boost::make_iterator_range (vertices (m_g))) {
+            if (in_degree (v, m_g) == 0) {
+              root = v;
+              break;
+            }
+          }  
+          OrderVis vis;
+          boost::detail::depth_first_visit_impl (m_g, root, vis, cm, 
+                                                 boost::detail::nontruth2());
+          return vis.m_order_vs;
+        }
+
        public:
         typedef boost::transform_iterator<MkNode, vertex_iterator> node_iterator; 
         typedef boost::transform_iterator<MkEdge, in_edge_iterator> pred_iterator; 
@@ -110,88 +155,97 @@ namespace crab {
 
        public:
 
-        SccGraph (G g): 
-            m_g (g), m_sccg (new scc_graph_t ()), 
-            m_node_to_vertex_map (new node_to_vertex_map_t ()),
-            m_comp_members_map (new m_comp_members_map_t ()) {
+        SccGraph (G g, bool order = false /*default post-order*/): 
+            m_g (g), 
+            m_same_scc_order (order),
+            m_sccg (new scc_graph_t ()), 
+            m_comp_to_vertex_map (new comp_to_vertex_map_t ()),
+            m_comp_members_map (new comp_members_map_t ()) {
 
-          typedef boost::unordered_map< node_t, std::size_t > component_map_t;
+          typedef boost::unordered_map< node_t, node_t > root_map_t;
           typedef boost::unordered_map< node_t, default_color_type > color_map_t;
           typedef boost::associative_property_map< component_map_t > property_component_map_t;
           typedef boost::associative_property_map< root_map_t > property_root_map_t;
           typedef boost::associative_property_map< color_map_t > property_color_map_t;
           
-          component_map_t comp_map, discover_time;
+          component_map_t discover_time;
+          root_map_t _root_map; 
           color_map_t color_map;
 
           for (auto const &v : boost::make_iterator_range (vertices (m_g))) {
-            comp_map [v] = 0;
+            m_comp_map [v] = 0;
             color_map [v] = default_color_type();
             discover_time [v] = 0;
-            m_root_map [v] = node_t ();
+            _root_map [v] = node_t ();
           }
           
           boost::strong_components(m_g,
-                                   property_component_map_t(comp_map),
-                                   root_map(property_root_map_t(m_root_map))
+                                   property_component_map_t(m_comp_map),
+                                   root_map(property_root_map_t(_root_map))
                                    .color_map(property_color_map_t(color_map))
                                    .discover_time_map(property_component_map_t(discover_time)));
-          
 
-          // build scc graph
-          for (auto p : m_root_map) {
-            auto it = m_node_to_vertex_map->find (p.second );
-            if (it != m_node_to_vertex_map->end ())
+          // debugging          
+          // cout << "comp map: \n";
+          // for (auto p: m_comp_map) {
+          //   cout <<"\t" << p.first << " --> " << p.second << endl; 
+          // }
+
+          // build SCC Dag
+
+          for (auto p : m_comp_map) {
+            auto it = m_comp_to_vertex_map->find (p.second );
+            if (it != m_comp_to_vertex_map->end ())
               continue;
             vertex_descriptor_t v = add_vertex (*m_sccg);
-            (*m_sccg) [v].m_node = p.second;
-            m_node_to_vertex_map->insert (std::make_pair (p.second, v));
+            (*m_sccg) [v].m_comp = p.second;
+            m_comp_to_vertex_map->insert (std::make_pair (p.second, v));
             CRAB_DEBUG("Added scc graph node ", p.second, "--- id=", v);
           }
           
-          // Build the DAG
           for (const node_t &u : boost::make_iterator_range (vertices (m_g))) {
             for (auto e : boost::make_iterator_range (out_edges (u, m_g))) {
               const node_t &d = target (e, m_g);              
 
-              if (m_root_map [u] == m_root_map [d])
+              if (m_comp_map [u] == m_comp_map [d])
                 continue;
 
-              add_edge ((*m_node_to_vertex_map) [m_root_map [u]], 
-                        (*m_node_to_vertex_map) [m_root_map [d]], 
+              add_edge ((*m_comp_to_vertex_map) [m_comp_map [u]], 
+                        (*m_comp_to_vertex_map) [m_comp_map [d]], 
                         *m_sccg);
 
               CRAB_DEBUG("Added scc graph edge ", 
-                         m_root_map [u], " --> ", m_root_map [d]);
+                         m_comp_map [u], " --> ", m_comp_map [d]);
             }
           }
 
-          // Build a map from scc roots to their members
-          for (auto p: m_root_map) {
-            node_t r = p.second;
-            auto it  = m_comp_members_map->find (r);
+          // Build a map from scc id to their node members
+          for (auto v: (m_same_scc_order ? sort<preorder_visitor> () : 
+                                           sort<postorder_visitor> ())) {
+            std::size_t id = m_comp_map [v];
+            auto it  = m_comp_members_map->find (id);
             if (it != m_comp_members_map->end ())
-              it->second.push_back (p.first);
+              it->second.push_back (v);
             else {
               std::vector<node_t> comp_mems;
-              comp_mems.push_back (p.first);
-              m_comp_members_map->insert (std::make_pair (r, comp_mems));
+              comp_mems.push_back (v);
+              m_comp_members_map->insert (std::make_pair (id, comp_mems));
+              // update the representative in m_sccg
+              //
+              // The representative is similar to the values in the 
+              // root_map's entries. However, we found cases where two members
+              // of the same SCC have assigned a different root. I
+              // think this contradicts to what the BOOST doc says but
+              // I didn't have time to figure out the problem so we
+              // choose our own representative.
+              (*m_sccg) [ (*m_comp_to_vertex_map) [id]].m_repr = v;
             }
           }
-
         }
-
-        // return the component root of n
-        const node_t& getComponentRoot (const node_t& n) const{
-          auto const it = m_root_map.find (n);
-          assert (it != m_root_map.end ());
-          return it->second;
-        }
-
-        // return the members of the scc that contains n
+        
+        // return the members of the scc component that contains n
         std::vector<node_t>& getComponentMembers (const node_t& n) {
-          const node_t &r = getComponentRoot (n);
-          return (*m_comp_members_map) [r];
+          return (*m_comp_members_map) [m_comp_map [n]];
         }
 
         std::pair<node_iterator, node_iterator> 
@@ -201,10 +255,9 @@ namespace crab {
                                  make_transform_iterator (p.second, MkNode (m_sccg)));
         }
 
-
         std::pair<succ_iterator, succ_iterator> 
         succs (const node_t &n) const {
-          vertex_descriptor_t v = (*m_node_to_vertex_map) [n]; 
+          vertex_descriptor_t v = (*m_comp_to_vertex_map) [get_comp_id (n)]; 
           auto p = boost::out_edges (v, *m_sccg);
           return std::make_pair (make_transform_iterator (p.first, MkEdge (m_sccg)),
                                  make_transform_iterator (p.second, MkEdge (m_sccg)));
@@ -212,7 +265,7 @@ namespace crab {
 
         std::pair<pred_iterator, pred_iterator> 
         preds (const node_t &n) const {
-          vertex_descriptor_t v = (*m_node_to_vertex_map) [n]; 
+          vertex_descriptor_t v = (*m_comp_to_vertex_map) [get_comp_id (n)]; 
           auto p = boost::in_edges (v, *m_sccg);
           return std::make_pair (make_transform_iterator (p.first, MkEdge (m_sccg)),
                                  make_transform_iterator (p.second, MkEdge (m_sccg)));
@@ -223,12 +276,12 @@ namespace crab {
         }
 
         std::size_t num_succs (const node_t &n) const {
-          vertex_descriptor_t v = (*m_node_to_vertex_map) [n]; 
+          vertex_descriptor_t v = (*m_comp_to_vertex_map) [get_comp_id (n)]; 
           return boost::out_degree (v, *m_sccg);
         }
 
         std::size_t num_preds (const node_t &n) const {
-          vertex_descriptor_t v = (*m_node_to_vertex_map) [n]; 
+          vertex_descriptor_t v = (*m_comp_to_vertex_map) [get_comp_id (n)]; 
           return boost::in_degree (v, *m_sccg);
         }
 
@@ -242,9 +295,9 @@ namespace crab {
             }
           }
           // debugging
-          o << "root map: \n";
-          for (auto p: m_root_map) {
-            o <<"\t" << p.first << " --> " << p.second << endl; 
+          o << "Component map: \n";
+          for (auto p: m_comp_map) {
+            o <<"\t" << p.first << " --> SCC ID " << p.second << endl; 
           }
         }
         
