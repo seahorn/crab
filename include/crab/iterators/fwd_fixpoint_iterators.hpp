@@ -134,7 +134,9 @@ namespace ikos {
     
     virtual AbstractValue extrapolate(NodeName /* node */, unsigned int iteration, 
                                       AbstractValue before, AbstractValue after) {
-      if (iteration == 1) {
+      // HOOK for boxes domain
+      const unsigned int threshold = 10;
+      if (iteration < threshold) {
 	return before | after; 
       } else {
 	return before || after;
