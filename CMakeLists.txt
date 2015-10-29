@@ -39,11 +39,6 @@ include_directories (${Boost_INCLUDE_DIRS})
 option (DEVMODE "Enable development mode" OFF)
 option (USE_LDD "Enable ldd" OFF)
 
-if (NOT TopLevel)
-  # propagate variables to the caller
-  set (USE_LDD ${USE_LDD} PARENT_SCOPE)
-endif()
-
 include(ExternalProject)
 set_property(DIRECTORY PROPERTY EP_STEP_TARGETS configure build test)
 
@@ -83,7 +78,7 @@ else()
   set(GMPXX_LIB "")
 endif()
 
-#if (TopLevel)
+if (TopLevel)
   if (USE_LDD)
     find_package(Ldd)
     if (LDD_FOUND)
@@ -98,7 +93,7 @@ endif()
       return()
     endif()
   endif ()
-#endif ()
+endif ()
 
 include_directories (${Crab_SOURCE_DIR}/include)
 if (USE_LDD)
