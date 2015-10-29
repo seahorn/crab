@@ -386,6 +386,9 @@ namespace crab {
           rev_map.push_back(variable_t(v));
         }
         vert_map.insert(vmap_elt_t(v, vert));
+
+//        g.check_adjs();
+
         return vert;
       }
 
@@ -411,6 +414,8 @@ namespace crab {
           rmap.push_back(variable_t(v));
         }
         vmap.insert(vmap_elt_t(v, vert));
+//        g.check_adjs();
+
         return vert;
       }
 
@@ -581,6 +586,7 @@ namespace crab {
           
 //          DBM_t res(join_range, out_vmap, out_revmap, join_g, join_pot);
           DBM_t res(out_vmap, out_revmap, join_g, join_pot);
+//          join_g.check_adjs();
           CRAB_DEBUG ("Result join:\n",res);
            
           return res;
@@ -655,6 +661,7 @@ namespace crab {
           GrOps::apply_delta(widen_g, delta);
           */
 
+//          widen_g.check_adjs();
           DBM_t res(/* widen_range ,*/ out_vmap, out_revmap, widen_g, widen_pot);
 
           // GKG: need to mark changes so we can restore closure
@@ -758,6 +765,7 @@ namespace crab {
           GrOps::apply_delta(meet_g, delta);
            
           DBM_t res(meet_verts, meet_rev, meet_g, meet_pi);
+//          meet_g.check_adjs();
           CRAB_DEBUG ("Result meet:\n",res);
           return res;
         }
@@ -806,25 +814,13 @@ namespace crab {
       void forget (Iterator vIt, Iterator vEt) {
         if (is_bottom ())
           return;
-        CRAB_WARN("forget not implemented.");
-        /*
-        vector<int> idxs;
+        // CRAB_WARN("forget not implemented.");
         for (auto v: boost::make_iterator_range (vIt,vEt)) {
           auto it = vert_map.find (v);
           if (it != vert_map.end ()) {
-            idxs.push_back  ((int) it->second);
-            _var_map.erase (v);
-            _rev_map.erase (it->second);
+            operator-=(v);
           }
         }
-        if (!idxs.empty()) {
-          // --- forget all at once is more efficient than calling
-          //     operator-= multiple times.
-          forget (idxs);
-          if (!dbm_compact ())
-            resize (Delta);
-        }
-        */
       }
 
       // Evaluate the potential value of a variable.
@@ -1145,8 +1141,7 @@ namespace crab {
           // this->operator-=(x);
         }
 
-        // Only need to update potentials and paths for x
-            
+//        g.check_adjs(); 
 
         CRAB_DEBUG("---", x, ":=", e,"\n",*this);
       }
@@ -1359,6 +1354,8 @@ namespace crab {
 
         if (cst.is_tautology())
           return;
+
+//        g.check_adjs();
       
         if (cst.is_contradiction()){
           set_to_bottom();
@@ -1369,6 +1366,7 @@ namespace crab {
         {
           if(!add_linear_leq(cst.expression()))
             set_to_bottom();
+//          g.check_adjs();
           CRAB_DEBUG("--- ", cst, "\n", *this);
           return;
         }
@@ -1381,6 +1379,7 @@ namespace crab {
             CRAB_DEBUG(" ~~> _|_");
             set_to_bottom();
           }
+//          g.check_adjs();
           CRAB_DEBUG("--- ", cst, "\n", *this);
           return;
         }

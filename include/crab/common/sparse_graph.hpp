@@ -40,7 +40,7 @@ class SparseWtGraph : public writeable {
         mtx((Wt*) malloc(sizeof(Wt)*max_sz*max_sz))
         , is_free(o.is_free), free_id(o.free_id)
     {
-      assert(max_sz > sz);
+      assert(sz <= max_sz);
       for(vert_id v = 0 ; v < sz; v++)
       {
         succs(v).clear(); preds(v).clear();
@@ -50,7 +50,7 @@ class SparseWtGraph : public writeable {
         for(vert_id d : o.succs(v))
           add_edge(v, o.edge_val(v, d), d);
 
-      check_adjs();
+//      check_adjs();
     }
 
     SparseWtGraph(const SparseWtGraph<Wt>& o)
@@ -60,6 +60,7 @@ class SparseWtGraph : public writeable {
         mtx((Wt*) malloc(sizeof(Wt)*max_sz*max_sz))
         , is_free(o.is_free), free_id(o.free_id)
     {
+      assert(sz <= max_sz);
       for(vert_id v = 0 ; v < sz; v++)
       {
         succs(v).clear(); preds(v).clear();
@@ -69,7 +70,7 @@ class SparseWtGraph : public writeable {
         for(vert_id d : o.succs(v))
           add_edge(v, o.edge_val(v, d), d);
 
-      check_adjs();
+//      check_adjs();
     }
 
     SparseWtGraph& operator=(const SparseWtGraph<Wt>& o)
@@ -102,7 +103,7 @@ class SparseWtGraph : public writeable {
       free_id = o.free_id;
       is_free = o.is_free;
 
-      check_adjs();
+//      check_adjs();
 
       return *this;
     }
@@ -118,6 +119,7 @@ class SparseWtGraph : public writeable {
           assert(preds(s).mem(v));
         }
 
+        assert(preds(v).size() <= sz);
         for(vert_id p : preds(v))
         {
           assert(p < sz);
@@ -151,6 +153,8 @@ class SparseWtGraph : public writeable {
           ret.add_edge(s, g.edge_val(s, d), d);
         }
       }
+//      ret.check_adjs();
+
       return ret;
     }
 
@@ -160,23 +164,27 @@ class SparseWtGraph : public writeable {
       if(free_id.size() > 0)
       {
         v = free_id.back();
+        assert(v < sz);
         free_id.pop_back();
         is_free[v] = false;
       } else {
-        v = sz++;
         if(max_sz <= sz)
         {
           growCap(max_sz*growth_rate);
         }
+        assert(sz < max_sz);
+        v = sz++;
         is_free.push_back(false);
       }
       preds(v).clear();
       succs(v).clear();
+
       return v;
     }
 
     void forget(vert_id v)
     {
+      assert(v < sz);
       // FIXME: currently assumes v is not free
       if(is_free[v])
         return;
@@ -230,8 +238,7 @@ class SparseWtGraph : public writeable {
     void clear(void)
     {
       clear_edges();
-      for(vert_id v : free_id)
-        is_free[v] = false;
+      is_free.clear();
       free_id.clear();
       sz = 0;
     }
@@ -244,6 +251,7 @@ class SparseWtGraph : public writeable {
     // Assumption: (x, y) not in mtx
     void add_edge(vert_id x, Wt wt, vert_id y)
     {
+      assert(x < size() && y < size());
       assert(x != y);
       assert(!elem(x, y));
       succs(x).add(y);
@@ -276,30 +284,36 @@ class SparseWtGraph : public writeable {
 
     class vert_iterator {
     public:
-      vert_iterator(vert_id _v)
-        : v(_v)
+      vert_iterator(vert_id _v, const vector<bool>& _is_free)
+        : v(_v), is_free(_is_free)
       { }
       vert_id operator*(void) const { return v; }
       vert_iterator& operator++(void) { ++v; return *this; }
       vert_iterator& operator--(void) { --v; return *this; }
-      bool operator!=(const vert_iterator& o) const { return v != o.v; }
+      bool operator!=(const vert_iterator& o) {
+        while(v < o.v && is_free[v])
+          ++v;
+        return v < o.v;
+      }
     protected:
       vert_id v;
+      const vector<bool>& is_free;
     };
     class vert_range {
     public:
-      vert_range(vert_id _sz)
-        : sz(_sz)
+      vert_range(vert_id _sz, const vector<bool>& _is_free)
+        : sz(_sz), is_free(_is_free)
       { }
-      vert_iterator begin(void) const { return vert_iterator(0); } 
-      vert_iterator end(void) const { return vert_iterator(sz); }
-      unsigned int size(void) const { return (unsigned int) sz; }
+      vert_iterator begin(void) const { return vert_iterator(0, is_free); } 
+      vert_iterator end(void) const { return vert_iterator(sz, is_free); }
+      // unsigned int size(void) const { return (unsigned int) sz; }
     protected:
       vert_id sz; 
+      const vector<bool>& is_free;
     };
     // FIXME: Verts currently iterates over free vertices,
     // as well as existing ones
-    vert_range verts(void) const { return vert_range(sz); }
+    vert_range verts(void) const { return vert_range(sz, is_free); }
 
     typedef vert_id* adj_iterator;
     class adj_list {
@@ -376,31 +390,43 @@ class SparseWtGraph : public writeable {
 
     void growCap(unsigned int new_max)
     {
+//      check_adjs();
       if(new_max <= max_sz)
         return;
 
-      unsigned int new_mtxsz = sizeof(Wt)*new_max*new_max;
-      unsigned int new_adjsz = sizeof(unsigned int)*(2*new_max+1);
+      unsigned int new_mtxsz = new_max*new_max;
+      unsigned int new_adjsz = (2*new_max)+1;
 
-      Wt* new_mtx = (Wt*) malloc(new_mtxsz);
-      unsigned int* new_fwd = (unsigned int*) malloc(new_max*new_adjsz);
-      unsigned int* new_rev = (unsigned int*) malloc(new_max*new_adjsz);
+      Wt* new_mtx = (Wt*) malloc(sizeof(Wt)*new_mtxsz);
+      unsigned int* new_fwd = (unsigned int*) malloc(sizeof(unsigned int)*new_max*new_adjsz);
+      assert(new_fwd);
+      unsigned int* new_rev = (unsigned int*) malloc(sizeof(unsigned int)*new_max*new_adjsz);
+      assert(new_rev);
 
       for(vert_id v = 0; v < sz; v++)
       {
+        if(is_free[v])
+          continue;
+        assert(v < new_max);
+
         unsigned int* new_fwd_ptr = new_fwd + v*new_adjsz; 
         *new_fwd_ptr = 0;
         for(vert_id d : succs(v))
         {
+          assert(d < new_max);
           _adj_add(new_fwd_ptr, new_max, d);
-          new_mtx[v*new_max + d] = mtx[v*max_sz + d];
+//          new_mtx[v*new_max + d] = mtx[v*max_sz + d];
+          new (&(new_mtx[v*new_max + d])) Wt(mtx[v*max_sz+d]);
           (&(mtx[max_sz*v + d]))->~Wt();
         }
 
         unsigned int* new_rev_ptr = new_rev + v*new_adjsz;
         *new_rev_ptr = 0;
         for(vert_id s : preds(v))
+        {
+          assert(s < new_max);
           _adj_add(new_rev_ptr, new_max, s);
+        }
       }
       free(mtx); 
       free(fwd_adjs);
@@ -409,6 +435,10 @@ class SparseWtGraph : public writeable {
       mtx = new_mtx;
       fwd_adjs = new_fwd;
       rev_adjs = new_rev;
+
+      max_sz = new_max;
+
+//      check_adjs();
     }
 
     void write(std::ostream& o) {
