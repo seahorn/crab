@@ -953,20 +953,17 @@ namespace crab {
       return true;
     }
 
-    template<class G, class P>
-    static void close_after_widen(graph_t& g, P& p, G& orig, edge_vector& delta)
+    template<class G, class P, class V>
+    static void close_after_widen(G& g, P& p, V& is_stable, edge_vector& delta)
     {
       unsigned int sz = g.size();
-      assert(orig.size() == sz);
+//      assert(orig.size() == sz);
       
       for(vert_id v : g.verts())
       {
         // We're abusing edge_marks to store _vertex_ flags.
         // Should really just switch this to allocating regions of a fixed-size buffer.
-        edge_marks[v] = V_UNSTABLE;
-        // Assumption: stable iff |G(v)| = |H(v)|.
-        if(g.succs(v).size() == orig.succs(v).size())
-          edge_marks[v] = V_STABLE;
+        edge_marks[v] = is_stable[v] ? V_STABLE : V_UNSTABLE;
       }
       
       vector< pair<vert_id, Wt> > aux;
@@ -975,7 +972,7 @@ namespace crab {
         if(!edge_marks[v])
         {
           aux.clear();
-          dijkstra_recover(g, p, edge_marks, aux); 
+          dijkstra_recover(g, p, edge_marks, v, aux); 
           for(auto p : aux)
             delta.push_back( make_pair( make_pair(v, p.first), p.second ) );   
         }

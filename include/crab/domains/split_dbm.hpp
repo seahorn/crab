@@ -209,6 +209,8 @@ namespace crab {
 //         if(ranges.size() != 0)
 //          return false;
         // GKG: Come up with a cheaper approach for this
+        if(g.succs(0).size() > 0)
+          return false;
         for(auto p : vert_map)
           if(g.succs(p.second).size() != 0)
             return false;
@@ -632,6 +634,27 @@ namespace crab {
          
           // Now perform the widening 
           graph_t widen_g(GrOps::widen(gx, gy));
+          /*
+          SubGraph<GrPerm> gx_ex(gx, 0);
+          SubGraph<graph_t> gw_ex(widen_g, 0);
+          edge_vector delta;
+          vector<bool> is_stable(widen_g.size(), true); 
+          for(vert_id v : gx.verts())
+          {
+            for(vert_id d : gx.succs(v))
+            {
+              if(!widen_g.elem(v, d))
+              {
+                is_stable[v] = false;
+                break;
+              }
+            }
+          }
+
+          GrOps::close_after_widen(gw_ex, widen_pot, is_stable, delta);
+          GrOps::apply_delta(widen_g, delta);
+          */
+
           DBM_t res(/* widen_range ,*/ out_vmap, out_revmap, widen_g, widen_pot);
 
           // GKG: need to mark changes so we can restore closure
@@ -733,33 +756,8 @@ namespace crab {
 //          for(auto e : delta)
 //            CRAB_DEBUG("NEW: ", *rev_map[e.first.second], "-", *rev_map[e.first.first], "<=", e.second);
           GrOps::apply_delta(meet_g, delta);
-          /*
-          for(auto e : delta)
-          {
-            vert_id s = e.first.first;
-            vert_id d = e.first.second; 
-            Wt w = e.second;
-            if(s == 0)
-            {
-              assert(rev_map[d]); 
-              variable_t x(*rev_map[d]);    
-              interval_t x_out = get_interval(meet_range, x)&
-                interval_t(bound_t::minus_infinity(), w);
-              assert(!x_out.is_bottom());
-              meet_range.insert(x.name(), x_out);
-            } else {
-              assert(d == 0);
-              assert(rev_map[s]); 
-              variable_t x(*rev_map[s]);
-              interval_t x_out = get_interval(meet_range, x)&
-                interval_t(w, bound_t::plus_infinity());
-              assert(!x_out.is_bottom());
-              meet_range.insert(x.name(), x_out);
-            }
-          }
-          */
            
-          DBM_t res(/*meet_range, */ meet_verts, meet_rev, meet_g, meet_pi);
+          DBM_t res(meet_verts, meet_rev, meet_g, meet_pi);
           CRAB_DEBUG ("Result meet:\n",res);
           return res;
         }
@@ -777,19 +775,6 @@ namespace crab {
           // Narrowing as a no-op should be sound.
           DBM_t res(*this);
 
-          /*
-          id_t id = 0;
-          // Build new map
-          var_map_t var_map = merge_var_map (_var_map, _dbm, 
-                                             o._var_map, o._dbm,
-                                             id, subs_x, subs_y);
-          // Build the reverse map
-          rev_map_t rev_map;
-          for(auto p: var_map)
-            rev_map.insert (make_pair (p.second, p.first));
-
-          */
-           
 
           CRAB_DEBUG ("Result narrowing:\n",res);
           return res;
@@ -1006,14 +991,14 @@ namespace crab {
             bound_t y_lb = operator[](y).lb();
             if(y_lb.is_infinite())
             {
-              if(unbounded_lbvar);
+              if(unbounded_lbvar)
                 goto diffcst_finish;
               unbounded_lbvar = y;
               unbounded_lbcoeff = coeff;
             } else {
               Wt ymin = (*(y_lb.number()));
               // Coeff is negative, so it's still add
-              exp_ub += ymin*coeff;
+              exp_ub -= ymin*coeff;
               pos_terms.push_back(make_pair(make_pair(coeff, y), ymin));
             }
           } else {
@@ -1027,7 +1012,7 @@ namespace crab {
               unbounded_ubcoeff = -coeff;
             } else {
               Wt ymax(*(y_ub.number()));
-              exp_ub += ymax*coeff;
+              exp_ub -= ymax*coeff;
               neg_terms.push_back(make_pair(make_pair(-coeff, y), ymax));
             }
           }
@@ -1045,7 +1030,7 @@ namespace crab {
           } else {
             if(unbounded_lbcoeff == Wt(1))
             {
-              for(auto p : pos_terms)
+              for(auto p : neg_terms)
                 csts.push_back(make_pair(make_pair(x, p.first.second), exp_ub - p.second));
             }
             // Add bounds for x
@@ -1057,7 +1042,7 @@ namespace crab {
             VariableName y(*unbounded_ubvar);
             if(unbounded_ubcoeff == Wt(1))
             {
-              for(auto p : neg_terms)
+              for(auto p : pos_terms)
                 csts.push_back(make_pair(make_pair(p.first.second, y), exp_ub + p.second));
             }
             // Bounds for y
@@ -1065,11 +1050,11 @@ namespace crab {
           } else {
             for(auto pl : neg_terms)
               for(auto pu : pos_terms)
-                csts.push_back(make_pair(make_pair(pl.first.second, pu.first.second), exp_ub + pl.second - pu.second));
+                csts.push_back(make_pair(make_pair(pu.first.second, pl.first.second), exp_ub - pl.second + pu.second));
             for(auto pl : neg_terms)
-              lbs.push_back(make_pair(pl.first.second, -pl.second - exp_ub/pl.first.first));
+              lbs.push_back(make_pair(pl.first.second, -exp_ub/pl.first.first + pl.second));
             for(auto pu : pos_terms)
-              ubs.push_back(make_pair(pu.first.second, exp_ub/pu.first.first - pu.second));
+              ubs.push_back(make_pair(pu.first.second, exp_ub/pu.first.first + pu.second));
           }
         }
     diffcst_finish:
@@ -1118,6 +1103,7 @@ namespace crab {
               delta.push_back(make_pair(make_pair(get_vert(diff.first), v), diff.second));
             }
                
+            /*
             for(auto diff : delta)
             {
               vert_id s = diff.first.first;
@@ -1125,12 +1111,14 @@ namespace crab {
 
               CRAB_DEBUG("|- ", (*rev_map[d]).name(),"[",d,"]-", (*rev_map[s]).name(), "[", s, "]<=", diff.second);
             }
+            */
             GrOps::apply_delta(g, delta);
             delta.clear();
             SubGraph<graph_t> g_excl(g, 0);
             GrOps::close_after_assign(g_excl, potential, v, delta);
             GrOps::apply_delta(g, delta);
 
+            /*
             for(auto diff : delta)
             {
               vert_id s = diff.first.first;
@@ -1138,12 +1126,14 @@ namespace crab {
 
               CRAB_DEBUG("|-> ", (*rev_map[d]).name(),"[",d,"]-", (*rev_map[s]).name(), "[", s, "]<=", diff.second);
             }
+            */
 
 
+            Wt_min min_op;
             if(x_int.lb().is_finite())
-              g.add_edge(v, -(*(x_int.lb().number())), 0);
+              g.update_edge(v, -(*(x_int.lb().number())), 0, min_op);
             if(x_int.ub().is_finite())
-              g.add_edge(0, *(x_int.ub().number()), v);
+              g.update_edge(0, *(x_int.ub().number()), v, min_op);
             // Clear the old x vertex
             operator-=(x);
 //            ranges.insert(x, x_int);
@@ -1273,61 +1263,25 @@ namespace crab {
         {
           CRAB_DEBUG(p.first, ">=", p.second);
           VariableName x(p.first);
-          /*
-          auto it = vert_map.find(x);
-          // Vertex already exists; add the edge and repair
-          if(it != vert_map.end())
+          vert_id v = get_vert(p.first);
+          g.update_edge(v, -p.second, 0, min_op); 
+          if(!repair_potential(v, 0))
           {
-            vert_id v = (*it).second;
-            */
-            vert_id v = get_vert(p.first);
-            g.update_edge(v, -p.second, 0, min_op); 
-            if(!repair_potential(v, 0))
-            {
-              set_to_bottom();
-              return false;
-            }
-          /* } */
-          /*
-          // Apply the interval.
-          // GKG: Check for bottom.
-          interval_t x_out = get_interval(ranges, x)&
-            interval_t(p.second, bound_t::plus_infinity());
-          if(x_out.is_bottom())
-          {
-            set_to_bottom(); return false;
+            set_to_bottom();
+            return false;
           }
-          ranges.insert(x, x_out);
-          */
         }
         for(auto p : ubs)
         {
           CRAB_DEBUG(p.first, "<=", p.second);
           VariableName x(p.first);
-          /*
-          auto it = vert_map.find(x);
-          if(it != vert_map.end())
+          vert_id v = get_vert(p.first);
+          g.update_edge(0, p.second, v, min_op);
+          if(!repair_potential(0, v))
           {
-          */
-            // vert_id v = (*it).second;
-            vert_id v = get_vert(p.first);
-            g.update_edge(0, p.second, v, min_op);
-            if(!repair_potential(0, v))
-            {
-              set_to_bottom();
-              return false;
-            }
-          /* } */
-          // Apply the interval.
-          /*
-          interval_t x_out = get_interval(ranges, x)&
-              interval_t(bound_t::minus_infinity(), p.second);
-          if(x_out.is_bottom())
-          {
-            set_to_bottom(); return false;
+            set_to_bottom();
+            return false;
           }
-          ranges.insert(x, x_out);
-          */
         }
 
         for(auto diff : csts)
@@ -1345,6 +1299,13 @@ namespace crab {
           
           close_over_edge(src, dest);
         }
+        /* */
+        // Collect bounds
+        // GKG: Do this more efficiently
+        edge_vector delta;
+        GrOps::close_after_assign(g, potential, 0, delta);
+        GrOps::apply_delta(g, delta);
+        /* */
 
         // CRAB_WARN("SplitDBM::add_linear_leq not yet implemented.");
         return true;  
@@ -1408,6 +1369,7 @@ namespace crab {
         {
           if(!add_linear_leq(cst.expression()))
             set_to_bottom();
+          CRAB_DEBUG("--- ", cst, "\n", *this);
           return;
         }
 
@@ -1415,13 +1377,18 @@ namespace crab {
         {
           linear_expression_t exp = cst.expression();
           if(!add_linear_leq(exp) || !add_linear_leq(-exp))
+          {
+            CRAB_DEBUG(" ~~> _|_");
             set_to_bottom();
+          }
+          CRAB_DEBUG("--- ", cst, "\n", *this);
           return;
         }
 
         if (cst.is_disequation())
         {
           add_disequation(cst.expression());
+          return;
         }
 
         CRAB_WARN("Unhandled constraint in SplitDBM");
@@ -1668,7 +1635,7 @@ namespace crab {
           Wt wt_sij = g_excl.edge_val(se,ii) + c;
 
           // assert(g_excl.preds(se).size() > 0);
-          assert(g_excl.preds(se).begin() != g_excl.preds(se).end());
+          assert(g_excl.succs(se).begin() != g_excl.succs(se).end());
           if(se != jj)
           {
             if(g_excl.elem(se, jj))
@@ -1686,7 +1653,7 @@ namespace crab {
               if(se != de)
               {
                 Wt wt_sijd = wt_sij + g_excl.edge_val(jj, de);
-                if(g_excl.elem(ii, jj))
+                if(g_excl.elem(se, de))
                 {
                   g_excl.edge_val(se, de) = min(g_excl.edge_val(se, de), wt_sijd);
                 } else {
@@ -1745,6 +1712,29 @@ namespace crab {
 //        ret = dbm_expand(get_dbm_index(x), get_dbm_index(y), _dbm);
 //        dbm_dealloc(_dbm);
 //        swap(_dbm, ret);
+      }
+
+      // dual of forget: remove all variables except [vIt,...vEt)
+      template<typename Iterator>
+      void project (Iterator vIt, Iterator vEt) {
+        if (is_bottom ())
+          return;
+        if (vIt == vEt) 
+          return;
+
+        vector<bool> save(rev_map.size(), false);
+        for(auto x : boost::make_iterator_range(vIt, vEt))
+        {
+          auto it = vert_map.find(x);
+          if(it != vert_map.end())
+            save[(*it).second] = true;
+        }
+
+        for(vert_id v = 0; v < rev_map.size(); v++)
+        {
+          if(!save[v] && rev_map[v])
+            operator-=((*rev_map[v]).name());
+        }
       }
 
       // Output function
@@ -1907,9 +1897,6 @@ namespace crab {
       const char* getDomainName () const {return "spDBM";}
 
     }; // class SplitDBM
-
-//    template<class Var, class Num>
-//    int SplitDBM<Var, Num>::count = 0;
   } // namespace domains
 
 
@@ -1931,6 +1918,11 @@ namespace crab {
        template <typename Number, typename VariableName, typename Iterator >
        void forget (SplitDBM<Number,VariableName>& inv, Iterator it, Iterator end){
          inv.forget (it, end);
+       }
+
+       template <typename Number, typename VariableName, typename Iterator >
+       void project (SplitDBM<Number,VariableName>& inv, Iterator it, Iterator end) {
+         inv.project (it, end);
        }
     } // namespace domain_traits
 
