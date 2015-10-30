@@ -73,6 +73,18 @@ class SparseWtGraph : public writeable {
 //      check_adjs();
     }
 
+    SparseWtGraph(SparseWtGraph<Wt>&& o)
+      : max_sz(o.max_sz), sz(o.sz), growth_rate(o.growth_rate),
+        fwd_adjs(o.fwd_adjs), rev_adjs(o.rev_adjs), mtx(o.mtx),
+        is_free(std::move(o.is_free)), free_id(std::move(o.free_id))
+    {
+      o.max_sz = 0;
+      o.sz = 0;
+      o.fwd_adjs = NULL;
+      o.rev_adjs = NULL;
+      o.mtx = NULL; 
+    }
+
     SparseWtGraph& operator=(const SparseWtGraph<Wt>& o)
     {
       if((&o) == this)
@@ -80,6 +92,7 @@ class SparseWtGraph : public writeable {
       
       // Make sure the number of vertices matches,
       // and active adjacency lists are initialized.
+      /*
       clear_edges(); 
       growCap(o.sz);
       for(; sz < o.sz; sz++)
@@ -89,6 +102,9 @@ class SparseWtGraph : public writeable {
         preds(sz).clear();
       }
       sz = o.sz;
+      */
+      clear();
+      growTo(o.sz);
 
       // Now copy the edges
       for(vert_id s : o.verts())
@@ -105,6 +121,33 @@ class SparseWtGraph : public writeable {
 
 //      check_adjs();
 
+      return *this;
+    }
+
+    SparseWtGraph& operator=(SparseWtGraph<Wt>&& o)
+    {
+      if(max_sz > 0)
+      {
+        free(mtx);
+        free(fwd_adjs);
+        free(rev_adjs);
+      }
+
+      max_sz = o.max_sz;
+      sz = o.sz;
+      growth_rate = o.growth_rate;
+      fwd_adjs = o.fwd_adjs;
+      rev_adjs = o.rev_adjs;
+      mtx = o.mtx;
+      is_free = std::move(o.is_free);
+      free_id = std::move(o.free_id);
+
+      o.max_sz = 0;
+      o.sz = 0;
+      o.fwd_adjs = NULL;
+      o.rev_adjs = NULL;
+      o.mtx = NULL; 
+      
       return *this;
     }
 
@@ -130,14 +173,17 @@ class SparseWtGraph : public writeable {
 
     ~SparseWtGraph()
     {
-      for(vert_id v = 0; v < sz; v++)
+      if(max_sz > 0)
       {
-        for(vert_id d : succs(v))
-          (&(mtx[max_sz*v + d]))->~Wt();
+        for(vert_id v = 0; v < sz; v++)
+        {
+          for(vert_id d : succs(v))
+            (&(mtx[max_sz*v + d]))->~Wt();
+        }
+        free(mtx);
+        free(fwd_adjs);
+        free(rev_adjs);
       }
-      free(mtx);
-      free(fwd_adjs);
-      free(rev_adjs);
     }
 
     template<class G> 
@@ -251,9 +297,9 @@ class SparseWtGraph : public writeable {
     // Assumption: (x, y) not in mtx
     void add_edge(vert_id x, Wt wt, vert_id y)
     {
-      assert(x < size() && y < size());
-      assert(x != y);
-      assert(!elem(x, y));
+//      assert(x < size() && y < size());
+//      assert(x != y);
+//      assert(!elem(x, y));
       succs(x).add(y);
       preds(y).add(x);
       // Allocate a new Wt at the given offset.
@@ -262,7 +308,7 @@ class SparseWtGraph : public writeable {
 
     void set_edge(vert_id s, Wt w, vert_id d)
     {
-      assert(s < size() && d < size());
+//      assert(s < size() && d < size());
       if(!elem(s, d))
         add_edge(s, w, d);
       else
@@ -333,15 +379,15 @@ class SparseWtGraph : public writeable {
         return idx < size() && dense()[idx] == v;
       }
       void add(unsigned int v) {
-        assert(!mem(v));
-        assert(dense()+v < sparse());
+ //       assert(!mem(v));
+//        assert(dense()+v < sparse());
         unsigned int idx = *ptr;
         dense()[idx] = v;
         sparse()[v] = idx;
         (*ptr)++;
       }
       void remove(unsigned int v) {
-        assert(mem(v));
+//        assert(mem(v));
         (*ptr)--;
         unsigned int idx = sparse()[v];
         unsigned int w = dense()[*ptr];

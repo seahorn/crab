@@ -108,7 +108,6 @@ namespace crab {
           numerical_domain<Number, VariableName >(),
           bitwise_operators< Number, VariableName >(),
           division_operators< Number, VariableName >(),
-//          ranges(o.ranges), 
           vert_map(o.vert_map),
           rev_map(o.rev_map),
           g(o.g),
@@ -118,23 +117,24 @@ namespace crab {
         if(o._is_bottom)
           set_to_bottom();
 
-        /*
-        for(vert_id v : g.verts())
-          if(g.succs(v).begin() != g.succs(v).end() || g.preds(v).begin() != g.preds(v).end())
-            if(v != 0)
-              assert(rev_map[v]);
-              */
+        if(!_is_bottom)
+          assert(g.size() > 0);
       }
 
+      SplitDBM(DBM_t&& o)
+        : vert_map(std::move(o.vert_map)), rev_map(std::move(o.rev_map)),
+          g(std::move(o.g)), potential(std::move(o.potential)), _is_bottom(o._is_bottom)
+      { }
+
       // We should probably use the magical rvalue ownership semantics stuff.
-      SplitDBM(/* ranges_t& _ranges,*/ vert_map_t& _vert_map, rev_map_t& _rev_map, graph_t& _g, vector<Wt>& _potential)
+      SplitDBM(vert_map_t& _vert_map, rev_map_t& _rev_map, graph_t& _g, vector<Wt>& _potential)
         : writeable(),
           numerical_domain<Number, VariableName >(),
           bitwise_operators< Number, VariableName >(),
           division_operators< Number, VariableName >(),
           /* ranges(_ranges),*/ vert_map(_vert_map), rev_map(_rev_map), g(_g), potential(_potential),
           _is_bottom(false)
-      { }
+      { assert(g.size() > 0); }
 
       // FIXME: Add a move constructor
       SplitDBM& operator=(const SplitDBM& o)
@@ -145,14 +145,27 @@ namespace crab {
             set_to_bottom();
           else {
             _is_bottom = false;
-            // ranges = o.ranges;
             vert_map = o.vert_map;
             rev_map = o.rev_map;
             g = o.g;
             potential = o.potential;
+            assert(g.size() > 0);
           }
         }
         return *this;
+      }
+
+      SplitDBM& operator=(SplitDBM&& o)
+      {
+        if(o._is_bottom) {
+          set_to_bottom();
+        } else {
+          _is_bottom = false;
+          vert_map = std::move(o.vert_map);
+          rev_map = std::move(o.rev_map);
+          g = std::move(o.g);
+          potential = std::move(o.potential);
+        }
       }
        
      private:
@@ -388,6 +401,7 @@ namespace crab {
         vert_map.insert(vmap_elt_t(v, vert));
 
 //        g.check_adjs();
+        assert(vert != 0);
 
         return vert;
       }
@@ -1091,12 +1105,12 @@ namespace crab {
             edge_vector delta;
             for(auto diff : diffs_lb)
             {
-              delta.push_back(make_pair(make_pair(v, get_vert(diff.first)), -diff.second));
+              delta.push_back(make_pair(make_pair(v, get_vert(diff.first)), -((Wt) diff.second)));
             }
 
             for(auto diff : diffs_ub)
             {
-              delta.push_back(make_pair(make_pair(get_vert(diff.first), v), diff.second));
+              delta.push_back(make_pair(make_pair(get_vert(diff.first), v), (Wt) diff.second));
             }
                
             /*
