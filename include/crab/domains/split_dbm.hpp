@@ -40,6 +40,18 @@ namespace crab {
 
      using namespace ikos;
 
+     namespace SDBM_impl {
+       // translate from Number to dbm val_t type
+       template<typename Number, typename Wt>
+       class NtoV {
+       public:
+         static Wt ntov(const Number& n) { 
+           return (Wt) n;
+         }
+       };
+     }; // end namespace SDBM_impl
+
+
     template<class Number, class VariableName>
     class SplitDBM: public writeable,
                public numerical_domain<Number, VariableName >,
@@ -64,7 +76,11 @@ namespace crab {
       typedef typename ranges_t::key_binary_op_t key_binary_op_t;
       
       // Eventually break this out into a template param
-      typedef Number Wt;
+      //typedef Number Wt;
+      typedef long Wt;
+
+      typedef SDBM_impl::NtoV<Number, Wt> ntov;
+
       typedef SparseWtGraph<Wt> graph_t;
       typedef typename graph_t::vert_id vert_id;
       typedef boost::container::flat_map<variable_t, vert_id> vert_map_t;
@@ -166,6 +182,7 @@ namespace crab {
           g = std::move(o.g);
           potential = std::move(o.potential);
         }
+        return *this;
       }
        
      private:
@@ -870,10 +887,10 @@ namespace crab {
       // Evaluate an expression under the chosen potentials
       Wt eval_expression(linear_expression_t e)
       {
-        Wt v((Wt) e.constant()); 
+        Wt v(ntov::ntov(e.constant())); 
         for(auto p : e)
         {
-          v += pot_value(p.second)*((Wt) p.first);
+          v += pot_value(p.second)*(ntov::ntov(p.first));
         }
         return v;
       }
@@ -894,18 +911,18 @@ namespace crab {
         {
           // Process upper bounds.
           optional<VariableName> unbounded_ubvar;
-          Wt exp_ub = exp.constant();
+          Wt exp_ub(ntov::ntov(exp.constant()));
           vector< pair<VariableName, Wt> > ub_terms;
           for(auto p : exp)
           {
-            Wt coeff = p.first;
+            Wt coeff(ntov::ntov(p.first));
             if(p.first < Wt(0))
             {
               // Can't do anything with negative coefficients.
               bound_t y_lb = operator[](p.second.name()).lb();
               if(y_lb.is_infinite())
                 goto assign_ub_finish;
-              exp_ub += (*(y_lb.number()))*coeff;
+              exp_ub += ntov::ntov(*(y_lb.number()))*coeff;
             } else {
               VariableName y(p.second.name());
               bound_t y_ub = operator[](y).ub(); 
@@ -915,7 +932,7 @@ namespace crab {
                   goto assign_ub_finish;
                 unbounded_ubvar = y;
               } else {
-                Wt ymax(*(y_ub.number()));
+                Wt ymax(ntov::ntov(*(y_ub.number())));
                 exp_ub += ymax*coeff;
                 ub_terms.push_back(make_pair(y, ymax));
               }
@@ -937,18 +954,18 @@ namespace crab {
 
         {
           optional<VariableName> unbounded_lbvar;
-          Wt exp_lb = exp.constant();
+          Wt exp_lb(ntov::ntov(exp.constant()));
           vector< pair<VariableName, Wt> > lb_terms;
           for(auto p : exp)
           {
-            Wt coeff = p.first;
+            Wt coeff(ntov::ntov(p.first));
             if(p.first < Wt(0))
             {
               // Again, can't do anything with negative coefficients.
               bound_t y_ub = operator[](p.second.name()).ub();
               if(y_ub.is_infinite())
                 goto assign_lb_finish;
-              exp_lb += (*(y_ub.number()))*coeff;
+              exp_lb += (ntov::ntov(*(y_ub.number())))*coeff;
             } else {
               VariableName y(p.second.name());
               bound_t y_lb = operator[](y).lb(); 
@@ -958,7 +975,7 @@ namespace crab {
                   goto assign_lb_finish;
                 unbounded_lbvar = y;
               } else {
-                Wt ymin(*(y_lb.number()));
+                Wt ymin(ntov::ntov(*(y_lb.number())));
                 exp_lb += ymin*coeff;
                 lb_terms.push_back(make_pair(y, ymin));
               }
@@ -989,12 +1006,12 @@ namespace crab {
         Wt unbounded_ubcoeff;
         optional<VariableName> unbounded_lbvar;
         optional<VariableName> unbounded_ubvar;
-        Wt exp_ub = -exp.constant();
+        Wt exp_ub = - (ntov::ntov(exp.constant()));
         vector< pair< pair<Wt, VariableName>, Wt> > pos_terms;
         vector< pair< pair<Wt, VariableName>, Wt> > neg_terms;
         for(auto p : exp)
         {
-          Wt coeff = p.first;
+          Wt coeff(ntov::ntov(p.first));
           if(coeff > Wt(0))
           {
             VariableName y(p.second.name());
@@ -1006,7 +1023,7 @@ namespace crab {
               unbounded_lbvar = y;
               unbounded_lbcoeff = coeff;
             } else {
-              Wt ymin = (*(y_lb.number()));
+              Wt ymin(ntov::ntov(*(y_lb.number())));
               // Coeff is negative, so it's still add
               exp_ub -= ymin*coeff;
               pos_terms.push_back(make_pair(make_pair(coeff, y), ymin));
@@ -1019,9 +1036,9 @@ namespace crab {
               if(unbounded_ubvar)
                 goto diffcst_finish;
               unbounded_ubvar = y;
-              unbounded_ubcoeff = -coeff;
+              unbounded_ubcoeff = -(ntov::ntov(coeff));
             } else {
-              Wt ymax(*(y_ub.number()));
+              Wt ymax(ntov::ntov(*(y_ub.number())));
               exp_ub -= ymax*coeff;
               neg_terms.push_back(make_pair(make_pair(-coeff, y), ymax));
             }
@@ -1105,12 +1122,12 @@ namespace crab {
             edge_vector delta;
             for(auto diff : diffs_lb)
             {
-              delta.push_back(make_pair(make_pair(v, get_vert(diff.first)), -((Wt) diff.second)));
+              delta.push_back(make_pair(make_pair(v, get_vert(diff.first)), -diff.second));
             }
 
             for(auto diff : diffs_ub)
             {
-              delta.push_back(make_pair(make_pair(get_vert(diff.first), v), (Wt) diff.second));
+              delta.push_back(make_pair(make_pair(get_vert(diff.first), v), diff.second));
             }
                
             /*
@@ -1141,9 +1158,9 @@ namespace crab {
 
             Wt_min min_op;
             if(x_int.lb().is_finite())
-              g.update_edge(v, -(*(x_int.lb().number())), 0, min_op);
+              g.update_edge(v, ntov::ntov(-(*(x_int.lb().number()))), 0, min_op);
             if(x_int.ub().is_finite())
-              g.update_edge(0, *(x_int.ub().number()), v, min_op);
+              g.update_edge(0, ntov::ntov(*(x_int.ub().number())), v, min_op);
             // Clear the old x vertex
             operator-=(x);
 //            ranges.insert(x, x_int);
@@ -1472,9 +1489,9 @@ namespace crab {
         this->operator-=(x);
         vert_id v = get_vert(x);
         if(intv.lb().is_finite())
-          g.set_edge(v, -*(intv.lb().number()), 0);
+          g.set_edge(v, -ntov::ntov(*(intv.lb().number())), 0);
         if(intv.ub().is_finite())
-          g.set_edge(0, *(intv.ub().number()), v);
+          g.set_edge(0, ntov::ntov(*(intv.ub().number())), v);
 //         ranges.insert(x, intv);
       }
 
