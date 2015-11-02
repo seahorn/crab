@@ -239,8 +239,8 @@ namespace crab {
           linterm_t t = termForVal (v);
           linterm_t r = termForVal (x);
           
-          mpq_class aa = a.get (); // FIXME: implicit cast from mpz_class to mpq_class
-          mpq_class kk = k.get (); // FIXME: implicit cast from mpz_class to mpq_class
+          mpq_class aa ((mpz_class) a); 
+          mpq_class kk ((mpz_class) k); 
           
           constant_t aaa = (constant_t) tvpi_create_cst (aa.get_mpq_t ());
           constant_t kkk = (constant_t) tvpi_create_cst (kk.get_mpq_t ());        
@@ -462,7 +462,7 @@ namespace crab {
 
           if (coef == -1) k = -k;
 
-          mpq_class kk = k.get (); // FIXME: implicit cast from mpz_class to mpq_class
+          mpq_class kk ((mpz_class) k); 
           constant_t kkk = (constant_t) tvpi_create_cst (kk.get_mpq_t ());
           linterm_t term = termForVal (x.name ());
 
@@ -515,14 +515,12 @@ namespace crab {
           constant_t kmin = NULL, kmax = NULL;
           
           if (boost::optional <Number> l = ival.lb ().number ()) {
-            // FIXME: implicit cast from mpz_class to mpq_class            
-            mpq_class val = (*l).get ();
+            mpq_class val ((mpz_class) (*l));
             kmin = (constant_t) tvpi_create_cst (val.get_mpq_t ());
           }
           
           if (boost::optional <Number> u = ival.ub ().number ()) {
-            // FIXME: implicit cast from mpz_class to mpq_class
-            mpq_class val = (*u).get ();
+            mpq_class val ((mpz_class) (*u));
             kmax = (constant_t)tvpi_create_cst (val.get_mpq_t ());
           }
           
@@ -544,8 +542,7 @@ namespace crab {
 
           if (e.is_constant ()) {
             Number k = e.constant ();
-            // FIXME: implicit cast from mpz_class to mpq_class
-            mpq_class kk = k.get (); 
+            mpq_class kk ((mpz_class) k); 
             constant_t kkk = (constant_t) tvpi_create_cst (kk.get_mpq_t ());
             linterm_t t = termForVal (x);
             m_ldd = lddPtr(get_ldd_man(), 

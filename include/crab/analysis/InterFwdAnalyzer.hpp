@@ -18,7 +18,7 @@
 #include <crab/analysis/graphs/TopoOrder.hpp>
 #include <crab/analysis/FwdAnalyzer.hpp>
 #include <crab/analysis/Liveness.hpp>
-#include <crab/analysis/InvTable_traits.hpp>
+//#include <crab/analysis/InvTable_traits.hpp>
 #include <crab/analysis/InterDS.hpp>
 
 namespace crab {
@@ -169,7 +169,7 @@ namespace crab {
           if (it != m_inv_map.end ())
             return it->second->get_pre (b);
         }
-        return inv_tbl_traits<TDAbsDomain,InvTblValTy>::top ();
+        return domain_traits::absdom_to_formula<TDAbsDomain,InvTblValTy>::mkTrue ();
       }
       
       //! Return the invariants that hold at the exit of b in cfg
@@ -181,7 +181,7 @@ namespace crab {
           if (it != m_inv_map.end ())
             return it->second->get_post (b);
         }
-        return inv_tbl_traits<TDAbsDomain,InvTblValTy>::top ();
+        return domain_traits::absdom_to_formula<TDAbsDomain,InvTblValTy>::mkTrue ();
       }
 
       //! Return true if there is a summary for cfg
@@ -193,18 +193,19 @@ namespace crab {
 
       //! Return the summary for cfg
       InvTblValTy get_summary(const cfg_t &cfg) const {
-        typedef inv_tbl_traits<typename summ_tbl_t::abs_domain_t, InvTblValTy> inv_tbl_t;        
+        typedef domain_traits::absdom_to_formula<typename summ_tbl_t::abs_domain_t, 
+                                                 InvTblValTy> conv_to_form_t;        
         
         if (auto fdecl = cfg.get_func_decl ()) {
           if (m_summ_tbl.hasSummary (*fdecl)) {
             auto summ = m_summ_tbl.get (*fdecl);
             typename summ_tbl_t::abs_domain_t inv = summ.get_sum ();
-            return inv_tbl_t::marshall (inv);
+            return conv_to_form_t::marshall (inv);
           }
         }
         
         CRAB_WARN("Summary not found");
-        return inv_tbl_t::top ();
+        return conv_to_form_t::mkTrue ();
       }
         
     }; 

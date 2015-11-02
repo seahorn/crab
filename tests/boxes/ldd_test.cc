@@ -112,7 +112,7 @@ linterm_t termForVal(LddManager* ldd, varname_t v, bool neg = false)
 LddNodePtr assign (LddManager *ldd, LddNodePtr n, varname_t v, z_number k) {
   if (isBot (ldd, n)) return n;
 
-  mpq_class kk = k.get (); // implicit cast from mpz_class to mpq_class
+  mpq_class kk ((mpz_class) k); 
   linterm_t t = termForVal (ldd, v);
   constant_t kkk = (constant_t) tvpi_create_cst (kk.get_mpq_t ());
   LddNodePtr newVal = 
@@ -131,12 +131,12 @@ LddNodePtr assign (LddManager* ldd, LddNodePtr n, varname_t v, interval_t ival) 
   constant_t kmin = NULL, kmax = NULL;
   
   if (boost::optional <z_number> l = ival.lb ().number ()) {
-    mpq_class val = (*l).get ();
+    mpq_class val ((mpz_class) (*l));
     kmin = (constant_t)tvpi_create_cst (val.get_mpq_t ());
   }
 
   if (boost::optional <z_number> u = ival.ub ().number ()) {
-    mpq_class val = (*u).get ();
+    mpq_class val ((mpz_class) (*u));
     kmax = (constant_t)tvpi_create_cst (val.get_mpq_t ());
   }
        
@@ -162,8 +162,8 @@ LddNodePtr apply (LddManager* ldd,
   linterm_t t = termForVal (ldd, v);
   linterm_t r = termForVal (ldd, u);
 
-  mpq_class aa = a.get (); // implicit cast from mpz_class to mpq_class
-  mpq_class kk = k.get (); // implicit cast from mpz_class to mpq_class
+  mpq_class aa ((mpz_class) a); 
+  mpq_class kk ((mpz_class) k); 
   
   constant_t aaa = (constant_t) tvpi_create_cst (aa.get_mpq_t ());
   constant_t kkk = (constant_t) tvpi_create_cst (kk.get_mpq_t ());        
