@@ -48,6 +48,7 @@
 #include <utility>
 #include <iostream>
 #include <map>
+#include <climits>
 #include <boost/shared_ptr.hpp>
 #include <crab/common/types.hpp>
 #include <crab/iterators/wto.hpp>
@@ -82,7 +83,15 @@ namespace ikos {
     CFG _cfg;
     wto_t _wto;
     invariant_table_ptr _pre, _post;
-    
+    // number of iterations until triggering widening
+    unsigned int _widening_threshold;
+    // number of narrowing iterations. If the narrowing operator is
+    // indeed a narrowing operator this parameter is not
+    // needed. However, there are abstract domains for which a sound
+    // narrowing operation is not available so we must enforce
+    // termination.
+    unsigned int _narrowing_iters;
+
   private:
     void set(invariant_table_ptr table, NodeName node, AbstractValue v) {
       std::pair< typename invariant_table_t::iterator, bool > res = 
@@ -110,11 +119,16 @@ namespace ikos {
     }
     
   public:
-    interleaved_fwd_fixpoint_iterator(CFG cfg): 
+    interleaved_fwd_fixpoint_iterator(CFG cfg, 
+                                      unsigned widening_threshold,
+                                      unsigned int narrowing_iters): 
         _cfg(cfg),
         _wto(cfg),
         _pre(invariant_table_ptr(new invariant_table_t)),
-        _post(invariant_table_ptr(new invariant_table_t)) { }
+        _post(invariant_table_ptr(new invariant_table_t)),
+        _widening_threshold(widening_threshold),
+        _narrowing_iters(narrowing_iters)
+    { }
     
     CFG get_cfg() {
       return this->_cfg;
@@ -134,9 +148,7 @@ namespace ikos {
     
     virtual AbstractValue extrapolate(NodeName /* node */, unsigned int iteration, 
                                       AbstractValue before, AbstractValue after) {
-      // HOOK for boxes domain
-      const unsigned int threshold = 10;
-      if (iteration < threshold) {
+      if (iteration <= _widening_threshold) {
 	return before | after; 
       } else {
 	return before || after;
@@ -160,6 +172,14 @@ namespace ikos {
       this->_wto.accept(&processor);
       this->_pre.reset();
       this->_post.reset();      
+    }
+
+    unsigned int get_widening_threshold () const { 
+      return _widening_threshold;
+    }
+
+    unsigned int get_narrowing_iters () const { 
+      return _narrowing_iters;
     }
 
     virtual ~interleaved_fwd_fixpoint_iterator() { }
@@ -242,24 +262,8 @@ namespace ikos {
             // No more refinement possible (pre == new_pre)
             break;
           } else {
-            ///////////////////////////////////////////////////////
-            // HOOK: FIXME
-            ///////////////////////////////////////////////////////
-            // Following, "Comparing the Galois Connection and
-            // Widening/Narrowing Approaches to Abstract
-            // Interpretation" the operator lambda x, y -> x is a
-            // narrowing operator and in page 20 refers to it as the
-            // naive narrowing.
-            // 
-            // However, I'm probably missing something here.  Let us
-            // assume x is the post-fixed point and f the abstract
-            // transformer.
-            //
-            // LOOP: x' := f(x) 
-            //       narrowing (x, x') = x
-            //       assume that x is not included in x' then we come back to LOOP.
-            // but this will not terminate!
-            if (iteration > 2) break; // temporary hook!
+            if (iteration > this->_iterator->get_narrowing_iters ()) break; 
+
             pre = this->_iterator->refine(head, iteration, pre, new_pre);
             this->_iterator->set_pre(head, pre);
           }

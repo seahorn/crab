@@ -170,13 +170,16 @@ cfg_t prog4 (VariableFactory &vfac)
 int main (int argc, char** argv )
 {
 
+  const unsigned int w = 10;
+  const unsigned int n = 2;
+      
   {
     VariableFactory vfac;
     cfg_t cfg = prog1 (vfac);
     cfg.simplify (); // this is optional
     cout << cfg << endl;
 #ifdef HAVE_LDD
-    NumFwdAnalyzer <cfg_t, boxes_domain_t,VariableFactory>::type a (cfg,vfac,nullptr);
+    NumFwdAnalyzer <cfg_t, boxes_domain_t,VariableFactory>::type a (cfg, vfac, nullptr, w, n);
     // Run fixpoint 
     boxes_domain_t inv = boxes_domain_t::top ();
     a.Run (inv);
@@ -196,7 +199,7 @@ int main (int argc, char** argv )
     cfg.simplify (); // this is optional
     cout << cfg << endl;
 #ifdef HAVE_LDD
-    NumFwdAnalyzer <cfg_t, boxes_domain_t,VariableFactory>::type a (cfg,vfac,nullptr);
+    NumFwdAnalyzer <cfg_t, boxes_domain_t,VariableFactory>::type a (cfg,vfac,nullptr,w,n);
     // Run fixpoint 
     boxes_domain_t inv = boxes_domain_t::top ();
     a.Run (inv);
@@ -215,7 +218,7 @@ int main (int argc, char** argv )
     cfg.simplify (); // this is optional
     cout << cfg << endl;
 #ifdef HAVE_LDD
-    NumFwdAnalyzer <cfg_t, boxes_domain_t,VariableFactory>::type a (cfg,vfac,nullptr);
+    NumFwdAnalyzer <cfg_t, boxes_domain_t,VariableFactory>::type a (cfg,vfac,nullptr,w,n);
     // Run fixpoint 
     boxes_domain_t inv = boxes_domain_t::top ();
     a.Run (inv);
@@ -234,7 +237,7 @@ int main (int argc, char** argv )
     cfg.simplify (); // this is optional
     cout << cfg << endl;
 #ifdef HAVE_LDD
-    NumFwdAnalyzer <cfg_t, boxes_domain_t,VariableFactory>::type a (cfg,vfac,nullptr);
+    NumFwdAnalyzer <cfg_t, boxes_domain_t,VariableFactory>::type a (cfg,vfac,nullptr,w,n);
     // Run fixpoint 
     boxes_domain_t inv = boxes_domain_t::top ();
     a.Run (inv);

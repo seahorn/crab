@@ -18,7 +18,6 @@
 #include <crab/analysis/graphs/TopoOrder.hpp>
 #include <crab/analysis/FwdAnalyzer.hpp>
 #include <crab/analysis/Liveness.hpp>
-//#include <crab/analysis/InvTable_traits.hpp>
 #include <crab/analysis/InterDS.hpp>
 
 namespace crab {
@@ -62,6 +61,8 @@ namespace crab {
       const liveness_map_t* m_live;
       invariant_map_t m_inv_map;
       summ_tbl_t m_summ_tbl;
+      unsigned int m_widening_thres;
+      unsigned int m_narrowing_iters;
 
       const liveness_t* get_live (cfg_t c) {
         if (m_live) {
@@ -74,8 +75,12 @@ namespace crab {
       
      public:
       
-      InterFwdAnalyzer (CG cg, VarFactory& vfac, const liveness_map_t* live): 
-          m_cg (cg), m_vfac (vfac), m_live (live) {
+      InterFwdAnalyzer (CG cg, VarFactory& vfac, const liveness_map_t* live,
+                        unsigned int widening_thres=1,
+                        unsigned int narrowing_iters=UINT_MAX): 
+          m_cg (cg), m_vfac (vfac), m_live (live),
+          m_widening_thres (widening_thres), 
+          m_narrowing_iters (narrowing_iters) {
       }
       
       //! Trigger the whole analysis
@@ -101,7 +106,8 @@ namespace crab {
               CRAB_DEBUG ("--- Analyzing ", (*fdecl).get_func_name ());
               // --- run the analysis
               bu_analyzer a (cfg, m_vfac, get_live (cfg), 
-                             &m_summ_tbl, &call_tbl) ; 
+                             &m_summ_tbl, &call_tbl,
+                             m_widening_thres, m_narrowing_iters) ; 
               a.Run (BUAbsDomain::top ());
               // --- build the summary
               std::vector<varname_t> formals;
@@ -143,7 +149,9 @@ namespace crab {
             }
             
             td_analyzer_ptr a (new td_analyzer (cfg, m_vfac, get_live (cfg), 
-                                                &m_summ_tbl, &call_tbl));           
+                                                &m_summ_tbl, &call_tbl,
+                                                m_widening_thres,
+                                                m_narrowing_iters));           
             if (is_root) {
               a->Run (init);
               is_root = false;
