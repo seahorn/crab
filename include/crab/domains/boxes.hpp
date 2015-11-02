@@ -41,6 +41,7 @@ namespace crab {
         using typename numerical_domain< Number, VariableName>::number_t;
         using typename numerical_domain< Number, VariableName>::varname_t;
         typedef boxes_domain <Number, VariableName> boxes_domain_t;
+        typedef interval <Number> interval_t;
 
         boxes_domain(): ikos::writeable() { }    
 
@@ -70,6 +71,12 @@ namespace crab {
         { CRAB_ERROR (LDD_NOT_FOUND); }
         
         void operator-=(VariableName var) 
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+
+        interval_t operator[](VariableName v) 
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+
+        void set(VariableName v, interval_t ival) 
         { CRAB_ERROR (LDD_NOT_FOUND); }
 
         void operator += (linear_constraint_system_t csts) 
