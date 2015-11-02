@@ -7,10 +7,8 @@
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/properties.hpp>
 #include <boost/iterator/transform_iterator.hpp>
-#include <crab/cfg/Cfg.hpp>
 
-using namespace std;
-using namespace boost;
+#include <crab/cfg/Cfg.hpp>
 
 namespace crab {
   namespace cfg {
@@ -66,6 +64,11 @@ namespace boost {
        typedef size_t vertices_size_type;
        typedef size_t edges_size_type;
        typedef size_t degree_size_type;
+
+       static vertex_descriptor null_vertex() { 
+         vertex_descriptor n;
+         return n; 
+       }    
        
        // iterator of BasicBlockLabel's
        typedef typename graph_t::label_iterator vertex_iterator;
@@ -76,20 +79,30 @@ namespace boost {
        typedef boost::transform_iterator<crab::cfg::graph::MkOutEdge<graph_t>, 
                                          typename graph_t::succ_iterator> out_edge_iterator; 
      }; // end class graph_traits
+} // end namespace
+
+
+using namespace boost;
+
+// XXX: should be boost namespace but for some reason gcc does not
+//      like it
+namespace crab {   
+   namespace cfg {   
+
+
+     // template<typename BasicBlockLabel, typename VariableName>
+     // typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName> >::vertex_descriptor
+     // source (typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName> >::edge_descriptor e, 
+     //         crab::cfg::Cfg<BasicBlockLabel, VariableName> /*g*/) {
+     //   return e.first;
+     // }
    
-     template<typename BasicBlockLabel, typename VariableName>
-     typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName> >::vertex_descriptor
-     source (typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName> >::edge_descriptor e, 
-             crab::cfg::Cfg<BasicBlockLabel, VariableName> /*g*/) {
-       return e.first;
-     }
-   
-     template<typename BasicBlockLabel, typename VariableName>
-     typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName> >::vertex_descriptor
-     target (typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName> >::edge_descriptor e, 
-             crab::cfg::Cfg<BasicBlockLabel,VariableName> /*g*/) {
-       return e.second;
-     }
+     // template<typename BasicBlockLabel, typename VariableName>
+     // typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName> >::vertex_descriptor
+     // target (typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName> >::edge_descriptor e, 
+     //         crab::cfg::Cfg<BasicBlockLabel,VariableName> /*g*/) {
+     //   return e.second;
+     // }
 
      template<typename BasicBlockLabel, typename VariableName>
      inline pair<typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName> >::vertex_iterator, 
@@ -157,6 +170,7 @@ namespace boost {
        return out_degree (v, g) + in_degree (v, g);
      }
    
-} // namespace boost
+ } // namespace cfg
+} // namespace crab
 
 #endif 

@@ -6,12 +6,16 @@
 #include <crab/analysis/BwdAnalyzer.hpp>
 #include <crab/domains/discrete_domains.hpp>
 
+#include <crab/cfg/CfgBgl.hpp>
+#include <crab/analysis/graphs/Sccg.hpp>
+#include <crab/analysis/graphs/TopoOrder.hpp>
+
 namespace crab {
 
   namespace analyzer {
 
     using namespace cfg;
-
+   
     namespace liveness_discrete_impl{
 
        template< typename Element>
@@ -50,8 +54,9 @@ namespace crab {
          liveness_domain(const liveness_domain_t &other): 
              ikos::writeable(), _inv(other._inv) { }
          
-         liveness_domain_t& operator=(liveness_domain_t other) {
-           this->_inv = other._inv;
+         liveness_domain_t& operator=(const liveness_domain_t &other) {
+           if (this != &other) 
+             this->_inv = other._inv;
            return *this;
          }
          
@@ -76,14 +81,25 @@ namespace crab {
          }
          
          bool operator<=(liveness_domain_t other) {
-           return (this->_inv <= other._inv);
+           if (is_bottom ()) 
+             return true;
+           else if (other.is_top ())
+             return true;
+           else
+             return (this->_inv <= other._inv);
          }
          
          void operator-=(Element x) {
+           if (is_bottom ()) 
+             return;
+           
            this->_inv -= x;
          }
          
          void operator-=(liveness_domain_t other) {
+           if (is_bottom () || other.is_bottom ()) 
+             return;
+
            if (!other._inv.is_top()) {
              for ( auto v : other) 
                this->_inv -= v; 
@@ -91,11 +107,22 @@ namespace crab {
          }
          
          void operator+=(Element x) {
+           if (is_top ()) 
+             return;
+
            this->_inv += x;
          }
          
          void operator+=(liveness_domain_t other) {
-           this->_inv = (this->_inv | other._inv);
+           if (is_top () || other.is_bottom ()) {
+             return;
+           }
+           else if (other.is_top ()) {
+             _inv = discrete_domain_t::top();
+           }
+           else {
+             this->_inv = (this->_inv | other._inv);
+           }
          }
          
          liveness_domain_t operator|(liveness_domain_t other) {
@@ -107,11 +134,13 @@ namespace crab {
          }
          
          liveness_domain_t operator||(liveness_domain_t other) {
-           return this->operator|(other);
+           // liveness domain is finite so no infinite AC
+           return other;
          }
       
          liveness_domain_t operator&&(liveness_domain_t other) {
-           return this->operator&(other);
+           // liveness domain is finite so no infinite DC
+           return other;
          }
          
          void write(ostream& o) {
@@ -122,7 +151,7 @@ namespace crab {
 
     } // end namespace liveness_discrete_impl
 
-#if 0
+    #if 0
     // The implementation using discrete_domain is significantly faster
     // than the one using std::set
     namespace liveness_set_impl {
@@ -313,8 +342,9 @@ namespace crab {
         }  
       }; 
     } // end namespace liveness_set_impl
-#endif 
+   #endif 
 
+   #ifdef USE_BACKWARD_FP_ITERATOR
    //! Live variable analysis
    template<typename CFG>
    class Liveness: 
@@ -355,8 +385,8 @@ namespace crab {
      void init()
      {
        for (auto &b: boost::make_iterator_range ( this->get_cfg().begin (), 
-                                                  this->get_cfg().end ())) {
-         liveness_domain_t kill, gen;
+                                                 this->get_cfg().end ())) {
+         liveness_domain_t kill, gen;         
          for (auto &s: b) {
            auto live = s.getLive();
            for (auto d: boost::make_iterator_range (live.defs_begin (), 
@@ -389,7 +419,6 @@ namespace crab {
          CRAB_WARN ("Trying to execute liveness twice!");
          return;
        }
-
        this->run (liveness_domain_t::bottom()); 
        m_has_exec = true;
      }
@@ -435,17 +464,14 @@ namespace crab {
                                 liveness_domain_t inv) {
        auto it = m_kill_gen_map.find (bb_id);
        assert(it != m_kill_gen_map.end ());
-       kill_gen_t p = it->second;
 
-       inv -= p.first;
-       inv += p.second;
-
+       inv -= it->second.first;
+       inv += it->second.second;
        return inv;
      }
 
      void check_pre (basic_block_label_t bb, 
                      liveness_domain_t live_in) {
-
        // // --- Collect live variables at the entry of bb
        // if (!live_in.is_bottom()) {
        //   set_ptr live_in_set = set_ptr (new set_t (live_in));         
@@ -457,7 +483,6 @@ namespace crab {
                       liveness_domain_t live_out) {
 
        // --- Collect dead variables at the exit of bb
-
        if (!live_out.is_bottom ()) {
          set_ptr dead_set (new set_t (this->get_cfg().get_node (bb).live ()));
          *dead_set -= live_out;
@@ -470,8 +495,202 @@ namespace crab {
          m_total_blks ++;
        }
      }
+   }; 
+   /////////
+   #else
+   /////////
+   //! Live variable analysis
+   template<typename CFG>
+   class Liveness {
+
+    public:
+     typedef typename CFG::basic_block_label_t basic_block_label_t;
+     typedef typename CFG::varname_t varname_t;
+     typedef liveness_discrete_impl::liveness_domain<varname_t> liveness_domain_t;
+     typedef liveness_domain_t set_t;
+     
+    private:
+     typedef boost::shared_ptr <set_t> set_ptr;
+     typedef boost::unordered_map< basic_block_label_t, set_ptr > liveness_map_t;
+     typedef std::pair< liveness_domain_t, liveness_domain_t >   kill_gen_t;
+     typedef boost::unordered_map< basic_block_label_t, kill_gen_t>  kill_gen_map_t;
+     typedef typename liveness_map_t::value_type l_binding_t;
+     typedef typename kill_gen_map_t::value_type kg_binding_t;
+
+     CFG m_cfg;
+     boost::unordered_map< basic_block_label_t, set_t> m_in_map;
+     boost::unordered_map< basic_block_label_t, set_t> m_out_map;
+
+     // for internal use
+     kill_gen_map_t m_kill_gen_map;
+     // for external queries
+     liveness_map_t m_dead_map;
+
+     // avoid run twice
+     bool m_has_exec;
+
+     // statistics 
+     unsigned m_max_live;
+     unsigned m_total_live;
+     unsigned m_total_blks;
+
+    private:
+
+     // precompute use/def sets
+     void init() {
+       for (auto &b: boost::make_iterator_range ( m_cfg.begin (), 
+                                                  m_cfg.end ())) {
+         liveness_domain_t kill, gen;
+         for (auto &s: boost::make_iterator_range (b.rbegin(), 
+                                                   b.rend ())) {
+           auto live = s.getLive();
+           for (auto d: boost::make_iterator_range (live.defs_begin (), 
+                                                    live.defs_end ())) {
+             kill += d; 
+             gen -= d;
+           }
+           for (auto u: boost::make_iterator_range (live.uses_begin (), 
+                                                    live.uses_end ())) {
+             gen  += u; 
+           }
+         }
+         m_kill_gen_map.insert ( kg_binding_t (b.label (), 
+                                               kill_gen_t (kill, gen)));
+       }
+     }
+     
+    public:
+
+     Liveness (CFG cfg): 
+         m_cfg (cfg),
+         m_has_exec (false),
+         m_max_live (0), m_total_live (0), m_total_blks (0) {
+       init(); 
+     }
+
+     void exec() { 
+
+       if (m_has_exec) {
+         CRAB_WARN ("Trying to execute liveness twice!");
+         return;
+       }
+
+       std::vector<typename CFG::node_t> rev_sccg_order;
+       crab::analyzer::graph_algo::SccGraph <CFG> Scc_g (m_cfg);
+       crab::analyzer::graph_algo::rev_topo_sort (Scc_g, rev_sccg_order);
+
+       std::vector<typename CFG::node_t> order;
+       for (auto &n : rev_sccg_order) {
+         auto &members = Scc_g.getComponentMembers (n);
+         order.insert (order.end (), members.begin (), members.end ());
+       }
+
+       assert (order.size () == m_cfg.size ());
+
+#if 0  //debugging
+       cout  << "\tFixpoint ordering of the CFG {"; 
+       for (auto &v : order)
+         cout << v << " -- "; 
+       cout << "}\n"; 
+#endif 
+
+       bool change = true;
+       unsigned iterations = 0;
+       while (change) {
+         change = false;
+         ++iterations;
+         for (auto &n : order) {
+           liveness_domain_t out = liveness_domain_t::bottom();
+           for (auto p: m_cfg.next_nodes (n))
+             out = out | m_in_map [p]; 
+           liveness_domain_t in = analyze (n, out);
+           liveness_domain_t old_in = m_in_map [n];
+           if (!(in <= old_in)) {
+             m_in_map [n] = in | old_in;
+             change = true;
+           }
+           else
+             m_out_map [n] = out;
+         }
+       }
+       
+       for (auto &n : order) {
+         process_post (n, m_out_map [n]);
+       }
+       
+       // std::cout << "Liveness fixpoint reached in " 
+       //           << iterations << " iterations \n"; 
+       m_has_exec = true;
+       
+#if 0  // debugging
+       cout << "Liveness sets: \n";
+       for (auto n: boost::make_iterator_range (m_cfg.label_begin (),
+                                                m_cfg.label_end ())) {
+         cout << n << " "
+              << "OUT=" << m_out_map [n]  << " "
+              << "IN=" << m_in_map [n] << "\n";
+       }
+       cout << "\n";
+#endif 
+       
+       // --- Keep a small memory footprint in client analyses
+       m_in_map.clear ();
+       m_out_map.clear ();
+     }
+
+     //! return the set of dead variables at the exit of block bb
+     set_t dead_exit (basic_block_label_t bb) const {
+       auto it = m_dead_map.find(bb);
+       if (it == m_dead_map.end()) 
+         return set_t ();
+       else 
+         return *(it->second); 
+     }
+
+     void get_stats (unsigned& total_live, 
+                     unsigned& max_live_per_blk,
+                     unsigned& avg_live_per_blk)  const {
+       total_live = m_total_live;
+       max_live_per_blk = m_max_live;
+       avg_live_per_blk = (m_total_blks == 0 ? 0 : (int) m_total_live / m_total_blks);
+     }
+
+     void write (ostream &o) const {
+     }
+     
+    private:
+
+      
+     liveness_domain_t analyze (basic_block_label_t bb_id, 
+                                liveness_domain_t live_out) {
+       auto it = m_kill_gen_map.find (bb_id);
+       assert(it != m_kill_gen_map.end ());
+
+       // --- compute live_in
+       live_out -= it->second.first;
+       live_out += it->second.second;
+       return live_out;
+     }
+
+     void process_post (basic_block_label_t bb, 
+                        liveness_domain_t live_out) {
+
+       // --- Collect dead variables at the exit of bb
+       if (!live_out.is_bottom ()) {
+         set_ptr dead_set (new set_t (m_cfg.get_node (bb).live ()));
+         *dead_set -= live_out;
+         m_dead_map.insert (l_binding_t (bb, dead_set));
+
+
+         // update statistics
+         m_total_live += live_out.size ();
+         m_max_live = std::max (m_max_live, live_out.size ());
+         m_total_blks ++;
+       }
+     }
           
    }; 
+#endif 
 
    template <typename CFG>
    ostream& operator << (ostream& o, const Liveness<CFG> &l) {
