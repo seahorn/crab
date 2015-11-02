@@ -150,7 +150,20 @@ namespace crab {
           division_operators< Number, VariableName >(),
           /* ranges(_ranges),*/ vert_map(_vert_map), rev_map(_rev_map), g(_g), potential(_potential),
           _is_bottom(false)
+      {
+        CRAB_WARN("Non-moving constructor.");
+        assert(g.size() > 0);
+      }
+      
+      SplitDBM(vert_map_t&& _vert_map, rev_map_t&& _rev_map, graph_t&& _g, vector<Wt>&& _potential)
+        : writeable(),
+          numerical_domain<Number, VariableName >(),
+          bitwise_operators< Number, VariableName >(),
+          division_operators< Number, VariableName >(),
+          vert_map(std::move(_vert_map)), rev_map(std::move(_rev_map)), g(std::move(_g)), potential(std::move(_potential)),
+          _is_bottom(false)
       { assert(g.size() > 0); }
+
 
       // FIXME: Add a move constructor
       SplitDBM& operator=(const SplitDBM& o)
@@ -236,9 +249,11 @@ namespace crab {
       bool is_top() {
         if(_is_bottom)
           return false;
+        return g.is_empty();
 //         if(ranges.size() != 0)
 //          return false;
         // GKG: Come up with a cheaper approach for this
+        /*
         if(g.succs(0).size() > 0)
           return false;
         for(auto p : vert_map)
@@ -246,6 +261,7 @@ namespace crab {
             return false;
 
         return true;
+        */
       }
     
       bool operator<=(DBM_t& o)  {
@@ -616,7 +632,7 @@ namespace crab {
           // Conjecture: join_g remains closed.
           
 //          DBM_t res(join_range, out_vmap, out_revmap, join_g, join_pot);
-          DBM_t res(out_vmap, out_revmap, join_g, join_pot);
+          DBM_t res(std::move(out_vmap), std::move(out_revmap), std::move(join_g), std::move(join_pot));
 //          join_g.check_adjs();
           CRAB_DEBUG ("Result join:\n",res);
            
@@ -693,7 +709,7 @@ namespace crab {
           */
 
 //          widen_g.check_adjs();
-          DBM_t res(/* widen_range ,*/ out_vmap, out_revmap, widen_g, widen_pot);
+          DBM_t res(std::move(out_vmap), std::move(out_revmap), std::move(widen_g), std::move(widen_pot));
 
           // GKG: need to mark changes so we can restore closure
            
@@ -795,7 +811,7 @@ namespace crab {
 //            CRAB_DEBUG("NEW: ", *rev_map[e.first.second], "-", *rev_map[e.first.first], "<=", e.second);
           GrOps::apply_delta(meet_g, delta);
            
-          DBM_t res(meet_verts, meet_rev, meet_g, meet_pi);
+          DBM_t res(std::move(meet_verts), std::move(meet_rev), std::move(meet_g), std::move(meet_pi));
 //          meet_g.check_adjs();
           CRAB_DEBUG ("Result meet:\n",res);
           return res;
