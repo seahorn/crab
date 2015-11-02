@@ -473,7 +473,8 @@ namespace crab {
           if(!l.elem(s, d))
             g.add_edge(s, r.edge_val(s, d), d);
           else
-            g.edge_val(s, d) = min(g.edge_val(s, d), r.edge_val(s, d));
+            g.set_edge(s, min(g.edge_val(s, d), r.edge_val(s, d)), d);
+//            g.edge_val(s, d) = min(g.edge_val(s, d), r.edge_val(s, d));
         }
       }
       return g;

@@ -31,6 +31,8 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/container/flat_map.hpp>
 
+#define CLOSE_BOUNDS_INLINE
+
 using namespace boost;
 using namespace std;
 
@@ -805,11 +807,21 @@ namespace crab {
           GrOps::apply_delta(meet_g, delta);
 
           // Recover updated LBs and UBs.
+#ifdef CLOSE_BOUNDS_INLINE
+          Wt_min min_op;
+          for(auto e : delta)
+          {
+            if(meet_g.elem(0, e.first.first))
+              meet_g.update_edge(0, meet_g.edge_val(0, e.first.first) + e.second, e.first.second, min_op);
+            if(meet_g.elem(e.first.second, 0))
+              meet_g.update_edge(e.first.first, meet_g.edge_val(e.first.second, 0) + e.second, e.first.first, min_op);
+          }
+#else
           delta.clear();
           GrOps::close_after_assign(meet_g, meet_pi, 0, delta);
-//          for(auto e : delta)
-//            CRAB_DEBUG("NEW: ", *rev_map[e.first.second], "-", *rev_map[e.first.first], "<=", e.second);
           GrOps::apply_delta(meet_g, delta);
+
+#endif
            
           DBM_t res(std::move(meet_verts), std::move(meet_rev), std::move(meet_g), std::move(meet_pi));
 //          meet_g.check_adjs();
@@ -1306,24 +1318,46 @@ namespace crab {
           CRAB_DEBUG(p.first, ">=", p.second);
           VariableName x(p.first);
           vert_id v = get_vert(p.first);
-          g.update_edge(v, -p.second, 0, min_op); 
+          if(g.elem(v, 0) && g.edge_val(v, 0) <= -p.second)
+            continue;
+          g.set_edge(v, -p.second, 0);
           if(!repair_potential(v, 0))
           {
             set_to_bottom();
             return false;
           }
+
+          // Compute other updated bounds
+#ifdef CLOSE_AFTER_ASSIGN
+          for(vert_id s : g.preds(v))
+          {
+            if(s == 0)
+              continue;
+            g.update_edge(s, g.edge_val(s, v) - p.second, 0, min_op);
+          }
+#endif
         }
         for(auto p : ubs)
         {
           CRAB_DEBUG(p.first, "<=", p.second);
           VariableName x(p.first);
           vert_id v = get_vert(p.first);
-          g.update_edge(0, p.second, v, min_op);
+          if(g.elem(0, v) && g.edge_val(0, v) <= p.second)
+            continue;
+          g.set_edge(0, p.second, v);
           if(!repair_potential(0, v))
           {
             set_to_bottom();
             return false;
           }
+#ifdef CLOSE_AFTER_ASSIGN
+          for(vert_id d : g.succs(v))
+          {
+            if(d == 0)
+              continue;
+            g.update_edge(0, g.edge_val(v, d) + p.second, d, min_op);
+          }
+#endif
         }
 
         for(auto diff : csts)
@@ -1341,12 +1375,13 @@ namespace crab {
           
           close_over_edge(src, dest);
         }
-        /* */
         // Collect bounds
-        // GKG: Do this more efficiently
+        // GKG: Now done in close_over_edge
+#ifndef CLOSE_AFTER_ASSIGN
         edge_vector delta;
         GrOps::close_after_assign(g, potential, 0, delta);
         GrOps::apply_delta(g, delta);
+#endif
         /* */
 
         // CRAB_WARN("SplitDBM::add_linear_leq not yet implemented.");
@@ -1670,17 +1705,25 @@ namespace crab {
       // Restore closure after a single edge addition
       void close_over_edge(vert_id ii, vert_id jj)
       {
+        Wt_min min_op;
+
         assert(ii != 0 && jj != 0);
         SubGraph<graph_t> g_excl(g, 0);
 
         Wt c = g_excl.edge_val(ii,jj);
+
+#ifdef CLOSE_BOUNDS_INLINE
+        if(g.elem(0, ii))
+          g.update_edge(0, g.edge_val(0, ii) + c, jj, min_op);
+        if(g.elem(jj, 0))
+          g.update_edge(ii, g.edge_val(jj, 0) + c, 0, min_op);
+#endif
 
         // There may be a cheaper way to do this.
         for(vert_id se : g_excl.preds(ii))
         {
           Wt wt_sij = g_excl.edge_val(se,ii) + c;
 
-          // assert(g_excl.preds(se).size() > 0);
           assert(g_excl.succs(se).begin() != g_excl.succs(se).end());
           if(se != jj)
           {
@@ -1689,11 +1732,18 @@ namespace crab {
               if(g_excl.edge_val(se,jj) <= wt_sij)
                 continue;
 
-              g_excl.edge_val(se,jj) = wt_sij;
+              g_excl.set_edge(se, wt_sij, jj);
             } else {
               g_excl.add_edge(se, wt_sij, jj);
             }
             
+#ifdef CLOSE_BOUNDS_INLINE
+            if(g.elem(0, se))
+              g.update_edge(0, g.edge_val(0, se) + wt_sij, jj, min_op);
+            if(g.elem(jj, 0))
+              g.update_edge(se, g.edge_val(jj, 0) + wt_sij, 0, min_op);
+#endif
+
             for(vert_id de : g_excl.succs(jj))
             {
               if(se != de)
@@ -1701,10 +1751,18 @@ namespace crab {
                 Wt wt_sijd = wt_sij + g_excl.edge_val(jj, de);
                 if(g_excl.elem(se, de))
                 {
-                  g_excl.edge_val(se, de) = min(g_excl.edge_val(se, de), wt_sijd);
+                  if(g_excl.edge_val(se, de) <= wt_sijd)
+                    continue;
+                  g_excl.set_edge(se, wt_sijd, de);
                 } else {
                   g_excl.add_edge(se, wt_sijd, de);
                 }
+#ifdef CLOSE_BOUNDS_INLINE
+                if(g.elem(0, se))
+                  g.update_edge(0, g.edge_val(0, se) + wt_sijd, de, min_op);
+                if(g.elem(de, 0))
+                  g.update_edge(de, g.edge_val(de, 0) + wt_sijd, se, min_op);
+#endif
               }
             }
           }
@@ -1717,10 +1775,19 @@ namespace crab {
           {
             if(g_excl.elem(ii, de))
             {
-              g_excl.edge_val(ii, de) = min(g_excl.edge_val(ii, de), wt_ijd);
+//              g_excl.edge_val(ii, de) = min(g_excl.edge_val(ii, de), wt_ijd);
+              if(g_excl.edge_val(ii, de) <= wt_ijd)
+                continue;
+              g_excl.set_edge(ii, wt_ijd, de);
             } else {
               g_excl.add_edge(ii, wt_ijd, de);
             }
+#ifdef CLOSE_BOUNDS_INLINE
+            if(g.elem(0,  ii))
+              g.update_edge(0, g.edge_val(0, ii) + wt_ijd, de, min_op);
+            if(g.elem(de, 0))
+              g.update_edge(ii, g.edge_val(de, 0) + wt_ijd, 0, min_op);
+#endif
           }
         }
         // Closure is now updated.
