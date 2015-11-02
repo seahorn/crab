@@ -6,6 +6,7 @@
 
 #include <crab/cfg/ConcSys.hpp>
 #include <crab/cfg/VarFactory.hpp>
+#include <crab/domains/domain_traits.hpp>
 #include <crab/analysis/FwdAnalyzer.hpp>
 
 namespace crab {
@@ -29,7 +30,7 @@ namespace crab {
       typedef typename fwd_analyzer_t::liveness_t liveness_t;
       typedef ConcSys <ThreadId, CFG> conc_sys_t;
       
-      typedef inv_tbl_traits <AbsDomain, InvTableTy> inv_tbl_t;
+      typedef domain_traits::absdom_to_formula <AbsDomain, InvTableTy> conv_to_form_t;
       
      public:
       typedef boost::unordered_map<basic_block_label_t, AbsDomain> inv_map_t;
@@ -90,7 +91,7 @@ namespace crab {
               for (auto bb: boost::make_iterator_range (p.second.label_begin (), 
                                                         p.second.label_end ()))
               {
-                AbsDomain bb_inv = inv_tbl_t::unmarshall (thread_analyzer [bb]);
+                AbsDomain bb_inv = conv_to_form_t::unmarshall (thread_analyzer [bb]);
                 inv_map->insert (make_pair (bb, bb_inv));
                 /// -- flow insensitive abstraction 
                 inv = inv | bb_inv;
@@ -106,7 +107,7 @@ namespace crab {
                                                         p.second.label_end ()))
              {
                AbsDomain& old_inv = (*inv_map) [bb];           
-               AbsDomain new_inv = inv_tbl_t::unmarshall (thread_analyzer [bb]);
+               AbsDomain new_inv = conv_to_form_t::unmarshall (thread_analyzer [bb]);
                if (!(new_inv <= old_inv && old_inv <= new_inv))
                {
                  change=true;
