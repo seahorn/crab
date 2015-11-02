@@ -1,5 +1,6 @@
 #include "../common.hpp"
 #include <crab/common/sparse_graph.hpp>
+#include <crab/common/pt_graph.hpp>
 #include <crab/common/graph_ops.hpp>
 
 using namespace std;
@@ -11,9 +12,10 @@ using namespace crab;
 typedef linear_constraint<z_number, varname_t> linear_constraint_t;
 typedef linear_expression<z_number, varname_t> linear_expression_t;
 
-typedef SparseWtGraph<z_number> graph_t;
+//typedef SparseWtGraph<z_number> graph_t;
+typedef PtGraph<z_number> graph_t;
 
-typedef GraphOps<z_number> GrOps;
+typedef GraphOps<graph_t> GrOps;
 
 void check_graph(graph_t& g)
 {

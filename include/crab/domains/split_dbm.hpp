@@ -17,6 +17,7 @@
 
 #include <crab/common/types.hpp>
 #include <crab/common/sparse_graph.hpp>
+#include <crab/common/pt_graph.hpp>
 #include <crab/common/graph_ops.hpp>
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/domains/intervals.hpp>
@@ -84,6 +85,7 @@ namespace crab {
       typedef SDBM_impl::NtoV<Number, Wt> ntov;
 
       typedef SparseWtGraph<Wt> graph_t;
+      //typedef PtGraph<Wt> graph_t;
       typedef typename graph_t::vert_id vert_id;
       typedef boost::container::flat_map<variable_t, vert_id> vert_map_t;
       typedef typename vert_map_t::value_type vmap_elt_t;
@@ -91,7 +93,7 @@ namespace crab {
 
       typedef SplitDBM<Number, VariableName> DBM_t;
 
-      typedef GraphOps<Wt> GrOps;
+      typedef GraphOps<graph_t> GrOps;
       typedef GraphPerm<graph_t> GrPerm;
       typedef typename GrOps::edge_vector edge_vector;
       // < <x, y>, k> == x - y <= k.

@@ -366,12 +366,13 @@ namespace crab {
   };
 
   // GKG - What's the best way to split this out?
-  template<class Number>
+  template<class Gr>
   class GraphOps {
   public:
-    typedef Number Wt;
+    typedef typename Gr::Wt Wt;
     // The following code assumes vert_id is an integer.
-    typedef SparseWtGraph<Wt> graph_t;
+//    typedef SparseWtGraph<Wt> graph_t;
+    typedef Gr graph_t;
     typedef typename graph_t::vert_id vert_id;
 
     typedef vector< pair< pair<vert_id, vert_id>, Wt > > edge_vector;
@@ -1091,16 +1092,16 @@ namespace crab {
   template<class Wt>
   unsigned int GraphOps<Wt>::scratch_sz = 0;
 
-  template<class Wt>
-  vector<Wt> GraphOps<Wt>::dists;
-  template<class Wt>
-  vector<Wt> GraphOps<Wt>::dists_alt;
-  template<class Wt>
-  vector<unsigned int> GraphOps<Wt>::dist_ts;
-  template<class Wt>
-  unsigned int GraphOps<Wt>::ts = 0;
-  template<class Wt>
-  unsigned int GraphOps<Wt>::ts_idx = 0;
+  template<class G>
+  vector<typename G::Wt> GraphOps<G>::dists;
+  template<class G>
+  vector<typename G::Wt> GraphOps<G>::dists_alt;
+  template<class G>
+  vector<unsigned int> GraphOps<G>::dist_ts;
+  template<class G>
+  unsigned int GraphOps<G>::ts = 0;
+  template<class G>
+  unsigned int GraphOps<G>::ts_idx = 0;
 
 } // namespace crab
 
