@@ -533,8 +533,12 @@ namespace crab {
           if (kmin) Ldd_GetTheory (get_ldd_man())->destroy_cst(kmin);
           if (kmax) Ldd_GetTheory (get_ldd_man())->destroy_cst(kmax);
         }
-        
-        
+
+        interval_t operator[](VariableName v) { 
+          CRAB_WARN("Projection to intervals not implemented");
+          return interval_t::top ();
+        }
+                
         void assign (VariableName x, linear_expression_t e) {
           if (is_bottom ()) return;
 

@@ -7,13 +7,6 @@ if (CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR )
     "In-source builds are not allowed. Please clean your source tree and try again.")  
 endif()
 
-# determine if this is top-level or embedded project
-if (PROJECT_NAME STREQUAL CMAKE_PROJECT_NAME)
-  set (TopLevel TRUE)
-else()
-  set (TopLevel FALSE)
-endif()
-
 # Add path for custom modules
 set(CMAKE_MODULE_PATH 
   ${CMAKE_MODULE_PATH} 
@@ -42,31 +35,29 @@ option (USE_LDD "Enable ldd" OFF)
 include(ExternalProject)
 set_property(DIRECTORY PROPERTY EP_STEP_TARGETS configure build test)
 
-if (TopLevel)
-  find_package (Git)
-  if (USE_LDD)
-    if (GIT_FOUND)
-      set (LDD_TAG "origin/master" CACHE STRING "ldd tag to use")
-      set (LDD_REPO "http://git.code.sf.net/p/lindd/code" CACHE STRING "ldd repository")
-      ExternalProject_Add(ldd
-        GIT_REPOSITORY ${LDD_REPO}
-        GIT_TAG ${LDD_TAG}
-        PREFIX ${CMAKE_BINARY_DIR}/ldd
-        INSTALL_DIR ${CMAKE_BINARY_DIR}/run/ldd
-        CMAKE_ARGS
-        -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-        -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
-        -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
-        TEST_AFTER_INSTALL 1
-        TEST_COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_LIST_FILE}
-        LOG_DOWNLOAD 1
-        LOG_CONFIGURE 1
-        LOG_BUILD 1
-        LOG_INSTALL 1)
-    else ()
-        message (STATUS "Could not find git. Not downloading ldd")
-    endif()
-  endif ()
+find_package (Git)
+if (USE_LDD)
+  if (GIT_FOUND)
+    set (LDD_TAG "origin/master" CACHE STRING "ldd tag to use")
+    set (LDD_REPO "http://git.code.sf.net/p/lindd/code" CACHE STRING "ldd repository")
+    ExternalProject_Add(ldd
+      GIT_REPOSITORY ${LDD_REPO}
+      GIT_TAG ${LDD_TAG}
+      PREFIX ${CMAKE_BINARY_DIR}/ldd
+      INSTALL_DIR ${CMAKE_BINARY_DIR}/run/ldd
+      CMAKE_ARGS
+      -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+      -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
+      -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
+      TEST_AFTER_INSTALL 1
+      TEST_COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_LIST_FILE}
+      LOG_DOWNLOAD 1
+      LOG_CONFIGURE 1
+      LOG_BUILD 1
+      LOG_INSTALL 1)
+  else ()
+      message (STATUS "Could not find git. Not downloading ldd")
+  endif()
 endif ()
 
 find_package(GMP REQUIRED)
@@ -78,21 +69,19 @@ else()
   set(GMPXX_LIB "")
 endif()
 
-if (TopLevel)
-  if (USE_LDD)
-    find_package(Ldd)
-    if (LDD_FOUND)
-      include_directories (${LDD_INCLUDE_DIR})
-      set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${LDD_CXXFLAGS}")
-      set (LDD_LIBS ${LDD_LIBRARY})
-      set (HAVE_LDD TRUE)
-    else()
-      ExternalProject_Get_Property (ldd INSTALL_DIR)
-      set (LDD_ROOT ${INSTALL_DIR} CACHE FILEPATH "Forced location of ldd" FORCE)
-      message (WARNING "No ldd found. Run \n\tcmake --build . --target ldd && cmake ${CMAKE_SOURCE_DIR}")
-      return()
-    endif()
-  endif ()
+if (USE_LDD)
+  find_package(Ldd)
+  if (LDD_FOUND)
+    include_directories (${LDD_INCLUDE_DIR})
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${LDD_CXXFLAGS}")
+    set (LDD_LIBS ${LDD_LIBRARY})
+    set (HAVE_LDD TRUE)
+  else()
+    ExternalProject_Get_Property (ldd INSTALL_DIR)
+    set (LDD_ROOT ${INSTALL_DIR} CACHE FILEPATH "Forced location of ldd" FORCE)
+    message (WARNING "No ldd found. Run \n\tcmake --build . --target ldd && cmake ${CMAKE_SOURCE_DIR}")
+    return()
+  endif()
 endif ()
 
 include_directories (${Crab_SOURCE_DIR}/include)
