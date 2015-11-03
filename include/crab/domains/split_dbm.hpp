@@ -1509,8 +1509,8 @@ namespace crab {
         }
         vert_id v = (*it).second;
         interval_t x_out = interval_t(
-            r.elem(v, 0) ? -r.edge_val(v, 0) : bound_t::minus_infinity(),
-            r.elem(0, v) ? r.edge_val(0, v) : bound_t::plus_infinity());
+            r.elem(v, 0) ? -Number(r.edge_val(v, 0)) : bound_t::minus_infinity(),
+            r.elem(0, v) ? Number(r.edge_val(0, v)) : bound_t::plus_infinity());
         return x_out;
         /*
         boost::optional< interval_t > v = r.lookup(x);
@@ -1919,8 +1919,8 @@ namespace crab {
             if(!g.elem(0, v) && !g.elem(v, 0))
              continue; 
             interval_t v_out = interval_t(
-                g.elem(v, 0) ? -g.edge_val(v, 0) : bound_t::minus_infinity(),
-                g.elem(0, v) ? g.edge_val(0, v) : bound_t::plus_infinity());
+                g.elem(v, 0) ? -Number(g.edge_val(v, 0)) : bound_t::minus_infinity(),
+                g.elem(0, v) ? Number(g.edge_val(0, v)) : bound_t::plus_infinity());
             
             if(first)
               first = false;
