@@ -2,29 +2,24 @@
 #define TOPOLOGICAL_ORDER_HPP__
 
 #include <boost/graph/topological_sort.hpp>
+#include <crab/analysis/graphs/SccgBgl.hpp>
 
 ///Uncomment for enabling debug information
 //#include <crab/common/dbg.hpp>
 
-#include <crab/cg/Sccg.hpp>
-#include <crab/cg/SccgBgl.hpp>
-
-
 /* 
-   Topological order of a call graph
+   Topological order of a graph
  */
 
-using namespace boost;
-
 namespace crab {
-
-   namespace cg {
+  namespace analyzer {
+   namespace graph_algo {
 
      // res contains the reverse topological order of the SCC graph g
-     template <typename CG>
-     void rev_topo_sort (const SccGraph<CG> &g, std::vector<typename CG::node_t>& res) {
+     template <typename G>
+     void rev_topo_sort (const G &g, std::vector<typename G::node_t>& res) {
 
-       typedef boost::unordered_map< typename CG::node_t, default_color_type > color_map_t;
+       typedef boost::unordered_map< typename G::node_t, default_color_type > color_map_t;
        typedef boost::associative_property_map< color_map_t > property_color_map_t;
 
        color_map_t colormap;
@@ -39,7 +34,8 @@ namespace crab {
                                color_map(property_color_map_t(colormap)));
      }
    
-   } // end namespace cg
+   } // end namespace graph_algo
+  } // end namespace analyzer
 } // end namespace crab
 
 #endif 

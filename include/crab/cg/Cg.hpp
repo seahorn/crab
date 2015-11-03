@@ -60,8 +60,13 @@ namespace crab {
           varname_t name () const {
             auto d_opt = m_cfg.get_func_decl ();
             if (!d_opt) CRAB_ERROR("No function name found");
-            
             return (*d_opt).get_func_name ();
+          }
+
+          string str_name () const {
+            auto d_opt = m_cfg.get_func_decl ();
+            if (!d_opt) CRAB_ERROR("No function name found");
+            return (*d_opt).get_func_name ().str ();
           }
 
           bool operator==(const CgNode &o) const {
@@ -73,7 +78,7 @@ namespace crab {
           }
           
           friend ostream& operator<<(ostream& o, CgNode n) {
-            o << n.getCfg ();
+            o << n.str_name ();
             return o;
           }
           
@@ -290,7 +295,7 @@ namespace crab {
           for (auto f: boost::make_iterator_range (nodes ())){
             if (num_succs (f) > 0) {
               for (auto e: boost::make_iterator_range (succs (f)))  {
-                o << e.Src().name () << "--> " << e.Dest().name () << endl;
+                o << e.Src() << "--> " << e.Dest() << endl;
               }
             }
           }

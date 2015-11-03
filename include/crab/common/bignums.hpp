@@ -81,7 +81,7 @@ public:
       return _n.get_si ();
     }
     else {
-      CRAB_ERROR("mpz_class", _n, " does not fit into a signed long integer");
+      CRAB_ERROR("mpz_class ", _n, " does not fit into a signed long integer");
     }
   } 
 
@@ -91,8 +91,12 @@ public:
       return (int) _n.get_si ();
     }
     else {
-      CRAB_ERROR("mpz_class", _n, " does not fit into a signed integer");
+      CRAB_ERROR("mpz_class ", _n, " does not fit into a signed integer");
     }
+  } 
+
+  explicit operator mpz_class() const { 
+    return _n;
   } 
 
 public:
