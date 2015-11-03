@@ -378,8 +378,12 @@ class SparseWtGraph : public writeable {
     vert_range verts(void) const { return vert_range(sz, is_free); }
 
     typedef vert_id* adj_iterator;
+    typedef adj_iterator succ_iterator;
+    typedef adj_iterator pred_iterator;
     class adj_list {
     public:
+      typedef adj_iterator iterator;
+
       adj_list(unsigned int* _ptr, unsigned int max_sz)
         : ptr(_ptr), sparseptr(_ptr+1+max_sz)
       { }
@@ -416,6 +420,9 @@ class SparseWtGraph : public writeable {
       unsigned int* ptr;
       unsigned int* sparseptr;
     };
+
+    typedef adj_list succ_range;
+    typedef adj_list pred_range;
 
     adj_list succs(vert_id v) const
     {

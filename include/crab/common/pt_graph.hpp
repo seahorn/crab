@@ -68,6 +68,8 @@ class PtGraph : public writeable {
       edge_count = o.edge_count;
       _succs = o._succs; 
       _preds = o._preds;
+      is_free = o.is_free;
+      free_id = o.free_id;
 
       return *this;
     }
@@ -77,6 +79,8 @@ class PtGraph : public writeable {
       edge_count = o.edge_count;
       _succs = std::move(o._succs);
       _preds = std::move(o._preds);
+      is_free = std::move(o.is_free);
+      free_id = std::move(o.free_id);
       
       return *this;
     }
@@ -227,7 +231,8 @@ class PtGraph : public writeable {
     {
       if(elem(s, d))
       {
-        _succs[s].insert(vert_idx(d), w, op);
+//        _succs[s].insert(vert_idx(d), w, op);
+        _succs[s].insert(vert_idx(d), op.apply(edge_val(s, d), w));
 //        edge_val(s, d) = op.apply(edge_val(s, d), w);
         return;
       }
@@ -271,22 +276,53 @@ class PtGraph : public writeable {
 
     class pred_iterator {
     public:
-      pred_iterator(const typename pred_t::iterator& _it)
+      typedef typename pred_t::iterator ItP;
+      typedef pred_iterator iter_t;
+
+      pred_iterator(const ItP& _it)
         : it(_it)
       { }
-      bool operator!=(const pred_iterator& o) { return it != o.it; }
-      pred_iterator& operator++(void) { ++it; return *this; }
+      pred_iterator(void)
+        : it()
+      { }
+      bool operator!=(const iter_t& o) {
+        return it != o.it;
+      }
+      iter_t& operator++(void) { ++it; return *this; }
       vert_id operator*(void) const { return (*it).v; }
     protected:
-      typename pred_t::iterator it;
+      ItP it;
     };
+
+    class succ_iterator {
+    public:
+      typedef typename succ_t::iterator ItS;
+      typedef succ_iterator iter_t;
+      succ_iterator(const ItS& _it)
+        : it(_it)
+      { }
+      succ_iterator(void)
+        : it()
+      { }
+      bool operator!=(const iter_t& o) {
+        return it != o.it;
+      }
+      iter_t& operator++(void) { ++it; return *this; }
+      vert_id operator*(void) const { return (*it).first.v; }
+    protected:
+      ItS it;      
+    };
+
     class pred_range {
     public:
+      typedef pred_iterator iterator;
+
       pred_range(pred_t& _p)
         : p(_p)
       { }
-      pred_iterator begin(void) const { return pred_iterator(p.begin()); }
-      pred_iterator end(void) const { return pred_iterator(p.end()); }
+      iterator begin(void) const { return iterator(p.begin()); }
+      iterator end(void) const { return iterator(p.end()); }
+      size_t size(void) const { return p.size(); }
 
       bool mem(unsigned int v) const { return p[v]; }
       void add(unsigned int v) { p += v; }
@@ -297,36 +333,30 @@ class PtGraph : public writeable {
       pred_t& p;
     };
 
-    class succ_iterator {
-    public:
-      succ_iterator(typename succ_t::iterator _it)
-        : it(_it)
-      { }
-      bool operator!=(const succ_iterator& o) {
-        return it != o.it;
-      }
-      succ_iterator& operator++(void) { ++it; return *this; }
-      vert_id operator*(void) const { return (*it).first.v; }
-    protected:
-      typename succ_t::iterator it;      
-    };
     class succ_range {
     public:
-      succ_range(succ_t& _s)
-        : s(_s)
+      typedef succ_iterator iterator;
+
+      succ_range(succ_t& _p)
+        : p(_p)
       { }
+      iterator begin(void) const { return iterator(p.begin()); }
+      iterator end(void) const { return iterator(p.end()); }
+      size_t size(void) const { return p.size(); }
 
-      succ_iterator begin(void) const { return succ_iterator(s.begin()); }
-      succ_iterator end(void) const { return succ_iterator(s.end()); }
+      bool mem(unsigned int v) const { return p.lookup(v); }
+      void add(unsigned int v, const Wt& w) { p.insert(v, w); }
+      Wt value(unsigned int v) { return *(p.lookup(v)); }
+      void remove(unsigned int v) { p.remove(v); }
+      void clear() { p.clear(); }
 
-      bool mem(unsigned int v) const { return s.lookup(v); }
-      void add(unsigned int v, const Wt& w) { s.insert(v, w); }
-      void remove(unsigned int v) { s.remove(v); }
-      Wt value(unsigned int v) { return *(s.lookup(v)); }
-      void clear() { s.clear(); }
     protected:
-      succ_t& s;
+      succ_t& p;
     };
+
+//    typedef adj_range<pred_t, pred_iterator> pred_range;
+//    typedef adj_range<succ_t, succ_iterator> succ_range;
+
     succ_range succs(vert_id v)
     {
       return succ_range(_succs[v]);

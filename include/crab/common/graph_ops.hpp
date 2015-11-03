@@ -46,7 +46,8 @@ namespace crab {
   public: 
     typedef typename G::vert_id vert_id;
     typedef typename G::Wt Wt;
-    typedef typename G::adj_list g_adj_list;
+    typedef typename G::pred_range g_pred_range;
+    typedef typename G::succ_range g_succ_range;
 
     GraphPerm(vector<vert_id>& _perm, G& _g) 
       : g(_g), perm(_perm), inv(_g.size(), -1)
@@ -68,7 +69,7 @@ namespace crab {
     }
 
     // Precondition: elem(x, y) is true.
-    Wt& edge_val(vert_id x, vert_id y) const {
+    Wt edge_val(vert_id x, vert_id y) const {
       assert(perm[x] < g.size() && perm[y] < g.size());
       return g.edge_val(perm[x], perm[y]);
     }
@@ -90,9 +91,10 @@ namespace crab {
 
     // GKG: Should probably modify this to handle cases where
     // the vertex iterator isn't just a vert_id*.
+    template<class ItG>
     class adj_iterator {
     public:
-      adj_iterator(vector<vert_id>& _inv, vert_id* _v)
+      adj_iterator(vector<vert_id>& _inv, const ItG& _v)
         : inv(_inv), v(_v)
       { }
 
@@ -114,12 +116,19 @@ namespace crab {
       }
     protected:
       vector<vert_id>& inv;
-      vert_id* v;
+      ItG v;
     };
 
+    template <class RG>
     class adj_list {
     public:
-      adj_list(vector<vert_id>& _perm, vector<vert_id>& _inv, const g_adj_list& _adj)
+      typedef typename RG::iterator ItG;
+      typedef adj_list<RG> adj_list_t;
+      typedef adj_iterator<ItG> adj_iter_t;
+
+      typedef adj_iter_t iterator;
+
+      adj_list(vector<vert_id>& _perm, vector<vert_id>& _inv, const RG& _adj)
         : perm(_perm), inv(_inv), adj(_adj)
       { }
 
@@ -127,17 +136,17 @@ namespace crab {
         : perm(_perm), inv(_inv), adj()
       { }
 
-      adj_iterator begin(void) const {
+      iterator begin(void) const {
         if(adj)
-          return adj_iterator(inv, (*adj).begin());
+          return iterator(inv, (*adj).begin());
         else
-          return adj_iterator(inv, NULL);
-      } 
-      adj_iterator end(void) const {
+          return iterator(inv, ItG());
+      }
+      iterator end(void) const {
         if(adj)
-          return adj_iterator(inv, (*adj).end());
+          return iterator(inv, (*adj).end());
         else
-          return adj_iterator(inv, NULL);
+          return iterator(inv, ItG());
       }
 
       bool mem(unsigned int v) const {
@@ -149,22 +158,24 @@ namespace crab {
     protected:
       vector<vert_id>& perm;
       vector<vert_id>& inv;
-      optional<g_adj_list> adj;
+      optional<RG> adj;
     };
+    typedef adj_list<typename G::pred_range> pred_range;
+    typedef adj_list<typename G::succ_range> succ_range;
 
-    adj_list succs(vert_id v)
+    succ_range succs(vert_id v)
     {
       if(perm[v] == (-1))
-        return adj_list(perm, inv);
+        return succ_range(perm, inv);
       else
-        return adj_list(perm, inv, g.succs(perm[v]));
+        return succ_range(perm, inv, g.succs(perm[v]));
     }
-    adj_list preds(vert_id v)
+    pred_range preds(vert_id v)
     {
       if(perm[v] == (-1))
-        return adj_list(perm, inv);
+        return pred_range(perm, inv);
       else
-        return adj_list(perm, inv, g.preds(perm[v]));
+        return pred_range(perm, inv, g.preds(perm[v]));
     }
     G& g;
     vector<vert_id> perm;
@@ -178,6 +189,9 @@ namespace crab {
     typedef typename G::vert_id vert_id;
     typedef typename G::Wt Wt;
 
+    typedef typename G::pred_range g_pred_range;
+    typedef typename G::succ_range g_succ_range;
+
     SubGraph(G& _g, vert_id _v_ex)
       : g(_g), v_ex(_v_ex)
     { }
@@ -187,7 +201,7 @@ namespace crab {
       return (x != v_ex && y != v_ex && g.elem(x, y));
     }
 
-    Wt& edge_val(vert_id x, vert_id y) const {
+    Wt edge_val(vert_id x, vert_id y) const {
       return g.edge_val(x, y);  
     }
 
@@ -261,9 +275,10 @@ namespace crab {
     };
     vert_range verts(void) const { return vert_range(g.verts(), v_ex); }
 
+    template<class It>
     class adj_iterator {
     public:
-      adj_iterator(const typename G::adj_iterator& _iG, vert_id _v_ex)
+      adj_iterator(const It& _iG, vert_id _v_ex)
         : iG(_iG), v_ex(_v_ex)
       { }
       vert_id operator*(void) const { return *iG; }
@@ -275,28 +290,36 @@ namespace crab {
         return iG != o.iG;
       }
 
-      typename G::adj_iterator iG;
+      It iG;
       vert_id v_ex;
     };
+
+    template<class R>
     class adj_list {
     public: 
-      adj_list(const typename G::adj_list& _rG, vert_id _v_ex)
+      typedef typename R::iterator g_iter;
+      typedef adj_iterator<g_iter> iterator;
+
+      adj_list(const R& _rG, vert_id _v_ex)
         : rG(_rG), v_ex(_v_ex)
       { }
-      adj_iterator begin() const { return adj_iterator(rG.begin(), v_ex); }
-      adj_iterator end() const { return adj_iterator(rG.end(), v_ex); }
+      iterator begin() const { return iterator(rG.begin(), v_ex); }
+      iterator end() const { return iterator(rG.end(), v_ex); }
       
     protected:
-      typename G::adj_list rG;
+      R rG;
       vert_id v_ex;
     };
-    adj_list succs(vert_id v) {
+    typedef adj_list<g_pred_range> pred_range;
+    typedef adj_list<g_succ_range> succ_range;
+
+    succ_range succs(vert_id v) {
       assert(v != v_ex);
-      return adj_list(g.succs(v), v_ex);
+      return succ_range(g.succs(v), v_ex);
     }
-    adj_list preds(vert_id v) {
+    pred_range preds(vert_id v) {
       assert(v != v_ex);
-      return adj_list(g.preds(v), v_ex);
+      return pred_range(g.preds(v), v_ex);
     }
 
     G& g;
@@ -311,7 +334,7 @@ namespace crab {
   public: 
     typedef typename G::vert_id vert_id;
     typedef typename G::Wt Wt;
-    typedef typename G::adj_list g_adj_list;
+//    typedef typename G::adj_list g_adj_list;
 
     GraphRev(G& _g) 
       : g(_g)
@@ -323,7 +346,7 @@ namespace crab {
     }
 
     // Precondition: elem(x, y) is true.
-    Wt& edge_val(vert_id x, vert_id y) const {
+    Wt edge_val(vert_id x, vert_id y) const {
       return g.edge_val(y, x);
     }
 
@@ -337,15 +360,17 @@ namespace crab {
       return g.size();
     }
 
-    typedef typename G::adj_list adj_list;
+//    typedef typename G::adj_list adj_list;
+    typedef typename G::succ_range pred_range;
+    typedef typename G::pred_range succ_range;
 
     typename G::vert_range verts(void) const { return g.verts(); }
 
-    adj_list succs(vert_id v) 
+    succ_range succs(vert_id v)
     {
       return g.preds(v);
     }
-    adj_list preds(vert_id v) 
+    succ_range preds(vert_id v) 
     {
       return g.succs(v);
     } 
