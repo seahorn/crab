@@ -38,7 +38,7 @@ namespace crab {
     //! Perform a forward flow-sensitive analysis.
     //  AbsTr defines the abstract transfer functions as well as which
     //  operations are modelled.
-    template< typename CFG, typename AbsTr, typename VarFactory, typename InvTblValTy>
+    template< typename CFG, typename AbsTr, typename VarFactory>
     class FwdAnalyzer: 
         public interleaved_fwd_fixpoint_iterator< typename CFG::basic_block_label_t, 
                                                   CFG, 
@@ -50,12 +50,7 @@ namespace crab {
       
       typedef interleaved_fwd_fixpoint_iterator<basic_block_label_t, CFG, abs_dom_t> fwd_iterator_t;
       typedef typename AbsTr::z_lin_cst_t z_lin_cst_t;
-      typedef boost::unordered_map<basic_block_label_t, InvTblValTy> invariant_map_t;    
-
-      // -- Convert from the abstract domain to InvTblValTy
-      //    InvTblValTy is the format in which Crab will communicate
-      //    invariants to clients.
-      typedef domain_traits::absdom_to_formula<abs_dom_t,InvTblValTy> conv_to_form_t;
+      typedef boost::unordered_map<basic_block_label_t, abs_dom_t> invariant_map_t;    
 
      public:
 
@@ -118,11 +113,11 @@ namespace crab {
         if (it == m_pre_map.end())
         {          
           if (inv.is_bottom ())
-            m_pre_map.insert(make_pair (node, conv_to_form_t::mkFalse()));
+            m_pre_map.insert(make_pair (node, abs_dom_t::bottom ()));
           else if (inv.is_top ())
-            m_pre_map.insert(make_pair (node, conv_to_form_t::mkTrue()));
+            m_pre_map.insert(make_pair (node, abs_dom_t::top ()));
           else
-            m_pre_map.insert(make_pair (node, conv_to_form_t::marshall(inv)));
+            m_pre_map.insert(make_pair (node, inv));
         }
       }
       
@@ -132,11 +127,11 @@ namespace crab {
         if (it == m_post_map.end())
         {
           if (inv.is_bottom ())
-            m_post_map.insert(make_pair (node, conv_to_form_t::mkFalse()));
+            m_post_map.insert(make_pair (node, abs_dom_t::bottom ()));
           else if (inv.is_top ())
-            m_post_map.insert(make_pair (node, conv_to_form_t::mkTrue()));
+            m_post_map.insert(make_pair (node, abs_dom_t::top ()));
           else
-            m_post_map.insert(make_pair (node, conv_to_form_t::marshall(inv)));
+            m_post_map.insert(make_pair (node, inv));
         }
       }
       
@@ -190,24 +185,24 @@ namespace crab {
       }      
 
       //! Return the invariants that hold at the entry of b
-      InvTblValTy operator[] (basic_block_label_t b) const {
+      abs_dom_t operator[] (basic_block_label_t b) const {
         return get_pre (b);
       }
       
       //! Return the invariants that hold at the entry of b
-      InvTblValTy get_pre (basic_block_label_t b) const { 
+      abs_dom_t get_pre (basic_block_label_t b) const { 
         auto it = m_pre_map.find (b);
         if (it == m_pre_map.end ())
-          return conv_to_form_t::mkTrue ();
+          return abs_dom_t::top ();
         else
           return it->second;
       }
       
       //! Return the invariants that hold at the exit of b
-      InvTblValTy get_post (basic_block_label_t b) const {
+      abs_dom_t get_post (basic_block_label_t b) const {
         auto it = m_post_map.find (b);
         if (it == m_post_map.end ())
-          return conv_to_form_t::mkTrue ();
+          return abs_dom_t::top ();
         else 
           return it->second;      
       }
@@ -223,8 +218,7 @@ namespace crab {
     }; 
 
     //! Specialized type for a numerical forward analyzer
-    template<typename CFG, typename AbsNumDomain, typename VarFactory, 
-             typename InvTblValTy = AbsNumDomain>  
+    template<typename CFG, typename AbsNumDomain, typename VarFactory>
     class NumFwdAnalyzer {
      private:
 
@@ -233,7 +227,7 @@ namespace crab {
                                  CallCtxTable<CFG,AbsNumDomain> > num_abs_tr_t; 
      public:
 
-      typedef FwdAnalyzer <CFG, num_abs_tr_t, VarFactory, InvTblValTy> type;
+      typedef FwdAnalyzer <CFG, num_abs_tr_t, VarFactory> type;
 
     };
   

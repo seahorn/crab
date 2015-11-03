@@ -264,7 +264,6 @@ namespace crab {
         
         const bool run_live = true; // XXX: make this a parameter
 
-        /// --- run the thread separately
         liveness_t* live = nullptr;
         if (run_live) {
           liveness_t ls (cfg);

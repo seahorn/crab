@@ -20,17 +20,14 @@ namespace crab {
     //  Currently very simple flow-insensitive abstraction `a la` Mine
     //  (VMCAI'14).
     template< typename ThreadId, typename CFG, 
-              typename AbsDomain, typename VarFactory,
-              typename InvTableTy>
+              typename AbsDomain, typename VarFactory>
     class ConcAnalyzer {
       typedef typename CFG::basic_block_label_t basic_block_label_t;
       typedef typename CFG::varname_t varname_t;
       typedef typename CFG::basic_block_t basic_block_t;
-      typedef typename NumFwdAnalyzer<CFG, AbsDomain, VarFactory, InvTableTy>::type fwd_analyzer_t;
+      typedef typename NumFwdAnalyzer<CFG, AbsDomain, VarFactory>::type fwd_analyzer_t;
       typedef typename fwd_analyzer_t::liveness_t liveness_t;
       typedef ConcSys <ThreadId, CFG> conc_sys_t;
-      
-      typedef domain_traits::absdom_to_formula <AbsDomain, InvTableTy> conv_to_form_t;
       
      public:
       typedef boost::unordered_map<basic_block_label_t, AbsDomain> inv_map_t;
@@ -91,7 +88,7 @@ namespace crab {
               for (auto bb: boost::make_iterator_range (p.second.label_begin (), 
                                                         p.second.label_end ()))
               {
-                AbsDomain bb_inv = conv_to_form_t::unmarshall (thread_analyzer [bb]);
+                AbsDomain bb_inv = thread_analyzer [bb];
                 inv_map->insert (make_pair (bb, bb_inv));
                 /// -- flow insensitive abstraction 
                 inv = inv | bb_inv;
@@ -107,7 +104,7 @@ namespace crab {
                                                         p.second.label_end ()))
              {
                AbsDomain& old_inv = (*inv_map) [bb];           
-               AbsDomain new_inv = conv_to_form_t::unmarshall (thread_analyzer [bb]);
+               AbsDomain new_inv = thread_analyzer [bb];
                if (!(new_inv <= old_inv && old_inv <= new_inv))
                {
                  change=true;
