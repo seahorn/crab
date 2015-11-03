@@ -677,9 +677,9 @@ namespace crab {
             break;
         }
         // Check if the SCC is feasible.
-        for(; qtail != qhead; qtail--)
+        for(; qtail != qhead; )
         { 
-          vert_id s = *qtail;
+          vert_id s = *(--qtail);
           Wt s_pot = potentials[s];
           for(vert_id d : g.succs(s))
           {
