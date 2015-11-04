@@ -166,6 +166,37 @@ cfg_t prog4 (VariableFactory &vfac)
   return cfg;
 }
 
+/* Example of how to build a CFG */
+cfg_t prog5 (VariableFactory &vfac)  {
+
+  // Definining program variables
+  z_var i (vfac ["i"]);
+  z_var k (vfac ["k"]);
+  z_var nd (vfac ["nd"]);
+  // entry and exit block
+  cfg_t cfg ("entry","ret");
+  // adding blocks
+  basic_block_t& entry = cfg.insert ("entry");
+  basic_block_t& bb1   = cfg.insert ("bb1");
+  basic_block_t& bb1_t = cfg.insert ("bb1_t");
+  basic_block_t& bb1_f = cfg.insert ("bb1_f");
+  basic_block_t& bb2   = cfg.insert ("bb2");
+  basic_block_t& ret   = cfg.insert ("ret");
+  // adding control flow
+  entry >> bb1;
+  bb1 >> bb1_t; bb1 >> bb1_f;
+  bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
+  // adding statements
+  entry.assign (k, 0);
+  entry.assign (i, 0);
+  bb1_t.assume (i != 9);
+  bb1_f.assume (i == 9);
+  bb2.add(i, i, 1);
+  bb2.add(k, k, 1);
+  return cfg;
+}
+
+
 /* Example of how to infer invariants from the above CFG */
 int main (int argc, char** argv )
 {
@@ -250,5 +281,82 @@ int main (int argc, char** argv )
 #endif 
   }
 
+  {
+    VariableFactory vfac;
+    cfg_t cfg = prog5 (vfac);
+    cout << cfg << endl;
+#ifdef HAVE_LDD
+    NumFwdAnalyzer <cfg_t, boxes_domain_t,VariableFactory>::type a (cfg,vfac,nullptr,w,n);
+    // Run fixpoint 
+    boxes_domain_t inv = boxes_domain_t::top ();
+    a.Run (inv);
+    // Print invariants
+    cout << "Invariants using " << inv.getDomainName () << "\n";
+    for (auto &b : cfg) {
+      auto inv = a [b.label ()];
+      std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
+    }
+#endif 
+  }
+
+  { 
+    std::cout << "Testing some boxes operations ...\n";
+    VariableFactory vfac;
+    varname_t x = vfac["x"];
+    varname_t y = vfac["y"];
+    varname_t z = vfac["z"];
+
+    boxes_domain_t inv1 = boxes_domain_t::top ();
+    inv1.assign (y, 6);
+    inv1.assign (z, 7);
+
+    boxes_domain_t inv2 = boxes_domain_t::top ();
+    inv2.assign (y, 3);
+    inv2.assign (z, 4);
+
+    boxes_domain_t inv3 = inv1 | inv2;
+
+    cout << inv3 << "\n";
+   
+    cout << x << ":=" << y << " + " << z << "= \n";
+    inv3.apply (OP_ADDITION, x, y, z);
+    cout << inv3 << "\n";
+
+    cout << x << ":=" << y << " - " << z << "= \n";
+    inv3.apply (OP_SUBTRACTION, x, y, z);
+    cout << inv3 << "\n";
+
+    cout << x << ":=" << y << " * " << z << "= \n";
+    inv3.apply (OP_MULTIPLICATION, x, y, z);
+    cout << inv3 << "\n";
+
+    cout << x << ":=" << y << " / " << z << "= \n";
+    inv3.apply (OP_DIVISION, x, y, z);
+    cout << inv3 << "\n";
+
+    boxes_domain_t inv4 = boxes_domain_t::top ();    
+    z_var cx (vfac["x"]);
+    z_var cy (vfac["y"]);
+    z_var cz (vfac["z"]);
+
+    inv4 +=  (cx >= cy);
+    cout << "Added x >= y \n" << inv4 << "\n";    
+
+    inv4 +=  (cx != 9);
+    cout << "Added x != 9\n" << inv4 << "\n";    
+
+    inv4 +=  (cy >=  9);
+    cout << "Added y >= 9\n" << inv4 << "\n";    
+
+    inv4 +=  (cy <=  9);
+    cout << "Added y <= 9\n" << inv4 << "\n";    
+
+    inv4 +=  (cz >= 10); 
+    cout << "Added z > 9\n" << inv4 << "\n";    
+
+    inv4 +=  (cz <= 8);
+    cout << "Added z < 9\n" << inv4 << "\n";    
+
+  }
   return 0;
 }
