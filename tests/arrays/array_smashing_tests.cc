@@ -385,8 +385,8 @@ void run(cfg_t cfg, string name, VariableFactory &vfac)
   cfg.simplify ();
   cout << cfg << endl;
   
-  typename NumFwdAnalyzer <cfg_t, ArrayDomain, 
-                           VariableFactory, z_lin_cst_sys_t>::type It (cfg,vfac,nullptr);
+  typename NumFwdAnalyzer <cfg_t, ArrayDomain, VariableFactory>::type It (cfg,vfac,nullptr); 
+                           
   ArrayDomain inv = ArrayDomain::top ();
   It.Run (inv);
   cout << "Results with " << inv.getDomainName () << ":\n";

@@ -220,7 +220,6 @@ namespace crab {
       typedef typename NumFwdAnalyzer<CFG,num_domain_t,VariableFactory>::type num_inv_gen_t;
       typedef typename num_inv_gen_t::liveness_t liveness_t;
       typedef typename GenBasicBlockCons < num_inv_gen_t>::pt_var_map_t pt_var_map_t;
-      typedef domain_traits::absdom_to_formula<num_domain_t,num_domain_t> conv_to_form_t;
       
       //! for external queries
       typedef boost::unordered_map< varname_t,
@@ -287,8 +286,7 @@ namespace crab {
 
         for (auto &b : cfg)
         {
-          gen_bb_cons_t vis (m_vfac, &m_cs, 
-                             conv_to_form_t::unmarshall (It [b.label ()]), 
+          gen_bb_cons_t vis (m_vfac, &m_cs, It [b.label ()], 
                              &It, &m_pt_var_map, func_name);
           for (auto &s: b) { s.accept (&vis); }
         }
