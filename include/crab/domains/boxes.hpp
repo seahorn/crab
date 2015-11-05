@@ -166,8 +166,6 @@ namespace crab {
         typedef boost::shared_ptr<var_bimap_t> VarMapPtr;
         typedef typename var_bimap_t::value_type binding_t;
         
-       public:
-        
         LddNodePtr m_ldd;
         static LddManager* m_ldd_man;
         static VarMapPtr m_var_map;
@@ -199,15 +197,6 @@ namespace crab {
             int id = get_var_map ()->size ();
             get_var_map ()->insert (binding_t (v, ++id));
             return id;
-          }
-        }
-
-        VariableName getVarName (int v) {
-          auto it = get_var_map ()->right.find (v);
-          if (it != get_var_map ()->right.end ())
-             return it->second;
-          else {
-             CRAB_ERROR ("Index", v, "cannot be mapped back to a variable name");
           }
         }
 
@@ -317,6 +306,19 @@ namespace crab {
         }
 
        public:
+
+        LddNodePtr getLdd () { 
+          return m_ldd; 
+        }
+
+        VariableName getVarName (int v) const {
+          auto it = get_var_map ()->right.find (v);
+          if (it != get_var_map ()->right.end ())
+             return it->second;
+          else {
+             CRAB_ERROR ("Index", v, "cannot be mapped back to a variable name");
+          }
+        }
         
         boxes_domain(): ikos::writeable() { 
           m_ldd = lddPtr (get_ldd_man(), Ldd_GetTrue (get_ldd_man()));
