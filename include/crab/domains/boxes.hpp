@@ -772,8 +772,10 @@ namespace crab {
           if (is_bottom ()) 
             return;
 
-          if (!(isTrackVar (x) && allTrackVars (e.variables ()))) 
+          if (!(isTrackVar (x) && allTrackVars (e.variables ()))) {
+            *this -= x;
             return;
+          }
 
           if (e.is_constant ()) {
             constant_t c = mkCst (e.constant ());
@@ -799,8 +801,10 @@ namespace crab {
           if (is_bottom ()) 
             return;
 
-          if (!isTrackVar (x) || !isTrackVar (y))
+          if (!isTrackVar (x) || !isTrackVar (y)) {
+            *this -= x;
             return;
+          }
           
           switch(op){
             case OP_ADDITION:
@@ -833,8 +837,10 @@ namespace crab {
           if (is_bottom ()) 
             return;
 
-          if (!isTrackVar (x))
+          if (!isTrackVar (x)) {
+            *this -= x;
             return;
+          }
 
           switch(op){
             case OP_ADDITION:
@@ -866,8 +872,10 @@ namespace crab {
           if (is_bottom ()) 
             return;
 
-          if (!isTrackVar (x) || !isTrackVar (y) || !isTrackVar (z))
+          if (!isTrackVar (x) || !isTrackVar (y) || !isTrackVar (z)) {
+            *this -= x;
             return;
+          }
 
           interval_t zi = operator[](z);
           if (auto k = zi.singleton ())
@@ -904,8 +912,10 @@ namespace crab {
           if (is_bottom ()) 
             return;
 
-          if (!isTrackVar (x) || !isTrackVar (y) || !isTrackVar (z))
+          if (!isTrackVar (x) || !isTrackVar (y) || !isTrackVar (z)) {
+            *this -= x;
             return;
+          }
 
           // Convert to intervals and perform the operation
           interval_t yi = operator[](y);
@@ -928,8 +938,10 @@ namespace crab {
           if (is_bottom ()) 
             return;
 
-          if (!isTrackVar (x) || !isTrackVar (y))
+          if (!isTrackVar (x) || !isTrackVar (y)) {
+            *this -= x;
             return;
+          }
           
           // Convert to intervals and perform the operation
           interval_t yi = operator[](y);
@@ -953,8 +965,10 @@ namespace crab {
           if (is_bottom ()) 
             return;
 
-          if (!isTrackVar (x) || !isTrackVar (y) || !isTrackVar (z))
+          if (!isTrackVar (x) || !isTrackVar (y) || !isTrackVar (z)) {
+            *this -= x;
             return;
+          }
 
           if (op == OP_SDIV){
             apply(OP_DIVISION, x, y, z);
@@ -979,8 +993,10 @@ namespace crab {
           if (is_bottom ()) 
             return;
 
-          if (!isTrackVar (x) || !isTrackVar (y))
+          if (!isTrackVar (x) || !isTrackVar (y)) {
+            *this -= x;
             return;
+          }
 
           if (op == OP_SDIV){
             apply(OP_DIVISION, x, y, k);
@@ -1030,13 +1046,9 @@ namespace crab {
           DdManager *cudd = Ldd_GetCudd (ldd_man);
           FILE *fp = Cudd_ReadStdout(cudd);
           Cudd_SetStdout(cudd, stdout);
-          if (m_ldd.get () == Ldd_GetTrue (ldd_man)) o << "{}\n";
-          else if (m_ldd.get () == Ldd_GetFalse (ldd_man)) o << "_|_\n";	
-          else {
-            o << "{";
-            Ldd_PrintMinterm(ldd_man, m_ldd.get ());
-            o << "}";
-          }
+          if (m_ldd.get () == Ldd_GetTrue (ldd_man)) o << "{}";
+          else if (m_ldd.get () == Ldd_GetFalse (ldd_man)) o << "_|_";	
+          else Ldd_PrintMinterm(ldd_man, m_ldd.get ());
           Cudd_SetStdout(cudd,fp);      
 
         }
