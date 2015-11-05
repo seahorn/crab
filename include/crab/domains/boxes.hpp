@@ -56,9 +56,6 @@ namespace crab {
         static void addTrackVar (VariableName v) 
         { CRAB_ERROR (LDD_NOT_FOUND); }
 
-        static bool isTrackVar (VariableName v) 
-        { CRAB_ERROR (LDD_NOT_FOUND); }
-
         static void resetTrackVars () 
         { CRAB_ERROR (LDD_NOT_FOUND); }
 
@@ -164,6 +161,19 @@ namespace crab {
 
         static rib_domain_t bottom() { CRAB_ERROR (LDD_NOT_FOUND); }
 
+
+        LddNodePtr getLdd () 
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+
+        VariableName getVarName (int v) const 
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+
+        static void addTrackVar (VariableName v) 
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+
+        static void resetTrackVars () 
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+
         rib_domain (const rib_domain_t& other): 
             ikos::writeable() { }
         
@@ -263,6 +273,9 @@ namespace crab {
 
       using namespace crab::domains::ldd;       
 
+      template<typename Number, typename VariableName, unsigned LddSize>
+      class rib_domain;
+
       template<typename Number, typename VariableName, unsigned LddSize = 100>
       class boxes_domain: 
          public ikos::writeable, 
@@ -270,6 +283,8 @@ namespace crab {
          public bitwise_operators< Number, VariableName >, 
          public division_operators< Number, VariableName > {
               
+        friend class rib_domain <Number,VariableName, LddSize>;
+
        public:
         using typename numerical_domain< Number, VariableName>::linear_expression_t;
         using typename numerical_domain< Number, VariableName>::linear_constraint_t;
@@ -511,13 +526,6 @@ namespace crab {
           }
           m_track_vars->insert (v);
         }
-
-        static bool isTrackVar (VariableName v) {
-          if (!m_track_vars) {
-            m_track_vars = var_set_ptr (new var_set_t ());            
-          }
-          return m_track_vars->find (v) != m_track_vars->end ();
-        }
         
         static void resetTrackVars () {
           if (!m_track_vars) {
@@ -527,6 +535,13 @@ namespace crab {
         }
 
        private:
+
+        static bool isTrackVar (VariableName v) {
+          if (!m_track_vars) {
+            m_track_vars = var_set_ptr (new var_set_t ());            
+          }
+          return m_track_vars->find (v) != m_track_vars->end ();
+        }
 
         bool isTrackVar (variable_t v) { return isTrackVar (v.name ()); }
 
@@ -1122,9 +1137,21 @@ namespace crab {
           return boxes.getLdd (); 
         }
 
-       static rib_domain_t top() {
-         return rib_domain_t (product_domain_t::top ());
-       }
+        VariableName getVarName (int v) const {
+          return m_inv.second ().getVarName (v);
+        }
+
+        void addTrackVar (VariableName v) {
+          m_inv.second ().addTrackVar (v);
+        }
+        
+        void resetTrackVars () {
+          m_inv.second ().resetTrackVars ();
+        }
+
+        static rib_domain_t top() {
+          return rib_domain_t (product_domain_t::top ());
+        }
        
        static rib_domain_t bottom() {
          return rib_domain_t (product_domain_t::bottom ());
