@@ -1122,15 +1122,11 @@ namespace crab {
            intvs.set (v, boxes [v]);
          }
        }
-
-       void reduce_variable(const variable_t& v) {
-         reduce_variable (v.name ());
-       }
        
        template < typename Range >
        void reduce_variables (const Range& r) {
          for (auto v: r)
-           reduce_variable (v);
+           reduce_variable (v.name ());
        }
               
       public:
