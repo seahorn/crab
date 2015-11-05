@@ -1201,8 +1201,8 @@ namespace crab {
        }
        
        void set(VariableName v, interval_t x) {
-         m_inv.first().set(v, x.first());
-         m_inv.second().set(v, x.second());
+         m_inv.first().set(v, x);
+         m_inv.second().set(v, x);
        }
        
        interval_t operator[](VariableName v) {
