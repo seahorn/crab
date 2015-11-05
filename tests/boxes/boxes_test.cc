@@ -213,6 +213,10 @@ int main (int argc, char** argv )
     NumFwdAnalyzer <cfg_t, boxes_domain_t,VariableFactory>::type a (cfg, vfac, nullptr, w, n);
     // Run fixpoint 
     boxes_domain_t inv = boxes_domain_t::top ();
+
+    // tell boxes which variables should track
+    inv.addTrackVar (vfac ["i"]);
+    inv.addTrackVar (vfac ["k"]);
     a.Run (inv);
     // Print invariants
     cout << "Invariants using " << inv.getDomainName () << "\n";
@@ -220,9 +224,33 @@ int main (int argc, char** argv )
       auto inv = a [b.label ()];
       std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
     }
+    inv.resetTrackVars ();
 #endif 
   }
 
+
+  {
+    VariableFactory vfac;
+    cfg_t cfg = prog1 (vfac);
+    cout << cfg << endl;
+#ifdef HAVE_LDD
+    NumFwdAnalyzer <cfg_t, rib_domain_t,VariableFactory>::type a (cfg, vfac, nullptr, w, n);
+    // Run fixpoint 
+    rib_domain_t inv = rib_domain_t::top ();
+
+    // tell boxes which variables should track
+    inv.second ().addTrackVar (vfac ["i"]);
+    inv.second ().addTrackVar (vfac ["k"]);
+    a.Run (inv);
+    // Print invariants
+    cout << "Invariants using " << inv.getDomainName () << "\n";
+    for (auto &b : cfg) {
+      auto inv = a [b.label ()];
+      std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
+    }
+    inv.second ().resetTrackVars ();
+#endif 
+  }
 
   {
     VariableFactory vfac;
@@ -233,6 +261,10 @@ int main (int argc, char** argv )
     NumFwdAnalyzer <cfg_t, boxes_domain_t,VariableFactory>::type a (cfg,vfac,nullptr,w,n);
     // Run fixpoint 
     boxes_domain_t inv = boxes_domain_t::top ();
+    // tell boxes which variables should track
+    inv.addTrackVar (vfac ["i"]);
+    inv.addTrackVar (vfac ["j"]);
+    inv.addTrackVar (vfac ["k"]);
     a.Run (inv);
     // Print invariants
     cout << "Invariants using " << inv.getDomainName () << "\n";
@@ -240,6 +272,7 @@ int main (int argc, char** argv )
       auto inv = a [b.label ()];
       std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
     }
+    inv.resetTrackVars ();
 #endif 
   }
 
@@ -252,6 +285,8 @@ int main (int argc, char** argv )
     NumFwdAnalyzer <cfg_t, boxes_domain_t,VariableFactory>::type a (cfg,vfac,nullptr,w,n);
     // Run fixpoint 
     boxes_domain_t inv = boxes_domain_t::top ();
+    // tell boxes which variables should track
+    inv.addTrackVar (vfac ["i"]);
     a.Run (inv);
     // Print invariants
     cout << "Invariants using " << inv.getDomainName () << "\n";
@@ -259,6 +294,7 @@ int main (int argc, char** argv )
       auto inv = a [b.label ()];
       std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
     }
+    inv.resetTrackVars ();
 #endif 
   }
 
@@ -271,6 +307,9 @@ int main (int argc, char** argv )
     NumFwdAnalyzer <cfg_t, boxes_domain_t,VariableFactory>::type a (cfg,vfac,nullptr,w,n);
     // Run fixpoint 
     boxes_domain_t inv = boxes_domain_t::top ();
+    // tell boxes which variables should track
+    inv.addTrackVar (vfac ["i"]);
+    inv.addTrackVar (vfac ["p"]);
     a.Run (inv);
     // Print invariants
     cout << "Invariants using " << inv.getDomainName () << "\n";
@@ -278,6 +317,7 @@ int main (int argc, char** argv )
       auto inv = a [b.label ()];
       std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
     }
+    inv.resetTrackVars ();
 #endif 
   }
 
@@ -289,6 +329,9 @@ int main (int argc, char** argv )
     NumFwdAnalyzer <cfg_t, boxes_domain_t,VariableFactory>::type a (cfg,vfac,nullptr,w,n);
     // Run fixpoint 
     boxes_domain_t inv = boxes_domain_t::top ();
+    // tell boxes which variables should track
+    inv.addTrackVar (vfac ["i"]);
+    inv.addTrackVar (vfac ["k"]);
     a.Run (inv);
     // Print invariants
     cout << "Invariants using " << inv.getDomainName () << "\n";
@@ -296,6 +339,7 @@ int main (int argc, char** argv )
       auto inv = a [b.label ()];
       std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
     }
+    inv.resetTrackVars ();
 #endif 
   }
 
@@ -307,6 +351,12 @@ int main (int argc, char** argv )
     varname_t z = vfac["z"];
 
     boxes_domain_t inv1 = boxes_domain_t::top ();
+
+    // tell boxes which variables should track
+    inv1.addTrackVar (vfac ["x"]);
+    inv1.addTrackVar (vfac ["y"]);
+    inv1.addTrackVar (vfac ["z"]);
+
     inv1.assign (y, 6);
     inv1.assign (z, 7);
 
@@ -357,6 +407,7 @@ int main (int argc, char** argv )
     inv4 +=  (cz <= 8);
     cout << "Added z < 9\n" << inv4 << "\n";    
 
+    inv1.resetTrackVars ();
   }
   return 0;
 }

@@ -21,7 +21,9 @@ using namespace ikos;
 
 
 #ifndef HAVE_LDD
-
+/*
+ * Empty skeletons if ldd not found 
+ */
 #define LDD_NOT_FOUND "No LDD. Run cmake with -DUSE_LDD=ON"
 namespace crab {
    namespace domains {
@@ -41,8 +43,24 @@ namespace crab {
         using typename numerical_domain< Number, VariableName>::varname_t;
         typedef boxes_domain <Number, VariableName> boxes_domain_t;
         typedef interval <Number> interval_t;
+        typedef int LddNodePtr;
 
         boxes_domain(): ikos::writeable() { }    
+
+        LddNodePtr getLdd () 
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+
+        VariableName getVarName (int v) const 
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+
+        static void addTrackVar (VariableName v) 
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+
+        static bool isTrackVar (VariableName v) 
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+
+        static void resetTrackVars () 
+        { CRAB_ERROR (LDD_NOT_FOUND); }
 
         static boxes_domain_t top() { CRAB_ERROR (LDD_NOT_FOUND); }
 
@@ -119,28 +137,132 @@ namespace crab {
           
         const char* getDomainName () const {return "Boxes";}  
       }; 
-   
+
+
+      template<typename Number, typename VariableName>
+      class rib_domain: 
+         public ikos::writeable, 
+         public numerical_domain< Number, VariableName>,
+         public bitwise_operators< Number, VariableName >, 
+         public division_operators< Number, VariableName > {
+              
+       public:
+        using typename numerical_domain< Number, VariableName>::linear_expression_t;
+        using typename numerical_domain< Number, VariableName>::linear_constraint_t;
+        using typename numerical_domain< Number, VariableName>::linear_constraint_system_t;
+        using typename numerical_domain< Number, VariableName>::variable_t;
+        using typename numerical_domain< Number, VariableName>::number_t;
+        using typename numerical_domain< Number, VariableName>::varname_t;
+        typedef rib_domain <Number, VariableName> rib_domain_t;
+        typedef interval <Number> interval_t;
+        typedef interval_domain <Number, VariableName> interval_domain_t;
+        typedef boxes_domain <Number, VariableName> boxes_domain_t;
+
+        rib_domain(): ikos::writeable() { }    
+
+        static rib_domain_t top() { CRAB_ERROR (LDD_NOT_FOUND); }
+
+        static rib_domain_t bottom() { CRAB_ERROR (LDD_NOT_FOUND); }
+
+        rib_domain (const rib_domain_t& other): 
+            ikos::writeable() { }
+        
+        bool is_bottom() { CRAB_ERROR (LDD_NOT_FOUND); }
+
+        bool is_top() { CRAB_ERROR (LDD_NOT_FOUND); }
+
+        interval_domain_t& first() 
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+        
+        boxes_domain_t& second()
+        { CRAB_ERROR (LDD_NOT_FOUND); } 
+
+        bool operator<=(rib_domain_t other) 
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+        
+        rib_domain_t operator|(rib_domain_t other)
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+        
+        rib_domain_t operator&(rib_domain_t other) 
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+        
+        rib_domain_t operator||(rib_domain_t other)
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+        
+        rib_domain_t operator&& (rib_domain_t other) 
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+        
+        void operator-=(VariableName var) 
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+
+        interval_t operator[](VariableName v) 
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+
+        void set(VariableName v, interval_t ival) 
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+
+        void operator += (linear_constraint_system_t csts) 
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+        
+        void assign (VariableName x, linear_expression_t e) 
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+          
+        void apply (operation_t op, VariableName x, VariableName y, Number z) 
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+        
+        void apply(operation_t op, VariableName x, VariableName y, VariableName z) 
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+        
+        void apply(operation_t op, VariableName x, Number k) 
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+
+        void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width) 
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+        
+        void apply(conv_operation_t op, VariableName x, Number k, unsigned width) 
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+        
+        void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) 
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+        
+        void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k) 
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+        
+        void apply(div_operation_t op, VariableName x, VariableName y, VariableName z) 
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+        
+        void apply(div_operation_t op, VariableName x, VariableName y, Number k) 
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+        
+        linear_constraint_system_t to_linear_constraint_system ()
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+        
+        void write(ostream& o) 
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+          
+        const char* getDomainName () const 
+        {return "Reduced Product of Intervals and Boxes";}  
+      }; 
+      
    } // namespace domains
 }// namespace crab
 
 #else
+/* 
+ *  Real implementation starts here 
+ */
 
-// Real implementation starts here
 #include <crab/domains/ldd/ldd.hpp>
-
 #include <boost/bimap.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/range/algorithm/set_algorithm.hpp>
 
-using namespace crab::domains::ldd;
-
-#define NON_STRICT 0
-#define STRICT 1
-
 namespace crab {
 
    namespace domains {
-       
+
+      using namespace crab::domains::ldd;       
+
       template<typename Number, typename VariableName, unsigned LddSize = 100>
       class boxes_domain: 
          public ikos::writeable, 
@@ -163,13 +285,19 @@ namespace crab {
         typedef interval_domain <Number, VariableName> interval_domain_t;
         // --- map from crab variable index to ldd term index
         typedef boost::bimap< VariableName , int > var_bimap_t;
-        typedef boost::shared_ptr<var_bimap_t> VarMapPtr;
+        typedef boost::shared_ptr<var_bimap_t> var_map_ptr;
         typedef typename var_bimap_t::value_type binding_t;
+        typedef boost::unordered_set <VariableName> var_set_t;
+        typedef boost::shared_ptr< var_set_t > var_set_ptr;
         
         LddNodePtr m_ldd;
         static LddManager* m_ldd_man;
-        static VarMapPtr m_var_map;
-        
+        static var_map_ptr m_var_map;
+        // --- Boxes only keeps track of variables included in
+        //     m_track_vars. By default, it won't keep track of any
+        //     variable
+        static var_set_ptr m_track_vars;
+
         static LddManager* get_ldd_man () {
           if (!m_ldd_man) {
             DdManager* cudd = Cudd_Init (0, 0, CUDD_UNIQUE_SLOTS, 127, 0);
@@ -180,13 +308,13 @@ namespace crab {
           return m_ldd_man;
         }
 
-        static VarMapPtr get_var_map () {
+        static var_map_ptr get_var_map () {
           if (!m_var_map) {
-            m_var_map = VarMapPtr (new var_bimap_t ());            
+            m_var_map = var_map_ptr (new var_bimap_t ());            
           }
           return m_var_map;
         }
-
+       
         boxes_domain (LddNodePtr ldd): m_ldd (ldd) { }
 
         int getVarId (VariableName v) {
@@ -305,6 +433,63 @@ namespace crab {
 
         }
 
+        // Restricts the ldd by the constraint e
+        // where e can be one of 
+        //    c*x <= k | c*x == k | c*x != k 
+        //    and c is 1 or -1 and k is an integer constant
+        typedef typename linear_constraint_t::kind_t kind_t;
+
+        void add_unit_constraint (Number coef, variable_t x, kind_t kind, Number k) {
+
+          assert (coef == 1 || coef == -1);
+          
+          auto theory = Ldd_GetTheory (get_ldd_man());
+          if (kind == kind_t::EQUALITY) {  // x == k <-> x<=k and !(x<k)
+            // x<=k
+            linterm_t term1 = termForVal (x.name (), (coef == 1 ? false : true));
+            constant_t c1 = mkCst (k);
+            lincons_t cons1 = theory->create_cons (term1, 0 /*non-strict*/, c1);
+            LddNodePtr n1 = lddPtr (get_ldd_man(), theory->to_ldd (get_ldd_man(), cons1));
+            theory->destroy_lincons (cons1);
+            m_ldd = lddPtr (get_ldd_man(), Ldd_And (get_ldd_man(), &*m_ldd, &*n1));
+            // !(x<k)
+            linterm_t term2 = termForVal (x.name (), (coef == 1 ? false : true));
+            constant_t c2 = mkCst (k);
+            lincons_t cons2 = theory->create_cons (term2, 1 /*strict*/, c2);
+            LddNodePtr n2 = lddPtr (get_ldd_man(), Ldd_Not (theory->to_ldd (get_ldd_man(), cons2)));
+            theory->destroy_lincons (cons2);
+            m_ldd = lddPtr (get_ldd_man(), Ldd_And (get_ldd_man(), &*m_ldd, &*n2));
+          }
+          else if (kind == kind_t::INEQUALITY) {
+            // case 1:  x <= k  
+            // case 2: -x <= k
+            linterm_t term = termForVal (x.name (), (coef == 1 ? false : true));
+            constant_t c = mkCst (k);
+            lincons_t cons = theory->create_cons (term, 0 /*non-strict*/, c);
+            LddNodePtr n = lddPtr (get_ldd_man(), theory->to_ldd (get_ldd_man(), cons));
+            theory->destroy_lincons (cons);
+            m_ldd = lddPtr (get_ldd_man(), Ldd_And (get_ldd_man(), &*m_ldd, &*n));
+          }
+          else { // assert (kind == kind_t::DISEQUALITY)
+            // case 1:  x != k  <->  x < k OR  x > k <->  x < k OR -x < -k
+            // case 2: -x != k  <-> -x < k OR -x > k <-> -x < k OR  x < -k
+            linterm_t term1 = termForVal (x.name (), (coef == 1 ? false : true));
+            constant_t c1 = mkCst (k);
+            lincons_t cons1 = theory->create_cons (term1, 1 /*strict*/, c1);
+            LddNodePtr n1 = lddPtr (get_ldd_man(), theory->to_ldd (get_ldd_man(), cons1));
+            theory->destroy_lincons (cons1);
+            
+            linterm_t term2 = termForVal (x.name (), (coef == 1 ? true : false));
+            constant_t c2 = mkCst (-k);
+            lincons_t cons2 = theory->create_cons (term2, 1 /*strict*/, c2);
+            LddNodePtr n2 = lddPtr (get_ldd_man(), theory->to_ldd (get_ldd_man(), cons2));
+            theory->destroy_lincons (cons2);
+            
+            LddNodePtr n3 = lddPtr (get_ldd_man (), Ldd_Or (get_ldd_man(), &*n1, &*n2));
+            m_ldd = lddPtr (get_ldd_man(), Ldd_And (get_ldd_man(), &*m_ldd, &*n3));
+          }
+        } 
+
        public:
 
         LddNodePtr getLdd () { 
@@ -319,7 +504,41 @@ namespace crab {
              CRAB_ERROR ("Index", v, "cannot be mapped back to a variable name");
           }
         }
+
+        static void addTrackVar (VariableName v) {
+          if (!m_track_vars) {
+            m_track_vars = var_set_ptr (new var_set_t ());            
+          }
+          m_track_vars->insert (v);
+        }
+
+        static bool isTrackVar (VariableName v) {
+          if (!m_track_vars) {
+            m_track_vars = var_set_ptr (new var_set_t ());            
+          }
+          return m_track_vars->find (v) != m_track_vars->end ();
+        }
         
+        static void resetTrackVars () {
+          if (!m_track_vars) {
+            m_track_vars = var_set_ptr (new var_set_t ());            
+          }
+          m_track_vars->clear ();
+        }
+
+       private:
+
+        bool isTrackVar (variable_t v) { return isTrackVar (v.name ()); }
+
+        template<typename Range>
+        bool allTrackVars (const Range& r) {
+          for (auto v: r)
+            if (!isTrackVar (v)) return false;
+          return true;
+        }
+
+       public:
+
         boxes_domain(): ikos::writeable() { 
           m_ldd = lddPtr (get_ldd_man(), Ldd_GetTrue (get_ldd_man()));
         }
@@ -411,6 +630,7 @@ namespace crab {
         
         void operator-=(VariableName var) {
           if (is_bottom ()) return;
+          if (!isTrackVar (var)) return;
 
           int id = getVarId (var);
           m_ldd =  lddPtr (get_ldd_man(), Ldd_ExistsAbstract (get_ldd_man(), &*m_ldd, id));
@@ -437,64 +657,6 @@ namespace crab {
           forget (s3.begin (), s3.end ());
         }
 
-        // Restricts the ldd by the constraint e
-        // where e can be one of 
-        //    c*x <= k | c*x == k | c*x != k 
-        //    and c is 1 or -1 and k is an integer constant
-        typedef typename linear_constraint_t::kind_t kind_t;
-
-        void add_unit_constraint (Number coef, variable_t x, kind_t kind, Number k) {
-
-          assert (coef == 1 || coef == -1);
-          
-          auto theory = Ldd_GetTheory (get_ldd_man());
-          if (kind == kind_t::EQUALITY) {  // x == k <-> x<=k and !(x<k)
-            // x<=k
-            linterm_t term1 = termForVal (x.name (), (coef == 1 ? false : true));
-            constant_t c1 = mkCst (k);
-            lincons_t cons1 = theory->create_cons (term1, NON_STRICT, c1);
-            LddNodePtr n1 = lddPtr (get_ldd_man(), theory->to_ldd (get_ldd_man(), cons1));
-            theory->destroy_lincons (cons1);
-            m_ldd = lddPtr (get_ldd_man(), Ldd_And (get_ldd_man(), &*m_ldd, &*n1));
-            // !(x<k)
-            linterm_t term2 = termForVal (x.name (), (coef == 1 ? false : true));
-            constant_t c2 = mkCst (k);
-            lincons_t cons2 = theory->create_cons (term2, STRICT, c2);
-            LddNodePtr n2 = lddPtr (get_ldd_man(), Ldd_Not (theory->to_ldd (get_ldd_man(), cons2)));
-            theory->destroy_lincons (cons2);
-            m_ldd = lddPtr (get_ldd_man(), Ldd_And (get_ldd_man(), &*m_ldd, &*n2));
-          }
-          else if (kind == kind_t::INEQUALITY) {
-            // case 1:  x <= k  
-            // case 2: -x <= k
-            linterm_t term = termForVal (x.name (), (coef == 1 ? false : true));
-            constant_t c = mkCst (k);
-            lincons_t cons = theory->create_cons (term, NON_STRICT, c);
-            LddNodePtr n = lddPtr (get_ldd_man(), theory->to_ldd (get_ldd_man(), cons));
-            theory->destroy_lincons (cons);
-            m_ldd = lddPtr (get_ldd_man(), Ldd_And (get_ldd_man(), &*m_ldd, &*n));
-          }
-          else { // assert (kind == kind_t::DISEQUALITY)
-            // case 1:  x != k  <->  x < k OR  x > k <->  x < k OR -x < -k
-            // case 2: -x != k  <-> -x < k OR -x > k <-> -x < k OR  x < -k
-            linterm_t term1 = termForVal (x.name (), (coef == 1 ? false : true));
-            constant_t c1 = mkCst (k);
-            lincons_t cons1 = theory->create_cons (term1, STRICT, c1);
-            LddNodePtr n1 = lddPtr (get_ldd_man(), theory->to_ldd (get_ldd_man(), cons1));
-            theory->destroy_lincons (cons1);
-            
-            linterm_t term2 = termForVal (x.name (), (coef == 1 ? true : false));
-            constant_t c2 = mkCst (-k);
-            lincons_t cons2 = theory->create_cons (term2, STRICT, c2);
-            LddNodePtr n2 = lddPtr (get_ldd_man(), theory->to_ldd (get_ldd_man(), cons2));
-            theory->destroy_lincons (cons2);
-            
-            LddNodePtr n3 = lddPtr (get_ldd_man (), Ldd_Or (get_ldd_man(), &*n1, &*n2));
-            m_ldd = lddPtr (get_ldd_man(), Ldd_And (get_ldd_man(), &*m_ldd, &*n3));
-          }
-
-        } 
-
         void operator+= (linear_constraint_t cst)
         {
           if (is_bottom () || cst.is_tautology ())  
@@ -504,6 +666,8 @@ namespace crab {
             m_ldd = lddPtr (get_ldd_man(), Ldd_GetFalse (get_ldd_man()));
             return;
           }
+
+          if (!allTrackVars (cst.variables ())) return;
 
           linear_expression_t exp = cst.expression();    
           unsigned int size = exp.size ();
@@ -531,7 +695,6 @@ namespace crab {
           CRAB_DEBUG("Assume(", cst, ") --> ", *this);
         }    
                     
-
         void operator += (linear_constraint_system_t csts) {
           if (is_bottom ()) return;
 
@@ -541,6 +704,8 @@ namespace crab {
         void set (VariableName v, interval_t ival) {
           
           if (is_bottom ()) return ;
+
+          if (!isTrackVar (v)) return;
           
           constant_t kmin = NULL, kmax = NULL;       
           if (boost::optional <Number> l = ival.lb ().number ())
@@ -559,7 +724,11 @@ namespace crab {
         }
 
         interval_t operator[](VariableName v) { 
-          if (is_bottom ()) return interval_t::bottom ();
+          if (is_bottom ()) 
+            return interval_t::bottom ();
+
+          if (!isTrackVar (v)) 
+            return interval_t::top ();
 
           // make a copy of m_ldd
           LddNodePtr tmp (m_ldd);  
@@ -585,7 +754,11 @@ namespace crab {
         }
                 
         void assign (VariableName x, linear_expression_t e) {
-          if (is_bottom ()) return;
+          if (is_bottom ()) 
+            return;
+
+          if (!(isTrackVar (x) && allTrackVars (e.variables ()))) 
+            return;
 
           if (e.is_constant ()) {
             constant_t c = mkCst (e.constant ());
@@ -608,8 +781,12 @@ namespace crab {
         }
         
         void apply (operation_t op, VariableName x, VariableName y, Number k) {
-          if (is_bottom ()) return;
+          if (is_bottom ()) 
+            return;
 
+          if (!isTrackVar (x) || !isTrackVar (y))
+            return;
+          
           switch(op){
             case OP_ADDITION:
               apply (x, y, 1, k);
@@ -638,7 +815,11 @@ namespace crab {
 
         void apply(operation_t op, VariableName x, Number k) {
 
-          if (is_bottom ()) return;
+          if (is_bottom ()) 
+            return;
+
+          if (!isTrackVar (x))
+            return;
 
           switch(op){
             case OP_ADDITION:
@@ -667,7 +848,11 @@ namespace crab {
 
         void apply(operation_t op, VariableName x, VariableName y, VariableName z) {
 
-          if (is_bottom ()) return;
+          if (is_bottom ()) 
+            return;
+
+          if (!isTrackVar (x) || !isTrackVar (y) || !isTrackVar (z))
+            return;
 
           interval_t zi = operator[](z);
           if (auto k = zi.singleton ())
@@ -700,7 +885,12 @@ namespace crab {
         }      
   
         void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) {
-          if (is_bottom ()) return;
+
+          if (is_bottom ()) 
+            return;
+
+          if (!isTrackVar (x) || !isTrackVar (y) || !isTrackVar (z))
+            return;
 
           // Convert to intervals and perform the operation
           interval_t yi = operator[](y);
@@ -719,7 +909,12 @@ namespace crab {
         }
         
         void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k) {
-          if (is_bottom ()) return;
+
+          if (is_bottom ()) 
+            return;
+
+          if (!isTrackVar (x) || !isTrackVar (y))
+            return;
           
           // Convert to intervals and perform the operation
           interval_t yi = operator[](y);
@@ -740,7 +935,11 @@ namespace crab {
         // division_operators_api
         void apply(div_operation_t op, VariableName x, VariableName y, VariableName z) {
 
-          if (is_bottom ()) return;
+          if (is_bottom ()) 
+            return;
+
+          if (!isTrackVar (x) || !isTrackVar (y) || !isTrackVar (z))
+            return;
 
           if (op == OP_SDIV){
             apply(OP_DIVISION, x, y, z);
@@ -761,7 +960,12 @@ namespace crab {
         }
         
         void apply(div_operation_t op, VariableName x, VariableName y, Number k) {
-          if (is_bottom ()) return;
+
+          if (is_bottom ()) 
+            return;
+
+          if (!isTrackVar (x) || !isTrackVar (y))
+            return;
 
           if (op == OP_SDIV){
             apply(OP_DIVISION, x, y, k);
@@ -811,7 +1015,7 @@ namespace crab {
           DdManager *cudd = Ldd_GetCudd (ldd_man);
           FILE *fp = Cudd_ReadStdout(cudd);
           Cudd_SetStdout(cudd, stdout);
-          if (m_ldd.get () == Ldd_GetTrue (ldd_man)) o << "true\n";
+          if (m_ldd.get () == Ldd_GetTrue (ldd_man)) o << "{}\n";
           else if (m_ldd.get () == Ldd_GetFalse (ldd_man)) o << "_|_\n";	
           else {
             o << "{";
@@ -830,7 +1034,230 @@ namespace crab {
      LddManager* boxes_domain<N,V,S>::m_ldd_man = nullptr;
 
      template<typename N, typename V, unsigned S>
-     typename boxes_domain<N,V,S>::VarMapPtr boxes_domain<N,V,S>::m_var_map = nullptr;
+     typename boxes_domain<N,V,S>::var_map_ptr boxes_domain<N,V,S>::m_var_map = nullptr;
+
+     template<typename N, typename V, unsigned S>
+     typename boxes_domain<N,V,S>::var_set_ptr boxes_domain<N,V,S>::m_track_vars = nullptr;
+
+
+     /*
+      * rib domain: reduced product of intervals with boxes.
+      */
+     template < typename Number, typename VariableName, unsigned LddSize = 100>
+     class rib_domain:
+         public ikos::writeable,
+         public numerical_domain< Number, VariableName >,
+         public bitwise_operators< Number, VariableName >,
+         public division_operators< Number, VariableName > {
+       
+      public:
+       using typename numerical_domain< Number, VariableName >::linear_expression_t;
+       using typename numerical_domain< Number, VariableName >::linear_constraint_t;
+       using typename numerical_domain< Number, VariableName >::linear_constraint_system_t;
+       using typename numerical_domain< Number, VariableName >::variable_t;
+       using typename numerical_domain< Number, VariableName >::number_t;
+       using typename numerical_domain< Number, VariableName >::varname_t;
+
+       typedef rib_domain< Number, VariableName, LddSize > rib_domain_t;
+       typedef interval< Number > interval_t;
+       
+      private:
+       typedef interval_domain <Number, VariableName> interval_domain_t;
+       typedef boxes_domain <Number, VariableName, LddSize> boxes_domain_t;
+
+       typedef numerical_domain_product2< Number, VariableName,
+                                          interval_domain_t, boxes_domain_t> product_domain_t;
+       
+       product_domain_t m_inv;
+       
+       rib_domain(const product_domain_t& inv): m_inv (inv) 
+       {}
+
+       // The RIB domain should be used in such way that the set of
+       // variables between intervals and boxes are disjoint. In that
+       // case, no reduction is needed.
+       //
+       // For simplicity, we can relax this by allowing the interval
+       // domain to keep track of all variables and only limiting
+       // boxes to a small set of variables. That's why we only reduce
+       // from boxes to intervals but not in the other direction.
+       void reduce_variable(const VariableName& v) {
+         if (is_bottom() || is_top ())
+           return;
+         
+         auto &intvs = m_inv.first ();
+         auto &boxes = m_inv.second ();
+         // --- there is no reduction from intervals to boxes
+
+         // --- reduction from boxes to intervals
+         interval_t itv = intvs [v];
+         if (itv.is_top () && boxes.isTrackVar (v)) {
+           intvs.set (v, boxes [v]);
+         }
+       }
+
+       void reduce_variable(const variable_t& v) {
+         reduce_variable (v.name ());
+       }
+       
+       template < typename Range >
+       void reduce_variables (const Range& r) {
+         for (auto v: r)
+           reduce_variable (v);
+       }
+              
+      public:
+
+        LddNodePtr getLdd () { 
+          // We add all the non-tracked intervals to boxes before we
+          // return the ldd
+          auto &intvs = m_inv.first ();
+          auto &boxes = m_inv.second ();
+          for (auto v: boost::make_iterator_range(intvs.begin (), intvs.end ())) {
+            interval_t intv = intvs [v];
+            if (!boxes.isTrackVar (v) && !intv.is_top ()) {
+              boxes.set (v, intv);
+            }
+          }              
+          return boxes.getLdd (); 
+        }
+
+       static rib_domain_t top() {
+         return rib_domain_t (product_domain_t::top ());
+       }
+       
+       static rib_domain_t bottom() {
+         return rib_domain_t (product_domain_t::bottom ());
+       }
+       
+       rib_domain() : m_inv () {}
+       
+       rib_domain(const rib_domain_t& other):
+           ikos::writeable(),
+           numerical_domain< Number, VariableName >(),
+           bitwise_operators< Number, VariableName >(),
+           division_operators< Number, VariableName >(),
+           m_inv (other.m_inv) {}
+       
+       rib_domain_t& operator= (const rib_domain_t& other) {
+         if (this != &other)
+           m_inv = other.m_inv;
+         return *this;
+       }
+       
+       bool is_bottom() { return m_inv.is_bottom(); }
+       
+       bool is_top() { return m_inv.is_top(); }
+       
+       interval_domain_t& first() { return m_inv.first(); }
+       
+       boxes_domain_t& second() { return m_inv.second(); }
+
+       bool operator<=(rib_domain_t other) {
+         return m_inv <= other.m_inv;
+       }
+       
+       rib_domain_t operator|(rib_domain_t other) {
+         return rib_domain_t (m_inv | other.m_inv);
+       }
+       
+       rib_domain_t operator&(rib_domain_t other) {
+         return rib_domain_t (m_inv & other.m_inv);
+       }
+       
+       rib_domain_t operator||(rib_domain_t other) {
+         return rib_domain_t (m_inv || other.m_inv);
+       }
+       
+       rib_domain_t operator&&(rib_domain_t other) {
+         return rib_domain_t (m_inv && other.m_inv);
+       }
+       
+       void set(VariableName v, interval_t x) {
+         m_inv.first().set(v, x.first());
+         m_inv.second().set(v, x.second());
+       }
+       
+       interval_t operator[](VariableName v) {
+         return (m_inv.first ()[v] & m_inv.second ()[v]);
+       }
+       
+       void operator+=(linear_constraint_system_t csts) {
+         m_inv += csts;
+         reduce_variables (csts.variables());
+       }
+       
+       void operator-=(VariableName v) { m_inv -= v; }
+
+       template<typename Iterator>
+       void forget (Iterator begin, Iterator end) {
+         if (is_bottom ()) return;
+         
+         for (auto v: boost::make_iterator_range (begin, end))
+           operator-= (v);
+       }
+       
+       void assign(VariableName x, linear_expression_t e) {
+         m_inv.assign(x, e);
+         reduce_variable(x);
+       }
+       
+       void apply(operation_t op, VariableName x, VariableName y, VariableName z) {
+         m_inv.apply(op, x, y, z);
+         reduce_variable(x);
+       }
+       
+       void apply(operation_t op, VariableName x, VariableName y, Number k) {
+         m_inv.apply(op, x, y, k);
+         reduce_variable(x);
+       }
+       
+       // bitwise_operators_api
+       
+       void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width) {
+         m_inv.apply(op, x, y, width);
+         reduce_variable(x);
+       }
+       
+       void apply(conv_operation_t op, VariableName x, Number k, unsigned width) {
+         m_inv.apply(op, x, k, width);
+         reduce_variable(x);
+       }
+       
+       void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) {
+         m_inv.apply(op, x, y, z);
+         reduce_variable(x);
+       }
+       
+       void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k) {
+         m_inv.apply(op, x, y, k);
+         reduce_variable(x);
+       }
+       
+       // division_operators_api
+       
+       void apply(div_operation_t op, VariableName x, VariableName y, VariableName z) {
+         m_inv.apply(op, x, y, z);
+         reduce_variable(x);
+       }
+       
+       void apply(div_operation_t op, VariableName x, VariableName y, Number k) {
+         m_inv.apply(op, x, y, k);
+         reduce_variable(x);
+       }
+       
+       void write(std::ostream& o) { 
+         m_inv.write(o); 
+       }
+       
+       linear_constraint_system_t to_linear_constraint_system() {
+         return m_inv.first().to_linear_constraint_system();
+       }
+       
+       const char* getDomainName() const { return m_inv.getDomainName (); }
+       
+     }; // class rib_domain
+
       
    } // namespace domains
 
@@ -843,12 +1270,25 @@ namespace crab {
                   Iterator it, Iterator end) {
        inv.forget (it, end);
      }
+
+     template <typename VariableName, typename Number, typename Iterator >
+     void forget (rib_domain<Number, VariableName>& inv, 
+                  Iterator it, Iterator end) {
+       inv.forget (it, end);
+     }
    
      template <typename VariableName, typename Number, typename Iterator >
      void project (boxes_domain<Number, VariableName>& inv, 
                    Iterator it, Iterator end) {
        inv.project (it, end);
      }
+   
+     template <typename VariableName, typename Number, typename Iterator >
+     void project (rib_domain<Number, VariableName>& inv, 
+                   Iterator it, Iterator end) {
+       inv.project (it, end);
+     }
+
 
    } // namespace domain_traits
 }// namespace crab

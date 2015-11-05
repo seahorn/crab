@@ -2,7 +2,6 @@
 
 #ifdef HAVE_LDD
 #include <crab/domains/boxes.hpp>
-using namespace crab::domains::ldd;
 namespace crab { 
    namespace domains {
 
