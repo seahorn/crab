@@ -183,7 +183,7 @@ namespace crab {
 
         interval_domain_t& first() 
         { CRAB_ERROR (LDD_NOT_FOUND); }
-        
+
         boxes_domain_t& second()
         { CRAB_ERROR (LDD_NOT_FOUND); } 
 
@@ -1122,13 +1122,7 @@ namespace crab {
            intvs.set (v, boxes [v]);
          }
        }
-       
-       template < typename Range >
-       void reduce_variables (const Range& r) {
-         for (auto v: r)
-           reduce_variable (v.name ());
-       }
-              
+                     
       public:
 
         LddNodePtr getLdd () { 
@@ -1136,17 +1130,18 @@ namespace crab {
           // return the ldd
           auto &intvs = m_inv.first ();
           auto &boxes = m_inv.second ();
-          for (auto v: boost::make_iterator_range(intvs.begin (), intvs.end ())) {
-            interval_t intv = intvs [v];
-            if (!boxes.isTrackVar (v) && !intv.is_top ()) {
-              boxes.set (v, intv);
+          for (auto p: boost::make_iterator_range(intvs.begin (), intvs.end ())) {
+            interval_t intv = intvs [p.first];
+            if (!boxes.isTrackVar (p.first) && !intv.is_top ()) {
+              boxes.set (p.first, intv);
             }
           }              
           return boxes.getLdd (); 
         }
 
         VariableName getVarName (int v) const {
-          return m_inv.second ().getVarName (v);
+          product_domain_t res (m_inv); 
+          return res.second ().getVarName (v);
         }
 
         void addTrackVar (VariableName v) {
@@ -1185,9 +1180,9 @@ namespace crab {
        bool is_top() { return m_inv.is_top(); }
        
        interval_domain_t& first() { return m_inv.first(); }
-       
-       boxes_domain_t& second() { return m_inv.second(); }
 
+       boxes_domain_t& second() { return m_inv.second(); }
+       
        bool operator<=(rib_domain_t other) {
          return m_inv <= other.m_inv;
        }
@@ -1219,7 +1214,8 @@ namespace crab {
        
        void operator+=(linear_constraint_system_t csts) {
          m_inv += csts;
-         reduce_variables (csts.variables());
+         for (auto v : csts.variables ())
+           reduce_variable (v.name ());
        }
        
        void operator-=(VariableName v) { m_inv -= v; }
