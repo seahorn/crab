@@ -18,6 +18,7 @@ class SparseWtGraph : public writeable {
 
     SparseWtGraph(unsigned int _maxsz = 10, float _growth_rate = 1.4)
       : max_sz(_maxsz), sz(0), growth_rate(_growth_rate),
+        edge_count(0),
         fwd_adjs((unsigned int*) malloc(sizeof(unsigned int)*max_sz*(2*max_sz+1))),
         rev_adjs((unsigned int*) malloc(sizeof(unsigned int)*max_sz*(2*max_sz+1))),
         mtx((Wt*) malloc(sizeof(Wt)*max_sz*max_sz))
@@ -35,6 +36,7 @@ class SparseWtGraph : public writeable {
     template<class Wo>
     SparseWtGraph(const SparseWtGraph<Wo>& o)
       : max_sz(o.max_sz), sz(o.sz), growth_rate(o.growth_rate),
+        edge_count(0),
         fwd_adjs((unsigned int*) malloc(sizeof(unsigned int)*max_sz*(2*max_sz+1))),
         rev_adjs((unsigned int*) malloc(sizeof(unsigned int)*max_sz*(2*max_sz+1))),
         mtx((Wt*) malloc(sizeof(Wt)*max_sz*max_sz))
@@ -55,6 +57,7 @@ class SparseWtGraph : public writeable {
 
     SparseWtGraph(const SparseWtGraph<Wt>& o)
       : max_sz(o.max_sz), sz(o.sz), growth_rate(o.growth_rate),
+        edge_count(0),
         fwd_adjs((unsigned int*) malloc(sizeof(unsigned int)*max_sz*(2*max_sz+1))),
         rev_adjs((unsigned int*) malloc(sizeof(unsigned int)*max_sz*(2*max_sz+1))),
         mtx((Wt*) malloc(sizeof(Wt)*max_sz*max_sz))
@@ -75,6 +78,7 @@ class SparseWtGraph : public writeable {
 
     SparseWtGraph(SparseWtGraph<Wt>&& o)
       : max_sz(o.max_sz), sz(o.sz), growth_rate(o.growth_rate),
+        edge_count(o.edge_count),
         fwd_adjs(o.fwd_adjs), rev_adjs(o.rev_adjs), mtx(o.mtx),
         is_free(std::move(o.is_free)), free_id(std::move(o.free_id))
     {
@@ -136,6 +140,7 @@ class SparseWtGraph : public writeable {
       max_sz = o.max_sz;
       sz = o.sz;
       growth_rate = o.growth_rate;
+      edge_count = o.edge_count;
       fwd_adjs = o.fwd_adjs;
       rev_adjs = o.rev_adjs;
       mtx = o.mtx;
@@ -199,10 +204,16 @@ class SparseWtGraph : public writeable {
           ret.add_edge(s, g.edge_val(s, d), d);
         }
       }
+      // Unforunately, views don't have
+      // convenient 'is_free' arrays.
+//      ret.free_id = g.free_id;
+//      ret.is_free = g.is_free;
 //      ret.check_adjs();
 
       return ret;
     }
+
+    bool is_empty(void) const { return edge_count == 0; }
 
     vert_id new_vertex(void)
     {
@@ -216,7 +227,8 @@ class SparseWtGraph : public writeable {
       } else {
         if(max_sz <= sz)
         {
-          growCap(max_sz*growth_rate);
+          // Make sure max_sz is strictly increasing
+          growCap(1 + max_sz*growth_rate);
         }
         assert(sz < max_sz);
         v = sz++;
@@ -239,6 +251,7 @@ class SparseWtGraph : public writeable {
       is_free[v] = true;
       
       // Remove (s -> v) from preds.
+      edge_count -= succs(v).size();
       for(vert_id s : succs(v))
       {
         (&(mtx[max_sz*v + s]))->~Wt();
@@ -247,6 +260,7 @@ class SparseWtGraph : public writeable {
       succs(v).clear();
 
       // Remove (v -> p) from succs
+      edge_count -= preds(v).size();
       for(vert_id p : preds(v))
       {
         (&(mtx[max_sz*p + v]))->~Wt();
@@ -279,6 +293,7 @@ class SparseWtGraph : public writeable {
         preds(v).clear();
         succs(v).clear();
       }
+      edge_count = 0;
     }
 
     void clear(void)
@@ -304,6 +319,7 @@ class SparseWtGraph : public writeable {
       preds(y).add(x);
       // Allocate a new Wt at the given offset.
       new (&(mtx[x*max_sz + y])) Wt(wt);
+      edge_count++;
     }
 
     void set_edge(vert_id s, Wt w, vert_id d)
@@ -362,8 +378,12 @@ class SparseWtGraph : public writeable {
     vert_range verts(void) const { return vert_range(sz, is_free); }
 
     typedef vert_id* adj_iterator;
+    typedef adj_iterator succ_iterator;
+    typedef adj_iterator pred_iterator;
     class adj_list {
     public:
+      typedef adj_iterator iterator;
+
       adj_list(unsigned int* _ptr, unsigned int max_sz)
         : ptr(_ptr), sparseptr(_ptr+1+max_sz)
       { }
@@ -400,6 +420,9 @@ class SparseWtGraph : public writeable {
       unsigned int* ptr;
       unsigned int* sparseptr;
     };
+
+    typedef adj_list succ_range;
+    typedef adj_list pred_range;
 
     adj_list succs(vert_id v) const
     {
@@ -517,6 +540,7 @@ class SparseWtGraph : public writeable {
     unsigned int max_sz;
     unsigned int sz;
     float growth_rate;
+    unsigned int edge_count;
 
     // Each element of fwd/rev adjs:
     // [ sz/1 | dense/max_sz | inv/max_sz ]

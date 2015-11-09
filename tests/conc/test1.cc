@@ -1,6 +1,5 @@
 #include "../common.hpp"
 #include <crab/cfg/ConcSys.hpp>
-#include <crab/analysis/InvTable_traits.hpp>
 #include <crab/analysis/ConcAnalyzer.hpp>
 
 using namespace std;

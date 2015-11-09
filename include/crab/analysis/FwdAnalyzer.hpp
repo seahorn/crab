@@ -7,7 +7,6 @@
 #include <crab/cfg/VarFactory.hpp>
 #include <crab/analysis/Liveness.hpp>
 #include <crab/analysis/AbsTransformer.hpp>
-#include <crab/analysis/InvTable_traits.hpp>
 #include <crab/analysis/InterDS.hpp>
 #include <crab/domains/domain_traits.hpp>
 
@@ -52,6 +51,11 @@ namespace crab {
       typedef interleaved_fwd_fixpoint_iterator<basic_block_label_t, CFG, abs_dom_t> fwd_iterator_t;
       typedef typename AbsTr::z_lin_cst_t z_lin_cst_t;
       typedef boost::unordered_map<basic_block_label_t, InvTblValTy> invariant_map_t;    
+
+      // -- Convert from the abstract domain to InvTblValTy
+      //    InvTblValTy is the format in which Crab will communicate
+      //    invariants to clients.
+      typedef domain_traits::absdom_to_formula<abs_dom_t,InvTblValTy> conv_to_form_t;
 
      public:
 
@@ -113,13 +117,12 @@ namespace crab {
         auto it = m_pre_map.find (node);
         if (it == m_pre_map.end())
         {          
-          typedef inv_tbl_traits<abs_dom_t,InvTblValTy> inv_tbl_t;
           if (inv.is_bottom ())
-            m_pre_map.insert(make_pair (node, inv_tbl_t::bot()));
+            m_pre_map.insert(make_pair (node, conv_to_form_t::mkFalse()));
           else if (inv.is_top ())
-            m_pre_map.insert(make_pair (node, inv_tbl_t::top()));
+            m_pre_map.insert(make_pair (node, conv_to_form_t::mkTrue()));
           else
-            m_pre_map.insert(make_pair (node, inv_tbl_t::marshall(inv)));
+            m_pre_map.insert(make_pair (node, conv_to_form_t::marshall(inv)));
         }
       }
       
@@ -128,13 +131,12 @@ namespace crab {
         auto it = m_post_map.find (node);
         if (it == m_post_map.end())
         {
-          typedef inv_tbl_traits<abs_dom_t,InvTblValTy> inv_tbl_t;
           if (inv.is_bottom ())
-            m_post_map.insert(make_pair (node, inv_tbl_t::bot()));
+            m_post_map.insert(make_pair (node, conv_to_form_t::mkFalse()));
           else if (inv.is_top ())
-            m_post_map.insert(make_pair (node, inv_tbl_t::top()));
+            m_post_map.insert(make_pair (node, conv_to_form_t::mkTrue()));
           else
-            m_post_map.insert(make_pair (node, inv_tbl_t::marshall(inv)));
+            m_post_map.insert(make_pair (node, conv_to_form_t::marshall(inv)));
         }
       }
       
@@ -192,7 +194,7 @@ namespace crab {
       InvTblValTy get_pre (basic_block_label_t b) const { 
         auto it = m_pre_map.find (b);
         if (it == m_pre_map.end ())
-          return inv_tbl_traits<abs_dom_t,InvTblValTy>::top();
+          return conv_to_form_t::mkTrue ();
         else
           return it->second;
       }
@@ -201,7 +203,7 @@ namespace crab {
       InvTblValTy get_post (basic_block_label_t b) const {
         auto it = m_post_map.find (b);
         if (it == m_post_map.end ())
-          return inv_tbl_traits<abs_dom_t,InvTblValTy>::top();
+          return conv_to_form_t::mkTrue ();
         else 
           return it->second;      
       }
