@@ -89,21 +89,6 @@ if (USE_LDD)
   set_target_properties(ldd PROPERTIES EXCLUDE_FROM_ALL ON)
 endif ()
 
-# if (IS_DIRECTORY ${CMAKE_SOURCE_DIR}/ldd AND
-#       EXISTS ${CMAKE_SOURCE_DIR}/ldd/src/ldd/lddBoxes.c)
-#     include_directories (AFTER ldd/src/include)
-#     include_directories (AFTER ldd/cudd-2.4.2/include)
-#     add_subdirectory (ldd/cudd-2.4.2)
-#     add_subdirectory (ldd/src)
-#     set (LDD_LIBS Cudd_Cudd Cudd_St Cudd_Epd Cudd_Mtr Cudd_Util Ldd_Ldd)
-#     set (HAVE_LDD TRUE)
-# else()
-#     #message (WARNING "No ldd found in ${CMAKE_SOURCE_DIR}/ldd")
-#     set (LDD_LIBS "")
-# endif()
-
-
-
 # check for rt lib. Not needed on OSX.
 find_library(RT_LIB NAMES rt)
 if (NOT RT_LIB)

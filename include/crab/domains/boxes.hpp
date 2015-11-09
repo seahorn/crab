@@ -22,7 +22,7 @@ using namespace ikos;
 
 #ifndef HAVE_LDD
 /*
- * Empty skeletons if ldd not found 
+ * Dummy implementation if ldd not found 
  */
 #define LDD_NOT_FOUND "No LDD. Run cmake with -DUSE_LDD=ON"
 namespace crab {
@@ -154,13 +154,13 @@ namespace crab {
         typedef interval <Number> interval_t;
         typedef interval_domain <Number, VariableName> interval_domain_t;
         typedef boxes_domain <Number, VariableName> boxes_domain_t;
+        typedef int LddNodePtr;
 
         rib_domain(): ikos::writeable() { }    
 
         static rib_domain_t top() { CRAB_ERROR (LDD_NOT_FOUND); }
 
         static rib_domain_t bottom() { CRAB_ERROR (LDD_NOT_FOUND); }
-
 
         LddNodePtr getLdd () 
         { CRAB_ERROR (LDD_NOT_FOUND); }
@@ -648,7 +648,8 @@ namespace crab {
           if (!isTrackVar (var)) return;
 
           int id = getVarId (var);
-          m_ldd =  lddPtr (get_ldd_man(), Ldd_ExistsAbstract (get_ldd_man(), &*m_ldd, id));
+          m_ldd =  lddPtr (get_ldd_man(), 
+                           Ldd_ExistsAbstract (get_ldd_man(), &*m_ldd, id));
         }
 
         // remove all variables [begin,...end)
@@ -1039,8 +1040,10 @@ namespace crab {
           
           return csts;
         }
+
         
         void write (ostream& o) {
+          // FIXME: variable names are internal ldd names
           // FIXME: write to ostream rather than stdout
           LddManager *ldd_man = getLddManager (m_ldd);
           DdManager *cudd = Ldd_GetCudd (ldd_man);
@@ -1050,7 +1053,6 @@ namespace crab {
           else if (m_ldd.get () == Ldd_GetFalse (ldd_man)) o << "_|_";	
           else Ldd_PrintMinterm(ldd_man, m_ldd.get ());
           Cudd_SetStdout(cudd,fp);      
-
         }
         
         const char* getDomainName () const {return "Boxes";}  
@@ -1104,7 +1106,7 @@ namespace crab {
        // variables between intervals and boxes are disjoint. In that
        // case, no reduction is needed.
        //
-       // For simplicity, we can relax this by allowing the interval
+       // For simplicity, we relax this by allowing the interval
        // domain to keep track of all variables and only limiting
        // boxes to a small set of variables. That's why we only reduce
        // from boxes to intervals but not in the other direction.

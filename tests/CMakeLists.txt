@@ -2,10 +2,6 @@ set (CRAB_LIBS
   dbm
   term)
 
-if (USE_LDD)
-  set (CRAB_LIBS ${CRAB_LIBS} boxes) 
-endif ()
-
 set (CRAB_LIBS ${CRAB_LIBS}
   ${LDD_LIBRARY} 
   ${GMPXX_LIB} 

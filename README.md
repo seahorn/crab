@@ -43,7 +43,7 @@ Then, just type:
 
 If you want to use the BOXES domain then type:
 
-    cmake -DDEVMODE=ON -DUSE_LDD=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=my_install_dir ../
+    cmake -DUSE_LDD=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=my_install_dir ../
     cmake --build . --target install 
 
 ## Input/Output ##
