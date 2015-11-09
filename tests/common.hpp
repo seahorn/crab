@@ -1,6 +1,7 @@
 #ifndef __TESTS_COMMON__
 #define __TESTS_COMMON__
 
+#include <crab/config.h>
 #include <crab/cfg/Cfg.hpp>
 #include <crab/cfg/VarFactory.hpp>
 #include <crab/common/types.hpp>
@@ -12,6 +13,7 @@
 #include <crab/domains/intervals_congruences.hpp>                      
 #include <crab/domains/dbm.hpp>                      
 #include <crab/domains/split_dbm.hpp>
+#include <crab/domains/boxes.hpp>                      
 #include <crab/domains/array_graph.hpp>                      
 #include <crab/domains/array_smashing.hpp>
 #include <crab/cfg/CfgBgl.hpp> 
@@ -41,6 +43,8 @@ namespace crab {
     using namespace crab::cfg_impl;
     using namespace crab::domains; 
     using namespace ikos;
+    typedef linear_expression<z_number, varname_t> z_lin_t;
+    typedef linear_constraint<z_number, varname_t> z_lin_cst_t;
     typedef linear_constraint_system<z_number, varname_t> z_lin_cst_sys_t;
     typedef interval<z_number> z_interval_t;
     typedef bound<z_number> z_bound_t;
@@ -51,6 +55,8 @@ namespace crab {
     typedef SplitDBM<z_number, varname_t> sdbm_domain_t;
     typedef anti_unif<term::TDomInfo<z_number, varname_t, interval_domain_t> >::anti_unif_t term_domain_t;
     typedef anti_unif<term::TDomInfo<z_number, varname_t, dbm_domain_t> >::anti_unif_t term_dbm_t;
+    typedef boxes_domain< z_number, varname_t > boxes_domain_t;
+    typedef rib_domain< z_number, varname_t > rib_domain_t;
     // Array domains
     typedef array_graph_domain<dbm_domain_t,
                                z_number, varname_t,

@@ -246,6 +246,10 @@ namespace crab {
           return _inv.to_linear_constraint_system ();
         }
         
+        NumDomain  get_base_domain () const {      
+          return _inv;
+        }
+
         void write(ostream& o) {
           o << _inv;
         }

@@ -41,6 +41,11 @@ Then, just type:
     cmake -DDEVMODE=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=my_install_dir ../
     cmake --build . --target install 
 
+If you want to use the BOXES domain then type:
+
+    cmake -DUSE_LDD=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=my_install_dir ../
+    cmake --build . --target install 
+
 ## Input/Output ##
 
 The input of Crab is a Control Flow Graph (CFG) language that

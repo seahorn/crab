@@ -60,10 +60,12 @@ class z_number {
 private:
   mpz_class _n;
 
-private:
-  z_number(mpz_class n) : _n(n) {}
+// private:
+//   z_number(mpz_class n) : _n(n) {}
 
 public:
+
+  z_number(mpz_class n) : _n(n) {}
 
   static z_number from_ulong(unsigned long n) {
     mpz_class b(n);

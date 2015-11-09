@@ -18,7 +18,6 @@
 #include <crab/analysis/graphs/TopoOrder.hpp>
 #include <crab/analysis/FwdAnalyzer.hpp>
 #include <crab/analysis/Liveness.hpp>
-//#include <crab/analysis/InvTable_traits.hpp>
 #include <crab/analysis/InterDS.hpp>
 
 namespace crab {
@@ -33,9 +32,7 @@ namespace crab {
               // abstract domain used for the bottom-up phase
               typename BUAbsDomain, 
               // abstract domain used for the top-down phase
-              typename TDAbsDomain,
-              // type for the persistent invariants 
-              typename InvTblValTy>
+              typename TDAbsDomain>
     class InterFwdAnalyzer: public boost::noncopyable {
 
       typedef typename CG::node_t cg_node_t;
@@ -51,8 +48,8 @@ namespace crab {
       typedef CallCtxTable <cfg_t, TDAbsDomain> call_tbl_t;
       typedef BottomUpSummNumAbsTransformer<summ_tbl_t, call_tbl_t> bu_abs_tr;
       typedef TopDownSummNumAbsTransformer<summ_tbl_t, call_tbl_t> td_abs_tr;
-      typedef FwdAnalyzer <cfg_t, bu_abs_tr, VarFactory, BUAbsDomain> bu_analyzer;
-      typedef FwdAnalyzer <cfg_t, td_abs_tr, VarFactory, InvTblValTy> td_analyzer;
+      typedef FwdAnalyzer <cfg_t, bu_abs_tr, VarFactory> bu_analyzer;
+      typedef FwdAnalyzer <cfg_t, td_abs_tr, VarFactory> td_analyzer;
 
       typedef boost::shared_ptr <td_analyzer> td_analyzer_ptr;
       typedef boost::unordered_map <std::size_t, td_analyzer_ptr> invariant_map_t;
@@ -62,6 +59,8 @@ namespace crab {
       const liveness_map_t* m_live;
       invariant_map_t m_inv_map;
       summ_tbl_t m_summ_tbl;
+      unsigned int m_widening_thres;
+      unsigned int m_narrowing_iters;
 
       const liveness_t* get_live (cfg_t c) {
         if (m_live) {
@@ -74,8 +73,12 @@ namespace crab {
       
      public:
       
-      InterFwdAnalyzer (CG cg, VarFactory& vfac, const liveness_map_t* live): 
-          m_cg (cg), m_vfac (vfac), m_live (live) {
+      InterFwdAnalyzer (CG cg, VarFactory& vfac, const liveness_map_t* live,
+                        unsigned int widening_thres=1,
+                        unsigned int narrowing_iters=UINT_MAX): 
+          m_cg (cg), m_vfac (vfac), m_live (live),
+          m_widening_thres (widening_thres), 
+          m_narrowing_iters (narrowing_iters) {
       }
       
       //! Trigger the whole analysis
@@ -101,7 +104,8 @@ namespace crab {
               CRAB_DEBUG ("--- Analyzing ", (*fdecl).get_func_name ());
               // --- run the analysis
               bu_analyzer a (cfg, m_vfac, get_live (cfg), 
-                             &m_summ_tbl, &call_tbl) ; 
+                             &m_summ_tbl, &call_tbl,
+                             m_widening_thres, m_narrowing_iters) ; 
               a.Run (BUAbsDomain::top ());
               // --- build the summary
               std::vector<varname_t> formals;
@@ -143,7 +147,9 @@ namespace crab {
             }
             
             td_analyzer_ptr a (new td_analyzer (cfg, m_vfac, get_live (cfg), 
-                                                &m_summ_tbl, &call_tbl));           
+                                                &m_summ_tbl, &call_tbl,
+                                                m_widening_thres,
+                                                m_narrowing_iters));           
             if (is_root) {
               a->Run (init);
               is_root = false;
@@ -161,7 +167,7 @@ namespace crab {
       }
 
       //! Return the invariants that hold at the entry of b in cfg
-      InvTblValTy get_pre (const cfg_t &cfg, 
+      TDAbsDomain get_pre (const cfg_t &cfg, 
                            typename cfg_t::basic_block_label_t b) const { 
 
         if (auto fdecl = cfg.get_func_decl ()) {
@@ -169,11 +175,11 @@ namespace crab {
           if (it != m_inv_map.end ())
             return it->second->get_pre (b);
         }
-        return domain_traits::absdom_to_formula<TDAbsDomain,InvTblValTy>::mkTrue ();
+        return TDAbsDomain::top ();
       }
       
       //! Return the invariants that hold at the exit of b in cfg
-      InvTblValTy get_post (const cfg_t &cfg, 
+      TDAbsDomain get_post (const cfg_t &cfg, 
                             typename cfg_t::basic_block_label_t b) const {
         
         if (auto fdecl = cfg.get_func_decl ()) {
@@ -181,7 +187,7 @@ namespace crab {
           if (it != m_inv_map.end ())
             return it->second->get_post (b);
         }
-        return domain_traits::absdom_to_formula<TDAbsDomain,InvTblValTy>::mkTrue ();
+        return TDAbsDomain::top ();
       }
 
       //! Return true if there is a summary for cfg
@@ -192,20 +198,16 @@ namespace crab {
       }
 
       //! Return the summary for cfg
-      InvTblValTy get_summary(const cfg_t &cfg) const {
-        typedef domain_traits::absdom_to_formula<typename summ_tbl_t::abs_domain_t, 
-                                                 InvTblValTy> conv_to_form_t;        
-        
+      BUAbsDomain get_summary(const cfg_t &cfg) const {
         if (auto fdecl = cfg.get_func_decl ()) {
           if (m_summ_tbl.hasSummary (*fdecl)) {
             auto summ = m_summ_tbl.get (*fdecl);
-            typename summ_tbl_t::abs_domain_t inv = summ.get_sum ();
-            return conv_to_form_t::marshall (inv);
+            return summ.get_sum ();
           }
         }
         
         CRAB_WARN("Summary not found");
-        return conv_to_form_t::mkTrue ();
+        return BUAbsDomain::top ();
       }
         
     }; 

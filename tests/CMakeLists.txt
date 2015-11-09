@@ -1,12 +1,18 @@
 set (CRAB_LIBS 
   dbm
-  term
-  ${GMPXX_LIB}
-  ${GMP_LIB}
+  term)
+
+set (CRAB_LIBS ${CRAB_LIBS}
+  ${LDD_LIBRARY} 
+  ${GMPXX_LIB} 
+  ${GMP_LIB} 
+  ${RT_LIB}
   )
 
-
 add_subdirectory (simple)
+if (USE_LDD)
+  add_subdirectory (boxes)
+endif ()
 add_subdirectory (arrays)
 add_subdirectory (pointers)
 add_subdirectory (unif)
