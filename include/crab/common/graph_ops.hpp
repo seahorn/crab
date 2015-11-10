@@ -507,7 +507,7 @@ namespace crab {
     }
 
     template<class G1, class G2>
-    static graph_t widen(G1& l, G2& r)
+    static graph_t widen(G1& l, G2& r, vector<vert_id>& unstable)
     {
       assert(l.size() == r.size());
       size_t sz = l.size();
@@ -519,7 +519,17 @@ namespace crab {
         {
           if(l.elem(s, d) && r.edge_val(s, d) <= l.edge_val(s, d))
             g.add_edge(s, l.edge_val(s, d), d);
-        }      
+        }
+
+        // Check if this vertex is stable
+        for(vert_id d : l.succs(s))
+        {
+          if(!g.elem(s, d))
+          {
+            unstable.push_back(s);
+            break;
+          }
+        }
       }
 
       return g;
@@ -704,6 +714,7 @@ namespace crab {
       // We just want to restore closure.
       assert(l.size() == r.size());
       unsigned int sz = l.size();
+      grow_scratch(sz);
       delta.clear();
       
       vector< vector<vert_id> > colour_succs(2*sz);
@@ -981,9 +992,10 @@ namespace crab {
     }
 
     template<class G, class P, class V>
-    static void close_after_widen(G& g, P& p, V& is_stable, edge_vector& delta)
+    static void close_after_widen(G& g, P& p, const V& is_stable, edge_vector& delta)
     {
       unsigned int sz = g.size();
+      grow_scratch(sz);
 //      assert(orig.size() == sz);
       
       for(vert_id v : g.verts())
