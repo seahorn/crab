@@ -84,13 +84,43 @@ namespace crab {
       //! Trigger the whole analysis
       void Run (TDAbsDomain init = TDAbsDomain::top ())  {
 
+        bool has_noedges = true;
+        for (auto const &v: boost::make_iterator_range (vertices (m_cg))) {
+          if (out_degree (v, m_cg) > 0) {
+            has_noedges = false;
+            break;
+          }
+        } 
+        
+        if (has_noedges) {
+          // -- Special case when the program has been inlined.
+          CRAB_DEBUG ("Call graph has no edges so no summaries are computed.");
+          for (auto &v: boost::make_iterator_range (vertices (m_cg))) {
+            cfg_t& cfg = v.getCfg ();
+            auto fdecl = cfg.get_func_decl ();
+            assert (fdecl);
+            std::string fun_name = boost::lexical_cast<string> ((*fdecl).get_func_name ());
+            if (fun_name != "main") continue;
+            
+            CRAB_DEBUG ("--- Analyzing ", (*fdecl).get_func_name ());
+            call_tbl_t call_tbl;
+            td_analyzer_ptr a (new td_analyzer (cfg, m_vfac, get_live (cfg), 
+                                                &m_summ_tbl, &call_tbl,
+                                                m_widening_thres,
+                                                m_narrowing_iters));           
+            a->Run (init);
+            m_inv_map.insert (make_pair (CfgHasher<cfg_t>::hash(*fdecl), a));
+          }
+          return;
+        }
+
+        // -- General case 
         std::vector<cg_node_t> rev_order;
         SccGraph <CG> Scc_g (m_cg);
         rev_topo_sort < SccGraph <CG> > (Scc_g, rev_order);
         call_tbl_t call_tbl;
        
         CRAB_DEBUG ("Bottom-up phase ...");
-        
         for (auto n: rev_order) {
           vector<cg_node_t> &scc_mems = Scc_g.getComponentMembers (n);
           for (auto m: scc_mems) {
