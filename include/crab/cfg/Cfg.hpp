@@ -2118,9 +2118,10 @@ namespace crab {
         cfg_t cfg;
         
         cfg.m_entry = m_entry ;
-        if (m_has_exit)
-          cfg.m_exit = m_exit ;
         cfg.m_has_exit = m_has_exit ;
+        if (cfg.m_has_exit)
+          cfg.m_exit = m_exit ;
+        cfg.m_track_prec = m_track_prec;
         cfg.m_func_decl = m_func_decl;
         for (auto const &BB: boost::make_iterator_range (begin (), end ()))
         {
