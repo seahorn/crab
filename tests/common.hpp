@@ -15,6 +15,7 @@
 #include <crab/domains/split_dbm.hpp>
 #include <crab/domains/var_packing_naive_dbm.hpp>
 #include <crab/domains/boxes.hpp>                      
+#include <crab/domains/apron_domains.hpp>                      
 #include <crab/domains/array_graph.hpp>                      
 #include <crab/domains/array_smashing.hpp>
 #include <crab/cfg/CfgBgl.hpp> 
@@ -59,6 +60,8 @@ namespace crab {
     typedef anti_unif<term::TDomInfo<z_number, varname_t, dbm_domain_t> >::anti_unif_t term_dbm_t;
     typedef boxes_domain< z_number, varname_t > boxes_domain_t;
     typedef rib_domain< z_number, varname_t > rib_domain_t;
+    typedef apron_domain< z_number, varname_t, apron_domain_id_t::OCT > oct_apron_domain_t;
+    typedef apron_domain< z_number, varname_t, apron_domain_id_t::PK > pk_apron_domain_t;
     // Array domains
     typedef array_graph_domain<dbm_domain_t,
                                z_number, varname_t,

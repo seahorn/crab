@@ -4,6 +4,7 @@ set (CRAB_LIBS
 
 set (CRAB_LIBS ${CRAB_LIBS}
   ${LDD_LIBRARY} 
+  ${APRON_LIBRARY}
   ${GMPXX_LIB} 
   ${GMP_LIB} 
   ${RT_LIB}
@@ -12,6 +13,9 @@ set (CRAB_LIBS ${CRAB_LIBS}
 add_subdirectory (simple)
 if (USE_LDD)
   add_subdirectory (boxes)
+endif ()
+if (USE_APRON)
+  add_subdirectory (apron)
 endif ()
 add_subdirectory (arrays)
 add_subdirectory (pointers)

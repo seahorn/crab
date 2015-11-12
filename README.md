@@ -41,10 +41,10 @@ Then, just type:
     cmake -DDEVMODE=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=my_install_dir ../
     cmake --build . --target install 
 
-If you want to use the BOXES domain then type:
+If you want to use the BOXES domain then add `-DUSE_LDD=ON` option.
 
-    cmake -DUSE_LDD=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=my_install_dir ../
-    cmake --build . --target install 
+If you want to use the Apron library domains then add `-DUSE_APRON=ON` option.
+
 
 ## Input/Output ##
 
