@@ -2007,6 +2007,7 @@ namespace crab {
       typedef boost::unordered_map< BasicBlockLabel, basic_block_ptr > basic_block_map;
       typedef typename basic_block_map::value_type binding_t;
       typedef boost::shared_ptr< basic_block_map > basic_block_map_ptr;
+      typedef typename basic_block_t::live_domain_t live_domain_t;
 
       struct getRef : public std::unary_function<binding_t, basic_block_t>
       {
@@ -2030,7 +2031,11 @@ namespace crab {
                                          typename basic_block_map::iterator > label_iterator;
       typedef boost::transform_iterator< getLabel, 
                                          typename basic_block_map::const_iterator > const_label_iterator;
-      
+
+      typedef typename std::vector<varname_t>::iterator var_iterator;
+
+      typedef typename std::vector<varname_t>::const_iterator const_var_iterator;
+
      private:
       
       BasicBlockLabel    m_entry;
@@ -2216,6 +2221,19 @@ namespace crab {
         m_blocks->erase (bb_id);
       }
       
+      // Return all variables (either used or defined) in the Cfg.
+      //
+      // This operation is linear on the size of the Cfg to still keep
+      // a valid set in case a block is removed.
+      std::pair<const_var_iterator, const_var_iterator>
+      get_vars () const {
+        live_domain_t vars = live_domain_t::bottom ();
+        for (auto &b : boost::make_iterator_range (begin (), end ()))
+          vars = vars | b.live ();
+        vector<varname_t> s;
+        s.insert (s.end (), vars.begin (), vars.end ());
+        return std::make_pair (s.begin(), s.end ());
+      }
       
       basic_block_t& get_node (BasicBlockLabel bb_id) 
       {

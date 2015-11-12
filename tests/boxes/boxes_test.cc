@@ -237,10 +237,10 @@ int main (int argc, char** argv )
     NumFwdAnalyzer <cfg_t, rib_domain_t,VariableFactory>::type a (cfg, vfac, nullptr, w, n);
     // Run fixpoint 
     rib_domain_t inv = rib_domain_t::top ();
-
-    // tell boxes which variables should track
-    inv.second ().addTrackVar (vfac ["i"]);
-    inv.second ().addTrackVar (vfac ["k"]);
+    // Tell boxes which variables should track
+    for (auto v: boost::make_iterator_range (cfg.get_vars ())) {
+      inv.second ().addTrackVar (v);
+    }
     a.Run (inv);
     // Print invariants
     cout << "Invariants using " << inv.getDomainName () << "\n";
@@ -261,10 +261,10 @@ int main (int argc, char** argv )
     NumFwdAnalyzer <cfg_t, boxes_domain_t,VariableFactory>::type a (cfg,vfac,nullptr,w,n);
     // Run fixpoint 
     boxes_domain_t inv = boxes_domain_t::top ();
-    // tell boxes which variables should track
-    inv.addTrackVar (vfac ["i"]);
-    inv.addTrackVar (vfac ["j"]);
-    inv.addTrackVar (vfac ["k"]);
+    // Tell boxes which variables should track
+    for (auto v: boost::make_iterator_range (cfg.get_vars ())) {
+      inv.addTrackVar (v);
+    }
     a.Run (inv);
     // Print invariants
     cout << "Invariants using " << inv.getDomainName () << "\n";
@@ -285,8 +285,10 @@ int main (int argc, char** argv )
     NumFwdAnalyzer <cfg_t, boxes_domain_t,VariableFactory>::type a (cfg,vfac,nullptr,w,n);
     // Run fixpoint 
     boxes_domain_t inv = boxes_domain_t::top ();
-    // tell boxes which variables should track
-    inv.addTrackVar (vfac ["i"]);
+    // Tell boxes which variables should track
+    for (auto v: boost::make_iterator_range (cfg.get_vars ())) {
+      inv.addTrackVar (v);
+    }
     a.Run (inv);
     // Print invariants
     cout << "Invariants using " << inv.getDomainName () << "\n";
@@ -307,9 +309,10 @@ int main (int argc, char** argv )
     NumFwdAnalyzer <cfg_t, boxes_domain_t,VariableFactory>::type a (cfg,vfac,nullptr,w,n);
     // Run fixpoint 
     boxes_domain_t inv = boxes_domain_t::top ();
-    // tell boxes which variables should track
-    inv.addTrackVar (vfac ["i"]);
-    inv.addTrackVar (vfac ["p"]);
+    // Tell boxes which variables should track
+    for (auto v: boost::make_iterator_range (cfg.get_vars ())) {
+      inv.addTrackVar (v);
+    }
     a.Run (inv);
     // Print invariants
     cout << "Invariants using " << inv.getDomainName () << "\n";
@@ -329,9 +332,10 @@ int main (int argc, char** argv )
     NumFwdAnalyzer <cfg_t, boxes_domain_t,VariableFactory>::type a (cfg,vfac,nullptr,w,n);
     // Run fixpoint 
     boxes_domain_t inv = boxes_domain_t::top ();
-    // tell boxes which variables should track
-    inv.addTrackVar (vfac ["i"]);
-    inv.addTrackVar (vfac ["k"]);
+    // Tell boxes which variables should track
+    for (auto v: boost::make_iterator_range (cfg.get_vars ())) {
+      inv.addTrackVar (v);
+    }
     a.Run (inv);
     // Print invariants
     cout << "Invariants using " << inv.getDomainName () << "\n";
