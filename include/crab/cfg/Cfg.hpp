@@ -1319,6 +1319,10 @@ namespace crab {
         return m_live;
       }
 
+      live_domain_t live () const {
+        return m_live;
+      }
+
       pair<succ_iterator, succ_iterator> next_blocks ()
       { 
         return make_pair (m_next.begin (), m_next.end ());
@@ -2225,14 +2229,15 @@ namespace crab {
       //
       // This operation is linear on the size of the Cfg to still keep
       // a valid set in case a block is removed.
-      std::pair<const_var_iterator, const_var_iterator>
-      get_vars () const {
-        live_domain_t vars = live_domain_t::bottom ();
-        for (auto &b : boost::make_iterator_range (begin (), end ()))
-          vars = vars | b.live ();
-        vector<varname_t> s;
-        s.insert (s.end (), vars.begin (), vars.end ());
-        return std::make_pair (s.begin(), s.end ());
+      std::vector<varname_t> get_vars () const {
+        live_domain_t ls = live_domain_t::bottom ();
+        for (auto const &b : boost::make_iterator_range (begin (), end ()))
+          ls = ls | b.live ();
+        // std::vector<varname_t> vars (ls.size ());
+        // vars.insert (vars.end (), ls.begin (), ls.end ());
+        std::vector<varname_t> vars;
+        for (auto v: ls) vars.push_back (v);
+        return vars;
       }
       
       basic_block_t& get_node (BasicBlockLabel bb_id) 
