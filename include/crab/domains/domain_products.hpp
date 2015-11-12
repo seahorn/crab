@@ -53,7 +53,9 @@ namespace ikos {
     
   public:
     typedef domain_product2< Domain1, Domain2 > domain_product2_t;
-    
+    typedef Domain1 first_type;
+    typedef Domain2 second_type;
+
   private:
     bool _is_bottom;
     Domain1 _first;
@@ -202,6 +204,9 @@ namespace ikos {
 
   public:
     typedef domain_product3< Domain1, Domain2, Domain3 > domain_product3_t;
+    typedef Domain1 first_type;
+    typedef Domain2 second_type;
+    typedef Domain3 third_type;
 
   private:
     typedef domain_product2< Domain2, Domain3 > product23_t;
@@ -302,6 +307,9 @@ namespace ikos {
 
   public:
     typedef numerical_domain_product2< Number, VariableName, Domain1, Domain2 > numerical_domain_product2_t;
+    typedef Domain1 first_type;
+    typedef Domain2 second_type;
+
     using typename numerical_domain< Number, VariableName >::linear_expression_t;
     using typename numerical_domain< Number, VariableName >::linear_constraint_t;
     using typename numerical_domain< Number, VariableName >::linear_constraint_system_t;
@@ -478,6 +486,10 @@ namespace ikos {
     typedef numerical_domain_product3< Number, VariableName, 
                                        Domain1, Domain2, Domain3 > 
     numerical_domain_product3_t;
+    typedef Domain1 first_type;
+    typedef Domain2 second_type;
+    typedef Domain3 third_type;
+
     using typename numerical_domain< Number, VariableName >::linear_expression_t;
     using typename numerical_domain< Number, VariableName >::linear_constraint_t;
     using typename numerical_domain< Number, VariableName >::linear_constraint_system_t;
