@@ -339,7 +339,7 @@ namespace crab {
           else {
             int id = get_var_map ()->size ();
             // id's must start at 0
-            get_var_map ()->insert (binding_t (v, id++));
+            get_var_map ()->insert (binding_t (v, id));
             return id;
           }
         }
@@ -517,7 +517,7 @@ namespace crab {
           if (it != get_var_map ()->right.end ())
              return it->second;
           else {
-             CRAB_ERROR ("Index", v, "cannot be mapped back to a variable name");
+             CRAB_ERROR ("Index ", v, " cannot be mapped back to a variable name");
           }
         }
 
