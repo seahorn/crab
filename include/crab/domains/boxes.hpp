@@ -338,7 +338,8 @@ namespace crab {
              return it->second;
           else {
             int id = get_var_map ()->size ();
-            get_var_map ()->insert (binding_t (v, ++id));
+            // id's must start at 0
+            get_var_map ()->insert (binding_t (v, id++));
             return id;
           }
         }
