@@ -195,25 +195,13 @@ cfg_t prog5 (VariableFactory &vfac)  {
   return cfg;
 }
 
-
-/* Example of how to infer invariants from the above CFG */
-int main (int argc, char** argv )
-{
-  const unsigned int w = 1;
-  const unsigned int n = 2;
-
-  {
-    VariableFactory vfac;
-    cfg_t cfg = prog1 (vfac);
-    cout << cfg << endl;
-
-#ifdef HAVE_APRON
-    NumFwdAnalyzer <cfg_t, oct_apron_domain_t,VariableFactory>::type a (cfg, vfac, nullptr, w, n);
-    // tell apron which variables should track
-    oct_apron_domain_t::addTrackVar (vfac ["i"]);
-    oct_apron_domain_t::addTrackVar (vfac ["k"]);
+template<typename AbsDomain>
+void run (cfg_t cfg, VariableFactory& vfac, unsigned widening, unsigned narrowing){
+    #ifdef HAVE_APRON
     // Run fixpoint 
-    oct_apron_domain_t inv = oct_apron_domain_t::top ();
+    typename NumFwdAnalyzer <cfg_t,AbsDomain,VariableFactory>::type 
+        a (cfg, vfac, nullptr, widening, narrowing);
+    AbsDomain inv = AbsDomain::top ();
     a.Run (inv);
     // Print invariants
     cout << "Invariants using " << inv.getDomainName () << "\n";
@@ -221,9 +209,106 @@ int main (int argc, char** argv )
       auto inv = a [b.label ()];
       std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
     }
-    inv.resetTrackVars ();
-#endif 
+    #endif 
+}
+
+/* Example of how to infer invariants from the above CFG */
+int main (int argc, char** argv ) {
+
+  // VariableFactory vfac;
+
+  // ap_manager_t* man = box_manager_alloc ();;
+  // // x:0 y:1 z:2
+  // ap_state_ptr ap1 = apPtr (man, ap_abstract0_top (man, 3, 0));
+  // ap1 = apPtr (man,
+  //               ap_abstract0_assign_texpr(man, false, 
+  //                                         &*ap1, 
+  //                                         0, ap_texpr0_cst_scalar_int ((int) 5), 
+  //                                         NULL));
+  // ap1 = apPtr (man,
+  //               ap_abstract0_assign_texpr(man, false, 
+  //                                         &*ap1, 
+  //                                         1, ap_texpr0_cst_scalar_int ((int) 2), 
+  //                                         NULL));
+  
+  // ap_abstract0_fprint (stdout, man, &*ap1, NULL);
+  
+  // ap_dimperm_t*  p = ap_dimperm_alloc (3);
+  
+  // p->dim[0] = 2;
+  // p->dim[1] = 1;
+  // p->dim[2] = 0;
+  
+  // ap_dimperm_fprint(stdout, p);
+  // ap_state_ptr ap2 = apPtr (man, ap_abstract0_permute_dimensions(man, false, &*ap1, p));
+  // ap_abstract0_fprint (stdout, man, &*ap2, NULL);
+  // ap_dimperm_free (p);
+
+  {
+    VariableFactory vfac;
+    cfg_t cfg = prog1 (vfac);
+    cout << cfg << endl;
+    run<interval_domain_t> ( cfg, vfac, 1, 2);
+    run<box_apron_domain_t> ( cfg, vfac, 1, 2);
+    run<oct_apron_domain_t> ( cfg, vfac, 1, 2);
+    run<pk_apron_domain_t> ( cfg, vfac, 1, 2);
   }
 
+  // {
+  //   VariableFactory vfac;
+  //   cfg_t cfg = prog2 (vfac);
+  //   cout << cfg << endl;
+  //   run<interval_domain_t> ( cfg, vfac, 1, 2);
+  //   run<box_apron_domain_t> ( cfg, vfac, 1, 2);
+  //   run<oct_apron_domain_t> ( cfg, vfac, 1, 2);
+  //   run<pk_apron_domain_t> ( cfg, vfac, 1, 2);
+  // }
+
+  // {
+  //   VariableFactory vfac;
+  //   cfg_t cfg = prog3 (vfac);
+  //   cout << cfg << endl;
+  //   run<interval_domain_t> ( cfg, vfac, 1, 2);
+  //   run<box_apron_domain_t> ( cfg, vfac, 1, 2);
+  //   run<oct_apron_domain_t> ( cfg, vfac, 1, 2);
+  //   run<pk_apron_domain_t> ( cfg, vfac, 1, 2);
+  // }
+
+  // {
+  //   VariableFactory vfac;
+  //   cfg_t cfg = prog4 (vfac);
+  //   cout << cfg << endl;
+  //   run<interval_domain_t> ( cfg, vfac, 1, 2);
+  //   run<box_apron_domain_t> ( cfg, vfac, 1, 2);
+  //   run<oct_apron_domain_t> ( cfg, vfac, 1, 2);
+  //   run<pk_apron_domain_t> ( cfg, vfac, 1, 2);
+  // }
+
+  // {
+  //   VariableFactory vfac;
+  //   cfg_t cfg = prog5 (vfac);
+  //   cout << cfg << endl;
+  //   run<interval_domain_t> ( cfg, vfac, 1, 2);
+  //   run<box_apron_domain_t> ( cfg, vfac, 1, 2);
+  //   run<oct_apron_domain_t> ( cfg, vfac, 1, 2);
+  //   run<pk_apron_domain_t> ( cfg, vfac, 1, 2);
+  // }
+
+  // { // testing non-standard operations
+  //   VariableFactory vfac;
+  //   pk_apron_domain_t inv1 = pk_apron_domain_t::top ();
+  //   inv1.assign (vfac ["x"], 5);
+  //   z_lin_cst_sys_t csts;
+  //   csts += (z_lin_t (vfac ["x"]) == z_lin_t (vfac ["y"]));
+  //   inv1 += csts;
+  //   pk_apron_domain_t inv2 (inv1);
+  //   cout << "Before expand x into z:" << inv1 << "\n";
+  //   inv1.expand (vfac ["x"], vfac["z"]);
+  //   cout << "After expand x into z: " << inv1 << "\n";
+  //   cout << "Copy before: " << inv2 << "\n";
+
+  //   pk_apron_domain_t inv3 = inv1 | inv2;
+  //   cout << "Join: " << inv3 << "\n";
+  // }
   return 0;
 }

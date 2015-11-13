@@ -39,7 +39,7 @@ namespace crab {
        if (_s)
        {
          ap_state_ptr p(_s, ap_state_deleter (_m));
-      return p;
+         return p;
        }
        return ap_state_ptr();
      }
