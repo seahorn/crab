@@ -26,7 +26,7 @@ using namespace ikos;
 #define LDD_NOT_FOUND "No LDD. Run cmake with -DUSE_LDD=ON"
 namespace crab {
    namespace domains {
-      template<typename Number, typename VariableName>
+      template<typename Number, typename VariableName, unsigned LddSize = 100>
       class boxes_domain: 
          public ikos::writeable, 
          public numerical_domain< Number, VariableName>,
@@ -40,7 +40,7 @@ namespace crab {
         using typename numerical_domain< Number, VariableName>::variable_t;
         using typename numerical_domain< Number, VariableName>::number_t;
         using typename numerical_domain< Number, VariableName>::varname_t;
-        typedef boxes_domain <Number, VariableName> boxes_domain_t;
+        typedef boxes_domain <Number, VariableName, LddSize> boxes_domain_t;
         typedef interval <Number> interval_t;
         typedef int LddNodePtr;
 
@@ -136,7 +136,7 @@ namespace crab {
       }; 
 
 
-      template<typename Number, typename VariableName>
+      template<typename Number, typename VariableName, unsigned LddSize = 100>
       class rib_domain: 
          public ikos::writeable, 
          public numerical_domain< Number, VariableName>,
@@ -150,10 +150,10 @@ namespace crab {
         using typename numerical_domain< Number, VariableName>::variable_t;
         using typename numerical_domain< Number, VariableName>::number_t;
         using typename numerical_domain< Number, VariableName>::varname_t;
-        typedef rib_domain <Number, VariableName> rib_domain_t;
+        typedef rib_domain <Number, VariableName, LddSize> rib_domain_t;
         typedef interval <Number> interval_t;
         typedef interval_domain <Number, VariableName> interval_domain_t;
-        typedef boxes_domain <Number, VariableName> boxes_domain_t;
+        typedef boxes_domain <Number, VariableName, LddSize> boxes_domain_t;
         typedef int LddNodePtr;
 
         rib_domain(): ikos::writeable() { }    
@@ -274,28 +274,37 @@ namespace crab {
 
       using namespace crab::domains::ldd;       
 
-      template<typename Number, typename VariableName>
+      template<typename Number, typename VariableName, unsigned LddSize>
       class rib_domain;
 
-      ////////////////////////////////////////////////////////////////
-      // FIXME: the boxes domain needs to know the number of
-      // dimensions before the analysis starts and the mapping from
-      // each VariableName to dimension.
-      //
-      // For now, this information is kept globally. This is far from
-      // ideal but it makes the implementation easier. Thus, all the
-      // variables MUST be register via create_global BEFORE the first
-      // instance of the boxes domain is created and then it cannot
-      // change. Otherwise, it will crash.
-      ////////////////////////////////////////////////////////////////
-      template<typename Number, typename VariableName>
+      /*
+       * FIXME: the current implementation of this wrapper for the
+       * boxes domain has two global datastructures:
+       *
+       * 1) a ldd manager and 
+       * 2) a map from VariableName to ldd dimension.
+       *
+       * Since the ldd manager is shared we need to fix a single size
+       * for all ldds. This is clearly a big limitation.
+       *
+       * For the map in 2) we could keep it local if we rename
+       * dimensions in the ldd by doing something similar to the DBM
+       * domain where the variable maps are merged only at binary
+       * operations (join, meet, etc)
+       *
+       * Until a better solution all variables MUST be register via
+       * create_global BEFORE the first instance of the boxes domain
+       * is created and then it cannot change. To reset the map for a
+       * new analysis we need to call destroy_global.
+       */
+      template<typename Number, typename VariableName, unsigned LddSize = 100>
       class boxes_domain: 
          public ikos::writeable, 
          public numerical_domain< Number, VariableName>,
          public bitwise_operators< Number, VariableName >, 
          public division_operators< Number, VariableName > {
               
-        friend class rib_domain <Number,VariableName>;
+        friend class rib_domain <Number,VariableName, LddSize>;
         typedef interval_domain <Number, VariableName> interval_domain_t;
 
        public:
@@ -306,7 +315,7 @@ namespace crab {
         using typename numerical_domain< Number, VariableName>::number_t;
         using typename numerical_domain< Number, VariableName>::varname_t;
 
-        typedef boxes_domain <Number, VariableName> boxes_domain_t;
+        typedef boxes_domain <Number, VariableName, LddSize> boxes_domain_t;
         typedef interval <Number> interval_t;
 
        private:
@@ -322,10 +331,8 @@ namespace crab {
         static LddManager* get_ldd_man () {
           if (!m_ldd_man) {
             DdManager* cudd = Cudd_Init (0, 0, CUDD_UNIQUE_SLOTS, 127, 0);
-            // make sure at the time it is called all the tracked
-            // variables have been register already.
-            CRAB_DEBUG ("Ldd manager with ", get_var_map ()->size (), " variables.");
-            theory_t* theory = tvpi_create_boxz_theory (get_var_map ()->size ());
+            // FIXME: all the ldd's has a fixed size
+            theory_t* theory = tvpi_create_boxz_theory (LddSize);
             m_ldd_man = Ldd_Init (cudd, theory);
             Cudd_AutodynEnable (cudd, CUDD_REORDER_GROUP_SIFT);
           }
@@ -339,9 +346,7 @@ namespace crab {
           return m_var_map;
         }
        
-        boxes_domain (LddNodePtr ldd): m_ldd (ldd) { }
-
-        int getVarId (VariableName v) const {
+        int get_var_dim (VariableName v) const {
           auto it = get_var_map()->left.find (v);
           if (it != get_var_map()->left.end ()) {
             return it->second;
@@ -368,7 +373,7 @@ namespace crab {
         /** return term for variable v, neg for negation of variable */
         linterm_t termForVal(VariableName v, bool neg = false) 
         {
-          int varId = getVarId (v);
+          int varId = get_var_dim (v);
           int sgn = neg ? -1 : 1;
           linterm_t term = 
               Ldd_GetTheory (get_ldd_man())->create_linterm_sparse_si (&varId, &sgn, 1);
@@ -513,6 +518,8 @@ namespace crab {
           }
         } 
 
+        boxes_domain (LddNodePtr ldd): m_ldd (ldd) { }
+
        public:
 
         LddNodePtr getLdd () { 
@@ -535,6 +542,9 @@ namespace crab {
             auto it = get_var_map()->left.find (v);
             if (it == get_var_map()->left.end ()) {
               int id = get_var_map ()->size ();
+              if (id >= LddSize)
+                CRAB_ERROR ("The number of variables is greater than the Ldd size of ", 
+                            LddSize);
               get_var_map ()->insert (binding_t (v, id));
             }
           }
@@ -542,19 +552,6 @@ namespace crab {
         
         static void destroy_global () { 
           get_var_map ()->clear (); 
-
-          // DdManager *cudd = nullptr;
-          // theory_t *theory = nullptr;
-          // if (m_ldd_man)  {
-	//   cudd = Ldd_GetCudd (m_ldd_man);
-	//   theory = Ldd_GetTheory (m_ldd_man);
-          //   Ldd_Quit (m_ldd_man);
-	// }
-          // if (theory) tvpi_destroy_theory(theory);
-          // if (cudd) Cudd_Quit(cudd);
-
-          // FIXME: huge memory leaks!
-          m_ldd_man = nullptr;
         }
 
        private:
@@ -665,7 +662,7 @@ namespace crab {
           if (is_bottom ()) return;
           if (!isTrackVar (var)) return;
 
-          int id = getVarId (var);
+          int id = get_var_dim (var);
           m_ldd =  lddPtr (get_ldd_man(), 
                            Ldd_ExistsAbstract (get_ldd_man(), &*m_ldd, id));
         }
@@ -771,7 +768,7 @@ namespace crab {
           // forget any variable that is not v
           for (auto p: (*m_var_map).left) {
             if (! (p.first == v)) {
-              int id = getVarId (p.first);
+              int id = get_var_dim (p.first);
               tmp =  lddPtr (get_ldd_man(), 
                              Ldd_ExistsAbstract (get_ldd_man(), &*tmp, id));
             }
@@ -1076,16 +1073,16 @@ namespace crab {
         
       }; 
 
-     template<typename N, typename V>
-     LddManager* boxes_domain<N,V>::m_ldd_man = nullptr;
+     template<typename N, typename V, unsigned S>
+     LddManager* boxes_domain<N,V,S>::m_ldd_man = nullptr;
 
-     template<typename N, typename V>
-     typename boxes_domain<N,V>::var_map_ptr boxes_domain<N,V>::m_var_map = nullptr;
+     template<typename N, typename V, unsigned S>
+     typename boxes_domain<N,V,S>::var_map_ptr boxes_domain<N,V,S>::m_var_map = nullptr;
 
      /*
       * rib domain: reduced product of intervals with boxes.
       */
-     template < typename Number, typename VariableName>
+     template < typename Number, typename VariableName, unsigned LddSize = 100>
      class rib_domain:
          public ikos::writeable,
          public numerical_domain< Number, VariableName >,
@@ -1100,12 +1097,12 @@ namespace crab {
        using typename numerical_domain< Number, VariableName >::number_t;
        using typename numerical_domain< Number, VariableName >::varname_t;
 
-       typedef rib_domain< Number, VariableName> rib_domain_t;
+       typedef rib_domain< Number, VariableName, LddSize> rib_domain_t;
        typedef interval< Number > interval_t;
        
       private:
        typedef interval_domain <Number, VariableName> interval_domain_t;
-       typedef boxes_domain <Number, VariableName> boxes_domain_t;
+       typedef boxes_domain <Number, VariableName, LddSize> boxes_domain_t;
 
        typedef numerical_domain_product2< Number, VariableName,
                                           interval_domain_t, boxes_domain_t> product_domain_t;
