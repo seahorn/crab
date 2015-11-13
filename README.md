@@ -4,9 +4,8 @@
 
 #About#
 
-Crab is a language agnostic framework to perform static analysis using
-[abstract interpretation](https://en.wikipedia.org/wiki/Abstract_interpretation)
-techniques.
+Crab is a language agnostic engine to perform static analysis based on
+[abstract interpretation](https://en.wikipedia.org/wiki/Abstract_interpretation).
 
 At its core, Crab is a collection of abstract domains and fixpoint
 iterators built on the top of
@@ -38,13 +37,14 @@ need:
 
 Then, just type:
 
-    cmake -DDEVMODE=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=my_install_dir ../
+    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=my_install_dir ../
     cmake --build . --target install 
+
+If you want to run the tests add `-DDEVMODE=ON` option.
 
 If you want to use the BOXES domain then add `-DUSE_LDD=ON` option.
 
 If you want to use the Apron library domains then add `-DUSE_APRON=ON` option.
-
 
 ## Input/Output ##
 

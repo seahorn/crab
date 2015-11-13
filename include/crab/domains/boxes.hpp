@@ -11,7 +11,6 @@
 //#include <crab/common/dbg.hpp>
 
 #include <crab/config.h>
-
 #include <crab/common/types.hpp>
 #include <crab/domains/numerical_domains_api.hpp>
 #include <crab/domains/domain_traits_impl.hpp>
@@ -27,7 +26,7 @@ using namespace ikos;
 #define LDD_NOT_FOUND "No LDD. Run cmake with -DUSE_LDD=ON"
 namespace crab {
    namespace domains {
-      template<typename Number, typename VariableName>
+      template<typename Number, typename VariableName, unsigned LddSize = 100>
       class boxes_domain: 
          public ikos::writeable, 
          public numerical_domain< Number, VariableName>,
@@ -41,7 +40,7 @@ namespace crab {
         using typename numerical_domain< Number, VariableName>::variable_t;
         using typename numerical_domain< Number, VariableName>::number_t;
         using typename numerical_domain< Number, VariableName>::varname_t;
-        typedef boxes_domain <Number, VariableName> boxes_domain_t;
+        typedef boxes_domain <Number, VariableName, LddSize> boxes_domain_t;
         typedef interval <Number> interval_t;
         typedef int LddNodePtr;
 
@@ -53,10 +52,11 @@ namespace crab {
         VariableName getVarName (int v) const 
         { CRAB_ERROR (LDD_NOT_FOUND); }
 
-        static void addTrackVar (VariableName v) 
+        template<typename Range, typename Filter>
+        static void create_global (const Range& vars, Filter f) 
         { CRAB_ERROR (LDD_NOT_FOUND); }
-
-        static void resetTrackVars () 
+        
+        static void destroy_global () 
         { CRAB_ERROR (LDD_NOT_FOUND); }
 
         static boxes_domain_t top() { CRAB_ERROR (LDD_NOT_FOUND); }
@@ -136,7 +136,7 @@ namespace crab {
       }; 
 
 
-      template<typename Number, typename VariableName>
+      template<typename Number, typename VariableName, unsigned LddSize = 100>
       class rib_domain: 
          public ikos::writeable, 
          public numerical_domain< Number, VariableName>,
@@ -150,10 +150,10 @@ namespace crab {
         using typename numerical_domain< Number, VariableName>::variable_t;
         using typename numerical_domain< Number, VariableName>::number_t;
         using typename numerical_domain< Number, VariableName>::varname_t;
-        typedef rib_domain <Number, VariableName> rib_domain_t;
+        typedef rib_domain <Number, VariableName, LddSize> rib_domain_t;
         typedef interval <Number> interval_t;
         typedef interval_domain <Number, VariableName> interval_domain_t;
-        typedef boxes_domain <Number, VariableName> boxes_domain_t;
+        typedef boxes_domain <Number, VariableName, LddSize> boxes_domain_t;
         typedef int LddNodePtr;
 
         rib_domain(): ikos::writeable() { }    
@@ -168,10 +168,11 @@ namespace crab {
         VariableName getVarName (int v) const 
         { CRAB_ERROR (LDD_NOT_FOUND); }
 
-        static void addTrackVar (VariableName v) 
+        template<typename Range, typename Filter>
+        static void create_global (const Range& vars, Filter f) 
         { CRAB_ERROR (LDD_NOT_FOUND); }
-
-        static void resetTrackVars () 
+        
+        static void destroy_global () 
         { CRAB_ERROR (LDD_NOT_FOUND); }
 
         rib_domain (const rib_domain_t& other): 
@@ -276,6 +277,26 @@ namespace crab {
       template<typename Number, typename VariableName, unsigned LddSize>
       class rib_domain;
 
+      /*
+       * FIXME: the current implementation of this wrapper for the
+       * boxes domain has two global datastructures:
+       *
+       * 1) a ldd manager and 
+       * 2) a map from VariableName to ldd dimension.
+       *
+       * Since the ldd manager is shared we need to fix a single size
+       * for all ldds. This is clearly a big limitation.
+       *
+       * For the map in 2) we could keep it local if we rename
+       * dimensions in the ldd by doing something similar to the DBM
+       * domain where the variable maps are merged only at binary
+       * operations (join, meet, etc)
+       *
+       * Until a better solution all variables MUST be register via
+       * create_global BEFORE the first instance of the boxes domain
+       * is created and then it cannot change. To reset the map for a
+       * new analysis we need to call destroy_global.
+       */
       template<typename Number, typename VariableName, unsigned LddSize = 100>
       class boxes_domain: 
          public ikos::writeable, 
@@ -284,6 +305,7 @@ namespace crab {
          public division_operators< Number, VariableName > {
               
         friend class rib_domain <Number,VariableName, LddSize>;
+        typedef interval_domain <Number, VariableName> interval_domain_t;
 
        public:
         using typename numerical_domain< Number, VariableName>::linear_expression_t;
@@ -293,29 +315,23 @@ namespace crab {
         using typename numerical_domain< Number, VariableName>::number_t;
         using typename numerical_domain< Number, VariableName>::varname_t;
 
-        typedef boxes_domain <Number, VariableName> boxes_domain_t;
+        typedef boxes_domain <Number, VariableName, LddSize> boxes_domain_t;
         typedef interval <Number> interval_t;
 
        private:
-        typedef interval_domain <Number, VariableName> interval_domain_t;
         // --- map from crab variable index to ldd term index
         typedef boost::bimap< VariableName , int > var_bimap_t;
         typedef boost::shared_ptr<var_bimap_t> var_map_ptr;
         typedef typename var_bimap_t::value_type binding_t;
-        typedef boost::unordered_set <VariableName> var_set_t;
-        typedef boost::shared_ptr< var_set_t > var_set_ptr;
-        
+
         LddNodePtr m_ldd;
         static LddManager* m_ldd_man;
         static var_map_ptr m_var_map;
-        // --- Boxes only keeps track of variables included in
-        //     m_track_vars. By default, it won't keep track of any
-        //     variable
-        static var_set_ptr m_track_vars;
 
         static LddManager* get_ldd_man () {
           if (!m_ldd_man) {
             DdManager* cudd = Cudd_Init (0, 0, CUDD_UNIQUE_SLOTS, 127, 0);
+            // FIXME: all the ldd's has a fixed size
             theory_t* theory = tvpi_create_boxz_theory (LddSize);
             m_ldd_man = Ldd_Init (cudd, theory);
             Cudd_AutodynEnable (cudd, CUDD_REORDER_GROUP_SIFT);
@@ -330,17 +346,14 @@ namespace crab {
           return m_var_map;
         }
        
-        boxes_domain (LddNodePtr ldd): m_ldd (ldd) { }
-
-        int getVarId (VariableName v) {
+        int get_var_dim (VariableName v) const {
           auto it = get_var_map()->left.find (v);
-          if (it != get_var_map()->left.end ())
-             return it->second;
-          else {
-            int id = get_var_map ()->size ();
-            get_var_map ()->insert (binding_t (v, ++id));
-            return id;
+          if (it != get_var_map()->left.end ()) {
+            return it->second;
           }
+
+          CRAB_ERROR ("Boxes could not find ", v, ". ",
+                      "Call create_global before analysis starts");
         }
 
         inline constant_t mkCst (Number k) {
@@ -360,7 +373,7 @@ namespace crab {
         /** return term for variable v, neg for negation of variable */
         linterm_t termForVal(VariableName v, bool neg = false) 
         {
-          int varId = getVarId (v);
+          int varId = get_var_dim (v);
           int sgn = neg ? -1 : 1;
           linterm_t term = 
               Ldd_GetTheory (get_ldd_man())->create_linterm_sparse_si (&varId, &sgn, 1);
@@ -505,6 +518,8 @@ namespace crab {
           }
         } 
 
+        boxes_domain (LddNodePtr ldd): m_ldd (ldd) { }
+
        public:
 
         LddNodePtr getLdd () { 
@@ -516,39 +531,39 @@ namespace crab {
           if (it != get_var_map ()->right.end ())
              return it->second;
           else {
-             CRAB_ERROR ("Index", v, "cannot be mapped back to a variable name");
+             CRAB_ERROR ("Index ", v, " cannot be mapped back to a variable name");
           }
         }
 
-        static void addTrackVar (VariableName v) {
-          if (!m_track_vars) {
-            m_track_vars = var_set_ptr (new var_set_t ());            
+        template<typename Range, typename Filter>
+        static void create_global (const Range& vars, Filter f) {
+          for (auto v: vars) {
+            if (!f (v)) continue;
+            auto it = get_var_map()->left.find (v);
+            if (it == get_var_map()->left.end ()) {
+              int id = get_var_map ()->size ();
+              if (id >= LddSize)
+                CRAB_ERROR ("The number of variables is greater than the Ldd size of ", 
+                            LddSize);
+              get_var_map ()->insert (binding_t (v, id));
+            }
           }
-          m_track_vars->insert (v);
         }
         
-        static void resetTrackVars () {
-          if (!m_track_vars) {
-            m_track_vars = var_set_ptr (new var_set_t ());            
-          }
-          m_track_vars->clear ();
+        static void destroy_global () { 
+          get_var_map ()->clear (); 
         }
 
        private:
 
-        static bool isTrackVar (VariableName v) {
-          if (!m_track_vars) {
-            m_track_vars = var_set_ptr (new var_set_t ());            
-          }
-          return m_track_vars->find (v) != m_track_vars->end ();
+        bool isTrackVar (VariableName v) {
+          return get_var_map ()->left.find (v) != get_var_map ()->left.end (); 
         }
-
-        bool isTrackVar (variable_t v) { return isTrackVar (v.name ()); }
 
         template<typename Range>
         bool allTrackVars (const Range& r) {
           for (auto v: r)
-            if (!isTrackVar (v)) return false;
+            if (!isTrackVar (v.name ())) return false;
           return true;
         }
 
@@ -647,7 +662,7 @@ namespace crab {
           if (is_bottom ()) return;
           if (!isTrackVar (var)) return;
 
-          int id = getVarId (var);
+          int id = get_var_dim (var);
           m_ldd =  lddPtr (get_ldd_man(), 
                            Ldd_ExistsAbstract (get_ldd_man(), &*m_ldd, id));
         }
@@ -753,7 +768,7 @@ namespace crab {
           // forget any variable that is not v
           for (auto p: (*m_var_map).left) {
             if (! (p.first == v)) {
-              int id = getVarId (p.first);
+              int id = get_var_dim (p.first);
               tmp =  lddPtr (get_ldd_man(), 
                              Ldd_ExistsAbstract (get_ldd_man(), &*tmp, id));
             }
@@ -793,7 +808,7 @@ namespace crab {
           }
           else {
             CRAB_WARN("Boxes only supports cst or var on the rhs of assignment");
-            this->operator-=(x);
+            *this -= x;
           }
           CRAB_DEBUG("---", x, ":=", e,"\n",*this);
         }
@@ -838,8 +853,7 @@ namespace crab {
           if (is_bottom ()) 
             return;
 
-          if (!isTrackVar (x)) {
-            *this -= x;
+          if (isTrackVar (x)) {
             return;
           }
 
@@ -1065,10 +1079,6 @@ namespace crab {
      template<typename N, typename V, unsigned S>
      typename boxes_domain<N,V,S>::var_map_ptr boxes_domain<N,V,S>::m_var_map = nullptr;
 
-     template<typename N, typename V, unsigned S>
-     typename boxes_domain<N,V,S>::var_set_ptr boxes_domain<N,V,S>::m_track_vars = nullptr;
-
-
      /*
       * rib domain: reduced product of intervals with boxes.
       */
@@ -1087,7 +1097,7 @@ namespace crab {
        using typename numerical_domain< Number, VariableName >::number_t;
        using typename numerical_domain< Number, VariableName >::varname_t;
 
-       typedef rib_domain< Number, VariableName, LddSize > rib_domain_t;
+       typedef rib_domain< Number, VariableName, LddSize> rib_domain_t;
        typedef interval< Number > interval_t;
        
       private:
@@ -1146,12 +1156,14 @@ namespace crab {
           return res.second ().getVarName (v);
         }
 
-        void addTrackVar (VariableName v) {
-          m_inv.second ().addTrackVar (v);
+
+        template<typename Range, typename Filter>
+        static void create_global (const Range& vars, Filter f) {
+          boxes_domain_t::create_global (vars, f);
         }
         
-        void resetTrackVars () {
-          m_inv.second ().resetTrackVars ();
+        static void destroy_global () { 
+          boxes_domain_t::destroy_global ();
         }
 
         static rib_domain_t top() {
@@ -1322,8 +1334,9 @@ namespace crab {
        inv.project (it, end);
      }
 
-
    } // namespace domain_traits
+
+
 }// namespace crab
 #endif /* HAVE_LDD */
 #endif 

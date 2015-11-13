@@ -692,7 +692,9 @@ namespace crab {
       using typename numerical_domain< Number, VariableName>::variable_t;
       using typename numerical_domain< Number, VariableName>::number_t;
       using typename numerical_domain< Number, VariableName>::varname_t;
-      
+      typedef WeightDomain content_domain_t;      
+      typedef ScalarNumDomain index_domain_t;      
+
      private:
       typedef array_graph< VariableName,WeightDomain,ScalarNumDomain,IsDistWeight> array_graph_t;
       typedef array_graph_domain<ScalarNumDomain,Number,VariableName, 
