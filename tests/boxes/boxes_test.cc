@@ -196,6 +196,9 @@ cfg_t prog5 (VariableFactory &vfac)  {
   return cfg;
 }
 
+struct IsTrue : public std::unary_function<int,bool> {
+  bool operator() (varname_t) {return true;}
+};
 
 /* Example of how to infer invariants from the above CFG */
 int main (int argc, char** argv )
@@ -209,22 +212,26 @@ int main (int argc, char** argv )
     cfg_t cfg = prog1 (vfac);
     cfg.simplify (); // this is optional
     cout << cfg << endl;
+
 #ifdef HAVE_LDD
-    NumFwdAnalyzer <cfg_t, boxes_domain_t,VariableFactory>::type a (cfg, vfac, nullptr, w, n);
+    // Tell boxes which variables should track before any boxes
+    // instance is created.
+    IsTrue filter;
+    boxes_domain_t::create_global (cfg.get_vars (), filter);
+
+    NumFwdAnalyzer <cfg_t,boxes_domain_t,VariableFactory>::type a (cfg, vfac, nullptr, w, n);
     // Run fixpoint 
     boxes_domain_t inv = boxes_domain_t::top ();
-
-    // tell boxes which variables should track
-    inv.addTrackVar (vfac ["i"]);
-    inv.addTrackVar (vfac ["k"]);
     a.Run (inv);
+
     // Print invariants
     cout << "Invariants using " << inv.getDomainName () << "\n";
     for (auto &b : cfg) {
       auto inv = a [b.label ()];
       std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
     }
-    inv.resetTrackVars ();
+    
+    boxes_domain_t::destroy_global ();
 #endif 
   }
 
@@ -234,13 +241,14 @@ int main (int argc, char** argv )
     cfg_t cfg = prog1 (vfac);
     cout << cfg << endl;
 #ifdef HAVE_LDD
+    // Tell boxes which variables should track before any boxes
+    // instance is created.
+    IsTrue filter;
+    rib_domain_t::create_global (cfg.get_vars (), filter);
+
     NumFwdAnalyzer <cfg_t, rib_domain_t,VariableFactory>::type a (cfg, vfac, nullptr, w, n);
     // Run fixpoint 
     rib_domain_t inv = rib_domain_t::top ();
-    // Tell boxes which variables should track
-    for (auto v: boost::make_iterator_range (cfg.get_vars ())) {
-      inv.second ().addTrackVar (v);
-    }
     a.Run (inv);
     // Print invariants
     cout << "Invariants using " << inv.getDomainName () << "\n";
@@ -248,7 +256,7 @@ int main (int argc, char** argv )
       auto inv = a [b.label ()];
       std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
     }
-    inv.second ().resetTrackVars ();
+    rib_domain_t::destroy_global ();
 #endif 
   }
 
@@ -258,13 +266,14 @@ int main (int argc, char** argv )
     cfg.simplify (); // this is optional
     cout << cfg << endl;
 #ifdef HAVE_LDD
+    // Tell boxes which variables should track before any boxes
+    // instance is created.
+    IsTrue filter;
+    boxes_domain_t::create_global (cfg.get_vars (), filter);
+
     NumFwdAnalyzer <cfg_t, boxes_domain_t,VariableFactory>::type a (cfg,vfac,nullptr,w,n);
     // Run fixpoint 
     boxes_domain_t inv = boxes_domain_t::top ();
-    // Tell boxes which variables should track
-    for (auto v: boost::make_iterator_range (cfg.get_vars ())) {
-      inv.addTrackVar (v);
-    }
     a.Run (inv);
     // Print invariants
     cout << "Invariants using " << inv.getDomainName () << "\n";
@@ -272,7 +281,7 @@ int main (int argc, char** argv )
       auto inv = a [b.label ()];
       std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
     }
-    inv.resetTrackVars ();
+    boxes_domain_t::destroy_global ();
 #endif 
   }
 
@@ -282,13 +291,14 @@ int main (int argc, char** argv )
     cfg.simplify (); // this is optional
     cout << cfg << endl;
 #ifdef HAVE_LDD
+    // Tell boxes which variables should track before any boxes
+    // instance is created.
+    IsTrue filter;
+    boxes_domain_t::create_global (cfg.get_vars (), filter);
+
     NumFwdAnalyzer <cfg_t, boxes_domain_t,VariableFactory>::type a (cfg,vfac,nullptr,w,n);
     // Run fixpoint 
     boxes_domain_t inv = boxes_domain_t::top ();
-    // Tell boxes which variables should track
-    for (auto v: boost::make_iterator_range (cfg.get_vars ())) {
-      inv.addTrackVar (v);
-    }
     a.Run (inv);
     // Print invariants
     cout << "Invariants using " << inv.getDomainName () << "\n";
@@ -296,7 +306,7 @@ int main (int argc, char** argv )
       auto inv = a [b.label ()];
       std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
     }
-    inv.resetTrackVars ();
+    boxes_domain_t::destroy_global ();
 #endif 
   }
 
@@ -306,13 +316,14 @@ int main (int argc, char** argv )
     cfg.simplify (); // this is optional
     cout << cfg << endl;
 #ifdef HAVE_LDD
+    // Tell boxes which variables should track before any boxes
+    // instance is created.
+    IsTrue filter;
+    boxes_domain_t::create_global (cfg.get_vars (), filter);
+
     NumFwdAnalyzer <cfg_t, boxes_domain_t,VariableFactory>::type a (cfg,vfac,nullptr,w,n);
     // Run fixpoint 
     boxes_domain_t inv = boxes_domain_t::top ();
-    // Tell boxes which variables should track
-    for (auto v: boost::make_iterator_range (cfg.get_vars ())) {
-      inv.addTrackVar (v);
-    }
     a.Run (inv);
     // Print invariants
     cout << "Invariants using " << inv.getDomainName () << "\n";
@@ -320,7 +331,7 @@ int main (int argc, char** argv )
       auto inv = a [b.label ()];
       std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
     }
-    inv.resetTrackVars ();
+    boxes_domain_t::destroy_global ();
 #endif 
   }
 
@@ -329,13 +340,14 @@ int main (int argc, char** argv )
     cfg_t cfg = prog5 (vfac);
     cout << cfg << endl;
 #ifdef HAVE_LDD
+    // Tell boxes which variables should track before any boxes
+    // instance is created.
+    IsTrue filter;
+    boxes_domain_t::create_global (cfg.get_vars (), filter);
+
     NumFwdAnalyzer <cfg_t, boxes_domain_t,VariableFactory>::type a (cfg,vfac,nullptr,w,n);
     // Run fixpoint 
     boxes_domain_t inv = boxes_domain_t::top ();
-    // Tell boxes which variables should track
-    for (auto v: boost::make_iterator_range (cfg.get_vars ())) {
-      inv.addTrackVar (v);
-    }
     a.Run (inv);
     // Print invariants
     cout << "Invariants using " << inv.getDomainName () << "\n";
@@ -343,7 +355,7 @@ int main (int argc, char** argv )
       auto inv = a [b.label ()];
       std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
     }
-    inv.resetTrackVars ();
+    boxes_domain_t::destroy_global ();
 #endif 
   }
 
@@ -354,12 +366,15 @@ int main (int argc, char** argv )
     varname_t y = vfac["y"];
     varname_t z = vfac["z"];
 
-    boxes_domain_t inv1 = boxes_domain_t::top ();
-
     // tell boxes which variables should track
-    inv1.addTrackVar (vfac ["x"]);
-    inv1.addTrackVar (vfac ["y"]);
-    inv1.addTrackVar (vfac ["z"]);
+    vector<varname_t> vars;
+    vars.push_back (vfac ["x"]);
+    vars.push_back (vfac ["y"]);
+    vars.push_back (vfac ["z"]);
+    IsTrue filter;
+    boxes_domain_t::create_global (vars, filter);
+
+    boxes_domain_t inv1 = boxes_domain_t::top ();
 
     inv1.assign (y, 6);
     inv1.assign (z, 7);
@@ -411,7 +426,7 @@ int main (int argc, char** argv )
     inv4 +=  (cz <= 8);
     cout << "Added z < 9\n" << inv4 << "\n";    
 
-    inv1.resetTrackVars ();
+    boxes_domain_t::destroy_global ();
   }
   return 0;
 }

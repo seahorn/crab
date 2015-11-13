@@ -44,6 +44,8 @@ namespace crab {
         using typename numerical_domain< Number, VariableName>::varname_t;
 
         typedef array_smashing <NumDomain, Number, VariableName> array_smashing_t;
+        typedef NumDomain content_domain_t;
+
         typedef interval <Number> interval_t;
         
        private:
