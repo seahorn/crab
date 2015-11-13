@@ -70,13 +70,13 @@ namespace crab {
 
     // Precondition: elem(x, y) is true.
     Wt edge_val(vert_id x, vert_id y) const {
-      assert(perm[x] < g.size() && perm[y] < g.size());
+//      assert(perm[x] < g.size() && perm[y] < g.size());
       return g.edge_val(perm[x], perm[y]);
     }
 
     // Precondition: elem(x, y) is true.
     Wt operator()(vert_id x, vert_id y) const {
-      assert(perm[x] < g.size() && perm[y] < g.size());
+//      assert(perm[x] < g.size() && perm[y] < g.size());
       return g(perm[x], perm[y]);
     }
 
@@ -225,20 +225,20 @@ namespace crab {
     // Assumption: (x, y) not in mtx
     void add_edge(vert_id x, Wt wt, vert_id y)
     {
-      assert(x != v_ex && y != v_ex);
+//      assert(x != v_ex && y != v_ex);
       g.add_edge(x, wt, y);
     }
 
     void set_edge(vert_id s, Wt w, vert_id d)
     {
-      assert(s != v_ex && d != v_ex);
+//      assert(s != v_ex && d != v_ex);
       g.set_edge(s, w, d);
     }
 
     template<class Op>
     void update_edge(vert_id s, Wt w, vert_id d, Op& op)
     {
-      assert(s != v_ex && d != v_ex);
+//      assert(s != v_ex && d != v_ex);
       g.update_edge(s, w, d, op);
     }
 
@@ -314,11 +314,11 @@ namespace crab {
     typedef adj_list<g_succ_range> succ_range;
 
     succ_range succs(vert_id v) {
-      assert(v != v_ex);
+//      assert(v != v_ex);
       return succ_range(g.succs(v), v_ex);
     }
     pred_range preds(vert_id v) {
-      assert(v != v_ex);
+//      assert(v != v_ex);
       return pred_range(g.preds(v), v_ex);
     }
 
@@ -542,7 +542,7 @@ namespace crab {
     static void strong_connect(G& x, vector<vert_id>& stack, int& index, vert_id v, vector< vector<vert_id> >& sccs)
     {
       vert_marks[v] = (index<<1)|1;
-      assert(vert_marks[v]&1);
+//      assert(vert_marks[v]&1);
       dual_queue[v] = index;
       index++;
 
@@ -767,9 +767,9 @@ namespace crab {
     {
       for(pair< pair<vert_id, vert_id>, Wt>& e : delta)
       {
-        assert(e.first.first != e.first.second);
-        assert(e.first.first < g.size());
-        assert(e.first.second < g.size());
+//        assert(e.first.first != e.first.second);
+//        assert(e.first.first < g.size());
+//        assert(e.first.second < g.size());
         g.set_edge(e.first.first, e.second, e.first.second);
       }
     }
@@ -1041,10 +1041,24 @@ namespace crab {
       return AdjCmp<P>(p);
     }
 
+    template<class P>
+    class NegP {
+    public:
+      NegP(const P& _p)
+        : p(_p)
+      { }
+      Wt operator[](vert_id v) const { return -(p[v]); }
+
+      const P& p;
+    };
+    template<class P>
+    static NegP<P> make_negp(const P& p)
+    { return NegP<P>(p); }
+
     // Compute the transitive closure of edges reachable from v, assuming
     // (1) the subgraph G \ {v} is closed, and (2) P is a valid model of G.
     template<class G, class P>
-    static void close_after_assign_fwd(G& g, P& p, vert_id v, vector< pair<vert_id, Wt> >& aux)
+    static void close_after_assign_fwd(G& g, const P& p, vert_id v, vector< pair<vert_id, Wt> >& aux)
     {
       // Initialize the queue and distances.
       for(vert_id u : g.verts())
@@ -1058,6 +1072,7 @@ namespace crab {
       {
         vert_marks[d] = BF_QUEUED;
         dists[d] = g.edge_val(v, d);
+//        assert(p[v] + dists[d] - p[d] >= Wt(0));
         *adj_tail = d;
         adj_tail++;
       }
@@ -1109,7 +1124,7 @@ namespace crab {
 
       aux.clear();
       GraphRev<G> g_rev(g);
-      close_after_assign_fwd(g_rev, p, v, aux);
+      close_after_assign_fwd(g_rev, make_negp(p), v, aux);
       for(auto p : aux)
         delta.push_back( make_pair( make_pair(p.first, v), p.second ) );
     }
