@@ -1269,7 +1269,7 @@ namespace crab {
           assert(check_potential(g, potential));
 
           // Compute other updated bounds
-#ifdef CLOSE_AFTER_ASSIGN
+#ifdef CLOSE_BOUNDS_INLINE
           for(vert_id s : g.preds(v))
           {
             if(s == 0)
@@ -1293,7 +1293,7 @@ namespace crab {
           }
           assert(check_potential(g, potential));
 
-#ifdef CLOSE_AFTER_ASSIGN
+#ifdef CLOSE_BOUNDS_INLINE
           for(vert_id d : g.succs(v))
           {
             if(d == 0)
@@ -1323,7 +1323,7 @@ namespace crab {
         // Collect bounds
         // GKG: Now done in close_over_edge
 
-#ifndef CLOSE_AFTER_ASSIGN
+#ifndef CLOSE_BOUNDS_INLINE
         edge_vector delta;
         GrOps::close_after_assign(g, potential, 0, delta);
         GrOps::apply_delta(g, delta);
