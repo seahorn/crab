@@ -363,9 +363,15 @@ namespace crab {
         Number coeff2Num (ap_coeff_t* coeff) {
           assert (coeff->discr == AP_COEFF_SCALAR);
           ap_scalar_t* scalar = coeff->val.scalar;
-          assert (scalar->discr == AP_SCALAR_MPQ);
-          mpq_ptr c = scalar->val.mpq;
-          return Number ((mpz_class) mpq_class(c));
+          if (scalar->discr == AP_SCALAR_DOUBLE) { 
+            // elina uses double
+            return Number ((long) scalar->val.dbl);
+          }
+          else {
+            assert (scalar->discr == AP_SCALAR_MPQ);
+            mpq_ptr c = scalar->val.mpq;
+            return Number ((mpz_class) mpq_class(c));
+          }
         }
 
         linear_expression_t term2expr (ap_coeff_t* coeff, ap_dim_t i) {
