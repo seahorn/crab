@@ -13,7 +13,7 @@ using namespace ikos;
 
 namespace crab {
    namespace domains {
-      typedef enum { APRON_INT, APRON_OCT, APRON_PK } apron_domain_id_t;
+      typedef enum { APRON_INT, APRON_OCT, APRON_OPT_OCT, APRON_PK } apron_domain_id_t;
    }
 }
 
@@ -170,6 +170,8 @@ namespace crab {
               m_apman = box_manager_alloc ();
             else if (ApronDom == APRON_OCT)
               m_apman = oct_manager_alloc ();
+            else if (ApronDom == APRON_OPT_OCT)
+              m_apman = opt_oct_manager_alloc ();
             else if (ApronDom == APRON_PK)
               m_apman = pk_manager_alloc (false);
             else
@@ -890,6 +892,8 @@ namespace crab {
             return "Apron Intervals"; 
           else if (ApronDom == APRON_OCT) 
             return "Apron Octagon"; 
+          else if (ApronDom == APRON_OPT_OCT) 
+            return "Apron Optimized Octagon"; 
           else if (ApronDom == APRON_PK) 
             return "Apron NewPolka";
           else 

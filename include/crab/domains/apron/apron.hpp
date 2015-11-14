@@ -5,6 +5,7 @@
 #include "box.h"
 #include "pk.h"
 #include "oct.h"
+#include "opt_oct.h"
 #include "pkeq.h"
 
 #include <boost/shared_ptr.hpp>

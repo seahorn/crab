@@ -251,6 +251,7 @@ int main (int argc, char** argv ) {
     run<interval_domain_t> ( cfg, vfac, 1, 2);
     run<box_apron_domain_t> ( cfg, vfac, 1, 2);
     run<oct_apron_domain_t> ( cfg, vfac, 1, 2);
+    run<opt_oct_apron_domain_t> ( cfg, vfac, 1, 2);
     run<pk_apron_domain_t> ( cfg, vfac, 1, 2);
   }
 

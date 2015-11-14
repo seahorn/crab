@@ -81,9 +81,10 @@ if (GIT_FOUND)
     get_filename_component (MPFR_SEARCH_PATH ${MPFR_INCLUDES} PATH)
   endif ()
 
+  set (APRON_TAG "origin/elina" CACHE STRING "apron tag to use")
   ExternalProject_Add(apron
-    GIT_REPOSITORY https://arieg@bitbucket.org/arieg/apron.git
-    GIT_TAG 708af3860585ffb747668c4deb34bccc111cf687
+    GIT_REPOSITORY git@bitbucket.org:jorgenavas/apron.git 
+    GIT_TAG ${APRON_TAG}
     CONFIGURE_COMMAND echo "Apron does not need a configure"
     BUILD_IN_SOURCE 1
     BUILD_COMMAND make CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} 
