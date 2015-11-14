@@ -7,14 +7,13 @@
 #include <crab/config.h>
 #include <crab/common/types.hpp>
 #include <crab/domains/numerical_domains_api.hpp>
-#include <crab/domains/domain_traits_impl.hpp>
 
 using namespace boost;
 using namespace ikos;
 
 namespace crab {
    namespace domains {
-      typedef enum { INT, OCT, PK } apron_domain_id_t;
+      typedef enum { APRON_INT, APRON_OCT, APRON_PK } apron_domain_id_t;
    }
 }
 
@@ -134,6 +133,8 @@ namespace crab {
 namespace crab {
    namespace domains {
 
+     using namespace apron;
+
       // TODO: resize (increase/decrease number of dimensions)
       template<typename Number, typename VariableName, apron_domain_id_t ApronDom, unsigned Dims = 50>
       class apron_domain: 
@@ -165,11 +166,11 @@ namespace crab {
 
         static ap_manager_t* get_man () {
           if (!m_apman) {
-            if (ApronDom == INT)
+            if (ApronDom == APRON_INT)
               m_apman = box_manager_alloc ();
-            else if (ApronDom == OCT)
+            else if (ApronDom == APRON_OCT)
               m_apman = oct_manager_alloc ();
-            else if (ApronDom == PK)
+            else if (ApronDom == APRON_PK)
               m_apman = pk_manager_alloc (false);
             else
               CRAB_ERROR("Unknown apron domain");
@@ -885,11 +886,11 @@ namespace crab {
         }          
 
         const char* getDomainName () const {
-          if (ApronDom == INT) 
+          if (ApronDom == APRON_INT) 
             return "Apron Intervals"; 
-          else if (ApronDom == OCT) 
+          else if (ApronDom == APRON_OCT) 
             return "Apron Octagon"; 
-          else if (ApronDom == PK) 
+          else if (ApronDom == APRON_PK) 
             return "Apron NewPolka";
           else 
             CRAB_ERROR("Unknown apron domain");
