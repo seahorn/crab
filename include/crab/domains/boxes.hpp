@@ -13,7 +13,6 @@
 #include <crab/config.h>
 #include <crab/common/types.hpp>
 #include <crab/domains/numerical_domains_api.hpp>
-#include <crab/domains/domain_traits_impl.hpp>
 
 using namespace boost;
 using namespace ikos;
