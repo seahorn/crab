@@ -362,16 +362,16 @@ namespace crab {
          
         Number coeff2Num (ap_coeff_t* coeff) {
           assert (coeff->discr == AP_COEFF_SCALAR);
+
           ap_scalar_t* scalar = coeff->val.scalar;
-          if (scalar->discr == AP_SCALAR_DOUBLE) { 
-            // elina uses double
+          if (scalar->discr == AP_SCALAR_DOUBLE) { // elina uses double
             return Number ((long) scalar->val.dbl);
           }
-          else {
-            assert (scalar->discr == AP_SCALAR_MPQ);
-            mpq_ptr c = scalar->val.mpq;
-            return Number ((mpz_class) mpq_class(c));
+          else if (scalar->discr == AP_SCALAR_MPQ) {
+            return Number ((mpz_class) mpq_class(scalar->val.mpq));
           }
+          else
+            CRAB_ERROR ("Apron translation only covers double or mpq scalars");
         }
 
         linear_expression_t term2expr (ap_coeff_t* coeff, ap_dim_t i) {
@@ -617,12 +617,19 @@ namespace crab {
           ap_scalar_t* lb = intv->inf;
           ap_scalar_t* ub = intv->sup;
 
-          assert (lb->discr == AP_SCALAR_MPQ);
-          mpq_ptr lb_c = lb->val.mpq;
-          assert (ub->discr == AP_SCALAR_MPQ);
-          mpq_ptr ub_c = ub->val.mpq;
-          return interval_t (Number ((mpz_class) mpq_class(lb_c)),
-                             Number ((mpz_class) mpq_class(ub_c)));
+
+          if (lb->discr == AP_SCALAR_DOUBLE && ub->discr == AP_SCALAR_DOUBLE) { 
+            // elina uses double
+            return interval_t (Number ((long) lb->val.dbl),
+                               Number ((long) ub->val.dbl));
+          }
+          else if (lb->discr == AP_SCALAR_MPQ && ub->discr == AP_SCALAR_MPQ ) {
+            return interval_t (Number ((mpz_class) mpq_class(lb->val.mpq)),
+                               Number ((mpz_class) mpq_class(ub->val.mpq)));
+          }
+          else {
+            CRAB_ERROR ("Apron translation only covers double or mpq scalars");
+          }
         }
 
         void set(VariableName v, interval_t ival) {
