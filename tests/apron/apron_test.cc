@@ -11,6 +11,8 @@ cfg_t prog1 (VariableFactory &vfac)  {
   // Definining program variables
   z_var i (vfac ["i"]);
   z_var k (vfac ["k"]);
+  z_var x1 (vfac ["x1"]);
+  z_var x2 (vfac ["x2"]);
   // entry and exit block
   cfg_t cfg ("entry","ret");
   // adding blocks
@@ -25,11 +27,13 @@ cfg_t prog1 (VariableFactory &vfac)  {
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   // adding statements
+  entry.assign (x1, 1);
   entry.assign (k, 0);
   entry.assign (i, 0);
   bb1_t.assume (i <= 99);
   bb1_f.assume (i >= 100);
   bb2.add(i, i, 1);
+  bb2.add (x2, x1, 1);
   bb2.add(k, k, 1);
   return cfg;
 }
@@ -198,9 +202,13 @@ cfg_t prog5 (VariableFactory &vfac)  {
 template<typename AbsDomain>
 void run (cfg_t cfg, VariableFactory& vfac, unsigned widening, unsigned narrowing){
     #ifdef HAVE_APRON
+
+    Liveness<cfg_t> live (cfg);
+    live.exec ();
+
     // Run fixpoint 
     typename NumFwdAnalyzer <cfg_t,AbsDomain,VariableFactory>::type 
-        a (cfg, vfac, nullptr, widening, narrowing);
+        a (cfg, vfac, &live, widening, narrowing);
     AbsDomain inv = AbsDomain::top ();
     a.Run (inv);
     // Print invariants
@@ -255,45 +263,49 @@ int main (int argc, char** argv ) {
     run<pk_apron_domain_t> ( cfg, vfac, 1, 2);
   }
 
-  // {
-  //   VariableFactory vfac;
-  //   cfg_t cfg = prog2 (vfac);
-  //   cout << cfg << endl;
-  //   run<interval_domain_t> ( cfg, vfac, 1, 2);
-  //   run<box_apron_domain_t> ( cfg, vfac, 1, 2);
-  //   run<oct_apron_domain_t> ( cfg, vfac, 1, 2);
-  //   run<pk_apron_domain_t> ( cfg, vfac, 1, 2);
-  // }
+  {
+    VariableFactory vfac;
+    cfg_t cfg = prog2 (vfac);
+    cout << cfg << endl;
+    run<interval_domain_t> ( cfg, vfac, 1, 2);
+    run<box_apron_domain_t> ( cfg, vfac, 1, 2);
+    run<oct_apron_domain_t> ( cfg, vfac, 1, 2);
+    run<opt_oct_apron_domain_t> ( cfg, vfac, 1, 2);
+    run<pk_apron_domain_t> ( cfg, vfac, 1, 2);
+  }
 
-  // {
-  //   VariableFactory vfac;
-  //   cfg_t cfg = prog3 (vfac);
-  //   cout << cfg << endl;
-  //   run<interval_domain_t> ( cfg, vfac, 1, 2);
-  //   run<box_apron_domain_t> ( cfg, vfac, 1, 2);
-  //   run<oct_apron_domain_t> ( cfg, vfac, 1, 2);
-  //   run<pk_apron_domain_t> ( cfg, vfac, 1, 2);
-  // }
+  {
+    VariableFactory vfac;
+    cfg_t cfg = prog3 (vfac);
+    cout << cfg << endl;
+    run<interval_domain_t> ( cfg, vfac, 1, 2);
+    run<box_apron_domain_t> ( cfg, vfac, 1, 2);
+    run<oct_apron_domain_t> ( cfg, vfac, 1, 2);
+    run<opt_oct_apron_domain_t> ( cfg, vfac, 1, 2);
+    run<pk_apron_domain_t> ( cfg, vfac, 1, 2);
+  }
 
-  // {
-  //   VariableFactory vfac;
-  //   cfg_t cfg = prog4 (vfac);
-  //   cout << cfg << endl;
-  //   run<interval_domain_t> ( cfg, vfac, 1, 2);
-  //   run<box_apron_domain_t> ( cfg, vfac, 1, 2);
-  //   run<oct_apron_domain_t> ( cfg, vfac, 1, 2);
-  //   run<pk_apron_domain_t> ( cfg, vfac, 1, 2);
-  // }
+  {
+    VariableFactory vfac;
+    cfg_t cfg = prog4 (vfac);
+    cout << cfg << endl;
+    run<interval_domain_t> ( cfg, vfac, 1, 2);
+    run<box_apron_domain_t> ( cfg, vfac, 1, 2);
+    run<oct_apron_domain_t> ( cfg, vfac, 1, 2);
+    run<opt_oct_apron_domain_t> ( cfg, vfac, 1, 2);
+    run<pk_apron_domain_t> ( cfg, vfac, 1, 2);
+  }
 
-  // {
-  //   VariableFactory vfac;
-  //   cfg_t cfg = prog5 (vfac);
-  //   cout << cfg << endl;
-  //   run<interval_domain_t> ( cfg, vfac, 1, 2);
-  //   run<box_apron_domain_t> ( cfg, vfac, 1, 2);
-  //   run<oct_apron_domain_t> ( cfg, vfac, 1, 2);
-  //   run<pk_apron_domain_t> ( cfg, vfac, 1, 2);
-  // }
+  {
+    VariableFactory vfac;
+    cfg_t cfg = prog5 (vfac);
+    cout << cfg << endl;
+    run<interval_domain_t> ( cfg, vfac, 1, 2);
+    run<box_apron_domain_t> ( cfg, vfac, 1, 2);
+    run<oct_apron_domain_t> ( cfg, vfac, 1, 2);
+    run<opt_oct_apron_domain_t> ( cfg, vfac, 1, 2);
+    run<pk_apron_domain_t> ( cfg, vfac, 1, 2);
+  }
 
   // { // testing non-standard operations
   //   VariableFactory vfac;
