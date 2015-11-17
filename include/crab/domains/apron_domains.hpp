@@ -25,7 +25,7 @@ namespace crab {
 
 namespace crab {
    namespace domains {
-      template<typename Number, typename VariableName, apron_domain_id_t ApronDom, unsigned Dims = 50>
+      template<typename Number, typename VariableName, apron_domain_id_t ApronDom, unsigned Dims = 50u>
       class apron_domain: 
          public ikos::writeable, 
          public numerical_domain< Number, VariableName>,
@@ -135,10 +135,7 @@ namespace crab {
 
      using namespace apron;
 
-      // XXX JN: it seems that if opt octagons is used the smaller
-      // number of dimensions must be 16, otherwise the fixpoint does
-      // not converge
-      template<typename Number, typename VariableName, apron_domain_id_t ApronDom, unsigned Dims = 50>
+      template<typename Number, typename VariableName, apron_domain_id_t ApronDom, unsigned Dims = 50u>
       class apron_domain: 
          public ikos::writeable, 
          public numerical_domain< Number, VariableName>,
@@ -157,6 +154,7 @@ namespace crab {
 
        private:
         typedef interval_domain <Number, VariableName> interval_domain_t;
+        typedef bound <Number> bound_t;
         typedef boost::bimap< VariableName , ap_dim_t > var_bimap_t;
         typedef boost::shared_ptr<var_bimap_t> var_map_ptr;
         typedef typename var_bimap_t::value_type binding_t;
@@ -177,7 +175,9 @@ namespace crab {
             else if (ApronDom == APRON_PK)
               m_apman = pk_manager_alloc (false);
             else
-              CRAB_ERROR("Unknown apron domain");
+              CRAB_ERROR("ERROR: unknown apron domain");
+
+            //cout << "Create apron manager: " << ap_manager_get_library (m_apman) << "\n";
           }
           return m_apman;
         }
@@ -189,17 +189,28 @@ namespace crab {
 
         size_t get_dims () const { return get_dims (m_apstate); }
 
-        ap_dim_t get_var_dim (VariableName v) const {
+        // If v is in m_var_map then it maps v to a dimension,
+        // otherwise null.
+        boost::optional<ap_dim_t> get_var_dim (VariableName v) const {
           auto it = m_var_map->left.find (v);
           if (it != m_var_map->left.end ())
             return it->second;
-          else {
-            unsigned dim = m_var_map->size ();
-            if (dim >= get_dims ())
-              CRAB_ERROR ("Apron needs more dimensions 2: this should not happen!\n");
-            m_var_map->insert (binding_t (v, dim));
-            return dim;
-          }
+          else
+            return boost::optional<ap_dim_t> ();
+        }
+
+        // If v is in m_var_map then it maps v to a dimension,
+        // otherwise it inserts v in m_var_map and returns a fresh
+        // dimension.
+        ap_dim_t get_var_dim_alloc (VariableName v) const {
+          if (auto dim = get_var_dim (v))
+            return *dim;
+
+          unsigned dim = m_var_map->size ();
+          if (dim >= get_dims ())
+            CRAB_ERROR ("Apron needs more dimensions: this should not happen!\n");
+          m_var_map->insert (binding_t (v, dim));
+          return dim;
         }
 
         bool has_var_name (const var_bimap_t& m, ap_dim_t i) const {
@@ -236,6 +247,9 @@ namespace crab {
         }
 
         void remove_dimensions (ap_state_ptr& s, vector<ap_dim_t> dims) const {
+#if 1
+          if ( (get_dims (s) - dims.size ()) <= Dims) return;
+
           // --- sort dimensions in descending order to avoid
           //     unnecessary shuffling in case remove_dimensions does
           //     not sort.
@@ -246,31 +260,45 @@ namespace crab {
             // remove dimension dims[i] and shift to the left all the
             // dimensions greater than dims[i]
             dimchange->dim[i] = dims[i]; 
-            //cout << "Removing dimension " << dims[i] << "\n";
           }
 
           s = apPtr (get_man (), 
                      ap_abstract0_remove_dimensions(get_man (), false, 
                                                     &*s, dimchange));
           ap_dimchange_free (dimchange);
+#endif 
         }
 
-        void enlarge (const var_bimap_t& varmap, ap_state_ptr& state) {
+        bool enlarge (const size_t size, ap_state_ptr& state) {
+#if 1
           const double load_factor = 0.75;
           unsigned threshold = (unsigned) ((double) get_dims (state) * load_factor);
           const double grow_factor = 1.5;
-          if (varmap.size () >= threshold) {
+          if (size >= threshold) {
+            // cout << "# Used dims= " << size  << "\n";
+            // cout << "Threshold=" << threshold << "\n";
             // cout << "Enlarging from " << get_dims (state) << " to " 
-            //      << get_dims (state) + Dims << "\n";
-            unsigned new_dims = (unsigned ) ((double) Dims * grow_factor);
+            //      << get_dims (state) + (Dims * grow_factor) << "\n";
+            unsigned new_dims = (size - threshold) + (unsigned ) ((double) Dims * grow_factor);
             add_dimensions (state, new_dims);
+            return true;
           }
+#endif 
+          return false;
+        }
+
+        bool is_unconstrained_var (const ap_state_ptr s, VariableName v) const {
+          if (auto dim = get_var_dim (v))
+            return ap_abstract0_is_dimension_unconstrained (get_man (), &*s, *dim);
+          else
+            return false;
         }
 
         var_map_ptr merge_var_map (const var_bimap_t& m_x, ap_state_ptr& s_x,
                                    const var_bimap_t& m_y, ap_state_ptr& s_y) {
 
-          // -- ensure both states have the same number of dimensions
+          // -- ensure both states have the same number of dimensions,
+          // -- otherwise it will crash
           size_t max_dim = std::max (get_dims (s_x), get_dims (s_y));
           add_dimensions (s_x, max_dim - get_dims(s_x));
           add_dimensions (s_y, max_dim - get_dims(s_y));
@@ -279,30 +307,41 @@ namespace crab {
 
           // -- collect all vars from the two maps
           std::set<VariableName> vars;
-          for (auto px: m_x.left) vars.insert (px.first);
-          for (auto py: m_y.left) vars.insert (py.first);
+          for (auto const& px: m_x.left) {  
+            // if (!is_unconstrained_var (s_x, px.first))
+            vars.insert (px.first);
+          }
+          for (auto const& py: m_y.left) {
+            // if (!is_unconstrained_var (s_y, py.first))
+            vars.insert (py.first);
+          }
             
           // -- create a fresh map
           var_map_ptr res = var_map_ptr (new var_bimap_t ());
-          unsigned dim = 0;
           for (auto v: vars) {
-            res->left.insert (make_pair (v, dim));
-            ++dim;
+            ap_dim_t dim = res->size ();
+            res->insert (binding_t (v, dim));
           }
 
-          if (res->size () >= get_dims (s_x))
-            CRAB_ERROR ("Apron needs more dimensions 1: this should not happen!\n");
+          // s_x and s_y can have disjoint set of variables
+          if (res->left.size () >= get_dims (s_x)) {
+            enlarge (res->left.size (), s_x);
+            enlarge (res->left.size (), s_y);
+          }
           
           // build the permutations maps
           ap_dimperm_t* perm_x = ap_dimperm_alloc (get_dims (s_x));
           ap_dimperm_t* perm_y = ap_dimperm_alloc (get_dims (s_x));
           ap_dimperm_set_id (perm_x); // identity permutation
           ap_dimperm_set_id (perm_y); // identity permutation
-
-          for (auto const &p: m_x.left)
-            perm_x->dim [p.second] = res->left.at (p.first); 
-          for (auto const &p: m_y.left)
-            perm_y->dim [p.second] = res->left.at (p.first);
+          for (auto const &px: m_x.left) {
+            //if (!is_unconstrained_var (s_x, px.first))
+            perm_x->dim [px.second] = res->left.at (px.first); 
+          }
+          for (auto const &py: m_y.left) {
+            //if (!is_unconstrained_var (s_y, py.first))
+            perm_y->dim [py.second] = res->left.at (py.first);
+          }
 
           //cout << "Before permutations: \n";
           //dump (m_x, s_x);
@@ -323,8 +362,10 @@ namespace crab {
           // dump (*res, s_x);
           // dump (*res, s_y);
 
+          /*
           ap_dimperm_free (perm_x);
           ap_dimperm_free (perm_y);
+          */
 
           return res;
         }
@@ -349,15 +390,18 @@ namespace crab {
         // --- from crab to apron
 
         inline ap_texpr0_t* var2texpr (VariableName v) const { 
-          return ap_texpr0_dim( get_var_dim (v));
+          return ap_texpr0_dim (get_var_dim_alloc (v));
         }
 
         inline ap_texpr0_t* num2texpr (Number i) const {  
-          return ap_texpr0_cst_scalar_int ((int) i); 
+          mpq_class n = ((mpz_class) i); 
+          return ap_texpr0_cst_scalar_mpq (n.get_mpq_t ());
         }
 
         inline ap_texpr0_t* intv2texpr (Number a, Number b) const { 
-          return ap_texpr0_cst_interval_int ((int) a,(int) b); 
+          mpq_class n1 = ((mpz_class) a); 
+          mpq_class n2 = ((mpz_class) b); 
+          return ap_texpr0_cst_interval_mpq (n1.get_mpq_t (), n2.get_mpq_t ());
         }
         
         inline ap_texpr0_t* expr2texpr (linear_expression_t e) const {
@@ -397,10 +441,11 @@ namespace crab {
             return Number ((long) scalar->val.dbl);
           }
           else if (scalar->discr == AP_SCALAR_MPQ) {
-            return Number ((mpz_class) mpq_class(scalar->val.mpq));
+            mpq_class n (scalar->val.mpq);
+            return Number ((mpz_class) n);
           }
           else
-            CRAB_ERROR ("Apron translation only covers double or mpq scalars");
+            CRAB_ERROR ("ERROR: apron translation only covers double or mpq scalars");
         }
 
         linear_expression_t term2expr (ap_coeff_t* coeff, ap_dim_t i) {
@@ -453,12 +498,12 @@ namespace crab {
 
         inline linear_constraint_t T () const {
           return linear_constraint_t (linear_expression_t (Number(1)) == 
-                                      linear_expression_t (Number(0)));          
+                                      linear_expression_t (Number(1)));          
         }
 
         inline linear_constraint_t F () const {
           return linear_constraint_t (linear_expression_t (Number(1)) == 
-                                      linear_expression_t (Number(1)));          
+                                      linear_expression_t (Number(0)));          
         }
 
         void dump (const var_bimap_t& m, ap_state_ptr apstate ) {  
@@ -479,15 +524,25 @@ namespace crab {
 
         void dump () { dump (*m_var_map, m_apstate); }
 
+        void dump_vars () {
+#if 0
+          std::cout << "vars={";
+          for (auto const& p: m_var_map->left)
+            std::cout << p.first <<";";
+          std::cout << "}\n";
+#endif 
+        }
+
         apron_domain (ap_state_ptr apState, var_map_ptr varMap): 
             ikos::writeable (), 
             m_apstate (apState), 
-            m_var_map (varMap) { }
+            m_var_map (varMap) { 
+          
+          if (ap_abstract0_is_top (get_man(), &*m_apstate) ||
+              ap_abstract0_is_bottom (get_man(), &*m_apstate)) {
+            m_var_map = var_map_ptr (new var_bimap_t ());
+          }
 
-        bool is_var_unconstrained (VariableName x) const {
-          return ap_abstract0_is_dimension_unconstrained (get_man (), 
-                                                          &*m_apstate,
-                                                          get_var_dim (x));
         }
 
        public:
@@ -509,17 +564,21 @@ namespace crab {
                                  var_map_ptr (new var_bimap_t ()));
         }
 
-        apron_domain (const apron_domain_t& other): 
+        // XXX
+        apron_domain (const apron_domain_t& o): 
             ikos::writeable(), 
-            m_apstate (other.m_apstate), 
-            m_var_map (other.m_var_map) {  }
+            m_apstate (apPtr (get_man (), ap_abstract0_copy (get_man (), &*(o.m_apstate)))),
+            m_var_map (var_map_ptr (new var_bimap_t (*o.m_var_map))) 
+            //m_apstate (o.m_apstate),
+            //m_var_map (o.m_var_map)
+        {  }
         
-        
+        // XXX        
         apron_domain_t operator=(const apron_domain_t& o) {
-          if (this != &o) {
-            m_apstate = o.m_apstate;
-            m_var_map = o.m_var_map;
-          }
+          //m_apstate  = apPtr (get_man (), ap_abstract0_copy (get_man (), &*(o.m_apstate)));
+          //std::swap (*m_var_map, *o.m_var_map);
+          m_apstate = o.m_apstate;
+          m_var_map = o.m_var_map;
           return *this;
         }
         
@@ -544,10 +603,10 @@ namespace crab {
           // else if (is_top () && o.is_top ())
           //   return true;
           // else { 
+          // Copy this->m_apstate because merge_var_map will modify it
           ap_state_ptr x = apPtr (get_man (), ap_abstract0_copy (get_man (), &*m_apstate));
-          ap_state_ptr y = apPtr (get_man (), ap_abstract0_copy (get_man (), &*(o.m_apstate)));
-          merge_var_map (*m_var_map, x, *(o.m_var_map), y);
-          return ap_abstract0_is_leq (get_man(), &*x, &*y);
+          merge_var_map (*m_var_map, x, *(o.m_var_map), o.m_apstate);
+          return ap_abstract0_is_leq (get_man(), &*x, &*o.m_apstate);
           //}
         }
         
@@ -558,14 +617,16 @@ namespace crab {
           // else if (is_top () || o.is_bottom())
           //   return *this;
           // else {
+
+          // XXX JN: Copy this->m_apstate because merge_var_map will
+          // modify it and the join is a function so this should not
+          // be modified.
+
           ap_state_ptr x = apPtr (get_man (), ap_abstract0_copy (get_man (), &*m_apstate));
-          ap_state_ptr y = apPtr (get_man (), ap_abstract0_copy (get_man (), &*(o.m_apstate)));
-          var_map_ptr  m = merge_var_map (*m_var_map, x, *(o.m_var_map), y);
-          apron_domain_t res (apPtr (get_man(), 
-                                     ap_abstract0_join (get_man(), false, &*x, &*y)), m);
-          
-          // enlarge (*(res.m_var_map), res.m_apstate);
-          return res;
+          var_map_ptr  m = merge_var_map (*m_var_map, x, *(o.m_var_map), o.m_apstate);
+          return apron_domain_t (apPtr (get_man(), 
+                                        ap_abstract0_join (get_man(), false, 
+                                                           &*x, &*o.m_apstate)), m);
           //}
         }        
         
@@ -578,14 +639,16 @@ namespace crab {
           // else if (o.is_top())
           //   return *this;
           // else{
+
+          // XXX JN: Copy this->m_apstate because merge_var_map will
+          // modify it and the meet is a function so this should not
+          // be modified.
+
           ap_state_ptr x = apPtr (get_man (), ap_abstract0_copy (get_man (), &*m_apstate));
-          ap_state_ptr y = apPtr (get_man (), ap_abstract0_copy (get_man (), &*(o.m_apstate)));
-          var_map_ptr  m = merge_var_map (*m_var_map, x, *(o.m_var_map), y);
-          apron_domain_t res (apPtr (get_man(), 
-                                     ap_abstract0_meet (get_man(), false, &*x, &*y)), m);
-          
-          //enlarge (*(res.m_var_map), res.m_apstate);
-          return res;
+          var_map_ptr  m = merge_var_map (*m_var_map, x, *(o.m_var_map), o.m_apstate);
+          return apron_domain_t (apPtr (get_man(), 
+                                        ap_abstract0_meet (get_man(), false, 
+                                                           &*x, &*o.m_apstate)), m);
           //}
         }        
         
@@ -596,14 +659,16 @@ namespace crab {
           // else if (o.is_bottom())
           //   return *this;
           // else {
-          ap_state_ptr x = apPtr (get_man (), ap_abstract0_copy (get_man (), &*m_apstate));
-          ap_state_ptr y = apPtr (get_man (), ap_abstract0_copy (get_man (), &*(o.m_apstate)));
-          var_map_ptr  m = merge_var_map (*m_var_map, x, *(o.m_var_map), y);
-          apron_domain_t res (apPtr (get_man(), 
-                                     ap_abstract0_widening (get_man(), &*x, &*y)), m);
 
-          //enlarge (*(res.m_var_map), res.m_apstate);
-          return res;
+          // XXX JN: Copy this->m_apstate because merge_var_map will
+          // modify it and the widening is a function so this should not
+          // be modified.
+
+          ap_state_ptr x = apPtr (get_man (), ap_abstract0_copy (get_man (), &*m_apstate));
+          var_map_ptr  m = merge_var_map (*m_var_map, x, *(o.m_var_map), o.m_apstate);
+          return apron_domain_t (apPtr (get_man(), 
+                                        ap_abstract0_widening (get_man(), 
+                                                               &*x, &*o.m_apstate)), m);
           //}
         }        
         
@@ -618,10 +683,10 @@ namespace crab {
         void forget (const Range &vars) {
           vector<ap_dim_t> dims;
           for (auto v: vars)  {
-            // do not call get_var_dim
-            auto it = m_var_map->left.find (v);
-            if (it != m_var_map->left.end ())
-              dims.push_back (it->second);
+            if (auto dim = get_var_dim (v)) {
+              dims.push_back (*dim);
+              m_var_map->left.erase (v);
+            }
           }
 
           if (dims.empty ()) return;
@@ -635,7 +700,7 @@ namespace crab {
           remove_dimensions (m_apstate, dims);
         }
 
-        // dual of forget: remove all variables except vars
+        // remove all variables except vars
         template<typename Range>
         void project (const Range& vars) {
           if (is_bottom ()) return;
@@ -648,43 +713,83 @@ namespace crab {
 
         void operator-=(VariableName var) {
           vector<ap_dim_t> dims;
-
-          // do not call get_var_dim
-          auto it = m_var_map->left.find (var);
-          if (it != m_var_map->left.end ()) {
-            dims.push_back (it->second);
+          if (auto dim = get_var_dim (var)) {
+            dims.push_back (*dim);
+            m_var_map->left.erase (var);
             m_apstate = apPtr (get_man (), 
                                ap_abstract0_forget_array (get_man (), 
                                                           false, 
                                                           &*m_apstate, 
                                                           &dims[0], dims.size(), 
                                                           false));
-
             remove_dimensions (m_apstate, dims);
           }
         }
 
         interval_t operator[](VariableName v) {
 
-          //enlarge (*m_var_map, m_apstate);
-          ap_interval_t* intv = ap_abstract0_bound_dimension (get_man (),
-                                                              &*m_apstate, get_var_dim (v));
-          ap_scalar_t* lb = intv->inf;
-          ap_scalar_t* ub = intv->sup;
+          if (is_bottom ()) 
+            return interval_t::bottom ();
 
+          if (auto dim = get_var_dim (v)) {
 
-          if (lb->discr == AP_SCALAR_DOUBLE && ub->discr == AP_SCALAR_DOUBLE) { 
-            // elina uses double
-            return interval_t (Number ((long) lb->val.dbl),
-                               Number ((long) ub->val.dbl));
+            ap_interval_t* intv = ap_abstract0_bound_dimension (get_man (),
+                                                                &*m_apstate, 
+                                                                *dim);
+            if (ap_interval_is_top (intv))
+              return interval_t::top ();
+
+            ap_scalar_t* lb = intv->inf;
+            ap_scalar_t* ub = intv->sup;
+            
+            if (lb->discr == AP_SCALAR_DOUBLE && ub->discr == AP_SCALAR_DOUBLE) { 
+
+              if (ap_scalar_infty(lb) == -1) {     // [-oo, k]
+                return interval_t (bound_t::minus_infinity (),
+                                   Number ((long) ub->val.dbl));
+
+              }
+              else if (ap_scalar_infty(ub) == 1) { // [k, +oo]
+                return interval_t (Number ((long) lb->val.dbl),
+                                   bound_t::plus_infinity ());
+              }
+              else { 
+                assert (ap_scalar_infty(lb) == 0); // lb is finite
+                assert (ap_scalar_infty(ub) == 0); // ub is finite
+                return interval_t (Number ((long) lb->val.dbl),
+                                   Number ((long) ub->val.dbl));
+              }
+
+            }
+            else if (lb->discr == AP_SCALAR_MPQ && ub->discr == AP_SCALAR_MPQ ) {
+
+              if (ap_scalar_infty(lb) == -1) {     // [-oo, k]
+                mpq_class sup (ub->val.mpq);
+                return interval_t (bound_t::minus_infinity (),
+                                   Number ((mpz_class) sup));
+
+              }
+              else if (ap_scalar_infty(ub) == 1) { // [k, +oo]
+                mpq_class inf (lb->val.mpq);
+                return interval_t (Number ((mpz_class) inf),
+                                   bound_t::plus_infinity ());
+              }
+              else {
+                assert (ap_scalar_infty(lb) == 0); // lb is finite
+                assert (ap_scalar_infty(ub) == 0); // ub is finite
+
+                mpq_class inf (lb->val.mpq);
+                mpq_class sup (ub->val.mpq);
+                return interval_t (Number ((mpz_class) inf), 
+                                   Number ((mpz_class) sup));
+              }
+
+            }
+            else 
+              CRAB_ERROR ("ERROR: apron translation only covers double or mpq scalars");
           }
-          else if (lb->discr == AP_SCALAR_MPQ && ub->discr == AP_SCALAR_MPQ ) {
-            return interval_t (Number ((mpz_class) mpq_class(lb->val.mpq)),
-                               Number ((mpz_class) mpq_class(ub->val.mpq)));
-          }
-          else {
-            CRAB_ERROR ("Apron translation only covers double or mpq scalars");
-          }
+          else 
+            return interval_t::top ();
         }
 
         void set(VariableName v, interval_t ival) {
@@ -716,7 +821,8 @@ namespace crab {
         void operator += (linear_constraint_system_t csts) {
           if(is_bottom()) return;
 
-          //enlarge (*m_var_map, m_apstate);
+          if (enlarge (m_var_map->left.size(), m_apstate))
+            dump_vars ();
 
           ap_tcons0_array_t array = ap_tcons0_array_make (csts.size ());
           unsigned i=0;
@@ -737,14 +843,15 @@ namespace crab {
         void assign (VariableName x, linear_expression_t e) {
           if(is_bottom()) return;
 
-          enlarge (*m_var_map, m_apstate);
-          
+          if (enlarge (m_var_map->left.size(), m_apstate))
+            dump_vars();
+                      
           ap_texpr0_t* t = expr2texpr (e);
           assert (t);
           m_apstate = apPtr (get_man (), 
                              ap_abstract0_assign_texpr(get_man (), false, 
                                                        &*m_apstate, 
-                                                       get_var_dim (x),t, 
+                                                       get_var_dim_alloc (x),t, 
                                                        NULL));
 
           ap_texpr0_free (t);
@@ -754,7 +861,8 @@ namespace crab {
         void apply (operation_t op, VariableName x, VariableName y, Number z) {
           if(is_bottom()) return;
 
-          enlarge (*m_var_map, m_apstate);
+          if (enlarge (m_var_map->left.size(), m_apstate))
+            dump_vars ();
 
           ap_texpr0_t* a = var2texpr (y);
           ap_texpr0_t* b = num2texpr (z);
@@ -765,12 +873,12 @@ namespace crab {
             case OP_SUBTRACTION: res = SUB (a, b); break;
             case OP_MULTIPLICATION: res = MUL (a, b); break;
             case OP_DIVISION: res = DIV (a, b); break;
-            default: CRAB_ERROR("Apron: unreachable");
+            default: CRAB_ERROR("ERROR apron: operation not supported");
           }
           assert (res);
           m_apstate = apPtr (get_man (), ap_abstract0_assign_texpr(get_man (), false, 
                                                                    &*m_apstate, 
-                                                                   get_var_dim (x), 
+                                                                   get_var_dim_alloc (x), 
                                                                    res, 
                                                                    NULL));
 
@@ -782,7 +890,8 @@ namespace crab {
         void apply(operation_t op, VariableName x, VariableName y, VariableName z) {
           if(is_bottom()) return;
 
-          //enlarge (*m_var_map, m_apstate);
+          if (enlarge (m_var_map->left.size(), m_apstate))
+            dump_vars ();
 
           ap_texpr0_t* a = var2texpr (y);
           ap_texpr0_t* b = var2texpr (z);
@@ -793,12 +902,12 @@ namespace crab {
             case OP_SUBTRACTION: res = SUB (a, b); break;
             case OP_MULTIPLICATION: res = MUL (a, b); break;
             case OP_DIVISION: res = DIV (a, b); break;
-            default: CRAB_ERROR("Apron: unreachable");
+            default: CRAB_ERROR("ERROR apron: operation not supported");
           }
           assert (res);
           m_apstate = apPtr (get_man (), ap_abstract0_assign_texpr(get_man (), false, 
                                                                    &*m_apstate, 
-                                                                   get_var_dim (x), 
+                                                                   get_var_dim_alloc (x), 
                                                                    res, 
                                                                    NULL));
 
@@ -809,7 +918,8 @@ namespace crab {
         void apply(operation_t op, VariableName x, Number k) {
           if(is_bottom()) return;
 
-          //enlarge (*m_var_map, m_apstate);
+          if (enlarge (m_var_map->left.size(), m_apstate))
+            dump_vars ();
 
           ap_texpr0_t* a = var2texpr (x);
           ap_texpr0_t* b = num2texpr (k);
@@ -820,12 +930,12 @@ namespace crab {
             case OP_SUBTRACTION: res = SUB (a, b); break;
             case OP_MULTIPLICATION: res = MUL (a, b); break;
             case OP_DIVISION: res = DIV (a, b); break;
-            default: CRAB_ERROR("Apron: unreachable");
+            default: CRAB_ERROR("ERROR apron: operation not supported");
           }
           assert (res);
           m_apstate = apPtr (get_man (), ap_abstract0_assign_texpr(get_man (), false, 
                                                                    &*m_apstate, 
-                                                                   get_var_dim (x), 
+                                                                   get_var_dim_alloc (x), 
                                                                    res, 
                                                                    NULL));
 
@@ -857,7 +967,7 @@ namespace crab {
             case OP_SHL: xi = yi.Shl(zi); break; 
             case OP_LSHR: xi = yi.LShr(zi); break;
             case OP_ASHR: xi = yi.AShr(zi); break;
-            default: CRAB_ERROR("Apron: unreachable");
+            default: CRAB_ERROR("ERROR apron: operation not supported");
           }
           set(x, xi);
         }
@@ -874,7 +984,7 @@ namespace crab {
             case OP_SHL: xi = yi.Shl(zi); break; 
             case OP_LSHR: xi = yi.LShr(zi); break;
             case OP_ASHR: xi = yi.AShr(zi); break;
-            default: CRAB_ERROR("Apron: unreachable");
+            default: CRAB_ERROR("ERROR apron: operation not supported");
           }
           set(x, xi);
         }
@@ -893,7 +1003,7 @@ namespace crab {
               case OP_UDIV: xi = yi.UDiv(zi); break;
               case OP_SREM: xi = yi.SRem(zi); break;
               case OP_UREM: xi = yi.URem(zi); break;
-              default: CRAB_ERROR("Apron: unreachable");
+              default: CRAB_ERROR("ERROR apron: operation not supported");
             }
             set(x, xi);
           }
@@ -912,13 +1022,13 @@ namespace crab {
               case OP_UDIV: xi = yi.UDiv(zi); break;
               case OP_SREM: xi = yi.SRem(zi); break;
               case OP_UREM: xi = yi.URem(zi); break;
-              default: CRAB_ERROR("Apron: unreachable");
+              default: CRAB_ERROR("ERROR apron: operation not supported");
             }
             set(x, xi);
           }
         }
         
-        linear_constraint_system_t to_linear_constraint_system (){
+        linear_constraint_system_t to_linear_constraint_system () {
           linear_constraint_system_t csts;
           if(is_bottom ())  {
             csts += F ();
@@ -927,6 +1037,8 @@ namespace crab {
             csts += T ();
           }
           else {
+            normalize ();
+
             ap_lincons0_array_t lcons_arr = ap_abstract0_to_lincons_array (get_man (), &*m_apstate);
             for (unsigned i=0 ; i < lcons_arr.size; i++)
               csts += tconst2const (lcons_arr.p[i]);
@@ -937,12 +1049,11 @@ namespace crab {
         }
         
         void expand (VariableName x, VariableName dup) {
-          if (m_var_map->left.find (dup) != m_var_map->left.end ())
-            CRAB_ERROR ("Apron tried to exxpand to an existing variable");
-          
+          *this -= dup;
           // --- increases number of dimensions by one
           m_apstate = apPtr (get_man(),
-                             ap_abstract0_expand(get_man (), false, &* m_apstate, get_var_dim (x), 1));
+                             ap_abstract0_expand(get_man (), false, &* m_apstate, 
+                                                 get_var_dim_alloc (x), 1));
 
           // --- the additional dimension is put at the end of integer
           //     dimensions.
@@ -954,9 +1065,6 @@ namespace crab {
         }
 
         void write(ostream& o) {
-
-          ap_abstract0_canonicalize (get_man (), &*m_apstate);
-
           if(is_bottom()){
             o << "_|_";
             return;
@@ -969,7 +1077,6 @@ namespace crab {
             //dump ();
             linear_constraint_system_t inv = to_linear_constraint_system ();
             o << inv;
-
           }
         }          
 
@@ -986,7 +1093,9 @@ namespace crab {
             CRAB_ERROR("Unknown apron domain");
         }
       }; 
-   
+
+      // --- global datastructures
+
       template<typename N, typename V, apron_domain_id_t D, unsigned S>
       ap_manager_t* apron_domain<N,V,D,S>::m_apman = nullptr;
 
@@ -1003,12 +1112,12 @@ namespace crab {
     
       template <typename Number, typename VariableName, apron_domain_id_t ApronDom>
       void normalize (apron_domain<Number,VariableName, ApronDom>& inv) {
-         inv.normalize ();
+        inv.normalize ();
       }
     
       template <typename Number, typename VariableName, apron_domain_id_t ApronDom, typename Iterator>
       void forget (apron_domain<Number,VariableName, ApronDom>& inv, Iterator it, Iterator end) {
-         inv.forget (boost::make_iterator_range (it, end));
+        inv.forget (boost::make_iterator_range (it, end));
       }
 
       template <typename Number, typename VariableName, apron_domain_id_t ApronDom, typename Iterator>

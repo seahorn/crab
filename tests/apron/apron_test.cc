@@ -307,7 +307,11 @@ int main (int argc, char** argv ) {
     run<pk_apron_domain_t> ( cfg, vfac, 1, 2);
   }
 
-  // { // testing non-standard operations
+  /////
+  // testing operations
+  /////
+  
+  // { 
   //   VariableFactory vfac;
   //   pk_apron_domain_t inv1 = pk_apron_domain_t::top ();
   //   inv1.assign (vfac ["x"], 5);
@@ -322,6 +326,20 @@ int main (int argc, char** argv ) {
 
   //   pk_apron_domain_t inv3 = inv1 | inv2;
   //   cout << "Join: " << inv3 << "\n";
+  // }
+  
+  // { 
+  //   VariableFactory vfac;
+  //   pk_apron_domain_t inv1 = pk_apron_domain_t::top ();
+  //   inv1.assign (vfac ["x"], 5);
+
+  //   pk_apron_domain_t inv2 (inv1);
+  //   inv2.apply (OP_ADDITION, vfac ["x"], vfac ["x"], 1);
+
+  //   pk_apron_domain_t inv3 = inv1;
+  //   cout << inv1 << "\n";
+  //   cout << inv2 << "\n";
+  //   cout << inv3 << "\n";
   // }
   return 0;
 }

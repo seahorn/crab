@@ -30,7 +30,7 @@ namespace crab {
          
          void operator () (ap_state s)
          {
-         if (s) ap_abstract0_free (man, s);
+           if (s) ap_abstract0_free (man, s);
          }
          
          //ap_manager_t** getManager () const { return man; }
@@ -44,7 +44,8 @@ namespace crab {
            ap_state_ptr p(_s, ap_state_deleter (_m));
            return p;
          }
-         return ap_state_ptr();
+         CRAB_ERROR ("apPtr is taking a null pointer!");
+         //return ap_state_ptr();
        }
      }
   }
