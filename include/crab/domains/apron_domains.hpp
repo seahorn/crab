@@ -56,6 +56,9 @@ namespace crab {
         bool is_top() { CRAB_ERROR (APRON_NOT_FOUND); }
 
         bool operator<=(apron_domain_t other) { CRAB_ERROR (APRON_NOT_FOUND); }
+
+        void operator|=(apron_domain_t other)
+        { CRAB_ERROR (APRON_NOT_FOUND); }
         
         apron_domain_t operator|(apron_domain_t other)
         { CRAB_ERROR (APRON_NOT_FOUND); }
@@ -524,6 +527,10 @@ namespace crab {
 
         void dump () { dump (*m_var_map, m_apstate); }
 
+       public:
+        void print_stats () { ap_abstract0_fprint (stdout, get_man (), &*m_apstate, NULL); }
+
+       private:
         void dump_vars () {
 #if 0
           std::cout << "vars={";
@@ -608,6 +615,12 @@ namespace crab {
           merge_var_map (*m_var_map, x, *(o.m_var_map), o.m_apstate);
           return ap_abstract0_is_leq (get_man(), &*x, &*o.m_apstate);
           //}
+        }
+
+        void operator|=(apron_domain_t o) {
+          m_var_map = merge_var_map (*m_var_map, m_apstate, *(o.m_var_map), o.m_apstate);
+          m_apstate = apPtr (get_man(), ap_abstract0_join (get_man(), false, 
+                                                           &*m_apstate, &*o.m_apstate));
         }
         
         apron_domain_t operator|(apron_domain_t o) {
@@ -1124,6 +1137,13 @@ namespace crab {
       void project (apron_domain<Number,VariableName, ApronDom>& inv, Iterator it, Iterator end) {
         inv.project (boost::make_iterator_range (it, end));
       }
+
+      // temporary
+      template <typename Number, typename VariableName, apron_domain_id_t ApronDom>
+      void print_stats (apron_domain<Number,VariableName, ApronDom>& inv) {
+        inv.print_stats ();
+      }
+
 
    } // namespace domain_traits
 }// namespace crab

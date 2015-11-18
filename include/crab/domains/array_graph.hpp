@@ -530,6 +530,10 @@ namespace crab {
          if (!is_bottom ()) 
            remove (v);
        }
+
+       void operator|=(array_graph_t other) {
+         *this = *this | other;
+       }
     
        // Point-wise join in the weight domain
        array_graph_t operator|(array_graph_t other)
@@ -1057,6 +1061,10 @@ namespace crab {
         } else {
           return (_scalar <= other._scalar && _g <= other._g);
         }
+      }
+
+      void operator|=(array_graph_domain_t other)  {
+        *this = *this | other;
       }
   
       array_graph_domain_t operator|(array_graph_domain_t other) 

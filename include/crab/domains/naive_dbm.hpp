@@ -550,6 +550,10 @@ public:
     }
   }
 
+  void operator|=(dbm_t o) {
+    *this = *this | o;
+  }
+
   // Join
   dbm_t operator|(dbm_t o) {
     // Requires normalization

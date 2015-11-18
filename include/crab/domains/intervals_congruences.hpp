@@ -440,6 +440,10 @@ public:
     return this->_product == other._product;
   }
 
+  void operator|=(interval_congruence_domain_t other) {
+    *this = *this | other;
+  }
+
   interval_congruence_domain_t operator|(interval_congruence_domain_t other) {
     return interval_congruence_domain_t(this->_product | other._product);
   }

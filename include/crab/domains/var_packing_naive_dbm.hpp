@@ -118,6 +118,10 @@ public:
 
   bool operator<=(var_packing_dbm_t o) { return _domain <= o._domain; }
 
+  void operator|=(var_packing_dbm_t o) {
+    *this = *this | o;
+  }
+
   var_packing_dbm_t operator|(var_packing_dbm_t o) {
     return var_packing_dbm_t(_domain | o._domain);
   }

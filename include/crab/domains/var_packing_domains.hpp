@@ -742,6 +742,10 @@ public:
     }
   }
 
+  void operator|=(var_packing_domain_t o) {
+    *this = *this | o;
+  }
+
   // Join
   var_packing_domain_t operator|(var_packing_domain_t o) {
     // Requires normalization

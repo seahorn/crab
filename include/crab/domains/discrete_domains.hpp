@@ -107,6 +107,10 @@ namespace ikos {
       return (this->_is_top && other._is_top) || (this->_set == other._set);
     }
 
+    void operator|=(discrete_domain_t other) {
+      *this = *this | other;
+    }
+
     discrete_domain_t operator|(discrete_domain_t other) {
       if (this->_is_top || other._is_top) {
         return discrete_domain_t(true);

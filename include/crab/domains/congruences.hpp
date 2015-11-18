@@ -863,6 +863,10 @@ public:
 
   bool operator<=(congruence_domain_t e) { return this->_env <= e._env; }
 
+  void operator|=(congruence_domain_t e) {
+    this->_env = this->_env | e._env;
+  }
+
   congruence_domain_t operator|(congruence_domain_t e) {
     return this->_env | e._env;
   }

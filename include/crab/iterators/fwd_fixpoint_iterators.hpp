@@ -93,7 +93,7 @@ namespace ikos {
     unsigned int _narrowing_iters;
 
   private:
-    void set(invariant_table_ptr table, NodeName node, AbstractValue v) {
+    void set(invariant_table_ptr table, NodeName node, const AbstractValue& v) {
       std::pair< typename invariant_table_t::iterator, bool > res = 
           table->insert(std::make_pair(node, v));
       if (!res.second) {
@@ -101,11 +101,11 @@ namespace ikos {
       }
     }
     
-    void set_pre(NodeName node, AbstractValue v) {
+    void set_pre(NodeName node, const AbstractValue& v) {
       this->set(this->_pre, node, v);
     }
 
-    void set_post(NodeName node, AbstractValue v) {
+    void set_post(NodeName node, const AbstractValue& v) {
       this->set(this->_post, node, v);
     }
 
@@ -147,7 +147,8 @@ namespace ikos {
     }
     
     virtual AbstractValue extrapolate(NodeName /* node */, unsigned int iteration, 
-                                      AbstractValue before, AbstractValue after) {
+                                      // FIXME should be const params
+                                      AbstractValue& before, AbstractValue& after) {
       if (iteration <= _widening_threshold) {
 	return before | after; 
       } else {
@@ -156,11 +157,12 @@ namespace ikos {
     }
 
     virtual AbstractValue refine(NodeName /* node */, unsigned int iteration, 
-                                 AbstractValue before, AbstractValue after) {
+                                 // FIXME should be const params
+                                 AbstractValue& before, AbstractValue& after) {
       if (iteration == 1) {
-	return before & after; 
+          return before & after; 
       } else {
-	return before && after;
+	return before && after; 
       }
     }
 
@@ -214,7 +216,7 @@ namespace ikos {
           auto prev_nodes = this->_iterator->_cfg.prev_nodes(node);
           pre = AbstractValue::bottom();
           for (NodeName prev : prev_nodes) 
-            pre = pre | this->_iterator->get_post(prev); 
+            pre |= this->_iterator->get_post(prev);  //pre = pre | this->_iterator->get_post(prev); 
           this->_iterator->set_pre(node, pre);
         }
         this->_iterator->set_post(node, this->_iterator->analyze(node, pre));
@@ -227,7 +229,7 @@ namespace ikos {
         AbstractValue pre = AbstractValue::bottom();
         for (NodeName prev : prev_nodes) {
           if (!(this->_iterator->_wto.nesting(prev) > cycle_nesting)) {
-            pre = pre | this->_iterator->get_post(prev);
+            pre |= this->_iterator->get_post(prev); //pre = pre | this->_iterator->get_post(prev);
           }
         }
         for(unsigned int iteration = 1; ; ++iteration) {
@@ -239,7 +241,7 @@ namespace ikos {
           }
           AbstractValue new_pre = AbstractValue::bottom();
           for (NodeName prev : prev_nodes) 
-            new_pre = new_pre | this->_iterator->get_post(prev);
+            new_pre |= this->_iterator->get_post(prev); //new_pre = new_pre | this->_iterator->get_post(prev);
           if (new_pre <= pre) {
             // Post-fixpoint reached
             this->_iterator->set_pre(head, new_pre);
@@ -257,13 +259,12 @@ namespace ikos {
           }
           AbstractValue new_pre = AbstractValue::bottom();
           for (NodeName prev : prev_nodes) 
-            new_pre = new_pre | this->_iterator->get_post(prev);
+            new_pre |= this->_iterator->get_post(prev); //new_pre = new_pre | this->_iterator->get_post(prev);
           if (pre <= new_pre) {
             // No more refinement possible (pre == new_pre)
             break;
           } else {
             if (iteration > this->_iterator->get_narrowing_iters ()) break; 
-
             pre = this->_iterator->refine(head, iteration, pre, new_pre);
             this->_iterator->set_pre(head, pre);
           }

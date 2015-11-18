@@ -381,6 +381,10 @@ namespace crab {
          }
        } 
        
+       void operator|=(anti_unif_t o) {
+         *this = *this | o;
+       }
+
        anti_unif_t operator|(anti_unif_t o) {
          // Requires normalization of both operands
          normalize();

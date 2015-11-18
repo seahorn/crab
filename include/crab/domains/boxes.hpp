@@ -71,6 +71,9 @@ namespace crab {
 
         bool operator<=(boxes_domain_t other) { CRAB_ERROR (LDD_NOT_FOUND); }
         
+        void operator|=(boxes_domain_t other)
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+
         boxes_domain_t operator|(boxes_domain_t other)
         { CRAB_ERROR (LDD_NOT_FOUND); }
         
@@ -188,6 +191,9 @@ namespace crab {
         { CRAB_ERROR (LDD_NOT_FOUND); } 
 
         bool operator<=(rib_domain_t other) 
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+
+        void operator|=(rib_domain_t other)
         { CRAB_ERROR (LDD_NOT_FOUND); }
         
         rib_domain_t operator|(rib_domain_t other)
@@ -615,6 +621,10 @@ namespace crab {
 
           CRAB_DEBUG ("Check if ", *this, " <= ", other, " ---> ", res);
           return res;
+        }
+
+        void operator|=(boxes_domain_t other) {
+          *this = *this | other;
         }
         
         boxes_domain_t operator|(boxes_domain_t other) {
@@ -1200,6 +1210,10 @@ namespace crab {
          return m_inv <= other.m_inv;
        }
        
+       void operator|=(rib_domain_t other) {
+         *this = *this | other;
+       }
+
        rib_domain_t operator|(rib_domain_t other) {
          return rib_domain_t (m_inv | other.m_inv);
        }

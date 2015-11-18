@@ -138,6 +138,10 @@ namespace ikos {
     bool operator==(domain_product2_t other) {
       return (this->operator<=(other) && other.operator<=(*this));
     }
+
+    void operator|=(domain_product2_t other) {
+      *this = *this | other;
+    }
     
     domain_product2_t operator|(domain_product2_t other) {
       if (this->is_bottom()) {
@@ -270,6 +274,10 @@ namespace ikos {
       return (this->_product == other._product);
     }
 
+    void operator|=(domain_product3_t other) {
+      *this = *this | other;
+    }
+
     domain_product3_t operator|(domain_product3_t other) {
       return domain_product3_t(this->_product | other._product);
     }
@@ -380,6 +388,10 @@ namespace ikos {
 
     bool operator==(numerical_domain_product2_t other) {
       return (this->_product == other._product);
+    }
+
+    void operator|=(numerical_domain_product2_t other) {
+      *this = *this | other;
     }
 
     numerical_domain_product2_t operator|(numerical_domain_product2_t other) {
@@ -561,6 +573,10 @@ namespace ikos {
       return (this->_product == other._product);
     }
 
+    void operator|=(numerical_domain_product3_t other) {
+      *this = *this | other;
+    }
+    
     numerical_domain_product3_t 
     operator|(numerical_domain_product3_t other) {
       return numerical_domain_product3_t(this->_product | other._product);

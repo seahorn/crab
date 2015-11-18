@@ -665,6 +665,10 @@ namespace crab {
         }
       }  
 
+      void operator|=(DBM_t o) {
+        *this = *this | o;
+      }
+
       DBM_t operator|(DBM_t o) {
         if (is_bottom() || o.is_top ())
           return o;

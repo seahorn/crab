@@ -101,6 +101,10 @@ namespace crab {
         bool operator<=(array_smashing_t other) {
           return (_inv <= other._inv);
         }
+
+        void operator|=(array_smashing_t other) {
+          *this = *this | other;
+        }
         
         array_smashing_t operator|(array_smashing_t other) {
           return array_smashing_t (_inv | other._inv);
