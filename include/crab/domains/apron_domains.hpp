@@ -365,10 +365,8 @@ namespace crab {
           // dump (*res, s_x);
           // dump (*res, s_y);
 
-          /*
           ap_dimperm_free (perm_x);
           ap_dimperm_free (perm_y);
-          */
 
           return res;
         }
