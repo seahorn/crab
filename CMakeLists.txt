@@ -88,6 +88,7 @@ if (GIT_FOUND)
   else ()
      if (SSE2_FOUND OR SSE3_FOUND OR SSSE3_FOUND OR SSE4_1_FOUND)
         message(STATUS "Building opt-oct with SSE")
+        set (IS_VECTOR "IS_VECTOR=-DVECTOR")
         set (IS_SSE "IS_SSE=-DSSE")
      else ()
         message(STATUS "Building opt-oct without vectorized operations.")
@@ -98,6 +99,7 @@ if (GIT_FOUND)
   ExternalProject_Add(apron
     GIT_REPOSITORY git@bitbucket.org:jorgenavas/apron.git 
     GIT_TAG ${APRON_TAG}
+    INSTALL_DIR ${CMAKE_BINARY_DIR}/run/apron
     CONFIGURE_COMMAND echo "Apron does not need a configure"
     BUILD_IN_SOURCE 1
     BUILD_COMMAND make CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} ${IS_VECTOR} ${IS_SSE}
