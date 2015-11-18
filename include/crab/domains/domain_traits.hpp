@@ -60,6 +60,10 @@ namespace crab {
                         VariableName i, typename AbsDomain::linear_expression_t v,
                         ikos::z_number n_bytes, bool is_singleton); 
 
+       // temporary for profiling domains
+      template <typename AbsDomain>
+      void print_stats (AbsDomain inv); 
+
    } // end namespace domain_traits
 }// end namespace crab
 

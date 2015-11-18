@@ -182,6 +182,9 @@ namespace crab {
       //! Trigger the fixpoint computation 
       void Run (abs_dom_t inv)  {
         this->run (inv); 
+        
+        // temporary for profiling domains
+        domain_traits::print_stats (inv);
       }      
 
       //! Return the invariants that hold at the entry of b
