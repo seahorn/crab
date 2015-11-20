@@ -617,7 +617,6 @@ namespace crab {
         }
 
         linear_constraint_t tconst2const (ap_lincons0_t cons) {
-
           assert (cons.scalar == NULL); // Not modulo form
           ap_linexpr0_t* linexp = cons.linexpr0;
           assert (ap_linexpr0_is_linear (linexp));
@@ -626,6 +625,9 @@ namespace crab {
           for (unsigned i=0; i < get_dims (); ++i) {
             ap_coeff_t* coeff = ap_linexpr0_coeffref (linexp, i);
             if (ap_coeff_zero (coeff)) continue;
+            
+            if (!has_var_name (i)) continue; // unused dimension
+
             e = e + term2expr ( coeff, i);
           }
 
@@ -653,7 +655,7 @@ namespace crab {
               res = T ();
               break;
             case AP_CONS_DISEQ:
-              // e != k 
+              // e != k
               res =  linear_constraint_t (e, linear_constraint_t::kind_t::DISEQUATION);
               break;
           }
