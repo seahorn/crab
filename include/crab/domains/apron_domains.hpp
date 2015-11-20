@@ -8,6 +8,8 @@
 #include <crab/common/types.hpp>
 #include <crab/domains/numerical_domains_api.hpp>
 
+#include "boost/range/algorithm/set_algorithm.hpp"
+
 using namespace boost;
 using namespace ikos;
 
@@ -192,30 +194,41 @@ namespace crab {
 
         size_t get_dims () const { return get_dims (m_apstate); }
 
-        // If v is in m_var_map then it maps v to a dimension,
-        // otherwise null.
-        boost::optional<ap_dim_t> get_var_dim (VariableName v) const {
-          auto it = m_var_map->left.find (v);
-          if (it != m_var_map->left.end ())
+        // If v is in the map then it maps v to a dimension, otherwise null
+        boost::optional<ap_dim_t> get_var_dim (const var_bimap_t& m, VariableName v) const {
+          auto it = m.left.find (v);
+          if (it != m.left.end ())
             return it->second;
           else
             return boost::optional<ap_dim_t> ();
         }
 
-        // If v is in m_var_map then it maps v to a dimension,
-        // otherwise it inserts v in m_var_map and returns a fresh
-        // dimension.
-        ap_dim_t get_var_dim_alloc (VariableName v) const {
-          if (auto dim = get_var_dim (v))
-            return *dim;
+        boost::optional<ap_dim_t> get_var_dim (VariableName v) const {
+          return get_var_dim (*m_var_map, v);
+        }
 
-          unsigned dim = m_var_map->size ();
-          if (dim >= get_dims ())
-            CRAB_ERROR ("Apron needs more dimensions: this should not happen!\n");
-          m_var_map->insert (binding_t (v, dim));
+
+        ap_dim_t map_insert (var_bimap_t& m, VariableName v){
+          unsigned dim = m.size ();
+          // if (dim >= get_dims ())
+          //   CRAB_ERROR ("Apron needs more dimensions!\n");
+          m.insert (binding_t (v, dim));
           return dim;
         }
 
+        // If v is in m then it maps v to a dimension, otherwise it
+        // inserts v in m and returns a fresh dimension.
+        ap_dim_t get_var_dim_insert (var_bimap_t& m, VariableName v)  {
+          if (auto dim = get_var_dim (m, v))
+            return *dim;
+          else
+            return map_insert (m, v);
+        }
+
+        ap_dim_t get_var_dim_insert (VariableName v) {
+          return get_var_dim_insert (*m_var_map, v);
+        }
+        
         bool has_var_name (const var_bimap_t& m, ap_dim_t i) const {
           return m.right.find (i) != m.right.end ();
         }
@@ -290,6 +303,7 @@ namespace crab {
           return false;
         }
 
+        // unused 
         bool is_unconstrained_var (const ap_state_ptr s, VariableName v) const {
           if (auto dim = get_var_dim (v))
             return ap_abstract0_is_dimension_unconstrained (get_man (), &*s, *dim);
@@ -297,9 +311,117 @@ namespace crab {
             return false;
         }
 
+        bool check_perm (ap_dimperm_t* perm, size_t size){
+#if 0
+          // it does not check injectivity
+          if (perm->size != size) return false;
+          for (unsigned i=0; i<perm->size; i++){
+            if (perm->dim[i]>=size){
+              return false;
+            }
+          }
+#endif 
+          return true;
+
+        }
+
+        // var_map_ptr merge_var_map (var_bimap_t m_x, ap_state_ptr& s_x,
+        //                            var_bimap_t m_y, ap_state_ptr& s_y) {
+
+        //   // -- ensure both states have the same number of dimensions,
+        //   // -- otherwise it will crash
+        //   size_t max_dim = std::max (get_dims (s_x), get_dims (s_y));
+        //   add_dimensions (s_x, max_dim - get_dims(s_x));
+        //   add_dimensions (s_y, max_dim - get_dims(s_y));
+
+        //   // Add variables until occur in both maps
+        //   for (auto const& px: m_x.left)
+        //     get_var_dim_insert (m_y, px.first);
+        //   for (auto const& py: m_y.left) 
+        //     get_var_dim_insert (m_x, py.first);
+          
+        //   if (get_dims (s_x) != get_dims (s_y))
+        //     CRAB_ERROR ("Merging two apron states with different dimensions",
+        //                 get_dims (s_x), " != ", get_dims (s_y));
+
+        //   size_t dims = get_dims (s_x);
+          
+        //   // -- initialize the permutations maps
+        //   ap_dimperm_t* perm_x = ap_dimperm_alloc (dims);
+        //   ap_dimperm_t* perm_y = ap_dimperm_alloc (dims);
+          
+
+        //   for (unsigned i=0; i < dims; i++){
+        //     // Use AP_DIM_MAX as a dont-care symbol
+        //     perm_x->dim [i] = AP_DIM_MAX; 
+        //     perm_y->dim [i] = AP_DIM_MAX; 
+        //   }
+          
+        //   // -- create a common map
+        //   var_map_ptr res = var_map_ptr (new var_bimap_t ());
+        //   for (auto const& px: m_x.left) {
+        //     ap_dim_t i = get_var_dim_insert (*res, px.first);
+        //     perm_x->dim [px.second] = i;
+        //   }
+        //   for (auto const& py: m_y.left) {
+        //     ap_dim_t i = get_var_dim_insert (*res, py.first);
+        //     perm_y->dim [py.second] = i;
+        //   }
+
+        //   unsigned unwanted_dim_x = res->size ();
+        //   unsigned unwanted_dim_y = res->size ();
+        //   for (unsigned i=0; i < dims; i++) {
+        //     if (perm_x->dim [i] == AP_DIM_MAX)
+        //       perm_x->dim [i] = unwanted_dim_x++;
+        //     if (perm_y->dim [i] == AP_DIM_MAX)
+        //       perm_y->dim [i] = unwanted_dim_y++;
+        //   }
+
+        //   if (!check_perm(perm_x, dims))
+        //     CRAB_ERROR ("Permutation x is not well formed!");
+
+        //   if (!check_perm(perm_y, dims))
+        //     CRAB_ERROR ("Permutation y is not well formed!");
+
+        //   // // s_x and s_y can have disjoint set of variables
+        //   // if (res->left.size () >= dims) {
+        //   //   enlarge (res->left.size (), s_x);
+        //   //   enlarge (res->left.size (), s_y);
+        //   // }
+
+        //   #if 0        
+        //   cout << "Permutations X: \n";
+        //   ap_dimperm_fprint(stdout, perm_x);          
+        //   cout << "Permutations Y: \n";
+        //   ap_dimperm_fprint(stdout, perm_y);          
+        //   #endif 
+
+        //   // apply the permutations
+        //   s_x = apPtr (get_man (), 
+        //                ap_abstract0_permute_dimensions(get_man (), false, &*s_x, perm_x));
+        //   s_y = apPtr (get_man (), 
+        //                ap_abstract0_permute_dimensions(get_man (), false, &*s_y, perm_y));
+
+        //   ap_dimperm_free (perm_x);
+        //   ap_dimperm_free (perm_y);
+
+        //   // remove unused dimensions
+
+        //   vector<ap_dim_t> rem_dims;
+        //   for (unsigned i=0; i< dims; i++) {
+        //     if (!has_var_name (*res, i))
+        //       rem_dims.push_back (i);
+        //   }            
+
+        //   remove_dimensions (s_x, rem_dims);
+        //   remove_dimensions (s_y, rem_dims);
+
+        //   return res;
+        // }
+
         var_map_ptr merge_var_map (const var_bimap_t& m_x, ap_state_ptr& s_x,
                                    const var_bimap_t& m_y, ap_state_ptr& s_y) {
-
+          
           // -- ensure both states have the same number of dimensions,
           // -- otherwise it will crash
           size_t max_dim = std::max (get_dims (s_x), get_dims (s_y));
@@ -311,11 +433,9 @@ namespace crab {
           // -- collect all vars from the two maps
           std::set<VariableName> vars;
           for (auto const& px: m_x.left) {  
-            // if (!is_unconstrained_var (s_x, px.first))
             vars.insert (px.first);
           }
           for (auto const& py: m_y.left) {
-            // if (!is_unconstrained_var (s_y, py.first))
             vars.insert (py.first);
           }
             
@@ -335,25 +455,62 @@ namespace crab {
           // build the permutations maps
           ap_dimperm_t* perm_x = ap_dimperm_alloc (get_dims (s_x));
           ap_dimperm_t* perm_y = ap_dimperm_alloc (get_dims (s_x));
-          ap_dimperm_set_id (perm_x); // identity permutation
-          ap_dimperm_set_id (perm_y); // identity permutation
+          char * xmap1 = (char *)calloc(get_dims (s_x),sizeof(char));
+          char * xmap2 = (char *)calloc(get_dims (s_x),sizeof(char));
           for (auto const &px: m_x.left) {
-            //if (!is_unconstrained_var (s_x, px.first))
-            perm_x->dim [px.second] = res->left.at (px.first); 
+            ap_dim_t ind = res->left.at (px.first);
+            perm_x->dim [px.second] = ind;
+            // This sets 1 if the index that has been assigned
+            xmap1[px.second] = 1;
+            // This sets 1 if the value has been assigned
+            xmap2[ind] = 1;
+            //perm_x->dim [ind] = tmp; 
           }
+          ap_dim_t i, counter = 0;
+          for(i=0; i < get_dims (s_x); i++){
+            // If the index has beena assigned, skip
+            if(xmap1[i]){
+              continue;
+            }
+            // Find the next available element that has not been assigned
+            while(xmap2[counter]){
+			counter++;
+            }
+            perm_x->dim[i] = counter;
+            counter++;
+          }
+          free(xmap1);
+          free(xmap2);
+          char * ymap1 = (char *)calloc(get_dims (s_x),sizeof(char));
+          char * ymap2 = (char *)calloc(get_dims (s_x),sizeof(char));
           for (auto const &py: m_y.left) {
             //if (!is_unconstrained_var (s_y, py.first))
-            perm_y->dim [py.second] = res->left.at (py.first);
+            ap_dim_t ind = res->left.at (py.first);
+            perm_y->dim [py.second] = ind;
+            //perm_y->dim [ind] = tmp;
+            ymap1[py.second] = 1;
+            ymap2[ind] = 1; 
           }
+          counter = 0;
+          for(i=0; i < get_dims (s_x); i++){
+            if(ymap1[i]){
+              continue;
+            }
+            while(ymap2[counter]){
+              counter++;
+            }
+            perm_y->dim[i] = counter;
+            counter++;
+          }
+          free(ymap1);
+          free(ymap2);
 
-          //cout << "Before permutations: \n";
-          //dump (m_x, s_x);
-          //dump (m_y, s_y);
-
-          // cout << "Permutations \n";
-          // ap_dimperm_fprint(stdout, perm_x);          
-          // cout << "Permutations \n";
-          // ap_dimperm_fprint(stdout, perm_y);          
+          #if 0          
+          cout << "Permutations \n";
+          ap_dimperm_fprint(stdout, perm_x);          
+          cout << "Permutations \n";
+          ap_dimperm_fprint(stdout, perm_y);          
+          #endif 
 
           // apply the permutations
           s_x = apPtr (get_man (), 
@@ -361,12 +518,18 @@ namespace crab {
           s_y = apPtr (get_man (), 
                        ap_abstract0_permute_dimensions(get_man (), false, &*s_y, perm_y));
 
-          // cout << "After permutations: \n";
-          // dump (*res, s_x);
-          // dump (*res, s_y);
-
           ap_dimperm_free (perm_x);
           ap_dimperm_free (perm_y);
+
+          // remove unused dimensions
+          vector<ap_dim_t> rem_dims;
+          for (unsigned i=0; i< get_dims (s_x); i++) {
+            if (!has_var_name (*res, i))
+              rem_dims.push_back (i);
+          }            
+
+          remove_dimensions (s_x, rem_dims);
+          remove_dimensions (s_y, rem_dims);
 
           return res;
         }
@@ -390,8 +553,8 @@ namespace crab {
 
         // --- from crab to apron
 
-        inline ap_texpr0_t* var2texpr (VariableName v) const { 
-          return ap_texpr0_dim (get_var_dim_alloc (v));
+        inline ap_texpr0_t* var2texpr (VariableName v) { 
+          return ap_texpr0_dim (get_var_dim_insert (v));
         }
 
         inline ap_texpr0_t* num2texpr (Number i) const {  
@@ -405,7 +568,7 @@ namespace crab {
           return ap_texpr0_cst_interval_mpq (n1.get_mpq_t (), n2.get_mpq_t ());
         }
         
-        inline ap_texpr0_t* expr2texpr (linear_expression_t e) const {
+        inline ap_texpr0_t* expr2texpr (linear_expression_t e)  {
           Number cst = e.constant ();
           ap_texpr0_t* res = num2texpr (cst);
           for (auto p: e) {
@@ -415,7 +578,7 @@ namespace crab {
           return res;
         }
 
-        inline ap_tcons0_t const2tconst (linear_constraint_t cst) const {
+        inline ap_tcons0_t const2tconst (linear_constraint_t cst)  {
           assert (!cst.is_tautology ());
           assert (!cst.is_contradiction ());
 
@@ -530,12 +693,12 @@ namespace crab {
 
        private:
         void dump_vars () {
-#if 0
-          std::cout << "vars={";
+          #if 0
+          cout << "vars={";
           for (auto const& p: m_var_map->left)
-            std::cout << p.first <<";";
-          std::cout << "}\n";
-#endif 
+            cout << p.first <<";";
+          cout << "}\n";
+          #endif 
         }
 
         apron_domain (ap_state_ptr apState, var_map_ptr varMap): 
@@ -597,90 +760,96 @@ namespace crab {
 
         bool operator<=(apron_domain_t o) { 
           // cover all trivial cases to avoid permutating dimensions
-          // if (is_bottom()) 
-          //   return true;
-          // else if(o.is_bottom())
-          //   return false;
-          // else if (o.is_top ())
-          //   return true;
-          // else if (is_top () && !o.is_top ())
-          //   return false;
-          // else if (is_top () && o.is_top ())
-          //   return true;
-          // else { 
-          // Copy this->m_apstate because merge_var_map will modify it
-          ap_state_ptr x = apPtr (get_man (), ap_abstract0_copy (get_man (), &*m_apstate));
-          merge_var_map (*m_var_map, x, *(o.m_var_map), o.m_apstate);
-          return ap_abstract0_is_leq (get_man(), &*x, &*o.m_apstate);
-          //}
+          if (is_bottom()) 
+            return true;
+          else if(o.is_bottom())
+            return false;
+          else if (o.is_top ())
+            return true;
+          else if (is_top () && !o.is_top ())
+            return false;
+          else if (is_top () && o.is_top ())
+            return true;
+          else { 
+            // XXX JN: copy this->m_apstate because merge_var_map will modify it
+            ap_state_ptr x = apPtr (get_man (), ap_abstract0_copy (get_man (), &*m_apstate));
+            merge_var_map (*m_var_map, x, *(o.m_var_map), o.m_apstate);
+            return ap_abstract0_is_leq (get_man(), &*x, &*o.m_apstate);
+          }
         }
 
         void operator|=(apron_domain_t o) {
-          m_var_map = merge_var_map (*m_var_map, m_apstate, *(o.m_var_map), o.m_apstate);
-          m_apstate = apPtr (get_man(), ap_abstract0_join (get_man(), false, 
-                                                           &*m_apstate, &*o.m_apstate));
+          if (is_bottom() || o.is_top ())
+            *this = o;
+          else if (is_top () || o.is_bottom())
+            return ;
+          else {
+              m_var_map = merge_var_map (*m_var_map, m_apstate, *(o.m_var_map), o.m_apstate);
+              m_apstate = apPtr (get_man(), ap_abstract0_join (get_man(), false, 
+                                                               &*m_apstate, &*o.m_apstate));
+          }
         }
         
         apron_domain_t operator|(apron_domain_t o) {
           // cover all trivial cases to avoid permutating dimensions
-          // if (is_bottom() || o.is_top ())
-          //   return o;
-          // else if (is_top () || o.is_bottom())
-          //   return *this;
-          // else {
+          if (is_bottom() || o.is_top ())
+            return o;
+          else if (is_top () || o.is_bottom())
+            return *this;
+          else {
 
-          // XXX JN: Copy this->m_apstate because merge_var_map will
-          // modify it and the join is a function so this should not
-          // be modified.
-
-          ap_state_ptr x = apPtr (get_man (), ap_abstract0_copy (get_man (), &*m_apstate));
-          var_map_ptr  m = merge_var_map (*m_var_map, x, *(o.m_var_map), o.m_apstate);
-          return apron_domain_t (apPtr (get_man(), 
-                                        ap_abstract0_join (get_man(), false, 
-                                                           &*x, &*o.m_apstate)), m);
-          //}
+            // XXX JN: Copy this->m_apstate because merge_var_map will
+            // modify it and the join is a function so this should not
+            // be modified.
+            
+            ap_state_ptr x = apPtr (get_man (), ap_abstract0_copy (get_man (), &*m_apstate));
+            var_map_ptr  m = merge_var_map (*m_var_map, x, *(o.m_var_map), o.m_apstate);
+            return apron_domain_t (apPtr (get_man(), 
+                                          ap_abstract0_join (get_man(), false, 
+                                                             &*x, &*o.m_apstate)), m);
+          }
         }        
         
         apron_domain_t operator&(apron_domain_t o) {
           // cover all trivial cases to avoid permutating dimensions
-          // if (is_bottom() || o.is_bottom())
-          //   return bottom();
-          // else if (is_top())
-          //   return o;
-          // else if (o.is_top())
-          //   return *this;
-          // else{
+          if (is_bottom() || o.is_bottom())
+            return bottom();
+          else if (is_top())
+            return o;
+          else if (o.is_top())
+            return *this;
+          else{
 
-          // XXX JN: Copy this->m_apstate because merge_var_map will
-          // modify it and the meet is a function so this should not
-          // be modified.
-
-          ap_state_ptr x = apPtr (get_man (), ap_abstract0_copy (get_man (), &*m_apstate));
-          var_map_ptr  m = merge_var_map (*m_var_map, x, *(o.m_var_map), o.m_apstate);
-          return apron_domain_t (apPtr (get_man(), 
-                                        ap_abstract0_meet (get_man(), false, 
-                                                           &*x, &*o.m_apstate)), m);
-          //}
+            // XXX JN: Copy this->m_apstate because merge_var_map will
+            // modify it and the meet is a function so this should not
+            // be modified.
+            
+            ap_state_ptr x = apPtr (get_man (), ap_abstract0_copy (get_man (), &*m_apstate));
+            var_map_ptr  m = merge_var_map (*m_var_map, x, *(o.m_var_map), o.m_apstate);
+            return apron_domain_t (apPtr (get_man(), 
+                                          ap_abstract0_meet (get_man(), false, 
+                                                             &*x, &*o.m_apstate)), m);
+          }
         }        
         
         apron_domain_t operator||(apron_domain_t o) {
           // cover all trivial cases to avoid permutating dimensions
-          // if (is_bottom())
-          //   return o;
-          // else if (o.is_bottom())
-          //   return *this;
-          // else {
+          if (is_bottom())
+            return o;
+          else if (o.is_bottom())
+            return *this;
+          else {
 
-          // XXX JN: Copy this->m_apstate because merge_var_map will
-          // modify it and the widening is a function so this should not
-          // be modified.
-
-          ap_state_ptr x = apPtr (get_man (), ap_abstract0_copy (get_man (), &*m_apstate));
-          var_map_ptr  m = merge_var_map (*m_var_map, x, *(o.m_var_map), o.m_apstate);
-          return apron_domain_t (apPtr (get_man(), 
-                                        ap_abstract0_widening (get_man(), 
-                                                               &*x, &*o.m_apstate)), m);
-          //}
+            // XXX JN: Copy this->m_apstate because merge_var_map will
+            // modify it and the widening is a function so this should not
+            // be modified.
+            
+            ap_state_ptr x = apPtr (get_man (), ap_abstract0_copy (get_man (), &*m_apstate));
+            var_map_ptr  m = merge_var_map (*m_var_map, x, *(o.m_var_map), o.m_apstate);
+            return apron_domain_t (apPtr (get_man(), 
+                                          ap_abstract0_widening (get_man(), 
+                                                                 &*x, &*o.m_apstate)), m);
+          }
         }        
         
         apron_domain_t operator&&(apron_domain_t o) {
@@ -862,7 +1031,7 @@ namespace crab {
           m_apstate = apPtr (get_man (), 
                              ap_abstract0_assign_texpr(get_man (), false, 
                                                        &*m_apstate, 
-                                                       get_var_dim_alloc (x),t, 
+                                                       get_var_dim_insert (x),t, 
                                                        NULL));
 
           ap_texpr0_free (t);
@@ -889,7 +1058,7 @@ namespace crab {
           assert (res);
           m_apstate = apPtr (get_man (), ap_abstract0_assign_texpr(get_man (), false, 
                                                                    &*m_apstate, 
-                                                                   get_var_dim_alloc (x), 
+                                                                   get_var_dim_insert (x), 
                                                                    res, 
                                                                    NULL));
 
@@ -918,7 +1087,7 @@ namespace crab {
           assert (res);
           m_apstate = apPtr (get_man (), ap_abstract0_assign_texpr(get_man (), false, 
                                                                    &*m_apstate, 
-                                                                   get_var_dim_alloc (x), 
+                                                                   get_var_dim_insert (x), 
                                                                    res, 
                                                                    NULL));
 
@@ -946,7 +1115,7 @@ namespace crab {
           assert (res);
           m_apstate = apPtr (get_man (), ap_abstract0_assign_texpr(get_man (), false, 
                                                                    &*m_apstate, 
-                                                                   get_var_dim_alloc (x), 
+                                                                   get_var_dim_insert (x), 
                                                                    res, 
                                                                    NULL));
 
@@ -1064,7 +1233,7 @@ namespace crab {
           // --- increases number of dimensions by one
           m_apstate = apPtr (get_man(),
                              ap_abstract0_expand(get_man (), false, &* m_apstate, 
-                                                 get_var_dim_alloc (x), 1));
+                                                 get_var_dim_insert (x), 1));
 
           // --- the additional dimension is put at the end of integer
           //     dimensions.
