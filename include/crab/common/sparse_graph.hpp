@@ -19,8 +19,8 @@ class SparseWtGraph : public writeable {
     SparseWtGraph(unsigned int _maxsz = 10, float _growth_rate = 1.4)
       : max_sz(_maxsz), sz(0), growth_rate(_growth_rate),
         edge_count(0),
-        fwd_adjs((unsigned int*) malloc(sizeof(unsigned int)*max_sz*(2*max_sz+1))),
-        rev_adjs((unsigned int*) malloc(sizeof(unsigned int)*max_sz*(2*max_sz+1))),
+        fwd_adjs((uint16_t*) malloc(sizeof(uint16_t)*max_sz*(2*max_sz+1))),
+        rev_adjs((uint16_t*) malloc(sizeof(uint16_t)*max_sz*(2*max_sz+1))),
         mtx((Wt*) malloc(sizeof(Wt)*max_sz*max_sz))
     {
       /*
@@ -37,8 +37,8 @@ class SparseWtGraph : public writeable {
     SparseWtGraph(const SparseWtGraph<Wo>& o)
       : max_sz(o.max_sz), sz(o.sz), growth_rate(o.growth_rate),
         edge_count(0),
-        fwd_adjs((unsigned int*) malloc(sizeof(unsigned int)*max_sz*(2*max_sz+1))),
-        rev_adjs((unsigned int*) malloc(sizeof(unsigned int)*max_sz*(2*max_sz+1))),
+        fwd_adjs((uint16_t*) malloc(sizeof(uint16_t)*max_sz*(2*max_sz+1))),
+        rev_adjs((uint16_t*) malloc(sizeof(uint16_t)*max_sz*(2*max_sz+1))),
         mtx((Wt*) malloc(sizeof(Wt)*max_sz*max_sz))
         , is_free(o.is_free), free_id(o.free_id)
     {
@@ -58,8 +58,8 @@ class SparseWtGraph : public writeable {
     SparseWtGraph(const SparseWtGraph<Wt>& o)
       : max_sz(o.max_sz), sz(o.sz), growth_rate(o.growth_rate),
         edge_count(0),
-        fwd_adjs((unsigned int*) malloc(sizeof(unsigned int)*max_sz*(2*max_sz+1))),
-        rev_adjs((unsigned int*) malloc(sizeof(unsigned int)*max_sz*(2*max_sz+1))),
+        fwd_adjs((uint16_t*) malloc(sizeof(uint16_t)*max_sz*(2*max_sz+1))),
+        rev_adjs((uint16_t*) malloc(sizeof(uint16_t)*max_sz*(2*max_sz+1))),
         mtx((Wt*) malloc(sizeof(Wt)*max_sz*max_sz))
         , is_free(o.is_free), free_id(o.free_id)
     {
@@ -377,21 +377,38 @@ class SparseWtGraph : public writeable {
     // as well as existing ones
     vert_range verts(void) const { return vert_range(sz, is_free); }
 
-    typedef vert_id* adj_iterator;
+    class adj_iterator {
+    public:
+      adj_iterator(void)
+        : ptr(nullptr)
+      { }
+      adj_iterator(uint16_t* _p)
+        : ptr(_p)
+      { }
+
+      vert_id operator*(void) const { return (vert_id) *ptr; } 
+      adj_iterator& operator++(void) { ptr++; return *this; }
+      bool operator!=(const adj_iterator& o) const { return ptr < o.ptr; }
+
+    protected: 
+      uint16_t* ptr;
+    };
+//    typedef vert_id* adj_iterator;
     typedef adj_iterator succ_iterator;
     typedef adj_iterator pred_iterator;
     class adj_list {
     public:
       typedef adj_iterator iterator;
+      //typedef adj_iterator adj_iterator;
 
-      adj_list(unsigned int* _ptr, unsigned int max_sz)
+      adj_list(uint16_t* _ptr, unsigned int max_sz)
         : ptr(_ptr), sparseptr(_ptr+1+max_sz)
       { }
-      vert_id* begin(void) const { return (vert_id*) (ptr+1); } 
-      vert_id* end(void) const { return (vert_id*) (ptr+1+size()); }
-      vert_id operator[](unsigned int idx) const { return ptr[1+idx]; }
-      unsigned int* sparse(void) const { return sparseptr; }
-      vert_id* dense(void) const { return (vert_id*) (ptr + 1); }
+      adj_iterator begin(void) const { return adj_iterator(ptr+1); } 
+      adj_iterator end(void) const { return adj_iterator(ptr+1+size()); }
+      vert_id operator[](unsigned int idx) const { return (vert_id) ptr[1+idx]; }
+      uint16_t* sparse(void) const { return sparseptr; }
+      uint16_t* dense(void) const { return (uint16_t*) (ptr + 1); }
       unsigned int size(void) const { return *ptr; }
 
       bool mem(unsigned int v) const {
@@ -417,8 +434,8 @@ class SparseWtGraph : public writeable {
       void clear() { *ptr = 0; }
 
     protected:
-      unsigned int* ptr;
-      unsigned int* sparseptr;
+      uint16_t* ptr;
+      uint16_t* sparseptr;
     };
 
     typedef adj_list succ_range;
@@ -450,7 +467,7 @@ class SparseWtGraph : public writeable {
     // Allocate new memory, and duplicate 
     // the content.
     // Add an element 
-    void _adj_add(unsigned int* adj, unsigned int max, unsigned int val)
+    void _adj_add(uint16_t* adj, unsigned int max, unsigned int val)
     {
       adj[1 + *adj] = val;
       adj[1 + max + val] = *adj;
@@ -467,9 +484,9 @@ class SparseWtGraph : public writeable {
       unsigned int new_adjsz = (2*new_max)+1;
 
       Wt* new_mtx = (Wt*) malloc(sizeof(Wt)*new_mtxsz);
-      unsigned int* new_fwd = (unsigned int*) malloc(sizeof(unsigned int)*new_max*new_adjsz);
+      uint16_t* new_fwd = (uint16_t*) malloc(sizeof(uint16_t)*new_max*new_adjsz);
       assert(new_fwd);
-      unsigned int* new_rev = (unsigned int*) malloc(sizeof(unsigned int)*new_max*new_adjsz);
+      uint16_t* new_rev = (uint16_t*) malloc(sizeof(uint16_t)*new_max*new_adjsz);
       assert(new_rev);
 
       for(vert_id v = 0; v < sz; v++)
@@ -478,7 +495,7 @@ class SparseWtGraph : public writeable {
           continue;
         assert(v < new_max);
 
-        unsigned int* new_fwd_ptr = new_fwd + v*new_adjsz; 
+        uint16_t* new_fwd_ptr = new_fwd + v*new_adjsz; 
         *new_fwd_ptr = 0;
         for(vert_id d : succs(v))
         {
@@ -489,7 +506,7 @@ class SparseWtGraph : public writeable {
           (&(mtx[max_sz*v + d]))->~Wt();
         }
 
-        unsigned int* new_rev_ptr = new_rev + v*new_adjsz;
+        uint16_t* new_rev_ptr = new_rev + v*new_adjsz;
         *new_rev_ptr = 0;
         for(vert_id s : preds(v))
         {
@@ -545,8 +562,8 @@ class SparseWtGraph : public writeable {
     // Each element of fwd/rev adjs:
     // [ sz/1 | dense/max_sz | inv/max_sz ]
     // Total size: sizeof(uint) * max_sz * (1 + 2*max_sz)
-    unsigned int* fwd_adjs;
-    unsigned int* rev_adjs;
+    uint16_t* fwd_adjs;
+    uint16_t* rev_adjs;
     Wt* mtx;
 
     std::vector<bool> is_free;
