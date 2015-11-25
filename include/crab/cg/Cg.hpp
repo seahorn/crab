@@ -107,7 +107,8 @@ namespace crab {
 
         /// --- begin internal representation of the call graph
         struct  vertex_t { CgNode func; };
-        typedef adjacency_list<vecS, vecS, bidirectionalS, 
+        typedef adjacency_list<setS, //disallow parallel edges
+                               vecS, bidirectionalS, 
                                property<vertex_color_t, 
                                         default_color_type, 
                                         vertex_t> > cg_t;     
@@ -149,16 +150,12 @@ namespace crab {
             size_t to = CfgHasher<CFG>::hash (cs);
             auto it_from = m_vertex_map->find (m_from);
             auto it_to = m_vertex_map->find (to);
-            if (it_from == m_vertex_map->end () || 
-                it_to == m_vertex_map->end ())
+            if (it_from == m_vertex_map->end () || it_to == m_vertex_map->end ())
               return;
             
-            add_edge (it_from->second, it_to->second, *m_cg);
-
-            CRAB_DEBUG("Added cg edge ", 
-                       it_from->second, 
-                       " --> ", 
-                       it_to->second);
+            auto res = add_edge (it_from->second, it_to->second, *m_cg);
+            if (res.second)
+              CRAB_DEBUG("Added cg edge ", it_from->second, " --> ", it_to->second); 
           }
           
           void visit(z_bin_op_t&){ }  

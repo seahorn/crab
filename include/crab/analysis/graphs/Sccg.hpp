@@ -7,7 +7,11 @@
 
 ///Uncomment for enabling debug information
 //#include <crab/common/dbg.hpp>
+//#define SCCG_DEBUG
 
+#ifdef SCCG_DEBUG
+#include <crab/cg/Cg.hpp>
+#endif 
 /* 
    Strongly connected component graph
  */
@@ -29,7 +33,8 @@ namespace crab {
 
         /// --- begin internal representation of the SccGraph
         struct  vertex_t { std::size_t m_comp; node_t m_repr;};
-        typedef adjacency_list<vecS, vecS, bidirectionalS, 
+        typedef adjacency_list<setS, //disallow parallel edges
+                               vecS, bidirectionalS, 
                                property<vertex_color_t, 
                                         default_color_type, 
                                         vertex_t> > scc_graph_t;     
@@ -109,6 +114,7 @@ namespace crab {
           }
         };
 
+        
         std::size_t get_comp_id (const node_t&n) const {
           auto it = m_comp_map.find (n);
           assert (it != m_comp_map.end ());
@@ -136,16 +142,43 @@ namespace crab {
           
           // find root 
           node_t root;
+          bool root_found = false;
           for (auto v: boost::make_iterator_range (vertices (m_g))) {
             if (in_degree (v, m_g) == 0) {
               root = v;
+              root_found = true;
               break;
             }
           }  
+
+          assert (root_found && "Not root found in graph");
+
           OrderVis vis;
           boost::detail::depth_first_visit_impl (m_g, root, vis, cm, 
                                                  boost::detail::nontruth2());
+
+          // Case: dead functions
+          //       we should remove dead functions but keep this code
+          //       to avoid crashes.
+          for (auto u: boost::make_iterator_range (vertices (m_g))) { 
+            if (get(cm, u) == default_color_type::white_color)
+              boost::detail::depth_first_visit_impl(m_g, u, vis, cm, boost::detail::nontruth2());
+          }
+
+          assert (vis.m_order_vs.size () == num_vertices (m_g));
+
           return vis.m_order_vs;
+        }
+
+        void check_comp_map () {
+          // --- Check that all vertices in the graph m_g are keys in
+          //     the component map
+          for (auto v: boost::make_iterator_range (vertices (m_g))) {
+             auto it = m_comp_map.find (v);
+             if (it == m_comp_map.end ())
+               return false;
+          } 
+          return true;
         }
 
        public:
@@ -161,6 +194,10 @@ namespace crab {
             m_sccg (new scc_graph_t ()), 
             m_comp_to_vertex_map (new comp_to_vertex_map_t ()),
             m_comp_members_map (new comp_members_map_t ()) {
+
+          #ifdef SCCG_DEBUG
+          cout << g << endl;
+          #endif 
 
           typedef boost::unordered_map< node_t, node_t > root_map_t;
           typedef boost::unordered_map< node_t, default_color_type > color_map_t;
@@ -185,11 +222,12 @@ namespace crab {
                                    .color_map(property_color_map_t(color_map))
                                    .discover_time_map(property_component_map_t(discover_time)));
 
-          // debugging          
-          // cout << "comp map: \n";
-          // for (auto p: m_comp_map) {
-          //   cout <<"\t" << p.first << " --> " << p.second << endl; 
-          // }
+          #ifdef SCCG_DEBUG
+          cout << "comp map: \n";
+          for (auto p: m_comp_map) {
+            cout <<"\t" << p.first << " --> " << p.second << endl; 
+          }
+          #endif 
 
           // build SCC Dag
 
@@ -210,22 +248,26 @@ namespace crab {
               if (m_comp_map [u] == m_comp_map [d])
                 continue;
 
-              add_edge ((*m_comp_to_vertex_map) [m_comp_map [u]], 
-                        (*m_comp_to_vertex_map) [m_comp_map [d]], 
-                        *m_sccg);
+              auto res = add_edge ((*m_comp_to_vertex_map) [m_comp_map [u]], 
+                                   (*m_comp_to_vertex_map) [m_comp_map [d]], 
+                                   *m_sccg);
 
-              CRAB_DEBUG("Added scc graph edge ", 
-                         m_comp_map [u], " --> ", m_comp_map [d]);
+              if (res.second)
+                CRAB_DEBUG("Added scc graph edge ", 
+                           m_comp_map [u], " --> ", m_comp_map [d]);
             }
           }
+
+          assert (check_comp_map ());
 
           // Build a map from scc id to their node members
           for (auto v: (m_same_scc_order ? sort<preorder_visitor> () : 
                                            sort<postorder_visitor> ())) {
             std::size_t id = m_comp_map [v];
             auto it  = m_comp_members_map->find (id);
-            if (it != m_comp_members_map->end ())
+            if (it != m_comp_members_map->end ()) {
               it->second.push_back (v);
+            }
             else {
               std::vector<node_t> comp_mems;
               comp_mems.push_back (v);
@@ -238,9 +280,13 @@ namespace crab {
               // think this contradicts to what the BOOST doc says but
               // I didn't have time to figure out the problem so we
               // choose our own representative.
-              (*m_sccg) [ (*m_comp_to_vertex_map) [id]].m_repr = v;
+              (*m_sccg) [(*m_comp_to_vertex_map) [id]].m_repr = v;
             }
           }
+          #ifdef SCCG_DEBUG
+          cout << "Built SCC graph \n";
+          write (std::cout);
+          #endif 
         }
         
         // return the members of the scc component that contains n
@@ -286,19 +332,27 @@ namespace crab {
         }
 
         void write(std::ostream& o) const {
-          o << "SCCG=\n";
-          for (auto f: boost::make_iterator_range (nodes ())){
-            if (num_succs (f) > 0) {
-              for (auto e: boost::make_iterator_range (succs (f)))  {
+          o << "SCCG=\nvertices={";
+          for (auto v: boost::make_iterator_range (nodes ()))
+             cout << v << ";";
+          o << "}\n";
+
+          o <<"edges=\n";
+          for (auto v: boost::make_iterator_range (nodes ())){
+            if (num_succs (v) > 0) {
+              for (auto e: boost::make_iterator_range (succs (v)))  {
                 o << e.Src () << "--> " << e.Dest () << endl;
               }
             }
           }
-          // debugging
+
+          #ifdef SCCG_DEBUG
           o << "Component map: \n";
           for (auto p: m_comp_map) {
             o <<"\t" << p.first << " --> SCC ID " << p.second << endl; 
           }
+          #endif 
+
         }
         
       };
