@@ -377,6 +377,23 @@ class SparseWtGraph : public writeable {
     // as well as existing ones
     vert_range verts(void) const { return vert_range(sz, is_free); }
 
+    class edge_ref {
+    public:
+      edge_ref(vert_id _v, Wt& _w)
+        : v(_v), w(_w)
+      { }
+      vert_id v;
+      Wt& w;
+    };
+
+    class const_edge_ref {
+      const_edge_ref(vert_id _v, const Wt& _w)
+        : v(_v), w(_w)
+      { }
+      vert_id v;
+      const Wt& w;
+    };
+
     class adj_iterator {
     public:
       adj_iterator(void)
@@ -393,13 +410,42 @@ class SparseWtGraph : public writeable {
     protected: 
       uint16_t* ptr;
     };
-//    typedef vert_id* adj_iterator;
+
+    class fwd_edge_iterator {
+    public:
+      fwd_edge_iterator(graph_t& _g, vert_id _s)
+        : g(_g), s(_s), it(g.succs(s))
+      { }
+
+      edge_ref operator*(void) const { return edge_ref((*it), g.edge_val(s, (*it))); }
+      fwd_edge_iterator& operator++(void) { it++; return *this; }
+      bool operator!=(const fwd_edge_iterator& o) { return it != o.it; }
+
+      graph_t& g;
+      vert_id s;
+      adj_iterator it;
+    };
+    
+    class rev_edge_iterator {
+    public:
+      rev_edge_iterator(graph_t& _g, vert_id _d)
+        : g(_g), d(_d), it(g.preds(d))
+      { }
+
+      edge_ref operator*(void) const { return edge_ref((*it), g.edge_val((*it), d)); }
+      fwd_edge_iterator& operator++(void) { it++; return *this; }
+      bool operator!=(const fwd_edge_iterator& o) { return it != o.it; }
+
+      graph_t& g;
+      vert_id d;
+      adj_iterator it;
+    };
+
     typedef adj_iterator succ_iterator;
     typedef adj_iterator pred_iterator;
     class adj_list {
     public:
       typedef adj_iterator iterator;
-      //typedef adj_iterator adj_iterator;
 
       adj_list(uint16_t* _ptr, unsigned int max_sz)
         : ptr(_ptr), sparseptr(_ptr+1+max_sz)

@@ -28,6 +28,8 @@
 #include <crab/domains/bitwise_operators_api.hpp>
 #include <crab/domains/division_operators_api.hpp>
 
+#include <unordered_set>
+
 #include <boost/optional.hpp>
 #include <boost/unordered_set.hpp>
 #include <boost/unordered_map.hpp>
@@ -309,7 +311,7 @@ namespace crab {
             vert_renaming[p.second] = (*it).second;
           }
 
-          assert(g.size() > 1);
+          assert(g.size() > 0);
           GrPerm g_perm(vert_renaming, g);
 
           for(vert_id ox : o.g.verts())
@@ -487,11 +489,15 @@ namespace crab {
           }
           // Apply the deferred relations, and re-close.
           edge_vector delta;
-          graph_t g_rx(GrOps::meet(gx, g_ix_ry));
+          bool is_closed;
+          graph_t g_rx(GrOps::meet(gx, g_ix_ry, is_closed));
           assert(check_potential(g_rx, pot_rx));
-          SubGraph<graph_t> g_rx_excl(g_rx, 0);
-          GrOps::close_after_meet(g_rx_excl, pot_rx, gx, g_ix_ry, delta);
-          GrOps::apply_delta(g_rx, delta);
+          if(!is_closed)
+          {
+            SubGraph<graph_t> g_rx_excl(g_rx, 0);
+            GrOps::close_after_meet(g_rx_excl, pot_rx, gx, g_ix_ry, delta);
+            GrOps::apply_delta(g_rx, delta);
+          }
 
           graph_t g_rx_iy;
           g_rx_iy.growTo(sz);
@@ -509,12 +515,15 @@ namespace crab {
           }
           delta.clear();
           // Similarly, should use a SubGraph view.
-          graph_t g_ry(GrOps::meet(gy, g_rx_iy));
+          graph_t g_ry(GrOps::meet(gy, g_rx_iy, is_closed));
           assert(check_potential(g_rx, pot_rx));
+          if(!is_closed)
+          {
 
-          SubGraph<graph_t> g_ry_excl(g_ry, 0);
-          GrOps::close_after_meet(g_ry_excl, pot_ry, gy, g_rx_iy, delta);
-          GrOps::apply_delta(g_ry, delta);
+            SubGraph<graph_t> g_ry_excl(g_ry, 0);
+            GrOps::close_after_meet(g_ry_excl, pot_ry, gy, g_rx_iy, delta);
+            GrOps::apply_delta(g_ry, delta);
+          }
            
           // We now have the relevant set of relations. Because g_rx and g_ry are closed,
           // the result is also closed.
@@ -573,6 +582,22 @@ namespace crab {
           }
 
           // Conjecture: join_g remains closed.
+          
+          // Now garbage collect any unused vertices
+          for(vert_id v : join_g.verts())
+          {
+            if(v == 0)
+              continue;
+            if(join_g.succs(v).size() == 0 && join_g.preds(v).size() == 0)
+            {
+              join_g.forget(v);
+              if(out_revmap[v])
+              {
+                out_vmap.erase(*(out_revmap[v]));
+                out_revmap[v] = boost::none;
+              }
+            }
+          }
           
 //          DBM_t res(join_range, out_vmap, out_revmap, join_g, join_pot);
           DBM_t res(std::move(out_vmap), std::move(out_revmap), std::move(join_g), std::move(pot_rx), vert_set_t());
@@ -702,7 +727,8 @@ namespace crab {
           GrPerm gy(perm_y, o.g);
 
           // Compute the syntactic meet of the permuted graphs.
-          graph_t meet_g(GrOps::meet(gx, gy));
+          bool is_closed;
+          graph_t meet_g(GrOps::meet(gx, gy, is_closed));
            
           // Compute updated potentials on the zero-enriched graph
           //vector<Wt> meet_pi(meet_g.size());
@@ -713,27 +739,29 @@ namespace crab {
             return bottom();
           }
 
-          edge_vector delta;
-          SubGraph<graph_t> meet_g_excl(meet_g, 0);
-          GrOps::close_after_meet(meet_g_excl, meet_pi, gx, gy, delta);
-          GrOps::apply_delta(meet_g, delta);
+          if(!is_closed)
+          {
+            edge_vector delta;
+            SubGraph<graph_t> meet_g_excl(meet_g, 0);
+            GrOps::close_after_meet(meet_g_excl, meet_pi, gx, gy, delta);
+            GrOps::apply_delta(meet_g, delta);
 
           // Recover updated LBs and UBs.
 #ifdef CLOSE_BOUNDS_INLINE
-          Wt_min min_op;
-          for(auto e : delta)
-          {
-            if(meet_g.elem(0, e.first.first))
-              meet_g.update_edge(0, meet_g.edge_val(0, e.first.first) + e.second, e.first.second, min_op);
-            if(meet_g.elem(e.first.second, 0))
-              meet_g.update_edge(e.first.first, meet_g.edge_val(e.first.second, 0) + e.second, e.first.first, min_op);
-          }
+            Wt_min min_op;
+            for(auto e : delta)
+            {
+              if(meet_g.elem(0, e.first.first))
+                meet_g.update_edge(0, meet_g.edge_val(0, e.first.first) + e.second, e.first.second, min_op);
+              if(meet_g.elem(e.first.second, 0))
+                meet_g.update_edge(e.first.first, meet_g.edge_val(e.first.second, 0) + e.second, e.first.first, min_op);
+            }
 #else
-          delta.clear();
-          GrOps::close_after_assign(meet_g, meet_pi, 0, delta);
-          GrOps::apply_delta(meet_g, delta);
-
+            delta.clear();
+            GrOps::close_after_assign(meet_g, meet_pi, 0, delta);
+            GrOps::apply_delta(meet_g, delta);
 #endif
+          }
           assert(check_potential(meet_g, meet_pi)); 
           DBM_t res(std::move(meet_verts), std::move(meet_rev), std::move(meet_g), std::move(meet_pi), vert_set_t());
           CRAB_DEBUG ("Result meet:\n",res);
