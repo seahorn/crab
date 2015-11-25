@@ -40,7 +40,7 @@ class vec {
 
     // Don't allow copying (error prone):
     vec<T>&  operator = (vec<T>& other) { assert(0); return *this; }
-             vec        (vec<T>& other) { assert(0); }
+    /*         vec        (vec<T>& other) { assert(0); } */
 
     static inline int imin(int x, int y) {
         int mask = (x-y) >> (sizeof(int)*8-1);
@@ -61,6 +61,45 @@ public:
     vec(int size, const T& pad) : data(NULL) , sz(0)   , cap(0)    { growTo(size, pad); }
     vec(T* array, int size)     : data(array), sz(size), cap(size) { }      // (takes ownership of array -- will be deallocated with 'free()')
    ~vec(void)                                                      { clear(true); }
+
+    // GKG: Added stuff - copy & move ctors, plus range interface.
+    vec(const vec<T>& o)
+      : data(NULL), sz(0), cap(0)
+    {
+      capacity(o.cap);
+      for(int ii = 0; ii < o.sz; ii++)
+        new (data+ii) T(o[ii]);
+      sz = o.sz;
+    }
+
+    vec(vec<T>&& o)
+      : data(o.data), sz(o.sz), cap(o.cap)
+    {
+      o.data = nullptr;
+      o.sz = 0;
+      o.cap = 0; 
+    }
+    vec<T>& operator=(vec<T>&& o)
+    {
+      if(data)
+        free(data);
+      data = o.data; o.data = nullptr;
+      sz = o.sz; o.sz = 0;
+      cap = o.cap; o.cap = 0;
+      return *this;
+    }
+    vec<T>& operator=(const vec<T>& o)
+    {
+      clear();
+      capacity(o.cap);
+      for(int ii = 0; ii < o.sz; ii++)
+        new (data+ii) T(o[ii]);
+      sz = o.sz;
+      return *this;
+    }
+
+    T* begin(void) const { return data; }
+    T* end(void) const { return data+sz; }
 
     // Ownership of underlying array:
     T*       release  (void)           { T* ret = data; data = NULL; sz = 0; cap = 0; return ret; }

@@ -19,6 +19,7 @@
 #include <crab/common/sparse_graph.hpp>
 #include <crab/common/pt_graph.hpp>
 #include <crab/common/ht_graph.hpp>
+#include <crab/common/adapt_sgraph.hpp>
 #include <crab/common/graph_ops.hpp>
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/domains/intervals.hpp>
@@ -87,9 +88,10 @@ namespace crab {
 
       typedef SDBM_impl::NtoV<Number, Wt> ntov;
 
-      typedef SparseWtGraph<Wt> graph_t;
+      //typedef SparseWtGraph<Wt> graph_t;
       //typedef PtGraph<Wt> graph_t;
       //typedef HtGraph<Wt> graph_t;
+      typedef AdaptGraph<Wt> graph_t;
       typedef typename graph_t::vert_id vert_id;
       typedef boost::container::flat_map<variable_t, vert_id> vert_map_t;
       typedef typename vert_map_t::value_type vmap_elt_t;

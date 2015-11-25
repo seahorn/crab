@@ -2,6 +2,7 @@
 #include <crab/common/sparse_graph.hpp>
 #include <crab/common/pt_graph.hpp>
 #include <crab/common/graph_ops.hpp>
+#include <crab/common/adapt_sgraph.hpp>
 
 using namespace std;
 using namespace crab::analyzer;
@@ -13,17 +14,21 @@ typedef linear_constraint<z_number, varname_t> linear_constraint_t;
 typedef linear_expression<z_number, varname_t> linear_expression_t;
 
 //typedef SparseWtGraph<z_number> graph_t;
-typedef PtGraph<z_number> graph_t;
+typedef PtGraph<int64_t> graph_t;
+typedef graph_t::vert_id vert_id;
+
+typedef AdaptGraph<int64_t> agraph_t;
 
 typedef GraphOps<graph_t> GrOps;
 
-void check_graph(graph_t& g)
+template<class G>
+void check_graph(G& g)
 {
-  for(int v = 0; v < g.size(); v++)
+  for(vert_id v : g.verts())
   {
-    for(int d : g.succs(v))
+    for(vert_id d : g.succs(v))
       assert(g.elem(v, d));
-    for(int s : g.preds(v))
+    for(vert_id s : g.preds(v))
       assert(g.elem(s, v));
   }
 }
@@ -66,8 +71,10 @@ void test_sdbm(void)
 
 void test_sgraph(void)
 {
-  graph_t x;
-  x.growTo(10);
+  agraph_t x;
+  for(vert_id v = 0; v < 10; v++)
+    x.new_vertex();
+  //x.growTo(10);
 
   x.add_edge(0, -1, 2);
   x.add_edge(1, 5, 2);
@@ -75,7 +82,9 @@ void test_sgraph(void)
   x.add_edge(2, 1, 1);
 
   graph_t y;
-  y.growTo(10);
+  for(vert_id v = 0; v < 10; v++)
+    y.new_vertex();
+//  y.growTo(10);
 
   y.add_edge(0, 3, 2);
   y.add_edge(0, 3, 1);
@@ -84,7 +93,7 @@ void test_sgraph(void)
   check_graph(x);
   check_graph(y);
 
-  vector<z_number> x_pot(x.size());
+  vector<int64_t> x_pot(x.size());
   if(!GrOps::select_potentials(x, x_pot))
     assert(0 && "Should be feasible.");
   cout << "x model: "; write_vec(cout, x_pot); cout << endl;
@@ -99,14 +108,19 @@ void test_sgraph(void)
   y.add_edge(1, -1, 2);
 
   // Compute the syntactic meet
+  bool is_closed = false;
+//  graph_t gm = GrOps::meet(x, y, is_closed);
   graph_t gm = GrOps::meet(x, y);
-  vector<z_number> gm_pot(gm.size());
-  GrOps::edge_vector delta;
+  vector<int64_t> gm_pot(gm.size());
 
   // Close
   GrOps::select_potentials(gm, gm_pot);
-  GrOps::close_after_meet(gm, gm_pot, x, y, delta);
-  GrOps::apply_delta(gm, delta);
+  if(!is_closed)
+  {
+    GrOps::edge_vector delta;
+    GrOps::close_after_meet(gm, gm_pot, x, y, delta);
+    GrOps::apply_delta(gm, delta);
+  }
 
   cout << gm << endl;
 
