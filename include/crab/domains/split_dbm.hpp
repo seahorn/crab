@@ -90,6 +90,7 @@ namespace crab {
 
       //typedef SparseWtGraph<Wt> graph_t;
       typedef AdaptGraph<Wt> graph_t;
+
       typedef typename graph_t::vert_id vert_id;
       typedef boost::container::flat_map<variable_t, vert_id> vert_map_t;
       typedef typename vert_map_t::value_type vmap_elt_t;
@@ -301,35 +302,43 @@ namespace crab {
           vert_renaming[0] = 0;
           for(auto p : o.vert_map)
           {
+            if(o.g.succs(p.second).size() == 0 && o.g.preds(p.second).size() == 0)
+              continue;
+
             auto it = vert_map.find(p.first);
             // We can't have this <= o if we're missing some
             // vertex.
             if(it == vert_map.end())
               return false;
             vert_renaming[p.second] = (*it).second;
+            // vert_renaming[(*it).second] = p.second;
           }
 
           assert(g.size() > 0);
-          GrPerm g_perm(vert_renaming, g);
+//          GrPerm g_perm(vert_renaming, g);
 
           for(vert_id ox : o.g.verts())
           {
+            if(o.g.succs(ox).size() == 0)
+              continue;
+
             assert(vert_renaming[ox] != -1);
             vert_id x = vert_renaming[ox];
             for(auto edge : o.g.e_succs(ox))
             {
               vert_id oy = edge.vert;
-              assert(vert_renaming[ox] != -1);
+              assert(vert_renaming[oy] != -1);
               vert_id y = vert_renaming[oy];
               Wt ow = edge.val;
 
-              if(g_perm.lookup(x, y, &wx) && ((*wx) <= ow))
+              if(g.lookup(x, y, &wx) && ((*wx) <= ow))
                 continue;
 
-              if(!g_perm.lookup(x, 0, &wx) || !g_perm.lookup(0, y, &wy))
+              if(!g.lookup(x, 0, &wx) || !g.lookup(0, y, &wy))
                 return false;
               if(!((*wx) + (*wy) <= ow))
                 return false;
+              }
             }
           }
           return true;
@@ -661,8 +670,6 @@ namespace crab {
             widen_unstable.insert(v);
 
           DBM_t res(std::move(out_vmap), std::move(out_revmap), std::move(widen_g), std::move(widen_pot), std::move(widen_unstable));
-
-          // GKG: need to mark changes so we can restore closure
            
           CRAB_DEBUG ("Result widening:\n",res);
           return res;
