@@ -338,7 +338,6 @@ namespace crab {
                 return false;
               if(!((*wx) + (*wy) <= ow))
                 return false;
-              }
             }
           }
           return true;
