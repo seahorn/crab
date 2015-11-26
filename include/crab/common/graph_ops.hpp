@@ -68,6 +68,12 @@ namespace crab {
       return g.elem(perm[x], perm[y]);
     }
 
+    bool lookup(vert_id x, vert_id y, Wt** w) const {
+      if(perm[x] > g.size() || perm[y] > g.size())
+        return false;
+      return g.lookup(perm[x], perm[y], w);
+    }
+
     // Precondition: elem(x, y) is true.
     Wt edge_val(vert_id x, vert_id y) const {
 //      assert(perm[x] < g.size() && perm[y] < g.size());
@@ -119,14 +125,44 @@ namespace crab {
       ItG v;
     };
 
-    template <class RG>
+    template<class ItG>
+    class e_adj_iterator {
+    public:
+      typedef typename ItG::edge_ref edge_ref;
+
+      e_adj_iterator(vector<vert_id>& _inv, const ItG& _v)
+        : inv(_inv), v(_v)
+      { }
+
+      edge_ref operator*(void) const
+      {
+        return edge_ref(inv[(*v).vert], (*v).val);
+      }
+
+      e_adj_iterator& operator++(void) {
+        ++v;
+        return *this;
+      }
+
+      bool operator!=(const e_adj_iterator& other)
+      {
+        while(v != other.v && inv[(*v).vert] == (-1))
+          ++v;
+        return v != other.v;
+      }
+    protected:
+      vector<vert_id>& inv;
+      ItG v;
+    };
+
+    template <class RG, class It>
     class adj_list {
     public:
       typedef typename RG::iterator ItG;
-      typedef adj_list<RG> adj_list_t;
-      typedef adj_iterator<ItG> adj_iter_t;
+      typedef adj_list<RG, It> adj_list_t;
+//      typedef adj_iterator<ItG> adj_iter_t;
 
-      typedef adj_iter_t iterator;
+      typedef It iterator;
 
       adj_list(vector<vert_id>& _perm, vector<vert_id>& _inv, const RG& _adj)
         : perm(_perm), inv(_inv), adj(_adj)
@@ -160,8 +196,16 @@ namespace crab {
       vector<vert_id>& inv;
       optional<RG> adj;
     };
-    typedef adj_list<typename G::pred_range> pred_range;
-    typedef adj_list<typename G::succ_range> succ_range;
+
+    typedef adj_list<typename G::pred_range,
+              adj_iterator<typename G::pred_range::iterator> > pred_range;
+    typedef adj_list<typename G::succ_range,
+            adj_iterator< typename G::succ_range::iterator> > succ_range;
+
+    typedef adj_list<typename G::e_pred_range,
+            e_adj_iterator< typename G::e_pred_range::iterator> > e_pred_range;
+    typedef adj_list<typename G::e_succ_range,
+            e_adj_iterator<typename G::e_succ_range::iterator > > e_succ_range;
 
     succ_range succs(vert_id v)
     {
@@ -177,6 +221,22 @@ namespace crab {
       else
         return pred_range(perm, inv, g.preds(perm[v]));
     }
+
+    e_succ_range e_succs(vert_id v)
+    {
+      if(perm[v] == (-1))
+        return e_succ_range(perm, inv);
+      else
+        return e_succ_range(perm, inv, g.e_succs(perm[v]));
+    }
+    e_pred_range e_preds(vert_id v)
+    {
+      if(perm[v] == (-1))
+        return e_pred_range(perm, inv);
+      else
+        return e_pred_range(perm, inv, g.e_preds(perm[v]));
+    }
+
     G& g;
     vector<vert_id> perm;
     vector<vert_id> inv;
@@ -192,6 +252,9 @@ namespace crab {
     typedef typename G::pred_range g_pred_range;
     typedef typename G::succ_range g_succ_range;
 
+    typedef typename G::e_pred_range g_e_pred_range;
+    typedef typename G::e_succ_range g_e_succ_range;
+
     SubGraph(G& _g, vert_id _v_ex)
       : g(_g), v_ex(_v_ex)
     { }
@@ -199,6 +262,10 @@ namespace crab {
      
     bool elem(vert_id x, vert_id y) const {
       return (x != v_ex && y != v_ex && g.elem(x, y));
+    }
+
+    bool lookup(vert_id x, vert_id y, Wt** w) const {
+      return (x != v_ex && y != v_ex && g.lookup(x, y, w));
     }
 
     Wt edge_val(vert_id x, vert_id y) const {
@@ -294,11 +361,32 @@ namespace crab {
       vert_id v_ex;
     };
 
-    template<class R>
+    template<class It>
+    class e_adj_iterator {
+    public:
+      typedef typename It::edge_ref edge_ref;
+
+      e_adj_iterator(const It& _iG, vert_id _v_ex)
+        : iG(_iG), v_ex(_v_ex)
+      { }
+      edge_ref operator*(void) const { return *iG; }
+      e_adj_iterator& operator++(void) { ++iG; return *this; }
+      bool operator!=(const e_adj_iterator& o)
+      {
+        if(iG != o.iG && (*iG).vert == v_ex)
+          ++iG;
+        return iG != o.iG;
+      }
+
+      It iG;
+      vert_id v_ex;
+    };
+
+    template<class R, class It>
     class adj_list {
     public: 
       typedef typename R::iterator g_iter;
-      typedef adj_iterator<g_iter> iterator;
+      typedef It iterator;
 
       adj_list(const R& _rG, vert_id _v_ex)
         : rG(_rG), v_ex(_v_ex)
@@ -310,8 +398,15 @@ namespace crab {
       R rG;
       vert_id v_ex;
     };
-    typedef adj_list<g_pred_range> pred_range;
-    typedef adj_list<g_succ_range> succ_range;
+    typedef adj_list<g_pred_range,
+              adj_iterator<typename g_pred_range::iterator> > pred_range;
+    typedef adj_list<g_succ_range,
+              adj_iterator<typename g_succ_range::iterator> > succ_range;
+
+    typedef adj_list<g_e_pred_range,
+              e_adj_iterator<typename g_e_pred_range::iterator> > e_pred_range;
+    typedef adj_list<g_e_succ_range,
+              e_adj_iterator<typename g_e_succ_range::iterator> > e_succ_range;
 
     succ_range succs(vert_id v) {
 //      assert(v != v_ex);
@@ -320,6 +415,12 @@ namespace crab {
     pred_range preds(vert_id v) {
 //      assert(v != v_ex);
       return pred_range(g.preds(v), v_ex);
+    }
+    e_succ_range e_succs(vert_id v) {
+      return e_succ_range(g.e_succs(v), v_ex);
+    }
+    e_pred_range e_preds(vert_id v) {
+      return e_pred_range(g.e_preds(v), v_ex);
     }
 
     G& g;
@@ -345,6 +446,10 @@ namespace crab {
       return g.elem(y, x);
     }
 
+    bool lookup(vert_id x, vert_id y, Wt** w) const {
+      return g.lookup(y, x, w);
+    }
+
     // Precondition: elem(x, y) is true.
     Wt edge_val(vert_id x, vert_id y) const {
       return g.edge_val(y, x);
@@ -364,6 +469,9 @@ namespace crab {
     typedef typename G::succ_range pred_range;
     typedef typename G::pred_range succ_range;
 
+    typedef typename G::e_succ_range e_pred_range;
+    typedef typename G::e_pred_range e_succ_range;
+
     typename G::vert_range verts(void) const { return g.verts(); }
 
     succ_range succs(vert_id v)
@@ -374,6 +482,9 @@ namespace crab {
     {
       return g.succs(v);
     } 
+
+    e_succ_range e_succs(vert_id v) { return g.e_preds(v); }
+    e_pred_range e_preds(vert_id v) { return g.e_succs(v); }
     G& g;
   };
 
@@ -473,12 +584,14 @@ namespace crab {
       graph_t g;
       g.growTo(sz);
       
+      Wt* wr;
       for(vert_id s : l.verts())
       {
-        for(vert_id d : l.succs(s))
+        for(auto e : l.e_succs(s))
         {
-          if(r.elem(s, d))
-            g.add_edge(s, max(l.edge_val(s, d), r.edge_val(s, d)), d);
+          vert_id d = e.vert;
+          if(r.lookup(s, d, &wr))
+            g.add_edge(s, max(e.val, *wr), d);
         }
       }
       return g;
@@ -504,35 +617,19 @@ r_not_dom:
       graph_t g(graph_t::copy(l));
 //      bool l_dom = true;
       
+      Wt* wg;
       for(vert_id s : r.verts())
       {
-        for(vert_id d : r.succs(s))
-        {
-          Wt wr = r.edge_val(s, d);
-          if(!l.elem(s, d))
-          {
-            g.add_edge(s, wr, d);
-          } else {
-            Wt wl = l.edge_val(s, d);
-            if(wr < wl)
-              g.set_edge(s, wr, d);
-          }
-        }
-
-        /*
         for(auto e : r.e_succs(s))
         {
-          Wt* wl;
-          // If lookup is true, wl is a pointer to wt_g(s, e.v)
-          if(!g.lookup(s, e.v, &wl))
+          if(!g.lookup(s, e.vert, &wg))
           {
-            g.add_edge(s, e.w, e.v);
+            g.add_edge(s, e.val, e.vert);
           } else {
-            if(e.w < *wl)
-              (*wl) = e.w;
+            if(e.val < *wg)
+              (*wg) = e.val;
           }
         }
-        */
       }
       is_closed = false;
       return g;
@@ -545,12 +642,14 @@ r_not_dom:
       size_t sz = l.size();
       graph_t g;
       g.growTo(sz);
+      Wt* wl;
       for(vert_id s : r.verts())
       {
-        for(vert_id d : r.succs(s))
+        for(auto e : r.e_succs(s))
         {
-          if(l.elem(s, d) && r.edge_val(s, d) <= l.edge_val(s, d))
-            g.add_edge(s, l.edge_val(s, d), d);
+          vert_id d = e.vert;
+          if(l.lookup(s, d, &wl) && e.val <= *wl)
+            g.add_edge(s, *wl, d);
         }
 
         // Check if this vertex is stable
@@ -696,9 +795,10 @@ r_not_dom:
             
             Wt s_pot = potentials[s];
 
-            for(vert_id d : g.succs(s))
+            for(auto e : g.e_succs(s))
             {
-              Wt sd_pot = s_pot + g.edge_val(s, d);
+              vert_id d = e.vert;
+              Wt sd_pot = s_pot + e.val;
               if(sd_pot < potentials[d])
               {
                 potentials[d] = sd_pot;
@@ -723,9 +823,10 @@ r_not_dom:
         { 
           vert_id s = *(--qtail);
           Wt s_pot = potentials[s];
-          for(vert_id d : g.succs(s))
+          for(auto e : g.e_succs(s))
           {
-            if(s_pot + g.edge_val(s, d) < potentials[d])
+            vert_id d = e.vert;
+            if(s_pot + e.val < potentials[d])
             {
               // Cleanup vertex marks
               for(vert_id v : g.verts())
@@ -750,17 +851,19 @@ r_not_dom:
       delta.clear();
       
       vector< vector<vert_id> > colour_succs(2*sz);
+      Wt* w;
       // Partition edges into r-only/rb/b-only.
       for(vert_id s : g.verts())
       {
 //        unsigned int g_count = 0;
 //        unsigned int r_count = 0;
-        for(vert_id d : g.succs(s))
+        for(auto e : g.e_succs(s))
         {
           char mark = 0;
-          if(l.elem(s, d) && l.edge_val(s, d) == g.edge_val(s, d))
+          vert_id d = e.vert;
+          if(l.lookup(s, d, &w) && (*w) == e.val)
             mark |= E_LEFT;
-          if(r.elem(s, d) && r.edge_val(s, d) == g.edge_val(s, d))
+          if(r.lookup(s, d, &w) && (*w) == e.val)
             mark |= E_RIGHT;
           // Add them to the appropriate coloured successor list 
           // Could do it inline, but this'll do.
@@ -826,21 +929,23 @@ r_not_dom:
       WtComp comp(dists);
       WtHeap heap(comp);
 
-      for(vert_id dest : g.succs(src))
+      for(auto e : g.e_succs(src))
       {
-        dists[dest] = p[src] + g.edge_val(src, dest) - p[dest];
+        vert_id dest = e.vert;
+        dists[dest] = p[src] + e.val - p[dest];
         dist_ts[dest] = ts;
 
         vert_marks[dest] = edge_marks[sz*src + dest];
         heap.insert(dest);
       }
 
+      Wt* w;
       while(!heap.empty())
       {
         int es = heap.removeMin();
         Wt es_cost = dists[es] + p[es]; // If it's on the queue, distance is not infinite.
         Wt es_val = es_cost - p[src];
-        if(!g.elem(src, es) || g.edge_val(src, es) > es_val)
+        if(!g.lookup(src, es, &w) || (*w) > es_val)
           out.push_back( make_pair(es, es_val) );
 
         if(vert_marks[es] == (E_LEFT|E_RIGHT))
@@ -895,21 +1000,23 @@ r_not_dom:
       WtComp comp(dists);
       WtHeap heap(comp);
 
-      for(vert_id dest : g.succs(src))
+      for(auto e : g.e_succs(src))
       {
-        dists[dest] = p[src] + g.edge_val(src, dest) - p[dest];
+        vert_id dest = e.vert;
+        dists[dest] = p[src] + e.val - p[dest];
         dist_ts[dest] = ts;
 
         vert_marks[dest] = V_UNSTABLE;
         heap.insert(dest);
       }
 
+      Wt* w;
       while(!heap.empty())
       {
         int es = heap.removeMin();
         Wt es_cost = dists[es] + p[es]; // If it's on the queue, distance is not infinite.
         Wt es_val = es_cost - p[src];
-        if(!g.elem(src, es) || g.edge_val(src, es) > es_val)
+        if(!g.lookup(src, es, &w) || (*w) > es_val)
           out.push_back( make_pair(es, es_val) );
 
         if(vert_marks[es] == V_STABLE)
@@ -918,9 +1025,10 @@ r_not_dom:
         char es_mark = is_stable[es] ? V_STABLE : V_UNSTABLE;
 
         // Pick the appropriate set of successors
-        for(vert_id ed : g.succs(es))
+        for(auto e : g.e_succs(es))
         {
-          Wt v = es_cost + g.edge_val(es, ed) - p[ed];
+          vert_id ed = e.vert;
+          Wt v = es_cost + e.val - p[ed];
           if(dist_ts[ed] != ts || v < dists[ed])
           {
             dists[ed] = v;
@@ -995,11 +1103,12 @@ r_not_dom:
 
         dists_alt[es] = p[es] + dists[es];
 
-        for(vert_id ed : g.succs(es))
+        for(auto e : g.e_succs(es))
         {
+          vert_id ed = e.vert;
           if(dists_alt[ed] == p[ed])
           {
-            Wt gnext_ed = dists_alt[es] + g.edge_val(es, ed) - dists_alt[ed];
+            Wt gnext_ed = dists_alt[es] + e.val - dists_alt[ed];
             if(gnext_ed < dists[ed])
             {
               dists[ed] = gnext_ed;
@@ -1100,10 +1209,11 @@ r_not_dom:
       dists[v] = Wt(0);
       vert_id* adj_head = dual_queue;
       vert_id* adj_tail = adj_head;
-      for(vert_id d : g.succs(v))
+      for(auto e : g.e_succs(v))
       {
+        vert_id d = e.vert;
         vert_marks[d] = BF_QUEUED;
-        dists[d] = g.edge_val(v, d);
+        dists[d] = e.val;
 //        assert(p[v] + dists[d] - p[d] >= Wt(0));
         *adj_tail = d;
         adj_tail++;
@@ -1118,9 +1228,10 @@ r_not_dom:
         vert_id d = *adj_head;  
         
         Wt d_wt = dists[d];
-        for(vert_id e : g.succs(d))
+        for(auto edge : g.e_succs(d))
         {
-          Wt e_wt = d_wt + g.edge_val(d, e);
+          vert_id e = edge.vert;
+          Wt e_wt = d_wt + edge.val;
           if(!vert_marks[e])
           {
             dists[e] = e_wt;

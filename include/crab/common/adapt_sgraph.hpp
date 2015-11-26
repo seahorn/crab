@@ -86,6 +86,7 @@ namespace crab {
           for(key_t idx = 0; idx < sz; idx++)
             sparse[dense[idx].key] = idx;
         }
+        return *this;
       }
 
       AdaptSMap& operator=(AdaptSMap&& o)
@@ -101,6 +102,7 @@ namespace crab {
         sz = o.sz; o.sz = 0;
         dense_maxsz = o.dense_maxsz; o.dense_maxsz = 0;
         sparse_ub = o.sparse_ub; o.sparse_ub = 0;
+        return *this;
       }
 
       ~AdaptSMap(void)
@@ -389,9 +391,9 @@ namespace crab {
     };
     vert_range verts(void) const { return vert_range(is_free); }
 
-    class edge_ref {
+    class edge_ref_t {
     public:
-      edge_ref(vert_id _vert, Wt& _val)
+      edge_ref_t(vert_id _vert, Wt& _val)
         : vert(_vert), val(_val)
       { }
       vert_id vert; 
@@ -400,27 +402,32 @@ namespace crab {
 
     class edge_iter {
     public:     
+      typedef edge_ref_t edge_ref;
       edge_iter(const smap_t::elt_iter_t& _it, vec<Wt>& _ws)
-        : it(_it), ws(_ws)
+        : it(_it), ws(&_ws)
       { }
       edge_iter(const edge_iter& o)
         : it(o.it), ws(o.ws)
       { }
+      edge_iter(void)
+        : ws(nullptr)
+      { }
 
-      edge_ref operator*(void) const { return edge_ref((*it).key, ws[(*it).val]); }
+      edge_ref operator*(void) const { return edge_ref((*it).key, (*ws)[(*it).val]); }
       edge_iter operator++(void) { ++it; return *this; }  
       bool operator!=(const edge_iter& o) { return it != o.it; }
 
       smap_t::elt_iter_t it;
-      vec<Wt>& ws;
+      vec<Wt>* ws;
     };
 
     typedef typename smap_t::key_range_t adj_range_t;
     typedef typename adj_range_t::iterator adj_iterator_t;
 
     class edge_range_t {
-      typedef typename smap_t::elt_range_t elt_range_t;
     public:
+      typedef typename smap_t::elt_range_t elt_range_t;
+      typedef edge_iter iterator;
       edge_range_t(const edge_range_t& o)
         : r(o.r), ws(o.ws)
       { }
@@ -428,9 +435,9 @@ namespace crab {
         : r(_r), ws(_ws)
       { }
 
-      edge_iter begin(void) { return edge_iter(r.begin(), ws); }
-      edge_iter end(void) { return edge_iter(r.end(), ws); }
-      size_t size(void) { return r.size(); }
+      edge_iter begin(void) const { return edge_iter(r.begin(), ws); }
+      edge_iter end(void) const { return edge_iter(r.end(), ws); }
+      size_t size(void) const { return r.size(); }
 
       elt_range_t r;
       vec<Wt>& ws;
@@ -450,6 +457,9 @@ namespace crab {
 
     edge_range_t e_succs(vert_id v) { return edge_range_t(_succs[v].elts(), _ws); }
     edge_range_t e_preds(vert_id v) { return edge_range_t(_preds[v].elts(), _ws); }
+
+    typedef edge_range_t e_pred_range;
+    typedef edge_range_t e_succ_range;
 
     // Management
     bool is_empty(void) const { return edge_count == 0; }
