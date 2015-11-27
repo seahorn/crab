@@ -486,23 +486,55 @@ namespace crab {
 
     // Syntactic meet
     template<class G1, class G2>
-    static graph_t meet(G1& l, G2& r)
+    static graph_t meet(G1& l, G2& r, bool& is_closed)
     {
       assert(l.size() == r.size());
 
-      graph_t g(graph_t::copy(l)); 
+/*
+      for(vert_id s : l.verts())
+        for(vert_id d : l.succs(s))
+          if(!r.elem(s, d) || l.edge_val(s, d) < r.edge_val(s, d))
+            goto r_not_dom;
+      // r dominates
+      is_closed = true;
+      return graph_t::copy(r);
+
+r_not_dom:
+*/
+      graph_t g(graph_t::copy(l));
+//      bool l_dom = true;
       
       for(vert_id s : r.verts())
       {
         for(vert_id d : r.succs(s))
         {
+          Wt wr = r.edge_val(s, d);
           if(!l.elem(s, d))
-            g.add_edge(s, r.edge_val(s, d), d);
-          else
-            g.set_edge(s, min(g.edge_val(s, d), r.edge_val(s, d)), d);
-//            g.edge_val(s, d) = min(g.edge_val(s, d), r.edge_val(s, d));
+          {
+            g.add_edge(s, wr, d);
+          } else {
+            Wt wl = l.edge_val(s, d);
+            if(wr < wl)
+              g.set_edge(s, wr, d);
+          }
         }
+
+        /*
+        for(auto e : r.e_succs(s))
+        {
+          Wt* wl;
+          // If lookup is true, wl is a pointer to wt_g(s, e.v)
+          if(!g.lookup(s, e.v, &wl))
+          {
+            g.add_edge(s, e.w, e.v);
+          } else {
+            if(e.w < *wl)
+              (*wl) = e.w;
+          }
+        }
+        */
       }
+      is_closed = false;
       return g;
     }
 
