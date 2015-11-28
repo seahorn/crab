@@ -27,13 +27,13 @@ cfg_t prog1 (VariableFactory &vfac)  {
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   // adding statements
-  entry.assign (x1, 1);
+  //  entry.assign (x1, 1);
   entry.assign (k, 0);
   entry.assign (i, 0);
   bb1_t.assume (i <= 99);
   bb1_f.assume (i >= 100);
   bb2.add(i, i, 1);
-  bb2.add (x2, x1, 1);
+  //bb2.add (x2, x1, 1);
   bb2.add(k, k, 1);
   return cfg;
 }
@@ -210,47 +210,21 @@ void run (cfg_t cfg, VariableFactory& vfac, unsigned widening, unsigned narrowin
     typename NumFwdAnalyzer <cfg_t,AbsDomain,VariableFactory>::type 
         a (cfg, vfac, &live, widening, narrowing);
     AbsDomain inv = AbsDomain::top ();
+    cout << "Invariants using " << inv.getDomainName () << "\n";
     a.Run (inv);
     // Print invariants
-    cout << "Invariants using " << inv.getDomainName () << "\n";
     for (auto &b : cfg) {
       auto inv = a [b.label ()];
       std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
     }
+    cout << "=======================================\n";
     #endif 
 }
 
 /* Example of how to infer invariants from the above CFG */
 int main (int argc, char** argv ) {
 
-  // VariableFactory vfac;
-
-  // ap_manager_t* man = box_manager_alloc ();;
-  // // x:0 y:1 z:2
-  // ap_state_ptr ap1 = apPtr (man, ap_abstract0_top (man, 3, 0));
-  // ap1 = apPtr (man,
-  //               ap_abstract0_assign_texpr(man, false, 
-  //                                         &*ap1, 
-  //                                         0, ap_texpr0_cst_scalar_int ((int) 5), 
-  //                                         NULL));
-  // ap1 = apPtr (man,
-  //               ap_abstract0_assign_texpr(man, false, 
-  //                                         &*ap1, 
-  //                                         1, ap_texpr0_cst_scalar_int ((int) 2), 
-  //                                         NULL));
-  
-  // ap_abstract0_fprint (stdout, man, &*ap1, NULL);
-  
-  // ap_dimperm_t*  p = ap_dimperm_alloc (3);
-  
-  // p->dim[0] = 2;
-  // p->dim[1] = 1;
-  // p->dim[2] = 0;
-  
-  // ap_dimperm_fprint(stdout, p);
-  // ap_state_ptr ap2 = apPtr (man, ap_abstract0_permute_dimensions(man, false, &*ap1, p));
-  // ap_abstract0_fprint (stdout, man, &*ap2, NULL);
-  // ap_dimperm_free (p);
+#if 1
 
   {
     VariableFactory vfac;
@@ -306,40 +280,109 @@ int main (int argc, char** argv ) {
     run<opt_oct_apron_domain_t> ( cfg, vfac, 1, 2);
     run<pk_apron_domain_t> ( cfg, vfac, 1, 2);
   }
+#endif 
 
   /////
   // testing operations
   /////
+
+#if 0
+  {
+    VariableFactory vfac;
+    
+    ap_manager_t* man = box_manager_alloc ();;
+    // x:0 y:1 z:2
+    ap_state_ptr ap1 = apPtr (man, ap_abstract0_top (man, 3, 0));
+    ap1 = apPtr (man,
+                 ap_abstract0_assign_texpr(man, false, 
+                                           &*ap1, 
+                                           0, ap_texpr0_cst_scalar_int ((int) 5), 
+                                           NULL));
+    ap1 = apPtr (man,
+                 ap_abstract0_assign_texpr(man, false, 
+                                           &*ap1, 
+                                           1, ap_texpr0_cst_scalar_int ((int) 2), 
+                                           NULL));
+    
+    ap_abstract0_fprint (stdout, man, &*ap1, NULL);
+    
+    ap_dimperm_t*  p = ap_dimperm_alloc (3);
+    
+    p->dim[0] = 2;
+    p->dim[1] = 1;
+    p->dim[2] = 0;
+    
+    ap_dimperm_fprint(stdout, p);
+    ap_state_ptr ap2 = apPtr (man, ap_abstract0_permute_dimensions(man, false, &*ap1, p));
+    ap_abstract0_fprint (stdout, man, &*ap2, NULL);
+    ap_dimperm_free (p);
+  }
   
-  // { 
-  //   VariableFactory vfac;
-  //   pk_apron_domain_t inv1 = pk_apron_domain_t::top ();
-  //   inv1.assign (vfac ["x"], 5);
-  //   z_lin_cst_sys_t csts;
-  //   csts += (z_lin_t (vfac ["x"]) == z_lin_t (vfac ["y"]));
-  //   inv1 += csts;
-  //   pk_apron_domain_t inv2 (inv1);
-  //   cout << "Before expand x into z:" << inv1 << "\n";
-  //   inv1.expand (vfac ["x"], vfac["z"]);
-  //   cout << "After expand x into z: " << inv1 << "\n";
-  //   cout << "Copy before: " << inv2 << "\n";
+  { 
+    VariableFactory vfac;
+    pk_apron_domain_t inv1 = pk_apron_domain_t::top ();
+    inv1.assign (vfac ["x"], 5);
+    z_lin_cst_sys_t csts;
+    csts += (z_lin_t (vfac ["x"]) == z_lin_t (vfac ["y"]));
+    inv1 += csts;
+    pk_apron_domain_t inv2 (inv1);
+    cout << "Before expand x into z:" << inv1 << "\n";
+    inv1.expand (vfac ["x"], vfac["z"]);
+    cout << "After expand x into z: " << inv1 << "\n";
+    cout << "Copy before: " << inv2 << "\n";
 
-  //   pk_apron_domain_t inv3 = inv1 | inv2;
-  //   cout << "Join: " << inv3 << "\n";
-  // }
+    pk_apron_domain_t inv3 = inv1 | inv2;
+    cout << "Join: " << inv3 << "\n";
+  }
   
-  // { 
-  //   VariableFactory vfac;
-  //   pk_apron_domain_t inv1 = pk_apron_domain_t::top ();
-  //   inv1.assign (vfac ["x"], 5);
+  { 
+    VariableFactory vfac;
+    pk_apron_domain_t inv1 = pk_apron_domain_t::top ();
+    inv1.assign (vfac ["x"], 5);
 
-  //   pk_apron_domain_t inv2 (inv1);
-  //   inv2.apply (OP_ADDITION, vfac ["x"], vfac ["x"], 1);
+    pk_apron_domain_t inv2 (inv1);
+    inv2.apply (OP_ADDITION, vfac ["x"], vfac ["x"], 1);
 
-  //   pk_apron_domain_t inv3 = inv1;
-  //   cout << inv1 << "\n";
-  //   cout << inv2 << "\n";
-  //   cout << inv3 << "\n";
-  // }
+    pk_apron_domain_t inv3 = inv1;
+    cout << inv1 << "\n";
+    cout << inv2 << "\n";
+    cout << inv3 << "\n";
+  }
+
+  {
+    VariableFactory vfac;
+    opt_oct_apron_domain_t inv1 = opt_oct_apron_domain_t::top ();
+    opt_oct_apron_domain_t inv2 = opt_oct_apron_domain_t::top ();
+    varname_t i = vfac ["i"];
+    varname_t k = vfac ["k"];
+
+    {
+      z_lin_cst_sys_t csts;
+      csts += (z_lin_t (k) <= 100);
+      csts += (- z_lin_t (i) + z_lin_t (k) <= 0);
+      csts += (z_lin_t (i) + z_lin_t (k)  <= 200);
+      csts += (-z_lin_t (k) <= 0);
+      csts += (-z_lin_t (i) - z_lin_t (k)  <= 0);
+      csts += (z_lin_t (i) - z_lin_t (k)  <= 0);
+      csts += (z_lin_t (i) <= 100);
+      csts += (-z_lin_t (i) <= 0);
+      inv1 += csts;
+    }
+
+    {
+      z_lin_cst_sys_t csts;
+      csts += (-z_lin_t (i) + z_lin_t (k)  <= 0);
+      csts += (-z_lin_t (k) <= 0);
+      csts += (-z_lin_t (i) - z_lin_t (k)  <= 0);
+      csts += (z_lin_t (i) - z_lin_t (k)  <= 0);
+      csts += (-z_lin_t (i) <= 0);
+      inv2 += csts;
+    }
+
+    bool res = inv1 <= inv2;
+    cout << "Checking " << inv1 << " <= " << inv2 << "\nRes=" << res << "\n"; 
+  }
+#endif 
+
   return 0;
 }
