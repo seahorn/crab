@@ -13,7 +13,7 @@
 #define SPLIT_DBM_HPP
 
 // Uncomment for enabling debug information
-#include <crab/common/dbg.hpp>
+// #include <crab/common/dbg.hpp>
 
 #include <crab/common/types.hpp>
 #include <crab/common/sparse_graph.hpp>
