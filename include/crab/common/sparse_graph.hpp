@@ -274,6 +274,13 @@ class SparseWtGraph : public writeable {
       return succs(x).mem(y);
     }
 
+    bool lookup(vert_id x, vert_id y, Wt** w) {
+      if(!succs(x).mem(y))
+        return false;
+      (*w) = &mtx[max_sz*x + y];
+      return true;
+    }
+
     Wt& edge_val(vert_id x, vert_id y) const {
       return mtx[max_sz*x + y];
     }
@@ -377,21 +384,21 @@ class SparseWtGraph : public writeable {
     // as well as existing ones
     vert_range verts(void) const { return vert_range(sz, is_free); }
 
-    class edge_ref {
+    class edge_ref_t {
     public:
-      edge_ref(vert_id _v, Wt& _w)
-        : v(_v), w(_w)
+      edge_ref_t(vert_id _v, Wt& _w)
+        : vert(_v), val(_w)
       { }
-      vert_id v;
-      Wt& w;
+      vert_id vert;
+      Wt& val;
     };
 
     class const_edge_ref {
       const_edge_ref(vert_id _v, const Wt& _w)
-        : v(_v), w(_w)
+        : vert(_v), val(_w)
       { }
-      vert_id v;
-      const Wt& w;
+      vert_id vert;
+      const Wt& val;
     };
 
     class adj_iterator {
@@ -413,30 +420,38 @@ class SparseWtGraph : public writeable {
 
     class fwd_edge_iterator {
     public:
-      fwd_edge_iterator(graph_t& _g, vert_id _s)
-        : g(_g), s(_s), it(g.succs(s))
+      typedef edge_ref_t edge_ref;
+      fwd_edge_iterator(void)
+        : g(nullptr)
+      { }
+      fwd_edge_iterator(graph_t& _g, vert_id _s, adj_iterator _it)
+        : g(&_g), s(_s), it(_it)
       { }
 
-      edge_ref operator*(void) const { return edge_ref((*it), g.edge_val(s, (*it))); }
-      fwd_edge_iterator& operator++(void) { it++; return *this; }
+      edge_ref operator*(void) const { return edge_ref((*it), g->edge_val(s, (*it))); }
+      fwd_edge_iterator& operator++(void) { ++it; return *this; }
       bool operator!=(const fwd_edge_iterator& o) { return it != o.it; }
 
-      graph_t& g;
+      graph_t* g;
       vert_id s;
       adj_iterator it;
     };
     
     class rev_edge_iterator {
     public:
-      rev_edge_iterator(graph_t& _g, vert_id _d)
-        : g(_g), d(_d), it(g.preds(d))
+      typedef edge_ref_t edge_ref;
+      rev_edge_iterator(void)
+        : g(nullptr)
+      { }
+      rev_edge_iterator(graph_t& _g, vert_id _d, adj_iterator _it)
+        : g(&_g), d(_d), it(_it)
       { }
 
-      edge_ref operator*(void) const { return edge_ref((*it), g.edge_val((*it), d)); }
-      fwd_edge_iterator& operator++(void) { it++; return *this; }
-      bool operator!=(const fwd_edge_iterator& o) { return it != o.it; }
+      edge_ref operator*(void) const { return edge_ref((*it), g->edge_val((*it), d)); }
+      rev_edge_iterator& operator++(void) { ++it; return *this; }
+      bool operator!=(const rev_edge_iterator& o) { return it != o.it; }
 
-      graph_t& g;
+      graph_t* g;
       vert_id d;
       adj_iterator it;
     };
@@ -487,13 +502,50 @@ class SparseWtGraph : public writeable {
     typedef adj_list succ_range;
     typedef adj_list pred_range;
 
+    class fwd_edge_range {
+    public:
+      typedef fwd_edge_iterator iterator;
+      fwd_edge_range(graph_t& _g, vert_id _s)
+        : g(_g), s(_s)
+      { }
+
+      fwd_edge_iterator begin(void) const { return fwd_edge_iterator(g, s, g.succs(s).begin()); }
+      fwd_edge_iterator end(void) const { return fwd_edge_iterator(g, s, g.succs(s).end()); }
+      graph_t& g;
+      vert_id s;
+    };
+
+    class rev_edge_range {
+    public:
+      typedef rev_edge_iterator iterator;
+      rev_edge_range(graph_t& _g, vert_id _d)
+        : g(_g), d(_d)
+      { }
+
+      rev_edge_iterator begin(void) const { return rev_edge_iterator(g, d, g.preds(d).begin()); }
+      rev_edge_iterator end(void) const { return rev_edge_iterator(g, d, g.preds(d).end()); }
+      graph_t& g;
+      vert_id d;
+    };
+
+    typedef fwd_edge_range e_succ_range;
+    typedef rev_edge_range e_pred_range;
+
     adj_list succs(vert_id v) const
     {
       return adj_list(fwd_adjs + v*(2*max_sz+1), max_sz);
     }
+    fwd_edge_range e_succs(vert_id v)
+    {
+      return fwd_edge_range(*this, v);
+    }
     adj_list preds(vert_id v) const
     {
       return adj_list(rev_adjs + v*(2*max_sz+1), max_sz);
+    }
+    rev_edge_range e_preds(vert_id v)
+    {
+       return rev_edge_range(*this, v);
     }
 
     // growTo shouldn't be used after forget

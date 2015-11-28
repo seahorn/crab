@@ -13,12 +13,10 @@
 #define SPLIT_DBM_HPP
 
 // Uncomment for enabling debug information
-//#include <crab/common/dbg.hpp>
+#include <crab/common/dbg.hpp>
 
 #include <crab/common/types.hpp>
 #include <crab/common/sparse_graph.hpp>
-#include <crab/common/pt_graph.hpp>
-#include <crab/common/ht_graph.hpp>
 #include <crab/common/adapt_sgraph.hpp>
 #include <crab/common/graph_ops.hpp>
 #include <crab/domains/linear_constraints.hpp>
@@ -91,9 +89,8 @@ namespace crab {
       typedef SDBM_impl::NtoV<Number, Wt> ntov;
 
       //typedef SparseWtGraph<Wt> graph_t;
-      //typedef PtGraph<Wt> graph_t;
-      //typedef HtGraph<Wt> graph_t;
       typedef AdaptGraph<Wt> graph_t;
+
       typedef typename graph_t::vert_id vert_id;
       typedef boost::container::flat_map<variable_t, vert_id> vert_map_t;
       typedef typename vert_map_t::value_type vmap_elt_t;
@@ -298,38 +295,48 @@ namespace crab {
           if(vert_map.size() < o.vert_map.size())
             return false;
 
+          Wt* wx; Wt* wy;
+
           // Set up a mapping from o to this.
           vector<unsigned int> vert_renaming(o.g.size(),-1);
           vert_renaming[0] = 0;
           for(auto p : o.vert_map)
           {
+            if(o.g.succs(p.second).size() == 0 && o.g.preds(p.second).size() == 0)
+              continue;
+
             auto it = vert_map.find(p.first);
             // We can't have this <= o if we're missing some
             // vertex.
             if(it == vert_map.end())
               return false;
             vert_renaming[p.second] = (*it).second;
+            // vert_renaming[(*it).second] = p.second;
           }
 
           assert(g.size() > 0);
-          GrPerm g_perm(vert_renaming, g);
+//          GrPerm g_perm(vert_renaming, g);
 
           for(vert_id ox : o.g.verts())
           {
+            if(o.g.succs(ox).size() == 0)
+              continue;
+
             assert(vert_renaming[ox] != -1);
             vert_id x = vert_renaming[ox];
-            for(vert_id oy : o.g.succs(ox))
+            for(auto edge : o.g.e_succs(ox))
             {
-              assert(vert_renaming[ox] != -1);
+              vert_id oy = edge.vert;
+              assert(vert_renaming[oy] != -1);
               vert_id y = vert_renaming[oy];
-              Wt ow = o.g.edge_val(ox, oy);
+              Wt ow = edge.val;
 
-              if(g_perm.elem(x, y) && (g_perm.edge_val(x, y) <= ow))
+              if(g.lookup(x, y, &wx) && ((*wx) <= ow))
                 continue;
 
-              if(!g_perm.elem(x, 0) || !g_perm.elem(0, y))
+              if(!g.lookup(x, 0, &wx) || !g.lookup(0, y, &wy))
                 return false;
-              if(!(g_perm.edge_val(x, 0) + g_perm.edge_val(0, y) <= ow))
+              if(!((*wx) + (*wy) <= ow))
                 return false;
             }
           }
@@ -488,8 +495,9 @@ namespace crab {
           {
             for(vert_id d : gy_excl.succs(s))
             {
-              if(gx.elem(s, 0) && gx.elem(0, d))
-                g_ix_ry.add_edge(s, gx.edge_val(s, 0) + gx.edge_val(0, d), d);
+              Wt* ws; Wt* wd;
+              if(gx.lookup(s, 0, &ws) && gx.lookup(0, d, &wd))
+                g_ix_ry.add_edge(s, (*ws) + (*wd), d);
             }
           }
           // Apply the deferred relations, and re-close.
@@ -512,10 +520,11 @@ namespace crab {
           {
             for(vert_id d : gx_excl.succs(s))
             {
+              Wt* ws; Wt* wd;
               // Assumption: gx.mem(s, d) -> gx.edge_val(s, d) <= ranges[var(s)].ub() - ranges[var(d)].lb()
               // That is, if the relation exists, it's at least as strong as the bounds.
-              if(gy.elem(s, 0) && gy.elem(0, d))
-                g_rx_iy.add_edge(s, gy.edge_val(s, 0) + gy.edge_val(0, d), d);
+              if(gy.lookup(s, 0, &ws) && gy.lookup(0, d, &wd))
+                g_rx_iy.add_edge(s, (*ws) + (*wd), d);
             }
           }
           delta.clear();
@@ -542,20 +551,22 @@ namespace crab {
           vector<vert_id> ub_up;
           vector<vert_id> ub_down;
 
+          Wt* wx;
+          Wt* wy;
           for(vert_id v : gx_excl.verts())
           {
-            if(gx.elem(0, v) && gy.elem(0, v))
+            if(gx.lookup(0, v, &wx) && gy.lookup(0, v, &wy))
             {
-              if(gx.edge_val(0, v) < gy.edge_val(0, v))
+              if(*wx < *wy)
                 ub_up.push_back(v);
-              if(gy.edge_val(0, v) < gx.edge_val(0, v))
+              if(*wy < *wx)
                 ub_down.push_back(v);
             }
-            if(gx.elem(v, 0) && gy.elem(v, 0))
+            if(gx.lookup(v, 0, &wx) && gy.lookup(v, 0, &wy))
             {
-              if(gx.edge_val(v, 0) < gy.edge_val(v, 0))
+              if(*wx < *wy)
                 lb_down.push_back(v);
-              if(gy.edge_val(v, 0) < gx.edge_val(v, 0))
+              if(*wy < *wx)
                 lb_up.push_back(v);
             }
           }
@@ -663,8 +674,6 @@ namespace crab {
             widen_unstable.insert(v);
 
           DBM_t res(std::move(out_vmap), std::move(out_revmap), std::move(widen_g), std::move(widen_pot), std::move(widen_unstable));
-
-          // GKG: need to mark changes so we can restore closure
            
           CRAB_DEBUG ("Result widening:\n",res);
           return res;
@@ -1288,12 +1297,13 @@ namespace crab {
         assert(check_potential(g, potential));
 
         Wt_min min_op;
+        Wt* w;
         for(auto p : lbs)
         {
           CRAB_DEBUG(p.first, ">=", p.second);
           VariableName x(p.first);
           vert_id v = get_vert(p.first);
-          if(g.elem(v, 0) && g.edge_val(v, 0) <= -p.second)
+          if(g.lookup(v, 0, &w) && (*w) <= -p.second)
             continue;
           g.set_edge(v, -p.second, 0);
           if(!repair_potential(v, 0))
@@ -1305,11 +1315,11 @@ namespace crab {
 
           // Compute other updated bounds
 #ifdef CLOSE_BOUNDS_INLINE
-          for(vert_id s : g.preds(v))
+          for(auto e : g.e_preds(v))
           {
-            if(s == 0)
+            if(e.vert == 0)
               continue;
-            g.update_edge(s, g.edge_val(s, v) - p.second, 0, min_op);
+            g.update_edge(e.vert, e.val - p.second, 0, min_op);
           }
 #endif
         }
@@ -1318,7 +1328,7 @@ namespace crab {
           CRAB_DEBUG(p.first, "<=", p.second);
           VariableName x(p.first);
           vert_id v = get_vert(p.first);
-          if(g.elem(0, v) && g.edge_val(0, v) <= p.second)
+          if(g.lookup(0, v, &w) && (*w) <= p.second)
             continue;
           g.set_edge(0, p.second, v);
           if(!repair_potential(0, v))
@@ -1329,11 +1339,11 @@ namespace crab {
           assert(check_potential(g, potential));
 
 #ifdef CLOSE_BOUNDS_INLINE
-          for(vert_id d : g.succs(v))
+          for(auto e : g.e_succs(v))
           {
-            if(d == 0)
+            if(e.vert == 0)
               continue;
-            g.update_edge(0, g.edge_val(v, d) + p.second, d, min_op);
+            g.update_edge(0, e.val + p.second, e.vert, min_op);
           }
 #endif
         }
@@ -1705,81 +1715,86 @@ namespace crab {
 
         Wt c = g_excl.edge_val(ii,jj);
 
+        Wt* w;
 #ifdef CLOSE_BOUNDS_INLINE
-        if(g.elem(0, ii))
-          g.update_edge(0, g.edge_val(0, ii) + c, jj, min_op);
-        if(g.elem(jj, 0))
-          g.update_edge(ii, g.edge_val(jj, 0) + c, 0, min_op);
+        if(g.lookup(0, ii, &w))
+          g.update_edge(0, (*w) + c, jj, min_op);
+        if(g.lookup(jj, 0, &w))
+          g.update_edge(ii, (*w) + c, 0, min_op);
 #endif
 
         // There may be a cheaper way to do this.
-        for(vert_id se : g_excl.preds(ii))
+        for(auto edge : g_excl.e_preds(ii))
         {
-          Wt wt_sij = g_excl.edge_val(se,ii) + c;
+          vert_id se = edge.vert;
+          Wt wt_sij = edge.val + c;
 
           assert(g_excl.succs(se).begin() != g_excl.succs(se).end());
           if(se != jj)
           {
-            if(g_excl.elem(se, jj))
+            if(g_excl.lookup(se, jj, &w))
             {
-              if(g_excl.edge_val(se,jj) <= wt_sij)
+              if(*w <= wt_sij)
                 continue;
 
-              g_excl.set_edge(se, wt_sij, jj);
+              (*w) = wt_sij;
+//              g_excl.set_edge(se, wt_sij, jj);
             } else {
               g_excl.add_edge(se, wt_sij, jj);
             }
             
 #ifdef CLOSE_BOUNDS_INLINE
-            if(g.elem(0, se))
-              g.update_edge(0, g.edge_val(0, se) + wt_sij, jj, min_op);
-            if(g.elem(jj, 0))
-              g.update_edge(se, g.edge_val(jj, 0) + wt_sij, 0, min_op);
+            if(g.lookup(0, se, &w))
+              g.update_edge(0, (*w) + wt_sij, jj, min_op);
+            if(g.lookup(jj, 0, &w))
+              g.update_edge(se, (*w) + wt_sij, 0, min_op);
 #endif
 
-            for(vert_id de : g_excl.succs(jj))
+            for(auto edge : g_excl.e_succs(jj))
             {
+              vert_id de = edge.vert;
               if(se != de)
               {
-                Wt wt_sijd = wt_sij + g_excl.edge_val(jj, de);
-                if(g_excl.elem(se, de))
+                Wt wt_sijd = wt_sij + edge.val;
+                if(g_excl.lookup(se, de, &w))
                 {
-                  if(g_excl.edge_val(se, de) <= wt_sijd)
+                  if((*w) <= wt_sijd)
                     continue;
-                  g_excl.set_edge(se, wt_sijd, de);
+                  (*w) = wt_sijd;
                 } else {
                   g_excl.add_edge(se, wt_sijd, de);
                 }
 #ifdef CLOSE_BOUNDS_INLINE
-                if(g.elem(0, se))
-                  g.update_edge(0, g.edge_val(0, se) + wt_sijd, de, min_op);
-                if(g.elem(de, 0))
-                  g.update_edge(se, g.edge_val(de, 0) + wt_sijd, 0, min_op);
+                if(g.lookup(0, se, &w))
+                  g.update_edge(0, (*w) + wt_sijd, de, min_op);
+                if(g.lookup(de, 0, &w))
+                  g.update_edge(se, (*w) + wt_sijd, 0, min_op);
 #endif
               }
             }
           }
         }
 
-        for(vert_id de : g_excl.succs(jj))
+        for(auto edge : g_excl.e_succs(jj))
         {
-          Wt wt_ijd = g_excl.edge_val(jj, de) + c;
+          vert_id de = edge.vert;
+          Wt wt_ijd = edge.val + c;
           if(de != ii)
           {
-            if(g_excl.elem(ii, de))
+            if(g_excl.lookup(ii, de, &w))
             {
 //              g_excl.edge_val(ii, de) = min(g_excl.edge_val(ii, de), wt_ijd);
-              if(g_excl.edge_val(ii, de) <= wt_ijd)
+              if((*w) <= wt_ijd)
                 continue;
-              g_excl.set_edge(ii, wt_ijd, de);
+              (*w) = wt_ijd;
             } else {
               g_excl.add_edge(ii, wt_ijd, de);
             }
 #ifdef CLOSE_BOUNDS_INLINE
-            if(g.elem(0,  ii))
-              g.update_edge(0, g.edge_val(0, ii) + wt_ijd, de, min_op);
-            if(g.elem(de, 0))
-              g.update_edge(ii, g.edge_val(de, 0) + wt_ijd, 0, min_op);
+            if(g.lookup(0,  ii, &w))
+              g.update_edge(0, (*w) + wt_ijd, de, min_op);
+            if(g.lookup(de, 0, &w))
+              g.update_edge(ii, (*w) + wt_ijd, 0, min_op);
 #endif
           }
         }
