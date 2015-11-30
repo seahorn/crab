@@ -138,8 +138,6 @@ namespace crab {
 #include <crab/domains/apron/apron.hpp>
 #include <boost/bimap.hpp>
 
-#define GARBAGE_COLLECTION
-
 namespace crab {
    namespace domains {
 
@@ -568,22 +566,21 @@ namespace crab {
             m_apstate (apState), 
             m_var_map (varMap) { 
 
-          //   // Garbage collection
-          //   vector<ap_dim_t> dims;
-          //   var_map_ptr res = var_map_ptr (new var_bimap_t ());
-          //   for (auto const& p: m_var_map->left) {  
-          //     if (ap_abstract0_is_dimension_unconstrained (get_man (),
-          //                                                  &*m_apstate, 
-          //                                                  p.second)) {
-          //       dims.push_back (p.second);
-          //     }
-          //     else {
-          //       ap_dim_t i = res->size ();
-          //       res->insert (binding_t (p.first, i));
-          //     }
-          //   }
-          //   remove_dimensions (m_apstate, dims);
-          //   std::swap (m_var_map, res);
+          vector<ap_dim_t> dims;
+          var_map_ptr res = var_map_ptr (new var_bimap_t ());
+          for (auto const& p: m_var_map->left) {  
+            if (ap_abstract0_is_dimension_unconstrained (get_man (),
+                                                         &*m_apstate, 
+                                                         p.second)) {
+              dims.push_back (p.second);
+            }
+            else {
+              ap_dim_t i = res->size ();
+              res->insert (binding_t (p.first, i));
+            }
+          }
+          remove_dimensions (m_apstate, dims);
+          std::swap (m_var_map, res);
 
           assert (m_var_map->size () == get_dims ());
         }
@@ -593,6 +590,23 @@ namespace crab {
             ikos::writeable (), 
             m_apstate (std::move (apState)), 
             m_var_map (std::move (varMap)) { 
+
+          vector<ap_dim_t> dims;
+          var_map_ptr res = var_map_ptr (new var_bimap_t ());
+          for (auto const& p: m_var_map->left) {  
+            if (ap_abstract0_is_dimension_unconstrained (get_man (),
+                                                         &*m_apstate, 
+                                                         p.second)) {
+              dims.push_back (p.second);
+            }
+            else {
+              ap_dim_t i = res->size ();
+              res->insert (binding_t (p.first, i));
+            }
+          }
+          remove_dimensions (m_apstate, dims);
+          std::swap (m_var_map, res);
+
           assert (m_var_map->size () == get_dims ());
         }
 
@@ -743,16 +757,14 @@ namespace crab {
                 return apron_domain_t (apPtr (get_man(), 
                                               ap_abstract0_oct_narrowing (get_man(),
                                                                           &*x, &*o.m_apstate)), m);
-                
               case APRON_OPT_OCT:
-                CRAB_WARN ("TODO: narrowing operator.");
-                // return apron_domain_t (apPtr (get_man(), 
-                //                               ap_abstract0_oct_narrowing (get_man(),
-                //                                                           &*x, &*o.m_apstate)), m);
+                return apron_domain_t (apPtr (get_man(), 
+                                              ap_abstract0_opt_oct_narrowing (get_man(),
+                                                                              &*x, &*o.m_apstate)), m);
               case APRON_INT:
               case APRON_PK:
               default:
-                CRAB_WARN ("Used meet instead of narrowing: \n",
+                CRAB_WARN (" used meet instead of narrowing: \n",
                            "make sure only a finite number of descending iterations are run.");
                 return apron_domain_t (apPtr (get_man(), 
                                               ap_abstract0_meet (get_man(), false, 
@@ -782,7 +794,7 @@ namespace crab {
                                                         &*m_apstate, 
                                                         &vector_dims[0], vector_dims.size(), 
                                                         false));
-          #ifdef GARBAGE_COLLECTION
+
           // -- Remove forgotten dimensions while compacting
           var_map_ptr res = var_map_ptr (new var_bimap_t ());
           for (auto const& p: m_var_map->left) {  
@@ -793,7 +805,6 @@ namespace crab {
           }
           remove_dimensions (m_apstate, vector_dims);
           std::swap (m_var_map, res);
-          #endif 
         }
 
         void operator-=(VariableName var) {
@@ -806,7 +817,6 @@ namespace crab {
                                                           &*m_apstate, 
                                                           &vector_dims[0], vector_dims.size(), 
                                                           false));
-            #ifdef GARBAGE_COLLECTION
             // -- Remove forgotten dimensions while compacting
             var_map_ptr res = var_map_ptr (new var_bimap_t ());
             for (auto const& p: m_var_map->left) {  
@@ -817,7 +827,6 @@ namespace crab {
             }
             remove_dimensions (m_apstate, vector_dims);
             std::swap (m_var_map, res);
-            #endif 
           }
         }
 
@@ -1140,16 +1149,15 @@ namespace crab {
         }
         
         void expand (VariableName x, VariableName dup) {
-          CRAB_WARN ("TODO: expand not implemented.");
-
-          // *this -= dup;
-          // // --- increases number of dimensions by one
-          // m_apstate = apPtr (get_man(),
-          //                    ap_abstract0_expand(get_man (), false, &* m_apstate, 
-          //                                        get_var_dim_insert (x), 1));
-          // // --- the additional dimension is put at the end of integer
-          // //     dimensions.
-          // m_var_map->insert (binding_t (dup, get_dims () - 1));            
+          *this -= dup;
+          // --- increases number of dimensions by one
+          m_apstate = apPtr (get_man(),
+                             ap_abstract0_expand(get_man (), false, 
+                                                 &* m_apstate, 
+                                                 get_var_dim_insert (x), 1));
+          // --- the additional dimension is put at the end of integer
+          //     dimensions.
+          m_var_map->insert (binding_t (dup, get_dims () - 1));            
         }
 
         void normalize () {
