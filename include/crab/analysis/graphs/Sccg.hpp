@@ -170,7 +170,7 @@ namespace crab {
           return vis.m_order_vs;
         }
 
-        void check_comp_map () {
+        bool check_comp_map () {
           // --- Check that all vertices in the graph m_g are keys in
           //     the component map
           for (auto v: boost::make_iterator_range (vertices (m_g))) {
