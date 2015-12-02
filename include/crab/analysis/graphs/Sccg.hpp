@@ -157,9 +157,6 @@ namespace crab {
           boost::detail::depth_first_visit_impl (m_g, root, vis, cm, 
                                                  boost::detail::nontruth2());
 
-          // Case: dead functions
-          //       we should remove dead functions but keep this code
-          //       to avoid crashes.
           for (auto u: boost::make_iterator_range (vertices (m_g))) { 
             if (get(cm, u) == default_color_type::white_color)
               boost::detail::depth_first_visit_impl(m_g, u, vis, cm, boost::detail::nontruth2());
