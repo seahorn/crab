@@ -2081,7 +2081,7 @@ namespace crab {
       
      public:
       
-      // --- needed by crab::cg::Function<CFG>
+      // --- needed by crab::cg::CallGraph<CFG>::CgNode
       Cfg (): m_blocks (basic_block_map_ptr (new basic_block_map)) { }
       
       Cfg (BasicBlockLabel entry, 
