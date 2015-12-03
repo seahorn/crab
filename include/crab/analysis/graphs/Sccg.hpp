@@ -151,11 +151,10 @@ namespace crab {
             }
           }  
 
-          assert (root_found && "Not root found in graph");
-
           OrderVis vis;
-          boost::detail::depth_first_visit_impl (m_g, root, vis, cm, 
-                                                 boost::detail::nontruth2());
+          if (root_found)
+            boost::detail::depth_first_visit_impl (m_g, root, vis, cm, 
+                                                   boost::detail::nontruth2());
 
           for (auto u: boost::make_iterator_range (vertices (m_g))) { 
             if (get(cm, u) == default_color_type::white_color)
