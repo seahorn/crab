@@ -875,6 +875,12 @@ public:
     return this->_env || e._env;
   }
 
+  template<typename Thresholds>
+  congruence_domain_t widening_thresholds (congruence_domain_t other, 
+                                           const Thresholds &/*ts*/) {
+    return (*this || other);
+  }
+
   congruence_domain_t operator&&(congruence_domain_t e) {
     return this->_env && e._env;
   }

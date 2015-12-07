@@ -113,6 +113,12 @@ namespace crab {
         array_smashing_t operator||(array_smashing_t other) {
           return array_smashing_t (_inv || other._inv);
         }
+
+        template<typename Thresholds>
+        array_smashing_t widening_thresholds (array_smashing_t other, 
+                                              const Thresholds &ts) {
+          return array_smashing_t (_inv.widening_thresholds (other._inv, ts));
+        }
         
         array_smashing_t operator&& (array_smashing_t other) {
           return array_smashing_t (_inv && other._inv);
@@ -256,7 +262,10 @@ namespace crab {
           o << _inv;
         }
         
-        const char* getDomainName () const {return "Array smashing";}  
+        const char* getDomainName () const {
+          std::string name ("Array smashing(" + std::string(_inv.getDomainName ()) + ")");
+          return name.c_str ();
+        }  
         
       }; // end array_smashing
    
@@ -265,6 +274,7 @@ namespace crab {
    namespace domain_traits {
     
      using namespace domains;            
+
      template <typename BaseDomain, typename VariableName, typename Number>
      void array_init (array_smashing<BaseDomain,Number,VariableName>& inv, 
                       VariableName a, 

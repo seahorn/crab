@@ -22,18 +22,26 @@ namespace crab {
 
    namespace domain_traits {
 
+      // Normalize the abstract domain if such notion exists.
       template <typename AbsNumDomain>
       void normalize(AbsNumDomain& inv); 
     
+      // Remove all variables [it, end)
       template <typename AbsNumDomain, typename Iterator>
       void forget(AbsNumDomain& inv, Iterator begin, Iterator end); 
 
+      // Forget all variables except [begin, end)
       template <typename AbsNumDomain, typename Iterator>
       void project(AbsNumDomain& inv, Iterator begin, Iterator end); 
     
+      // Make a new copy of x without relating x with new_x
       template <typename AbsDomain, typename VariableName>
       void expand (AbsDomain& inv, VariableName x, VariableName new_x);
-    
+   
+      ////// 
+      /// Special operations for arrays
+      //////
+
       template <typename AbsDomain, typename VariableName>
       void array_init (AbsDomain& inv, VariableName a, 
                        const vector<ikos::z_number>& vals); 

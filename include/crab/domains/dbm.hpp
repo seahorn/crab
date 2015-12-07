@@ -800,6 +800,13 @@ namespace crab {
         }
       } 
 
+      template<typename Thresholds>
+      DBM_t widening_thresholds (DBM_t other, 
+                                 const Thresholds &/*ts*/) {
+        // TODO: use thresholds
+        return (*this || other);
+      }
+
       DBM_t operator&(DBM_t o) { 
         if (is_bottom() || o.is_bottom())
           return bottom();

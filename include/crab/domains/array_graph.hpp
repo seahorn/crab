@@ -1099,7 +1099,13 @@ namespace crab {
           return widen;
         }
       }
-  
+
+      template<typename Thresholds>
+      array_graph_domain_t widening_thresholds (array_graph_domain_t other, 
+                                                const Thresholds & /*ts*/) {
+        return (*this || other);
+      }
+        
       array_graph_domain_t operator&& (array_graph_domain_t other) 
       {
         if (is_bottom ()|| other.is_bottom ()) 

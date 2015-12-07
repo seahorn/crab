@@ -9,6 +9,8 @@
  * - arithmetic operations over integers
  * - C-like pointers and arrays
  * - functions 
+ * 
+ * Note: changes are needed to support floating point operations.
  */
 
 #include <boost/shared_ptr.hpp>
@@ -20,6 +22,7 @@
 
 #include <crab/common/types.hpp>
 #include <crab/common/bignums.hpp>
+#include <crab/iterators/thresholds.hpp>
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/domains/intervals.hpp>
 #include <crab/domains/discrete_domains.hpp>
@@ -1997,7 +2000,8 @@ namespace crab {
       typedef FunctionDecl<varname_t> fdecl_t;
       typedef BasicBlock< BasicBlockLabel, VariableName > basic_block_t;   
       typedef Statement < VariableName > statement_t;
-      
+      typedef crab::iterators::Thresholds<z_number> thresholds_t;
+
       typedef typename basic_block_t::succ_iterator succ_iterator;
       typedef typename basic_block_t::pred_iterator pred_iterator;
       
@@ -2042,12 +2046,13 @@ namespace crab {
 
      private:
       
-      BasicBlockLabel    m_entry;
-      BasicBlockLabel    m_exit;
-      bool               m_has_exit;
-      basic_block_map_ptr  m_blocks;
-      TrackedPrecision   m_track_prec;
-      //! if Cfg is associated with a function
+      BasicBlockLabel m_entry;
+      BasicBlockLabel m_exit;
+      bool m_has_exit;
+      basic_block_map_ptr m_blocks;
+      TrackedPrecision m_track_prec;
+      //! we allow to define a cfg without being associated with a
+      //! function
       boost::optional<fdecl_t> m_func_decl; 
       
       
@@ -2303,7 +2308,26 @@ namespace crab {
       }
       
       size_t size () const { return std::distance (begin (), end ()); }
-      
+     
+      thresholds_t initialize_thresholds_for_widening (size_t size) const {
+        
+        thresholds_t thresholds (size);
+        for (auto const &b : boost::make_iterator_range (begin (), end ())) {
+          for (auto const&i : boost::make_iterator_range (b.begin (), b.end ())) {
+            if (i.isAssume ()) {
+              auto assume_inst = static_cast<const typename basic_block_t::z_assume_t*> (&i);
+              z_number t (-(assume_inst->constraint ().expression ().constant ()));
+              // for each constant c we also add c-1 and c+1
+              thresholds.add (t-1);
+              thresholds.add (t);
+              thresholds.add (t+1);
+            }
+          }
+        }
+        
+        return thresholds;
+      }
+
       void reverse()
       {
         if (!m_has_exit)

@@ -19,4 +19,5 @@ add_subdirectory (unif)
 add_subdirectory (inter)
 add_subdirectory (conc)
 add_subdirectory (cg)
+add_subdirectory (thresholds)
 

@@ -452,6 +452,13 @@ public:
     return interval_congruence_domain_t(this->_product || other._product);
   }
 
+  template<typename Thresholds>
+  interval_congruence_domain_t widening_thresholds (interval_congruence_domain_t other,
+                                                    const Thresholds& ts) {
+    return interval_congruence_domain_t(
+        this->_product.widening_thresholds (other._product, ts));
+  }
+
   interval_congruence_domain_t operator&&(interval_congruence_domain_t other) {
     return interval_congruence_domain_t(this->_product && other._product);
   }

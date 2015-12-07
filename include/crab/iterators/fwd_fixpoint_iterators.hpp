@@ -53,6 +53,7 @@
 #include <crab/common/types.hpp>
 #include <crab/iterators/wto.hpp>
 #include <crab/iterators/fixpoint_iterators_api.hpp>
+#include <crab/iterators/thresholds.hpp>
 
 namespace ikos {
 
@@ -78,6 +79,7 @@ namespace ikos {
     typedef wto< NodeName, CFG > wto_t;
     typedef interleaved_fwd_fixpoint_iterator_impl::wto_iterator< NodeName, CFG, AbstractValue > wto_iterator_t;
     typedef interleaved_fwd_fixpoint_iterator_impl::wto_processor< NodeName, CFG, AbstractValue > wto_processor_t;
+    typedef crab::iterators::Thresholds<typename AbstractValue::number_t> thresholds_t;
     
   private:
     CFG _cfg;
@@ -90,7 +92,11 @@ namespace ikos {
     // needed. However, there are abstract domains for which a sound
     // narrowing operation is not available so we must enforce
     // termination.
-    unsigned int _narrowing_iters;
+    unsigned int _narrowing_iterations;
+    // whether jump set is used for widening
+    bool _use_widening_jump_set;    
+    // set of thresholds to jump during widening
+    thresholds_t _jump_set;
 
   private:
     void set(invariant_table_ptr table, NodeName node, AbstractValue v) {
@@ -121,14 +127,22 @@ namespace ikos {
   public:
     interleaved_fwd_fixpoint_iterator(CFG cfg, 
                                       unsigned widening_threshold,
-                                      unsigned int narrowing_iters): 
+                                      unsigned int narrowing_iterations,
+                                      size_t jump_set_size): 
         _cfg(cfg),
         _wto(cfg),
         _pre(invariant_table_ptr(new invariant_table_t)),
         _post(invariant_table_ptr(new invariant_table_t)),
         _widening_threshold(widening_threshold),
-        _narrowing_iters(narrowing_iters)
-    { }
+        _narrowing_iterations(narrowing_iterations),
+        _use_widening_jump_set (jump_set_size > 0) {
+
+      if (_use_widening_jump_set) {
+        // select statically some widening points to jump to.
+        _jump_set = _cfg.initialize_thresholds_for_widening(jump_set_size);
+      }
+      
+    }
     
     CFG get_cfg() {
       return this->_cfg;
@@ -149,9 +163,12 @@ namespace ikos {
     virtual AbstractValue extrapolate(NodeName /* node */, unsigned int iteration, 
                                       AbstractValue before, AbstractValue after) {
       if (iteration <= _widening_threshold) {
-	return before | after; 
+        return before | after; 
       } else {
-	return before || after;
+        if (_use_widening_jump_set)
+          return before.widening_thresholds (after, _jump_set);
+        else
+          return before || after;
       }
     }
 
@@ -172,14 +189,6 @@ namespace ikos {
       this->_wto.accept(&processor);
       this->_pre.reset();
       this->_post.reset();      
-    }
-
-    unsigned int get_widening_threshold () const { 
-      return _widening_threshold;
-    }
-
-    unsigned int get_narrowing_iters () const { 
-      return _narrowing_iters;
     }
 
     virtual ~interleaved_fwd_fixpoint_iterator() { }
@@ -262,7 +271,7 @@ namespace ikos {
             // No more refinement possible (pre == new_pre)
             break;
           } else {
-            if (iteration > this->_iterator->get_narrowing_iters ()) break; 
+            if (iteration > this->_iterator->_narrowing_iterations) break; 
 
             pre = this->_iterator->refine(head, iteration, pre, new_pre);
             this->_iterator->set_pre(head, pre);

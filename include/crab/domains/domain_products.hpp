@@ -394,6 +394,14 @@ namespace ikos {
       return numerical_domain_product2_t(this->_product || other._product);
     }
 
+    template<typename Thresholds>
+    numerical_domain_product2_t widening_thresholds (numerical_domain_product2_t other,
+                                                     const Thresholds& ts) {
+      return numerical_domain_product2_t (
+          this->_product.first ().widening_thresholds (other._product.first (), ts),
+          this->_product.second ().widening_thresholds (other._product.second (), ts));
+    }
+
     numerical_domain_product2_t operator&&(numerical_domain_product2_t other) {
       return numerical_domain_product2_t(this->_product && other._product);
     }
@@ -574,6 +582,13 @@ namespace ikos {
     numerical_domain_product3_t 
     operator||(numerical_domain_product3_t other) {
       return numerical_domain_product3_t(this->_product || other._product);
+    }
+
+    template<typename Thresholds>
+    numerical_domain_product3_t widening_thresholds (numerical_domain_product3_t other,
+                                                     const Thresholds& ts) {
+      return numerical_domain_product3_t (
+          this->_product.widening_thresholds (other._product, ts));
     }
 
     numerical_domain_product3_t 

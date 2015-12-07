@@ -80,6 +80,11 @@ namespace crab {
         
         boxes_domain_t operator||(boxes_domain_t other)
         { CRAB_ERROR (LDD_NOT_FOUND); }
+
+        template<typename Thresholds>
+        boxes_domain_t widening_thresholds (boxes_domain_t other, 
+                                            const Thresholds &ts)
+        { CRAB_ERROR (LDD_NOT_FOUND); }
         
         boxes_domain_t operator&& (boxes_domain_t other) 
         { CRAB_ERROR (LDD_NOT_FOUND); }
@@ -200,6 +205,11 @@ namespace crab {
         rib_domain_t operator||(rib_domain_t other)
         { CRAB_ERROR (LDD_NOT_FOUND); }
         
+        template<typename Thresholds>
+        rib_domain_t widening_thresholds (rib_domain_t other, 
+                                          const Thresholds &ts)
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+
         rib_domain_t operator&& (rib_domain_t other) 
         { CRAB_ERROR (LDD_NOT_FOUND); }
         
@@ -648,6 +658,12 @@ namespace crab {
 
           CRAB_DEBUG ("Widening ", *this, " and ", other, "=", res);
           return res;
+        }
+
+        template<typename Thresholds>
+        boxes_domain_t widening_thresholds (boxes_domain_t other, 
+                                            const Thresholds & /*ts*/) {
+          return (*this || other);
         }
         
         boxes_domain_t operator&& (boxes_domain_t other) {
@@ -1213,6 +1229,12 @@ namespace crab {
          return rib_domain_t (m_inv || other.m_inv);
        }
        
+       template<typename Thresholds>
+       rib_domain_t widening_thresholds (rib_domain_t other, 
+                                         const Thresholds &ts) {
+         return this->widening_thresholds(other, ts);
+       }
+
        rib_domain_t operator&&(rib_domain_t other) {
          return rib_domain_t (m_inv && other.m_inv);
        }

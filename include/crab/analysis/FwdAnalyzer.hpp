@@ -142,8 +142,10 @@ namespace crab {
       FwdAnalyzer (CFG cfg, VarFactory& vfac, 
                    const liveness_t* live,
                    unsigned int widening_threshold=1,
-                   unsigned int narrowing_iters=UINT_MAX):
-          fwd_iterator_t (cfg, widening_threshold, narrowing_iters), 
+                   unsigned int narrowing_iters=UINT_MAX,
+                   size_t jump_set_size=0):
+          fwd_iterator_t (cfg, widening_threshold, narrowing_iters, 
+                          jump_set_size), 
           m_vfac (vfac), m_live (live), 
           m_summ_tbl (nullptr), m_call_tbl (nullptr) { }
       
@@ -153,10 +155,13 @@ namespace crab {
                    const liveness_t* live, 
                    summ_tbl_t* sum_tbl, call_tbl_t* call_tbl,
                    unsigned int widening_threshold=1,
-                   unsigned int narrowing_iters=UINT_MAX):
-          fwd_iterator_t (cfg, widening_threshold, narrowing_iters), 
+                   unsigned int narrowing_iters=UINT_MAX,
+                   size_t jump_set_size=0):
+          fwd_iterator_t (cfg, widening_threshold, narrowing_iters, 
+                          jump_set_size), 
           m_vfac (vfac), m_live (live), 
           m_summ_tbl (sum_tbl), m_call_tbl (call_tbl) {
+
         if (live) {
           // --- collect formal parameters and return value (if any)
           auto fdecl = this->get_cfg ().get_func_decl ();
@@ -167,6 +172,7 @@ namespace crab {
           if (auto ret_val = findReturn (this->get_cfg ()))
             m_formals += *ret_val; 
         }
+
       }
       
       iterator       pre_begin ()       { return m_pre_map.begin(); } 
