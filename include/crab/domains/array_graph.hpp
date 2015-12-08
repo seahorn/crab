@@ -78,8 +78,7 @@ namespace crab {
        
        typedef VertexName VertexNameKey;
        
-       template < typename Any1, typename Any2, 
-                  typename Any3, typename Any4, bool Any5> 
+       template < typename Any1, typename Any2, bool Any5> 
        friend class array_graph_domain;
        
        typedef index_t key_t;
@@ -674,18 +673,23 @@ namespace crab {
       Reduced product of a scalar numerical domain with a weighted array
       graph.
     */
-    template<typename ScalarNumDomain, typename Number, typename VariableName, 
-             typename WeightDomain, bool IsDistWeight = false>
+    template<typename ScalarNumDomain, typename WeightDomain, bool IsDistWeight = false>
     class array_graph_domain: 
         public writeable, 
-        public numerical_domain< Number, VariableName>,
-        public bitwise_operators< Number, VariableName >, 
-        public division_operators< Number, VariableName >
+         public numerical_domain<typename ScalarNumDomain::number_t,
+                                 typename ScalarNumDomain::varname_t>,
+         public bitwise_operators<typename ScalarNumDomain::number_t, 
+                                  typename ScalarNumDomain::varname_t>, 
+         public division_operators<typename ScalarNumDomain::number_t,
+                                   typename ScalarNumDomain::varname_t>
     {
       
      public:
-      // WARNING: assumes ScalarNumDomain::number_t = Number and
-      // ScalarNumDomain::varname_t = VariableName
+      typedef typename ScalarNumDomain::number_t Number;
+      typedef typename ScalarNumDomain::varname_t VariableName;
+      
+      // WARNING: assumes ScalarNumDomain::number_t = WeightDomain::number_t and
+      //                  ScalarNumDomain::varname_t = WeightDomain::varname_t
       using typename numerical_domain< Number, VariableName>::linear_expression_t;
       using typename numerical_domain< Number, VariableName>::linear_constraint_t;
       using typename numerical_domain< Number, VariableName>::linear_constraint_system_t;
@@ -697,8 +701,7 @@ namespace crab {
 
      private:
       typedef array_graph< VariableName,WeightDomain,ScalarNumDomain,IsDistWeight> array_graph_t;
-      typedef array_graph_domain<ScalarNumDomain,Number,VariableName, 
-                                 WeightDomain,IsDistWeight> array_graph_domain_t;
+      typedef array_graph_domain<ScalarNumDomain,WeightDomain,IsDistWeight> array_graph_domain_t;
       
       typedef mergeable_map<VariableName,VariableName> succ_index_map_t;
       typedef boost::shared_ptr< succ_index_map_t > succ_index_map_ptr;
@@ -1325,20 +1328,19 @@ namespace crab {
 
     namespace domain_traits
     {
-      template <typename ScalarDomain, typename WeightDomain, 
-                typename VariableName, typename Number>
-      void array_load (array_graph_domain<ScalarDomain, Number, VariableName, 
-                       WeightDomain, false>& inv, 
-                       VariableName lhs, VariableName arr, 
-                       VariableName idx, z_number /*n_bytes*/) {
+      template <typename ScalarDomain, typename WeightDomain>
+                
+      void array_load (array_graph_domain<ScalarDomain,WeightDomain, false>& inv, 
+                       typename ScalarDomain::varname_t lhs, 
+                       typename ScalarDomain::varname_t arr, 
+                       typename ScalarDomain::varname_t idx, z_number /*n_bytes*/) {
         inv.load (lhs, arr, idx);
       }
     
-      template <typename ScalarDomain, typename WeightDomain, 
-                typename VariableName, typename Number>
-      void array_store (array_graph_domain<ScalarDomain, Number, VariableName, 
-                        WeightDomain, false>& inv, 
-                        VariableName arr, VariableName idx,
+      template <typename ScalarDomain, typename WeightDomain>
+      void array_store (array_graph_domain<ScalarDomain,WeightDomain, false>& inv, 
+                        typename ScalarDomain::varname_t arr, 
+                        typename ScalarDomain::varname_t idx,
                         typename ScalarDomain::linear_expression_t val,
                         z_number /*n_bytes*/, bool /*is_singleton*/) {
         inv.store (arr, idx, val);

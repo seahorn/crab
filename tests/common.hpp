@@ -53,13 +53,11 @@ namespace crab {
     typedef DBM<z_number, varname_t> dbm_domain_t;
     typedef anti_unif<term::TDomInfo<z_number, varname_t, interval_domain_t> >::anti_unif_t term_domain_t;
     typedef anti_unif<term::TDomInfo<z_number, varname_t, dbm_domain_t> >::anti_unif_t term_dbm_t;
-    typedef boxes_domain< z_number, varname_t > boxes_domain_t;
-    typedef rib_domain< z_number, varname_t > rib_domain_t;
+    typedef boxes_domain<z_number, varname_t > boxes_domain_t;
+    typedef rib_domain<z_number, varname_t > rib_domain_t;
     // Array domains
-    typedef array_graph_domain<dbm_domain_t,
-                               z_number, varname_t,
-                               interval_domain_t> array_graph_domain_t;
-    typedef array_smashing <interval_domain_t, z_number, varname_t> array_smashing_t;
+    typedef array_graph_domain<dbm_domain_t, interval_domain_t> array_graph_domain_t;
+    typedef array_smashing<interval_domain_t> array_smashing_t;
   } 
 
 }
