@@ -170,6 +170,9 @@ namespace crab {
       bool isAssume () const { 
         return (m_stmt_code == ASSUME); 
       }
+      bool isSelect () const { 
+        return (m_stmt_code == SELECT); 
+      }
       bool isArrRead () const { 
         return (m_stmt_code == ARR_LOAD);
       }
@@ -2310,17 +2313,31 @@ namespace crab {
       size_t size () const { return std::distance (begin (), end ()); }
      
       thresholds_t initialize_thresholds_for_widening (size_t size) const {
-        
+        typedef typename thresholds_t::bound_t bound_t;
+
         thresholds_t thresholds (size);
         for (auto const &b : boost::make_iterator_range (begin (), end ())) {
           for (auto const&i : boost::make_iterator_range (b.begin (), b.end ())) {
+
+            bound_t t = bound_t::plus_infinity ();
             if (i.isAssume ()) {
               auto assume_inst = static_cast<const typename basic_block_t::z_assume_t*> (&i);
-              z_number t (-(assume_inst->constraint ().expression ().constant ()));
-              // for each constant c we also add c-1 and c+1
-              thresholds.add (t-1);
-              thresholds.add (t);
-              thresholds.add (t+1);
+              t = -(assume_inst->constraint ().expression ().constant ());
+            }
+            else if (i.isSelect ()) {
+              auto select_inst = static_cast<const typename basic_block_t::z_select_t*> (&i);
+              t = -(select_inst->cond ().expression ().constant ());
+            }
+            
+            if (t != bound_t::plus_infinity ()) {
+              ////
+              // For code pattern like this "if(x<k1) {x+=k2;}" note
+              // that the condition (x<k1) is translated to (x<=k1-1)
+              // so an useful threshold would be k1+1+k2.  Since we
+              // don't keep track of how x is incremented or
+              // decremented we choose arbitrarily k2=1.
+              ////
+              thresholds.add (t+2);
             }
           }
         }
