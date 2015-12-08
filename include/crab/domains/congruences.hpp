@@ -1189,7 +1189,9 @@ public:
     return csts;
   }
 
-  const char* getDomainName() const { return "Congruences"; }
+  static const char* getDomainName() {
+    return "Congruences"; 
+  }
 
 }; // class congruence_domain
 

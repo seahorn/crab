@@ -262,8 +262,10 @@ namespace crab {
           o << _inv;
         }
         
-        const char* getDomainName () const {
-          std::string name ("Array smashing(" + std::string(_inv.getDomainName ()) + ")");
+        static const char* getDomainName () {
+          std::string name ("ArraySmashing(" + 
+                            std::string(NumDomain::getDomainName ()) + 
+                            ")");
           return name.c_str ();
         }  
         

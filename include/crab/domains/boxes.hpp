@@ -137,7 +137,9 @@ namespace crab {
         void write(ostream& o) 
         { CRAB_ERROR (LDD_NOT_FOUND); }
           
-        const char* getDomainName () const {return "Boxes";}  
+        static const char* getDomainName () {
+          return "Dummy Boxes";
+        }  
       }; 
 
 
@@ -261,8 +263,9 @@ namespace crab {
         void write(ostream& o) 
         { CRAB_ERROR (LDD_NOT_FOUND); }
           
-        const char* getDomainName () const 
-        {return "Reduced Product of Intervals and Boxes";}  
+        static const char* getDomainName () {
+          return "Dummy Reduced Product of Intervals and Boxes";
+        }  
       }; 
       
    } // namespace domains
@@ -1085,7 +1088,9 @@ namespace crab {
           Cudd_SetStdout(cudd,fp);      
         }
         
-        const char* getDomainName () const {return "Boxes";}  
+        static const char* getDomainName () {
+          return "Boxes";
+        }  
         
       }; 
 
@@ -1321,7 +1326,9 @@ namespace crab {
          return m_inv.first().to_linear_constraint_system();
        }
        
-       const char* getDomainName() const { return m_inv.getDomainName (); }
+       static const char* getDomainName() { 
+         return product_domain_t::getDomainName (); 
+       }
        
      }; // class rib_domain
 

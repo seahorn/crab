@@ -98,7 +98,7 @@ int main (){
     term_domain_t inv = term_domain_t::top ();
     a.Run (inv);
     // Print invariants
-    cout << "Invariants using " << inv.getDomainName () << "\n";
+    cout << "Invariants using " << term_domain_t::getDomainName () << "\n";
     for (auto &b : cfg) {
       auto inv = a [b.label ()];
       std::cout << get_label_str (b.label ()) << "=" << inv << "\n";

@@ -547,8 +547,8 @@ namespace crab {
          return this->_product.first().to_linear_constraint_system();
        }
        
-       const char* getDomainName() const { 
-         return this->_product.getDomainName (); 
+       static const char* getDomainName() { 
+         return domain_product2_t::getDomainName (); 
        }
        
      }; // class numerical_congruence_domain

@@ -1542,7 +1542,9 @@ namespace ikos {
       return csts;
     }
     
-    const char* getDomainName () const {return "Intervals";}
+    static const char* getDomainName () {
+      return "Intervals";
+    }
 
   }; // class interval_domain
   

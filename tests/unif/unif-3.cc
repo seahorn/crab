@@ -67,7 +67,7 @@ int main (int argc, char** argv )
     interval_domain_t inv = interval_domain_t::top ();
     a.Run (inv);
     // Print invariants
-    cout << "Invariants using " << inv.getDomainName () << "\n";
+    cout << "Invariants using " << interval_domain_t::getDomainName () << "\n";
     for (auto &b : cfg) {
       auto inv = a [b.label ()];
       std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
@@ -80,7 +80,7 @@ int main (int argc, char** argv )
     dbm_domain_t inv = dbm_domain_t::top ();
     a.Run (inv);
     // Print invariants
-    cout << "Invariants using " << inv.getDomainName () << "\n";
+    cout << "Invariants using " << dbm_domain_t::getDomainName () << "\n";
     for (auto &b : cfg) {
       auto inv = a [b.label ()];
       std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
@@ -93,7 +93,7 @@ int main (int argc, char** argv )
     term_domain_t inv = term_domain_t::top ();
     a.Run (inv);
     // Print invariants
-    cout << "Invariants using " << inv.getDomainName () << "\n";
+    cout << "Invariants using " << term_domain_t::getDomainName () << "\n";
     for (auto &b : cfg) {
       auto inv = a [b.label ()];
       std::cout << get_label_str (b.label ()) << "=" << inv << "\n";

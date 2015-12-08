@@ -187,12 +187,12 @@ namespace ikos {
       }
     }
 
-    const char* getDomainName () const { 
+    static const char* getDomainName () { 
        std::stringstream buf;
        buf << "Product of " 
-           << this->_first.getDomainName () 
+           << Domain1::getDomainName () 
            << " and "
-           << this->_second.getDomainName ();
+           << Domain2::getDomainName ();
        std::string name (buf.str());
        return name.c_str ();
     }
@@ -478,8 +478,8 @@ namespace ikos {
       this->_product.write(o);
     }
 
-    const char* getDomainName () const { 
-      return this->_product.getDomainName ();
+    static const char* getDomainName () { 
+      return domain_product2_t::getDomainName ();
     }
 
   }; // class numerical_domain_product2

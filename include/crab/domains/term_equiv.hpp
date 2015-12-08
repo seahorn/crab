@@ -1127,8 +1127,10 @@ namespace crab {
 #endif 
        }
 
-       const char* getDomainName () const { 
-         std::string name ("term(" + std::string(_impl.getDomainName ()) + ")");
+       static const char* getDomainName () { 
+         std::string name ("Term(" + 
+                           std::string(dom_t::getDomainName ()) + 
+                           ")");
          return name.c_str ();
        }
 

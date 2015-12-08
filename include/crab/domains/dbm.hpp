@@ -1469,7 +1469,9 @@ namespace crab {
         return csts;
       }
 
-      const char* getDomainName () const {return "DBM";}
+      static const char* getDomainName () {
+        return "Sparse DBM";
+      }
 
     }; // class DBM
 
