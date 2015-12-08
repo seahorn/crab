@@ -40,13 +40,12 @@ namespace crab {
           std::swap (inv, res);
         }
      
-        // make a new copy of x
         template <typename AbsDomain, typename VariableName >
         void expand (AbsDomain& inv, VariableName x, VariableName new_x) {
           // lose precision if relational domain
           inv.set (new_x , inv [x]);
         }
-     
+
         template <typename AbsDomain, typename VariableName>
         void array_init (AbsDomain& inv, VariableName a,
                          const vector<ikos::z_number>& vals) {

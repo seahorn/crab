@@ -82,6 +82,11 @@ namespace crab {
         
         boxes_domain_t operator||(boxes_domain_t other)
         { CRAB_ERROR (LDD_NOT_FOUND); }
+
+        template<typename Thresholds>
+        boxes_domain_t widening_thresholds (boxes_domain_t other, 
+                                            const Thresholds &ts)
+        { CRAB_ERROR (LDD_NOT_FOUND); }
         
         boxes_domain_t operator&& (boxes_domain_t other) 
         { CRAB_ERROR (LDD_NOT_FOUND); }
@@ -134,7 +139,9 @@ namespace crab {
         void write(ostream& o) 
         { CRAB_ERROR (LDD_NOT_FOUND); }
           
-        const char* getDomainName () const {return "Boxes";}  
+        static const char* getDomainName () {
+          return "Dummy Boxes";
+        }  
       }; 
 
 
@@ -205,6 +212,11 @@ namespace crab {
         rib_domain_t operator||(rib_domain_t other)
         { CRAB_ERROR (LDD_NOT_FOUND); }
         
+        template<typename Thresholds>
+        rib_domain_t widening_thresholds (rib_domain_t other, 
+                                          const Thresholds &ts)
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+
         rib_domain_t operator&& (rib_domain_t other) 
         { CRAB_ERROR (LDD_NOT_FOUND); }
         
@@ -256,8 +268,9 @@ namespace crab {
         void write(ostream& o) 
         { CRAB_ERROR (LDD_NOT_FOUND); }
           
-        const char* getDomainName () const 
-        {return "Reduced Product of Intervals and Boxes";}  
+        static const char* getDomainName () {
+          return "Dummy Reduced Product of Intervals and Boxes";
+        }  
       }; 
       
    } // namespace domains
@@ -657,6 +670,12 @@ namespace crab {
 
           CRAB_DEBUG ("Widening ", *this, " and ", other, "=", res);
           return res;
+        }
+
+        template<typename Thresholds>
+        boxes_domain_t widening_thresholds (boxes_domain_t other, 
+                                            const Thresholds & /*ts*/) {
+          return (*this || other);
         }
         
         boxes_domain_t operator&& (boxes_domain_t other) {
@@ -1078,7 +1097,9 @@ namespace crab {
           Cudd_SetStdout(cudd,fp);      
         }
         
-        const char* getDomainName () const {return "Boxes";}  
+        static const char* getDomainName () {
+          return "Boxes";
+        }  
         
       }; 
 
@@ -1226,6 +1247,12 @@ namespace crab {
          return rib_domain_t (m_inv || other.m_inv);
        }
        
+       template<typename Thresholds>
+       rib_domain_t widening_thresholds (rib_domain_t other, 
+                                         const Thresholds &ts) {
+         return this->widening_thresholds(other, ts);
+       }
+
        rib_domain_t operator&&(rib_domain_t other) {
          return rib_domain_t (m_inv && other.m_inv);
        }
@@ -1312,7 +1339,9 @@ namespace crab {
          return m_inv.first().to_linear_constraint_system();
        }
        
-       const char* getDomainName() const { return m_inv.getDomainName (); }
+       static const char* getDomainName() { 
+         return product_domain_t::getDomainName (); 
+       }
        
      }; // class rib_domain
 

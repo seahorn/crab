@@ -789,6 +789,14 @@ public:
     }
   }
 
+  // Widening with thresholds
+  template<typename Thresholds>
+  var_packing_domain_t widening_thresholds (var_packing_domain_t o, 
+                                            const Thresholds &ts) {
+    // TODO: use thresholds
+    return (*this || o);
+  }
+  
   // Narrowing
   var_packing_domain_t operator&&(var_packing_domain_t o) {
     // Requires normalization
@@ -1023,7 +1031,9 @@ public:
 #endif
   }
 
-  const char* getDomainName() const { return "VariablePacking"; }
+  static const char* getDomainName() { 
+    return "VariablePacking"; 
+  }
 
 }; // end class var_packing_domain
 

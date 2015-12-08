@@ -100,6 +100,29 @@ namespace ikos {
       }
       
     }; // class widening_op
+
+
+    template <typename Thresholds>
+    class widening_thresholds_op: public binary_op_t {
+      const Thresholds& m_ts;
+
+     public:
+      widening_thresholds_op (const Thresholds& ts): m_ts (ts) { }
+
+      boost::optional< Value > apply(Value x, Value y) {
+        Value z = x.widening_thresholds(y, m_ts);
+        if (z.is_top()) {
+          return boost::optional< Value >();
+        } else {
+          return boost::optional< Value >(z);
+        }
+      };
+      
+      bool default_is_absorbing() {
+        return true;
+      }
+      
+    }; // class widening_thresholds_op
     
     class meet_op: public binary_op_t {
       
@@ -255,6 +278,19 @@ namespace ikos {
         return *this;
       } else {
         widening_op o;
+        return separate_domain_t(apply_operation(o, this->_tree, e._tree));
+      }
+    }
+
+    // Widening with thresholds
+    template<typename Thresholds>
+    separate_domain_t widening_thresholds(separate_domain_t e, const Thresholds& ts) {
+      if (this->is_bottom()) {
+        return e;
+      } else if(e.is_bottom()) {
+        return *this;
+      } else {
+        widening_thresholds_op<Thresholds> o (ts);
         return separate_domain_t(apply_operation(o, this->_tree, e._tree));
       }
     }

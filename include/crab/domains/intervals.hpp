@@ -448,7 +448,20 @@ namespace ikos {
                           this->_ub);
       }
     }
-    
+
+    template<typename Thresholds>
+    interval_t widening_thresholds (interval_t x, const Thresholds &ts) {
+      if (this->is_bottom()) {
+	return x;
+      } else if (x.is_bottom()) {
+	return *this;
+      } else {
+        bound_t lb = (x._lb < this->_lb ? ts.get_prev (x._lb) : this->_lb);
+        bound_t ub = (this->_ub < x._ub ? ts.get_next (x._ub) :  this->_ub);            
+        return interval_t(lb, ub);
+      }
+    }
+
     interval_t operator&&(interval_t x) const {
       if (this->is_bottom() || x.is_bottom()) {
         return this->bottom();
@@ -1220,6 +1233,11 @@ namespace ikos {
       return (this->_env || e._env);
     }
 
+    template<typename Thresholds>
+    interval_domain_t widening_thresholds (interval_domain_t e, const Thresholds &ts) {
+      return this->_env.widening_thresholds (e._env, ts);
+    }
+
     interval_domain_t operator&&(interval_domain_t e) {
       return (this->_env && e._env);
     }
@@ -1528,7 +1546,9 @@ namespace ikos {
       return csts;
     }
     
-    const char* getDomainName () const {return "Intervals";}
+    static const char* getDomainName () {
+      return "Intervals";
+    }
 
   }; // class interval_domain
   

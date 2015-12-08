@@ -191,12 +191,12 @@ namespace ikos {
       }
     }
 
-    const char* getDomainName () const { 
+    static const char* getDomainName () { 
        std::stringstream buf;
        buf << "Product of " 
-           << this->_first.getDomainName () 
+           << Domain1::getDomainName () 
            << " and "
-           << this->_second.getDomainName ();
+           << Domain2::getDomainName ();
        std::string name (buf.str());
        return name.c_str ();
     }
@@ -406,6 +406,14 @@ namespace ikos {
       return numerical_domain_product2_t(this->_product || other._product);
     }
 
+    template<typename Thresholds>
+    numerical_domain_product2_t widening_thresholds (numerical_domain_product2_t other,
+                                                     const Thresholds& ts) {
+      return numerical_domain_product2_t (
+          this->_product.first ().widening_thresholds (other._product.first (), ts),
+          this->_product.second ().widening_thresholds (other._product.second (), ts));
+    }
+
     numerical_domain_product2_t operator&&(numerical_domain_product2_t other) {
       return numerical_domain_product2_t(this->_product && other._product);
     }
@@ -482,8 +490,8 @@ namespace ikos {
       this->_product.write(o);
     }
 
-    const char* getDomainName () const { 
-      return this->_product.getDomainName ();
+    static const char* getDomainName () { 
+      return domain_product2_t::getDomainName ();
     }
 
   }; // class numerical_domain_product2
@@ -590,6 +598,13 @@ namespace ikos {
     numerical_domain_product3_t 
     operator||(numerical_domain_product3_t other) {
       return numerical_domain_product3_t(this->_product || other._product);
+    }
+
+    template<typename Thresholds>
+    numerical_domain_product3_t widening_thresholds (numerical_domain_product3_t other,
+                                                     const Thresholds& ts) {
+      return numerical_domain_product3_t (
+          this->_product.widening_thresholds (other._product, ts));
     }
 
     numerical_domain_product3_t 

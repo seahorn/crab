@@ -20,11 +20,12 @@ Crab has been designed to have two kind of users:
 2.  Researchers on abstract interpretation who would like to
     experiment with new abstract domains and fixpoint iterators.
 
-## License ##
+## Licenses ##
 
 Ikos is distributed under NASA Open Source Agreement (NOSA)
-Version 1.3 or later. Crab is distributed under MIT license. See
-[Crab_LICENSE.txt](Crab_LICENSE.txt) and
+Version 1.3 or later. Crab is distributed under MIT license.
+
+See [Crab_LICENSE.txt](Crab_LICENSE.txt) and
 [Ikos_LICENSE.pdf](Ikos_LICENSE.pdf) for details.
 
 ## Compilation ##
@@ -46,7 +47,7 @@ If you want to use the BOXES domain then add `-DUSE_LDD=ON` option.
 
 If you want to use the Apron library domains then add `-DUSE_APRON=ON` option.
 
-## Input/Output ##
+## Crab CFG language and output ##
 
 The input of Crab is a Control Flow Graph (CFG) language that
 interfaces with the abstract domains and iterators for the purpose of
@@ -64,8 +65,8 @@ but it also supports other instructions such as
 - load, store, pointer arithmetic, and function pointers
 - function calls and returns
 
-The output of Crab is a map from CFG basic blocks to invariants. The
-format of the output invariants can be chosen by the client.
+The output of Crab is a map from CFG basic blocks to invariants
+expressed in the underlying abstract domain.
 
 ## Examples ##
 
@@ -79,9 +80,8 @@ tests.
 
 Check these projects:
 
-- [crab-llvm](https://github.com/seahorn/crab-llvm) is a standalone
-application that computes invariants from LLVM-based languages using
-crab.
+- [crab-llvm](https://github.com/seahorn/crab-llvm) is a static
+analyzer that infers invariants from LLVM-based languages using Crab.
 
 - [SeaHorn](https://github.com/seahorn) is a verification framework
 that uses crab-llvm to supply invariants to the back-end solvers.
@@ -93,6 +93,7 @@ The new fixpoint iterator must follow this API:
     template< class NodeName, class AbstractValue >
     class forward_fixpoint_iterator {
      public:
+	 
      virtual AbstractValue analyze(NodeName, AbstractValue) = 0;
     
      virtual void process_pre(NodeName, AbstractValue) = 0;
@@ -100,6 +101,7 @@ The new fixpoint iterator must follow this API:
      virtual void process_post(NodeName, AbstractValue) = 0;
     
      virtual ~forward_fixpoint_iterator() { }
+	 
     }; 
 
 ## How to implement new abstract domains ##

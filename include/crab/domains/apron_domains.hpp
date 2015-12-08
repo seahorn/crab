@@ -74,6 +74,10 @@ namespace crab {
         apron_domain_t operator||(apron_domain_t other)
         { CRAB_ERROR (APRON_NOT_FOUND); }
         
+        template<typename Thresholds>
+        apron_domain_t widening_thresholds (apron_domain_t e, const Thresholds &ts) 
+        { CRAB_ERROR (APRON_NOT_FOUND); }
+
         apron_domain_t operator&& (apron_domain_t other) 
         { CRAB_ERROR (APRON_NOT_FOUND); }
         
@@ -125,7 +129,9 @@ namespace crab {
         void write(ostream& o) 
         { CRAB_ERROR (APRON_NOT_FOUND); }
           
-        const char* getDomainName () const {return "Dummy Apron";}  
+        static const char* getDomainName () {
+          return "Dummy Apron";
+        }  
       }; 
    } // namespace domains
 }// namespace crab
@@ -742,6 +748,12 @@ namespace crab {
           }
         }        
         
+        template<typename Thresholds>
+        apron_domain_t widening_thresholds (apron_domain_t o, const Thresholds &ts) {
+          // TODO: use thresholds
+          return (*this || o);
+        }
+
         apron_domain_t operator&&(apron_domain_t o) {
           if (is_bottom() || o.is_bottom())
             return bottom();
@@ -1180,7 +1192,7 @@ namespace crab {
           }
         }          
 
-        const char* getDomainName () const {
+        static const char* getDomainName () {
           switch (ApronDom) {
             case APRON_INT:     return "Apron Intervals"; 
             case APRON_OCT:     return "Apron Octagon"; 

@@ -599,6 +599,13 @@ public:
     }
   }
 
+  // Widening with thresholds
+  template<typename Thresholds>
+  dbm_t widening_thresholds (dbm_t o, const Thresholds &ts) {
+    // TODO: use thresholds
+    return (*this || o);
+  }
+
   // Narrowing
   dbm_t operator&&(dbm_t o) {
     // Requires normalization
@@ -1250,7 +1257,9 @@ public:
     o << csts;
   }
 
-  const char* getDomainName() const { return "Naive DBM"; }
+  static const char* getDomainName() { 
+    return "Dense DBM";
+  }
 
 }; // class naive_dbm
 

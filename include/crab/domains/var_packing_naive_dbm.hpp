@@ -134,6 +134,13 @@ public:
     return var_packing_dbm_t(_domain || o._domain);
   }
 
+  // Widening with thresholds
+  template<typename Thresholds>
+  var_packing_dbm_t widening_thresholds (var_packing_dbm_t o, 
+                                         const Thresholds &ts) {
+    return this->widening_thresholds (o, ts);
+  }
+  
   var_packing_dbm_t operator&&(var_packing_dbm_t o) {
     return var_packing_dbm_t(_domain && o._domain);
   }
@@ -468,7 +475,9 @@ public:
 
   void write(std::ostream& o) { _domain.write(o);}
 
-  const char* getDomainName() const { return "VariablePackingDBM"; }
+  static const char* getDomainName() {
+    return "Dense DBM with packing"; 
+  }
 
 }; // end class var_packing_dbm
 

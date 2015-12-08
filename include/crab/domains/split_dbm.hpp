@@ -680,6 +680,12 @@ namespace crab {
         }
       }
 
+      template<typename Thresholds>
+      DBM_t widening_thresholds (DBM_t o, const Thresholds &ts) {
+        // TODO: use thresholds
+        return (*this || o);
+      }
+
       DBM_t operator&(DBM_t o) {
         if (is_bottom() || o.is_bottom())
           return bottom();
@@ -2017,7 +2023,9 @@ namespace crab {
         return csts;
       }
 
-      const char* getDomainName () const {return "spDBM";}
+      static const char* getDomainName () {
+        return "split DBM";
+      }
 
     }; // class SplitDBM
   } // namespace domains

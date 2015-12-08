@@ -26,16 +26,21 @@ namespace crab {
 
       //! Abstract domain to reason about summarized variables. All array
       //  elements are `smashed` into a single cell.
-      template<typename NumDomain, typename Number, typename VariableName>
+      template<typename NumDomain>
       class array_smashing: 
          public ikos::writeable, 
-         public numerical_domain< Number, VariableName>,
-         public bitwise_operators< Number, VariableName >, 
-         public division_operators< Number, VariableName > {
+         public numerical_domain<typename NumDomain::number_t,
+                                 typename NumDomain::varname_t>,
+         public bitwise_operators<typename NumDomain::number_t, 
+                                  typename NumDomain::varname_t>, 
+         public division_operators<typename NumDomain::number_t,
+                                   typename NumDomain::varname_t> {
               
        public:
-        // WARNING: assumes NumDomain::number_t = Number and
-        // NumDomain::varname_t = VariableName
+
+        typedef typename NumDomain::number_t Number;
+        typedef typename NumDomain::varname_t VariableName;
+
         using typename numerical_domain< Number, VariableName>::linear_expression_t;
         using typename numerical_domain< Number, VariableName>::linear_constraint_t;
         using typename numerical_domain< Number, VariableName>::linear_constraint_system_t;
@@ -43,7 +48,7 @@ namespace crab {
         using typename numerical_domain< Number, VariableName>::number_t;
         using typename numerical_domain< Number, VariableName>::varname_t;
 
-        typedef array_smashing <NumDomain, Number, VariableName> array_smashing_t;
+        typedef array_smashing <NumDomain> array_smashing_t;
         typedef NumDomain content_domain_t;
 
         typedef interval <Number> interval_t;
@@ -116,6 +121,12 @@ namespace crab {
         
         array_smashing_t operator||(array_smashing_t other) {
           return array_smashing_t (_inv || other._inv);
+        }
+
+        template<typename Thresholds>
+        array_smashing_t widening_thresholds (array_smashing_t other, 
+                                              const Thresholds &ts) {
+          return array_smashing_t (_inv.widening_thresholds (other._inv, ts));
         }
         
         array_smashing_t operator&& (array_smashing_t other) {
@@ -260,7 +271,12 @@ namespace crab {
           o << _inv;
         }
         
-        const char* getDomainName () const {return "Array smashing";}  
+        static const char* getDomainName () {
+          std::string name ("ArraySmashing(" + 
+                            std::string(NumDomain::getDomainName ()) + 
+                            ")");
+          return name.c_str ();
+        }  
         
       }; // end array_smashing
    
@@ -269,48 +285,55 @@ namespace crab {
    namespace domain_traits {
     
      using namespace domains;            
-     template <typename BaseDomain, typename VariableName, typename Number>
-     void array_init (array_smashing<BaseDomain,Number,VariableName>& inv, 
-                      VariableName a, 
+
+     template <typename BaseDomain>
+     void array_init (array_smashing<BaseDomain>& inv, 
+                      typename BaseDomain::varname_t a, 
                       const vector<ikos::z_number> &values) {
        inv.array_init (a, values);
      }
    
-     template <typename BaseDomain, typename VariableName, typename Number>
-     void assume_array (array_smashing<BaseDomain,Number,VariableName>& inv, 
-                        VariableName a, Number val) {
-       inv.assume_array (a, interval<Number> (bound <Number> (val)));
+     template <typename BaseDomain>
+     void assume_array (array_smashing<BaseDomain>& inv, 
+                        typename BaseDomain::varname_t a, 
+                        typename BaseDomain::number_t val) {
+       inv.assume_array (a, interval<typename BaseDomain::number_t> 
+                         (bound <typename BaseDomain::number_t> (val)));
      }
    
-     template <typename BaseDomain, typename VariableName, typename Number>
-     void assume_array (array_smashing<BaseDomain,Number,VariableName>& inv, 
-                        VariableName a, interval<Number> val) {
+     template <typename BaseDomain>
+     void assume_array (array_smashing<BaseDomain>& inv, 
+                        typename BaseDomain::varname_t a, 
+                        interval<typename BaseDomain::number_t> val) {
        inv.assume_array (a, val);
      }
    
-     template <typename BaseDomain, typename VariableName, typename Number>
-     void array_load (array_smashing<BaseDomain, Number, VariableName>& inv, 
-                      VariableName lhs, VariableName a, 
-                      VariableName i, z_number n_bytes) {
+     template <typename BaseDomain>
+     void array_load (array_smashing<BaseDomain>& inv, 
+                      typename BaseDomain::varname_t lhs, 
+                      typename BaseDomain::varname_t a, 
+                      typename BaseDomain::varname_t i, 
+                      z_number n_bytes) {
        inv.load (lhs, a, i, n_bytes);
      }
    
-     template <typename BaseDomain, typename VariableName, typename Number>
-     void array_store (array_smashing<BaseDomain, Number, VariableName>& inv, 
-                       VariableName a, VariableName i,
+     template <typename BaseDomain>
+     void array_store (array_smashing<BaseDomain>& inv, 
+                       typename BaseDomain::varname_t a, 
+                       typename BaseDomain::varname_t i,
                        typename BaseDomain::linear_expression_t val,
                        z_number n_bytes, bool is_singleton) {
        inv.store (a, i, val, n_bytes, is_singleton);
      }
 
-     template <typename BaseDomain, typename VariableName, typename Number, typename Iterator >
-     void forget (array_smashing<BaseDomain, Number,VariableName>& inv, 
+     template <typename BaseDomain, typename Iterator >
+     void forget (array_smashing<BaseDomain>& inv, 
                   Iterator it, Iterator end) {
        inv.forget (it, end);
      }
    
-     template <typename BaseDomain, typename VariableName, typename Number, typename Iterator >
-     void project (array_smashing<BaseDomain,Number, VariableName>& inv, 
+     template <typename BaseDomain, typename Iterator >
+     void project (array_smashing<BaseDomain>& inv, 
                    Iterator it, Iterator end) {
        inv.project (it, end);
      }

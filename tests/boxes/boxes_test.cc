@@ -225,7 +225,7 @@ int main (int argc, char** argv )
     a.Run (inv);
 
     // Print invariants
-    cout << "Invariants using " << inv.getDomainName () << "\n";
+    cout << "Invariants using " << boxes_domain_t::getDomainName () << "\n";
     for (auto &b : cfg) {
       auto inv = a [b.label ()];
       std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
@@ -251,7 +251,7 @@ int main (int argc, char** argv )
     rib_domain_t inv = rib_domain_t::top ();
     a.Run (inv);
     // Print invariants
-    cout << "Invariants using " << inv.getDomainName () << "\n";
+    cout << "Invariants using " << boxes_domain_t::getDomainName () << "\n";
     for (auto &b : cfg) {
       auto inv = a [b.label ()];
       std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
@@ -276,7 +276,7 @@ int main (int argc, char** argv )
     boxes_domain_t inv = boxes_domain_t::top ();
     a.Run (inv);
     // Print invariants
-    cout << "Invariants using " << inv.getDomainName () << "\n";
+    cout << "Invariants using " << boxes_domain_t::getDomainName () << "\n";
     for (auto &b : cfg) {
       auto inv = a [b.label ()];
       std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
@@ -301,7 +301,7 @@ int main (int argc, char** argv )
     boxes_domain_t inv = boxes_domain_t::top ();
     a.Run (inv);
     // Print invariants
-    cout << "Invariants using " << inv.getDomainName () << "\n";
+    cout << "Invariants using " << boxes_domain_t::getDomainName () << "\n";
     for (auto &b : cfg) {
       auto inv = a [b.label ()];
       std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
@@ -326,7 +326,7 @@ int main (int argc, char** argv )
     boxes_domain_t inv = boxes_domain_t::top ();
     a.Run (inv);
     // Print invariants
-    cout << "Invariants using " << inv.getDomainName () << "\n";
+    cout << "Invariants using " << boxes_domain_t::getDomainName () << "\n";
     for (auto &b : cfg) {
       auto inv = a [b.label ()];
       std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
@@ -350,7 +350,7 @@ int main (int argc, char** argv )
     boxes_domain_t inv = boxes_domain_t::top ();
     a.Run (inv);
     // Print invariants
-    cout << "Invariants using " << inv.getDomainName () << "\n";
+    cout << "Invariants using " << boxes_domain_t::getDomainName () << "\n";
     for (auto &b : cfg) {
       auto inv = a [b.label ()];
       std::cout << get_label_str (b.label ()) << "=" << inv << "\n";

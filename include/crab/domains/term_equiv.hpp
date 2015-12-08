@@ -473,8 +473,39 @@ namespace crab {
          }
        }
 
-       // Widening
-       anti_unif_t operator||(anti_unif_t o) {
+       anti_unif_t operator||(anti_unif_t other) {
+         WidenOp op;
+         return this->widening (other, op);
+       }
+       
+       template<typename Thresholds>
+       anti_unif_t widening_thresholds (anti_unif_t other, const Thresholds& ts) {
+         WidenWithThresholdsOp<Thresholds> op (ts);
+         return this->widening (other, op);
+       }
+       
+      private:
+
+       struct WidenOp {
+         dom_t apply (dom_t before, dom_t after){ 
+           return before || after;
+         }
+       };
+
+       template<typename Thresholds>
+       struct WidenWithThresholdsOp {
+         const Thresholds & m_ts;
+
+         WidenWithThresholdsOp (const Thresholds &ts): m_ts (ts) { }
+
+         dom_t apply (dom_t before, dom_t after) { 
+           return before.widening_thresholds (after, m_ts);
+         }
+       };
+
+       template <typename WidenOp>
+       anti_unif_t widening (anti_unif_t o, WidenOp widen_op) {
+                             
          // The left operand of the widenning cannot be closed, otherwise
          // termination is not ensured. However, if the right operand is
          // close precision may be improved.
@@ -532,10 +563,11 @@ namespace crab {
              x_impl.assign(vt.name(), dom_linexp_t(vx));
              y_impl.assign(vt.name(), dom_linexp_t(vy));
            }
+
            for(auto vx : xvars) x_impl -= vx.name();
            for(auto vy : yvars) y_impl -= vy.name();
-           
-           dom_t x_widen_y = x_impl||y_impl;
+                      
+           dom_t x_widen_y = widen_op.apply (x_impl, y_impl);
            
            for(auto p : out_vmap)
              out_tbl.add_ref(p.second);
@@ -548,9 +580,11 @@ namespace crab {
            CRAB_DEBUG(x_widen_y,"\n================");
            
            return res;
-         }
+         }         
        }
-       
+
+      public:
+
        // Meet
        anti_unif_t operator&(anti_unif_t o) {
          // Does not require normalization of any of the two operands
@@ -1097,10 +1131,10 @@ namespace crab {
 #endif 
        }
 
-       const char* getDomainName () const { 
-         std::stringstream buf;
-         buf << "term(" << _impl.getDomainName () << ")";
-         std::string name(buf.str());
+       static const char* getDomainName () { 
+         std::string name ("Term(" + 
+                           std::string(dom_t::getDomainName ()) + 
+                           ")");
          return name.c_str ();
        }
 

@@ -10,7 +10,7 @@
 #include <crab/analysis/Liveness.hpp>
 #include <crab/domains/linear_constraints.hpp> 
 #include <crab/domains/intervals.hpp>                      
-#include <crab/domains/intervals_congruences.hpp>                      
+#include <crab/domains/numerical_with_congruences.hpp>                      
 #include <crab/domains/dbm.hpp>                      
 #include <crab/domains/split_dbm.hpp>
 #include <crab/domains/var_packing_naive_dbm.hpp>
@@ -52,7 +52,7 @@ namespace crab {
     typedef bound<z_number> z_bound_t;
     // Numerical domains
     typedef interval_domain< z_number, varname_t > interval_domain_t;
-    typedef interval_congruence_domain< z_number, varname_t > ric_domain_t;
+    typedef numerical_congruence_domain< interval_domain_t> ric_domain_t;
     typedef DBM<z_number, varname_t> dbm_domain_t;
     typedef SplitDBM<z_number, varname_t> sdbm_domain_t;
     typedef var_packing_naive_dbm<z_number, varname_t> pdbm_domain_t;
@@ -65,10 +65,8 @@ namespace crab {
     typedef apron_domain< z_number, varname_t, apron_domain_id_t::APRON_OPT_OCT > opt_oct_apron_domain_t;
     typedef apron_domain< z_number, varname_t, apron_domain_id_t::APRON_PK > pk_apron_domain_t;
     // Array domains
-    typedef array_graph_domain<dbm_domain_t,
-                               z_number, varname_t,
-                               interval_domain_t> array_graph_domain_t;
-    typedef array_smashing <interval_domain_t, z_number, varname_t> array_smashing_t;
+    typedef array_graph_domain<dbm_domain_t, interval_domain_t> array_graph_domain_t;
+    typedef array_smashing<interval_domain_t> array_smashing_t;
   } 
 
 }

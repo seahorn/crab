@@ -9,6 +9,8 @@
  * - arithmetic operations over integers
  * - C-like pointers and arrays
  * - functions 
+ * 
+ * Note: changes are needed to support floating point operations.
  */
 
 #include <boost/shared_ptr.hpp>
@@ -20,6 +22,7 @@
 
 #include <crab/common/types.hpp>
 #include <crab/common/bignums.hpp>
+#include <crab/iterators/thresholds.hpp>
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/domains/intervals.hpp>
 #include <crab/domains/discrete_domains.hpp>
@@ -166,6 +169,9 @@ namespace crab {
       }
       bool isAssume () const { 
         return (m_stmt_code == ASSUME); 
+      }
+      bool isSelect () const { 
+        return (m_stmt_code == SELECT); 
       }
       bool isArrRead () const { 
         return (m_stmt_code == ARR_LOAD);
@@ -1997,7 +2003,8 @@ namespace crab {
       typedef FunctionDecl<varname_t> fdecl_t;
       typedef BasicBlock< BasicBlockLabel, VariableName > basic_block_t;   
       typedef Statement < VariableName > statement_t;
-      
+      typedef crab::iterators::Thresholds<z_number> thresholds_t;
+
       typedef typename basic_block_t::succ_iterator succ_iterator;
       typedef typename basic_block_t::pred_iterator pred_iterator;
       
@@ -2042,12 +2049,13 @@ namespace crab {
 
      private:
       
-      BasicBlockLabel    m_entry;
-      BasicBlockLabel    m_exit;
-      bool               m_has_exit;
-      basic_block_map_ptr  m_blocks;
-      TrackedPrecision   m_track_prec;
-      //! if Cfg is associated with a function
+      BasicBlockLabel m_entry;
+      BasicBlockLabel m_exit;
+      bool m_has_exit;
+      basic_block_map_ptr m_blocks;
+      TrackedPrecision m_track_prec;
+      //! we allow to define a cfg without being associated with a
+      //! function
       boost::optional<fdecl_t> m_func_decl; 
       
       
@@ -2303,7 +2311,40 @@ namespace crab {
       }
       
       size_t size () const { return std::distance (begin (), end ()); }
-      
+     
+      thresholds_t initialize_thresholds_for_widening (size_t size) const {
+        typedef typename thresholds_t::bound_t bound_t;
+
+        thresholds_t thresholds (size);
+        for (auto const &b : boost::make_iterator_range (begin (), end ())) {
+          for (auto const&i : boost::make_iterator_range (b.begin (), b.end ())) {
+
+            bound_t t = bound_t::plus_infinity ();
+            if (i.isAssume ()) {
+              auto assume_inst = static_cast<const typename basic_block_t::z_assume_t*> (&i);
+              t = -(assume_inst->constraint ().expression ().constant ());
+            }
+            else if (i.isSelect ()) {
+              auto select_inst = static_cast<const typename basic_block_t::z_select_t*> (&i);
+              t = -(select_inst->cond ().expression ().constant ());
+            }
+            
+            if (t != bound_t::plus_infinity ()) {
+              ////
+              // For code pattern like this "if(x<k1) {x+=k2;}" note
+              // that the condition (x<k1) is translated to (x<=k1-1)
+              // so an useful threshold would be k1+1+k2.  Since we
+              // don't keep track of how x is incremented or
+              // decremented we choose arbitrarily k2=1.
+              ////
+              thresholds.add (t+2);
+            }
+          }
+        }
+        
+        return thresholds;
+      }
+
       void reverse()
       {
         if (!m_has_exit)
