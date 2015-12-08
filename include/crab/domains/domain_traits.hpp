@@ -9,7 +9,7 @@
 #include <crab/domains/numerical_domains_api.hpp>
 #include <crab/domains/intervals.hpp>
 #include <crab/domains/congruences.hpp>
-#include <crab/domains/intervals_congruences.hpp>
+#include <crab/domains/numerical_with_congruences.hpp>
 #include <crab/domains/dbm.hpp>
 #include <crab/domains/term_equiv.hpp>
 #ifdef HAVE_LDD

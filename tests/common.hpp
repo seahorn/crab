@@ -10,7 +10,7 @@
 #include <crab/analysis/Liveness.hpp>
 #include <crab/domains/linear_constraints.hpp> 
 #include <crab/domains/intervals.hpp>                      
-#include <crab/domains/intervals_congruences.hpp>                      
+#include <crab/domains/numerical_with_congruences.hpp>                      
 #include <crab/domains/dbm.hpp>                      
 #include <crab/domains/boxes.hpp>                      
 #include <crab/domains/array_graph.hpp>                      
@@ -49,7 +49,7 @@ namespace crab {
     typedef bound<z_number> z_bound_t;
     // Numerical domains
     typedef interval_domain< z_number, varname_t > interval_domain_t;
-    typedef interval_congruence_domain< z_number, varname_t > ric_domain_t;
+    typedef numerical_congruence_domain< interval_domain_t> ric_domain_t;
     typedef DBM<z_number, varname_t> dbm_domain_t;
     typedef anti_unif<term::TDomInfo<z_number, varname_t, interval_domain_t> >::anti_unif_t term_domain_t;
     typedef anti_unif<term::TDomInfo<z_number, varname_t, dbm_domain_t> >::anti_unif_t term_dbm_t;
