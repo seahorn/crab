@@ -641,7 +641,7 @@ namespace crab {
             m_apstate (std::move (o.m_apstate)), 
             m_var_map (std::move (o.m_var_map)) { }
         
-        apron_domain_t operator=(const apron_domain_t& o) {
+        apron_domain_t& operator=(const apron_domain_t& o) {
           if (this != &o) {
             m_apstate = o.m_apstate;
             m_var_map = o.m_var_map;
@@ -649,7 +649,7 @@ namespace crab {
           return *this;
         }
 
-        apron_domain_t operator=(apron_domain_t&& o) {
+        apron_domain_t& operator=(apron_domain_t&& o) {
           if (this != &o) {
             m_apstate = std::move (o.m_apstate);
             m_var_map = std::move (o.m_var_map);
