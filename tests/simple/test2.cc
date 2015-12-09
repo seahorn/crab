@@ -131,5 +131,17 @@ int main (int argc, char** argv )
     }
   }
 
+  {
+    NumFwdAnalyzer <cfg_t, dis_interval_domain_t,VariableFactory>::type 
+        a (cfg,vfac,&live, 1, 2, 20);
+    a.Run (dis_interval_domain_t::top ());
+    cout << "Invariants using " << dis_interval_domain_t::getDomainName () << "\n";
+    for (auto &b : cfg) 
+    {
+      auto inv = a [b.label ()];
+      std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
+    }
+  }
+
   return 0;
 }

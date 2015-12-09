@@ -16,6 +16,7 @@
 #include <crab/domains/var_packing_naive_dbm.hpp>
 #include <crab/domains/boxes.hpp>                      
 #include <crab/domains/apron_domains.hpp>                      
+#include <crab/domains/dis_intervals.hpp>
 #include <crab/domains/array_graph.hpp>                      
 #include <crab/domains/array_smashing.hpp>
 #include <crab/cfg/CfgBgl.hpp> 
@@ -64,9 +65,10 @@ namespace crab {
     typedef apron_domain< z_number, varname_t, apron_domain_id_t::APRON_OCT > oct_apron_domain_t;
     typedef apron_domain< z_number, varname_t, apron_domain_id_t::APRON_OPT_OCT > opt_oct_apron_domain_t;
     typedef apron_domain< z_number, varname_t, apron_domain_id_t::APRON_PK > pk_apron_domain_t;
+    typedef dis_interval_domain<z_number, varname_t > dis_interval_domain_t;
     // Array domains
     typedef array_graph_domain<dbm_domain_t, interval_domain_t> array_graph_domain_t;
-    typedef array_smashing<interval_domain_t> array_smashing_t;
+    typedef array_smashing<dis_interval_domain_t> array_smashing_t;
   } 
 
 }

@@ -951,7 +951,7 @@ namespace ikos {
   class linear_interval_solver {
     
   public:
-    typedef interval< Number > interval_t;
+    typedef typename IntervalCollection::value_type Interval; 
     typedef variable< Number, VariableName > variable_t;
     typedef linear_expression< Number, VariableName > linear_expression_t;
     typedef linear_constraint< Number, VariableName > linear_constraint_t;
@@ -982,28 +982,28 @@ namespace ikos {
     static const std::size_t _large_system_op_threshold = 27; 
 
   private:
-    void refine(variable_t v, interval_t i, IntervalCollection& env) {
+    void refine(variable_t v, Interval i, IntervalCollection& env) {
       VariableName n = v.name();
-      interval_t old_i = env[n];
-      interval_t new_i = old_i & i;
+      Interval old_i = env[n];
+      Interval new_i = old_i & i;
       if (new_i.is_bottom()) {
 	throw bottom_found();
       }
-      if (old_i != new_i) {
+      if (!(old_i == new_i)) {
 	env.set(n, new_i);
 	this->_refined_variables += v;
 	++(this->_op_count);
       }
     }
 
-    interval_t compute_residual(linear_constraint_t cst, variable_t pivot, 
-                                IntervalCollection& env) {
-      interval_t residual(cst.constant());
+    Interval compute_residual(linear_constraint_t cst, variable_t pivot, 
+                              IntervalCollection& env) {
+      Interval residual(cst.constant());
       for (typename linear_constraint_t::iterator it = cst.begin(); 
            it != cst.end(); ++it) {
 	variable_t v = it->second;
 	if (v.index() != pivot.index()) {
-	  residual = residual - (it->first * env[v.name()]);
+	  residual = residual - (Interval (it->first) * env[v.name()]);
 	  ++(this->_op_count);
 	}
       }
@@ -1015,7 +1015,7 @@ namespace ikos {
            it != cst.end(); ++it) {
 	Number c = it->first;
 	variable_t pivot = it->second;
-	interval_t rhs = this->compute_residual(cst, pivot, env) / interval_t(c);
+	Interval rhs = this->compute_residual(cst, pivot, env) / Interval(c);
 	if (cst.is_equality()) {
 	  this->refine(pivot, rhs, env);
 	} else if (cst.is_inequality()) {
@@ -1028,12 +1028,12 @@ namespace ikos {
 	  // cst is a disequation
 	  boost::optional< Number > c = rhs.singleton();
 	  if (c) {
-	    interval_t old_i = env[pivot.name()];
-	    interval_t new_i = intervals_impl::trim_bound< Number >(old_i, *c);
+	    Interval old_i = env[pivot.name()];
+	    Interval new_i = intervals_impl::trim_bound< Number >(old_i, *c);
 	    if (new_i.is_bottom()) {
 	      throw bottom_found();
 	    }
-	    if (old_i != new_i) {
+	    if (!(old_i == new_i)) {
 	      env.set(pivot.name(), new_i);
 	      this->_refined_variables += pivot;
 	    }

@@ -24,4 +24,5 @@ add_subdirectory (inter)
 add_subdirectory (conc)
 add_subdirectory (cg)
 add_subdirectory (thresholds)
+add_subdirectory (disintervals)
 
