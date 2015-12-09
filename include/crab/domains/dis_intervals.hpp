@@ -593,12 +593,13 @@ namespace crab {
        if (shortcut_top || (x.is_finite () && y.is_finite ())) {
          for (unsigned int i=0; i < x._list.size (); ++i){ 
            for (unsigned int j=0; j < y._list.size (); ++j){ 
-
              interval_t intv = op (x._list[i], y._list[j]);
              if (intv.is_bottom ())
                continue;
+
              if (intv.is_top ())
                return this->top ();
+             
              is_bot = false;
              res.push_back (intv);
              
@@ -616,12 +617,15 @@ namespace crab {
            interval_t intv = (is_non_top_left ? 
                               op (non_top_arg._list[i], interval_t::top ()) :
                               op (interval_t::top () , non_top_arg._list[i]));
+
            if (intv.is_bottom ())
              continue;
+
            if (intv.is_top ())
              return this->top ();
-             is_bot = false;
-             res.push_back (intv);
+
+           is_bot = false;
+           res.push_back (intv);
              
          }
        }
@@ -720,7 +724,7 @@ namespace crab {
          return this->bottom();
        } else {
          auto f = [](interval_t a, interval_t b){ return a / b;};
-         return apply_bin_op (*this, x, f, true); 
+         return apply_bin_op (*this, x, f, false); 
        }
      }
      
@@ -769,7 +773,7 @@ namespace crab {
          return this->bottom();
        } else {
          auto f = [](interval_t a, interval_t b){ return a / b;};
-         return apply_bin_op (*this, x, f, true); 
+         return apply_bin_op (*this, x, f, false); 
        }
      }
      
@@ -819,7 +823,7 @@ namespace crab {
          return this->bottom();
        } else {
          auto f = [](interval_t a, interval_t b){ return a.Or(b);};
-         return apply_bin_op (*this, x, f, true); 
+         return apply_bin_op (*this, x, f, false); 
        }
      }
     
@@ -828,7 +832,7 @@ namespace crab {
          return this->bottom();
        } else {
          auto f = [](interval_t a, interval_t b){ return a.Xor(b);};
-         return apply_bin_op (*this, x, f, true); 
+         return apply_bin_op (*this, x, f, false); 
        }
      }
      
@@ -837,7 +841,7 @@ namespace crab {
          return this->bottom();
        } else {
          auto f = [](interval_t a, interval_t b){ return a.Shl(b);};
-         return apply_bin_op (*this, x, f, true); 
+         return apply_bin_op (*this, x, f, false); 
        }
      }
      
@@ -846,7 +850,7 @@ namespace crab {
          return this->bottom();
        } else {
          auto f = [](interval_t a, interval_t b){ return a.LShr(b);};
-         return apply_bin_op (*this, x, f, true); 
+         return apply_bin_op (*this, x, f, false); 
        }
      }
 
@@ -855,7 +859,7 @@ namespace crab {
          return this->bottom();
        } else {
          auto f = [](interval_t a, interval_t b){ return a.AShr(b);};
-         return apply_bin_op (*this, x, f, true); 
+         return apply_bin_op (*this, x, f, false); 
        }
      }
      
