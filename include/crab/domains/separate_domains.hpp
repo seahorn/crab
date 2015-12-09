@@ -59,7 +59,9 @@ namespace ikos {
   public:
     typedef separate_domain< Key, Value > separate_domain_t;
     typedef typename patricia_tree_t::iterator iterator;
-    
+    typedef Key key_type;
+    typedef Value value_type;
+
   private:
     bool _is_bottom;
     patricia_tree_t _tree;
@@ -204,7 +206,7 @@ namespace ikos {
       return *this;
     }
 
-    iterator begin() {
+    iterator begin() const {
       if (this->is_bottom()) {
         CRAB_ERROR("Separate domain: trying to invoke iterator on bottom");
       } else {
@@ -212,7 +214,7 @@ namespace ikos {
       }
     }
     
-    iterator end() {
+    iterator end() const {
       if (this->is_bottom()) {
         CRAB_ERROR("Separate domain: trying to invoke iterator on bottom");
       } else {
@@ -220,11 +222,11 @@ namespace ikos {
       }
     }
     
-    bool is_bottom() {
+    bool is_bottom() const {
       return this->_is_bottom;
     }
     
-    bool is_top() {
+    bool is_top() const {
       return (!this->is_bottom() && this->_tree.size() == 0);
     }
     
