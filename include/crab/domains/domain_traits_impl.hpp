@@ -32,7 +32,7 @@ namespace crab {
 
         template <typename AbsNumDomain, typename Iterator>
         void project(AbsNumDomain& inv, Iterator begin, Iterator end) {
-          // lose precision if relational domain
+          // lose precision if relational or disjunctive domain
           AbsNumDomain res = AbsNumDomain::top ();
           for (auto v : boost::make_iterator_range (begin, end)){
             res.set (v, inv[v]); 
@@ -42,7 +42,7 @@ namespace crab {
      
         template <typename AbsDomain, typename VariableName >
         void expand (AbsDomain& inv, VariableName x, VariableName new_x) {
-          // lose precision if relational domain
+          // lose precision if relational or disjunctive domain
           inv.set (new_x , inv [x]);
         }
 
