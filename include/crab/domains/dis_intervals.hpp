@@ -269,11 +269,12 @@ namespace crab {
      }
 
      dis_interval(const dis_interval_t& i): 
-         writeable(), _state (i._state), _list (i._list) {
-       
-       if (_state != FINITE)
-         _list.clear ();
-     }
+         writeable(), _state (i._state), _list (i._list) { }
+
+     dis_interval(dis_interval_t&& i): 
+         writeable(), 
+         _state (std::move (i._state)),
+         _list (std::move (i._list)) { }
      
      dis_interval_t& operator=(const dis_interval_t& i){
        if (this != &i){
@@ -282,8 +283,14 @@ namespace crab {
        }
        return *this;
      }
-     
-     // TODO: implement move methods
+
+     dis_interval_t& operator=(dis_interval_t&& i){
+       if (this != &i){
+         _state = std::move (i._state);
+         _list = std::move (i._list);
+       }
+       return *this;
+     }
      
      bool is_bottom() const { 
        return (_state == BOT); 
