@@ -5,9 +5,13 @@
 #ifndef DOMAINS_TRAITS_HPP
 #define DOMAINS_TRAITS_HPP
 
+// If a domain provides a different implementation from the default
+// one (available in domain_traits_impl.hpp) then its header file
+// should be included here
 #include <crab/common/types.hpp>
 #include <crab/domains/numerical_domains_api.hpp>
 #include <crab/domains/intervals.hpp>
+#include <crab/domains/dis_intervals.hpp>
 #include <crab/domains/congruences.hpp>
 #include <crab/domains/numerical_with_congruences.hpp>
 #include <crab/domains/dbm.hpp>
