@@ -293,25 +293,27 @@ namespace crab {
            changed_terms(o.changed_terms)
        { check_terms(); } 
        
-       anti_unif_t operator=(anti_unif_t o) {
-         o.check_terms();
-         _is_bottom= o.is_bottom();
-         _ttbl = o._ttbl;
-         _impl = o._impl;
-         _alloc = o._alloc;
-         _var_map= o._var_map;
-         _term_map= o._term_map;
-         changed_terms = o.changed_terms;
+       anti_unif_t& operator=(const anti_unif_t &o) {
          
+         o.check_terms();
+         if (this != &o) {
+           _is_bottom= o.is_bottom();
+           _ttbl = o._ttbl;
+           _impl = o._impl;
+           _alloc = o._alloc;
+           _var_map= o._var_map;
+           _term_map= o._term_map;
+           changed_terms = o.changed_terms;
+         }
          check_terms();
          return *this;
        }
        
-       bool is_bottom() {
+       bool is_bottom() const {
          return _is_bottom;
        }
        
-       bool is_top() {
+       bool is_top() const {
          return !_var_map.size() && !is_bottom();
        }
        
@@ -646,10 +648,10 @@ namespace crab {
          }
        }
 
-       void check_terms(void)
+       void check_terms(void) const
        {
 #ifdef DEBUG_VARMAP
-         for(auto p : _var_map)
+         for(auto const p : _var_map)
            assert(p.second < _ttbl.size());
 #endif
        }

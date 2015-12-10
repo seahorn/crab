@@ -160,7 +160,10 @@ namespace crab {
 
      dis_interval(state_t state, list_intervals_t l, bool Normalize): 
          _state (state), _list (l) { 
-       
+
+       if (l.size () >= 50)
+         CRAB_WARN ("number of disjunctions may be too large: ", l.size ()); 
+
        if (Normalize) {
          bool is_bottom = false;
          list_intervals_t res = normalize (_list, is_bottom);
@@ -220,7 +223,14 @@ namespace crab {
          
          assert (_list.size () >= 2 && o._list.size () >= 2);
          
-         // --- we widen the extremes and keep only stable intervals
+         // The widening implemented in CodeContracts widens the
+         // extremes and keep only stable intervals. For this query
+         // widening ( [1,1] | [4, 4], [1,1] | [3,3] | [4, 4]) the
+         // result would to be [1,1] | [4,4]. But this is not even an
+         // upper bound of the right argument so it cannot be a
+         // widening.
+
+         // -- widen the extremes
          interval_t lb_widen = widen_op.apply (_list [0], o._list [0]);
          interval_t ub_widen = widen_op.apply (_list [_list.size () - 1],
                                                o._list [o._list.size () - 1]);
@@ -229,17 +239,23 @@ namespace crab {
          res.reserve (_list.size () + o._list.size ());
          
          res.push_back (lb_widen);
-         for (unsigned int i=1; i < _list.size () - 1; ++i) {
-           for (unsigned int j=1; i < o._list.size () - 1; ++j) {
-             if (o._list [j] <= _list [i]) { 
-               res.push_back (_list [i]);
-               break;
-             }
-           }
-         }
+
+         // for (unsigned int i=1; i < _list.size () - 1; i++) {
+         //   for (unsigned int j=1; j < o._list.size () - 1; j++) {
+         //     if (o._list [j] <= _list [i]) { 
+         //       res.push_back (_list [i]);
+         //       break;
+         //     }
+         //   }
+         // }
+
+         // keep all the intervals, normalize will do the rest
+         res.insert (res.end (), _list.begin () + 1, _list.end () - 1);
+         res.insert (res.end (), o._list.begin () + 1, o._list.end () - 1);
+
          res.push_back (ub_widen);
-         
-         return dis_interval_t (FINITE, res, true); // we still normalize         
+
+         return dis_interval_t (FINITE, res, true); // normalize
        }
      }
 
@@ -269,11 +285,12 @@ namespace crab {
      }
 
      dis_interval(const dis_interval_t& i): 
-         writeable(), _state (i._state), _list (i._list) {
-       
-       if (_state != FINITE)
-         _list.clear ();
-     }
+         writeable(), _state (i._state), _list (i._list) { }
+
+     dis_interval(dis_interval_t&& i): 
+         writeable(), 
+         _state (std::move (i._state)),
+         _list (std::move (i._list)) { }
      
      dis_interval_t& operator=(const dis_interval_t& i){
        if (this != &i){
@@ -282,8 +299,14 @@ namespace crab {
        }
        return *this;
      }
-     
-     // TODO: implement move methods
+
+     dis_interval_t& operator=(dis_interval_t&& i){
+       if (this != &i){
+         _state = std::move (i._state);
+         _list = std::move (i._list);
+       }
+       return *this;
+     }
      
      bool is_bottom() const { 
        return (_state == BOT); 
@@ -372,7 +395,7 @@ namespace crab {
        } else if (o.is_bottom()) {
          return false;
        } else {
-         
+
          unsigned j=0;
          for (unsigned int i=0; i < _list.size (); i++) {
            for (; j < o._list.size (); j++){
@@ -593,12 +616,13 @@ namespace crab {
        if (shortcut_top || (x.is_finite () && y.is_finite ())) {
          for (unsigned int i=0; i < x._list.size (); ++i){ 
            for (unsigned int j=0; j < y._list.size (); ++j){ 
-
              interval_t intv = op (x._list[i], y._list[j]);
              if (intv.is_bottom ())
                continue;
+
              if (intv.is_top ())
                return this->top ();
+             
              is_bot = false;
              res.push_back (intv);
              
@@ -616,12 +640,15 @@ namespace crab {
            interval_t intv = (is_non_top_left ? 
                               op (non_top_arg._list[i], interval_t::top ()) :
                               op (interval_t::top () , non_top_arg._list[i]));
+
            if (intv.is_bottom ())
              continue;
+
            if (intv.is_top ())
              return this->top ();
-             is_bot = false;
-             res.push_back (intv);
+
+           is_bot = false;
+           res.push_back (intv);
              
          }
        }
@@ -720,7 +747,7 @@ namespace crab {
          return this->bottom();
        } else {
          auto f = [](interval_t a, interval_t b){ return a / b;};
-         return apply_bin_op (*this, x, f, true); 
+         return apply_bin_op (*this, x, f, false); 
        }
      }
      
@@ -769,7 +796,7 @@ namespace crab {
          return this->bottom();
        } else {
          auto f = [](interval_t a, interval_t b){ return a / b;};
-         return apply_bin_op (*this, x, f, true); 
+         return apply_bin_op (*this, x, f, false); 
        }
      }
      
@@ -819,7 +846,7 @@ namespace crab {
          return this->bottom();
        } else {
          auto f = [](interval_t a, interval_t b){ return a.Or(b);};
-         return apply_bin_op (*this, x, f, true); 
+         return apply_bin_op (*this, x, f, false); 
        }
      }
     
@@ -828,7 +855,7 @@ namespace crab {
          return this->bottom();
        } else {
          auto f = [](interval_t a, interval_t b){ return a.Xor(b);};
-         return apply_bin_op (*this, x, f, true); 
+         return apply_bin_op (*this, x, f, false); 
        }
      }
      
@@ -837,7 +864,7 @@ namespace crab {
          return this->bottom();
        } else {
          auto f = [](interval_t a, interval_t b){ return a.Shl(b);};
-         return apply_bin_op (*this, x, f, true); 
+         return apply_bin_op (*this, x, f, false); 
        }
      }
      
@@ -846,7 +873,7 @@ namespace crab {
          return this->bottom();
        } else {
          auto f = [](interval_t a, interval_t b){ return a.LShr(b);};
-         return apply_bin_op (*this, x, f, true); 
+         return apply_bin_op (*this, x, f, false); 
        }
      }
 
@@ -855,7 +882,7 @@ namespace crab {
          return this->bottom();
        } else {
          auto f = [](interval_t a, interval_t b){ return a.AShr(b);};
-         return apply_bin_op (*this, x, f, true); 
+         return apply_bin_op (*this, x, f, false); 
        }
      }
      
@@ -888,6 +915,12 @@ namespace crab {
      typedef separate_domain< VariableName, dis_interval_t > separate_domain_t;
      typedef linear_interval_solver< Number, VariableName, separate_domain_t > solver_t;
 
+    public:
+
+     typedef typename separate_domain_t::iterator iterator;
+
+    private:
+
      separate_domain_t _env;
 
      dis_interval_domain (separate_domain_t env): _env(env) { }
@@ -901,7 +934,7 @@ namespace crab {
      static dis_interval_domain_t bottom() {
        return dis_interval_domain (separate_domain_t::bottom ());
      }
-          
+
      dis_interval_domain(): _env(separate_domain_t::top()) { }    
 
      dis_interval_domain (const dis_interval_domain_t& o): 
@@ -923,6 +956,14 @@ namespace crab {
      
      bool is_top() const {
        return this->_env.is_top();
+     }
+
+     iterator begin() {
+       return this->_env.begin();
+     }
+     
+     iterator end() {
+       return this->_env.end();
      }
 
      bool operator<=(dis_interval_domain_t e) {
