@@ -915,6 +915,12 @@ namespace crab {
      typedef separate_domain< VariableName, dis_interval_t > separate_domain_t;
      typedef linear_interval_solver< Number, VariableName, separate_domain_t > solver_t;
 
+    public:
+
+     typedef typename separate_domain_t::iterator iterator;
+
+    private:
+
      separate_domain_t _env;
 
      dis_interval_domain (separate_domain_t env): _env(env) { }
@@ -928,7 +934,7 @@ namespace crab {
      static dis_interval_domain_t bottom() {
        return dis_interval_domain (separate_domain_t::bottom ());
      }
-          
+
      dis_interval_domain(): _env(separate_domain_t::top()) { }    
 
      dis_interval_domain (const dis_interval_domain_t& o): 
@@ -950,6 +956,14 @@ namespace crab {
      
      bool is_top() const {
        return this->_env.is_top();
+     }
+
+     iterator begin() {
+       return this->_env.begin();
+     }
+     
+     iterator end() {
+       return this->_env.end();
      }
 
      bool operator<=(dis_interval_domain_t e) {
