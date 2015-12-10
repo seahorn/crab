@@ -160,7 +160,10 @@ namespace crab {
 
      dis_interval(state_t state, list_intervals_t l, bool Normalize): 
          _state (state), _list (l) { 
-       
+
+       if (l.size () >= 50)
+         CRAB_WARN ("number of disjunctions may be too large: ", l.size ()); 
+
        if (Normalize) {
          bool is_bottom = false;
          list_intervals_t res = normalize (_list, is_bottom);
@@ -220,7 +223,14 @@ namespace crab {
          
          assert (_list.size () >= 2 && o._list.size () >= 2);
          
-         // --- we widen the extremes and keep only stable intervals
+         // The widening implemented in CodeContracts widens the
+         // extremes and keep only stable intervals. For this query
+         // widening ( [1,1] | [4, 4], [1,1] | [3,3] | [4, 4]) the
+         // result would to be [1,1] | [4,4]. But this is not even an
+         // upper bound of the right argument so it cannot be a
+         // widening.
+
+         // -- widen the extremes
          interval_t lb_widen = widen_op.apply (_list [0], o._list [0]);
          interval_t ub_widen = widen_op.apply (_list [_list.size () - 1],
                                                o._list [o._list.size () - 1]);
@@ -229,17 +239,23 @@ namespace crab {
          res.reserve (_list.size () + o._list.size ());
          
          res.push_back (lb_widen);
-         for (unsigned int i=1; i < _list.size () - 1; ++i) {
-           for (unsigned int j=1; i < o._list.size () - 1; ++j) {
-             if (o._list [j] <= _list [i]) { 
-               res.push_back (_list [i]);
-               break;
-             }
-           }
-         }
+
+         // for (unsigned int i=1; i < _list.size () - 1; i++) {
+         //   for (unsigned int j=1; j < o._list.size () - 1; j++) {
+         //     if (o._list [j] <= _list [i]) { 
+         //       res.push_back (_list [i]);
+         //       break;
+         //     }
+         //   }
+         // }
+
+         // keep all the intervals, normalize will do the rest
+         res.insert (res.end (), _list.begin () + 1, _list.end () - 1);
+         res.insert (res.end (), o._list.begin () + 1, o._list.end () - 1);
+
          res.push_back (ub_widen);
-         
-         return dis_interval_t (FINITE, res, true); // we still normalize         
+
+         return dis_interval_t (FINITE, res, true); // normalize
        }
      }
 
@@ -379,7 +395,7 @@ namespace crab {
        } else if (o.is_bottom()) {
          return false;
        } else {
-         
+
          unsigned j=0;
          for (unsigned int i=0; i < _list.size (); i++) {
            for (; j < o._list.size (); j++){
