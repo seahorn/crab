@@ -1834,11 +1834,18 @@ namespace crab {
         if(is_bottom())
           return;
 
-        assign(x, linear_expression_t(y));
-//        dbm ret = NULL;      
-//        ret = dbm_expand(get_dbm_index(x), get_dbm_index(y), _dbm);
-//        dbm_dealloc(_dbm);
-//        swap(_dbm, ret);
+        vert_id vx = get_vert (x);        
+        vert_id vy = get_vert (y);
+
+        for (auto s : g.succs (vx)) {
+          g.add_edge (vy, g.edge_val (vx, s), s);
+        }
+
+        for (auto p : g.preds (vx)) {
+          g.add_edge (p, g.edge_val (p, vx), vy);
+        }
+
+        potential [vy] = potential [vx];
       }
 
       // dual of forget: remove all variables except [vIt,...vEt)
