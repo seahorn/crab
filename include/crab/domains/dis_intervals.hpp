@@ -600,7 +600,7 @@ namespace crab {
      
      // pre: *this and o are normalized
      dis_interval_t operator&&(dis_interval_t o) const {
-       // TODO: narrowing operator
+       CRAB_WARN (" DisIntervals narrowing operator replaced with meet");
        return (*this & o);
      }
 
@@ -916,18 +916,25 @@ namespace ikos {
      template<>
      inline dis_z_interval_t trim_bound(dis_z_interval_t  x, z_number c) {
 
-       if (x.is_top () || x.is_bottom ())
+       if (x.is_bottom ())
          return x;
 
        dis_z_interval_t res = dis_z_interval_t::bottom ();
-       for (auto i: boost::make_iterator_range (x.begin (), x.end ())) {
-         if (i.lb() == c) {
-           res = res | dis_z_interval_t (z_interval(c + 1, i.ub()));
-         } else if (i.ub() == c) {
-           res = res | dis_z_interval_t (z_interval(i.lb(), c - 1));
-         } else {
-           res = res | dis_z_interval_t (z_interval(i.lb(), c - 1));
-           res = res | dis_z_interval_t (z_interval(c + 1, i.ub()));
+
+       if (x.is_top ()) {
+         res = res | dis_z_interval_t (z_interval(c-1).lower_half_line ());
+         res = res | dis_z_interval_t (z_interval(c+1).upper_half_line ());
+       }
+       else {
+         for (auto i: boost::make_iterator_range (x.begin (), x.end ())) {
+           if (i.lb() == c) {
+             res = res | dis_z_interval_t (z_interval(c + 1, i.ub()));
+           } else if (i.ub() == c) {
+             res = res | dis_z_interval_t (z_interval(i.lb(), c - 1));
+           } else {
+             res = res | dis_z_interval_t (z_interval(i.lb(), c - 1));
+             res = res | dis_z_interval_t (z_interval(c + 1, i.ub()));
+           }
          }
        }
 
@@ -1242,7 +1249,7 @@ namespace crab {
      }
      
      static const char* getDomainName () {
-       return "DisjunctiveIntervals";
+       return "DisIntervals";
      }  
    }; 
    
