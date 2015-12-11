@@ -196,10 +196,6 @@ cfg_t prog5 (VariableFactory &vfac)  {
   return cfg;
 }
 
-struct IsTrue : public std::unary_function<int,bool> {
-  bool operator() (varname_t) {return true;}
-};
-
 /* Example of how to infer invariants from the above CFG */
 int main (int argc, char** argv )
 {
@@ -212,27 +208,15 @@ int main (int argc, char** argv )
     cfg_t cfg = prog1 (vfac);
     cfg.simplify (); // this is optional
     cout << cfg << endl;
-
-#ifdef HAVE_LDD
-    // Tell boxes which variables should track before any boxes
-    // instance is created.
-    IsTrue filter;
-    boxes_domain_t::create_global (cfg.get_vars (), filter);
-
     NumFwdAnalyzer <cfg_t,boxes_domain_t,VariableFactory>::type a (cfg, vfac, nullptr, w, n);
     // Run fixpoint 
-    boxes_domain_t inv = boxes_domain_t::top ();
-    a.Run (inv);
-
+    a.Run (boxes_domain_t::top ());
     // Print invariants
     cout << "Invariants using " << boxes_domain_t::getDomainName () << "\n";
     for (auto &b : cfg) {
       auto inv = a [b.label ()];
       std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
     }
-    
-    boxes_domain_t::destroy_global ();
-#endif 
   }
 
 
@@ -240,24 +224,15 @@ int main (int argc, char** argv )
     VariableFactory vfac;
     cfg_t cfg = prog1 (vfac);
     cout << cfg << endl;
-#ifdef HAVE_LDD
-    // Tell boxes which variables should track before any boxes
-    // instance is created.
-    IsTrue filter;
-    rib_domain_t::create_global (cfg.get_vars (), filter);
-
-    NumFwdAnalyzer <cfg_t, rib_domain_t,VariableFactory>::type a (cfg, vfac, nullptr, w, n);
+    NumFwdAnalyzer <cfg_t, boxes_domain_t,VariableFactory>::type a (cfg, vfac, nullptr, w, n);
     // Run fixpoint 
-    rib_domain_t inv = rib_domain_t::top ();
-    a.Run (inv);
+    a.Run (boxes_domain_t::top ());
     // Print invariants
     cout << "Invariants using " << boxes_domain_t::getDomainName () << "\n";
     for (auto &b : cfg) {
       auto inv = a [b.label ()];
       std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
     }
-    rib_domain_t::destroy_global ();
-#endif 
   }
 
   {
@@ -265,24 +240,15 @@ int main (int argc, char** argv )
     cfg_t cfg = prog2 (vfac);
     cfg.simplify (); // this is optional
     cout << cfg << endl;
-#ifdef HAVE_LDD
-    // Tell boxes which variables should track before any boxes
-    // instance is created.
-    IsTrue filter;
-    boxes_domain_t::create_global (cfg.get_vars (), filter);
-
     NumFwdAnalyzer <cfg_t, boxes_domain_t,VariableFactory>::type a (cfg,vfac,nullptr,w,n);
     // Run fixpoint 
-    boxes_domain_t inv = boxes_domain_t::top ();
-    a.Run (inv);
+    a.Run (boxes_domain_t::top ());
     // Print invariants
     cout << "Invariants using " << boxes_domain_t::getDomainName () << "\n";
     for (auto &b : cfg) {
       auto inv = a [b.label ()];
       std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
     }
-    boxes_domain_t::destroy_global ();
-#endif 
   }
 
   {
@@ -290,24 +256,15 @@ int main (int argc, char** argv )
     cfg_t cfg = prog3 (vfac);
     cfg.simplify (); // this is optional
     cout << cfg << endl;
-#ifdef HAVE_LDD
-    // Tell boxes which variables should track before any boxes
-    // instance is created.
-    IsTrue filter;
-    boxes_domain_t::create_global (cfg.get_vars (), filter);
-
     NumFwdAnalyzer <cfg_t, boxes_domain_t,VariableFactory>::type a (cfg,vfac,nullptr,w,n);
     // Run fixpoint 
-    boxes_domain_t inv = boxes_domain_t::top ();
-    a.Run (inv);
+    a.Run (boxes_domain_t::top ());
     // Print invariants
     cout << "Invariants using " << boxes_domain_t::getDomainName () << "\n";
     for (auto &b : cfg) {
       auto inv = a [b.label ()];
       std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
     }
-    boxes_domain_t::destroy_global ();
-#endif 
   }
 
   {
@@ -315,48 +272,31 @@ int main (int argc, char** argv )
     cfg_t cfg = prog4 (vfac);
     cfg.simplify (); // this is optional
     cout << cfg << endl;
-#ifdef HAVE_LDD
-    // Tell boxes which variables should track before any boxes
-    // instance is created.
-    IsTrue filter;
-    boxes_domain_t::create_global (cfg.get_vars (), filter);
-
     NumFwdAnalyzer <cfg_t, boxes_domain_t,VariableFactory>::type a (cfg,vfac,nullptr,w,n);
     // Run fixpoint 
-    boxes_domain_t inv = boxes_domain_t::top ();
-    a.Run (inv);
+    a.Run (boxes_domain_t::top ());
     // Print invariants
     cout << "Invariants using " << boxes_domain_t::getDomainName () << "\n";
     for (auto &b : cfg) {
       auto inv = a [b.label ()];
       std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
     }
-    boxes_domain_t::destroy_global ();
-#endif 
+
   }
 
   {
     VariableFactory vfac;
     cfg_t cfg = prog5 (vfac);
     cout << cfg << endl;
-#ifdef HAVE_LDD
-    // Tell boxes which variables should track before any boxes
-    // instance is created.
-    IsTrue filter;
-    boxes_domain_t::create_global (cfg.get_vars (), filter);
-
     NumFwdAnalyzer <cfg_t, boxes_domain_t,VariableFactory>::type a (cfg,vfac,nullptr,w,n);
     // Run fixpoint 
-    boxes_domain_t inv = boxes_domain_t::top ();
-    a.Run (inv);
+    a.Run (boxes_domain_t::top ());
     // Print invariants
     cout << "Invariants using " << boxes_domain_t::getDomainName () << "\n";
     for (auto &b : cfg) {
       auto inv = a [b.label ()];
       std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
     }
-    boxes_domain_t::destroy_global ();
-#endif 
   }
 
   { 
@@ -365,14 +305,6 @@ int main (int argc, char** argv )
     varname_t x = vfac["x"];
     varname_t y = vfac["y"];
     varname_t z = vfac["z"];
-
-    // tell boxes which variables should track
-    vector<varname_t> vars;
-    vars.push_back (vfac ["x"]);
-    vars.push_back (vfac ["y"]);
-    vars.push_back (vfac ["z"]);
-    IsTrue filter;
-    boxes_domain_t::create_global (vars, filter);
 
     boxes_domain_t inv1 = boxes_domain_t::top ();
 
@@ -425,8 +357,6 @@ int main (int argc, char** argv )
 
     inv4 +=  (cz <= 8);
     cout << "Added z < 9\n" << inv4 << "\n";    
-
-    boxes_domain_t::destroy_global ();
   }
   return 0;
 }

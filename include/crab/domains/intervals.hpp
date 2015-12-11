@@ -925,8 +925,8 @@ namespace ikos {
   
   namespace intervals_impl {
 
-    template< typename Number >
-    inline interval< Number > trim_bound(interval< Number > i, Number c);
+    template< typename Interval, typename Number >
+    inline Interval trim_bound(Interval i, Number c);
     
     template<>
     inline z_interval trim_bound(z_interval i, z_number c) {
@@ -1029,7 +1029,7 @@ namespace ikos {
 	  boost::optional< Number > c = rhs.singleton();
 	  if (c) {
 	    Interval old_i = env[pivot.name()];
-	    Interval new_i = intervals_impl::trim_bound< Number >(old_i, *c);
+              Interval new_i = intervals_impl::trim_bound (old_i, *c);
 	    if (new_i.is_bottom()) {
 	      throw bottom_found();
 	    }

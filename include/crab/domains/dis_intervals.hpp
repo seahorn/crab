@@ -224,8 +224,8 @@ namespace crab {
          assert (_list.size () >= 2 && o._list.size () >= 2);
          
          // The widening implemented in CodeContracts widens the
-         // extremes and keep only stable intervals. For this query
-         // widening ( [1,1] | [4, 4], [1,1] | [3,3] | [4, 4]) the
+         // extremes and keep only stable intervals. For this query:
+         // widening( [1,1] | [4, 4], [1,1] | [3,3] | [4, 4]) the
          // result would to be [1,1] | [4,4]. But this is not even an
          // upper bound of the right argument so it cannot be a
          // widening.
@@ -320,28 +320,31 @@ namespace crab {
        return (_state == FINITE);
      }
 
-     // dis_interval_t lower_half_line () const {
-     //   if (is_bottom()) {
-     //     return bottom();
-     //   } else {
-     //     auto f = [](interval_t x){ return x.lower_half_line;};
-     //     return apply_unary_op (*this, f, true);
-     //   }
-     // }
+     // for the interval solver
+     dis_interval_t lower_half_line () const {
+       if (is_bottom()) {
+         return bottom();
+       } else {
+         auto f = [](interval_t x){ return x.lower_half_line ();};
+         return apply_unary_op (*this, f);
+       }
+     }
 
-     // dis_interval_t upper_half_line () const {
-     //   if (is_bottom()) {
-     //     return bottom();
-     //   } else {
-     //     auto f = [](interval_t x){ return x.upper_half_line;};
-     //     return apply_unary_op (*this, f, true);
-     //   }
-     // }
+     // for the interval solver
+     dis_interval_t upper_half_line () const {
+       if (is_bottom()) {
+         return bottom();
+       } else {
+         auto f = [](interval_t x){ return x.upper_half_line ();};
+         return apply_unary_op (*this, f);
+       }
+     }
 
-     // boost::optional< Number > singleton() const {
-     //   interval_t i = approx ();
-     //   return i.singleton ();
-     // }
+     // for the interval solver
+     boost::optional< Number > singleton() const {
+       interval_t i = approx ();
+       return i.singleton ();
+     }
 
      // iterate over the disjunctive intervals
      iterator begin () { return _list.begin (); }
@@ -415,7 +418,12 @@ namespace crab {
          return o;
        } else if (o.is_bottom()) {
          return *this;
+       } else if (this->is_top ()) {
+         return *this;
+       } else if (o.is_top ()) {
+         return o;
        } else {
+       
          unsigned int i=0;
          unsigned int j=0;
          list_intervals_t res;
@@ -546,9 +554,15 @@ namespace crab {
      dis_interval_t operator&(dis_interval_t o) const {
        if (this->is_bottom() || o.is_bottom()) {
          return this->bottom();
+       } else if (this->is_top ()) { 
+         return o;
+       } else if (o.is_top ()) {
+         return *this;
        } else {
+
          list_intervals_t res;
          res.reserve (_list.size () + o._list.size ());
+
          bool is_bot = true;
          for (unsigned int i=0; i< _list.size (); ++i){
            for (unsigned int j=0; j< o._list.size (); ++j){
@@ -560,12 +574,13 @@ namespace crab {
            }
          }
 
-         if (is_bot)
+         if (is_bot) {
            return (this->bottom ());
-         else if (res.empty ())
+         } else if (res.empty ()) {
            return (this->top ());
-         else
+         } else {
            return dis_interval_t (FINITE, res, true); 
+         }
        }
      }
 
@@ -712,7 +727,7 @@ namespace crab {
          return this->bottom();
        } else {
          auto f = [](interval_t a){ return -a;};
-         return apply_unary_op (*this, f, true);
+         return apply_unary_op (*this, f);
        }
      }
     
@@ -888,7 +903,49 @@ namespace crab {
      
    };//  class dis_interval
 
-   
+ } // end namespace domains
+} // end namespace crab 
+ 
+namespace ikos {
+  namespace intervals_impl {
+     /// --- for interval solver of disequalities
+
+     typedef crab::domains::dis_interval <z_number> dis_z_interval_t;
+     typedef crab::domains::dis_interval <q_number> dis_q_interval_t;
+
+     template<>
+     inline dis_z_interval_t trim_bound(dis_z_interval_t  x, z_number c) {
+
+       if (x.is_top () || x.is_bottom ())
+         return x;
+
+       dis_z_interval_t res = dis_z_interval_t::bottom ();
+       for (auto i: boost::make_iterator_range (x.begin (), x.end ())) {
+         if (i.lb() == c) {
+           res = res | dis_z_interval_t (z_interval(c + 1, i.ub()));
+         } else if (i.ub() == c) {
+           res = res | dis_z_interval_t (z_interval(i.lb(), c - 1));
+         } else {
+           res = res | dis_z_interval_t (z_interval(i.lb(), c - 1));
+           res = res | dis_z_interval_t (z_interval(c + 1, i.ub()));
+         }
+       }
+
+       return res;
+     }
+
+    template<>
+    inline dis_q_interval_t trim_bound(dis_q_interval_t i, q_number /* c */) { 
+      // No refinement possible for disequations over rational numbers
+      return i;
+    }
+
+  } // end namespace intervals_impl
+} // end namespace ikos
+
+namespace crab {
+  namespace domains {
+
    template<typename Number, typename VariableName>
    class dis_interval_domain: 
          public ikos::writeable, 
@@ -1009,21 +1066,12 @@ namespace crab {
      }
      
      void operator+=(linear_constraint_system_t csts) {
-       if (!is_bottom()) {
-         
-         interval_domain_t intervals = approx ();
-         intervals += csts;
-
-         if (intervals.is_bottom ()) {
-           this->_env.set_to_bottom ();
-         }
-         else {
-           dis_interval_domain_t res;
-           for (auto p: boost::make_iterator_range (intervals.begin (), intervals.end ())) {
-             res.set (p.first, p.second);
-           }
-           *this = *this & res;
-         }
+       if (!this->is_bottom()) {
+         //cout << "-- Add constraints " << csts << " in " << *this << "\n";
+         const size_t threshold = 10; // make this template parameter
+         solver_t solver(csts, threshold);
+         solver.run(this->_env);
+         //cout << "-- Result=" << *this << "\n";
        }
      }
 
