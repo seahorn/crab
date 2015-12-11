@@ -26,7 +26,7 @@ using namespace ikos;
 #define LDD_NOT_FOUND "No LDD. Run cmake with -DUSE_LDD=ON"
 namespace crab {
    namespace domains {
-      template<typename Number, typename VariableName, unsigned LddSize = 100>
+      template<typename Number, typename VariableName, size_t LddSize = 100>
       class boxes_domain: 
          public ikos::writeable, 
          public numerical_domain< Number, VariableName>,
@@ -50,13 +50,6 @@ namespace crab {
         { CRAB_ERROR (LDD_NOT_FOUND); }
 
         VariableName getVarName (int v) const 
-        { CRAB_ERROR (LDD_NOT_FOUND); }
-
-        template<typename Range, typename Filter>
-        static void create_global (const Range& vars, Filter f) 
-        { CRAB_ERROR (LDD_NOT_FOUND); }
-        
-        static void destroy_global () 
         { CRAB_ERROR (LDD_NOT_FOUND); }
 
         static boxes_domain_t top() { CRAB_ERROR (LDD_NOT_FOUND); }
@@ -142,132 +135,6 @@ namespace crab {
         }  
       }; 
 
-
-      template<typename Number, typename VariableName, unsigned LddSize = 100>
-      class rib_domain: 
-         public ikos::writeable, 
-         public numerical_domain< Number, VariableName>,
-         public bitwise_operators< Number, VariableName >, 
-         public division_operators< Number, VariableName > {
-              
-       public:
-        using typename numerical_domain< Number, VariableName>::linear_expression_t;
-        using typename numerical_domain< Number, VariableName>::linear_constraint_t;
-        using typename numerical_domain< Number, VariableName>::linear_constraint_system_t;
-        using typename numerical_domain< Number, VariableName>::variable_t;
-        using typename numerical_domain< Number, VariableName>::number_t;
-        using typename numerical_domain< Number, VariableName>::varname_t;
-        typedef rib_domain <Number, VariableName, LddSize> rib_domain_t;
-        typedef interval <Number> interval_t;
-        typedef interval_domain <Number, VariableName> interval_domain_t;
-        typedef boxes_domain <Number, VariableName, LddSize> boxes_domain_t;
-        typedef int LddNodePtr;
-
-        rib_domain(): ikos::writeable() { }    
-
-        static rib_domain_t top() { CRAB_ERROR (LDD_NOT_FOUND); }
-
-        static rib_domain_t bottom() { CRAB_ERROR (LDD_NOT_FOUND); }
-
-        LddNodePtr getLdd () 
-        { CRAB_ERROR (LDD_NOT_FOUND); }
-
-        VariableName getVarName (int v) const 
-        { CRAB_ERROR (LDD_NOT_FOUND); }
-
-        template<typename Range, typename Filter>
-        static void create_global (const Range& vars, Filter f) 
-        { CRAB_ERROR (LDD_NOT_FOUND); }
-        
-        static void destroy_global () 
-        { CRAB_ERROR (LDD_NOT_FOUND); }
-
-        rib_domain (const rib_domain_t& other): 
-            ikos::writeable() { }
-        
-        bool is_bottom() { CRAB_ERROR (LDD_NOT_FOUND); }
-
-        bool is_top() { CRAB_ERROR (LDD_NOT_FOUND); }
-
-        interval_domain_t& first() 
-        { CRAB_ERROR (LDD_NOT_FOUND); }
-
-        boxes_domain_t& second()
-        { CRAB_ERROR (LDD_NOT_FOUND); } 
-
-        bool operator<=(rib_domain_t other) 
-        { CRAB_ERROR (LDD_NOT_FOUND); }
-        
-        rib_domain_t operator|(rib_domain_t other)
-        { CRAB_ERROR (LDD_NOT_FOUND); }
-        
-        rib_domain_t operator&(rib_domain_t other) 
-        { CRAB_ERROR (LDD_NOT_FOUND); }
-        
-        rib_domain_t operator||(rib_domain_t other)
-        { CRAB_ERROR (LDD_NOT_FOUND); }
-        
-        template<typename Thresholds>
-        rib_domain_t widening_thresholds (rib_domain_t other, 
-                                          const Thresholds &ts)
-        { CRAB_ERROR (LDD_NOT_FOUND); }
-
-        rib_domain_t operator&& (rib_domain_t other) 
-        { CRAB_ERROR (LDD_NOT_FOUND); }
-        
-        void operator-=(VariableName var) 
-        { CRAB_ERROR (LDD_NOT_FOUND); }
-
-        interval_t operator[](VariableName v) 
-        { CRAB_ERROR (LDD_NOT_FOUND); }
-
-        void set(VariableName v, interval_t ival) 
-        { CRAB_ERROR (LDD_NOT_FOUND); }
-
-        void operator += (linear_constraint_system_t csts) 
-        { CRAB_ERROR (LDD_NOT_FOUND); }
-        
-        void assign (VariableName x, linear_expression_t e) 
-        { CRAB_ERROR (LDD_NOT_FOUND); }
-          
-        void apply (operation_t op, VariableName x, VariableName y, Number z) 
-        { CRAB_ERROR (LDD_NOT_FOUND); }
-        
-        void apply(operation_t op, VariableName x, VariableName y, VariableName z) 
-        { CRAB_ERROR (LDD_NOT_FOUND); }
-        
-        void apply(operation_t op, VariableName x, Number k) 
-        { CRAB_ERROR (LDD_NOT_FOUND); }
-
-        void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width) 
-        { CRAB_ERROR (LDD_NOT_FOUND); }
-        
-        void apply(conv_operation_t op, VariableName x, Number k, unsigned width) 
-        { CRAB_ERROR (LDD_NOT_FOUND); }
-        
-        void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) 
-        { CRAB_ERROR (LDD_NOT_FOUND); }
-        
-        void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k) 
-        { CRAB_ERROR (LDD_NOT_FOUND); }
-        
-        void apply(div_operation_t op, VariableName x, VariableName y, VariableName z) 
-        { CRAB_ERROR (LDD_NOT_FOUND); }
-        
-        void apply(div_operation_t op, VariableName x, VariableName y, Number k) 
-        { CRAB_ERROR (LDD_NOT_FOUND); }
-        
-        linear_constraint_system_t to_linear_constraint_system ()
-        { CRAB_ERROR (LDD_NOT_FOUND); }
-        
-        void write(ostream& o) 
-        { CRAB_ERROR (LDD_NOT_FOUND); }
-          
-        static const char* getDomainName () {
-          return "Dummy Reduced Product of Intervals and Boxes";
-        }  
-      }; 
-      
    } // namespace domains
 }// namespace crab
 
@@ -287,39 +154,23 @@ namespace crab {
 
       using namespace crab::domains::ldd;       
 
-      template<typename Number, typename VariableName, unsigned LddSize>
-      class rib_domain;
-
       /*
-       * FIXME: the current implementation of this wrapper for the
-       * boxes domain has two global datastructures:
-       *
+       * The wrapper has two global datastructures:
        * 1) a ldd manager and 
        * 2) a map from VariableName to ldd dimension.
        *
-       * Since the ldd manager is shared we need to fix a single size
-       * for all ldds. This is clearly a big limitation.
-       *
-       * For the map in 2) we could keep it local if we rename
-       * dimensions in the ldd by doing something similar to the DBM
-       * domain where the variable maps are merged only at binary
-       * operations (join, meet, etc)
-       *
-       * Until a better solution all variables MUST be register via
-       * create_global BEFORE the first instance of the boxes domain
-       * is created and then it cannot change. To reset the map for a
-       * new analysis we need to call destroy_global.
+       * FIXME: since the ldd manager is shared we need to fix a
+       * single size for all ldds. Since ldds are sparse we can fix a
+       * size big enough for our programs.
        */
-      template<typename Number, typename VariableName, unsigned LddSize = 100>
+      template<typename Number, typename VariableName, size_t LddSize = 3000>
       class boxes_domain: 
          public ikos::writeable, 
          public numerical_domain< Number, VariableName>,
          public bitwise_operators< Number, VariableName >, 
          public division_operators< Number, VariableName > {
               
-        friend class rib_domain <Number,VariableName, LddSize>;
         typedef interval_domain <Number, VariableName> interval_domain_t;
-
        public:
         using typename numerical_domain< Number, VariableName>::linear_expression_t;
         using typename numerical_domain< Number, VariableName>::linear_constraint_t;
@@ -344,8 +195,8 @@ namespace crab {
         static LddManager* get_ldd_man () {
           if (!m_ldd_man) {
             DdManager* cudd = Cudd_Init (0, 0, CUDD_UNIQUE_SLOTS, 127, 0);
-            // FIXME: all the ldd's has a fixed size
             theory_t* theory = tvpi_create_boxz_theory (LddSize);
+            CRAB_DEBUG ("Created a ldd of size ", LddSize);
             m_ldd_man = Ldd_Init (cudd, theory);
             Cudd_AutodynEnable (cudd, CUDD_REORDER_GROUP_SIFT);
           }
@@ -363,10 +214,14 @@ namespace crab {
           auto it = get_var_map()->left.find (v);
           if (it != get_var_map()->left.end ()) {
             return it->second;
+          } else {
+            int id = get_var_map ()->size ();
+            if (id >= LddSize) {
+              CRAB_ERROR ("The Ldd size of ", LddSize, " needs to be larger");
+            }
+            get_var_map ()->insert (binding_t (v, id));
+            return id;
           }
-
-          CRAB_ERROR ("Boxes could not find ", v, ". ",
-                      "Call create_global before analysis starts");
         }
 
         inline constant_t mkCst (Number k) {
@@ -548,46 +403,11 @@ namespace crab {
           }
         }
 
-        template<typename Range, typename Filter>
-        static void create_global (const Range& vars, Filter f) {
-          for (auto v: vars) {
-            if (!f (v)) continue;
-            auto it = get_var_map()->left.find (v);
-            if (it == get_var_map()->left.end ()) {
-              int id = get_var_map ()->size ();
-              if (id >= LddSize)
-                CRAB_ERROR ("The number of variables is greater than the Ldd size of ", 
-                            LddSize);
-              get_var_map ()->insert (binding_t (v, id));
-            }
-          }
-        }
-        
-        static void destroy_global () { 
-          get_var_map ()->clear (); 
-        }
-
-       private:
-
-        bool isTrackVar (VariableName v) {
-          return get_var_map ()->left.find (v) != get_var_map ()->left.end (); 
-        }
-
-        template<typename Range>
-        bool allTrackVars (const Range& r) {
-          for (auto v: r)
-            if (!isTrackVar (v.name ())) return false;
-          return true;
-        }
-
-       public:
-
         boxes_domain(): ikos::writeable() { 
           m_ldd = lddPtr (get_ldd_man(), Ldd_GetTrue (get_ldd_man()));
         }
         
         ~boxes_domain () { 
-          
           // DdManager *cudd = nullptr;
           // theory_t *theory = nullptr;
           // if (m_ldd_man)  {
@@ -597,7 +417,6 @@ namespace crab {
 	// }
           // if (theory) tvpi_destroy_theory(theory);
           // if (cudd) Cudd_Quit(cudd);
-
         }
                 
         static boxes_domain_t top() { 
@@ -616,11 +435,11 @@ namespace crab {
            return *this;
         }
         
-        bool is_bottom() { 
+        bool is_bottom() const { 
           return &*m_ldd == Ldd_GetFalse (get_ldd_man());
         }
         
-        bool is_top() { 
+        bool is_top() const { 
           return &*m_ldd == Ldd_GetTrue (get_ldd_man());
         }
         
@@ -666,20 +485,20 @@ namespace crab {
         template<typename Thresholds>
         boxes_domain_t widening_thresholds (boxes_domain_t other, 
                                             const Thresholds & /*ts*/) {
+          CRAB_WARN (" boxes widening operator with thresholds not implemented");
           return (*this || other);
         }
         
         boxes_domain_t operator&& (boxes_domain_t other) {
-          // TODO: narrowing
-          boxes_domain_t res(*this);
-
+          boxes_domain_t res (*this & other);
+          CRAB_WARN (" boxes narrowing operator replaced with meet");
+          
           CRAB_DEBUG ("Narrowing ", *this, " and ", other, "=", res);
           return res;
         }
         
         void operator-=(VariableName var) {
           if (is_bottom ()) return;
-          if (!isTrackVar (var)) return;
 
           int id = get_var_dim (var);
           m_ldd =  lddPtr (get_ldd_man(), 
@@ -717,8 +536,6 @@ namespace crab {
             return;
           }
 
-          if (!allTrackVars (cst.variables ())) return;
-
           linear_expression_t exp = cst.expression();    
           unsigned int size = exp.size ();
           if (size == 0) 
@@ -732,19 +549,19 @@ namespace crab {
               add_unit_constraint (cx, x, cst.kind (), k);
             }
             else 
-              CRAB_WARN ("Boxes only supports constraints with unit coefficients");
+              CRAB_WARN (" boxes only supports constraints with unit coefficients");
           }
           else if (size >= 2) {
             // TODO: we can always do the operation in the interval
             //       domain and meet the result with the ldd. But it
             //       might be expensive if a basic block has two many
             //       assume's.
-            CRAB_WARN ("Boxes only supports constraints with at most one variable.");
+            CRAB_WARN (" boxes only supports constraints with at most one variable.");
           }
           
           CRAB_DEBUG("Assume(", cst, ") --> ", *this);
         }    
-                    
+
         void operator += (linear_constraint_system_t csts) {
           if (is_bottom ()) return;
 
@@ -755,8 +572,6 @@ namespace crab {
           
           if (is_bottom ()) return ;
 
-          if (!isTrackVar (v)) return;
-          
           constant_t kmin = NULL, kmax = NULL;       
           if (boost::optional <Number> l = ival.lb ().number ())
             kmin = mkCst (*l);
@@ -773,12 +588,10 @@ namespace crab {
           Ldd_GetTheory (get_ldd_man())->destroy_term(t);
         }
 
+        // FIXME: expensive operation
         interval_t operator[](VariableName v) { 
           if (is_bottom ()) 
             return interval_t::bottom ();
-
-          if (!isTrackVar (v)) 
-            return interval_t::top ();
 
           // make a copy of m_ldd
           LddNodePtr tmp (m_ldd);  
@@ -807,11 +620,6 @@ namespace crab {
           if (is_bottom ()) 
             return;
 
-          if (!(isTrackVar (x) && allTrackVars (e.variables ()))) {
-            *this -= x;
-            return;
-          }
-
           if (e.is_constant ()) {
             constant_t c = mkCst (e.constant ());
             linterm_t t = termForVal (x);
@@ -826,7 +634,7 @@ namespace crab {
               apply (x, y, 1, 0);      
           }
           else {
-            CRAB_WARN("Boxes only supports cst or var on the rhs of assignment");
+            CRAB_WARN(" boxes only supports cst or var on the rhs of assignment");
             *this -= x;
           }
           CRAB_DEBUG("---", x, ":=", e,"\n",*this);
@@ -836,21 +644,10 @@ namespace crab {
           if (is_bottom ()) 
             return;
 
-          if (!isTrackVar (x) || !isTrackVar (y)) {
-            *this -= x;
-            return;
-          }
-          
           switch(op){
-            case OP_ADDITION:
-              apply (x, y, 1, k);
-              break;
-            case OP_SUBTRACTION:
-              apply (x, y, 1, -k);
-              break;
-            case OP_MULTIPLICATION:
-              apply (x, y, k, 0);
-              break;
+            case OP_ADDITION: apply (x, y, 1, k); break;
+            case OP_SUBTRACTION: apply (x, y, 1, -k); break;
+            case OP_MULTIPLICATION: apply (x, y, k, 0); break;
             case OP_DIVISION: 
               {
                 // Convert to intervals and perform the operation
@@ -869,10 +666,7 @@ namespace crab {
 
         void apply(operation_t op, VariableName x, Number k) {
 
-          if (is_bottom ()) 
-            return;
-
-          if (isTrackVar (x)) {
+          if (is_bottom ()) {
             return;
           }
 
@@ -896,7 +690,6 @@ namespace crab {
                 set(x, xi);              
                 break;
               }
-            default: CRAB_ERROR ("Boxes: unreachable");
           }
           CRAB_DEBUG("apply ", x, " := ", x, " ", op, " ", k, "---", *this);
         }
@@ -905,11 +698,6 @@ namespace crab {
 
           if (is_bottom ()) 
             return;
-
-          if (!isTrackVar (x) || !isTrackVar (y) || !isTrackVar (z)) {
-            *this -= x;
-            return;
-          }
 
           interval_t zi = operator[](z);
           if (auto k = zi.singleton ())
@@ -946,11 +734,6 @@ namespace crab {
           if (is_bottom ()) 
             return;
 
-          if (!isTrackVar (x) || !isTrackVar (y) || !isTrackVar (z)) {
-            *this -= x;
-            return;
-          }
-
           // Convert to intervals and perform the operation
           interval_t yi = operator[](y);
           interval_t zi = operator[](z);
@@ -962,7 +745,6 @@ namespace crab {
             case OP_SHL:  xi = yi.Shl(zi); break;
             case OP_LSHR: xi = yi.LShr(zi); break;
             case OP_ASHR: xi = yi.AShr(zi); break;
-            default: CRAB_ERROR("Boxes: unreachable");
           }
           set(x, xi);
         }
@@ -972,11 +754,6 @@ namespace crab {
           if (is_bottom ()) 
             return;
 
-          if (!isTrackVar (x) || !isTrackVar (y)) {
-            *this -= x;
-            return;
-          }
-          
           // Convert to intervals and perform the operation
           interval_t yi = operator[](y);
           interval_t zi(k);
@@ -988,7 +765,6 @@ namespace crab {
             case OP_SHL:  xi = yi.Shl(zi); break;
             case OP_LSHR: xi = yi.LShr(zi); break;
             case OP_ASHR: xi = yi.AShr(zi); break;
-            default: CRAB_ERROR("Boxes: unreachable");
           }
           set(x, xi);
         }
@@ -998,11 +774,6 @@ namespace crab {
 
           if (is_bottom ()) 
             return;
-
-          if (!isTrackVar (x) || !isTrackVar (y) || !isTrackVar (z)) {
-            *this -= x;
-            return;
-          }
 
           if (op == OP_SDIV){
             apply(OP_DIVISION, x, y, z);
@@ -1026,11 +797,6 @@ namespace crab {
 
           if (is_bottom ()) 
             return;
-
-          if (!isTrackVar (x) || !isTrackVar (y)) {
-            *this -= x;
-            return;
-          }
 
           if (op == OP_SDIV){
             apply(OP_DIVISION, x, y, k);
@@ -1094,245 +860,12 @@ namespace crab {
         
       }; 
 
-     template<typename N, typename V, unsigned S>
+     template<typename N, typename V, size_t S>
      LddManager* boxes_domain<N,V,S>::m_ldd_man = nullptr;
 
-     template<typename N, typename V, unsigned S>
+     template<typename N, typename V, size_t S>
      typename boxes_domain<N,V,S>::var_map_ptr boxes_domain<N,V,S>::m_var_map = nullptr;
 
-     /*
-      * rib domain: reduced product of intervals with boxes.
-      */
-     template < typename Number, typename VariableName, unsigned LddSize = 100>
-     class rib_domain:
-         public ikos::writeable,
-         public numerical_domain< Number, VariableName >,
-         public bitwise_operators< Number, VariableName >,
-         public division_operators< Number, VariableName > {
-       
-      public:
-       using typename numerical_domain< Number, VariableName >::linear_expression_t;
-       using typename numerical_domain< Number, VariableName >::linear_constraint_t;
-       using typename numerical_domain< Number, VariableName >::linear_constraint_system_t;
-       using typename numerical_domain< Number, VariableName >::variable_t;
-       using typename numerical_domain< Number, VariableName >::number_t;
-       using typename numerical_domain< Number, VariableName >::varname_t;
-
-       typedef rib_domain< Number, VariableName, LddSize> rib_domain_t;
-       typedef interval< Number > interval_t;
-       
-      private:
-       typedef interval_domain <Number, VariableName> interval_domain_t;
-       typedef boxes_domain <Number, VariableName, LddSize> boxes_domain_t;
-
-       typedef numerical_domain_product2< Number, VariableName,
-                                          interval_domain_t, boxes_domain_t> product_domain_t;
-       
-       product_domain_t m_inv;
-       
-       rib_domain(const product_domain_t& inv): m_inv (inv) 
-       {}
-
-       // The RIB domain should be used in such way that the set of
-       // variables between intervals and boxes are disjoint. In that
-       // case, no reduction is needed.
-       //
-       // For simplicity, we relax this by allowing the interval
-       // domain to keep track of all variables and only limiting
-       // boxes to a small set of variables. That's why we only reduce
-       // from boxes to intervals but not in the other direction.
-       void reduce_variable(const VariableName& v) {
-         if (is_bottom() || is_top ())
-           return;
-         
-         auto &intvs = m_inv.first ();
-         auto &boxes = m_inv.second ();
-         // --- there is no reduction from intervals to boxes
-
-         // --- reduction from boxes to intervals
-         interval_t itv = intvs [v];
-         if (itv.is_top () && boxes.isTrackVar (v)) {
-           intvs.set (v, boxes [v]);
-         }
-       }
-                     
-      public:
-
-        LddNodePtr getLdd () { 
-          // We add all the non-tracked intervals to boxes before we
-          // return the ldd
-          auto &intvs = m_inv.first ();
-          auto &boxes = m_inv.second ();
-          for (auto p: boost::make_iterator_range(intvs.begin (), intvs.end ())) {
-            interval_t intv = intvs [p.first];
-            if (!boxes.isTrackVar (p.first) && !intv.is_top ()) {
-              boxes.set (p.first, intv);
-            }
-          }              
-          return boxes.getLdd (); 
-        }
-
-        VariableName getVarName (int v) const {
-          product_domain_t res (m_inv); 
-          return res.second ().getVarName (v);
-        }
-
-
-        template<typename Range, typename Filter>
-        static void create_global (const Range& vars, Filter f) {
-          boxes_domain_t::create_global (vars, f);
-        }
-        
-        static void destroy_global () { 
-          boxes_domain_t::destroy_global ();
-        }
-
-        static rib_domain_t top() {
-          return rib_domain_t (product_domain_t::top ());
-        }
-       
-       static rib_domain_t bottom() {
-         return rib_domain_t (product_domain_t::bottom ());
-       }
-       
-       rib_domain() : m_inv () {}
-       
-       rib_domain(const rib_domain_t& other):
-           ikos::writeable(),
-           numerical_domain< Number, VariableName >(),
-           bitwise_operators< Number, VariableName >(),
-           division_operators< Number, VariableName >(),
-           m_inv (other.m_inv) {}
-       
-       rib_domain_t& operator= (const rib_domain_t& other) {
-         if (this != &other)
-           m_inv = other.m_inv;
-         return *this;
-       }
-       
-       bool is_bottom() { return m_inv.is_bottom(); }
-       
-       bool is_top() { return m_inv.is_top(); }
-       
-       interval_domain_t& first() { return m_inv.first(); }
-
-       boxes_domain_t& second() { return m_inv.second(); }
-       
-       bool operator<=(rib_domain_t other) {
-         return m_inv <= other.m_inv;
-       }
-       
-       rib_domain_t operator|(rib_domain_t other) {
-         return rib_domain_t (m_inv | other.m_inv);
-       }
-       
-       rib_domain_t operator&(rib_domain_t other) {
-         return rib_domain_t (m_inv & other.m_inv);
-       }
-       
-       rib_domain_t operator||(rib_domain_t other) {
-         return rib_domain_t (m_inv || other.m_inv);
-       }
-       
-       template<typename Thresholds>
-       rib_domain_t widening_thresholds (rib_domain_t other, 
-                                         const Thresholds &ts) {
-         return this->widening_thresholds(other, ts);
-       }
-
-       rib_domain_t operator&&(rib_domain_t other) {
-         return rib_domain_t (m_inv && other.m_inv);
-       }
-       
-       void set(VariableName v, interval_t x) {
-         m_inv.first().set(v, x);
-         m_inv.second().set(v, x);
-       }
-       
-       interval_t operator[](VariableName v) {
-         return (m_inv.first ()[v] & m_inv.second ()[v]);
-       }
-       
-       void operator+=(linear_constraint_system_t csts) {
-         m_inv += csts;
-         for (auto v : csts.variables ())
-           reduce_variable (v.name ());
-       }
-       
-       void operator-=(VariableName v) { m_inv -= v; }
-
-       template<typename Iterator>
-       void forget (Iterator begin, Iterator end) {
-         if (is_bottom ()) return;
-         
-         for (auto v: boost::make_iterator_range (begin, end))
-           operator-= (v);
-       }
-       
-       void assign(VariableName x, linear_expression_t e) {
-         m_inv.assign(x, e);
-         reduce_variable(x);
-       }
-       
-       void apply(operation_t op, VariableName x, VariableName y, VariableName z) {
-         m_inv.apply(op, x, y, z);
-         reduce_variable(x);
-       }
-       
-       void apply(operation_t op, VariableName x, VariableName y, Number k) {
-         m_inv.apply(op, x, y, k);
-         reduce_variable(x);
-       }
-       
-       // bitwise_operators_api
-       
-       void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width) {
-         m_inv.apply(op, x, y, width);
-         reduce_variable(x);
-       }
-       
-       void apply(conv_operation_t op, VariableName x, Number k, unsigned width) {
-         m_inv.apply(op, x, k, width);
-         reduce_variable(x);
-       }
-       
-       void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) {
-         m_inv.apply(op, x, y, z);
-         reduce_variable(x);
-       }
-       
-       void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k) {
-         m_inv.apply(op, x, y, k);
-         reduce_variable(x);
-       }
-       
-       // division_operators_api
-       
-       void apply(div_operation_t op, VariableName x, VariableName y, VariableName z) {
-         m_inv.apply(op, x, y, z);
-         reduce_variable(x);
-       }
-       
-       void apply(div_operation_t op, VariableName x, VariableName y, Number k) {
-         m_inv.apply(op, x, y, k);
-         reduce_variable(x);
-       }
-       
-       void write(std::ostream& o) { 
-         m_inv.write(o); 
-       }
-       
-       linear_constraint_system_t to_linear_constraint_system() {
-         return m_inv.first().to_linear_constraint_system();
-       }
-       
-       static const char* getDomainName() { 
-         return product_domain_t::getDomainName (); 
-       }
-       
-     }; // class rib_domain
-
-      
    } // namespace domains
 
    namespace domain_traits {
@@ -1346,23 +879,17 @@ namespace crab {
      }
 
      template <typename VariableName, typename Number, typename Iterator >
-     void forget (rib_domain<Number, VariableName>& inv, 
-                  Iterator it, Iterator end) {
-       inv.forget (it, end);
-     }
-   
-     template <typename VariableName, typename Number, typename Iterator >
      void project (boxes_domain<Number, VariableName>& inv, 
                    Iterator it, Iterator end) {
        inv.project (it, end);
      }
-   
-     template <typename VariableName, typename Number, typename Iterator >
-     void project (rib_domain<Number, VariableName>& inv, 
-                   Iterator it, Iterator end) {
-       inv.project (it, end);
-     }
 
+     template <typename VariableName, typename Number>
+     void expand (boxes_domain<Number, VariableName>& inv, 
+                  VariableName x, VariableName new_x) {
+       CRAB_WARN(" boxes expand operation is replaced with intervals");
+     }
+   
    } // namespace domain_traits
 
 
