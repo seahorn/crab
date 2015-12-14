@@ -16,9 +16,9 @@
 // #include <crab/common/dbg.hpp>
 
 #include <crab/common/types.hpp>
-#include <crab/common/sparse_graph.hpp>
-#include <crab/common/adapt_sgraph.hpp>
-#include <crab/common/graph_ops.hpp>
+#include <crab/domains/graphs/sparse_graph.hpp>
+#include <crab/domains/graphs/adapt_sgraph.hpp>
+#include <crab/domains/graphs/graph_ops.hpp>
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/domains/intervals.hpp>
 #include <crab/domains/patricia_trees.hpp>
