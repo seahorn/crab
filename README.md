@@ -4,7 +4,8 @@
 
 #About#
 
-Crab is a language agnostic engine to perform static analysis based on
+Crab is a language agnostic engine to perform static analysis of
+programs based on
 [abstract interpretation](https://en.wikipedia.org/wiki/Abstract_interpretation).
 
 At its core, Crab is a collection of abstract domains and fixpoint
@@ -45,9 +46,9 @@ If you want to run the tests add `-DDEVMODE=ON` option.
 
 If you want to use the BOXES domain then add `-DUSE_LDD=ON` option.
 
-## Crab CFG language and output ##
+## Crab input language and output ##
 
-The input of Crab is a Control Flow Graph (CFG) language that
+The main input of Crab is a Control Flow Graph (CFG) language that
 interfaces with the abstract domains and iterators for the purpose of
 generating invariants.
 
@@ -62,6 +63,11 @@ but it also supports other instructions such as
 
 - load, store, pointer arithmetic, and function pointers
 - function calls and returns
+
+To support inter-procedural analysis, Crab can also take as input a
+whole program represented as a bunch of functions. For Crab, a
+function is a CFG (as described above) with a signature that consists
+of the function name, its formal parameters, and return value.
 
 The output of Crab is a map from CFG basic blocks to invariants
 expressed in the underlying abstract domain.
@@ -78,11 +84,11 @@ tests.
 
 Check these projects:
 
-- [crab-llvm](https://github.com/seahorn/crab-llvm) is a static
+- [Crab-Llvm](https://github.com/seahorn/crab-llvm) is a static
 analyzer that infers invariants from LLVM-based languages using Crab.
 
 - [SeaHorn](https://github.com/seahorn) is a verification framework
-that uses crab-llvm to supply invariants to the back-end solvers.
+that uses Crab-Llvm to supply invariants to the back-end solvers.
 
 ## How to implement new fixpoint iterators ##
 
@@ -98,8 +104,6 @@ The new fixpoint iterator must follow this API:
     
      virtual void process_post(NodeName, AbstractValue) = 0;
     
-     virtual ~forward_fixpoint_iterator() { }
-	 
     }; 
 
 ## How to implement new abstract domains ##
@@ -151,10 +155,9 @@ required to implement the API described in `numerical_domains_api.hpp`:
     // assume (c);
     virtual void operator+=(linear_constraint_system_t csts) = 0;
 
-    // Forget
+    // forget
     virtual void operator-=(VariableName v) = 0;
 
-    virtual ~numerical_domain() { }
       
 This API assumes the manipulation of linear expressions and linear
 constraints both defined in `linear_constraints.hpp` so it is good to be
