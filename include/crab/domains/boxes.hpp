@@ -205,6 +205,12 @@ namespace crab {
           return m_ldd_man;
         }
 
+        static int num_of_vars () {
+          if (!m_var_map) return 0;
+          
+          return (*m_var_map).left.size ();
+        }
+
         static var_map_ptr get_var_map () {
           if (!m_var_map) {
             m_var_map = var_map_ptr (new var_bimap_t ());            
@@ -232,8 +238,35 @@ namespace crab {
         }
         
         // convex approximation
-        LddNodePtr approx (LddNodePtr v) {
-          return lddPtr (get_ldd_man(), Ldd_TermMinmaxApprox(get_ldd_man(), &*v));
+        LddNodePtr convex_approx () const {
+          return lddPtr (get_ldd_man(), Ldd_TermMinmaxApprox(get_ldd_man(), &*m_ldd));
+        }
+
+        // pre: ldd is not either true or false
+        void project (LddNodePtr& ldd, VariableName v) const {
+          for (auto p: (*m_var_map).left) {
+            if (!(p.first == v)) {
+              int id = get_var_dim (p.first);
+              ldd = lddPtr (get_ldd_man(), 
+                            Ldd_ExistsAbstract (get_ldd_man(), &*ldd, id));
+              
+            }
+          }
+        }
+
+        // non-relational approximation (but still non-convex)
+        // expensive operation
+        LddNodePtr non_relational_approx () const {
+          if (is_top () || is_bottom ())
+            return m_ldd;
+                                  
+          LddNodePtr res = lddPtr (get_ldd_man(), Ldd_GetTrue (get_ldd_man()));
+          for (auto p: (*m_var_map).left) {
+            LddNodePtr tmp (m_ldd);
+            project (tmp, p.first);
+            res = lddPtr (get_ldd_man(), Ldd_And (get_ldd_man(), &*res, &*tmp));
+          }
+          return res;
         }
 
         LddNodePtr join (LddNodePtr v1, LddNodePtr v2) {
@@ -388,7 +421,36 @@ namespace crab {
           }
         } 
 
-        boxes_domain (LddNodePtr ldd): m_ldd (ldd) { }
+        boxes_domain (LddNodePtr ldd): m_ldd (ldd) {
+#if 1
+          const int CST_FACTOR = 10; /* JN: some magic constant factor */
+          int threshold = num_of_vars () * CST_FACTOR;
+          if (threshold > 0) {
+            int before_num_paths = Ldd_PathSize (NULL, &*m_ldd);
+            // -- we throw away relationships between variables if the
+            //    number of ldd paths is not linear with some constant
+            //    factor in the size of the diagram.
+            if (before_num_paths >= threshold) {
+              m_ldd = non_relational_approx ();
+              int after_num_paths = Ldd_PathSize (NULL, &*m_ldd);
+              if (after_num_paths == before_num_paths) {
+                // -- if the previous approximation did not work then
+                // -- we further simplify the ldd by making it convex
+                m_ldd = convex_approx ();                
+                CRAB_WARN ("ldd is growing too fast (number of paths= " , before_num_paths, "). ", 
+                           "After making convex the ldd ",
+                           "the number of paths is ", Ldd_PathSize (NULL, &*m_ldd));
+                           
+              }
+              else {
+                CRAB_WARN ("ldd is growing too fast (number of paths= " , before_num_paths, "). ", 
+                           "After deleting relationships between variables ",
+                           "the number of paths is ", after_num_paths);
+              }
+            }
+          }
+#endif 
+        }
 
        public:
 
@@ -596,13 +658,15 @@ namespace crab {
 
         // FIXME: expensive operation
         interval_t operator[](VariableName v) { 
+
           if (is_bottom ()) 
             return interval_t::bottom ();
 
-          // make a copy of m_ldd
-          LddNodePtr tmp (m_ldd);  
+          if (is_top ()) 
+            return interval_t::top ();
+
           // make convex the ldd
-          tmp = approx (tmp);
+          LddNodePtr tmp = convex_approx ();
           // forget any variable that is not v
           for (auto p: (*m_var_map).left) {
             if (! (p.first == v)) {
@@ -611,13 +675,11 @@ namespace crab {
                              Ldd_ExistsAbstract (get_ldd_man(), &*tmp, id));
             }
           }
-
           // convert to interval domain
           linear_constraint_system_t csts;
           toLinCstSysRecur (&*tmp, csts);
           interval_domain_t intv = interval_domain_t::top ();
           for (auto cst: csts) { intv += cst; }
-
           // do projection with intervals
           return intv[v];
         }
@@ -659,8 +721,7 @@ namespace crab {
                 // Convert to intervals and perform the operation
                 interval_t yi = operator[](y);
                 interval_t zi (k);
-                interval_t xi = interval_t::bottom();
-                xi = yi / zi;
+                interval_t xi = yi / zi;
                 set (x, xi);              
                 break;
               }
@@ -672,9 +733,8 @@ namespace crab {
 
         void apply(operation_t op, VariableName x, Number k) {
 
-          if (is_bottom ()) {
+          if (is_bottom ())
             return;
-          }
 
           switch(op){
             case OP_ADDITION:
@@ -691,8 +751,7 @@ namespace crab {
                 // Convert to intervals and perform the operation
                 interval_t yi = operator[](x);
                 interval_t zi (k);
-                interval_t xi = interval_t::bottom();
-                xi = yi / zi;
+                interval_t xi = yi / zi;
                 set(x, xi);              
                 break;
               }
@@ -838,7 +897,7 @@ namespace crab {
           }
 
           // --- produce convex approximation
-          LddNodePtr v = approx (m_ldd);
+          LddNodePtr v = convex_approx ();
 
           // --- extract linear inequalities from the convex ldd
           toLinCstSysRecur(&*v, csts);

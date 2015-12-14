@@ -9,7 +9,7 @@
 */
 
 /// Uncomment for enabling debug information
-//#include <crab/common/dbg.hpp>
+// #include <crab/common/dbg.hpp>
 
 #include <crab/config.h>
 #include <crab/common/types.hpp>
@@ -22,8 +22,6 @@
 using namespace boost;
 using namespace ikos;
 using namespace std;
-
-// TODO: graceful degradation if the number of intervals is too large
 
 namespace crab {
    namespace domains {
@@ -63,23 +61,76 @@ namespace crab {
      }
      
     private:
-     
-     struct StrictWeakOrderingForIntervals{
-       bool operator()(const interval_t& i1, const interval_t& i2) const {
-         return ((i1 <= i2) && (i1 != i2));
-       }
-     };
 
      // FIXME: this is assuming Number=z_number
-     bool are_consecutive (const interval_t& i1, const interval_t& i2) const {
+     static bool are_consecutive (const interval_t& i1, const interval_t& i2) {
+       assert (i1.is_finite () && i2.is_finite ());
+
        return ( (i1.lb () <= i2.lb () && i1.ub () <= i2.ub ()) &&
                 (i1.ub () + Number(1) == i2.lb ())) ||
               ( (i2.lb () <= i1.lb () && i2.ub () <= i1.ub ()) &&
                 (i2.ub () + Number(1) == i1.lb ()));
      }
      
-     bool overlap (const interval_t& i1, const interval_t& i2) const {
+     static bool overlap (const interval_t& i1, const interval_t& i2) {
+       assert (i1.is_finite () && i2.is_finite ());
+
        return (i2.lb () <= i1.ub () && i1.lb () <= i2.ub ());
+     }
+
+     struct IsOnTheLeft{
+       bool operator() (const interval_t& i1, const interval_t& i2) const {
+         assert (i1.is_finite () && i2.is_finite ());
+         
+         return ((i1.ub () <= i2.lb ()) && (i1.ub () != i2.lb ()));
+       }
+     };
+     
+     static bool check_well_formed (const dis_interval_t &x) {
+
+       if (x.is_top () || x.is_bottom ()) {
+         return true;
+       }
+
+       if (!x.is_finite ())  {
+         CRAB_ERROR ("sanity check -- state should be finite\n",
+                     x, " not well formed");
+         return false;
+       }
+       
+       if (x._list.empty ()) {
+         CRAB_ERROR ("sanity check -- list cannot be empty\n",
+                     x, " not well formed");
+         return false;
+       }
+
+       if (x._list.size () == 1) {
+         if (x._list[0].is_top () || x._list [0].is_bottom ()) {
+           CRAB_ERROR ("sanity check -- cannot be top or bottom\n",
+                       x, " not well formed");
+           return false;
+         } else {
+           return true;
+         }
+       }
+
+       // -- check the list of intervals is strictly sorted. This also
+       // -- checks for duplicates but it won't complain with two
+       // -- intervals like [0,2], [3,4]
+       IsOnTheLeft comp;
+       list_intervals_t tmp (x._list);
+       unsigned prev = 0;
+       for (unsigned cur=1; cur < tmp.size (); cur++,prev++) {
+         if (comp (tmp [prev], tmp [cur]))
+           continue;
+         
+         CRAB_ERROR ("sanity check -- list is not strictly sorted: ",
+                     tmp [prev], " not leq ", tmp[cur], "\n",
+                     x, " not well formed");
+         return false;
+       }
+
+       return true;
      }
      
      list_intervals_t normalize (list_intervals_t l, bool& is_bottom) {
@@ -90,7 +141,7 @@ namespace crab {
          return l;
        }
        
-       StrictWeakOrderingForIntervals comp;
+       IsOnTheLeft comp;
        std::sort (l.begin (), l.end(), comp);
        
        list_intervals_t res;
@@ -142,8 +193,13 @@ namespace crab {
          
          prev = intv;
          CRAB_DEBUG ("-- Normalize: adding ",  intv);
+         if (intv.is_top ()) {
+           CRAB_DEBUG ("-- Normalize: top interval");
+           is_bottom = false;
+           return list_intervals_t ();
+         }
+
          res.push_back (intv);
-         
          next_iter: ;;
          
        }
@@ -158,107 +214,41 @@ namespace crab {
      
      dis_interval(state_t state): _state (state) { }
 
-     dis_interval(state_t state, list_intervals_t l, bool Normalize): 
-         _state (state), _list (l) { 
+     dis_interval(list_intervals_t l, bool Normalize = true): 
+         _state (FINITE), _list (l) { 
 
-       if (l.size () >= 50)
-         CRAB_WARN ("number of disjunctions may be too large: ", l.size ()); 
+       // TODO: make it a template parameter
+       const std::size_t max_num_disjunctions = 50;
 
        if (Normalize) {
          bool is_bottom = false;
          list_intervals_t res = normalize (_list, is_bottom);
-         if (is_bottom)
+         if (is_bottom) {
            _state = BOT;
-         else if (res.empty ())
+           _list.clear ();
+         } else if (res.empty ()) {
            _state = TOP;
+           _list.clear ();
+         }
          else {
            std::swap (_list, res);
          }
        }
+
+
+       if (is_finite () && _list.size () >= max_num_disjunctions) {
+         // TODO: rather than merging all intervals do a more graceful
+         // degradation e.g., start by merging the nearest intervals.
+         CRAB_WARN (" reached maximum allowed number of disjunctions. ",
+                    "Merging all intervals ... ");
+         interval_t alljoined = approx (_list);
+         _list.clear ();
+         _list.push_back (alljoined);
+       }
+
+       assert (check_well_formed (*this));
      }
           
-     struct WidenOp {
-       interval_t apply (interval_t before, interval_t after){ 
-         return before || after;
-       }
-     };
-     
-     template<typename Thresholds>
-     struct WidenWithThresholdsOp {
-       const Thresholds & m_ts;
-       
-       WidenWithThresholdsOp (const Thresholds &ts): m_ts (ts) { }
-       
-       interval_t apply (interval_t before, interval_t after) { 
-         return before.widening_thresholds (after, m_ts);
-       }
-     };
-     
-     template <typename WidenOp>
-     dis_interval_t widening (dis_interval_t o, WidenOp widen_op) const {
-       if (this->is_bottom()) {
-         return o;
-       } else if (o.is_bottom()) {
-         return *this;
-       } else if (this->is_top ()) {
-         return *this;
-       } else if (o.is_top ()) {
-         return o;
-       } else {
-         
-         // --- trivial cases first 
-         if (_list.size () == 1 && o._list.size () == 1) {  
-           return dis_interval_t (widen_op.apply (_list[0], o._list[0]));
-         }
-         
-         if (_list.size () == 1 && o._list.size () > 1) {
-           interval_t x = approx (o._list);
-           return dis_interval_t (widen_op.apply (_list [0], x));
-         }
-         
-         if (_list.size () > 1 && o._list.size () == 1) {
-           interval_t x = approx (_list);
-           return dis_interval_t (widen_op.apply (x, o._list [0]));
-         }
-         
-         assert (_list.size () >= 2 && o._list.size () >= 2);
-         
-         // The widening implemented in CodeContracts widens the
-         // extremes and keep only stable intervals. For this query:
-         // widening( [1,1] | [4, 4], [1,1] | [3,3] | [4, 4]) the
-         // result would to be [1,1] | [4,4]. But this is not even an
-         // upper bound of the right argument so it cannot be a
-         // widening.
-
-         // -- widen the extremes
-         interval_t lb_widen = widen_op.apply (_list [0], o._list [0]);
-         interval_t ub_widen = widen_op.apply (_list [_list.size () - 1],
-                                               o._list [o._list.size () - 1]);
-         
-         list_intervals_t res;
-         res.reserve (_list.size () + o._list.size ());
-         
-         res.push_back (lb_widen);
-
-         // for (unsigned int i=1; i < _list.size () - 1; i++) {
-         //   for (unsigned int j=1; j < o._list.size () - 1; j++) {
-         //     if (o._list [j] <= _list [i]) { 
-         //       res.push_back (_list [i]);
-         //       break;
-         //     }
-         //   }
-         // }
-
-         // keep all the intervals, normalize will do the rest
-         res.insert (res.end (), _list.begin () + 1, _list.end () - 1);
-         res.insert (res.end (), o._list.begin () + 1, o._list.end () - 1);
-
-         res.push_back (ub_widen);
-
-         return dis_interval_t (FINITE, res, true); // normalize
-       }
-     }
-
      // pre: x is normalized
      interval_t approx (list_intervals_t x) const {
        if (x.empty ()) 
@@ -414,6 +404,9 @@ namespace crab {
      
      // pre: *this and o are normalized
      dis_interval_t operator|(dis_interval_t o) const {
+
+       CRAB_DEBUG ("Join of ", *this, " and ", o);
+
        if (this->is_bottom()) {
          return o;
        } else if (o.is_bottom()) {
@@ -423,65 +416,71 @@ namespace crab {
        } else if (o.is_top ()) {
          return o;
        } else {
-       
+         
          unsigned int i=0;
          unsigned int j=0;
          list_intervals_t res;
          res.reserve (_list.size () + o._list.size ());
-
+         
          while (i < _list.size () && j < o._list.size ()) {
            CRAB_DEBUG ("Join -- left operand =", _list[i], " right operand=", o._list[j]);
 
            if (_list[i].is_top () || o._list[j].is_top ()) {
-             CRAB_DEBUG ("Join -- One of the arguments is top");
+             CRAB_DEBUG ("Join -- One of the operands is top");
              return dis_interval_t ();
            }
            else if (_list[i].is_bottom ()) {
-             CRAB_DEBUG ("Join -- Left argument is bottom");
+             CRAB_DEBUG ("Join -- Left operand is bottom");
              i++;
            }
            else if (o._list[j].is_bottom ()) {
-             CRAB_DEBUG ("Join -- Right argument is bottom");
+             CRAB_DEBUG ("Join -- Right operand is bottom");
              j++;
+           }
+           else if (_list[i] == o._list[j]) {
+             CRAB_DEBUG ("Join -- Left operand is equal to right");
+             res.push_back(_list[i]);
+             i++; j++;
            }
            else if (_list[i] <= o._list[j]) {
              CRAB_DEBUG ("Join -- Left operand is included in the right");
              res.push_back(o._list[j]);
-             i++; j++;
+             i++;j++; 
            }
            else if (o._list[j] <= _list[i]) {
              CRAB_DEBUG ("Join -- Right operand is included in the left");
              res.push_back (_list[i]);
-             i++; j++;
+             i++;j++;
            }
            else if (overlap (_list[i], o._list[j]) || 
                     are_consecutive (_list[i], o._list[j])) {
-             CRAB_DEBUG ("Join -- Right ",_list[i], " and left ", o._list[j],
+             CRAB_DEBUG ("Join -- Left ",_list[i], " and right ", o._list[j],
                          " operands overlap or are consecutive");
              res.push_back (_list [i] | o._list[j]);
              i++; j++;
-
            }
-           else if (_list[i].ub () <= o._list [j].lb ()) {
+           else if (IsOnTheLeft () (_list[i], o._list [j])) {
              CRAB_DEBUG ("Join -- Left operand ", _list[i] , 
-                         " is smaller than the right ", o._list[j]);
+                         " is on the left of the right operand ", o._list[j]);
              res.push_back (_list [i]);
              i++;
            }
            else {
+             assert (IsOnTheLeft () (o._list [j], _list [i]));
+                     
              CRAB_DEBUG ("Join -- Right operand ", o._list[j] ,
-                         " is smaller than the left ", _list[i]);
+                         " is on the left of the right operand ", _list[i]);
              res.push_back (o._list [j]);
              j++;
            }
          }
-
+         
          // consume the rest of left operand
          while (i < _list.size ()){
            auto intv = _list [i];
-
+           
            CRAB_DEBUG ("Join -- Adding the rest of left operand ", intv);
-
+           
            bool refined = true;
            while (refined && res.size () > 0) {
              auto prev = res [res.size () -1];
@@ -510,7 +509,7 @@ namespace crab {
          while (j < o._list.size ()){
            auto intv = o._list [j];
            CRAB_DEBUG ("Join -- Adding the rest of right operands ", intv);
-
+           
            bool refined = true;
            while (refined && res.size () > 0) {
              auto prev = res [res.size () -1];
@@ -544,12 +543,18 @@ namespace crab {
            return dis_interval_t (TOP);
          }
          else {
-           //cout << "Join result="; for (auto i: res) { cout << i << "|";} cout << "\n";
-           return dis_interval_t (FINITE, res, false); // no normalization?
+           // It needs normalization. E.g., the join of {[0, 7] | [9, 11]}
+           // and {[0, 6] | [8, 11]} returns {[0, 7] | [8, 11]} which
+           // should be further simplified to [0,11].
+
+           dis_interval_t join (res);
+           CRAB_DEBUG ("Joing result=", join);
+
+           return join;
          }
        }
      }
-
+         
      // pre: *this and o are normalized     
      dis_interval_t operator&(dis_interval_t o) const {
        if (this->is_bottom() || o.is_bottom()) {
@@ -579,12 +584,98 @@ namespace crab {
          } else if (res.empty ()) {
            return (this->top ());
          } else {
-           return dis_interval_t (FINITE, res, true); 
+           return dis_interval_t (res); 
          }
        }
      }
 
+
+    private:
+
+     struct WidenOp {
+       interval_t apply (interval_t before, interval_t after){ 
+         return before || after;
+       }
+     };
      
+     template<typename Thresholds>
+     struct WidenWithThresholdsOp {
+       const Thresholds & m_ts;
+       
+       WidenWithThresholdsOp (const Thresholds &ts): m_ts (ts) { }
+       
+       interval_t apply (interval_t before, interval_t after) { 
+         return before.widening_thresholds (after, m_ts);
+       }
+     };
+     
+     template <typename WidenOp>
+     dis_interval_t widening (dis_interval_t o, WidenOp widen_op) const {
+       if (this->is_bottom()) {
+         return o;
+       } else if (o.is_bottom()) {
+         return *this;
+       } else if (this->is_top ()) {
+         return *this;
+       } else if (o.is_top ()) {
+         return o;
+       } else {
+         
+         // --- trivial cases first 
+         if (_list.size () == 1 && o._list.size () == 1) {  
+           return dis_interval_t (widen_op.apply (_list[0], o._list[0]));
+         }
+         
+         if (_list.size () == 1 && o._list.size () > 1) {
+           interval_t x = approx (o._list);
+           return dis_interval_t (widen_op.apply (_list [0], x));
+         }
+         
+         if (_list.size () > 1 && o._list.size () == 1) {
+           interval_t x = approx (_list);
+           return dis_interval_t (widen_op.apply (x, o._list [0]));
+         }
+         
+         assert (_list.size () >= 2 && o._list.size () >= 2);
+         
+         // The widening implemented in CodeContracts widens the
+         // extremes and keep only stable intervals. For this query:
+         // widening( [1,1] | [4, 4], [1,1] | [3,3] | [4, 4]) the
+         // result would to be [1,1] | [4,4]. But this is not even an
+         // upper bound of the right argument so it cannot be a
+         // widening.
+
+         // -- widen the extremes
+         interval_t lb_widen = widen_op.apply (_list [0], o._list [0]);
+         interval_t ub_widen = widen_op.apply (_list [_list.size () - 1],
+                                               o._list [o._list.size () - 1]);
+         
+         list_intervals_t res;
+         res.reserve (_list.size () + o._list.size ());
+         
+         res.push_back (lb_widen);
+
+         // for (unsigned int i=1; i < _list.size () - 1; i++) {
+         //   for (unsigned int j=1; j < o._list.size () - 1; j++) {
+         //     if (o._list [j] <= _list [i]) { 
+         //       res.push_back (_list [i]);
+         //       break;
+         //     }
+         //   }
+         // }
+
+         // keep all the intervals, normalize will do the rest
+         res.insert (res.end (), _list.begin () + 1, _list.end () - 1);
+         res.insert (res.end (), o._list.begin () + 1, o._list.end () - 1);
+
+         res.push_back (ub_widen);
+
+         return dis_interval_t (res); 
+       }
+     }
+
+    public:
+
      // pre: *this and o are normalized
      dis_interval_t operator|| (dis_interval_t o) const {
        WidenOp op;
@@ -600,7 +691,8 @@ namespace crab {
      
      // pre: *this and o are normalized
      dis_interval_t operator&&(dis_interval_t o) const {
-       // TODO: narrowing operator
+       CRAB_WARN (" DisIntervals narrowing operator replaced with meet");
+
        return (*this & o);
      }
 
@@ -671,7 +763,7 @@ namespace crab {
        if (is_bot) 
          return this->bottom ();
        else
-         return dis_interval_t (FINITE, res, true); // normalize?
+         return dis_interval_t (res);
      }
      
 
@@ -685,26 +777,29 @@ namespace crab {
        if (x.is_top ())
          return this->top ();
 
+       assert (x.is_finite ());
+
+       if (x._list.empty ())
+         CRAB_ERROR ("list should not be empty");
+
        list_intervals_t res;
        res.reserve (x._list.size ());
        bool is_bot = true;
-
-       if (x.is_finite ()) {
-         for (unsigned int i=0; i < x._list.size (); ++i){ 
-           interval_t intv = op (x._list[i]);
-           if (intv.is_bottom ())
-             continue;
-           if (intv.is_top ())
-             return this->top ();
-           is_bot = false;
-           res.push_back (intv);
-         }
+       
+       for (unsigned int i=0; i < x._list.size (); ++i){ 
+         interval_t intv = op (x._list[i]);
+         if (intv.is_bottom ())
+           continue;
+         if (intv.is_top ())
+           return this->top ();
+         is_bot = false;
+         res.push_back (intv);
        }
        
        if (is_bot) 
          return this->bottom ();
        else
-         return dis_interval_t (FINITE, res, true); // normalize?
+         return dis_interval_t (res);
      }
      
     public:
@@ -780,6 +875,7 @@ namespace crab {
        } else if (res.empty ()) {
          _state = TOP;
        } else {
+         _state = FINITE;
          std::swap (_list, res);
        }
      }
@@ -903,6 +999,12 @@ namespace crab {
      
    };//  class dis_interval
 
+   template<typename N>
+   std::ostream& operator<<(std::ostream& o, dis_interval<N> i) {
+     i.write (o);
+     return o;
+   }
+
  } // end namespace domains
 } // end namespace crab 
  
@@ -916,18 +1018,25 @@ namespace ikos {
      template<>
      inline dis_z_interval_t trim_bound(dis_z_interval_t  x, z_number c) {
 
-       if (x.is_top () || x.is_bottom ())
+       if (x.is_bottom ())
          return x;
 
        dis_z_interval_t res = dis_z_interval_t::bottom ();
-       for (auto i: boost::make_iterator_range (x.begin (), x.end ())) {
-         if (i.lb() == c) {
-           res = res | dis_z_interval_t (z_interval(c + 1, i.ub()));
-         } else if (i.ub() == c) {
-           res = res | dis_z_interval_t (z_interval(i.lb(), c - 1));
-         } else {
-           res = res | dis_z_interval_t (z_interval(i.lb(), c - 1));
-           res = res | dis_z_interval_t (z_interval(c + 1, i.ub()));
+
+       if (x.is_top ()) {
+         res = res | dis_z_interval_t (z_interval(c-1).lower_half_line ());
+         res = res | dis_z_interval_t (z_interval(c+1).upper_half_line ());
+       }
+       else {
+         for (auto i: boost::make_iterator_range (x.begin (), x.end ())) {
+           if (i.lb() == c) {
+             res = res | dis_z_interval_t (z_interval(c + 1, i.ub()));
+           } else if (i.ub() == c) {
+             res = res | dis_z_interval_t (z_interval(i.lb(), c - 1));
+           } else {
+             res = res | dis_z_interval_t (z_interval(i.lb(), c - 1));
+             res = res | dis_z_interval_t (z_interval(c + 1, i.ub()));
+           }
          }
        }
 
@@ -1024,7 +1133,10 @@ namespace crab {
      }
 
      bool operator<=(dis_interval_domain_t e) {
-       return (this->_env <= e._env);
+       //cout << "*** Leq " << *this << " and " << e << "\n";
+       bool res = this->_env <= e._env;
+       //cout << "result=" << res << "\n";
+       return res;
      }
      
      void operator|=(dis_interval_domain_t e) {
@@ -1032,24 +1144,39 @@ namespace crab {
      }
      
      dis_interval_domain_t operator|(dis_interval_domain_t e) {
-       return (this->_env | e._env);
+       //cout << "*** Join " << *this << " and " << e << "\n";
+       dis_interval_domain_t res (this->_env | e._env);
+       //cout << "result=" << res << "\n";
+       return res;
      }
      
      dis_interval_domain_t operator&(dis_interval_domain_t e) {
-       return (this->_env & e._env);
+       //cout << "*** Meet " << *this << " and " << e << "\n";
+       dis_interval_domain_t res (this->_env & e._env);
+       //cout << "result=" << res << "\n";
+       return res;
      }
 
      dis_interval_domain_t operator||(dis_interval_domain_t e) {
-      return (this->_env || e._env);
+       //cout << "*** Widening " << *this << " and " << e << "\n";
+       dis_interval_domain_t res (this->_env || e._env);
+       //cout << "result=" << res << "\n";
+       return res;
      }
      
      template<typename Thresholds>
      dis_interval_domain_t widening_thresholds (dis_interval_domain_t e, const Thresholds &ts) {
-       return this->_env.widening_thresholds (e._env, ts);
+       //cout << "*** Widening w/ thresholds " << *this << " and " << e << "\n";
+       dis_interval_domain_t res = this->_env.widening_thresholds (e._env, ts);
+       //cout << "result=" << res << "\n";
+       return res;
      }
      
      dis_interval_domain_t operator&&(dis_interval_domain_t e) {
-       return (this->_env && e._env);
+       //cout << "*** Narrowing " << *this << " and " << e << "\n";
+       dis_interval_domain_t res (this->_env && e._env);
+       //cout << "result=" << res << "\n";
+       return res;
      }
      
      void operator-=(VariableName v) {
@@ -1067,15 +1194,16 @@ namespace crab {
      
      void operator+=(linear_constraint_system_t csts) {
        if (!this->is_bottom()) {
-         //cout << "-- Add constraints " << csts << " in " << *this << "\n";
+         //cout << "*** add constraints " << csts << " in " << *this << "\n";
          const size_t threshold = 10; // make this template parameter
          solver_t solver(csts, threshold);
          solver.run(this->_env);
-         //cout << "-- Result=" << *this << "\n";
+         //cout << "result=" << *this << "\n";
        }
      }
 
      void assign (VariableName x, linear_expression_t e)  {
+       //cout << "*** " <<  x << ":=" << e << " in " << *this << "\n";
        if (boost::optional<variable_t> v = e.get_variable ()) {
          this->_env.set(x, this->_env [(*v).name ()]);
        }
@@ -1085,9 +1213,11 @@ namespace crab {
            r += dis_interval_t (t.first) * this->_env[t.second.name()];
          this->_env.set(x, r);
        }
+       //cout << "result=" << *this << "\n";
      }
      
      void apply (operation_t op, VariableName x, VariableName y, Number z) {
+       //cout << "*** " << x << ":=" << y << op << z << " in " << *this << "\n";
        dis_interval_t yi = this->_env[y];
        dis_interval_t zi (z);
        dis_interval_t xi = dis_interval_t::top ();
@@ -1098,9 +1228,11 @@ namespace crab {
          case OP_DIVISION: xi = yi / zi; break;
        }
        this->_env.set(x, xi);
+       //cout << "result=" << *this << "\n";
      }
 
      void apply(operation_t op, VariableName x, VariableName y, VariableName z) {
+       //cout << "*** " << x << ":=" << y << op << z << " in " << *this << "\n";
        dis_interval_t yi = this->_env[y];
        dis_interval_t zi = this->_env[z];
        dis_interval_t xi = dis_interval_t::top();
@@ -1111,6 +1243,7 @@ namespace crab {
          case OP_DIVISION: xi = yi / zi; break; 
        }
        this->_env.set(x, xi);
+       //cout << "result=" << *this << "\n";
      }
      
      
