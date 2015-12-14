@@ -217,6 +217,9 @@ namespace crab {
      dis_interval(list_intervals_t l, bool Normalize = true): 
          _state (FINITE), _list (l) { 
 
+       // TODO: make it a template parameter
+       const std::size_t max_num_disjunctions = 50;
+
        if (Normalize) {
          bool is_bottom = false;
          list_intervals_t res = normalize (_list, is_bottom);
@@ -226,23 +229,24 @@ namespace crab {
          } else if (res.empty ()) {
            _state = TOP;
            _list.clear ();
-         } else {
+         }
+         else {
            std::swap (_list, res);
          }
        }
 
-       assert (check_well_formed (*this));
 
-       // TODO: make it a template parameter
-       const std::size_t max_num_disjunctions = 50;
-       if (_list.size () >= max_num_disjunctions) {
-         CRAB_WARN ("Number of disjunctions >= ", max_num_disjunctions,
-                    " merging all intervals ... ");
-         // TODO: graceful degradation if the number of intervals is
-         // too large. E.g., start by merging the nearest intervals.
-         approx ();
+       if (is_finite () && _list.size () >= max_num_disjunctions) {
+         // TODO: rather than merging all intervals do a more graceful
+         // degradation e.g., start by merging the nearest intervals.
+         CRAB_WARN (" reached maximum allowed number of disjunctions. ",
+                    "Merging all intervals ... ");
+         interval_t alljoined = approx (_list);
+         _list.clear ();
+         _list.push_back (alljoined);
        }
 
+       assert (check_well_formed (*this));
      }
           
      // pre: x is normalized
