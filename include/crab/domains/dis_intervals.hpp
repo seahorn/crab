@@ -64,7 +64,8 @@ namespace crab {
 
      // FIXME: this is assuming Number=z_number
      static bool are_consecutive (const interval_t& i1, const interval_t& i2) {
-       assert (i1.is_finite () && i2.is_finite ());
+       assert (i1.lb().is_finite () && i1.ub().is_finite () && 
+               i2.lb().is_finite () && i2.ub().is_finite ());
 
        return ( (i1.lb () <= i2.lb () && i1.ub () <= i2.ub ()) &&
                 (i1.ub () + Number(1) == i2.lb ())) ||
@@ -73,15 +74,17 @@ namespace crab {
      }
      
      static bool overlap (const interval_t& i1, const interval_t& i2) {
-       assert (i1.is_finite () && i2.is_finite ());
+       assert (i1.lb().is_finite () && i1.ub().is_finite () && 
+               i2.lb().is_finite () && i2.ub().is_finite ());
 
        return (i2.lb () <= i1.ub () && i1.lb () <= i2.ub ());
      }
 
      struct IsOnTheLeft{
        bool operator() (const interval_t& i1, const interval_t& i2) const {
-         assert (i1.is_finite () && i2.is_finite ());
-         
+         assert (i1.lb().is_finite () && i1.ub().is_finite () && 
+                 i2.lb().is_finite () && i2.ub().is_finite ());
+
          return ((i1.ub () <= i2.lb ()) && (i1.ub () != i2.lb ()));
        }
      };
@@ -888,7 +891,7 @@ namespace crab {
         o << "[-oo,+oo]";
       }
       else {
-        assert (_status == FINITE);
+        assert (_state == FINITE);
 
         for (typename list_intervals_t::iterator it = _list.begin (), 
                  et= _list.end (); it!=et; ){
