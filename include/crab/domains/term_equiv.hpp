@@ -14,6 +14,9 @@
 #include <iostream>
 #include <vector>
 #include <sstream>
+
+#include <boost/range.hpp>
+#include "boost/range/algorithm/set_algorithm.hpp"
 #include <boost/container/flat_map.hpp>
 #include <boost/container/flat_set.hpp>
 #include <boost/optional.hpp>
@@ -631,9 +634,9 @@ namespace crab {
            }
          }
        }
-    
+
+       // Remove a variable from the scope
        void operator-=(VariableName v) {
-         // Remove a variable from the scope
          auto it(_var_map.find(v));
          if(it != _var_map.end())
          {
@@ -643,6 +646,28 @@ namespace crab {
            deref(t);
          }
        }
+
+       // Remove a range of variables from the scope
+       template<typename Range>
+       void forget (Range vs) {
+         if (is_bottom ()) return;
+         
+         for (auto v:  vs)
+           *this -= v;
+       }
+
+       // Remove all variables except vs
+       template<typename Range>
+       void project (Range vs) {
+         if (is_bottom ()) return;
+         
+         std::set<VariableName> s1,s2,s3;
+         for (auto p: _var_map) s1.insert (p.first.name ());
+         s2.insert (vs.begin (), vs.end ());
+         boost::set_difference (s1,s2,std::inserter (s3, s3.end ()));
+         forget (s3);
+       }
+
 
        void check_terms(void) const
        {
@@ -1384,6 +1409,16 @@ namespace crab {
 
   namespace domain_traits {
     using namespace domains;
+
+     template <typename Info, typename Iterator >
+     void forget (anti_unif<Info>& inv, Iterator it, Iterator end) {
+       inv.forget (boost::make_iterator_range (it, end));
+     }
+  
+     template <typename Info, typename Iterator >
+     void project (anti_unif<Info>& inv, Iterator it, Iterator end) {
+       inv.project (boost::make_iterator_range (it, end));
+     }
  
     template <typename Info, typename VariableName>
     void expand (anti_unif<Info>& inv, VariableName x, VariableName new_x) {
