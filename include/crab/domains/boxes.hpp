@@ -13,7 +13,6 @@
 #include <crab/config.h>
 #include <crab/common/types.hpp>
 #include <crab/domains/numerical_domains_api.hpp>
-#include <crab/domains/domain_traits_impl.hpp>
 
 using namespace boost;
 using namespace ikos;
@@ -65,6 +64,9 @@ namespace crab {
 
         bool operator<=(boxes_domain_t other) { CRAB_ERROR (LDD_NOT_FOUND); }
         
+        void operator|=(boxes_domain_t other)
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+
         boxes_domain_t operator|(boxes_domain_t other)
         { CRAB_ERROR (LDD_NOT_FOUND); }
         
@@ -144,6 +146,7 @@ namespace crab {
  */
 
 #include <crab/domains/ldd/ldd.hpp>
+#include <crab/domains/ldd/ldd_print.hpp>
 #include <boost/bimap.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/range/algorithm/set_algorithm.hpp>
@@ -512,6 +515,10 @@ namespace crab {
           return res;
         }
 
+        void operator|=(boxes_domain_t other) {
+          *this = *this | other;
+        }
+        
         boxes_domain_t operator|(boxes_domain_t other) {
           return boxes_domain_t (join (m_ldd, other.m_ldd));
         }
@@ -901,15 +908,24 @@ namespace crab {
 
         
         void write (ostream& o) {
-          // FIXME: variable names are internal ldd names
-          // FIXME: write to ostream rather than stdout
+          // TODO: write to ostream rather than stdout
           LddManager *ldd_man = getLddManager (m_ldd);
           DdManager *cudd = Ldd_GetCudd (ldd_man);
           FILE *fp = Cudd_ReadStdout(cudd);
           Cudd_SetStdout(cudd, stdout);
-          if (m_ldd.get () == Ldd_GetTrue (ldd_man)) o << "{}";
-          else if (m_ldd.get () == Ldd_GetFalse (ldd_man)) o << "_|_";	
-          else Ldd_PrintMinterm(ldd_man, m_ldd.get ());
+          if (m_ldd.get () == Ldd_GetTrue (ldd_man)) 
+            o << "{}";
+          else if (m_ldd.get () == Ldd_GetFalse (ldd_man)) 
+            o << "_|_";	
+          else 
+          {
+            // -- build dictionary
+            vector<char*> vnames;
+            vnames.reserve (num_of_vars ());
+            for (unsigned int i=0; i < num_of_vars (); i++)
+              vnames.push_back (const_cast<char*> (getVarName (i).str ().c_str()));
+            Ldd_PrintMintermSmtLibv1 (ldd_man, m_ldd.get (), &vnames[0]);
+          }
           Cudd_SetStdout(cudd,fp);      
         }
         
