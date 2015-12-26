@@ -922,9 +922,18 @@ namespace crab {
             // -- build dictionary
             vector<char*> vnames;
             vnames.reserve (num_of_vars ());
-            for (unsigned int i=0; i < num_of_vars (); i++)
-              vnames.push_back (const_cast<char*> (getVarName (i).str ().c_str()));
+            for (unsigned int i=0; i < num_of_vars (); i++) {
+              const char * name = getVarName (i).str ().c_str();
+              char * cname = (char*) malloc (sizeof(char) * (std::strlen (name)));
+              std::strcpy (cname, name);
+              vnames.push_back (cname);
+            }
+
             Ldd_PrintMintermSmtLibv1 (ldd_man, m_ldd.get (), &vnames[0]);
+
+            // -- destroy dict
+            for (unsigned int i=0; i < num_of_vars (); i++)
+              free (vnames[i]);
           }
           Cudd_SetStdout(cudd,fp);      
         }
