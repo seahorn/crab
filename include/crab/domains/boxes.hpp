@@ -146,6 +146,7 @@ namespace crab {
  */
 
 #include <crab/domains/ldd/ldd.hpp>
+#include <crab/domains/ldd/ldd_print.hpp>
 #include <boost/bimap.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/range/algorithm/set_algorithm.hpp>
@@ -907,15 +908,33 @@ namespace crab {
 
         
         void write (ostream& o) {
-          // FIXME: variable names are internal ldd names
-          // FIXME: write to ostream rather than stdout
+          // TODO: write to ostream rather than stdout
           LddManager *ldd_man = getLddManager (m_ldd);
           DdManager *cudd = Ldd_GetCudd (ldd_man);
           FILE *fp = Cudd_ReadStdout(cudd);
           Cudd_SetStdout(cudd, stdout);
-          if (m_ldd.get () == Ldd_GetTrue (ldd_man)) o << "{}";
-          else if (m_ldd.get () == Ldd_GetFalse (ldd_man)) o << "_|_";	
-          else Ldd_PrintMinterm(ldd_man, m_ldd.get ());
+          if (m_ldd.get () == Ldd_GetTrue (ldd_man)) 
+            o << "{}";
+          else if (m_ldd.get () == Ldd_GetFalse (ldd_man)) 
+            o << "_|_";	
+          else 
+          {
+            // -- build dictionary
+            vector<char*> vnames;
+            vnames.reserve (num_of_vars ());
+            for (unsigned int i=0; i < num_of_vars (); i++) {
+              const char * name = getVarName (i).str ().c_str();
+              char * cname = (char*) malloc (sizeof(char) * (std::strlen (name)));
+              std::strcpy (cname, name);
+              vnames.push_back (cname);
+            }
+
+            Ldd_PrintMintermSmtLibv1 (ldd_man, m_ldd.get (), &vnames[0]);
+
+            // -- destroy dict
+            for (unsigned int i=0; i < num_of_vars (); i++)
+              free (vnames[i]);
+          }
           Cudd_SetStdout(cudd,fp);      
         }
         

@@ -200,11 +200,12 @@ cfg_t prog5 (VariableFactory &vfac)  {
 int main (int argc, char** argv )
 {
 
+  VariableFactory vfac;
+
   const unsigned int w = 10;
   const unsigned int n = 2;
       
   {
-    VariableFactory vfac;
     cfg_t cfg = prog1 (vfac);
     cfg.simplify (); // this is optional
     cout << cfg << endl;
@@ -221,7 +222,6 @@ int main (int argc, char** argv )
 
 
   {
-    VariableFactory vfac;
     cfg_t cfg = prog1 (vfac);
     cout << cfg << endl;
     NumFwdAnalyzer <cfg_t, boxes_domain_t,VariableFactory>::type a (cfg, vfac, nullptr, w, n);
@@ -236,7 +236,6 @@ int main (int argc, char** argv )
   }
 
   {
-    VariableFactory vfac;
     cfg_t cfg = prog2 (vfac);
     cfg.simplify (); // this is optional
     cout << cfg << endl;
@@ -252,7 +251,6 @@ int main (int argc, char** argv )
   }
 
   {
-    VariableFactory vfac;
     cfg_t cfg = prog3 (vfac);
     cfg.simplify (); // this is optional
     cout << cfg << endl;
@@ -268,7 +266,6 @@ int main (int argc, char** argv )
   }
 
   {
-    VariableFactory vfac;
     cfg_t cfg = prog4 (vfac);
     cfg.simplify (); // this is optional
     cout << cfg << endl;
@@ -285,7 +282,6 @@ int main (int argc, char** argv )
   }
 
   {
-    VariableFactory vfac;
     cfg_t cfg = prog5 (vfac);
     cout << cfg << endl;
     NumFwdAnalyzer <cfg_t, boxes_domain_t,VariableFactory>::type a (cfg,vfac,nullptr,w,n);
@@ -301,7 +297,6 @@ int main (int argc, char** argv )
 
   { 
     std::cout << "Testing some boxes operations ...\n";
-    VariableFactory vfac;
     varname_t x = vfac["x"];
     varname_t y = vfac["y"];
     varname_t z = vfac["z"];
