@@ -1,4 +1,5 @@
-add_library(term STATIC term.cpp)
+add_library(term ${CRAB_LIBS_TYPE}  
+  term.cpp)
 
 
 install(TARGETS term

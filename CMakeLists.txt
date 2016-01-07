@@ -32,6 +32,17 @@ include_directories (${Boost_INCLUDE_DIRS})
 option (DEVMODE "Enable development mode" OFF)
 option (USE_LDD "Enable ldd" OFF)
 
+# Whether crab libraries are built shared or statically
+option(BUILD_CRAB_LIBS_SHARED "Build all Crab libraries shared." OFF)
+
+if (BUILD_CRAB_LIBS_SHARED)
+  message (STATUS "All crab libraries will be built as shared libraries")
+  set(CRAB_LIBS_TYPE SHARED)
+else()
+  message (STATUS "All crab libraries will be built statically")
+  set(CRAB_LIBS_TYPE STATIC)
+endif ()
+
 include(ExternalProject)
 set_property(DIRECTORY PROPERTY EP_STEP_TARGETS configure build test)
 
