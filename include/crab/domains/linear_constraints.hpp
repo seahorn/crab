@@ -48,6 +48,7 @@
 #include <boost/container/flat_map.hpp>
 #include <boost/container/slist.hpp>
 #include <boost/iterator/iterator_facade.hpp>
+#include <boost/functional/hash.hpp>
 #include <crab/common/types.hpp>
 #include <crab/domains/patricia_trees.hpp>
 
@@ -57,6 +58,8 @@ namespace ikos {
   class linear_expression: public writeable {
     
   public:
+    typedef Number number_t;
+    typedef VariableName varname_t;
     typedef variable< Number, VariableName > variable_t;
     typedef linear_expression< Number, VariableName > linear_expression_t;
     typedef std::pair< Number, variable_t > component_t;
@@ -165,7 +168,16 @@ namespace ikos {
     iterator end() const {
       return iterator(this->_map, false);
     }
-    
+
+    size_t hash () const {
+      size_t res = 0;
+      for (iterator it=begin(), et=end (); it!=et; ++it) {
+        boost::hash_combine (res, std::make_pair((*it).second, (*it).first));
+      }
+      boost::hash_combine (res, _cst);
+      return res;
+    }
+
     bool is_constant() const {
       return (this->_map->size() == 0);
     }
@@ -185,6 +197,22 @@ namespace ikos {
       } else {
 	return 0;
       }
+    }
+
+    template<typename VarMap>
+    boost::optional<linear_expression_t> rename (const VarMap& map) const {
+      Number cst(this->_cst);
+      linear_expression_t ren_exp(cst);
+      for(auto v : this->variables()) {
+        auto const it = map.find(v);
+        if (it != map.end()) {
+          variable_t v_out ((*it).second);
+          ren_exp = ren_exp + this->operator[](v) * v_out;
+        }
+        else
+          return boost::optional<linear_expression_t>();
+      }
+      return ren_exp;
     }
 
     linear_expression_t operator+(Number n) const {
@@ -304,6 +332,11 @@ namespace ikos {
     }
     
   }; // class linear_expression
+
+  template<typename Number, typename VariableName>
+  inline std::size_t hash_value(const linear_expression<Number,VariableName>& e) {
+    return e.hash ();
+  }
 
   template< typename Number, typename VariableName >
   inline linear_expression< Number, VariableName > 
@@ -445,6 +478,8 @@ namespace ikos {
   class linear_constraint: public writeable {
     
   public:
+    typedef Number number_t;
+    typedef VariableName varname_t;
     typedef linear_constraint< Number, VariableName > linear_constraint_t;
     typedef variable< Number, VariableName > variable_t;
     typedef linear_expression< Number, VariableName > linear_expression_t;
@@ -504,7 +539,7 @@ namespace ikos {
       return (this->_kind == DISEQUATION);
     }
 
-    const linear_expression_t& expression() {
+    const linear_expression_t& expression() const {
       return this->_expr;
     }
     
@@ -528,6 +563,13 @@ namespace ikos {
       return this->_expr.size();
     }
 
+    size_t hash () const {
+      size_t res = 0;
+      boost::hash_combine (res, _expr);
+      boost::hash_combine (res, _kind);
+      return res;
+    }
+    
     Number operator[](variable_t x) const {
       return this->_expr.operator[](x);
     }
@@ -556,6 +598,18 @@ namespace ikos {
       }
       CRAB_ERROR("unreachable");       
     }
+
+    template<typename VarMap>
+    boost::optional<linear_constraint_t> rename(const VarMap& map) const {
+
+      boost::optional<linear_expression_t> e = this->_expr.rename(map);
+      if (e) {
+        return linear_constraint_t(*e, this->_kind);
+      } else {
+        return boost::optional<linear_constraint_t>();
+      }
+    }
+
     
     void write(std::ostream& o) {
       if (this->is_contradiction()) {
@@ -586,6 +640,11 @@ namespace ikos {
     
     
   }; // class linear_constraint
+
+  template<typename Number, typename VariableName>
+  inline std::size_t hash_value(const linear_constraint<Number,VariableName>& e) {
+    return e.hash ();
+  }
 
   template< typename Number, typename VariableName >
   inline linear_constraint< Number, VariableName > 
@@ -942,6 +1001,8 @@ namespace ikos {
   class linear_constraint_system: public writeable {
 
   public:
+    typedef Number number_t;
+    typedef VariableName varname_t;
     typedef linear_constraint< Number, VariableName > linear_constraint_t;
     typedef linear_constraint_system< Number, VariableName > linear_constraint_system_t;
     typedef variable< Number, VariableName > variable_t;
