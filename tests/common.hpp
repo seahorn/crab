@@ -52,8 +52,8 @@ namespace crab {
     typedef interval_domain< z_number, varname_t > interval_domain_t;
     typedef numerical_congruence_domain< interval_domain_t> ric_domain_t;
     typedef DBM<z_number, varname_t> dbm_domain_t;
-    typedef anti_unif<term::TDomInfo<z_number, varname_t, interval_domain_t> >::anti_unif_t term_domain_t;
-    typedef anti_unif<term::TDomInfo<z_number, varname_t, dbm_domain_t> >::anti_unif_t term_dbm_t;
+    typedef term_domain<term::TDomInfo<z_number, varname_t, interval_domain_t> > term_domain_t;
+    typedef term_domain<term::TDomInfo<z_number, varname_t, dbm_domain_t> > term_dbm_t;
     typedef boxes_domain<z_number, varname_t > boxes_domain_t;
     typedef dis_interval_domain<z_number, varname_t > dis_interval_domain_t;
     // Array domains
