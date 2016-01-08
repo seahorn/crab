@@ -263,7 +263,7 @@ namespace crab {
           return _inv.to_linear_constraint_system ();
         }
         
-        NumDomain  get_base_domain () const {      
+        NumDomain  get_content_domain () const {      
           return _inv;
         }
 

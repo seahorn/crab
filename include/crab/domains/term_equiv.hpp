@@ -1,17 +1,19 @@
 /*******************************************************************************
- *
- * Anti-unification domain -- lifting a value domain using term
- * equivalences.
+ * An abstract domain that lifts a value domain using term
+ * equivalences based on the paper "An Abstract Domain of
+ * Uninterpreted Functions" by Gange, Navas, Schachte, Sondergaard,
+ * and Stuckey published in VMCAI'16.
  *
  * Author: Graeme Gange (gkgange@unimelb.edu.au)
+ *
+ * Contributors: Jorge A. Navas (jorge.a.navaslaserna@nasa.gov)
  ******************************************************************************/
 
-#ifndef ANTI_UNIF_HPP
-#define ANTI_UNIF_HPP
+#ifndef TERM_DOMAIN_HPP
+#define TERM_DOMAIN_HPP
 
 #include <utility>
 #include <algorithm>
-#include <iostream>
 #include <vector>
 #include <sstream>
 
@@ -31,6 +33,7 @@
 #include <crab/domains/numerical_domains_api.hpp>
 #include <crab/domains/bitwise_operators_api.hpp>
 #include <crab/domains/division_operators_api.hpp>
+#include <crab/domains/domain_traits_impl.hpp>
 #include <crab/domains/intervals.hpp>
 #include <crab/domains/term/term_expr.hpp>
 #include <crab/domains/term/inverse.hpp>
@@ -38,6 +41,7 @@
 using namespace boost;
 using namespace std;
 using namespace ikos;
+
 //#define VERBOSE 
 //#define DEBUG_VARMAP
 
@@ -54,7 +58,7 @@ namespace crab {
           typedef Num Number;
           typedef VName VariableName;
           typedef cfg::var_factory_impl::StrVarAlloc_col Alloc;
-       typedef Abs domain_t; 
+          typedef Abs domain_t; 
         };
      }
 
@@ -62,16 +66,18 @@ namespace crab {
      class TermNormalizer;
 
      template< typename Info >
-     class anti_unif: public writeable,
-                      public numerical_domain<typename Info::Number, typename Info::VariableName >, 
-                      public bitwise_operators< typename Info::Number, typename Info::VariableName >,
-                      public division_operators< typename Info::Number, typename Info::VariableName > {
+     class term_domain: public writeable,
+                        public numerical_domain<typename Info::Number, typename Info::VariableName >, 
+                        public bitwise_operators< typename Info::Number, typename Info::VariableName >,
+                        public division_operators< typename Info::Number, typename Info::VariableName > {
        friend class TermNormalizer<Info, typename Info::domain_t>;
       private:
-       // Underlying (value?) domain.
+       // Number and VariableName can be different from
+       // dom_t::number_t and dom_t::varname_t although currently
+       // Number and dom_t::number_t must be the same type.
        typedef typename Info::Number Number;
        typedef typename Info::VariableName VariableName;
-       typedef typename Info::domain_t  dom_t;
+       typedef typename Info::domain_t dom_t;
        
        typedef typename dom_t::variable_t dom_var_t;
        typedef typename Info::Alloc dom_var_alloc_t;
@@ -89,14 +95,15 @@ namespace crab {
        using typename numerical_domain< Number, VariableName >::number_t;
        using typename numerical_domain< Number, VariableName >::varname_t;
 
-       typedef anti_unif<Info>        anti_unif_t;
+       typedef term_domain<Info> term_domain_t;
        typedef term::term_table< Number, binary_operation_t > ttbl_t;
        typedef typename ttbl_t::term_id_t term_id_t;
        typedef patricia_tree_set< VariableName >  varname_set_t;
        
       private:
+
        // WARNING: assumes the underlying domain uses the same number type.
-       typedef typename Info::Number                     dom_number;
+       typedef typename Info::Number                      dom_number;
        typedef typename dom_t::linear_constraint_t        dom_lincst_t;
        typedef typename dom_t::linear_constraint_system_t dom_linsys_t;
        typedef typename dom_t::linear_expression_t        dom_linexp_t;
@@ -109,23 +116,23 @@ namespace crab {
        typedef container::flat_map< variable_t, term_id_t > var_map_t;
        
       private:
-       bool     _is_bottom;
+
+       bool _is_bottom;
        // Uses a single state of the underlying domain.
-       ttbl_t          _ttbl;
-       dom_t           _impl;
+       ttbl_t _ttbl;
+       dom_t _impl;
        dom_var_alloc_t _alloc;
-       var_map_t       _var_map;
-       term_map_t      _term_map;
-       term_set_t      changed_terms; 
+       var_map_t _var_map;
+       term_map_t _term_map;
+       term_set_t changed_terms; 
        
        void set_to_bottom (){
          this->_is_bottom = true;
        }
        
-      private:
-       anti_unif(bool is_top): _is_bottom(!is_top) { }
+       term_domain(bool is_top): _is_bottom(!is_top) { }
        
-       anti_unif(dom_var_alloc_t alloc, var_map_t vm, ttbl_t tbl, term_map_t tmap, dom_t impl)
+       term_domain(dom_var_alloc_t alloc, var_map_t vm, ttbl_t tbl, term_map_t tmap, dom_t impl)
            : _is_bottom((impl.is_bottom ())? true: false), _ttbl(tbl), _impl(impl), _alloc(alloc), 
              _var_map(vm), _term_map(tmap)
        { check_terms(); }
@@ -137,7 +144,7 @@ namespace crab {
          optional<Number> n_ub = ub.number ();
          
          if (n_lb && n_ub && (*n_lb == *n_ub))
-           return build_const(*n_lb);
+           return term_of_const(*n_lb);
          
          term_id_t t_itv = _ttbl.fresh_var();
          dom_var_t dom_itv = domvar_of_term(t_itv);
@@ -161,15 +168,13 @@ namespace crab {
        //     return tx;
        //   }
        // }
-       
-       
+              
        // void apply(operation_t op, VariableName x, VariableName y, bound_t lb, bound_t ub){	
        //   term_id_t t_x = term_of_expr(op, term_of_var(y), term_of_itv(lb, ub));
        //   // JNL: check with Graeme
        //   //      insert only adds an entry if the key does not exist
        //   //_var_map.insert(std::make_pair(x, t_x));
        //   rebind_var (x, t_x);
-         
        //   check_terms();
        // }
 
@@ -234,15 +239,12 @@ namespace crab {
               
        dom_t eval_ftor_copy(dom_t& dom, ttbl_t& tbl, term_id_t t)
        {
-         // cout << "Before tightening:" << endl;
-         // cout << dom << endl;
          dom_t ret = dom;
          eval_ftor(ret, tbl, t);
-         // std::cout << "After tightening:" << endl << ret << endl;
          return ret;
        }  
 
-       binary_operation_t convToBinOp (operation_t op) {
+       binary_operation_t conv2binop (operation_t op) {
          switch (op) {
            case OP_ADDITION: return BINOP_ADD;
            case OP_SUBTRACTION: return BINOP_SUB;
@@ -251,7 +253,7 @@ namespace crab {
          }
        }
 
-       binary_operation_t convToBinOp (div_operation_t op) {
+       binary_operation_t conv2binop (div_operation_t op) {
          switch (op) {
            case OP_SDIV: return BINOP_SDIV;
            case OP_UDIV: return BINOP_UDIV;
@@ -260,7 +262,7 @@ namespace crab {
          }
        }
 
-       binary_operation_t convToBinOp (bitwise_operation_t op) {
+       binary_operation_t conv2binop (bitwise_operation_t op) {
          switch (op) {
            case OP_AND: return BINOP_AND;
            case OP_OR: return BINOP_OR;
@@ -270,21 +272,233 @@ namespace crab {
            default: return BINOP_ASHR;
          }
        }
-       
-      public:
-       static anti_unif_t top() {
-         return anti_unif(true);
+
+       void check_terms(void) const
+       {
+         #ifdef DEBUG_VARMAP
+         for(auto const p : _var_map)
+           assert(p.second < _ttbl.size());
+         #endif
+       }
+
+       template<class T> T check_terms(T& t)
+       {
+         check_terms();
+         return t;
+       }
+
+       void deref(term_id_t t)
+       {
+         std::vector<term_id_t> forgotten;
+         _ttbl.deref(t, forgotten);
+         for(term_id_t f : forgotten)
+         {
+           typename term_map_t::iterator it(_term_map.find(f));
+           if(it != _term_map.end())
+           {
+             _impl -= (*it).second.name();
+             _term_map.erase(it);
+           }
+         }
+       }
+
+       void rebind_var(variable_t& x, term_id_t tx)
+       {
+         _ttbl.add_ref(tx);
+
+         auto it(_var_map.find(x));
+         if(it != _var_map.end())
+         {
+           deref((*it).second);
+           _var_map.erase(it);
+         }
+
+         _var_map.insert(std::make_pair(x, tx));
+       }
+
+       // Build the tree for a linexpr, and ensure that
+       // values for the subterms are sustained.
+
+       term_id_t term_of_const(const Number& n)
+       {
+         dom_number dom_n(n);
+         optional<term_id_t> opt_n(_ttbl.find_const(dom_n));
+         if(opt_n) {
+           return *opt_n;
+         } else {
+           term_id_t term_n(_ttbl.make_const(dom_n));
+           dom_var_t v = domvar_of_term(term_n);
+
+           dom_linexp_t exp(n);
+           _impl.assign(v.name(), exp);
+           return term_n;
+         }
+       }
+
+       term_id_t term_of_var(variable_t v)
+       {
+         auto it(_var_map.find(v)); 
+         if(it != _var_map.end())
+         {
+           // assert ((*it).first == v);
+           assert(_ttbl.size() > (*it).second);
+           return (*it).second;
+         } else {
+           // Allocate a fresh term
+           term_id_t id(_ttbl.fresh_var());
+           _var_map[v] = id;
+           _ttbl.add_ref(id);
+           return id;
+         }
+       }
+
+       term_id_t term_of_linterm(linterm_t term)
+       {
+         if(term.first == 1)
+         {
+           return term_of_var(term.second);
+         } else {
+           return build_term(OP_MULTIPLICATION,
+                             term_of_const(term.first),
+                             term_of_var(term.second));
+         }
+       }
+
+       // OpTy = [operation_t | div_operation_t | bitwise_operation_t]
+       template<typename OpTy> 
+       term_id_t build_term(OpTy op, term_id_t ty, term_id_t tz)
+       {
+         // Check if the term already exists
+         binary_operation_t binop = conv2binop (op);
+         optional<term_id_t> eopt(_ttbl.find_ftor(binop, ty, tz));
+         if(eopt) {
+           return *eopt;
+         } else {
+           // Create the term
+           term_id_t tx = _ttbl.apply_ftor(binop, ty, tz);
+           dom_var_t v(domvar_of_term(tx));
+           dom_var_t y(domvar_of_term(ty));
+           dom_var_t z(domvar_of_term(tz));
+
+           // Set up the evaluation.
+           CRAB_DEBUG("Prev: ",_impl);
+
+           _impl.apply(op, v.name(), y.name(), z.name());
+
+           CRAB_DEBUG("Should have ", v.name(), "|", v.name().index()," := ", 
+                      y.name(), "|", y.name().index(), op , z.name(), "|", z.name().index());
+           CRAB_DEBUG(_impl);
+
+           return tx;
+         }
+       }
+
+       term_id_t build_linexpr(linear_expression_t& e)
+       {
+         Number cst = e.constant();
+         typename linear_expression_t::iterator it(e.begin());
+         if(it == e.end())
+           return term_of_const(cst);
+     
+         term_id_t t;
+         if(cst == 0)
+         {
+           t = term_of_linterm(*it);
+           ++it;
+         } else {
+           t = term_of_const(cst);
+         }
+         for(; it != e.end(); ++it) {
+           t = build_term(OP_ADDITION, t, term_of_linterm(*it));
+         }
+
+         CRAB_DEBUG("Should have ", domvar_of_term(t).name(), " := ", e,"\n",_impl);
+         return t;       
+       }
+
+       dom_var_t domvar_of_term(term_id_t id)
+       {
+         typename term_map_t::iterator it(_term_map.find(id));
+         if(it != _term_map.end()) {
+           return (*it).second;
+         } else {
+           // Allocate a fresh variable
+           dom_var_t dvar(_alloc.next());
+           _term_map.insert(std::make_pair(id, dvar));
+           return dvar;
+         }
+       }
+
+       dom_var_t domvar_of_var(variable_t v)
+       {
+         return domvar_of_term(term_of_var(v));
+       }
+
+       // Remap a linear constraint to the domain.
+       dom_linexp_t rename_linear_expr(linear_expression_t exp)
+       {
+         Number cst(exp.constant());
+         dom_linexp_t dom_exp(cst);
+         for(auto v : exp.variables())
+         {
+           dom_exp = dom_exp + exp[v]*domvar_of_var(v);
+         }
+         return dom_exp;
+       }
+
+       dom_lincst_t rename_linear_cst(linear_constraint_t cst)
+       {
+         return dom_lincst_t(rename_linear_expr(cst.expression()), 
+                             (typename dom_lincst_t::kind_t) cst.kind());
+       }
+
+       // Assumption: vars(exp) subseteq keys(map)
+       // XXX JNL: exp can have variables that are not in rev_map (e.g.,
+       // some generated by build_linexpr). 
+       boost::optional<linear_expression_t> 
+       rename_linear_expr_rev(dom_linexp_t exp, rev_map_t rev_map) const
+       {
+         Number cst(exp.constant());
+         linear_expression_t rev_exp(cst);
+         for(auto v : exp.variables()) {
+           auto it = rev_map.find(v);
+           if (it != rev_map.end()) {
+             variable_t v_out((*it).second);
+             rev_exp = rev_exp + exp[v]*v_out;
+           }
+           else
+             return boost::optional<linear_expression_t> ();
+         }
+         return rev_exp;
+       }
+
+       boost::optional<linear_constraint_t> 
+       rename_linear_cst_rev(dom_lincst_t cst, rev_map_t rev_map) const
+       {
+         boost::optional<linear_expression_t> e = 
+             rename_linear_expr_rev(cst.expression(), rev_map);
+         if (e)
+           return linear_constraint_t(*e,
+                                      (typename linear_constraint_t::kind_t) cst.kind());
+         else
+           return boost::optional<linear_constraint_t>();
        }
        
-       static anti_unif_t bottom() {
-         return anti_unif(false);
+      public:
+
+       static term_domain_t top() {
+         return term_domain(true);
+       }
+       
+       static term_domain_t bottom() {
+         return term_domain(false);
        }
        
       public:
-       // Constructs top octagon, represented by a size of 0.
-       anti_unif(): _is_bottom(false) { }
+
+       term_domain(): _is_bottom(false) { }
        
-       anti_unif(const anti_unif_t& o): 
+       term_domain(const term_domain_t& o): 
            writeable(), 
            numerical_domain<Number, VariableName >(),
            bitwise_operators< Number, VariableName >(),
@@ -296,7 +510,7 @@ namespace crab {
            changed_terms(o.changed_terms)
        { check_terms(); } 
        
-       anti_unif_t& operator=(const anti_unif_t &o) {
+       term_domain_t& operator=(const term_domain_t &o) {
          
          o.check_terms();
          if (this != &o) {
@@ -325,18 +539,8 @@ namespace crab {
          // return _is_normalized(_impl);
        }
        
-       varname_set_t get_variables() const {
-         varname_set_t vars;
-         for(auto& p : _var_map)
-         {
-           variable_t v(p.first);
-           vars += v.name();
-         }
-         return vars;
-       }
-       
        // Lattice operations
-       bool operator<=(anti_unif_t o)  {	
+       bool operator<=(term_domain_t o)  {	
          // Require normalization of the first argument
          this->normalize();
          
@@ -386,11 +590,88 @@ namespace crab {
          }
        } 
        
-       void operator|=(anti_unif_t o) {
-         *this = *this | o;
+       // Optimized version of | that avoids some unnecessary copies
+       void operator|=(term_domain_t o) {
+         
+         // Requires normalization of both operands
+         normalize();
+         o.normalize();
+         
+         if (is_bottom() || o.is_top()) {
+           *this = o;
+         } 
+         else if(o.is_bottom() || is_top ()) {
+           return;
+         }       
+         else {
+           // First, we need to compute the new term table.
+           ttbl_t out_tbl;
+
+           // Mapping of (term, term) pairs to terms in the join state
+           typename ttbl_t::gener_map_t gener_map;
+           
+           var_map_t out_vmap;
+           
+           dom_var_alloc_t palloc(_alloc, o._alloc);
+           
+           // For each program variable in state, compute a generalization
+           for(auto p : _var_map)
+           {
+             variable_t v(p.first);
+             term_id_t tx(term_of_var(v));
+             term_id_t ty(o.term_of_var(v));
+             
+             term_id_t tz = _ttbl.generalize(o._ttbl, tx, ty, out_tbl, gener_map);
+             assert(tz < out_tbl.size());
+             out_vmap[v] = tz;
+           }
+           
+           // Rename the common terms together
+           // Perform the mapping
+           term_map_t out_map;
+           
+           vector<dom_var_t> xvars; 
+           vector<dom_var_t> yvars;
+           xvars.reserve (gener_map.size ());
+           yvars.reserve (gener_map.size ());
+           for(auto p : gener_map)
+           {
+             auto txy = p.first;
+             term_id_t tz = p.second;
+             dom_var_t vt = palloc.next();
+             out_map.insert(std::make_pair(tz, vt));
+             
+             dom_var_t vx = domvar_of_term(txy.first);
+             dom_var_t vy = o.domvar_of_term(txy.second);
+             
+             xvars.push_back (vx);
+             yvars.push_back (vy);
+             
+             _impl.assign(vt.name(), dom_linexp_t(vx));
+             o._impl.assign(vt.name(), dom_linexp_t(vy));
+           }
+           
+           // TODO: for relational domains we should use
+           // domain_traits::forget which can be more efficient than
+           // removing one by one.
+           for(auto vx : xvars) _impl -= vx.name();
+           for(auto vy : yvars) o._impl -= vy.name();
+           
+           _impl |= o._impl;
+           
+           for(auto p : out_vmap)
+             out_tbl.add_ref(p.second);
+           
+           std::swap (_alloc, palloc);
+           std::swap (_var_map, out_vmap);
+           std::swap (_ttbl, out_tbl);
+           std::swap (_term_map, out_map);
+           _is_bottom = (_impl.is_bottom () ? true: false);
+           
+         }
        }
 
-       anti_unif_t operator|(anti_unif_t o) {
+       term_domain_t operator|(term_domain_t o) {
          // Requires normalization of both operands
          normalize();
          o.normalize();
@@ -471,20 +752,20 @@ namespace crab {
            for(auto p : out_vmap)
              out_tbl.add_ref(p.second);
            
-           anti_unif_t res (anti_unif (palloc, out_vmap, out_tbl, out_map, x_join_y));
+           term_domain_t res (term_domain (palloc, out_vmap, out_tbl, out_map, x_join_y));
            
            CRAB_DEBUG("After elimination:\n", res);
            return res;
          }
        }
 
-       anti_unif_t operator||(anti_unif_t other) {
+       term_domain_t operator||(term_domain_t other) {
          WidenOp op;
          return this->widening (other, op);
        }
        
        template<typename Thresholds>
-       anti_unif_t widening_thresholds (anti_unif_t other, const Thresholds& ts) {
+       term_domain_t widening_thresholds (term_domain_t other, const Thresholds& ts) {
          WidenWithThresholdsOp<Thresholds> op (ts);
          return this->widening (other, op);
        }
@@ -509,7 +790,7 @@ namespace crab {
        };
 
        template <typename WidenOp>
-       anti_unif_t widening (anti_unif_t o, WidenOp widen_op) {
+       term_domain_t widening (term_domain_t o, WidenOp widen_op) {
                              
          // The left operand of the widenning cannot be closed, otherwise
          // termination is not ensured. However, if the right operand is
@@ -577,7 +858,7 @@ namespace crab {
            for(auto p : out_vmap)
              out_tbl.add_ref(p.second);
            
-           anti_unif_t res (palloc, out_vmap, out_tbl, out_map, x_widen_y);
+           term_domain_t res (palloc, out_vmap, out_tbl, out_map, x_widen_y);
            
            CRAB_DEBUG("============","WIDENING", "==================");
            CRAB_DEBUG(x_impl,"\n~~~~~~~~~~~~~~~~");
@@ -591,7 +872,7 @@ namespace crab {
       public:
 
        // Meet
-       anti_unif_t operator&(anti_unif_t o) {
+       term_domain_t operator&(term_domain_t o) {
          // Does not require normalization of any of the two operands
          if (is_bottom() || o.is_bottom()) {
            return bottom();
@@ -611,7 +892,7 @@ namespace crab {
        }
     
        // Narrowing
-       anti_unif_t operator&&(anti_unif_t o) {	
+       term_domain_t operator&&(term_domain_t o) {	
          // Does not require normalization of any of the two operands
          if (is_bottom() || o.is_bottom()) {
            return bottom();
@@ -623,22 +904,7 @@ namespace crab {
            return *this; 
          }
        } // Returned matrix is not normalized.
-
-       void deref(term_id_t t)
-       {
-         std::vector<term_id_t> forgotten;
-         _ttbl.deref(t, forgotten);
-         for(term_id_t f : forgotten)
-         {
-           typename term_map_t::iterator it(_term_map.find(f));
-           if(it != _term_map.end())
-           {
-             _impl -= (*it).second.name();
-             _term_map.erase(it);
-           }
-         }
-       }
-
+          
        // Remove a variable from the scope
        void operator-=(VariableName v) {
          auto it(_var_map.find(v));
@@ -670,117 +936,6 @@ namespace crab {
          s2.insert (vs.begin (), vs.end ());
          boost::set_difference (s1,s2,std::inserter (s3, s3.end ()));
          forget (s3);
-       }
-
-
-       void check_terms(void) const
-       {
-#ifdef DEBUG_VARMAP
-         for(auto const p : _var_map)
-           assert(p.second < _ttbl.size());
-#endif
-       }
-       template<class T>
-       T check_terms(T& t)
-       {
-         check_terms();
-         return t;
-       }
-
-       void rebind_var(variable_t& x, term_id_t tx)
-       {
-         _ttbl.add_ref(tx);
-
-         auto it(_var_map.find(x));
-         if(it != _var_map.end())
-         {
-           deref((*it).second);
-           _var_map.erase(it);
-         }
-
-         _var_map.insert(std::make_pair(x, tx));
-       }
-
-       // Build the tree for a linexpr, and ensure that
-       // values for the subterms are sustained.
-       term_id_t build_const(const Number& n)
-       {
-         dom_number dom_n(n);
-         optional<term_id_t> opt_n(_ttbl.find_const(dom_n));
-         if(opt_n) {
-           return *opt_n;
-         } else {
-           term_id_t term_n(_ttbl.make_const(dom_n));
-           dom_var_t v = domvar_of_term(term_n);
-
-           dom_linexp_t exp(n);
-           _impl.assign(v.name(), exp);
-           return term_n;
-         }
-       }
-
-       term_id_t build_linterm(linterm_t term)
-       {
-         if(term.first == 1)
-         {
-           return term_of_var(term.second);
-         } else {
-           return build_term(OP_MULTIPLICATION,
-                             build_const(term.first),
-                             term_of_var(term.second));
-         }
-       }
-
-       term_id_t build_linexpr(linear_expression_t& e)
-       {
-         Number cst = e.constant();
-         typename linear_expression_t::iterator it(e.begin());
-         if(it == e.end())
-           return build_const(cst);
-     
-         term_id_t t;
-         if(cst == 0)
-         {
-           t = build_linterm(*it);
-           ++it;
-         } else {
-           t = build_const(cst);
-         }
-         for(; it != e.end(); ++it) {
-           t = build_term(OP_ADDITION, t, build_linterm(*it));
-         }
-
-         CRAB_DEBUG("Should have ", domvar_of_term(t).name(), " := ", e,"\n",_impl);
-         return t;       
-       }
-
-       template<typename Op> // [operation_t | div_operation_t | bitwise_operation_t]
-       term_id_t build_term(Op op, term_id_t ty, term_id_t tz)
-       {
-         // Check if the term already exists
-         binary_operation_t binop = convToBinOp (op);
-         optional<term_id_t> eopt(_ttbl.find_ftor(binop, ty, tz));
-         if(eopt) {
-           return *eopt;
-         } else {
-           // Create the term
-           term_id_t tx = _ttbl.apply_ftor(binop, ty, tz);
-           dom_var_t v(domvar_of_term(tx));
-
-           dom_var_t y(domvar_of_term(ty));
-           dom_var_t z(domvar_of_term(tz));
-
-           // Set up the evaluation.
-           CRAB_DEBUG("Prev: ",_impl);
-
-           _impl.apply(op, v.name(), y.name(), z.name());
-
-           CRAB_DEBUG("Should have ", v.name(), "|", v.name().index()," := ", 
-                      y.name(), "|", y.name().index(), op , z.name(), "|", z.name().index());
-           CRAB_DEBUG(_impl);
-
-           return tx;
-         }
        }
 
        void assign(VariableName x_name, linear_expression_t e) {
@@ -824,7 +979,6 @@ namespace crab {
            return;   
          } else {
            variable_t vx(x);
-          
            term_id_t tx(build_term(op, term_of_var(y), term_of_var(z)));
            rebind_var(vx, tx);
          }
@@ -838,66 +992,12 @@ namespace crab {
            return;   
          } else {
            variable_t vx(x);
-          
-           term_id_t tx(build_term(op, term_of_var(y), build_const(k)));
+           term_id_t tx(build_term(op, term_of_var(y), term_of_const(k)));
            rebind_var(vx, tx);
          }
          check_terms();
          CRAB_DEBUG("*** Apply ", x, ":=", y, " ", op, " ", k, ":", *this);
          return;
-       }
-
-       term_id_t term_of_var(variable_t v)
-       {
-         auto it(_var_map.find(v)); 
-         if(it != _var_map.end())
-         {
-           // assert ((*it).first == v);
-           assert(_ttbl.size() > (*it).second);
-           return (*it).second;
-         } else {
-           // Allocate a fresh term
-           term_id_t id(_ttbl.fresh_var());
-           _var_map[v] = id;
-           _ttbl.add_ref(id);
-           return id;
-         }
-       }
-
-       dom_var_t domvar_of_term(term_id_t id)
-       {
-         typename term_map_t::iterator it(_term_map.find(id));
-         if(it != _term_map.end()) {
-           return (*it).second;
-         } else {
-           // Allocate a fresh variable
-           dom_var_t dvar(_alloc.next());
-           _term_map.insert(std::make_pair(id, dvar));
-           return dvar;
-         }
-       }
-
-       dom_var_t domvar_of_var(variable_t v)
-       {
-         return domvar_of_term(term_of_var(v));
-       }
-
-       // Remap a linear constraint to the domain.
-       dom_linexp_t rename_linear_expr(linear_expression_t exp)
-       {
-         Number cst(exp.constant());
-         dom_linexp_t dom_exp(cst);
-         for(auto v : exp.variables())
-         {
-           dom_exp = dom_exp + exp[v]*domvar_of_var(v);
-         }
-         return dom_exp;
-       }
-
-       dom_lincst_t rename_linear_cst(linear_constraint_t cst)
-       {
-         return dom_lincst_t(rename_linear_expr(cst.expression()), 
-                             (typename dom_lincst_t::kind_t) cst.kind());
        }
 
        void operator+=(linear_constraint_t cst) {  
@@ -914,28 +1014,6 @@ namespace crab {
 
          CRAB_DEBUG("*** Assume ",cst,":", *this);
          return;
-       }
-
-       // Assumption: vars(exp) subseteq keys(map)
-       linear_expression_t rename_linear_expr_rev(dom_linexp_t exp, rev_map_t rev_map)
-       {
-         Number cst(exp.constant());
-         linear_expression_t rev_exp(cst);
-         for(auto v : exp.variables())
-         {
-           auto it = rev_map.find(v);
-           assert(it != rev_map.end());
-           variable_t v_out((*it).second);
-           rev_exp = rev_exp + exp[v]*v_out;
-         }
-
-         return rev_exp;
-       }
-
-       linear_constraint_t rename_linear_cst_rev(dom_lincst_t cst, rev_map_t rev_map)
-       {
-         return linear_constraint_t(rename_linear_expr_rev(cst.expression(), rev_map),
-                                    (typename linear_constraint_t::kind_t) cst.kind());
        }
 
        /*
@@ -989,9 +1067,6 @@ namespace crab {
     
        linear_constraint_system_t to_linear_constraint_system(void)
        {
-         // Extract the underlying constraint system
-         // dom_linsys_t dom_sys(_impl.to_linear_constraint_system());
-
          // Collect the visible terms
          rev_map_t rev_map;
          std::vector< std::pair<variable_t, variable_t> > equivs;
@@ -1012,32 +1087,20 @@ namespace crab {
 
          // Create a copy of _impl with only visible variables.
          dom_t d_vis(_impl);
-         for(auto p : _term_map)
-         {
+         for(auto p : _term_map) {
            dom_var_t dv = p.second;
            if(rev_map.find(dv) == rev_map.end())
              d_vis -= dv.name();
          }
-
 
          // Now build and rename the constraint system, plus equivalences.
          dom_linsys_t dom_sys(d_vis.to_linear_constraint_system());
 
          linear_constraint_system_t out_sys; 
          for(dom_lincst_t cst : dom_sys) {
-
-           // JNL:cst can have variables that are not in rev_map (e.g.,
-           // some generated by build_linexpr). If the constraint
-           // contains one then we ignore the constraint.
-           bool is_rev_mapped = true;
-           for(auto v : cst.variables()) {
-             auto it = rev_map.find(v);
-             if (it == rev_map.end())
-               is_rev_mapped = false;
-           }
-
-           if (is_rev_mapped)
-             out_sys += rename_linear_cst_rev(cst, rev_map);
+           auto out_cst = rename_linear_cst_rev(cst, rev_map);
+           if (!out_cst) continue;
+           out_sys += *out_cst;
          }
       
          for(auto p : equivs) {
@@ -1067,7 +1130,6 @@ namespace crab {
            return;   
          } else {
            variable_t vx(x);
-          
            term_id_t tx(build_term(op, term_of_var(y), term_of_var(z)));
            rebind_var(vx, tx);
          }
@@ -1080,8 +1142,7 @@ namespace crab {
            return;   
          } else {
            variable_t vx(x);
-          
-           term_id_t tx(build_term(op, term_of_var(y), build_const(k)));
+           term_id_t tx(build_term(op, term_of_var(y), term_of_const(k)));
            rebind_var(vx, tx);
          }
 
@@ -1097,7 +1158,6 @@ namespace crab {
            return;   
          } else {
            variable_t vx(x);
-          
            term_id_t tx(build_term(op, term_of_var(y), term_of_var(z)));
            rebind_var(vx, tx);
          }
@@ -1111,8 +1171,7 @@ namespace crab {
            return;   
          } else {
            variable_t vx(x);
-          
-           term_id_t tx(build_term(op, term_of_var(y), build_const(k)));
+           term_id_t tx(build_term(op, term_of_var(y), term_of_const(k)));
            rebind_var(vx, tx);
          }
 
@@ -1152,10 +1211,10 @@ namespace crab {
          // print underlying domain
          o << _impl;
 
-#ifdef VERBOSE
+         #ifdef VERBOSE
          /// For debugging purposes     
          o << " ttbl={" << _ttbl << "}\n";
-#endif 
+         #endif 
        }
 
        static const char* getDomainName () { 
@@ -1165,248 +1224,247 @@ namespace crab {
          return name.c_str ();
        }
 
-     }; // class anti_unif
+     }; // class term_domain
   
     // Propagate information from tightened terms to
     // parents/children.
-  template<class Info, class Abs>
-  class TermNormalizer {
-   public:
-    typedef typename anti_unif<Info>::anti_unif_t anti_unif_t;
-    typedef typename anti_unif_t::term_id_t term_id_t;
-    typedef Abs dom_t;
-    typedef typename anti_unif_t::ttbl_t ttbl_t;
-    typedef container::flat_set< term_id_t > term_set_t;
-    
-    static void queue_push(ttbl_t& tbl, vector< vector<term_id_t> >& queue, term_id_t t)
-    {
-      int d = tbl.depth(t);
-      while(queue.size() <= d)
+    template<class Info, class Abs>
+    class TermNormalizer {
+     public:
+      typedef typename term_domain<Info>::term_domain_t term_domain_t;
+      typedef typename term_domain_t::term_id_t term_id_t;
+      typedef Abs dom_t;
+      typedef typename term_domain_t::ttbl_t ttbl_t;
+      typedef container::flat_set< term_id_t > term_set_t;
+      
+      static void queue_push(ttbl_t& tbl, vector< vector<term_id_t> >& queue, term_id_t t)
+      {
+        int d = tbl.depth(t);
+        while(queue.size() <= d)
         queue.push_back(vector<term_id_t>());
-      queue[d].push_back(t);
+        queue[d].push_back(t);
     }
-    
-    static void normalize(anti_unif_t& abs){
-      // First propagate down, then up.   
-      vector< vector< term_id_t > > queue;
-
-      ttbl_t& ttbl(abs._ttbl);
-      dom_t& impl = abs._impl;
-
-      for(term_id_t t : abs.changed_terms)
-      {
-        queue_push(ttbl, queue, t);
-      }
-
-      dom_t d_prime = impl;
-      // Propagate information to children.
-      // Don't need to propagate level 0, since
-      //
-      for(int d = queue.size()-1; d > 0; d--)
-      {
-        for(term_id_t t : queue[d])
+      
+      static void normalize(term_domain_t& abs){
+        // First propagate down, then up.   
+        vector< vector< term_id_t > > queue;
+        
+        ttbl_t& ttbl(abs._ttbl);
+        dom_t& impl = abs._impl;
+        
+        for(term_id_t t : abs.changed_terms)
         {
-          abs.eval_ftor_down(d_prime, ttbl, t);
-          if(!(abs._impl <= d_prime))
+          queue_push(ttbl, queue, t);
+        }
+        
+        dom_t d_prime = impl;
+        // Propagate information to children.
+        // Don't need to propagate level 0, since
+        //
+        for(int d = queue.size()-1; d > 0; d--)
+        {
+          for(term_id_t t : queue[d])
           {
-            impl = d_prime;
+            abs.eval_ftor_down(d_prime, ttbl, t);
+            if(!(abs._impl <= d_prime))
+            {
+              impl = d_prime;
+              
+              // Enqueue the args.
+              typename ttbl_t::term_t* t_ptr = ttbl.get_term_ptr(t); 
+              std::vector<term_id_t>& args(term::term_args(t_ptr));
+              for(term_id_t c : args)
+              {
+                if(abs.changed_terms.find(c) == abs.changed_terms.end())
+                {
+                  abs.changed_terms.insert(c);
+                  queue[ttbl.depth(c)].push_back(c);
+                }
+              }
+            }
+          }
+        }
+        
+        // Collect the parents of changed terms.
+        term_set_t up_terms;
+        vector< vector<term_id_t> > up_queue;
+        for(term_id_t t : abs.changed_terms)
+        {
+          for(term_id_t p : ttbl.parents(t))
+          {
+            if(up_terms.find(p) == up_terms.end())
+            {
+              up_terms.insert(p);
+              queue_push(ttbl, up_queue, p);
+            }
+          }
+        }
+        
+        // Now propagate up, level by level.
+        // This may miss inferences; for example with [[x = y - z]]
+        // information about y can propagate to z.
+        assert(up_queue.size() == 0 || up_queue[0].size() == 0);
+        for(int d = 1; d < up_queue.size(); d++)
+        {
+          // up_queue[d] shouldn't change.
+          for(term_id_t t : up_queue[d])
+          {
+            abs.eval_ftor(d_prime, ttbl, t);
+            if(!(impl <= d_prime))
+            {
+              // We need to do a meet here, as
+              // impl and F(stmt)impl may be
+              // incomparable
+              impl = impl&d_prime;
+              // impl = d_prime; // Old code
+              
+              for(term_id_t p : ttbl.parents(t))
+              {
+                if(up_terms.find(p) == up_terms.end())
+                {
+                  up_terms.insert(p);
+                  queue_push(ttbl, up_queue, p);
+                }
+              }
+            }
+          }
+        }
+        
+        abs.changed_terms.clear();
+        
+        if (abs._impl.is_bottom ())
+          abs.set_to_bottom ();
+      }
+    };
 
-            // Enqueue the args.
-            typename ttbl_t::term_t* t_ptr = ttbl.get_term_ptr(t); 
+    // Specialized implementation for interval domain.
+    // GKG: Should modify to work with any independent attribute domain.
+    #ifdef USE_TERM_INTERVAL_NORMALIZER
+    template<class Info, class Num, class Var>
+    class TermNormalizer<Info, interval_domain<Num, Var> > {
+     public:
+      typedef typename term_domain<Info>::term_domain_t term_domain_t;
+      typedef typename term_domain_t::term_id_t term_id_t;
+      typedef interval_domain<Num, Var> dom_t;
+      typedef typename term_domain_t::dom_var_t var_t;
+      
+      typedef typename term_domain_t::ttbl_t ttbl_t;
+      typedef container::flat_set< term_id_t > term_set_t;
+      
+      typedef typename dom_t::interval_t interval_t;
+      
+      static void queue_push(ttbl_t& tbl, vector< vector<term_id_t> >& queue, term_id_t t)
+      {
+        int d = tbl.depth(t);
+        while(queue.size() <= d)
+          queue.push_back(vector<term_id_t>());
+        queue[d].push_back(t);
+      }
+      
+      static void normalize(term_domain_t& abs){
+        // First propagate down, then up.
+        vector< vector< term_id_t > > queue;
+        //    fprintf(stdout, "Specialized for term<interval>\n");
+        
+        ttbl_t& ttbl(abs._ttbl);
+        dom_t& impl = abs._impl;
+        if(impl.is_bottom())
+        {
+          abs.set_to_bottom();
+          return;
+        }
+        
+        for(term_id_t t : abs.changed_terms)
+        {
+          queue_push(ttbl, queue, t);
+        }
+        
+        // Propagate information to children.
+        // Don't need to propagate level 0, since
+        //
+        for(int d = queue.size()-1; d > 0; d--)
+        {
+          for(term_id_t t : queue[d])
+          {
+            typename ttbl_t::term_t* t_ptr = ttbl.get_term_ptr(t);
+            if(t_ptr->kind() != term::TERM_APP)
+              continue;
+            
             std::vector<term_id_t>& args(term::term_args(t_ptr));
+            std::vector<interval_t> arg_intervals;
             for(term_id_t c : args)
+              arg_intervals.push_back(impl[abs.domvar_of_term(c)]);
+            abs.eval_ftor_down(impl, ttbl, t);
+            
+            // Enqueue the args
+            for(size_t ci  = 0; ci < args.size(); ci++)
             {
-              if(abs.changed_terms.find(c) == abs.changed_terms.end())
+              term_id_t c(args[ci]);
+              var_t v = abs.domvar_of_term(c);
+              interval_t v_upd(impl[v]);
+              if(!(arg_intervals[ci] <= v_upd))
               {
-                abs.changed_terms.insert(c);
-                queue[ttbl.depth(c)].push_back(c);
+                impl.set(v.name(), arg_intervals[ci]&v_upd);
+                if(abs.changed_terms.find(c) == abs.changed_terms.end())
+                {
+                  abs.changed_terms.insert(c);
+                  queue[ttbl.depth(c)].push_back(c);
+                }
               }
             }
           }
         }
-      }
-
-      // Collect the parents of changed terms.
-      term_set_t up_terms;
-      vector< vector<term_id_t> > up_queue;
-      for(term_id_t t : abs.changed_terms)
-      {
-        for(term_id_t p : ttbl.parents(t))
+        
+        // Collect the parents of changed terms.
+        term_set_t up_terms;
+        vector< vector<term_id_t> > up_queue;
+        for(term_id_t t : abs.changed_terms)
         {
-          if(up_terms.find(p) == up_terms.end())
+          for(term_id_t p : ttbl.parents(t))
           {
-            up_terms.insert(p);
-            queue_push(ttbl, up_queue, p);
+            if(up_terms.find(p) == up_terms.end())
+            {
+              up_terms.insert(p);
+              queue_push(ttbl, up_queue, p);
+            }
           }
         }
-      }
-
-      // Now propagate up, level by level.
-      // This may miss inferences; for example with [[x = y - z]]
-      // information about y can propagate to z.
-      assert(up_queue.size() == 0 || up_queue[0].size() == 0);
-      for(int d = 1; d < up_queue.size(); d++)
-      {
-        // up_queue[d] shouldn't change.
-        for(term_id_t t : up_queue[d])
+        
+        // Now propagate up, level by level.
+        assert(up_queue.size() == 0 || up_queue[0].size() == 0);
+        for(int d = 1; d < up_queue.size(); d++)
         {
-          abs.eval_ftor(d_prime, ttbl, t);
-          if(!(impl <= d_prime))
+          // up_queue[d] shouldn't change.
+          for(term_id_t t : up_queue[d])
           {
-            // We need to do a meet here, as
-            // impl and F(stmt)impl may be
-            // incomparable
-            impl = impl&d_prime;
-            // impl = d_prime; // Old code
-          
-            for(term_id_t p : ttbl.parents(t))
+            var_t v = abs.domvar_of_term(t);
+            interval_t v_interval = impl[v];
+            
+            abs.eval_ftor(impl, ttbl, t);
+            
+            interval_t v_upd = impl[v];
+            if(!(v_interval <= v_upd))
             {
-              if(up_terms.find(p) == up_terms.end())
+              impl.set(v.name(), v_interval&v_upd);
+              for(term_id_t p : ttbl.parents(t))
               {
-                up_terms.insert(p);
-                queue_push(ttbl, up_queue, p);
+                if(up_terms.find(p) == up_terms.end())
+                {
+                  up_terms.insert(p);
+                  queue_push(ttbl, up_queue, p);
+                }
               }
             }
           }
         }
+        
+        abs.changed_terms.clear();
+        
+        if (impl.is_bottom ())
+          abs.set_to_bottom ();
       }
-
-      abs.changed_terms.clear();
-
-      if (abs._impl.is_bottom ())
-        abs.set_to_bottom ();
-    }
-  };
-
-  // Specialized implementation for interval domain.
-  // GKG: Should modify to work with any independent attribute domain.
-#ifdef USE_TERM_INTERVAL_NORMALIZER
-  template<class Info, class Num, class Var>
-  class TermNormalizer<Info, interval_domain<Num, Var> > {
-   public:
-    typedef typename anti_unif<Info>::anti_unif_t anti_unif_t;
-    typedef typename anti_unif_t::term_id_t term_id_t;
-    typedef interval_domain<Num, Var> dom_t;
-    typedef typename anti_unif_t::dom_var_t var_t;
-    
-    typedef typename anti_unif_t::ttbl_t ttbl_t;
-    typedef container::flat_set< term_id_t > term_set_t;
-    
-    typedef typename dom_t::interval_t interval_t;
-    
-    static void queue_push(ttbl_t& tbl, vector< vector<term_id_t> >& queue, term_id_t t)
-    {
-      int d = tbl.depth(t);
-      while(queue.size() <= d)
-        queue.push_back(vector<term_id_t>());
-      queue[d].push_back(t);
-    }
-    
-    static void normalize(anti_unif_t& abs){
-      // First propagate down, then up.
-      vector< vector< term_id_t > > queue;
-      
-      //    fprintf(stdout, "Specialized for term<interval>\n");
-      
-      ttbl_t& ttbl(abs._ttbl);
-      dom_t& impl = abs._impl;
-      if(impl.is_bottom())
-      {
-        abs.set_to_bottom();
-        return;
-      }
-      
-      for(term_id_t t : abs.changed_terms)
-      {
-        queue_push(ttbl, queue, t);
-      }
-      
-      // Propagate information to children.
-      // Don't need to propagate level 0, since
-      //
-      for(int d = queue.size()-1; d > 0; d--)
-      {
-        for(term_id_t t : queue[d])
-        {
-          typename ttbl_t::term_t* t_ptr = ttbl.get_term_ptr(t);
-          if(t_ptr->kind() != term::TERM_APP)
-            continue;
-          
-          std::vector<term_id_t>& args(term::term_args(t_ptr));
-          std::vector<interval_t> arg_intervals;
-          for(term_id_t c : args)
-            arg_intervals.push_back(impl[abs.domvar_of_term(c)]);
-          abs.eval_ftor_down(impl, ttbl, t);
-          
-          // Enqueue the args
-          for(size_t ci  = 0; ci < args.size(); ci++)
-          {
-            term_id_t c(args[ci]);
-            var_t v = abs.domvar_of_term(c);
-            interval_t v_upd(impl[v]);
-            if(!(arg_intervals[ci] <= v_upd))
-            {
-              impl.set(v.name(), arg_intervals[ci]&v_upd);
-              if(abs.changed_terms.find(c) == abs.changed_terms.end())
-              {
-                abs.changed_terms.insert(c);
-                queue[ttbl.depth(c)].push_back(c);
-              }
-            }
-          }
-        }
-      }
-      
-      // Collect the parents of changed terms.
-      term_set_t up_terms;
-      vector< vector<term_id_t> > up_queue;
-      for(term_id_t t : abs.changed_terms)
-      {
-        for(term_id_t p : ttbl.parents(t))
-        {
-          if(up_terms.find(p) == up_terms.end())
-          {
-            up_terms.insert(p);
-            queue_push(ttbl, up_queue, p);
-          }
-        }
-      }
-      
-      // Now propagate up, level by level.
-      assert(up_queue.size() == 0 || up_queue[0].size() == 0);
-      for(int d = 1; d < up_queue.size(); d++)
-      {
-        // up_queue[d] shouldn't change.
-        for(term_id_t t : up_queue[d])
-        {
-          var_t v = abs.domvar_of_term(t);
-          interval_t v_interval = impl[v];
-          
-          abs.eval_ftor(impl, ttbl, t);
-          
-          interval_t v_upd = impl[v];
-          if(!(v_interval <= v_upd))
-          {
-            impl.set(v.name(), v_interval&v_upd);
-            for(term_id_t p : ttbl.parents(t))
-            {
-              if(up_terms.find(p) == up_terms.end())
-              {
-                up_terms.insert(p);
-                queue_push(ttbl, up_queue, p);
-              }
-            }
-          }
-        }
-      }
-      
-      abs.changed_terms.clear();
-      
-      if (impl.is_bottom ())
-        abs.set_to_bottom ();
-    }
-  };
-#endif
+    };
+    #endif
 
   }// namespace domains
 
@@ -1415,22 +1473,22 @@ namespace crab {
     using namespace domains;
 
      template <typename Info, typename Iterator >
-     void forget (anti_unif<Info>& inv, Iterator it, Iterator end) {
+     void forget (term_domain<Info>& inv, Iterator it, Iterator end) {
        inv.forget (boost::make_iterator_range (it, end));
      }
   
      template <typename Info, typename Iterator >
-     void project (anti_unif<Info>& inv, Iterator it, Iterator end) {
+     void project (term_domain<Info>& inv, Iterator it, Iterator end) {
        inv.project (boost::make_iterator_range (it, end));
      }
  
     template <typename Info, typename VariableName>
-    void expand (anti_unif<Info>& inv, VariableName x, VariableName new_x) {
+    void expand (term_domain<Info>& inv, VariableName x, VariableName new_x) {
       inv.expand (x, new_x);
     }
   
     template <typename Info>
-    void normalize (anti_unif<Info>& inv) {
+    void normalize (term_domain<Info>& inv) {
       inv.normalize();
     }
   
@@ -1438,4 +1496,4 @@ namespace crab {
 
 } // namespace crab
 
-#endif // ANTI_UNIF_HPP
+#endif // TERM_DOMAIN_HPP
