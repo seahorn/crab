@@ -38,10 +38,6 @@ option(BUILD_CRAB_LIBS_SHARED "Build all Crab libraries shared." OFF)
 if (BUILD_CRAB_LIBS_SHARED)
   message (STATUS "All crab libraries will be built as shared libraries")
   set(CRAB_LIBS_TYPE SHARED)
-  # so that executables outside the build tree can find later shared
-  # libraries
-  set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-  set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 else()
   message (STATUS "All crab libraries will be built statically")
   set(CRAB_LIBS_TYPE STATIC)
