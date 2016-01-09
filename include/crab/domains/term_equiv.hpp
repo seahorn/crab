@@ -1253,7 +1253,6 @@ namespace crab {
         dom_t& impl = abs._impl;
         
         for(term_id_t t : abs.changed_terms)
-<<<<<<< HEAD
         {
           queue_push(ttbl, queue, t);
         }
@@ -1264,18 +1263,6 @@ namespace crab {
         //
         for(int d = queue.size()-1; d > 0; d--)
         {
-=======
-        {
-          queue_push(ttbl, queue, t);
-        }
-        
-        dom_t d_prime = impl;
-        // Propagate information to children.
-        // Don't need to propagate level 0, since
-        //
-        for(int d = queue.size()-1; d > 0; d--)
-        {
->>>>>>> origin/master
           for(term_id_t t : queue[d])
           {
             abs.eval_ftor_down(d_prime, ttbl, t);
