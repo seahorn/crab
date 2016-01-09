@@ -42,6 +42,7 @@
 #define IKOS_DOMAIN_PRODUCTS_HPP
 
 #include <crab/common/types.hpp>
+#include <crab/domains/domain_traits_impl.hpp>
 #include <crab/domains/numerical_domains_api.hpp>
 #include <crab/domains/bitwise_operators_api.hpp>
 #include <crab/domains/division_operators_api.hpp>
@@ -140,7 +141,14 @@ namespace ikos {
     }
 
     void operator|=(domain_product2_t other) {
-      *this = *this | other;
+      if (this->is_bottom()) {
+        *this = other;
+      } else if (other.is_bottom()) {
+        return;
+      } else {
+        this->_first |= other._first;
+        this->_second |= other._second;
+      }
     }
     
     domain_product2_t operator|(domain_product2_t other) {
@@ -391,7 +399,7 @@ namespace ikos {
     }
 
     void operator|=(numerical_domain_product2_t other) {
-      *this = *this | other;
+      this->_product |= other._product;
     }
 
     numerical_domain_product2_t operator|(numerical_domain_product2_t other) {
@@ -643,5 +651,4 @@ namespace ikos {
   }; // class numerical_domain_product3
 
 } // namespace ikos
-
 #endif // IKOS_DOMAIN_PRODUCTS_HPP
