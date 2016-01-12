@@ -1873,6 +1873,53 @@ namespace crab {
         }
       }
 
+      
+      template<typename G>
+      bool is_eq (vert_id u, vert_id v, G& g) {
+        // pre: rev_map[u] and rev_map[v]
+        if (g.elem (u, v) && g.elem (v, u)) {
+          return (g.edge_val(u, v) == g.edge_val(v, u));
+        } else {
+          return false;
+        }
+      }
+
+      template <typename NumDomain>
+      void push (const VariableName& x, NumDomain&inv){
+
+        normalize ();
+        if (is_bottom () || inv.is_bottom ()) return;
+
+        linear_constraint_system_t csts;     
+
+        auto it = vert_map.find(x);
+        if(it != vert_map.end()) {
+          vert_id s = (*it).second;
+          if(rev_map[s]) {
+            variable_t vs = *rev_map[s];
+            SubGraph<graph_t> g_excl(g, 0);
+            for(vert_id d : g_excl.verts()) {
+              if(rev_map[d]) {
+                variable_t vd = *rev_map[d];
+                // We give priority to equalities since some domains
+                // might not understand inequalities
+                if (g_excl.elem (s, d) && g_excl.elem (d, s) &&
+                    (g_excl.edge_val(s, d) == g_excl.edge_val(d, s))) {
+                  linear_constraint_t cst (vs == vd);
+                  //cout << "Propagating " << cst << " to " << inv.getDomainName () << "\n";
+                  csts += cst;
+                } else if (g_excl.elem (s, d)) {
+                  linear_constraint_t cst (vd - vs <= g_excl.edge_val(s, d));
+                  //cout << "Propagating " << cst << " to " << inv.getDomainName () << "\n";
+                  csts += cst;
+                }
+              }
+            }
+          }
+        }
+        inv += csts;
+      }
+      
       // Output function
       void write(ostream& o) {
 
@@ -2062,6 +2109,12 @@ namespace crab {
        void project (SplitDBM<Number,VariableName>& inv, Iterator it, Iterator end) {
          inv.project (it, end);
        }
+
+       template <typename VariableName, typename Number, typename NumDomain>
+       void push (const VariableName& x, SplitDBM<Number,VariableName> from, NumDomain& to){
+         from.push (x, to);
+       }
+
     } // namespace domain_traits
 
 } // namespace crab

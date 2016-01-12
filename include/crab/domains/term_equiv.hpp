@@ -876,14 +876,11 @@ namespace crab {
          // Does not require normalization of any of the two operands
          if (is_bottom() || o.is_bottom()) {
            return bottom();
-         } 
-         else if (is_top()) {
+         } else if (is_top()) { 
            return o;
-         }
-         else if (o.is_top()) {
+         } else if (o.is_top()) {
            return *this;
-         }
-         else {
+         } else {
            CRAB_WARN ("ANTI-UNIF: meet not yet implemented.");
            // If meet is only used to refine instead of narrowing then we
            // should return the second argument.
@@ -904,7 +901,7 @@ namespace crab {
            return *this; 
          }
        } // Returned matrix is not normalized.
-          
+
        // Remove a variable from the scope
        void operator-=(VariableName v) {
          auto it(_var_map.find(v));
@@ -968,6 +965,31 @@ namespace crab {
 
            check_terms();
          }
+       }
+
+       template<typename NumDomain>
+       void push (const VariableName& x, NumDomain& inv) {
+
+         if (!is_normalized ()) normalize ();
+
+         if (is_bottom () || inv.is_bottom ()) return;
+
+         // add equivalences
+         variable_t vx (x);
+         auto it = _var_map.find (vx);
+         linear_constraint_system_t csts;
+         if (it != _var_map.end ()) {
+           term_id_t tx = it->second;
+           std::vector< std::pair<variable_t, variable_t> > equivs;
+           for(auto p : _var_map) {
+             if ((p.first.index() != vx.index()) && (p.second == tx)) {
+               linear_constraint_t cst(vx == p.first);
+               //cout << "Propagating " << cst << " to " << inv.getDomainName () << "\n";
+               csts += cst;
+             }
+           }
+         }         
+         inv += csts;
        }
 
 
@@ -1051,7 +1073,7 @@ namespace crab {
       
          dom_var_t dom_x = domvar_of_term(it->second);
 
-         return _impl[dom_x];
+         return _impl[dom_x.name()];
        } 
 
        void set (VariableName x, interval_t intv){
@@ -1489,7 +1511,12 @@ namespace crab {
   
     template <typename Info>
     void normalize (term_domain<Info>& inv) {
-      inv.normalize();
+      inv.normalize ();
+    }
+
+    template <typename VariableName, typename Info, typename NumDomain>
+    void push (const VariableName& x, term_domain<Info> from, NumDomain& to) {
+      from.push (x, to);
     }
   
   } // namespace domain_traits
