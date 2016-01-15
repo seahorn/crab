@@ -171,6 +171,10 @@ int main (int argc, char** argv ) {
   {
     InterFwdAnalyzer<CallGraph<cfg_t>,  VariableFactory,
                      dbm_domain_t, interval_domain_t> a (cg, vfac, nullptr); 
+    cout << "Running" 
+         << " summary domain=" << dbm_domain_t::getDomainName () 
+         << " and forward domain=" << interval_domain_t::getDomainName () << "\n";
+
     a.Run ();
     
     // Print invariants
@@ -198,11 +202,82 @@ int main (int argc, char** argv ) {
   }
 
 
+
   {
     InterFwdAnalyzer<CallGraph<cfg_t>,  VariableFactory,
                      opt_oct_apron_domain_t, interval_domain_t> a (cg, vfac, nullptr); 
 
-    cout << "Testing apron domains ... \n";
+    cout << "Running" 
+         << " summary domain=" << opt_oct_apron_domain_t::getDomainName () 
+         << " and forward domain=" << interval_domain_t::getDomainName () << "\n";
+
+    a.Run ();
+    
+    // Print invariants
+    for (auto &cfg : cfgs) {
+      auto fdecl_opt = cfg.get_func_decl ();
+      assert (fdecl_opt);
+      cout << *fdecl_opt << "\n"; 
+      for (auto &b : cfg) {
+        auto inv = a.get_post (cfg, b.label ());
+        std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
+      }
+      cout << "=================================\n";
+    }
+    
+    // Print summaries
+    for (auto &cfg : cfgs) {
+      if (a.has_summary (cfg)) {
+        auto fdecl_opt = cfg.get_func_decl ();
+        assert (fdecl_opt);
+        cout << "Summary for " << *fdecl_opt << ": "; 
+        auto sum = a.get_summary (cfg);
+        cout << sum << "\n";
+      }
+    }
+  }
+
+  {
+    InterFwdAnalyzer<CallGraph<cfg_t>,  VariableFactory,
+                     term_domain_t, interval_domain_t> a (cg, vfac, nullptr); 
+
+    cout << "Running" 
+         << " summary domain=" << term_domain_t::getDomainName () 
+         << " and forward domain=" << interval_domain_t::getDomainName () << "\n";
+
+    a.Run ();
+    
+    // Print invariants
+    for (auto &cfg : cfgs) {
+      auto fdecl_opt = cfg.get_func_decl ();
+      assert (fdecl_opt);
+      cout << *fdecl_opt << "\n"; 
+      for (auto &b : cfg) {
+        auto inv = a.get_post (cfg, b.label ());
+        std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
+      }
+      cout << "=================================\n";
+    }
+    
+    // Print summaries
+    for (auto &cfg : cfgs) {
+      if (a.has_summary (cfg)) {
+        auto fdecl_opt = cfg.get_func_decl ();
+        assert (fdecl_opt);
+        cout << "Summary for " << *fdecl_opt << ": "; 
+        auto sum = a.get_summary (cfg);
+        cout << sum << "\n";
+      }
+    }
+  }
+
+  {
+    InterFwdAnalyzer<CallGraph<cfg_t>,  VariableFactory,
+                     num_domain_t, num_domain_t> a (cg, vfac, nullptr); 
+
+    cout << "Running" 
+         << " summary domain=" << num_domain_t::getDomainName () 
+         << " and forward domain=" << num_domain_t::getDomainName () << "\n";
 
     a.Run ();
     

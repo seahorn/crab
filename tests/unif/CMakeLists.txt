@@ -12,3 +12,6 @@ target_link_libraries (unif-2 ${CRAB_LIBS})
 
 add_executable(unif-3 unif-3.cc)
 target_link_libraries (unif-3 ${CRAB_LIBS})
+
+add_executable(unif-4 unif-4.cc)
+target_link_libraries (unif-4 ${CRAB_LIBS})

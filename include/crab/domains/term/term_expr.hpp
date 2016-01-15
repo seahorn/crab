@@ -176,6 +176,9 @@ namespace crab {
         }
       }
 
+      template<typename TermTable>
+      class congruence_closure_solver;
+
       template<class Num, class Ftor>
       class term_table : public writeable {
        public:
@@ -343,7 +346,7 @@ namespace crab {
           map[ty] = tx;
           return true;
         }
-        
+
         term_id_t generalize(term_table_t& y, term_id tx, term_id ty, 
                              term_table_t& out, gener_map_t& g_map)
         {
@@ -403,12 +406,39 @@ namespace crab {
             return ret;
           }
         }
-        
+
+        // Copy term x from table tx
+        term_id_t copy_term (term_table_t& tx, term_id x, term_map_t& ren_map) { 
+          auto it = ren_map.find(x);
+          if(it != ren_map.end()) {
+            return (*it).second;
+          } else {
+            auto px(tx.terms[x].p.get());
+            term_kind kx = px->kind();
+            term_id_t ret;
+            if(kx == TERM_VAR) {
+              ret = fresh_var(); 
+            } else if(kx == TERM_CONST) { 
+              ret = make_const(term_const(px));
+            } else {
+              assert(kx == TERM_APP);
+              std::vector<term_id>& xargs(term_args(px));
+              std::vector<term_id> yargs;
+              for(unsigned int ii = 0; ii < xargs.size(); ii++)
+                yargs.push_back (copy_term (tx, xargs[ii], ren_map));
+              ret = apply_ftor( term_ftor(px), yargs);
+            }
+            
+            ren_map[x] = ret;
+            return ret;
+          }
+        }
+
         std::vector<term_id_t>& parents(term_id_t id)
         {
           return _parents[id];
         }
-        
+
         void write(ostream& o) { 
           bool first = true;
           for(unsigned int ti = 0; ti < terms.size(); ti++)
@@ -493,6 +523,185 @@ namespace crab {
         std::vector<unsigned int> _depth;
         std::vector<term_id> free_terms;
       };
+
+
+      template<typename TermTable>
+      class congruence_closure_solver : public boost::noncopyable {
+       
+       public:
+       
+        typedef typename TermTable::term_id_t term_id_t;
+        typedef typename TermTable::term_t term_t;
+        typedef container::flat_set< term_id_t > term_set_t;
+        typedef std::map <term_id_t, term_set_t> ccpar_map_t;
+        typedef std::map <term_id_t, term_id_t> find_map_t;
+        typedef std::pair<term_id_t, term_id_t> equation_t;
+        typedef std::map <term_id_t, std::vector<term_id_t> > member_map_t;
+
+       private:
+        TermTable* _ttbl;
+        ccpar_map_t _ccpar_map;
+        find_map_t _find_map;
+        std::vector<equation_t> _eqs;
+        term_set_t _terms;
+        member_map_t _members;
+
+       public:
+        
+        congruence_closure_solver (TermTable* ttbl): _ttbl (ttbl) { }
+        
+        void operator+=(equation_t eq) {
+          _terms.insert (eq.first);
+          _terms.insert (eq.second);
+          _eqs.push_back (eq);
+        }
+
+        void run () {
+          for (auto eq: _eqs) {
+            term_id_t x = eq.first;
+            term_id_t y = eq.second;
+            merge (x, y);
+          }
+        }
+
+        void run (vector<equation_t>& eqs) {
+          for (auto e: eqs) { *this += e; }
+          run ();
+        }
+
+        // return the equivalence class associated with t
+        term_id_t get_class (term_id_t t) {
+          return find (t);
+        }
+
+        // return the members of an equivalence class of k
+        std::vector<term_id_t>& get_members (term_id_t t) {
+          auto it = _members.find (t);
+          if (it != _members.end ())  {
+            return it->second;
+          } else {
+            t = find (t); // find representative of the t's class
+            std::vector<term_id_t> members;
+            for (auto x: _terms) {
+              if (find (x) == t /*find (t)*/)
+                members.push_back (x);
+            }
+            auto res = _members.insert(make_pair (t, members));
+            return (res.first)->second;
+          }
+        }
+
+        // return the size of the equivalence class of k
+        size_t get_size (term_id_t t) {
+          return get_members (t).size ();
+        }
+
+        void write (ostream&o) {
+          for (auto t1: _terms) {
+            o << "t" << t1 << " --> {";
+            for (auto t2: _terms) {
+              if (find (t1) == find (t2))
+                o << "t" << t2 << ";";
+            }
+            o << "}\n";
+          }
+        }
+
+        vector<term_id_t>& get_parents (term_id_t t){
+          return _ttbl->parents (t);
+        }
+
+       private:
+        
+        term_set_t& get_ccpar (term_id_t t) {
+          auto it = _ccpar_map.find (t);
+          if (it == _ccpar_map.end ()) {
+            auto res = _ccpar_map.insert (make_pair (t, term_set_t ()));
+            return (res.first)->second;
+          } else {
+            return it->second;
+          }
+        }
+        
+        // return the representative of i
+        term_id_t find (term_id_t t) {
+          auto it = _find_map.find (t);
+          if (it == _find_map.end ()) {
+            _find_map.insert (make_pair (t,t));
+            return t;
+          }
+          
+          if (it->second == t) {
+            return it->second;
+          } else {
+            return find (it->second);
+          }
+        }
+        
+        // i2 is the new representative
+        void do_union (term_id_t t1, term_id_t t2) {
+          _find_map [t1] = _find_map [t2];
+          
+          term_set_t& ccpar1 = get_ccpar (t1);
+          term_set_t& ccpar2 = get_ccpar (t2);
+          ccpar2.insert (ccpar1.begin(), ccpar1.end());
+
+          term_t* t1_ptr = _ttbl->get_term_ptr(t1);
+          assert (t1_ptr);
+          if (t1_ptr->kind () == TERM_APP) {
+            vector<term_id_t>& par1 = get_parents (t1);
+            ccpar2.insert (par1.begin (), par1.end());
+          }
+
+          term_t* t2_ptr = _ttbl->get_term_ptr(t2);
+          assert (t2_ptr);
+          if (t2_ptr->kind () == TERM_APP) {
+            vector<term_id_t>& par2 = get_parents (t2);
+            ccpar2.insert (par2.begin (), par2.end());
+          }
+          ccpar1.clear ();
+        }
+       
+        // pre: t1 and t2 are TERM_APP
+        bool is_congruent (term_id_t t1, term_id_t t2) {
+          
+          term_t* t1_ptr = _ttbl->get_term_ptr(t1);
+          term_t* t2_ptr = _ttbl->get_term_ptr(t2);
+          
+          assert (t1_ptr->kind() == TERM_APP);
+          assert (t2_ptr->kind() == TERM_APP);
+          
+          if (term_ftor (t1_ptr) != term_ftor (t2_ptr))
+           return false;
+         
+          vector<term_id_t>& xargs(term_args(t1_ptr));
+          vector<term_id_t>& yargs(term_args(t2_ptr));
+          
+         if (xargs.size () != yargs.size ())
+           return false;
+         
+         for (unsigned i=0;i < xargs.size() ; i++) {
+           if (find (xargs [i]) != find (yargs [i]))
+             return false;
+         }
+         return true;
+        }
+        
+        void merge (term_id_t t1, term_id_t t2) {
+
+          if (find (t1) == find (t2)) return;
+
+          do_union (t1, t2);
+          auto &ps1 = get_ccpar (t1);
+          auto &ps2 = get_ccpar (t2);
+          for (auto p1 : ps1) {
+            for (auto p2 : ps2) {
+              if ((find (p1) != find (p2)) && is_congruent (p1,p2) )
+                merge (p1,p2);
+            }
+          }
+        }
+      }; // end congruence_closure_solver
 
    } //end namespace term
  } // end namepsace domains
