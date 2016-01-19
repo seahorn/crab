@@ -1313,13 +1313,12 @@ namespace crab {
         CRAB_ERROR ("array_graph: to_linear_constraint_system not implemented");
       }
 
-
-      static const char* getDomainName () {
-          std::string name ("ArrayGraph(" + 
-                            std::string(ScalarNumDomain::getDomainName ()) +  "," + 
-                            std::string(WeightDomain::getDomainName ()) +
-                            ")");
-          return name.c_str ();
+      static string getDomainName () {
+        string name ("ArrayGraph(" + 
+                       ScalarNumDomain::getDomainName () +  "," + 
+                     WeightDomain::getDomainName () +
+                     ")");
+        return name;
       }
 
     }; // end array_graph_domain

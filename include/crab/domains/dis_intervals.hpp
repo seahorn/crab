@@ -1368,7 +1368,7 @@ namespace crab {
       this->_env.write(o);
      }
      
-     static const char* getDomainName () {
+     static std::string getDomainName () {
        return "DisjunctiveIntervals";
      }  
    }; 

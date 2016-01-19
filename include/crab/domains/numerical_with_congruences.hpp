@@ -547,7 +547,7 @@ namespace crab {
          return this->_product.first().to_linear_constraint_system();
        }
        
-       static const char* getDomainName() { 
+       static std::string getDomainName() { 
          return domain_product2_t::getDomainName (); 
        }
        
