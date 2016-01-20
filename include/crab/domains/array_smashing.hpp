@@ -90,8 +90,9 @@ namespace crab {
             ikos::writeable(), 
             _inv (other._inv) { }
         
-        array_smashing_t& operator=(array_smashing_t other) {
-          _inv = other._inv;
+        array_smashing_t& operator=(const array_smashing_t& other) {
+          if (this != &other)
+            _inv = other._inv;
           return *this;
         }
         
@@ -108,7 +109,7 @@ namespace crab {
         }
 
         void operator|=(array_smashing_t other) {
-          *this = *this | other;
+          *this |= other;
         }
         
         array_smashing_t operator|(array_smashing_t other) {

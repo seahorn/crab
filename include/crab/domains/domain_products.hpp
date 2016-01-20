@@ -99,10 +99,12 @@ namespace ikos {
         _is_bottom(other._is_bottom), 
         _first(other._first), _second(other._second) { }
     
-    domain_product2_t& operator=(domain_product2_t other) {
-      this->_is_bottom = other._is_bottom;
-      this->_first = other._first;
-      this->_second = other._second;
+    domain_product2_t& operator=(const domain_product2_t& other) {
+      if (this != &other) {
+        this->_is_bottom = other._is_bottom;
+        this->_first = other._first;
+        this->_second = other._second;
+      }
       return *this;
     }
     
@@ -246,8 +248,9 @@ namespace ikos {
         writeable(), 
         _product(other._product) { }
     
-    domain_product3_t& operator=(domain_product3_t other) {
-      this->_product = other._product;
+    domain_product3_t& operator=(const domain_product3_t& other) {
+      if (this != &other)
+        this->_product = other._product;
       return *this;
     }
 
@@ -366,8 +369,9 @@ namespace ikos {
         numerical_domain< Number, VariableName >(), 
         _product(other._product) { }
     
-    numerical_domain_product2_t& operator=(numerical_domain_product2_t other) {
-      this->_product = other._product;
+    numerical_domain_product2_t& operator=(const numerical_domain_product2_t& other) {
+      if (this != &other)
+        this->_product = other._product;
       return *this;
     }
 
@@ -553,8 +557,9 @@ namespace ikos {
         _product(other._product) { }
     
     numerical_domain_product3_t& 
-    operator=(numerical_domain_product3_t other) {
-      this->_product = other._product;
+    operator=(const numerical_domain_product3_t& other) {
+      if (this != &other)
+        this->_product = other._product;
       return *this;
     }
     
