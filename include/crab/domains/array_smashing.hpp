@@ -109,7 +109,7 @@ namespace crab {
         }
 
         void operator|=(array_smashing_t other) {
-          *this |= other;
+          _inv |= other._inv;
         }
         
         array_smashing_t operator|(array_smashing_t other) {
