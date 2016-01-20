@@ -692,7 +692,7 @@ namespace crab {
       }
       
       void operator|=(rnc_domain_t other) {
-        this->_product = this->_product | other._product;
+        this->_product |= other._product;
       }
 
       rnc_domain_t operator|(rnc_domain_t other) {
