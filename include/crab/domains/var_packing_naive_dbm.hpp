@@ -475,7 +475,7 @@ public:
 
   void write(std::ostream& o) { _domain.write(o);}
 
-  static const char* getDomainName() {
+  static std::string getDomainName() {
     return "Dense DBM with packing"; 
   }
 

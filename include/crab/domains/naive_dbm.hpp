@@ -1257,7 +1257,7 @@ public:
     o << csts;
   }
 
-  static const char* getDomainName() { 
+  static std::string getDomainName() { 
     return "Dense DBM";
   }
 

@@ -290,14 +290,12 @@ namespace crab {
         return this->_product.second().to_linear_constraint_system();
       }
       
-      static const char* getDomainName() { 
-        std::stringstream buf;
-        buf << "Reduced Product of " 
-            << Domain1::getDomainName () 
-            << " and "
-            << Domain2::getDomainName ();
-       std::string name (buf.str());
-       return name.c_str ();
+      static std::string getDomainName() { 
+        std::string name = "Reduced Product of " +
+                           Domain1::getDomainName () +
+                           " and " + 
+                           Domain2::getDomainName ();
+        return name;
       }
       
     }; // class reduced_numerical_domain_product2
@@ -799,7 +797,7 @@ namespace crab {
         return this->_product.first().to_linear_constraint_system();
       }
       
-      static const char* getDomainName() { 
+      static std::string getDomainName() { 
         return domain_product2_t::getDomainName (); 
       }
       

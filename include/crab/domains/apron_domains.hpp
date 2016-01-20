@@ -129,7 +129,7 @@ namespace crab {
         void write(ostream& o) 
         { CRAB_ERROR (APRON_NOT_FOUND); }
           
-        static const char* getDomainName () {
+        static std::string getDomainName () {
           return "Dummy Apron";
         }  
       }; 
@@ -1192,7 +1192,7 @@ namespace crab {
           }
         }          
 
-        static const char* getDomainName () {
+        static std::string getDomainName () {
           switch (ApronDom) {
             case APRON_INT:     return "Apron Intervals"; 
             case APRON_OCT:     return "Apron Octagon"; 

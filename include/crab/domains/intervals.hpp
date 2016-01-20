@@ -1546,7 +1546,7 @@ namespace ikos {
       return csts;
     }
     
-    static const char* getDomainName () {
+    static std::string getDomainName () {
       return "Intervals";
     }
 

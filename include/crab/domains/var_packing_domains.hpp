@@ -1031,7 +1031,7 @@ public:
 #endif
   }
 
-  static const char* getDomainName() { 
+  static std::string getDomainName() { 
     return "VariablePacking"; 
   }
 

@@ -132,7 +132,7 @@ namespace crab {
         void write(ostream& o) 
         { CRAB_ERROR (LDD_NOT_FOUND); }
           
-        static const char* getDomainName () {
+        static std::string getDomainName () {
           return "Dummy Boxes";
         }  
       }; 
@@ -938,7 +938,7 @@ namespace crab {
           Cudd_SetStdout(cudd,fp);      
         }
         
-        static const char* getDomainName () {
+        static std::string getDomainName () {
           return "Boxes";
         }  
         
