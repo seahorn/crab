@@ -473,7 +473,9 @@ namespace crab {
               out_revmap.push_back(p.first);
 
               pot_rx.push_back(potential[p.second] - potential[0]);
-              pot_ry.push_back(o.potential[p.second] - o.potential[0]);
+              // XXX JNL: check this out
+              //pot_ry.push_back(o.potential[p.second] - o.potential[0]);
+              pot_ry.push_back(o.potential[(*it).second] - o.potential[0]);
               perm_inv.push_back(p.first);
               perm_x.push_back(p.second);
               perm_y.push_back((*it).second);
