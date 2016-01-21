@@ -2,9 +2,10 @@
 #define __TESTS_COMMON__
 
 #include <crab/config.h>
+#include <crab/common/types.hpp>
 #include <crab/cfg/Cfg.hpp>
 #include <crab/cfg/VarFactory.hpp>
-#include <crab/common/types.hpp>
+#include <crab/cfg/CfgBgl.hpp> 
 #include <crab/analysis/FwdAnalyzer.hpp>
 #include <crab/analysis/Pointer.hpp>
 #include <crab/analysis/Liveness.hpp>
@@ -12,11 +13,11 @@
 #include <crab/domains/intervals.hpp>                      
 #include <crab/domains/numerical_with_congruences.hpp>                      
 #include <crab/domains/dbm.hpp>                      
+#include <crab/domains/term_equiv.hpp>
 #include <crab/domains/boxes.hpp>                    
 #include <crab/domains/dis_intervals.hpp>                        
 #include <crab/domains/array_graph.hpp>                      
 #include <crab/domains/array_smashing.hpp>
-#include <crab/cfg/CfgBgl.hpp> 
 
 namespace crab {
 

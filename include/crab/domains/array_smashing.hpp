@@ -15,7 +15,7 @@
 
 #include <crab/common/types.hpp>
 #include <crab/domains/numerical_domains_api.hpp>
-#include <crab/domains/domain_traits_impl.hpp>
+#include <crab/domains/domain_traits.hpp>
 
 using namespace boost;
 using namespace ikos;
@@ -136,13 +136,13 @@ namespace crab {
         // remove all variables [begin,...end)
         template<typename Iterator>
         void forget (Iterator begin, Iterator end) {
-          crab::domain_traits::forget (_inv, begin, end);
+          domain_traits<NumDomain>::forget (_inv, begin, end);
         }
 
         // dual of forget: remove all variables except [begin,...end)
         template<typename Iterator>
         void project (Iterator begin, Iterator end) {
-          crab::domain_traits::project (_inv, begin, end);
+          domain_traits<NumDomain>::project (_inv, begin, end);
         }
 
         void operator += (linear_constraint_system_t csts) {
@@ -235,7 +235,7 @@ namespace crab {
           // a) is not sound.
           /* ask for a temp var */
           VariableName a_prime = a.getVarFactory().get(); 
-          crab::domain_traits::expand (_inv, a, a_prime);
+          domain_traits<NumDomain>::expand (_inv, a, a_prime);
           _inv.assign (lhs, linear_expression_t (a_prime));
           _inv -= a_prime; 
           
@@ -276,64 +276,73 @@ namespace crab {
         
       }; // end array_smashing
    
+     template<typename BaseDomain>
+     class array_domain_traits<array_smashing<BaseDomain> > {
+       
+      public:
+       
+       typedef ikos::z_number z_number;
+       typedef typename BaseDomain::number_t number_t;
+       typedef typename BaseDomain::varname_t varname_t;
+       typedef typename BaseDomain::linear_expression_t linear_expression_t;
+       typedef array_smashing<BaseDomain> array_smashing_t;
+       
+       static void array_init (array_smashing_t& inv, varname_t a, 
+                               const vector<z_number> &values) {
+         inv.array_init (a, values);
+       }
+       
+       static void assume_array (array_smashing_t& inv, varname_t a, number_t val) {
+         inv.assume_array (a, interval<number_t> (bound <number_t> (val)));
+       }
+       
+       static void assume_array (array_smashing_t& inv, varname_t a, 
+                                 interval<number_t> val) {
+         inv.assume_array (a, val);
+       }
+       
+       static void array_load (array_smashing_t& inv, 
+                               varname_t lhs, varname_t a, varname_t i, 
+                               z_number n_bytes) {
+         inv.load (lhs, a, i, n_bytes);
+       }
+       
+       static void array_store (array_smashing_t& inv, 
+                                varname_t a, varname_t i,
+                                linear_expression_t val,
+                                z_number n_bytes, bool is_singleton) {
+         inv.store (a, i, val, n_bytes, is_singleton);
+       }
+     };
+   
+     template<typename BaseDomain>
+     class domain_traits <array_smashing<BaseDomain> > {
+      public:
+       
+       typedef array_smashing<BaseDomain> array_smashing_t;
+       typedef typename BaseDomain::varname_t VariableName;
+
+       static void normalize (array_smashing_t& inv) { 
+         CRAB_WARN ("array smashing normalize not implemented");
+       }
+       
+       template <typename Iter>
+       static void forget (array_smashing_t& inv, Iter it, Iter end) {
+         inv.forget (it, end);
+       }
+       
+       template <typename Iter >
+       static void project (array_smashing_t& inv, Iter it, Iter end) {
+         inv.project (it, end);
+       }
+
+       static void expand (array_smashing_t& inv, VariableName x, VariableName new_x) {
+         // -- lose precision if relational or disjunctive domain
+         CRAB_WARN ("array smashing expand not implemented");
+       }
+
+     };
+
    } // namespace domains
-
-   namespace domain_traits {
-    
-     using namespace domains;            
-
-     template <typename BaseDomain>
-     void array_init (array_smashing<BaseDomain>& inv, 
-                      typename BaseDomain::varname_t a, 
-                      const vector<ikos::z_number> &values) {
-       inv.array_init (a, values);
-     }
-   
-     template <typename BaseDomain>
-     void assume_array (array_smashing<BaseDomain>& inv, 
-                        typename BaseDomain::varname_t a, 
-                        typename BaseDomain::number_t val) {
-       inv.assume_array (a, interval<typename BaseDomain::number_t> 
-                         (bound <typename BaseDomain::number_t> (val)));
-     }
-   
-     template <typename BaseDomain>
-     void assume_array (array_smashing<BaseDomain>& inv, 
-                        typename BaseDomain::varname_t a, 
-                        interval<typename BaseDomain::number_t> val) {
-       inv.assume_array (a, val);
-     }
-   
-     template <typename BaseDomain>
-     void array_load (array_smashing<BaseDomain>& inv, 
-                      typename BaseDomain::varname_t lhs, 
-                      typename BaseDomain::varname_t a, 
-                      typename BaseDomain::varname_t i, 
-                      z_number n_bytes) {
-       inv.load (lhs, a, i, n_bytes);
-     }
-   
-     template <typename BaseDomain>
-     void array_store (array_smashing<BaseDomain>& inv, 
-                       typename BaseDomain::varname_t a, 
-                       typename BaseDomain::varname_t i,
-                       typename BaseDomain::linear_expression_t val,
-                       z_number n_bytes, bool is_singleton) {
-       inv.store (a, i, val, n_bytes, is_singleton);
-     }
-
-     template <typename BaseDomain, typename Iterator >
-     void forget (array_smashing<BaseDomain>& inv, 
-                  Iterator it, Iterator end) {
-       inv.forget (it, end);
-     }
-   
-     template <typename BaseDomain, typename Iterator >
-     void project (array_smashing<BaseDomain>& inv, 
-                   Iterator it, Iterator end) {
-       inv.project (it, end);
-     }
-
-   } // namespace domain_traits
 }// namespace crab
 #endif 

@@ -223,28 +223,28 @@ namespace crab {
     }
 
     void exec (z_arr_init_t &stmt) {
-      domain_traits::array_init (m_inv, 
-                                 stmt.variable (), 
-                                 stmt.values ());
+      domains::array_domain_traits<abs_dom_t>::array_init (m_inv, 
+                                                           stmt.variable (), 
+                                                           stmt.values ());
     }
 
     void exec (z_assume_arr_t &stmt) {
-      domain_traits::assume_array (m_inv, 
-                                   stmt.variable (), 
-                                   stmt.val ());
+      domains::array_domain_traits<abs_dom_t>::assume_array (m_inv, 
+                                                             stmt.variable (), 
+                                                             stmt.val ());
     }
-
+    
     void exec (z_arr_store_t &stmt) {
       if (stmt.index ().get_variable ())
       {
         auto arr = stmt.array ().name ();
         auto idx = *(stmt.index ().get_variable ());
-        domain_traits::array_store (m_inv, 
-                                    arr,
-                                    idx.name(), 
-                                    stmt.value (),
-                                    stmt.n_bytes (),
-                                    stmt.is_singleton ());
+        domains::array_domain_traits<abs_dom_t>::array_store (m_inv, 
+                                                              arr,
+                                                              idx.name(), 
+                                                              stmt.value (),
+                                                              stmt.n_bytes (),
+                                                              stmt.is_singleton ());
       }
     }
 
@@ -252,11 +252,11 @@ namespace crab {
       if (stmt.index ().get_variable ())
       {
         auto idx = *(stmt.index ().get_variable ());
-        domain_traits::array_load (m_inv, 
-                                   stmt.lhs ().name (), 
-                                   stmt.array ().name (), 
-                                   idx.name (),
-                                   stmt.n_bytes ());
+        domains::array_domain_traits<abs_dom_t>::array_load (m_inv, 
+                                                             stmt.lhs ().name (), 
+                                                             stmt.array ().name (), 
+                                                             idx.name (),
+                                                             stmt.n_bytes ());
       }
     }
 
@@ -339,7 +339,7 @@ namespace crab {
       //     as much context from the caller as possible
       std::set<varname_t> s;
       boost::set_difference (formals, actuals, std::inserter(s, s.end ()));
-      domain_traits::forget (caller, s.begin (), s.end ());
+      domains::domain_traits<abs_dom_t>::forget (caller, s.begin (), s.end ());
     }
 
    public:
@@ -484,7 +484,9 @@ namespace crab {
             ++i;
           }
           // --- project only onto formal parameters
-          domain_traits::project (callee_ctx_inv, pars.begin (), pars.end ());
+          domains::domain_traits<abs_dom_t>::project (callee_ctx_inv, 
+                                                      pars.begin (),
+                                                      pars.end ());
           // --- store the callee context
           CRAB_DEBUG ("--- Callee context stored: ", callee_ctx_inv);
           m_call_tbl->insert (cs, callee_ctx_inv);          

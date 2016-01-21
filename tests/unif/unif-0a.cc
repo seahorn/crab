@@ -37,7 +37,7 @@ int main (int argc, char** argv )
     vs.push_back (x);
     vs.push_back (y);
     cout << "Before project " << inv << "\n";
-    crab::domain_traits::project (inv, vs.begin (), vs.end ());
+    crab::domains::domain_traits<term_domain_t>::project (inv, vs.begin (), vs.end ());
     cout << "After project " << inv << "\n";
 
 

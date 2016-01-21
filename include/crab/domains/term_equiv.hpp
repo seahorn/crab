@@ -33,7 +33,7 @@
 #include <crab/domains/numerical_domains_api.hpp>
 #include <crab/domains/bitwise_operators_api.hpp>
 #include <crab/domains/division_operators_api.hpp>
-#include <crab/domains/domain_traits_impl.hpp>
+#include <crab/domains/domain_traits.hpp>
 #include <crab/domains/intervals.hpp>
 #include <crab/domains/term/term_expr.hpp>
 #include <crab/domains/term/inverse.hpp>
@@ -1383,34 +1383,34 @@ namespace crab {
     };
     #endif
 
-  }// namespace domains
 
+   template<typename Info>
+   class domain_traits <term_domain<Info> > {
+    public:
 
-  namespace domain_traits {
-    using namespace domains;
+     typedef term_domain<Info> term_domain_t;
+     typedef typename Info::VariableName  VariableName;
 
-     template <typename Info, typename Iterator >
-     void forget (term_domain<Info>& inv, Iterator it, Iterator end) {
+     static void normalize (term_domain_t& inv) {
+       inv.normalize();
+     }
+     
+     template <typename Iter>
+     static void forget (term_domain_t& inv, Iter it, Iter end) {
        inv.forget (boost::make_iterator_range (it, end));
      }
-  
-     template <typename Info, typename Iterator >
-     void project (term_domain<Info>& inv, Iterator it, Iterator end) {
+     
+     template <typename Iter>
+     static void project (term_domain_t& inv, Iter it, Iter end) {
        inv.project (boost::make_iterator_range (it, end));
      }
  
-    template <typename Info, typename VariableName>
-    void expand (term_domain<Info>& inv, VariableName x, VariableName new_x) {
-      inv.expand (x, new_x);
-    }
-  
-    template <typename Info>
-    void normalize (term_domain<Info>& inv) {
-      inv.normalize();
-    }
-  
-  } // namespace domain_traits
+     static void expand (term_domain_t& inv, VariableName x, VariableName new_x) {
+       inv.expand (x, new_x);
+     }
+   };
 
+  }// namespace domains
 } // namespace crab
 
 #endif // TERM_DOMAIN_HPP

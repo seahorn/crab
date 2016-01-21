@@ -950,33 +950,29 @@ namespace crab {
      template<typename N, typename V, size_t S>
      typename boxes_domain<N,V,S>::var_map_ptr boxes_domain<N,V,S>::m_var_map = nullptr;
 
+     template<typename Number, typename VariableName, size_t LddSize>
+     class domain_traits <boxes_domain<Number,VariableName, LddSize> > {
+      public:
+       typedef boxes_domain<Number, VariableName, LddSize> boxes_domain_t;
+
+       static void normalize (boxes_domain_t& inv) { }
+
+       template <typename Iter>
+       static void forget (boxes_domain_t& inv, Iter it, Iter end) {
+         inv.forget (it, end);
+       }
+       
+       template <typename Iter>
+       static void project (boxes_domain_t& inv, Iter it, Iter end) {
+         inv.project (it, end);
+       }
+
+       static void expand (boxes_domain_t& inv, VariableName x, VariableName new_x) {
+         CRAB_WARN ("boxes expand operation not implemented");
+       }
+
+     };
    } // namespace domains
-
-   namespace domain_traits {
-
-     using namespace domains;
-
-     template <typename VariableName, typename Number, typename Iterator >
-     void forget (boxes_domain<Number, VariableName>& inv, 
-                  Iterator it, Iterator end) {
-       inv.forget (it, end);
-     }
-
-     template <typename VariableName, typename Number, typename Iterator >
-     void project (boxes_domain<Number, VariableName>& inv, 
-                   Iterator it, Iterator end) {
-       inv.project (it, end);
-     }
-
-     template <typename VariableName, typename Number>
-     void expand (boxes_domain<Number, VariableName>& inv, 
-                  VariableName x, VariableName new_x) {
-       CRAB_WARN(" boxes expand operation is replaced with intervals");
-     }
-   
-   } // namespace domain_traits
-
-
 }// namespace crab
 #endif /* HAVE_LDD */
 #endif 

@@ -92,7 +92,9 @@ namespace crab {
         auto dead = m_live->dead_exit (node);       
 
         dead -= m_formals;
-        domain_traits::forget (inv, dead.begin (), dead.end ());
+        domains::domain_traits<abs_dom_t>::forget (inv, 
+                                                   dead.begin (), 
+                                                   dead.end ());
       }
 
       //! Given a basic block and the invariant at the entry it produces

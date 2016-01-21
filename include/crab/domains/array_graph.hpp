@@ -51,7 +51,7 @@
 #include <crab/domains/numerical_domains_api.hpp>
 #include <crab/domains/bitwise_operators_api.hpp>
 #include <crab/domains/division_operators_api.hpp>
-#include <crab/domains/domain_traits_impl.hpp>
+#include <crab/domains/domain_traits.hpp>
 
 using namespace std;
 using namespace boost;
@@ -1043,7 +1043,7 @@ namespace crab {
       {
         if (is_bottom ()) return; 
       
-        domain_traits::normalize<ScalarNumDomain>(_scalar);
+        domain_traits<ScalarNumDomain>::normalize(_scalar);
 
         if (_scalar.is_bottom() || _g.is_bottom())
           set_to_bottom();
@@ -1315,7 +1315,7 @@ namespace crab {
 
       static string getDomainName () {
         string name ("ArrayGraph(" + 
-                       ScalarNumDomain::getDomainName () +  "," + 
+                     ScalarNumDomain::getDomainName () +  "," + 
                      WeightDomain::getDomainName () +
                      ")");
         return name;
@@ -1323,27 +1323,43 @@ namespace crab {
 
     }; // end array_graph_domain
 
-  } // namespace domains
+    template <typename ScalarDomain, typename WeightDomain>
+    class array_domain_traits<array_graph_domain<ScalarDomain,WeightDomain,false> > {
 
-    namespace domain_traits
-    {
-      template <typename ScalarDomain, typename WeightDomain>
-                
-      void array_load (array_graph_domain<ScalarDomain,WeightDomain, false>& inv, 
-                       typename ScalarDomain::varname_t lhs, 
-                       typename ScalarDomain::varname_t arr, 
-                       typename ScalarDomain::varname_t idx, z_number /*n_bytes*/) {
-        inv.load (lhs, arr, idx);
-      }
-    
-      template <typename ScalarDomain, typename WeightDomain>
-      void array_store (array_graph_domain<ScalarDomain,WeightDomain, false>& inv, 
-                        typename ScalarDomain::varname_t arr, 
-                        typename ScalarDomain::varname_t idx,
-                        typename ScalarDomain::linear_expression_t val,
-                        z_number /*n_bytes*/, bool /*is_singleton*/) {
-        inv.store (arr, idx, val);
-      } 
+       public:
+        
+        typedef ikos::z_number z_number;
+        typedef typename ScalarDomain::number_t number_t;
+        typedef typename ScalarDomain::varname_t varname_t;
+        typedef typename ScalarDomain::linear_expression_t linear_expression_t;
+        typedef array_graph_domain<ScalarDomain,WeightDomain, false> array_graph_domain_t;
+
+        static void array_init (array_graph_domain_t& inv, varname_t a, 
+                                const vector<z_number> &values) { 
+          CRAB_WARN ("array_graph_domain init not implemented");
+        }
+        
+        static void assume_array (array_graph_domain_t& inv, varname_t a, number_t val) {
+          CRAB_WARN ("array_graph_domain assume not implemented");
+        }
+        
+        static void assume_array (array_graph_domain_t& inv, varname_t a, 
+                                  interval<number_t> val) {
+          CRAB_WARN ("array_graph_domain assume not implemented");
+        }
+        
+        static void array_load (array_graph_domain_t& inv, 
+                                varname_t lhs, varname_t arr, varname_t idx, 
+                                z_number /*n_bytes*/) {
+          inv.load (lhs, arr, idx);
+        }
+        
+        static void array_store (array_graph_domain_t& inv, varname_t arr, 
+                                 varname_t idx, linear_expression_t val,
+                                 z_number /*n_bytes*/, bool /*is_singleton*/) {
+          inv.store (arr, idx, val);
+        }        
+      };
 
     }// namespace domain_traits
 

@@ -105,7 +105,9 @@ namespace crab {
                 inv_map->insert (make_pair (bb, bb_inv));
                 /// -- flow insensitive abstraction 
                 inv = inv | bb_inv;
-                domain_traits::forget (inv, locals.begin (), locals.end ());
+                domains::domain_traits<AbsDomain>::forget (inv, 
+                                                           locals.begin (), 
+                                                           locals.end ());
               }
               m_global_inv [p.first] = inv_map;
               change=true;
@@ -125,7 +127,9 @@ namespace crab {
                }
                /// -- flow insensitive abstraction
                inv = inv | new_inv;
-               domain_traits::forget (inv, locals.begin (), locals.end ());
+               domains::domain_traits<AbsDomain>::forget (inv, 
+                                                          locals.begin (), 
+                                                          locals.end ());
              }
             }
           } // end analysis of all threads
