@@ -151,7 +151,9 @@ namespace crab {
                 formals.push_back (*ret_val_opt);
               // --- project onto formal parameters and return 
               auto inv = a.get_post (cfg.exit ());
-              domain_traits::project (inv, formals.begin (), formals.end ());            
+              domains::domain_traits<BUAbsDomain>::project (inv,
+                                                            formals.begin (), 
+                                                            formals.end ());            
               if (ret_val_opt) 
                 formals.pop_back ();
               m_summ_tbl.insert (*fdecl, inv, ret_val_opt, formals);

@@ -18,6 +18,7 @@
 #include <crab/domains/numerical_domains_api.hpp>
 #include <crab/domains/bitwise_operators_api.hpp>
 #include <crab/domains/division_operators_api.hpp>
+#include <crab/domains/domain_traits.hpp>
 
 using namespace boost;
 using namespace ikos;
@@ -1372,30 +1373,35 @@ namespace crab {
        return "DisjunctiveIntervals";
      }  
    }; 
-   
-   } // namespace domains
 
-   namespace domain_traits {
-      using namespace domains;
-
-      template <typename Number, typename VariableName>
-      void normalize (dis_interval_domain<Number,VariableName>& inv) {
-        inv.normalize ();
-      }
-
-      template <typename Number, typename VariableName, typename Iterator>
-      void project (dis_interval_domain <Number, VariableName>& inv, 
-                    Iterator begin, Iterator end) {
-        inv.project (boost::make_iterator_range (begin, end));
+   template<typename Number, typename VariableName>
+   class domain_traits <dis_interval_domain<Number, VariableName> > {
+    public:
+     
+     typedef dis_interval_domain<Number, VariableName> dis_interval_domain_t;
+     
+     static void normalize (dis_interval_domain_t& inv) {
+       inv.normalize ();
       }
      
-      template <typename Number, typename VariableName>
-      void expand (dis_interval_domain <Number, VariableName>& inv, 
-                   VariableName x, VariableName new_x) {
-        inv.expand (x, new_x);
-      }
+     template <typename Iter>
+     static void project (dis_interval_domain_t& inv, Iter begin, Iter end) {
+       inv.project (boost::make_iterator_range (begin, end));
+     }
+     
+     static void expand (dis_interval_domain_t& inv, VariableName x, VariableName new_x) {
+       inv.expand (x, new_x);
+     }
 
-   } // namespace domain_traits
+     template <typename Iter>
+     static void forget(dis_interval_domain_t& inv, Iter begin, Iter end){
+       for (auto v : boost::make_iterator_range (begin, end)){
+         inv -= v;
+       }
+     }
+     
+   };
 
+  } // namespace domains   
 }// namespace crab
 #endif 

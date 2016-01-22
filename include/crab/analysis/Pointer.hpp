@@ -8,7 +8,6 @@
 #include <crab/cfg/Cfg.hpp>
 #include <crab/cfg/VarFactory.hpp>
 #include <crab/analysis/FwdAnalyzer.hpp>
-#include <crab/domains/domain_traits.hpp>
 
 #include <crab/common/types.hpp>
 #include <crab/domains/pta.hpp>

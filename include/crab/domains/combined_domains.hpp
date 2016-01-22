@@ -12,13 +12,13 @@
  **************************************************************************/
 
 #include <crab/common/types.hpp>
-#include <crab/domains/domain_traits_impl.hpp>
 #include <crab/domains/domain_products.hpp>
 #include <crab/domains/numerical_domains_api.hpp>
 #include <crab/domains/bitwise_operators_api.hpp>
 #include <crab/domains/division_operators_api.hpp>
 #include <crab/domains/congruences.hpp>
 #include <crab/domains/intervals.hpp>
+#include <crab/domains/domain_traits.hpp>
 
 namespace crab {
   namespace domains {
@@ -111,9 +111,8 @@ namespace crab {
           // propagate other constraints expressed by the domains
           //////
 
-          crab::domain_traits::push (v, inv1, inv2);
-          crab::domain_traits::push (v, inv2, inv1);
-
+          crab::domains::product_domain_traits<Domain1,Domain2>::push (v, inv1, inv2);
+          crab::domains::product_domain_traits<Domain2,Domain1>::push (v, inv2, inv1);
         }
       }
       
@@ -260,25 +259,31 @@ namespace crab {
       // domain_traits_api
       
       void expand(VariableName x, VariableName new_x) {
-        crab::domain_traits::expand (this->_product.first(), x, new_x);
-        crab::domain_traits::expand (this->_product.second(), x, new_x);
+        crab::domains::domain_traits<Domain1>::expand (this->_product.first(), 
+                                                       x, new_x);
+        crab::domains::domain_traits<Domain2>::expand (this->_product.second(), 
+                                                       x, new_x);
       }
       
       void normalize() {
-        crab::domain_traits::normalize(this->_product.first());
-        crab::domain_traits::normalize(this->_product.second());
+        crab::domains::domain_traits<Domain1>::normalize(this->_product.first());
+        crab::domains::domain_traits<Domain2>::normalize(this->_product.second());
       }
       
       template <typename Range>
       void forget(Range vars){
-        crab::domain_traits::forget(this->_product.first(), vars.begin (), vars.end());
-        crab::domain_traits::forget(this->_product.second(), vars.begin (), vars.end());
+        crab::domains::domain_traits<Domain1>::forget(this->_product.first(), 
+                                                      vars.begin (), vars.end());
+        crab::domains::domain_traits<Domain2>::forget(this->_product.second(), 
+                                                      vars.begin (), vars.end());
       }
       
       template <typename Range>
       void project(Range vars) {
-        crab::domain_traits::project(this->_product.first(), vars.begin(), vars.end());
-        crab::domain_traits::project(this->_product.second(), vars.begin(), vars.end());
+        crab::domains::domain_traits<Domain1>::project(this->_product.first(), 
+                                                       vars.begin(), vars.end());
+        crab::domains::domain_traits<Domain2>::project(this->_product.second(), 
+                                                       vars.begin(), vars.end());
       }
       
       void write(std::ostream& o) { 
@@ -801,33 +806,35 @@ namespace crab {
         return domain_product2_t::getDomainName (); 
       }
       
-     }; // class numerical_congruence_domain
-  }
+    }; // class numerical_congruence_domain
 
-  namespace domain_traits {
-    using namespace domains;
+    template<typename Domain1, typename Domain2>
+    class domain_traits <reduced_numerical_domain_product2<Domain1,Domain2> > {
+     public:
 
-    template <typename V, typename D1, typename D2>
-    void expand (reduced_numerical_domain_product2<D1,D2>& inv, V x, V new_x) {
-      inv.expand (x, new_x);
-    }
-  
-    template <typename D1, typename D2>
-    void normalize (reduced_numerical_domain_product2<D1,D2>& inv) {
-      inv.normalize();
-    }
-  
-    template <typename D1, typename D2, typename Iter>
-    void forget (reduced_numerical_domain_product2<D1,D2>& inv, Iter it, Iter end){
-      inv.forget (boost::make_iterator_range (it, end));
-    }
-  
-    template <typename D1, typename D2, typename Iter>
-    void project (reduced_numerical_domain_product2<D1,D2>& inv, Iter it, Iter end) {
-      inv.project (boost::make_iterator_range (it, end));
-    }
-  } // namespace domain_traits
+      typedef reduced_numerical_domain_product2<Domain1,Domain2> product_t;
+      typedef typename product_t::varname_t VariableName;
 
+      static void normalize (product_t& inv) {
+        inv.normalize();
+      }
+
+      static void expand (product_t& inv, VariableName x, VariableName new_x) {
+        inv.expand (x, new_x);
+      }
+      
+      template <typename Iter>
+      static void forget (product_t& inv, Iter it, Iter end){
+        inv.forget (boost::make_iterator_range (it, end));
+      }
+      
+      template <typename Iter>
+      static void project (product_t& inv, Iter it, Iter end) {
+        inv.project (boost::make_iterator_range (it, end));
+      }
+    };
+
+  } // end namespace domains
 } // namespace crab
 
 #endif 

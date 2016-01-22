@@ -2084,41 +2084,48 @@ namespace crab {
       }
 
     }; // class SplitDBM
+
+    template<typename Number, typename VariableName>
+    class domain_traits <SplitDBM<Number,VariableName> > {
+     public:
+
+      typedef SplitDBM<Number,VariableName> sdbm_domain_t;
+
+      static void expand (sdbm_domain_t& inv, VariableName x, VariableName new_x) {
+        inv.expand (x, new_x);
+      }
+    
+      static void normalize (sdbm_domain_t& inv) {
+        inv.normalize();
+      }
+    
+      template <typename Iter>
+      static void forget (sdbm_domain_t& inv, Iter it, Iter end){
+        inv.forget (it, end);
+      }
+
+      template <typename Iter>
+      static void project (sdbm_domain_t& inv, Iter it, Iter end) {
+        inv.project (it, end);
+      }
+    };
+
+
+    template<typename Domain>
+    class product_domain_traits<SplitDBM<typename Domain::number_t, 
+                                         typename Domain::varname_t>, Domain> {
+
+     public:
+      typedef typename Domain::varname_t varname_t;
+      typedef SplitDBM<typename Domain::number_t, 
+                       typename Domain::varname_t> sdbm_domain_t;
+      
+      static void push (const varname_t& x, sdbm_domain_t from, Domain& to){
+        from.push (x, to);
+      }
+    };
+  
   } // namespace domains
-
-
-  namespace domain_traits {
-
-       using namespace domains;
-
-       template <typename Number, typename VariableName>
-       void expand (SplitDBM<Number,VariableName>& inv, 
-                    VariableName x, VariableName new_x) {
-         inv.expand (x, new_x);
-       }
-    
-       template <typename Number, typename VariableName>
-       void normalize (SplitDBM<Number,VariableName>& inv) {
-         inv.normalize();
-       }
-    
-       template <typename Number, typename VariableName, typename Iterator >
-       void forget (SplitDBM<Number,VariableName>& inv, Iterator it, Iterator end){
-         inv.forget (it, end);
-       }
-
-       template <typename Number, typename VariableName, typename Iterator >
-       void project (SplitDBM<Number,VariableName>& inv, Iterator it, Iterator end) {
-         inv.project (it, end);
-       }
-
-       template <typename VariableName, typename Number, typename NumDomain>
-       void push (const VariableName& x, SplitDBM<Number,VariableName> from, NumDomain& to){
-         from.push (x, to);
-       }
-
-    } // namespace domain_traits
-
 } // namespace crab
 
 

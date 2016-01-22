@@ -4,11 +4,12 @@
 /// Uncomment for enabling debug information
 //#include <crab/common/dbg.hpp>
 
+#include "boost/range/algorithm/set_algorithm.hpp"
+
 #include <crab/config.h>
 #include <crab/common/types.hpp>
 #include <crab/domains/numerical_domains_api.hpp>
-
-#include "boost/range/algorithm/set_algorithm.hpp"
+#include <crab/domains/domain_traits.hpp>
 
 using namespace boost;
 using namespace ikos;
@@ -1208,40 +1209,33 @@ namespace crab {
       template<typename N, typename V, apron_domain_id_t D>
       ap_manager_t* apron_domain<N,V,D>::m_apman = nullptr;
 
+      template<typename Number, typename VariableName, apron_domain_id_t ApronDom>
+      class domain_traits <apron_domain<Number,VariableName, ApronDom> > {
+       public:
+        
+        typedef apron_domain<Number,VariableName, ApronDom> apron_domain_t;
+        
+        static void normalize (apron_domain_t& inv) { 
+          inv.normalize ();
+        }
+        
+        template <typename Iter>
+        static void forget (apron_domain_t& inv, Iter it, Iter end) {
+          inv.forget (boost::make_iterator_range (it, end));
+        }
+        
+        template <typename Iter >
+        static void project (apron_domain_t& inv, Iter it, Iter end) {
+          inv.project (boost::make_iterator_range (it, end));
+        }
+        
+        static void expand (apron_domain_t& inv, VariableName x, VariableName new_x) {
+          inv.expand (x, new_x);
+        }
+        
+      };
+   
    } // namespace domains
-
-   namespace domain_traits {
-      using namespace domains;
-
-      template <typename Number, typename VariableName, apron_domain_id_t ApronDom>
-      void expand (apron_domain<Number,VariableName, ApronDom>& inv,
-                   VariableName x, VariableName new_x) {
-        inv.expand (x, new_x);
-      }
-    
-      template <typename Number, typename VariableName, apron_domain_id_t ApronDom>
-      void normalize (apron_domain<Number,VariableName, ApronDom>& inv) {
-        inv.normalize ();
-      }
-    
-      template <typename Number, typename VariableName, apron_domain_id_t ApronDom, typename Iterator>
-      void forget (apron_domain<Number,VariableName, ApronDom>& inv, Iterator it, Iterator end) {
-        inv.forget (boost::make_iterator_range (it, end));
-      }
-
-      template <typename Number, typename VariableName, apron_domain_id_t ApronDom, typename Iterator>
-      void project (apron_domain<Number,VariableName, ApronDom>& inv, Iterator it, Iterator end) {
-        inv.project (boost::make_iterator_range (it, end));
-      }
-
-      // temporary
-      template <typename Number, typename VariableName, apron_domain_id_t ApronDom>
-      void print_stats (apron_domain<Number,VariableName, ApronDom>& inv) {
-        inv.print_stats ();
-      }
-
-
-   } // namespace domain_traits
 }// namespace crab
 #endif 
 #endif 

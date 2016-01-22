@@ -25,6 +25,7 @@
 #include <crab/domains/numerical_domains_api.hpp>
 #include <crab/domains/bitwise_operators_api.hpp>
 #include <crab/domains/division_operators_api.hpp>
+#include <crab/domains/domain_traits.hpp>
 
 #include <boost/optional.hpp>
 #include <boost/unordered_set.hpp>
@@ -1476,39 +1477,34 @@ namespace crab {
       static std::string getDomainName () {
         return "Sparse DBM";
       }
-
     }; // class DBM
 
+    template<typename Number, typename VariableName>
+    class domain_traits <DBM<Number, VariableName> > {
+     public:
+      
+      typedef DBM<Number,VariableName> dbm_domain_t;
+      
+      static void normalize (dbm_domain_t& inv) {
+        inv.normalize ();
+      }
+      
+      static void expand (dbm_domain_t& inv, VariableName x, VariableName new_x) {
+        inv.expand (x, new_x);
+      }
+      
+      template <typename Iter>
+      static void forget (dbm_domain_t& inv, Iter it, Iter end) {
+        inv.forget (it, end);
+      }
+      
+      template <typename Iter>
+      static void project (dbm_domain_t& inv, Iter it, Iter end) {
+        inv.project (it, end);
+      }
+    };
+
   } // namespace domains
-
-
-  namespace domain_traits {
-
-       using namespace domains;
-
-       template <typename Number, typename VariableName>
-       void expand (DBM<Number,VariableName>& inv, 
-                    VariableName x, VariableName new_x) {
-         inv.expand (x, new_x);
-       }
-    
-       template <typename Number, typename VariableName>
-       void normalize (DBM<Number,VariableName>& inv) {
-         inv.normalize ();
-       }
-    
-       template <typename Number, typename VariableName, typename Iterator >
-       void forget (DBM<Number,VariableName>& inv, Iterator it, Iterator end) {
-         inv.forget (it, end);
-       }
-
-       template <typename Number, typename VariableName, typename Iterator >
-       void project (DBM<Number,VariableName>& inv, Iterator it, Iterator end) {
-         inv.project (it, end);
-       }
-
-    } // namespace domain_traits
-
 } // namespace crab
 
 #endif // DBM_HPP

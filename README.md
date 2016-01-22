@@ -171,17 +171,6 @@ fast mergeable integer map based on patricia trees. This map can be
 used to map variable names to abstract values. The implementation of
 intervals and congruences use it.
 
-### How to add non-standard abstract operations ###
-
-Some abstract domains may need some non-standard abstract operations
-(e.g., array read/write, expand, etc). The signature of these
-operations are described in `domain_traits.hpp`. Default
-implementations are in `domain_traits_impl.hpp`. If an abstract domain
-needs a different implementation from the default one then it should
-implement the operation under the namespace `crab::domain_traits`. The
-file `domain_traits.hpp` must also include the header file of the
-abstract domain (if not already there).
-
 ##People##
 
 * [Arie Gurfinkel](arieg.bitbucket.org)

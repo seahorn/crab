@@ -42,7 +42,6 @@
 #define IKOS_DOMAIN_PRODUCTS_HPP
 
 #include <crab/common/types.hpp>
-#include <crab/domains/domain_traits_impl.hpp>
 #include <crab/domains/numerical_domains_api.hpp>
 #include <crab/domains/bitwise_operators_api.hpp>
 #include <crab/domains/division_operators_api.hpp>
