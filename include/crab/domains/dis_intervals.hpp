@@ -1024,6 +1024,11 @@ namespace ikos {
        }
        else {
          for (auto i: boost::make_iterator_range (x.begin (), x.end ())) {
+           if (!(z_interval (c) <= i)) {
+             res = res | i;
+             continue;
+           }
+
            if (i.lb() == c) {
              res = res | dis_z_interval_t (z_interval(c + 1, i.ub()));
            } else if (i.ub() == c) {
