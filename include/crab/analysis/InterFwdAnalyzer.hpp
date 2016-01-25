@@ -59,8 +59,8 @@ namespace crab {
       const liveness_map_t* m_live;
       invariant_map_t m_inv_map;
       summ_tbl_t m_summ_tbl;
-      unsigned int m_widening_thres;
-      unsigned int m_narrowing_iters;
+      unsigned int m_widening_delay;
+      unsigned int m_descending_iters;
       size_t m_jump_set_size; // max size of the jump set (=0 if jump set disabled)
       
       const liveness_t* get_live (cfg_t c) {
@@ -75,12 +75,12 @@ namespace crab {
      public:
       
       InterFwdAnalyzer (CG cg, VarFactory& vfac, const liveness_map_t* live,
-                        unsigned int widening_thres=1,
-                        unsigned int narrowing_iters=UINT_MAX,
+                        unsigned int widening_delay=1,
+                        unsigned int descending_iters=UINT_MAX,
                         size_t jump_set_size=0): 
           m_cg (cg), m_vfac (vfac), m_live (live),
-          m_widening_thres (widening_thres), 
-          m_narrowing_iters (narrowing_iters),
+          m_widening_delay (widening_delay), 
+          m_descending_iters (descending_iters),
           m_jump_set_size (jump_set_size) { }
       
       //! Trigger the whole analysis
@@ -108,8 +108,8 @@ namespace crab {
             call_tbl_t call_tbl;
             td_analyzer_ptr a (new td_analyzer (cfg, m_vfac, get_live (cfg), 
                                                 &m_summ_tbl, &call_tbl,
-                                                m_widening_thres,
-                                                m_narrowing_iters,
+                                                m_widening_delay,
+                                                m_descending_iters,
                                                 m_jump_set_size));           
             a->Run (init);
             m_inv_map.insert (make_pair (CfgHasher<cfg_t>::hash(*fdecl), a));
@@ -138,7 +138,7 @@ namespace crab {
               // --- run the analysis
               bu_analyzer a (cfg, m_vfac, get_live (cfg), 
                              &m_summ_tbl, &call_tbl,
-                             m_widening_thres, m_narrowing_iters,
+                             m_widening_delay, m_descending_iters,
                              m_jump_set_size) ; 
               a.Run (BUAbsDomain::top ());
               // --- build the summary
@@ -184,8 +184,8 @@ namespace crab {
             
             td_analyzer_ptr a (new td_analyzer (cfg, m_vfac, get_live (cfg), 
                                                 &m_summ_tbl, &call_tbl,
-                                                m_widening_thres,
-                                                m_narrowing_iters));           
+                                                m_widening_delay,
+                                                m_descending_iters));           
             if (is_root) {
               a->Run (init);
               is_root = false;

@@ -143,10 +143,10 @@ namespace crab {
       // live can be nullptr if no live information is available
       FwdAnalyzer (CFG cfg, VarFactory& vfac, 
                    const liveness_t* live,
-                   unsigned int widening_threshold=1,
-                   unsigned int narrowing_iters=UINT_MAX,
+                   unsigned int widening_delay=1,
+                   unsigned int descending_iters=UINT_MAX,
                    size_t jump_set_size=0):
-          fwd_iterator_t (cfg, widening_threshold, narrowing_iters, 
+          fwd_iterator_t (cfg, widening_delay, descending_iters, 
                           jump_set_size), 
           m_vfac (vfac), m_live (live), 
           m_summ_tbl (nullptr), m_call_tbl (nullptr) { }
@@ -156,10 +156,10 @@ namespace crab {
       FwdAnalyzer (CFG cfg, VarFactory& vfac, 
                    const liveness_t* live, 
                    summ_tbl_t* sum_tbl, call_tbl_t* call_tbl,
-                   unsigned int widening_threshold=1,
-                   unsigned int narrowing_iters=UINT_MAX,
+                   unsigned int widening_delay=1,
+                   unsigned int descending_iters=UINT_MAX,
                    size_t jump_set_size=0):
-          fwd_iterator_t (cfg, widening_threshold, narrowing_iters, 
+          fwd_iterator_t (cfg, widening_delay, descending_iters, 
                           jump_set_size), 
           m_vfac (vfac), m_live (live), 
           m_summ_tbl (sum_tbl), m_call_tbl (call_tbl) {

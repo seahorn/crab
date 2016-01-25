@@ -86,13 +86,13 @@ namespace ikos {
     wto_t _wto;
     invariant_table_ptr _pre, _post;
     // number of iterations until triggering widening
-    unsigned int _widening_threshold;
+    unsigned int _widening_delay;
     // number of narrowing iterations. If the narrowing operator is
     // indeed a narrowing operator this parameter is not
     // needed. However, there are abstract domains for which a sound
     // narrowing operation is not available so we must enforce
     // termination.
-    unsigned int _narrowing_iterations;
+    unsigned int _descending_iterations;
     // whether jump set is used for widening
     bool _use_widening_jump_set;    
     // set of thresholds to jump during widening
@@ -126,15 +126,15 @@ namespace ikos {
     
   public:
     interleaved_fwd_fixpoint_iterator(CFG cfg, 
-                                      unsigned widening_threshold,
-                                      unsigned int narrowing_iterations,
+                                      unsigned int widening_delay,
+                                      unsigned int descending_iterations,
                                       size_t jump_set_size): 
         _cfg(cfg),
         _wto(cfg),
         _pre(invariant_table_ptr(new invariant_table_t)),
         _post(invariant_table_ptr(new invariant_table_t)),
-        _widening_threshold(widening_threshold),
-        _narrowing_iterations(narrowing_iterations),
+        _widening_delay(widening_delay),
+        _descending_iterations(descending_iterations),
         _use_widening_jump_set (jump_set_size > 0) {
 
       if (_use_widening_jump_set) {
@@ -163,7 +163,7 @@ namespace ikos {
     virtual AbstractValue extrapolate(NodeName /* node */, unsigned int iteration, 
                                       // FIXME should be const params
                                       AbstractValue& before, AbstractValue& after) {
-      if (iteration <= _widening_threshold) {
+      if (iteration <= _widening_delay) {
         return before | after; 
       } else {
         if (_use_widening_jump_set)
@@ -238,7 +238,7 @@ namespace ikos {
         AbstractValue pre = AbstractValue::bottom();
         for (NodeName prev : prev_nodes) {
           if (!(this->_iterator->_wto.nesting(prev) > cycle_nesting)) {
-            pre |= this->_iterator->get_post(prev); //pre = pre | this->_iterator->get_post(prev);
+            pre |= this->_iterator->get_post(prev); 
           }
         }
         for(unsigned int iteration = 1; ; ++iteration) {
@@ -250,7 +250,7 @@ namespace ikos {
           }
           AbstractValue new_pre = AbstractValue::bottom();
           for (NodeName prev : prev_nodes) 
-            new_pre |= this->_iterator->get_post(prev); //new_pre = new_pre | this->_iterator->get_post(prev);
+            new_pre |= this->_iterator->get_post(prev); 
           if (new_pre <= pre) {
             // Post-fixpoint reached
             this->_iterator->set_pre(head, new_pre);
@@ -268,12 +268,12 @@ namespace ikos {
           }
           AbstractValue new_pre = AbstractValue::bottom();
           for (NodeName prev : prev_nodes) 
-            new_pre |= this->_iterator->get_post(prev); //new_pre = new_pre | this->_iterator->get_post(prev);
+            new_pre |= this->_iterator->get_post(prev); 
           if (pre <= new_pre) {
             // No more refinement possible (pre == new_pre)
             break;
           } else {
-            if (iteration > this->_iterator->_narrowing_iterations) break; 
+            if (iteration > this->_iterator->_descending_iterations) break; 
 
             pre = this->_iterator->refine(head, iteration, pre, new_pre);
             this->_iterator->set_pre(head, pre);

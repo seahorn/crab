@@ -42,19 +42,19 @@ namespace crab {
       bool m_run_live;
       global_inv_map_t m_global_inv;
       
-      unsigned int m_widening_thres;
-      unsigned int m_narrowing_iters;
+      unsigned int m_widening_delay;
+      unsigned int m_descending_iters;
       size_t m_jump_set_size; 
 
      public:
       
       ConcAnalyzer (conc_sys_t& conc_sys, VarFactory& vfac, bool runLive,
-                    unsigned int widening_thres=1,
-                    unsigned int narrowing_iters=UINT_MAX,
+                    unsigned int widening_delay=1,
+                    unsigned int descending_iters=UINT_MAX,
                     size_t jump_set_size=0):  
           m_conc_sys (conc_sys), m_vfac (vfac), m_run_live (runLive),
-          m_widening_thres (widening_thres),
-          m_narrowing_iters (narrowing_iters),
+          m_widening_delay (widening_delay),
+          m_descending_iters (descending_iters),
           m_jump_set_size (m_jump_set_size)
       { }
       
@@ -86,8 +86,8 @@ namespace crab {
             }
               
             fwd_analyzer_t thread_analyzer (p.second, m_vfac, live,
-                                            m_widening_thres,
-                                            m_narrowing_iters,
+                                            m_widening_delay,
+                                            m_descending_iters,
                                             m_jump_set_size);
             thread_analyzer.Run (inv);
             
