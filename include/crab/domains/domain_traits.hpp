@@ -86,7 +86,7 @@ namespace crab {
 
      // To perform reduction between domains
      template <typename VariableName>
-     void push (const VariableName& x, Domain1 from, Domain2& to){ }
+     static void push (const VariableName& x, Domain1 from, Domain2& to){ }
      
    };
 
