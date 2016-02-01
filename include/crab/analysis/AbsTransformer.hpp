@@ -3,6 +3,10 @@
 
 /* 
    Definition of abstract transfer functions.
+
+   TODO: NumAbsTransformer should be extended with pointer operations
+         so that we can have, for instance, reduced products of
+         numerical domains with nullity.
  */
 
 #include <boost/optional.hpp>
@@ -14,6 +18,8 @@
 #include <crab/cfg/Cfg.hpp>
 #include <crab/domains/domain_traits.hpp>
 #include <crab/domains/linear_constraints.hpp>
+
+#include <crab/domains/nullity.hpp>
 
 namespace crab {
 
@@ -528,6 +534,146 @@ namespace crab {
         this->m_inv -= *lhs_opt;
     }
   }; 
+
+  //! Abstract transformer specialized for pointer operations for
+  //! only nullity information.
+  template <typename VariableName,typename SumTable, typename CallCtxTable>
+  class NullityAbsTransformer: public AbsTransformerApi <VariableName>  {
+    typedef AbsTransformerApi <VariableName> abs_tr_t;
+    
+    using typename abs_tr_t::z_bin_op_t;
+    using typename abs_tr_t::z_lin_cst_t;
+    using typename abs_tr_t::z_var_t;
+    using typename abs_tr_t::z_assign_t;
+    using typename abs_tr_t::z_assume_t;
+    using typename abs_tr_t::havoc_t;
+    using typename abs_tr_t::unreach_t;
+    using typename abs_tr_t::z_select_t;
+    
+    using typename abs_tr_t::callsite_t;
+    using typename abs_tr_t::return_t;
+    using typename abs_tr_t::ptr_load_t;
+    using typename abs_tr_t::ptr_store_t;
+    using typename abs_tr_t::ptr_assign_t;
+    using typename abs_tr_t::ptr_object_t;
+    using typename abs_tr_t::ptr_function_t;
+    using typename abs_tr_t::ptr_null_t;
+    
+    typedef domains::nullity_domain <VariableName> nullity_domain_t;
+    
+    nullity_domain_t m_inv;
+    
+    // optional<std::pair<VariableName, VariableName> >
+    // get_unit_bin_eq_or_diseq (z_lin_cst_t cst) {
+    //   if (cst.is_equality () || cst.is_disequation ()) {
+    //     if (cst.size () == 2 && cst.constant () == 0) {
+    //       auto it = cst.begin ();
+    //       auto nx = it->first;
+    //       auto vx = it->second;
+    //       ++it;
+    //       assert (it != cst.end ());
+    //       auto ny = it->first;
+    //       auto vy = it->second;
+    //       if (nx == (ny * -1 )) {
+    //         return std::make_pair(vx.name(), vy.name());
+    //       } 
+    //     }
+    //   } 
+    //   return optional<std::pair<VariableName, VariableName> > ();
+    // }
+    
+    // optional<VariableName>
+    // get_eq_or_diseq_to_zero (z_lin_cst_t cst) {
+    //   if (cst.is_equality () || cst.is_disequation ()) {
+    //     if (cst.size () == 1 && cst.constant () == 0) {
+    //       auto it = cst.begin ();
+    //        auto vx = it->second;
+    //        return vx.name();
+    //     }
+    //   } 
+    //   return optional<VariableName> ();
+    // }
+      
+   public:
+    
+    // for FwdAnalyzer.hpp
+    typedef nullity_domain_t abs_dom_t;
+    typedef nullity_domain_t summ_abs_domain_t;
+    typedef nullity_domain_t call_abs_domain_t;
+    
+   public:
+    
+    NullityAbsTransformer (nullity_domain_t init, SumTable*, CallCtxTable*):
+        m_inv (init) { }
+    
+    nullity_domain_t inv() const { return m_inv; }
+
+    void visit (ptr_null_t & stmt) { 
+      m_inv.set (stmt.lhs (), domains::nullity_value::null ());
+    }
+    
+    void visit (ptr_object_t & stmt) { 
+      m_inv.set (stmt.lhs (), domains::nullity_value::non_null ());
+    }
+    
+    void visit (ptr_function_t & stmt) { 
+      m_inv.set (stmt.lhs (), domains::nullity_value::non_null ());
+    }
+    
+    void visit (ptr_assign_t & stmt) { 
+      m_inv.assign (stmt.lhs (), stmt.rhs ());
+    }
+    
+    void visit (ptr_load_t & stmt) {
+      m_inv.equality (stmt.rhs (), domains::nullity_value::non_null ());
+    }
+    
+    void visit (ptr_store_t & stmt) { 
+      m_inv.equality (stmt.lhs (), domains::nullity_value::non_null ());
+    }
+    
+    // TODO: analysis of constraints p {==,!=} null and p {==,!=} q
+    //       but only if p,q are pointers. We could use the language
+    //       of z_assume_t (see below) to express these constraints
+    //       but it would also include constraints involving
+    //       non-pointer variables.
+    
+    void visit (z_assume_t& stmt) { 
+      // auto cst = stmt.constraint ();
+      // if (auto v = get_eq_or_diseq_to_zero (cst)) {
+      //   if (cst.is_equality ()) {
+      //     m_inv.equality ((*v), domains::nullity_value::null ());
+      //     return;
+      //   }
+      //   else if (cst.is_disequation ()) {
+      //     m_inv.disequality ((*v), domains::nullity_value::null ());
+      //     return;
+      //   }
+      // }
+      // if (auto p = get_unit_bin_eq_or_diseq (cst)) {
+      //   if (cst.is_equality ()) {
+      //     m_inv.equality ((*p).first, (*p).second);
+      //   } else if (cst.is_disequation ()) {
+      //     m_inv.disequality ((*p).first, (*p).second);
+      //   }
+      // }
+    }
+    
+    void visit (callsite_t & stmt) { 
+      // TODO
+      if (auto lhs = stmt.get_lhs_name ()) {
+        m_inv -= *lhs;
+      }
+    }
+    
+    void visit (havoc_t& stmt) {
+        m_inv -= stmt.variable ();
+    }
+    
+    void visit (unreach_t& stmt) { 
+      m_inv = nullity_domain_t::bottom ();
+    }
+  };
   
   } // end namespace
 } // end namespace
