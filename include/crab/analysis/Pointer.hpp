@@ -7,6 +7,7 @@
 
 #include <crab/cfg/Cfg.hpp>
 #include <crab/cfg/VarFactory.hpp>
+#include <crab/analysis/AbsTransformer.hpp>
 #include <crab/analysis/FwdAnalyzer.hpp>
 
 #include <crab/common/types.hpp>
@@ -49,21 +50,24 @@ namespace crab {
       //! Generate points-to constraints from statements using
       //! invariants to resolve offsets.
       template < typename NumInvGen>
-      struct GenBasicBlockCons: public StatementVisitor <varname_t>  {
-        using typename StatementVisitor<varname_t>::z_bin_op_t;
-        using typename StatementVisitor<varname_t>::z_assign_t;
-        using typename StatementVisitor<varname_t>::z_assume_t;
-        using typename StatementVisitor<varname_t>::havoc_t;
-        using typename StatementVisitor<varname_t>::unreach_t;
-        using typename StatementVisitor<varname_t>::z_select_t;
+      struct PtrOffsetCstGen: public AbsTransformerApi <varname_t>  {
+
+        typedef AbsTransformerApi <varname_t> abs_tr_t;
+
+        using typename abs_tr_t::z_bin_op_t;
+        using typename abs_tr_t::z_assign_t;
+        using typename abs_tr_t::z_assume_t;
+        using typename abs_tr_t::havoc_t;
+        using typename abs_tr_t::unreach_t;
+        using typename abs_tr_t::z_select_t;
         
-        using typename StatementVisitor<varname_t>::callsite_t;
-        using typename StatementVisitor<varname_t>::return_t;
-        using typename StatementVisitor<varname_t>::ptr_load_t;
-        using typename StatementVisitor<varname_t>::ptr_store_t;
-        using typename StatementVisitor<varname_t>::ptr_assign_t;
-        using typename StatementVisitor<varname_t>::ptr_object_t;
-        using typename StatementVisitor<varname_t>::ptr_function_t;
+        using typename abs_tr_t::callsite_t;
+        using typename abs_tr_t::return_t;
+        using typename abs_tr_t::ptr_load_t;
+        using typename abs_tr_t::ptr_store_t;
+        using typename abs_tr_t::ptr_assign_t;
+        using typename abs_tr_t::ptr_object_t;
+        using typename abs_tr_t::ptr_function_t;
         
         typedef FunctionDecl<varname_t> FunctionDecl_t;
         typedef boost::unordered_map< varname_t, pointer_var > pt_var_map_t;
@@ -107,7 +111,7 @@ namespace crab {
           return p;
         }
         
-        GenBasicBlockCons (VariableFactory& vfac,
+        PtrOffsetCstGen (VariableFactory& vfac,
                            pta_system* cs, 
                            num_domain_t inv, 
                            NumInvGen* inv_gen, 
@@ -215,10 +219,10 @@ namespace crab {
         { m_inv = m_inv_gen->AnalyzeStmt (stmt, m_inv); }
         
       };
-      
+
       typedef typename NumFwdAnalyzer<CFG,num_domain_t,VariableFactory>::type num_inv_gen_t;
       typedef typename num_inv_gen_t::liveness_t liveness_t;
-      typedef typename GenBasicBlockCons < num_inv_gen_t>::pt_var_map_t pt_var_map_t;
+      typedef typename PtrOffsetCstGen < num_inv_gen_t>::pt_var_map_t pt_var_map_t;
       
       //! for external queries
       typedef boost::unordered_map< varname_t,
@@ -231,7 +235,7 @@ namespace crab {
       
       ptr_map_t m_ptr_map; //! to store results
       
-      typedef GenBasicBlockCons<num_inv_gen_t> gen_bb_cons_t;
+      typedef PtrOffsetCstGen <num_inv_gen_t> const_gen_t;
       
      public:
       
@@ -277,16 +281,16 @@ namespace crab {
         boost::optional<varname_t> func_name;
         if (func_decl)
         {
-          gen_bb_cons_t vis (m_vfac, &m_cs, num_domain_t::top (), 
-                             &It, &m_pt_var_map, func_name);
+          const_gen_t vis (m_vfac, &m_cs, num_domain_t::top (), 
+                           &It, &m_pt_var_map, func_name);
           vis.gen_func_decl_cons (*func_decl);
           func_name = (*func_decl).get_func_name ();
         }
 
         for (auto &b : cfg)
         {
-          gen_bb_cons_t vis (m_vfac, &m_cs, It [b.label ()], 
-                             &It, &m_pt_var_map, func_name);
+          const_gen_t vis (m_vfac, &m_cs, It [b.label ()], 
+                           &It, &m_pt_var_map, func_name);
           for (auto &s: b) { s.accept (&vis); }
         }
       }
