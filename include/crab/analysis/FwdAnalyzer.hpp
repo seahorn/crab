@@ -49,7 +49,6 @@ namespace crab {
       typedef typename AbsTr::abs_dom_t abs_dom_t;
       
       typedef interleaved_fwd_fixpoint_iterator<basic_block_label_t, CFG, abs_dom_t> fwd_iterator_t;
-      typedef typename AbsTr::z_lin_cst_t z_lin_cst_t;
       typedef boost::unordered_map<basic_block_label_t, abs_dom_t> invariant_map_t;    
 
      public:
