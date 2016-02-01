@@ -50,6 +50,7 @@ namespace crab {
     typedef PtrAssign<z_number,VariableName>    z_ptr_assign_t;
     typedef PtrObject<VariableName>             ptr_object_t;
     typedef PtrFunction<VariableName>           ptr_function_t;
+    typedef PtrNull<VariableName>               ptr_null_t;
 
    protected: 
 
@@ -70,6 +71,7 @@ namespace crab {
     virtual void exec (z_ptr_assign_t&) { }
     virtual void exec (ptr_object_t&) { }
     virtual void exec (ptr_function_t&) { }
+    virtual void exec (ptr_null_t&) { }
 
    public: /* visitor api */
 
@@ -90,6 +92,7 @@ namespace crab {
     void visit (z_ptr_assign_t &s) { exec (s); }
     void visit (ptr_object_t &s) { exec (s); }
     void visit (ptr_function_t &s) { exec (s); }
+    void visit (ptr_null_t &s) { exec (s); }
 
   };
 

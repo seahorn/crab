@@ -46,11 +46,12 @@ namespace crab {
     enum VariableType { INT_TYPE, PTR_TYPE, ARR_TYPE, UNK_TYPE};
 
 
-    enum StatementCode { UNDEF = 0, 
-                         BIN_OP = 1, ASSIGN = 21, ASSUME = 22, UNREACH = 23, HAVOC = 24, SELECT = 25,
-                         ARR_INIT = 30, ARR_ASSUME = 31, ARR_STORE = 32, ARR_LOAD = 33,
-                         PTR_LOAD = 40, PTR_STORE = 41, PTR_ASSIGN = 42, PTR_OBJECT = 43, PTR_FUNCTION = 44,
-                         CALLSITE = 50, RETURN = 51 }; 
+    enum StatementCode {
+      UNDEF = 0, 
+      BIN_OP = 1, ASSIGN = 21, ASSUME = 22, UNREACH = 23, HAVOC = 24, SELECT = 25,
+      ARR_INIT = 30, ARR_ASSUME = 31, ARR_STORE = 32, ARR_LOAD = 33,
+      PTR_LOAD = 40, PTR_STORE = 41, PTR_ASSIGN = 42, PTR_OBJECT = 43, PTR_FUNCTION = 44, PTR_NULL=45,
+      CALLSITE = 50, RETURN = 51 }; 
 
     template<typename Number, typename VariableName>
     inline ostream& operator<< (ostream &o, 
@@ -184,6 +185,9 @@ namespace crab {
       }
       bool isPtrWrite () const { 
         return (m_stmt_code == PTR_STORE); 
+      }
+      bool isPtrNull () const { 
+        return (m_stmt_code == PTR_NULL); 
       }
       
      public:
@@ -948,6 +952,41 @@ namespace crab {
         return;
       }
     }; 
+
+    template<class VariableName>
+    class PtrNull: public Statement<VariableName>
+    {
+      //! lhs := null;
+      VariableName m_lhs;
+
+     public:
+      
+      PtrNull (VariableName lhs): 
+          Statement <VariableName> (PTR_NULL), m_lhs (lhs) 
+      {
+        this->m_live.addDef (m_lhs);
+      }
+      
+      VariableName lhs () const { return m_lhs; }
+      
+      virtual void accept(StatementVisitor <VariableName> *v) 
+      {
+        v->visit(*this);
+      }
+      
+      virtual boost::shared_ptr<Statement <VariableName> > clone () const
+      {
+        typedef PtrNull <VariableName> ptr_null_t;
+        return boost::static_pointer_cast< Statement <VariableName>, ptr_null_t>
+            (boost::shared_ptr <ptr_null_t> (new ptr_null_t (m_lhs)));
+      }
+      
+      virtual void write(ostream& o) const
+      {
+        o << m_lhs << " = "  << "NULL";
+        return;
+      }
+    }; 
   
     /*
       Function calls
@@ -1186,6 +1225,7 @@ namespace crab {
       typedef PtrAssign<z_number,VariableName> ptr_assign_t;
       typedef PtrObject<VariableName> ptr_object_t;
       typedef PtrFunction<VariableName> ptr_function_t;
+      typedef PtrNull<VariableName> ptr_null_t;
 
      private:
 
@@ -1206,6 +1246,8 @@ namespace crab {
       typedef boost::shared_ptr<ptr_assign_t> ptr_assign_ptr;
       typedef boost::shared_ptr<ptr_object_t> ptr_object_ptr;    
       typedef boost::shared_ptr<ptr_function_t> ptr_function_ptr;    
+      typedef boost::shared_ptr<ptr_null_t> ptr_null_ptr;    
+
       
       BasicBlockLabel m_bb_id;
       stmt_list_t m_stmts;
@@ -1862,6 +1904,13 @@ namespace crab {
           insert(boost::static_pointer_cast< statement_t, ptr_function_t >
                  (ptr_function_ptr (new ptr_function_t (lhs, func))));
       }
+
+      void ptr_null (VariableName lhs) 
+      {
+        if (m_track_prec >= PTR)
+          insert(boost::static_pointer_cast< statement_t, ptr_null_t >
+                 (ptr_null_ptr (new ptr_null_t (lhs))));
+      }
       
       friend ostream& operator<<(ostream &o, const basic_block_t &b)
       {
@@ -1896,6 +1945,7 @@ namespace crab {
       typedef PtrAssign<z_number,VariableName> ptr_assign_t;
       typedef PtrObject<VariableName> ptr_object_t;
       typedef PtrFunction<VariableName> ptr_function_t;
+      typedef PtrNull<VariableName> ptr_null_t;
       
       // Only implementation for basic statements is required
       
@@ -1917,6 +1967,7 @@ namespace crab {
       virtual void visit (ptr_assign_t&) { };
       virtual void visit (ptr_object_t&) { };
       virtual void visit (ptr_function_t&) { };
+      virtual void visit (ptr_null_t&) { };
       
       virtual ~StatementVisitor () { }
     }; 
