@@ -45,10 +45,7 @@
 #ifndef IKOS_FWD_FIXPOINT_ITERATORS_HPP
 #define IKOS_FWD_FIXPOINT_ITERATORS_HPP
 
-#include <utility>
-#include <iostream>
 #include <map>
-#include <climits>
 #include <boost/shared_ptr.hpp>
 #include <crab/common/types.hpp>
 #include <crab/iterators/wto.hpp>
@@ -79,7 +76,7 @@ namespace ikos {
     typedef wto< NodeName, CFG > wto_t;
     typedef interleaved_fwd_fixpoint_iterator_impl::wto_iterator< NodeName, CFG, AbstractValue > wto_iterator_t;
     typedef interleaved_fwd_fixpoint_iterator_impl::wto_processor< NodeName, CFG, AbstractValue > wto_processor_t;
-    typedef crab::iterators::Thresholds<typename AbstractValue::number_t> thresholds_t;
+    typedef crab::iterators::Thresholds<z_number> thresholds_t;
     
   private:
     CFG _cfg;
@@ -225,7 +222,7 @@ namespace ikos {
           auto prev_nodes = this->_iterator->_cfg.prev_nodes(node);
           pre = AbstractValue::bottom();
           for (NodeName prev : prev_nodes) 
-            pre |= this->_iterator->get_post(prev);  //pre = pre | this->_iterator->get_post(prev); 
+            pre |= this->_iterator->get_post(prev);  
           this->_iterator->set_pre(node, pre);
         }
         this->_iterator->set_post(node, this->_iterator->analyze(node, pre));
@@ -314,8 +311,6 @@ namespace ikos {
       
     }; // class wto_processor
   
-  } // interleaved_fwd_fixpoint_iterator_impl
-  
+  } // interleaved_fwd_fixpoint_iterator_impl  
 } // namespace ikos
-
 #endif // IKOS_FWD_FIXPOINT_ITERATORS
