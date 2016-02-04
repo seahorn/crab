@@ -225,7 +225,8 @@ namespace ikos {
             pre |= this->_iterator->get_post(prev);  
           this->_iterator->set_pre(node, pre);
         }
-        this->_iterator->set_post(node, this->_iterator->analyze(node, pre));
+        this->_iterator->analyze(node, pre);
+        this->_iterator->set_post(node, pre);
       }
       
       void visit(wto_cycle_t& cycle) {
@@ -241,7 +242,9 @@ namespace ikos {
         for(unsigned int iteration = 1; ; ++iteration) {
           // Increasing iteration sequence with widening
           this->_iterator->set_pre(head, pre);
-          this->_iterator->set_post(head, this->_iterator->analyze(head, pre));
+          AbstractValue post(pre); 
+          this->_iterator->analyze(head, post);
+          this->_iterator->set_post(head, post);
           for (typename wto_cycle_t::iterator it = cycle.begin(); it != cycle.end(); ++it) {
             it->accept(this);
           }
@@ -259,7 +262,9 @@ namespace ikos {
         }
         for(unsigned int iteration = 1; ; ++iteration) {
           // Decreasing iteration sequence with narrowing
-          this->_iterator->set_post(head, this->_iterator->analyze(head, pre));
+          AbstractValue post(pre); 
+          this->_iterator->analyze(head, post);
+          this->_iterator->set_post(head, post);
           for (typename wto_cycle_t::iterator it = cycle.begin(); it != cycle.end(); ++it) {
             it->accept(this);
           }

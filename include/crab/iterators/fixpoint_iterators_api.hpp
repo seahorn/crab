@@ -47,7 +47,7 @@ namespace ikos {
   class forward_fixpoint_iterator {
 
   public:
-    virtual AbstractValue analyze(NodeName, AbstractValue) = 0;
+    virtual void analyze(NodeName, AbstractValue&) = 0;
     
     virtual void process_pre(NodeName, AbstractValue) = 0;
     

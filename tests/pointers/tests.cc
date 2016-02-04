@@ -175,10 +175,11 @@ cfg_t bar (VariableFactory &vfac)
   return cfg;
 }
 
+template<typename NumAbsDom>
 void run (vector<cfg_t> cfgs, VariableFactory& vfac)
 {
 
-  Pointer<cfg_t, VariableFactory> pta (vfac);
+  Pointer<cfg_t, VariableFactory, NumAbsDom> pta (vfac);
   for (auto cfg: cfgs)
   {
     cfg.simplify ();
@@ -199,7 +200,7 @@ int main ()
     VariableFactory vfac;
     vector<cfg_t> cfgs;
     cfgs.push_back (cfg1 (vfac));
-    run (cfgs, vfac);
+    run<interval_domain_t> (cfgs, vfac);
   }
 
   {
@@ -207,7 +208,7 @@ int main ()
     VariableFactory vfac;
     vector<cfg_t> cfgs;
     cfgs.push_back (cfg2 (vfac));
-    run (cfgs, vfac);
+    run<interval_domain_t> (cfgs, vfac);
   }
 
   {
@@ -215,7 +216,7 @@ int main ()
     VariableFactory vfac;
     vector<cfg_t> cfgs;
     cfgs.push_back (cfg3 (vfac));
-    run (cfgs, vfac);
+    run<sdbm_domain_t> (cfgs, vfac);
   }
 
   {
@@ -224,7 +225,7 @@ int main ()
     vector<cfg_t> cfgs;
     cfgs.push_back (foo (vfac));
     cfgs.push_back (bar (vfac));
-    run (cfgs, vfac);
+    run<sdbm_domain_t> (cfgs, vfac);
   }
   
   return 0;

@@ -139,7 +139,7 @@ namespace crab {
 
    protected:
 
-    abs_dom_t m_inv;
+    abs_dom_t& m_inv;
 
     template<typename T>
     void apply (abs_dom_t& inv, binary_operation_t op,
@@ -161,16 +161,14 @@ namespace crab {
     
    public:
 
-    abs_dom_t inv() const { return m_inv; }
+    NumAbsTransformer (abs_dom_t& inv): 
+        m_inv (inv) { }
+    
+    NumAbsTransformer (abs_dom_t& inv, SumTable*, CallCtxTable*): 
+        m_inv (inv) { }
 
-   public:
-    
-    NumAbsTransformer (abs_dom_t inv): 
-        m_inv (inv) { }
-    
-    NumAbsTransformer (abs_dom_t inv, SumTable*, CallCtxTable*): 
-        m_inv (inv) { }
-    
+    abs_dom_t& inv () { return m_inv; }
+
     void exec (z_bin_op_t& stmt)  {
       
       z_lin_exp_t op1 = stmt.left ();
@@ -314,8 +312,6 @@ namespace crab {
 
    public:
 
-    abs_dom_t inv() const { return this->m_inv; }
-
     // The code is a bit more complicated because it works even if
     // callsite and callee's signature variables are not disjoint
     static void reuse_summary (abs_dom_t& caller, 
@@ -353,16 +349,18 @@ namespace crab {
 
    public:
 
-    BottomUpSummNumAbsTransformer (abs_dom_t inv, 
+    BottomUpSummNumAbsTransformer (abs_dom_t& inv, 
                                    SumTable* sum_tbl): 
         num_abs_transform_t(inv), 
         m_sum_tbl (sum_tbl) { }
     
-    BottomUpSummNumAbsTransformer (abs_dom_t inv, 
+    BottomUpSummNumAbsTransformer (abs_dom_t& inv, 
                                    SumTable* sum_tbl, CallCtxTable*): 
         num_abs_transform_t(inv), 
         m_sum_tbl (sum_tbl) { }
-    
+
+    abs_dom_t& inv () { return this->m_inv; }    
+
     void exec (z_bin_op_t& stmt) { num_abs_transform_t::exec (stmt); }
     void exec (z_select_t& stmt) { num_abs_transform_t::exec (stmt); }
     void exec (z_assign_t& stmt) { num_abs_transform_t::exec (stmt); }
@@ -445,17 +443,15 @@ namespace crab {
     CallCtxTable* m_call_tbl;
 
    public:
-
-    abs_dom_t inv() const { return this->m_inv; }
-
-   public:
     
-    TopDownSummNumAbsTransformer (abs_dom_t inv, 
+    TopDownSummNumAbsTransformer (abs_dom_t& inv, 
                                   SumTable* sum_tbl,
                                   CallCtxTable* call_tbl): 
         num_abs_transform_t(inv), 
         m_sum_tbl (sum_tbl),
         m_call_tbl (call_tbl) { }
+
+    abs_dom_t& inv () { return this->m_inv; }    
     
     void exec (z_bin_op_t& stmt) { num_abs_transform_t::exec (stmt); }
     void exec (z_select_t& stmt) { num_abs_transform_t::exec (stmt); }
@@ -561,7 +557,7 @@ namespace crab {
     
     typedef domains::nullity_domain <VariableName> nullity_domain_t;
     
-    nullity_domain_t m_inv;
+    nullity_domain_t& m_inv;
     
     // optional<std::pair<VariableName, VariableName> >
     // get_unit_bin_eq_or_diseq (z_lin_cst_t cst) {
@@ -603,10 +599,10 @@ namespace crab {
     
    public:
     
-    NullityAbsTransformer (nullity_domain_t init, SumTable*, CallCtxTable*):
+    NullityAbsTransformer (nullity_domain_t& init, SumTable*, CallCtxTable*):
         m_inv (init) { }
-    
-    nullity_domain_t inv() const { return m_inv; }
+
+    nullity_domain_t& inv () { return m_inv; }
 
     void visit (ptr_null_t & stmt) { 
       m_inv.set (stmt.lhs (), domains::nullity_value::null ());
@@ -667,7 +663,7 @@ namespace crab {
     }
     
     void visit (havoc_t& stmt) {
-        m_inv -= stmt.variable ();
+      m_inv -= stmt.variable ();
     }
     
     void visit (unreach_t& stmt) { 

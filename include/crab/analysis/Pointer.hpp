@@ -12,7 +12,7 @@
 
 #include <crab/common/types.hpp>
 #include <crab/domains/pta.hpp>
-#include <crab/domains/intervals.hpp>
+#include <crab/domains/intervals.hpp> 
 #include <crab/domains/discrete_domains.hpp>
 
 namespace crab {
@@ -41,10 +41,10 @@ namespace crab {
     };
   
     //! Run a flow-insensitive pointer analysis for a set of CFGs.
-    template<typename CFG, typename VariableFactory>
+    template<typename CFG, typename VariableFactory, typename NumDom>
     class Pointer {
+
       typedef typename CFG::varname_t varname_t;
-      typedef interval_domain <z_number, varname_t> num_domain_t;
       typedef interval <z_number> interval_t;
       
       //! Generate points-to constraints from statements using
@@ -74,7 +74,7 @@ namespace crab {
         
         VariableFactory& m_vfac;
         pta_system* m_cs; 
-        num_domain_t m_inv;
+        NumDom m_inv;
         NumInvGen* m_inv_gen; 
         pt_var_map_t*m_pt_map; 
         boost::optional<varname_t> m_func_name; 
@@ -112,11 +112,11 @@ namespace crab {
         }
         
         PtrOffsetCstGen (VariableFactory& vfac,
-                           pta_system* cs, 
-                           num_domain_t inv, 
-                           NumInvGen* inv_gen, 
-                           pt_var_map_t* pt_map,
-                           boost::optional<varname_t> func_name): 
+                         pta_system* cs, 
+                         NumDom inv, 
+                         NumInvGen* inv_gen, 
+                         pt_var_map_t* pt_map,
+                         boost::optional<varname_t> func_name): 
             m_vfac (vfac), m_cs (cs), m_inv (inv), m_inv_gen (inv_gen), 
             m_pt_map (pt_map), m_func_name (func_name)
         { }
@@ -200,27 +200,40 @@ namespace crab {
           (*m_cs) += (lhs + size) << rhs;          
         }
         
-        void visit (z_bin_op_t& stmt) 
-        { m_inv = m_inv_gen->AnalyzeStmt (stmt, m_inv); }
+        void visit (z_bin_op_t& stmt) {
+          typedef typename NumInvGen::abs_tr_ptr abs_tr_ptr;          
+          abs_tr_ptr vis = m_inv_gen->get_abs_transformer (m_inv);
+          stmt.accept (&*vis);
+        }
         
-        void visit (z_assign_t& stmt)
-        { m_inv = m_inv_gen->AnalyzeStmt (stmt, m_inv); }
+        void visit (z_assign_t& stmt) {
+          auto vis = m_inv_gen->get_abs_transformer (m_inv);
+          stmt.accept (&*vis);
+        }
         
-        void visit (z_assume_t& stmt)
-        { m_inv = m_inv_gen->AnalyzeStmt (stmt, m_inv); }
+        void visit (z_assume_t& stmt) {
+          auto vis = m_inv_gen->get_abs_transformer (m_inv);
+          stmt.accept (&*vis);
+        }
         
-        void visit (havoc_t& stmt)
-        { m_inv = m_inv_gen->AnalyzeStmt (stmt, m_inv); }
+        void visit (havoc_t& stmt) {
+          auto vis = m_inv_gen->get_abs_transformer (m_inv);
+          stmt.accept (&*vis);
+        }
         
-        void visit (unreach_t& stmt)
-        { m_inv = m_inv_gen->AnalyzeStmt (stmt, m_inv); }
+        void visit (unreach_t& stmt) {
+          auto vis = m_inv_gen->get_abs_transformer (m_inv);
+          stmt.accept (&*vis);
+        }
         
-        void visit (z_select_t& stmt) 
-        { m_inv = m_inv_gen->AnalyzeStmt (stmt, m_inv); }
+        void visit (z_select_t& stmt) {
+          auto vis = m_inv_gen->get_abs_transformer (m_inv);
+          stmt.accept (&*vis);
+        }
         
       };
 
-      typedef typename NumFwdAnalyzer<CFG,num_domain_t,VariableFactory>::type num_inv_gen_t;
+      typedef typename NumFwdAnalyzer<CFG,NumDom,VariableFactory>::type num_inv_gen_t;
       typedef typename num_inv_gen_t::liveness_t liveness_t;
       typedef typename PtrOffsetCstGen < num_inv_gen_t>::pt_var_map_t pt_var_map_t;
       
@@ -274,14 +287,14 @@ namespace crab {
         }
 
         num_inv_gen_t It (cfg, m_vfac, live);
-        It.Run (num_domain_t::top ());
+        It.Run (NumDom::top ());
         
         // 2) Gen points-to constraints
         auto func_decl = cfg.get_func_decl ();
         boost::optional<varname_t> func_name;
         if (func_decl)
         {
-          const_gen_t vis (m_vfac, &m_cs, num_domain_t::top (), 
+          const_gen_t vis (m_vfac, &m_cs, NumDom::top (), 
                            &It, &m_pt_var_map, func_name);
           vis.gen_func_decl_cons (*func_decl);
           func_name = (*func_decl).get_func_name ();
@@ -338,8 +351,8 @@ namespace crab {
       }
     }; 
   
-    template <typename CFG, typename VariableFactory >
-    ostream& operator << (ostream& o, const Pointer<CFG, VariableFactory> &pta)
+    template <typename CFG, typename VariableFactory, typename NumAbsDom>
+    ostream& operator << (ostream& o, const Pointer<CFG, VariableFactory, NumAbsDom> &pta)
     {
       pta.write (o);
       return o;

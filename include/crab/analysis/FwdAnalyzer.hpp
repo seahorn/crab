@@ -44,10 +44,17 @@ namespace crab {
                                                   CFG, 
                                                   typename AbsTr::abs_dom_t > 
     {
+
+     public:
+
+      typedef CFG cfg_t;
       typedef typename CFG::basic_block_label_t basic_block_label_t;
       typedef typename CFG::varname_t varname_t;
       typedef typename AbsTr::abs_dom_t abs_dom_t;
+      typedef boost::shared_ptr<AbsTr> abs_tr_ptr;
       
+     private:
+
       typedef interleaved_fwd_fixpoint_iterator<basic_block_label_t, CFG, abs_dom_t> fwd_iterator_t;
       typedef boost::unordered_map<basic_block_label_t, abs_dom_t> invariant_map_t;    
 
@@ -98,14 +105,12 @@ namespace crab {
 
       //! Given a basic block and the invariant at the entry it produces
       //! the invariant at the exit of the block.
-      abs_dom_t analyze (basic_block_label_t node, abs_dom_t pre) 
+      void analyze (basic_block_label_t node, abs_dom_t &inv) 
       { 
         auto &b = this->get_cfg().get_node (node);
-        AbsTr vis (pre, m_summ_tbl, m_call_tbl);
+        AbsTr vis (inv, m_summ_tbl, m_call_tbl);
         for (auto &s : b) { s.accept (&vis); }
-        abs_dom_t post = vis.inv ();
-        prune_dead_variables (post, node);
-        return post;
+        prune_dead_variables (inv, node);
       } 
       
       void process_pre (basic_block_label_t node, abs_dom_t inv) 
@@ -191,6 +196,13 @@ namespace crab {
         this->run (inv);         
       }      
 
+      //! Propagate inv through statements
+      abs_tr_ptr get_abs_transformer (abs_dom_t &inv) {
+        // pass inv by ref to avoid copies
+        abs_tr_ptr vis (new AbsTr (inv, m_summ_tbl, m_call_tbl));        
+        return vis;
+      }
+
       //! Return the invariants that hold at the entry of b
       abs_dom_t operator[] (basic_block_label_t b) const {
         return get_pre (b);
@@ -213,15 +225,6 @@ namespace crab {
         else 
           return it->second;      
       }
-
-      //! Propagate invariants at the statement level
-      template < typename Statement >
-      abs_dom_t AnalyzeStmt (Statement s, abs_dom_t pre) {
-        AbsTr vis (pre, m_summ_tbl, m_call_tbl); 
-        vis.visit (s);
-        return vis.inv ();            
-      }
-
     }; 
 
     //! Specialized type for a numerical forward analyzer
