@@ -616,7 +616,7 @@ namespace crab {
         term_set_t& get_ccpar (term_id_t t) {
           auto it = _ccpar_map.find (t);
           if (it == _ccpar_map.end ()) {
-            auto res = _ccpar_map.insert (make_pair (t, term_set_t ()));
+            auto res = _ccpar_map.insert (std::make_pair (t, term_set_t ()));
             return (res.first)->second;
           } else {
             return it->second;
