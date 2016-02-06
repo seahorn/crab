@@ -25,12 +25,15 @@ cfg_t cfg1 (VariableFactory &vfac)
   // definining program variables
   varname_t p = vfac ["p"];
   varname_t q = vfac ["q"];
-  z_var nd (vfac ["nd"]);
+  varname_t r = vfac ["r"];
+  varname_t s = vfac ["s"];
   // adding statements
   b0.new_object (p, 1);
-  b0.havoc (nd.name ());
-  b1.assume (nd >= 1);
-  b2.assume (nd <= 0);
+  b0.havoc (r);
+  b0.havoc (s);
+  b1.ptr_assume (ptr_cst_t::mk_eq_null (r));
+  b1.ptr_assume (ptr_cst_t::mk_eq (r,s));
+  b2.ptr_assume (ptr_cst_t::mk_diseq (r,s));
   b2.new_object (q, 2);
   b2.ptr_assign (p, q, z_number(4));
   return cfg;

@@ -47,11 +47,17 @@ namespace crab {
 
 
     enum StatementCode {
-      UNDEF = 0, 
+      UNDEF = 0,
+      // integers
       BIN_OP = 1, ASSIGN = 21, ASSUME = 22, UNREACH = 23, HAVOC = 24, SELECT = 25,
+      // arrays 
       ARR_INIT = 30, ARR_ASSUME = 31, ARR_STORE = 32, ARR_LOAD = 33,
-      PTR_LOAD = 40, PTR_STORE = 41, PTR_ASSIGN = 42, PTR_OBJECT = 43, PTR_FUNCTION = 44, PTR_NULL=45,
-      CALLSITE = 50, RETURN = 51 }; 
+      // pointers
+      PTR_LOAD = 40, PTR_STORE = 41, PTR_ASSIGN = 42, 
+      PTR_OBJECT = 43, PTR_FUNCTION = 44, PTR_NULL=45, PTR_ASSUME = 46,
+      // functions calls
+      CALLSITE = 50, RETURN = 51 
+    }; 
 
     template<typename Number, typename VariableName>
     inline ostream& operator<< (ostream &o, 
@@ -188,6 +194,9 @@ namespace crab {
       }
       bool isPtrNull () const { 
         return (m_stmt_code == PTR_NULL); 
+      }
+      bool isPtrAssume () const { 
+        return (m_stmt_code == PTR_ASSUME); 
       }
       
      public:
@@ -987,6 +996,54 @@ namespace crab {
         return;
       }
     }; 
+
+    template<class VariableName>
+    class PtrAssume: public Statement<VariableName>
+    {
+     public:
+
+      typedef pointer_constraint<VariableName> ptr_cst_t;
+
+     private:
+
+      ptr_cst_t m_cst;
+      
+     public:
+      
+      PtrAssume (ptr_cst_t cst): 
+          Statement <VariableName> (PTR_ASSUME),
+          m_cst (cst) 
+      {
+        if (!cst.is_tautology () && !cst.is_contradiction ()) {
+          if (cst.is_unary ()) {
+            this->m_live.addUse (cst.lhs ());
+          } else {
+            this->m_live.addUse (cst.lhs ());
+            this->m_live.addUse (cst.rhs ());
+          }
+        }
+      }
+      
+      ptr_cst_t constraint () const { return m_cst; }
+      
+      virtual void accept(StatementVisitor <VariableName> *v) 
+      {
+        v->visit(*this);
+      }
+      
+      virtual boost::shared_ptr<Statement <VariableName> > clone () const
+      {
+        typedef PtrAssume <VariableName> ptr_assume_t;
+        return boost::static_pointer_cast< Statement <VariableName>, ptr_assume_t>
+            (boost::shared_ptr <ptr_assume_t> (new ptr_assume_t (m_cst)));
+      }
+      
+      virtual void write(ostream& o) const
+      {
+        o << m_cst;
+        return;
+      }
+    }; 
   
     /*
       Function calls
@@ -1226,6 +1283,7 @@ namespace crab {
       typedef PtrObject<VariableName> ptr_object_t;
       typedef PtrFunction<VariableName> ptr_function_t;
       typedef PtrNull<VariableName> ptr_null_t;
+      typedef PtrAssume<VariableName> ptr_assume_t;
 
      private:
 
@@ -1247,6 +1305,7 @@ namespace crab {
       typedef boost::shared_ptr<ptr_object_t> ptr_object_ptr;    
       typedef boost::shared_ptr<ptr_function_t> ptr_function_ptr;    
       typedef boost::shared_ptr<ptr_null_t> ptr_null_ptr;    
+      typedef boost::shared_ptr<ptr_assume_t> ptr_assume_ptr;    
 
       
       BasicBlockLabel m_bb_id;
@@ -1911,6 +1970,13 @@ namespace crab {
           insert(boost::static_pointer_cast< statement_t, ptr_null_t >
                  (ptr_null_ptr (new ptr_null_t (lhs))));
       }
+
+      void ptr_assume (pointer_constraint<VariableName> cst) 
+      {
+        if (m_track_prec >= PTR)
+          insert(boost::static_pointer_cast< statement_t, ptr_assume_t >
+                 (ptr_assume_ptr (new ptr_assume_t (cst))));
+      }
       
       friend ostream& operator<<(ostream &o, const basic_block_t &b)
       {
@@ -1946,6 +2012,7 @@ namespace crab {
       typedef PtrObject<VariableName> ptr_object_t;
       typedef PtrFunction<VariableName> ptr_function_t;
       typedef PtrNull<VariableName> ptr_null_t;
+      typedef PtrAssume<VariableName> ptr_assume_t;
       
       // Only implementation for basic statements is required
       
@@ -1968,6 +2035,7 @@ namespace crab {
       virtual void visit (ptr_object_t&) { };
       virtual void visit (ptr_function_t&) { };
       virtual void visit (ptr_null_t&) { };
+      virtual void visit (ptr_assume_t&) { };
       
       virtual ~StatementVisitor () { }
     }; 

@@ -57,6 +57,7 @@ namespace crab {
     typedef PtrObject<VariableName>             ptr_object_t;
     typedef PtrFunction<VariableName>           ptr_function_t;
     typedef PtrNull<VariableName>               ptr_null_t;
+    typedef PtrAssume<VariableName>             ptr_assume_t;
 
    protected: 
 
@@ -78,6 +79,7 @@ namespace crab {
     virtual void exec (ptr_object_t&) { }
     virtual void exec (ptr_function_t&) { }
     virtual void exec (ptr_null_t&) { }
+    virtual void exec (ptr_assume_t&) { }
 
    public: /* visitor api */
 
@@ -99,6 +101,7 @@ namespace crab {
     void visit (ptr_object_t &s) { exec (s); }
     void visit (ptr_function_t &s) { exec (s); }
     void visit (ptr_null_t &s) { exec (s); }
+    void visit (ptr_assume_t &s) { exec (s); }
 
   };
 
@@ -554,42 +557,12 @@ namespace crab {
     using typename abs_tr_t::ptr_object_t;
     using typename abs_tr_t::ptr_function_t;
     using typename abs_tr_t::ptr_null_t;
+    using typename abs_tr_t::ptr_assume_t;
     
     typedef domains::nullity_domain <VariableName> nullity_domain_t;
     
     nullity_domain_t& m_inv;
     
-    // optional<std::pair<VariableName, VariableName> >
-    // get_unit_bin_eq_or_diseq (z_lin_cst_t cst) {
-    //   if (cst.is_equality () || cst.is_disequation ()) {
-    //     if (cst.size () == 2 && cst.constant () == 0) {
-    //       auto it = cst.begin ();
-    //       auto nx = it->first;
-    //       auto vx = it->second;
-    //       ++it;
-    //       assert (it != cst.end ());
-    //       auto ny = it->first;
-    //       auto vy = it->second;
-    //       if (nx == (ny * -1 )) {
-    //         return std::make_pair(vx.name(), vy.name());
-    //       } 
-    //     }
-    //   } 
-    //   return optional<std::pair<VariableName, VariableName> > ();
-    // }
-    
-    // optional<VariableName>
-    // get_eq_or_diseq_to_zero (z_lin_cst_t cst) {
-    //   if (cst.is_equality () || cst.is_disequation ()) {
-    //     if (cst.size () == 1 && cst.constant () == 0) {
-    //       auto it = cst.begin ();
-    //        auto vx = it->second;
-    //        return vx.name();
-    //     }
-    //   } 
-    //   return optional<VariableName> ();
-    // }
-      
    public:
     
     // for FwdAnalyzer.hpp
@@ -628,31 +601,30 @@ namespace crab {
       m_inv.equality (stmt.lhs (), domains::nullity_value::non_null ());
     }
     
-    // TODO: analysis of constraints p {==,!=} null and p {==,!=} q
-    //       but only if p,q are pointers. We could use the language
-    //       of z_assume_t (see below) to express these constraints
-    //       but it would also include constraints involving
-    //       non-pointer variables.
-    
-    void visit (z_assume_t& stmt) { 
-      // auto cst = stmt.constraint ();
-      // if (auto v = get_eq_or_diseq_to_zero (cst)) {
-      //   if (cst.is_equality ()) {
-      //     m_inv.equality ((*v), domains::nullity_value::null ());
-      //     return;
-      //   }
-      //   else if (cst.is_disequation ()) {
-      //     m_inv.disequality ((*v), domains::nullity_value::null ());
-      //     return;
-      //   }
-      // }
-      // if (auto p = get_unit_bin_eq_or_diseq (cst)) {
-      //   if (cst.is_equality ()) {
-      //     m_inv.equality ((*p).first, (*p).second);
-      //   } else if (cst.is_disequation ()) {
-      //     m_inv.disequality ((*p).first, (*p).second);
-      //   }
-      // }
+    void visit (ptr_assume_t& stmt) { 
+      auto cst = stmt.constraint ();
+      
+      if (cst.is_tautology ()) {
+        return;
+      } 
+
+      if (cst.is_contradiction ()) {
+        m_inv = nullity_domain_t::bottom ();
+        return;
+      }
+
+      if (cst.is_unary ()) {
+        if (cst.is_equality ()) 
+          m_inv.equality (cst.lhs (), domains::nullity_value::null ());
+        else // cst.is_disequality ();
+          m_inv.disequality (cst.lhs (), domains::nullity_value::null ());
+      } else { 
+        assert (cst.is_binary ());
+        if (cst.is_equality ()) 
+          m_inv.equality (cst.lhs (), cst.rhs ());
+        else  // cst.is_disequality ();
+          m_inv.disequality (cst.lhs (), cst.rhs ());
+      }
     }
     
     void visit (callsite_t & stmt) { 

@@ -51,6 +51,7 @@ namespace crab {
     typedef linear_expression<z_number, varname_t> z_lin_t;
     typedef linear_constraint<z_number, varname_t> z_lin_cst_t;
     typedef linear_constraint_system<z_number, varname_t> z_lin_cst_sys_t;
+    typedef pointer_constraint <varname_t> ptr_cst_t;
     typedef interval<z_number> z_interval_t;
     typedef bound<z_number> z_bound_t;
     // Numerical domains

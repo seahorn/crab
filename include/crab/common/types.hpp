@@ -114,7 +114,148 @@ namespace crab {
   template<typename T>
   inline boost::optional<T> convOp (binary_operation_t op); 
 
-}
+
+  // toy language for pointer constraints
+  typedef enum  { PTR_EQUALITY, PTR_DISEQUALITY } ptr_cst_kind_t;  
+
+  template<typename VariableName>
+  class pointer_constraint {
+   public:
+
+    typedef pointer_constraint <VariableName> ptr_cst_t;
+    typedef boost::optional<VariableName> opt_var_t;
+
+   private:
+
+    opt_var_t _lhs; 
+    opt_var_t _rhs;
+    ptr_cst_kind_t _kind;
+
+    /* 
+       We can only express constraints of the form p {==,!=} q where
+       p,q can be either null or a variable.
+
+       !lhs, !rhs, kind == PTR_EQUALITY    -> null == null -> true
+       !lhs, !rhs, kind == PTR_DISEQUALITY -> null != null -> false
+       !lhs, rhs, kind == PTR_EQUALITY     -> *rhs == null
+       lhs, !rhs, kind == PTR_EQUALITY     -> *lhs == null
+       !lhs, rhs, kind == PTR_DISEQUALITY  -> *rhs != null
+       lhs, !rhs, kind == PTR_DISEQUALITY  -> *lhs != nul
+       lhs, rhs, kind == PTR_EQUALITY      -> *lhs == *rhs
+       lhs, rhs, kind == PTR_DISEQUALITY   -> *lhs != *rhs
+    */
+
+    pointer_constraint (opt_var_t lhs, opt_var_t rhs, ptr_cst_kind_t kind):
+        _lhs (lhs), _rhs (rhs), _kind (kind) {
+      if (!_lhs && _rhs){ // normalize
+        std::swap (_lhs,_rhs);
+      }
+    }
+
+   public:
+
+    pointer_constraint () : _kind (PTR_EQUALITY) { }
+    
+    // return true iff null != null
+    bool is_contradiction () const {
+      return (!_lhs && !_rhs && _kind == PTR_DISEQUALITY);
+    }
+
+    // return true iff null == null
+    bool is_tautology () const {
+      return (!_lhs && !_rhs && _kind == PTR_EQUALITY);
+    }
+
+    bool is_equality () const {
+      return (_kind == PTR_EQUALITY);
+    }
+
+    bool is_disequality () const {
+      return (_kind == PTR_DISEQUALITY);
+    }
+
+    // return true iff  p == null or p != null
+    bool is_unary () const {
+      return (_lhs && !_rhs);
+    }
+
+    // return true iff p == q or p != q
+    bool is_binary () const {
+      return (_lhs && _rhs);
+    }
+
+    VariableName lhs () const {
+      if (!_lhs) CRAB_ERROR ("pointer constraint lhs is null");
+      return *_lhs;
+    }
+
+    VariableName rhs () const {
+      if (!_rhs) CRAB_ERROR ("pointer constraint rhs is null");
+      return *_rhs;
+    }
+
+    static ptr_cst_t mk_true () {
+      return ptr_cst_t ();
+    }
+
+    static ptr_cst_t mk_false () {
+      return ptr_cst_t (opt_var_t (), opt_var_t (), PTR_DISEQUALITY);
+    }
+
+    static ptr_cst_t mk_eq_null (VariableName v)  {
+      return ptr_cst_t (opt_var_t (v), opt_var_t (), PTR_EQUALITY);
+    }
+
+    static ptr_cst_t mk_diseq_null (VariableName v) {
+      return ptr_cst_t (opt_var_t (v), opt_var_t (), PTR_DISEQUALITY);
+    }
+
+    static ptr_cst_t mk_eq (VariableName v1, VariableName v2)  {
+      return ptr_cst_t (opt_var_t (v1), opt_var_t (v2), PTR_EQUALITY);
+    }
+
+    static ptr_cst_t mk_diseq (VariableName v1, VariableName v2)  {
+      return ptr_cst_t (opt_var_t (v1), opt_var_t (v2), PTR_DISEQUALITY);
+    }
+
+    void write (std::ostream& o) const {
+      if (is_contradiction () ) {
+        o << "false";
+      } else if (is_tautology ()) {
+        o << "true";
+      } else {
+        assert (_lhs);
+
+        o << lhs ();
+        
+        if (_kind == PTR_EQUALITY) 
+          o << " == ";
+        else 
+          o << " != ";
+        
+        if (!_rhs)
+          o << "NULL";
+        else 
+          o <<  rhs ();
+      }
+    }
+    
+    friend std::ostream& operator<<(std::ostream& o, const ptr_cst_kind_t& k) {
+      if (k == PTR_EQUALITY ) 
+        o << " == ";
+      else 
+        o << " != ";
+      return o;
+    }
+    
+    friend std::ostream& operator<<(std::ostream& o, const ptr_cst_t& cst) {
+      cst.write (o);
+      return o;
+    }
+
+  };
+
+} // end namespace crab
 
 namespace ikos 
 {
