@@ -149,6 +149,46 @@ namespace crab {
       }
     };
 
+    struct DebugInfo {
+      
+      std::string m_file;
+      int m_line;
+      int m_col;
+      
+      DebugInfo ():
+          m_file (""), m_line (-1), m_col (-1) { }
+
+      DebugInfo (std::string file, unsigned line, unsigned col):
+          m_file (file), m_line (line), m_col (col) { }
+      
+      bool operator<(const DebugInfo& other) const {
+        return (m_file < other.m_file && 
+                m_line < other.m_line && 
+                m_col < other.m_col);
+      }
+
+      bool operator==(const DebugInfo& other) const {
+        return (m_file == other.m_file && 
+                m_line == other.m_line && 
+                m_col == other.m_col);
+      }
+
+      bool has_debug  () const {
+        return ((m_file != "") && (m_line >= 0) && (m_col >= 0));
+      }
+
+      void write (ostream&o) const {
+        o << "File  : " << m_file << "\n"
+          << "Line  : " << m_line  << "\n" 
+          << "Column: " << m_col << "\n";
+      }
+    };
+
+    inline std::ostream& operator<<(std::ostream& o, const DebugInfo& l) {
+      l.write (o);
+      return o;
+    }
+
     template< typename VariableName>
     struct StatementVisitor;
   
@@ -162,8 +202,12 @@ namespace crab {
      protected:
       live_t m_live;
       StatementCode m_stmt_code;
+      DebugInfo m_dbg_info;
 
-      Statement (StatementCode code = UNDEF): m_stmt_code (code) { }
+      Statement (StatementCode code = UNDEF,
+                 DebugInfo debug_info = DebugInfo ()): 
+          m_stmt_code (code),
+          m_dbg_info (debug_info) { }
 
      public:
       
@@ -210,7 +254,9 @@ namespace crab {
      public:
       
       live_t getLive() const { return m_live; }
-      
+
+      DebugInfo getDebugInfo () const { return m_dbg_info; }
+
       virtual void accept(StatementVisitor< VariableName> *) = 0;
       
       virtual void write(ostream& o) const = 0 ;
@@ -253,8 +299,9 @@ namespace crab {
       BinaryOp (variable_t lhs, 
                 binary_operation_t op, 
                 linear_expression_t op1, 
-                linear_expression_t op2): 
-          Statement <VariableName> (BIN_OP),
+                linear_expression_t op2,
+                DebugInfo debug_info = DebugInfo ()): 
+          Statement <VariableName> (BIN_OP, debug_info),
           m_lhs(lhs), m_op(op), m_op1(op1), m_op2(op2) 
       { 
         this->m_live.addDef (m_lhs.name());
@@ -525,11 +572,12 @@ namespace crab {
      private:
       
       linear_constraint_t m_cst;
-      
+
      public:
       
-      Assert (linear_constraint_t cst): 
-          Statement <VariableName> (ASSERT), m_cst(cst) 
+      Assert (linear_constraint_t cst, DebugInfo dbg_info = DebugInfo ()): 
+          Statement <VariableName> (ASSERT, dbg_info), 
+          m_cst(cst)
       { 
         for(auto v: cst.variables())
           this->m_live.addUse (v.name()); 
@@ -793,8 +841,9 @@ namespace crab {
       
      public:
       
-      PtrLoad (VariableName lhs, VariableName rhs, interval_t size): 
-          Statement <VariableName> (PTR_LOAD),
+      PtrLoad (VariableName lhs, VariableName rhs, interval_t size,
+               DebugInfo debug_info = DebugInfo ()): 
+          Statement <VariableName> (PTR_LOAD, debug_info),
           m_lhs (lhs), m_rhs (rhs), m_size (size)
       {
         this->m_live.addUse (lhs);
@@ -847,8 +896,9 @@ namespace crab {
       
      public:
       
-      PtrStore (VariableName lhs, VariableName rhs, interval_t size): 
-          Statement <VariableName> (PTR_STORE),
+      PtrStore (VariableName lhs, VariableName rhs, interval_t size,
+                DebugInfo debug_info = DebugInfo ()): 
+          Statement <VariableName> (PTR_STORE, debug_info),
           m_lhs (lhs), m_rhs (rhs), m_size (size)
       {
         this->m_live.addUse (lhs);
@@ -1109,8 +1159,8 @@ namespace crab {
       
      public:
       
-      PtrAssert (ptr_cst_t cst): 
-          Statement <VariableName> (PTR_ASSERT),
+      PtrAssert (ptr_cst_t cst, DebugInfo dbg_info = DebugInfo ()): 
+          Statement <VariableName> (PTR_ASSERT, dbg_info),
           m_cst (cst) 
       {
         if (!cst.is_tautology () && !cst.is_contradiction ()) {
@@ -1963,6 +2013,12 @@ namespace crab {
         insert (boost::static_pointer_cast< statement_t, z_assert_t >
                 (z_assert_ptr (new z_assert_t (cst))));
       }
+
+      void assertion (z_lin_cst_t cst, DebugInfo di) 
+      {
+        insert (boost::static_pointer_cast< statement_t, z_assert_t >
+                (z_assert_ptr (new z_assert_t (cst, di))));
+      }
       
       void callsite (VariableName func, 
                      vector<pair <VariableName,VariableType> > args) 
@@ -2093,6 +2149,13 @@ namespace crab {
         if (m_track_prec >= PTR)
           insert(boost::static_pointer_cast< statement_t, ptr_assert_t >
                  (ptr_assert_ptr (new ptr_assert_t (cst))));
+      }
+
+      void ptr_assertion (pointer_constraint<VariableName> cst, DebugInfo di) 
+      {
+        if (m_track_prec >= PTR)
+          insert(boost::static_pointer_cast< statement_t, ptr_assert_t >
+                 (ptr_assert_ptr (new ptr_assert_t (cst, di))));
       }
       
       friend ostream& operator<<(ostream &o, const basic_block_t &b)
