@@ -45,6 +45,7 @@ namespace crab {
     typedef Havoc<VariableName>                 havoc_t;
     typedef Unreachable<VariableName>           unreach_t;
     typedef Select <z_number,VariableName>      z_select_t;
+    typedef Assert <z_number,VariableName>      z_assert_t;
     typedef FCallSite<VariableName>             callsite_t;
     typedef Return<VariableName>                return_t;
     typedef ArrayInit<VariableName>             z_arr_init_t;
@@ -58,6 +59,7 @@ namespace crab {
     typedef PtrFunction<VariableName>           ptr_function_t;
     typedef PtrNull<VariableName>               ptr_null_t;
     typedef PtrAssume<VariableName>             ptr_assume_t;
+    typedef PtrAssert<VariableName>             ptr_assert_t;
 
    protected: 
 
@@ -67,6 +69,7 @@ namespace crab {
     virtual void exec (havoc_t&) { }
     virtual void exec (unreach_t&) { }
     virtual void exec (z_select_t&) { }
+    virtual void exec (z_assert_t&) { }
     virtual void exec (callsite_t&) { }
     virtual void exec (return_t&) { }
     virtual void exec (z_arr_init_t&) { }
@@ -80,6 +83,7 @@ namespace crab {
     virtual void exec (ptr_function_t&) { }
     virtual void exec (ptr_null_t&) { }
     virtual void exec (ptr_assume_t&) { }
+    virtual void exec (ptr_assert_t&) { }
 
    public: /* visitor api */
 
@@ -89,6 +93,7 @@ namespace crab {
     void visit (havoc_t &s) { exec (s); }
     void visit (unreach_t &s) { exec (s); }
     void visit (z_select_t &s) { exec (s); }
+    void visit (z_assert_t &s) { exec (s); }
     void visit (callsite_t &s) { exec (s); }
     void visit (return_t &s) { exec (s); }
     void visit (z_arr_init_t &s) { exec (s); }
@@ -102,6 +107,7 @@ namespace crab {
     void visit (ptr_function_t &s) { exec (s); }
     void visit (ptr_null_t &s) { exec (s); }
     void visit (ptr_assume_t &s) { exec (s); }
+    void visit (ptr_assert_t &s) { exec (s); }
 
   };
 
@@ -558,6 +564,7 @@ namespace crab {
     using typename abs_tr_t::ptr_function_t;
     using typename abs_tr_t::ptr_null_t;
     using typename abs_tr_t::ptr_assume_t;
+    using typename abs_tr_t::ptr_assert_t;
     
     typedef domains::nullity_domain <VariableName> nullity_domain_t;
     

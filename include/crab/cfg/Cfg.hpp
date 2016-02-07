@@ -50,11 +50,13 @@ namespace crab {
       UNDEF = 0,
       // integers
       BIN_OP = 1, ASSIGN = 21, ASSUME = 22, UNREACH = 23, HAVOC = 24, SELECT = 25,
+      ASSERT = 26,
       // arrays 
       ARR_INIT = 30, ARR_ASSUME = 31, ARR_STORE = 32, ARR_LOAD = 33,
       // pointers
       PTR_LOAD = 40, PTR_STORE = 41, PTR_ASSIGN = 42, 
-      PTR_OBJECT = 43, PTR_FUNCTION = 44, PTR_NULL=45, PTR_ASSUME = 46,
+      PTR_OBJECT = 43, PTR_FUNCTION = 44, PTR_NULL=45, 
+      PTR_ASSUME = 46, PTR_ASSERT = 47,
       // functions calls
       CALLSITE = 50, RETURN = 51 
     }; 
@@ -180,6 +182,9 @@ namespace crab {
       bool isSelect () const { 
         return (m_stmt_code == SELECT); 
       }
+      bool isAssert () const { 
+        return (m_stmt_code == ASSERT); 
+      }
       bool isArrRead () const { 
         return (m_stmt_code == ARR_LOAD);
       }
@@ -197,6 +202,9 @@ namespace crab {
       }
       bool isPtrAssume () const { 
         return (m_stmt_code == PTR_ASSUME); 
+      }
+      bool isPtrAssert () const { 
+        return (m_stmt_code == PTR_ASSERT); 
       }
       
      public:
@@ -501,6 +509,49 @@ namespace crab {
       {
         o << m_lhs << " = " 
           << "ite(" << m_cond << "," << m_e1 << "," << m_e2 << ")";
+        return;
+      }
+    }; 
+
+    template<class Number, class VariableName>
+    class Assert: public Statement <VariableName>
+    {
+      
+     public:
+      
+      typedef variable< Number, VariableName > variable_t;
+      typedef linear_constraint< Number, VariableName > linear_constraint_t;
+      
+     private:
+      
+      linear_constraint_t m_cst;
+      
+     public:
+      
+      Assert (linear_constraint_t cst): 
+          Statement <VariableName> (ASSERT), m_cst(cst) 
+      { 
+        for(auto v: cst.variables())
+          this->m_live.addUse (v.name()); 
+      }
+      
+      linear_constraint_t constraint() const { return m_cst; }
+      
+      virtual void accept(StatementVisitor <VariableName> *v) 
+      {
+        v->visit(*this);
+      }
+      
+      virtual boost::shared_ptr<Statement <VariableName> > clone () const
+      {
+        typedef Assert <Number, VariableName> Assert_t;
+        return boost::static_pointer_cast< Statement <VariableName>, Assert_t >
+            (boost::shared_ptr <Assert_t> (new Assert_t(m_cst)));
+      }
+      
+      virtual void write (ostream & o) const
+      {
+        o << "assert (" << m_cst << ")"; 
         return;
       }
     }; 
@@ -1044,6 +1095,55 @@ namespace crab {
         return;
       }
     }; 
+
+    template<class VariableName>
+    class PtrAssert: public Statement<VariableName>
+    {
+     public:
+
+      typedef pointer_constraint<VariableName> ptr_cst_t;
+
+     private:
+
+      ptr_cst_t m_cst;
+      
+     public:
+      
+      PtrAssert (ptr_cst_t cst): 
+          Statement <VariableName> (PTR_ASSERT),
+          m_cst (cst) 
+      {
+        if (!cst.is_tautology () && !cst.is_contradiction ()) {
+          if (cst.is_unary ()) {
+            this->m_live.addUse (cst.lhs ());
+          } else {
+            this->m_live.addUse (cst.lhs ());
+            this->m_live.addUse (cst.rhs ());
+          }
+        }
+      }
+      
+      ptr_cst_t constraint () const { return m_cst; }
+      
+      virtual void accept(StatementVisitor <VariableName> *v) 
+      {
+        v->visit(*this);
+      }
+      
+      virtual boost::shared_ptr<Statement <VariableName> > clone () const
+      {
+        typedef PtrAssert <VariableName> ptr_assert_t;
+        return boost::static_pointer_cast< Statement <VariableName>, ptr_assert_t>
+            (boost::shared_ptr <ptr_assert_t> (new ptr_assert_t (m_cst)));
+      }
+      
+      virtual void write(ostream& o) const
+      {
+        o << "assert(" << m_cst << ")";
+        return;
+      }
+    }; 
+  
   
     /*
       Function calls
@@ -1268,6 +1368,7 @@ namespace crab {
       typedef Havoc<VariableName> havoc_t;
       typedef Unreachable<VariableName> unreach_t;
       typedef Select<z_number,VariableName> z_select_t;
+      typedef Assert<z_number,VariableName> z_assert_t;
       // Functions
       typedef FCallSite<VariableName> callsite_t;
       typedef Return<VariableName> return_t;
@@ -1284,6 +1385,7 @@ namespace crab {
       typedef PtrFunction<VariableName> ptr_function_t;
       typedef PtrNull<VariableName> ptr_null_t;
       typedef PtrAssume<VariableName> ptr_assume_t;
+      typedef PtrAssert<VariableName> ptr_assert_t;
 
      private:
 
@@ -1293,6 +1395,7 @@ namespace crab {
       typedef boost::shared_ptr<havoc_t> havoc_ptr;      
       typedef boost::shared_ptr<unreach_t> unreach_ptr;
       typedef boost::shared_ptr<z_select_t> z_select_ptr;
+      typedef boost::shared_ptr<z_assert_t> z_assert_ptr;
       typedef boost::shared_ptr<callsite_t> callsite_ptr;      
       typedef boost::shared_ptr<return_t> return_ptr;      
       typedef boost::shared_ptr<z_arr_init_t> z_arr_init_ptr;
@@ -1306,6 +1409,7 @@ namespace crab {
       typedef boost::shared_ptr<ptr_function_t> ptr_function_ptr;    
       typedef boost::shared_ptr<ptr_null_t> ptr_null_ptr;    
       typedef boost::shared_ptr<ptr_assume_t> ptr_assume_ptr;    
+      typedef boost::shared_ptr<ptr_assert_t> ptr_assert_ptr;    
 
       
       BasicBlockLabel m_bb_id;
@@ -1853,6 +1957,12 @@ namespace crab {
         insert(boost::static_pointer_cast< statement_t, z_select_t >
                (z_select_ptr(new z_select_t (lhs, cond, e1, e2))));
       }
+
+      void assertion (z_lin_cst_t cst) 
+      {
+        insert (boost::static_pointer_cast< statement_t, z_assert_t >
+                (z_assert_ptr (new z_assert_t (cst))));
+      }
       
       void callsite (VariableName func, 
                      vector<pair <VariableName,VariableType> > args) 
@@ -1977,6 +2087,13 @@ namespace crab {
           insert(boost::static_pointer_cast< statement_t, ptr_assume_t >
                  (ptr_assume_ptr (new ptr_assume_t (cst))));
       }
+
+      void ptr_assertion (pointer_constraint<VariableName> cst) 
+      {
+        if (m_track_prec >= PTR)
+          insert(boost::static_pointer_cast< statement_t, ptr_assert_t >
+                 (ptr_assert_ptr (new ptr_assert_t (cst))));
+      }
       
       friend ostream& operator<<(ostream &o, const basic_block_t &b)
       {
@@ -1997,6 +2114,7 @@ namespace crab {
       typedef Havoc<VariableName> havoc_t;
       typedef Unreachable<VariableName> unreach_t;
       typedef Select<z_number,VariableName> z_select_t;
+      typedef Assert <z_number,VariableName> z_assert_t;
       
       typedef FCallSite<VariableName> callsite_t;
       typedef Return<VariableName> return_t;
@@ -2013,6 +2131,7 @@ namespace crab {
       typedef PtrFunction<VariableName> ptr_function_t;
       typedef PtrNull<VariableName> ptr_null_t;
       typedef PtrAssume<VariableName> ptr_assume_t;
+      typedef PtrAssert<VariableName> ptr_assert_t;
       
       // Only implementation for basic statements is required
       
@@ -2022,6 +2141,7 @@ namespace crab {
       virtual void visit (havoc_t&) = 0;
       virtual void visit (unreach_t&) = 0;
       virtual void visit (z_select_t&) = 0;
+      virtual void visit (z_assert_t&) { };
       
       virtual void visit (callsite_t&) { };
       virtual void visit (return_t&) { };
@@ -2036,6 +2156,7 @@ namespace crab {
       virtual void visit (ptr_function_t&) { };
       virtual void visit (ptr_null_t&) { };
       virtual void visit (ptr_assume_t&) { };
+      virtual void visit (ptr_assert_t&) { };
       
       virtual ~StatementVisitor () { }
     }; 
