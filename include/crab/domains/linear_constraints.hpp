@@ -500,7 +500,17 @@ namespace ikos {
     
     linear_constraint(const linear_expression_t &expr, 
                       kind_t kind): _kind(kind), _expr(expr) { }    
-    
+
+    static linear_constraint_t get_true () {
+      linear_constraint_t res(linear_expression_t(Number(0)), EQUALITY);
+      return res;
+    }
+
+    static linear_constraint_t get_false () {
+      linear_constraint_t res(linear_expression_t(Number(0)), DISEQUATION);
+      return res;
+    }
+
     bool is_tautology() const {
       switch (this->_kind) {
         case DISEQUATION: 
