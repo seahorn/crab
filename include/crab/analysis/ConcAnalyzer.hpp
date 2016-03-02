@@ -55,7 +55,7 @@ namespace crab {
           m_conc_sys (conc_sys), m_vfac (vfac), m_run_live (runLive),
           m_widening_delay (widening_delay),
           m_descending_iters (descending_iters),
-          m_jump_set_size (m_jump_set_size)
+          m_jump_set_size (jump_set_size)
       { }
       
       //! Return analysis results
