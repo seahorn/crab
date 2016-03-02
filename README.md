@@ -168,10 +168,3 @@ of separate_domains which provides an efficient implementation of a
 fast mergeable integer map based on patricia trees. This map can be
 used to map variable names to abstract values. The implementation of
 intervals and congruences use it.
-
-##People##
-
-* [Arie Gurfinkel](arieg.bitbucket.org)
-* [Jorge Navas](http://ti.arc.nasa.gov/profile/jorge/)
-* [Temesghen Kahsai](http://www.lememta.info/)
-* Graeme Gange 
