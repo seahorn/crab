@@ -353,9 +353,9 @@ namespace crab {
 
       for(vert_id s : o.verts())
       {
-        for(vert_id d : const_cast<G&>(o).succs(s))
+        for(auto e : const_cast<G&>(o).e_succs(s))
         {
-          g.add_edge(s, o.edge_val(s, d), d);
+          g.add_edge(s, e.val, e.vert);
         }
       }
       return g;

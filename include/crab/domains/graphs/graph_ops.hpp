@@ -909,6 +909,77 @@ r_not_dom:
       }
     }
 
+    // Straight implementation of Dijkstra's algorithm
+    template<class G, class P>
+    static void dijkstra(G& g, const P& p, vert_id src, vector< pair<vert_id, Wt> >& out)
+    {
+      unsigned int sz = g.size();
+      if(sz == 0)
+        return;
+      grow_scratch(sz);
+
+      // Reset all vertices to infty.
+      dist_ts[ts_idx] = ts++;
+      ts_idx = (ts_idx+1) % dists.size();
+
+      dists[src] = Wt(0);
+      dist_ts[src] = ts;
+
+      WtComp comp(dists);
+      WtHeap heap(comp);
+
+      for(auto e : g.e_succs(src))
+      {
+        vert_id dest = e.vert;
+        dists[dest] = p[src] + e.val - p[dest];
+        dist_ts[dest] = ts;
+
+        vert_marks[dest] = edge_marks[sz*src + dest];
+        heap.insert(dest);
+      }
+
+      Wt* w;
+      while(!heap.empty())
+      {
+        int es = heap.removeMin();
+        Wt es_cost = dists[es] + p[es]; // If it's on the queue, distance is not infinite.
+        Wt es_val = es_cost - p[src];
+        if(!g.lookup(src, es, &w) || (*w) > es_val)
+          out.push_back( make_pair(es, es_val) );
+
+        for(auto e_ed : g.e_succs(es))
+        {
+          vert_id ed(e_ed.vert);
+          Wt v = es_cost + e_ed.val - p[ed];
+          if(dist_ts[ed] != ts || v < dists[ed])
+          {
+            dists[ed] = v;
+            dist_ts[ed] = ts;
+
+            if(heap.inHeap(ed))
+            {
+              heap.decrease(ed);
+            } else {
+              heap.insert(ed);
+            }
+          }
+        }
+      }
+    }
+
+    template<class G, class P>
+    static void close_johnson(G& g, const P& p, edge_vector& out)
+    {
+      vector< pair<vert_id, Wt> > adjs;
+      for(vert_id v : g.verts())
+      {
+        adjs.clear();
+        dijkstra(g, p, v, adjs);
+        for(auto p : adjs)
+          out.push_back( make_pair(make_pair(v, p.first), p.second) );
+      }
+    }
+
     // P is some vector-alike holding a valid system of potentials.
     // Don't need to clear/initialize 
     template<class G, class P>
