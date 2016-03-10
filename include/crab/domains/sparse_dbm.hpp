@@ -1839,7 +1839,9 @@ namespace crab {
         return csts;
       }
 
-      const char* getDomainName () const {return "SparseDBM";}
+      static std::string getDomainName () {
+        return "SparseDBM";
+      }
 
     }; // class SparseDBM
   } // namespace domains
