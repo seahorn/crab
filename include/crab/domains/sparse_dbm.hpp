@@ -60,9 +60,13 @@ namespace crab {
          enum { widen_restabilize = 1 };
          enum { special_assign = 1 };
        };
-     }; // end namespace SDBM_impl
-
-
+       class SimpleParams {
+       public:
+         enum { chrome_dijkstra = 0 };
+         enum { widen_restabilize = 0 };
+         enum { special_assign = 0 };
+       };
+     }; // end namespace SpDBM_impl
 
     template<class Number, class VariableName, class Params = SpDBM_impl::DefaultParams>
     class SparseDBM: public writeable,
@@ -1379,12 +1383,14 @@ namespace crab {
           Wt ub = ntov::ntov(*(intv.ub().number()));
           potential[v] = potential[0] + ub;
           g.set_edge(0, ub, v);
+          close_over_edge(0, v);
         }
         if(intv.lb().is_finite())
         {
           Wt lb = ntov::ntov(*(intv.lb().number()));
           potential[v] = potential[0] + lb;
           g.set_edge(v, -lb, 0);
+          close_over_edge(v, 0);
         }
       }
 
@@ -1842,7 +1848,6 @@ namespace crab {
       static std::string getDomainName () {
         return "SparseDBM";
       }
-
     }; // class SparseDBM
   } // namespace domains
 
