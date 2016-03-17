@@ -1558,14 +1558,14 @@ namespace crab {
       {
         Wt_min min_op;
 
-//        assert(ii != 0 && jj != 0);
-//        SubGraph<graph_t> g_excl(g, 0);
-
         Wt c = g.edge_val(ii,jj);
 
         Wt* w;
 
         // There may be a cheaper way to do this.
+        // GKG: Now implemented.
+        std::vector< std::pair<vert_id, Wt> > src_dec;   
+
         for(auto edge : g.e_preds(ii))
         {
           vert_id se = edge.vert;
@@ -1580,11 +1580,12 @@ namespace crab {
                 continue;
 
               (*w) = wt_sij;
-//              g.set_edge(se, wt_sij, jj);
             } else {
               g.add_edge(se, wt_sij, jj);
             }
+            src_dec.push_back(std::make_pair(se, edge.val));
             
+           /*
             for(auto edge : g.e_succs(jj))
             {
               vert_id de = edge.vert;
@@ -1601,9 +1602,11 @@ namespace crab {
                 }
               }
             }
+            */
           }
         }
 
+        std::vector< std::pair<vert_id, Wt> > dest_dec;   
         for(auto edge : g.e_succs(jj))
         {
           vert_id de = edge.vert;
@@ -1618,12 +1621,26 @@ namespace crab {
             } else {
               g.add_edge(ii, wt_ijd, de);
             }
-#ifdef CLOSE_BOUNDS_INLINE
-            if(g.lookup(0,  ii, &w))
-              g.update_edge(0, (*w) + wt_ijd, de, min_op);
-            if(g.lookup(de, 0, &w))
-              g.update_edge(ii, (*w) + wt_ijd, 0, min_op);
-#endif
+            dest_dec.push_back(std::make_pair(de, edge.val));
+          }
+        }
+        // Look at (src, dest) pairs with updated edges.
+        for(auto s_p : src_dec)
+        {
+          vert_id se = s_p.first;
+          Wt wt_sij = c + s_p.second;
+          for(auto d_p : dest_dec)
+          {
+            vert_id de = d_p.first;
+            Wt wt_sijd = wt_sij + d_p.second; 
+            if(g.lookup(se, de, &w))
+            {
+              if((*w) <= wt_sijd)
+                continue;
+              (*w) = wt_sijd;
+            } else {
+              g.add_edge(se, wt_sijd, de);
+            }
           }
         }
         // Closure is now updated.

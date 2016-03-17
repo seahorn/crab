@@ -1732,6 +1732,8 @@ namespace crab {
 #endif
 
         // There may be a cheaper way to do this.
+        // GKG: Now implemented.
+        std::vector<std::pair<vert_id, Wt> > src_dec;
         for(auto edge : g_excl.e_preds(ii))
         {
           vert_id se = edge.vert;
@@ -1750,7 +1752,7 @@ namespace crab {
             } else {
               g_excl.add_edge(se, wt_sij, jj);
             }
-            
+            src_dec.push_back(std::make_pair(se, edge.val));  
 #ifdef CLOSE_BOUNDS_INLINE
             if(g.lookup(0, se, &w))
               g.update_edge(0, (*w) + wt_sij, jj, min_op);
@@ -1758,6 +1760,7 @@ namespace crab {
               g.update_edge(se, (*w) + wt_sij, 0, min_op);
 #endif
 
+/*
             for(auto edge : g_excl.e_succs(jj))
             {
               vert_id de = edge.vert;
@@ -1780,9 +1783,11 @@ namespace crab {
 #endif
               }
             }
+            */
           }
         }
 
+        std::vector<std::pair<vert_id, Wt> > dest_dec;
         for(auto edge : g_excl.e_succs(jj))
         {
           vert_id de = edge.vert;
@@ -1791,13 +1796,13 @@ namespace crab {
           {
             if(g_excl.lookup(ii, de, &w))
             {
-//              g_excl.edge_val(ii, de) = min(g_excl.edge_val(ii, de), wt_ijd);
               if((*w) <= wt_ijd)
                 continue;
               (*w) = wt_ijd;
             } else {
               g_excl.add_edge(ii, wt_ijd, de);
             }
+            dest_dec.push_back(std::make_pair(de, edge.val));
 #ifdef CLOSE_BOUNDS_INLINE
             if(g.lookup(0,  ii, &w))
               g.update_edge(0, (*w) + wt_ijd, de, min_op);
@@ -1806,6 +1811,32 @@ namespace crab {
 #endif
           }
         }
+
+        for(auto s_p : src_dec)
+        {
+          vert_id se = s_p.first;
+          Wt wt_sij = c + s_p.second;
+          for(auto d_p : dest_dec)
+          {
+            vert_id de = d_p.first;
+            Wt wt_sijd = wt_sij + d_p.second; 
+            if(g.lookup(se, de, &w))
+            {
+              if((*w) <= wt_sijd)
+                continue;
+              (*w) = wt_sijd;
+            } else {
+              g.add_edge(se, wt_sijd, de);
+            }
+#ifdef CLOSE_BOUNDS_INLINE
+            if(g.lookup(0, se, &w))
+              g.update_edge(0, (*w) + wt_sijd, de, min_op);
+            if(g.lookup(de, 0, &w))
+              g.update_edge(se, (*w) + wt_sijd, 0, min_op);
+#endif
+          }
+        }
+
         // Closure is now updated.
       }
     
