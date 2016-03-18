@@ -56,10 +56,23 @@ namespace crab {
            return (Wt) n;
          }
        };
+
+       class DefaultParams {
+       public:
+         enum { chrome_dijkstra = 1 };
+         enum { widen_restabilize = 1 };
+         enum { special_assign = 1 };
+       };
+       class SimpleParams {
+       public:
+         enum { chrome_dijkstra = 0 };
+         enum { widen_restabilize = 0 };
+         enum { special_assign = 0 };
+       };
      }; // end namespace SDBM_impl
 
 
-    template<class Number, class VariableName>
+    template<class Number, class VariableName, class Params = SDBM_impl::DefaultParams>
     class SplitDBM: public writeable,
                public numerical_domain<Number, VariableName >,
                public bitwise_operators<Number,VariableName >,
@@ -96,7 +109,7 @@ namespace crab {
       typedef typename vert_map_t::value_type vmap_elt_t;
       typedef vector< boost::optional<variable_t> > rev_map_t;
 
-      typedef SplitDBM<Number, VariableName> DBM_t;
+      typedef SplitDBM<Number, VariableName, Params> DBM_t;
 
       typedef GraphOps<graph_t> GrOps;
       typedef GraphPerm<graph_t> GrPerm;
@@ -765,7 +778,13 @@ namespace crab {
           {
             edge_vector delta;
             SubGraph<graph_t> meet_g_excl(meet_g, 0);
-            GrOps::close_after_meet(meet_g_excl, meet_pi, gx, gy, delta);
+//            GrOps::close_after_meet(meet_g_excl, meet_pi, gx, gy, delta);
+
+            if(Params::chrome_dijkstra)
+              GrOps::close_after_meet(meet_g_excl, meet_pi, gx, gy, delta);
+            else
+              GrOps::close_johnson(meet_g_excl, meet_pi, delta);
+
             GrOps::apply_delta(meet_g, delta);
 
           // Recover updated LBs and UBs.
@@ -831,7 +850,16 @@ namespace crab {
           return;
 
         edge_vector delta;
-        GrOps::close_after_widen(g, potential, vert_set_wrap_t(unstable), delta);
+//        GrOps::close_after_widen(g, potential, vert_set_wrap_t(unstable), delta);
+        // GKG: Check
+        SubGraph<graph_t> g_excl(g, 0);
+        if(Params::widen_restabilize)
+          GrOps::close_after_widen(g_excl, potential, vert_set_wrap_t(unstable), delta);
+        else
+          GrOps::close_johnson(g_excl, potential, delta);
+        // Retrive variable bounds
+        GrOps::close_after_assign(g, potential, 0, delta);
+
         GrOps::apply_delta(g, delta);
 
         unstable.clear();
@@ -1122,64 +1150,96 @@ namespace crab {
           diffcsts_of_assign(x, e, diffs_lb, diffs_ub);
           if(diffs_lb.size() > 0 || diffs_ub.size() > 0)
           {
-            // Allocate a new vertex for x
-            vert_id v = g.new_vertex();
-            assert(v <= rev_map.size());
-            if(v == rev_map.size())
+            if(Params::special_assign)
             {
-              rev_map.push_back(variable_t(x));
-              potential.push_back(potential[0] + eval_expression(e));
+              // Allocate a new vertex for x
+              vert_id v = g.new_vertex();
+              assert(v <= rev_map.size());
+              if(v == rev_map.size())
+              {
+                rev_map.push_back(variable_t(x));
+                potential.push_back(potential[0] + eval_expression(e));
+              } else {
+                potential[v] = potential[0] + eval_expression(e);
+                rev_map[v] = x;
+              }
+              
+              edge_vector delta;
+              for(auto diff : diffs_lb)
+              {
+                delta.push_back(make_pair(make_pair(v, get_vert(diff.first)), -diff.second));
+              }
+
+              for(auto diff : diffs_ub)
+              {
+                delta.push_back(make_pair(make_pair(get_vert(diff.first), v), diff.second));
+              }
+                 
+              // apply_delta should be safe here, as x has no edges in G.
+              GrOps::apply_delta(g, delta);
+              delta.clear();
+              SubGraph<graph_t> g_excl(g, 0);
+              GrOps::close_after_assign(g_excl, potential, v, delta);
+              GrOps::apply_delta(g, delta);
+
+              Wt_min min_op;
+              if(x_int.lb().is_finite())
+                g.update_edge(v, ntov::ntov(-(*(x_int.lb().number()))), 0, min_op);
+              if(x_int.ub().is_finite())
+                g.update_edge(0, ntov::ntov(*(x_int.ub().number())), v, min_op);
+              // Clear the old x vertex
+              operator-=(x);
+              vert_map.insert(vmap_elt_t(variable_t(x), v));
             } else {
-              potential[v] = potential[0] + eval_expression(e);
-              rev_map[v] = x;
-            }
-            
-            edge_vector delta;
-            for(auto diff : diffs_lb)
-            {
-              delta.push_back(make_pair(make_pair(v, get_vert(diff.first)), -diff.second));
-            }
+              // Assignment as a sequence of edge additions.
+              vert_id v = g.new_vertex();
+              assert(v <= rev_map.size());
+              if(v == rev_map.size())
+              {
+                rev_map.push_back(variable_t(x));
+                potential.push_back(Wt(0));
+              } else {
+                potential[v] = Wt(0);
+                rev_map[v] = x;
+              }
+              Wt_min min_op;
+              edge_vector cst_edges;
 
-            for(auto diff : diffs_ub)
-            {
-              delta.push_back(make_pair(make_pair(get_vert(diff.first), v), diff.second));
-            }
+              if(x_int.lb().is_finite())
+                cst_edges.push_back(make_pair(make_pair(v, 0), ntov::ntov(-(*(x_int.lb().number())))));
+              if(x_int.ub().is_finite())
+                cst_edges.push_back(make_pair(make_pair(0, v), ntov::ntov(*(x_int.ub().number()))));
+
+              for(auto diff : diffs_lb)
+              {
+                cst_edges.push_back(make_pair(make_pair(v, get_vert(diff.first)), -diff.second));
+              }
+
+              for(auto diff : diffs_ub)
+              {
+                cst_edges.push_back(make_pair(make_pair(get_vert(diff.first), v), diff.second));
+              }
                
-            /*
-            for(auto diff : delta)
-            {
-              vert_id s = diff.first.first;
-              vert_id d = diff.first.second;
+              for(auto diff : cst_edges)
+              {
+                vert_id src = diff.first.first;
+                vert_id dest = diff.first.second;
+                g.update_edge(src, diff.second, dest, min_op);
+                if(!repair_potential(src, dest))
+                {
+                  assert(0 && "Unreachable");
+                  set_to_bottom();
+                }
+                assert(check_potential(g, potential));
+                
+                close_over_edge(src, dest);
+                assert(check_potential(g, potential));
+              }
 
-              CRAB_DEBUG("|- ", (*rev_map[d]).name(),"[",d,"]-", (*rev_map[s]).name(), "[", s, "]<=", diff.second);
+              // Clear the old x vertex
+              operator-=(x);
+              vert_map.insert(vmap_elt_t(variable_t(x), v));
             }
-            */
-            GrOps::apply_delta(g, delta);
-            delta.clear();
-            SubGraph<graph_t> g_excl(g, 0);
-            GrOps::close_after_assign(g_excl, potential, v, delta);
-            GrOps::apply_delta(g, delta);
-
-            /*
-            for(auto diff : delta)
-            {
-              vert_id s = diff.first.first;
-              vert_id d = diff.first.second;
-
-              CRAB_DEBUG("|-> ", (*rev_map[d]).name(),"[",d,"]-", (*rev_map[s]).name(), "[", s, "]<=", diff.second);
-            }
-            */
-
-
-            Wt_min min_op;
-            if(x_int.lb().is_finite())
-              g.update_edge(v, ntov::ntov(-(*(x_int.lb().number()))), 0, min_op);
-            if(x_int.ub().is_finite())
-              g.update_edge(0, ntov::ntov(*(x_int.ub().number())), v, min_op);
-            // Clear the old x vertex
-            operator-=(x);
-//            ranges.insert(x, x_int);
-            vert_map.insert(vmap_elt_t(variable_t(x), v));
           } else {
             set(x, x_int);
           }
