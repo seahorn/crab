@@ -31,7 +31,6 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/container/flat_map.hpp>
 
-#define CLOSE_BOUNDS_INLINE
 // #define CHECK_POTENTIAL
 //#define SDBM_NO_NORMALIZE
 
@@ -69,7 +68,7 @@ namespace crab {
      }; // end namespace SpDBM_impl
 
     template<class Number, class VariableName, class Params = SpDBM_impl::DefaultParams>
-    class SparseDBM: public writeable,
+    class SparseDBM_: public writeable,
                public numerical_domain<Number, VariableName >,
                public bitwise_operators<Number,VariableName >,
                public division_operators<Number, VariableName >{
@@ -103,7 +102,7 @@ namespace crab {
       typedef typename vert_map_t::value_type vmap_elt_t;
       typedef vector< boost::optional<variable_t> > rev_map_t;
 
-      typedef SparseDBM<Number, VariableName, Params> DBM_t;
+      typedef SparseDBM_<Number, VariableName, Params> DBM_t;
 
       typedef GraphOps<graph_t> GrOps;
       typedef GraphPerm<graph_t> GrPerm;
@@ -130,7 +129,7 @@ namespace crab {
       bool _is_bottom;
 
    public:
-      SparseDBM(bool is_bottom = false):
+      SparseDBM_(bool is_bottom = false):
         writeable(), _is_bottom(is_bottom)
       {
         g.growTo(1);  // Allocate the zero vector
@@ -139,7 +138,7 @@ namespace crab {
       }
 
       // FIXME: Rewrite to avoid copying if o is _|_
-      SparseDBM(const DBM_t& o)
+      SparseDBM_(const DBM_t& o)
         : writeable(),
           numerical_domain<Number, VariableName >(),
           bitwise_operators< Number, VariableName >(),
@@ -158,14 +157,14 @@ namespace crab {
           assert(g.size() > 0);
       }
 
-      SparseDBM(DBM_t&& o)
+      SparseDBM_(DBM_t&& o)
         : vert_map(std::move(o.vert_map)), rev_map(std::move(o.rev_map)),
           g(std::move(o.g)), potential(std::move(o.potential)),
           unstable(std::move(o.unstable)),
           _is_bottom(o._is_bottom)
       { }
 
-      SparseDBM(vert_map_t& _vert_map, rev_map_t& _rev_map, graph_t& _g, vector<Wt>& _potential,
+      SparseDBM_(vert_map_t& _vert_map, rev_map_t& _rev_map, graph_t& _g, vector<Wt>& _potential,
         vert_set_t& _unstable)
         : writeable(),
           numerical_domain<Number, VariableName >(),
@@ -180,7 +179,7 @@ namespace crab {
       }
       
       // Magical rvalue ownership stuff for efficient initialization
-      SparseDBM(vert_map_t&& _vert_map, rev_map_t&& _rev_map, graph_t&& _g, vector<Wt>&& _potential, vert_set_t&& _unstable)
+      SparseDBM_(vert_map_t&& _vert_map, rev_map_t&& _rev_map, graph_t&& _g, vector<Wt>&& _potential, vert_set_t&& _unstable)
         : writeable(),
           numerical_domain<Number, VariableName >(),
           bitwise_operators< Number, VariableName >(),
@@ -192,7 +191,7 @@ namespace crab {
 
 
       // FIXME: Add a move constructor
-      SparseDBM& operator=(const SparseDBM& o)
+      SparseDBM_& operator=(const SparseDBM_& o)
       {
         if(this != &o)
         {
@@ -211,7 +210,7 @@ namespace crab {
         return *this;
       }
 
-      SparseDBM& operator=(SparseDBM&& o)
+      SparseDBM_& operator=(SparseDBM_&& o)
       {
         if(o._is_bottom) {
           set_to_bottom();
@@ -263,9 +262,9 @@ namespace crab {
 
      public:
 
-      static DBM_t top() { return SparseDBM(false); }
+      static DBM_t top() { return SparseDBM_(false); }
     
-      static DBM_t bottom() { return SparseDBM(true); }
+      static DBM_t bottom() { return SparseDBM_(true); }
     
      public:
 
@@ -1323,7 +1322,6 @@ namespace crab {
         }
       }
 
-      // interval_t get_interval(ranges_t& r, variable_t x) {
       interval_t get_interval(variable_t x) {
         return get_interval(vert_map, g, x);
       }
@@ -1335,7 +1333,6 @@ namespace crab {
         return get_interval(m, r, x.name());
       }
 
-      // interval_t get_interval(ranges_t& r, VariableName x) {
       interval_t get_interval(vert_map_t& m, graph_t& r, VariableName x) {
         auto it = m.find(x);
         if(it == m.end())
@@ -1672,10 +1669,6 @@ namespace crab {
           return;
 
         assign(x, linear_expression_t(y));
-//        dbm ret = NULL;      
-//        ret = dbm_expand(get_dbm_index(x), get_dbm_index(y), _dbm);
-//        dbm_dealloc(_dbm);
-//        swap(_dbm, ret);
       }
 
       // dual of forget: remove all variables except [vIt,...vEt)
@@ -1708,36 +1701,6 @@ namespace crab {
 
         normalize ();
 
-#if 0
-        o << "edges={";
-        for(vert_id v : g.verts())
-        {
-          for(vert_id d : g.succs(v))
-          {
-            if(!rev_map[v] || !rev_map[d])
-            {
-              CRAB_WARN("Edge incident to un-mapped vertex.");
-              continue;
-            }
-            o << "(" << (*(rev_map[v])) << "," << (*(rev_map[d])) << ":" << g.edge_val(v,d) << ")";
-          }
-        }
-        o << "}";
-#endif
-
-#if 0
-        cout << "var_map={";
-        for (auto &p: _var_map) 
-          cout << p.first << "(" << p.first.index () << ") " << "->" << p.second << ";";
-        cout << "}\n";
-        cout << "rev_map={";
-        for (auto &p: _rev_map) 
-          cout << p.first << "->" << p.second << ";";
-        cout << "}\n";
-        cout << "matrix:\n";
-        dbm_print_to(cout, _dbm);
-#endif 
-
         if(is_bottom()){
           o << "_|_";
           return;
@@ -1751,16 +1714,6 @@ namespace crab {
           // Intervals
           bool first = true;
           o << "{";
-          /*
-          for(auto p : ranges)
-          {
-            if(first)
-              first = false;
-            else
-              o << ", ";
-            o << p.first << " -> " << p.second;
-          }
-          */
           // Extract all the edges
           SubGraph<graph_t> g_excl(g, 0);
           for(vert_id v : g_excl.verts())
@@ -1863,7 +1816,167 @@ namespace crab {
       static std::string getDomainName () {
         return "SparseDBM";
       }
-    }; // class SparseDBM
+    }; // class SparseDBM_
+
+    // Quick wrapper which uses shared references with copy-on-write.
+    template<class Number, class VariableName, class Params = SpDBM_impl::DefaultParams>
+    class SparseDBM : public writeable,
+               public numerical_domain<Number, VariableName >,
+               public bitwise_operators<Number,VariableName >,
+               public division_operators<Number, VariableName > {
+      public:
+      using typename numerical_domain< Number, VariableName >::linear_expression_t;
+      using typename numerical_domain< Number, VariableName >::linear_constraint_t;
+      using typename numerical_domain< Number, VariableName >::linear_constraint_system_t;
+      using typename numerical_domain< Number, VariableName >::variable_t;
+      using typename numerical_domain< Number, VariableName >::number_t;
+      using typename numerical_domain< Number, VariableName >::varname_t;
+      typedef typename linear_constraint_t::kind_t constraint_kind_t;
+      typedef interval<Number>  interval_t;
+
+      typedef SparseDBM_<Number, VariableName> dbm_impl_t;
+      typedef std::shared_ptr<dbm_impl_t> dbm_ref_t;
+      typedef SparseDBM<Number, VariableName, Params> DBM_t;
+
+      SparseDBM(dbm_ref_t _ref) : ref(_ref) { }
+      DBM_t create(dbm_impl_t&& t)
+      {
+        return DBM_t(new dbm_impl_t(std::move(t)));
+      }
+
+      void lock(void) {
+//        if(!ref.unique())
+//          ref = std::make_shared<dbm_impl_t>(*ref);
+//        assert(ref.unique());
+      }
+          
+    public:
+
+      static DBM_t top() { return SparseDBM(false); }
+    
+      static DBM_t bottom() { return SparseDBM(true); }
+
+      SparseDBM(bool is_bottom = false)
+        : ref(std::make_shared<dbm_impl_t>(is_bottom)) { }
+
+      SparseDBM(const DBM_t& o)
+        : ref(std::make_shared<dbm_impl_t>(*o.ref))
+      { }
+
+      SparseDBM& operator=(const DBM_t& o) {
+        (*ref) = *(o.ref);
+        return *this;
+      }
+
+
+      bool is_bottom() const { return ref->is_bottom(); }
+      bool is_top() const { return ref->is_top(); }
+      bool operator<=(DBM_t& o) { lock(); o.lock(); return *ref <= *(o.ref); }
+      void operator|=(DBM_t o) { lock(); o.lock(); *ref |= *(o.ref); }
+      DBM_t operator|(DBM_t o) { lock(); o.lock(); return create(*ref | *(o.ref)); }
+      DBM_t operator||(DBM_t o) { lock(); o.lock(); return create(*ref || *(o.ref)); }
+      DBM_t operator&(DBM_t o) { lock(); o.lock(); return create(*ref & *(o.ref)); }
+      DBM_t operator&&(DBM_t o) { lock(); o.lock(); return create(*ref && *(o.ref)); }
+
+      template<typename Thresholds>
+      DBM_t widening_thresholds (DBM_t o, const Thresholds &ts) {
+        lock(); o.lock();
+        return create(ref->widening_thresholds<Thresholds>(*(o.ref), ts));
+      }
+
+      void normalize() { lock(); ref->normalize(); }
+      void operator+=(linear_constraint_system_t csts) { lock(); (*ref) += csts; } 
+      void operator-=(VariableName v) { lock(); (*ref) -= v; }
+      interval_t operator[](VariableName x) { ref->operator[](x); }
+      void set(VariableName x, interval_t intv) { lock(); ref->set(x, intv); }
+
+      template<typename Iterator>
+      void forget (Iterator vIt, Iterator vEt) { lock(); ref->forget(vIt, vEt); }
+      void assign(VariableName x, linear_expression_t e) { lock(); ref->assign(x, e); }
+      void apply(operation_t op, VariableName x, VariableName y, Number k) {
+        lock(); ref->apply(op, x, y, k);
+      }
+      void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width) {
+        lock(); ref->apply(op, x, y, width);
+      }
+      void apply(conv_operation_t op, VariableName x, Number k, unsigned width) {
+        lock(); ref->apply(op, x, k, width);
+      }
+      void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k) {
+        lock(); ref->apply(op, x, y, k);
+      }
+      void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) {
+        lock(); ref->apply(op, x, y, z);
+      }
+      void apply(operation_t op, VariableName x, VariableName y, VariableName z) {
+        lock(); ref->apply(op, x, y, z);
+      }
+      void apply(div_operation_t op, VariableName x, VariableName y, VariableName z) {
+        lock(); ref->apply(op, x, y, z);
+      }
+      void apply(div_operation_t op, VariableName x, VariableName y, Number k) {
+        lock(); ref->apply(op, x, y, k);
+      }
+      void expand (VariableName x, VariableName y) { lock(); ref->expand(x, y); }
+
+      template<typename Iterator>
+      void project (Iterator vIt, Iterator vEt) { lock(); ref->project(vIt, vEt); }
+
+      template <typename NumDomain>
+      void push (const VariableName& x, NumDomain&inv){ lock(); ref->push(x, inv); }
+
+      void write(ostream& o) { lock(); ref->write(o); }
+
+      linear_constraint_system_t to_linear_constraint_system () {
+        lock();
+        return ref->to_linear_constraint_system();
+      }
+      static std::string getDomainName () { return dbm_impl_t::getDomainName(); }
+    protected:  
+      dbm_ref_t ref;  
+    };
+
+    template<typename Number, typename VariableName, typename Params>
+    class domain_traits <SparseDBM<Number,VariableName, Params> > {
+     public:
+
+      typedef SparseDBM<Number,VariableName, Params> sdbm_domain_t;
+
+      static void expand (sdbm_domain_t& inv, VariableName x, VariableName new_x) {
+        inv.expand (x, new_x);
+      }
+    
+      static void normalize (sdbm_domain_t& inv) {
+        inv.normalize();
+      }
+    
+      template <typename Iter>
+      static void forget (sdbm_domain_t& inv, Iter it, Iter end){
+        inv.forget (it, end);
+      }
+
+      template <typename Iter>
+      static void project (sdbm_domain_t& inv, Iter it, Iter end) {
+        inv.project (it, end);
+      }
+    };
+
+
+    template<typename Domain>
+    class product_domain_traits<SparseDBM<typename Domain::number_t, 
+                                          typename Domain::varname_t>, Domain> {
+
+     public:
+      typedef typename Domain::varname_t varname_t;
+      typedef SparseDBM<typename Domain::number_t, 
+                        typename Domain::varname_t> sdbm_domain_t;
+      
+      static void push (const varname_t& x, sdbm_domain_t from, Domain& to){
+        from.push (x, to);
+      }
+    };
+  
+
   } // namespace domains
 
 

@@ -13,7 +13,7 @@
 #define SPLIT_DBM_HPP
 
 // Uncomment for enabling debug information
-// #include <crab/common/dbg.hpp>
+#include <crab/common/dbg.hpp>
 
 #include <crab/common/types.hpp>
 #include <crab/domains/graphs/sparse_graph.hpp>
@@ -73,7 +73,7 @@ namespace crab {
 
 
     template<class Number, class VariableName, class Params = SDBM_impl::DefaultParams>
-    class SplitDBM: public writeable,
+    class SplitDBM_ : public writeable,
                public numerical_domain<Number, VariableName >,
                public bitwise_operators<Number,VariableName >,
                public division_operators<Number, VariableName >{
@@ -109,7 +109,7 @@ namespace crab {
       typedef typename vert_map_t::value_type vmap_elt_t;
       typedef vector< boost::optional<variable_t> > rev_map_t;
 
-      typedef SplitDBM<Number, VariableName, Params> DBM_t;
+      typedef SplitDBM_<Number, VariableName, Params> DBM_t;
 
       typedef GraphOps<graph_t> GrOps;
       typedef GraphPerm<graph_t> GrPerm;
@@ -125,7 +125,6 @@ namespace crab {
       // Domain data
       //================
       // GKG: ranges are now maintained in the graph
-//      ranges_t ranges; // Intervals for each variable
       vert_map_t vert_map; // Mapping from variables to vertices
       rev_map_t rev_map;
       graph_t g; // The underlying relation graph
@@ -136,7 +135,7 @@ namespace crab {
       bool _is_bottom;
 
    public:
-      SplitDBM(bool is_bottom = false):
+      SplitDBM_(bool is_bottom = false):
         writeable(), _is_bottom(is_bottom)
       {
         g.growTo(1);  // Allocate the zero vector
@@ -145,7 +144,7 @@ namespace crab {
       }
 
       // FIXME: Rewrite to avoid copying if o is _|_
-      SplitDBM(const DBM_t& o)
+      SplitDBM_(const DBM_t& o)
         : writeable(),
           numerical_domain<Number, VariableName >(),
           bitwise_operators< Number, VariableName >(),
@@ -164,7 +163,7 @@ namespace crab {
           assert(g.size() > 0);
       }
 
-      SplitDBM(DBM_t&& o)
+      SplitDBM_(DBM_t&& o)
         : vert_map(std::move(o.vert_map)), rev_map(std::move(o.rev_map)),
           g(std::move(o.g)), potential(std::move(o.potential)),
           unstable(std::move(o.unstable)),
@@ -172,7 +171,7 @@ namespace crab {
       { }
 
       // We should probably use the magical rvalue ownership semantics stuff.
-      SplitDBM(vert_map_t& _vert_map, rev_map_t& _rev_map, graph_t& _g, vector<Wt>& _potential,
+      SplitDBM_(vert_map_t& _vert_map, rev_map_t& _rev_map, graph_t& _g, vector<Wt>& _potential,
         vert_set_t& _unstable)
         : writeable(),
           numerical_domain<Number, VariableName >(),
@@ -186,7 +185,7 @@ namespace crab {
         assert(g.size() > 0);
       }
       
-      SplitDBM(vert_map_t&& _vert_map, rev_map_t&& _rev_map, graph_t&& _g, vector<Wt>&& _potential, vert_set_t&& _unstable)
+      SplitDBM_(vert_map_t&& _vert_map, rev_map_t&& _rev_map, graph_t&& _g, vector<Wt>&& _potential, vert_set_t&& _unstable)
         : writeable(),
           numerical_domain<Number, VariableName >(),
           bitwise_operators< Number, VariableName >(),
@@ -197,8 +196,7 @@ namespace crab {
       { assert(g.size() > 0); }
 
 
-      // FIXME: Add a move constructor
-      SplitDBM& operator=(const SplitDBM& o)
+      SplitDBM_& operator=(const SplitDBM_& o)
       {
         if(this != &o)
         {
@@ -217,7 +215,7 @@ namespace crab {
         return *this;
       }
 
-      SplitDBM& operator=(SplitDBM&& o)
+      SplitDBM_& operator=(SplitDBM_&& o)
       {
         if(o._is_bottom) {
           set_to_bottom();
@@ -233,15 +231,6 @@ namespace crab {
       }
        
      private:
-
-      /*
-      void forget(vector<int> idxs) {
-        dbm ret = NULL;
-        ret = dbm_forget_array(&idxs[0], idxs.size(), _dbm);
-        dbm_dealloc(_dbm);
-        swap(_dbm, ret);
-      }
-      */
 
       void set_to_bottom() {
         // ranges.clear();
@@ -269,15 +258,13 @@ namespace crab {
 
      public:
 
-      static DBM_t top() { return SplitDBM(false); }
+      static DBM_t top() { return SplitDBM_(false); }
     
-      static DBM_t bottom() { return SplitDBM(true); }
+      static DBM_t bottom() { return SplitDBM_(true); }
     
      public:
 
       bool is_bottom() const {
-//        if(!_is_bottom && g.has_negative_cycle())
-//          _is_bottom = true;
         return _is_bottom;
       }
     
@@ -299,9 +286,6 @@ namespace crab {
           return false;
         else {
           normalize();
-//          interval_po po;
-//           if(!ranges.leq(o.ranges, po))
-//             return false;
 
 //          CRAB_DEBUG("operator<=: ", *this, "<=?", o);
 
@@ -440,11 +424,11 @@ namespace crab {
       }
 
       // FIXME: can be done more efficient
-      void operator|=(DBM_t o) {
+      void operator|=(DBM_t& o) {
         *this = *this | o;
       }
 
-      DBM_t operator|(DBM_t o) {
+      DBM_t operator|(DBM_t& o) {
         if (is_bottom() || o.is_top ())
           return o;
         else if (is_top () || o.is_bottom())
@@ -639,7 +623,7 @@ namespace crab {
         }
       }
 
-      DBM_t operator||(DBM_t o) {	
+      DBM_t operator||(DBM_t& o) {	
         if (is_bottom())
           return o;
         else if (o.is_bottom())
@@ -696,12 +680,12 @@ namespace crab {
       }
 
       template<typename Thresholds>
-      DBM_t widening_thresholds (DBM_t o, const Thresholds &ts) {
+      DBM_t widening_thresholds (DBM_t& o, const Thresholds &ts) {
         // TODO: use thresholds
         return (*this || o);
       }
 
-      DBM_t operator&(DBM_t o) {
+      DBM_t operator&(DBM_t& o) {
         if (is_bottom() || o.is_bottom())
           return bottom();
         else if (is_top())
@@ -810,7 +794,7 @@ namespace crab {
         }
       }
     
-      DBM_t operator&&(DBM_t o) {
+      DBM_t operator&&(DBM_t& o) {
         if (is_bottom() || o.is_bottom())
           return bottom();
         else if (is_top ())
@@ -1547,7 +1531,6 @@ namespace crab {
         }
       }
 
-      // interval_t get_interval(ranges_t& r, variable_t x) {
       interval_t get_interval(variable_t x) {
         return get_interval(vert_map, g, x);
       }
@@ -1559,7 +1542,6 @@ namespace crab {
         return get_interval(m, r, x.name());
       }
 
-      // interval_t get_interval(ranges_t& r, VariableName x) {
       interval_t get_interval(vert_map_t& m, graph_t& r, VariableName x) {
         auto it = m.find(x);
         if(it == m.end())
@@ -2174,7 +2156,123 @@ namespace crab {
         return "split DBM";
       }
 
-    }; // class SplitDBM
+    }; // class SplitDBM_
+
+    // Quick wrapper which uses shared references with copy-on-write.
+    template<class Number, class VariableName>
+    class SplitDBM : public writeable,
+               public numerical_domain<Number, VariableName >,
+               public bitwise_operators<Number,VariableName >,
+               public division_operators<Number, VariableName > {
+      public:
+      using typename numerical_domain< Number, VariableName >::linear_expression_t;
+      using typename numerical_domain< Number, VariableName >::linear_constraint_t;
+      using typename numerical_domain< Number, VariableName >::linear_constraint_system_t;
+      using typename numerical_domain< Number, VariableName >::variable_t;
+      using typename numerical_domain< Number, VariableName >::number_t;
+      using typename numerical_domain< Number, VariableName >::varname_t;
+      typedef typename linear_constraint_t::kind_t constraint_kind_t;
+      typedef interval<Number>  interval_t;
+
+      typedef SplitDBM_<Number, VariableName> dbm_impl_t;
+      typedef std::shared_ptr<dbm_impl_t> dbm_ref_t;
+      typedef SplitDBM<Number, VariableName> DBM_t;
+
+      SplitDBM(dbm_ref_t _ref) : ref(_ref) { }
+      DBM_t create(dbm_impl_t&& t)
+      {
+        return DBM_t(new dbm_impl_t(std::move(t)));
+      }
+
+      void lock(void) {
+        if(!ref.unique())
+          ref = std::make_shared<dbm_impl_t>(*ref);
+        assert(ref.unique());
+      }
+          
+    public:
+
+      static DBM_t top() { return SplitDBM(false); }
+    
+      static DBM_t bottom() { return SplitDBM(true); }
+
+      SplitDBM(bool is_bottom = false)
+        : ref(std::make_shared<dbm_impl_t>(is_bottom)) { }
+      SplitDBM(const DBM_t& o)
+        : ref(o.ref)
+      { }
+
+      SplitDBM& operator=(const DBM_t& o) {
+        ref = o.ref;
+        return *this;
+      }
+
+
+      bool is_bottom() const { return ref->is_bottom(); }
+      bool is_top() const { return ref->is_top(); }
+      bool operator<=(DBM_t& o) { return *ref <= *(o.ref); }
+      void operator|=(DBM_t o) { lock(); *ref |= *(o.ref); }
+      DBM_t operator|(DBM_t o) { return create(*ref | *(o.ref)); }
+      DBM_t operator||(DBM_t o) { return create(*ref || *(o.ref)); }
+      DBM_t operator&(DBM_t o) { return create(*ref & *(o.ref)); }
+      DBM_t operator&&(DBM_t o) { return create(*ref && *(o.ref)); }
+
+      template<typename Thresholds>
+      DBM_t widening_thresholds (DBM_t o, const Thresholds &ts) {
+        return create(ref->widening_thresholds<Thresholds>(*(o.ref), ts));
+      }
+
+      void normalize() { lock(); ref->normalize(); }
+      void operator+=(linear_constraint_system_t csts) { lock(); (*ref) += csts; } 
+      void operator-=(VariableName v) { lock(); (*ref) -= v; }
+      interval_t operator[](VariableName x) { ref->operator[](x); }
+      void set(VariableName x, interval_t intv) { lock(); ref->set(x, intv); }
+
+      template<typename Iterator>
+      void forget (Iterator vIt, Iterator vEt) { lock(); ref->forget(vIt, vEt); }
+      void assign(VariableName x, linear_expression_t e) { lock(); ref->assign(x, e); }
+      void apply(operation_t op, VariableName x, VariableName y, Number k) {
+        lock(); ref->apply(op, x, y, k);
+      }
+      void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width) {
+        lock(); ref->apply(op, x, y, width);
+      }
+      void apply(conv_operation_t op, VariableName x, Number k, unsigned width) {
+        lock(); ref->apply(op, x, k, width);
+      }
+      void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k) {
+        lock(); ref->apply(op, x, y, k);
+      }
+      void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) {
+        lock(); ref->apply(op, x, y, z);
+      }
+      void apply(operation_t op, VariableName x, VariableName y, VariableName z) {
+        lock(); ref->apply(op, x, y, z);
+      }
+      void apply(div_operation_t op, VariableName x, VariableName y, VariableName z) {
+        lock(); ref->apply(op, x, y, z);
+      }
+      void apply(div_operation_t op, VariableName x, VariableName y, Number k) {
+        lock(); ref->apply(op, x, y, k);
+      }
+      void expand (VariableName x, VariableName y) { lock(); ref->expand(x, y); }
+
+      template<typename Iterator>
+      void project (Iterator vIt, Iterator vEt) { lock(); ref->project(vIt, vEt); }
+
+      template <typename NumDomain>
+      void push (const VariableName& x, NumDomain&inv){ lock(); ref->push(x, inv); }
+
+      void write(ostream& o) { lock(); ref->write(o); }
+
+      linear_constraint_system_t to_linear_constraint_system () {
+        lock();
+        return ref->to_linear_constraint_system();
+      }
+      static std::string getDomainName () { return dbm_impl_t::getDomainName(); }
+    protected:  
+      dbm_ref_t ref;  
+    };
 
     template<typename Number, typename VariableName>
     class domain_traits <SplitDBM<Number,VariableName> > {
