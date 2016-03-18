@@ -1205,11 +1205,6 @@ namespace crab {
               Wt_min min_op;
               edge_vector cst_edges;
 
-              if(x_int.lb().is_finite())
-                cst_edges.push_back(make_pair(make_pair(v, 0), ntov::ntov(-(*(x_int.lb().number())))));
-              if(x_int.ub().is_finite())
-                cst_edges.push_back(make_pair(make_pair(0, v), ntov::ntov(*(x_int.ub().number()))));
-
               for(auto diff : diffs_lb)
               {
                 cst_edges.push_back(make_pair(make_pair(v, get_vert(diff.first)), -diff.second));
@@ -1235,6 +1230,11 @@ namespace crab {
                 close_over_edge(src, dest);
                 assert(check_potential(g, potential));
               }
+
+              if(x_int.lb().is_finite())
+                g.update_edge(v, ntov::ntov(-(*(x_int.lb().number()))), 0, min_op);
+              if(x_int.ub().is_finite())
+                g.update_edge(0, ntov::ntov(*(x_int.ub().number())), v, min_op);
 
               // Clear the old x vertex
               operator-=(x);
