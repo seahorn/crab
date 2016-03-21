@@ -2189,7 +2189,7 @@ namespace crab {
       {
         // Allocate a fresh copy.
         if(!base_ref.unique()) 
-          base_ref = std::make_shared<dbm_impl_t>(*base_ref);
+          base_ref = std::make_shared<dbm_impl_t>(norm());
         norm_ref.reset();
       }
     public:
