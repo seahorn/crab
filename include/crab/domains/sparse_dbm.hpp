@@ -426,11 +426,11 @@ namespace crab {
       }
       
       // FIXME: can be done more efficient
-      void operator|=(DBM_t o) {
+      void operator|=(DBM_t& o) {
         *this = *this | o;
       }
 
-      DBM_t operator|(DBM_t o) {
+      DBM_t operator|(DBM_t& o) {
         if (is_bottom() || o.is_top ())
           return o;
         else if (is_top () || o.is_bottom())
@@ -514,7 +514,7 @@ namespace crab {
         }
       }
 
-      DBM_t operator||(DBM_t o) {	
+      DBM_t operator||(DBM_t& o) {	
         if (is_bottom())
           return o;
         else if (o.is_bottom())
@@ -570,7 +570,7 @@ namespace crab {
         }
       }
 
-      DBM_t operator&(DBM_t o) {
+      DBM_t operator&(DBM_t& o) {
         if (is_bottom() || o.is_bottom())
           return bottom();
         else if (is_top())
@@ -660,7 +660,7 @@ namespace crab {
         }
       }
     
-      DBM_t operator&&(DBM_t o) {
+      DBM_t operator&&(DBM_t& o) {
         if (is_bottom() || o.is_bottom())
           return bottom();
         else if (is_top ())
