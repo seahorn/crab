@@ -1838,18 +1838,20 @@ namespace crab {
       typedef std::shared_ptr<dbm_impl_t> dbm_ref_t;
       typedef SparseDBM<Number, VariableName, Params> DBM_t;
 
-      SparseDBM(dbm_ref_t _ref) : ref(_ref) { }
+      SparseDBM(dbm_ref_t _ref) : base_ref(_ref) { }
+
       DBM_t create(dbm_impl_t&& t)
       {
-        return DBM_t(new dbm_impl_t(std::move(t)));
+        return std::make_shared<dbm_impl_t>(std::move(t));
       }
 
-      void lock(void) {
-//        if(!ref.unique())
-//          ref = std::make_shared<dbm_impl_t>(*ref);
-//        assert(ref.unique());
+      void lock(void)
+      {
+        // Allocate a fresh copy.
+        if(!base_ref.unique()) 
+          base_ref = std::make_shared<dbm_impl_t>(*base_ref);
+        norm_ref.reset();
       }
-          
     public:
 
       static DBM_t top() { return SparseDBM(false); }
@@ -1857,83 +1859,93 @@ namespace crab {
       static DBM_t bottom() { return SparseDBM(true); }
 
       SparseDBM(bool is_bottom = false)
-        : ref(std::make_shared<dbm_impl_t>(is_bottom)) { }
+        : base_ref(std::make_shared<dbm_impl_t>(is_bottom)), norm_ref(nullptr) { }
 
       SparseDBM(const DBM_t& o)
-        : ref(std::make_shared<dbm_impl_t>(*o.ref))
+        : base_ref(o.base_ref), norm_ref(o.norm_ref)
       { }
 
       SparseDBM& operator=(const DBM_t& o) {
-        (*ref) = *(o.ref);
+        base_ref = o.base_ref;
+        norm_ref = o.norm_ref;
+
         return *this;
       }
 
+      dbm_impl_t& base(void) { return *base_ref; }
+      dbm_impl_t& norm(void) {
+        if(!norm_ref)
+        {
+          norm_ref = std::make_shared<dbm_impl_t>(*base_ref);
+          norm_ref->normalize();
+        }
+        return *norm_ref;
+      }
 
-      bool is_bottom() const { return ref->is_bottom(); }
-      bool is_top() const { return ref->is_top(); }
-      bool operator<=(DBM_t& o) { lock(); o.lock(); return *ref <= *(o.ref); }
-      void operator|=(DBM_t o) { lock(); o.lock(); *ref |= *(o.ref); }
-      DBM_t operator|(DBM_t o) { lock(); o.lock(); return create(*ref | *(o.ref)); }
-      DBM_t operator||(DBM_t o) { lock(); o.lock(); return create(*ref || *(o.ref)); }
-      DBM_t operator&(DBM_t o) { lock(); o.lock(); return create(*ref & *(o.ref)); }
-      DBM_t operator&&(DBM_t o) { lock(); o.lock(); return create(*ref && *(o.ref)); }
+      bool is_bottom() { return norm().is_bottom(); }
+      bool is_top() { return norm().is_top(); }
+      bool operator<=(DBM_t& o) { return norm() <= o.norm(); }
+      void operator|=(DBM_t o) { lock(); base() |= o.norm(); }
+      DBM_t operator|(DBM_t o) { return create(norm() | o.norm()); }
+      DBM_t operator||(DBM_t o) { return create(base() || o.norm()); }
+      DBM_t operator&(DBM_t o) { return create(norm() & o.norm()); }
+      DBM_t operator&&(DBM_t o) { return create(norm() && o.norm()); }
 
       template<typename Thresholds>
       DBM_t widening_thresholds (DBM_t o, const Thresholds &ts) {
-        lock(); o.lock();
-        return create(ref->widening_thresholds<Thresholds>(*(o.ref), ts));
+        return create(base().widening_thresholds<Thresholds>(o.norm(), ts));
       }
 
-      void normalize() { lock(); ref->normalize(); }
-      void operator+=(linear_constraint_system_t csts) { lock(); (*ref) += csts; } 
-      void operator-=(VariableName v) { lock(); (*ref) -= v; }
-      interval_t operator[](VariableName x) { ref->operator[](x); }
-      void set(VariableName x, interval_t intv) { lock(); ref->set(x, intv); }
+      void normalize() { norm(); }
+      void operator+=(linear_constraint_system_t csts) { lock(); base() += csts; } 
+      void operator-=(VariableName v) { lock(); base() -= v; }
+      interval_t operator[](VariableName x) { return norm()[x]; }
+      void set(VariableName x, interval_t intv) { lock(); base().set(x, intv); }
 
       template<typename Iterator>
-      void forget (Iterator vIt, Iterator vEt) { lock(); ref->forget(vIt, vEt); }
-      void assign(VariableName x, linear_expression_t e) { lock(); ref->assign(x, e); }
+      void forget (Iterator vIt, Iterator vEt) { lock(); base().forget(vIt, vEt); }
+      void assign(VariableName x, linear_expression_t e) { lock(); base().assign(x, e); }
       void apply(operation_t op, VariableName x, VariableName y, Number k) {
-        lock(); ref->apply(op, x, y, k);
+        lock(); base().apply(op, x, y, k);
       }
       void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width) {
-        lock(); ref->apply(op, x, y, width);
+        lock(); base().apply(op, x, y, width);
       }
       void apply(conv_operation_t op, VariableName x, Number k, unsigned width) {
-        lock(); ref->apply(op, x, k, width);
+        lock(); base().apply(op, x, k, width);
       }
       void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k) {
-        lock(); ref->apply(op, x, y, k);
+        lock(); base().apply(op, x, y, k);
       }
       void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) {
-        lock(); ref->apply(op, x, y, z);
+        lock(); base().apply(op, x, y, z);
       }
       void apply(operation_t op, VariableName x, VariableName y, VariableName z) {
-        lock(); ref->apply(op, x, y, z);
+        lock(); base().apply(op, x, y, z);
       }
       void apply(div_operation_t op, VariableName x, VariableName y, VariableName z) {
-        lock(); ref->apply(op, x, y, z);
+        lock(); base().apply(op, x, y, z);
       }
       void apply(div_operation_t op, VariableName x, VariableName y, Number k) {
-        lock(); ref->apply(op, x, y, k);
+        lock(); base().apply(op, x, y, k);
       }
-      void expand (VariableName x, VariableName y) { lock(); ref->expand(x, y); }
+      void expand (VariableName x, VariableName y) { lock(); base().expand(x, y); }
 
       template<typename Iterator>
-      void project (Iterator vIt, Iterator vEt) { lock(); ref->project(vIt, vEt); }
+      void project (Iterator vIt, Iterator vEt) { lock(); base().project(vIt, vEt); }
 
       template <typename NumDomain>
-      void push (const VariableName& x, NumDomain&inv){ lock(); ref->push(x, inv); }
+      void push (const VariableName& x, NumDomain&inv){ lock(); base().push(x, inv); }
 
-      void write(ostream& o) { lock(); ref->write(o); }
+      void write(ostream& o) { norm().write(o); }
 
       linear_constraint_system_t to_linear_constraint_system () {
-        lock();
-        return ref->to_linear_constraint_system();
+        return norm().to_linear_constraint_system();
       }
       static std::string getDomainName () { return dbm_impl_t::getDomainName(); }
     protected:  
-      dbm_ref_t ref;  
+      dbm_ref_t base_ref;  
+      dbm_ref_t norm_ref;
     };
 
     template<typename Number, typename VariableName, typename Params>
