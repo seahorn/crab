@@ -317,7 +317,7 @@ namespace crab {
           }
 
           assert(g.size() > 0);
-          GrPerm g_perm(vert_renaming, g);
+          // GrPerm g_perm(vert_renaming, g);
 
           for(vert_id ox : o.g.verts())
           {
@@ -330,12 +330,7 @@ namespace crab {
               vert_id y = vert_renaming[oy];
               Wt ow = edge.val;
 
-              if(g_perm.lookup(x, y, &wx) && ((*wx) <= ow))
-                continue;
-
-              if(!g_perm.lookup(x, 0, &wx) || !g_perm.lookup(0, y, &wy))
-                return false;
-              if(!((*wx) + (*wy) <= ow))
+              if(!g.lookup(x, y, &wx) || (ow < (*wx)))
                 return false;
             }
           }
