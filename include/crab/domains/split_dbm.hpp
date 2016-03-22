@@ -2243,7 +2243,7 @@ namespace crab {
 
       template<typename Thresholds>
       DBM_t widening_thresholds (DBM_t o, const Thresholds &ts) {
-        return create(base().widening_thresholds<Thresholds>(o.norm(), ts));
+        return create_base(base().widening_thresholds<Thresholds>(o.norm(), ts));
       }
 
       void normalize() { norm(); }
