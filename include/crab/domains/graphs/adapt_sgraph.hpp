@@ -48,14 +48,13 @@ namespace crab {
 
       AdaptSMap(const AdaptSMap& o)
         : sz(o.sz),
-          // dense_maxsz(o.dense_maxsz), sparse_ub(o.sparse_ub),
-          dense_maxsz(o.sz > sparse_threshold ? o.sz : sparse_threshold), sparse_ub(o.sparse_ub),
+          dense_maxsz(o.dense_maxsz), sparse_ub(o.sparse_ub),
           dense((elt_t*) malloc(sizeof(elt_t)*dense_maxsz)),
           sparse(nullptr)
       {
         memcpy(dense, o.dense, sizeof(elt_t)*sz);
 
-        if(sz > sparse_threshold && o.sparse)
+        if(o.sparse)
         {
           sparse = (key_t*) malloc(sizeof(key_t)*sparse_ub);
           for(key_t idx = 0; idx < sz; idx++)
