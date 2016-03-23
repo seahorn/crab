@@ -22,6 +22,7 @@
 #include <crab/domains/numerical_domains_api.hpp>
 #include <crab/domains/bitwise_operators_api.hpp>
 #include <crab/domains/division_operators_api.hpp>
+#include <crab/domains/domain_traits.hpp>
 
 #include <unordered_set>
 
@@ -467,7 +468,7 @@ namespace crab {
               out_revmap.push_back(p.first);
 
               pot_rx.push_back(potential[p.second] - potential[0]);
-              pot_ry.push_back(o.potential[p.second] - o.potential[0]);
+              pot_ry.push_back(o.potential[(*it).second] - o.potential[0]);
               perm_inv.push_back(p.first);
               perm_x.push_back(p.second);
               perm_y.push_back((*it).second);
@@ -1363,10 +1364,11 @@ namespace crab {
       void set(VariableName x, interval_t intv) {
         if(is_bottom())
           return;
+        this->operator-=(x);
+
         if(intv.is_top())
           return;
 
-        this->operator-=(x);
         vert_id v = get_vert(x);
         if(intv.ub().is_finite())
         {
@@ -1684,7 +1686,7 @@ namespace crab {
             save[(*it).second] = true;
         }
 
-        for(vert_id v = 0; v < rev_map.size(); v++)
+        for(vert_id v = 1; v < rev_map.size(); v++)
         {
           if(!save[v] && rev_map[v])
             operator-=((*rev_map[v]).name());
@@ -1954,10 +1956,10 @@ namespace crab {
     };
 
     template<typename Number, typename VariableName, typename Params>
-    class domain_traits <SparseDBM<Number,VariableName, Params> > {
+    class domain_traits <SparseDBM<Number,VariableName,Params> > {
      public:
 
-      typedef SparseDBM<Number,VariableName, Params> sdbm_domain_t;
+      typedef SparseDBM<Number,VariableName,Params> sdbm_domain_t;
 
       static void expand (sdbm_domain_t& inv, VariableName x, VariableName new_x) {
         inv.expand (x, new_x);
@@ -1978,15 +1980,14 @@ namespace crab {
       }
     };
 
-
-    template<typename Domain>
+    template<typename Domain, typename Params>
     class product_domain_traits<SparseDBM<typename Domain::number_t, 
-                                          typename Domain::varname_t>, Domain> {
+                                          typename Domain::varname_t,Params>, Domain> {
 
      public:
       typedef typename Domain::varname_t varname_t;
       typedef SparseDBM<typename Domain::number_t, 
-                        typename Domain::varname_t> sdbm_domain_t;
+                        typename Domain::varname_t,Params> sdbm_domain_t;
       
       static void push (const varname_t& x, sdbm_domain_t from, Domain& to){
         from.push (x, to);
@@ -1995,33 +1996,6 @@ namespace crab {
   
 
   } // namespace domains
-
-
-  namespace domain_traits {
-
-       using namespace domains;
-
-       template <typename Number, typename VariableName>
-       void expand (SparseDBM<Number,VariableName>& inv, 
-                    VariableName x, VariableName new_x) {
-         inv.expand (x, new_x);
-       }
-    
-       template <typename Number, typename VariableName>
-       void normalize (SparseDBM<Number,VariableName>& inv) {
-         inv.normalize();
-       }
-    
-       template <typename Number, typename VariableName, typename Iterator >
-       void forget (SparseDBM<Number,VariableName>& inv, Iterator it, Iterator end){
-         inv.forget (it, end);
-       }
-
-       template <typename Number, typename VariableName, typename Iterator >
-       void project (SparseDBM<Number,VariableName>& inv, Iterator it, Iterator end) {
-         inv.project (it, end);
-       }
-    } // namespace domain_traits
 
 } // namespace crab
 
