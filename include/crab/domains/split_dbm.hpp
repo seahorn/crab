@@ -1577,10 +1577,12 @@ namespace crab {
       void set(VariableName x, interval_t intv) {
         if(is_bottom())
           return;
+
+        this->operator-=(x);
+
         if(intv.is_top())
           return;
 
-        this->operator-=(x);
         vert_id v = get_vert(x);
         if(intv.ub().is_finite())
         {
@@ -1908,19 +1910,8 @@ namespace crab {
       void expand (VariableName x, VariableName y) {
         if(is_bottom())
           return;
-
-        vert_id vx = get_vert (x);        
-        vert_id vy = get_vert (y);
-
-        for (auto s : g.succs (vx)) {
-          g.add_edge (vy, g.edge_val (vx, s), s);
-        }
-
-        for (auto p : g.preds (vx)) {
-          g.add_edge (p, g.edge_val (p, vx), vy);
-        }
-
-        potential [vy] = potential [vx];
+        
+        assign(x, linear_expression_t(y));
       }
 
       // dual of forget: remove all variables except [vIt,...vEt)
@@ -2243,7 +2234,7 @@ namespace crab {
 
       template<typename Thresholds>
       DBM_t widening_thresholds (DBM_t o, const Thresholds &ts) {
-        return create(base().widening_thresholds<Thresholds>(o.norm(), ts));
+        return create_base(base().widening_thresholds<Thresholds>(o.norm(), ts));
       }
 
       void normalize() { norm(); }
