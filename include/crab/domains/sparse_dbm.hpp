@@ -360,11 +360,12 @@ namespace crab {
           return (*it).second;
 
         vert_id vert(g.new_vertex());
-        vert_map.insert(vmap_elt_t(variable_t(v), vert)); 
+//        vert_map.insert(vmap_elt_t(variable_t(v), vert)); 
         // Initialize 
         assert(vert <= rev_map.size());
         if(vert < rev_map.size())
         {
+          assert(!rev_map[vert]);
           potential[vert] = Wt(0);
           rev_map[vert] = v;
         } else {
@@ -386,11 +387,12 @@ namespace crab {
           return (*it).second;
 
         vert_id vert(g.new_vertex());
-        vmap.insert(vmap_elt_t(variable_t(v), vert)); 
+//        vmap.insert(vmap_elt_t(variable_t(v), vert)); 
         // Initialize 
         assert(vert <= rmap.size());
         if(vert < rmap.size())
         {
+          assert(!rmap[vert]);
           pot[vert] = Wt(0);
           rmap[vert] = v;
         } else {
@@ -718,7 +720,6 @@ namespace crab {
           return;
         normalize();
 
-//        ranges.remove(v);
         auto it = vert_map.find (v);
         if (it != vert_map.end ()) {
           CRAB_DEBUG("Before forget ", it->second, ": ", g);
@@ -1033,6 +1034,7 @@ namespace crab {
                 rev_map.push_back(variable_t(x));
                 potential.push_back(Wt(0));
               } else {
+                assert(!rev_map[v]);
                 potential[v] = Wt(0);
                 rev_map[v] = x;
               }
@@ -1561,7 +1563,8 @@ namespace crab {
         for(auto edge : g.e_preds(ii))
         {
           vert_id se = edge.vert;
-          Wt wt_sij = edge.val + c;
+          Wt w_si = edge.val;
+          Wt wt_sij = w_si + c;
 
           assert(g.succs(se).begin() != g.succs(se).end());
           if(se != jj)
@@ -1575,7 +1578,8 @@ namespace crab {
             } else {
               g.add_edge(se, wt_sij, jj);
             }
-            src_dec.push_back(std::make_pair(se, edge.val));
+//            assert(potential[se] + g.edge_val(se, jj) - potential[jj] >= Wt(0));
+            src_dec.push_back(std::make_pair(se, w_si));
             
            /*
             for(auto edge : g.e_succs(jj))
@@ -1602,7 +1606,8 @@ namespace crab {
         for(auto edge : g.e_succs(jj))
         {
           vert_id de = edge.vert;
-          Wt wt_ijd = edge.val + c;
+          Wt w_jd = edge.val;
+          Wt wt_ijd = w_jd + c;
           if(de != ii)
           {
             if(g.lookup(ii, de, &w))
@@ -1613,7 +1618,9 @@ namespace crab {
             } else {
               g.add_edge(ii, wt_ijd, de);
             }
-            dest_dec.push_back(std::make_pair(de, edge.val));
+//            assert(potential[ii] + g.edge_val(ii, de) - potential[de] >= Wt(0));
+            // dest_dec.push_back(std::make_pair(de, edge.val));
+            dest_dec.push_back(std::make_pair(de, w_jd));
           }
         }
         // Look at (src, dest) pairs with updated edges.
@@ -1633,6 +1640,7 @@ namespace crab {
             } else {
               g.add_edge(se, wt_sijd, de);
             }
+//            assert(potential[se] + g.edge_val(se, de) - potential[de] >= Wt(0));
           }
         }
         // Closure is now updated.
@@ -1686,7 +1694,7 @@ namespace crab {
             save[(*it).second] = true;
         }
 
-        for(vert_id v = 1; v < rev_map.size(); v++)
+        for(vert_id v = 0; v < rev_map.size(); v++)
         {
           if(!save[v] && rev_map[v])
             operator-=((*rev_map[v]).name());
@@ -1903,7 +1911,7 @@ namespace crab {
         return create_base(base().widening_thresholds<Thresholds>(o.norm(), ts));
       }
 
-      void normalize() { norm(); }
+      void normalize() { norm().normalize(); }
       void operator+=(linear_constraint_system_t csts) { lock(); norm() += csts; } 
       void operator-=(VariableName v) { lock(); norm() -= v; }
       interval_t operator[](VariableName x) { return norm()[x]; }
@@ -1974,10 +1982,24 @@ namespace crab {
         inv.forget (it, end);
       }
 
+#if 1
       template <typename Iter>
       static void project (sdbm_domain_t& inv, Iter it, Iter end) {
         inv.project (it, end);
       }
+#else
+     // Default implementation of project
+     template <typename Iter>
+     static void project(sdbm_domain_t& inv, Iter begin, Iter end){
+       // -- lose precision if relational or disjunctive domain
+       sdbm_domain_t res = sdbm_domain_t::top ();
+       for (auto v : boost::make_iterator_range (begin, end)){
+         res.set (v, inv[v]); 
+       }
+       std::swap (inv, res);
+     }
+#endif
+
     };
 
     template<typename Domain, typename Params>
@@ -2000,4 +2022,4 @@ namespace crab {
 } // namespace crab
 
 
-#endif // SPLIT_DBM_HPP
+#endif // SPARSE_DBM_HPP
