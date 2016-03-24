@@ -198,7 +198,12 @@ namespace ikos {
     }
     
     bound_t operator*(bound_t x) const {
-      return bound_t(this->_is_infinite || x._is_infinite, this->_n * x._n);
+      if (x._n == 0) 
+        return x;
+      else if (this->_n == 0)
+        return *this;
+      else 
+        return bound_t(this->_is_infinite || x._is_infinite, this->_n * x._n);
     }
 		
     bound_t& operator*=(bound_t x)  {
