@@ -43,16 +43,16 @@
 #ifndef IKOS_VAR_PACKING_DBM_HPP
 #define IKOS_VAR_PACKING_DBM_HPP
 
-#include <crab/domains/naive_dbm.hpp>
+#include <crab/domains/dense_dbm.hpp>
 #include <crab/domains/var_packing_domains.hpp>
 
 namespace ikos {
 
 template < typename Number, typename VariableName >
-class var_packing_naive_dbm : public writeable,
-                        public numerical_domain< Number, VariableName >,
-                        public bitwise_operators< Number, VariableName >,
-                        public division_operators< Number, VariableName > {
+class DensePackDBM : public writeable,
+                     public numerical_domain< Number, VariableName >,
+                     public bitwise_operators< Number, VariableName >,
+                     public division_operators< Number, VariableName > {
 public:
   using typename numerical_domain< Number, VariableName >::linear_expression_t;
   using typename numerical_domain< Number, VariableName >::linear_constraint_t;
@@ -64,12 +64,12 @@ public:
   typedef patricia_tree_set< variable_t > variable_set_t;
   typedef interval< Number > interval_t;
   typedef interval_domain< Number, VariableName > interval_domain_t;
-  typedef var_packing_naive_dbm< Number, VariableName > var_packing_dbm_t;
+  typedef DensePackDBM< Number, VariableName > var_packing_dbm_t;
 
 private:
   typedef var_packing_domain< Number,
                               VariableName,
-                              naive_dbm< Number, VariableName > >
+                              DenseDBM< Number, VariableName > >
       var_packing_domain_t;
   typedef typename var_packing_domain_t::domain_ptr_t domain_ptr_t;
 
@@ -77,7 +77,7 @@ private:
   var_packing_domain_t _domain;
 
 private:
-  var_packing_naive_dbm(const var_packing_domain_t& domain) : _domain(domain) {}
+  DensePackDBM(const var_packing_domain_t& domain) : _domain(domain) {}
 
   // Check the satisfiability of a linear constraint using intervals
   bool satisfies(linear_constraint_t cst) {
@@ -101,9 +101,9 @@ public:
   }
 
 public:
-  var_packing_naive_dbm() : _domain() {}
+  DensePackDBM() : _domain() {}
 
-  var_packing_naive_dbm(const var_packing_dbm_t& o) : _domain(o._domain) {}
+  DensePackDBM(const var_packing_dbm_t& o) : _domain(o._domain) {}
 
   var_packing_dbm_t& operator=(const var_packing_dbm_t& o) {
     _domain = o._domain;
@@ -476,7 +476,7 @@ public:
   void write(std::ostream& o) { _domain.write(o);}
 
   static std::string getDomainName() {
-    return "Dense DBM with packing"; 
+    return "DenseDBM with packing"; 
   }
 
 }; // end class var_packing_dbm

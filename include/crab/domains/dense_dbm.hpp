@@ -54,7 +54,7 @@
 namespace ikos {
 
 template < typename Number, typename VariableName >
-class naive_dbm : public writeable,
+class DenseDBM : public writeable,
             public numerical_domain< Number, VariableName >,
             public bitwise_operators< Number, VariableName >,
             public division_operators< Number, VariableName > {
@@ -70,7 +70,7 @@ public:
   typedef patricia_tree_set< variable_t > variable_set_t;
   typedef interval< Number > interval_t;
   typedef interval_domain< Number, VariableName > interval_domain_t;
-  typedef naive_dbm< Number, VariableName > dbm_t;
+  typedef DenseDBM< Number, VariableName > dbm_t;
 
 private:
   class dbmatrix : public writeable {
@@ -159,7 +159,7 @@ private:
   var_indexes_t _var_indexes;
 
 private:
-  naive_dbm(bool is_top) : _is_bottom(!is_top), _is_normalized(true) {}
+  DenseDBM(bool is_top) : _is_bottom(!is_top), _is_normalized(true) {}
 
   void set_bottom() {
     _is_bottom = true;
@@ -422,14 +422,14 @@ private:
   };
 
 public:
-  static dbm_t top() { return naive_dbm(true); }
+  static dbm_t top() { return DenseDBM(true); }
 
-  static dbm_t bottom() { return naive_dbm(false); }
+  static dbm_t bottom() { return DenseDBM(false); }
 
 public:
-  naive_dbm() : _is_bottom(false), _is_normalized(true) {}
+  DenseDBM() : _is_bottom(false), _is_normalized(true) {}
 
-  naive_dbm(const dbm_t& o)
+  DenseDBM(const dbm_t& o)
       : _is_bottom(o._is_bottom),
         _is_normalized(o._is_normalized),
         _matrix(o._matrix),
@@ -1258,10 +1258,10 @@ public:
   }
 
   static std::string getDomainName() { 
-    return "Dense DBM";
+    return "DenseDBM";
   }
 
-}; // class naive_dbm
+}; // class DenseDBM
 
 } // namespace ikos
 

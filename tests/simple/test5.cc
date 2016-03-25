@@ -59,6 +59,28 @@ int main (int argc, char** argv )
   live.exec ();
 
   {
+    NumFwdAnalyzer <cfg_t, ddbm_domain_t,VariableFactory>::type a (cfg,vfac,&live);
+    a.Run (ddbm_domain_t::top ());
+    cout << "Invariants using " << ddbm_domain_t::getDomainName () << "\n";
+    for (auto &b : cfg)
+    {
+      auto inv = a [b.label ()];
+      std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
+    }
+  }
+
+  {
+    NumFwdAnalyzer <cfg_t, dbm_domain_t,VariableFactory>::type a (cfg,vfac,&live);
+    a.Run (dbm_domain_t::top ());
+    cout << "Invariants using " << dbm_domain_t::getDomainName () << "\n";
+    for (auto &b : cfg)
+    {
+      auto inv = a [b.label ()];
+      std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
+    }
+  }
+
+  {
     NumFwdAnalyzer <cfg_t, sdbm_domain_t,VariableFactory>::type a (cfg,vfac,&live);
     a.Run (sdbm_domain_t::top ());
     cout << "Invariants using " << sdbm_domain_t::getDomainName () << "\n";

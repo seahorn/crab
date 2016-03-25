@@ -1,6 +1,6 @@
 set (CRAB_LIBS 
-  dbm
-  term)
+#  dbm
+   term)
 
 set (CRAB_LIBS ${CRAB_LIBS}
   ${LDD_LIBRARY} 

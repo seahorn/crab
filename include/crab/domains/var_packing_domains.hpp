@@ -60,9 +60,9 @@
 
 namespace ikos {
 
-// forward declaration for var_packing_naive_dbm
+// forward declaration for DensePackDBM
 template < typename Number, typename VariableName >
-class var_packing_naive_dbm;
+class DensePackDBM;
 
 
 template < typename Number, typename VariableName, typename Domain >
@@ -83,7 +83,7 @@ public:
   typedef var_packing_domain< Number, VariableName, Domain >
       var_packing_domain_t;
 
-  friend class var_packing_naive_dbm< Number, VariableName >;
+  friend class DensePackDBM< Number, VariableName >;
 
 private:
   typedef boost::shared_ptr< Domain > domain_ptr_t;
