@@ -206,6 +206,55 @@ public:
     _is_normalized = true;
   }
 
+  void close_over_edge(unsigned int x, unsigned int y, bound_t c) {
+    
+    if (_is_bottom) {
+      set_bottom();
+      _is_normalized = true;
+      return;
+    }
+
+#if 1
+    // find indexes that change
+    std::vector<unsigned int> Q1, Q2;
+    for (unsigned int i = 0; i < _matrix.num_var(); i++) {
+      _matrix(i, i) = 0;
+      if (_matrix (i,x) + c < _matrix (i,y))
+        Q1.push_back (i);
+      if (_matrix (y,i) + c < _matrix (x,i))
+        Q2.push_back (i);
+    }
+       
+    _matrix(x, y) = c;
+
+    for (auto i: Q1) {
+      for (auto j: Q2)
+        _matrix(i, j) = bound_t::min(_matrix(i, j), 
+                                     _matrix(i, x) + _matrix(y, j) + c);        
+    }
+#else
+    _matrix(x, y) = c;
+
+    for (unsigned int i = 0; i < _matrix.num_var(); i++)
+      _matrix(i, i) = 0;
+    
+    for (unsigned int i = 0; i < _matrix.num_var(); i++) {
+      for (unsigned int j = 0; j < _matrix.num_var(); j++) 
+        _matrix(i, j) = bound_t::min(_matrix(i, j), 
+                                     _matrix(i, x) + _matrix(y, j) + c);        
+    }
+#endif     
+    // Check for negative cycle
+    for (unsigned int i = 0; i < _matrix.num_var(); i++) {
+      if (_matrix(i, i) < 0) {
+        set_bottom();
+        break;
+      }
+    }
+
+    _is_normalized = true;
+  }
+
 private:
   // Get the index of variable x in _matrix (create a new one if not found)
   unsigned int var_index(const VariableName& x) {
@@ -265,8 +314,8 @@ private:
   void add_constraint(unsigned int i, unsigned int j, bound_t c) {
     bound_t w = _matrix(j, i);
     if (c < w) {
-      _matrix(j, i) = c;
-      _is_normalized = false;
+      //_matrix(j, i) = c;
+      close_over_edge(j, i, c);
     }
   }
 
@@ -281,8 +330,9 @@ private:
         _matrix(j, i) = _matrix(j, i) + c;
       }
     }
-
-    _is_normalized = false;
+    // XXX: closure is preserved
+    //_is_normalized = false;
+    _is_normalized = true;
   }
 
   template < typename op_t >
@@ -628,9 +678,7 @@ public:
     unsigned int i = var_index(x);
 
     if (e.is_constant()) { // x = c
-      forget(i);
-      add_constraint(i, 0, e.constant());
-      add_constraint(0, i, -e.constant());
+      set(x, e.constant ());
     } else if (e.size() == 1 && e.begin()->first == 1) { // x = y + c
       const VariableName& y = e.begin()->second.name();
       Number c = e.constant();
@@ -652,10 +700,7 @@ public:
         return;
 
       interval_t value = to_interval(e);
-
-      forget(i);
-      add_constraint(i, 0, value.ub());
-      add_constraint(0, i, -value.lb());
+      set(x, value);
     }
   }
 
@@ -713,10 +758,7 @@ public:
       default: { CRAB_ERROR("unreachable"); }
     }
 
-    unsigned int i = var_index(x);
-    forget(i);
-    add_constraint(i, 0, v_x.ub());
-    add_constraint(0, i, -v_x.lb());
+    set(x, v_x);
   }
 
   // x = y op k
@@ -770,9 +812,7 @@ public:
             return;
 
           interval_t v_x = to_interval(y) * k;
-          forget(i);
-          add_constraint(i, 0, v_x.ub());
-          add_constraint(0, i, -v_x.lb());
+          set (x, v_x);
         }
         break;
       }
@@ -793,9 +833,7 @@ public:
             return;
 
           interval_t v_x = to_interval(y) / k;
-          forget(i);
-          add_constraint(i, 0, v_x.ub());
-          add_constraint(0, i, -v_x.lb());
+          set(x, v_x);
         }
         break;
       }
@@ -957,8 +995,10 @@ public:
 
     unsigned int i = var_index(x);
     forget(i);
-    add_constraint(i, 0, intv.ub());
-    add_constraint(0, i, -intv.lb());
+    if (intv.ub().is_finite ())
+      add_constraint(i, 0, intv.ub());
+    if (intv.lb().is_finite())
+      add_constraint(0, i, -intv.lb());
   }
 
   // bitwise_operators_api
@@ -991,11 +1031,7 @@ public:
       }
       default: { CRAB_ERROR("unreachable"); }
     }
-
-    unsigned int i = var_index(x);
-    forget(i);
-    add_constraint(i, 0, v_x.ub());
-    add_constraint(0, i, -v_x.lb());
+    set (x, v_x);
   }
 
   void apply(conv_operation_t op, VariableName x, Number k, unsigned width) {
@@ -1022,11 +1058,7 @@ public:
       }
       default: { CRAB_ERROR("unreachable"); }
     }
-
-    unsigned int i = var_index(x);
-    forget(i);
-    add_constraint(i, 0, v_x.ub());
-    add_constraint(0, i, -v_x.lb());
+    set(x, v_x);
   }
 
   void apply(bitwise_operation_t op,
@@ -1070,11 +1102,7 @@ public:
       }
       default: { CRAB_ERROR("unreachable"); }
     }
-
-    unsigned int i = var_index(x);
-    forget(i);
-    add_constraint(i, 0, v_x.ub());
-    add_constraint(0, i, -v_x.lb());
+    set(x, v_x);
   }
 
   void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k) {
@@ -1116,10 +1144,7 @@ public:
       default: { CRAB_ERROR("unreachable"); }
     }
 
-    unsigned int i = var_index(x);
-    forget(i);
-    add_constraint(i, 0, v_x.ub());
-    add_constraint(0, i, -v_x.lb());
+    set(x, v_x);
   }
 
   // division_operators_api
@@ -1157,11 +1182,7 @@ public:
       }
       default: { CRAB_ERROR("unreachable"); }
     }
-
-    unsigned int i = var_index(x);
-    forget(i);
-    add_constraint(i, 0, v_x.ub());
-    add_constraint(0, i, -v_x.lb());
+    set(x,v_x);
   }
 
   void apply(div_operation_t op, VariableName x, VariableName y, Number k) {
@@ -1194,11 +1215,7 @@ public:
       }
       default: { CRAB_ERROR("unreachable"); }
     }
-
-    unsigned int i = var_index(x);
-    forget(i);
-    add_constraint(i, 0, v_x.ub());
-    add_constraint(0, i, -v_x.lb());
+    set(x,v_x);
   }
 
   linear_constraint_system_t to_linear_constraint_system() {
