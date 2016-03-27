@@ -53,6 +53,34 @@
 
 namespace ikos {
 
+  namespace DenseDBM_impl {
+    // translate from Number to dbm weight type
+    template<typename Number, typename Wt>
+    class NtoV {
+     public:
+      static Wt ntov(const Number& n) { 
+        return (Wt) n;
+      }
+    };
+
+    // translate from  bound<dbm weight type> to bound<Number>
+    template<typename Wt, typename Number>
+    class VtoN {
+     public:
+      static bound<Number> vton(const bound<Wt>& w) { 
+        if (w.is_plus_infinity())
+          return bound<Number>::plus_infinity();
+        else if (w.is_minus_infinity())
+          return bound<Number>::minus_infinity();
+        else {
+          Wt n = *(w.number());
+          return bound<Number> (n);
+        }
+      }
+    };
+
+  }
+
 template < typename Number, typename VariableName >
 class DenseDBM : public writeable,
             public numerical_domain< Number, VariableName >,
@@ -65,17 +93,22 @@ public:
   using typename numerical_domain< Number, VariableName >::variable_t;
   using typename numerical_domain< Number, VariableName >::number_t;
   using typename numerical_domain< Number, VariableName >::varname_t;
-  
-  typedef bound< Number > bound_t;
-  typedef patricia_tree_set< variable_t > variable_set_t;
-  typedef interval< Number > interval_t;
-  typedef interval_domain< Number, VariableName > interval_domain_t;
-  typedef DenseDBM< Number, VariableName > dbm_t;
+
+  // Eventually break this out into a template param
+  //typedef Number Wt;
+  typedef long Wt;
+  typedef bound<Wt> bound_t;
+  typedef DenseDBM_impl::NtoV<Number, Wt> ntov;
+  typedef DenseDBM_impl::VtoN<Wt, Number> vton;
+
+  typedef patricia_tree_set<variable_t> variable_set_t;
+  typedef interval<Number> interval_t;
+  typedef DenseDBM<Number, VariableName> dbm_t;
 
 private:
   class dbmatrix : public writeable {
   private:
-    std::vector< bound_t > _matrix; // Matrix of size _num_var * _num_var
+    std::vector<bound_t> _matrix; // Matrix of size _num_var * _num_var
     std::size_t _num_var;
 
   public:
@@ -120,8 +153,8 @@ private:
         _num_var = 2;
         _matrix.resize(_num_var * _num_var, bound_t::plus_infinity());
       } else {
-        std::vector< bound_t > new_matrix((_num_var + 1) * (_num_var + 1),
-                                          bound_t::plus_infinity());
+        std::vector<bound_t> new_matrix((_num_var + 1) * (_num_var + 1),
+                                   bound_t::plus_infinity());
 
         for (unsigned int i = 0; i < _num_var; i++) {
           for (unsigned int j = 0; j < _num_var; j++) {
@@ -186,12 +219,9 @@ public:
     }
 
     for (unsigned int k = 0; k < _matrix.num_var(); k++) {
-      for (unsigned int i = 0; i < _matrix.num_var(); i++) {
-        for (unsigned int j = 0; j < _matrix.num_var(); j++) {
-          _matrix(i, j) =
-              bound_t::min(_matrix(i, j), _matrix(i, k) + _matrix(k, j));
-        }
-      }
+      for (unsigned int i = 0; i < _matrix.num_var(); i++) 
+        for (unsigned int j = 0; j < _matrix.num_var(); j++) 
+          _matrix(i, j) = bound_t::min(_matrix(i, j), _matrix(i, k) + _matrix(k, j));
     }
 
     // Check for negative cycle
@@ -229,8 +259,7 @@ public:
 
     for (auto i: Q1) {
       for (auto j: Q2)
-        _matrix(i, j) = bound_t::min(_matrix(i, j), 
-                                     _matrix(i, x) + _matrix(y, j) + c);        
+        _matrix(i, j) = bound_t::min(_matrix(i, j), _matrix(i, x) + _matrix(y, j) + c);
     }
 #else
     _matrix(x, y) = c;
@@ -240,8 +269,7 @@ public:
     
     for (unsigned int i = 0; i < _matrix.num_var(); i++) {
       for (unsigned int j = 0; j < _matrix.num_var(); j++) 
-        _matrix(i, j) = bound_t::min(_matrix(i, j), 
-                                     _matrix(i, x) + _matrix(y, j) + c);        
+        _matrix(i, j) = bound_t::min(_matrix(i, j), _matrix(i, x) + _matrix(y, j) + c);
     }
 #endif     
     // Check for negative cycle
@@ -293,7 +321,6 @@ private:
     if (!_is_normalized) { // Useless if already normalized
       for (unsigned int i = 0; i < _matrix.num_var(); i++) {
         bound_t w_i_k = _matrix(i, k);
-
         for (unsigned int j = 0; j < _matrix.num_var(); j++) {
           if (i != k && j != k) {
             _matrix(i, j) = bound_t::min(_matrix(i, j), w_i_k + _matrix(k, j));
@@ -313,10 +340,8 @@ private:
   // Add constraint v_i - v_j <= c
   void add_constraint(unsigned int i, unsigned int j, bound_t c) {
     bound_t w = _matrix(j, i);
-    if (c < w) {
-      //_matrix(j, i) = c;
+    if (c < w) 
       close_over_edge(j, i, c);
-    }
   }
 
   // v_i = v_i + c
@@ -324,10 +349,11 @@ private:
     if (c == 0)
       return;
 
+    bound_t v(ntov::ntov(c)); 
     for (unsigned int j = 0; j < _matrix.num_var(); j++) {
       if (i != j) {
-        _matrix(i, j) = _matrix(i, j) - c;
-        _matrix(j, i) = _matrix(j, i) + c;
+        _matrix(i, j) = _matrix(i, j) - v;
+        _matrix(j, i) = _matrix(j, i) + v;
       }
     }
     // XXX: closure is preserved
@@ -689,8 +715,9 @@ public:
         unsigned int j = var_index(y);
 
         forget(i);
-        add_constraint(i, j, c);
-        add_constraint(j, i, -c);
+        bound_t v(ntov::ntov(c)); 
+        add_constraint(i, j, v);
+        add_constraint(j, i, -v);
       }
     } else {
       // Projection using intervals, requires normalization
@@ -778,8 +805,9 @@ public:
           unsigned int j = var_index(y);
 
           forget(i);
-          add_constraint(i, j, k);
-          add_constraint(j, i, -k);
+          bound_t v(ntov::ntov(k)); 
+          add_constraint(i, j, v);
+          add_constraint(j, i, -v);
         }
         break;
       }
@@ -790,8 +818,9 @@ public:
           unsigned int j = var_index(y);
 
           forget(i);
-          add_constraint(i, j, -k);
-          add_constraint(j, i, k);
+          bound_t v(ntov::ntov(k)); 
+          add_constraint(i, j, -v);
+          add_constraint(j, i, v);
         }
         break;
       }
@@ -906,11 +935,12 @@ public:
       return;
     }
 
+    bound_t v(ntov::ntov(c)); 
     if (cst.is_inequality()) {
-      add_constraint(i, j, c);
+      add_constraint(i, j, v);
     } else if (cst.is_equality()) {
-      add_constraint(i, j, c);
-      add_constraint(j, i, -c);
+      add_constraint(i, j, v);
+      add_constraint(j, i, -v);
     } else {
       // The only thing we can do is check the satisfiability
       normalize();
@@ -947,7 +977,8 @@ public:
       if (it == _var_indexes.cend()) {
         return interval_t::top();
       } else {
-        return interval_t(-_matrix(it->second, 0), _matrix(0, it->second));
+        return interval_t(-vton::vton(_matrix(it->second, 0)), 
+                          vton::vton(_matrix(0, it->second)));
       }
     }
   }
@@ -972,6 +1003,7 @@ public:
   // Check satisfiability of a linear constraint using intervals
   // Does not normalize.
   bool satisfies(linear_constraint_t cst) const {
+    typedef interval_domain< Number, VariableName > interval_domain_t;
     interval_domain_t inv;
 
     for (typename linear_expression_t::iterator it = cst.begin();
@@ -995,76 +1027,32 @@ public:
 
     unsigned int i = var_index(x);
     forget(i);
-    if (intv.ub().is_finite ())
-      add_constraint(i, 0, intv.ub());
-    if (intv.lb().is_finite())
-      add_constraint(0, i, -intv.lb());
+    if (intv.ub().is_finite ()) {
+      bound_t v(ntov::ntov(*(intv.ub().number()))); 
+      add_constraint(i, 0, v);
+    }
+    if (intv.lb().is_finite()) {
+      bound_t v(ntov::ntov(*(intv.lb().number()))); 
+      add_constraint(0, i, -v);
+    }
   }
 
   // bitwise_operators_api
 
-  void apply(conv_operation_t op,
-             VariableName x,
-             VariableName y,
+  void apply(conv_operation_t op, VariableName x, VariableName y,
              unsigned width) {
-    // Requires normalization
-    normalize();
-
-    if (is_bottom())
-      return;
-
-    interval_t v_x = interval_t::top();
-    interval_t v_y = to_interval(y);
-
-    switch (op) {
-      case OP_TRUNC: {
-        v_x = v_y.Trunc(width);
-        break;
-      }
-      case OP_ZEXT: {
-        v_x = v_y.ZExt(width);
-        break;
-      }
-      case OP_SEXT: {
-        v_x = v_y.SExt(width);
-        break;
-      }
-      default: { CRAB_ERROR("unreachable"); }
-    }
-    set (x, v_x);
+    // since reasoning about infinite precision we simply assign and
+    // ignore the width.
+    assign(x, linear_expression_t(y));
   }
 
   void apply(conv_operation_t op, VariableName x, Number k, unsigned width) {
-    // Does not require normalization
-
-    if (_is_bottom)
-      return;
-
-    interval_t v_x = interval_t::top();
-    interval_t v_y(k);
-
-    switch (op) {
-      case OP_TRUNC: {
-        v_x = v_y.Trunc(width);
-        break;
-      }
-      case OP_ZEXT: {
-        v_x = v_y.ZExt(width);
-        break;
-      }
-      case OP_SEXT: {
-        v_x = v_y.SExt(width);
-        break;
-      }
-      default: { CRAB_ERROR("unreachable"); }
-    }
-    set(x, v_x);
+    // since reasoning about infinite precision we simply assign
+    // and ignore the width.
+    assign(x, k);
   }
 
-  void apply(bitwise_operation_t op,
-             VariableName x,
-             VariableName y,
-             VariableName z) {
+  void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) {
     // Requires normalization
     normalize();
 
@@ -1149,73 +1137,84 @@ public:
 
   // division_operators_api
 
-  void apply(div_operation_t op,
-             VariableName x,
-             VariableName y,
-             VariableName z) {
-    // Requires normalization
-    normalize();
+  void apply(div_operation_t op, VariableName x, VariableName y, VariableName z) {
 
-    if (is_bottom())
-      return;
-
-    interval_t v_x = interval_t::top();
-    interval_t v_y = to_interval(y);
-    interval_t v_z = to_interval(z);
-
-    switch (op) {
-      case OP_SDIV: {
-        v_x = v_y / v_z;
-        break;
-      }
-      case OP_UDIV: {
-        v_x = v_y.UDiv(v_z);
-        break;
-      }
-      case OP_SREM: {
-        v_x = v_y.SRem(v_z);
-        break;
-      }
-      case OP_UREM: {
-        v_x = v_y.URem(v_z);
-        break;
-      }
-      default: { CRAB_ERROR("unreachable"); }
+    if (op == OP_SDIV){
+      apply(OP_DIVISION, x, y, z);
     }
-    set(x,v_x);
+    else{
+      
+      // Requires normalization
+      normalize();
+      
+      if (is_bottom())
+        return;
+
+      interval_t v_x = interval_t::top();
+      interval_t v_y = to_interval(y);
+      interval_t v_z = to_interval(z);
+      
+      switch (op) {
+        case OP_SDIV: {
+          v_x = v_y / v_z;
+          break;
+        }
+        case OP_UDIV: {
+          v_x = v_y.UDiv(v_z);
+          break;
+        }
+        case OP_SREM: {
+          v_x = v_y.SRem(v_z);
+          break;
+        }
+        case OP_UREM: {
+          v_x = v_y.URem(v_z);
+          break;
+        }
+        default: { CRAB_ERROR("unreachable"); }
+      }
+      set(x,v_x);
+    }
   }
 
   void apply(div_operation_t op, VariableName x, VariableName y, Number k) {
-    // Requires normalization
-    normalize();
 
-    if (is_bottom())
-      return;
-
-    interval_t v_x = interval_t::top();
-    interval_t v_y = to_interval(y);
-    interval_t v_z(k);
-
-    switch (op) {
-      case OP_SDIV: {
-        v_x = v_y / v_z;
-        break;
-      }
-      case OP_UDIV: {
-        v_x = v_y.UDiv(v_z);
-        break;
-      }
-      case OP_SREM: {
-        v_x = v_y.SRem(v_z);
-        break;
-      }
-      case OP_UREM: {
-        v_x = v_y.URem(v_z);
-        break;
-      }
-      default: { CRAB_ERROR("unreachable"); }
+    if (op == OP_SDIV){
+      apply(OP_DIVISION, x, y, k);
     }
-    set(x,v_x);
+    else{
+      
+      // Requires normalization
+      normalize();
+      
+      if (is_bottom())
+        return;
+      
+      interval_t v_x = interval_t::top();
+      interval_t v_y = to_interval(y);
+      interval_t v_z(k);
+      
+      switch (op) {
+        case OP_SDIV: {
+          v_x = v_y / v_z;
+          break;
+        }
+        case OP_UDIV: {
+          v_x = v_y.UDiv(v_z);
+          break;
+        }
+        case OP_SREM: {
+          v_x = v_y.SRem(v_z);
+          break;
+        }
+        case OP_UREM: {
+          v_x = v_y.URem(v_z);
+          break;
+        }
+        default: { CRAB_ERROR("unreachable"); }
+      }
+      set(x,v_x);
+    }
   }
 
   linear_constraint_system_t to_linear_constraint_system() {
