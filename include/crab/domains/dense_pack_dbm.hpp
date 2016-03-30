@@ -138,7 +138,8 @@ public:
   template<typename Thresholds>
   var_packing_dbm_t widening_thresholds (var_packing_dbm_t o, 
                                          const Thresholds &ts) {
-    return this->widening_thresholds (o, ts);
+    // TODO: use thresholds
+    return (*this || o);
   }
   
   var_packing_dbm_t operator&&(var_packing_dbm_t o) {
