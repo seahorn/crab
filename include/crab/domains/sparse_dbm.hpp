@@ -302,7 +302,7 @@ namespace crab {
           if(vert_map.size() < o.vert_map.size())
             return false;
 
-          Wt* wx; Wt* wy;
+          Wt* wx; 
 
           // Set up a mapping from o to this.
           vector<unsigned int> vert_renaming(o.g.size(),-1);
