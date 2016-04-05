@@ -17,7 +17,7 @@ if(NOT CMAKE_BUILD_TYPE)
    set(CMAKE_BUILD_TYPE Debug CACHE STRING "Choose the type of build." FORCE)
 endif(NOT CMAKE_BUILD_TYPE)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O3 -Wall")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wall")
 
 set (CUSTOM_BOOST_ROOT "" CACHE PATH "Path to custom boost installation.")
 if (CUSTOM_BOOST_ROOT)
@@ -41,17 +41,6 @@ else()
   set(GMP_LIB "")
   set(GMPXX_LIB "")
 endif()
-
-# Whether crab libraries are built shared or statically
-option(BUILD_CRAB_LIBS_SHARED "Build all Crab libraries shared." OFF)
-
-if (BUILD_CRAB_LIBS_SHARED)
-  message (STATUS "All crab libraries will be built as shared libraries")
-  set(CRAB_LIBS_TYPE SHARED)
-else()
-  message (STATUS "All crab libraries will be built statically")
-  set(CRAB_LIBS_TYPE STATIC)
-endif ()
 
 # Whether crab libraries are built shared or statically
 option(BUILD_CRAB_LIBS_SHARED "Build all Crab libraries shared." OFF)
@@ -187,8 +176,11 @@ find_package(OpenMP)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 
 add_definitions(-std=c++11)
-add_definitions(-Wno-redeclared-class-member -Wno-sometimes-uninitialized)
+add_definitions(-Wno-redeclared-class-member)
 add_definitions(-Wno-covered-switch-default)
+
+add_definitions(-Wno-sometimes-uninitialized)
+add_definitions(-Wno-maybe-uninitialized)
 
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
 add_definitions( -Wno-unused-local-typedefs)
