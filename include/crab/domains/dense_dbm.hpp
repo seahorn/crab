@@ -72,10 +72,12 @@ namespace ikos {
           return bound<Number>::plus_infinity();
         else if (w.is_minus_infinity())
           return bound<Number>::minus_infinity();
-        else {
-          Wt n = *(w.number());
-          return bound<Number> (n);
-        }
+        else
+          return bound<Number> (*(w.number()));
+      }
+
+      static Number vton(Wt w) { 
+        return Number(w);
       }
     };
 
@@ -97,7 +99,8 @@ public:
   // Eventually break this out into a template param
   //typedef Number Wt;
   typedef long Wt;
-  typedef bound<Wt> bound_t;
+  typedef bound<Wt> Wt_bound_t;
+  typedef interval<Wt> Wt_interval_t;
   typedef DenseDBM_impl::NtoV<Number, Wt> ntov;
   typedef DenseDBM_impl::VtoN<Wt, Number> vton;
 
@@ -108,7 +111,7 @@ public:
 private:
   class dbmatrix : public writeable {
   private:
-    std::vector<bound_t> _matrix; // Matrix of size _num_var * _num_var
+    std::vector<Wt_bound_t> _matrix; // Matrix of size _num_var * _num_var
     std::size_t _num_var;
 
   public:
@@ -124,12 +127,12 @@ private:
 
     std::size_t num_var() const { return _num_var; }
 
-    bound_t operator()(unsigned int i, unsigned int j) const {
+    Wt_bound_t operator()(unsigned int i, unsigned int j) const {
       assert(i < _num_var && j < _num_var && "ouf of bounds error");
       return _matrix[_num_var * i + j];
     }
 
-    bound_t& operator()(unsigned int i, unsigned int j) {
+    Wt_bound_t& operator()(unsigned int i, unsigned int j) {
       assert(i < _num_var && j < _num_var && "ouf of bounds error");
       return _matrix[_num_var * i + j];
     }
@@ -142,7 +145,7 @@ private:
     /* Clear and resize the matrix */
     void clear_resize(std::size_t num_var) {
       _matrix.clear();
-      _matrix.resize(num_var * num_var, bound_t::plus_infinity());
+      _matrix.resize(num_var * num_var, Wt_bound_t::plus_infinity());
       _num_var = num_var;
     }
 
@@ -151,10 +154,10 @@ private:
     unsigned int add_variable() {
       if (_num_var == 0) {
         _num_var = 2;
-        _matrix.resize(_num_var * _num_var, bound_t::plus_infinity());
+        _matrix.resize(_num_var * _num_var, Wt_bound_t::plus_infinity());
       } else {
-        std::vector<bound_t> new_matrix((_num_var + 1) * (_num_var + 1),
-                                   bound_t::plus_infinity());
+        std::vector<Wt_bound_t> new_matrix((_num_var + 1) * (_num_var + 1),
+                                   Wt_bound_t::plus_infinity());
 
         for (unsigned int i = 0; i < _num_var; i++) {
           for (unsigned int j = 0; j < _num_var; j++) {
@@ -221,7 +224,7 @@ public:
     for (unsigned int k = 0; k < _matrix.num_var(); k++) {
       for (unsigned int i = 0; i < _matrix.num_var(); i++) 
         for (unsigned int j = 0; j < _matrix.num_var(); j++) 
-          _matrix(i, j) = bound_t::min(_matrix(i, j), _matrix(i, k) + _matrix(k, j));
+          _matrix(i, j) = Wt_bound_t::min(_matrix(i, j), _matrix(i, k) + _matrix(k, j));
     }
 
     // Check for negative cycle
@@ -236,7 +239,7 @@ public:
     _is_normalized = true;
   }
 
-  void close_over_edge(unsigned int x, unsigned int y, bound_t c) {
+  void incr_closure(unsigned int x, unsigned int y, Wt_bound_t c) {
     
     if (_is_bottom) {
       set_bottom();
@@ -244,7 +247,7 @@ public:
       return;
     }
 
-#if 1
+    #if 1
     // find indexes that change
     std::vector<unsigned int> Q1, Q2;
     for (unsigned int i = 0; i < _matrix.num_var(); i++) {
@@ -259,9 +262,9 @@ public:
 
     for (auto i: Q1) {
       for (auto j: Q2)
-        _matrix(i, j) = bound_t::min(_matrix(i, j), _matrix(i, x) + _matrix(y, j) + c);
+        _matrix(i, j) = Wt_bound_t::min(_matrix(i, j), _matrix(i, x) + _matrix(y, j) + c);
     }
-#else
+    #else
     _matrix(x, y) = c;
 
     for (unsigned int i = 0; i < _matrix.num_var(); i++)
@@ -269,9 +272,9 @@ public:
     
     for (unsigned int i = 0; i < _matrix.num_var(); i++) {
       for (unsigned int j = 0; j < _matrix.num_var(); j++) 
-        _matrix(i, j) = bound_t::min(_matrix(i, j), _matrix(i, x) + _matrix(y, j) + c);
+        _matrix(i, j) = Wt_bound_t::min(_matrix(i, j), _matrix(i, x) + _matrix(y, j) + c);
     }
-#endif     
+    #endif     
     // Check for negative cycle
     for (unsigned int i = 0; i < _matrix.num_var(); i++) {
       if (_matrix(i, i) < 0) {
@@ -320,17 +323,17 @@ private:
     // Use informations about k to improve all constraints
     if (!_is_normalized) { // Useless if already normalized
       for (unsigned int i = 0; i < _matrix.num_var(); i++) {
-        bound_t w_i_k = _matrix(i, k);
+        Wt_bound_t w_i_k = _matrix(i, k);
         for (unsigned int j = 0; j < _matrix.num_var(); j++) {
           if (i != k && j != k) {
-            _matrix(i, j) = bound_t::min(_matrix(i, j), w_i_k + _matrix(k, j));
+            _matrix(i, j) = Wt_bound_t::min(_matrix(i, j), w_i_k + _matrix(k, j));
           }
         }
       }
     }
 
     for (unsigned int i = 0; i < _matrix.num_var(); i++) {
-      _matrix(i, k) = _matrix(k, i) = bound_t::plus_infinity();
+      _matrix(i, k) = _matrix(k, i) = Wt_bound_t::plus_infinity();
     }
     _matrix(k, k) = 0;
 
@@ -338,26 +341,25 @@ private:
   }
 
   // Add constraint v_i - v_j <= c
-  void add_constraint(unsigned int i, unsigned int j, bound_t c) {
-    bound_t w = _matrix(j, i);
-    if (c < w) 
-      close_over_edge(j, i, c);
+  void add_constraint(unsigned int i, unsigned int j, Wt_bound_t c) {
+    Wt_bound_t w = _matrix(j, i);
+    if (c < w)
+      incr_closure(j, i, c);
   }
 
   // v_i = v_i + c
-  void increment(unsigned int i, Number c) {
-    if (c == 0)
-      return;
+  void increment(unsigned int i, Wt_interval_t v) {
+    if (v.singleton() && *(v.singleton()) == 0) return;
 
-    bound_t v(ntov::ntov(c)); 
     for (unsigned int j = 0; j < _matrix.num_var(); j++) {
       if (i != j) {
-        _matrix(i, j) = _matrix(i, j) - v;
-        _matrix(j, i) = _matrix(j, i) + v;
+        if (v.lb().is_finite())
+          _matrix(i, j) = _matrix(i, j) - v.lb();
+        if (v.ub().is_finite())
+          _matrix(j, i) = _matrix(j, i) + v.ub();
       }
     }
     // XXX: closure is preserved
-    //_is_normalized = false;
     _is_normalized = true;
   }
 
@@ -451,44 +453,44 @@ private:
   // Helpers for lattice operations
   struct join_op {
     // Default value
-    bound_t operator()() { return bound_t::plus_infinity(); }
+    Wt_bound_t operator()() { return Wt_bound_t::plus_infinity(); }
 
-    bound_t operator()(bound_t) { return bound_t::plus_infinity(); }
+    Wt_bound_t operator()(Wt_bound_t) { return Wt_bound_t::plus_infinity(); }
 
-    bound_t operator()(bound_t v1, bound_t v2) { return bound_t::max(v1, v2); }
+    Wt_bound_t operator()(Wt_bound_t v1, Wt_bound_t v2) { return Wt_bound_t::max(v1, v2); }
   };
 
   struct meet_op {
     // Default value
-    bound_t operator()() { return bound_t::plus_infinity(); }
+    Wt_bound_t operator()() { return Wt_bound_t::plus_infinity(); }
 
-    bound_t operator()(bound_t v) { return v; }
+    Wt_bound_t operator()(Wt_bound_t v) { return v; }
 
-    bound_t operator()(bound_t v1, bound_t v2) { return bound_t::min(v1, v2); }
+    Wt_bound_t operator()(Wt_bound_t v1, Wt_bound_t v2) { return Wt_bound_t::min(v1, v2); }
   };
 
   struct widening_op {
     // Default value
-    bound_t operator()() { return bound_t::plus_infinity(); }
+    Wt_bound_t operator()() { return Wt_bound_t::plus_infinity(); }
 
-    bound_t operator()(bound_t v) { return bound_t::plus_infinity(); }
+    Wt_bound_t operator()(Wt_bound_t v) { return Wt_bound_t::plus_infinity(); }
 
-    bound_t operator()(bound_t v1, bound_t v2) {
+    Wt_bound_t operator()(Wt_bound_t v1, Wt_bound_t v2) {
       if (v2 <= v1) {
         return v1;
       } else {
-        return bound_t::plus_infinity();
+        return Wt_bound_t::plus_infinity();
       }
     }
   };
 
   struct narrowing_op {
     // Default value
-    bound_t operator()() { return bound_t::plus_infinity(); }
+    Wt_bound_t operator()() { return Wt_bound_t::plus_infinity(); }
 
-    bound_t operator()(bound_t v) { return v; }
+    Wt_bound_t operator()(Wt_bound_t v) { return v; }
 
-    bound_t operator()(bound_t v1, bound_t v2) {
+    Wt_bound_t operator()(Wt_bound_t v1, Wt_bound_t v2) {
       if (v1.is_plus_infinity()) {
         return v2;
       } else {
@@ -710,12 +712,13 @@ public:
       Number c = e.constant();
 
       if (x == y) { // x = x + c
-        increment(i, c);
+        Wt_bound_t v(ntov::ntov(c)); 
+        increment(i, v);
       } else {
         unsigned int j = var_index(y);
 
         forget(i);
-        bound_t v(ntov::ntov(c)); 
+        Wt_bound_t v(ntov::ntov(c)); 
         add_constraint(i, j, v);
         add_constraint(j, i, -v);
       }
@@ -745,6 +748,21 @@ public:
 
     switch (op) {
       case OP_ADDITION: {
+
+        if (x == y) { // x += [a,b]
+          Wt_interval_t wt_z = to_wt_interval(z);
+          if (!wt_z.is_top ()) {
+            increment (var_index(x), wt_z);
+            return;
+          }
+        } else if (x == z) {
+          Wt_interval_t wt_y = to_wt_interval(y);
+          if (!wt_y.is_top()) {
+            increment (var_index(x), wt_y);
+            return;
+          }
+        }
+        
         if (v_z.singleton()) { // x = y + c
           apply(op, x, y, *v_z.singleton());
           return;
@@ -752,14 +770,32 @@ public:
           apply(op, x, z, *v_y.singleton());
           return;
         }
+
+        // otherwise, we fall back on intervals
         v_x = v_y + v_z;
         break;
       }
       case OP_SUBTRACTION: {
+
+        if (x == y) { // x -= [a,b]
+          Wt_interval_t wt_z = to_wt_interval(z);
+          if (!wt_z.is_top ()) {
+            increment (var_index(x), -wt_z);
+            return;
+          }
+        } else if (x == z) {
+          Wt_interval_t wt_y = to_wt_interval(y);
+          if (!wt_y.is_top()) {
+            increment (var_index(x), -wt_y);
+            return;
+          }
+        }
+
         if (v_z.singleton()) { // x = y - c
           apply(op, x, y, *v_z.singleton());
           return;
         }
+        // otherwise, we fall back on intervals
         v_x = v_y - v_z;
         break;
       }
@@ -771,6 +807,7 @@ public:
           apply(op, x, z, *v_y.singleton());
           return;
         }
+        // otherwise, we fall back on intervals
         v_x = v_y * v_z;
         break;
       }
@@ -779,6 +816,7 @@ public:
           apply(op, x, y, *v_z.singleton());
           return;
         }
+        // otherwise, we fall back on intervals
         v_x = v_y / v_z;
         break;
       }
@@ -786,6 +824,7 @@ public:
     }
 
     set(x, v_x);
+    return;
   }
 
   // x = y op k
@@ -799,13 +838,14 @@ public:
 
     switch (op) {
       case OP_ADDITION: {
-        if (x == y) { // x = x + k
-          increment(i, k);
-        } else { // x = y + k
-          unsigned int j = var_index(y);
 
+        if (x == y) { // x = x + k
+          Wt_bound_t v(ntov::ntov(k)); 
+          increment(i, v);
+        } else { // x = y + k
           forget(i);
-          bound_t v(ntov::ntov(k)); 
+          Wt_bound_t v(ntov::ntov(k)); 
+          unsigned int j = var_index(y);
           add_constraint(i, j, v);
           add_constraint(j, i, -v);
         }
@@ -813,12 +853,12 @@ public:
       }
       case OP_SUBTRACTION: {
         if (x == y) { // x = x - k
-          increment(i, -k);
+          Wt_bound_t v(ntov::ntov(k)); 
+          increment(i, -v);
         } else { // x = y - k
-          unsigned int j = var_index(y);
-
           forget(i);
-          bound_t v(ntov::ntov(k)); 
+          unsigned int j = var_index(y);
+          Wt_bound_t v(ntov::ntov(k)); 
           add_constraint(i, j, -v);
           add_constraint(j, i, v);
         }
@@ -828,9 +868,8 @@ public:
         if (k == 1) { // x = y
           if (x == y)
             return;
-          unsigned int j = var_index(y);
-
           forget(i);
+          unsigned int j = var_index(y);
           add_constraint(i, j, 0);
           add_constraint(j, i, 0);
         } else {
@@ -849,9 +888,8 @@ public:
         if (k == 1) { // x = y
           if (x == y)
             return;
-          unsigned int j = var_index(y);
-
           forget(i);
+          unsigned int j = var_index(y);
           add_constraint(i, j, 0);
           add_constraint(j, i, 0);
         } else {
@@ -935,7 +973,7 @@ public:
       return;
     }
 
-    bound_t v(ntov::ntov(c)); 
+    Wt_bound_t v(ntov::ntov(c)); 
     if (cst.is_inequality()) {
       add_constraint(i, j, v);
     } else if (cst.is_equality()) {
@@ -982,6 +1020,24 @@ public:
       }
     }
   }
+  
+ private:
+
+  // Does not normalize.
+  Wt_interval_t to_wt_interval(VariableName x) const {
+    if (_is_bottom) {
+      return Wt_interval_t::bottom();
+    } else {
+      typename var_indexes_t::const_iterator it = _var_indexes.find(x);
+      if (it == _var_indexes.cend()) {
+        return Wt_interval_t::top();
+      } else {
+        return Wt_interval_t(-_matrix(it->second, 0), _matrix(0, it->second));
+      }
+    }
+  }
+
+ public:
 
   // Does not normalize.
   interval_t to_interval(linear_expression_t e) const {
@@ -1028,11 +1084,11 @@ public:
     unsigned int i = var_index(x);
     forget(i);
     if (intv.ub().is_finite ()) {
-      bound_t v(ntov::ntov(*(intv.ub().number()))); 
+      Wt_bound_t v(ntov::ntov(*(intv.ub().number()))); 
       add_constraint(i, 0, v);
     }
     if (intv.lb().is_finite()) {
-      bound_t v(ntov::ntov(*(intv.lb().number()))); 
+      Wt_bound_t v(ntov::ntov(*(intv.lb().number()))); 
       add_constraint(0, i, -v);
     }
   }
@@ -1233,13 +1289,13 @@ public:
       unsigned int i = it->second;
 
       if (_matrix(i, 0).is_finite() && _matrix(i, 0) == -_matrix(0, i)) {
-        csts += linear_constraint_t(var_i == *_matrix(0, i).number());
+        csts += linear_constraint_t(var_i == vton::vton(*_matrix(0, i).number()));
       } else {
         if (_matrix(i, 0).is_finite()) { // 0 - var_i <= c
-          csts += linear_constraint_t(var_i >= -*_matrix(i, 0).number());
+          csts += linear_constraint_t(var_i >= -vton::vton(*_matrix(i, 0).number()));
         }
         if (_matrix(0, i).is_finite()) { // var_i <= c
-          csts += linear_constraint_t(var_i <= *_matrix(0, i).number());
+          csts += linear_constraint_t(var_i <= vton::vton(*_matrix(0, i).number()));
         }
       }
 
@@ -1250,15 +1306,15 @@ public:
         unsigned int j = it2->second;
 
         if (_matrix(i, j).is_finite() && _matrix(i, j) == -_matrix(j, i)) {
-          csts += linear_constraint_t(var_i - var_j == *_matrix(j, i).number());
+          csts += linear_constraint_t(var_i - var_j == vton::vton(*_matrix(j, i).number()));
         } else {
           if (_matrix(i, j).is_finite()) { // var_j - var_i <= c
             csts +=
-                linear_constraint_t(var_j - var_i <= *_matrix(i, j).number());
+                linear_constraint_t(var_j - var_i <= vton::vton(*_matrix(i, j).number()));
           }
           if (_matrix(j, i).is_finite()) { // var_i - var_j <= c
             csts +=
-                linear_constraint_t(var_i - var_j <= *_matrix(j, i).number());
+                linear_constraint_t(var_i - var_j <= vton::vton(*_matrix(j, i).number()));
           }
         }
       }
