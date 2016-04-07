@@ -151,12 +151,11 @@ namespace crab {
      using namespace apron;
 
       template<typename Number, typename VariableName, apron_domain_id_t ApronDom>
-      class apron_domain: 
+      class apron_domain_: 
          public ikos::writeable, 
          public numerical_domain< Number, VariableName>,
          public bitwise_operators< Number, VariableName >, 
          public division_operators< Number, VariableName > {
-              
        public:
         using typename numerical_domain< Number, VariableName>::linear_expression_t;
         using typename numerical_domain< Number, VariableName>::linear_constraint_t;
@@ -164,10 +163,10 @@ namespace crab {
         using typename numerical_domain< Number, VariableName>::variable_t;
         using typename numerical_domain< Number, VariableName>::number_t;
         using typename numerical_domain< Number, VariableName>::varname_t;
-        typedef apron_domain <Number, VariableName, ApronDom> apron_domain_t;
         typedef interval <Number> interval_t;
 
        private:
+        typedef apron_domain_ <Number, VariableName, ApronDom> apron_domain_t;
         typedef interval_domain <Number, VariableName> interval_domain_t;
         typedef bound <Number> bound_t;
         typedef boost::bimap< VariableName , ap_dim_t > var_bimap_t;
@@ -568,7 +567,7 @@ namespace crab {
 
        private:
 
-        apron_domain (ap_state_ptr apState, var_map_ptr varMap): 
+        apron_domain_ (ap_state_ptr apState, var_map_ptr varMap): 
             ikos::writeable (), 
             m_apstate (apState), 
             m_var_map (varMap) { 
@@ -593,7 +592,7 @@ namespace crab {
         }
 
 
-        apron_domain (ap_state_ptr&& apState, var_map_ptr&& varMap): 
+        apron_domain_ (ap_state_ptr&& apState, var_map_ptr&& varMap): 
             ikos::writeable (), 
             m_apstate (std::move (apState)), 
             m_var_map (std::move (varMap)) { 
@@ -620,7 +619,7 @@ namespace crab {
 
        public:
 
-        apron_domain (bool isBot = false): 
+        apron_domain_ (bool isBot = false): 
             ikos::writeable (),
             m_apstate (apPtr (get_man(), 
                               (isBot ? 
@@ -629,15 +628,15 @@ namespace crab {
             m_var_map (var_map_ptr (new var_bimap_t ()))
         { }
 
-        ~apron_domain () { }
+        ~apron_domain_ () { }
 
-        apron_domain (const apron_domain_t& o): 
+        apron_domain_ (const apron_domain_t& o): 
             ikos::writeable(), 
             m_apstate (apPtr (get_man (), ap_abstract0_copy (get_man (), &*(o.m_apstate)))),
             m_var_map (var_map_ptr (new var_bimap_t (*o.m_var_map)))
         {  }
 
-        apron_domain (apron_domain_t&& o): 
+        apron_domain_ (apron_domain_t&& o): 
             ikos::writeable(), 
             m_apstate (std::move (o.m_apstate)), 
             m_var_map (std::move (o.m_var_map)) { }
@@ -1204,11 +1203,152 @@ namespace crab {
         }
       }; 
 
+      // Quick wrapper which uses shared references with copy-on-write.
+      template<class Number, class VariableName, apron_domain_id_t ApronDom>
+      class apron_domain : public ikos::writeable,
+                           public numerical_domain<Number, VariableName >,
+                           public bitwise_operators<Number,VariableName >,
+                           public division_operators<Number, VariableName > {
+       public:
+        using typename numerical_domain< Number, VariableName >::linear_expression_t;
+        using typename numerical_domain< Number, VariableName >::linear_constraint_t;
+        using typename numerical_domain< Number, VariableName >::linear_constraint_system_t;
+        using typename numerical_domain< Number, VariableName >::variable_t;
+        using typename numerical_domain< Number, VariableName >::number_t;
+        using typename numerical_domain< Number, VariableName >::varname_t;
+        typedef typename linear_constraint_t::kind_t constraint_kind_t;
+        typedef interval<Number>  interval_t;
+        
+        typedef apron_domain_<Number, VariableName, ApronDom> apron_domain_impl_t;
+        typedef std::shared_ptr<apron_domain_impl_t> apron_domain_ref_t;
+        typedef apron_domain<Number, VariableName, ApronDom> apron_domain_t;
+
+        apron_domain(apron_domain_ref_t _ref) : norm_ref(_ref) { }
+        
+        apron_domain(apron_domain_ref_t _base, apron_domain_ref_t _norm) 
+            : base_ref(_base), norm_ref(_norm)
+        { }
+        
+        apron_domain_t create(apron_domain_impl_t&& t)
+        {
+          return std::make_shared<apron_domain_impl_t>(std::move(t));
+        }
+        
+        apron_domain_t create_base(apron_domain_impl_t&& t)
+        {
+          apron_domain_ref_t base = std::make_shared<apron_domain_impl_t>(t);
+          apron_domain_ref_t norm = std::make_shared<apron_domain_impl_t>(std::move(t));  
+          return apron_domain_t(base, norm);
+        }
+        
+        void lock(void)
+        {
+          // Allocate a fresh copy.
+          if(!norm_ref.unique())
+            norm_ref = std::make_shared<apron_domain_impl_t>(*norm_ref);
+          base_ref.reset();
+        }
+        
+       public:
+        
+        static apron_domain_t top() { return apron_domain(false); }
+        
+        static apron_domain_t bottom() { return apron_domain(true); }
+        
+        apron_domain(bool is_bottom = false)
+            : norm_ref(std::make_shared<apron_domain_impl_t>(is_bottom)) { }
+        
+        apron_domain(const apron_domain_t& o)
+            : base_ref(o.base_ref), norm_ref(o.norm_ref)
+        { }
+        
+        apron_domain& operator=(const apron_domain_t& o) {
+          base_ref = o.base_ref;
+          norm_ref = o.norm_ref;
+          return *this;
+        }
+        
+        apron_domain_impl_t& base(void) {
+          if(base_ref)
+            return *base_ref;
+          else
+            return *norm_ref;
+        }
+        apron_domain_impl_t& norm(void) { return *norm_ref; }
+        
+        bool is_bottom() { return norm().is_bottom(); }
+        bool is_top() { return norm().is_top(); }
+        bool operator<=(apron_domain_t& o) { return norm() <= o.norm(); }
+        void operator|=(apron_domain_t o) { lock(); norm() |= o.norm(); }
+        apron_domain_t operator|(apron_domain_t o) { return create(norm() | o.norm()); }
+        apron_domain_t operator||(apron_domain_t o) { return create_base(base() || o.norm()); }
+        apron_domain_t operator&(apron_domain_t o) { return create(norm() & o.norm()); }
+        apron_domain_t operator&&(apron_domain_t o) { return create(norm() && o.norm()); }
+        
+        template<typename Thresholds>
+        apron_domain_t widening_thresholds (apron_domain_t o, const Thresholds &ts) {
+          return create_base(base().widening_thresholds<Thresholds>(o.norm(), ts));
+        }
+        
+        void normalize() { norm(); }
+        void operator+=(linear_constraint_system_t csts) { lock(); norm() += csts; } 
+        void operator-=(VariableName v) { lock(); norm() -= v; }
+        interval_t operator[](VariableName x) { return norm()[x]; }
+        void set(VariableName x, interval_t intv) { lock(); norm().set(x, intv); }
+        
+        template<typename Range>
+        void forget (Range vs) { lock(); norm().forget(vs); }
+        void assign(VariableName x, linear_expression_t e) { lock(); norm().assign(x, e); }
+        void apply(operation_t op, VariableName x, VariableName y, Number k) {
+          lock(); norm().apply(op, x, y, k);
+        }
+        void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width) {
+          lock(); norm().apply(op, x, y, width);
+        }
+        void apply(conv_operation_t op, VariableName x, Number k, unsigned width) {
+          lock(); norm().apply(op, x, k, width);
+        }
+        void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k) {
+          lock(); norm().apply(op, x, y, k);
+        }
+        void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) {
+          lock(); norm().apply(op, x, y, z);
+        }
+        void apply(operation_t op, VariableName x, VariableName y, VariableName z) {
+          lock(); norm().apply(op, x, y, z);
+        }
+        void apply(div_operation_t op, VariableName x, VariableName y, VariableName z) {
+          lock(); norm().apply(op, x, y, z);
+        }
+        void apply(div_operation_t op, VariableName x, VariableName y, Number k) {
+          lock(); norm().apply(op, x, y, k);
+        }
+        void expand (VariableName x, VariableName y) { lock(); norm().expand(x, y); }
+        
+        template<typename Range>
+        void project (Range vs) { lock(); norm().project(vs); }
+        
+        template <typename NumDomain>
+        void push (const VariableName& x, NumDomain&inv){ lock(); norm().push(x, inv); }
+        
+        void write(ostream& o) { norm().write(o); }
+        
+        linear_constraint_system_t to_linear_constraint_system () {
+          return norm().to_linear_constraint_system();
+        }
+        static std::string getDomainName () { return apron_domain_impl_t::getDomainName(); }
+
+       protected:  
+        apron_domain_ref_t base_ref;  
+        apron_domain_ref_t norm_ref;
+      };
+
       // --- global datastructures
 
       template<typename N, typename V, apron_domain_id_t D>
-      ap_manager_t* apron_domain<N,V,D>::m_apman = nullptr;
+      ap_manager_t* apron_domain_<N,V,D>::m_apman = nullptr;
 
+      // -- domain traits
       template<typename Number, typename VariableName, apron_domain_id_t ApronDom>
       class domain_traits <apron_domain<Number,VariableName, ApronDom> > {
        public:
