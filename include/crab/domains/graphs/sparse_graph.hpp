@@ -561,6 +561,33 @@ class SparseWtGraph : public writeable {
       // GKG: Need to be careful about free_ids.
     }
 
+    void write(std::ostream& o) {
+      o << "[|";
+      bool first = true;
+      for(vert_id v = 0; v < sz; v++)
+      {
+        auto it = succs(v).begin();
+        auto end = succs(v).end();
+
+        if(it != end)
+        {
+          if(first)
+            first = false;
+          else
+            o << ", ";
+
+          o << "[v" << v << " -> ";
+          o << "(" << edge_val(v, *it) << ":" << *it << ")";
+          for(++it; it != end; ++it)
+          {
+            o << ", (" << edge_val(v, *it) << ":" << *it << ")";
+          }
+          o << "]";
+        }
+      }
+      o << "|]";
+    }
+
   protected:
     // Allocate new memory, and duplicate 
     // the content.
@@ -625,32 +652,6 @@ class SparseWtGraph : public writeable {
 //      check_adjs();
     }
 
-    void write(std::ostream& o) {
-      o << "[|";
-      bool first = true;
-      for(vert_id v = 0; v < sz; v++)
-      {
-        auto it = succs(v).begin();
-        auto end = succs(v).end();
-
-        if(it != end)
-        {
-          if(first)
-            first = false;
-          else
-            o << ", ";
-
-          o << "[v" << v << " -> ";
-          o << "(" << edge_val(v, *it) << ":" << *it << ")";
-          for(++it; it != end; ++it)
-          {
-            o << ", (" << edge_val(v, *it) << ":" << *it << ")";
-          }
-          o << "]";
-        }
-      }
-      o << "|]";
-    }
 
     unsigned int max_sz;
     unsigned int sz;
