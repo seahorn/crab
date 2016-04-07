@@ -16,8 +16,10 @@
 //#include <crab/common/dbg.hpp>
 
 #include <crab/common/types.hpp>
-#include <crab/domains/graphs/sparse_graph.hpp>
 #include <crab/domains/graphs/adapt_sgraph.hpp>
+#include <crab/domains/graphs/sparse_graph.hpp>
+#include <crab/domains/graphs/ht_graph.hpp>
+#include <crab/domains/graphs/pt_graph.hpp>
 #include <crab/domains/graphs/graph_ops.hpp>
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/domains/intervals.hpp>
@@ -56,7 +58,7 @@ namespace crab {
            return (Wt) n;
          }
        };
-
+     
        class DefaultParams {
        public:
          enum { chrome_dijkstra = 1 };
@@ -98,11 +100,12 @@ namespace crab {
       // Eventually break this out into a template param
       //typedef Number Wt;
       typedef long Wt;
-
-      typedef SDBM_impl::NtoV<Number, Wt> ntov;
-
       //typedef SparseWtGraph<Wt> graph_t;
       typedef AdaptGraph<Wt> graph_t;
+      //typedef HtGraph<Wt> graph_t;
+      //typedef PtGraph<Wt> graph_t;
+
+      typedef SDBM_impl::NtoV<Number, Wt> ntov;
 
       typedef typename graph_t::vert_id vert_id;
       typedef boost::container::flat_map<variable_t, vert_id> vert_map_t;

@@ -15,6 +15,8 @@
 #include <crab/common/types.hpp>
 #include <crab/domains/graphs/sparse_graph.hpp>
 #include <crab/domains/graphs/adapt_sgraph.hpp>
+#include <crab/domains/graphs/ht_graph.hpp>
+#include <crab/domains/graphs/pt_graph.hpp>
 #include <crab/domains/graphs/graph_ops.hpp>
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/domains/intervals.hpp>
@@ -32,7 +34,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/container/flat_map.hpp>
 
-// #define CHECK_POTENTIAL
+//#define CHECK_POTENTIAL
 //#define SDBM_NO_NORMALIZE
 
 using namespace boost;
@@ -94,10 +96,13 @@ namespace crab {
       // Eventually break this out into a template param
       //typedef Number Wt;
       typedef long Wt;
+      //typedef SparseWtGraph<Wt> graph_t;
+      typedef AdaptGraph<Wt> graph_t;
+      //typedef HtGraph<Wt> graph_t; 
+      //typedef PtGraph<Wt> graph_t;
 
       typedef SpDBM_impl::NtoV<Number, Wt> ntov;
 
-      typedef AdaptGraph<Wt> graph_t;
       typedef typename graph_t::vert_id vert_id;
       typedef boost::container::flat_map<variable_t, vert_id> vert_map_t;
       typedef typename vert_map_t::value_type vmap_elt_t;
@@ -507,7 +512,7 @@ namespace crab {
           
           DBM_t res(std::move(out_vmap), std::move(out_revmap), std::move(join_g), std::move(pot_rx), vert_set_t());
           CRAB_DEBUG ("Result join:\n",res);
-           
+
           return res;
         }
       }
@@ -1266,6 +1271,7 @@ namespace crab {
       void operator+=(linear_constraint_t cst) {
         if(is_bottom())
           return;
+
         normalize();
 
         if (cst.is_tautology())
