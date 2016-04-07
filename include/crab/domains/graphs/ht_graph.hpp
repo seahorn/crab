@@ -4,10 +4,11 @@
 #include <unordered_map>
 #include <unordered_set>
 
-/* Hash table backed implementation of a sparse, weighted graph.
+/* 
+ * Hash table backed implementation of a sparse, weighted graph.
  * Trades some time penalty for much lower memory consumption.
  */
-namespace ikos {
+namespace crab {
 
 template <class Weight>
 class HtGraph : public writeable {
@@ -163,8 +164,14 @@ class HtGraph : public writeable {
       return succs(x).mem(y);
     }
 
-    // GKG: No longer a ref
-    Wt edge_val(vert_id x, vert_id y) {
+    bool lookup(vert_id x, vert_id y, Wt** w) {
+      if(!succs(x).mem(y))
+        return false;
+      (*w) = &succs(x).value(y);
+      return true;
+    }
+
+    Wt& edge_val(vert_id x, vert_id y)  {
       return succs(x).value(y);
     }
 
@@ -208,11 +215,14 @@ class HtGraph : public writeable {
 
     void set_edge(vert_id s, Wt w, vert_id d)
     {
-//      assert(s < size() && d < size());
+      // assert(s < size() && d < size());
       if(!elem(s, d))
         add_edge(s, w, d);
-      else
-        _succs[s].insert(succ_elt_t(d, w));
+      else {
+        // XXX: this does not have effect if d is already a key
+        //_succs[s].insert(succ_elt_t(d, w));
+        edge_val(s, d) = w;
+      }
     }
 
     template<class Op>
@@ -220,9 +230,10 @@ class HtGraph : public writeable {
     {
       if(elem(s, d))
       {
-//        _succs[s].insert(vert_idx(d), w, op);
-        _succs[s].insert(succ_elt_t(d, op.apply(edge_val(s, d), w)));
-//        edge_val(s, d) = op.apply(edge_val(s, d), w);
+        // _succs[s].insert(vert_idx(d), w, op);
+        // XXX: this does not have effect if d is already a key
+        //_succs[s].insert(succ_elt_t(d, op.apply(edge_val(s, d), w)));
+        edge_val(s, d) = op.apply(edge_val(s, d), w);
         return;
       }
 
@@ -335,7 +346,8 @@ class HtGraph : public writeable {
 
       bool mem(unsigned int v) const { return p.find(v) != p.end(); }
       void add(unsigned int v, const Wt& w) { p.insert(succ_elt_t(v, w)); }
-      Wt value(unsigned int v) { return (*(p.find(v))).second; }
+      Wt value(unsigned int v) const { return (*(p.find(v))).second; }
+      Wt& value(unsigned int v) { return (*(p.find(v))).second; }
       void remove(unsigned int v) { p.erase(v); }
       void clear() { p.clear(); }
 
@@ -343,16 +355,110 @@ class HtGraph : public writeable {
       succ_t& p;
     };
 
-//    typedef adj_range<pred_t, pred_iterator> pred_range;
-//    typedef adj_range<succ_t, succ_iterator> succ_range;
+    class edge_ref_t {
+    public:
+      edge_ref_t(vert_id _v, Wt& _w)
+        : vert(_v), val(_w)
+      { }
+      vert_id vert;
+      Wt& val; 
+    };
+
+    class const_edge_ref_t {
+     public:
+      const_edge_ref_t(vert_id _v, const Wt& _w)
+        : vert(_v), val(_w)
+      { }
+      vert_id vert;
+      const Wt& val;
+    };
+
+    class fwd_edge_iterator {
+    public:
+      typedef edge_ref_t edge_ref;
+      fwd_edge_iterator(void)
+        : g(nullptr)
+      { }
+      fwd_edge_iterator(graph_t& _g, vert_id _s, succ_iterator _it)
+        : g(&_g), s(_s), it(_it)
+      { }
+
+      edge_ref operator*(void) const { return edge_ref((*it), g->edge_val(s, (*it))); }
+      fwd_edge_iterator& operator++(void) { ++it; return *this; }
+      bool operator!=(const fwd_edge_iterator& o) { return it != o.it; }
+
+      graph_t* g;
+      vert_id s;
+      succ_iterator it;
+    };
+
+    class fwd_edge_range {
+    public:
+      typedef fwd_edge_iterator iterator;
+      fwd_edge_range(graph_t& _g, vert_id _s)
+        : g(_g), s(_s)
+      { }
+
+      fwd_edge_iterator begin(void) const { return fwd_edge_iterator(g, s, g.succs(s).begin()); }
+      fwd_edge_iterator end(void) const { return fwd_edge_iterator(g, s, g.succs(s).end()); }
+      graph_t& g;
+      vert_id s;
+    };
+
+    class rev_edge_iterator {
+    public:
+      typedef edge_ref_t edge_ref;
+      rev_edge_iterator(void)
+        : g(nullptr)
+      { }
+      rev_edge_iterator(graph_t& _g, vert_id _d, pred_iterator _it)
+        : g(&_g), d(_d), it(_it)
+      { }
+
+      edge_ref operator*(void) const { return edge_ref((*it), g->edge_val((*it), d)); }
+      rev_edge_iterator& operator++(void) { ++it; return *this; }
+      bool operator!=(const rev_edge_iterator& o) { return it != o.it; }
+
+      graph_t* g;
+      vert_id d;
+      pred_iterator it;
+    };
+
+    class rev_edge_range {
+    public:
+      typedef rev_edge_iterator iterator;
+      rev_edge_range(graph_t& _g, vert_id _d)
+        : g(_g), d(_d)
+      { }
+
+      rev_edge_iterator begin(void) const { return rev_edge_iterator(g, d, g.preds(d).begin()); }
+      rev_edge_iterator end(void) const { return rev_edge_iterator(g, d, g.preds(d).end()); }
+      graph_t& g;
+      vert_id d;
+    };
+
+
+    typedef fwd_edge_range e_succ_range;
+    typedef rev_edge_range e_pred_range;
 
     succ_range succs(vert_id v)
     {
       return succ_range(_succs[v]);
     }
+
+    e_succ_range e_succs(vert_id v) 
+    {
+      return fwd_edge_range (*this, v);
+    }
+
     pred_range preds(vert_id v)
     {
       return pred_range(_preds[v]);
+    }
+
+    e_pred_range e_preds(vert_id v) 
+    {
+      return rev_edge_range (*this, v);
     }
 
     // growTo shouldn't be used after forget
@@ -368,8 +474,7 @@ class HtGraph : public writeable {
       assert(free_id.size() == 0);
     }
 
-  protected:
-    void write(std::ostream& o) {
+    void write(std::ostream& o) {      
       o << "[|";
       bool first = true;
       for(vert_id v = 0; v < _succs.size(); v++)
@@ -395,6 +500,8 @@ class HtGraph : public writeable {
       }
       o << "|]";
     }
+
+ protected:
 
     unsigned int edge_count;
 
