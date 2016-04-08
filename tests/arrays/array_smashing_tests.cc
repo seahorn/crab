@@ -455,8 +455,10 @@ void test9(){
   run<array_smashing_t>(cfg, "Program 9: forall 0<= i < n. a[i] == 123456 (decrementing loop)", vfac);
 }
 
-int main(int, char **) 
+int main(int argc, char **argv) 
 {
+  SET_LOGGER(argc,argv)
+
   test1 ();
   test2 ();
   test3 ();

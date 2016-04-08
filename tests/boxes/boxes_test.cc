@@ -199,6 +199,7 @@ cfg_t prog5 (VariableFactory &vfac)  {
 /* Example of how to infer invariants from the above CFG */
 int main (int argc, char** argv )
 {
+  SET_LOGGER(argc,argv)
 
   VariableFactory vfac;
 

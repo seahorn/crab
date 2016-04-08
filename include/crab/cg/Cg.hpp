@@ -10,9 +10,7 @@
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/shared_ptr.hpp>
 
-///Uncomment for enabling debug information
-//#include <crab/common/dbg.hpp>
-
+#include <crab/common/debug.hpp>
 #include <crab/common/types.hpp>
 #include <crab/cfg/Cfg.hpp>
 
@@ -155,7 +153,10 @@ namespace crab {
             
             auto res = add_edge (it_from->second, it_to->second, *m_cg);
             if (res.second)
-              CRAB_DEBUG("Added cg edge ", it_from->second, " --> ", it_to->second); 
+              CRAB_LOG("cg",
+                       std::cout << "Added cg edge " <<  it_from->second 
+                                 << " --> " <<  it_to->second;); 
+                                 
           }
           
           void visit(z_bin_op_t&){ }  
@@ -232,7 +233,9 @@ namespace crab {
             m_node_vertex_id_map->insert(make_pair (f, v));
             (*m_cg) [v].func = f;
 
-            CRAB_DEBUG("Added call graph node ", *decl_opt, "--- id=", v);
+            CRAB_LOG("cg", 
+                     std::cout << "Added call graph node " <<  *decl_opt 
+                               <<  "--- id=" <<  v);
           }
           
           // --- add edges in the call graph

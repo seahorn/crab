@@ -24,6 +24,9 @@
 #include <crab/domains/array_smashing.hpp>
 #include <crab/domains/combined_domains.hpp>                      
 
+#include <crab/common/debug.hpp>
+#include <boost/program_options.hpp>
+
 namespace crab {
 
   namespace cfg_impl {
@@ -78,5 +81,26 @@ namespace crab {
   } 
 
 }
+
+namespace {
+
+#define SET_LOGGER(ARGC,ARGV)                                                                         \
+  boost::program_options::options_description log("Logging Options");                                 \
+  log.add_options()                                                                                   \
+      ("log",  boost::program_options::value<std::vector<string> >(), "Enable specified log level");  \
+  boost::program_options::options_description cmmdline_options;                                       \
+  cmmdline_options.add(log);                                                                          \
+  boost::program_options::variables_map vm;                                                           \
+  boost::program_options::positional_options_description p;                                           \
+  boost::program_options::store(boost::program_options::command_line_parser(ARGC, ARGV).              \
+            options(cmmdline_options).                                                                \
+            positional(p).                                                                            \
+              run(), vm);                                                                             \
+  boost::program_options::notify(vm);                                                                 \
+  if (vm.count("log")) {                                                                              \
+    vector<string> loggers = vm ["log"].as<vector<string> > ();                                       \
+    for(unsigned int i=0; i<loggers.size (); i++)                                                     \
+      crab::CrabEnableLog (loggers [i]); }                                                            
+}                           
 
 #endif 

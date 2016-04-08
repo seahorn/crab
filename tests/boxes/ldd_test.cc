@@ -186,6 +186,8 @@ LddNodePtr assign (LddManager* ldd, const LddNodePtr n,
    
 int main (int argc, char** argv )
 {
+  SET_LOGGER(argc,argv)
+
   LddManager* ldd = create_ldd_man (500);
 
   VariableFactory vfac;

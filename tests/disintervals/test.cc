@@ -33,7 +33,9 @@ cfg_t prog (VariableFactory &vfac)  {
   return cfg;
 }
 
-int main (){
+int main (int argc, char**argv){
+
+  SET_LOGGER(argc,argv)
 
   // typedef dis_interval <z_number> dis_interval_t;
   // typedef interval <z_number> interval_t;

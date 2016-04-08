@@ -48,6 +48,7 @@
 #include <map>
 #include <boost/shared_ptr.hpp>
 #include <crab/common/types.hpp>
+#include <crab/common/debug.hpp>
 #include <crab/iterators/wto.hpp>
 #include <crab/iterators/fixpoint_iterators_api.hpp>
 #include <crab/iterators/thresholds.hpp>
@@ -158,21 +159,38 @@ namespace ikos {
     }
     
     virtual AbstractValue extrapolate(NodeName /* node */, unsigned int iteration, 
-                                      // FIXME should be const params
-                                      AbstractValue& before, AbstractValue& after) {
+                                      AbstractValue before, AbstractValue after) {
+
+      CRAB_LOG("fixpo", std::cout << "Fixpo iteration=" << iteration << "\n";);
+
       if (iteration <= _widening_delay) {
+        CRAB_LOG("fixpo",
+                 auto widen_res = before | after;
+                 std::cout << "Prev: " << before << "\n"
+                           << "Current: " << after << "\n"
+                           << "Widening " << widen_res << "\n");
         return before | after; 
       } else {
-        if (_use_widening_jump_set)
+        if (_use_widening_jump_set) {
+          CRAB_LOG("fixpo",
+                   auto widen_res = before.widening_thresholds (after, _jump_set);
+                   std::cout << "Prev: " << before << "\n"
+                             << "Current: " << after << "\n"
+                             << "Widening " << widen_res << "\n");
           return before.widening_thresholds (after, _jump_set);
-        else
+        } else {
+          CRAB_LOG("fixpo",
+                   auto widen_res = before || after;
+                   std::cout << "Prev: " << before << "\n"
+                             << "Current: " << after << "\n"
+                             << "Widening " << widen_res << "\n");
           return before || after;
+        }
       }
     }
 
     virtual AbstractValue refine(NodeName /* node */, unsigned int iteration, 
-                                 // FIXME should be const params
-                                 AbstractValue& before, AbstractValue& after) {
+                                 AbstractValue before, AbstractValue after) {
       if (iteration == 1) {
           return before & after; 
       } else {

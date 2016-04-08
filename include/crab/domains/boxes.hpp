@@ -7,10 +7,8 @@
  * SAS'10.
  **************************************************************************/
 
-// Uncomment for enabling debug information
-//#include <crab/common/dbg.hpp>
-
 #include <crab/config.h>
+#include <crab/common/debug.hpp>
 #include <crab/common/types.hpp>
 #include <crab/domains/numerical_domains_api.hpp>
 
@@ -200,7 +198,7 @@ namespace crab {
           if (!m_ldd_man) {
             DdManager* cudd = Cudd_Init (0, 0, CUDD_UNIQUE_SLOTS, 127, 0);
             theory_t* theory = tvpi_create_boxz_theory (LddSize);
-            CRAB_DEBUG ("Created a ldd of size ", LddSize);
+            CRAB_LOG ("boxes",std::cout << "Created a ldd of size " << LddSize <<"\n";);
             m_ldd_man = Ldd_Init (cudd, theory);
             Cudd_AutodynEnable (cudd, CUDD_REORDER_GROUP_SIFT);
           }
@@ -512,7 +510,9 @@ namespace crab {
         bool operator<=(boxes_domain_t other) {
           bool res = Ldd_TermLeq (get_ldd_man(), &(*m_ldd), &(*other.m_ldd));
 
-          CRAB_DEBUG ("Check if ", *this, " <= ", other, " ---> ", res);
+          CRAB_LOG ("boxes", 
+                    std::cout << "Check if " <<  *this << " <= " <<  other 
+                              <<  " ---> " <<  res <<"\n";);
           return res;
         }
 
@@ -548,7 +548,9 @@ namespace crab {
 #endif 
           boxes_domain_t res (w); 
 
-          CRAB_DEBUG ("Widening ", *this, " and ", other, "=", res);
+          CRAB_LOG ("boxes",
+                    std::cout << "Widening " <<  *this << " and " <<  other 
+                              <<  "=" << res <<"\n";);
           return res;
         }
 
@@ -563,7 +565,8 @@ namespace crab {
           boxes_domain_t res (*this & other);
           CRAB_WARN (" boxes narrowing operator replaced with meet");
           
-          CRAB_DEBUG ("Narrowing ", *this, " and ", other, "=", res);
+          CRAB_LOG ("boxes", 
+                    std::cout << "Narrowing " << *this << " and " << other << "=" << res <<"\n";);
           return res;
         }
         
@@ -629,7 +632,7 @@ namespace crab {
             CRAB_WARN (" boxes only supports constraints with at most one variable.");
           }
           
-          CRAB_DEBUG("Assume(", cst, ") --> ", *this);
+          CRAB_LOG("boxes", std::cout << "Assume(" << cst << ") --> " <<  *this <<"\n";);
         }    
 
         void operator += (linear_constraint_system_t csts) {
@@ -707,7 +710,7 @@ namespace crab {
             CRAB_WARN(" boxes only supports cst or var on the rhs of assignment");
             *this -= x;
           }
-          CRAB_DEBUG("---", x, ":=", e,"\n",*this);
+          CRAB_LOG("boxes", std::cout << "---" << x << ":=" << e << "\n" << *this <<"\n";);
         }
         
         void apply (operation_t op, VariableName x, VariableName y, Number k) {
@@ -730,7 +733,9 @@ namespace crab {
             default: CRAB_ERROR ("Boxes unreachable");
           }
           
-          CRAB_DEBUG("apply ", x, " := ", y, " ", op, " ", k, " --- ", *this);
+          CRAB_LOG("boxes", 
+                   std::cout << "apply " << x << " := " << y << " " <<  op 
+                             << " " << k << " --- " <<  *this <<"\n";);
         }
 
         void apply(operation_t op, VariableName x, Number k) {
@@ -758,7 +763,9 @@ namespace crab {
                 break;
               }
           }
-          CRAB_DEBUG("apply ", x, " := ", x, " ", op, " ", k, "---", *this);
+          CRAB_LOG("boxes",
+                   std::cout << "apply " << x << " := " << x << " " << op << " " 
+                             << k <<  "---" <<  *this <<"\n";);
         }
 
         void apply(operation_t op, VariableName x, VariableName y, VariableName z) {

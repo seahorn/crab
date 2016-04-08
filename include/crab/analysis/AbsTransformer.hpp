@@ -12,9 +12,7 @@
 #include <boost/optional.hpp>
 #include "boost/range/algorithm/set_algorithm.hpp"
 
-///Uncomment for enabling debug information
-//#include <crab/common/dbg.hpp>
-
+#include <crab/common/debug.hpp>
 #include <crab/cfg/Cfg.hpp>
 #include <crab/domains/domain_traits.hpp>
 #include <crab/domains/linear_constraints.hpp>
@@ -343,7 +341,8 @@ namespace crab {
 
       // --- meet caller's inv with summ
       caller = caller & summ.get_sum ();
-      CRAB_DEBUG ("--- After meet: ", caller);
+      CRAB_LOG("inter",
+               std::cout << "--- After meet: " <<  caller << "\n");
       // --- matching formal and actual parameters
       auto pars = summ.get_params ();
       unsigned i=0;
@@ -362,7 +361,9 @@ namespace crab {
         caller.assign(*lhs_opt, z_lin_exp_t (z_var_t (*ret_opt)));
         actuals.insert (*lhs_opt); formals.insert (*ret_opt);
       }
-      CRAB_DEBUG ("--- After matching formals and actuals: ", caller);
+      CRAB_LOG ("inter", 
+                std::cout << "--- After matching formals and actuals: " 
+                <<  caller << "\n");
       // --- remove from caller only formal parameters so we can keep
       //     as much context from the caller as possible
       std::set<varname_t> s;
@@ -415,7 +416,8 @@ namespace crab {
           CRAB_WARN ("Ignored callsite due to mismatch of caller and callee's parameters");
       }
       else
-        CRAB_DEBUG ("Summary not found for ", cs);
+        CRAB_LOG("inter",
+                 std::cout << "Summary not found for " << cs << "\n");
       
       auto lhs_opt = cs.get_lhs_name ();
       if (lhs_opt) // havoc 
@@ -519,7 +521,8 @@ namespace crab {
                                                       pars.begin (),
                                                       pars.end ());
           // --- store the callee context
-          CRAB_DEBUG ("--- Callee context stored: ", callee_ctx_inv);
+          CRAB_LOG ("inter", 
+                    std::cout << "--- Callee context stored: " << callee_ctx_inv << "\n");
           m_call_tbl->insert (cs, callee_ctx_inv);          
 
           /////
@@ -530,16 +533,20 @@ namespace crab {
           summ_abs_domain_t caller_ctx_inv = summ_abs_domain_t::top();
           for (auto cst : this->m_inv.to_linear_constraint_system ())
             caller_ctx_inv += cst;
-          CRAB_DEBUG ("--- Caller context: ", caller_ctx_inv);
+          CRAB_LOG ("inter",
+                    std::cout << "--- Caller context: " <<  caller_ctx_inv << "\n");
           // --- reuse summary to do the continuation
           bu_abs_transformer_t::reuse_summary (caller_ctx_inv, cs, sum);
-          CRAB_DEBUG ("--- Caller context after plugin summary: ", caller_ctx_inv);
+          CRAB_LOG ("inter",
+                    std::cout << "--- Caller context after plugin summary: " << caller_ctx_inv << "\n");
           // --- convert back inv to the language of abs_dom_t
           abs_dom_t inv = abs_dom_t::top();          
           for (auto cst : caller_ctx_inv.to_linear_constraint_system ())
             inv += cst;
           std::swap (this->m_inv, inv);
-          CRAB_DEBUG ("--- Caller continuation after ", cs, "=", this->m_inv);
+          CRAB_LOG ("inter",
+                    std::cout << "--- Caller continuation after " <<  cs <<  "=" 
+                    <<  this->m_inv << "\n");
           return;
         }
         else 

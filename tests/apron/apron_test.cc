@@ -224,6 +224,8 @@ void run (cfg_t cfg, VariableFactory& vfac, unsigned widening, unsigned narrowin
 /* Example of how to infer invariants from the above CFG */
 int main (int argc, char** argv ) {
 
+  SET_LOGGER(argc,argv)
+
 #if 1
 
   {

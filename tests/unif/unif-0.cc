@@ -7,6 +7,8 @@ using namespace crab::domain_impl;
 
 int main (int argc, char** argv )
 {
+  SET_LOGGER(argc,argv)
+
   VariableFactory vfac;
 
   term_domain_t dom_left = term_domain_t::top ();

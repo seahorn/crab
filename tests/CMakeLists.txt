@@ -1,8 +1,11 @@
 set (CRAB_LIBS 
 #  dbm
-   term)
+   term
+   Debug
+   )
 
 set (CRAB_LIBS ${CRAB_LIBS}
+  ${Boost_PROGRAM_OPTIONS_LIBRARY}
   ${LDD_LIBRARY} 
   ${APRON_LIBRARY}
   ${GMPXX_LIB} 

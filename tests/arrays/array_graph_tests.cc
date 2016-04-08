@@ -441,8 +441,10 @@ void test9(){
 }
 
 
-int main(int, char **) 
+int main(int argc, char **argv) 
 {
+  SET_LOGGER(argc,argv)
+
   test1 ();
   test2 ();
   test3 ();

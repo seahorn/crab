@@ -193,8 +193,10 @@ void run (vector<cfg_t> cfgs, VariableFactory& vfac)
 }
 
 
-int main ()
+int main (int argc, char**argv)
 {
+  SET_LOGGER(argc,argv)
+
   {
     // intra-procedural example
     VariableFactory vfac;

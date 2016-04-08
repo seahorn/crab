@@ -137,7 +137,9 @@ void run (cfg_t &cfg, VariableFactory& vfac) {
 
 }
 
-int main () {
+int main (int argc, char** argv) {
+  SET_LOGGER(argc,argv)
+
   VariableFactory vfac;
   cfg_t cfg_1 = cfg1 (vfac);
   run (cfg_1, vfac);

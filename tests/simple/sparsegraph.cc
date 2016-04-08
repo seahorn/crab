@@ -127,6 +127,8 @@ void test_sgraph(void)
 }
 int main (int argc, char** argv )
 {
+  SET_LOGGER(argc,argv)
+
   test_sgraph();
 
   test_sdbm();

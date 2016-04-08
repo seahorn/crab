@@ -7,6 +7,8 @@ using namespace crab::domain_impl;
 
 int main (int argc, char** argv )
 {
+  SET_LOGGER(argc,argv)
+
   VariableFactory vfac;
   typedef interval< z_number> interval_t;
 

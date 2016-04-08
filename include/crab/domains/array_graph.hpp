@@ -34,9 +34,6 @@
 #ifndef ARRAY_GRAPH_HPP
 #define ARRAY_GRAPH_HPP
 
-// Uncomment for enabling debug information
-// #include <crab/common/dbg.hpp>
-
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -46,6 +43,7 @@
 #include <boost/lexical_cast.hpp>
 
 #include <crab/common/types.hpp>
+#include <crab/common/debug.hpp>
 #include <crab/common/mergeable_map.hpp>
 #include <crab/domains/patricia_trees.hpp>
 #include <crab/domains/numerical_domains_api.hpp>
@@ -1106,7 +1104,7 @@ namespace crab {
                                                        *(other._succ_idx_map)));
           array_graph_domain_t widen (_scalar || other._scalar, 
                                       _g || other._g, map);
-          CRAB_DEBUG("Widening: ",*this);
+          CRAB_LOG("array-graph" , std::cout << "Widening: " << *this<<"\n";);
           return widen;
         }
       }
@@ -1175,7 +1173,8 @@ namespace crab {
         _scalar += csts;
         reduce();
 
-        CRAB_DEBUG("Assume(", csts, ") --- ", *this);
+        CRAB_LOG("array-graph", 
+                 std::cout << "Assume("<< csts<< ") --- "<< *this<<"\n";);
       }
 
       void assign (VariableName x, linear_expression_t e) 
@@ -1213,7 +1212,8 @@ namespace crab {
     
         reduce();
 
-        CRAB_DEBUG("Assign ",x," := ",e," ==> ",*this);
+        CRAB_LOG("array-graph", 
+                 std::cout << "Assign "<<x<<" := "<<e<<" ==> "<<*this<<"\n";);
       }
 
       void apply (operation_t op, VariableName x, VariableName y, Number z) 
@@ -1221,7 +1221,8 @@ namespace crab {
         assign (x, linear_expression_t(y));
         apply_helper<Number> (op, x, z);
 
-        CRAB_DEBUG("Apply ",x," := ",y," ",op," ",z," ==> ",*this); 
+        CRAB_LOG("array-graph",
+                 std::cout << "Apply "<<x<<" := "<<y<<" "<<op<<" "<<z<<" ==> "<<*this<<"\n";); 
       }
 
       void apply(operation_t op, VariableName x, VariableName y, VariableName z) 
@@ -1229,14 +1230,16 @@ namespace crab {
         assign (x, linear_expression_t(y));
         apply_helper<VariableName> (op, x, z);
 
-        CRAB_DEBUG("Apply ",x," := ",y," ",op," ",z," ==> ",*this);
+        CRAB_LOG("array-graph", 
+                 std::cout << "Apply "<<x<<" := "<<y<<" "<<op<<" "<<z<<" ==> "<<*this<<"\n";);
       }
 
       void apply(operation_t op, VariableName x, Number k) 
       {
         apply_helper<Number> (op, x, k);
 
-        CRAB_DEBUG("Apply ",x," := ",x," ",op," ",k," ==> ",*this);
+        CRAB_LOG("array-graph",
+                 std::cout << "Apply "<<x<<" := "<<x<<" "<<op<<" "<<k<<" ==> "<<*this<<"\n";);
       }
 
 
@@ -1275,7 +1278,9 @@ namespace crab {
         //     We use operator[] as the conversion function
         _scalar.set (lhs, w [arr]);
 
-        CRAB_DEBUG("Array read ",lhs," := ", arr,"[",idx,"] ==> ", *this);    
+        CRAB_LOG("array-graph",
+                 std::cout << "Array read "<<lhs<<" := "<< arr<<"["<<idx<<"] ==> "
+                           << *this <<"\n";);    
       }
 
       void store (VariableName arr, VariableName idx, linear_expression_t val)
@@ -1296,7 +1301,8 @@ namespace crab {
         }
         array_write (arr, idx, w);
 
-        CRAB_DEBUG("Array write ",arr,"[",idx,"] := ",val, " ==> ", *this);
+        CRAB_LOG("array-graph",
+                 std::cout << "Array write "<<arr<<"["<<idx<<"] := "<<val<< " ==> "<< *this <<"\n";);
       }
     
       void write(ostream& o) 

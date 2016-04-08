@@ -10,10 +10,8 @@
 #ifndef ARRAY_SMASHING_HPP
 #define ARRAY_SMASHING_HPP
 
-// Uncomment for enabling debug information
-// #include <crab/common/dbg.hpp>
-
 #include <crab/common/types.hpp>
+#include <crab/common/debug.hpp>
 #include <crab/domains/numerical_domains_api.hpp>
 #include <crab/domains/domain_traits.hpp>
 
@@ -157,25 +155,29 @@ namespace crab {
         void assign (VariableName x, linear_expression_t e) {
           _inv.assign (x, e);
           
-          CRAB_DEBUG("apply ", x, " := ", e, *this);
+          CRAB_LOG("smashing",
+                   std::cout << "apply "<< x<< " := "<< e<< *this <<"\n";);
         }
         
         void apply (operation_t op, VariableName x, VariableName y, Number z) {
           _inv.apply (op, x, y, z);
           
-          CRAB_DEBUG("apply ", x, " := ", y, " ", op, " ", z, *this);
+          CRAB_LOG("smashing",
+                   std::cout << "apply "<< x<< " := "<< y<< " "<< op<< " "<< z<< *this <<"\n";);
         }
         
         void apply(operation_t op, VariableName x, VariableName y, VariableName z) {
           _inv.apply (op, x, y, z);
           
-          CRAB_DEBUG("apply ", x, " := ", y, " ", op, " ", z, *this);
+          CRAB_LOG("smashing",
+                   std::cout << "apply "<< x<< " := "<< y<< " "<< op<< " "<< z<< *this <<"\n";);
         }
         
         void apply(operation_t op, VariableName x, Number k) {
           _inv.apply (op, x, k);
           
-          CRAB_DEBUG("apply ", x, " := ", x, " ", op, " ", k, *this);
+          CRAB_LOG("smashing",
+                   std::cout << "apply "<< x<< " := "<< x<< " "<< op<< " "<< k<< *this <<"\n";);
         }
 
         // bitwise_operators_api
@@ -190,26 +192,30 @@ namespace crab {
         void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) {
           _inv.apply (op, x, y, z);
 
-          CRAB_DEBUG("apply ", x, " := ", y, " ", op, " ", z, *this);
+          CRAB_LOG("smashing",
+                   std::cout << "apply "<< x<< " := "<< y<< " "<< op<< " "<< z<< *this <<"\n";);
         }
         
         void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k) {
           _inv.apply (op, x, y, k);
 
-          CRAB_DEBUG("apply ", x, " := ", y, " ", op, " ", k, *this);
+          CRAB_LOG("smashing",
+                   std::cout << "apply "<< x<< " := "<< y<< " "<< op<< " "<< k<< *this <<"\n";);
         }
         
         // division_operators_api
         void apply(div_operation_t op, VariableName x, VariableName y, VariableName z) {
           _inv.apply (op, x, y, z);
 
-          CRAB_DEBUG("apply ", x, " := ", y, " ", op, " ", z, *this);
+          CRAB_LOG("smashing",
+                   std::cout << "apply "<< x<< " := "<< y<< " "<< op<< " "<< z<< *this <<"\n";);
         }
         
         void apply(div_operation_t op, VariableName x, VariableName y, Number k) {
           _inv.apply (op, x, y, k);
 
-          CRAB_DEBUG("apply ", x, " := ", y, " ", op, " ", k, *this);
+          CRAB_LOG("smashing",
+                   std::cout << "apply "<< x<< " := "<< y<< " "<< op<< " "<< k<< *this <<"\n";);
         }
         
         void array_init (VariableName a, 
@@ -222,14 +228,15 @@ namespace crab {
             init = init | interval_t (bound_t (v)); 
           }
           _inv.set (a, init);
-          CRAB_DEBUG("Array init: ",*this);
+          CRAB_LOG("smashing", 
+                   std::cout << "Array init: " << *this <<"\n";);
         }
         
         // All the array elements are initialized to val
         void assume_array (VariableName a, interval_t val) {
           _inv.set (a, val);
           
-          CRAB_DEBUG("Assume array: ",*this);
+          CRAB_LOG("smashing", std::cout << "Assume array: " << *this <<"\n";);
         }
         
         void load (VariableName lhs, VariableName a, 
@@ -244,7 +251,7 @@ namespace crab {
           _inv.assign (lhs, linear_expression_t (a_prime));
           _inv -= a_prime; 
           
-          CRAB_DEBUG("Load: ",*this);
+          CRAB_LOG("smashing", std::cout << "Load: " << *this <<"\n";);
         }
         
         
@@ -257,7 +264,7 @@ namespace crab {
           else 
             weak_update (a, val);
           
-          CRAB_DEBUG("Store: ",*this);
+          CRAB_LOG("smashing", std::cout << "Store: " << *this <<"\n";);
         }
         
         linear_constraint_system_t to_linear_constraint_system (){

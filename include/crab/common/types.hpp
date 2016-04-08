@@ -80,8 +80,6 @@ inline void ___print___(ArgTypes... args)
     std::cerr << "\n";               \
   } while (0)
 
-// Default definition but it can be redefined by dbg.hpp
-#define CRAB_DEBUG(...)
 
 namespace crab {
 

@@ -12,10 +12,8 @@
 #ifndef DBM_HPP
 #define DBM_HPP
 
-// Uncomment for enabling debug information
-//#include <crab/common/dbg.hpp>
-
 #include <crab/common/types.hpp>
+#include <crab/common/debug.hpp>
 #include <crab/common/bignums.hpp>
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/domains/dbm/dbm.h>
@@ -146,7 +144,8 @@ namespace crab {
         dbm_dealloc(_dbm);
         swap(_dbm, ret);
 
-        CRAB_DEBUG ("Compacted dbm to size ", _var_map.size (), "\n", *this);
+        CRAB_LOG ("zones-old",
+                  std::cout << "Compacted dbm to size "<< _var_map.size ()<< "\n"<< *this <<"\n";);
         return true;
       }
 
@@ -532,7 +531,8 @@ namespace crab {
         if (sz < 3 || !(sz > d->sz))
           return d;
 
-        CRAB_DEBUG ("Resizing the matrix to ", sz, " ... ");
+        CRAB_LOG ("zones-old", 
+                  std::cout << "Resizing the matrix to "<< sz<< " ... " <<"\n";);
 
         dbm x = NULL;      
         x= dbm_resize (d, sz);
@@ -676,7 +676,8 @@ namespace crab {
         else if (is_top () || o.is_bottom())
           return *this;
         else {
-          CRAB_DEBUG ("Before join:\n","DBM 1\n",*this,"\n","DBM 2\n",o);
+          CRAB_LOG ("zones-old",
+                    std::cout << "Before join:\n"<<"DBM 1\n"<<*this<<"\n"<<"DBM 2\n"<<o <<"\n";);
 
           vector<rmap>  subs_x;
           vector<rmap>  subs_y;
@@ -740,7 +741,8 @@ namespace crab {
           dbm_dealloc(dbm_xx);
           dbm_dealloc(dbm_yy);
 
-          CRAB_DEBUG ("Result join:\n",res);
+          CRAB_LOG ("zones-old",
+                    std::cout << "Result join:\n"<<res <<"\n";);
 
           return res;
         }
@@ -752,7 +754,8 @@ namespace crab {
         else if (o.is_bottom())
           return *this;
         else {
-          CRAB_DEBUG ("Before widening:\n","DBM 1\n",*this,"\n","DBM 2\n",o);
+          CRAB_LOG ("zones-old",
+                    std::cout << "Before widening:\n"<<"DBM 1\n"<<*this<<"\n"<<"DBM 2\n"<<o <<"\n";);
 
           vector<rmap>  subs_x;
           vector<rmap>  subs_y;
@@ -800,7 +803,8 @@ namespace crab {
           dbm_dealloc(dbm_xx);
           dbm_dealloc(dbm_yy);
 
-          CRAB_DEBUG ("Result widening:\n",res);
+          CRAB_LOG ("zones-old",
+                    std::cout << "Result widening:\n"<<res <<"\n";);
           return res;
         }
       } 
@@ -820,7 +824,8 @@ namespace crab {
         else if (o.is_top())
           return *this;
         else{
-          CRAB_DEBUG ("Before meet:\n","DBM 1\n",*this,"\n","DBM 2\n",o);
+          CRAB_LOG ("zones-old",
+                    std::cout << "Before meet:\n"<<"DBM 1\n"<<*this<<"\n"<<"DBM 2\n"<<o <<"\n";);
           vector<rmap>  subs_x;
           vector<rmap>  subs_y;
           id_t id = 0;
@@ -867,7 +872,8 @@ namespace crab {
           dbm_dealloc(dbm_xx);
           dbm_dealloc(dbm_yy);
 
-          CRAB_DEBUG ("Result meet:\n",res);
+          CRAB_LOG ("zones-old",
+                    std::cout << "Result meet:\n"<<res <<"\n";);
           return res;
         }
       }	
@@ -878,7 +884,8 @@ namespace crab {
         else if (is_top ())
           return o;
         else{
-          CRAB_DEBUG ("Before narrowing:\n","DBM 1\n",*this,"\n","DBM 2\n",o);
+          CRAB_LOG ("zones-old",
+                    std::cout << "Before narrowing:\n"<<"DBM 1\n"<<*this<<"\n"<<"DBM 2\n"<<o <<"\n";);
           vector<rmap>  subs_x;
           vector<rmap>  subs_y;
           id_t id = 0;
@@ -925,7 +932,8 @@ namespace crab {
           dbm_dealloc(dbm_xx);
           dbm_dealloc(dbm_yy);
 
-          CRAB_DEBUG ("Result narrowing:\n",res);
+          CRAB_LOG ("zones-old",
+                    std::cout << "Result narrowing:\n"<<res <<"\n";);
           return res;
         }
       }	
@@ -1021,7 +1029,8 @@ namespace crab {
           this->operator-=(x);
         }
 
-        CRAB_DEBUG("---", x, ":=", e,"\n",*this);
+        CRAB_LOG("zones-old",
+                 std::cout << "---"<< x<< ":="<< e<<"\n"<<*this <<"\n";);
       }
 
       void apply(operation_t op, VariableName x, VariableName y, VariableName z){	
@@ -1051,7 +1060,8 @@ namespace crab {
             apply(op, x, get_dbm_index(y), get_dbm_index(z));
         }
 
-        CRAB_DEBUG("---", x, ":=", y, op, z,"\n", *this);
+        CRAB_LOG("zones-old",
+                 std::cout << "---"<< x<< ":="<< y<< op<< z<<"\n"<< *this <<"\n";);
       }
 
     
@@ -1073,7 +1083,8 @@ namespace crab {
           apply(op, x, get_dbm_index(y), k);
         }
 
-        CRAB_DEBUG("---", x, ":=", y, op, k,"\n", *this);
+        CRAB_LOG("zones-old",
+                 std::cout << "---"<< x<< ":="<< y<< op<< k<<"\n"<< *this <<"\n";);
       }
    
    
@@ -1114,7 +1125,8 @@ namespace crab {
           add_constraint((int) coef_x, x, (int) coef_y, y, k, cst);
         }
 
-        CRAB_DEBUG("---", cst, "\n", *this);
+        CRAB_LOG("zones-old",
+                 std::cout << "---"<< cst<< "\n"<< *this <<"\n";);
       } 
     
       void operator+=(linear_constraint_system_t csts) {  

@@ -4,9 +4,6 @@
 #include <boost/graph/topological_sort.hpp>
 #include <crab/analysis/graphs/SccgBgl.hpp>
 
-///Uncomment for enabling debug information
-//#include <crab/common/dbg.hpp>
-
 /* 
    Topological order of a graph
  */

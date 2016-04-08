@@ -4,9 +4,8 @@
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/strong_components.hpp>
+#include <crab/common/debug.hpp>
 
-///Uncomment for enabling debug information
-//#include <crab/common/dbg.hpp>
 //#define SCCG_DEBUG
 
 #ifdef SCCG_DEBUG
@@ -234,7 +233,8 @@ namespace crab {
             vertex_descriptor_t v = add_vertex (*m_sccg);
             (*m_sccg) [v].m_comp = p.second;
             m_comp_to_vertex_map->insert (std::make_pair (p.second, v));
-            CRAB_DEBUG("Added scc graph node ", p.second, "--- id=", v);
+            CRAB_LOG("scc",
+                     std::cout << "Added scc graph node " << p.second <<  "--- id=" <<  v << "\n");
           }
           
           for (const node_t &u : boost::make_iterator_range (vertices (m_g))) {
@@ -249,8 +249,9 @@ namespace crab {
                                    *m_sccg);
 
               if (res.second)
-                CRAB_DEBUG("Added scc graph edge ", 
-                           m_comp_map [u], " --> ", m_comp_map [d]);
+                CRAB_LOG("scc", 
+                         std::cout << "Added scc graph edge " 
+                         << m_comp_map [u] << " --> " <<  m_comp_map [d] << "\n");
             }
           }
 

@@ -145,6 +145,8 @@ cfg_t m (VariableFactory &vfac)  {
 
 int main (int argc, char** argv ) {
 
+  SET_LOGGER(argc,argv)
+
   VariableFactory vfac;
   cfg_t t1 = foo (vfac);
   cfg_t t2 = bar (vfac);

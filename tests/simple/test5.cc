@@ -51,6 +51,8 @@ cfg_t prog (VariableFactory &vfac)  {
 
 int main (int argc, char** argv )
 {
+  SET_LOGGER(argc,argv)
+
   VariableFactory vfac;
   cfg_t cfg = prog (vfac);
   cout << cfg << endl;

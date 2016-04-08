@@ -1,12 +1,10 @@
 #ifndef APRON_DOMAINS_HPP
 #define APRON_DOMAINS_HPP
 
-/// Uncomment for enabling debug information
-//#include <crab/common/dbg.hpp>
-
 #include "boost/range/algorithm/set_algorithm.hpp"
 
 #include <crab/config.h>
+#include <crab/common/debug.hpp>
 #include <crab/common/types.hpp>
 #include <crab/domains/numerical_domains_api.hpp>
 #include <crab/domains/domain_traits.hpp>
@@ -961,7 +959,8 @@ namespace crab {
                                                             &*m_apstate, &array));
 
           ap_tcons0_array_clear(&array);
-          CRAB_DEBUG("--- ", "Assume ",csts, " --> ", *this);
+          CRAB_LOG("apron", 
+                   std::cout << "--- "<< "Assume "<<csts<< " --> "<< *this<<"\n";);
         }
        
         void assign (VariableName x, linear_expression_t e) {
@@ -976,7 +975,8 @@ namespace crab {
                                                        NULL));
 
           ap_texpr0_free (t);
-          CRAB_DEBUG("--- ", x, ":=", e , " --> ", *this);
+          CRAB_LOG("apron",
+                   std::cout << "--- "<< x<< ":="<< e << " --> "<< *this<<"\n";);
         }
           
         void apply (operation_t op, VariableName x, VariableName y, Number z) {
@@ -1002,7 +1002,8 @@ namespace crab {
 
           
           ap_texpr0_free (res);
-          CRAB_DEBUG("--- ", x, ":=", y, op, z, " --> ", *this);
+          CRAB_LOG("apron",
+                   std::cout << "--- "<< x<< ":="<< y<< op<< z<< " --> "<< *this<<"\n";);
         }
         
         void apply(operation_t op, VariableName x, VariableName y, VariableName z) {
@@ -1027,7 +1028,8 @@ namespace crab {
                                                                    NULL));
 
           ap_texpr0_free (res);
-          CRAB_DEBUG("--- ", x, ":=", y, op, z, " --> ", *this);
+          CRAB_LOG("apron",
+                   std::cout << "--- "<< x<< ":="<< y<< op<< z<< " --> "<< *this<<"\n";);
         }
         
         void apply(operation_t op, VariableName x, Number k) {
@@ -1052,7 +1054,8 @@ namespace crab {
                                                                    NULL));
 
           ap_texpr0_free (res);
-          CRAB_DEBUG("--- ", x, ":=", x, op, k, " --> ", *this);
+          CRAB_LOG("apron",
+                   std::cout << "--- "<< x<< ":="<< x<< op<< k<< " --> "<< *this<<"\n";);
         }
 
         void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width) {

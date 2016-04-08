@@ -11,6 +11,8 @@ typedef linear_expression<z_number, varname_t> linear_expression_t;
 
 int main (int argc, char** argv )
 {
+  SET_LOGGER(argc,argv)
+
   VariableFactory vfac;
   {  
     varname_t x = vfac["x"];

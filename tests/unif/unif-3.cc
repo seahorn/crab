@@ -57,6 +57,8 @@ cfg_t prog (VariableFactory &vfac)  {
 /* Example of how to infer invariants from the above CFG */
 int main (int argc, char** argv )
 {
+  SET_LOGGER(argc,argv)
+
   VariableFactory vfac;
   cfg_t cfg = prog (vfac);
   cfg.simplify (); // this is optional

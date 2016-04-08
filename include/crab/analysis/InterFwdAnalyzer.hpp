@@ -8,9 +8,7 @@
 
 #include "boost/noncopyable.hpp"
 
-///Uncomment for enabling debug information
-//#include <crab/common/dbg.hpp>
-
+#include <crab/common/debug.hpp>
 #include <crab/cfg/Cfg.hpp>
 #include <crab/cfg/VarFactory.hpp>
 #include <crab/domains/domain_traits.hpp>
@@ -96,7 +94,8 @@ namespace crab {
         
         if (has_noedges) {
           // -- Special case when the program has been inlined.
-          CRAB_DEBUG ("Call graph has no edges so no summaries are computed.");
+          CRAB_LOG("inter",
+                   std::cout << "Call graph has no edges so no summaries are computed.\n");
           for (auto &v: boost::make_iterator_range (vertices (m_cg))) {
             cfg_t& cfg = v.getCfg ();
             auto fdecl = cfg.get_func_decl ();
@@ -104,7 +103,9 @@ namespace crab {
             std::string fun_name = boost::lexical_cast<string> ((*fdecl).get_func_name ());
             if (fun_name != "main") continue;
             
-            CRAB_DEBUG ("--- Analyzing ", (*fdecl).get_func_name ());
+            CRAB_LOG ("inter",
+                      std::cout << "--- Analyzing " << (*fdecl).get_func_name () << "\n");
+
             call_tbl_t call_tbl;
             td_analyzer_ptr a (new td_analyzer (cfg, m_vfac, get_live (cfg), 
                                                 &m_summ_tbl, &call_tbl,
@@ -123,7 +124,7 @@ namespace crab {
         rev_topo_sort < SccGraph <CG> > (Scc_g, rev_order);
         call_tbl_t call_tbl;
        
-        CRAB_DEBUG ("Bottom-up phase ...");
+        CRAB_LOG("inter",std::cout << "Bottom-up phase ...\n");
         for (auto n: rev_order) {
           vector<cg_node_t> &scc_mems = Scc_g.getComponentMembers (n);
           for (auto m: scc_mems) {
@@ -134,7 +135,8 @@ namespace crab {
 
             std::string fun_name = boost::lexical_cast<string> ((*fdecl).get_func_name ());
             if (fun_name != "main" && cfg.has_exit ()) {
-              CRAB_DEBUG ("--- Analyzing ", (*fdecl).get_func_name ());
+              CRAB_LOG ("inter", 
+                        std::cout << "--- Analyzing " << (*fdecl).get_func_name () << "\n");
               // --- run the analysis
               bu_analyzer a (cfg, m_vfac, get_live (cfg), 
                              &m_summ_tbl, &call_tbl,
@@ -161,7 +163,7 @@ namespace crab {
           }
         } 
 
-        CRAB_DEBUG ("Top-down phase ...");
+        CRAB_LOG ("inter", std::cout << "Top-down phase ...\n");
         bool is_root = true;
         for (auto n: boost::make_iterator_range (rev_order.rbegin(),
                                                  rev_order.rend ())) {
@@ -171,8 +173,7 @@ namespace crab {
             cfg_t& cfg = m.getCfg ();
             auto fdecl = cfg.get_func_decl ();
             assert (fdecl);
-            CRAB_DEBUG ("--- Analyzing ", (*fdecl).get_func_name ());
-            
+            CRAB_LOG ("inter", std::cout << "--- Analyzing " << (*fdecl).get_func_name () << "\n");
             if (scc_mems.size () > 1) {
               // If the node is recursive then what we have in call_tbl
               // is incomplete and therefore it is unsound to use it. To
@@ -191,9 +192,11 @@ namespace crab {
               is_root = false;
             }
             else {
-              CRAB_DEBUG("Starting analysis of ", 
-                         *fdecl, " with ", 
-                         call_tbl.get_call_ctx (*fdecl));
+              CRAB_LOG("inter",
+                       auto init_ctx = call_tbl.get_call_ctx (*fdecl);
+                       std::cout << "Starting analysis of "
+                                 << *fdecl <<  " with "
+                                 << init_ctx << "\n");
               a->Run (call_tbl.get_call_ctx (*fdecl));
             }
             
