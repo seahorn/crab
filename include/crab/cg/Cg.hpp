@@ -11,6 +11,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include <crab/common/debug.hpp>
+#include <crab/common/stats.hpp>
 #include <crab/common/types.hpp>
 #include <crab/cfg/Cfg.hpp>
 
@@ -219,6 +220,8 @@ namespace crab {
             m_vertex_map (new vertex_map_t ()),
             m_node_vertex_id_map (new node_vertex_id_map_t ()),
             m_id (0) {
+
+          crab::ScopedCrabStats __st__("CallGraph");
 
           // --- add vertices in the call graph
           for (auto cfg: cfgs) {

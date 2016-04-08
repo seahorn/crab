@@ -3,8 +3,11 @@
 
 /* Liveness analysis */
 
-#include <crab/analysis/BwdAnalyzer.hpp>
+#include <crab/common/stats.hpp>
 #include <crab/domains/discrete_domains.hpp>
+#ifdef USE_BACKWARD_FP_ITERATOR
+#include <crab/analysis/BwdAnalyzer.hpp>
+#endif 
 
 #include <crab/cfg/CfgBgl.hpp>
 #include <crab/analysis/graphs/Sccg.hpp>
@@ -565,10 +568,12 @@ namespace crab {
          m_cfg (cfg),
          m_has_exec (false),
          m_max_live (0), m_total_live (0), m_total_blks (0) {
+       crab::ScopedCrabStats __st__("Liveness");
        init(); 
      }
 
      void exec() { 
+        crab::ScopedCrabStats __st__("Liveness");
 
        if (m_has_exec) {
          CRAB_WARN ("Trying to execute liveness twice!");

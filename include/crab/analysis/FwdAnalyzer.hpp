@@ -5,6 +5,7 @@
 
 #include <crab/cfg/Cfg.hpp>
 #include <crab/cfg/VarFactory.hpp>
+#include <crab/iterators/fwd_fixpoint_iterators.hpp>
 #include <crab/analysis/Liveness.hpp>
 #include <crab/analysis/AbsTransformer.hpp>
 #include <crab/analysis/InterDS.hpp>
@@ -40,9 +41,9 @@ namespace crab {
     //  operations are modelled.
     template< typename CFG, typename AbsTr, typename VarFactory>
     class FwdAnalyzer: 
-        public interleaved_fwd_fixpoint_iterator< typename CFG::basic_block_label_t, 
-                                                  CFG, 
-                                                  typename AbsTr::abs_dom_t > 
+        public ikos::interleaved_fwd_fixpoint_iterator< typename CFG::basic_block_label_t, 
+                                                        CFG, 
+                                                        typename AbsTr::abs_dom_t > 
     {
 
      public:

@@ -13,6 +13,7 @@
 #include "boost/range/algorithm/set_algorithm.hpp"
 
 #include <crab/common/debug.hpp>
+#include <crab/common/stats.hpp>
 #include <crab/cfg/Cfg.hpp>
 #include <crab/domains/domain_traits.hpp>
 #include <crab/domains/linear_constraints.hpp>
@@ -157,6 +158,9 @@ namespace crab {
       auto op2 = convOp<ikos::div_operation_t> (op);
       auto op3 = convOp<ikos::bitwise_operation_t> (op);
 
+      crab::CrabStats::count ("Fixpo.count.apply");
+      crab::ScopedCrabStats __st__("Fixpo.apply");
+
       if (op1) 
         inv.apply (*op1, x, y, z);
       else if (op2) 
@@ -203,33 +207,53 @@ namespace crab {
     
       abs_dom_t inv1 (m_inv);
       abs_dom_t inv2 (m_inv);
+      crab::CrabStats::resume ("Fixpo.add_constraint");
+      crab::CrabStats::count ("Fixpo.count.add_constraint");
       inv1 += stmt.cond ();
+      crab::CrabStats::count ("Fixpo.count.add_constraint");
       inv2 += stmt.cond ().negate ();
+      crab::CrabStats::stop ("Fixpo.add_constraint");
 
       if (inv2.is_bottom()) {
+        crab::CrabStats::count ("Fixpo.count.assign");
+        crab::ScopedCrabStats __st__("Fixpo.assign");
         inv1.assign (stmt.lhs().name (),stmt.left());
         m_inv = inv1;
       }
       else if (inv1.is_bottom ()) {
+        crab::CrabStats::count ("Fixpo.count.assign");
+        crab::ScopedCrabStats __st__("Fixpo.assign");
         inv2.assign (stmt.lhs().name (),stmt.right());
         m_inv = inv2;
       }
       else {
+        crab::CrabStats::count ("Fixpo.count.assign");
+        crab::CrabStats::resume ("Fixpo.assign");
         inv1.assign (stmt.lhs().name (),stmt.left());
+        crab::CrabStats::count ("Fixpo.count.assign");
         inv2.assign (stmt.lhs().name (),stmt.right());
+        crab::CrabStats::stop ("Fixpo.assign");
+        crab::CrabStats::count ("Fixpo.count.join");
+        crab::ScopedCrabStats __st__("Fixpo.join");
         m_inv = inv1 | inv2;
       }
     }    
     
     void exec (z_assign_t& stmt) {
+      crab::CrabStats::count ("Fixpo.count.assign");
+      crab::ScopedCrabStats __st__("Fixpo.assign");
       m_inv.assign (stmt.lhs().name (), z_lin_exp_t (stmt.rhs()));
     }
     
     void exec (z_assume_t& stmt) {
+      crab::CrabStats::count ("Fixpo.count.add_constraint");
+      crab::ScopedCrabStats __st__("Fixpo.add_constraint");
       m_inv += stmt.constraint();
     }
 
     void exec (havoc_t& stmt)  {
+      crab::CrabStats::count ("Fixpo.count.forget");
+      crab::ScopedCrabStats __st__("Fixpo.forget");
       m_inv -= stmt.variable();
     }
 
@@ -239,13 +263,19 @@ namespace crab {
 
     void exec (z_assert_t& stmt) {
       abs_dom_t cst;
+      crab::CrabStats::count ("Fixpo.count.add_constraint");
+      crab::CrabStats::resume ("Fixpo.add_constraint");
       cst += stmt.constraint();
+      crab::CrabStats::stop ("Fixpo.add_constraint");
+      crab::CrabStats::count ("Fixpo.count.meet");
+      crab::CrabStats::resume ("Fixpo.meet");
       abs_dom_t meet = cst & m_inv;
+      crab::CrabStats::stop ("Fixpo.meet");
       if (meet.is_bottom ()) {
         m_inv = abs_dom_t::bottom (); // assertion does not definitely hold.
         return;
       }
-      
+      crab::ScopedCrabStats __st__("Fixpo.add_constraint");      
       m_inv += stmt.constraint ();
     }
 
@@ -266,6 +296,8 @@ namespace crab {
       {
         auto arr = stmt.array ().name ();
         auto idx = *(stmt.index ().get_variable ());
+        crab::CrabStats::count ("Fixpo.count.array_store");
+        crab::ScopedCrabStats __st__("Fixpo.array_store");      
         domains::array_domain_traits<abs_dom_t>::array_store (m_inv, 
                                                               arr,
                                                               idx.name(), 
@@ -279,6 +311,8 @@ namespace crab {
       if (stmt.index ().get_variable ())
       {
         auto idx = *(stmt.index ().get_variable ());
+        crab::CrabStats::count ("Fixpo.count.array_load");
+        crab::ScopedCrabStats __st__("Fixpo.array_load");      
         domains::array_domain_traits<abs_dom_t>::array_load (m_inv, 
                                                              stmt.lhs ().name (), 
                                                              stmt.array ().name (), 
@@ -289,8 +323,11 @@ namespace crab {
 
     void exec (callsite_t &cs) {
       auto lhs_opt = cs.get_lhs_name ();
-      if (lhs_opt) // havoc 
+      if (lhs_opt) { // havoc 
+        crab::CrabStats::count ("Fixpo.count.forget");
+        crab::ScopedCrabStats __st__("Fixpo.forget");      
         m_inv -= *lhs_opt;
+      }
     }
   }; 
 
@@ -339,8 +376,13 @@ namespace crab {
                                const callsite_t& cs,
                                const typename SumTable::Summary& summ) {
 
+      //crab::ScopedCrabStats st("Inter.ReuseSummary");      
+
       // --- meet caller's inv with summ
+      crab::CrabStats::count ("Fixpo.count.meet");
+      crab::CrabStats::resume ("Fixpo.meet");
       caller = caller & summ.get_sum ();
+      crab::CrabStats::stop ("Fixpo.meet");
       CRAB_LOG("inter",
                std::cout << "--- After meet: " <<  caller << "\n");
       // --- matching formal and actual parameters
@@ -349,8 +391,11 @@ namespace crab {
       std::set<varname_t> actuals, formals;
       for (auto p : pars) {
         auto a = cs.get_arg_name (i);
-        if (!(a == p))
+        if (!(a == p)) {
+          crab::CrabStats::count ("Fixpo.count.add_constraint");
+          crab::ScopedCrabStats __st__("Fixpo.add_constraint");
           caller += (z_var_t (a) == z_var_t (p));
+        }
         ++i;
         actuals.insert (a); formals.insert (p);
       }
@@ -358,6 +403,8 @@ namespace crab {
       auto lhs_opt = cs.get_lhs_name ();
       auto ret_opt = summ.get_ret_val ();
       if (lhs_opt && ret_opt) {
+        crab::CrabStats::count ("Fixpo.count.assign");
+        crab::ScopedCrabStats __st__("Fixpo.assign");
         caller.assign(*lhs_opt, z_lin_exp_t (z_var_t (*ret_opt)));
         actuals.insert (*lhs_opt); formals.insert (*ret_opt);
       }
@@ -368,6 +415,8 @@ namespace crab {
       //     as much context from the caller as possible
       std::set<varname_t> s;
       boost::set_difference (formals, actuals, std::inserter(s, s.end ()));
+      crab::CrabStats::count ("Fixpo.count.forget");
+      crab::ScopedCrabStats __st__("Fixpo.forget");
       domains::domain_traits<abs_dom_t>::forget (caller, s.begin (), s.end ());
     }
 
@@ -420,8 +469,11 @@ namespace crab {
                  std::cout << "Summary not found for " << cs << "\n");
       
       auto lhs_opt = cs.get_lhs_name ();
-      if (lhs_opt) // havoc 
+      if (lhs_opt) { // havoc 
+        crab::CrabStats::count ("Fixpo.count.forget");
+        crab::ScopedCrabStats __st__("Fixpo.forget");
         this->m_inv -= *lhs_opt;
+      }
     }
   }; 
 
@@ -512,17 +564,24 @@ namespace crab {
           unsigned i=0;
           for (auto p : pars) {
             auto a = cs.get_arg_name (i);
-            if (!(a == p))
+            if (!(a == p)) {
+              crab::CrabStats::count ("Fixpo.count.add_constraint");
+              crab::ScopedCrabStats __st__("Fixpo.add_constraint");
               callee_ctx_inv += (z_var_t (p) == z_var_t (a));
+            }
             ++i;
           }
           // --- project only onto formal parameters
+          crab::CrabStats::count ("Fixpo.count.project");
+          crab::CrabStats::resume ("Fixpo.project");
           domains::domain_traits<abs_dom_t>::project (callee_ctx_inv, 
                                                       pars.begin (),
                                                       pars.end ());
+          crab::CrabStats::stop ("Fixpo.project");
           // --- store the callee context
           CRAB_LOG ("inter", 
-                    std::cout << "--- Callee context stored: " << callee_ctx_inv << "\n");
+                    std::cout << "--- Callee context stored: " 
+                              << callee_ctx_inv << "\n");
           m_call_tbl->insert (cs, callee_ctx_inv);          
 
           /////
@@ -531,22 +590,30 @@ namespace crab {
 
           // --- convert this->m_inv to the language of summ_abs_dom_t (sum)
           summ_abs_domain_t caller_ctx_inv = summ_abs_domain_t::top();
-          for (auto cst : this->m_inv.to_linear_constraint_system ())
+          for (auto cst : this->m_inv.to_linear_constraint_system ()) {
+            crab::CrabStats::count ("Fixpo.count.add_constraint");
+            crab::ScopedCrabStats __st__("Fixpo.add_constraint");
             caller_ctx_inv += cst;
+          }
           CRAB_LOG ("inter",
-                    std::cout << "--- Caller context: " <<  caller_ctx_inv << "\n");
+                    std::cout << "--- Caller context: " 
+                              <<  caller_ctx_inv << "\n");
           // --- reuse summary to do the continuation
           bu_abs_transformer_t::reuse_summary (caller_ctx_inv, cs, sum);
           CRAB_LOG ("inter",
-                    std::cout << "--- Caller context after plugin summary: " << caller_ctx_inv << "\n");
+                    std::cout << "--- Caller context after plugin summary: " 
+                              << caller_ctx_inv << "\n");
           // --- convert back inv to the language of abs_dom_t
           abs_dom_t inv = abs_dom_t::top();          
-          for (auto cst : caller_ctx_inv.to_linear_constraint_system ())
+          for (auto cst : caller_ctx_inv.to_linear_constraint_system ()) {
+            crab::CrabStats::count ("Fixpo.count.add_constraint");
+            crab::ScopedCrabStats __st__("Fixpo.add_constraint");
             inv += cst;
+          }
           std::swap (this->m_inv, inv);
           CRAB_LOG ("inter",
-                    std::cout << "--- Caller continuation after " <<  cs <<  "=" 
-                    <<  this->m_inv << "\n");
+                    std::cout << "--- Caller continuation after " 
+                              <<  cs << "=" <<  this->m_inv << "\n");
           return;
         }
         else 
@@ -559,8 +626,11 @@ namespace crab {
       // We could not reuse a summary so we just havoc lhs of the call
       // site
       auto lhs_opt = cs.get_lhs_name ();
-      if (lhs_opt)
+      if (lhs_opt) {
+        crab::CrabStats::count ("Fixpo.count.forget");
+        crab::ScopedCrabStats __st__("Fixpo.forget");
         this->m_inv -= *lhs_opt;
+      }
     }
   }; 
 

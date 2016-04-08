@@ -9,6 +9,7 @@
 #include "boost/noncopyable.hpp"
 
 #include <crab/common/debug.hpp>
+#include <crab/common/stats.hpp>
 #include <crab/cfg/Cfg.hpp>
 #include <crab/cfg/VarFactory.hpp>
 #include <crab/domains/domain_traits.hpp>
@@ -83,6 +84,7 @@ namespace crab {
       
       //! Trigger the whole analysis
       void Run (TDAbsDomain init = TDAbsDomain::top ())  {
+        crab::ScopedCrabStats __st__("Inter");
 
         bool has_noedges = true;
         for (auto const &v: boost::make_iterator_range (vertices (m_cg))) {
@@ -97,6 +99,8 @@ namespace crab {
           CRAB_LOG("inter",
                    std::cout << "Call graph has no edges so no summaries are computed.\n");
           for (auto &v: boost::make_iterator_range (vertices (m_cg))) {
+            crab::ScopedCrabStats __st__("Inter.TopDown");
+
             cfg_t& cfg = v.getCfg ();
             auto fdecl = cfg.get_func_decl ();
             assert (fdecl);
@@ -126,6 +130,7 @@ namespace crab {
        
         CRAB_LOG("inter",std::cout << "Bottom-up phase ...\n");
         for (auto n: rev_order) {
+          crab::ScopedCrabStats __st__("Inter.BottomUp");
           vector<cg_node_t> &scc_mems = Scc_g.getComponentMembers (n);
           for (auto m: scc_mems) {
 
@@ -153,6 +158,7 @@ namespace crab {
                 formals.push_back (*ret_val_opt);
               // --- project onto formal parameters and return 
               auto inv = a.get_post (cfg.exit ());
+              crab::CrabStats::count ("Fixpo.count.project");
               domains::domain_traits<BUAbsDomain>::project (inv,
                                                             formals.begin (), 
                                                             formals.end ());            
@@ -167,13 +173,15 @@ namespace crab {
         bool is_root = true;
         for (auto n: boost::make_iterator_range (rev_order.rbegin(),
                                                  rev_order.rend ())) {
-
+          crab::ScopedCrabStats __st__("Inter.TopDown");
           vector<cg_node_t> &scc_mems = Scc_g.getComponentMembers (n);
           for (auto m: scc_mems) {
             cfg_t& cfg = m.getCfg ();
             auto fdecl = cfg.get_func_decl ();
             assert (fdecl);
-            CRAB_LOG ("inter", std::cout << "--- Analyzing " << (*fdecl).get_func_name () << "\n");
+            CRAB_LOG ("inter", 
+                      std::cout << "--- Analyzing " 
+                                << (*fdecl).get_func_name () << "\n");
             if (scc_mems.size () > 1) {
               // If the node is recursive then what we have in call_tbl
               // is incomplete and therefore it is unsound to use it. To

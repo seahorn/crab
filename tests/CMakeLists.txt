@@ -2,6 +2,7 @@ set (CRAB_LIBS
 #  dbm
    term
    Debug
+   Stats
    )
 
 set (CRAB_LIBS ${CRAB_LIBS}
