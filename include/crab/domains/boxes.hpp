@@ -498,9 +498,12 @@ namespace crab {
           crab::ScopedCrabStats __st__("Domain.copy");
         }
         
-        boxes_domain_t& operator=(boxes_domain_t other) {
-           m_ldd = other.m_ldd;
-           return *this;
+        boxes_domain_t& operator=(const boxes_domain_t& other) {
+          crab::CrabStats::count ("Domain.count.copy");
+          crab::ScopedCrabStats __st__("Domain.copy");
+          if (this != &other) 
+            m_ldd = other.m_ldd;
+          return *this;
         }
         
         bool is_bottom() const { 

@@ -852,8 +852,11 @@ public:
     crab::ScopedCrabStats __st__("Domain.copy");
   }
 
-  congruence_domain_t& operator=(congruence_domain_t e) {
-    this->_env = e._env;
+  congruence_domain_t& operator=(const congruence_domain_t& o) {
+    crab::CrabStats::count ("Domain.count.copy");
+    crab::ScopedCrabStats __st__("Domain.copy");
+    if (this != &o)
+      this->_env = o._env;
     return *this;
   }
 

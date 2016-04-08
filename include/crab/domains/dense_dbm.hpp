@@ -518,6 +518,9 @@ public:
   }
 
   dbm_t& operator=(const dbm_t& o) {
+    crab::CrabStats::count ("Domain.count.copy");
+    crab::ScopedCrabStats __st__("Domain.copy");
+
     _is_bottom = o._is_bottom;
     _is_normalized = o._is_normalized;
     _matrix = o._matrix;

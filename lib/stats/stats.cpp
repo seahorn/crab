@@ -8,6 +8,10 @@ namespace crab
   std::map<std::string,std::string> CrabStats::ss;
   
   void CrabStats::count (const std::string &name) { ++counters[name]; }
+  void CrabStats::count_max (const std::string &name, unsigned v) {
+      counters[name] = std::max (counters[name], v);
+  }
+
   double CrabStats::avg (const std::string &n, double v) { return av[n].add (v); }
   unsigned CrabStats::uset (const std::string &n, unsigned v)
   { return counters [n] = v; }

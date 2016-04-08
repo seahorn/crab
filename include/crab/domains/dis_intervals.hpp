@@ -1124,6 +1124,8 @@ namespace crab {
      }
      
      dis_interval_domain_t& operator=(const dis_interval_domain_t& o) {
+       crab::CrabStats::count ("Domain.count.copy");
+       crab::ScopedCrabStats __st__("Domain.copy");
        if (this != &o)
          this->_env = o._env;
        return *this;

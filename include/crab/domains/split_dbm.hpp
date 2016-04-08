@@ -203,6 +203,9 @@ namespace crab {
 
       SplitDBM_& operator=(const SplitDBM_& o)
       {
+        crab::CrabStats::count ("Domain.count.copy");
+        crab::ScopedCrabStats __st__("Domain.copy");
+
         if(this != &o)
         {
           if(o._is_bottom)

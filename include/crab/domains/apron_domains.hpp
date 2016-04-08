@@ -645,6 +645,8 @@ namespace crab {
             m_var_map (std::move (o.m_var_map)) { }
         
         apron_domain_t& operator=(const apron_domain_t& o) {
+          crab::CrabStats::count ("Domain.count.copy");
+          crab::ScopedCrabStats __st__("Domain.copy");
           if (this != &o) {
             m_apstate = o.m_apstate;
             m_var_map = o.m_var_map;

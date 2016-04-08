@@ -93,6 +93,8 @@ namespace crab {
         }
         
         array_smashing_t& operator=(const array_smashing_t& other) {
+          crab::CrabStats::count ("Domain.count.copy");
+          crab::ScopedCrabStats __st__("Domain.copy");
           if (this != &other)
             _inv = other._inv;
           return *this;

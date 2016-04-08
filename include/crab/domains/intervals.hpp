@@ -1201,8 +1201,11 @@ namespace ikos {
       crab::ScopedCrabStats __st__("Domain.copy");
     }
 
-    interval_domain_t& operator=(interval_domain_t e) {
-      this->_env = e._env;
+    interval_domain_t& operator=(const interval_domain_t& o) {
+      crab::CrabStats::count ("Domain.count.copy");
+      crab::ScopedCrabStats __st__("Domain.copy");
+      if (this != &o)
+        this->_env = o._env;
       return *this;
     }
 

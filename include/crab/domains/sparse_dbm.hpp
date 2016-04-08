@@ -199,9 +199,11 @@ namespace crab {
       { assert(g.size() > 0); }
 
 
-      // FIXME: Add a move constructor
       SparseDBM_& operator=(const SparseDBM_& o)
       {
+        crab::CrabStats::count ("Domain.count.copy");
+        crab::ScopedCrabStats __st__("Domain.copy");
+
         if(this != &o)
         {
           if(o._is_bottom)

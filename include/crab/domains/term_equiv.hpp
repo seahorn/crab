@@ -521,6 +521,8 @@ namespace crab {
        } 
        
        term_domain_t& operator=(const term_domain_t &o) {
+         crab::CrabStats::count ("Domain.count.copy");
+         crab::ScopedCrabStats __st__("Domain.copy");
          
          o.check_terms();
          if (this != &o) {

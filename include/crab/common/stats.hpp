@@ -128,6 +128,7 @@ namespace crab
     static std::string& sget (const std::string &n);
     
     static void count (const std::string &name);
+    static void count_max (const std::string &name, unsigned v);
 
     static void start (const std::string &name);
     static void stop (const std::string &name);

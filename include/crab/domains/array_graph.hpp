@@ -437,6 +437,8 @@ namespace crab {
     
        array_graph_t& operator=(const array_graph_t &other)
        {
+         crab::CrabStats::count ("Domain.count.copy");
+         crab::ScopedCrabStats __st__("Domain.copy");
          if (this != &other)
          {
            _is_bottom      = other._is_bottom;

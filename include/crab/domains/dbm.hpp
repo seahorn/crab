@@ -580,6 +580,8 @@ namespace crab {
       }
    
       DBM_t operator=(const DBM_t& o) {
+        crab::CrabStats::count ("Domain.count.copy");
+        crab::ScopedCrabStats __st__("Domain.copy");
         if (this != &o) {
           dbm_dealloc(_dbm);
           _dbm = dbm_copy(o._dbm); 
