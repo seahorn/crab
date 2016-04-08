@@ -14,20 +14,30 @@
  * [i,j).
  ******************************************************************************/
 
-/* FIXMEs:
+/* Limitations:
 
   - The implementation is just a proof-of-concept so it is horribly
-  inefficient. I have not tried to make it more efficient yet or ran
-  even with real programs. 
-
+    inefficient. I have not tried to make it more efficient yet or
+    ran even with real programs.
   - Assume all array accesses are aligned wrt to the size of the array
-  element (e.g., if the size of the array element is 4 bytes then all
-  array accesses must be multiple of 4). Note this assumption does not
-  hold in real programs!
+    element (e.g., if the size of the array element is 4 bytes then
+    all array accesses must be multiple of 4).
+  - Assume that the size of the array element is always
+    1. Therefore, if the array indexes are incremented or decremented
+    by 2,4,... we will lose all the precision.
 
-  - It also assumes that the size of the array element is always
-  1. Therefore, if the array indexes are incremented or decremented by
-  2,4,... we will lose all the precision.
+  FIXMEs:
+
+  - Use AdaptGraph instead of boost::graph
+  - Have a flag is_normalized and normalize only if the flag is false
+  - Perform incremental Floyd-Warshall by keeping track of changed edges.
+  - array_graph::widening is normalizing both operands. The first
+    operand cannot be normalized.
+  - perform common renaming before binary operations (join/widening/narrowing/meet)
+  - Do no use shared_ptr because we are doing deep copies Use magic
+    move semantics and also shared references with copy-on-write to
+    avoid unnecessary copies.
+  - etc.
 
  */
 
@@ -44,7 +54,6 @@
 
 #include <crab/common/types.hpp>
 #include <crab/common/debug.hpp>
-#include <crab/common/mergeable_map.hpp>
 #include <crab/domains/patricia_trees.hpp>
 #include <crab/domains/numerical_domains_api.hpp>
 #include <crab/domains/bitwise_operators_api.hpp>
@@ -685,6 +694,103 @@ namespace crab {
          public division_operators<typename ScalarNumDomain::number_t,
                                    typename ScalarNumDomain::varname_t>
     {
+
+      template<typename Key, typename Value>
+      class merge_op_check_equal: public patricia_tree< Key, Value >::binary_op_t {
+        boost::optional< Value > apply(Value x, Value y) {
+          if (x == y) return x;
+          else
+            CRAB_ERROR("merging a key with two different values");
+        };
+        bool default_is_absorbing() { return false; }
+      }; 
+   
+      template<typename Key, typename Value>
+      class merge_op_first: public patricia_tree< Key, Value >::binary_op_t {
+        boost::optional< Value > apply(Value x, Value y)  {
+          return x;
+        };
+        bool default_is_absorbing() { return false; } 
+      }; 
+   
+      template<typename Key, typename Value>
+      class merge_op_second: public patricia_tree< Key, Value >::binary_op_t {  
+        boost::optional< Value > apply(Value x, Value y)  {
+          return y;
+        };
+        bool default_is_absorbing() { return false; }
+      }; 
+   
+     template < typename Key, typename Value, 
+                typename MergeOp = merge_op_check_equal <Key, Value> >
+     class mergeable_map: public writeable {
+       
+      private:
+       typedef patricia_tree< Key, Value > patricia_tree_t;
+       typedef typename patricia_tree_t::binary_op_t binary_op_t;
+  
+      public:
+       typedef mergeable_map< Key, Value > mergeable_map_t;
+       typedef typename patricia_tree_t::iterator iterator;
+       
+      private:
+       patricia_tree_t _tree;
+       
+       static patricia_tree_t do_union(patricia_tree_t t1, patricia_tree_t t2) {
+         MergeOp o;
+         t1.merge_with(t2, o);
+         return t1;
+       }
+       
+       mergeable_map(patricia_tree_t t): _tree(t) { }
+       
+      public:
+       
+       mergeable_map(): _tree(patricia_tree_t()) { }
+  
+       mergeable_map(const mergeable_map_t& e): writeable(), _tree(e._tree) { }
+       
+       mergeable_map_t& operator=(mergeable_map_t e) {
+         _tree = e._tree;
+         return *this;
+       }
+       
+       iterator begin() { return _tree.begin(); }
+
+       iterator end() { return _tree.end(); }
+
+       std::size_t size(){ return _tree.size(); }
+
+       void set(Key k, Value v) { _tree.insert(k, v); }
+
+       mergeable_map_t& operator-=(Key k) {
+         _tree.remove(k);
+         return *this;
+       }       
+       mergeable_map_t operator|(mergeable_map_t e) {
+         mergeable_map_t u(do_union(_tree, e._tree));
+         return u;
+       }
+              
+       boost::optional<Value> operator[](Key k) { return _tree.lookup(k); }
+       void clear() { _tree = patricia_tree_t(); }
+       
+       void write(std::ostream& o) {
+         o << "{";
+         for (auto it = _tree.begin(); it != _tree.end(); ) {
+           Key k = it->first;
+           k.write(o);
+           o << " -> ";
+           Value v = it->second;
+           o << v;
+           ++it;
+           if (it != _tree.end()) {
+             o << "; ";
+           }
+         }
+         o << "}";
+       }    
+     }; // class mergeable_map
       
      public:
       typedef typename ScalarNumDomain::number_t Number;
