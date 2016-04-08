@@ -9,6 +9,7 @@
 
 #include <crab/config.h>
 #include <crab/common/debug.hpp>
+#include <crab/common/stats.hpp>
 #include <crab/common/types.hpp>
 #include <crab/domains/numerical_domains_api.hpp>
 
@@ -492,7 +493,10 @@ namespace crab {
         }
         
         boxes_domain (const boxes_domain_t& other): 
-            ikos::writeable(), m_ldd (other.m_ldd) { }
+            ikos::writeable(), m_ldd (other.m_ldd) { 
+          crab::CrabStats::count ("Domain.count.copy");
+          crab::ScopedCrabStats __st__("Domain.copy");
+        }
         
         boxes_domain_t& operator=(boxes_domain_t other) {
            m_ldd = other.m_ldd;

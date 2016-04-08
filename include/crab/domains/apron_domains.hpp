@@ -5,6 +5,7 @@
 
 #include <crab/config.h>
 #include <crab/common/debug.hpp>
+#include <crab/common/stats.hpp>
 #include <crab/common/types.hpp>
 #include <crab/domains/numerical_domains_api.hpp>
 #include <crab/domains/domain_traits.hpp>
@@ -53,7 +54,8 @@ namespace crab {
         static apron_domain_t bottom() { CRAB_ERROR (APRON_NOT_FOUND); }
 
         apron_domain (const apron_domain_t& other): 
-            ikos::writeable() { }
+            ikos::writeable() { 
+        }
         
         bool is_bottom() { CRAB_ERROR (APRON_NOT_FOUND); }
 
@@ -632,7 +634,10 @@ namespace crab {
             ikos::writeable(), 
             m_apstate (apPtr (get_man (), ap_abstract0_copy (get_man (), &*(o.m_apstate)))),
             m_var_map (var_map_ptr (new var_bimap_t (*o.m_var_map)))
-        {  }
+        {  
+          crab::CrabStats::count ("Domain.count.copy");
+          crab::ScopedCrabStats __st__("Domain.copy");
+        }
 
         apron_domain_ (apron_domain_t&& o): 
             ikos::writeable(), 

@@ -45,6 +45,7 @@
 #define IKOS_NAIVE_DBM_HPP
 
 #include <crab/common/types.hpp>
+#include <crab/common/stats.hpp>
 #include <crab/common/bignums.hpp>
 #include <crab/domains/numerical_domains_api.hpp>
 #include <crab/domains/bitwise_operators_api.hpp>
@@ -511,7 +512,10 @@ public:
       : _is_bottom(o._is_bottom),
         _is_normalized(o._is_normalized),
         _matrix(o._matrix),
-        _var_indexes(o._var_indexes) {}
+        _var_indexes(o._var_indexes) {
+    crab::CrabStats::count ("Domain.count.copy");
+    crab::ScopedCrabStats __st__("Domain.copy");
+  }
 
   dbm_t& operator=(const dbm_t& o) {
     _is_bottom = o._is_bottom;

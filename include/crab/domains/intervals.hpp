@@ -55,6 +55,7 @@
 #include <map>
 #include <boost/optional.hpp>
 #include <crab/common/types.hpp>
+#include <crab/common/stats.hpp>
 #include <crab/common/bignums.hpp>
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/domains/separate_domains.hpp>
@@ -1195,7 +1196,10 @@ namespace ikos {
       numerical_domain< Number, VariableName >(), 
       bitwise_operators< Number, VariableName >(),
       division_operators< Number, VariableName >(),
-      _env(e._env) { }
+      _env(e._env) { 
+      crab::CrabStats::count ("Domain.count.copy");
+      crab::ScopedCrabStats __st__("Domain.copy");
+    }
 
     interval_domain_t& operator=(interval_domain_t e) {
       this->_env = e._env;

@@ -54,6 +54,7 @@
 
 #include <crab/common/types.hpp>
 #include <crab/common/debug.hpp>
+#include <crab/common/stats.hpp>
 #include <crab/domains/patricia_trees.hpp>
 #include <crab/domains/numerical_domains_api.hpp>
 #include <crab/domains/bitwise_operators_api.hpp>
@@ -403,6 +404,9 @@ namespace crab {
            _vertex_map (new vertex_map_t()), 
            _vertices_set (new vertex_names_set_t())
        {
+         crab::CrabStats::count ("Domain.count.copy");
+         crab::ScopedCrabStats __st__("Domain.copy");
+
          if (!is_bottom ())
          {
            // copy vertices, _vertex_map and _vertices_set

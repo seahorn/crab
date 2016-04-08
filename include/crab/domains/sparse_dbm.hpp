@@ -10,6 +10,7 @@
 #define SPARSE_DBM_HPP
 
 #include <crab/common/types.hpp>
+#include <crab/common/stats.hpp>
 #include <crab/common/debug.hpp>
 #include <crab/domains/graphs/sparse_graph.hpp>
 #include <crab/domains/graphs/adapt_sgraph.hpp>
@@ -154,6 +155,10 @@ namespace crab {
           unstable(o.unstable),
           _is_bottom(false)
       {
+
+        crab::CrabStats::count ("Domain.count.copy");
+        crab::ScopedCrabStats __st__("Domain.copy");
+
         if(o._is_bottom)
           set_to_bottom();
 

@@ -12,6 +12,7 @@
 
 #include <crab/common/types.hpp>
 #include <crab/common/debug.hpp>
+#include <crab/common/stats.hpp>
 #include <crab/domains/numerical_domains_api.hpp>
 #include <crab/domains/domain_traits.hpp>
 
@@ -86,7 +87,10 @@ namespace crab {
         
         array_smashing (const array_smashing_t& other): 
             ikos::writeable(), 
-            _inv (other._inv) { }
+            _inv (other._inv) { 
+          crab::CrabStats::count ("Domain.count.copy");
+          crab::ScopedCrabStats __st__("Domain.copy");
+        }
         
         array_smashing_t& operator=(const array_smashing_t& other) {
           if (this != &other)

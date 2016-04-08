@@ -14,6 +14,7 @@
 
 #include <crab/common/types.hpp>
 #include <crab/common/debug.hpp>
+#include <crab/common/stats.hpp>
 #include <crab/common/bignums.hpp>
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/domains/dbm/dbm.h>
@@ -573,7 +574,10 @@ namespace crab {
           _id (o._id),
           _var_map (o._var_map),
           _rev_map(o._rev_map)
-      { }
+      { 
+        crab::CrabStats::count ("Domain.count.copy");
+        crab::ScopedCrabStats __st__("Domain.copy");
+      }
    
       DBM_t operator=(const DBM_t& o) {
         if (this != &o) {

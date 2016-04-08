@@ -61,6 +61,7 @@
 #include <iostream>
 
 #include <crab/common/types.hpp>
+#include <crab/common/stats.hpp>
 #include <crab/domains/separate_domains.hpp>
 #include <crab/domains/numerical_domains_api.hpp>
 #include <crab/domains/bitwise_operators_api.hpp>
@@ -846,7 +847,10 @@ public:
         numerical_domain< Number, VariableName >(),
         bitwise_operators< Number, VariableName >(),
         division_operators< Number, VariableName >(),
-        _env(e._env) {}
+        _env(e._env) {
+    crab::CrabStats::count ("Domain.count.copy");
+    crab::ScopedCrabStats __st__("Domain.copy");
+  }
 
   congruence_domain_t& operator=(congruence_domain_t e) {
     this->_env = e._env;

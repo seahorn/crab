@@ -174,8 +174,8 @@ namespace ikos {
                  std::cout << "Prev   : " << before << "\n"
                            << "Current: " << after << "\n"
                            << "Res    : " << widen_res << "\n");
-        crab::CrabStats::count ("Fixpo.count.join");
-        crab::ScopedCrabStats __st__("Fixpo.join");
+        crab::CrabStats::count ("Domain.count.join");
+        crab::ScopedCrabStats __st__("Domain.join");
         return before | after; 
       } else {
         CRAB_LOG("fixpo",
@@ -187,15 +187,15 @@ namespace ikos {
           CRAB_LOG("fixpo",
                    auto widen_res = before.widening_thresholds (after, _jump_set);
                    std::cout << "Res    : " << widen_res << "\n");
-          crab::CrabStats::count ("Fixpo.count.widening");
-          crab::ScopedCrabStats __st__("Fixpo.widening");
+          crab::CrabStats::count ("Domain.count.widening");
+          crab::ScopedCrabStats __st__("Domain.widening");
           return before.widening_thresholds (after, _jump_set);
         } else {
           CRAB_LOG("fixpo",
                    auto widen_res = before || after;
                    std::cout << "Res    : " << widen_res << "\n");
-          crab::CrabStats::count ("Fixpo.count.widening");
-          crab::ScopedCrabStats __st__("Fixpo.widening");
+          crab::CrabStats::count ("Domain.count.widening");
+          crab::ScopedCrabStats __st__("Domain.widening");
           return before || after;
         }
       }
@@ -214,8 +214,8 @@ namespace ikos {
                  std::cout << "Prev   : " << before << "\n"
                            << "Current: " << after << "\n"
                            << "Res    : " << narrow_res << "\n");
-        crab::CrabStats::count ("Fixpo.count.meet");
-        crab::ScopedCrabStats __st__("Fixpo.meet");
+        crab::CrabStats::count ("Domain.count.meet");
+        crab::ScopedCrabStats __st__("Domain.meet");
         return before & after; 
       } else {
         CRAB_LOG("fixpo",
@@ -224,8 +224,8 @@ namespace ikos {
                  std::cout << "Prev   : " << before << "\n"
                  << "Current: " << after << "\n"
                            << "Res    : " << narrow_res << "\n");
-        crab::CrabStats::count ("Fixpo.count.narrowing");
-        crab::ScopedCrabStats __st__("Fixpo.narrowing");
+        crab::CrabStats::count ("Domain.count.narrowing");
+        crab::ScopedCrabStats __st__("Domain.narrowing");
         return before && after; 
       }
     }
@@ -276,8 +276,8 @@ namespace ikos {
           pre = AbstractValue::bottom();
           CRAB_LOG ("fixpo", std::cout << "Joining predecessors ...\n");
           for (NodeName prev : prev_nodes) {
-            crab::CrabStats::count ("Fixpo.count.join");
-            crab::ScopedCrabStats __st__("Fixpo.join");
+            crab::CrabStats::count ("Domain.count.join");
+            crab::ScopedCrabStats __st__("Domain.join");
             pre |= this->_iterator->get_post(prev);  
           }
           this->_iterator->set_pre(node, pre);
@@ -295,8 +295,8 @@ namespace ikos {
         CRAB_LOG ("fixpo", std::cout << "Merging predecessors at widening point ...\n");
         for (NodeName prev : prev_nodes) {
           if (!(this->_iterator->_wto.nesting(prev) > cycle_nesting)) {
-            crab::CrabStats::count ("Fixpo.count.join");
-            crab::ScopedCrabStats __st__("Fixpo.join");
+            crab::CrabStats::count ("Domain.count.join");
+            crab::ScopedCrabStats __st__("Domain.join");
             pre |= this->_iterator->get_post(prev); 
           }
         }
@@ -312,21 +312,21 @@ namespace ikos {
           }
           AbstractValue new_pre = AbstractValue::bottom();
           for (NodeName prev : prev_nodes) {
-            crab::CrabStats::count ("Fixpo.count.join");
-            crab::ScopedCrabStats __st__("Fixpo.join");
+            crab::CrabStats::count ("Domain.count.join");
+            crab::ScopedCrabStats __st__("Domain.join");
             new_pre |= this->_iterator->get_post(prev); 
           }
-          crab::CrabStats::count ("Fixpo.count.leq");
-          crab::CrabStats::resume ("Fixpo.leq");
+          crab::CrabStats::count ("Domain.count.leq");
+          crab::CrabStats::resume ("Domain.leq");
           if (new_pre <= pre) {
-            crab::CrabStats::stop ("Fixpo.leq");
+            crab::CrabStats::stop ("Domain.leq");
             // Post-fixpoint reached
             CRAB_LOG ("fixpo", std::cout << "post-fixpoint reached\n");
             this->_iterator->set_pre(head, new_pre);
             pre = new_pre;
             break;
           } else {
-            crab::CrabStats::stop ("Fixpo.leq");
+            crab::CrabStats::stop ("Domain.leq");
             pre = this->_iterator->extrapolate(head, iteration, pre, new_pre);
           }
         }
@@ -341,19 +341,19 @@ namespace ikos {
           }
           AbstractValue new_pre = AbstractValue::bottom();
           for (NodeName prev : prev_nodes) {
-            crab::CrabStats::count ("Fixpo.count.join");
-            crab::ScopedCrabStats __st__("Fixpo.join");
+            crab::CrabStats::count ("Domain.count.join");
+            crab::ScopedCrabStats __st__("Domain.join");
             new_pre |= this->_iterator->get_post(prev); 
           }
-          crab::CrabStats::count ("Fixpo.count.leq");
-          crab::CrabStats::resume ("Fixpo.leq");
+          crab::CrabStats::count ("Domain.count.leq");
+          crab::CrabStats::resume ("Domain.leq");
           if (pre <= new_pre) {
-            crab::CrabStats::stop ("Fixpo.leq");
+            crab::CrabStats::stop ("Domain.leq");
             CRAB_LOG ("fixpo", std::cout << "No more refinement possible.\n");
             // No more refinement possible (pre == new_pre)
             break;
           } else {
-            crab::CrabStats::stop ("Fixpo.leq");
+            crab::CrabStats::stop ("Domain.leq");
             if (iteration > this->_iterator->_descending_iterations) break; 
             pre = this->_iterator->refine(head, iteration, pre, new_pre);
             this->_iterator->set_pre(head, pre);

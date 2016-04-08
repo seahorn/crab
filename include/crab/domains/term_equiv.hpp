@@ -25,6 +25,7 @@
 
 
 #include <crab/common/debug.hpp>
+#include <crab/common/stats.hpp>
 #include <crab/common/types.hpp>
 #include <crab/common/bignums.hpp>
 #include <crab/cfg/VarFactory.hpp>
@@ -513,7 +514,11 @@ namespace crab {
            _alloc(o._alloc),
            _var_map(o._var_map), _term_map(o._term_map),
            changed_terms(o.changed_terms)
-       { check_terms(); } 
+       { 
+         crab::CrabStats::count ("Domain.count.copy");
+         crab::ScopedCrabStats __st__("Domain.copy");
+         check_terms(); 
+       } 
        
        term_domain_t& operator=(const term_domain_t &o) {
          

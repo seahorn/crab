@@ -10,6 +10,7 @@
 
 #include <crab/config.h>
 #include <crab/common/debug.hpp>
+#include <crab/common/stats.hpp>
 #include <crab/common/types.hpp>
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/domains/separate_domains.hpp>
@@ -1117,7 +1118,10 @@ namespace crab {
          numerical_domain< Number, VariableName >(), 
          bitwise_operators< Number, VariableName >(),
          division_operators< Number, VariableName >(),
-         _env(o._env) { }
+         _env(o._env) { 
+       crab::CrabStats::count ("Domain.count.copy");
+       crab::ScopedCrabStats __st__("Domain.copy");
+     }
      
      dis_interval_domain_t& operator=(const dis_interval_domain_t& o) {
        if (this != &o)

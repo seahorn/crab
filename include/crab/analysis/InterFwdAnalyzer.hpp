@@ -158,7 +158,7 @@ namespace crab {
                 formals.push_back (*ret_val_opt);
               // --- project onto formal parameters and return 
               auto inv = a.get_post (cfg.exit ());
-              crab::CrabStats::count ("Fixpo.count.project");
+              crab::CrabStats::count ("Domain.count.project");
               domains::domain_traits<BUAbsDomain>::project (inv,
                                                             formals.begin (), 
                                                             formals.end ());            

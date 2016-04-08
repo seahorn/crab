@@ -35,8 +35,8 @@ namespace crab {
       void insert_helper (std::size_t func_key, AbsDomain inv) {
         auto it = m_call_table.find (func_key);
         if (it != m_call_table.end ()) {
-          crab::CrabStats::count ("Fixpo.count.join");
-          crab::ScopedCrabStats __st__("Fixpo.join");
+          crab::CrabStats::count ("Domain.count.join");
+          crab::ScopedCrabStats __st__("Domain.join");
           it->second = it->second | inv;
         }
         else
