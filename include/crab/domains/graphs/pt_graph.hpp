@@ -387,7 +387,12 @@ class PtGraph : public writeable {
       iterator end(void) const { return iterator(p.end()); }
       size_t size(void) const { return p.size(); }
 
-      bool mem(unsigned int v) const { return p.lookup(v); }
+      bool mem(unsigned int v) const { 
+        if (p.lookup(v)) 
+          return true;
+        else
+          return false;        
+      }
       void add(unsigned int v, const Wt& w) { p.insert(v, w); }
       Wt value(unsigned int v) const { return *(p.lookup (v)); }
       void remove(unsigned int v) { p.remove(v); }
