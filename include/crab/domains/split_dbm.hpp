@@ -27,6 +27,7 @@
 #include <crab/domains/bitwise_operators_api.hpp>
 #include <crab/domains/division_operators_api.hpp>
 
+#include <type_traits>
 #include <unordered_set>
 
 #include <boost/optional.hpp>
@@ -57,23 +58,73 @@ namespace crab {
            return (Wt) n;
          }
        };
-     
+
+       // All of these representations are implementations of a
+       // sparse weighted graph. They differ on the datastructures
+       // used to store successors and predecessors
+       enum GraphRep { 
+         // sparse-map and sparse-sets
+         ss = 1,        
+         // adaptive sparse-map and sparse-sets
+         adapt_ss = 2,  
+         // patricia tree-maps and patricia tree-sets
+         pt = 3,           
+         // hash table and hash sets
+         ht = 4
+       };          
+
+       template<typename Number, GraphRep Graph = GraphRep::adapt_ss>
        class DefaultParams {
        public:
          enum { chrome_dijkstra = 1 };
          enum { widen_restabilize = 1 };
          enum { special_assign = 1 };
+
+         //typedef Number Wt;
+         typedef long Wt;
+
+         typedef typename std::conditional< 
+           (Graph == ss), 
+           SparseWtGraph<Wt>,
+           typename std::conditional< 
+             (Graph == adapt_ss), 
+             AdaptGraph<Wt>,
+             typename std::conditional< 
+               (Graph == pt), 
+               PtGraph<Wt>, 
+               HtGraph<Wt> 
+               >::type 
+             >::type 
+           >::type graph_t;
        };
+
+       template<typename Number, GraphRep Graph = GraphRep::adapt_ss>
        class SimpleParams {
        public:
          enum { chrome_dijkstra = 0 };
          enum { widen_restabilize = 0 };
          enum { special_assign = 0 };
+
+         typedef long Wt;
+
+         typedef typename std::conditional< 
+           (Graph == ss), 
+           SparseWtGraph<Wt>,
+           typename std::conditional< 
+             (Graph == adapt_ss), 
+             AdaptGraph<Wt>,
+             typename std::conditional< 
+               (Graph == pt), 
+               PtGraph<Wt>, 
+               HtGraph<Wt> 
+               >::type 
+             >::type 
+           >::type graph_t;
        };
      }; // end namespace SDBM_impl
 
 
-    template<class Number, class VariableName, class Params = SDBM_impl::DefaultParams>
+    template<class Number, class VariableName, class Params = SDBM_impl::DefaultParams<Number> >
     class SplitDBM_ : public writeable,
                public numerical_domain<Number, VariableName >,
                public bitwise_operators<Number,VariableName >,
@@ -95,14 +146,9 @@ namespace crab {
       // retrofit some operations onto the join.
       typedef patricia_tree< VariableName, interval_t > ranges_t;
       typedef typename ranges_t::key_binary_op_t key_binary_op_t;
-      
-      // Eventually break this out into a template param
-      //typedef Number Wt;
-      typedef long Wt;
-      //typedef SparseWtGraph<Wt> graph_t;
-      typedef AdaptGraph<Wt> graph_t;
-      //typedef HtGraph<Wt> graph_t;
-      //typedef PtGraph<Wt> graph_t;
+   
+      typedef typename Params::Wt Wt;
+      typedef typename Params::graph_t graph_t;
 
       typedef SDBM_impl::NtoV<Number, Wt> ntov;
 
@@ -2173,13 +2219,13 @@ namespace crab {
       }
 
       static std::string getDomainName () {
-        return "split DBM";
+        return "SplitDBM";
       }
 
     }; // class SplitDBM_
 
     // Quick wrapper which uses shared references with copy-on-write.
-    template<class Number, class VariableName, class Params = SDBM_impl::DefaultParams>
+    template<class Number, class VariableName, class Params = SDBM_impl::DefaultParams <Number> >
     class SplitDBM : public writeable,
                public numerical_domain<Number, VariableName >,
                public bitwise_operators<Number,VariableName >,

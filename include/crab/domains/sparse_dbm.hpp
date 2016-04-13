@@ -55,21 +55,71 @@ namespace crab {
          }
        };
 
+       // All of these representations are implementations of a
+       // sparse weighted graph. They differ on the datastructures
+       // used to store successors and predecessors
+       enum GraphRep { 
+         // sparse-map and sparse-sets
+         ss = 1,        
+         // adaptive sparse-map and sparse-sets
+         adapt_ss = 2,  
+         // patricia tree-maps and patricia tree-sets
+         pt = 3,           
+         // hash table and hash sets
+         ht = 4
+       };          
+
+       template<typename Number, GraphRep Graph = GraphRep::adapt_ss>
        class DefaultParams {
        public:
          enum { chrome_dijkstra = 1 };
          enum { widen_restabilize = 1 };
          enum { special_assign = 1 };
+
+         //typedef Number Wt;
+         typedef long Wt;
+
+         typedef typename std::conditional< 
+           (Graph == ss), 
+           SparseWtGraph<Wt>,
+           typename std::conditional< 
+             (Graph == adapt_ss), 
+             AdaptGraph<Wt>,
+             typename std::conditional< 
+               (Graph == pt), 
+               PtGraph<Wt>, 
+               HtGraph<Wt> 
+               >::type 
+             >::type 
+           >::type graph_t;
        };
+
+       template<typename Number, GraphRep Graph = GraphRep::adapt_ss>
        class SimpleParams {
        public:
          enum { chrome_dijkstra = 0 };
          enum { widen_restabilize = 0 };
          enum { special_assign = 0 };
+
+         typedef long Wt;
+
+         typedef typename std::conditional< 
+           (Graph == ss), 
+           SparseWtGraph<Wt>,
+           typename std::conditional< 
+             (Graph == adapt_ss), 
+             AdaptGraph<Wt>,
+             typename std::conditional< 
+               (Graph == pt), 
+               PtGraph<Wt>, 
+               HtGraph<Wt> 
+               >::type 
+             >::type 
+           >::type graph_t;
        };
      }; // end namespace SpDBM_impl
 
-    template<class Number, class VariableName, class Params = SpDBM_impl::DefaultParams>
+    template<class Number, class VariableName, class Params = SpDBM_impl::DefaultParams <Number> >
     class SparseDBM_: public writeable,
                public numerical_domain<Number, VariableName >,
                public bitwise_operators<Number,VariableName >,
@@ -1859,7 +1909,7 @@ namespace crab {
     }; // class SparseDBM_
 
     // Quick wrapper which uses shared references with copy-on-write.
-    template<class Number, class VariableName, class Params = SpDBM_impl::DefaultParams>
+    template<class Number, class VariableName, class Params = SpDBM_impl::DefaultParams<Number> >
     class SparseDBM : public writeable,
                public numerical_domain<Number, VariableName >,
                public bitwise_operators<Number,VariableName >,
