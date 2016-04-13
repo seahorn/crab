@@ -357,7 +357,7 @@ namespace crab {
           if(vert_map.size() < o.vert_map.size())
             return false;
 
-          Wt* wx; 
+          typename graph_t::mut_val_ref_t wx;
 
           // Set up a mapping from o to this.
           vector<unsigned int> vert_renaming(o.g.size(),-1);
@@ -386,7 +386,7 @@ namespace crab {
               vert_id y = vert_renaming[oy];
               Wt ow = edge.val;
 
-              if(!g.lookup(x, y, &wx) || (ow < (*wx)))
+              if(!g.lookup(x, y, &wx) || (ow < wx))
                 return false;
             }
           }
@@ -1634,7 +1634,7 @@ namespace crab {
 
         Wt c = g.edge_val(ii,jj);
 
-        Wt* w;
+        typename graph_t::mut_val_ref_t w;
 
         // There may be a cheaper way to do this.
         // GKG: Now implemented.
@@ -1651,10 +1651,10 @@ namespace crab {
           {
             if(g.lookup(se, jj, &w))
             {
-              if(*w <= wt_sij)
+              if(w <= wt_sij)
                 continue;
 
-              (*w) = wt_sij;
+              w = wt_sij;
             } else {
               g.add_edge(se, wt_sij, jj);
             }
@@ -1692,9 +1692,9 @@ namespace crab {
           {
             if(g.lookup(ii, de, &w))
             {
-              if((*w) <= wt_ijd)
+              if(w <= wt_ijd)
                 continue;
-              (*w) = wt_ijd;
+              w = wt_ijd;
             } else {
               g.add_edge(ii, wt_ijd, de);
             }
@@ -1714,9 +1714,9 @@ namespace crab {
             Wt wt_sijd = wt_sij + d_p.second; 
             if(g.lookup(se, de, &w))
             {
-              if((*w) <= wt_sijd)
+              if(w <= wt_sijd)
                 continue;
-              (*w) = wt_sijd;
+              w = wt_sijd;
             } else {
               g.add_edge(se, wt_sijd, de);
             }

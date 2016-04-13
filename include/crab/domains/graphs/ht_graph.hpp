@@ -164,10 +164,38 @@ class HtGraph : public writeable {
       return succs(x).mem(y);
     }
 
-    bool lookup(vert_id x, vert_id y, Wt** w) {
+    class mut_val_ref_t {
+
+     public:
+
+      mut_val_ref_t(): w(nullptr) { }
+
+      mut_val_ref_t(Wt* _w): w(_w) { }
+
+      operator Wt () const { 
+        assert (w);
+        return *w; 
+      }
+
+      void operator=(const mut_val_ref_t& o) {
+        w = o.w;
+      }
+
+      void operator=(Wt _w) {
+        assert (w);
+        *w = _w;
+      }
+
+     private:
+      Wt* w;
+    };
+
+    typedef mut_val_ref_t mut_val_ref_t;
+
+    bool lookup(vert_id x, vert_id y, mut_val_ref_t* w) {
       if(!succs(x).mem(y))
         return false;
-      (*w) = &succs(x).value(y);
+      (*w) = mut_val_ref_t(&succs(x).value(y));
       return true;
     }
 

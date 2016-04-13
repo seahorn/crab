@@ -174,14 +174,58 @@ class PtGraph : public writeable {
       return succs(x).mem(y);
     }
 
-    // GKG: No longer a ref
+    class mut_val_ref_t {
+
+     public:
+
+      mut_val_ref_t(): g(nullptr) { }
+
+      mut_val_ref_t(graph_t& _g, vert_id _s, vert_id _d): 
+          g(&_g), s(_s), d(_d), w(g->succs(s).value(d)) { }
+
+      operator Wt () const { 
+        assert (g);
+        return w; 
+      }
+
+      void operator=(const mut_val_ref_t& o) {
+        if (this != &o) {
+          g = o.g;
+          s = o.s;
+          d = o.d;
+          w = o.w;
+        }
+      }
+
+      void operator=(Wt _w) {
+        assert (g);
+        g->set_edge(s, _w, d);
+        w = _w;
+      }
+
+     private:
+      graph_t* g;
+      vert_id s;
+      vert_id d;
+      Wt w;
+    };
+
+    typedef mut_val_ref_t mut_val_ref_t;
+
+    bool lookup(vert_id x, vert_id y, mut_val_ref_t* w) {
+      if(!succs(x).mem(y))
+        return false;
+      (*w) = mut_val_ref_t (*this, x, y);
+      return true;
+    }
+
+    // GKG: no longer a ref
     Wt edge_val(vert_id x, vert_id y) {
       return succs(x).value(y);
     }
 
     // Precondition: elem(x, y) is true.
     Wt operator()(vert_id x, vert_id y) {
-      // return mtx[max_sz*x + y];
       return succs(x).value(y);
     }
 
@@ -219,7 +263,7 @@ class PtGraph : public writeable {
 
     void set_edge(vert_id s, Wt w, vert_id d)
     {
-//      assert(s < size() && d < size());
+      // assert(s < size() && d < size());
       if(!elem(s, d))
         add_edge(s, w, d);
       else
@@ -231,9 +275,8 @@ class PtGraph : public writeable {
     {
       if(elem(s, d))
       {
-//        _succs[s].insert(vert_idx(d), w, op);
+        // _succs[s].insert(vert_idx(d), w, op);
         _succs[s].insert(vert_idx(d), op.apply(edge_val(s, d), w));
-//        edge_val(s, d) = op.apply(edge_val(s, d), w);
         return;
       }
 
@@ -248,7 +291,7 @@ class PtGraph : public writeable {
       { }
       vert_id operator*(void) const { return v; }
       vert_iterator& operator++(void) { ++v; return *this; }
-//      vert_iterator& operator--(void) { --v; return *this; }
+      // vert_iterator& operator--(void) { --v; return *this; }
       bool operator!=(const vert_iterator& o) {
         while(v < o.v && is_free[v])
           ++v;
@@ -346,7 +389,7 @@ class PtGraph : public writeable {
 
       bool mem(unsigned int v) const { return p.lookup(v); }
       void add(unsigned int v, const Wt& w) { p.insert(v, w); }
-      Wt value(unsigned int v) { return *(p.lookup(v)); }
+      Wt value(unsigned int v) const { return *(p.lookup (v)); }
       void remove(unsigned int v) { p.remove(v); }
       void clear() { p.clear(); }
 
@@ -354,16 +397,111 @@ class PtGraph : public writeable {
       succ_t& p;
     };
 
-//    typedef adj_range<pred_t, pred_iterator> pred_range;
-//    typedef adj_range<succ_t, succ_iterator> succ_range;
+    class edge_ref_t {
+    public:
+      edge_ref_t(vert_id _v, Wt _w)
+        : vert(_v), val(_w)
+      { }
+      vert_id vert;
+      Wt val; // no longer a ref
+    };
+
+    class const_edge_ref_t {
+     public:
+      const_edge_ref_t(vert_id _v, const Wt& _w)
+        : vert(_v), val(_w)
+      { }
+      vert_id vert;
+      const Wt& val;
+    };
+
+    class fwd_edge_iterator {
+    public:
+      typedef edge_ref_t edge_ref;
+      fwd_edge_iterator(void)
+        : g(nullptr)
+      { }
+      fwd_edge_iterator(graph_t& _g, vert_id _s, succ_iterator _it)
+        : g(&_g), s(_s), it(_it)
+      { }
+
+      edge_ref operator*(void) const { return edge_ref((*it), g->edge_val(s, (*it))); }
+      fwd_edge_iterator& operator++(void) { ++it; return *this; }
+      bool operator!=(const fwd_edge_iterator& o) { return it != o.it; }
+
+      graph_t* g;
+      vert_id s;
+      succ_iterator it;
+    };
+
+    class fwd_edge_range {
+    public:
+      typedef fwd_edge_iterator iterator;
+      fwd_edge_range(graph_t& _g, vert_id _s)
+        : g(_g), s(_s)
+      { }
+
+      fwd_edge_iterator begin(void) const { return fwd_edge_iterator(g, s, g.succs(s).begin()); }
+      fwd_edge_iterator end(void) const { return fwd_edge_iterator(g, s, g.succs(s).end()); }
+      graph_t& g;
+      vert_id s;
+    };
+
+    class rev_edge_iterator {
+    public:
+      typedef edge_ref_t edge_ref;
+      rev_edge_iterator(void)
+        : g(nullptr)
+      { }
+      rev_edge_iterator(graph_t& _g, vert_id _d, pred_iterator _it)
+        : g(&_g), d(_d), it(_it)
+      { }
+
+      edge_ref operator*(void) const { return edge_ref((*it), g->edge_val((*it), d)); }
+      rev_edge_iterator& operator++(void) { ++it; return *this; }
+      bool operator!=(const rev_edge_iterator& o) { return it != o.it; }
+
+      graph_t* g;
+      vert_id d;
+      pred_iterator it;
+    };
+
+    class rev_edge_range {
+    public:
+      typedef rev_edge_iterator iterator;
+      rev_edge_range(graph_t& _g, vert_id _d)
+        : g(_g), d(_d)
+      { }
+
+      rev_edge_iterator begin(void) const { return rev_edge_iterator(g, d, g.preds(d).begin()); }
+      rev_edge_iterator end(void) const { return rev_edge_iterator(g, d, g.preds(d).end()); }
+      graph_t& g;
+      vert_id d;
+    };
+
+
+    typedef fwd_edge_range e_succ_range;
+    typedef rev_edge_range e_pred_range;
+
 
     succ_range succs(vert_id v)
     {
       return succ_range(_succs[v]);
     }
+
+    e_succ_range e_succs(vert_id v) 
+    {
+      return fwd_edge_range (*this, v);
+    }
+
     pred_range preds(vert_id v)
     {
       return pred_range(_preds[v]);
+    }
+
+    e_pred_range e_preds(vert_id v) 
+    {
+      return rev_edge_range (*this, v);
     }
 
     // growTo shouldn't be used after forget
@@ -379,7 +517,6 @@ class PtGraph : public writeable {
       assert(free_id.size() == 0);
     }
 
-  protected:
     void write(std::ostream& o) {
       o << "[|";
       bool first = true;
@@ -406,6 +543,8 @@ class PtGraph : public writeable {
       }
       o << "|]";
     }
+
+  protected:
 
     unsigned int edge_count;
 

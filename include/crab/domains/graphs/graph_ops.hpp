@@ -48,6 +48,7 @@ namespace crab {
     typedef typename G::Wt Wt;
     typedef typename G::pred_range g_pred_range;
     typedef typename G::succ_range g_succ_range;
+    typedef typename G::mut_val_ref_t mut_val_ref_t;
 
     GraphPerm(vector<vert_id>& _perm, G& _g) 
       : g(_g), perm(_perm), inv(_g.size(), -1)
@@ -68,7 +69,7 @@ namespace crab {
       return g.elem(perm[x], perm[y]);
     }
 
-    bool lookup(vert_id x, vert_id y, Wt** w) const {
+    bool lookup(vert_id x, vert_id y, mut_val_ref_t* w) const {
       if(perm[x] > g.size() || perm[y] > g.size())
         return false;
       return g.lookup(perm[x], perm[y], w);
@@ -255,6 +256,8 @@ namespace crab {
     typedef typename G::e_pred_range g_e_pred_range;
     typedef typename G::e_succ_range g_e_succ_range;
 
+    typedef typename G::mut_val_ref_t mut_val_ref_t;
+
     SubGraph(G& _g, vert_id _v_ex)
       : g(_g), v_ex(_v_ex)
     { }
@@ -264,7 +267,7 @@ namespace crab {
       return (x != v_ex && y != v_ex && g.elem(x, y));
     }
 
-    bool lookup(vert_id x, vert_id y, Wt** w) const {
+    bool lookup(vert_id x, vert_id y, mut_val_ref_t* w) const {
       return (x != v_ex && y != v_ex && g.lookup(x, y, w));
     }
 
@@ -435,7 +438,8 @@ namespace crab {
   public: 
     typedef typename G::vert_id vert_id;
     typedef typename G::Wt Wt;
-//    typedef typename G::adj_list g_adj_list;
+    // typedef typename G::adj_list g_adj_list;
+    typedef typename G::mut_val_ref_t mut_val_ref_t;
 
     GraphRev(G& _g) 
       : g(_g)
@@ -446,7 +450,7 @@ namespace crab {
       return g.elem(y, x);
     }
 
-    bool lookup(vert_id x, vert_id y, Wt** w) const {
+    bool lookup(vert_id x, vert_id y, mut_val_ref_t* w) const {
       return g.lookup(y, x, w);
     }
 
@@ -510,6 +514,7 @@ namespace crab {
 //    typedef SparseWtGraph<Wt> graph_t;
     typedef Gr graph_t;
     typedef typename graph_t::vert_id vert_id;
+    typedef typename graph_t::mut_val_ref_t mut_val_ref_t;
 
     typedef vector< pair< pair<vert_id, vert_id>, Wt > > edge_vector;
 
@@ -584,14 +589,14 @@ namespace crab {
       graph_t g;
       g.growTo(sz);
       
-      Wt* wr;
+      mut_val_ref_t wr;
       for(vert_id s : l.verts())
       {
         for(auto e : l.e_succs(s))
         {
           vert_id d = e.vert;
           if(r.lookup(s, d, &wr))
-            g.add_edge(s, max(e.val, *wr), d);
+            g.add_edge(s, max(e.val, (Wt) wr), d);
         }
       }
       return g;
@@ -617,7 +622,7 @@ r_not_dom:
       graph_t g(graph_t::copy(l));
 //      bool l_dom = true;
       
-      Wt* wg;
+      mut_val_ref_t wg;
       for(vert_id s : r.verts())
       {
         for(auto e : r.e_succs(s))
@@ -626,8 +631,8 @@ r_not_dom:
           {
             g.add_edge(s, e.val, e.vert);
           } else {
-            if(e.val < *wg)
-              (*wg) = e.val;
+            if(e.val < wg)
+              wg = e.val;
           }
         }
       }
@@ -642,14 +647,14 @@ r_not_dom:
       size_t sz = l.size();
       graph_t g;
       g.growTo(sz);
-      Wt* wl;
+      mut_val_ref_t wl;
       for(vert_id s : r.verts())
       {
         for(auto e : r.e_succs(s))
         {
           vert_id d = e.vert;
-          if(l.lookup(s, d, &wl) && e.val <= *wl)
-            g.add_edge(s, *wl, d);
+          if(l.lookup(s, d, &wl) && e.val <= wl)
+            g.add_edge(s, wl, d);
         }
 
         // Check if this vertex is stable
@@ -851,7 +856,8 @@ r_not_dom:
       delta.clear();
       
       vector< vector<vert_id> > colour_succs(2*sz);
-      Wt* w;
+      mut_val_ref_t w;
+      
       // Partition edges into r-only/rb/b-only.
       for(vert_id s : g.verts())
       {
@@ -861,9 +867,9 @@ r_not_dom:
         {
           char mark = 0;
           vert_id d = e.vert;
-          if(l.lookup(s, d, &w) && (*w) == e.val)
+          if(l.lookup(s, d, &w) && w == e.val)
             mark |= E_LEFT;
-          if(r.lookup(s, d, &w) && (*w) == e.val)
+          if(r.lookup(s, d, &w) && w == e.val)
             mark |= E_RIGHT;
           // Add them to the appropriate coloured successor list 
           // Could do it inline, but this'll do.
@@ -938,13 +944,13 @@ r_not_dom:
         heap.insert(dest);
       }
 
-      Wt* w;
+      mut_val_ref_t w;
       while(!heap.empty())
       {
         int es = heap.removeMin();
         Wt es_cost = dists[es] + p[es]; // If it's on the queue, distance is not infinite.
         Wt es_val = es_cost - p[src];
-        if(!g.lookup(src, es, &w) || (*w) > es_val)
+        if(!g.lookup(src, es, &w) || w > es_val)
           out.push_back( make_pair(es, es_val) );
 
         for(auto e_ed : g.e_succs(es))
@@ -1010,13 +1016,13 @@ r_not_dom:
         heap.insert(dest);
       }
 
-      Wt* w;
+      mut_val_ref_t w;
       while(!heap.empty())
       {
         int es = heap.removeMin();
         Wt es_cost = dists[es] + p[es]; // If it's on the queue, distance is not infinite.
         Wt es_val = es_cost - p[src];
-        if(!g.lookup(src, es, &w) || (*w) > es_val)
+        if(!g.lookup(src, es, &w) || w > es_val)
           out.push_back( make_pair(es, es_val) );
 
         if(vert_marks[es] == (E_LEFT|E_RIGHT))
@@ -1081,13 +1087,13 @@ r_not_dom:
         heap.insert(dest);
       }
 
-      Wt* w;
+      mut_val_ref_t w;
       while(!heap.empty())
       {
         int es = heap.removeMin();
         Wt es_cost = dists[es] + p[es]; // If it's on the queue, distance is not infinite.
         Wt es_val = es_cost - p[src];
-        if(!g.lookup(src, es, &w) || (*w) > es_val)
+        if(!g.lookup(src, es, &w) || w > es_val)
           out.push_back( make_pair(es, es_val) );
 
         if(vert_marks[es] == V_STABLE)
