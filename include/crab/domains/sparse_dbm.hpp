@@ -141,15 +141,10 @@ namespace crab {
       // retrofit some operations onto the join.
       typedef patricia_tree< VariableName, interval_t > ranges_t;
       typedef typename ranges_t::key_binary_op_t key_binary_op_t;
-      
-      // Eventually break this out into a template param
-      //typedef Number Wt;
-      typedef long Wt;
-      //typedef SparseWtGraph<Wt> graph_t;
-      typedef AdaptGraph<Wt> graph_t;
-      //typedef HtGraph<Wt> graph_t; 
-      //typedef PtGraph<Wt> graph_t;
 
+      typedef typename Params::Wt Wt;
+      typedef typename Params::graph_t graph_t;
+      
       typedef SpDBM_impl::NtoV<Number, Wt> ntov;
 
       typedef typename graph_t::vert_id vert_id;
