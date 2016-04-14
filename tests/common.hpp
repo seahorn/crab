@@ -62,9 +62,9 @@ namespace crab {
     typedef interval_domain< z_number, varname_t > interval_domain_t;
     typedef numerical_congruence_domain< interval_domain_t> ric_domain_t;
     typedef DenseDBM<z_number, varname_t> ddbm_domain_t;
-    typedef SpDBM_impl::DefaultParams<z_number, SpDBM_impl::GraphRep::ss> SparseDBMGraph;
+    typedef SpDBM_impl::DefaultParams<z_number, SpDBM_impl::GraphRep::adapt_ss> SparseDBMGraph;
     typedef SparseDBM<z_number, varname_t, SparseDBMGraph> dbm_domain_t;
-    typedef SDBM_impl::DefaultParams<z_number, SDBM_impl::GraphRep::ss> SplitDBMGraph;
+    typedef SDBM_impl::DefaultParams<z_number, SDBM_impl::GraphRep::adapt_ss> SplitDBMGraph;
     typedef SplitDBM<z_number, varname_t, SplitDBMGraph> sdbm_domain_t;
     typedef DensePackDBM<z_number, varname_t> pdbm_domain_t;
     typedef boxes_domain< z_number, varname_t > boxes_domain_t;

@@ -275,26 +275,12 @@ class SparseWtGraph : public writeable {
     }
 
     class mut_val_ref_t {
-
      public:
 
       mut_val_ref_t(): w(nullptr) { }
-
-      mut_val_ref_t(Wt* _w): w(_w) { }
-
-      operator Wt () const { 
-        assert (w);
-        return *w; 
-      }
-
-      void operator=(mut_val_ref_t o) {
-        w = o.w;
-      }
-
-      void operator=(Wt _w) {
-        assert (w);
-        *w = _w;
-      }
+      operator Wt () const { assert (w); return *w; }
+      void operator=(Wt* _w) { w = _w; } 
+      void operator=(Wt _w) { assert (w); *w = _w; } 
 
      private:
       Wt* w;
@@ -305,7 +291,7 @@ class SparseWtGraph : public writeable {
     bool lookup(vert_id x, vert_id y, mut_val_ref_t* w) {
       if(!succs(x).mem(y))
         return false;
-      (*w) = mut_val_ref_t(&mtx[max_sz*x + y]);
+      *w = &mtx[max_sz*x + y];
       return true;
     }
 
