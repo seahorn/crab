@@ -1,3 +1,6 @@
+#include <crab/config.h>
+
+#ifdef HAVE_STATS
 #include "crab/common/stats.hpp"
 
 namespace crab
@@ -75,6 +78,5 @@ namespace crab
   }  
     
   void Averager::Print (std::ostream &out) const { out << avg; }
-
-
 }
+#endif 

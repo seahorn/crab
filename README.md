@@ -48,6 +48,12 @@ If you want to use the BOXES domain then add `-DUSE_LDD=ON` option.
 
 If you want to use the Apron library domains then add `-DUSE_APRON=ON` option.
 
+If you want to enable statistics about the analysis then add `-DUSE_STATS=ON` option.
+
+If you want to enable logging for debugging purposes then add `-DUSE_LOG=ON` option.
+
+By default, all these options are set to `OFF` (i.e., disabled).
+
 ## Crab input language and output ##
 
 The main input of Crab is a Control Flow Graph (CFG) language that

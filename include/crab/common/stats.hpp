@@ -8,9 +8,12 @@
 #include <sys/resource.h>
 #include <iostream>
 #include <iosfwd>
+#include <crab/config.h>
 
 namespace crab
 {
+
+#ifdef HAVE_STATS
   class Stopwatch
   {
   private:
@@ -92,13 +95,35 @@ namespace crab
     void Print (std::ostream &out) const;
 
   };
+#else
+  struct Stopwatch
+  {
+    Stopwatch () {}
+    void start () {}
+    void stop () {}
+    void resume () {}
+    long getTimeElapsed () const { return 0;}
+    void Print (std::ostream &out) {}
+    double toSeconds(){ return 0.0;}
 
+  };
+  struct Averager
+  {
+  public :
+   Averager () {}
+   double add (double k) { return 0.0;}
+   void Print (std::ostream &out) const {}
+  };
+
+#endif 
 }
 
 
 
 namespace crab
 {
+
+#ifdef HAVE_STATS
   inline std::ostream &operator<< (std::ostream &OS, const Stopwatch &sw)
   {
     sw.Print (OS);
@@ -192,7 +217,34 @@ namespace crab
     }
     ~ScopedCrabStats () { CrabStats::stop (m_name); }
   };  
-
+#else
+  inline std::ostream &operator<< (std::ostream &OS, const Stopwatch &sw){}
+  inline std::ostream &operator<< (std::ostream &OS, const Averager &av){}
+  struct CrabStats
+  {
+    static unsigned  get (const std::string &n){}
+    static double avg (const std::string &n, double v){}
+    static unsigned uset (const std::string &n, unsigned v){}
+    static void sset (const std::string &n, std::string v){}
+    static std::string& sget (const std::string &n){}
+    static void count (const std::string &name){}
+    static void count_max (const std::string &name, unsigned v){}
+    static void start (const std::string &name){}
+    static void stop (const std::string &name){}
+    static void resume (const std::string &name){}
+    static void Print (std::ostream &OS){}
+    static void PrintBrunch (std::ostream &OS){}
+  };
+  template <typename Output>
+  struct TimeIt
+  {
+    TimeIt (const char *msg, Output out, double min = 0.0) {}
+  };
+  struct ScopedCrabStats 
+  {
+    ScopedCrabStats (const std::string &name, bool reset = false) {}
+  };  
+#endif 
 }
 
 #define CRAB_MEASURE_FN crab::ScopedCrabStats __stats__(__FUNCTION__)
