@@ -10,6 +10,10 @@
 #include <iosfwd>
 #include <crab/config.h>
 
+#ifndef HAVE_STATS
+#include <crab/common/types.hpp>
+#endif 
+
 namespace crab
 {
 
@@ -218,15 +222,16 @@ namespace crab
     ~ScopedCrabStats () { CrabStats::stop (m_name); }
   };  
 #else
-  inline std::ostream &operator<< (std::ostream &OS, const Stopwatch &sw){}
-  inline std::ostream &operator<< (std::ostream &OS, const Averager &av){}
+  inline std::ostream &operator<< (std::ostream &OS, const Stopwatch &sw){ return OS;}
+  inline std::ostream &operator<< (std::ostream &OS, const Averager &av){ return OS;}
   struct CrabStats
   {
-    static unsigned  get (const std::string &n){}
-    static double avg (const std::string &n, double v){}
-    static unsigned uset (const std::string &n, unsigned v){}
+    static unsigned  get (const std::string &n){ return 0;}
+    static double avg (const std::string &n, double v){ return 0.0;}
+    static unsigned uset (const std::string &n, unsigned v){return 0;}
     static void sset (const std::string &n, std::string v){}
-    static std::string& sget (const std::string &n){}
+    static std::string& sget (const std::string &n)
+    { CRAB_ERROR("Stats::sget not implemented");}
     static void count (const std::string &name){}
     static void count_max (const std::string &name, unsigned v){}
     static void start (const std::string &name){}
