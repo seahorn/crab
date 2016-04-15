@@ -1019,10 +1019,10 @@ namespace ikos {
     typedef patricia_tree_set< variable_t > variable_set_t;
 
   private:
-    typedef collection< linear_constraint_t > cst_collection_t;
+    typedef std::vector< linear_constraint_t > cst_collection_t;
 
   public:
-    typedef typename cst_collection_t::iterator iterator;
+    typedef typename cst_collection_t::const_iterator iterator;
 
   private:
     cst_collection_t _csts;
@@ -1031,18 +1031,25 @@ namespace ikos {
     linear_constraint_system() { }
 
     linear_constraint_system(const linear_constraint_t &cst) {
-      this->_csts += cst;
+      _csts.push_back(cst);
     }
+
+    linear_constraint_system(const linear_constraint_system_t &o)
+        : _csts (o._csts) { }
+
+    linear_constraint_system(linear_constraint_system_t &&o)
+        : _csts (std::move(o._csts)) { }
 
     linear_constraint_system_t& 
     operator+=(const linear_constraint_t &cst) {
-      this->_csts += cst;
+      this->_csts.push_back(cst);
       return *this;
     }
 
     linear_constraint_system_t& 
     operator+=(const linear_constraint_system_t &s) {
-      this->_csts += s._csts;
+      for (auto c: s)
+        this->_csts.push_back(c);
       return *this;
     }
 
@@ -1054,28 +1061,30 @@ namespace ikos {
       return r;
     }
 
-    iterator begin() const {
-      return this->_csts.begin();
-    }
+    iterator begin() const { return _csts.begin(); }
 
-    iterator end() const {
-      return this->_csts.end();
-    }
+    iterator end() const { return _csts.end(); }
 
     variable_set_t variables() const {
       variable_set_t variables;
-      for (iterator it = this->begin(); it != this->end(); ++it) {
-	variables |= it->variables();
-      }
+      for (auto c: *this)
+        variables |= c.variables();
       return variables;
     }
     
-    std::size_t size() const {
-      return this->_csts.size();
-    }
-    
+    std::size_t size() const { return _csts.size(); }
+        
     void write(std::ostream& o) {
-      this->_csts.write(o);
+      o << "{";
+      for (iterator it = this->begin(); it != this->end();) {
+        auto c = *it;
+        o << c;
+        ++it;
+        if (it != end()) {
+        o << "; ";
+        }
+      }
+      o << "}";
     }
 
   }; // class linear_constraint_system
