@@ -55,6 +55,7 @@
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/container/slist.hpp>
 #include <crab/common/types.hpp>
+#include <crab/common/stats.hpp>
 #include <crab/domains/intervals.hpp>
 
 namespace ikos {
@@ -551,6 +552,8 @@ namespace ikos {
         _dfn_table(dfn_table_ptr(new dfn_table_t)), 
         _num(0), _stack(stack_ptr(new stack_t)), 
         _nesting_table(nesting_table_ptr(new nesting_table_t)) {
+      crab::ScopedCrabStats __st__("Weak Topological sort");
+
       this->visit(cfg, cfg.entry(), this->_wto_components);
       this->_dfn_table.reset();
       this->_stack.reset();
