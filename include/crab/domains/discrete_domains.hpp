@@ -46,6 +46,8 @@
 #include <crab/domains/patricia_trees.hpp>
 #include <crab/domains/separate_domains.hpp>
 
+#include <boost/range.hpp>
+
 namespace ikos {
 
   template< typename Element >
@@ -56,7 +58,6 @@ namespace ikos {
 
   public:
     typedef discrete_domain< Element > discrete_domain_t;
-    typedef collection< Element > collection_t;
     typedef typename ptset_t::iterator iterator;
 
   private:
@@ -85,9 +86,11 @@ namespace ikos {
 
     discrete_domain(Element s): _is_top(false), _set(s) { }
 
-    discrete_domain(collection_t c): _is_top(false) {
-      for (typename collection_t::iterator it = c.begin(); it != c.end(); ++it) {
-        this->_set += *it;
+    template<typename Iterator>
+    discrete_domain(Iterator eIt, Iterator eEt)
+        : _is_top(false) {
+      for (auto e: boost::make_iterator_range (eIt, eEt)) {
+        this->_set += e;
       }
     }
 
@@ -146,12 +149,11 @@ namespace ikos {
       return *this;
     }
     
-    discrete_domain_t& operator+=(collection_t c) {
-      if (!this->_is_top) {
-        for (typename collection_t::iterator it = c.begin(); it != c.end(); ++it) {
-          this->_set += *it;
-        }
-      }
+    template<typename Range>
+    discrete_domain_t& operator+=(Range es) {
+      if (!this->_is_top)
+        for (auto e: es)
+          this->_set += e;
       return *this;
     }
     
@@ -161,9 +163,10 @@ namespace ikos {
       return r;
     }
     
-    discrete_domain_t operator+(collection_t c) {
+    template<typename Range>
+    discrete_domain_t operator+(Range es) {
       discrete_domain_t r(*this);
-      r.operator+=(c);
+      r.operator+=(es);
       return r;
     }
 
@@ -174,12 +177,11 @@ namespace ikos {
       return *this;
     }
     
-    discrete_domain_t& operator-=(collection_t c) {
-      if (!this->_is_top) {
-        for (typename collection_t::iterator it = c.begin(); it != c.end(); ++it) {
-          this->_set -= *it;
-        }
-      }
+    template<typename Range>
+    discrete_domain_t& operator-=(Range es) {
+      if (!this->_is_top)
+        for (auto e: es)
+          this->_set -= e;
       return *this;
     }
 
@@ -189,9 +191,10 @@ namespace ikos {
       return r;
     }
     
-    discrete_domain_t operator-(collection_t c) {
+    template<typename Range>
+    discrete_domain_t operator-(Range es) {
       discrete_domain_t r(*this);
-      r.operator-=(c);
+      r.operator-=(es);
       return r;
     }
     
