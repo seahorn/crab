@@ -41,7 +41,6 @@
 #ifndef IKOS_SEPARATE_DOMAINS_HPP
 #define IKOS_SEPARATE_DOMAINS_HPP
 
-#include <iostream>
 #include <crab/common/types.hpp>
 #include <crab/domains/patricia_trees.hpp>
 

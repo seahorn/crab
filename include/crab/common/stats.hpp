@@ -6,13 +6,9 @@
 #include <map>
 #include <sys/time.h>
 #include <sys/resource.h>
-#include <iostream>
-#include <iosfwd>
-#include <crab/config.h>
 
-#ifndef HAVE_STATS
+#include <crab/config.h>
 #include <crab/common/types.hpp>
-#endif 
 
 namespace crab
 {

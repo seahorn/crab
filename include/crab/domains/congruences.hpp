@@ -58,8 +58,6 @@
 #ifndef IKOS_CONGRUENCES_HPP
 #define IKOS_CONGRUENCES_HPP
 
-#include <iostream>
-
 #include <crab/common/types.hpp>
 #include <crab/common/stats.hpp>
 #include <crab/domains/separate_domains.hpp>

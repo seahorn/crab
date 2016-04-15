@@ -51,9 +51,7 @@
 #ifndef IKOS_PTA_HPP
 #define IKOS_PTA_HPP
 
-#include <iostream>
 #include <set>
-#include <sstream>
 #include <vector>
 
 #include <boost/shared_ptr.hpp>

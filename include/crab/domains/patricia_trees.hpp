@@ -45,9 +45,6 @@
 
 #include <algorithm>
 #include <deque>
-#include <iostream>
-#include <utility>
-
 #include <boost/shared_ptr.hpp>
 #include <boost/optional.hpp>
 #include <boost/iterator/iterator_facade.hpp>

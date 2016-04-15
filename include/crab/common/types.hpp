@@ -3,7 +3,9 @@
 
 #include <stdint.h>
 #include <string>
+#include <iosfwd>
 #include <iostream>
+#include <sstream>
 #include <stdarg.h>
 #include <errno.h>
 #include <boost/optional.hpp>

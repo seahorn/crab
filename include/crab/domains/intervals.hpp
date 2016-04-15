@@ -48,8 +48,6 @@
 #ifndef IKOS_INTERVALS_HPP
 #define IKOS_INTERVALS_HPP
 
-#include <string>
-#include <iostream>
 #include <vector>
 #include <set>
 #include <map>

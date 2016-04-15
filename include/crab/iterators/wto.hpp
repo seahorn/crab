@@ -45,12 +45,9 @@
 #ifndef IKOS_WTO_HPP
 #define IKOS_WTO_HPP
 
-#include <utility>
-#include <iostream>
 #include <vector>
 #include <deque>
 #include <map>
-#include <sstream>
 #include <boost/shared_ptr.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/container/slist.hpp>

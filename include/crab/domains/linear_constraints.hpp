@@ -41,8 +41,6 @@
 #ifndef IKOS_LINEAR_CONSTRAINTS_HPP
 #define IKOS_LINEAR_CONSTRAINTS_HPP
 
-#include <iostream>
-#include <utility>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/container/flat_map.hpp>

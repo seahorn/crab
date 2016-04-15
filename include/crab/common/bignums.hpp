@@ -42,14 +42,9 @@
 #ifndef IKOS_BIGNUMS_HPP
 #define IKOS_BIGNUMS_HPP
 
-#include <string>
-#include <sstream>
-#include <iostream>
 #include <climits>
 #include <gmpxx.h>
-
 #include <boost/functional/hash.hpp>
-
 #include <crab/common/types.hpp>
 
 namespace ikos {
