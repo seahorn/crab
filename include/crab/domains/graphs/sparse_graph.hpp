@@ -6,7 +6,7 @@
 /* A (slightly) cleaner implementation of a sparse weighted graph.
  * 
  */
-namespace ikos {
+namespace crab {
 
 template <class Weight>
 class SparseWtGraph : public writeable {

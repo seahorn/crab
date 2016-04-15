@@ -6,7 +6,7 @@
 /* Patricia-tree backed sparse weighted graph.
  * Trades some time penalty for much lower memory consumption.
  */
-namespace ikos {
+namespace crab {
 
 template <class Weight>
 class PtGraph : public writeable {
