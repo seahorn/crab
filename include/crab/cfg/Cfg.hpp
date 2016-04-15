@@ -19,6 +19,7 @@
 #include <boost/range/iterator_range.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/unordered_set.hpp>
+#include <boost/unordered_map.hpp>
 
 #include <crab/common/types.hpp>
 #include <crab/common/bignums.hpp>
