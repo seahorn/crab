@@ -176,3 +176,49 @@ of separate_domains which provides an efficient implementation of a
 fast mergeable integer map based on patricia trees. This map can be
 used to map variable names to abstract values. The implementation of
 intervals and congruences use it.
+
+## Check properties with Crab ##
+
+The check of properties is done in two phases. During the first phase,
+the invariants are computed for the whole program and stored for now
+in memory (in the future it can be done in some external database). In
+a second phase, the invariants (computed during the first phase) are
+used to prove or disprove the property checks.
+
+First, we need some terminology.
+
+An _analyzer_ object inherits from a fixpoint iterator and keeps in
+memory the cfg or call graph as well as the invariants computed by the
+fixpoint iterator.
+
+A _checker_ object is a wrapper for an analyzer object that contains
+in addition a bunch of property checkers (see below). The checker
+scans all the cfg blocks and checks the analyzer's invariants wrt the
+properties of interest. A checker object is associated to a unique
+analyzer. Since Crab keeps only in memory the invariants that hold
+only at the entry of the blocks the checker also needs to propagate
+the invariants to each program point. This is done actually via the
+analyzer. A checker object can run multiple property checkers as long
+as all are associated to the same analyzer.
+
+A property of interest is defined via _property checkers_. The
+property checker object scans each block statement wrt to the
+analyzer's invariants. Thus, it is the one that actually does the
+job. A property checker object is also associated with a unique
+analyzer.
+
+At some point, the analyzer(s) and checker should be stable and
+fixed. Therefore, new properties should imply only to implement new
+property checkers.
+
+As a proof of concept, we have implemented so far some simple property
+checkers for nullity, division by zero and user-definable assertions
+(similar to C asserts). All the new property checkers should inherit
+from a base property checker class called `BaseProperty.hpp`.
+
+## TODO List ##
+
+- No domains for supporting floating point computations.
+- No domains for supporting machine arithmetic.
+- ...
+
