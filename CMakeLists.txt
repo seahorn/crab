@@ -29,11 +29,11 @@ set (Boost_USE_STATIC_LIBS ON)
 find_package (Boost COMPONENTS program_options REQUIRED)
 include_directories (${Boost_INCLUDE_DIRS})
 
-option (DEVMODE   "Enable development mode" OFF)
+option (ENABLE_TESTS "Enable tests" OFF)
 option (USE_LDD   "Enable Ldd library" OFF)
 option (USE_APRON "Enable Apron library" OFF)
-option (USE_STATS "Enable statistics about the analysis" OFF)
-option (USE_LOG   "Enable logging for debugging purposes" OFF)
+option (USE_STATS "Enable statistics" ON)
+option (USE_LOG   "Enable logging for debugging purposes" ON)
 
 find_package(GMP REQUIRED)
 if (GMP_FOUND)
@@ -214,8 +214,8 @@ configure_file( include/crab/config.h.cmake
 
 add_subdirectory(lib)
 
-if (DEVMODE)
-   message (STATUS "Enabled development mode: tests will be compiled")
+if (ENABLE_TESTS)
+   message (STATUS "Tests will be compiled")
    add_subdirectory(tests)
 endif ()
 

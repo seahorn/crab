@@ -1,15 +1,25 @@
-# Crab #
+#Crab: A Language-Agnostic Engine for Static Analysis#
 
 <img src="http://i.imgur.com/IDKhq5h.png" alt="crab logo" width=280 height=200 />
 
-#About#
+#Description#
 
-Crab is a language agnostic engine to perform static analysis of
-programs based on
-[abstract interpretation](https://en.wikipedia.org/wiki/Abstract_interpretation).
+Crab allows to perform static analysis of programs based on
+[Abstract Interpretation](https://en.wikipedia.org/wiki/Abstract_interpretation).
 
-At its core, Crab is a collection of abstract domains and fixpoint
-iterators built on the top of
+Crab does not analyze directly a mainstream program language such as
+C, C++, or Java but instead it analyzes a simplified
+Control-Flow-Graph (CFG) based language which is
+language-independent. This can allow Crab analyzing different
+programming languages assuming a translator to the CFG-based language
+is available.
+
+In spite of its simplicity, Crab has been designed to scale with large
+real programs and its CFG-based language is rich enough to represent
+programs with loops, functions, pointers, etc.
+
+The foundations of Crab is based on a collection of abstract domains
+and fixpoint iterators built on the top of
 [Ikos](http://ti.arc.nasa.gov/opensource/ikos/) (Inference Kernel for
 Open Static Analyzers) developed by NASA Ames Research Center.
 
@@ -21,74 +31,136 @@ Crab has been designed to have two kind of users:
 2.  Researchers on abstract interpretation who would like to
     experiment with new abstract domains and fixpoint iterators.
 
-## Licenses ##
 
-Ikos is distributed under NASA Open Source Agreement (NOSA)
-Version 1.3 or later. Crab is distributed under MIT license.
+#Installation and Usage #
 
-See [Crab_LICENSE.txt](Crab_LICENSE.txt) and
-[Ikos_LICENSE.pdf](Ikos_LICENSE.pdf) for details.
-
-## Compilation ##
-
-Crab is written in C++ and uses heavily the Boost library. You will
-need:
+Crab is written in C++ and uses heavily the Boost library. The main
+requirements are:
 
 - C++ compiler supporting c++11
-- Boost and Gmp 
+- Boost and GMP
 
-Then, just type:
+Crab is mostly a bunch of C++ header files but it has some
+libraries. To include Crab in your application you just need to
+include the corresponding C++ header files located at the `include`
+directory and make sure that you link your application with the Crab
+libraries (`lib` directory). This repository contains a
+`CMakeLists.txt` that you can adapt for your own needs.
 
-    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=my_install_dir ../
+The `tests` directory contains many examples of how to build CFGs and
+compute invariants using different abstract domains. To install all
+the tests via `CMake` type:
+
+	mkdir build && cd build
+    cmake -DCMAKE_BUILD_TYPE=Release `-DENABLE_TESTS=ON` -DCMAKE_INSTALL_PREFIX=run ../
     cmake --build . --target install 
 
-If you want to run the tests add `-DDEVMODE=ON` option.
+and, for instance, to execute the test `tests/simple/test1.cc` type:
+
+    cd build/run/tests/simple && ./test1
+
+The Boxes and Apron domains require third-party libraries. To avoid
+the burden to users who are not interested in those domains, the
+installation of the libraries is optional.
 
 If you want to use the BOXES domain then add `-DUSE_LDD=ON` option.
 
 If you want to use the Apron library domains then add `-DUSE_APRON=ON` option.
 
-If you want to enable statistics about the analysis then add `-DUSE_STATS=ON` option.
+#Example#
 
-If you want to enable logging for debugging purposes then add `-DUSE_LOG=ON` option.
+Assume we want to perform static analysis on the following C-like
+program:
 
-By default, all these options are set to `OFF` (i.e., disabled).
+```c
+    int i,x,y;
+	i=0;
+	x=1;
+	y=0;
+	while (i < 100) {
+		x=x+y;
+		y=y+1;
+		i=i+1;
+	}	 
+``` 
 
-## Crab input language and output ##
+This is the C++ code to build the corresponding Crab CFG and run the
+analysis using the Zones domain:
 
-The main input of Crab is a Control Flow Graph (CFG) language that
-interfaces with the abstract domains and iterators for the purpose of
-generating invariants.
+```c++
+	// CFG-based language
+    #include <crab/cfg/Cfg.hpp>
+	// Variable factory	
+    #include <crab/cfg/VarFactory.hpp>
+	// Forward analyzer	
+    #include <crab/analysis/FwdAnalyzer.hpp>
 
-In its simplest form, the CFG consists only of:
+    // linear expressions and constraints
+    #include <crab/domains/linear_constraints.hpp>
+	// Zones domain
+	#include <crab/domains/split_dbm.hpp>
 
-- assume,
-- havoc, 
-- arithmetic and bitwise operations, and
-- goto instructions
+	typedef SplitDBM<z_number, varname_t> zones_domain_t;
+    typedef NumFwdAnalyzer <cfg_t,zones_domain_t,VariableFactory>::type analyzer_t;
 
-but it also supports other instructions such as
+    int main (int argc, char**argv) {
+	
+	   // Declare variables i,x, and y
+       VariableFactory vfac;	
+       z_var i (vfac ["i"]);
+       z_var x (vfac ["x"]);
+       z_var y (vfac ["y"]);
+       // Create an empty CFG marking "entry" and "exit" are the labels
+       // for the entry and exit blocks.
+	   cfg_t cfg ("entry","ret");
+       // Add blocks
+       basic_block_t& entry = cfg.insert ("entry");
+       basic_block_t& bb1   = cfg.insert ("bb1");
+       basic_block_t& bb1_t = cfg.insert ("bb1_t");
+       basic_block_t& bb1_f = cfg.insert ("bb1_f");
+       basic_block_t& bb2   = cfg.insert ("bb2");
+       basic_block_t& ret   = cfg.insert ("ret");
+       // Add control flow 
+       entry >> bb1; bb1 >> bb1_t; bb1 >> bb1_f;
+       bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
+       // Add statements
+       entry.assign (i, 0);
+       entry.assign (x, 1);
+       entry.assign (y, 0);
+       bb1_t.assume (i <= 99);
+       bb1_f.assume (i >= 100);
+       bb2.add(x,x,y);
+       bb2.add(y,y,1);
+       bb2.add(i,i,1);
 
-- load, store, pointer arithmetic, and function pointers
-- function calls and returns
+       // Build an analyzer and run the zones domain
+       analyzer_t a(cfg,vfac,...);
+       a.Run(zones_domain_t::top());
+       cout << "Invariants using " << zones_domain_t::getDomainName() << "\n";
+	
+       // Scan all CFG basic blocks and print the invariants that hold
+	   // at their entries
+       for (auto &b : cfg) {
+         auto inv = a[b.label()];
+         cout << get_label_str(b.label()) << "=" << inv << "\n";
+       }
+	   return 0;
+	}    
+```
 
-To support inter-procedural analysis, Crab can also take as input a
-whole program represented as a bunch of functions. For Crab, a
-function is a CFG (as described above) with a signature that consists
-of the function name, its formal parameters, and return value.
+The Crab output of this program, showing the invariants that hold at
+the entry of each basic block, should be something like this:
 
-The output of Crab is a map from CFG basic blocks to invariants
-expressed in the underlying abstract domain.
+    Invariants using SplitDBM
+	
+	entry={}
+	bb1={i -> [0, 100], x -> [1, +oo], y -> [0, 100], y-i<=0, y-x<=0, i-x<=0, i-y<=0}
+    bb1_t={i -> [0, 100], x -> [1, +oo], y -> [0, 100], y-i<=0, y-x<=0, i-x<=0, i-y<=0}
+    bb1_f={i -> [0, 100], x -> [1, +oo], y -> [0, 100], y-i<=0, y-x<=0, i-x<=0, i-y<=0}
+    bb2={i -> [0, 99], x -> [1, +oo], y -> [0, 99], y-i<=0, y-x<=0, i-x<=0, i-y<=0}
+	ret={i -> [100, 100], x -> [100, +oo], y -> [100, 100], y-i<=0, y-x<=0, i-x<=0, i-y<=0}
 
-## Examples ##
-
-The tests directory contains some examples of how to build CFGs and
-how to compute invariants using different abstract domains.
-
-Important: the option `DEVMODE` must be enabled to compile all the
-tests.
-
-## How to integrate Crab in other verification tools ##
+#Integrating Crab in other verification tools#
 
 Check these projects:
 
@@ -98,127 +170,15 @@ analyzer that infers invariants from LLVM-based languages using Crab.
 - [SeaHorn](https://github.com/seahorn) is a verification framework
 that uses Crab-Llvm to supply invariants to the back-end solvers.
 
-## How to implement new fixpoint iterators ##
+#Licensing#
 
-The new fixpoint iterator must follow this API:
+Ikos is distributed under NASA Open Source Agreement (NOSA)
+Version 1.3 or later. Crab is distributed under MIT license.
 
-    template< class NodeName, class AbstractValue >
-    class forward_fixpoint_iterator {
-     public:
-	 
-     virtual AbstractValue analyze(NodeName, AbstractValue) = 0;
-    
-     virtual void process_pre(NodeName, AbstractValue) = 0;
-    
-     virtual void process_post(NodeName, AbstractValue) = 0;
-    
-    }; 
+See [Crab_LICENSE.txt](Crab_LICENSE.txt) and
+[Ikos_LICENSE.pdf](Ikos_LICENSE.pdf) for details.
 
-## How to implement new abstract domains ##
+#Publications#
 
-The main task is to implement the following API required by the
-fixpoint algorithm:
-  
-    static AbsDomain top();
-    
-    static AbsDomain bottom();
-    
-    bool is_bottom ();
-
-    bool is_top ();
-
-    // Less or equal
-    bool operator<=(AbsDomain o);
-
-    // Join
-    AbsDomain operator|(AbsDomain o);
-
-    // Meet
-    AbsDomain operator&(AbsDomain o);
-
-    // Widening
-    AbsDomain operator||(AbsDomain o);
-
-    // Narrowing 
-    AbsDomain operator&&(AbsDomain o);
-    
-### How to implement new numerical abstract domains ###
-
-In addition to the previous API, for numerical domains it is also
-required to implement the API described in `numerical_domains_api.hpp`:
-
-    typedef linear_expression< Number, VariableName > linear_expression_t;
-    typedef linear_constraint< Number, VariableName > linear_constraint_t;
-    typedef linear_constraint_system< Number, VariableName > linear_constraint_system_t;
-  
-    // x = y op z
-    virtual void apply(operation_t op, VariableName x, VariableName y, VariableName z) = 0; 
-
-    // x = y op k
-    virtual void apply(operation_t op, VariableName x, VariableName y, Number k) = 0; 
-
-    // x = e
-    virtual void assign(VariableName x, linear_expression_t e) = 0; 
-
-    // assume (c);
-    virtual void operator+=(linear_constraint_system_t csts) = 0;
-
-    // forget
-    virtual void operator-=(VariableName v) = 0;
-
-      
-This API assumes the manipulation of linear expressions and linear
-constraints both defined in `linear_constraints.hpp` so it is good to be
-familiar with.
-
-For non-relational domains it is highly recommend to build on the top
-of separate_domains which provides an efficient implementation of a
-fast mergeable integer map based on patricia trees. This map can be
-used to map variable names to abstract values. The implementation of
-intervals and congruences use it.
-
-## Check properties with Crab ##
-
-The check of properties is done in two phases. During the first phase,
-the invariants are computed for the whole program and stored for now
-in memory (in the future it can be done in some external database). In
-a second phase, the invariants (computed during the first phase) are
-used to prove or disprove the property checks.
-
-First, we need some terminology.
-
-An _analyzer_ object inherits from a fixpoint iterator and keeps in
-memory the cfg or call graph as well as the invariants computed by the
-fixpoint iterator.
-
-A _checker_ object is a wrapper for an analyzer object that contains
-in addition a bunch of property checkers (see below). The checker
-scans all the cfg blocks and checks the analyzer's invariants wrt the
-properties of interest. A checker object is associated to a unique
-analyzer. Since Crab keeps only in memory the invariants that hold
-only at the entry of the blocks the checker also needs to propagate
-the invariants to each program point. This is done actually via the
-analyzer. A checker object can run multiple property checkers as long
-as all are associated to the same analyzer.
-
-A property of interest is defined via _property checkers_. The
-property checker object scans each block statement wrt to the
-analyzer's invariants. Thus, it is the one that actually does the
-job. A property checker object is also associated with a unique
-analyzer.
-
-At some point, the analyzer(s) and checker should be stable and
-fixed. Therefore, new properties should imply only to implement new
-property checkers.
-
-As a proof of concept, we have implemented so far some simple property
-checkers for nullity, division by zero and user-definable assertions
-(similar to C asserts). All the new property checkers should inherit
-from a base property checker class called `BaseProperty.hpp`.
-
-## TODO List ##
-
-- No domains for supporting floating point computations.
-- No domains for supporting machine arithmetic.
-- ...
+- "An Abstract Domain of Uninterpreted Functions". G.Gange , J.A.Navas, P.Schachte, H.Sondergaard, and P.J. Stuckey. [(PDF)](http://www.clip.dia.fi.upm.es/~jorge/docs/terms-vmcai16.pdf). VMCAI'16
 
