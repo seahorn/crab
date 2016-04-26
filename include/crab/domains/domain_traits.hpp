@@ -10,6 +10,9 @@
 #include <crab/common/bignums.hpp>
 #include <crab/domains/intervals.hpp>
 
+#include <boost/range/iterator_range.hpp>
+#include <vector>
+
 namespace crab {
 
  namespace domains {
@@ -62,7 +65,7 @@ namespace crab {
 
      template <typename VariableName>
      static void array_init (Domain& inv, VariableName a, 
-                             const vector<z_number>& vals) { }
+                             const std::vector<z_number>& vals) { }
      
      template <typename VariableName, typename Number>
      static void assume_array (Domain& inv, VariableName a, Number val) { }
