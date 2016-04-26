@@ -6,8 +6,11 @@
 
 #include <crab/cfg/ConcSys.hpp>
 #include <crab/cfg/VarFactory.hpp>
+#include <crab/common/debug.hpp>
 #include <crab/domains/domain_traits.hpp>
 #include <crab/analysis/FwdAnalyzer.hpp>
+
+#include <boost/noncopyable.hpp>
 
 namespace crab {
 
@@ -21,7 +24,7 @@ namespace crab {
     //  (VMCAI'14).
     template< typename ThreadId, typename CFG, 
               typename AbsDomain, typename VarFactory>
-    class ConcAnalyzer {
+    class ConcAnalyzer: public boost::noncopyable {
       typedef typename CFG::basic_block_label_t basic_block_label_t;
       typedef typename CFG::varname_t varname_t;
       typedef typename CFG::basic_block_t basic_block_t;
@@ -134,7 +137,7 @@ namespace crab {
             }
           } // end analysis of all threads
         }
-        cout << "Global fixpoint reached in " << num_iter << " iterations\n";
+        crab::outs() << "Global fixpoint reached in " << num_iter << " iterations\n";
       }      
     }; 
   } // end namespace

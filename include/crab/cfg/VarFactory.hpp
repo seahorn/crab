@@ -6,7 +6,6 @@
  */
 
 #include <crab/common/types.hpp>
-//#include <crab/common/bignums.hpp>
 
 #include <boost/optional.hpp>
 #include <boost/noncopyable.hpp>

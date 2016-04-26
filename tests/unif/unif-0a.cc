@@ -24,8 +24,8 @@ int main (int argc, char** argv )
     
     term_domain_t l_join_r = dom_left | dom_right;
     
-    std::cout << dom_left << " | " << dom_right << " = " << l_join_r << std::endl;
-    //  std::cout << dom_left;
+    crab::outs() << dom_left << " | " << dom_right << " = " << l_join_r << std::endl;
+    //  crab::outs() << dom_left;
   }
 
   {
@@ -38,9 +38,9 @@ int main (int argc, char** argv )
     std::vector <varname_t> vs;
     vs.push_back (x);
     vs.push_back (y);
-    cout << "Before project " << inv << "\n";
+    crab::outs() << "Before project " << inv << "\n";
     crab::domains::domain_traits<term_domain_t>::project (inv, vs.begin (), vs.end ());
-    cout << "After project " << inv << "\n";
+    crab::outs() << "After project " << inv << "\n";
 
 
   }

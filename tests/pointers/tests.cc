@@ -6,7 +6,7 @@ using namespace crab::analyzer;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
-cfg_t cfg1 (VariableFactory &vfac) 
+cfg_t* cfg1 (VariableFactory &vfac) 
 {
 
   ////
@@ -14,12 +14,12 @@ cfg_t cfg1 (VariableFactory &vfac)
   ////
 
   // entry and exit block
-  cfg_t cfg ("b0","b3",PTR);
+  cfg_t* cfg = new cfg_t("b0","b3",PTR);
   // adding blocks
-  basic_block_t& b0 = cfg.insert ("b0");
-  basic_block_t& b1 = cfg.insert ("b1");
-  basic_block_t& b2 = cfg.insert ("b2");
-  basic_block_t& b3 = cfg.insert ("b3");
+  basic_block_t& b0 = cfg->insert ("b0");
+  basic_block_t& b1 = cfg->insert ("b1");
+  basic_block_t& b2 = cfg->insert ("b2");
+  basic_block_t& b3 = cfg->insert ("b3");
   // adding control flow
   b0 >> b1; b0 >> b2; b1 >> b3; b2 >> b3;
 
@@ -37,16 +37,16 @@ cfg_t cfg1 (VariableFactory &vfac)
   return cfg;
 }
 
-cfg_t cfg2 (VariableFactory &vfac) 
+cfg_t* cfg2 (VariableFactory &vfac) 
 {
 
   // entry and exit block
-  cfg_t cfg ("b0","b3",PTR);
+  cfg_t* cfg = new cfg_t("b0","b3",PTR);
   // adding blocks
-  basic_block_t& b0 = cfg.insert ("b0");
-  basic_block_t& b1 = cfg.insert ("b1");
-  basic_block_t& b2 = cfg.insert ("b2");
-  basic_block_t& b3 = cfg.insert ("b3");
+  basic_block_t& b0 = cfg->insert ("b0");
+  basic_block_t& b1 = cfg->insert ("b1");
+  basic_block_t& b2 = cfg->insert ("b2");
+  basic_block_t& b3 = cfg->insert ("b3");
   // adding control flow
   b0 >> b1; b0 >> b2; b1 >> b3; b2 >> b3;
   
@@ -71,16 +71,16 @@ cfg_t cfg2 (VariableFactory &vfac)
 }
 
 
-cfg_t cfg3 (VariableFactory &vfac) 
+cfg_t* cfg3 (VariableFactory &vfac) 
 {
 
   // entry and exit block
-  cfg_t cfg ("b0","b3",PTR);
+  cfg_t* cfg = new cfg_t("b0","b3",PTR);
   // adding blocks
-  basic_block_t& b0 = cfg.insert ("b0");
-  basic_block_t& b1 = cfg.insert ("b1");
-  basic_block_t& b2 = cfg.insert ("b2");
-  basic_block_t& b3 = cfg.insert ("b3");
+  basic_block_t& b0 = cfg->insert ("b0");
+  basic_block_t& b1 = cfg->insert ("b1");
+  basic_block_t& b2 = cfg->insert ("b2");
+  basic_block_t& b3 = cfg->insert ("b3");
   // adding control flow
   b0 >> b1; b0 >> b2; b1 >> b3; b2 >> b3;
   
@@ -104,22 +104,22 @@ cfg_t cfg3 (VariableFactory &vfac)
   return cfg;
 }
 
-cfg_t foo (VariableFactory &vfac) 
+cfg_t* foo (VariableFactory &vfac) 
 {
   vector<pair<varname_t,VariableType> > params;
   params.push_back (make_pair (vfac["p"], PTR_TYPE));
   params.push_back (make_pair (vfac["q"], PTR_TYPE));
   FunctionDecl<varname_t> decl (PTR_TYPE, vfac["foo"], params);
   // entry and exit block
-  cfg_t cfg ("b0","b6", decl, PTR);
+  cfg_t* cfg = new cfg_t("b0","b6", decl, PTR);
   // adding blocks
-  basic_block_t& b0 = cfg.insert ("b0");
-  basic_block_t& b1 = cfg.insert ("b1");
-  basic_block_t& b2 = cfg.insert ("b2");
-  basic_block_t& b3 = cfg.insert ("b3");
-  basic_block_t& b4 = cfg.insert ("b4");
-  basic_block_t& b5 = cfg.insert ("b5");
-  basic_block_t& b6 = cfg.insert ("b6");
+  basic_block_t& b0 = cfg->insert ("b0");
+  basic_block_t& b1 = cfg->insert ("b1");
+  basic_block_t& b2 = cfg->insert ("b2");
+  basic_block_t& b3 = cfg->insert ("b3");
+  basic_block_t& b4 = cfg->insert ("b4");
+  basic_block_t& b5 = cfg->insert ("b5");
+  basic_block_t& b6 = cfg->insert ("b6");
   // adding control flow
   b0 >> b1; b0 >> b2; b1 >> b3; b2 >> b3; b3>>b4; b3>>b5; b4>>b6; b5>>b6;
   
@@ -149,7 +149,7 @@ cfg_t foo (VariableFactory &vfac)
 }
 
 
-cfg_t bar (VariableFactory &vfac) 
+cfg_t* bar (VariableFactory &vfac) 
 {
   vector<pair<varname_t,VariableType> > params;
   params.push_back (make_pair (vfac["x1"], PTR_TYPE));
@@ -157,10 +157,10 @@ cfg_t bar (VariableFactory &vfac)
   FunctionDecl<varname_t> decl (PTR_TYPE, vfac["bar"], params);
 
   // entry and exit block
-  cfg_t cfg ("b0","b1",decl,PTR);
+  cfg_t* cfg = new cfg_t("b0","b1",decl,PTR);
   // adding blocks
-  basic_block_t& b0 = cfg.insert ("b0");
-  basic_block_t& b1 = cfg.insert ("b1");
+  basic_block_t& b0 = cfg->insert ("b0");
+  basic_block_t& b1 = cfg->insert ("b1");
   // adding control flow
   b0 >> b1; 
   
@@ -176,20 +176,20 @@ cfg_t bar (VariableFactory &vfac)
 }
 
 template<typename NumAbsDom>
-void run (vector<cfg_t> cfgs, VariableFactory& vfac)
+void run (vector<cfg_ref_t> cfgs, VariableFactory& vfac)
 {
 
-  Pointer<cfg_t, VariableFactory, NumAbsDom> pta (vfac);
+  Pointer<cfg_ref_t, VariableFactory, NumAbsDom> pta (vfac);
   for (auto cfg: cfgs)
   {
     cfg.simplify ();
-    cout << cfg << endl;
+    crab::outs() << cfg << endl;
     pta.gen_constraints  (cfg);
   }
 
   pta.solve ();
-  cout << "Pointer information\n";
-  cout << pta << endl; 
+  crab::outs() << "Pointer information\n";
+  crab::outs() << pta << endl; 
 }
 
 
@@ -200,34 +200,39 @@ int main (int argc, char**argv)
   {
     // intra-procedural example
     VariableFactory vfac;
-    vector<cfg_t> cfgs;
-    cfgs.push_back (cfg1 (vfac));
+    auto p1 = cfg1 (vfac);
+    vector<cfg_ref_t> cfgs = {*p1};
     run<interval_domain_t> (cfgs, vfac);
+    delete p1;
   }
 
   {
     // intra-procedural example
     VariableFactory vfac;
-    vector<cfg_t> cfgs;
-    cfgs.push_back (cfg2 (vfac));
+    auto p2 = cfg2 (vfac);
+    vector<cfg_ref_t> cfgs = {*p2};
     run<interval_domain_t> (cfgs, vfac);
+    delete p2;
   }
 
   {
     // intra-procedural example
     VariableFactory vfac;
-    vector<cfg_t> cfgs;
-    cfgs.push_back (cfg3 (vfac));
+    auto p3 = cfg3 (vfac);
+    vector<cfg_ref_t> cfgs = {*p3};
     run<sdbm_domain_t> (cfgs, vfac);
+    delete p3;
   }
 
   {
     // inter-procedural example
     VariableFactory vfac;
-    vector<cfg_t> cfgs;
-    cfgs.push_back (foo (vfac));
-    cfgs.push_back (bar (vfac));
+    auto p4 = foo (vfac);
+    auto p5 = bar (vfac);
+    vector<cfg_ref_t> cfgs = { *p4, *p5};
     run<sdbm_domain_t> (cfgs, vfac);
+    delete p4;
+    delete p5;
   }
   
   return 0;

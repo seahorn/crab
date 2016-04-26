@@ -352,7 +352,7 @@ namespace crab {
 //           if(!ranges.leq(o.ranges, po))
 //             return false;
 
-          // CRAB_LOG("zones-sparse", std::cout << "operator<=: "<< *this<< "<=?"<< o << "\n");
+          // CRAB_LOG("zones-sparse", crab::outs() << "operator<=: "<< *this<< "<=?"<< o << "\n");
 
           if(vert_map.size() < o.vert_map.size())
             return false;
@@ -490,7 +490,7 @@ namespace crab {
           return *this;
         else {
           CRAB_LOG ("zones-sparse",
-                    std::cout << "Before join:\n"<<"DBM 1\n"<<*this<<"\n"<<"DBM 2\n"<<o << "\n");
+                    crab::outs() << "Before join:\n"<<"DBM 1\n"<<*this<<"\n"<<"DBM 2\n"<<o << "\n");
 
           normalize();
           o.normalize();
@@ -563,7 +563,7 @@ namespace crab {
           
           DBM_t res(std::move(out_vmap), std::move(out_revmap), std::move(join_g), std::move(pot_rx), vert_set_t());
           CRAB_LOG ("zones-sparse",
-                    std::cout << "Result join:\n"<<res<<"\n";);
+                    crab::outs() << "Result join:\n"<<res<<"\n";);
 
           return res;
         }
@@ -576,7 +576,7 @@ namespace crab {
           return *this;
         else {
           CRAB_LOG ("zones-sparse",
-                    std::cout << "Before widening:\n"<<"DBM 1\n"<<*this<<"\n"<<"DBM 2\n"<<o<<"\n";);
+                    crab::outs() << "Before widening:\n"<<"DBM 1\n"<<*this<<"\n"<<"DBM 2\n"<<o<<"\n";);
           o.normalize();
           
           // Figure out the common renaming
@@ -622,7 +622,7 @@ namespace crab {
           DBM_t res(std::move(out_vmap), std::move(out_revmap), std::move(widen_g), 
                     std::move(widen_pot), std::move(widen_unstable));
 
-          CRAB_LOG ("zones-sparse", std::cout << "Result widening:\n"<<res<<"\n";);
+          CRAB_LOG ("zones-sparse", crab::outs() << "Result widening:\n"<<res<<"\n";);
           return res;
         }
       }
@@ -636,7 +636,7 @@ namespace crab {
           return *this;
         else{
           CRAB_LOG ("zones-sparse",
-                    std::cout << "Before meet:\n"<<"DBM 1\n"<<*this<<"\n"<<"DBM 2\n"<<o<<"\n";);
+                    crab::outs() << "Before meet:\n"<<"DBM 1\n"<<*this<<"\n"<<"DBM 2\n"<<o<<"\n";);
           normalize();
           o.normalize();
           
@@ -715,7 +715,7 @@ namespace crab {
           DBM_t res(std::move(meet_verts), std::move(meet_rev), std::move(meet_g), 
                     std::move(meet_pi), vert_set_t());
           CRAB_LOG ("zones-sparse",
-                    std::cout << "Result meet:\n" << res<<"\n";);
+                    crab::outs() << "Result meet:\n" << res<<"\n";);
           return res;
         }
       }
@@ -727,7 +727,7 @@ namespace crab {
           return o;
         else{
           CRAB_LOG ("zones-sparse",
-                    std::cout << "Before narrowing:\n"<<"DBM 1\n"<<*this<<"\n"<<"DBM 2\n"<<o<<"\n";);
+                    crab::outs() << "Before narrowing:\n"<<"DBM 1\n"<<*this<<"\n"<<"DBM 2\n"<<o<<"\n";);
 
           // FIXME: Implement properly
           // Narrowing as a no-op should be sound.
@@ -735,7 +735,7 @@ namespace crab {
           DBM_t res(*this);
 
           CRAB_LOG ("zones-sparse",
-                    std::cout << "Result narrowing:\n" << res<<"\n";);
+                    crab::outs() << "Result narrowing:\n" << res<<"\n";);
           return res;
         }
       }	
@@ -787,9 +787,9 @@ namespace crab {
         auto it = vert_map.find (v);
         if (it != vert_map.end ()) {
           CRAB_LOG("zones-sparse",
-                   std::cout << "Before forget "<< it->second<< ": "<< g<<"\n";);
+                   crab::outs() << "Before forget "<< it->second<< ": "<< g<<"\n";);
           g.forget(it->second);
-          CRAB_LOG("zones-sparse", std::cout << "After: " << g<<"\n";);
+          CRAB_LOG("zones-sparse", crab::outs() << "After: " << g<<"\n";);
                    
           rev_map[it->second] = boost::none;
           vert_map.erase(v);
@@ -1039,9 +1039,9 @@ namespace crab {
         if(is_bottom())
           return;
         CRAB_LOG("zones-sparse",
-                 std::cout << "Before assign: "<< *this<<"\n";);
+                 crab::outs() << "Before assign: "<< *this<<"\n";);
         CRAB_LOG("zones-sparse",
-                 std::cout << x<< ":="<< e<<"\n";);
+                 crab::outs() << x<< ":="<< e<<"\n";);
         normalize();
 
         assert(check_potential(g, potential));
@@ -1127,7 +1127,7 @@ namespace crab {
               for(auto diff : cst_edges)
               {
                 // CRAB_LOG("zones-sparse",
-                // sdt::cout << diff.first.first<< "-"<< diff.first.second<< "<="<< diff.second);
+                // crab::out() << diff.first.first<< "-"<< diff.first.second<< "<="<< diff.second);
 
                 vert_id src = diff.first.first;
                 vert_id dest = diff.first.second;
@@ -1160,7 +1160,7 @@ namespace crab {
 
         assert(check_potential(g, potential));
         CRAB_LOG("zones-sparse",
-                 std::cout << "---"<< x<< ":="<< e<<"\n"<<*this<<"\n";);
+                 crab::outs() << "---"<< x<< ":="<< e<<"\n"<<*this<<"\n";);
       }
 
       void apply(operation_t op, VariableName x, VariableName y, VariableName z){	
@@ -1200,7 +1200,7 @@ namespace crab {
           }
         }
         CRAB_LOG("zones-sparse",
-                 std::cout << "---"<< x<< ":="<< y<< op<< z<<"\n"<< *this<<"\n";);
+                 crab::outs() << "---"<< x<< ":="<< y<< op<< z<<"\n"<< *this<<"\n";);
       }
 
     
@@ -1243,14 +1243,14 @@ namespace crab {
         }
 
         CRAB_LOG("zones-sparse",
-                 std::cout << "---"<< x<< ":="<< y<< op<< k<<"\n"<< *this<<"\n";);
+                 crab::outs() << "---"<< x<< ":="<< y<< op<< k<<"\n"<< *this<<"\n";);
       }
       
       bool add_linear_leq(const linear_expression_t& exp)
       {
         CRAB_LOG("zones-sparse",
                  linear_expression_t exp_tmp (exp);
-                 std::cout << "Adding: "<< exp_tmp << "<= 0" << "\n");
+                 crab::outs() << "Adding: "<< exp_tmp << "<= 0" << "\n");
         vector< pair<VariableName, Wt> > lbs;
         vector< pair<VariableName, Wt> > ubs;
         vector<diffcst_t> csts;
@@ -1268,7 +1268,7 @@ namespace crab {
         for(auto diff : csts)
         {
           CRAB_LOG("zones-sparse",
-                   std::cout << diff.first.first<< "-"<< diff.first.second<< "<="<< diff.second<<"\n";);
+                   crab::outs() << diff.first.first<< "-"<< diff.first.second<< "<="<< diff.second<<"\n";);
           es.push_back(make_pair(
                 make_pair(get_vert(diff.first.second), get_vert(diff.first.first)), diff.second
               ));
@@ -1277,7 +1277,7 @@ namespace crab {
         for(auto edge : es)
         {
           // CRAB_LOG("zones-sparse",
-          // std::cout << diff.first.first<< "-"<< diff.first.second<< "<="<< diff.second<<"\n";);
+          // crab::outs() << diff.first.first<< "-"<< diff.first.second<< "<="<< diff.second<<"\n";);
 
           vert_id src = edge.first.first;
           vert_id dest = edge.first.second;
@@ -1361,7 +1361,7 @@ namespace crab {
             set_to_bottom();
 //          g.check_adjs();
           CRAB_LOG("zones-sparse",
-                   std::cout << "--- "<< cst<< "\n"<< *this<<"\n";);
+                   crab::outs() << "--- "<< cst<< "\n"<< *this<<"\n";);
           return;
         }
 
@@ -1370,12 +1370,12 @@ namespace crab {
           linear_expression_t exp = cst.expression();
           if(!add_linear_leq(exp) || !add_linear_leq(-exp))
           {
-            CRAB_LOG("zones-sparse", std::cout << " ~~> _|_"<<"\n";);
+            CRAB_LOG("zones-sparse", crab::outs() << " ~~> _|_"<<"\n";);
             set_to_bottom();
           }
 //          g.check_adjs();
           CRAB_LOG("zones-sparse",
-                   std::cout << "--- "<< cst<< "\n"<< *this<<"\n";);
+                   crab::outs() << "--- "<< cst<< "\n"<< *this<<"\n";);
           return;
         }
 
@@ -1388,7 +1388,7 @@ namespace crab {
         CRAB_WARN("Unhandled constraint in SparseDBM");
 
         CRAB_LOG("zones-sparse",
-                 std::cout << "---"<< cst<< "\n"<< *this<<"\n";);
+                 crab::outs() << "---"<< cst<< "\n"<< *this<<"\n";);
         return;
       }
     

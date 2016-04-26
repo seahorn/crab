@@ -162,28 +162,28 @@ namespace crab {
           _inv.assign (x, e);
           
           CRAB_LOG("smashing",
-                   std::cout << "apply "<< x<< " := "<< e<< *this <<"\n";);
+                   crab::outs() << "apply "<< x<< " := "<< e<< *this <<"\n";);
         }
         
         void apply (operation_t op, VariableName x, VariableName y, Number z) {
           _inv.apply (op, x, y, z);
           
           CRAB_LOG("smashing",
-                   std::cout << "apply "<< x<< " := "<< y<< " "<< op<< " "<< z<< *this <<"\n";);
+                   crab::outs() << "apply "<< x<< " := "<< y<< " "<< op<< " "<< z<< *this <<"\n";);
         }
         
         void apply(operation_t op, VariableName x, VariableName y, VariableName z) {
           _inv.apply (op, x, y, z);
           
           CRAB_LOG("smashing",
-                   std::cout << "apply "<< x<< " := "<< y<< " "<< op<< " "<< z<< *this <<"\n";);
+                   crab::outs() << "apply "<< x<< " := "<< y<< " "<< op<< " "<< z<< *this <<"\n";);
         }
         
         void apply(operation_t op, VariableName x, Number k) {
           _inv.apply (op, x, k);
           
           CRAB_LOG("smashing",
-                   std::cout << "apply "<< x<< " := "<< x<< " "<< op<< " "<< k<< *this <<"\n";);
+                   crab::outs() << "apply "<< x<< " := "<< x<< " "<< op<< " "<< k<< *this <<"\n";);
         }
 
         // bitwise_operators_api
@@ -199,14 +199,14 @@ namespace crab {
           _inv.apply (op, x, y, z);
 
           CRAB_LOG("smashing",
-                   std::cout << "apply "<< x<< " := "<< y<< " "<< op<< " "<< z<< *this <<"\n";);
+                   crab::outs() << "apply "<< x<< " := "<< y<< " "<< op<< " "<< z<< *this <<"\n";);
         }
         
         void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k) {
           _inv.apply (op, x, y, k);
 
           CRAB_LOG("smashing",
-                   std::cout << "apply "<< x<< " := "<< y<< " "<< op<< " "<< k<< *this <<"\n";);
+                   crab::outs() << "apply "<< x<< " := "<< y<< " "<< op<< " "<< k<< *this <<"\n";);
         }
         
         // division_operators_api
@@ -214,14 +214,14 @@ namespace crab {
           _inv.apply (op, x, y, z);
 
           CRAB_LOG("smashing",
-                   std::cout << "apply "<< x<< " := "<< y<< " "<< op<< " "<< z<< *this <<"\n";);
+                   crab::outs() << "apply "<< x<< " := "<< y<< " "<< op<< " "<< z<< *this <<"\n";);
         }
         
         void apply(div_operation_t op, VariableName x, VariableName y, Number k) {
           _inv.apply (op, x, y, k);
 
           CRAB_LOG("smashing",
-                   std::cout << "apply "<< x<< " := "<< y<< " "<< op<< " "<< k<< *this <<"\n";);
+                   crab::outs() << "apply "<< x<< " := "<< y<< " "<< op<< " "<< k<< *this <<"\n";);
         }
         
         void array_init (VariableName a, 
@@ -235,14 +235,14 @@ namespace crab {
           }
           _inv.set (a, init);
           CRAB_LOG("smashing", 
-                   std::cout << "Array init: " << *this <<"\n";);
+                   crab::outs() << "Array init: " << *this <<"\n";);
         }
         
         // All the array elements are initialized to val
         void assume_array (VariableName a, interval_t val) {
           _inv.set (a, val);
           
-          CRAB_LOG("smashing", std::cout << "Assume array: " << *this <<"\n";);
+          CRAB_LOG("smashing", crab::outs() << "Assume array: " << *this <<"\n";);
         }
         
         void load (VariableName lhs, VariableName a, 
@@ -257,7 +257,7 @@ namespace crab {
           _inv.assign (lhs, linear_expression_t (a_prime));
           _inv -= a_prime; 
           
-          CRAB_LOG("smashing", std::cout << "Load: " << *this <<"\n";);
+          CRAB_LOG("smashing", crab::outs() << "Load: " << *this <<"\n";);
         }
         
         
@@ -270,7 +270,7 @@ namespace crab {
           else 
             weak_update (a, val);
           
-          CRAB_LOG("smashing", std::cout << "Store: " << *this <<"\n";);
+          CRAB_LOG("smashing", crab::outs() << "Store: " << *this <<"\n";);
         }
         
         linear_constraint_system_t to_linear_constraint_system (){

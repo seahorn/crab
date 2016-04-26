@@ -130,7 +130,7 @@ namespace crab {
      list_intervals_t normalize (list_intervals_t l, bool& is_bottom) {
        
        if (l.size () <= 1) {
-         CRAB_LOG ("disint", std::cout << "-- Normalize: singleton " << l[0] <<"\n");
+         CRAB_LOG ("disint", crab::outs() << "-- Normalize: singleton " << l[0] <<"\n");
          is_bottom = false;
          return l;
        }
@@ -146,18 +146,18 @@ namespace crab {
          interval_t intv = l[i];
          
          if (prev == intv) { 
-           CRAB_LOG ("disint", std::cout << "-- Normalize: duplicate" <<"\n");
+           CRAB_LOG ("disint", crab::outs() << "-- Normalize: duplicate" <<"\n");
            continue;
          }
          
          if (intv.is_bottom ()) {
-           CRAB_LOG ("disint", std::cout << "-- Normalize: bottom interval" <<"\n");
+           CRAB_LOG ("disint", crab::outs() << "-- Normalize: bottom interval" <<"\n");
            bottoms++;
            continue;
          }
 
          if (intv.is_top ()) {
-           CRAB_LOG ("disint", std::cout << "-- Normalize: top interval" <<"\n");
+           CRAB_LOG ("disint", crab::outs() << "-- Normalize: top interval" <<"\n");
            is_bottom = false;
            return list_intervals_t ();
          }
@@ -169,14 +169,14 @@ namespace crab {
              prev = res [res.size () -1];
              if (overlap (prev, intv) || are_consecutive (prev,intv)) {
                CRAB_LOG ("disint", 
-                         std::cout << "-- Normalize: overlapping or consecutive intervals"
+                         crab::outs() << "-- Normalize: overlapping or consecutive intervals"
                                    << prev <<  " and " <<  intv <<"\n");                 
                res.pop_back ();
                intv = prev | intv;
              }
              else if (intv <= prev) {
                CRAB_LOG ("disint", 
-                         std::cout << "-- Normalize: skipping subsumed interval"
+                         crab::outs() << "-- Normalize: skipping subsumed interval"
                                    << prev <<  " and " <<  intv <<"\n");               
                goto next_iter;
              }
@@ -188,9 +188,9 @@ namespace crab {
          }
          
          prev = intv;
-         CRAB_LOG ("disint", std::cout << "-- Normalize: adding " << intv <<"\n");
+         CRAB_LOG ("disint", crab::outs() << "-- Normalize: adding " << intv <<"\n");
          if (intv.is_top ()) {
-           CRAB_LOG ("disint", std::cout << "-- Normalize: top interval" <<"\n");
+           CRAB_LOG ("disint", crab::outs() << "-- Normalize: top interval" <<"\n");
            is_bottom = false;
            return list_intervals_t ();
          }
@@ -201,8 +201,8 @@ namespace crab {
        }
        
        is_bottom = (bottoms == l.size ());
-       CRAB_LOG ("disint", std::cout << "-- Normalize: number of bottoms = " << bottoms <<"\n");
-       //cout << "-- Normalize result="; for (auto i: res) { cout << i << "|";} cout << "\n";
+       CRAB_LOG ("disint", crab::outs() << "-- Normalize: number of bottoms = " << bottoms <<"\n");
+       //crab::outs() << "-- Normalize result="; for (auto i: res) { crab::outs() << i << "|";} crab::outs() << "\n";
        return res;
      }
      
@@ -400,7 +400,7 @@ namespace crab {
      // pre: *this and o are normalized
      dis_interval_t operator|(dis_interval_t o) const {
 
-       CRAB_LOG ("disint", std::cout << "Join of " <<  *this << " and " << o <<"\n");
+       CRAB_LOG ("disint", crab::outs() << "Join of " <<  *this << " and " << o <<"\n");
 
        if (this->is_bottom()) {
          return o;
@@ -419,47 +419,47 @@ namespace crab {
          
          while (i < _list.size () && j < o._list.size ()) {
            CRAB_LOG ("disint",
-                     std::cout << "Join -- left operand =" <<  _list[i] 
+                     crab::outs() << "Join -- left operand =" <<  _list[i] 
                                <<  " right operand=" <<  o._list[j] <<"\n");
 
            if (_list[i].is_top () || o._list[j].is_top ()) {
-             CRAB_LOG ("disint", std::cout << "Join -- One of the operands is top" <<"\n");
+             CRAB_LOG ("disint", crab::outs() << "Join -- One of the operands is top" <<"\n");
              return dis_interval_t ();
            }
            else if (_list[i].is_bottom ()) {
-             CRAB_LOG ("disint", std::cout << "Join -- Left operand is bottom" <<"\n");
+             CRAB_LOG ("disint", crab::outs() << "Join -- Left operand is bottom" <<"\n");
              i++;
            }
            else if (o._list[j].is_bottom ()) {
-             CRAB_LOG ("disint", std::cout << "Join -- Right operand is bottom" <<"\n");
+             CRAB_LOG ("disint", crab::outs() << "Join -- Right operand is bottom" <<"\n");
              j++;
            }
            else if (_list[i] == o._list[j]) {
-             CRAB_LOG ("disint", std::cout << "Join -- Left operand is equal to right" <<"\n");
+             CRAB_LOG ("disint", crab::outs() << "Join -- Left operand is equal to right" <<"\n");
              res.push_back(_list[i]);
              i++; j++;
            }
            else if (_list[i] <= o._list[j]) {
-             CRAB_LOG ("disint", std::cout << "Join -- Left operand is included in the right" <<"\n");
+             CRAB_LOG ("disint", crab::outs() << "Join -- Left operand is included in the right" <<"\n");
              res.push_back(o._list[j]);
              i++;j++; 
            }
            else if (o._list[j] <= _list[i]) {
-             CRAB_LOG ("disint", std::cout << "Join -- Right operand is included in the left" <<"\n");
+             CRAB_LOG ("disint", crab::outs() << "Join -- Right operand is included in the left" <<"\n");
              res.push_back (_list[i]);
              i++;j++;
            }
            else if (overlap (_list[i], o._list[j]) || 
                     are_consecutive (_list[i], o._list[j])) {
              CRAB_LOG ("disint", 
-                       std::cout << "Join -- Left " << _list[i] << " and right " 
+                       crab::outs() << "Join -- Left " << _list[i] << " and right " 
                                  <<  o._list[j] << " operands overlap or are consecutive" <<"\n");
              res.push_back (_list [i] | o._list[j]);
              i++; j++;
            }
            else if (IsOnTheLeft () (_list[i], o._list [j])) {
              CRAB_LOG ("disint", 
-                       std::cout << "Join -- Left operand " << _list[i] 
+                       crab::outs() << "Join -- Left operand " << _list[i] 
                                  << " is on the left of the right operand " <<  o._list[j] <<"\n");
              res.push_back (_list [i]);
              i++;
@@ -468,7 +468,7 @@ namespace crab {
              assert (IsOnTheLeft () (o._list [j], _list [i]));
                      
              CRAB_LOG ("disint", 
-                       std::cout << "Join -- Right operand " << o._list[j] 
+                       crab::outs() << "Join -- Right operand " << o._list[j] 
                        << " is on the left of the right operand " <<  _list[i] <<"\n");
              
              res.push_back (o._list [j]);
@@ -481,21 +481,21 @@ namespace crab {
            auto intv = _list [i];
            
            CRAB_LOG ("disint",
-                     std::cout << "Join -- Adding the rest of left operand " << intv <<"\n");
+                     crab::outs() << "Join -- Adding the rest of left operand " << intv <<"\n");
            
            bool refined = true;
            while (refined && res.size () > 0) {
              auto prev = res [res.size () -1];
              if (overlap (prev, intv) || are_consecutive (prev,intv)) {
                CRAB_LOG ("disint",
-                         std::cout << "\t-- Join : overlapping or consecutive intervals" 
+                         crab::outs() << "\t-- Join : overlapping or consecutive intervals" 
                          <<  prev <<  " and " << intv <<"\n");               
                res.pop_back ();
                intv = prev | intv;
              }
              else if (intv <= prev) {
                CRAB_LOG ("disint", 
-                         std::cout << "\t-- Join: skipping subsumed interval"
+                         crab::outs() << "\t-- Join: skipping subsumed interval"
                          << prev <<  " and " << intv <<"\n");               
                goto next_iter_1;
              }
@@ -513,20 +513,20 @@ namespace crab {
          while (j < o._list.size ()){
            auto intv = o._list [j];
            CRAB_LOG ("disint", 
-                     std::cout << "Join -- Adding the rest of right operands " << intv <<"\n");
+                     crab::outs() << "Join -- Adding the rest of right operands " << intv <<"\n");
            bool refined = true;
            while (refined && res.size () > 0) {
              auto prev = res [res.size () -1];
              if (overlap (prev, intv) || are_consecutive (prev,intv)) {
                CRAB_LOG ("disint",
-                         std::cout << "\t-- Join : overlapping or consecutive intervals"
+                         crab::outs() << "\t-- Join : overlapping or consecutive intervals"
                          << prev <<   " and " << intv <<"\n");               
                res.pop_back ();
                intv = prev | intv;
              }
              else if (intv <= prev) {
                CRAB_LOG ("disint",
-                         std::cout << "\t-- Join: skipping subsumed interval" 
+                         crab::outs() << "\t-- Join: skipping subsumed interval" 
                          <<  prev <<  " and " << intv <<"\n");               
                goto next_iter_2;
              }
@@ -541,11 +541,11 @@ namespace crab {
          }
 
          if (res.empty ()) {
-           CRAB_LOG ("disint", std::cout << "Join result=_|_" <<"\n");
+           CRAB_LOG ("disint", crab::outs() << "Join result=_|_" <<"\n");
            return dis_interval_t (BOT);
          }
          else if (res.size () <= 1 && res[0].is_top ()) {
-           CRAB_LOG ("disint", std::cout << "Joing result=[-oo,+oo]" <<"\n");
+           CRAB_LOG ("disint", crab::outs() << "Joing result=[-oo,+oo]" <<"\n");
            return dis_interval_t (TOP);
          }
          else {
@@ -554,7 +554,7 @@ namespace crab {
            // should be further simplified to [0,11].
 
            dis_interval_t join (res);
-           CRAB_LOG ("disint", std::cout << "Joing result=" << join <<"\n");
+           CRAB_LOG ("disint", crab::outs() << "Joing result=" << join <<"\n");
            return join;
          }
        }
@@ -1148,9 +1148,9 @@ namespace crab {
      }
 
      bool operator<=(dis_interval_domain_t e) {
-       //cout << "*** Leq " << *this << " and " << e << "\n";
+       //crab::outs() << "*** Leq " << *this << " and " << e << "\n";
        bool res = this->_env <= e._env;
-       //cout << "result=" << res << "\n";
+       //crab::outs() << "result=" << res << "\n";
        return res;
      }
      
@@ -1159,38 +1159,38 @@ namespace crab {
      }
      
      dis_interval_domain_t operator|(dis_interval_domain_t e) {
-       //cout << "*** Join " << *this << " and " << e << "\n";
+       //crab::outs() << "*** Join " << *this << " and " << e << "\n";
        dis_interval_domain_t res (this->_env | e._env);
-       //cout << "result=" << res << "\n";
+       //crab::outs() << "result=" << res << "\n";
        return res;
      }
      
      dis_interval_domain_t operator&(dis_interval_domain_t e) {
-       //cout << "*** Meet " << *this << " and " << e << "\n";
+       //crab::outs() << "*** Meet " << *this << " and " << e << "\n";
        dis_interval_domain_t res (this->_env & e._env);
-       //cout << "result=" << res << "\n";
+       //crab::outs() << "result=" << res << "\n";
        return res;
      }
 
      dis_interval_domain_t operator||(dis_interval_domain_t e) {
-       //cout << "*** Widening " << *this << " and " << e << "\n";
+       //crab::outs() << "*** Widening " << *this << " and " << e << "\n";
        dis_interval_domain_t res (this->_env || e._env);
-       //cout << "result=" << res << "\n";
+       //crab::outs() << "result=" << res << "\n";
        return res;
      }
      
      template<typename Thresholds>
      dis_interval_domain_t widening_thresholds (dis_interval_domain_t e, const Thresholds &ts) {
-       //cout << "*** Widening w/ thresholds " << *this << " and " << e << "\n";
+       //crab::outs() << "*** Widening w/ thresholds " << *this << " and " << e << "\n";
        dis_interval_domain_t res = this->_env.widening_thresholds (e._env, ts);
-       //cout << "result=" << res << "\n";
+       //crab::outs() << "result=" << res << "\n";
        return res;
      }
      
      dis_interval_domain_t operator&&(dis_interval_domain_t e) {
-       //cout << "*** Narrowing " << *this << " and " << e << "\n";
+       //crab::outs() << "*** Narrowing " << *this << " and " << e << "\n";
        dis_interval_domain_t res (this->_env && e._env);
-       //cout << "result=" << res << "\n";
+       //crab::outs() << "result=" << res << "\n";
        return res;
      }
      
@@ -1209,16 +1209,16 @@ namespace crab {
      
      void operator+=(linear_constraint_system_t csts) {
        if (!this->is_bottom()) {
-         //cout << "*** add constraints " << csts << " in " << *this << "\n";
+         //crab::outs() << "*** add constraints " << csts << " in " << *this << "\n";
          const size_t threshold = 10; // make this template parameter
          solver_t solver(csts, threshold);
          solver.run(this->_env);
-         //cout << "result=" << *this << "\n";
+         //crab::outs() << "result=" << *this << "\n";
        }
      }
 
      void assign (VariableName x, linear_expression_t e)  {
-       //cout << "*** " <<  x << ":=" << e << " in " << *this << "\n";
+       //crab::outs() << "*** " <<  x << ":=" << e << " in " << *this << "\n";
        if (boost::optional<variable_t> v = e.get_variable ()) {
          this->_env.set(x, this->_env [(*v).name ()]);
        }
@@ -1228,11 +1228,11 @@ namespace crab {
            r += dis_interval_t (t.first) * this->_env[t.second.name()];
          this->_env.set(x, r);
        }
-       //cout << "result=" << *this << "\n";
+       //crab::outs() << "result=" << *this << "\n";
      }
      
      void apply (operation_t op, VariableName x, VariableName y, Number z) {
-       //cout << "*** " << x << ":=" << y << op << z << " in " << *this << "\n";
+       //crab::outs() << "*** " << x << ":=" << y << op << z << " in " << *this << "\n";
        dis_interval_t yi = this->_env[y];
        dis_interval_t zi (z);
        dis_interval_t xi = dis_interval_t::top ();
@@ -1243,11 +1243,11 @@ namespace crab {
          case OP_DIVISION: xi = yi / zi; break;
        }
        this->_env.set(x, xi);
-       //cout << "result=" << *this << "\n";
+       //crab::outs() << "result=" << *this << "\n";
      }
 
      void apply(operation_t op, VariableName x, VariableName y, VariableName z) {
-       //cout << "*** " << x << ":=" << y << op << z << " in " << *this << "\n";
+       //crab::outs() << "*** " << x << ":=" << y << op << z << " in " << *this << "\n";
        dis_interval_t yi = this->_env[y];
        dis_interval_t zi = this->_env[z];
        dis_interval_t xi = dis_interval_t::top();
@@ -1258,7 +1258,7 @@ namespace crab {
          case OP_DIVISION: xi = yi / zi; break; 
        }
        this->_env.set(x, xi);
-       //cout << "result=" << *this << "\n";
+       //crab::outs() << "result=" << *this << "\n";
      }
      
      

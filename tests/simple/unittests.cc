@@ -28,7 +28,7 @@ int main (int argc, char** argv )
     dbm -= x_prime;
     // if (x <= 0)
     dbm += linear_constraint_t ( linear_expression_t (x) <= z_number (0));
-    cout << dbm << endl;
+    crab::outs() << dbm << endl;
   }
   return 0;
 }

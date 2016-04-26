@@ -5,7 +5,7 @@ using namespace crab::analyzer;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
-cfg_t cfg1 (VariableFactory &vfac) 
+cfg_t* cfg1 (VariableFactory &vfac) 
 {
 
   ////
@@ -13,12 +13,12 @@ cfg_t cfg1 (VariableFactory &vfac)
   ////
 
   // entry and exit block
-  cfg_t cfg ("b0","b3",PTR);
+  cfg_t* cfg = new cfg_t("b0","b3",PTR);
   // adding blocks
-  basic_block_t& b0 = cfg.insert ("b0");
-  basic_block_t& b1 = cfg.insert ("b1");
-  basic_block_t& b2 = cfg.insert ("b2");
-  basic_block_t& b3 = cfg.insert ("b3");
+  basic_block_t& b0 = cfg->insert ("b0");
+  basic_block_t& b1 = cfg->insert ("b1");
+  basic_block_t& b2 = cfg->insert ("b2");
+  basic_block_t& b3 = cfg->insert ("b3");
   // adding control flow
   b0 >> b1; b0 >> b2; b1 >> b3; b2 >> b3;
 
@@ -39,16 +39,16 @@ cfg_t cfg1 (VariableFactory &vfac)
   return cfg;
 }
 
-cfg_t cfg2 (VariableFactory &vfac) 
+cfg_t* cfg2 (VariableFactory &vfac) 
 {
 
   // entry and exit block
-  cfg_t cfg ("b0","b3",PTR);
+  cfg_t* cfg = new cfg_t("b0","b3",PTR);
   // adding blocks
-  basic_block_t& b0 = cfg.insert ("b0");
-  basic_block_t& b1 = cfg.insert ("b1");
-  basic_block_t& b2 = cfg.insert ("b2");
-  basic_block_t& b3 = cfg.insert ("b3");
+  basic_block_t& b0 = cfg->insert ("b0");
+  basic_block_t& b1 = cfg->insert ("b1");
+  basic_block_t& b2 = cfg->insert ("b2");
+  basic_block_t& b3 = cfg->insert ("b3");
   // adding control flow
   b0 >> b1; b0 >> b2; b1 >> b3; b2 >> b3;
   
@@ -73,8 +73,7 @@ cfg_t cfg2 (VariableFactory &vfac)
 }
 
 
-
-cfg_t cfg3 (VariableFactory &vfac)  {
+cfg_t* cfg3 (VariableFactory &vfac)  {
 
   // Definining program variables
   z_var i (vfac ["i"]);
@@ -83,14 +82,14 @@ cfg_t cfg3 (VariableFactory &vfac)  {
   varname_t p (vfac ["p"]);
   varname_t q (vfac ["q"]);
   // entry and exit block
-  cfg_t cfg ("entry","ret",PTR);
+  cfg_t* cfg = new cfg_t("entry","ret",PTR);
   // adding blocks
-  basic_block_t& entry = cfg.insert ("entry");
-  basic_block_t& bb1   = cfg.insert ("bb1");
-  basic_block_t& bb1_t = cfg.insert ("bb1_t");
-  basic_block_t& bb1_f = cfg.insert ("bb1_f");
-  basic_block_t& bb2   = cfg.insert ("bb2");
-  basic_block_t& ret   = cfg.insert ("ret");
+  basic_block_t& entry = cfg->insert ("entry");
+  basic_block_t& bb1   = cfg->insert ("bb1");
+  basic_block_t& bb1_t = cfg->insert ("bb1_t");
+  basic_block_t& bb1_f = cfg->insert ("bb1_f");
+  basic_block_t& bb2   = cfg->insert ("bb2");
+  basic_block_t& ret   = cfg->insert ("ret");
   // adding control flow 
   entry >> bb1;
   bb1 >> bb1_t; bb1 >> bb1_f;
@@ -113,23 +112,23 @@ cfg_t cfg3 (VariableFactory &vfac)  {
 }
 
 
-void run (cfg_t &cfg, VariableFactory& vfac) {
-  typedef NullityAnalyzer<cfg_t, VariableFactory>::analyzer_t nullity_analyzer_t;
-  typedef NullityAnalyzer<cfg_t, VariableFactory>::nullity_domain_t nullity_domain_t;
+void run (cfg_ref_t cfg, VariableFactory& vfac) {
+  typedef NullityAnalyzer<cfg_ref_t, VariableFactory>::analyzer_t nullity_analyzer_t;
+  typedef NullityAnalyzer<cfg_ref_t, VariableFactory>::nullity_domain_t nullity_domain_t;
 
-  Liveness<cfg_t> live (cfg);
+  Liveness<cfg_ref_t> live (cfg);
   //live.exec ();
 
   nullity_analyzer_t a (cfg, vfac, &live);
-  cout << cfg << "\n";
+  crab::outs() << cfg << "\n";
 
   a.Run (nullity_domain_t::top ());
 
-  std::cout << "Nullity analysis \n";
+  crab::outs() << "Nullity analysis \n";
   for (auto &b : cfg)  {
     auto pre = a.get_pre (b.label ());
     auto post = a.get_post (b.label ());
-    std::cout << get_label_str (b.label ()) << "=" 
+    crab::outs() << get_label_str (b.label ()) << "=" 
               << pre 
               << " ==> "
               << post << "\n";
@@ -141,12 +140,16 @@ int main (int argc, char** argv) {
   SET_LOGGER(argc,argv)
 
   VariableFactory vfac;
-  cfg_t cfg_1 = cfg1 (vfac);
-  run (cfg_1, vfac);
-  cfg_t cfg_2 = cfg2 (vfac);
-  run (cfg_2, vfac);
-  cfg_t cfg_3 = cfg3 (vfac);
-  run (cfg_3, vfac);
+  cfg_t* cfg_1 = cfg1 (vfac);
+  run (*cfg_1, vfac);
+  cfg_t* cfg_2 = cfg2 (vfac);
+  run (*cfg_2, vfac);
+  cfg_t* cfg_3 = cfg3 (vfac);
+  run (*cfg_3, vfac);
   
+  delete cfg_1;
+  delete cfg_2;
+  delete cfg_3;
+
   return 0;
 }

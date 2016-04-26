@@ -17,7 +17,10 @@ using namespace crab::domain_impl;
 
 using namespace boost;
 
-cfg_t foo (VariableFactory &vfac) {
+typedef CallGraph<cfg_ref_t> call_graph_t;
+typedef CallGraph_Ref<call_graph_t> call_graph_ref_t;
+
+cfg_t* foo (VariableFactory &vfac) {
   vector<pair<varname_t,VariableType> > params;
   params.push_back (make_pair (vfac["x"], INT_TYPE));
   FunctionDecl<varname_t> decl (INT_TYPE, vfac["foo"], params);
@@ -26,10 +29,10 @@ cfg_t foo (VariableFactory &vfac) {
   z_var y (vfac ["y"]);
   z_var z (vfac ["z"]);
   // entry and exit block
-  cfg_t cfg ("entry", "exit", decl);
+  cfg_t* cfg = new cfg_t("entry", "exit", decl);
   // adding blocks
-  basic_block_t& entry = cfg.insert ("entry");
-  basic_block_t& exit   = cfg.insert ("exit");
+  basic_block_t& entry = cfg->insert ("entry");
+  basic_block_t& exit   = cfg->insert ("exit");
   // adding control flow
   entry >> exit;
   // adding statements
@@ -40,7 +43,7 @@ cfg_t foo (VariableFactory &vfac) {
 }
 
 
-cfg_t bar (VariableFactory &vfac) {
+cfg_t* bar (VariableFactory &vfac) {
   vector<pair<varname_t,VariableType> > params;
   params.push_back (make_pair (vfac["a"], INT_TYPE));
   FunctionDecl<varname_t> decl (INT_TYPE, vfac["bar"], params);
@@ -49,10 +52,10 @@ cfg_t bar (VariableFactory &vfac) {
   z_var x (vfac ["x"]);
   z_var y (vfac ["y"]);
   // entry and exit block
-  cfg_t cfg ("entry", "exit", decl);
+  cfg_t* cfg = new cfg_t("entry", "exit", decl);
   // adding blocks
-  basic_block_t& entry = cfg.insert ("entry");
-  basic_block_t& exit   = cfg.insert ("exit");
+  basic_block_t& entry = cfg->insert ("entry");
+  basic_block_t& exit   = cfg->insert ("exit");
   // adding control flow
   entry >> exit;
   // adding statements
@@ -64,7 +67,7 @@ cfg_t bar (VariableFactory &vfac) {
   return cfg;
 }
 
-cfg_t m (VariableFactory &vfac)  {
+cfg_t* m (VariableFactory &vfac)  {
   vector<pair<varname_t,VariableType> > params;
   FunctionDecl<varname_t> decl (UNK_TYPE, vfac["main"], params);
   // Defining program variables
@@ -72,10 +75,10 @@ cfg_t m (VariableFactory &vfac)  {
   z_var y (vfac ["y"]);
   z_var z (vfac ["z"]);
   // entry and exit block
-  cfg_t cfg ("entry", "exit", decl);
+  cfg_t* cfg = new cfg_t("entry", "exit", decl);
   // adding blocks
-  basic_block_t& entry = cfg.insert ("entry");
-  basic_block_t& exit   = cfg.insert ("exit");
+  basic_block_t& entry = cfg->insert ("entry");
+  basic_block_t& exit   = cfg->insert ("exit");
   // adding control flow
   entry >> exit;
   // adding statements
@@ -88,9 +91,9 @@ cfg_t m (VariableFactory &vfac)  {
 }
 
 struct print_visitor: public boost::default_dfs_visitor {
-  void discover_vertex(graph_traits< CallGraph<cfg_t> >::vertex_descriptor v, 
-                       CallGraph<cfg_t> g)  {
-    std::cout << v.name () << endl;
+  void discover_vertex(graph_traits<call_graph_t>::vertex_descriptor v, 
+                       const call_graph_t& g)  {
+    crab::outs() << v.name () << endl;
   }
 };
 
@@ -100,48 +103,49 @@ int main (int argc, char** argv ) {
 
   VariableFactory vfac;
 
-  cfg_t t1 = foo (vfac);
-  cfg_t t2 = bar (vfac);
-  cfg_t t3 = m (vfac);
+  cfg_t* t1 = foo (vfac);
+  cfg_t* t2 = bar (vfac);
+  cfg_t* t3 = m (vfac);
 
-  cout << t1 << endl;
-  cout << t2 << endl;
-  cout << t3 << endl;
+  crab::outs() << *t1 << endl;
+  crab::outs() << *t2 << endl;
+  crab::outs() << *t3 << endl;
 
-  vector<cfg_t> cfgs;
-  cfgs.push_back(t1);
-  cfgs.push_back(t2);
-  cfgs.push_back(t3);
+  vector<cfg_ref_t> cfgs;
+  cfgs.push_back(*t1);
+  cfgs.push_back(*t2);
+  cfgs.push_back(*t3);
 
-  CallGraph<cfg_t> cg (cfgs);
-  cout << cg << endl;
+
+  call_graph_t cg (cfgs);
+  crab::outs() << cg << endl;
 
   /// -- Basic BGL api
   for (auto v : boost::make_iterator_range (vertices (cg))) {
     if (out_degree (v, cg) > 0) {
-      cout << "number of successors " << v.name () << "=" << out_degree (v,cg) << endl;
-      boost::graph_traits< CallGraph<cfg_t> >::out_edge_iterator ei, ei_end;
+      crab::outs() << "number of successors " << v.name () << "=" << out_degree (v,cg) << endl;
+      boost::graph_traits<call_graph_t>::out_edge_iterator ei, ei_end;
       boost::tie (ei, ei_end) = out_edges (v, cg);
       for (; ei != ei_end; ++ei) {
         auto s = source (*ei, cg);
         auto t = target (*ei, cg);
-        cout << s.name () << "-->" << t.name ()  << endl;
+        crab::outs() << s.name () << "-->" << t.name ()  << endl;
       }
     }
 
     if (in_degree (v, cg) > 0) {
-      cout << "number of predecessors " << v.name () << "=" << in_degree (v,cg) << endl;
+      crab::outs() << "number of predecessors " << v.name () << "=" << in_degree (v,cg) << endl;
       for (auto e: boost::make_iterator_range (in_edges (v, cg))) {
         auto s = source (e, cg);
         auto t = target (e, cg);
-        cout << s.name () << "-->" << t.name () << endl;
+        crab::outs() << s.name () << "-->" << t.name () << endl;
       }
     }
   }
 
 #if 1
   /// --- DFS
-  typedef boost::unordered_map< boost::graph_traits< CallGraph<cfg_t> >::vertex_descriptor, 
+  typedef boost::unordered_map< boost::graph_traits<call_graph_t>::vertex_descriptor, 
                                 default_color_type > color_map_t;
   color_map_t color;
   for (auto v : boost::make_iterator_range (vertices (cg))) {
@@ -150,39 +154,43 @@ int main (int argc, char** argv ) {
   boost::associative_property_map< color_map_t > cm (color);
 
   // find root 
-  boost::graph_traits< CallGraph<cfg_t> >::vertex_descriptor root;
+  boost::graph_traits<call_graph_t>::vertex_descriptor root;
   for (auto v: boost::make_iterator_range (vertices (cg))) {
     if (in_degree (v, cg) == 0) {
       root = v;
       break;
     }
   }  
-  cout << "Found root " << root.name () << endl;
+  crab::outs() << "Found root " << root.name () << endl;
   
   //print all cg nodes in depth-first search order
-  cout << "Printing in preorder ...\n";
+  crab::outs() << "Printing in preorder ...\n";
   print_visitor vis;
   boost::detail::depth_first_visit_impl (cg, root, vis, cm, detail::nontruth2());
 #endif 
 
 #if 1
   // --- SccGraph 
-  SccGraph< CallGraph<cfg_t> > scc_graph(cg);
-  scc_graph.write (std::cout);
+  SccGraph<call_graph_ref_t> scc_graph(cg);
+  scc_graph.write (crab::outs());
   
-  std::vector<CallGraph<cfg_t>::node_t> order;
+  std::vector<call_graph_ref_t::node_t> order;
   rev_topo_sort (scc_graph, order);
  
-  cout << "reverse topological sort: ";
+  crab::outs() << "reverse topological sort: ";
   for(auto n: order)
-    cout << n.name () << "--";
-  cout << endl;
-  cout << "topological sort: ";
+    crab::outs() << n.name () << "--";
+  crab::outs() << endl;
+  crab::outs() << "topological sort: ";
   for(auto n: boost::make_iterator_range (order.rbegin(), order.rend ()))
-    cout << n.name () << "--";
-  cout << endl;
+    crab::outs() << n.name () << "--";
+  crab::outs() << endl;
   
 #endif 
+
+  delete t1;
+  delete t2;
+  delete t3;
 
   return 0;
 }

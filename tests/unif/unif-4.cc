@@ -35,9 +35,9 @@ int main (int argc, char** argv )
     dom_right.apply(OP_ADDITION, x, w, z);
 
     // meet = ({x=y=w= '+' (c0,c1), z=c2},{_|_}) = _|_
-    std::cout << "Meet" << "\n" << dom_left << " \n " << dom_right << "\n"; 
+    crab::outs() << "Meet" << "\n" << dom_left << " \n " << dom_right << "\n"; 
     term_domain_t l_meet_r = dom_left & dom_right;
-    std::cout << "Result=" << l_meet_r << std::endl;
+    crab::outs() << "Result=" << l_meet_r << std::endl;
   }
 
   {
@@ -57,9 +57,9 @@ int main (int argc, char** argv )
     dom_right.apply(OP_ADDITION, x, w, z);
 
     // meet = ({x=y=w= '+' (c0,c1), z=c2},{x=[5,8], y=[6,7], z=[3,5], w=[5,7]})
-    std::cout << "Meet" << "\n" << dom_left << " \n " << dom_right << "\n"; 
+    crab::outs() << "Meet" << "\n" << dom_left << " \n " << dom_right << "\n"; 
     term_domain_t l_meet_r = dom_left & dom_right;
-    std::cout << "Result=" << l_meet_r << std::endl;
+    crab::outs() << "Result=" << l_meet_r << std::endl;
   }
 
   {
@@ -73,14 +73,14 @@ int main (int argc, char** argv )
     dom.apply(OP_ADDITION, x, one, zero);
     dom.apply(OP_ADDITION, y, zero, one);
     z_lin_cst_t c1 (z_lin_t(x) == z_lin_t(y));
-    std::cout << "Added " << c1 << "\n";
-    std::cout << dom << std::endl;
+    crab::outs() << "Added " << c1 << "\n";
+    crab::outs() << dom << std::endl;
     dom += c1;
-    std::cout << "Result=" << dom << std::endl;
+    crab::outs() << "Result=" << dom << std::endl;
     z_lin_cst_t c2 (z_lin_t(x) != z_lin_t(y));
-    std::cout << "Added " << c2 << "\n";
+    crab::outs() << "Added " << c2 << "\n";
     dom += c2;
-    std::cout << "Result=" << dom << std::endl;
+    crab::outs() << "Result=" << dom << std::endl;
   }
 
   return 0;

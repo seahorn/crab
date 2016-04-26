@@ -6,21 +6,21 @@ using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
 /* Example of how to build a CFG */
-cfg_t prog1 (VariableFactory &vfac)  {
+cfg_t* prog1 (VariableFactory &vfac)  {
 
   // Definining program variables
   z_var i (vfac ["i"]);
   z_var k (vfac ["k"]);
   z_var nd (vfac ["nd"]);
   // entry and exit block
-  cfg_t cfg ("entry","ret");
+  cfg_t* cfg = new cfg_t("entry","ret");
   // adding blocks
-  basic_block_t& entry = cfg.insert ("entry");
-  basic_block_t& bb1   = cfg.insert ("bb1");
-  basic_block_t& bb1_t = cfg.insert ("bb1_t");
-  basic_block_t& bb1_f = cfg.insert ("bb1_f");
-  basic_block_t& bb2   = cfg.insert ("bb2");
-  basic_block_t& ret   = cfg.insert ("ret");
+  basic_block_t& entry = cfg->insert ("entry");
+  basic_block_t& bb1   = cfg->insert ("bb1");
+  basic_block_t& bb1_t = cfg->insert ("bb1_t");
+  basic_block_t& bb1_f = cfg->insert ("bb1_f");
+  basic_block_t& bb2   = cfg->insert ("bb2");
+  basic_block_t& ret   = cfg->insert ("ret");
   // adding control flow
   entry >> bb1;
   bb1 >> bb1_t; bb1 >> bb1_f;
@@ -35,22 +35,21 @@ cfg_t prog1 (VariableFactory &vfac)  {
   return cfg;
 }
 
-cfg_t prog2 (VariableFactory &vfac) 
+cfg_t* prog2 (VariableFactory &vfac) 
 {
 
-  cfg_t cfg ("loop1_entry","ret");
-  //cfg_t cfg ("loop1_entry");
-  basic_block_t& loop1_entry = cfg.insert ("loop1_entry");
-  basic_block_t& loop1_bb1   = cfg.insert ("loop1_bb1");
-  basic_block_t& loop1_bb1_t = cfg.insert ("loop1_bb1_t");
-  basic_block_t& loop1_bb1_f = cfg.insert ("loop1_bb1_f");
-  basic_block_t& loop1_bb2   = cfg.insert ("loop1_bb2");
-  basic_block_t& loop2_entry = cfg.insert ("loop2_entry");
-  basic_block_t& loop2_bb1   = cfg.insert ("loop2_bb1");
-  basic_block_t& loop2_bb1_t = cfg.insert ("loop2_bb1_t");
-  basic_block_t& loop2_bb1_f = cfg.insert ("loop2_bb1_f");
-  basic_block_t& loop2_bb2   = cfg.insert ("loop2_bb2");
-  basic_block_t& ret         = cfg.insert ("ret");
+  cfg_t* cfg = new cfg_t("loop1_entry","ret"); 
+  basic_block_t& loop1_entry = cfg->insert ("loop1_entry");
+  basic_block_t& loop1_bb1   = cfg->insert ("loop1_bb1");
+  basic_block_t& loop1_bb1_t = cfg->insert ("loop1_bb1_t");
+  basic_block_t& loop1_bb1_f = cfg->insert ("loop1_bb1_f");
+  basic_block_t& loop1_bb2   = cfg->insert ("loop1_bb2");
+  basic_block_t& loop2_entry = cfg->insert ("loop2_entry");
+  basic_block_t& loop2_bb1   = cfg->insert ("loop2_bb1");
+  basic_block_t& loop2_bb1_t = cfg->insert ("loop2_bb1_t");
+  basic_block_t& loop2_bb1_f = cfg->insert ("loop2_bb1_f");
+  basic_block_t& loop2_bb2   = cfg->insert ("loop2_bb2");
+  basic_block_t& ret         = cfg->insert ("ret");
 
   loop1_entry >> loop1_bb1;
   loop1_bb1 >> loop1_bb1_t; loop1_bb1 >> loop1_bb1_f;
@@ -77,26 +76,26 @@ cfg_t prog2 (VariableFactory &vfac)
   return cfg;
 }
 
-cfg_t prog3 (VariableFactory &vfac) 
+cfg_t* prog3 (VariableFactory &vfac) 
 {
 
-  cfg_t cfg ("entry","ret");
-  basic_block_t& entry       = cfg.insert ("entry");
-  basic_block_t& loop1_head  = cfg.insert ("loop1_head");
-  basic_block_t& loop1_t     = cfg.insert ("loop1_t");
-  basic_block_t& loop1_f     = cfg.insert ("loop1_f");
-  basic_block_t& loop1_body  = cfg.insert ("loop1_body");
+  cfg_t* cfg = new cfg_t("entry","ret");
+  basic_block_t& entry       = cfg->insert ("entry");
+  basic_block_t& loop1_head  = cfg->insert ("loop1_head");
+  basic_block_t& loop1_t     = cfg->insert ("loop1_t");
+  basic_block_t& loop1_f     = cfg->insert ("loop1_f");
+  basic_block_t& loop1_body  = cfg->insert ("loop1_body");
 
-  basic_block_t& loop1_body_t  = cfg.insert ("loop1_body_t");
-  basic_block_t& loop1_body_f  = cfg.insert ("loop1_body_f");
-  basic_block_t& loop1_body_x  = cfg.insert ("loop1_body_x");
+  basic_block_t& loop1_body_t  = cfg->insert ("loop1_body_t");
+  basic_block_t& loop1_body_f  = cfg->insert ("loop1_body_f");
+  basic_block_t& loop1_body_x  = cfg->insert ("loop1_body_x");
 
-  basic_block_t& cont        = cfg.insert ("cont");
-  basic_block_t& loop2_head  = cfg.insert ("loop2_head");
-  basic_block_t& loop2_t     = cfg.insert ("loop2_t");
-  basic_block_t& loop2_f     = cfg.insert ("loop2_f");
-  basic_block_t& loop2_body  = cfg.insert ("loop2_body");
-  basic_block_t& ret         = cfg.insert ("ret");
+  basic_block_t& cont        = cfg->insert ("cont");
+  basic_block_t& loop2_head  = cfg->insert ("loop2_head");
+  basic_block_t& loop2_t     = cfg->insert ("loop2_t");
+  basic_block_t& loop2_f     = cfg->insert ("loop2_f");
+  basic_block_t& loop2_body  = cfg->insert ("loop2_body");
+  basic_block_t& ret         = cfg->insert ("ret");
 
   entry >> loop1_head;
   loop1_head >> loop1_t; 
@@ -134,16 +133,16 @@ cfg_t prog3 (VariableFactory &vfac)
   return cfg;
 }
 
-cfg_t prog4 (VariableFactory &vfac) 
+cfg_t* prog4 (VariableFactory &vfac) 
 {
 
-  cfg_t cfg ("entry","ret");
-  basic_block_t& entry      = cfg.insert ("entry");
-  basic_block_t& loop_head  = cfg.insert ("loop_head");
-  basic_block_t& loop_t     = cfg.insert ("loop_t");
-  basic_block_t& loop_f     = cfg.insert ("loop_f");
-  basic_block_t& loop_body  = cfg.insert ("loop_body");
-  basic_block_t& ret        = cfg.insert ("ret");
+  cfg_t* cfg = new cfg_t("entry","ret");
+  basic_block_t& entry      = cfg->insert ("entry");
+  basic_block_t& loop_head  = cfg->insert ("loop_head");
+  basic_block_t& loop_t     = cfg->insert ("loop_t");
+  basic_block_t& loop_f     = cfg->insert ("loop_f");
+  basic_block_t& loop_body  = cfg->insert ("loop_body");
+  basic_block_t& ret        = cfg->insert ("ret");
 
   entry >> loop_head;
   loop_head >> loop_t; 
@@ -167,21 +166,21 @@ cfg_t prog4 (VariableFactory &vfac)
 }
 
 /* Example of how to build a CFG */
-cfg_t prog5 (VariableFactory &vfac)  {
+cfg_t* prog5 (VariableFactory &vfac)  {
 
   // Definining program variables
   z_var i (vfac ["i"]);
   z_var k (vfac ["k"]);
   z_var nd (vfac ["nd"]);
   // entry and exit block
-  cfg_t cfg ("entry","ret");
+  cfg_t* cfg = new cfg_t("entry","ret");
   // adding blocks
-  basic_block_t& entry = cfg.insert ("entry");
-  basic_block_t& bb1   = cfg.insert ("bb1");
-  basic_block_t& bb1_t = cfg.insert ("bb1_t");
-  basic_block_t& bb1_f = cfg.insert ("bb1_f");
-  basic_block_t& bb2   = cfg.insert ("bb2");
-  basic_block_t& ret   = cfg.insert ("ret");
+  basic_block_t& entry = cfg->insert ("entry");
+  basic_block_t& bb1   = cfg->insert ("bb1");
+  basic_block_t& bb1_t = cfg->insert ("bb1_t");
+  basic_block_t& bb1_f = cfg->insert ("bb1_f");
+  basic_block_t& bb2   = cfg->insert ("bb2");
+  basic_block_t& ret   = cfg->insert ("ret");
   // adding control flow
   entry >> bb1;
   bb1 >> bb1_t; bb1 >> bb1_f;
@@ -205,99 +204,93 @@ int main (int argc, char** argv )
 
   const unsigned int w = 10;
   const unsigned int n = 2;
-      
+
+  
+  cfg_t* cfg1 = prog1 (vfac);      
+  cfg_t* cfg2 = prog2 (vfac);
+  cfg_t* cfg3 = prog3 (vfac);
+  cfg_t* cfg4 = prog4 (vfac);
+  cfg_t* cfg5 = prog5 (vfac);
+
   {
-    cfg_t cfg = prog1 (vfac);
-    cfg.simplify (); // this is optional
-    cout << cfg << endl;
-    NumFwdAnalyzer <cfg_t,boxes_domain_t,VariableFactory>::type a (cfg, vfac, nullptr, w, n);
+
+    cfg1->simplify (); // this is optional
+    crab::outs() << *cfg1 << endl;
+    NumFwdAnalyzer <cfg_ref_t,boxes_domain_t,VariableFactory>::type a (*cfg1, vfac, nullptr, w, n);
     // Run fixpoint 
     a.Run (boxes_domain_t::top ());
     // Print invariants
-    cout << "Invariants using " << boxes_domain_t::getDomainName () << "\n";
-    for (auto &b : cfg) {
+    crab::outs() << "Invariants using " << boxes_domain_t::getDomainName () << "\n";
+    for (auto &b : *cfg1) {
       auto inv = a [b.label ()];
-      std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
-    }
-  }
-
-
-  {
-    cfg_t cfg = prog1 (vfac);
-    cout << cfg << endl;
-    NumFwdAnalyzer <cfg_t, boxes_domain_t,VariableFactory>::type a (cfg, vfac, nullptr, w, n);
-    // Run fixpoint 
-    a.Run (boxes_domain_t::top ());
-    // Print invariants
-    cout << "Invariants using " << boxes_domain_t::getDomainName () << "\n";
-    for (auto &b : cfg) {
-      auto inv = a [b.label ()];
-      std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
+      crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
     }
   }
 
   {
-    cfg_t cfg = prog2 (vfac);
-    cfg.simplify (); // this is optional
-    cout << cfg << endl;
-    NumFwdAnalyzer <cfg_t, boxes_domain_t,VariableFactory>::type a (cfg,vfac,nullptr,w,n);
+    cfg2->simplify (); // this is optional
+    crab::outs() << *cfg2 << endl;
+    NumFwdAnalyzer <cfg_ref_t, boxes_domain_t,VariableFactory>::type a (*cfg2,vfac,nullptr,w,n);
     // Run fixpoint 
     a.Run (boxes_domain_t::top ());
     // Print invariants
-    cout << "Invariants using " << boxes_domain_t::getDomainName () << "\n";
-    for (auto &b : cfg) {
+    crab::outs() << "Invariants using " << boxes_domain_t::getDomainName () << "\n";
+    for (auto &b : *cfg2) {
       auto inv = a [b.label ()];
-      std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
+      crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
     }
   }
 
   {
-    cfg_t cfg = prog3 (vfac);
-    cfg.simplify (); // this is optional
-    cout << cfg << endl;
-    NumFwdAnalyzer <cfg_t, boxes_domain_t,VariableFactory>::type a (cfg,vfac,nullptr,w,n);
+    cfg3->simplify (); // this is optional
+    crab::outs() << *cfg3 << endl;
+    NumFwdAnalyzer <cfg_ref_t, boxes_domain_t,VariableFactory>::type a (*cfg3,vfac,nullptr,w,n);
     // Run fixpoint 
     a.Run (boxes_domain_t::top ());
     // Print invariants
-    cout << "Invariants using " << boxes_domain_t::getDomainName () << "\n";
-    for (auto &b : cfg) {
+    crab::outs() << "Invariants using " << boxes_domain_t::getDomainName () << "\n";
+    for (auto &b : *cfg3) {
       auto inv = a [b.label ()];
-      std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
+      crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
     }
   }
 
   {
-    cfg_t cfg = prog4 (vfac);
-    cfg.simplify (); // this is optional
-    cout << cfg << endl;
-    NumFwdAnalyzer <cfg_t, boxes_domain_t,VariableFactory>::type a (cfg,vfac,nullptr,w,n);
+    cfg4->simplify (); // this is optional
+    crab::outs() << *cfg4 << endl;
+    NumFwdAnalyzer <cfg_ref_t, boxes_domain_t,VariableFactory>::type a (*cfg4,vfac,nullptr,w,n);
     // Run fixpoint 
     a.Run (boxes_domain_t::top ());
     // Print invariants
-    cout << "Invariants using " << boxes_domain_t::getDomainName () << "\n";
-    for (auto &b : cfg) {
+    crab::outs() << "Invariants using " << boxes_domain_t::getDomainName () << "\n";
+    for (auto &b : *cfg4) {
       auto inv = a [b.label ()];
-      std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
+      crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
     }
 
   }
 
   {
-    cfg_t cfg = prog5 (vfac);
-    cout << cfg << endl;
-    NumFwdAnalyzer <cfg_t, boxes_domain_t,VariableFactory>::type a (cfg,vfac,nullptr,w,n);
+    crab::outs() << *cfg5 << endl;
+    NumFwdAnalyzer <cfg_ref_t, boxes_domain_t,VariableFactory>::type a (*cfg5,vfac,nullptr,w,n);
     // Run fixpoint 
     a.Run (boxes_domain_t::top ());
     // Print invariants
-    cout << "Invariants using " << boxes_domain_t::getDomainName () << "\n";
-    for (auto &b : cfg) {
+    crab::outs() << "Invariants using " << boxes_domain_t::getDomainName () << "\n";
+    for (auto &b : *cfg5) {
       auto inv = a [b.label ()];
-      std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
+      crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
     }
   }
+
+  delete cfg1;
+  delete cfg2;
+  delete cfg3;
+  delete cfg4;
+  delete cfg5;
 
   { 
-    std::cout << "Testing some boxes operations ...\n";
+    crab::outs() << "Testing some boxes operations ...\n";
     varname_t x = vfac["x"];
     varname_t y = vfac["y"];
     varname_t z = vfac["z"];
@@ -313,23 +306,23 @@ int main (int argc, char** argv )
 
     boxes_domain_t inv3 = inv1 | inv2;
 
-    cout << inv3 << "\n";
+    crab::outs() << inv3 << "\n";
    
-    cout << x << ":=" << y << " + " << z << "= \n";
+    crab::outs() << x << ":=" << y << " + " << z << "= \n";
     inv3.apply (OP_ADDITION, x, y, z);
-    cout << inv3 << "\n";
+    crab::outs() << inv3 << "\n";
 
-    cout << x << ":=" << y << " - " << z << "= \n";
+    crab::outs() << x << ":=" << y << " - " << z << "= \n";
     inv3.apply (OP_SUBTRACTION, x, y, z);
-    cout << inv3 << "\n";
+    crab::outs() << inv3 << "\n";
 
-    cout << x << ":=" << y << " * " << z << "= \n";
+    crab::outs() << x << ":=" << y << " * " << z << "= \n";
     inv3.apply (OP_MULTIPLICATION, x, y, z);
-    cout << inv3 << "\n";
+    crab::outs() << inv3 << "\n";
 
-    cout << x << ":=" << y << " / " << z << "= \n";
+    crab::outs() << x << ":=" << y << " / " << z << "= \n";
     inv3.apply (OP_DIVISION, x, y, z);
-    cout << inv3 << "\n";
+    crab::outs() << inv3 << "\n";
 
     boxes_domain_t inv4 = boxes_domain_t::top ();    
     z_var cx (vfac["x"]);
@@ -337,22 +330,22 @@ int main (int argc, char** argv )
     z_var cz (vfac["z"]);
 
     inv4 +=  (cx >= cy);
-    cout << "Added x >= y \n" << inv4 << "\n";    
+    crab::outs() << "Added x >= y \n" << inv4 << "\n";    
 
     inv4 +=  (cx != 9);
-    cout << "Added x != 9\n" << inv4 << "\n";    
+    crab::outs() << "Added x != 9\n" << inv4 << "\n";    
 
     inv4 +=  (cy >=  9);
-    cout << "Added y >= 9\n" << inv4 << "\n";    
+    crab::outs() << "Added y >= 9\n" << inv4 << "\n";    
 
     inv4 +=  (cy <=  9);
-    cout << "Added y <= 9\n" << inv4 << "\n";    
+    crab::outs() << "Added y <= 9\n" << inv4 << "\n";    
 
     inv4 +=  (cz >= 10); 
-    cout << "Added z > 9\n" << inv4 << "\n";    
+    crab::outs() << "Added z > 9\n" << inv4 << "\n";    
 
     inv4 +=  (cz <= 8);
-    cout << "Added z < 9\n" << inv4 << "\n";    
+    crab::outs() << "Added z < 9\n" << inv4 << "\n";    
   }
   return 0;
 }

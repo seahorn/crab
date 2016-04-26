@@ -6,26 +6,26 @@ using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
 /* Example of how to build a CFG */
-cfg_t prog (VariableFactory &vfac)  {
+cfg_t* prog (VariableFactory &vfac)  {
 
-  // Definining program variables
+  // Defining program variables
   z_var i (vfac ["i"]);
   z_var k (vfac ["k"]);
   z_var nd (vfac ["nd"]);
   z_var inc (vfac ["inc"]);
   // entry and exit block
-  cfg_t cfg ("x0","ret");
+  auto cfg = new cfg_t("x0","ret");
   // adding blocks
-  basic_block_t& x0 = cfg.insert ("x0");
-  basic_block_t& x1 = cfg.insert ("x1");
-  basic_block_t& x2 = cfg.insert ("x2");
-  basic_block_t& x3 = cfg.insert ("x3");
-  basic_block_t& entry = cfg.insert ("entry");
-  basic_block_t& bb1   = cfg.insert ("bb1");
-  basic_block_t& bb1_t = cfg.insert ("bb1_t");
-  basic_block_t& bb1_f = cfg.insert ("bb1_f");
-  basic_block_t& bb2   = cfg.insert ("bb2");
-  basic_block_t& ret   = cfg.insert ("ret");
+  basic_block_t& x0 = cfg->insert ("x0");
+  basic_block_t& x1 = cfg->insert ("x1");
+  basic_block_t& x2 = cfg->insert ("x2");
+  basic_block_t& x3 = cfg->insert ("x3");
+  basic_block_t& entry = cfg->insert ("entry");
+  basic_block_t& bb1   = cfg->insert ("bb1");
+  basic_block_t& bb1_t = cfg->insert ("bb1_t");
+  basic_block_t& bb1_f = cfg->insert ("bb1_f");
+  basic_block_t& bb2   = cfg->insert ("bb2");
+  basic_block_t& ret   = cfg->insert ("ret");
   // adding control flow
   x0 >> x1; x1 >> x2; x2 >> x3; x3 >> entry;
   entry >> bb1;
@@ -49,113 +49,115 @@ int main (int argc, char** argv )
   SET_LOGGER(argc,argv)
 
   VariableFactory vfac;
-  cfg_t cfg = prog (vfac);
-  cfg.simplify (); // this is optional
-  cout << cfg << endl;
+  cfg_t* cfg = prog(vfac);
+  cfg->simplify (); // this is optional
+  crab::outs() << *cfg << endl;
 
   {
-    NumFwdAnalyzer <cfg_t, interval_domain_t,VariableFactory>::type a (cfg,vfac,nullptr);
+    NumFwdAnalyzer <cfg_ref_t, interval_domain_t, VariableFactory>::type a (*cfg,vfac,nullptr);
     // Run fixpoint 
     interval_domain_t inv = interval_domain_t::top ();
     a.Run (inv);
     // Print invariants
-    cout << "Invariants using " << interval_domain_t::getDomainName () << "\n";
-    for (auto &b : cfg) {
+    crab::outs() << "Invariants using " << interval_domain_t::getDomainName () << "\n";
+    for (auto &b : *cfg) {
       auto inv = a [b.label ()];
-      std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
+      crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
     }
   }
 
   {
-    NumFwdAnalyzer <cfg_t, ddbm_domain_t,VariableFactory>::type a (cfg,vfac,nullptr);
+    NumFwdAnalyzer <cfg_ref_t, ddbm_domain_t, VariableFactory>::type a (*cfg,vfac,nullptr);
     // Run fixpoint 
     ddbm_domain_t inv = ddbm_domain_t::top ();
     a.Run (inv);
     // Print invariants
-    cout << "Invariants using " << ddbm_domain_t::getDomainName () << "\n";
-    for (auto &b : cfg) {
+    crab::outs() << "Invariants using " << ddbm_domain_t::getDomainName () << "\n";
+    for (auto &b : *cfg) {
       auto inv = a [b.label ()];
-      std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
+      crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
     }
   }
 
   {
-    NumFwdAnalyzer <cfg_t, dbm_domain_t,VariableFactory>::type a (cfg,vfac,nullptr);
+    NumFwdAnalyzer <cfg_ref_t, dbm_domain_t, VariableFactory>::type a (*cfg,vfac,nullptr);
     // Run fixpoint 
     dbm_domain_t inv = dbm_domain_t::top ();
     a.Run (inv);
     // Print invariants
-    cout << "Invariants using " << dbm_domain_t::getDomainName () << "\n";
-    for (auto &b : cfg) {
+    crab::outs() << "Invariants using " << dbm_domain_t::getDomainName () << "\n";
+    for (auto &b : *cfg) {
       auto inv = a [b.label ()];
-      std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
+      crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
     }
   }
 
   {
-    NumFwdAnalyzer <cfg_t, sdbm_domain_t,VariableFactory>::type a (cfg,vfac,nullptr);
+    NumFwdAnalyzer <cfg_ref_t, sdbm_domain_t, VariableFactory>::type a (*cfg,vfac,nullptr);
     // Run fixpoint 
     sdbm_domain_t inv = sdbm_domain_t::top ();
     a.Run (inv);
     // Print invariants
-    cout << "Invariants using " << inv.getDomainName () << "\n";
-    for (auto &b : cfg) {
+    crab::outs() << "Invariants using " << inv.getDomainName () << "\n";
+    for (auto &b : *cfg) {
       auto inv = a [b.label ()];
-      std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
+      crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
     }
   }
 
   {
-    NumFwdAnalyzer <cfg_t, pdbm_domain_t,VariableFactory>::type a (cfg,vfac,nullptr);
+    NumFwdAnalyzer <cfg_ref_t, pdbm_domain_t, VariableFactory>::type a (*cfg,vfac,nullptr);
     // Run fixpoint 
     pdbm_domain_t inv = pdbm_domain_t::top ();
     a.Run (inv);
     // Print invariants
-    cout << "Invariants using " << inv.getDomainName () << "\n";
-    for (auto &b : cfg) {
+    crab::outs() << "Invariants using " << inv.getDomainName () << "\n";
+    for (auto &b : *cfg) {
       auto inv = a [b.label ()];
-      std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
+      crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
     }
   }
 
   {
-    NumFwdAnalyzer <cfg_t, ric_domain_t,VariableFactory>::type a (cfg,vfac,nullptr);
+    NumFwdAnalyzer <cfg_ref_t, ric_domain_t, VariableFactory>::type a (*cfg,vfac,nullptr);
     // Run fixpoint 
     ric_domain_t inv = ric_domain_t::top ();
     a.Run (inv);
     // Print invariants
-    cout << "Invariants using " << ric_domain_t::getDomainName () << "\n";
-    for (auto &b : cfg) {
+    crab::outs() << "Invariants using " << ric_domain_t::getDomainName () << "\n";
+    for (auto &b : *cfg) {
       auto inv = a [b.label ()];
-      std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
+      crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
     }
   }
 
   {
-    NumFwdAnalyzer <cfg_t, term_domain_t,VariableFactory>::type a (cfg,vfac,nullptr);
+    NumFwdAnalyzer <cfg_ref_t, term_domain_t, VariableFactory>::type a (*cfg,vfac,nullptr);
     // Run fixpoint 
     term_domain_t inv = term_domain_t::top ();
     a.Run (inv);
     // Print invariants
-    cout << "Invariants using " << term_domain_t::getDomainName () << "\n";
-    for (auto &b : cfg) {
+    crab::outs() << "Invariants using " << term_domain_t::getDomainName () << "\n";
+    for (auto &b : *cfg) {
       auto inv = a [b.label ()];
-      std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
+      crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
     }
   }
 
   {
-    NumFwdAnalyzer <cfg_t, dis_interval_domain_t,VariableFactory>::type 
-        a (cfg,vfac,nullptr,1,2,20);
+    NumFwdAnalyzer <cfg_ref_t, dis_interval_domain_t, VariableFactory>::type a (*cfg,vfac,nullptr,1,2,20);
     // Run fixpoint 
     a.Run (dis_interval_domain_t::top ());
     // Print invariants
-    cout << "Invariants using " << dis_interval_domain_t::getDomainName () << "\n";
-    for (auto &b : cfg) {
+    crab::outs() << "Invariants using " << dis_interval_domain_t::getDomainName () << "\n";
+    for (auto &b : *cfg) {
       auto inv = a [b.label ()];
-      std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
+      crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
     }
   }
+
+  // free the CFG
+  delete cfg;
 
   return 0;
 }

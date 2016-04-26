@@ -32,3 +32,12 @@ add_subdirectory (thresholds)
 add_subdirectory (disintervals)
 add_subdirectory (checkers)
 
+# Needed if shared libraries
+if (BUILD_CRAB_LIBS_SHARED)
+if (USE_APRON)
+  install(FILES ${APRON_LIBRARY} DESTINATION lib)
+endif ()
+if (USE_LDD)
+  install(FILES ${LDD_LIBRARY} DESTINATION lib)
+endif ()
+endif ()

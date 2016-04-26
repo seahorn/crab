@@ -1,17 +1,23 @@
 #ifndef CRAB_COMMON_HPP
 #define CRAB_COMMON_HPP
 
-#include <stdint.h>
-#include <string>
-#include <iosfwd>
+//#include <iosfwd>
 #include <iostream>
-#include <sstream>
+//#include <string>
+#include <stdint.h>
+//#include <sstream>
 #include <stdarg.h>
 #include <errno.h>
 #include <boost/optional.hpp>
 
 /* Basic type definitions */
 
+namespace crab {
+
+  extern std::ostream& outs();
+  extern std::ostream& errs();
+
+}
 
 template<typename... ArgTypes>
 inline void ___print___(ArgTypes... args)
@@ -23,21 +29,21 @@ inline void ___print___(ArgTypes... args)
   // trick is to use the side effect of list-initializer to call a function
   // on every argument.
   // (void) is to suppress "statement has no effect" warnings
-    (void)expand_variadic_pack{0, ((std::cerr << args), void(), 0)... };
+  (void)expand_variadic_pack{0, ((crab::errs() << args), void(), 0)... };
 }
 
 #define CRAB_ERROR(...)              \
   do {                               \
     ___print___(__VA_ARGS__);        \
-    std::cerr << "\n";               \
+    crab::errs() << "\n";            \
     std::exit (EXIT_FAILURE);        \
   } while (0)
 
 #define CRAB_WARN(...)               \
   do {                               \
-    std::cerr << "WARNING:";         \
+    crab::errs() << "WARNING:";      \
     ___print___(__VA_ARGS__);        \
-    std::cerr << "\n";               \
+    crab::errs() << "\n";            \
   } while (0)
 
 

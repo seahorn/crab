@@ -7,6 +7,8 @@
 */
 
 #include "boost/noncopyable.hpp"
+#include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
 
 #include <crab/common/debug.hpp>
 #include <crab/common/stats.hpp>
@@ -40,7 +42,7 @@ namespace crab {
      public:
 
       typedef CG cg_t;
-      typedef typename cg_node_t::cfg_t cfg_t;
+      typedef typename cg_node_t::cfg_t cfg_t; // cfg_t is actually a wrap to Cfg&
       typedef typename cfg_t::varname_t varname_t;
       typedef Liveness<cfg_t> liveness_t;     
       typedef boost::unordered_map <cfg_t, const liveness_t*> liveness_map_t;
@@ -53,7 +55,6 @@ namespace crab {
      public:
 
       typedef BottomUpSummNumAbsTransformer<summ_tbl_t, call_tbl_t> bu_abs_tr;
-      typedef boost::shared_ptr<bu_abs_tr> bu_abs_tr_ptr;
       typedef TopDownSummNumAbsTransformer<summ_tbl_t, call_tbl_t> td_abs_tr;
       typedef boost::shared_ptr<td_abs_tr> td_abs_tr_ptr;
       typedef FwdAnalyzer <cfg_t, bu_abs_tr, VarFactory> bu_analyzer;
@@ -61,7 +62,7 @@ namespace crab {
 
      public:
 
-      // for communicating with checkers
+      // for communication with checkers
       typedef TD_Dom abs_dom_t;
       typedef td_abs_tr_ptr abs_tr_ptr;
 
@@ -80,7 +81,7 @@ namespace crab {
       unsigned int m_descending_iters;
       size_t m_jump_set_size; // max size of the jump set (=0 if jump set disabled)
       
-      const liveness_t* get_live (cfg_t c) {
+      const liveness_t* get_live (const cfg_t& c) {
         if (m_live) {
           auto it = m_live->find (c);
           if (it != m_live->end ())
@@ -115,24 +116,24 @@ namespace crab {
         if (has_noedges) {
           // -- Special case when the program has been inlined.
           CRAB_LOG("inter",
-                   std::cout << "Call graph has no edges so no summaries are computed.\n");
+                   crab::outs() << "Call graph has no edges so no summaries are computed.\n");
           for (auto &v: boost::make_iterator_range (vertices (m_cg))) {
             crab::ScopedCrabStats __st__("Inter.TopDown");
 
-            cfg_t& cfg = v.getCfg ();
+            auto cfg = v.getCfg ();
             auto fdecl = cfg.get_func_decl ();
             assert (fdecl);
             std::string fun_name = boost::lexical_cast<string> ((*fdecl).get_func_name ());
             if (fun_name != "main") continue;
             
             CRAB_LOG ("inter",
-                      std::cout << "--- Analyzing " << (*fdecl).get_func_name () << "\n");
+                      crab::outs() << "--- Analyzing " << (*fdecl).get_func_name () << "\n");
 
-            td_analyzer_ptr a (new td_analyzer (cfg, m_vfac, get_live (cfg), 
-                                                &m_summ_tbl, &m_call_tbl,
-                                                m_widening_delay,
-                                                m_descending_iters,
-                                                m_jump_set_size));           
+            auto a = boost::make_shared<td_analyzer> (cfg, m_vfac, get_live (cfg), 
+                                                      &m_summ_tbl, &m_call_tbl,
+                                                      m_widening_delay,
+                                                      m_descending_iters,
+                                                      m_jump_set_size);           
             a->Run (init);
             m_inv_map.insert (make_pair (CfgHasher<cfg_t>::hash(*fdecl), a));
           }
@@ -144,20 +145,20 @@ namespace crab {
         SccGraph <CG> Scc_g (m_cg);
         rev_topo_sort < SccGraph <CG> > (Scc_g, rev_order);
        
-        CRAB_LOG("inter",std::cout << "Bottom-up phase ...\n");
+        CRAB_LOG("inter",crab::outs() << "Bottom-up phase ...\n");
         for (auto n: rev_order) {
           crab::ScopedCrabStats __st__("Inter.BottomUp");
           vector<cg_node_t> &scc_mems = Scc_g.getComponentMembers (n);
           for (auto m: scc_mems) {
 
-            cfg_t& cfg = m.getCfg ();
+            auto cfg = m.getCfg ();
             auto fdecl = cfg.get_func_decl ();            
             assert (fdecl);
 
             std::string fun_name = boost::lexical_cast<string> ((*fdecl).get_func_name ());
             if (fun_name != "main" && cfg.has_exit ()) {
               CRAB_LOG ("inter", 
-                        std::cout << "--- Analyzing " << (*fdecl).get_func_name () << "\n");
+                        crab::outs() << "--- Analyzing " << (*fdecl).get_func_name () << "\n");
               // --- run the analysis
               bu_analyzer a (cfg, m_vfac, get_live (cfg), 
                              &m_summ_tbl, &m_call_tbl,
@@ -169,7 +170,7 @@ namespace crab {
               formals.reserve ((*fdecl).get_num_params());
               for (unsigned i=0; i < (*fdecl).get_num_params();i++)
                 formals.push_back ((*fdecl).get_param_name (i));
-              auto ret_val_opt = findReturn (cfg);
+              auto ret_val_opt = findReturnVar (cfg);
               if (ret_val_opt) 
                 formals.push_back (*ret_val_opt);
               // --- project onto formal parameters and return 
@@ -185,18 +186,18 @@ namespace crab {
           }
         } 
 
-        CRAB_LOG ("inter", std::cout << "Top-down phase ...\n");
+        CRAB_LOG ("inter", crab::outs() << "Top-down phase ...\n");
         bool is_root = true;
         for (auto n: boost::make_iterator_range (rev_order.rbegin(),
                                                  rev_order.rend ())) {
           crab::ScopedCrabStats __st__("Inter.TopDown");
           vector<cg_node_t> &scc_mems = Scc_g.getComponentMembers (n);
           for (auto m: scc_mems) {
-            cfg_t& cfg = m.getCfg ();
+            auto cfg = m.getCfg ();
             auto fdecl = cfg.get_func_decl ();
             assert (fdecl);
             CRAB_LOG ("inter", 
-                      std::cout << "--- Analyzing " 
+                      crab::outs() << "--- Analyzing " 
                                 << (*fdecl).get_func_name () << "\n");
             if (scc_mems.size () > 1) {
               // If the node is recursive then what we have in m_call_tbl
@@ -207,10 +208,10 @@ namespace crab {
               m_call_tbl.insert (*fdecl, TD_Dom::top ());
             }
             
-            td_analyzer_ptr a (new td_analyzer (cfg, m_vfac, get_live (cfg), 
-                                                &m_summ_tbl, &m_call_tbl,
-                                                m_widening_delay,
-                                                m_descending_iters));           
+            auto a = boost::make_shared<td_analyzer> (cfg, m_vfac, get_live (cfg), 
+                                                      &m_summ_tbl, &m_call_tbl,
+                                                      m_widening_delay,
+                                                      m_descending_iters);           
             if (is_root) {
               a->Run (init);
               is_root = false;
@@ -218,9 +219,9 @@ namespace crab {
             else {
               CRAB_LOG("inter",
                        auto init_ctx = m_call_tbl.get_call_ctx (*fdecl);
-                       std::cout << "Starting analysis of "
-                                 << *fdecl <<  " with "
-                                 << init_ctx << "\n");
+                       crab::outs() << "Starting analysis of "
+                                    << *fdecl <<  " with "
+                                    << init_ctx << "\n");
               a->Run (m_call_tbl.get_call_ctx (*fdecl));
             }
             
@@ -236,7 +237,7 @@ namespace crab {
 
       //! Return the invariants that hold at the entry of b in cfg
       TD_Dom get_pre (const cfg_t &cfg, 
-                           typename cfg_t::basic_block_label_t b) const { 
+                      typename cfg_t::basic_block_label_t b) const { 
 
         if (auto fdecl = cfg.get_func_decl ()) {
           auto const it = m_inv_map.find (CfgHasher<cfg_t>::hash(*fdecl));
@@ -248,7 +249,7 @@ namespace crab {
       
       //! Return the invariants that hold at the exit of b in cfg
       TD_Dom get_post (const cfg_t &cfg, 
-                            typename cfg_t::basic_block_label_t b) const {
+                       typename cfg_t::basic_block_label_t b) const {
         
         if (auto fdecl = cfg.get_func_decl ()) {
           auto const it = m_inv_map.find (CfgHasher<cfg_t>::hash(*fdecl));
@@ -261,7 +262,7 @@ namespace crab {
       //! Propagate inv through statements
       td_abs_tr_ptr get_abs_transformer (TD_Dom &inv) {
         // pass inv by ref to avoid copies
-        td_abs_tr_ptr vis (new td_abs_tr (inv, &m_summ_tbl, &m_call_tbl));        
+        auto vis = boost::make_shared<td_abs_tr>(inv, &m_summ_tbl, &m_call_tbl);        
         return vis;
       }
 

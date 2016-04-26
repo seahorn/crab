@@ -18,18 +18,16 @@ namespace crab {
     using namespace cfg;
   
     template<typename CFG>
-    inline boost::optional<typename CFG::varname_t> findReturn (CFG cfg)
+    inline boost::optional<typename CFG::varname_t> findReturnVar (const CFG& cfg)
     {
       typedef typename CFG::varname_t varname_t;
 
       if (cfg.has_exit ()) {
-        auto const & bb = cfg.get_node (cfg.exit ());
-        for (auto const& s : boost::make_iterator_range (bb.begin (),
-                                                         bb.end ())) {
+        auto const &bb = cfg.get_node (cfg.exit ());
+        for (auto const &s : boost::make_iterator_range (bb.begin(), bb.end())) {
           if (s.isReturn ()) {                            
-            const Return <varname_t>* ret_stmt = 
-                static_cast< const Return <varname_t> *> (&s);
-            return  ret_stmt->get_ret_var ();
+            const Return <varname_t>* ret_stmt = static_cast<const Return <varname_t> *> (&s);
+            return ret_stmt->get_ret_var ();
           }
         }
       }
@@ -43,7 +41,8 @@ namespace crab {
     class FwdAnalyzer: 
         public ikos::interleaved_fwd_fixpoint_iterator< typename CFG::basic_block_label_t, 
                                                         CFG, 
-                                                        typename AbsTr::abs_dom_t > 
+                                                        typename AbsTr::abs_dom_t >,
+        public boost::noncopyable
     {
 
      public:
@@ -81,14 +80,16 @@ namespace crab {
 
       VarFactory&  m_vfac;
       const liveness_t* m_live;
-      // datastructures needed to perform interprocedural analysis
+      // Datastructures needed to perform interprocedural analysis
+      // m_summ_tbl and m_call_tbl are preserved in memory so it could
+      // be expensive.
       summ_tbl_t* m_summ_tbl;
       call_tbl_t* m_call_tbl;
       live_set_t m_formals;
       // Preserve invariants at the entry and exit. This might be
-      // expensive in terms of memory. As an alternative, we could
-      // compute the invariants at the exit by propagating locally from
-      // the invariants at the entry.
+      // expensive in terms of memory. To mitigate this, we could
+      // compute the invariants at the exit by propagating locally
+      // from the invariants at the entry.
       invariant_map_t  m_pre_map;
       invariant_map_t  m_post_map;
 
@@ -176,7 +177,7 @@ namespace crab {
           for (unsigned i=0; i < (*fdecl).get_num_params();i++)
             m_formals += (*fdecl).get_param_name (i); 
         
-          if (auto ret_val = findReturn (this->get_cfg ()))
+          if (auto ret_val = findReturnVar (this->get_cfg ()))
             m_formals += *ret_val; 
         }
 
@@ -200,7 +201,7 @@ namespace crab {
       //! Propagate inv through statements
       abs_tr_ptr get_abs_transformer (abs_dom_t &inv) {
         // pass inv by ref to avoid copies
-        abs_tr_ptr vis (new AbsTr (inv, m_summ_tbl, m_call_tbl));        
+        auto vis = boost::make_shared<AbsTr>(inv, m_summ_tbl, m_call_tbl);  
         return vis;
       }
 

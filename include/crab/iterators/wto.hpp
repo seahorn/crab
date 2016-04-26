@@ -120,7 +120,7 @@ namespace ikos {
     }; // class iterator
     
   private:
-    wto_nesting(node_list_ptr l): _nodes(node_list_ptr(new node_list_t(*l))) { }
+    wto_nesting(node_list_ptr l): _nodes(boost::make_shared<node_list_t>(*l)) { }
 
     int compare(wto_nesting_t& other) {
       iterator this_it = this->begin(), other_it = other.begin();
@@ -142,10 +142,10 @@ namespace ikos {
     }
     
   public:
-    wto_nesting(): _nodes(node_list_ptr(new node_list_t)) { }
+    wto_nesting(): _nodes(boost::make_shared<node_list_t>()) { }
 
     void operator+=(NodeName n) {
-      this->_nodes = node_list_ptr(new node_list_t(*(this->_nodes)));
+      this->_nodes = boost::make_shared<node_list_t>(*(this->_nodes));
       this->_nodes->push_back(n);
     }
     
@@ -449,8 +449,8 @@ namespace ikos {
       this->_stack->push_back(n);
     }
 
-    wto_cycle_ptr component(CFG& cfg, NodeName vertex) {
-      wto_component_list_ptr partition(new wto_component_list_t);
+    wto_cycle_ptr component(CFG cfg, NodeName vertex) {
+      auto partition = boost::make_shared<wto_component_list_t>();
       auto next_nodes = cfg.next_nodes(vertex);
       for (NodeName succ : next_nodes) {
         if (this->get_dfn(succ) == 0) {
@@ -460,7 +460,7 @@ namespace ikos {
       return wto_cycle_ptr(new wto_cycle_t(vertex, partition));
     }
     
-    dfn_t visit(CFG& cfg, NodeName vertex, wto_component_list_ptr partition) {
+    dfn_t visit(CFG cfg, NodeName vertex, wto_component_list_ptr partition) {
       dfn_t head = 0, min = 0;
       bool loop;
       NodeName element;
@@ -544,11 +544,11 @@ namespace ikos {
     }; // class iterator    
     
   public:
-    wto(CFG& cfg): 
-        _wto_components(wto_component_list_ptr(new wto_component_list_t)), 
-        _dfn_table(dfn_table_ptr(new dfn_table_t)), 
-        _num(0), _stack(stack_ptr(new stack_t)), 
-        _nesting_table(nesting_table_ptr(new nesting_table_t)) {
+    wto(CFG cfg): 
+        _wto_components(boost::make_shared<wto_component_list_t>()), 
+        _dfn_table(boost::make_shared<dfn_table_t>()), 
+        _num(0), _stack(boost::make_shared<stack_t>()), 
+        _nesting_table(boost::make_shared<nesting_table_t>()) {
       crab::ScopedCrabStats __st__("Weak Topological sort");
 
       this->visit(cfg, cfg.entry(), this->_wto_components);

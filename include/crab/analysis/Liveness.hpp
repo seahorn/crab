@@ -4,14 +4,13 @@
 /* Liveness analysis */
 
 #include <crab/common/stats.hpp>
+#include <crab/common/debug.hpp>
 #include <crab/domains/discrete_domains.hpp>
-#ifdef USE_BACKWARD_FP_ITERATOR
-#include <crab/analysis/BwdAnalyzer.hpp>
-#endif 
-
 #include <crab/cfg/CfgBgl.hpp>
 #include <crab/analysis/graphs/Sccg.hpp>
 #include <crab/analysis/graphs/TopoOrder.hpp>
+
+#include <boost/noncopyable.hpp>
 
 namespace crab {
 
@@ -347,164 +346,9 @@ namespace crab {
     } // end namespace liveness_set_impl
    #endif 
 
-   #ifdef USE_BACKWARD_FP_ITERATOR
    //! Live variable analysis
    template<typename CFG>
-   class Liveness: 
-        public backward_fp_iterator< typename CFG::basic_block_label_t, 
-                                     CFG, 
-                                     liveness_discrete_impl::liveness_domain <typename CFG::varname_t> > {
-
-    public:
-     typedef typename CFG::basic_block_label_t basic_block_label_t;
-     typedef typename CFG::varname_t varname_t;
-     typedef liveness_discrete_impl::liveness_domain<varname_t> liveness_domain_t;
-     typedef liveness_domain_t set_t;
-     
-    private:
-     typedef boost::shared_ptr <set_t> set_ptr;
-     typedef boost::unordered_map< basic_block_label_t, set_ptr > liveness_map_t;
-     typedef std::pair< liveness_domain_t, liveness_domain_t >   kill_gen_t;
-     typedef boost::unordered_map< basic_block_label_t, kill_gen_t>  kill_gen_map_t;
-     typedef typename liveness_map_t::value_type l_binding_t;
-     typedef typename kill_gen_map_t::value_type kg_binding_t;
-
-     // for external queries
-     liveness_map_t m_live_map;
-     liveness_map_t m_dead_map;
-     // for internal use
-     kill_gen_map_t m_kill_gen_map;
-
-     bool m_has_exec;
-
-     // statistics 
-     unsigned m_max_live;
-     unsigned m_total_live;
-     unsigned m_total_blks;
-
-    private:
-
-     // precompute use/def sets
-     void init()
-     {
-       for (auto &b: boost::make_iterator_range ( this->get_cfg().begin (), 
-                                                 this->get_cfg().end ())) {
-         liveness_domain_t kill, gen;         
-         for (auto &s: b) {
-           auto live = s.getLive();
-           for (auto d: boost::make_iterator_range (live.defs_begin (), 
-                                                    live.defs_end ())) {
-             kill += d; 
-             gen -= d;
-           }
-           for (auto u: boost::make_iterator_range (live.uses_begin (), 
-                                                    live.uses_end ())) {
-             gen  += u; 
-           }
-         }
-         m_kill_gen_map.insert ( kg_binding_t (b.label (), 
-                                               kill_gen_t (kill, gen)));
-       }
-     }
-     
-    public:
-
-     Liveness (CFG cfg): 
-         backward_fp_iterator
-         <basic_block_label_t, CFG, liveness_domain_t> (cfg),
-         m_has_exec (false),
-         m_max_live (0), m_total_live (0), m_total_blks (0) {
-       init(); 
-     }
-
-     void exec() { 
-       if (m_has_exec) {
-         CRAB_WARN ("Trying to execute liveness twice!");
-         return;
-       }
-       this->run (liveness_domain_t::bottom()); 
-       m_has_exec = true;
-     }
-
-     //! return the set of dead variables at the exit of block bb
-     set_t dead_exit (basic_block_label_t bb) const {
-       auto it = m_dead_map.find(bb);
-       if (it == m_dead_map.end()) 
-         return set_t ();
-       else 
-         return *(it->second); 
-     }
-
-     void get_stats (unsigned& total_live, 
-                     unsigned& max_live_per_blk,
-                     unsigned& avg_live_per_blk)  const {
-       total_live = m_total_live;
-       max_live_per_blk = m_max_live;
-       avg_live_per_blk = (m_total_blks == 0 ? 0 : (int) m_total_live / m_total_blks);
-     }
-
-     // //! return the set of live variables at the entry of block bb
-     // set_t live_entry (basic_block_label_t bb) const {
-     //   auto it = m_live_map.find(bb);
-     //   if (it == m_live_map.end())
-     //     return set_t ();
-     //   else
-     //     return *(it->second);
-     // }
-
-     void write (ostream &o) const {
-       for (auto p: m_live_map) {
-         o << p.first << " :{";
-         for (auto v : p.second)
-           o << v << ";" ;
-         o << "}\n";
-       }
-     }
-
-    private:
-
-     liveness_domain_t analyze (basic_block_label_t bb_id, 
-                                liveness_domain_t inv) {
-       auto it = m_kill_gen_map.find (bb_id);
-       assert(it != m_kill_gen_map.end ());
-
-       inv -= it->second.first;
-       inv += it->second.second;
-       return inv;
-     }
-
-     void check_pre (basic_block_label_t bb, 
-                     liveness_domain_t live_in) {
-       // // --- Collect live variables at the entry of bb
-       // if (!live_in.is_bottom()) {
-       //   set_ptr live_in_set = set_ptr (new set_t (live_in));         
-       //   m_live_map.insert (l_binding_t (bb, live_in_set));
-       // }
-     }
-     
-     void check_post (basic_block_label_t bb, 
-                      liveness_domain_t live_out) {
-
-       // --- Collect dead variables at the exit of bb
-       if (!live_out.is_bottom ()) {
-         set_ptr dead_set (new set_t (this->get_cfg().get_node (bb).live ()));
-         *dead_set -= live_out;
-         m_dead_map.insert (l_binding_t (bb, dead_set));
-
-
-         // update statistics
-         m_total_live += live_out.size ();
-         m_max_live = std::max (m_max_live, live_out.size ());
-         m_total_blks ++;
-       }
-     }
-   }; 
-   /////////
-   #else
-   /////////
-   //! Live variable analysis
-   template<typename CFG>
-   class Liveness {
+   class Liveness: boost::noncopyable {
 
     public:
      typedef typename CFG::basic_block_label_t basic_block_label_t;
@@ -541,19 +385,19 @@ namespace crab {
 
      // precompute use/def sets
      void init() {
-       for (auto &b: boost::make_iterator_range ( m_cfg.begin (), 
-                                                  m_cfg.end ())) {
+       for (auto &b: boost::make_iterator_range(m_cfg.begin(),m_cfg.end())) {
+         
          liveness_domain_t kill, gen;
-         for (auto &s: boost::make_iterator_range (b.rbegin(), 
-                                                   b.rend ())) {
+         for (auto &s: boost::make_iterator_range(b.rbegin(),b.rend())) { 
+                                                   
            auto live = s.getLive();
-           for (auto d: boost::make_iterator_range (live.defs_begin (), 
-                                                    live.defs_end ())) {
+           for (auto d: boost::make_iterator_range(live.defs_begin(), 
+                                                   live.defs_end())) {
              kill += d; 
              gen -= d;
            }
-           for (auto u: boost::make_iterator_range (live.uses_begin (), 
-                                                    live.uses_end ())) {
+           for (auto u: boost::make_iterator_range(live.uses_begin(), 
+                                                   live.uses_end())) {
              gen  += u; 
            }
          }
@@ -564,10 +408,9 @@ namespace crab {
      
     public:
 
-     Liveness (CFG cfg): 
-         m_cfg (cfg),
-         m_has_exec (false),
-         m_max_live (0), m_total_live (0), m_total_blks (0) {
+     Liveness (CFG cfg)
+         : m_cfg (cfg), m_has_exec (false),
+           m_max_live (0), m_total_live (0), m_total_blks (0) {
        crab::ScopedCrabStats __st__("Liveness");
        init(); 
      }
@@ -592,12 +435,11 @@ namespace crab {
 
        assert (order.size () == m_cfg.size ());
 
-#if 0  //debugging
-       cout  << "\tFixpoint ordering of the CFG {"; 
-       for (auto &v : order)
-         cout << v << " -- "; 
-       cout << "}\n"; 
-#endif 
+       CRAB_LOG("liveness", 
+                crab::outs()  << "\tFixpoint ordering of the CFG {"; 
+                for (auto &v : order)
+                  crab::outs() << cfg_impl::get_label_str(v) << " -- "; 
+                crab::outs() << "}\n";); 
 
        bool change = true;
        unsigned iterations = 0;
@@ -622,21 +464,21 @@ namespace crab {
        for (auto &n : order) {
          process_post (n, m_out_map [n]);
        }
-       
-       // std::cout << "Liveness fixpoint reached in " 
-       //           << iterations << " iterations \n"; 
+
+      CRAB_LOG("liveness", 
+               crab::outs() << "Liveness fixpoint reached in " 
+                         << iterations << " iterations \n"); 
        m_has_exec = true;
        
-#if 0  // debugging
-       cout << "Liveness sets: \n";
-       for (auto n: boost::make_iterator_range (m_cfg.label_begin (),
-                                                m_cfg.label_end ())) {
-         cout << n << " "
-              << "OUT=" << m_out_map [n]  << " "
-              << "IN=" << m_in_map [n] << "\n";
-       }
-       cout << "\n";
-#endif 
+      CRAB_LOG("liveness", 
+               crab::outs() << "Liveness sets: \n";
+               for (auto n: boost::make_iterator_range (m_cfg.label_begin (),
+                                                        m_cfg.label_end ())) {
+                 crab::outs() << cfg_impl::get_label_str(n) << " "
+                              << "OUT=" << m_out_map [n]  << " "
+                              << "IN=" << m_in_map [n] << "\n";
+               }
+               crab::outs() << "\n";);
        
        // --- Keep a small memory footprint in client analyses
        m_in_map.clear ();
@@ -682,7 +524,7 @@ namespace crab {
 
        // --- Collect dead variables at the exit of bb
        if (!live_out.is_bottom ()) {
-         set_ptr dead_set (new set_t (m_cfg.get_node (bb).live ()));
+         auto dead_set = boost::make_shared<set_t>(m_cfg.get_node (bb).live ());
          *dead_set -= live_out;
          m_dead_map.insert (l_binding_t (bb, dead_set));
 
@@ -695,7 +537,6 @@ namespace crab {
      }
           
    }; 
-#endif 
 
    template <typename CFG>
    ostream& operator << (ostream& o, const Liveness<CFG> &l) {

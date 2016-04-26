@@ -12,16 +12,16 @@ using namespace crab::domain_impl;
 using namespace crab::checker;
 
 
-cfg_t cfg1 (VariableFactory &vfac) 
+cfg_t* cfg1 (VariableFactory &vfac) 
 {
 
   // entry and exit block
-  cfg_t cfg ("b0","b3",PTR);
+  cfg_t* cfg = new cfg_t("b0","b3",PTR);
   // adding blocks
-  basic_block_t& b0 = cfg.insert ("b0");
-  basic_block_t& b1 = cfg.insert ("b1");
-  basic_block_t& b2 = cfg.insert ("b2");
-  basic_block_t& b3 = cfg.insert ("b3");
+  basic_block_t& b0 = cfg->insert ("b0");
+  basic_block_t& b1 = cfg->insert ("b1");
+  basic_block_t& b2 = cfg->insert ("b2");
+  basic_block_t& b3 = cfg->insert ("b3");
   // adding control flow
   b0 >> b1; b0 >> b2; b1 >> b3; b2 >> b3;
   
@@ -46,7 +46,7 @@ cfg_t cfg1 (VariableFactory &vfac)
 }
 
 
-cfg_t cfg2 (VariableFactory &vfac)  {
+cfg_t* cfg2 (VariableFactory &vfac)  {
 
   // Definining program variables
   z_var i (vfac ["i"]);
@@ -55,14 +55,14 @@ cfg_t cfg2 (VariableFactory &vfac)  {
   varname_t p (vfac ["p"]);
   varname_t q (vfac ["q"]);
   // entry and exit block
-  cfg_t cfg ("entry","ret",PTR);
+  cfg_t* cfg = new cfg_t("entry","ret",PTR);
   // adding blocks
-  basic_block_t& entry = cfg.insert ("entry");
-  basic_block_t& bb1   = cfg.insert ("bb1");
-  basic_block_t& bb1_t = cfg.insert ("bb1_t");
-  basic_block_t& bb1_f = cfg.insert ("bb1_f");
-  basic_block_t& bb2   = cfg.insert ("bb2");
-  basic_block_t& ret   = cfg.insert ("ret");
+  basic_block_t& entry = cfg->insert ("entry");
+  basic_block_t& bb1   = cfg->insert ("bb1");
+  basic_block_t& bb1_t = cfg->insert ("bb1_t");
+  basic_block_t& bb1_f = cfg->insert ("bb1_f");
+  basic_block_t& bb2   = cfg->insert ("bb2");
+  basic_block_t& ret   = cfg->insert ("ret");
   // adding control flow 
   entry >> bb1;
   bb1 >> bb1_t; bb1 >> bb1_f;
@@ -89,14 +89,14 @@ cfg_t cfg2 (VariableFactory &vfac)  {
   return cfg;
 }
 
-typedef NullityAnalyzer<cfg_t, VariableFactory>::nullity_domain_t nullity_domain_t;
+typedef NullityAnalyzer<cfg_ref_t, VariableFactory>::nullity_domain_t nullity_domain_t;
 
-void check (cfg_t &cfg, VariableFactory& vfac) {
+void check (cfg_ref_t cfg, VariableFactory& vfac) {
 
   // Each checker is associated to one analyzer
-  typedef NullityAnalyzer<cfg_t, VariableFactory>::analyzer_t null_analyzer_t;
+  typedef NullityAnalyzer<cfg_ref_t, VariableFactory>::analyzer_t null_analyzer_t;
   typedef IntraChecker<null_analyzer_t> null_checker_t;
-  typedef NumFwdAnalyzer<cfg_t, sdbm_domain_t, VariableFactory>::type num_analyzer_t;
+  typedef NumFwdAnalyzer<cfg_ref_t, sdbm_domain_t, VariableFactory>::type num_analyzer_t;
   typedef IntraChecker<num_analyzer_t> num_checker_t;
 
   // We can have multiple properties per analyzer
@@ -106,17 +106,17 @@ void check (cfg_t &cfg, VariableFactory& vfac) {
 
 
   // Run liveness (optionally) and print cfg
-  Liveness<cfg_t> live (cfg);  
-  cout << cfg << "\n";
+  Liveness<cfg_ref_t> live (cfg);  
+  crab::outs() << cfg << "\n";
 
   // Run nullity analysis
   null_analyzer_t null_a (cfg, vfac, &live);
   null_a.Run (nullity_domain_t::top ());
-  std::cout << "Nullity analysis using " << nullity_domain_t::getDomainName () << "\n";
+  crab::outs() << "Nullity analysis using " << nullity_domain_t::getDomainName () << "\n";
   for (auto &b : cfg)  {
     auto pre = null_a.get_pre (b.label ());
     auto post = null_a.get_post (b.label ());
-    std::cout << get_label_str (b.label ()) << "=" 
+    crab::outs() << get_label_str (b.label ()) << "=" 
               << pre 
               << " ==> "
               << post << "\n";
@@ -125,11 +125,11 @@ void check (cfg_t &cfg, VariableFactory& vfac) {
   // Run numerical analysis
   num_analyzer_t num_a (cfg, vfac, &live);
   num_a.Run (sdbm_domain_t::top ());
-  std::cout << "Numerical analysis using " << sdbm_domain_t::getDomainName () << "\n";
+  crab::outs() << "Numerical analysis using " << sdbm_domain_t::getDomainName () << "\n";
   for (auto &b : cfg)  {
     auto pre = num_a.get_pre (b.label ());
     auto post = num_a.get_post (b.label ());
-    std::cout << get_label_str (b.label ()) << "=" 
+    crab::outs() << get_label_str (b.label ()) << "=" 
               << pre 
               << " ==> "
               << post << "\n";
@@ -144,7 +144,7 @@ void check (cfg_t &cfg, VariableFactory& vfac) {
     typename null_checker_t::prop_checker_ptr prop1 (new null_prop_null_checker_t (verbose));
     null_checker_t checker (null_a, {prop1});
     checker.Run ();
-    checker.Show (std::cout);
+    checker.Show (crab::outs());
   }
 
   {
@@ -153,7 +153,7 @@ void check (cfg_t &cfg, VariableFactory& vfac) {
     num_checker_t checker (num_a, {prop1, prop2});
 
     checker.Run ();
-    checker.Show (std::cout);
+    checker.Show (crab::outs());
   }
 
 }
@@ -163,9 +163,13 @@ int main (int argc, char**argv) {
   SET_LOGGER(argc,argv)
 
   VariableFactory vfac;
-  cfg_t cfg_1 = cfg1 (vfac);
-  check (cfg_1, vfac);
-  cfg_t cfg_2 = cfg2 (vfac);
-  check (cfg_2, vfac);
+  cfg_t* p1 = cfg1 (vfac);
+  check (*p1, vfac);
+  cfg_t* p2 = cfg2 (vfac);
+  check (*p2, vfac);
+
+  delete p1;
+  delete p2;
+
   return 0;
 }

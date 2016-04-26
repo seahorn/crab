@@ -1,4 +1,8 @@
-add_executable(conc_test1 test1.cc)
-target_link_libraries (conc_test1 ${CRAB_LIBS})
+add_executable(conc test1.cc)
+target_link_libraries (conc ${CRAB_LIBS})
+
+install(TARGETS conc
+  RUNTIME DESTINATION tests/concurrency
+  )
 
 

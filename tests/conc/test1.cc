@@ -16,9 +16,9 @@ namespace crab {
   } 
 }
 
-typedef ConcSys< string, cfg_t> conc_sys_t;
+typedef ConcSys< string, cfg_ref_t> conc_sys_t;
 
-cfg_t thread1 (VariableFactory &vfac) 
+cfg_t* thread1 (VariableFactory &vfac) 
 {
 
   ////
@@ -31,17 +31,17 @@ cfg_t thread1 (VariableFactory &vfac)
   z_var z (vfac ["z"]);
   
   // entry and exit block
-  cfg_t cfg ("entry","ret");
+  cfg_t* cfg = new cfg_t("entry","ret");
   // adding blocks
-  basic_block_t& entry = cfg.insert ("entry");
-  basic_block_t& bb1   = cfg.insert ("bb1");
-  basic_block_t& bb1_t = cfg.insert ("bb1_t");
-  basic_block_t& bb1_f = cfg.insert ("bb1_f");
-  basic_block_t& bb2   = cfg.insert ("bb2");
-  basic_block_t& bb3_t   = cfg.insert ("bb3_t");
-  basic_block_t& bb3_f   = cfg.insert ("bb3_f");
-  basic_block_t& bb4   = cfg.insert ("bb4");
-  basic_block_t& ret   = cfg.insert ("ret");
+  basic_block_t& entry = cfg->insert ("entry");
+  basic_block_t& bb1   = cfg->insert ("bb1");
+  basic_block_t& bb1_t = cfg->insert ("bb1_t");
+  basic_block_t& bb1_f = cfg->insert ("bb1_f");
+  basic_block_t& bb2   = cfg->insert ("bb2");
+  basic_block_t& bb3_t = cfg->insert ("bb3_t");
+  basic_block_t& bb3_f = cfg->insert ("bb3_f");
+  basic_block_t& bb4   = cfg->insert ("bb4");
+  basic_block_t& ret   = cfg->insert ("ret");
   // adding control flow
   entry >> bb1;
   bb1 >> bb1_t; bb1 >> bb1_f;
@@ -58,7 +58,7 @@ cfg_t thread1 (VariableFactory &vfac)
   return cfg;
 }
 
-cfg_t thread2 (VariableFactory &vfac) 
+cfg_t* thread2 (VariableFactory &vfac) 
 {
 
   ////
@@ -71,20 +71,20 @@ cfg_t thread2 (VariableFactory &vfac)
   z_var z (vfac ["z"]);
   z_var w (vfac ["w"]);
   // entry and exit block
-  cfg_t cfg ("entry","ret");
+  cfg_t* cfg = new cfg_t("entry","ret");
   // adding blocks
-  basic_block_t& entry = cfg.insert ("entry");
-  basic_block_t& bb1   = cfg.insert ("bb1");
-  basic_block_t& bb1_t = cfg.insert ("bb1_t");
-  basic_block_t& bb1_f = cfg.insert ("bb1_f");
-  basic_block_t& bb2   = cfg.insert ("bb2");
-  basic_block_t& bb3_t   = cfg.insert ("bb3_t");
-  basic_block_t& bb3_f   = cfg.insert ("bb3_f");
-  basic_block_t& bb4_t   = cfg.insert ("bb4_t");
-  basic_block_t& bb4_f   = cfg.insert ("bb4_f");
-  basic_block_t& bb5   = cfg.insert ("bb5");
-  basic_block_t& bb6   = cfg.insert ("bb6");
-  basic_block_t& ret   = cfg.insert ("ret");
+  basic_block_t& entry = cfg->insert ("entry");
+  basic_block_t& bb1   = cfg->insert ("bb1");
+  basic_block_t& bb1_t = cfg->insert ("bb1_t");
+  basic_block_t& bb1_f = cfg->insert ("bb1_f");
+  basic_block_t& bb2   = cfg->insert ("bb2");
+  basic_block_t& bb3_t = cfg->insert ("bb3_t");
+  basic_block_t& bb3_f = cfg->insert ("bb3_f");
+  basic_block_t& bb4_t = cfg->insert ("bb4_t");
+  basic_block_t& bb4_f = cfg->insert ("bb4_f");
+  basic_block_t& bb5   = cfg->insert ("bb5");
+  basic_block_t& bb6   = cfg->insert ("bb6");
+  basic_block_t& ret   = cfg->insert ("ret");
   // adding control flow
   entry >> bb1;
   bb1 >> bb1_t; bb1 >> bb1_f;
@@ -116,40 +116,42 @@ int main (int argc, char** argv )
 
   VariableFactory vfac;
 
-  cfg_t t1 = thread1 (vfac);
-  t1.simplify ();
+  cfg_t* t1 = thread1 (vfac);
+  t1->simplify ();
 
-  cfg_t t2 = thread2 (vfac);
-  t2.simplify ();
+  cfg_t* t2 = thread2 (vfac);
+  t2->simplify ();
 
   conc_sys_t concSys;
   vector<varname_t> shared_vars;
   shared_vars.push_back (vfac ["x"]);
   shared_vars.push_back (vfac ["y"]);
 
-  concSys.add_thread ("thread1", t1, shared_vars.begin (), shared_vars.end ());
-  concSys.add_thread ("thread2", t2, shared_vars.begin (), shared_vars.end ());
+  concSys.add_thread ("thread1", *t1, shared_vars.begin (), shared_vars.end ());
+  concSys.add_thread ("thread2", *t2, shared_vars.begin (), shared_vars.end ());
 
-  cout << concSys << endl;
+  crab::outs() << concSys << endl;
 
   const bool run_live = true;
   auto global_inv = interval_domain_t::top ();
   global_inv.assign (vfac ["x"], interval_domain_t::linear_expression_t (0));
   global_inv.assign (vfac ["y"], interval_domain_t::linear_expression_t (0));
 
-  typedef ConcAnalyzer <string, cfg_t,
-                        interval_domain_t, VariableFactory> conc_analyzer_t;
+  typedef ConcAnalyzer <string, cfg_ref_t, interval_domain_t, VariableFactory> conc_analyzer_t;
 
   conc_analyzer_t a (concSys, vfac, run_live);
   a.Run (global_inv);
   
   for (auto const p: concSys)
   {
-    cout << "Results " << crab::conc_impl::get_thread_id_str (p.first) << "\n";
+    crab::outs() << "Results " << crab::conc_impl::get_thread_id_str (p.first) << "\n";
     conc_analyzer_t::inv_map_t &inv_map = a.getInvariants (p.first);
     for (auto p : inv_map)
-      cout << p.first << ": " << p.second << endl;
+      crab::outs() << p.first << ": " << p.second << endl;
   }
+
+  delete t1;
+  delete t2;
 
   return 0;
 }

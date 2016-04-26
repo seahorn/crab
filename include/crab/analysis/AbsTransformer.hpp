@@ -384,7 +384,7 @@ namespace crab {
       caller = caller & summ.get_sum ();
       crab::CrabStats::stop ("Domain.meet");
       CRAB_LOG("inter",
-               std::cout << "--- After meet: " <<  caller << "\n");
+               crab::outs() << "--- After meet: " <<  caller << "\n");
       // --- matching formal and actual parameters
       auto pars = summ.get_params ();
       unsigned i=0;
@@ -409,7 +409,7 @@ namespace crab {
         actuals.insert (*lhs_opt); formals.insert (*ret_opt);
       }
       CRAB_LOG ("inter", 
-                std::cout << "--- After matching formals and actuals: " 
+                crab::outs() << "--- After matching formals and actuals: " 
                 <<  caller << "\n");
       // --- remove from caller only formal parameters so we can keep
       //     as much context from the caller as possible
@@ -466,7 +466,7 @@ namespace crab {
       }
       else
         CRAB_LOG("inter",
-                 std::cout << "Summary not found for " << cs << "\n");
+                 crab::outs() << "Summary not found for " << cs << "\n");
       
       auto lhs_opt = cs.get_lhs_name ();
       if (lhs_opt) { // havoc 
@@ -580,8 +580,8 @@ namespace crab {
           crab::CrabStats::stop ("Domain.project");
           // --- store the callee context
           CRAB_LOG ("inter", 
-                    std::cout << "--- Callee context stored: " 
-                              << callee_ctx_inv << "\n");
+                    crab::outs() << "--- Callee context stored: " 
+                                 << callee_ctx_inv << "\n");
           m_call_tbl->insert (cs, callee_ctx_inv);          
 
           /////
@@ -596,13 +596,13 @@ namespace crab {
             caller_ctx_inv += cst;
           }
           CRAB_LOG ("inter",
-                    std::cout << "--- Caller context: " 
-                              <<  caller_ctx_inv << "\n");
+                    crab::outs() << "--- Caller context: " 
+                                 <<  caller_ctx_inv << "\n");
           // --- reuse summary to do the continuation
           bu_abs_transformer_t::reuse_summary (caller_ctx_inv, cs, sum);
           CRAB_LOG ("inter",
-                    std::cout << "--- Caller context after plugin summary: " 
-                              << caller_ctx_inv << "\n");
+                    crab::outs() << "--- Caller context after plugin summary: " 
+                                 << caller_ctx_inv << "\n");
           // --- convert back inv to the language of abs_dom_t
           abs_dom_t inv = abs_dom_t::top();          
           for (auto cst : caller_ctx_inv.to_linear_constraint_system ()) {
@@ -612,8 +612,8 @@ namespace crab {
           }
           std::swap (this->m_inv, inv);
           CRAB_LOG ("inter",
-                    std::cout << "--- Caller continuation after " 
-                              <<  cs << "=" <<  this->m_inv << "\n");
+                    crab::outs() << "--- Caller continuation after " 
+                                 <<  cs << "=" <<  this->m_inv << "\n");
           return;
         }
         else 

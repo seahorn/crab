@@ -42,7 +42,7 @@ namespace crab {
   
     //! Run a flow-insensitive pointer analysis for a set of CFGs.
     template<typename CFG, typename VariableFactory, typename NumDom>
-    class Pointer {
+    class Pointer: boost::noncopyable {
 
       typedef typename CFG::varname_t varname_t;
       typedef interval <z_number> interval_t;

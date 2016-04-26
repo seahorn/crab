@@ -34,6 +34,18 @@ option (USE_LDD   "Enable Ldd library" OFF)
 option (USE_APRON "Enable Apron library" OFF)
 option (USE_STATS "Enable statistics" ON)
 option (USE_LOG   "Enable logging for debugging purposes" ON)
+option (BUILD_CRAB_LIBS_SHARED "Build all Crab libraries shared." OFF)
+
+# Temporary fix because ldd provides only static libraries
+if (USE_LDD)
+  message (STATUS "ldd provides only static libraries. Forced Crab static building.")
+  set (BUILD_CRAB_LIBS_SHARED OFF)
+endif ()
+
+if (NOT BUILD_CRAB_LIBS_SHARED)
+   # put static libraries first unless we want shared libraries
+   set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ${CMAKE_FIND_LIBRARY_SUFFIXES})
+endif ()   
 
 find_package(GMP REQUIRED)
 if (GMP_FOUND)
@@ -44,15 +56,26 @@ else()
   set(GMPXX_LIB "")
 endif()
 
-# Whether crab libraries are built shared or statically
-option(BUILD_CRAB_LIBS_SHARED "Build all Crab libraries shared." OFF)
 
 if (BUILD_CRAB_LIBS_SHARED)
   message (STATUS "All crab libraries will be built as shared libraries")
   set(CRAB_LIBS_TYPE SHARED)
+  # so that executables outside the build tree can find later shared
+  # libraries
+  # set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+  # if (NOT CMAKE_INSTALL_RPATH)
+  #   set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+  # endif ()
 else()
   message (STATUS "All crab libraries will be built statically")
   set(CRAB_LIBS_TYPE STATIC)
+endif ()
+
+# Even if CRAB_LIBS_TYPE=STATIC we could have a mix of shared and
+# static libraries
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+if (NOT CMAKE_INSTALL_RPATH)
+  set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 endif ()
 
 include(ExternalProject)

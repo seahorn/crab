@@ -146,7 +146,7 @@ namespace crab {
         swap(_dbm, ret);
 
         CRAB_LOG ("zones-old",
-                  std::cout << "Compacted dbm to size "<< _var_map.size ()<< "\n"<< *this <<"\n";);
+                  crab::outs() << "Compacted dbm to size "<< _var_map.size ()<< "\n"<< *this <<"\n";);
         return true;
       }
 
@@ -533,7 +533,7 @@ namespace crab {
           return d;
 
         CRAB_LOG ("zones-old", 
-                  std::cout << "Resizing the matrix to "<< sz<< " ... " <<"\n";);
+                  crab::outs() << "Resizing the matrix to "<< sz<< " ... " <<"\n";);
 
         dbm x = NULL;      
         x= dbm_resize (d, sz);
@@ -683,7 +683,7 @@ namespace crab {
           return *this;
         else {
           CRAB_LOG ("zones-old",
-                    std::cout << "Before join:\n"<<"DBM 1\n"<<*this<<"\n"<<"DBM 2\n"<<o <<"\n";);
+                    crab::outs() << "Before join:\n"<<"DBM 1\n"<<*this<<"\n"<<"DBM 2\n"<<o <<"\n";);
 
           vector<rmap>  subs_x;
           vector<rmap>  subs_y;
@@ -748,7 +748,7 @@ namespace crab {
           dbm_dealloc(dbm_yy);
 
           CRAB_LOG ("zones-old",
-                    std::cout << "Result join:\n"<<res <<"\n";);
+                    crab::outs() << "Result join:\n"<<res <<"\n";);
 
           return res;
         }
@@ -761,7 +761,7 @@ namespace crab {
           return *this;
         else {
           CRAB_LOG ("zones-old",
-                    std::cout << "Before widening:\n"<<"DBM 1\n"<<*this<<"\n"<<"DBM 2\n"<<o <<"\n";);
+                    crab::outs() << "Before widening:\n"<<"DBM 1\n"<<*this<<"\n"<<"DBM 2\n"<<o <<"\n";);
 
           vector<rmap>  subs_x;
           vector<rmap>  subs_y;
@@ -810,7 +810,7 @@ namespace crab {
           dbm_dealloc(dbm_yy);
 
           CRAB_LOG ("zones-old",
-                    std::cout << "Result widening:\n"<<res <<"\n";);
+                    crab::outs() << "Result widening:\n"<<res <<"\n";);
           return res;
         }
       } 
@@ -831,7 +831,7 @@ namespace crab {
           return *this;
         else{
           CRAB_LOG ("zones-old",
-                    std::cout << "Before meet:\n"<<"DBM 1\n"<<*this<<"\n"<<"DBM 2\n"<<o <<"\n";);
+                    crab::outs() << "Before meet:\n"<<"DBM 1\n"<<*this<<"\n"<<"DBM 2\n"<<o <<"\n";);
           vector<rmap>  subs_x;
           vector<rmap>  subs_y;
           id_t id = 0;
@@ -879,7 +879,7 @@ namespace crab {
           dbm_dealloc(dbm_yy);
 
           CRAB_LOG ("zones-old",
-                    std::cout << "Result meet:\n"<<res <<"\n";);
+                    crab::outs() << "Result meet:\n"<<res <<"\n";);
           return res;
         }
       }	
@@ -891,7 +891,7 @@ namespace crab {
           return o;
         else{
           CRAB_LOG ("zones-old",
-                    std::cout << "Before narrowing:\n"<<"DBM 1\n"<<*this<<"\n"<<"DBM 2\n"<<o <<"\n";);
+                    crab::outs() << "Before narrowing:\n"<<"DBM 1\n"<<*this<<"\n"<<"DBM 2\n"<<o <<"\n";);
           vector<rmap>  subs_x;
           vector<rmap>  subs_y;
           id_t id = 0;
@@ -939,7 +939,7 @@ namespace crab {
           dbm_dealloc(dbm_yy);
 
           CRAB_LOG ("zones-old",
-                    std::cout << "Result narrowing:\n"<<res <<"\n";);
+                    crab::outs() << "Result narrowing:\n"<<res <<"\n";);
           return res;
         }
       }	
@@ -1036,7 +1036,7 @@ namespace crab {
         }
 
         CRAB_LOG("zones-old",
-                 std::cout << "---"<< x<< ":="<< e<<"\n"<<*this <<"\n";);
+                 crab::outs() << "---"<< x<< ":="<< e<<"\n"<<*this <<"\n";);
       }
 
       void apply(operation_t op, VariableName x, VariableName y, VariableName z){	
@@ -1067,7 +1067,7 @@ namespace crab {
         }
 
         CRAB_LOG("zones-old",
-                 std::cout << "---"<< x<< ":="<< y<< op<< z<<"\n"<< *this <<"\n";);
+                 crab::outs() << "---"<< x<< ":="<< y<< op<< z<<"\n"<< *this <<"\n";);
       }
 
     
@@ -1090,7 +1090,7 @@ namespace crab {
         }
 
         CRAB_LOG("zones-old",
-                 std::cout << "---"<< x<< ":="<< y<< op<< k<<"\n"<< *this <<"\n";);
+                 crab::outs() << "---"<< x<< ":="<< y<< op<< k<<"\n"<< *this <<"\n";);
       }
    
    
@@ -1132,7 +1132,7 @@ namespace crab {
         }
 
         CRAB_LOG("zones-old",
-                 std::cout << "---"<< cst<< "\n"<< *this <<"\n";);
+                 crab::outs() << "---"<< cst<< "\n"<< *this <<"\n";);
       } 
     
       void operator+=(linear_constraint_system_t csts) {  

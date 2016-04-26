@@ -11,7 +11,7 @@ using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 using namespace crab::cg;
 
-cfg_t foo (VariableFactory &vfac) {
+cfg_t* foo (VariableFactory &vfac) {
   vector<pair<varname_t,VariableType> > params;
   params.push_back (make_pair (vfac["x"], INT_TYPE));
   FunctionDecl<varname_t> decl (INT_TYPE, vfac["foo"], params);
@@ -20,10 +20,10 @@ cfg_t foo (VariableFactory &vfac) {
   z_var y (vfac ["y"]);
   z_var z (vfac ["z"]);
   // entry and exit block
-  cfg_t cfg ("entry", "exit", decl);
+  cfg_t* cfg = new cfg_t("entry", "exit", decl);
   // adding blocks
-  basic_block_t& entry = cfg.insert ("entry");
-  basic_block_t& exit   = cfg.insert ("exit");
+  basic_block_t& entry = cfg->insert ("entry");
+  basic_block_t& exit   = cfg->insert ("exit");
   // adding control flow
   entry >> exit;
   // adding statements
@@ -33,7 +33,7 @@ cfg_t foo (VariableFactory &vfac) {
   return cfg;
 }
 
-cfg_t rec1 (VariableFactory &vfac) {
+cfg_t* rec1 (VariableFactory &vfac) {
   vector<pair<varname_t,VariableType> > params;
   params.push_back (make_pair (vfac["s"], INT_TYPE));
   FunctionDecl<varname_t> decl (INT_TYPE, vfac["rec1"], params);
@@ -42,10 +42,10 @@ cfg_t rec1 (VariableFactory &vfac) {
   z_var s (vfac ["s"]);
   z_var t (vfac ["t"]);
   // entry and exit block
-  cfg_t cfg ("entry", "exit", decl);
+  cfg_t* cfg  = new cfg_t("entry", "exit", decl);
   // adding blocks
-  basic_block_t& entry = cfg.insert ("entry");
-  basic_block_t& exit   = cfg.insert ("exit");
+  basic_block_t& entry = cfg->insert ("entry");
+  basic_block_t& exit   = cfg->insert ("exit");
   // adding control flow
   entry >> exit;
   // adding statements
@@ -57,7 +57,7 @@ cfg_t rec1 (VariableFactory &vfac) {
   return cfg;
 }
 
-cfg_t rec2 (VariableFactory &vfac) {
+cfg_t* rec2 (VariableFactory &vfac) {
   vector<pair<varname_t,VariableType> > params;
   params.push_back (make_pair (vfac["s1"], INT_TYPE));
   FunctionDecl<varname_t> decl (INT_TYPE, vfac["rec2"], params);
@@ -66,10 +66,10 @@ cfg_t rec2 (VariableFactory &vfac) {
   z_var s (vfac ["s1"]);
   z_var t (vfac ["t1"]);
   // entry and exit block
-  cfg_t cfg ("entry", "exit", decl);
+  cfg_t* cfg = new cfg_t("entry", "exit", decl);
   // adding blocks
-  basic_block_t& entry = cfg.insert ("entry");
-  basic_block_t& exit   = cfg.insert ("exit");
+  basic_block_t& entry = cfg->insert ("entry");
+  basic_block_t& exit   = cfg->insert ("exit");
   // adding control flow
   entry >> exit;
   // adding statements
@@ -85,7 +85,7 @@ cfg_t rec2 (VariableFactory &vfac) {
 }
 
 
-cfg_t bar (VariableFactory &vfac) {
+cfg_t* bar (VariableFactory &vfac) {
   vector<pair<varname_t,VariableType> > params;
   params.push_back (make_pair (vfac["a"], INT_TYPE));
   FunctionDecl<varname_t> decl (INT_TYPE, vfac["bar"], params);
@@ -95,10 +95,10 @@ cfg_t bar (VariableFactory &vfac) {
   z_var y (vfac ["y1"]);
   z_var w (vfac ["w1"]);
   // entry and exit block
-  cfg_t cfg ("entry", "exit", decl);
+  cfg_t* cfg = new cfg_t("entry", "exit", decl);
   // adding blocks
-  basic_block_t& entry = cfg.insert ("entry");
-  basic_block_t& exit   = cfg.insert ("exit");
+  basic_block_t& entry = cfg->insert ("entry");
+  basic_block_t& exit   = cfg->insert ("exit");
   // adding control flow
   entry >> exit;
   // adding statements
@@ -111,7 +111,7 @@ cfg_t bar (VariableFactory &vfac) {
   return cfg;
 }
 
-cfg_t m (VariableFactory &vfac)  {
+cfg_t* m (VariableFactory &vfac)  {
   vector<pair<varname_t,VariableType> > params;
   FunctionDecl<varname_t> decl (INT_TYPE, vfac["main"], params);
   // Defining program variables
@@ -119,10 +119,10 @@ cfg_t m (VariableFactory &vfac)  {
   z_var y (vfac ["y2"]);
   z_var z (vfac ["z2"]);
   // entry and exit block
-  cfg_t cfg ("entry", "exit", decl);
+  cfg_t* cfg = new cfg_t("entry", "exit", decl);
   // adding blocks
-  basic_block_t& entry = cfg.insert ("entry");
-  basic_block_t& exit   = cfg.insert ("exit");
+  basic_block_t& entry = cfg->insert ("entry");
+  basic_block_t& exit   = cfg->insert ("exit");
   // adding control flow
   entry >> exit;
   // adding statements
@@ -148,165 +148,172 @@ int main (int argc, char** argv ) {
   SET_LOGGER(argc,argv)
 
   VariableFactory vfac;
-  cfg_t t1 = foo (vfac);
-  cfg_t t2 = bar (vfac);
-  cfg_t t3 = rec1 (vfac);
-  cfg_t t4 = rec2 (vfac);
-  cfg_t t5 = m (vfac);
+  cfg_t* t1 = foo (vfac);
+  cfg_t* t2 = bar (vfac);
+  cfg_t* t3 = rec1 (vfac);
+  cfg_t* t4 = rec2 (vfac);
+  cfg_t* t5 = m (vfac);
 
-  cout << t1 << endl;
-  cout << t2 << endl;
-  cout << t3 << endl;
-  cout << t4 << endl;
-  cout << t5 << endl;
+  crab::outs() << *t1 << endl;
+  crab::outs() << *t2 << endl;
+  crab::outs() << *t3 << endl;
+  crab::outs() << *t4 << endl;
+  crab::outs() << *t5 << endl;
 
-  vector<cfg_t> cfgs;
-  cfgs.push_back(t1);
-  cfgs.push_back(t2);
-  cfgs.push_back(t3);
-  cfgs.push_back(t4);
-  cfgs.push_back(t5);
+  vector<cfg_ref_t> cfgs;
+  cfgs.push_back(*t1);
+  cfgs.push_back(*t2);
+  cfgs.push_back(*t3);
+  cfgs.push_back(*t4);
+  cfgs.push_back(*t5);
 
-  CallGraph<cfg_t> cg (cfgs);
+  typedef CallGraph<cfg_ref_t> callgraph_t;
+  typedef CallGraph_Ref<callgraph_t> callgraph_ref_t;
 
-
+  boost::scoped_ptr<callgraph_t> cg(new callgraph_t(cfgs));
   {
-    InterFwdAnalyzer<CallGraph<cfg_t>,  VariableFactory,
-                     dbm_domain_t, interval_domain_t> a (cg, vfac, nullptr); 
-    cout << "Running" 
+    InterFwdAnalyzer<callgraph_ref_t, VariableFactory,
+                     dbm_domain_t, interval_domain_t> a (*cg, vfac, nullptr); 
+    crab::outs() << "Running" 
          << " summary domain=" << dbm_domain_t::getDomainName () 
          << " and forward domain=" << interval_domain_t::getDomainName () << "\n";
 
     a.Run ();
     
     // Print invariants
-    for (auto &cfg : cfgs) {
+    for (auto cfg : cfgs) {
       auto fdecl_opt = cfg.get_func_decl ();
       assert (fdecl_opt);
-      cout << *fdecl_opt << "\n"; 
+      crab::outs() << *fdecl_opt << "\n"; 
       for (auto &b : cfg) {
         auto inv = a.get_post (cfg, b.label ());
-        std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
+        crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
       }
-      cout << "=================================\n";
+      crab::outs() << "=================================\n";
     }
     
     // Print summaries
-    for (auto &cfg : cfgs) {
+    for (auto cfg : cfgs) {
       if (a.has_summary (cfg)) {
         auto fdecl_opt = cfg.get_func_decl ();
         assert (fdecl_opt);
-        cout << "Summary for " << *fdecl_opt << ": "; 
+        crab::outs() << "Summary for " << *fdecl_opt << ": "; 
         auto sum = a.get_summary (cfg);
-        cout << sum << "\n";
+        crab::outs() << sum << "\n";
       }
     }
   }
 
 
-
+#ifdef HAVE_APRON
   {
-    InterFwdAnalyzer<CallGraph<cfg_t>,  VariableFactory,
-                     opt_oct_apron_domain_t, interval_domain_t> a (cg, vfac, nullptr); 
+    InterFwdAnalyzer<callgraph_ref_t, VariableFactory,
+                     opt_oct_apron_domain_t, interval_domain_t> a (*cg, vfac, nullptr); 
 
-    cout << "Running" 
+    crab::outs() << "Running" 
          << " summary domain=" << opt_oct_apron_domain_t::getDomainName () 
          << " and forward domain=" << interval_domain_t::getDomainName () << "\n";
 
     a.Run ();
     
     // Print invariants
-    for (auto &cfg : cfgs) {
+    for (auto cfg : cfgs) {
       auto fdecl_opt = cfg.get_func_decl ();
       assert (fdecl_opt);
-      cout << *fdecl_opt << "\n"; 
+      crab::outs() << *fdecl_opt << "\n"; 
       for (auto &b : cfg) {
         auto inv = a.get_post (cfg, b.label ());
-        std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
+        crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
       }
-      cout << "=================================\n";
+      crab::outs() << "=================================\n";
     }
     
     // Print summaries
-    for (auto &cfg : cfgs) {
+    for (auto cfg : cfgs) {
       if (a.has_summary (cfg)) {
         auto fdecl_opt = cfg.get_func_decl ();
         assert (fdecl_opt);
-        cout << "Summary for " << *fdecl_opt << ": "; 
+        crab::outs() << "Summary for " << *fdecl_opt << ": "; 
         auto sum = a.get_summary (cfg);
-        cout << sum << "\n";
+        crab::outs() << sum << "\n";
       }
     }
   }
+#endif 
 
   {
-    InterFwdAnalyzer<CallGraph<cfg_t>,  VariableFactory,
-                     term_domain_t, interval_domain_t> a (cg, vfac, nullptr); 
+    InterFwdAnalyzer<callgraph_ref_t,  VariableFactory,
+                     term_domain_t, interval_domain_t> a (*cg, vfac, nullptr); 
 
-    cout << "Running" 
+    crab::outs() << "Running" 
          << " summary domain=" << term_domain_t::getDomainName () 
          << " and forward domain=" << interval_domain_t::getDomainName () << "\n";
 
     a.Run ();
     
     // Print invariants
-    for (auto &cfg : cfgs) {
+    for (auto cfg : cfgs) {
       auto fdecl_opt = cfg.get_func_decl ();
       assert (fdecl_opt);
-      cout << *fdecl_opt << "\n"; 
+      crab::outs() << *fdecl_opt << "\n"; 
       for (auto &b : cfg) {
         auto inv = a.get_post (cfg, b.label ());
-        std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
+        crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
       }
-      cout << "=================================\n";
+      crab::outs() << "=================================\n";
     }
     
     // Print summaries
-    for (auto &cfg : cfgs) {
+    for (auto cfg : cfgs) {
       if (a.has_summary (cfg)) {
         auto fdecl_opt = cfg.get_func_decl ();
         assert (fdecl_opt);
-        cout << "Summary for " << *fdecl_opt << ": "; 
+        crab::outs() << "Summary for " << *fdecl_opt << ": "; 
         auto sum = a.get_summary (cfg);
-        cout << sum << "\n";
+        crab::outs() << sum << "\n";
       }
     }
   }
 
   {
-    InterFwdAnalyzer<CallGraph<cfg_t>,  VariableFactory,
-                     num_domain_t, num_domain_t> a (cg, vfac, nullptr); 
+    InterFwdAnalyzer<callgraph_ref_t,  VariableFactory,
+                     num_domain_t, num_domain_t> a (*cg, vfac, nullptr); 
 
-    cout << "Running" 
+    crab::outs() << "Running" 
          << " summary domain=" << num_domain_t::getDomainName () 
          << " and forward domain=" << num_domain_t::getDomainName () << "\n";
 
     a.Run ();
     
     // Print invariants
-    for (auto &cfg : cfgs) {
+    for (auto cfg : cfgs) {
       auto fdecl_opt = cfg.get_func_decl ();
       assert (fdecl_opt);
-      cout << *fdecl_opt << "\n"; 
+      crab::outs() << *fdecl_opt << "\n"; 
       for (auto &b : cfg) {
         auto inv = a.get_post (cfg, b.label ());
-        std::cout << get_label_str (b.label ()) << "=" << inv << "\n";
+        crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
       }
-      cout << "=================================\n";
+      crab::outs() << "=================================\n";
     }
     
     // Print summaries
-    for (auto &cfg : cfgs) {
+    for (auto cfg : cfgs) {
       if (a.has_summary (cfg)) {
         auto fdecl_opt = cfg.get_func_decl ();
         assert (fdecl_opt);
-        cout << "Summary for " << *fdecl_opt << ": "; 
+        crab::outs() << "Summary for " << *fdecl_opt << ": "; 
         auto sum = a.get_summary (cfg);
-        cout << sum << "\n";
+        crab::outs() << sum << "\n";
       }
     }
   }
 
+  delete t1;
+  delete t2;
+  delete t3;
+  delete t4;
+  delete t5;
 
   return 0;
 }

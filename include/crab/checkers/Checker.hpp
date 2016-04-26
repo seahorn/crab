@@ -9,13 +9,14 @@
 #include <crab/checkers/BaseProperty.hpp>
 #include <crab/analysis/FwdAnalyzer.hpp>
 #include <crab/analysis/InterFwdAnalyzer.hpp>
+#include <boost/noncopyable.hpp>
 
 namespace crab {
 
   namespace checker {
 
   template<typename Analyzer>
-  class Checker {
+  class Checker: public boost::noncopyable {
     /*
       The checker propagates the invariants that hold at the entry of
       each block (assume forward analysis) to each program point while

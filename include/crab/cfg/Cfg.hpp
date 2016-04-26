@@ -10,10 +10,17 @@
  * - C-like pointers and arrays
  * - functions 
  * 
- * Note: changes are needed to support floating point operations.
+ * Important note: objects of the class Cfg are not copyable. Instead,
+ * we provide a class Cfg_Ref that wraps Cfg references into copyable
+ * and assignable objects.
+ *
+ * Limitations: 
+ * - changes are needed to support floating point operations.
+ * 
  */
 
 #include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
 #include <boost/iterator/indirect_iterator.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/range/iterator_range.hpp>
@@ -27,6 +34,8 @@
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/domains/intervals.hpp>
 #include <crab/domains/discrete_domains.hpp>
+
+#include <functional> // for wrapper_reference
 
 namespace crab {
 
@@ -325,9 +334,9 @@ namespace crab {
       
       virtual boost::shared_ptr<Statement <VariableName> > clone () const
       {
-        typedef BinaryOp <Number, VariableName> BinaryOp_t;
-        return boost::static_pointer_cast< Statement <VariableName>, BinaryOp_t >
-            (boost::shared_ptr <BinaryOp_t> (new BinaryOp_t(m_lhs, m_op, m_op1, m_op2)));
+        typedef BinaryOp<Number, VariableName> BinaryOp_t;
+        return boost::static_pointer_cast<Statement <VariableName>, BinaryOp_t>
+            (boost::make_shared<BinaryOp_t>(m_lhs, m_op, m_op1, m_op2));
       }
       
       virtual void write (ostream& o) const
@@ -376,7 +385,7 @@ namespace crab {
       {
         typedef Assignment <Number, VariableName> Assignment_t;
         return boost::static_pointer_cast< Statement <VariableName>, Assignment_t >
-            (boost::shared_ptr <Assignment_t> (new Assignment_t(m_lhs, m_rhs)));
+            (boost::make_shared<Assignment_t>(m_lhs, m_rhs));
       }
       
       virtual void write(ostream& o) const
@@ -420,7 +429,7 @@ namespace crab {
       {
         typedef Assume <Number, VariableName> Assume_t;
         return boost::static_pointer_cast< Statement <VariableName>, Assume_t >
-            (boost::shared_ptr <Assume_t> (new Assume_t(m_cst)));
+            (boost::make_shared<Assume_t>(m_cst));
       }
       
       virtual void write (ostream & o) const
@@ -446,7 +455,7 @@ namespace crab {
       {
         typedef Unreachable <VariableName> Unreachable_t;
         return boost::static_pointer_cast< Statement <VariableName>, Unreachable_t >
-            (boost::shared_ptr <Unreachable_t> (new Unreachable_t()));
+            (boost::make_shared<Unreachable_t>());
       }
       
       virtual void write(ostream& o) const
@@ -481,7 +490,7 @@ namespace crab {
       {
         typedef Havoc <VariableName> Havoc_t;
         return boost::static_pointer_cast< Statement <VariableName>, Havoc_t >
-            (boost::shared_ptr <Havoc_t> (new Havoc_t(m_lhs)));
+            (boost::make_shared<Havoc_t>(m_lhs));
       }
       
       void write (ostream& o) const
@@ -550,7 +559,7 @@ namespace crab {
       {
         typedef Select <Number, VariableName> Select_t;
         return boost::static_pointer_cast< Statement <VariableName>, Select_t >
-            (boost::shared_ptr <Select_t> (new Select_t(m_lhs, m_cond, m_e1, m_e2)));
+            (boost::make_shared<Select_t>(m_lhs, m_cond, m_e1, m_e2));
       }
       
       virtual void write (ostream& o) const
@@ -595,7 +604,7 @@ namespace crab {
       {
         typedef Assert <Number, VariableName> Assert_t;
         return boost::static_pointer_cast< Statement <VariableName>, Assert_t >
-            (boost::shared_ptr <Assert_t> (new Assert_t(m_cst)));
+            (boost::make_shared<Assert_t>(m_cst));
       }
       
       virtual void write (ostream & o) const
@@ -633,7 +642,7 @@ namespace crab {
       {
         typedef ArrayInit <VariableName> ArrayInit_t;
         return boost::static_pointer_cast< Statement <VariableName>, ArrayInit_t >
-            (boost::shared_ptr <ArrayInit_t> (new ArrayInit_t(m_arr, m_values)));
+            (boost::make_shared<ArrayInit_t>(m_arr, m_values));
       }
       
       void write (ostream& o) const
@@ -683,7 +692,7 @@ namespace crab {
       {
         typedef AssumeArray <Number, VariableName> AssumeArray_t;
         return boost::static_pointer_cast< Statement <VariableName>, AssumeArray_t >
-            (boost::shared_ptr <AssumeArray_t> (new AssumeArray_t(m_arr, m_val)));
+            (boost::make_shared<AssumeArray_t>(m_arr, m_val));
       }
       
       void write (ostream& o) const
@@ -751,10 +760,9 @@ namespace crab {
       {
         typedef ArrayStore <Number, VariableName> array_store_t;
         return boost::static_pointer_cast< Statement <VariableName>, array_store_t>
-            (boost::shared_ptr <array_store_t> (new array_store_t (m_arr, m_index,
-                                                                   m_value, m_bytes, 
-                                                                   m_is_singleton)));
-      }
+            (boost::make_shared<array_store_t>(m_arr, m_index,
+                                               m_value, m_bytes, m_is_singleton));
+    }
       
       virtual void write(ostream& o) const
       {
@@ -810,8 +818,8 @@ namespace crab {
       {
         typedef ArrayLoad <Number, VariableName> array_load_t;
         return boost::static_pointer_cast< Statement <VariableName>, array_load_t>
-            (boost::shared_ptr <array_load_t> (new array_load_t (m_lhs, m_array, 
-                                                                 m_index, m_bytes)));
+            (boost::make_shared<array_load_t>(m_lhs, m_array, m_index, m_bytes));
+                                              
       }
       
       virtual void write(ostream& o) const
@@ -866,7 +874,7 @@ namespace crab {
       {
         typedef PtrLoad <Number,VariableName> ptr_load_t;
         return boost::static_pointer_cast< Statement <VariableName>, ptr_load_t >
-            (boost::shared_ptr <ptr_load_t> (new ptr_load_t (m_lhs, m_rhs, m_size)));
+            (boost::make_shared<ptr_load_t>(m_lhs, m_rhs, m_size));
       }
       
       virtual void write(ostream& o) const
@@ -921,7 +929,7 @@ namespace crab {
       {
         typedef PtrStore <Number,VariableName> ptr_store_t;
         return boost::static_pointer_cast< Statement <VariableName>, ptr_store_t >
-            (boost::shared_ptr <ptr_store_t> (new ptr_store_t (m_lhs, m_rhs, m_size)));
+            (boost::make_shared<ptr_store_t>(m_lhs, m_rhs, m_size));
       }
       
       virtual void write(ostream& o) const
@@ -974,7 +982,7 @@ namespace crab {
       {
         typedef PtrAssign <Number, VariableName> ptr_assign_t;
         return boost::static_pointer_cast< Statement <VariableName>, ptr_assign_t >
-            (boost::shared_ptr <ptr_assign_t> (new ptr_assign_t (m_lhs, m_rhs, m_offset)));
+            (boost::make_shared<ptr_assign_t>(m_lhs, m_rhs, m_offset));
       }
       
       virtual void write(ostream& o) const
@@ -1015,7 +1023,7 @@ namespace crab {
       {
         typedef PtrObject <VariableName> ptr_object_t;
         return boost::static_pointer_cast< Statement <VariableName>, ptr_object_t>
-            (boost::shared_ptr <ptr_object_t> (new ptr_object_t (m_lhs, m_address)));
+            (boost::make_shared<ptr_object_t>(m_lhs, m_address));
       }
       
       virtual void write(ostream& o) const
@@ -1054,7 +1062,7 @@ namespace crab {
       {
         typedef PtrFunction <VariableName> ptr_function_t;
         return boost::static_pointer_cast< Statement <VariableName>, ptr_function_t>
-            (boost::shared_ptr <ptr_function_t> (new ptr_function_t ( lhs (), rhs ())));
+            (boost::make_shared<ptr_function_t>(lhs (), rhs ()));
       }
       
       virtual void write(ostream& o) const
@@ -1089,7 +1097,7 @@ namespace crab {
       {
         typedef PtrNull <VariableName> ptr_null_t;
         return boost::static_pointer_cast< Statement <VariableName>, ptr_null_t>
-            (boost::shared_ptr <ptr_null_t> (new ptr_null_t (m_lhs)));
+            (boost::make_shared<ptr_null_t>(m_lhs));
       }
       
       virtual void write(ostream& o) const
@@ -1137,7 +1145,7 @@ namespace crab {
       {
         typedef PtrAssume <VariableName> ptr_assume_t;
         return boost::static_pointer_cast< Statement <VariableName>, ptr_assume_t>
-            (boost::shared_ptr <ptr_assume_t> (new ptr_assume_t (m_cst)));
+            (boost::make_shared<ptr_assume_t>(m_cst));
       }
       
       virtual void write(ostream& o) const
@@ -1185,7 +1193,7 @@ namespace crab {
       {
         typedef PtrAssert <VariableName> ptr_assert_t;
         return boost::static_pointer_cast< Statement <VariableName>, ptr_assert_t>
-            (boost::shared_ptr <ptr_assert_t> (new ptr_assert_t (m_cst)));
+            (boost::make_shared<ptr_assert_t>(m_cst));
       }
       
       virtual void write(ostream& o) const
@@ -1298,14 +1306,12 @@ namespace crab {
         if (m_lhs) {
           return boost::static_pointer_cast< Statement <VariableName>, 
                                              call_site_t>
-              (boost::shared_ptr <call_site_t> (
-                  new call_site_t (*m_lhs, m_func_name, m_args)));
+              (boost::make_shared<call_site_t> (*m_lhs, m_func_name, m_args));
         }
         else {
           return boost::static_pointer_cast< Statement <VariableName>, 
                                              call_site_t>
-              (boost::shared_ptr <call_site_t> (
-                  new call_site_t (m_func_name, m_args)));
+              (boost::make_shared<call_site_t>(m_func_name, m_args));
         }
       }
 
@@ -1362,7 +1368,7 @@ namespace crab {
       {
         typedef Return <VariableName> return_t;
         return boost::static_pointer_cast< Statement <VariableName>, return_t>
-            (boost::shared_ptr <return_t> (new return_t (m_var, m_type)));
+            (boost::make_shared<return_t>(m_var, m_type));
       }
       
       virtual void write(ostream& o) const
@@ -1495,10 +1501,10 @@ namespace crab {
           m_live (live_domain_t::bottom ())
       { }
       
-      static boost::shared_ptr< basic_block_t > Create (BasicBlockLabel bb_id, 
-                                                        TrackedPrecision track_prec) 
+      static boost::shared_ptr< basic_block_t > 
+      Create (BasicBlockLabel bb_id, TrackedPrecision track_prec) 
       {
-        return boost::shared_ptr< basic_block_t > (new basic_block_t (bb_id, track_prec));
+        return boost::shared_ptr<basic_block_t>(new basic_block_t(bb_id, track_prec));
       }
       
       void insert(statement_ptr stmt) 
@@ -1525,10 +1531,9 @@ namespace crab {
         m_insert_point_at_front = true;
       }
       
-      boost::shared_ptr <basic_block_t> clone () const
+      boost::shared_ptr<basic_block_t> clone () const
       {
-        boost::shared_ptr <basic_block_t> b (new basic_block_t (label (), 
-                                                                m_track_prec));
+        boost::shared_ptr<basic_block_t> b (new basic_block_t(label (), m_track_prec));
         
         for (auto &s : boost::make_iterator_range (begin (), end ()))
           b->m_stmts.push_back (s.clone ()); 
@@ -1604,7 +1609,9 @@ namespace crab {
       { 
         return make_pair (m_prev.begin (), m_prev.end ());
       }
-      
+
+      // FIXME: just create a view rather than actually reverse the
+      //        block
       void reverse()
       {
         std::swap (m_prev, m_next);
@@ -1667,13 +1674,13 @@ namespace crab {
       void add (z_variable_t lhs, z_variable_t op1, z_variable_t op2) 
       {
         insert(boost::static_pointer_cast< statement_t, z_bin_op_t >
-               (z_bin_op_ptr(new z_bin_op_t(lhs, BINOP_ADD, op1, op2))));
+               (boost::make_shared<z_bin_op_t>(lhs, BINOP_ADD, op1, op2)));
       }
       
       void add (z_variable_t lhs, z_variable_t op1, z_number op2) 
       {
         insert(boost::static_pointer_cast< statement_t, z_bin_op_t > 
-               (z_bin_op_ptr(new z_bin_op_t(lhs, BINOP_ADD, op1,  op2))));
+               (boost::make_shared<z_bin_op_t>(lhs, BINOP_ADD, op1,  op2)));
       }
       
       void add (z_variable_t lhs, z_lin_exp_t op1, z_lin_exp_t op2) 
@@ -1691,7 +1698,7 @@ namespace crab {
         {
           z_lin_exp_t rhs(z_number(op1.constant () + op2.constant ()));
           insert(boost::static_pointer_cast< statement_t, z_assign_t >
-                 (z_assign_ptr (new z_assign_t (lhs, rhs))));
+                 (boost::make_shared<z_assign_t>(lhs, rhs)));
         }
         else
           CRAB_ERROR("add operands unexpected");
@@ -1700,13 +1707,13 @@ namespace crab {
       void sub (z_variable_t lhs, z_variable_t op1, z_variable_t op2) 
       {
         insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
-                (z_bin_op_ptr (new z_bin_op_t (lhs, BINOP_SUB, op1, op2))));
+                (boost::make_shared<z_bin_op_t>(lhs, BINOP_SUB, op1, op2)));
       }
       
       void sub (z_variable_t lhs, z_variable_t op1, z_number op2) 
       {
         insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
-                (z_bin_op_ptr (new z_bin_op_t (lhs, BINOP_SUB, op1, op2))));
+                (boost::make_shared<z_bin_op_t>(lhs, BINOP_SUB, op1, op2)));
       }
       
       void sub (z_variable_t lhs, z_lin_exp_t op1, z_lin_exp_t op2) 
@@ -1721,7 +1728,7 @@ namespace crab {
         {
           z_lin_exp_t rhs (z_number (op1.constant () - op2.constant ()));
           insert (boost::static_pointer_cast< statement_t, z_assign_t >
-                  (z_assign_ptr(new z_assign_t (lhs, rhs))));
+                  (boost::make_shared<z_assign_t>(lhs, rhs)));
         }
         else
           CRAB_ERROR("sub operands unexpected");
@@ -1730,13 +1737,13 @@ namespace crab {
       void mul (z_variable_t lhs, z_variable_t op1, z_variable_t op2) 
       {
         insert(boost::static_pointer_cast< statement_t, z_bin_op_t >
-               (z_bin_op_ptr(new z_bin_op_t (lhs, BINOP_MUL, op1, op2))));
+               (boost::make_shared<z_bin_op_t>(lhs, BINOP_MUL, op1, op2)));
       }
       
       void mul (z_variable_t lhs, z_variable_t op1, z_number op2) 
       {
         insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
-                (z_bin_op_ptr(new z_bin_op_t (lhs, BINOP_MUL, op1, op2))));
+                (boost::make_shared<z_bin_op_t>(lhs, BINOP_MUL, op1, op2)));
       }
       
       void mul(z_variable_t lhs, z_lin_exp_t op1, z_lin_exp_t op2) 
@@ -1754,7 +1761,7 @@ namespace crab {
         {
           z_lin_exp_t rhs(z_number(op1.constant () * op2.constant ()));
           insert(boost::static_pointer_cast< statement_t, z_assign_t >
-                 (z_assign_ptr(new z_assign_t (lhs, rhs))));
+                 (boost::make_shared<z_assign_t>(lhs, rhs)));
         }
         else
           CRAB_ERROR("mul operands unexpected");
@@ -1764,13 +1771,13 @@ namespace crab {
       void div (z_variable_t lhs, z_variable_t op1, z_variable_t op2) 
       {
         insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
-                (z_bin_op_ptr (new z_bin_op_t (lhs, BINOP_SDIV, op1, op2))));
+                (boost::make_shared<z_bin_op_t>(lhs, BINOP_SDIV, op1, op2)));
       }
       
       void div (z_variable_t lhs, z_variable_t op1, z_number op2) 
       {
         insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
-                (z_bin_op_ptr (new z_bin_op_t (lhs, BINOP_SDIV, op1, op2))));
+                (boost::make_shared<z_bin_op_t>(lhs, BINOP_SDIV, op1, op2)));
       }
       
       void div (z_variable_t lhs, z_lin_exp_t op1, z_lin_exp_t op2) 
@@ -1785,7 +1792,7 @@ namespace crab {
         {
           z_lin_exp_t rhs (z_number (op1.constant() / op2.constant()));
           insert (boost::static_pointer_cast< statement_t, z_assign_t >
-                  (z_assign_ptr (new z_assign_t (lhs, rhs))));
+                  (boost::make_shared<z_assign_t>(lhs, rhs)));
         }
         else
           CRAB_ERROR("div operands unexpected");
@@ -1795,13 +1802,13 @@ namespace crab {
       void udiv (z_variable_t lhs, z_variable_t op1, z_variable_t op2) 
       {
         insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
-                (z_bin_op_ptr (new z_bin_op_t (lhs, BINOP_UDIV, op1, op2))));
+                (boost::make_shared<z_bin_op_t>(lhs, BINOP_UDIV, op1, op2)));
       }
       
       void udiv (z_variable_t lhs, z_variable_t op1, z_number op2) 
       {
         insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
-                (z_bin_op_ptr (new z_bin_op_t (lhs, BINOP_UDIV, op1, op2))));
+                (boost::make_shared<z_bin_op_t>(lhs, BINOP_UDIV, op1, op2)));
       }
       
       void udiv (z_variable_t lhs, z_lin_exp_t op1, z_lin_exp_t op2) 
@@ -1820,13 +1827,13 @@ namespace crab {
       void rem (z_variable_t lhs, z_variable_t op1, z_variable_t op2) 
       {
         insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
-                (z_bin_op_ptr (new z_bin_op_t (lhs, BINOP_SREM, op1, op2))));
+                (boost::make_shared<z_bin_op_t>(lhs, BINOP_SREM, op1, op2)));
       }
       
       void rem (z_variable_t lhs, z_variable_t op1, z_number op2) 
       {
         insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
-                (z_bin_op_ptr (new z_bin_op_t (lhs, BINOP_SREM, op1, op2))));
+                (boost::make_shared<z_bin_op_t>(lhs, BINOP_SREM, op1, op2)));
       }
       
       void rem (z_variable_t lhs, z_lin_exp_t op1, z_lin_exp_t op2) 
@@ -1841,7 +1848,7 @@ namespace crab {
         {
           z_lin_exp_t rhs (z_number (op1.constant() % op2.constant()));
           insert (boost::static_pointer_cast< statement_t, z_assign_t >
-                  (z_assign_ptr (new z_assign_t (lhs, rhs))));
+                  (boost::make_shared<z_assign_t> (lhs, rhs)));
         }
         else
           CRAB_ERROR("rem operands unexpected");
@@ -1851,13 +1858,13 @@ namespace crab {
       void urem (z_variable_t lhs, z_variable_t op1, z_variable_t op2) 
       {
         insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
-                (z_bin_op_ptr (new z_bin_op_t (lhs, BINOP_UREM, op1, op2))));
+                (boost::make_shared<z_bin_op_t>(lhs, BINOP_UREM, op1, op2)));
       }
       
       void urem (z_variable_t lhs, z_variable_t op1, z_number op2) 
       {
         insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
-                (z_bin_op_ptr (new z_bin_op_t (lhs, BINOP_UREM, op1, op2))));
+                (boost::make_shared<z_bin_op_t>(lhs, BINOP_UREM, op1, op2)));
       }
       
       void urem (z_variable_t lhs, z_lin_exp_t op1, z_lin_exp_t op2) 
@@ -1876,13 +1883,13 @@ namespace crab {
       void bitwise_and (z_variable_t lhs, z_variable_t op1, z_variable_t op2) 
       {
         insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
-                (z_bin_op_ptr (new z_bin_op_t (lhs, BINOP_AND, op1, op2))));
+                (boost::make_shared<z_bin_op_t>(lhs, BINOP_AND, op1, op2)));
       }
       
       void bitwise_and (z_variable_t lhs, z_variable_t op1, z_number op2) 
       {
         insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
-                (z_bin_op_ptr (new z_bin_op_t (lhs, BINOP_AND, op1, op2))));
+                (boost::make_shared<z_bin_op_t> (lhs, BINOP_AND, op1, op2)));
       }
       
       void bitwise_and (z_variable_t lhs, z_lin_exp_t op1, z_lin_exp_t op2) 
@@ -1900,7 +1907,7 @@ namespace crab {
         {
           z_lin_exp_t rhs (z_number (op1.constant () & op2.constant ()));
           insert (boost::static_pointer_cast< statement_t, z_assign_t >
-                  (z_assign_ptr(new z_assign_t (lhs, rhs))));
+                  (boost::make_shared<z_assign_t>(lhs, rhs)));
         }
         else
           CRAB_ERROR("and operands unexpected");
@@ -1909,13 +1916,13 @@ namespace crab {
       void bitwise_or (z_variable_t lhs, z_variable_t op1, z_variable_t op2) 
       {
         insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
-                (z_bin_op_ptr (new z_bin_op_t (lhs, BINOP_OR, op1, op2))));
+                (boost::make_shared<z_bin_op_t> (lhs, BINOP_OR, op1, op2)));
       }
       
       void bitwise_or (z_variable_t lhs, z_variable_t op1, z_number op2) 
       {
         insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
-                (z_bin_op_ptr (new z_bin_op_t (lhs, BINOP_OR, op1, op2))));
+                (boost::make_shared<z_bin_op_t>(lhs, BINOP_OR, op1, op2)));
       }
       
       void bitwise_or (z_variable_t lhs, z_lin_exp_t op1, z_lin_exp_t op2) 
@@ -1933,7 +1940,7 @@ namespace crab {
         {
           z_lin_exp_t rhs (z_number (op1.constant () | op2.constant ()));
           insert (boost::static_pointer_cast< statement_t, z_assign_t >
-                  (z_assign_ptr(new z_assign_t (lhs, rhs))));
+                  (boost::make_shared<z_assign_t>(lhs, rhs)));
         }
         else
           CRAB_ERROR("or operands unexpected");
@@ -1942,13 +1949,13 @@ namespace crab {
       void bitwise_xor (z_variable_t lhs, z_variable_t op1, z_variable_t op2) 
       {
         insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
-                (z_bin_op_ptr (new z_bin_op_t (lhs, BINOP_XOR, op1, op2))));
+                (boost::make_shared<z_bin_op_t>(lhs, BINOP_XOR, op1, op2)));
       }
       
       void bitwise_xor (z_variable_t lhs, z_variable_t op1, z_number op2) 
       {
         insert (boost::static_pointer_cast< statement_t, z_bin_op_t >
-                (z_bin_op_ptr (new z_bin_op_t (lhs, BINOP_XOR, op1, op2))));
+                (boost::make_shared<z_bin_op_t>(lhs, BINOP_XOR, op1, op2)));
       }
       
       void bitwise_xor (z_variable_t lhs, z_lin_exp_t op1, z_lin_exp_t op2) 
@@ -1966,7 +1973,7 @@ namespace crab {
         {
           z_lin_exp_t rhs (z_number (op1.constant () ^ op2.constant ()));
           insert (boost::static_pointer_cast< statement_t, z_assign_t >
-                  (z_assign_ptr(new z_assign_t (lhs, rhs))));
+                  (boost::make_shared<z_assign_t> (lhs, rhs)));
         }
         else
           CRAB_ERROR("xor operands unexpected");
@@ -1975,63 +1982,63 @@ namespace crab {
       void assign (z_variable_t lhs, z_lin_exp_t rhs) 
       {
         insert (boost::static_pointer_cast< statement_t, z_assign_t >
-                (z_assign_ptr (new z_assign_t (lhs, rhs))));
+                (boost::make_shared<z_assign_t> (lhs, rhs)));
       }
       
       void assume (z_lin_cst_t cst) 
       {
         insert (boost::static_pointer_cast< statement_t, z_assume_t >
-                (z_assume_ptr (new z_assume_t (cst))));
+                (boost::make_shared<z_assume_t> (cst)));
       }
       
       void havoc(VariableName lhs) 
       {
         insert (boost::static_pointer_cast< statement_t, havoc_t > 
-                (havoc_ptr (new havoc_t (lhs))));
+                (boost::make_shared<havoc_t> (lhs)));
       }
       
       void unreachable() 
       {
         insert (boost::static_pointer_cast< statement_t, unreach_t > 
-                (unreach_ptr (new unreach_t ())));
+                (boost::make_shared<unreach_t> ()));
       }
       
       void select (z_variable_t lhs, z_variable_t v, z_lin_exp_t e1, z_lin_exp_t e2) 
       {
         z_lin_cst_t cond = (v >= z_number(1));
         insert(boost::static_pointer_cast< statement_t, z_select_t >
-               (z_select_ptr(new z_select_t (lhs, cond, e1, e2))));
+               (boost::make_shared<z_select_t>(lhs, cond, e1, e2)));
       }
       
       void select (z_variable_t lhs, z_lin_cst_t cond, z_lin_exp_t e1, z_lin_exp_t e2) 
       {
         insert(boost::static_pointer_cast< statement_t, z_select_t >
-               (z_select_ptr(new z_select_t (lhs, cond, e1, e2))));
+               (boost::make_shared<z_select_t>(lhs, cond, e1, e2)));
       }
 
       void assertion (z_lin_cst_t cst) 
       {
         insert (boost::static_pointer_cast< statement_t, z_assert_t >
-                (z_assert_ptr (new z_assert_t (cst))));
+                (boost::make_shared<z_assert_t> (cst)));
       }
 
       void assertion (z_lin_cst_t cst, DebugInfo di) 
       {
         insert (boost::static_pointer_cast< statement_t, z_assert_t >
-                (z_assert_ptr (new z_assert_t (cst, di))));
+                (boost::make_shared<z_assert_t> (cst, di)));
       }
       
       void callsite (VariableName func, 
                      vector<pair <VariableName,VariableType> > args) 
       {
         insert(boost::static_pointer_cast< statement_t, callsite_t >
-               (callsite_ptr (new callsite_t(func, args))));
+               (boost::make_shared<callsite_t>(func, args)));
       }
       
       void callsite (VariableName func, vector<VariableName> args) 
       {
         insert(boost::static_pointer_cast< statement_t, callsite_t >
-               (callsite_ptr (new callsite_t(func, args))));
+               (boost::make_shared<callsite_t>(func, args)));
       }
       
       void callsite (pair<VariableName,VariableType> lhs, 
@@ -2039,41 +2046,41 @@ namespace crab {
                      vector<pair <VariableName,VariableType> > args) 
       {
         insert(boost::static_pointer_cast< statement_t, callsite_t >
-               (callsite_ptr (new callsite_t(lhs, func, args))));
+               (boost::make_shared<callsite_t>(lhs, func, args)));
       }
       
       void callsite (VariableName lhs, VariableName func, vector<VariableName> args) 
       {
         insert(boost::static_pointer_cast< statement_t, callsite_t >
-               (callsite_ptr (new callsite_t(lhs, func, args))));
+               (boost::make_shared<callsite_t>(lhs, func, args)));
       }
       
       void ret (VariableName var, VariableType ty) 
       {
         insert(boost::static_pointer_cast< statement_t, return_t >
-               (return_ptr (new return_t(var, ty))));
+               (boost::make_shared<return_t>(var, ty)));
       }
       
       void ret (VariableName var) 
       {
         insert(boost::static_pointer_cast< statement_t, return_t >
-               (return_ptr (new return_t(var))));
+               (boost::make_shared<return_t>(var)));
       }
       
       void array_init (VariableName a, 
                        const vector<ikos::z_number>& vals) {
         insert (boost::static_pointer_cast< statement_t, z_arr_init_t > 
-                (z_arr_init_ptr (new z_arr_init_t (a, vals))));
+                (boost::make_shared<z_arr_init_t> (a, vals)));
       }
       
       void assume_array (VariableName a, z_interval val) {
         insert (boost::static_pointer_cast< statement_t, z_assume_arr_t > 
-                (z_assume_arr_ptr (new z_assume_arr_t (a, val))));
+                (boost::make_shared<z_assume_arr_t> (a, val)));
       }
       
       void assume_array (VariableName a, ikos::z_number val) {
         insert (boost::static_pointer_cast< statement_t, z_assume_arr_t > 
-                (z_assume_arr_ptr (new z_assume_arr_t (a, val))));
+                (boost::make_shared<z_assume_arr_t> (a, val)));
       }
       
       void array_store (z_variable_t arr, z_lin_exp_t idx, 
@@ -2082,9 +2089,7 @@ namespace crab {
       {
         if (m_track_prec == ARR)
           insert(boost::static_pointer_cast< statement_t, z_arr_store_t >
-                 (z_arr_store_ptr (new z_arr_store_t(arr, idx, 
-                                                     val, n_bytes,
-                                                     is_singleton))));
+                 (boost::make_shared<z_arr_store_t>(arr, idx, val, n_bytes, is_singleton)));
       }
       
       void array_load (z_variable_t lhs, z_variable_t arr, 
@@ -2092,71 +2097,70 @@ namespace crab {
       {
         if (m_track_prec == ARR)
           insert(boost::static_pointer_cast< statement_t, z_arr_load_t >
-                 (z_arr_load_ptr (new z_arr_load_t(lhs, arr, 
-                                                   idx, n_bytes))));
+                 (boost::make_shared<z_arr_load_t>(lhs, arr, idx, n_bytes)));
       }
       
       void ptr_store (VariableName lhs, VariableName rhs, z_interval size) 
       {
         if (m_track_prec >= PTR)
           insert(boost::static_pointer_cast< statement_t, ptr_store_t >
-                 (ptr_store_ptr (new ptr_store_t (lhs, rhs, size))));
+                 (boost::make_shared<ptr_store_t> (lhs, rhs, size)));
       }
       
       void ptr_load (VariableName lhs, VariableName rhs, z_interval size) 
       {
         if (m_track_prec >= PTR)
           insert(boost::static_pointer_cast< statement_t, ptr_load_t >
-                 (ptr_load_ptr (new ptr_load_t (lhs, rhs, size))));
+                 (boost::make_shared<ptr_load_t> (lhs, rhs, size)));
       }
       
       void ptr_assign (VariableName lhs, VariableName rhs, z_lin_exp_t offset) 
       {
         if (m_track_prec >= PTR)
           insert(boost::static_pointer_cast< statement_t, ptr_assign_t >
-                 (ptr_assign_ptr (new ptr_assign_t (lhs, rhs, offset))));
+                 (boost::make_shared<ptr_assign_t> (lhs, rhs, offset)));
       }
       
       void new_object (VariableName lhs, index_t address) 
       {
         if (m_track_prec >= PTR)
           insert(boost::static_pointer_cast< statement_t, ptr_object_t >
-                 (ptr_object_ptr (new ptr_object_t (lhs, address))));
+                 (boost::make_shared<ptr_object_t> (lhs, address)));
       }
       
       void new_ptr_func (VariableName lhs, index_t func) 
       {
         if (m_track_prec >= PTR)
           insert(boost::static_pointer_cast< statement_t, ptr_function_t >
-                 (ptr_function_ptr (new ptr_function_t (lhs, func))));
+                 (boost::make_shared<ptr_function_t> (lhs, func)));
       }
 
       void ptr_null (VariableName lhs) 
       {
         if (m_track_prec >= PTR)
           insert(boost::static_pointer_cast< statement_t, ptr_null_t >
-                 (ptr_null_ptr (new ptr_null_t (lhs))));
+                 (boost::make_shared<ptr_null_t> (lhs)));
       }
 
       void ptr_assume (pointer_constraint<VariableName> cst) 
       {
         if (m_track_prec >= PTR)
           insert(boost::static_pointer_cast< statement_t, ptr_assume_t >
-                 (ptr_assume_ptr (new ptr_assume_t (cst))));
+                 (boost::make_shared<ptr_assume_t> (cst)));
       }
 
       void ptr_assertion (pointer_constraint<VariableName> cst) 
       {
         if (m_track_prec >= PTR)
           insert(boost::static_pointer_cast< statement_t, ptr_assert_t >
-                 (ptr_assert_ptr (new ptr_assert_t (cst))));
+                 (boost::make_shared<ptr_assert_t> (cst)));
       }
 
       void ptr_assertion (pointer_constraint<VariableName> cst, DebugInfo di) 
       {
         if (m_track_prec >= PTR)
           insert(boost::static_pointer_cast< statement_t, ptr_assert_t >
-                 (ptr_assert_ptr (new ptr_assert_t (cst, di))));
+                 (boost::make_shared<ptr_assert_t> (cst, di)));
       }
       
       friend ostream& operator<<(ostream &o, const basic_block_t &b)
@@ -2296,9 +2300,7 @@ namespace crab {
     }; 
 
     template< class BasicBlockLabel, class VariableName >
-    class Cfg
-    {
-
+    class Cfg: public boost::noncopyable {
      public:
 
       typedef BasicBlockLabel basic_block_label_t;
@@ -2311,17 +2313,20 @@ namespace crab {
 
       typedef typename basic_block_t::succ_iterator succ_iterator;
       typedef typename basic_block_t::pred_iterator pred_iterator;
+      typedef typename basic_block_t::const_succ_iterator const_succ_iterator;
+      typedef typename basic_block_t::const_pred_iterator const_pred_iterator;
       
       typedef boost::iterator_range <succ_iterator> succ_range;
       typedef boost::iterator_range <pred_iterator> pred_range;
+      typedef boost::iterator_range <const_succ_iterator> const_succ_range;
+      typedef boost::iterator_range <const_pred_iterator> const_pred_range;
       
      private:
       
       typedef Cfg < BasicBlockLabel, VariableName > cfg_t;
       typedef boost::shared_ptr< basic_block_t > basic_block_ptr;
-      typedef boost::unordered_map< BasicBlockLabel, basic_block_ptr > basic_block_map;
-      typedef typename basic_block_map::value_type binding_t;
-      typedef boost::shared_ptr< basic_block_map > basic_block_map_ptr;
+      typedef boost::unordered_map< BasicBlockLabel, basic_block_ptr > basic_block_map_t;
+      typedef typename basic_block_map_t::value_type binding_t;
       typedef typename basic_block_t::live_domain_t live_domain_t;
 
       struct getRef : public std::unary_function<binding_t, basic_block_t>
@@ -2339,16 +2344,15 @@ namespace crab {
      public:
       
       typedef boost::transform_iterator< getRef, 
-                                         typename basic_block_map::iterator > iterator;
+                                         typename basic_block_map_t::iterator > iterator;
       typedef boost::transform_iterator< getRef, 
-                                         typename basic_block_map::const_iterator > const_iterator;
+                                         typename basic_block_map_t::const_iterator > const_iterator;
       typedef boost::transform_iterator< getLabel, 
-                                         typename basic_block_map::iterator > label_iterator;
+                                         typename basic_block_map_t::iterator > label_iterator;
       typedef boost::transform_iterator< getLabel, 
-                                         typename basic_block_map::const_iterator > const_label_iterator;
+                                         typename basic_block_map_t::const_iterator > const_label_iterator;
 
       typedef typename std::vector<varname_t>::iterator var_iterator;
-
       typedef typename std::vector<varname_t>::const_iterator const_var_iterator;
 
      private:
@@ -2356,7 +2360,7 @@ namespace crab {
       BasicBlockLabel m_entry;
       BasicBlockLabel m_exit;
       bool m_has_exit;
-      basic_block_map_ptr m_blocks;
+      basic_block_map_t m_blocks;
       TrackedPrecision m_track_prec;
       //! we allow to define a cfg without being associated with a
       //! function
@@ -2394,60 +2398,52 @@ namespace crab {
      public:
       
       // --- needed by crab::cg::CallGraph<CFG>::CgNode
-      Cfg (): m_blocks (basic_block_map_ptr (new basic_block_map)) { }
+      Cfg () { }
       
       Cfg (BasicBlockLabel entry, 
-           TrackedPrecision track_prec = INT):  
-          m_entry  (entry), 
-          m_has_exit (false),
-          m_blocks (basic_block_map_ptr (new basic_block_map)),
-          m_track_prec (track_prec) {
-        m_blocks->insert (binding_t (m_entry, 
+           TrackedPrecision track_prec = INT)
+          : m_entry  (entry),  
+            m_has_exit (false),
+            m_track_prec (track_prec) {
+        m_blocks.insert (binding_t (m_entry, 
                                      basic_block_t::Create (m_entry, m_track_prec)));
       }
       
       Cfg (BasicBlockLabel entry, 
            BasicBlockLabel exit, 
-           TrackedPrecision track_prec = INT):  
-          m_entry  (entry), 
-          m_exit   (exit), 
-          m_has_exit (true),
-          m_blocks (basic_block_map_ptr (new basic_block_map)),
-          m_track_prec (track_prec) {
-        m_blocks->insert (binding_t (m_entry, 
-                                     basic_block_t::Create (m_entry, m_track_prec)));
+           TrackedPrecision track_prec = INT)
+          : m_entry  (entry), 
+            m_exit   (exit), 
+            m_has_exit (true),
+            m_track_prec (track_prec) {
+        m_blocks.insert (binding_t (m_entry, 
+                                    basic_block_t::Create (m_entry, m_track_prec)));
       }
       
       Cfg (BasicBlockLabel entry, 
            BasicBlockLabel exit, 
            fdecl_t func_decl, 
-           TrackedPrecision track_prec = INT):  
-          m_entry (entry), 
-          m_exit (exit), 
-          m_has_exit (true),
-          m_blocks (basic_block_map_ptr (new basic_block_map)),
-          m_track_prec (track_prec),
-          m_func_decl (boost::optional<fdecl_t> (func_decl)) {
-        m_blocks->insert (binding_t (m_entry, 
-                                     basic_block_t::Create (m_entry, m_track_prec)));
+           TrackedPrecision track_prec = INT)
+          : m_entry (entry), 
+            m_exit (exit), 
+            m_has_exit (true),
+            m_track_prec (track_prec),
+            m_func_decl (boost::optional<fdecl_t> (func_decl)) {
+        m_blocks.insert (binding_t (m_entry, 
+                                    basic_block_t::Create (m_entry, m_track_prec)));
       }
       
-      //! copy constructor will make shallow copies so use this method
-      //! for deep copies.
-      cfg_t clone () const
+      boost::shared_ptr<cfg_t> clone () const
       {
-        cfg_t cfg;
-        
-        cfg.m_entry = m_entry ;
-        cfg.m_has_exit = m_has_exit ;
-        if (cfg.m_has_exit)
-          cfg.m_exit = m_exit ;
-        cfg.m_track_prec = m_track_prec;
-        cfg.m_func_decl = m_func_decl;
+        boost::shared_ptr<cfg_t> cfg (new cfg_t (m_entry, m_track_prec));
+        cfg->m_has_exit = m_has_exit ;
+        if (cfg->m_has_exit)
+          cfg->m_exit = m_exit ;
+        cfg->m_func_decl = m_func_decl;
         for (auto const &BB: boost::make_iterator_range (begin (), end ()))
         {
           boost::shared_ptr <basic_block_t> copyBB = BB.clone ();
-          cfg.m_blocks->insert (binding_t (copyBB->label (), copyBB));
+          cfg->m_blocks.insert (binding_t (copyBB->label (), copyBB));
         }
         return cfg;
       }
@@ -2460,7 +2456,6 @@ namespace crab {
         return m_track_prec;
       }
       
-      BasicBlockLabel entry() const { return m_entry; } 
       
       bool has_exit () const { return m_has_exit; }
       
@@ -2482,28 +2477,62 @@ namespace crab {
       void set_func_decl (fdecl_t decl) { 
         m_func_decl  = boost::optional<fdecl_t> (decl);
       }
+
+      // --- Begin ikos fixpoint API
+
+      BasicBlockLabel entry() const { return m_entry; } 
+
+      const_succ_range next_nodes (BasicBlockLabel bb_id) const
+      {
+        const basic_block_t& b = get_node(bb_id);
+        return boost::make_iterator_range (b.next_blocks ());
+      }
       
-      //! required by ikos fixpoint
+      const_pred_range prev_nodes (BasicBlockLabel bb_id) const
+      {
+        const basic_block_t& b = get_node(bb_id);
+        return boost::make_iterator_range (b.prev_blocks ());
+      }
+      
       succ_range next_nodes (BasicBlockLabel bb_id) 
       {
         basic_block_t& b = get_node(bb_id);
         return boost::make_iterator_range (b.next_blocks ());
       }
       
-      //! required by ikos fixpoint
       pred_range prev_nodes (BasicBlockLabel bb_id) 
       {
         basic_block_t& b = get_node(bb_id);
         return boost::make_iterator_range (b.prev_blocks ());
       }
+
+      basic_block_t& get_node (BasicBlockLabel bb_id) 
+      {
+        auto it = m_blocks.find (bb_id);
+        if (it == m_blocks.end ())
+          CRAB_ERROR ("Basic block not found in the CFG");
+        
+        return *(it->second);
+      }
       
+      const basic_block_t& get_node (BasicBlockLabel bb_id) const
+      {
+        auto it = m_blocks.find (bb_id);
+        if (it == m_blocks.end ())
+          CRAB_ERROR ("Basic block not found in the CFG");
+        
+        return *(it->second);
+      }
+
+      // --- End ikos fixpoint API
+
       basic_block_t& insert (BasicBlockLabel bb_id) 
       {
-        auto it = m_blocks->find (bb_id);
-        if (it != m_blocks->end ()) return *(it->second);
+        auto it = m_blocks.find (bb_id);
+        if (it != m_blocks.end ()) return *(it->second);
         
         basic_block_ptr block = basic_block_t::Create (bb_id, m_track_prec);
-        m_blocks->insert (binding_t (bb_id, block));
+        m_blocks.insert (binding_t (bb_id, block));
         return *block;
       }
       
@@ -2534,7 +2563,7 @@ namespace crab {
         for (auto p : dead)
           (*p.first) -= (*p.second);
         
-        m_blocks->erase (bb_id);
+        m_blocks.erase (bb_id);
       }
       
       // Return all variables (either used or defined) in the Cfg.
@@ -2551,67 +2580,49 @@ namespace crab {
         for (auto v: ls) vars.push_back (v);
         return vars;
       }
-      
-      basic_block_t& get_node (BasicBlockLabel bb_id) 
-      {
-        auto it = m_blocks->find (bb_id);
-        if (it == m_blocks->end ())
-          CRAB_ERROR ("Basic block not found in the CFG");
-        
-        return *(it->second);
-      }
-      
-      const basic_block_t& get_node (BasicBlockLabel bb_id) const
-      {
-        auto it = m_blocks->find (bb_id);
-        if (it == m_blocks->end ())
-          CRAB_ERROR ("Basic block not found in the CFG");
-        
-        return *(it->second);
-      }
-      
+            
       //! return a begin iterator of BasicBlock's
       iterator begin() 
       {
-        return boost::make_transform_iterator (m_blocks->begin (), getRef ());
+        return boost::make_transform_iterator (m_blocks.begin (), getRef ());
       }
       
       //! return an end iterator of BasicBlock's
       iterator end() 
       {
-        return boost::make_transform_iterator (m_blocks->end (), getRef ());
+        return boost::make_transform_iterator (m_blocks.end (), getRef ());
       }
       
       const_iterator begin() const
       {
-        return boost::make_transform_iterator (m_blocks->begin (), getRef ());
+        return boost::make_transform_iterator (m_blocks.begin (), getRef ());
       }
       
       const_iterator end() const
       {
-        return boost::make_transform_iterator (m_blocks->end (), getRef ());
+        return boost::make_transform_iterator (m_blocks.end (), getRef ());
       }
       
       //! return a begin iterator of BasicBlockLabel's
       label_iterator label_begin() 
       {
-        return boost::make_transform_iterator (m_blocks->begin (), getLabel ());
+        return boost::make_transform_iterator (m_blocks.begin (), getLabel ());
       }
       
       //! return an end iterator of BasicBlockLabel's
       label_iterator label_end() 
       {
-        return boost::make_transform_iterator (m_blocks->end (), getLabel ());
+        return boost::make_transform_iterator (m_blocks.end (), getLabel ());
       }
       
       const_label_iterator label_begin() const
       {
-        return boost::make_transform_iterator (m_blocks->begin (), getLabel ());
+        return boost::make_transform_iterator (m_blocks.begin (), getLabel ());
       }
       
       const_label_iterator label_end() const
       {
-        return boost::make_transform_iterator (m_blocks->end (), getLabel ());
+        return boost::make_transform_iterator (m_blocks.end (), getLabel ());
       }
       
       size_t size () const { return std::distance (begin (), end ()); }
@@ -2649,6 +2660,8 @@ namespace crab {
         return thresholds;
       }
 
+      // FIXME: just create a view rather than actually reverse the
+      //        CFG
       void reverse()
       {
         if (!m_has_exit)
@@ -2812,11 +2825,11 @@ namespace crab {
       {
         if (!has_exit ()) return;
         
-        cfg_t cfg  = clone ();
-        cfg.reverse ();
+        auto cfg_ptr = clone ();
+        cfg_ptr->reverse ();
         
         visited_t useful, useless;
-        markAliveBlocks (cfg.entry (), cfg, useful);
+        markAliveBlocks (cfg_ptr->entry (), *cfg_ptr, useful);
         
         for (auto const &bb : *this) 
           if (!(useful.count (bb.label ()) > 0))
@@ -2827,6 +2840,172 @@ namespace crab {
       }
       
     }; 
+
+    // A lightweight object that wraps a reference to a CFG into a
+    // copyable, assignable object.
+    template <class CFG>
+    class Cfg_Ref {
+     public:
+
+      // CFG's typedefs
+      typedef typename CFG::basic_block_label_t basic_block_label_t;
+      typedef typename CFG::node_t node_t;
+      typedef typename CFG::varname_t varname_t;
+      typedef typename CFG::fdecl_t fdecl_t;
+      typedef typename CFG::basic_block_t basic_block_t;   
+      typedef typename CFG::statement_t statement_t;
+      typedef typename CFG::thresholds_t thresholds_t;
+
+      typedef typename CFG::succ_iterator succ_iterator;
+      typedef typename CFG::pred_iterator pred_iterator;
+      typedef typename CFG::const_succ_iterator const_succ_iterator;
+      typedef typename CFG::const_pred_iterator const_pred_iterator;
+      typedef typename CFG::succ_range succ_range;
+      typedef typename CFG::pred_range pred_range;
+      typedef typename CFG::const_succ_range const_succ_range;
+      typedef typename CFG::const_pred_range const_pred_range;
+      typedef typename CFG::iterator iterator;
+      typedef typename CFG::const_iterator const_iterator;
+      typedef typename CFG::label_iterator label_iterator;
+      typedef typename CFG::const_label_iterator const_label_iterator;
+      typedef typename CFG::var_iterator var_iterator;
+      typedef typename CFG::const_var_iterator const_var_iterator;
+
+     private:
+
+      boost::optional<reference_wrapper<CFG> > _ref;
+
+     public:
+
+      // --- hook needed by crab::cg::CallGraph<CFG>::CgNode
+      Cfg_Ref () { } 
+
+      Cfg_Ref (CFG &cfg)
+          : _ref(reference_wrapper<CFG>(cfg)) { } 
+      
+      const CFG& get() const { 
+        assert (_ref);
+        return *_ref;
+      }
+
+      CFG& get() { 
+        assert (_ref);
+        return *_ref;
+      }
+
+      basic_block_label_t  entry() const {
+        assert (_ref);
+        return (*_ref).get().entry();
+      }
+
+      const_succ_range next_nodes (basic_block_label_t bb) const {
+        assert (_ref);
+        return (*_ref).get().next_nodes(bb);
+      }
+
+      const_pred_range prev_nodes (basic_block_label_t bb) const {
+        assert (_ref);
+        return (*_ref).get().prev_nodes(bb);
+      }
+
+      succ_range next_nodes (basic_block_label_t bb) {
+        assert (_ref);
+        return (*_ref).get().next_nodes(bb);
+      }
+
+      pred_range prev_nodes (basic_block_label_t bb) {
+        assert (_ref);
+        return (*_ref).get().prev_nodes(bb);
+      }
+
+      thresholds_t initialize_thresholds_for_widening (size_t size) const {
+        assert (_ref);
+        return (*_ref).get().initialize_thresholds_for_widening (size);
+      }
+
+      basic_block_t& get_node (basic_block_label_t bb) {
+        assert (_ref);
+        return (*_ref).get().get_node(bb);
+      }
+      
+      const basic_block_t& get_node (basic_block_label_t bb) const {
+        assert (_ref);
+        return (*_ref).get().get_node(bb);
+      }
+ 
+      iterator begin() {
+        assert (_ref);
+        return (*_ref).get().begin();
+      }
+      
+      iterator end() {
+        assert (_ref);
+        return (*_ref).get().end();
+      }
+      
+      const_iterator begin() const {
+        assert (_ref);
+        return (*_ref).get().begin();
+      }
+      
+      const_iterator end() const {
+        assert (_ref);
+        return (*_ref).get().end();
+      }
+
+      label_iterator label_begin() {
+        assert (_ref);
+        return (*_ref).get().label_begin();
+      }
+      
+      label_iterator label_end() {
+        assert (_ref);
+        return (*_ref).get().label_end();
+      }
+      
+      const_label_iterator label_begin() const {
+        assert (_ref);
+        return (*_ref).get().label_begin();
+      }
+      
+      const_label_iterator label_end() const {
+        assert (_ref);
+        return (*_ref).get().label_end();
+      }
+
+      boost::optional<fdecl_t> get_func_decl () const { 
+        assert (_ref);
+        return (*_ref).get().get_func_decl();
+      }
+
+      
+      bool has_exit () const {
+        assert (_ref);
+        return (*_ref).get().has_exit();
+      }
+      
+      basic_block_label_t exit()  const { 
+        assert (_ref);
+        return (*_ref).get().exit();
+      }
+
+      
+      friend std::ostream& operator<<(std::ostream &o, const Cfg_Ref<CFG> &cfg) {
+        o << cfg.get();
+        return o;
+      }
+      
+      void simplify () {
+        if (_ref) (*_ref).get().simplify();
+      }
+
+      // #include <boost/fusion/functional/invocation/invoke.hpp>
+      // template< class... ArgTypes >
+      // typename std::result_of<CFG&(ArgTypes&&...)>::type
+      // operator() ( ArgTypes&&... args ) const {
+      //   return boost::fusion::invoke(get(), std::forward<ArgTypes>(args)...);
+      // }      
+    };
   
      // Helper class
     template<typename CFG>
@@ -2853,7 +3032,7 @@ namespace crab {
     };
 
     // extending boost::hash for Cfg class
-    template< class BB, class VarName >
+    template<class BB, class VarName>
     std::size_t hash_value(Cfg<BB,VarName> const& cfg) {
       auto fdecl = cfg.get_func_decl ();            
       if (!fdecl)
@@ -2862,8 +3041,23 @@ namespace crab {
       return CfgHasher< Cfg <BB,VarName> >::hash(*fdecl);
     }
 
-    template< class BB, class VarName >
+    template<class CFG>
+    std::size_t hash_value(Cfg_Ref<CFG> const& cfg) {
+      auto fdecl = cfg.get().get_func_decl ();            
+      if (!fdecl)
+        CRAB_ERROR ("cannot hash a cfg because function declaration is missing");
+
+      return CfgHasher<Cfg_Ref<CFG> >::hash(*fdecl);
+    }
+
+
+    template<class BB, class VarName >
     bool operator==(Cfg<BB,VarName> const& a, Cfg<BB,VarName> const& b) {
+      return hash_value (a) == hash_value (b);
+    }
+
+    template<class CFG>
+    bool operator==(Cfg_Ref<CFG> const& a, Cfg_Ref<CFG> const& b) {
       return hash_value (a) == hash_value (b);
     }
 

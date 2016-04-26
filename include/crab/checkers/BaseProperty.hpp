@@ -5,6 +5,7 @@
    Base class for a property checker
  */
 
+#include <crab/common/debug.hpp>
 #include <crab/cfg/Cfg.hpp>
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/domains/nullity.hpp>
@@ -96,37 +97,37 @@ namespace crab {
     
   };
 
-  #define LOG_SAFE(VERBOSE,INV,PROP,DEBUG_LOC)       \
-  this->m_db.add (_SAFE);                            \
-  if (VERBOSE >=3) {                                 \
-    std::cout << " --- SAFE -----------------\n";    \
-    if (DEBUG_LOC.has_debug ())                      \
-      std::cout << DEBUG_LOC << "\n";                \
-    std::cout << "Property : " << PROP << "\n";      \
-    std::cout << "Invariant: " << INV << "\n";       \
-    std::cout << " -----------------------------\n"; \
+  #define LOG_SAFE(VERBOSE,INV,PROP,DEBUG_LOC)          \
+  this->m_db.add (_SAFE);                               \
+  if (VERBOSE >=3) {                                    \
+    crab::outs() << " --- SAFE -----------------\n";    \
+    if (DEBUG_LOC.has_debug ())                         \
+      crab::outs() << DEBUG_LOC << "\n";                \
+    crab::outs() << "Property : " << PROP << "\n";      \
+    crab::outs() << "Invariant: " << INV << "\n";       \
+    crab::outs() << " -----------------------------\n"; \
   }
 
-  #define LOG_WARN(VERBOSE,INV,PROP,DEBUG_LOC)       \
-  this->m_db.add (_WARN, DEBUG_LOC);                 \
-  if (VERBOSE >=2) {                                 \
-    std::cout << " --- WARNING -----------------\n"; \
-    if (DEBUG_LOC.has_debug ())                      \
-      std::cout << DEBUG_LOC << "\n";                \
-    std::cout << "Property : " << PROP << "\n";      \
-    std::cout << "Invariant: " << INV << "\n";       \
-    std::cout << " -----------------------------\n"; \
+  #define LOG_WARN(VERBOSE,INV,PROP,DEBUG_LOC)          \
+  this->m_db.add (_WARN, DEBUG_LOC);                    \
+  if (VERBOSE >=2) {                                    \
+    crab::outs() << " --- WARNING -----------------\n"; \
+    if (DEBUG_LOC.has_debug ())                         \
+      crab::outs() << DEBUG_LOC << "\n";                \
+    crab::outs() << "Property : " << PROP << "\n";      \
+    crab::outs() << "Invariant: " << INV << "\n";       \
+    crab::outs() << " -----------------------------\n"; \
   }
 
-  #define LOG_ERR(VERBOSE,INV,PROP,DEBUG_LOC)        \
-    this->m_db.add (_ERR, DEBUG_LOC);                \
-  if (VERBOSE >=1) {                                 \
-    std::cout << " --- ERROR -----------------\n";   \
-    if (DEBUG_LOC.has_debug ())                      \
-      std::cout << DEBUG_LOC << "\n";                \
-    std::cout << "Property : " << PROP << "\n";      \
-    std::cout << "Invariant: " << INV << "\n";       \
-    std::cout << " -----------------------------\n"; \
+  #define LOG_ERR(VERBOSE,INV,PROP,DEBUG_LOC)           \
+    this->m_db.add (_ERR, DEBUG_LOC);                   \
+  if (VERBOSE >=1) {                                    \
+    crab::outs() << " --- ERROR -----------------\n";   \
+    if (DEBUG_LOC.has_debug ())                         \
+      crab::outs() << DEBUG_LOC << "\n";                \
+    crab::outs() << "Property : " << PROP << "\n";      \
+    crab::outs() << "Invariant: " << INV << "\n";       \
+    crab::outs() << " -----------------------------\n"; \
   }
 
 

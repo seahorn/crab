@@ -1,4 +1,8 @@
-add_executable(disint_test test.cc)
-target_link_libraries (disint_test ${CRAB_LIBS})
+add_executable(dis-int test.cc)
+target_link_libraries (dis-int ${CRAB_LIBS})
+
+install(TARGETS dis-int
+  RUNTIME DESTINATION tests/domains
+  )
 
 

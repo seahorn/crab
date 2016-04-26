@@ -385,13 +385,13 @@ namespace crab {
            dom_var_t z(domvar_of_term(tz));
 
            // Set up the evaluation.
-           CRAB_LOG("term", std::cout << "Prev: " << _impl <<"\n");
+           CRAB_LOG("term", crab::outs() << "Prev: " << _impl <<"\n");
 
            _impl.apply(op, v.name(), y.name(), z.name());
 
            CRAB_LOG("term", 
-                    std::cout << "Should have " << v.name() << " := " << y.name() << op  << z.name() <<"\n");
-           CRAB_LOG("term", std::cout << _impl <<"\n");
+                    crab::outs() << "Should have " << v.name() << " := " << y.name() << op  << z.name() <<"\n");
+           CRAB_LOG("term", crab::outs() << _impl <<"\n");
 
            return tx;
          }
@@ -417,7 +417,7 @@ namespace crab {
          }
 
          CRAB_LOG("term", 
-                  std::cout << "Should have " << domvar_of_term(t).name() << " := " 
+                  crab::outs() << "Should have " << domvar_of_term(t).name() << " := " 
                   << e << "\n" << _impl <<"\n");
          return t;       
        }
@@ -743,7 +743,7 @@ namespace crab {
            }
            
            CRAB_LOG("term", 
-                    std::cout << "============ JOIN =================="
+                    crab::outs() << "============ JOIN =================="
                               << *this << "\n" << "~~~~~~~~~~~~~~~~"
                               << o << "\n" << "----------------"
                               << "x = " << _impl
@@ -762,7 +762,7 @@ namespace crab {
            
            term_domain_t res (term_domain (palloc, out_vmap, out_tbl, out_map, x_join_y));
            
-           CRAB_LOG("term", std::cout << "After elimination:\n" << res << "\n");
+           CRAB_LOG("term", crab::outs() << "After elimination:\n" << res << "\n");
            return res;
          }
        }
@@ -869,10 +869,10 @@ namespace crab {
            term_domain_t res (palloc, out_vmap, out_tbl, out_map, x_widen_y);
            
            CRAB_LOG("term", 
-                    std::cout << "============ WIDENING ==================";
-                    std::cout << x_impl << "\n~~~~~~~~~~~~~~~~";
-                    std::cout << y_impl << "\n----------------";
-                    std::cout << x_widen_y << "\n================" << "\n");
+                    crab::outs() << "============ WIDENING ==================";
+                    crab::outs() << x_impl << "\n~~~~~~~~~~~~~~~~";
+                    crab::outs() << y_impl << "\n----------------";
+                    crab::outs() << x_widen_y << "\n================" << "\n");
            
            return res;
          }         
@@ -910,8 +910,8 @@ namespace crab {
          auto it = cache.find (t);
          if (it != cache.end ()) {
            #ifdef DEBUG_MEET
-           cout << "Found in cache: ";
-           cout << "t" << t << " --> " << "t" << it->second << "\n";
+           crab::outs() << "Found in cache: ";
+           crab::outs() << "t" << t << " --> " << "t" << it->second << "\n";
            #endif 
            return it->second;
          }
@@ -920,8 +920,8 @@ namespace crab {
          if (std::find (stack.begin (), stack.end (), t) != stack.end ()) {
            term_id_t v = out_ttbl.fresh_var ();
            #ifdef DEBUG_MEET
-           cout << "Detected cycle: ";
-           cout << "t" << t << " --> " << "t" << v << "\n";
+           crab::outs() << "Detected cycle: ";
+           crab::outs() << "t" << t << " --> " << "t" << v << "\n";
            #endif 
            return v;
          }
@@ -936,16 +936,16 @@ namespace crab {
            auto res = cache.insert (make_pair (t, v));
            stack.pop_back ();
            #ifdef DEBUG_MEET
-           cout << "No concrete definition: ";
-           cout << "t" << t << " --> " << "t" << (res.first)->second << "\n";
+           crab::outs() << "No concrete definition: ";
+           crab::outs() << "t" << t << " --> " << "t" << (res.first)->second << "\n";
            #endif 
            return (res.first)->second;
          } else {
            // traverse recursively the term
            typename ttbl_t::term_t* f_ptr = ttbl.get_term_ptr(*f); 
            #ifdef DEBUG_MEET
-           cout << "Traversing recursively the term " << "t" << *f << ":";
-           cout << *f_ptr << "\n";
+           crab::outs() << "Traversing recursively the term " << "t" << *f << ":";
+           crab::outs() << *f_ptr << "\n";
            #endif 
            std::vector<term_id_t>& args(term::term_args(f_ptr));
            std::vector<term_id_t> res_args;
@@ -959,8 +959,8 @@ namespace crab {
                                                          res_args)));
            stack.pop_back ();
            #ifdef DEBUG_MEET
-           cout << "Finished recursive case: ";
-           cout << "t" << t << " --> " << "t" << (res.first)->second << "\n";
+           crab::outs() << "Finished recursive case: ";
+           crab::outs() << "t" << t << " --> " << "t" << (res.first)->second << "\n";
            #endif 
            return (res.first)->second;
          }
@@ -1062,10 +1062,10 @@ namespace crab {
            term_domain_t res (palloc, out_vmap, out_ttbl, out_map, x_meet_y);
 
            CRAB_LOG("term", 
-                    std::cout << "============ MEET ==================";
-                    std::cout << *this << "\n----------------";
-                    std::cout << o << "\n----------------";
-                    std::cout << res << "\n================" << "\n");
+                    crab::outs() << "============ MEET ==================";
+                    crab::outs() << *this << "\n----------------";
+                    crab::outs() << o << "\n----------------";
+                    crab::outs() << res << "\n================" << "\n");
            return res;
          }
        }
@@ -1121,7 +1121,7 @@ namespace crab {
            check_terms();
 
            CRAB_LOG("term", 
-                    std::cout << "*** Assign " << x_name << ":=" << e << ":" << *this << "\n");
+                    crab::outs() << "*** Assign " << x_name << ":=" << e << ":" << *this << "\n");
            return;
          }
        }
@@ -1159,7 +1159,7 @@ namespace crab {
            for(auto p : _var_map) {
              if ((p.first.index() != vx.index()) && (p.second == tx)) {
                linear_constraint_t cst(vx == p.first);
-               //cout << "Propagating " << cst << " to " << inv.getDomainName () << "\n";
+               //crab::outs() << "Propagating " << cst << " to " << inv.getDomainName () << "\n";
                csts += cst;
              }
            }
@@ -1181,7 +1181,7 @@ namespace crab {
          }
          check_terms();
          CRAB_LOG("term", 
-                  std::cout << "*** " << x << ":=" <<  y <<  " " <<  op <<  " "
+                  crab::outs() << "*** " << x << ":=" <<  y <<  " " <<  op <<  " "
                   <<  z <<  ":" <<  *this << "\n");
        }
     
@@ -1196,7 +1196,7 @@ namespace crab {
          }
          check_terms();
          CRAB_LOG("term",
-                  std::cout << "*** " << x << ":=" << y << " " << op << " " << k <<  ":" << *this << "\n");
+                  crab::outs() << "*** " << x << ":=" << y << " " << op << " " << k <<  ":" << *this << "\n");
          return;
        }
 
@@ -1231,7 +1231,7 @@ namespace crab {
            term_id_t ty (term_of_var((*eq).second));
            if (cst.is_disequation () && (tx == ty)) {
              set_to_bottom ();
-             CRAB_LOG("term", std::cout << "*** Assume " << cst << ":" <<  *this << "\n");
+             CRAB_LOG("term", crab::outs() << "*** Assume " << cst << ":" <<  *this << "\n");
              return;
            } else {
              // not bother if they are already equal
@@ -1282,7 +1282,7 @@ namespace crab {
          // Probably doesn't need to done so eagerly.
          normalize();
 
-         CRAB_LOG("term", std::cout << "*** Assume " << cst << ":" << *this << "\n");
+         CRAB_LOG("term", crab::outs() << "*** Assume " << cst << ":" << *this << "\n");
          return;
        }
        
@@ -1375,7 +1375,7 @@ namespace crab {
       
          for(auto p : equivs) {
            CRAB_LOG("term", 
-                    std::cout << "Added equivalence " << p.first << "=" << p.second << "\n");
+                    crab::outs() << "Added equivalence " << p.first << "=" << p.second << "\n");
            out_sys += (p.first - p.second == 0);
          }
 
@@ -1406,7 +1406,7 @@ namespace crab {
          }
          check_terms();
          CRAB_LOG("term", 
-                  std::cout << "*** " << x << ":=" << y << " " << op 
+                  crab::outs() << "*** " << x << ":=" << y << " " << op 
                   << " " << z << ":" << *this << "\n");
        }
     
@@ -1421,7 +1421,7 @@ namespace crab {
 
          check_terms();
          CRAB_LOG("term", 
-                  std::cout << "*** " << x << ":=" << y << " "<< op << " " << k 
+                  crab::outs() << "*** " << x << ":=" << y << " "<< op << " " << k 
                   << ":" << *this << "\n");
          return;
        }
@@ -1439,7 +1439,7 @@ namespace crab {
 
          check_terms();
          CRAB_LOG("term", 
-                  std::cout << "*** "<< x<< ":="<< y<< " "<< op<< " "<< z<< ":"<< *this << "\n");
+                  crab::outs() << "*** "<< x<< ":="<< y<< " "<< op<< " "<< z<< ":"<< *this << "\n");
        }
 
        void apply(div_operation_t op, VariableName x, VariableName y, Number k){
@@ -1453,7 +1453,7 @@ namespace crab {
 
          check_terms();
          CRAB_LOG("term",
-                  std::cout << "*** "<< x<< ":="<< y<< " "<< op<< " "<< k<< ":"<< *this << "\n");
+                  crab::outs() << "*** "<< x<< ":="<< y<< " "<< op<< " "<< k<< ":"<< *this << "\n");
          return;
        }
     

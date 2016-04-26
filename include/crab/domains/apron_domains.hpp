@@ -169,14 +169,13 @@ namespace crab {
         typedef apron_domain_ <Number, VariableName, ApronDom> apron_domain_t;
         typedef interval_domain <Number, VariableName> interval_domain_t;
         typedef bound <Number> bound_t;
-        typedef boost::bimap< VariableName , ap_dim_t > var_bimap_t;
-        typedef boost::shared_ptr<var_bimap_t> var_map_ptr;
-        typedef typename var_bimap_t::value_type binding_t;
+        typedef boost::bimap< VariableName , ap_dim_t > var_map_t;
+        typedef typename var_map_t::value_type binding_t;
 
         static ap_manager_t* m_apman;
         
         ap_state_ptr m_apstate; 
-        var_map_ptr m_var_map;
+        var_map_t m_var_map;
 
         static ap_manager_t* get_man () {
           if (!m_apman) {
@@ -199,7 +198,7 @@ namespace crab {
         size_t get_dims () const { return get_dims (m_apstate); }
 
         // If v is in the map then it maps v to a dimension, otherwise null
-        boost::optional<ap_dim_t> get_var_dim (const var_bimap_t& m, VariableName v) const {
+        boost::optional<ap_dim_t> get_var_dim (const var_map_t& m, VariableName v) const {
           auto it = m.left.find (v);
           if (it != m.left.end ())
             return it->second;
@@ -208,31 +207,31 @@ namespace crab {
         }
 
         boost::optional<ap_dim_t> get_var_dim (VariableName v) const {
-          return get_var_dim (*m_var_map, v);
+          return get_var_dim (m_var_map, v);
         }
 
         ap_dim_t get_var_dim_insert (VariableName v) {
-          assert (m_var_map->size () == get_dims ());
+          assert (m_var_map.size () == get_dims ());
           if (auto dim = get_var_dim (v))
             return *dim;
           else {
-            ap_dim_t i = m_var_map->size ();
-            m_var_map->insert (binding_t (v, i));
+            ap_dim_t i = m_var_map.size ();
+            m_var_map.insert (binding_t (v, i));
             add_dimensions (m_apstate, 1);
-            assert (m_var_map->size () == get_dims ());
+            assert (m_var_map.size () == get_dims ());
             return i;
           }
         }
         
-        bool has_var_name (const var_bimap_t& m, ap_dim_t i) const {
+        bool has_var_name (const var_map_t& m, ap_dim_t i) const {
           return m.right.find (i) != m.right.end ();
         }
 
         bool has_var_name (ap_dim_t i) const {
-          return has_var_name (*m_var_map, i);
+          return has_var_name (m_var_map, i);
         }
 
-        VariableName get_var_name (const var_bimap_t& m, ap_dim_t i) const {
+        VariableName get_var_name (const var_map_t& m, ap_dim_t i) const {
           auto it = m.right.find (i);
           if (it != m.right.end ())
             return it->second;            
@@ -240,7 +239,7 @@ namespace crab {
         }
 
         VariableName get_var_name (ap_dim_t i) const {
-          return get_var_name (*m_var_map, i);
+          return get_var_name (m_var_map, i);
         }
 
         void add_dimensions (ap_state_ptr& s, size_t dims) const {
@@ -277,8 +276,8 @@ namespace crab {
           ap_dimchange_free (dimchange);
 
           #if 0
-          cout << "Removed " << dims.size () << " dimensions\n";
-          cout << "Size = " << get_dims (s) << "\n";
+          crab::outs() << "Removed " << dims.size () << " dimensions\n";
+          crab::outs() << "Size = " << get_dims (s) << "\n";
           #endif           
         }
 
@@ -293,8 +292,8 @@ namespace crab {
           return true;
         }
 
-        var_map_ptr merge_var_map (const var_bimap_t& m_x, ap_state_ptr& s_x,
-                                   const var_bimap_t& m_y, ap_state_ptr& s_y) {
+        var_map_t merge_var_map (const var_map_t& m_x, ap_state_ptr& s_x,
+                                   const var_map_t& m_y, ap_state_ptr& s_y) {
 
           assert (m_x.size () == get_dims (s_x));
           assert (m_y.size () == get_dims (s_y));
@@ -315,11 +314,11 @@ namespace crab {
           assert (get_dims (s_x) == get_dims (s_y));
 
           // -- create a fresh map 
-          var_map_ptr res = var_map_ptr (new var_bimap_t ());
+          var_map_t res;
           for (auto v: vars) {
-            ap_dim_t i = res->size ();
+            ap_dim_t i = res.size ();
             assert (i < get_dims (s_x));
-            res->insert (binding_t (v, i));
+            res.insert (binding_t (v, i));
           }
           
           // build the permutations maps
@@ -330,7 +329,7 @@ namespace crab {
           char * xmap2 = (char *)calloc (get_dims (s_x), sizeof(char));
           if (!xmap2) CRAB_ERROR ("calloc does not have more available memory");
           for (auto const &px: m_x.left) {
-            ap_dim_t ind = res->left.at (px.first);
+            ap_dim_t ind = res.left.at (px.first);
             perm_x->dim [px.second] = ind;
             // This sets 1 if the index that has been assigned
             assert (px.second < get_dims(s_x));
@@ -357,7 +356,7 @@ namespace crab {
           char * ymap2 = (char *)calloc (get_dims (s_x), sizeof(char));
           if (!ymap2) CRAB_ERROR ("calloc does not have more available memory");
           for (auto const &py: m_y.left) {
-            ap_dim_t ind = res->left.at (py.first);
+            ap_dim_t ind = res.left.at (py.first);
             perm_y->dim [py.second] = ind;
             assert (py.second < get_dims(s_x));
             ymap1[py.second] = 1;
@@ -378,9 +377,9 @@ namespace crab {
           free (ymap2);
 
           #if 0          
-          cout << "Permutations \n";
+          crab::outs() << "Permutations \n";
           ap_dimperm_fprint(stdout, perm_x);          
-          cout << "Permutations \n";
+          crab::outs() << "Permutations \n";
           ap_dimperm_fprint(stdout, perm_y);          
           #endif 
 
@@ -396,8 +395,8 @@ namespace crab {
           ap_dimperm_free (perm_x);
           ap_dimperm_free (perm_y);
 
-          assert (res->size () == get_dims (s_x));
-          assert (res->size () == get_dims (s_y));
+          assert (res.size () == get_dims (s_x));
+          assert (res.size () == get_dims (s_y));
 
           return res;
         }
@@ -540,9 +539,9 @@ namespace crab {
                                       linear_expression_t (Number(0)));          
         }
 
-        void dump (const var_bimap_t& m, ap_state_ptr apstate ) {  
-          cout << "\nNumber of dimensions=" << get_dims (apstate) << "\n";
-          cout << "variable map ["; 
+        void dump (const var_map_t& m, ap_state_ptr apstate ) {  
+          crab::outs() << "\nNumber of dimensions=" << get_dims (apstate) << "\n";
+          crab::outs() << "variable map ["; 
           vector<char*> names;
           for (unsigned i=0; i < get_dims (apstate) ; i++){
             string varname;
@@ -550,70 +549,70 @@ namespace crab {
               varname = get_var_name (m, i).str ();
             else // unused dimension
               varname = string ("_x") + std::to_string (i);
-            cout << i << " -> " << varname << ";";
+            crab::outs() << i << " -> " << varname << ";";
             char* name = new char [varname.length () + 1];
             strcpy (name, varname.c_str ());
             names.push_back (name);
           }
-          cout << "]\n";
+          crab::outs() << "]\n";
           ap_abstract0_fprint (stdout, get_man (), &*apstate, &names[0]);
           for (auto n : names) { delete n; }
         }
 
-        void dump () { dump (*m_var_map, m_apstate); }
+        void dump () { dump (m_var_map, m_apstate); }
 
        public:
         void print_stats () { ap_abstract0_fprint (stdout, get_man (), &*m_apstate, NULL); }
 
        private:
 
-        apron_domain_ (ap_state_ptr apState, var_map_ptr varMap): 
+        apron_domain_ (ap_state_ptr apState, var_map_t varMap): 
             ikos::writeable (), 
             m_apstate (apState), 
             m_var_map (varMap) { 
 
           vector<ap_dim_t> dims;
-          var_map_ptr res = var_map_ptr (new var_bimap_t ());
-          for (auto const& p: m_var_map->left) {  
+          var_map_t res;
+          for (auto const& p: m_var_map.left) {  
             if (ap_abstract0_is_dimension_unconstrained (get_man (),
                                                          &*m_apstate, 
                                                          p.second)) {
               dims.push_back (p.second);
             }
             else {
-              ap_dim_t i = res->size ();
-              res->insert (binding_t (p.first, i));
+              ap_dim_t i = res.size ();
+              res.insert (binding_t (p.first, i));
             }
           }
           remove_dimensions (m_apstate, dims);
           std::swap (m_var_map, res);
 
-          assert (m_var_map->size () == get_dims ());
+          assert (m_var_map.size () == get_dims ());
         }
 
 
-        apron_domain_ (ap_state_ptr&& apState, var_map_ptr&& varMap): 
+        apron_domain_ (ap_state_ptr&& apState, var_map_t&& varMap): 
             ikos::writeable (), 
             m_apstate (std::move (apState)), 
             m_var_map (std::move (varMap)) { 
 
           vector<ap_dim_t> dims;
-          var_map_ptr res = var_map_ptr (new var_bimap_t ());
-          for (auto const& p: m_var_map->left) {  
+          var_map_t res;
+          for (auto const& p: m_var_map.left) {  
             if (ap_abstract0_is_dimension_unconstrained (get_man (),
                                                          &*m_apstate, 
                                                          p.second)) {
               dims.push_back (p.second);
             }
             else {
-              ap_dim_t i = res->size ();
-              res->insert (binding_t (p.first, i));
+              ap_dim_t i = res.size ();
+              res.insert (binding_t (p.first, i));
             }
           }
           remove_dimensions (m_apstate, dims);
           std::swap (m_var_map, res);
 
-          assert (m_var_map->size () == get_dims ());
+          assert (m_var_map.size () == get_dims ());
         }
 
 
@@ -624,8 +623,7 @@ namespace crab {
             m_apstate (apPtr (get_man(), 
                               (isBot ? 
                                ap_abstract0_bottom (get_man(), 0, 0) : 
-                               ap_abstract0_top (get_man(), 0, 0)))),
-            m_var_map (var_map_ptr (new var_bimap_t ()))
+                               ap_abstract0_top (get_man(), 0, 0))))
         { }
 
         ~apron_domain_ () { }
@@ -633,7 +631,7 @@ namespace crab {
         apron_domain_ (const apron_domain_t& o): 
             ikos::writeable(), 
             m_apstate (apPtr (get_man (), ap_abstract0_copy (get_man (), &*(o.m_apstate)))),
-            m_var_map (var_map_ptr (new var_bimap_t (*o.m_var_map)))
+            m_var_map (o.m_var_map)
         {  
           crab::CrabStats::count ("Domain.count.copy");
           crab::ScopedCrabStats __st__("Domain.copy");
@@ -691,7 +689,7 @@ namespace crab {
             return true;
           else { 
             ap_state_ptr x = apPtr (get_man (), ap_abstract0_copy (get_man (), &*m_apstate));
-            merge_var_map (*m_var_map, x, *(o.m_var_map), o.m_apstate);
+            merge_var_map (m_var_map, x, o.m_var_map, o.m_apstate);
             return ap_abstract0_is_leq (get_man(), &*x, &*o.m_apstate);
           }
         }
@@ -702,7 +700,7 @@ namespace crab {
           else if (is_top () || o.is_bottom())
             return ;
           else {
-            m_var_map = merge_var_map (*m_var_map, m_apstate, *(o.m_var_map), o.m_apstate);
+            m_var_map = merge_var_map (m_var_map, m_apstate, o.m_var_map, o.m_apstate);
             m_apstate = apPtr (get_man(), 
                                ap_abstract0_join (get_man(), false, 
                                                   &*m_apstate, &*o.m_apstate));
@@ -716,7 +714,7 @@ namespace crab {
             return *this;
           else {
             ap_state_ptr x = apPtr (get_man (), ap_abstract0_copy (get_man (), &*m_apstate));
-            var_map_ptr  m = merge_var_map (*m_var_map, x, *(o.m_var_map), o.m_apstate);
+            var_map_t  m = merge_var_map (m_var_map, x, o.m_var_map, o.m_apstate);
             return apron_domain_t (apPtr (get_man(), 
                                           ap_abstract0_join (get_man(), false, 
                                                              &*x, &*o.m_apstate)), m);
@@ -732,7 +730,7 @@ namespace crab {
             return *this;
           else{
             ap_state_ptr x = apPtr (get_man (), ap_abstract0_copy (get_man (), &*m_apstate));
-            var_map_ptr  m = merge_var_map (*m_var_map, x, *(o.m_var_map), o.m_apstate);
+            var_map_t  m = merge_var_map (m_var_map, x, o.m_var_map, o.m_apstate);
             return apron_domain_t (apPtr (get_man(), 
                                           ap_abstract0_meet (get_man(), false, 
                                                              &*x, &*o.m_apstate)), m);
@@ -746,7 +744,7 @@ namespace crab {
             return *this;
           else {
             ap_state_ptr x = apPtr (get_man (), ap_abstract0_copy (get_man (), &*m_apstate));
-            var_map_ptr  m = merge_var_map (*m_var_map, x, *(o.m_var_map), o.m_apstate);
+            var_map_t  m = merge_var_map (m_var_map, x, o.m_var_map, o.m_apstate);
             return apron_domain_t (apPtr (get_man(), 
                                           ap_abstract0_widening (get_man(), 
                                                                  &*x, &*o.m_apstate)), m);
@@ -768,7 +766,7 @@ namespace crab {
             return *this;
           else{
             ap_state_ptr x = apPtr (get_man (), ap_abstract0_copy (get_man (), &*m_apstate));
-            var_map_ptr  m = merge_var_map (*m_var_map, x, *(o.m_var_map), o.m_apstate);
+            var_map_t  m = merge_var_map (m_var_map, x, o.m_var_map, o.m_apstate);
             switch (ApronDom) {
               case APRON_OCT:
                 return apron_domain_t (apPtr (get_man(), 
@@ -813,11 +811,11 @@ namespace crab {
                                                         false));
 
           // -- Remove forgotten dimensions while compacting
-          var_map_ptr res = var_map_ptr (new var_bimap_t ());
-          for (auto const& p: m_var_map->left) {  
+          var_map_t res;
+          for (auto const& p: m_var_map.left) {  
              if (set_dims.count (p.second) <= 0) {
-               ap_dim_t i = res->size ();
-               res->insert (binding_t (p.first, i));
+               ap_dim_t i = res.size ();
+               res.insert (binding_t (p.first, i));
              }
           }
           remove_dimensions (m_apstate, vector_dims);
@@ -835,11 +833,11 @@ namespace crab {
                                                           &vector_dims[0], vector_dims.size(), 
                                                           false));
             // -- Remove forgotten dimensions while compacting
-            var_map_ptr res = var_map_ptr (new var_bimap_t ());
-            for (auto const& p: m_var_map->left) {  
+            var_map_t res;
+            for (auto const& p: m_var_map.left) {  
               if (p.second != *dim) {
-                ap_dim_t i = res->size ();
-                res->insert (binding_t (p.first, i));
+                ap_dim_t i = res.size ();
+                res.insert (binding_t (p.first, i));
               }
             }
             remove_dimensions (m_apstate, vector_dims);
@@ -852,7 +850,7 @@ namespace crab {
         void project (const Range& vars) {
           if (is_bottom ()) return;
           std::set<VariableName> s1,s2,s3;
-          for (auto p: m_var_map->left) s1.insert (p.first);
+          for (auto p: m_var_map.left) s1.insert (p.first);
           s2.insert (vars.begin (), vars.end ());
           boost::set_difference (s1,s2,std::inserter (s3, s3.end ()));
           forget (s3);
@@ -967,7 +965,7 @@ namespace crab {
 
           ap_tcons0_array_clear(&array);
           CRAB_LOG("apron", 
-                   std::cout << "--- "<< "Assume "<<csts<< " --> "<< *this<<"\n";);
+                   crab::outs() << "--- "<< "Assume "<<csts<< " --> "<< *this<<"\n";);
         }
        
         void assign (VariableName x, linear_expression_t e) {
@@ -983,7 +981,7 @@ namespace crab {
 
           ap_texpr0_free (t);
           CRAB_LOG("apron",
-                   std::cout << "--- "<< x<< ":="<< e << " --> "<< *this<<"\n";);
+                   crab::outs() << "--- "<< x<< ":="<< e << " --> "<< *this<<"\n";);
         }
           
         void apply (operation_t op, VariableName x, VariableName y, Number z) {
@@ -1010,7 +1008,7 @@ namespace crab {
           
           ap_texpr0_free (res);
           CRAB_LOG("apron",
-                   std::cout << "--- "<< x<< ":="<< y<< op<< z<< " --> "<< *this<<"\n";);
+                   crab::outs() << "--- "<< x<< ":="<< y<< op<< z<< " --> "<< *this<<"\n";);
         }
         
         void apply(operation_t op, VariableName x, VariableName y, VariableName z) {
@@ -1036,7 +1034,7 @@ namespace crab {
 
           ap_texpr0_free (res);
           CRAB_LOG("apron",
-                   std::cout << "--- "<< x<< ":="<< y<< op<< z<< " --> "<< *this<<"\n";);
+                   crab::outs() << "--- "<< x<< ":="<< y<< op<< z<< " --> "<< *this<<"\n";);
         }
         
         void apply(operation_t op, VariableName x, Number k) {
@@ -1062,7 +1060,7 @@ namespace crab {
 
           ap_texpr0_free (res);
           CRAB_LOG("apron",
-                   std::cout << "--- "<< x<< ":="<< x<< op<< k<< " --> "<< *this<<"\n";);
+                   crab::outs() << "--- "<< x<< ":="<< x<< op<< k<< " --> "<< *this<<"\n";);
         }
 
         void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width) {
@@ -1179,7 +1177,7 @@ namespace crab {
                                                  get_var_dim_insert (x), 1));
           // --- the additional dimension is put at the end of integer
           //     dimensions.
-          m_var_map->insert (binding_t (dup, get_dims () - 1));            
+          m_var_map.insert (binding_t (dup, get_dims () - 1));            
         }
 
         void normalize () {

@@ -1216,7 +1216,7 @@ namespace crab {
                                                        *(other._succ_idx_map)));
           array_graph_domain_t widen (_scalar || other._scalar, 
                                       _g || other._g, map);
-          CRAB_LOG("array-graph" , std::cout << "Widening: " << *this<<"\n";);
+          CRAB_LOG("array-graph" , crab::outs() << "Widening: " << *this<<"\n";);
           return widen;
         }
       }
@@ -1286,7 +1286,7 @@ namespace crab {
         reduce();
 
         CRAB_LOG("array-graph", 
-                 std::cout << "Assume("<< csts<< ") --- "<< *this<<"\n";);
+                 crab::outs() << "Assume("<< csts<< ") --- "<< *this<<"\n";);
       }
 
       void assign (VariableName x, linear_expression_t e) 
@@ -1325,7 +1325,7 @@ namespace crab {
         reduce();
 
         CRAB_LOG("array-graph", 
-                 std::cout << "Assign "<<x<<" := "<<e<<" ==> "<<*this<<"\n";);
+                 crab::outs() << "Assign "<<x<<" := "<<e<<" ==> "<<*this<<"\n";);
       }
 
       void apply (operation_t op, VariableName x, VariableName y, Number z) 
@@ -1334,7 +1334,7 @@ namespace crab {
         apply_helper<Number> (op, x, z);
 
         CRAB_LOG("array-graph",
-                 std::cout << "Apply "<<x<<" := "<<y<<" "<<op<<" "<<z<<" ==> "<<*this<<"\n";); 
+                 crab::outs() << "Apply "<<x<<" := "<<y<<" "<<op<<" "<<z<<" ==> "<<*this<<"\n";); 
       }
 
       void apply(operation_t op, VariableName x, VariableName y, VariableName z) 
@@ -1343,7 +1343,7 @@ namespace crab {
         apply_helper<VariableName> (op, x, z);
 
         CRAB_LOG("array-graph", 
-                 std::cout << "Apply "<<x<<" := "<<y<<" "<<op<<" "<<z<<" ==> "<<*this<<"\n";);
+                 crab::outs() << "Apply "<<x<<" := "<<y<<" "<<op<<" "<<z<<" ==> "<<*this<<"\n";);
       }
 
       void apply(operation_t op, VariableName x, Number k) 
@@ -1351,7 +1351,7 @@ namespace crab {
         apply_helper<Number> (op, x, k);
 
         CRAB_LOG("array-graph",
-                 std::cout << "Apply "<<x<<" := "<<x<<" "<<op<<" "<<k<<" ==> "<<*this<<"\n";);
+                 crab::outs() << "Apply "<<x<<" := "<<x<<" "<<op<<" "<<k<<" ==> "<<*this<<"\n";);
       }
 
 
@@ -1391,7 +1391,7 @@ namespace crab {
         _scalar.set (lhs, w [arr]);
 
         CRAB_LOG("array-graph",
-                 std::cout << "Array read "<<lhs<<" := "<< arr<<"["<<idx<<"] ==> "
+                 crab::outs() << "Array read "<<lhs<<" := "<< arr<<"["<<idx<<"] ==> "
                            << *this <<"\n";);    
       }
 
@@ -1409,12 +1409,12 @@ namespace crab {
         }
         else {
           // If you see this warning you can switch to intervals.
-          cout << "Warning: scalar domain does not support assignments with arbitrary rhs.\n";
+          crab::outs() << "Warning: scalar domain does not support assignments with arbitrary rhs.\n";
         }
         array_write (arr, idx, w);
 
         CRAB_LOG("array-graph",
-                 std::cout << "Array write "<<arr<<"["<<idx<<"] := "<<val<< " ==> "<< *this <<"\n";);
+                 crab::outs() << "Array write "<<arr<<"["<<idx<<"] := "<<val<< " ==> "<< *this <<"\n";);
       }
     
       void write(ostream& o) 
