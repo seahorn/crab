@@ -1,9 +1,13 @@
 #ifndef CONCURRENT_SYSTEM_HPP
 #define CONCURRENT_SYSTEM_HPP
 
+#include "crab/cfg/Cfg.hpp" 
+
 #include <boost/noncopyable.hpp>
 #include <boost/unordered_map.hpp>
 #include "boost/range/algorithm/set_algorithm.hpp"
+
+#include <set>
 
 namespace crab {
 
@@ -35,7 +39,7 @@ namespace crab {
        
        typedef typename CFG::varname_t varname_t;
        typedef boost::unordered_map <ThreadId, CFG> cfg_map_t;
-       typedef boost::unordered_map <ThreadId, set<varname_t> > var_map_t;
+       typedef boost::unordered_map <ThreadId, std::set<varname_t> > var_map_t;
        
        cfg_map_t m_cfg_map;
        var_map_t m_gv_map;
@@ -45,8 +49,8 @@ namespace crab {
        
        typedef typename cfg_map_t::iterator iterator;
        typedef typename cfg_map_t::const_iterator const_iterator;
-       typedef typename set<varname_t>::iterator var_iterator;
-       typedef typename set<varname_t>::const_iterator const_var_iterator;
+       typedef typename std::set<varname_t>::iterator var_iterator;
+       typedef typename std::set<varname_t>::const_iterator const_var_iterator;
        
        ConcSys () { }
        
@@ -61,10 +65,10 @@ namespace crab {
          if (it != m_cfg_map.end ())
            return;
          
-         set<varname_t> shared_vs;
+         std::set<varname_t> shared_vs;
          shared_vs.insert (sh_begin, sh_end);
          
-         set<varname_t> local_vs;
+         std::set<varname_t> local_vs;
          for (auto &b: boost::make_iterator_range (cfg.begin (), cfg.end ()))
          {
            for (auto &s: b)
@@ -78,9 +82,9 @@ namespace crab {
          }
          set_difference (local_vs, shared_vs);
          
-         m_cfg_map.insert (make_pair (t, cfg));
-         m_gv_map.insert (make_pair (t, shared_vs));
-         m_lv_map.insert (make_pair (t, local_vs));
+         m_cfg_map.insert (std::make_pair (t, cfg));
+         m_gv_map.insert (std::make_pair (t, shared_vs));
+         m_lv_map.insert (std::make_pair (t, local_vs));
        }
        
        iterator begin () { return m_cfg_map.begin (); }
@@ -88,13 +92,13 @@ namespace crab {
        const_iterator begin () const { return m_cfg_map.begin (); }
        const_iterator end () const { return m_cfg_map.end (); }
        
-       pair<const_var_iterator, const_var_iterator> 
+       std::pair<const_var_iterator, const_var_iterator> 
        get_globals (ThreadId t) const
        {
          auto const it = m_gv_map.find (t);
          if (it == m_gv_map.end ())
            CRAB_ERROR ("Thread not found");
-         return make_pair (it->second.begin (), it->second.end ());
+         return std::make_pair (it->second.begin (), it->second.end ());
        }
        
        pair<const_var_iterator, const_var_iterator> 
@@ -103,7 +107,7 @@ namespace crab {
          auto const it = m_lv_map.find (t);
          if (it == m_lv_map.end ())
            CRAB_ERROR ("Thread not found");
-         return make_pair (it->second.begin (), it->second.end ());
+         return std::make_pair (it->second.begin (), it->second.end ());
        }
        
        void write (ostream& o) const
