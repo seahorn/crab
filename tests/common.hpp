@@ -3,6 +3,7 @@
 
 #include <crab/config.h>
 #include <crab/common/types.hpp>
+#include <crab/common/debug.hpp>
 #include <crab/cfg/Cfg.hpp>
 #include <crab/cfg/CfgBgl.hpp> 
 #include <crab/cfg/VarFactory.hpp>
@@ -14,8 +15,6 @@
 #include <crab/domains/intervals.hpp>                      
 #include <crab/domains/sparse_dbm.hpp>                      
 #include <crab/domains/split_dbm.hpp>
-#include <crab/domains/dense_dbm.hpp>
-#include <crab/domains/dense_pack_dbm.hpp>
 #include <crab/domains/boxes.hpp>                      
 #include <crab/domains/apron_domains.hpp>                      
 #include <crab/domains/dis_intervals.hpp>
@@ -24,7 +23,6 @@
 #include <crab/domains/array_smashing.hpp>
 #include <crab/domains/combined_domains.hpp>                      
 
-#include <crab/common/debug.hpp>
 #include <boost/program_options.hpp>
 
 namespace crab {
@@ -62,12 +60,10 @@ namespace crab {
     // Numerical domains
     typedef interval_domain< z_number, varname_t > interval_domain_t;
     typedef numerical_congruence_domain< interval_domain_t> ric_domain_t;
-    typedef DenseDBM<z_number, varname_t> ddbm_domain_t;
     typedef SpDBM_impl::DefaultParams<z_number, SpDBM_impl::GraphRep::adapt_ss> SparseDBMGraph;
     typedef SparseDBM<z_number, varname_t, SparseDBMGraph> dbm_domain_t;
     typedef SDBM_impl::DefaultParams<z_number, SDBM_impl::GraphRep::adapt_ss> SplitDBMGraph;
     typedef SplitDBM<z_number, varname_t, SplitDBMGraph> sdbm_domain_t;
-    typedef DensePackDBM<z_number, varname_t> pdbm_domain_t;
     typedef boxes_domain< z_number, varname_t > boxes_domain_t;
     typedef dis_interval_domain<z_number, varname_t > dis_interval_domain_t;
     typedef apron_domain< z_number, varname_t, apron_domain_id_t::APRON_INT > box_apron_domain_t;

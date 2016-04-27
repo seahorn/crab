@@ -61,17 +61,6 @@ int main (int argc, char** argv )
   live.exec ();
 
   {
-    NumFwdAnalyzer <cfg_ref_t, ddbm_domain_t,VariableFactory>::type a (*cfg,vfac,&live);
-    a.Run (ddbm_domain_t::top ());
-    crab::outs() << "Invariants using " << ddbm_domain_t::getDomainName () << "\n";
-    for (auto &b : *cfg)
-    {
-      auto inv = a [b.label ()];
-      crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
-    }
-  }
-
-  {
     NumFwdAnalyzer <cfg_ref_t, dbm_domain_t,VariableFactory>::type a (*cfg,vfac,&live);
     a.Run (dbm_domain_t::top ());
     crab::outs() << "Invariants using " << dbm_domain_t::getDomainName () << "\n";

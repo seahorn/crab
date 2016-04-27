@@ -67,19 +67,6 @@ int main (int argc, char** argv )
   }
 
   {
-    NumFwdAnalyzer <cfg_ref_t, ddbm_domain_t, VariableFactory>::type a (*cfg,vfac,nullptr);
-    // Run fixpoint 
-    ddbm_domain_t inv = ddbm_domain_t::top ();
-    a.Run (inv);
-    // Print invariants
-    crab::outs() << "Invariants using " << ddbm_domain_t::getDomainName () << "\n";
-    for (auto &b : *cfg) {
-      auto inv = a [b.label ()];
-      crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
-    }
-  }
-
-  {
     NumFwdAnalyzer <cfg_ref_t, dbm_domain_t, VariableFactory>::type a (*cfg,vfac,nullptr);
     // Run fixpoint 
     dbm_domain_t inv = dbm_domain_t::top ();
@@ -96,19 +83,6 @@ int main (int argc, char** argv )
     NumFwdAnalyzer <cfg_ref_t, sdbm_domain_t, VariableFactory>::type a (*cfg,vfac,nullptr);
     // Run fixpoint 
     sdbm_domain_t inv = sdbm_domain_t::top ();
-    a.Run (inv);
-    // Print invariants
-    crab::outs() << "Invariants using " << inv.getDomainName () << "\n";
-    for (auto &b : *cfg) {
-      auto inv = a [b.label ()];
-      crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
-    }
-  }
-
-  {
-    NumFwdAnalyzer <cfg_ref_t, pdbm_domain_t, VariableFactory>::type a (*cfg,vfac,nullptr);
-    // Run fixpoint 
-    pdbm_domain_t inv = pdbm_domain_t::top ();
     a.Run (inv);
     // Print invariants
     crab::outs() << "Invariants using " << inv.getDomainName () << "\n";
