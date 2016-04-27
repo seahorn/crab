@@ -12,7 +12,6 @@
 #include <boost/unordered_map.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
-#include <boost/lexical_cast.hpp>
 #include <boost/range/iterator_range.hpp>
 
 using namespace std;
@@ -90,7 +89,7 @@ namespace crab {
              {  return indexed_string_impl::get_str< T >(*_s);  }
              else
              { // unlikely prefix
-               return "@shadow.var._" + boost::lexical_cast<string> (_id);
+               return "@shadow.var._" + std::to_string(_id);
              }
            }
            
@@ -282,9 +281,8 @@ namespace crab {
          }
          
          StrVariableFactory::varname_t next() {
-           std::stringstream ss;
-           ss << col_prefix[colour] << next_id++;
-           return vfac[ss.str()];
+           std::string v = col_prefix[colour] + std::to_string(next_id++);
+           return vfac[v];
          }
          
         protected:

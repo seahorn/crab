@@ -433,7 +433,7 @@ namespace crab {
          order.insert (order.end (), members.begin (), members.end ());
        }
 
-       assert (order.size () == m_cfg.size ());
+       assert (order.size () == std::distance(m_cfg.begin(), m_cfg.end()));
 
        CRAB_LOG("liveness", 
                 crab::outs()  << "\tFixpoint ordering of the CFG {"; 

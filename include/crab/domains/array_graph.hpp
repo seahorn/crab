@@ -851,8 +851,11 @@ namespace crab {
       template <typename VariableFactory>
       VariableName add_variable (Number n, VariableFactory &vfac)
       {
-        ostringstream buf; buf << "v_" << n;
-        VariableName var_n = vfac[buf.str()];
+        // FIXME: really big assumption that the variable factory
+        // understands strings. For instance, this is not true if the
+        // factory is created by Crab-llvm.
+        VariableName var_n = vfac["#C" + n.get_str()];
+
         if (n >= 0)
         {
           _g.insert_vertex(var_n);

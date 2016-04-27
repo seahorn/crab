@@ -114,6 +114,10 @@ public:
     }
   }
 
+  std::string get_str () const {
+    return _n.get_str();
+  }
+
   z_number operator+(z_number x) const {
     mpz_class r = this->_n + x._n;
     return z_number(r);
@@ -260,10 +264,8 @@ inline std::ostream& operator<<(std::ostream& o, z_number z) {
 }
 
 inline std::size_t hash_value(const z_number& n) {
-  std::ostringstream buf;
-  boost::hash< std::string > hasher;
-  buf << n;
-  return hasher(buf.str());
+  boost::hash<std::string> hasher;
+  return hasher(n.get_str());
 }
 
 class q_number {
@@ -290,6 +292,10 @@ public:
   q_number(z_number n) : _n(n._n) { this->_n.canonicalize(); }
 
   q_number(z_number n, z_number d) : _n(n._n, d._n) { this->_n.canonicalize(); }
+
+  std::string get_str () const {
+    return _n.get_str();
+  }
 
   q_number operator+(q_number x) const {
     mpq_class r = this->_n + x._n;
@@ -416,10 +422,8 @@ inline std::ostream& operator<<(std::ostream& o, q_number q) {
 }
 
 inline std::size_t hash_value(const q_number& n) {
-  std::ostringstream buf;
-  boost::hash< std::string > hasher;
-  buf << n;
-  return hasher(buf.str());
+  boost::hash<std::string> hasher;
+  return hasher(n.get_str());
 }
 }
 

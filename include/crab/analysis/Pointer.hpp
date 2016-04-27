@@ -96,18 +96,20 @@ namespace crab {
         //! Create a new parameter
         pointer_var new_param_ref (varname_t fname, unsigned param) {
           auto par_ref = ikos::mk_param_ref(new_pointer_var(fname), param);
-          std::ostringstream buf;
-          par_ref->print (buf);
-          pointer_var p = new_pointer_var (m_vfac[buf.str()]);
+          // FIXME: really big assumption that the variable factory
+          // understands strings. For instance, this is not true if the
+          // factory is created by Crab-llvm.
+          pointer_var p = new_pointer_var (m_vfac[par_ref->get_str()]);
           return p;
         }
         
         //! Create a new return
         pointer_var new_return_ref (varname_t fname) {
           auto ret_ref = ikos::mk_return_ref(new_pointer_var(fname));
-          std::ostringstream buf;
-          ret_ref->print (buf);
-          pointer_var p = new_pointer_var (m_vfac[buf.str()]);
+          // FIXME: really big assumption that the variable factory
+          // understands strings. For instance, this is not true if the
+          // factory is created by Crab-llvm.
+          pointer_var p = new_pointer_var (m_vfac[ret_ref->get_str()]);
           return p;
         }
         

@@ -78,9 +78,7 @@ public:
   pointer_var(index_t uid) : _uid(uid) {}
 
   std::string str() const {
-    std::stringstream buf;
-    buf << "V_" << _uid;
-    return buf.str();
+    return "V_" + std::to_string(_uid);
   }
 
 }; // class pointer_var
@@ -169,9 +167,7 @@ public:
   }
 
   std::string str() const {
-    std::stringstream buf;
-    buf << "F{" << this->_uid << "}";
-    return buf.str();
+    return "F{" + std::to_string(this->_uid) + "}";
   }
 
 }; // class function_ref
@@ -196,9 +192,7 @@ public:
   }
 
   std::string str() const {
-    std::stringstream buf;
-    buf << "O{" << this->_address << "}";
-    return buf.str();
+    return "O{" + std::to_string(this->_address) + "}";
   }
 
 }; // class object_ref
@@ -224,9 +218,11 @@ public:
   }
 
   std::string str(index_t fuid) const {
-    std::ostringstream buf;
-    buf << "P_" << this->_param << "(" << fuid << ")";
-    return buf.str();
+    return "P_" + std::to_string(this->_param) + "(" + std::to_string(fuid) + ")";
+  }
+
+  std::string get_str() const {
+    return "P_" + std::to_string(this->_param) + "(" + this->_fptr.str() + ")";
   }
 
 }; // class param_ref
@@ -246,15 +242,15 @@ public:
   pta_ref_kind kind() const { return RETURN_REF; }
 
   void print(std::ostream& o) const {
-    o << "R"
-      << "(" << this->_fptr << ")";
+    o << "R(" << this->_fptr << ")";
   }
 
   std::string str(index_t fuid) const {
-    std::ostringstream buf;
-    buf << "R"
-        << "(" << fuid << ")";
-    return buf.str();
+    return "R(" + std::to_string(fuid) + ")";
+  }
+
+  std::string get_str() const {
+    return "R(" + this->_fptr.str() + ")";
   }
 
 }; // class return_ref
@@ -574,10 +570,9 @@ private:
             address_set& addrs = get_address_set(pt_ref->str());
             for (address_set::iterator it = addrs.begin(); it != addrs.end();
                  ++it) {
-              std::stringstream buf;
-              buf << "O{" << *it << "}";
-              add_address_set(buf.str(), rhs_addrs);
-              add_offset(buf.str(), rhs_offset, op);
+              std::string vname = "O{" + std::to_string(*it) + "}";
+              add_address_set(vname, rhs_addrs);
+              add_offset(vname, rhs_offset, op);
             }
             break;
           }
@@ -627,10 +622,9 @@ private:
             address_set& addrs = get_address_set(pt_ref->str());
             for (address_set::iterator it = addrs.begin(); it != addrs.end();
                  ++it) {
-              std::stringstream buf;
-              buf << "O{" << *it << "}";
-              add_address_set(load->_lhs.str(), get_address_set(buf.str()));
-              add_offset(load->_lhs.str(), get_offset(buf.str()), op);
+              std::string vname = "O{" + std::to_string(*it) + "}";
+              add_address_set(load->_lhs.str(), get_address_set(vname));
+              add_offset(load->_lhs.str(), get_offset(vname), op);
             }
             break;
           }

@@ -123,7 +123,7 @@ namespace crab {
             auto cfg = v.getCfg ();
             auto fdecl = cfg.get_func_decl ();
             assert (fdecl);
-            std::string fun_name = boost::lexical_cast<string> ((*fdecl).get_func_name ());
+            std::string fun_name = (*fdecl).get_func_name ().str();
             if (fun_name != "main") continue;
             
             CRAB_LOG ("inter",
@@ -155,7 +155,7 @@ namespace crab {
             auto fdecl = cfg.get_func_decl ();            
             assert (fdecl);
 
-            std::string fun_name = boost::lexical_cast<string> ((*fdecl).get_func_name ());
+            std::string fun_name = (*fdecl).get_func_name ().str();
             if (fun_name != "main" && cfg.has_exit ()) {
               CRAB_LOG ("inter", 
                         crab::outs() << "--- Analyzing " << (*fdecl).get_func_name () << "\n");

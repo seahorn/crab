@@ -4,10 +4,10 @@
 //#include <iosfwd>
 #include <iostream>
 //#include <string>
-#include <stdint.h>
+//#include <stdint.h>
 //#include <sstream>
 #include <stdarg.h>
-#include <errno.h>
+//#include <errno.h>
 #include <boost/optional.hpp>
 
 /* Basic type definitions */

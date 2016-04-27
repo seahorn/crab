@@ -51,7 +51,7 @@ compute invariants using different abstract domains. To install all
 the tests via `CMake` type:
 
 	mkdir build && cd build
-    cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=ON -DCMAKE_INSTALL_PREFIX=run ../
+    cmake -DENABLE_TESTS=ON -DCMAKE_INSTALL_PREFIX=run ../
     cmake --build . --target install 
 
 and, for instance, to execute the test `tests/simple/test1.cc` type:

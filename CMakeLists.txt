@@ -14,10 +14,10 @@ set(CMAKE_MODULE_PATH
   )
 
 if(NOT CMAKE_BUILD_TYPE)
-   set(CMAKE_BUILD_TYPE Debug CACHE STRING "Choose the type of build." FORCE)
+   set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
 endif(NOT CMAKE_BUILD_TYPE)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wall")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 
 set (CUSTOM_BOOST_ROOT "" CACHE PATH "Path to custom boost installation.")
 if (CUSTOM_BOOST_ROOT)
@@ -133,7 +133,7 @@ if (GIT_FOUND)
 
   set (APRON_TAG "origin/elina" CACHE STRING "apron tag to use")
   ExternalProject_Add(apron
-    GIT_REPOSITORY git@bitbucket.org:jorgenavas/apron.git 
+    GIT_REPOSITORY https://jorgenavas@bitbucket.org/jorgenavas/apron.git 
     GIT_TAG ${APRON_TAG}
     INSTALL_DIR ${CMAKE_BINARY_DIR}/run/apron
     CONFIGURE_COMMAND echo "Apron does not need a configure"
