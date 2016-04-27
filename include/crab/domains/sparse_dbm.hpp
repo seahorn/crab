@@ -1750,10 +1750,28 @@ namespace crab {
 
       //! copy of x into a new fresh variable y
       void expand (VariableName x, VariableName y) {
-        if(is_bottom())
+        if(is_bottom()) 
           return;
+        
+        CRAB_LOG ("zones-sparse",
+                  crab::outs() << "Before expand " << x << " into " << y << ":\n"<< *this <<"\n");
 
-        assign(x, linear_expression_t(y));
+        auto it = vert_map.find(variable_t(y));
+        if(it != vert_map.end()) {
+          CRAB_ERROR("sparse_dbm expand operation failed because y already exists");
+        }
+        
+        vert_id ii = get_vert(x);
+        vert_id jj = get_vert(y);
+
+        for (auto edge : g.e_preds(ii))  
+          g.add_edge (edge.vert, edge.val, jj);
+        
+        for (auto edge : g.e_succs(ii))  
+          g.add_edge (jj, edge.val, edge.vert);
+
+        CRAB_LOG ("zones-sparse",
+                  crab::outs() << "After expand " << x << " into " << y << ":\n"<< *this <<"\n");
       }
 
       // dual of forget: remove all variables except [vIt,...vEt)
