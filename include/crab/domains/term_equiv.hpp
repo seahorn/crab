@@ -1026,6 +1026,9 @@ namespace crab {
              out_vmap [v] = t_new;
            }
 
+           for(auto p : out_vmap)
+             out_ttbl.add_ref(p.second);
+
            // Rename the base domains
            dom_var_alloc_t palloc(_alloc, o._alloc); 
            dom_t x_impl (_impl); 
