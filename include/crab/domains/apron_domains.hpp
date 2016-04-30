@@ -973,12 +973,12 @@ namespace crab {
 
           ap_texpr0_t* t = expr2texpr (e);
           assert (t);
+          auto dim_x = get_var_dim_insert (x);
           m_apstate = apPtr (get_man (), 
                              ap_abstract0_assign_texpr(get_man (), false, 
                                                        &*m_apstate, 
-                                                       get_var_dim_insert (x),t, 
-                                                       NULL));
-
+                                                       dim_x, t, NULL));
+                                                       
           ap_texpr0_free (t);
           CRAB_LOG("apron",
                    crab::outs() << "--- "<< x<< ":="<< e << " --> "<< *this<<"\n";);
@@ -999,13 +999,12 @@ namespace crab {
             default: CRAB_ERROR("ERROR apron: operation not supported");
           }
           assert (res);
+
+          auto dim_x = get_var_dim_insert (x);
           m_apstate = apPtr (get_man (), ap_abstract0_assign_texpr(get_man (), false, 
                                                                    &*m_apstate, 
-                                                                   get_var_dim_insert (x), 
-                                                                   res, 
-                                                                   NULL));
-
-          
+                                                                   dim_x, res, NULL));
+                                                                   
           ap_texpr0_free (res);
           CRAB_LOG("apron",
                    crab::outs() << "--- "<< x<< ":="<< y<< op<< z<< " --> "<< *this<<"\n";);
@@ -1026,11 +1025,11 @@ namespace crab {
             default: CRAB_ERROR("ERROR apron: operation not supported");
           }
           assert (res);
+
+          auto dim_x = get_var_dim_insert (x);
           m_apstate = apPtr (get_man (), ap_abstract0_assign_texpr(get_man (), false, 
                                                                    &*m_apstate, 
-                                                                   get_var_dim_insert (x), 
-                                                                   res, 
-                                                                   NULL));
+                                                                   dim_x, res, NULL));
 
           ap_texpr0_free (res);
           CRAB_LOG("apron",
@@ -1052,11 +1051,11 @@ namespace crab {
             default: CRAB_ERROR("ERROR apron: operation not supported");
           }
           assert (res);
+
+          auto dim_x = get_var_dim_insert (x);
           m_apstate = apPtr (get_man (), ap_abstract0_assign_texpr(get_man (), false, 
                                                                    &*m_apstate, 
-                                                                   get_var_dim_insert (x), 
-                                                                   res, 
-                                                                   NULL));
+                                                                   dim_x, res, NULL));
 
           ap_texpr0_free (res);
           CRAB_LOG("apron",
@@ -1171,10 +1170,10 @@ namespace crab {
         void expand (VariableName x, VariableName dup) {
           *this -= dup;
           // --- increases number of dimensions by one
+          auto dim_x = get_var_dim_insert (x);
           m_apstate = apPtr (get_man(),
-                             ap_abstract0_expand(get_man (), false, 
-                                                 &* m_apstate, 
-                                                 get_var_dim_insert (x), 1));
+                             ap_abstract0_expand(get_man (), false, &* m_apstate, 
+                                                 dim_x, 1));
           // --- the additional dimension is put at the end of integer
           //     dimensions.
           m_var_map.insert (binding_t (dup, get_dims () - 1));            
