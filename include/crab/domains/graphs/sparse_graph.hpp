@@ -156,25 +156,25 @@ class SparseWtGraph : public writeable {
       return *this;
     }
 
-    void check_adjs(void)
-    {
-      for(vert_id v : verts())
-      {
-        assert(succs(v).size() <= sz);
-        for(vert_id s : succs(v))
-        {
-          assert(s < sz);
-          assert(preds(s).mem(v));
-        }
+    // void check_adjs(void)
+    // {
+    //   for(vert_id v : verts())
+    //   {
+    //     assert(succs(v).size() <= sz);
+    //     for(vert_id s : succs(v))
+    //     {
+    //       assert(s < sz);
+    //       assert(preds(s).mem(v));
+    //     }
 
-        assert(preds(v).size() <= sz);
-        for(vert_id p : preds(v))
-        {
-          assert(p < sz);
-          assert(succs(p).mem(v));
-        }
-      }
-    }
+    //     assert(preds(v).size() <= sz);
+    //     for(vert_id p : preds(v))
+    //     {
+    //       assert(p < sz);
+    //       assert(succs(p).mem(v));
+    //     }
+    //   }
+    // }
 
     ~SparseWtGraph()
     {

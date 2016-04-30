@@ -1295,7 +1295,7 @@ namespace crab {
         
         template<typename Thresholds>
         apron_domain_t widening_thresholds (apron_domain_t o, const Thresholds &ts) {
-          return create_base(base().widening_thresholds<Thresholds>(o.norm(), ts));
+          return create_base(base().template widening_thresholds<Thresholds>(o.norm(), ts));
         }
         
         void normalize() { norm(); }

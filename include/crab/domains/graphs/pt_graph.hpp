@@ -85,25 +85,25 @@ class PtGraph : public writeable {
       return *this;
     }
 
-    void check_adjs(void)
-    {
-      for(vert_id v : verts())
-      {
-        assert(succs(v).size() <= _succs.size());
-        for(vert_id s : succs(v))
-        {
-          assert(s < _succs.size());
-          assert(preds(s).mem(v));
-        }
+    // void check_adjs(void)
+    // {
+    //   for(vert_id v : verts())
+    //   {
+    //     assert(succs(v).size() <= _succs.size());
+    //     for(vert_id s : succs(v))
+    //     {
+    //       assert(s < _succs.size());
+    //       assert(preds(s).mem(v));
+    //     }
 
-        assert(preds(v).size() <= _succs.size());
-        for(vert_id p : preds(v))
-        {
-          assert(p < _succs.size());
-          assert(succs(p).mem(v));
-        }
-      }
-    }
+    //     assert(preds(v).size() <= _succs.size());
+    //     for(vert_id p : preds(v))
+    //     {
+    //       assert(p < _succs.size());
+    //       assert(succs(p).mem(v));
+    //     }
+    //   }
+    // }
 
     ~PtGraph()
     { }

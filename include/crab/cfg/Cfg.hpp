@@ -1038,7 +1038,7 @@ namespace crab {
     {
       // lhs = &func;
       VariableName m_lhs;
-      index_t m_func;
+      VariableName m_func; // Pre: function names are unique 
       
      public:
       
@@ -1051,7 +1051,7 @@ namespace crab {
       
       VariableName lhs () const { return m_lhs; }
       
-      index_t rhs () const { return m_func; }
+      VariableName rhs () const { return m_func; }
       
       virtual void accept(StatementVisitor <VariableName> *v) 
       {

@@ -171,7 +171,7 @@ namespace crab {
         
         void visit (ptr_function_t & stmt) { 
           pointer_var lhs = new_pointer_var (stmt.lhs ());
-          auto ref = ikos::mk_function_ref (stmt.rhs ());
+          auto ref = ikos::mk_function_ref (stmt.rhs ().index());
           (*m_cs) += lhs == ref;
         }
         
