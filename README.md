@@ -181,5 +181,5 @@ See [Crab_LICENSE.txt](Crab_LICENSE.txt) and
 
 # Publications #
 
-- "An Abstract Domain of Uninterpreted Functions". G.Gange , J.A.Navas, P.Schachte, H.Sondergaard, and P.J. Stuckey. [(PDF)](http://www.clip.dia.fi.upm.es/~jorge/docs/terms-vmcai16.pdf). VMCAI'16
+- "An Abstract Domain of Uninterpreted Functions" [(PDF)](http://www.clip.dia.fi.upm.es/~jorge/docs/terms-vmcai16.pdf). VMCAI'16.
 
