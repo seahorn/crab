@@ -44,6 +44,7 @@ namespace crab {
     typedef std::string                          basic_block_label_t;
     typedef Cfg< basic_block_label_t, varname_t> cfg_t;
     typedef Cfg_Ref<cfg_t>                       cfg_ref_t;
+    typedef Cfg_Rev<cfg_ref_t>                   cfg_rev_t;
     typedef cfg_t::basic_block_t                 basic_block_t;
   }
 

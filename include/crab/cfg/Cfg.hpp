@@ -1390,6 +1390,9 @@ namespace crab {
       
      public:
       
+      typedef VariableName varname_t;
+      typedef BasicBlockLabel basic_block_label_t;
+
       // helper types to build statements
       typedef variable< z_number, VariableName > z_variable_t;
       typedef linear_expression< z_number, VariableName > z_lin_exp_t;
@@ -1610,13 +1613,11 @@ namespace crab {
         return make_pair (m_prev.begin (), m_prev.end ());
       }
 
-      // FIXME: just create a view rather than actually reverse the
-      //        block
-      void reverse()
-      {
-        std::swap (m_prev, m_next);
-        std::reverse (m_stmts.begin (), m_stmts.end ());
-      }
+      // void reverse()
+      // {
+      //   std::swap (m_prev, m_next);
+      //   std::reverse (m_stmts.begin (), m_stmts.end ());
+      // }
       
       // Add a cfg edge from *this to b
       void operator>>(basic_block_t& b) 
@@ -2171,6 +2172,82 @@ namespace crab {
       }
       
     }; 
+
+    // Viewing a BasicBlock with all statements reversed. Useful for
+    // backward analysis.
+    template<class BasicBlock> 
+    class BasicBlock_Rev {
+     public:
+      typedef typename BasicBlock::varname_t varname_t;
+      typedef typename BasicBlock::basic_block_label_t basic_block_label_t;
+
+      typedef BasicBlock_Rev<BasicBlock> basic_block_rev_t;
+
+      typedef typename BasicBlock::succ_iterator succ_iterator;
+      typedef typename BasicBlock::const_succ_iterator const_succ_iterator;
+      typedef succ_iterator pred_iterator;
+      typedef const_succ_iterator const_pred_iterator;
+
+      typedef typename BasicBlock::reverse_iterator iterator;
+      typedef typename BasicBlock::const_reverse_iterator const_iterator;
+      typedef discrete_domain<varname_t> live_domain_t;
+
+     private:
+
+      BasicBlock& _bb;
+
+     public:
+
+      BasicBlock_Rev(BasicBlock& bb): _bb(bb) {}
+
+      basic_block_label_t label () const { return _bb.label(); }
+
+      std::string name () const { return _bb.name();}
+
+      iterator begin() { return _bb.rbegin();}            
+
+      iterator end() { return _bb.rend();}             
+
+      const_iterator begin() const { return _bb.rbegin(); }
+
+      const_iterator end() const { return _bb.rend();}
+      
+      std::size_t size() const { return std::distance ( begin (), end ()); }
+
+      live_domain_t& live () { return _bb.live(); }
+
+      live_domain_t live () const { return _bb.live(); }
+
+      pair<succ_iterator, succ_iterator> next_blocks()
+      { return _bb.prev_blocks(); }
+      
+      pair<pred_iterator, pred_iterator> prev_blocks() 
+      { return _bb.next_blocks(); }
+      
+      pair<const_succ_iterator,const_succ_iterator> next_blocks () const
+      { return _bb.prev_blocks(); }
+      
+      pair<const_pred_iterator,const_pred_iterator> prev_blocks() const
+      { return _bb.next_blocks(); }
+
+      void write(ostream& o) const
+      {
+        o << name() << ":\n";	
+        for (auto const &s: *this)
+        { o << "  " << s << ";\n"; }
+        o << "--> [";
+        for (auto const &n : boost::make_iterator_range (next_blocks ()))
+        { o << n << ";"; }
+        o << "]\n";
+        return;
+      }     
+
+      friend ostream& operator<<(ostream &o, const basic_block_rev_t &b) {
+        //b.write (o);
+        o << b.name();
+        return o;
+      }
+    };
   
     template< class VariableName>
     struct StatementVisitor
@@ -2299,6 +2376,10 @@ namespace crab {
       }
     }; 
 
+    // forward declarations
+    template<class Any> class Cfg_Rev;
+    template<class Any> class Cfg_Ref;
+     
     template< class BasicBlockLabel, class VariableName >
     class Cfg: public boost::noncopyable {
      public:
@@ -2660,17 +2741,15 @@ namespace crab {
         return thresholds;
       }
 
-      // FIXME: just create a view rather than actually reverse the
-      //        CFG
-      void reverse()
-      {
-        if (!m_has_exit)
-          CRAB_ERROR ("Cfg cannot be reversed: no exit block found");
+      // void reverse()
+      // {
+      //   if (!m_has_exit)
+      //     CRAB_ERROR ("Cfg cannot be reversed: no exit block found");
         
-        std::swap (m_entry, m_exit);
-        for (auto &p: *this) 
-          p.reverse (); 
-      }
+      //   std::swap (m_entry, m_exit);
+      //   for (auto &p: *this) 
+      //     p.reverse (); 
+      // }
       
       void write (ostream& o) const
       {
@@ -2796,8 +2875,9 @@ namespace crab {
       }
       
       // mark reachable blocks from curId
+      template<class AnyCfg>
       void markAliveBlocks (BasicBlockLabel curId, 
-                            cfg_t& cfg,
+                            AnyCfg& cfg,
                             visited_t& visited)
       {
         if (visited.count (curId) > 0) return;
@@ -2825,11 +2905,10 @@ namespace crab {
       {
         if (!has_exit ()) return;
         
-        auto cfg_ptr = clone ();
-        cfg_ptr->reverse ();
-        
+        Cfg_Rev<Cfg_Ref<cfg_t> > rev_cfg (*this); 
+
         visited_t useful, useless;
-        markAliveBlocks (cfg_ptr->entry (), *cfg_ptr, useful);
+        markAliveBlocks (rev_cfg.entry (), rev_cfg, useful);
         
         for (auto const &bb : *this) 
           if (!(useful.count (bb.label ()) > 0))
@@ -3007,6 +3086,196 @@ namespace crab {
       // }      
     };
   
+    // Viewing a CFG with all edges and block statements
+    // reversed. Useful for backward analysis.
+    template<class CFGRef> // CFGRef must be copyable!
+    class Cfg_Rev {
+     public:
+      typedef typename CFGRef::basic_block_label_t basic_block_label_t;
+      typedef BasicBlock_Rev<typename CFGRef::basic_block_t> basic_block_t;
+      typedef basic_block_label_t node_t; // for Bgl graphs
+      typedef typename CFGRef::varname_t varname_t;
+      typedef typename CFGRef::fdecl_t fdecl_t;
+      typedef typename CFGRef::statement_t statement_t;
+      typedef typename CFGRef::thresholds_t thresholds_t;
+
+      typedef typename CFGRef::succ_range pred_range;
+      typedef typename CFGRef::pred_range succ_range;
+      typedef typename CFGRef::const_succ_range const_pred_range;
+      typedef typename CFGRef::const_pred_range const_succ_range;
+
+      // For BGL
+      typedef typename basic_block_t::succ_iterator succ_iterator;
+      typedef typename basic_block_t::pred_iterator pred_iterator;
+      typedef typename basic_block_t::const_succ_iterator const_succ_iterator;
+      typedef typename basic_block_t::const_pred_iterator const_pred_iterator;
+
+      typedef Cfg_Rev<CFGRef> cfg_rev_t;
+
+     private:
+
+      struct getRev : public std::unary_function<typename CFGRef::basic_block_t, basic_block_t> {
+        const boost::unordered_map<basic_block_label_t, basic_block_t>& _rev_bbs;
+
+        getRev(const boost::unordered_map<basic_block_label_t, basic_block_t>& rev_bbs)
+            : _rev_bbs(rev_bbs) { }
+
+        const basic_block_t& operator()(typename CFGRef::basic_block_t &bb) const {
+          auto it = _rev_bbs.find(bb.label());
+          if (it != _rev_bbs.end())
+            return it->second;
+          CRAB_ERROR ("Basic block not found in the CFG");          
+        }
+      }; 
+
+     public:
+
+      typedef boost::transform_iterator<getRev, typename CFGRef::iterator> iterator;
+      typedef boost::transform_iterator<getRev, typename CFGRef::const_iterator> const_iterator;
+      typedef typename CFGRef::label_iterator label_iterator;
+      typedef typename CFGRef::const_label_iterator const_label_iterator;
+      typedef typename CFGRef::var_iterator var_iterator;
+      typedef typename CFGRef::const_var_iterator const_var_iterator;
+
+     private:
+
+      CFGRef _cfg;
+      boost::unordered_map<basic_block_label_t, basic_block_t> _rev_bbs;
+     
+     public:
+
+      // --- hook needed by crab::cg::CallGraph<CFGRef>::CgNode
+      Cfg_Rev () { }
+
+      Cfg_Rev (CFGRef cfg): _cfg(cfg) { 
+        // Create BasicBlock_Rev from BasicBlock objects
+        // Note that BasicBlock_Rev is also a view of BasicBlock so it
+        // doesn't modify BasicBlock objects.
+        for(auto &bb: cfg) {
+          basic_block_t rev(bb);
+          _rev_bbs.insert(std::make_pair(bb.label(), rev));
+        }
+      }
+
+      Cfg_Rev(const cfg_rev_t& o)
+          : _cfg(o._cfg), _rev_bbs(o._rev_bbs) { }
+
+      Cfg_Rev(cfg_rev_t && o)
+          : _cfg(std::move(o._cfg)), _rev_bbs(std::move(o._rev_bbs)) { }
+
+      cfg_rev_t& operator=(const cfg_rev_t&o) {
+        if (this != &o) {
+          _cfg = o._cfg;
+          _rev_bbs = o._rev_bbs;
+        }
+        return *this;
+      }
+
+      cfg_rev_t& operator=(cfg_rev_t&&o) {
+        _cfg = std::move(o._cfg);
+        _rev_bbs = std::move(o._rev_bbs);
+        return *this;
+      }
+
+      basic_block_label_t  entry() const {
+        if (!_cfg.has_exit()) CRAB_ERROR("Entry not found!");
+        return _cfg.exit();
+      }
+
+      const_succ_range next_nodes (basic_block_label_t bb) const {
+        return _cfg.prev_nodes(bb);
+      }
+
+      const_pred_range prev_nodes (basic_block_label_t bb) const {
+        return _cfg.next_nodes(bb);
+      }
+
+      succ_range next_nodes (basic_block_label_t bb) {
+        return _cfg.prev_nodes(bb);
+      }
+
+      pred_range prev_nodes (basic_block_label_t bb) {
+        return _cfg.next_nodes(bb);
+      }
+
+      basic_block_t& get_node (basic_block_label_t bb_id) {
+        auto it = _rev_bbs.find (bb_id);
+        if (it == _rev_bbs.end()) 
+          CRAB_ERROR ("Basic block not found in the CFG");
+        return it->second;
+      }
+
+      const basic_block_t& get_node (basic_block_label_t bb_id) const {
+        auto it = _rev_bbs.find (bb_id);
+        if (it == _rev_bbs.end()) 
+          CRAB_ERROR ("Basic block not found in the CFG");
+        return it->second;
+      }
+      
+      thresholds_t initialize_thresholds_for_widening (size_t size) const {
+        return _cfg.initialize_thresholds_for_widening (size);
+      }
+
+      iterator begin() {
+        return boost::make_transform_iterator (_cfg.begin(), getRev(_rev_bbs));
+      }
+      
+      iterator end() {
+        return boost::make_transform_iterator (_cfg.end(), getRev(_rev_bbs));
+      }
+      
+      const_iterator begin() const {
+        return boost::make_transform_iterator (_cfg.begin(), getRev(_rev_bbs));
+      }
+      
+      const_iterator end() const {
+        return boost::make_transform_iterator (_cfg.end(), getRev(_rev_bbs));
+      }
+
+      label_iterator label_begin() {
+        return _cfg.label_begin();
+      }
+      
+      label_iterator label_end() {
+        return _cfg.label_end();
+      }
+      
+      const_label_iterator label_begin() const {
+        return _cfg.label_begin();
+      }
+      
+      const_label_iterator label_end() const {
+        return _cfg.label_end();
+      }
+
+      boost::optional<fdecl_t> get_func_decl () const { 
+        return _cfg.get_func_decl();
+      }
+      
+      bool has_exit () const {
+        return true;
+      }
+      
+      basic_block_label_t exit()  const { 
+        return _cfg.entry();
+      }
+
+      void write(std::ostream& o) const {
+        if (get_func_decl())
+          o << *get_func_decl() << endl;
+        for (auto &bb: *this)
+        { bb.write(o); }
+      }
+
+      friend std::ostream& operator<<(std::ostream &o, const Cfg_Rev<CFGRef> &cfg) {
+        cfg.write(o);
+        return o;
+      }
+      
+      void simplify () { }
+      
+    };
+
      // Helper class
     template<typename CFG>
     struct CfgHasher {
@@ -3032,13 +3301,13 @@ namespace crab {
     };
 
     // extending boost::hash for Cfg class
-    template<class BB, class VarName>
-    std::size_t hash_value(Cfg<BB,VarName> const& cfg) {
+    template<class B, class V>
+    std::size_t hash_value(Cfg<B,V> const& cfg) {
       auto fdecl = cfg.get_func_decl ();            
       if (!fdecl)
         CRAB_ERROR ("cannot hash a cfg because function declaration is missing");
 
-      return CfgHasher< Cfg <BB,VarName> >::hash(*fdecl);
+      return CfgHasher<Cfg<B,V> >::hash(*fdecl);
     }
 
     template<class CFG>
@@ -3050,14 +3319,27 @@ namespace crab {
       return CfgHasher<Cfg_Ref<CFG> >::hash(*fdecl);
     }
 
+    template<class CFGRef>
+    std::size_t hash_value(Cfg_Rev<CFGRef> const& cfg) {
+      auto fdecl = cfg.get().get_func_decl ();            
+      if (!fdecl)
+        CRAB_ERROR ("cannot hash a cfg because function declaration is missing");
 
-    template<class BB, class VarName >
-    bool operator==(Cfg<BB,VarName> const& a, Cfg<BB,VarName> const& b) {
+      return CfgHasher<Cfg_Rev<CFGRef> >::hash(*fdecl);
+    }
+
+    template<class B, class V>
+    bool operator==(Cfg<B,V> const& a, Cfg<B,V> const& b) {
       return hash_value (a) == hash_value (b);
     }
 
     template<class CFG>
     bool operator==(Cfg_Ref<CFG> const& a, Cfg_Ref<CFG> const& b) {
+      return hash_value (a) == hash_value (b);
+    }
+
+    template<class CFGRef>
+    bool operator==(Cfg_Rev<CFGRef> const& a, Cfg_Rev<CFGRef> const& b) {
       return hash_value (a) == hash_value (b);
     }
 
