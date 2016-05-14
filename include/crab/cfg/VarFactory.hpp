@@ -31,8 +31,7 @@ namespace crab {
 
        // This variable factory creates a new variable associated to an
        // element of type T. It can also create variables that are not
-       // associated to an element of type T. We call them shadow
-       // variables.
+       // associated to an element of type T. We call them shadow variables.
        // 
        // The factory uses a counter of type index_t to generate variable
        // id's that always increases.
@@ -50,11 +49,12 @@ namespace crab {
            friend class VariableFactory;
            
           public:
-           typedef ikos::index_t index_t; 
+
            // FIXME: we should use some unlimited precision type to avoid
            // overflow. However, this change is a bit involving since we
            // need to change the algorithm api's in patricia_trees.hpp because
            // they assume ikos::index_t.
+           typedef ikos::index_t index_t; 
            // typedef ikos::z_number index_t;
            
           private:
@@ -72,7 +72,8 @@ namespace crab {
            
           public:
            
-           IndexedString(const IndexedString& is): _s(is._s), _id(is._id), _vfac(is._vfac) { }
+           IndexedString(const IndexedString& is)
+               : _s(is._s), _id(is._id), _vfac(is._vfac) { }
            
            IndexedString& operator=(IndexedString is) {
              _s = is._s;
@@ -89,7 +90,7 @@ namespace crab {
              {  return indexed_string_impl::get_str< T >(*_s);  }
              else
              { // unlikely prefix
-               return "@shadow.var._" + std::to_string(_id);
+               return "@V_" + std::to_string(_id);
              }
            }
            
@@ -147,16 +148,10 @@ namespace crab {
          VariableFactory (): _next_id (1) { }
          
          VariableFactory (index_t start_id): _next_id (start_id) { }
-         
-         // return all the shadow variables created by the factory.
-         const_var_range get_shadow_vars () const 
-         {
-           return boost::make_iterator_range (_shadow_vars.begin (),
-                                              _shadow_vars.end ());
-         }
-         
-         // special purpose: for generating IndexedString's without being
+                  
+         // hook for generating IndexedString's without being
          // associated with a particular T (w/o caching).
+         // XXX: do not use it unless strictly necessary.
          IndexedString get ()
          {
            IndexedString is (_next_id++, this);
@@ -164,8 +159,9 @@ namespace crab {
            return is;
          }
          
-         // special purpose: for generating IndexedString's without being
+         // hook for generating IndexedString's without being
          // associated with a particular T (w/ caching).
+         // XXX: do not use it unless strictly necessary.
          IndexedString get (index_t key)
          {
            auto it = _shadow_map.find (key);
@@ -192,6 +188,14 @@ namespace crab {
            else 
              return it->second;
          }
+
+         // return all the shadow variables created by the factory.
+         const_var_range get_shadow_vars () const 
+         {
+           return boost::make_iterator_range (_shadow_vars.begin (),
+                                              _shadow_vars.end ());
+         }
+
        }; 
     
        //! Specialized factory for strings
@@ -204,13 +208,16 @@ namespace crab {
          
          typedef StrVariableFactory_t::variable_t varname_t;
          typedef StrVariableFactory_t::const_var_range const_var_range;
-         
+         typedef typename StrVariableFactory_t::index_t index_t;         
+
          StrVariableFactory(): m_factory (new StrVariableFactory_t()){ }
          
-         varname_t operator[](std::string v) {
-           return (*m_factory)[v];
-         }
-         
+         varname_t operator[](std::string v) { return (*m_factory)[v]; }
+
+         varname_t get () { return m_factory->get(); }
+
+         varname_t get (index_t key) { return m_factory->get(key); }
+
          const_var_range get_shadow_vars () const  {
            return m_factory->get_shadow_vars ();
          }
@@ -228,23 +235,11 @@ namespace crab {
        }; 
     
        inline int fresh_colour(int col_x, int col_y) {
-         switch(col_x)
-         {
-           case 0:
-             {
-               return col_y == 1 ? 2 : 1;
-             }
-           case 1:
-             {
-               return col_y == 0 ? 2 : 0;
-             }
-           case 2:
-             {
-               return col_y == 0 ? 1 : 0;
-             }
-           default:
-             CRAB_ERROR("Unreachable");
-             return 0;
+         switch(col_x) {
+           case 0: return col_y == 1 ? 2 : 1;
+           case 1: return col_y == 0 ? 2 : 0;
+           case 2: return col_y == 0 ? 1 : 0;
+           default: CRAB_ERROR("Unreachable");
          }
        }
   
