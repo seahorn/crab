@@ -145,6 +145,7 @@ namespace crab
     static std::map<std::string,std::string> ss;
 
   public:
+    static void reset();
     static unsigned  get (const std::string &n);
     static double avg (const std::string &n, double v);
     static unsigned uset (const std::string &n, unsigned v);

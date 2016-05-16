@@ -9,7 +9,14 @@ namespace crab
   std::map<std::string,Stopwatch> CrabStats::sw;
   std::map<std::string,Averager> CrabStats::av;
   std::map<std::string,std::string> CrabStats::ss;
-  
+
+  void CrabStats::reset () {
+    counters.clear();
+    sw.clear();
+    av.clear();
+    ss.clear();
+  }
+
   void CrabStats::count (const std::string &name) { ++counters[name]; }
   void CrabStats::count_max (const std::string &name, unsigned v) {
       counters[name] = std::max (counters[name], v);
