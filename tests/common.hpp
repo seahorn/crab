@@ -8,7 +8,7 @@
 #include <crab/cfg/CfgBgl.hpp> 
 #include <crab/cfg/VarFactory.hpp>
 #include <crab/analysis/FwdAnalyzer.hpp>
-#include <crab/analysis/Pointer.hpp>
+//#include <crab/analysis/Pointer.hpp>
 #include <crab/analysis/Liveness.hpp>
 
 #include <crab/domains/linear_constraints.hpp> 
