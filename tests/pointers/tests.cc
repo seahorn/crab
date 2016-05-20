@@ -195,7 +195,7 @@ void run (vector<cfg_ref_t> cfgs, VariableFactory& vfac)
 
 int main (int argc, char**argv)
 {
-  SET_LOGGER(argc,argv)
+  SET_TEST_OPTIONS(argc,argv)
 
   {
     // intra-procedural example

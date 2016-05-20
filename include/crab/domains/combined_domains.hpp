@@ -12,6 +12,7 @@
  **************************************************************************/
 
 #include <crab/common/types.hpp>
+#include <crab/common/stats.hpp>
 #include <crab/domains/domain_products.hpp>
 #include <crab/domains/numerical_domains_api.hpp>
 #include <crab/domains/bitwise_operators_api.hpp>
@@ -83,6 +84,9 @@ namespace crab {
       }
 
       void reduce_variable(const VariableName& v) {
+        crab::CrabStats::count (getDomainName() + ".count.reduce");
+        crab::ScopedCrabStats __st__(getDomainName() + ".reduce");
+
         if (!is_bottom()) {
           
           // We just propagate from one domain to another.  We could
@@ -296,10 +300,11 @@ namespace crab {
       }
       
       static std::string getDomainName() { 
-        std::string name = "Reduced Product of " +
+        std::string name = "ReducedProduct(" +
                            Domain1::getDomainName () +
-                           " and " + 
-                           Domain2::getDomainName ();
+                           "," + 
+                           Domain2::getDomainName () + 
+                           ")";
         return name;
       }
       
@@ -619,6 +624,9 @@ namespace crab {
           _product(product) {}
       
       void reduce_variable(const varname_t& v) {
+        crab::CrabStats::count (getDomainName() + ".count.reduce");
+        crab::ScopedCrabStats __st__(getDomainName() + ".reduce");
+
         if (is_bottom())
           return;
         

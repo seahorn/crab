@@ -145,7 +145,7 @@ cfg_t* m (VariableFactory &vfac)  {
 
 int main (int argc, char** argv ) {
 
-  SET_LOGGER(argc,argv)
+  SET_TEST_OPTIONS(argc,argv)
 
   VariableFactory vfac;
   cfg_t* t1 = foo (vfac);
@@ -180,6 +180,11 @@ int main (int argc, char** argv ) {
 
     a.Run ();
     
+    if (stats_enabled) {
+      crab::CrabStats::Print(crab::outs());
+      crab::CrabStats::reset();
+    }  
+
     // Print invariants
     for (auto cfg : cfgs) {
       auto fdecl_opt = cfg.get_func_decl ();
@@ -215,6 +220,11 @@ int main (int argc, char** argv ) {
          << " and forward domain=" << interval_domain_t::getDomainName () << "\n";
 
     a.Run ();
+    if (stats_enabled) {
+      crab::CrabStats::Print(crab::outs());
+      crab::CrabStats::reset();
+    }  
+
     
     // Print invariants
     for (auto cfg : cfgs) {
@@ -250,6 +260,11 @@ int main (int argc, char** argv ) {
          << " and forward domain=" << interval_domain_t::getDomainName () << "\n";
 
     a.Run ();
+    if (stats_enabled) {
+      crab::CrabStats::Print(crab::outs());
+      crab::CrabStats::reset();
+    }  
+
     
     // Print invariants
     for (auto cfg : cfgs) {
@@ -284,6 +299,11 @@ int main (int argc, char** argv ) {
          << " and forward domain=" << num_domain_t::getDomainName () << "\n";
 
     a.Run ();
+
+    if (stats_enabled) {
+      crab::CrabStats::Print(crab::outs());
+      crab::CrabStats::reset();
+    }  
     
     // Print invariants
     for (auto cfg : cfgs) {

@@ -53,7 +53,7 @@ cfg_t* prog (VariableFactory &vfac)
 
 int main (int argc, char**argv){
 
-  SET_LOGGER(argc,argv)
+  SET_TEST_OPTIONS(argc,argv)
   
   // Simple operations on thresholds
   typename cfg_t::thresholds_t thresholds;

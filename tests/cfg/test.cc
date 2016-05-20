@@ -59,7 +59,7 @@ std::vector<typename CFG::node_t> rev_topo(CFG cfg) {
 
 int main (int argc, char** argv )
 {
-  SET_LOGGER(argc,argv)
+  SET_TEST_OPTIONS(argc,argv)
 
   VariableFactory vfac;
   cfg_t* cfg = prog(vfac);

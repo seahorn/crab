@@ -160,7 +160,7 @@ void check (cfg_ref_t cfg, VariableFactory& vfac) {
 
 int main (int argc, char**argv) {
 
-  SET_LOGGER(argc,argv)
+  SET_TEST_OPTIONS(argc,argv)
 
   VariableFactory vfac;
   cfg_t* p1 = cfg1 (vfac);

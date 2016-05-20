@@ -217,13 +217,17 @@ void run (cfg_t* cfg, VariableFactory& vfac, unsigned widening, unsigned narrowi
       crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
     }
     crab::outs() << "=======================================\n";
+    if (stats_enabled) {
+      crab::CrabStats::Print(crab::outs());
+      crab::CrabStats::reset();
+    }
     #endif 
 }
 
 /* Example of how to infer invariants from the above CFG */
 int main (int argc, char** argv ) {
 
-  SET_LOGGER(argc,argv)
+  SET_TEST_OPTIONS(argc,argv)
 
 #if 1
 

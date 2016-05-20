@@ -1134,10 +1134,16 @@ namespace crab {
           _scalar(other._scalar) , 
           _g(other._g), 
           _succ_idx_map(new succ_index_map_t(*other._succ_idx_map))
-      { }
+      {
+        crab::CrabStats::count (getDomainName() + ".count.copy");
+        crab::ScopedCrabStats __st__(getDomainName() + ".copy");
+      }
   
       array_graph_domain_t& operator=(array_graph_domain_t other) 
       {
+        crab::CrabStats::count (getDomainName() + ".count.copy");
+        crab::ScopedCrabStats __st__(getDomainName() + ".copy");
+
         if (this != &other)
         {
           this->_is_bottom = other._is_bottom;
@@ -1158,6 +1164,9 @@ namespace crab {
   
       void reduce ()
       {
+        crab::CrabStats::count (getDomainName() + ".count.reduce");
+        crab::ScopedCrabStats __st__(getDomainName() + ".reduce");
+
         if (is_bottom ()) return; 
       
         domain_traits<ScalarNumDomain>::normalize(_scalar);
@@ -1170,6 +1179,9 @@ namespace crab {
 
       bool operator<=(array_graph_domain_t other) 
       {
+        crab::CrabStats::count (getDomainName() + ".count.leq");
+        crab::ScopedCrabStats __st__(getDomainName() + ".leq");
+
         if (is_bottom ()) {
           return true;
         } else if (other.is_bottom ()) {
@@ -1185,6 +1197,9 @@ namespace crab {
   
       array_graph_domain_t operator|(array_graph_domain_t other) 
       {
+        crab::CrabStats::count (getDomainName() + ".count.join");
+        crab::ScopedCrabStats __st__(getDomainName() + ".join");
+
         if (is_bottom ()) {
           return other;
         } else if (other.is_bottom ()) {
@@ -1199,6 +1214,9 @@ namespace crab {
   
       array_graph_domain_t operator&(array_graph_domain_t other) 
       {
+        crab::CrabStats::count (getDomainName() + ".count.meet");
+        crab::ScopedCrabStats __st__(getDomainName() + ".meet");
+
         if (is_bottom () || other.is_bottom ()) {
           return bottom();
         } else {
@@ -1211,6 +1229,9 @@ namespace crab {
   
       array_graph_domain_t operator||(array_graph_domain_t other) 
       {
+        crab::CrabStats::count (getDomainName() + ".count.widening");
+        crab::ScopedCrabStats __st__(getDomainName() + ".widening");
+
         if (is_bottom ())  return other;
         else if (other.is_bottom ())  return *this;
         else 
@@ -1232,6 +1253,9 @@ namespace crab {
         
       array_graph_domain_t operator&& (array_graph_domain_t other) 
       {
+        crab::CrabStats::count (getDomainName() + ".count.narrowing");
+        crab::ScopedCrabStats __st__(getDomainName() + ".narrowing");
+
         if (is_bottom ()|| other.is_bottom ()) 
           return bottom();
         else 
@@ -1245,6 +1269,9 @@ namespace crab {
   
       void operator-=(VariableName var)
       {
+        crab::CrabStats::count (getDomainName() + ".count.forget");
+        crab::ScopedCrabStats __st__(getDomainName() + ".forget");
+
         if (is_bottom ()) return;
 
         // scalar domain
@@ -1273,6 +1300,9 @@ namespace crab {
 
       void operator += (linear_constraint_system_t csts) 
       {
+        crab::CrabStats::count (getDomainName() + ".count.add_constraints");
+        crab::ScopedCrabStats __st__(getDomainName() + ".add_constraints");
+
         if (is_bottom()) return;
     
         // graph domain: make sure that all the relevant variables
@@ -1294,6 +1324,9 @@ namespace crab {
 
       void assign (VariableName x, linear_expression_t e) 
       {
+        crab::CrabStats::count (getDomainName() + ".count.assign");
+        crab::ScopedCrabStats __st__(getDomainName() + ".assign");
+
         if (is_bottom()) return;
 
         if (optional<variable_t> y = e.get_variable())
@@ -1333,6 +1366,9 @@ namespace crab {
 
       void apply (operation_t op, VariableName x, VariableName y, Number z) 
       {
+        crab::CrabStats::count (getDomainName() + ".count.apply");
+        crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+
         assign (x, linear_expression_t(y));
         apply_helper<Number> (op, x, z);
 
@@ -1342,6 +1378,9 @@ namespace crab {
 
       void apply(operation_t op, VariableName x, VariableName y, VariableName z) 
       {
+        crab::CrabStats::count (getDomainName() + ".count.apply");
+        crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+
         assign (x, linear_expression_t(y));
         apply_helper<VariableName> (op, x, z);
 
@@ -1351,6 +1390,9 @@ namespace crab {
 
       void apply(operation_t op, VariableName x, Number k) 
       {
+        crab::CrabStats::count (getDomainName() + ".count.apply");
+        crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+
         apply_helper<Number> (op, x, k);
 
         CRAB_LOG("array-graph",
@@ -1386,6 +1428,9 @@ namespace crab {
 
       void load (VariableName lhs, VariableName arr, VariableName idx)
       {
+        crab::CrabStats::count (getDomainName() + ".count.load");
+        crab::ScopedCrabStats __st__(getDomainName() + ".load");
+
         WeightDomain w = array_read (idx);
         // --- Simplification wrt Gange et.al.:
         //     Only non-relational invariants are passed from the graph
@@ -1400,6 +1445,9 @@ namespace crab {
 
       void store (VariableName arr, VariableName idx, linear_expression_t val)
       {
+        crab::CrabStats::count (getDomainName() + ".count.store");
+        crab::ScopedCrabStats __st__(getDomainName() + ".store");
+
         // --- Simplification wrt Gange et.al.:
         //     Only non-relational invariants are passed from the scalar
         //     domain to the graph domain.

@@ -195,10 +195,35 @@ cfg_t* prog5 (VariableFactory &vfac)  {
   return cfg;
 }
 
+template <typename Domain, typename Live>
+void run(cfg_ref_t cfg, VariableFactory &vfac, Live *live)
+{
+  const unsigned int w = 10;
+  const unsigned int n = 2;
+
+  typename NumFwdAnalyzer <cfg_ref_t, Domain, VariableFactory>::type 
+      It (cfg, vfac, live, w, n, 20);
+  Domain inv = Domain::top ();
+  It.Run (inv);
+  crab::outs() << "Invariants using " << Domain::getDomainName () << ":\n";
+
+  for (auto &b : cfg)
+  {
+    // invariants at the entry of the block
+    auto inv = It [b.label ()];
+    crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
+  }
+  crab::outs() << endl;
+  if (stats_enabled) {
+    crab::CrabStats::Print(crab::outs());
+    crab::CrabStats::reset();
+  }  
+}
+
 /* Example of how to infer invariants from the above CFG */
 int main (int argc, char** argv )
 {
-  SET_LOGGER(argc,argv)
+  SET_TEST_OPTIONS(argc,argv)
 
   VariableFactory vfac;
 
@@ -212,76 +237,24 @@ int main (int argc, char** argv )
   cfg_t* cfg4 = prog4 (vfac);
   cfg_t* cfg5 = prog5 (vfac);
 
-  {
+  cfg1->simplify (); // this is optional
+  crab::outs() << *cfg1 << endl;
+  run<boxes_domain_t>(*cfg1, vfac, nullptr);
 
-    cfg1->simplify (); // this is optional
-    crab::outs() << *cfg1 << endl;
-    NumFwdAnalyzer <cfg_ref_t,boxes_domain_t,VariableFactory>::type a (*cfg1, vfac, nullptr, w, n);
-    // Run fixpoint 
-    a.Run (boxes_domain_t::top ());
-    // Print invariants
-    crab::outs() << "Invariants using " << boxes_domain_t::getDomainName () << "\n";
-    for (auto &b : *cfg1) {
-      auto inv = a [b.label ()];
-      crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
-    }
-  }
+  cfg2->simplify (); // this is optional
+  crab::outs() << *cfg2 << endl;
+  run<boxes_domain_t>(*cfg2, vfac, nullptr);
+  
+  cfg3->simplify (); // this is optional
+  crab::outs() << *cfg3 << endl;
+  run<boxes_domain_t>(*cfg3, vfac, nullptr);
 
-  {
-    cfg2->simplify (); // this is optional
-    crab::outs() << *cfg2 << endl;
-    NumFwdAnalyzer <cfg_ref_t, boxes_domain_t,VariableFactory>::type a (*cfg2,vfac,nullptr,w,n);
-    // Run fixpoint 
-    a.Run (boxes_domain_t::top ());
-    // Print invariants
-    crab::outs() << "Invariants using " << boxes_domain_t::getDomainName () << "\n";
-    for (auto &b : *cfg2) {
-      auto inv = a [b.label ()];
-      crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
-    }
-  }
+  cfg4->simplify (); // this is optional
+  crab::outs() << *cfg4 << endl;
+  run<boxes_domain_t>(*cfg4, vfac, nullptr);
 
-  {
-    cfg3->simplify (); // this is optional
-    crab::outs() << *cfg3 << endl;
-    NumFwdAnalyzer <cfg_ref_t, boxes_domain_t,VariableFactory>::type a (*cfg3,vfac,nullptr,w,n);
-    // Run fixpoint 
-    a.Run (boxes_domain_t::top ());
-    // Print invariants
-    crab::outs() << "Invariants using " << boxes_domain_t::getDomainName () << "\n";
-    for (auto &b : *cfg3) {
-      auto inv = a [b.label ()];
-      crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
-    }
-  }
-
-  {
-    cfg4->simplify (); // this is optional
-    crab::outs() << *cfg4 << endl;
-    NumFwdAnalyzer <cfg_ref_t, boxes_domain_t,VariableFactory>::type a (*cfg4,vfac,nullptr,w,n);
-    // Run fixpoint 
-    a.Run (boxes_domain_t::top ());
-    // Print invariants
-    crab::outs() << "Invariants using " << boxes_domain_t::getDomainName () << "\n";
-    for (auto &b : *cfg4) {
-      auto inv = a [b.label ()];
-      crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
-    }
-
-  }
-
-  {
-    crab::outs() << *cfg5 << endl;
-    NumFwdAnalyzer <cfg_ref_t, boxes_domain_t,VariableFactory>::type a (*cfg5,vfac,nullptr,w,n);
-    // Run fixpoint 
-    a.Run (boxes_domain_t::top ());
-    // Print invariants
-    crab::outs() << "Invariants using " << boxes_domain_t::getDomainName () << "\n";
-    for (auto &b : *cfg5) {
-      auto inv = a [b.label ()];
-      crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
-    }
-  }
+  crab::outs() << *cfg5 << endl;
+  run<boxes_domain_t>(*cfg5, vfac, nullptr);
 
   delete cfg1;
   delete cfg2;

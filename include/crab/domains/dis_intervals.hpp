@@ -1119,13 +1119,13 @@ namespace crab {
          bitwise_operators< Number, VariableName >(),
          division_operators< Number, VariableName >(),
          _env(o._env) { 
-       crab::CrabStats::count ("Domain.count.copy");
-       crab::ScopedCrabStats __st__("Domain.copy");
+       crab::CrabStats::count (getDomainName() + ".count.copy");
+       crab::ScopedCrabStats __st__(getDomainName() + ".copy");
      }
      
      dis_interval_domain_t& operator=(const dis_interval_domain_t& o) {
-       crab::CrabStats::count ("Domain.count.copy");
-       crab::ScopedCrabStats __st__("Domain.copy");
+       crab::CrabStats::count (getDomainName() + ".count.copy");
+       crab::ScopedCrabStats __st__(getDomainName() + ".copy");
        if (this != &o)
          this->_env = o._env;
        return *this;
@@ -1148,6 +1148,9 @@ namespace crab {
      }
 
      bool operator<=(dis_interval_domain_t e) {
+       crab::CrabStats::count (getDomainName() + ".count.leq");
+       crab::ScopedCrabStats __st__(getDomainName() + ".leq");
+
        //crab::outs() << "*** Leq " << *this << " and " << e << "\n";
        bool res = this->_env <= e._env;
        //crab::outs() << "result=" << res << "\n";
@@ -1159,6 +1162,9 @@ namespace crab {
      }
      
      dis_interval_domain_t operator|(dis_interval_domain_t e) {
+       crab::CrabStats::count (getDomainName() + ".count.join");
+       crab::ScopedCrabStats __st__(getDomainName() + ".join");
+
        //crab::outs() << "*** Join " << *this << " and " << e << "\n";
        dis_interval_domain_t res (this->_env | e._env);
        //crab::outs() << "result=" << res << "\n";
@@ -1166,6 +1172,9 @@ namespace crab {
      }
      
      dis_interval_domain_t operator&(dis_interval_domain_t e) {
+       crab::CrabStats::count (getDomainName() + ".count.meet");
+       crab::ScopedCrabStats __st__(getDomainName() + ".meet");
+
        //crab::outs() << "*** Meet " << *this << " and " << e << "\n";
        dis_interval_domain_t res (this->_env & e._env);
        //crab::outs() << "result=" << res << "\n";
@@ -1173,6 +1182,9 @@ namespace crab {
      }
 
      dis_interval_domain_t operator||(dis_interval_domain_t e) {
+       crab::CrabStats::count (getDomainName() + ".count.widening");
+       crab::ScopedCrabStats __st__(getDomainName() + ".widening");
+
        //crab::outs() << "*** Widening " << *this << " and " << e << "\n";
        dis_interval_domain_t res (this->_env || e._env);
        //crab::outs() << "result=" << res << "\n";
@@ -1181,6 +1193,9 @@ namespace crab {
      
      template<typename Thresholds>
      dis_interval_domain_t widening_thresholds (dis_interval_domain_t e, const Thresholds &ts) {
+       crab::CrabStats::count (getDomainName() + ".count.widening");
+       crab::ScopedCrabStats __st__(getDomainName() + ".widening");
+
        //crab::outs() << "*** Widening w/ thresholds " << *this << " and " << e << "\n";
        dis_interval_domain_t res = this->_env.widening_thresholds (e._env, ts);
        //crab::outs() << "result=" << res << "\n";
@@ -1188,6 +1203,9 @@ namespace crab {
      }
      
      dis_interval_domain_t operator&&(dis_interval_domain_t e) {
+       crab::CrabStats::count (getDomainName() + ".count.narrowing");
+       crab::ScopedCrabStats __st__(getDomainName() + ".narrowing");
+
        //crab::outs() << "*** Narrowing " << *this << " and " << e << "\n";
        dis_interval_domain_t res (this->_env && e._env);
        //crab::outs() << "result=" << res << "\n";
@@ -1195,19 +1213,31 @@ namespace crab {
      }
      
      void operator-=(VariableName v) {
+       crab::CrabStats::count (getDomainName() + ".count.forget");
+       crab::ScopedCrabStats __st__(getDomainName() + ".forget");
+
        this->_env -= v;
      }
 
      interval_t operator[](VariableName v)  {
+       crab::CrabStats::count (getDomainName() + ".count.to_intervals");
+       crab::ScopedCrabStats __st__(getDomainName() + ".to_intervals");
+
        dis_interval_t x = this->_env [v];
        return x.approx ();
      }
      
      void set(VariableName v, interval_t intv) {
+       crab::CrabStats::count (getDomainName() + ".count.assign");
+       crab::ScopedCrabStats __st__(getDomainName() + ".assign");
+
        this->_env.set (v, dis_interval_t (intv));
      }
      
      void operator+=(linear_constraint_system_t csts) {
+       crab::CrabStats::count (getDomainName() + ".count.add_constraints");
+       crab::ScopedCrabStats __st__(getDomainName() + ".add_constraints");
+
        if (!this->is_bottom()) {
          //crab::outs() << "*** add constraints " << csts << " in " << *this << "\n";
          const size_t threshold = 10; // make this template parameter
@@ -1218,6 +1248,9 @@ namespace crab {
      }
 
      void assign (VariableName x, linear_expression_t e)  {
+       crab::CrabStats::count (getDomainName() + ".count.assign");
+       crab::ScopedCrabStats __st__(getDomainName() + ".assign");
+
        //crab::outs() << "*** " <<  x << ":=" << e << " in " << *this << "\n";
        if (boost::optional<variable_t> v = e.get_variable ()) {
          this->_env.set(x, this->_env [(*v).name ()]);
@@ -1232,6 +1265,9 @@ namespace crab {
      }
      
      void apply (operation_t op, VariableName x, VariableName y, Number z) {
+       crab::CrabStats::count (getDomainName() + ".count.apply");
+       crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+
        //crab::outs() << "*** " << x << ":=" << y << op << z << " in " << *this << "\n";
        dis_interval_t yi = this->_env[y];
        dis_interval_t zi (z);
@@ -1247,6 +1283,9 @@ namespace crab {
      }
 
      void apply(operation_t op, VariableName x, VariableName y, VariableName z) {
+       crab::CrabStats::count (getDomainName() + ".count.apply");
+       crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+
        //crab::outs() << "*** " << x << ":=" << y << op << z << " in " << *this << "\n";
        dis_interval_t yi = this->_env[y];
        dis_interval_t zi = this->_env[z];
@@ -1263,6 +1302,9 @@ namespace crab {
      
      
      void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width)  {
+       crab::CrabStats::count (getDomainName() + ".count.apply");
+       crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+
        dis_interval_t yi = this->_env[y];
        dis_interval_t xi = dis_interval_t::top ();
        switch(op){
@@ -1274,6 +1316,9 @@ namespace crab {
      }
      
      void apply(conv_operation_t op, VariableName x, Number k, unsigned width) {
+       crab::CrabStats::count (getDomainName() + ".count.apply");
+       crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+
        dis_interval_t yi (k);
        dis_interval_t xi = dis_interval_t::top ();
        switch(op){
@@ -1285,6 +1330,9 @@ namespace crab {
      }
      
      void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) {
+       crab::CrabStats::count (getDomainName() + ".count.apply");
+       crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+
        dis_interval_t yi = this->_env[y];
        dis_interval_t zi = this->_env[z];
        dis_interval_t xi = dis_interval_t::top ();
@@ -1300,6 +1348,9 @@ namespace crab {
      }
         
      void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k) {
+       crab::CrabStats::count (getDomainName() + ".count.apply");
+       crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+
        dis_interval_t yi = this->_env[y];
        dis_interval_t zi (k);
        dis_interval_t xi = dis_interval_t::top ();
@@ -1315,6 +1366,9 @@ namespace crab {
      }
      
      void apply(div_operation_t op, VariableName x, VariableName y, VariableName z) {
+       crab::CrabStats::count (getDomainName() + ".count.apply");
+       crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+
        dis_interval_t yi = this->_env[y];
        dis_interval_t zi = this->_env[z];
        dis_interval_t xi = dis_interval_t::top ();
@@ -1329,6 +1383,9 @@ namespace crab {
      }
      
      void apply(div_operation_t op, VariableName x, VariableName y, Number k) {
+       crab::CrabStats::count (getDomainName() + ".count.apply");
+       crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+
        dis_interval_t yi = this->_env[y];
        dis_interval_t zi (k);
        dis_interval_t xi = dis_interval_t::top ();
@@ -1344,11 +1401,17 @@ namespace crab {
      }
 
      void expand (VariableName x, VariableName new_x) {
+       crab::CrabStats::count (getDomainName() + ".count.expand");
+       crab::ScopedCrabStats __st__(getDomainName() + ".expand");
+
        this->_env.set (new_x, this->_env [x]);
      }
 
      template<typename Range>
      void project (Range vs) {
+       crab::CrabStats::count (getDomainName() + ".count.project");
+       crab::ScopedCrabStats __st__(getDomainName() + ".project");
+
        separate_domain_t env;
        for (auto v : vs) {
          env.set (v, this->_env [v]);
@@ -1357,6 +1420,9 @@ namespace crab {
      }
 
      void normalize () {
+       crab::CrabStats::count (getDomainName() + ".count.normalize");
+       crab::ScopedCrabStats __st__(getDomainName() + ".normalize");
+
        if (is_bottom () || is_top ()) return;
 
        separate_domain_t env;

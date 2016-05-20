@@ -398,6 +398,11 @@ void run(cfg_ref_t cfg, string name, VariableFactory &vfac)
     crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
   }
   crab::outs() << endl;
+
+  if (stats_enabled) {
+    crab::CrabStats::Print(crab::outs());
+    crab::CrabStats::reset();
+  }  
 }
 
 void test1(){
@@ -475,7 +480,7 @@ void test9(){
 
 int main(int argc, char **argv) 
 {
-  SET_LOGGER(argc,argv)
+  SET_TEST_OPTIONS(argc,argv)
 
   test1 ();
   test2 ();

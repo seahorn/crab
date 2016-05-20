@@ -88,13 +88,13 @@ namespace crab {
         array_smashing (const array_smashing_t& other): 
             ikos::writeable(), 
             _inv (other._inv) { 
-          crab::CrabStats::count ("Domain.count.copy");
-          crab::ScopedCrabStats __st__("Domain.copy");
+          crab::CrabStats::count (getDomainName() + ".count.copy");
+          crab::ScopedCrabStats __st__(getDomainName() + ".copy");
         }
         
         array_smashing_t& operator=(const array_smashing_t& other) {
-          crab::CrabStats::count ("Domain.count.copy");
-          crab::ScopedCrabStats __st__("Domain.copy");
+          crab::CrabStats::count (getDomainName() + ".count.copy");
+          crab::ScopedCrabStats __st__(getDomainName() + ".copy");
           if (this != &other)
             _inv = other._inv;
           return *this;
@@ -247,6 +247,9 @@ namespace crab {
         
         void load (VariableName lhs, VariableName a, 
                    VariableName /*i*/, z_number /*n_bytes*/) {
+
+          crab::CrabStats::count (getDomainName() + ".count.load");
+          crab::ScopedCrabStats __st__(getDomainName() + ".load");
           
           // We need to be careful when assigning a summarized variable a
           // into a non-summarized variable lhs. Simply _inv.assign (lhs,
@@ -264,6 +267,9 @@ namespace crab {
         void store (VariableName a, VariableName /*i*/,
                     linear_expression_t val, z_number /*n_bytes*/,
                     bool is_singleton) {
+
+          crab::CrabStats::count (getDomainName() + ".count.store");
+          crab::ScopedCrabStats __st__(getDomainName() + ".store");
           
           if (is_singleton)
             strong_update (a, val);

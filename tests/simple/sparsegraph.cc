@@ -127,10 +127,9 @@ void test_sgraph(void)
 }
 int main (int argc, char** argv )
 {
-  SET_LOGGER(argc,argv)
+  SET_TEST_OPTIONS(argc,argv)
 
   test_sgraph();
-
   test_sdbm();
   return 0;
 }

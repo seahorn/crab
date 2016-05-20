@@ -99,7 +99,7 @@ struct print_visitor: public boost::default_dfs_visitor {
 
 
 int main (int argc, char** argv ) {
-  SET_LOGGER(argc,argv)
+  SET_TEST_OPTIONS(argc,argv)
 
   VariableFactory vfac;
 

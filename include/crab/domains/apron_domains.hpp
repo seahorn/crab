@@ -633,8 +633,8 @@ namespace crab {
             m_apstate (apPtr (get_man (), ap_abstract0_copy (get_man (), &*(o.m_apstate)))),
             m_var_map (o.m_var_map)
         {  
-          crab::CrabStats::count ("Domain.count.copy");
-          crab::ScopedCrabStats __st__("Domain.copy");
+          crab::CrabStats::count (getDomainName() + ".count.copy");
+          crab::ScopedCrabStats __st__(getDomainName() + ".copy");
         }
 
         apron_domain_ (apron_domain_t&& o): 
@@ -643,8 +643,8 @@ namespace crab {
             m_var_map (std::move (o.m_var_map)) { }
         
         apron_domain_t& operator=(const apron_domain_t& o) {
-          crab::CrabStats::count ("Domain.count.copy");
-          crab::ScopedCrabStats __st__("Domain.copy");
+          crab::CrabStats::count (getDomainName() + ".count.copy");
+          crab::ScopedCrabStats __st__(getDomainName() + ".copy");
           if (this != &o) {
             m_apstate = o.m_apstate;
             m_var_map = o.m_var_map;
@@ -677,6 +677,9 @@ namespace crab {
         }
 
         bool operator<=(apron_domain_t o) { 
+          crab::CrabStats::count (getDomainName() + ".count.leq");
+          crab::ScopedCrabStats __st__(getDomainName() + ".leq");
+
           if (is_bottom()) 
             return true;
           else if(o.is_bottom())
@@ -695,6 +698,9 @@ namespace crab {
         }
 
         void operator|=(apron_domain_t o) {
+          crab::CrabStats::count (getDomainName() + ".count.join");
+          crab::ScopedCrabStats __st__(getDomainName() + ".join");
+
           if (is_bottom() || o.is_top ())
             *this = o;
           else if (is_top () || o.is_bottom())
@@ -708,6 +714,9 @@ namespace crab {
         }
         
         apron_domain_t operator|(apron_domain_t o) {
+          crab::CrabStats::count (getDomainName() + ".count.join");
+          crab::ScopedCrabStats __st__(getDomainName() + ".join");
+
           if (is_bottom() || o.is_top ())
             return o;
           else if (is_top () || o.is_bottom())
@@ -722,6 +731,9 @@ namespace crab {
         }        
         
         apron_domain_t operator&(apron_domain_t o) {
+          crab::CrabStats::count (getDomainName() + ".count.meet");
+          crab::ScopedCrabStats __st__(getDomainName() + ".meet");
+
           if (is_bottom() || o.is_bottom())
             return bottom();
           else if (is_top())
@@ -738,6 +750,9 @@ namespace crab {
         }        
         
         apron_domain_t operator||(apron_domain_t o) {
+          crab::CrabStats::count (getDomainName() + ".count.widening");
+          crab::ScopedCrabStats __st__(getDomainName() + ".widening");
+
           if (is_bottom())
             return o;
           else if (o.is_bottom())
@@ -758,6 +773,9 @@ namespace crab {
         }
 
         apron_domain_t operator&&(apron_domain_t o) {
+          crab::CrabStats::count (getDomainName() + ".count.narrowing");
+          crab::ScopedCrabStats __st__(getDomainName() + ".narrowing");
+
           if (is_bottom() || o.is_bottom())
             return bottom();
           else if (is_top())
@@ -790,6 +808,8 @@ namespace crab {
 
         template<typename Range>
         void forget (const Range &vars) {
+          crab::CrabStats::count (getDomainName() + ".count.forget");
+          crab::ScopedCrabStats __st__(getDomainName() + ".forget");
 
           vector<ap_dim_t> vector_dims;
           std::set<ap_dim_t> set_dims;
@@ -848,6 +868,9 @@ namespace crab {
         // remove all variables except vars
         template<typename Range>
         void project (const Range& vars) {
+          crab::CrabStats::count (getDomainName() + ".count.project");
+          crab::ScopedCrabStats __st__(getDomainName() + ".project");
+
           if (is_bottom ()) return;
           std::set<VariableName> s1,s2,s3;
           for (auto p: m_var_map.left) s1.insert (p.first);
@@ -857,6 +880,8 @@ namespace crab {
         }
 
         interval_t operator[](VariableName v) {
+          crab::CrabStats::count (getDomainName() + ".count.to_intervals");
+          crab::ScopedCrabStats __st__(getDomainName() + ".to_intervals");
 
           if (is_bottom ()) 
             return interval_t::bottom ();
@@ -923,6 +948,8 @@ namespace crab {
         }
 
         void set(VariableName v, interval_t ival) {
+          crab::CrabStats::count (getDomainName() + ".count.assign");
+          crab::ScopedCrabStats __st__(getDomainName() + ".assign");
 
           // -- forget v
           *this -= v;
@@ -949,6 +976,9 @@ namespace crab {
         }
 
         void operator += (linear_constraint_system_t csts) {
+          crab::CrabStats::count (getDomainName() + ".count.add_constraints");
+          crab::ScopedCrabStats __st__(getDomainName() + ".add_constraints");
+
           if(is_bottom()) return;
 
           ap_tcons0_array_t array = ap_tcons0_array_make (csts.size ());
@@ -969,6 +999,9 @@ namespace crab {
         }
        
         void assign (VariableName x, linear_expression_t e) {
+          crab::CrabStats::count (getDomainName() + ".count.assign");
+          crab::ScopedCrabStats __st__(getDomainName() + ".assign");
+
           if(is_bottom()) return;
 
           ap_texpr0_t* t = expr2texpr (e);
@@ -985,6 +1018,9 @@ namespace crab {
         }
           
         void apply (operation_t op, VariableName x, VariableName y, Number z) {
+          crab::CrabStats::count (getDomainName() + ".count.apply");
+          crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+
           if(is_bottom()) return;
 
           ap_texpr0_t* a = var2texpr (y);
@@ -1011,6 +1047,9 @@ namespace crab {
         }
         
         void apply(operation_t op, VariableName x, VariableName y, VariableName z) {
+          crab::CrabStats::count (getDomainName() + ".count.apply");
+          crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+
           if(is_bottom()) return;
 
           ap_texpr0_t* a = var2texpr (y);
@@ -1037,6 +1076,9 @@ namespace crab {
         }
         
         void apply(operation_t op, VariableName x, Number k) {
+          crab::CrabStats::count (getDomainName() + ".count.apply");
+          crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+
           if(is_bottom()) return;
 
           ap_texpr0_t* a = var2texpr (x);
@@ -1075,6 +1117,9 @@ namespace crab {
         }
         
         void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) {
+          crab::CrabStats::count (getDomainName() + ".count.apply");
+          crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+
           // Convert to intervals and perform the operation
           interval_t yi = operator[](y);
           interval_t zi = operator[](z);
@@ -1092,6 +1137,9 @@ namespace crab {
         }
         
         void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k) {
+          crab::CrabStats::count (getDomainName() + ".count.apply");
+          crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+
           // Convert to intervals and perform the operation
           interval_t yi = operator[](y);
           interval_t zi(k);
@@ -1109,6 +1157,9 @@ namespace crab {
         }
         
         void apply(div_operation_t op, VariableName x, VariableName y, VariableName z) {
+          crab::CrabStats::count (getDomainName() + ".count.apply");
+          crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+
           if (op == OP_SDIV){
             apply(OP_DIVISION, x, y, z);
           }
@@ -1129,6 +1180,9 @@ namespace crab {
         }
         
         void apply(div_operation_t op, VariableName x, VariableName y, Number k) {
+          crab::CrabStats::count (getDomainName() + ".count.apply");
+          crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+
           if (op == OP_SDIV){
             apply(OP_DIVISION, x, y, k);
           }
@@ -1201,10 +1255,10 @@ namespace crab {
 
         static std::string getDomainName () {
           switch (ApronDom) {
-            case APRON_INT:     return "Apron Intervals"; 
-            case APRON_OCT:     return "Apron Octagon"; 
-            case APRON_OPT_OCT: return "Apron Optimized Octagon"; 
-            case APRON_PK:      return "Apron NewPolka";
+            case APRON_INT:     return "ApronIntervals"; 
+            case APRON_OCT:     return "ApronOctagon"; 
+            case APRON_OPT_OCT: return "ApronOptimizedOctagon"; 
+            case APRON_PK:      return "ApronNewPolka";
             default: CRAB_ERROR("Unknown apron domain");
           }
         }

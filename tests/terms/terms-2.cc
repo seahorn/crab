@@ -50,10 +50,34 @@ cfg_t* prog (VariableFactory &vfac)
   return cfg;
 }
 
+template <typename Domain, typename Live>
+void run(cfg_ref_t cfg, VariableFactory &vfac, Live *live)
+{
+  const unsigned int w = 1;
+  const unsigned int n = 2;
+
+  typename NumFwdAnalyzer <cfg_ref_t, Domain, VariableFactory>::type 
+      It (cfg, vfac, live, w, n, 20);
+  Domain inv = Domain::top ();
+  It.Run (inv);
+  crab::outs() << "Invariants using " << Domain::getDomainName () << ":\n";
+
+  for (auto &b : cfg)
+  {
+    // invariants at the entry of the block
+    auto inv = It [b.label ()];
+    crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
+  }
+  crab::outs() << endl;
+  if (stats_enabled) {
+    crab::CrabStats::Print(crab::outs());
+    crab::CrabStats::reset();
+  }
+}
 
 int main (int argc, char** argv )
 {
-  SET_LOGGER(argc,argv)
+  SET_TEST_OPTIONS(argc,argv)
 
   VariableFactory vfac;
   cfg_t* cfg = prog (vfac);
@@ -63,29 +87,8 @@ int main (int argc, char** argv )
   Liveness<cfg_ref_t> live (*cfg);
   live.exec ();
 
-  interval_domain_t intervals = interval_domain_t::top ();
-  NumFwdAnalyzer <cfg_ref_t, interval_domain_t, VariableFactory>::type
-      itv_a (*cfg, vfac, &live);
-  itv_a.Run (intervals);
-  crab::outs() << "Results with intervals:\n";
-  for (auto &b : *cfg)
-  {
-    interval_domain_t inv = itv_a [b.label ()];
-    crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
-  }
-
-  term_domain_t tdom = term_domain_t::top ();
-  NumFwdAnalyzer <cfg_ref_t, term_domain_t, VariableFactory>::type
-      term_a (*cfg, vfac, &live);
-  term_a.Run (tdom);
-  crab::outs() << "Results with term<interval> domain:\n";
-  for (auto &b : *cfg)
-  {
-    term_domain_t inv = term_a [b.label ()];
-    crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
-    auto cst = inv.to_linear_constraint_system();
-    crab::outs() << "  := " << cst << endl;
-  }
+  run<interval_domain_t>(*cfg, vfac, &live);
+  run<term_domain_t>(*cfg, vfac, &live);
 
   /*
   term_dbm_t t_dbm_dom = term_dbm_t::top ();

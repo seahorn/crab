@@ -174,8 +174,8 @@ namespace ikos {
                  crab::outs() << "Prev   : " << before << "\n"
                            << "Current: " << after << "\n"
                            << "Res    : " << widen_res << "\n");
-        crab::CrabStats::count ("Domain.count.join");
-        crab::ScopedCrabStats __st__("Domain.join");
+        //crab::CrabStats::count (AbstractValue::getDomainName() + ".count.join");
+        //crab::ScopedCrabStats __st__(AbstractValue::getDomainName() + ".join");
         return before | after; 
       } else {
         CRAB_LOG("fixpo",
@@ -187,15 +187,15 @@ namespace ikos {
           CRAB_LOG("fixpo",
                    auto widen_res = before.widening_thresholds (after, _jump_set);
                    crab::outs() << "Res    : " << widen_res << "\n");
-          crab::CrabStats::count ("Domain.count.widening");
-          crab::ScopedCrabStats __st__("Domain.widening");
+          //crab::CrabStats::count (AbstractValue::getDomainName() + ".count.widening");
+          //crab::ScopedCrabStats __st__(AbstractValue::getDomainName() + ".widening");
           return before.widening_thresholds (after, _jump_set);
         } else {
           CRAB_LOG("fixpo",
                    auto widen_res = before || after;
                    crab::outs() << "Res    : " << widen_res << "\n");
-          crab::CrabStats::count ("Domain.count.widening");
-          crab::ScopedCrabStats __st__("Domain.widening");
+          //crab::CrabStats::count (AbstractValue::getDomainName() + ".count.widening");
+          //crab::ScopedCrabStats __st__(AbstractValue::getDomainName() + ".widening");
           return before || after;
         }
       }
@@ -214,8 +214,8 @@ namespace ikos {
                  crab::outs() << "Prev   : " << before << "\n"
                            << "Current: " << after << "\n"
                            << "Res    : " << narrow_res << "\n");
-        crab::CrabStats::count ("Domain.count.meet");
-        crab::ScopedCrabStats __st__("Domain.meet");
+        //crab::CrabStats::count (AbstractValue::getDomainName() + ".count.meet");
+        //crab::ScopedCrabStats __st__(AbstractValue::getDomainName() + ".meet");
         return before & after; 
       } else {
         CRAB_LOG("fixpo",
@@ -224,8 +224,8 @@ namespace ikos {
                  crab::outs() << "Prev   : " << before << "\n"
                  << "Current: " << after << "\n"
                            << "Res    : " << narrow_res << "\n");
-        crab::CrabStats::count ("Domain.count.narrowing");
-        crab::ScopedCrabStats __st__("Domain.narrowing");
+        //crab::CrabStats::count (AbstractValue::getDomainName() + ".count.narrowing");
+        //crab::ScopedCrabStats __st__(AbstractValue::getDomainName() + ".narrowing");
         return before && after; 
       }
     }
@@ -275,8 +275,8 @@ namespace ikos {
           pre = AbstractValue::bottom();
           CRAB_LOG ("fixpo", crab::outs() << "Joining predecessors ...\n");
           for (NodeName prev : prev_nodes) {
-            crab::CrabStats::count ("Domain.count.join");
-            crab::ScopedCrabStats __st__("Domain.join");
+            //crab::CrabStats::count (AbstractValue::getDomainName() + ".count.join");
+            //crab::ScopedCrabStats __st__(AbstractValue::getDomainName() + ".join");
             pre |= this->_iterator->get_post(prev);  
           }
           this->_iterator->set_pre(node, pre);
@@ -294,8 +294,8 @@ namespace ikos {
         CRAB_LOG ("fixpo", crab::outs() << "Merging predecessors at widening point ...\n");
         for (NodeName prev : prev_nodes) {
           if (!(this->_iterator->_wto.nesting(prev) > cycle_nesting)) {
-            crab::CrabStats::count ("Domain.count.join");
-            crab::ScopedCrabStats __st__("Domain.join");
+            //crab::CrabStats::count (AbstractValue::getDomainName() + ".count.join");
+            //crab::ScopedCrabStats __st__(AbstractValue::getDomainName() + ".join");
             pre |= this->_iterator->get_post(prev); 
           }
         }
@@ -311,21 +311,21 @@ namespace ikos {
           }
           AbstractValue new_pre = AbstractValue::bottom();
           for (NodeName prev : prev_nodes) {
-            crab::CrabStats::count ("Domain.count.join");
-            crab::ScopedCrabStats __st__("Domain.join");
+            //crab::CrabStats::count (AbstractValue::getDomainName() + ".count.join");
+            //crab::ScopedCrabStats __st__(AbstractValue::getDomainName() + ".join");
             new_pre |= this->_iterator->get_post(prev); 
           }
-          crab::CrabStats::count ("Domain.count.leq");
-          crab::CrabStats::resume ("Domain.leq");
+          //crab::CrabStats::count (AbstractValue::getDomainName() + ".count.leq");
+          //crab::CrabStats::resume (AbstractValue::getDomainName() + ".leq");
           if (new_pre <= pre) {
-            crab::CrabStats::stop ("Domain.leq");
+            //crab::CrabStats::stop (AbstractValue::getDomainName() + ".leq");
             // Post-fixpoint reached
             CRAB_LOG ("fixpo", crab::outs() << "post-fixpoint reached\n");
             this->_iterator->set_pre(head, new_pre);
             pre = new_pre;
             break;
           } else {
-            crab::CrabStats::stop ("Domain.leq");
+            //crab::CrabStats::stop (AbstractValue::getDomainName() + ".leq");
             pre = this->_iterator->extrapolate(head, iteration, pre, new_pre);
           }
         }
@@ -340,19 +340,19 @@ namespace ikos {
           }
           AbstractValue new_pre = AbstractValue::bottom();
           for (NodeName prev : prev_nodes) {
-            crab::CrabStats::count ("Domain.count.join");
-            crab::ScopedCrabStats __st__("Domain.join");
+            //crab::CrabStats::count (AbstractValue::getDomainName() + ".count.join");
+            //crab::ScopedCrabStats __st__(AbstractValue::getDomainName() + ".join");
             new_pre |= this->_iterator->get_post(prev); 
           }
-          crab::CrabStats::count ("Domain.count.leq");
-          crab::CrabStats::resume ("Domain.leq");
+          //crab::CrabStats::count (AbstractValue::getDomainName() + ".count.leq");
+          //crab::CrabStats::resume (AbstractValue::getDomainName() + ".leq");
           if (pre <= new_pre) {
-            crab::CrabStats::stop ("Domain.leq");
+            //crab::CrabStats::stop (AbstractValue::getDomainName() + ".leq");
             CRAB_LOG ("fixpo", crab::outs() << "No more refinement possible.\n");
             // No more refinement possible (pre == new_pre)
             break;
           } else {
-            crab::CrabStats::stop ("Domain.leq");
+            //crab::CrabStats::stop (AbstractValue::getDomainName() + ".leq");
             if (iteration > this->_iterator->_descending_iterations) break; 
             pre = this->_iterator->refine(head, iteration, pre, new_pre);
             this->_iterator->set_pre(head, pre);

@@ -494,13 +494,13 @@ namespace crab {
         
         boxes_domain (const boxes_domain_t& other): 
             ikos::writeable(), m_ldd (other.m_ldd) { 
-          crab::CrabStats::count ("Domain.count.copy");
-          crab::ScopedCrabStats __st__("Domain.copy");
+          crab::CrabStats::count (getDomainName () + ".count.copy");
+          crab::ScopedCrabStats __st__(getDomainName() + ".copy");
         }
         
         boxes_domain_t& operator=(const boxes_domain_t& other) {
-          crab::CrabStats::count ("Domain.count.copy");
-          crab::ScopedCrabStats __st__("Domain.copy");
+          crab::CrabStats::count (getDomainName() + ".count.copy");
+          crab::ScopedCrabStats __st__(getDomainName() + ".copy");
           if (this != &other) 
             m_ldd = other.m_ldd;
           return *this;
@@ -515,6 +515,9 @@ namespace crab {
         }
         
         bool operator<=(boxes_domain_t other) {
+          crab::CrabStats::count (getDomainName() + ".count.leq");
+          crab::ScopedCrabStats __st__(getDomainName() + ".leq");
+
           bool res = Ldd_TermLeq (get_ldd_man(), &(*m_ldd), &(*other.m_ldd));
 
           CRAB_LOG ("boxes", 
@@ -528,15 +531,24 @@ namespace crab {
         }
         
         boxes_domain_t operator|(boxes_domain_t other) {
+          crab::CrabStats::count (getDomainName() + ".count.join");
+          crab::ScopedCrabStats __st__(getDomainName() + ".join");
+
           return boxes_domain_t (join (m_ldd, other.m_ldd));
         }
         
         boxes_domain_t operator&(boxes_domain_t other) {
+          crab::CrabStats::count (getDomainName() + ".count.meet");
+          crab::ScopedCrabStats __st__(getDomainName() + ".meet");
+
           return boxes_domain_t (lddPtr (get_ldd_man(), 
                                          Ldd_And (get_ldd_man(), &*m_ldd, &*other.m_ldd)));
         }
 
         boxes_domain_t operator||(boxes_domain_t other) {
+          crab::CrabStats::count (getDomainName() + ".count.widening");
+          crab::ScopedCrabStats __st__(getDomainName() + ".widening");
+
           // It is not necessarily true that the new value is bigger
           // than the old value so we apply 
           // widen(old, new) = widen (old, (join (old,new)))
@@ -569,6 +581,9 @@ namespace crab {
         }
         
         boxes_domain_t operator&& (boxes_domain_t other) {
+          crab::CrabStats::count (getDomainName() + ".count.narrowing");
+          crab::ScopedCrabStats __st__(getDomainName() + ".narrowing");
+
           boxes_domain_t res (*this & other);
           CRAB_WARN (" boxes narrowing operator replaced with meet");
           
@@ -578,6 +593,9 @@ namespace crab {
         }
         
         void operator-=(VariableName var) {
+          crab::CrabStats::count (getDomainName() + ".count.forget");
+          crab::ScopedCrabStats __st__(getDomainName() + ".forget");
+
           if (is_bottom ()) return;
 
           int id = get_var_dim (var);
@@ -597,6 +615,9 @@ namespace crab {
         // dual of forget: remove all variables except [begin,...end)
         template<typename Iterator>
         void project (Iterator begin, Iterator end) {
+          crab::CrabStats::count (getDomainName() + ".count.project");
+          crab::ScopedCrabStats __st__(getDomainName() + ".project");
+
           if (is_bottom ()) return;
 
           std::set<VariableName> s1,s2,s3;
@@ -608,6 +629,9 @@ namespace crab {
 
         void operator+= (linear_constraint_t cst)
         {
+          crab::CrabStats::count (getDomainName() + ".count.add_constraints");
+          crab::ScopedCrabStats __st__(getDomainName() + ".add_constraints");
+
           if (is_bottom () || cst.is_tautology ())  
             return;
 
@@ -649,6 +673,8 @@ namespace crab {
         }
 
         void set (VariableName v, interval_t ival) {
+          crab::CrabStats::count (getDomainName() + ".count.assign");
+          crab::ScopedCrabStats __st__(getDomainName() + ".assign");
           
           if (is_bottom ()) return ;
 
@@ -670,6 +696,9 @@ namespace crab {
 
         // FIXME: expensive operation
         interval_t operator[](VariableName v) { 
+
+          crab::CrabStats::count (getDomainName() + ".count.to_intervals");
+          crab::ScopedCrabStats __st__(getDomainName() + ".to_intervals");
 
           if (is_bottom ()) 
             return interval_t::bottom ();
@@ -697,6 +726,9 @@ namespace crab {
         }
                 
         void assign (VariableName x, linear_expression_t e) {
+          crab::CrabStats::count (getDomainName() + ".count.assign");
+          crab::ScopedCrabStats __st__(getDomainName() + ".assign");
+
           if (is_bottom ()) 
             return;
 
@@ -721,6 +753,9 @@ namespace crab {
         }
         
         void apply (operation_t op, VariableName x, VariableName y, Number k) {
+          crab::CrabStats::count (getDomainName() + ".count.apply");
+          crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+
           if (is_bottom ()) 
             return;
 
@@ -746,6 +781,8 @@ namespace crab {
         }
 
         void apply(operation_t op, VariableName x, Number k) {
+          crab::CrabStats::count (getDomainName() + ".count.apply");
+          crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
           if (is_bottom ())
             return;
@@ -776,6 +813,8 @@ namespace crab {
         }
 
         void apply(operation_t op, VariableName x, VariableName y, VariableName z) {
+          crab::CrabStats::count (getDomainName() + ".count.apply");
+          crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
           if (is_bottom ()) 
             return;
@@ -811,6 +850,8 @@ namespace crab {
         }      
   
         void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) {
+          crab::CrabStats::count (getDomainName() + ".count.apply");
+          crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
           if (is_bottom ()) 
             return;
@@ -831,6 +872,8 @@ namespace crab {
         }
         
         void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k) {
+          crab::CrabStats::count (getDomainName() + ".count.apply");
+          crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
           if (is_bottom ()) 
             return;
@@ -852,6 +895,8 @@ namespace crab {
         
         // division_operators_api
         void apply(div_operation_t op, VariableName x, VariableName y, VariableName z) {
+          crab::CrabStats::count (getDomainName() + ".count.apply");
+          crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
           if (is_bottom ()) 
             return;
@@ -875,6 +920,8 @@ namespace crab {
         }
         
         void apply(div_operation_t op, VariableName x, VariableName y, Number k) {
+          crab::CrabStats::count (getDomainName() + ".count.apply");
+          crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
           if (is_bottom ()) 
             return;

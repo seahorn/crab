@@ -54,60 +54,44 @@ cfg_t* prog (VariableFactory &vfac)  {
   return cfg;
 }
 
+template <typename Domain, typename Live>
+void run(cfg_ref_t cfg, VariableFactory &vfac, Live live)
+{
+  const unsigned int w = 1;
+  const unsigned int n = 2;
+
+  typename NumFwdAnalyzer <cfg_ref_t, Domain, VariableFactory>::type 
+      It (cfg, vfac, live, w, n, 20);
+  Domain inv = Domain::top ();
+  It.Run (inv);
+  crab::outs() << "Invariants using " << Domain::getDomainName () << ":\n";
+
+  for (auto &b : cfg)
+  {
+    // invariants at the entry of the block
+    auto inv = It [b.label ()];
+    crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
+  }
+  crab::outs() << endl;
+  if (stats_enabled) {
+    crab::CrabStats::Print(crab::outs());
+    crab::CrabStats::reset();
+  }
+}
+
 /* Example of how to infer invariants from the above CFG */
 int main (int argc, char** argv )
 {
-  SET_LOGGER(argc,argv)
+  SET_TEST_OPTIONS(argc,argv)
 
   VariableFactory vfac;
   cfg_t* cfg = prog (vfac);
   cfg->simplify (); // this is optional
   crab::outs() << *cfg << endl;
-  {
-    NumFwdAnalyzer <cfg_ref_t, interval_domain_t,VariableFactory>::type a (*cfg,vfac,nullptr);
-    // Run fixpoint 
-    interval_domain_t inv = interval_domain_t::top ();
-    a.Run (inv);
-    // Print invariants
-    crab::outs() << "Invariants using " << interval_domain_t::getDomainName () << "\n";
-    for (auto &b : *cfg) {
-      auto inv = a [b.label ()];
-      crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
-    }
-  }
 
-  {
-    NumFwdAnalyzer <cfg_ref_t, dbm_domain_t,VariableFactory>::type a (*cfg,vfac,nullptr);
-    // Run fixpoint 
-    dbm_domain_t inv = dbm_domain_t::top ();
-    a.Run (inv);
-    // Print invariants
-    crab::outs() << "Invariants using " << dbm_domain_t::getDomainName () << "\n";
-    for (auto &b : *cfg) {
-      auto inv = a [b.label ()];
-      crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
-    }
-  }
-
-  {
-    NumFwdAnalyzer <cfg_ref_t, term_domain_t,VariableFactory>::type a (*cfg,vfac,nullptr);
-    // Run fixpoint 
-    term_domain_t inv = term_domain_t::top ();
-    a.Run (inv);
-    // Print invariants
-    crab::outs() << "Invariants using " << term_domain_t::getDomainName () << "\n";
-    for (auto &b : *cfg) {
-      auto inv = a [b.label ()];
-      crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
-    }
-    crab::outs() << "As linear constraints:\n" << endl;
-    for (auto & b : *cfg)
-    {
-      term_domain_t inv = a [b.label ()];
-      term_domain_t::linear_constraint_system_t cst(inv.to_linear_constraint_system());
-      crab::outs() << "  " << get_label_str (b.label ()) << "=" << cst << "\n";
-    }
-  }
+  run<interval_domain_t>(*cfg,vfac,nullptr);
+  run<dbm_domain_t>(*cfg,vfac,nullptr);
+  run<term_domain_t>(*cfg,vfac,nullptr);
 
   return 0;
 }

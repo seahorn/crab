@@ -575,13 +575,13 @@ namespace crab {
           _var_map (o._var_map),
           _rev_map(o._rev_map)
       { 
-        crab::CrabStats::count ("Domain.count.copy");
-        crab::ScopedCrabStats __st__("Domain.copy");
+        crab::CrabStats::count (getDomainName() + ".count.copy");
+        crab::ScopedCrabStats __st__(getDomainName() + ".copy");
       }
    
       DBM_t operator=(const DBM_t& o) {
-        crab::CrabStats::count ("Domain.count.copy");
-        crab::ScopedCrabStats __st__("Domain.copy");
+        crab::CrabStats::count (getDomainName() + ".count.copy");
+        crab::ScopedCrabStats __st__(getDomainName() + ".copy");
         if (this != &o) {
           dbm_dealloc(_dbm);
           _dbm = dbm_copy(o._dbm); 
@@ -1493,7 +1493,7 @@ namespace crab {
       }
 
       static std::string getDomainName () {
-        return "Sparse DBM";
+        return "SparseDBM";
       }
     }; // class DBM
 

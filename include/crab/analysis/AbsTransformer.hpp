@@ -157,9 +157,9 @@ namespace crab {
       auto op1 = convOp<ikos::operation_t> (op);
       auto op2 = convOp<ikos::div_operation_t> (op);
       auto op3 = convOp<ikos::bitwise_operation_t> (op);
-
-      crab::CrabStats::count ("Domain.count.apply");
-      crab::ScopedCrabStats __st__("Domain.apply");
+      
+      //crab::CrabStats::count (abs_dom_t::getDomainName() + ".count.apply");
+      //crab::ScopedCrabStats __st__(abs_dom_t::getDomainName() + ".apply");
 
       if (op1) 
         inv.apply (*op1, x, y, z);
@@ -207,53 +207,53 @@ namespace crab {
     
       abs_dom_t inv1 (m_inv);
       abs_dom_t inv2 (m_inv);
-      crab::CrabStats::resume ("Domain.add_constraint");
-      crab::CrabStats::count ("Domain.count.add_constraint");
+      //crab::CrabStats::resume (abs_dom_t::getDomainName() + ".add_constraint");
+      //crab::CrabStats::count (abs_dom_t::getDomainName() + ".count.add_constraint");
       inv1 += stmt.cond ();
-      crab::CrabStats::count ("Domain.count.add_constraint");
+      //crab::CrabStats::count (abs_dom_t::getDomainName() + ".count.add_constraint");
       inv2 += stmt.cond ().negate ();
-      crab::CrabStats::stop ("Domain.add_constraint");
+      //crab::CrabStats::stop (abs_dom_t::getDomainName() + ".add_constraint");
 
       if (inv2.is_bottom()) {
-        crab::CrabStats::count ("Domain.count.assign");
-        crab::ScopedCrabStats __st__("Domain.assign");
+        //crab::CrabStats::count (abs_dom_t::getDomainName() + ".count.assign");
+        //crab::ScopedCrabStats __st__(abs_dom_t::getDomainName() + ".assign");
         inv1.assign (stmt.lhs().name (),stmt.left());
         m_inv = inv1;
       }
       else if (inv1.is_bottom ()) {
-        crab::CrabStats::count ("Domain.count.assign");
-        crab::ScopedCrabStats __st__("Domain.assign");
+        //crab::CrabStats::count (abs_dom_t::getDomainName() + ".count.assign");
+        //crab::ScopedCrabStats __st__(abs_dom_t::getDomainName() + ".assign");
         inv2.assign (stmt.lhs().name (),stmt.right());
         m_inv = inv2;
       }
       else {
-        crab::CrabStats::count ("Domain.count.assign");
-        crab::CrabStats::resume ("Domain.assign");
+        //crab::CrabStats::count (abs_dom_t::getDomainName() + ".count.assign");
+        //crab::CrabStats::resume (abs_dom_t::getDomainName() + ".assign");
         inv1.assign (stmt.lhs().name (),stmt.left());
-        crab::CrabStats::count ("Domain.count.assign");
+        //crab::CrabStats::count (abs_dom_t::getDomainName() + ".count.assign");
         inv2.assign (stmt.lhs().name (),stmt.right());
-        crab::CrabStats::stop ("Domain.assign");
-        crab::CrabStats::count ("Domain.count.join");
-        crab::ScopedCrabStats __st__("Domain.join");
+        //crab::CrabStats::stop (abs_dom_t::getDomainName() + ".assign");
+        //crab::CrabStats::count (abs_dom_t::getDomainName() + ".count.join");
+        //crab::ScopedCrabStats __st__(abs_dom_t::getDomainName() + ".join");
         m_inv = inv1 | inv2;
       }
     }    
     
     void exec (z_assign_t& stmt) {
-      crab::CrabStats::count ("Domain.count.assign");
-      crab::ScopedCrabStats __st__("Domain.assign");
+      //crab::CrabStats::count (abs_dom_t::getDomainName() + ".count.assign");
+      //crab::ScopedCrabStats __st__(abs_dom_t::getDomainName() + ".assign");
       m_inv.assign (stmt.lhs().name (), z_lin_exp_t (stmt.rhs()));
     }
     
     void exec (z_assume_t& stmt) {
-      crab::CrabStats::count ("Domain.count.add_constraint");
-      crab::ScopedCrabStats __st__("Domain.add_constraint");
+      //crab::CrabStats::count (abs_dom_t::getDomainName() + ".count.add_constraint");
+      //crab::ScopedCrabStats __st__(abs_dom_t::getDomainName() + ".add_constraint");
       m_inv += stmt.constraint();
     }
 
     void exec (havoc_t& stmt)  {
-      crab::CrabStats::count ("Domain.count.forget");
-      crab::ScopedCrabStats __st__("Domain.forget");
+      //crab::CrabStats::count (abs_dom_t::getDomainName() + ".count.forget");
+      //crab::ScopedCrabStats __st__(abs_dom_t::getDomainName() + ".forget");
       m_inv -= stmt.variable();
     }
 
@@ -263,19 +263,19 @@ namespace crab {
 
     void exec (z_assert_t& stmt) {
       abs_dom_t cst;
-      crab::CrabStats::count ("Domain.count.add_constraint");
-      crab::CrabStats::resume ("Domain.add_constraint");
+      //crab::CrabStats::count (abs_dom_t::getDomainName() + ".count.add_constraint");
+      //crab::CrabStats::resume (abs_dom_t::getDomainName() + ".add_constraint");
       cst += stmt.constraint();
-      crab::CrabStats::stop ("Domain.add_constraint");
-      crab::CrabStats::count ("Domain.count.meet");
-      crab::CrabStats::resume ("Domain.meet");
+      //crab::CrabStats::stop (abs_dom_t::getDomainName() + ".add_constraint");
+      //crab::CrabStats::count (abs_dom_t::getDomainName() + ".count.meet");
+      //crab::CrabStats::resume (abs_dom_t::getDomainName() + ".meet");
       abs_dom_t meet = cst & m_inv;
-      crab::CrabStats::stop ("Domain.meet");
+      //crab::CrabStats::stop (abs_dom_t::getDomainName() + ".meet");
       if (meet.is_bottom ()) {
         m_inv = abs_dom_t::bottom (); // assertion does not definitely hold.
         return;
       }
-      crab::ScopedCrabStats __st__("Domain.add_constraint");      
+      //crab::ScopedCrabStats __st__(abs_dom_t::getDomainName() + ".add_constraint");      
       m_inv += stmt.constraint ();
     }
 
@@ -296,8 +296,8 @@ namespace crab {
       {
         auto arr = stmt.array ().name ();
         auto idx = *(stmt.index ().get_variable ());
-        crab::CrabStats::count ("Domain.count.array_store");
-        crab::ScopedCrabStats __st__("Domain.array_store");      
+        //crab::CrabStats::count (abs_dom_t::getDomainName() + ".count.array_store");
+        //crab::ScopedCrabStats __st__(abs_dom_t::getDomainName() + ".array_store");      
         domains::array_domain_traits<abs_dom_t>::array_store (m_inv, 
                                                               arr,
                                                               idx.name(), 
@@ -311,8 +311,8 @@ namespace crab {
       if (stmt.index ().get_variable ())
       {
         auto idx = *(stmt.index ().get_variable ());
-        crab::CrabStats::count ("Domain.count.array_load");
-        crab::ScopedCrabStats __st__("Domain.array_load");      
+        //crab::CrabStats::count (abs_dom_t::getDomainName() + ".count.array_load");
+        //crab::ScopedCrabStats __st__(abs_dom_t::getDomainName() + ".array_load");      
         domains::array_domain_traits<abs_dom_t>::array_load (m_inv, 
                                                              stmt.lhs ().name (), 
                                                              stmt.array ().name (), 
@@ -324,8 +324,8 @@ namespace crab {
     void exec (callsite_t &cs) {
       auto lhs_opt = cs.get_lhs_name ();
       if (lhs_opt) { // havoc 
-        crab::CrabStats::count ("Domain.count.forget");
-        crab::ScopedCrabStats __st__("Domain.forget");      
+        //crab::CrabStats::count (abs_dom_t::getDomainName() + ".count.forget");
+        //crab::ScopedCrabStats __st__(abs_dom_t::getDomainName() + ".forget");      
         m_inv -= *lhs_opt;
       }
     }
@@ -379,10 +379,10 @@ namespace crab {
       //crab::ScopedCrabStats st("Inter.ReuseSummary");      
 
       // --- meet caller's inv with summ
-      crab::CrabStats::count ("Domain.count.meet");
-      crab::CrabStats::resume ("Domain.meet");
+      //crab::CrabStats::count (abs_dom_t::getDomainName() + ".count.meet");
+      //crab::CrabStats::resume (abs_dom_t::getDomainName() + ".meet");
       caller = caller & summ.get_sum ();
-      crab::CrabStats::stop ("Domain.meet");
+      //crab::CrabStats::stop (abs_dom_t::getDomainName() + ".meet");
       CRAB_LOG("inter",
                crab::outs() << "--- After meet: " <<  caller << "\n");
       // --- matching formal and actual parameters
@@ -392,8 +392,8 @@ namespace crab {
       for (auto p : pars) {
         auto a = cs.get_arg_name (i);
         if (!(a == p)) {
-          crab::CrabStats::count ("Domain.count.add_constraint");
-          crab::ScopedCrabStats __st__("Domain.add_constraint");
+          //crab::CrabStats::count (abs_dom_t::getDomainName() + ".count.add_constraint");
+          //crab::ScopedCrabStats __st__(abs_dom_t::getDomainName() + ".add_constraint");
           caller += (z_var_t (a) == z_var_t (p));
         }
         ++i;
@@ -403,8 +403,8 @@ namespace crab {
       auto lhs_opt = cs.get_lhs_name ();
       auto ret_opt = summ.get_ret_val ();
       if (lhs_opt && ret_opt) {
-        crab::CrabStats::count ("Domain.count.assign");
-        crab::ScopedCrabStats __st__("Domain.assign");
+        //crab::CrabStats::count (abs_dom_t::getDomainName() + ".count.assign");
+        //crab::ScopedCrabStats __st__(abs_dom_t::getDomainName() + ".assign");
         caller.assign(*lhs_opt, z_lin_exp_t (z_var_t (*ret_opt)));
         actuals.insert (*lhs_opt); formals.insert (*ret_opt);
       }
@@ -415,8 +415,8 @@ namespace crab {
       //     as much context from the caller as possible
       std::set<varname_t> s;
       boost::set_difference (formals, actuals, std::inserter(s, s.end ()));
-      crab::CrabStats::count ("Domain.count.forget");
-      crab::ScopedCrabStats __st__("Domain.forget");
+      //crab::CrabStats::count (abs_dom_t::getDomainName() + ".count.forget");
+      //crab::ScopedCrabStats __st__(abs_dom_t::getDomainName() + ".forget");
       domains::domain_traits<abs_dom_t>::forget (caller, s.begin (), s.end ());
     }
 
@@ -470,8 +470,8 @@ namespace crab {
       
       auto lhs_opt = cs.get_lhs_name ();
       if (lhs_opt) { // havoc 
-        crab::CrabStats::count ("Domain.count.forget");
-        crab::ScopedCrabStats __st__("Domain.forget");
+        //crab::CrabStats::count (abs_dom_t::getDomainName() + ".count.forget");
+        //crab::ScopedCrabStats __st__(abs_dom_t::getDomainName() + ".forget");
         this->m_inv -= *lhs_opt;
       }
     }
@@ -565,19 +565,19 @@ namespace crab {
           for (auto p : pars) {
             auto a = cs.get_arg_name (i);
             if (!(a == p)) {
-              crab::CrabStats::count ("Domain.count.add_constraint");
-              crab::ScopedCrabStats __st__("Domain.add_constraint");
+              //crab::CrabStats::count (abs_dom_t::getDomainName() + ".count.add_constraint");
+              //crab::ScopedCrabStats __st__(abs_dom_t::getDomainName() + ".add_constraint");
               callee_ctx_inv += (z_var_t (p) == z_var_t (a));
             }
             ++i;
           }
           // --- project only onto formal parameters
-          crab::CrabStats::count ("Domain.count.project");
-          crab::CrabStats::resume ("Domain.project");
+          //crab::CrabStats::count (abs_dom_t::getDomainName() + ".count.project");
+          //crab::CrabStats::resume (abs_dom_t::getDomainName() + ".project");
           domains::domain_traits<abs_dom_t>::project (callee_ctx_inv, 
                                                       pars.begin (),
                                                       pars.end ());
-          crab::CrabStats::stop ("Domain.project");
+          //crab::CrabStats::stop (abs_dom_t::getDomainName() + ".project");
           // --- store the callee context
           CRAB_LOG ("inter", 
                     crab::outs() << "--- Callee context stored: " 
@@ -591,8 +591,8 @@ namespace crab {
           // --- convert this->m_inv to the language of summ_abs_dom_t (sum)
           summ_abs_domain_t caller_ctx_inv = summ_abs_domain_t::top();
           for (auto cst : this->m_inv.to_linear_constraint_system ()) {
-            crab::CrabStats::count ("Domain.count.add_constraint");
-            crab::ScopedCrabStats __st__("Domain.add_constraint");
+            //crab::CrabStats::count (abs_dom_t::getDomainName() + ".count.add_constraint");
+            //crab::ScopedCrabStats __st__(abs_dom_t::getDomainName() + ".add_constraint");
             caller_ctx_inv += cst;
           }
           CRAB_LOG ("inter",
@@ -606,8 +606,8 @@ namespace crab {
           // --- convert back inv to the language of abs_dom_t
           abs_dom_t inv = abs_dom_t::top();          
           for (auto cst : caller_ctx_inv.to_linear_constraint_system ()) {
-            crab::CrabStats::count ("Domain.count.add_constraint");
-            crab::ScopedCrabStats __st__("Domain.add_constraint");
+            //crab::CrabStats::count (abs_dom_t::getDomainName() + ".count.add_constraint");
+            //crab::ScopedCrabStats __st__(abs_dom_t::getDomainName() + ".add_constraint");
             inv += cst;
           }
           std::swap (this->m_inv, inv);
@@ -627,8 +627,8 @@ namespace crab {
       // site
       auto lhs_opt = cs.get_lhs_name ();
       if (lhs_opt) {
-        crab::CrabStats::count ("Domain.count.forget");
-        crab::ScopedCrabStats __st__("Domain.forget");
+        //crab::CrabStats::count (abs_dom_t::getDomainName() + ".count.forget");
+        //crab::ScopedCrabStats __st__(abs_dom_t::getDomainName() + ".forget");
         this->m_inv -= *lhs_opt;
       }
     }

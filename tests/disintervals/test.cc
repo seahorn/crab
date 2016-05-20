@@ -33,9 +33,34 @@ cfg_t* prog (VariableFactory &vfac)  {
   return cfg;
 }
 
+template <typename Domain, typename Live>
+void run(cfg_ref_t cfg, VariableFactory &vfac, Live live)
+{
+  const unsigned int w = 1;
+  const unsigned int n = 2;
+
+  typename NumFwdAnalyzer <cfg_ref_t, Domain, VariableFactory>::type 
+      It (cfg, vfac, live, w, n, 20);
+  Domain inv = Domain::top ();
+  It.Run (inv);
+  crab::outs() << "Invariants using " << Domain::getDomainName () << ":\n";
+
+  for (auto &b : cfg)
+  {
+    // invariants at the entry of the block
+    auto inv = It [b.label ()];
+    crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
+  }
+  crab::outs() << endl;
+  if (stats_enabled) {
+    crab::CrabStats::Print(crab::outs());
+    crab::CrabStats::reset();
+  }  
+}
+
 int main (int argc, char**argv){
 
-  SET_LOGGER(argc,argv)
+  SET_TEST_OPTIONS(argc,argv)
 
   // typedef dis_interval <z_number> dis_interval_t;
   // typedef interval <z_number> interval_t;
@@ -96,18 +121,7 @@ int main (int argc, char**argv){
     VariableFactory vfac;
     cfg_t* cfg = prog (vfac);
     crab::outs() << *cfg << "\n";
-
-    NumFwdAnalyzer <cfg_ref_t, dis_interval_domain_t,VariableFactory>::type 
-        a (*cfg, vfac, nullptr, 1, 2, 20);
-    // Run fixpoint 
-    a.Run (dis_interval_domain_t::top ());
-    // Print invariants
-    crab::outs() << "Invariants using " << dis_interval_domain_t::getDomainName () << "\n";
-    for (auto &b : *cfg) {
-      auto inv = a [b.label ()];
-      crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
-    }
-
+    run<dis_interval_domain_t>(*cfg, vfac, nullptr); 
     delete cfg;
   }
 }

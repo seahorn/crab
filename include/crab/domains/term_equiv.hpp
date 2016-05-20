@@ -515,14 +515,14 @@ namespace crab {
            _var_map(o._var_map), _term_map(o._term_map),
            changed_terms(o.changed_terms)
        { 
-         crab::CrabStats::count ("Domain.count.copy");
-         crab::ScopedCrabStats __st__("Domain.copy");
+         crab::CrabStats::count (getDomainName() + ".count.copy");
+         crab::ScopedCrabStats __st__(getDomainName() + ".copy");
          check_terms(); 
        } 
        
        term_domain_t& operator=(const term_domain_t &o) {
-         crab::CrabStats::count ("Domain.count.copy");
-         crab::ScopedCrabStats __st__("Domain.copy");
+         crab::CrabStats::count (getDomainName() + ".count.copy");
+         crab::ScopedCrabStats __st__(getDomainName() + ".copy");
          
          o.check_terms();
          if (this != &o) {
@@ -553,6 +553,9 @@ namespace crab {
        
        // Lattice operations
        bool operator<=(term_domain_t o)  {	
+         crab::CrabStats::count (getDomainName() + ".count.leq");
+         crab::ScopedCrabStats __st__(getDomainName() + ".leq");
+
          // Require normalization of the first argument
          this->normalize();
          
@@ -604,6 +607,9 @@ namespace crab {
        
        // Optimized version of | that avoids some unnecessary copies
        void operator|=(term_domain_t o) {
+
+         crab::CrabStats::count (getDomainName() + ".count.join");
+         crab::ScopedCrabStats __st__(getDomainName() + ".join");
          
          // Requires normalization of both operands
          normalize();
@@ -682,6 +688,9 @@ namespace crab {
        }
 
        term_domain_t operator|(term_domain_t o) {
+         crab::CrabStats::count (getDomainName() + ".count.join");
+         crab::ScopedCrabStats __st__(getDomainName() + ".join");
+
          // Requires normalization of both operands
          normalize();
          o.normalize();
@@ -768,12 +777,16 @@ namespace crab {
        }
 
        term_domain_t operator||(term_domain_t other) {
+         crab::CrabStats::count (getDomainName() + ".count.widening");
+         crab::ScopedCrabStats __st__(getDomainName() + ".widening");
          WidenOp op;
          return this->widening (other, op);
        }
        
        template<typename Thresholds>
        term_domain_t widening_thresholds (term_domain_t other, const Thresholds& ts) {
+         crab::CrabStats::count (getDomainName() + ".count.widening");
+         crab::ScopedCrabStats __st__(getDomainName() + ".widening");
          WidenWithThresholdsOp<Thresholds> op (ts);
          return this->widening (other, op);
        }
@@ -970,6 +983,9 @@ namespace crab {
 
        // Meet
        term_domain_t operator&(term_domain_t o) {
+         crab::CrabStats::count (getDomainName() + ".count.meet");
+         crab::ScopedCrabStats __st__(getDomainName() + ".meet");
+
          // Does not require normalization of any of the two operands
          if (is_bottom() || o.is_bottom()) {
            return bottom();
@@ -1075,12 +1091,18 @@ namespace crab {
     
        // Narrowing
        term_domain_t operator&&(term_domain_t o) {	
+         crab::CrabStats::count (getDomainName() + ".count.narrowing");
+         crab::ScopedCrabStats __st__(getDomainName() + ".narrowing");
+
          CRAB_WARN ("Term narrowing operator replaced with meet");
          return *this & o; 
        } 
 
        // Remove a variable from the scope
        void operator-=(VariableName v) {
+         crab::CrabStats::count (getDomainName() + ".count.forget");
+         crab::ScopedCrabStats __st__(getDomainName() + ".forget");
+
          auto it(_var_map.find(v));
          if(it != _var_map.end())
          {
@@ -1103,6 +1125,9 @@ namespace crab {
        // Remove all variables except vs
        template<typename Range>
        void project (Range vs) {
+         crab::CrabStats::count (getDomainName() + ".count.project");
+         crab::ScopedCrabStats __st__(getDomainName() + ".project");
+
          if (is_bottom ()) return;
          
          std::set<VariableName> s1,s2,s3;
@@ -1113,6 +1138,9 @@ namespace crab {
        }
 
        void assign(VariableName x_name, linear_expression_t e) {
+         crab::CrabStats::count (getDomainName() + ".count.assign");
+         crab::ScopedCrabStats __st__(getDomainName() + ".assign");
+
          if (this->is_bottom()) {
            return;
          } else {
@@ -1131,6 +1159,9 @@ namespace crab {
 
        //! copy of x into a new fresh variable y
        void expand (VariableName x_name, VariableName y_name) {
+         crab::CrabStats::count (getDomainName() + ".count.expand");
+         crab::ScopedCrabStats __st__(getDomainName() + ".expand");
+
          if (is_bottom ()) {
            return;
          }
@@ -1147,6 +1178,8 @@ namespace crab {
 
        template<typename NumDomain>
        void push (const VariableName& x, NumDomain& inv) {
+         crab::CrabStats::count (getDomainName() + ".count.push");
+         crab::ScopedCrabStats __st__(getDomainName() + ".push");
 
          if (!is_normalized ()) normalize ();
 
@@ -1175,6 +1208,9 @@ namespace crab {
 
        // x = y op z
        void apply(operation_t op, VariableName x, VariableName y, VariableName z){	
+         crab::CrabStats::count (getDomainName() + ".count.apply");
+         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+
          if (this->is_bottom()) {
            return;   
          } else {
@@ -1190,6 +1226,9 @@ namespace crab {
     
        // x = y op k
        void apply(operation_t op, VariableName x, VariableName y, Number k){	
+         crab::CrabStats::count (getDomainName() + ".count.apply");
+         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+
          if (this->is_bottom()) {
            return;   
          } else {
@@ -1227,6 +1266,9 @@ namespace crab {
       public:
 
        void operator+=(linear_constraint_t cst) {  
+         crab::CrabStats::count (getDomainName() + ".count.add_constraints");
+         crab::ScopedCrabStats __st__(getDomainName() + ".add_constraints");
+
          typedef std::pair<variable_t,variable_t> pair_var_t;
 
          if (optional<pair_var_t> eq = get_eq_or_diseq(cst)) {
@@ -1309,9 +1351,16 @@ namespace crab {
     
        // Propagate information from tightened terms to
        // parents/children.
-       void normalize() { TermNormalizer<Info, typename Info::domain_t>::normalize(*this); }
+       void normalize() { 
+         crab::CrabStats::count (getDomainName() + ".count.normalize");
+         crab::ScopedCrabStats __st__(getDomainName() + ".normalize");
+         TermNormalizer<Info, typename Info::domain_t>::normalize(*this); 
+       }
 
        interval_t operator[](VariableName x) { 
+         crab::CrabStats::count (getDomainName() + ".count.to_intervals");
+         crab::ScopedCrabStats __st__(getDomainName() + ".to_intervals");
+
          // Needed for accuracy
          normalize();
 
@@ -1328,6 +1377,9 @@ namespace crab {
        } 
 
        void set (VariableName x, interval_t intv){
+         crab::CrabStats::count (getDomainName() + ".count.assign");
+         crab::ScopedCrabStats __st__(getDomainName() + ".assign");
+
          variable_t vx (x);
          rebind_var (vx, term_of_itv (intv.lb (), intv.ub ()));
        }
@@ -1400,6 +1452,9 @@ namespace crab {
        }
 
        void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z){
+         crab::CrabStats::count (getDomainName() + ".count.apply");
+         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+
          if (this->is_bottom()) {
            return;   
          } else {
@@ -1414,6 +1469,9 @@ namespace crab {
        }
     
        void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k){
+         crab::CrabStats::count (getDomainName() + ".count.apply");
+         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+
          if (this->is_bottom()) {
            return;   
          } else {
@@ -1432,6 +1490,9 @@ namespace crab {
        // division_operators_api
     
        void apply(div_operation_t op, VariableName x, VariableName y, VariableName z){
+         crab::CrabStats::count (getDomainName() + ".count.apply");
+         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+
          if (this->is_bottom()) {
            return;   
          } else {
@@ -1446,6 +1507,9 @@ namespace crab {
        }
 
        void apply(div_operation_t op, VariableName x, VariableName y, Number k){
+         crab::CrabStats::count (getDomainName() + ".count.apply");
+         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+
          if (this->is_bottom()) {
            return;   
          } else {

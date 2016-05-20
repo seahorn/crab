@@ -549,7 +549,7 @@ namespace ikos {
         _dfn_table(boost::make_shared<dfn_table_t>()), 
         _num(0), _stack(boost::make_shared<stack_t>()), 
         _nesting_table(boost::make_shared<nesting_table_t>()) {
-      crab::ScopedCrabStats __st__("Weak Topological sort");
+      crab::ScopedCrabStats __st__("Fixpo.WTO");
 
       this->visit(cfg, cfg.entry(), this->_wto_components);
       this->_dfn_table.reset();

@@ -84,12 +84,16 @@ namespace crab {
 
 namespace {
 
-#define SET_LOGGER(ARGC,ARGV)                                                                         \
-  boost::program_options::options_description log("Logging Options");                                 \
-  log.add_options()                                                                                   \
+  bool stats_enabled = false;                                                                         
+
+  #define SET_TEST_OPTIONS(ARGC,ARGV)                                                                 \
+  boost::program_options::options_description po("Test Options");                                     \
+  po.add_options()                                                                                    \
       ("log",  boost::program_options::value<std::vector<string> >(), "Enable specified log level");  \
+  po.add_options()                                                                                    \
+      ("stats",boost::program_options::bool_switch(&stats_enabled), "Enable stats");                  \
   boost::program_options::options_description cmmdline_options;                                       \
-  cmmdline_options.add(log);                                                                          \
+  cmmdline_options.add(po);                                                                           \
   boost::program_options::variables_map vm;                                                           \
   boost::program_options::positional_options_description p;                                           \
   boost::program_options::store(boost::program_options::command_line_parser(ARGC, ARGV).              \
@@ -101,6 +105,5 @@ namespace {
     vector<string> loggers = vm ["log"].as<vector<string> > ();                                       \
     for(unsigned int i=0; i<loggers.size (); i++)                                                     \
       crab::CrabEnableLog (loggers [i]); }                                                            
-}                           
-
-#endif 
+  }                           
+  #endif 

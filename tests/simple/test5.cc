@@ -49,9 +49,31 @@ cfg_t* prog (VariableFactory &vfac)  {
   return cfg;
 }
 
+template <typename Domain, typename Live>
+void run(cfg_ref_t cfg, VariableFactory &vfac, Live *live)
+{
+  typename NumFwdAnalyzer <cfg_ref_t, Domain, VariableFactory>::type 
+      It (cfg, vfac, live, 1, 2, 20);
+  Domain inv = Domain::top ();
+  It.Run (inv);
+  crab::outs() << "Invariants using " << Domain::getDomainName () << ":\n";
+
+  for (auto &b : cfg)
+  {
+    // invariants at the entry of the block
+    auto inv = It [b.label ()];
+    crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
+  }
+  crab::outs() << endl;
+  if (stats_enabled) {
+    crab::CrabStats::Print(crab::outs());
+    crab::CrabStats::reset();
+  }  
+}
+
 int main (int argc, char** argv )
 {
-  SET_LOGGER(argc,argv)
+  SET_TEST_OPTIONS(argc,argv)
 
   VariableFactory vfac;
   cfg_t* cfg = prog (vfac);
@@ -60,52 +82,10 @@ int main (int argc, char** argv )
   Liveness<cfg_ref_t> live (*cfg);
   live.exec ();
 
-  {
-    NumFwdAnalyzer <cfg_ref_t, dbm_domain_t,VariableFactory>::type a (*cfg,vfac,&live);
-    a.Run (dbm_domain_t::top ());
-    crab::outs() << "Invariants using " << dbm_domain_t::getDomainName () << "\n";
-    for (auto &b : *cfg)
-    {
-      auto inv = a [b.label ()];
-      crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
-    }
-  }
-
-  {
-    NumFwdAnalyzer <cfg_ref_t, sdbm_domain_t,VariableFactory>::type a (*cfg,vfac,&live);
-    a.Run (sdbm_domain_t::top ());
-    crab::outs() << "Invariants using " << sdbm_domain_t::getDomainName () << "\n";
-    for (auto &b : *cfg)
-    {
-      auto inv = a [b.label ()];
-      crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
-    }
-  }
-
-
-  {
-    NumFwdAnalyzer <cfg_ref_t, term_dis_int_t,VariableFactory>::type a (*cfg,vfac,&live);
-    a.Run (term_dis_int_t::top ());
-    crab::outs() << "Invariants using " << term_dis_int_t::getDomainName () << "\n";
-    for (auto &b : *cfg)
-    {
-      auto inv = a [b.label ()];
-      crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
-    }
-  }
-
-  {
-    NumFwdAnalyzer <cfg_ref_t, num_domain_t,VariableFactory>::type a (*cfg,vfac,&live, 1, 2, 20);
-    a.Run (num_domain_t::top ());
-    crab::outs() << "Invariants using " << num_domain_t::getDomainName () << "\n";
-    for (auto &b : *cfg) 
-    {
-      auto inv = a [b.label ()];
-      crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
-    }
-  }
-
+  run<dbm_domain_t>(*cfg,vfac,&live);
+  run<sdbm_domain_t>(*cfg,vfac,&live);
+  run<term_dis_int_t>(*cfg,vfac,&live);
+  run<num_domain_t>(*cfg,vfac,&live);
   delete cfg;
-
   return 0;
 }

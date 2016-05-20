@@ -201,9 +201,9 @@ namespace ikos {
     }
 
     static std::string getDomainName () { 
-      std::string name = "Product of " +
-          Domain1::getDomainName () + " and " +
-          Domain2::getDomainName ();
+      std::string name = "Product(" +
+          Domain1::getDomainName () + "," +
+          Domain2::getDomainName () + ")";
       return name;
     }
 

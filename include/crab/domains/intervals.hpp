@@ -1195,13 +1195,13 @@ namespace ikos {
       bitwise_operators< Number, VariableName >(),
       division_operators< Number, VariableName >(),
       _env(e._env) { 
-      crab::CrabStats::count ("Domain.count.copy");
-      crab::ScopedCrabStats __st__("Domain.copy");
+      crab::CrabStats::count (getDomainName() + ".count.copy");
+      crab::ScopedCrabStats __st__(getDomainName() + ".copy");
     }
 
     interval_domain_t& operator=(const interval_domain_t& o) {
-      crab::CrabStats::count ("Domain.count.copy");
-      crab::ScopedCrabStats __st__("Domain.copy");
+      crab::CrabStats::count (getDomainName() + ".count.copy");
+      crab::ScopedCrabStats __st__(getDomainName() + ".copy");
       if (this != &o)
         this->_env = o._env;
       return *this;
@@ -1224,43 +1224,63 @@ namespace ikos {
     }
 
     bool operator<=(interval_domain_t e) {
+      crab::CrabStats::count (getDomainName() + ".count.leq");
+      crab::ScopedCrabStats __st__(getDomainName() + ".leq");
       return (this->_env <= e._env);
     }
 
     void operator|=(interval_domain_t e) {
+      crab::CrabStats::count (getDomainName() + ".count.join");
+      crab::ScopedCrabStats __st__(getDomainName() + ".join");
       this->_env = this->_env | e._env;
     }
 
     interval_domain_t operator|(interval_domain_t e) {
+      crab::CrabStats::count (getDomainName() + ".count.join");
+      crab::ScopedCrabStats __st__(getDomainName() + ".join");
       return (this->_env | e._env);
     }
 
     interval_domain_t operator&(interval_domain_t e) {
+      crab::CrabStats::count (getDomainName() + ".count.meet");
+      crab::ScopedCrabStats __st__(getDomainName() + ".meet");
       return (this->_env & e._env);
     }
 
     interval_domain_t operator||(interval_domain_t e) {
+      crab::CrabStats::count (getDomainName() + ".count.widening");
+      crab::ScopedCrabStats __st__(getDomainName() + ".widening");
       return (this->_env || e._env);
     }
 
     template<typename Thresholds>
     interval_domain_t widening_thresholds (interval_domain_t e, const Thresholds &ts) {
+      crab::CrabStats::count (getDomainName() + ".count.widening");
+      crab::ScopedCrabStats __st__(getDomainName() + ".widening");
       return this->_env.widening_thresholds (e._env, ts);
     }
 
     interval_domain_t operator&&(interval_domain_t e) {
+      crab::CrabStats::count (getDomainName() + ".count.narrowing");
+      crab::ScopedCrabStats __st__(getDomainName() + ".narrowing");
       return (this->_env && e._env);
     }
 
     void set(VariableName v, interval_t i) {
+      crab::CrabStats::count (getDomainName() + ".count.assign");
+      crab::ScopedCrabStats __st__(getDomainName() + ".assign");
       this->_env.set(v, i);
     }
 
     void set(VariableName v, Number n) {
+      crab::CrabStats::count (getDomainName() + ".count.assign");
+      crab::ScopedCrabStats __st__(getDomainName() + ".assign");
       this->_env.set(v, interval_t(n));
     }
 
     void operator-=(VariableName v) {
+      crab::CrabStats::count (getDomainName() + ".count.forget");
+      crab::ScopedCrabStats __st__(getDomainName() + ".forget");
       this->_env -= v;
     }
     
@@ -1279,6 +1299,8 @@ namespace ikos {
     }
     
     void operator+=(linear_constraint_system_t csts) {
+      crab::CrabStats::count (getDomainName() + ".count.add_constraints");
+      crab::ScopedCrabStats __st__(getDomainName() + ".add_constraints");
       this->add(csts);
     }
 
@@ -1297,6 +1319,9 @@ namespace ikos {
     }
     
     void assign(VariableName x, linear_expression_t e) {
+      crab::CrabStats::count (getDomainName() + ".count.assign");
+      crab::ScopedCrabStats __st__(getDomainName() + ".assign");
+
       if (boost::optional<variable_t> v = e.get_variable ()) {
         this->_env.set(x, this->_env [(*v).name ()]);
       }
@@ -1311,6 +1336,9 @@ namespace ikos {
     }
 
     void apply(operation_t op, VariableName x, VariableName y, VariableName z) {
+      crab::CrabStats::count (getDomainName() + ".count.apply");
+      crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+
       interval_t yi = this->_env[y];
       interval_t zi = this->_env[z];
       interval_t xi = interval_t::bottom();
@@ -1337,6 +1365,9 @@ namespace ikos {
     }
 
     void apply(operation_t op, VariableName x, VariableName y, Number k) {
+      crab::CrabStats::count (getDomainName() + ".count.apply");
+      crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+
       interval_t yi = this->_env[y];
       interval_t zi(k);
       interval_t xi = interval_t::bottom();
@@ -1365,6 +1396,9 @@ namespace ikos {
     // bitwise_operators_api
     
     void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width){
+      crab::CrabStats::count (getDomainName() + ".count.apply");
+      crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+
       interval_t yi = this->_env[y];
       interval_t xi = interval_t::bottom();
       switch(op){
@@ -1384,6 +1418,9 @@ namespace ikos {
     }
 
     void apply(conv_operation_t op, VariableName x, Number k, unsigned width){
+      crab::CrabStats::count (getDomainName() + ".count.apply");
+      crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+
       interval_t yi(k);
       interval_t xi = interval_t::bottom();
       switch(op){
@@ -1401,7 +1438,11 @@ namespace ikos {
       }      
       this->_env.set(x, xi);
     }
+
     void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z){
+      crab::CrabStats::count (getDomainName() + ".count.apply");
+      crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+
       interval_t yi = this->_env[y];
       interval_t zi = this->_env[z];
       interval_t xi = interval_t::bottom();
@@ -1438,6 +1479,9 @@ namespace ikos {
     }
     
     void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k){
+      crab::CrabStats::count (getDomainName() + ".count.apply");
+      crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+
       interval_t yi = this->_env[y];
       interval_t zi(k);
       interval_t xi = interval_t::bottom();
@@ -1475,6 +1519,9 @@ namespace ikos {
     // division_operators_api
     
     void apply(div_operation_t op, VariableName x, VariableName y, VariableName z){
+      crab::CrabStats::count (getDomainName() + ".count.apply");
+      crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+
       interval_t yi = this->_env[y];
       interval_t zi = this->_env[z];
       interval_t xi = interval_t::bottom();
@@ -1502,7 +1549,11 @@ namespace ikos {
       this->_env.set(x, xi);
 
     }
+
     void apply(div_operation_t op, VariableName x, VariableName y, Number k){
+      crab::CrabStats::count (getDomainName() + ".count.apply");
+      crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+
       interval_t yi = this->_env[y];
       interval_t zi(k);
       interval_t xi = interval_t::bottom();
