@@ -43,59 +43,53 @@ cfg_t* prog (VariableFactory &vfac)  {
   return cfg;
 }
 
-template<class CFG> 
-std::vector<typename CFG::node_t> rev_topo(CFG cfg) {
-  std::vector<typename CFG::node_t> rev_sccg_order;
-  crab::analyzer::graph_algo::SccGraph <CFG> Scc_g (cfg);
-  crab::analyzer::graph_algo::rev_topo_sort (Scc_g, rev_sccg_order);
-  
-  std::vector<typename CFG::node_t> order;
-  for (auto &n : rev_sccg_order) {
-    auto &members = Scc_g.getComponentMembers (n);
-    order.insert (order.end (), members.begin (), members.end ());
-  }
-  return order;
-}
-
 int main (int argc, char** argv )
 {
   SET_TEST_OPTIONS(argc,argv)
 
   VariableFactory vfac;
-  cfg_t* cfg = prog(vfac);
 
-  crab::outs() << "CFG\n" << *cfg << endl;
+  { 
+    cfg_t* cfg = prog(vfac);
+    
+    crab::outs() << "CFG\n" << *cfg << endl;
+    cfg_rev_t rev_cfg(*cfg);
+    crab::outs() << "Reversed CFG\n" << rev_cfg << endl;
+    
+    std::cout << "Weak reversed topological order of CFG \n";
+    bool first=true;
+    for (auto &N: crab::analyzer::graph_algo::weak_rev_topo_sort(cfg_ref_t(*cfg))) {
+      if (!first)
+        std::cout << " -- ";
+      std::cout << N;
+      first = false;
+    }
+    std::cout << "\n";
+    
+    std::cout << "Weak topological order of the reversed CFG \n";
+    first=true;
+    for (auto &N: crab::analyzer::graph_algo::weak_topo_sort(rev_cfg)) {
+      if (!first)
+        std::cout << " -- ";
+      std::cout << N;
+      first = false;
+    }
+    std::cout << "\n";
 
-  std::cout << "Reversed topological order of CFG \n";
-  bool first=true;
-  for (auto &N: rev_topo(cfg_ref_t(*cfg))) {
-    if (!first)
-      std::cout << " -- ";
-    std::cout << N;
-    first = false;
+    std::cout << "Bourdoncle WTO of the reversed CFG\n";
+    ikos::wto<typename cfg_rev_t::node_t, cfg_rev_t> wto_g(rev_cfg);
+    std::cout << wto_g << "\n";
+    
+    cfg->simplify ();
+    crab::outs() << "Simplified CFG\n" << *cfg << endl;
+    
+    rev_cfg = cfg_rev_t(*cfg);
+    crab::outs() << "Reversed simplified CFG\n" << rev_cfg << endl;
+
+    delete cfg;
   }
-  std::cout << "\n";
-  
-  cfg_rev_t rev_cfg(*cfg);
-  crab::outs() << "Reversed CFG\n" << rev_cfg << endl;
 
-  std::cout << "Reversed topological order of the reversed CFG \n";
-  first=true;
-  for (auto &N: rev_topo(rev_cfg)) {
-    if (!first)
-      std::cout << " -- ";
-    std::cout << N;
-    first = false;
+  {
   }
-  std::cout << "\n";
-  
-  cfg->simplify ();
-  crab::outs() << "Simplified CFG\n" << *cfg << endl;
-
-  rev_cfg = cfg_rev_t(*cfg);
-  crab::outs() << "Reversed simplified CFG\n" << rev_cfg << endl;
-  
-  // free the CFG
-  delete cfg;
   return 0;
 }

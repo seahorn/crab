@@ -12,7 +12,8 @@ namespace crab {
   namespace analyzer {
    namespace graph_algo {
 
-     // res contains the reverse topological order of the SCC graph g
+     // res contains the reverse topological order of a graph g
+     // pre: g is a DAG.
      template <typename G>
      void rev_topo_sort (const G &g, std::vector<typename G::node_t>& res) {
 
@@ -30,7 +31,46 @@ namespace crab {
                                std::back_inserter(res),
                                color_map(property_color_map_t(colormap)));
      }
-   
+
+     // res contains the topological order of g.
+     // pre: g is a DAG.
+     template <typename G>
+     void topo_sort (const G &g, std::vector<typename G::node_t>& res) {
+       rev_topo_sort(g, res);
+       std::reverse(res.begin(), res.end());
+     }
+
+     // return the reversed topological order of g with possibly cycles.
+     // XXX: related concept but this is not Bourdoncle's WTO
+     template<class G> 
+     std::vector<typename G::node_t> weak_rev_topo_sort(G g) {
+       std::vector<typename G::node_t> sccg_order;
+       crab::analyzer::graph_algo::SccGraph <G> scc_g (g, false /*postorder within scc*/);
+       crab::analyzer::graph_algo::rev_topo_sort (scc_g, sccg_order);
+       std::vector<typename G::node_t> order;
+       for (auto &n : sccg_order) {
+         auto &members = scc_g.getComponentMembers (n);
+         order.insert (order.end (), members.begin (), members.end ());
+       }
+       return order;
+     }
+
+     // return the topological order of g with possibly cycles.
+     // XXX: related concept but this is not Bourdoncle's WTO
+     template<class G> 
+     std::vector<typename G::node_t> weak_topo_sort(G g) {
+       std::vector<typename G::node_t> sccg_order;
+       crab::analyzer::graph_algo::SccGraph <G> scc_g (g, true /*preorder within scc*/);
+       crab::analyzer::graph_algo::topo_sort (scc_g, sccg_order);
+       std::vector<typename G::node_t> order;
+       for (auto &n : sccg_order) {
+         auto &members = scc_g.getComponentMembers (n);
+         order.insert (order.end (), members.begin (), members.end ());
+       }
+       return order;
+     }
+
+
    } // end namespace graph_algo
   } // end namespace analyzer
 } // end namespace crab
