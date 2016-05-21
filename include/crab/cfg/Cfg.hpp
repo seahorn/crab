@@ -718,7 +718,7 @@ namespace crab {
       variable_t m_arr;
       linear_expression_t m_index;
       linear_expression_t m_value;
-      ikos::z_number m_bytes; //! number of bytes written
+      ikos::z_number m_elem_size; // size in bytes
       
       bool m_is_singleton; //! whether the store writes to a singleton
                            //  cell. If unknown set to false.
@@ -727,11 +727,11 @@ namespace crab {
       ArrayStore (variable_t arr, 
                   linear_expression_t index, 
                   linear_expression_t value, 
-                  ikos::z_number n_bytes,
-                  bool is_sing): 
+                  ikos::z_number elem_size,
+                  bool is_sing = false): 
           Statement <VariableName> (ARR_STORE),
           m_arr (arr), m_index (index),
-          m_value (value), m_bytes (n_bytes), 
+          m_value (value), m_elem_size (elem_size), 
           m_is_singleton (is_sing)
       {
         this->m_live.addUse (m_arr.name());
@@ -747,7 +747,7 @@ namespace crab {
       
       linear_expression_t value () const { return m_value; }
       
-      ikos::z_number n_bytes () const { return m_bytes; }
+      ikos::z_number elem_size () const { return m_elem_size; }
       
       bool is_singleton () const { return m_is_singleton;}
       
@@ -760,8 +760,9 @@ namespace crab {
       {
         typedef ArrayStore <Number, VariableName> array_store_t;
         return boost::static_pointer_cast< Statement <VariableName>, array_store_t>
-            (boost::make_shared<array_store_t>(m_arr, m_index,
-                                               m_value, m_bytes, m_is_singleton));
+            (boost::make_shared<array_store_t>(m_arr, m_index, m_value, m_elem_size,
+                                               m_is_singleton));
+                                               
     }
       
       virtual void write(ostream& o) const
@@ -785,15 +786,15 @@ namespace crab {
       variable_t m_lhs;
       variable_t m_array;
       linear_expression_t m_index;
-      ikos::z_number m_bytes; //! number of bytes read
+      ikos::z_number m_elem_size; //! size in bytes
       
      public:
       
       ArrayLoad (variable_t lhs, variable_t arr, 
-                 linear_expression_t index, ikos::z_number n_bytes): 
+                 linear_expression_t index, ikos::z_number elem_size): 
           Statement <VariableName> (ARR_LOAD),
           m_lhs (lhs), m_array (arr), 
-          m_index (index), m_bytes (n_bytes)
+          m_index (index), m_elem_size (elem_size)
       {
         this->m_live.addDef (lhs.name());
         this->m_live.addUse (m_array.name());
@@ -807,7 +808,7 @@ namespace crab {
       
       linear_expression_t index () const { return m_index; }
       
-      ikos::z_number n_bytes () const { return m_bytes; }
+      ikos::z_number elem_size () const { return m_elem_size; }
       
       virtual void accept(StatementVisitor <VariableName> *v) 
       {
@@ -818,7 +819,7 @@ namespace crab {
       {
         typedef ArrayLoad <Number, VariableName> array_load_t;
         return boost::static_pointer_cast< Statement <VariableName>, array_load_t>
-            (boost::make_shared<array_load_t>(m_lhs, m_array, m_index, m_bytes));
+            (boost::make_shared<array_load_t>(m_lhs, m_array, m_index, m_elem_size));
                                               
       }
       
@@ -846,14 +847,13 @@ namespace crab {
       
       VariableName m_lhs;
       VariableName m_rhs;
-      interval_t   m_size; //! bytes read
       
      public:
       
-      PtrLoad (VariableName lhs, VariableName rhs, interval_t size,
+      PtrLoad (VariableName lhs, VariableName rhs, 
                DebugInfo debug_info = DebugInfo ()): 
           Statement <VariableName> (PTR_LOAD, debug_info),
-          m_lhs (lhs), m_rhs (rhs), m_size (size)
+          m_lhs (lhs), m_rhs (rhs)
       {
         this->m_live.addUse (lhs);
         this->m_live.addUse (rhs);
@@ -862,8 +862,6 @@ namespace crab {
       VariableName lhs () const { return m_lhs; }
       
       VariableName rhs () const { return m_rhs; }
-      
-      interval_t size () const { return m_size; }
       
       virtual void accept(StatementVisitor <VariableName> *v) 
       {
@@ -874,15 +872,12 @@ namespace crab {
       {
         typedef PtrLoad <Number,VariableName> ptr_load_t;
         return boost::static_pointer_cast< Statement <VariableName>, ptr_load_t >
-            (boost::make_shared<ptr_load_t>(m_lhs, m_rhs, m_size));
+            (boost::make_shared<ptr_load_t>(m_lhs, m_rhs));
       }
       
       virtual void write(ostream& o) const
       {
-        o << m_lhs << " = "  << "*(" << m_rhs << " + ";
-        interval_t sz (m_size) ; // FIX: write method is not const in ikos domains
-        sz.write (o);
-        o << ")";
+        o << m_lhs << " = "  << "*(" << m_rhs << ")";
         return;
       }
       
@@ -891,7 +886,6 @@ namespace crab {
     template<class Number, class VariableName>
     class PtrStore: public Statement<VariableName>
     {
-      
       // *p = q
      public:
       
@@ -901,14 +895,13 @@ namespace crab {
       
       VariableName m_lhs;
       VariableName m_rhs;
-      interval_t   m_size; //! bytes written
       
      public:
       
-      PtrStore (VariableName lhs, VariableName rhs, interval_t size,
+      PtrStore (VariableName lhs, VariableName rhs,
                 DebugInfo debug_info = DebugInfo ()): 
           Statement <VariableName> (PTR_STORE, debug_info),
-          m_lhs (lhs), m_rhs (rhs), m_size (size)
+          m_lhs (lhs), m_rhs (rhs)
       {
         this->m_live.addUse (lhs);
         this->m_live.addUse (rhs);
@@ -917,8 +910,6 @@ namespace crab {
       VariableName lhs () const { return m_lhs; }
       
       VariableName rhs () const { return m_rhs; }
-      
-      interval_t size () const { return m_size; }
       
       virtual void accept(StatementVisitor <VariableName> *v) 
       {
@@ -929,15 +920,12 @@ namespace crab {
       {
         typedef PtrStore <Number,VariableName> ptr_store_t;
         return boost::static_pointer_cast< Statement <VariableName>, ptr_store_t >
-            (boost::make_shared<ptr_store_t>(m_lhs, m_rhs, m_size));
+            (boost::make_shared<ptr_store_t>(m_lhs, m_rhs));
       }
       
       virtual void write(ostream& o) const
       {
-        o << "*(" << m_lhs << " + ";
-        interval_t sz (m_size) ; // FIX: write method is not const in ikos domains
-        sz.write (o);
-        o << ") = "  << m_rhs;
+        o << "*(" << m_lhs << ") = " << m_rhs;
         return;
       }
     }; 
@@ -2085,34 +2073,34 @@ namespace crab {
       }
       
       void array_store (z_variable_t arr, z_lin_exp_t idx, 
-                        z_lin_exp_t val, ikos::z_number n_bytes, 
+                        z_lin_exp_t val, ikos::z_number elem_size, 
                         bool is_singleton = false) 
       {
         if (m_track_prec == ARR)
           insert(boost::static_pointer_cast< statement_t, z_arr_store_t >
-                 (boost::make_shared<z_arr_store_t>(arr, idx, val, n_bytes, is_singleton)));
+                 (boost::make_shared<z_arr_store_t>(arr, idx, val, elem_size, is_singleton)));
       }
       
       void array_load (z_variable_t lhs, z_variable_t arr, 
-                       z_lin_exp_t idx, ikos::z_number n_bytes) 
+                       z_lin_exp_t idx, ikos::z_number elem_size) 
       {
         if (m_track_prec == ARR)
           insert(boost::static_pointer_cast< statement_t, z_arr_load_t >
-                 (boost::make_shared<z_arr_load_t>(lhs, arr, idx, n_bytes)));
+                 (boost::make_shared<z_arr_load_t>(lhs, arr, idx, elem_size)));
       }
       
-      void ptr_store (VariableName lhs, VariableName rhs, z_interval size) 
+      void ptr_store (VariableName lhs, VariableName rhs) 
       {
         if (m_track_prec >= PTR)
           insert(boost::static_pointer_cast< statement_t, ptr_store_t >
-                 (boost::make_shared<ptr_store_t> (lhs, rhs, size)));
+                 (boost::make_shared<ptr_store_t> (lhs, rhs)));
       }
       
-      void ptr_load (VariableName lhs, VariableName rhs, z_interval size) 
+      void ptr_load (VariableName lhs, VariableName rhs) 
       {
         if (m_track_prec >= PTR)
           insert(boost::static_pointer_cast< statement_t, ptr_load_t >
-                 (boost::make_shared<ptr_load_t> (lhs, rhs, size)));
+                 (boost::make_shared<ptr_load_t> (lhs, rhs)));
       }
       
       void ptr_assign (VariableName lhs, VariableName rhs, z_lin_exp_t offset) 

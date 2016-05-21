@@ -39,9 +39,9 @@ cfg_t* cfg1 (VariableFactory &vfac)
   b0.havoc (nd.name ());
   b1.assume (nd >= 1);
   b2.assume (nd <= 0);
-  b1.ptr_store (p, q1, z_interval (0,3));  // *p = q1
-  b2.ptr_store (p, q2, z_interval (0,3));  // *p = q2
-  b3.ptr_load (r, p, z_interval (0,3));    // r = *p
+  b1.ptr_store (p, q1);  // *p = q1
+  b2.ptr_store (p, q2);  // *p = q2
+  b3.ptr_load (r, p);    // r = *p
   return cfg;
 }
 
