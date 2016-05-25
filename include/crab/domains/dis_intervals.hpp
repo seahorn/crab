@@ -1466,9 +1466,12 @@ namespace crab {
      
      typedef dis_interval_domain<Number, VariableName> dis_interval_domain_t;
      
+     template<class CFG, class VarFactory>
+     static void do_initialization (CFG cfg, VarFactory &vfac) { }
+
      static void normalize (dis_interval_domain_t& inv) {
        inv.normalize ();
-      }
+     }
      
      template <typename Iter>
      static void project (dis_interval_domain_t& inv, Iter begin, Iter end) {

@@ -22,6 +22,12 @@ namespace crab {
 
     public:
 
+     // Initialization of static data 
+     // XXX: it doesn't take inv as argument because this method
+     // should only access to static data.
+     template<class CFG, class VarFactory>
+     static void do_initialization(CFG cfg, VarFactory &vfac) { }
+
      // Normalize the abstract domain if such notion exists.
      static void normalize (Domain& inv) { }
 
@@ -92,6 +98,25 @@ namespace crab {
      static void push (const VariableName& x, Domain1 from, Domain2& to){ }
      
    };
+
+   // Special operations needed by the array_sparse_graph domain
+   template<typename Domain>
+   class array_sgraph_domain_traits {
+
+    public:
+
+     static bool is_unsat(Domain &inv, typename Domain::linear_constraint_t cst) { 
+       Domain copy(inv);
+       copy += cst;
+       return copy.is_bottom();
+     }
+
+     static std::vector<typename Domain::varname_t> active_variables(Domain &inv) {
+       CRAB_ERROR("operation active_variables not implemented");
+     }
+     
+   };
+
 
  } // end namespace domains   
 }// end namespace crab

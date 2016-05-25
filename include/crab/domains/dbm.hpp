@@ -1502,6 +1502,9 @@ namespace crab {
      public:
       
       typedef DBM<Number,VariableName> dbm_domain_t;
+
+      template<class CFG, class VarFactory>
+      static void do_initialization (CFG cfg, VarFactory &vfac) { }
       
       static void normalize (dbm_domain_t& inv) {
         inv.normalize ();

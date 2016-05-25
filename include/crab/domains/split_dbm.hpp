@@ -296,18 +296,97 @@ namespace crab {
         _is_bottom = true;
       }
 
-      // check satisfiability of cst using intervals
-      // Only to be used if cst is too hard for dbm
-      bool intervals_check_sat(linear_constraint_t cst)  {
-        if (is_top())    return true;
-        if (is_bottom()) return false;
+      
+      boost::optional<std::pair<vert_id,std::pair<vert_id, Wt> > >
+      diffcst_of_leq(linear_constraint_t cst) {
 
-        auto vars = cst.variables();
-        ranges_t inv;
-        for(auto v: vars)
-          inv.set (v.name(), operator[](v.name));
-        inv += cst;
-        return !inv.is_bottom();
+        assert (cst.size() > 0);
+        assert (cst.is_inequality());
+
+        std::vector<std::pair<vert_id,std::pair<vert_id, Wt> > > diffcsts;
+
+        typename linear_expression_t::iterator it1 = cst.begin();
+        typename linear_expression_t::iterator it2 = ++cst.begin();
+        vert_id i, j;
+        
+        if (cst.size() == 1 && it1->first == 1) {
+          i = get_vert(it1->second.name());
+          j = 0;
+        } else if (cst.size() == 1 && it1->first == -1) {
+          i = 0;
+          j = get_vert(it1->second.name());
+        } else if (cst.size() == 2 && it1->first == 1 && it2->first == -1) {
+          i = get_vert(it1->second.name());
+          j = get_vert(it2->second.name());
+        } else if (cst.size() == 2 && it1->first == -1 && it2->first == 1) {
+          i = get_vert(it2->second.name());
+          j = get_vert(it1->second.name());
+        } else { 
+          // the constraint cannot be expressed as a difference constraint
+          return none;
+        }
+        return std::make_pair(j, std::make_pair(i, Wt(cst.constant())));
+      }
+
+     public:
+
+      // -- Needed by array_sgraph_domain_traits
+
+      // return true iff inequality cst is unsatisfiable.
+      bool is_unsat(linear_constraint_t cst) {
+        if (is_bottom() || cst.is_contradiction()) 
+          return true;
+
+        if (is_top() || cst.is_tautology()) 
+          return false;
+
+        if (!cst.is_inequality()) {
+          CRAB_WARN("is_unsat only supports inequalities");
+          /// XXX: but it would be trivial to handle equalities
+          return false;
+        }
+                  
+        auto diffcst = diffcst_of_leq(cst);
+        if (!diffcst)
+          return false;
+
+        // x - y <= k
+        auto x = (*diffcst).first;
+        auto y = (*diffcst).second.first;
+        auto k = (*diffcst).second.second;
+
+        typename graph_t::mut_val_ref_t w;        
+        if (g.lookup(y,x,&w)) {
+          return ((w + k) < 0);
+        } else {
+          interval_t intv_x = interval_t::top();
+          interval_t intv_y = interval_t::top();
+          if (g.elem(0,x) || g.elem(x,0)) {
+            intv_x = interval_t(
+                g.elem(x, 0) ? -Number(g.edge_val(x, 0)) : bound_t::minus_infinity(),
+                g.elem(0, x) ?  Number(g.edge_val(0, x)) : bound_t::plus_infinity());
+          }
+          if (g.elem(0,y) || g.elem(y,0)) {
+            intv_y = interval_t(
+                g.elem(y, 0) ? -Number(g.edge_val(y, 0)) : bound_t::minus_infinity(),
+                g.elem(0, y) ?  Number(g.edge_val(0, y)) : bound_t::plus_infinity());
+          }
+          if (intv_x.is_top() || intv_y.is_top()) {
+            return false;
+          } else  {
+            return (!((intv_y - intv_x).lb() <= k));
+          }
+        }
+      }
+
+      std::vector<VariableName> active_variables() const {
+        std::vector<VariableName> res;
+        res.reserve(g.size());
+        for (auto v: g.verts()) {
+          if (rev_map[v]) 
+            res.push_back((*(rev_map[v])).name());
+        }
+        return res;
       }
 
      public:
@@ -346,7 +425,7 @@ namespace crab {
 
           // CRAB_LOG("zones-split", crab::outs() << "operator<=: "<< *this<< "<=?"<< o <<"\n");
 
-          if(vert_map.size() < o.vert_map.size())
+          if(vert_map.size() < o.vert_map.size()) 
             return false;
 
           typename graph_t::mut_val_ref_t wx; typename graph_t::mut_val_ref_t wy;
@@ -362,7 +441,7 @@ namespace crab {
             auto it = vert_map.find(p.first);
             // We can't have this <= o if we're missing some
             // vertex.
-            if(it == vert_map.end())
+            if(it == vert_map.end()) 
               return false;
             vert_renaming[p.second] = (*it).second;
             // vert_renaming[(*it).second] = p.second;
@@ -388,10 +467,11 @@ namespace crab {
               if(g.lookup(x, y, &wx) && (wx <= ow))
                 continue;
 
-              if(!g.lookup(x, 0, &wx) || !g.lookup(0, y, &wy))
+              if(!g.lookup(x, 0, &wx) || !g.lookup(0, y, &wy)) 
                 return false;
-              if(!(wx + wy <= ow))
+              if(!(wx + wy <= ow)) 
                 return false;
+              
             }
           }
           return true;
@@ -2135,7 +2215,6 @@ namespace crab {
       void write(ostream& o) {
 
         normalize ();
-
 #if 0
         o << "edges={";
         for(vert_id v : g.verts())
@@ -2152,18 +2231,13 @@ namespace crab {
         }
         o << "}";
 #endif
-
 #if 0
-        crab::outs() << "var_map={";
-        for (auto &p: _var_map) 
-          crab::outs() << p.first << "(" << p.first.index () << ") " << "->" << p.second << ";";
-        crab::outs() << "}\n";
         crab::outs() << "rev_map={";
-        for (auto &p: _rev_map) 
-          crab::outs() << p.first << "->" << p.second << ";";
+        for(unsigned i=0, e = rev_map.size(); i!=e; i++) {
+          if (rev_map[i])
+            crab::outs() << *(rev_map[i]) << "(" << i << ");";
+        }
         crab::outs() << "}\n";
-        crab::outs() << "matrix:\n";
-        dbm_print_to(crab::outs(), _dbm);
 #endif 
 
         if(is_bottom()){
@@ -2423,6 +2497,10 @@ namespace crab {
       template <typename NumDomain>
       void push (const VariableName& x, NumDomain&inv){ lock(); norm().push(x, inv); }
 
+      bool is_unsat (linear_constraint_t cst){ lock(); return norm().is_unsat(cst);}
+
+      std::vector<VariableName> active_variables(){ return norm().active_variables();}
+
       void write(ostream& o) { norm().write(o); }
 
       linear_constraint_system_t to_linear_constraint_system () {
@@ -2440,6 +2518,9 @@ namespace crab {
      public:
 
       typedef SplitDBM<Number,VariableName> sdbm_domain_t;
+
+      template<class CFG, class VarFactory>
+      static void do_initialization (CFG cfg, VarFactory &vfac) { }
 
       static void expand (sdbm_domain_t& inv, VariableName x, VariableName new_x) {
         inv.expand (x, new_x);
@@ -2473,6 +2554,21 @@ namespace crab {
       static void push (const varname_t& x, sdbm_domain_t from, Domain& to){
         from.push (x, to);
       }
+    };
+
+
+    // Expose special operations needed by the array_sparse_graph
+    // domain.
+    template<typename Number, typename VariableName>
+    struct array_sgraph_domain_traits <SplitDBM<Number,VariableName> > {
+      typedef SplitDBM<Number,VariableName> sdbm_domain_t;
+      typedef typename sdbm_domain_t::linear_constraint_t linear_constraint_t;
+
+      static bool is_unsat(sdbm_domain_t &inv, linear_constraint_t cst) 
+      { return inv.is_unsat(cst); }
+      
+      static std::vector<VariableName> active_variables(sdbm_domain_t &inv) 
+      { return inv.active_variables(); }
     };
   
   } // namespace domains

@@ -346,6 +346,9 @@ namespace crab {
        typedef array_smashing<BaseDomain> array_smashing_t;
        typedef typename BaseDomain::varname_t VariableName;
 
+       template<class CFG, class VarFactory>
+       static void do_initialization (CFG cfg, VarFactory &vfac) { }
+
        static void normalize (array_smashing_t& inv) { 
          CRAB_WARN ("array smashing normalize not implemented");
        }

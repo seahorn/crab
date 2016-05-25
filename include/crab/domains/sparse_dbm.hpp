@@ -2126,6 +2126,9 @@ namespace crab {
 
       typedef SparseDBM<Number,VariableName,Params> sdbm_domain_t;
 
+      template<class CFG, class VarFactory>
+      static void do_initialization (CFG cfg, VarFactory &vfac) { }
+
       static void expand (sdbm_domain_t& inv, VariableName x, VariableName new_x) {
         inv.expand (x, new_x);
       }

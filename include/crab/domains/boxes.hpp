@@ -1017,6 +1017,9 @@ namespace crab {
       public:
        typedef boxes_domain<Number, VariableName, LddSize> boxes_domain_t;
 
+       template<class CFG, class VarFactory>
+       static void do_initialization (CFG cfg, VarFactory &vfac) { }
+
        static void normalize (boxes_domain_t& inv) { }
 
        template <typename Iter>
