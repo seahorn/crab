@@ -213,7 +213,7 @@ void run(cfg_ref_t cfg, VariableFactory &vfac, Live *live)
     auto inv = It [b.label ()];
     crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
   }
-  crab::outs() << endl;
+  crab::outs() << "\n";
   if (stats_enabled) {
     crab::CrabStats::Print(crab::outs());
     crab::CrabStats::reset();
@@ -238,22 +238,22 @@ int main (int argc, char** argv )
   cfg_t* cfg5 = prog5 (vfac);
 
   cfg1->simplify (); // this is optional
-  crab::outs() << *cfg1 << endl;
+  crab::outs() << *cfg1 << "\n";
   run<boxes_domain_t>(*cfg1, vfac, nullptr);
 
   cfg2->simplify (); // this is optional
-  crab::outs() << *cfg2 << endl;
+  crab::outs() << *cfg2 << "\n";
   run<boxes_domain_t>(*cfg2, vfac, nullptr);
   
   cfg3->simplify (); // this is optional
-  crab::outs() << *cfg3 << endl;
+  crab::outs() << *cfg3 << "\n";
   run<boxes_domain_t>(*cfg3, vfac, nullptr);
 
   cfg4->simplify (); // this is optional
-  crab::outs() << *cfg4 << endl;
+  crab::outs() << *cfg4 << "\n";
   run<boxes_domain_t>(*cfg4, vfac, nullptr);
 
-  crab::outs() << *cfg5 << endl;
+  crab::outs() << *cfg5 << "\n";
   run<boxes_domain_t>(*cfg5, vfac, nullptr);
 
   delete cfg1;

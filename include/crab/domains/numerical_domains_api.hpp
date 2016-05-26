@@ -54,7 +54,7 @@ namespace ikos {
     OP_DIVISION
   } operation_t;
 
-  inline std::ostream& operator<<(std::ostream&o, operation_t op) {
+  inline crab::crab_os& operator<<(crab::crab_os&o, operation_t op) {
     switch (op) {
       case OP_ADDITION: o << "+"; break;
       case OP_SUBTRACTION: o << "-"; break;

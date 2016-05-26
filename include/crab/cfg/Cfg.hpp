@@ -72,7 +72,7 @@ namespace crab {
     }; 
 
     template<typename Number, typename VariableName>
-    inline ostream& operator<< (ostream &o, 
+    inline crab_os& operator<< (crab_os &o, 
                                 const ikos::variable<Number, VariableName> &v)
     {
       auto tmp (v);
@@ -81,7 +81,7 @@ namespace crab {
     }
 
     template<typename Number, typename VariableName>
-    inline ostream& operator<< (ostream &o, 
+    inline crab_os& operator<< (crab_os &o, 
                                 const ikos::linear_expression<Number, VariableName> &e)
     {
       auto tmp (e);
@@ -90,7 +90,7 @@ namespace crab {
     }
 
     template<typename Number, typename VariableName>
-    inline ostream& operator<< (ostream &o, 
+    inline crab_os& operator<< (crab_os &o, 
                                 const ikos::linear_constraint<Number, VariableName> &c)
     {
       auto tmp (c);
@@ -98,7 +98,7 @@ namespace crab {
       return o;
     }
   
-    inline ostream& operator<< (ostream& o, VariableType t)
+    inline crab_os& operator<< (crab_os& o, VariableType t)
     {
       switch (t)
       {
@@ -143,7 +143,7 @@ namespace crab {
       const_use_iterator defs_begin() const { return m_defs.begin (); }
       const_use_iterator defs_end()   const { return m_defs.end (); }
 
-      friend ostream& operator<<(ostream &o, 
+      friend crab_os& operator<<(crab_os &o, 
                                  const Live< VariableName> &live )
       {
         o << "Use={"; 
@@ -187,14 +187,14 @@ namespace crab {
         return ((m_file != "") && (m_line >= 0) && (m_col >= 0));
       }
 
-      void write (ostream&o) const {
+      void write (crab_os&o) const {
         o << "File  : " << m_file << "\n"
           << "Line  : " << m_line  << "\n" 
           << "Column: " << m_col << "\n";
       }
     };
 
-    inline std::ostream& operator<<(std::ostream& o, const DebugInfo& l) {
+    inline crab_os& operator<<(crab_os& o, const DebugInfo& l) {
       l.write (o);
       return o;
     }
@@ -269,13 +269,13 @@ namespace crab {
 
       virtual void accept(StatementVisitor< VariableName> *) = 0;
       
-      virtual void write(ostream& o) const = 0 ;
+      virtual void write(crab_os& o) const = 0 ;
       
       virtual boost::shared_ptr<Statement <VariableName> > clone () const = 0;
       
       virtual ~Statement() { }
       
-      friend ostream& operator <<(ostream&o, 
+      friend crab_os& operator <<(crab_os&o, 
                                   const Statement<VariableName> &s)
       {
         s.write (o);
@@ -339,7 +339,7 @@ namespace crab {
             (boost::make_shared<BinaryOp_t>(m_lhs, m_op, m_op1, m_op2));
       }
       
-      virtual void write (ostream& o) const
+      virtual void write (crab_os& o) const
       {
         o << m_lhs << " = " << m_op1 << m_op << m_op2;
         return;
@@ -388,7 +388,7 @@ namespace crab {
             (boost::make_shared<Assignment_t>(m_lhs, m_rhs));
       }
       
-      virtual void write(ostream& o) const
+      virtual void write(crab_os& o) const
       {
         o << m_lhs << " = " << m_rhs; // << " " << this->m_live;
         return;
@@ -432,7 +432,7 @@ namespace crab {
             (boost::make_shared<Assume_t>(m_cst));
       }
       
-      virtual void write (ostream & o) const
+      virtual void write (crab_os & o) const
       {
         o << "assume (" << m_cst << ")"; //  << " " << this->m_live;
         return;
@@ -458,7 +458,7 @@ namespace crab {
             (boost::make_shared<Unreachable_t>());
       }
       
-      virtual void write(ostream& o) const
+      virtual void write(crab_os& o) const
       {
         o << "unreachable";
         return;
@@ -493,7 +493,7 @@ namespace crab {
             (boost::make_shared<Havoc_t>(m_lhs));
       }
       
-      void write (ostream& o) const
+      void write (crab_os& o) const
       {
         o << m_lhs << " =*" << " "; // << this->m_live;
         return;
@@ -562,7 +562,7 @@ namespace crab {
             (boost::make_shared<Select_t>(m_lhs, m_cond, m_e1, m_e2));
       }
       
-      virtual void write (ostream& o) const
+      virtual void write (crab_os& o) const
       {
         o << m_lhs << " = " 
           << "ite(" << m_cond << "," << m_e1 << "," << m_e2 << ")";
@@ -607,7 +607,7 @@ namespace crab {
             (boost::make_shared<Assert_t>(m_cst));
       }
       
-      virtual void write (ostream & o) const
+      virtual void write (crab_os & o) const
       {
         o << "assert (" << m_cst << ")"; 
         return;
@@ -645,7 +645,7 @@ namespace crab {
             (boost::make_shared<ArrayInit_t>(m_arr, m_values));
       }
       
-      void write (ostream& o) const
+      void write (crab_os& o) const
       {
         o << m_arr << " = array_init ({";
         for (auto v: m_values)
@@ -695,7 +695,7 @@ namespace crab {
             (boost::make_shared<AssumeArray_t>(m_arr, m_val));
       }
       
-      void write (ostream& o) const
+      void write (crab_os& o) const
       {
         o << "assume (forall l. " << m_arr << "[l]=";
         val ().write (o);
@@ -765,7 +765,7 @@ namespace crab {
                                                
     }
       
-      virtual void write(ostream& o) const
+      virtual void write(crab_os& o) const
       {
         o << "array_store(" << m_arr << "," << m_index << "," << m_value << ")"; 
         return;
@@ -823,7 +823,7 @@ namespace crab {
                                               
       }
       
-      virtual void write(ostream& o) const
+      virtual void write(crab_os& o) const
       {
         o << m_lhs << " = " 
           << "array_load(" << m_array << "," << m_index  << ")"; 
@@ -875,7 +875,7 @@ namespace crab {
             (boost::make_shared<ptr_load_t>(m_lhs, m_rhs));
       }
       
-      virtual void write(ostream& o) const
+      virtual void write(crab_os& o) const
       {
         o << m_lhs << " = "  << "*(" << m_rhs << ")";
         return;
@@ -923,7 +923,7 @@ namespace crab {
             (boost::make_shared<ptr_store_t>(m_lhs, m_rhs));
       }
       
-      virtual void write(ostream& o) const
+      virtual void write(crab_os& o) const
       {
         o << "*(" << m_lhs << ") = " << m_rhs;
         return;
@@ -973,7 +973,7 @@ namespace crab {
             (boost::make_shared<ptr_assign_t>(m_lhs, m_rhs, m_offset));
       }
       
-      virtual void write(ostream& o) const
+      virtual void write(crab_os& o) const
       {
         o << m_lhs << " = "  << m_rhs << " + ";
         linear_expression_t off (m_offset) ; // FIX: write method is not const in ikos 
@@ -1014,7 +1014,7 @@ namespace crab {
             (boost::make_shared<ptr_object_t>(m_lhs, m_address));
       }
       
-      virtual void write(ostream& o) const
+      virtual void write(crab_os& o) const
       {
         o << m_lhs << " = "  << "&(" << m_address << ")" ;
         return;
@@ -1053,7 +1053,7 @@ namespace crab {
             (boost::make_shared<ptr_function_t>(lhs (), rhs ()));
       }
       
-      virtual void write(ostream& o) const
+      virtual void write(crab_os& o) const
       {
         o << m_lhs << " = "  << "&(" << m_func << ")" ;
         return;
@@ -1088,7 +1088,7 @@ namespace crab {
             (boost::make_shared<ptr_null_t>(m_lhs));
       }
       
-      virtual void write(ostream& o) const
+      virtual void write(crab_os& o) const
       {
         o << m_lhs << " = "  << "NULL";
         return;
@@ -1136,7 +1136,7 @@ namespace crab {
             (boost::make_shared<ptr_assume_t>(m_cst));
       }
       
-      virtual void write(ostream& o) const
+      virtual void write(crab_os& o) const
       {
         o << m_cst;
         return;
@@ -1184,7 +1184,7 @@ namespace crab {
             (boost::make_shared<ptr_assert_t>(m_cst));
       }
       
-      virtual void write(ostream& o) const
+      virtual void write(crab_os& o) const
       {
         o << "assert(" << m_cst << ")";
         return;
@@ -1303,7 +1303,7 @@ namespace crab {
         }
       }
 
-      virtual void write(ostream& o) const
+      virtual void write(crab_os& o) const
       {
         if (m_lhs)
           o << (*m_lhs).first << " = ";
@@ -1359,7 +1359,7 @@ namespace crab {
             (boost::make_shared<return_t>(m_var, m_type));
       }
       
-      virtual void write(ostream& o) const
+      virtual void write(crab_os& o) const
       {
         o << "return " << m_var;
         return;
@@ -1641,7 +1641,7 @@ namespace crab {
         m_live = m_live | other.m_live;
       }
       
-      void write(ostream& o) const
+      void write(crab_os& o) const
       {
         o << cfg_impl::get_label_str (m_bb_id) << ":\n";	
         
@@ -2152,7 +2152,7 @@ namespace crab {
                  (boost::make_shared<ptr_assert_t> (cst, di)));
       }
       
-      friend ostream& operator<<(ostream &o, const basic_block_t &b)
+      friend crab_os& operator<<(crab_os &o, const basic_block_t &b)
       {
         //b.write (o);
         o << cfg_impl::get_label_str (b);
@@ -2218,7 +2218,7 @@ namespace crab {
       pair<const_pred_iterator,const_pred_iterator> prev_blocks() const
       { return _bb.next_blocks(); }
 
-      void write(ostream& o) const
+      void write(crab_os& o) const
       {
         o << name() << ":\n";	
         for (auto const &s: *this)
@@ -2230,7 +2230,7 @@ namespace crab {
         return;
       }     
 
-      friend ostream& operator<<(ostream &o, const basic_block_rev_t &b) {
+      friend crab_os& operator<<(crab_os &o, const basic_block_rev_t &b) {
         //b.write (o);
         o << b.name();
         return o;
@@ -2342,7 +2342,7 @@ namespace crab {
         return m_params[idx].second;
       }
 
-      void write(ostream& o) const
+      void write(crab_os& o) const
       {
         o << m_lhs_type << " declare " << m_func_name << "(";
         for (const_param_iterator It = m_params.begin (), Et=m_params.end (); It!=Et; )
@@ -2357,7 +2357,7 @@ namespace crab {
         return;
       }
       
-      friend ostream& operator<<(ostream& o, const FunctionDecl<VariableName> &decl)
+      friend crab_os& operator<<(crab_os& o, const FunctionDecl<VariableName> &decl)
       { 
         decl.write (o);
         return o;
@@ -2458,8 +2458,8 @@ namespace crab {
       
       struct PrintBlock 
       {
-        ostream &m_o;
-        PrintBlock (ostream& o) : m_o (o) { }
+        crab_os &m_o;
+        PrintBlock (crab_os& o) : m_o (o) { }
         void operator () (const basic_block_t& B){ B.write (m_o); }
       };
       
@@ -2739,16 +2739,16 @@ namespace crab {
       //     p.reverse (); 
       // }
       
-      void write (ostream& o) const
+      void write (crab_os& o) const
       {
         PrintBlock f (o);
         if (m_func_decl)
-          o << *m_func_decl << endl;
+          o << *m_func_decl << "\n";
         dfs (f);
         return;
       }
       
-      friend ostream& operator<<(ostream &o, 
+      friend crab_os& operator<<(crab_os &o, 
                                  const Cfg< BasicBlockLabel, VariableName > &cfg)
       {
         cfg.write (o);
@@ -3057,7 +3057,7 @@ namespace crab {
       }
 
       
-      friend std::ostream& operator<<(std::ostream &o, const Cfg_Ref<CFG> &cfg) {
+      friend crab_os& operator<<(crab_os &o, const Cfg_Ref<CFG> &cfg) {
         o << cfg.get();
         return o;
       }
@@ -3248,14 +3248,14 @@ namespace crab {
         return _cfg.entry();
       }
 
-      void write(std::ostream& o) const {
+      void write(crab_os& o) const {
         if (get_func_decl())
-          o << *get_func_decl() << endl;
+          o << *get_func_decl() << "\n";
         for (auto &bb: *this)
         { bb.write(o); }
       }
 
-      friend std::ostream& operator<<(std::ostream &o, const Cfg_Rev<CFGRef> &cfg) {
+      friend crab_os& operator<<(crab_os &o, const Cfg_Rev<CFGRef> &cfg) {
         cfg.write(o);
         return o;
       }

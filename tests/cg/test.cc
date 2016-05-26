@@ -93,7 +93,7 @@ cfg_t* m (VariableFactory &vfac)  {
 struct print_visitor: public boost::default_dfs_visitor {
   void discover_vertex(graph_traits<call_graph_t>::vertex_descriptor v, 
                        const call_graph_t& g)  {
-    crab::outs() << v.name () << endl;
+    crab::outs() << v.name () << "\n";
   }
 };
 
@@ -107,9 +107,9 @@ int main (int argc, char** argv ) {
   cfg_t* t2 = bar (vfac);
   cfg_t* t3 = m (vfac);
 
-  crab::outs() << *t1 << endl;
-  crab::outs() << *t2 << endl;
-  crab::outs() << *t3 << endl;
+  crab::outs() << *t1 << "\n";
+  crab::outs() << *t2 << "\n";
+  crab::outs() << *t3 << "\n";
 
   vector<cfg_ref_t> cfgs;
   cfgs.push_back(*t1);
@@ -118,27 +118,27 @@ int main (int argc, char** argv ) {
 
 
   call_graph_t cg (cfgs);
-  crab::outs() << cg << endl;
+  crab::outs() << cg << "\n";
 
   /// -- Basic BGL api
   for (auto v : boost::make_iterator_range (vertices (cg))) {
     if (out_degree (v, cg) > 0) {
-      crab::outs() << "number of successors " << v.name () << "=" << out_degree (v,cg) << endl;
+      crab::outs() << "number of successors " << v.name () << "=" << out_degree (v,cg) << "\n";
       boost::graph_traits<call_graph_t>::out_edge_iterator ei, ei_end;
       boost::tie (ei, ei_end) = out_edges (v, cg);
       for (; ei != ei_end; ++ei) {
         auto s = source (*ei, cg);
         auto t = target (*ei, cg);
-        crab::outs() << s.name () << "-->" << t.name ()  << endl;
+        crab::outs() << s.name () << "-->" << t.name ()  << "\n";
       }
     }
 
     if (in_degree (v, cg) > 0) {
-      crab::outs() << "number of predecessors " << v.name () << "=" << in_degree (v,cg) << endl;
+      crab::outs() << "number of predecessors " << v.name () << "=" << in_degree (v,cg) << "\n";
       for (auto e: boost::make_iterator_range (in_edges (v, cg))) {
         auto s = source (e, cg);
         auto t = target (e, cg);
-        crab::outs() << s.name () << "-->" << t.name () << endl;
+        crab::outs() << s.name () << "-->" << t.name () << "\n";
       }
     }
   }
@@ -161,7 +161,7 @@ int main (int argc, char** argv ) {
       break;
     }
   }  
-  crab::outs() << "Found root " << root.name () << endl;
+  crab::outs() << "Found root " << root.name () << "\n";
   
   //print all cg nodes in depth-first search order
   crab::outs() << "Printing in preorder ...\n";
@@ -180,11 +180,11 @@ int main (int argc, char** argv ) {
   crab::outs() << "reverse topological sort: ";
   for(auto n: order)
     crab::outs() << n.name () << "--";
-  crab::outs() << endl;
+  crab::outs() << "\n";
   crab::outs() << "topological sort: ";
   for(auto n: boost::make_iterator_range (order.rbegin(), order.rend ()))
     crab::outs() << n.name () << "--";
-  crab::outs() << endl;
+  crab::outs() << "\n";
   
 #endif 
 

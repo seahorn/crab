@@ -290,7 +290,7 @@ namespace crab {
                                                        vars.begin(), vars.end());
       }
       
-      void write(std::ostream& o) { 
+      void write(crab_os& o) { 
         this->_product.write(o); 
       }
       
@@ -478,7 +478,7 @@ namespace crab {
         }
       }
       
-      void write(std::ostream& o) {
+      void write(crab_os& o) {
         o << "(" << this->_first << ", " << this->_second << ")";
       }
       
@@ -802,7 +802,7 @@ namespace crab {
         this->reduce_variable(x);
       }
       
-      void write(std::ostream& o) { 
+      void write(crab_os& o) { 
         this->_product.write(o); 
        }
       

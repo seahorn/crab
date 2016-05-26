@@ -5,6 +5,7 @@
    Base class for a property checker
  */
 
+#include <crab/common/types.hpp>
 #include <crab/common/debug.hpp>
 #include <crab/cfg/Cfg.hpp>
 #include <crab/domains/linear_constraints.hpp>
@@ -57,7 +58,7 @@ namespace crab {
       m_total_unreach += other.m_total_unreach;
     }
     
-    void write (std::ostream& o) const {
+    void write (crab_os& o) const {
       std::vector<unsigned> cnts = { m_total_safe, m_total_err, 
                                      m_total_warn, m_total_unreach };
       unsigned MaxValLen = 0;
@@ -367,7 +368,7 @@ namespace crab {
        return "dummy property";
     }
 
-    void write (std::ostream& o) const {
+    void write (crab_os& o) const {
       o << get_property_name () << "\n";
       m_db.write (o);
     }

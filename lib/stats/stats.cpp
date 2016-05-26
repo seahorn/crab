@@ -35,7 +35,7 @@ namespace crab
   void CrabStats::resume (const std::string &name) { sw[name].resume (); }
 
   /** Outputs all statistics to std output */
-  void CrabStats::Print (std::ostream &OS) {
+  void CrabStats::Print (crab_os &OS) {
     OS << "\n\n************** STATS ***************** \n";
     for (auto &kv : ss)
       OS << kv.first << ": " << kv.second << "\n";
@@ -52,7 +52,7 @@ namespace crab
     OS << "************** STATS END ***************** \n";
   }
 
-  void CrabStats::PrintBrunch (std::ostream &OS)
+  void CrabStats::PrintBrunch (crab_os &OS)
   {
     OS << "\n\n************** BRUNCH STATS ***************** \n";
     for (auto &kv : ss) 
@@ -72,7 +72,7 @@ namespace crab
   }
 
 
-  void Stopwatch::Print (std::ostream &out) const
+  void Stopwatch::Print (crab_os &out) const
   {
     long time = getTimeElapsed ();
     long h = time/3600000000L;
@@ -84,6 +84,6 @@ namespace crab
     out << s << "s";
   }  
     
-  void Averager::Print (std::ostream &out) const { out << avg; }
+  void Averager::Print (crab_os &out) const { out << avg; }
 }
 #endif 

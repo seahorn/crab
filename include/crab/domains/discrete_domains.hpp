@@ -221,7 +221,7 @@ namespace ikos {
       }
     }
     
-    void write(std::ostream& o) {
+    void write(crab::crab_os& o) {
       if (this->_is_top) {
 	o << "{...}";
       } else if (this->_set.empty()) {

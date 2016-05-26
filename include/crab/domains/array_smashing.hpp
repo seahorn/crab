@@ -287,7 +287,7 @@ namespace crab {
           return _inv;
         }
 
-        void write(ostream& o) {
+        void write(crab_os& o) {
           o << _inv;
         }
         

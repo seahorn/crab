@@ -68,7 +68,7 @@ void run(cfg_ref_t cfg, VariableFactory &vfac, Live *live)
     auto inv = It [b.label ()];
     crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
   }
-  crab::outs() << endl;
+  crab::outs() << "\n";
   if (stats_enabled) {
     crab::CrabStats::Print(crab::outs());
     crab::CrabStats::reset();
@@ -82,7 +82,7 @@ int main (int argc, char** argv )
   VariableFactory vfac;
   cfg_t* cfg = prog (vfac);
   cfg->simplify ();
-  crab::outs() << *cfg << endl;
+  crab::outs() << *cfg << "\n";
 
   Liveness<cfg_ref_t> live (*cfg);
   live.exec ();
@@ -101,7 +101,7 @@ int main (int argc, char** argv )
     term_dbm_t inv = term_dbm_a [b.label ()];
     crab::outs() << cfg_impl::get_label_str (b.label ()) << "=" << inv << "\n";
 //    auto cst = inv.to_linear_constraint_system();
-//    crab::outs() << "  := " << cst << endl;
+//    crab::outs() << "  := " << cst << "\n";
   }
 
 

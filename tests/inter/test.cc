@@ -154,11 +154,11 @@ int main (int argc, char** argv ) {
   cfg_t* t4 = rec2 (vfac);
   cfg_t* t5 = m (vfac);
 
-  crab::outs() << *t1 << endl;
-  crab::outs() << *t2 << endl;
-  crab::outs() << *t3 << endl;
-  crab::outs() << *t4 << endl;
-  crab::outs() << *t5 << endl;
+  crab::outs() << *t1 << "\n";
+  crab::outs() << *t2 << "\n";
+  crab::outs() << *t3 << "\n";
+  crab::outs() << *t4 << "\n";
+  crab::outs() << *t5 << "\n";
 
   vector<cfg_ref_t> cfgs;
   cfgs.push_back(*t1);

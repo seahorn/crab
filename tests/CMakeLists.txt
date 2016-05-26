@@ -1,5 +1,5 @@
 set (CRAB_LIBS 
-#  dbm
+   OS
    term
    Debug
    Stats

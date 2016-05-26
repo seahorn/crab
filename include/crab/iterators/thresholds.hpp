@@ -58,7 +58,7 @@ namespace crab {
          return m_thresholds [0];
        }
        
-       void write (ostream &o) const { 
+       void write (crab_os &o) const { 
          o << "{";
          for (typename vector<bound_t>::const_iterator it = m_thresholds.begin (), 
                   et= m_thresholds.end (); it != et; ) {
@@ -74,7 +74,7 @@ namespace crab {
      };
 
      template<typename Number>
-     std::ostream& operator<< (std::ostream& o, const Thresholds<Number>& t) {
+     crab_os& operator<< (crab_os& o, const Thresholds<Number>& t) {
        t.write (o);
        return o;
      }

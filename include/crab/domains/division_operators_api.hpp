@@ -50,7 +50,7 @@ namespace ikos {
     OP_UREM
   } div_operation_t;
 
-  inline std::ostream& operator<<(std::ostream&o, div_operation_t op) {
+  inline crab::crab_os& operator<<(crab::crab_os&o, div_operation_t op) {
     switch (op) {
       case OP_SDIV: o << "/"; break;
       case OP_UDIV: o << "/_u"; break;

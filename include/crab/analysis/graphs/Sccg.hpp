@@ -8,6 +8,7 @@
 #include <boost/make_shared.hpp>
 
 #include <crab/common/debug.hpp>
+#include <crab/common/types.hpp>
 #include <crab/cg/Cg.hpp>
 
 /* 
@@ -185,7 +186,7 @@ namespace crab {
               m_same_scc_order (order),
               m_sccg (boost::make_shared<scc_graph_t>()) {
 
-          CRAB_LOG ("sccg", crab::outs() << g << endl);
+          CRAB_LOG ("sccg", crab::outs() << g << "\n");
 
           typedef boost::unordered_map< node_t, node_t > root_map_t;
           typedef boost::unordered_map< node_t, default_color_type > color_map_t;
@@ -213,7 +214,7 @@ namespace crab {
           CRAB_LOG ("sccg",
               crab::outs() << "comp map: \n";
               for (auto p: m_comp_map) {
-               crab::outs() <<"\t" << p.first << " --> " << p.second << endl; 
+               crab::outs() <<"\t" << p.first << " --> " << p.second << "\n"; 
               });
 
           // build SCC Dag
@@ -332,17 +333,17 @@ namespace crab {
           return boost::in_degree (It->second, *m_sccg);
         }
 
-        void write(std::ostream& o) const {
+        void write(crab_os& o) const {
           o << "SCCG=\nvertices={";
           for (auto v: boost::make_iterator_range (nodes ()))
-             crab::outs() << v << ";";
+             o << v << ";";
           o << "}\n";
 
           o <<"edges=\n";
           for (auto v: boost::make_iterator_range (nodes ())){
             if (num_succs (v) > 0) {
               for (auto e: boost::make_iterator_range (succs (v)))  {
-                o << e.Src () << "--> " << e.Dest () << endl;
+                o << e.Src () << "--> " << e.Dest () << "\n";
               }
             }
           }
@@ -350,7 +351,7 @@ namespace crab {
           CRAB_LOG ("sccg",
                o << "Component map: \n";
                for (auto p: m_comp_map) {
-                 o <<"\t" << p.first << " --> SCC ID " << p.second << endl; 
+                 o <<"\t" << p.first << " --> SCC ID " << p.second << "\n"; 
                });
           
         }

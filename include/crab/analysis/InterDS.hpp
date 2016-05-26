@@ -6,6 +6,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/noncopyable.hpp>
 
+#include <crab/common/types.hpp>
 #include <crab/cfg/Cfg.hpp>
 
 /* Datastructures needed during inter-procedural analysis */
@@ -111,7 +112,7 @@ namespace crab {
 
         boost::optional<varname_t> get_ret_val () const { return m_ret;}
 
-        void write(ostream &o)  {
+        void write(crab_os &o)  {
           o << m_fdecl << " --> " << " variables = {";
           for (auto const &p: m_params) {
             o << p << ";";
@@ -169,17 +170,16 @@ namespace crab {
         return *(it->second);
       }
 
-      void write (std::ostream&o) const {
+      void write (crab_os &o) const {
         o << "--- Begin summary table: \n";
         for (auto const &p: m_sum_table) {
           p.second->write (o);
-          o << endl;
+          o << "\n";
         }
         o << "--- End summary table\n";
       }
       
-      friend std::ostream& operator<<(std::ostream& o, 
-                                      const SummaryTable<CFG, AbsDomain>&t) {
+      friend crab_os& operator<<(crab_os& o, const SummaryTable<CFG, AbsDomain>&t) {
         t.write (o);
         return o;
       }

@@ -79,7 +79,7 @@ namespace crab {
             return !(*this == o);
           }
           
-          friend ostream& operator<<(ostream& o, CgNode n) {
+          friend crab_os& operator<<(crab_os& o, CgNode n) {
             o << n.str_name ();
             return o;
           }
@@ -323,12 +323,12 @@ namespace crab {
           return boost::in_degree (v, *m_cg);
         }
 
-        void write(std::ostream& o) const {
+        void write(crab_os& o) const {
           o << "CG=\n";
           for (auto f: boost::make_iterator_range (nodes ())){
             if (num_succs (f) > 0) {
               for (auto e: boost::make_iterator_range (succs (f)))  {
-                o << e.Src() << "--> " << e.Dest() << endl;
+                o << e.Src() << "--> " << e.Dest() << "\n";
               }
             }
           }
@@ -337,8 +337,7 @@ namespace crab {
       }; // end class CallGraph<CFG>
    
       template <typename CFG>
-      inline std::ostream& operator<<(std::ostream& o, 
-                                      const CallGraph<CFG> &cg) {
+      inline crab_os& operator<<(crab_os& o, const CallGraph<CFG> &cg) {
         cg.write (o);
         return o;
       }
@@ -407,15 +406,14 @@ namespace crab {
           return (*_ref).get().num_preds(n);
         }
         
-        void write(std::ostream& o) const {
+        void write(crab_os& o) const {
           assert (_ref);
           (*_ref).get().write(o);
         }
       };
   
       template <typename CG>
-      inline std::ostream& operator<<(std::ostream& o, 
-                                      const CallGraph_Ref<CG> &cg) {
+      inline crab_os& operator<<(crab_os& o, const CallGraph_Ref<CG> &cg) {
         cg.write (o);
         return o;
       }

@@ -192,7 +192,7 @@ namespace ikos {
       }
     }
     
-    void write(std::ostream& o) {
+    void write(crab::crab_os& o) {
       if (this->is_bottom()) {
         o << "_|_";
       } else {
@@ -301,7 +301,7 @@ namespace ikos {
       return domain_product3_t(this->_product && other._product);
     }
 
-    void write(std::ostream& o) {
+    void write(crab::crab_os& o) {
       if (this->is_bottom()) {
         o << "_|_";
       } else {
@@ -494,7 +494,7 @@ namespace ikos {
       this->_product.second() -= v;
     }
     
-    void write(std::ostream& o) {
+    void write(crab::crab_os& o) {
       this->_product.write(o);
     }
 
@@ -641,7 +641,7 @@ namespace ikos {
       this->_product -= v;
     }
     
-    void write(std::ostream& o) {
+    void write(crab::crab_os& o) {
       if (this->is_bottom()) {
         o << "_|_";
       } else {

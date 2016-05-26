@@ -131,7 +131,7 @@ namespace crab {
         return (_inv & other._inv);
       }
          
-      void write(ostream& o) { _inv.write(o); }
+      void write(crab_os& o) { _inv.write(o); }
       
     }; 
 

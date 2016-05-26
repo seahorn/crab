@@ -1395,7 +1395,7 @@ public:
     return (this->operator<=(s) && s.operator<=(*this));
   }
 
-  void write(std::ostream& o) {
+  void write(crab::crab_os& o) {
     o << "{";
     for (iterator it = begin(); it != end();) {
       it->write(o);

@@ -4,6 +4,8 @@
 #include <memory>
 #include <boost/optional.hpp>
 
+#include <crab/common/types.hpp>
+
 using namespace std;
 using namespace boost;
 
@@ -28,7 +30,7 @@ namespace crab {
         
         bool operator<(term_t& other);
         
-        virtual void write(ostream& o) = 0;
+        virtual void write(crab_os& o) = 0;
 
         int depth;
       };
@@ -64,7 +66,7 @@ namespace crab {
         { }
         term_kind kind(void) { return TERM_CONST; }
         
-        void write(ostream& o)
+        void write(crab_os& o)
         {
           o << "c(" << val << ")";
         }
@@ -78,7 +80,7 @@ namespace crab {
             : var(_var)
         { }
         term_kind kind(void) { return TERM_VAR; }
-        void write(ostream& o)
+        void write(crab_os& o)
         {
           o << "v(" << var << ")";
         }
@@ -92,7 +94,7 @@ namespace crab {
             : ftor(_f), args(_args)
         { }
         term_kind kind(void) { return TERM_APP; }
-        void write(ostream& o)
+        void write(crab_os& o)
         {
           o << "<op>(";
           bool first = true;
@@ -439,7 +441,7 @@ namespace crab {
           return _parents[id];
         }
 
-        void write(ostream& o) { 
+        void write(crab_os& o) { 
           bool first = true;
           for(unsigned int ti = 0; ti < terms.size(); ti++)
           {
@@ -596,7 +598,7 @@ namespace crab {
           return get_members (t).size ();
         }
 
-        void write (ostream&o) {
+        void write (crab_os&o) {
           for (auto t1: _terms) {
             o << "t" << t1 << " --> {";
             for (auto t2: _terms) {

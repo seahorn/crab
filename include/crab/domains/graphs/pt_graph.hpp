@@ -23,7 +23,7 @@ class PtGraph : public writeable {
       { }
       index_t index(void) const { return (index_t) v; }
 
-      void write(std::ostream& o) {
+      void write(crab_os& o) {
         o << v;
       }
 
@@ -522,7 +522,7 @@ class PtGraph : public writeable {
       assert(free_id.size() == 0);
     }
 
-    void write(std::ostream& o) {
+    void write(crab_os& o) {
       o << "[|";
       bool first = true;
       for(vert_id v = 0; v < _succs.size(); v++)

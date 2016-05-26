@@ -366,9 +366,9 @@ cfg_t* prog9(VariableFactory &vfac)
 template <typename ArrayDomain>
 void run(cfg_ref_t cfg, string name, VariableFactory &vfac)
 {
-  crab::outs() << "--- " << name  << endl;
+  crab::outs() << "--- " << name  << "\n";
   cfg.simplify ();
-  crab::outs() << cfg << endl;
+  crab::outs() << cfg << "\n";
   
   typename NumFwdAnalyzer <cfg_ref_t, ArrayDomain, VariableFactory>::type It (cfg,vfac, nullptr);
   ArrayDomain inv = ArrayDomain::top ();
@@ -381,7 +381,7 @@ void run(cfg_ref_t cfg, string name, VariableFactory &vfac)
     auto inv = It [b.label ()];
     crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
   }
-  crab::outs() << endl;
+  crab::outs() << "\n";
   if (stats_enabled) {
     crab::CrabStats::Print(crab::outs());
     crab::CrabStats::reset();

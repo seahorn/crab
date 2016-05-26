@@ -1,14 +1,5 @@
 #include <crab/common/debug.hpp>
 
-#include <iostream>
-
-namespace crab {
-
-   std::ostream& outs () { return std::cout; }
-   std::ostream& errs () { return std::cerr;}
-   
-}
-
 #ifndef NCRABLOG
 #include <set>
 using namespace crab;

@@ -609,7 +609,7 @@ namespace crab {
       }
     }
 
-    void write(std::ostream& o) {
+    void write(crab_os& o) {
       o << "[|";
       bool first = true;
       for(vert_id v : verts())

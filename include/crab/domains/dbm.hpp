@@ -1355,7 +1355,7 @@ namespace crab {
       }
 
       // Output function
-      void write(ostream& o) { 
+      void write(crab_os& o) { 
 
         normalize ();
 

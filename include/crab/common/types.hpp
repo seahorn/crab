@@ -1,23 +1,54 @@
 #ifndef CRAB_COMMON_HPP
 #define CRAB_COMMON_HPP
 
-//#include <iosfwd>
-#include <iostream>
-//#include <string>
-//#include <stdint.h>
-//#include <sstream>
+#include <iosfwd>
 #include <stdarg.h>
-//#include <errno.h>
 #include <boost/optional.hpp>
+#include <boost/noncopyable.hpp>
 
 /* Basic type definitions */
 
 namespace crab {
+  
+  // A wrapper to std::ostream that avoids polluting all crab header
+  // files with iostream stuff
+  class crab_os: boost::noncopyable {
+     
+     std::ostream* m_os;
+ 
+     static crab_os* m_cout;
+     static crab_os* m_cerr;
+ 
+    public:
+ 
+     static crab_os* cout();
+     static crab_os* cerr();
+ 
+    public:
+     
+     crab_os (std::ostream& os);
+     
+     ~crab_os ();
+    
+     crab_os & operator<<(char C);
+     crab_os & operator<<(unsigned char C);
+     crab_os & operator<<(signed char C);
+     crab_os & operator<<(const char *Str);
+     crab_os & operator<<(const std::string& Str);
+     crab_os & operator<<(unsigned long N);
+     crab_os & operator<<(long N);
+     crab_os & operator<<(unsigned long long N);
+     crab_os & operator<<(long long N);
+     crab_os & operator<<(const void *P);
+     crab_os & operator<<(unsigned int N);
+     crab_os & operator<< (int N);
+     crab_os & operator<< (double N);
+   };
 
-  extern std::ostream& outs();
-  extern std::ostream& errs();
+  extern crab_os& outs();
+  extern crab_os& errs();
 
-}
+}// end namespace
 
 template<typename... ArgTypes>
 inline void ___print___(ArgTypes... args)
@@ -55,7 +86,7 @@ namespace crab {
      BINOP_AND, BINOP_OR, BINOP_XOR, BINOP_SHL, BINOP_LSHR, BINOP_ASHR
    } binary_operation_t;
 
-   inline std::ostream& operator<<(std::ostream&o, binary_operation_t op) {
+   inline crab::crab_os& operator<<(crab::crab_os&o, binary_operation_t op) {
      switch (op) {
        case BINOP_ADD: o << "+"; break;
        case BINOP_SUB: o << "-"; break;
@@ -182,7 +213,7 @@ namespace crab {
       return ptr_cst_t (opt_var_t (v1), opt_var_t (v2), PTR_DISEQUALITY);
     }
 
-    void write (std::ostream& o) const {
+    void write (crab::crab_os& o) const {
       if (is_contradiction () ) {
         o << "false";
       } else if (is_tautology ()) {
@@ -204,7 +235,7 @@ namespace crab {
       }
     }
     
-    friend std::ostream& operator<<(std::ostream& o, const ptr_cst_kind_t& k) {
+    friend crab::crab_os& operator<<(crab::crab_os& o, const ptr_cst_kind_t& k) {
       if (k == PTR_EQUALITY ) 
         o << " == ";
       else 
@@ -212,7 +243,7 @@ namespace crab {
       return o;
     }
     
-    friend std::ostream& operator<<(std::ostream& o, const ptr_cst_t& cst) {
+    friend crab::crab_os& operator<<(crab::crab_os& o, const ptr_cst_t& cst) {
       cst.write (o);
       return o;
     }
@@ -227,11 +258,11 @@ namespace ikos {
   // Interface for writeable objects
   class writeable {
    public:
-    virtual void write(std::ostream& o) = 0;
+    virtual void write(crab::crab_os& o) = 0;
     virtual ~writeable() {}
   }; // class writeable
 
-  inline std::ostream& operator<<(std::ostream& o, writeable& x) {
+  inline crab::crab_os& operator<<(crab::crab_os& o, writeable& x) {
     x.write(o);
     return o;
   }
@@ -283,7 +314,7 @@ namespace ikos {
       return _n.index () < o._n.index ();
     }
     
-    void write(std::ostream& o) { 
+    void write(crab::crab_os& o) { 
       if (_ty)
         o << _n << ":" << *_ty; 
       else
@@ -295,7 +326,7 @@ namespace ikos {
       return v.index ();
     }
   
-    friend std::ostream& operator<<(std::ostream& o, variable_t& v) {
+    friend crab::crab_os& operator<<(crab::crab_os& o, variable_t& v) {
       v.write(o);
       return o;
     }

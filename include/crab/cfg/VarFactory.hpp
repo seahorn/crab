@@ -107,12 +107,12 @@ namespace crab {
            bool operator==(IndexedString s) const 
            { return (_id == s._id);}
            
-           void write(ostream& o) 
+           void write(crab_os& o) 
            {
              o << str();
            }
            
-           friend ostream& operator<<(ostream& o, IndexedString s) 
+           friend crab_os& operator<<(crab_os& o, IndexedString s) 
            {
              o << s.str ();
              return o;

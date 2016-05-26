@@ -49,7 +49,7 @@ namespace ikos {
     OP_ZEXT 
   } conv_operation_t;
 
-  inline std::ostream& operator<<(std::ostream&o, conv_operation_t op) {
+  inline crab::crab_os& operator<<(crab::crab_os&o, conv_operation_t op) {
     switch (op) {
       case OP_TRUNC: o << "trunc"; break;
       case OP_SEXT: o << "sext"; break;
@@ -67,7 +67,7 @@ namespace ikos {
     OP_ASHR
   } bitwise_operation_t;
 
-  inline std::ostream& operator<<(std::ostream&o, bitwise_operation_t op) {
+  inline crab::crab_os& operator<<(crab::crab_os&o, bitwise_operation_t op) {
     switch (op) {
       case OP_AND: o << "&"; break;
       case OP_OR: o << "|"; break;

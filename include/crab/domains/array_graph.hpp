@@ -649,7 +649,7 @@ namespace crab {
          CRAB_ERROR ("No edge found with given vertices");
        }
     
-       void write(ostream& o) 
+       void write(crab_os& o) 
        {
          if (is_bottom())
            o << "_|_";
@@ -781,7 +781,7 @@ namespace crab {
        boost::optional<Value> operator[](Key k) { return _tree.lookup(k); }
        void clear() { _tree = patricia_tree_t(); }
        
-       void write(std::ostream& o) {
+       void write(crab_os& o) {
          o << "{";
          for (auto it = _tree.begin(); it != _tree.end(); ) {
            Key k = it->first;
@@ -1468,7 +1468,7 @@ namespace crab {
                  crab::outs() << "Array write "<<arr<<"["<<idx<<"] := "<<val<< " ==> "<< *this <<"\n";);
       }
     
-      void write(ostream& o) 
+      void write(crab_os& o) 
       {
         o << "(" ;
 #if 1

@@ -24,7 +24,7 @@ int main (int argc, char** argv )
     
     term_domain_t l_join_r = dom_left | dom_right;
     
-    crab::outs() << dom_left << " | " << dom_right << " = " << l_join_r << std::endl;
+    crab::outs() << dom_left << " | " << dom_right << " = " << l_join_r << "\n";
     //  crab::outs() << dom_left;
   }
 

@@ -1859,7 +1859,7 @@ namespace crab {
       }
 
       // Output function
-      void write(ostream& o) {
+      void write(crab_os& o) {
 
         normalize ();
 
@@ -2109,7 +2109,7 @@ namespace crab {
       template <typename NumDomain>
       void push (const VariableName& x, NumDomain&inv){ lock(); norm().push(x, inv); }
 
-      void write(ostream& o) { norm().write(o); }
+      void write(crab_os& o) { norm().write(o); }
 
       linear_constraint_system_t to_linear_constraint_system () {
         return norm().to_linear_constraint_system();

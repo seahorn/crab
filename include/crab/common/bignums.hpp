@@ -78,7 +78,7 @@ public:
       return _n.get_si ();
     }
     else {
-      CRAB_ERROR("mpz_class ", _n, " does not fit into a signed long integer");
+      CRAB_ERROR("mpz_class ", _n.get_str(), " does not fit into a signed long integer");
     }
   } 
 
@@ -88,7 +88,7 @@ public:
       return (int) _n.get_si ();
     }
     else {
-      CRAB_ERROR("mpz_class ", _n, " does not fit into a signed integer");
+      CRAB_ERROR("mpz_class ", _n.get_str(), " does not fit into a signed integer");
     }
   } 
 
@@ -254,11 +254,11 @@ public:
     return z_number(result);
   }
 
-  void write(std::ostream& o) { o << this->_n; }
+  void write(crab::crab_os& o) { o << this->_n.get_str(); }
 
 }; // class z_number
 
-inline std::ostream& operator<<(std::ostream& o, z_number z) {
+inline crab::crab_os& operator<<(crab::crab_os& o, z_number z) {
   z.write(o);
   return o;
 }
@@ -412,11 +412,11 @@ public:
     }
   }
 
-  void write(std::ostream& o) { o << this->_n; }
+  void write(crab::crab_os& o) { o << this->_n.get_str(); }
 
 }; // class q_number
 
-inline std::ostream& operator<<(std::ostream& o, q_number q) {
+inline crab::crab_os& operator<<(crab::crab_os& o, q_number q) {
   q.write(o);
   return o;
 }

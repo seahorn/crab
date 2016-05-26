@@ -90,7 +90,7 @@ int main (int argc, char** argv )
   VariableFactory vfac;
   cfg_t* cfg = prog (vfac);
   //cfg->simplify ();
-  crab::outs() << *cfg << endl;
+  crab::outs() << *cfg << "\n";
 
   Liveness<cfg_ref_t> live (*cfg);
   live.exec ();

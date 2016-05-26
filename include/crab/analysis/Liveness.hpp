@@ -5,6 +5,7 @@
 
 #include <crab/common/stats.hpp>
 #include <crab/common/debug.hpp>
+#include <crab/common/types.hpp>
 #include <boost/noncopyable.hpp>
 
 #if 1
@@ -160,11 +161,11 @@ namespace crab {
      }
 
      // TODO
-     void write (ostream &o) const { }         
+     void write (crab_os &o) const { }         
    }; 
 
    template <typename CFG>
-   ostream& operator << (ostream& o, const Liveness<CFG> &l) {
+   crab_os& operator << (crab_os& o, const Liveness<CFG> &l) {
      l.write (o);
      return o;
    }
@@ -311,7 +312,7 @@ namespace crab {
            return other;
          }
          
-         void write(ostream& o) {
+         void write(crab_os& o) {
            this->_inv.write(o);
          }  
          
@@ -493,7 +494,7 @@ namespace crab {
           return this->operator&(other);
         }
         
-        void write(ostream& o) {
+        void write(crab_os& o) {
           if (is_top ())  o << "{...}";
           else if (is_bottom ())   o << "_|_";
           else 
@@ -661,7 +662,7 @@ namespace crab {
        avg_live_per_blk = (m_total_blks == 0 ? 0 : (int) m_total_live / m_total_blks);
      }
 
-     void write (ostream &o) const {
+     void write (crab_os &o) const {
      }
      
     private:
@@ -703,7 +704,7 @@ namespace crab {
    }; 
 
    template <typename CFG>
-   ostream& operator << (ostream& o, const Liveness<CFG> &l) {
+   crab_os& operator << (crab_os& o, const Liveness<CFG> &l) {
      l.write (o);
      return o;
    }

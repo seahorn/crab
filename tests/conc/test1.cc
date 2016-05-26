@@ -130,7 +130,7 @@ int main (int argc, char** argv )
   concSys.add_thread ("thread1", *t1, shared_vars.begin (), shared_vars.end ());
   concSys.add_thread ("thread2", *t2, shared_vars.begin (), shared_vars.end ());
 
-  crab::outs() << concSys << endl;
+  crab::outs() << concSys << "\n";
 
   const bool run_live = true;
   auto global_inv = interval_domain_t::top ();
@@ -147,7 +147,7 @@ int main (int argc, char** argv )
     crab::outs() << "Results " << crab::conc_impl::get_thread_id_str (p.first) << "\n";
     conc_analyzer_t::inv_map_t &inv_map = a.getInvariants (p.first);
     for (auto p : inv_map)
-      crab::outs() << p.first << ": " << p.second << endl;
+      crab::outs() << p.first << ": " << p.second << "\n";
   }
 
   if (stats_enabled) {

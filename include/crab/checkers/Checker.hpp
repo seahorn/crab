@@ -5,6 +5,7 @@
    A generic forward checker for properties
  */
 
+#include <crab/common/types.hpp>
 #include <crab/common/stats.hpp>
 #include <crab/checkers/BaseProperty.hpp>
 #include <crab/analysis/FwdAnalyzer.hpp>
@@ -39,7 +40,7 @@ namespace crab {
     
     virtual void Run () = 0;
     
-    virtual void Show (std::ostream& o) {
+    virtual void Show (crab_os& o) {
       for (auto checker: this->m_checkers) {
         checker->write (o);
       }

@@ -1,6 +1,7 @@
 #ifndef CONCURRENT_SYSTEM_HPP
 #define CONCURRENT_SYSTEM_HPP
 
+#include "crab/common/types.hpp" 
 #include "crab/cfg/Cfg.hpp" 
 
 #include <boost/noncopyable.hpp>
@@ -110,7 +111,7 @@ namespace crab {
          return std::make_pair (it->second.begin (), it->second.end ());
        }
        
-       void write (ostream& o) const
+       void write (crab_os& o) const
        {
          for (auto const p: m_cfg_map)
          {
@@ -128,7 +129,7 @@ namespace crab {
          }
        }
        
-       friend ostream& operator<<(ostream& o, 
+       friend crab_os& operator<<(crab_os& o, 
                                   const ConcSys<ThreadId, CFG>& sys) {
          sys.write (o);
          return o;

@@ -11,10 +11,10 @@ void write (cfg_ref_t g)
   crab::outs() << "Num of vertices: " << num_vertices (g) << "\n";
   for (auto v: boost::make_iterator_range (vertices (g)))
   {
-    crab::outs() << "Vertex: " << v << endl; 
-    crab::outs() << "Num of predecessors=" << in_degree (v, g) << endl;
-    crab::outs() << "Num of successors  =" << out_degree (v, g) << endl;
-    crab::outs() << "Num of neighbors   =" << degree (v, g) << endl;
+    crab::outs() << "Vertex: " << v << "\n"; 
+    crab::outs() << "Num of predecessors=" << in_degree (v, g) << "\n";
+    crab::outs() << "Num of successors  =" << out_degree (v, g) << "\n";
+    crab::outs() << "Num of neighbors   =" << degree (v, g) << "\n";
     crab::outs() << "Succs={";
     {
       auto p = out_edges (v, g);
@@ -24,7 +24,7 @@ void write (cfg_ref_t g)
         crab::outs() << target (*succIt, g) << ";";
       }
     }
-    crab::outs() << "}" << endl;
+    crab::outs() << "}" << "\n";
     crab::outs() << "Preds={ ";
     {
       auto p = in_edges (v, g);
@@ -34,7 +34,7 @@ void write (cfg_ref_t g)
         crab::outs() << source (*predIt, g) << ";";
       }
     }
-    crab::outs() << "}" << endl;
+    crab::outs() << "}" << "\n";
   }
 }
 
@@ -86,7 +86,7 @@ void run(cfg_ref_t cfg, VariableFactory &vfac, Live *live)
     auto inv = It [b.label ()];
     crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
   }
-  crab::outs() << endl;
+  crab::outs() << "\n";
   if (stats_enabled) {
     crab::CrabStats::Print(crab::outs());
     crab::CrabStats::reset();
@@ -100,9 +100,9 @@ int main (int argc, char** argv )
   VariableFactory vfac;
   cfg_t* cfg = prog (vfac);
   cfg->simplify ();
-  crab::outs() << *cfg << endl;
+  crab::outs() << *cfg << "\n";
   //write (*cfg);
-  //crab::outs() << endl;
+  //crab::outs() << "\n";
 
   Liveness<cfg_ref_t> live (*cfg);
   live.exec ();

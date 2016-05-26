@@ -234,7 +234,7 @@ int main (int argc, char** argv ) {
   {
     VariableFactory vfac;
     cfg_t* cfg = prog1 (vfac);
-    crab::outs() << *cfg << endl;
+    crab::outs() << *cfg << "\n";
     run<interval_domain_t> ( cfg, vfac, 1, 2);
     run<box_apron_domain_t> ( cfg, vfac, 1, 2);
     run<oct_apron_domain_t> ( cfg, vfac, 1, 2);
@@ -246,7 +246,7 @@ int main (int argc, char** argv ) {
   {
     VariableFactory vfac;
     cfg_t* cfg = prog2 (vfac);
-    crab::outs() << *cfg << endl;
+    crab::outs() << *cfg << "\n";
     run<interval_domain_t> ( cfg, vfac, 1, 2);
     run<box_apron_domain_t> ( cfg, vfac, 1, 2);
     run<oct_apron_domain_t> ( cfg, vfac, 1, 2);
@@ -258,7 +258,7 @@ int main (int argc, char** argv ) {
   {
     VariableFactory vfac;
     cfg_t* cfg = prog3 (vfac);
-    crab::outs() << *cfg << endl;
+    crab::outs() << *cfg << "\n";
     run<interval_domain_t> ( cfg, vfac, 1, 2);
     run<box_apron_domain_t> ( cfg, vfac, 1, 2);
     run<oct_apron_domain_t> ( cfg, vfac, 1, 2);
@@ -270,7 +270,7 @@ int main (int argc, char** argv ) {
   {
     VariableFactory vfac;
     cfg_t* cfg = prog4 (vfac);
-    crab::outs() << *cfg << endl;
+    crab::outs() << *cfg << "\n";
     run<interval_domain_t> ( cfg, vfac, 1, 2);
     run<box_apron_domain_t> ( cfg, vfac, 1, 2);
     run<oct_apron_domain_t> ( cfg, vfac, 1, 2);
@@ -282,7 +282,7 @@ int main (int argc, char** argv ) {
   {
     VariableFactory vfac;
     cfg_t* cfg = prog5 (vfac);
-    crab::outs() << *cfg << endl;
+    crab::outs() << *cfg << "\n";
     run<interval_domain_t> ( cfg, vfac, 1, 2);
     run<box_apron_domain_t> ( cfg, vfac, 1, 2);
     run<oct_apron_domain_t> ( cfg, vfac, 1, 2);

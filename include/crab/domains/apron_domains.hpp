@@ -127,7 +127,7 @@ namespace crab {
         linear_constraint_system_t to_linear_constraint_system ()
         { CRAB_ERROR (APRON_NOT_FOUND); }
         
-        void write(ostream& o) 
+        void write(crab_os& o) 
         { CRAB_ERROR (APRON_NOT_FOUND); }
           
         static std::string getDomainName () {
@@ -1237,7 +1237,7 @@ namespace crab {
           ap_abstract0_canonicalize (get_man (), &*m_apstate);
         }
 
-        void write(ostream& o) {
+        void write(crab_os& o) {
           if(is_bottom()){
             o << "_|_";
             return;
@@ -1392,7 +1392,7 @@ namespace crab {
         template <typename NumDomain>
         void push (const VariableName& x, NumDomain&inv){ lock(); norm().push(x, inv); }
         
-        void write(ostream& o) { norm().write(o); }
+        void write(crab_os& o) { norm().write(o); }
         
         linear_constraint_system_t to_linear_constraint_system () {
           return norm().to_linear_constraint_system();

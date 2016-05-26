@@ -66,7 +66,7 @@ void test_sdbm(void)
   dbm -= x_prime;
   // if (x <= 0)
   dbm += linear_constraint_t ( linear_expression_t (x) <= z_number (0));
-  cout << dbm << endl;
+  cout << dbm << "\n";
 }
 
 void test_sgraph(void)
@@ -88,7 +88,7 @@ void test_sgraph(void)
 
   y.add_edge(0, 3, 2);
   y.add_edge(0, 3, 1);
-  cout << x << y << endl;
+  cout << x << y << "\n";
 
   check_graph(x);
   check_graph(y);
@@ -96,10 +96,10 @@ void test_sgraph(void)
   vector<int64_t> x_pot(x.size());
   if(!GrOps::select_potentials(x, x_pot))
     assert(0 && "Should be feasible.");
-  cout << "x model: "; write_vec(cout, x_pot); cout << endl;
+  cout << "x model: "; write_vec(cout, x_pot); cout << "\n";
 
   graph_t g = GrOps::join(x, y);
-  cout << g << endl;
+  cout << g << "\n";
 
   x.clear_edges();
   x.add_edge(0, -1, 1);
@@ -122,7 +122,7 @@ void test_sgraph(void)
     GrOps::apply_delta(gm, delta);
   }
 
-  cout << gm << endl;
+  cout << gm << "\n";
 
 }
 int main (int argc, char** argv )

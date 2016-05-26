@@ -15,7 +15,6 @@
 #include <utility>
 #include <algorithm>
 #include <vector>
-#include <sstream>
 
 #include <boost/range.hpp>
 #include "boost/range/algorithm/set_algorithm.hpp"
@@ -1525,7 +1524,7 @@ namespace crab {
        }
     
        // Output function
-       void write(ostream& o) { 
+       void write(crab_os& o) { 
          // Normalization is not enforced in order to maintain accuracy
          // but we force it to display all the relationships.
          normalize();

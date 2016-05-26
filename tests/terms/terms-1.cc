@@ -50,7 +50,7 @@ int main (int argc, char** argv )
   VariableFactory vfac;
   cfg_t* cfg = prog (vfac);
   cfg->simplify ();
-  crab::outs() << *cfg << endl;
+  crab::outs() << *cfg << "\n";
 
   NumFwdAnalyzer <cfg_ref_t, interval_domain_t, VariableFactory>::type itv_a (*cfg, vfac, nullptr);
   itv_a.Run (interval_domain_t::top ());
@@ -79,7 +79,7 @@ int main (int argc, char** argv )
     crab::CrabStats::reset();
   }
 
-  crab::outs() << "\n  as linear constraints:\n" << endl;
+  crab::outs() << "\n  as linear constraints:\n" << "\n";
   for (auto & b : *cfg)
   {
     term_domain_t inv = term_a [b.label ()];
