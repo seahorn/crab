@@ -77,7 +77,7 @@ namespace crab {
 
   template<>
   inline boost::optional<div_operation_t> 
-  convOp (binary_operation_t op) {     
+  conv_op (binary_operation_t op) {     
     switch (op) {
       case BINOP_SDIV: return OP_SDIV;
       case BINOP_UDIV: return OP_UDIV;

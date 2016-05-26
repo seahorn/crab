@@ -1,6 +1,6 @@
 set (CRAB_LIBS 
    OS
-   term
+   Term
    Debug
    Stats
    )

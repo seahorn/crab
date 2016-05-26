@@ -14,7 +14,7 @@
 
 #include <crab/common/debug.hpp>
 #include <crab/common/stats.hpp>
-#include <crab/cfg/Cfg.hpp>
+#include <crab/cfg/cfg.hpp>
 #include <crab/domains/domain_traits.hpp>
 #include <crab/domains/linear_constraints.hpp>
 
@@ -29,7 +29,7 @@ namespace crab {
 
   //! API abstract transformer
   template<typename VariableName>
-  class AbsTransformerApi: public StatementVisitor <VariableName>
+  class abs_transformer_api: public statement_visitor <VariableName>
   {
    public:
 
@@ -38,27 +38,28 @@ namespace crab {
     typedef linear_expression< z_number, VariableName > z_lin_exp_t;
     typedef linear_constraint< z_number, VariableName > z_lin_cst_t;
     typedef linear_constraint_system< z_number, VariableName > z_lin_cst_sys_t;
-    typedef BinaryOp <z_number,VariableName>    z_bin_op_t;
-    typedef Assignment <z_number,VariableName>  z_assign_t;
-    typedef Assume <z_number,VariableName>      z_assume_t;
-    typedef Havoc<VariableName>                 havoc_t;
-    typedef Unreachable<VariableName>           unreach_t;
-    typedef Select <z_number,VariableName>      z_select_t;
-    typedef Assert <z_number,VariableName>      z_assert_t;
-    typedef FCallSite<VariableName>             callsite_t;
-    typedef Return<VariableName>                return_t;
-    typedef ArrayInit<VariableName>             z_arr_init_t;
-    typedef AssumeArray<z_number,VariableName>  z_assume_arr_t;
-    typedef ArrayStore<z_number,VariableName>   z_arr_store_t;
-    typedef ArrayLoad<z_number,VariableName>    z_arr_load_t;
-    typedef PtrStore<z_number,VariableName>     z_ptr_store_t;
-    typedef PtrLoad<z_number,VariableName>      z_ptr_load_t;
-    typedef PtrAssign<z_number,VariableName>    z_ptr_assign_t;
-    typedef PtrObject<VariableName>             ptr_object_t;
-    typedef PtrFunction<VariableName>           ptr_function_t;
-    typedef PtrNull<VariableName>               ptr_null_t;
-    typedef PtrAssume<VariableName>             ptr_assume_t;
-    typedef PtrAssert<VariableName>             ptr_assert_t;
+
+    typedef binary_op <z_number,VariableName>        z_bin_op_t;
+    typedef assignment <z_number,VariableName>       z_assign_t;
+    typedef assume_stmt <z_number,VariableName>      z_assume_t;
+    typedef havoc_stmt<VariableName>                 havoc_t;
+    typedef unreachable_stmt<VariableName>           unreach_t;
+    typedef select_stmt <z_number,VariableName>      z_select_t;
+    typedef assert_stmt <z_number,VariableName>      z_assert_t;
+    typedef callsite_stmt<VariableName>              callsite_t;
+    typedef return_stmt<VariableName>                return_t;
+    typedef array_init_stmt<VariableName>            z_arr_init_t;
+    typedef assume_array_stmt<z_number,VariableName> z_assume_arr_t;
+    typedef array_store_stmt<z_number,VariableName>  z_arr_store_t;
+    typedef array_load_stmt<z_number,VariableName>   z_arr_load_t;
+    typedef ptr_store_stmt<z_number,VariableName>    z_ptr_store_t;
+    typedef ptr_load_stmt<z_number,VariableName>     z_ptr_load_t;
+    typedef ptr_assign_stmt<z_number,VariableName>   z_ptr_assign_t;
+    typedef ptr_object_stmt<VariableName>            ptr_object_t;
+    typedef ptr_function_stmt<VariableName>          ptr_function_t;
+    typedef ptr_null_stmt<VariableName>              ptr_null_t;
+    typedef ptr_assume_stmt<VariableName>            ptr_assume_t;
+    typedef ptr_assert_stmt<VariableName>            ptr_assert_t;
 
    protected: 
 
@@ -115,8 +116,8 @@ namespace crab {
   //! with arrays but without pointers.
   template<typename NumAbsDomain, 
            typename SumTable /*unused*/, typename CallCtxTable /*unused*/>
-  class NumAbsTransformer: 
-        public AbsTransformerApi <typename CallCtxTable::abs_domain_t::varname_t>
+  class num_abs_transformer: 
+        public abs_transformer_api <typename CallCtxTable::abs_domain_t::varname_t>
   {
 
    public:
@@ -127,7 +128,7 @@ namespace crab {
 
    public:
 
-    typedef AbsTransformerApi <typename CallCtxTable::abs_domain_t::varname_t> abs_transform_t;
+    typedef abs_transformer_api <typename CallCtxTable::abs_domain_t::varname_t> abs_transform_t;
     using typename abs_transform_t::varname_t;
     using typename abs_transform_t::z_var_t;
     using typename abs_transform_t::z_lin_exp_t;
@@ -154,9 +155,9 @@ namespace crab {
     void apply (abs_dom_t& inv, binary_operation_t op,
                 varname_t x, varname_t y, T z) {
 
-      auto op1 = convOp<ikos::operation_t> (op);
-      auto op2 = convOp<ikos::div_operation_t> (op);
-      auto op3 = convOp<ikos::bitwise_operation_t> (op);
+      auto op1 = conv_op<ikos::operation_t> (op);
+      auto op2 = conv_op<ikos::div_operation_t> (op);
+      auto op3 = conv_op<ikos::bitwise_operation_t> (op);
       
       if (op1) 
         inv.apply (*op1, x, y, z);
@@ -170,10 +171,10 @@ namespace crab {
     
    public:
 
-    NumAbsTransformer (abs_dom_t& inv): 
+    num_abs_transformer (abs_dom_t& inv): 
         m_inv (inv) { }
     
-    NumAbsTransformer (abs_dom_t& inv, SumTable*, CallCtxTable*): 
+    num_abs_transformer (abs_dom_t& inv, SumTable*, CallCtxTable*): 
         m_inv (inv) { }
 
     abs_dom_t& inv () { return m_inv; }
@@ -296,8 +297,8 @@ namespace crab {
 
   //! Transformer specialized for computing numerical summaries
   template<typename SumTable, typename CallCtxTable /*unused*/>
-  class BottomUpSummNumAbsTransformer: 
-        public NumAbsTransformer <typename SumTable::abs_domain_t,
+  class bu_summ_num_abs_transformer: 
+        public num_abs_transformer <typename SumTable::abs_domain_t,
                                    SumTable, CallCtxTable> {
                                    
    public:
@@ -308,7 +309,7 @@ namespace crab {
 
    public:
 
-    typedef NumAbsTransformer <abs_dom_t, SumTable, CallCtxTable> num_abs_transform_t;
+    typedef num_abs_transformer <abs_dom_t, SumTable, CallCtxTable> num_abs_transform_t;
     typedef typename num_abs_transform_t::abs_transform_t abs_transform_t;
 
     using typename abs_transform_t::varname_t;
@@ -376,15 +377,13 @@ namespace crab {
 
    public:
 
-    BottomUpSummNumAbsTransformer (abs_dom_t& inv, 
-                                   SumTable* sum_tbl): 
-        num_abs_transform_t(inv), 
-        m_sum_tbl (sum_tbl) { }
+    bu_summ_num_abs_transformer(abs_dom_t& inv, SumTable* sum_tbl)
+        : num_abs_transform_t(inv), 
+          m_sum_tbl (sum_tbl) { }
     
-    BottomUpSummNumAbsTransformer (abs_dom_t& inv, 
-                                   SumTable* sum_tbl, CallCtxTable*): 
-        num_abs_transform_t(inv), 
-        m_sum_tbl (sum_tbl) { }
+    bu_summ_num_abs_transformer(abs_dom_t& inv, SumTable* sum_tbl, CallCtxTable*)
+        : num_abs_transform_t(inv), 
+          m_sum_tbl (sum_tbl) { }
 
     abs_dom_t& inv () { return this->m_inv; }    
 
@@ -433,8 +432,8 @@ namespace crab {
   // Transformer specialized for performing top-down forward
   // traversal while reusing numerical summaries at the callsites
   template<typename SumTable, typename CallCtxTable>
-  class TopDownSummNumAbsTransformer: 
-        public NumAbsTransformer <typename CallCtxTable::abs_domain_t,
+  class td_summ_num_abs_transformer: 
+        public num_abs_transformer<typename CallCtxTable::abs_domain_t,
                                   SumTable, CallCtxTable> {
                                    
    public:
@@ -445,7 +444,7 @@ namespace crab {
 
    public:
 
-    typedef NumAbsTransformer <abs_dom_t, SumTable,CallCtxTable> num_abs_transform_t;
+    typedef num_abs_transformer<abs_dom_t, SumTable,CallCtxTable> num_abs_transform_t;
     typedef typename num_abs_transform_t::abs_transform_t abs_transform_t;
 
     using typename abs_transform_t::varname_t;
@@ -468,20 +467,19 @@ namespace crab {
 
    private:
 
-    typedef BottomUpSummNumAbsTransformer<SumTable,CallCtxTable> bu_abs_transformer_t;
+    typedef bu_summ_num_abs_transformer<SumTable,CallCtxTable> bu_abs_transformer_t;
 
     SumTable* m_sum_tbl;
     CallCtxTable* m_call_tbl;
 
    public:
     
-    TopDownSummNumAbsTransformer (abs_dom_t& inv, 
-                                  SumTable* sum_tbl,
-                                  CallCtxTable* call_tbl): 
-        num_abs_transform_t(inv), 
-        m_sum_tbl (sum_tbl),
-        m_call_tbl (call_tbl) { }
-
+    td_summ_num_abs_transformer (abs_dom_t& inv, 
+                                 SumTable* sum_tbl, CallCtxTable* call_tbl)
+        : num_abs_transform_t(inv), 
+          m_sum_tbl (sum_tbl),
+          m_call_tbl (call_tbl) { }
+    
     abs_dom_t& inv () { return this->m_inv; }    
     
     void exec (z_bin_op_t& stmt) { num_abs_transform_t::exec (stmt); }
@@ -578,8 +576,8 @@ namespace crab {
   //! Abstract transformer specialized for pointer operations for
   //! only nullity information.
   template <typename VariableName,typename SumTable, typename CallCtxTable>
-  class NullityAbsTransformer: public AbsTransformerApi <VariableName>  {
-    typedef AbsTransformerApi <VariableName> abs_tr_t;
+  class nullity_abs_transformer: public abs_transformer_api <VariableName>  {
+    typedef abs_transformer_api<VariableName> abs_tr_t;
     
     using typename abs_tr_t::z_bin_op_t;
     using typename abs_tr_t::z_lin_cst_t;
@@ -614,7 +612,7 @@ namespace crab {
     
    public:
     
-    NullityAbsTransformer (nullity_domain_t& init, SumTable*, CallCtxTable*):
+    nullity_abs_transformer (nullity_domain_t& init, SumTable*, CallCtxTable*):
         m_inv (init) { }
 
     nullity_domain_t& inv () { return m_inv; }

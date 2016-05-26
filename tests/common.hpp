@@ -4,11 +4,11 @@
 #include <crab/config.h>
 #include <crab/common/types.hpp>
 #include <crab/common/debug.hpp>
-#include <crab/cfg/Cfg.hpp>
-#include <crab/cfg/CfgBgl.hpp> 
-#include <crab/cfg/VarFactory.hpp>
-#include <crab/analysis/FwdAnalyzer.hpp>
-#include <crab/analysis/Liveness.hpp>
+#include <crab/cfg/cfg.hpp>
+#include <crab/cfg/cfg_bgl.hpp> 
+#include <crab/cfg/var_factory.hpp>
+#include <crab/analysis/fwd_analyzer.hpp>
+#include <crab/analysis/liveness.hpp>
 
 #include <crab/domains/linear_constraints.hpp> 
 #include <crab/domains/intervals.hpp>                      
@@ -35,15 +35,15 @@ namespace crab {
     { return e; }
 
     // A variable factory based on strings
-    typedef cfg::var_factory_impl::StrVariableFactory VariableFactory;
-    typedef typename VariableFactory::varname_t varname_t;
+    typedef cfg::var_factory_impl::str_variable_factory variable_factory_t;
+    typedef typename variable_factory_t::varname_t varname_t;
 
     // CFG
     typedef variable< z_number, varname_t >      z_var;
     typedef std::string                          basic_block_label_t;
     typedef Cfg< basic_block_label_t, varname_t> cfg_t;
-    typedef Cfg_Ref<cfg_t>                       cfg_ref_t;
-    typedef Cfg_Rev<cfg_ref_t>                   cfg_rev_t;
+    typedef cfg_ref<cfg_t>                       cfg_ref_t;
+    typedef cfg_rev<cfg_ref_t>                   cfg_rev_t;
     typedef cfg_t::basic_block_t                 basic_block_t;
   }
 
@@ -78,7 +78,6 @@ namespace crab {
     typedef array_graph_domain<sdbm_domain_t, interval_domain_t> array_graph_domain_t;
     typedef array_smashing<dis_interval_domain_t> array_smashing_t;
   } 
-
 }
 
 namespace {
@@ -103,6 +102,40 @@ namespace {
   if (vm.count("log")) {                                                                              \
     vector<string> loggers = vm ["log"].as<vector<string> > ();                                       \
     for(unsigned int i=0; i<loggers.size (); i++)                                                     \
-      crab::CrabEnableLog (loggers [i]); }                                                            
-  }                           
+      crab::CrabEnableLog (loggers [i]);                                                              \
+  }                                                                                                   
   #endif 
+
+  template<typename Dom>
+  void run (crab::cfg_impl::cfg_t* cfg, 
+            crab::cfg_impl::variable_factory_t& vfac, 
+            bool run_liveness,
+            unsigned widening, 
+            unsigned narrowing, 
+            unsigned jump_set_size){
+    crab::analyzer::liveness<crab::cfg_impl::cfg_ref_t> *live = nullptr;
+    if (run_liveness) {
+      crab::analyzer::liveness<crab::cfg_impl::cfg_ref_t> live_(*cfg);
+      live_.exec ();
+      live=&live_;
+    }
+    // Run fixpoint 
+    typename crab::analyzer::num_fwd_analyzer
+    <crab::cfg_impl::cfg_ref_t,Dom,crab::cfg_impl::variable_factory_t>::type 
+    a (*cfg, vfac, live, widening, narrowing, jump_set_size);
+    Dom inv = Dom::top ();
+    crab::outs() << "Invariants using " << inv.getDomainName () << "\n";
+    a.Run (inv);
+    // Print invariants
+    for (auto &b : *cfg) {
+      auto inv = a[b.label ()];
+      crab::outs() << crab::cfg_impl::get_label_str (b.label ()) << "=" << inv << "\n";
+    }
+    crab::outs() << "\n";
+    if (stats_enabled) {
+      crab::CrabStats::Print(crab::outs());
+      crab::CrabStats::reset();
+    }
+  }
+} //end namespace
+

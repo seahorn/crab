@@ -6,7 +6,7 @@ using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
 /* Example of how to build a CFG */
-cfg_t* prog (VariableFactory &vfac)  {
+cfg_t* prog (variable_factory_t &vfac)  {
 
   // Defining program variables
   z_var i (vfac ["i"]);
@@ -47,7 +47,7 @@ int main (int argc, char** argv )
 {
   SET_TEST_OPTIONS(argc,argv)
 
-  VariableFactory vfac;
+  variable_factory_t vfac;
 
   { 
     cfg_t* cfg = prog(vfac);

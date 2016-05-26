@@ -9,7 +9,7 @@
 
 #include <crab/common/debug.hpp>
 #include <crab/common/types.hpp>
-#include <crab/cg/Cg.hpp>
+#include <crab/cg/cg.hpp>
 
 /* 
    Strongly connected component graph
@@ -22,7 +22,7 @@ namespace crab {
      namespace graph_algo {
 
       template< typename G>
-      class SccGraph {
+      class scc_graph {
 
        public:
 
@@ -30,7 +30,7 @@ namespace crab {
 
        private:
 
-        /// --- begin internal representation of the SccGraph
+        /// --- begin internal representation of the scc_graph
         struct  vertex_t { std::size_t m_comp; node_t m_repr;};
         typedef adjacency_list<setS, //disallow parallel edges
                                vecS, bidirectionalS, 
@@ -43,7 +43,7 @@ namespace crab {
         typedef typename boost::graph_traits<scc_graph_t>::vertex_iterator vertex_iterator;
         typedef typename boost::graph_traits<scc_graph_t>::out_edge_iterator out_edge_iterator;
         typedef typename boost::graph_traits<scc_graph_t>::in_edge_iterator in_edge_iterator;
-        /// --- end internal representation of the SccGraph
+        /// --- end internal representation of the scc_graph
 
         typedef boost::unordered_map< node_t, std::size_t > component_map_t;
         typedef boost::unordered_map <std::size_t, vertex_descriptor_t> comp_to_vertex_map_t;
@@ -181,7 +181,7 @@ namespace crab {
 
        public:
 
-        SccGraph (G g, bool order = false /*default post-order*/)
+        scc_graph(G g, bool order = false /*default post-order*/)
             : m_g (g), 
               m_same_scc_order (order),
               m_sccg (boost::make_shared<scc_graph_t>()) {
@@ -280,7 +280,7 @@ namespace crab {
         }
         
         // return the members of the scc component that contains n
-        std::vector<node_t>& getComponentMembers (const node_t& n) {
+        std::vector<node_t>& get_component_members (const node_t& n) {
           return m_comp_members_map[m_comp_map [n]];
         }
 

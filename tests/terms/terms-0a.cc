@@ -10,7 +10,7 @@ int main (int argc, char** argv )
 {
   SET_TEST_OPTIONS(argc,argv)
 
-  VariableFactory vfac;
+  variable_factory_t vfac;
 
   varname_t x = vfac["x"];
   varname_t y = vfac["y"];

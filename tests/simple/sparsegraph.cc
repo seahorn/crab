@@ -1,8 +1,8 @@
 #include "../common.hpp"
-#include <crab/common/sparse_graph.hpp>
-#include <crab/common/pt_graph.hpp>
-#include <crab/common/graph_ops.hpp>
-#include <crab/common/adapt_sgraph.hpp>
+#include <crab/domains/graphs/sparse_graph.hpp>
+#include <crab/domains/graphs/pt_graph.hpp>
+#include <crab/domains/graphs/graph_ops.hpp>
+#include <crab/domains/graphs/adapt_sgraph.hpp>
 
 using namespace std;
 using namespace crab::analyzer;

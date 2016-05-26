@@ -4,11 +4,11 @@
 #include <boost/unordered_map.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include <crab/cfg/ConcSys.hpp>
-#include <crab/cfg/VarFactory.hpp>
+#include <crab/cfg/conc_sys.hpp>
+#include <crab/cfg/var_factory.hpp>
 #include <crab/common/debug.hpp>
 #include <crab/domains/domain_traits.hpp>
-#include <crab/analysis/FwdAnalyzer.hpp>
+#include <crab/analysis/fwd_analyzer.hpp>
 
 #include <boost/noncopyable.hpp>
 
@@ -24,13 +24,13 @@ namespace crab {
     //  (VMCAI'14).
     template< typename ThreadId, typename CFG, 
               typename AbsDomain, typename VarFactory>
-    class ConcAnalyzer: public boost::noncopyable {
+    class conc_analyzer: public boost::noncopyable {
       typedef typename CFG::basic_block_label_t basic_block_label_t;
       typedef typename CFG::varname_t varname_t;
       typedef typename CFG::basic_block_t basic_block_t;
-      typedef typename NumFwdAnalyzer<CFG, AbsDomain, VarFactory>::type fwd_analyzer_t;
+      typedef typename num_fwd_analyzer<CFG, AbsDomain, VarFactory>::type fwd_analyzer_t;
       typedef typename fwd_analyzer_t::liveness_t liveness_t;
-      typedef ConcSys <ThreadId, CFG> conc_sys_t;
+      typedef conc_sys<ThreadId, CFG> conc_sys_t;
       
      public:
       typedef boost::unordered_map<basic_block_label_t, AbsDomain> inv_map_t;
@@ -51,14 +51,14 @@ namespace crab {
 
      public:
       
-      ConcAnalyzer (conc_sys_t& conc_sys, VarFactory& vfac, bool runLive,
-                    unsigned int widening_delay=1,
-                    unsigned int descending_iters=UINT_MAX,
-                    size_t jump_set_size=0):  
-          m_conc_sys (conc_sys), m_vfac (vfac), m_run_live (runLive),
-          m_widening_delay (widening_delay),
-          m_descending_iters (descending_iters),
-          m_jump_set_size (jump_set_size)
+      conc_analyzer (conc_sys_t& conc_sys, VarFactory& vfac, bool runLive,
+                     unsigned int widening_delay=1,
+                     unsigned int descending_iters=UINT_MAX,
+                     size_t jump_set_size=0)
+          :  m_conc_sys (conc_sys), m_vfac (vfac), m_run_live (runLive),
+             m_widening_delay (widening_delay),
+             m_descending_iters (descending_iters),
+             m_jump_set_size (jump_set_size)
       { }
       
       //! Return analysis results

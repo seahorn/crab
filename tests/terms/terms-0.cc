@@ -9,7 +9,7 @@ int main (int argc, char** argv )
 {
   SET_TEST_OPTIONS(argc,argv)
 
-  VariableFactory vfac;
+  variable_factory_t vfac;
 
   term_domain_t dom_left = term_domain_t::top ();
   term_domain_t dom_right = term_domain_t::top ();

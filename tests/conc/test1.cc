@@ -1,6 +1,6 @@
 #include "../common.hpp"
-#include <crab/cfg/ConcSys.hpp>
-#include <crab/analysis/ConcAnalyzer.hpp>
+#include <crab/cfg/conc_sys.hpp>
+#include <crab/analysis/conc_analyzer.hpp>
 
 using namespace std;
 using namespace crab::analyzer;
@@ -16,9 +16,9 @@ namespace crab {
   } 
 }
 
-typedef ConcSys< string, cfg_ref_t> conc_sys_t;
+typedef conc_sys< string, cfg_ref_t> conc_sys_t;
 
-cfg_t* thread1 (VariableFactory &vfac) 
+cfg_t* thread1 (variable_factory_t &vfac) 
 {
 
   ////
@@ -58,7 +58,7 @@ cfg_t* thread1 (VariableFactory &vfac)
   return cfg;
 }
 
-cfg_t* thread2 (VariableFactory &vfac) 
+cfg_t* thread2 (variable_factory_t &vfac) 
 {
 
   ////
@@ -114,7 +114,7 @@ int main (int argc, char** argv )
 {
   SET_TEST_OPTIONS(argc,argv)
 
-  VariableFactory vfac;
+  variable_factory_t vfac;
 
   cfg_t* t1 = thread1 (vfac);
   t1->simplify ();
@@ -137,7 +137,7 @@ int main (int argc, char** argv )
   global_inv.assign (vfac ["x"], interval_domain_t::linear_expression_t (0));
   global_inv.assign (vfac ["y"], interval_domain_t::linear_expression_t (0));
 
-  typedef ConcAnalyzer <string, cfg_ref_t, interval_domain_t, VariableFactory> conc_analyzer_t;
+  typedef conc_analyzer<string, cfg_ref_t, interval_domain_t, variable_factory_t> conc_analyzer_t;
 
   conc_analyzer_t a (concSys, vfac, run_live);
   a.Run (global_inv);

@@ -96,7 +96,7 @@ namespace crab {
   using namespace ikos;
   template<>
   inline boost::optional<bitwise_operation_t> 
-  convOp (binary_operation_t op) {     
+  conv_op (binary_operation_t op) {     
     switch (op) {
       case BINOP_AND: return OP_AND;
       case BINOP_OR: return OP_OR;

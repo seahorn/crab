@@ -10,8 +10,8 @@
  * - C-like pointers and arrays
  * - functions 
  * 
- * Important note: objects of the class Cfg are not copyable. Instead,
- * we provide a class Cfg_Ref that wraps Cfg references into copyable
+ * Important note: objects of the class cfg are not copyable. Instead,
+ * we provide a class cfg_ref that wraps cfg references into copyable
  * and assignable objects.
  *
  * Limitations: 
@@ -51,12 +51,12 @@ namespace crab {
     using namespace std;
 
     // The values must be such that INT <= PTR <= ARR
-    enum TrackedPrecision { INT = 0, PTR = 1, ARR = 2 };
+    enum tracked_precision { INT = 0, PTR = 1, ARR = 2 };
   
-    enum VariableType { INT_TYPE, PTR_TYPE, ARR_TYPE, UNK_TYPE};
+    enum variable_type { INT_TYPE, PTR_TYPE, ARR_TYPE, UNK_TYPE};
 
 
-    enum StatementCode {
+    enum stmt_code {
       UNDEF = 0,
       // integers
       BIN_OP = 1, ASSIGN = 21, ASSUME = 22, UNREACH = 23, HAVOC = 24, SELECT = 25,
@@ -98,7 +98,7 @@ namespace crab {
       return o;
     }
   
-    inline crab_os& operator<< (crab_os& o, VariableType t)
+    inline crab_os& operator<< (crab_os& o, variable_type t)
     {
       switch (t)
       {
@@ -135,8 +135,8 @@ namespace crab {
       
       Live() { }
       
-      void addUse(const VariableName v){ add (m_uses,v);}
-      void addDef(const VariableName v){ add (m_defs,v);}
+      void add_use(const VariableName v){ add (m_uses,v);}
+      void add_def(const VariableName v){ add (m_defs,v);}
       
       const_use_iterator uses_begin() const { return m_uses.begin (); }
       const_use_iterator uses_end()   const { return m_uses.end (); }
@@ -159,25 +159,25 @@ namespace crab {
       }
     };
 
-    struct DebugInfo {
+    struct debug_info {
       
       std::string m_file;
       int m_line;
       int m_col;
       
-      DebugInfo ():
+      debug_info ():
           m_file (""), m_line (-1), m_col (-1) { }
 
-      DebugInfo (std::string file, unsigned line, unsigned col):
+      debug_info (std::string file, unsigned line, unsigned col):
           m_file (file), m_line (line), m_col (col) { }
       
-      bool operator<(const DebugInfo& other) const {
+      bool operator<(const debug_info& other) const {
         return (m_file < other.m_file && 
                 m_line < other.m_line && 
                 m_col < other.m_col);
       }
 
-      bool operator==(const DebugInfo& other) const {
+      bool operator==(const debug_info& other) const {
         return (m_file == other.m_file && 
                 m_line == other.m_line && 
                 m_col == other.m_col);
@@ -194,16 +194,16 @@ namespace crab {
       }
     };
 
-    inline crab_os& operator<<(crab_os& o, const DebugInfo& l) {
+    inline crab_os& operator<<(crab_os& o, const debug_info& l) {
       l.write (o);
       return o;
     }
 
     template< typename VariableName>
-    struct StatementVisitor;
+    struct statement_visitor;
   
     template< class VariableName>
-    class Statement
+    class statement
     {
       
      public:
@@ -211,72 +211,72 @@ namespace crab {
       
      protected:
       live_t m_live;
-      StatementCode m_stmt_code;
-      DebugInfo m_dbg_info;
+      stmt_code m_stmt_code;
+      debug_info m_dbg_info;
 
-      Statement (StatementCode code = UNDEF,
-                 DebugInfo debug_info = DebugInfo ()): 
+      statement (stmt_code code = UNDEF,
+                 debug_info dbg_info = debug_info ()): 
           m_stmt_code (code),
-          m_dbg_info (debug_info) { }
+          m_dbg_info (dbg_info) { }
 
      public:
       
-      bool isReturn () const { 
+      bool is_return () const { 
         return m_stmt_code == RETURN; 
       }
-      bool isBinOp () const { 
+      bool is_bin_op () const { 
         return (m_stmt_code >= 1 && m_stmt_code <= 20); 
       }
-      bool isAssign () const { 
+      bool is_assign () const { 
         return (m_stmt_code == ASSIGN); 
       }
-      bool isAssume () const { 
+      bool is_assume () const { 
         return (m_stmt_code == ASSUME); 
       }
-      bool isSelect () const { 
+      bool is_select () const { 
         return (m_stmt_code == SELECT); 
       }
-      bool isAssert () const { 
+      bool is_assert () const { 
         return (m_stmt_code == ASSERT); 
       }
-      bool isArrRead () const { 
+      bool is_arr_read () const { 
         return (m_stmt_code == ARR_LOAD);
       }
-      bool isPtrRead () const {
+      bool is_ptr_read () const {
         return (m_stmt_code == PTR_LOAD); 
       }
-      bool isArrWrite () const { 
+      bool is_arr_write () const { 
         return (m_stmt_code == ARR_STORE); 
       }
-      bool isPtrWrite () const { 
+      bool is_ptr_write () const { 
         return (m_stmt_code == PTR_STORE); 
       }
-      bool isPtrNull () const { 
+      bool is_ptr_null () const { 
         return (m_stmt_code == PTR_NULL); 
       }
-      bool isPtrAssume () const { 
+      bool is_ptr_assume () const { 
         return (m_stmt_code == PTR_ASSUME); 
       }
-      bool isPtrAssert () const { 
+      bool is_ptr_assert () const { 
         return (m_stmt_code == PTR_ASSERT); 
       }
       
      public:
       
-      live_t getLive() const { return m_live; }
+      live_t get_live() const { return m_live; }
 
-      DebugInfo getDebugInfo () const { return m_dbg_info; }
+      debug_info get_debug_info () const { return m_dbg_info; }
 
-      virtual void accept(StatementVisitor< VariableName> *) = 0;
+      virtual void accept(statement_visitor< VariableName> *) = 0;
       
       virtual void write(crab_os& o) const = 0 ;
       
-      virtual boost::shared_ptr<Statement <VariableName> > clone () const = 0;
+      virtual boost::shared_ptr<statement <VariableName> > clone () const = 0;
       
-      virtual ~Statement() { }
+      virtual ~statement() { }
       
       friend crab_os& operator <<(crab_os&o, 
-                                  const Statement<VariableName> &s)
+                                  const statement<VariableName> &s)
       {
         s.write (o);
         return o;
@@ -285,11 +285,11 @@ namespace crab {
     }; 
   
     /*
-      Basic Statements (INT_TYPE)
+      Basic statements (INT_TYPE)
     */
 
     template< class Number, class VariableName>
-    class BinaryOp: public Statement <VariableName>
+    class binary_op: public statement <VariableName>
     {
       
      public:
@@ -306,17 +306,17 @@ namespace crab {
       
      public:
       
-      BinaryOp (variable_t lhs, 
+      binary_op (variable_t lhs, 
                 binary_operation_t op, 
                 linear_expression_t op1, 
                 linear_expression_t op2,
-                DebugInfo debug_info = DebugInfo ()): 
-          Statement <VariableName> (BIN_OP, debug_info),
-          m_lhs(lhs), m_op(op), m_op1(op1), m_op2(op2) 
+                debug_info dbg_info = debug_info ())
+          : statement <VariableName> (BIN_OP, dbg_info),
+            m_lhs(lhs), m_op(op), m_op1(op1), m_op2(op2) 
       { 
-        this->m_live.addDef (m_lhs.name());
-        for (auto v: m_op1.variables()){ this->m_live.addUse (v.name()); }         
-        for (auto v: m_op2.variables()){ this->m_live.addUse (v.name()); }         
+        this->m_live.add_def (m_lhs.name());
+        for (auto v: m_op1.variables()){ this->m_live.add_use (v.name()); }         
+        for (auto v: m_op2.variables()){ this->m_live.add_use (v.name()); }         
       }
       
       variable_t lhs () const { return m_lhs; }
@@ -327,16 +327,16 @@ namespace crab {
       
       linear_expression_t right () const { return m_op2; }
       
-      virtual void accept(StatementVisitor < VariableName> *v) 
+      virtual void accept(statement_visitor < VariableName> *v) 
       {
         v->visit(*this);
       }
       
-      virtual boost::shared_ptr<Statement <VariableName> > clone () const
+      virtual boost::shared_ptr<statement <VariableName> > clone () const
       {
-        typedef BinaryOp<Number, VariableName> BinaryOp_t;
-        return boost::static_pointer_cast<Statement <VariableName>, BinaryOp_t>
-            (boost::make_shared<BinaryOp_t>(m_lhs, m_op, m_op1, m_op2));
+        typedef binary_op<Number, VariableName> binary_op_t;
+        return boost::static_pointer_cast<statement <VariableName>, binary_op_t>
+            (boost::make_shared<binary_op_t>(m_lhs, m_op, m_op1, m_op2));
       }
       
       virtual void write (crab_os& o) const
@@ -347,7 +347,7 @@ namespace crab {
     }; 
 
     template< class Number, class VariableName>
-    class Assignment: public Statement<VariableName>
+    class assignment: public statement<VariableName>
     {
       
      public:
@@ -362,30 +362,29 @@ namespace crab {
       
      public:
       
-      Assignment (variable_t lhs, linear_expression_t rhs): 
-          Statement <VariableName> (ASSIGN),
-          m_lhs(lhs), 
-          m_rhs(rhs) 
+      assignment (variable_t lhs, linear_expression_t rhs)
+          : statement <VariableName> (ASSIGN),
+            m_lhs(lhs), m_rhs(rhs) 
       {
-        this->m_live.addDef (m_lhs.name());
+        this->m_live.add_def (m_lhs.name());
         for(auto v: m_rhs.variables()) 
-          this->m_live.addUse (v.name());
+          this->m_live.add_use (v.name());
       }
       
       variable_t lhs () const { return m_lhs; }
       
       linear_expression_t rhs () const { return m_rhs; }
       
-      virtual void accept(StatementVisitor <VariableName> *v) 
+      virtual void accept(statement_visitor <VariableName> *v) 
       {
         v->visit(*this);
       }
       
-      virtual boost::shared_ptr<Statement <VariableName> > clone () const
+      virtual boost::shared_ptr<statement <VariableName> > clone () const
       {
-        typedef Assignment <Number, VariableName> Assignment_t;
-        return boost::static_pointer_cast< Statement <VariableName>, Assignment_t >
-            (boost::make_shared<Assignment_t>(m_lhs, m_rhs));
+        typedef assignment <Number, VariableName> assignment_t;
+        return boost::static_pointer_cast< statement <VariableName>, assignment_t >
+            (boost::make_shared<assignment_t>(m_lhs, m_rhs));
       }
       
       virtual void write(crab_os& o) const
@@ -397,7 +396,7 @@ namespace crab {
     }; 
     
     template<class Number, class VariableName>
-    class Assume: public Statement <VariableName>
+    class assume_stmt: public statement <VariableName>
     {
       
      public:
@@ -411,25 +410,25 @@ namespace crab {
       
      public:
       
-      Assume (linear_constraint_t cst): 
-          Statement <VariableName> (ASSUME), m_cst(cst) 
+      assume_stmt (linear_constraint_t cst): 
+          statement <VariableName> (ASSUME), m_cst(cst) 
       { 
         for(auto v: cst.variables())
-          this->m_live.addUse (v.name()); 
+          this->m_live.add_use (v.name()); 
       }
       
       linear_constraint_t constraint() const { return m_cst; }
       
-      virtual void accept(StatementVisitor <VariableName> *v) 
+      virtual void accept(statement_visitor <VariableName> *v) 
       {
         v->visit(*this);
       }
       
-      virtual boost::shared_ptr<Statement <VariableName> > clone () const
+      virtual boost::shared_ptr<statement <VariableName> > clone () const
       {
-        typedef Assume <Number, VariableName> Assume_t;
-        return boost::static_pointer_cast< Statement <VariableName>, Assume_t >
-            (boost::make_shared<Assume_t>(m_cst));
+        typedef assume_stmt <Number, VariableName> assume_t;
+        return boost::static_pointer_cast< statement <VariableName>, assume_t >
+            (boost::make_shared<assume_t>(m_cst));
       }
       
       virtual void write (crab_os & o) const
@@ -440,22 +439,22 @@ namespace crab {
     }; 
 
     template< class VariableName>
-    class Unreachable: public Statement< VariableName> 
+    class unreachable_stmt: public statement< VariableName> 
     {
      public:
       
-      Unreachable(): Statement <VariableName> (UNREACH) { }
+      unreachable_stmt(): statement <VariableName> (UNREACH) { }
       
-      virtual void accept(StatementVisitor <VariableName> *v) 
+      virtual void accept(statement_visitor <VariableName> *v) 
       {
         v->visit(*this);
       }
       
-      virtual boost::shared_ptr<Statement <VariableName> > clone () const
+      virtual boost::shared_ptr<statement <VariableName> > clone () const
       {
-        typedef Unreachable <VariableName> Unreachable_t;
-        return boost::static_pointer_cast< Statement <VariableName>, Unreachable_t >
-            (boost::make_shared<Unreachable_t>());
+        typedef unreachable_stmt <VariableName> unreachable_t;
+        return boost::static_pointer_cast< statement <VariableName>, unreachable_t >
+            (boost::make_shared<unreachable_t>());
       }
       
       virtual void write(crab_os& o) const
@@ -467,30 +466,30 @@ namespace crab {
     }; 
   
     template< class VariableName>
-    class Havoc: public Statement< VariableName> 
+    class havoc_stmt: public statement< VariableName> 
     {
       
       VariableName m_lhs;
       
      public:
       
-      Havoc (VariableName lhs): 
-          Statement <VariableName> (HAVOC), m_lhs(lhs)  {
-        this->m_live.addDef (m_lhs);
+      havoc_stmt (VariableName lhs): 
+          statement <VariableName> (HAVOC), m_lhs(lhs)  {
+        this->m_live.add_def (m_lhs);
       }
       
       VariableName variable () const { return m_lhs; }
       
-      virtual void accept (StatementVisitor<VariableName> *v) 
+      virtual void accept (statement_visitor<VariableName> *v) 
       {
         v->visit (*this);
       }
       
-      virtual boost::shared_ptr<Statement <VariableName> > clone () const
+      virtual boost::shared_ptr<statement <VariableName> > clone () const
       {
-        typedef Havoc <VariableName> Havoc_t;
-        return boost::static_pointer_cast< Statement <VariableName>, Havoc_t >
-            (boost::make_shared<Havoc_t>(m_lhs));
+        typedef havoc_stmt <VariableName> havoc_t;
+        return boost::static_pointer_cast< statement <VariableName>, havoc_t >
+            (boost::make_shared<havoc_t>(m_lhs));
       }
       
       void write (crab_os& o) const
@@ -508,7 +507,7 @@ namespace crab {
     // generate many select instructions so we prefer to support
     // natively to avoid a blow up in the size of the CFG.
     template< class Number, class VariableName>
-    class Select: public Statement <VariableName>
+    class select_stmt: public statement <VariableName>
     {
       
      public:
@@ -526,20 +525,20 @@ namespace crab {
       
      public:
       
-      Select (variable_t lhs, 
+      select_stmt (variable_t lhs, 
               linear_constraint_t cond, 
               linear_expression_t e1, 
               linear_expression_t e2): 
-          Statement <VariableName> (SELECT),
+          statement <VariableName> (SELECT),
           m_lhs(lhs), m_cond(cond), m_e1(e1), m_e2(e2) 
       { 
-        this->m_live.addDef (m_lhs.name());
+        this->m_live.add_def (m_lhs.name());
         for (auto v: m_cond.variables())
-          this->m_live.addUse (v.name()); 
+          this->m_live.add_use (v.name()); 
         for (auto v: m_e1.variables())
-          this->m_live.addUse (v.name()); 
+          this->m_live.add_use (v.name()); 
         for (auto v: m_e2.variables())
-          this->m_live.addUse (v.name());
+          this->m_live.add_use (v.name());
       }
       
       variable_t lhs () const { return m_lhs; }
@@ -550,16 +549,16 @@ namespace crab {
       
       linear_expression_t right () const { return m_e2; }
       
-      virtual void accept(StatementVisitor < VariableName> *v) 
+      virtual void accept(statement_visitor < VariableName> *v) 
       {
         v->visit(*this);
       }
       
-      virtual boost::shared_ptr<Statement <VariableName> > clone () const
+      virtual boost::shared_ptr<statement <VariableName> > clone () const
       {
-        typedef Select <Number, VariableName> Select_t;
-        return boost::static_pointer_cast< Statement <VariableName>, Select_t >
-            (boost::make_shared<Select_t>(m_lhs, m_cond, m_e1, m_e2));
+        typedef select_stmt <Number, VariableName> select_t;
+        return boost::static_pointer_cast< statement <VariableName>, select_t >
+            (boost::make_shared<select_t>(m_lhs, m_cond, m_e1, m_e2));
       }
       
       virtual void write (crab_os& o) const
@@ -571,7 +570,7 @@ namespace crab {
     }; 
 
     template<class Number, class VariableName>
-    class Assert: public Statement <VariableName>
+    class assert_stmt: public statement <VariableName>
     {
       
      public:
@@ -585,26 +584,26 @@ namespace crab {
 
      public:
       
-      Assert (linear_constraint_t cst, DebugInfo dbg_info = DebugInfo ()): 
-          Statement <VariableName> (ASSERT, dbg_info), 
-          m_cst(cst)
+      assert_stmt (linear_constraint_t cst, debug_info dbg_info = debug_info ())
+          : statement <VariableName> (ASSERT, dbg_info), 
+            m_cst(cst)
       { 
         for(auto v: cst.variables())
-          this->m_live.addUse (v.name()); 
+          this->m_live.add_use (v.name()); 
       }
       
       linear_constraint_t constraint() const { return m_cst; }
       
-      virtual void accept(StatementVisitor <VariableName> *v) 
+      virtual void accept(statement_visitor <VariableName> *v) 
       {
         v->visit(*this);
       }
       
-      virtual boost::shared_ptr<Statement <VariableName> > clone () const
+      virtual boost::shared_ptr<statement <VariableName> > clone () const
       {
-        typedef Assert <Number, VariableName> Assert_t;
-        return boost::static_pointer_cast< Statement <VariableName>, Assert_t >
-            (boost::make_shared<Assert_t>(m_cst));
+        typedef assert_stmt <Number, VariableName> assert_t;
+        return boost::static_pointer_cast< statement <VariableName>, assert_t >
+            (boost::make_shared<assert_t>(m_cst));
       }
       
       virtual void write (crab_os & o) const
@@ -620,29 +619,29 @@ namespace crab {
   
     //! All the initial values of the array are statically known.
     template<class VariableName>
-    class ArrayInit: public Statement< VariableName> 
+    class array_init_stmt: public statement< VariableName> 
     {
       VariableName m_arr; 
       vector<ikos::z_number> m_values; 
       
      public:
-      ArrayInit (VariableName arr, vector<ikos::z_number> values): 
-          Statement <VariableName> (ARR_INIT),
-          m_arr (arr), m_values (values)  { }
+      array_init_stmt (VariableName arr, vector<ikos::z_number> values)
+          : statement <VariableName> (ARR_INIT),
+            m_arr (arr), m_values (values)  { }
       
       VariableName variable () const { return m_arr; }
       
       vector<ikos::z_number> values () const { return m_values; }
       
-      virtual void accept (StatementVisitor<VariableName> *v) {
+      virtual void accept (statement_visitor<VariableName> *v) {
         v->visit (*this);
       }
       
-      virtual boost::shared_ptr<Statement <VariableName> > clone () const
+      virtual boost::shared_ptr<statement <VariableName> > clone () const
       {
-        typedef ArrayInit <VariableName> ArrayInit_t;
-        return boost::static_pointer_cast< Statement <VariableName>, ArrayInit_t >
-            (boost::make_shared<ArrayInit_t>(m_arr, m_values));
+        typedef array_init_stmt <VariableName> array_init_t;
+        return boost::static_pointer_cast< statement <VariableName>, array_init_t >
+            (boost::make_shared<array_init_t>(m_arr, m_values));
       }
       
       void write (crab_os& o) const
@@ -658,7 +657,7 @@ namespace crab {
     //! Assume all the array elements are overapproximated uniformly by
     //! some interval.
     template< class Number, class VariableName>
-    class AssumeArray: public Statement< VariableName> 
+    class assume_array_stmt: public statement< VariableName> 
     {
       typedef bound <Number> bound_t;
       
@@ -672,27 +671,27 @@ namespace crab {
       
      public:
       
-      AssumeArray (VariableName arr, ikos::z_number val): 
-          Statement <VariableName> (ARR_ASSUME),
-          m_arr (arr), m_val (bound_t (val))  { }
+      assume_array_stmt (VariableName arr, ikos::z_number val)
+          : statement <VariableName> (ARR_ASSUME),
+            m_arr (arr), m_val (bound_t (val))  { }
       
-      AssumeArray (VariableName arr, interval_t val): 
-          Statement <VariableName> (ARR_ASSUME),
+      assume_array_stmt (VariableName arr, interval_t val): 
+          statement <VariableName> (ARR_ASSUME),
           m_arr (arr), m_val (val)  { }
       
       VariableName variable () const { return m_arr; }
       
       interval_t val () const { return m_val; }
       
-      virtual void accept (StatementVisitor<VariableName> *v) {
+      virtual void accept (statement_visitor<VariableName> *v) {
         v->visit (*this);
       }
       
-      virtual boost::shared_ptr<Statement <VariableName> > clone () const
+      virtual boost::shared_ptr<statement <VariableName> > clone () const
       {
-        typedef AssumeArray <Number, VariableName> AssumeArray_t;
-        return boost::static_pointer_cast< Statement <VariableName>, AssumeArray_t >
-            (boost::make_shared<AssumeArray_t>(m_arr, m_val));
+        typedef assume_array_stmt <Number, VariableName> assume_array_t;
+        return boost::static_pointer_cast< statement <VariableName>, assume_array_t >
+            (boost::make_shared<assume_array_t>(m_arr, m_val));
       }
       
       void write (crab_os& o) const
@@ -705,7 +704,7 @@ namespace crab {
     }; 
     
     template< class Number, class VariableName>
-    class ArrayStore: public Statement<VariableName>
+    class array_store_stmt: public statement<VariableName>
     {
       
      public:
@@ -724,21 +723,21 @@ namespace crab {
                            //  cell. If unknown set to false.
      public:
       
-      ArrayStore (variable_t arr, 
-                  linear_expression_t index, 
-                  linear_expression_t value, 
-                  ikos::z_number elem_size,
-                  bool is_sing = false): 
-          Statement <VariableName> (ARR_STORE),
-          m_arr (arr), m_index (index),
-          m_value (value), m_elem_size (elem_size), 
-          m_is_singleton (is_sing)
+      array_store_stmt (variable_t arr, 
+                        linear_expression_t index, 
+                        linear_expression_t value, 
+                        ikos::z_number elem_size,
+                        bool is_sing = false)
+          : statement<VariableName>(ARR_STORE),
+            m_arr (arr), m_index (index),
+            m_value (value), m_elem_size (elem_size), 
+            m_is_singleton (is_sing)
       {
-        this->m_live.addUse (m_arr.name());
+        this->m_live.add_use (m_arr.name());
         for(auto v: m_index.variables()) 
-          this->m_live.addUse (v.name());
+          this->m_live.add_use (v.name());
         for(auto v: m_value.variables()) 
-          this->m_live.addUse (v.name());
+          this->m_live.add_use (v.name());
       }
       
       variable_t array () const { return m_arr; }
@@ -751,15 +750,15 @@ namespace crab {
       
       bool is_singleton () const { return m_is_singleton;}
       
-      virtual void accept(StatementVisitor <VariableName> *v) 
+      virtual void accept(statement_visitor <VariableName> *v) 
       {
         v->visit(*this);
       }
       
-      virtual boost::shared_ptr<Statement <VariableName> > clone () const
+      virtual boost::shared_ptr<statement <VariableName> > clone () const
       {
-        typedef ArrayStore <Number, VariableName> array_store_t;
-        return boost::static_pointer_cast< Statement <VariableName>, array_store_t>
+        typedef array_store_stmt <Number, VariableName> array_store_t;
+        return boost::static_pointer_cast< statement <VariableName>, array_store_t>
             (boost::make_shared<array_store_t>(m_arr, m_index, m_value, m_elem_size,
                                                m_is_singleton));
                                                
@@ -773,7 +772,7 @@ namespace crab {
     }; 
 
     template< class Number, class VariableName>
-    class ArrayLoad: public Statement<VariableName>
+    class array_load_stmt: public statement<VariableName>
     {
       
      public:
@@ -790,16 +789,16 @@ namespace crab {
       
      public:
       
-      ArrayLoad (variable_t lhs, variable_t arr, 
-                 linear_expression_t index, ikos::z_number elem_size): 
-          Statement <VariableName> (ARR_LOAD),
-          m_lhs (lhs), m_array (arr), 
-          m_index (index), m_elem_size (elem_size)
+      array_load_stmt (variable_t lhs, variable_t arr, 
+                 linear_expression_t index, ikos::z_number elem_size)
+          : statement <VariableName> (ARR_LOAD),
+            m_lhs (lhs), m_array (arr), 
+            m_index (index), m_elem_size (elem_size)
       {
-        this->m_live.addDef (lhs.name());
-        this->m_live.addUse (m_array.name());
+        this->m_live.add_def (lhs.name());
+        this->m_live.add_use (m_array.name());
         for(auto v: m_index.variables()) 
-          this->m_live.addUse (v.name());
+          this->m_live.add_use (v.name());
       }
       
       variable_t lhs () const { return m_lhs; }
@@ -810,15 +809,15 @@ namespace crab {
       
       ikos::z_number elem_size () const { return m_elem_size; }
       
-      virtual void accept(StatementVisitor <VariableName> *v) 
+      virtual void accept(statement_visitor <VariableName> *v) 
       {
         v->visit(*this);
       }
       
-      virtual boost::shared_ptr<Statement <VariableName> > clone () const
+      virtual boost::shared_ptr<statement <VariableName> > clone () const
       {
-        typedef ArrayLoad <Number, VariableName> array_load_t;
-        return boost::static_pointer_cast< Statement <VariableName>, array_load_t>
+        typedef array_load_stmt <Number, VariableName> array_load_t;
+        return boost::static_pointer_cast< statement <VariableName>, array_load_t>
             (boost::make_shared<array_load_t>(m_lhs, m_array, m_index, m_elem_size));
                                               
       }
@@ -836,7 +835,7 @@ namespace crab {
     */
 
     template< class Number, class VariableName>
-    class PtrLoad: public Statement<VariableName>
+    class ptr_load_stmt: public statement<VariableName>
     {
       // p = *q
      public:
@@ -850,28 +849,28 @@ namespace crab {
       
      public:
       
-      PtrLoad (VariableName lhs, VariableName rhs, 
-               DebugInfo debug_info = DebugInfo ()): 
-          Statement <VariableName> (PTR_LOAD, debug_info),
-          m_lhs (lhs), m_rhs (rhs)
+      ptr_load_stmt (VariableName lhs, VariableName rhs, 
+               debug_info dbg_info = debug_info ())
+          : statement <VariableName> (PTR_LOAD, dbg_info),
+            m_lhs (lhs), m_rhs (rhs)
       {
-        this->m_live.addUse (lhs);
-        this->m_live.addUse (rhs);
+        this->m_live.add_use (lhs);
+        this->m_live.add_use (rhs);
       }
       
       VariableName lhs () const { return m_lhs; }
       
       VariableName rhs () const { return m_rhs; }
       
-      virtual void accept(StatementVisitor <VariableName> *v) 
+      virtual void accept(statement_visitor <VariableName> *v) 
       {
         v->visit(*this);
       }
       
-      virtual boost::shared_ptr<Statement <VariableName> > clone () const
+      virtual boost::shared_ptr<statement <VariableName> > clone () const
       {
-        typedef PtrLoad <Number,VariableName> ptr_load_t;
-        return boost::static_pointer_cast< Statement <VariableName>, ptr_load_t >
+        typedef ptr_load_stmt <Number,VariableName> ptr_load_t;
+        return boost::static_pointer_cast< statement <VariableName>, ptr_load_t >
             (boost::make_shared<ptr_load_t>(m_lhs, m_rhs));
       }
       
@@ -884,7 +883,7 @@ namespace crab {
     }; 
 
     template<class Number, class VariableName>
-    class PtrStore: public Statement<VariableName>
+    class ptr_store_stmt: public statement<VariableName>
     {
       // *p = q
      public:
@@ -898,28 +897,28 @@ namespace crab {
       
      public:
       
-      PtrStore (VariableName lhs, VariableName rhs,
-                DebugInfo debug_info = DebugInfo ()): 
-          Statement <VariableName> (PTR_STORE, debug_info),
-          m_lhs (lhs), m_rhs (rhs)
+      ptr_store_stmt (VariableName lhs, VariableName rhs,
+                debug_info dbg_info = debug_info ())
+          : statement <VariableName> (PTR_STORE, dbg_info),
+            m_lhs (lhs), m_rhs (rhs)
       {
-        this->m_live.addUse (lhs);
-        this->m_live.addUse (rhs);
+        this->m_live.add_use (lhs);
+        this->m_live.add_use (rhs);
       }
       
       VariableName lhs () const { return m_lhs; }
       
       VariableName rhs () const { return m_rhs; }
       
-      virtual void accept(StatementVisitor <VariableName> *v) 
+      virtual void accept(statement_visitor <VariableName> *v) 
       {
         v->visit(*this);
       }
       
-      virtual boost::shared_ptr<Statement <VariableName> > clone () const
+      virtual boost::shared_ptr<statement <VariableName> > clone () const
       {
-        typedef PtrStore <Number,VariableName> ptr_store_t;
-        return boost::static_pointer_cast< Statement <VariableName>, ptr_store_t >
+        typedef ptr_store_stmt <Number,VariableName> ptr_store_t;
+        return boost::static_pointer_cast< statement <VariableName>, ptr_store_t >
             (boost::make_shared<ptr_store_t>(m_lhs, m_rhs));
       }
       
@@ -931,7 +930,7 @@ namespace crab {
     }; 
 
     template< class Number, class VariableName>
-    class PtrAssign: public Statement<VariableName>
+    class ptr_assign_stmt: public statement<VariableName>
     {
       //! p = q + n
      public:
@@ -947,12 +946,12 @@ namespace crab {
       
      public:
       
-      PtrAssign (VariableName lhs, VariableName rhs, linear_expression_t offset): 
-          Statement <VariableName> (PTR_ASSIGN),
-          m_lhs (lhs), m_rhs (rhs), m_offset(offset)
+      ptr_assign_stmt (VariableName lhs, VariableName rhs, linear_expression_t offset)
+          : statement <VariableName> (PTR_ASSIGN),
+            m_lhs (lhs), m_rhs (rhs), m_offset(offset)
       {
-        this->m_live.addDef (lhs);
-        this->m_live.addUse (rhs);
+        this->m_live.add_def (lhs);
+        this->m_live.add_use (rhs);
       }
       
       VariableName lhs () const { return m_lhs; }
@@ -961,15 +960,15 @@ namespace crab {
       
       linear_expression_t offset () const { return m_offset; }
       
-      virtual void accept(StatementVisitor <VariableName> *v) 
+      virtual void accept(statement_visitor <VariableName> *v) 
       {
         v->visit(*this);
       }
       
-      virtual boost::shared_ptr<Statement <VariableName> > clone () const
+      virtual boost::shared_ptr<statement <VariableName> > clone () const
       {
-        typedef PtrAssign <Number, VariableName> ptr_assign_t;
-        return boost::static_pointer_cast< Statement <VariableName>, ptr_assign_t >
+        typedef ptr_assign_stmt <Number, VariableName> ptr_assign_t;
+        return boost::static_pointer_cast< statement <VariableName>, ptr_assign_t >
             (boost::make_shared<ptr_assign_t>(m_lhs, m_rhs, m_offset));
       }
       
@@ -983,7 +982,7 @@ namespace crab {
     }; 
   
     template<class VariableName>
-    class PtrObject: public Statement<VariableName>
+    class ptr_object_stmt: public statement<VariableName>
     {
       //! lhs = &a;
       VariableName m_lhs;
@@ -991,26 +990,26 @@ namespace crab {
       
      public:
       
-      PtrObject (VariableName lhs, index_t address): 
-          Statement <VariableName> (PTR_OBJECT),
-          m_lhs (lhs), m_address (address)
+      ptr_object_stmt (VariableName lhs, index_t address)
+          : statement <VariableName> (PTR_OBJECT),
+            m_lhs (lhs), m_address (address)
       {
-        this->m_live.addDef (lhs);
+        this->m_live.add_def (lhs);
       }
       
       VariableName lhs () const { return m_lhs; }
       
       index_t rhs () const { return m_address; }
       
-      virtual void accept(StatementVisitor <VariableName> *v) 
+      virtual void accept(statement_visitor <VariableName> *v) 
       {
         v->visit(*this);
       }
       
-      virtual boost::shared_ptr<Statement <VariableName> > clone () const
+      virtual boost::shared_ptr<statement <VariableName> > clone () const
       {
-        typedef PtrObject <VariableName> ptr_object_t;
-        return boost::static_pointer_cast< Statement <VariableName>, ptr_object_t>
+        typedef ptr_object_stmt <VariableName> ptr_object_t;
+        return boost::static_pointer_cast< statement <VariableName>, ptr_object_t>
             (boost::make_shared<ptr_object_t>(m_lhs, m_address));
       }
       
@@ -1022,7 +1021,7 @@ namespace crab {
     }; 
 
     template<class VariableName>
-    class PtrFunction: public Statement<VariableName>
+    class ptr_function_stmt: public statement<VariableName>
     {
       // lhs = &func;
       VariableName m_lhs;
@@ -1030,26 +1029,26 @@ namespace crab {
       
      public:
       
-      PtrFunction (VariableName lhs, VariableName func): 
-          Statement <VariableName> (PTR_FUNCTION),
-          m_lhs (lhs), m_func (func)
+      ptr_function_stmt (VariableName lhs, VariableName func)
+          : statement <VariableName> (PTR_FUNCTION),
+            m_lhs (lhs), m_func (func)
       {
-        this->m_live.addDef (lhs);
+        this->m_live.add_def (lhs);
       }
       
       VariableName lhs () const { return m_lhs; }
       
       VariableName rhs () const { return m_func; }
       
-      virtual void accept(StatementVisitor <VariableName> *v) 
+      virtual void accept(statement_visitor <VariableName> *v) 
       {
         v->visit(*this);
       }
       
-      virtual boost::shared_ptr<Statement <VariableName> > clone () const
+      virtual boost::shared_ptr<statement <VariableName> > clone () const
       {
-        typedef PtrFunction <VariableName> ptr_function_t;
-        return boost::static_pointer_cast< Statement <VariableName>, ptr_function_t>
+        typedef ptr_function_stmt <VariableName> ptr_function_t;
+        return boost::static_pointer_cast< statement <VariableName>, ptr_function_t>
             (boost::make_shared<ptr_function_t>(lhs (), rhs ()));
       }
       
@@ -1061,30 +1060,30 @@ namespace crab {
     }; 
 
     template<class VariableName>
-    class PtrNull: public Statement<VariableName>
+    class ptr_null_stmt: public statement<VariableName>
     {
       //! lhs := null;
       VariableName m_lhs;
 
      public:
       
-      PtrNull (VariableName lhs): 
-          Statement <VariableName> (PTR_NULL), m_lhs (lhs) 
+      ptr_null_stmt (VariableName lhs)
+          : statement <VariableName> (PTR_NULL), m_lhs (lhs) 
       {
-        this->m_live.addDef (m_lhs);
+        this->m_live.add_def (m_lhs);
       }
       
       VariableName lhs () const { return m_lhs; }
       
-      virtual void accept(StatementVisitor <VariableName> *v) 
+      virtual void accept(statement_visitor <VariableName> *v) 
       {
         v->visit(*this);
       }
       
-      virtual boost::shared_ptr<Statement <VariableName> > clone () const
+      virtual boost::shared_ptr<statement <VariableName> > clone () const
       {
-        typedef PtrNull <VariableName> ptr_null_t;
-        return boost::static_pointer_cast< Statement <VariableName>, ptr_null_t>
+        typedef ptr_null_stmt <VariableName> ptr_null_t;
+        return boost::static_pointer_cast< statement <VariableName>, ptr_null_t>
             (boost::make_shared<ptr_null_t>(m_lhs));
       }
       
@@ -1096,7 +1095,7 @@ namespace crab {
     }; 
 
     template<class VariableName>
-    class PtrAssume: public Statement<VariableName>
+    class ptr_assume_stmt: public statement<VariableName>
     {
      public:
 
@@ -1108,31 +1107,31 @@ namespace crab {
       
      public:
       
-      PtrAssume (ptr_cst_t cst): 
-          Statement <VariableName> (PTR_ASSUME),
-          m_cst (cst) 
+      ptr_assume_stmt (ptr_cst_t cst)
+          : statement <VariableName> (PTR_ASSUME),
+            m_cst (cst) 
       {
         if (!cst.is_tautology () && !cst.is_contradiction ()) {
           if (cst.is_unary ()) {
-            this->m_live.addUse (cst.lhs ());
+            this->m_live.add_use (cst.lhs ());
           } else {
-            this->m_live.addUse (cst.lhs ());
-            this->m_live.addUse (cst.rhs ());
+            this->m_live.add_use (cst.lhs ());
+            this->m_live.add_use (cst.rhs ());
           }
         }
       }
       
       ptr_cst_t constraint () const { return m_cst; }
       
-      virtual void accept(StatementVisitor <VariableName> *v) 
+      virtual void accept(statement_visitor <VariableName> *v) 
       {
         v->visit(*this);
       }
       
-      virtual boost::shared_ptr<Statement <VariableName> > clone () const
+      virtual boost::shared_ptr<statement <VariableName> > clone () const
       {
-        typedef PtrAssume <VariableName> ptr_assume_t;
-        return boost::static_pointer_cast< Statement <VariableName>, ptr_assume_t>
+        typedef ptr_assume_stmt <VariableName> ptr_assume_t;
+        return boost::static_pointer_cast< statement <VariableName>, ptr_assume_t>
             (boost::make_shared<ptr_assume_t>(m_cst));
       }
       
@@ -1144,7 +1143,7 @@ namespace crab {
     }; 
 
     template<class VariableName>
-    class PtrAssert: public Statement<VariableName>
+    class ptr_assert_stmt: public statement<VariableName>
     {
      public:
 
@@ -1156,31 +1155,31 @@ namespace crab {
       
      public:
       
-      PtrAssert (ptr_cst_t cst, DebugInfo dbg_info = DebugInfo ()): 
-          Statement <VariableName> (PTR_ASSERT, dbg_info),
-          m_cst (cst) 
+      ptr_assert_stmt (ptr_cst_t cst, debug_info dbg_info = debug_info ())
+          : statement <VariableName> (PTR_ASSERT, dbg_info),
+            m_cst (cst) 
       {
         if (!cst.is_tautology () && !cst.is_contradiction ()) {
           if (cst.is_unary ()) {
-            this->m_live.addUse (cst.lhs ());
+            this->m_live.add_use (cst.lhs ());
           } else {
-            this->m_live.addUse (cst.lhs ());
-            this->m_live.addUse (cst.rhs ());
+            this->m_live.add_use (cst.lhs ());
+            this->m_live.add_use (cst.rhs ());
           }
         }
       }
       
       ptr_cst_t constraint () const { return m_cst; }
       
-      virtual void accept(StatementVisitor <VariableName> *v) 
+      virtual void accept(statement_visitor <VariableName> *v) 
       {
         v->visit(*this);
       }
       
-      virtual boost::shared_ptr<Statement <VariableName> > clone () const
+      virtual boost::shared_ptr<statement <VariableName> > clone () const
       {
-        typedef PtrAssert <VariableName> ptr_assert_t;
-        return boost::static_pointer_cast< Statement <VariableName>, ptr_assert_t>
+        typedef ptr_assert_stmt <VariableName> ptr_assert_t;
+        return boost::static_pointer_cast< statement <VariableName>, ptr_assert_t>
             (boost::make_shared<ptr_assert_t>(m_cst));
       }
       
@@ -1197,59 +1196,59 @@ namespace crab {
     */
   
     template< class VariableName>
-    class FCallSite: public Statement<VariableName>
+    class callsite_stmt: public statement<VariableName>
     {
       
-      boost::optional<pair<VariableName,VariableType> > m_lhs;
+      boost::optional<pair<VariableName,variable_type> > m_lhs;
       VariableName m_func_name;
-      vector<pair<VariableName,VariableType> > m_args;
+      vector<pair<VariableName,variable_type> > m_args;
       
-      typedef typename vector<pair<VariableName,VariableType> >::iterator arg_iterator;
-      typedef typename vector<pair<VariableName,VariableType> >::const_iterator const_arg_iterator;
+      typedef typename vector<pair<VariableName,variable_type> >::iterator arg_iterator;
+      typedef typename vector<pair<VariableName,variable_type> >::const_iterator const_arg_iterator;
       
      public:
       
-      FCallSite (VariableName func_name, 
-                 vector<pair<VariableName,VariableType> > args): 
-          m_func_name (func_name)
+      callsite_stmt (VariableName func_name, 
+                     vector<pair<VariableName,variable_type> > args)
+          : m_func_name (func_name)
       {
         std::copy (args.begin (), args.end (), std::back_inserter (m_args));
-        for (auto arg:  m_args) { this->m_live.addUse (arg.first); }
+        for (auto arg:  m_args) { this->m_live.add_use (arg.first); }
       }
       
-      FCallSite (VariableName func_name, vector<VariableName> args): 
-          Statement <VariableName> (CALLSITE),
-          m_func_name (func_name)
+      callsite_stmt (VariableName func_name, vector<VariableName> args)
+          : statement <VariableName> (CALLSITE),
+            m_func_name (func_name)
       {
         for (auto v : args)
         {
           m_args.push_back (make_pair (v, UNK_TYPE));
-          this->m_live.addUse (v);
+          this->m_live.add_use (v);
         }
       }
       
-      FCallSite (pair<VariableName,VariableType> lhs, 
-                 VariableName func_name, 
-                 vector<pair<VariableName,VariableType> > args): 
-          m_lhs (boost::optional<pair<VariableName,VariableType> > (lhs)), 
-          m_func_name (func_name)
+      callsite_stmt (pair<VariableName,variable_type> lhs, 
+                     VariableName func_name, 
+                     vector<pair<VariableName,variable_type> > args)
+          : m_lhs (boost::optional<pair<VariableName,variable_type> > (lhs)), 
+            m_func_name (func_name)
       {
         std::copy (args.begin (), args.end (), std::back_inserter(m_args));
-        for (auto arg:  m_args) { this->m_live.addUse (arg.first); }
-        this->m_live.addDef ((*m_lhs).first);
+        for (auto arg:  m_args) { this->m_live.add_use (arg.first); }
+        this->m_live.add_def ((*m_lhs).first);
       }
       
-      FCallSite (VariableName lhs, 
-                 VariableName func_name, vector<VariableName> args): 
-          m_lhs (boost::optional<pair<VariableName,VariableType> > (lhs, UNK_TYPE)), 
-          m_func_name (func_name)
+      callsite_stmt (VariableName lhs, 
+                VariableName func_name, vector<VariableName> args)
+          : m_lhs (boost::optional<pair<VariableName,variable_type> > (lhs, UNK_TYPE)), 
+            m_func_name (func_name)
       {
         for (auto v : args)
         {
           m_args.push_back (make_pair (v, UNK_TYPE));
-          this->m_live.addUse (v);
+          this->m_live.add_use (v);
         }
-        this->m_live.addDef ((*m_lhs).first);
+        this->m_live.add_def ((*m_lhs).first);
       }
             
       boost::optional<VariableName> get_lhs_name () const { 
@@ -1259,7 +1258,7 @@ namespace crab {
         return boost::optional<VariableName> ();
       }
       
-      VariableType get_lhs_type () const {       
+      variable_type get_lhs_type () const {       
         if (m_lhs) return (*m_lhs).second;
         else return UNK_TYPE;
       }
@@ -1277,27 +1276,27 @@ namespace crab {
         return m_args[idx].first;
       }
       
-      VariableType get_arg_type (unsigned idx) const { 
+      variable_type get_arg_type (unsigned idx) const { 
         if (idx >= m_args.size ())
         CRAB_ERROR ("Out-of-bound access to call site parameter");
         
         return m_args[idx].second;
       }
       
-      virtual void accept(StatementVisitor <VariableName> *v) {
+      virtual void accept(statement_visitor <VariableName> *v) {
         v->visit(*this);
       }
       
-      virtual boost::shared_ptr<Statement <VariableName> > clone () const
+      virtual boost::shared_ptr<statement <VariableName> > clone () const
       {
-        typedef FCallSite <VariableName> call_site_t;
+        typedef callsite_stmt <VariableName> call_site_t;
         if (m_lhs) {
-          return boost::static_pointer_cast< Statement <VariableName>, 
+          return boost::static_pointer_cast< statement <VariableName>, 
                                              call_site_t>
               (boost::make_shared<call_site_t> (*m_lhs, m_func_name, m_args));
         }
         else {
-          return boost::static_pointer_cast< Statement <VariableName>, 
+          return boost::static_pointer_cast< statement <VariableName>, 
                                              call_site_t>
               (boost::make_shared<call_site_t>(m_func_name, m_args));
         }
@@ -1324,38 +1323,38 @@ namespace crab {
     }; 
   
     template< class VariableName>
-    class Return: public Statement<VariableName>
+    class return_stmt: public statement<VariableName>
     {
       
       VariableName m_var;
-      VariableType m_type;
+      variable_type m_type;
       
      public:
       
-      Return (VariableName var, VariableType type = UNK_TYPE): 
-          Statement <VariableName> (RETURN),
-          m_var (var), m_type (type)
+      return_stmt (VariableName var, variable_type type = UNK_TYPE)
+          : statement <VariableName> (RETURN),
+            m_var (var), m_type (type)
       {
-        this->m_live.addUse (m_var); 
+        this->m_live.add_use (m_var); 
       }
       
       VariableName get_ret_var () const { 
         return m_var;
       }
       
-      VariableType get_ret_type () const { 
+      variable_type get_ret_type () const { 
         return m_type;
       }
       
-      virtual void accept(StatementVisitor <VariableName> *v) 
+      virtual void accept(statement_visitor <VariableName> *v) 
       {
         v->visit(*this);
       }
 
-      virtual boost::shared_ptr<Statement <VariableName> > clone () const
+      virtual boost::shared_ptr<statement <VariableName> > clone () const
       {
-        typedef Return <VariableName> return_t;
-        return boost::static_pointer_cast< Statement <VariableName>, return_t>
+        typedef return_stmt <VariableName> return_t;
+        return boost::static_pointer_cast< statement <VariableName>, return_t>
             (boost::make_shared<return_t>(m_var, m_type));
       }
       
@@ -1370,7 +1369,7 @@ namespace crab {
     class Cfg;
   
     template< class BasicBlockLabel, class VariableName >
-    class BasicBlock: public boost::noncopyable
+    class basic_block: public boost::noncopyable
     {
       
       // TODO: support for removing statements 
@@ -1385,8 +1384,8 @@ namespace crab {
       typedef variable< z_number, VariableName > z_variable_t;
       typedef linear_expression< z_number, VariableName > z_lin_exp_t;
       typedef linear_constraint< z_number, VariableName > z_lin_cst_t;
-      typedef Statement< VariableName> statement_t;
-      typedef BasicBlock< BasicBlockLabel, VariableName > basic_block_t;
+      typedef statement< VariableName> statement_t;
+      typedef basic_block< BasicBlockLabel, VariableName > basic_block_t;
       typedef interval <z_number> z_interval;
       
      private:
@@ -1410,30 +1409,30 @@ namespace crab {
      public:
 
       // Basic statements
-      typedef BinaryOp<z_number,VariableName> z_bin_op_t;
-      typedef Assignment<z_number,VariableName> z_assign_t;
-      typedef Assume<z_number,VariableName> z_assume_t;
-      typedef Havoc<VariableName> havoc_t;
-      typedef Unreachable<VariableName> unreach_t;
-      typedef Select<z_number,VariableName> z_select_t;
-      typedef Assert<z_number,VariableName> z_assert_t;
+      typedef binary_op<z_number,VariableName> z_bin_op_t;
+      typedef assignment<z_number,VariableName> z_assign_t;
+      typedef assume_stmt<z_number,VariableName> z_assume_t;
+      typedef havoc_stmt<VariableName> havoc_t;
+      typedef unreachable_stmt<VariableName> unreach_t;
+      typedef select_stmt<z_number,VariableName> z_select_t;
+      typedef assert_stmt<z_number,VariableName> z_assert_t;
       // Functions
-      typedef FCallSite<VariableName> callsite_t;
-      typedef Return<VariableName> return_t;
+      typedef callsite_stmt<VariableName> callsite_t;
+      typedef return_stmt<VariableName> return_t;
       // Arrays
-      typedef ArrayInit<VariableName> z_arr_init_t;
-      typedef AssumeArray<z_number,VariableName> z_assume_arr_t;
-      typedef ArrayStore<z_number,VariableName> z_arr_store_t;
-      typedef ArrayLoad<z_number,VariableName> z_arr_load_t;
+      typedef array_init_stmt<VariableName> z_arr_init_t;
+      typedef assume_array_stmt<z_number,VariableName> z_assume_arr_t;
+      typedef array_store_stmt<z_number,VariableName> z_arr_store_t;
+      typedef array_load_stmt<z_number,VariableName> z_arr_load_t;
       // Pointers
-      typedef PtrStore<z_number,VariableName> ptr_store_t;
-      typedef PtrLoad<z_number,VariableName> ptr_load_t;
-      typedef PtrAssign<z_number,VariableName> ptr_assign_t;
-      typedef PtrObject<VariableName> ptr_object_t;
-      typedef PtrFunction<VariableName> ptr_function_t;
-      typedef PtrNull<VariableName> ptr_null_t;
-      typedef PtrAssume<VariableName> ptr_assume_t;
-      typedef PtrAssert<VariableName> ptr_assert_t;
+      typedef ptr_store_stmt<z_number,VariableName> ptr_store_t;
+      typedef ptr_load_stmt<z_number,VariableName> ptr_load_t;
+      typedef ptr_assign_stmt<z_number,VariableName> ptr_assign_t;
+      typedef ptr_object_stmt<VariableName> ptr_object_t;
+      typedef ptr_function_stmt<VariableName> ptr_function_t;
+      typedef ptr_null_stmt<VariableName> ptr_null_t;
+      typedef ptr_assume_stmt<VariableName> ptr_assume_t;
+      typedef ptr_assert_stmt<VariableName> ptr_assert_t;
 
      private:
 
@@ -1463,7 +1462,7 @@ namespace crab {
       BasicBlockLabel m_bb_id;
       stmt_list_t m_stmts;
       bb_id_set_t m_prev, m_next;
-      TrackedPrecision m_track_prec;    
+      tracked_precision m_track_prec;    
       // Ideally it should be size_t to indicate any position within the
       // block. For now, we only allow to insert either at front or at
       // the back (default). Note that if insertions at the front are
@@ -1474,26 +1473,26 @@ namespace crab {
       // set of used/def variables 
       live_domain_t m_live; 
       
-      void InsertAdjacent (bb_id_set_t &c, BasicBlockLabel e)
+      void insert_adjacent (bb_id_set_t &c, BasicBlockLabel e)
       { 
         if (std::find(c.begin (), c.end (), e) == c.end ())
           c.push_back (e);
       }
       
-      void RemoveAdjacent (bb_id_set_t &c, BasicBlockLabel e)
+      void remove_adjacent (bb_id_set_t &c, BasicBlockLabel e)
       {
         if (std::find(c.begin (), c.end (), e) != c.end ())
           c.erase (std::remove(c.begin (), c.end (), e), c.end ());
       }
       
-      BasicBlock (BasicBlockLabel bb_id, TrackedPrecision track_prec): 
+      basic_block (BasicBlockLabel bb_id, tracked_precision track_prec): 
           m_bb_id (bb_id), m_track_prec (track_prec), 
           m_insert_point_at_front (false), 
           m_live (live_domain_t::bottom ())
       { }
       
       static boost::shared_ptr< basic_block_t > 
-      Create (BasicBlockLabel bb_id, TrackedPrecision track_prec) 
+      create (BasicBlockLabel bb_id, tracked_precision track_prec) 
       {
         return boost::shared_ptr<basic_block_t>(new basic_block_t(bb_id, track_prec));
       }
@@ -1508,7 +1507,7 @@ namespace crab {
         else
           m_stmts.push_back(stmt);
 
-        auto ls = stmt->getLive ();
+        auto ls = stmt->get_live ();
         for (auto &v : boost::make_iterator_range (ls.uses_begin (), ls.uses_end ()))
           m_live += v;
         for (auto &v : boost::make_iterator_range (ls.defs_begin (), ls.defs_end ()))
@@ -1610,15 +1609,15 @@ namespace crab {
       // Add a cfg edge from *this to b
       void operator>>(basic_block_t& b) 
       {
-        InsertAdjacent (m_next, b.m_bb_id);
-        InsertAdjacent (b.m_prev, m_bb_id);
+        insert_adjacent (m_next, b.m_bb_id);
+        insert_adjacent (b.m_prev, m_bb_id);
       }
       
       // Remove a cfg edge from *this to b
       void operator-=(basic_block_t &b)
       {
-        RemoveAdjacent (m_next, b.m_bb_id);
-        RemoveAdjacent (b.m_prev, m_bb_id);       
+        remove_adjacent (m_next, b.m_bb_id);
+        remove_adjacent (b.m_prev, m_bb_id);       
       }
       
       // insert all statements of other at the front
@@ -2011,14 +2010,14 @@ namespace crab {
                 (boost::make_shared<z_assert_t> (cst)));
       }
 
-      void assertion (z_lin_cst_t cst, DebugInfo di) 
+      void assertion (z_lin_cst_t cst, debug_info di) 
       {
         insert (boost::static_pointer_cast< statement_t, z_assert_t >
                 (boost::make_shared<z_assert_t> (cst, di)));
       }
       
       void callsite (VariableName func, 
-                     vector<pair <VariableName,VariableType> > args) 
+                     vector<pair <VariableName,variable_type> > args) 
       {
         insert(boost::static_pointer_cast< statement_t, callsite_t >
                (boost::make_shared<callsite_t>(func, args)));
@@ -2030,9 +2029,9 @@ namespace crab {
                (boost::make_shared<callsite_t>(func, args)));
       }
       
-      void callsite (pair<VariableName,VariableType> lhs, 
+      void callsite (pair<VariableName,variable_type> lhs, 
                      VariableName func, 
-                     vector<pair <VariableName,VariableType> > args) 
+                     vector<pair <VariableName,variable_type> > args) 
       {
         insert(boost::static_pointer_cast< statement_t, callsite_t >
                (boost::make_shared<callsite_t>(lhs, func, args)));
@@ -2044,7 +2043,7 @@ namespace crab {
                (boost::make_shared<callsite_t>(lhs, func, args)));
       }
       
-      void ret (VariableName var, VariableType ty) 
+      void ret (VariableName var, variable_type ty) 
       {
         insert(boost::static_pointer_cast< statement_t, return_t >
                (boost::make_shared<return_t>(var, ty)));
@@ -2145,7 +2144,7 @@ namespace crab {
                  (boost::make_shared<ptr_assert_t> (cst)));
       }
 
-      void ptr_assertion (pointer_constraint<VariableName> cst, DebugInfo di) 
+      void ptr_assertion (pointer_constraint<VariableName> cst, debug_info di) 
       {
         if (m_track_prec >= PTR)
           insert(boost::static_pointer_cast< statement_t, ptr_assert_t >
@@ -2164,12 +2163,12 @@ namespace crab {
     // Viewing a BasicBlock with all statements reversed. Useful for
     // backward analysis.
     template<class BasicBlock> 
-    class BasicBlock_Rev {
+    class basic_block_rev {
      public:
       typedef typename BasicBlock::varname_t varname_t;
       typedef typename BasicBlock::basic_block_label_t basic_block_label_t;
 
-      typedef BasicBlock_Rev<BasicBlock> basic_block_rev_t;
+      typedef basic_block_rev<BasicBlock> basic_block_rev_t;
 
       typedef typename BasicBlock::succ_iterator succ_iterator;
       typedef typename BasicBlock::const_succ_iterator const_succ_iterator;
@@ -2186,7 +2185,7 @@ namespace crab {
 
      public:
 
-      BasicBlock_Rev(BasicBlock& bb): _bb(bb) {}
+      basic_block_rev(BasicBlock& bb): _bb(bb) {}
 
       basic_block_label_t label () const { return _bb.label(); }
 
@@ -2238,33 +2237,33 @@ namespace crab {
     };
   
     template< class VariableName>
-    struct StatementVisitor
+    struct statement_visitor
     {
       typedef linear_expression< z_number, VariableName > z_lin_exp_t;
-      typedef BinaryOp <z_number,VariableName> z_bin_op_t;
-      typedef Assignment <z_number,VariableName> z_assign_t;
-      typedef Assume <z_number,VariableName> z_assume_t;
-      typedef Havoc<VariableName> havoc_t;
-      typedef Unreachable<VariableName> unreach_t;
-      typedef Select<z_number,VariableName> z_select_t;
-      typedef Assert <z_number,VariableName> z_assert_t;
+      typedef binary_op <z_number,VariableName> z_bin_op_t;
+      typedef assignment <z_number,VariableName> z_assign_t;
+      typedef assume_stmt <z_number,VariableName> z_assume_t;
+      typedef havoc_stmt<VariableName> havoc_t;
+      typedef unreachable_stmt<VariableName> unreach_t;
+      typedef select_stmt<z_number,VariableName> z_select_t;
+      typedef assert_stmt <z_number,VariableName> z_assert_t;
       
-      typedef FCallSite<VariableName> callsite_t;
-      typedef Return<VariableName> return_t;
+      typedef callsite_stmt<VariableName> callsite_t;
+      typedef return_stmt<VariableName> return_t;
       
-      typedef ArrayInit<VariableName> z_arr_init_t;
-      typedef AssumeArray<z_number,VariableName> z_assume_arr_t;
-      typedef ArrayStore<z_number,VariableName> z_arr_store_t;
-      typedef ArrayLoad<z_number,VariableName> z_arr_load_t;
+      typedef array_init_stmt<VariableName> z_arr_init_t;
+      typedef assume_array_stmt<z_number,VariableName> z_assume_arr_t;
+      typedef array_store_stmt<z_number,VariableName> z_arr_store_t;
+      typedef array_load_stmt<z_number,VariableName> z_arr_load_t;
       
-      typedef PtrStore<z_number,VariableName> ptr_store_t;
-      typedef PtrLoad<z_number,VariableName> ptr_load_t;
-      typedef PtrAssign<z_number,VariableName> ptr_assign_t;
-      typedef PtrObject<VariableName> ptr_object_t;
-      typedef PtrFunction<VariableName> ptr_function_t;
-      typedef PtrNull<VariableName> ptr_null_t;
-      typedef PtrAssume<VariableName> ptr_assume_t;
-      typedef PtrAssert<VariableName> ptr_assert_t;
+      typedef ptr_store_stmt<z_number,VariableName> ptr_store_t;
+      typedef ptr_load_stmt<z_number,VariableName> ptr_load_t;
+      typedef ptr_assign_stmt<z_number,VariableName> ptr_assign_t;
+      typedef ptr_object_stmt<VariableName> ptr_object_t;
+      typedef ptr_function_stmt<VariableName> ptr_function_t;
+      typedef ptr_null_stmt<VariableName> ptr_null_t;
+      typedef ptr_assume_stmt<VariableName> ptr_assume_t;
+      typedef ptr_assert_stmt<VariableName> ptr_assert_t;
       
       // Only implementation for basic statements is required
       
@@ -2291,38 +2290,38 @@ namespace crab {
       virtual void visit (ptr_assume_t&) { };
       virtual void visit (ptr_assert_t&) { };
       
-      virtual ~StatementVisitor () { }
+      virtual ~statement_visitor () { }
     }; 
     
     template< class VariableName>
-    class FunctionDecl
+    class function_decl
     {
       
-      VariableType m_lhs_type;
+      variable_type m_lhs_type;
       VariableName m_func_name;
-      vector<pair<VariableName,VariableType> > m_params;
+      vector<pair<VariableName,variable_type> > m_params;
       
-      typedef typename vector<pair<VariableName,VariableType> >::iterator param_iterator;
-      typedef typename vector<pair<VariableName,VariableType> >::const_iterator const_param_iterator;
+      typedef typename vector<pair<VariableName,variable_type> >::iterator param_iterator;
+      typedef typename vector<pair<VariableName,variable_type> >::const_iterator const_param_iterator;
       
      public:
       
-      FunctionDecl (VariableName func_name, vector<VariableName> params): 
-          m_lhs_type (UNK_TYPE), m_func_name (func_name)
+      function_decl (VariableName func_name, vector<VariableName> params)
+          : m_lhs_type (UNK_TYPE), m_func_name (func_name)
       {
         for (auto v : params)
           m_params.push_back (make_pair (v, UNK_TYPE));
       }
       
-      FunctionDecl (VariableType lhs_type, VariableName func_name, 
-                    vector<pair<VariableName,VariableType> > params): 
-          m_lhs_type (lhs_type), m_func_name (func_name)
+      function_decl (variable_type lhs_type, VariableName func_name, 
+                     vector<pair<VariableName,variable_type> > params)
+          : m_lhs_type (lhs_type), m_func_name (func_name)
       {
         std::copy (params.begin (), params.end (), 
                    std::back_inserter (m_params));
       }
       
-      VariableType get_lhs_type () const { return m_lhs_type; }
+      variable_type get_lhs_type () const { return m_lhs_type; }
       
       VariableName get_func_name () const { return m_func_name;  }
       
@@ -2335,7 +2334,7 @@ namespace crab {
         return m_params[idx].first;
       }
       
-      VariableType get_param_type (unsigned idx) const { 
+      variable_type get_param_type (unsigned idx) const { 
         if (idx >= m_params.size ())
           CRAB_ERROR ("Out-of-bound access to function parameter");
         
@@ -2357,7 +2356,7 @@ namespace crab {
         return;
       }
       
-      friend crab_os& operator<<(crab_os& o, const FunctionDecl<VariableName> &decl)
+      friend crab_os& operator<<(crab_os& o, const function_decl<VariableName> &decl)
       { 
         decl.write (o);
         return o;
@@ -2365,8 +2364,8 @@ namespace crab {
     }; 
 
     // forward declarations
-    template<class Any> class Cfg_Rev;
-    template<class Any> class Cfg_Ref;
+    template<class Any> class cfg_rev;
+    template<class Any> class cfg_ref;
      
     template< class BasicBlockLabel, class VariableName >
     class Cfg: public boost::noncopyable {
@@ -2375,10 +2374,10 @@ namespace crab {
       typedef BasicBlockLabel basic_block_label_t;
       typedef basic_block_label_t node_t; // for Bgl graphs
       typedef VariableName varname_t;
-      typedef FunctionDecl<varname_t> fdecl_t;
-      typedef BasicBlock< BasicBlockLabel, VariableName > basic_block_t;   
-      typedef Statement < VariableName > statement_t;
-      typedef crab::iterators::Thresholds<z_number> thresholds_t;
+      typedef function_decl<varname_t> fdecl_t;
+      typedef basic_block<BasicBlockLabel, VariableName > basic_block_t;   
+      typedef statement<VariableName > statement_t;
+      typedef crab::iterators::thresholds<z_number> thresholds_t;
 
       typedef typename basic_block_t::succ_iterator succ_iterator;
       typedef typename basic_block_t::pred_iterator pred_iterator;
@@ -2392,15 +2391,15 @@ namespace crab {
       
      private:
       
-      typedef Cfg < BasicBlockLabel, VariableName > cfg_t;
+      typedef Cfg<BasicBlockLabel, VariableName > cfg_t;
       typedef boost::shared_ptr< basic_block_t > basic_block_ptr;
       typedef boost::unordered_map< BasicBlockLabel, basic_block_ptr > basic_block_map_t;
       typedef typename basic_block_map_t::value_type binding_t;
       typedef typename basic_block_t::live_domain_t live_domain_t;
 
-      struct getRef : public std::unary_function<binding_t, basic_block_t>
+      struct get_ref : public std::unary_function<binding_t, basic_block_t>
       {
-        getRef () { }
+        get_ref () { }
         basic_block_t& operator () (const binding_t &p) const { return *(p.second); }
       }; 
       
@@ -2412,9 +2411,9 @@ namespace crab {
       
      public:
       
-      typedef boost::transform_iterator< getRef, 
+      typedef boost::transform_iterator< get_ref, 
                                          typename basic_block_map_t::iterator > iterator;
-      typedef boost::transform_iterator< getRef, 
+      typedef boost::transform_iterator< get_ref, 
                                          typename basic_block_map_t::const_iterator > const_iterator;
       typedef boost::transform_iterator< getLabel, 
                                          typename basic_block_map_t::iterator > label_iterator;
@@ -2430,7 +2429,7 @@ namespace crab {
       BasicBlockLabel m_exit;
       bool m_has_exit;
       basic_block_map_t m_blocks;
-      TrackedPrecision m_track_prec;
+      tracked_precision m_track_prec;
       //! we allow to define a cfg without being associated with a
       //! function
       boost::optional<fdecl_t> m_func_decl; 
@@ -2456,72 +2455,69 @@ namespace crab {
         dfs_rec (m_entry, visited, f);
       }
       
-      struct PrintBlock 
+      struct print_block 
       {
         crab_os &m_o;
-        PrintBlock (crab_os& o) : m_o (o) { }
+        print_block (crab_os& o) : m_o (o) { }
         void operator () (const basic_block_t& B){ B.write (m_o); }
       };
       
       
      public:
       
-      // --- needed by crab::cg::CallGraph<CFG>::CgNode
+      // --- needed by crab::cg::call_graph<CFG>::cg_node
       Cfg () { }
       
-      Cfg (BasicBlockLabel entry, 
-           TrackedPrecision track_prec = INT)
+      Cfg (BasicBlockLabel entry, tracked_precision track_prec = INT)
           : m_entry  (entry),  
             m_has_exit (false),
             m_track_prec (track_prec) {
         m_blocks.insert (binding_t (m_entry, 
-                                     basic_block_t::Create (m_entry, m_track_prec)));
+                                    basic_block_t::create (m_entry, m_track_prec)));
       }
       
-      Cfg (BasicBlockLabel entry, 
-           BasicBlockLabel exit, 
-           TrackedPrecision track_prec = INT)
+      Cfg (BasicBlockLabel entry, BasicBlockLabel exit, 
+           tracked_precision track_prec = INT)
           : m_entry  (entry), 
             m_exit   (exit), 
             m_has_exit (true),
             m_track_prec (track_prec) {
         m_blocks.insert (binding_t (m_entry, 
-                                    basic_block_t::Create (m_entry, m_track_prec)));
+                                    basic_block_t::create (m_entry, m_track_prec)));
       }
       
-      Cfg (BasicBlockLabel entry, 
-           BasicBlockLabel exit, 
+      Cfg (BasicBlockLabel entry, BasicBlockLabel exit, 
            fdecl_t func_decl, 
-           TrackedPrecision track_prec = INT)
+           tracked_precision track_prec = INT)
           : m_entry (entry), 
             m_exit (exit), 
             m_has_exit (true),
             m_track_prec (track_prec),
             m_func_decl (boost::optional<fdecl_t> (func_decl)) {
         m_blocks.insert (binding_t (m_entry, 
-                                    basic_block_t::Create (m_entry, m_track_prec)));
+                                    basic_block_t::create (m_entry, m_track_prec)));
       }
       
       boost::shared_ptr<cfg_t> clone () const
       {
-        boost::shared_ptr<cfg_t> cfg (new cfg_t (m_entry, m_track_prec));
-        cfg->m_has_exit = m_has_exit ;
-        if (cfg->m_has_exit)
-          cfg->m_exit = m_exit ;
-        cfg->m_func_decl = m_func_decl;
+        boost::shared_ptr<cfg_t> _cfg (new cfg_t (m_entry, m_track_prec));
+        _cfg->m_has_exit = m_has_exit ;
+        if (_cfg->m_has_exit)
+          _cfg->m_exit = m_exit ;
+        _cfg->m_func_decl = m_func_decl;
         for (auto const &BB: boost::make_iterator_range (begin (), end ()))
         {
           boost::shared_ptr <basic_block_t> copyBB = BB.clone ();
-          cfg->m_blocks.insert (binding_t (copyBB->label (), copyBB));
+          _cfg->m_blocks.insert (binding_t (copyBB->label (), copyBB));
         }
-        return cfg;
+        return _cfg;
       }
       
       boost::optional<fdecl_t> get_func_decl () const { 
         return m_func_decl; 
       }
       
-      TrackedPrecision get_track_prec () const {
+      tracked_precision get_track_prec () const {
         return m_track_prec;
       }
       
@@ -2531,17 +2527,17 @@ namespace crab {
       BasicBlockLabel exit()  const { 
         if (has_exit ()) return m_exit; 
         
-        CRAB_ERROR ("Cfg does not have an exit block");
+        CRAB_ERROR ("cfg does not have an exit block");
       } 
       
-      //! set method to mark the exit block after the Cfg has been
+      //! set method to mark the exit block after the cfg has been
       //! created.
       void set_exit (BasicBlockLabel exit) { 
         m_exit = exit; 
         m_has_exit = true;
       }
       
-      //! set method to add the function declaration after the Cfg has
+      //! set method to add the function declaration after the cfg has
       //! been created.
       void set_func_decl (fdecl_t decl) { 
         m_func_decl  = boost::optional<fdecl_t> (decl);
@@ -2600,7 +2596,7 @@ namespace crab {
         auto it = m_blocks.find (bb_id);
         if (it != m_blocks.end ()) return *(it->second);
         
-        basic_block_ptr block = basic_block_t::Create (bb_id, m_track_prec);
+        basic_block_ptr block = basic_block_t::create (bb_id, m_track_prec);
         m_blocks.insert (binding_t (bb_id, block));
         return *block;
       }
@@ -2635,9 +2631,9 @@ namespace crab {
         m_blocks.erase (bb_id);
       }
       
-      // Return all variables (either used or defined) in the Cfg.
+      // Return all variables (either used or defined) in the cfg.
       //
-      // This operation is linear on the size of the Cfg to still keep
+      // This operation is linear on the size of the cfg to still keep
       // a valid set in case a block is removed.
       std::vector<varname_t> get_vars () const {
         live_domain_t ls = live_domain_t::bottom ();
@@ -2653,23 +2649,23 @@ namespace crab {
       //! return a begin iterator of BasicBlock's
       iterator begin() 
       {
-        return boost::make_transform_iterator (m_blocks.begin (), getRef ());
+        return boost::make_transform_iterator (m_blocks.begin (), get_ref ());
       }
       
       //! return an end iterator of BasicBlock's
       iterator end() 
       {
-        return boost::make_transform_iterator (m_blocks.end (), getRef ());
+        return boost::make_transform_iterator (m_blocks.end (), get_ref ());
       }
       
       const_iterator begin() const
       {
-        return boost::make_transform_iterator (m_blocks.begin (), getRef ());
+        return boost::make_transform_iterator (m_blocks.begin (), get_ref ());
       }
       
       const_iterator end() const
       {
-        return boost::make_transform_iterator (m_blocks.end (), getRef ());
+        return boost::make_transform_iterator (m_blocks.end (), get_ref ());
       }
       
       //! return a begin iterator of BasicBlockLabel's
@@ -2704,11 +2700,11 @@ namespace crab {
           for (auto const&i : boost::make_iterator_range (b.begin (), b.end ())) {
 
             bound_t t = bound_t::plus_infinity ();
-            if (i.isAssume ()) {
+            if (i.is_assume ()) {
               auto assume_inst = static_cast<const typename basic_block_t::z_assume_t*> (&i);
               t = -(assume_inst->constraint ().expression ().constant ());
             }
-            else if (i.isSelect ()) {
+            else if (i.is_select ()) {
               auto select_inst = static_cast<const typename basic_block_t::z_select_t*> (&i);
               t = -(select_inst->cond ().expression ().constant ());
             }
@@ -2732,7 +2728,7 @@ namespace crab {
       // void reverse()
       // {
       //   if (!m_has_exit)
-      //     CRAB_ERROR ("Cfg cannot be reversed: no exit block found");
+      //     CRAB_ERROR ("cfg cannot be reversed: no exit block found");
         
       //   std::swap (m_entry, m_exit);
       //   for (auto &p: *this) 
@@ -2741,7 +2737,7 @@ namespace crab {
       
       void write (crab_os& o) const
       {
-        PrintBlock f (o);
+        print_block f (o);
         if (m_func_decl)
           o << *m_func_decl << "\n";
         dfs (f);
@@ -2757,35 +2753,35 @@ namespace crab {
       
       void simplify ()
       {
-        mergeBlocks ();        
-        removeUnreachableBlocks ();
-        removeUselessBlocks ();
+        merge_blocks ();        
+        remove_unreachable_blocks ();
+        remove_useless_blocks ();
         //after removing useless blocks there can be opportunities to
         //merge more blocks.
-        mergeBlocks ();
-        mergeBlocks ();
+        merge_blocks ();
+        merge_blocks ();
       }
       
      private:
       
       ////
-      // Cfg simplifications
+      // cfg simplifications
       ////
       
       //XXX: this is a bit adhoc. It should be probably a parameter of
       // simplify().
-      struct DoNotSimplifyVisitor: public StatementVisitor<VariableName>
+      struct donot_simplify_visitor: public statement_visitor<VariableName>
       {
-        typedef typename StatementVisitor<VariableName>::z_bin_op_t z_bin_op_t;
-        typedef typename StatementVisitor<VariableName>::z_assign_t z_assign_t;
-        typedef typename StatementVisitor<VariableName>::z_assume_t z_assume_t;
-        typedef typename StatementVisitor<VariableName>::havoc_t havoc_t;
-        typedef typename StatementVisitor<VariableName>::unreach_t unreach_t;
-        typedef typename StatementVisitor<VariableName>::z_select_t z_select_t;
-        typedef typename StatementVisitor<VariableName>::z_arr_load_t z_arr_load_t;
+        typedef typename statement_visitor<VariableName>::z_bin_op_t z_bin_op_t;
+        typedef typename statement_visitor<VariableName>::z_assign_t z_assign_t;
+        typedef typename statement_visitor<VariableName>::z_assume_t z_assume_t;
+        typedef typename statement_visitor<VariableName>::havoc_t havoc_t;
+        typedef typename statement_visitor<VariableName>::unreach_t unreach_t;
+        typedef typename statement_visitor<VariableName>::z_select_t z_select_t;
+        typedef typename statement_visitor<VariableName>::z_arr_load_t z_arr_load_t;
         
         bool _do_not_simplify;
-        DoNotSimplifyVisitor (): _do_not_simplify(false) { }
+        donot_simplify_visitor (): _do_not_simplify(false) { }
         void visit(z_bin_op_t&){ }  
         void visit(z_assign_t&) { }
         void visit(z_assume_t&) { _do_not_simplify = true; }
@@ -2796,33 +2792,33 @@ namespace crab {
       };
       
       // Helpers
-      bool hasOneChild (BasicBlockLabel b)
+      bool has_one_child (BasicBlockLabel b)
       {
         auto rng = next_nodes (b);
         return (std::distance (rng.begin (), rng.end ()) == 1);
       }
       
-      bool hasOneParent (BasicBlockLabel b)
+      bool has_one_parent (BasicBlockLabel b)
       {
         auto rng = prev_nodes (b);
         return (std::distance (rng.begin (), rng.end ()) == 1);
       }
       
-      basic_block_t& getChild (BasicBlockLabel b)
+      basic_block_t& get_child (BasicBlockLabel b)
       {
-        assert (hasOneChild (b));
+        assert (has_one_child (b));
         auto rng = next_nodes (b);
         return get_node (*(rng.begin ()));
       }
       
-      basic_block_t& getParent (BasicBlockLabel b)
+      basic_block_t& get_parent (BasicBlockLabel b)
       {
-        assert (hasOneParent (b));
+        assert (has_one_parent (b));
         auto rng = prev_nodes (b);
         return get_node (*(rng.begin ()));
       }
       
-      void mergeBlocksRec (BasicBlockLabel curId, 
+      void merge_blocks_rec (BasicBlockLabel curId, 
                            visited_t& visited)
       {
         
@@ -2831,12 +2827,12 @@ namespace crab {
         
         basic_block_t &cur = get_node (curId);
         
-        if (hasOneChild (curId) && hasOneParent (curId))
+        if (has_one_child (curId) && has_one_parent (curId))
         {
-          basic_block_t &parent = getParent (curId);
-          basic_block_t &child  = getChild (curId);
+          basic_block_t &parent = get_parent (curId);
+          basic_block_t &child  = get_child (curId);
           
-          DoNotSimplifyVisitor vis;
+          donot_simplify_visitor vis;
           for (auto it = cur.begin (); it != cur.end (); ++it)
             it->accept(&vis);
           
@@ -2845,40 +2841,40 @@ namespace crab {
             parent.merge_back (cur);
             remove (curId);
             parent >> child;        
-            mergeBlocksRec (child.label (), visited); 
+            merge_blocks_rec (child.label (), visited); 
             return;
           }
         }
         
         for (auto n : boost::make_iterator_range (cur.next_blocks ()))
-          mergeBlocksRec (n, visited);
+          merge_blocks_rec (n, visited);
       }
       
       // Merges a basic block into its predecessor if there is only one
       // and the predecessor only has one successor.
-      void mergeBlocks ()
+      void merge_blocks ()
       {
         visited_t visited;
-        mergeBlocksRec (entry (), visited);
+        merge_blocks_rec (entry (), visited);
       }
       
       // mark reachable blocks from curId
       template<class AnyCfg>
-      void markAliveBlocks (BasicBlockLabel curId, 
+      void mark_alive_blocks (BasicBlockLabel curId, 
                             AnyCfg& cfg,
                             visited_t& visited)
       {
         if (visited.count (curId) > 0) return;
         visited.insert (curId);
         for (auto child : cfg.next_nodes (curId))
-          markAliveBlocks (child, cfg, visited);
+          mark_alive_blocks (child, cfg, visited);
       }
       
       // remove unreachable blocks
-      void removeUnreachableBlocks ()
+      void remove_unreachable_blocks ()
       {
         visited_t alive, dead;
-        markAliveBlocks (entry (), *this, alive);
+        mark_alive_blocks (entry (), *this, alive);
         
         for (auto const &bb : *this) 
           if (!(alive.count (bb.label ()) > 0))
@@ -2889,14 +2885,14 @@ namespace crab {
       }
       
       // remove blocks that cannot reach the exit block
-      void removeUselessBlocks ()
+      void remove_useless_blocks ()
       {
         if (!has_exit ()) return;
         
-        Cfg_Rev<Cfg_Ref<cfg_t> > rev_cfg (*this); 
+        cfg_rev<cfg_ref<cfg_t> > rev_cfg (*this); 
 
         visited_t useful, useless;
-        markAliveBlocks (rev_cfg.entry (), rev_cfg, useful);
+        mark_alive_blocks (rev_cfg.entry (), rev_cfg, useful);
         
         for (auto const &bb : *this) 
           if (!(useful.count (bb.label ()) > 0))
@@ -2911,7 +2907,7 @@ namespace crab {
     // A lightweight object that wraps a reference to a CFG into a
     // copyable, assignable object.
     template <class CFG>
-    class Cfg_Ref {
+    class cfg_ref {
      public:
 
       // CFG's typedefs
@@ -2945,9 +2941,9 @@ namespace crab {
      public:
 
       // --- hook needed by crab::cg::CallGraph<CFG>::CgNode
-      Cfg_Ref () { } 
+      cfg_ref () { } 
 
-      Cfg_Ref (CFG &cfg)
+      cfg_ref (CFG &cfg)
           : _ref(reference_wrapper<CFG>(cfg)) { } 
       
       const CFG& get() const { 
@@ -3057,7 +3053,7 @@ namespace crab {
       }
 
       
-      friend crab_os& operator<<(crab_os &o, const Cfg_Ref<CFG> &cfg) {
+      friend crab_os& operator<<(crab_os &o, const cfg_ref<CFG> &cfg) {
         o << cfg.get();
         return o;
       }
@@ -3077,10 +3073,10 @@ namespace crab {
     // Viewing a CFG with all edges and block statements
     // reversed. Useful for backward analysis.
     template<class CFGRef> // CFGRef must be copyable!
-    class Cfg_Rev {
+    class cfg_rev {
      public:
       typedef typename CFGRef::basic_block_label_t basic_block_label_t;
-      typedef BasicBlock_Rev<typename CFGRef::basic_block_t> basic_block_t;
+      typedef basic_block_rev<typename CFGRef::basic_block_t> basic_block_t;
       typedef basic_block_label_t node_t; // for Bgl graphs
       typedef typename CFGRef::varname_t varname_t;
       typedef typename CFGRef::fdecl_t fdecl_t;
@@ -3098,7 +3094,7 @@ namespace crab {
       typedef typename basic_block_t::const_succ_iterator const_succ_iterator;
       typedef typename basic_block_t::const_pred_iterator const_pred_iterator;
 
-      typedef Cfg_Rev<CFGRef> cfg_rev_t;
+      typedef cfg_rev<CFGRef> cfg_rev_t;
 
      private:
 
@@ -3133,11 +3129,11 @@ namespace crab {
      public:
 
       // --- hook needed by crab::cg::CallGraph<CFGRef>::CgNode
-      Cfg_Rev () { }
+      cfg_rev () { }
 
-      Cfg_Rev (CFGRef cfg): _cfg(cfg) { 
-        // Create BasicBlock_Rev from BasicBlock objects
-        // Note that BasicBlock_Rev is also a view of BasicBlock so it
+      cfg_rev (CFGRef cfg): _cfg(cfg) { 
+        // Create basic_block_rev from BasicBlock objects
+        // Note that basic_block_rev is also a view of BasicBlock so it
         // doesn't modify BasicBlock objects.
         for(auto &bb: cfg) {
           basic_block_t rev(bb);
@@ -3145,10 +3141,10 @@ namespace crab {
         }
       }
 
-      Cfg_Rev(const cfg_rev_t& o)
+      cfg_rev(const cfg_rev_t& o)
           : _cfg(o._cfg), _rev_bbs(o._rev_bbs) { }
 
-      Cfg_Rev(cfg_rev_t && o)
+      cfg_rev(cfg_rev_t && o)
           : _cfg(std::move(o._cfg)), _rev_bbs(std::move(o._rev_bbs)) { }
 
       cfg_rev_t& operator=(const cfg_rev_t&o) {
@@ -3255,7 +3251,7 @@ namespace crab {
         { bb.write(o); }
       }
 
-      friend crab_os& operator<<(crab_os &o, const Cfg_Rev<CFGRef> &cfg) {
+      friend crab_os& operator<<(crab_os &o, const cfg_rev<CFGRef> &cfg) {
         cfg.write(o);
         return o;
       }
@@ -3266,7 +3262,7 @@ namespace crab {
 
      // Helper class
     template<typename CFG>
-    struct CfgHasher {
+    struct cfg_hasher {
       typedef typename CFG::basic_block_t::callsite_t callsite_t;
       typedef typename CFG::fdecl_t fdecl_t;
       
@@ -3288,32 +3284,32 @@ namespace crab {
       }      
     };
 
-    // extending boost::hash for Cfg class
+    // extending boost::hash for cfg class
     template<class B, class V>
-    std::size_t hash_value(Cfg<B,V> const& cfg) {
-      auto fdecl = cfg.get_func_decl ();            
+    std::size_t hash_value(Cfg<B,V> const& _cfg) {
+      auto fdecl = _cfg.get_func_decl ();            
       if (!fdecl)
         CRAB_ERROR ("cannot hash a cfg because function declaration is missing");
 
-      return CfgHasher<Cfg<B,V> >::hash(*fdecl);
+      return cfg_hasher<Cfg<B,V> >::hash(*fdecl);
     }
 
     template<class CFG>
-    std::size_t hash_value(Cfg_Ref<CFG> const& cfg) {
-      auto fdecl = cfg.get().get_func_decl ();            
+    std::size_t hash_value(cfg_ref<CFG> const& _cfg) {
+      auto fdecl = _cfg.get().get_func_decl ();            
       if (!fdecl)
         CRAB_ERROR ("cannot hash a cfg because function declaration is missing");
 
-      return CfgHasher<Cfg_Ref<CFG> >::hash(*fdecl);
+      return cfg_hasher<cfg_ref<CFG> >::hash(*fdecl);
     }
 
     template<class CFGRef>
-    std::size_t hash_value(Cfg_Rev<CFGRef> const& cfg) {
-      auto fdecl = cfg.get().get_func_decl ();            
+    std::size_t hash_value(cfg_rev<CFGRef> const& _cfg) {
+      auto fdecl = _cfg.get().get_func_decl ();            
       if (!fdecl)
         CRAB_ERROR ("cannot hash a cfg because function declaration is missing");
 
-      return CfgHasher<Cfg_Rev<CFGRef> >::hash(*fdecl);
+      return cfg_hasher<cfg_rev<CFGRef> >::hash(*fdecl);
     }
 
     template<class B, class V>
@@ -3322,12 +3318,12 @@ namespace crab {
     }
 
     template<class CFG>
-    bool operator==(Cfg_Ref<CFG> const& a, Cfg_Ref<CFG> const& b) {
+    bool operator==(cfg_ref<CFG> const& a, cfg_ref<CFG> const& b) {
       return hash_value (a) == hash_value (b);
     }
 
     template<class CFGRef>
-    bool operator==(Cfg_Rev<CFGRef> const& a, Cfg_Rev<CFGRef> const& b) {
+    bool operator==(cfg_rev<CFGRef> const& a, cfg_rev<CFGRef> const& b) {
       return hash_value (a) == hash_value (b);
     }
 

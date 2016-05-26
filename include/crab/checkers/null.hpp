@@ -5,7 +5,7 @@
    Property checker for null-dereference
  */
 
-#include <crab/checkers/BaseProperty.hpp>
+#include <crab/checkers/base_property.hpp>
 #include <crab/domains/nullity.hpp>
 
 namespace crab {
@@ -17,20 +17,20 @@ namespace crab {
        // To avoid compilation errors if the Analyzer's abstract domain
        // is not compatible with nullity information.
        template<typename Domain, typename VariableName>
-       struct GetAs {
+       struct get_as {
          typedef crab::domains::nullity_value nullity_value_t;
-         GetAs (Domain&) { }
+         get_as (Domain&) { }
          nullity_value_t operator[](VariableName v){
            return nullity_value_t::top ();
          }
        };
      
        template<typename VariableName>
-       struct GetAs <crab::domains::nullity_domain<VariableName>, VariableName> {
+       struct get_as <crab::domains::nullity_domain<VariableName>, VariableName> {
          typedef crab::domains::nullity_value nullity_value_t;
          typedef crab::domains::nullity_domain<VariableName> nullity_domain_t;
          nullity_domain_t& m_inv;
-         GetAs (nullity_domain_t& inv) : m_inv (inv) { }
+         get_as (nullity_domain_t& inv) : m_inv (inv) { }
          nullity_value_t operator[](VariableName v){
            return m_inv [v];
          }
@@ -38,12 +38,12 @@ namespace crab {
      } // end null_detail namespace
 
     template<typename Analyzer>
-    class NullPropertyChecker: public PropertyChecker <Analyzer> {
+    class null_property_checker: public property_checker <Analyzer> {
       
       typedef typename Analyzer::varname_t varname_t;
       typedef crab::domains::nullity_domain<varname_t> nullity_domain_t;
       typedef typename Analyzer::abs_dom_t abs_dom_t;
-      typedef PropertyChecker<Analyzer> base_checker_t;
+      typedef property_checker<Analyzer> base_checker_t;
       using typename base_checker_t::z_var_t;
       using typename base_checker_t::z_lin_exp_t;
       using typename base_checker_t::z_lin_cst_t;
@@ -53,7 +53,7 @@ namespace crab {
 
      public:
       
-      NullPropertyChecker (int verbose = 0): base_checker_t (verbose) { }
+      null_property_checker (int verbose = 0): base_checker_t (verbose) { }
       
       std::string get_property_name () const override {
         return "null-dereference checker";
@@ -64,7 +64,7 @@ namespace crab {
         
         auto &inv = this->m_abs_tr->inv ();
         auto ptr = s.lhs ();
-        null_detail::GetAs<abs_dom_t,varname_t> null_inv (inv);
+        null_detail::get_as<abs_dom_t,varname_t> null_inv (inv);
         crab::domains::nullity_value val = null_inv [ptr];
 
         if (val.is_bottom ()) {
@@ -85,7 +85,7 @@ namespace crab {
         
         auto &inv = this->m_abs_tr->inv ();
         auto ptr = s.lhs ();
-        null_detail::GetAs<abs_dom_t, varname_t> null_inv (inv);
+        null_detail::get_as<abs_dom_t, varname_t> null_inv (inv);
         crab::domains::nullity_value val = null_inv [ptr];
 
         if (val.is_bottom ()) {

@@ -6,7 +6,7 @@ using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
 /* Example of how to build a CFG */
-cfg_t* prog1 (VariableFactory &vfac)  {
+cfg_t* prog1 (variable_factory_t &vfac)  {
 
   // Definining program variables
   z_var i (vfac ["i"]);
@@ -38,7 +38,7 @@ cfg_t* prog1 (VariableFactory &vfac)  {
   return cfg;
 }
 
-cfg_t* prog2 (VariableFactory &vfac) 
+cfg_t* prog2 (variable_factory_t &vfac) 
 {
 
   cfg_t* cfg = new cfg_t("loop1_entry","ret");
@@ -79,7 +79,7 @@ cfg_t* prog2 (VariableFactory &vfac)
   return cfg;
 }
 
-cfg_t* prog3 (VariableFactory &vfac) 
+cfg_t* prog3 (variable_factory_t &vfac) 
 {
 
   cfg_t* cfg = new cfg_t("entry","ret");
@@ -136,7 +136,7 @@ cfg_t* prog3 (VariableFactory &vfac)
   return cfg;
 }
 
-cfg_t* prog4 (VariableFactory &vfac) 
+cfg_t* prog4 (variable_factory_t &vfac) 
 {
 
   cfg_t* cfg = new cfg_t("entry","ret");
@@ -169,7 +169,7 @@ cfg_t* prog4 (VariableFactory &vfac)
 }
 
 /* Example of how to build a CFG */
-cfg_t* prog5 (VariableFactory &vfac)  {
+cfg_t* prog5 (variable_factory_t &vfac)  {
 
   // Definining program variables
   z_var i (vfac ["i"]);
@@ -198,32 +198,6 @@ cfg_t* prog5 (VariableFactory &vfac)  {
   return cfg;
 }
 
-template<typename AbsDomain>
-void run (cfg_t* cfg, VariableFactory& vfac, unsigned widening, unsigned narrowing){
-    #ifdef HAVE_APRON
-
-    Liveness<cfg_ref_t> live (*cfg);
-    live.exec ();
-
-    // Run fixpoint 
-    typename NumFwdAnalyzer <cfg_ref_t,AbsDomain,VariableFactory>::type 
-        a (*cfg, vfac, &live, widening, narrowing);
-    AbsDomain inv = AbsDomain::top ();
-    crab::outs() << "Invariants using " << inv.getDomainName () << "\n";
-    a.Run (inv);
-    // Print invariants
-    for (auto &b : *cfg) {
-      auto inv = a [b.label ()];
-      crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
-    }
-    crab::outs() << "=======================================\n";
-    if (stats_enabled) {
-      crab::CrabStats::Print(crab::outs());
-      crab::CrabStats::reset();
-    }
-    #endif 
-}
-
 /* Example of how to infer invariants from the above CFG */
 int main (int argc, char** argv ) {
 
@@ -232,62 +206,62 @@ int main (int argc, char** argv ) {
 #if 1
 
   {
-    VariableFactory vfac;
+    variable_factory_t vfac;
     cfg_t* cfg = prog1 (vfac);
     crab::outs() << *cfg << "\n";
-    run<interval_domain_t> ( cfg, vfac, 1, 2);
-    run<box_apron_domain_t> ( cfg, vfac, 1, 2);
-    run<oct_apron_domain_t> ( cfg, vfac, 1, 2);
-    run<opt_oct_apron_domain_t> ( cfg, vfac, 1, 2);
-    run<pk_apron_domain_t> ( cfg, vfac, 1, 2);
+    run<interval_domain_t> ( cfg, vfac, false, 1, 2, 20);
+    run<box_apron_domain_t> ( cfg, vfac, false, 1, 2, 20);
+    run<oct_apron_domain_t> ( cfg, vfac, false, 1, 2, 20);
+    run<opt_oct_apron_domain_t> ( cfg, vfac, false, 1, 2, 20);
+    run<pk_apron_domain_t> ( cfg, vfac, false, 1, 2, 20);
     delete cfg;
   }
 
   {
-    VariableFactory vfac;
+    variable_factory_t vfac;
     cfg_t* cfg = prog2 (vfac);
     crab::outs() << *cfg << "\n";
-    run<interval_domain_t> ( cfg, vfac, 1, 2);
-    run<box_apron_domain_t> ( cfg, vfac, 1, 2);
-    run<oct_apron_domain_t> ( cfg, vfac, 1, 2);
-    run<opt_oct_apron_domain_t> ( cfg, vfac, 1, 2);
-    run<pk_apron_domain_t> ( cfg, vfac, 1, 2);
+    run<interval_domain_t> ( cfg, vfac, false, 1, 2, 20);
+    run<box_apron_domain_t> ( cfg, vfac, false, 1, 2, 20);
+    run<oct_apron_domain_t> ( cfg, vfac, false, 1, 2, 20);
+    run<opt_oct_apron_domain_t> ( cfg, vfac, false, 1, 2, 20);
+    run<pk_apron_domain_t> ( cfg, vfac, false, 1, 2, 20);
     delete cfg;
   }
 
   {
-    VariableFactory vfac;
+    variable_factory_t vfac;
     cfg_t* cfg = prog3 (vfac);
     crab::outs() << *cfg << "\n";
-    run<interval_domain_t> ( cfg, vfac, 1, 2);
-    run<box_apron_domain_t> ( cfg, vfac, 1, 2);
-    run<oct_apron_domain_t> ( cfg, vfac, 1, 2);
-    run<opt_oct_apron_domain_t> ( cfg, vfac, 1, 2);
-    run<pk_apron_domain_t> ( cfg, vfac, 1, 2);
+    run<interval_domain_t> ( cfg, vfac, false, 1, 2, 20);
+    run<box_apron_domain_t> ( cfg, vfac, false, 1, 2, 20);
+    run<oct_apron_domain_t> ( cfg, vfac, false, 1, 2, 20);
+    run<opt_oct_apron_domain_t> ( cfg, vfac, false, 1, 2, 20);
+    run<pk_apron_domain_t> ( cfg, vfac, false, 1, 2, 20);
     delete cfg;
   }
 
   {
-    VariableFactory vfac;
+    variable_factory_t vfac;
     cfg_t* cfg = prog4 (vfac);
     crab::outs() << *cfg << "\n";
-    run<interval_domain_t> ( cfg, vfac, 1, 2);
-    run<box_apron_domain_t> ( cfg, vfac, 1, 2);
-    run<oct_apron_domain_t> ( cfg, vfac, 1, 2);
-    run<opt_oct_apron_domain_t> ( cfg, vfac, 1, 2);
-    run<pk_apron_domain_t> ( cfg, vfac, 1, 2);
+    run<interval_domain_t> ( cfg, vfac, false, 1, 2, 20);
+    run<box_apron_domain_t> ( cfg, vfac, false, 1, 2, 20);
+    run<oct_apron_domain_t> ( cfg, vfac, false, 1, 2, 20);
+    run<opt_oct_apron_domain_t> ( cfg, vfac, false, 1, 2, 20);
+    run<pk_apron_domain_t> ( cfg, vfac, false, 1, 2, 20);
     delete cfg;
   }
 
   {
-    VariableFactory vfac;
+    variable_factory_t vfac;
     cfg_t* cfg = prog5 (vfac);
     crab::outs() << *cfg << "\n";
-    run<interval_domain_t> ( cfg, vfac, 1, 2);
-    run<box_apron_domain_t> ( cfg, vfac, 1, 2);
-    run<oct_apron_domain_t> ( cfg, vfac, 1, 2);
-    run<opt_oct_apron_domain_t> ( cfg, vfac, 1, 2);
-    run<pk_apron_domain_t> ( cfg, vfac, 1, 2);
+    run<interval_domain_t> ( cfg, vfac, false, 1, 2, 20);
+    run<box_apron_domain_t> ( cfg, vfac, false, 1, 2, 20);
+    run<oct_apron_domain_t> ( cfg, vfac, false, 1, 2, 20);
+    run<opt_oct_apron_domain_t> ( cfg, vfac, false, 1, 2, 20);
+    run<pk_apron_domain_t> ( cfg, vfac, false, 1, 2, 20);
     delete cfg;
   }
 #endif 
@@ -298,7 +272,7 @@ int main (int argc, char** argv ) {
 
 #if 0
   {
-    VariableFactory vfac;
+    variable_factory_t vfac;
     
     ap_manager_t* man = box_manager_alloc ();;
     // x:0 y:1 z:2
@@ -329,7 +303,7 @@ int main (int argc, char** argv ) {
   }
   
   { 
-    VariableFactory vfac;
+    variable_factory_t vfac;
     pk_apron_domain_t inv1 = pk_apron_domain_t::top ();
     inv1.assign (vfac ["x"], 5);
     z_lin_cst_sys_t csts;
@@ -346,7 +320,7 @@ int main (int argc, char** argv ) {
   }
   
   { 
-    VariableFactory vfac;
+    variable_factory_t vfac;
     pk_apron_domain_t inv1 = pk_apron_domain_t::top ();
     inv1.assign (vfac ["x"], 5);
 
@@ -360,7 +334,7 @@ int main (int argc, char** argv ) {
   }
 
   {
-    VariableFactory vfac;
+    variable_factory_t vfac;
     opt_oct_apron_domain_t inv1 = opt_oct_apron_domain_t::top ();
     opt_oct_apron_domain_t inv2 = opt_oct_apron_domain_t::top ();
     varname_t i = vfac ["i"];

@@ -107,7 +107,7 @@ namespace crab {
    }
 
   template<typename T>
-  inline boost::optional<T> convOp (binary_operation_t op); 
+  inline boost::optional<T> conv_op (binary_operation_t op); 
 
 
   // toy language for pointer constraints

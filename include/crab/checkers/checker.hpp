@@ -7,9 +7,9 @@
 
 #include <crab/common/types.hpp>
 #include <crab/common/stats.hpp>
-#include <crab/checkers/BaseProperty.hpp>
-#include <crab/analysis/FwdAnalyzer.hpp>
-#include <crab/analysis/InterFwdAnalyzer.hpp>
+#include <crab/checkers/base_property.hpp>
+#include <crab/analysis/fwd_analyzer.hpp>
+#include <crab/analysis/inter_fwd_analyzer.hpp>
 #include <boost/noncopyable.hpp>
 
 namespace crab {
@@ -17,7 +17,7 @@ namespace crab {
   namespace checker {
 
   template<typename Analyzer>
-  class Checker: public boost::noncopyable {
+  class checker: public boost::noncopyable {
     /*
       The checker propagates the invariants that hold at the entry of
       each block (assume forward analysis) to each program point while
@@ -27,7 +27,7 @@ namespace crab {
      */
    public:
 
-    typedef boost::shared_ptr<PropertyChecker<Analyzer> > prop_checker_ptr;
+    typedef boost::shared_ptr<property_checker<Analyzer> > prop_checker_ptr;
     typedef std::vector<prop_checker_ptr> prop_checker_vector;
 
    protected:
@@ -36,11 +36,11 @@ namespace crab {
     
    public:
 
-    Checker (prop_checker_vector checkers): m_checkers (checkers) { }
+    checker (prop_checker_vector checkers): m_checkers (checkers) { }
     
-    virtual void Run () = 0;
+    virtual void run () = 0;
     
-    virtual void Show (crab_os& o) {
+    virtual void show (crab_os& o) {
       for (auto checker: this->m_checkers) {
         checker->write (o);
       }
@@ -48,10 +48,10 @@ namespace crab {
   };
 
   template<typename Analyzer>  
-  class IntraChecker: public Checker <Analyzer> {
+  class intra_checker: public checker <Analyzer> {
    public:
 
-    typedef Checker<Analyzer> base_checker_t;
+    typedef checker<Analyzer> base_checker_t;
     using typename base_checker_t::prop_checker_ptr;
     using typename base_checker_t::prop_checker_vector;
 
@@ -65,10 +65,10 @@ namespace crab {
 
    public:
 
-    IntraChecker (Analyzer& analyzer, prop_checker_vector checkers): 
-        base_checker_t (checkers), m_analyzer (analyzer) { }
+    intra_checker (Analyzer& analyzer, prop_checker_vector checkers)
+        : base_checker_t (checkers), m_analyzer (analyzer) { }
     
-    virtual void Run () override {
+    virtual void run () override {
       crab::ScopedCrabStats __st__("Checker");
       cfg_t cfg = m_analyzer.get_cfg ();
       for (auto &bb: cfg) {
@@ -88,10 +88,10 @@ namespace crab {
 
 
   template< typename Analyzer>
-  class InterChecker: public Checker<Analyzer> {
+  class inter_checker: public checker<Analyzer> {
    public:
 
-    typedef Checker<Analyzer> base_checker_t;
+    typedef checker<Analyzer> base_checker_t;
     using typename base_checker_t::prop_checker_ptr;
     using typename base_checker_t::prop_checker_vector;
 
@@ -106,10 +106,10 @@ namespace crab {
     
    public:
 
-    InterChecker (Analyzer& analyzer, prop_checker_vector checkers): 
-        base_checker_t (checkers), m_analyzer (analyzer) { }
+    inter_checker (Analyzer& analyzer, prop_checker_vector checkers)
+        : base_checker_t (checkers), m_analyzer (analyzer) { }
     
-    virtual void Run () override {
+    virtual void run () override {
       crab::ScopedCrabStats __st__("Checker");
       cg_t& cg = m_analyzer.get_call_graph (); 
       for (auto &v: boost::make_iterator_range (vertices (cg))) {

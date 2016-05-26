@@ -2,7 +2,7 @@
 #define CONCURRENT_SYSTEM_HPP
 
 #include "crab/common/types.hpp" 
-#include "crab/cfg/Cfg.hpp" 
+#include "crab/cfg/cfg.hpp" 
 
 #include <boost/noncopyable.hpp>
 #include <boost/unordered_map.hpp>
@@ -35,7 +35,7 @@ namespace crab {
      //  shared global variables. Each CFG corresponds to a thread. The
      //  communication between threads is via shared global variables.
      template<class ThreadId, class CFG>
-     class ConcSys : public boost::noncopyable
+     class conc_sys : public boost::noncopyable
      {
        
        typedef typename CFG::varname_t varname_t;
@@ -53,7 +53,7 @@ namespace crab {
        typedef typename std::set<varname_t>::iterator var_iterator;
        typedef typename std::set<varname_t>::const_iterator const_var_iterator;
        
-       ConcSys () { }
+       conc_sys () { }
        
        // [begin, end) contains all the global shared variables 
        // read/written by t
@@ -74,7 +74,7 @@ namespace crab {
          {
            for (auto &s: b)
            {
-             auto ls = s.getLive ();
+             auto ls = s.get_live ();
              if (ls.defs_begin () != ls.defs_end ())
                local_vs.insert (ls.defs_begin (), ls.defs_end ());
              if (ls.uses_begin () != ls.uses_end ())
@@ -130,7 +130,7 @@ namespace crab {
        }
        
        friend crab_os& operator<<(crab_os& o, 
-                                  const ConcSys<ThreadId, CFG>& sys) {
+                                  const conc_sys<ThreadId, CFG>& sys) {
          sys.write (o);
          return o;
        }

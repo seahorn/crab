@@ -102,7 +102,7 @@ namespace crab {
 
   template<>
   inline boost::optional<operation_t> 
-  convOp (binary_operation_t op) {     
+  conv_op (binary_operation_t op) {     
     switch (op) {
       case BINOP_ADD: return OP_ADDITION;
       case BINOP_SUB: return OP_SUBTRACTION;

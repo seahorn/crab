@@ -5,7 +5,7 @@ using namespace crab::analyzer;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
-cfg_t* prog (VariableFactory &vfac) 
+cfg_t* prog (variable_factory_t &vfac) 
 {
   ////
   // Building the CFG
@@ -47,12 +47,12 @@ int main (int argc, char** argv )
 {
   SET_TEST_OPTIONS(argc,argv)
 
-  VariableFactory vfac;
+  variable_factory_t vfac;
   cfg_t* cfg = prog (vfac);
   cfg->simplify ();
   crab::outs() << *cfg << "\n";
 
-  NumFwdAnalyzer <cfg_ref_t, interval_domain_t, VariableFactory>::type itv_a (*cfg, vfac, nullptr);
+  num_fwd_analyzer <cfg_ref_t, interval_domain_t, variable_factory_t>::type itv_a (*cfg, vfac, nullptr);
   itv_a.Run (interval_domain_t::top ());
   crab::outs() << "Results with intervals:\n";
   for (auto &b : *cfg)
@@ -65,7 +65,7 @@ int main (int argc, char** argv )
     crab::CrabStats::reset();
   }
 
-  NumFwdAnalyzer <cfg_ref_t, term_domain_t, VariableFactory>::type term_a (*cfg, vfac, nullptr);
+  num_fwd_analyzer <cfg_ref_t, term_domain_t, variable_factory_t>::type term_a (*cfg, vfac, nullptr);
   term_a.Run (term_domain_t::top ());
   crab::outs() << "Results with term<interval> domain:\n";
   for (auto &b : *cfg)
@@ -88,7 +88,7 @@ int main (int argc, char** argv )
   }
 
   /*
-  NumFwdAnalyzer <cfg_ref_t, dbm_domain_t, VariableFactory>::type dom_a (*cfg, vfac, nullptr);
+  NumFwdAnalyzer <cfg_ref_t, dbm_domain_t, variable_factory_t>::type dom_a (*cfg, vfac, nullptr);
 
   dbm_a.Run (dbm_domain_t::top ());
   crab::outs() << "Results with DBMs:\n";

@@ -1,15 +1,15 @@
 #ifndef FWD_ANALYZER_HPP
 #define FWD_ANALYZER_HPP
 
-#include "boost/range/algorithm/set_algorithm.hpp"
-
-#include <crab/cfg/Cfg.hpp>
-#include <crab/cfg/VarFactory.hpp>
+#include <crab/cfg/cfg.hpp>
+#include <crab/cfg/var_factory.hpp>
 #include <crab/iterators/fwd_fixpoint_iterators.hpp>
-#include <crab/analysis/Liveness.hpp>
-#include <crab/analysis/AbsTransformer.hpp>
-#include <crab/analysis/InterDS.hpp>
+#include <crab/analysis/liveness.hpp>
+#include <crab/analysis/abs_transformer.hpp>
+#include <crab/analysis/inter_ds.hpp>
 #include <crab/domains/domain_traits.hpp>
+
+#include "boost/range/algorithm/set_algorithm.hpp"
 
 namespace crab {
 
@@ -18,15 +18,15 @@ namespace crab {
     using namespace cfg;
   
     template<typename CFG>
-    inline boost::optional<typename CFG::varname_t> findReturnVar (const CFG& cfg)
+    inline boost::optional<typename CFG::varname_t> find_return_var (const CFG& cfg)
     {
       typedef typename CFG::varname_t varname_t;
 
       if (cfg.has_exit ()) {
         auto const &bb = cfg.get_node (cfg.exit ());
         for (auto const &s : boost::make_iterator_range (bb.begin(), bb.end())) {
-          if (s.isReturn ()) {                            
-            const Return <varname_t>* ret_stmt = static_cast<const Return <varname_t> *> (&s);
+          if (s.is_return ()) {                            
+            const return_stmt<varname_t>* ret_stmt = static_cast<const return_stmt<varname_t> *> (&s);
             return ret_stmt->get_ret_var ();
           }
         }
@@ -38,7 +38,7 @@ namespace crab {
     //  AbsTr defines the abstract transfer functions as well as which
     //  operations are modelled.
     template< typename CFG, typename AbsTr, typename VarFactory>
-    class FwdAnalyzer: 
+    class fwd_analyzer: 
         public ikos::interleaved_fwd_fixpoint_iterator< typename CFG::basic_block_label_t, 
                                                         CFG, 
                                                         typename AbsTr::abs_dom_t >,
@@ -61,7 +61,7 @@ namespace crab {
      public:
 
       // liveness info
-      typedef Liveness<CFG> liveness_t;     
+      typedef liveness<CFG> liveness_t;     
 
      private:
 
@@ -70,8 +70,8 @@ namespace crab {
      public:
 
       // datastructure types in case of inter-procedural analysis
-      typedef SummaryTable <CFG, typename AbsTr::summ_abs_domain_t> summ_tbl_t;
-      typedef CallCtxTable <CFG, typename AbsTr::call_abs_domain_t> call_tbl_t;
+      typedef summary_table<CFG, typename AbsTr::summ_abs_domain_t> summ_tbl_t;
+      typedef call_ctx_table<CFG, typename AbsTr::call_abs_domain_t> call_tbl_t;
 
       typedef typename invariant_map_t::iterator iterator;        
       typedef typename invariant_map_t::const_iterator const_iterator;        
@@ -147,29 +147,27 @@ namespace crab {
 
       // --- intra-procedural version
       // live can be nullptr if no live information is available
-      FwdAnalyzer (CFG cfg, VarFactory& vfac, 
+      fwd_analyzer(CFG cfg, VarFactory& vfac, 
                    const liveness_t* live,
                    unsigned int widening_delay=1,
                    unsigned int descending_iters=UINT_MAX,
-                   size_t jump_set_size=0):
-          fwd_iterator_t (cfg, widening_delay, descending_iters, 
-                          jump_set_size), 
-          m_vfac (vfac), m_live (live), 
-          m_summ_tbl (nullptr), m_call_tbl (nullptr) { }
+                   size_t jump_set_size=0)
+          : fwd_iterator_t (cfg, widening_delay, descending_iters, jump_set_size), 
+            m_vfac (vfac), m_live (live), 
+            m_summ_tbl (nullptr), m_call_tbl (nullptr) { }
       
       // --- inter-procedural version
       // live can be nullptr if no live information is available
-      FwdAnalyzer (CFG cfg, VarFactory& vfac, 
-                   const liveness_t* live, 
-                   summ_tbl_t* sum_tbl, call_tbl_t* call_tbl,
-                   unsigned int widening_delay=1,
-                   unsigned int descending_iters=UINT_MAX,
-                   size_t jump_set_size=0):
-          fwd_iterator_t (cfg, widening_delay, descending_iters, 
-                          jump_set_size), 
-          m_vfac (vfac), m_live (live), 
-          m_summ_tbl (sum_tbl), m_call_tbl (call_tbl) {
-
+      fwd_analyzer (CFG cfg, VarFactory& vfac, 
+                    const liveness_t* live, 
+                    summ_tbl_t* sum_tbl, call_tbl_t* call_tbl,
+                    unsigned int widening_delay=1,
+                    unsigned int descending_iters=UINT_MAX,
+                    size_t jump_set_size=0)
+          : fwd_iterator_t (cfg, widening_delay, descending_iters, jump_set_size), 
+            m_vfac (vfac), m_live (live), 
+            m_summ_tbl (sum_tbl), m_call_tbl (call_tbl) {
+        
         if (live) {
           // --- collect formal parameters and return value (if any)
           auto fdecl = this->get_cfg ().get_func_decl ();
@@ -177,7 +175,7 @@ namespace crab {
           for (unsigned i=0; i < (*fdecl).get_num_params();i++)
             m_formals += (*fdecl).get_param_name (i); 
         
-          if (auto ret_val = findReturnVar (this->get_cfg ()))
+          if (auto ret_val = find_return_var (this->get_cfg ()))
             m_formals += *ret_val; 
         }
 
@@ -231,15 +229,15 @@ namespace crab {
 
     //! Specialized type for a numerical forward analyzer
     template<typename CFG, typename AbsNumDomain, typename VarFactory>
-    class NumFwdAnalyzer {
+    class num_fwd_analyzer {
      private:
 
-      typedef NumAbsTransformer <AbsNumDomain,
-                                 SummaryTable<CFG,AbsNumDomain>,
-                                 CallCtxTable<CFG,AbsNumDomain> > num_abs_tr_t; 
+      typedef num_abs_transformer<AbsNumDomain,
+                                  summary_table<CFG,AbsNumDomain>,
+                                  call_ctx_table<CFG,AbsNumDomain> > num_abs_tr_t; 
      public:
 
-      typedef FwdAnalyzer <CFG, num_abs_tr_t, VarFactory> type;
+      typedef fwd_analyzer<CFG, num_abs_tr_t, VarFactory> type;
 
     };
 
@@ -250,18 +248,18 @@ namespace crab {
     //  have a reduced product of a numerical domain and the nullity
     //  domain.
     template<typename CFG, typename VarFactory>
-    class NullityAnalyzer {
+    class nullity_analyzer {
       typedef typename CFG::varname_t varname_t;
 
      public:      
-      typedef domains::nullity_domain <varname_t> nullity_domain_t;
+      typedef domains::nullity_domain<varname_t> nullity_domain_t;
       
      private:
-      typedef NullityAbsTransformer<varname_t,
-                                    SummaryTable<CFG, nullity_domain_t>,
-                                    CallCtxTable<CFG, nullity_domain_t> > abs_tr_t;
+      typedef nullity_abs_transformer<varname_t,
+                                      summary_table<CFG, nullity_domain_t>,
+                                      call_ctx_table<CFG, nullity_domain_t> > abs_tr_t;
      public:
-      typedef FwdAnalyzer <CFG, abs_tr_t, VarFactory> analyzer_t;
+      typedef fwd_analyzer<CFG, abs_tr_t, VarFactory> analyzer_t;
     };
   
   } // end namespace

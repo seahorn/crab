@@ -9,7 +9,7 @@ int main (int argc, char** argv )
 {
   SET_TEST_OPTIONS(argc,argv)
 
-  VariableFactory vfac;
+  variable_factory_t vfac;
   typedef interval< z_number> interval_t;
 
   varname_t x = vfac["x"];

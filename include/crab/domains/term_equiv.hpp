@@ -27,7 +27,7 @@
 #include <crab/common/stats.hpp>
 #include <crab/common/types.hpp>
 #include <crab/common/bignums.hpp>
-#include <crab/cfg/VarFactory.hpp>
+#include <crab/cfg/var_factory.hpp>
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/domains/numerical_domains_api.hpp>
 #include <crab/domains/bitwise_operators_api.hpp>
@@ -57,7 +57,7 @@ namespace crab {
          public:
           typedef Num Number;
           typedef VName VariableName;
-          typedef cfg::var_factory_impl::StrVarAlloc_col Alloc;
+          typedef cfg::var_factory_impl::str_var_alloc_col Alloc;
           typedef Abs domain_t; 
         };
      }
@@ -181,9 +181,9 @@ namespace crab {
       
        void apply (dom_t& dom, binary_operation_t op,
                    dom_varname_t x, dom_varname_t y, dom_varname_t z) {
-         auto op1 = convOp <operation_t> (op);
-         auto op2 = convOp <div_operation_t> (op);
-         auto op3 = convOp <bitwise_operation_t> (op);
+         auto op1 = conv_op <operation_t> (op);
+         auto op2 = conv_op <div_operation_t> (op);
+         auto op3 = conv_op <bitwise_operation_t> (op);
 
          if (op1) dom.apply (*op1, x, y, z); 
          else if (op2) dom.apply (*op2, x, y, z);
@@ -227,7 +227,7 @@ namespace crab {
            std::vector<term_id_t>& args(term::term_args(t_ptr));
            assert(args.size() == 2);
 
-           if (optional<operation_t> arith_op = convOp <operation_t> (op)) {           
+           if (optional<operation_t> arith_op = conv_op <operation_t> (op)) {           
              term::InverseOps<dom_number, dom_varname_t, dom_t>::
                  apply(dom, *arith_op,
                        domvar_of_term(t).name(),

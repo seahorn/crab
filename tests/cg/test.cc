@@ -1,9 +1,9 @@
 #include "../common.hpp"
 
-#include <crab/cg/Cg.hpp>
-#include <crab/cg/CgBgl.hpp>
-#include <crab/analysis/graphs/Sccg.hpp>
-#include <crab/analysis/graphs/TopoOrder.hpp>
+#include <crab/cg/cg.hpp>
+#include <crab/cg/cg_bgl.hpp>
+#include <crab/analysis/graphs/sccg.hpp>
+#include <crab/analysis/graphs/topo_order.hpp>
 
 
 using namespace std;
@@ -17,13 +17,13 @@ using namespace crab::domain_impl;
 
 using namespace boost;
 
-typedef CallGraph<cfg_ref_t> call_graph_t;
-typedef CallGraph_Ref<call_graph_t> call_graph_ref_t;
+typedef call_graph<cfg_ref_t> call_graph_t;
+typedef call_graph_ref<call_graph_t> call_graph_ref_t;
 
-cfg_t* foo (VariableFactory &vfac) {
-  vector<pair<varname_t,VariableType> > params;
+cfg_t* foo (variable_factory_t &vfac) {
+  vector<pair<varname_t,variable_type> > params;
   params.push_back (make_pair (vfac["x"], INT_TYPE));
-  FunctionDecl<varname_t> decl (INT_TYPE, vfac["foo"], params);
+  function_decl<varname_t> decl (INT_TYPE, vfac["foo"], params);
   // Defining program variables
   z_var x (vfac ["x"]);
   z_var y (vfac ["y"]);
@@ -43,10 +43,10 @@ cfg_t* foo (VariableFactory &vfac) {
 }
 
 
-cfg_t* bar (VariableFactory &vfac) {
-  vector<pair<varname_t,VariableType> > params;
+cfg_t* bar (variable_factory_t &vfac) {
+  vector<pair<varname_t,variable_type> > params;
   params.push_back (make_pair (vfac["a"], INT_TYPE));
-  FunctionDecl<varname_t> decl (INT_TYPE, vfac["bar"], params);
+  function_decl<varname_t> decl (INT_TYPE, vfac["bar"], params);
   // Defining program variables
   z_var a (vfac ["a"]);
   z_var x (vfac ["x"]);
@@ -59,7 +59,7 @@ cfg_t* bar (VariableFactory &vfac) {
   // adding control flow
   entry >> exit;
   // adding statements
-  vector<pair<varname_t,VariableType> > args;
+  vector<pair<varname_t,variable_type> > args;
   args.push_back (make_pair (vfac["x"], INT_TYPE));
   exit.callsite (make_pair (vfac["y"], INT_TYPE), vfac ["foo"], args);
   entry.assign (x, a);
@@ -67,9 +67,9 @@ cfg_t* bar (VariableFactory &vfac) {
   return cfg;
 }
 
-cfg_t* m (VariableFactory &vfac)  {
-  vector<pair<varname_t,VariableType> > params;
-  FunctionDecl<varname_t> decl (UNK_TYPE, vfac["main"], params);
+cfg_t* m (variable_factory_t &vfac)  {
+  vector<pair<varname_t,variable_type> > params;
+  function_decl<varname_t> decl (UNK_TYPE, vfac["main"], params);
   // Defining program variables
   z_var x (vfac ["x"]);
   z_var y (vfac ["y"]);
@@ -83,7 +83,7 @@ cfg_t* m (VariableFactory &vfac)  {
   entry >> exit;
   // adding statements
   entry.assign(x, 3);
-  vector<pair<varname_t,VariableType> > args;
+  vector<pair<varname_t,variable_type> > args;
   args.push_back (make_pair (vfac["x"], INT_TYPE));
   entry.callsite (make_pair (vfac["y"], INT_TYPE), vfac ["bar"], args);
   exit.add (z, y, 2);
@@ -101,7 +101,7 @@ struct print_visitor: public boost::default_dfs_visitor {
 int main (int argc, char** argv ) {
   SET_TEST_OPTIONS(argc,argv)
 
-  VariableFactory vfac;
+  variable_factory_t vfac;
 
   cfg_t* t1 = foo (vfac);
   cfg_t* t2 = bar (vfac);
@@ -171,11 +171,11 @@ int main (int argc, char** argv ) {
 
 #if 1
   // --- SccGraph 
-  SccGraph<call_graph_ref_t> scc_graph(cg);
-  scc_graph.write (crab::outs());
+  scc_graph<call_graph_ref_t> scc_g(cg);
+  scc_g.write (crab::outs());
   
   std::vector<call_graph_ref_t::node_t> order;
-  rev_topo_sort (scc_graph, order);
+  rev_topo_sort (scc_g, order);
  
   crab::outs() << "reverse topological sort: ";
   for(auto n: order)

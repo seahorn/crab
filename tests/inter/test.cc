@@ -1,9 +1,8 @@
 #include "../common.hpp"
 
-#include <crab/cg/CgBgl.hpp>
-#include <crab/analysis/graphs/SccgBgl.hpp>
-
-#include <crab/analysis/InterFwdAnalyzer.hpp>
+#include <crab/cg/cg_bgl.hpp>
+#include <crab/analysis/graphs/sccg_bgl.hpp>
+#include <crab/analysis/inter_fwd_analyzer.hpp>
 
 using namespace std;
 using namespace crab::analyzer;
@@ -11,10 +10,10 @@ using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 using namespace crab::cg;
 
-cfg_t* foo (VariableFactory &vfac) {
-  vector<pair<varname_t,VariableType> > params;
+cfg_t* foo (variable_factory_t &vfac) {
+  vector<pair<varname_t,variable_type> > params;
   params.push_back (make_pair (vfac["x"], INT_TYPE));
-  FunctionDecl<varname_t> decl (INT_TYPE, vfac["foo"], params);
+  function_decl<varname_t> decl (INT_TYPE, vfac["foo"], params);
   // Defining program variables
   z_var x (vfac ["x"]);
   z_var y (vfac ["y"]);
@@ -33,10 +32,10 @@ cfg_t* foo (VariableFactory &vfac) {
   return cfg;
 }
 
-cfg_t* rec1 (VariableFactory &vfac) {
-  vector<pair<varname_t,VariableType> > params;
+cfg_t* rec1 (variable_factory_t &vfac) {
+  vector<pair<varname_t,variable_type> > params;
   params.push_back (make_pair (vfac["s"], INT_TYPE));
-  FunctionDecl<varname_t> decl (INT_TYPE, vfac["rec1"], params);
+  function_decl<varname_t> decl (INT_TYPE, vfac["rec1"], params);
   // Defining program variables
   z_var r (vfac ["r"]);
   z_var s (vfac ["s"]);
@@ -50,17 +49,17 @@ cfg_t* rec1 (VariableFactory &vfac) {
   entry >> exit;
   // adding statements
   entry.sub (r, s, 1);
-  vector<pair<varname_t,VariableType> > args;
+  vector<pair<varname_t,variable_type> > args;
   args.push_back (make_pair (vfac["r"], INT_TYPE));
   exit.callsite (make_pair (vfac["t"], INT_TYPE), vfac ["rec2"], args);
   exit.ret (vfac["t"], INT_TYPE);
   return cfg;
 }
 
-cfg_t* rec2 (VariableFactory &vfac) {
-  vector<pair<varname_t,VariableType> > params;
+cfg_t* rec2 (variable_factory_t &vfac) {
+  vector<pair<varname_t,variable_type> > params;
   params.push_back (make_pair (vfac["s1"], INT_TYPE));
-  FunctionDecl<varname_t> decl (INT_TYPE, vfac["rec2"], params);
+  function_decl<varname_t> decl (INT_TYPE, vfac["rec2"], params);
   // Defining program variables
   z_var r (vfac ["r1"]);
   z_var s (vfac ["s1"]);
@@ -74,7 +73,7 @@ cfg_t* rec2 (VariableFactory &vfac) {
   entry >> exit;
   // adding statements
   entry.sub (r, s, 1);
-  vector<pair<varname_t,VariableType> > args;
+  vector<pair<varname_t,variable_type> > args;
   args.push_back (make_pair (vfac["r1"], INT_TYPE));
   exit.callsite (make_pair (vfac["t1"], INT_TYPE), vfac ["rec1"], args);
   args.clear ();
@@ -85,10 +84,10 @@ cfg_t* rec2 (VariableFactory &vfac) {
 }
 
 
-cfg_t* bar (VariableFactory &vfac) {
-  vector<pair<varname_t,VariableType> > params;
+cfg_t* bar (variable_factory_t &vfac) {
+  vector<pair<varname_t,variable_type> > params;
   params.push_back (make_pair (vfac["a"], INT_TYPE));
-  FunctionDecl<varname_t> decl (INT_TYPE, vfac["bar"], params);
+  function_decl<varname_t> decl (INT_TYPE, vfac["bar"], params);
   // Defining program variables
   z_var a (vfac ["a"]);
   z_var x (vfac ["x1"]);
@@ -102,7 +101,7 @@ cfg_t* bar (VariableFactory &vfac) {
   // adding control flow
   entry >> exit;
   // adding statements
-  vector<pair<varname_t,VariableType> > args;
+  vector<pair<varname_t,variable_type> > args;
   args.push_back (make_pair (vfac["x1"], INT_TYPE));
   exit.callsite (make_pair (vfac["y1"], INT_TYPE), vfac ["foo"], args);
   entry.assign (x, a);
@@ -111,9 +110,9 @@ cfg_t* bar (VariableFactory &vfac) {
   return cfg;
 }
 
-cfg_t* m (VariableFactory &vfac)  {
-  vector<pair<varname_t,VariableType> > params;
-  FunctionDecl<varname_t> decl (INT_TYPE, vfac["main"], params);
+cfg_t* m (variable_factory_t &vfac)  {
+  vector<pair<varname_t,variable_type> > params;
+  function_decl<varname_t> decl (INT_TYPE, vfac["main"], params);
   // Defining program variables
   z_var x (vfac ["x2"]);
   z_var y (vfac ["y2"]);
@@ -127,7 +126,7 @@ cfg_t* m (VariableFactory &vfac)  {
   entry >> exit;
   // adding statements
   entry.assign(x, 3);
-  vector<pair<varname_t,VariableType> > args;
+  vector<pair<varname_t,variable_type> > args;
   args.push_back (make_pair (vfac["x2"], INT_TYPE));
   entry.callsite (make_pair (vfac["y2"], INT_TYPE), vfac ["bar"], args);
   args.clear ();
@@ -147,7 +146,7 @@ int main (int argc, char** argv ) {
 
   SET_TEST_OPTIONS(argc,argv)
 
-  VariableFactory vfac;
+  variable_factory_t vfac;
   cfg_t* t1 = foo (vfac);
   cfg_t* t2 = bar (vfac);
   cfg_t* t3 = rec1 (vfac);
@@ -167,12 +166,12 @@ int main (int argc, char** argv ) {
   cfgs.push_back(*t4);
   cfgs.push_back(*t5);
 
-  typedef CallGraph<cfg_ref_t> callgraph_t;
-  typedef CallGraph_Ref<callgraph_t> callgraph_ref_t;
+  typedef call_graph<cfg_ref_t> callgraph_t;
+  typedef call_graph_ref<callgraph_t> callgraph_ref_t;
 
   boost::scoped_ptr<callgraph_t> cg(new callgraph_t(cfgs));
   {
-    InterFwdAnalyzer<callgraph_ref_t, VariableFactory,
+    inter_fwd_analyzer<callgraph_ref_t, variable_factory_t,
                      dbm_domain_t, interval_domain_t> a (*cg, vfac, nullptr); 
     crab::outs() << "Running" 
          << " summary domain=" << dbm_domain_t::getDomainName () 
@@ -212,7 +211,7 @@ int main (int argc, char** argv ) {
 
 #ifdef HAVE_APRON
   {
-    InterFwdAnalyzer<callgraph_ref_t, VariableFactory,
+    inter_fwd_analyzer<callgraph_ref_t, variable_factory_t,
                      opt_oct_apron_domain_t, interval_domain_t> a (*cg, vfac, nullptr); 
 
     crab::outs() << "Running" 
@@ -252,7 +251,7 @@ int main (int argc, char** argv ) {
 #endif 
 
   {
-    InterFwdAnalyzer<callgraph_ref_t,  VariableFactory,
+    inter_fwd_analyzer<callgraph_ref_t,  variable_factory_t,
                      term_domain_t, interval_domain_t> a (*cg, vfac, nullptr); 
 
     crab::outs() << "Running" 
@@ -291,8 +290,8 @@ int main (int argc, char** argv ) {
   }
 
   {
-    InterFwdAnalyzer<callgraph_ref_t,  VariableFactory,
-                     num_domain_t, num_domain_t> a (*cg, vfac, nullptr); 
+    inter_fwd_analyzer<callgraph_ref_t,  variable_factory_t,
+                       num_domain_t, num_domain_t> a (*cg, vfac, nullptr); 
 
     crab::outs() << "Running" 
          << " summary domain=" << num_domain_t::getDomainName () 

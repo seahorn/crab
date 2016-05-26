@@ -6,19 +6,19 @@
  */
 
 #include <crab/common/types.hpp>
-#include <crab/checkers/BaseProperty.hpp>
+#include <crab/checkers/base_property.hpp>
 
 namespace crab {
 
   namespace checker {
 
     template<typename Analyzer>
-    class AssertPropertyChecker: public PropertyChecker <Analyzer> {
+    class assert_property_checker: public property_checker <Analyzer> {
       
       typedef typename Analyzer::varname_t varname_t;
       typedef crab::domains::interval<z_number> interval_t;
       typedef typename Analyzer::abs_dom_t abs_dom_t;
-      typedef PropertyChecker<Analyzer> base_checker_t;
+      typedef property_checker<Analyzer> base_checker_t;
 
       using typename base_checker_t::z_var_t;
       using typename base_checker_t::z_lin_exp_t;
@@ -31,7 +31,7 @@ namespace crab {
 
      public:
       
-      AssertPropertyChecker (int verbose = 0): base_checker_t (verbose) { }
+      assert_property_checker (int verbose = 0): base_checker_t (verbose) { }
       
       virtual std::string get_property_name () const override {
         return "user-defined assertion checker";
@@ -46,14 +46,14 @@ namespace crab {
           return;
         }
         
-        num_dom_detail::GetAs<abs_dom_t,varname_t> wrapper_inv (inv);
+        num_dom_detail::get_as<abs_dom_t,varname_t> wrapper_inv (inv);
         z_lin_cst_t cst = s.constraint ();
         if (wrapper_inv.entails(cst)) {
-          LOG_SAFE(this->m_verbose, inv, cst, s.getDebugInfo());
+          LOG_SAFE(this->m_verbose, inv, cst, s.get_debug_info());
         } else if (wrapper_inv.intersect (cst)) {
-          LOG_WARN(this->m_verbose, inv, cst, s.getDebugInfo());
+          LOG_WARN(this->m_verbose, inv, cst, s.get_debug_info());
         } else {
-          LOG_ERR(this->m_verbose, inv, cst, s.getDebugInfo());
+          LOG_ERR(this->m_verbose, inv, cst, s.get_debug_info());
         }
         
         s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt

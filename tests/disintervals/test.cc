@@ -5,7 +5,7 @@ using namespace crab::analyzer;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
-cfg_t* prog (VariableFactory &vfac)  {
+cfg_t* prog (variable_factory_t &vfac)  {
 
   // Definining program variables
   z_var i (vfac ["i"]);
@@ -33,30 +33,6 @@ cfg_t* prog (VariableFactory &vfac)  {
   return cfg;
 }
 
-template <typename Domain, typename Live>
-void run(cfg_ref_t cfg, VariableFactory &vfac, Live live)
-{
-  const unsigned int w = 1;
-  const unsigned int n = 2;
-
-  typename NumFwdAnalyzer <cfg_ref_t, Domain, VariableFactory>::type 
-      It (cfg, vfac, live, w, n, 20);
-  Domain inv = Domain::top ();
-  It.Run (inv);
-  crab::outs() << "Invariants using " << Domain::getDomainName () << ":\n";
-
-  for (auto &b : cfg)
-  {
-    // invariants at the entry of the block
-    auto inv = It [b.label ()];
-    crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
-  }
-  crab::outs() << "\n";
-  if (stats_enabled) {
-    crab::CrabStats::Print(crab::outs());
-    crab::CrabStats::reset();
-  }  
-}
 
 int main (int argc, char**argv){
 
@@ -118,10 +94,10 @@ int main (int argc, char**argv){
   // }
 
   {
-    VariableFactory vfac;
+    variable_factory_t vfac;
     cfg_t* cfg = prog (vfac);
     crab::outs() << *cfg << "\n";
-    run<dis_interval_domain_t>(*cfg, vfac, nullptr); 
+    run<dis_interval_domain_t>(cfg, vfac, false, 1, 2, 20); 
     delete cfg;
   }
 }

@@ -7,7 +7,7 @@
 #include <boost/noncopyable.hpp>
 
 #include <crab/common/types.hpp>
-#include <crab/cfg/Cfg.hpp>
+#include <crab/cfg/cfg.hpp>
 
 /* Datastructures needed during inter-procedural analysis */
 
@@ -17,7 +17,7 @@ namespace crab {
 
     /* Store the calling contexts of each function */
     template <typename CFG, typename AbsDomain>
-    class CallCtxTable: boost::noncopyable {
+    class call_ctx_table: boost::noncopyable {
      public:
 
       typedef typename CFG::basic_block_t::callsite_t callsite_t;
@@ -46,18 +46,18 @@ namespace crab {
 
      public:
       
-      CallCtxTable () { }
+      call_ctx_table() { }
 
       void insert (callsite_t cs, AbsDomain inv) {
-        insert_helper (CfgHasher<CFG>::hash (cs), inv);
+        insert_helper (cfg_hasher<CFG>::hash (cs), inv);
       }
 
       void insert (fdecl_t d, AbsDomain inv) {
-        insert_helper (CfgHasher<CFG>::hash (d), inv);
+        insert_helper (cfg_hasher<CFG>::hash (d), inv);
       }
 
       AbsDomain get_call_ctx (fdecl_t d) const {
-        auto it = m_call_table.find (CfgHasher<CFG>::hash (d));
+        auto it = m_call_table.find (cfg_hasher<CFG>::hash (d));
         if (it != m_call_table.end ())
           return it->second;
         else 
@@ -68,7 +68,7 @@ namespace crab {
 
     /* Store the summaries for each function*/
     template<typename CFG, typename AbsDomain>
-    class SummaryTable: boost::noncopyable {
+    class summary_table: boost::noncopyable {
 
      public:
       
@@ -131,7 +131,7 @@ namespace crab {
       
      public:
 
-      SummaryTable () { }
+      summary_table () { }
       
       // insert summary information
       void insert (fdecl_t d, 
@@ -141,30 +141,30 @@ namespace crab {
 
         std::vector<varname_t> ps (params.begin(), params.end ());
         summary_ptr sum_tuple (new Summary (d, sum, ret, ps));
-        m_sum_table.insert (std::make_pair (CfgHasher<CFG>::hash (d), sum_tuple));
+        m_sum_table.insert (std::make_pair (cfg_hasher<CFG>::hash (d), sum_tuple));
       }
 
       // return true if there is a summary
       bool hasSummary (callsite_t cs) const {
-        auto it = m_sum_table.find (CfgHasher<CFG>::hash (cs));
+        auto it = m_sum_table.find (cfg_hasher<CFG>::hash (cs));
         return (it != m_sum_table.end ());
       }
 
       bool hasSummary (fdecl_t d) const {
-        auto it = m_sum_table.find (CfgHasher<CFG>::hash (d));
+        auto it = m_sum_table.find (cfg_hasher<CFG>::hash (d));
         return (it != m_sum_table.end ());
       }
 
       // get the summary
       Summary& get (callsite_t cs) const {
-        auto it = m_sum_table.find (CfgHasher<CFG>::hash (cs));
+        auto it = m_sum_table.find (cfg_hasher<CFG>::hash (cs));
         assert (it != m_sum_table.end ());
         
         return *(it->second);
       }
 
       Summary& get (fdecl_t d) const {
-        auto it = m_sum_table.find (CfgHasher<CFG>::hash (d));
+        auto it = m_sum_table.find (cfg_hasher<CFG>::hash (d));
         assert (it != m_sum_table.end ());
         
         return *(it->second);
@@ -179,7 +179,7 @@ namespace crab {
         o << "--- End summary table\n";
       }
       
-      friend crab_os& operator<<(crab_os& o, const SummaryTable<CFG, AbsDomain>&t) {
+      friend crab_os& operator<<(crab_os& o, const summary_table<CFG, AbsDomain>&t) {
         t.write (o);
         return o;
       }

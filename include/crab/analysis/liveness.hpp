@@ -49,7 +49,7 @@ namespace crab {
         for (auto &b: boost::make_iterator_range(this->_cfg.begin(),this->_cfg.end())) {
           liveness_domain_t kill, gen;
           for (auto &s: boost::make_iterator_range(b.rbegin(),b.rend())) { 
-             auto live = s.getLive();
+             auto live = s.get_live();
              for (auto d: boost::make_iterator_range(live.defs_begin(), 
                                                      live.defs_end())) {
                kill += d; 
@@ -77,7 +77,7 @@ namespace crab {
 
    //! Live variable analysis
    template<typename CFG>
-   class Liveness: boost::noncopyable, 
+   class liveness: boost::noncopyable, 
                    public crab::iterators::killgen_fixpoint_iterator
        <CFG, liveness_analysis<CFG,typename CFG::varname_t> >{
     public:
@@ -132,7 +132,7 @@ namespace crab {
           
     public:
 
-     Liveness (CFG cfg)
+     liveness (CFG cfg)
          : killgen_fixpoint_iterator_t(cfg), 
            _max_live (0), _total_live (0), _total_blks (0) { }
 
@@ -165,7 +165,7 @@ namespace crab {
    }; 
 
    template <typename CFG>
-   crab_os& operator << (crab_os& o, const Liveness<CFG> &l) {
+   crab_os& operator << (crab_os& o, const liveness<CFG> &l) {
      l.write (o);
      return o;
    }
@@ -175,9 +175,9 @@ namespace crab {
 #else
 
 #include <crab/domains/discrete_domains.hpp>
-#include <crab/cfg/CfgBgl.hpp>
-#include <crab/analysis/graphs/Sccg.hpp>
-#include <crab/analysis/graphs/TopoOrder.hpp>
+#include <crab/cfg/cfg_bgl.hpp>
+#include <crab/analysis/graphs/sccg.hpp>
+#include <crab/analysis/graphs/topo_order.hpp>
 
 namespace crab {
 
@@ -201,7 +201,7 @@ namespace crab {
          discrete_domain_t _inv;
 
         public:
-         // hook to speedup check_post in Liveness class
+         // hook to speedup check_post in liveness class
          liveness_domain(discrete_domain_t inv): 
              ikos::writeable(), _inv(inv){ }
 
@@ -515,7 +515,7 @@ namespace crab {
 
    //! Live variable analysis
    template<typename CFG>
-   class Liveness: boost::noncopyable {
+   class liveness: boost::noncopyable {
 
     public:
      typedef typename CFG::basic_block_label_t basic_block_label_t;
@@ -557,7 +557,7 @@ namespace crab {
          liveness_domain_t kill, gen;
          for (auto &s: boost::make_iterator_range(b.rbegin(),b.rend())) { 
                                                    
-           auto live = s.getLive();
+           auto live = s.get_live();
            for (auto d: boost::make_iterator_range(live.defs_begin(), 
                                                    live.defs_end())) {
              kill += d; 
@@ -575,15 +575,15 @@ namespace crab {
      
     public:
 
-     Liveness (CFG cfg)
+     liveness (CFG cfg)
          : m_cfg (cfg), m_has_exec (false),
            m_max_live (0), m_total_live (0), m_total_blks (0) {
-       crab::ScopedCrabStats __st__("Liveness");
+       crab::ScopedCrabStats __st__("liveness");
        init(); 
      }
 
      void exec() { 
-        crab::ScopedCrabStats __st__("Liveness");
+        crab::ScopedCrabStats __st__("liveness");
 
        if (m_has_exec) {
          CRAB_WARN ("Trying to execute liveness twice!");
@@ -704,7 +704,7 @@ namespace crab {
    }; 
 
    template <typename CFG>
-   crab_os& operator << (crab_os& o, const Liveness<CFG> &l) {
+   crab_os& operator << (crab_os& o, const liveness<CFG> &l) {
      l.write (o);
      return o;
    }

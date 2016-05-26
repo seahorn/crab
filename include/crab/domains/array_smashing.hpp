@@ -255,7 +255,7 @@ namespace crab {
           // into a non-summarized variable lhs. Simply _inv.assign (lhs,
           // a) is not sound.
           /* ask for a temp var */
-          VariableName a_prime = a.getVarFactory().get(); 
+          VariableName a_prime = a.get_var_factory().get(); 
           domain_traits<NumDomain>::expand (_inv, a, a_prime);
           _inv.assign (lhs, linear_expression_t (a_prime));
           _inv -= a_prime; 
