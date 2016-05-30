@@ -1,5 +1,9 @@
 #include <crab/common/types.hpp>
+
+#include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
 #include <iostream>
+#include <sstream>
 
 namespace crab 
 {
@@ -9,91 +13,169 @@ namespace crab
 
 namespace crab {
 
-  crab_os* crab_os::m_cout = nullptr;
-  crab_os* crab_os::m_cerr = nullptr;
+  /// crab_os adaptor
 
-  crab_os::crab_os(std::ostream& os) {
-    m_os = &os;
-  }
+  boost::shared_ptr<crab_os> crab_os::m_cout = nullptr;
 
-  crab_os* crab_os::cout () {
-    if (!m_cout) m_cout = new crab_os(std::cout);
+  boost::shared_ptr<crab_os> crab_os::m_cerr = nullptr;
+
+  boost::shared_ptr<crab_os> crab_os::cout() {
+    if (!m_cout) m_cout = boost::make_shared<crab_os>(&std::cout);
     return m_cout;
   }
 
-  crab_os* crab_os::cerr () {
-    if (!m_cerr) m_cerr = new crab_os(std::cerr);
+  boost::shared_ptr<crab_os> crab_os::cerr() {
+    if (!m_cerr) m_cerr = boost::make_shared<crab_os>(&std::cerr);
     return m_cerr;
   }
 
-  crab_os::~crab_os() { 
-    if (m_cout) delete m_cout;
-    if (m_cerr) delete m_cerr;
-  }
+  crab_os::crab_os(std::ostream* os): m_os(os) { }
 
-  crab_os & crab_os::operator<<(char C) {
+  crab_os::crab_os(): m_os(nullptr) {}
+
+  crab_os::~crab_os() { }
+  
+  crab_os& crab_os::operator<<(char C) {
     *m_os << C;
     return *this;
   }
 
-  crab_os & crab_os::operator<<(unsigned char C) {
+  crab_os& crab_os::operator<<(unsigned char C) {
     *m_os << C;
     return *this;
   }
 
-  crab_os & crab_os::operator<<(signed char C) {
+  crab_os& crab_os::operator<<(signed char C) {
     *m_os << C;
     return *this;
   }
 
-  crab_os & crab_os::operator<<(const char* C) {
+  crab_os& crab_os::operator<<(const char* C) {
     *m_os << C;
     return *this;
   }
 
-  crab_os & crab_os::operator<<(const std::string& Str) {
+  crab_os& crab_os::operator<<(const std::string& Str) {
     *m_os << Str;
     return *this;
   }
 
-  crab_os & crab_os::operator<<(unsigned long N) {
+  crab_os& crab_os::operator<<(unsigned long N) {
     *m_os << N;
     return *this;
   }
 
-  crab_os & crab_os::operator<<(long N) {
+  crab_os& crab_os::operator<<(long N) {
     *m_os << N;
     return *this;
   }
 
-  crab_os & crab_os::operator<<(unsigned long long N) {
+  crab_os& crab_os::operator<<(unsigned long long N) {
     *m_os << N;
     return *this;
   }
 
-  crab_os & crab_os::operator<<(long long N) {
+  crab_os& crab_os::operator<<(long long N) {
     *m_os << N;
     return *this;
   }
 
-  crab_os & crab_os::operator<<(const void *P) {
+  crab_os& crab_os::operator<<(const void *P) {
     *m_os << P;
     return *this;
   }
 
-  crab_os & crab_os::operator<<(unsigned int N) {
+  crab_os& crab_os::operator<<(unsigned int N) {
     *m_os << N;
     return *this;
   }
 
-  crab_os & crab_os::operator<<(int N) {
+  crab_os& crab_os::operator<<(int N) {
     *m_os << N;
     return *this;
   }
 
-  crab_os & crab_os::operator<<(double N) {
+  crab_os& crab_os::operator<<(double N) {
     *m_os << N;
     return *this;
+  }
+
+  /// crab_string_os adaptor
+
+  crab_string_os::crab_string_os ()
+      : crab_os(), m_string_os(new std::ostringstream()) { }
+
+  crab_string_os::~crab_string_os() {
+    delete m_string_os;
+  }
+
+  crab_os& crab_string_os::operator<<(char C) {
+    *m_string_os << C;
+    return *(static_cast<crab_os*>(this));
+  }
+
+  crab_os& crab_string_os::operator<<(unsigned char C){
+    *m_string_os << C;
+    return *(static_cast<crab_os*>(this));
+  }
+
+  crab_os& crab_string_os::operator<<(signed char C){
+    *m_string_os << C;
+    return *(static_cast<crab_os*>(this));
+  }
+
+  crab_os& crab_string_os::operator<<(const char *Str){
+    *m_string_os << Str;
+    return *(static_cast<crab_os*>(this));
+  }
+
+  crab_os& crab_string_os::operator<<(const std::string& Str){  
+    *m_string_os << Str;
+    return *(static_cast<crab_os*>(this));
+  }
+
+  crab_os& crab_string_os::operator<<(unsigned long N) {
+    *m_string_os << N;
+    return *(static_cast<crab_os*>(this));
+  }
+
+  crab_os& crab_string_os::operator<<(long N) {
+    *m_string_os << N;
+    return *(static_cast<crab_os*>(this));
+  }
+
+  crab_os& crab_string_os::operator<<(unsigned long long N){
+    *m_string_os << N;
+    return *(static_cast<crab_os*>(this));
+  }  
+
+  crab_os& crab_string_os::operator<<(long long N){
+    *m_string_os << N;
+    return *(static_cast<crab_os*>(this));
+  }
+
+  crab_os& crab_string_os::operator<<(const void *P){
+    *m_string_os << P;
+    return *(static_cast<crab_os*>(this));
+  }
+
+  crab_os& crab_string_os::operator<<(unsigned int N){
+    *m_string_os << N;
+    return *(static_cast<crab_os*>(this));
+  }
+
+  crab_os& crab_string_os::operator<<(int N){
+    *m_string_os << N;
+    return *(static_cast<crab_os*>(this));
+  }
+
+  crab_os& crab_string_os::operator<<(double N) {
+    *m_string_os << N;
+    return *(static_cast<crab_os*>(this));
+  }
+
+  std::string crab_string_os::str() {
+    return m_string_os->str();
   }
 
 } // end namespace
