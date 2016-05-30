@@ -36,17 +36,17 @@ namespace crab {
        // The factory uses a counter of type index_t to generate variable
        // id's that always increases.
        template< class T>
-       class VariableFactory : public boost::noncopyable
+       class variable_factory : public boost::noncopyable
        {
-         typedef VariableFactory< T > VariableFactory_t;
+         typedef variable_factory< T > variable_factory_t;
          
         public:
          
-         class IndexedString 
+         class indexed_string 
          {
            
            template< typename Any>
-           friend class VariableFactory;
+           friend class variable_factory;
            
           public:
 
@@ -60,22 +60,22 @@ namespace crab {
           private:
            boost::shared_ptr< T > _s;
            index_t _id;
-           VariableFactory* _vfac;
+           variable_factory* _vfac;
            
-           IndexedString();
+           indexed_string();
            
-           IndexedString(index_t id, VariableFactory *vfac): 
+           indexed_string(index_t id, variable_factory *vfac): 
                _s(0), _id(id), _vfac(vfac) { }
            
-           IndexedString(boost::shared_ptr< T > s, index_t id, VariableFactory *vfac): 
+           indexed_string(boost::shared_ptr< T > s, index_t id, variable_factory *vfac): 
                _s(s), _id(id), _vfac(vfac) { }
            
           public:
            
-           IndexedString(const IndexedString& is)
+           indexed_string(const indexed_string& is)
                : _s(is._s), _id(is._id), _vfac(is._vfac) { }
            
-           IndexedString& operator=(IndexedString is) {
+           indexed_string& operator=(indexed_string is) {
              _s = is._s;
              _id = is._id;
              _vfac = is._vfac;
@@ -99,26 +99,26 @@ namespace crab {
              else return boost::optional<T> ();
            }
            
-           VariableFactory& getVarFactory () { return *_vfac; }
+           variable_factory& get_var_factory () { return *_vfac; }
            
-           bool operator<(IndexedString s)  const 
+           bool operator<(indexed_string s)  const 
            { return (_id < s._id); }
            
-           bool operator==(IndexedString s) const 
+           bool operator==(indexed_string s) const 
            { return (_id == s._id);}
            
-           void write(ostream& o) 
+           void write(crab_os& o) 
            {
              o << str();
            }
            
-           friend ostream& operator<<(ostream& o, IndexedString s) 
+           friend crab_os& operator<<(crab_os& o, indexed_string s) 
            {
              o << s.str ();
              return o;
            }
            
-           friend size_t hash_value (IndexedString  s)
+           friend size_t hash_value (indexed_string  s)
            {
              boost::hash<index_t> hasher;
              return hasher(s.index());
@@ -127,47 +127,47 @@ namespace crab {
 
        public:
 
-         typedef typename IndexedString::index_t index_t;
+         typedef typename indexed_string::index_t index_t;
          
         private:
          
-         typedef boost::unordered_map< T, IndexedString >   t_map_t;      
-         typedef boost::unordered_map< index_t, IndexedString > shadow_map_t;      
+         typedef boost::unordered_map< T, indexed_string >   t_map_t;      
+         typedef boost::unordered_map< index_t, indexed_string > shadow_map_t;      
          
          index_t _next_id;
          t_map_t _map;
          shadow_map_t _shadow_map;
-         vector<IndexedString> _shadow_vars;
+         vector<indexed_string> _shadow_vars;
          
         public:
-         typedef IndexedString variable_t;
-         typedef boost::iterator_range<typename vector<IndexedString>::iterator> var_range;
-         typedef boost::iterator_range<typename vector<IndexedString>::const_iterator> const_var_range;
+         typedef indexed_string variable_t;
+         typedef boost::iterator_range<typename vector<indexed_string>::iterator> var_range;
+         typedef boost::iterator_range<typename vector<indexed_string>::const_iterator> const_var_range;
          
         public:
-         VariableFactory (): _next_id (1) { }
+         variable_factory (): _next_id (1) { }
          
-         VariableFactory (index_t start_id): _next_id (start_id) { }
+         variable_factory (index_t start_id): _next_id (start_id) { }
                   
-         // hook for generating IndexedString's without being
+         // hook for generating indexed_string's without being
          // associated with a particular T (w/o caching).
          // XXX: do not use it unless strictly necessary.
-         IndexedString get ()
+         indexed_string get ()
          {
-           IndexedString is (_next_id++, this);
+           indexed_string is (_next_id++, this);
            _shadow_vars.push_back (is);
            return is;
          }
          
-         // hook for generating IndexedString's without being
+         // hook for generating indexed_string's without being
          // associated with a particular T (w/ caching).
          // XXX: do not use it unless strictly necessary.
-         IndexedString get (index_t key)
+         indexed_string get (index_t key)
          {
            auto it = _shadow_map.find (key);
            if (it == _shadow_map.end()) 
            {
-             IndexedString is (_next_id++, this);
+             indexed_string is (_next_id++, this);
              _shadow_map.insert (typename shadow_map_t::value_type (key, is));
              _shadow_vars.push_back (is);
              return is;
@@ -176,12 +176,12 @@ namespace crab {
              return it->second;
          }
          
-         IndexedString operator[](T s) 
+         indexed_string operator[](T s) 
          {
            auto it = _map.find (s);
            if (it == _map.end()) 
            {
-             IndexedString is (boost::make_shared<T>(s), _next_id++, this);
+             indexed_string is (boost::make_shared<T>(s), _next_id++, this);
              _map.insert (typename t_map_t::value_type (s, is));
              return is;
            }
@@ -199,18 +199,18 @@ namespace crab {
        }; 
     
        //! Specialized factory for strings
-       class StrVariableFactory : public boost::noncopyable  
+       class str_variable_factory : public boost::noncopyable  
        {
-         typedef VariableFactory< std::string > StrVariableFactory_t;
-         std::unique_ptr< StrVariableFactory_t > m_factory; 
+         typedef variable_factory< std::string > str_variable_factory_t;
+         std::unique_ptr< str_variable_factory_t > m_factory; 
          
         public: 
          
-         typedef StrVariableFactory_t::variable_t varname_t;
-         typedef StrVariableFactory_t::const_var_range const_var_range;
-         typedef typename StrVariableFactory_t::index_t index_t;         
+         typedef str_variable_factory_t::variable_t varname_t;
+         typedef str_variable_factory_t::const_var_range const_var_range;
+         typedef typename str_variable_factory_t::index_t index_t;         
 
-         StrVariableFactory(): m_factory (new StrVariableFactory_t()){ }
+         str_variable_factory(): m_factory (new str_variable_factory_t()){ }
          
          varname_t operator[](std::string v) { return (*m_factory)[v]; }
 
@@ -224,12 +224,12 @@ namespace crab {
        }; 
 
        //! Specialized factory for integers
-       class IntVariableFactory : public boost::noncopyable  
+       class int_variable_factory : public boost::noncopyable  
        {
         public: 
          typedef int varname_t;
          
-         IntVariableFactory() { }
+         int_variable_factory() { }
          
          varname_t operator[](int v) { return v; }
        }; 
@@ -245,22 +245,22 @@ namespace crab {
   
        //! Three-coloured variable allocation. So the number of variables
        //  is bounded by 3|Tbl|, rather than always increasing.
-       class StrVarAlloc_col {
+       class str_var_alloc_col {
          static const char** col_prefix;
         public:
          
-         typedef StrVariableFactory::varname_t varname_t;
-         static StrVariableFactory vfac;
+         typedef str_variable_factory::varname_t varname_t;
+         static str_variable_factory vfac;
          
-         StrVarAlloc_col()
+         str_var_alloc_col()
              : colour(0), next_id(0)
          { }
          
-         StrVarAlloc_col(const StrVarAlloc_col& o)
+         str_var_alloc_col(const str_var_alloc_col& o)
              : colour(o.colour), next_id(o.next_id)
          { }
          
-         StrVarAlloc_col(const StrVarAlloc_col& x, const StrVarAlloc_col& y)
+         str_var_alloc_col(const str_var_alloc_col& x, const str_var_alloc_col& y)
              : colour(fresh_colour(x.colour, y.colour)),
                next_id(0)
          {
@@ -268,14 +268,14 @@ namespace crab {
            assert(colour != y.colour);
          }
          
-         StrVarAlloc_col& operator=(const StrVarAlloc_col& x)
+         str_var_alloc_col& operator=(const str_var_alloc_col& x)
          {
            colour = x.colour;
            next_id = x.next_id;
            return *this;
          }
          
-         StrVariableFactory::varname_t next() {
+         str_variable_factory::varname_t next() {
            std::string v = col_prefix[colour] + std::to_string(next_id++);
            return vfac[v];
          }
@@ -286,20 +286,20 @@ namespace crab {
        };
     
 
-       class IntVarAlloc_col {
+       class int_var_alloc_col {
         public:
          typedef int varname_t;
-         static IntVariableFactory vfac;
+         static int_variable_factory vfac;
          
-         IntVarAlloc_col()
+         int_var_alloc_col()
              : colour(0), next_id(0)
          { }
          
-         IntVarAlloc_col(const IntVarAlloc_col& o)
+         int_var_alloc_col(const int_var_alloc_col& o)
              : colour(o.colour), next_id(o.next_id)
          { }
          
-         IntVarAlloc_col(const IntVarAlloc_col& x, const IntVarAlloc_col& y)
+         int_var_alloc_col(const int_var_alloc_col& x, const int_var_alloc_col& y)
              : colour(fresh_colour(x.colour, y.colour)),
                next_id(0)
          {
@@ -307,14 +307,14 @@ namespace crab {
            assert(colour != y.colour);
          }
          
-         IntVarAlloc_col& operator=(const IntVarAlloc_col& x)
+         int_var_alloc_col& operator=(const int_var_alloc_col& x)
          {
            colour = x.colour;
            next_id = x.next_id;
            return *this;
          }
          
-         IntVariableFactory::varname_t next() {
+         int_variable_factory::varname_t next() {
            int id = next_id++;
            return 3*id + colour;
          }

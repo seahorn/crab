@@ -886,7 +886,7 @@ namespace crab {
      }
 
      
-    void write(std::ostream& o) {
+    void write(crab_os& o) {
       if (is_bottom()) {
         o << "_|_";
       } else if (is_top ()) {
@@ -1005,7 +1005,7 @@ namespace crab {
    };//  class dis_interval
 
    template<typename N>
-   std::ostream& operator<<(std::ostream& o, dis_interval<N> i) {
+   crab_os& operator<<(crab_os& o, dis_interval<N> i) {
      i.write (o);
      return o;
    }
@@ -1451,7 +1451,7 @@ namespace crab {
        return intervals.to_linear_constraint_system ();
      }
      
-     void write(ostream& o) {
+     void write(crab_os& o) {
       this->_env.write(o);
      }
      

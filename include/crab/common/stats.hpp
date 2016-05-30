@@ -66,7 +66,7 @@ namespace crab
     }
 
 
-    void Print (std::ostream &out) const;
+    void Print (crab_os &out) const;
 
     double toSeconds(){
       double time = ((double) getTimeElapsed () / 1000000) ;
@@ -92,7 +92,7 @@ namespace crab
       return avg;
     }
 
-    void Print (std::ostream &out) const;
+    void Print (crab_os &out) const;
 
   };
 #else
@@ -103,7 +103,7 @@ namespace crab
     void stop () {}
     void resume () {}
     long getTimeElapsed () const { return 0;}
-    void Print (std::ostream &out) {}
+    void Print (crab_os &out) {}
     double toSeconds(){ return 0.0;}
 
   };
@@ -112,7 +112,7 @@ namespace crab
   public :
    Averager () {}
    double add (double k) { return 0.0;}
-   void Print (std::ostream &out) const {}
+   void Print (crab_os &out) const {}
   };
 
 #endif 
@@ -124,13 +124,13 @@ namespace crab
 {
 
 #ifdef HAVE_STATS
-  inline std::ostream &operator<< (std::ostream &OS, const Stopwatch &sw)
+  inline crab_os &operator<< (crab_os &OS, const Stopwatch &sw)
   {
     sw.Print (OS);
     return OS;
   }
 
-  inline std::ostream &operator<< (std::ostream &OS, const Averager &av)
+  inline crab_os &operator<< (crab_os &OS, const Averager &av)
   {
     av.Print (OS);
     return OS;
@@ -161,8 +161,8 @@ namespace crab
     static void resume (const std::string &name);
 
     /** Outputs all statistics to std output */
-    static void Print (std::ostream &OS);
-    static void PrintBrunch (std::ostream &OS);
+    static void Print (crab_os &OS);
+    static void PrintBrunch (crab_os &OS);
   };
 
 
@@ -219,8 +219,8 @@ namespace crab
     ~ScopedCrabStats () { CrabStats::stop (m_name); }
   };  
 #else
-  inline std::ostream &operator<< (std::ostream &OS, const Stopwatch &sw){ return OS;}
-  inline std::ostream &operator<< (std::ostream &OS, const Averager &av){ return OS;}
+  inline crab_os &operator<< (crab_os &OS, const Stopwatch &sw){ return OS;}
+  inline crab_os &operator<< (crab_os &OS, const Averager &av){ return OS;}
   struct CrabStats
   {
     static unsigned  get (const std::string &n){ return 0;}
@@ -234,8 +234,8 @@ namespace crab
     static void start (const std::string &name){}
     static void stop (const std::string &name){}
     static void resume (const std::string &name){}
-    static void Print (std::ostream &OS){}
-    static void PrintBrunch (std::ostream &OS){}
+    static void Print (crab_os &OS){}
+    static void PrintBrunch (crab_os &OS){}
   };
   template <typename Output>
   struct TimeIt

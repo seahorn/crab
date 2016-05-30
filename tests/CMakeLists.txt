@@ -1,6 +1,6 @@
 set (CRAB_LIBS 
-#  dbm
-   term
+   OS
+   Term
    Debug
    Stats
    )

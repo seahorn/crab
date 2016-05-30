@@ -1,9 +1,9 @@
 #include "../common.hpp"
-#include <crab/checkers/BaseProperty.hpp>
-#include <crab/checkers/Null.hpp>
-#include <crab/checkers/DivZero.hpp>
-#include <crab/checkers/Assertion.hpp>
-#include <crab/checkers/Checker.hpp>
+#include <crab/checkers/base_property.hpp>
+#include <crab/checkers/null.hpp>
+#include <crab/checkers/div_zero.hpp>
+#include <crab/checkers/assertion.hpp>
+#include <crab/checkers/checker.hpp>
 
 using namespace std;
 using namespace crab::analyzer;
@@ -12,7 +12,7 @@ using namespace crab::domain_impl;
 using namespace crab::checker;
 
 
-cfg_t* cfg1 (VariableFactory &vfac) 
+cfg_t* cfg1 (variable_factory_t &vfac) 
 {
 
   // entry and exit block
@@ -46,7 +46,7 @@ cfg_t* cfg1 (VariableFactory &vfac)
 }
 
 
-cfg_t* cfg2 (VariableFactory &vfac)  {
+cfg_t* cfg2 (variable_factory_t &vfac)  {
 
   // Definining program variables
   z_var i (vfac ["i"]);
@@ -89,29 +89,29 @@ cfg_t* cfg2 (VariableFactory &vfac)  {
   return cfg;
 }
 
-typedef NullityAnalyzer<cfg_ref_t, VariableFactory>::nullity_domain_t nullity_domain_t;
+typedef nullity_analyzer<cfg_ref_t, variable_factory_t>::nullity_domain_t nullity_domain_t;
 
-void check (cfg_ref_t cfg, VariableFactory& vfac) {
+void check (cfg_ref_t cfg, variable_factory_t& vfac) {
 
   // Each checker is associated to one analyzer
-  typedef NullityAnalyzer<cfg_ref_t, VariableFactory>::analyzer_t null_analyzer_t;
-  typedef IntraChecker<null_analyzer_t> null_checker_t;
-  typedef NumFwdAnalyzer<cfg_ref_t, sdbm_domain_t, VariableFactory>::type num_analyzer_t;
-  typedef IntraChecker<num_analyzer_t> num_checker_t;
+  typedef nullity_analyzer<cfg_ref_t, variable_factory_t>::analyzer_t null_analyzer_t;
+  typedef intra_checker<null_analyzer_t> null_checker_t;
+  typedef num_fwd_analyzer<cfg_ref_t, sdbm_domain_t, variable_factory_t>::type num_analyzer_t;
+  typedef intra_checker<num_analyzer_t> num_checker_t;
 
   // We can have multiple properties per analyzer
-  typedef NullPropertyChecker<null_analyzer_t> null_prop_null_checker_t;
-  typedef DivZeroPropertyChecker<num_analyzer_t> div_zero_prop_num_checker_t;
-  typedef AssertPropertyChecker<num_analyzer_t> assert_prop_num_checker_t;
+  typedef null_property_checker<null_analyzer_t> null_prop_null_checker_t;
+  typedef div_zero_property_checker<num_analyzer_t> div_zero_prop_num_checker_t;
+  typedef assert_property_checker<num_analyzer_t> assert_prop_num_checker_t;
 
 
   // Run liveness (optionally) and print cfg
-  Liveness<cfg_ref_t> live (cfg);  
+  liveness<cfg_ref_t> live (cfg);  
   crab::outs() << cfg << "\n";
 
   // Run nullity analysis
   null_analyzer_t null_a (cfg, vfac, &live);
-  null_a.Run (nullity_domain_t::top ());
+  null_a.run (nullity_domain_t::top ());
   crab::outs() << "Nullity analysis using " << nullity_domain_t::getDomainName () << "\n";
   for (auto &b : cfg)  {
     auto pre = null_a.get_pre (b.label ());
@@ -124,7 +124,7 @@ void check (cfg_ref_t cfg, VariableFactory& vfac) {
 
   // Run numerical analysis
   num_analyzer_t num_a (cfg, vfac, &live);
-  num_a.Run (sdbm_domain_t::top ());
+  num_a.run (sdbm_domain_t::top ());
   crab::outs() << "Numerical analysis using " << sdbm_domain_t::getDomainName () << "\n";
   for (auto &b : cfg)  {
     auto pre = num_a.get_pre (b.label ());
@@ -143,8 +143,8 @@ void check (cfg_ref_t cfg, VariableFactory& vfac) {
   {
     typename null_checker_t::prop_checker_ptr prop1 (new null_prop_null_checker_t (verbose));
     null_checker_t checker (null_a, {prop1});
-    checker.Run ();
-    checker.Show (crab::outs());
+    checker.run ();
+    checker.show (crab::outs());
   }
 
   {
@@ -152,8 +152,8 @@ void check (cfg_ref_t cfg, VariableFactory& vfac) {
     typename num_checker_t::prop_checker_ptr prop2 (new assert_prop_num_checker_t (verbose));
     num_checker_t checker (num_a, {prop1, prop2});
 
-    checker.Run ();
-    checker.Show (crab::outs());
+    checker.run ();
+    checker.show (crab::outs());
   }
 
 }
@@ -162,7 +162,7 @@ int main (int argc, char**argv) {
 
   SET_TEST_OPTIONS(argc,argv)
 
-  VariableFactory vfac;
+  variable_factory_t vfac;
   cfg_t* p1 = cfg1 (vfac);
   check (*p1, vfac);
   cfg_t* p2 = cfg2 (vfac);

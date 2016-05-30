@@ -100,7 +100,7 @@ namespace crab {
       return this->operator&(other); 
     }
 
-    void write(std::ostream& o) {
+    void write(crab_os& o) {
       switch (_value) {
         case Bottom:     o << "_|_"; break;
         case Top:        o << "T"; break;
@@ -255,7 +255,7 @@ namespace crab {
       return "Nullity";
     }    
 
-    void write(std::ostream& o) {
+    void write(crab_os& o) {
       _env.write(o); 
     }
     

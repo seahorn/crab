@@ -642,11 +642,11 @@ namespace crab {
           }
       }
 
-      void write(std::ostream& o) {
+      void write(crab_os& o) {
         write(o, true);
       }
 
-      void write(std::ostream& o, bool print_bottom_edges) {
+      void write(crab_os& o, bool print_bottom_edges) {
         
         normalize ();
 
@@ -809,8 +809,8 @@ namespace crab {
 
       void operator-=(Vertex v) { lock(); norm() -= v; }
 
-      void write(ostream& o) { norm().write(o); }
-      void write(ostream& o, bool print_bottom_edges) { norm().write(o, print_bottom_edges); }
+      void write(crab_os& o) { norm().write(o); }
+      void write(crab_os& o, bool print_bottom_edges) { norm().write(o, print_bottom_edges); }
 
     protected:  
       array_sgraph_ref_t base_ref;  
@@ -832,7 +832,7 @@ namespace crab {
       landmark_kind_t kind() const { return _kind;} 
       virtual bool operator==(const landmark<V,N>& o) const = 0;
       virtual bool operator<(const landmark<V,N>& o) const = 0;
-      virtual void write(std::ostream&o) const = 0;
+      virtual void write(crab_os&o) const = 0;
       virtual std::size_t hash () const = 0;
     };
 
@@ -860,7 +860,7 @@ namespace crab {
         return (_n < static_cast<const landmark_cst_t*>(&o)->_n);
       }
 
-      void write(std::ostream&o) const { o << _n; }
+      void write(crab_os&o) const { o << _n; }
 
       std::size_t hash() const { return hash_value(_n);}
 
@@ -897,7 +897,7 @@ namespace crab {
           CRAB_ERROR("unreachable!");
       }
 
-      void write(std::ostream&o) const { o << _v; }
+      void write(crab_os&o) const { o << _v; }
 
       std::size_t hash() const { return hash_value(_v);}
 
@@ -931,7 +931,7 @@ namespace crab {
         return (_v < o_ptr->_v);
       }
 
-      void write(std::ostream&o) const { o << _lm << "'"; }
+      void write(crab_os&o) const { o << _lm << "'"; }
 
       std::size_t hash() const { return hash_value(_v);}
 
@@ -968,7 +968,7 @@ namespace crab {
 
       bool operator<(const landmark_ref &o) const { return (*_ref < *(o._ref)); } 
 
-      void write(std::ostream& o) const { _ref->write(o); } 
+      void write(crab_os& o) const { _ref->write(o); } 
 
       std::size_t hash () const { return _ref->hash();}
     };
@@ -988,7 +988,7 @@ namespace crab {
     }
 
     template<class V, class N>
-    inline std::ostream& operator<<(std::ostream& o, const landmark_ref<V,N> &lm) {
+    inline crab_os& operator<<(crab_os& o, const landmark_ref<V,N> &lm) {
       lm.write(o);
       return o;
     }
@@ -1097,7 +1097,7 @@ namespace crab {
       template<class CFG, class VarFactory>
       static void do_initialization (CFG cfg, VarFactory& vfac) {
 
-        typedef crab::analyzer::ArraySegmentation<CFG,typename CFG::varname_t> array_segment_analysis_t;
+        typedef crab::analyzer::array_segmentation<CFG,typename CFG::varname_t> array_segment_analysis_t;
         typedef typename array_segment_analysis_t::array_segment_domain_t array_segment_domain_t;
         typedef crab::analyzer::array_constant_segment_visitor<array_segment_domain_t> array_cst_segment_visitor_t;
 
@@ -1332,8 +1332,8 @@ namespace crab {
  
         /// --- Add x_old and x_old' to store old values of x and x'
 
-        VariableName x_old = x.getVarFactory ().get ();      
-        VariableName x_old_prime = x.getVarFactory ().get (); 
+        VariableName x_old = x.get_var_factory().get();      
+        VariableName x_old_prime = x.get_var_factory().get(); 
         landmark_ref_t lm_x_old (x_old);
         landmark_ref_t lm_x_old_prime (x_old_prime, x_old.str());
         var_landmarks.insert(std::make_pair(lm_x_old, lm_x_old_prime));
@@ -1811,7 +1811,7 @@ namespace crab {
                               << *this <<"\n";);
       }
     
-      void write(std::ostream& o) {
+      void write(crab_os& o) {
         #if 1
         NumDom copy_scalar(_scalar);
         array_sgraph_t copy_g(_g);

@@ -88,11 +88,11 @@ analysis using the Zones domain:
 
 ```c++
     // CFG-based language
-    #include <crab/cfg/Cfg.hpp>
+    #include <crab/cfg/cfg.hpp>
     // Variable factory	
-    #include <crab/cfg/VarFactory.hpp>
+    #include <crab/cfg/var_factory.hpp>
     // Forward analyzer	
-    #include <crab/analysis/FwdAnalyzer.hpp>
+    #include <crab/analysis/fwd_analyzer.hpp>
 
     // linear expressions and constraints
     #include <crab/domains/linear_constraints.hpp>
@@ -100,12 +100,11 @@ analysis using the Zones domain:
     #include <crab/domains/split_dbm.hpp>
 
     typedef SplitDBM<z_number, varname_t> zones_domain_t;
-    typedef NumFwdAnalyzer <cfg_ref_t,zones_domain_t,VariableFactory>::type analyzer_t;
+    typedef num_fwd_analyzer<cfg_ref_t,zones_domain_t,str_variable_factory>::type analyzer_t;
 
     int main (int argc, char**argv) {
-	
        // Declare variables i,x, and y
-       VariableFactory vfac;	
+       str_variable_factory vfac;	
        z_var i (vfac ["i"]);
        z_var x (vfac ["x"]);
        z_var y (vfac ["y"]);
@@ -123,11 +122,11 @@ analysis using the Zones domain:
        entry >> bb1; bb1 >> bb1_t; bb1 >> bb1_f;
        bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
        // Add statements
-       entry.assign (i, 0);
-       entry.assign (x, 1);
-       entry.assign (y, 0);
-       bb1_t.assume (i <= 99);
-       bb1_f.assume (i >= 100);
+       entry.assign(i, 0);
+       entry.assign(x, 1);
+       entry.assign(y, 0);
+       bb1_t.assume(i <= 99);
+       bb1_f.assume(i >= 100);
        bb2.add(x,x,y);
        bb2.add(y,y,1);
        bb2.add(i,i,1);

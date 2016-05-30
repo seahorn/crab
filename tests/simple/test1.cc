@@ -6,7 +6,7 @@ using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
 /* Example of how to build a CFG */
-cfg_t* prog (VariableFactory &vfac)  {
+cfg_t* prog (variable_factory_t &vfac)  {
 
   // Defining program variables
   z_var i (vfac ["i"]);
@@ -43,44 +43,22 @@ cfg_t* prog (VariableFactory &vfac)  {
   return cfg;
 }
 
-template <typename Domain>
-void run(cfg_ref_t cfg, VariableFactory &vfac)
-{
-  typename NumFwdAnalyzer <cfg_ref_t, Domain, VariableFactory>::type 
-      It (cfg, vfac, nullptr, 1, 2, 20);
-  Domain inv = Domain::top ();
-  It.Run (inv);
-  crab::outs() << "Invariants using " << Domain::getDomainName () << ":\n";
-
-  for (auto &b : cfg)
-  {
-    // invariants at the entry of the block
-    auto inv = It [b.label ()];
-    crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
-  }
-  crab::outs() << endl;
-  if (stats_enabled) {
-    crab::CrabStats::Print(crab::outs());
-    crab::CrabStats::reset();
-  }  
-}
-
 /* Example of how to infer invariants from the above CFG */
 int main (int argc, char** argv )
 {
   SET_TEST_OPTIONS(argc,argv)
 
-  VariableFactory vfac;
+  variable_factory_t vfac;
   cfg_t* cfg = prog(vfac);
   cfg->simplify (); // this is optional
-  crab::outs() << *cfg << endl;
+  crab::outs() << *cfg << "\n";
 
-  run<interval_domain_t>(*cfg, vfac);
-  run<dbm_domain_t>(*cfg, vfac);
-  run<sdbm_domain_t>(*cfg, vfac);
-  run<ric_domain_t>(*cfg, vfac);
-  run<term_domain_t>(*cfg, vfac);
-  run<dis_interval_domain_t>(*cfg, vfac);
+  run<interval_domain_t>(cfg, vfac, false, 1, 2, 20);
+  run<dbm_domain_t>(cfg, vfac, false, 1, 2, 20);
+  run<sdbm_domain_t>(cfg, vfac, false, 1, 2, 20);
+  run<ric_domain_t>(cfg, vfac, false, 1, 2, 20);
+  run<term_domain_t>(cfg, vfac, false, 1, 2, 20);
+  run<dis_interval_domain_t>(cfg, vfac, false, 1, 2, 20);
 
   // free the CFG
   delete cfg;

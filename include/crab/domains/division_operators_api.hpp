@@ -50,7 +50,7 @@ namespace ikos {
     OP_UREM
   } div_operation_t;
 
-  inline std::ostream& operator<<(std::ostream&o, div_operation_t op) {
+  inline crab::crab_os& operator<<(crab::crab_os&o, div_operation_t op) {
     switch (op) {
       case OP_SDIV: o << "/"; break;
       case OP_UDIV: o << "/_u"; break;
@@ -77,7 +77,7 @@ namespace crab {
 
   template<>
   inline boost::optional<div_operation_t> 
-  convOp (binary_operation_t op) {     
+  conv_op (binary_operation_t op) {     
     switch (op) {
       case BINOP_SDIV: return OP_SDIV;
       case BINOP_UDIV: return OP_UDIV;

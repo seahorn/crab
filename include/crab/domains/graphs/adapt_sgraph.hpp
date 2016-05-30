@@ -1,6 +1,6 @@
 #ifndef CRAB_ADAPT_SGRAPH_HPP
 #define CRAB_ADAPT_SGRAPH_HPP
-#include <crab/domains/dbm/util/Vec.h>
+#include <crab/domains/graphs/util/Vec.h>
 // Adaptive sparse-set based weighted graph implementation
 
 namespace crab {
@@ -609,7 +609,7 @@ namespace crab {
       }
     }
 
-    void write(std::ostream& o) {
+    void write(crab_os& o) {
       o << "[|";
       bool first = true;
       for(vert_id v : verts())

@@ -1,23 +1,91 @@
 #ifndef CRAB_COMMON_HPP
 #define CRAB_COMMON_HPP
 
-//#include <iosfwd>
-#include <iostream>
-//#include <string>
-//#include <stdint.h>
-//#include <sstream>
+#include <iosfwd>
 #include <stdarg.h>
-//#include <errno.h>
+#include <boost/shared_ptr.hpp>
 #include <boost/optional.hpp>
+#include <boost/noncopyable.hpp>
 
 /* Basic type definitions */
 
 namespace crab {
+  
+  // An adaptor for std::ostream that avoids polluting all crab header
+  // files with iostream stuff
+  class crab_os: boost::noncopyable {
+     
+   private:
+    
+    static boost::shared_ptr<crab_os> m_cout;
+    static boost::shared_ptr<crab_os> m_cerr;
+    
+   public:
+    
+    static boost::shared_ptr<crab_os> cout();
+    static boost::shared_ptr<crab_os> cerr();
 
-  extern std::ostream& outs();
-  extern std::ostream& errs();
+   private:
+    
+    std::ostream* m_os;
+    
+   protected:
 
-}
+    crab_os();
+
+   public:
+
+    crab_os(std::ostream* os);    
+
+    virtual ~crab_os();
+    
+    virtual crab_os& operator<<(char C);
+    virtual crab_os& operator<<(unsigned char C);
+    virtual crab_os& operator<<(signed char C);
+    virtual crab_os& operator<<(const char *Str);
+    virtual crab_os& operator<<(const std::string& Str);
+    virtual crab_os& operator<<(unsigned long N);
+    virtual crab_os& operator<<(long N);
+    virtual crab_os& operator<<(unsigned long long N);
+    virtual crab_os& operator<<(long long N);
+    virtual crab_os& operator<<(const void *P);
+    virtual crab_os& operator<<(unsigned int N);
+    virtual crab_os& operator<<(int N);
+    virtual crab_os& operator<<(double N);
+  };
+
+  extern crab_os& outs();
+  extern crab_os& errs();
+
+  // An adaptor for std::ostringstream
+  class crab_string_os: public crab_os {
+
+    std::ostringstream* m_string_os;    
+
+   public:
+
+    crab_string_os();
+
+    ~crab_string_os();
+
+    std::string str();
+
+    crab_os& operator<<(char C);
+    crab_os& operator<<(unsigned char C);
+    crab_os& operator<<(signed char C);
+    crab_os& operator<<(const char *Str);
+    crab_os& operator<<(const std::string& Str);
+    crab_os& operator<<(unsigned long N);
+    crab_os& operator<<(long N);
+    crab_os& operator<<(unsigned long long N);
+    crab_os& operator<<(long long N);
+    crab_os& operator<<(const void *P);
+    crab_os& operator<<(unsigned int N);
+    crab_os& operator<<(int N);
+    crab_os& operator<<(double N);    
+  };
+
+}// end namespace
 
 template<typename... ArgTypes>
 inline void ___print___(ArgTypes... args)
@@ -55,7 +123,7 @@ namespace crab {
      BINOP_AND, BINOP_OR, BINOP_XOR, BINOP_SHL, BINOP_LSHR, BINOP_ASHR
    } binary_operation_t;
 
-   inline std::ostream& operator<<(std::ostream&o, binary_operation_t op) {
+   inline crab::crab_os& operator<<(crab::crab_os&o, binary_operation_t op) {
      switch (op) {
        case BINOP_ADD: o << "+"; break;
        case BINOP_SUB: o << "-"; break;
@@ -76,7 +144,7 @@ namespace crab {
    }
 
   template<typename T>
-  inline boost::optional<T> convOp (binary_operation_t op); 
+  inline boost::optional<T> conv_op (binary_operation_t op); 
 
 
   // toy language for pointer constraints
@@ -182,7 +250,7 @@ namespace crab {
       return ptr_cst_t (opt_var_t (v1), opt_var_t (v2), PTR_DISEQUALITY);
     }
 
-    void write (std::ostream& o) const {
+    void write (crab::crab_os& o) const {
       if (is_contradiction () ) {
         o << "false";
       } else if (is_tautology ()) {
@@ -204,7 +272,7 @@ namespace crab {
       }
     }
     
-    friend std::ostream& operator<<(std::ostream& o, const ptr_cst_kind_t& k) {
+    friend crab::crab_os& operator<<(crab::crab_os& o, const ptr_cst_kind_t& k) {
       if (k == PTR_EQUALITY ) 
         o << " == ";
       else 
@@ -212,7 +280,7 @@ namespace crab {
       return o;
     }
     
-    friend std::ostream& operator<<(std::ostream& o, const ptr_cst_t& cst) {
+    friend crab::crab_os& operator<<(crab::crab_os& o, const ptr_cst_t& cst) {
       cst.write (o);
       return o;
     }
@@ -227,11 +295,11 @@ namespace ikos {
   // Interface for writeable objects
   class writeable {
    public:
-    virtual void write(std::ostream& o) = 0;
+    virtual void write(crab::crab_os& o) = 0;
     virtual ~writeable() {}
   }; // class writeable
 
-  inline std::ostream& operator<<(std::ostream& o, writeable& x) {
+  inline crab::crab_os& operator<<(crab::crab_os& o, writeable& x) {
     x.write(o);
     return o;
   }
@@ -283,7 +351,7 @@ namespace ikos {
       return _n.index () < o._n.index ();
     }
     
-    void write(std::ostream& o) { 
+    void write(crab::crab_os& o) { 
       if (_ty)
         o << _n << ":" << *_ty; 
       else
@@ -295,7 +363,7 @@ namespace ikos {
       return v.index ();
     }
   
-    friend std::ostream& operator<<(std::ostream& o, variable_t& v) {
+    friend crab::crab_os& operator<<(crab::crab_os& o, variable_t& v) {
       v.write(o);
       return o;
     }

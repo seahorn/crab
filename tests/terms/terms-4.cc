@@ -9,7 +9,7 @@ int main (int argc, char** argv )
 {
   SET_TEST_OPTIONS(argc,argv)
 
-  VariableFactory vfac;
+  variable_factory_t vfac;
   typedef interval< z_number> interval_t;
 
   varname_t x = vfac["x"];
@@ -37,7 +37,7 @@ int main (int argc, char** argv )
     // meet = ({x=y=w= '+' (c0,c1), z=c2},{_|_}) = _|_
     crab::outs() << "Meet" << "\n" << dom_left << " \n " << dom_right << "\n"; 
     term_domain_t l_meet_r = dom_left & dom_right;
-    crab::outs() << "Result=" << l_meet_r << std::endl;
+    crab::outs() << "Result=" << l_meet_r << "\n";
   }
 
   {
@@ -59,7 +59,7 @@ int main (int argc, char** argv )
     // meet = ({x=y=w= '+' (c0,c1), z=c2},{x=[5,8], y=[6,7], z=[3,5], w=[5,7]})
     crab::outs() << "Meet" << "\n" << dom_left << " \n " << dom_right << "\n"; 
     term_domain_t l_meet_r = dom_left & dom_right;
-    crab::outs() << "Result=" << l_meet_r << std::endl;
+    crab::outs() << "Result=" << l_meet_r << "\n";
   }
 
   {
@@ -74,13 +74,13 @@ int main (int argc, char** argv )
     dom.apply(OP_ADDITION, y, zero, one);
     z_lin_cst_t c1 (z_lin_t(x) == z_lin_t(y));
     crab::outs() << "Added " << c1 << "\n";
-    crab::outs() << dom << std::endl;
+    crab::outs() << dom << "\n";
     dom += c1;
-    crab::outs() << "Result=" << dom << std::endl;
+    crab::outs() << "Result=" << dom << "\n";
     z_lin_cst_t c2 (z_lin_t(x) != z_lin_t(y));
     crab::outs() << "Added " << c2 << "\n";
     dom += c2;
-    crab::outs() << "Result=" << dom << std::endl;
+    crab::outs() << "Result=" << dom << "\n";
   }
 
   return 0;

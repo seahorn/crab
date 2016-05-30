@@ -128,7 +128,7 @@ namespace crab {
         linear_constraint_system_t to_linear_constraint_system ()
         { CRAB_ERROR (LDD_NOT_FOUND); }
         
-        void write(ostream& o) 
+        void write(crab_os& o) 
         { CRAB_ERROR (LDD_NOT_FOUND); }
           
         static std::string getDomainName () {
@@ -969,8 +969,8 @@ namespace crab {
         }
 
         
-        void write (ostream& o) {
-          // TODO: write to ostream rather than stdout
+        void write (crab_os& o) {
+          // TODO: write to o rather than stdout
           LddManager *ldd_man = getLddManager (m_ldd);
           DdManager *cudd = Ldd_GetCudd (ldd_man);
           FILE *fp = Cudd_ReadStdout(cudd);

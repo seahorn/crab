@@ -193,7 +193,7 @@ namespace ikos {
       return this->compare(other) == 1;
     }
     
-    void write(std::ostream& o) {
+    void write(crab::crab_os& o) {
       o << "[";
       for (iterator it = this->begin(); it != this->end(); ) {
 	NodeName n = *it;
@@ -241,7 +241,7 @@ namespace ikos {
       v->visit(*this);
     }
     
-    void write(std::ostream& o) {
+    void write(crab::crab_os& o) {
       o << this->_node;
     }   
 
@@ -322,7 +322,7 @@ namespace ikos {
       return iterator(this->_wto_components, false);
     }
     
-    void write(std::ostream& o) {
+    void write(crab::crab_os& o) {
       o << "(" << this->_head;
       if (!this->_wto_components->empty()) {
 	o << " ";
@@ -589,7 +589,7 @@ namespace ikos {
       }
     }
     
-    void write(std::ostream& o) {
+    void write(crab::crab_os& o) {
       for (iterator it = this->begin(); it != this->end(); ) {
         wto_component_t& c = *it;
         o << c;

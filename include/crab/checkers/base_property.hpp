@@ -5,8 +5,9 @@
    Base class for a property checker
  */
 
+#include <crab/common/types.hpp>
 #include <crab/common/debug.hpp>
-#include <crab/cfg/Cfg.hpp>
+#include <crab/cfg/cfg.hpp>
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/domains/nullity.hpp>
 
@@ -20,8 +21,8 @@ namespace crab {
 
   // Toy database to store invariants. We may want to replace it with
   // a permanent external database.
-  class ChecksDB {
-    typedef std::pair<DebugInfo, check_kind_t> check_t;
+  class checks_db {
+    typedef std::pair<debug_info, check_kind_t> check_t;
     typedef std::set<check_t> checks_db_t;
 
     checks_db_t m_db;
@@ -32,12 +33,12 @@ namespace crab {
 
    public:
 
-    ChecksDB ():
+    checks_db ():
         m_total_safe(0), m_total_err(0), 
         m_total_unreach(0), m_total_warn (0) { }
     
     // add an entry in the database
-    void add (check_kind_t status, DebugInfo dbg = DebugInfo () ) {
+    void add (check_kind_t status, debug_info dbg = debug_info () ) {
       switch (status) {
         case _SAFE: m_total_safe++;break;
         case _ERR : m_total_err++;break;
@@ -49,7 +50,7 @@ namespace crab {
     }
     
     // merge two databases
-    void operator+=(const ChecksDB& other) {
+    void operator+=(const checks_db& other) {
       m_db.insert (other.m_db.begin (), other.m_db.end ());
       m_total_safe += other.m_total_safe;
       m_total_err += other.m_total_err;
@@ -57,7 +58,7 @@ namespace crab {
       m_total_unreach += other.m_total_unreach;
     }
     
-    void write (std::ostream& o) const {
+    void write (crab_os& o) const {
       std::vector<unsigned> cnts = { m_total_safe, m_total_err, 
                                      m_total_warn, m_total_unreach };
       unsigned MaxValLen = 0;
@@ -135,12 +136,12 @@ namespace crab {
      // To avoid compilation errors if the abstract domain is not a
      // numerical domain
      template<typename Domain, typename VariableName>
-     struct GetAs {
+     struct get_as {
        typedef crab::domains::interval<z_number> interval_t;
        typedef linear_constraint< z_number, VariableName> z_lin_cst_t;
 
        Domain& m_inv;
-       GetAs (Domain& inv): m_inv (inv) { }
+       get_as (Domain& inv): m_inv (inv) { }
 
        interval_t operator[](VariableName v){ return m_inv [v]; }
 
@@ -169,12 +170,12 @@ namespace crab {
 
      // TO BE COMPLETED: add here any non-numerical domain
      template<typename VariableName>
-     struct GetAs <crab::domains::nullity_domain<VariableName>, VariableName> {
+     struct get_as <crab::domains::nullity_domain<VariableName>, VariableName> {
        typedef crab::domains::interval<z_number> interval_t;
        typedef linear_constraint<z_number,VariableName> z_lin_cst_t;
        typedef crab::domains::nullity_domain<VariableName> nullity_domain_t;
        
-       GetAs (nullity_domain_t&) { }
+       get_as (nullity_domain_t&) { }
        interval_t operator[](VariableName){ return interval_t::top (); }
        bool entails(z_lin_cst_t) { return false; }
        bool intersect(z_lin_cst_t) { return true; }  
@@ -183,7 +184,7 @@ namespace crab {
   } // end num_dom_detail namespace
 
   template<typename Analyzer>
-  class PropertyChecker: public StatementVisitor <typename Analyzer::varname_t> {
+  class property_checker: public statement_visitor <typename Analyzer::varname_t> {
    public:
     typedef typename Analyzer::abs_tr_ptr abs_tr_ptr;
     typedef typename Analyzer::varname_t varname_t;
@@ -193,35 +194,36 @@ namespace crab {
     typedef linear_expression< z_number, varname_t > z_lin_exp_t;
     typedef linear_constraint< z_number, varname_t > z_lin_cst_t;
     typedef linear_constraint_system< z_number, varname_t > z_lin_cst_sys_t;
-    typedef BinaryOp <z_number,varname_t> z_bin_op_t;
-    typedef Assignment <z_number,varname_t> z_assign_t;
-    typedef Assume <z_number,varname_t> z_assume_t;
-    typedef Assert <z_number,varname_t> z_assert_t;
-    typedef Havoc<varname_t> havoc_t;
-    typedef Unreachable<varname_t> unreach_t;
-    typedef Select <z_number,varname_t> z_select_t;
-    typedef FCallSite<varname_t> callsite_t;
-    typedef Return<varname_t> return_t;
-    typedef ArrayInit<varname_t> z_arr_init_t;
-    typedef AssumeArray<z_number,varname_t> z_assume_arr_t;
-    typedef ArrayStore<z_number,varname_t> z_arr_store_t;
-    typedef ArrayLoad<z_number,varname_t> z_arr_load_t;
-    typedef PtrStore<z_number,varname_t> z_ptr_store_t;
-    typedef PtrLoad<z_number,varname_t> z_ptr_load_t;
-    typedef PtrAssign<z_number,varname_t> z_ptr_assign_t;
-    typedef PtrObject<varname_t> ptr_object_t;
-    typedef PtrFunction<varname_t> ptr_function_t;
-    typedef PtrNull<varname_t> ptr_null_t;
-    typedef PtrAssume<varname_t> ptr_assume_t;
-    typedef PtrAssert<varname_t> ptr_assert_t;
 
-    typedef std::set<std::pair<DebugInfo, check_kind_t> > CheckResultsDB;
+    typedef binary_op<z_number,varname_t>         z_bin_op_t;
+    typedef assignment<z_number,varname_t>        z_assign_t;
+    typedef assume_stmt<z_number,varname_t>       z_assume_t;
+    typedef assert_stmt<z_number,varname_t>       z_assert_t;
+    typedef havoc_stmt<varname_t>                 havoc_t;
+    typedef unreachable_stmt<varname_t>           unreach_t;
+    typedef select_stmt <z_number,varname_t>      z_select_t;
+    typedef callsite_stmt<varname_t>              callsite_t;
+    typedef return_stmt<varname_t>                return_t;
+    typedef array_init_stmt<varname_t>            z_arr_init_t;
+    typedef assume_array_stmt<z_number,varname_t> z_assume_arr_t;
+    typedef array_store_stmt<z_number,varname_t>  z_arr_store_t;
+    typedef array_load_stmt<z_number,varname_t>   z_arr_load_t;
+    typedef ptr_store_stmt<z_number,varname_t>    z_ptr_store_t;
+    typedef ptr_load_stmt<z_number,varname_t>     z_ptr_load_t;
+    typedef ptr_assign_stmt<z_number,varname_t>   z_ptr_assign_t;
+    typedef ptr_object_stmt<varname_t>            ptr_object_t;
+    typedef ptr_function_stmt<varname_t>          ptr_function_t;
+    typedef ptr_null_stmt<varname_t>              ptr_null_t;
+    typedef ptr_assume_stmt<varname_t>            ptr_assume_t;
+    typedef ptr_assert_stmt<varname_t>            ptr_assert_t;
+
+    typedef std::set<std::pair<debug_info, check_kind_t> > check_results_db;
  
    protected: 
 
     abs_tr_ptr m_abs_tr; // it can be null
     int m_verbose;
-    ChecksDB m_db; // Store debug information about the checks
+    checks_db m_db; // Store debug information about the checks
    
     virtual void check (z_assert_t& s) { 
       if (!this->m_abs_tr) return;        
@@ -352,22 +354,22 @@ namespace crab {
     void visit (ptr_null_t &s) { check (s); }
     void visit (ptr_assert_t &s) { check (s); }
     
-    PropertyChecker (int verbose): 
+    property_checker (int verbose): 
         m_abs_tr (nullptr), m_verbose (verbose) { }
     
     void set (abs_tr_ptr abs_tr) {
       m_abs_tr = abs_tr;
     }
     
-    const ChecksDB& get_db () const { return m_db; }
+    const checks_db& get_db () const { return m_db; }
     
-    ChecksDB get_db () { return m_db; }
+    checks_db get_db () { return m_db; }
 
     virtual std::string get_property_name () const {
        return "dummy property";
     }
 
-    void write (std::ostream& o) const {
+    void write (crab_os& o) const {
       o << get_property_name () << "\n";
       m_db.write (o);
     }

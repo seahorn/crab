@@ -5,7 +5,7 @@ using namespace crab::analyzer;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
-cfg_t* prog (VariableFactory &vfac) 
+cfg_t* prog (variable_factory_t &vfac) 
 {
   ////
   // Building the CFG
@@ -50,49 +50,21 @@ cfg_t* prog (VariableFactory &vfac)
   return cfg;
 }
 
-template <typename Domain, typename Live>
-void run(cfg_ref_t cfg, VariableFactory &vfac, Live *live)
-{
-  const unsigned int w = 1;
-  const unsigned int n = 2;
-
-  typename NumFwdAnalyzer <cfg_ref_t, Domain, VariableFactory>::type 
-      It (cfg, vfac, live, w, n, 20);
-  Domain inv = Domain::top ();
-  It.Run (inv);
-  crab::outs() << "Invariants using " << Domain::getDomainName () << ":\n";
-
-  for (auto &b : cfg)
-  {
-    // invariants at the entry of the block
-    auto inv = It [b.label ()];
-    crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
-  }
-  crab::outs() << endl;
-  if (stats_enabled) {
-    crab::CrabStats::Print(crab::outs());
-    crab::CrabStats::reset();
-  }
-}
-
 int main (int argc, char** argv )
 {
   SET_TEST_OPTIONS(argc,argv)
 
-  VariableFactory vfac;
+  variable_factory_t vfac;
   cfg_t* cfg = prog (vfac);
   cfg->simplify ();
-  crab::outs() << *cfg << endl;
+  crab::outs() << *cfg << "\n";
 
-  Liveness<cfg_ref_t> live (*cfg);
-  live.exec ();
-
-  run<interval_domain_t>(*cfg, vfac, &live);
-  run<term_domain_t>(*cfg, vfac, &live);
+  run<interval_domain_t>(cfg, vfac, true, 1, 2, 20);
+  run<term_domain_t>(cfg, vfac, true, 1, 2, 20);
 
   /*
   term_dbm_t t_dbm_dom = term_dbm_t::top ();
-  NumFwdAnalyzer <cfg_ref_t, term_dbm_t, VariableFactory>::type
+  num_fwd_analyzer <cfg_ref_t, term_dbm_t, variable_factory_t>::type
       term_dbm_a (*cfg, vfac, &live);
   term_dbm_a.Run (t_dbm_dom);
   crab::outs() << "Results with term<dbm> domain:\n";
@@ -101,12 +73,12 @@ int main (int argc, char** argv )
     term_dbm_t inv = term_dbm_a [b.label ()];
     crab::outs() << cfg_impl::get_label_str (b.label ()) << "=" << inv << "\n";
 //    auto cst = inv.to_linear_constraint_system();
-//    crab::outs() << "  := " << cst << endl;
+//    crab::outs() << "  := " << cst << "\n";
   }
 
 
   dbm_domain_t dbm = dbm_domain_t::top ();
-  NumFwdAnalyzer <cfg_ref_t, dbm_domain_t, VariableFactory>::type
+  num_fwd_analyzer <cfg_ref_t, dbm_domain_t, variable_factory_t>::type
       dbm_a (*cfg, vfac, &live);
   dbm_a.Run (dbm);
   crab::outs() << "Results with DBMs:\n";

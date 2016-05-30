@@ -6,7 +6,7 @@
  */
 
 #include <crab/common/types.hpp>
-#include <crab/checkers/BaseProperty.hpp>
+#include <crab/checkers/base_property.hpp>
 #include <crab/domains/intervals.hpp>
 #include <crab/domains/nullity.hpp>
 
@@ -15,12 +15,12 @@ namespace crab {
   namespace checker {
 
     template<typename Analyzer>
-    class DivZeroPropertyChecker: public PropertyChecker <Analyzer> {
+    class div_zero_property_checker: public property_checker <Analyzer> {
       
       typedef typename Analyzer::varname_t varname_t;
       typedef crab::domains::interval<z_number> interval_t;
       typedef typename Analyzer::abs_dom_t abs_dom_t;
-      typedef PropertyChecker<Analyzer> base_checker_t;
+      typedef property_checker<Analyzer> base_checker_t;
       using typename base_checker_t::z_var_t;
       using typename base_checker_t::z_lin_exp_t;
       using typename base_checker_t::z_lin_cst_t;
@@ -29,7 +29,8 @@ namespace crab {
 
      public:
       
-      DivZeroPropertyChecker (int verbose = 0): base_checker_t (verbose) { }
+      div_zero_property_checker (int verbose = 0)
+          : base_checker_t (verbose) { }
       
       std::string get_property_name () const override {
         return "integer division by zero checker";
@@ -57,18 +58,18 @@ namespace crab {
             }
           }
           else if (auto var = divisor_expr.get_variable ()) {
-            num_dom_detail::GetAs<abs_dom_t,varname_t> num_inv (inv);
+            num_dom_detail::get_as<abs_dom_t,varname_t> num_inv (inv);
             interval_t divisor_intv = num_inv [(*var).name()];
             if (auto divisor = divisor_intv.singleton ()) {
               if (*divisor == z_number (0)) {
                 LOG_ERR(this->m_verbose, inv, z_lin_cst_t (*var != z_number (0)),
-                        s.getDebugInfo());
+                        s.get_debug_info());
               } else {
                 this->m_db.add (_SAFE);
               }
             } else if (interval_t (z_number (0)) <= divisor_intv) {
               LOG_WARN(this->m_verbose, inv, z_lin_cst_t (*var != z_number (0)),
-                       s.getDebugInfo());
+                       s.get_debug_info());
             } else {
               this->m_db.add (_SAFE);
             }

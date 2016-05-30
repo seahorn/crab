@@ -1,8 +1,8 @@
-add_library(term ${CRAB_LIBS_TYPE}  
+add_library(Term ${CRAB_LIBS_TYPE}  
   term.cpp)
 
 
-install(TARGETS term
+install(TARGETS Term
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
   )

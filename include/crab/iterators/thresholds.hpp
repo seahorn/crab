@@ -12,7 +12,7 @@ namespace crab {
    namespace iterators {
  
      template<typename Number>
-     class Thresholds {
+     class thresholds {
        
       public:
        
@@ -25,7 +25,7 @@ namespace crab {
 
       public:
        
-       Thresholds (int size = INT_MAX) : m_size (size) { 
+       thresholds (int size = INT_MAX) : m_size (size) { 
          m_thresholds.push_back (bound_t::minus_infinity ());
          m_thresholds.push_back (0);
          m_thresholds.push_back (bound_t::plus_infinity ());
@@ -58,7 +58,7 @@ namespace crab {
          return m_thresholds [0];
        }
        
-       void write (ostream &o) const { 
+       void write (crab_os &o) const { 
          o << "{";
          for (typename vector<bound_t>::const_iterator it = m_thresholds.begin (), 
                   et= m_thresholds.end (); it != et; ) {
@@ -74,7 +74,7 @@ namespace crab {
      };
 
      template<typename Number>
-     std::ostream& operator<< (std::ostream& o, const Thresholds<Number>& t) {
+     crab_os& operator<< (crab_os& o, const thresholds<Number>& t) {
        t.write (o);
        return o;
      }

@@ -589,7 +589,7 @@ public:
 
   congruence_t SExt(unsigned width) { return *this; }
 
-  void write(std::ostream& o) {
+  void write(crab::crab_os& o) {
     if (is_bottom()) {
       o << "_|_";
       return;
@@ -1230,7 +1230,7 @@ public:
     this->_env.set(x, xi);
   }
 
-  void write(std::ostream& o) { 
+  void write(crab::crab_os& o) { 
     this->_env.write(o); 
   }
 

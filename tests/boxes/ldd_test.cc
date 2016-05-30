@@ -190,7 +190,7 @@ int main (int argc, char** argv )
 
   LddManager* ldd = create_ldd_man (500);
 
-  VariableFactory vfac;
+  variable_factory_t vfac;
   varname_t x = vfac["x"];
   varname_t y = vfac["y"];
 

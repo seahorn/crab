@@ -1,6 +1,6 @@
 #ifndef CRAB_GRAPH_OPS_HPP
 #define CRAB_GRAPH_OPS_HPP
-#include <crab/domains/dbm/util/Heap.h>
+#include <crab/domains/graphs/util/Heap.h>
 //============================
 // A set of utility algorithms for manipulating graphs.
 

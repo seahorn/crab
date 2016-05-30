@@ -5,7 +5,7 @@ using namespace crab::analyzer;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
-cfg_t* prog (VariableFactory &vfac) 
+cfg_t* prog (variable_factory_t &vfac) 
 {
 
   ////
@@ -87,13 +87,13 @@ int main (int argc, char**argv){
   crab::outs() << "prev threshold for -10000:" << t9 << "\n";
 
   {
-    VariableFactory vfac;
+    variable_factory_t vfac;
     cfg_t* cfg = prog (vfac);
     crab::outs() << *cfg << "\n";
 
     typename cfg_t::thresholds_t ts = cfg->initialize_thresholds_for_widening (50);
     crab::outs() << "Thresholds=" << ts << "\n";
-    NumFwdAnalyzer <cfg_ref_t, term_domain_t,VariableFactory>::type a (*cfg, vfac, nullptr, 1, 2, 20);
+    num_fwd_analyzer<cfg_ref_t,term_domain_t,variable_factory_t>::type a (*cfg, vfac, nullptr, 1, 2, 20);
     // Run fixpoint 
     term_domain_t inv = term_domain_t::top ();
     a.Run (inv);

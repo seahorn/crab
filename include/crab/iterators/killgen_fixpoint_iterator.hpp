@@ -6,9 +6,9 @@
 #include <crab/common/stats.hpp>
 #include <crab/common/debug.hpp>
 #include <crab/domains/discrete_domains.hpp>
-#include <crab/cfg/CfgBgl.hpp>
-#include <crab/analysis/graphs/Sccg.hpp>
-#include <crab/analysis/graphs/TopoOrder.hpp>
+#include <crab/cfg/cfg_bgl.hpp>
+#include <crab/analysis/graphs/sccg.hpp>
+#include <crab/analysis/graphs/topo_order.hpp>
 
 namespace crab {
 
@@ -131,7 +131,7 @@ namespace crab {
         return (_inv & other._inv);
       }
          
-      void write(ostream& o) { _inv.write(o); }
+      void write(crab_os& o) { _inv.write(o); }
       
     }; 
 

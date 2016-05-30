@@ -293,7 +293,7 @@ namespace ikos {
       }
     }
     
-    void write(std::ostream& o) {
+    void write(crab::crab_os& o) {
       if (this->is_plus_infinity()) {
         o << "+oo";
       } else if (this->is_minus_infinity()) {
@@ -549,7 +549,7 @@ namespace ikos {
       }
     }
     
-    void write(std::ostream& o) {
+    void write(crab::crab_os& o) {
       if (is_bottom()) {
         o << "_|_";
       } else {
@@ -919,7 +919,7 @@ namespace ikos {
   }
 
   template < typename Number >
-  inline std::ostream& operator<<(std::ostream& o, interval< Number > i) {
+  inline crab::crab_os& operator<<(crab::crab_os& o, interval< Number > i) {
     i.write(o);
     return o;
   }
@@ -1580,7 +1580,7 @@ namespace ikos {
       this->_env.set(x, xi);
     }
 
-    void write(std::ostream& o) {
+    void write(crab::crab_os& o) {
       this->_env.write(o);
     }
 

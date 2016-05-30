@@ -349,7 +349,7 @@ namespace ikos {
       }
     }
     
-    void write(std::ostream& o) {
+    void write(crab::crab_os& o) {
       if (this->is_bottom()) {
         o << "_|_";
       } else {

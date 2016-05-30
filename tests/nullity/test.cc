@@ -5,7 +5,7 @@ using namespace crab::analyzer;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
-cfg_t* cfg1 (VariableFactory &vfac) 
+cfg_t* cfg1 (variable_factory_t &vfac) 
 {
 
   ////
@@ -39,7 +39,7 @@ cfg_t* cfg1 (VariableFactory &vfac)
   return cfg;
 }
 
-cfg_t* cfg2 (VariableFactory &vfac) 
+cfg_t* cfg2 (variable_factory_t &vfac) 
 {
 
   // entry and exit block
@@ -73,7 +73,7 @@ cfg_t* cfg2 (VariableFactory &vfac)
 }
 
 
-cfg_t* cfg3 (VariableFactory &vfac)  {
+cfg_t* cfg3 (variable_factory_t &vfac)  {
 
   // Definining program variables
   z_var i (vfac ["i"]);
@@ -112,11 +112,11 @@ cfg_t* cfg3 (VariableFactory &vfac)  {
 }
 
 
-void run (cfg_ref_t cfg, VariableFactory& vfac) {
-  typedef NullityAnalyzer<cfg_ref_t, VariableFactory>::analyzer_t nullity_analyzer_t;
-  typedef NullityAnalyzer<cfg_ref_t, VariableFactory>::nullity_domain_t nullity_domain_t;
+void run (cfg_ref_t cfg, variable_factory_t& vfac) {
+  typedef nullity_analyzer<cfg_ref_t, variable_factory_t>::analyzer_t nullity_analyzer_t;
+  typedef nullity_analyzer<cfg_ref_t, variable_factory_t>::nullity_domain_t nullity_domain_t;
 
-  Liveness<cfg_ref_t> live (cfg);
+  liveness<cfg_ref_t> live (cfg);
   //live.exec ();
 
   nullity_analyzer_t a (cfg, vfac, &live);
@@ -139,7 +139,7 @@ void run (cfg_ref_t cfg, VariableFactory& vfac) {
 int main (int argc, char** argv) {
   SET_TEST_OPTIONS(argc,argv)
 
-  VariableFactory vfac;
+  variable_factory_t vfac;
   cfg_t* cfg_1 = cfg1 (vfac);
   run (*cfg_1, vfac);
   cfg_t* cfg_2 = cfg2 (vfac);

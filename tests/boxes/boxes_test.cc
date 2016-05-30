@@ -6,7 +6,7 @@ using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
 /* Example of how to build a CFG */
-cfg_t* prog1 (VariableFactory &vfac)  {
+cfg_t* prog1 (variable_factory_t &vfac)  {
 
   // Definining program variables
   z_var i (vfac ["i"]);
@@ -35,7 +35,7 @@ cfg_t* prog1 (VariableFactory &vfac)  {
   return cfg;
 }
 
-cfg_t* prog2 (VariableFactory &vfac) 
+cfg_t* prog2 (variable_factory_t &vfac) 
 {
 
   cfg_t* cfg = new cfg_t("loop1_entry","ret"); 
@@ -76,7 +76,7 @@ cfg_t* prog2 (VariableFactory &vfac)
   return cfg;
 }
 
-cfg_t* prog3 (VariableFactory &vfac) 
+cfg_t* prog3 (variable_factory_t &vfac) 
 {
 
   cfg_t* cfg = new cfg_t("entry","ret");
@@ -133,7 +133,7 @@ cfg_t* prog3 (VariableFactory &vfac)
   return cfg;
 }
 
-cfg_t* prog4 (VariableFactory &vfac) 
+cfg_t* prog4 (variable_factory_t &vfac) 
 {
 
   cfg_t* cfg = new cfg_t("entry","ret");
@@ -166,7 +166,7 @@ cfg_t* prog4 (VariableFactory &vfac)
 }
 
 /* Example of how to build a CFG */
-cfg_t* prog5 (VariableFactory &vfac)  {
+cfg_t* prog5 (variable_factory_t &vfac)  {
 
   // Definining program variables
   z_var i (vfac ["i"]);
@@ -195,42 +195,13 @@ cfg_t* prog5 (VariableFactory &vfac)  {
   return cfg;
 }
 
-template <typename Domain, typename Live>
-void run(cfg_ref_t cfg, VariableFactory &vfac, Live *live)
-{
-  const unsigned int w = 10;
-  const unsigned int n = 2;
-
-  typename NumFwdAnalyzer <cfg_ref_t, Domain, VariableFactory>::type 
-      It (cfg, vfac, live, w, n, 20);
-  Domain inv = Domain::top ();
-  It.Run (inv);
-  crab::outs() << "Invariants using " << Domain::getDomainName () << ":\n";
-
-  for (auto &b : cfg)
-  {
-    // invariants at the entry of the block
-    auto inv = It [b.label ()];
-    crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
-  }
-  crab::outs() << endl;
-  if (stats_enabled) {
-    crab::CrabStats::Print(crab::outs());
-    crab::CrabStats::reset();
-  }  
-}
-
 /* Example of how to infer invariants from the above CFG */
 int main (int argc, char** argv )
 {
   SET_TEST_OPTIONS(argc,argv)
 
-  VariableFactory vfac;
+  variable_factory_t vfac;
 
-  const unsigned int w = 10;
-  const unsigned int n = 2;
-
-  
   cfg_t* cfg1 = prog1 (vfac);      
   cfg_t* cfg2 = prog2 (vfac);
   cfg_t* cfg3 = prog3 (vfac);
@@ -238,23 +209,23 @@ int main (int argc, char** argv )
   cfg_t* cfg5 = prog5 (vfac);
 
   cfg1->simplify (); // this is optional
-  crab::outs() << *cfg1 << endl;
-  run<boxes_domain_t>(*cfg1, vfac, nullptr);
+  crab::outs() << *cfg1 << "\n";
+  run<boxes_domain_t>(cfg1, vfac, false, 10,2,20);
 
   cfg2->simplify (); // this is optional
-  crab::outs() << *cfg2 << endl;
-  run<boxes_domain_t>(*cfg2, vfac, nullptr);
+  crab::outs() << *cfg2 << "\n";
+  run<boxes_domain_t>(cfg2, vfac, false, 10,2,20);
   
   cfg3->simplify (); // this is optional
-  crab::outs() << *cfg3 << endl;
-  run<boxes_domain_t>(*cfg3, vfac, nullptr);
+  crab::outs() << *cfg3 << "\n";
+  run<boxes_domain_t>(cfg3, vfac, false, 10,2,20);
 
   cfg4->simplify (); // this is optional
-  crab::outs() << *cfg4 << endl;
-  run<boxes_domain_t>(*cfg4, vfac, nullptr);
+  crab::outs() << *cfg4 << "\n";
+  run<boxes_domain_t>(cfg4, vfac, false, 10,2,20);
 
-  crab::outs() << *cfg5 << endl;
-  run<boxes_domain_t>(*cfg5, vfac, nullptr);
+  crab::outs() << *cfg5 << "\n";
+  run<boxes_domain_t>(cfg5, vfac, false, 10,2,20);
 
   delete cfg1;
   delete cfg2;

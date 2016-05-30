@@ -6,7 +6,7 @@ using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
 /* Example of how to build a CFG */
-cfg_t* prog (VariableFactory &vfac)  {
+cfg_t* prog (variable_factory_t &vfac)  {
 
   // Defining program variables
   z_var i (vfac ["i"]);
@@ -47,44 +47,44 @@ int main (int argc, char** argv )
 {
   SET_TEST_OPTIONS(argc,argv)
 
-  VariableFactory vfac;
+  variable_factory_t vfac;
 
   { 
     cfg_t* cfg = prog(vfac);
     
-    crab::outs() << "CFG\n" << *cfg << endl;
+    crab::outs() << "CFG\n" << *cfg << "\n";
     cfg_rev_t rev_cfg(*cfg);
-    crab::outs() << "Reversed CFG\n" << rev_cfg << endl;
+    crab::outs() << "Reversed CFG\n" << rev_cfg << "\n";
     
-    std::cout << "Weak reversed topological order of CFG \n";
+    crab::outs() << "Weak reversed topological order of CFG \n";
     bool first=true;
     for (auto &N: crab::analyzer::graph_algo::weak_rev_topo_sort(cfg_ref_t(*cfg))) {
       if (!first)
-        std::cout << " -- ";
-      std::cout << N;
+        crab::outs() << " -- ";
+      crab::outs() << N;
       first = false;
     }
-    std::cout << "\n";
+    crab::outs() << "\n";
     
-    std::cout << "Weak topological order of the reversed CFG \n";
+    crab::outs() << "Weak topological order of the reversed CFG \n";
     first=true;
     for (auto &N: crab::analyzer::graph_algo::weak_topo_sort(rev_cfg)) {
       if (!first)
-        std::cout << " -- ";
-      std::cout << N;
+        crab::outs() << " -- ";
+      crab::outs() << N;
       first = false;
     }
-    std::cout << "\n";
+    crab::outs() << "\n";
 
-    std::cout << "Bourdoncle WTO of the reversed CFG\n";
+    crab::outs() << "Bourdoncle WTO of the reversed CFG\n";
     ikos::wto<typename cfg_rev_t::node_t, cfg_rev_t> wto_g(rev_cfg);
-    std::cout << wto_g << "\n";
+    crab::outs() << wto_g << "\n";
     
     cfg->simplify ();
-    crab::outs() << "Simplified CFG\n" << *cfg << endl;
+    crab::outs() << "Simplified CFG\n" << *cfg << "\n";
     
     rev_cfg = cfg_rev_t(*cfg);
-    crab::outs() << "Reversed simplified CFG\n" << rev_cfg << endl;
+    crab::outs() << "Reversed simplified CFG\n" << rev_cfg << "\n";
 
     delete cfg;
   }

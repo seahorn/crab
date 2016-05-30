@@ -2212,7 +2212,7 @@ namespace crab {
       }
       
       // Output function
-      void write(ostream& o) {
+      void write(crab_os& o) {
 
         normalize ();
 #if 0
@@ -2501,7 +2501,7 @@ namespace crab {
 
       std::vector<VariableName> active_variables(){ return norm().active_variables();}
 
-      void write(ostream& o) { norm().write(o); }
+      void write(crab_os& o) { norm().write(o); }
 
       linear_constraint_system_t to_linear_constraint_system () {
         return norm().to_linear_constraint_system();

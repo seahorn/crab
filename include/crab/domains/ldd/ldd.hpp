@@ -7,8 +7,6 @@
 #ifndef _LDD_CPLUS_HPP_
 #define _LDD_CPLUS_HPP_
 
-#include <stdio.h>
-
 #include "cuddInt.h"
 #include "ldd.h"
 #undef TRUE

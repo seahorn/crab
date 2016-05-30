@@ -10,7 +10,7 @@
 #include <crab/common/debug.hpp>
 #include <crab/common/stats.hpp>
 
-#include <crab/cfg/Cfg.hpp> 
+#include <crab/cfg/cfg.hpp> 
 #include <crab/iterators/killgen_fixpoint_iterator.hpp> 
 
 #include <boost/unordered_map.hpp>
@@ -32,17 +32,17 @@ namespace crab {
 
       private:
        
-       class array_segment_visitor: public cfg::StatementVisitor<V> {
-         typedef typename cfg::StatementVisitor<V>::z_bin_op_t z_bin_op_t;
-         typedef typename cfg::StatementVisitor<V>::z_assign_t z_assign_t;
-         typedef typename cfg::StatementVisitor<V>::z_assume_t z_assume_t;
-         typedef typename cfg::StatementVisitor<V>::havoc_t havoc_t;
-         typedef typename cfg::StatementVisitor<V>::unreach_t unreach_t;
-         typedef typename cfg::StatementVisitor<V>::z_select_t z_select_t;
-         typedef typename cfg::StatementVisitor<V>::callsite_t callsite_t;
-         typedef typename cfg::StatementVisitor<V>::z_assert_t z_assert_t;
-         typedef typename cfg::StatementVisitor<V>::z_arr_load_t z_arr_load_t;
-         typedef typename cfg::StatementVisitor<V>::z_arr_store_t z_arr_store_t;
+       class array_segment_visitor: public cfg::statement_visitor<V> {
+         typedef typename cfg::statement_visitor<V>::z_bin_op_t z_bin_op_t;
+         typedef typename cfg::statement_visitor<V>::z_assign_t z_assign_t;
+         typedef typename cfg::statement_visitor<V>::z_assume_t z_assume_t;
+         typedef typename cfg::statement_visitor<V>::havoc_t havoc_t;
+         typedef typename cfg::statement_visitor<V>::unreach_t unreach_t;
+         typedef typename cfg::statement_visitor<V>::z_select_t z_select_t;
+         typedef typename cfg::statement_visitor<V>::callsite_t callsite_t;
+         typedef typename cfg::statement_visitor<V>::z_assert_t z_assert_t;
+         typedef typename cfg::statement_visitor<V>::z_arr_load_t z_arr_load_t;
+         typedef typename cfg::statement_visitor<V>::z_arr_store_t z_arr_store_t;
 
          // assume all statements have the same type expression_t;
          typedef typename z_bin_op_t::linear_expression_t linear_expression_t;
@@ -131,8 +131,8 @@ namespace crab {
      };
    
      template<class CFG, class V>
-     class ArraySegmentation: public boost::noncopyable, 
-                              public crab::iterators::killgen_fixpoint_iterator
+     class array_segmentation: public boost::noncopyable, 
+                               public crab::iterators::killgen_fixpoint_iterator
          <CFG, array_segment_analysis<CFG,V> >{
       public:
 
@@ -152,7 +152,7 @@ namespace crab {
        
       public:
        
-       ArraySegmentation (CFG cfg)
+       array_segmentation(CFG cfg)
            : killgen_fixpoint_iterator_t(cfg) { }
        
        void exec() { 
@@ -187,18 +187,18 @@ namespace crab {
      // segment boundaries.
      template<class ArraySegmentDom>
      class array_constant_segment_visitor: 
-         public cfg::StatementVisitor<typename ArraySegmentDom::element_t> {
+         public cfg::statement_visitor<typename ArraySegmentDom::element_t> {
        typedef typename ArraySegmentDom::element_t E;
-       typedef typename cfg::StatementVisitor<E>::z_bin_op_t z_bin_op_t;
-       typedef typename cfg::StatementVisitor<E>::z_assign_t z_assign_t;
-       typedef typename cfg::StatementVisitor<E>::z_assume_t z_assume_t;
-       typedef typename cfg::StatementVisitor<E>::havoc_t havoc_t;
-       typedef typename cfg::StatementVisitor<E>::unreach_t unreach_t;
-       typedef typename cfg::StatementVisitor<E>::z_select_t z_select_t;
-       typedef typename cfg::StatementVisitor<E>::callsite_t callsite_t;
-       typedef typename cfg::StatementVisitor<E>::z_assert_t z_assert_t;
-       typedef typename cfg::StatementVisitor<E>::z_arr_load_t z_arr_load_t;
-       typedef typename cfg::StatementVisitor<E>::z_arr_store_t z_arr_store_t;
+       typedef typename cfg::statement_visitor<E>::z_bin_op_t z_bin_op_t;
+       typedef typename cfg::statement_visitor<E>::z_assign_t z_assign_t;
+       typedef typename cfg::statement_visitor<E>::z_assume_t z_assume_t;
+       typedef typename cfg::statement_visitor<E>::havoc_t havoc_t;
+       typedef typename cfg::statement_visitor<E>::unreach_t unreach_t;
+       typedef typename cfg::statement_visitor<E>::z_select_t z_select_t;
+       typedef typename cfg::statement_visitor<E>::callsite_t callsite_t;
+       typedef typename cfg::statement_visitor<E>::z_assert_t z_assert_t;
+       typedef typename cfg::statement_visitor<E>::z_arr_load_t z_arr_load_t;
+       typedef typename cfg::statement_visitor<E>::z_arr_store_t z_arr_store_t;
        
        typedef typename z_bin_op_t::linear_expression_t linear_expression_t;
        typedef typename linear_expression_t::number_t number_t;

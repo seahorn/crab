@@ -13,7 +13,7 @@ int main (int argc, char** argv )
 {
   SET_TEST_OPTIONS(argc,argv)
 
-  VariableFactory vfac;
+  variable_factory_t vfac;
   {  
     varname_t x = vfac["x"];
     varname_t A = vfac["A"];
@@ -28,7 +28,7 @@ int main (int argc, char** argv )
     dbm -= x_prime;
     // if (x <= 0)
     dbm += linear_constraint_t ( linear_expression_t (x) <= z_number (0));
-    crab::outs() << dbm << endl;
+    crab::outs() << dbm << "\n";
   }
   return 0;
 }

@@ -649,7 +649,7 @@ namespace crab {
          CRAB_ERROR ("No edge found with given vertices");
        }
     
-       void write(ostream& o) 
+       void write(crab_os& o) 
        {
          if (is_bottom())
            o << "_|_";
@@ -781,7 +781,7 @@ namespace crab {
        boost::optional<Value> operator[](Key k) { return _tree.lookup(k); }
        void clear() { _tree = patricia_tree_t(); }
        
-       void write(std::ostream& o) {
+       void write(crab_os& o) {
          o << "{";
          for (auto it = _tree.begin(); it != _tree.end(); ) {
            Key k = it->first;
@@ -869,7 +869,7 @@ namespace crab {
         if (is_array_index(v))
         {
           /*assign to v_succ a fresh var must be always the same*/ 
-          VariableName v_succ = v.getVarFactory().get (v.index()); 
+          VariableName v_succ = v.get_var_factory().get (v.index()); 
 
           _g.insert_vertex (v);
           _g.insert_vertex (v_succ);
@@ -904,14 +904,14 @@ namespace crab {
       void meet_weight (Number i, VariableName j, WeightDomain w)
       {
         add_variable (j);
-        _g.meet_weight (add_variable(i, j.getVarFactory ()),j,w);
+        _g.meet_weight (add_variable(i, j.get_var_factory ()),j,w);
         reduce();
       }
 
       void meet_weight (VariableName i, Number j, WeightDomain w)
       {
         add_variable(i);
-        _g.meet_weight(i,add_variable(j, i.getVarFactory ()),w);
+        _g.meet_weight(i,add_variable(j, i.get_var_factory ()),w);
         reduce();
       }
 
@@ -933,8 +933,8 @@ namespace crab {
         if (is_bottom()) return;
 
         /// step 1: add x_old in the graph
-        VariableName x_old = x.getVarFactory ().get (); /*fresh var*/ 
-        VariableName x_old_succ = x.getVarFactory ().get (); /*fresh var*/
+        VariableName x_old = x.get_var_factory ().get (); /*fresh var*/ 
+        VariableName x_old_succ = x.get_var_factory ().get (); /*fresh var*/
         _g.insert_vertex(x_old);
         _g.insert_vertex(x_old_succ);
         _succ_idx_map->set(x_old, x_old_succ);
@@ -1339,7 +1339,7 @@ namespace crab {
    
         // graph domain
         if (e.is_constant() && (e.constant() == 0))
-          add_variable (e.constant(), x.getVarFactory ());
+          add_variable (e.constant(), x.get_var_factory ());
 
         if (_g.find_vertex_map(x))
         {
@@ -1468,7 +1468,7 @@ namespace crab {
                  crab::outs() << "Array write "<<arr<<"["<<idx<<"] := "<<val<< " ==> "<< *this <<"\n";);
       }
     
-      void write(ostream& o) 
+      void write(crab_os& o) 
       {
         o << "(" ;
 #if 1

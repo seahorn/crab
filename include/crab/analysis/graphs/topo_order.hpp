@@ -2,7 +2,7 @@
 #define TOPOLOGICAL_ORDER_HPP__
 
 #include <boost/graph/topological_sort.hpp>
-#include <crab/analysis/graphs/SccgBgl.hpp>
+#include <crab/analysis/graphs/sccg_bgl.hpp>
 
 /* 
    Topological order of a graph
@@ -45,11 +45,11 @@ namespace crab {
      template<class G> 
      std::vector<typename G::node_t> weak_rev_topo_sort(G g) {
        std::vector<typename G::node_t> sccg_order;
-       crab::analyzer::graph_algo::SccGraph <G> scc_g (g, false /*postorder within scc*/);
+       crab::analyzer::graph_algo::scc_graph <G> scc_g (g, false /*postorder within scc*/);
        crab::analyzer::graph_algo::rev_topo_sort (scc_g, sccg_order);
        std::vector<typename G::node_t> order;
        for (auto &n : sccg_order) {
-         auto &members = scc_g.getComponentMembers (n);
+         auto &members = scc_g.get_component_members (n);
          order.insert (order.end (), members.begin (), members.end ());
        }
        return order;
@@ -60,11 +60,11 @@ namespace crab {
      template<class G> 
      std::vector<typename G::node_t> weak_topo_sort(G g) {
        std::vector<typename G::node_t> sccg_order;
-       crab::analyzer::graph_algo::SccGraph <G> scc_g (g, true /*preorder within scc*/);
+       crab::analyzer::graph_algo::scc_graph <G> scc_g (g, true /*preorder within scc*/);
        crab::analyzer::graph_algo::topo_sort (scc_g, sccg_order);
        std::vector<typename G::node_t> order;
        for (auto &n : sccg_order) {
-         auto &members = scc_g.getComponentMembers (n);
+         auto &members = scc_g.get_component_members (n);
          order.insert (order.end (), members.begin (), members.end ());
        }
        return order;

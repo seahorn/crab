@@ -9,7 +9,7 @@ int main (int argc, char** argv )
 {
   SET_TEST_OPTIONS(argc,argv)
 
-  VariableFactory vfac;
+  variable_factory_t vfac;
 
   term_domain_t dom_left = term_domain_t::top ();
   term_domain_t dom_right = term_domain_t::top ();
@@ -25,7 +25,7 @@ int main (int argc, char** argv )
 
   term_domain_t l_join_r = dom_left | dom_right;
 
-  crab::outs() << dom_left << " | " << dom_right << " = " << l_join_r << std::endl;
+  crab::outs() << dom_left << " | " << dom_right << " = " << l_join_r << "\n";
 //  crab::outs() << dom_left;
   return 0;
 }

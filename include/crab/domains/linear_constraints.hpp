@@ -306,7 +306,7 @@ namespace ikos {
       }
     }
     
-    void write(std::ostream& o) {
+    void write(crab::crab_os& o) {
       for (typename map_t::iterator it = this->_map->begin(); 
            it != this->_map->end(); ++it) {
         Number n = it->second;
@@ -619,7 +619,7 @@ namespace ikos {
     }
 
     
-    void write(std::ostream& o) {
+    void write(crab::crab_os& o) {
       if (this->is_contradiction()) {
         o << "false";
       } else if (this->is_tautology()) {
@@ -1072,7 +1072,7 @@ namespace ikos {
     
     std::size_t size() const { return _csts.size(); }
         
-    void write(std::ostream& o) {
+    void write(crab::crab_os& o) {
       o << "{";
       for (iterator it = this->begin(); it != this->end();) {
         auto c = *it;
