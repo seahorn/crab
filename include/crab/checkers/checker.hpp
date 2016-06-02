@@ -113,7 +113,7 @@ namespace crab {
       crab::ScopedCrabStats __st__("Checker");
       cg_t& cg = m_analyzer.get_call_graph (); 
       for (auto &v: boost::make_iterator_range (vertices (cg))) {
-        cfg_t& cfg = v.getCfg ();
+        cfg_t cfg = v.get_cfg ();
         for (auto &bb: cfg) {
           for (auto checker: this->m_checkers) {
             crab::ScopedCrabStats __st__("Checker." + checker->get_property_name());
