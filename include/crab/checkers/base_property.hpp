@@ -89,47 +89,54 @@ namespace crab {
           case _UNREACH: o << "unreachable: "; break;
           default:       o << "warning: "; break;
         }
-        o << p.first.m_file << std::string ((int) MaxFileLen - p.first.m_file.size(), ' ') 
-          << std::string (2, ' ')
-          << " line " << p.first.m_line 
-          << " col " << p.first.m_col << "\n";
+        // print all checks here
+        // o << p.first.m_file << std::string ((int) MaxFileLen - p.first.m_file.size(), ' ') 
+        //   << std::string (2, ' ')
+        //   << " line " << p.first.m_line 
+        //   << " col " << p.first.m_col << "\n";
       }
     }
     
   };
 
-  #define LOG_SAFE(VERBOSE,INV,PROP,DEBUG_LOC)          \
-  this->m_db.add (_SAFE);                               \
-  if (VERBOSE >=3) {                                    \
-    crab::outs() << " --- SAFE -----------------\n";    \
-    if (DEBUG_LOC.has_debug ())                         \
-      crab::outs() << DEBUG_LOC << "\n";                \
-    crab::outs() << "Property : " << PROP << "\n";      \
-    crab::outs() << "Invariant: " << INV << "\n";       \
-    crab::outs() << " -----------------------------\n"; \
-  }
+  #define LOG_SAFE(VERBOSE,INV,PROP,DEBUG_LOC)           \
+  do {                                                   \
+    this->m_db.add (_SAFE);                              \
+    if (VERBOSE >=3) {                                   \
+      crab::outs() << " --- SAFE -----------------\n";   \
+      if (DEBUG_LOC.has_debug ())                        \
+         crab::outs() << DEBUG_LOC << "\n";              \
+      crab::outs() << "Property : " << PROP << "\n";     \
+      crab::outs() << "Invariant: " << INV << "\n";      \
+      crab::outs() << " -----------------------------\n";\
+    }                                                    \
+  } while (false);
 
-  #define LOG_WARN(VERBOSE,INV,PROP,DEBUG_LOC)          \
-  this->m_db.add (_WARN, DEBUG_LOC);                    \
-  if (VERBOSE >=2) {                                    \
-    crab::outs() << " --- WARNING -----------------\n"; \
-    if (DEBUG_LOC.has_debug ())                         \
-      crab::outs() << DEBUG_LOC << "\n";                \
-    crab::outs() << "Property : " << PROP << "\n";      \
-    crab::outs() << "Invariant: " << INV << "\n";       \
-    crab::outs() << " -----------------------------\n"; \
-  }
+  #define LOG_WARN(VERBOSE,INV,PROP,DEBUG_LOC)            \
+  do {                                                    \
+    this->m_db.add (_WARN, DEBUG_LOC);                    \
+    if (VERBOSE >=2) {                                    \
+      crab::outs() << " --- WARNING -----------------\n"; \
+      if (DEBUG_LOC.has_debug ())                         \
+         crab::outs() << DEBUG_LOC << "\n";               \
+      crab::outs() << "Property : " << PROP << "\n";      \
+      crab::outs() << "Invariant: " << INV << "\n";       \
+      crab::outs() << " -----------------------------\n"; \
+    }                                                     \
+  } while (false);  
 
-  #define LOG_ERR(VERBOSE,INV,PROP,DEBUG_LOC)           \
-    this->m_db.add (_ERR, DEBUG_LOC);                   \
-  if (VERBOSE >=1) {                                    \
-    crab::outs() << " --- ERROR -----------------\n";   \
-    if (DEBUG_LOC.has_debug ())                         \
-      crab::outs() << DEBUG_LOC << "\n";                \
-    crab::outs() << "Property : " << PROP << "\n";      \
-    crab::outs() << "Invariant: " << INV << "\n";       \
-    crab::outs() << " -----------------------------\n"; \
-  }
+  #define LOG_ERR(VERBOSE,INV,PROP,DEBUG_LOC)             \
+  do {                                                    \
+    this->m_db.add (_ERR, DEBUG_LOC);                     \
+    if (VERBOSE >=1) {                                    \
+       crab::outs() << " --- ERROR -----------------\n";  \
+       if (DEBUG_LOC.has_debug ())                        \
+           crab::outs() << DEBUG_LOC << "\n";             \
+       crab::outs() << "Property : " << PROP << "\n";     \
+       crab::outs() << "Invariant: " << INV << "\n";      \
+       crab::outs() << " -----------------------------\n";\
+    }                                                     \
+  } while (false); 
 
 
   namespace num_dom_detail {
@@ -146,6 +153,9 @@ namespace crab {
        interval_t operator[](VariableName v){ return m_inv [v]; }
 
        bool entails(z_lin_cst_t cst) { 
+         // special cases first
+         if (m_inv.is_bottom()) return true;
+
          if (cst.is_tautology ()) return true;
 
          if (cst.is_contradiction ()) return false;
@@ -157,10 +167,11 @@ namespace crab {
        }
 
        bool intersect(z_lin_cst_t cst) {
-         if (cst.is_tautology ()) return true;
+         // special cases first
+         if (m_inv.is_bottom () || cst.is_contradiction ()) return false;
 
-         if (cst.is_contradiction ()) return false;
-         
+         if (m_inv.is_top () || cst.is_tautology ()) return true;
+
          Domain inv;
          inv += cst;
          Domain meet = m_inv & inv;
