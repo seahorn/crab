@@ -41,10 +41,20 @@ namespace crab {
     virtual void run () = 0;
     
     virtual void show (crab_os& o) {
-      for (auto checker: this->m_checkers) {
-        checker->write (o);
+      for (auto prop_checker: m_checkers) {
+        prop_checker->write (o);
       }
     }
+
+    // merge all the databases in one: useful for crab clients
+    virtual checks_db get_all_checks () const {
+      checks_db res;
+      for (auto prop_checker: m_checkers) {
+        res += prop_checker->get_db();
+      }
+      return res;
+    }
+
   };
 
   template<typename Analyzer>  
