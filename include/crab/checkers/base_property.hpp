@@ -33,10 +33,16 @@ namespace crab {
 
    public:
 
-    checks_db ():
-        m_total_safe(0), m_total_err(0), 
-        m_total_unreach(0), m_total_warn (0) { }
-    
+    checks_db ()
+        : m_total_safe(0), m_total_err(0), 
+          m_total_unreach(0), m_total_warn (0) { }
+
+    unsigned get_total_safe () const { return m_total_safe; }
+
+    unsigned get_total_warning () const { return m_total_warn; }
+
+    unsigned get_total_error () const { return m_total_err; }
+
     // add an entry in the database
     void add (check_kind_t status, debug_info dbg = debug_info () ) {
       switch (status) {
