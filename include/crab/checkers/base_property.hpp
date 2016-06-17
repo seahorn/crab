@@ -37,7 +37,7 @@ namespace crab {
         : m_total_safe(0), m_total_err(0), 
           m_total_unreach(0), m_total_warn (0) { }
 
-    unsigned get_total_safe () const { return m_total_safe; }
+    unsigned get_total_safe () const { return m_total_safe + m_total_unreach; }
 
     unsigned get_total_warning () const { return m_total_warn; }
 
