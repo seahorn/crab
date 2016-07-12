@@ -182,3 +182,5 @@ See [Crab_LICENSE.txt](Crab_LICENSE.txt) and
 
 - "An Abstract Domain of Uninterpreted Functions" [(PDF)](http://www.clip.dia.fi.upm.es/~jorge/docs/terms-vmcai16.pdf). VMCAI'16.
 
+- "Exploiting Sparsity in Difference-Bounds Matrices" [(PDF)](http://www.clip.dia.fi.upm.es/~jorge/docs/zones-SAS16.pdf). SAS'16.
+
