@@ -41,13 +41,24 @@ namespace crab {
         if (!this->m_abs_tr) return;        
         
         auto &inv = this->m_abs_tr->inv ();
+        z_lin_cst_t cst = s.constraint ();
+
+        // Answering a reachability question
+        if (cst.is_contradiction()) {
+          if (inv.is_bottom()) {
+            LOG_SAFE(this->m_verbose, inv, cst, s.get_debug_info());
+          } else {
+            LOG_WARN(this->m_verbose, inv, cst, s.get_debug_info());
+          }
+          return;
+        }
+          
         if (inv.is_bottom ()) {
           this->m_db.add (_UNREACH);
           return;
         }
         
         num_dom_detail::get_as<abs_dom_t,varname_t> wrapper_inv (inv);
-        z_lin_cst_t cst = s.constraint ();
         if (wrapper_inv.entails(cst)) {
           LOG_SAFE(this->m_verbose, inv, cst, s.get_debug_info());
         } else if (wrapper_inv.intersect (cst)) {
