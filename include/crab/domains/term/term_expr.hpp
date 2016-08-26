@@ -96,7 +96,8 @@ namespace crab {
         term_kind kind(void) { return TERM_APP; }
         void write(crab_os& o)
         {
-          o << "<op>(";
+          //o << "<op>(";
+          o << ftor << "(";
           bool first = true;
           for(term_id c : args)
           {
