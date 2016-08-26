@@ -36,6 +36,7 @@
 #include <crab/domains/intervals.hpp>
 #include <crab/domains/term/term_expr.hpp>
 #include <crab/domains/term/inverse.hpp>
+#include <crab/domains/term/simplify.hpp>
 
 using namespace boost;
 using namespace std;
@@ -114,7 +115,9 @@ namespace crab {
        typedef container::flat_map< dom_var_t, variable_t > rev_map_t;
        typedef container::flat_set< term_id_t > term_set_t;
        typedef container::flat_map< variable_t, term_id_t > var_map_t;
-       
+
+       typedef term::NumSimplifier<Number> simplifier_t;
+
       private:
 
        bool _is_bottom;
@@ -1522,7 +1525,28 @@ namespace crab {
                   crab::outs() << "*** "<< x<< ":="<< y<< " "<< op<< " "<< k<< ":"<< *this << "\n");
          return;
        }
-    
+
+       /// XXX: should be part of array_sgraph_domain_traits
+       /// Simplify the term associated with x by given the standard
+       /// arithmetic meaning to the functors
+       bool simplify (VariableName x) 
+       {
+         variable_t vx(x);
+         auto it = _var_map.find (vx);
+         if (it != _var_map.end ())
+         {
+           term_id_t t = it->second;
+           simplifier_t simp (_ttbl);
+           auto nt = simp.simplify_term (t);  
+           if (nt) 
+           {
+             rebind_var(vx, *nt); 
+             return true;
+           }
+         }
+         return false;
+       }
+
        // Output function
        void write(crab_os& o) { 
          // Normalization is not enforced in order to maintain accuracy

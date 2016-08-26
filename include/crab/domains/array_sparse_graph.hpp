@@ -32,6 +32,10 @@
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/domains/intervals.hpp>
 
+// XXX: if expression domain is a template parameter no need to
+// include this
+#include <crab/domains/term_equiv.hpp>
+
 #include <boost/unordered_map.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
@@ -1031,6 +1035,10 @@ namespace crab {
       typedef array_sparse_graph<landmark_ref_t,Weight,IsDistWeight> array_sgraph_t;
       typedef array_sparse_graph_domain<NumDom,Weight,IsDistWeight> array_sgraph_domain_t;
 
+      //// XXX: make this a template parameter later
+      typedef interval_domain<Number, VariableName> interval_domain_t;
+      typedef term_domain<term::TDomInfo<Number, VariableName, interval_domain_t> > expression_domain_t;
+
      private:
       typedef typename array_sgraph_t::mut_val_ref_t mut_val_ref_t;
 
@@ -1048,6 +1056,7 @@ namespace crab {
       };
 
       NumDom _scalar;        
+      expression_domain_t _expressions; // map each program variable to a symbolic expression
       array_sgraph_t _g;        
 
       // A landmark is either a variable or number that may appear as
@@ -1175,10 +1184,24 @@ namespace crab {
                  );
       }
 
+      // Some funtions like normalize_offset needs to add temporary
+      // landmarks
+      template<class VarFactory>
+      static void add_landmark(landmark_ref_t lm, VarFactory& vfac)
+      {
+        if (lm.kind () != LMV) return;
+
+        auto v = boost::static_pointer_cast<const landmark_var_t>(lm._ref)->get_var();
+        varname_t v_prime = vfac.get(v.index());
+        landmark_ref_t lm_prime(v_prime, v.str());
+        var_landmarks.insert(std::make_pair(lm, lm_prime));
+      }
+
      private:
 
       void set_to_bottom(){
         _scalar = NumDom::bottom();
+        _expressions = expression_domain_t::bottom();
         _g.set_to_bottom();
       }
 
@@ -1270,14 +1293,13 @@ namespace crab {
       void array_update (VariableName i, Weight w)
       {
         if (is_bottom()) return;
-
+        
         landmark_ref_t lm_i(i);
         //--- strong update
         auto it = var_landmarks.find(lm_i);
-        if (it == var_landmarks.end ()) {
+        if (it == var_landmarks.end ())
           return;
-        }
-        
+
         _g.update_edge(lm_i, w, it->second);
         mut_val_ref_t wi;          
         if (!_g.lookup_edge(lm_i, it->second, &wi))
@@ -1431,6 +1453,53 @@ namespace crab {
         }
       }
 
+      VariableName normalize_offset (VariableName o, z_number n)
+      {
+        CRAB_LOG("array-sgraph-domain-norm",
+                 crab::outs() << "EXPRESSIONS (before normalize offset)=" << _expressions << "\n");
+
+        // --- create a fresh variable no such that no := o;
+        VariableName no = o.get_var_factory().get();
+        _expressions.assign (no, linear_expression_t (o));
+
+        // -- apply no := no / n; in the expressions domain
+        _expressions.apply (operation_t::OP_DIVISION, no, no, n);
+        
+        // -- simplifiy the expression domain 
+        // FIXME: should be part of array_sgraph_domain_traits 
+        bool simp_done = _expressions.simplify (no);
+
+        CRAB_LOG("array-sgraph-domain-norm",
+                 crab::outs() << "EXPRESSIONS (after normalize offset)=" << _expressions << "\n");
+
+        // XXX: kind of hook. If the offset o cannot be simplified
+        // then we just return it.
+        if (!simp_done) return o;
+          
+        // -- propagate equalities from _expressions to _scalar
+        product_domain_traits<expression_domain_t, NumDom>::push(no, _expressions, _scalar);
+
+        // -- add to _scalar the constraint no' = no + 1
+        landmark_ref_t lm_no (no);
+        add_landmark (lm_no, o.get_var_factory());
+
+        auto it = var_landmarks.find (lm_no);
+        assert (it != var_landmarks.end());
+        _scalar += make_prime_relation(it->second, lm_no);
+        
+        // reduce between _scalar and the array graph
+        if (!reduce(_scalar, _g)) { // FIXME: incremental version
+          // XXX: I think we should never get bottom here.
+          set_to_bottom();
+        }
+
+        // cleanup of the expression abstraction
+        _expressions -= no;
+        
+        return no;
+      }
+
+
      public:
 
       // The reduction consists of detecting dead segments so it is
@@ -1476,31 +1545,36 @@ namespace crab {
      public:
 
       array_sparse_graph_domain(bool is_bottom=false)
-          : _scalar(NumDom::top()), _g(array_sgraph_t::top()) { 
+          : _scalar(NumDom::top()), _expressions(expression_domain_t::top ()), 
+            _g(array_sgraph_t::top()) { 
         if (is_bottom) 
           set_to_bottom();
       }
 
-      array_sparse_graph_domain(const NumDom& s, const array_sgraph_t& g)
-          : _scalar(s), _g(g) { 
-        if (_scalar.is_bottom() || _g.is_bottom())
+      array_sparse_graph_domain(const NumDom& s, const expression_domain_t& e, 
+                                const array_sgraph_t& g)
+          : _scalar(s), _expressions(e), _g(g) { 
+        if (_scalar.is_bottom() || _expressions.is_bottom() || _g.is_bottom())
           set_to_bottom();
       }
     
-      array_sparse_graph_domain(NumDom &&s, array_sgraph_t &&g)
-          : _scalar(std::move(s)), _g(std::move(g)) { 
-        if (_scalar.is_bottom() || _g.is_bottom())
+      array_sparse_graph_domain(NumDom &&s, expression_domain_t &&e, 
+                                array_sgraph_t &&g)
+          : _scalar(std::move(s)), _expressions (std::move(e)), _g(std::move(g)) { 
+        if (_scalar.is_bottom() || _expressions.is_bottom() || _g.is_bottom())
           set_to_bottom();
       }
 
       array_sparse_graph_domain(const array_sgraph_domain_t&o)
-          : _scalar(o._scalar), _g(o._g) { 
+          : _scalar(o._scalar), _expressions (o._expressions), _g(o._g) { 
         crab::CrabStats::count (getDomainName() + ".count.copy");
         crab::ScopedCrabStats __st__(getDomainName() + ".copy");
       }
 
       array_sparse_graph_domain(array_sgraph_domain_t &&o)
-          : _scalar(std::move(o._scalar)), _g(std::move(o._g)) { 
+          : _scalar(std::move(o._scalar)), 
+            _expressions (std::move(o._expressions)), 
+            _g(std::move(o._g)) { 
       }
 
       array_sgraph_domain_t& operator=(const array_sgraph_domain_t& o) {
@@ -1508,6 +1582,7 @@ namespace crab {
         crab::ScopedCrabStats __st__(getDomainName() + ".copy");
         if(this != &o) {
           _scalar = o._scalar;
+          _expressions = o._expressions;
           _g = o._g;
         }
         return *this;
@@ -1515,16 +1590,17 @@ namespace crab {
 
       array_sgraph_domain_t& operator=(array_sgraph_domain_t &&o) {
         _scalar = std::move(o._scalar);
+        _expressions = std::move(o._expressions);
         _g = std::move(o._g);
         return *this;
       }
       
       bool is_top() {
-        return _scalar.is_top () && _g.is_top();
+        return _scalar.is_top () && _expressions.is_top () && _g.is_top();
       }
       
       bool is_bottom() {
-        return _scalar.is_bottom () || _g.is_bottom();
+        return _scalar.is_bottom() || _expressions.is_bottom() || _g.is_bottom();
       }
 
       bool operator<=(array_sgraph_domain_t &o) {
@@ -1533,7 +1609,9 @@ namespace crab {
 
         CRAB_LOG("array-sgraph-domain",
                  crab::outs () << "Leq " << *this << " and\n"  << o << "=\n";);
-        bool res = (_scalar <= o._scalar) && (_g <= o._g);
+        bool res = (_scalar <= o._scalar) && 
+                   (_expressions <= o._expressions) && 
+                   (_g <= o._g);
         CRAB_LOG("array-sgraph-domain", crab::outs () << res << "\n";);
         return res;
       }
@@ -1548,7 +1626,9 @@ namespace crab {
 
         CRAB_LOG("array-sgraph-domain",
                  crab::outs () << "Join " << *this << " and "  << o << "=\n");
-        array_sgraph_domain_t join(_scalar | o._scalar, _g | o._g);
+        array_sgraph_domain_t join(_scalar | o._scalar, 
+                                   _expressions | o._expressions,
+                                   _g | o._g);
         CRAB_LOG("array-sgraph-domain", crab::outs () << join << "\n";);
         return join;
       }
@@ -1562,12 +1642,13 @@ namespace crab {
           CRAB_LOG("array-sgraph-domain",
                    crab::outs () << "Widening (w/ thresholds) " << *this << " and "  << o << "=\n";);
         auto widen_scalar(_scalar.widening_thresholds(o._scalar,ts));
+        auto widen_expr(_expressions.widening_thresholds(o._expressions,ts));
         auto widen_g(_g.widening_thresholds(o._g,ts));
         if (!reduce(widen_scalar, widen_g)) {
           CRAB_LOG("array-sgraph-domain", crab::outs () << "_|_\n";);
           return array_sgraph_domain_t::bottom();
         } else {
-          array_sgraph_domain_t widen(widen_scalar, widen_g);
+          array_sgraph_domain_t widen(widen_scalar, widen_expr, widen_g);
           CRAB_LOG("array-sgraph-domain", crab::outs () << widen << "\n";);
           return widen;
         }
@@ -1580,12 +1661,13 @@ namespace crab {
         CRAB_LOG("array-sgraph-domain",
                  crab::outs () << "Widening " << *this << " and "  << o << "=\n");        
         auto widen_scalar(_scalar || o._scalar);
+        auto widen_expr(_expressions || o._expressions);
         auto widen_g(_g || o._g);
         if (!reduce(widen_scalar, widen_g)) {
           CRAB_LOG("array-sgraph-domain", crab::outs () << "_|_\n";);
           return array_sgraph_domain_t::bottom();
         } else {
-          array_sgraph_domain_t widen(widen_scalar, widen_g);
+          array_sgraph_domain_t widen(widen_scalar, widen_expr, widen_g);
           CRAB_LOG("array-sgraph-domain", crab::outs () << widen << "\n";);
           return widen;
         }
@@ -1598,12 +1680,13 @@ namespace crab {
         CRAB_LOG("array-sgraph-domain",
                  crab::outs () << "Meet " << *this << " and "  << o << "=\n");
         auto meet_scalar(_scalar & o._scalar);
+        auto meet_expr(_expressions & o._expressions);
         auto meet_g(_g & o._g);
         if (!reduce(meet_scalar, meet_g)) {
           CRAB_LOG("array-sgraph-domain", crab::outs () << "_|_\n";);
           return array_sgraph_domain_t::bottom();
         } else {
-          array_sgraph_domain_t meet(meet_scalar, meet_g);
+          array_sgraph_domain_t meet(meet_scalar, meet_expr, meet_g);
           CRAB_LOG("array-sgraph-domain", crab::outs () << meet << "\n";);
           return meet;
         }
@@ -1633,7 +1716,9 @@ namespace crab {
 
         // remove v from scalar and array graph
         _scalar -= v;
-
+        // remove v from expressions
+        _expressions -= v;
+        
         if (var_landmarks.find(landmark_ref_t(v)) != var_landmarks.end()) {
           array_forget(v);
           // remove v' from scalar and array graph
@@ -1649,6 +1734,7 @@ namespace crab {
         if (is_bottom()) return;
         
         _scalar += csts;
+        _expressions += csts;
 
         if (!reduce(_scalar, _g)) { // FIXME: incremental version
           set_to_bottom();
@@ -1658,7 +1744,11 @@ namespace crab {
                  crab::outs() << "Assume("<< csts<< ") --- "<< *this<<"\n";);
       }
 
-      void assign (VariableName x, linear_expression_t e) {
+      void assign (VariableName x, linear_expression_t e) 
+      { assign (x, e, true); }
+        
+      void assign (VariableName x, linear_expression_t e, bool update_expressions) 
+      {
         crab::CrabStats::count (getDomainName() + ".count.assign");
         crab::ScopedCrabStats __st__(getDomainName() + ".assign");
 
@@ -1669,6 +1759,7 @@ namespace crab {
           if ((*y).name() == x) return;
         
         _scalar.assign(x, e);
+        if (update_expressions) _expressions.assign(x, e);
 
         landmark_ref_t lm_x(x);
         auto it = var_landmarks.find(lm_x);
@@ -1693,7 +1784,8 @@ namespace crab {
         crab::CrabStats::count (getDomainName() + ".count.apply");
         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
-        assign(x, linear_expression_t(y));
+        _expressions.apply (op, x, y, z);
+        assign(x, linear_expression_t(y), false);
         apply_landmark<Number> (op, x, z);
 
         CRAB_LOG("array-sgraph-domain",
@@ -1704,7 +1796,8 @@ namespace crab {
         crab::CrabStats::count (getDomainName() + ".count.apply");
         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
-        assign(x, linear_expression_t(y));
+        _expressions.apply (op, x, y, z);
+        assign(x, linear_expression_t(y), false);
         apply_landmark<VariableName> (op, x, z);
 
         CRAB_LOG("array-sgraph-domain", 
@@ -1715,20 +1808,23 @@ namespace crab {
         crab::CrabStats::count (getDomainName() + ".count.apply");
         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
+        _expressions.apply (op, x, k);
         apply_landmark<Number> (op, x, k);
 
         CRAB_LOG("array-sgraph-domain",
                  crab::outs() << "Apply "<<x<<" := "<<x<<" "<<op<<" "<<k<<" ==> "<<*this<<"\n";);
       }
 
-      void apply(conv_operation_t op, VariableName x, VariableName y, unsigned /*width*/) {
+      void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width) {
+        _expressions.apply (op, x, y, width);
         // assume unlimited precision so width is ignored.
-        assign(x, variable_t (y));
+        assign(x, variable_t (y), false);
       }
       
-      void apply(conv_operation_t op, VariableName x, Number k, unsigned /*width*/) {
+      void apply(conv_operation_t op, VariableName x, Number k, unsigned width) {
+        _expressions.apply (op, x, k, width);
         // assume unlimited precision so width is ignored.
-        assign(x, k);
+        assign(x, k, false);
       }
 
       // bitwise_operators_api      
@@ -1736,6 +1832,7 @@ namespace crab {
         crab::CrabStats::count (getDomainName() + ".count.apply");
         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
+        _expressions.apply (op, x, y, z);
         apply_only_scalar(op, x, y, z);
       }
       
@@ -1743,6 +1840,7 @@ namespace crab {
         crab::CrabStats::count (getDomainName() + ".count.apply");
         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
+        _expressions.apply (op, x, y, k);
         apply_only_scalar(op, x, y, k);
       }
       
@@ -1751,6 +1849,7 @@ namespace crab {
         crab::CrabStats::count (getDomainName() + ".count.apply");
         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
+        _expressions.apply (op, x, y, z);
         apply_only_scalar(op, x, y, z);
       }
       
@@ -1758,18 +1857,19 @@ namespace crab {
         crab::CrabStats::count (getDomainName() + ".count.apply");
         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
+        _expressions.apply (op, x, y, k);
         apply_only_scalar(op, x, y, k);
       }
 
       // lhs := arr[idx];
-      // TODO: consider the number of read bytes so we can handle v += step 
-      //       where step > 1
-      void load (VariableName lhs, VariableName arr, VariableName idx, z_number /*nbytes*/)
+      void load (VariableName lhs, VariableName arr, VariableName idx, z_number nbytes)
       {
         crab::CrabStats::count (getDomainName() + ".count.load");
         crab::ScopedCrabStats __st__(getDomainName() + ".load");
 
-        Weight w = array_elem (idx);
+        VariableName norm_idx = normalize_offset (idx, nbytes);
+        Weight w = array_elem (norm_idx);
+
         // --- XXX: simplification wrt Gange et.al.:
         //     Only non-relational invariants involved arr are passed
         //     from the graph domain to the scalar domain.
@@ -1787,9 +1887,7 @@ namespace crab {
       }
 
       // arr[idx] := val 
-      // TODO: consider the number of written bytes so we can handle v += step
-      //       where step > 1
-      void store (VariableName arr, VariableName idx, linear_expression_t val, z_number /*nbytes*/)
+      void store (VariableName arr, VariableName idx, linear_expression_t val, z_number nbytes)
       {
         crab::CrabStats::count (getDomainName() + ".count.store");
         crab::ScopedCrabStats __st__(getDomainName() + ".store");
@@ -1800,8 +1898,9 @@ namespace crab {
         Weight w;
         w.set(arr, eval_interval(val));
 
-        array_forget(idx, arr);
-        array_update(idx, w);
+        VariableName norm_idx = normalize_offset (idx, nbytes);
+        array_forget(norm_idx, arr);
+        array_update(norm_idx, w);
 
         // XXX: since we do not propagate from the array weights to
         // the scalar domain I think we don't need to reduce here.
@@ -1827,6 +1926,7 @@ namespace crab {
         o << "(" << copy_scalar  << ",";
         copy_g.write(o,false);  // we do not print bottom edges
         o << ")";
+        //o << "##" << _expressions;
         #else
         o << "(" << _scalar  << ",";
         _g.write(o,true); 
