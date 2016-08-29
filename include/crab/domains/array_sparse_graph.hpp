@@ -1036,8 +1036,10 @@ namespace crab {
       typedef array_sparse_graph_domain<NumDom,Weight,IsDistWeight> array_sgraph_domain_t;
 
       //// XXX: make this a template parameter later
-      typedef interval_domain<Number, VariableName> interval_domain_t;
-      typedef term_domain<term::TDomInfo<Number, VariableName, interval_domain_t> > expression_domain_t;
+      typedef crab::cfg::var_factory_impl::str_var_alloc_col::varname_t str_varname_t;
+      typedef interval_domain<z_number, str_varname_t> str_interval_dom_t;
+      typedef term::TDomInfo<z_number, varname_t, str_interval_dom_t> idom_info;
+      typedef term_domain<idom_info> expression_domain_t;  
 
      private:
       typedef typename array_sgraph_t::mut_val_ref_t mut_val_ref_t;
