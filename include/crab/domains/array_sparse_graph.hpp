@@ -1474,8 +1474,6 @@ namespace crab {
         CRAB_LOG("array-sgraph-domain-norm",
                  crab::outs() << "EXPRESSIONS (after normalize offset)=" << _expressions << "\n");
 
-        // XXX: kind of hook. If the offset o cannot be simplified
-        // then we just return it.
         if (!simp_done) return o;
           
         // -- propagate equalities from _expressions to _scalar
@@ -1876,6 +1874,7 @@ namespace crab {
         //     Only non-relational invariants involved arr are passed
         //     from the graph domain to the scalar domain.
         _scalar.set (lhs, w[arr]);
+        _expressions.set (lhs, w[arr]);
 
         /// FIXME: we need to reduce only if the content of an array
         /// cell may be propagated to an array index.
