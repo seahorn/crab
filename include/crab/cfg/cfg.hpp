@@ -1310,7 +1310,7 @@ namespace crab {
         o << "call " << m_func_name << "(";
         for (const_arg_iterator It = m_args.begin (), Et=m_args.end (); It!=Et; )
         {
-          o << It->first;
+          o << It->first << ":" << It->second;
           ++It;
           if (It != Et)
             o << ",";
