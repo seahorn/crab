@@ -31,6 +31,9 @@ and fixpoint iterators built on the top of
 [Ikos](http://ti.arc.nasa.gov/opensource/ikos/) (Inference Kernel for
 Open Static Analyzers) developed by NASA Ames Research Center.
 
+# Crab architecture #
+
+![Crab Architecture](https://github.com/caballa/crab/blob/master/Crab_arch.jpg?raw=true "Crab Architecture")
 
 # Installation and Usage #
 
