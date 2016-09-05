@@ -823,8 +823,8 @@ namespace crab {
       typedef reduced_numerical_domain_product2<Domain1,Domain2> product_t;
       typedef typename product_t::varname_t VariableName;
 
-      template<class CFG, class VarFactory>
-      static void do_initialization (CFG cfg, VarFactory &vfac) { }
+      template<class CFG>
+      static void do_initialization (CFG cfg) { }
 
       static void normalize (product_t& inv) {
         inv.normalize();

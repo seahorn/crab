@@ -1839,8 +1839,8 @@ namespace crab {
      typedef term_domain<Info> term_domain_t;
      typedef typename Info::VariableName  VariableName;
 
-     template<class CFG, class VarFactory>
-     static void do_initialization (CFG cfg, VarFactory &vfac) { }
+     template<class CFG>
+     static void do_initialization (CFG cfg) { }
 
      static void normalize (term_domain_t& inv) {
        inv.normalize();

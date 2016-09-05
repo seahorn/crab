@@ -1105,8 +1105,8 @@ namespace crab {
      
      public:
 
-      template<class CFG, class VarFactory>
-      static void do_initialization (CFG cfg, VarFactory& vfac) {
+      template<class CFG>
+      static void do_initialization (CFG cfg) {
 
         typedef crab::analyzer::array_segmentation<CFG,typename CFG::varname_t> array_segment_analysis_t;
         typedef typename array_segment_analysis_t::array_segment_domain_t array_segment_domain_t;
@@ -1118,7 +1118,15 @@ namespace crab {
         array_segment_analysis_t analysis(cfg);
         analysis.exec();
         auto var_indexes = analysis.get_variables(cfg.entry());
+
+        if (var_indexes.begin() == var_indexes.end()) {
+          CRAB_WARN ("No variables found in the cfg. No array graph landmarks will be added\n");
+          return;
+        }
         lms.insert(var_indexes.begin(), var_indexes.end());
+
+        // get variable factory
+        auto &vfac = (*var_indexes.begin()).get_var_factory ();
 
         // add constants
         // make sure 0 is always considered as an array index
@@ -1962,9 +1970,9 @@ namespace crab {
       
       typedef array_sparse_graph_domain<NumDom,Weight,false> array_sgraph_domain_t;
 
-      template<class CFG, class VarFactory>
-      static void do_initialization (CFG cfg, VarFactory &vfac) {
-        array_sgraph_domain_t::do_initialization(cfg, vfac);
+      template<class CFG>
+      static void do_initialization (CFG cfg) {
+        array_sgraph_domain_t::do_initialization(cfg);
       }
 
       static void expand (array_sgraph_domain_t& inv, V x, V new_x) {

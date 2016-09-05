@@ -25,8 +25,8 @@ namespace crab {
      // Initialization of static data 
      // XXX: it doesn't take inv as argument because this method
      // should only access to static data.
-     template<class CFG, class VarFactory>
-     static void do_initialization(CFG cfg, VarFactory &vfac) { }
+     template<class CFG>
+     static void do_initialization(CFG cfg) { }
 
      // Normalize the abstract domain if such notion exists.
      static void normalize (Domain& inv) { }

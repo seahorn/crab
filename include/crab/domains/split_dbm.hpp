@@ -2519,8 +2519,8 @@ namespace crab {
 
       typedef SplitDBM<Number,VariableName> sdbm_domain_t;
 
-      template<class CFG, class VarFactory>
-      static void do_initialization (CFG cfg, VarFactory &vfac) { }
+      template<class CFG>
+      static void do_initialization (CFG cfg) { }
 
       static void expand (sdbm_domain_t& inv, VariableName x, VariableName new_x) {
         inv.expand (x, new_x);

@@ -194,7 +194,7 @@ namespace crab {
       //! Trigger the fixpoint computation 
       void Run (abs_dom_t inv)  {
         // initialization of static data
-        domains::domain_traits<abs_dom_t>::do_initialization (this->get_cfg(), m_vfac);
+        domains::domain_traits<abs_dom_t>::do_initialization (this->get_cfg());
         // XXX: inv was created before the static data is initialized
         //      so it won't contain that data.
         this->run (inv);         

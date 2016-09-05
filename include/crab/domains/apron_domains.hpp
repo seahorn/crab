@@ -1416,8 +1416,8 @@ namespace crab {
         
         typedef apron_domain<Number,VariableName, ApronDom> apron_domain_t;
         
-        template<class CFG, class VarFactory>
-        static void do_initialization (CFG cfg, VarFactory &vfac) { }
+        template<class CFG>
+        static void do_initialization (CFG cfg) { }
 
         static void normalize (apron_domain_t& inv) { 
           inv.normalize ();
