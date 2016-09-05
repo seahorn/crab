@@ -117,6 +117,12 @@ namespace crab {
           // -- Special case when the program has been inlined.
           CRAB_LOG("inter",
                    crab::outs() << "Call graph has no edges so no summaries are computed.\n");
+
+          CRAB_LOG("inter", 
+                   m_cg.write(crab::outs());
+                   crab::outs () << "\n";);
+                   
+
           for (auto &v: boost::make_iterator_range (vertices (m_cg))) {
             crab::ScopedCrabStats __st__("Inter.TopDown");
 

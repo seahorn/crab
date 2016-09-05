@@ -149,8 +149,20 @@ namespace crab {
             size_t to = cfg_hasher<CFG>::hash (cs);
             auto it_from = m_vertex_map.find (m_from);
             auto it_to = m_vertex_map.find (to);
-            if (it_from == m_vertex_map.end () || it_to == m_vertex_map.end ())
+
+            CRAB_LOG("cg", crab::outs() << "Visiting call site" << cs << "\n";);
+
+            if (it_from == m_vertex_map.end ())
+            {              
+              CRAB_LOG("cg", crab::outs() << "Not found caller \n";);
               return;
+            }
+
+            if (it_to == m_vertex_map.end ())
+            {
+              CRAB_LOG("cg", crab::outs() << "Not found callee \n";);
+              return;
+            }
             
             auto res = add_edge (it_from->second, it_to->second, m_cg);
             if (res.second)
@@ -242,7 +254,8 @@ namespace crab {
 
             CRAB_LOG("cg", 
                      crab::outs() << "Added call graph node " <<  *decl_opt 
-                                  <<  "--- id=" <<  v);
+                     <<  "--- id=" <<  v << "\n";);
+                     
           }
           
           // --- add edges in the call graph
