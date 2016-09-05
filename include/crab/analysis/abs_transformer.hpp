@@ -12,6 +12,8 @@
 #include <boost/optional.hpp>
 #include "boost/range/algorithm/set_algorithm.hpp"
 
+#include <type_traits>
+
 #include <crab/common/debug.hpp>
 #include <crab/common/stats.hpp>
 #include <crab/cfg/cfg.hpp>
@@ -334,8 +336,6 @@ namespace crab {
 
    public:
 
-    // The code is a bit more complicated because it works even if
-    // callsite and callee's signature variables are not disjoint
     static void reuse_summary (abs_dom_t& caller, 
                                const callsite_t& cs,
                                const typename SumTable::Summary& summ) {
@@ -343,7 +343,8 @@ namespace crab {
       //crab::ScopedCrabStats st("Inter.ReuseSummary");      
 
       // --- meet caller's inv with summ
-      caller = caller & summ.get_sum ();
+      auto sum_inv = summ.get_sum ();
+      caller = caller & sum_inv;
       CRAB_LOG("inter",
                crab::outs() << "--- After meet: " <<  caller << "\n");
       // --- matching formal and actual parameters
@@ -535,23 +536,33 @@ namespace crab {
 
           // --- convert this->m_inv to the language of summ_abs_dom_t (sum)
           summ_abs_domain_t caller_ctx_inv = summ_abs_domain_t::top();
-          for (auto cst : this->m_inv.to_linear_constraint_system ()) {
-            caller_ctx_inv += cst;
+          if (std::is_same<summ_abs_domain_t, abs_dom_t>::value) {
+            caller_ctx_inv = this->m_inv;
+          } else {
+            // XXX: it will lose precision for disjunctive domains
+            for (auto cst : this->m_inv.to_linear_constraint_system ())
+              caller_ctx_inv += cst;
           }
+          
           CRAB_LOG ("inter",
-                    crab::outs() << "--- Caller context: " 
-                                 <<  caller_ctx_inv << "\n");
+                    crab::outs() << "--- Caller context: " <<  caller_ctx_inv << "\n");
+                    
           // --- reuse summary to do the continuation
           bu_abs_transformer_t::reuse_summary (caller_ctx_inv, cs, sum);
           CRAB_LOG ("inter",
                     crab::outs() << "--- Caller context after plugin summary: " 
                                  << caller_ctx_inv << "\n");
+
           // --- convert back inv to the language of abs_dom_t
-          abs_dom_t inv = abs_dom_t::top();          
-          for (auto cst : caller_ctx_inv.to_linear_constraint_system ()) {
-            inv += cst;
+          if (std::is_same<summ_abs_domain_t, abs_dom_t>::value) {
+            this->m_inv = caller_ctx_inv;
+          } else {
+            // XXX: it will lose precision for disjunctive domains
+            abs_dom_t inv = abs_dom_t::top();          
+            for (auto cst : caller_ctx_inv.to_linear_constraint_system ())
+              inv += cst;
+            std::swap (this->m_inv, inv);
           }
-          std::swap (this->m_inv, inv);
           CRAB_LOG ("inter",
                     crab::outs() << "--- Caller continuation after " 
                                  <<  cs << "=" <<  this->m_inv << "\n");
