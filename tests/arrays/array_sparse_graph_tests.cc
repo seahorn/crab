@@ -324,7 +324,6 @@ cfg_t* prog9(variable_factory_t &vfac)
   basic_block_t& bb2_b   = cfg->insert("bb2b");
   basic_block_t& bb3   = cfg->insert("bb3");
   basic_block_t& ret     = cfg->insert("ret");
-  z_var n1(vfac["n1"]);
   z_var i1(vfac["i1"]);
   z_var i2(vfac["i2"]);
   z_var n(vfac["n"]);
@@ -339,7 +338,6 @@ cfg_t* prog9(variable_factory_t &vfac)
   ////////
   // assume array element of 1 byte
   entry.assume(n >= 1);
-  entry.assign(n1, 1);
   entry.assign(i1, 0);
   entry.assign(i2, 0);  
   ///////
@@ -351,15 +349,15 @@ cfg_t* prog9(variable_factory_t &vfac)
   // if (*)
   bb2_a.assume (nd >= 1);
   bb2_a.array_store(a, i1, 1, 1);
-  bb2_a.add(i1, i1, n1);
+  bb2_a.add(i1, i1, 1);
   // else
   bb2_b.assume (nd <= 0);
   bb2_b.array_store(a, i2, 2, 1);
-  bb2_b.add(i2, i2, n1);
+  bb2_b.add(i2, i2, 1);
   // } end while
   bb1_f1.assume(i1 >= n);
   bb1_f2.assume(i2 >= n);
-  ret.sub(tmp1, n, n1);
+  ret.sub(tmp1, n, 1);
   ret.array_load(tmp2, a, tmp1, 1); // initialized
   return cfg;
 }
