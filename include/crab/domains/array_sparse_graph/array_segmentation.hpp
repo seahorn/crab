@@ -222,8 +222,11 @@ namespace crab {
        void visit(z_assign_t &s) {
          if (!(_dom & s.lhs().name()).is_bottom()) {
            if (s.rhs().is_constant() && s.rhs().constant() >= 0 &&
-               std::find(_csts.begin(), _csts.end(), s.rhs().constant()) == _csts.end())
+               std::find(_csts.begin(), _csts.end(), s.rhs().constant()) == _csts.end()) {
              _csts.push_back(s.rhs().constant());
+             // for decrementing loops we need to include the upper bound index i and i+1
+             _csts.push_back(s.rhs().constant() + 1);
+           }
          }
        }
 
