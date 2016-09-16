@@ -6,10 +6,11 @@ using namespace crab::analyzer;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
-cfg_t* prog1 (variable_factory_t &vfac) 
+cfg_t* prog1 (variable_factory_t &vfac, bool temp_add) 
 {
   z_var n1(vfac["n1"]);
   z_var i(vfac["i"]);
+  z_var i1(vfac["i1"]);
   z_var a(vfac["A0"]);
   z_var a1(vfac["A1"]);
   z_var tmp3(vfac["tmp3"]);
@@ -36,7 +37,13 @@ cfg_t* prog1 (variable_factory_t &vfac)
   bb1_t.assume(i <= 9);
   bb1_f.assume(i >= 10);
   bb2.array_store(a, i, 123456, 1);
-  bb2.add(i, i, n1);
+  if (temp_add) 
+  {
+    bb2.add(i1, i, n1);
+    bb2.assign(i, i1);
+  }
+  else
+    bb2.add(i, i, n1);
   ret.sub(tmp3, i, n1);
   ret.array_load(tmp5, a, tmp3, 1); // initialized
   ret.array_load(tmp6, a, i, 1);    // top
@@ -44,7 +51,7 @@ cfg_t* prog1 (variable_factory_t &vfac)
 }
 
 
-cfg_t* prog2(variable_factory_t &vfac) 
+cfg_t* prog2(variable_factory_t &vfac, bool temp_sub) 
 {
   cfg_t* cfg = new cfg_t("entry","ret",ARR);
   basic_block_t& entry = cfg->insert("entry");
@@ -54,28 +61,34 @@ cfg_t* prog2(variable_factory_t &vfac)
   basic_block_t& bb2   = cfg->insert("bb2");
   basic_block_t& ret   = cfg->insert("ret");
   z_var n0(vfac["n0"]);
-  z_var n1(vfac["n1"]);
   z_var n9(vfac["n9"]);
   z_var i(vfac["i"]);
+  z_var i1(vfac["i1"]);
+  z_var i2(vfac["i2"]);
   z_var a(vfac["A"]);
   z_var tmp3(vfac["tmp3"]);
   z_var tmp4(vfac["tmp4"]);
   z_var tmp5(vfac["tmp5"]);
+  z_var x(vfac["x"]);
   entry >> bb1;
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   ////////
-  // assume array element of 1 byte
-  entry.assign(n0, 0); // we need to consider 0 as graph node
-  entry.assign(n1, 1); 
-  entry.assign(n9, 9); // we need to consider 9 as graph node
-  //entry.assign(i, n9);
-  entry.assign(i,9);
+  // assume array elements of 1 byte
   ///////
+  entry.assign(i,9);
   bb1_t.assume(i >= 0);
   bb1_f.assume(i <= -1);
   bb2.array_store (a, i, 123456, 1);
-  bb2.sub(i, i, n1);
+  if (temp_sub) 
+  {
+    bb2.sub(i1, i, 1);
+    bb2.assign(i2, i1);
+    bb2.assign(i, i2);
+
+  } 
+  else
+    bb2.sub(i, i, 1);
   ret.assign(tmp3, 5);
   ret.array_load(tmp4, a, tmp3, 1); // initialized
   ret.array_load(tmp5, a, i, 1);    // top
@@ -392,7 +405,7 @@ void run(cfg_ref_t cfg, string name, variable_factory_t &vfac)
 
 void test1(){
   variable_factory_t vfac;
-  cfg_t* cfg = prog1(vfac);
+  cfg_t* cfg = prog1(vfac, false);
   run<array_sgraph_domain_t> (*cfg, "Program 1: forall 0<= i< 10. a[i] = 123456", vfac);
   delete cfg;
 }
@@ -450,8 +463,22 @@ void test8(){
 
 void test9(){
   variable_factory_t vfac;
-  cfg_t* cfg = prog2(vfac);
+  cfg_t* cfg = prog2(vfac, false);
   run<array_sgraph_domain_t>(*cfg, "Program 9: forall 0<= i < n. a[i] == 123456 (decrementing loop)", vfac);
+  delete cfg;
+}
+
+void test10(){
+  variable_factory_t vfac;
+  cfg_t* cfg = prog2(vfac, true);
+  run<array_sgraph_domain_t>(*cfg, "Program 10: forall 0<= i < n. a[i] == 123456 (decrementing loop w/ temp vars)", vfac);
+  delete cfg;
+}
+
+void test11(){
+  variable_factory_t vfac;
+  cfg_t* cfg = prog1(vfac, true);
+  run<array_sgraph_domain_t> (*cfg, "Program 11: forall 0<= i< 10. a[i] = 123456 (w/ temp vars)", vfac);
   delete cfg;
 }
 
@@ -469,6 +496,8 @@ int main(int argc, char **argv)
   test7 ();
   test8 ();
   test9 ();
+  test10 ();
+  test11 ();
   return 42;
 }
 
