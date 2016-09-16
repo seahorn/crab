@@ -85,10 +85,11 @@ namespace crab {
         }
         return g;
       }
-      
-      // Syntactic meet
+
+      // Syntactic meet/narrowing
+      // apply meet if is_meet is true, otherwise apply narrowing
       template<class G1, class G2>
-      static graph_t meet(G1& l, G2& r, vector<vert_id>& unstable)
+      static graph_t meet_or_narrowing(G1& l, G2& r, const bool is_meet, vector<vert_id>& changed)
       {
         assert(l.size() == r.size());
         graph_t g(graph_t::copy(l));
@@ -96,34 +97,35 @@ namespace crab {
         for(vert_id s : r.verts()) {
           for(auto e : r.e_succs(s)) {
             if(!g.lookup(s, e.vert, &wg)) {
-              add_edge(g, s, e.val, e.vert);
+              // XXX: this is correct even if narrowing since we just
+              // refine from a top weight
+              add_edge(g, s, e.val, e.vert); 
             } else {
-              wg = e.val & (Wt) wg;
+              wg = (is_meet ? e.val & (Wt) wg :  e.val && (Wt) wg); 
             }
           }
           // Check if this vertex is stable
-          mut_val_ref_t meet_w;
           for (auto e: l.e_succs(s)) {
             vert_id d = e.vert;
-            if(g.lookup(s, d, &meet_w)) {
-              if (less_than((Wt) meet_w, e.val)) { 
-                unstable.push_back(s);
+            if(g.lookup(s, d, &wg)) {
+              if (less_than((Wt) wg, e.val)) { 
+                changed.push_back(s);
                 break;
               }
             } else {
-              unstable.push_back(s);
+              changed.push_back(s);
               break;
             }
           }
           for (auto e: r.e_succs(s)) {
             vert_id d = e.vert;
-            if(g.lookup(s, d, &meet_w)) {
-              if (less_than((Wt) meet_w, e.val)) { 
-                unstable.push_back(s);
+            if(g.lookup(s, d, &wg)) {
+              if (less_than((Wt) wg, e.val)) { 
+                changed.push_back(s);
                 break;
               }
             } else {
-              unstable.push_back(s);
+              changed.push_back(s);
               break;
             }
           }
@@ -131,7 +133,7 @@ namespace crab {
         }
         return g;
       }
-
+      
       // Syntactic widening 
       template<class G1, class G2>
       static graph_t widen(G1& l, G2& r, vector<vert_id>& unstable)
@@ -176,8 +178,11 @@ namespace crab {
             return true;
           }
         } else {
-          set_edge(g, i, w_ik | w_kj, j);
-          return true;
+          auto w_ij = w_ik | w_kj;
+          if (!w_ij.is_top ()) {
+            set_edge(g, i, w_ij, j);
+            return true;
+          }
         }
         return false;
       }
@@ -340,11 +345,11 @@ namespace crab {
         apply_delta(g, delta);
       }
 
-      // restore closure after meet 
+      // restore closure after meet/narrowing 
       // XXX: if weight is not distributive then closure is not
       // guaranteed.
       template<class G, class V>
-      static void close_after_meet(G& g, const V& is_stable)
+      static void close_after_meet_or_narrowing(G& g, const V& is_stable)
       {
         edge_vector delta;
         for(vert_id v : g.verts()) {
