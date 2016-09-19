@@ -12,8 +12,6 @@
 #include <boost/optional.hpp>
 #include "boost/range/algorithm/set_algorithm.hpp"
 
-#include <type_traits>
-
 #include <crab/common/debug.hpp>
 #include <crab/common/stats.hpp>
 #include <crab/cfg/cfg.hpp>
@@ -429,6 +427,21 @@ namespace crab {
     }
   }; 
 
+  /// Conversion between domains
+  template<typename Domain>
+  inline void convert_domains (Domain from, Domain& to) {
+    to = from;
+  }
+
+  template<typename Domain1, typename Domain2>
+  inline void convert_domains (Domain1 from, Domain2& to) {
+    CRAB_WARN("Converting from " + Domain1::getDomainName () + " to " +
+              Domain2::getDomainName () + 
+              " might lose precision if " + Domain1::getDomainName () + 
+              " is a disjunctive domain");
+    for (auto cst : from.to_linear_constraint_system ())
+    { to += cst; }
+  }
 
   // Transformer specialized for performing top-down forward
   // traversal while reusing numerical summaries at the callsites
@@ -535,15 +548,8 @@ namespace crab {
           /////
 
           // --- convert this->m_inv to the language of summ_abs_dom_t (sum)
-          summ_abs_domain_t caller_ctx_inv = summ_abs_domain_t::top();
-          if (std::is_same<summ_abs_domain_t, abs_dom_t>::value) {
-            caller_ctx_inv = this->m_inv;
-          } else {
-            // XXX: it will lose precision for disjunctive domains
-            for (auto cst : this->m_inv.to_linear_constraint_system ())
-              caller_ctx_inv += cst;
-          }
-          
+          summ_abs_domain_t caller_ctx_inv;
+          convert_domains(this->m_inv, caller_ctx_inv);
           CRAB_LOG ("inter",
                     crab::outs() << "--- Caller context: " <<  caller_ctx_inv << "\n");
                     
@@ -554,15 +560,7 @@ namespace crab {
                                  << caller_ctx_inv << "\n");
 
           // --- convert back inv to the language of abs_dom_t
-          if (std::is_same<summ_abs_domain_t, abs_dom_t>::value) {
-            this->m_inv = caller_ctx_inv;
-          } else {
-            // XXX: it will lose precision for disjunctive domains
-            abs_dom_t inv = abs_dom_t::top();          
-            for (auto cst : caller_ctx_inv.to_linear_constraint_system ())
-              inv += cst;
-            std::swap (this->m_inv, inv);
-          }
+          convert_domains(caller_ctx_inv, this->m_inv);
           CRAB_LOG ("inter",
                     crab::outs() << "--- Caller continuation after " 
                                  <<  cs << "=" <<  this->m_inv << "\n");

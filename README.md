@@ -31,6 +31,9 @@ and fixpoint iterators built on the top of
 [Ikos](http://ti.arc.nasa.gov/opensource/ikos/) (Inference Kernel for
 Open Static Analyzers) developed by NASA Ames Research Center.
 
+# Crab architecture #
+
+![Crab Architecture](https://github.com/caballa/crab/blob/master/Crab_arch.jpg?raw=true "Crab Architecture")
 
 # Installation and Usage #
 
@@ -170,13 +173,12 @@ that uses Crab-Llvm to supply invariants to the back-end solvers.
 
 # Licensing #
 
-Crab is distributed under MIT license.
+Crab is currently under a licensing process. Meanwhile, Crab cannot be
+publicly distributed.
 
 Ikos is distributed under NASA Open Source Agreement (NOSA)
-Version 1.3 or later.
-
-See [Crab_LICENSE.txt](Crab_LICENSE.txt) and
-[Ikos_LICENSE.pdf](Ikos_LICENSE.pdf) for details.
+Version 1.3 or later. See [Ikos_LICENSE.pdf](Ikos_LICENSE.pdf) for
+details.
 
 # Publications #
 

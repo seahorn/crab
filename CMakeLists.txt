@@ -260,7 +260,7 @@ endif ()
 install(DIRECTORY include/ DESTINATION include)
 
 # Licenses
-install(FILES Crab_LICENSE.txt DESTINATION shared/doc)       
+##install(FILES Crab_LICENSE.txt DESTINATION shared/doc)       
 
 install(FILES Ikos_LICENSE.pdf DESTINATION shared/doc)       
 
