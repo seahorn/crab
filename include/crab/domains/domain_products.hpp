@@ -42,9 +42,7 @@
 #define IKOS_DOMAIN_PRODUCTS_HPP
 
 #include <crab/common/types.hpp>
-#include <crab/domains/numerical_domains_api.hpp>
-#include <crab/domains/bitwise_operators_api.hpp>
-#include <crab/domains/division_operators_api.hpp>
+#include <crab/domains/operators_api.hpp>
 
 namespace ikos {
 
@@ -318,8 +316,8 @@ namespace ikos {
   class numerical_domain_product2: public writeable,
                                    public numerical_domain< Number, VariableName >,
                                    public bitwise_operators< Number, VariableName >, 
-                                   public division_operators< Number, VariableName > {
-
+                                   public division_operators< Number, VariableName >,
+                                   public crab::domains::array_operators< Number, VariableName > {
   public:
     typedef numerical_domain_product2< Number, VariableName, Domain1, Domain2 > numerical_domain_product2_t;
     typedef Domain1 first_type;

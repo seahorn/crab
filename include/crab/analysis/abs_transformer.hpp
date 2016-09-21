@@ -250,15 +250,12 @@ namespace crab {
     }
 
     void exec (z_arr_init_t &stmt) {
-      domains::array_domain_traits<abs_dom_t>::array_init (m_inv, 
-                                                           stmt.variable (), 
-                                                           stmt.values ());
+      m_inv.array_init (stmt.variable (), stmt.values ());
     }
 
     void exec (z_assume_arr_t &stmt) {
-      domains::array_domain_traits<abs_dom_t>::assume_array (m_inv, 
-                                                             stmt.variable (), 
-                                                             stmt.val ());
+      m_inv.array_assume (stmt.variable (), 
+                          stmt.val().lb().number(), stmt.val().ub().number());
     }
     
     void exec (z_arr_store_t &stmt) {
@@ -266,12 +263,8 @@ namespace crab {
       {
         auto arr = stmt.array ().name ();
         auto idx = *(stmt.index ().get_variable ());
-        domains::array_domain_traits<abs_dom_t>::array_store (m_inv, 
-                                                              arr,
-                                                              idx.name(), 
-                                                              stmt.value (),
-                                                              stmt.elem_size(),
-                                                              stmt.is_singleton ());
+        m_inv.array_store (arr, idx.name(), stmt.value (), stmt.elem_size(), 
+                           stmt.is_singleton ());
       }
     }
 
@@ -279,11 +272,8 @@ namespace crab {
       if (stmt.index ().get_variable ())
       {
         auto idx = *(stmt.index ().get_variable ());
-        domains::array_domain_traits<abs_dom_t>::array_load (m_inv, 
-                                                             stmt.lhs ().name (), 
-                                                             stmt.array ().name (), 
-                                                             idx.name (),
-                                                             stmt.elem_size());
+        m_inv.array_load (stmt.lhs ().name (), stmt.array ().name (), idx.name (),
+                          stmt.elem_size());
       }
     }
 

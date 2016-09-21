@@ -227,6 +227,21 @@ namespace crab {
       }
     }; 
 
+    // //! Specialized forward analyzer
+    // template<typename CFG, typename AbsNumDomain, typename VarFactory>
+    // class fwd_analyzer_impl {
+    //  private:
+
+    //   // TODO: change this
+    //   typedef num_abs_transformer<AbsNumDomain,
+    //                               summary_table<CFG,AbsNumDomain>,
+    //                               call_ctx_table<CFG,AbsNumDomain> > abs_tr_t; 
+    //  public:
+
+    //   typedef fwd_analyzer<CFG, abs_tr_t, VarFactory> type;
+
+    // };
+
     //! Specialized type for a numerical forward analyzer
     template<typename CFG, typename AbsNumDomain, typename VarFactory>
     class num_fwd_analyzer {
@@ -242,11 +257,6 @@ namespace crab {
     };
 
     //! Specialized type for a nullity forward analyzer.
-    //  TODO: Currently, nullity must be run completely separately
-    //  from a numerical analysis. We need to extend the numerical
-    //  abstract transformer with pointer operations so that we can
-    //  have a reduced product of a numerical domain and the nullity
-    //  domain.
     template<typename CFG, typename VarFactory>
     class nullity_analyzer {
       typedef typename CFG::varname_t varname_t;

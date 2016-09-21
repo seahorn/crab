@@ -55,34 +55,6 @@ namespace crab {
 
    };
 
-   template<typename Domain>
-   class array_domain_traits {
-
-    public:
-
-     typedef ikos::z_number z_number;
-     typedef typename Domain::linear_expression_t linear_expression_t;
-
-     template <typename VariableName>
-     static void array_init (Domain& inv, VariableName a, 
-                             const std::vector<z_number>& vals) { }
-     
-     template <typename VariableName, typename Number>
-     static void assume_array (Domain& inv, VariableName a, Number val) { }
-     
-     template <typename VariableName, typename Number>
-     static void assume_array (Domain& inv, VariableName a, interval<Number> val) { }
-     
-     template <typename VariableName>
-     static void array_load (Domain& inv, VariableName lhs, 
-                             VariableName a, VariableName i, z_number n_bytes) { }
-     
-     template <typename VariableName>
-     static void array_store (Domain& inv, VariableName a, 
-                              VariableName i, linear_expression_t v,
-                              z_number n_bytes, bool is_singleton) { }
-   };
-
    template<typename Domain1, typename Domain2>
    class product_domain_traits {
     public:

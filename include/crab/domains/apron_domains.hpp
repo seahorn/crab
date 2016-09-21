@@ -7,7 +7,7 @@
 #include <crab/common/debug.hpp>
 #include <crab/common/stats.hpp>
 #include <crab/common/types.hpp>
-#include <crab/domains/numerical_domains_api.hpp>
+#include <crab/domains/operators_api.hpp>
 #include <crab/domains/domain_traits.hpp>
 
 using namespace boost;
@@ -35,7 +35,8 @@ namespace crab {
          public ikos::writeable, 
          public numerical_domain< Number, VariableName>,
          public bitwise_operators< Number, VariableName >, 
-         public division_operators< Number, VariableName > {
+         public division_operators< Number, VariableName >,
+         public array_operators< Number, VariableName > {
               
        public:
         using typename numerical_domain< Number, VariableName>::linear_expression_t;
@@ -155,7 +156,8 @@ namespace crab {
          public ikos::writeable, 
          public numerical_domain< Number, VariableName>,
          public bitwise_operators< Number, VariableName >, 
-         public division_operators< Number, VariableName > {
+         public division_operators< Number, VariableName >,
+         public array_operators< Number, VariableName > {
        public:
         using typename numerical_domain< Number, VariableName>::linear_expression_t;
         using typename numerical_domain< Number, VariableName>::linear_constraint_t;
@@ -1269,7 +1271,8 @@ namespace crab {
       class apron_domain : public ikos::writeable,
                            public numerical_domain<Number, VariableName >,
                            public bitwise_operators<Number,VariableName >,
-                           public division_operators<Number, VariableName > {
+                           public division_operators<Number, VariableName >,
+                           public array_operators< Number, VariableName > {
        public:
         using typename numerical_domain< Number, VariableName >::linear_expression_t;
         using typename numerical_domain< Number, VariableName >::linear_constraint_t;
