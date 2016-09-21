@@ -68,7 +68,8 @@ namespace crab {
                         public numerical_domain<typename Info::Number, typename Info::VariableName >, 
                         public bitwise_operators< typename Info::Number, typename Info::VariableName >,
                         public division_operators< typename Info::Number, typename Info::VariableName >,
-                        public array_operators< typename Info::Number, typename Info::VariableName > {
+                        public array_operators< typename Info::Number, typename Info::VariableName >,
+                        public pointer_operators< typename Info::Number, typename Info::VariableName > {
        friend class TermNormalizer<Info, typename Info::domain_t>;
       private:
        // Number and VariableName can be different from
@@ -508,6 +509,7 @@ namespace crab {
            bitwise_operators< Number, VariableName >(),
            division_operators< Number, VariableName >(),   
            array_operators< Number, VariableName >(),   
+           pointer_operators< Number, VariableName >(),   
            _is_bottom(o._is_bottom), 
            _ttbl(o._ttbl), _impl(o._impl),
            _alloc(o._alloc),

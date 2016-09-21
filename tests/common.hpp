@@ -77,6 +77,8 @@ namespace crab {
     // Array domains
     typedef array_graph_domain<sdbm_domain_t, interval_domain_t> array_graph_domain_t;
     typedef array_smashing<dis_interval_domain_t> array_smashing_t;
+    // Pointer domains
+    typedef nullity_domain< z_number, varname_t > nullity_domain_t;
   } 
 }
 

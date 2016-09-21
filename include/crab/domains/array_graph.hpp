@@ -698,8 +698,9 @@ namespace crab {
         public division_operators<typename ScalarNumDomain::number_t,
                                   typename ScalarNumDomain::varname_t>,
         public array_operators<typename ScalarNumDomain::number_t,
-                               typename ScalarNumDomain::varname_t >
-    {
+                               typename ScalarNumDomain::varname_t >,
+        public pointer_operators<typename ScalarNumDomain::number_t,
+                                 typename ScalarNumDomain::varname_t > {
 
       template<typename Key, typename Value>
       class merge_op_check_equal: public patricia_tree< Key, Value >::binary_op_t {

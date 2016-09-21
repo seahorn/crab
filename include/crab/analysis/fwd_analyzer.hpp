@@ -227,22 +227,11 @@ namespace crab {
       }
     }; 
 
-    // //! Specialized forward analyzer
-    // template<typename CFG, typename AbsNumDomain, typename VarFactory>
-    // class fwd_analyzer_impl {
-    //  private:
-
-    //   // TODO: change this
-    //   typedef num_abs_transformer<AbsNumDomain,
-    //                               summary_table<CFG,AbsNumDomain>,
-    //                               call_ctx_table<CFG,AbsNumDomain> > abs_tr_t; 
-    //  public:
-
-    //   typedef fwd_analyzer<CFG, abs_tr_t, VarFactory> type;
-
-    // };
-
-    //! Specialized type for a numerical forward analyzer
+    //! Specialized type for a numerical forward analyzer with array
+    //! and pointers
+    // XXX: num_fwd_analyzer should be renamed to something like
+    //      fwd_analyzer_impl. The prefix num is for historical
+    //      reasons (originally supported only numerical operations)
     template<typename CFG, typename AbsNumDomain, typename VarFactory>
     class num_fwd_analyzer {
      private:
@@ -254,22 +243,6 @@ namespace crab {
 
       typedef fwd_analyzer<CFG, num_abs_tr_t, VarFactory> type;
 
-    };
-
-    //! Specialized type for a nullity forward analyzer.
-    template<typename CFG, typename VarFactory>
-    class nullity_analyzer {
-      typedef typename CFG::varname_t varname_t;
-
-     public:      
-      typedef domains::nullity_domain<varname_t> nullity_domain_t;
-      
-     private:
-      typedef nullity_abs_transformer<varname_t,
-                                      summary_table<CFG, nullity_domain_t>,
-                                      call_ctx_table<CFG, nullity_domain_t> > abs_tr_t;
-     public:
-      typedef fwd_analyzer<CFG, abs_tr_t, VarFactory> analyzer_t;
     };
   
   } // end namespace

@@ -1151,7 +1151,8 @@ namespace ikos {
                          public numerical_domain< Number, VariableName >,
                          public bitwise_operators< Number, VariableName >, 
                          public division_operators< Number, VariableName >,
-                         public crab::domains::array_operators< Number, VariableName > {
+                         public crab::domains::array_operators< Number, VariableName >,
+                         public crab::domains::pointer_operators< Number, VariableName > {
     
   public:
     using typename numerical_domain< Number, VariableName >::linear_expression_t;
@@ -1194,6 +1195,7 @@ namespace ikos {
       bitwise_operators< Number, VariableName >(),
       division_operators< Number, VariableName >(),
       crab::domains::array_operators< Number, VariableName > (),
+      crab::domains::pointer_operators< Number, VariableName > (),
       _env(e._env) { 
       crab::CrabStats::count (getDomainName() + ".count.copy");
       crab::ScopedCrabStats __st__(getDomainName() + ".copy");

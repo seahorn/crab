@@ -89,12 +89,16 @@ cfg_t* cfg2 (variable_factory_t &vfac)  {
   return cfg;
 }
 
-typedef nullity_analyzer<cfg_ref_t, variable_factory_t>::nullity_domain_t nullity_domain_t;
-
 void check (cfg_ref_t cfg, variable_factory_t& vfac) {
 
   // Each checker is associated to one analyzer
-  typedef nullity_analyzer<cfg_ref_t, variable_factory_t>::analyzer_t null_analyzer_t;
+  typedef crab::domains::numerical_domain_product2<z_number, varname_t, sdbm_domain_t, nullity_domain_t>
+      dbm_nullity_domain_t;
+  
+  //typedef nullity_domain_t num_nullity_domain_t;
+  typedef dbm_nullity_domain_t num_nullity_domain_t;
+
+  typedef num_fwd_analyzer<cfg_ref_t, num_nullity_domain_t, variable_factory_t>::type null_analyzer_t;
   typedef intra_checker<null_analyzer_t> null_checker_t;
   typedef num_fwd_analyzer<cfg_ref_t, sdbm_domain_t, variable_factory_t>::type num_analyzer_t;
   typedef intra_checker<num_analyzer_t> num_checker_t;
@@ -111,8 +115,8 @@ void check (cfg_ref_t cfg, variable_factory_t& vfac) {
 
   // Run nullity analysis
   null_analyzer_t null_a (cfg, vfac, &live);
-  null_a.run (nullity_domain_t::top ());
-  crab::outs() << "Nullity analysis using " << nullity_domain_t::getDomainName () << "\n";
+  null_a.run (num_nullity_domain_t::top ());
+  crab::outs() << "Analysis using " << num_nullity_domain_t::getDomainName () << "\n";
   for (auto &b : cfg)  {
     auto pre = null_a.get_pre (b.label ());
     auto post = null_a.get_post (b.label ());
@@ -125,7 +129,7 @@ void check (cfg_ref_t cfg, variable_factory_t& vfac) {
   // Run numerical analysis
   num_analyzer_t num_a (cfg, vfac, &live);
   num_a.run (sdbm_domain_t::top ());
-  crab::outs() << "Numerical analysis using " << sdbm_domain_t::getDomainName () << "\n";
+  crab::outs() << "Analysis using " << sdbm_domain_t::getDomainName () << "\n";
   for (auto &b : cfg)  {
     auto pre = num_a.get_pre (b.label ());
     auto post = num_a.get_post (b.label ());

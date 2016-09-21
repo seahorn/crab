@@ -795,7 +795,8 @@ class congruence_domain : public writeable,
                           public numerical_domain< Number, VariableName >,
                           public bitwise_operators< Number, VariableName >,
                           public division_operators< Number, VariableName >,
-                          public crab::domains::array_operators< Number, VariableName > {
+                          public crab::domains::array_operators< Number, VariableName >,
+                          public crab::domains::pointer_operators< Number, VariableName > {
 public:
   typedef congruence< Number, typeSize > congruence_t;
   // note that this is assuming that all variables have the same bit
@@ -845,6 +846,7 @@ public:
         bitwise_operators< Number, VariableName >(),
         division_operators< Number, VariableName >(),
         crab::domains::array_operators< Number, VariableName >(),
+        crab::domains::pointer_operators< Number, VariableName >(),
         _env(e._env) {
     crab::CrabStats::count (getDomainName() + ".count.copy");
     crab::ScopedCrabStats __st__(getDomainName() + ".copy");

@@ -35,8 +35,9 @@ namespace crab {
          public division_operators<typename NumDomain::number_t,
                                    typename NumDomain::varname_t>,
          public array_operators<typename NumDomain::number_t,
-                                typename NumDomain::varname_t >
-      {
+                                typename NumDomain::varname_t >,
+         public pointer_operators<typename NumDomain::number_t,
+                                  typename NumDomain::varname_t > {
               
        public:
 

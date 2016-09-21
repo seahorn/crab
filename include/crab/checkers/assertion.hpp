@@ -58,10 +58,10 @@ namespace crab {
           return;
         }
         
-        num_dom_detail::get_as<abs_dom_t,varname_t> wrapper_inv (inv);
-        if (wrapper_inv.entails(cst)) {
+        num_dom_detail::checker_ops<abs_dom_t> cinv (inv);
+        if (cinv.entails(cst)) {
           LOG_SAFE(this->m_verbose, inv, cst, s.get_debug_info());
-        } else if (wrapper_inv.intersect (cst)) {
+        } else if (cinv.intersect (cst)) {
           LOG_WARN(this->m_verbose, inv, cst, s.get_debug_info());
         } else {
           LOG_ERR(this->m_verbose, inv, cst, s.get_debug_info());
