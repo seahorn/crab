@@ -271,21 +271,24 @@ namespace crab {
           o <<  rhs ();
       }
     }
-    
-    friend crab::crab_os& operator<<(crab::crab_os& o, const ptr_cst_kind_t& k) {
-      if (k == PTR_EQUALITY ) 
-        o << " == ";
-      else 
-        o << " != ";
-      return o;
-    }
-    
-    friend crab::crab_os& operator<<(crab::crab_os& o, const ptr_cst_t& cst) {
-      cst.write (o);
-      return o;
-    }
-
   };
+
+  inline crab::crab_os& operator<<(crab::crab_os& o, 
+                                   const ptr_cst_kind_t &k) {
+    if (k == PTR_EQUALITY ) 
+      o << " == ";
+    else 
+      o << " != ";
+    return o;
+  }
+    
+  template<typename VariableName>  
+  inline crab::crab_os& operator<<(crab::crab_os& o, 
+                                   const pointer_constraint<VariableName> &cst) {
+    cst.write (o);
+    return o;
+  }
+
 } // end namespace
  
 namespace ikos {
@@ -357,18 +360,21 @@ namespace ikos {
       else
         o << _n;
     }
-    
-    friend index_t hash_value (const variable_t& v) {
-      // ignore type for computing hash value
-      return v.index ();
-    }
-  
-    friend crab::crab_os& operator<<(crab::crab_os& o, variable_t& v) {
-      v.write(o);
-      return o;
-    }
-    
+        
   }; // class variable
+
+  template< typename Type, typename VariableName >
+  inline index_t hash_value (const variable<Type, VariableName> &v) {
+    // ignore type for computing hash value
+    return v.index ();
+  }
+  
+  template< typename Type, typename VariableName >
+  inline crab::crab_os& operator<<(crab::crab_os& o, variable<Type, VariableName> &v) {
+    v.write(o);
+    return o;
+  }
+
 
 } // end namespace 
 
