@@ -14,8 +14,6 @@
 #include <crab/domains/domain_traits.hpp>
 #include <crab/domains/linear_constraints.hpp>
 
-#include <crab/domains/nullity.hpp>
-
 namespace crab {
 
   namespace analyzer {
@@ -244,6 +242,11 @@ namespace crab {
       m_inv = abs_dom_t::bottom ();
     }
 
+    // --- default implementation is intra-procedural
+    // TODO/FIXME: havoc also all the pointer actual parameters.
+    // XXX: no need to havoc array parameters because compilation
+    // ensures input/output arrays so in this case output arrays will
+    // be already top.
     void exec (callsite_t &cs) {
       auto lhs_opt = cs.get_lhs_name ();
       if (lhs_opt) { // havoc 
@@ -455,6 +458,7 @@ namespace crab {
                  crab::outs() << "Summary not found for " << cs << "\n");
       
       auto lhs_opt = cs.get_lhs_name ();
+      // TODO/FIXME: havoc also all the pointer actual parameters.
       if (lhs_opt) { // havoc 
         this->m_inv -= *lhs_opt;
       }
@@ -610,7 +614,8 @@ namespace crab {
       }
 
       // We could not reuse a summary so we just havoc lhs of the call
-      // site
+      // site. TODO/FIXME: havoc also all the pointer actual
+      // parameters.
       auto lhs_opt = cs.get_lhs_name ();
       if (lhs_opt) {
         this->m_inv -= *lhs_opt;
