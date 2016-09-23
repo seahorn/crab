@@ -577,15 +577,17 @@ namespace crab {
 
           vector<ap_dim_t> dims;
           var_map_t res;
-          for (auto const& p: m_var_map.left) {  
+          /// XXX: we must iterate on the dimension id's to preserve
+          /// order between them
+          for (auto const& p: m_var_map.right) {  
             if (ap_abstract0_is_dimension_unconstrained (get_man (),
                                                          &*m_apstate, 
-                                                         p.second)) {
-              dims.push_back (p.second);
+                                                         p.first)) {
+              dims.push_back (p.first);
             }
             else {
               ap_dim_t i = res.size ();
-              res.insert (binding_t (p.first, i));
+              res.insert (binding_t (p.second, i));
             }
           }
           remove_dimensions (m_apstate, dims);
@@ -602,15 +604,17 @@ namespace crab {
 
           vector<ap_dim_t> dims;
           var_map_t res;
-          for (auto const& p: m_var_map.left) {  
+          /// XXX: we must iterate on the dimension id's to preserve
+          /// order between them
+          for (auto const& p: m_var_map.right) {  
             if (ap_abstract0_is_dimension_unconstrained (get_man (),
                                                          &*m_apstate, 
-                                                         p.second)) {
-              dims.push_back (p.second);
+                                                         p.first)) {
+              dims.push_back (p.first);
             }
             else {
               ap_dim_t i = res.size ();
-              res.insert (binding_t (p.first, i));
+              res.insert (binding_t (p.second, i));
             }
           }
           remove_dimensions (m_apstate, dims);
@@ -836,12 +840,15 @@ namespace crab {
 
           // -- Remove forgotten dimensions while compacting
           var_map_t res;
-          for (auto const& p: m_var_map.left) {  
-             if (set_dims.count (p.second) <= 0) {
+          /// XXX: we must iterate on the dimension id's to preserve
+          /// order between them
+          for (auto const& p: m_var_map.right) {  
+             if (set_dims.count (p.first) <= 0) {
                ap_dim_t i = res.size ();
-               res.insert (binding_t (p.first, i));
+               res.insert (binding_t (p.second, i));
              }
           }
+
           remove_dimensions (m_apstate, vector_dims);
           std::swap (m_var_map, res);
         }
@@ -858,10 +865,12 @@ namespace crab {
                                                           false));
             // -- Remove forgotten dimensions while compacting
             var_map_t res;
-            for (auto const& p: m_var_map.left) {  
-              if (p.second != *dim) {
+            /// XXX: we must iterate on the dimension id's to preserve
+            /// order between them
+            for (auto const& p: m_var_map.right) {  
+              if (p.first != *dim) {
                 ap_dim_t i = res.size ();
-                res.insert (binding_t (p.first, i));
+                res.insert (binding_t (p.second, i));
               }
             }
             remove_dimensions (m_apstate, vector_dims);
