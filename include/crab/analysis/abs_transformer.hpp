@@ -474,9 +474,9 @@ namespace crab {
   template<typename Domain1, typename Domain2>
   inline void convert_domains (Domain1 from, Domain2& to) {
     CRAB_WARN("Converting from " + Domain1::getDomainName () + " to " +
-              Domain2::getDomainName () + 
-              " might lose precision if " + Domain1::getDomainName () + 
-              " is a disjunctive domain");
+              Domain2::getDomainName () + " might lose precision " +
+              "if " + Domain1::getDomainName () + " is an abstraction of " +
+              Domain2::getDomainName ());
     for (auto cst : from.to_linear_constraint_system ())
     { to += cst; }
   }
