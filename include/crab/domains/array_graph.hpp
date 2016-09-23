@@ -56,9 +56,7 @@
 #include <crab/common/debug.hpp>
 #include <crab/common/stats.hpp>
 #include <crab/domains/patricia_trees.hpp>
-#include <crab/domains/numerical_domains_api.hpp>
-#include <crab/domains/bitwise_operators_api.hpp>
-#include <crab/domains/division_operators_api.hpp>
+#include <crab/domains/operators_api.hpp>
 #include <crab/domains/domain_traits.hpp>
 
 using namespace std;
@@ -693,13 +691,16 @@ namespace crab {
     template<typename ScalarNumDomain, typename WeightDomain, bool IsDistWeight = false>
     class array_graph_domain: 
         public writeable, 
-         public numerical_domain<typename ScalarNumDomain::number_t,
-                                 typename ScalarNumDomain::varname_t>,
-         public bitwise_operators<typename ScalarNumDomain::number_t, 
-                                  typename ScalarNumDomain::varname_t>, 
-         public division_operators<typename ScalarNumDomain::number_t,
-                                   typename ScalarNumDomain::varname_t>
-    {
+        public numerical_domain<typename ScalarNumDomain::number_t,
+                                typename ScalarNumDomain::varname_t>,
+        public bitwise_operators<typename ScalarNumDomain::number_t, 
+                                 typename ScalarNumDomain::varname_t>, 
+        public division_operators<typename ScalarNumDomain::number_t,
+                                  typename ScalarNumDomain::varname_t>,
+        public array_operators<typename ScalarNumDomain::number_t,
+                               typename ScalarNumDomain::varname_t >,
+        public pointer_operators<typename ScalarNumDomain::number_t,
+                                 typename ScalarNumDomain::varname_t > {
 
       template<typename Key, typename Value>
       class merge_op_check_equal: public patricia_tree< Key, Value >::binary_op_t {
@@ -1426,8 +1427,19 @@ namespace crab {
         CRAB_WARN ("division operations not implemented in array_graph");
       }
 
-      void load (VariableName lhs, VariableName arr, VariableName idx)
-      {
+      // array_operators_api
+        
+      virtual void array_init (VariableName a, const vector<ikos::z_number> &values)  override {
+        CRAB_WARN ("array_graph_domain init not implemented");
+      }
+
+      virtual void array_assume (VariableName a, 
+                                 boost::optional<Number> lb, boost::optional<Number> ub) override {
+        CRAB_WARN ("array_graph_domain assume not implemented");
+      }
+
+      virtual void array_load (VariableName lhs, VariableName arr, VariableName idx, 
+                               z_number /*bytes*/) override {
         crab::CrabStats::count (getDomainName() + ".count.load");
         crab::ScopedCrabStats __st__(getDomainName() + ".load");
 
@@ -1443,8 +1455,9 @@ namespace crab {
                            << *this <<"\n";);    
       }
 
-      void store (VariableName arr, VariableName idx, linear_expression_t val)
-      {
+      virtual void array_store (VariableName arr, VariableName idx, linear_expression_t val,
+                                 z_number /*n_bytes*/, bool /*is_singleton*/) override {
+
         crab::CrabStats::count (getDomainName() + ".count.store");
         crab::ScopedCrabStats __st__(getDomainName() + ".store");
 
@@ -1500,43 +1513,6 @@ namespace crab {
 
     }; // end array_graph_domain
 
-    template <typename ScalarDomain, typename WeightDomain>
-    class array_domain_traits<array_graph_domain<ScalarDomain,WeightDomain,false> > {
-
-       public:
-        
-        typedef ikos::z_number z_number;
-        typedef typename ScalarDomain::number_t number_t;
-        typedef typename ScalarDomain::varname_t varname_t;
-        typedef typename ScalarDomain::linear_expression_t linear_expression_t;
-        typedef array_graph_domain<ScalarDomain,WeightDomain, false> array_graph_domain_t;
-
-        static void array_init (array_graph_domain_t& inv, varname_t a, 
-                                const vector<z_number> &values) { 
-          CRAB_WARN ("array_graph_domain init not implemented");
-        }
-        
-        static void assume_array (array_graph_domain_t& inv, varname_t a, number_t val) {
-          CRAB_WARN ("array_graph_domain assume not implemented");
-        }
-        
-        static void assume_array (array_graph_domain_t& inv, varname_t a, 
-                                  interval<number_t> val) {
-          CRAB_WARN ("array_graph_domain assume not implemented");
-        }
-        
-        static void array_load (array_graph_domain_t& inv, 
-                                varname_t lhs, varname_t arr, varname_t idx, 
-                                z_number /*n_bytes*/) {
-          inv.load (lhs, arr, idx);
-        }
-        
-        static void array_store (array_graph_domain_t& inv, varname_t arr, 
-                                 varname_t idx, linear_expression_t val,
-                                 z_number /*n_bytes*/, bool /*is_singleton*/) {
-          inv.store (arr, idx, val);
-        }        
-      };
 
     }// namespace domain_traits
 

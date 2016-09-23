@@ -834,15 +834,10 @@ namespace crab {
       Pointer statements (PTR_TYPE)
     */
 
-    template< class Number, class VariableName>
+    template<class VariableName>
     class ptr_load_stmt: public statement<VariableName>
     {
       // p = *q
-     public:
-      
-      typedef interval <Number> interval_t;
-      
-     private:
       
       VariableName m_lhs;
       VariableName m_rhs;
@@ -869,7 +864,7 @@ namespace crab {
       
       virtual boost::shared_ptr<statement <VariableName> > clone () const
       {
-        typedef ptr_load_stmt <Number,VariableName> ptr_load_t;
+        typedef ptr_load_stmt <VariableName> ptr_load_t;
         return boost::static_pointer_cast< statement <VariableName>, ptr_load_t >
             (boost::make_shared<ptr_load_t>(m_lhs, m_rhs));
       }
@@ -882,15 +877,10 @@ namespace crab {
       
     }; 
 
-    template<class Number, class VariableName>
+    template<class VariableName>
     class ptr_store_stmt: public statement<VariableName>
     {
       // *p = q
-     public:
-      
-      typedef interval <Number> interval_t;
-      
-     private:
       
       VariableName m_lhs;
       VariableName m_rhs;
@@ -917,7 +907,7 @@ namespace crab {
       
       virtual boost::shared_ptr<statement <VariableName> > clone () const
       {
-        typedef ptr_store_stmt <Number,VariableName> ptr_store_t;
+        typedef ptr_store_stmt <VariableName> ptr_store_t;
         return boost::static_pointer_cast< statement <VariableName>, ptr_store_t >
             (boost::make_shared<ptr_store_t>(m_lhs, m_rhs));
       }
@@ -1137,7 +1127,7 @@ namespace crab {
       
       virtual void write(crab_os& o) const
       {
-        o << m_cst;
+        o << "assume_ptr(" << m_cst << ")";
         return;
       }
     }; 
@@ -1185,7 +1175,7 @@ namespace crab {
       
       virtual void write(crab_os& o) const
       {
-        o << "assert(" << m_cst << ")";
+        o << "assert_ptr(" << m_cst << ")";
         return;
       }
     }; 
@@ -1425,8 +1415,8 @@ namespace crab {
       typedef array_store_stmt<z_number,VariableName> z_arr_store_t;
       typedef array_load_stmt<z_number,VariableName> z_arr_load_t;
       // Pointers
-      typedef ptr_store_stmt<z_number,VariableName> ptr_store_t;
-      typedef ptr_load_stmt<z_number,VariableName> ptr_load_t;
+      typedef ptr_store_stmt<VariableName> ptr_store_t;
+      typedef ptr_load_stmt<VariableName> ptr_load_t;
       typedef ptr_assign_stmt<z_number,VariableName> ptr_assign_t;
       typedef ptr_object_stmt<VariableName> ptr_object_t;
       typedef ptr_function_stmt<VariableName> ptr_function_t;
@@ -2256,8 +2246,8 @@ namespace crab {
       typedef array_store_stmt<z_number,VariableName> z_arr_store_t;
       typedef array_load_stmt<z_number,VariableName> z_arr_load_t;
       
-      typedef ptr_store_stmt<z_number,VariableName> ptr_store_t;
-      typedef ptr_load_stmt<z_number,VariableName> ptr_load_t;
+      typedef ptr_store_stmt<VariableName> ptr_store_t;
+      typedef ptr_load_stmt<VariableName> ptr_load_t;
       typedef ptr_assign_stmt<z_number,VariableName> ptr_assign_t;
       typedef ptr_object_stmt<VariableName> ptr_object_t;
       typedef ptr_function_stmt<VariableName> ptr_function_t;

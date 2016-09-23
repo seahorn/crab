@@ -13,7 +13,7 @@
 #include <crab/common/types.hpp>
 #include <crab/common/debug.hpp>
 #include <crab/common/stats.hpp>
-#include <crab/domains/numerical_domains_api.hpp>
+#include <crab/domains/operators_api.hpp>
 #include <crab/domains/domain_traits.hpp>
 
 using namespace boost;
@@ -33,7 +33,11 @@ namespace crab {
          public bitwise_operators<typename NumDomain::number_t, 
                                   typename NumDomain::varname_t>, 
          public division_operators<typename NumDomain::number_t,
-                                   typename NumDomain::varname_t> {
+                                   typename NumDomain::varname_t>,
+         public array_operators<typename NumDomain::number_t,
+                                typename NumDomain::varname_t >,
+         public pointer_operators<typename NumDomain::number_t,
+                                  typename NumDomain::varname_t > {
               
        public:
 
@@ -224,8 +228,9 @@ namespace crab {
                    crab::outs() << "apply "<< x<< " := "<< y<< " "<< op<< " "<< k<< *this <<"\n";);
         }
         
-        void array_init (VariableName a, 
-                         const vector<ikos::z_number>& values) {
+        // All the array elements are initialized to the join of values
+        virtual void array_init (VariableName a, 
+                                 const vector<ikos::z_number>& values) override {
           if (values.empty ()) return;
           
           interval_t init = interval_t::bottom ();
@@ -234,19 +239,22 @@ namespace crab {
             init = init | interval_t (bound_t (v)); 
           }
           _inv.set (a, init);
+
           CRAB_LOG("smashing", 
                    crab::outs() << "Array init: " << *this <<"\n";);
         }
         
-        // All the array elements are initialized to val
-        void assume_array (VariableName a, interval_t val) {
-          _inv.set (a, val);
-          
+        // Assume that all array contents are in [lb,ub]
+        virtual void array_assume (VariableName a,
+                                   boost::optional<Number> lb, boost::optional<Number> ub) override {
+          _inv.set (a, interval_t (lb ? *lb : bound_t::minus_infinity (),
+                                   ub ? *ub : bound_t::plus_infinity ()));
+
           CRAB_LOG("smashing", crab::outs() << "Assume array: " << *this <<"\n";);
         }
         
-        void load (VariableName lhs, VariableName a, 
-                   VariableName /*i*/, z_number /*n_bytes*/) {
+        virtual void array_load (VariableName lhs, VariableName a, 
+                                 VariableName /*i*/, z_number /*bytes*/) override {
 
           crab::CrabStats::count (getDomainName() + ".count.load");
           crab::ScopedCrabStats __st__(getDomainName() + ".load");
@@ -264,9 +272,9 @@ namespace crab {
         }
         
         
-        void store (VariableName a, VariableName /*i*/,
-                    linear_expression_t val, z_number /*n_bytes*/,
-                    bool is_singleton) {
+        virtual void array_store (VariableName a, VariableName /*i*/,
+                                  linear_expression_t val, z_number /*bytes*/,
+                                  bool is_singleton) override {
 
           crab::CrabStats::count (getDomainName() + ".count.store");
           crab::ScopedCrabStats __st__(getDomainName() + ".store");
@@ -299,45 +307,6 @@ namespace crab {
         }  
         
       }; // end array_smashing
-   
-     template<typename BaseDomain>
-     class array_domain_traits<array_smashing<BaseDomain> > {
-       
-      public:
-       
-       typedef ikos::z_number z_number;
-       typedef typename BaseDomain::number_t number_t;
-       typedef typename BaseDomain::varname_t varname_t;
-       typedef typename BaseDomain::linear_expression_t linear_expression_t;
-       typedef array_smashing<BaseDomain> array_smashing_t;
-       
-       static void array_init (array_smashing_t& inv, varname_t a, 
-                               const vector<z_number> &values) {
-         inv.array_init (a, values);
-       }
-       
-       static void assume_array (array_smashing_t& inv, varname_t a, number_t val) {
-         inv.assume_array (a, interval<number_t> (bound <number_t> (val)));
-       }
-       
-       static void assume_array (array_smashing_t& inv, varname_t a, 
-                                 interval<number_t> val) {
-         inv.assume_array (a, val);
-       }
-       
-       static void array_load (array_smashing_t& inv, 
-                               varname_t lhs, varname_t a, varname_t i, 
-                               z_number n_bytes) {
-         inv.load (lhs, a, i, n_bytes);
-       }
-       
-       static void array_store (array_smashing_t& inv, 
-                                varname_t a, varname_t i,
-                                linear_expression_t val,
-                                z_number n_bytes, bool is_singleton) {
-         inv.store (a, i, val, n_bytes, is_singleton);
-       }
-     };
    
      template<typename BaseDomain>
      class domain_traits <array_smashing<BaseDomain> > {

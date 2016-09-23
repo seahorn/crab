@@ -57,9 +57,7 @@
 #include <crab/common/bignums.hpp>
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/domains/separate_domains.hpp>
-#include <crab/domains/numerical_domains_api.hpp>
-#include <crab/domains/bitwise_operators_api.hpp>
-#include <crab/domains/division_operators_api.hpp>
+#include <crab/domains/operators_api.hpp>
 
 namespace ikos {
 
@@ -1152,7 +1150,9 @@ namespace ikos {
   class interval_domain: public writeable, 
                          public numerical_domain< Number, VariableName >,
                          public bitwise_operators< Number, VariableName >, 
-                         public division_operators< Number, VariableName >{
+                         public division_operators< Number, VariableName >,
+                         public crab::domains::array_operators< Number, VariableName >,
+                         public crab::domains::pointer_operators< Number, VariableName > {
     
   public:
     using typename numerical_domain< Number, VariableName >::linear_expression_t;
@@ -1194,6 +1194,8 @@ namespace ikos {
       numerical_domain< Number, VariableName >(), 
       bitwise_operators< Number, VariableName >(),
       division_operators< Number, VariableName >(),
+      crab::domains::array_operators< Number, VariableName > (),
+      crab::domains::pointer_operators< Number, VariableName > (),
       _env(e._env) { 
       crab::CrabStats::count (getDomainName() + ".count.copy");
       crab::ScopedCrabStats __st__(getDomainName() + ".copy");

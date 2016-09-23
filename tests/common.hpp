@@ -22,6 +22,7 @@
 #include <crab/domains/array_sparse_graph.hpp>                      
 #include <crab/domains/array_smashing.hpp>
 #include <crab/domains/combined_domains.hpp>                      
+#include <crab/domains/nullity.hpp>                      
 
 #include <boost/program_options.hpp>
 
@@ -79,6 +80,8 @@ namespace crab {
     typedef array_graph_domain<sdbm_domain_t, interval_domain_t> array_graph_domain_t;
     typedef array_sparse_graph_domain<sdbm_domain_t, interval_domain_t> array_sgraph_domain_t;
     typedef array_smashing<dis_interval_domain_t> array_smashing_t;
+    // Pointer domains
+    typedef nullity_domain< z_number, varname_t > nullity_domain_t;
   } 
 }
 

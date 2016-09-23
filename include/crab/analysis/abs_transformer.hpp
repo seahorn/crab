@@ -3,10 +3,6 @@
 
 /* 
    Definition of abstract transfer functions.
-
-   TODO: NumAbsTransformer should be extended with pointer operations
-         so that we can have, for instance, reduced products of
-         numerical domains with nullity.
  */
 
 #include <boost/optional.hpp>
@@ -17,8 +13,6 @@
 #include <crab/cfg/cfg.hpp>
 #include <crab/domains/domain_traits.hpp>
 #include <crab/domains/linear_constraints.hpp>
-
-#include <crab/domains/nullity.hpp>
 
 namespace crab {
 
@@ -52,8 +46,8 @@ namespace crab {
     typedef assume_array_stmt<z_number,VariableName> z_assume_arr_t;
     typedef array_store_stmt<z_number,VariableName>  z_arr_store_t;
     typedef array_load_stmt<z_number,VariableName>   z_arr_load_t;
-    typedef ptr_store_stmt<z_number,VariableName>    z_ptr_store_t;
-    typedef ptr_load_stmt<z_number,VariableName>     z_ptr_load_t;
+    typedef ptr_store_stmt<VariableName>             ptr_store_t;
+    typedef ptr_load_stmt<VariableName>              ptr_load_t;
     typedef ptr_assign_stmt<z_number,VariableName>   z_ptr_assign_t;
     typedef ptr_object_stmt<VariableName>            ptr_object_t;
     typedef ptr_function_stmt<VariableName>          ptr_function_t;
@@ -76,8 +70,8 @@ namespace crab {
     virtual void exec (z_assume_arr_t&) { }
     virtual void exec (z_arr_store_t&) { }
     virtual void exec (z_arr_load_t&) { }
-    virtual void exec (z_ptr_store_t&) { }
-    virtual void exec (z_ptr_load_t&) { }
+    virtual void exec (ptr_store_t&) { }
+    virtual void exec (ptr_load_t&) { }
     virtual void exec (z_ptr_assign_t&) { }
     virtual void exec (ptr_object_t&) { }
     virtual void exec (ptr_function_t&) { }
@@ -100,8 +94,8 @@ namespace crab {
     void visit (z_assume_arr_t &s) { exec (s); }
     void visit (z_arr_store_t &s) { exec (s); }
     void visit (z_arr_load_t &s) { exec (s); }
-    void visit (z_ptr_store_t &s) { exec (s); }
-    void visit (z_ptr_load_t &s) { exec (s); }
+    void visit (ptr_store_t &s) { exec (s); }
+    void visit (ptr_load_t &s) { exec (s); }
     void visit (z_ptr_assign_t &s) { exec (s); }
     void visit (ptr_object_t &s) { exec (s); }
     void visit (ptr_function_t &s) { exec (s); }
@@ -113,7 +107,9 @@ namespace crab {
 
 
   //! Abstract transformer specialized for numerical abstract domains
-  //! with arrays but without pointers.
+  //! with arrays and pointers.
+  // XXX: num_abs_transformer should be renamed to
+  //      abs_transformer_impl or something like that.
   template<typename NumAbsDomain, 
            typename SumTable /*unused*/, typename CallCtxTable /*unused*/>
   class num_abs_transformer: 
@@ -141,11 +137,19 @@ namespace crab {
     using typename abs_transform_t::z_assert_t;
     using typename abs_transform_t::havoc_t;
     using typename abs_transform_t::unreach_t;
+    using typename abs_transform_t::callsite_t;
     using typename abs_transform_t::z_arr_init_t;
     using typename abs_transform_t::z_assume_arr_t;
     using typename abs_transform_t::z_arr_load_t;
     using typename abs_transform_t::z_arr_store_t;
-    using typename abs_transform_t::callsite_t;
+    using typename abs_transform_t::ptr_load_t;
+    using typename abs_transform_t::ptr_store_t;
+    using typename abs_transform_t::ptr_assign_t;
+    using typename abs_transform_t::ptr_object_t;
+    using typename abs_transform_t::ptr_function_t;
+    using typename abs_transform_t::ptr_null_t;
+    using typename abs_transform_t::ptr_assume_t;
+    using typename abs_transform_t::ptr_assert_t;
 
    protected:
 
@@ -238,6 +242,18 @@ namespace crab {
       m_inv = abs_dom_t::bottom ();
     }
 
+    // --- default implementation is intra-procedural
+    // TODO/FIXME: havoc also all the pointer actual parameters.
+    // XXX: no need to havoc array parameters because compilation
+    // ensures input/output arrays so in this case output arrays will
+    // be already top.
+    void exec (callsite_t &cs) {
+      auto lhs_opt = cs.get_lhs_name ();
+      if (lhs_opt) { // havoc 
+        m_inv -= *lhs_opt;
+      }
+    }
+
     void exec (z_assert_t& stmt) {
       abs_dom_t cst;
       cst += stmt.constraint();
@@ -249,16 +265,15 @@ namespace crab {
       m_inv += stmt.constraint ();
     }
 
+    // arrays 
+
     void exec (z_arr_init_t &stmt) {
-      domains::array_domain_traits<abs_dom_t>::array_init (m_inv, 
-                                                           stmt.variable (), 
-                                                           stmt.values ());
+      m_inv.array_init (stmt.variable (), stmt.values ());
     }
 
     void exec (z_assume_arr_t &stmt) {
-      domains::array_domain_traits<abs_dom_t>::assume_array (m_inv, 
-                                                             stmt.variable (), 
-                                                             stmt.val ());
+      m_inv.array_assume (stmt.variable (), 
+                          stmt.val().lb().number(), stmt.val().ub().number());
     }
     
     void exec (z_arr_store_t &stmt) {
@@ -266,12 +281,8 @@ namespace crab {
       {
         auto arr = stmt.array ().name ();
         auto idx = *(stmt.index ().get_variable ());
-        domains::array_domain_traits<abs_dom_t>::array_store (m_inv, 
-                                                              arr,
-                                                              idx.name(), 
-                                                              stmt.value (),
-                                                              stmt.elem_size(),
-                                                              stmt.is_singleton ());
+        m_inv.array_store (arr, idx.name(), stmt.value (), stmt.elem_size(), 
+                           stmt.is_singleton ());
       }
     }
 
@@ -279,23 +290,49 @@ namespace crab {
       if (stmt.index ().get_variable ())
       {
         auto idx = *(stmt.index ().get_variable ());
-        domains::array_domain_traits<abs_dom_t>::array_load (m_inv, 
-                                                             stmt.lhs ().name (), 
-                                                             stmt.array ().name (), 
-                                                             idx.name (),
-                                                             stmt.elem_size());
+        m_inv.array_load (stmt.lhs ().name (), stmt.array ().name (), idx.name (),
+                          stmt.elem_size());
       }
     }
 
-    void exec (callsite_t &cs) {
-      auto lhs_opt = cs.get_lhs_name ();
-      if (lhs_opt) { // havoc 
-        m_inv -= *lhs_opt;
-      }
+    // pointers 
+
+    void exec (ptr_null_t & stmt) { 
+      m_inv.pointer_mk_null (stmt.lhs ());
     }
+    
+    void exec (ptr_object_t & stmt) { 
+      m_inv.pointer_mk_obj (stmt.lhs (), stmt.rhs());
+    }
+    
+    void exec (ptr_function_t & stmt) { 
+      m_inv.pointer_function (stmt.lhs (), stmt.rhs ());
+    }
+    
+    void exec (ptr_assign_t & stmt) { 
+      m_inv.pointer_assign (stmt.lhs (), stmt.rhs (), stmt.offset ());
+    }
+    
+    void exec (ptr_load_t & stmt) {
+      m_inv.pointer_load (stmt.lhs (), stmt.rhs ());
+    }
+    
+    void exec (ptr_store_t & stmt) { 
+      m_inv.pointer_store (stmt.lhs (), stmt.rhs ());
+    }
+    
+    void exec (ptr_assume_t& stmt) { 
+      m_inv.pointer_assume (stmt.constraint ());
+    }
+
+    void exec (ptr_assert_t& stmt) { 
+      m_inv.pointer_assert (stmt.constraint ());
+    }
+
   }; 
 
   //! Transformer specialized for computing numerical summaries
+  // TODO/FIXME: pointer operands are ignored
   template<typename SumTable, typename CallCtxTable /*unused*/>
   class bu_summ_num_abs_transformer: 
         public num_abs_transformer <typename SumTable::abs_domain_t,
@@ -421,6 +458,7 @@ namespace crab {
                  crab::outs() << "Summary not found for " << cs << "\n");
       
       auto lhs_opt = cs.get_lhs_name ();
+      // TODO/FIXME: havoc also all the pointer actual parameters.
       if (lhs_opt) { // havoc 
         this->m_inv -= *lhs_opt;
       }
@@ -436,15 +474,16 @@ namespace crab {
   template<typename Domain1, typename Domain2>
   inline void convert_domains (Domain1 from, Domain2& to) {
     CRAB_WARN("Converting from " + Domain1::getDomainName () + " to " +
-              Domain2::getDomainName () + 
-              " might lose precision if " + Domain1::getDomainName () + 
-              " is a disjunctive domain");
+              Domain2::getDomainName () + " might lose precision " +
+              "if " + Domain1::getDomainName () + " is an abstraction of " +
+              Domain2::getDomainName ());
     for (auto cst : from.to_linear_constraint_system ())
     { to += cst; }
   }
 
   // Transformer specialized for performing top-down forward
   // traversal while reusing numerical summaries at the callsites
+  // TODO/FIXME: pointer operands are ignored
   template<typename SumTable, typename CallCtxTable>
   class td_summ_num_abs_transformer: 
         public num_abs_transformer<typename CallCtxTable::abs_domain_t,
@@ -574,7 +613,8 @@ namespace crab {
       }
 
       // We could not reuse a summary so we just havoc lhs of the call
-      // site
+      // site. TODO/FIXME: havoc also all the pointer actual
+      // parameters.
       auto lhs_opt = cs.get_lhs_name ();
       if (lhs_opt) {
         this->m_inv -= *lhs_opt;
@@ -582,116 +622,6 @@ namespace crab {
     }
   }; 
 
-  //! Abstract transformer specialized for pointer operations for
-  //! only nullity information.
-  template <typename VariableName,typename SumTable, typename CallCtxTable>
-  class nullity_abs_transformer: public abs_transformer_api <VariableName>  {
-    typedef abs_transformer_api<VariableName> abs_tr_t;
-    
-    using typename abs_tr_t::z_bin_op_t;
-    using typename abs_tr_t::z_lin_cst_t;
-    using typename abs_tr_t::z_var_t;
-    using typename abs_tr_t::z_assign_t;
-    using typename abs_tr_t::z_assume_t;
-    using typename abs_tr_t::havoc_t;
-    using typename abs_tr_t::unreach_t;
-    using typename abs_tr_t::z_select_t;
-    
-    using typename abs_tr_t::callsite_t;
-    using typename abs_tr_t::return_t;
-    using typename abs_tr_t::ptr_load_t;
-    using typename abs_tr_t::ptr_store_t;
-    using typename abs_tr_t::ptr_assign_t;
-    using typename abs_tr_t::ptr_object_t;
-    using typename abs_tr_t::ptr_function_t;
-    using typename abs_tr_t::ptr_null_t;
-    using typename abs_tr_t::ptr_assume_t;
-    using typename abs_tr_t::ptr_assert_t;
-    
-    typedef domains::nullity_domain <VariableName> nullity_domain_t;
-    
-    nullity_domain_t& m_inv;
-    
-   public:
-    
-    // for FwdAnalyzer.hpp
-    typedef nullity_domain_t abs_dom_t;
-    typedef nullity_domain_t summ_abs_domain_t;
-    typedef nullity_domain_t call_abs_domain_t;
-    
-   public:
-    
-    nullity_abs_transformer (nullity_domain_t& init, SumTable*, CallCtxTable*):
-        m_inv (init) { }
-
-    nullity_domain_t& inv () { return m_inv; }
-
-    void visit (ptr_null_t & stmt) { 
-      m_inv.set (stmt.lhs (), domains::nullity_value::null ());
-    }
-    
-    void visit (ptr_object_t & stmt) { 
-      m_inv.set (stmt.lhs (), domains::nullity_value::non_null ());
-    }
-    
-    void visit (ptr_function_t & stmt) { 
-      m_inv.set (stmt.lhs (), domains::nullity_value::non_null ());
-    }
-    
-    void visit (ptr_assign_t & stmt) { 
-      m_inv.assign (stmt.lhs (), stmt.rhs ());
-    }
-    
-    void visit (ptr_load_t & stmt) {
-      m_inv.equality (stmt.rhs (), domains::nullity_value::non_null ());
-    }
-    
-    void visit (ptr_store_t & stmt) { 
-      m_inv.equality (stmt.lhs (), domains::nullity_value::non_null ());
-    }
-    
-    void visit (ptr_assume_t& stmt) { 
-      auto cst = stmt.constraint ();
-      
-      if (cst.is_tautology ()) {
-        return;
-      } 
-
-      if (cst.is_contradiction ()) {
-        m_inv = nullity_domain_t::bottom ();
-        return;
-      }
-
-      if (cst.is_unary ()) {
-        if (cst.is_equality ()) 
-          m_inv.equality (cst.lhs (), domains::nullity_value::null ());
-        else // cst.is_disequality ();
-          m_inv.disequality (cst.lhs (), domains::nullity_value::null ());
-      } else { 
-        assert (cst.is_binary ());
-        if (cst.is_equality ()) 
-          m_inv.equality (cst.lhs (), cst.rhs ());
-        else  // cst.is_disequality ();
-          m_inv.disequality (cst.lhs (), cst.rhs ());
-      }
-    }
-    
-    void visit (callsite_t & stmt) { 
-      // TODO
-      if (auto lhs = stmt.get_lhs_name ()) {
-        m_inv -= *lhs;
-      }
-    }
-    
-    void visit (havoc_t& stmt) {
-      m_inv -= stmt.variable ();
-    }
-    
-    void visit (unreach_t& stmt) { 
-      m_inv = nullity_domain_t::bottom ();
-    }
-  };
-  
   } // end namespace
 } // end namespace
 #endif 

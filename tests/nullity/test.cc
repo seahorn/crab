@@ -112,40 +112,19 @@ cfg_t* cfg3 (variable_factory_t &vfac)  {
 }
 
 
-void run (cfg_ref_t cfg, variable_factory_t& vfac) {
-  typedef nullity_analyzer<cfg_ref_t, variable_factory_t>::analyzer_t nullity_analyzer_t;
-  typedef nullity_analyzer<cfg_ref_t, variable_factory_t>::nullity_domain_t nullity_domain_t;
-
-  liveness<cfg_ref_t> live (cfg);
-  //live.exec ();
-
-  nullity_analyzer_t a (cfg, vfac, &live);
-  crab::outs() << cfg << "\n";
-
-  a.Run (nullity_domain_t::top ());
-
-  crab::outs() << "Nullity analysis \n";
-  for (auto &b : cfg)  {
-    auto pre = a.get_pre (b.label ());
-    auto post = a.get_post (b.label ());
-    crab::outs() << get_label_str (b.label ()) << "=" 
-              << pre 
-              << " ==> "
-              << post << "\n";
-  }
-
-}
-
 int main (int argc, char** argv) {
   SET_TEST_OPTIONS(argc,argv)
 
   variable_factory_t vfac;
   cfg_t* cfg_1 = cfg1 (vfac);
-  run (*cfg_1, vfac);
+  crab::outs () << *cfg_1 << "\n";
+  run<nullity_domain_t>(cfg_1, vfac, false, 1, 2, 20);
   cfg_t* cfg_2 = cfg2 (vfac);
-  run (*cfg_2, vfac);
+  crab::outs () << *cfg_2 << "\n";
+  run<nullity_domain_t>(cfg_2, vfac, false, 1, 2, 20);
   cfg_t* cfg_3 = cfg3 (vfac);
-  run (*cfg_3, vfac);
+  crab::outs () << *cfg_3 << "\n";
+  run<nullity_domain_t>(cfg_3, vfac, false, 1, 2, 20);
   
   delete cfg_1;
   delete cfg_2;

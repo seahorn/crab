@@ -8,7 +8,6 @@
 #include <crab/common/types.hpp>
 #include <crab/checkers/base_property.hpp>
 #include <crab/domains/intervals.hpp>
-#include <crab/domains/nullity.hpp>
 
 namespace crab {
 
@@ -58,7 +57,7 @@ namespace crab {
             }
           }
           else if (auto var = divisor_expr.get_variable ()) {
-            num_dom_detail::get_as<abs_dom_t,varname_t> num_inv (inv);
+            num_dom_detail::checker_ops<abs_dom_t> num_inv (inv);
             interval_t divisor_intv = num_inv [(*var).name()];
             if (auto divisor = divisor_intv.singleton ()) {
               if (*divisor == z_number (0)) {

@@ -14,11 +14,9 @@
 #include <crab/common/types.hpp>
 #include <crab/common/stats.hpp>
 #include <crab/domains/domain_products.hpp>
-#include <crab/domains/numerical_domains_api.hpp>
-#include <crab/domains/bitwise_operators_api.hpp>
-#include <crab/domains/division_operators_api.hpp>
 #include <crab/domains/congruences.hpp>
 #include <crab/domains/intervals.hpp>
+#include <crab/domains/operators_api.hpp>
 #include <crab/domains/domain_traits.hpp>
 
 namespace crab {
@@ -33,7 +31,9 @@ namespace crab {
        public writeable,
        public numerical_domain<typename Domain1::number_t, typename Domain1::varname_t>,
        public bitwise_operators<typename Domain1::number_t, typename Domain1::varname_t>, 
-       public division_operators<typename Domain1::number_t, typename Domain1::varname_t> {
+       public division_operators<typename Domain1::number_t, typename Domain1::varname_t>,
+       public array_operators<typename Domain1::number_t, typename Domain1::varname_t>,
+       public pointer_operators<typename Domain1::number_t, typename Domain1::varname_t> {
       
      public:
       // Assume that Domain1 and Domain2 have the same types for
@@ -137,6 +137,8 @@ namespace crab {
           numerical_domain<number_t,varname_t>(),
           bitwise_operators<number_t,varname_t>(),
           division_operators<number_t,varname_t>(),
+          array_operators<number_t,varname_t>(),
+          pointer_operators<number_t,varname_t>(),
           _product() {}
       
       reduced_numerical_domain_product2(const reduced_numerical_domain_product2_t& other) :
@@ -144,6 +146,8 @@ namespace crab {
           numerical_domain<number_t,varname_t>(),
           bitwise_operators<number_t,varname_t>(),
           division_operators<number_t,varname_t>(),
+          array_operators<number_t,varname_t>(),
+          pointer_operators<number_t,varname_t>(),
           _product(other._product) { }
       
       reduced_numerical_domain_product2_t& operator=(const reduced_numerical_domain_product2_t& other) {
@@ -595,7 +599,11 @@ namespace crab {
         public bitwise_operators<typename NumAbsDom::number_t, 
                                  typename NumAbsDom::varname_t>,
         public division_operators<typename NumAbsDom::number_t,
-                                  typename NumAbsDom::varname_t> {
+                                  typename NumAbsDom::varname_t>,
+        public array_operators<typename NumAbsDom::number_t,
+                               typename NumAbsDom::varname_t>,
+        public pointer_operators<typename NumAbsDom::number_t,
+                                 typename NumAbsDom::varname_t> {
      private:
       typedef typename NumAbsDom::number_t N;
       typedef typename NumAbsDom::varname_t V;
@@ -672,6 +680,8 @@ namespace crab {
           numerical_domain<number_t,varname_t>(),
           bitwise_operators<number_t,varname_t>(),
           division_operators<number_t,varname_t>(),
+          array_operators<number_t,varname_t>(),
+          pointer_operators<number_t,varname_t>(),
           _product() {}
       
       numerical_congruence_domain(const rnc_domain_t& other) :
@@ -679,6 +689,8 @@ namespace crab {
           numerical_domain<number_t,varname_t>(),
           bitwise_operators<number_t,varname_t>(),
           division_operators<number_t,varname_t>(),
+          array_operators<number_t,varname_t>(),
+          pointer_operators<number_t,varname_t>(),
           _product(other._product) { }
       
       rnc_domain_t& operator=(const rnc_domain_t& other) {

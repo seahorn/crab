@@ -19,12 +19,8 @@
 #include <crab/common/types.hpp>
 #include <crab/common/debug.hpp>
 #include <crab/common/stats.hpp>
-
-#include <crab/domains/numerical_domains_api.hpp>
-#include <crab/domains/bitwise_operators_api.hpp>
-#include <crab/domains/division_operators_api.hpp>
+#include <crab/domains/operators_api.hpp>
 #include <crab/domains/domain_traits.hpp>
-
 #include <crab/domains/array_sparse_graph/array_segmentation.hpp>
 #include <crab/domains/array_sparse_graph/array_graph_ops.hpp>
 #include <crab/domains/graphs/adapt_sgraph.hpp>
@@ -1131,7 +1127,9 @@ namespace crab {
         public writeable,
         public numerical_domain<typename NumDom::number_t, typename NumDom::varname_t>,
         public bitwise_operators<typename NumDom::number_t, typename NumDom::varname_t>, 
-        public division_operators<typename NumDom::number_t, typename NumDom::varname_t>
+        public division_operators<typename NumDom::number_t, typename NumDom::varname_t>,
+        public array_operators<typename NumDom::number_t, typename NumDom::varname_t>,
+        public pointer_operators<typename NumDom::number_t, typename NumDom::varname_t>
     {
       
      public:
@@ -2099,8 +2097,19 @@ namespace crab {
         return _scalar[v];
       }
 
+      virtual void array_init (VariableName a, 
+                               const vector<ikos::z_number>& values) override {
+        CRAB_WARN (" array_graph_domain array_init not implemented");
+      }
+
+      virtual void array_assume (VariableName a,
+                                 boost::optional<Number> lb, boost::optional<Number> ub) override {
+        CRAB_WARN (" array_graph_domain assume_array not implemented");
+      }
+      
       // lhs := arr[idx];
-      void array_read (VariableName lhs, VariableName arr, VariableName idx, z_number nbytes)
+      virtual void array_load (VariableName lhs, VariableName arr, VariableName idx, 
+                               z_number nbytes) override
       {
         crab::CrabStats::count (getDomainName() + ".count.load");
         crab::ScopedCrabStats __st__(getDomainName() + ".load");
@@ -2149,7 +2158,8 @@ namespace crab {
       }
 
       // arr[idx] := val 
-      void array_write (VariableName arr, VariableName idx, linear_expression_t val, z_number nbytes)
+      virtual void array_store (VariableName arr, VariableName idx, linear_expression_t val, 
+                                z_number nbytes, bool /*is_singleton*/) override 
       {
         crab::CrabStats::count (getDomainName() + ".count.store");
         crab::ScopedCrabStats __st__(getDomainName() + ".store");
@@ -2271,43 +2281,6 @@ namespace crab {
       }
     };
   
-    template <typename NumDom, typename Weight>
-    class array_domain_traits<array_sparse_graph_domain<NumDom,Weight,false> > {
-        
-       public:
-        typedef ikos::z_number z_number;
-        typedef typename NumDom::number_t number_t;
-        typedef typename NumDom::varname_t varname_t;
-        typedef typename NumDom::linear_expression_t linear_expression_t;
-        typedef array_sparse_graph_domain<NumDom,Weight, false> array_sgraph_domain_t;
-
-        static void array_init (array_sgraph_domain_t& inv, varname_t a, 
-                                const vector<z_number> &values) { 
-          CRAB_WARN (" array_graph_domain array_init not implemented");
-        }
-        
-        static void assume_array (array_sgraph_domain_t& inv, varname_t a, number_t val) {
-          CRAB_WARN (" array_graph_domain assume_array not implemented");
-        }
-        
-        static void assume_array (array_sgraph_domain_t& inv, varname_t a, 
-                                  interval<number_t> val) {
-          CRAB_WARN (" array_graph_domain assume_array not implemented");
-        }
-        
-        static void array_load (array_sgraph_domain_t& inv, 
-                                varname_t lhs, varname_t arr, varname_t idx, 
-                                z_number nbytes) {
-          inv.array_read (lhs, arr, idx, nbytes);
-        }
-        
-        static void array_store (array_sgraph_domain_t& inv, varname_t arr, 
-                                 varname_t idx, linear_expression_t val,
-                                 z_number nbytes, bool /*is_singleton*/) {
-          inv.array_write (arr, idx, val, nbytes);
-        }        
-    };
-
     // Static data allocation
     template<class Dom, class Wt, bool IsDistWt>
     boost::unordered_map<landmark_ref<typename Dom::varname_t, typename Dom::number_t>, 

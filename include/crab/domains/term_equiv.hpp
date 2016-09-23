@@ -29,9 +29,7 @@
 #include <crab/common/bignums.hpp>
 #include <crab/cfg/var_factory.hpp>
 #include <crab/domains/linear_constraints.hpp>
-#include <crab/domains/numerical_domains_api.hpp>
-#include <crab/domains/bitwise_operators_api.hpp>
-#include <crab/domains/division_operators_api.hpp>
+#include <crab/domains/operators_api.hpp>
 #include <crab/domains/domain_traits.hpp>
 #include <crab/domains/intervals.hpp>
 #include <crab/domains/term/term_expr.hpp>
@@ -70,7 +68,9 @@ namespace crab {
      class term_domain: public writeable,
                         public numerical_domain<typename Info::Number, typename Info::VariableName >, 
                         public bitwise_operators< typename Info::Number, typename Info::VariableName >,
-                        public division_operators< typename Info::Number, typename Info::VariableName > {
+                        public division_operators< typename Info::Number, typename Info::VariableName >,
+                        public array_operators< typename Info::Number, typename Info::VariableName >,
+                        public pointer_operators< typename Info::Number, typename Info::VariableName > {
        friend class TermNormalizer<Info, typename Info::domain_t>;
       private:
        // Number and VariableName can be different from
@@ -511,6 +511,8 @@ namespace crab {
            numerical_domain<Number, VariableName >(),
            bitwise_operators< Number, VariableName >(),
            division_operators< Number, VariableName >(),   
+           array_operators< Number, VariableName >(),   
+           pointer_operators< Number, VariableName >(),   
            _is_bottom(o._is_bottom), 
            _ttbl(o._ttbl), _impl(o._impl),
            _alloc(o._alloc),

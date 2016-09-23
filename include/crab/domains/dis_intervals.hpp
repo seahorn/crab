@@ -14,9 +14,7 @@
 #include <crab/common/types.hpp>
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/domains/separate_domains.hpp>
-#include <crab/domains/numerical_domains_api.hpp>
-#include <crab/domains/bitwise_operators_api.hpp>
-#include <crab/domains/division_operators_api.hpp>
+#include <crab/domains/operators_api.hpp>
 #include <crab/domains/domain_traits.hpp>
 
 using namespace boost;
@@ -1070,7 +1068,9 @@ namespace crab {
          public ikos::writeable, 
          public numerical_domain< Number, VariableName>,
          public bitwise_operators< Number, VariableName >, 
-         public division_operators< Number, VariableName > {
+         public division_operators< Number, VariableName >,
+         public array_operators< Number, VariableName >,
+         public pointer_operators< Number, VariableName > {
      
     public:
      using typename numerical_domain< Number, VariableName>::linear_expression_t;
@@ -1118,6 +1118,8 @@ namespace crab {
          numerical_domain< Number, VariableName >(), 
          bitwise_operators< Number, VariableName >(),
          division_operators< Number, VariableName >(),
+         array_operators< Number, VariableName >(),
+         pointer_operators< Number, VariableName >(),
          _env(o._env) { 
        crab::CrabStats::count (getDomainName() + ".count.copy");
        crab::ScopedCrabStats __st__(getDomainName() + ".copy");

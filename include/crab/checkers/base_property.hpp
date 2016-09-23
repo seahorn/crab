@@ -146,18 +146,18 @@ namespace crab {
 
 
   namespace num_dom_detail {
-     // To avoid compilation errors if the abstract domain is not a
-     // numerical domain
-     template<typename Domain, typename VariableName>
-     struct get_as {
+
+     template<typename Domain>
+     struct checker_ops {
+       typedef typename Domain::varname_t varname_t;
        typedef crab::domains::interval<z_number> interval_t;
-       typedef linear_constraint< z_number, VariableName> z_lin_cst_t;
-
+       typedef linear_constraint< z_number, varname_t> z_lin_cst_t;
        Domain& m_inv;
-       get_as (Domain& inv): m_inv (inv) { }
+       checker_ops (Domain& inv): m_inv (inv) { }
 
-       interval_t operator[](VariableName v){ return m_inv [v]; }
+       interval_t operator[](varname_t v){ return m_inv [v]; }
 
+       // if the domain is not numerical then return always false
        bool entails(z_lin_cst_t cst) { 
          // special cases first
          if (m_inv.is_bottom()) return true;
@@ -172,6 +172,7 @@ namespace crab {
          return m_inv <= inv; 
        }
 
+       // if the domain is not numerical then return always true
        bool intersect(z_lin_cst_t cst) {
          // special cases first
          if (m_inv.is_bottom () || cst.is_contradiction ()) return false;
@@ -185,19 +186,6 @@ namespace crab {
        }
      };
 
-     // TO BE COMPLETED: add here any non-numerical domain
-     template<typename VariableName>
-     struct get_as <crab::domains::nullity_domain<VariableName>, VariableName> {
-       typedef crab::domains::interval<z_number> interval_t;
-       typedef linear_constraint<z_number,VariableName> z_lin_cst_t;
-       typedef crab::domains::nullity_domain<VariableName> nullity_domain_t;
-       
-       get_as (nullity_domain_t&) { }
-       interval_t operator[](VariableName){ return interval_t::top (); }
-       bool entails(z_lin_cst_t) { return false; }
-       bool intersect(z_lin_cst_t) { return true; }  
-       
-     };
   } // end num_dom_detail namespace
 
   template<typename Analyzer>
@@ -225,8 +213,8 @@ namespace crab {
     typedef assume_array_stmt<z_number,varname_t> z_assume_arr_t;
     typedef array_store_stmt<z_number,varname_t>  z_arr_store_t;
     typedef array_load_stmt<z_number,varname_t>   z_arr_load_t;
-    typedef ptr_store_stmt<z_number,varname_t>    z_ptr_store_t;
-    typedef ptr_load_stmt<z_number,varname_t>     z_ptr_load_t;
+    typedef ptr_store_stmt<varname_t>             ptr_store_t;
+    typedef ptr_load_stmt<varname_t>              ptr_load_t;
     typedef ptr_assign_stmt<z_number,varname_t>   z_ptr_assign_t;
     typedef ptr_object_stmt<varname_t>            ptr_object_t;
     typedef ptr_function_stmt<varname_t>          ptr_function_t;
@@ -307,12 +295,12 @@ namespace crab {
         s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
     }
       
-    virtual void check (z_ptr_store_t& s) { 
+    virtual void check (ptr_store_t& s) { 
       if (!this->m_abs_tr) return;        
         s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
     }
       
-    virtual void check (z_ptr_load_t& s) { 
+    virtual void check (ptr_load_t& s) { 
       if (!this->m_abs_tr) return;        
         s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
     }
@@ -363,8 +351,8 @@ namespace crab {
     void visit (z_assume_arr_t &s) { check (s); }
     void visit (z_arr_store_t &s) { check (s); }
     void visit (z_arr_load_t &s) { check (s); }
-    void visit (z_ptr_store_t &s) { check (s); }
-    void visit (z_ptr_load_t &s) { check (s); }
+    void visit (ptr_store_t &s) { check (s); }
+    void visit (ptr_load_t &s) { check (s); }
     void visit (z_ptr_assign_t &s) { check (s); }
     void visit (ptr_object_t &s) { check (s); }
     void visit (ptr_function_t &s) { check (s); }

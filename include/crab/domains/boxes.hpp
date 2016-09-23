@@ -11,7 +11,7 @@
 #include <crab/common/debug.hpp>
 #include <crab/common/stats.hpp>
 #include <crab/common/types.hpp>
-#include <crab/domains/numerical_domains_api.hpp>
+#include <crab/domains/operators_api.hpp>
 
 using namespace boost;
 using namespace ikos;
@@ -29,7 +29,9 @@ namespace crab {
          public ikos::writeable, 
          public numerical_domain< Number, VariableName>,
          public bitwise_operators< Number, VariableName >, 
-         public division_operators< Number, VariableName > {
+         public division_operators< Number, VariableName >,
+         public array_operators< Number, VariableName>,
+         public pointer_operators< Number, VariableName> {
               
        public:
         using typename numerical_domain< Number, VariableName>::linear_expression_t;
@@ -171,8 +173,10 @@ namespace crab {
          public ikos::writeable, 
          public numerical_domain< Number, VariableName>,
          public bitwise_operators< Number, VariableName >, 
-         public division_operators< Number, VariableName > {
-              
+         public division_operators< Number, VariableName >,
+         public array_operators< Number, VariableName>,
+         public pointer_operators< Number, VariableName> {
+
         typedef interval_domain <Number, VariableName> interval_domain_t;
        public:
         using typename numerical_domain< Number, VariableName>::linear_expression_t;

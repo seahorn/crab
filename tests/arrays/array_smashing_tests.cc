@@ -36,7 +36,7 @@ cfg_t* prog1 (variable_factory_t &vfac)
   ///////
   bb1_t.assume(i <= 9);
   bb1_f.assume(i >= 10);
-  bb2.array_store(a, i, 0, 1);
+  bb2.array_store(a, i, 123456, 1);
   bb2.add(i, i, n1);
   ret.sub(tmp3, i, n1);
   ret.array_load(tmp5, a, tmp3, 1); // initialized
@@ -76,7 +76,7 @@ cfg_t* prog2(variable_factory_t &vfac)
   ///////
   bb1_t.assume(i >= 0);
   bb1_f.assume(i <= -1);
-  bb2.array_store (a, i, 0, 1);
+  bb2.array_store (a, i, 123456, 1);
   bb2.sub(i, i, n1);
   ret.assign(tmp3, 5);
   ret.array_load(tmp4, a, tmp3, 1); // initialized
@@ -114,7 +114,7 @@ cfg_t* prog3(variable_factory_t &vfac)
   entry.assign(i, 0);
   bb1_t.assume(i <= 9);
   bb1_f.assume(i >= 10);
-  bb2.array_store(a, i, 0, 1);
+  bb2.array_store(a, i, 123456, 1);
   bb2.array_load(tmp1, a, i, 1);    
   bb2.array_store(b, i, tmp1, 1);
   bb2.add(i, i, n1);
@@ -193,7 +193,7 @@ cfg_t* prog5(variable_factory_t &vfac)
   ///////
   bb1_t.assume(i <= n - 1);
   bb1_f.assume(i >= n);
-  bb2.array_store(a, i, 0, 1);
+  bb2.array_store(a, i, 123456, 1);
   bb2.add(i, i, n1);
   ret.sub(tmp1, i, n1);
   ret.array_load(tmp2, a, tmp1, 1); // initialized
@@ -227,7 +227,7 @@ cfg_t* prog6(variable_factory_t &vfac)
   bb1_f.assume(10 <= i);
   bb2.assign(tmp, i);
   bb2.mul(offset, tmp, 4); 
-  bb2.array_store(a, offset, 0, 4);
+  bb2.array_store(a, offset, 123456, 4);
   bb2.add(i, i, 1);
   ret.array_load(tmp4, a, 8, 4);    
   return cfg;

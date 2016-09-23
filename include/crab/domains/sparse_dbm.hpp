@@ -20,9 +20,7 @@
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/domains/intervals.hpp>
 #include <crab/domains/patricia_trees.hpp>
-#include <crab/domains/numerical_domains_api.hpp>
-#include <crab/domains/bitwise_operators_api.hpp>
-#include <crab/domains/division_operators_api.hpp>
+#include <crab/domains/operators_api.hpp>
 #include <crab/domains/domain_traits.hpp>
 
 #include <unordered_set>
@@ -123,7 +121,9 @@ namespace crab {
     class SparseDBM_: public writeable,
                public numerical_domain<Number, VariableName >,
                public bitwise_operators<Number,VariableName >,
-               public division_operators<Number, VariableName >{
+               public division_operators<Number, VariableName >,
+               public array_operators<Number, VariableName >,
+               public pointer_operators<Number, VariableName >{
      public:
       using typename numerical_domain< Number, VariableName >::linear_expression_t;
       using typename numerical_domain< Number, VariableName >::linear_constraint_t;
@@ -193,6 +193,8 @@ namespace crab {
           numerical_domain<Number, VariableName >(),
           bitwise_operators< Number, VariableName >(),
           division_operators< Number, VariableName >(),
+          array_operators< Number, VariableName >(),
+          pointer_operators< Number, VariableName >(),
           vert_map(o.vert_map),
           rev_map(o.rev_map),
           g(o.g),
@@ -224,6 +226,8 @@ namespace crab {
           numerical_domain<Number, VariableName >(),
           bitwise_operators< Number, VariableName >(),
           division_operators< Number, VariableName >(),
+          array_operators< Number, VariableName >(),
+          pointer_operators< Number, VariableName >(),
           /* ranges(_ranges),*/ vert_map(_vert_map), rev_map(_rev_map), g(_g), potential(_potential),
           unstable(_unstable),
           _is_bottom(false)
@@ -238,6 +242,8 @@ namespace crab {
           numerical_domain<Number, VariableName >(),
           bitwise_operators< Number, VariableName >(),
           division_operators< Number, VariableName >(),
+          array_operators< Number, VariableName >(),
+          pointer_operators< Number, VariableName >(),
           vert_map(std::move(_vert_map)), rev_map(std::move(_rev_map)), g(std::move(_g)), potential(std::move(_potential)),
           unstable(std::move(_unstable)),
           _is_bottom(false)
@@ -1985,7 +1991,9 @@ namespace crab {
     class SparseDBM : public writeable,
                public numerical_domain<Number, VariableName >,
                public bitwise_operators<Number,VariableName >,
-               public division_operators<Number, VariableName > {
+               public division_operators<Number, VariableName >,
+               public array_operators<Number, VariableName >,
+               public pointer_operators<Number, VariableName > {
       public:
       using typename numerical_domain< Number, VariableName >::linear_expression_t;
       using typename numerical_domain< Number, VariableName >::linear_constraint_t;
