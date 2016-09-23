@@ -21,6 +21,7 @@
 #include <crab/domains/array_graph.hpp>                      
 #include <crab/domains/array_smashing.hpp>
 #include <crab/domains/combined_domains.hpp>                      
+#include <crab/domains/nullity.hpp>                      
 
 #include <boost/program_options.hpp>
 
