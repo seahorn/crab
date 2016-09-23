@@ -185,24 +185,40 @@ namespace crab {
     bool operator<=(nullity_domain_t o) { return (_env <= o._env); }
     
     nullity_domain_t operator|(nullity_domain_t o) {
-      return (_env | o._env);
+      nullity_domain_t res (_env | o._env);
+
+      CRAB_LOG("nullity", crab::outs () << "After join " << *this << " and " << o << "=" << res << "\n";);
+      return res;
     }
 
     void operator|=(nullity_domain_t o) {
+      CRAB_LOG("nullity", crab::outs () << "After join " << *this << " and " << o << "=");
+
       _env = _env  | o._env;
+
+      CRAB_LOG("nullity", crab::outs () << *this << "\n");
     }
 
     nullity_domain_t operator&(nullity_domain_t o) {
-      return (_env & o._env);
+      nullity_domain_t res (_env & o._env);
+      
+      CRAB_LOG("nullity", crab::outs () << "After meet " << *this << " and " << o << "=" << res << "\n");
+      return res;
     }
     
     nullity_domain_t operator||(nullity_domain_t o) {
-      return (_env || o._env);
+      nullity_domain_t res (_env || o._env);
+
+      CRAB_LOG("nullity", crab::outs () << "After widening " << *this << " and " << o << "=" << res << "\n");
+      return res;
     }
 
     template<typename Thresholds>
     nullity_domain_t widening_thresholds (nullity_domain_t o, const Thresholds &) {
-      return (_env || o._env);
+      nullity_domain_t res (_env || o._env);
+
+      CRAB_LOG("nullity", crab::outs () << "After widening " << *this << " and " << o << "=" << res << "\n");
+      return res;
     }
     
     nullity_domain_t operator&&(nullity_domain_t o) {
@@ -217,6 +233,8 @@ namespace crab {
     void assign(VariableName x, VariableName y) {
       if (!is_bottom())
         _env.set (x, _env[y]);
+
+      CRAB_LOG("nullity", crab::outs () << "After " << x << ":="  << y << "=" << *this <<"\n");
     }
     
     nullity_value operator[](VariableName v) { 
@@ -235,11 +253,15 @@ namespace crab {
       nullity_value p_meet_q = _env[p] & _env[q];
       _env.set(p, p_meet_q);
       _env.set(q, p_meet_q);
+
+      CRAB_LOG("nullity", crab::outs () << "After " << p << "=="  << q << "=" << *this <<"\n");
     }
 
     void equality (VariableName p, nullity_value v) {
       if (!is_bottom ()) 
         _env.set(p, _env[p] & v);
+
+      CRAB_LOG("nullity", crab::outs () << "After " << p << "=="  << v << "=" << *this <<"\n");
     }
     
     void disequality (VariableName p, VariableName q) {
@@ -253,6 +275,8 @@ namespace crab {
       } else if (_env[q].is_top() && _env[p].is_null()) {
         _env.set(q, nullity_value::non_null()); // refine q
       }
+
+      CRAB_LOG("nullity", crab::outs () << "After " << p << "!="  << q << "=" << *this <<"\n");
     }
     
     void disequality (VariableName p, nullity_value v) {
@@ -263,6 +287,8 @@ namespace crab {
       } else if (_env[p].is_top() && v.is_null()) { // refine p
         _env.set(p, nullity_value::non_null());
       }
+
+      CRAB_LOG("nullity", crab::outs () << "After " << p << "!="  << v << "=" << *this <<"\n");
     }
 
     // numerical_domains_api
@@ -287,10 +313,14 @@ namespace crab {
 
     // pointer_operators_api 
     virtual void pointer_load (VariableName /*lhs*/, VariableName rhs) override {
+      // XXX: assume after the load the rhs must be non-null otherwise
+      // the program failed.
       equality (rhs, nullity_value::non_null ());
     }
 
     virtual void pointer_store (VariableName lhs, VariableName /*rhs*/) override {
+      // XXX: assume after the store the lhs must be non-null
+      // otherwise the program failed.
       equality (lhs, nullity_value::non_null ());
     } 
 
