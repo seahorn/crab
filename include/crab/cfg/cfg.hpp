@@ -1127,7 +1127,7 @@ namespace crab {
       
       virtual void write(crab_os& o) const
       {
-        o << m_cst;
+        o << "assume_ptr(" << m_cst << ")";
         return;
       }
     }; 
@@ -1175,7 +1175,7 @@ namespace crab {
       
       virtual void write(crab_os& o) const
       {
-        o << "assert(" << m_cst << ")";
+        o << "assert_ptr(" << m_cst << ")";
         return;
       }
     }; 
