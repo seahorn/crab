@@ -78,6 +78,11 @@ namespace crab {
       using typename base_checker_t::ptr_load_t;
       using typename base_checker_t::ptr_store_t;
 
+      std::string checked_prop_str (varname_t p) {
+        std::string res = p.str () + " != 0";
+        return res;
+      }
+
      public:
       
       null_property_checker (int verbose = 0): base_checker_t (verbose) { }
@@ -97,11 +102,14 @@ namespace crab {
         if (val.is_bottom ()) {
           this->m_db.add (_UNREACH);
         } else if (val.is_non_null ()) {
-          this->m_db.add (_SAFE);
+          LOG_SAFE(this->m_verbose, inv, checked_prop_str(ptr), s.get_debug_info());
+          //this->m_db.add (_SAFE);
         } else if (val.is_null ()) {
-          this->m_db.add (_ERR);
+          LOG_ERR(this->m_verbose, inv, checked_prop_str(ptr), s.get_debug_info());
+          //this->m_db.add (_ERR);
         } else {
-          this->m_db.add (_WARN);
+          LOG_WARN(this->m_verbose, inv, checked_prop_str(ptr), s.get_debug_info());
+          //this->m_db.add (_WARN);
         }
         
         s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
@@ -111,18 +119,18 @@ namespace crab {
         if (!this->m_abs_tr) return;        
         
         auto &inv = this->m_abs_tr->inv ();
-        auto ptr = s.lhs ();
+        auto ptr = s.rhs ();
         null_detail::get_as<abs_dom_t> null_inv (inv);
         crab::domains::nullity_value val = null_inv [ptr];
-
+        
         if (val.is_bottom ()) {
           this->m_db.add (_UNREACH);
         } else if (val.is_non_null ()) {
-          this->m_db.add (_SAFE);
+          LOG_SAFE(this->m_verbose, inv, checked_prop_str(ptr), s.get_debug_info());
         } else if (val.is_null ()) {
-          this->m_db.add (_ERR);
+          LOG_ERR(this->m_verbose, inv, checked_prop_str(ptr), s.get_debug_info());
         } else {
-          this->m_db.add (_WARN);
+          LOG_WARN(this->m_verbose, inv, checked_prop_str(ptr), s.get_debug_info());
         }
         
         s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
