@@ -117,10 +117,13 @@ int main (int argc, char** argv) {
 
   variable_factory_t vfac;
   cfg_t* cfg_1 = cfg1 (vfac);
+  crab::outs () << *cfg_1 << "\n";
   run<nullity_domain_t>(cfg_1, vfac, false, 1, 2, 20);
   cfg_t* cfg_2 = cfg2 (vfac);
+  crab::outs () << *cfg_2 << "\n";
   run<nullity_domain_t>(cfg_2, vfac, false, 1, 2, 20);
   cfg_t* cfg_3 = cfg3 (vfac);
+  crab::outs () << *cfg_3 << "\n";
   run<nullity_domain_t>(cfg_3, vfac, false, 1, 2, 20);
   
   delete cfg_1;

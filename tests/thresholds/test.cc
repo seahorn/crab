@@ -91,18 +91,35 @@ int main (int argc, char**argv){
     cfg_t* cfg = prog (vfac);
     crab::outs() << *cfg << "\n";
 
-    typename cfg_t::thresholds_t ts = cfg->initialize_thresholds_for_widening (50);
-    crab::outs() << "Thresholds=" << ts << "\n";
-    num_fwd_analyzer<cfg_ref_t,term_domain_t,variable_factory_t>::type a (*cfg, vfac, nullptr, 1, 2, 20);
-    // Run fixpoint 
-    term_domain_t inv = term_domain_t::top ();
-    a.Run (inv);
-    // Print invariants
-    crab::outs() << "Invariants using " << term_domain_t::getDomainName () << "\n";
-    for (auto &b : *cfg) {
-      auto inv = a [b.label ()];
-      crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
+    { 
+      num_fwd_analyzer<cfg_ref_t,term_domain_t,variable_factory_t>::type a (*cfg, vfac, nullptr, 1, 2, 0);
+      // Run fixpoint 
+      term_domain_t inv = term_domain_t::top ();
+      a.Run (inv);
+      // Print invariants
+      crab::outs() << "Invariants using " << term_domain_t::getDomainName () << " without tresholds\n";
+      for (auto &b : *cfg) {
+        auto inv = a [b.label ()];
+        crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
+      }
     }
+
+    { 
+      typename cfg_t::thresholds_t ts = cfg->initialize_thresholds_for_widening (50);
+      crab::outs() << "Thresholds=" << ts << "\n";
+      num_fwd_analyzer<cfg_ref_t,term_domain_t,variable_factory_t>::type a (*cfg, vfac, nullptr, 1, 2, 20);
+      // Run fixpoint 
+      term_domain_t inv = term_domain_t::top ();
+      a.Run (inv);
+      // Print invariants
+      crab::outs() << "Invariants using " << term_domain_t::getDomainName () << " with thesholds \n";
+      for (auto &b : *cfg) {
+        auto inv = a [b.label ()];
+        crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
+      }
+    }
+
+
     delete cfg;
   }
 }
