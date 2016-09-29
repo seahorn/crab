@@ -512,19 +512,26 @@ namespace ikos {
       this->reduce ();
     }
 
-    virtual void array_load (VariableName lhs, VariableName a, 
-                             VariableName i, ikos::z_number bytes) override {
-      this->_product.first().array_load (lhs, a, i, bytes);
-      this->_product.second().array_load (lhs, a, i, bytes);
+    virtual void array_load (VariableName lhs, VariableName a, crab::variable_type a_ty, 
+                             linear_expression_t i, ikos::z_number bytes) override {
+                             
+      this->_product.first().array_load (lhs, a, a_ty, i, bytes);
+      this->_product.second().array_load (lhs, a, a_ty, i, bytes);
       this->reduce ();
     }
 
-    virtual void array_store (VariableName a, VariableName i,
-                              linear_expression_t val, ikos::z_number bytes,
-                              bool is_singleton) override {
-      this->_product.first().array_store (a, i, val, bytes, is_singleton);
-      this->_product.second().array_store (a, i, val, bytes, is_singleton);
+    virtual void array_store (VariableName a, crab::variable_type a_ty, 
+                              linear_expression_t i, VariableName val, 
+                              ikos::z_number bytes, bool is_singleton) override {
+      this->_product.first().array_store (a, a_ty, i, val, bytes, is_singleton);
+      this->_product.second().array_store (a, a_ty, i, val, bytes, is_singleton);
       this->reduce ();
+    }
+
+    virtual void array_assign (VariableName lhs, VariableName rhs, crab::variable_type ty) override {
+      this->_product.first().array_assign (lhs, rhs, ty);
+      this->_product.second().array_assign (lhs, rhs, ty);
+      this->reduce ();      
     }
 
     // pointer_operators_api

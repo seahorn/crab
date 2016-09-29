@@ -117,6 +117,21 @@ inline void ___print___(ArgTypes... args)
 
 namespace crab {
 
+   enum variable_type { INT_TYPE, PTR_TYPE, ARR_INT_TYPE, ARR_PTR_TYPE, UNK_TYPE};
+
+   inline crab_os& operator<< (crab_os& o, variable_type t)
+   {
+     switch (t)
+     {
+       case INT_TYPE: o << "int"; break;
+       case PTR_TYPE: o << "ptr"; break;
+       case ARR_INT_TYPE: o << "arr_int"; break;
+       case ARR_PTR_TYPE: o << "arr_ptr"; break;
+       default: o << "unknown"; break;
+     }
+     return o;
+   }
+
    typedef enum { 
      BINOP_ADD, BINOP_SUB, BINOP_MUL, 
      BINOP_SDIV, BINOP_UDIV, BINOP_SREM, BINOP_UREM,
@@ -307,74 +322,66 @@ namespace ikos {
     return o;
   }
 
-  // Container for typed variables
-  template< typename Type, typename VariableName >
+  // Container for _numerical_ variables used by the crab abstract
+  // domains and linear_constraints.  
+  // XXX: Number is required even if the class does not use it.  This
+  // allows, e.g., linear_constraint to deduce the kind of Number from
+  // constraints like x < y.
+  template< typename Number, typename VariableName >
   class variable: public writeable {
+
+    VariableName _n;
   
    public:
-    typedef variable< Type, VariableName > variable_t;
+
+    typedef variable< Number, VariableName > variable_t;
     typedef typename VariableName::index_t index_t;
-    
-   private:
-    VariableName _n;
-    boost::optional<Type> _ty;
-    
+
    public:
     
     variable(const VariableName& n): writeable (), _n(n) { }
 
     variable(VariableName&& o): _n(std::move(o)) { }
     
-    variable(const VariableName& n, const Type& ty): 
-        writeable (), _n(n), _ty (ty) { }
-    
-    variable(const variable_t& v): 
-        writeable(), _n(v._n), _ty (v._ty) { }
+    variable(const variable_t& v): writeable(), _n(v._n) { }
     
     variable_t& operator=(const variable_t &o) {
-      if (this != &o) {
+      if (this != &o)
         this->_n = o._n;
-        this->_ty = o._ty;
-      }
       return *this;
     }
     
     const VariableName& name() const { return _n; }
     
-    boost::optional<Type> type() const { return _ty; }
-    
     index_t index() const { return _n.index(); }
     
-    // bool operator==(const variable_t& o) const {
-    //   return _n.index () == o._n.index ();
-    // }
-    
     bool operator<(const variable_t& o) const {
-      // ignore type for comparing variables
       return _n.index () < o._n.index ();
     }
     
-    void write(crab::crab_os& o) { 
-      if (_ty)
-        o << _n << ":" << *_ty; 
-      else
-        o << _n;
-    }
+    void write(crab::crab_os& o) { o << _n; }
         
   }; // class variable
 
-  template< typename Type, typename VariableName >
-  inline index_t hash_value (const variable<Type, VariableName> &v) {
+  template< typename Number, typename VariableName >
+  inline index_t hash_value (const variable<Number, VariableName> &v) {
     // ignore type for computing hash value
     return v.index ();
   }
   
-  template< typename Type, typename VariableName >
-  inline crab::crab_os& operator<<(crab::crab_os& o, variable<Type, VariableName> &v) {
+  template< typename Number, typename VariableName >
+  inline crab::crab_os& operator<<(crab::crab_os& o, variable<Number, VariableName> &v) {
     v.write(o);
     return o;
   }
 
+  template<typename Number, typename VariableName>
+  inline crab::crab_os& operator<<(crab::crab_os &o, const variable<Number, VariableName> &v)
+  {
+    auto tmp (v);
+    tmp.write (o);
+    return o;
+  }
 
 } // end namespace 
 

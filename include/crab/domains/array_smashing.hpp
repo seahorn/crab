@@ -67,13 +67,19 @@ namespace crab {
             ikos::writeable (), 
             _inv (inv) { }
         
-        void strong_update (VariableName lhs, linear_expression_t rhs ) {
-          _inv.assign (lhs, rhs);
+        void strong_update (VariableName a, crab::variable_type a_ty, VariableName rhs ) {
+          if (a_ty == ARR_INT_TYPE)
+            _inv.assign (a, linear_expression_t (rhs));
+          else
+            _inv.pointer_assign (a, rhs, Number(0));
         }
         
-        void weak_update (VariableName lhs, linear_expression_t rhs) {
+        void weak_update (VariableName a, crab::variable_type a_ty, VariableName rhs) {
           NumDomain other (_inv);
-          other.assign (lhs, rhs);
+          if (a_ty == ARR_INT_TYPE)
+            other.assign (a, linear_expression_t (rhs));
+          else 
+            other.pointer_assign (a, rhs, Number(0));
           _inv = _inv | other;
         }
         
@@ -253,8 +259,8 @@ namespace crab {
           CRAB_LOG("smashing", crab::outs() << "Assume array: " << *this <<"\n";);
         }
         
-        virtual void array_load (VariableName lhs, VariableName a, 
-                                 VariableName /*i*/, z_number /*bytes*/) override {
+        virtual void array_load (VariableName lhs, VariableName a, crab::variable_type a_ty,
+                                 linear_expression_t /*i*/, z_number /*bytes*/) override {
 
           crab::CrabStats::count (getDomainName() + ".count.load");
           crab::ScopedCrabStats __st__(getDomainName() + ".load");
@@ -265,26 +271,40 @@ namespace crab {
           /* ask for a temp var */
           VariableName a_prime = a.get_var_factory().get(); 
           domain_traits<NumDomain>::expand (_inv, a, a_prime);
-          _inv.assign (lhs, linear_expression_t (a_prime));
+          
+          if (a_ty == ARR_INT_TYPE)
+            _inv.assign (lhs, linear_expression_t (a_prime));
+          else 
+            _inv.pointer_assign (lhs, a_prime, Number(0));
+
           _inv -= a_prime; 
           
           CRAB_LOG("smashing", crab::outs() << "Load: " << *this <<"\n";);
         }
         
         
-        virtual void array_store (VariableName a, VariableName /*i*/,
-                                  linear_expression_t val, z_number /*bytes*/,
-                                  bool is_singleton) override {
+        virtual void array_store (VariableName a, crab::variable_type a_ty,
+                                  linear_expression_t /*i*/, VariableName val, 
+                                  z_number /*bytes*/, bool is_singleton) override {
+                                  
 
           crab::CrabStats::count (getDomainName() + ".count.store");
           crab::ScopedCrabStats __st__(getDomainName() + ".store");
           
           if (is_singleton)
-            strong_update (a, val);
+            strong_update (a, a_ty, val);
           else 
-            weak_update (a, val);
+            weak_update (a, a_ty, val);
           
           CRAB_LOG("smashing", crab::outs() << "Store: " << *this <<"\n";);
+        }
+
+        virtual void array_assign (VariableName lhs, VariableName rhs, 
+                                   crab::variable_type ty) override {
+          if (ty == ARR_INT_TYPE)
+            _inv.assign (lhs, linear_expression_t(rhs));
+          else 
+            _inv.pointer_assign (lhs, rhs, Number(0));
         }
         
         linear_constraint_system_t to_linear_constraint_system (){
