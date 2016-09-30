@@ -16,7 +16,7 @@ namespace crab {
     class assert_property_checker: public property_checker <Analyzer> {
       
       typedef typename Analyzer::varname_t varname_t;
-      typedef crab::domains::interval<z_number> interval_t;
+      typedef ikos::interval<z_number> interval_t;
       typedef typename Analyzer::abs_dom_t abs_dom_t;
       typedef property_checker<Analyzer> base_checker_t;
 
