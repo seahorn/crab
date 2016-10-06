@@ -234,28 +234,15 @@ namespace crab {
                    crab::outs() << "apply "<< x<< " := "<< y<< " "<< op<< " "<< k<< *this <<"\n";);
         }
         
-        // All the array elements are initialized to the join of values
-        virtual void array_init (VariableName a, 
-                                 const vector<ikos::z_number>& values) override {
-          if (values.empty ()) return;
+        // All the array elements are assumed to be equal to var
+        virtual void array_assume (VariableName a, variable_type a_ty, VariableName var) override {
+          // XXX: this is imprecise since we don't check first whether
+          // the elements of a are consistent with var.
+          if (a_ty == ARR_INT_TYPE)
+            _inv.assign (a, linear_expression_t(var));
+          else 
+            _inv.pointer_assign (a, var, Number(0));
           
-          interval_t init = interval_t::bottom ();
-          for (auto const &v: values) {
-            // assume automatic conversion from z_number to bound_t
-            init = init | interval_t (bound_t (v)); 
-          }
-          _inv.set (a, init);
-
-          CRAB_LOG("smashing", 
-                   crab::outs() << "Array init: " << *this <<"\n";);
-        }
-        
-        // Assume that all array contents are in [lb,ub]
-        virtual void array_assume (VariableName a,
-                                   boost::optional<Number> lb, boost::optional<Number> ub) override {
-          _inv.set (a, interval_t (lb ? *lb : bound_t::minus_infinity (),
-                                   ub ? *ub : bound_t::plus_infinity ()));
-
           CRAB_LOG("smashing", crab::outs() << "Assume array: " << *this <<"\n";);
         }
         

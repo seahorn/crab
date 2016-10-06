@@ -684,75 +684,28 @@ namespace crab {
       Array statements (ARR_INT_TYPE and ARR_PTR_TYPE)
     */
   
-    //! All the initial values of the array are statically known.
-    // FIXME: temporary for array smashing
-    // FIXME: limited to array of INT
-    template<class VariableName>
-    class array_init_stmt: public statement< VariableName> 
-    {
-      VariableName m_arr; 
-      vector<ikos::z_number> m_values; 
-      
-     public:
-      array_init_stmt (VariableName arr, vector<ikos::z_number> values)
-          : statement <VariableName> (ARR_INIT),
-            m_arr (arr), m_values (values)  { }
-      
-      VariableName variable () const { return m_arr; }
-      
-      vector<ikos::z_number> values () const { return m_values; }
-      
-      virtual void accept (statement_visitor<VariableName> *v) {
-        v->visit (*this);
-      }
-      
-      virtual boost::shared_ptr<statement <VariableName> > clone () const
-      {
-        typedef array_init_stmt <VariableName> array_init_t;
-        return boost::static_pointer_cast< statement <VariableName>, array_init_t >
-            (boost::make_shared<array_init_t>(m_arr, m_values));
-      }
-      
-      void write (crab_os& o) const
-      {
-        o << m_arr << " = array_init ({";
-        for (auto v: m_values)
-          o << v << " ";
-        o << "})";
-        return;
-      }
-    }; 
   
-    //! Assume all the array elements are overapproximated uniformly by
-    //! some interval.
-    // FIXME: temporary for array smashing
-    // FIXME: limited to array of INT
+    //! Assume all the array elements are equal to some variable
     template< class Number, class VariableName>
-    class assume_array_stmt: public statement< VariableName> 
+    class array_assume_stmt: public statement< VariableName> 
     {
-      typedef bound <Number> bound_t;
-      
-     public:
-      typedef interval <Number> interval_t;
-      
-     private:
-      // forall i \in arr. m_val.lb () <= arr[i]  <= m_val.ub ()
+
+      // forall i \in [-oo,oo]. arr[i] == var
       VariableName m_arr; 
-      interval_t m_val;
+      variable_type m_arr_ty;
+      VariableName m_var;
       
      public:
       
-      assume_array_stmt (VariableName arr, ikos::z_number val)
-          : statement <VariableName> (ARR_ASSUME),
-            m_arr (arr), m_val (bound_t (val))  { }
-      
-      assume_array_stmt (VariableName arr, interval_t val): 
+      array_assume_stmt (VariableName arr, variable_type arr_ty, VariableName var): 
           statement <VariableName> (ARR_ASSUME),
-          m_arr (arr), m_val (val)  { }
+          m_arr (arr), m_arr_ty (arr_ty), m_var (var)  { }
       
-      VariableName variable () const { return m_arr; }
+      VariableName array () const { return m_arr; }
       
-      interval_t val () const { return m_val; }
+      variable_type array_type () const { return m_arr_ty; }
+
+      VariableName var () const { return m_var; }
       
       virtual void accept (statement_visitor<VariableName> *v) {
         v->visit (*this);
@@ -760,16 +713,14 @@ namespace crab {
       
       virtual boost::shared_ptr<statement <VariableName> > clone () const
       {
-        typedef assume_array_stmt <Number, VariableName> assume_array_t;
+        typedef array_assume_stmt <Number, VariableName> assume_array_t;
         return boost::static_pointer_cast< statement <VariableName>, assume_array_t >
-            (boost::make_shared<assume_array_t>(m_arr, m_val));
+            (boost::make_shared<assume_array_t>(m_arr, m_arr_ty, m_var));
       }
       
       void write (crab_os& o) const
       {
-        o << "assume (forall l. " << m_arr << "[l]=";
-        val ().write (o);
-        o << ")";          
+        o << "assume (forall l in [-oo,oo] :: " << m_arr << "[l]=" << m_var << ")";          
         return;
       }
     }; 
@@ -1536,8 +1487,7 @@ namespace crab {
       typedef callsite_stmt<VariableName> callsite_t;
       typedef return_stmt<VariableName> return_t;
       // Arrays
-      /*XXX: TEMP*/ typedef array_init_stmt<VariableName> z_arr_init_t; 
-      /*XXX: TEMP*/ typedef assume_array_stmt<z_number,VariableName> z_assume_arr_t; 
+      typedef array_assume_stmt<z_number,VariableName> z_assume_arr_t; 
       typedef array_store_stmt<z_number,VariableName> arr_store_t;
       typedef array_load_stmt<z_number,VariableName> arr_load_t;
       typedef array_assign_stmt<VariableName> arr_assign_t;
@@ -1562,7 +1512,6 @@ namespace crab {
       typedef boost::shared_ptr<z_assert_t> z_assert_ptr;
       typedef boost::shared_ptr<callsite_t> callsite_ptr;      
       typedef boost::shared_ptr<return_t> return_ptr;      
-      typedef boost::shared_ptr<z_arr_init_t> z_arr_init_ptr;
       typedef boost::shared_ptr<z_assume_arr_t> z_assume_arr_ptr;
       typedef boost::shared_ptr<arr_store_t> arr_store_ptr;
       typedef boost::shared_ptr<arr_load_t> arr_load_ptr;    
@@ -2173,46 +2122,29 @@ namespace crab {
                (boost::make_shared<return_t>(ret_vals)));
       }
             
-      // XXX: begin temporary statements for array smashing 
-      void array_init (VariableName a, const vector<ikos::z_number>& vals) {
-        if (m_track_prec == ARR)
-          insert (boost::static_pointer_cast< statement_t, z_arr_init_t > 
-                  (boost::make_shared<z_arr_init_t> (a, vals)));
-      }
-      
-      void assume_array (VariableName a, z_interval val) {
-        if (m_track_prec == ARR)
-          insert (boost::static_pointer_cast< statement_t, z_assume_arr_t > 
-                  (boost::make_shared<z_assume_arr_t> (a, val)));
-      }
-      
-      void assume_array (VariableName a, ikos::z_number val) {
-        if (m_track_prec == ARR)
-          insert (boost::static_pointer_cast< statement_t, z_assume_arr_t > 
-                (boost::make_shared<z_assume_arr_t> (a, val)));
-      }
-      /// end array smashing
 
+      void array_assume (VariableName a, variable_type arr_ty, VariableName v) {
+        if (m_track_prec == ARR)
+          insert (boost::static_pointer_cast< statement_t, z_assume_arr_t > 
+                  (boost::make_shared<z_assume_arr_t> (a, arr_ty, v)));
+      }
+      
       void array_store (VariableName arr, variable_type arr_ty, 
                         z_lin_exp_t idx, VariableName val, 
-                        ikos::z_number elem_size, bool is_singleton = false) 
-                        
-      {
+                        ikos::z_number elem_size, bool is_singleton = false)  {
         if (m_track_prec == ARR)
           insert(boost::static_pointer_cast< statement_t, arr_store_t >
                  (boost::make_shared<arr_store_t>(arr, arr_ty, idx, val, elem_size, is_singleton)));
       }
       
       void array_load (VariableName lhs, VariableName arr, variable_type arr_ty, 
-                       z_lin_exp_t idx, ikos::z_number elem_size) 
-      {
+                       z_lin_exp_t idx, ikos::z_number elem_size) {
         if (m_track_prec == ARR)
           insert(boost::static_pointer_cast< statement_t, arr_load_t >
                  (boost::make_shared<arr_load_t>(lhs, arr, arr_ty, idx, elem_size)));
       }
 
-      void array_assign (VariableName lhs, VariableName rhs, variable_type ty) 
-      {
+      void array_assign (VariableName lhs, VariableName rhs, variable_type ty) {
         if (m_track_prec == ARR)
           insert(boost::static_pointer_cast< statement_t, arr_assign_t >
                  (boost::make_shared<arr_assign_t>(lhs, rhs, ty)));
@@ -2239,14 +2171,14 @@ namespace crab {
                  (boost::make_shared<ptr_assign_t> (lhs, rhs, offset)));
       }
       
-      void new_object (VariableName lhs, index_t address) 
+      void ptr_new_object (VariableName lhs, index_t address) 
       {
         if (m_track_prec >= PTR)
           insert(boost::static_pointer_cast< statement_t, ptr_object_t >
                  (boost::make_shared<ptr_object_t> (lhs, address)));
       }
       
-      void new_ptr_func (VariableName lhs, index_t func) 
+      void ptr_new_func (VariableName lhs, index_t func) 
       {
         if (m_track_prec >= PTR)
           insert(boost::static_pointer_cast< statement_t, ptr_function_t >
@@ -2382,8 +2314,7 @@ namespace crab {
       typedef callsite_stmt<VariableName> callsite_t;
       typedef return_stmt<VariableName> return_t;
       
-      typedef array_init_stmt<VariableName> z_arr_init_t;
-      typedef assume_array_stmt<z_number,VariableName> z_assume_arr_t;
+      typedef array_assume_stmt<z_number,VariableName> z_assume_arr_t;
       typedef array_store_stmt<z_number,VariableName> arr_store_t;
       typedef array_load_stmt<z_number,VariableName> arr_load_t;
       typedef array_assign_stmt<VariableName> arr_assign_t;
@@ -2411,7 +2342,6 @@ namespace crab {
       virtual void visit (callsite_t&) { };
       virtual void visit (return_t&) { };
 
-      virtual void visit (z_arr_init_t&) { };
       virtual void visit (z_assume_arr_t&) { };
       virtual void visit (arr_store_t&) { };
       virtual void visit (arr_load_t&) { };

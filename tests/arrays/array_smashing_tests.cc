@@ -10,6 +10,7 @@ cfg_t* prog1 (variable_factory_t &vfac)
   z_var n1(vfac["n1"]);
   z_var i(vfac["i"]);
   varname_t a = vfac["A0"];
+  varname_t a_p = vfac["A0_prop"];
   z_var tmp3(vfac["tmp3"]);
   varname_t tmp5 = vfac["tmp5"];
   varname_t tmp6 = vfac["tmp6"];
@@ -29,7 +30,8 @@ cfg_t* prog1 (variable_factory_t &vfac)
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   ////////
-  entry.assume_array (a, 0);
+  entry.assign (a_p, 0);
+  entry.array_assume (a, crab::ARR_INT_TYPE, a_p);
   /////////
   entry.assign(n1, 1);
   entry.assign(i, 0);
@@ -60,6 +62,7 @@ cfg_t* prog2(variable_factory_t &vfac)
   z_var n9(vfac["n9"]);
   z_var i(vfac["i"]);
   varname_t a = vfac["A"];
+  varname_t a_p = vfac["A_p"];
   z_var tmp3(vfac["tmp3"]);
   varname_t tmp4 = vfac["tmp4"];
   varname_t tmp5 = vfac["tmp5"];
@@ -70,7 +73,8 @@ cfg_t* prog2(variable_factory_t &vfac)
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   ////////
   // assume array element of 1 byte
-  entry.assume_array (a, 0);
+  entry.assign (a_p, 0);
+  entry.array_assume (a, crab::ARR_INT_TYPE, a_p);
   /////////
   entry.assign(n0, 0); // we need it to be considered as graph node
   entry.assign(n1, 1); 
@@ -104,6 +108,7 @@ cfg_t* prog3(variable_factory_t &vfac)
   z_var n1(vfac["n1"]);
   z_var i(vfac["i"]);
   varname_t a = vfac["A"];
+  varname_t a_p = vfac["A_p"];
   varname_t b = vfac["B"];
   varname_t tmp1 = vfac["tmp1"];
   z_var tmp2(vfac["tmp2"]);
@@ -112,8 +117,9 @@ cfg_t* prog3(variable_factory_t &vfac)
   z_var val(vfac["val"]);
 
   // assume array element of 1 byte
-  entry.assume_array (a, 0);
-  entry.assume_array (b, 0);
+  entry.assign (a_p, 0);
+  entry.array_assume (a, crab::ARR_INT_TYPE, a_p);
+  entry.array_assume (b, crab::ARR_INT_TYPE, a_p);
 
   entry.assign(n1, 1);
   entry.assign(i, 0);
@@ -144,6 +150,7 @@ cfg_t* prog4(variable_factory_t &vfac)
   z_var n1(vfac["n1"]);
   z_var i(vfac["i"]);
   varname_t a = vfac["A"];
+  varname_t a_p = vfac["A_p"];
   varname_t b = vfac["B"];
   z_var tmp3(vfac["tmp3"]);
   varname_t tmp5 = vfac["tmp5"];
@@ -157,8 +164,9 @@ cfg_t* prog4(variable_factory_t &vfac)
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
 
   // assume array element of 1 byte
-  entry.assume_array (a, 0);
-  entry.assume_array (b, 0);
+  entry.assign (a_p, 0);
+  entry.array_assume (a,  crab::ARR_INT_TYPE, a_p);
+  entry.array_assume (b,  crab::ARR_INT_TYPE, a_p);
 
   entry.assign(n1, 1);
   entry.assign(i, 0);
@@ -189,6 +197,7 @@ cfg_t* prog5(variable_factory_t &vfac)
   z_var i(vfac["i"]);
   z_var n(vfac["n"]);
   varname_t a = vfac["A"];
+  varname_t a_p = vfac["A_p"];
   z_var tmp1(vfac["tmp1"]);
   varname_t tmp2 = vfac["tmp2"];
   z_var val(vfac["val"]);
@@ -198,7 +207,8 @@ cfg_t* prog5(variable_factory_t &vfac)
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
 
   // assume array element of 1 byte
-  entry.assume_array (a, 0);
+  entry.assign (a_p, 0);
+  entry.array_assume (a,  crab::ARR_INT_TYPE, a_p);
 
   entry.assume(n >= 1);
   entry.assign(n1, 1);
@@ -225,6 +235,7 @@ cfg_t* prog6(variable_factory_t &vfac)
   basic_block_t& ret   = cfg->insert("ret");
   z_var i(vfac["i"]);
   varname_t a = vfac["A"];
+  varname_t a_p = vfac["A_p"];
   z_var tmp(vfac["tmp"]);
   z_var offset(vfac["o"]);
   z_var tmp2(vfac["tmp2"]);
@@ -235,7 +246,8 @@ cfg_t* prog6(variable_factory_t &vfac)
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   // assume array element of 4 bytes
-  entry.assume_array (a, 0);
+  entry.assign (a_p, 0);
+  entry.array_assume (a,  crab::ARR_INT_TYPE, a_p);
   entry.assign(i, 0);
   ///////
   bb1_t.assume(i <= 9);
@@ -262,6 +274,7 @@ cfg_t* prog7(variable_factory_t &vfac)
   z_var i(vfac["i"]);
   z_var n(vfac["n"]);
   varname_t a = vfac["A"];
+  varname_t a_p = vfac["A_p"];
   z_var tmp1(vfac["tmp1"]);
   varname_t tmp2 = vfac["tmp2"];
   z_var tmp3(vfac["tmp3"]);
@@ -275,7 +288,8 @@ cfg_t* prog7(variable_factory_t &vfac)
   // assume array element of 1 byte
 
   // assume (forall i. a[i] =0);
-  entry.assume_array (a, 0);
+  entry.assign (a_p, 0);
+  entry.array_assume (a,  crab::ARR_INT_TYPE, a_p);
   //////
   entry.assume(n >= 2);
   entry.assign(n1, 1);
@@ -313,6 +327,7 @@ cfg_t* prog8(variable_factory_t &vfac)
   z_var i1(vfac["i1"]);
   z_var n(vfac["n"]);
   varname_t a = vfac["A"];
+  varname_t a_p = vfac["A_p"];
   z_var tmp1(vfac["tmp1"]);
   varname_t tmp2 = vfac["tmp2"];
   z_var tmp3(vfac["tmp3"]);
@@ -323,7 +338,8 @@ cfg_t* prog8(variable_factory_t &vfac)
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
 
   // assume array element of 1 byte
-  entry.assume_array (a, 0);
+  entry.assign (a_p, 0);
+  entry.array_assume (a,  crab::ARR_INT_TYPE, a_p);
   entry.assume(n >= 1);
   entry.assign(n1, 1);
   entry.assign(n2, 2);
@@ -365,6 +381,7 @@ cfg_t* prog9(variable_factory_t &vfac)
   z_var i2(vfac["i2"]);
   z_var n(vfac["n"]);
   varname_t a = vfac["A"];
+  varname_t a_p = vfac["A_p"];
   z_var tmp1(vfac["tmp1"]);
   varname_t tmp2 = vfac["tmp2"];
   z_var nd(vfac["nd"]);
@@ -376,7 +393,8 @@ cfg_t* prog9(variable_factory_t &vfac)
   bb1_t >> bb2; bb2 >> bb2_a; bb2 >> bb2_b; bb2_a >> bb1; bb2_b >> bb1; bb1_f >> ret;
 
   // assume array element of 1 byte
-  entry.assume_array (a, 0);
+  entry.assign (a_p, 0);
+  entry.array_assume (a,  crab::ARR_INT_TYPE, a_p);
   entry.assume(n >= 1);
   entry.assign(n1, 1);
   entry.assign(i1, 0);
@@ -405,13 +423,11 @@ cfg_t* prog9(variable_factory_t &vfac)
   return cfg;
 }
 
-
-
 void test1(){
   variable_factory_t vfac;
   cfg_t* cfg = prog1(vfac);
   crab::outs () << "Program 1: forall 0<= i< 10. a[i] = 123456\n";
-  run<array_smashing_t> (cfg, vfac, false, 1, 2, 20);
+  run<array_smashing<dis_interval_domain_t> > (cfg, vfac, false, 1, 2, 20);
   run<array_smashing<sdbm_domain_t> > (cfg, vfac, false, 1, 2, 20);
   delete cfg;
 }
@@ -420,7 +436,7 @@ void test2(){
   variable_factory_t vfac;
   cfg_t* cfg = prog3(vfac);
   crab::outs () << "Program 2: forall 0<= i< 10. a[i] = b[i] = x and x = 123456\n";
-  run<array_smashing_t> (cfg, vfac, false, 1, 2, 20);
+  run<array_smashing<dis_interval_domain_t> > (cfg, vfac, false, 1, 2, 20);
   run<array_smashing<sdbm_domain_t> > (cfg, vfac, false, 1, 2, 20);
   delete cfg;
 }
@@ -429,7 +445,7 @@ void test3(){
   variable_factory_t vfac;
   cfg_t* cfg = prog4(vfac);
   crab::outs () << "Program 3: forall 0<= i< 10. a[i] = 8 and b[i] = 5\n";
-  run<array_smashing_t> (cfg, vfac, false, 1, 2, 20);
+  run<array_smashing<dis_interval_domain_t> > (cfg, vfac, false, 1, 2, 20);
   run<array_smashing<sdbm_domain_t> > (cfg, vfac, false, 1, 2, 20);
   delete cfg;
 }
@@ -438,7 +454,7 @@ void test4(){
   variable_factory_t vfac;
   cfg_t* cfg = prog5(vfac);
   crab::outs () << "Program 4: forall 0<= i < n. a[i] = 123456 (unbounded loop)\n";
-  run<array_smashing_t> (cfg, vfac, false, 1, 2, 20);
+  run<array_smashing<dis_interval_domain_t> > (cfg, vfac, false, 1, 2, 20);
   run<array_smashing<sdbm_domain_t> > (cfg, vfac, false, 1, 2, 20);
   delete cfg;
 }
@@ -447,7 +463,7 @@ void test5(){
   variable_factory_t vfac;
   cfg_t* cfg = prog6(vfac);
   crab::outs () << "Program 5: for all 0<= i< 10. a[i] = 123456 (assume elem size of 4 bytes)\n";
-  run<array_smashing_t> (cfg, vfac, false, 1, 2, 20);
+  run<array_smashing<dis_interval_domain_t> > (cfg, vfac, false, 1, 2, 20);
   run<array_smashing<sdbm_domain_t> > (cfg, vfac, false, 1, 2, 20);
   delete cfg;
 }
@@ -456,7 +472,7 @@ void test6(){
   variable_factory_t vfac;
   cfg_t* cfg = prog7(vfac);
   crab::outs () << "Program 6: a[0] = 89 and for all 1<= i < n. a[i] = a[i-1]\n";
-  run<array_smashing_t> (cfg, vfac, false, 1, 2, 20);
+  run<array_smashing<dis_interval_domain_t> > (cfg, vfac, false, 1, 2, 20);
   run<array_smashing<sdbm_domain_t> > (cfg, vfac, false, 1, 2, 20);
   delete cfg;
 }
@@ -465,7 +481,7 @@ void test7(){
   variable_factory_t vfac;
   cfg_t* cfg = prog8(vfac);
   crab::outs () << "Program 7: forall 0<= i< 10 and i % 2 = 0. a[i] = 123456\n";
-  run<array_smashing_t> (cfg, vfac, false, 1, 2, 20);
+  run<array_smashing<dis_interval_domain_t> > (cfg, vfac, false, 1, 2, 20);
   run<array_smashing<sdbm_domain_t> > (cfg, vfac, false, 1, 2, 20);
   delete cfg;
 }
@@ -475,7 +491,7 @@ void test8(){
   variable_factory_t vfac;
   cfg_t* cfg = prog9(vfac);
   crab::outs () << "Program 8: forall 0<= i < n. 1 <= a[i] <= 2\n";
-  run<array_smashing_t> (cfg, vfac, false, 1, 2, 20);
+  run<array_smashing<dis_interval_domain_t> > (cfg, vfac, false, 1, 2, 20);
   run<array_smashing<sdbm_domain_t> > (cfg, vfac, false, 1, 2, 20);
   delete cfg;
 }
@@ -484,7 +500,7 @@ void test9(){
   variable_factory_t vfac;
   cfg_t* cfg = prog2(vfac);
   crab::outs () << "Program 9: forall 0<= i < n. a[i] == 123456 (decrementing loop)\n";
-  run<array_smashing_t> (cfg, vfac, false, 1, 2, 20);
+  run<array_smashing<dis_interval_domain_t> > (cfg, vfac, false, 1, 2, 20);
   run<array_smashing<sdbm_domain_t> > (cfg, vfac, false, 1, 2, 20);
   delete cfg;
 }

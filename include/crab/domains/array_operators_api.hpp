@@ -25,19 +25,9 @@ namespace crab {
         
         virtual ~array_operators () { }
 
-        /* --- begin (temporary) operations for array smashing */
-        // This need to be fixed
-        // smashes a sequence of array stores 
-        virtual void array_init (VariableName a, const std::vector<ikos::z_number>& vals) {}
-        // assume all array contents are in [*lb_val, *ub_val]
-        // if lb_val is null then -oo 
-        // if ub_val is null then +oo
-        // XXX: we do not use bound or interval because we don't want
-        //      to introduce circular dependencies between header files
-        virtual void array_assume (VariableName a, 
-                                   boost::optional<Number> lb_val, boost::optional<Number> ub_val) {}
-        /* end operations for array smashing */
-
+        // Pre: a is an array of type a_ty
+        // assume all array contents are initialized to var
+        virtual void array_assume (VariableName a, variable_type a_ty, VariableName var) {}
 
         // Pre: a is an array of type a_ty
         // lhs := a[i] where bytes is the size of a elements in bytes

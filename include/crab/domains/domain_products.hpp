@@ -498,17 +498,11 @@ namespace ikos {
     }
 
     // array_operators_api
-    virtual void array_init (VariableName a, 
-                             const vector<ikos::z_number>& values) override {
-      this->_product.first().array_init (a, values);
-      this->_product.second().array_init (a, values);
-      this->reduce ();
-    }
 
-    virtual void array_assume (VariableName a,
-                               boost::optional<Number> lb, boost::optional<Number> ub) override {
-      this->_product.first().array_assume (a, lb, ub);
-      this->_product.second().array_assume (a, lb, ub);
+    virtual void array_assume (VariableName a, crab::variable_type a_ty, 
+                               VariableName var) override {
+      this->_product.first().array_assume (a, a_ty, var);
+      this->_product.second().array_assume (a, a_ty, var);
       this->reduce ();
     }
 

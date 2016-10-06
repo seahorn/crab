@@ -76,8 +76,7 @@ namespace crab {
     typedef assert_stmt <z_number,VariableName>      z_assert_t;
     typedef callsite_stmt<VariableName>              callsite_t;
     typedef return_stmt<VariableName>                return_t;
-    typedef array_init_stmt<VariableName>            z_arr_init_t;
-    typedef assume_array_stmt<z_number,VariableName> z_assume_arr_t;
+    typedef array_assume_stmt<z_number,VariableName> arr_assume_t;
     typedef array_store_stmt<z_number,VariableName>  arr_store_t;
     typedef array_load_stmt<z_number,VariableName>   arr_load_t;
     typedef array_assign_stmt<VariableName>          arr_assign_t;
@@ -101,8 +100,7 @@ namespace crab {
     virtual void exec (z_assert_t&) { }
     virtual void exec (callsite_t&) { }
     virtual void exec (return_t&) { }
-    virtual void exec (z_arr_init_t&) { }
-    virtual void exec (z_assume_arr_t&) { }
+    virtual void exec (arr_assume_t&) { }
     virtual void exec (arr_store_t&) { }
     virtual void exec (arr_load_t&) { }
     virtual void exec (arr_assign_t&) { }
@@ -126,8 +124,7 @@ namespace crab {
     void visit (z_assert_t &s) { exec (s); }
     void visit (callsite_t &s) { exec (s); }
     void visit (return_t &s) { exec (s); }
-    void visit (z_arr_init_t &s) { exec (s); }
-    void visit (z_assume_arr_t &s) { exec (s); }
+    void visit (arr_assume_t &s) { exec (s); }
     void visit (arr_store_t &s) { exec (s); }
     void visit (arr_load_t &s) { exec (s); }
     void visit (arr_assign_t &s) { exec (s); }
@@ -176,8 +173,7 @@ namespace crab {
     using typename abs_transform_t::z_assert_t;
     using typename abs_transform_t::unreach_t;
     using typename abs_transform_t::callsite_t;
-    using typename abs_transform_t::z_arr_init_t;
-    using typename abs_transform_t::z_assume_arr_t;
+    using typename abs_transform_t::arr_assume_t;
     using typename abs_transform_t::arr_load_t;
     using typename abs_transform_t::arr_store_t;
     using typename abs_transform_t::arr_assign_t;
@@ -300,17 +296,8 @@ namespace crab {
 
     // arrays 
 
-    // XXX: temporary for array smashing
-    // FIXME
-    void exec (z_arr_init_t &stmt) {
-      m_inv.array_init (stmt.variable (), stmt.values ());
-    }
-
-    // XXX: temporary for array smashing
-    // FIXME
-    void exec (z_assume_arr_t &stmt) {
-      m_inv.array_assume (stmt.variable (), 
-                          stmt.val().lb().number(), stmt.val().ub().number());
+    void exec (arr_assume_t &stmt) {
+      m_inv.array_assume (stmt.array (), stmt.array_type (), stmt.var ());
     }
     
     void exec (arr_store_t &stmt) {
@@ -393,8 +380,7 @@ namespace crab {
     using typename abs_transform_t::z_select_t;
     using typename abs_transform_t::unreach_t;
     using typename abs_transform_t::z_assert_t;
-    using typename abs_transform_t::z_arr_init_t;
-    using typename abs_transform_t::z_assume_arr_t;
+    using typename abs_transform_t::arr_assume_t;
     using typename abs_transform_t::arr_load_t;
     using typename abs_transform_t::arr_store_t;
     using typename abs_transform_t::arr_assign_t;
@@ -520,8 +506,7 @@ namespace crab {
     void exec (z_assume_t& stmt) { num_abs_transform_t::exec (stmt); }
     void exec (unreach_t& stmt) { num_abs_transform_t::exec (stmt); }
     void exec (z_assert_t& stmt) { num_abs_transform_t::exec (stmt); }
-    void exec (z_arr_init_t &stmt) { num_abs_transform_t::exec (stmt); }
-    void exec (z_assume_arr_t &stmt) { num_abs_transform_t::exec (stmt); }
+    void exec (arr_assume_t &stmt) { num_abs_transform_t::exec (stmt); }
     void exec (arr_store_t &stmt) { num_abs_transform_t::exec (stmt); }
     void exec (arr_load_t  &stmt) { num_abs_transform_t::exec (stmt); }
     void exec (arr_assign_t &stmt) { num_abs_transform_t::exec (stmt); }
@@ -599,8 +584,7 @@ namespace crab {
     using typename abs_transform_t::z_select_t;
     using typename abs_transform_t::unreach_t;
     using typename abs_transform_t::z_assert_t;
-    using typename abs_transform_t::z_arr_init_t;
-    using typename abs_transform_t::z_assume_arr_t;
+    using typename abs_transform_t::arr_assume_t;
     using typename abs_transform_t::arr_load_t;
     using typename abs_transform_t::arr_store_t;
     using typename abs_transform_t::arr_assign_t;
@@ -638,8 +622,7 @@ namespace crab {
     void exec (z_assume_t& stmt) { num_abs_transform_t::exec (stmt); }
     void exec (unreach_t& stmt) { num_abs_transform_t::exec (stmt); }
     void exec (z_assert_t& stmt) { num_abs_transform_t::exec (stmt); }
-    void exec (z_arr_init_t &stmt) { num_abs_transform_t::exec (stmt); }
-    void exec (z_assume_arr_t &stmt) { num_abs_transform_t::exec (stmt); }
+    void exec (arr_assume_t &stmt) { num_abs_transform_t::exec (stmt); }
     void exec (arr_store_t &stmt) { num_abs_transform_t::exec (stmt); }
     void exec (arr_load_t  &stmt) { num_abs_transform_t::exec (stmt); }
     void exec (arr_assign_t  &stmt) { num_abs_transform_t::exec (stmt); }
