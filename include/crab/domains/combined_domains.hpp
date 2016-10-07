@@ -2,30 +2,478 @@
 #define CRAB_COMBINED_DOMAINS_HPP
 
 /************************************************************************** 
- * Customized combination of domains:
+ * Combination of domains:
  * 
- * - reduced product of two arbitrary numerical domains. The
- *   propagation between domains is done via a push operation that
- *   must be defined by the domains.
+ * (1) reduced product of two arbitrary domains with only lattice
+ *     operations.
  *
- * - reduced product of an arbitrary numerical domain and congruences.
+ * (2) reduced product of two arbitrary domains with all operations.
+ * 
+ * The reduction in (1) and (2) is simply done by making bottom the
+ * abstract state if one of them is bottom.
+ * 
+ * (3) reduced product of two numerical domains. The reduction is done
+ *     via a special push operation that must be defined by the
+ *     domains. This is often more precise than (2).
+ *
+ * (4) reduced product of an arbitrary numerical domain and congruences.
  **************************************************************************/
 
 #include <crab/common/types.hpp>
 #include <crab/common/stats.hpp>
-#include <crab/domains/domain_products.hpp>
 #include <crab/domains/congruences.hpp>
 #include <crab/domains/intervals.hpp>
 #include <crab/domains/operators_api.hpp>
-#include <crab/domains/domain_traits.hpp>
 
 namespace crab {
   namespace domains {
 
     using namespace ikos;
 
-    // This domain is similar to numerical_domain_product2 but it uses
-    // a customized reduction operation.
+
+    // Provided by Ikos
+    // Reduced product of two arbitrary domains with only lattice
+    // operations.
+    template< typename Domain1, typename Domain2 >
+    class basic_domain_product2: public writeable {
+    
+     public:
+      typedef basic_domain_product2< Domain1, Domain2 > basic_domain_product2_t;
+      typedef Domain1 first_type;
+      typedef Domain2 second_type;
+      
+     private:
+      bool _is_bottom;
+      Domain1 _first;
+      Domain2 _second;
+      
+     public:
+      
+      static basic_domain_product2_t top() {
+        return basic_domain_product2_t(Domain1::top(), Domain2::top());
+      }
+      
+      static basic_domain_product2_t bottom() {
+        return basic_domain_product2_t(Domain1::bottom(), Domain2::bottom());
+      }
+      
+     private:
+      void canonicalize() {
+        if (!this->_is_bottom) {
+          this->_is_bottom = this->_first.is_bottom() || 
+              this->_second.is_bottom();
+          if (this->_is_bottom) {
+            this->_first = Domain1::bottom();
+            this->_second = Domain2::bottom();      
+          }
+        }
+      }
+      
+     public:
+      basic_domain_product2(): 
+          _is_bottom(false), 
+          _first(Domain1::top()), _second(Domain2::top()) { }
+      
+      basic_domain_product2(Domain1 first, Domain2 second): 
+          _is_bottom(false), 
+          _first(first), _second(second) {
+        this->canonicalize();
+      }
+      
+      basic_domain_product2(const basic_domain_product2_t& other): 
+          writeable(), 
+          _is_bottom(other._is_bottom), 
+          _first(other._first), _second(other._second) { }
+      
+      basic_domain_product2_t& operator=(const basic_domain_product2_t& other) {
+        if (this != &other) {
+          this->_is_bottom = other._is_bottom;
+          this->_first = other._first;
+          this->_second = other._second;
+        }
+        return *this;
+      }
+      
+      bool is_bottom() {
+        this->canonicalize();
+        return this->_is_bottom;
+      }
+      
+      bool is_top() {
+        return (this->_first.is_top() && this->_second.is_top());
+      }
+      
+      Domain1& first() {
+        this->canonicalize();
+        return this->_first;
+      }
+      
+      Domain2& second() {
+        this->canonicalize();
+        return this->_second;
+      }
+      
+      bool operator<=(basic_domain_product2_t other) {
+        if (this->is_bottom()) {
+          return true;
+        } else if (other.is_bottom()) {
+          return false;
+        } else {
+          return (this->_first <= other._first) && 
+              (this->_second <= other._second);
+        }
+      }
+      
+      bool operator==(basic_domain_product2_t other) {
+        return (this->operator<=(other) && other.operator<=(*this));
+      }
+      
+      void operator|=(basic_domain_product2_t other) {
+        if (this->is_bottom()) {
+          *this = other;
+        } else if (other.is_bottom()) {
+          return;
+        } else {
+          this->_first |= other._first;
+          this->_second |= other._second;
+        }
+      }
+      
+      basic_domain_product2_t operator|(basic_domain_product2_t other) {
+        if (this->is_bottom()) {
+          return other;
+        } else if (other.is_bottom()) {
+          return *this;
+        } else {
+          return basic_domain_product2_t(this->_first | other._first, 
+                                         this->_second | other._second);
+        }
+      }
+      
+      basic_domain_product2_t operator||(basic_domain_product2_t other) {
+        if (this->is_bottom()) {
+          return other;
+        } else if (other.is_bottom()) {
+          return *this;
+        } else {
+          return basic_domain_product2_t(this->_first || other._first, 
+                                         this->_second || other._second);
+        }
+      }
+      
+      basic_domain_product2_t operator&(basic_domain_product2_t other) {
+        if (this->is_bottom() || other.is_bottom()) {
+          return bottom();
+        } else {
+          return basic_domain_product2_t(this->_first & other._first, 
+                                         this->_second & other._second);
+        }
+      }
+      
+      basic_domain_product2_t operator&&(basic_domain_product2_t other) {
+        if (this->is_bottom() || other.is_bottom()) {
+          return bottom();
+        } else {
+          return basic_domain_product2_t(this->_first && other._first, 
+                                         this->_second && other._second);
+        }
+      }
+      
+      void write(crab::crab_os& o) {
+        if (this->is_bottom()) {
+          o << "_|_";
+        } else {
+          o << "(" << this->_first << ", " << this->_second << ")";
+        }
+      }
+      
+      static std::string getDomainName () { 
+        std::string name = "Product(" +
+            Domain1::getDomainName () + "," +
+            Domain2::getDomainName () + ")";
+        return name;
+      }
+    }; // class basic_domain_product2
+
+
+    // Provided by Ikos
+    // Reduced product of two arbitrary domains with all operations.
+    template< typename Number, typename VariableName, typename Domain1, typename Domain2 >
+    class domain_product2: public writeable,
+                           public numerical_domain< Number, VariableName >,
+                           public bitwise_operators< Number, VariableName >, 
+                           public division_operators< Number, VariableName >,
+                           public crab::domains::array_operators< Number, VariableName >,
+                           public crab::domains::pointer_operators< Number, VariableName > {
+     public:
+      typedef domain_product2< Number, VariableName, Domain1, Domain2 > domain_product2_t;
+      typedef Domain1 first_type;
+      typedef Domain2 second_type;
+      
+      using typename numerical_domain< Number, VariableName >::linear_expression_t;
+      using typename numerical_domain< Number, VariableName >::linear_constraint_t;
+      using typename numerical_domain< Number, VariableName >::linear_constraint_system_t;
+      using typename numerical_domain< Number, VariableName >::variable_t;
+      using typename numerical_domain< Number, VariableName >::number_t;
+      using typename numerical_domain< Number, VariableName >::varname_t;
+      
+      typedef crab::pointer_constraint<VariableName> ptr_cst_t;
+      
+     private:
+      typedef basic_domain_product2< Domain1, Domain2 > basic_domain_product2_t;
+      
+     private:
+      basic_domain_product2_t _product;
+      
+     private:
+      domain_product2(basic_domain_product2_t product): _product(product) { }
+      
+      void reduce() {
+        if (this->_product.first().is_bottom() || 
+            this->_product.second().is_bottom()) {
+          _product = basic_domain_product2_t::bottom();
+        }
+      }
+      
+     public:
+      static domain_product2_t top() {
+        return domain_product2_t(basic_domain_product2_t::top());
+      }
+      
+      static domain_product2_t bottom() {
+        return domain_product2_t(basic_domain_product2_t::bottom());
+    }
+      
+     public:
+      domain_product2(): _product() { }
+      
+      domain_product2(Domain1 first, Domain2 second): 
+          _product(basic_domain_product2_t(first, second)) { }
+      
+      domain_product2(const domain_product2_t& other): 
+          writeable(), 
+          numerical_domain< Number, VariableName >(), 
+          _product(other._product) { }
+      
+      domain_product2_t& operator=(const domain_product2_t& other) {
+        if (this != &other)
+          this->_product = other._product;
+        return *this;
+      }
+      
+      bool is_bottom() {
+        return this->_product.is_bottom();
+      }
+      
+      bool is_top() {
+        return this->_product.is_top();
+      }
+      
+      Domain1& first() {
+        return this->_product.first();
+      }
+      
+      Domain2& second() {
+        return this->_product.second();
+      }
+      
+      bool operator<=(domain_product2_t other) {
+        return (this->_product <= other._product);
+      }
+      
+      bool operator==(domain_product2_t other) {
+        return (this->_product == other._product);
+      }
+      
+      void operator|=(domain_product2_t other) {
+        this->_product |= other._product;
+      }
+      
+      domain_product2_t operator|(domain_product2_t other) {
+        return domain_product2_t(this->_product | other._product);
+      }
+      
+      domain_product2_t operator&(domain_product2_t other) {
+        return domain_product2_t(this->_product & other._product);
+      }
+      
+      domain_product2_t operator||(domain_product2_t other) {
+        return domain_product2_t(this->_product || other._product);
+      }
+      
+      template<typename Thresholds>
+      domain_product2_t widening_thresholds (domain_product2_t other,
+                                             const Thresholds& ts) {
+        return domain_product2_t (
+            this->_product.first ().widening_thresholds (other._product.first (), ts),
+            this->_product.second ().widening_thresholds (other._product.second (), ts));
+      }
+      
+      domain_product2_t operator&&(domain_product2_t other) {
+        return domain_product2_t(this->_product && other._product);
+      }
+      
+      void assign(VariableName x, linear_expression_t e) {
+        this->_product.first().assign(x, e);
+        this->_product.second().assign(x, e);
+      }
+      
+      void apply(operation_t op, VariableName x, VariableName y, VariableName z) {
+        this->_product.first().apply(op, x, y, z);
+        this->_product.second().apply(op, x, y, z);
+        this->reduce();
+      }
+      
+      void apply(operation_t op, VariableName x, VariableName y, Number k) {
+        this->_product.first().apply(op, x, y, k);
+        this->_product.second().apply(op, x, y, k);
+        this->reduce();
+      }
+      
+      void operator+=(linear_constraint_system_t csts) {
+        this->_product.first() += csts;
+        this->_product.second() += csts;
+        this->reduce();
+      }
+      
+      void operator-=(VariableName v) {
+        this->_product.first() -= v;
+        this->_product.second() -= v;
+      }
+      
+      // bitwise_operators_api
+      
+      void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width) {
+        this->_product.first().apply(op, x, y, width);
+        this->_product.second().apply(op, x, y, width);
+        this->reduce();
+      }
+      
+      void apply(conv_operation_t op, VariableName x, Number k, unsigned width) {
+        this->_product.first().apply(op, x, k, width);
+        this->_product.second().apply(op, x, k, width);
+        this->reduce();
+      }
+      
+      void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) {
+        this->_product.first().apply(op, x, y, z);
+        this->_product.second().apply(op, x, y, z);
+        this->reduce();
+      }
+      
+      void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k) {
+        this->_product.first().apply(op, x, y, k);
+        this->_product.second().apply(op, x, y, k);
+        this->reduce();
+      }
+      
+      // division_operators_api
+      
+      void apply(div_operation_t op, VariableName x, VariableName y, VariableName z) {
+        this->_product.first().apply(op, x, y, z);
+        this->_product.second().apply(op, x, y, z);
+        this->reduce();
+      }
+      
+      void apply(div_operation_t op, VariableName x, VariableName y, Number k) {
+        this->_product.first().apply(op, x, y, k);
+        this->_product.second().apply(op, x, y, k);
+        this->reduce();
+      }
+      
+      // array_operators_api
+      
+      virtual void array_assume (VariableName a, crab::variable_type a_ty, 
+                                 VariableName var) override {
+        this->_product.first().array_assume (a, a_ty, var);
+        this->_product.second().array_assume (a, a_ty, var);
+        this->reduce ();
+      }
+      
+      virtual void array_load (VariableName lhs, VariableName a, crab::variable_type a_ty, 
+                               linear_expression_t i, ikos::z_number bytes) override {
+        
+        this->_product.first().array_load (lhs, a, a_ty, i, bytes);
+        this->_product.second().array_load (lhs, a, a_ty, i, bytes);
+        this->reduce ();
+      }
+      
+      virtual void array_store (VariableName a, crab::variable_type a_ty, 
+                                linear_expression_t i, VariableName val, 
+                                ikos::z_number bytes, bool is_singleton) override {
+        this->_product.first().array_store (a, a_ty, i, val, bytes, is_singleton);
+        this->_product.second().array_store (a, a_ty, i, val, bytes, is_singleton);
+        this->reduce ();
+      }
+      
+      virtual void array_assign (VariableName lhs, VariableName rhs, crab::variable_type ty) override {
+        this->_product.first().array_assign (lhs, rhs, ty);
+        this->_product.second().array_assign (lhs, rhs, ty);
+        this->reduce ();      
+      }
+      
+      // pointer_operators_api
+      virtual void pointer_load (VariableName lhs, VariableName rhs) override {
+        this->_product.first().pointer_load (lhs, rhs);
+        this->_product.second().pointer_load (lhs, rhs);
+        this->reduce ();
+      }
+      
+      virtual void pointer_store (VariableName lhs, VariableName rhs) override {
+        this->_product.first().pointer_store (lhs, rhs);
+        this->_product.second().pointer_store (lhs, rhs);
+        this->reduce ();
+      } 
+      
+      virtual void pointer_assign (VariableName lhs, VariableName rhs, linear_expression_t offset) override {
+        this->_product.first().pointer_assign (lhs, rhs, offset);
+        this->_product.second().pointer_assign (lhs, rhs, offset);
+        this->reduce ();
+      }
+      
+      virtual void pointer_mk_obj (VariableName lhs, ikos::index_t address) override {
+        this->_product.first().pointer_mk_obj (lhs, address);
+        this->_product.second().pointer_mk_obj (lhs, address);
+        this->reduce ();
+      }
+      
+      virtual void pointer_function (VariableName lhs, VariableName func) override {
+        this->_product.first().pointer_function (lhs, func);
+        this->_product.second().pointer_function (lhs, func);
+        this->reduce ();
+      }
+      
+      virtual void pointer_mk_null (VariableName lhs) override {
+        this->_product.first().pointer_mk_null (lhs);
+        this->_product.second().pointer_mk_null (lhs);
+        this->reduce ();
+      }
+      
+      virtual void pointer_assume (ptr_cst_t cst) override {
+        this->_product.first().pointer_assume (cst);
+        this->_product.second().pointer_assume (cst);
+        this->reduce ();
+      }    
+      
+      virtual void pointer_assert (ptr_cst_t cst) override {
+        this->_product.first().pointer_assert (cst);
+        this->_product.second().pointer_assert (cst);
+        this->reduce ();
+      }    
+      
+      void write(crab::crab_os& o) {
+        this->_product.write(o);
+      }
+      
+      static std::string getDomainName () { 
+        return basic_domain_product2_t::getDomainName ();
+      }
+      
+    }; // class domain_product2
+  
+
+    // This domain is similar to domain_product2 but it uses a more
+    // precise reduction operation.
     template<typename Domain1, typename Domain2 >
     class reduced_numerical_domain_product2: 
        public writeable,
@@ -54,14 +502,14 @@ namespace crab {
      private:
       
       typedef patricia_tree_set<VariableName> variable_set_t;
-      typedef numerical_domain_product2<Number, VariableName, Domain1, Domain2> domain_product2_t; 
+      typedef domain_product2<Number, VariableName, Domain1, Domain2> domain_product2_t; 
       
       domain_product2_t _product;
       
       reduced_numerical_domain_product2(const domain_product2_t& product):
           _product(product) {}
 
-      inline linear_constraint_system_t 
+      linear_constraint_system_t 
       to_linear_constraints (variable_t v, interval_t i) const {
         linear_constraint_system_t csts;
         if (i.lb ().is_finite () && i.ub ().is_finite ()) {
@@ -150,7 +598,8 @@ namespace crab {
           pointer_operators<number_t,varname_t>(),
           _product(other._product) { }
       
-      reduced_numerical_domain_product2_t& operator=(const reduced_numerical_domain_product2_t& other) {
+      reduced_numerical_domain_product2_t& 
+      operator=(const reduced_numerical_domain_product2_t& other) {
         if (this != &other)
           this->_product = other._product;
         
@@ -173,25 +622,30 @@ namespace crab {
         this->_product |= other._product;
       }
       
-      reduced_numerical_domain_product2_t operator|(reduced_numerical_domain_product2_t other) {
+      reduced_numerical_domain_product2_t 
+      operator|(reduced_numerical_domain_product2_t other) {
         return reduced_numerical_domain_product2_t(this->_product | other._product);
       }
       
-      reduced_numerical_domain_product2_t operator&(reduced_numerical_domain_product2_t other) {
+      reduced_numerical_domain_product2_t 
+      operator&(reduced_numerical_domain_product2_t other) {
         return reduced_numerical_domain_product2_t(this->_product & other._product);
       }
       
-      reduced_numerical_domain_product2_t operator||(reduced_numerical_domain_product2_t other) {
+      reduced_numerical_domain_product2_t 
+      operator||(reduced_numerical_domain_product2_t other) {
         return reduced_numerical_domain_product2_t(this->_product || other._product);
       }
       
       template<typename Thresholds>
       reduced_numerical_domain_product2_t widening_thresholds 
       (reduced_numerical_domain_product2_t other, const Thresholds& ts) {
-        return reduced_numerical_domain_product2_t(this->_product.widening_thresholds (other._product, ts));
+        return reduced_numerical_domain_product2_t
+            (this->_product.widening_thresholds (other._product, ts));
       }
       
-      reduced_numerical_domain_product2_t operator&&(reduced_numerical_domain_product2_t other) {
+      reduced_numerical_domain_product2_t 
+      operator&&(reduced_numerical_domain_product2_t other) {
         return reduced_numerical_domain_product2_t(this->_product && other._product);
       }
       
@@ -623,7 +1077,7 @@ namespace crab {
       
      private:
       typedef patricia_tree_set<variable_t > variable_set_t;
-      typedef numerical_domain_product2<number_t, varname_t, 
+      typedef domain_product2<number_t, varname_t, 
                                         NumAbsDom, congruence_domain_t > domain_product2_t; 
       
       domain_product2_t _product;

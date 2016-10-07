@@ -92,7 +92,7 @@ cfg_t* cfg2 (variable_factory_t &vfac)  {
 void check (cfg_ref_t cfg, variable_factory_t& vfac) {
 
   // Each checker is associated to one analyzer
-  typedef crab::domains::numerical_domain_product2<z_number, varname_t, sdbm_domain_t, nullity_domain_t>
+  typedef crab::domains::domain_product2<z_number, varname_t, sdbm_domain_t, nullity_domain_t>
       dbm_nullity_domain_t;
   
   //typedef nullity_domain_t num_nullity_domain_t;
