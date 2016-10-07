@@ -423,6 +423,51 @@ cfg_t* prog9(variable_factory_t &vfac)
   return cfg;
 }
 
+cfg_t* prog10(variable_factory_t &vfac) 
+{
+  cfg_t* cfg = new cfg_t("entry","ret",ARR);
+  basic_block_t& entry = cfg->insert("entry");
+  basic_block_t& bb1   = cfg->insert("bb1");
+  basic_block_t& bb1_t = cfg->insert("bb1_t");
+  basic_block_t& bb1_f = cfg->insert("bb1_f");
+  basic_block_t& bb2   = cfg->insert("bb2");
+  basic_block_t& ret   = cfg->insert("ret");
+  z_var i(vfac["i"]);
+  z_var n(vfac["n"]);
+  varname_t a = vfac["A"];
+  varname_t b = vfac["B"];
+  varname_t obj1 = vfac["obj1"];
+  varname_t tmp1 = vfac["tmp1"];
+  varname_t tmp2 = vfac["tmp2"];
+  z_var tmp3(vfac["tmp3"]);
+
+  entry >> bb1;
+  bb1 >> bb1_t; bb1 >> bb1_f;
+  bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
+  // assume array element of 1 byte
+
+
+  // forall i :: is_not_null(a[i])
+  // forall i :: is_not_null(b[i])
+  entry.ptr_new_object (obj1, 0);
+  entry.array_assume (a, crab::ARR_PTR_TYPE, obj1);
+  entry.array_assume (b, crab::ARR_PTR_TYPE, obj1);
+  ///
+  entry.assume(n >= 1);
+  entry.assign(i, 0);
+  ///////
+  bb1_t.assume(i <= n - 1);
+  bb1_f.assume(i >= n);
+  // b[i] := a[i]
+  bb2.array_load(tmp1, a, crab::ARR_PTR_TYPE, i, 1);
+  bb2.array_store(b, crab::ARR_PTR_TYPE, i, tmp1, 1);
+  bb2.add(i, i, 1);
+  ret.sub(tmp3, i, 1);
+  // read b[i-1] 
+  ret.array_load(tmp2, b, crab::ARR_PTR_TYPE, tmp3, 1); 
+  return cfg;
+}
+
 void test1(){
   variable_factory_t vfac;
   cfg_t* cfg = prog1(vfac);
@@ -505,6 +550,14 @@ void test9(){
   delete cfg;
 }
 
+void test10(){
+  variable_factory_t vfac;
+  cfg_t* cfg = prog10(vfac); 
+  crab::outs () << "Program 10: forall 0<= i < n. is_not_null(a[i]) &&  is_not_null(b[i]) \n";
+  run<array_smashing<num_null_domain_t> > (cfg, vfac, false, 1, 2, 20);
+  delete cfg;
+}
+
 int main(int argc, char **argv) 
 {
   SET_TEST_OPTIONS(argc,argv)
@@ -518,6 +571,7 @@ int main(int argc, char **argv)
   test7 ();
   test8 ();
   test9 ();
+  test10 ();
 
   return 42;
 }

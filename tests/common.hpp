@@ -76,6 +76,8 @@ namespace crab {
     typedef reduced_numerical_domain_product2<term_dis_int_t, sdbm_domain_t> num_domain_t; 
     // Pointer domains
     typedef nullity_domain< z_number, varname_t > nullity_domain_t;
+    // Numerical x pointer domains
+    typedef numerical_nullity_domain<sdbm_domain_t> num_null_domain_t; 
   } 
 }
 

@@ -50,6 +50,7 @@ namespace crab {
         using typename numerical_domain< Number, VariableName>::variable_t;
         using typename numerical_domain< Number, VariableName>::number_t;
         using typename numerical_domain< Number, VariableName>::varname_t;
+        typedef crab::pointer_constraint<VariableName> ptr_cst_t;
 
         typedef array_smashing <NumDomain> array_smashing_t;
         typedef NumDomain content_domain_t;
@@ -148,9 +149,6 @@ namespace crab {
           return array_smashing_t (_inv && other._inv);
         }
         
-        void operator-=(VariableName var) {
-          _inv -= var;
-        }
 
         // remove all variables [begin,...end)
         template<typename Iterator>
@@ -166,6 +164,10 @@ namespace crab {
 
         void operator += (linear_constraint_system_t csts) {
           _inv += csts;
+        }
+
+        void operator-=(VariableName var) {
+          _inv -= var;
         }
         
         void assign (VariableName x, linear_expression_t e) {
@@ -233,7 +235,42 @@ namespace crab {
           CRAB_LOG("smashing",
                    crab::outs() << "apply "<< x<< " := "<< y<< " "<< op<< " "<< k<< *this <<"\n";);
         }
+
+        // pointer_operators_api
+        virtual void pointer_load (VariableName lhs, VariableName rhs) override {
+          _inv.pointer_load(lhs,rhs);
+        }
         
+        virtual void pointer_store (VariableName lhs, VariableName rhs) override {
+          _inv.pointer_store(lhs,rhs);
+        } 
+        
+        virtual void pointer_assign (VariableName lhs, VariableName rhs, linear_expression_t offset) override {
+          _inv.pointer_assign (lhs,rhs,offset);
+        }
+        
+        virtual void pointer_mk_obj (VariableName lhs, ikos::index_t address) override {
+          _inv.pointer_mk_obj (lhs, address);
+        }
+        
+        virtual void pointer_function (VariableName lhs, VariableName func) override {
+          _inv.pointer_function (lhs, func);
+        }
+        
+        virtual void pointer_mk_null (VariableName lhs) override {
+          _inv.pointer_mk_null (lhs);
+        }
+        
+        virtual void pointer_assume (ptr_cst_t cst) override {
+          _inv.pointer_assume (cst);
+        }    
+        
+        virtual void pointer_assert (ptr_cst_t cst) override {
+          _inv.pointer_assert (cst);
+        }    
+        
+        // array_operators_api 
+
         // All the array elements are assumed to be equal to var
         virtual void array_assume (VariableName a, variable_type a_ty, VariableName var) override {
           // XXX: this is imprecise since we don't check first whether
@@ -243,11 +280,11 @@ namespace crab {
           else 
             _inv.pointer_assign (a, var, Number(0));
           
-          CRAB_LOG("smashing", crab::outs() << "Assume array: " << *this <<"\n";);
+          CRAB_LOG("smashing", crab::outs() << "forall i:: " << a << "[i]==" << var << " -- " << *this <<"\n";);
         }
         
         virtual void array_load (VariableName lhs, VariableName a, crab::variable_type a_ty,
-                                 linear_expression_t /*i*/, z_number /*bytes*/) override {
+                                 linear_expression_t i, z_number /*bytes*/) override {
 
           crab::CrabStats::count (getDomainName() + ".count.load");
           crab::ScopedCrabStats __st__(getDomainName() + ".load");
@@ -258,7 +295,6 @@ namespace crab {
           /* ask for a temp var */
           VariableName a_prime = a.get_var_factory().get(); 
           domain_traits<NumDomain>::expand (_inv, a, a_prime);
-          
           if (a_ty == ARR_INT_TYPE)
             _inv.assign (lhs, linear_expression_t (a_prime));
           else 
@@ -266,12 +302,12 @@ namespace crab {
 
           _inv -= a_prime; 
           
-          CRAB_LOG("smashing", crab::outs() << "Load: " << *this <<"\n";);
+          CRAB_LOG("smashing", crab::outs() << lhs << ":=" << a <<"[" << i << "]  -- "  << *this <<"\n";);
         }
         
         
         virtual void array_store (VariableName a, crab::variable_type a_ty,
-                                  linear_expression_t /*i*/, VariableName val, 
+                                  linear_expression_t i, VariableName val, 
                                   z_number /*bytes*/, bool is_singleton) override {
                                   
 
@@ -283,7 +319,7 @@ namespace crab {
           else 
             weak_update (a, a_ty, val);
           
-          CRAB_LOG("smashing", crab::outs() << "Store: " << *this <<"\n";);
+          CRAB_LOG("smashing", crab::outs() << a << "[" << i << "]:=" << val << " -- " << *this <<"\n";);
         }
 
         virtual void array_assign (VariableName lhs, VariableName rhs, 

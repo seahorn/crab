@@ -38,7 +38,7 @@ namespace crab {
          get_as (nullity_domain_t &inv) : m_inv (inv) { }
 
          nullity_value_t operator[](VariableName v)
-         { return m_inv [v]; }
+         { return m_inv.get_nullity(v); }
        };
 
        // Reduced product of an arbitrary abstract domain with nullity
@@ -58,7 +58,30 @@ namespace crab {
          get_as (domain_product2_t& inv) : m_inv (inv) { }
 
          nullity_value_t operator[](VariableName v)
-         { return m_inv.second() [v]; }
+         { return m_inv.second().get_nullity(v); }
+       };
+
+
+       // Reduced product of an arbitrary abstract domain with nullity
+       template<typename Dom>
+       class get_as <crab::domains::numerical_nullity_domain<Dom> > {
+
+         typedef crab::domains::numerical_nullity_domain<Dom> domain_t;
+
+         typedef typename domain_t::varname_t varname_t;
+         typedef typename domain_t::number_t number_t;
+
+         typedef crab::domains::nullity_value nullity_value_t;
+         typedef crab::domains::nullity_domain<number_t, varname_t> nullity_domain_t;
+         
+         domain_t &m_inv;
+
+        public:
+
+         get_as (domain_t& inv) : m_inv (inv) { }
+
+         nullity_value_t operator[](varname_t v)
+         { return m_inv.second().get_nullity(v); }
        };
 
      } // end null_detail namespace
