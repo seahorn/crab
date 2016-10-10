@@ -4,6 +4,7 @@
 /* A flat lattice for nullity */
 
 #include <crab/common/types.hpp>
+#include <crab/domains/intervals.hpp>
 #include <crab/domains/separate_domains.hpp>
 #include <crab/domains/operators_api.hpp>
 
@@ -136,8 +137,9 @@ namespace crab {
     typedef linear_expression<Number, VariableName> linear_expression_t;
     typedef linear_constraint<Number, VariableName> linear_constraint_t;
     typedef linear_constraint_system<Number, VariableName> linear_constraint_system_t;
+    typedef interval<Number>  interval_t;    
     typedef typename separate_domain_t::iterator iterator;
-    
+
    private:
 
     separate_domain_t _env;
@@ -225,19 +227,19 @@ namespace crab {
       return (_env && o._env);
     }
     
-    void set(VariableName v, nullity_value n) {
+    void set_nullity(VariableName v, nullity_value n) {
       if (!is_bottom())
         _env.set(v, n);
     }
 
-    void assign(VariableName x, VariableName y) {
+    void set_nullity(VariableName x, VariableName y) {
       if (!is_bottom())
         _env.set (x, _env[y]);
 
       CRAB_LOG("nullity", crab::outs () << "After " << x << ":="  << y << "=" << *this <<"\n");
     }
     
-    nullity_value operator[](VariableName v) { 
+    nullity_value get_nullity(VariableName v) { 
       return _env[v]; 
     }
     
@@ -298,6 +300,9 @@ namespace crab {
     void assign(VariableName x, linear_expression_t e) {}
     void operator+=(linear_constraint_system_t csts) {}
     void operator+=(linear_constraint_t cst) {}
+    // not part of the numerical_domains api but it should be
+    void set (VariableName x, interval_t intv) {}
+    interval_t operator[](VariableName x) { return interval_t::top ();}
 
     // division_operators_api
     // XXX: needed for making a reduced product with a numerical domain
@@ -325,19 +330,22 @@ namespace crab {
     } 
 
     virtual void pointer_assign (VariableName lhs, VariableName rhs, lin_exp_t /*offset*/) override {
-      assign (lhs, rhs);
+      set_nullity (lhs, rhs);
+      CRAB_LOG("nullity", crab::outs () << "After " << lhs << ":=" << rhs << "=" << *this << "\n");
     }
 
     virtual void pointer_mk_obj (VariableName lhs, ikos::index_t /*address*/) override {
-      set (lhs, nullity_value::non_null ());
+      set_nullity (lhs, nullity_value::non_null ());
+      CRAB_LOG("nullity", crab::outs () << "After " << lhs << ":= mk_object()" << "=" << *this << "\n");
     }
 
     virtual void pointer_function (VariableName lhs, VariableName /*func*/) override {
-      set (lhs, nullity_value::non_null ());
+      set_nullity (lhs, nullity_value::non_null ());
     }
     
     virtual void pointer_mk_null (VariableName lhs) override {
-      set (lhs, nullity_value::null ());
+      set_nullity (lhs, nullity_value::null ());
+      CRAB_LOG("nullity", crab::outs () << "After " << lhs << ":= NULL" << "=" << *this << "\n");
     }
     
     virtual void pointer_assume (ptr_cst_t cst) override {
@@ -375,6 +383,44 @@ namespace crab {
     }
     
     }; // class nullity_domain
+
+
+   template <typename Number, typename VariableName>
+   class domain_traits <nullity_domain<Number,VariableName> > {
+
+     typedef nullity_domain<Number,VariableName> nullity_domain_t;
+
+    public:
+
+     template<class CFG>
+     static void do_initialization (CFG cfg) { }
+
+     // Normalize the abstract domain if such notion exists.
+     static void normalize (nullity_domain_t& inv) { }
+
+     // Remove all variables [begin, end)
+     template<typename Iter>
+     static void forget (nullity_domain_t& inv, Iter begin, Iter end) {
+       for (auto v : boost::make_iterator_range (begin,end)){
+         inv -= v; 
+       }
+     }
+
+     // Forget all variables except [begin, end)
+     template <typename Iter>
+     static void project(nullity_domain_t& inv, Iter begin, Iter end){
+       nullity_domain_t res = nullity_domain_t::top ();
+       for (auto v : boost::make_iterator_range (begin, end))
+         res.set_nullity (v, inv.get_nullity(v)); 
+       std::swap (inv, res);
+     }
+         
+     // Make a new copy of x without relating x with new_x
+     static void expand (nullity_domain_t& inv, VariableName x, VariableName new_x) {
+       inv.set_nullity (new_x , inv.get_nullity (x));
+     }
+
+   };
  
   } // end namespace domains 
 } // end namespace crab

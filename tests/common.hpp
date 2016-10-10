@@ -18,10 +18,10 @@
 #include <crab/domains/apron_domains.hpp>                      
 #include <crab/domains/dis_intervals.hpp>
 #include <crab/domains/term_equiv.hpp>
-#include <crab/domains/combined_domains.hpp>                      
 #include <crab/domains/array_sparse_graph.hpp>                      
 #include <crab/domains/array_smashing.hpp>
 #include <crab/domains/nullity.hpp>                      
+#include <crab/domains/combined_domains.hpp>                      
 
 #include <boost/program_options.hpp>
 
@@ -75,11 +75,11 @@ namespace crab {
     typedef term_domain<term::TDomInfo<z_number, varname_t, sdbm_domain_t> > term_dbm_t;
     typedef term_domain<term::TDomInfo<z_number, varname_t, dis_interval_domain_t> > term_dis_int_t;
     typedef reduced_numerical_domain_product2<term_dis_int_t, sdbm_domain_t> num_domain_t; 
-    // Array domains
-    typedef array_sparse_graph_domain<sdbm_domain_t, interval_domain_t> array_sgraph_domain_t;
-    typedef array_smashing<dis_interval_domain_t> array_smashing_t;
+    //typedef array_sparse_graph_domain<sdbm_domain_t, interval_domain_t> array_sgraph_domain_t;
     // Pointer domains
     typedef nullity_domain< z_number, varname_t > nullity_domain_t;
+    // Numerical x pointer domains
+    typedef numerical_nullity_domain<sdbm_domain_t> num_null_domain_t; 
   } 
 }
 
@@ -123,7 +123,7 @@ namespace {
       live=&live_;
     }
     // Run fixpoint 
-    typename crab::analyzer::num_fwd_analyzer
+    typename crab::analyzer::fwd_analyzer_impl
     <crab::cfg_impl::cfg_ref_t,Dom,crab::cfg_impl::variable_factory_t>::type 
     a (*cfg, vfac, live, widening, narrowing, jump_set_size);
     Dom inv = Dom::top ();

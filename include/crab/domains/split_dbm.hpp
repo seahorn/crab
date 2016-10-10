@@ -939,7 +939,7 @@ namespace crab {
               if(meet_g.elem(0, e.first.first))
                 meet_g.update_edge(0, meet_g.edge_val(0, e.first.first) + e.second, e.first.second, min_op);
               if(meet_g.elem(e.first.second, 0))
-                meet_g.update_edge(e.first.first, meet_g.edge_val(e.first.second, 0) + e.second, e.first.first, min_op);
+                meet_g.update_edge(e.first.first, meet_g.edge_val(e.first.second, 0) + e.second, 0, min_op);
             }
 #else
             delta.clear();

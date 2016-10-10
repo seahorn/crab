@@ -2,8 +2,8 @@
 #define INTER_FWD_ANALYZER_HPP
 
 /* 
-   A standard two-phase approach for context-insensitive
-   inter-procedural analysis. 
+   A standard two-phase approach for _context-insensitive_
+   inter-procedural analysis.
 */
 
 #include "boost/noncopyable.hpp"
@@ -20,7 +20,7 @@
 #include <crab/analysis/graphs/topo_order.hpp>
 #include <crab/analysis/fwd_analyzer.hpp>
 #include <crab/analysis/liveness.hpp>
-#include <crab/analysis/inter_ds.hpp>
+#include <crab/analysis/inter_fwd_analyzer_ds.hpp>
 
 namespace crab {
 
@@ -54,8 +54,8 @@ namespace crab {
 
      public:
 
-      typedef bu_summ_num_abs_transformer<summ_tbl_t, call_tbl_t> bu_abs_tr;
-      typedef td_summ_num_abs_transformer<summ_tbl_t, call_tbl_t> td_abs_tr;
+      typedef bu_summ_abs_transformer<summ_tbl_t, call_tbl_t> bu_abs_tr;
+      typedef td_summ_abs_transformer<summ_tbl_t, call_tbl_t> td_abs_tr;
       typedef boost::shared_ptr<td_abs_tr> td_abs_tr_ptr;
       typedef fwd_analyzer<cfg_t, bu_abs_tr, VarFactory> bu_analyzer;
       typedef fwd_analyzer<cfg_t, td_abs_tr, VarFactory> td_analyzer;
@@ -103,6 +103,10 @@ namespace crab {
       
       //! Trigger the whole analysis
       void Run (TD_Dom init = TD_Dom::top ())  {
+
+        CRAB_LOG("inter", 
+                 m_cg.write (crab::outs()); crab::outs () << "\n");
+                 
         crab::ScopedCrabStats __st__("Inter");
 
         bool has_noedges = true;
@@ -172,22 +176,29 @@ namespace crab {
                              m_jump_set_size) ; 
               a.Run (BU_Dom::top ());
               // --- build the summary
-              std::vector<varname_t> formals;
-              formals.reserve ((*fdecl).get_num_params());
-              for (unsigned i=0; i < (*fdecl).get_num_params();i++)
+              std::vector<varname_t> formals, inputs, outputs;
+              formals.reserve ((*fdecl).get_num_params() + (*fdecl).get_lhs_types().size ());
+              inputs.reserve ((*fdecl).get_num_params());
+              outputs.reserve ((*fdecl).get_lhs_types().size ());
+
+              for (unsigned i=0; i < (*fdecl).get_num_params();i++) {
+                inputs.push_back ((*fdecl).get_param_name (i));
                 formals.push_back ((*fdecl).get_param_name (i));
-              auto ret_val_opt = find_return_var (cfg);
-              if (ret_val_opt) 
-                formals.push_back (*ret_val_opt);
-              // --- project onto formal parameters and return 
+              }
+              auto const&ret_vals = find_return_vars (cfg);
+              for (auto rv: ret_vals)  {
+                outputs.push_back (rv);
+                formals.push_back (rv);
+              }
+
+              // --- project onto formal parameters and return values
               auto inv = a.get_post (cfg.exit ());
               //crab::CrabStats::count (BU_Dom::getDomainName() + ".count.project");
               domains::domain_traits<BU_Dom>::project (inv,
                                                        formals.begin (), 
                                                        formals.end ());            
-              if (ret_val_opt) 
-                formals.pop_back ();
-              m_summ_tbl.insert (*fdecl, inv, ret_val_opt, formals);
+
+              m_summ_tbl.insert (*fdecl, inv, inputs, outputs);
             }
           }
         } 
@@ -204,7 +215,7 @@ namespace crab {
             assert (fdecl);
             CRAB_LOG ("inter", 
                       crab::outs() << "--- Analyzing " 
-                                << (*fdecl).get_func_name () << "\n");
+                                   << (*fdecl).get_func_name () << "\n");
             if (scc_mems.size () > 1) {
               // If the node is recursive then what we have in m_call_tbl
               // is incomplete and therefore it is unsound to use it. To
@@ -225,9 +236,8 @@ namespace crab {
             else {
               CRAB_LOG("inter",
                        auto init_ctx = m_call_tbl.get_call_ctx (*fdecl);
-                       crab::outs() << "Starting analysis of "
-                                    << *fdecl <<  " with "
-                                    << init_ctx << "\n");
+                       crab::outs() << "    Starting analysis of "
+                                    << *fdecl <<  " with " << init_ctx << "\n");
               a->Run (m_call_tbl.get_call_ctx (*fdecl));
             }
             

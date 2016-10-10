@@ -28,13 +28,13 @@ cfg_t* cfg1 (variable_factory_t &vfac)
   varname_t r = vfac ["r"];
   varname_t s = vfac ["s"];
   // adding statements
-  b0.new_object (p, 1);
+  b0.ptr_new_object (p, 1);
   b0.havoc (r);
   b0.havoc (s);
   b1.ptr_assume (ptr_cst_t::mk_eq_null (r));
   b1.ptr_assume (ptr_cst_t::mk_eq (r,s));
   b2.ptr_assume (ptr_cst_t::mk_diseq (r,s));
-  b2.new_object (q, 2);
+  b2.ptr_new_object (q, 2);
   b2.ptr_assign (p, q, z_number(4));
   return cfg;
 }
@@ -60,9 +60,9 @@ cfg_t* cfg2 (variable_factory_t &vfac)
   varname_t r = vfac ["r"];
   z_var nd (vfac ["nd"]);
   // adding statements
-  b0.new_object (p , 1);  // p = malloc (...);
-  b0.new_object (q1, 2);  // q1 = malloc (...);
-  b0.new_object (q2, 3);  // q2 = malloc (...);
+  b0.ptr_new_object (p , 1);  // p = malloc (...);
+  b0.ptr_new_object (q1, 2);  // q1 = malloc (...);
+  b0.ptr_new_object (q2, 3);  // q2 = malloc (...);
   b0.havoc (nd.name ());
   b1.assume (nd >= 1);
   b2.assume (nd <= 0);
@@ -103,7 +103,7 @@ cfg_t* cfg3 (variable_factory_t &vfac)  {
   bb1_f.assume (i >= 100);
   bb2.add(x,x,y);
   bb2.add(y,y,1);
-  bb2.new_object (q, 1);
+  bb2.ptr_new_object (q, 1);
   bb2.ptr_assign (p, q, z_number(4));
   bb2.add(i, i, 1);
   ret.assume (x <= y);

@@ -41,8 +41,8 @@ namespace crab {
          typedef typename cfg::statement_visitor<V>::z_select_t z_select_t;
          typedef typename cfg::statement_visitor<V>::callsite_t callsite_t;
          typedef typename cfg::statement_visitor<V>::z_assert_t z_assert_t;
-         typedef typename cfg::statement_visitor<V>::z_arr_load_t z_arr_load_t;
-         typedef typename cfg::statement_visitor<V>::z_arr_store_t z_arr_store_t;
+         typedef typename cfg::statement_visitor<V>::arr_load_t arr_load_t;
+         typedef typename cfg::statement_visitor<V>::arr_store_t arr_store_t;
 
          // assume all statements have the same type expression_t;
          typedef typename z_bin_op_t::linear_expression_t linear_expression_t;
@@ -86,11 +86,11 @@ namespace crab {
              _indexes += vars;
          }
          
-         void visit(z_arr_load_t &s) {
+         void visit(arr_load_t &s) {
            _indexes += get_variables(s.index());
          }
          
-         void visit(z_arr_store_t &s) {
+         void visit(arr_store_t &s) {
            _indexes += get_variables(s.index());
          }
 
@@ -197,8 +197,8 @@ namespace crab {
        typedef typename cfg::statement_visitor<E>::z_select_t z_select_t;
        typedef typename cfg::statement_visitor<E>::callsite_t callsite_t;
        typedef typename cfg::statement_visitor<E>::z_assert_t z_assert_t;
-       typedef typename cfg::statement_visitor<E>::z_arr_load_t z_arr_load_t;
-       typedef typename cfg::statement_visitor<E>::z_arr_store_t z_arr_store_t;
+       typedef typename cfg::statement_visitor<E>::arr_load_t arr_load_t;
+       typedef typename cfg::statement_visitor<E>::arr_store_t arr_store_t;
        
        typedef typename z_bin_op_t::linear_expression_t linear_expression_t;
        typedef typename linear_expression_t::number_t number_t;
@@ -232,8 +232,8 @@ namespace crab {
 
        void visit(z_bin_op_t &s){}         
        void visit(z_assume_t &s) {}
-       void visit(z_arr_load_t &s) {}
-       void visit(z_arr_store_t &s) {}
+       void visit(arr_load_t &s) {}
+       void visit(arr_store_t &s) {}
        void visit(z_select_t&) {}
        void visit(callsite_t&) {}
        void visit(havoc_t&) {}

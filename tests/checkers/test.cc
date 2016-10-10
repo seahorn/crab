@@ -33,9 +33,9 @@ cfg_t* cfg1 (variable_factory_t &vfac)
   varname_t r = vfac ["r"];
   z_var nd (vfac ["nd"]);
   // adding statements
-  b0.new_object (p , 1);  // p = malloc (...);
-  b0.new_object (q1, 2);  // q1 = malloc (...);
-  b0.new_object (q2, 3);  // q2 = malloc (...);
+  b0.ptr_new_object (p , 1);  // p = malloc (...);
+  b0.ptr_new_object (q1, 2);  // q1 = malloc (...);
+  b0.ptr_new_object (q2, 3);  // q2 = malloc (...);
   b0.havoc (nd.name ());
   b1.assume (nd >= 1);
   b2.assume (nd <= 0);
@@ -76,7 +76,7 @@ cfg_t* cfg2 (variable_factory_t &vfac)  {
   bb1_f.assume (i >= 100);
   bb2.add(x,x,y);
   bb2.add(y,y,1);
-  bb2.new_object (q, 1);
+  bb2.ptr_new_object (q, 1);
   bb2.ptr_assign (p, q, z_number(4));
   bb2.add(i, i, 1);
   ret.assume (x <= y);
@@ -92,15 +92,9 @@ cfg_t* cfg2 (variable_factory_t &vfac)  {
 void check (cfg_ref_t cfg, variable_factory_t& vfac) {
 
   // Each checker is associated to one analyzer
-  typedef crab::domains::numerical_domain_product2<z_number, varname_t, sdbm_domain_t, nullity_domain_t>
-      dbm_nullity_domain_t;
-  
-  //typedef nullity_domain_t num_nullity_domain_t;
-  typedef dbm_nullity_domain_t num_nullity_domain_t;
-
-  typedef num_fwd_analyzer<cfg_ref_t, num_nullity_domain_t, variable_factory_t>::type null_analyzer_t;
+  typedef fwd_analyzer_impl<cfg_ref_t, num_null_domain_t, variable_factory_t>::type null_analyzer_t;
   typedef intra_checker<null_analyzer_t> null_checker_t;
-  typedef num_fwd_analyzer<cfg_ref_t, sdbm_domain_t, variable_factory_t>::type num_analyzer_t;
+  typedef fwd_analyzer_impl<cfg_ref_t, sdbm_domain_t, variable_factory_t>::type num_analyzer_t;
   typedef intra_checker<num_analyzer_t> num_checker_t;
 
   // We can have multiple properties per analyzer
@@ -115,8 +109,8 @@ void check (cfg_ref_t cfg, variable_factory_t& vfac) {
 
   // Run nullity analysis
   null_analyzer_t null_a (cfg, vfac, &live);
-  null_a.run (num_nullity_domain_t::top ());
-  crab::outs() << "Analysis using " << num_nullity_domain_t::getDomainName () << "\n";
+  null_a.run (num_null_domain_t::top ());
+  crab::outs() << "Analysis using " << num_null_domain_t::getDomainName () << "\n";
   for (auto &b : cfg)  {
     auto pre = null_a.get_pre (b.label ());
     auto post = null_a.get_post (b.label ());

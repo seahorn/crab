@@ -11,9 +11,9 @@ using namespace crab::domain_impl;
 using namespace crab::cg;
 
 cfg_t* foo (variable_factory_t &vfac) {
-  vector<pair<varname_t,variable_type> > params;
-  params.push_back (make_pair (vfac["x"], INT_TYPE));
-  function_decl<varname_t> decl (INT_TYPE, vfac["foo"], params);
+  vector<pair<varname_t,crab::variable_type> > params;
+  params.push_back (make_pair (vfac["x"], crab::INT_TYPE));
+  function_decl<varname_t> decl (crab::INT_TYPE, vfac["foo"], params);
   // Defining program variables
   z_var x (vfac ["x"]);
   z_var y (vfac ["y"]);
@@ -28,14 +28,14 @@ cfg_t* foo (variable_factory_t &vfac) {
   // adding statements
   entry.add (y, x, 1);
   exit.add (z , y , 2);
-  exit.ret (vfac ["z"], INT_TYPE);
+  exit.ret (vfac ["z"], crab::INT_TYPE);
   return cfg;
 }
 
 cfg_t* rec1 (variable_factory_t &vfac) {
-  vector<pair<varname_t,variable_type> > params;
-  params.push_back (make_pair (vfac["s"], INT_TYPE));
-  function_decl<varname_t> decl (INT_TYPE, vfac["rec1"], params);
+  vector<pair<varname_t,crab::variable_type> > params;
+  params.push_back (make_pair (vfac["s"], crab::INT_TYPE));
+  function_decl<varname_t> decl (crab::INT_TYPE, vfac["rec1"], params);
   // Defining program variables
   z_var r (vfac ["r"]);
   z_var s (vfac ["s"]);
@@ -49,17 +49,17 @@ cfg_t* rec1 (variable_factory_t &vfac) {
   entry >> exit;
   // adding statements
   entry.sub (r, s, 1);
-  vector<pair<varname_t,variable_type> > args;
-  args.push_back (make_pair (vfac["r"], INT_TYPE));
-  exit.callsite (make_pair (vfac["t"], INT_TYPE), vfac ["rec2"], args);
-  exit.ret (vfac["t"], INT_TYPE);
+  vector<pair<varname_t,crab::variable_type> > args;
+  args.push_back (make_pair (vfac["r"], crab::INT_TYPE));
+  exit.callsite (make_pair (vfac["t"], crab::INT_TYPE), vfac ["rec2"], args);
+  exit.ret (vfac["t"], crab::INT_TYPE);
   return cfg;
 }
 
 cfg_t* rec2 (variable_factory_t &vfac) {
-  vector<pair<varname_t,variable_type> > params;
-  params.push_back (make_pair (vfac["s1"], INT_TYPE));
-  function_decl<varname_t> decl (INT_TYPE, vfac["rec2"], params);
+  vector<pair<varname_t,crab::variable_type> > params;
+  params.push_back (make_pair (vfac["s1"], crab::INT_TYPE));
+  function_decl<varname_t> decl (crab::INT_TYPE, vfac["rec2"], params);
   // Defining program variables
   z_var r (vfac ["r1"]);
   z_var s (vfac ["s1"]);
@@ -73,21 +73,21 @@ cfg_t* rec2 (variable_factory_t &vfac) {
   entry >> exit;
   // adding statements
   entry.sub (r, s, 1);
-  vector<pair<varname_t,variable_type> > args;
-  args.push_back (make_pair (vfac["r1"], INT_TYPE));
-  exit.callsite (make_pair (vfac["t1"], INT_TYPE), vfac ["rec1"], args);
+  vector<pair<varname_t,crab::variable_type> > args;
+  args.push_back (make_pair (vfac["r1"], crab::INT_TYPE));
+  exit.callsite (make_pair (vfac["t1"], crab::INT_TYPE), vfac ["rec1"], args);
   args.clear ();
-  //args.push_back (make_pair (vfac["t1"], INT_TYPE));
-  //exit.callsite (make_pair (vfac["t1"], INT_TYPE), vfac ["foo"], args);
-  exit.ret (vfac["t1"], INT_TYPE);
+  //args.push_back (make_pair (vfac["t1"], crab::INT_TYPE));
+  //exit.callsite (make_pair (vfac["t1"], crab::INT_TYPE), vfac ["foo"], args);
+  exit.ret (vfac["t1"], crab::INT_TYPE);
   return cfg;
 }
 
 
 cfg_t* bar (variable_factory_t &vfac) {
-  vector<pair<varname_t,variable_type> > params;
-  params.push_back (make_pair (vfac["a"], INT_TYPE));
-  function_decl<varname_t> decl (INT_TYPE, vfac["bar"], params);
+  vector<pair<varname_t,crab::variable_type> > params;
+  params.push_back (make_pair (vfac["a"], crab::INT_TYPE));
+  function_decl<varname_t> decl (crab::INT_TYPE, vfac["bar"], params);
   // Defining program variables
   z_var a (vfac ["a"]);
   z_var x (vfac ["x1"]);
@@ -101,18 +101,18 @@ cfg_t* bar (variable_factory_t &vfac) {
   // adding control flow
   entry >> exit;
   // adding statements
-  vector<pair<varname_t,variable_type> > args;
-  args.push_back (make_pair (vfac["x1"], INT_TYPE));
-  exit.callsite (make_pair (vfac["y1"], INT_TYPE), vfac ["foo"], args);
+  vector<pair<varname_t,crab::variable_type> > args;
+  args.push_back (make_pair (vfac["x1"], crab::INT_TYPE));
+  exit.callsite (make_pair (vfac["y1"], crab::INT_TYPE), vfac ["foo"], args);
   entry.assign (x, a);
   entry.assign (w, 5);
-  exit.ret (vfac["y1"], INT_TYPE);
+  exit.ret (vfac["y1"], crab::INT_TYPE);
   return cfg;
 }
 
 cfg_t* m (variable_factory_t &vfac)  {
-  vector<pair<varname_t,variable_type> > params;
-  function_decl<varname_t> decl (INT_TYPE, vfac["main"], params);
+  vector<pair<varname_t,crab::variable_type> > params;
+  function_decl<varname_t> decl (crab::INT_TYPE, vfac["main"], params);
   // Defining program variables
   z_var x (vfac ["x2"]);
   z_var y (vfac ["y2"]);
@@ -126,19 +126,19 @@ cfg_t* m (variable_factory_t &vfac)  {
   entry >> exit;
   // adding statements
   entry.assign(x, 3);
-  vector<pair<varname_t,variable_type> > args;
-  args.push_back (make_pair (vfac["x2"], INT_TYPE));
-  entry.callsite (make_pair (vfac["y2"], INT_TYPE), vfac ["bar"], args);
+  vector<pair<varname_t,crab::variable_type> > args;
+  args.push_back (make_pair (vfac["x2"], crab::INT_TYPE));
+  entry.callsite (make_pair (vfac["y2"], crab::INT_TYPE), vfac ["bar"], args);
   args.clear ();
   /////
-  args.push_back (make_pair (vfac["y2"], INT_TYPE));
-  entry.callsite (make_pair (vfac["z3"], INT_TYPE), vfac ["rec1"], args);
+  args.push_back (make_pair (vfac["y2"], crab::INT_TYPE));
+  entry.callsite (make_pair (vfac["z3"], crab::INT_TYPE), vfac ["rec1"], args);
   args.clear ();
   /////
   exit.add (z, y, 2);
-  args.push_back (make_pair (vfac["z2"], INT_TYPE));
-  exit.callsite (make_pair (vfac["w2"], INT_TYPE), vfac ["foo"], args);
-  exit.ret (vfac["w2"], INT_TYPE);
+  args.push_back (make_pair (vfac["z2"], crab::INT_TYPE));
+  exit.callsite (make_pair (vfac["w2"], crab::INT_TYPE), vfac ["foo"], args);
+  exit.ret (vfac["w2"], crab::INT_TYPE);
   return cfg;
 }
 

@@ -1144,6 +1144,7 @@ namespace crab {
       using typename numerical_domain< Number, VariableName>::variable_t;
       using typename numerical_domain< Number, VariableName>::number_t;
       using typename numerical_domain< Number, VariableName>::varname_t;
+      typedef crab::pointer_constraint<VariableName> ptr_cst_t;
       typedef interval<Number> interval_t;
       
       typedef landmark_cst<VariableName,Number> landmark_cst_t;
@@ -2097,26 +2098,62 @@ namespace crab {
         return _scalar[v];
       }
 
-      virtual void array_init (VariableName a, 
-                               const vector<ikos::z_number>& values) override {
-        CRAB_WARN (" array_graph_domain array_init not implemented");
-      }
-
-      virtual void array_assume (VariableName a,
-                                 boost::optional<Number> lb, boost::optional<Number> ub) override {
-        CRAB_WARN (" array_graph_domain assume_array not implemented");
+      // pointer_operators_api
+      virtual void pointer_load (VariableName lhs, VariableName rhs) override {
+        _scalar.pointer_load(lhs,rhs);
       }
       
-      // lhs := arr[idx];
-      virtual void array_load (VariableName lhs, VariableName arr, VariableName idx, 
-                               z_number nbytes) override
+      virtual void pointer_store (VariableName lhs, VariableName rhs) override {
+        _scalar.pointer_store(lhs,rhs);
+      } 
+      
+      virtual void pointer_assign (VariableName lhs, VariableName rhs, linear_expression_t offset) override {
+        _scalar.pointer_assign (lhs,rhs,offset);
+      }
+      
+      virtual void pointer_mk_obj (VariableName lhs, ikos::index_t address) override {
+        _scalar.pointer_mk_obj (lhs, address);
+      }
+      
+      virtual void pointer_function (VariableName lhs, VariableName func) override {
+        _scalar.pointer_function (lhs, func);
+      }
+      
+      virtual void pointer_mk_null (VariableName lhs) override {
+        _scalar.pointer_mk_null (lhs);
+      }
+      
+      virtual void pointer_assume (ptr_cst_t cst) override {
+        _scalar.pointer_assume (cst);
+      }    
+      
+      virtual void pointer_assert (ptr_cst_t cst) override {
+        _scalar.pointer_assert (cst);
+      }    
+        
+
+      // array_operators_api       
+
+      virtual void array_assume (VariableName a, variable_type a_ty, VariableName var) override {
+        CRAB_WARN (" array_graph_domain assume_array not implemented");
+      }
+
+      virtual void array_load (VariableName lhs, VariableName a, crab::variable_type a_ty,
+                               linear_expression_t i, z_number nbytes) override 
       {
+
         crab::CrabStats::count (getDomainName() + ".count.load");
         crab::ScopedCrabStats __st__(getDomainName() + ".load");
 
+        auto vi = i.get_variable ();
+        if (!vi) {
+          CRAB_WARN ("TODO: array load index must be a variable");
+          return;
+        }
+
         // -- normalization ensures that closure and reduction have
         // -- been applied.
-        auto p = normalize_offset (idx, nbytes);
+        auto p = normalize_offset ((*vi).name(), nbytes);
         VariableName norm_idx = p.first;
 
         // #if 0
@@ -2128,7 +2165,7 @@ namespace crab {
         //   crab::outs () << "#### 1 " << _g << "\n"; 
           
         //   Weight w;
-        //   w += linear_constraint_t(linear_expression_t(lhs) == linear_expression_t(arr));
+        //   w += linear_constraint_t(linear_expression_t(lhs) == linear_expression_t(a));
         //   crab::outs () << "#### 2 " << w << "\n";
         //   //_g.update_edge_unclosed(lm_norm_idx, w, lm_norm_idx_prime);
         //   _g.update_edge(lm_norm_idx, w, lm_norm_idx_prime);
@@ -2139,9 +2176,14 @@ namespace crab {
         //     Only non-relational invariants are propagated from the
         //     graph domain to the scalar domain.
         Weight w = array_edge (norm_idx);
-        _scalar.set (lhs, w[arr]);
-        _expressions.set (lhs, w[arr]);
 
+        if (a_ty == ARR_INT_TYPE) {
+          _scalar.set (lhs, w[a]);
+          _expressions.set (lhs, w[a]);
+        } else {
+          CRAB_WARN ("TODO: array load of pointers");
+        }
+        
         // if normalize_offset created a landmark we remove it here to
         // keep smaller array graph
         if (p.second) remove_landmark (norm_idx); 
@@ -2153,34 +2195,43 @@ namespace crab {
             set_to_bottom();
         
         CRAB_LOG("array-sgraph-domain",
-                 crab::outs() << "Array read "<<lhs<<" := "<< arr<<"["<<idx<<"] ==> "
+                 crab::outs() << "Array read "<<lhs<<" := "<< a<<"["<<i<<"] ==> "
                                << *this <<"\n";);    
       }
 
-      // arr[idx] := val 
-      virtual void array_store (VariableName arr, VariableName idx, linear_expression_t val, 
-                                z_number nbytes, bool /*is_singleton*/) override 
-      {
+      virtual void array_store (VariableName a, crab::variable_type a_ty,
+                                linear_expression_t i, VariableName val, 
+                                z_number nbytes, bool /*is_singleton*/) override {
         crab::CrabStats::count (getDomainName() + ".count.store");
         crab::ScopedCrabStats __st__(getDomainName() + ".store");
+
+        auto vi = i.get_variable ();
+        if (!vi) {
+          CRAB_WARN ("TODO: array store index must be a variable");
+          return;
+        }
 
         // --- XXX: simplification wrt Gange et.al.:
         //     Only non-relational invariants are passed from the scalar
         //     domain to the graph domain.
         Weight w;
-        w.set(arr, eval_interval (val));
-
-        auto p = normalize_offset (idx, nbytes);
+        if (a_ty == ARR_INT_TYPE) {
+          w.set(a, eval_interval (variable_t(val)));
+        } else {
+          CRAB_WARN ("TODO: array store of pointers");
+        }
+          
+        auto p = normalize_offset ((*vi).name(), nbytes);
         VariableName norm_idx = p.first;
 
-        array_edge_forget (norm_idx, arr);
+        array_edge_forget (norm_idx, a);
         array_edge_update (norm_idx, w);
 
         // XXX: since we do not propagate from the array weights to
         // the scalar domain I think we don't need to reduce here.
 
         CRAB_LOG("array-sgraph-domain",
-                 crab::outs() << "Array write "<<arr<<"["<<idx<<"] := "<<val<< " ==> "
+                 crab::outs() << "Array write "<<a<<"["<<i<<"] := "<<val<< " ==> "
                               << *this <<"\n";);
       }
 

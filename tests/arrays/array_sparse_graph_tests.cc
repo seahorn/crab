@@ -11,11 +11,11 @@ cfg_t* prog1 (variable_factory_t &vfac, bool temp_add)
   z_var n1(vfac["n1"]);
   z_var i(vfac["i"]);
   z_var i1(vfac["i1"]);
-  z_var a(vfac["A0"]);
-  z_var a1(vfac["A1"]);
+  varname_t a = vfac["A0"];
   z_var tmp3(vfac["tmp3"]);
-  z_var tmp5(vfac["tmp5"]);
-  z_var tmp6(vfac["tmp6"]);
+  z_var val(vfac["val"]);
+  varname_t tmp5 = vfac["tmp5"];
+  varname_t tmp6 = vfac["tmp6"];
 
   cfg_t* cfg = new cfg_t("entry","ret", ARR);
   basic_block_t& entry = cfg->insert ("entry");
@@ -36,7 +36,8 @@ cfg_t* prog1 (variable_factory_t &vfac, bool temp_add)
   ///////
   bb1_t.assume(i <= 9);
   bb1_f.assume(i >= 10);
-  bb2.array_store(a, i, 123456, 1);
+  bb2.assign(val, 123456); 
+  bb2.array_store(a, crab::ARR_INT_TYPE, i, val.name(), 1);
   if (temp_add) 
   {
     bb2.add(i1, i, n1);
@@ -45,8 +46,8 @@ cfg_t* prog1 (variable_factory_t &vfac, bool temp_add)
   else
     bb2.add(i, i, n1);
   ret.sub(tmp3, i, n1);
-  ret.array_load(tmp5, a, tmp3, 1); // initialized
-  ret.array_load(tmp6, a, i, 1);    // top
+  ret.array_load(tmp5, a, crab::ARR_INT_TYPE, tmp3, 1); // initialized
+  ret.array_load(tmp6, a, crab::ARR_INT_TYPE, i, 1);    // top
   return cfg;
 }
 
@@ -65,11 +66,12 @@ cfg_t* prog2(variable_factory_t &vfac, bool temp_sub)
   z_var i(vfac["i"]);
   z_var i1(vfac["i1"]);
   z_var i2(vfac["i2"]);
-  z_var a(vfac["A"]);
+  varname_t  a = vfac["A"];
   z_var tmp3(vfac["tmp3"]);
-  z_var tmp4(vfac["tmp4"]);
-  z_var tmp5(vfac["tmp5"]);
-  z_var x(vfac["x"]);
+  varname_t tmp4 = vfac["tmp4"];
+  varname_t tmp5 = vfac["tmp5"];
+  z_var val(vfac["val"]);
+
   entry >> bb1;
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
@@ -79,7 +81,8 @@ cfg_t* prog2(variable_factory_t &vfac, bool temp_sub)
   entry.assign(i,9);
   bb1_t.assume(i >= 0);
   bb1_f.assume(i <= -1);
-  bb2.array_store (a, i, 123456, 1);
+  bb2.assign(val, 123456); 
+  bb2.array_store(a, crab::ARR_INT_TYPE, i, val.name(), 1);
   if (temp_sub) 
   {
     bb2.sub(i1, i, 1);
@@ -90,8 +93,8 @@ cfg_t* prog2(variable_factory_t &vfac, bool temp_sub)
   else
     bb2.sub(i, i, 1);
   ret.assign(tmp3, 5);
-  ret.array_load(tmp4, a, tmp3, 1); // initialized
-  ret.array_load(tmp5, a, i, 1);    // top
+  ret.array_load(tmp4, a, crab::ARR_INT_TYPE,tmp3, 1); // initialized
+  ret.array_load(tmp5, a, crab::ARR_INT_TYPE,i, 1);    // top
   return cfg;
 }
 
@@ -110,25 +113,27 @@ cfg_t* prog3(variable_factory_t &vfac)
 
   z_var n1(vfac["n1"]);
   z_var i(vfac["i"]);
-  z_var a(vfac["A"]);
-  z_var b(vfac["B"]);
-  z_var tmp1(vfac["tmp1"]);
+  varname_t a = vfac["A"];
+  varname_t b = vfac["B"];
+  varname_t tmp1 = vfac["tmp1"];
   z_var tmp2(vfac["tmp2"]);
-  z_var tmp3(vfac["tmp3"]);
-  z_var tmp4(vfac["tmp4"]);
+  z_var val(vfac["val"]);
+  varname_t tmp3 = vfac["tmp3"];
+  varname_t tmp4 = vfac["tmp4"];
 
   // assume array element of 1 byte
   entry.assign(n1, 1);
   entry.assign(i, 0);
   bb1_t.assume(i <= 9);
   bb1_f.assume(i >= 10);
-  bb2.array_store(a, i, 123456, 1);
-  bb2.array_load(tmp1, a, i, 1);    
-  bb2.array_store(b, i, tmp1, 1);
+  bb2.assign(val, 123456); 
+  bb2.array_store(a, crab::ARR_INT_TYPE, i, val.name(), 1);
+  bb2.array_load(tmp1, a, crab::ARR_INT_TYPE, i, 1);    
+  bb2.array_store(b, crab::ARR_INT_TYPE, i, tmp1, 1);
   bb2.add(i, i, n1);
   ret.sub(tmp2, i, n1);
-  ret.array_load(tmp3, b, tmp2, 1); // initialized
-  ret.array_load(tmp4, b, i, 1);    // top
+  ret.array_load(tmp3, b, crab::ARR_INT_TYPE, tmp2, 1); // initialized
+  ret.array_load(tmp4, b, crab::ARR_INT_TYPE, i, 1);    // top
   return cfg;
 }
 
@@ -145,12 +150,14 @@ cfg_t* prog4(variable_factory_t &vfac)
   basic_block_t& ret   = cfg->insert("ret");
   z_var n1(vfac["n1"]);
   z_var i(vfac["i"]);
-  z_var a(vfac["A"]);
-  z_var b(vfac["B"]);
+  varname_t a = vfac["A"];
+  varname_t b = vfac["B"];
   z_var tmp3(vfac["tmp3"]);
-  z_var tmp5(vfac["tmp5"]);
-  z_var tmp6(vfac["tmp6"]);
-  z_var x(vfac["x"]);
+  varname_t tmp5 = vfac["tmp5"];
+  varname_t tmp6 = vfac["tmp6"];
+  z_var val1(vfac["val1"]);
+  z_var val2(vfac["val2"]);
+
   entry >> bb1;
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
@@ -161,12 +168,15 @@ cfg_t* prog4(variable_factory_t &vfac)
   ///////
   bb1_t.assume(i <= 9);
   bb1_f.assume(i >= 10);
-  bb2.array_store(a, i, 8, 1);
-  bb2.array_store(b, i, 5, 1);
+
+  bb2.assign(val1, 8); 
+  bb2.array_store(a, crab::ARR_INT_TYPE, i, val1.name(), 1);
+  bb2.assign(val2, 5); 
+  bb2.array_store(b, crab::ARR_INT_TYPE, i, val2.name(), 1);
   bb2.add(i, i, n1);
   ret.sub(tmp3, i, n1);
-  ret.array_load(tmp5, a, tmp3, 1); 
-  ret.array_load(tmp6, b, tmp3, 1); 
+  ret.array_load(tmp5, a, crab::ARR_INT_TYPE, tmp3, 1); 
+  ret.array_load(tmp6, b, crab::ARR_INT_TYPE, tmp3, 1); 
   return cfg;
 }
 
@@ -182,9 +192,11 @@ cfg_t* prog5(variable_factory_t &vfac)
   z_var n1(vfac["n1"]);
   z_var i(vfac["i"]);
   z_var n(vfac["n"]);
-  z_var a(vfac["A"]);
+  varname_t a= vfac["A"];
   z_var tmp1(vfac["tmp1"]);
-  z_var tmp2(vfac["tmp2"]);
+  z_var val(vfac["val"]);
+  varname_t tmp2 = vfac["tmp2"];
+
   entry >> bb1;
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
@@ -196,10 +208,11 @@ cfg_t* prog5(variable_factory_t &vfac)
   ///////
   bb1_t.assume(i <= n - 1);
   bb1_f.assume(i >= n);
-  bb2.array_store(a, i, 123456, 1);
+  bb2.assign(val, 123456); 
+  bb2.array_store(a, crab::ARR_INT_TYPE, i, val.name(), 1);
   bb2.add(i, i, n1);
   ret.sub(tmp1, i, n1);
-  ret.array_load(tmp2, a, tmp1, 1); // initialized
+  ret.array_load(tmp2, a, crab::ARR_INT_TYPE, tmp1, 1); // initialized
   return cfg;
 }
 
@@ -213,11 +226,12 @@ cfg_t* prog6(variable_factory_t &vfac)
   basic_block_t& bb2   = cfg->insert("bb2");
   basic_block_t& ret   = cfg->insert("ret");
   z_var i(vfac["i"]);
-  z_var a(vfac["A"]);
+  varname_t a = vfac["A"];
   z_var tmp(vfac["tmp"]);
   z_var offset(vfac["o"]);
   z_var tmp2(vfac["tmp2"]);
-  z_var tmp4(vfac["tmp4"]);
+  z_var val(vfac["val"]);
+  varname_t tmp4 = vfac["tmp4"];
 
   entry >> bb1;
   bb1 >> bb1_t; bb1 >> bb1_f;
@@ -230,9 +244,11 @@ cfg_t* prog6(variable_factory_t &vfac)
   bb1_f.assume(10 <= i);
   bb2.assign(tmp, i);
   bb2.mul(offset, tmp, 4); 
-  bb2.array_store(a, offset, 123456, 4);
+
+  bb2.assign(val, 123456); 
+  bb2.array_store(a, crab::ARR_INT_TYPE, offset, val.name(), 4);
   bb2.add(i, i, 1);
-  ret.array_load(tmp4, a, 8, 4);    
+  ret.array_load(tmp4, a, crab::ARR_INT_TYPE, 8, 4);    
   return cfg;
 }
 
@@ -248,12 +264,14 @@ cfg_t* prog7(variable_factory_t &vfac)
   z_var n1(vfac["n1"]);
   z_var i(vfac["i"]);
   z_var n(vfac["n"]);
-  z_var a(vfac["A"]);
+  varname_t a = vfac["A"];
   z_var tmp1(vfac["tmp1"]);
-  z_var tmp2(vfac["tmp2"]);
+  varname_t tmp2 = vfac["tmp2"];
   z_var tmp3(vfac["tmp3"]);
-  z_var tmp4(vfac["tmp4"]);
+  z_var val(vfac["val"]);
+  varname_t tmp4 = vfac["tmp4"];
   z_var x(vfac["x"]);
+
   entry >> bb1;
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
@@ -262,19 +280,21 @@ cfg_t* prog7(variable_factory_t &vfac)
   entry.assume(n >= 2);
   entry.assign(n1, 1);
   entry.assign(i , 0);
-  entry.array_store(a, i, 89, 1);
+
+  entry.assign(val, 89); 
+  entry.array_store(a, crab::ARR_INT_TYPE, i, val.name(), 1);
   entry.assign(i , 1);
   ///////
   bb1_t.assume(i <= n - 1);
   bb1_f.assume(i >= n);
   ///////
   bb2.sub(tmp1, i, n1);
-  bb2.array_load(tmp2, a, tmp1, 1); 
-  bb2.array_store(a, i, tmp2, 1);
+  bb2.array_load(tmp2, a, crab::ARR_INT_TYPE, tmp1, 1); 
+  bb2.array_store(a, crab::ARR_INT_TYPE, i, tmp2, 1);
   bb2.add(i, i, n1);
   ///////
   ret.sub(tmp3, n, n1);
-  ret.array_load(tmp4, a, tmp3, 1); 
+  ret.array_load(tmp4, a, crab::ARR_INT_TYPE, tmp3, 1); 
   return cfg;
 }
 
@@ -293,10 +313,12 @@ cfg_t* prog8(variable_factory_t &vfac)
   z_var i(vfac["i"]);
   z_var i1(vfac["i1"]);
   z_var n(vfac["n"]);
-  z_var a(vfac["A"]);
+  varname_t a = vfac["A"];
   z_var tmp1(vfac["tmp1"]);
-  z_var tmp2(vfac["tmp2"]);
+  z_var val(vfac["val"]);
+  varname_t tmp2 = vfac["tmp2"];
   z_var tmp3(vfac["tmp3"]);
+
   entry >> bb1;
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
@@ -309,14 +331,17 @@ cfg_t* prog8(variable_factory_t &vfac)
   ///////
   bb1_t.assume(i <= 9);
   bb1_f.assume(i >= 10);
-  bb2.array_store(a, i, 123456, 1);
+
+  bb2.assign(val, 123456); 
+  bb2.array_store(a, crab::ARR_INT_TYPE, i, val.name(), 1);
   // If we comment these two lines then we do only initialization of
   // even positions.
   //bb2.add(i1, i, n1);
-  //bb2.array_store(a, i1, 123, 1);
+  // bb2.assign(val, 123); 
+  // bb2.array_store(a, crab::ARR_INT_TYPE, i1, val.name(), 1);
   bb2.add(i, i, n2);
   ret.assign(tmp1, 6);
-  ret.array_load(tmp2, a, tmp1, 1); // initialized
+  ret.array_load(tmp2, a, crab::ARR_INT_TYPE, tmp1, 1); // initialized
   return cfg;
 
 }
@@ -340,10 +365,12 @@ cfg_t* prog9(variable_factory_t &vfac)
   z_var i1(vfac["i1"]);
   z_var i2(vfac["i2"]);
   z_var n(vfac["n"]);
-  z_var a(vfac["A"]);
+  varname_t a = vfac["A"];
   z_var tmp1(vfac["tmp1"]);
-  z_var tmp2(vfac["tmp2"]);
+  z_var val(vfac["val"]);
+  varname_t tmp2 = vfac["tmp2"];
   z_var nd(vfac["nd"]);
+
   entry >> bb1;
   bb1 >> bb1_t; bb1 >> bb1_f1; bb1 >> bb1_f2;
   bb1_f1 >> bb1_f;   bb1_f2 >> bb1_f; 
@@ -361,17 +388,19 @@ cfg_t* prog9(variable_factory_t &vfac)
 
   // if (*)
   bb2_a.assume (nd >= 1);
-  bb2_a.array_store(a, i1, 1, 1);
+  bb2_a.assign(val, 1); 
+  bb2_a.array_store(a, crab::ARR_INT_TYPE, i1, val.name(), 1);
   bb2_a.add(i1, i1, 1);
   // else
   bb2_b.assume (nd <= 0);
-  bb2_b.array_store(a, i2, 2, 1);
+  bb2_b.assign(val, 2); 
+  bb2_b.array_store(a, crab::ARR_INT_TYPE, i2, val.name(), 1);
   bb2_b.add(i2, i2, 1);
   // } end while
   bb1_f1.assume(i1 >= n);
   bb1_f2.assume(i2 >= n);
   ret.sub(tmp1, n, 1);
-  ret.array_load(tmp2, a, tmp1, 1); // initialized
+  ret.array_load(tmp2, a, crab::ARR_INT_TYPE, tmp1, 1); // initialized
   return cfg;
 }
 
@@ -384,7 +413,7 @@ void run(cfg_ref_t cfg, string name, variable_factory_t &vfac)
   cfg.simplify ();
   crab::outs() << cfg << "\n";
   
-  typename num_fwd_analyzer <cfg_ref_t, ArrayDomain, variable_factory_t>::type 
+  typename fwd_analyzer_impl <cfg_ref_t, ArrayDomain, variable_factory_t>::type 
       It (cfg, vfac, nullptr, 1, 2, 20);
   ArrayDomain inv = ArrayDomain::top ();
   It.Run (inv);
@@ -402,6 +431,8 @@ void run(cfg_ref_t cfg, string name, variable_factory_t &vfac)
     crab::CrabStats::reset();
   }  
 }
+
+typedef array_sparse_graph_domain<sdbm_domain_t, interval_domain_t> array_sgraph_domain_t;
 
 void test1(){
   variable_factory_t vfac;

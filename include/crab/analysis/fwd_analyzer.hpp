@@ -6,7 +6,7 @@
 #include <crab/iterators/fwd_fixpoint_iterators.hpp>
 #include <crab/analysis/liveness.hpp>
 #include <crab/analysis/abs_transformer.hpp>
-#include <crab/analysis/inter_ds.hpp>
+#include <crab/analysis/inter_fwd_analyzer_ds.hpp>
 #include <crab/domains/domain_traits.hpp>
 
 #include "boost/range/algorithm/set_algorithm.hpp"
@@ -18,20 +18,25 @@ namespace crab {
     using namespace cfg;
   
     template<typename CFG>
-    inline boost::optional<typename CFG::varname_t> find_return_var (const CFG& cfg)
+    inline std::vector<typename CFG::varname_t> find_return_vars (const CFG& cfg)
     {
       typedef typename CFG::varname_t varname_t;
+      std::vector<varname_t> res;
 
       if (cfg.has_exit ()) {
         auto const &bb = cfg.get_node (cfg.exit ());
         for (auto const &s : boost::make_iterator_range (bb.begin(), bb.end())) {
-          if (s.is_return ()) {                            
+          if (s.is_return ()) {                
             const return_stmt<varname_t>* ret_stmt = static_cast<const return_stmt<varname_t> *> (&s);
-            return ret_stmt->get_ret_var ();
+            auto const &ret_typed_vars = ret_stmt->get_ret_vals ();
+            res.reserve (ret_typed_vars.size ());
+            for (auto vt: ret_typed_vars)
+              res.push_back (vt.first);
+            return res;
           }
         }
       }
-      return boost::optional<varname_t> ();
+      return res;
     }
         
     //! Perform a forward flow-sensitive analysis.
@@ -169,14 +174,14 @@ namespace crab {
             m_summ_tbl (sum_tbl), m_call_tbl (call_tbl) {
         
         if (live) {
-          // --- collect formal parameters and return value (if any)
+          // --- collect formal parameters and return values
           auto fdecl = this->get_cfg ().get_func_decl ();
           assert (fdecl);
           for (unsigned i=0; i < (*fdecl).get_num_params();i++)
             m_formals += (*fdecl).get_param_name (i); 
         
-          if (auto ret_val = find_return_var (this->get_cfg ()))
-            m_formals += *ret_val; 
+          auto const& ret_vals = find_return_vars (this->get_cfg ());
+          for (auto rv: ret_vals) {  m_formals += rv; }
         }
 
       }
@@ -231,18 +236,15 @@ namespace crab {
       }
     }; 
 
-    //! Specialized type for a numerical forward analyzer with array
-    //! and pointers
-    // XXX: num_fwd_analyzer should be renamed to something like
-    //      fwd_analyzer_impl. The prefix num is for historical
-    //      reasons (originally supported only numerical operations)
+    //! Specialized type for a forward analyzer that can infer
+    //! invariants involving numerical, array and pointers operations.
     template<typename CFG, typename AbsNumDomain, typename VarFactory>
-    class num_fwd_analyzer {
+    class fwd_analyzer_impl {
      private:
 
-      typedef num_abs_transformer<AbsNumDomain,
-                                  summary_table<CFG,AbsNumDomain>,
-                                  call_ctx_table<CFG,AbsNumDomain> > num_abs_tr_t; 
+      typedef abs_transformer<AbsNumDomain,
+                              summary_table<CFG,AbsNumDomain>,
+                              call_ctx_table<CFG,AbsNumDomain> > num_abs_tr_t; 
      public:
 
       typedef fwd_analyzer<CFG, num_abs_tr_t, VarFactory> type;

@@ -2,7 +2,41 @@
 #define ABSTRACT_TRANSFORMER_HPP
 
 /* 
-   Definition of abstract transfer functions.
+   Implementation of the abstract transfer functions by reducing them
+   to abstract domain operations.
+   
+   These are the main Crab statements for which we define their abstract
+   transfer functions:
+   
+   INTEGERS 
+     x := y bin_op z;
+     x := y; 
+     assume (cst) / assert (cst);
+     x := select (cond, y, z);
+
+   ARRAYS
+     a[i] = v;    (v can be either an integer or pointer)
+     v = a[i];
+     a := b       (a and b arrays)
+
+   POINTERS
+     *p = q;
+     p = *q;
+     p := q+n 
+     p := &obj;
+     p := &fun
+     p := null;
+
+   FUNCTIONS
+     x := foo(arg1,...,argn);
+     return r;
+
+   INTEGERS/ARRAYS/POINTERS
+     havoc (x);
+
+  Comments: note that all abstract transfer functions assume z_number
+  as the *only* type for numbers. Thus, changes are required to
+  support other types, e.g., reals.
  */
 
 #include <boost/optional.hpp>
@@ -33,19 +67,19 @@ namespace crab {
     typedef linear_constraint< z_number, VariableName > z_lin_cst_t;
     typedef linear_constraint_system< z_number, VariableName > z_lin_cst_sys_t;
 
+    typedef havoc_stmt<VariableName>                 havoc_t;
     typedef binary_op <z_number,VariableName>        z_bin_op_t;
     typedef assignment <z_number,VariableName>       z_assign_t;
     typedef assume_stmt <z_number,VariableName>      z_assume_t;
-    typedef havoc_stmt<VariableName>                 havoc_t;
     typedef unreachable_stmt<VariableName>           unreach_t;
     typedef select_stmt <z_number,VariableName>      z_select_t;
     typedef assert_stmt <z_number,VariableName>      z_assert_t;
     typedef callsite_stmt<VariableName>              callsite_t;
     typedef return_stmt<VariableName>                return_t;
-    typedef array_init_stmt<VariableName>            z_arr_init_t;
-    typedef assume_array_stmt<z_number,VariableName> z_assume_arr_t;
-    typedef array_store_stmt<z_number,VariableName>  z_arr_store_t;
-    typedef array_load_stmt<z_number,VariableName>   z_arr_load_t;
+    typedef array_assume_stmt<z_number,VariableName> arr_assume_t;
+    typedef array_store_stmt<z_number,VariableName>  arr_store_t;
+    typedef array_load_stmt<z_number,VariableName>   arr_load_t;
+    typedef array_assign_stmt<VariableName>          arr_assign_t;
     typedef ptr_store_stmt<VariableName>             ptr_store_t;
     typedef ptr_load_stmt<VariableName>              ptr_load_t;
     typedef ptr_assign_stmt<z_number,VariableName>   z_ptr_assign_t;
@@ -57,19 +91,19 @@ namespace crab {
 
    protected: 
 
+    virtual void exec (havoc_t&) { }
     virtual void exec (z_bin_op_t&)  { } 
     virtual void exec (z_assign_t&) { }
     virtual void exec (z_assume_t&) { }
-    virtual void exec (havoc_t&) { }
     virtual void exec (unreach_t&) { }
     virtual void exec (z_select_t&) { }
     virtual void exec (z_assert_t&) { }
     virtual void exec (callsite_t&) { }
     virtual void exec (return_t&) { }
-    virtual void exec (z_arr_init_t&) { }
-    virtual void exec (z_assume_arr_t&) { }
-    virtual void exec (z_arr_store_t&) { }
-    virtual void exec (z_arr_load_t&) { }
+    virtual void exec (arr_assume_t&) { }
+    virtual void exec (arr_store_t&) { }
+    virtual void exec (arr_load_t&) { }
+    virtual void exec (arr_assign_t&) { }
     virtual void exec (ptr_store_t&) { }
     virtual void exec (ptr_load_t&) { }
     virtual void exec (z_ptr_assign_t&) { }
@@ -81,19 +115,19 @@ namespace crab {
 
    public: /* visitor api */
 
+    void visit (havoc_t &s) { exec (s); }
     void visit (z_bin_op_t &s) { exec (s); }
     void visit (z_assign_t &s) { exec (s); }
     void visit (z_assume_t &s) { exec (s); }
-    void visit (havoc_t &s) { exec (s); }
     void visit (unreach_t &s) { exec (s); }
     void visit (z_select_t &s) { exec (s); }
     void visit (z_assert_t &s) { exec (s); }
     void visit (callsite_t &s) { exec (s); }
     void visit (return_t &s) { exec (s); }
-    void visit (z_arr_init_t &s) { exec (s); }
-    void visit (z_assume_arr_t &s) { exec (s); }
-    void visit (z_arr_store_t &s) { exec (s); }
-    void visit (z_arr_load_t &s) { exec (s); }
+    void visit (arr_assume_t &s) { exec (s); }
+    void visit (arr_store_t &s) { exec (s); }
+    void visit (arr_load_t &s) { exec (s); }
+    void visit (arr_assign_t &s) { exec (s); }
     void visit (ptr_store_t &s) { exec (s); }
     void visit (ptr_load_t &s) { exec (s); }
     void visit (z_ptr_assign_t &s) { exec (s); }
@@ -106,13 +140,11 @@ namespace crab {
   };
 
 
-  //! Abstract transformer specialized for numerical abstract domains
-  //! with arrays and pointers.
-  // XXX: num_abs_transformer should be renamed to
-  //      abs_transformer_impl or something like that.
+  //! Abstract transformer specialized for numerical, arrays and
+  //! pointers operations.
   template<typename NumAbsDomain, 
            typename SumTable /*unused*/, typename CallCtxTable /*unused*/>
-  class num_abs_transformer: 
+  class abs_transformer: 
         public abs_transformer_api <typename CallCtxTable::abs_domain_t::varname_t>
   {
 
@@ -130,18 +162,19 @@ namespace crab {
     using typename abs_transform_t::z_lin_exp_t;
     using typename abs_transform_t::z_lin_cst_t;
     using typename abs_transform_t::z_lin_cst_sys_t;
+
+    using typename abs_transform_t::havoc_t;
     using typename abs_transform_t::z_bin_op_t;
     using typename abs_transform_t::z_assign_t;
     using typename abs_transform_t::z_assume_t;
     using typename abs_transform_t::z_select_t;
     using typename abs_transform_t::z_assert_t;
-    using typename abs_transform_t::havoc_t;
     using typename abs_transform_t::unreach_t;
     using typename abs_transform_t::callsite_t;
-    using typename abs_transform_t::z_arr_init_t;
-    using typename abs_transform_t::z_assume_arr_t;
-    using typename abs_transform_t::z_arr_load_t;
-    using typename abs_transform_t::z_arr_store_t;
+    using typename abs_transform_t::arr_assume_t;
+    using typename abs_transform_t::arr_load_t;
+    using typename abs_transform_t::arr_store_t;
+    using typename abs_transform_t::arr_assign_t;
     using typename abs_transform_t::ptr_load_t;
     using typename abs_transform_t::ptr_store_t;
     using typename abs_transform_t::ptr_assign_t;
@@ -175,10 +208,10 @@ namespace crab {
     
    public:
 
-    num_abs_transformer (abs_dom_t& inv): 
+    abs_transformer (abs_dom_t& inv): 
         m_inv (inv) { }
     
-    num_abs_transformer (abs_dom_t& inv, SumTable*, CallCtxTable*): 
+    abs_transformer (abs_dom_t& inv, SumTable*, CallCtxTable*): 
         m_inv (inv) { }
 
     abs_dom_t& inv () { return m_inv; }
@@ -243,15 +276,9 @@ namespace crab {
     }
 
     // --- default implementation is intra-procedural
-    // TODO/FIXME: havoc also all the pointer actual parameters.
-    // XXX: no need to havoc array parameters because compilation
-    // ensures input/output arrays so in this case output arrays will
-    // be already top.
     void exec (callsite_t &cs) {
-      auto lhs_opt = cs.get_lhs_name ();
-      if (lhs_opt) { // havoc 
-        m_inv -= *lhs_opt;
-      }
+      for (auto vt: cs.get_lhs())
+        m_inv -= vt.first;  // havoc
     }
 
     void exec (z_assert_t& stmt) {
@@ -267,32 +294,24 @@ namespace crab {
 
     // arrays 
 
-    void exec (z_arr_init_t &stmt) {
-      m_inv.array_init (stmt.variable (), stmt.values ());
-    }
-
-    void exec (z_assume_arr_t &stmt) {
-      m_inv.array_assume (stmt.variable (), 
-                          stmt.val().lb().number(), stmt.val().ub().number());
+    void exec (arr_assume_t &stmt) {
+      m_inv.array_assume (stmt.array (), stmt.array_type (), stmt.var ());
     }
     
-    void exec (z_arr_store_t &stmt) {
-      if (stmt.index ().get_variable ())
-      {
-        auto arr = stmt.array ().name ();
-        auto idx = *(stmt.index ().get_variable ());
-        m_inv.array_store (arr, idx.name(), stmt.value (), stmt.elem_size(), 
-                           stmt.is_singleton ());
-      }
+    void exec (arr_store_t &stmt) {
+      m_inv.array_store (stmt.array(), stmt.array_type (), 
+                         stmt.index (), stmt.value (),
+                         stmt.elem_size(), stmt.is_singleton ());
     }
 
-    void exec (z_arr_load_t  &stmt) {
-      if (stmt.index ().get_variable ())
-      {
-        auto idx = *(stmt.index ().get_variable ());
-        m_inv.array_load (stmt.lhs ().name (), stmt.array ().name (), idx.name (),
-                          stmt.elem_size());
-      }
+    void exec (arr_load_t  &stmt) {
+      m_inv.array_load (stmt.lhs (), 
+                        stmt.array (), stmt.array_type (), 
+                        stmt.index(), stmt.elem_size());
+    }
+
+    void exec (arr_assign_t  &stmt) {
+      m_inv.array_assign (stmt.lhs (), stmt.rhs (), stmt.array_type ());
     }
 
     // pointers 
@@ -332,11 +351,10 @@ namespace crab {
   }; 
 
   //! Transformer specialized for computing numerical summaries
-  // TODO/FIXME: pointer operands are ignored
   template<typename SumTable, typename CallCtxTable /*unused*/>
-  class bu_summ_num_abs_transformer: 
-        public num_abs_transformer <typename SumTable::abs_domain_t,
-                                   SumTable, CallCtxTable> {
+  class bu_summ_abs_transformer: 
+        public abs_transformer <typename SumTable::abs_domain_t,
+                                SumTable, CallCtxTable> {
                                    
    public:
 
@@ -346,24 +364,33 @@ namespace crab {
 
    public:
 
-    typedef num_abs_transformer <abs_dom_t, SumTable, CallCtxTable> num_abs_transform_t;
+    typedef abs_transformer <abs_dom_t, SumTable, CallCtxTable> num_abs_transform_t;
     typedef typename num_abs_transform_t::abs_transform_t abs_transform_t;
 
     using typename abs_transform_t::varname_t;
     using typename abs_transform_t::z_var_t;
     using typename abs_transform_t::z_lin_exp_t;
+
+    using typename abs_transform_t::havoc_t;
     using typename abs_transform_t::z_bin_op_t;
     using typename abs_transform_t::z_assign_t;
     using typename abs_transform_t::z_assume_t;
     using typename abs_transform_t::z_select_t;
-    using typename abs_transform_t::havoc_t;
     using typename abs_transform_t::unreach_t;
     using typename abs_transform_t::z_assert_t;
-    using typename abs_transform_t::z_arr_init_t;
-    using typename abs_transform_t::z_assume_arr_t;
-    using typename abs_transform_t::z_arr_load_t;
-    using typename abs_transform_t::z_arr_store_t;
+    using typename abs_transform_t::arr_assume_t;
+    using typename abs_transform_t::arr_load_t;
+    using typename abs_transform_t::arr_store_t;
+    using typename abs_transform_t::arr_assign_t;
     using typename abs_transform_t::callsite_t;
+    using typename abs_transform_t::ptr_load_t;
+    using typename abs_transform_t::ptr_store_t;
+    using typename abs_transform_t::ptr_assign_t;
+    using typename abs_transform_t::ptr_object_t;
+    using typename abs_transform_t::ptr_function_t;
+    using typename abs_transform_t::ptr_null_t;
+    using typename abs_transform_t::ptr_assume_t;
+    using typename abs_transform_t::ptr_assert_t;
 
    private:
 
@@ -375,65 +402,120 @@ namespace crab {
                                const callsite_t& cs,
                                const typename SumTable::Summary& summ) {
 
-      //crab::ScopedCrabStats st("Inter.ReuseSummary");      
+      // error if cs and function declaration associated with summ are
+      // not type consistent
+      summ.check_type_consistency (cs);
 
-      // --- meet caller's inv with summ
-      auto sum_inv = summ.get_sum ();
-      caller = caller & sum_inv;
-      CRAB_LOG("inter",
-               crab::outs() << "--- After meet: " <<  caller << "\n");
+      CRAB_LOG("inter", 
+               crab::outs () << "    Reuse summary at " << cs << "\n";
+               crab::outs () << "    Summary:";  summ.write(crab::outs ()); 
+               crab::outs () << "\n");
+
+      std::set<varname_t> actuals, formals;
       // --- matching formal and actual parameters
       auto pars = summ.get_params ();
       unsigned i=0;
-      std::set<varname_t> actuals, formals;
+      // XXX: propagating down
       for (auto p : pars) {
         auto a = cs.get_arg_name (i);
+
         if (!(a == p)) {
-          caller += (z_var_t (a) == z_var_t (p));
+
+          CRAB_LOG ("inter",
+                    crab::outs () << "\t\tPropagate from caller to callee " 
+                                  << p << ":=" << a << "\n");
+
+          if (cs.get_arg_type(i) == INT_TYPE) {
+            caller.assign (p, z_var_t(a));
+          } else if (cs.get_arg_type(i) == PTR_TYPE) {
+            caller.pointer_assign (p, a, z_number(0));
+          } else {
+            caller.array_assign (p, a, cs.get_arg_type(i));
+          }
         }
         ++i;
         actuals.insert (a); formals.insert (p);
       }
+
+      // --- meet caller's inv with summ
+      auto sum_inv = summ.get_sum ();
+      caller = caller & sum_inv;
+      CRAB_LOG("inter", crab::outs() << "\t\tAfter meet caller and summary: " <<  caller << "\n");
+
       // --- matching callsite's lhs and callee's return value 
-      auto lhs_opt = cs.get_lhs_name ();
-      auto ret_opt = summ.get_ret_val ();
-      if (lhs_opt && ret_opt) {
-        caller.assign(*lhs_opt, z_lin_exp_t (z_var_t (*ret_opt)));
-        actuals.insert (*lhs_opt); formals.insert (*ret_opt);
+      // XXX: propagate from the return values in the callee to the
+      // lhs variables of the callsite in the caller.
+      auto const &caller_vts = cs.get_lhs ();
+      auto const &callee_rs = summ.get_ret_vals ();
+      assert (caller_vts.size () == callee_rs.size ());
+      
+      auto caller_it = caller_vts.begin();
+      auto caller_et = caller_vts.end();
+      auto callee_it = callee_rs.begin();
+      
+      // XXX: propagating up
+      for (; caller_it != caller_et; ++caller_it, ++callee_it){
+        auto vt = *caller_it;
+        auto r = *callee_it;
+
+        CRAB_LOG ("inter",
+                  crab::outs () << "\t\tPropagate from callee to caller " 
+                                << vt.first << ":=" << r << "\n");
+        
+        if (vt.second == INT_TYPE) {
+          caller.assign(vt.first, z_var_t (r));
+        } else if (vt.second == PTR_TYPE) {
+          caller.pointer_assign (vt.first, r, z_number (0));
+        } else { 
+          caller.array_assign (vt.first, r, vt.second);
+        }
+
+        actuals.insert (vt.first); formals.insert (r);
       }
-      CRAB_LOG ("inter", 
-                crab::outs() << "--- After matching formals and actuals: " 
-                <<  caller << "\n");
+
       // --- remove from caller only formal parameters so we can keep
       //     as much context from the caller as possible
-      std::set<varname_t> s;
-      boost::set_difference (formals, actuals, std::inserter(s, s.end ()));
-      domains::domain_traits<abs_dom_t>::forget (caller, s.begin (), s.end ());
+      std::set<varname_t> vs;
+      boost::set_difference (formals, actuals, std::inserter(vs, vs.end ()));
+      domains::domain_traits<abs_dom_t>::forget (caller, vs.begin (), vs.end ());
+
+      CRAB_LOG ("inter", 
+                crab::outs() << "\t\tAfter forgetting formal parameters {";
+                for (auto v: vs) crab::outs () << v << ";";
+                crab::outs () << "}=" <<  caller << "\n");
     }
 
    public:
 
-    bu_summ_num_abs_transformer(abs_dom_t& inv, SumTable* sum_tbl)
+    bu_summ_abs_transformer(abs_dom_t& inv, SumTable* sum_tbl)
         : num_abs_transform_t(inv), 
           m_sum_tbl (sum_tbl) { }
     
-    bu_summ_num_abs_transformer(abs_dom_t& inv, SumTable* sum_tbl, CallCtxTable*)
+    bu_summ_abs_transformer(abs_dom_t& inv, SumTable* sum_tbl, CallCtxTable*)
         : num_abs_transform_t(inv), 
           m_sum_tbl (sum_tbl) { }
 
     abs_dom_t& inv () { return this->m_inv; }    
 
+    void exec (havoc_t& stmt) { num_abs_transform_t::exec (stmt); }
     void exec (z_bin_op_t& stmt) { num_abs_transform_t::exec (stmt); }
     void exec (z_select_t& stmt) { num_abs_transform_t::exec (stmt); }
     void exec (z_assign_t& stmt) { num_abs_transform_t::exec (stmt); }
     void exec (z_assume_t& stmt) { num_abs_transform_t::exec (stmt); }
-    void exec (havoc_t& stmt) { num_abs_transform_t::exec (stmt); }
     void exec (unreach_t& stmt) { num_abs_transform_t::exec (stmt); }
     void exec (z_assert_t& stmt) { num_abs_transform_t::exec (stmt); }
-    void exec (z_arr_init_t &stmt) { num_abs_transform_t::exec (stmt); }
-    void exec (z_assume_arr_t &stmt) { num_abs_transform_t::exec (stmt); }
-    void exec (z_arr_store_t &stmt) { num_abs_transform_t::exec (stmt); }
-    void exec (z_arr_load_t  &stmt) { num_abs_transform_t::exec (stmt); }
+    void exec (arr_assume_t &stmt) { num_abs_transform_t::exec (stmt); }
+    void exec (arr_store_t &stmt) { num_abs_transform_t::exec (stmt); }
+    void exec (arr_load_t  &stmt) { num_abs_transform_t::exec (stmt); }
+    void exec (arr_assign_t &stmt) { num_abs_transform_t::exec (stmt); }
+    void exec (ptr_load_t &stmt) { num_abs_transform_t::exec (stmt); }
+    void exec (ptr_store_t &stmt) { num_abs_transform_t::exec (stmt); }
+    void exec (ptr_assign_t &stmt) { num_abs_transform_t::exec (stmt); }
+    void exec (ptr_object_t &stmt) { num_abs_transform_t::exec (stmt); }
+    void exec (ptr_function_t &stmt) { num_abs_transform_t::exec (stmt); }
+    void exec (ptr_null_t &stmt) { num_abs_transform_t::exec (stmt); }
+    void exec (ptr_assume_t &stmt) { num_abs_transform_t::exec (stmt); }
+    void exec (ptr_assert_t &stmt) { num_abs_transform_t::exec (stmt); }
 
     // If there is a summary for the callee we use it to compute the
     // caller's summary
@@ -444,32 +526,20 @@ namespace crab {
       }
 
       if (m_sum_tbl->hasSummary (cs)) {
-        auto &sum = m_sum_tbl->get (cs);
-        auto pars = sum.get_params ();
-        if (pars.size () == cs.get_num_args ()) {
-          reuse_summary (this->m_inv, cs, sum);
-          return;
-        }
-        else
-          CRAB_WARN ("Ignored callsite due to mismatch of caller and callee's parameters");
-      }
-      else
+        auto &summ = m_sum_tbl->get (cs);
+        reuse_summary (this->m_inv, cs, summ);
+      } else {
         CRAB_LOG("inter",
-                 crab::outs() << "Summary not found for " << cs << "\n");
-      
-      auto lhs_opt = cs.get_lhs_name ();
-      // TODO/FIXME: havoc also all the pointer actual parameters.
-      if (lhs_opt) { // havoc 
-        this->m_inv -= *lhs_opt;
+                 crab::outs() << "\tSummary not found for " << cs << "\n");
+        for (auto vt: cs.get_lhs())
+          this->m_inv -= vt.first;  // havoc 
       }
     }
   }; 
 
   /// Conversion between domains
   template<typename Domain>
-  inline void convert_domains (Domain from, Domain& to) {
-    to = from;
-  }
+  inline void convert_domains (Domain from, Domain& to) { to = from; }
 
   template<typename Domain1, typename Domain2>
   inline void convert_domains (Domain1 from, Domain2& to) {
@@ -482,12 +552,11 @@ namespace crab {
   }
 
   // Transformer specialized for performing top-down forward
-  // traversal while reusing numerical summaries at the callsites
-  // TODO/FIXME: pointer operands are ignored
+  // traversal while reusing numerical summaries at the callsites  
   template<typename SumTable, typename CallCtxTable>
-  class td_summ_num_abs_transformer: 
-        public num_abs_transformer<typename CallCtxTable::abs_domain_t,
-                                  SumTable, CallCtxTable> {
+  class td_summ_abs_transformer: 
+        public abs_transformer<typename CallCtxTable::abs_domain_t,
+                               SumTable, CallCtxTable> {
                                    
    public:
 
@@ -497,7 +566,7 @@ namespace crab {
 
    public:
 
-    typedef num_abs_transformer<abs_dom_t, SumTable,CallCtxTable> num_abs_transform_t;
+    typedef abs_transformer<abs_dom_t, SumTable,CallCtxTable> num_abs_transform_t;
     typedef typename num_abs_transform_t::abs_transform_t abs_transform_t;
 
     using typename abs_transform_t::varname_t;
@@ -505,120 +574,141 @@ namespace crab {
     using typename abs_transform_t::z_lin_exp_t;
     using typename abs_transform_t::z_lin_cst_t;
     using typename abs_transform_t::z_lin_cst_sys_t;
+
+    using typename abs_transform_t::havoc_t;
     using typename abs_transform_t::z_bin_op_t;
     using typename abs_transform_t::z_assign_t;
     using typename abs_transform_t::z_assume_t;
     using typename abs_transform_t::z_select_t;
-    using typename abs_transform_t::havoc_t;
     using typename abs_transform_t::unreach_t;
     using typename abs_transform_t::z_assert_t;
-    using typename abs_transform_t::z_arr_init_t;
-    using typename abs_transform_t::z_assume_arr_t;
-    using typename abs_transform_t::z_arr_load_t;
-    using typename abs_transform_t::z_arr_store_t;
+    using typename abs_transform_t::arr_assume_t;
+    using typename abs_transform_t::arr_load_t;
+    using typename abs_transform_t::arr_store_t;
+    using typename abs_transform_t::arr_assign_t;
     using typename abs_transform_t::callsite_t;
+    using typename abs_transform_t::ptr_load_t;
+    using typename abs_transform_t::ptr_store_t;
+    using typename abs_transform_t::ptr_assign_t;
+    using typename abs_transform_t::ptr_object_t;
+    using typename abs_transform_t::ptr_function_t;
+    using typename abs_transform_t::ptr_null_t;
+    using typename abs_transform_t::ptr_assume_t;
+    using typename abs_transform_t::ptr_assert_t;
 
    private:
 
-    typedef bu_summ_num_abs_transformer<SumTable,CallCtxTable> bu_abs_transformer_t;
+    typedef bu_summ_abs_transformer<SumTable,CallCtxTable> bu_abs_transformer_t;
 
     SumTable* m_sum_tbl;
     CallCtxTable* m_call_tbl;
 
    public:
     
-    td_summ_num_abs_transformer (abs_dom_t& inv, 
-                                 SumTable* sum_tbl, CallCtxTable* call_tbl)
+    td_summ_abs_transformer (abs_dom_t& inv, 
+                             SumTable* sum_tbl, CallCtxTable* call_tbl)
         : num_abs_transform_t(inv), 
           m_sum_tbl (sum_tbl),
           m_call_tbl (call_tbl) { }
     
     abs_dom_t& inv () { return this->m_inv; }    
-    
+
+    void exec (havoc_t& stmt) { num_abs_transform_t::exec (stmt); }    
     void exec (z_bin_op_t& stmt) { num_abs_transform_t::exec (stmt); }
     void exec (z_select_t& stmt) { num_abs_transform_t::exec (stmt); }
     void exec (z_assign_t& stmt) { num_abs_transform_t::exec (stmt); }
     void exec (z_assume_t& stmt) { num_abs_transform_t::exec (stmt); }
-    void exec (havoc_t& stmt) { num_abs_transform_t::exec (stmt); }
     void exec (unreach_t& stmt) { num_abs_transform_t::exec (stmt); }
     void exec (z_assert_t& stmt) { num_abs_transform_t::exec (stmt); }
-    void exec (z_arr_init_t &stmt) { num_abs_transform_t::exec (stmt); }
-    void exec (z_assume_arr_t &stmt) { num_abs_transform_t::exec (stmt); }
-    void exec (z_arr_store_t &stmt) { num_abs_transform_t::exec (stmt); }
-    void exec (z_arr_load_t  &stmt) { num_abs_transform_t::exec (stmt); }
+    void exec (arr_assume_t &stmt) { num_abs_transform_t::exec (stmt); }
+    void exec (arr_store_t &stmt) { num_abs_transform_t::exec (stmt); }
+    void exec (arr_load_t  &stmt) { num_abs_transform_t::exec (stmt); }
+    void exec (arr_assign_t  &stmt) { num_abs_transform_t::exec (stmt); }
+    void exec (ptr_load_t &stmt) { num_abs_transform_t::exec (stmt); }
+    void exec (ptr_store_t &stmt) { num_abs_transform_t::exec (stmt); }
+    void exec (ptr_assign_t &stmt) { num_abs_transform_t::exec (stmt); }
+    void exec (ptr_object_t &stmt) { num_abs_transform_t::exec (stmt); }
+    void exec (ptr_function_t &stmt) { num_abs_transform_t::exec (stmt); }
+    void exec (ptr_null_t &stmt) { num_abs_transform_t::exec (stmt); }
+    void exec (ptr_assume_t &stmt) { num_abs_transform_t::exec (stmt); }
+    void exec (ptr_assert_t &stmt) { num_abs_transform_t::exec (stmt); }
 
     void exec (callsite_t &cs) {
       
       if (!m_sum_tbl) {
         CRAB_WARN ("The summary table is empty");
-      }
-      else if (m_sum_tbl->hasSummary (cs)) {
+      } else if (m_sum_tbl->hasSummary (cs)) {
+        auto &summ = m_sum_tbl->get (cs);
+
+        // error if cs and function declaration associated with summ
+        // are not type consistent
+        summ.check_type_consistency (cs);
         
-        auto &sum = m_sum_tbl->get (cs);
-        auto pars = sum.get_params ();
-
-        if (pars.size () == cs.get_num_args ()) {
-
-          ///////
-          /// Generate the callee context and store it.
-          ///////
-          abs_dom_t callee_ctx_inv (this->m_inv);
-          // --- matching formal and actual parameters
-          unsigned i=0;
-          for (auto p : pars) {
-            auto a = cs.get_arg_name (i);
-            if (!(a == p)) {
-              callee_ctx_inv += (z_var_t (p) == z_var_t (a));
-            }
-            ++i;
+        CRAB_LOG ("inter", 
+                  crab::outs () << "    Pluging caller context into callee\n");
+        ///////
+        /// Generate the callee context and store it.
+        ///////
+        abs_dom_t callee_ctx_inv (this->m_inv);
+        // --- matching formal and actual parameters
+        unsigned i=0;
+        auto pars = summ.get_params ();
+        // XXX: propagating down 
+        for (auto p : pars) {
+          auto a = cs.get_arg_name (i);
+          if (!(a == p)) {
+            if (cs.get_arg_type(i) == INT_TYPE) {
+              callee_ctx_inv.assign (p, z_var_t (a));
+            } else if (cs.get_arg_type(i) == PTR_TYPE) { 
+              callee_ctx_inv.pointer_assign (p, a, z_number (0));
+            } else {
+              callee_ctx_inv.array_assign (p, a, cs.get_arg_type (i));
+            } 
           }
-          // --- project only onto formal parameters
-          domains::domain_traits<abs_dom_t>::project (callee_ctx_inv, 
-                                                      pars.begin (),
-                                                      pars.end ());
-          // --- store the callee context
-          CRAB_LOG ("inter", 
-                    crab::outs() << "--- Callee context stored: " 
-                                 << callee_ctx_inv << "\n");
-          m_call_tbl->insert (cs, callee_ctx_inv);          
-
-          /////
-          // Generate the continuation at the caller
-          /////
-
-          // --- convert this->m_inv to the language of summ_abs_dom_t (sum)
-          summ_abs_domain_t caller_ctx_inv;
-          convert_domains(this->m_inv, caller_ctx_inv);
-          CRAB_LOG ("inter",
-                    crab::outs() << "--- Caller context: " <<  caller_ctx_inv << "\n");
-                    
-          // --- reuse summary to do the continuation
-          bu_abs_transformer_t::reuse_summary (caller_ctx_inv, cs, sum);
-          CRAB_LOG ("inter",
-                    crab::outs() << "--- Caller context after plugin summary: " 
-                                 << caller_ctx_inv << "\n");
-
-          // --- convert back inv to the language of abs_dom_t
-          convert_domains(caller_ctx_inv, this->m_inv);
-          CRAB_LOG ("inter",
-                    crab::outs() << "--- Caller continuation after " 
-                                 <<  cs << "=" <<  this->m_inv << "\n");
-          return;
+          ++i;
         }
-        else 
-          CRAB_WARN ("mismatch of parameters between caller and callee");
-      }
-      else {
-        // no summary found: do nothing
-      }
 
-      // We could not reuse a summary so we just havoc lhs of the call
-      // site. TODO/FIXME: havoc also all the pointer actual
-      // parameters.
-      auto lhs_opt = cs.get_lhs_name ();
-      if (lhs_opt) {
-        this->m_inv -= *lhs_opt;
+        // --- project only onto formal parameters
+        domains::domain_traits<abs_dom_t>::project (callee_ctx_inv, 
+                                                    pars.begin (),
+                                                    pars.end ());
+        // --- store the callee context
+        CRAB_LOG ("inter", 
+                  crab::outs() << "\t\tCallee context stored: " 
+                               << callee_ctx_inv << "\n");
+        m_call_tbl->insert (cs, callee_ctx_inv);          
+        
+        /////
+        // Generate the continuation at the caller
+        /////
+        
+        // --- convert this->m_inv to the language of summ_abs_dom_t (summ)
+        summ_abs_domain_t caller_ctx_inv;
+        convert_domains(this->m_inv, caller_ctx_inv);
+        
+        CRAB_LOG ("inter",
+                  crab::outs() << "\t\tCaller context: " <<  caller_ctx_inv << "\n");
+        
+        // --- reuse summary to do the continuation
+        bu_abs_transformer_t::reuse_summary (caller_ctx_inv, cs, summ);
+        CRAB_LOG ("inter",
+                  crab::outs() << "\t\tCaller context after plugin summary: " 
+                               << caller_ctx_inv << "\n");
+        
+        // --- convert back inv to the language of abs_dom_t
+        convert_domains(caller_ctx_inv, this->m_inv);
+        CRAB_LOG ("inter",
+                  crab::outs() << "\t\tCaller continuation after " 
+                               <<  cs << "=" <<  this->m_inv << "\n");
+        return;
+      } else {
+        // --- no summary found: do nothing
       }
+        
+      // We could not reuse a summary so we just havoc lhs of the call
+      // site.
+      for (auto vt: cs.get_lhs())
+        this->m_inv -= vt.first; 
     }
   }; 
 
