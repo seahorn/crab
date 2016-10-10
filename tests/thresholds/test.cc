@@ -92,7 +92,7 @@ int main (int argc, char**argv){
     crab::outs() << *cfg << "\n";
 
     { 
-      num_fwd_analyzer<cfg_ref_t,term_domain_t,variable_factory_t>::type a (*cfg, vfac, nullptr, 1, 2, 0);
+      fwd_analyzer_impl<cfg_ref_t,term_domain_t,variable_factory_t>::type a (*cfg, vfac, nullptr, 1, 2, 0);
       // Run fixpoint 
       term_domain_t inv = term_domain_t::top ();
       a.Run (inv);
@@ -107,7 +107,7 @@ int main (int argc, char**argv){
     { 
       typename cfg_t::thresholds_t ts = cfg->initialize_thresholds_for_widening (50);
       crab::outs() << "Thresholds=" << ts << "\n";
-      num_fwd_analyzer<cfg_ref_t,term_domain_t,variable_factory_t>::type a (*cfg, vfac, nullptr, 1, 2, 20);
+      fwd_analyzer_impl<cfg_ref_t,term_domain_t,variable_factory_t>::type a (*cfg, vfac, nullptr, 1, 2, 20);
       // Run fixpoint 
       term_domain_t inv = term_domain_t::top ();
       a.Run (inv);

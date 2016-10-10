@@ -28,7 +28,7 @@ namespace crab {
       typedef typename CFG::basic_block_label_t basic_block_label_t;
       typedef typename CFG::varname_t varname_t;
       typedef typename CFG::basic_block_t basic_block_t;
-      typedef typename num_fwd_analyzer<CFG, AbsDomain, VarFactory>::type fwd_analyzer_t;
+      typedef typename fwd_analyzer_impl<CFG, AbsDomain, VarFactory>::type fwd_analyzer_t;
       typedef typename fwd_analyzer_t::liveness_t liveness_t;
       typedef conc_sys<ThreadId, CFG> conc_sys_t;
       

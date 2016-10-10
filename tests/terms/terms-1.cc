@@ -52,7 +52,7 @@ int main (int argc, char** argv )
   cfg->simplify ();
   crab::outs() << *cfg << "\n";
 
-  num_fwd_analyzer <cfg_ref_t, interval_domain_t, variable_factory_t>::type itv_a (*cfg, vfac, nullptr);
+  fwd_analyzer_impl <cfg_ref_t, interval_domain_t, variable_factory_t>::type itv_a (*cfg, vfac, nullptr);
   itv_a.Run (interval_domain_t::top ());
   crab::outs() << "Results with intervals:\n";
   for (auto &b : *cfg)
@@ -65,7 +65,7 @@ int main (int argc, char** argv )
     crab::CrabStats::reset();
   }
 
-  num_fwd_analyzer <cfg_ref_t, term_domain_t, variable_factory_t>::type term_a (*cfg, vfac, nullptr);
+  fwd_analyzer_impl <cfg_ref_t, term_domain_t, variable_factory_t>::type term_a (*cfg, vfac, nullptr);
   term_a.Run (term_domain_t::top ());
   crab::outs() << "Results with term<interval> domain:\n";
   for (auto &b : *cfg)

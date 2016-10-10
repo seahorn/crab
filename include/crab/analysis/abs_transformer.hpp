@@ -140,13 +140,11 @@ namespace crab {
   };
 
 
-  //! Abstract transformer specialized for numerical abstract domains
-  //! with arrays and pointers.
-  // XXX: num_abs_transformer should be renamed to
-  //      abs_transformer_impl or something like that.
+  //! Abstract transformer specialized for numerical, arrays and
+  //! pointers operations.
   template<typename NumAbsDomain, 
            typename SumTable /*unused*/, typename CallCtxTable /*unused*/>
-  class num_abs_transformer: 
+  class abs_transformer: 
         public abs_transformer_api <typename CallCtxTable::abs_domain_t::varname_t>
   {
 
@@ -210,10 +208,10 @@ namespace crab {
     
    public:
 
-    num_abs_transformer (abs_dom_t& inv): 
+    abs_transformer (abs_dom_t& inv): 
         m_inv (inv) { }
     
-    num_abs_transformer (abs_dom_t& inv, SumTable*, CallCtxTable*): 
+    abs_transformer (abs_dom_t& inv, SumTable*, CallCtxTable*): 
         m_inv (inv) { }
 
     abs_dom_t& inv () { return m_inv; }
@@ -354,9 +352,9 @@ namespace crab {
 
   //! Transformer specialized for computing numerical summaries
   template<typename SumTable, typename CallCtxTable /*unused*/>
-  class bu_summ_num_abs_transformer: 
-        public num_abs_transformer <typename SumTable::abs_domain_t,
-                                   SumTable, CallCtxTable> {
+  class bu_summ_abs_transformer: 
+        public abs_transformer <typename SumTable::abs_domain_t,
+                                SumTable, CallCtxTable> {
                                    
    public:
 
@@ -366,7 +364,7 @@ namespace crab {
 
    public:
 
-    typedef num_abs_transformer <abs_dom_t, SumTable, CallCtxTable> num_abs_transform_t;
+    typedef abs_transformer <abs_dom_t, SumTable, CallCtxTable> num_abs_transform_t;
     typedef typename num_abs_transform_t::abs_transform_t abs_transform_t;
 
     using typename abs_transform_t::varname_t;
@@ -489,11 +487,11 @@ namespace crab {
 
    public:
 
-    bu_summ_num_abs_transformer(abs_dom_t& inv, SumTable* sum_tbl)
+    bu_summ_abs_transformer(abs_dom_t& inv, SumTable* sum_tbl)
         : num_abs_transform_t(inv), 
           m_sum_tbl (sum_tbl) { }
     
-    bu_summ_num_abs_transformer(abs_dom_t& inv, SumTable* sum_tbl, CallCtxTable*)
+    bu_summ_abs_transformer(abs_dom_t& inv, SumTable* sum_tbl, CallCtxTable*)
         : num_abs_transform_t(inv), 
           m_sum_tbl (sum_tbl) { }
 
@@ -556,9 +554,9 @@ namespace crab {
   // Transformer specialized for performing top-down forward
   // traversal while reusing numerical summaries at the callsites  
   template<typename SumTable, typename CallCtxTable>
-  class td_summ_num_abs_transformer: 
-        public num_abs_transformer<typename CallCtxTable::abs_domain_t,
-                                  SumTable, CallCtxTable> {
+  class td_summ_abs_transformer: 
+        public abs_transformer<typename CallCtxTable::abs_domain_t,
+                               SumTable, CallCtxTable> {
                                    
    public:
 
@@ -568,7 +566,7 @@ namespace crab {
 
    public:
 
-    typedef num_abs_transformer<abs_dom_t, SumTable,CallCtxTable> num_abs_transform_t;
+    typedef abs_transformer<abs_dom_t, SumTable,CallCtxTable> num_abs_transform_t;
     typedef typename num_abs_transform_t::abs_transform_t abs_transform_t;
 
     using typename abs_transform_t::varname_t;
@@ -600,15 +598,15 @@ namespace crab {
 
    private:
 
-    typedef bu_summ_num_abs_transformer<SumTable,CallCtxTable> bu_abs_transformer_t;
+    typedef bu_summ_abs_transformer<SumTable,CallCtxTable> bu_abs_transformer_t;
 
     SumTable* m_sum_tbl;
     CallCtxTable* m_call_tbl;
 
    public:
     
-    td_summ_num_abs_transformer (abs_dom_t& inv, 
-                                 SumTable* sum_tbl, CallCtxTable* call_tbl)
+    td_summ_abs_transformer (abs_dom_t& inv, 
+                             SumTable* sum_tbl, CallCtxTable* call_tbl)
         : num_abs_transform_t(inv), 
           m_sum_tbl (sum_tbl),
           m_call_tbl (call_tbl) { }

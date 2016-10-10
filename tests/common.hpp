@@ -121,7 +121,7 @@ namespace {
       live=&live_;
     }
     // Run fixpoint 
-    typename crab::analyzer::num_fwd_analyzer
+    typename crab::analyzer::fwd_analyzer_impl
     <crab::cfg_impl::cfg_ref_t,Dom,crab::cfg_impl::variable_factory_t>::type 
     a (*cfg, vfac, live, widening, narrowing, jump_set_size);
     Dom inv = Dom::top ();

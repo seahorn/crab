@@ -232,18 +232,15 @@ namespace crab {
       }
     }; 
 
-    //! Specialized type for a numerical forward analyzer with array
-    //! and pointers
-    // XXX: num_fwd_analyzer should be renamed to something like
-    //      fwd_analyzer_impl. The prefix num is for historical
-    //      reasons (originally supported only numerical operations)
+    //! Specialized type for a forward analyzer that can infer
+    //! invariants involving numerical, array and pointers operations.
     template<typename CFG, typename AbsNumDomain, typename VarFactory>
-    class num_fwd_analyzer {
+    class fwd_analyzer_impl {
      private:
 
-      typedef num_abs_transformer<AbsNumDomain,
-                                  summary_table<CFG,AbsNumDomain>,
-                                  call_ctx_table<CFG,AbsNumDomain> > num_abs_tr_t; 
+      typedef abs_transformer<AbsNumDomain,
+                              summary_table<CFG,AbsNumDomain>,
+                              call_ctx_table<CFG,AbsNumDomain> > num_abs_tr_t; 
      public:
 
       typedef fwd_analyzer<CFG, num_abs_tr_t, VarFactory> type;

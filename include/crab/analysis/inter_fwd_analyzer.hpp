@@ -54,8 +54,8 @@ namespace crab {
 
      public:
 
-      typedef bu_summ_num_abs_transformer<summ_tbl_t, call_tbl_t> bu_abs_tr;
-      typedef td_summ_num_abs_transformer<summ_tbl_t, call_tbl_t> td_abs_tr;
+      typedef bu_summ_abs_transformer<summ_tbl_t, call_tbl_t> bu_abs_tr;
+      typedef td_summ_abs_transformer<summ_tbl_t, call_tbl_t> td_abs_tr;
       typedef boost::shared_ptr<td_abs_tr> td_abs_tr_ptr;
       typedef fwd_analyzer<cfg_t, bu_abs_tr, VarFactory> bu_analyzer;
       typedef fwd_analyzer<cfg_t, td_abs_tr, VarFactory> td_analyzer;

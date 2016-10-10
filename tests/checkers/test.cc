@@ -92,9 +92,9 @@ cfg_t* cfg2 (variable_factory_t &vfac)  {
 void check (cfg_ref_t cfg, variable_factory_t& vfac) {
 
   // Each checker is associated to one analyzer
-  typedef num_fwd_analyzer<cfg_ref_t, num_null_domain_t, variable_factory_t>::type null_analyzer_t;
+  typedef fwd_analyzer_impl<cfg_ref_t, num_null_domain_t, variable_factory_t>::type null_analyzer_t;
   typedef intra_checker<null_analyzer_t> null_checker_t;
-  typedef num_fwd_analyzer<cfg_ref_t, sdbm_domain_t, variable_factory_t>::type num_analyzer_t;
+  typedef fwd_analyzer_impl<cfg_ref_t, sdbm_domain_t, variable_factory_t>::type num_analyzer_t;
   typedef intra_checker<num_analyzer_t> num_checker_t;
 
   // We can have multiple properties per analyzer
