@@ -13,6 +13,24 @@
  * as array with scalar variables.
  ******************************************************************************/
 
+/* IMPORTANT
+ * JN: the implementation works for toy programs but two main things
+ * must to be done for being able to analyze real programs:
+ *
+ * 1) landmarks must be kept as local state as part of each abstract
+ *    state.
+ * 
+ * 2) reduction between scalar and weight domains must be done
+ *    incrementally. For that, we need some assumptions about the
+ *    underlying scalar domain. For instance, if we assume zones then
+ *    after each operation we know which are the indexes affected by
+ *    the operation. We can use that information for doing reduction
+ *    only on those indexes. This would remove the need of having
+ *    methods such as array_sgraph_domain_traits::is_unsat and
+ *    array_sgraph_domain_traits::active_variables which are anyway
+ *    domain dependent.
+ */ 
+
 #ifndef ARRAY_SPARSE_GRAPH_HPP
 #define ARRAY_SPARSE_GRAPH_HPP
 
@@ -28,9 +46,11 @@
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/domains/intervals.hpp>
 
-// XXX: if expression domain is a template parameter no need to
-// include this
+// XXX: if expression domain is a template parameter no need to include
 #include <crab/domains/term_equiv.hpp>
+// XXX: for customized propagations between weight and scalar domains
+#include <crab/domains/combined_domains.hpp>
+#include <crab/domains/nullity.hpp>
 
 #include <boost/unordered_map.hpp>
 #include <boost/shared_ptr.hpp>
@@ -794,6 +814,92 @@ namespace crab {
       }
     };
 
+    namespace array_sparse_graph_impl {
+
+      // JN: I do not know how to propagate arbitrary invariants
+      // between weight and scalar domains in a domain-independent
+      // manner. Here, we define propagations between specific
+      // domains.
+
+      template <typename Dom>
+      interval<typename Dom::number_t> 
+      eval_interval(Dom dom, typename Dom::linear_expression_t e)
+      {
+        interval<typename Dom::number_t>  r = e.constant();
+        for (auto p : e)
+          r += p.first * dom[p.second.name()];
+        return r;
+      }
+
+      template<typename Dom1, typename Dom2>
+      void propagate_between_weight_and_scalar(Dom1 src, typename Dom1::varname_t src_var, 
+                                               variable_type ty, 
+                                               Dom2 &dst, typename Dom2::varname_t dst_var) {
+        if (ty == ARR_INT_TYPE) {
+          // --- XXX: simplification wrt Gange et.al.:
+          //     Only non-relational numerical invariants are
+          //     propagated from the graph domain to the scalar domain.
+          dst.set (dst_var, eval_interval(src, typename Dom1::variable_t(src_var))); 
+        } else {
+          CRAB_WARN ("Missing propagation between weight and scalar domains");
+        }
+      }
+
+      template<typename BaseDom>
+      void propagate_between_weight_and_scalar(numerical_nullity_domain<BaseDom> src,
+                                               typename BaseDom::varname_t src_var, 
+                                               variable_type ty, 
+                                               numerical_nullity_domain<BaseDom> &dst, 
+                                               typename BaseDom::varname_t dst_var) {
+        if (ty == ARR_INT_TYPE) {
+          // --- XXX: simplification wrt Gange et.al.:
+          //     Only non-relational numerical invariants are
+          //     propagated from the graph domain to the scalar domain.
+          dst.set (dst_var, eval_interval(src, typename BaseDom::variable_t(src_var))); 
+        } else if (ty == ARR_PTR_TYPE) {
+          auto &null_dom = dst.second ();
+          null_dom.set_nullity (dst_var, src.get_nullity (src_var));
+        } else {
+          CRAB_WARN ("Missing propagation between weight and scalar domains");
+        }
+      }
+
+      template<typename BaseDom>
+      void propagate_between_weight_and_scalar(nullity_domain<typename BaseDom::number_t,
+                                                              typename BaseDom::varname_t> src,
+                                               typename BaseDom::varname_t src_var, 
+                                               variable_type ty, 
+                                               numerical_nullity_domain<BaseDom> &dst, 
+                                               typename BaseDom::varname_t dst_var) {
+        if (ty == ARR_INT_TYPE) {
+          // do nothing
+        } else if (ty == ARR_PTR_TYPE) {
+          auto &null_dom = dst.second ();
+          null_dom.set_nullity (dst_var, src.get_nullity (src_var));
+        } else {
+          CRAB_WARN ("Missing propagation between weight and scalar domains");
+        }
+      }
+
+      template<typename BaseDom>
+      void propagate_between_weight_and_scalar(numerical_nullity_domain<BaseDom> src, 
+                                               typename BaseDom::varname_t src_var, 
+                                               variable_type ty, 
+                                               nullity_domain<typename BaseDom::number_t,
+                                                              typename BaseDom::varname_t> &dst,
+                                               typename BaseDom::varname_t dst_var) {
+        if (ty == ARR_INT_TYPE) {
+          // do nothing
+        } else if (ty == ARR_PTR_TYPE) {
+          dst.set_nullity (dst_var, src.second ().get_nullity (src_var));
+        } else {
+          CRAB_WARN ("Missing propagation between weight and scalar domains");
+        }
+      }
+
+    } /* end array_sparse_graph_impl */
+    
+
     // Wrapper which uses shared references with copy-on-write.
     template<class Vertex, class Weight, bool IsDistWeight>
     class array_sparse_graph : public writeable {
@@ -1325,7 +1431,13 @@ namespace crab {
         _scalar += make_prime_relation(lm_v_prime, lm_v);
 
         // reduce between _scalar and the array graph
-        if (!reduce(_scalar, _g)) { // FIXME: incremental version
+        if (!reduce(_scalar, _g)) { 
+          // FIXME: incremental version
+          // TODO: we can assume that the scalar domain is zones so
+          // that we can return the affected edges after each
+          // operation and apply reduction only on those edges. That
+          // would suffice for now. If the scalar domain is not zones
+          // then we don't reduce incrementally.
           set_to_bottom();
         }
 
@@ -1348,7 +1460,6 @@ namespace crab {
       // By active we mean current variables that are kept track by
       // the scalar domain.
       void get_active_landmarks(NumDom &scalar, std::vector<landmark_ref_t> & landmarks) const {
-        /// FIXME: avoid repeating this loop over and over
         landmarks.reserve(cst_landmarks.size());
         for (auto p: cst_landmarks) { 
           landmarks.push_back (p.first);
@@ -1504,14 +1615,6 @@ namespace crab {
         }
       }
 
-      interval_t eval_interval(linear_expression_t e)
-      {
-        interval_t r = e.constant();
-        for (auto p : e)
-          r += p.first * _scalar[p.second.name()];
-        return r;
-      }
-
       // x := x op k 
       template<typename VarOrNum>
       void apply_one_variable (operation_t op, VariableName x, VarOrNum k) { 
@@ -1623,7 +1726,6 @@ namespace crab {
         _expressions.apply (operation_t::OP_DIVISION, no, no, n);
         
         // -- simplify the expression domain 
-        // FIXME: should be part of array_sgraph_domain_traits 
         bool simp_done = _expressions.simplify (no);
 
         CRAB_LOG("array-sgraph-domain-norm",
@@ -1658,13 +1760,6 @@ namespace crab {
         return std::make_pair(no, true);
       }
 
-      // Add edge from s to d with weight arr = val
-      void array_assume (VariableName arr, landmark_ref_t s, landmark_ref_t d, linear_expression_t val)
-      {
-        Weight w;
-        w.set(arr, eval_interval(val));
-        _g.update_edge(s, w, d);        
-      }
 
      public:
 
@@ -2134,8 +2229,23 @@ namespace crab {
 
       // array_operators_api       
 
-      virtual void array_assume (VariableName a, variable_type a_ty, VariableName var) override {
-        CRAB_WARN (" array_graph_domain assume_array not implemented");
+      virtual void array_assume (VariableName a, variable_type a_ty, 
+                                 linear_expression_t lb_idx, linear_expression_t ub_idx, 
+                                 VariableName var) override {
+        
+        auto lb_var_opt = lb_idx.get_variable ();
+        auto ub_var_opt = ub_idx.get_variable ();
+
+        if (lb_idx.is_constant () && ub_idx.is_constant ())
+          array_assume (a, a_ty, lb_idx.constant (), ub_idx.constant (), var);
+        else if (lb_idx.is_constant () && ub_var_opt)
+          array_assume (a, a_ty, lb_idx.constant (), (*ub_var_opt).name(), var);
+        else if (lb_var_opt && ub_idx.is_constant ())
+          array_assume (a, a_ty, (*lb_var_opt).name(), ub_idx.constant (), var);
+        else if (lb_var_opt && ub_var_opt)
+          array_assume (a, a_ty, (*lb_var_opt).name(), (*ub_var_opt).name(), var);
+        else
+          CRAB_WARN ("array_sparse_graph only supports assume_array with number or constant indexes");
       }
 
       virtual void array_load (VariableName lhs, VariableName a, crab::variable_type a_ty,
@@ -2172,17 +2282,15 @@ namespace crab {
         // }
         // #endif 
 
-        // --- XXX: simplification wrt Gange et.al.:
-        //     Only non-relational invariants are propagated from the
-        //     graph domain to the scalar domain.
         Weight w = array_edge (norm_idx);
 
         if (a_ty == ARR_INT_TYPE) {
-          _scalar.set (lhs, w[a]);
+          // Only non-relational numerical invariants are
+          // propagated from the graph domain to the expressions domain.
           _expressions.set (lhs, w[a]);
-        } else {
-          CRAB_WARN ("TODO: array load of pointers");
         }
+
+        array_sparse_graph_impl::propagate_between_weight_and_scalar(w, a, a_ty, _scalar, lhs);
         
         // if normalize_offset created a landmark we remove it here to
         // keep smaller array graph
@@ -2211,16 +2319,9 @@ namespace crab {
           return;
         }
 
-        // --- XXX: simplification wrt Gange et.al.:
-        //     Only non-relational invariants are passed from the scalar
-        //     domain to the graph domain.
-        Weight w;
-        if (a_ty == ARR_INT_TYPE) {
-          w.set(a, eval_interval (variable_t(val)));
-        } else {
-          CRAB_WARN ("TODO: array store of pointers");
-        }
-          
+        Weight w = Weight::top ();
+        array_sparse_graph_impl::propagate_between_weight_and_scalar(_scalar, val, a_ty, w, a);
+
         auto p = normalize_offset ((*vi).name(), nbytes);
         VariableName norm_idx = p.first;
 
@@ -2237,7 +2338,7 @@ namespace crab {
 
       // T1 and T2 are either VariableName or z_number
       template<typename T1, typename T2>
-      void array_assume (VariableName arr, T1 src, T2 dst, linear_expression_t val)
+      void array_assume (VariableName arr, variable_type arr_ty, T1 src, T2 dst, VariableName val)
       {
         if (!is_landmark (src)) {
           crab::outs () << "WARNING no landmark found for " << src << "\n";
@@ -2251,7 +2352,10 @@ namespace crab {
        
         landmark_ref_t lm_src (src);
         landmark_ref_t lm_dst (dst); 
-        array_assume (arr, lm_src, lm_dst, val);
+
+        Weight w = Weight::top ();
+        array_sparse_graph_impl::propagate_between_weight_and_scalar(_scalar, val, arr_ty, w, arr);
+        _g.update_edge(lm_src, w, lm_dst);        
       }
     
       void write(crab_os& o) {

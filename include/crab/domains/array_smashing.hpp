@@ -272,7 +272,9 @@ namespace crab {
         // array_operators_api 
 
         // All the array elements are assumed to be equal to var
-        virtual void array_assume (VariableName a, variable_type a_ty, VariableName var) override {
+        virtual void array_assume (VariableName a, variable_type a_ty, 
+                                   linear_expression_t /*lb_idx*/, linear_expression_t /*ub_idx*/, 
+                                   VariableName var) override {
           // XXX: this is imprecise since we don't check first whether
           // the elements of a are consistent with var.
           if (a_ty == ARR_INT_TYPE)

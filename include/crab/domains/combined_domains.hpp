@@ -388,9 +388,10 @@ namespace crab {
       // array_operators_api
       
       virtual void array_assume (VariableName a, crab::variable_type a_ty, 
+                                 linear_expression_t lb_idx, linear_expression_t ub_idx, 
                                  VariableName var) override {
-        this->_product.first().array_assume (a, a_ty, var);
-        this->_product.second().array_assume (a, a_ty, var);
+        this->_product.first().array_assume (a, a_ty, lb_idx, ub_idx, var);
+        this->_product.second().array_assume (a, a_ty, lb_idx, ub_idx, var);
         this->reduce ();
       }
       
@@ -1466,8 +1467,10 @@ namespace crab {
       
       // array_operators_api
       
-      virtual void array_assume (varname_t a, crab::variable_type a_ty, varname_t var) override {
-        this->_product.array_assume (a, a_ty, var);
+      virtual void array_assume (varname_t a, crab::variable_type a_ty, 
+                                 linear_expression_t lb_idx, linear_expression_t ub_idx,
+                                 varname_t var) override {
+        this->_product.array_assume (a, a_ty, lb_idx, ub_idx, var);
       }
       
       virtual void array_load (varname_t lhs, varname_t a, crab::variable_type a_ty, 
@@ -1620,6 +1623,18 @@ namespace crab {
       static void project (product_t& inv, Iter it, Iter end) {
         inv.project (boost::make_iterator_range (it, end));
       }
+    };
+
+    template<typename Dom>
+    struct array_sgraph_domain_traits <numerical_nullity_domain<Dom> > {
+      typedef numerical_nullity_domain<Dom> num_null_domain_t;
+      typedef typename num_null_domain_t::linear_constraint_t linear_constraint_t;
+
+      static bool is_unsat(num_null_domain_t &inv, linear_constraint_t cst) 
+      { return array_sgraph_domain_traits<Dom>::is_unsat(inv.first(), cst); }
+      
+      static std::vector<typename Dom::varname_t> active_variables(num_null_domain_t &inv) 
+      { return array_sgraph_domain_traits<Dom>::active_variables(inv.first()); }
     };
 
   } // end namespace domains

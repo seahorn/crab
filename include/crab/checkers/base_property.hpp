@@ -210,9 +210,9 @@ namespace crab {
     typedef select_stmt <z_number,varname_t>      z_select_t;
     typedef callsite_stmt<varname_t>              callsite_t;
     typedef return_stmt<varname_t>                return_t;
-    typedef array_assume_stmt<z_number,varname_t> z_assume_arr_t;
-    typedef array_store_stmt<z_number,varname_t>  z_arr_store_t;
-    typedef array_load_stmt<z_number,varname_t>   z_arr_load_t;
+    typedef array_assume_stmt<z_number,varname_t> arr_assume_t;
+    typedef array_store_stmt<z_number,varname_t>  arr_store_t;
+    typedef array_load_stmt<z_number,varname_t>   arr_load_t;
     typedef ptr_store_stmt<varname_t>             ptr_store_t;
     typedef ptr_load_stmt<varname_t>              ptr_load_t;
     typedef ptr_assign_stmt<z_number,varname_t>   z_ptr_assign_t;
@@ -275,17 +275,17 @@ namespace crab {
         s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt 
     }
       
-    virtual void check (z_assume_arr_t& s) { 
+    virtual void check (arr_assume_t& s) { 
       if (!this->m_abs_tr) return;        
         s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
     }
       
-    virtual void check (z_arr_store_t& s) { 
+    virtual void check (arr_store_t& s) { 
       if (!this->m_abs_tr) return;        
         s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
     }
       
-    virtual void check (z_arr_load_t& s) { 
+    virtual void check (arr_load_t& s) { 
       if (!this->m_abs_tr) return;        
         s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
     }
@@ -342,9 +342,9 @@ namespace crab {
     void visit (z_assert_t &s) { check (s); }
     void visit (callsite_t &s) { check (s); }
     void visit (return_t &s) { check (s); }
-    void visit (z_assume_arr_t &s) { check (s); }
-    void visit (z_arr_store_t &s) { check (s); }
-    void visit (z_arr_load_t &s) { check (s); }
+    void visit (arr_assume_t &s) { check (s); }
+    void visit (arr_store_t &s) { check (s); }
+    void visit (arr_load_t &s) { check (s); }
     void visit (ptr_store_t &s) { check (s); }
     void visit (ptr_load_t &s) { check (s); }
     void visit (z_ptr_assign_t &s) { check (s); }

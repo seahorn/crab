@@ -2565,9 +2565,6 @@ namespace crab {
       }
     };
 
-
-    // Expose special operations needed by the array_sparse_graph
-    // domain.
     template<typename Number, typename VariableName>
     struct array_sgraph_domain_traits <SplitDBM<Number,VariableName> > {
       typedef SplitDBM<Number,VariableName> sdbm_domain_t;

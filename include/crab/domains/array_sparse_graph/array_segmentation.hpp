@@ -41,6 +41,8 @@ namespace crab {
          typedef typename cfg::statement_visitor<V>::z_select_t z_select_t;
          typedef typename cfg::statement_visitor<V>::callsite_t callsite_t;
          typedef typename cfg::statement_visitor<V>::z_assert_t z_assert_t;
+
+         typedef typename cfg::statement_visitor<V>::arr_assume_t arr_assume_t;
          typedef typename cfg::statement_visitor<V>::arr_load_t arr_load_t;
          typedef typename cfg::statement_visitor<V>::arr_store_t arr_store_t;
 
@@ -85,6 +87,11 @@ namespace crab {
            if (!(_indexes & vars).is_bottom())
              _indexes += vars;
          }
+
+         void visit(arr_assume_t &s) {
+           _indexes += get_variables(s.lb_index());
+           _indexes += get_variables(s.ub_index());
+         }
          
          void visit(arr_load_t &s) {
            _indexes += get_variables(s.index());
@@ -95,6 +102,7 @@ namespace crab {
          }
 
          void visit(unreach_t&) { }
+
          // FIXME: implement these 
          void visit(z_select_t&) { }
          void visit(callsite_t&) { }
@@ -161,12 +169,9 @@ namespace crab {
          CRAB_LOG("array-segment",
                   crab::outs() << "Array segment variables alive at the block entries\n";);
          
-         for (auto p : boost::make_iterator_range(this->out_begin(), this->out_end())) {
+         for (auto p : boost::make_iterator_range(this->in_begin(), this->in_end())) {
            CRAB_LOG("array-segment",
                     crab::outs() << p.first << ":" << p.second << "\n";);
-           // XXX: we want the variables from the IN set but because
-           // we are working on the reversed view of the cfg we get
-           // them instead from the OUT set.
            _segment_map.insert(std::make_pair(p.first, p.second)); 
          } 
          this->release_memory();
@@ -197,6 +202,8 @@ namespace crab {
        typedef typename cfg::statement_visitor<E>::z_select_t z_select_t;
        typedef typename cfg::statement_visitor<E>::callsite_t callsite_t;
        typedef typename cfg::statement_visitor<E>::z_assert_t z_assert_t;
+
+       typedef typename cfg::statement_visitor<E>::arr_assume_t arr_assume_t;
        typedef typename cfg::statement_visitor<E>::arr_load_t arr_load_t;
        typedef typename cfg::statement_visitor<E>::arr_store_t arr_store_t;
        
@@ -232,6 +239,7 @@ namespace crab {
 
        void visit(z_bin_op_t &s){}         
        void visit(z_assume_t &s) {}
+       void visit(arr_assume_t &s) {}
        void visit(arr_load_t &s) {}
        void visit(arr_store_t &s) {}
        void visit(z_select_t&) {}

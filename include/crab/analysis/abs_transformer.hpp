@@ -295,7 +295,9 @@ namespace crab {
     // arrays 
 
     void exec (arr_assume_t &stmt) {
-      m_inv.array_assume (stmt.array (), stmt.array_type (), stmt.var ());
+      m_inv.array_assume (stmt.array (), stmt.array_type (), 
+                          stmt.lb_index (), stmt.ub_index (), 
+                          stmt.var ());
     }
     
     void exec (arr_store_t &stmt) {

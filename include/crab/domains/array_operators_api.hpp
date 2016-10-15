@@ -26,8 +26,10 @@ namespace crab {
         virtual ~array_operators () { }
 
         // Pre: a is an array of type a_ty
-        // assume all array contents are initialized to var
-        virtual void array_assume (VariableName a, variable_type a_ty, VariableName var) {}
+        // assume all array contents in [lb_idx,ub_idx] are equal to var
+        virtual void array_assume (VariableName a, variable_type a_ty, 
+                                   _linear_exp_t lb_idx, _linear_exp_t ub_idx, 
+                                   VariableName var) {}
 
         // Pre: a is an array of type a_ty
         // lhs := a[i] where bytes is the size of a elements in bytes
