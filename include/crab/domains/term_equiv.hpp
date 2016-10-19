@@ -6,7 +6,7 @@
  *
  * Author: Graeme Gange (gkgange@unimelb.edu.au)
  *
- * Contributors: Jorge A. Navas (jorge.a.navaslaserna@nasa.gov)
+ * Contributors: Jorge A. Navas (jorge.navas@sri.com)
  ******************************************************************************/
 
 #ifndef TERM_DOMAIN_HPP
@@ -582,10 +582,7 @@ namespace crab {
            dom_t y_impl(o._impl);
            
            // Perform the mapping
-           vector<dom_var_t> xvars; 
-           vector<dom_var_t> yvars;
-           xvars.reserve (gen_map.size ());
-           yvars.reserve (gen_map.size ());
+           vector<typename dom_t::varname_t> out_varnames;
            for(auto p : gen_map)
            {
              // dom_var_t vt = _alloc.next();
@@ -593,15 +590,14 @@ namespace crab {
              dom_var_t vx = domvar_of_term(p.second); 
              dom_var_t vy = o.domvar_of_term(p.first);
              
-             xvars.push_back (vx);
-             yvars.push_back (vy);
-             
+             out_varnames.push_back (vt.name ());
+
              x_impl.assign(vt.name(), dom_linexp_t(vx));
              y_impl.assign(vt.name(), dom_linexp_t(vy));
            }
-           for(auto vx : xvars) x_impl -= vx.name();
-           for(auto vy : yvars) y_impl -= vy.name();
-           
+           domain_traits<dom_t>::project (x_impl, out_varnames.begin (), out_varnames.end ());
+           domain_traits<dom_t>::project (y_impl, out_varnames.begin (), out_varnames.end ());
+
            return x_impl <= y_impl;
          }
        } 
@@ -648,11 +644,7 @@ namespace crab {
            // Rename the common terms together
            // Perform the mapping
            term_map_t out_map;
-           
-           vector<dom_var_t> xvars; 
-           vector<dom_var_t> yvars;
-           xvars.reserve (gener_map.size ());
-           yvars.reserve (gener_map.size ());
+           vector<typename dom_t::varname_t> out_varnames;
            for(auto p : gener_map)
            {
              auto txy = p.first;
@@ -663,17 +655,15 @@ namespace crab {
              dom_var_t vx = domvar_of_term(txy.first);
              dom_var_t vy = o.domvar_of_term(txy.second);
              
-             xvars.push_back (vx);
-             yvars.push_back (vy);
+             out_varnames.push_back (vt.name ());             
              
              _impl.assign(vt.name(), dom_linexp_t(vx));
              o._impl.assign(vt.name(), dom_linexp_t(vy));
            }
            
-           // TODO: use domain_traits::forget
-           for(auto vx : xvars) _impl -= vx.name();
-           for(auto vy : yvars) o._impl -= vy.name();
-           
+           domain_traits<dom_t>::project (_impl, out_varnames.begin (), out_varnames.end ());
+           domain_traits<dom_t>::project (o._impl, out_varnames.begin (), out_varnames.end ());
+
            _impl |= o._impl;
            
            for(auto p : out_vmap)
@@ -730,11 +720,7 @@ namespace crab {
            
            // Perform the mapping
            term_map_t out_map;
-           
-           vector<dom_var_t> xvars; 
-           vector<dom_var_t> yvars;
-           xvars.reserve (gener_map.size ());
-           yvars.reserve (gener_map.size ());
+           vector<typename dom_t::varname_t> out_varnames;
            for(auto p : gener_map)
            {
              auto txy = p.first;
@@ -745,8 +731,7 @@ namespace crab {
              dom_var_t vx = domvar_of_term(txy.first);
              dom_var_t vy = o.domvar_of_term(txy.second);
              
-             xvars.push_back (vx);
-             yvars.push_back (vy);
+             out_varnames.push_back (vt.name ());
              
              x_impl.assign(vt.name(), dom_linexp_t(vx));
              y_impl.assign(vt.name(), dom_linexp_t(vy));
@@ -761,9 +746,8 @@ namespace crab {
                               << "ren_0(x) = " << x_impl
                               << "ren_0(y) = " <<  y_impl <<"\n");
            
-           // TODO: use domain_traits::forget.
-           for(auto vx : xvars) x_impl -= vx.name();
-           for(auto vy : yvars) y_impl -= vy.name();
+           domain_traits<dom_t>::project (x_impl, out_varnames.begin (), out_varnames.end ());
+           domain_traits<dom_t>::project (y_impl, out_varnames.begin (), out_varnames.end ());
            
            dom_t x_join_y = x_impl|y_impl;
            
@@ -773,6 +757,7 @@ namespace crab {
            term_domain_t res (term_domain (palloc, out_vmap, out_tbl, out_map, x_join_y));
            
            CRAB_LOG("term", crab::outs() << "After elimination:\n" << res << "\n");
+
            return res;
          }
        }
@@ -851,10 +836,7 @@ namespace crab {
            
            // Perform the mapping
            term_map_t out_map;
-           vector<dom_var_t> xvars; 
-           vector<dom_var_t> yvars;
-           xvars.reserve (gener_map.size ());
-           yvars.reserve (gener_map.size ());
+           vector<typename dom_t::varname_t> out_varnames;
            for(auto p : gener_map)
            {
              auto txy = p.first;
@@ -865,15 +847,14 @@ namespace crab {
              dom_var_t vx = domvar_of_term(txy.first);
              dom_var_t vy = o.domvar_of_term(txy.second);
              
-             xvars.push_back(vx);
-             yvars.push_back(vy);
-             
+             out_varnames.push_back (vt.name ());             
+
              x_impl.assign(vt.name(), dom_linexp_t(vx));
              y_impl.assign(vt.name(), dom_linexp_t(vy));
            }
 
-           for(auto vx : xvars) x_impl -= vx.name();
-           for(auto vy : yvars) y_impl -= vy.name();
+           domain_traits<dom_t>::project (x_impl, out_varnames.begin (), out_varnames.end ());
+           domain_traits<dom_t>::project (y_impl, out_varnames.begin (), out_varnames.end ());
                       
            dom_t x_widen_y = widen_op.apply (x_impl, y_impl);
            
@@ -1051,8 +1032,7 @@ namespace crab {
            dom_t x_impl (_impl); 
            dom_t y_impl (o._impl); 
            term_map_t out_map; // map term to dom var
-           vector<dom_var_t> xvars; 
-           vector<dom_var_t> yvars;
+           vector<typename dom_t::varname_t> out_varnames;
            for (auto p: out_vmap) {
              variable_t v = p.first;
              term_id_t t_new = p.second;
@@ -1062,21 +1042,19 @@ namespace crab {
              auto xit = _var_map.find (v);
              if (xit != _var_map.end ()) {
                dom_var_t vx = domvar_of_term(xit->second);
-               xvars.push_back (vx);
                x_impl.assign(vt.name(), dom_linexp_t(vx));
              }
              // renaming o's base domain
              auto yit = o._var_map.find (v);
              if (yit != o._var_map.end ()) {
                dom_var_t vy = o.domvar_of_term(yit->second);
-               yvars.push_back (vy);
                y_impl.assign(vt.name(), dom_linexp_t(vy));
-             }  
+             }
+             out_varnames.push_back (vt.name ());
            }
 
-           // TODO: use domain_traits::forget.
-           for(auto vx : xvars) x_impl -= vx.name();
-           for(auto vy : yvars) y_impl -= vy.name();
+           domain_traits<dom_t>::project (x_impl, out_varnames.begin (), out_varnames.end ());
+           domain_traits<dom_t>::project (y_impl, out_varnames.begin (), out_varnames.end ());
 
            dom_t x_meet_y = x_impl & y_impl;
            term_domain_t res (palloc, out_vmap, out_ttbl, out_map, x_meet_y);
@@ -1196,7 +1174,10 @@ namespace crab {
            for(auto p : _var_map) {
              if ((p.first.index() != vx.index()) && (p.second == tx)) {
                linear_constraint_t cst(vx == p.first);
-               //crab::outs() << "Propagating " << cst << " to " << inv.getDomainName () << "\n";
+               CRAB_LOG("terms",
+			crab::outs() << "Propagating " << cst << " to "
+    			             << inv.getDomainName () << "\n");
+
                csts += cst;
              }
            }
@@ -1275,10 +1256,12 @@ namespace crab {
          if (optional<pair_var_t> eq = get_eq_or_diseq(cst)) {
            term_id_t tx (term_of_var((*eq).first));
            term_id_t ty (term_of_var((*eq).second));
-           if (cst.is_disequation () && (tx == ty)) {
-             set_to_bottom ();
-             CRAB_LOG("term", crab::outs() << "*** Assume " << cst << ":" <<  *this << "\n");
-             return;
+           if (cst.is_disequation ()) {
+	     if (tx == ty) {
+	       set_to_bottom ();
+	       CRAB_LOG("term", crab::outs() << "*** Assume 1 " << cst << ":" <<  *this << "\n");
+	       return;
+	     }
            } else {
              // not bother if they are already equal
              if (tx == ty) return; 
@@ -1291,7 +1274,7 @@ namespace crab {
              std::vector<int> stack;
              std::map <int, term_id_t> cache;
              dom_t x_impl (_impl); 
-             vector<dom_var_t> xvars; 
+             vector<typename dom_t::varname_t> out_varnames;
              // new map from variable to an acyclic term
              // and also renaming of the base domain
              for(auto p : _var_map) {
@@ -1302,33 +1285,31 @@ namespace crab {
                                                  _ttbl, stack, cache);
 
                dom_var_t vt = domvar_of_term(t_new);
-               dom_var_t vx = domvar_of_term(t_old); 
-
-               xvars.push_back (vx);
+               dom_var_t vx = domvar_of_term(t_old);
+	       
+               out_varnames.push_back (vt.name());
                x_impl.assign(vt.name(), dom_linexp_t(vx));
 
                rebind_var (v, t_new);
              }
              
-             // TODO: use better domain_traits::forget
-             for(auto vx : xvars) x_impl -= vx.name();
-             
+             domain_traits<dom_t>::project (x_impl, out_varnames.begin (), out_varnames.end ());
              std::swap (_impl, x_impl);
            }
          } 
-         
+
          dom_lincst_t cst_rn(rename_linear_cst(cst));
          _impl += cst_rn;
-         
+
          // Possibly tightened some variable in cst
          for(auto v : cst.expression().variables()) {
            changed_terms.insert(term_of_var(v));
          }
-         
+
          // Probably doesn't need to done so eagerly.
          normalize();
 
-         CRAB_LOG("term", crab::outs() << "*** Assume " << cst << ":" << *this << "\n");
+         CRAB_LOG("term", crab::outs() << "*** Assume 2 " << cst << ":" << *this << "\n");
          return;
        }
        
