@@ -2202,12 +2202,22 @@ namespace crab {
                 // We give priority to equalities since some domains
                 // might not understand inequalities
                 if (g_excl.elem (s, d) && g_excl.elem (d, s) &&
-                    (g_excl.edge_val(s, d) == g_excl.edge_val(d, s))) {
+                    g_excl.edge_val(s, d) == 0 &&
+		    g_excl.edge_val(d, s) == 0) {
                   linear_constraint_t cst (vs == vd);
                   //crab::outs() << "Propagating " << cst << " to " << inv.getDomainName () << "\n";
                   csts += cst;
-                } else if (g_excl.elem (s, d)) {
+		  continue;
+                }
+		
+		if (g_excl.elem (s, d)) {
                   linear_constraint_t cst (vd - vs <= g_excl.edge_val(s, d));
+                  //crab::outs() << "Propagating " << cst << " to " << inv.getDomainName () << "\n";
+                  csts += cst;
+                }
+		
+		if (g_excl.elem (d, s)) {
+                  linear_constraint_t cst (vs - vd <= g_excl.edge_val(d, s));
                   //crab::outs() << "Propagating " << cst << " to " << inv.getDomainName () << "\n";
                   csts += cst;
                 }
@@ -2217,7 +2227,7 @@ namespace crab {
         }
         inv += csts;
       }
-      
+
       // Output function
       void write(crab_os& o) {
 
