@@ -170,29 +170,63 @@ namespace crab {
       }
       
       void operator|=(reduced_numerical_domain_product2_t other) {
+	CRAB_LOG("combined-domain", 
+		 crab::outs() << "============ JOIN ==================";
+		 crab::outs() << *this << "\n----------------";
+		 crab::outs() << other << "\n----------------";);
         this->_product |= other._product;
+	CRAB_LOG("reduced-dom", 
+		 crab::outs() << *this << "\n----------------\n";);
+	
       }
       
       reduced_numerical_domain_product2_t operator|(reduced_numerical_domain_product2_t other) {
-        return reduced_numerical_domain_product2_t(this->_product | other._product);
+        reduced_numerical_domain_product2_t res(this->_product | other._product);
+	CRAB_LOG("combined-domain", 
+		 crab::outs() << "============ JOIN ==================";
+		 crab::outs() << *this << "\n----------------";
+		 crab::outs() << other << "\n----------------";
+		 crab::outs() << res << "\n================\n");
+	return res;
       }
       
       reduced_numerical_domain_product2_t operator&(reduced_numerical_domain_product2_t other) {
-        return reduced_numerical_domain_product2_t(this->_product & other._product);
+        reduced_numerical_domain_product2_t res(this->_product & other._product);
+	CRAB_LOG("combined-domain", 
+		 crab::outs() << "============ MEET ==================";
+		 crab::outs() << *this << "\n----------------";
+		 crab::outs() << other << "\n----------------\n";);
+	return res;
       }
       
       reduced_numerical_domain_product2_t operator||(reduced_numerical_domain_product2_t other) {
-        return reduced_numerical_domain_product2_t(this->_product || other._product);
+        reduced_numerical_domain_product2_t res(this->_product || other._product);
+	CRAB_LOG("combined-domain", 
+		 crab::outs() << "============ WIDENING ==================";
+		 crab::outs() << *this << "\n----------------";
+		 crab::outs() << other << "\n----------------\n";);
+	return res;
       }
       
       template<typename Thresholds>
       reduced_numerical_domain_product2_t widening_thresholds 
       (reduced_numerical_domain_product2_t other, const Thresholds& ts) {
-        return reduced_numerical_domain_product2_t(this->_product.widening_thresholds (other._product, ts));
+	reduced_numerical_domain_product2_t res(this->_product.widening_thresholds (other._product, ts));
+	CRAB_LOG("combined-domain", 
+		 crab::outs() << "============ WIDENING ==================";
+		 crab::outs() << *this << "\n----------------";
+		 crab::outs() << other << "\n----------------\n";);
+	return res;
       }
       
       reduced_numerical_domain_product2_t operator&&(reduced_numerical_domain_product2_t other) {
-        return reduced_numerical_domain_product2_t(this->_product && other._product);
+        reduced_numerical_domain_product2_t res(this->_product && other._product);
+	CRAB_LOG("combined-domain", 
+		 crab::outs() << "============ NARROWING ==================";
+		 crab::outs() << *this << "\n----------------";
+		 crab::outs() << other << "\n----------------\n";);
+	return res;
+	
       }
       
       void set (varname_t v, interval_t x) {
@@ -210,6 +244,8 @@ namespace crab {
         for (auto v: csts.variables()) {
           reduce_variable(v.name());
         }
+	CRAB_LOG("combined-domain", 
+		 crab::outs () << "Added constraints " << csts << "=" << *this << "\n");
       }
       
       void operator-=(varname_t v) { this->_product -= v; }
@@ -217,16 +253,23 @@ namespace crab {
       void assign(varname_t x, linear_expression_t e) {
         this->_product.assign(x, e);
         this->reduce_variable(x);
+	CRAB_LOG("combined-domain", 
+		 crab::outs () << x << ":=" << e << "=" << *this << "\n");	
       }
       
       void apply(operation_t op, varname_t x, varname_t y, varname_t z) {
         this->_product.apply(op, x, y, z);
         this->reduce_variable(x);
+	CRAB_LOG("combined-domain", 
+		 crab::outs () << x << ":=" << y << op << z << "=" << *this << "\n");
+	
       }
       
       void apply(operation_t op, varname_t x, varname_t y, number_t k) {
         this->_product.apply(op, x, y, k);
         this->reduce_variable(x);
+	CRAB_LOG("combined-domain", 
+		 crab::outs () << x << ":=" << y << op << k << "=" << *this << "\n");
       }
       
       // bitwise_operators_api
@@ -295,7 +338,7 @@ namespace crab {
       }
       
       void write(crab_os& o) { 
-        this->_product.write(o); 
+        this->_product.write(o);
       }
       
       linear_constraint_system_t to_linear_constraint_system() {
