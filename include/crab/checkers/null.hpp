@@ -6,7 +6,6 @@
  */
 
 #include <crab/checkers/base_property.hpp>
-#include <crab/domains/nullity.hpp>
 #include <crab/domains/domain_products.hpp>
 
 namespace crab {
@@ -43,12 +42,12 @@ namespace crab {
 
        // Reduced product of a numerical abstract domain with nullity
        template<typename Dom, typename Number, typename VariableName>
-       class get_as <crab::domains::numerical_domain_product2<Number, 
+       class get_as <ikos::numerical_domain_product2<Number, 
                       VariableName, Dom, crab::domains::nullity_domain<Number, VariableName> > > {
 
          typedef crab::domains::nullity_value nullity_value_t;
          typedef crab::domains::nullity_domain<Number, VariableName> nullity_domain_t;
-         typedef crab::domains::numerical_domain_product2<Number, VariableName, Dom, nullity_domain_t>
+         typedef ikos::numerical_domain_product2<Number, VariableName, Dom, nullity_domain_t>
          numerical_domain_product2_t;
          
          numerical_domain_product2_t &m_inv;

@@ -36,67 +36,67 @@ namespace crab {
   crab_os::~crab_os() { }
   
   crab_os& crab_os::operator<<(char C) {
-    *m_os << C;
+    *m_os << C; m_os->flush ();
     return *this;
   }
 
   crab_os& crab_os::operator<<(unsigned char C) {
-    *m_os << C;
+    *m_os << C; m_os->flush ();
     return *this;
   }
 
   crab_os& crab_os::operator<<(signed char C) {
-    *m_os << C;
+    *m_os << C; m_os->flush ();
     return *this;
   }
 
   crab_os& crab_os::operator<<(const char* C) {
-    *m_os << C;
+    *m_os << C; m_os->flush ();
     return *this;
   }
 
   crab_os& crab_os::operator<<(const std::string& Str) {
-    *m_os << Str;
+    *m_os << Str; m_os->flush ();
     return *this;
   }
 
   crab_os& crab_os::operator<<(unsigned long N) {
-    *m_os << N;
+    *m_os << N; m_os->flush ();
     return *this;
   }
 
   crab_os& crab_os::operator<<(long N) {
-    *m_os << N;
+    *m_os << N; m_os->flush ();
     return *this;
   }
 
   crab_os& crab_os::operator<<(unsigned long long N) {
-    *m_os << N;
+    *m_os << N; m_os->flush ();
     return *this;
   }
 
   crab_os& crab_os::operator<<(long long N) {
-    *m_os << N;
+    *m_os << N; m_os->flush ();
     return *this;
   }
 
   crab_os& crab_os::operator<<(const void *P) {
-    *m_os << P;
+    *m_os << P; m_os->flush ();
     return *this;
   }
 
   crab_os& crab_os::operator<<(unsigned int N) {
-    *m_os << N;
+    *m_os << N; m_os->flush ();
     return *this;
   }
 
   crab_os& crab_os::operator<<(int N) {
-    *m_os << N;
+    *m_os << N; m_os->flush ();
     return *this;
   }
 
   crab_os& crab_os::operator<<(double N) {
-    *m_os << N;
+    *m_os << N; m_os->flush ();
     return *this;
   }
 

@@ -9,6 +9,7 @@
 #include <crab/common/debug.hpp>
 #include <crab/cfg/cfg.hpp>
 #include <crab/domains/linear_constraints.hpp>
+#include <crab/domains/intervals.hpp>
 #include <crab/domains/nullity.hpp>
 
 namespace crab {
@@ -150,7 +151,7 @@ namespace crab {
      template<typename Domain>
      struct checker_ops {
        typedef typename Domain::varname_t varname_t;
-       typedef crab::domains::interval<z_number> interval_t;
+       typedef ikos::interval<z_number> interval_t;
        typedef linear_constraint< z_number, varname_t> z_lin_cst_t;
        Domain& m_inv;
        checker_ops (Domain& inv): m_inv (inv) { }

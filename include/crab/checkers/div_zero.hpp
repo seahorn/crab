@@ -7,7 +7,6 @@
 
 #include <crab/common/types.hpp>
 #include <crab/checkers/base_property.hpp>
-#include <crab/domains/intervals.hpp>
 
 namespace crab {
 
@@ -17,7 +16,7 @@ namespace crab {
     class div_zero_property_checker: public property_checker <Analyzer> {
       
       typedef typename Analyzer::varname_t varname_t;
-      typedef crab::domains::interval<z_number> interval_t;
+      typedef ikos::interval<z_number> interval_t;
       typedef typename Analyzer::abs_dom_t abs_dom_t;
       typedef property_checker<Analyzer> base_checker_t;
       using typename base_checker_t::z_var_t;

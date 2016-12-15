@@ -939,7 +939,7 @@ namespace crab {
               if(meet_g.elem(0, e.first.first))
                 meet_g.update_edge(0, meet_g.edge_val(0, e.first.first) + e.second, e.first.second, min_op);
               if(meet_g.elem(e.first.second, 0))
-                meet_g.update_edge(e.first.first, meet_g.edge_val(e.first.second, 0) + e.second, e.first.first, min_op);
+                meet_g.update_edge(e.first.first, meet_g.edge_val(e.first.second, 0) + e.second, 0, min_op);
             }
 #else
             delta.clear();
@@ -1544,7 +1544,6 @@ namespace crab {
             return false;
           }
           assert(check_potential(g, potential));
-
           // Compute other updated bounds
 #ifdef CLOSE_BOUNDS_INLINE
           for(auto e : g.e_preds(v))
@@ -1552,7 +1551,15 @@ namespace crab {
             if(e.vert == 0)
               continue;
             g.update_edge(e.vert, e.val - p.second, 0, min_op);
+
+	    if(!repair_potential(e.vert, 0))
+	    {
+	      set_to_bottom();
+	      return false;
+	    }
+	    assert(check_potential(g, potential));
           }
+
 #endif
         }
         for(auto p : ubs)
@@ -1577,6 +1584,12 @@ namespace crab {
             if(e.vert == 0)
               continue;
             g.update_edge(0, e.val + p.second, e.vert, min_op);
+	    if(!repair_potential(0, e.vert))
+	    {
+	      set_to_bottom();
+	      return false;
+	    }
+	    assert(check_potential(g, potential));
           }
 #endif
         }
@@ -2202,12 +2215,22 @@ namespace crab {
                 // We give priority to equalities since some domains
                 // might not understand inequalities
                 if (g_excl.elem (s, d) && g_excl.elem (d, s) &&
-                    (g_excl.edge_val(s, d) == g_excl.edge_val(d, s))) {
+                    g_excl.edge_val(s, d) == 0 &&
+		    g_excl.edge_val(d, s) == 0) {
                   linear_constraint_t cst (vs == vd);
                   //crab::outs() << "Propagating " << cst << " to " << inv.getDomainName () << "\n";
                   csts += cst;
-                } else if (g_excl.elem (s, d)) {
+		  continue;
+                }
+		
+		if (g_excl.elem (s, d)) {
                   linear_constraint_t cst (vd - vs <= g_excl.edge_val(s, d));
+                  //crab::outs() << "Propagating " << cst << " to " << inv.getDomainName () << "\n";
+                  csts += cst;
+                }
+		
+		if (g_excl.elem (d, s)) {
+                  linear_constraint_t cst (vs - vd <= g_excl.edge_val(d, s));
                   //crab::outs() << "Propagating " << cst << " to " << inv.getDomainName () << "\n";
                   csts += cst;
                 }
@@ -2217,7 +2240,7 @@ namespace crab {
         }
         inv += csts;
       }
-      
+
       // Output function
       void write(crab_os& o) {
 

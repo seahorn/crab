@@ -137,7 +137,13 @@ if (GIT_FOUND)
      endif ()
   endif ()
 
-  set (APRON_TAG "origin/elina" CACHE STRING "apron tag to use")
+  if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    # Mac OS X specific code
+    set (APRON_TAG "origin/elina-el-capitan" CACHE STRING "apron tag to use")
+  else ()
+    set (APRON_TAG "origin/elina" CACHE STRING "apron tag to use")
+  endif()
+  
   ExternalProject_Add(apron
     GIT_REPOSITORY https://jorgenavas@bitbucket.org/jorgenavas/apron.git 
     GIT_TAG ${APRON_TAG}
@@ -242,6 +248,7 @@ else ()
    if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-uninitialized")
      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-local-typedef")
+     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-inconsistent-missing-override")
    endif ()
 endif ()
 

@@ -16,7 +16,7 @@ namespace crab {
     class assert_property_checker: public property_checker <Analyzer> {
       
       typedef typename Analyzer::varname_t varname_t;
-      typedef crab::domains::interval<z_number> interval_t;
+      typedef ikos::interval<z_number> interval_t;
       typedef typename Analyzer::abs_dom_t abs_dom_t;
       typedef property_checker<Analyzer> base_checker_t;
 
@@ -34,7 +34,7 @@ namespace crab {
       assert_property_checker (int verbose = 0): base_checker_t (verbose) { }
       
       virtual std::string get_property_name () const override {
-        return "user-defined assertion checker";
+        return "user-defined assertion checker using " + abs_dom_t::getDomainName ();
       }
 
       virtual void check (z_assert_t& s) override { 
