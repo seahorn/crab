@@ -1544,7 +1544,6 @@ namespace crab {
             return false;
           }
           assert(check_potential(g, potential));
-
           // Compute other updated bounds
 #ifdef CLOSE_BOUNDS_INLINE
           for(auto e : g.e_preds(v))
@@ -1552,7 +1551,15 @@ namespace crab {
             if(e.vert == 0)
               continue;
             g.update_edge(e.vert, e.val - p.second, 0, min_op);
+
+	    if(!repair_potential(e.vert, 0))
+	    {
+	      set_to_bottom();
+	      return false;
+	    }
+	    assert(check_potential(g, potential));
           }
+
 #endif
         }
         for(auto p : ubs)
@@ -1577,6 +1584,12 @@ namespace crab {
             if(e.vert == 0)
               continue;
             g.update_edge(0, e.val + p.second, e.vert, min_op);
+	    if(!repair_potential(0, e.vert))
+	    {
+	      set_to_bottom();
+	      return false;
+	    }
+	    assert(check_potential(g, potential));
           }
 #endif
         }
