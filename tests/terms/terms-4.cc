@@ -19,8 +19,8 @@ int main (int argc, char** argv )
 
   {
 
-    term_domain_t dom_left = term_domain_t::top ();
-    term_domain_t dom_right = term_domain_t::top ();
+    z_term_domain_t dom_left = z_term_domain_t::top ();
+    z_term_domain_t dom_right = z_term_domain_t::top ();
 
     // ({w = a0, x = a0, y = '+' (a0,a1), z = a1}, { x=5, w=5, z=3, y=8 })
     dom_left.assign (x, 5);
@@ -36,13 +36,13 @@ int main (int argc, char** argv )
 
     // meet = ({x=y=w= '+' (c0,c1), z=c2},{_|_}) = _|_
     crab::outs() << "Meet" << "\n" << dom_left << " \n " << dom_right << "\n"; 
-    term_domain_t l_meet_r = dom_left & dom_right;
+    z_term_domain_t l_meet_r = dom_left & dom_right;
     crab::outs() << "Result=" << l_meet_r << "\n";
   }
 
   {
-    term_domain_t dom_left = term_domain_t::top ();
-    term_domain_t dom_right = term_domain_t::top ();
+    z_term_domain_t dom_left = z_term_domain_t::top ();
+    z_term_domain_t dom_right = z_term_domain_t::top ();
 
     // ({w = a0, x = a0, y = '+' (a0,a1), z = a1}, {x=[5,8],w=[5,8],z=[1,10],y=[6,18]})
     dom_left.set (x, interval_t (5,8));
@@ -58,12 +58,12 @@ int main (int argc, char** argv )
 
     // meet = ({x=y=w= '+' (c0,c1), z=c2},{x=[5,8], y=[6,7], z=[3,5], w=[5,7]})
     crab::outs() << "Meet" << "\n" << dom_left << " \n " << dom_right << "\n"; 
-    term_domain_t l_meet_r = dom_left & dom_right;
+    z_term_domain_t l_meet_r = dom_left & dom_right;
     crab::outs() << "Result=" << l_meet_r << "\n";
   }
 
   {
-    term_domain_t dom = term_domain_t::top ();
+    z_term_domain_t dom = z_term_domain_t::top ();
     varname_t zero = vfac["v0"];
     varname_t one = vfac["v1"];
 

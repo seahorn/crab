@@ -11,8 +11,8 @@ int main (int argc, char** argv )
 
   variable_factory_t vfac;
 
-  term_domain_t dom_left = term_domain_t::top ();
-  term_domain_t dom_right = term_domain_t::top ();
+  z_term_domain_t dom_left = z_term_domain_t::top ();
+  z_term_domain_t dom_right = z_term_domain_t::top ();
 
 
   varname_t x = vfac["x"];
@@ -23,7 +23,7 @@ int main (int argc, char** argv )
 
   dom_right.apply(OP_MULTIPLICATION, x, y, z_number(5));
 
-  term_domain_t l_join_r = dom_left | dom_right;
+  z_term_domain_t l_join_r = dom_left | dom_right;
 
   crab::outs() << dom_left << " | " << dom_right << " = " << l_join_r << "\n";
 //  crab::outs() << dom_left;

@@ -1,6 +1,7 @@
 #ifndef THRESHOLDS_HPP
 #define THRESHOLDS_HPP
 
+#include <crab/common/bignums.hpp>
 #include <crab/domains/intervals.hpp>
 #include <algorithm>
 #include <climits>
@@ -10,19 +11,26 @@ using namespace std;
 namespace crab {
 
    namespace iterators {
- 
+
+     
      template<typename Number>
      class thresholds {
        
-      public:
-       
-       typedef bound <Number> bound_t;
-       
       private:
+
+       /// XXX: internal representation of a threshold
+       typedef ikos::bound <Number> bound_t;
        
        vector<bound_t> m_thresholds;
        int m_size;
 
+       template<class B1, class B2>
+       static B2 convert_bounds_impl (B1 b1) {
+	 B2 b2 (0); // some initial value it doesn't matter which one
+	 ikos::bounds_impl::convert_bounds (b1, b2);
+	 return b2;
+       }
+       
       public:
        
        thresholds (int size = INT_MAX) : m_size (size) { 
@@ -31,33 +39,41 @@ namespace crab {
          m_thresholds.push_back (bound_t::plus_infinity ());
        }
 
-       void add (bound_t v) { 
+       template<typename N>
+       void add (ikos::bound<N> v1) { 
          if (m_thresholds.size () < m_size) {
-           if (std::find (m_thresholds.begin (), m_thresholds.end (), v) == m_thresholds.end ()) {
+       	   bound_t v = convert_bounds_impl<ikos::bound<N>, bound_t> (v1);
+           if (std::find
+	       (m_thresholds.begin (), m_thresholds.end (), v) == m_thresholds.end ()) {
              auto ub = std::upper_bound (m_thresholds.begin (), m_thresholds.end (), v);
              m_thresholds.insert (ub, v);
            }
          }
        }
-
-       bound_t get_next (bound_t v) const { 
+              
+       template<typename N>
+       ikos::bound<N> get_next (ikos::bound<N> v1) const {
+	 bound_t v = convert_bounds_impl<ikos::bound<N>, bound_t> (v1);
+	 bound_t t = m_thresholds [m_thresholds.size () - 1];	 
          auto ub = std::upper_bound (m_thresholds.begin (), m_thresholds.end (), v);         
          if (ub != m_thresholds.end ())
-           return *ub;
-         
-         return m_thresholds [m_thresholds.size () - 1];
+	   t = *ub;
+	 return convert_bounds_impl<bound_t, ikos::bound<N> > (t);
        }
-       
-       bound_t get_prev (bound_t v) const { 
+
+       template<typename N>
+       ikos::bound<N> get_prev (ikos::bound<N> v1) const {
+	 bound_t v = convert_bounds_impl<ikos::bound<N>, bound_t> (v1);	 
          auto lb = std::lower_bound (m_thresholds.begin (), m_thresholds.end (), v);         
          if (lb != m_thresholds.end ()) {
            --lb;
-           if (lb != m_thresholds.end ())
-             return *lb;
+           if (lb != m_thresholds.end ()) {
+	     return convert_bounds_impl<bound_t, ikos::bound<N> > (*lb);	 	     
+	   }
          }
-         return m_thresholds [0];
+	 return convert_bounds_impl<bound_t, ikos::bound<N> > (m_thresholds [0]);
        }
-       
+
        void write (crab_os &o) const { 
          o << "{";
          for (typename vector<bound_t>::const_iterator it = m_thresholds.begin (), 
@@ -78,6 +94,9 @@ namespace crab {
        t.write (o);
        return o;
      }
+
+     // explicit instantiation
+     typedef thresholds<ikos::q_number> thresholds_t;     
    
    }
 }

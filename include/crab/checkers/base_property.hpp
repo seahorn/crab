@@ -151,8 +151,10 @@ namespace crab {
      template<typename Domain>
      struct checker_ops {
        typedef typename Domain::varname_t varname_t;
-       typedef ikos::interval<z_number> interval_t;
-       typedef linear_constraint< z_number, varname_t> z_lin_cst_t;
+       typedef typename Domain::number_t number_t;
+       
+       typedef ikos::interval<number_t> interval_t;
+       typedef linear_constraint<number_t, varname_t> z_lin_cst_t;
        Domain& m_inv;
        checker_ops (Domain& inv): m_inv (inv) { }
 
@@ -190,37 +192,40 @@ namespace crab {
   } // end num_dom_detail namespace
 
   template<typename Analyzer>
-  class property_checker: public statement_visitor <typename Analyzer::varname_t> {
+  class property_checker:
+      public statement_visitor <typename Analyzer::number_t,
+				typename Analyzer::varname_t> {
    public:
     typedef typename Analyzer::abs_tr_ptr abs_tr_ptr;
     typedef typename Analyzer::varname_t varname_t;
+    typedef typename Analyzer::number_t number_t;
     typedef typename Analyzer::abs_dom_t abs_dom_t;
 
-    typedef variable < z_number, varname_t > z_var_t;
-    typedef linear_expression< z_number, varname_t > z_lin_exp_t;
-    typedef linear_constraint< z_number, varname_t > z_lin_cst_t;
-    typedef linear_constraint_system< z_number, varname_t > z_lin_cst_sys_t;
+    typedef variable <number_t, varname_t> var_t;
+    typedef linear_expression<number_t, varname_t> lin_exp_t;
+    typedef linear_constraint<number_t, varname_t> lin_cst_t;
+    typedef linear_constraint_system<number_t, varname_t> lin_cst_sys_t;
 
-    typedef binary_op<z_number,varname_t>         z_bin_op_t;
-    typedef assignment<z_number,varname_t>        z_assign_t;
-    typedef assume_stmt<z_number,varname_t>       z_assume_t;
-    typedef assert_stmt<z_number,varname_t>       z_assert_t;
-    typedef havoc_stmt<varname_t>                 havoc_t;
-    typedef unreachable_stmt<varname_t>           unreach_t;
-    typedef select_stmt <z_number,varname_t>      z_select_t;
-    typedef callsite_stmt<varname_t>              callsite_t;
-    typedef return_stmt<varname_t>                return_t;
-    typedef array_assume_stmt<z_number,varname_t> arr_assume_t;
-    typedef array_store_stmt<z_number,varname_t>  arr_store_t;
-    typedef array_load_stmt<z_number,varname_t>   arr_load_t;
-    typedef ptr_store_stmt<varname_t>             ptr_store_t;
-    typedef ptr_load_stmt<varname_t>              ptr_load_t;
-    typedef ptr_assign_stmt<z_number,varname_t>   z_ptr_assign_t;
-    typedef ptr_object_stmt<varname_t>            ptr_object_t;
-    typedef ptr_function_stmt<varname_t>          ptr_function_t;
-    typedef ptr_null_stmt<varname_t>              ptr_null_t;
-    typedef ptr_assume_stmt<varname_t>            ptr_assume_t;
-    typedef ptr_assert_stmt<varname_t>            ptr_assert_t;
+    typedef binary_op<number_t,varname_t>         bin_op_t;
+    typedef assignment<number_t,varname_t>        assign_t;
+    typedef assume_stmt<number_t,varname_t>       assume_t;
+    typedef assert_stmt<number_t,varname_t>       assert_t;
+    typedef select_stmt <number_t,varname_t>      select_t;    
+    typedef havoc_stmt<number_t,varname_t>        havoc_t;
+    typedef unreachable_stmt<number_t,varname_t>  unreach_t;
+    typedef callsite_stmt<number_t,varname_t>     callsite_t;
+    typedef return_stmt<number_t,varname_t>       return_t;
+    typedef array_assume_stmt<number_t,varname_t> arr_assume_t;
+    typedef array_store_stmt<number_t,varname_t>  arr_store_t;
+    typedef array_load_stmt<number_t,varname_t>   arr_load_t;
+    typedef ptr_store_stmt<number_t,varname_t>    ptr_store_t;
+    typedef ptr_load_stmt<number_t,varname_t>     ptr_load_t;
+    typedef ptr_assign_stmt<number_t,varname_t>   ptr_assign_t;
+    typedef ptr_object_stmt<number_t,varname_t>   ptr_object_t;
+    typedef ptr_function_stmt<number_t,varname_t> ptr_function_t;
+    typedef ptr_null_stmt<number_t,varname_t>     ptr_null_t;
+    typedef ptr_assume_stmt<number_t,varname_t>   ptr_assume_t;
+    typedef ptr_assert_stmt<number_t,varname_t>   ptr_assert_t;
 
     typedef std::set<std::pair<debug_info, check_kind_t> > check_results_db;
  
@@ -230,22 +235,22 @@ namespace crab {
     int m_verbose;
     checks_db m_db; // Store debug information about the checks
    
-    virtual void check (z_assert_t& s) { 
+    virtual void check (assert_t& s) { 
       if (!this->m_abs_tr) return;        
         s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
     }
 
-    virtual void check (z_bin_op_t& s) { 
+    virtual void check (bin_op_t& s) { 
       if (!this->m_abs_tr) return;        
         s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
     } 
       
-    virtual void check (z_assign_t& s) { 
+    virtual void check (assign_t& s) { 
       if (!this->m_abs_tr) return;        
         s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
     }
       
-    virtual void check (z_assume_t& s) { 
+    virtual void check (assume_t& s) { 
       if (!this->m_abs_tr) return;        
         s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
     }
@@ -260,7 +265,7 @@ namespace crab {
         s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
     }
       
-    virtual void check (z_select_t& s) { 
+    virtual void check (select_t& s) { 
       if (!this->m_abs_tr) return;        
         s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
     }
@@ -300,7 +305,7 @@ namespace crab {
         s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
     }
       
-    virtual void check (z_ptr_assign_t& s) { 
+    virtual void check (ptr_assign_t& s) { 
       if (!this->m_abs_tr) return;        
         s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
     }
@@ -333,13 +338,13 @@ namespace crab {
    public: 
 
     /* Visitor API */
-    void visit (z_bin_op_t &s) { check (s); }
-    void visit (z_assign_t &s) { check (s); }
-    void visit (z_assume_t &s) { check (s); }
+    void visit (bin_op_t &s) { check (s); }
+    void visit (assign_t &s) { check (s); }
+    void visit (assume_t &s) { check (s); }
+    void visit (select_t &s) { check (s); }
+    void visit (assert_t &s) { check (s); }    
     void visit (havoc_t &s) { check (s); }
     void visit (unreach_t &s) { check (s); }
-    void visit (z_select_t &s) { check (s); }
-    void visit (z_assert_t &s) { check (s); }
     void visit (callsite_t &s) { check (s); }
     void visit (return_t &s) { check (s); }
     void visit (arr_assume_t &s) { check (s); }
@@ -347,7 +352,7 @@ namespace crab {
     void visit (arr_load_t &s) { check (s); }
     void visit (ptr_store_t &s) { check (s); }
     void visit (ptr_load_t &s) { check (s); }
-    void visit (z_ptr_assign_t &s) { check (s); }
+    void visit (ptr_assign_t &s) { check (s); }
     void visit (ptr_object_t &s) { check (s); }
     void visit (ptr_function_t &s) { check (s); }
     void visit (ptr_null_t &s) { check (s); }

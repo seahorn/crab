@@ -124,15 +124,16 @@ namespace crab {
         typedef boost::unordered_map<std::size_t, vertex_descriptor_t > vertex_map_t;
         typedef boost::unordered_map <cg_node, vertex_descriptor_t > node_vertex_id_map_t;
         typedef typename CFG::varname_t varname_t;
-        typedef crab::cfg::statement_visitor<varname_t> stmt_visitor_t;
+        typedef typename CFG::number_t number_t;	
+        typedef crab::cfg::statement_visitor<number_t, varname_t> stmt_visitor_t;
 
         struct mk_edge_vis: public stmt_visitor_t {
-          typedef typename stmt_visitor_t::z_bin_op_t z_bin_op_t;
-          typedef typename stmt_visitor_t::z_assign_t z_assign_t;
-          typedef typename stmt_visitor_t::z_assume_t z_assume_t;
-          typedef typename stmt_visitor_t::havoc_t havoc_t;
-          typedef typename stmt_visitor_t::unreach_t unreach_t;
-          typedef typename stmt_visitor_t::z_select_t z_select_t;
+          typedef typename stmt_visitor_t::bin_op_t   bin_op_t;
+          typedef typename stmt_visitor_t::assign_t   assign_t;
+          typedef typename stmt_visitor_t::assume_t   assume_t;
+          typedef typename stmt_visitor_t::havoc_t    havoc_t;
+          typedef typename stmt_visitor_t::unreach_t  unreach_t;
+          typedef typename stmt_visitor_t::select_t   select_t;
           typedef typename stmt_visitor_t::callsite_t callsite_t;
           typedef typename CFG::fdecl_t fdecl_t;
 
@@ -171,13 +172,6 @@ namespace crab {
                                  << " --> " <<  it_to->second;); 
                                  
           }
-          
-          void visit(z_bin_op_t&){ }  
-          void visit(z_assign_t&) { }
-          void visit(z_assume_t&) { }
-          void visit(havoc_t&) { }
-          void visit(unreach_t&){ }
-          void visit(z_select_t&){ }
         };
                   
         struct mk_node : 

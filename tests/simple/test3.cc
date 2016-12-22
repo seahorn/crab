@@ -5,26 +5,26 @@ using namespace crab::analyzer;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
-cfg_t* prog (variable_factory_t &vfac) 
+z_cfg_t* prog (variable_factory_t &vfac) 
 {
 
-  cfg_t* cfg = new cfg_t("entry","ret");
-  basic_block_t& entry       = cfg->insert ("entry");
-  basic_block_t& loop1_head  = cfg->insert ("loop1_head");
-  basic_block_t& loop1_t     = cfg->insert ("loop1_t");
-  basic_block_t& loop1_f     = cfg->insert ("loop1_f");
-  basic_block_t& loop1_body  = cfg->insert ("loop1_body");
+  z_cfg_t* cfg = new z_cfg_t("entry","ret");
+  z_basic_block_t& entry       = cfg->insert ("entry");
+  z_basic_block_t& loop1_head  = cfg->insert ("loop1_head");
+  z_basic_block_t& loop1_t     = cfg->insert ("loop1_t");
+  z_basic_block_t& loop1_f     = cfg->insert ("loop1_f");
+  z_basic_block_t& loop1_body  = cfg->insert ("loop1_body");
 
-  basic_block_t& loop1_body_t  = cfg->insert ("loop1_body_t");
-  basic_block_t& loop1_body_f  = cfg->insert ("loop1_body_f");
-  basic_block_t& loop1_body_x  = cfg->insert ("loop1_body_x");
+  z_basic_block_t& loop1_body_t  = cfg->insert ("loop1_body_t");
+  z_basic_block_t& loop1_body_f  = cfg->insert ("loop1_body_f");
+  z_basic_block_t& loop1_body_x  = cfg->insert ("loop1_body_x");
 
-  basic_block_t& cont        = cfg->insert ("cont");
-  basic_block_t& loop2_head  = cfg->insert ("loop2_head");
-  basic_block_t& loop2_t     = cfg->insert ("loop2_t");
-  basic_block_t& loop2_f     = cfg->insert ("loop2_f");
-  basic_block_t& loop2_body  = cfg->insert ("loop2_body");
-  basic_block_t& ret         = cfg->insert ("ret");
+  z_basic_block_t& cont        = cfg->insert ("cont");
+  z_basic_block_t& loop2_head  = cfg->insert ("loop2_head");
+  z_basic_block_t& loop2_t     = cfg->insert ("loop2_t");
+  z_basic_block_t& loop2_f     = cfg->insert ("loop2_f");
+  z_basic_block_t& loop2_body  = cfg->insert ("loop2_body");
+  z_basic_block_t& ret         = cfg->insert ("ret");
 
   entry >> loop1_head;
   loop1_head >> loop1_t; 
@@ -67,16 +67,16 @@ int main (int argc, char** argv )
   SET_TEST_OPTIONS(argc,argv)
 
   variable_factory_t vfac;
-  cfg_t* cfg = prog (vfac);
+  z_cfg_t* cfg = prog (vfac);
   //cfg->simplify ();
   crab::outs() << *cfg << "\n";
 
-  run<interval_domain_t>(cfg,vfac,true,1,2,20);
-  run<dbm_domain_t>(cfg,vfac,true,1,2,20);
-  run<sdbm_domain_t>(cfg,vfac,true,1,2,20);
-  run<ric_domain_t>(cfg,vfac,true,1,2,20);
-  run<term_domain_t>(cfg,vfac,true,1,2,20);
-  run<dis_interval_domain_t>(cfg,vfac,true,1,2,20);
+  run<z_interval_domain_t>(cfg,vfac,true,1,2,20);
+  run<z_dbm_domain_t>(cfg,vfac,true,1,2,20);
+  run<z_sdbm_domain_t>(cfg,vfac,true,1,2,20);
+  run<z_ric_domain_t>(cfg,vfac,true,1,2,20);
+  run<z_term_domain_t>(cfg,vfac,true,1,2,20);
+  run<z_dis_interval_domain_t>(cfg,vfac,true,1,2,20);
   delete cfg;
   return 0;
 }

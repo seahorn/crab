@@ -26,29 +26,31 @@ namespace crab {
        typedef crab::iterators::killgen_analysis<CFG, V> killgen_analysis_t;
        
       public:
-       
+
        typedef typename CFG::basic_block_label_t basic_block_label_t;
+       typedef typename CFG::number_t N;       
        typedef typename killgen_analysis_t::killgen_domain_t array_segment_domain_t;       
 
       private:
        
-       class array_segment_visitor: public cfg::statement_visitor<V> {
-         typedef typename cfg::statement_visitor<V>::z_bin_op_t z_bin_op_t;
-         typedef typename cfg::statement_visitor<V>::z_assign_t z_assign_t;
-         typedef typename cfg::statement_visitor<V>::z_assume_t z_assume_t;
-         typedef typename cfg::statement_visitor<V>::havoc_t havoc_t;
-         typedef typename cfg::statement_visitor<V>::unreach_t unreach_t;
-         typedef typename cfg::statement_visitor<V>::z_select_t z_select_t;
-         typedef typename cfg::statement_visitor<V>::callsite_t callsite_t;
-         typedef typename cfg::statement_visitor<V>::z_assert_t z_assert_t;
+       class array_segment_visitor: public cfg::statement_visitor<N,V> {
+         typedef typename cfg::statement_visitor<N,V>::bin_op_t bin_op_t;
+         typedef typename cfg::statement_visitor<N,V>::assign_t assign_t;
+         typedef typename cfg::statement_visitor<N,V>::assume_t assume_t;
+         typedef typename cfg::statement_visitor<N,V>::select_t select_t;
+         typedef typename cfg::statement_visitor<N,V>::assert_t assert_t;
+	 
+         typedef typename cfg::statement_visitor<N,V>::havoc_t    havoc_t;
+         typedef typename cfg::statement_visitor<N,V>::unreach_t  unreach_t;
+         typedef typename cfg::statement_visitor<N,V>::callsite_t callsite_t;
 
-         typedef typename cfg::statement_visitor<V>::arr_assume_t arr_assume_t;
-         typedef typename cfg::statement_visitor<V>::arr_load_t arr_load_t;
-         typedef typename cfg::statement_visitor<V>::arr_store_t arr_store_t;
+         typedef typename cfg::statement_visitor<N,V>::arr_assume_t arr_assume_t;
+         typedef typename cfg::statement_visitor<N,V>::arr_load_t   arr_load_t;
+         typedef typename cfg::statement_visitor<N,V>::arr_store_t  arr_store_t;
 
          // assume all statements have the same type expression_t;
-         typedef typename z_bin_op_t::linear_expression_t linear_expression_t;
-         typedef typename z_assume_t::linear_constraint_t linear_constraint_t;
+         typedef typename bin_op_t::linear_expression_t linear_expression_t;
+         typedef typename assume_t::linear_constraint_t linear_constraint_t;
          
          array_segment_domain_t get_variables (linear_expression_t e) {
            array_segment_domain_t res;
@@ -69,20 +71,20 @@ namespace crab {
          array_segment_visitor (array_segment_domain_t inv)
              : _indexes(inv) { }
          
-         void visit(z_bin_op_t &s){ 
+         void visit(bin_op_t &s){ 
            if (!(_indexes & s.lhs().name()).is_bottom()) {
              _indexes += get_variables(s.left());
              _indexes += get_variables(s.right());
            }
          }  
          
-         void visit(z_assign_t &s) {
+         void visit(assign_t &s) {
            if (!(_indexes & s.lhs().name()).is_bottom()) {
              _indexes += get_variables(s.rhs());
            }
          }
          
-         void visit(z_assume_t &s) { 
+         void visit(assume_t &s) { 
            auto vars = get_variables(s.constraint());
            if (!(_indexes & vars).is_bottom())
              _indexes += vars;
@@ -104,10 +106,10 @@ namespace crab {
          void visit(unreach_t&) { }
 
          // FIXME: implement these 
-         void visit(z_select_t&) { }
+         void visit(select_t&) { }
          void visit(callsite_t&) { }
          void visit(havoc_t&) { }
-         void visit(z_assert_t&) { }
+         void visit(assert_t&) { }
        };
        
       public:
@@ -190,24 +192,24 @@ namespace crab {
 
      // Visitor for finding constants that might appear as array
      // segment boundaries.
-     template<class ArraySegmentDom>
+     template<class N, class ArraySegmentDom>
      class array_constant_segment_visitor: 
-         public cfg::statement_visitor<typename ArraySegmentDom::element_t> {
+       public cfg::statement_visitor<N, typename ArraySegmentDom::element_t> {
        typedef typename ArraySegmentDom::element_t E;
-       typedef typename cfg::statement_visitor<E>::z_bin_op_t z_bin_op_t;
-       typedef typename cfg::statement_visitor<E>::z_assign_t z_assign_t;
-       typedef typename cfg::statement_visitor<E>::z_assume_t z_assume_t;
-       typedef typename cfg::statement_visitor<E>::havoc_t havoc_t;
-       typedef typename cfg::statement_visitor<E>::unreach_t unreach_t;
-       typedef typename cfg::statement_visitor<E>::z_select_t z_select_t;
-       typedef typename cfg::statement_visitor<E>::callsite_t callsite_t;
-       typedef typename cfg::statement_visitor<E>::z_assert_t z_assert_t;
+       typedef typename cfg::statement_visitor<N,E>::bin_op_t   bin_op_t;
+       typedef typename cfg::statement_visitor<N,E>::assign_t   assign_t;
+       typedef typename cfg::statement_visitor<N,E>::assume_t   assume_t;
+       typedef typename cfg::statement_visitor<N,E>::havoc_t    havoc_t;
+       typedef typename cfg::statement_visitor<N,E>::unreach_t  unreach_t;
+       typedef typename cfg::statement_visitor<N,E>::select_t   select_t;
+       typedef typename cfg::statement_visitor<N,E>::callsite_t callsite_t;
+       typedef typename cfg::statement_visitor<N,E>::assert_t   assert_t;
 
-       typedef typename cfg::statement_visitor<E>::arr_assume_t arr_assume_t;
-       typedef typename cfg::statement_visitor<E>::arr_load_t arr_load_t;
-       typedef typename cfg::statement_visitor<E>::arr_store_t arr_store_t;
+       typedef typename cfg::statement_visitor<N,E>::arr_assume_t arr_assume_t;
+       typedef typename cfg::statement_visitor<N,E>::arr_load_t   arr_load_t;
+       typedef typename cfg::statement_visitor<N,E>::arr_store_t  arr_store_t;
        
-       typedef typename z_bin_op_t::linear_expression_t linear_expression_t;
+       typedef typename bin_op_t::linear_expression_t linear_expression_t;
        typedef typename linear_expression_t::number_t number_t;
 
       public:
@@ -226,7 +228,7 @@ namespace crab {
        constant_set_t get_constants () { return _csts;}
 
        /// XXX: we focus for now only on assignments
-       void visit(z_assign_t &s) {
+       void visit(assign_t &s) {
          if (!(_dom & s.lhs().name()).is_bottom()) {
            if (s.rhs().is_constant() && s.rhs().constant() >= 0 &&
                std::find(_csts.begin(), _csts.end(), s.rhs().constant()) == _csts.end()) {
@@ -237,15 +239,15 @@ namespace crab {
          }
        }
 
-       void visit(z_bin_op_t &s){}         
-       void visit(z_assume_t &s) {}
+       void visit(bin_op_t &s){}         
+       void visit(assume_t &s) {}
        void visit(arr_assume_t &s) {}
        void visit(arr_load_t &s) {}
        void visit(arr_store_t &s) {}
-       void visit(z_select_t&) {}
+       void visit(select_t&) {}
        void visit(callsite_t&) {}
        void visit(havoc_t&) {}
-       void visit(z_assert_t&) {}
+       void visit(assert_t&) {}
        void visit(unreach_t&) {}
      };
 

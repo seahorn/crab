@@ -404,38 +404,60 @@ namespace crab {
 
           return res;
         }
-        
-        // --- build apron binary operations
-        inline ap_texpr0_t* ADD(ap_texpr0_t* a, ap_texpr0_t*b) const {
+	       	
+	// FIXME: dispatch based on Number ?
+        #if 0
+	static ap_texpr0_t* ADD(ap_texpr0_t* a, ap_texpr0_t*b)
+	{ /// XXX: should not be the rounding direction AP_RDIR_ZERO 
+	  ///      (i.e., truncation for integers) ?
           return ap_texpr0_binop(AP_TEXPR_ADD,a,b,AP_RTYPE_INT,AP_RDIR_NEAREST);
-        }
-        
-        inline ap_texpr0_t* SUB(ap_texpr0_t* a, ap_texpr0_t*b) const {
-          return ap_texpr0_binop(AP_TEXPR_SUB,a,b,AP_RTYPE_INT,AP_RDIR_NEAREST);
-        }
-        
-        inline ap_texpr0_t* MUL(ap_texpr0_t* a, ap_texpr0_t*b) const {
-          return ap_texpr0_binop(AP_TEXPR_MUL,a,b,AP_RTYPE_INT,AP_RDIR_NEAREST);
-        }
-        
-        inline ap_texpr0_t* DIV(ap_texpr0_t* a, ap_texpr0_t*b) const {
-          return ap_texpr0_binop(AP_TEXPR_DIV,a,b,AP_RTYPE_INT,AP_RDIR_NEAREST);
-        }
-
+	}
+	static ap_texpr0_t* SUB(ap_texpr0_t* a, ap_texpr0_t*b)
+	{ return ap_texpr0_binop(AP_TEXPR_SUB,a,b,AP_RTYPE_INT,AP_RDIR_NEAREST);}	  
+	static ap_texpr0_t* MUL(ap_texpr0_t* a, ap_texpr0_t*b)
+	{ return ap_texpr0_binop(AP_TEXPR_MUL,a,b,AP_RTYPE_INT,AP_RDIR_NEAREST); }	  
+	static ap_texpr0_t* DIV(ap_texpr0_t* a, ap_texpr0_t*b)
+	{ return ap_texpr0_binop(AP_TEXPR_DIV,a,b,AP_RTYPE_INT,AP_RDIR_NEAREST);}	  	
+	#else
+	///////////
+	// XXX: we approximate integers and rationals using reals
+	//////////
+	
+        static ap_texpr0_t* ADD(ap_texpr0_t* a, ap_texpr0_t*b)
+	{ /// XXX: AP_RTYPE_REAL does not have rounding so we choose
+	  ///      an arbitrary one
+          return ap_texpr0_binop(AP_TEXPR_ADD,a,b,AP_RTYPE_REAL,AP_RDIR_UP);
+	}
+        static ap_texpr0_t* SUB(ap_texpr0_t* a, ap_texpr0_t*b)	  
+	{ return ap_texpr0_binop(AP_TEXPR_SUB,a,b,AP_RTYPE_REAL,AP_RDIR_UP);}
+        static ap_texpr0_t* MUL(ap_texpr0_t* a, ap_texpr0_t*b)	  
+	{ return ap_texpr0_binop(AP_TEXPR_MUL,a,b,AP_RTYPE_REAL,AP_RDIR_UP);}
+        static ap_texpr0_t* DIV(ap_texpr0_t* a, ap_texpr0_t*b)	  
+	{ return ap_texpr0_binop(AP_TEXPR_DIV,a,b,AP_RTYPE_REAL,AP_RDIR_UP);}
+	#endif
+	       	
         // --- from crab to apron
-
+	
         inline ap_texpr0_t* var2texpr (VariableName v) { 
           return ap_texpr0_dim (get_var_dim_insert (v));
         }
 
+	inline void convert_crab_number (ikos::z_number n, mpq_class &res) const
+	{ res = mpq_class ((mpz_class) n); }
+
+	inline void convert_crab_number (ikos::q_number n, mpq_class &res) const 
+	{ res = ((mpq_class) n); }
+		
         inline ap_texpr0_t* num2texpr (Number i) const {  
-          mpq_class n = ((mpz_class) i); 
+	  mpq_class n(0);
+	  convert_crab_number(i, n);
           return ap_texpr0_cst_scalar_mpq (n.get_mpq_t ());
         }
 
-        inline ap_texpr0_t* intv2texpr (Number a, Number b) const { 
-          mpq_class n1 = ((mpz_class) a); 
-          mpq_class n2 = ((mpz_class) b); 
+        inline ap_texpr0_t* intv2texpr (Number a, Number b) const {
+	  mpq_class n1(0), n2(0);
+	  convert_crab_number(a, n1);
+	  convert_crab_number(b, n2);
           return ap_texpr0_cst_interval_mpq (n1.get_mpq_t (), n2.get_mpq_t ());
         }
         
@@ -450,9 +472,11 @@ namespace crab {
         }
 
         inline ap_tcons0_t const2tconst (linear_constraint_t cst)  {
-          assert (!cst.is_tautology ());
-          assert (!cst.is_contradiction ());
-
+	  if (cst.is_tautology ())
+	    CRAB_ERROR("Tautologies not supported");
+	  if (cst.is_contradiction ())
+	    CRAB_ERROR("Contradictions not supported");
+	  
           linear_expression_t exp = cst.expression();
           if (cst.is_equality ()) {
             return ap_tcons0_make (AP_CONS_EQ, expr2texpr (exp), NULL);            
@@ -467,17 +491,33 @@ namespace crab {
         }
           
         // --- from apron to crab 
-         
+
+	inline void convert_apron_number (double n, ikos::z_number &res) const
+	{ res = ikos::z_number ((long) n); }
+
+	inline void convert_apron_number (double n, ikos::q_number &res) const
+	{ res = ikos::q_number (n); }
+	
+	inline void convert_apron_number (mpq_ptr n, ikos::z_number &res) const
+	{ // FIXME: find a better way
+	  res = ikos::z_number (mpz_class(mpq_class(n)));
+	}
+	inline void convert_apron_number (mpq_ptr n, ikos::q_number &res) const
+	{ res = ikos::q_number (mpq_class(n)); }	  
+
         Number coeff2Num (ap_coeff_t* coeff) {
           assert (coeff->discr == AP_COEFF_SCALAR);
 
-          ap_scalar_t* scalar = coeff->val.scalar;
+	  ap_scalar_t* scalar = coeff->val.scalar;	  
           if (scalar->discr == AP_SCALAR_DOUBLE) { // elina uses double
-            return Number ((long) scalar->val.dbl);
+	    Number res;
+	    convert_apron_number(scalar->val.dbl, res);
+	    return res;
           }
           else if (scalar->discr == AP_SCALAR_MPQ) {
-            mpq_class n (scalar->val.mpq);
-            return Number ((mpz_class) n);
+	    Number res;
+	    convert_apron_number(scalar->val.mpq, res);
+	    return res;
           }
           else
             CRAB_ERROR ("ERROR: apron translation only covers double or mpq scalars");
@@ -913,43 +953,47 @@ namespace crab {
             if (lb->discr == AP_SCALAR_DOUBLE && ub->discr == AP_SCALAR_DOUBLE) { 
 
               if (ap_scalar_infty(lb) == -1) {     // [-oo, k]
-                return interval_t (bound_t::minus_infinity (),
-                                   Number ((long) ub->val.dbl));
-
+		Number sup;
+		convert_apron_number (ub->val.dbl, sup);
+                return interval_t (bound_t::minus_infinity (), sup);
               }
               else if (ap_scalar_infty(ub) == 1) { // [k, +oo]
-                return interval_t (Number ((long) lb->val.dbl),
-                                   bound_t::plus_infinity ());
+		Number inf;
+		convert_apron_number (lb->val.dbl, inf);
+                return interval_t (inf, bound_t::plus_infinity ());
+                                   
               }
               else { 
                 assert (ap_scalar_infty(lb) == 0); // lb is finite
                 assert (ap_scalar_infty(ub) == 0); // ub is finite
-                return interval_t (Number ((long) lb->val.dbl),
-                                   Number ((long) ub->val.dbl));
+		Number inf, sup;
+		convert_apron_number(lb->val.dbl, inf);
+		convert_apron_number(ub->val.dbl, sup);
+                return interval_t (inf, sup);
               }
 
             }
             else if (lb->discr == AP_SCALAR_MPQ && ub->discr == AP_SCALAR_MPQ ) {
 
               if (ap_scalar_infty(lb) == -1) {     // [-oo, k]
-                mpq_class sup (ub->val.mpq);
-                return interval_t (bound_t::minus_infinity (),
-                                   Number ((mpz_class) sup));
+		Number sup;
+		convert_apron_number (ub->val.mpq, sup);
+                return interval_t (bound_t::minus_infinity (), sup);
 
               }
               else if (ap_scalar_infty(ub) == 1) { // [k, +oo]
-                mpq_class inf (lb->val.mpq);
-                return interval_t (Number ((mpz_class) inf),
-                                   bound_t::plus_infinity ());
+		Number inf;
+		convert_apron_number (lb->val.mpq, inf);
+                return interval_t (inf, bound_t::plus_infinity ());
               }
               else {
                 assert (ap_scalar_infty(lb) == 0); // lb is finite
                 assert (ap_scalar_infty(ub) == 0); // ub is finite
 
-                mpq_class inf (lb->val.mpq);
-                mpq_class sup (ub->val.mpq);
-                return interval_t (Number ((mpz_class) inf), 
-                                   Number ((mpz_class) sup));
+		Number inf, sup;
+		convert_apron_number (lb->val.mpq, inf);
+		convert_apron_number (ub->val.mpq, sup);		
+                return interval_t (inf, sup);
               }
 
             }

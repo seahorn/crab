@@ -6,7 +6,7 @@ using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
 /* Example of how to build a CFG */
-cfg_t* prog (variable_factory_t &vfac)  {
+z_cfg_t* prog (variable_factory_t &vfac)  {
 
   // Definining program variables
   z_var i (vfac ["i"]);
@@ -19,14 +19,14 @@ cfg_t* prog (variable_factory_t &vfac)  {
   z_var nd1 (vfac ["nd1"]);
   z_var nd2 (vfac ["nd2"]);
   // entry and exit block
-  cfg_t* cfg = new cfg_t("entry","ret");
+  z_cfg_t* cfg = new z_cfg_t("entry","ret");
   // adding blocks
-  basic_block_t& entry = cfg->insert ("entry");
-  basic_block_t& bb1   = cfg->insert ("bb1");
-  basic_block_t& bb1_t = cfg->insert ("bb1_t");
-  basic_block_t& bb1_f = cfg->insert ("bb1_f");
-  basic_block_t& bb2   = cfg->insert ("bb2");
-  basic_block_t& ret   = cfg->insert ("ret");
+  z_basic_block_t& entry = cfg->insert ("entry");
+  z_basic_block_t& bb1   = cfg->insert ("bb1");
+  z_basic_block_t& bb1_t = cfg->insert ("bb1_t");
+  z_basic_block_t& bb1_f = cfg->insert ("bb1_f");
+  z_basic_block_t& bb2   = cfg->insert ("bb2");
+  z_basic_block_t& ret   = cfg->insert ("ret");
   // adding control flow 
   entry >> bb1;
   bb1 >> bb1_t; bb1 >> bb1_f;
@@ -60,13 +60,13 @@ int main (int argc, char** argv )
   SET_TEST_OPTIONS(argc,argv)
 
   variable_factory_t vfac;
-  cfg_t* cfg = prog (vfac);
+  z_cfg_t* cfg = prog (vfac);
   cfg->simplify (); // this is optional
   crab::outs() << *cfg << "\n";
 
-  run<interval_domain_t>(cfg,vfac,false,1,2,20);
-  run<dbm_domain_t>(cfg,vfac,false,1,2,20);
-  run<term_domain_t>(cfg,vfac,false,1,2,20);
+  run<z_interval_domain_t>(cfg,vfac,false,1,2,20);
+  run<z_dbm_domain_t>(cfg,vfac,false,1,2,20);
+  run<z_term_domain_t>(cfg,vfac,false,1,2,20);
 
   return 0;
 }

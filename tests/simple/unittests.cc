@@ -19,7 +19,7 @@ int main (int argc, char** argv )
     varname_t A = vfac["A"];
     varname_t x_prime = vfac["x\'"];
 
-    dbm_domain_t dbm = dbm_domain_t::top ();
+    z_dbm_domain_t dbm = z_dbm_domain_t::top ();
     // for all i. A[i] >= 0
     dbm += linear_constraint_t ( linear_expression_t (A) >= z_number (0));
     // x = A[..];

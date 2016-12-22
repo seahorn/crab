@@ -10,7 +10,7 @@ using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 using namespace crab::cg;
 
-cfg_t* foo (variable_factory_t &vfac) {
+z_cfg_t* foo (variable_factory_t &vfac) {
   vector<pair<varname_t,crab::variable_type> > params;
   params.push_back (make_pair (vfac["x"], crab::INT_TYPE));
   function_decl<varname_t> decl (crab::INT_TYPE, vfac["foo"], params);
@@ -19,10 +19,10 @@ cfg_t* foo (variable_factory_t &vfac) {
   z_var y (vfac ["y"]);
   z_var z (vfac ["z"]);
   // entry and exit block
-  cfg_t* cfg = new cfg_t("entry", "exit", decl);
+  z_cfg_t* cfg = new z_cfg_t("entry", "exit", decl);
   // adding blocks
-  basic_block_t& entry = cfg->insert ("entry");
-  basic_block_t& exit   = cfg->insert ("exit");
+  z_basic_block_t& entry = cfg->insert ("entry");
+  z_basic_block_t& exit   = cfg->insert ("exit");
   // adding control flow
   entry >> exit;
   // adding statements
@@ -32,7 +32,7 @@ cfg_t* foo (variable_factory_t &vfac) {
   return cfg;
 }
 
-cfg_t* rec1 (variable_factory_t &vfac) {
+z_cfg_t* rec1 (variable_factory_t &vfac) {
   vector<pair<varname_t,crab::variable_type> > params;
   params.push_back (make_pair (vfac["s"], crab::INT_TYPE));
   function_decl<varname_t> decl (crab::INT_TYPE, vfac["rec1"], params);
@@ -41,10 +41,10 @@ cfg_t* rec1 (variable_factory_t &vfac) {
   z_var s (vfac ["s"]);
   z_var t (vfac ["t"]);
   // entry and exit block
-  cfg_t* cfg  = new cfg_t("entry", "exit", decl);
+  z_cfg_t* cfg  = new z_cfg_t("entry", "exit", decl);
   // adding blocks
-  basic_block_t& entry = cfg->insert ("entry");
-  basic_block_t& exit   = cfg->insert ("exit");
+  z_basic_block_t& entry = cfg->insert ("entry");
+  z_basic_block_t& exit   = cfg->insert ("exit");
   // adding control flow
   entry >> exit;
   // adding statements
@@ -56,7 +56,7 @@ cfg_t* rec1 (variable_factory_t &vfac) {
   return cfg;
 }
 
-cfg_t* rec2 (variable_factory_t &vfac) {
+z_cfg_t* rec2 (variable_factory_t &vfac) {
   vector<pair<varname_t,crab::variable_type> > params;
   params.push_back (make_pair (vfac["s1"], crab::INT_TYPE));
   function_decl<varname_t> decl (crab::INT_TYPE, vfac["rec2"], params);
@@ -65,10 +65,10 @@ cfg_t* rec2 (variable_factory_t &vfac) {
   z_var s (vfac ["s1"]);
   z_var t (vfac ["t1"]);
   // entry and exit block
-  cfg_t* cfg = new cfg_t("entry", "exit", decl);
+  z_cfg_t* cfg = new z_cfg_t("entry", "exit", decl);
   // adding blocks
-  basic_block_t& entry = cfg->insert ("entry");
-  basic_block_t& exit   = cfg->insert ("exit");
+  z_basic_block_t& entry = cfg->insert ("entry");
+  z_basic_block_t& exit   = cfg->insert ("exit");
   // adding control flow
   entry >> exit;
   // adding statements
@@ -84,7 +84,7 @@ cfg_t* rec2 (variable_factory_t &vfac) {
 }
 
 
-cfg_t* bar (variable_factory_t &vfac) {
+z_cfg_t* bar (variable_factory_t &vfac) {
   vector<pair<varname_t,crab::variable_type> > params;
   params.push_back (make_pair (vfac["a"], crab::INT_TYPE));
   function_decl<varname_t> decl (crab::INT_TYPE, vfac["bar"], params);
@@ -94,10 +94,10 @@ cfg_t* bar (variable_factory_t &vfac) {
   z_var y (vfac ["y1"]);
   z_var w (vfac ["w1"]);
   // entry and exit block
-  cfg_t* cfg = new cfg_t("entry", "exit", decl);
+  z_cfg_t* cfg = new z_cfg_t("entry", "exit", decl);
   // adding blocks
-  basic_block_t& entry = cfg->insert ("entry");
-  basic_block_t& exit   = cfg->insert ("exit");
+  z_basic_block_t& entry = cfg->insert ("entry");
+  z_basic_block_t& exit   = cfg->insert ("exit");
   // adding control flow
   entry >> exit;
   // adding statements
@@ -110,7 +110,7 @@ cfg_t* bar (variable_factory_t &vfac) {
   return cfg;
 }
 
-cfg_t* m (variable_factory_t &vfac)  {
+z_cfg_t* m (variable_factory_t &vfac)  {
   vector<pair<varname_t,crab::variable_type> > params;
   function_decl<varname_t> decl (crab::INT_TYPE, vfac["main"], params);
   // Defining program variables
@@ -118,10 +118,10 @@ cfg_t* m (variable_factory_t &vfac)  {
   z_var y (vfac ["y2"]);
   z_var z (vfac ["z2"]);
   // entry and exit block
-  cfg_t* cfg = new cfg_t("entry", "exit", decl);
+  z_cfg_t* cfg = new z_cfg_t("entry", "exit", decl);
   // adding blocks
-  basic_block_t& entry = cfg->insert ("entry");
-  basic_block_t& exit   = cfg->insert ("exit");
+  z_basic_block_t& entry = cfg->insert ("entry");
+  z_basic_block_t& exit   = cfg->insert ("exit");
   // adding control flow
   entry >> exit;
   // adding statements
@@ -147,11 +147,11 @@ int main (int argc, char** argv ) {
   SET_TEST_OPTIONS(argc,argv)
 
   variable_factory_t vfac;
-  cfg_t* t1 = foo (vfac);
-  cfg_t* t2 = bar (vfac);
-  cfg_t* t3 = rec1 (vfac);
-  cfg_t* t4 = rec2 (vfac);
-  cfg_t* t5 = m (vfac);
+  z_cfg_t* t1 = foo (vfac);
+  z_cfg_t* t2 = bar (vfac);
+  z_cfg_t* t3 = rec1 (vfac);
+  z_cfg_t* t4 = rec2 (vfac);
+  z_cfg_t* t5 = m (vfac);
 
   crab::outs() << *t1 << "\n";
   crab::outs() << *t2 << "\n";
@@ -159,23 +159,23 @@ int main (int argc, char** argv ) {
   crab::outs() << *t4 << "\n";
   crab::outs() << *t5 << "\n";
 
-  vector<cfg_ref_t> cfgs;
+  vector<z_cfg_ref_t> cfgs;
   cfgs.push_back(*t1);
   cfgs.push_back(*t2);
   cfgs.push_back(*t3);
   cfgs.push_back(*t4);
   cfgs.push_back(*t5);
 
-  typedef call_graph<cfg_ref_t> callgraph_t;
+  typedef call_graph<z_cfg_ref_t> callgraph_t;
   typedef call_graph_ref<callgraph_t> callgraph_ref_t;
 
   boost::scoped_ptr<callgraph_t> cg(new callgraph_t(cfgs));
   {
     inter_fwd_analyzer<callgraph_ref_t, variable_factory_t,
-                     dbm_domain_t, interval_domain_t> a (*cg, vfac, nullptr); 
+		       z_dbm_domain_t, z_interval_domain_t> a (*cg, vfac, nullptr); 
     crab::outs() << "Running" 
-         << " summary domain=" << dbm_domain_t::getDomainName () 
-         << " and forward domain=" << interval_domain_t::getDomainName () << "\n";
+         << " summary domain=" << z_dbm_domain_t::getDomainName () 
+         << " and forward domain=" << z_interval_domain_t::getDomainName () << "\n";
 
     a.Run ();
     
@@ -212,11 +212,12 @@ int main (int argc, char** argv ) {
 #ifdef HAVE_APRON
   {
     inter_fwd_analyzer<callgraph_ref_t, variable_factory_t,
-                     opt_oct_apron_domain_t, interval_domain_t> a (*cg, vfac, nullptr); 
+		       z_opt_oct_apron_domain_t,
+		       z_interval_domain_t> a (*cg, vfac, nullptr); 
 
     crab::outs() << "Running" 
-         << " summary domain=" << opt_oct_apron_domain_t::getDomainName () 
-         << " and forward domain=" << interval_domain_t::getDomainName () << "\n";
+         << " summary domain=" << z_opt_oct_apron_domain_t::getDomainName () 
+         << " and forward domain=" << z_interval_domain_t::getDomainName () << "\n";
 
     a.Run ();
     if (stats_enabled) {
@@ -252,11 +253,11 @@ int main (int argc, char** argv ) {
 
   {
     inter_fwd_analyzer<callgraph_ref_t,  variable_factory_t,
-                     term_domain_t, interval_domain_t> a (*cg, vfac, nullptr); 
+		       z_term_domain_t, z_interval_domain_t> a (*cg, vfac, nullptr); 
 
     crab::outs() << "Running" 
-         << " summary domain=" << term_domain_t::getDomainName () 
-         << " and forward domain=" << interval_domain_t::getDomainName () << "\n";
+         << " summary domain=" << z_term_domain_t::getDomainName () 
+         << " and forward domain=" << z_interval_domain_t::getDomainName () << "\n";
 
     a.Run ();
     if (stats_enabled) {
@@ -291,11 +292,11 @@ int main (int argc, char** argv ) {
 
   {
     inter_fwd_analyzer<callgraph_ref_t,  variable_factory_t,
-                       num_domain_t, num_domain_t> a (*cg, vfac, nullptr); 
+                       z_num_domain_t, z_num_domain_t> a (*cg, vfac, nullptr); 
 
     crab::outs() << "Running" 
-         << " summary domain=" << num_domain_t::getDomainName () 
-         << " and forward domain=" << num_domain_t::getDomainName () << "\n";
+         << " summary domain=" << z_num_domain_t::getDomainName () 
+         << " and forward domain=" << z_num_domain_t::getDomainName () << "\n";
 
     a.Run ();
 

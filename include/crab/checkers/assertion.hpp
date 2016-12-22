@@ -16,18 +16,20 @@ namespace crab {
     class assert_property_checker: public property_checker <Analyzer> {
       
       typedef typename Analyzer::varname_t varname_t;
-      typedef ikos::interval<z_number> interval_t;
+      typedef typename Analyzer::number_t number_t;
+      
+      typedef ikos::interval<number_t> interval_t;
       typedef typename Analyzer::abs_dom_t abs_dom_t;
       typedef property_checker<Analyzer> base_checker_t;
 
-      using typename base_checker_t::z_var_t;
-      using typename base_checker_t::z_lin_exp_t;
-      using typename base_checker_t::z_lin_cst_t;
-      using typename base_checker_t::z_lin_cst_sys_t;
-      using typename base_checker_t::z_bin_op_t;
-      using typename base_checker_t::z_assign_t;
-      using typename base_checker_t::z_assume_t;
-      using typename base_checker_t::z_assert_t;
+      using typename base_checker_t::var_t;
+      using typename base_checker_t::lin_exp_t;
+      using typename base_checker_t::lin_cst_t;
+      using typename base_checker_t::lin_cst_sys_t;
+      using typename base_checker_t::bin_op_t;
+      using typename base_checker_t::assign_t;
+      using typename base_checker_t::assume_t;
+      using typename base_checker_t::assert_t;
 
      public:
       
@@ -37,11 +39,11 @@ namespace crab {
         return "user-defined assertion checker using " + abs_dom_t::getDomainName ();
       }
 
-      virtual void check (z_assert_t& s) override { 
+      virtual void check (assert_t& s) override { 
         if (!this->m_abs_tr) return;        
         
         auto &inv = this->m_abs_tr->inv ();
-        z_lin_cst_t cst = s.constraint ();
+        lin_cst_t cst = s.constraint ();
 
         // Answering a reachability question
         if (cst.is_contradiction()) {

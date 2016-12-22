@@ -6,7 +6,7 @@ using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
 /* Example of how to build a CFG */
-cfg_t* prog (variable_factory_t &vfac)  {
+z_cfg_t* prog (variable_factory_t &vfac)  {
 
   // Defining program variables
   z_var i (vfac ["i"]);
@@ -14,18 +14,18 @@ cfg_t* prog (variable_factory_t &vfac)  {
   z_var nd (vfac ["nd"]);
   z_var inc (vfac ["inc"]);
   // entry and exit block
-  auto cfg = new cfg_t("x0","ret");
+  auto cfg = new z_cfg_t("x0","ret");
   // adding blocks
-  basic_block_t& x0 = cfg->insert ("x0");
-  basic_block_t& x1 = cfg->insert ("x1");
-  basic_block_t& x2 = cfg->insert ("x2");
-  basic_block_t& x3 = cfg->insert ("x3");
-  basic_block_t& entry = cfg->insert ("entry");
-  basic_block_t& bb1   = cfg->insert ("bb1");
-  basic_block_t& bb1_t = cfg->insert ("bb1_t");
-  basic_block_t& bb1_f = cfg->insert ("bb1_f");
-  basic_block_t& bb2   = cfg->insert ("bb2");
-  basic_block_t& ret   = cfg->insert ("ret");
+  z_basic_block_t& x0 = cfg->insert ("x0");
+  z_basic_block_t& x1 = cfg->insert ("x1");
+  z_basic_block_t& x2 = cfg->insert ("x2");
+  z_basic_block_t& x3 = cfg->insert ("x3");
+  z_basic_block_t& entry = cfg->insert ("entry");
+  z_basic_block_t& bb1   = cfg->insert ("bb1");
+  z_basic_block_t& bb1_t = cfg->insert ("bb1_t");
+  z_basic_block_t& bb1_f = cfg->insert ("bb1_f");
+  z_basic_block_t& bb2   = cfg->insert ("bb2");
+  z_basic_block_t& ret   = cfg->insert ("ret");
   // adding control flow
   x0 >> x1; x1 >> x2; x2 >> x3; x3 >> entry;
   entry >> bb1;
@@ -50,15 +50,15 @@ int main (int argc, char** argv )
   variable_factory_t vfac;
 
   { 
-    cfg_t* cfg = prog(vfac);
+    z_cfg_t* cfg = prog(vfac);
     
     crab::outs() << "CFG\n" << *cfg << "\n";
-    cfg_rev_t rev_cfg(*cfg);
+    z_cfg_rev_t rev_cfg(*cfg);
     crab::outs() << "Reversed CFG\n" << rev_cfg << "\n";
     
     crab::outs() << "Weak reversed topological order of CFG \n";
     bool first=true;
-    for (auto &N: crab::analyzer::graph_algo::weak_rev_topo_sort(cfg_ref_t(*cfg))) {
+    for (auto &N: crab::analyzer::graph_algo::weak_rev_topo_sort(z_cfg_ref_t(*cfg))) {
       if (!first)
         crab::outs() << " -- ";
       crab::outs() << N;
@@ -77,13 +77,13 @@ int main (int argc, char** argv )
     crab::outs() << "\n";
 
     crab::outs() << "Bourdoncle WTO of the reversed CFG\n";
-    ikos::wto<typename cfg_rev_t::node_t, cfg_rev_t> wto_g(rev_cfg);
+    ikos::wto<typename z_cfg_rev_t::node_t, z_cfg_rev_t> wto_g(rev_cfg);
     crab::outs() << wto_g << "\n";
     
     cfg->simplify ();
     crab::outs() << "Simplified CFG\n" << *cfg << "\n";
     
-    rev_cfg = cfg_rev_t(*cfg);
+    rev_cfg = z_cfg_rev_t(*cfg);
     crab::outs() << "Reversed simplified CFG\n" << rev_cfg << "\n";
 
     delete cfg;

@@ -117,13 +117,19 @@ inline void ___print___(ArgTypes... args)
 
 namespace crab {
 
-   enum variable_type { INT_TYPE, PTR_TYPE, ARR_INT_TYPE, ARR_PTR_TYPE, UNK_TYPE};
+   enum variable_type {
+     INT_TYPE,
+     REAL_TYPE,
+     PTR_TYPE,
+     ARR_INT_TYPE, ARR_PTR_TYPE,
+     UNK_TYPE};
 
    inline crab_os& operator<< (crab_os& o, variable_type t)
    {
      switch (t)
      {
        case INT_TYPE: o << "int"; break;
+       case REAL_TYPE: o << "real"; break;	 
        case PTR_TYPE: o << "ptr"; break;
        case ARR_INT_TYPE: o << "arr_int"; break;
        case ARR_PTR_TYPE: o << "arr_ptr"; break;

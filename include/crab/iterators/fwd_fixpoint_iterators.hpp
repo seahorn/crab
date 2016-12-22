@@ -78,7 +78,7 @@ namespace ikos {
     typedef wto< NodeName, CFG > wto_t;
     typedef interleaved_fwd_fixpoint_iterator_impl::wto_iterator< NodeName, CFG, AbstractValue > wto_iterator_t;
     typedef interleaved_fwd_fixpoint_iterator_impl::wto_processor< NodeName, CFG, AbstractValue > wto_processor_t;
-    typedef crab::iterators::thresholds<z_number> thresholds_t;
+    typedef crab::iterators::thresholds_t thresholds_t;
     
   private:
     CFG _cfg;
@@ -88,7 +88,7 @@ namespace ikos {
     unsigned int _widening_delay;
     // number of narrowing iterations. If the narrowing operator is
     // indeed a narrowing operator this parameter is not
-    // needed. However, there are abstract domains for which a sound
+    // needed. However, there are abstract domains for which an actual
     // narrowing operation is not available so we must enforce
     // termination.
     unsigned int _descending_iterations;

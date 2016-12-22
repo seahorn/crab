@@ -46,9 +46,9 @@ namespace crab {
 namespace boost {
 
      // cfg
-     template<typename BasicBlockLabel, typename VariableName>
-     struct graph_traits<crab::cfg::Cfg <BasicBlockLabel, VariableName> >  {
-       typedef crab::cfg::Cfg<BasicBlockLabel, VariableName> graph_t;
+     template<typename BasicBlockLabel, typename VariableName, typename Number>
+     struct graph_traits<crab::cfg::Cfg <BasicBlockLabel, VariableName, Number> >  {
+       typedef crab::cfg::Cfg<BasicBlockLabel, VariableName, Number> graph_t;
        typedef BasicBlockLabel vertex_descriptor;
        typedef pair<vertex_descriptor, vertex_descriptor> edge_descriptor;
        typedef pair<const vertex_descriptor, 
@@ -152,34 +152,24 @@ namespace crab {
    namespace cfg {   
 
      // cfg
-
-     // template<typename BasicBlockLabel, typename VariableName>
-     // typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName> >::vertex_descriptor
-     // source (typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName> >::edge_descriptor e, 
-     //         crab::cfg::Cfg<BasicBlockLabel, VariableName> /*g*/) {
-     //   return e.first;
-     // }
-   
-     // template<typename BasicBlockLabel, typename VariableName>
-     // typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName> >::vertex_descriptor
-     // target (typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName> >::edge_descriptor e, 
-     //         crab::cfg::Cfg<BasicBlockLabel,VariableName> /*g*/) {
-     //   return e.second;
-     // }
-
-     template<typename BasicBlockLabel, typename VariableName>
-     inline pair<typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName> >::vertex_iterator, 
-                 typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName> >::vertex_iterator > 
-     vertices (crab::cfg::Cfg<BasicBlockLabel,VariableName> g) {
+     template<typename BasicBlockLabel, typename VariableName, typename Number>
+     inline pair<typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> >::
+		 vertex_iterator, 
+                 typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> >::
+		 vertex_iterator > 
+     vertices (crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> g) {
        return std::make_pair (g.label_begin (), g.label_end ());
      }
    
-     template<typename BasicBlockLabel, typename VariableName>
-     inline pair< typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName> >::out_edge_iterator, 
-                  typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName> >::out_edge_iterator >
-     out_edges (typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName> >::vertex_descriptor v, 
-                crab::cfg::Cfg<BasicBlockLabel,VariableName> g) {
-       typedef crab::cfg::Cfg<BasicBlockLabel,VariableName> G;
+     template<typename BasicBlockLabel, typename VariableName, typename Number>
+     inline pair< typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> >::
+		  out_edge_iterator, 
+                  typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> >::
+		  out_edge_iterator >
+     out_edges (typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> >::
+		vertex_descriptor v, 
+                crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> g) {
+       typedef crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> G;
        
        auto& node = g.get_node (v);
        auto p = node.next_blocks ();
@@ -189,12 +179,15 @@ namespace crab {
                                                        crab::cfg::graph::mk_out_edge<G> (v)));     
      }
    
-     template<typename BasicBlockLabel, typename VariableName>
-     inline pair< typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName> >::in_edge_iterator, 
-                  typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName> >::in_edge_iterator >
-     in_edges (typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName> >::vertex_descriptor v, 
-               crab::cfg::Cfg<BasicBlockLabel,VariableName> g) {
-       typedef crab::cfg::Cfg<BasicBlockLabel,VariableName> G;
+     template<typename BasicBlockLabel, typename VariableName, typename Number>
+     inline pair< typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> >::
+		  in_edge_iterator, 
+                  typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> >::
+		  in_edge_iterator >
+     in_edges (typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> >::
+	       vertex_descriptor v, 
+               crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> g) {
+       typedef crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> G;
        
        auto& node = g.get_node (v);
        auto p = node.prev_blocks ();
@@ -204,32 +197,39 @@ namespace crab {
                                                        crab::cfg::graph::mk_in_edge<G> (v)));
      }
    
-     template<typename BasicBlockLabel, typename VariableName>
-     typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName> >::vertices_size_type
-     num_vertices (crab::cfg::Cfg<BasicBlockLabel,VariableName> g) {
+     template<typename BasicBlockLabel, typename VariableName, typename Number>
+     typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName, Number> >::
+     vertices_size_type
+     num_vertices (crab::cfg::Cfg<BasicBlockLabel,VariableName, Number> g) {
        return std::distance (g.label_begin (), g.label_end ());
      }
    
-     template<typename BasicBlockLabel, typename VariableName>
-     typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName> >::degree_size_type
-     in_degree (typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName> >::vertex_descriptor v, 
-                crab::cfg::Cfg<BasicBlockLabel,VariableName> g) {
+     template<typename BasicBlockLabel, typename VariableName, typename Number>
+     typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> >::
+     degree_size_type
+     in_degree (typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> >::
+		vertex_descriptor v, 
+                crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> g) {
        auto preds = g.prev_nodes (v);
        return std::distance (preds.begin (), preds.end ());
      }
    
-     template<typename BasicBlockLabel, typename VariableName>
-     typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName> >::degree_size_type
-     out_degree (typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName> >::vertex_descriptor v, 
-                 crab::cfg::Cfg<BasicBlockLabel,VariableName> g) {
+     template<typename BasicBlockLabel, typename VariableName, typename Number>
+     typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> >::
+     degree_size_type
+     out_degree (typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> >::
+		 vertex_descriptor v, 
+                 crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> g) {
        auto succs = g.next_nodes (v);
        return std::distance (succs.begin (), succs.end ());
      }
    
-     template<typename BasicBlockLabel, typename VariableName>
-     typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName> >::degree_size_type
-     degree (typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName> >::vertex_descriptor v, 
-             crab::cfg::Cfg<BasicBlockLabel,VariableName> g) {
+     template<typename BasicBlockLabel, typename VariableName, typename Number>
+     typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> >::
+     degree_size_type
+     degree (typename graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> >::
+	     vertex_descriptor v, 
+             crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> g) {
        return out_degree (v, g) + in_degree (v, g);
      }
 

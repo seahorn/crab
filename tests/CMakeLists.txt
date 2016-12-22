@@ -1,9 +1,9 @@
 set (CRAB_LIBS 
-   OS
-   Term
-   Debug
-   Stats
-   )
+  OS
+  Term
+  Debug
+  Stats
+  )
 
 set (CRAB_LIBS ${CRAB_LIBS}
   ${Boost_PROGRAM_OPTIONS_LIBRARY}
@@ -31,6 +31,7 @@ add_subdirectory (cfg)
 add_subdirectory (thresholds)
 add_subdirectory (disintervals)
 add_subdirectory (checkers)
+add_subdirectory (rationals)
 
 # Needed if shared libraries
 if (BUILD_CRAB_LIBS_SHARED)

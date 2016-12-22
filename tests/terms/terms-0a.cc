@@ -16,13 +16,13 @@ int main (int argc, char** argv )
   varname_t y = vfac["y"];
 
   {
-    term_domain_t dom_left = term_domain_t::top ();
+    z_term_domain_t dom_left = z_term_domain_t::top ();
     dom_left.assign(x, z_number(1));
 
-    term_domain_t dom_right = dom_left;
+    z_term_domain_t dom_right = dom_left;
     dom_right.apply(OP_ADDITION, x, x, z_number(1));
     
-    term_domain_t l_join_r = dom_left | dom_right;
+    z_term_domain_t l_join_r = dom_left | dom_right;
     
     crab::outs() << dom_left << " | " << dom_right << " = " << l_join_r << "\n";
     //  crab::outs() << dom_left;
@@ -31,7 +31,7 @@ int main (int argc, char** argv )
   {
     varname_t z = vfac["z"];
 
-    term_domain_t inv = term_domain_t::top ();
+    z_term_domain_t inv = z_term_domain_t::top ();
     inv.assign (x, 5);
     inv.assign (y, 5);
     inv.assign (z, 9);
@@ -39,7 +39,7 @@ int main (int argc, char** argv )
     vs.push_back (x);
     vs.push_back (y);
     crab::outs() << "Before project " << inv << "\n";
-    crab::domains::domain_traits<term_domain_t>::project (inv, vs.begin (), vs.end ());
+    crab::domains::domain_traits<z_term_domain_t>::project (inv, vs.begin (), vs.end ());
     crab::outs() << "After project " << inv << "\n";
 
 

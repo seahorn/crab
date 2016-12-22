@@ -6,7 +6,7 @@ using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
 // To test the interface to BGL graphs
-void write (cfg_ref_t g)
+void write (z_cfg_ref_t g)
 {
   crab::outs() << "Num of vertices: " << num_vertices (g) << "\n";
   for (auto v: boost::make_iterator_range (vertices (g)))
@@ -38,16 +38,16 @@ void write (cfg_ref_t g)
   }
 }
 
-cfg_t* prog (variable_factory_t &vfac) 
+z_cfg_t* prog (variable_factory_t &vfac) 
 {
 
-  cfg_t* cfg = new cfg_t("entry","ret");
-  basic_block_t& entry      = cfg->insert ("entry");
-  basic_block_t& loop_head  = cfg->insert ("loop_head");
-  basic_block_t& loop_t     = cfg->insert ("loop_t");
-  basic_block_t& loop_f     = cfg->insert ("loop_f");
-  basic_block_t& loop_body  = cfg->insert ("loop_body");
-  basic_block_t& ret        = cfg->insert ("ret");
+  z_cfg_t* cfg = new z_cfg_t("entry","ret");
+  z_basic_block_t& entry      = cfg->insert ("entry");
+  z_basic_block_t& loop_head  = cfg->insert ("loop_head");
+  z_basic_block_t& loop_t     = cfg->insert ("loop_t");
+  z_basic_block_t& loop_f     = cfg->insert ("loop_f");
+  z_basic_block_t& loop_body  = cfg->insert ("loop_body");
+  z_basic_block_t& ret        = cfg->insert ("ret");
 
   entry >> loop_head;
   loop_head >> loop_t; 
@@ -75,16 +75,16 @@ int main (int argc, char** argv )
   SET_TEST_OPTIONS(argc,argv)
 
   variable_factory_t vfac;
-  cfg_t* cfg = prog (vfac);
+  z_cfg_t* cfg = prog (vfac);
   cfg->simplify ();
   crab::outs() << *cfg << "\n";
 
-  run<interval_domain_t>(cfg,vfac,true,1,2,20);
-  run<dbm_domain_t>(cfg,vfac,true,1,2,20);
-  run<sdbm_domain_t>(cfg,vfac,true,1,2,20);
-  run<ric_domain_t>(cfg,vfac,true,1,2,20);
-  run<term_domain_t>(cfg,vfac,true,1,2,20);
-  run<dis_interval_domain_t>(cfg,vfac,true,1,2,20);
+  run<z_interval_domain_t>(cfg,vfac,true,1,2,20);
+  run<z_dbm_domain_t>(cfg,vfac,true,1,2,20);
+  run<z_sdbm_domain_t>(cfg,vfac,true,1,2,20);
+  run<z_ric_domain_t>(cfg,vfac,true,1,2,20);
+  run<z_term_domain_t>(cfg,vfac,true,1,2,20);
+  run<z_dis_interval_domain_t>(cfg,vfac,true,1,2,20);
   delete cfg;
   return 0;
 }

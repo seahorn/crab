@@ -5,22 +5,22 @@ using namespace crab::analyzer;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
-cfg_t* prog (variable_factory_t &vfac) 
+z_cfg_t* prog (variable_factory_t &vfac) 
 {
 
-  cfg_t* cfg = new cfg_t("loop1_entry","ret");
-  //cfg_t cfg ("loop1_entry");
-  basic_block_t& loop1_entry = cfg->insert ("loop1_entry");
-  basic_block_t& loop1_bb1   = cfg->insert ("loop1_bb1");
-  basic_block_t& loop1_bb1_t = cfg->insert ("loop1_bb1_t");
-  basic_block_t& loop1_bb1_f = cfg->insert ("loop1_bb1_f");
-  basic_block_t& loop1_bb2   = cfg->insert ("loop1_bb2");
-  basic_block_t& loop2_entry = cfg->insert ("loop2_entry");
-  basic_block_t& loop2_bb1   = cfg->insert ("loop2_bb1");
-  basic_block_t& loop2_bb1_t = cfg->insert ("loop2_bb1_t");
-  basic_block_t& loop2_bb1_f = cfg->insert ("loop2_bb1_f");
-  basic_block_t& loop2_bb2   = cfg->insert ("loop2_bb2");
-  basic_block_t& ret         = cfg->insert ("ret");
+  z_cfg_t* cfg = new z_cfg_t("loop1_entry","ret");
+  //z_cfg_t cfg ("loop1_entry");
+  z_basic_block_t& loop1_entry = cfg->insert ("loop1_entry");
+  z_basic_block_t& loop1_bb1   = cfg->insert ("loop1_bb1");
+  z_basic_block_t& loop1_bb1_t = cfg->insert ("loop1_bb1_t");
+  z_basic_block_t& loop1_bb1_f = cfg->insert ("loop1_bb1_f");
+  z_basic_block_t& loop1_bb2   = cfg->insert ("loop1_bb2");
+  z_basic_block_t& loop2_entry = cfg->insert ("loop2_entry");
+  z_basic_block_t& loop2_bb1   = cfg->insert ("loop2_bb1");
+  z_basic_block_t& loop2_bb1_t = cfg->insert ("loop2_bb1_t");
+  z_basic_block_t& loop2_bb1_f = cfg->insert ("loop2_bb1_f");
+  z_basic_block_t& loop2_bb2   = cfg->insert ("loop2_bb2");
+  z_basic_block_t& ret         = cfg->insert ("ret");
 
   loop1_entry >> loop1_bb1;
   loop1_bb1 >> loop1_bb1_t; loop1_bb1 >> loop1_bb1_f;
@@ -53,16 +53,16 @@ int main (int argc, char** argv )
   SET_TEST_OPTIONS(argc,argv)
 
   variable_factory_t vfac;
-  cfg_t* cfg = prog (vfac);
+  z_cfg_t* cfg = prog (vfac);
   cfg->simplify ();
   crab::outs() << *cfg << "\n";
 
-  run<interval_domain_t>(cfg,vfac,true,1,2,20);
-  run<dbm_domain_t>(cfg,vfac,true,1,2,20);
-  run<sdbm_domain_t>(cfg,vfac,true,1,2,20);
-  run<ric_domain_t>(cfg,vfac,true,1,2,20);
-  run<term_domain_t>(cfg,vfac,true,1,2,20);
-  run<dis_interval_domain_t>(cfg,vfac,true,1,2,20);
+  run<z_interval_domain_t>(cfg,vfac,true,1,2,20);
+  run<z_dbm_domain_t>(cfg,vfac,true,1,2,20);
+  run<z_sdbm_domain_t>(cfg,vfac,true,1,2,20);
+  run<z_ric_domain_t>(cfg,vfac,true,1,2,20);
+  run<z_term_domain_t>(cfg,vfac,true,1,2,20);
+  run<z_dis_interval_domain_t>(cfg,vfac,true,1,2,20);
 
   delete cfg;
   return 0;

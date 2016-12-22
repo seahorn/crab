@@ -94,10 +94,10 @@ namespace crab {
       typedef typename abs_dom_t::number_t number_t;
       typedef crab::domains::nullity_domain<number_t, varname_t> nullity_domain_t;
       typedef property_checker<Analyzer> base_checker_t;
-      using typename base_checker_t::z_var_t;
-      using typename base_checker_t::z_lin_exp_t;
-      using typename base_checker_t::z_lin_cst_t;
-      using typename base_checker_t::z_lin_cst_sys_t;
+      using typename base_checker_t::var_t;
+      using typename base_checker_t::lin_exp_t;
+      using typename base_checker_t::lin_cst_t;
+      using typename base_checker_t::lin_cst_sys_t;
       using typename base_checker_t::ptr_load_t;
       using typename base_checker_t::ptr_store_t;
 

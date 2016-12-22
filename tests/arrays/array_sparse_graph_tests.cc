@@ -6,7 +6,7 @@ using namespace crab::analyzer;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
-cfg_t* prog1 (variable_factory_t &vfac, bool temp_add) 
+z_cfg_t* prog1 (variable_factory_t &vfac, bool temp_add) 
 {
   z_var n1(vfac["n1"]);
   z_var i(vfac["i"]);
@@ -17,13 +17,13 @@ cfg_t* prog1 (variable_factory_t &vfac, bool temp_add)
   varname_t tmp5 = vfac["tmp5"];
   varname_t tmp6 = vfac["tmp6"];
 
-  cfg_t* cfg = new cfg_t("entry","ret", ARR);
-  basic_block_t& entry = cfg->insert ("entry");
-  basic_block_t& bb1   = cfg->insert ("bb1");
-  basic_block_t& bb1_t = cfg->insert ("bb1_t");
-  basic_block_t& bb1_f = cfg->insert ("bb1_f");
-  basic_block_t& bb2   = cfg->insert ("bb2");
-  basic_block_t& ret   = cfg->insert ("ret");
+  z_cfg_t* cfg = new z_cfg_t("entry","ret", ARR);
+  z_basic_block_t& entry = cfg->insert ("entry");
+  z_basic_block_t& bb1   = cfg->insert ("bb1");
+  z_basic_block_t& bb1_t = cfg->insert ("bb1_t");
+  z_basic_block_t& bb1_f = cfg->insert ("bb1_f");
+  z_basic_block_t& bb2   = cfg->insert ("bb2");
+  z_basic_block_t& ret   = cfg->insert ("ret");
 
   // assume array element of 1 byte
 
@@ -52,15 +52,15 @@ cfg_t* prog1 (variable_factory_t &vfac, bool temp_add)
 }
 
 
-cfg_t* prog2(variable_factory_t &vfac, bool temp_sub) 
+z_cfg_t* prog2(variable_factory_t &vfac, bool temp_sub) 
 {
-  cfg_t* cfg = new cfg_t("entry","ret",ARR);
-  basic_block_t& entry = cfg->insert("entry");
-  basic_block_t& bb1   = cfg->insert("bb1");
-  basic_block_t& bb1_t = cfg->insert("bb1_t");
-  basic_block_t& bb1_f = cfg->insert("bb1_f");
-  basic_block_t& bb2   = cfg->insert("bb2");
-  basic_block_t& ret   = cfg->insert("ret");
+  z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
+  z_basic_block_t& entry = cfg->insert("entry");
+  z_basic_block_t& bb1   = cfg->insert("bb1");
+  z_basic_block_t& bb1_t = cfg->insert("bb1_t");
+  z_basic_block_t& bb1_f = cfg->insert("bb1_f");
+  z_basic_block_t& bb2   = cfg->insert("bb2");
+  z_basic_block_t& ret   = cfg->insert("ret");
   z_var n0(vfac["n0"]);
   z_var n9(vfac["n9"]);
   z_var i(vfac["i"]);
@@ -98,15 +98,15 @@ cfg_t* prog2(variable_factory_t &vfac, bool temp_sub)
   return cfg;
 }
 
-cfg_t* prog3(variable_factory_t &vfac) 
+z_cfg_t* prog3(variable_factory_t &vfac) 
 {
-  cfg_t* cfg= new cfg_t("entry","ret",ARR);
-  basic_block_t& entry = cfg->insert("entry");
-  basic_block_t& bb1   = cfg->insert("bb1");
-  basic_block_t& bb1_t = cfg->insert("bb1_t");
-  basic_block_t& bb1_f = cfg->insert("bb1_f");
-  basic_block_t& bb2   = cfg->insert("bb2");
-  basic_block_t& ret   = cfg->insert("ret");
+  z_cfg_t* cfg= new z_cfg_t("entry","ret",ARR);
+  z_basic_block_t& entry = cfg->insert("entry");
+  z_basic_block_t& bb1   = cfg->insert("bb1");
+  z_basic_block_t& bb1_t = cfg->insert("bb1_t");
+  z_basic_block_t& bb1_f = cfg->insert("bb1_f");
+  z_basic_block_t& bb2   = cfg->insert("bb2");
+  z_basic_block_t& ret   = cfg->insert("ret");
   entry >> bb1;
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
@@ -138,16 +138,16 @@ cfg_t* prog3(variable_factory_t &vfac)
 }
 
 
-cfg_t* prog4(variable_factory_t &vfac) 
+z_cfg_t* prog4(variable_factory_t &vfac) 
 {
 
-  cfg_t* cfg = new cfg_t("entry","ret",ARR);
-  basic_block_t& entry = cfg->insert("entry");
-  basic_block_t& bb1   = cfg->insert("bb1");
-  basic_block_t& bb1_t = cfg->insert("bb1_t");
-  basic_block_t& bb1_f = cfg->insert("bb1_f");
-  basic_block_t& bb2   = cfg->insert("bb2");
-  basic_block_t& ret   = cfg->insert("ret");
+  z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
+  z_basic_block_t& entry = cfg->insert("entry");
+  z_basic_block_t& bb1   = cfg->insert("bb1");
+  z_basic_block_t& bb1_t = cfg->insert("bb1_t");
+  z_basic_block_t& bb1_f = cfg->insert("bb1_f");
+  z_basic_block_t& bb2   = cfg->insert("bb2");
+  z_basic_block_t& ret   = cfg->insert("ret");
   z_var n1(vfac["n1"]);
   z_var i(vfac["i"]);
   varname_t a = vfac["A"];
@@ -180,15 +180,15 @@ cfg_t* prog4(variable_factory_t &vfac)
   return cfg;
 }
 
-cfg_t* prog5(variable_factory_t &vfac) 
+z_cfg_t* prog5(variable_factory_t &vfac) 
 {
-  cfg_t* cfg = new cfg_t("entry","ret",ARR);
-  basic_block_t& entry = cfg->insert("entry");
-  basic_block_t& bb1   = cfg->insert("bb1");
-  basic_block_t& bb1_t = cfg->insert("bb1_t");
-  basic_block_t& bb1_f = cfg->insert("bb1_f");
-  basic_block_t& bb2   = cfg->insert("bb2");
-  basic_block_t& ret   = cfg->insert("ret");
+  z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
+  z_basic_block_t& entry = cfg->insert("entry");
+  z_basic_block_t& bb1   = cfg->insert("bb1");
+  z_basic_block_t& bb1_t = cfg->insert("bb1_t");
+  z_basic_block_t& bb1_f = cfg->insert("bb1_f");
+  z_basic_block_t& bb2   = cfg->insert("bb2");
+  z_basic_block_t& ret   = cfg->insert("ret");
   z_var n1(vfac["n1"]);
   z_var i(vfac["i"]);
   z_var n(vfac["n"]);
@@ -216,15 +216,15 @@ cfg_t* prog5(variable_factory_t &vfac)
   return cfg;
 }
 
-cfg_t* prog6(variable_factory_t &vfac) 
+z_cfg_t* prog6(variable_factory_t &vfac) 
 {
-  cfg_t* cfg = new cfg_t("entry","ret",ARR);
-  basic_block_t& entry = cfg->insert("entry");
-  basic_block_t& bb1   = cfg->insert("bb1");
-  basic_block_t& bb1_t = cfg->insert("bb1_t");
-  basic_block_t& bb1_f = cfg->insert("bb1_f");
-  basic_block_t& bb2   = cfg->insert("bb2");
-  basic_block_t& ret   = cfg->insert("ret");
+  z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
+  z_basic_block_t& entry = cfg->insert("entry");
+  z_basic_block_t& bb1   = cfg->insert("bb1");
+  z_basic_block_t& bb1_t = cfg->insert("bb1_t");
+  z_basic_block_t& bb1_f = cfg->insert("bb1_f");
+  z_basic_block_t& bb2   = cfg->insert("bb2");
+  z_basic_block_t& ret   = cfg->insert("ret");
   z_var i(vfac["i"]);
   varname_t a = vfac["A"];
   z_var tmp(vfac["tmp"]);
@@ -254,15 +254,15 @@ cfg_t* prog6(variable_factory_t &vfac)
   return cfg;
 }
 
-cfg_t* prog7(variable_factory_t &vfac) 
+z_cfg_t* prog7(variable_factory_t &vfac) 
 {
-  cfg_t* cfg = new cfg_t("entry","ret",ARR);
-  basic_block_t& entry = cfg->insert("entry");
-  basic_block_t& bb1   = cfg->insert("bb1");
-  basic_block_t& bb1_t = cfg->insert("bb1_t");
-  basic_block_t& bb1_f = cfg->insert("bb1_f");
-  basic_block_t& bb2   = cfg->insert("bb2");
-  basic_block_t& ret   = cfg->insert("ret");
+  z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
+  z_basic_block_t& entry = cfg->insert("entry");
+  z_basic_block_t& bb1   = cfg->insert("bb1");
+  z_basic_block_t& bb1_t = cfg->insert("bb1_t");
+  z_basic_block_t& bb1_f = cfg->insert("bb1_f");
+  z_basic_block_t& bb2   = cfg->insert("bb2");
+  z_basic_block_t& ret   = cfg->insert("ret");
   z_var n1(vfac["n1"]);
   z_var i(vfac["i"]);
   z_var n(vfac["n"]);
@@ -301,15 +301,15 @@ cfg_t* prog7(variable_factory_t &vfac)
 }
 
 // Initialize only even positions
-cfg_t* prog8(variable_factory_t &vfac) 
+z_cfg_t* prog8(variable_factory_t &vfac) 
 {
-  cfg_t* cfg = new cfg_t("entry","ret", ARR);
-  basic_block_t& entry = cfg->insert("entry");
-  basic_block_t& bb1   = cfg->insert("bb1");
-  basic_block_t& bb1_t = cfg->insert("bb1_t");
-  basic_block_t& bb1_f = cfg->insert("bb1_f");
-  basic_block_t& bb2   = cfg->insert("bb2");
-  basic_block_t& ret   = cfg->insert("ret");
+  z_cfg_t* cfg = new z_cfg_t("entry","ret", ARR);
+  z_basic_block_t& entry = cfg->insert("entry");
+  z_basic_block_t& bb1   = cfg->insert("bb1");
+  z_basic_block_t& bb1_t = cfg->insert("bb1_t");
+  z_basic_block_t& bb1_f = cfg->insert("bb1_f");
+  z_basic_block_t& bb2   = cfg->insert("bb2");
+  z_basic_block_t& ret   = cfg->insert("ret");
   z_var n1(vfac["n1"]);
   z_var n2(vfac["n2"]);
   z_var i(vfac["i"]);
@@ -350,20 +350,20 @@ cfg_t* prog8(variable_factory_t &vfac)
 
 
 // this is the program init_rand from Gange et.al paper.
-cfg_t* prog9(variable_factory_t &vfac) 
+z_cfg_t* prog9(variable_factory_t &vfac) 
 {
-  cfg_t* cfg = new cfg_t("entry","ret",ARR);
-  basic_block_t& entry   = cfg->insert("entry");
-  basic_block_t& bb1     = cfg->insert("bb1");
-  basic_block_t& bb1_t   = cfg->insert("bb1_t");
-  basic_block_t& bb1_f1  = cfg->insert("bb1_f1");
-  basic_block_t& bb1_f2  = cfg->insert("bb1_f2");
-  basic_block_t& bb1_f   = cfg->insert("bb1_f");
-  basic_block_t& bb2   = cfg->insert("bb2");
-  basic_block_t& bb2_a   = cfg->insert("bb2a");
-  basic_block_t& bb2_b   = cfg->insert("bb2b");
-  basic_block_t& bb3   = cfg->insert("bb3");
-  basic_block_t& ret     = cfg->insert("ret");
+  z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
+  z_basic_block_t& entry   = cfg->insert("entry");
+  z_basic_block_t& bb1     = cfg->insert("bb1");
+  z_basic_block_t& bb1_t   = cfg->insert("bb1_t");
+  z_basic_block_t& bb1_f1  = cfg->insert("bb1_f1");
+  z_basic_block_t& bb1_f2  = cfg->insert("bb1_f2");
+  z_basic_block_t& bb1_f   = cfg->insert("bb1_f");
+  z_basic_block_t& bb2   = cfg->insert("bb2");
+  z_basic_block_t& bb2_a   = cfg->insert("bb2a");
+  z_basic_block_t& bb2_b   = cfg->insert("bb2b");
+  z_basic_block_t& bb3   = cfg->insert("bb3");
+  z_basic_block_t& ret     = cfg->insert("ret");
   z_var i1(vfac["i1"]);
   z_var i2(vfac["i2"]);
   z_var n(vfac["n"]);
@@ -406,15 +406,15 @@ cfg_t* prog9(variable_factory_t &vfac)
   return cfg;
 }
 
-cfg_t* prog10(variable_factory_t &vfac) 
+z_cfg_t* prog10(variable_factory_t &vfac) 
 {
-  cfg_t* cfg = new cfg_t("entry","ret",ARR);
-  basic_block_t& entry = cfg->insert("entry");
-  basic_block_t& bb1   = cfg->insert("bb1");
-  basic_block_t& bb1_t = cfg->insert("bb1_t");
-  basic_block_t& bb1_f = cfg->insert("bb1_f");
-  basic_block_t& bb2   = cfg->insert("bb2");
-  basic_block_t& ret   = cfg->insert("ret");
+  z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
+  z_basic_block_t& entry = cfg->insert("entry");
+  z_basic_block_t& bb1   = cfg->insert("bb1");
+  z_basic_block_t& bb1_t = cfg->insert("bb1_t");
+  z_basic_block_t& bb1_f = cfg->insert("bb1_f");
+  z_basic_block_t& bb2   = cfg->insert("bb2");
+  z_basic_block_t& ret   = cfg->insert("ret");
   z_var i(vfac["i"]);
   z_var n(vfac["n"]);
   z_var max(vfac["max"]);
@@ -453,16 +453,16 @@ cfg_t* prog10(variable_factory_t &vfac)
 
 
 template <typename ArrayDomain>
-void run(cfg_ref_t cfg, string name, variable_factory_t &vfac)
+void run(z_cfg_ref_t cfg, string name, variable_factory_t &vfac)
 {
   crab::outs() << "--- " << name  << "\n";
   cfg.simplify ();
   crab::outs() << cfg << "\n";
   
-  typename fwd_analyzer_impl <cfg_ref_t, ArrayDomain, variable_factory_t>::type 
-      It (cfg, vfac, nullptr, 1, 2, 20);
   ArrayDomain inv = ArrayDomain::top ();
-  It.Run (inv);
+  using namespace crab::analyzer;
+  intra_fwd_analyzer<crab::cfg_impl::z_cfg_ref_t,ArrayDomain> It (cfg, inv, nullptr, 1, 2, 20);
+  It.run ();
   crab::outs() << "Results with " << ArrayDomain::getDomainName () << ":\n";
   crab::outs() << "(Invariants hold at the block's entries)\n";
   for (auto &b : cfg)
@@ -478,11 +478,11 @@ void run(cfg_ref_t cfg, string name, variable_factory_t &vfac)
   }  
 }
 
-typedef array_sparse_graph_domain<sdbm_domain_t, interval_domain_t> array_sgraph_domain_t;
+typedef array_sparse_graph_domain<z_sdbm_domain_t, z_interval_domain_t> array_sgraph_domain_t;
 
 void test1(){
   variable_factory_t vfac;
-  cfg_t* cfg = prog1(vfac, false);
+  z_cfg_t* cfg = prog1(vfac, false);
   run<array_sgraph_domain_t> (*cfg, "Program 1: forall 0<= i< 10. a[i] = 123456", vfac);
   delete cfg;
 }
@@ -490,42 +490,42 @@ void test1(){
 
 void test2(){
   variable_factory_t vfac;
-  cfg_t* cfg = prog3(vfac);
+  z_cfg_t* cfg = prog3(vfac);
   run<array_sgraph_domain_t>(*cfg, "Program 2: forall 0<= i< 10. a[i] = b[i] = x and x = 123456", vfac);
   delete cfg;
 }
 
 void test3(){
   variable_factory_t vfac;
-  cfg_t* cfg = prog4(vfac);
+  z_cfg_t* cfg = prog4(vfac);
   run<array_sgraph_domain_t>(*cfg, "Program 3: forall 0<= i< 10. a[i] = 8 and b[i] = 5", vfac);
   delete cfg;
 }
 
 void test4(){
   variable_factory_t vfac;
-  cfg_t* cfg = prog5(vfac);
+  z_cfg_t* cfg = prog5(vfac);
   run<array_sgraph_domain_t>(*cfg, "Program 4: forall 0<= i < n. a[i] = 123456 (unbounded loop)", vfac);
   delete cfg;
 }
 
 void test5(){
   variable_factory_t vfac;
-  cfg_t* cfg = prog6(vfac);
+  z_cfg_t* cfg = prog6(vfac);
   run<array_sgraph_domain_t>(*cfg, "Program 5: for all 0<= i< 10. a[i] = 123456 (assume elem size of 4 bytes)", vfac);
   delete cfg;
 }
 
 void test6(){
   variable_factory_t vfac;
-  cfg_t* cfg = prog7(vfac);
+  z_cfg_t* cfg = prog7(vfac);
   run<array_sgraph_domain_t>(*cfg, "Program 6: a[0] = 89 and for all 1<= i < n. a[i] = a[i-1]", vfac);
   delete cfg;
 }
 
 void test7(){
   variable_factory_t vfac;
-  cfg_t* cfg = prog8(vfac);
+  z_cfg_t* cfg = prog8(vfac);
   run<array_sgraph_domain_t>(*cfg, "Program 7: forall 0<= i< 10 and i % 2 = 0. a[i] = 123456", vfac);
   delete cfg;
 }
@@ -533,37 +533,37 @@ void test7(){
 
 void test8(){
   variable_factory_t vfac;
-  cfg_t* cfg = prog9(vfac);
+  z_cfg_t* cfg = prog9(vfac);
   run<array_sgraph_domain_t>(*cfg, "Program 8: forall 0<= i < n. 1 <= a[i] <= 2", vfac);
   delete cfg;
 }
 
 void test9(){
   variable_factory_t vfac;
-  cfg_t* cfg = prog2(vfac, false);
+  z_cfg_t* cfg = prog2(vfac, false);
   run<array_sgraph_domain_t>(*cfg, "Program 9: forall 0<= i < n. a[i] == 123456 (decrementing loop)", vfac);
   delete cfg;
 }
 
 void test10(){
   variable_factory_t vfac;
-  cfg_t* cfg = prog2(vfac, true);
+  z_cfg_t* cfg = prog2(vfac, true);
   run<array_sgraph_domain_t>(*cfg, "Program 10: forall 0<= i < n. a[i] == 123456 (decrementing loop w/ temp vars)", vfac);
   delete cfg;
 }
 
 void test11(){
   variable_factory_t vfac;
-  cfg_t* cfg = prog1(vfac, true);
+  z_cfg_t* cfg = prog1(vfac, true);
   run<array_sgraph_domain_t> (*cfg, "Program 11: forall 0<= i< 10. a[i] = 123456 (w/ temp vars)", vfac);
   delete cfg;
 }
 
 void test12(){
   variable_factory_t vfac;
-  cfg_t* cfg = prog10(vfac); 
+  z_cfg_t* cfg = prog10(vfac); 
   crab::outs () << "Program 12: forall 0<= i < n. is_not_null(a[i]) &&  is_not_null(b[i]) \n";
-  run<array_sparse_graph_domain<num_null_domain_t, nullity_domain_t> > (cfg, vfac, false, 1, 2, 20);
+  run<array_sparse_graph_domain<z_num_null_domain_t, z_nullity_domain_t> > (cfg, vfac, false, 1, 2, 20);
   delete cfg;
 }
 

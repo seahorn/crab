@@ -44,6 +44,7 @@ namespace crab {
       typedef CG cg_t;
       typedef typename cg_node_t::cfg_t cfg_t; // cfg_t is actually a wrap to Cfg&
       typedef typename cfg_t::varname_t varname_t;
+      typedef typename cfg_t::number_t number_t;
       typedef liveness<cfg_t> liveness_t;     
       typedef boost::unordered_map <cfg_t, const liveness_t*> liveness_map_t;
 
@@ -54,11 +55,11 @@ namespace crab {
 
      public:
 
-      typedef bu_summ_abs_transformer<summ_tbl_t, call_tbl_t> bu_abs_tr;
+      typedef bu_summ_abs_transformer<summ_tbl_t> bu_abs_tr;
       typedef td_summ_abs_transformer<summ_tbl_t, call_tbl_t> td_abs_tr;
       typedef boost::shared_ptr<td_abs_tr> td_abs_tr_ptr;
-      typedef fwd_analyzer<cfg_t, bu_abs_tr, VarFactory> bu_analyzer;
-      typedef fwd_analyzer<cfg_t, td_abs_tr, VarFactory> td_analyzer;
+      typedef fwd_analyzer<cfg_t, bu_abs_tr> bu_analyzer;
+      typedef fwd_analyzer<cfg_t, td_abs_tr> td_analyzer;
 
      public:
 
@@ -139,12 +140,14 @@ namespace crab {
             CRAB_LOG ("inter",
                       crab::outs() << "--- Analyzing " << (*fdecl).get_func_name () << "\n");
 
-            auto a = boost::make_shared<td_analyzer> (cfg, m_vfac, get_live (cfg), 
-                                                      &m_summ_tbl, &m_call_tbl,
+	    auto abs_tr = boost::make_shared<td_abs_tr> (&init, &m_summ_tbl, &m_call_tbl);
+            auto a = boost::make_shared<td_analyzer> (cfg, &*abs_tr,
                                                       m_widening_delay,
                                                       m_descending_iters,
-                                                      m_jump_set_size);           
-            a->Run (init);
+                                                      m_jump_set_size,
+						      get_live (cfg));
+						      
+            a->Run ();
             m_inv_map.insert (make_pair (cfg_hasher<cfg_t>::hash(*fdecl), a));
           }
           return;
@@ -170,11 +173,13 @@ namespace crab {
               CRAB_LOG ("inter", 
                         crab::outs() << "--- Analyzing " << (*fdecl).get_func_name () << "\n");
               // --- run the analysis
-              bu_analyzer a (cfg, m_vfac, get_live (cfg), 
-                             &m_summ_tbl, &m_call_tbl,
-                             m_widening_delay, m_descending_iters,
-                             m_jump_set_size) ; 
-              a.Run (BU_Dom::top ());
+	      auto init_inv = BU_Dom::top ();
+	      bu_abs_tr abs_tr (&init_inv, &m_summ_tbl);
+              bu_analyzer a (cfg, &abs_tr, 
+                             m_widening_delay, m_descending_iters, m_jump_set_size,
+			     get_live (cfg)) ; 
+              a.Run ();
+	      
               // --- build the summary
               std::vector<varname_t> formals, inputs, outputs;
               formals.reserve ((*fdecl).get_num_params() + (*fdecl).get_lhs_types().size ());
@@ -224,23 +229,25 @@ namespace crab {
               // contexts during the recursive calls.
               m_call_tbl.insert (*fdecl, TD_Dom::top ());
             }
-            
-            auto a = boost::make_shared<td_analyzer> (cfg, m_vfac, get_live (cfg), 
-                                                      &m_summ_tbl, &m_call_tbl,
-                                                      m_widening_delay,
-                                                      m_descending_iters);           
-            if (is_root) {
-              a->Run (init);
+	   
+	    auto init_inv = init;	    
+            if (is_root)
               is_root = false;
-            }
-            else {
+            else
+	    {
+	      init_inv = m_call_tbl.get_call_ctx (*fdecl);	      
               CRAB_LOG("inter",
-                       auto init_ctx = m_call_tbl.get_call_ctx (*fdecl);
                        crab::outs() << "    Starting analysis of "
-                                    << *fdecl <<  " with " << init_ctx << "\n");
-              a->Run (m_call_tbl.get_call_ctx (*fdecl));
+  		                    << *fdecl <<  " with " << init_inv << "\n");
             }
-            
+
+	    auto abs_tr = boost::make_shared<td_abs_tr> (&init_inv, &m_summ_tbl, &m_call_tbl);
+            auto a = boost::make_shared<td_analyzer> (cfg, &*abs_tr, 
+                                                      m_widening_delay,
+						      m_descending_iters,
+						      m_jump_set_size,
+						      get_live (cfg));
+	    a->Run();
             m_inv_map.insert (make_pair (cfg_hasher<cfg_t>::hash(*fdecl), a));
           }
         }

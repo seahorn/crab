@@ -21,13 +21,15 @@ namespace crab {
     inline std::vector<typename CFG::varname_t> find_return_vars (const CFG& cfg)
     {
       typedef typename CFG::varname_t varname_t;
+      typedef typename CFG::number_t number_t;      
       std::vector<varname_t> res;
 
       if (cfg.has_exit ()) {
         auto const &bb = cfg.get_node (cfg.exit ());
         for (auto const &s : boost::make_iterator_range (bb.begin(), bb.end())) {
           if (s.is_return ()) {                
-            const return_stmt<varname_t>* ret_stmt = static_cast<const return_stmt<varname_t> *> (&s);
+            auto ret_stmt =
+	      static_cast<const return_stmt<number_t,varname_t> *> (&s);
             auto const &ret_typed_vars = ret_stmt->get_ret_vals ();
             res.reserve (ret_typed_vars.size ());
             for (auto vt: ret_typed_vars)
@@ -39,10 +41,10 @@ namespace crab {
       return res;
     }
         
-    //! Perform a forward flow-sensitive analysis.
+    //! Perform a standard forward flow-sensitive analysis.
     //  AbsTr defines the abstract transfer functions as well as which
     //  operations are modelled.
-    template< typename CFG, typename AbsTr, typename VarFactory>
+    template< typename CFG, typename AbsTr>
     class fwd_analyzer: 
         public ikos::interleaved_fwd_fixpoint_iterator< typename CFG::basic_block_label_t, 
                                                         CFG, 
@@ -56,7 +58,7 @@ namespace crab {
       typedef typename CFG::basic_block_label_t basic_block_label_t;
       typedef typename CFG::varname_t varname_t;
       typedef typename AbsTr::abs_dom_t abs_dom_t;
-      typedef boost::shared_ptr<AbsTr> abs_tr_ptr;
+      typedef AbsTr* abs_tr_ptr;
       
      private:
 
@@ -74,23 +76,15 @@ namespace crab {
 
      public:
 
-      // datastructure types in case of inter-procedural analysis
-      typedef summary_table<CFG, typename AbsTr::summ_abs_domain_t> summ_tbl_t;
-      typedef call_ctx_table<CFG, typename AbsTr::call_abs_domain_t> call_tbl_t;
-
       typedef typename invariant_map_t::iterator iterator;        
       typedef typename invariant_map_t::const_iterator const_iterator;        
 
      private:
 
-      VarFactory&  m_vfac;
+      abs_tr_ptr m_abs_tr; // the abstract transformer
       const liveness_t* m_live;
-      // Datastructures needed to perform interprocedural analysis
-      // m_summ_tbl and m_call_tbl are preserved in memory so it could
-      // be expensive.
-      summ_tbl_t* m_summ_tbl;
-      call_tbl_t* m_call_tbl;
       live_set_t m_formals;
+      
       // Preserve invariants at the entry and exit. This might be
       // expensive in terms of memory. To mitigate this, we could
       // compute the invariants at the exit by propagating locally
@@ -115,8 +109,9 @@ namespace crab {
       void analyze (basic_block_label_t node, abs_dom_t &inv) 
       { 
         auto &b = this->get_cfg().get_node (node);
-        AbsTr vis (inv, m_summ_tbl, m_call_tbl);
-        for (auto &s : b) { s.accept (&vis); }
+	// XXX: set takes a reference to inv so no copies here
+	m_abs_tr->set (inv);
+        for (auto &s : b) { s.accept (m_abs_tr); }
         prune_dead_variables (inv, node);
       } 
       
@@ -150,38 +145,26 @@ namespace crab {
       
      public:
 
-      // --- intra-procedural version
-      // live can be nullptr if no live information is available
-      fwd_analyzer(CFG cfg, VarFactory& vfac, 
-                   const liveness_t* live,
-                   unsigned int widening_delay=1,
-                   unsigned int descending_iters=UINT_MAX,
-                   size_t jump_set_size=0)
+      fwd_analyzer (CFG cfg, abs_tr_ptr abs_tr,
+		    // fixpoint parameters
+                    unsigned int widening_delay,
+                    unsigned int descending_iters,
+                    size_t jump_set_size,
+		    // live can be nullptr if no live info is available
+		    const liveness_t* live)
           : fwd_iterator_t (cfg, widening_delay, descending_iters, jump_set_size), 
-            m_vfac (vfac), m_live (live), 
-            m_summ_tbl (nullptr), m_call_tbl (nullptr) { }
-      
-      // --- inter-procedural version
-      // live can be nullptr if no live information is available
-      fwd_analyzer (CFG cfg, VarFactory& vfac, 
-                    const liveness_t* live, 
-                    summ_tbl_t* sum_tbl, call_tbl_t* call_tbl,
-                    unsigned int widening_delay=1,
-                    unsigned int descending_iters=UINT_MAX,
-                    size_t jump_set_size=0)
-          : fwd_iterator_t (cfg, widening_delay, descending_iters, jump_set_size), 
-            m_vfac (vfac), m_live (live), 
-            m_summ_tbl (sum_tbl), m_call_tbl (call_tbl) {
+            m_abs_tr (abs_tr),
+	    m_live (live) {
         
-        if (live) {
+        if (live)
+	{
           // --- collect formal parameters and return values
-          auto fdecl = this->get_cfg ().get_func_decl ();
-          assert (fdecl);
-          for (unsigned i=0; i < (*fdecl).get_num_params();i++)
-            m_formals += (*fdecl).get_param_name (i); 
-        
-          auto const& ret_vals = find_return_vars (this->get_cfg ());
-          for (auto rv: ret_vals) {  m_formals += rv; }
+          if (auto fdecl = this->get_cfg ().get_func_decl ()) {
+	    for (unsigned i=0; i < (*fdecl).get_num_params();i++)
+	      m_formals += (*fdecl).get_param_name (i); 
+	    auto const& ret_vals = find_return_vars (this->get_cfg ());
+	    for (auto rv: ret_vals) {  m_formals += rv; }
+	  }
         }
 
       }
@@ -197,19 +180,19 @@ namespace crab {
       const_iterator post_end ()   const { return m_post_map.end();   }
       
       //! Trigger the fixpoint computation 
-      void Run (abs_dom_t inv)  {
+      void Run ()  {
         // initialization of static data
         domains::domain_traits<abs_dom_t>::do_initialization (this->get_cfg());
         // XXX: inv was created before the static data is initialized
         //      so it won't contain that data.
-        this->run (inv);         
+        this->run (m_abs_tr->inv());         
       }      
 
       //! Propagate inv through statements
       abs_tr_ptr get_abs_transformer (abs_dom_t &inv) {
-        // pass inv by ref to avoid copies
-        auto vis = boost::make_shared<AbsTr>(inv, m_summ_tbl, m_call_tbl);  
-        return vis;
+	/// XXX: set takes a reference to inv so no copies here
+	m_abs_tr->set (inv);
+	return m_abs_tr;
       }
 
       //! Return the invariants that hold at the entry of b
@@ -236,21 +219,86 @@ namespace crab {
       }
     }; 
 
-    //! Specialized type for a forward analyzer that can infer
-    //! invariants involving numerical, array and pointers operations.
-    template<typename CFG, typename AbsNumDomain, typename VarFactory>
-    class fwd_analyzer_impl {
-     private:
+    //////////////////////////////////////////////////////////////////
+    //! Specialized class for an intra-procedural forward analysis
+    //! over integers
+    //////////////////////////////////////////////////////////////////    
+    template<typename CFG, typename AbsDomain, typename AbsTr>
+    class intra_fwd_analyzer_impl
+    {
+      typedef fwd_analyzer<CFG, AbsTr> fwd_analyzer_t;
 
-      typedef abs_transformer<AbsNumDomain,
-                              summary_table<CFG,AbsNumDomain>,
-                              call_ctx_table<CFG,AbsNumDomain> > num_abs_tr_t; 
-     public:
+      AbsDomain m_init;      
+      AbsTr m_abs_tr;
+      fwd_analyzer_t m_analyzer;
+      
+    public:
 
-      typedef fwd_analyzer<CFG, num_abs_tr_t, VarFactory> type;
+      typedef AbsDomain abs_dom_t;
+      typedef liveness<CFG> liveness_t;
+      
+      typedef CFG cfg_t;
+      typedef typename CFG::basic_block_label_t basic_block_label_t;
+      typedef typename CFG::varname_t varname_t;
+      typedef typename CFG::number_t number_t;
+      typedef typename fwd_analyzer_t::abs_tr_ptr abs_tr_ptr;
+      
+    public:
+      
+      typedef typename fwd_analyzer_t::iterator iterator;
+      typedef typename fwd_analyzer_t::const_iterator const_iterator;
 
+    public:
+      
+      intra_fwd_analyzer_impl (CFG cfg,
+			       AbsDomain init,
+			       // liveness info
+			       const liveness_t* live = nullptr,
+			       // fixpoint parameters
+			       unsigned int widening_delay=1,
+			       unsigned int descending_iters=UINT_MAX,
+			       size_t jump_set_size=0):
+	m_init (init),
+	m_abs_tr (&m_init),
+	m_analyzer (cfg, &m_abs_tr, 
+		    widening_delay, descending_iters, jump_set_size,
+		    live) { }
+      
+      iterator       pre_begin ()       { return m_analyzer.pre_begin();} 
+      iterator       pre_end ()         { return m_analyzer.pre_end();}
+      const_iterator pre_begin () const { return m_analyzer.pre_begin();}
+      const_iterator pre_end ()   const { return m_analyzer.pre_end();}
+      
+      iterator       post_begin ()       { return m_analyzer.post_begin();}
+      iterator       post_end ()         { return m_analyzer.post_end();}
+      const_iterator post_begin () const { return m_analyzer.post_begin();}
+      const_iterator post_end ()   const { return m_analyzer.post_end();}
+
+      void run () { m_analyzer.Run ();}
+      
+      abs_dom_t operator[] (basic_block_label_t b) const
+      { return m_analyzer[b]; }
+      
+      abs_dom_t get_pre (basic_block_label_t b) const
+      { return m_analyzer.get_pre (b); }
+      
+      abs_dom_t get_post (basic_block_label_t b) const
+      { return m_analyzer.get_post (b); }
+
+      CFG get_cfg ()
+      { return m_analyzer.get_cfg (); }
+      
+      abs_tr_ptr get_abs_transformer (abs_dom_t &inv)
+      { return m_analyzer.get_abs_transformer (inv); }      
     };
-  
+
+    // c++11 alias templates
+    template<typename CFG, typename AbsDomain>
+    using intra_fwd_analyzer = intra_fwd_analyzer_impl<CFG,
+						       AbsDomain,
+						       intra_abs_transformer<AbsDomain> >;
+
+    
   } // end namespace
 } // end namespace
 

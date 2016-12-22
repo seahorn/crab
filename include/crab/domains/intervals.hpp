@@ -306,6 +306,37 @@ namespace ikos {
   typedef bound< z_number > z_bound;
   typedef bound< q_number > q_bound;
 
+
+  namespace bounds_impl {
+    // Conversion between z_bound and q_bound
+    // template<class B1, class B2>
+    // inline void convert_bounds(B1 b1, B2& b2);
+    
+    inline void convert_bounds(z_bound b1, z_bound &b2)
+    { std::swap (b1,b2); }
+    inline void convert_bounds(q_bound b1, q_bound &b2)
+    { std::swap (b1,b2); }
+    inline void convert_bounds(z_bound b1, q_bound &b2)
+    {
+      if (b1.is_plus_infinity())
+	b2 = q_bound::plus_infinity();
+      else if (b1.is_minus_infinity())
+	b2 = q_bound::minus_infinity();
+      else
+	b2 = q_bound (q_number(*b1.number()));
+    }
+    inline void convert_bounds(q_bound b1, z_bound &b2)
+    {
+      if (b1.is_plus_infinity())
+	b2 = z_bound::plus_infinity();
+      else if (b1.is_minus_infinity())
+	b2 = z_bound::minus_infinity();
+      else
+	b2 = z_bound ((*(b1.number())).round_to_lower ());
+    }
+  }
+
+  
   template< typename Number >
   class interval;
 

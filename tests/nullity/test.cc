@@ -5,7 +5,7 @@ using namespace crab::analyzer;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
-cfg_t* cfg1 (variable_factory_t &vfac) 
+z_cfg_t* cfg1 (variable_factory_t &vfac) 
 {
 
   ////
@@ -13,12 +13,12 @@ cfg_t* cfg1 (variable_factory_t &vfac)
   ////
 
   // entry and exit block
-  cfg_t* cfg = new cfg_t("b0","b3",PTR);
+  z_cfg_t* cfg = new z_cfg_t("b0","b3",PTR);
   // adding blocks
-  basic_block_t& b0 = cfg->insert ("b0");
-  basic_block_t& b1 = cfg->insert ("b1");
-  basic_block_t& b2 = cfg->insert ("b2");
-  basic_block_t& b3 = cfg->insert ("b3");
+  z_basic_block_t& b0 = cfg->insert ("b0");
+  z_basic_block_t& b1 = cfg->insert ("b1");
+  z_basic_block_t& b2 = cfg->insert ("b2");
+  z_basic_block_t& b3 = cfg->insert ("b3");
   // adding control flow
   b0 >> b1; b0 >> b2; b1 >> b3; b2 >> b3;
 
@@ -39,16 +39,16 @@ cfg_t* cfg1 (variable_factory_t &vfac)
   return cfg;
 }
 
-cfg_t* cfg2 (variable_factory_t &vfac) 
+z_cfg_t* cfg2 (variable_factory_t &vfac) 
 {
 
   // entry and exit block
-  cfg_t* cfg = new cfg_t("b0","b3",PTR);
+  z_cfg_t* cfg = new z_cfg_t("b0","b3",PTR);
   // adding blocks
-  basic_block_t& b0 = cfg->insert ("b0");
-  basic_block_t& b1 = cfg->insert ("b1");
-  basic_block_t& b2 = cfg->insert ("b2");
-  basic_block_t& b3 = cfg->insert ("b3");
+  z_basic_block_t& b0 = cfg->insert ("b0");
+  z_basic_block_t& b1 = cfg->insert ("b1");
+  z_basic_block_t& b2 = cfg->insert ("b2");
+  z_basic_block_t& b3 = cfg->insert ("b3");
   // adding control flow
   b0 >> b1; b0 >> b2; b1 >> b3; b2 >> b3;
   
@@ -73,7 +73,7 @@ cfg_t* cfg2 (variable_factory_t &vfac)
 }
 
 
-cfg_t* cfg3 (variable_factory_t &vfac)  {
+z_cfg_t* cfg3 (variable_factory_t &vfac)  {
 
   // Definining program variables
   z_var i (vfac ["i"]);
@@ -82,14 +82,14 @@ cfg_t* cfg3 (variable_factory_t &vfac)  {
   varname_t p (vfac ["p"]);
   varname_t q (vfac ["q"]);
   // entry and exit block
-  cfg_t* cfg = new cfg_t("entry","ret",PTR);
+  z_cfg_t* cfg = new z_cfg_t("entry","ret",PTR);
   // adding blocks
-  basic_block_t& entry = cfg->insert ("entry");
-  basic_block_t& bb1   = cfg->insert ("bb1");
-  basic_block_t& bb1_t = cfg->insert ("bb1_t");
-  basic_block_t& bb1_f = cfg->insert ("bb1_f");
-  basic_block_t& bb2   = cfg->insert ("bb2");
-  basic_block_t& ret   = cfg->insert ("ret");
+  z_basic_block_t& entry = cfg->insert ("entry");
+  z_basic_block_t& bb1   = cfg->insert ("bb1");
+  z_basic_block_t& bb1_t = cfg->insert ("bb1_t");
+  z_basic_block_t& bb1_f = cfg->insert ("bb1_f");
+  z_basic_block_t& bb2   = cfg->insert ("bb2");
+  z_basic_block_t& ret   = cfg->insert ("ret");
   // adding control flow 
   entry >> bb1;
   bb1 >> bb1_t; bb1 >> bb1_f;
@@ -116,15 +116,15 @@ int main (int argc, char** argv) {
   SET_TEST_OPTIONS(argc,argv)
 
   variable_factory_t vfac;
-  cfg_t* cfg_1 = cfg1 (vfac);
+  z_cfg_t* cfg_1 = cfg1 (vfac);
   crab::outs () << *cfg_1 << "\n";
-  run<nullity_domain_t>(cfg_1, vfac, false, 1, 2, 20);
-  cfg_t* cfg_2 = cfg2 (vfac);
+  run<z_nullity_domain_t>(cfg_1, vfac, false, 1, 2, 20);
+  z_cfg_t* cfg_2 = cfg2 (vfac);
   crab::outs () << *cfg_2 << "\n";
-  run<nullity_domain_t>(cfg_2, vfac, false, 1, 2, 20);
-  cfg_t* cfg_3 = cfg3 (vfac);
+  run<z_nullity_domain_t>(cfg_2, vfac, false, 1, 2, 20);
+  z_cfg_t* cfg_3 = cfg3 (vfac);
   crab::outs () << *cfg_3 << "\n";
-  run<nullity_domain_t>(cfg_3, vfac, false, 1, 2, 20);
+  run<z_nullity_domain_t>(cfg_3, vfac, false, 1, 2, 20);
   
   delete cfg_1;
   delete cfg_2;

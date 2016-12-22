@@ -16,14 +16,16 @@ namespace crab {
     class div_zero_property_checker: public property_checker <Analyzer> {
       
       typedef typename Analyzer::varname_t varname_t;
-      typedef ikos::interval<z_number> interval_t;
+      typedef typename Analyzer::number_t number_t;
+      
+      typedef ikos::interval<number_t> interval_t;
       typedef typename Analyzer::abs_dom_t abs_dom_t;
       typedef property_checker<Analyzer> base_checker_t;
-      using typename base_checker_t::z_var_t;
-      using typename base_checker_t::z_lin_exp_t;
-      using typename base_checker_t::z_lin_cst_t;
-      using typename base_checker_t::z_lin_cst_sys_t;
-      using typename base_checker_t::z_bin_op_t;
+      using typename base_checker_t::var_t;
+      using typename base_checker_t::lin_exp_t;
+      using typename base_checker_t::lin_cst_t;
+      using typename base_checker_t::lin_cst_sys_t;
+      using typename base_checker_t::bin_op_t;
 
      public:
       
@@ -34,7 +36,7 @@ namespace crab {
         return "integer division by zero checker";
       }
 
-      void check (z_bin_op_t &s) override { 
+      void check (bin_op_t &s) override { 
         if (!this->m_abs_tr) return;        
 
         if (s.op () == BINOP_SDIV || s.op () == BINOP_UDIV ||
@@ -48,8 +50,8 @@ namespace crab {
 
           auto divisor_expr = s.right ();
           if (divisor_expr.is_constant ()) {
-            z_number divisor = divisor_expr.constant ();
-            if (divisor == z_number (0)) {
+            number_t divisor = divisor_expr.constant ();
+            if (divisor == number_t (0)) {
               this->m_db.add (_ERR);             
             } else {
               this->m_db.add (_SAFE);
@@ -59,14 +61,14 @@ namespace crab {
             num_dom_detail::checker_ops<abs_dom_t> num_inv (inv);
             interval_t divisor_intv = num_inv [(*var).name()];
             if (auto divisor = divisor_intv.singleton ()) {
-              if (*divisor == z_number (0)) {
-                LOG_ERR(this->m_verbose, inv, z_lin_cst_t (*var != z_number (0)),
+              if (*divisor == number_t (0)) {
+                LOG_ERR(this->m_verbose, inv, lin_cst_t (*var != number_t (0)),
                         s.get_debug_info());
               } else {
                 this->m_db.add (_SAFE);
               }
-            } else if (interval_t (z_number (0)) <= divisor_intv) {
-              LOG_WARN(this->m_verbose, inv, z_lin_cst_t (*var != z_number (0)),
+            } else if (interval_t (number_t (0)) <= divisor_intv) {
+              LOG_WARN(this->m_verbose, inv, lin_cst_t (*var != number_t (0)),
                        s.get_debug_info());
             } else {
               this->m_db.add (_SAFE);

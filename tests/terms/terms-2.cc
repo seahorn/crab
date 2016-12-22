@@ -5,7 +5,7 @@ using namespace crab::analyzer;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
-cfg_t* prog (variable_factory_t &vfac) 
+z_cfg_t* prog (variable_factory_t &vfac) 
 {
   ////
   // Building the CFG
@@ -18,13 +18,13 @@ cfg_t* prog (variable_factory_t &vfac)
   z_var z0 (vfac ["z0"]);
   z_var y0 (vfac ["y0"]);
   // entry and exit block
-  cfg_t* cfg = new cfg_t("p0","ret");
+  z_cfg_t* cfg = new z_cfg_t("p0","ret");
   // adding blocks
-  basic_block_t& p0 = cfg->insert ("p0");
-  basic_block_t& p_neg = cfg->insert ("p_neg");
-  basic_block_t& p_pos = cfg->insert ("p_pos");
-  basic_block_t& exit = cfg->insert ("exit");
-  basic_block_t& ret = cfg->insert ("ret");
+  z_basic_block_t& p0 = cfg->insert ("p0");
+  z_basic_block_t& p_neg = cfg->insert ("p_neg");
+  z_basic_block_t& p_pos = cfg->insert ("p_pos");
+  z_basic_block_t& exit = cfg->insert ("exit");
+  z_basic_block_t& ret = cfg->insert ("ret");
   // adding control flow
   p0 >> p_pos;
   p0 >> p_neg;
@@ -55,39 +55,12 @@ int main (int argc, char** argv )
   SET_TEST_OPTIONS(argc,argv)
 
   variable_factory_t vfac;
-  cfg_t* cfg = prog (vfac);
+  z_cfg_t* cfg = prog (vfac);
   cfg->simplify ();
   crab::outs() << *cfg << "\n";
 
-  run<interval_domain_t>(cfg, vfac, true, 1, 2, 20);
-  run<term_domain_t>(cfg, vfac, true, 1, 2, 20);
-
-  /*
-  term_dbm_t t_dbm_dom = term_dbm_t::top ();
-  num_fwd_analyzer <cfg_ref_t, term_dbm_t, variable_factory_t>::type
-      term_dbm_a (*cfg, vfac, &live);
-  term_dbm_a.Run (t_dbm_dom);
-  crab::outs() << "Results with term<dbm> domain:\n";
-  for (auto &b : *cfg)
-  {
-    term_dbm_t inv = term_dbm_a [b.label ()];
-    crab::outs() << cfg_impl::get_label_str (b.label ()) << "=" << inv << "\n";
-//    auto cst = inv.to_linear_constraint_system();
-//    crab::outs() << "  := " << cst << "\n";
-  }
-
-
-  dbm_domain_t dbm = dbm_domain_t::top ();
-  num_fwd_analyzer <cfg_ref_t, dbm_domain_t, variable_factory_t>::type
-      dbm_a (*cfg, vfac, &live);
-  dbm_a.Run (dbm);
-  crab::outs() << "Results with DBMs:\n";
-  for (auto &b : *cfg)
-  {
-    dbm_domain_t inv = dbm_a [b.label ()];
-    crab::outs() << cfg_impl::get_label_str (b.label ()) << "=" << inv << "\n";
-  }
-  */
+  run<z_interval_domain_t>(cfg, vfac, true, 1, 2, 20);
+  run<z_term_domain_t>(cfg, vfac, true, 1, 2, 20);
 
   return 0;
 }

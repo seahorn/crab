@@ -5,7 +5,7 @@ using namespace crab::analyzer;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
-cfg_t* prog1 (variable_factory_t &vfac) 
+z_cfg_t* prog1 (variable_factory_t &vfac) 
 {
   z_var n1(vfac["n1"]);
   z_var i(vfac["i"]);
@@ -16,13 +16,13 @@ cfg_t* prog1 (variable_factory_t &vfac)
   varname_t tmp6 = vfac["tmp6"];
   z_var val(vfac["val"]);
 
-  cfg_t* cfg = new cfg_t("entry","ret", ARR);
-  basic_block_t& entry = cfg->insert ("entry");
-  basic_block_t& bb1   = cfg->insert ("bb1");
-  basic_block_t& bb1_t = cfg->insert ("bb1_t");
-  basic_block_t& bb1_f = cfg->insert ("bb1_f");
-  basic_block_t& bb2   = cfg->insert ("bb2");
-  basic_block_t& ret   = cfg->insert ("ret");
+  z_cfg_t* cfg = new z_cfg_t("entry","ret", ARR);
+  z_basic_block_t& entry = cfg->insert ("entry");
+  z_basic_block_t& bb1   = cfg->insert ("bb1");
+  z_basic_block_t& bb1_t = cfg->insert ("bb1_t");
+  z_basic_block_t& bb1_f = cfg->insert ("bb1_f");
+  z_basic_block_t& bb2   = cfg->insert ("bb2");
+  z_basic_block_t& ret   = cfg->insert ("ret");
 
   // assume array element of 1 byte
 
@@ -30,7 +30,7 @@ cfg_t* prog1 (variable_factory_t &vfac)
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   ////////
-  entry.assign (a_p, 0);
+  entry.assign (z_var(a_p), 0);
   entry.array_assume (a, crab::ARR_INT_TYPE, 0, 9, a_p);
   /////////
   entry.assign(n1, 1);
@@ -48,15 +48,15 @@ cfg_t* prog1 (variable_factory_t &vfac)
 }
 
 
-cfg_t* prog2(variable_factory_t &vfac) 
+z_cfg_t* prog2(variable_factory_t &vfac) 
 {
-  cfg_t* cfg = new cfg_t("entry","ret",ARR);
-  basic_block_t& entry = cfg->insert("entry");
-  basic_block_t& bb1   = cfg->insert("bb1");
-  basic_block_t& bb1_t = cfg->insert("bb1_t");
-  basic_block_t& bb1_f = cfg->insert("bb1_f");
-  basic_block_t& bb2   = cfg->insert("bb2");
-  basic_block_t& ret   = cfg->insert("ret");
+  z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
+  z_basic_block_t& entry = cfg->insert("entry");
+  z_basic_block_t& bb1   = cfg->insert("bb1");
+  z_basic_block_t& bb1_t = cfg->insert("bb1_t");
+  z_basic_block_t& bb1_f = cfg->insert("bb1_f");
+  z_basic_block_t& bb2   = cfg->insert("bb2");
+  z_basic_block_t& ret   = cfg->insert("ret");
   z_var n0(vfac["n0"]);
   z_var n1(vfac["n1"]);
   z_var n9(vfac["n9"]);
@@ -73,7 +73,7 @@ cfg_t* prog2(variable_factory_t &vfac)
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   ////////
   // assume array element of 1 byte
-  entry.assign (a_p, 0);
+  entry.assign (z_var(a_p), 0);
   entry.array_assume (a, crab::ARR_INT_TYPE, 0, 9, a_p);
   /////////
   entry.assign(n0, 0); // we need it to be considered as graph node
@@ -92,15 +92,15 @@ cfg_t* prog2(variable_factory_t &vfac)
   return cfg;
 }
 
-cfg_t* prog3(variable_factory_t &vfac) 
+z_cfg_t* prog3(variable_factory_t &vfac) 
 {
-  cfg_t* cfg = new cfg_t("entry","ret",ARR);
-  basic_block_t& entry = cfg->insert("entry");
-  basic_block_t& bb1   = cfg->insert("bb1");
-  basic_block_t& bb1_t = cfg->insert("bb1_t");
-  basic_block_t& bb1_f = cfg->insert("bb1_f");
-  basic_block_t& bb2   = cfg->insert("bb2");
-  basic_block_t& ret   = cfg->insert("ret");
+  z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
+  z_basic_block_t& entry = cfg->insert("entry");
+  z_basic_block_t& bb1   = cfg->insert("bb1");
+  z_basic_block_t& bb1_t = cfg->insert("bb1_t");
+  z_basic_block_t& bb1_f = cfg->insert("bb1_f");
+  z_basic_block_t& bb2   = cfg->insert("bb2");
+  z_basic_block_t& ret   = cfg->insert("ret");
   entry >> bb1;
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
@@ -117,7 +117,7 @@ cfg_t* prog3(variable_factory_t &vfac)
   z_var val(vfac["val"]);
 
   // assume array element of 1 byte
-  entry.assign (a_p, 0);
+  entry.assign (z_var(a_p), 0);
   entry.array_assume (a, crab::ARR_INT_TYPE, 0, 9, a_p);
   entry.array_assume (b, crab::ARR_INT_TYPE, 0, 9, a_p);
 
@@ -137,16 +137,16 @@ cfg_t* prog3(variable_factory_t &vfac)
 }
 
 
-cfg_t* prog4(variable_factory_t &vfac) 
+z_cfg_t* prog4(variable_factory_t &vfac) 
 {
 
-  cfg_t* cfg = new cfg_t("entry","ret",ARR);
-  basic_block_t& entry = cfg->insert("entry");
-  basic_block_t& bb1   = cfg->insert("bb1");
-  basic_block_t& bb1_t = cfg->insert("bb1_t");
-  basic_block_t& bb1_f = cfg->insert("bb1_f");
-  basic_block_t& bb2   = cfg->insert("bb2");
-  basic_block_t& ret   = cfg->insert("ret");
+  z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
+  z_basic_block_t& entry = cfg->insert("entry");
+  z_basic_block_t& bb1   = cfg->insert("bb1");
+  z_basic_block_t& bb1_t = cfg->insert("bb1_t");
+  z_basic_block_t& bb1_f = cfg->insert("bb1_f");
+  z_basic_block_t& bb2   = cfg->insert("bb2");
+  z_basic_block_t& ret   = cfg->insert("ret");
   z_var n1(vfac["n1"]);
   z_var i(vfac["i"]);
   varname_t a = vfac["A"];
@@ -164,7 +164,7 @@ cfg_t* prog4(variable_factory_t &vfac)
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
 
   // assume array element of 1 byte
-  entry.assign (a_p, 0);
+  entry.assign (z_var(a_p), 0);
   entry.array_assume (a,  crab::ARR_INT_TYPE, 0, 9, a_p);
   entry.array_assume (b,  crab::ARR_INT_TYPE, 0, 9, a_p);
 
@@ -184,15 +184,15 @@ cfg_t* prog4(variable_factory_t &vfac)
   return cfg;
 }
 
-cfg_t* prog5(variable_factory_t &vfac) 
+z_cfg_t* prog5(variable_factory_t &vfac) 
 {
-  cfg_t* cfg = new cfg_t("entry","ret",ARR);
-  basic_block_t& entry = cfg->insert("entry");
-  basic_block_t& bb1   = cfg->insert("bb1");
-  basic_block_t& bb1_t = cfg->insert("bb1_t");
-  basic_block_t& bb1_f = cfg->insert("bb1_f");
-  basic_block_t& bb2   = cfg->insert("bb2");
-  basic_block_t& ret   = cfg->insert("ret");
+  z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
+  z_basic_block_t& entry = cfg->insert("entry");
+  z_basic_block_t& bb1   = cfg->insert("bb1");
+  z_basic_block_t& bb1_t = cfg->insert("bb1_t");
+  z_basic_block_t& bb1_f = cfg->insert("bb1_f");
+  z_basic_block_t& bb2   = cfg->insert("bb2");
+  z_basic_block_t& ret   = cfg->insert("ret");
   z_var n1(vfac["n1"]);
   z_var i(vfac["i"]);
   z_var n(vfac["n"]);
@@ -207,7 +207,7 @@ cfg_t* prog5(variable_factory_t &vfac)
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
 
   // assume array element of 1 byte
-  entry.assign (a_p, 0);
+  entry.assign (z_var(a_p), 0);
   entry.array_assume (a,  crab::ARR_INT_TYPE, 0, n, a_p);
 
   entry.assume(n >= 1);
@@ -224,15 +224,15 @@ cfg_t* prog5(variable_factory_t &vfac)
   return cfg;
 }
 
-cfg_t* prog6(variable_factory_t &vfac) 
+z_cfg_t* prog6(variable_factory_t &vfac) 
 {
-  cfg_t* cfg = new cfg_t("entry","ret",ARR);
-  basic_block_t& entry = cfg->insert("entry");
-  basic_block_t& bb1   = cfg->insert("bb1");
-  basic_block_t& bb1_t = cfg->insert("bb1_t");
-  basic_block_t& bb1_f = cfg->insert("bb1_f");
-  basic_block_t& bb2   = cfg->insert("bb2");
-  basic_block_t& ret   = cfg->insert("ret");
+  z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
+  z_basic_block_t& entry = cfg->insert("entry");
+  z_basic_block_t& bb1   = cfg->insert("bb1");
+  z_basic_block_t& bb1_t = cfg->insert("bb1_t");
+  z_basic_block_t& bb1_f = cfg->insert("bb1_f");
+  z_basic_block_t& bb2   = cfg->insert("bb2");
+  z_basic_block_t& ret   = cfg->insert("ret");
   z_var i(vfac["i"]);
   varname_t a = vfac["A"];
   varname_t a_p = vfac["A_p"];
@@ -246,7 +246,7 @@ cfg_t* prog6(variable_factory_t &vfac)
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   // assume array element of 4 bytes
-  entry.assign (a_p, 0);
+  entry.assign (z_var(a_p), 0);
   entry.array_assume (a,  crab::ARR_INT_TYPE, 0, 9 , a_p);
   entry.assign(i, 0);
   ///////
@@ -261,15 +261,15 @@ cfg_t* prog6(variable_factory_t &vfac)
   return cfg;
 }
 
-cfg_t* prog7(variable_factory_t &vfac) 
+z_cfg_t* prog7(variable_factory_t &vfac) 
 {
-  cfg_t* cfg = new cfg_t("entry","ret",ARR);
-  basic_block_t& entry = cfg->insert("entry");
-  basic_block_t& bb1   = cfg->insert("bb1");
-  basic_block_t& bb1_t = cfg->insert("bb1_t");
-  basic_block_t& bb1_f = cfg->insert("bb1_f");
-  basic_block_t& bb2   = cfg->insert("bb2");
-  basic_block_t& ret   = cfg->insert("ret");
+  z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
+  z_basic_block_t& entry = cfg->insert("entry");
+  z_basic_block_t& bb1   = cfg->insert("bb1");
+  z_basic_block_t& bb1_t = cfg->insert("bb1_t");
+  z_basic_block_t& bb1_f = cfg->insert("bb1_f");
+  z_basic_block_t& bb2   = cfg->insert("bb2");
+  z_basic_block_t& ret   = cfg->insert("ret");
   z_var n1(vfac["n1"]);
   z_var i(vfac["i"]);
   z_var n(vfac["n"]);
@@ -288,7 +288,7 @@ cfg_t* prog7(variable_factory_t &vfac)
   // assume array element of 1 byte
 
   // assume (forall i. a[i] =0);
-  entry.assign (a_p, 0);
+  entry.assign (z_var(a_p), 0);
   entry.array_assume (a,  crab::ARR_INT_TYPE, 0, n, a_p);
   //////
   entry.assume(n >= 2);
@@ -312,15 +312,15 @@ cfg_t* prog7(variable_factory_t &vfac)
 }
 
 // Initialize only even positions
-cfg_t* prog8(variable_factory_t &vfac) 
+z_cfg_t* prog8(variable_factory_t &vfac) 
 {
-  cfg_t* cfg = new cfg_t("entry","ret", ARR);
-  basic_block_t& entry = cfg->insert("entry");
-  basic_block_t& bb1   = cfg->insert("bb1");
-  basic_block_t& bb1_t = cfg->insert("bb1_t");
-  basic_block_t& bb1_f = cfg->insert("bb1_f");
-  basic_block_t& bb2   = cfg->insert("bb2");
-  basic_block_t& ret   = cfg->insert("ret");
+  z_cfg_t* cfg = new z_cfg_t("entry","ret", ARR);
+  z_basic_block_t& entry = cfg->insert("entry");
+  z_basic_block_t& bb1   = cfg->insert("bb1");
+  z_basic_block_t& bb1_t = cfg->insert("bb1_t");
+  z_basic_block_t& bb1_f = cfg->insert("bb1_f");
+  z_basic_block_t& bb2   = cfg->insert("bb2");
+  z_basic_block_t& ret   = cfg->insert("ret");
   z_var n1(vfac["n1"]);
   z_var n2(vfac["n2"]);
   z_var i(vfac["i"]);
@@ -338,7 +338,7 @@ cfg_t* prog8(variable_factory_t &vfac)
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
 
   // assume array element of 1 byte
-  entry.assign (a_p, 0);
+  entry.assign (z_var(a_p), 0);
   entry.array_assume (a,  crab::ARR_INT_TYPE, 0, 10, a_p);
   entry.assume(n >= 1);
   entry.assign(n1, 1);
@@ -363,19 +363,19 @@ cfg_t* prog8(variable_factory_t &vfac)
 
 
 // this is the program init_rand from Gange et.al paper.
-cfg_t* prog9(variable_factory_t &vfac) 
+z_cfg_t* prog9(variable_factory_t &vfac) 
 {
-  cfg_t* cfg = new cfg_t("entry","ret",ARR);
-  basic_block_t& entry   = cfg->insert("entry");
-  basic_block_t& bb1     = cfg->insert("bb1");
-  basic_block_t& bb1_t   = cfg->insert("bb1_t");
-  basic_block_t& bb1_f1  = cfg->insert("bb1_f1");
-  basic_block_t& bb1_f2  = cfg->insert("bb1_f2");
-  basic_block_t& bb1_f   = cfg->insert("bb1_f");
-  basic_block_t& bb2   = cfg->insert("bb2");
-  basic_block_t& bb2_a   = cfg->insert("bb2a");
-  basic_block_t& bb2_b   = cfg->insert("bb2b");
-  basic_block_t& ret     = cfg->insert("ret");
+  z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
+  z_basic_block_t& entry   = cfg->insert("entry");
+  z_basic_block_t& bb1     = cfg->insert("bb1");
+  z_basic_block_t& bb1_t   = cfg->insert("bb1_t");
+  z_basic_block_t& bb1_f1  = cfg->insert("bb1_f1");
+  z_basic_block_t& bb1_f2  = cfg->insert("bb1_f2");
+  z_basic_block_t& bb1_f   = cfg->insert("bb1_f");
+  z_basic_block_t& bb2   = cfg->insert("bb2");
+  z_basic_block_t& bb2_a   = cfg->insert("bb2a");
+  z_basic_block_t& bb2_b   = cfg->insert("bb2b");
+  z_basic_block_t& ret     = cfg->insert("ret");
   z_var n1(vfac["n1"]);
   z_var i1(vfac["i1"]);
   z_var i2(vfac["i2"]);
@@ -393,7 +393,7 @@ cfg_t* prog9(variable_factory_t &vfac)
   bb1_t >> bb2; bb2 >> bb2_a; bb2 >> bb2_b; bb2_a >> bb1; bb2_b >> bb1; bb1_f >> ret;
 
   // assume array element of 1 byte
-  entry.assign (a_p, 0);
+  entry.assign (z_var(a_p), 0);
   entry.array_assume (a,  crab::ARR_INT_TYPE, 0, n, a_p);
   entry.assume(n >= 1);
   entry.assign(n1, 1);
@@ -423,15 +423,15 @@ cfg_t* prog9(variable_factory_t &vfac)
   return cfg;
 }
 
-cfg_t* prog10(variable_factory_t &vfac) 
+z_cfg_t* prog10(variable_factory_t &vfac) 
 {
-  cfg_t* cfg = new cfg_t("entry","ret",ARR);
-  basic_block_t& entry = cfg->insert("entry");
-  basic_block_t& bb1   = cfg->insert("bb1");
-  basic_block_t& bb1_t = cfg->insert("bb1_t");
-  basic_block_t& bb1_f = cfg->insert("bb1_f");
-  basic_block_t& bb2   = cfg->insert("bb2");
-  basic_block_t& ret   = cfg->insert("ret");
+  z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
+  z_basic_block_t& entry = cfg->insert("entry");
+  z_basic_block_t& bb1   = cfg->insert("bb1");
+  z_basic_block_t& bb1_t = cfg->insert("bb1_t");
+  z_basic_block_t& bb1_f = cfg->insert("bb1_f");
+  z_basic_block_t& bb2   = cfg->insert("bb2");
+  z_basic_block_t& ret   = cfg->insert("ret");
   z_var i(vfac["i"]);
   z_var n(vfac["n"]);
   varname_t a = vfac["A"];
@@ -470,91 +470,91 @@ cfg_t* prog10(variable_factory_t &vfac)
 
 void test1(){
   variable_factory_t vfac;
-  cfg_t* cfg = prog1(vfac);
+  z_cfg_t* cfg = prog1(vfac);
   crab::outs () << "Program 1: forall 0<= i< 10. a[i] = 123456\n";
-  run<array_smashing<dis_interval_domain_t> > (cfg, vfac, false, 1, 2, 20);
-  run<array_smashing<sdbm_domain_t> > (cfg, vfac, false, 1, 2, 20);
+  run<array_smashing<z_dis_interval_domain_t> > (cfg, vfac, false, 1, 2, 20);
+  run<array_smashing<z_sdbm_domain_t> > (cfg, vfac, false, 1, 2, 20);
   delete cfg;
 }
 
 void test2(){
   variable_factory_t vfac;
-  cfg_t* cfg = prog3(vfac);
+  z_cfg_t* cfg = prog3(vfac);
   crab::outs () << "Program 2: forall 0<= i< 10. a[i] = b[i] = x and x = 123456\n";
-  run<array_smashing<dis_interval_domain_t> > (cfg, vfac, false, 1, 2, 20);
-  run<array_smashing<sdbm_domain_t> > (cfg, vfac, false, 1, 2, 20);
+  run<array_smashing<z_dis_interval_domain_t> > (cfg, vfac, false, 1, 2, 20);
+  run<array_smashing<z_sdbm_domain_t> > (cfg, vfac, false, 1, 2, 20);
   delete cfg;
 }
 
 void test3(){
   variable_factory_t vfac;
-  cfg_t* cfg = prog4(vfac);
+  z_cfg_t* cfg = prog4(vfac);
   crab::outs () << "Program 3: forall 0<= i< 10. a[i] = 8 and b[i] = 5\n";
-  run<array_smashing<dis_interval_domain_t> > (cfg, vfac, false, 1, 2, 20);
-  run<array_smashing<sdbm_domain_t> > (cfg, vfac, false, 1, 2, 20);
+  run<array_smashing<z_dis_interval_domain_t> > (cfg, vfac, false, 1, 2, 20);
+  run<array_smashing<z_sdbm_domain_t> > (cfg, vfac, false, 1, 2, 20);
   delete cfg;
 }
 
 void test4(){
   variable_factory_t vfac;
-  cfg_t* cfg = prog5(vfac);
+  z_cfg_t* cfg = prog5(vfac);
   crab::outs () << "Program 4: forall 0<= i < n. a[i] = 123456 (unbounded loop)\n";
-  run<array_smashing<dis_interval_domain_t> > (cfg, vfac, false, 1, 2, 20);
-  run<array_smashing<sdbm_domain_t> > (cfg, vfac, false, 1, 2, 20);
+  run<array_smashing<z_dis_interval_domain_t> > (cfg, vfac, false, 1, 2, 20);
+  run<array_smashing<z_sdbm_domain_t> > (cfg, vfac, false, 1, 2, 20);
   delete cfg;
 }
 
 void test5(){
   variable_factory_t vfac;
-  cfg_t* cfg = prog6(vfac);
+  z_cfg_t* cfg = prog6(vfac);
   crab::outs () << "Program 5: for all 0<= i< 10. a[i] = 123456 (assume elem size of 4 bytes)\n";
-  run<array_smashing<dis_interval_domain_t> > (cfg, vfac, false, 1, 2, 20);
-  run<array_smashing<sdbm_domain_t> > (cfg, vfac, false, 1, 2, 20);
+  run<array_smashing<z_dis_interval_domain_t> > (cfg, vfac, false, 1, 2, 20);
+  run<array_smashing<z_sdbm_domain_t> > (cfg, vfac, false, 1, 2, 20);
   delete cfg;
 }
 
 void test6(){
   variable_factory_t vfac;
-  cfg_t* cfg = prog7(vfac);
+  z_cfg_t* cfg = prog7(vfac);
   crab::outs () << "Program 6: a[0] = 89 and for all 1<= i < n. a[i] = a[i-1]\n";
-  run<array_smashing<dis_interval_domain_t> > (cfg, vfac, false, 1, 2, 20);
-  run<array_smashing<sdbm_domain_t> > (cfg, vfac, false, 1, 2, 20);
+  run<array_smashing<z_dis_interval_domain_t> > (cfg, vfac, false, 1, 2, 20);
+  run<array_smashing<z_sdbm_domain_t> > (cfg, vfac, false, 1, 2, 20);
   delete cfg;
 }
 
 void test7(){
   variable_factory_t vfac;
-  cfg_t* cfg = prog8(vfac);
+  z_cfg_t* cfg = prog8(vfac);
   crab::outs () << "Program 7: forall 0<= i< 10 and i % 2 = 0. a[i] = 123456\n";
-  run<array_smashing<dis_interval_domain_t> > (cfg, vfac, false, 1, 2, 20);
-  run<array_smashing<sdbm_domain_t> > (cfg, vfac, false, 1, 2, 20);
+  run<array_smashing<z_dis_interval_domain_t> > (cfg, vfac, false, 1, 2, 20);
+  run<array_smashing<z_sdbm_domain_t> > (cfg, vfac, false, 1, 2, 20);
   delete cfg;
 }
 
 
 void test8(){
   variable_factory_t vfac;
-  cfg_t* cfg = prog9(vfac);
+  z_cfg_t* cfg = prog9(vfac);
   crab::outs () << "Program 8: forall 0<= i < n. 1 <= a[i] <= 2\n";
-  run<array_smashing<dis_interval_domain_t> > (cfg, vfac, false, 1, 2, 20);
-  run<array_smashing<sdbm_domain_t> > (cfg, vfac, false, 1, 2, 20);
+  run<array_smashing<z_dis_interval_domain_t> > (cfg, vfac, false, 1, 2, 20);
+  run<array_smashing<z_sdbm_domain_t> > (cfg, vfac, false, 1, 2, 20);
   delete cfg;
 }
 
 void test9(){
   variable_factory_t vfac;
-  cfg_t* cfg = prog2(vfac);
+  z_cfg_t* cfg = prog2(vfac);
   crab::outs () << "Program 9: forall 0<= i < n. a[i] == 123456 (decrementing loop)\n";
-  run<array_smashing<dis_interval_domain_t> > (cfg, vfac, false, 1, 2, 20);
-  run<array_smashing<sdbm_domain_t> > (cfg, vfac, false, 1, 2, 20);
+  run<array_smashing<z_dis_interval_domain_t> > (cfg, vfac, false, 1, 2, 20);
+  run<array_smashing<z_sdbm_domain_t> > (cfg, vfac, false, 1, 2, 20);
   delete cfg;
 }
 
 void test10(){
   variable_factory_t vfac;
-  cfg_t* cfg = prog10(vfac); 
+  z_cfg_t* cfg = prog10(vfac); 
   crab::outs () << "Program 10: forall 0<= i < n. is_not_null(a[i]) &&  is_not_null(b[i]) \n";
-  run<array_smashing<num_null_domain_t> > (cfg, vfac, false, 1, 2, 20);
+  run<array_smashing<z_num_null_domain_t> > (cfg, vfac, false, 1, 2, 20);
   delete cfg;
 }
 

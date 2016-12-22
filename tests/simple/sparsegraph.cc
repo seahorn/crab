@@ -57,7 +57,7 @@ void test_sdbm(void)
   varname_t A = vfac["A"];
   varname_t x_prime = vfac["x\'"];
 
-  sdbm_domain_t dbm = sdbm_domain_t::top ();
+  z_sdbm_domain_t dbm = z_sdbm_domain_t::top ();
   // for all i. A[i] >= 0
   dbm += linear_constraint_t ( linear_expression_t (A) >= z_number (0));
   // x = A[..];

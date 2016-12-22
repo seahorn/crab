@@ -17,10 +17,10 @@ using namespace crab::domain_impl;
 
 using namespace boost;
 
-typedef call_graph<cfg_ref_t> call_graph_t;
+typedef call_graph<z_cfg_ref_t> call_graph_t;
 typedef call_graph_ref<call_graph_t> call_graph_ref_t;
 
-cfg_t* foo (variable_factory_t &vfac) {
+z_cfg_t* foo (variable_factory_t &vfac) {
   vector<pair<varname_t,crab::variable_type> > params;
   params.push_back (make_pair (vfac["x"], crab::INT_TYPE));
   function_decl<varname_t> decl (crab::INT_TYPE, vfac["foo"], params);
@@ -29,10 +29,10 @@ cfg_t* foo (variable_factory_t &vfac) {
   z_var y (vfac ["y"]);
   z_var z (vfac ["z"]);
   // entry and exit block
-  cfg_t* cfg = new cfg_t("entry", "exit", decl);
+  z_cfg_t* cfg = new z_cfg_t("entry", "exit", decl);
   // adding blocks
-  basic_block_t& entry = cfg->insert ("entry");
-  basic_block_t& exit   = cfg->insert ("exit");
+  z_basic_block_t& entry = cfg->insert ("entry");
+  z_basic_block_t& exit   = cfg->insert ("exit");
   // adding control flow
   entry >> exit;
   // adding statements
@@ -43,7 +43,7 @@ cfg_t* foo (variable_factory_t &vfac) {
 }
 
 
-cfg_t* bar (variable_factory_t &vfac) {
+z_cfg_t* bar (variable_factory_t &vfac) {
   vector<pair<varname_t,crab::variable_type> > params;
   params.push_back (make_pair (vfac["a"], crab::INT_TYPE));
   function_decl<varname_t> decl (crab::INT_TYPE, vfac["bar"], params);
@@ -52,10 +52,10 @@ cfg_t* bar (variable_factory_t &vfac) {
   z_var x (vfac ["x"]);
   z_var y (vfac ["y"]);
   // entry and exit block
-  cfg_t* cfg = new cfg_t("entry", "exit", decl);
+  z_cfg_t* cfg = new z_cfg_t("entry", "exit", decl);
   // adding blocks
-  basic_block_t& entry = cfg->insert ("entry");
-  basic_block_t& exit   = cfg->insert ("exit");
+  z_basic_block_t& entry = cfg->insert ("entry");
+  z_basic_block_t& exit   = cfg->insert ("exit");
   // adding control flow
   entry >> exit;
   // adding statements
@@ -67,7 +67,7 @@ cfg_t* bar (variable_factory_t &vfac) {
   return cfg;
 }
 
-cfg_t* m (variable_factory_t &vfac)  {
+z_cfg_t* m (variable_factory_t &vfac)  {
   vector<pair<varname_t,crab::variable_type> > params;
   function_decl<varname_t> decl (crab::UNK_TYPE, vfac["main"], params);
   // Defining program variables
@@ -75,10 +75,10 @@ cfg_t* m (variable_factory_t &vfac)  {
   z_var y (vfac ["y"]);
   z_var z (vfac ["z"]);
   // entry and exit block
-  cfg_t* cfg = new cfg_t("entry", "exit", decl);
+  z_cfg_t* cfg = new z_cfg_t("entry", "exit", decl);
   // adding blocks
-  basic_block_t& entry = cfg->insert ("entry");
-  basic_block_t& exit   = cfg->insert ("exit");
+  z_basic_block_t& entry = cfg->insert ("entry");
+  z_basic_block_t& exit   = cfg->insert ("exit");
   // adding control flow
   entry >> exit;
   // adding statements
@@ -103,15 +103,15 @@ int main (int argc, char** argv ) {
 
   variable_factory_t vfac;
 
-  cfg_t* t1 = foo (vfac);
-  cfg_t* t2 = bar (vfac);
-  cfg_t* t3 = m (vfac);
+  z_cfg_t* t1 = foo (vfac);
+  z_cfg_t* t2 = bar (vfac);
+  z_cfg_t* t3 = m (vfac);
 
   crab::outs() << *t1 << "\n";
   crab::outs() << *t2 << "\n";
   crab::outs() << *t3 << "\n";
 
-  vector<cfg_ref_t> cfgs;
+  vector<z_cfg_ref_t> cfgs;
   cfgs.push_back(*t1);
   cfgs.push_back(*t2);
   cfgs.push_back(*t3);

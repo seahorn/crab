@@ -55,9 +55,6 @@ class z_number {
 private:
   mpz_class _n;
 
-// private:
-//   z_number(mpz_class n) : _n(n) {}
-
 public:
 
   z_number(mpz_class n) : _n(n) {}
@@ -272,12 +269,12 @@ class q_number {
 private:
   mpq_class _n;
 
-private:
-  q_number(mpq_class n) : _n(n) {}
-
 public:
+  
   q_number() : _n(0) {}
 
+  q_number(mpq_class n) : _n(n) {}
+  
   q_number(std::string s) {
     try {
       this->_n = s;
@@ -287,11 +284,15 @@ public:
     }
   }
 
-  q_number(int n) : _n(n) { this->_n.canonicalize(); }
-
+  q_number(double n): _n(n) { this->_n.canonicalize(); }
+  
   q_number(z_number n) : _n(n._n) { this->_n.canonicalize(); }
 
   q_number(z_number n, z_number d) : _n(n._n, d._n) { this->_n.canonicalize(); }
+
+  explicit operator mpq_class() const { 
+    return _n;
+  } 
 
   std::string get_str () const {
     return _n.get_str();
