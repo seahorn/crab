@@ -29,7 +29,6 @@ add_subdirectory (inter)
 add_subdirectory (cg)
 add_subdirectory (cfg)
 add_subdirectory (thresholds)
-add_subdirectory (disintervals)
 add_subdirectory (checkers)
 add_subdirectory (rationals)
 
