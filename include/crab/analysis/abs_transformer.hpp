@@ -186,7 +186,8 @@ namespace crab {
 
     
    protected:
-    /// XXX: the transformer does not own m_inv and it does never copy it
+    /// XXX: the transformer does not own m_inv and it does never copy
+    ///      its content.
     abs_dom_t *m_inv;
 
    private:
@@ -206,7 +207,12 @@ namespace crab {
     
    public:
 
-    intra_abs_transformer (abs_dom_t* inv): m_inv (inv) { }
+    intra_abs_transformer (abs_dom_t* inv):
+      m_inv (inv) {
+      if (!m_inv)
+	CRAB_ERROR ("Invariant passed to transformer cannot be null!");
+    }
+    
     virtual ~intra_abs_transformer () { }
 
     void set (abs_dom_t& inv) { m_inv = &inv;}
@@ -376,8 +382,7 @@ namespace crab {
     }
   }
     
-  //! Transformer specialized for computing numerical summaries over
-  //! integers.
+  //! Transformer specialized for computing summaries.
   //  class SumTable stores the summaries
   template<class SumTable> 
   class bu_summ_abs_transformer: 
@@ -514,8 +519,7 @@ namespace crab {
   }
 
   // Transformer specialized for performing top-down forward traversal
-  // while reusing numerical summaries at the callsites using domains
-  // defined over integers.
+  // while reusing summaries at the callsites.
   // class CallCtxTable stores the calling context.
   template<class SumTable, class CallCtxTable> 
   class td_summ_abs_transformer: 

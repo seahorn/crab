@@ -220,8 +220,7 @@ namespace crab {
     }; 
 
     //////////////////////////////////////////////////////////////////
-    //! Specialized class for an intra-procedural forward analysis
-    //! over integers
+    //! Internal implementation of an intra-procedural forward analysis
     //////////////////////////////////////////////////////////////////    
     template<typename CFG, typename AbsDomain, typename AbsTr>
     class intra_fwd_analyzer_impl
