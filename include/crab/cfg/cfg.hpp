@@ -2830,7 +2830,6 @@ namespace crab {
 
             bound_t t = bound_t::plus_infinity ();
             if (i.is_assume ()) {
-	      /// XXX: use of dynamic_cast is expensive but not better way for now
               auto a = static_cast<const typename basic_block_t::assume_t*> (&i);
 	      t = bound_t(-(a->constraint ().expression ().constant ()));
             }
@@ -2838,6 +2837,11 @@ namespace crab {
               auto s = static_cast<const typename basic_block_t::select_t*> (&i);
 	      t = bound_t(-(s->cond ().expression ().constant ()));
             }
+            else if (i.is_assign ()) {
+              auto a = static_cast<const typename basic_block_t::assign_t*> (&i);
+	      if (a->rhs ().is_constant ())
+		t = bound_t(-(a->rhs().constant ()));
+            }	    
             
             if (t != bound_t::plus_infinity ()) {
               // XXX: for code pattern like this "if(x<k1) {x+=k2;}"
@@ -2845,7 +2849,7 @@ namespace crab {
               // (x<=k1-1) so an useful threshold would be k1+1+k2.
               // Since we don't keep track of how x is incremented or
               // decremented we choose arbitrarily k2=1.
-	      thresholds.add(t+2);	      
+	      thresholds.add(t+2);
             }
           }
         }
