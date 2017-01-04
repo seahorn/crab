@@ -489,7 +489,7 @@ namespace crab {
             return ap_tcons0_make (AP_CONS_DISEQ, expr2texpr (exp), NULL);            
           }
         }
-          
+		
         // --- from apron to crab 
 
 	inline void convert_apron_number (double n, ikos::z_number &res) const
@@ -813,11 +813,50 @@ namespace crab {
                                                                  &*x, &*o.m_apstate)), m);
           }
         }        
-        
+
+        template<typename Thresholds>	
+	ap_lincons0_array_t make_thresholds (apron_domain_t o, const Thresholds &ts) {
+	  // TODO: make some constraints using the constants from ts
+	  ap_lincons0_array_t csts = ap_lincons0_array_make(0);
+	  return csts;
+	}
+	
         template<typename Thresholds>
         apron_domain_t widening_thresholds (apron_domain_t o, const Thresholds &ts) {
-          // TODO: use thresholds
-          return (*this || o);
+          crab::CrabStats::count (getDomainName() + ".count.widening");
+          crab::ScopedCrabStats __st__(getDomainName() + ".widening");
+
+          if (is_bottom())
+            return o;
+          else if (o.is_bottom())
+            return *this;
+          else {
+            ap_state_ptr x = apPtr (get_man (), ap_abstract0_copy (get_man (), &*m_apstate));
+            var_map_t  m = merge_var_map (m_var_map, x, o.m_var_map, o.m_apstate);	    
+	    #if 1
+	    // widening w/o thresholds in the apron domain
+            apron_domain_t res (apPtr (get_man(), 
+					 ap_abstract0_widening (get_man(), 
+								&*x, &*o.m_apstate)), m);
+
+	    // widening w/ thresholds in the interval domain
+	    auto intv_this  = this->to_interval_domain ();
+	    auto intv_o     = o.to_interval_domain ();
+	    auto intv_widen = intv_this.widening_thresholds (intv_o, ts);	    
+	    
+	    // refine the apron domain using the widen intervals
+	    apron_domain_t apron_intv_widen;
+	    apron_intv_widen += intv_widen.to_linear_constraint_system ();
+	    return res & apron_intv_widen;
+	    #else
+	    ap_lincons0_array_t csts = make_thresholds (o, ts);
+            apron_domain_t res (apPtr (get_man(), 
+				       ap_abstract0_widening_threshold
+				       (get_man(), &*x, &*o.m_apstate, &csts)), m);
+	    ap_lincons0_array_clear (&csts);
+	    return res;
+	    #endif 
+          }
         }
 
         apron_domain_t operator&&(apron_domain_t o) {
@@ -1046,6 +1085,23 @@ namespace crab {
             ++i;
           }
 
+	  #if 0
+	  ///// debugging
+	  vector<char*> names;
+	  for (unsigned i=0; i < get_dims (m_apstate) ; i++){
+	    string varname;
+	    if (has_var_name (m_var_map, i))
+	      varname = get_var_name (m_var_map, i).str ();
+	    else // unused dimension
+	      varname = string ("_x") + std::to_string (i);
+	    char* name = new char [varname.length () + 1];
+	    strcpy (name, varname.c_str ());
+	    names.push_back (name);
+	  }
+	  ap_tcons0_array_fprint (stdout, &array, &names[0]);
+	  for (auto n : names) { delete n; }
+	  #endif 
+	  
           m_apstate = apPtr (get_man (), 
                              ap_abstract0_meet_tcons_array (get_man (), false, 
                                                             &*m_apstate, &array));
@@ -1257,7 +1313,17 @@ namespace crab {
             set(x, xi);
           }
         }
-        
+
+	interval_domain_t to_interval_domain () {
+	  if (is_bottom ()) return interval_domain_t::bottom();
+	  if (is_top ())    return interval_domain_t::top();	  
+	  
+	  interval_domain_t res;
+	  for (auto &px: m_var_map.left)
+	    res.set (px.first, this->operator[](px.first));
+	  return res;
+	}
+	
         linear_constraint_system_t to_linear_constraint_system () {
           linear_constraint_system_t csts;
           if(is_bottom ())  {
