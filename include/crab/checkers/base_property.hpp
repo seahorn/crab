@@ -226,6 +226,12 @@ namespace crab {
     typedef ptr_null_stmt<number_t,varname_t>     ptr_null_t;
     typedef ptr_assume_stmt<number_t,varname_t>   ptr_assume_t;
     typedef ptr_assert_stmt<number_t,varname_t>   ptr_assert_t;
+    typedef bool_binary_op<number_t,varname_t>    bool_bin_op_t;
+    typedef bool_assign_cst<number_t,varname_t>   bool_assign_cst_t;
+    typedef bool_assign_var<number_t,varname_t>   bool_assign_var_t;    
+    typedef bool_assume_stmt<number_t,varname_t>  bool_assume_t;
+    typedef bool_assert_stmt<number_t,varname_t>  bool_assert_t;
+    typedef bool_select_stmt <number_t,varname_t> bool_select_t;    
 
     typedef std::set<std::pair<debug_info, check_kind_t> > check_results_db;
  
@@ -254,7 +260,12 @@ namespace crab {
       if (!this->m_abs_tr) return;        
         s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
     }
-      
+
+    virtual void check (select_t& s) { 
+      if (!this->m_abs_tr) return;        
+        s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
+    }
+    
     virtual void check (havoc_t& s) { 
       if (!this->m_abs_tr) return;        
         s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
@@ -264,12 +275,7 @@ namespace crab {
       if (!this->m_abs_tr) return;        
         s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
     }
-      
-    virtual void check (select_t& s) { 
-      if (!this->m_abs_tr) return;        
-        s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
-    }
-      
+            
     virtual void check (callsite_t& s) { 
       if (!this->m_abs_tr) return;        
         s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
@@ -334,7 +340,37 @@ namespace crab {
       if (!this->m_abs_tr) return;        
         s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
     }
+
+    virtual void check (bool_assert_t& s) { 
+      if (!this->m_abs_tr) return;        
+        s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
+    }
+
+    virtual void check (bool_bin_op_t& s) { 
+      if (!this->m_abs_tr) return;        
+        s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
+    } 
       
+    virtual void check (bool_assign_cst_t& s) { 
+      if (!this->m_abs_tr) return;        
+        s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
+    }
+
+    virtual void check (bool_assign_var_t& s) { 
+      if (!this->m_abs_tr) return;        
+        s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
+    }
+    
+    virtual void check (bool_assume_t& s) { 
+      if (!this->m_abs_tr) return;        
+        s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
+    }
+
+    virtual void check (bool_select_t& s) { 
+      if (!this->m_abs_tr) return;        
+        s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
+    }
+    
    public: 
 
     /* Visitor API */
@@ -357,6 +393,12 @@ namespace crab {
     void visit (ptr_function_t &s) { check (s); }
     void visit (ptr_null_t &s) { check (s); }
     void visit (ptr_assert_t &s) { check (s); }
+    void visit (bool_bin_op_t &s) { check (s); }
+    void visit (bool_assign_cst_t &s) { check (s); }
+    void visit (bool_assign_var_t &s) { check (s); }    
+    void visit (bool_assume_t &s) { check (s); }
+    void visit (bool_select_t &s) { check (s); }
+    void visit (bool_assert_t &s) { check (s); }    
     
     property_checker (int verbose): 
         m_abs_tr (nullptr), m_verbose (verbose) { }

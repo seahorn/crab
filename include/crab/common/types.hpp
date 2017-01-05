@@ -118,6 +118,7 @@ inline void ___print___(ArgTypes... args)
 namespace crab {
 
    enum variable_type {
+     BOOL_TYPE,
      INT_TYPE,
      REAL_TYPE,
      PTR_TYPE,
@@ -128,6 +129,7 @@ namespace crab {
    {
      switch (t)
      {
+       case BOOL_TYPE: o << "bool"; break;       
        case INT_TYPE: o << "int"; break;
        case REAL_TYPE: o << "real"; break;	 
        case PTR_TYPE: o << "ptr"; break;
@@ -144,6 +146,10 @@ namespace crab {
      BINOP_AND, BINOP_OR, BINOP_XOR, BINOP_SHL, BINOP_LSHR, BINOP_ASHR
    } binary_operation_t;
 
+   typedef enum { 
+     BINOP_BAND, BINOP_BOR, BINOP_BXOR
+   } bool_binary_operation_t;
+  
    inline crab::crab_os& operator<<(crab::crab_os&o, binary_operation_t op) {
      switch (op) {
        case BINOP_ADD: o << "+"; break;
@@ -164,9 +170,22 @@ namespace crab {
      return o;
    }
 
+   inline crab::crab_os& operator<<(crab::crab_os&o, bool_binary_operation_t op) {
+     switch (op) {
+       case BINOP_BAND: o << "&"; break;
+       case BINOP_BOR: o << "|"; break;
+       case BINOP_BXOR: o << "^"; break;
+       default: CRAB_ERROR("unreachable");
+      }
+     return o;
+   }
+  
   template<typename T>
   inline boost::optional<T> conv_op (binary_operation_t op); 
 
+  template<typename T>
+  inline boost::optional<T> conv_op (bool_binary_operation_t op); 
+  
 
   // toy language for pointer constraints
   typedef enum  { PTR_EQUALITY, PTR_DISEQUALITY } ptr_cst_kind_t;  

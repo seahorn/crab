@@ -8,7 +8,7 @@
    These are the main Crab statements for which we define their abstract
    transfer functions:
    
-   ARITHMETIC
+   ARITHMETIC and BOOLEAN
      x := y bin_op z;
      x := y; 
      assume (cst) 
@@ -37,7 +37,7 @@
  */
 
 #include <boost/optional.hpp>
-#include "boost/range/algorithm/set_algorithm.hpp"
+#include <boost/range/algorithm/set_algorithm.hpp>
 #include <boost/noncopyable.hpp>
 
 #include <crab/common/debug.hpp>
@@ -93,6 +93,13 @@ namespace crab {
     typedef ptr_assume_stmt<number_t,VariableName>   ptr_assume_t;
     typedef ptr_assert_stmt<number_t,VariableName>   ptr_assert_t;
 
+    typedef bool_binary_op <number_t,VariableName>   bool_bin_op_t;
+    typedef bool_assign_cst <number_t,VariableName>  bool_assign_cst_t;
+    typedef bool_assign_var <number_t,VariableName>  bool_assign_var_t;    
+    typedef bool_assume_stmt <number_t,VariableName> bool_assume_t;
+    typedef bool_select_stmt <number_t,VariableName> bool_select_t;
+    typedef bool_assert_stmt <number_t,VariableName> bool_assert_t;
+    
    protected: 
 
     virtual void exec (havoc_t&) { }
@@ -116,6 +123,12 @@ namespace crab {
     virtual void exec (ptr_null_t&) { }
     virtual void exec (ptr_assume_t&) { }
     virtual void exec (ptr_assert_t&) { }
+    virtual void exec (bool_bin_op_t&)  { } 
+    virtual void exec (bool_assign_cst_t&) { }
+    virtual void exec (bool_assign_var_t&) { }    
+    virtual void exec (bool_assume_t&) { }
+    virtual void exec (bool_select_t&) { }
+    virtual void exec (bool_assert_t&) { }
 
    public: /* visitor api */
 
@@ -140,7 +153,12 @@ namespace crab {
     void visit (ptr_null_t &s) { exec (s); }
     void visit (ptr_assume_t &s) { exec (s); }
     void visit (ptr_assert_t &s) { exec (s); }
-
+    void visit (bool_bin_op_t &s) { exec (s); }
+    void visit (bool_assign_cst_t &s) { exec (s); }
+    void visit (bool_assign_var_t &s) { exec (s); }    
+    void visit (bool_assume_t &s) { exec (s); }
+    void visit (bool_select_t &s) { exec (s); }
+    void visit (bool_assert_t &s) { exec (s); }
   };
 
 
@@ -183,6 +201,12 @@ namespace crab {
     using typename abs_transform_api_t::ptr_null_t;
     using typename abs_transform_api_t::ptr_assume_t;
     using typename abs_transform_api_t::ptr_assert_t;
+    using typename abs_transform_api_t::bool_bin_op_t;
+    using typename abs_transform_api_t::bool_assign_cst_t;
+    using typename abs_transform_api_t::bool_assign_var_t;    
+    using typename abs_transform_api_t::bool_assume_t;
+    using typename abs_transform_api_t::bool_select_t;
+    using typename abs_transform_api_t::bool_assert_t;
 
     
    protected:
@@ -292,6 +316,44 @@ namespace crab {
       else
 	*m_inv += stmt.constraint ();
     }
+
+    void exec (bool_bin_op_t& stmt)
+    {
+      assert(m_inv);
+      CRAB_WARN ("TODO: transformer for bool binop");	      
+    }
+        
+    void exec (bool_assign_cst_t& stmt)
+    {
+      assert(m_inv);
+      //(*m_inv).set_bool (stmt.lhs (), stmt.rhs ());
+      CRAB_WARN ("TODO: transformer for bool assign cst");	            
+    }
+
+    void exec (bool_assign_var_t& stmt)
+    {
+      assert(m_inv);
+      //(*m_inv).set_bool (stmt.lhs (), stmt.rhs ());
+      CRAB_WARN ("TODO: transformer for bool assign var");	            
+    }
+    
+    void exec (bool_select_t& stmt)
+    {
+      assert(m_inv);
+      CRAB_WARN ("TODO: transformer for bool select");	                  
+    }
+    
+    void exec (bool_assume_t& stmt)
+    {
+      assert(m_inv);
+      CRAB_WARN ("TODO: transformer for bool assume");	                        
+    }
+    
+    void exec (bool_assert_t& stmt)
+    {
+      assert(m_inv);
+      CRAB_WARN ("TODO: transformer for bool assert");	                              
+    }
     
     void exec (havoc_t& stmt)
     { assert(m_inv); (*m_inv) -= stmt.variable(); }
@@ -367,6 +429,9 @@ namespace crab {
     typedef typename AbsDom::number_t number_t;
     switch (ty)
     {
+      case BOOL_TYPE:
+	CRAB_WARN ("TODO: unify bool types");	
+	break;      
       case INT_TYPE:
 	inv.assign (lhs, linear_expression_t (rhs));
 	break;

@@ -6,5 +6,6 @@
 #include <crab/domains/division_operators_api.hpp>
 #include <crab/domains/array_operators_api.hpp>
 #include <crab/domains/pointer_operators_api.hpp>
+#include <crab/domains/boolean_operators_api.hpp>
 
 #endif 

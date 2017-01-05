@@ -9,15 +9,20 @@
  * reals, pointers, array of integers, or array of pointers.
  *
  * Crab CFG supports the modelling of:
- *   - arithmetic operations over integers and reals
+ *   - arithmetic operations over integers and reals and boolean operations
  *   - C-like pointers 
  *   - uni-dimensional arrays of integers or pointers (useful for
  *     C-like arrays and heap abstractions)
  *   - and functions 
  * 
- * Important note: objects of the class cfg are not copyable. Instead,
- * we provide a class cfg_ref that wraps cfg references into copyable
- * and assignable objects.
+ * Important notes: 
+ * 
+ * - objects of the class cfg are not copyable. Instead, we provide a
+ *   class cfg_ref that wraps cfg references into copyable and
+ *   assignable objects.
+ * 
+ * - During the construction of a cfg there is no type checking so the
+ *   client must ensure that types are compatible.
  * 
  * TODO: support arrays of reals.
  */
@@ -70,8 +75,11 @@ namespace crab {
       PTR_ASSUME = 46, PTR_ASSERT = 47,
       // functions calls
       CALLSITE = 50, RETURN = 51,
-      // integers/arrays/pointers
-      HAVOC = 60 
+      // integers/arrays/pointers/boolean
+      HAVOC = 60,
+      // boolean
+      BOOL_BIN_OP = 70, BOOL_ASSIGN_CST = 71, BOOL_ASSIGN_VAR = 72,
+      BOOL_ASSUME = 73, BOOL_SELECT = 74, BOOL_ASSERT = 75
     }; 
 
     template<typename Number, typename VariableName>
@@ -324,6 +332,24 @@ namespace crab {
       }
       bool is_ptr_assert () const { 
         return (m_stmt_code == PTR_ASSERT); 
+      }
+      bool is_bool_bin_op () const { 
+        return (m_stmt_code == BOOL_BIN_OP); 
+      }
+      bool is_bool_assign_cst () const { 
+        return (m_stmt_code == BOOL_ASSIGN_CST); 
+      }
+      bool is_bool_assign_var () const { 
+        return (m_stmt_code == BOOL_ASSIGN_VAR); 
+      }      
+      bool is_bool_assume () const { 
+        return (m_stmt_code == BOOL_ASSUME); 
+      }
+      bool is_bool_assert () const { 
+        return (m_stmt_code == BOOL_ASSERT); 
+      }      
+      bool is_bool_select () const { 
+        return (m_stmt_code == BOOL_SELECT); 
       }
       
      public:
@@ -1479,7 +1505,278 @@ namespace crab {
         return;
       }
     }; 
-  
+
+    /* 
+       Boolean statements
+    */
+
+    template<class Number, class VariableName>
+    class bool_assign_cst: public statement<Number, VariableName>
+    {
+      
+     public:
+
+      typedef statement<Number,VariableName> statement_t;            
+      typedef linear_constraint< Number, VariableName > linear_constraint_t;
+      
+     private:
+      
+      VariableName        m_lhs; // pre: BOOL_TYPE
+      linear_constraint_t m_rhs;
+      
+     public:
+      
+      bool_assign_cst (VariableName lhs, linear_constraint_t rhs)
+	: statement_t (BOOL_ASSIGN_CST), m_lhs(lhs), m_rhs(rhs) 
+      {
+        this->m_live.add_def (m_lhs);
+        for(auto v: m_rhs.variables()) 
+          this->m_live.add_use (v.name());
+      }
+      
+      VariableName lhs () const { return m_lhs; }
+      
+      linear_constraint_t rhs () const { return m_rhs; }
+      
+      virtual void accept(statement_visitor <Number, VariableName> *v) 
+      { v->visit(*this); }
+      
+      virtual boost::shared_ptr<statement_t> clone () const
+      {
+        typedef bool_assign_cst <Number, VariableName> bool_assign_cst_t;
+        return boost::static_pointer_cast< statement_t, bool_assign_cst_t >
+	  (boost::make_shared<bool_assign_cst_t>(m_lhs, m_rhs));
+      }
+      
+      virtual void write(crab_os& o) const
+      {
+	if (m_rhs.is_tautology ())
+	  o << m_lhs << " = true ";
+	else if (m_rhs.is_contradiction ())
+	  o << m_lhs << " = false ";
+	else 
+	  o << m_lhs << " = (" << m_rhs << ")";
+      }
+    }; 
+
+    template<class Number, class VariableName>
+    class bool_assign_var: public statement<Number, VariableName>
+    {
+      // Note that this can be simulated with bool_binary_op (e.g.,
+      // b1 := b2 ----> b1 := b2 or false). However, we create a
+      // special statement to assign a variable to another because it
+      // is a very common operation.
+     public:
+
+      typedef statement<Number,VariableName> statement_t;            
+      
+     private:
+      
+      VariableName        m_lhs; // pre: BOOL_TYPE
+      VariableName        m_rhs; // pre: BOOL_TYPE
+      
+     public:
+      
+      bool_assign_var (VariableName lhs, VariableName rhs)
+	: statement_t (BOOL_ASSIGN_VAR), m_lhs(lhs), m_rhs(rhs) 
+      {
+        this->m_live.add_def (m_lhs);
+	this->m_live.add_use (m_rhs);
+      }
+      
+      VariableName lhs () const { return m_lhs; }
+      
+      VariableName rhs () const { return m_rhs; }
+      
+      virtual void accept(statement_visitor <Number, VariableName> *v) 
+      { v->visit(*this); }
+      
+      virtual boost::shared_ptr<statement_t> clone () const
+      {
+        typedef bool_assign_var <Number, VariableName> bool_assign_var_t;
+        return boost::static_pointer_cast< statement_t, bool_assign_var_t >
+	  (boost::make_shared<bool_assign_var_t>(m_lhs, m_rhs));
+      }
+      
+      virtual void write(crab_os& o) const
+      { o << m_lhs << " = " << m_rhs; }
+    }; 
+    
+    template< class Number, class VariableName>
+    class bool_binary_op: public statement <Number,VariableName>
+    {
+      // b1:= b2 and b3
+      // b1:= b2 or b3
+      // b1:= b2 xor b3
+      // Note that b1 := not b2   ----> b1 := b2 xor true
+     public:
+
+      typedef statement<Number,VariableName> statement_t;
+      
+     private:
+      
+      VariableName      m_lhs; // pre: BOOL_TYPE
+      bool_binary_operation_t m_op; 
+      VariableName      m_op1; // pre: BOOL_TYPE
+      VariableName      m_op2; // pre: BOOL_TYPE
+      
+     public:
+      
+      bool_binary_op (VariableName lhs, 
+		      bool_binary_operation_t op, VariableName op1, VariableName op2,
+		      debug_info dbg_info = debug_info ())
+  	: statement_t (BOOL_BIN_OP, dbg_info),
+	  m_lhs(lhs), m_op(op), m_op1(op1), m_op2(op2) 
+      { 
+        this->m_live.add_def (m_lhs);
+        this->m_live.add_use (m_op1);
+        this->m_live.add_use (m_op2);	
+      }
+      
+      VariableName lhs () const { return m_lhs; }
+      
+      bool_binary_operation_t op () const { return m_op; }
+      
+      VariableName left () const { return m_op1; }
+      
+      VariableName right () const { return m_op2; }
+      
+      virtual void accept(statement_visitor <Number,VariableName> *v) 
+      { v->visit(*this); }
+      
+      virtual boost::shared_ptr<statement_t> clone () const
+      {
+        typedef bool_binary_op<Number, VariableName> bool_binary_op_t;
+        return boost::static_pointer_cast<statement_t, bool_binary_op_t>
+            (boost::make_shared<bool_binary_op_t>(m_lhs, m_op, m_op1, m_op2));
+      }
+      
+      virtual void write (crab_os& o) const
+      { o << m_lhs << " = " << m_op1 << m_op << m_op2; }
+    }; 
+    
+    template<class Number, class VariableName>
+    class bool_assume_stmt: public statement <Number, VariableName>
+    {
+      
+     public:
+      
+      typedef statement<Number,VariableName> statement_t;                  
+      
+     private:
+      
+      VariableName m_var;  // pre: BOOL_TYPE
+      
+     public:
+      
+      bool_assume_stmt (VariableName v): statement_t(BOOL_ASSUME), m_var(v) 
+      { this->m_live.add_use (v); }
+      
+      VariableName cond() const { return m_var; }
+      
+      virtual void accept(statement_visitor <Number, VariableName> *v) 
+      { v->visit(*this); }
+      
+      virtual boost::shared_ptr<statement_t> clone () const
+      {
+        typedef bool_assume_stmt <Number, VariableName> bool_assume_t;
+        return boost::static_pointer_cast< statement_t, bool_assume_t >
+            (boost::make_shared<bool_assume_t>(m_var));
+      }
+      
+      virtual void write (crab_os & o) const
+      { o << "assume (" << m_var << ")";  }
+    }; 
+
+    // select b1, b2, b3, b4:
+    //    if b2 then b1=b3 else b1=b4
+    template< class Number, class VariableName>
+    class bool_select_stmt: public statement <Number, VariableName>
+    {
+      
+     public:
+
+      typedef statement<Number,VariableName> statement_t;      
+      
+     private:
+      
+      VariableName m_lhs;  // pre: BOOL_TYPE
+      VariableName m_cond; // pre: BOOL_TYPE
+      VariableName m_b1;   // pre: BOOL_TYPE
+      VariableName m_b2;   // pre: BOOL_TYPE
+      
+     public:
+      
+      bool_select_stmt (VariableName lhs, VariableName cond,
+			VariableName b1, VariableName b2): 
+	statement_t(BOOL_SELECT),
+	m_lhs(lhs), m_cond(cond), m_b1(b1), m_b2(b2) 
+      { 
+        this->m_live.add_def (m_lhs);
+	this->m_live.add_use (m_cond); 
+	this->m_live.add_use (m_b1); 
+	this->m_live.add_use (m_b2);
+      }
+      
+      VariableName lhs () const { return m_lhs; }
+      
+      VariableName cond () const { return m_cond; }
+      
+      VariableName left () const { return m_b1; }
+      
+      VariableName right () const { return m_b2; }
+      
+      virtual void accept(statement_visitor <Number, VariableName> *v) 
+      { v->visit(*this); }
+      
+      virtual boost::shared_ptr<statement_t> clone () const
+      {
+        typedef bool_select_stmt <Number, VariableName> bool_select_t;
+        return boost::static_pointer_cast< statement_t, bool_select_t >
+            (boost::make_shared<bool_select_t>(m_lhs, m_cond, m_b1, m_b2));
+      }
+      
+      virtual void write (crab_os& o) const
+      {
+        o << m_lhs << " = " 
+          << "ite(" << m_cond << "," << m_b1 << "," << m_b2 << ")";
+      }
+    }; 
+
+    template<class Number, class VariableName>
+    class bool_assert_stmt: public statement <Number, VariableName>
+    {
+      
+     public:
+
+      typedef statement<Number,VariableName> statement_t;            
+      
+     private:
+      
+      VariableName m_var;  // pre: BOOL_TYPE
+
+     public:
+      
+      bool_assert_stmt (VariableName v, debug_info dbg_info = debug_info ())
+	: statement_t (BOOL_ASSERT, dbg_info), m_var(v)
+      { this->m_live.add_use (v); }
+      
+      VariableName cond() const { return m_var; }
+      
+      virtual void accept(statement_visitor <Number, VariableName> *v) 
+      { v->visit(*this); }
+      
+      virtual boost::shared_ptr<statement_t> clone () const
+      {
+        typedef bool_assert_stmt <Number, VariableName> bool_assert_t;
+        return boost::static_pointer_cast< statement_t, bool_assert_t >
+            (boost::make_shared<bool_assert_t>(m_var));
+      }
+      
+      virtual void write (crab_os & o) const
+      { o << "assert (" << m_var << ")"; }
+    }; 
+    
     template< class BasicBlockLabel, class VariableName, class Number>
     class Cfg;
   
@@ -1548,6 +1845,13 @@ namespace crab {
       typedef ptr_null_stmt<Number, VariableName>     ptr_null_t;
       typedef ptr_assume_stmt<Number, VariableName>   ptr_assume_t;
       typedef ptr_assert_stmt<Number, VariableName>   ptr_assert_t;
+      // Boolean
+      typedef bool_binary_op<Number,VariableName>     bool_bin_op_t;
+      typedef bool_assign_cst<Number,VariableName>    bool_assign_cst_t;
+      typedef bool_assign_var<Number,VariableName>    bool_assign_var_t;      
+      typedef bool_assume_stmt<Number,VariableName>   bool_assume_t;
+      typedef bool_select_stmt<Number,VariableName>   bool_select_t;
+      typedef bool_assert_stmt<Number,VariableName>   bool_assert_t;
 
      private:
 
@@ -1575,6 +1879,13 @@ namespace crab {
       typedef boost::shared_ptr<ptr_assume_t> ptr_assume_ptr;    
       typedef boost::shared_ptr<ptr_assert_t> ptr_assert_ptr;    
 
+      typedef boost::shared_ptr<bool_bin_op_t> bool_bin_op_ptr;
+      typedef boost::shared_ptr<bool_assign_cst_t> bool_assign_cst_ptr;
+      typedef boost::shared_ptr<bool_assign_var_t> bool_assign_var_ptr;      
+      typedef boost::shared_ptr<bool_assume_t> bool_assume_ptr;
+      typedef boost::shared_ptr<bool_select_t> bool_select_ptr;
+      typedef boost::shared_ptr<bool_assert_t> bool_assert_ptr;
+      
       
       BasicBlockLabel m_bb_id;
       stmt_list_t m_stmts;
@@ -2257,6 +2568,57 @@ namespace crab {
           insert(boost::static_pointer_cast< statement_t, ptr_assert_t >
                  (boost::make_shared<ptr_assert_t> (cst, di)));
       }
+
+
+      void bool_assign (VariableName lhs, linear_constraint<Number, VariableName> rhs) 
+      {
+        insert (boost::static_pointer_cast< statement_t, bool_assign_cst_t >
+                (boost::make_shared<bool_assign_cst_t> (lhs, rhs)));
+      }
+
+
+      void bool_assign (VariableName lhs, VariableName rhs) 
+      {
+        insert (boost::static_pointer_cast< statement_t, bool_assign_var_t >
+                (boost::make_shared<bool_assign_var_t> (lhs, rhs)));
+      }
+      
+      void bool_assume (VariableName c) 
+      {
+        insert (boost::static_pointer_cast< statement_t, bool_assume_t >
+                (boost::make_shared<bool_assume_t> (c)));
+      }
+
+      void bool_assert (VariableName c) 
+      {
+        insert (boost::static_pointer_cast< statement_t, bool_assert_t >
+                (boost::make_shared<bool_assert_t> (c)));
+      }
+
+      void bool_select (VariableName lhs, VariableName cond, VariableName b1, VariableName b2) 
+      {
+        insert(boost::static_pointer_cast< statement_t, bool_select_t >
+               (boost::make_shared<bool_select_t>(lhs, cond, b1, b2)));
+      }
+      
+      void bool_and (VariableName lhs, VariableName op1, VariableName op2) 
+      {
+        insert (boost::static_pointer_cast< statement_t, bool_bin_op_t >
+                (boost::make_shared<bool_bin_op_t>(lhs, BINOP_BAND, op1, op2)));
+      }
+
+      void bool_or (VariableName lhs, VariableName op1, VariableName op2) 
+      {
+        insert (boost::static_pointer_cast< statement_t, bool_bin_op_t >
+                (boost::make_shared<bool_bin_op_t>(lhs, BINOP_BOR, op1, op2)));
+      }
+
+      void bool_xor (VariableName lhs, VariableName op1, VariableName op2) 
+      {
+        insert (boost::static_pointer_cast< statement_t, bool_bin_op_t >
+                (boost::make_shared<bool_bin_op_t>(lhs, BINOP_BXOR, op1, op2)));
+      }
+      
       
       friend crab_os& operator<<(crab_os &o, const basic_block_t &b)
       {
@@ -2372,6 +2734,13 @@ namespace crab {
       typedef ptr_null_stmt<Number, VariableName> ptr_null_t;
       typedef ptr_assume_stmt<Number, VariableName> ptr_assume_t;
       typedef ptr_assert_stmt<Number, VariableName> ptr_assert_t;
+
+      typedef bool_binary_op <Number,VariableName> bool_bin_op_t;
+      typedef bool_assign_cst <Number,VariableName> bool_assign_cst_t;
+      typedef bool_assign_var <Number,VariableName> bool_assign_var_t;      
+      typedef bool_assume_stmt <Number,VariableName> bool_assume_t;
+      typedef bool_select_stmt<Number,VariableName> bool_select_t;
+      typedef bool_assert_stmt <Number,VariableName> bool_assert_t;
       
       virtual void visit (bin_op_t&) {};
       virtual void visit (assign_t&) {};
@@ -2398,6 +2767,13 @@ namespace crab {
       virtual void visit (ptr_null_t&) {};
       virtual void visit (ptr_assume_t&) {};
       virtual void visit (ptr_assert_t&) {};
+
+      virtual void visit (bool_bin_op_t&) {};
+      virtual void visit (bool_assign_cst_t&) {};
+      virtual void visit (bool_assign_var_t&) {};      
+      virtual void visit (bool_assume_t&) {};
+      virtual void visit (bool_select_t&) {};
+      virtual void visit (bool_assert_t&) {};
       
       virtual ~statement_visitor () {}
     }; 
@@ -2910,12 +3286,14 @@ namespace crab {
         typedef typename statement_visitor<number_t, VariableName>::unreach_t unreach_t;
         typedef typename statement_visitor<number_t, VariableName>::select_t select_t;
         typedef typename statement_visitor<number_t, VariableName>::arr_load_t arr_load_t;
+        typedef typename statement_visitor<number_t, VariableName>::bool_assume_t bool_assume_t;	
         
         bool _do_not_simplify;
         donot_simplify_visitor (): _do_not_simplify(false) { }
         void visit(bin_op_t&){ }  
         void visit(assign_t&) { }
         void visit(assume_t&) { _do_not_simplify = true; }
+        void visit(bool_assume_t&) { _do_not_simplify = true; }	
         void visit(arr_load_t&) { _do_not_simplify = true; }
         void visit(havoc_t&) { }
         void visit(unreach_t&){ }

@@ -30,6 +30,7 @@ namespace crab {
       using typename base_checker_t::assign_t;
       using typename base_checker_t::assume_t;
       using typename base_checker_t::assert_t;
+      using typename base_checker_t::bool_assert_t;      
 
      public:
       
@@ -72,6 +73,14 @@ namespace crab {
         s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
       }
 
+
+      virtual void check (bool_assert_t& s) override { 
+        if (!this->m_abs_tr) return;        
+        
+	CRAB_WARN ("TODO: checker with bool assertions");
+        s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
+      }
+      
     }; 
   } // end namespace
 } // end namespace
