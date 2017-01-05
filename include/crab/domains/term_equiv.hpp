@@ -65,12 +65,15 @@ namespace crab {
      class TermNormalizer;
 
      template< typename Info >
-     class term_domain: public writeable,
-                        public numerical_domain<typename Info::Number, typename Info::VariableName >, 
-                        public bitwise_operators< typename Info::Number, typename Info::VariableName >,
-                        public division_operators< typename Info::Number, typename Info::VariableName >,
-                        public array_operators< typename Info::Number, typename Info::VariableName >,
-                        public pointer_operators< typename Info::Number, typename Info::VariableName > {
+     class term_domain:
+        public writeable,
+	public numerical_domain<typename Info::Number, typename Info::VariableName >, 
+	public bitwise_operators< typename Info::Number, typename Info::VariableName >,
+	public division_operators< typename Info::Number, typename Info::VariableName >,
+	public array_operators< typename Info::Number, typename Info::VariableName >,
+	public pointer_operators< typename Info::Number, typename Info::VariableName >,
+	public boolean_operators< typename Info::Number, typename Info::VariableName >
+     {
        friend class TermNormalizer<Info, typename Info::domain_t>;
       private:
        // Number and VariableName can be different from
@@ -507,12 +510,6 @@ namespace crab {
        term_domain(): _is_bottom(false) { }
        
        term_domain(const term_domain_t& o): 
-           writeable(), 
-           numerical_domain<Number, VariableName >(),
-           bitwise_operators< Number, VariableName >(),
-           division_operators< Number, VariableName >(),   
-           array_operators< Number, VariableName >(),   
-           pointer_operators< Number, VariableName >(),   
            _is_bottom(o._is_bottom), 
            _ttbl(o._ttbl), _impl(o._impl),
            _alloc(o._alloc),

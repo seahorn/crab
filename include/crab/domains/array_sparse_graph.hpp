@@ -1235,7 +1235,8 @@ namespace crab {
         public bitwise_operators<typename NumDom::number_t, typename NumDom::varname_t>, 
         public division_operators<typename NumDom::number_t, typename NumDom::varname_t>,
         public array_operators<typename NumDom::number_t, typename NumDom::varname_t>,
-        public pointer_operators<typename NumDom::number_t, typename NumDom::varname_t>
+        public pointer_operators<typename NumDom::number_t, typename NumDom::varname_t>,
+	public boolean_operators<typename NumDom::number_t, typename NumDom::varname_t>	
     {
       
      public:

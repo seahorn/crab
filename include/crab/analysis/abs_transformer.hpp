@@ -316,43 +316,49 @@ namespace crab {
       else
 	*m_inv += stmt.constraint ();
     }
-
-    void exec (bool_bin_op_t& stmt)
-    {
-      assert(m_inv);
-      CRAB_WARN ("TODO: transformer for bool binop");	      
-    }
         
     void exec (bool_assign_cst_t& stmt)
     {
       assert(m_inv);
-      //(*m_inv).set_bool (stmt.lhs (), stmt.rhs ());
-      CRAB_WARN ("TODO: transformer for bool assign cst");	            
+      (*m_inv).assign_bool_cst (stmt.lhs (), stmt.rhs ());
     }
 
     void exec (bool_assign_var_t& stmt)
     {
       assert(m_inv);
-      //(*m_inv).set_bool (stmt.lhs (), stmt.rhs ());
-      CRAB_WARN ("TODO: transformer for bool assign var");	            
+      (*m_inv).assign_bool_var (stmt.lhs (), stmt.rhs ());      
+    }
+
+    void exec (bool_bin_op_t& stmt)
+    {
+      assert(m_inv);
+      if (auto op = conv_op<bool_operation_t> (stmt.op()))
+	(*m_inv).apply_binary_bool (*op, stmt.lhs(), stmt.left(), stmt.right ());
     }
     
+    
+    void exec (bool_assume_t& stmt)
+    {
+      assert(m_inv);
+      (*m_inv).assume_bool (stmt.cond(), stmt.is_negated ());
+    }
+
     void exec (bool_select_t& stmt)
     {
       assert(m_inv);
       CRAB_WARN ("TODO: transformer for bool select");	                  
     }
-    
-    void exec (bool_assume_t& stmt)
-    {
-      assert(m_inv);
-      CRAB_WARN ("TODO: transformer for bool assume");	                        
-    }
-    
+
     void exec (bool_assert_t& stmt)
     {
       assert(m_inv);
-      CRAB_WARN ("TODO: transformer for bool assert");	                              
+      abs_dom_t inv;
+      inv.assume_bool (stmt.cond (), false);
+      abs_dom_t meet = inv & *m_inv;
+      if (meet.is_bottom ())
+        *m_inv = abs_dom_t::bottom (); // assertion does not definitely hold.
+      else
+	(*m_inv).assume_bool (stmt.cond(), false);
     }
     
     void exec (havoc_t& stmt)

@@ -1070,7 +1070,8 @@ namespace crab {
          public bitwise_operators< Number, VariableName >, 
          public division_operators< Number, VariableName >,
          public array_operators< Number, VariableName >,
-         public pointer_operators< Number, VariableName > {
+         public pointer_operators< Number, VariableName >,
+	 public boolean_operators< Number, VariableName >   {
      
     public:
      using typename numerical_domain< Number, VariableName>::linear_expression_t;
@@ -1114,13 +1115,7 @@ namespace crab {
      dis_interval_domain(): _env(separate_domain_t::top()) { }    
 
      dis_interval_domain (const dis_interval_domain_t& o): 
-         writeable(), 
-         numerical_domain< Number, VariableName >(), 
-         bitwise_operators< Number, VariableName >(),
-         division_operators< Number, VariableName >(),
-         array_operators< Number, VariableName >(),
-         pointer_operators< Number, VariableName >(),
-         _env(o._env) { 
+       _env(o._env) { 
        crab::CrabStats::count (getDomainName() + ".count.copy");
        crab::ScopedCrabStats __st__(getDomainName() + ".copy");
      }

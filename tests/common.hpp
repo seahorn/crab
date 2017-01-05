@@ -20,7 +20,8 @@
 #include <crab/domains/term_equiv.hpp>
 #include <crab/domains/array_sparse_graph.hpp>                      
 #include <crab/domains/array_smashing.hpp>
-#include <crab/domains/nullity.hpp>                      
+#include <crab/domains/nullity.hpp>
+#include <crab/domains/flat_boolean_domain.hpp>                      
 #include <crab/domains/combined_domains.hpp>                      
 
 #include <boost/program_options.hpp>
@@ -80,7 +81,9 @@ namespace crab {
     // Pointer domains
     typedef nullity_domain< z_number, varname_t > z_nullity_domain_t;
     // Numerical x pointer domains
-    typedef numerical_nullity_domain<z_sdbm_domain_t> z_num_null_domain_t; 
+    typedef numerical_nullity_domain<z_sdbm_domain_t> z_num_null_domain_t;
+    // Boolean-numerical domain
+    typedef flat_boolean_numerical_domain<z_dbm_domain_t> z_bool_num_domain_t;
   } 
 }
 

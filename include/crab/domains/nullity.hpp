@@ -122,7 +122,8 @@ namespace crab {
         public bitwise_operators<Number,VariableName >,
         public division_operators<Number, VariableName >,
         public array_operators< Number, VariableName >,
-        public pointer_operators< Number, VariableName > {
+        public pointer_operators< Number, VariableName >,
+	public boolean_operators< Number, VariableName >{
     
     typedef separate_domain< VariableName, nullity_value > separate_domain_t;
     typedef nullity_domain<Number, VariableName> nullity_domain_t;

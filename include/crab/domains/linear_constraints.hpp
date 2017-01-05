@@ -577,6 +577,11 @@ namespace ikos {
       boost::hash_combine (res, _kind);
       return res;
     }
+
+    index_t index() const {
+      // XXX: to store linear constraints in patricia trees 
+      return (index_t) hash();
+    }
     
     Number operator[](variable_t x) const {
       return this->_expr.operator[](x);

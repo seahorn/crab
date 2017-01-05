@@ -129,7 +129,8 @@ namespace crab {
                public bitwise_operators<Number,VariableName >,
                public division_operators<Number, VariableName >,
                public array_operators<Number, VariableName >,
-               public pointer_operators<Number, VariableName >{
+	       public pointer_operators<Number, VariableName >,
+	       public boolean_operators<Number, VariableName > {
      public:
       using typename numerical_domain< Number, VariableName >::linear_expression_t;
       using typename numerical_domain< Number, VariableName >::linear_constraint_t;
@@ -194,13 +195,7 @@ namespace crab {
 
       // FIXME: Rewrite to avoid copying if o is _|_
       SplitDBM_(const DBM_t& o)
-        : writeable(),
-          numerical_domain<Number, VariableName >(),
-          bitwise_operators< Number, VariableName >(),
-          division_operators< Number, VariableName >(),
-          array_operators< Number, VariableName >(),
-          pointer_operators< Number, VariableName >(),
-          vert_map(o.vert_map),
+        : vert_map(o.vert_map),
           rev_map(o.rev_map),
           g(o.g),
           potential(o.potential),
@@ -227,13 +222,7 @@ namespace crab {
       // We should probably use the magical rvalue ownership semantics stuff.
       SplitDBM_(vert_map_t& _vert_map, rev_map_t& _rev_map, graph_t& _g, vector<Wt>& _potential,
         vert_set_t& _unstable)
-        : writeable(),
-          numerical_domain<Number, VariableName >(),
-          bitwise_operators< Number, VariableName >(),
-          division_operators< Number, VariableName >(),
-          array_operators< Number, VariableName >(),
-          pointer_operators< Number, VariableName >(),
-          /* ranges(_ranges),*/ vert_map(_vert_map), rev_map(_rev_map), g(_g), potential(_potential),
+        : /* ranges(_ranges),*/ vert_map(_vert_map), rev_map(_rev_map), g(_g), potential(_potential),
           unstable(_unstable),
           _is_bottom(false)
       {
@@ -242,13 +231,7 @@ namespace crab {
       }
       
       SplitDBM_(vert_map_t&& _vert_map, rev_map_t&& _rev_map, graph_t&& _g, vector<Wt>&& _potential, vert_set_t&& _unstable)
-        : writeable(),
-          numerical_domain<Number, VariableName >(),
-          bitwise_operators< Number, VariableName >(),
-          division_operators< Number, VariableName >(),
-          array_operators< Number, VariableName >(),
-          pointer_operators< Number, VariableName >(),
-          vert_map(std::move(_vert_map)), rev_map(std::move(_rev_map)), g(std::move(_g)), potential(std::move(_potential)),
+        : vert_map(std::move(_vert_map)), rev_map(std::move(_rev_map)), g(std::move(_g)), potential(std::move(_potential)),
           unstable(std::move(_unstable)),
           _is_bottom(false)
       { assert(g.size() > 0); }
@@ -2405,7 +2388,8 @@ namespace crab {
                public bitwise_operators<Number,VariableName >,
                public division_operators<Number, VariableName >,
                public array_operators<Number, VariableName >,
-               public pointer_operators<Number, VariableName > {
+	       public pointer_operators<Number, VariableName >,
+               public boolean_operators<Number, VariableName > {
       public:
       using typename numerical_domain< Number, VariableName >::linear_expression_t;
       using typename numerical_domain< Number, VariableName >::linear_constraint_t;

@@ -37,7 +37,10 @@ namespace crab {
          public array_operators<typename NumDomain::number_t,
                                 typename NumDomain::varname_t >,
          public pointer_operators<typename NumDomain::number_t,
-                                  typename NumDomain::varname_t > {
+                                  typename NumDomain::varname_t >,
+	 public boolean_operators<typename NumDomain::number_t,
+				  typename NumDomain::varname_t >	
+      {
               
        public:
 

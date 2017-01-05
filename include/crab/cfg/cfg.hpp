@@ -1666,13 +1666,17 @@ namespace crab {
      private:
       
       VariableName m_var;  // pre: BOOL_TYPE
+      bool m_is_negated;
       
      public:
       
-      bool_assume_stmt (VariableName v): statement_t(BOOL_ASSUME), m_var(v) 
+      bool_assume_stmt (VariableName v, bool is_negated):
+	statement_t(BOOL_ASSUME), m_var(v), m_is_negated (is_negated) 
       { this->m_live.add_use (v); }
       
       VariableName cond() const { return m_var; }
+
+      bool is_negated () const { return m_is_negated;}
       
       virtual void accept(statement_visitor <Number, VariableName> *v) 
       { v->visit(*this); }
@@ -1681,11 +1685,16 @@ namespace crab {
       {
         typedef bool_assume_stmt <Number, VariableName> bool_assume_t;
         return boost::static_pointer_cast< statement_t, bool_assume_t >
-            (boost::make_shared<bool_assume_t>(m_var));
+	  (boost::make_shared<bool_assume_t>(m_var, m_is_negated));
       }
       
       virtual void write (crab_os & o) const
-      { o << "assume (" << m_var << ")";  }
+      {
+	if (m_is_negated)
+	  o << "assume (not(" << m_var << "))";
+	else
+	  o << "assume (" << m_var << ")";	
+      }
     }; 
 
     // select b1, b2, b3, b4:
@@ -2586,9 +2595,15 @@ namespace crab {
       void bool_assume (VariableName c) 
       {
         insert (boost::static_pointer_cast< statement_t, bool_assume_t >
-                (boost::make_shared<bool_assume_t> (c)));
+                (boost::make_shared<bool_assume_t> (c, false)));
       }
 
+      void bool_not_assume (VariableName c) 
+      {
+        insert (boost::static_pointer_cast< statement_t, bool_assume_t >
+                (boost::make_shared<bool_assume_t> (c, true)));
+      }
+      
       void bool_assert (VariableName c) 
       {
         insert (boost::static_pointer_cast< statement_t, bool_assert_t >

@@ -31,7 +31,8 @@ namespace crab {
          public bitwise_operators< Number, VariableName >, 
          public division_operators< Number, VariableName >,
          public array_operators< Number, VariableName>,
-         public pointer_operators< Number, VariableName> {
+         public pointer_operators< Number, VariableName>,
+	 public boolean_operators< Number, VariableName> {
               
        public:
         using typename numerical_domain< Number, VariableName>::linear_expression_t;
@@ -175,7 +176,8 @@ namespace crab {
          public bitwise_operators< Number, VariableName >, 
          public division_operators< Number, VariableName >,
          public array_operators< Number, VariableName>,
-         public pointer_operators< Number, VariableName> {
+         public pointer_operators< Number, VariableName>,
+	 public boolean_operators< Number, VariableName>{
 
         typedef interval_domain <Number, VariableName> interval_domain_t;
        public:

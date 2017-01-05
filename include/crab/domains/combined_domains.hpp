@@ -208,7 +208,8 @@ namespace crab {
                            public bitwise_operators< Number, VariableName >, 
                            public division_operators< Number, VariableName >,
                            public crab::domains::array_operators< Number, VariableName >,
-                           public crab::domains::pointer_operators< Number, VariableName > {
+                           public crab::domains::pointer_operators< Number, VariableName >,
+			   public crab::domains::boolean_operators< Number, VariableName >{
      public:
       typedef domain_product2< Number, VariableName, Domain1, Domain2 > domain_product2_t;
       typedef Domain1 first_type;
@@ -465,6 +466,32 @@ namespace crab {
         this->_product.second().pointer_assert (cst);
         this->reduce ();
       }    
+
+      // boolean operators
+      virtual void assign_bool_cst (VariableName lhs, linear_constraint_t rhs) override {
+        this->_product.first().assign_bool_cst (lhs, rhs);
+        this->_product.second().assign_bool_cst (lhs, rhs);
+        this->reduce ();
+      }    
+
+      virtual void assign_bool_var (VariableName lhs, VariableName rhs) override {
+        this->_product.first().assign_bool_var (lhs, rhs);
+        this->_product.second().assign_bool_var (lhs, rhs);
+        this->reduce ();
+      }    
+
+      virtual void apply_binary_bool (bool_operation_t op,VariableName x,
+				      VariableName y,VariableName z) override {
+        this->_product.first().apply_binary_bool (op, x, y, z);
+        this->_product.second().apply_binary_bool (op, x, y, z);
+        this->reduce ();
+      }    
+
+      virtual void assume_bool (VariableName v, bool is_negated) override {
+        this->_product.first().assume_bool (v, is_negated);
+        this->_product.second().assume_bool (v, is_negated);
+        this->reduce ();
+      }    
       
       void write(crab::crab_os& o) {
         this->_product.write(o);
@@ -486,7 +513,8 @@ namespace crab {
        public bitwise_operators<typename Domain1::number_t, typename Domain1::varname_t>, 
        public division_operators<typename Domain1::number_t, typename Domain1::varname_t>,
        public array_operators<typename Domain1::number_t, typename Domain1::varname_t>,
-       public pointer_operators<typename Domain1::number_t, typename Domain1::varname_t> {
+       public pointer_operators<typename Domain1::number_t, typename Domain1::varname_t>,
+       public boolean_operators<typename Domain1::number_t, typename Domain1::varname_t>{
       
      public:
       // Assume that Domain1 and Domain2 have the same types for
@@ -585,23 +613,11 @@ namespace crab {
     
      public:
       
-      reduced_numerical_domain_product2() : 
-          writeable(),
-          numerical_domain<number_t,varname_t>(),
-          bitwise_operators<number_t,varname_t>(),
-          division_operators<number_t,varname_t>(),
-          array_operators<number_t,varname_t>(),
-          pointer_operators<number_t,varname_t>(),
-          _product() {}
+      reduced_numerical_domain_product2(): _product() {}
+	
       
       reduced_numerical_domain_product2(const reduced_numerical_domain_product2_t& other) :
-          writeable(),
-          numerical_domain<number_t,varname_t>(),
-          bitwise_operators<number_t,varname_t>(),
-          division_operators<number_t,varname_t>(),
-          array_operators<number_t,varname_t>(),
-          pointer_operators<number_t,varname_t>(),
-          _product(other._product) { }
+	_product(other._product) { }
       
       reduced_numerical_domain_product2_t& 
       operator=(const reduced_numerical_domain_product2_t& other) {
@@ -1099,7 +1115,9 @@ namespace crab {
         public array_operators<typename NumAbsDom::number_t,
                                typename NumAbsDom::varname_t>,
         public pointer_operators<typename NumAbsDom::number_t,
-                                 typename NumAbsDom::varname_t> {
+                                 typename NumAbsDom::varname_t>,
+	public boolean_operators<typename NumAbsDom::number_t,
+				 typename NumAbsDom::varname_t> {
      private:
       typedef typename NumAbsDom::number_t N;
       typedef typename NumAbsDom::varname_t V;
@@ -1171,24 +1189,11 @@ namespace crab {
       
      public:
        
-      numerical_congruence_domain() : 
-          writeable(),
-          numerical_domain<number_t,varname_t>(),
-          bitwise_operators<number_t,varname_t>(),
-          division_operators<number_t,varname_t>(),
-          array_operators<number_t,varname_t>(),
-          pointer_operators<number_t,varname_t>(),
-          _product() {}
+      numerical_congruence_domain() : _product() {}
       
       numerical_congruence_domain(const rnc_domain_t& other) :
-          writeable(),
-          numerical_domain<number_t,varname_t>(),
-          bitwise_operators<number_t,varname_t>(),
-          division_operators<number_t,varname_t>(),
-          array_operators<number_t,varname_t>(),
-          pointer_operators<number_t,varname_t>(),
-          _product(other._product) { }
-      
+	_product(other._product) { }	
+	      
       rnc_domain_t& operator=(const rnc_domain_t& other) {
         if (this != &other)
           this->_product = other._product;
@@ -1339,7 +1344,10 @@ namespace crab {
         public array_operators<typename NumAbsDom::number_t,
                                typename NumAbsDom::varname_t>,
         public pointer_operators<typename NumAbsDom::number_t,
-                                 typename NumAbsDom::varname_t> {
+                                 typename NumAbsDom::varname_t>,
+        public boolean_operators<typename NumAbsDom::number_t,
+                                 typename NumAbsDom::varname_t> 
+    {
      private:
       typedef typename NumAbsDom::number_t N;
       typedef typename NumAbsDom::varname_t V;
@@ -1379,23 +1387,11 @@ namespace crab {
       
      public:
        
-      numerical_nullity_domain() : 
-          writeable(),
-          numerical_domain<number_t,varname_t>(),
-          bitwise_operators<number_t,varname_t>(),
-          division_operators<number_t,varname_t>(),
-          array_operators<number_t,varname_t>(),
-          pointer_operators<number_t,varname_t>(),
-          _product() {}
+      numerical_nullity_domain() : _product() {}
+	
       
       numerical_nullity_domain(const nn_domain_t& other) :
-          writeable(),
-          numerical_domain<number_t,varname_t>(),
-          bitwise_operators<number_t,varname_t>(),
-          division_operators<number_t,varname_t>(),
-          array_operators<number_t,varname_t>(),
-          pointer_operators<number_t,varname_t>(),
-          _product(other._product) { }
+	_product(other._product) { }
       
       nn_domain_t& operator=(const nn_domain_t& other) {
         if (this != &other)
@@ -1673,7 +1669,7 @@ namespace crab {
       static std::vector<typename Dom::varname_t> active_variables(num_null_domain_t &inv) 
       { return array_sgraph_domain_traits<Dom>::active_variables(inv.first()); }
     };
-
+      
   } // end namespace domains
 } // namespace crab
 
