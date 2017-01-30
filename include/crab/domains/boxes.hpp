@@ -170,7 +170,7 @@ namespace crab {
        * size big enough for our programs.
        */
       template<typename Number, typename VariableName, size_t LddSize = 3000>
-      class boxes_domain: 
+      class boxes_domain_: 
          public ikos::writeable, 
          public numerical_domain< Number, VariableName>,
          public bitwise_operators< Number, VariableName >, 
@@ -188,7 +188,7 @@ namespace crab {
         using typename numerical_domain< Number, VariableName>::number_t;
         using typename numerical_domain< Number, VariableName>::varname_t;
 
-        typedef boxes_domain <Number, VariableName, LddSize> boxes_domain_t;
+        typedef boxes_domain_ <Number, VariableName, LddSize> boxes_domain_t;
         typedef interval <Number> interval_t;
 
        private:
@@ -428,7 +428,7 @@ namespace crab {
           }
         } 
 
-        boxes_domain (LddNodePtr ldd): m_ldd (ldd) {
+        boxes_domain_ (LddNodePtr ldd): m_ldd (ldd) {
 #if 1
           const int CST_FACTOR = 10; /* JN: some magic constant factor */
           int threshold = num_of_vars () * CST_FACTOR;
@@ -474,18 +474,18 @@ namespace crab {
           }
         }
 
-        boxes_domain(): ikos::writeable() { 
+        boxes_domain_(): ikos::writeable() { 
           m_ldd = lddPtr (get_ldd_man(), Ldd_GetTrue (get_ldd_man()));
         }
         
-        ~boxes_domain () { 
+        ~boxes_domain_ () { 
           // DdManager *cudd = nullptr;
           // theory_t *theory = nullptr;
           // if (m_ldd_man)  {
-	//   cudd = Ldd_GetCudd (m_ldd_man);
-	//   theory = Ldd_GetTheory (m_ldd_man);
-	//   Ldd_Quit (m_ldd_man);
-	// }
+	  //   cudd = Ldd_GetCudd (m_ldd_man);
+	  //   theory = Ldd_GetTheory (m_ldd_man);
+	  //   Ldd_Quit (m_ldd_man);
+	  // }
           // if (theory) tvpi_destroy_theory(theory);
           // if (cudd) Cudd_Quit(cudd);
         }
@@ -498,7 +498,7 @@ namespace crab {
           return boxes_domain_t (lddPtr (get_ldd_man(), Ldd_GetFalse (get_ldd_man())));
         }
         
-        boxes_domain (const boxes_domain_t& other): 
+        boxes_domain_ (const boxes_domain_t& other): 
             ikos::writeable(), m_ldd (other.m_ldd) { 
           crab::CrabStats::count (getDomainName () + ".count.copy");
           crab::ScopedCrabStats __st__(getDomainName() + ".copy");
@@ -562,7 +562,7 @@ namespace crab {
           LddNodePtr w = lddPtr (get_ldd_man (), 
                                  Ldd_BoxWiden2 (get_ldd_man (), &*m_ldd, &*v));
 
-#if 1
+          #if 1
           /** ensure that 'w' is only the fronteer of the compution. 
               Not sure whether this is still a widening though 
           */
@@ -570,7 +570,8 @@ namespace crab {
                       Ldd_And (get_ldd_man (), &*w, Ldd_Not (&*m_ldd)));
           /** ensure the output is at least as big as newV */
           w = lddPtr (get_ldd_man (), Ldd_Or (get_ldd_man (), &*w, &*other.m_ldd));
-#endif 
+          #endif
+	  
           boxes_domain_t res (w); 
 
           CRAB_LOG ("boxes",
@@ -674,7 +675,6 @@ namespace crab {
 
         void operator += (linear_constraint_system_t csts) {
           if (is_bottom ()) return;
-
           for (auto cst : csts) operator += (cst);
         }
 
@@ -745,15 +745,15 @@ namespace crab {
                            Ldd_TermReplace(get_ldd_man(), &(*m_ldd), t, NULL, NULL, c, c));
             Ldd_GetTheory (get_ldd_man())->destroy_cst (c);
             Ldd_GetTheory (get_ldd_man())->destroy_term(t);
-          }
-          else if (optional<variable_t> v = e.get_variable()){
+          } else if (optional<variable_t> v = e.get_variable()){
             VariableName y = (*v).name();
-            if (!(x==y))
-              apply (x, y, 1, 0);      
-          }
-          else {
-            CRAB_WARN(" boxes only supports cst or var on the rhs of assignment");
-            *this -= x;
+            if (!(x==y)) apply (x, y, 1, 0);      
+          } else {
+	    // Convert e to intervals
+	    interval_t r = e.constant();
+	    for (auto p : e)
+	      r += p.first * this->operator[](p.second.name());
+	    set(x, r);
           }
           CRAB_LOG("boxes", crab::outs() << "---" << x << ":=" << e << "\n" << *this <<"\n";);
         }
@@ -954,23 +954,16 @@ namespace crab {
           linear_constraint_system_t csts;
     
           if(is_bottom ()) {
-            csts += linear_constraint_t (linear_expression_t (Number(1)) == 
-                                         linear_expression_t (Number(0)));
-            return csts;
+            csts += linear_constraint_t::get_false();
           }
-
-          if(is_top ()) {
-            csts += linear_constraint_t (linear_expression_t (Number(1)) == 
-                                         linear_expression_t (Number(1)));
-            return csts;
-          }
-
-          // --- produce convex approximation
-          LddNodePtr v = convex_approx ();
-
-          // --- extract linear inequalities from the convex ldd
-          toLinCstSysRecur(&*v, csts);
-          
+          else if(is_top ()) {
+            csts += linear_constraint_t::get_true();
+          } else {
+	    // --- produce convex approximation
+	    LddNodePtr v = convex_approx ();
+	    // --- extract linear inequalities from the convex ldd
+	    toLinCstSysRecur(&*v, csts);
+	  }
           return csts;
         }
 
@@ -987,6 +980,9 @@ namespace crab {
             o << "_|_";	
           else 
           {
+            #if 1	    
+	    Ldd_PrintMinterm (ldd_man, m_ldd.get());
+            #else
             // -- build dictionary
             vector<char*> vnames;
             vnames.reserve (num_of_vars ());
@@ -1002,6 +998,7 @@ namespace crab {
             // -- destroy dict
             for (unsigned int i=0; i < num_of_vars (); i++)
               free (vnames[i]);
+	    #endif 
           }
           Cudd_SetStdout(cudd,fp);      
         }
@@ -1013,15 +1010,15 @@ namespace crab {
       }; 
 
      template<typename N, typename V, size_t S>
-     LddManager* boxes_domain<N,V,S>::m_ldd_man = nullptr;
+     LddManager* boxes_domain_<N,V,S>::m_ldd_man = nullptr;
 
      template<typename N, typename V, size_t S>
-     typename boxes_domain<N,V,S>::var_map_ptr boxes_domain<N,V,S>::m_var_map = nullptr;
+     typename boxes_domain_<N,V,S>::var_map_ptr boxes_domain_<N,V,S>::m_var_map = nullptr;
 
      template<typename Number, typename VariableName, size_t LddSize>
-     class domain_traits <boxes_domain<Number,VariableName, LddSize> > {
+     class domain_traits <boxes_domain_<Number,VariableName, LddSize> > {
       public:
-       typedef boxes_domain<Number, VariableName, LddSize> boxes_domain_t;
+       typedef boxes_domain_<Number, VariableName, LddSize> boxes_domain_t;
 
        template<class CFG>
        static void do_initialization (CFG cfg) { }
@@ -1043,6 +1040,174 @@ namespace crab {
        }
 
      };
+
+
+    // Quick wrapper which uses shared references with copy-on-write.
+    template<class Number, class VariableName, size_t LddSize = 3000 >
+    class boxes_domain: public writeable,
+               public numerical_domain<Number, VariableName >,
+               public bitwise_operators<Number,VariableName >,
+               public division_operators<Number, VariableName >,
+               public array_operators<Number, VariableName >,
+	       public pointer_operators<Number, VariableName >,
+               public boolean_operators<Number, VariableName > {
+      public:
+      using typename numerical_domain< Number, VariableName >::linear_expression_t;
+      using typename numerical_domain< Number, VariableName >::linear_constraint_t;
+      using typename numerical_domain< Number, VariableName >::linear_constraint_system_t;
+      using typename numerical_domain< Number, VariableName >::variable_t;
+      using typename numerical_domain< Number, VariableName >::number_t;
+      using typename numerical_domain< Number, VariableName >::varname_t;
+      typedef typename linear_constraint_t::kind_t constraint_kind_t;
+      typedef interval<Number>  interval_t;
+      typedef boxes_domain <Number, VariableName, LddSize> boxes_domain_t;      
+
+    private:
+      
+      typedef boxes_domain_ <Number, VariableName, LddSize> boxes_impl_t;
+      typedef std::shared_ptr<boxes_impl_t> boxes_ref_t;
+
+      boxes_domain(boxes_ref_t _ref) : norm_ref(_ref) { }
+
+      boxes_domain(boxes_ref_t _base, boxes_ref_t _norm) 
+        : base_ref(_base), norm_ref(_norm)
+      { }
+
+      boxes_domain_t create(boxes_impl_t&& t)
+      { return std::make_shared<boxes_impl_t>(std::move(t)); }
+        
+      boxes_domain_t create_base(boxes_impl_t&& t)
+      {
+        boxes_ref_t base = std::make_shared<boxes_impl_t>(t);
+        boxes_ref_t norm = std::make_shared<boxes_impl_t>(std::move(t));  
+        return boxes_domain_t(base, norm);
+      }
+
+      void lock(void)
+      {
+        // Allocate a fresh copy.
+        if(!norm_ref.unique())
+          norm_ref = std::make_shared<boxes_impl_t>(*norm_ref);
+        base_ref.reset();
+      }
+
+      boxes_impl_t& base(void)
+      {
+        if(base_ref)
+          return *base_ref;
+        else
+          return *norm_ref;
+      }
+      
+      boxes_impl_t& norm(void) { return *norm_ref; }
+
+      const boxes_impl_t& norm(void) const { return *norm_ref; }
+      
+    private:
+      
+      boxes_ref_t base_ref;  
+      boxes_ref_t norm_ref;
+            
+    public:
+
+      boxes_domain(bool is_bottom = false): base_ref(nullptr), norm_ref(nullptr)
+      {
+	if (is_bottom) 
+	  norm_ref = std::make_shared<boxes_impl_t>(boxes_impl_t::bottom());
+	else 
+	  norm_ref = std::make_shared<boxes_impl_t>(boxes_impl_t::top());
+      }
+      
+      static boxes_domain_t top() { return boxes_domain(false); }
+    
+      static boxes_domain_t bottom() { return boxes_domain(true); }
+
+      boxes_domain(const boxes_domain_t& o)
+        : base_ref(o.base_ref), norm_ref(o.norm_ref) { }
+      
+      boxes_domain_t& operator=(const boxes_domain_t& o)
+      {
+        base_ref = o.base_ref;
+        norm_ref = o.norm_ref;
+        return *this;
+      }
+
+      LddNodePtr getLdd () { return norm().getLdd (); } 
+      VariableName getVarName (int v) const { return norm().getVarName(v); }
+      bool is_bottom() { return norm().is_bottom(); }
+      bool is_top() { return norm().is_top(); }
+      bool operator<=(boxes_domain_t& o) { return norm() <= o.norm(); }
+      void operator|=(boxes_domain_t o) { lock(); norm() |= o.norm(); }
+      boxes_domain_t operator|(boxes_domain_t o) { return create(norm() | o.norm()); }
+      boxes_domain_t operator||(boxes_domain_t o) { return create_base(base() || o.norm()); }
+      boxes_domain_t operator&(boxes_domain_t o) { return create(norm() & o.norm()); }
+      boxes_domain_t operator&&(boxes_domain_t o) { return create(norm() && o.norm()); }
+
+      template<typename Thresholds>
+      boxes_domain_t widening_thresholds (boxes_domain_t o, const Thresholds &ts) {
+        return create_base(base().template widening_thresholds<Thresholds>(o.norm(), ts));
+      }
+     
+      void operator+=(linear_constraint_system_t csts) { lock(); norm() += csts; } 
+      void operator-=(VariableName v) { lock(); norm() -= v; }
+      interval_t operator[](VariableName x) { return norm()[x]; }
+      void set(VariableName x, interval_t intv) { lock(); norm().set(x, intv); }
+
+      template<typename Iterator>
+      void forget (Iterator vIt, Iterator vEt) { lock(); norm().forget(vIt, vEt); }
+      void assign(VariableName x, linear_expression_t e) { lock(); norm().assign(x, e); }
+      void apply(operation_t op, VariableName x, VariableName y, Number k)
+      { lock(); norm().apply(op, x, y, k); }
+      void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width)
+      { lock(); norm().apply(op, x, y, width); }
+      void apply(conv_operation_t op, VariableName x, Number k, unsigned width)
+      { lock(); norm().apply(op, x, k, width); }
+      void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k)
+      { lock(); norm().apply(op, x, y, k); }
+      void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z)
+      { lock(); norm().apply(op, x, y, z); }
+      void apply(operation_t op, VariableName x, VariableName y, VariableName z)
+      { lock(); norm().apply(op, x, y, z); }
+      void apply(div_operation_t op, VariableName x, VariableName y, VariableName z)
+      { lock(); norm().apply(op, x, y, z); }
+      void apply(div_operation_t op, VariableName x, VariableName y, Number k)
+      { lock(); norm().apply(op, x, y, k); }
+      
+      template<typename Iterator>
+      void project (Iterator vIt, Iterator vEt) { lock(); norm().project(vIt, vEt); }
+
+      void write(crab_os& o) { norm().write(o); }
+
+      linear_constraint_system_t to_linear_constraint_system ()
+      { return norm().to_linear_constraint_system(); }
+            
+      static std::string getDomainName () { return boxes_impl_t::getDomainName(); }
+      
+    };
+
+    template<typename Number, typename VariableName, size_t LddSize>
+    class domain_traits <boxes_domain<Number,VariableName, LddSize> > {
+    public:
+      typedef boxes_domain<Number, VariableName, LddSize> boxes_domain_t;
+      
+      template<class CFG>
+      static void do_initialization (CFG cfg) {}
+
+      static void normalize (boxes_domain_t& inv) {}
+
+      template <typename Iter>
+      static void forget (boxes_domain_t& inv, Iter it, Iter end)
+      { inv.forget (it, end); }
+      
+      template <typename Iter>
+      static void project (boxes_domain_t& inv, Iter it, Iter end)
+      { inv.project (it, end); }
+      
+      static void expand (boxes_domain_t& inv, VariableName x, VariableName new_x)
+      { CRAB_WARN ("boxes expand operation not implemented"); }
+    };
+
+     
    } // namespace domains
 }// namespace crab
 #endif /* HAVE_LDD */
