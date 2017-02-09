@@ -354,9 +354,9 @@ namespace crab {
       
      public:
       
-      live_t get_live() const { return m_live; }
+      const live_t& get_live() const { return m_live; }
 
-      debug_info get_debug_info () const { return m_dbg_info; }
+      const debug_info& get_debug_info () const { return m_dbg_info; }
 
       virtual void accept(statement_visitor<Number, VariableName> *) = 0;
       
