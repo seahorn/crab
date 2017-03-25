@@ -1,6 +1,7 @@
 #ifndef CRAB_GRAPH_OPS_HPP
 #define CRAB_GRAPH_OPS_HPP
 #include <crab/domains/graphs/util/Heap.h>
+#include <boost/optional.hpp>
 //============================
 // A set of utility algorithms for manipulating graphs.
 
@@ -195,7 +196,7 @@ namespace crab {
     protected:
       vector<vert_id>& perm;
       vector<vert_id>& inv;
-      optional<RG> adj;
+      boost::optional<RG> adj;
     };
 
     typedef adj_list<typename G::pred_range,
