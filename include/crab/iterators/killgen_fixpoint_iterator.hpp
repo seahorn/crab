@@ -1,26 +1,32 @@
 #ifndef KILLGEN_FIXPOINT_ITERATOR_HPP
 #define KILLGEN_FIXPOINT_ITERATOR_HPP
 
-/* A specialized fixpoint iterator for kill-gen problems */
+/**
+  * Specialized fixpoint iterators and domains for kill-gen problems.
+  */
 
 #include <crab/common/stats.hpp>
 #include <crab/common/debug.hpp>
-#include <crab/domains/discrete_domains.hpp>
 #include <crab/cfg/cfg_bgl.hpp>
 #include <crab/analysis/graphs/sccg.hpp>
 #include <crab/analysis/graphs/topo_order.hpp>
 
+#include <crab/domains/discrete_domains.hpp>
+#include <crab/domains/patricia_trees.hpp>
+
+#include <boost/optional.hpp>
+
 namespace crab {
 
-  namespace iterators {
+  namespace domains {
 
-    // A quick wrapper for a generic kill-gen domain
+    // A wrapper for discrete_domain (i.e,. set of Element)
     template<class Element>
-    class killgen_domain: public ikos::writeable {
+    class flat_killgen_domain: public ikos::writeable {
          
      private:
 
-      typedef killgen_domain<Element> killgen_domain_t;
+      typedef flat_killgen_domain<Element> flat_killgen_domain_t;
       typedef discrete_domain<Element> discrete_domain_t;
       
      public:
@@ -34,40 +40,36 @@ namespace crab {
       
      public:
       
-      killgen_domain(discrete_domain_t inv)
+      flat_killgen_domain(discrete_domain_t inv)
           : ikos::writeable(), _inv(inv){ } 
       
-     public:
-      
-      static killgen_domain_t top() {
-        return killgen_domain(discrete_domain_t::top());
+      static flat_killgen_domain_t top() {
+        return flat_killgen_domain(discrete_domain_t::top());
       }
       
-      static killgen_domain_t bottom() {
-        return killgen_domain(discrete_domain_t::bottom());
+      static flat_killgen_domain_t bottom() {
+        return flat_killgen_domain(discrete_domain_t::bottom());
       }
       
-     public:
-      
-      killgen_domain()
+      flat_killgen_domain()
           : ikos::writeable(), _inv(discrete_domain_t::bottom()){ }
       
-      killgen_domain(Element e)
+      flat_killgen_domain(Element e)
           : ikos::writeable(), _inv(e) { }
       
-      killgen_domain(const killgen_domain_t &o)
+      flat_killgen_domain(const flat_killgen_domain_t &o)
           : ikos::writeable(), _inv(o._inv) { } 
           
-      killgen_domain(killgen_domain_t &&o)
+      flat_killgen_domain(flat_killgen_domain_t &&o)
           : ikos::writeable(), _inv(std::move(o._inv)) { } 
       
-      killgen_domain_t& operator=(const killgen_domain_t &other) {
+      flat_killgen_domain_t& operator=(const flat_killgen_domain_t &other) {
         if (this != &other) 
           _inv = other._inv;
         return *this;
       }
       
-      killgen_domain_t& operator=(killgen_domain_t &&other) {
+      flat_killgen_domain_t& operator=(flat_killgen_domain_t &&other) {
         _inv = std::move(other._inv);
         return *this;
       }
@@ -81,8 +83,12 @@ namespace crab {
       bool is_bottom() { return _inv.is_bottom(); }
          
       bool is_top() { return _inv.is_top(); }
-         
-      bool operator<=(killgen_domain_t other) {
+
+      bool operator==(flat_killgen_domain_t other) {
+	return *this <= other && other <= *this;
+      }
+      
+      bool operator<=(flat_killgen_domain_t other) {
         if (is_bottom ()) 
           return true;
         else if (other.is_top ())
@@ -90,14 +96,14 @@ namespace crab {
         else
           return (_inv <= other._inv);
       }
-         
+      
       void operator-=(Element x) {
         if (is_bottom ()) 
           return;
         _inv -= x;
       }
          
-      void operator-=(killgen_domain_t other) {
+      void operator-=(flat_killgen_domain_t other) {
         if (is_bottom () || other.is_bottom ()) 
           return;
         
@@ -113,7 +119,7 @@ namespace crab {
         _inv += x;
       }
       
-      void operator+=(killgen_domain_t other) {
+      void operator+=(flat_killgen_domain_t other) {
         if (is_top () || other.is_bottom ()) {
           return;
         } else if (other.is_top ()) {
@@ -123,26 +129,233 @@ namespace crab {
         }
       }
       
-      killgen_domain_t operator|(killgen_domain_t other) {
+      flat_killgen_domain_t operator|(flat_killgen_domain_t other) {
         return (_inv | other._inv);
       }
       
-      killgen_domain_t operator&(killgen_domain_t other) {
+      flat_killgen_domain_t operator&(flat_killgen_domain_t other) {
         return (_inv & other._inv);
       }
          
       void write(crab_os& o) { _inv.write(o); }
       
-    }; 
+    };
 
-    // API for a kill-gen analysis
-    template<class CFG, class Element>
-    class killgen_analysis {
+    // To represent sets of pairs (Key,Value). 
+    // Bottom means empty set rather than failure.
+    template <typename Key, typename Value>
+    class separate_killgen_domain: public ikos::writeable {
+      
+    private:
+      typedef ikos::patricia_tree<Key,Value> patricia_tree_t;
+      typedef typename patricia_tree_t::unary_op_t unary_op_t;
+      typedef typename patricia_tree_t::binary_op_t binary_op_t;
+      typedef typename patricia_tree_t::partial_order_t partial_order_t;
+
+    public:
+      typedef separate_killgen_domain<Key,Value > separate_killgen_domain_t;
+      typedef typename patricia_tree_t::iterator iterator;
+      typedef Key key_type;
+      typedef Value value_type;
+      
+    private:
+      bool _is_top;
+      patricia_tree_t _tree;
+    
+    public: 
+      class bottom_found { };
+      
+      class join_op: public binary_op_t {
+	boost::optional< Value > apply(Value x, Value y) {
+	  Value z = x.operator|(y);
+	  if (z.is_top()) {
+	    return boost::optional<Value>();
+	  } else {
+	    return boost::optional<Value>(z);
+	  }
+	}
+	bool default_is_absorbing() { return false; }
+      }; // class join_op
+
+      class meet_op: public binary_op_t {
+	boost::optional< Value > apply(Value x, Value y) {
+	  Value z = x.operator&(y);
+	  if (z.is_bottom()) {
+	    throw bottom_found();
+	  } else {
+	    return boost::optional<Value>(z);
+	  }
+	};
+	bool default_is_absorbing() { return true; }
+      }; // class meet_op
+    
+      class domain_po: public partial_order_t {
+	bool leq(Value x, Value y) { return x.operator<=(y); }
+	bool default_is_top() { return false; }
+      }; // class domain_po
+    
+   public:
+      
+      static separate_killgen_domain_t top() {
+	return separate_killgen_domain_t (true);
+      }
+      
+      static separate_killgen_domain_t bottom() {
+	return separate_killgen_domain_t (false);
+      }
+    
+   private:
+      
+      static patricia_tree_t apply_operation(binary_op_t& o, 
+					     patricia_tree_t t1, 
+					     patricia_tree_t t2) {
+	t1.merge_with(t2, o);
+	return t1;
+      }
+    
+      separate_killgen_domain(patricia_tree_t t)
+	: _is_top(false), _tree(t) { }
+      
+      separate_killgen_domain(bool b)
+	: _is_top(b) { }
+    
+    public:
+      
+      separate_killgen_domain()
+	: _is_top(false), _tree (patricia_tree_t()) { }
+
+      separate_killgen_domain(const separate_killgen_domain_t& o)
+	: _is_top(o._is_top), _tree(o._tree) { }
+    
+      separate_killgen_domain_t& operator=(separate_killgen_domain_t o) {
+	this->_is_top = o._is_top;
+	this->_tree = o._tree;
+	return *this;
+      }
+
+      iterator begin() const {
+	if (this->is_top()) {
+	  CRAB_ERROR("Separate killgen domain: trying to invoke iterator on top");
+	} else {
+	  return this->_tree.begin();
+	}
+      }
+    
+      iterator end() const {
+	if (this->is_top()) {
+	  CRAB_ERROR("Separate killgen domain: trying to invoke iterator on top");
+	} else {
+	  return this->_tree.end();
+	}
+      }
+
+      bool is_top() const {
+	return _is_top;
+      }
+      
+      bool is_bottom() const {
+	return (!is_top () && _tree.empty ());
+      }
+    
+    
+      bool operator<=(separate_killgen_domain_t o) {
+	domain_po po; 
+	return (o.is_top() || (!is_top() && (_tree.leq (o._tree, po))));
+      }
+    
+      separate_killgen_domain_t operator|(separate_killgen_domain_t o) {
+	if (is_top() || o.is_top ()) {
+	  return separate_killgen_domain_t::top();
+	} else {
+	  join_op op;
+	  return separate_killgen_domain_t(apply_operation(op, _tree, o._tree));
+	}
+      }
+    
+      separate_killgen_domain_t operator&(separate_killgen_domain_t o) {
+	if (is_top ()) {
+	  return o;
+	} else if (o.is_top()) {
+	  return *this;
+	} else {
+	  try {
+	    meet_op op;
+	    return separate_killgen_domain_t(apply_operation(op, _tree, o._tree));
+	  }
+	  catch (bottom_found& exc) {
+	    return separate_killgen_domain_t::bottom ();
+	  }
+	}
+      }
+
+      void set(Key k, Value v) {
+	if (!is_top ()) {
+	  if (v.is_bottom()) {
+	    this->_tree.remove(k);
+	  } else {
+	    this->_tree.insert(k, v);
+	  }	  
+	}
+      }
+    
+      separate_killgen_domain_t& operator-=(Key k) {
+	if (!is_top ()) {
+	  _tree.remove(k);
+	}
+	return *this;
+      }
+    
+      Value operator[](Key k) {
+	if (is_top ())
+	  return Value::top ();
+	else {
+	  boost::optional< Value > v = _tree.lookup(k);
+	  if (v) {
+	    return *v;
+	  } else {
+	    return Value::bottom();
+	  }
+	}
+      }
+    
+      void write(crab::crab_os& o) {
+	if (this->is_top()) {
+	  o << "{...}";
+	} if (_tree.empty ()) {
+	  o << "_|_";
+	}
+	else {
+	  o << "{";
+	  for (typename patricia_tree_t::iterator it = this->_tree.begin(); 
+	       it != this->_tree.end(); ) {
+	    Key k = it->first;
+	    k.write(o);
+	    o << " -> ";
+          Value v = it->second;
+          v.write(o);
+          ++it;
+          if (it != this->_tree.end()) {
+            o << "; ";
+	  }
+	  }
+	  o << "}";
+	}
+      }
+    }; // class separate_killgen_domain
+    
+  } // end namespace domains
+
+  
+  namespace iterators {
+    
+    // API for a kill-gen analysis operations
+    template<class CFG, class Dom>
+    class killgen_operations_api {
 
      public:
       
       typedef typename CFG::basic_block_label_t basic_block_label_t;    
-      typedef killgen_domain<Element> killgen_domain_t;
+      typedef Dom killgen_domain_t;
 
      protected:
 
@@ -150,49 +363,50 @@ namespace crab {
 
      public:
 
-      killgen_analysis (CFG cfg): _cfg(cfg) { }
+      killgen_operations_api (CFG cfg): _cfg(cfg) { }
 
-      virtual ~killgen_analysis() { }
+      virtual ~killgen_operations_api() { }
 
       // whether forward or backward analysis
       virtual bool is_forward () = 0;
 
       // initial state
-      virtual killgen_domain_t entry() = 0;
+      virtual Dom entry() = 0;
  
       // (optional) initialization for the fixpoint
       virtual void init_fixpoint () = 0;
 
       // confluence operator
-      virtual killgen_domain_t merge(killgen_domain_t, killgen_domain_t) = 0;
+      virtual Dom merge(Dom, Dom) = 0;
 
       // analyze a basic block
-      virtual killgen_domain_t analyze (basic_block_label_t, killgen_domain_t) = 0;
+      virtual Dom analyze (basic_block_label_t, Dom) = 0;
 
       // analysis name
       virtual std::string name () = 0;
     };
 
     // A simple fixpoint for a killgen analysis
-    template<class CFG, class KillGenAnalysis>
+    template<class CFG, class KgAnalysisOps>
     class killgen_fixpoint_iterator {
 
      public:
       
       typedef typename CFG::basic_block_label_t basic_block_label_t;
-      typedef typename KillGenAnalysis::killgen_domain_t killgen_domain_t;
-      typedef typename boost::unordered_map<basic_block_label_t,killgen_domain_t>::iterator iterator;
-      typedef typename boost::unordered_map<basic_block_label_t,killgen_domain_t>::const_iterator const_iterator;
+      typedef typename KgAnalysisOps::killgen_domain_t killgen_domain_t;
+      typedef boost::unordered_map<basic_block_label_t,killgen_domain_t> inv_map_t;
+      typedef typename inv_map_t::iterator iterator;
+      typedef typename inv_map_t::const_iterator const_iterator;
       
      protected:
 
       CFG _cfg;
-      boost::unordered_map<basic_block_label_t, killgen_domain_t> _in_map;
-      boost::unordered_map<basic_block_label_t, killgen_domain_t> _out_map;
+      inv_map_t _in_map;
+      inv_map_t _out_map;
 
      private:
 
-      KillGenAnalysis _analysis;
+      KgAnalysisOps _analysis;
 
       /// XXX: run_bwd_fixpo(G) is equivalent to run_fwd_fixpo(reverse(G)).
       ///      However, weak_rev_topo_sort(G) != weak_topo_sort(reverse(G))
@@ -259,7 +473,8 @@ namespace crab {
 
      public:
 
-      killgen_fixpoint_iterator (CFG cfg) : _cfg (cfg), _analysis (_cfg) { }
+      killgen_fixpoint_iterator (CFG cfg)
+	: _cfg (cfg), _analysis (_cfg) { }
 
       void release_memory () {
         _in_map.clear();
