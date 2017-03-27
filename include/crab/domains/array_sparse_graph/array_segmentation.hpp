@@ -20,16 +20,20 @@ namespace crab {
 
    namespace analyzer{
 
-     template<class CFG, class V>
-     class array_segment_analysis: public crab::iterators::killgen_analysis<CFG, V> {
+     template<class CFG>
+     class array_segment_ops:
+       public crab::iterators::killgen_operations_api
+              <CFG, flat_killgen_domain<typename CFG::varname_t> > {
        
-       typedef crab::iterators::killgen_analysis<CFG, V> killgen_analysis_t;
+       typedef crab::iterators::killgen_operations_api
+              <CFG, flat_killgen_domain<typename CFG::varname_t> > killgen_operations_api_t;
        
       public:
 
        typedef typename CFG::basic_block_label_t basic_block_label_t;
-       typedef typename CFG::number_t N;       
-       typedef typename killgen_analysis_t::killgen_domain_t array_segment_domain_t;       
+       typedef typename CFG::number_t N;
+       typedef typename CFG::varname_t V;              
+       typedef typename killgen_operations_api_t::killgen_domain_t array_segment_domain_t;
 
       private:
        
@@ -114,7 +118,7 @@ namespace crab {
        
       public:
        
-       array_segment_analysis (CFG cfg): killgen_analysis_t(cfg) { }
+       array_segment_ops (CFG cfg): killgen_operations_api_t(cfg) { }
 
        virtual bool is_forward() override { return false;}
        
@@ -140,21 +144,21 @@ namespace crab {
        }
      };
    
-     template<class CFG, class V>
+     template<class CFG>
      class array_segmentation: public boost::noncopyable, 
                                public crab::iterators::killgen_fixpoint_iterator
-         <CFG, array_segment_analysis<CFG,V> >{
+         <CFG, array_segment_ops<CFG> >{
       public:
 
-       typedef array_segment_analysis<CFG,V> array_segment_analysis_t;
+       typedef array_segment_ops<CFG> array_segment_ops_t;
        typedef typename CFG::basic_block_label_t basic_block_label_t;
        typedef typename CFG::statement_t statement_t;
        typedef typename CFG::varname_t varname_t;       
-       typedef typename array_segment_analysis_t::array_segment_domain_t array_segment_domain_t;
+       typedef typename array_segment_ops_t::array_segment_domain_t array_segment_domain_t;
 
       private:
 
-       typedef crab::iterators::killgen_fixpoint_iterator<CFG,array_segment_analysis_t> 
+       typedef crab::iterators::killgen_fixpoint_iterator<CFG,array_segment_ops_t> 
                 killgen_fixpoint_iterator_t;
        typedef boost::unordered_map<basic_block_label_t, array_segment_domain_t> segment_map_t;
        

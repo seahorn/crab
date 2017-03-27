@@ -64,9 +64,17 @@ namespace boost {
        typedef size_t edges_size_type;
        typedef size_t degree_size_type;
 
-       static vertex_descriptor null_vertex() { 
-         vertex_descriptor n;
-         return n; 
+       static vertex_descriptor null_vertex() {
+	 if (std::is_pointer<vertex_descriptor>::value)
+	   return nullptr;
+	 else {
+	   // XXX: if vertex_descriptor is a basic type then
+	   // null_vertex will return an undefined value, otherwise it
+	   // will return the result of calling the default
+	   // constructor.
+	   vertex_descriptor n;
+	   return n;
+	 }
        }    
        
        // iterator of basic_block_label_t's
@@ -99,9 +107,17 @@ namespace boost {
        typedef size_t edges_size_type;
        typedef size_t degree_size_type;
 
-       static vertex_descriptor null_vertex() { 
-         vertex_descriptor n;
-         return n; 
+       static vertex_descriptor null_vertex() {
+	 if (std::is_pointer<vertex_descriptor>::value)
+	   return nullptr;
+	 else {
+	   // XXX: if vertex_descriptor is a basic type then
+	   // null_vertex will return an undefined value, otherwise it
+	   // will return the result of calling the default
+	   // constructor.
+	   vertex_descriptor n;
+	   return n;
+	 }
        }    
 
        typedef typename graph_t::label_iterator vertex_iterator;
@@ -130,9 +146,17 @@ namespace boost {
        typedef size_t edges_size_type;
        typedef size_t degree_size_type;
 
-       static vertex_descriptor null_vertex() { 
-         vertex_descriptor n;
-         return n; 
+       static vertex_descriptor null_vertex() {
+	 if (std::is_pointer<vertex_descriptor>::value)
+	   return nullptr;
+	 else {
+	   // XXX: if vertex_descriptor is a basic type then
+	   // null_vertex will return an undefined value, otherwise it
+	   // will return the result of calling the default
+	   // constructor.	   
+	   vertex_descriptor n;
+	   return n;
+	 }
        }    
 
        typedef typename graph_t::label_iterator vertex_iterator;

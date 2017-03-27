@@ -1334,8 +1334,7 @@ namespace crab {
       template<class CFG>
       static void do_initialization (CFG cfg) {
 
-        typedef crab::analyzer::array_segmentation<CFG,typename CFG::varname_t>
-	  array_segment_analysis_t;
+        typedef crab::analyzer::array_segmentation<CFG> array_segment_analysis_t;
         typedef typename array_segment_analysis_t::array_segment_domain_t
 	  array_segment_domain_t;
         typedef crab::analyzer::array_constant_segment_visitor
