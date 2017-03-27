@@ -1,4 +1,6 @@
 #include "../common.hpp"
+//#include "crab/analysis/graphs/dominance.hpp"
+#include "crab/analysis/graphs/cdg.hpp"
 
 using namespace std;
 using namespace crab::analyzer;
@@ -6,7 +8,7 @@ using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
 /* Example of how to build a CFG */
-cfg_t* prog (variable_factory_t &vfac)  {
+cfg_t* prog1 (variable_factory_t &vfac)  {
 
   // Defining program variables
   z_var i (vfac ["i"]);
@@ -43,6 +45,29 @@ cfg_t* prog (variable_factory_t &vfac)  {
   return cfg;
 }
 
+cfg_t* prog2 (variable_factory_t &vfac)  {
+  // entry and exit block
+  auto cfg = new cfg_t("entry","exit");
+  // adding blocks
+  basic_block_t& entry = cfg->insert ("entry");
+  basic_block_t& b1 = cfg->insert ("x1");
+  basic_block_t& b2 = cfg->insert ("x2");
+  basic_block_t& b3 = cfg->insert ("x3");
+  basic_block_t& b4 = cfg->insert ("x4");
+  basic_block_t& b5 = cfg->insert ("x5");
+  basic_block_t& b6 = cfg->insert ("x6");
+  basic_block_t& b7 = cfg->insert ("x7");
+  basic_block_t& b8 = cfg->insert ("x8");
+  basic_block_t& b9 = cfg->insert ("x9");
+  basic_block_t& exit= cfg->insert ("exit");
+  // adding control flow
+  entry >> b1; b1 >> b2; b2 >> b3; b2 >> b4; b3 >> b5; b4 >> b5; b5 >> b1; b1 >> b6;
+  b6 >> b7; b6 >> b8; b7 >> b9, b8 >> b9; b9 >> exit;
+  // if added this edge then b6 should control dependent on b1.
+  b1 >> exit;
+  return cfg;
+}
+
 int main (int argc, char** argv )
 {
   SET_TEST_OPTIONS(argc,argv)
@@ -50,9 +75,9 @@ int main (int argc, char** argv )
   variable_factory_t vfac;
 
   { 
-    cfg_t* cfg = prog(vfac);
-    
+    cfg_t* cfg = prog1(vfac);
     crab::outs() << "CFG\n" << *cfg << "\n";
+    
     cfg_rev_t rev_cfg(*cfg);
     crab::outs() << "Reversed CFG\n" << rev_cfg << "\n";
     
@@ -85,11 +110,28 @@ int main (int argc, char** argv )
     
     rev_cfg = cfg_rev_t(*cfg);
     crab::outs() << "Reversed simplified CFG\n" << rev_cfg << "\n";
-
+    
     delete cfg;
   }
 
   {
+
+    cfg_t* cfg = prog2(vfac);
+    crab::outs() << "CFG\n" << *cfg << "\n";
+    
+    std::map <typename cfg_t::node_t, std::vector< typename cfg_t::node_t> > cdg;
+    crab::analyzer::graph_algo::control_dep_graph (cfg_ref_t(*cfg), cdg);
+    crab::outs () << "Control-dependence graph \n";
+    for (auto &kv: cdg) {
+      crab::outs () << "{";
+      for (auto v: kv.second) {
+	crab::outs () << crab::cfg_impl::get_label_str(v) << ";";
+      }
+      crab::outs () << "} " << " control-dependent on ";
+      crab::outs () << crab::cfg_impl::get_label_str(kv.first) << "\n";
+    }
+
+    delete cfg;
   }
   return 0;
 }
