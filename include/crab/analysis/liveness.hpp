@@ -15,27 +15,32 @@
 namespace crab {
 
   namespace analyzer {
-  
-   template<class CFG, class V>
-   class liveness_analysis: public crab::iterators::killgen_analysis<CFG, V> {
 
-    typedef crab::iterators::killgen_analysis<CFG, V> killgen_analysis_t;
+   template<typename V>
+   using liveness_domain = crab::domains::flat_killgen_domain<V>;       
 
-    public:
+    
+   template<class CFG>
+   class liveness_ops:
+      public crab::iterators::
+      killgen_operations_api<CFG, liveness_domain<typename CFG::varname_t> > {
 
+   public:
+     
+     typedef liveness_domain<typename CFG::varname_t> liveness_domain_t;
      typedef typename CFG::basic_block_label_t basic_block_label_t;
-     typedef typename killgen_analysis_t::killgen_domain_t liveness_domain_t;       
 
-    private:
-
-      typedef std::pair<liveness_domain_t, liveness_domain_t> binding_t;
-      typedef boost::unordered_map<basic_block_label_t, binding_t> liveness_map_t;
-
-      liveness_map_t _liveness_map;
+   private:
+     
+     typedef crab::iterators::killgen_operations_api<CFG, liveness_domain_t> this_type;
+     typedef std::pair<liveness_domain_t, liveness_domain_t> binding_t;
+     typedef boost::unordered_map<basic_block_label_t, binding_t> liveness_map_t;
+     
+     liveness_map_t _liveness_map;
 
     public:
 
-     liveness_analysis (CFG cfg): killgen_analysis_t(cfg) { }
+     liveness_ops (CFG cfg): this_type (cfg) { }
 
      virtual bool is_forward () { return false; }
 
@@ -77,9 +82,10 @@ namespace crab {
 
    //! Live variable analysis
    template<typename CFG>
-   class liveness: boost::noncopyable, 
-                   public crab::iterators::killgen_fixpoint_iterator
-       <CFG, liveness_analysis<CFG,typename CFG::varname_t> >{
+   class liveness:
+      boost::noncopyable, 
+      public crab::iterators::killgen_fixpoint_iterator <CFG, liveness_ops<CFG> >{
+     
     public:
 
      typedef typename CFG::basic_block_label_t basic_block_label_t;
@@ -88,12 +94,11 @@ namespace crab {
      
     private:
 
-     typedef liveness_analysis<CFG,varname_t> liveness_analysis_t;
-     typedef typename liveness_analysis_t::liveness_domain_t liveness_domain_t;
-     typedef crab::iterators::killgen_fixpoint_iterator<CFG,liveness_analysis_t> 
+     typedef liveness_ops<CFG> liveness_ops_t;
+     typedef typename liveness_ops_t::liveness_domain_t liveness_domain_t;
+     typedef crab::iterators::killgen_fixpoint_iterator<CFG,liveness_ops_t> 
              killgen_fixpoint_iterator_t;
-     typedef boost::unordered_map<basic_block_label_t, liveness_domain_t> liveness_map_t;
-
+     
     public:
 
      //for backward compatibility
@@ -101,8 +106,10 @@ namespace crab {
      typedef liveness_domain_t set_t;
 
     private:
-     
-     liveness_map_t _dead_map;
+
+     // output of the analysis: map basic blocks to set of dead
+     // variables at the end of the blocks
+     boost::unordered_map<basic_block_label_t, liveness_domain_t> _dead_map;
 
      // statistics 
      unsigned _max_live;
