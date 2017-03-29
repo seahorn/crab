@@ -98,7 +98,7 @@ namespace crab {
 	 // map node to its idom node
 	 boost::unordered_map<node_t, node_t> idom;
 	 dominator_tree (g, entry, idom);
-	 
+
 	 // // map node n to all its immediate dominated nodes
 	 // boost::unordered_map<node_t, std::vector<node_t> > dominated;
 	 // for (auto v: boost::make_iterator_range (vertices (g))) {
@@ -116,14 +116,15 @@ namespace crab {
 	     // n's predecessors until found a node that immediate
 	     // dominates n.
 	     node_t runner = source (e, g);
-	     while (runner != idom[n] && runner != n) {
+	     while (runner != graph_traits<G>::null_vertex() &&
+		    runner != idom[n] && runner != n) {	       
 	       if (std::find(df[runner].begin(),df[runner].end(),n) == df[runner].end())
 		 df[runner].push_back (n);
 	       runner = idom[runner];
 	     }
 	   }
 	 } // end outer for       
-       
+
 	 CRAB_LOG ("dominance",
 		   for (auto &kv: df) {
 		     crab::outs () <<  crab::cfg_impl::get_label_str(kv.first)
