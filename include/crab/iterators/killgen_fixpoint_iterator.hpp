@@ -290,11 +290,12 @@ namespace crab {
 
       void set(Key k, Value v) {
 	if (!is_top ()) {
-	  if (v.is_bottom()) {
-	    this->_tree.remove(k);
-	  } else {
-	    this->_tree.insert(k, v);
-	  }	  
+	  // if (v.is_bottom()) {
+	  //   this->_tree.remove(k);
+	  // } else {
+	  //   this->_tree.insert(k, v);
+	  // }
+	  this->_tree.insert(k, v);	  
 	}
       }
     
