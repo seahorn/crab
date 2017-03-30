@@ -11,13 +11,26 @@ using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 using namespace crab::domains::ldd;
 
-typedef linear_constraint<z_number, varname_t> linear_constraint_t;
-typedef linear_expression<z_number, varname_t> linear_expression_t;
-typedef interval <z_number> interval_t;
+#define RATIONALS
+
+#ifdef RATIONALS
+typedef q_number number_t;
+#else
+typedef z_number number_t;
+#endif 
+
+typedef linear_constraint<number_t, varname_t> linear_constraint_t;
+typedef linear_expression<number_t, varname_t> linear_expression_t;
+typedef interval <number_t> interval_t;
 
 LddManager* create_ldd_man (size_t num_vars) {
   DdManager* cudd = Cudd_Init (0, 0, CUDD_UNIQUE_SLOTS, 127, 0);
+  #ifndef RATIONALS
   theory_t * theory = tvpi_create_boxz_theory (num_vars);
+  #else
+  theory_t * theory = tvpi_create_box_theory (num_vars);
+  #endif 
+  
   LddManager* ldd = Ldd_Init (cudd, theory);
 
   const bool dvo = true;
@@ -43,8 +56,8 @@ void dump (LddNodePtr val) {
   DdManager *cudd = Ldd_GetCudd (ldd);
   FILE *fp = Cudd_ReadStdout(cudd);
   Cudd_SetStdout(cudd,stderr);
-  if (val.get () == Ldd_GetTrue (ldd)) cout << "true\n";
-  else if (val.get () == Ldd_GetFalse (ldd)) cout << "false\n";	
+  if (val.get () == Ldd_GetTrue (ldd)) crab::outs () << "true\n";
+  else if (val.get () == Ldd_GetFalse (ldd)) crab::outs () << "false\n";	
   else Ldd_PrintMinterm(ldd,val.get ());
   Cudd_SetStdout(cudd,fp);      
 }
@@ -109,10 +122,14 @@ linterm_t termForVal(LddManager* ldd, varname_t v, bool neg = false)
 
 
 /** v := k, where k is a constant */
-LddNodePtr assign (LddManager *ldd, LddNodePtr n, varname_t v, z_number k) {
+LddNodePtr assign (LddManager *ldd, LddNodePtr n, varname_t v, number_t k) {
   if (isBot (ldd, n)) return n;
 
-  mpq_class kk ((mpz_class) k); 
+  #ifndef RATIONALS
+  mpq_class kk ((mpz_class) k);
+  #else
+  mpq_class kk = ((mpq_class) k);
+  #endif 
   linterm_t t = termForVal (ldd, v);
   constant_t kkk = (constant_t) tvpi_create_cst (kk.get_mpq_t ());
   LddNodePtr newVal = 
@@ -130,13 +147,21 @@ LddNodePtr assign (LddManager* ldd, LddNodePtr n, varname_t v, interval_t ival) 
   
   constant_t kmin = NULL, kmax = NULL;
   
-  if (boost::optional <z_number> l = ival.lb ().number ()) {
+  if (boost::optional <number_t> l = ival.lb ().number ()) {
+    #ifndef RATIONALS    
     mpq_class val ((mpz_class) (*l));
+    #else
+    mpq_class val ((mpq_class) (*l));    
+    #endif 
     kmin = (constant_t)tvpi_create_cst (val.get_mpq_t ());
   }
 
-  if (boost::optional <z_number> u = ival.ub ().number ()) {
+  if (boost::optional <number_t> u = ival.ub ().number ()) {
+    #ifndef RATIONALS        
     mpq_class val ((mpz_class) (*u));
+    #else
+    mpq_class val ((mpq_class) (*u));    
+    #endif 
     kmax = (constant_t)tvpi_create_cst (val.get_mpq_t ());
   }
        
@@ -155,15 +180,20 @@ LddNodePtr assign (LddManager* ldd, LddNodePtr n, varname_t v, interval_t ival) 
 LddNodePtr apply (LddManager* ldd,
                   const LddNodePtr n, 
                   varname_t v, varname_t u,
-                  z_number a, z_number k)
+                  number_t a, number_t k)
 {
   if (isTop (ldd, n) || isBot (ldd, n)) return n;
   
   linterm_t t = termForVal (ldd, v);
   linterm_t r = termForVal (ldd, u);
 
+  #ifndef RATIONALS          
   mpq_class aa ((mpz_class) a); 
-  mpq_class kk ((mpz_class) k); 
+  mpq_class kk ((mpz_class) k);
+  #else
+  mpq_class aa ((mpq_class) a); 
+  mpq_class kk ((mpq_class) k); 
+  #endif   
   
   constant_t aaa = (constant_t) tvpi_create_cst (aa.get_mpq_t ());
   constant_t kkk = (constant_t) tvpi_create_cst (kk.get_mpq_t ());        
@@ -188,31 +218,36 @@ int main (int argc, char** argv )
 {
   SET_TEST_OPTIONS(argc,argv)
 
-  LddManager* ldd = create_ldd_man (500);
-
+  LddManager* man = create_ldd_man (3000);
+  Ldd_SanityCheck (man);
+	  
   variable_factory_t vfac;
   varname_t x = vfac["x"];
   varname_t y = vfac["y"];
 
-  LddNodePtr s1  = top (ldd);
-  LddNodePtr s11 = assign (ldd, s1, x, 5);
-  LddNodePtr s111 = assign (ldd, s11, y, 8);
+  {
+    LddNodePtr s1  = top (man);
+    LddNodePtr s11 = assign (man, s1, x, 5.5);
+    LddNodePtr s111 = assign (man, s11, y, 8.3);
+    
+    LddNodePtr s2  = top (man);
+    LddNodePtr s22 = assign (man, s2, x, 5.5);
+    LddNodePtr s222 = assign (man, s22, y, 12.2);
+    
+    dump (s111);
+    dump (s222);
+    crab::outs () << "Join \n";
+    LddNodePtr s3 = join (man, s111, s222);
+    dump (s3);
+    crab::outs () << "Widening \n";  
+    LddNodePtr s4 = widen (man, s111, s222);
+    dump (s4);
+  }
 
-  LddNodePtr s2  = top (ldd);
-  LddNodePtr s22 = assign (ldd, s2, x, 10);
-  LddNodePtr s222 = assign (ldd, s22, y, 12);
-
-  cout << "Join \n";
-  cout.flush ();
-  dump (s111);
-  dump (s222);
-  cout << "Result \n";
-  cout.flush ();
-  LddNodePtr s3 = join (ldd, s111, s222);
-  dump (s3);
-
+  // Ldd_NodeSanityCheck (man, &(*s4));
+  
   // FIXME: seg fault here
-  // destroy_ldd_man (ldd);
+  // destroy_ldd_man (man);
   return 0;
 }
 #endif 

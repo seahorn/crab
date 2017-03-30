@@ -28,6 +28,7 @@ namespace crab
      // Numerical domains
      typedef interval_domain<q_number, varname_t> q_interval_domain_t;     
      typedef apron_domain<q_number, varname_t, apron_domain_id_t::APRON_PK> q_pk_apron_domain_t;
+     typedef boxes_domain< q_number, varname_t > q_boxes_domain_t;     
    }
 }
 
@@ -84,6 +85,8 @@ int main (int argc, char** argv )
 
   run<q_interval_domain_t>(cfg,vfac,false,1,2,20);    
   run<q_pk_apron_domain_t>(cfg,vfac,false,1,2,20);  
-
+  #ifdef HAVE_LDD
+  run<q_boxes_domain_t>(cfg,vfac,false,1,2,20);
+  #endif   
   return 0;
 }

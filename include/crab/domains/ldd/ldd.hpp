@@ -36,7 +36,7 @@ namespace crab {
     public:
      ldd_node_deleter (LddManager *m) : ldd(m) {}
      void operator() (LddNode *p) { if (p) Ldd_RecursiveDeref (ldd, p); }  
-    LddManager *getManager () const { return ldd; }
+     LddManager *getManager () const { return ldd; }
    };
    
    /** Constructs an BoxesVal(ldd,top);LddNodePtr from an LddManager
@@ -51,12 +51,12 @@ namespace crab {
 	LddNodePtr p(n, ldd_node_deleter (ldd));
 	return p;
      }
-#ifdef LDD_DEBUG
+     #ifdef LDD_DEBUG
      Cudd_ReduceHeap (Ldd_GetCudd (ldd), CUDD_REORDER_SAME, 0);
      assert (Cudd_DebugCheck (Ldd_GetCudd (ldd)) == 0);
      assert (Cudd_CheckKeys (Ldd_GetCudd (ldd)) == 0);
      Ldd_SanityCheck (ldd);
-#endif    
+     #endif    
      return LddNodePtr();
    }
    
@@ -71,8 +71,20 @@ namespace crab {
    inline size_t hash_value (LddNodePtr n)
    {
      return (size_t) (((size_t) (&*n)) * DD_P1);
-   }  
    }
+
+   template<typename Number>
+   theory_t* create_box_theory (size_t sz);
+     
+   template<>
+   theory_t* create_box_theory<ikos::z_number> (size_t sz)
+   { return tvpi_create_boxz_theory (sz); }
+
+   template<>
+   theory_t* create_box_theory<ikos::q_number> (size_t sz)
+   { return tvpi_create_box_theory (sz); }
+     
+   } // end ldd
  }
 }
 

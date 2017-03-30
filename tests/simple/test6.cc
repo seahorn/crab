@@ -64,7 +64,8 @@ int main (int argc, char** argv )
   crab::outs() << *cfg << "\n";
 
   run<z_interval_domain_t>(cfg, vfac, false, 1, 2, 20);
-  run<z_bool_num_domain_t>(cfg, vfac, false, 1, 2, 20);  
+  run<z_bool_num_domain_t>(cfg, vfac, false, 1, 2, 20);
+  run<z_boxes_domain_t>(cfg, vfac, false, 1, 2, 20);    
 
   // free the CFG
   delete cfg;

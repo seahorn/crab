@@ -153,13 +153,14 @@ namespace crab {
 #include <boost/bimap.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/range/algorithm/set_algorithm.hpp>
+#include <boost/optional.hpp>
 
 namespace crab {
 
    namespace domains {
 
       using namespace crab::domains::ldd;       
-
+    
       /*
        * The wrapper has two global datastructures:
        * 1) a ldd manager and 
@@ -169,7 +170,7 @@ namespace crab {
        * single size for all ldds. Since ldds are sparse we can fix a
        * size big enough for our programs.
        */
-      template<typename Number, typename VariableName, size_t LddSize = 3000>
+      template<typename Number, typename VariableName, size_t LddSize>
       class boxes_domain_: 
          public ikos::writeable, 
          public numerical_domain< Number, VariableName>,
@@ -204,10 +205,11 @@ namespace crab {
         static LddManager* get_ldd_man () {
           if (!m_ldd_man) {
             DdManager* cudd = Cudd_Init (0, 0, CUDD_UNIQUE_SLOTS, 127, 0);
-            theory_t* theory = tvpi_create_boxz_theory (LddSize);
+            theory_t* theory = ldd::create_box_theory<Number> (LddSize);
             CRAB_LOG ("boxes",crab::outs() << "Created a ldd of size " << LddSize <<"\n";);
             m_ldd_man = Ldd_Init (cudd, theory);
-            Cudd_AutodynEnable (cudd, CUDD_REORDER_GROUP_SIFT);
+            //Cudd_AutodynEnable (cudd, CUDD_REORDER_GROUP_SIFT);
+	    Ldd_SanityCheck (get_ldd_man ());
           }
           return m_ldd_man;
         }
@@ -230,7 +232,8 @@ namespace crab {
           if (it != get_var_map()->left.end ()) {
             return it->second;
           } else {
-            int id = get_var_map ()->size ();
+	    // XXX: reserved dim 0 for SPECIAL variable
+            int id = get_var_map ()->size () + 1;
             if (id >= LddSize) {
               CRAB_ERROR ("The Ldd size of ", LddSize, " needs to be larger");
             }
@@ -239,11 +242,16 @@ namespace crab {
           }
         }
 
-        inline constant_t mkCst (Number k) {
+        inline constant_t mk_cst (ikos::z_number k) {
           mpq_class kk ((mpz_class) k); 
           return (constant_t) tvpi_create_cst (kk.get_mpq_t ());
         }
-        
+
+        inline constant_t mk_cst (ikos::q_number k) {
+          mpq_class kk ((mpq_class) k); 
+          return (constant_t) tvpi_create_cst (kk.get_mpq_t ());
+        }
+	
         // convex approximation
         LddNodePtr convex_approx () const {
           return lddPtr (get_ldd_man(), Ldd_TermMinmaxApprox(get_ldd_man(), &*m_ldd));
@@ -281,24 +289,63 @@ namespace crab {
         }
 
         /** return term for variable v, neg for negation of variable */
-        linterm_t termForVal(VariableName v, bool neg = false) 
+        linterm_t term_from_var(VariableName v, bool neg = false) 
         {
-          int varId = get_var_dim (v);
+          int dim = get_var_dim (v);
           int sgn = neg ? -1 : 1;
           linterm_t term = 
-              Ldd_GetTheory (get_ldd_man())->create_linterm_sparse_si (&varId, &sgn, 1);
+              Ldd_GetTheory (get_ldd_man())->create_linterm_sparse_si (&dim, &sgn, 1);
           return term; 
         }
-        
+
+        /** return term from SPECIAL variable $0 */
+        linterm_t term_from_special_var(bool neg = false) 
+        {
+          int dim = 0; // reserved for SPECIAL variable
+	  int sgn = neg ? -1 : 1;
+          return  Ldd_GetTheory (get_ldd_man())->create_linterm_sparse_si (&dim, &sgn, 1);
+        }
+
+	void copy_term (VariableName v, boost::optional<VariableName> x)
+	{
+          if (is_top () || is_bottom ()) return ;
+
+	  this->operator-=(v); // remove v before assigning new term
+	  
+          linterm_t lhs = term_from_var (v);
+          linterm_t rhs;
+	  
+	  if (x)
+	    rhs = term_from_var (*x);
+	  else
+	    rhs = term_from_special_var ();
+	  
+          m_ldd = lddPtr(get_ldd_man(), 
+                         Ldd_TermCopy(get_ldd_man(), &(*m_ldd), lhs, rhs));
+          Ldd_GetTheory (get_ldd_man())->destroy_term(lhs);
+          Ldd_GetTheory (get_ldd_man())->destroy_term(rhs);
+
+	  if (!x) {
+	    // XXX: if we copy the SPECIAL var to v we forget the SPECIAL
+	    //      var after we copy.
+	    crab::CrabStats::count (getDomainName() + ".count.forget");
+	    crab::ScopedCrabStats __st__(getDomainName() + ".forget");
+	    int dim = 0; // SPECIAL variable is dim 0
+	    m_ldd =  lddPtr (get_ldd_man(), 
+			     Ldd_ExistsAbstract (get_ldd_man(), &*m_ldd, dim));
+	  }
+	  
+	}
+
         /** v := a * x + k, where a, k are constants and x variable */
         void apply (VariableName v, VariableName x, Number a, Number k) {
           if (is_top () || is_bottom ()) return ;
 
-          linterm_t t = termForVal (v);
-          linterm_t r = termForVal (x);
+          linterm_t t = term_from_var (v);
+          linterm_t r = term_from_var (x);
 
-          constant_t c1 = mkCst (a);
-          constant_t c2 = mkCst (k);
+          constant_t c1 = mk_cst (a);
+          constant_t c2 = mk_cst (k);
           // FIXME: Ldd_TermReplace seems to leak memory
           m_ldd = lddPtr(get_ldd_man(), 
                          Ldd_TermReplace(get_ldd_man(), &(*m_ldd), t, r, c1, c2, c2));
@@ -309,30 +356,36 @@ namespace crab {
           Ldd_GetTheory (get_ldd_man())->destroy_cst(c2);
         }
 
-        Number numFromLddCst (constant_t cst, theory_t *theory) {
+        void num_from_ldd_cst (constant_t cst, theory_t *theory, ikos::z_number& res) {
           mpq_class v;
           // XXX We know that the theory is tvpi, use its method direclty.
           tvpi_cst_set_mpq (v.get_mpq_t (), (tvpi_cst_t) cst);
-          // FIXME: it's assuming that Number has a constructor that
-          // takes mpz_class
-          mpz_class n = static_cast<mpz_class> (v);
-          return Number (n);
+          res = ikos::z_number (static_cast<mpz_class> (v));
         }
 
-        linear_expression_t exprFromLddTerm (linterm_t term, theory_t *theory) {
+        void num_from_ldd_cst (constant_t cst, theory_t *theory, ikos::q_number& res) {
+          mpq_class v;
+          // XXX We know that the theory is tvpi, use its method direclty.
+          tvpi_cst_set_mpq (v.get_mpq_t (), (tvpi_cst_t) cst);
+	  res = ikos::q_number(v);
+        }
+	
+        linear_expression_t expr_from_ldd_term (linterm_t term, theory_t *theory) {
           linear_expression_t e (0);
           for(size_t i = 0;i < theory->term_size (term); i++) {
-            Number k = numFromLddCst (theory->term_get_coeff (term,i), theory);
+	    Number k (0); // any value
+            num_from_ldd_cst (theory->term_get_coeff (term,i), theory, k);
             VariableName v =  getVarName (theory->term_get_var(term,i));
             e = e + (k * linear_expression_t (v));
           }
           return e;
         }
 
-        linear_constraint_t cstFromLddCons(lincons_t lincons, theory_t *theory) {
+        linear_constraint_t cst_from_ldd_cons(lincons_t lincons, theory_t *theory) {
 
-          linear_expression_t lhs = exprFromLddTerm(theory->get_term(lincons), theory);
-          Number rhs = numFromLddCst(theory->get_constant(lincons), theory);
+          linear_expression_t lhs = expr_from_ldd_term(theory->get_term(lincons), theory);
+	  Number rhs (0); // any value
+          num_from_ldd_cst(theory->get_constant(lincons), theory, rhs);
 
           if (theory->is_strict (lincons)) {
             // lhs < rhs <-> lhs+1 <= rhs but only for integers!
@@ -348,14 +401,14 @@ namespace crab {
         }
 
         // Pre: n is convex and cannot be bottom
-        void toLinCstSysRecur(LddNode* n, 
-                              linear_constraint_system_t& csts) {
+        void to_lin_cst_sys_recur(LddNode* n, 
+				  linear_constraint_system_t& csts) {
 
           LddNode *N = Ldd_Regular (n);
           if (N == Ldd_GetTrue (get_ldd_man ())) return;
 
 
-          auto cst = cstFromLddCons (Ldd_GetCons(get_ldd_man (), N), 
+          auto cst = cst_from_ldd_cons (Ldd_GetCons(get_ldd_man (), N), 
                                      Ldd_GetTheory (get_ldd_man ()));
 
           if (Ldd_Regular (Ldd_T(N)) == Ldd_GetTrue (get_ldd_man ()) &&
@@ -366,8 +419,8 @@ namespace crab {
           else
             csts += cst;
             
-          toLinCstSysRecur (Ldd_T (N), csts);
-          toLinCstSysRecur (Ldd_E (N), csts);
+          to_lin_cst_sys_recur (Ldd_T (N), csts);
+          to_lin_cst_sys_recur (Ldd_E (N), csts);
 
         }
 
@@ -377,59 +430,69 @@ namespace crab {
         //    and c is 1 or -1 and k is an integer constant
         typedef typename linear_constraint_t::kind_t kind_t;
 
-        void add_unit_constraint (Number coef, variable_t x, kind_t kind, Number k) {
+        LddNodePtr gen_unit_constraint (Number coef, linterm_t term, kind_t kind, Number k) {
 
           assert (coef == 1 || coef == -1);
           
           auto theory = Ldd_GetTheory (get_ldd_man());
           if (kind == kind_t::EQUALITY) {  // x == k <-> x<=k and !(x<k)
-            // x<=k
-            linterm_t term1 = termForVal (x.name (), (coef == 1 ? false : true));
-            constant_t c1 = mkCst (k);
-            lincons_t cons1 = theory->create_cons (term1, 0 /*non-strict*/, c1);
+            // x<=k  
+            constant_t c1 = mk_cst (k);
+            lincons_t cons1 = theory->create_cons (term, 0 /*non-strict*/, c1);
             LddNodePtr n1 = lddPtr (get_ldd_man(), theory->to_ldd (get_ldd_man(), cons1));
-            theory->destroy_lincons (cons1);
-            m_ldd = lddPtr (get_ldd_man(), Ldd_And (get_ldd_man(), &*m_ldd, &*n1));
             // !(x<k)
-            linterm_t term2 = termForVal (x.name (), (coef == 1 ? false : true));
-            constant_t c2 = mkCst (k);
-            lincons_t cons2 = theory->create_cons (term2, 1 /*strict*/, c2);
-            LddNodePtr n2 = lddPtr (get_ldd_man(), Ldd_Not (theory->to_ldd (get_ldd_man(), cons2)));
-            theory->destroy_lincons (cons2);
-            m_ldd = lddPtr (get_ldd_man(), Ldd_And (get_ldd_man(), &*m_ldd, &*n2));
-          }
-          else if (kind == kind_t::INEQUALITY) {
+            constant_t c2 = mk_cst (k);
+            lincons_t cons2 = theory->create_cons (term, 1 /*strict*/, c2);
+            LddNodePtr n2 = lddPtr(get_ldd_man(),Ldd_Not (theory->to_ldd (get_ldd_man(), cons2)));
+	    // FIXME: memory leak
+            //theory->destroy_lincons (cons1);
+            //theory->destroy_lincons (cons2);
+	    return lddPtr (get_ldd_man (), Ldd_And (get_ldd_man(), &*n1, &*n2));
+          } else if (kind == kind_t::INEQUALITY) {
             // case 1:  x <= k  
             // case 2: -x <= k
-            linterm_t term = termForVal (x.name (), (coef == 1 ? false : true));
-            constant_t c = mkCst (k);
+            constant_t c = mk_cst (k);
             lincons_t cons = theory->create_cons (term, 0 /*non-strict*/, c);
             LddNodePtr n = lddPtr (get_ldd_man(), theory->to_ldd (get_ldd_man(), cons));
-            theory->destroy_lincons (cons);
-            m_ldd = lddPtr (get_ldd_man(), Ldd_And (get_ldd_man(), &*m_ldd, &*n));
-          }
-          else { // assert (kind == kind_t::DISEQUALITY)
+	    // FIXME: memory leak
+            // theory->destroy_lincons (cons);
+	    return n; 
+          } else { // assert (kind == kind_t::DISEQUALITY)
             // case 1:  x != k  <->  x < k OR  x > k <->  x < k OR -x < -k
             // case 2: -x != k  <-> -x < k OR -x > k <-> -x < k OR  x < -k
-            linterm_t term1 = termForVal (x.name (), (coef == 1 ? false : true));
-            constant_t c1 = mkCst (k);
-            lincons_t cons1 = theory->create_cons (term1, 1 /*strict*/, c1);
+            constant_t c1 = mk_cst (k);
+            lincons_t cons1 = theory->create_cons (term, 1 /*strict*/, c1);
             LddNodePtr n1 = lddPtr (get_ldd_man(), theory->to_ldd (get_ldd_man(), cons1));
-            theory->destroy_lincons (cons1);
-            
-            linterm_t term2 = termForVal (x.name (), (coef == 1 ? true : false));
-            constant_t c2 = mkCst (-k);
-            lincons_t cons2 = theory->create_cons (term2, 1 /*strict*/, c2);
+            constant_t c2 = mk_cst (-k);
+            lincons_t cons2 = theory->create_cons (term, 1 /*strict*/, c2);
             LddNodePtr n2 = lddPtr (get_ldd_man(), theory->to_ldd (get_ldd_man(), cons2));
-            theory->destroy_lincons (cons2);
-            
             LddNodePtr n3 = lddPtr (get_ldd_man (), Ldd_Or (get_ldd_man(), &*n1, &*n2));
-            m_ldd = lddPtr (get_ldd_man(), Ldd_And (get_ldd_man(), &*m_ldd, &*n3));
+	    // FIXME: memory leak
+            //theory->destroy_lincons (cons1);
+            //theory->destroy_lincons (cons2);            
+	    return n3;
           }
         } 
 
+	LddNodePtr gen_unit_constraint (Number coef, variable_t var, kind_t kind, Number k) {
+	  linterm_t term = term_from_var (var.name (), (coef == 1 ? false : true));
+	  return gen_unit_constraint(coef, term, kind, k);
+	}
+
+	LddNodePtr gen_unit_constraint (Number coef, kind_t kind, Number k) {
+	  linterm_t term = term_from_special_var ((coef == 1 ? false : true));
+	  return gen_unit_constraint(coef, term, kind, k);
+	}
+	
+	
+        void add_unit_constraint (Number coef, variable_t x, kind_t kind, Number k)
+	{
+	  LddNodePtr n = gen_unit_constraint (coef, x, kind, k);
+	  m_ldd = lddPtr (get_ldd_man(), Ldd_And (get_ldd_man(), &*m_ldd, &*n));
+        } 
+
         boxes_domain_ (LddNodePtr ldd): m_ldd (ldd) {
-#if 1
+          #if 1
           const int CST_FACTOR = 10; /* JN: some magic constant factor */
           int threshold = num_of_vars () * CST_FACTOR;
           if (threshold > 0) {
@@ -444,19 +507,23 @@ namespace crab {
                 // -- if the previous approximation did not work then
                 // -- we further simplify the ldd by making it convex
                 m_ldd = convex_approx ();                
-                CRAB_WARN ("ldd is growing too fast (number of paths= " , before_num_paths, "). ", 
+                CRAB_WARN ("ldd is growing too fast (number of paths= " ,
+			   before_num_paths, "). ", 
                            "After making convex the ldd ",
-                           "the number of paths is ", Ldd_PathSize (NULL, &*m_ldd));
+                           "the number of paths is ",
+			   Ldd_PathSize (NULL, &*m_ldd));
                            
               }
               else {
-                CRAB_WARN ("ldd is growing too fast (number of paths= " , before_num_paths, "). ", 
+                CRAB_WARN ("ldd is growing too fast (number of paths= " ,
+			   before_num_paths, "). ", 
                            "After deleting relationships between variables ",
-                           "the number of paths is ", after_num_paths);
+                           "the number of paths is ",
+			   after_num_paths);
               }
             }
           }
-#endif 
+          #endif 
         }
 
        public:
@@ -474,9 +541,8 @@ namespace crab {
           }
         }
 
-        boxes_domain_(): ikos::writeable() { 
-          m_ldd = lddPtr (get_ldd_man(), Ldd_GetTrue (get_ldd_man()));
-        }
+        boxes_domain_()
+	  : ikos::writeable(), m_ldd (lddPtr (get_ldd_man(), Ldd_GetTrue (get_ldd_man()))) {}
         
         ~boxes_domain_ () { 
           // DdManager *cudd = nullptr;
@@ -491,15 +557,15 @@ namespace crab {
         }
                 
         static boxes_domain_t top() { 
-          return boxes_domain_t (lddPtr (get_ldd_man(), Ldd_GetTrue (get_ldd_man())));
+	  return boxes_domain_t (lddPtr (get_ldd_man(), Ldd_GetTrue (get_ldd_man())));
         }
         
         static boxes_domain_t bottom() {
-          return boxes_domain_t (lddPtr (get_ldd_man(), Ldd_GetFalse (get_ldd_man())));
+	  return boxes_domain_t (lddPtr (get_ldd_man(), Ldd_GetFalse (get_ldd_man())));
         }
         
         boxes_domain_ (const boxes_domain_t& other): 
-            ikos::writeable(), m_ldd (other.m_ldd) { 
+	  ikos::writeable(), m_ldd (other.m_ldd) { 
           crab::CrabStats::count (getDomainName () + ".count.copy");
           crab::ScopedCrabStats __st__(getDomainName() + ".copy");
         }
@@ -526,9 +592,9 @@ namespace crab {
 
           bool res = Ldd_TermLeq (get_ldd_man(), &(*m_ldd), &(*other.m_ldd));
 
-          CRAB_LOG ("boxes", 
-                    crab::outs() << "Check if " <<  *this << " <= " <<  other 
-                              <<  " ---> " <<  res <<"\n";);
+          // CRAB_LOG ("boxes", 
+          //           crab::outs() << "Check if " <<  *this << " <= " <<  other 
+          //                     <<  " ---> " <<  res <<"\n";);
           return res;
         }
 
@@ -558,10 +624,9 @@ namespace crab {
           // It is not necessarily true that the new value is bigger
           // than the old value so we apply 
           // widen(old, new) = widen (old, (join (old,new)))
-          LddNodePtr v = join (m_ldd, other.m_ldd); 
+          LddNodePtr v = join (m_ldd, other.m_ldd);
           LddNodePtr w = lddPtr (get_ldd_man (), 
                                  Ldd_BoxWiden2 (get_ldd_man (), &*m_ldd, &*v));
-
           #if 1
           /** ensure that 'w' is only the fronteer of the compution. 
               Not sure whether this is still a widening though 
@@ -571,7 +636,6 @@ namespace crab {
           /** ensure the output is at least as big as newV */
           w = lddPtr (get_ldd_man (), Ldd_Or (get_ldd_man (), &*w, &*other.m_ldd));
           #endif
-	  
           boxes_domain_t res (w); 
 
           CRAB_LOG ("boxes",
@@ -595,7 +659,8 @@ namespace crab {
           CRAB_WARN (" boxes narrowing operator replaced with meet");
           
           CRAB_LOG ("boxes", 
-                    crab::outs() << "Narrowing " << *this << " and " << other << "=" << res <<"\n";);
+                    crab::outs() << "Narrowing " << *this << " and " << other << "="
+		                 << res <<"\n";);
           return res;
         }
         
@@ -686,11 +751,11 @@ namespace crab {
 
           constant_t kmin = NULL, kmax = NULL;       
           if (boost::optional <Number> l = ival.lb ().number ())
-            kmin = mkCst (*l);
+            kmin = mk_cst (*l);
           if (boost::optional <Number> u = ival.ub ().number ())
-            kmax = mkCst (*u);
+            kmax = mk_cst (*u);
           
-          linterm_t t = termForVal(v);
+          linterm_t t = term_from_var(v);
           // FIXME: Ldd_TermReplace seems to leak memory
           m_ldd = lddPtr(get_ldd_man(), 
                          Ldd_TermReplace(get_ldd_man(), &(*m_ldd), t, NULL, NULL, kmin, kmax));
@@ -724,7 +789,7 @@ namespace crab {
           }
           // convert to interval domain
           linear_constraint_system_t csts;
-          toLinCstSysRecur (&*tmp, csts);
+          to_lin_cst_sys_recur (&*tmp, csts);
           interval_domain_t intv = interval_domain_t::top ();
           for (auto cst: csts) { intv += cst; }
           // do projection with intervals
@@ -734,20 +799,20 @@ namespace crab {
         void assign (VariableName x, linear_expression_t e) {
           crab::CrabStats::count (getDomainName() + ".count.assign");
           crab::ScopedCrabStats __st__(getDomainName() + ".assign");
-
+	  
           if (is_bottom ()) 
             return;
 
           if (e.is_constant ()) {
-            constant_t c = mkCst (e.constant ());
-            linterm_t t = termForVal (x);
+            constant_t c = mk_cst(e.constant ());
+            linterm_t t = term_from_var (x);
             m_ldd = lddPtr(get_ldd_man(), 
                            Ldd_TermReplace(get_ldd_man(), &(*m_ldd), t, NULL, NULL, c, c));
             Ldd_GetTheory (get_ldd_man())->destroy_cst (c);
             Ldd_GetTheory (get_ldd_man())->destroy_term(t);
           } else if (optional<variable_t> v = e.get_variable()){
             VariableName y = (*v).name();
-            if (!(x==y)) apply (x, y, 1, 0);      
+            if (!(x==y)) copy_term(x,y); //apply (x, y, 1, 0);      
           } else {
 	    // Convert e to intervals
 	    interval_t r = e.constant();
@@ -755,7 +820,8 @@ namespace crab {
 	      r += p.first * this->operator[](p.second.name());
 	    set(x, r);
           }
-          CRAB_LOG("boxes", crab::outs() << "---" << x << ":=" << e << "\n" << *this <<"\n";);
+
+          CRAB_LOG("boxes", crab::outs() << "--- " << x << ":=" << e << "\n" << *this <<"\n";);
         }
         
         void apply (operation_t op, VariableName x, VariableName y, Number k) {
@@ -780,9 +846,9 @@ namespace crab {
               }
             default: CRAB_ERROR ("Boxes unreachable");
           }
-          
+
           CRAB_LOG("boxes", 
-                   crab::outs() << "apply " << x << " := " << y << " " <<  op 
+                   crab::outs() << "--- apply " << x << " := " << y << " " <<  op 
                              << " " << k << " --- " <<  *this <<"\n";);
         }
 
@@ -814,7 +880,7 @@ namespace crab {
               }
           }
           CRAB_LOG("boxes",
-                   crab::outs() << "apply " << x << " := " << x << " " << op << " " 
+                   crab::outs() << "--- apply " << x << " := " << x << " " << op << " " 
                                 << k <<  "---" <<  *this <<"\n";);
         }
 
@@ -962,14 +1028,14 @@ namespace crab {
 	    // --- produce convex approximation
 	    LddNodePtr v = convex_approx ();
 	    // --- extract linear inequalities from the convex ldd
-	    toLinCstSysRecur(&*v, csts);
+	    to_lin_cst_sys_recur(&*v, csts);
 	  }
           return csts;
         }
 
         
         void write (crab_os& o) {
-          // TODO: write to o rather than stdout
+          // FIXME: write to o rather than stdout
           LddManager *ldd_man = getLddManager (m_ldd);
           DdManager *cudd = Ldd_GetCudd (ldd_man);
           FILE *fp = Cudd_ReadStdout(cudd);
@@ -980,32 +1046,215 @@ namespace crab {
             o << "_|_";	
           else 
           {
-            #if 1	    
+            #if 1
 	    Ldd_PrintMinterm (ldd_man, m_ldd.get());
             #else
             // -- build dictionary
             vector<char*> vnames;
-            vnames.reserve (num_of_vars ());
-            for (unsigned int i=0; i < num_of_vars (); i++) {
+            vnames.reserve (num_of_vars () + 1);
+	    char * special = (char*) malloc (sizeof(char) * (std::strlen ("")));
+	    std::strcpy (special, "");
+	    vnames.push_back(special);
+            for (unsigned int i=1; i <= num_of_vars (); i++) {
               const char * name = getVarName (i).str ().c_str();
               char * cname = (char*) malloc (sizeof(char) * (std::strlen (name)));
               std::strcpy (cname, name);
+	      crab::outs () << "Dim " << i << " -- " << cname << "\n";
               vnames.push_back (cname);
             }
 
             Ldd_PrintMintermSmtLibv1 (ldd_man, m_ldd.get (), &vnames[0]);
 
             // -- destroy dict
-            for (unsigned int i=0; i < num_of_vars (); i++)
+            for (unsigned int i=0; i <= num_of_vars (); i++)
               free (vnames[i]);
 	    #endif 
           }
           Cudd_SetStdout(cudd,fp);      
         }
         
-        static std::string getDomainName () {
-          return "Boxes";
-        }  
+        static std::string getDomainName ()
+	{ return "Boxes"; }
+
+	////////
+	//// boolean_operators_api
+	////////
+	
+      private:
+	
+	// return x >= 1 or $0 >=1 if !x
+	inline LddNode* gen_true_var (boost::optional<VariableName> x)
+	{ // x >=1 <--> -x <= -1
+	  if (x) {
+	    auto r = gen_unit_constraint (Number(-1), variable_t(*x),
+					  linear_constraint_t::INEQUALITY,
+					  Number(-1));
+	    return &*r;
+	  }
+	  else {
+	    auto r = gen_unit_constraint (Number(-1), 
+					  linear_constraint_t::INEQUALITY,
+					  Number(-1));
+	    return &*r;
+	  }
+	}
+
+	// return x <= 0 or $0 <= 0 if !x
+	inline LddNode* gen_false_var (boost::optional<VariableName> x)
+	{
+	  if (x) {
+	    auto r = gen_unit_constraint (Number(1), variable_t(*x),
+					  linear_constraint_t::INEQUALITY,
+					  Number(0));
+	    return &*r;
+	  } else {
+	    auto r = gen_unit_constraint (Number(1), 
+					  linear_constraint_t::INEQUALITY,
+					  Number(0));
+	    return &*r;
+	  }
+	}
+
+	// return Ite(y>=1 Op z>=1, x>=1, x <= 0)
+	LddNode* gen_binary_bool(bool_operation_t op,
+				 boost::optional<VariableName> x,
+				 VariableName y, VariableName z)
+	{
+	  switch (op) {
+	  case OP_BAND:
+	    return Ldd_Ite(get_ldd_man (),
+			   Ldd_And(get_ldd_man(), gen_true_var(y), gen_true_var(z)), 
+			   gen_true_var(x), gen_false_var(x));
+	    break;
+	  case OP_BOR:
+	    return Ldd_Ite(get_ldd_man (),
+			   Ldd_Or(get_ldd_man(), gen_true_var(y), gen_true_var(z)),  
+			   gen_true_var(x), gen_false_var(x));
+	    break;
+	  case OP_BXOR:
+	    return Ldd_Ite(get_ldd_man (),
+			   Ldd_Xor(get_ldd_man(), gen_true_var(y), gen_true_var(z)),
+			   gen_true_var(x), gen_false_var(x));
+	    break;
+	  default: CRAB_ERROR ("Unknown boolean operator");
+	  }
+	}
+	
+      public:
+	
+	void assign_bool_cst (VariableName lhs, linear_constraint_t cst) override
+	{
+          crab::CrabStats::count (getDomainName() + ".count.assign_bool_cst");
+          crab::ScopedCrabStats __st__(getDomainName() + ".assign_bool_cst");
+	  
+	  if (is_bottom ()) return;
+	  
+	  // XXX: lhs should not appear in cst so we can remove lhs
+	  // without losing precision
+	  this->operator-=(lhs);
+	  
+	  if (cst.is_tautology ()) {
+	    // m_ldd &= lhs >= 1	    
+	    m_ldd = lddPtr (get_ldd_man(),
+			    Ldd_And (get_ldd_man(), &*m_ldd, gen_true_var(lhs)));
+	  } else if (cst.is_contradiction ()) {
+	    // m_ldd &= lhs <= 0
+	    m_ldd = lddPtr (get_ldd_man(),
+			    Ldd_And (get_ldd_man(), &*m_ldd, gen_false_var(lhs)));
+	  } else {
+	    linear_expression_t exp = cst.expression();    
+	    unsigned int size = exp.size ();
+	    if (size == 0) return; // this should not happen 
+	    else if (size == 1) {
+	      auto it = exp.begin();
+	      Number cx = it->first;
+	      if (cx == 1 || cx == -1) {
+		Number k = -exp.constant(); 
+		variable_t vx = it->second;
+		// m_ldd &= ite (cst, lhs >=1, lhs<=0);
+		m_ldd = lddPtr (get_ldd_man (),
+				Ldd_And (get_ldd_man(), &*m_ldd,
+				   Ldd_Ite(get_ldd_man (),
+					   &*(gen_unit_constraint (cx, vx, cst.kind (),k)),
+					   gen_true_var(lhs), gen_false_var(lhs))));
+						 
+	      }
+	      else 
+		CRAB_WARN (" boxes only supports constraints with unit coefficients");
+	    }
+	    else if (size >= 2) {
+	      // TODO: we can always do the operation in the interval
+	      //       domain and meet the result with the ldd. But it
+	      //       might be expensive if a basic block has two many
+	      //       assume's.
+	      CRAB_WARN (" boxes only supports constraints with at most one variable.");
+	    }
+	  }
+	  
+	  CRAB_LOG("boxes",
+		   crab::outs () << lhs << ":=" << cst << "=\n" << *this << "\n");
+	}    
+	
+	void assign_bool_var (VariableName x, VariableName y) override
+	{
+          crab::CrabStats::count (getDomainName() + ".count.assign_bool_var");
+          crab::ScopedCrabStats __st__(getDomainName() + ".assign_bool_var");
+	  
+	  copy_term (x, y);
+	  
+	  CRAB_LOG("boxes",
+		   crab::outs()  << x << ":=" << y << "=\n" << *this << "\n");
+	}
+	
+	void apply_binary_bool(bool_operation_t op, VariableName x,
+			       VariableName y, VariableName z) override
+	{
+          crab::CrabStats::count (getDomainName() + ".count.apply_bin_bool");
+          crab::ScopedCrabStats __st__(getDomainName() + ".apply_bin_bool");
+	  
+	  // XXX: if *lhs is null then it represents the SPECIAL
+	  // variable $0.
+	  boost::optional<VariableName> lhs; 
+	  
+	  if (!(x == y) && !(x == z)) {
+	    lhs = boost::optional<VariableName> (x);
+	    // XXX: x does not appear on the rhs so we can remove it
+	    // without losing precision.
+	    this->operator-=(x);
+	  }
+	  
+	  m_ldd = lddPtr (get_ldd_man (),
+			  Ldd_And(get_ldd_man(), &*m_ldd,
+				  gen_binary_bool(op, lhs, y, z)));
+	  
+	  if ((x == y) || (x == z)) {
+	    // XXX: if we are here we added ite(y op z, $0 >=1, $0 <= 0);
+	    // so we still need to assign $0 to x:
+	    copy_term(x, boost::optional<VariableName>());
+	  }
+
+	  CRAB_LOG("boxes",
+		   crab::outs () << x << ":=" << y << " " << op << " " << z << "=\n"
+     		                 << *this << "\n");
+	  
+	}
+	
+	void assume_bool (VariableName x, bool is_negated) override
+	{
+          crab::CrabStats::count (getDomainName() + ".count.assume_bool");
+          crab::ScopedCrabStats __st__(getDomainName() + ".assume_bool");
+	  
+	  m_ldd = lddPtr (get_ldd_man(),
+			  Ldd_And (get_ldd_man(), &*m_ldd,
+				   ((is_negated) ?
+				    gen_false_var (x): gen_true_var (x))));
+
+	  CRAB_LOG("boxes",
+		   if (!is_negated) 
+		     crab::outs () << "assume(" << x << ")=" << *this << "\n";
+		   else
+		     crab::outs () << "assume(not(" << x << "))=" << *this << "\n";); 
+	}
         
       }; 
 
@@ -1041,9 +1290,13 @@ namespace crab {
 
      };
 
-
+    #if 0
+     // Without copy-on-write
+    template<typename Number, typename VariableName, size_t LddSize=3000>
+    using boxes_domain = boxes_domain_<Number,VariableName,LddSize>;     
+    #else 
     // Quick wrapper which uses shared references with copy-on-write.
-    template<class Number, class VariableName, size_t LddSize = 3000 >
+    template<class Number, class VariableName, size_t LddSize=3000>
     class boxes_domain: public writeable,
                public numerical_domain<Number, VariableName >,
                public bitwise_operators<Number,VariableName >,
@@ -1067,55 +1320,31 @@ namespace crab {
       typedef boxes_domain_ <Number, VariableName, LddSize> boxes_impl_t;
       typedef std::shared_ptr<boxes_impl_t> boxes_ref_t;
 
-      boxes_domain(boxes_ref_t _ref) : norm_ref(_ref) { }
-
-      boxes_domain(boxes_ref_t _base, boxes_ref_t _norm) 
-        : base_ref(_base), norm_ref(_norm)
-      { }
+      boxes_ref_t _ref;
+      
+      boxes_domain(boxes_ref_t ref) : _ref(ref) { }
 
       boxes_domain_t create(boxes_impl_t&& t)
       { return std::make_shared<boxes_impl_t>(std::move(t)); }
         
-      boxes_domain_t create_base(boxes_impl_t&& t)
-      {
-        boxes_ref_t base = std::make_shared<boxes_impl_t>(t);
-        boxes_ref_t norm = std::make_shared<boxes_impl_t>(std::move(t));  
-        return boxes_domain_t(base, norm);
-      }
-
-      void lock(void)
-      {
-        // Allocate a fresh copy.
-        if(!norm_ref.unique())
-          norm_ref = std::make_shared<boxes_impl_t>(*norm_ref);
-        base_ref.reset();
-      }
-
-      boxes_impl_t& base(void)
-      {
-        if(base_ref)
-          return *base_ref;
-        else
-          return *norm_ref;
+      void detach(void)
+      { 
+        if(!_ref || !_ref.unique())
+          _ref = std::make_shared<boxes_impl_t>(*_ref);
       }
       
-      boxes_impl_t& norm(void) { return *norm_ref; }
+      boxes_impl_t& ref(void) { return *_ref; }
 
-      const boxes_impl_t& norm(void) const { return *norm_ref; }
+      const boxes_impl_t& ref(void) const { return *_ref; }
       
-    private:
-      
-      boxes_ref_t base_ref;  
-      boxes_ref_t norm_ref;
-            
     public:
 
-      boxes_domain(bool is_bottom = false): base_ref(nullptr), norm_ref(nullptr)
+      boxes_domain(bool is_bottom = false): _ref(nullptr)
       {
 	if (is_bottom) 
-	  norm_ref = std::make_shared<boxes_impl_t>(boxes_impl_t::bottom());
+	  _ref = std::make_shared<boxes_impl_t>(boxes_impl_t::bottom());
 	else 
-	  norm_ref = std::make_shared<boxes_impl_t>(boxes_impl_t::top());
+	  _ref = std::make_shared<boxes_impl_t>(boxes_impl_t::top());
       }
       
       static boxes_domain_t top() { return boxes_domain(false); }
@@ -1123,68 +1352,78 @@ namespace crab {
       static boxes_domain_t bottom() { return boxes_domain(true); }
 
       boxes_domain(const boxes_domain_t& o)
-        : base_ref(o.base_ref), norm_ref(o.norm_ref) { }
+        : _ref(o._ref) { }
       
-      boxes_domain_t& operator=(const boxes_domain_t& o)
+      boxes_domain_t& operator=(const boxes_domain_t& o) 
       {
-        base_ref = o.base_ref;
-        norm_ref = o.norm_ref;
+        _ref = o._ref;
         return *this;
       }
 
-      LddNodePtr getLdd () { return norm().getLdd (); } 
-      VariableName getVarName (int v) const { return norm().getVarName(v); }
-      bool is_bottom() { return norm().is_bottom(); }
-      bool is_top() { return norm().is_top(); }
-      bool operator<=(boxes_domain_t& o) { return norm() <= o.norm(); }
-      void operator|=(boxes_domain_t o) { lock(); norm() |= o.norm(); }
-      boxes_domain_t operator|(boxes_domain_t o) { return create(norm() | o.norm()); }
-      boxes_domain_t operator||(boxes_domain_t o) { return create_base(base() || o.norm()); }
-      boxes_domain_t operator&(boxes_domain_t o) { return create(norm() & o.norm()); }
-      boxes_domain_t operator&&(boxes_domain_t o) { return create(norm() && o.norm()); }
+      LddNodePtr getLdd () { return ref().getLdd (); } 
+      VariableName getVarName (int v) const { return ref().getVarName(v); }
+      bool is_bottom() { return ref().is_bottom(); }
+      bool is_top() { return ref().is_top(); }
+      bool operator<=(boxes_domain_t& o) { return ref() <= o.ref(); }
+      void operator|=(boxes_domain_t o) { detach(); ref() |= o.ref(); }
+      boxes_domain_t operator|(boxes_domain_t o) { return create(ref() | o.ref()); }
+      boxes_domain_t operator||(boxes_domain_t o) { return create(ref() || o.ref()); }
+      boxes_domain_t operator&(boxes_domain_t o) { return create(ref() & o.ref()); }
+      boxes_domain_t operator&&(boxes_domain_t o) { return create(ref() && o.ref()); }
 
       template<typename Thresholds>
       boxes_domain_t widening_thresholds (boxes_domain_t o, const Thresholds &ts) {
-        return create_base(base().template widening_thresholds<Thresholds>(o.norm(), ts));
+        return create(ref().template widening_thresholds<Thresholds>(o.ref(), ts));
       }
      
-      void operator+=(linear_constraint_system_t csts) { lock(); norm() += csts; } 
-      void operator-=(VariableName v) { lock(); norm() -= v; }
-      interval_t operator[](VariableName x) { return norm()[x]; }
-      void set(VariableName x, interval_t intv) { lock(); norm().set(x, intv); }
+      void operator+=(linear_constraint_system_t csts) { detach(); ref() += csts; } 
+      void operator-=(VariableName v) { detach(); ref() -= v; }
+      interval_t operator[](VariableName x) { return ref()[x]; }
+      void set(VariableName x, interval_t intv) { detach(); ref().set(x, intv); }
 
       template<typename Iterator>
-      void forget (Iterator vIt, Iterator vEt) { lock(); norm().forget(vIt, vEt); }
-      void assign(VariableName x, linear_expression_t e) { lock(); norm().assign(x, e); }
+      void forget (Iterator vIt, Iterator vEt)
+      { detach(); ref().forget(vIt, vEt); }
+      void assign(VariableName x, linear_expression_t e)
+      { detach(); ref().assign(x, e); }
       void apply(operation_t op, VariableName x, VariableName y, Number k)
-      { lock(); norm().apply(op, x, y, k); }
+      { detach(); ref().apply(op, x, y, k); }
       void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width)
-      { lock(); norm().apply(op, x, y, width); }
+      { detach(); ref().apply(op, x, y, width); }
       void apply(conv_operation_t op, VariableName x, Number k, unsigned width)
-      { lock(); norm().apply(op, x, k, width); }
+      { detach(); ref().apply(op, x, k, width); }
       void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k)
-      { lock(); norm().apply(op, x, y, k); }
+      { detach(); ref().apply(op, x, y, k); }
       void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z)
-      { lock(); norm().apply(op, x, y, z); }
+      { detach(); ref().apply(op, x, y, z); }
       void apply(operation_t op, VariableName x, VariableName y, VariableName z)
-      { lock(); norm().apply(op, x, y, z); }
+      { detach(); ref().apply(op, x, y, z); }
       void apply(div_operation_t op, VariableName x, VariableName y, VariableName z)
-      { lock(); norm().apply(op, x, y, z); }
+      { detach(); ref().apply(op, x, y, z); }
       void apply(div_operation_t op, VariableName x, VariableName y, Number k)
-      { lock(); norm().apply(op, x, y, k); }
+      { detach(); ref().apply(op, x, y, k); }
+
+      void assign_bool_cst (VariableName x, linear_constraint_t cst)
+      { detach(); ref().assign_bool_cst(x,cst);}
+      void assign_bool_var (VariableName x, VariableName y)
+      { detach(); ref().assign_bool_var(x,y);}
+      void apply_binary_bool(bool_operation_t op,VariableName x, VariableName y, VariableName z)
+      { detach(); ref().apply_binary_bool(op,x,y,z);}
+      void assume_bool (VariableName x, bool is_negated)
+      { detach(); ref().assume_bool(x,is_negated);}
       
       template<typename Iterator>
-      void project (Iterator vIt, Iterator vEt) { lock(); norm().project(vIt, vEt); }
+      void project (Iterator vIt, Iterator vEt) { detach(); ref().project(vIt, vEt); }
 
-      void write(crab_os& o) { norm().write(o); }
+      void write(crab_os& o) { ref().write(o); }
 
       linear_constraint_system_t to_linear_constraint_system ()
-      { return norm().to_linear_constraint_system(); }
+      { return ref().to_linear_constraint_system(); }
             
       static std::string getDomainName () { return boxes_impl_t::getDomainName(); }
       
     };
-
+     
     template<typename Number, typename VariableName, size_t LddSize>
     class domain_traits <boxes_domain<Number,VariableName, LddSize> > {
     public:
@@ -1206,6 +1445,7 @@ namespace crab {
       static void expand (boxes_domain_t& inv, VariableName x, VariableName new_x)
       { CRAB_WARN ("boxes expand operation not implemented"); }
     };
+    #endif
 
      
    } // namespace domains
