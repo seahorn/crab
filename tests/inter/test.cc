@@ -171,8 +171,9 @@ int main (int argc, char** argv ) {
 
   boost::scoped_ptr<callgraph_t> cg(new callgraph_t(cfgs));
   {
-    inter_fwd_analyzer<callgraph_ref_t, variable_factory_t,
-		       z_dbm_domain_t, z_interval_domain_t> a (*cg, vfac, nullptr); 
+    inter_fwd_analyzer<callgraph_ref_t, 
+		       z_dbm_domain_t,
+		       z_interval_domain_t> a (*cg, nullptr); 
     crab::outs() << "Running" 
          << " summary domain=" << z_dbm_domain_t::getDomainName () 
          << " and forward domain=" << z_interval_domain_t::getDomainName () << "\n";
@@ -211,9 +212,9 @@ int main (int argc, char** argv ) {
 
 #ifdef HAVE_APRON
   {
-    inter_fwd_analyzer<callgraph_ref_t, variable_factory_t,
+    inter_fwd_analyzer<callgraph_ref_t, 
 		       z_opt_oct_apron_domain_t,
-		       z_interval_domain_t> a (*cg, vfac, nullptr); 
+		       z_interval_domain_t> a (*cg, nullptr); 
 
     crab::outs() << "Running" 
          << " summary domain=" << z_opt_oct_apron_domain_t::getDomainName () 
@@ -252,8 +253,9 @@ int main (int argc, char** argv ) {
 #endif 
 
   {
-    inter_fwd_analyzer<callgraph_ref_t,  variable_factory_t,
-		       z_term_domain_t, z_interval_domain_t> a (*cg, vfac, nullptr); 
+    inter_fwd_analyzer<callgraph_ref_t, 
+		       z_term_domain_t,
+		       z_interval_domain_t> a (*cg, nullptr); 
 
     crab::outs() << "Running" 
          << " summary domain=" << z_term_domain_t::getDomainName () 
@@ -291,8 +293,9 @@ int main (int argc, char** argv ) {
   }
 
   {
-    inter_fwd_analyzer<callgraph_ref_t,  variable_factory_t,
-                       z_num_domain_t, z_num_domain_t> a (*cg, vfac, nullptr); 
+    inter_fwd_analyzer<callgraph_ref_t,  
+                       z_num_domain_t,
+		       z_num_domain_t> a (*cg, nullptr); 
 
     crab::outs() << "Running" 
          << " summary domain=" << z_num_domain_t::getDomainName () 

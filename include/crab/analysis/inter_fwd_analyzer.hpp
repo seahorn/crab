@@ -14,7 +14,6 @@
 #include <crab/common/stats.hpp>
 #include <crab/cfg/cfg.hpp>
 #include <crab/cg/cg.hpp>
-#include <crab/cfg/var_factory.hpp>
 #include <crab/domains/domain_traits.hpp>
 #include <crab/analysis/graphs/sccg.hpp>
 #include <crab/analysis/graphs/topo_order.hpp>
@@ -30,7 +29,7 @@ namespace crab {
     using namespace cg;
     using namespace graph_algo;
 
-    template< typename CG, typename VarFactory,
+    template< typename CG, 
               // abstract domain used for the bottom-up phase
               typename BU_Dom, 
               // abstract domain used for the top-down phase
@@ -73,7 +72,6 @@ namespace crab {
       typedef boost::unordered_map <std::size_t, td_analyzer_ptr> invariant_map_t;
 
       CG m_cg;
-      VarFactory&  m_vfac;
       const liveness_map_t* m_live;
       invariant_map_t m_inv_map;
       summ_tbl_t m_summ_tbl;
@@ -93,11 +91,11 @@ namespace crab {
       
      public:
       
-      inter_fwd_analyzer (CG cg, VarFactory& vfac, const liveness_map_t* live,
+      inter_fwd_analyzer (CG cg, const liveness_map_t* live,
                           unsigned int widening_delay=1,
                           unsigned int descending_iters=UINT_MAX,
                           size_t jump_set_size=0)
-          : m_cg (cg), m_vfac (vfac), m_live (live),
+          : m_cg (cg), m_live (live),
             m_widening_delay (widening_delay), 
             m_descending_iters (descending_iters),
             m_jump_set_size (jump_set_size) { }
