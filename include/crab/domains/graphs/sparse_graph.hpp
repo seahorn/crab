@@ -9,7 +9,7 @@
 namespace crab {
 
 template <class Weight>
-class SparseWtGraph : public writeable {
+class SparseWtGraph : public ikos::writeable {
   public:
     typedef Weight Wt;
     typedef SparseWtGraph<Wt> graph_t;
@@ -367,7 +367,7 @@ class SparseWtGraph : public writeable {
 
     class vert_iterator {
     public:
-      vert_iterator(vert_id _v, const vector<bool>& _is_free)
+      vert_iterator(vert_id _v, const std::vector<bool>& _is_free)
         : v(_v), is_free(_is_free)
       { }
       vert_id operator*(void) const { return v; }
@@ -380,11 +380,11 @@ class SparseWtGraph : public writeable {
       }
     protected:
       vert_id v;
-      const vector<bool>& is_free;
+      const std::vector<bool>& is_free;
     };
     class vert_range {
     public:
-      vert_range(vert_id _sz, const vector<bool>& _is_free)
+      vert_range(vert_id _sz, const std::vector<bool>& _is_free)
         : sz(_sz), is_free(_is_free)
       { }
       vert_iterator begin(void) const { return vert_iterator(0, is_free); } 
@@ -392,7 +392,7 @@ class SparseWtGraph : public writeable {
       // unsigned int size(void) const { return (unsigned int) sz; }
     protected:
       vert_id sz; 
-      const vector<bool>& is_free;
+      const std::vector<bool>& is_free;
     };
     // FIXME: Verts currently iterates over free vertices,
     // as well as existing ones

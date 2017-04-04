@@ -93,18 +93,17 @@ namespace ikos {
 } // namespace ikos
 
 namespace crab {
-  using namespace ikos;
   template<>
-  inline boost::optional<bitwise_operation_t> 
+  inline boost::optional<ikos::bitwise_operation_t> 
   conv_op (binary_operation_t op) {     
     switch (op) {
-      case BINOP_AND: return OP_AND;
-      case BINOP_OR: return OP_OR;
-      case BINOP_XOR: return OP_XOR;
-      case BINOP_SHL: return OP_SHL;
-      case BINOP_LSHR: return OP_LSHR;
-      case BINOP_ASHR: return OP_ASHR;
-      default: return boost::optional<bitwise_operation_t> ();
+    case BINOP_AND: return ikos::OP_AND;
+    case BINOP_OR: return ikos::OP_OR;
+    case BINOP_XOR: return ikos::OP_XOR;
+    case BINOP_SHL: return ikos::OP_SHL;
+    case BINOP_LSHR: return ikos::OP_LSHR;
+    case BINOP_ASHR: return ikos::OP_ASHR;
+    default: return boost::optional<ikos::bitwise_operation_t> ();
     }
   }
 

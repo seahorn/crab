@@ -5,8 +5,6 @@
 //============================
 // A set of utility algorithms for manipulating graphs.
 
-using namespace std;
-
 namespace crab {
   // Graph views - for when we want to traverse some mutation
   // of the graph without actually constructing it.
@@ -51,7 +49,7 @@ namespace crab {
     typedef typename G::succ_range g_succ_range;
     typedef typename G::mut_val_ref_t mut_val_ref_t;
 
-    GraphPerm(vector<vert_id>& _perm, G& _g) 
+    GraphPerm(std::vector<vert_id>& _perm, G& _g) 
       : g(_g), perm(_perm), inv(_g.size(), -1)
     {
       for(unsigned int vi = 0; vi < perm.size(); vi++)
@@ -102,7 +100,7 @@ namespace crab {
     template<class ItG>
     class adj_iterator {
     public:
-      adj_iterator(vector<vert_id>& _inv, const ItG& _v)
+      adj_iterator(std::vector<vert_id>& _inv, const ItG& _v)
         : inv(_inv), v(_v)
       { }
 
@@ -123,7 +121,7 @@ namespace crab {
         return v != other.v;
       }
     protected:
-      vector<vert_id>& inv;
+      std::vector<vert_id>& inv;
       ItG v;
     };
 
@@ -132,7 +130,7 @@ namespace crab {
     public:
       typedef typename ItG::edge_ref edge_ref;
 
-      e_adj_iterator(vector<vert_id>& _inv, const ItG& _v)
+      e_adj_iterator(std::vector<vert_id>& _inv, const ItG& _v)
         : inv(_inv), v(_v)
       { }
 
@@ -153,7 +151,7 @@ namespace crab {
         return v != other.v;
       }
     protected:
-      vector<vert_id>& inv;
+      std::vector<vert_id>& inv;
       ItG v;
     };
 
@@ -166,11 +164,11 @@ namespace crab {
 
       typedef It iterator;
 
-      adj_list(vector<vert_id>& _perm, vector<vert_id>& _inv, const RG& _adj)
+      adj_list(std::vector<vert_id>& _perm, std::vector<vert_id>& _inv, const RG& _adj)
         : perm(_perm), inv(_inv), adj(_adj)
       { }
 
-      adj_list(vector<vert_id>& _perm, vector<vert_id>& _inv)
+      adj_list(std::vector<vert_id>& _perm, std::vector<vert_id>& _inv)
         : perm(_perm), inv(_inv), adj()
       { }
 
@@ -194,8 +192,8 @@ namespace crab {
       }
 
     protected:
-      vector<vert_id>& perm;
-      vector<vert_id>& inv;
+      std::vector<vert_id>& perm;
+      std::vector<vert_id>& inv;
       boost::optional<RG> adj;
     };
 
@@ -240,8 +238,8 @@ namespace crab {
     }
 
     G& g;
-    vector<vert_id> perm;
-    vector<vert_id> inv;
+    std::vector<vert_id> perm;
+    std::vector<vert_id> inv;
   };
 
   // View of a graph, omitting a given vertex
@@ -517,12 +515,12 @@ namespace crab {
     typedef typename graph_t::vert_id vert_id;
     typedef typename graph_t::mut_val_ref_t mut_val_ref_t;
 
-    typedef vector< pair< pair<vert_id, vert_id>, Wt > > edge_vector;
+    typedef std::vector< std::pair< std::pair<vert_id, vert_id>, Wt > > edge_vector;
 
-    typedef DistComp< vector<Wt> > WtComp;
+    typedef DistComp< std::vector<Wt> > WtComp;
     typedef Heap<WtComp> WtHeap;
 
-    typedef pair<pair< vert_id, vert_id >, Wt> edge_ref;
+    typedef std::pair<std::pair< vert_id, vert_id >, Wt> edge_ref;
 
     //===========================================
     // Enums used to mark vertices/edges during algorithms
@@ -551,9 +549,9 @@ namespace crab {
     // dist_ts tells us which distances are current,
     // and ts_idx prevents wraparound problems, in the unlikely
     // circumstance that we have more than 2^sizeof(uint) iterations.
-    static vector<Wt> dists;
-    static vector<Wt> dists_alt;
-    static vector<unsigned int> dist_ts;
+    static std::vector<Wt> dists;
+    static std::vector<Wt> dists_alt;
+    static std::vector<unsigned int> dist_ts;
     static unsigned int ts; 
     static unsigned int ts_idx;
 
@@ -597,7 +595,7 @@ namespace crab {
         {
           vert_id d = e.vert;
           if(r.lookup(s, d, &wr))
-            g.add_edge(s, max(e.val, (Wt) wr), d);
+            g.add_edge(s, std::max(e.val, (Wt) wr), d);
         }
       }
       return g;
@@ -642,7 +640,7 @@ r_not_dom:
     }
 
     template<class G1, class G2>
-    static graph_t widen(G1& l, G2& r, vector<vert_id>& unstable)
+    static graph_t widen(G1& l, G2& r, std::vector<vert_id>& unstable)
     {
       assert(l.size() == r.size());
       size_t sz = l.size();
@@ -676,10 +674,11 @@ r_not_dom:
     // Duped pretty much verbatim from Wikipedia
     // Abuses 'dual_queue' to store indices.
     template<class G>
-    static void strong_connect(G& x, vector<vert_id>& stack, int& index, vert_id v, vector< vector<vert_id> >& sccs)
+    static void strong_connect(G& x, std::vector<vert_id>& stack, int& index,
+			       vert_id v, std::vector< std::vector<vert_id> >& sccs)
     {
       vert_marks[v] = (index<<1)|1;
-//      assert(vert_marks[v]&1);
+      // assert(vert_marks[v]&1);
       dual_queue[v] = index;
       index++;
 
@@ -691,18 +690,18 @@ r_not_dom:
         if(!vert_marks[w])
         {
           strong_connect(x, stack, index, w, sccs);
-          dual_queue[v] = min(dual_queue[v], dual_queue[w]);
+          dual_queue[v] = std::min(dual_queue[v], dual_queue[w]);
         } else if(vert_marks[w]&1) {
           // W is on the stack
-          dual_queue[v] = min(dual_queue[v], (vert_id) (vert_marks[w]>>1));
+          dual_queue[v] = std::min(dual_queue[v], (vert_id) (vert_marks[w]>>1));
         }
       }
 
       // If v is a root node, pop the stack and generate an SCC
       if(dual_queue[v] == (vert_marks[v]>>1))
       {
-        sccs.push_back(vector<vert_id>()); 
-        vector<vert_id>& scc(sccs.back());
+        sccs.push_back(std::vector<vert_id>()); 
+        std::vector<vert_id>& scc(sccs.back());
         int w;
         do 
         {
@@ -715,7 +714,7 @@ r_not_dom:
     }
 
     template<class G>
-    static void compute_sccs(G& x, vector< vector<vert_id> >& out_scc)
+    static void compute_sccs(G& x, std::vector< std::vector<vert_id> >& out_scc)
     {
       int sz = x.size();
       grow_scratch(sz);
@@ -723,7 +722,7 @@ r_not_dom:
       for(vert_id v : x.verts())
         vert_marks[v] = 0;
       int index = 1;
-      vector<vert_id> stack;
+      std::vector<vert_id> stack;
       for(vert_id v : x.verts())
       {
         if(!vert_marks[v])
@@ -754,7 +753,7 @@ r_not_dom:
       assert(potentials.size() >= sz);
       grow_scratch(sz);
 
-      vector< vector<vert_id> > sccs;
+      std::vector< std::vector<vert_id> > sccs;
       compute_sccs(g, sccs);
 
       // Currently trusting the call-site to select reasonable
@@ -772,11 +771,11 @@ r_not_dom:
 #endif
 
       // Run Bellman-ford on each SCC.
-      //for(vector<vert_id>& scc : sccs)
+      //for(std::vector<vert_id>& scc : sccs)
       // Current implementation returns sccs in reverse topological order.
       for(auto it = sccs.rbegin(); it != sccs.rend(); ++it)
       {
-        vector<vert_id>& scc(*it);
+        std::vector<vert_id>& scc(*it);
 
         vert_id* qhead = dual_queue;
         vert_id* qtail = qhead;
@@ -818,7 +817,7 @@ r_not_dom:
             }
           }
           // Prepare for the next iteration
-          swap(qhead, next_head);
+          std::swap(qhead, next_head);
           qtail = next_tail;
           next_tail = next_head;
           if(qhead == qtail)
@@ -856,7 +855,7 @@ r_not_dom:
       grow_scratch(sz);
       delta.clear();
       
-      vector< vector<vert_id> > colour_succs(2*sz);
+      std::vector< std::vector<vert_id> > colour_succs(2*sz);
       mut_val_ref_t w;
       
       // Partition edges into r-only/rb/b-only.
@@ -892,22 +891,22 @@ r_not_dom:
 
       // We can run the chromatic Dijkstra variant
       // on each source.
-      vector< pair<vert_id, Wt> > adjs;
+      std::vector< std::pair<vert_id, Wt> > adjs;
 //      for(vert_id v = 0; v < sz; v++)
       for(vert_id v : g.verts())
       {
         adjs.clear();
         chrome_dijkstra(g, pots, colour_succs, v, adjs);
 
-        for(pair<vert_id, Wt>& p : adjs)
-          delta.push_back( make_pair(make_pair(v, p.first), p.second) );
+        for(std::pair<vert_id, Wt>& p : adjs)
+          delta.push_back( std::make_pair(std::make_pair(v, p.first), p.second) );
       }
 
     }
 
     static void apply_delta(graph_t& g, edge_vector& delta)
     {
-      for(pair< pair<vert_id, vert_id>, Wt>& e : delta)
+      for(std::pair< std::pair<vert_id, vert_id>, Wt>& e : delta)
       {
 //        assert(e.first.first != e.first.second);
 //        assert(e.first.first < g.size());
@@ -918,7 +917,8 @@ r_not_dom:
 
     // Straight implementation of Dijkstra's algorithm
     template<class G, class P>
-    static void dijkstra(G& g, const P& p, vert_id src, vector< pair<vert_id, Wt> >& out)
+    static void dijkstra(G& g, const P& p, vert_id src,
+			 std::vector< std::pair<vert_id, Wt> >& out)
     {
       unsigned int sz = g.size();
       if(sz == 0)
@@ -952,7 +952,7 @@ r_not_dom:
         Wt es_cost = dists[es] + p[es]; // If it's on the queue, distance is not infinite.
         Wt es_val = es_cost - p[src];
         if(!g.lookup(src, es, &w) || w > es_val)
-          out.push_back( make_pair(es, es_val) );
+          out.push_back( std::make_pair(es, es_val) );
 
         for(auto e_ed : g.e_succs(es))
         {
@@ -977,20 +977,22 @@ r_not_dom:
     template<class G, class P>
     static void close_johnson(G& g, const P& p, edge_vector& out)
     {
-      vector< pair<vert_id, Wt> > adjs;
+      std::vector< std::pair<vert_id, Wt> > adjs;
       for(vert_id v : g.verts())
       {
         adjs.clear();
         dijkstra(g, p, v, adjs);
         for(auto p : adjs)
-          out.push_back( make_pair(make_pair(v, p.first), p.second) );
+          out.push_back( std::make_pair(std::make_pair(v, p.first), p.second) );
       }
     }
 
     // P is some vector-alike holding a valid system of potentials.
     // Don't need to clear/initialize 
     template<class G, class P>
-    static void chrome_dijkstra(G& g, const P& p, vector< vector<vert_id> >& colour_succs, vert_id src, vector< pair<vert_id, Wt> >& out)
+    static void chrome_dijkstra(G& g, const P& p,
+				std::vector< std::vector<vert_id> >& colour_succs,
+				vert_id src, std::vector< std::pair<vert_id, Wt> >& out)
     {
       unsigned int sz = g.size();
       if(sz == 0)
@@ -1024,13 +1026,13 @@ r_not_dom:
         Wt es_cost = dists[es] + p[es]; // If it's on the queue, distance is not infinite.
         Wt es_val = es_cost - p[src];
         if(!g.lookup(src, es, &w) || w > es_val)
-          out.push_back( make_pair(es, es_val) );
+          out.push_back( std::make_pair(es, es_val) );
 
         if(vert_marks[es] == (E_LEFT|E_RIGHT))
           continue;
 
         // Pick the appropriate set of successors
-        vector<vert_id>& es_succs = (vert_marks[es] == E_LEFT) ?
+        std::vector<vert_id>& es_succs = (vert_marks[es] == E_LEFT) ?
           colour_succs[2*es+1] : colour_succs[2*es];
         for(vert_id ed : es_succs)
         {
@@ -1058,7 +1060,8 @@ r_not_dom:
     // anything that _was_ stable.
     // GKG: Factor out common elements of this & the previous algorithm.
     template<class G, class P, class S>
-    static void dijkstra_recover(G& g, const P& p, const S& is_stable, vert_id src, vector< pair<vert_id, Wt> >& out)
+    static void dijkstra_recover(G& g, const P& p, const S& is_stable, vert_id src,
+				 std::vector< std::pair<vert_id, Wt> >& out)
     {
       unsigned int sz = g.size();
       if(sz == 0)
@@ -1095,7 +1098,7 @@ r_not_dom:
         Wt es_cost = dists[es] + p[es]; // If it's on the queue, distance is not infinite.
         Wt es_val = es_cost - p[src];
         if(!g.lookup(src, es, &w) || w > es_val)
-          out.push_back( make_pair(es, es_val) );
+          out.push_back( std::make_pair(es, es_val) );
 
         if(vert_marks[es] == V_STABLE)
           continue;
@@ -1224,7 +1227,7 @@ r_not_dom:
         edge_marks[v] = is_stable[v] ? V_STABLE : V_UNSTABLE;
       }
       
-      vector< pair<vert_id, Wt> > aux;
+      std::vector< std::pair<vert_id, Wt> > aux;
       for(vert_id v : g.verts())
       {
         if(!edge_marks[v])
@@ -1232,7 +1235,7 @@ r_not_dom:
           aux.clear();
           dijkstra_recover(g, p, edge_marks, v, aux); 
           for(auto p : aux)
-            delta.push_back( make_pair( make_pair(v, p.first), p.second ) );   
+            delta.push_back( std::make_pair( std::make_pair(v, p.first), p.second ) );   
         }
       }
     }
@@ -1277,7 +1280,8 @@ r_not_dom:
     // Compute the transitive closure of edges reachable from v, assuming
     // (1) the subgraph G \ {v} is closed, and (2) P is a valid model of G.
     template<class G, class P>
-    static void close_after_assign_fwd(G& g, const P& p, vert_id v, vector< pair<vert_id, Wt> >& aux)
+    static void close_after_assign_fwd(G& g, const P& p, vert_id v,
+				       std::vector< std::pair<vert_id, Wt> >& aux)
     {
       // Initialize the queue and distances.
       for(vert_id u : g.verts())
@@ -1317,7 +1321,7 @@ r_not_dom:
             *reach_tail = e;
             reach_tail++;
           } else {
-            dists[e] = min(e_wt, dists[e]);
+            dists[e] = std::min(e_wt, dists[e]);
           }
         }
       }
@@ -1326,7 +1330,7 @@ r_not_dom:
       // FIXME: This collects _all_ edges from x, not just new ones.
       for(adj_head = dual_queue; adj_head < reach_tail; adj_head++)
       {
-        aux.push_back(make_pair(*adj_head, dists[*adj_head]));
+        aux.push_back(std::make_pair(*adj_head, dists[*adj_head]));
         vert_marks[*adj_head] = 0;
       }
     }
@@ -1337,17 +1341,17 @@ r_not_dom:
       unsigned int sz = g.size();
       grow_scratch(sz);
 
-      vector< pair<vert_id, Wt> > aux;
+      std::vector< std::pair<vert_id, Wt> > aux;
 
       close_after_assign_fwd(g, p, v, aux);
       for(auto p : aux)
-        delta.push_back( make_pair( make_pair(v, p.first), p.second ) );   
+        delta.push_back( std::make_pair( std::make_pair(v, p.first), p.second ) );   
 
       aux.clear();
       GraphRev<G> g_rev(g);
       close_after_assign_fwd(g_rev, make_negp(p), v, aux);
       for(auto p : aux)
-        delta.push_back( make_pair( make_pair(p.first, v), p.second ) );
+        delta.push_back( std::make_pair( std::make_pair(p.first, v), p.second ) );
     }
   };
 
@@ -1366,11 +1370,11 @@ r_not_dom:
   unsigned int GraphOps<Wt>::scratch_sz = 0;
 
   template<class G>
-  vector<typename G::Wt> GraphOps<G>::dists;
+  std::vector<typename G::Wt> GraphOps<G>::dists;
   template<class G>
-  vector<typename G::Wt> GraphOps<G>::dists_alt;
+  std::vector<typename G::Wt> GraphOps<G>::dists_alt;
   template<class G>
-  vector<unsigned int> GraphOps<G>::dist_ts;
+  std::vector<unsigned int> GraphOps<G>::dist_ts;
   template<class G>
   unsigned int GraphOps<G>::ts = 0;
   template<class G>

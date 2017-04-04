@@ -50,55 +50,52 @@ namespace crab {
 
   namespace analyzer {
 
-  using namespace cfg;
-  using namespace std;
-
   //! API abstract transformer
   template<typename Number, typename VariableName>
-  class abs_transformer_api: public statement_visitor <Number, VariableName>
+  class abs_transformer_api: public cfg::statement_visitor <Number, VariableName>
   {
    public:
 
     typedef Number number_t;    
     typedef VariableName varname_t;
     
-    typedef variable <number_t, VariableName > var_t;
-    typedef linear_expression<number_t, VariableName > lin_exp_t;
-    typedef linear_constraint<number_t, VariableName > lin_cst_t;
-    typedef linear_constraint_system<number_t, VariableName > lin_cst_sys_t;
+    typedef ikos::variable <number_t, VariableName > var_t;
+    typedef ikos::linear_expression<number_t, VariableName > lin_exp_t;
+    typedef ikos::linear_constraint<number_t, VariableName > lin_cst_t;
+    typedef ikos::linear_constraint_system<number_t, VariableName > lin_cst_sys_t;
 
-    typedef havoc_stmt<number_t,VariableName>        havoc_t;
-    typedef unreachable_stmt<number_t,VariableName>  unreach_t;
+    typedef cfg::havoc_stmt<number_t,VariableName>        havoc_t;
+    typedef cfg::unreachable_stmt<number_t,VariableName>  unreach_t;
     
-    typedef binary_op <number_t,VariableName>        bin_op_t;
-    typedef assignment <number_t,VariableName>       assign_t;
-    typedef assume_stmt <number_t,VariableName>      assume_t;
-    typedef select_stmt <number_t,VariableName>      select_t;
-    typedef assert_stmt <number_t,VariableName>      assert_t;
+    typedef cfg::binary_op<number_t,VariableName>        bin_op_t;
+    typedef cfg::assignment<number_t,VariableName>       assign_t;
+    typedef cfg::assume_stmt<number_t,VariableName>      assume_t;
+    typedef cfg::select_stmt<number_t,VariableName>      select_t;
+    typedef cfg::assert_stmt<number_t,VariableName>      assert_t;
     
-    typedef callsite_stmt<number_t,VariableName>     callsite_t;
-    typedef return_stmt<number_t,VariableName>       return_t;
+    typedef cfg::callsite_stmt<number_t,VariableName>     callsite_t;
+    typedef cfg::return_stmt<number_t,VariableName>       return_t;
     
-    typedef array_assume_stmt<number_t,VariableName> arr_assume_t;
-    typedef array_store_stmt<number_t,VariableName>  arr_store_t;
-    typedef array_load_stmt<number_t,VariableName>   arr_load_t;
-    typedef array_assign_stmt<number_t,VariableName> arr_assign_t;
-    typedef ptr_store_stmt<number_t,VariableName>    ptr_store_t;
-    typedef ptr_load_stmt<number_t,VariableName>     ptr_load_t;
+    typedef cfg::array_assume_stmt<number_t,VariableName> arr_assume_t;
+    typedef cfg::array_store_stmt<number_t,VariableName>  arr_store_t;
+    typedef cfg::array_load_stmt<number_t,VariableName>   arr_load_t;
+    typedef cfg::array_assign_stmt<number_t,VariableName> arr_assign_t;
+    typedef cfg::ptr_store_stmt<number_t,VariableName>    ptr_store_t;
+    typedef cfg::ptr_load_stmt<number_t,VariableName>     ptr_load_t;
 
-    typedef ptr_assign_stmt<number_t,VariableName>   ptr_assign_t;
-    typedef ptr_object_stmt<number_t,VariableName>   ptr_object_t;
-    typedef ptr_function_stmt<number_t,VariableName> ptr_function_t;
-    typedef ptr_null_stmt<number_t,VariableName>     ptr_null_t;
-    typedef ptr_assume_stmt<number_t,VariableName>   ptr_assume_t;
-    typedef ptr_assert_stmt<number_t,VariableName>   ptr_assert_t;
+    typedef cfg::ptr_assign_stmt<number_t,VariableName>   ptr_assign_t;
+    typedef cfg::ptr_object_stmt<number_t,VariableName>   ptr_object_t;
+    typedef cfg::ptr_function_stmt<number_t,VariableName> ptr_function_t;
+    typedef cfg::ptr_null_stmt<number_t,VariableName>     ptr_null_t;
+    typedef cfg::ptr_assume_stmt<number_t,VariableName>   ptr_assume_t;
+    typedef cfg::ptr_assert_stmt<number_t,VariableName>   ptr_assert_t;
 
-    typedef bool_binary_op <number_t,VariableName>   bool_bin_op_t;
-    typedef bool_assign_cst <number_t,VariableName>  bool_assign_cst_t;
-    typedef bool_assign_var <number_t,VariableName>  bool_assign_var_t;    
-    typedef bool_assume_stmt <number_t,VariableName> bool_assume_t;
-    typedef bool_select_stmt <number_t,VariableName> bool_select_t;
-    typedef bool_assert_stmt <number_t,VariableName> bool_assert_t;
+    typedef cfg::bool_binary_op<number_t,VariableName>   bool_bin_op_t;
+    typedef cfg::bool_assign_cst<number_t,VariableName>  bool_assign_cst_t;
+    typedef cfg::bool_assign_var<number_t,VariableName>  bool_assign_var_t;    
+    typedef cfg::bool_assume_stmt<number_t,VariableName> bool_assume_t;
+    typedef cfg::bool_select_stmt<number_t,VariableName> bool_select_t;
+    typedef cfg::bool_assert_stmt<number_t,VariableName> bool_assert_t;
     
    protected: 
 
@@ -332,7 +329,7 @@ namespace crab {
     void exec (bool_bin_op_t& stmt)
     {
       assert(m_inv);
-      if (auto op = conv_op<bool_operation_t> (stmt.op()))
+      if (auto op = conv_op<domains::bool_operation_t> (stmt.op()))
 	(*m_inv).apply_binary_bool (*op, stmt.lhs(), stmt.left(), stmt.right ());
     }
     

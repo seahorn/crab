@@ -22,10 +22,6 @@ namespace crab {
 
    namespace cg {
 
-      using namespace std;
-      using namespace boost;
-      using namespace cfg;
-
       // Class to build a call graph
       //
       // Important: this class assumes that all function calls have been
@@ -65,7 +61,7 @@ namespace crab {
             return (*d_opt).get_func_name ();
           }
 
-          string str_name () const {
+          std::string str_name () const {
             auto d_opt = m_cfg.get_func_decl ();
             if (!d_opt) CRAB_ERROR("No function name found");
             return (*d_opt).get_func_name ().str ();
@@ -109,16 +105,16 @@ namespace crab {
 
         /// --- begin internal representation of the call graph
         struct  vertex_t { cg_node func; };
-        typedef adjacency_list<setS, //disallow parallel edges
-                               vecS, bidirectionalS, 
-                               property<vertex_color_t, 
-                                        default_color_type, 
+        typedef boost::adjacency_list<boost::setS, //disallow parallel edges
+				      boost::vecS, boost::bidirectionalS, 
+				      boost::property<boost::vertex_color_t, 
+						      boost::default_color_type, 
                                         vertex_t> > cg_t;     
-        typedef typename graph_traits<cg_t>::vertex_descriptor vertex_descriptor_t;
-        typedef typename graph_traits<cg_t>::edge_descriptor edge_descriptor_t;
-        typedef typename graph_traits<cg_t>::vertex_iterator vertex_iterator;
-        typedef typename graph_traits<cg_t>::out_edge_iterator out_edge_iterator;
-        typedef typename graph_traits<cg_t>::in_edge_iterator in_edge_iterator;
+        typedef typename boost::graph_traits<cg_t>::vertex_descriptor vertex_descriptor_t;
+        typedef typename boost::graph_traits<cg_t>::edge_descriptor edge_descriptor_t;
+        typedef typename boost::graph_traits<cg_t>::vertex_iterator vertex_iterator;
+        typedef typename boost::graph_traits<cg_t>::out_edge_iterator out_edge_iterator;
+        typedef typename boost::graph_traits<cg_t>::in_edge_iterator in_edge_iterator;
         /// --- end internal representation of the call graph
 
         typedef boost::unordered_map<std::size_t, vertex_descriptor_t > vertex_map_t;
@@ -143,11 +139,11 @@ namespace crab {
 
           mk_edge_vis (cg_t &cg, vertex_map_t &vertex_map, fdecl_t &from): 
               m_cg (cg), m_vertex_map (vertex_map), 
-              m_from (cfg_hasher<CFG>::hash (from)) { 
+              m_from (cfg::cfg_hasher<CFG>::hash (from)) { 
           }
           
           void visit(callsite_t& cs) { 
-            size_t to = cfg_hasher<CFG>::hash (cs);
+            size_t to = cfg::cfg_hasher<CFG>::hash (cs);
             auto it_from = m_vertex_map.find (m_from);
             auto it_to = m_vertex_map.find (to);
 
@@ -239,11 +235,11 @@ namespace crab {
             if (!decl_opt)
               CRAB_ERROR("Could not compute call graph: function info is missing.");
             
-            size_t k = cfg_hasher<CFG>::hash (*decl_opt);
+            size_t k = cfg::cfg_hasher<CFG>::hash (*decl_opt);
             vertex_descriptor_t v = add_vertex (*m_cg);
-            m_vertex_map.insert (make_pair (k,v));
+            m_vertex_map.insert (std::make_pair (k,v));
             node_t f (cfg, m_id++);
-            m_node_vertex_id_map.insert(make_pair (f, v));
+            m_node_vertex_id_map.insert(std::make_pair (f, v));
             (*m_cg)[v].func = f;
 
             CRAB_LOG("cg", 
@@ -282,7 +278,7 @@ namespace crab {
 
        public:
         
-        call_graph (vector<CFG>& cfgs)
+        call_graph (std::vector<CFG>& cfgs)
             : m_cg (new cg_t()), m_id (0) {
           build_call_graph (cfgs.begin(), cfgs.end());
         }

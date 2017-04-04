@@ -39,14 +39,9 @@
 // #define CHECK_POTENTIAL
 //#define SDBM_NO_NORMALIZE
 
-using namespace boost;
-using namespace std;
-
 namespace crab {
 
   namespace domains {
-
-     using namespace ikos;
 
      namespace SDBM_impl {
        // translate from Number to dbm val_t type
@@ -125,12 +120,12 @@ namespace crab {
 
     template<class Number, class VariableName, class Params = SDBM_impl::DefaultParams<Number> >
     class SplitDBM_ : public writeable,
-               public numerical_domain<Number, VariableName >,
-               public bitwise_operators<Number,VariableName >,
-               public division_operators<Number, VariableName >,
-               public array_operators<Number, VariableName >,
-	       public pointer_operators<Number, VariableName >,
-	       public boolean_operators<Number, VariableName > {
+		      public numerical_domain<Number, VariableName >,
+		      public bitwise_operators<Number,VariableName >,
+		      public division_operators<Number, VariableName >,
+		      public array_operators<Number, VariableName >,
+		      public pointer_operators<Number, VariableName >,
+		      public boolean_operators<Number, VariableName > {
      public:
       using typename numerical_domain< Number, VariableName >::linear_expression_t;
       using typename numerical_domain< Number, VariableName >::linear_constraint_t;
@@ -157,7 +152,7 @@ namespace crab {
       typedef typename graph_t::vert_id vert_id;
       typedef boost::container::flat_map<variable_t, vert_id> vert_map_t;
       typedef typename vert_map_t::value_type vmap_elt_t;
-      typedef vector< boost::optional<variable_t> > rev_map_t;
+      typedef std::vector< boost::optional<variable_t> > rev_map_t;
 
       typedef SplitDBM_<Number, VariableName, Params> DBM_t;
 
@@ -165,7 +160,7 @@ namespace crab {
       typedef GraphPerm<graph_t> GrPerm;
       typedef typename GrOps::edge_vector edge_vector;
       // < <x, y>, k> == x - y <= k.
-      typedef pair< pair<VariableName, VariableName>, Wt > diffcst_t;
+      typedef std::pair< std::pair<VariableName, VariableName>, Wt > diffcst_t;
 
       typedef std::unordered_set<vert_id> vert_set_t;
 
@@ -178,7 +173,7 @@ namespace crab {
       vert_map_t vert_map; // Mapping from variables to vertices
       rev_map_t rev_map;
       graph_t g; // The underlying relation graph
-      vector<Wt> potential; // Stored potential for the vertex
+      std::vector<Wt> potential; // Stored potential for the vertex
 
       vert_set_t unstable;
 
@@ -190,7 +185,7 @@ namespace crab {
       {
         g.growTo(1);  // Allocate the zero vector
         potential.push_back(Wt(0));
-        rev_map.push_back(none);
+        rev_map.push_back(boost::none);
       }
 
       // FIXME: Rewrite to avoid copying if o is _|_
@@ -220,20 +215,20 @@ namespace crab {
       { }
 
       // We should probably use the magical rvalue ownership semantics stuff.
-      SplitDBM_(vert_map_t& _vert_map, rev_map_t& _rev_map, graph_t& _g, vector<Wt>& _potential,
+      SplitDBM_(vert_map_t& _vert_map, rev_map_t& _rev_map, graph_t& _g,
+		std::vector<Wt>& _potential,
         vert_set_t& _unstable)
-        : /* ranges(_ranges),*/ vert_map(_vert_map), rev_map(_rev_map), g(_g), potential(_potential),
-          unstable(_unstable),
-          _is_bottom(false)
+        : /* ranges(_ranges),*/ vert_map(_vert_map), rev_map(_rev_map), g(_g),
+	  potential(_potential), unstable(_unstable), _is_bottom(false)
       {
         CRAB_WARN("Non-moving constructor.");
         assert(g.size() > 0);
       }
       
-      SplitDBM_(vert_map_t&& _vert_map, rev_map_t&& _rev_map, graph_t&& _g, vector<Wt>&& _potential, vert_set_t&& _unstable)
-        : vert_map(std::move(_vert_map)), rev_map(std::move(_rev_map)), g(std::move(_g)), potential(std::move(_potential)),
-          unstable(std::move(_unstable)),
-          _is_bottom(false)
+      SplitDBM_(vert_map_t&& _vert_map, rev_map_t&& _rev_map, graph_t&& _g,
+		std::vector<Wt>&& _potential, vert_set_t&& _unstable)
+        : vert_map(std::move(_vert_map)), rev_map(std::move(_rev_map)), g(std::move(_g)),
+	  potential(std::move(_potential)), unstable(std::move(_unstable)), _is_bottom(false)
       { assert(g.size() > 0); }
 
 
@@ -313,7 +308,7 @@ namespace crab {
           j = get_vert(it1->second.name());
         } else { 
           // the constraint cannot be expressed as a difference constraint
-          return none;
+          return boost::none;
         }
         return std::make_pair(j, std::make_pair(i, Wt(cst.constant())));
       }
@@ -421,7 +416,7 @@ namespace crab {
           typename graph_t::mut_val_ref_t wx; typename graph_t::mut_val_ref_t wy;
 
           // Set up a mapping from o to this.
-          vector<unsigned int> vert_renaming(o.g.size(),-1);
+          std::vector<unsigned int> vert_renaming(o.g.size(),-1);
           vert_renaming[0] = 0;
           for(auto p : o.vert_map)
           {
@@ -471,14 +466,14 @@ namespace crab {
       class Wt_max {
       public:
        Wt_max() { } 
-       Wt apply(const Wt& x, const Wt& y) { return max(x, y); }
+       Wt apply(const Wt& x, const Wt& y) { return std::max(x, y); }
        bool default_is_absorbing() { return true; }
       };
 
       class Wt_min {
       public:
         Wt_min() { }
-        Wt apply(const Wt& x, const Wt& y) { return min(x, y); }
+        Wt apply(const Wt& x, const Wt& y) { return std::min(x, y); }
         bool default_is_absorbing() { return false; }
       };
 
@@ -508,7 +503,7 @@ namespace crab {
       }
 
       vert_id get_vert(graph_t& g, vert_map_t& vmap, rev_map_t& rmap,
-          vector<Wt>& pot, VariableName v)
+          std::vector<Wt>& pot, VariableName v)
       {
         auto it = vmap.find(variable_t(v));
         if(it != vmap.end())
@@ -565,7 +560,8 @@ namespace crab {
           return *this;
         else {
           CRAB_LOG ("zones-split",
-                    crab::outs() << "Before join:\n"<<"DBM 1\n"<<*this<<"\n"<<"DBM 2\n"<<o <<"\n");
+                    crab::outs() << "Before join:\n"<<"DBM 1\n"<<*this<<"\n"<<"DBM 2\n"
+		                 << o <<"\n");
 
           normalize();
           o.normalize();
@@ -575,12 +571,12 @@ namespace crab {
 
           // Figure out the common renaming, initializing the
           // resulting potentials as we go.
-          vector<vert_id> perm_x;
-          vector<vert_id> perm_y;
-          vector<variable_t> perm_inv;
+          std::vector<vert_id> perm_x;
+          std::vector<vert_id> perm_y;
+          std::vector<variable_t> perm_inv;
 
-          vector<Wt> pot_rx;
-          vector<Wt> pot_ry;
+          std::vector<Wt> pot_rx;
+          std::vector<Wt> pot_ry;
           vert_map_t out_vmap;
           rev_map_t out_revmap;
           // Add the zero vertex
@@ -589,7 +585,7 @@ namespace crab {
           pot_ry.push_back(0);
           perm_x.push_back(0);
           perm_y.push_back(0);
-          out_revmap.push_back(none);
+          out_revmap.push_back(boost::none);
 
           for(auto p : vert_map)
           {
@@ -676,10 +672,10 @@ namespace crab {
 
           // Now reapply the missing independent relations.
           // Need to derive vert_ids from lb_up/lb_down, and make sure the vertices exist
-          vector<vert_id> lb_up;
-          vector<vert_id> lb_down;
-          vector<vert_id> ub_up;
-          vector<vert_id> ub_down;
+          std::vector<vert_id> lb_up;
+          std::vector<vert_id> lb_down;
+          std::vector<vert_id> ub_up;
+          std::vector<vert_id> ub_down;
 
           typename graph_t::mut_val_ref_t wx;
           typename graph_t::mut_val_ref_t wy;
@@ -710,7 +706,8 @@ namespace crab {
               if(s == d)
                 continue;
 
-              join_g.update_edge(s, max(dx_s + gx.edge_val(0, d), dy_s + gy.edge_val(0, d)), d, min_op);
+              join_g.update_edge(s, std::max(dx_s + gx.edge_val(0, d), dy_s + gy.edge_val(0, d)),
+				 d, min_op);
             }
           }
 
@@ -723,7 +720,8 @@ namespace crab {
               if(s == d)
                 continue;
 
-              join_g.update_edge(s, max(dx_s + gx.edge_val(0, d), dy_s + gy.edge_val(0, d)), d, min_op);
+              join_g.update_edge(s, std::max(dx_s + gx.edge_val(0, d), dy_s + gy.edge_val(0, d)),
+				 d, min_op);
             }
           }
 
@@ -766,22 +764,23 @@ namespace crab {
           return *this;
         else {
           CRAB_LOG ("zones-split",
-                    crab::outs() << "Before widening:\n"<<"DBM 1\n"<<*this<<"\n"<<"DBM 2\n"<<o <<"\n");
+                    crab::outs() << "Before widening:\n"<<"DBM 1\n"<<*this<<"\n"<<"DBM 2\n"
+		    <<o <<"\n");
           o.normalize();
           
           // Figure out the common renaming
-          vector<vert_id> perm_x;
-          vector<vert_id> perm_y;
+          std::vector<vert_id> perm_x;
+          std::vector<vert_id> perm_y;
           vert_map_t out_vmap;
           rev_map_t out_revmap;
-          vector<Wt> widen_pot;
+          std::vector<Wt> widen_pot;
           vert_set_t widen_unstable(unstable);
 
           assert(potential.size() > 0);
           widen_pot.push_back(Wt(0));
           perm_x.push_back(0);
           perm_y.push_back(0);
-          out_revmap.push_back(none);
+          out_revmap.push_back(boost::none);
           for(auto p : vert_map)
           {
             auto it = o.vert_map.find(p.first); 
@@ -804,7 +803,7 @@ namespace crab {
           GrPerm gy(perm_y, o.g);
          
           // Now perform the widening 
-          vector<vert_id> destabilized;
+          std::vector<vert_id> destabilized;
           graph_t widen_g(GrOps::widen(gx, gy, destabilized));
           for(vert_id v : destabilized)
             widen_unstable.insert(v);
@@ -836,7 +835,8 @@ namespace crab {
           return *this;
         else{
           CRAB_LOG ("zones-split",
-                    crab::outs() << "Before meet:\n"<<"DBM 1\n"<<*this<<"\n"<<"DBM 2\n"<<o <<"\n");
+                    crab::outs() << "Before meet:\n"<<"DBM 1\n"<<*this<<"\n"<<"DBM 2\n"<<o
+		                 <<"\n");
           normalize();
           o.normalize();
           
@@ -845,13 +845,13 @@ namespace crab {
           vert_map_t meet_verts;
           rev_map_t meet_rev;
 
-          vector<vert_id> perm_x;
-          vector<vert_id> perm_y;
-          vector<Wt> meet_pi;
+          std::vector<vert_id> perm_x;
+          std::vector<vert_id> perm_y;
+          std::vector<Wt> meet_pi;
           perm_x.push_back(0);
           perm_y.push_back(0);
           meet_pi.push_back(Wt(0));
-          meet_rev.push_back(none);
+          meet_rev.push_back(boost::none);
           for(auto p : vert_map)
           {
             vert_id vv = perm_x.size();
@@ -915,20 +915,22 @@ namespace crab {
             GrOps::apply_delta(meet_g, delta);
 
           // Recover updated LBs and UBs.
-#ifdef CLOSE_BOUNDS_INLINE
+          #ifdef CLOSE_BOUNDS_INLINE
             Wt_min min_op;
             for(auto e : delta)
             {
               if(meet_g.elem(0, e.first.first))
-                meet_g.update_edge(0, meet_g.edge_val(0, e.first.first) + e.second, e.first.second, min_op);
+                meet_g.update_edge(0, meet_g.edge_val(0, e.first.first) + e.second,
+				   e.first.second, min_op);
               if(meet_g.elem(e.first.second, 0))
-                meet_g.update_edge(e.first.first, meet_g.edge_val(e.first.second, 0) + e.second, 0, min_op);
+                meet_g.update_edge(e.first.first, meet_g.edge_val(e.first.second, 0) + e.second,
+				   0, min_op);
             }
-#else
+          #else
             delta.clear();
             GrOps::close_after_assign(meet_g, meet_pi, 0, delta);
             GrOps::apply_delta(meet_g, delta);
-#endif
+          #endif
           }
           assert(check_potential(meet_g, meet_pi)); 
           DBM_t res(std::move(meet_verts), std::move(meet_rev), std::move(meet_g), 
@@ -949,7 +951,8 @@ namespace crab {
           return o;
         else{
           CRAB_LOG ("zones-split",
-                    crab::outs() << "Before narrowing:\n"<<"DBM 1\n"<<*this<<"\n"<<"DBM 2\n"<<o <<"\n");
+                    crab::outs() << "Before narrowing:\n"<<"DBM 1\n"<<*this<<"\n"<<"DBM 2\n"
+		                 << o <<"\n");
 
           // FIXME: Implement properly
           // Narrowing as a no-op should be sound.
@@ -1007,7 +1010,8 @@ namespace crab {
 //        ranges.remove(v);
         auto it = vert_map.find (v);
         if (it != vert_map.end ()) {
-          CRAB_LOG("zones-split", crab::outs() << "Before forget "<< it->second<< ": "<< g <<"\n");
+          CRAB_LOG("zones-split", crab::outs() << "Before forget "<< it->second<< ": "
+		                               << g <<"\n");
           g.forget(it->second);
           CRAB_LOG("zones-split", crab::outs() << "After: "<< g <<"\n");
           rev_map[it->second] = boost::none;
@@ -1044,7 +1048,7 @@ namespace crab {
       }
 
       //Wt pot_value(variable_t v, ranges_t& ranges, vector<Wt>& potential)
-      Wt pot_value(variable_t v, vector<Wt>& potential)
+      Wt pot_value(variable_t v, std::vector<Wt>& potential)
       {
         auto it = vert_map.find(v); 
         if(it != vert_map.end())
@@ -1080,13 +1084,14 @@ namespace crab {
 
       // Turn an assignment into a set of difference constraints.
       void diffcsts_of_assign(VariableName x, linear_expression_t exp,
-          vector<pair<VariableName, Wt> >& lb, vector<pair<VariableName,Wt> >& ub)
+			      std::vector<std::pair<VariableName, Wt> >& lb,
+			      std::vector<std::pair<VariableName,Wt> >& ub)
       {
         {
           // Process upper bounds.
-          optional<VariableName> unbounded_ubvar;
+          boost::optional<VariableName> unbounded_ubvar;
           Wt exp_ub(ntov::ntov(exp.constant()));
-          vector< pair<VariableName, Wt> > ub_terms;
+          std::vector< std::pair<VariableName, Wt> > ub_terms;
           for(auto p : exp)
           {
             Wt coeff(ntov::ntov(p.first));
@@ -1108,7 +1113,7 @@ namespace crab {
               } else {
                 Wt ymax(ntov::ntov(*(y_ub.number())));
                 exp_ub += ymax*coeff;
-                ub_terms.push_back(make_pair(y, ymax));
+                ub_terms.push_back(std::make_pair(y, ymax));
               }
             }
           }
@@ -1116,20 +1121,20 @@ namespace crab {
           if(unbounded_ubvar)
           {
             // There is exactly one unbounded variable. 
-            ub.push_back(make_pair(*unbounded_ubvar, exp_ub));
+            ub.push_back(std::make_pair(*unbounded_ubvar, exp_ub));
           } else {
             for(auto p : ub_terms)
             {
-              ub.push_back(make_pair(p.first, exp_ub - p.second));
+              ub.push_back(std::make_pair(p.first, exp_ub - p.second));
             }
           }
         }
       assign_ub_finish:
 
         {
-          optional<VariableName> unbounded_lbvar;
+          boost::optional<VariableName> unbounded_lbvar;
           Wt exp_lb(ntov::ntov(exp.constant()));
-          vector< pair<VariableName, Wt> > lb_terms;
+          std::vector< std::pair<VariableName, Wt> > lb_terms;
           for(auto p : exp)
           {
             Wt coeff(ntov::ntov(p.first));
@@ -1151,18 +1156,18 @@ namespace crab {
               } else {
                 Wt ymin(ntov::ntov(*(y_lb.number())));
                 exp_lb += ymin*coeff;
-                lb_terms.push_back(make_pair(y, ymin));
+                lb_terms.push_back(std::make_pair(y, ymin));
               }
             }
           }
 
           if(unbounded_lbvar)
           {
-            lb.push_back(make_pair(*unbounded_lbvar, exp_lb));
+            lb.push_back(std::make_pair(*unbounded_lbvar, exp_lb));
           } else {
             for(auto p : lb_terms)
             {
-              lb.push_back(make_pair(p.first, exp_lb - p.second));
+              lb.push_back(std::make_pair(p.first, exp_lb - p.second));
             }
           }
         }
@@ -1172,17 +1177,18 @@ namespace crab {
    
       // GKG: I suspect there're some sign/bound direction errors in the 
       // following.
-      void diffcsts_of_lin_leq(const linear_expression_t& exp, vector<diffcst_t>& csts,
-          vector<pair<VariableName, Wt> >& lbs, vector<pair<VariableName, Wt> >& ubs)
+      void diffcsts_of_lin_leq(const linear_expression_t& exp, std::vector<diffcst_t>& csts,
+			       std::vector<std::pair<VariableName, Wt> >& lbs,
+			       std::vector<std::pair<VariableName, Wt> >& ubs)
       {
         // Process upper bounds.
         Wt unbounded_lbcoeff;
         Wt unbounded_ubcoeff;
-        optional<VariableName> unbounded_lbvar;
-        optional<VariableName> unbounded_ubvar;
+        boost::optional<VariableName> unbounded_lbvar;
+        boost::optional<VariableName> unbounded_ubvar;
         Wt exp_ub = - (ntov::ntov(exp.constant()));
-        vector< pair< pair<Wt, VariableName>, Wt> > pos_terms;
-        vector< pair< pair<Wt, VariableName>, Wt> > neg_terms;
+        std::vector< std::pair< std::pair<Wt, VariableName>, Wt> > pos_terms;
+        std::vector< std::pair< std::pair<Wt, VariableName>, Wt> > neg_terms;
         for(auto p : exp)
         {
           Wt coeff(ntov::ntov(p.first));
@@ -1200,7 +1206,7 @@ namespace crab {
               Wt ymin(ntov::ntov(*(y_lb.number())));
               // Coeff is negative, so it's still add
               exp_ub -= ymin*coeff;
-              pos_terms.push_back(make_pair(make_pair(coeff, y), ymin));
+              pos_terms.push_back(std::make_pair(std::make_pair(coeff, y), ymin));
             }
           } else {
             VariableName y(p.second.name());
@@ -1214,7 +1220,7 @@ namespace crab {
             } else {
               Wt ymax(ntov::ntov(*(y_ub.number())));
               exp_ub -= ymax*coeff;
-              neg_terms.push_back(make_pair(make_pair(-coeff, y), ymax));
+              neg_terms.push_back(std::make_pair(std::make_pair(-coeff, y), ymax));
             }
           }
         }
@@ -1227,15 +1233,16 @@ namespace crab {
             if(unbounded_lbcoeff != Wt(1) || unbounded_ubcoeff != Wt(1))
               goto diffcst_finish;
             VariableName y(*unbounded_ubvar);
-            csts.push_back(make_pair(make_pair(x, y), exp_ub));
+            csts.push_back(std::make_pair(std::make_pair(x, y), exp_ub));
           } else {
             if(unbounded_lbcoeff == Wt(1))
             {
               for(auto p : neg_terms)
-                csts.push_back(make_pair(make_pair(x, p.first.second), exp_ub - p.second));
+                csts.push_back(std::make_pair(std::make_pair(x, p.first.second),
+					      exp_ub - p.second));
             }
             // Add bounds for x
-            ubs.push_back(make_pair(x, exp_ub/unbounded_lbcoeff));
+            ubs.push_back(std::make_pair(x, exp_ub/unbounded_lbcoeff));
           }
         } else {
           if(unbounded_ubvar)
@@ -1244,18 +1251,20 @@ namespace crab {
             if(unbounded_ubcoeff == Wt(1))
             {
               for(auto p : pos_terms)
-                csts.push_back(make_pair(make_pair(p.first.second, y), exp_ub + p.second));
+                csts.push_back(std::make_pair(std::make_pair(p.first.second, y),
+					      exp_ub + p.second));
             }
             // Bounds for y
-            lbs.push_back(make_pair(y, -exp_ub/unbounded_ubcoeff));
+            lbs.push_back(std::make_pair(y, -exp_ub/unbounded_ubcoeff));
           } else {
             for(auto pl : neg_terms)
               for(auto pu : pos_terms)
-                csts.push_back(make_pair(make_pair(pu.first.second, pl.first.second), exp_ub - pl.second + pu.second));
+                csts.push_back(std::make_pair(std::make_pair(pu.first.second, pl.first.second),
+					 exp_ub - pl.second + pu.second));
             for(auto pl : neg_terms)
-              lbs.push_back(make_pair(pl.first.second, -exp_ub/pl.first.first + pl.second));
+              lbs.push_back(std::make_pair(pl.first.second, -exp_ub/pl.first.first + pl.second));
             for(auto pu : pos_terms)
-              ubs.push_back(make_pair(pu.first.second, exp_ub/pu.first.first + pu.second));
+              ubs.push_back(std::make_pair(pu.first.second, exp_ub/pu.first.first + pu.second));
           }
         }
     diffcst_finish:
@@ -1280,8 +1289,8 @@ namespace crab {
           set(x, e.constant());
         } else {
           interval_t x_int = eval_interval(e);
-          vector<pair<VariableName, Wt> > diffs_lb;
-          vector<pair<VariableName, Wt> > diffs_ub;
+          std::vector<std::pair<VariableName, Wt> > diffs_lb;
+          std::vector<std::pair<VariableName, Wt> > diffs_ub;
           // Construct difference constraints from the assignment
           diffcsts_of_assign(x, e, diffs_lb, diffs_ub);
           if(diffs_lb.size() > 0 || diffs_ub.size() > 0)
@@ -1303,12 +1312,14 @@ namespace crab {
               edge_vector delta;
               for(auto diff : diffs_lb)
               {
-                delta.push_back(make_pair(make_pair(v, get_vert(diff.first)), -diff.second));
+                delta.push_back(std::make_pair(std::make_pair(v, get_vert(diff.first)),
+					       -diff.second));
               }
 
               for(auto diff : diffs_ub)
               {
-                delta.push_back(make_pair(make_pair(get_vert(diff.first), v), diff.second));
+                delta.push_back(std::make_pair(std::make_pair(get_vert(diff.first), v),
+					       diff.second));
               }
                  
               // apply_delta should be safe here, as x has no edges in G.
@@ -1343,12 +1354,14 @@ namespace crab {
 
               for(auto diff : diffs_lb)
               {
-                cst_edges.push_back(make_pair(make_pair(v, get_vert(diff.first)), -diff.second));
+                cst_edges.push_back(std::make_pair(std::make_pair(v, get_vert(diff.first)),
+						   -diff.second));
               }
 
               for(auto diff : diffs_ub)
               {
-                cst_edges.push_back(make_pair(make_pair(get_vert(diff.first), v), diff.second));
+                cst_edges.push_back(std::make_pair(std::make_pair(get_vert(diff.first), v),
+						   diff.second));
               }
                
               for(auto diff : cst_edges)
@@ -1503,9 +1516,9 @@ namespace crab {
         CRAB_LOG("zones-split",
                  linear_expression_t exp_tmp (exp);
                  crab::outs() << "Adding: "<< exp_tmp << "<= 0" <<"\n");
-        vector< pair<VariableName, Wt> > lbs;
-        vector< pair<VariableName, Wt> > ubs;
-        vector<diffcst_t> csts;
+        std::vector< std::pair<VariableName, Wt> > lbs;
+        std::vector< std::pair<VariableName, Wt> > ubs;
+        std::vector<diffcst_t> csts;
         diffcsts_of_lin_leq(exp, csts, lbs, ubs);
 
         assert(check_potential(g, potential));
@@ -1580,7 +1593,8 @@ namespace crab {
         for(auto diff : csts)
         {
           CRAB_LOG("zones-split",
-                   crab::outs() << diff.first.first<< "-"<< diff.first.second<< "<="<< diff.second <<"\n");
+                   crab::outs() << diff.first.first<< "-"<< diff.first.second<< "<="
+		                << diff.second <<"\n");
 
           vert_id src = get_vert(diff.first.second);
           vert_id dest = get_vert(diff.first.first);
@@ -2150,7 +2164,7 @@ namespace crab {
 
         normalize();
 
-        vector<bool> save(rev_map.size(), false);
+        std::vector<bool> save(rev_map.size(), false);
         for(auto x : boost::make_iterator_range(vIt, vEt))
         {
           auto it = vert_map.find(x);
@@ -2239,7 +2253,8 @@ namespace crab {
               CRAB_WARN("Edge incident to un-mapped vertex.");
               continue;
             }
-            o << "(" << (*(rev_map[v])) << "," << (*(rev_map[d])) << ":" << g.edge_val(v,d) << ")";
+            o << "(" << (*(rev_map[v])) << "," << (*(rev_map[d])) << ":"
+	             << g.edge_val(v,d) << ")";
           }
         }
         o << "}";
@@ -2368,7 +2383,8 @@ namespace crab {
             if(!rev_map[d])
               continue;
             variable_t vd = *rev_map[d];
-            csts += linear_constraint_t(linear_expression_t(vd) - linear_expression_t(vs) <= linear_expression_t(g_excl.edge_val(s, d)));
+            csts += linear_constraint_t(linear_expression_t(vd) - linear_expression_t(vs) <=
+					linear_expression_t(g_excl.edge_val(s, d)));
           }
         }
 
@@ -2382,21 +2398,21 @@ namespace crab {
     }; // class SplitDBM_
 
     // Quick wrapper which uses shared references with copy-on-write.
-    template<class Number, class VariableName, class Params = SDBM_impl::DefaultParams <Number> >
+    template<class Number, class VariableName, class Params=SDBM_impl::DefaultParams <Number> >
     class SplitDBM : public writeable,
-               public numerical_domain<Number, VariableName >,
-               public bitwise_operators<Number,VariableName >,
-               public division_operators<Number, VariableName >,
-               public array_operators<Number, VariableName >,
-	       public pointer_operators<Number, VariableName >,
-               public boolean_operators<Number, VariableName > {
+               public numerical_domain<Number, VariableName>,
+               public bitwise_operators<Number,VariableName>,
+               public division_operators<Number, VariableName>,
+               public array_operators<Number, VariableName>,
+	       public pointer_operators<Number, VariableName>,
+               public boolean_operators<Number, VariableName> {
       public:
-      using typename numerical_domain< Number, VariableName >::linear_expression_t;
-      using typename numerical_domain< Number, VariableName >::linear_constraint_t;
-      using typename numerical_domain< Number, VariableName >::linear_constraint_system_t;
-      using typename numerical_domain< Number, VariableName >::variable_t;
-      using typename numerical_domain< Number, VariableName >::number_t;
-      using typename numerical_domain< Number, VariableName >::varname_t;
+      using typename numerical_domain< Number, VariableName>::linear_expression_t;
+      using typename numerical_domain< Number, VariableName>::linear_constraint_t;
+      using typename numerical_domain< Number, VariableName>::linear_constraint_system_t;
+      using typename numerical_domain< Number, VariableName>::variable_t;
+      using typename numerical_domain< Number, VariableName>::number_t;
+      using typename numerical_domain< Number, VariableName>::varname_t;
       typedef typename linear_constraint_t::kind_t constraint_kind_t;
       typedef interval<Number>  interval_t;
 

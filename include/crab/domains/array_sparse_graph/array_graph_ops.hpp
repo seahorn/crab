@@ -89,7 +89,7 @@ namespace crab {
       // Syntactic meet/narrowing
       // apply meet if is_meet is true, otherwise apply narrowing
       template<class G1, class G2>
-      static graph_t meet_or_narrowing(G1& l, G2& r, const bool is_meet, vector<vert_id>& changed)
+      static graph_t meet_or_narrowing(G1& l, G2& r, const bool is_meet, std::vector<vert_id>& changed)
       {
         assert(l.size() == r.size());
         graph_t g(graph_t::copy(l));
@@ -136,7 +136,7 @@ namespace crab {
       
       // Syntactic widening 
       template<class G1, class G2>
-      static graph_t widen(G1& l, G2& r, vector<vert_id>& unstable)
+      static graph_t widen(G1& l, G2& r, std::vector<vert_id>& unstable)
       {
         assert(l.size() == r.size());
         size_t sz = l.size();
@@ -234,7 +234,7 @@ namespace crab {
           return false;
 
         // find vertices that change
-        vector<vert_id> Q1, Q2;
+        std::vector<vert_id> Q1, Q2;
         Q1.push_back (x);
         Q2.push_back (y);
         for(vert_id i : g.verts()) {
@@ -281,14 +281,14 @@ namespace crab {
         { return !(A[y] <= A[x]); }
         V& A;
       };
-      typedef DistComp< vector<Wt> > WtComp;
+      typedef DistComp< std::vector<Wt> > WtComp;
       typedef Heap<WtComp> WtHeap;
 
       /// FIXME: Avoid expanding stable vertices
       template<typename G>
-      static void dijkstra (G& g, vert_id s, vector< std::pair<vert_id, Wt> >& out) {
+      static void dijkstra (G& g, vert_id s, std::vector< std::pair<vert_id, Wt> >& out) {
 
-        vector<Wt> dists;
+        std::vector<Wt> dists;
         while (dists.size () < g.size())
           dists.push_back(Wt::top());
         dists[s] = Wt::bottom();

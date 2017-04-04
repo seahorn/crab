@@ -47,16 +47,14 @@ namespace crab {
 } // namespace crab
 
 namespace crab {
-  using namespace domains;
-  
   template<>
-  inline boost::optional<bool_operation_t> 
+  inline boost::optional<domains::bool_operation_t> 
   conv_op (bool_binary_operation_t op) {     
     switch (op) {
-      case BINOP_BAND: return OP_BAND;
-      case BINOP_BOR:  return OP_BOR;
-      case BINOP_BXOR: return OP_BXOR;
-      default: return boost::optional<bool_operation_t> ();
+    case BINOP_BAND: return domains::OP_BAND;
+    case BINOP_BOR:  return domains::OP_BOR;
+    case BINOP_BXOR: return domains::OP_BXOR;
+    default: return boost::optional<domains::bool_operation_t> ();
     }
   }
 }

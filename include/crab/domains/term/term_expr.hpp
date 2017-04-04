@@ -6,9 +6,6 @@
 
 #include <crab/common/types.hpp>
 
-using namespace std;
-using namespace boost;
-
 // ERGH, make it properly flexible later.
 namespace crab {
 
@@ -226,7 +223,7 @@ namespace crab {
           term_ref_t ref(new const_term_t(n));
           return add_term(ref);
         };
-        optional<term_id> find_const(Num& n) {
+        boost::optional<term_id> find_const(Num& n) {
           term_ref_t ref(new const_term_t(n));
           return find_term(ref);
         }
@@ -265,14 +262,14 @@ namespace crab {
           return apply_ftor(f, ids);
         }
         
-        optional<term_id> find_ftor(Ftor& f, std::vector<term_id>& ids)
+        boost::optional<term_id> find_ftor(Ftor& f, std::vector<term_id>& ids)
         {
           term_ref_t ref(new ftor_term_t(f, ids));
           return find_term(ref); 
         }
         
         template<typename ... Types>
-        optional<term_id> find_ftor(Ftor& f, Types ... args)
+        boost::optional<term_id> find_ftor(Ftor& f, Types ... args)
         {
           std::vector<term_id> ids;
           collect_args(ids, args...);
@@ -460,13 +457,13 @@ namespace crab {
         int depth(term_id t) { return _depth[t]; }
         
        protected:
-        optional<term_id> find_term(term_ref_t ref)
+        boost::optional<term_id> find_term(term_ref_t ref)
         {
           auto it = _map.find(ref);
           if(it != _map.end())
-            return optional<term_id>(it->second);
+            return boost::optional<term_id>(it->second);
           else
-            return optional<term_id>();
+            return boost::optional<term_id>();
         }
 
         // When we know that a germ doesn't already exist.
@@ -535,7 +532,7 @@ namespace crab {
        
         typedef typename TermTable::term_id_t term_id_t;
         typedef typename TermTable::term_t term_t;
-        typedef container::flat_set< term_id_t > term_set_t;
+        typedef boost::container::flat_set< term_id_t > term_set_t;
         typedef std::map <term_id_t, term_set_t> ccpar_map_t;
         typedef std::map <term_id_t, term_id_t> find_map_t;
         typedef std::pair<term_id_t, term_id_t> equation_t;
@@ -567,7 +564,7 @@ namespace crab {
           }
         }
 
-        void run (vector<equation_t>& eqs) {
+        void run (std::vector<equation_t>& eqs) {
           for (auto e: eqs) { *this += e; }
           run ();
         }
@@ -589,7 +586,7 @@ namespace crab {
               if (find (x) == t /*find (t)*/)
                 members.push_back (x);
             }
-            auto res = _members.insert(make_pair (t, members));
+            auto res = _members.insert(std::make_pair (t, members));
             return (res.first)->second;
           }
         }
@@ -610,7 +607,7 @@ namespace crab {
           }
         }
 
-        vector<term_id_t>& get_parents (term_id_t t){
+        std::vector<term_id_t>& get_parents (term_id_t t){
           return _ttbl->parents (t);
         }
 
@@ -630,7 +627,7 @@ namespace crab {
         term_id_t find (term_id_t t) {
           auto it = _find_map.find (t);
           if (it == _find_map.end ()) {
-            _find_map.insert (make_pair (t,t));
+            _find_map.insert (std::make_pair (t,t));
             return t;
           }
           
@@ -652,14 +649,14 @@ namespace crab {
           term_t* t1_ptr = _ttbl->get_term_ptr(t1);
           assert (t1_ptr);
           if (t1_ptr->kind () == TERM_APP) {
-            vector<term_id_t>& par1 = get_parents (t1);
+            std::vector<term_id_t>& par1 = get_parents (t1);
             ccpar2.insert (par1.begin (), par1.end());
           }
 
           term_t* t2_ptr = _ttbl->get_term_ptr(t2);
           assert (t2_ptr);
           if (t2_ptr->kind () == TERM_APP) {
-            vector<term_id_t>& par2 = get_parents (t2);
+            std::vector<term_id_t>& par2 = get_parents (t2);
             ccpar2.insert (par2.begin (), par2.end());
           }
           ccpar1.clear ();
@@ -677,8 +674,8 @@ namespace crab {
           if (term_ftor (t1_ptr) != term_ftor (t2_ptr))
            return false;
          
-          vector<term_id_t>& xargs(term_args(t1_ptr));
-          vector<term_id_t>& yargs(term_args(t2_ptr));
+          std::vector<term_id_t>& xargs(term_args(t1_ptr));
+          std::vector<term_id_t>& yargs(term_args(t2_ptr));
           
          if (xargs.size () != yargs.size ())
            return false;

@@ -25,10 +25,6 @@ namespace crab {
 
   namespace analyzer {
 
-    using namespace cfg;
-    using namespace cg;
-    using namespace graph_algo;
-
     template< typename CG, 
               // abstract domain used for the bottom-up phase
               typename BU_Dom, 
@@ -146,20 +142,20 @@ namespace crab {
 						      get_live (cfg));
 						      
             a->Run ();
-            m_inv_map.insert (make_pair (cfg_hasher<cfg_t>::hash(*fdecl), a));
+            m_inv_map.insert (std::make_pair (cfg::cfg_hasher<cfg_t>::hash(*fdecl), a));
           }
           return;
         }
 
         // -- General case 
         std::vector<cg_node_t> rev_order;
-        scc_graph<CG> Scc_g (m_cg);
-        rev_topo_sort<scc_graph <CG> > (Scc_g, rev_order);
+	graph_algo::scc_graph<CG> Scc_g (m_cg);
+        graph_algo::rev_topo_sort<graph_algo::scc_graph<CG> > (Scc_g, rev_order);
        
         CRAB_LOG("inter",crab::outs() << "Bottom-up phase ...\n");
         for (auto n: rev_order) {
           crab::ScopedCrabStats __st__("Inter.BottomUp");
-          vector<cg_node_t> &scc_mems = Scc_g.get_component_members (n);
+          std::vector<cg_node_t> &scc_mems = Scc_g.get_component_members (n);
           for (auto m: scc_mems) {
 
             auto cfg = m.get_cfg ();
@@ -211,7 +207,7 @@ namespace crab {
         for (auto n: boost::make_iterator_range (rev_order.rbegin(),
                                                  rev_order.rend ())) {
           crab::ScopedCrabStats __st__("Inter.TopDown");
-          vector<cg_node_t> &scc_mems = Scc_g.get_component_members (n);
+          std::vector<cg_node_t> &scc_mems = Scc_g.get_component_members (n);
           for (auto m: scc_mems) {
             auto cfg = m.get_cfg ();
             auto fdecl = cfg.get_func_decl ();
@@ -246,7 +242,7 @@ namespace crab {
 						      m_jump_set_size,
 						      get_live (cfg));
 	    a->Run();
-            m_inv_map.insert (make_pair (cfg_hasher<cfg_t>::hash(*fdecl), a));
+            m_inv_map.insert (std::make_pair (cfg::cfg_hasher<cfg_t>::hash(*fdecl), a));
           }
         }
       }
@@ -261,7 +257,7 @@ namespace crab {
                       typename cfg_t::basic_block_label_t b) const { 
 
         if (auto fdecl = cfg.get_func_decl ()) {
-          auto const it = m_inv_map.find (cfg_hasher<cfg_t>::hash(*fdecl));
+          auto const it = m_inv_map.find (cfg::cfg_hasher<cfg_t>::hash(*fdecl));
           if (it != m_inv_map.end ())
             return it->second->get_pre (b);
         }
@@ -273,7 +269,7 @@ namespace crab {
                        typename cfg_t::basic_block_label_t b) const {
         
         if (auto fdecl = cfg.get_func_decl ()) {
-          auto const it = m_inv_map.find (cfg_hasher<cfg_t>::hash(*fdecl));
+          auto const it = m_inv_map.find (cfg::cfg_hasher<cfg_t>::hash(*fdecl));
           if (it != m_inv_map.end ())
             return it->second->get_post (b);
         }

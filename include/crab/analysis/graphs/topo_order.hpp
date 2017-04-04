@@ -17,13 +17,13 @@ namespace crab {
      template <typename G>
      void rev_topo_sort (const G &g, std::vector<typename G::node_t>& res) {
 
-       typedef boost::unordered_map< typename G::node_t, default_color_type > color_map_t;
-       typedef boost::associative_property_map< color_map_t > property_color_map_t;
+       typedef boost::unordered_map<typename G::node_t,boost::default_color_type> color_map_t;
+       typedef boost::associative_property_map<color_map_t> property_color_map_t;
 
        color_map_t colormap;
 
        for (auto const &v: boost::make_iterator_range (vertices (g))) 
-         colormap [v] = default_color_type();
+         colormap [v] = boost::default_color_type();
 
        res.reserve(num_vertices (g));
        

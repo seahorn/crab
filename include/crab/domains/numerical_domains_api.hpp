@@ -98,17 +98,15 @@ namespace ikos {
 } // namespace ikos
 
 namespace crab {
-  using namespace ikos;
-
   template<>
-  inline boost::optional<operation_t> 
+  inline boost::optional<ikos::operation_t> 
   conv_op (binary_operation_t op) {     
     switch (op) {
-      case BINOP_ADD: return OP_ADDITION;
-      case BINOP_SUB: return OP_SUBTRACTION;
-      case BINOP_MUL: return OP_MULTIPLICATION;
-      case BINOP_SDIV: return OP_DIVISION;
-      default: return boost::optional<operation_t> ();
+    case BINOP_ADD: return ikos::OP_ADDITION;
+    case BINOP_SUB: return ikos::OP_SUBTRACTION;
+    case BINOP_MUL: return ikos::OP_MULTIPLICATION;
+    case BINOP_SDIV: return ikos::OP_DIVISION;
+    default: return boost::optional<ikos::operation_t> ();
     }
   }
 }

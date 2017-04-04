@@ -27,7 +27,7 @@ namespace crab {
      private:
 
       typedef flat_killgen_domain<Element> flat_killgen_domain_t;
-      typedef discrete_domain<Element> discrete_domain_t;
+      typedef ikos::discrete_domain<Element> discrete_domain_t;
       
      public:
 

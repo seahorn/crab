@@ -92,7 +92,7 @@ namespace crab {
 
       typedef boost::container::flat_map<Vertex, _vert_id> vert_map_t;
       typedef typename vert_map_t::value_type vmap_elt_t;
-      typedef vector<boost::optional<Vertex> > rev_map_t;
+      typedef std::vector<boost::optional<Vertex> > rev_map_t;
       typedef std::unordered_set<_vert_id> vert_set_t;
       typedef array_sparse_graph_<Vertex, Weight, IsDistWeight> array_sparse_graph_t;
 
@@ -200,8 +200,10 @@ namespace crab {
       typedef iterator_range<typename graph_t::succ_range, succ_transform_iterator> succ_range;
       typedef iterator_range<typename graph_t::pred_range, pred_transform_iterator> pred_range;
       typedef iterator_range<typename graph_t::vert_range, vert_transform_iterator> vert_range;
-      typedef iterator_range<typename graph_t::e_succ_range, fwd_edge_transform_iterator> e_succ_range;
-      typedef iterator_range<typename graph_t::e_pred_range, rev_edge_transform_iterator> e_pred_range;
+      typedef iterator_range<typename graph_t::e_succ_range, fwd_edge_transform_iterator>
+      e_succ_range;
+      typedef iterator_range<typename graph_t::e_pred_range, rev_edge_transform_iterator>
+      e_pred_range;
 
       vert_range verts() {
         typename graph_t::vert_range p = _g.verts();
@@ -248,13 +250,15 @@ namespace crab {
             _g(std::move(o._g)), _unstable(std::move(o._unstable)), _is_bottom(o._is_bottom) 
       { }
 
-      array_sparse_graph_(vert_map_t& vert_map, rev_map_t& rev_map, graph_t& g, vert_set_t unstable)
-          : writeable(),
-            _vert_map(vert_map), _rev_map(rev_map), _g(g), 
-            _unstable(unstable), _is_bottom(false)
+      array_sparse_graph_(vert_map_t& vert_map, rev_map_t& rev_map, graph_t& g,
+			  vert_set_t unstable)
+	: writeable(),
+	  _vert_map(vert_map), _rev_map(rev_map), _g(g), 
+	  _unstable(unstable), _is_bottom(false)
       { }
       
-      array_sparse_graph_(vert_map_t&& vert_map, rev_map_t&& rev_map, graph_t&& g, vert_set_t &&unstable)
+      array_sparse_graph_(vert_map_t&& vert_map, rev_map_t&& rev_map, graph_t&& g,
+			  vert_set_t &&unstable)
           : writeable(),
             _vert_map(std::move(vert_map)), _rev_map(std::move(rev_map)), _g(std::move(g)),
             _unstable(std::move(unstable)), _is_bottom(false)
@@ -413,7 +417,7 @@ namespace crab {
             return false;
 
           // Set up a mapping from o to this.
-          vector<unsigned int> vert_renaming(o._g.size(),-1);
+          std::vector<unsigned int> vert_renaming(o._g.size(),-1);
           for(auto p : o._vert_map)
           {
             auto it = _vert_map.find(p.first);
@@ -458,8 +462,8 @@ namespace crab {
           o.normalize();
 
           // Figure out the common renaming.
-          vector<_vert_id> perm_x;
-          vector<_vert_id> perm_y;
+          std::vector<_vert_id> perm_x;
+          std::vector<_vert_id> perm_y;
 
           vert_map_t out_vmap;
           rev_map_t out_revmap;
@@ -527,8 +531,8 @@ namespace crab {
           o.normalize();
           
           // Figure out the common renaming
-          vector<_vert_id> perm_x;
-          vector<_vert_id> perm_y;
+          std::vector<_vert_id> perm_x;
+          std::vector<_vert_id> perm_y;
           vert_map_t out_vmap;
           rev_map_t out_revmap;
           vert_set_t widen_unstable(_unstable);
@@ -554,7 +558,7 @@ namespace crab {
           GrPerm gy(perm_y, o._g);
           
           // Now perform the widening 
-          vector<_vert_id> destabilized;
+          std::vector<_vert_id> destabilized;
           graph_t widen_g(GrOps::widen(gx, gy, destabilized));
           for(_vert_id v : destabilized) {
             widen_unstable.insert(v);
@@ -568,7 +572,8 @@ namespace crab {
       }
 
 
-      array_sparse_graph_t meet_or_narrowing(array_sparse_graph_t &o, bool is_meet, const std::string op) {
+      array_sparse_graph_t meet_or_narrowing(array_sparse_graph_t &o, bool is_meet,
+					     const std::string op) {
 
         if (is_bottom() || o.is_bottom())
           return bottom();
@@ -585,8 +590,8 @@ namespace crab {
           o.normalize();
 
           // Figure out the common renaming.
-          vector<_vert_id> perm_x;
-          vector<_vert_id> perm_y;
+          std::vector<_vert_id> perm_x;
+          std::vector<_vert_id> perm_y;
 
           vert_map_t out_vmap;
           rev_map_t out_revmap;
@@ -624,7 +629,7 @@ namespace crab {
           GrPerm gy(perm_y, o._g);
 
           // Compute the syntactic meet/narrowing of the permuted graphs.
-          vector<_vert_id> changes;
+          std::vector<_vert_id> changes;
           graph_t out_g(GrOps::meet_or_narrowing(gx, gy, is_meet, changes));
           vert_set_t unstable;
           for(_vert_id v : changes)
@@ -664,8 +669,8 @@ namespace crab {
       //     o.normalize();
 
       //     // Figure out the common renaming.
-      //     vector<_vert_id> perm_x;
-      //     vector<_vert_id> perm_y;
+      //     std::vector<_vert_id> perm_x;
+      //     std::vector<_vert_id> perm_y;
 
       //     vert_map_t out_vmap;
       //     rev_map_t out_revmap;
@@ -705,7 +710,7 @@ namespace crab {
       //     GrPerm gy(perm_y, o._g);
 
       //     // Compute the syntactic meet of the permuted graphs.
-      //     vector<_vert_id> changes;
+      //     std::vector<_vert_id> changes;
       //     graph_t meet_g(GrOps::meet_or_narrowing(gx, gy, true /*meet*/, changes));
       //     vert_set_t unstable;
       //     for(_vert_id v : changes)
@@ -1297,12 +1302,14 @@ namespace crab {
       static lm_map_t cst_landmarks;
 
       // --- landmark iterators
-      struct get_first : public std::unary_function<typename lm_map_t::value_type, landmark_ref_t> {
+      struct get_first : public std::unary_function<typename lm_map_t::value_type,
+						    landmark_ref_t> {
         get_first () {}
         landmark_ref_t operator()(const typename lm_map_t::value_type &p) const 
         { return p.first; }
       }; 
-      struct get_second : public std::unary_function<typename lm_map_t::value_type, landmark_ref_t> {
+      struct get_second : public std::unary_function<typename lm_map_t::value_type,
+						     landmark_ref_t> {
         get_second () {}
         landmark_ref_t operator()(const typename lm_map_t::value_type &p) const 
         { return p.second; }
@@ -1492,7 +1499,8 @@ namespace crab {
           case LMV: 
             return variable_t(boost::static_pointer_cast<landmark_var_t>(x._ref)->get_var());
           case LMVP:
-            return variable_t(boost::static_pointer_cast<landmark_var_prime_t>(x._ref)->get_var());
+            return variable_t(boost::static_pointer_cast<landmark_var_prime_t>
+			      (x._ref)->get_var());
           default:
             CRAB_ERROR("unreachable!");
         }
@@ -1720,7 +1728,8 @@ namespace crab {
       std::pair<VariableName,bool> normalize_offset (VariableName o, z_number n)
       {
         CRAB_LOG("array-sgraph-domain-norm",
-                 crab::outs() << "BEFORE NORMALIZE OFFSET: expressions=" << _expressions << "\n");
+                 crab::outs() << "BEFORE NORMALIZE OFFSET: expressions="
+		              << _expressions << "\n");
 
         // --- create a fresh variable no such that no := o;
         VariableName no = o.get_var_factory().get();
@@ -1733,7 +1742,8 @@ namespace crab {
         bool simp_done = _expressions.simplify (no);
 
         CRAB_LOG("array-sgraph-domain-norm",
-                 crab::outs() << "AFTER NORMALIZE OFFSET: expressions=" << _expressions << "\n");
+                 crab::outs() << "AFTER NORMALIZE OFFSET: expressions="
+		              << _expressions << "\n");
 
         if (!simp_done) {
           CRAB_LOG("array-sgraph-domain-norm",
@@ -1907,7 +1917,8 @@ namespace crab {
         crab::ScopedCrabStats __st__(getDomainName() + ".widening");
 
           CRAB_LOG("array-sgraph-domain",
-                   crab::outs () << "Widening (w/ thresholds) " << *this << " and "  << o << "=\n";);
+                   crab::outs () << "Widening (w/ thresholds) " << *this << " and "
+		                 << o << "=\n";);
         auto widen_scalar(_scalar.widening_thresholds(o._scalar,ts));
         auto widen_expr(_expressions.widening_thresholds(o._expressions,ts));
         auto widen_g(_g.widening_thresholds(o._g,ts));
@@ -2092,7 +2103,8 @@ namespace crab {
           _expressions.apply (op, x, y, z);
           apply_one_variable<Number> (op, x, z);
           CRAB_LOG("array-sgraph-domain",
-                   crab::outs() << "Apply "<<x<<" := "<<y<<" "<<op<<" "<<z<<" ==> "<<*this<<"\n";); 
+                   crab::outs() << "Apply "<<x<<" := "<<y<<" "<<op<<" "<<z<<" ==> "
+		                << *this<<"\n";); 
         }
         else {
           switch (op) {
@@ -2116,7 +2128,8 @@ namespace crab {
           _expressions.apply (op, x, y, z);
           apply_one_variable<VariableName> (op, x, z);
           CRAB_LOG("array-sgraph-domain", 
-                   crab::outs() << "Apply "<<x<<" := "<<y<<" "<<op<<" "<<z<<" ==> "<<*this<<"\n";);
+                   crab::outs() << "Apply "<<x<<" := "<<y<<" "<<op<<" "<<z<<" ==> "
+		                << *this<<"\n";);
         }
         else {
           switch (op) {
@@ -2140,7 +2153,8 @@ namespace crab {
         apply_one_variable <Number> (op, x, k);
 
         CRAB_LOG("array-sgraph-domain",
-                 crab::outs() << "Apply "<<x<<" := "<<x<<" "<<op<<" "<<k<<" ==> "<<*this<<"\n";);
+                 crab::outs() << "Apply "<<x<<" := "<<x<<" "<<op<<" "<<k<<" ==> "
+		              << *this<<"\n";);
       }
 
       void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width) {
@@ -2206,7 +2220,8 @@ namespace crab {
         _scalar.pointer_store(lhs,rhs);
       } 
       
-      virtual void pointer_assign (VariableName lhs, VariableName rhs, linear_expression_t offset) override {
+      virtual void pointer_assign (VariableName lhs, VariableName rhs,
+				   linear_expression_t offset) override {
         _scalar.pointer_assign (lhs,rhs,offset);
       }
       
@@ -2249,7 +2264,7 @@ namespace crab {
         else if (lb_var_opt && ub_var_opt)
           array_assume (a, a_ty, (*lb_var_opt).name(), (*ub_var_opt).name(), var);
         else
-          CRAB_WARN ("array_sparse_graph only supports assume_array with number or constant indexes");
+          CRAB_WARN ("array_sparse_graph only supports assume_array with number or cst indexes");
       }
 
       virtual void array_load (VariableName lhs, VariableName a, crab::variable_type a_ty,
@@ -2342,7 +2357,8 @@ namespace crab {
 
       // T1 and T2 are either VariableName or z_number
       template<typename T1, typename T2>
-      void array_assume (VariableName arr, variable_type arr_ty, T1 src, T2 dst, VariableName val)
+      void array_assume (VariableName arr, variable_type arr_ty, T1 src, T2 dst,
+			 VariableName val)
       {
         if (!is_landmark (src)) {
           crab::outs () << "WARNING no landmark found for " << src << "\n";
@@ -2358,7 +2374,8 @@ namespace crab {
         landmark_ref_t lm_dst (dst); 
 
         Weight w = Weight::top ();
-        array_sparse_graph_impl::propagate_between_weight_and_scalar(_scalar, val, arr_ty, w, arr);
+        array_sparse_graph_impl::propagate_between_weight_and_scalar
+	  (_scalar, val, arr_ty, w, arr);
         _g.update_edge(lm_src, w, lm_dst);        
       }
     
@@ -2396,9 +2413,9 @@ namespace crab {
         return linear_constraint_system_t();
       }
 
-      static string getDomainName () {
-        string name ("ArraySparseGraph(" + 
-                     NumDom::getDomainName () +  "," +  Weight::getDomainName () + ")");
+      static std::string getDomainName () {
+        std::string name ("ArraySparseGraph(" + 
+			  NumDom::getDomainName () +  "," +  Weight::getDomainName () + ")");
         return name;
       }
 

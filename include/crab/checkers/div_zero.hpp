@@ -62,14 +62,15 @@ namespace crab {
             interval_t divisor_intv = num_inv [(*var).name()];
             if (auto divisor = divisor_intv.singleton ()) {
               if (*divisor == number_t (0)) {
-                LOG_ERR(this->m_verbose, inv, lin_cst_t (*var != number_t (0)),
-                        s.get_debug_info());
+		lin_cst_t e_cst(*var != number_t (0));
+                LOG_ERR(this->m_verbose, inv, e_cst, s.get_debug_info());
               } else {
                 this->m_db.add (_SAFE);
               }
             } else if (interval_t (number_t (0)) <= divisor_intv) {
-              LOG_WARN(this->m_verbose, inv, lin_cst_t (*var != number_t (0)),
-                       s.get_debug_info());
+	      lin_cst_t w_cst(*var != number_t (0));
+	      LOG_WARN(this->m_verbose, inv, w_cst, s.get_debug_info());
+                       
             } else {
               this->m_db.add (_SAFE);
             }

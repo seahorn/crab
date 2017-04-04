@@ -15,8 +15,6 @@
    Strongly connected component graph
  */
 
-using namespace boost;
-
 namespace crab {
    namespace analyzer {
      namespace graph_algo {
@@ -32,11 +30,11 @@ namespace crab {
 
         /// --- begin internal representation of the scc_graph
         struct  vertex_t { std::size_t m_comp; node_t m_repr;};
-        typedef adjacency_list<setS, //disallow parallel edges
-                               vecS, bidirectionalS, 
-                               property<vertex_color_t, 
-                                        default_color_type, 
-                                        vertex_t> > scc_graph_t;     
+        typedef boost::adjacency_list<boost::setS, //disallow parallel edges
+				      boost::vecS, boost::bidirectionalS, 
+				      boost::property<boost::vertex_color_t, 
+						      boost::default_color_type, 
+						      vertex_t> > scc_graph_t;     
         typedef boost::shared_ptr <scc_graph_t> scc_graph_ptr;
         typedef typename boost::graph_traits<scc_graph_t>::vertex_descriptor vertex_descriptor_t;
         typedef typename boost::graph_traits<scc_graph_t>::edge_descriptor edge_descriptor_t;
@@ -119,21 +117,21 @@ namespace crab {
         }
 
         struct preorder_visitor: public boost::default_dfs_visitor {
-          vector<node_t> m_order_vs;
+          std::vector<node_t> m_order_vs;
           void discover_vertex(node_t v, G g) { m_order_vs.push_back (v); }
         };
 
         struct postorder_visitor: public boost::default_dfs_visitor {
-          vector<node_t> m_order_vs;
+          std::vector<node_t> m_order_vs;
           void finish_vertex(node_t v, G g) { m_order_vs.push_back (v); }
         };
 
         template<typename OrderVis>
-        vector<node_t> sort () const {
-          typedef boost::unordered_map< node_t, default_color_type > color_map_t;
+        std::vector<node_t> sort () const {
+          typedef boost::unordered_map< node_t, boost::default_color_type > color_map_t;
           color_map_t color;
           for (auto v : boost::make_iterator_range (vertices (m_g))) {
-            color[v] = default_color_type();
+            color[v] = boost::default_color_type();
           }
           boost::associative_property_map< color_map_t > cm (color);
           
@@ -154,7 +152,7 @@ namespace crab {
                                                    boost::detail::nontruth2());
 
           for (auto u: boost::make_iterator_range (vertices (m_g))) { 
-            if (get(cm, u) == default_color_type::white_color)
+            if (get(cm, u) == boost::default_color_type::white_color)
               boost::detail::depth_first_visit_impl(m_g, u, vis, cm, boost::detail::nontruth2());
           }
 
@@ -189,7 +187,7 @@ namespace crab {
           CRAB_LOG ("sccg", crab::outs() << g << "\n");
 
           typedef boost::unordered_map< node_t, node_t > root_map_t;
-          typedef boost::unordered_map< node_t, default_color_type > color_map_t;
+          typedef boost::unordered_map< node_t, boost::default_color_type > color_map_t;
           typedef boost::associative_property_map< component_map_t > property_component_map_t;
           typedef boost::associative_property_map< root_map_t > property_root_map_t;
           typedef boost::associative_property_map< color_map_t > property_color_map_t;
@@ -200,7 +198,7 @@ namespace crab {
 
           for (auto const &v : boost::make_iterator_range (vertices (m_g))) {
             m_comp_map [v] = 0;
-            color_map [v] = default_color_type();
+            color_map [v] = boost::default_color_type();
             discover_time [v] = 0;
             _root_map [v] = node_t ();
           }

@@ -11,7 +11,7 @@
 namespace crab {
 
 template <class Weight>
-class HtGraph : public writeable {
+class HtGraph : public ikos::writeable {
     enum { table_init_sz = 17 };
   public:
     typedef Weight Wt;
@@ -257,7 +257,7 @@ class HtGraph : public writeable {
 
     class vert_iterator {
     public:
-      vert_iterator(vert_id _v, const vector<bool>& _is_free)
+      vert_iterator(vert_id _v, const std::vector<bool>& _is_free)
         : v(_v), is_free(_is_free)
       { }
       vert_id operator*(void) const { return v; }
@@ -270,18 +270,18 @@ class HtGraph : public writeable {
       }
     protected:
       vert_id v;
-      const vector<bool>& is_free;
+      const std::vector<bool>& is_free;
     };
 
     class vert_range {
     public:
-      vert_range(const vector<bool>& _is_free)
+      vert_range(const std::vector<bool>& _is_free)
         : is_free(_is_free)
       { }
       vert_iterator begin(void) const { return vert_iterator(0, is_free); }
       vert_iterator end(void) const { return vert_iterator(is_free.size(), is_free); }
     protected:
-      const vector<bool>& is_free;
+      const std::vector<bool>& is_free;
     };
 
     // FIXME: Verts currently iterates over free vertices,
@@ -519,8 +519,8 @@ class HtGraph : public writeable {
 
     unsigned int edge_count;
 
-    vector<succ_t> _succs;
-    vector<pred_t> _preds;
+    std::vector<succ_t> _succs;
+    std::vector<pred_t> _preds;
 
     std::vector<bool> is_free;
     std::vector<int> free_id;

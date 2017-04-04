@@ -13,10 +13,6 @@
 #include <crab/common/types.hpp>
 #include <crab/domains/operators_api.hpp>
 
-using namespace boost;
-using namespace ikos;
-
-
 #ifndef HAVE_LDD
 /*
  * Dummy implementation if ldd not found 
@@ -810,7 +806,7 @@ namespace crab {
                            Ldd_TermReplace(get_ldd_man(), &(*m_ldd), t, NULL, NULL, c, c));
             Ldd_GetTheory (get_ldd_man())->destroy_cst (c);
             Ldd_GetTheory (get_ldd_man())->destroy_term(t);
-          } else if (optional<variable_t> v = e.get_variable()){
+          } else if (boost::optional<variable_t> v = e.get_variable()){
             VariableName y = (*v).name();
             if (!(x==y)) copy_term(x,y); //apply (x, y, 1, 0);      
           } else {

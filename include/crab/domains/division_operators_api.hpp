@@ -73,17 +73,15 @@ namespace ikos {
 } // namespace ikos
 
 namespace crab {
-  using namespace ikos;
-
   template<>
-  inline boost::optional<div_operation_t> 
+  inline boost::optional<ikos::div_operation_t> 
   conv_op (binary_operation_t op) {     
     switch (op) {
-      case BINOP_SDIV: return OP_SDIV;
-      case BINOP_UDIV: return OP_UDIV;
-      case BINOP_SREM: return OP_SREM;
-      case BINOP_UREM: return OP_UREM;
-      default: return boost::optional<div_operation_t> ();
+      case BINOP_SDIV: return ikos::OP_SDIV;
+      case BINOP_UDIV: return ikos::OP_UDIV;
+      case BINOP_SREM: return ikos::OP_SREM;
+      case BINOP_UREM: return ikos::OP_UREM;
+      default: return boost::optional<ikos::div_operation_t> ();
     }
   }
 

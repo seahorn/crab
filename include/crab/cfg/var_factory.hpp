@@ -14,8 +14,6 @@
 #include <boost/make_shared.hpp>
 #include <boost/range/iterator_range.hpp>
 
-using namespace std;
-
 namespace crab {
 
   namespace cfg  {
@@ -23,10 +21,10 @@ namespace crab {
     namespace var_factory_impl {
 
        namespace indexed_string_impl  {
-          template< typename T >
-          inline string get_str(T e);
+          template<typename T>
+          inline std::string get_str(T e);
 
-          template<> inline string get_str(string e) { return e; }
+          template<> inline std::string get_str(std::string e) { return e; }
        } 
 
        // This variable factory creates a new variable associated to an
@@ -84,7 +82,7 @@ namespace crab {
            
            index_t index() const { return this->_id; }
            
-           string str() const 
+           std::string str() const 
            { 
              if (_s)
              {  return indexed_string_impl::get_str< T >(*_s);  }
@@ -137,12 +135,14 @@ namespace crab {
          index_t _next_id;
          t_map_t _map;
          shadow_map_t _shadow_map;
-         vector<indexed_string> _shadow_vars;
+         std::vector<indexed_string> _shadow_vars;
          
         public:
          typedef indexed_string variable_t;
-         typedef boost::iterator_range<typename vector<indexed_string>::iterator> var_range;
-         typedef boost::iterator_range<typename vector<indexed_string>::const_iterator> const_var_range;
+         typedef boost::iterator_range
+	         <typename std::vector<indexed_string>::iterator> var_range;
+         typedef boost::iterator_range
+	         <typename std::vector<indexed_string>::const_iterator> const_var_range;
          
         public:
          variable_factory (): _next_id (1) { }

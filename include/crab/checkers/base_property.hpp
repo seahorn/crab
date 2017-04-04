@@ -15,15 +15,12 @@
 namespace crab {
 
   namespace checker {
-
-  using namespace cfg;
-
   typedef enum { _SAFE, _ERR, _WARN, _UNREACH } check_kind_t;
 
   // Toy database to store invariants. We may want to replace it with
   // a permanent external database.
   class checks_db {
-    typedef std::pair<debug_info, check_kind_t> check_t;
+    typedef std::pair<cfg::debug_info, check_kind_t> check_t;
     typedef std::set<check_t> checks_db_t;
 
     checks_db_t m_db;
@@ -45,7 +42,7 @@ namespace crab {
     unsigned get_total_error () const { return m_total_err; }
 
     // add an entry in the database
-    void add (check_kind_t status, debug_info dbg = debug_info () ) {
+    void add (check_kind_t status, cfg::debug_info dbg = cfg::debug_info () ) {
       switch (status) {
         case _SAFE: m_total_safe++;break;
         case _ERR : m_total_err++;break;
@@ -154,7 +151,7 @@ namespace crab {
        typedef typename Domain::number_t number_t;
        
        typedef ikos::interval<number_t> interval_t;
-       typedef linear_constraint<number_t, varname_t> z_lin_cst_t;
+       typedef ikos::linear_constraint<number_t, varname_t> z_lin_cst_t;
        Domain& m_inv;
        checker_ops (Domain& inv): m_inv (inv) { }
 
@@ -193,47 +190,47 @@ namespace crab {
 
   template<typename Analyzer>
   class property_checker:
-      public statement_visitor <typename Analyzer::number_t,
-				typename Analyzer::varname_t> {
+      public cfg::statement_visitor <typename Analyzer::number_t,
+				     typename Analyzer::varname_t> {
    public:
     typedef typename Analyzer::abs_tr_ptr abs_tr_ptr;
     typedef typename Analyzer::varname_t varname_t;
     typedef typename Analyzer::number_t number_t;
     typedef typename Analyzer::abs_dom_t abs_dom_t;
 
-    typedef variable <number_t, varname_t> var_t;
-    typedef linear_expression<number_t, varname_t> lin_exp_t;
-    typedef linear_constraint<number_t, varname_t> lin_cst_t;
-    typedef linear_constraint_system<number_t, varname_t> lin_cst_sys_t;
+    typedef ikos::variable <number_t,varname_t> var_t;
+    typedef ikos::linear_expression<number_t,varname_t> lin_exp_t;
+    typedef ikos::linear_constraint<number_t,varname_t> lin_cst_t;
+    typedef ikos::linear_constraint_system<number_t,varname_t> lin_cst_sys_t;
 
-    typedef binary_op<number_t,varname_t>         bin_op_t;
-    typedef assignment<number_t,varname_t>        assign_t;
-    typedef assume_stmt<number_t,varname_t>       assume_t;
-    typedef assert_stmt<number_t,varname_t>       assert_t;
-    typedef select_stmt <number_t,varname_t>      select_t;    
-    typedef havoc_stmt<number_t,varname_t>        havoc_t;
-    typedef unreachable_stmt<number_t,varname_t>  unreach_t;
-    typedef callsite_stmt<number_t,varname_t>     callsite_t;
-    typedef return_stmt<number_t,varname_t>       return_t;
-    typedef array_assume_stmt<number_t,varname_t> arr_assume_t;
-    typedef array_store_stmt<number_t,varname_t>  arr_store_t;
-    typedef array_load_stmt<number_t,varname_t>   arr_load_t;
-    typedef ptr_store_stmt<number_t,varname_t>    ptr_store_t;
-    typedef ptr_load_stmt<number_t,varname_t>     ptr_load_t;
-    typedef ptr_assign_stmt<number_t,varname_t>   ptr_assign_t;
-    typedef ptr_object_stmt<number_t,varname_t>   ptr_object_t;
-    typedef ptr_function_stmt<number_t,varname_t> ptr_function_t;
-    typedef ptr_null_stmt<number_t,varname_t>     ptr_null_t;
-    typedef ptr_assume_stmt<number_t,varname_t>   ptr_assume_t;
-    typedef ptr_assert_stmt<number_t,varname_t>   ptr_assert_t;
-    typedef bool_binary_op<number_t,varname_t>    bool_bin_op_t;
-    typedef bool_assign_cst<number_t,varname_t>   bool_assign_cst_t;
-    typedef bool_assign_var<number_t,varname_t>   bool_assign_var_t;    
-    typedef bool_assume_stmt<number_t,varname_t>  bool_assume_t;
-    typedef bool_assert_stmt<number_t,varname_t>  bool_assert_t;
-    typedef bool_select_stmt <number_t,varname_t> bool_select_t;    
+    typedef cfg::binary_op<number_t,varname_t>         bin_op_t;
+    typedef cfg::assignment<number_t,varname_t>        assign_t;
+    typedef cfg::assume_stmt<number_t,varname_t>       assume_t;
+    typedef cfg::assert_stmt<number_t,varname_t>       assert_t;
+    typedef cfg::select_stmt <number_t,varname_t>      select_t;    
+    typedef cfg::havoc_stmt<number_t,varname_t>        havoc_t;
+    typedef cfg::unreachable_stmt<number_t,varname_t>  unreach_t;
+    typedef cfg::callsite_stmt<number_t,varname_t>     callsite_t;
+    typedef cfg::return_stmt<number_t,varname_t>       return_t;
+    typedef cfg::array_assume_stmt<number_t,varname_t> arr_assume_t;
+    typedef cfg::array_store_stmt<number_t,varname_t>  arr_store_t;
+    typedef cfg::array_load_stmt<number_t,varname_t>   arr_load_t;
+    typedef cfg::ptr_store_stmt<number_t,varname_t>    ptr_store_t;
+    typedef cfg::ptr_load_stmt<number_t,varname_t>     ptr_load_t;
+    typedef cfg::ptr_assign_stmt<number_t,varname_t>   ptr_assign_t;
+    typedef cfg::ptr_object_stmt<number_t,varname_t>   ptr_object_t;
+    typedef cfg::ptr_function_stmt<number_t,varname_t> ptr_function_t;
+    typedef cfg::ptr_null_stmt<number_t,varname_t>     ptr_null_t;
+    typedef cfg::ptr_assume_stmt<number_t,varname_t>   ptr_assume_t;
+    typedef cfg::ptr_assert_stmt<number_t,varname_t>   ptr_assert_t;
+    typedef cfg::bool_binary_op<number_t,varname_t>    bool_bin_op_t;
+    typedef cfg::bool_assign_cst<number_t,varname_t>   bool_assign_cst_t;
+    typedef cfg::bool_assign_var<number_t,varname_t>   bool_assign_var_t;    
+    typedef cfg::bool_assume_stmt<number_t,varname_t>  bool_assume_t;
+    typedef cfg::bool_assert_stmt<number_t,varname_t>  bool_assert_t;
+    typedef cfg::bool_select_stmt <number_t,varname_t> bool_select_t;    
 
-    typedef std::set<std::pair<debug_info, check_kind_t> > check_results_db;
+    typedef std::set<std::pair<cfg::debug_info, check_kind_t> > check_results_db;
  
    protected: 
 

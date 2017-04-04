@@ -410,4 +410,10 @@ namespace ikos {
 
 } // end namespace 
 
+namespace crab {
+  namespace domains {
+    using namespace ikos;
+  }
+}
+
 #endif // CRAB_COMMON_HPP

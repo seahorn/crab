@@ -23,10 +23,11 @@ namespace crab {
      template<class CFG>
      class array_segment_ops:
        public crab::iterators::killgen_operations_api
-              <CFG, flat_killgen_domain<typename CFG::varname_t> > {
+              <CFG,domains::flat_killgen_domain<typename CFG::varname_t> > {
        
        typedef crab::iterators::killgen_operations_api
-              <CFG, flat_killgen_domain<typename CFG::varname_t> > killgen_operations_api_t;
+              <CFG,domains::flat_killgen_domain<typename CFG::varname_t> >
+              killgen_operations_api_t;
        
       public:
 
@@ -191,7 +192,7 @@ namespace crab {
            return it->second; 
        }
        
-       void write (ostream &o) const { }
+       void write (crab_os &o) const { }
      }; 
 
      // Visitor for finding constants that might appear as array

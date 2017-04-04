@@ -32,9 +32,6 @@
 namespace crab {
   namespace domains {
 
-    using namespace ikos;
-
-
     // Provided by Ikos
     // Reduced product of two arbitrary domains with only lattice
     // operations.

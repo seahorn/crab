@@ -55,9 +55,6 @@ namespace crab {
 
   namespace cfg {
 
-    using namespace ikos;
-    using namespace std;
-
     // The values must be such that NUM <= PTR <= ARR
     enum tracked_precision { NUM = 0, PTR = 1, ARR = 2 };
   
@@ -183,7 +180,7 @@ namespace crab {
     template< typename VariableName>
     class Live
     {
-      typedef vector < VariableName > live_set_t;
+      typedef std::vector < VariableName > live_set_t;
 
      public:
       
@@ -386,8 +383,8 @@ namespace crab {
      public:
 
       typedef statement<Number,VariableName> statement_t;      
-      typedef variable< Number, VariableName > variable_t;
-      typedef linear_expression< Number, VariableName > linear_expression_t;
+      typedef ikos::variable< Number, VariableName > variable_t;
+      typedef ikos::linear_expression< Number, VariableName > linear_expression_t;
       
      private:
       
@@ -445,8 +442,8 @@ namespace crab {
      public:
 
       typedef statement<Number,VariableName> statement_t;            
-      typedef variable< Number, VariableName >          variable_t;
-      typedef linear_expression< Number, VariableName > linear_expression_t;
+      typedef ikos::variable< Number, VariableName >          variable_t;
+      typedef ikos::linear_expression< Number, VariableName > linear_expression_t;
       
      private:
       
@@ -494,8 +491,8 @@ namespace crab {
      public:
       
       typedef statement<Number,VariableName> statement_t;                  
-      typedef variable< Number, VariableName > variable_t;
-      typedef linear_constraint< Number, VariableName > linear_constraint_t;
+      typedef ikos::variable< Number, VariableName > variable_t;
+      typedef ikos::linear_constraint< Number, VariableName > linear_constraint_t;
       
      private:
       
@@ -610,9 +607,9 @@ namespace crab {
      public:
 
       typedef statement<Number,VariableName> statement_t;      
-      typedef variable< Number, VariableName > variable_t;
-      typedef linear_expression< Number, VariableName > linear_expression_t;
-      typedef linear_constraint< Number, VariableName > linear_constraint_t;
+      typedef ikos::variable< Number, VariableName > variable_t;
+      typedef ikos::linear_expression< Number, VariableName > linear_expression_t;
+      typedef ikos::linear_constraint< Number, VariableName > linear_constraint_t;
       
      private:
       
@@ -674,8 +671,8 @@ namespace crab {
      public:
 
       typedef statement<Number,VariableName> statement_t;            
-      typedef variable< Number, VariableName > variable_t;
-      typedef linear_constraint< Number, VariableName > linear_constraint_t;
+      typedef ikos::variable< Number, VariableName > variable_t;
+      typedef ikos::linear_constraint< Number, VariableName > linear_constraint_t;
       
      private:
       
@@ -733,7 +730,7 @@ namespace crab {
      public:
 
       typedef statement<Number,VariableName> statement_t;                  
-      typedef linear_expression<Number, VariableName > linear_expression_t;
+      typedef ikos::linear_expression<Number, VariableName > linear_expression_t;
 
      private:
 
@@ -786,7 +783,7 @@ namespace crab {
      public:
 
       typedef statement<Number,VariableName> statement_t;                  
-      typedef linear_expression<Number, VariableName > linear_expression_t;
+      typedef ikos::linear_expression<Number, VariableName > linear_expression_t;
       
      private:
       
@@ -859,7 +856,7 @@ namespace crab {
      public:
 
       typedef statement<Number,VariableName> statement_t;                        
-      typedef linear_expression<Number, VariableName > linear_expression_t;
+      typedef ikos::linear_expression<Number, VariableName > linear_expression_t;
       
      private:
 
@@ -1068,8 +1065,8 @@ namespace crab {
      public:
 
       typedef statement<Number,VariableName> statement_t;                                    
-      typedef variable<Number, VariableName > variable_t;
-      typedef linear_expression<Number, VariableName > linear_expression_t;
+      typedef ikos::variable<Number, VariableName > variable_t;
+      typedef ikos::linear_expression<Number, VariableName > linear_expression_t;
       
      private:
       
@@ -1119,13 +1116,13 @@ namespace crab {
     {
       //! lhs = &a;
       VariableName m_lhs;
-      index_t m_address;
+      ikos::index_t m_address;
       
      public:
       
       typedef statement<Number,VariableName> statement_t;
       
-      ptr_object_stmt (VariableName lhs, index_t address)
+      ptr_object_stmt (VariableName lhs, ikos::index_t address)
           : statement_t (PTR_OBJECT),
             m_lhs (lhs), m_address (address)
       {
@@ -1134,7 +1131,7 @@ namespace crab {
       
       VariableName lhs () const { return m_lhs; }
       
-      index_t rhs () const { return m_address; }
+      ikos::index_t rhs () const { return m_address; }
       
       virtual void accept(statement_visitor <Number, VariableName> *v) 
       {
@@ -1346,24 +1343,24 @@ namespace crab {
 
      private:
 
-      vector<typed_variable_t> m_lhs;
+      std::vector<typed_variable_t> m_lhs;
       VariableName m_func_name;
-      vector<typed_variable_t> m_args;
+      std::vector<typed_variable_t> m_args;
       
-      typedef typename vector<typed_variable_t>::iterator iterator;
-      typedef typename vector<typed_variable_t>::const_iterator const_iterator;
+      typedef typename std::vector<typed_variable_t>::iterator iterator;
+      typedef typename std::vector<typed_variable_t>::const_iterator const_iterator;
       
      public:
       
-      callsite_stmt (VariableName func_name, const vector<typed_variable_t> &args)
+      callsite_stmt (VariableName func_name, const std::vector<typed_variable_t> &args)
 	: statement_t (CALLSITE), m_func_name (func_name)
       {
         std::copy (args.begin (), args.end (), std::back_inserter (m_args));
         for (auto arg:  m_args) { this->m_live.add_use (arg.first); }
       }
       
-      callsite_stmt (const vector<typed_variable_t> &lhs, 
-                     VariableName func_name, const vector<typed_variable_t> &args)
+      callsite_stmt (const std::vector<typed_variable_t> &lhs, 
+                     VariableName func_name, const std::vector<typed_variable_t> &args)
 	: statement_t (CALLSITE), m_func_name (func_name)
       {
         std::copy (args.begin (), args.end (), std::back_inserter(m_args));
@@ -1373,7 +1370,7 @@ namespace crab {
         for (auto arg:  m_lhs) { this->m_live.add_def (arg.first); }
       }
       
-      const vector<typed_variable_t>& get_lhs () const { 
+      const std::vector<typed_variable_t>& get_lhs () const { 
         return m_lhs;
       }
       
@@ -1381,7 +1378,7 @@ namespace crab {
         return m_func_name; 
       }
 
-      const vector<typed_variable_t>& get_args () const { 
+      const std::vector<typed_variable_t>& get_args () const { 
         return m_args;
       }
 
@@ -1453,7 +1450,7 @@ namespace crab {
 
      private:
 
-      vector<typed_variable_t> m_ret;
+      std::vector<typed_variable_t> m_ret;
       
      public:
       
@@ -1464,14 +1461,14 @@ namespace crab {
         this->m_live.add_use (var); 
       }
 
-      return_stmt (const vector<typed_variable_t> &ret_vals)
+      return_stmt (const std::vector<typed_variable_t> &ret_vals)
           : statement_t (RETURN)
       {
         std::copy (ret_vals.begin (), ret_vals.end (), std::back_inserter(m_ret));
         for (auto r:  m_ret) { this->m_live.add_use (r.first); }
       }
       
-      const vector<typed_variable_t>& get_ret_vals () const {
+      const std::vector<typed_variable_t>& get_ret_vals () const {
         return m_ret;
       }
       
@@ -1517,7 +1514,7 @@ namespace crab {
      public:
 
       typedef statement<Number,VariableName> statement_t;            
-      typedef linear_constraint< Number, VariableName > linear_constraint_t;
+      typedef ikos::linear_constraint< Number, VariableName > linear_constraint_t;
       
      private:
       
@@ -1802,18 +1799,18 @@ namespace crab {
       typedef BasicBlockLabel basic_block_label_t;
 
       // helper types to build statements
-      typedef variable< Number, VariableName > variable_t;
-      typedef linear_expression< Number, VariableName > lin_exp_t;
-      typedef linear_constraint< Number, VariableName > lin_cst_t;
+      typedef ikos::variable< Number, VariableName > variable_t;
+      typedef ikos::linear_expression< Number, VariableName > lin_exp_t;
+      typedef ikos::linear_constraint< Number, VariableName > lin_cst_t;
       typedef statement< Number, VariableName> statement_t;
       typedef basic_block< BasicBlockLabel, VariableName, Number> basic_block_t;
-      typedef interval <Number> interval_t;
+      typedef ikos::interval <Number> interval_t;
       
      private:
       
-      typedef vector< BasicBlockLabel > bb_id_set_t;
+      typedef std::vector< BasicBlockLabel > bb_id_set_t;
       typedef boost::shared_ptr< statement_t > statement_ptr;
-      typedef vector< statement_ptr > stmt_list_t;
+      typedef std::vector< statement_ptr > stmt_list_t;
       
      public:
       
@@ -1825,7 +1822,7 @@ namespace crab {
       typedef boost::indirect_iterator< typename stmt_list_t::const_iterator > const_iterator;
       typedef boost::indirect_iterator< typename stmt_list_t::reverse_iterator > reverse_iterator;
       typedef boost::indirect_iterator< typename stmt_list_t::const_reverse_iterator > const_reverse_iterator;
-      typedef discrete_domain <VariableName> live_domain_t;
+      typedef ikos::discrete_domain <VariableName> live_domain_t;
       
      public:
 
@@ -1977,7 +1974,7 @@ namespace crab {
 
       BasicBlockLabel label () const { return m_bb_id; }
 
-      string name () const {
+      std::string name () const {
         return cfg_impl::get_label_str (m_bb_id); 
       }
 
@@ -2448,7 +2445,7 @@ namespace crab {
       }
 
       void callsite (VariableName func, 
-                     const vector<std::pair <VariableName,variable_type> > &args) 
+                     const std::vector<std::pair <VariableName,variable_type> > &args) 
       {
         insert(boost::static_pointer_cast< statement_t, callsite_t >
                (boost::make_shared<callsite_t>(func, args)));
@@ -2457,16 +2454,16 @@ namespace crab {
       
       void callsite (std::pair<VariableName,variable_type> lhs, 
                      VariableName func, 
-                     const vector<std::pair<VariableName,variable_type> > &args) 
+                     const std::vector<std::pair<VariableName,variable_type> > &args) 
       {
-        vector<std::pair <VariableName,variable_type> > v_lhs = { lhs };
+        std::vector<std::pair <VariableName,variable_type> > v_lhs = { lhs };
         insert(boost::static_pointer_cast< statement_t, callsite_t >
                (boost::make_shared<callsite_t>(v_lhs, func, args)));
       }
 
-      void callsite (const vector<std::pair<VariableName,variable_type> > &lhs, 
+      void callsite (const std::vector<std::pair<VariableName,variable_type> > &lhs, 
                      VariableName func, 
-                     const vector<std::pair<VariableName,variable_type> > &args) 
+                     const std::vector<std::pair<VariableName,variable_type> > &args) 
       {
         insert(boost::static_pointer_cast< statement_t, callsite_t >
                (boost::make_shared<callsite_t>(lhs, func, args)));
@@ -2475,12 +2472,12 @@ namespace crab {
       
       void ret (VariableName var, variable_type ty) 
       {
-        vector<std::pair <VariableName,variable_type> > ret_vals = { std::make_pair(var,ty) };        
+        std::vector<std::pair <VariableName,variable_type> > ret_vals = { std::make_pair(var,ty) };        
         insert(boost::static_pointer_cast< statement_t, return_t >
                (boost::make_shared<return_t>(ret_vals)));
       }
 
-      void ret (const vector<std::pair<VariableName,variable_type> > &ret_vals) 
+      void ret (const std::vector<std::pair<VariableName,variable_type> > &ret_vals) 
       {
         insert(boost::static_pointer_cast< statement_t, return_t >
                (boost::make_shared<return_t>(ret_vals)));
@@ -2536,14 +2533,14 @@ namespace crab {
                  (boost::make_shared<ptr_assign_t> (lhs, rhs, offset)));
       }
       
-      void ptr_new_object (VariableName lhs, index_t address) 
+      void ptr_new_object (VariableName lhs, ikos::index_t address) 
       {
         if (m_track_prec >= PTR)
           insert(boost::static_pointer_cast< statement_t, ptr_object_t >
                  (boost::make_shared<ptr_object_t> (lhs, address)));
       }
       
-      void ptr_new_func (VariableName lhs, index_t func) 
+      void ptr_new_func (VariableName lhs, ikos::index_t func) 
       {
         if (m_track_prec >= PTR)
           insert(boost::static_pointer_cast< statement_t, ptr_function_t >
@@ -2579,7 +2576,7 @@ namespace crab {
       }
 
 
-      void bool_assign (VariableName lhs, linear_constraint<Number, VariableName> rhs) 
+      void bool_assign (VariableName lhs, ikos::linear_constraint<Number, VariableName> rhs) 
       {
         insert (boost::static_pointer_cast< statement_t, bool_assign_cst_t >
                 (boost::make_shared<bool_assign_cst_t> (lhs, rhs)));
@@ -2661,7 +2658,7 @@ namespace crab {
 
       typedef typename BasicBlock::reverse_iterator iterator;
       typedef typename BasicBlock::const_reverse_iterator const_iterator;
-      typedef discrete_domain<varname_t> live_domain_t;
+      typedef ikos::discrete_domain<varname_t> live_domain_t;
 
      private:
 
@@ -2803,29 +2800,29 @@ namespace crab {
 
      private:
 
-      vector<variable_type> m_lhs_types;
+      std::vector<variable_type> m_lhs_types;
       VariableName m_func_name;
-      vector<typed_variable_t> m_params;
+      std::vector<typed_variable_t> m_params;
       
-      typedef typename vector<typed_variable_t>::iterator param_iterator;
-      typedef typename vector<typed_variable_t>::const_iterator const_param_iterator;
+      typedef typename std::vector<typed_variable_t>::iterator param_iterator;
+      typedef typename std::vector<typed_variable_t>::const_iterator const_param_iterator;
       
      public:
       
       function_decl (variable_type lhs_type, VariableName func_name, 
-                     vector<typed_variable_t> params)
+                     std::vector<typed_variable_t> params)
           : m_func_name (func_name)
       {
         m_lhs_types.push_back (lhs_type);
         std::copy (params.begin (), params.end (), std::back_inserter (m_params));
       }
       
-      const vector<variable_type>& get_lhs_types () const { return m_lhs_types; }
+      const std::vector<variable_type>& get_lhs_types () const { return m_lhs_types; }
       
       VariableName get_func_name () const { return m_func_name;  }
 
       
-      const vector<typed_variable_t>& get_params () const { return m_params; }
+      const std::vector<typed_variable_t>& get_params () const { return m_params; }
 
       unsigned get_num_params () const { return m_params.size (); }
       
@@ -3125,7 +3122,7 @@ namespace crab {
       {
         basic_block_t& bb = get_node(bb_id) ;
         
-        vector< std::pair<basic_block_t*,basic_block_t*> > dead;
+        std::vector< std::pair<basic_block_t*,basic_block_t*> > dead;
         
         for (auto id : boost::make_iterator_range (bb.prev_blocks ()))
         { 
@@ -3213,7 +3210,7 @@ namespace crab {
       size_t size () const { return std::distance (begin (), end ()); }
      
       thresholds_t initialize_thresholds_for_widening (size_t size) const {
-	typedef bound<number_t> bound_t;
+	typedef ikos::bound<number_t> bound_t;
 	
         thresholds_t thresholds (size);
         for (auto const &b : boost::make_iterator_range (begin (), end ())) {
@@ -3461,7 +3458,7 @@ namespace crab {
 
      private:
 
-      boost::optional<reference_wrapper<CFG> > _ref;
+      boost::optional<std::reference_wrapper<CFG> > _ref;
 
      public:
 
@@ -3469,7 +3466,7 @@ namespace crab {
       cfg_ref () { } 
 
       cfg_ref (CFG &cfg)
-          : _ref(reference_wrapper<CFG>(cfg)) { } 
+          : _ref(std::reference_wrapper<CFG>(cfg)) { } 
       
       const CFG& get() const { 
         assert (_ref);

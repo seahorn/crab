@@ -17,10 +17,6 @@
 #include <crab/domains/operators_api.hpp>
 #include <crab/domains/domain_traits.hpp>
 
-using namespace boost;
-using namespace ikos;
-using namespace std;
-
 namespace crab {
    namespace domains {
 
@@ -36,7 +32,7 @@ namespace crab {
     private:
 
      typedef enum { BOT, FINITE, TOP } state_t;
-     typedef vector<interval_t> list_intervals_t;
+     typedef std::vector<interval_t> list_intervals_t;
     
     public:
 

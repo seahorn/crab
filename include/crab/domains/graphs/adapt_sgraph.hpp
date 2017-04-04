@@ -299,7 +299,7 @@ namespace crab {
   };
 
   template<class Weight>
-  class AdaptGraph : public writeable {
+  class AdaptGraph : public ikos::writeable {
     typedef AdaptSMap<size_t> smap_t;
   public:  
     typedef unsigned int vert_id;

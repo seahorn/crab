@@ -10,9 +10,6 @@
 #include <crab/domains/operators_api.hpp>
 #include <crab/domains/domain_traits.hpp>
 
-using namespace boost;
-using namespace ikos;
-
 namespace crab {
    namespace domains {
       typedef enum { APRON_INT, 
@@ -262,7 +259,7 @@ namespace crab {
           
         }
 
-        void remove_dimensions (ap_state_ptr& s, vector<ap_dim_t> dims) const {
+        void remove_dimensions (ap_state_ptr& s, std::vector<ap_dim_t> dims) const {
           if (dims.empty ()) return;
 
           // Apron assumption: make sure that the removing dimensions
@@ -588,13 +585,13 @@ namespace crab {
         void dump (const var_map_t& m, ap_state_ptr apstate ) {  
           crab::outs() << "\nNumber of dimensions=" << get_dims (apstate) << "\n";
           crab::outs() << "variable map ["; 
-          vector<char*> names;
+          std::vector<char*> names;
           for (unsigned i=0; i < get_dims (apstate) ; i++){
-            string varname;
+            std::string varname;
             if (has_var_name (m, i))
               varname = get_var_name (m, i).str ();
             else // unused dimension
-              varname = string ("_x") + std::to_string (i);
+              varname = std::string ("_x") + std::to_string (i);
             crab::outs() << i << " -> " << varname << ";";
             char* name = new char [varname.length () + 1];
             strcpy (name, varname.c_str ());
@@ -617,7 +614,7 @@ namespace crab {
             m_apstate (apState), 
             m_var_map (varMap) { 
 
-          vector<ap_dim_t> dims;
+          std::vector<ap_dim_t> dims;
           var_map_t res;
           /// XXX: we must iterate on the dimension id's to preserve
           /// order between them
@@ -644,7 +641,7 @@ namespace crab {
             m_apstate (std::move (apState)), 
             m_var_map (std::move (varMap)) { 
 
-          vector<ap_dim_t> dims;
+          std::vector<ap_dim_t> dims;
           var_map_t res;
           /// XXX: we must iterate on the dimension id's to preserve
           /// order between them
@@ -900,7 +897,7 @@ namespace crab {
           crab::CrabStats::count (getDomainName() + ".count.forget");
           crab::ScopedCrabStats __st__(getDomainName() + ".forget");
 
-          vector<ap_dim_t> vector_dims;
+          std::vector<ap_dim_t> vector_dims;
           std::set<ap_dim_t> set_dims;
 
           for (auto v: vars)  {
@@ -935,7 +932,7 @@ namespace crab {
         }
 
         void operator-=(VariableName var) {
-          vector<ap_dim_t> vector_dims;
+          std::vector<ap_dim_t> vector_dims;
           if (auto dim = get_var_dim (var)) {
             vector_dims.push_back (*dim);
             m_apstate = apPtr (get_man (), 
@@ -1089,13 +1086,13 @@ namespace crab {
 
 	  #if 0
 	  ///// debugging
-	  vector<char*> names;
+	  std::vector<char*> names;
 	  for (unsigned i=0; i < get_dims (m_apstate) ; i++){
-	    string varname;
+	    std::string varname;
 	    if (has_var_name (m_var_map, i))
 	      varname = get_var_name (m_var_map, i).str ();
 	    else // unused dimension
-	      varname = string ("_x") + std::to_string (i);
+	      varname = std::string ("_x") + std::to_string (i);
 	    char* name = new char [varname.length () + 1];
 	    strcpy (name, varname.c_str ());
 	    names.push_back (name);

@@ -6,8 +6,6 @@
 #include <algorithm>
 #include <climits>
 
-using namespace std;
-
 namespace crab {
 
    namespace iterators {
@@ -21,7 +19,7 @@ namespace crab {
        /// XXX: internal representation of a threshold
        typedef ikos::bound <Number> bound_t;
        
-       vector<bound_t> m_thresholds;
+       std::vector<bound_t> m_thresholds;
        int m_size;
 
        template<class B1, class B2>
@@ -76,7 +74,7 @@ namespace crab {
 
        void write (crab_os &o) const { 
          o << "{";
-         for (typename vector<bound_t>::const_iterator it = m_thresholds.begin (), 
+         for (typename std::vector<bound_t>::const_iterator it = m_thresholds.begin (), 
                   et= m_thresholds.end (); it != et; ) {
            bound_t b (*it);
            b.write (o);

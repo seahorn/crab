@@ -16,9 +16,6 @@
 #include <crab/domains/operators_api.hpp>
 #include <crab/domains/domain_traits.hpp>
 
-using namespace boost;
-using namespace ikos;
-
 namespace crab {
 
    namespace domains {
