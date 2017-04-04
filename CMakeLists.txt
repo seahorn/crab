@@ -146,7 +146,8 @@ if (GIT_FOUND)
   endif()
   
   ExternalProject_Add(apron
-    GIT_REPOSITORY https://jorgenavas@bitbucket.org/jorgenavas/apron.git 
+    #GIT_REPOSITORY https://jorgenavas@bitbucket.org/jorgenavas/apron.git
+    GIT_REPOSITORY git@bitbucket.org:jorgenavas/apron.git    
     GIT_TAG ${APRON_TAG}
     INSTALL_DIR ${CMAKE_BINARY_DIR}/run/apron
     CONFIGURE_COMMAND echo "Apron does not need a configure"
