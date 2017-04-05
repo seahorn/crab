@@ -10,7 +10,7 @@
 namespace boost {
 
   template<class CFG>
-  struct boost::graph_traits < crab::cg::call_graph<CFG> >  {
+  struct graph_traits < crab::cg::call_graph<CFG> >  {
 
     typedef crab::cg::call_graph<CFG> cg_t;
 
@@ -45,7 +45,7 @@ namespace boost {
   }; // end class graph_traits
 
   template<class CG>
-  struct boost::graph_traits < crab::cg::call_graph_ref<CG> >  {
+  struct graph_traits < crab::cg::call_graph_ref<CG> >  {
     typedef crab::cg::call_graph_ref<CG> cg_ref_t;
     typedef typename cg_ref_t::node_t vertex_descriptor;
     typedef typename cg_ref_t::edge_t edge_descriptor;

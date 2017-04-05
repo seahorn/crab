@@ -176,230 +176,230 @@ namespace crab {
      // cfg
      template<typename BasicBlockLabel, typename VariableName, typename Number>
      inline std::pair<typename
-		 boost::graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> >::
+		 boost::graph_traits<Cfg<BasicBlockLabel,VariableName,Number> >::
 		 vertex_iterator, 
                  typename
-		 boost::graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> >::
+		 boost::graph_traits<Cfg<BasicBlockLabel,VariableName,Number> >::
 		 vertex_iterator > 
-     vertices (crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> g) {
+     vertices (Cfg<BasicBlockLabel,VariableName,Number> g) {
        return std::make_pair (g.label_begin (), g.label_end ());
      }
    
      template<typename BasicBlockLabel, typename VariableName, typename Number>
      inline std::pair< typename
-		  boost::graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> >::
+		  boost::graph_traits<Cfg<BasicBlockLabel,VariableName,Number> >::
 		  out_edge_iterator, 
                   typename
-		  boost::graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> >::
+		  boost::graph_traits<Cfg<BasicBlockLabel,VariableName,Number> >::
 		  out_edge_iterator >
      out_edges (typename
-		boost::graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> >::
+		boost::graph_traits<Cfg<BasicBlockLabel,VariableName,Number> >::
 		vertex_descriptor v, 
-                crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> g) {
-       typedef crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> G;
+                Cfg<BasicBlockLabel,VariableName,Number> g) {
+       typedef Cfg<BasicBlockLabel,VariableName,Number> G;
        
        auto& node = g.get_node (v);
        auto p = node.next_blocks ();
        return std::make_pair (boost::make_transform_iterator
-			      (p.first, crab::cfg::graph::mk_out_edge<G> (v)),
+			      (p.first, graph::mk_out_edge<G> (v)),
                               boost::make_transform_iterator
-			      (p.second, crab::cfg::graph::mk_out_edge<G> (v)));
+			      (p.second, graph::mk_out_edge<G> (v)));
 			       
      }
    
      template<typename BasicBlockLabel, typename VariableName, typename Number>
      inline std::pair< typename
-		  boost::graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> >::
+		  boost::graph_traits<Cfg<BasicBlockLabel,VariableName,Number> >::
 		  in_edge_iterator, 
                   typename
-		  boost::graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> >::
+		  boost::graph_traits<Cfg<BasicBlockLabel,VariableName,Number> >::
 		  in_edge_iterator >
      in_edges (typename
-	       boost::graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> >::
+	       boost::graph_traits<Cfg<BasicBlockLabel,VariableName,Number> >::
 	       vertex_descriptor v, 
-               crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> g) {
-       typedef crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> G;
+               Cfg<BasicBlockLabel,VariableName,Number> g) {
+       typedef Cfg<BasicBlockLabel,VariableName,Number> G;
        
        auto& node = g.get_node (v);
        auto p = node.prev_blocks ();
        return std::make_pair (boost::make_transform_iterator
 			      (p.first, 
-			       crab::cfg::graph::mk_in_edge<G> (v)),
+			       graph::mk_in_edge<G> (v)),
                               boost::make_transform_iterator
 			      (p.second, 
-			       crab::cfg::graph::mk_in_edge<G> (v)));
+			       graph::mk_in_edge<G> (v)));
      }
    
      template<typename BasicBlockLabel, typename VariableName, typename Number>
-     typename boost::graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName, Number> >::
+     typename boost::graph_traits<Cfg<BasicBlockLabel,VariableName, Number> >::
      vertices_size_type
-     num_vertices (crab::cfg::Cfg<BasicBlockLabel,VariableName, Number> g) {
+     num_vertices (Cfg<BasicBlockLabel,VariableName, Number> g) {
        return std::distance (g.label_begin (), g.label_end ());
      }
    
      template<typename BasicBlockLabel, typename VariableName, typename Number>
-     typename boost::graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> >::
+     typename boost::graph_traits<Cfg<BasicBlockLabel,VariableName,Number> >::
      degree_size_type
      in_degree (typename
-		boost::graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> >::
+		boost::graph_traits<Cfg<BasicBlockLabel,VariableName,Number> >::
 		vertex_descriptor v, 
-                crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> g) {
+                Cfg<BasicBlockLabel,VariableName,Number> g) {
        auto preds = g.prev_nodes (v);
        return std::distance (preds.begin (), preds.end ());
      }
    
      template<typename BasicBlockLabel, typename VariableName, typename Number>
-     typename boost::graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> >::
+     typename boost::graph_traits<Cfg<BasicBlockLabel,VariableName,Number> >::
      degree_size_type
      out_degree (typename
-		 boost::graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> >::
+		 boost::graph_traits<Cfg<BasicBlockLabel,VariableName,Number> >::
 		 vertex_descriptor v, 
-                 crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> g) {
+                 Cfg<BasicBlockLabel,VariableName,Number> g) {
        auto succs = g.next_nodes (v);
        return std::distance (succs.begin (), succs.end ());
      }
    
      template<typename BasicBlockLabel, typename VariableName, typename Number>
-     typename boost::graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> >::
+     typename boost::graph_traits<Cfg<BasicBlockLabel,VariableName,Number> >::
      degree_size_type
      degree (typename
-	     boost::graph_traits<crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> >::
+	     boost::graph_traits<Cfg<BasicBlockLabel,VariableName,Number> >::
 	     vertex_descriptor v, 
-             crab::cfg::Cfg<BasicBlockLabel,VariableName,Number> g) {
+             Cfg<BasicBlockLabel,VariableName,Number> g) {
        return out_degree (v, g) + in_degree (v, g);
      }
 
      // cfg_ref
 
      template<class CFG>
-     inline std::pair<typename boost::graph_traits<crab::cfg::cfg_ref<CFG> >::vertex_iterator, 
-		      typename boost::graph_traits<crab::cfg::cfg_ref<CFG> >::vertex_iterator> 
-     vertices (crab::cfg::cfg_ref<CFG> g) {
+     inline std::pair<typename boost::graph_traits<cfg_ref<CFG> >::vertex_iterator, 
+		      typename boost::graph_traits<cfg_ref<CFG> >::vertex_iterator> 
+     vertices (cfg_ref<CFG> g) {
        return std::make_pair (g.label_begin (), g.label_end ());
      }
    
      template<class CFG>
-     inline std::pair<typename boost::graph_traits<crab::cfg::cfg_ref<CFG> >::out_edge_iterator, 
-		      typename boost::graph_traits<crab::cfg::cfg_ref<CFG> >::out_edge_iterator>
-     out_edges (typename boost::graph_traits<crab::cfg::cfg_ref<CFG> >::vertex_descriptor v, 
-                crab::cfg::cfg_ref<CFG> g) {
-       typedef crab::cfg::cfg_ref<CFG> G;
+     inline std::pair<typename boost::graph_traits<cfg_ref<CFG> >::out_edge_iterator, 
+		      typename boost::graph_traits<cfg_ref<CFG> >::out_edge_iterator>
+     out_edges (typename boost::graph_traits<cfg_ref<CFG> >::vertex_descriptor v, 
+                cfg_ref<CFG> g) {
+       typedef cfg_ref<CFG> G;
        auto &node = g.get_node (v);
        auto p = node.next_blocks ();
        return std::make_pair (boost::make_transform_iterator
-			      (p.first, crab::cfg::graph::mk_out_edge<G> (v)),
+			      (p.first, graph::mk_out_edge<G> (v)),
                               boost::make_transform_iterator
-			      (p.second, crab::cfg::graph::mk_out_edge<G> (v)));
+			      (p.second, graph::mk_out_edge<G> (v)));
 			       
      }
    
      template<class CFG>
-     inline std::pair<typename boost::graph_traits<crab::cfg::cfg_ref<CFG> >::in_edge_iterator, 
-		      typename boost::graph_traits<crab::cfg::cfg_ref<CFG> >::in_edge_iterator>
-     in_edges (typename boost::graph_traits<crab::cfg::cfg_ref<CFG> >::vertex_descriptor v, 
-               crab::cfg::cfg_ref<CFG> g) {
-       typedef crab::cfg::cfg_ref<CFG> G;
+     inline std::pair<typename boost::graph_traits<cfg_ref<CFG> >::in_edge_iterator, 
+		      typename boost::graph_traits<cfg_ref<CFG> >::in_edge_iterator>
+     in_edges (typename boost::graph_traits<cfg_ref<CFG> >::vertex_descriptor v, 
+               cfg_ref<CFG> g) {
+       typedef cfg_ref<CFG> G;
        auto &node = g.get_node (v);
        auto p = node.prev_blocks ();
        return std::make_pair (boost::make_transform_iterator
-			      (p.first, crab::cfg::graph::mk_in_edge<G> (v)),
+			      (p.first, graph::mk_in_edge<G> (v)),
                               boost::make_transform_iterator
-			      (p.second, crab::cfg::graph::mk_in_edge<G> (v)));
+			      (p.second, graph::mk_in_edge<G> (v)));
      }
    
      template<class CFG>
-     typename boost::graph_traits<crab::cfg::cfg_ref<CFG> >::vertices_size_type
-     num_vertices (crab::cfg::cfg_ref<CFG> g) {
+     typename boost::graph_traits<cfg_ref<CFG> >::vertices_size_type
+     num_vertices (cfg_ref<CFG> g) {
        return std::distance (g.label_begin (), g.label_end ());
      }
    
      template<class CFG>
-     typename boost::graph_traits<crab::cfg::cfg_ref<CFG> >::degree_size_type
-     in_degree (typename boost::graph_traits<crab::cfg::cfg_ref<CFG> >::vertex_descriptor v, 
-                crab::cfg::cfg_ref<CFG> g) {
+     typename boost::graph_traits<cfg_ref<CFG> >::degree_size_type
+     in_degree (typename boost::graph_traits<cfg_ref<CFG> >::vertex_descriptor v, 
+                cfg_ref<CFG> g) {
        auto preds = g.prev_nodes (v);
        return std::distance (preds.begin (), preds.end ());
      }
    
      template<class CFG>
-     typename boost::graph_traits<crab::cfg::cfg_ref<CFG> >::degree_size_type
-     out_degree (typename boost::graph_traits<crab::cfg::cfg_ref<CFG> >::vertex_descriptor v, 
-                 crab::cfg::cfg_ref<CFG> g) {
+     typename boost::graph_traits<cfg_ref<CFG> >::degree_size_type
+     out_degree (typename boost::graph_traits<cfg_ref<CFG> >::vertex_descriptor v, 
+                 cfg_ref<CFG> g) {
        auto succs = g.next_nodes (v);
        return std::distance (succs.begin (), succs.end ());
      }
    
      template<class CFG>
-     typename boost::graph_traits<crab::cfg::cfg_ref<CFG> >::degree_size_type
-     degree (typename boost::graph_traits<crab::cfg::cfg_ref<CFG> >::vertex_descriptor v, 
-             crab::cfg::cfg_ref<CFG> g) {
+     typename boost::graph_traits<cfg_ref<CFG> >::degree_size_type
+     degree (typename boost::graph_traits<cfg_ref<CFG> >::vertex_descriptor v, 
+             cfg_ref<CFG> g) {
        return out_degree (v, g) + in_degree (v, g);
      }
 
      // cfg_rev
 
      template<class CFG>
-     inline std::pair<typename boost::graph_traits<crab::cfg::cfg_rev<CFG> >::vertex_iterator, 
-		      typename boost::graph_traits<crab::cfg::cfg_rev<CFG> >::vertex_iterator> 
-     vertices (crab::cfg::cfg_rev<CFG> g) {
+     inline std::pair<typename boost::graph_traits<cfg_rev<CFG> >::vertex_iterator, 
+		      typename boost::graph_traits<cfg_rev<CFG> >::vertex_iterator> 
+     vertices (cfg_rev<CFG> g) {
        return std::make_pair (g.label_begin (), g.label_end ());
      }
    
      template<class CFG>
-     inline std::pair<typename boost::graph_traits<crab::cfg::cfg_rev<CFG> >::out_edge_iterator, 
-		      typename boost::graph_traits<crab::cfg::cfg_rev<CFG> >::out_edge_iterator>
-     out_edges (typename boost::graph_traits<crab::cfg::cfg_rev<CFG> >::vertex_descriptor v, 
-                crab::cfg::cfg_rev<CFG> g) {
-       typedef crab::cfg::cfg_rev<CFG> G;
+     inline std::pair<typename boost::graph_traits<cfg_rev<CFG> >::out_edge_iterator, 
+		      typename boost::graph_traits<cfg_rev<CFG> >::out_edge_iterator>
+     out_edges (typename boost::graph_traits<cfg_rev<CFG> >::vertex_descriptor v, 
+                cfg_rev<CFG> g) {
+       typedef cfg_rev<CFG> G;
        auto &node = g.get_node (v);
        auto p = node.next_blocks ();
        return std::make_pair (boost::make_transform_iterator
-			      (p.first, crab::cfg::graph::mk_out_edge<G> (v)),
+			      (p.first, graph::mk_out_edge<G> (v)),
                               boost::make_transform_iterator
 			      (p.second, 
-			       crab::cfg::graph::mk_out_edge<G> (v)));
+			       graph::mk_out_edge<G> (v)));
      }
    
      template<class CFG>
-     inline std::pair<typename boost::graph_traits<crab::cfg::cfg_rev<CFG> >::in_edge_iterator, 
-		      typename boost::graph_traits<crab::cfg::cfg_rev<CFG> >::in_edge_iterator>
-     in_edges (typename boost::graph_traits<crab::cfg::cfg_rev<CFG> >::vertex_descriptor v, 
-               crab::cfg::cfg_rev<CFG> g) {
-       typedef crab::cfg::cfg_rev<CFG> G;
+     inline std::pair<typename boost::graph_traits<cfg_rev<CFG> >::in_edge_iterator, 
+		      typename boost::graph_traits<cfg_rev<CFG> >::in_edge_iterator>
+     in_edges (typename boost::graph_traits<cfg_rev<CFG> >::vertex_descriptor v, 
+               cfg_rev<CFG> g) {
+       typedef cfg_rev<CFG> G;
        auto &node = g.get_node (v);
        auto p = node.prev_blocks ();
        return std::make_pair (boost::make_transform_iterator
-			      (p.first, crab::cfg::graph::mk_in_edge<G> (v)),
+			      (p.first, graph::mk_in_edge<G> (v)),
                               boost::make_transform_iterator
-			      (p.second, crab::cfg::graph::mk_in_edge<G> (v)));
+			      (p.second, graph::mk_in_edge<G> (v)));
      }
    
      template<class CFG>
-     typename boost::graph_traits<crab::cfg::cfg_rev<CFG> >::vertices_size_type
-     num_vertices (crab::cfg::cfg_rev<CFG> g) {
+     typename boost::graph_traits<cfg_rev<CFG> >::vertices_size_type
+     num_vertices (cfg_rev<CFG> g) {
        return std::distance (g.label_begin (), g.label_end ());
      }
    
      template<class CFG>
-     typename boost::graph_traits<crab::cfg::cfg_rev<CFG> >::degree_size_type
-     in_degree (typename boost::graph_traits<crab::cfg::cfg_rev<CFG> >::vertex_descriptor v, 
-                crab::cfg::cfg_rev<CFG> g) {
+     typename boost::graph_traits<cfg_rev<CFG> >::degree_size_type
+     in_degree (typename boost::graph_traits<cfg_rev<CFG> >::vertex_descriptor v, 
+                cfg_rev<CFG> g) {
        auto preds = g.prev_nodes (v);
        return std::distance (preds.begin (), preds.end ());
      }
    
      template<class CFG>
-     typename boost::graph_traits<crab::cfg::cfg_rev<CFG> >::degree_size_type
-     out_degree (typename boost::graph_traits<crab::cfg::cfg_rev<CFG> >::vertex_descriptor v, 
-                 crab::cfg::cfg_rev<CFG> g) {
+     typename boost::graph_traits<cfg_rev<CFG> >::degree_size_type
+     out_degree (typename boost::graph_traits<cfg_rev<CFG> >::vertex_descriptor v, 
+                 cfg_rev<CFG> g) {
        auto succs = g.next_nodes (v);
        return std::distance (succs.begin (), succs.end ());
      }
    
      template<class CFG>
-     typename boost::graph_traits<crab::cfg::cfg_rev<CFG> >::degree_size_type
-     degree (typename boost::graph_traits<crab::cfg::cfg_rev<CFG> >::vertex_descriptor v, 
-             crab::cfg::cfg_rev<CFG> g) {
+     typename boost::graph_traits<cfg_rev<CFG> >::degree_size_type
+     degree (typename boost::graph_traits<cfg_rev<CFG> >::vertex_descriptor v, 
+             cfg_rev<CFG> g) {
        return out_degree (v, g) + in_degree (v, g);
      }
 
