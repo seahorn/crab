@@ -61,7 +61,10 @@ if (NOT CMAKE_INSTALL_RPATH)
   set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 endif ()
 
-set (Boost_USE_STATIC_LIBS ON)
+
+if (NOT BUILD_CRAB_LIBS_SHARED)
+  set (Boost_USE_STATIC_LIBS ON)
+endif ()  
 if (ENABLE_TESTS)
   find_package (Boost 1.55.0 COMPONENTS program_options REQUIRED)
 else ()
@@ -226,6 +229,25 @@ endif ()
 #   set(RT_LIB "")
 # endif()
 # mark_as_advanced(RT_LIB)
+
+# XXX: needed if shared libraries
+if (BUILD_CRAB_LIBS_SHARED)
+  if (USE_APRON)
+    if (CMAKE_LIBRARY_OUTPUT_DIRECTORY)
+      install(FILES ${APRON_LIBRARY} DESTINATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+    else ()
+      install(FILES ${APRON_LIBRARY} DESTINATION lib)
+    endif ()
+  endif ()
+  if (USE_LDD)
+    if (CMAKE_LIBRARY_OUTPUT_DIRECTORY)
+      install(FILES ${LDD_LIBRARY} DESTINATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+    else ()
+      install(FILES ${LDD_LIBRARY} DESTINATION lib)
+    endif ()
+  endif ()
+endif ()
+
 
 # XXX: do not use add_definition for warning flags. add_definition is
 #      intended for -D...

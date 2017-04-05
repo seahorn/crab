@@ -7,16 +7,6 @@ set (CRAB_LIBS Crab
   ${GMP_LIB} 
   )
 
-# XXX: needed if shared libraries
-if (BUILD_CRAB_LIBS_SHARED)
-  if (USE_APRON)
-    install(FILES ${APRON_LIBRARY} DESTINATION lib)
-  endif ()
-  if (USE_LDD)
-    install(FILES ${LDD_LIBRARY} DESTINATION lib)
-  endif ()
-endif ()
-
 function (AddTest testSrc)
   #Extract the filename without an extension (NAME_WE)
   get_filename_component(testName ${testSrc} NAME_WE)
