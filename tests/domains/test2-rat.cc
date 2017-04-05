@@ -38,8 +38,10 @@ int main (int argc, char** argv )
   q_cfg_t* cfg = prog (vfac);
   crab::outs() << *cfg << "\n";
 
-  run<q_interval_domain_t>(cfg,vfac,false,1,2,20);    
-  run<q_pk_apron_domain_t>(cfg,vfac,false,1,2,20);  
+  run<q_interval_domain_t>(cfg,vfac,false,1,2,20);
+  #ifdef HAVE_APRON
+  run<q_pk_apron_domain_t>(cfg,vfac,false,1,2,20);
+  #endif
   #ifdef HAVE_LDD
   run<q_boxes_domain_t>(cfg,vfac,false,1,2,20);
   #endif   

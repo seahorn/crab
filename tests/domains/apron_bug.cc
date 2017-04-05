@@ -40,7 +40,7 @@ namespace crab
 /* Example of how to infer invariants from the above CFG */
 int main (int argc, char** argv ) {
 
-
+#ifdef HAVE_APRON
   variable_factory_t vfac;
   {
     q_pk_apron_domain_t inv = q_pk_apron_domain_t::top ();
@@ -65,6 +65,7 @@ int main (int argc, char** argv ) {
     crab::outs () << "EXPECTED={x = 1/2}\n";
     crab::outs () << "RESULT=" << inv << "\n";
   }
-  
+#endif  
   return 0;
 }
+

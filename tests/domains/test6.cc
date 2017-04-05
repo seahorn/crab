@@ -65,7 +65,9 @@ int main (int argc, char** argv )
 
   run<z_interval_domain_t>(cfg, vfac, false, 1, 2, 20);
   run<z_bool_num_domain_t>(cfg, vfac, false, 1, 2, 20);
-  run<z_boxes_domain_t>(cfg, vfac, false, 1, 2, 20);    
+  #ifdef HAVE_LDD
+  run<z_boxes_domain_t>(cfg, vfac, false, 1, 2, 20);
+  #endif 
 
   // free the CFG
   delete cfg;

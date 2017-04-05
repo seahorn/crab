@@ -1,15 +1,18 @@
 #include <crab/config.h>
 
-#ifdef HAVE_LDD
 #include "../common.hpp"
+#ifdef HAVE_LDD
 #include <crab/domains/ldd/ldd.hpp>
+#endif 
 #include <boost/optional.hpp>
 
 using namespace std;
 using namespace ikos;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
+#ifdef HAVE_LDD
 using namespace crab::domains::ldd;
+#endif 
 
 #define RATIONALS
 
@@ -22,6 +25,8 @@ typedef z_number number_t;
 typedef linear_constraint<number_t, varname_t> linear_constraint_t;
 typedef linear_expression<number_t, varname_t> linear_expression_t;
 typedef interval <number_t> interval_t;
+
+#ifdef HAVE_LDD
 
 LddManager* create_ldd_man (size_t num_vars) {
   DdManager* cudd = Cudd_Init (0, 0, CUDD_UNIQUE_SLOTS, 127, 0);
@@ -212,10 +217,11 @@ LddNodePtr assign (LddManager* ldd, const LddNodePtr n,
 {
   return apply (ldd, n, v, u, 1, 0);      
 }
-    
+#endif     
    
 int main (int argc, char** argv )
 {
+#ifdef HAVE_LDD
   SET_TEST_OPTIONS(argc,argv)
 
   LddManager* man = create_ldd_man (3000);
@@ -248,6 +254,6 @@ int main (int argc, char** argv )
   
   // FIXME: seg fault here
   // destroy_ldd_man (man);
+#endif 
   return 0;
 }
-#endif 
