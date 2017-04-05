@@ -30,37 +30,30 @@ option (USE_LDD   "Enable Ldd library" OFF)
 option (USE_APRON "Enable Apron library" OFF)
 option (USE_STATS "Enable statistics" ON)
 option (USE_LOG   "Enable logging for debugging purposes" ON)
-option (BUILD_CRAB_LIBS_SHARED "Build all Crab libraries shared." ON)
-
-# Temporary fix because ldd provides only static libraries
-if (USE_LDD)
-  message (STATUS "ldd provides only static libraries. Forced Crab static building.")
-  set (BUILD_CRAB_LIBS_SHARED OFF)
-endif ()
+option (BUILD_CRAB_LIBS_SHARED "Build all Crab libraries dynamically." ON)
 
 if (NOT BUILD_CRAB_LIBS_SHARED)
-   # put static libraries first unless we want shared libraries
+   # put static libraries first unless we want dynamic libraries
    set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ${CMAKE_FIND_LIBRARY_SUFFIXES})
 endif ()   
 
 if (BUILD_CRAB_LIBS_SHARED)
-  message (STATUS "All crab libraries will be built as shared libraries")
+  message (STATUS "All crab libraries will be built dynamically")
   set(CRAB_LIBS_TYPE SHARED)
-  # so that executables outside the build tree can find later shared
-  # libraries
-  set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-  set(CMAKE_MACOSX_RPATH TRUE)    
-  if (NOT CMAKE_INSTALL_RPATH)
-    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-  endif ()
 else()
   message (STATUS "All crab libraries will be built statically")
   set(CRAB_LIBS_TYPE STATIC)
 endif ()
 
-# Even if CRAB_LIBS_TYPE=STATIC we could have a mix of shared and
-# static libraries
+
+# So that executables outside the build tree can find later dynamic
+# libraries.  Even if CRAB_LIBS_TYPE=STATIC we could have a mix of
+# dynamic and static libraries
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  # Mac OS X specific code
+  set(CMAKE_MACOSX_RPATH TRUE)
+endif ()  
 if (NOT CMAKE_INSTALL_RPATH)
   set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 endif ()
@@ -146,7 +139,6 @@ if (GIT_FOUND)
   endif()
   
   ExternalProject_Add(apron
-    #GIT_REPOSITORY https://jorgenavas@bitbucket.org/jorgenavas/apron.git
     GIT_REPOSITORY git@bitbucket.org:jorgenavas/apron.git    
     GIT_TAG ${APRON_TAG}
     INSTALL_DIR ${CMAKE_BINARY_DIR}/run/apron
@@ -226,16 +218,11 @@ else ()
 endif ()
 
 # check for rt lib. Not needed on OSX.
-find_library(RT_LIB NAMES rt)
-if (NOT RT_LIB)
-  set(RT_LIB "")
-endif()
-mark_as_advanced(RT_LIB)
-
-# find_package(OpenMP)
-# if (OpenMP_FOUND)
-#   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-# endif ()
+# find_library(RT_LIB NAMES rt)
+# if (NOT RT_LIB)
+#   set(RT_LIB "")
+# endif()
+# mark_as_advanced(RT_LIB)
 
 # XXX: do not use add_definition for warning flags. add_definition is
 #      intended for -D...
@@ -269,9 +256,7 @@ endif ()
 install(DIRECTORY include/ DESTINATION include)
 
 # Licenses
-##install(FILES Crab_LICENSE.txt DESTINATION shared/doc)       
-
-install(FILES Ikos_LICENSE.pdf DESTINATION shared/doc)       
+##install(FILES LICENSE.txt DESTINATION shared/doc)       
 
 
 

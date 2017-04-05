@@ -1,18 +1,10 @@
-set (CRAB_LIBS 
-  OS
-  Term
-  Debug
-  Stats
-  )
-
-set (CRAB_LIBS ${CRAB_LIBS}
+set (CRAB_LIBS Crab
   ${Boost_PROGRAM_OPTIONS_LIBRARY}
   ${LDD_LIBRARY} 
   ${APRON_LIBRARY}
   ${MPFR_LIBRARIES} 
   ${GMPXX_LIB} 
   ${GMP_LIB} 
-  ${RT_LIB}
   )
 
 add_subdirectory (simple)
