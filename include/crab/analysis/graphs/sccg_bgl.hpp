@@ -12,7 +12,7 @@
 namespace boost {
 
   template<class G>
-  struct boost::graph_traits < crab::analyzer::graph_algo::scc_graph<G> >  {
+  struct graph_traits < crab::analyzer::graph_algo::scc_graph<G> >  {
 
     typedef crab::analyzer::graph_algo::scc_graph<G> sccg_t;
 

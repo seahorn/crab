@@ -80,11 +80,11 @@ namespace boost {
        // iterator of basic_block_label_t's
        typedef typename graph_t::label_iterator vertex_iterator;
        // iterator of pairs of basic_block_label_t's
-       typedef boost::transform_iterator<crab::cfg::graph::mk_in_edge<graph_t>, 
-                                         typename graph_t::pred_iterator> in_edge_iterator;
+       typedef transform_iterator<crab::cfg::graph::mk_in_edge<graph_t>, 
+				  typename graph_t::pred_iterator> in_edge_iterator;
        // iterator of pairs of basic_block_label_t's
-       typedef boost::transform_iterator<crab::cfg::graph::mk_out_edge<graph_t>, 
-                                         typename graph_t::succ_iterator> out_edge_iterator; 
+       typedef transform_iterator<crab::cfg::graph::mk_out_edge<graph_t>, 
+				  typename graph_t::succ_iterator> out_edge_iterator; 
      }; // end class graph_traits
 
 
