@@ -57,10 +57,6 @@ the tests via `CMake` type:
     cmake -DENABLE_TESTS=ON -DCMAKE_INSTALL_PREFIX=run ../
     cmake --build . --target install 
 
-and, for instance, to execute the test `tests/simple/test1.cc` type:
-
-    cd run/tests/domains && ./test1
-
 The Boxes and Apron domains require third-party libraries. To avoid
 the burden to users who are not interested in those domains, the
 installation of the libraries is optional.
@@ -68,6 +64,7 @@ installation of the libraries is optional.
 If you want to use the BOXES domain then add `-DUSE_LDD=ON` option.
 
 If you want to use the Apron library domains then add `-DUSE_APRON=ON` option.
+
 
 # Example #
 
@@ -173,12 +170,7 @@ that uses Crab-Llvm to supply invariants to the back-end solvers.
 
 # Licensing #
 
-Crab is currently under a licensing process. Meanwhile, Crab cannot be
-publicly distributed.
-
-Ikos is distributed under NASA Open Source Agreement (NOSA)
-Version 1.3 or later. See [Ikos_LICENSE.pdf](Ikos_LICENSE.pdf) for
-details.
+Apache 2.0 license coming soon!
 
 # Publications #
 
