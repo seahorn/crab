@@ -1,7 +1,7 @@
-add_executable(nullity test.cc)
-target_link_libraries (nullity ${CRAB_LIBS})
+add_executable(null-tests null-tests.cc)
+target_link_libraries (null-tests ${CRAB_LIBS})
 
-install(TARGETS nullity
+install(TARGETS null-tests
   RUNTIME DESTINATION tests/domains
   )
 

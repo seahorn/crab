@@ -1,7 +1,7 @@
-add_executable(thresholds test.cc)
-target_link_libraries (thresholds ${CRAB_LIBS})
+add_executable(thresholds-tests thresholds-tests.cc)
+target_link_libraries (thresholds-tests ${CRAB_LIBS})
 
-install(TARGETS thresholds
+install(TARGETS thresholds-tests
   RUNTIME DESTINATION tests/fixpo
   )
 

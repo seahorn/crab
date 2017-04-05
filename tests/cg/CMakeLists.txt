@@ -1,8 +1,8 @@
-add_executable(callgraph test.cc)
-target_link_libraries (callgraph ${CRAB_LIBS})
+add_executable(cg-tests cg-tests.cc)
+target_link_libraries (cg-tests ${CRAB_LIBS})
 
-install(TARGETS callgraph
-  RUNTIME DESTINATION tests/callgraph
+install(TARGETS cg-tests
+  RUNTIME DESTINATION tests/cg
   )
 
 

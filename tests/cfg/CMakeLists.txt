@@ -1,7 +1,7 @@
-add_executable(test test.cc)
-target_link_libraries (test ${CRAB_LIBS})
+add_executable(cfg-tests cfg-tests.cc)
+target_link_libraries (cfg-tests ${CRAB_LIBS})
 
-install(TARGETS test
+install(TARGETS cfg-tests
   RUNTIME DESTINATION tests/cfg
   )
 
