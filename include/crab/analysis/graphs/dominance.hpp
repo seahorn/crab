@@ -5,6 +5,7 @@
 #include <boost/property_map/property_map.hpp>
 #include <boost/graph/dominator_tree.hpp>
 #include <boost/unordered_map.hpp>
+#include <boost/version.hpp>
 
 /*
 
@@ -35,6 +36,15 @@ namespace crab {
      //      is the immediate dominator of u. 
      template <typename G, typename Map>
      void dominator_tree(G g, typename G::node_t entry, Map &idom) {
+#if BOOST_VERSION /100 % 100 < 62
+       // XXX: the boost dominator_tree class used by
+       //      lengauer_tarjan_dominator_tree ignores completely
+       //      index_map in versions older than 1.62 so calls to
+       //      get(vertex_index, g) will fail.
+       // FIXME: need to get around in older versions but for now we
+       //        give up and report to user.
+       CRAB_WARN("Dominance queries require boost >= 1.62");
+#else
        typedef typename G::node_t node_t;
        typedef typename boost::graph_traits<G>::vertices_size_type vertices_size_type_t;       
        typedef boost::associative_property_map<std::map <node_t, int> > index_map_t;
@@ -84,6 +94,7 @@ namespace crab {
 		                   << " is not dominated by anyone!\n");
 	 }
        }
+#endif 
      }
 
      namespace graph_algo_impl {       
