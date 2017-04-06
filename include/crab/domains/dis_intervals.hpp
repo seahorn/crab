@@ -1415,12 +1415,12 @@ namespace crab {
      void normalize () {
        crab::CrabStats::count (getDomainName() + ".count.normalize");
        crab::ScopedCrabStats __st__(getDomainName() + ".normalize");
-
        if (is_bottom () || is_top ()) return;
-
        separate_domain_t env;
        for (auto p : boost::make_iterator_range (_env.begin (), _env.end ())) {
-         env.set (p.first, p.second.normalize ());
+	 auto disint = p.second;
+	 disint.normalize ();
+         env.set (p.first, disint);
        }
        std::swap (_env, env);
      }

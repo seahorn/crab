@@ -581,10 +581,15 @@ namespace crab {
       { this->_product += csts; }
       
       void set (V v, interval_t intv)
-      { this->_product.set(v, intv); }
+      { // domain_product2 does not define set method
+	this->_product.second().set(v, intv);  // only on the numerical domain
+      }
             
       interval_t operator[](V v)
-      { return this->_product[v]; }
+      { // domain_product2 does not define [] method
+	// TODO: if v is bool and it is not top then we can convert it to an interval.
+	return this->_product.second()[v];
+      }
 
       void operator-=(V v)
       {
