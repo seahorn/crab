@@ -77,11 +77,11 @@ namespace crab {
    theory_t* create_box_theory (size_t sz);
      
    template<>
-   theory_t* create_box_theory<ikos::z_number> (size_t sz)
+   inline theory_t* create_box_theory<ikos::z_number> (size_t sz)
    { return tvpi_create_boxz_theory (sz); }
 
    template<>
-   theory_t* create_box_theory<ikos::q_number> (size_t sz)
+   inline theory_t* create_box_theory<ikos::q_number> (size_t sz)
    { return tvpi_create_box_theory (sz); }
      
    } // end ldd
