@@ -1,6 +1,7 @@
+#include "../program_options.hpp"
 #include "../common.hpp"
-//#include "crab/analysis/graphs/dominance.hpp"
-#include "crab/analysis/graphs/cdg.hpp"
+#include <crab/iterators/wto.hpp>
+#include <crab/analysis/graphs/cdg.hpp>
 
 using namespace std;
 using namespace crab::analyzer;

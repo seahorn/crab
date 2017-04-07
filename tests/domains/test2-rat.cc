@@ -1,8 +1,10 @@
+#include "../program_options.hpp"
 #include "../common.hpp"
 
 
 // To run abstract domains defined over reals
 
+using namespace crab::cfg;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
@@ -38,12 +40,12 @@ int main (int argc, char** argv )
   q_cfg_t* cfg = prog (vfac);
   crab::outs() << *cfg << "\n";
 
-  run<q_interval_domain_t>(cfg,vfac,false,1,2,20);
+  run<q_interval_domain_t>(cfg,false,1,2,20,stats_enabled);
   #ifdef HAVE_APRON
-  run<q_pk_apron_domain_t>(cfg,vfac,false,1,2,20);
+  run<q_pk_apron_domain_t>(cfg,false,1,2,20,stats_enabled);
   #endif
   #ifdef HAVE_LDD
-  run<q_boxes_domain_t>(cfg,vfac,false,1,2,20);
+  run<q_boxes_domain_t>(cfg,false,1,2,20,stats_enabled);
   #endif   
   return 0;
 }

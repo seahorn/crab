@@ -1,3 +1,4 @@
+#include "../program_options.hpp"
 #include "../common.hpp"
 #include <crab/checkers/base_property.hpp>
 #include <crab/checkers/null.hpp>
@@ -7,6 +8,7 @@
 
 using namespace std;
 using namespace crab::analyzer;
+using namespace crab::cfg;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 using namespace crab::checker;

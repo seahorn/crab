@@ -1,7 +1,9 @@
+#include "../program_options.hpp"
 #include "../common.hpp"
 
 using namespace std;
 using namespace crab::analyzer;
+using namespace crab::cfg;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
@@ -97,7 +99,7 @@ int main (int argc, char**argv){
     variable_factory_t vfac;
     z_cfg_t* cfg = prog (vfac);
     crab::outs() << *cfg << "\n";
-    run<z_dis_interval_domain_t>(cfg, vfac, false, 1, 2, 20); 
+    run<z_dis_interval_domain_t>(cfg,  false, 1, 2, 20, stats_enabled); 
     delete cfg;
   }
 }

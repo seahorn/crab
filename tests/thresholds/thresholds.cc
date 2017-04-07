@@ -1,7 +1,9 @@
+#include "../program_options.hpp"
 #include "../common.hpp"
 
 using namespace std;
 using namespace crab::analyzer;
+using namespace crab::cfg;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
@@ -92,12 +94,12 @@ int main (int argc, char**argv){
     crab::outs() << *cfg << "\n";
 
     // w/o thresholds
-    run<z_term_domain_t>(cfg, vfac, false, 1, 2, 0);      
+    run<z_term_domain_t>(cfg, false, 1, 2, 0, stats_enabled);      
 
     // w/thresholds
     typename z_cfg_t::thresholds_t ts = cfg->initialize_thresholds_for_widening (50);
     crab::outs() << "Thresholds=" << ts << "\n";
-    run<z_term_domain_t>(cfg, vfac, false, 1, 2, 20);
+    run<z_term_domain_t>(cfg, false, 1, 2, 20, stats_enabled);
 
 
     delete cfg;

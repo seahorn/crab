@@ -7,6 +7,13 @@ if (CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR )
     "In-source builds are not allowed. Please clean your source tree and try again.")  
 endif()
 
+# determine if this is top-level or embedded project
+if (PROJECT_NAME STREQUAL CMAKE_PROJECT_NAME)
+  set (TopLevel TRUE)
+else()
+  set (TopLevel FALSE)
+endif()
+
 # Add path for custom modules
 set(CMAKE_MODULE_PATH 
   ${CMAKE_MODULE_PATH} 
@@ -48,6 +55,10 @@ else()
   set(CRAB_LIBS_TYPE STATIC)
 endif ()
 
+######
+# WARNING: crab dependencies (apron and ldd) are currently compiled
+# statically regardless BUILD_CRAB_LIBS_SHARED.
+######
 
 # So that executables outside the build tree can find later dynamic
 # libraries.  Even if CRAB_LIBS_TYPE=STATIC we could have a mix of
@@ -231,22 +242,22 @@ endif ()
 # mark_as_advanced(RT_LIB)
 
 # XXX: needed if shared libraries
-if (BUILD_CRAB_LIBS_SHARED)
-  if (USE_APRON)
-    if (CMAKE_LIBRARY_OUTPUT_DIRECTORY)
-      install(FILES ${APRON_LIBRARY} DESTINATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
-    else ()
-      install(FILES ${APRON_LIBRARY} DESTINATION lib)
-    endif ()
-  endif ()
-  if (USE_LDD)
-    if (CMAKE_LIBRARY_OUTPUT_DIRECTORY)
-      install(FILES ${LDD_LIBRARY} DESTINATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
-    else ()
-      install(FILES ${LDD_LIBRARY} DESTINATION lib)
-    endif ()
-  endif ()
-endif ()
+# if (BUILD_CRAB_LIBS_SHARED)
+#   if (USE_APRON)
+#     if (CMAKE_LIBRARY_OUTPUT_DIRECTORY)
+#       install(FILES ${APRON_LIBRARY} DESTINATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+#     else ()
+#       install(FILES ${APRON_LIBRARY} DESTINATION lib)
+#     endif ()
+#   endif ()
+#   if (USE_LDD)
+#     if (CMAKE_LIBRARY_OUTPUT_DIRECTORY)
+#       install(FILES ${LDD_LIBRARY} DESTINATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+#     else ()
+#       install(FILES ${LDD_LIBRARY} DESTINATION lib)
+#     endif ()
+#   endif ()
+# endif ()
 
 
 # XXX: do not use add_definition for warning flags. add_definition is
@@ -266,6 +277,19 @@ else ()
    endif ()
 endif ()
 
+set (CRAB_DEPS_LIBS
+  ${LDD_LIBRARY} 
+  ${APRON_LIBRARY}
+  ${MPFR_LIBRARIES} 
+  ${GMPXX_LIB} 
+  ${GMP_LIB})
+
+if (TopLevel)
+  set (CRAB_LIBS Crab ${CRAB_DEPS_LIBS})
+else ()
+  set (CRAB_LIBS Crab ${CRAB_DEPS_LIBS} PARENT_SCOPE)
+endif ()  
+  
 include_directories (${CMAKE_BINARY_DIR}/include)
 
 configure_file( include/crab/config.h.cmake

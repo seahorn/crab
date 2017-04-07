@@ -1,8 +1,10 @@
+#include "../program_options.hpp"
 #include "../common.hpp"
 
 using namespace std;
 using namespace crab::analyzer;
 using namespace crab::cfg_impl;
+using namespace crab::cfg;
 using namespace crab::domain_impl;
 
 

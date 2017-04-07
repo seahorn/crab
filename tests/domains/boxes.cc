@@ -1,7 +1,9 @@
+#include "../program_options.hpp"
 #include "../common.hpp"
 
 using namespace std;
 using namespace crab::analyzer;
+using namespace crab::cfg;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
@@ -212,22 +214,22 @@ int main (int argc, char** argv )
 
   cfg1->simplify (); // this is optional
   crab::outs() << *cfg1 << "\n";
-  run<z_boxes_domain_t>(cfg1, vfac, false, 10,2,20);
+  run<z_boxes_domain_t>(cfg1,  false, 10,2,20,stats_enabled);
 
   cfg2->simplify (); // this is optional
   crab::outs() << *cfg2 << "\n";
-  run<z_boxes_domain_t>(cfg2, vfac, false, 10,2,20);
+  run<z_boxes_domain_t>(cfg2,  false, 10,2,20,stats_enabled);
   
   cfg3->simplify (); // this is optional
   crab::outs() << *cfg3 << "\n";
-  run<z_boxes_domain_t>(cfg3, vfac, false, 10,2,20);
+  run<z_boxes_domain_t>(cfg3,  false, 10,2,20,stats_enabled);
 
   cfg4->simplify (); // this is optional
   crab::outs() << *cfg4 << "\n";
-  run<z_boxes_domain_t>(cfg4, vfac, false, 10,2,20);
+  run<z_boxes_domain_t>(cfg4,  false, 10,2,20,stats_enabled);
 
   crab::outs() << *cfg5 << "\n";
-  run<z_boxes_domain_t>(cfg5, vfac, false, 10,2,20);
+  run<z_boxes_domain_t>(cfg5,  false, 10,2,20,stats_enabled);
 
   delete cfg1;
   delete cfg2;

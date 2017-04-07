@@ -1,7 +1,9 @@
+#include "../program_options.hpp"
 #include "../common.hpp"
 
 using namespace std;
 using namespace crab::analyzer;
+using namespace crab::cfg;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
@@ -118,13 +120,13 @@ int main (int argc, char** argv) {
   variable_factory_t vfac;
   z_cfg_t* cfg_1 = cfg1 (vfac);
   crab::outs () << *cfg_1 << "\n";
-  run<z_nullity_domain_t>(cfg_1, vfac, false, 1, 2, 20);
+  run<z_nullity_domain_t>(cfg_1,  false, 1, 2, 20, stats_enabled);
   z_cfg_t* cfg_2 = cfg2 (vfac);
   crab::outs () << *cfg_2 << "\n";
-  run<z_nullity_domain_t>(cfg_2, vfac, false, 1, 2, 20);
+  run<z_nullity_domain_t>(cfg_2,  false, 1, 2, 20, stats_enabled);
   z_cfg_t* cfg_3 = cfg3 (vfac);
   crab::outs () << *cfg_3 << "\n";
-  run<z_nullity_domain_t>(cfg_3, vfac, false, 1, 2, 20);
+  run<z_nullity_domain_t>(cfg_3,  false, 1, 2, 20, stats_enabled);
   
   delete cfg_1;
   delete cfg_2;

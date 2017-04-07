@@ -1,5 +1,6 @@
 #include <crab/config.h>
 
+#include "../program_options.hpp"
 #include "../common.hpp"
 #ifdef HAVE_LDD
 #include <crab/domains/ldd/ldd.hpp>

@@ -1,8 +1,9 @@
+#include "../program_options.hpp"
 #include "../common.hpp"
-#include <crab/common/stats.hpp>
 
 using namespace std;
 using namespace crab::analyzer;
+using namespace crab::cfg;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
@@ -452,38 +453,40 @@ z_cfg_t* prog10(variable_factory_t &vfac)
 }
 
 
-template <typename ArrayDomain>
-void run(z_cfg_ref_t cfg, string name, variable_factory_t &vfac)
-{
-  crab::outs() << "--- " << name  << "\n";
-  cfg.simplify ();
-  crab::outs() << cfg << "\n";
+// template <typename ArrayDomain>
+// void run(z_cfg_ref_t cfg, string name)
+// {
+//   crab::outs() << "--- " << name  << "\n";
+//   cfg.simplify ();
+//   crab::outs() << cfg << "\n";
   
-  ArrayDomain inv = ArrayDomain::top ();
-  using namespace crab::analyzer;
-  intra_fwd_analyzer<crab::cfg_impl::z_cfg_ref_t,ArrayDomain> It (cfg, inv, nullptr, 1, 2, 20);
-  It.run ();
-  crab::outs() << "Results with " << ArrayDomain::getDomainName () << ":\n";
-  crab::outs() << "(Invariants hold at the block's entries)\n";
-  for (auto &b : cfg)
-  {
-    // invariants at the entry of the block
-    auto inv = It.get_pre(b.label ());
-    crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
-  }
-  crab::outs() << "\n";
-  if (stats_enabled) {
-    crab::CrabStats::Print(crab::outs());
-    crab::CrabStats::reset();
-  }  
-}
+//   ArrayDomain inv = ArrayDomain::top ();
+//   using namespace crab::analyzer;
+//   intra_fwd_analyzer<crab::cfg_impl::z_cfg_ref_t,ArrayDomain> It (cfg, inv, nullptr, 1, 2, 20);
+//   It.run ();
+//   crab::outs() << "Results with " << ArrayDomain::getDomainName () << ":\n";
+//   crab::outs() << "(Invariants hold at the block's entries)\n";
+//   for (auto &b : cfg)
+//   {
+//     // invariants at the entry of the block
+//     auto inv = It.get_pre(b.label ());
+//     crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
+//   }
+//   crab::outs() << "\n";
+//   if (stats_enabled) {
+//     crab::CrabStats::Print(crab::outs());
+//     crab::CrabStats::reset();
+//   }  
+// }
 
 typedef array_sparse_graph_domain<z_sdbm_domain_t, z_interval_domain_t> array_sgraph_domain_t;
 
 void test1(){
   variable_factory_t vfac;
   z_cfg_t* cfg = prog1(vfac, false);
-  run<array_sgraph_domain_t> (*cfg, "Program 1: forall 0<= i< 10. a[i] = 123456", vfac);
+  crab::outs () << "Program 1: forall 0<= i< 10. a[i] = 123456";
+  run<array_sgraph_domain_t> (cfg, false, 1, 2, 20, stats_enabled);  
+  //run<array_sgraph_domain_t> (*cfg, "Program 1: forall 0<= i< 10. a[i] = 123456");
   delete cfg;
 }
 
@@ -491,42 +494,54 @@ void test1(){
 void test2(){
   variable_factory_t vfac;
   z_cfg_t* cfg = prog3(vfac);
-  run<array_sgraph_domain_t>(*cfg, "Program 2: forall 0<= i< 10. a[i] = b[i] = x and x = 123456", vfac);
+  crab::outs () << "Program 2: forall 0<= i< 10. a[i] = b[i] = x and x = 123456";
+  run<array_sgraph_domain_t> (cfg, false, 1, 2, 20, stats_enabled);  
+  //run<array_sgraph_domain_t>(*cfg, "Program 2: forall 0<= i< 10. a[i] = b[i] = x and x = 123456");
   delete cfg;
 }
 
 void test3(){
   variable_factory_t vfac;
   z_cfg_t* cfg = prog4(vfac);
-  run<array_sgraph_domain_t>(*cfg, "Program 3: forall 0<= i< 10. a[i] = 8 and b[i] = 5", vfac);
+  crab::outs () << "Program 3: forall 0<= i< 10. a[i] = 8 and b[i] = 5";
+  run<array_sgraph_domain_t> (cfg, false, 1, 2, 20, stats_enabled);  
+  //  run<array_sgraph_domain_t>(*cfg, "Program 3: forall 0<= i< 10. a[i] = 8 and b[i] = 5");
   delete cfg;
 }
 
 void test4(){
   variable_factory_t vfac;
   z_cfg_t* cfg = prog5(vfac);
-  run<array_sgraph_domain_t>(*cfg, "Program 4: forall 0<= i < n. a[i] = 123456 (unbounded loop)", vfac);
+  crab::outs () << "Program 4: forall 0<= i < n. a[i] = 123456 (unbounded loop)";
+  run<array_sgraph_domain_t> (cfg, false, 1, 2, 20, stats_enabled);  
+  //run<array_sgraph_domain_t>(*cfg, "Program 4: forall 0<= i < n. a[i] = 123456 (unbounded loop)");
   delete cfg;
 }
 
 void test5(){
   variable_factory_t vfac;
   z_cfg_t* cfg = prog6(vfac);
-  run<array_sgraph_domain_t>(*cfg, "Program 5: for all 0<= i< 10. a[i] = 123456 (assume elem size of 4 bytes)", vfac);
+  crab::outs () << "Program 5: for all 0<= i< 10. a[i] = 123456 (assume elem size of 4 bytes)";
+  run<array_sgraph_domain_t> (cfg, false, 1, 2, 20, stats_enabled);  
+  //run<array_sgraph_domain_t>(*cfg, "Program 5: for all 0<= i< 10. a[i] = 123456 (assume elem size of 4 bytes)");
   delete cfg;
 }
 
 void test6(){
   variable_factory_t vfac;
   z_cfg_t* cfg = prog7(vfac);
-  run<array_sgraph_domain_t>(*cfg, "Program 6: a[0] = 89 and for all 1<= i < n. a[i] = a[i-1]", vfac);
+  crab::outs () << "Program 6: a[0] = 89 and for all 1<= i < n. a[i] = a[i-1]";
+  run<array_sgraph_domain_t> (cfg, false, 1, 2, 20, stats_enabled);  
+  //run<array_sgraph_domain_t>(*cfg, "Program 6: a[0] = 89 and for all 1<= i < n. a[i] = a[i-1]");
   delete cfg;
 }
 
 void test7(){
   variable_factory_t vfac;
   z_cfg_t* cfg = prog8(vfac);
-  run<array_sgraph_domain_t>(*cfg, "Program 7: forall 0<= i< 10 and i % 2 = 0. a[i] = 123456", vfac);
+  crab::outs () << "Program 7: forall 0<= i< 10 and i % 2 = 0. a[i] = 123456";
+  run<array_sgraph_domain_t> (cfg, false, 1, 2, 20, stats_enabled);  
+  //run<array_sgraph_domain_t>(*cfg, "Program 7: forall 0<= i< 10 and i % 2 = 0. a[i] = 123456");
   delete cfg;
 }
 
@@ -534,28 +549,36 @@ void test7(){
 void test8(){
   variable_factory_t vfac;
   z_cfg_t* cfg = prog9(vfac);
-  run<array_sgraph_domain_t>(*cfg, "Program 8: forall 0<= i < n. 1 <= a[i] <= 2", vfac);
+  crab::outs () << "Program 8: forall 0<= i < n. 1 <= a[i] <= 2";
+  run<array_sgraph_domain_t> (cfg, false, 1, 2, 20, stats_enabled);  
+  //run<array_sgraph_domain_t>(*cfg, "Program 8: forall 0<= i < n. 1 <= a[i] <= 2");
   delete cfg;
 }
 
 void test9(){
   variable_factory_t vfac;
   z_cfg_t* cfg = prog2(vfac, false);
-  run<array_sgraph_domain_t>(*cfg, "Program 9: forall 0<= i < n. a[i] == 123456 (decrementing loop)", vfac);
+  crab::outs () << "Program 9: forall 0<= i < n. a[i] == 123456 (decrementing loop)";
+  run<array_sgraph_domain_t> (cfg, false, 1, 2, 20, stats_enabled);  
+  //run<array_sgraph_domain_t>(*cfg, "Program 9: forall 0<= i < n. a[i] == 123456 (decrementing loop)");
   delete cfg;
 }
 
 void test10(){
   variable_factory_t vfac;
   z_cfg_t* cfg = prog2(vfac, true);
-  run<array_sgraph_domain_t>(*cfg, "Program 10: forall 0<= i < n. a[i] == 123456 (decrementing loop w/ temp vars)", vfac);
+  crab::outs () << "Program 10: forall 0<= i < n. a[i] == 123456 (decrementing loop w/ temp vars)";
+  run<array_sgraph_domain_t> (cfg, false, 1, 2, 20, stats_enabled);
+  //run<array_sgraph_domain_t>(*cfg, "Program 10: forall 0<= i < n. a[i] == 123456 (decrementing loop w/ temp vars)");
   delete cfg;
 }
 
 void test11(){
   variable_factory_t vfac;
   z_cfg_t* cfg = prog1(vfac, true);
-  run<array_sgraph_domain_t> (*cfg, "Program 11: forall 0<= i< 10. a[i] = 123456 (w/ temp vars)", vfac);
+  crab::outs () << "Program 11: forall 0<= i< 10. a[i] = 123456 (w/ temp vars)";
+  run<array_sgraph_domain_t> (cfg, false, 1, 2, 20, stats_enabled);  
+  //run<array_sgraph_domain_t> (*cfg, "Program 11: forall 0<= i< 10. a[i] = 123456 (w/ temp vars)");
   delete cfg;
 }
 
@@ -563,7 +586,8 @@ void test12(){
   variable_factory_t vfac;
   z_cfg_t* cfg = prog10(vfac); 
   crab::outs () << "Program 12: forall 0<= i < n. is_not_null(a[i]) &&  is_not_null(b[i]) \n";
-  run<array_sparse_graph_domain<z_num_null_domain_t, z_nullity_domain_t> > (cfg, vfac, false, 1, 2, 20);
+  run<array_sparse_graph_domain<z_num_null_domain_t, z_nullity_domain_t> >
+    (cfg, false, 1, 2, 20, stats_enabled);
   delete cfg;
 }
 

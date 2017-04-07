@@ -1,11 +1,12 @@
+#include "../program_options.hpp"
 #include "../common.hpp"
 
 #include <crab/cg/cg_bgl.hpp>
 #include <crab/analysis/graphs/sccg_bgl.hpp>
-#include <crab/analysis/inter_fwd_analyzer.hpp>
 
 using namespace std;
 using namespace crab::analyzer;
+using namespace crab::cfg;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 using namespace crab::cg;
@@ -170,168 +171,13 @@ int main (int argc, char** argv ) {
   typedef call_graph_ref<callgraph_t> callgraph_ref_t;
 
   boost::scoped_ptr<callgraph_t> cg(new callgraph_t(cfgs));
-  {
-    inter_fwd_analyzer<callgraph_ref_t, 
-		       z_dbm_domain_t,
-		       z_interval_domain_t> a (*cg, nullptr); 
-    crab::outs() << "Running" 
-         << " summary domain=" << z_dbm_domain_t::getDomainName () 
-         << " and forward domain=" << z_interval_domain_t::getDomainName () << "\n";
-
-    a.Run ();
-    
-    if (stats_enabled) {
-      crab::CrabStats::Print(crab::outs());
-      crab::CrabStats::reset();
-    }  
-
-    // Print invariants
-    for (auto cfg : cfgs) {
-      auto fdecl_opt = cfg.get_func_decl ();
-      assert (fdecl_opt);
-      crab::outs() << *fdecl_opt << "\n"; 
-      for (auto &b : cfg) {
-        auto inv = a.get_post (cfg, b.label ());
-        crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
-      }
-      crab::outs() << "=================================\n";
-    }
-    
-    // Print summaries
-    for (auto cfg : cfgs) {
-      if (a.has_summary (cfg)) {
-        auto fdecl_opt = cfg.get_func_decl ();
-        assert (fdecl_opt);
-        crab::outs() << "Summary for " << *fdecl_opt << ": "; 
-        auto sum = a.get_summary (cfg);
-        crab::outs() << sum << "\n";
-      }
-    }
-  }
-
-
-#ifdef HAVE_APRON
-  {
-    inter_fwd_analyzer<callgraph_ref_t, 
-		       z_opt_oct_apron_domain_t,
-		       z_interval_domain_t> a (*cg, nullptr); 
-
-    crab::outs() << "Running" 
-         << " summary domain=" << z_opt_oct_apron_domain_t::getDomainName () 
-         << " and forward domain=" << z_interval_domain_t::getDomainName () << "\n";
-
-    a.Run ();
-    if (stats_enabled) {
-      crab::CrabStats::Print(crab::outs());
-      crab::CrabStats::reset();
-    }  
-
-    
-    // Print invariants
-    for (auto cfg : cfgs) {
-      auto fdecl_opt = cfg.get_func_decl ();
-      assert (fdecl_opt);
-      crab::outs() << *fdecl_opt << "\n"; 
-      for (auto &b : cfg) {
-        auto inv = a.get_post (cfg, b.label ());
-        crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
-      }
-      crab::outs() << "=================================\n";
-    }
-    
-    // Print summaries
-    for (auto cfg : cfgs) {
-      if (a.has_summary (cfg)) {
-        auto fdecl_opt = cfg.get_func_decl ();
-        assert (fdecl_opt);
-        crab::outs() << "Summary for " << *fdecl_opt << ": "; 
-        auto sum = a.get_summary (cfg);
-        crab::outs() << sum << "\n";
-      }
-    }
-  }
-#endif 
-
-  {
-    inter_fwd_analyzer<callgraph_ref_t, 
-		       z_term_domain_t,
-		       z_interval_domain_t> a (*cg, nullptr); 
-
-    crab::outs() << "Running" 
-         << " summary domain=" << z_term_domain_t::getDomainName () 
-         << " and forward domain=" << z_interval_domain_t::getDomainName () << "\n";
-
-    a.Run ();
-    if (stats_enabled) {
-      crab::CrabStats::Print(crab::outs());
-      crab::CrabStats::reset();
-    }  
-
-    
-    // Print invariants
-    for (auto cfg : cfgs) {
-      auto fdecl_opt = cfg.get_func_decl ();
-      assert (fdecl_opt);
-      crab::outs() << *fdecl_opt << "\n"; 
-      for (auto &b : cfg) {
-        auto inv = a.get_post (cfg, b.label ());
-        crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
-      }
-      crab::outs() << "=================================\n";
-    }
-    
-    // Print summaries
-    for (auto cfg : cfgs) {
-      if (a.has_summary (cfg)) {
-        auto fdecl_opt = cfg.get_func_decl ();
-        assert (fdecl_opt);
-        crab::outs() << "Summary for " << *fdecl_opt << ": "; 
-        auto sum = a.get_summary (cfg);
-        crab::outs() << sum << "\n";
-      }
-    }
-  }
-
-  {
-    inter_fwd_analyzer<callgraph_ref_t,  
-                       z_num_domain_t,
-		       z_num_domain_t> a (*cg, nullptr); 
-
-    crab::outs() << "Running" 
-         << " summary domain=" << z_num_domain_t::getDomainName () 
-         << " and forward domain=" << z_num_domain_t::getDomainName () << "\n";
-
-    a.Run ();
-
-    if (stats_enabled) {
-      crab::CrabStats::Print(crab::outs());
-      crab::CrabStats::reset();
-    }  
-    
-    // Print invariants
-    for (auto cfg : cfgs) {
-      auto fdecl_opt = cfg.get_func_decl ();
-      assert (fdecl_opt);
-      crab::outs() << *fdecl_opt << "\n"; 
-      for (auto &b : cfg) {
-        auto inv = a.get_post (cfg, b.label ());
-        crab::outs() << get_label_str (b.label ()) << "=" << inv << "\n";
-      }
-      crab::outs() << "=================================\n";
-    }
-    
-    // Print summaries
-    for (auto cfg : cfgs) {
-      if (a.has_summary (cfg)) {
-        auto fdecl_opt = cfg.get_func_decl ();
-        assert (fdecl_opt);
-        crab::outs() << "Summary for " << *fdecl_opt << ": "; 
-        auto sum = a.get_summary (cfg);
-        crab::outs() << sum << "\n";
-      }
-    }
-  }
-
+  inter_run<z_dbm_domain_t, z_interval_domain_t> (&*cg, false, 2, 2, 20, stats_enabled);
+#ifdef HAVE_APRON  
+  inter_run<z_opt_oct_apron_domain_t, z_interval_domain_t> (&*cg, false, 2, 2, 20, stats_enabled);
+#endif   
+  inter_run<z_term_domain_t, z_interval_domain_t> (&*cg, false, 2, 2, 20, stats_enabled);
+  inter_run<z_num_domain_t, z_num_domain_t> (&*cg, false, 2, 2, 20, stats_enabled);  
+  
   delete t1;
   delete t2;
   delete t3;

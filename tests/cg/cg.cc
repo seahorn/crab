@@ -1,3 +1,4 @@
+#include "../program_options.hpp"
 #include "../common.hpp"
 
 #include <crab/cg/cg.hpp>

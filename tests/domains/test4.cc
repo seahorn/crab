@@ -1,7 +1,9 @@
+#include "../program_options.hpp"
 #include "../common.hpp"
 
 using namespace std;
 using namespace crab::analyzer;
+using namespace crab::cfg;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
@@ -79,12 +81,12 @@ int main (int argc, char** argv )
   cfg->simplify ();
   crab::outs() << *cfg << "\n";
 
-  run<z_interval_domain_t>(cfg,vfac,true,1,2,20);
-  run<z_dbm_domain_t>(cfg,vfac,true,1,2,20);
-  run<z_sdbm_domain_t>(cfg,vfac,true,1,2,20);
-  run<z_ric_domain_t>(cfg,vfac,true,1,2,20);
-  run<z_term_domain_t>(cfg,vfac,true,1,2,20);
-  run<z_dis_interval_domain_t>(cfg,vfac,true,1,2,20);
+  run<z_interval_domain_t>(cfg,true,1,2,20,stats_enabled);
+  run<z_dbm_domain_t>(cfg,true,1,2,20,stats_enabled);
+  run<z_sdbm_domain_t>(cfg,true,1,2,20,stats_enabled);
+  run<z_ric_domain_t>(cfg,true,1,2,20,stats_enabled);
+  run<z_term_domain_t>(cfg,true,1,2,20,stats_enabled);
+  run<z_dis_interval_domain_t>(cfg,true,1,2,20,stats_enabled);
   delete cfg;
   return 0;
 }
