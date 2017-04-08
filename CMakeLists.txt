@@ -113,6 +113,9 @@ if (GIT_FOUND)
       -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
       -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
       -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
+      # XXX: ldd is always compiled statically.
+      # We add -fPIC flag so it can be linked with a shared library
+      -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON
       TEST_AFTER_INSTALL 1
       TEST_COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_LIST_FILE}
       LOG_DOWNLOAD 1
@@ -156,7 +159,9 @@ if (GIT_FOUND)
   endif()
   
   ExternalProject_Add(apron
-    GIT_REPOSITORY git@bitbucket.org:jorgenavas/apron.git    
+    #GIT_REPOSITORY git@bitbucket.org:jorgenavas/apron.git
+    ## XXX: for travis, virtual box, etc
+    GIT_REPOSITORY https://jorgenavas@bitbucket.org/jorgenavas/apron.git
     GIT_TAG ${APRON_TAG}
     INSTALL_DIR ${CMAKE_BINARY_DIR}/run/apron
     CONFIGURE_COMMAND echo "Apron does not need a configure"
