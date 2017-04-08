@@ -426,7 +426,7 @@ namespace crab {
                           unsigned &iterations){
 
         order = crab::analyzer::graph_algo::weak_topo_sort(_cfg);
-        assert (order.size () == std::distance(_cfg.begin(), _cfg.end()));
+        assert ((int)order.size () == std::distance(_cfg.begin(), _cfg.end()));
         bool change = true;
         iterations = 0;
         while (change) {
@@ -451,7 +451,7 @@ namespace crab {
                           unsigned &iterations){
 
         order = crab::analyzer::graph_algo::weak_rev_topo_sort(_cfg);
-        assert (order.size () == std::distance(_cfg.begin(), _cfg.end()));
+        assert ((int)order.size () == std::distance(_cfg.begin(), _cfg.end()));
         bool change = true;
         iterations = 0;
         while (change) {

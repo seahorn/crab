@@ -229,7 +229,7 @@ namespace crab {
             return it->second;
           } else {
 	    // XXX: reserved dim 0 for SPECIAL variable
-            int id = get_var_map ()->size () + 1;
+            unsigned int id = get_var_map ()->size () + 1;
             if (id >= LddSize) {
               CRAB_ERROR ("The Ldd size of ", LddSize, " needs to be larger");
             }
@@ -368,7 +368,7 @@ namespace crab {
 	
         linear_expression_t expr_from_ldd_term (linterm_t term, theory_t *theory) {
           linear_expression_t e (0);
-          for(size_t i = 0;i < theory->term_size (term); i++) {
+          for(size_t i = 0;i < (size_t) theory->term_size (term); i++) {
 	    Number k (0); // any value
             num_from_ldd_cst (theory->term_get_coeff (term,i), theory, k);
             VariableName v =  getVarName (theory->term_get_var(term,i));

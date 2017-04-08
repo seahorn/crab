@@ -6,7 +6,9 @@
 
 #include <crab/common/types.hpp>
 
-// ERGH, make it properly flexible later.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-compare"
+
 namespace crab {
 
  namespace domains {
@@ -706,4 +708,5 @@ namespace crab {
    } //end namespace term
  } // end namepsace domains
 } // end namespace crab
+#pragma GCC diagnostic pop
 #endif

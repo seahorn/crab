@@ -39,6 +39,9 @@
 // #define CHECK_POTENTIAL
 //#define SDBM_NO_NORMALIZE
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-compare"
+
 namespace crab {
 
   namespace domains {
@@ -2603,5 +2606,5 @@ namespace crab {
   } // namespace domains
 } // namespace crab
 
-
+#pragma GCC diagnostic pop
 #endif // SPLIT_DBM_HPP

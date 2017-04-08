@@ -20,7 +20,7 @@ namespace crab {
        typedef ikos::bound <Number> bound_t;
        
        std::vector<bound_t> m_thresholds;
-       int m_size;
+       unsigned int m_size;
 
        template<class B1, class B2>
        static B2 convert_bounds_impl (B1 b1) {
@@ -31,7 +31,7 @@ namespace crab {
        
       public:
        
-       thresholds (int size = INT_MAX) : m_size (size) { 
+       thresholds (int size = UINT_MAX) : m_size (size) { 
          m_thresholds.push_back (bound_t::minus_infinity ());
          m_thresholds.push_back (0);
          m_thresholds.push_back (bound_t::plus_infinity ());

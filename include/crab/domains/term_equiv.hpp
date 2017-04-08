@@ -42,6 +42,9 @@
 
 #define USE_TERM_INTERVAL_NORMALIZER
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-compare"
+
 namespace crab {
 
   namespace domains {
@@ -1852,4 +1855,5 @@ namespace crab {
   }// namespace domains
 } // namespace crab
 
+#pragma GCC diagnostic pop
 #endif // TERM_DOMAIN_HPP

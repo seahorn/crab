@@ -7,6 +7,9 @@
 
 #include <crab/domains/graphs/graph_ops.hpp>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-compare"
+
 namespace crab {
 
   namespace domains {
@@ -362,4 +365,5 @@ namespace crab {
     };
   } // end namespace domains
 } // end namespace crab
+#pragma GCC diagnostic pop
 #endif 

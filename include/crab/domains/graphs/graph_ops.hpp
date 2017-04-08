@@ -5,6 +5,9 @@
 //============================
 // A set of utility algorithms for manipulating graphs.
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-compare"
+
 namespace crab {
   // Graph views - for when we want to traverse some mutation
   // of the graph without actually constructing it.
@@ -1381,5 +1384,5 @@ r_not_dom:
   unsigned int GraphOps<G>::ts_idx = 0;
 
 } // namespace crab
-
+#pragma GCC diagnostic pop
 #endif

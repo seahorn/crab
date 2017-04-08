@@ -3,6 +3,9 @@
 #include <crab/domains/graphs/util/Vec.h>
 // Adaptive sparse-set based weighted graph implementation
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-compare"
+
 namespace crab {
   // An adaptive sparse-map.
   // Starts off as an unsorted vector, switching to a
@@ -650,4 +653,5 @@ namespace crab {
     vec<size_t> free_widx;
   };
 }
+#pragma GCC diagnostic pop
 #endif
