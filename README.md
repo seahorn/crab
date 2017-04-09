@@ -4,6 +4,8 @@
 
 # Description #
 
+<a href="https://travis-ci.com/caballa/crab"><img src="https://travis-ci.com/caballa/crab.svg?branch=master" title="Ubuntu 12.04 LTS 64bit, g++-4.8"/>
+
 Crab allows to perform static analysis of programs based on
 [Abstract Interpretation](https://en.wikipedia.org/wiki/Abstract_interpretation).
 
@@ -66,11 +68,11 @@ The Boxes and Apron domains require third-party libraries. To avoid
 the burden to users who are not interested in those domains, the
 installation of the libraries is optional.
 
-If you want to use the BOXES domain then add `-DUSE_LDD=ON` option.
+If you want to use the Boxes domain then add `-DUSE_LDD=ON` option.
 
 If you want to use the Apron library domains then add `-DUSE_APRON=ON` option.
 
-For instance, to include BOXES and Apron type:
+To install Crab with Boxes and Apron, type:
 
 	mkdir build && cd build
     cmake -DCMAKE_INSTALL_PREFIX=_DIR_ -DUSE_LDD=ON -DUSE_APRON=ON ../
@@ -188,7 +190,7 @@ the entry of each basic block, should be something like this:
 
 Check these projects:
 
-- [Crab-Llvm](https://github.com/seahorn/crab-llvm) is a static
+- [Crab-Llvm](https://github.com/caballa/crab-llvm) is a static
 analyzer that infers invariants from LLVM-based languages using Crab.
 
 - [SeaHorn](https://github.com/seahorn) is a verification framework
