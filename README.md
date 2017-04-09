@@ -4,8 +4,6 @@
 
 # Description #
 
-<a href="https://travis-ci.com/caballa/crab"><img src="https://travis-ci.com/caballa/crab.svg?branch=master" title="Ubuntu 12.04 LTS 64bit, g++-4.8"/>
-
 Crab allows to perform static analysis of programs based on
 [Abstract Interpretation](https://en.wikipedia.org/wiki/Abstract_interpretation).
 
