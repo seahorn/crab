@@ -171,15 +171,6 @@ analyzer that infers invariants from LLVM-based languages using Crab.
 - [SeaHorn](https://github.com/seahorn) is a verification framework
 that uses Crab-Llvm to supply invariants to the back-end solvers.
 
-# Licensing #
-
-Crab is currently under a licensing process. Meanwhile, Crab cannot be
-publicly distributed.
-
-Ikos is distributed under NASA Open Source Agreement (NOSA)
-Version 1.3 or later. See [Ikos_LICENSE.pdf](Ikos_LICENSE.pdf) for
-details.
-
 # Publications #
 
 - "An Abstract Domain of Uninterpreted Functions" [(PDF)](http://www.clip.dia.fi.upm.es/~jorge/docs/terms-vmcai16.pdf). VMCAI'16.
