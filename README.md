@@ -41,21 +41,26 @@ Crab is written in C++ and uses heavily the Boost library. The main
 requirements are:
 
 - C++ compiler supporting c++11
-- Boost and GMP
+- Boost
+- GMP 
+- MPFR (if `-DUSE_APRON=ON`)
 
-To include Crab in your application you just need to include the
-corresponding C++ header files located at the `include` directory and
-make sure that you link your application with the Crab libraries
-(`lib` directory). This repository contains a `CMakeLists.txt` that
-you can adapt for your own needs.
+In linux, you can install requirements typing the commands:
 
-The `tests` directory contains many examples of how to build CFGs and
-compute invariants using different abstract domains. To install all
-the tests via `CMake` type:
+	sudo apt-get install libboost-all-dev libboost-program-options-dev
+    sudo apt-get install libgmp-dev
+    sudo apt-get install libmpfr-dev	
+
+To install Crab, type:
 
 	mkdir build && cd build
-    cmake -DENABLE_TESTS=ON -DCMAKE_INSTALL_PREFIX=run ../
+    cmake -DCMAKE_INSTALL_PREFIX=_DIR_ ../
     cmake --build . --target install 
+
+To include Crab in your application you just need to include the
+corresponding C++ header files located at the `_DIR_/include`
+directory and make sure that you link your application with the Crab
+libraries (`_DIR_/lib` directory).
 
 The Boxes and Apron domains require third-party libraries. To avoid
 the burden to users who are not interested in those domains, the
@@ -65,6 +70,27 @@ If you want to use the BOXES domain then add `-DUSE_LDD=ON` option.
 
 If you want to use the Apron library domains then add `-DUSE_APRON=ON` option.
 
+For instance, to include BOXES and Apron type:
+
+	mkdir build && cd build
+    cmake -DCMAKE_INSTALL_PREFIX=_DIR_ -DUSE_LDD=ON -DUSE_APRON=ON ../
+	cmake --build . --target ldd && cmake ..
+	cmake --build . --target apron && cmake ..	
+    cmake --build . --target install 	
+
+The `tests` directory contains many examples of how to build CFGs and
+compute invariants using different abstract domains. To run these tests
+type:
+
+	mkdir build && cd build
+    cmake -DCMAKE_INSTALL_PREFIX=_DIR_ -DUSE_LDD=ON -DUSE_APRON=ON -DENABLE_TESTS=ON ../
+	cmake --build . --target ldd && cmake ..
+	cmake --build . --target apron && cmake ..	
+    cmake --build . --target install 	
+
+and then, for instance, to run `test1`:
+
+    `../tests/test-bin/test1`
 
 # Example #
 
@@ -167,10 +193,6 @@ analyzer that infers invariants from LLVM-based languages using Crab.
 
 - [SeaHorn](https://github.com/seahorn) is a verification framework
 that uses Crab-Llvm to supply invariants to the back-end solvers.
-
-# Licensing #
-
-Apache 2.0 license coming soon!
 
 # Publications #
 
