@@ -14,6 +14,12 @@ else()
   set (TopLevel FALSE)
 endif()
 
+# Default is release with debug info
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING
+    "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel." FORCE)
+endif()
+
 # Add path for custom modules
 set(CMAKE_MODULE_PATH 
   ${CMAKE_MODULE_PATH} 
@@ -309,8 +315,8 @@ endif ()
 
 install(DIRECTORY include/ DESTINATION include)
 
-# Licenses
-##install(FILES LICENSE.txt DESTINATION shared/doc)       
+# License
+install(FILES LICENSE DESTINATION ./)       
 
 
 

@@ -1,10 +1,10 @@
-# Crab: A Language-Agnostic Engine for Static Analysis #
+# Crab: A Language-Agnostic Library for Static Analysis #
 
 <img src="http://i.imgur.com/IDKhq5h.png" alt="crab logo" width=280 height=200 />
 
 # Description #
 
-Crab allows to perform static analysis of programs based on
+Crab (CoRnucopia of ABstractions) allows to perform static analysis of programs based on
 [Abstract Interpretation](https://en.wikipedia.org/wiki/Abstract_interpretation).
 
 Crab does not analyze directly a mainstream programming language such as
@@ -90,7 +90,7 @@ type:
 
 and then, for instance, to run `test1`:
 
-    `../tests/test-bin/test1`
+    ../tests/test-bin/test1
 
 # Example #
 
@@ -98,39 +98,61 @@ Assume we want to perform static analysis on the following C-like
 program:
 
 ```c
-    int i,x,y;
+	int i,x,y;
 	i=0;
 	x=1;
 	y=0;
 	while (i < 100) {
-		x=x+y;
-		y=y+1;
-		i=i+1;
+	   x=x+y;
+	   y=y+1;
+	   i=i+1;
 	}	 
 ``` 
 
 This is the C++ code to build the corresponding Crab CFG and run the
-analysis using the Zones domain:
+analysis using the Zones domain (this code will not compile like it
+is. Go to `tests` directory for real examples):
 
 ```c++
     // CFG-based language
     #include <crab/cfg/cfg.hpp>
     // Variable factory	
     #include <crab/cfg/var_factory.hpp>
-    // Forward analyzer	
+    // Intra forward analyzer	
     #include <crab/analysis/fwd_analyzer.hpp>
-
-    // linear expressions and constraints
-    #include <crab/domains/linear_constraints.hpp>
     // Zones domain
     #include <crab/domains/split_dbm.hpp>
 
+	/* 
+	To define a Control-Flow Graph (CFG) users need to define :
+	(1) Type for a variable 
+	(2) Type for a basic block label
+	(3) Choose between integers or rationals (Crab cannot mix them)
+	*/
+	
+    // (1) A variable factory based on strings
+    typedef cfg::var_factory_impl::str_variable_factory variable_factory_t;
+    typedef typename variable_factory_t::varname_t varname_t;
+    // (2) CFG basic block labels
+    typedef std::string basic_block_label_t;
+    // (3) CFG over integers
+    typedef cfg::Cfg<basic_block_label_t, varname_t, z_number> z_cfg_t;
+	// Convenient wrapper for a CFG
+    typedef cfg:cfg_ref<z_cfg_t> z_cfg_ref_t;
+
+	// Abstract domain: zones or difference-constraints domain
     typedef SplitDBM<z_number, varname_t> zones_domain_t;
-    typedef num_fwd_analyzer<cfg_ref_t,zones_domain_t,str_variable_factory>::type analyzer_t;
+
+    /* 
+	Crab provides both intra- and inter-procedural analyses which 
+	are parametric on the abstract domain: we choose an
+	intra-procedural forward analysis with zones domain
+    */
+    typedef intra_fwd_analyzer<z_cfg_ref_t, zones_domain_t> intra_zones_analyzer_t;	
 
     int main (int argc, char**argv) {
        // Declare variables i,x, and y
-       str_variable_factory vfac;	
+       variable_factory_t vfac;	
        z_var i (vfac ["i"]);
        z_var x (vfac ["x"]);
        z_var y (vfac ["y"]);
@@ -158,8 +180,9 @@ analysis using the Zones domain:
        bb2.add(i,i,1);
 
        // Build an analyzer and run the zones domain
-       analyzer_t a(cfg,vfac,...);
-       a.Run(zones_domain_t::top());
+	   zones_domain_t inv;  // initially top
+	   intra_zones_analyzer_t a (cfg, inv, ...);
+       a.run();
        cout << "Invariants using " << zones_domain_t::getDomainName() << "\n";
 	
        // Scan all CFG basic blocks and print the invariants that hold
