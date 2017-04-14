@@ -1,8 +1,11 @@
 # Crab: A Language-Agnostic Library for Static Analysis #
 
+<a href="https://travis-ci.org/caballa/crab"><img src="https://travis-ci.org/caballa/crab.svg?branch=master" title="Ubuntu 12.04 LTS 64bit, g++-4.8"/></a>
+
 <img src="http://i.imgur.com/IDKhq5h.png" alt="crab logo" width=280 height=200 />
 
 # Description #
+
 
 Crab (CoRnucopia of ABstractions) allows to perform static analysis of programs based on
 [Abstract Interpretation](https://en.wikipedia.org/wiki/Abstract_interpretation).
