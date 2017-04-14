@@ -46,7 +46,7 @@ script:
   - /usr/bin/cmake --build . --target ldd && cmake ..
   - /usr/bin/cmake --build . --target apron && cmake ..	
   - /usr/bin/cmake --build . --target install
-  - /usr/bin/cmake --build . --target test
+  - env CTEST_OUTPUT_ON_FAILURE=1 /usr/bin/cmake --build . --target test
 
 notifications:
   email:
