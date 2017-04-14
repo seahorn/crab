@@ -42,7 +42,9 @@ script:
   - mkdir -p build
   - cd build
   - GENERATOR=-GNinja;
-  - /usr/bin/cmake -DBOOST_ROOT=$BOOST_ROOT -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} -DCMAKE_PROGRAM_PATH=/usr/bin  -DCMAKE_INSTALL_PREFIX=run ../;
+  - /usr/bin/cmake -DBOOST_ROOT=$BOOST_ROOT -DUSE_APRON=ON -DUSE_LDD=ON -DENABLE_TESTS=ON -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} -DCMAKE_PROGRAM_PATH=/usr/bin  -DCMAKE_INSTALL_PREFIX=run ../;
+  - /usr/bin/cmake --build . --target ldd && cmake ..
+  - /usr/bin/cmake --build . --target apron && cmake ..	
   - /usr/bin/cmake --build . --target install
   - /usr/bin/cmake --build . --target test
 
