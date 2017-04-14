@@ -5,7 +5,7 @@ env:
    # =======================================================
    # RELEASE Build
    # =======================================================
-     - CMAKE_CXX_COMPILER=g++-4.8
+     - CMAKE_CXX_COMPILER=g++-5.4
        CMAKE_BUILD_TYPE=RELEASE
        CONSERVE_MEMORY=ON
 
@@ -25,8 +25,8 @@ install:
   - until sudo apt-get -qq install ninja-build; do echo retry; done  
   - ninja --version
   - until sudo apt-get -qq update; do echo retry; done
-  - until sudo apt-get -qq install libstdc++-4.8-dev; do echo retry; done
-  - if [[ $CMAKE_CXX_COMPILER == g++-4.8 ]]; then until sudo apt-get -qq install g++-4.8; do echo retry; done fi
+  - until sudo apt-get -qq install libstdc++6; do echo retry; done
+  - if [[ $CMAKE_CXX_COMPILER == g++-5.4 ]]; then until sudo apt-get -qq install g++-5.4; do echo retry; done fi
   - wget --no-verbose --output-document=boost-trunk.tar.bz2 http://sourceforge.net/projects/boost/files/boost/1.55.0/boost_1_55_0.tar.bz2/download
   - export BOOST_ROOT="$TRAVIS_BUILD_DIR/../boost-trunk"
   - export CMAKE_MODULE_PATH="$BOOST_ROOT"
