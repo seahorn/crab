@@ -22,12 +22,7 @@ before_install:
 
 install:
   - until sudo apt-get -qq install libboost-all-dev libboost-test-dev libboost-program-options-dev; do echo retry; done
-  - wget http://dl.dropboxusercontent.com/u/203889738/gcc/ninja.tar.gz;
-    tar xfz ninja.tar.gz;
-    cd ninja;
-    ./bootstrap.py > /dev/null 2>&1;
-    sudo cp -v ninja /usr/bin/;
-    cd ..;
+  - until sudo apt-get -qq install ninja-build; do echo retry; done  
   - ninja --version
   - until sudo apt-get -qq update; do echo retry; done
   - until sudo apt-get -qq install libstdc++-4.8-dev; do echo retry; done
