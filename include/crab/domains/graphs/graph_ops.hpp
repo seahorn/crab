@@ -179,13 +179,13 @@ namespace crab {
         if(adj)
           return iterator(inv, (*adj).begin());
         else
-          return iterator(inv, ItG());
+          return iterator(inv, ItG::empty_iterator());
       }
       iterator end(void) const {
         if(adj)
           return iterator(inv, (*adj).end());
         else
-          return iterator(inv, ItG());
+          return iterator(inv, ItG::empty_iterator());
       }
 
       bool mem(unsigned int v) const {
