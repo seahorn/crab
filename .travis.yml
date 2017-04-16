@@ -16,29 +16,26 @@ before_install:
    - sudo apt-add-repository --yes ppa:smspillaz/cmake-2.8.12
    - sudo apt-get --yes update
    - sudo apt-get install --yes cmake cmake-data
-   - sudo apt-get install --yes libgmp-dev
-   - sudo apt-get install --yes libmpfr-dev   
-   - sudo apt-get install --yes python-pip
+   - until sudo apt-get -qq install ninja-build; do echo retry; done  
+   - ninja --version
+   - until sudo apt-get -qq update; do echo retry; done
+   - until sudo apt-get -qq install libstdc++5; do echo retry; done
+   - if [[ $CMAKE_CXX_COMPILER == g++-5 ]]; then until sudo apt-get -qq install g++-5; do echo retry; done fi
 
 install:
-  - until sudo apt-get -qq install libboost-all-dev libboost-test-dev libboost-program-options-dev; do echo retry; done
-  - until sudo apt-get -qq install ninja-build; do echo retry; done  
-  - ninja --version
-  - until sudo apt-get -qq update; do echo retry; done
-  - until sudo apt-get -qq install libstdc++5; do echo retry; done
-  - if [[ $CMAKE_CXX_COMPILER == g++-5 ]]; then until sudo apt-get -qq install g++-5; do echo retry; done fi
-  - wget --no-verbose --output-document=boost-trunk.tar.bz2 http://sourceforge.net/projects/boost/files/boost/1.62.0/boost_1_62_0.tar.bz2/download
+  - sudo apt-get install --yes libgmp-dev
+  - sudo apt-get install --yes libmpfr-dev   
+  - wget --no-verbose --output-document=boost-trunk.tar.bz2 http://sourceforge.net/projects/boost/files/boost/1.63.0/boost_1_63_0.tar.bz2/download
   - export BOOST_ROOT="$TRAVIS_BUILD_DIR/../boost-trunk"
   - export CMAKE_MODULE_PATH="$BOOST_ROOT"
   - mkdir -p $BOOST_ROOT
   - tar jxf boost-trunk.tar.bz2 --strip-components=1 -C $BOOST_ROOT
-  - (cd $BOOST_ROOT; ./bootstrap.sh --with-libraries=system,program_options,iostreams)
-  - (cd $BOOST_ROOT; ./b2 threading=multi --prefix=$BOOST_ROOT -d0 install)
+  - (cd $BOOST_ROOT; ./bootstrap.sh --with-libraries=system,program_options)
+  - (cd $BOOST_ROOT; ./b2 --prefix=$BOOST_ROOT -d0 install)
   - cd ..
 
 script:
   - cd crab
-  - ls
   - mkdir -p build
   - cd build
   - GENERATOR=-GNinja;
