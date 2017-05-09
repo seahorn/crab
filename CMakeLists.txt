@@ -7,15 +7,24 @@ if (CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR )
     "In-source builds are not allowed. Please clean your source tree and try again.")  
 endif()
 
+# determine if this is top-level or embedded project
+if (PROJECT_NAME STREQUAL CMAKE_PROJECT_NAME)
+  set (TopLevel TRUE)
+else()
+  set (TopLevel FALSE)
+endif()
+
+# Default is release with debug info
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING
+    "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel." FORCE)
+endif()
+
 # Add path for custom modules
 set(CMAKE_MODULE_PATH 
   ${CMAKE_MODULE_PATH} 
   "${CMAKE_CURRENT_SOURCE_DIR}/cmake"
   )
-
-if(NOT CMAKE_BUILD_TYPE)
-   set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
-endif(NOT CMAKE_BUILD_TYPE)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 
@@ -30,13 +39,7 @@ option (USE_LDD   "Enable Ldd library" OFF)
 option (USE_APRON "Enable Apron library" OFF)
 option (USE_STATS "Enable statistics" ON)
 option (USE_LOG   "Enable logging for debugging purposes" ON)
-option (BUILD_CRAB_LIBS_SHARED "Build all Crab libraries shared." OFF)
-
-# Temporary fix because ldd provides only static libraries
-if (USE_LDD)
-  message (STATUS "ldd provides only static libraries. Forced Crab static building.")
-  set (BUILD_CRAB_LIBS_SHARED OFF)
-endif ()
+option (BUILD_CRAB_LIBS_SHARED "Build all Crab libraries shared." ON)
 
 if (NOT BUILD_CRAB_LIBS_SHARED)
    # put static libraries first unless we want shared libraries
@@ -44,27 +47,33 @@ if (NOT BUILD_CRAB_LIBS_SHARED)
 endif ()   
 
 if (BUILD_CRAB_LIBS_SHARED)
-  message (STATUS "All crab libraries will be built as shared libraries")
+  message (STATUS "All crab libraries will be built dynamically")
   set(CRAB_LIBS_TYPE SHARED)
-  # so that executables outside the build tree can find later shared
-  # libraries
-  # set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-  # if (NOT CMAKE_INSTALL_RPATH)
-  #   set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-  # endif ()
 else()
   message (STATUS "All crab libraries will be built statically")
   set(CRAB_LIBS_TYPE STATIC)
 endif ()
 
-# Even if CRAB_LIBS_TYPE=STATIC we could have a mix of shared and
-# static libraries
+######
+# WARNING: crab dependencies (apron and ldd) are currently compiled
+# statically regardless BUILD_CRAB_LIBS_SHARED.
+######
+
+# So that executables outside the build tree can find later dynamic
+# libraries.  Even if CRAB_LIBS_TYPE=STATIC we could have a mix of
+# dynamic and static libraries
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  # Mac OS X specific code
+  set(CMAKE_MACOSX_RPATH TRUE)
+endif ()  
 if (NOT CMAKE_INSTALL_RPATH)
   set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 endif ()
 
-set (Boost_USE_STATIC_LIBS ON)
+if (NOT BUILD_CRAB_LIBS_SHARED)
+  set (Boost_USE_STATIC_LIBS ON)
+endif ()  
 if (ENABLE_TESTS)
   find_package (Boost 1.55.0 COMPONENTS program_options REQUIRED)
 else ()
@@ -82,7 +91,6 @@ else()
   set(GMP_LIB "")
   set(GMPXX_LIB "")
 endif()
-
 
 include(ExternalProject)
 set_property(DIRECTORY PROPERTY EP_STEP_TARGETS configure build test)
@@ -102,6 +110,9 @@ if (GIT_FOUND)
       -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
       -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
       -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
+      # XXX: ldd is always compiled statically.
+      # We add -fPIC flag so it can be linked with a shared library
+      -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON
       TEST_AFTER_INSTALL 1
       TEST_COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_LIST_FILE}
       LOG_DOWNLOAD 1
@@ -145,6 +156,8 @@ if (GIT_FOUND)
   endif()
   
   ExternalProject_Add(apron
+    #GIT_REPOSITORY git@bitbucket.org:jorgenavas/apron.git
+    ## XXX: for travis, virtual box, etc  
     GIT_REPOSITORY https://jorgenavas@bitbucket.org/jorgenavas/apron.git 
     GIT_TAG ${APRON_TAG}
     INSTALL_DIR ${CMAKE_BINARY_DIR}/run/apron
@@ -224,11 +237,11 @@ else ()
 endif ()
 
 # check for rt lib. Not needed on OSX.
-find_library(RT_LIB NAMES rt)
-if (NOT RT_LIB)
-  set(RT_LIB "")
-endif()
-mark_as_advanced(RT_LIB)
+#find_library(RT_LIB NAMES rt)
+#if (NOT RT_LIB)
+#  set(RT_LIB "")
+#endif()
+#mark_as_advanced(RT_LIB)
 
 # find_package(OpenMP)
 # if (OpenMP_FOUND)
@@ -252,6 +265,19 @@ else ()
    endif ()
 endif ()
 
+set (CRAB_DEPS_LIBS
+  ${LDD_LIBRARY} 
+  ${APRON_LIBRARY}
+  ${MPFR_LIBRARIES} 
+  ${GMPXX_LIB} 
+  ${GMP_LIB})
+
+if (TopLevel)
+  set (CRAB_LIBS Crab ${CRAB_DEPS_LIBS})
+else ()
+  set (CRAB_LIBS Crab ${CRAB_DEPS_LIBS} PARENT_SCOPE)
+endif ()  
+
 include_directories (${CMAKE_BINARY_DIR}/include)
 
 configure_file( include/crab/config.h.cmake
@@ -267,7 +293,7 @@ endif ()
 install(DIRECTORY include/ DESTINATION include)
 
 # Licenses
-##install(FILES LICENSE DESTINATION shared/doc)       
+install(FILES LICENSE DESTINATION ./)       
 
 
 

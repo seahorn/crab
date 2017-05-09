@@ -453,7 +453,7 @@ int main(int argc, char **argv)
   test8 ();
   test9 ();
 
-  return 42;
+  return 0;
 }
 
 

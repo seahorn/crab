@@ -1,5 +1,11 @@
-add_subdirectory (os)
-add_subdirectory (term)
-add_subdirectory (debug)
-add_subdirectory (stats)
+add_library(Crab ${CRAB_LIBS_TYPE} 
+  debug.cpp
+  stats.cpp
+  os.cpp
+  term.cpp
+  )
+
+install(TARGETS Crab
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib)
 

@@ -1,6 +1,6 @@
 add_executable(checkers test.cc)
-target_link_libraries (checkers ${CRAB_LIBS})
+target_link_libraries (checkers ${TEST_LIBS})
 
 install(TARGETS checkers
-  RUNTIME DESTINATION tests/checkers
+  RUNTIME DESTINATION tests
   )

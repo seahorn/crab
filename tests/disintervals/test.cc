@@ -100,4 +100,5 @@ int main (int argc, char**argv){
     run<dis_interval_domain_t>(cfg, vfac, false, 1, 2, 20); 
     delete cfg;
   }
+  return 0;
 }

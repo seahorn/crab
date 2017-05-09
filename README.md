@@ -1,10 +1,18 @@
-# Crab: A Language-Agnostic Engine for Static Analysis #
+# Crab: A Language-Agnostic Library for Static Analysis #
+
+<a href="https://travis-ci.org/caballa/crab"><img src="https://travis-ci.org/caballa/crab.svg?branch=crab-llvm" title="Ubuntu 12.04 LTS 64bit, g++-4.8"/></a>
 
 <img src="http://i.imgur.com/IDKhq5h.png" alt="crab logo" width=280 height=200 />
 
+# **Warning** #
+
+This branch is obsolete (wrt to `master`) but it is the only one that
+works currently with `crab-llvm`. If you do not plan to use
+`crab-llvm` then use please the `master` branch.
+
 # Description #
 
-Crab allows to perform static analysis of programs based on
+Crab (CoRnucopia of ABstractions) allows to perform static analysis of programs based on
 [Abstract Interpretation](https://en.wikipedia.org/wiki/Abstract_interpretation).
 
 Crab does not analyze directly a mainstream programming language such as
@@ -41,33 +49,58 @@ Crab is written in C++ and uses heavily the Boost library. The main
 requirements are:
 
 - C++ compiler supporting c++11
-- Boost and GMP
+- Boost
+- GMP 
+- MPFR (if `-DUSE_APRON=ON`)
+
+In linux, you can install requirements typing the commands:
+
+     sudo apt-get install libboost-all-dev libboost-program-options-dev
+     sudo apt-get install libgmp-dev
+     sudo apt-get install libmpfr-dev	
+
+To install Crab, type:
+
+     mkdir build && cd build
+     cmake -DCMAKE_INSTALL_PREFIX=_DIR_ ../
+     cmake --build . --target install 
+
 
 To include Crab in your application you just need to include the
-corresponding C++ header files located at the `include` directory and
-make sure that you link your application with the Crab libraries
-(`lib` directory). This repository contains a `CMakeLists.txt` that
-you can adapt for your own needs.
-
-The `tests` directory contains many examples of how to build CFGs and
-compute invariants using different abstract domains. To install all
-the tests via `CMake` type:
-
-	mkdir build && cd build
-    cmake -DENABLE_TESTS=ON -DCMAKE_INSTALL_PREFIX=run ../
-    cmake --build . --target install 
-
-and, for instance, to execute the test `tests/simple/test1.cc` type:
-
-    cd run/tests/domains && ./test1
+corresponding C++ header files located at the `_DIR_/include`
+directory and make sure that you link your application with the Crab
+libraries (`_DIR_/lib` directory).
 
 The Boxes and Apron domains require third-party libraries. To avoid
 the burden to users who are not interested in those domains, the
 installation of the libraries is optional.
 
-If you want to use the BOXES domain then add `-DUSE_LDD=ON` option.
+If you want to use the Boxes domain then add `-DUSE_LDD=ON` option.
 
 If you want to use the Apron library domains then add `-DUSE_APRON=ON` option.
+
+To install Crab with Boxes and Apron, type:
+
+      mkdir build && cd build
+      cmake -DCMAKE_INSTALL_PREFIX=_DIR_ -DUSE_LDD=ON -DUSE_APRON=ON ../
+      cmake --build . --target ldd && cmake ..
+      cmake --build . --target apron && cmake ..	
+      cmake --build . --target install 	
+
+The `tests` directory contains many examples of how to build CFGs and
+compute invariants using different abstract domains. To run these tests
+type:
+
+      mkdir build && cd build
+      cmake -DCMAKE_INSTALL_PREFIX=_DIR_ -DUSE_LDD=ON -DUSE_APRON=ON -DENABLE_TESTS=ON ../
+      cmake --build . --target ldd && cmake ..
+      cmake --build . --target apron && cmake ..	
+      cmake --build . --target install 	
+
+
+and, for instance, to execute the test `tests/simple/test1.cc` type:
+
+    cd _DIR_/tests && ./test1
 
 # Example #
 
@@ -165,7 +198,7 @@ the entry of each basic block, should be something like this:
 
 Check these projects:
 
-- [Crab-Llvm](https://github.com/seahorn/crab-llvm) is a static
+- [Crab-Llvm](https://github.com/caballa/crab-llvm) is a static
 analyzer that infers invariants from LLVM-based languages using Crab.
 
 - [SeaHorn](https://github.com/seahorn) is a verification framework

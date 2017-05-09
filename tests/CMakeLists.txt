@@ -1,18 +1,6 @@
-set (CRAB_LIBS 
-   OS
-   Term
-   Debug
-   Stats
-   )
-
-set (CRAB_LIBS ${CRAB_LIBS}
+set (TEST_LIBS 
   ${Boost_PROGRAM_OPTIONS_LIBRARY}
-  ${LDD_LIBRARY} 
-  ${APRON_LIBRARY}
-  ${MPFR_LIBRARIES} 
-  ${GMPXX_LIB} 
-  ${GMP_LIB} 
-  ${RT_LIB}
+  ${CRAB_LIBS}
   )
 
 add_subdirectory (simple)
@@ -33,11 +21,11 @@ add_subdirectory (disintervals)
 add_subdirectory (checkers)
 
 # Needed if shared libraries
-if (BUILD_CRAB_LIBS_SHARED)
-if (USE_APRON)
-  install(FILES ${APRON_LIBRARY} DESTINATION lib)
-endif ()
-if (USE_LDD)
-  install(FILES ${LDD_LIBRARY} DESTINATION lib)
-endif ()
-endif ()
+#if (BUILD_CRAB_LIBS_SHARED)
+#if (USE_APRON)
+#  install(FILES ${APRON_LIBRARY} DESTINATION lib)
+#endif ()
+#if (USE_LDD)
+#  install(FILES ${LDD_LIBRARY} DESTINATION lib)
+#endif ()
+#endif ()

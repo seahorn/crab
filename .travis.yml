@@ -1,0 +1,61 @@
+language: cpp
+cache: apt
+env:
+  matrix:
+   # =======================================================
+   # RELEASE Build
+   # =======================================================
+     - CMAKE_CXX_COMPILER=g++-5
+       CMAKE_BUILD_TYPE=RELEASE
+       CONSERVE_MEMORY=ON
+
+before_install:
+   - until sudo add-apt-repository -y ppa:saiarcot895/chromium-beta; do echo retry; done
+   - until sudo apt-get -qq update; do echo retry; done
+   - until sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test; do echo retry; done
+   - sudo apt-add-repository --yes ppa:smspillaz/cmake-2.8.12
+   - sudo apt-get --yes update
+   - sudo apt-get install --yes cmake cmake-data
+   - until sudo apt-get -qq install ninja-build; do echo retry; done  
+   - ninja --version
+   - until sudo apt-get -qq update; do echo retry; done
+   - until sudo apt-get -qq install libstdc++5; do echo retry; done
+   - if [[ $CMAKE_CXX_COMPILER == g++-5 ]]; then until sudo apt-get -qq install g++-5; do echo retry; done fi
+
+install:
+  - sudo apt-get install --yes libgmp-dev
+  - sudo apt-get install --yes libmpfr-dev   
+  - wget --no-verbose --output-document=boost-trunk.tar.bz2 http://sourceforge.net/projects/boost/files/boost/1.63.0/boost_1_63_0.tar.bz2/download
+  - export BOOST_ROOT="$TRAVIS_BUILD_DIR/../boost-trunk"
+  - export CMAKE_MODULE_PATH="$BOOST_ROOT"
+  - mkdir -p $BOOST_ROOT
+  - tar jxf boost-trunk.tar.bz2 --strip-components=1 -C $BOOST_ROOT
+  - (cd $BOOST_ROOT; ./bootstrap.sh --with-libraries=system,program_options)
+  - (cd $BOOST_ROOT; ./b2 --prefix=$BOOST_ROOT -d0 install)
+  - cd ..
+
+script:
+  - cd crab
+  - mkdir -p build
+  - cd build
+  - GENERATOR=-GNinja;
+  - /usr/bin/cmake -DBOOST_ROOT=$BOOST_ROOT -DUSE_APRON=ON -DUSE_LDD=ON -DENABLE_TESTS=ON -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} -DCMAKE_PROGRAM_PATH=/usr/bin  -DCMAKE_INSTALL_PREFIX=run ../;
+  - /usr/bin/cmake --build . --target ldd && cmake ..
+  - /usr/bin/cmake --build . --target apron && cmake ..	
+  - /usr/bin/cmake --build . --target install
+  - run/tests/test1
+  - run/tests/test2
+  - run/tests/test3
+  - run/tests/test4
+  - run/tests/test5  
+  - run/tests/apron-domains
+  - run/tests/boxes
+  - run/tests/inter
+  - run/tests/array_smashing  
+
+notifications:
+  email:
+    recipients:
+     - navasjorgea@gmail.com
+    on_success: always
+    on_failure: always
