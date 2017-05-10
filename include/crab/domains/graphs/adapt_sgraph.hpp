@@ -3,6 +3,9 @@
 #include <crab/domains/graphs/util/Vec.h>
 // Adaptive sparse-set based weighted graph implementation
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-compare"
+
 namespace crab {
   // An adaptive sparse-map.
   // Starts off as an unsorted vector, switching to a
@@ -123,6 +126,16 @@ namespace crab {
         key_iter_t(elt_t* _e)
           : e(_e)
         { }
+
+	// XXX: to make sure that we always return the same address
+	// for the "empty" iterator, otherwise we can trigger
+	// undefined behavior.
+	static key_iter_t empty_iterator () { 
+	  static std::unique_ptr<key_iter_t> it = nullptr;
+	  if (!it)
+	    it = std::unique_ptr<key_iter_t>(new key_iter_t ());
+	  return *it;
+	}
 
         key_t operator*(void) const { return (*e).key; }
         bool operator!=(const key_iter_t& o) const { return e < o.e; }
@@ -299,7 +312,7 @@ namespace crab {
   };
 
   template<class Weight>
-  class AdaptGraph : public writeable {
+  class AdaptGraph : public ikos::writeable {
     typedef AdaptSMap<size_t> smap_t;
   public:  
     typedef unsigned int vert_id;
@@ -412,6 +425,16 @@ namespace crab {
       edge_iter(void)
         : ws(nullptr)
       { }
+
+      // XXX: to make sure that we always return the same address
+      // for the "empty" iterator, otherwise we can trigger
+      // undefined behavior.
+      static edge_iter empty_iterator () { 
+	static std::unique_ptr<edge_iter> it = nullptr;
+	if (!it)
+	  it = std::unique_ptr<edge_iter>(new edge_iter ());
+	return *it;
+      }
 
       edge_ref operator*(void) const { return edge_ref((*it).key, (*ws)[(*it).val]); }
       edge_iter operator++(void) { ++it; return *this; }  
@@ -650,4 +673,5 @@ namespace crab {
     vec<size_t> free_widx;
   };
 }
+#pragma GCC diagnostic pop
 #endif

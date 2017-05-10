@@ -9,7 +9,7 @@
 namespace crab {
 
 template <class Weight>
-class PtGraph : public writeable {
+class PtGraph : public ikos::writeable {
   public:
     typedef Weight Wt;
     typedef PtGraph<Wt> graph_t;
@@ -21,7 +21,7 @@ class PtGraph : public writeable {
       vert_idx(vert_id _v)
         : v(_v)
       { }
-      index_t index(void) const { return (index_t) v; }
+      ikos::index_t index(void) const { return (ikos::index_t) v; }
 
       void write(crab_os& o) {
         o << v;
@@ -30,8 +30,8 @@ class PtGraph : public writeable {
       vert_id v;
     };
 
-    typedef patricia_tree_set<vert_idx> pred_t;
-    typedef patricia_tree<vert_idx, Wt> succ_t;
+    typedef ikos::patricia_tree_set<vert_idx> pred_t;
+    typedef ikos::patricia_tree<vert_idx, Wt> succ_t;
 
     PtGraph()
       : edge_count(0), _succs(), _preds(), is_free(), free_id()
@@ -286,7 +286,7 @@ class PtGraph : public writeable {
 
     class vert_iterator {
     public:
-      vert_iterator(vert_id _v, const vector<bool>& _is_free)
+      vert_iterator(vert_id _v, const std::vector<bool>& _is_free)
         : v(_v), is_free(_is_free)
       { }
       vert_id operator*(void) const { return v; }
@@ -299,18 +299,18 @@ class PtGraph : public writeable {
       }
     protected:
       vert_id v;
-      const vector<bool>& is_free;
+      const std::vector<bool>& is_free;
     };
 
     class vert_range {
     public:
-      vert_range(const vector<bool>& _is_free)
+      vert_range(const std::vector<bool>& _is_free)
         : is_free(_is_free)
       { }
       vert_iterator begin(void) const { return vert_iterator(0, is_free); }
       vert_iterator end(void) const { return vert_iterator(is_free.size(), is_free); }
     protected:
-      const vector<bool>& is_free;
+      const std::vector<bool>& is_free;
     };
 
     // FIXME: Verts currently iterates over free vertices,
@@ -347,6 +347,15 @@ class PtGraph : public writeable {
       succ_iterator(void)
         : it()
       { }
+      // XXX: to make sure that we always return the same address
+      // for the "empty" iterator, otherwise we can trigger
+      // undefined behavior.
+      static iter_t empty_iterator () { 
+	static std::unique_ptr<iter_t> it = nullptr;
+	if (!it)
+	  it = std::unique_ptr<iter_t>(new iter_t ());
+	return *it;
+      }
       bool operator!=(const iter_t& o) {
         return it != o.it;
       }
@@ -429,6 +438,15 @@ class PtGraph : public writeable {
       fwd_edge_iterator(graph_t& _g, vert_id _s, succ_iterator _it)
         : g(&_g), s(_s), it(_it)
       { }
+      // XXX: to make sure that we always return the same address
+      // for the "empty" iterator, otherwise we can trigger
+      // undefined behavior.
+      static fwd_edge_iterator empty_iterator () { 
+	static std::unique_ptr<fwd_edge_iterator> it = nullptr;
+	if (!it)
+	  it = std::unique_ptr<fwd_edge_iterator>(new fwd_edge_iterator ());
+	return *it;
+      }
 
       edge_ref operator*(void) const { return edge_ref((*it), g->edge_val(s, (*it))); }
       fwd_edge_iterator& operator++(void) { ++it; return *this; }
@@ -553,8 +571,8 @@ class PtGraph : public writeable {
 
     unsigned int edge_count;
 
-    vector<succ_t> _succs;
-    vector<pred_t> _preds;
+    std::vector<succ_t> _succs;
+    std::vector<pred_t> _preds;
 
     std::vector<bool> is_free;
     std::vector<int> free_id;
