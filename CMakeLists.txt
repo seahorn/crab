@@ -311,8 +311,11 @@ endif ()
 
 install(DIRECTORY include/ DESTINATION include)
 
-# License
-install(FILES LICENSE DESTINATION ./)       
+if (TopLevel)
+   install(FILES LICENSE DESTINATION .)
+   install(FILES README.md DESTINATION .)
+endif () 
+
 
 
 
