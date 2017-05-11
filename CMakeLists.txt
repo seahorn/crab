@@ -294,16 +294,17 @@ if (TopLevel)
 else ()
   ## XXX: propagate CRAB_LIBS and CRAB_INCLUDE_DIRS to parent
   set (CRAB_LIBS Crab ${CRAB_DEPS_LIBS} PARENT_SCOPE)
-  set (CRAB_INCLUDE_DIRS 
-       ${Crab_SOURCE_DIR}/include 
-       ${CMAKE_BINARY_DIR}/include ## crab config.h
-       PARENT_SCOPE)
+  set (_CRAB_INCLUDE_DIRS 
+       ${Crab_SOURCE_DIR}/include
+       ## crab config.h
+       ${CMAKE_BINARY_DIR}/include )
   if (LDD_FOUND)
-     set (CRAB_INCLUDE_DIRS ${CRAB_INCLUDE_DIRS} ${LDD_INCLUDE_DIR} PARENT_SCOPE)
+     set (_CRAB_INCLUDE_DIRS ${_CRAB_INCLUDE_DIRS} ${LDD_INCLUDE_DIR})
   endif ()
   if (APRON_FOUND)
-     set (CRAB_INCLUDE_DIRS ${CRAB_INCLUDE_DIRS} ${APRON_INCLUDE_DIR} PARENT_SCOPE)
+     set (_CRAB_INCLUDE_DIRS ${_CRAB_INCLUDE_DIRS} ${APRON_INCLUDE_DIR})
   endif ()
+  set (CRAB_INCLUDE_DIRS ${_CRAB_INCLUDE_DIRS} PARENT_SCOPE)  
 endif ()  
   
 include_directories (${CMAKE_BINARY_DIR}/include)
