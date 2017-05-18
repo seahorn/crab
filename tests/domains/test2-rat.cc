@@ -45,10 +45,7 @@ int main (int argc, char** argv )
   run<q_pk_apron_domain_t>(cfg,false,1,2,20,stats_enabled);
   #endif
   #ifdef HAVE_LDD
-  #if 0
-  // XXX: this test crashes so we comment it so make test can succeed.
   run<q_boxes_domain_t>(cfg,false,1,2,20,stats_enabled);
-  #endif 
   #endif   
   return 0;
 }
