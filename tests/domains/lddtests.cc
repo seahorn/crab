@@ -6,7 +6,7 @@
 #include <crab/domains/ldd/ldd.hpp>
 #endif 
 #include <boost/optional.hpp>
-
+#include <crab/domains/boxes.hpp>
 using namespace std;
 using namespace ikos;
 using namespace crab::cfg_impl;
@@ -98,9 +98,14 @@ LddNodePtr meet (LddManager *ldd, LddNodePtr n1, LddNodePtr n2)
   return lddPtr (ldd, Ldd_And (ldd, &*n1, &*n2));
 }
 
-LddNodePtr join (LddManager *ldd, LddNodePtr n1, LddNodePtr n2)
+LddNodePtr convex_join (LddManager *ldd, LddNodePtr n1, LddNodePtr n2)
 {
   return approx (ldd, lddPtr (ldd, Ldd_Or (ldd, &*n1, &*n2)));
+}
+
+LddNodePtr join (LddManager *ldd, LddNodePtr n1, LddNodePtr n2)
+{
+  return lddPtr (ldd, Ldd_Or (ldd, &*n1, &*n2));
 }
 
 bool isLeq (LddManager *ldd, LddNodePtr n1, LddNodePtr n2)
@@ -251,6 +256,41 @@ int main (int argc, char** argv )
     dump (s4);
   }
 
+  #if 0
+  {
+    // This reproduce a bug:
+    // Assertion failed: (level < (unsigned) cuddI(unique,Cudd_Regular(E)->index)), function cuddUniqueInter, file /Users/E30338/Repos/crab/build_crab2/ldd/src/ldd/cudd-2.4.2/cudd/cuddTable.c, line 1143.
+    
+    typedef boxes_domain< number_t, varname_t > boxes_domain_t;
+    typedef variable <number_t, varname_t> var_t;
+    
+    boxes_domain_t s1;
+    s1 += linear_constraint_t (var_t(x) >= number_t(0));
+    s1 += linear_constraint_t (var_t(x) <= number_t(1,4));
+    s1 += linear_constraint_t (var_t(y) >= number_t(1,4));
+    s1 += linear_constraint_t (var_t(y) <= number_t(1,2));
+    boxes_domain_t s2;
+    s2 += linear_constraint_t (var_t(x) == number_t(0));
+    s2 += linear_constraint_t (var_t(y) == number_t(1,2));
+
+    boxes_domain_t s3 = s2 | s1;
+    ///////////////////
+    boxes_domain_t s4;
+    s4 += linear_constraint_t (var_t(x) >= number_t(1,4));
+    s4 += linear_constraint_t (var_t(x) <= number_t(1));    
+    s4 += linear_constraint_t (var_t(y) >= number_t(1,8));
+    s4 += linear_constraint_t (var_t(y) <= number_t(1,4));    
+
+    boxes_domain_t s5 = s4 | s2;
+    //////
+    crab::outs () << "Widening of \n" << s3;
+    crab::outs () << "and\n" << s5 << " = \n";
+    boxes_domain_t s6 = s3 || s5;
+    crab::outs () << s6 << "\n";
+    
+  }
+  #endif
+  
   // Ldd_NodeSanityCheck (man, &(*s4));
   
   // FIXME: seg fault here
