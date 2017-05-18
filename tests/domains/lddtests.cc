@@ -256,9 +256,9 @@ int main (int argc, char** argv )
     dump (s4);
   }
 
-  #if 0
+  #if 1
   {
-    // This reproduce a bug:
+    // To reproduce an old bug with boxes.
     // Assertion failed: (level < (unsigned) cuddI(unique,Cudd_Regular(E)->index)), function cuddUniqueInter, file /Users/E30338/Repos/crab/build_crab2/ldd/src/ldd/cudd-2.4.2/cudd/cuddTable.c, line 1143.
     
     typedef boxes_domain< number_t, varname_t > boxes_domain_t;
