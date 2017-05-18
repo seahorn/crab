@@ -17,11 +17,11 @@ function (AddTest testSrc dirName)
   endif ()
   #move testing binaries into a test-bin directory
   set_target_properties(${testName} PROPERTIES 
-    RUNTIME_OUTPUT_DIRECTORY  ${CMAKE_CURRENT_SOURCE_DIR}/test-bin)
+    RUNTIME_OUTPUT_DIRECTORY  ${CMAKE_BINARY_DIR}/test-bin)
   #Finally add it to test execution
   add_test(NAME ${testName} 
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test-bin
-    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test-bin/${testName} )
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/test-bin
+    COMMAND ${CMAKE_BINARY_DIR}/test-bin/${testName} )
 endfunction()
 
 function (AddTestDir dirName)
