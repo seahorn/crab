@@ -255,6 +255,7 @@ namespace crab {
 
         // pre: ldd is not either true or false
         void project (LddNodePtr& ldd, VariableName v) const {
+	  if (!m_var_map) return;
           for (auto p: (*m_var_map).left) {
             if (!(p.first == v)) {
               int id = get_var_dim (p.first);
@@ -268,7 +269,7 @@ namespace crab {
         // non-relational approximation (but still non-convex)
         // expensive operation
         LddNodePtr non_relational_approx () const {
-          if (is_top () || is_bottom ())
+          if (is_top () || is_bottom () || !m_var_map)
             return m_ldd;
                                   
           LddNodePtr res = lddPtr (get_ldd_man(), Ldd_GetTrue (get_ldd_man()));
@@ -688,6 +689,8 @@ namespace crab {
 
           if (is_bottom ()) return;
 
+	  if (!m_var_map) return;
+	  
           std::set<VariableName> s1,s2,s3;
           for (auto p: (*m_var_map).left) s1.insert (p.first);
           s2.insert (begin, end);
@@ -773,6 +776,9 @@ namespace crab {
           if (is_top ()) 
             return interval_t::top ();
 
+	  if (!m_var_map)
+	    return interval_t::top ();
+	  
           // make convex the ldd
           LddNodePtr tmp = convex_approx ();
           // forget any variable that is not v
