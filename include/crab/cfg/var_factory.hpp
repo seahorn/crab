@@ -148,7 +148,13 @@ namespace crab {
          variable_factory (): _next_id (1) { }
          
          variable_factory (index_t start_id): _next_id (start_id) { }
-                  
+
+	 virtual ~variable_factory () {
+	   _map.clear ();
+	   _shadow_map.clear ();
+	   _shadow_vars.clear ();
+	 }
+
          // hook for generating indexed_string's without being
          // associated with a particular T (w/o caching).
          // XXX: do not use it unless strictly necessary.
