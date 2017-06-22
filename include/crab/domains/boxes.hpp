@@ -435,15 +435,17 @@ namespace crab {
           if (kind == kind_t::EQUALITY) {  // x == k <-> x<=k and !(x<k)
             // x<=k  
             constant_t c1 = mk_cst (k);
-            lincons_t cons1 = theory->create_cons (term, 0 /*non-strict*/, c1);
+	    // XXX: make copy of term so that we can free memory using
+	    // destroy_lincons without having double free
+	    linterm_t copy_term = Ldd_GetTheory (get_ldd_man())->dup_term (term);
+            lincons_t cons1 = theory->create_cons (copy_term, 0 /*non-strict*/, c1);
             LddNodePtr n1 = lddPtr (get_ldd_man(), theory->to_ldd (get_ldd_man(), cons1));
             // !(x<k)
             constant_t c2 = mk_cst (k);
             lincons_t cons2 = theory->create_cons (term, 1 /*strict*/, c2);
             LddNodePtr n2 = lddPtr(get_ldd_man(),Ldd_Not (theory->to_ldd (get_ldd_man(), cons2)));
-	    // FIXME: memory leak
-            //theory->destroy_lincons (cons1);
-            //theory->destroy_lincons (cons2);
+            theory->destroy_lincons (cons1);
+            theory->destroy_lincons (cons2);
 	    return lddPtr (get_ldd_man (), Ldd_And (get_ldd_man(), &*n1, &*n2));
           } else if (kind == kind_t::INEQUALITY) {
             // case 1:  x <= k  
@@ -451,22 +453,23 @@ namespace crab {
             constant_t c = mk_cst (k);
             lincons_t cons = theory->create_cons (term, 0 /*non-strict*/, c);
             LddNodePtr n = lddPtr (get_ldd_man(), theory->to_ldd (get_ldd_man(), cons));
-	    // FIXME: memory leak
-            // theory->destroy_lincons (cons);
+            theory->destroy_lincons (cons);
 	    return n; 
           } else { // assert (kind == kind_t::DISEQUALITY)
             // case 1:  x != k  <->  x < k OR  x > k <->  x < k OR -x < -k
             // case 2: -x != k  <-> -x < k OR -x > k <-> -x < k OR  x < -k
             constant_t c1 = mk_cst (k);
-            lincons_t cons1 = theory->create_cons (term, 1 /*strict*/, c1);
+	    // XXX: make copy of term so that we can free memory using
+	    // destroy_lincons without having double free
+	    linterm_t copy_term = Ldd_GetTheory (get_ldd_man())->dup_term (term);
+            lincons_t cons1 = theory->create_cons (copy_term, 1 /*strict*/, c1);
             LddNodePtr n1 = lddPtr (get_ldd_man(), theory->to_ldd (get_ldd_man(), cons1));
             constant_t c2 = mk_cst (-k);
             lincons_t cons2 = theory->create_cons (term, 1 /*strict*/, c2);
             LddNodePtr n2 = lddPtr (get_ldd_man(), theory->to_ldd (get_ldd_man(), cons2));
             LddNodePtr n3 = lddPtr (get_ldd_man (), Ldd_Or (get_ldd_man(), &*n1, &*n2));
-	    // FIXME: memory leak
-            //theory->destroy_lincons (cons1);
-            //theory->destroy_lincons (cons2);            
+            theory->destroy_lincons (cons1);
+            theory->destroy_lincons (cons2);            
 	    return n3;
           }
         } 

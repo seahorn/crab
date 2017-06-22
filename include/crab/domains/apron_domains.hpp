@@ -982,8 +982,10 @@ namespace crab {
             ap_interval_t* intv = ap_abstract0_bound_dimension (get_man (),
                                                                 &*m_apstate, 
                                                                 *dim);
-            if (ap_interval_is_top (intv))
+            if (ap_interval_is_top (intv)) {
+	      ap_interval_free (intv);
               return interval_t::top ();
+	    }
 
             ap_scalar_t* lb = intv->inf;
             ap_scalar_t* ub = intv->sup;
@@ -993,11 +995,13 @@ namespace crab {
               if (ap_scalar_infty(lb) == -1) {     // [-oo, k]
 		Number sup;
 		convert_apron_number (ub->val.dbl, sup);
+		ap_interval_free (intv);
                 return interval_t (bound_t::minus_infinity (), sup);
               }
               else if (ap_scalar_infty(ub) == 1) { // [k, +oo]
 		Number inf;
 		convert_apron_number (lb->val.dbl, inf);
+		ap_interval_free (intv);
                 return interval_t (inf, bound_t::plus_infinity ());
                                    
               }
@@ -1007,6 +1011,7 @@ namespace crab {
 		Number inf, sup;
 		convert_apron_number(lb->val.dbl, inf);
 		convert_apron_number(ub->val.dbl, sup);
+		ap_interval_free (intv);
                 return interval_t (inf, sup);
               }
 
@@ -1016,12 +1021,14 @@ namespace crab {
               if (ap_scalar_infty(lb) == -1) {     // [-oo, k]
 		Number sup;
 		convert_apron_number (ub->val.mpq, sup);
+		ap_interval_free (intv);
                 return interval_t (bound_t::minus_infinity (), sup);
 
               }
               else if (ap_scalar_infty(ub) == 1) { // [k, +oo]
 		Number inf;
 		convert_apron_number (lb->val.mpq, inf);
+		ap_interval_free (intv);
                 return interval_t (inf, bound_t::plus_infinity ());
               }
               else {
@@ -1031,9 +1038,9 @@ namespace crab {
 		Number inf, sup;
 		convert_apron_number (lb->val.mpq, inf);
 		convert_apron_number (ub->val.mpq, sup);		
+		ap_interval_free (intv);
                 return interval_t (inf, sup);
               }
-
             }
             else 
               CRAB_ERROR ("ERROR: apron translation only covers double or mpq scalars");
