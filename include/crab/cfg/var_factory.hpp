@@ -10,8 +10,6 @@
 #include <boost/optional.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/unordered_map.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
 #include <boost/range/iterator_range.hpp>
 
 namespace crab {
@@ -56,20 +54,22 @@ namespace crab {
            // typedef ikos::z_number index_t;
            
           private:
-           boost::shared_ptr< T > _s;
+	   boost::optional<T> _s;
            index_t _id;
            variable_factory* _vfac;
            
            indexed_string();
            
            indexed_string(index_t id, variable_factory *vfac): 
-               _s(0), _id(id), _vfac(vfac) { }
-           
-           indexed_string(boost::shared_ptr< T > s, index_t id, variable_factory *vfac): 
-               _s(s), _id(id), _vfac(vfac) { }
+	     _id(id), _vfac(vfac) { }
+	   
+           indexed_string(T s, index_t id, variable_factory *vfac): 
+	     _s(s), _id(id), _vfac(vfac) { }
            
           public:
-           
+
+	   ~indexed_string () {}
+	   
            indexed_string(const indexed_string& is)
                : _s(is._s), _id(is._id), _vfac(is._vfac) { }
            
@@ -84,17 +84,16 @@ namespace crab {
            
            std::string str() const 
            { 
-             if (_s)
-             {  return indexed_string_impl::get_str< T >(*_s);  }
-             else
-             { // unlikely prefix
+             if (_s) {
+	       return indexed_string_impl::get_str<T>(*_s);
+	     } else {
+	       // unlikely prefix
                return "@V_" + std::to_string(_id);
              }
            }
            
-           boost::optional<T> get() const{ 
-             if (_s) return *_s; 
-             else return boost::optional<T> ();
+           boost::optional<T> get() const{
+	     return _s ? *_s : boost::optional<T> ();
            }
            
            variable_factory& get_var_factory () { return *_vfac; }
@@ -181,7 +180,7 @@ namespace crab {
            auto it = _map.find (s);
            if (it == _map.end()) 
            {
-             indexed_string is (boost::make_shared<T>(s), _next_id++, this);
+             indexed_string is (/*boost::make_shared<T>(s)*/ s, _next_id++, this);
              _map.insert (typename t_map_t::value_type (s, is));
              return is;
            }
