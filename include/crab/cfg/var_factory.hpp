@@ -122,7 +122,7 @@ namespace crab {
            }
          }; 
 
-       public:
+        public:
 
          typedef typename indexed_string::index_t index_t;
          
@@ -137,13 +137,14 @@ namespace crab {
          std::vector<indexed_string> _shadow_vars;
          
         public:
-         typedef indexed_string variable_t;
+         typedef indexed_string varname_t;
          typedef boost::iterator_range
 	         <typename std::vector<indexed_string>::iterator> var_range;
          typedef boost::iterator_range
 	         <typename std::vector<indexed_string>::const_iterator> const_var_range;
          
         public:
+	 
          variable_factory (): _next_id (1) { }
          
          variable_factory (index_t start_id): _next_id (start_id) { }
@@ -151,7 +152,7 @@ namespace crab {
          // hook for generating indexed_string's without being
          // associated with a particular T (w/o caching).
          // XXX: do not use it unless strictly necessary.
-         indexed_string get ()
+         virtual indexed_string get ()
          {
            indexed_string is (_next_id++, this);
            _shadow_vars.push_back (is);
@@ -161,7 +162,7 @@ namespace crab {
          // hook for generating indexed_string's without being
          // associated with a particular T (w/ caching).
          // XXX: do not use it unless strictly necessary.
-         indexed_string get (index_t key)
+         virtual indexed_string get (index_t key)
          {
            auto it = _shadow_map.find (key);
            if (it == _shadow_map.end()) 
@@ -175,12 +176,12 @@ namespace crab {
              return it->second;
          }
          
-         indexed_string operator[](T s) 
+         virtual indexed_string operator[](T s) 
          {
            auto it = _map.find (s);
            if (it == _map.end()) 
            {
-             indexed_string is (/*boost::make_shared<T>(s)*/ s, _next_id++, this);
+             indexed_string is (s, _next_id++, this);
              _map.insert (typename t_map_t::value_type (s, is));
              return is;
            }
@@ -189,7 +190,7 @@ namespace crab {
          }
 
          // return all the shadow variables created by the factory.
-         const_var_range get_shadow_vars () const 
+         virtual const_var_range get_shadow_vars () const 
          {
            return boost::make_iterator_range (_shadow_vars.begin (),
                                               _shadow_vars.end ());
@@ -198,30 +199,19 @@ namespace crab {
        }; 
     
        //! Specialized factory for strings
-       class str_variable_factory : public boost::noncopyable  
+       class str_variable_factory : public variable_factory<std::string>
        {
-         typedef variable_factory< std::string > str_variable_factory_t;
-         std::unique_ptr< str_variable_factory_t > m_factory; 
-         
+	 typedef variable_factory<std::string> variable_factory_t;
+	 
         public: 
          
-         typedef str_variable_factory_t::variable_t varname_t;
-         typedef str_variable_factory_t::const_var_range const_var_range;
-         typedef typename str_variable_factory_t::index_t index_t;         
+         typedef variable_factory_t::varname_t varname_t;
+         typedef variable_factory_t::const_var_range const_var_range;
+         typedef variable_factory_t::index_t index_t;         
 
-         str_variable_factory(): m_factory (new str_variable_factory_t()){ }
-         
-         varname_t operator[](std::string v) { return (*m_factory)[v]; }
-
-         varname_t get () { return m_factory->get(); }
-
-         varname_t get (index_t key) { return m_factory->get(key); }
-
-         const_var_range get_shadow_vars () const  {
-           return m_factory->get_shadow_vars ();
-         }
+         str_variable_factory(): variable_factory_t () { }
        }; 
-
+      
        //! Specialized factory for integers
        class int_variable_factory : public boost::noncopyable  
        {
