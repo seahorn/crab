@@ -190,13 +190,12 @@ namespace crab {
 
        private:
         // --- map from crab variable index to ldd term index
-        typedef boost::bimap< VariableName , int > var_bimap_t;
-        typedef boost::shared_ptr<var_bimap_t> var_map_ptr;
-        typedef typename var_bimap_t::value_type binding_t;
+        typedef boost::bimap< VariableName , int > var_map_t;
+        typedef typename var_map_t::value_type binding_t;
 
         LddNodePtr m_ldd;
         static LddManager* m_ldd_man;
-        static var_map_ptr m_var_map;
+        static var_map_t m_var_map;
 
         static LddManager* get_ldd_man () {
           if (!m_ldd_man) {
@@ -211,29 +210,20 @@ namespace crab {
         }
 
         static int num_of_vars () {
-          if (!m_var_map) return 0;
-          
-          return (*m_var_map).left.size ();
+          return m_var_map.left.size ();
         }
 
-        static var_map_ptr get_var_map () {
-          if (!m_var_map) {
-            m_var_map = var_map_ptr (new var_bimap_t ());            
-          }
-          return m_var_map;
-        }
-       
         int get_var_dim (VariableName v) const {
-          auto it = get_var_map()->left.find (v);
-          if (it != get_var_map()->left.end ()) {
+          auto it = m_var_map.left.find (v);
+          if (it != m_var_map.left.end ()) {
             return it->second;
           } else {
 	    // XXX: reserved dim 0 for SPECIAL variable
-            unsigned int id = get_var_map ()->size () + 1;
+            unsigned int id = m_var_map.size () + 1;
             if (id >= LddSize) {
               CRAB_ERROR ("The Ldd size of ", LddSize, " needs to be larger");
             }
-            get_var_map ()->insert (binding_t (v, id));
+            m_var_map.insert (binding_t (v, id));
             return id;
           }
         }
@@ -255,8 +245,7 @@ namespace crab {
 
         // pre: ldd is not either true or false
         void project (LddNodePtr& ldd, VariableName v) const {
-	  if (!m_var_map) return;
-          for (auto p: (*m_var_map).left) {
+          for (auto p: m_var_map.left) {
             if (!(p.first == v)) {
               int id = get_var_dim (p.first);
               ldd = lddPtr (get_ldd_man(), 
@@ -269,11 +258,11 @@ namespace crab {
         // non-relational approximation (but still non-convex)
         // expensive operation
         LddNodePtr non_relational_approx () const {
-          if (is_top () || is_bottom () || !m_var_map)
+          if (is_top () || is_bottom ())
             return m_ldd;
                                   
           LddNodePtr res = lddPtr (get_ldd_man(), Ldd_GetTrue (get_ldd_man()));
-          for (auto p: (*m_var_map).left) {
+          for (auto p: m_var_map.left) {
             LddNodePtr tmp (m_ldd);
             project (tmp, p.first);
             res = lddPtr (get_ldd_man(), Ldd_And (get_ldd_man(), &*res, &*tmp));
@@ -533,8 +522,8 @@ namespace crab {
         }
 
         VariableName getVarName (int v) const {
-          auto it = get_var_map ()->right.find (v);
-          if (it != get_var_map ()->right.end ())
+          auto it = m_var_map.right.find (v);
+          if (it != m_var_map.right.end ())
              return it->second;
           else {
              CRAB_ERROR ("Index ", v, " cannot be mapped back to a variable name");
@@ -692,10 +681,8 @@ namespace crab {
 
           if (is_bottom ()) return;
 
-	  if (!m_var_map) return;
-	  
           std::set<VariableName> s1,s2,s3;
-          for (auto p: (*m_var_map).left) s1.insert (p.first);
+          for (auto p: m_var_map.left) s1.insert (p.first);
           s2.insert (begin, end);
           boost::set_difference (s1,s2,std::inserter (s3, s3.end ()));
           forget (s3.begin (), s3.end ());
@@ -779,13 +766,10 @@ namespace crab {
           if (is_top ()) 
             return interval_t::top ();
 
-	  if (!m_var_map)
-	    return interval_t::top ();
-	  
           // make convex the ldd
           LddNodePtr tmp = convex_approx ();
           // forget any variable that is not v
-          for (auto p: (*m_var_map).left) {
+          for (auto p: m_var_map.left) {
             if (! (p.first == v)) {
               int id = get_var_dim (p.first);
               tmp =  lddPtr (get_ldd_man(), 
@@ -1267,7 +1251,7 @@ namespace crab {
      LddManager* boxes_domain_<N,V,S>::m_ldd_man = nullptr;
 
      template<typename N, typename V, size_t S>
-     typename boxes_domain_<N,V,S>::var_map_ptr boxes_domain_<N,V,S>::m_var_map = nullptr;
+     typename boxes_domain_<N,V,S>::var_map_t boxes_domain_<N,V,S>::m_var_map;
 
      template<typename Number, typename VariableName, size_t LddSize>
      class domain_traits <boxes_domain_<Number,VariableName, LddSize> > {
