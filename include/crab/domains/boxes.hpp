@@ -2,9 +2,9 @@
 #define BOXES_DOMAIN_HPP
 
 /************************************************************************** 
- * A disjunctive domain of intervals based on "Boxes: A Symbolic
- * Abstract Domain of Boxes" by A. Gurfinkel and S. Chaki published
- * SAS'10.
+ * A wrapper for a disjunctive domain of intervals based on "Boxes: A
+ * Symbolic Abstract Domain of Boxes" by A. Gurfinkel and S. Chaki
+ * published in SAS'10.
  **************************************************************************/
 
 #include <crab/config.h>
@@ -37,20 +37,15 @@ namespace crab {
         using typename numerical_domain< Number, VariableName>::linear_expression_t;
         using typename numerical_domain< Number, VariableName>::linear_constraint_t;
         using typename numerical_domain< Number, VariableName>::linear_constraint_system_t;
+	typedef disjunctive_linear_constraint_system<Number, VariableName>
+	disjunctive_linear_constraint_system_t;
         using typename numerical_domain< Number, VariableName>::variable_t;
         using typename numerical_domain< Number, VariableName>::number_t;
         using typename numerical_domain< Number, VariableName>::varname_t;
         typedef boxes_domain <Number, VariableName, LddSize> boxes_domain_t;
         typedef interval <Number> interval_t;
-        typedef int LddNodePtr;
 
         boxes_domain(): ikos::writeable() { }    
-
-        LddNodePtr getLdd () 
-        { CRAB_ERROR (LDD_NOT_FOUND); }
-
-        VariableName getVarName (int v) const 
-        { CRAB_ERROR (LDD_NOT_FOUND); }
 
         static boxes_domain_t top() { CRAB_ERROR (LDD_NOT_FOUND); }
 
@@ -129,7 +124,11 @@ namespace crab {
         
         linear_constraint_system_t to_linear_constraint_system ()
         { CRAB_ERROR (LDD_NOT_FOUND); }
-        
+
+        disjunctive_linear_constraint_system_t
+	to_disjunctive_linear_constraint_system ()
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+	
         void write(crab_os& o) 
         { CRAB_ERROR (LDD_NOT_FOUND); }
           
@@ -182,6 +181,8 @@ namespace crab {
         using typename numerical_domain< Number, VariableName>::linear_expression_t;
         using typename numerical_domain< Number, VariableName>::linear_constraint_t;
         using typename numerical_domain< Number, VariableName>::linear_constraint_system_t;
+	typedef disjunctive_linear_constraint_system<Number, VariableName>
+	disjunctive_linear_constraint_system_t;
         using typename numerical_domain< Number, VariableName>::variable_t;
         using typename numerical_domain< Number, VariableName>::number_t;
         using typename numerical_domain< Number, VariableName>::varname_t;
@@ -457,7 +458,97 @@ namespace crab {
 #endif 
         }
 
-       public:
+	void to_disjunctive_linear_constraint_system_aux
+	(LddManager *ldd, LddNode *n,
+	 disjunctive_linear_constraint_system_t &e,
+	 std::vector<int> &list) {
+	    /**
+	     * the latest negative constraint to be printed. 
+	     * is NULL if there isn't one 
+	     */
+	    lincons_t negc = nullptr;
+	    
+	    DdNode *N = Cudd_Regular (n);
+	    
+	    if (cuddIsConstant (N)) {
+	      /* n == N here implies that n is one */
+	      if (n == N) {
+
+		linear_constraint_system_t csts;
+		
+		/* for each level */
+		for (int i = 0; i < ldd->cudd->size; i++) {
+		  /* let p be the index of level i */
+		  int p = ldd->cudd->invperm [i];
+		  /* let v be the value of p */
+		  int v = list [p];
+		  
+		  /* skip don't care */
+		  if (v == 2) continue;
+		  
+		  if (v == 0 && ldd->ddVars [p] != nullptr)
+		    {
+		      lincons_t c;
+		      c = THEORY->negate_cons (ldd->ddVars [p]);
+		
+		      if (negc != nullptr) {
+			/* consider negative constraint if it is not implied
+			   by c
+			*/
+			if (!THEORY->is_stronger_cons (c, negc)) {
+			  csts += cstFromLddCons (negc, Ldd_GetTheory (ldd));
+			}
+			THEORY->destroy_lincons (negc);
+		      }
+		      
+		      /* store the current constraint to be considered later */
+		      negc = c;
+		      continue;
+		    }
+		  
+		  /* if there is a negative constraint waiting to be
+		     considered, conjoin it now
+		  */
+		  if (negc != nullptr) {
+		    csts += cstFromLddCons (negc, Ldd_GetTheory (ldd)); 
+		    THEORY->destroy_lincons (negc);
+		    negc = nullptr;
+		  }
+
+		  /* if v is not a don't care but p does not correspond to a
+		   * constraint, consider it as a Boolean variable */
+		  if (v != 2 && ldd->ddVars [p] == nullptr)  {
+		    // TODO ????
+		    //fprintf (stderr, "%sb%d", (v == 0 ? "!" : " "), p); 
+		  }
+		  /* v is true */
+		  else if (v == 1) {
+		    csts += cstFromLddCons (ldd->ddVars [p],Ldd_GetTheory (ldd));
+		  }
+		} // end for
+		
+		/* if there is a constraint waiting to be considered, do it
+		   now */
+		if (negc != nullptr) {
+		  csts += cstFromLddCons (negc, Ldd_GetTheory (ldd)); 
+		  THEORY->destroy_lincons (negc);	    
+		  negc = nullptr;
+		}
+		e += csts;
+	      }
+	    } 
+	    else {
+	      DdNode *Nv = Cudd_NotCond (cuddT(N), N != n);
+	      DdNode *Nnv = Cudd_NotCond (cuddE(N), N != n);
+	      int index = N->index;
+	      list[index] = 0;
+	      to_disjunctive_linear_constraint_system_aux(ldd, Nnv, e, list);
+	      list[index] = 1;
+	      to_disjunctive_linear_constraint_system_aux(ldd, Nv, e, list);
+	      list[index] = 2;
+	    }
+	    return;
+       }
 
         LddNodePtr getLdd () { 
           return m_ldd; 
@@ -471,6 +562,8 @@ namespace crab {
              CRAB_ERROR ("Index ", v, " cannot be mapped back to a variable name");
           }
         }
+	
+       public:
 
         boxes_domain(): ikos::writeable() { 
           m_ldd = lddPtr (get_ldd_man(), Ldd_GetTrue (get_ldd_man()));
@@ -698,7 +791,7 @@ namespace crab {
           Ldd_GetTheory (get_ldd_man())->destroy_term(t);
         }
 
-        // FIXME: expensive operation
+        // expensive operation
         interval_t operator[](VariableName v) { 
 
           crab::CrabStats::count (getDomainName() + ".count.to_intervals");
@@ -973,36 +1066,30 @@ namespace crab {
         }
 
         
-        void write (crab_os& o) {
-          // TODO: write to o rather than stdout
-          LddManager *ldd_man = getLddManager (m_ldd);
-          DdManager *cudd = Ldd_GetCudd (ldd_man);
-          FILE *fp = Cudd_ReadStdout(cudd);
-          Cudd_SetStdout(cudd, stdout);
-          if (m_ldd.get () == Ldd_GetTrue (ldd_man)) 
-            o << "{}";
-          else if (m_ldd.get () == Ldd_GetFalse (ldd_man)) 
-            o << "_|_";	
-          else 
-          {
-            // -- build dictionary
-            vector<char*> vnames;
-            vnames.reserve (num_of_vars ());
-            for (unsigned int i=0; i < num_of_vars (); i++) {
-              const char * name = getVarName (i).str ().c_str();
-              char * cname = (char*) malloc (sizeof(char) * (std::strlen (name)));
-              std::strcpy (cname, name);
-              vnames.push_back (cname);
-            }
-
-            Ldd_PrintMintermSmtLibv1 (ldd_man, m_ldd.get (), &vnames[0]);
-
-            // -- destroy dict
-            for (unsigned int i=0; i < num_of_vars (); i++)
-              free (vnames[i]);
-          }
-          Cudd_SetStdout(cudd,fp);      
-        }
+ 	disjunctive_linear_constraint_system_t
+ 	to_disjunctive_linear_constraint_system () {
+ 	  LddManager *ldd_man = getLddManager (m_ldd);
+ 	  
+ 	  std::vector<int> list;
+ 	  list.reserve (ldd_man->cudd->size);
+ 	  for (int i=0; i < ldd_man->cudd->size; i++) list.push_back(2);
+ 	  
+ 	  disjunctive_linear_constraint_system_t r;
+ 	  to_disjunctive_linear_constraint_system_aux (ldd_man, m_ldd.get (),
+ 						       r, list);
+ 	  return r;
+ 	}
+ 	
+ 	void write (crab_os& o) {
+	  if (is_top ()) {
+	    o << "{}";
+ 	  } else if (is_bottom ())  {
+	    o << "_|_";	
+ 	  } else  {
+ 	    auto r = to_disjunctive_linear_constraint_system ();
+ 	    o << r;
+	  }
+	}
         
         static std::string getDomainName () {
           return "Boxes";
