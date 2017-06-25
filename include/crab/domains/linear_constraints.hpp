@@ -1074,6 +1074,22 @@ namespace ikos {
         variables |= c.variables();
       return variables;
     }
+
+    // TODO: expensive linear operation.
+    // XXX: We can keep track of whether the system is false in an
+    // incremental manner.
+    bool is_false () const {
+      if (_csts.empty ())
+	return false; // empty is considered true
+      
+      for (auto it = this->begin(); it != this->end();) {
+        auto c = *it;
+	if (!c.is_contradiction ()) {
+	  return false;
+	}
+      }
+      return true; // all constraints are false
+    }
     
     std::size_t size() const { return _csts.size(); }
         
@@ -1092,6 +1108,115 @@ namespace ikos {
 
   }; // class linear_constraint_system
 
+
+  // This class contains a disjunction of linear constraints
+  template< typename Number, typename VariableName >
+  class disjunctive_linear_constraint_system: public writeable {
+
+  public:
+    typedef Number number_t;
+    typedef VariableName varname_t;
+    typedef linear_constraint<Number,VariableName> linear_constraint_t;
+    typedef linear_constraint_system<Number,VariableName> linear_constraint_system_t;
+    typedef disjunctive_linear_constraint_system<Number,VariableName> this_type;
+    
+  private:
+    typedef std::vector<linear_constraint_system_t> cst_collection_t;
+    cst_collection_t _csts;
+    bool _is_false;
+
+  public:
+    typedef typename cst_collection_t::const_iterator iterator;
+
+    disjunctive_linear_constraint_system()
+      : _is_false (false) {}
+
+    disjunctive_linear_constraint_system(const linear_constraint_system_t &cst)
+      : _is_false (false) {
+      if (cst.is_false ()) {
+	_is_false = true;
+      } else {
+	_csts.push_back(cst);
+      }
+    }
+
+    disjunctive_linear_constraint_system(const this_type &o)
+        : _csts (o._csts) { }
+
+    disjunctive_linear_constraint_system(this_type &&o)
+        : _csts (std::move(o._csts)) { }
+
+    bool is_false () const {
+      return _is_false;
+    }
+    
+    this_type& operator+=(const linear_constraint_system_t &cst) {
+      if (_csts.empty () && cst.is_false ()) {
+	_is_false = true;
+      } else {
+	_csts.push_back(cst);
+	_is_false = false;
+      }
+      return *this;
+    }
+
+    this_type& operator+=(const this_type &s) {
+      if (this->is_false ()) {
+	return s;
+      } else if (s.is_false ()) {
+	return *this;
+      } else { 
+	for (auto c: s) {
+	  _csts.push_back(c);
+	}
+	return *this;
+      }
+    }
+
+    this_type operator+(const this_type &s) const {
+      this_type r;
+      r.operator+=(s);
+      r.operator+=(*this);
+      return r;
+    }
+
+    // To enumerate all the conjunctions
+    iterator begin() const {      
+      if (is_false ())
+	CRAB_ERROR("Disjunctive Linear constraint: trying to call begin() when false");
+      return _csts.begin();
+    }
+
+    iterator end() const {
+      if (is_false ())
+	CRAB_ERROR("Disjunctive Linear constraint: trying to call end() when false");      
+      return _csts.end();
+    }
+
+    // Return the number of conjunctions
+    std::size_t size() const { return _csts.size(); }
+        
+    void write(crab::crab_os& o) {
+      if (is_false ()) {
+	o << "_|_";
+      } else if (_csts.empty ()) {
+	o << "{}";
+      } else if (size () == 1) {
+	o << _csts[0];
+      } else {
+	assert (size () > 1);
+	for (iterator it = this->begin(); it != this->end();) {
+	  auto c = *it;
+	  o << c;
+	  ++it;
+	  if (it != end()) {
+	    o << " or \n";
+	  }
+	}
+      }
+    }
+  }; 
+  
 } // namespace ikos
 
 #endif // IKOS_LINEAR_CONSTRAINTS_HPP
