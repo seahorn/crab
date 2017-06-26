@@ -99,7 +99,7 @@ find_package (Git)
 if (USE_LDD)
 if (GIT_FOUND)
     set (LDD_TAG "origin/master" CACHE STRING "ldd tag to use")
-    set (LDD_REPO "http://git.code.sf.net/p/lindd/code" CACHE STRING "ldd repository")
+    set (LDD_REPO "https://github.com/seahorn/ldd.git" CACHE STRING "ldd repository")
     ExternalProject_Add(ldd
       GIT_REPOSITORY ${LDD_REPO}
       GIT_TAG ${LDD_TAG}
@@ -155,9 +155,7 @@ if (GIT_FOUND)
   endif()
   
   ExternalProject_Add(apron
-    #GIT_REPOSITORY git@bitbucket.org:jorgenavas/apron.git
-    ## XXX: for travis, virtual box, etc  
-    GIT_REPOSITORY https://jorgenavas@bitbucket.org/jorgenavas/apron.git 
+    GIT_REPOSITORY https://github.com/seahorn/elina.git
     GIT_TAG ${APRON_TAG}
     INSTALL_DIR ${CMAKE_BINARY_DIR}/run/apron
     CONFIGURE_COMMAND echo "Apron does not need a configure"
