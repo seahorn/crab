@@ -1,6 +1,6 @@
 # Crab: A Language-Agnostic Library for Static Analysis #
 
-<a href="https://travis-ci.org/caballa/crab"><img src="https://travis-ci.org/caballa/crab.svg?branch=master" title="Ubuntu 12.04 LTS 64bit, g++-4.8"/></a>
+<a href="https://travis-ci.org/seahorn/crab"><img src="https://travis-ci.org/seahorn/crab.svg?branch=master" title="Ubuntu 12.04 LTS 64bit, g++-4.8"/></a>
 
 <img src="http://i.imgur.com/IDKhq5h.png" alt="crab logo" width=280 height=200 />
 
@@ -36,7 +36,7 @@ Open Static Analyzers) developed by NASA Ames Research Center.
 
 # Crab architecture #
 
-![Crab Architecture](https://github.com/caballa/crab/blob/master/Crab_arch.jpg?raw=true "Crab Architecture")
+![Crab Architecture](https://github.com/seahorn/crab/blob/master/Crab_arch.jpg?raw=true "Crab Architecture")
 
 # Installation and Usage #
 
@@ -214,7 +214,7 @@ the entry of each basic block, should be something like this:
 
 Check these projects:
 
-- [Crab-Llvm](https://github.com/caballa/crab-llvm) is a static
+- [Crab-Llvm](https://github.com/seahorn/crab-llvm) is a static
 analyzer that infers invariants from LLVM-based languages using Crab.
 
 - [SeaHorn](https://github.com/seahorn) is a verification framework
