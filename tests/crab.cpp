@@ -30,13 +30,21 @@ void intra_run_impl (CFG* cfg,
   // Print invariants
   for (auto &b : *cfg) {
     auto inv = a[b.label ()];
-    crab::outs() << crab::cfg_impl::get_label_str (b.label ()) << "=" << inv << "\n";
+    crab::outs() << crab::cfg_impl::get_label_str (b.label ()) << "="
+		 << inv << "\n";
   }
+  // Print abstract trace.
+  // We consider as an abtract trace the WTO annotated with how many
+  // times a cycle is visited by the fixpoint.
+  auto &wto = a.get_wto ();
+  crab::outs () << "Abstract trace: " << wto << "\n";
+  
   crab::outs() << "\n";
   if (enable_stats) {
     crab::CrabStats::Print(crab::outs());
     crab::CrabStats::reset();
   }
+
 }
 
 // To run abstract domains defined over integers

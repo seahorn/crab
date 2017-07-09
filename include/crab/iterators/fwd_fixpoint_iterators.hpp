@@ -72,15 +72,16 @@ namespace ikos {
 
     friend class interleaved_fwd_fixpoint_iterator_impl::wto_iterator< NodeName, CFG, AbstractValue >;
 
+  public:
+    typedef wto< NodeName, CFG> wto_t;
+
   private:
     typedef std::map< NodeName, AbstractValue > invariant_table_t;
     typedef boost::shared_ptr< invariant_table_t > invariant_table_ptr;
-    typedef wto< NodeName, CFG > wto_t;
     typedef interleaved_fwd_fixpoint_iterator_impl::wto_iterator< NodeName, CFG, AbstractValue > wto_iterator_t;
     typedef interleaved_fwd_fixpoint_iterator_impl::wto_processor< NodeName, CFG, AbstractValue > wto_processor_t;
     typedef crab::iterators::thresholds_t thresholds_t;
     
-  private:
     CFG _cfg;
     wto_t _wto;
     invariant_table_ptr _pre, _post;
@@ -97,7 +98,6 @@ namespace ikos {
     // set of thresholds to jump during widening
     thresholds_t _jump_set;
 
-  private:
     void set(invariant_table_ptr table, NodeName node, const AbstractValue& v) {
       std::pair< typename invariant_table_t::iterator, bool > res = 
           table->insert(std::make_pair(node, v));
@@ -122,46 +122,7 @@ namespace ikos {
         return AbstractValue::bottom();
       }
     }
-    
-  public:
-    interleaved_fwd_fixpoint_iterator(CFG cfg, 
-                                      unsigned int widening_delay,
-                                      unsigned int descending_iterations,
-                                      size_t jump_set_size): 
-        _cfg(cfg),
-        _wto(cfg),
-        _pre(boost::make_shared<invariant_table_t>()),
-        _post(boost::make_shared<invariant_table_t>()),
-        _widening_delay(widening_delay),
-        _descending_iterations(descending_iterations),
-        _use_widening_jump_set (jump_set_size > 0) {
 
-      if (_use_widening_jump_set) {
-        crab::CrabStats::resume ("Fixpo");
-        // select statically some widening points to jump to.
-        _jump_set = _cfg.initialize_thresholds_for_widening(jump_set_size);
-        crab::CrabStats::stop ("Fixpo");
-      }      
-    }
-        
-    CFG get_cfg() const {
-      return this->_cfg;
-    }
-
-    const wto_t& get_wto() const {
-      return this->_wto;
-    }
-
-    AbstractValue get_pre(NodeName node) {
-      return this->get(this->_pre, node);
-    }
-    
-    AbstractValue get_post(NodeName node) {
-      return this->get(this->_post, node);
-    }
-    
-   private:
-    
     AbstractValue extrapolate(NodeName /* node */, unsigned int iteration, 
                               AbstractValue before, AbstractValue after) {
 
@@ -229,8 +190,45 @@ namespace ikos {
         return before && after; 
       }
     }
+    
+  public:
+    interleaved_fwd_fixpoint_iterator(CFG cfg, 
+                                      unsigned int widening_delay,
+                                      unsigned int descending_iterations,
+                                      size_t jump_set_size): 
+        _cfg(cfg),
+        _wto(cfg),
+        _pre(boost::make_shared<invariant_table_t>()),
+        _post(boost::make_shared<invariant_table_t>()),
+        _widening_delay(widening_delay),
+        _descending_iterations(descending_iterations),
+        _use_widening_jump_set (jump_set_size > 0) {
 
-   public:
+      if (_use_widening_jump_set) {
+        crab::CrabStats::resume ("Fixpo");
+        // select statically some widening points to jump to.
+        _jump_set = _cfg.initialize_thresholds_for_widening(jump_set_size);
+        crab::CrabStats::stop ("Fixpo");
+      }      
+    }
+
+    virtual ~interleaved_fwd_fixpoint_iterator() { }
+    
+    CFG get_cfg() const {
+      return this->_cfg;
+    }
+
+    const wto_t& get_wto() const {
+      return this->_wto;
+    }
+
+    AbstractValue get_pre(NodeName node) {
+      return this->get(this->_pre, node);
+    }
+    
+    AbstractValue get_post(NodeName node) {
+      return this->get(this->_post, node);
+    }
 
     void run(AbstractValue init) {
       crab::ScopedCrabStats __st__("Fixpo");
@@ -239,12 +237,24 @@ namespace ikos {
       this->_wto.accept(&iterator);
       wto_processor_t processor(this);
       this->_wto.accept(&processor);
+      reset ();
+    }
+
+    void run(AbstractValue init,
+	     std::map<NodeName,AbstractValue> &invars) {
+      crab::ScopedCrabStats __st__("Fixpo");
+      this->set_pre(this->_cfg.entry(), init);
+      wto_iterator_t iterator(this, &invars);
+      this->_wto.accept(&iterator);
+      wto_processor_t processor(this);
+      this->_wto.accept(&processor);
+    }
+
+    void reset () {
       this->_pre.reset();
       this->_post.reset();      
     }
-
-    virtual ~interleaved_fwd_fixpoint_iterator() { }
-
+        
   }; // class interleaved_fwd_fixpoint_iterator
 
   namespace interleaved_fwd_fixpoint_iterator_impl {
@@ -258,12 +268,19 @@ namespace ikos {
       typedef wto_cycle< NodeName, CFG > wto_cycle_t;
       typedef wto< NodeName, CFG > wto_t;
       typedef typename wto_t::wto_nesting_t wto_nesting_t;
+      typedef std::map<NodeName,AbstractValue> strengthening_table_t;
       
     private:
       interleaved_iterator_t *_iterator;
+      strengthening_table_t *_s_table;
       
     public:
-      wto_iterator(interleaved_iterator_t *iterator): _iterator(iterator) { }
+      wto_iterator(interleaved_iterator_t *iterator):
+	_iterator(iterator), _s_table (nullptr) { }
+
+      wto_iterator(interleaved_iterator_t *iterator,
+		   strengthening_table_t *s_table):
+	_iterator(iterator), _s_table (s_table) { }      
       
       void visit(wto_vertex_t& vertex) {
         AbstractValue pre;
@@ -299,7 +316,24 @@ namespace ikos {
             pre |= this->_iterator->get_post(prev); 
           }
         }
+
+	{ // strengthen the abstract state at the cycle head
+	  if (_s_table) {
+	    auto it = _s_table->find(head);
+	    if (it != _s_table->end ()) {
+	      CRAB_LOG ("fixpo",
+			crab::outs () << "Before strengthening at " << head << ":" << pre << "\n");
+	      pre = pre & it->second;
+	      CRAB_LOG ("fixpo",
+			crab::outs () << "After strengthening at " << head << ":" << pre << "\n");
+	    }
+	  }
+	}
+	
         for(unsigned int iteration = 1; ; ++iteration) {
+	  // keep track of how many times the cycle is visited by the fixpoint
+	  cycle.increment_fixpo_visits ();
+	  
           // Increasing iteration sequence with widening
           this->_iterator->set_pre(head, pre);
           AbstractValue post(pre); 

@@ -263,11 +263,13 @@ namespace ikos {
   private:
     NodeName _head;
     wto_component_list_ptr _wto_components;
+    // number of times the wto cycle is analyzed by the fixpoint iterator
+    unsigned _num_fixpo;
     
   private:
     wto_cycle(NodeName head, 
               wto_component_list_ptr wto_components): 
-        _head(head), _wto_components(wto_components) { }
+      _head(head), _wto_components(wto_components), _num_fixpo(0) { }
     
   public:
     class iterator: public boost::iterator_facade< iterator,
@@ -283,9 +285,9 @@ namespace ikos {
       
     public:
       iterator(wto_component_list_ptr l, bool b): 
-          _it(b ? l->begin() : l->end()), _l(l) { }
+	_it(b ? l->begin() : l->end()), _l(l) { }
       
-     private:
+    private:
       void increment() { 
         ++(this->_it);
       }
@@ -321,6 +323,14 @@ namespace ikos {
     iterator end() {
       return iterator(this->_wto_components, false);
     }
+
+    void increment_fixpo_visits () {
+      _num_fixpo++;
+    }
+
+    unsigned get_fixpo_visits () const {
+      return _num_fixpo;
+    }
     
     void write(crab::crab_os& o) {
       o << "(" << this->_head;
@@ -336,6 +346,8 @@ namespace ikos {
 	}
       }
       o << ")";
+      if (this->_num_fixpo > 0)
+	o << "^{" << this->_num_fixpo << "}";
     }
     
   }; // class wto_cycle
@@ -398,7 +410,7 @@ namespace ikos {
       
     public:
       nesting_builder(nesting_table_ptr nesting_table): 
-          _nesting_table(nesting_table) { }
+	_nesting_table(nesting_table) { }
 
       void visit(wto_cycle_t& cycle) {
         NodeName head = cycle.head();
@@ -429,7 +441,7 @@ namespace ikos {
     
     void set_dfn(NodeName n, dfn_t dfn) {
       std::pair< typename dfn_table_t::iterator, bool > res = 
-          this->_dfn_table->insert(std::make_pair(n, dfn));
+	this->_dfn_table->insert(std::make_pair(n, dfn));
       if (!res.second) {
         (res.first)->second = dfn;
       }
@@ -516,13 +528,13 @@ namespace ikos {
       
       friend class boost::iterator_core_access;
       
-     private:
+    private:
       typename wto_component_list_t::iterator _it;
       wto_component_list_ptr _l;
       
-     public:
+    public:
       iterator(wto_component_list_ptr l, bool b): 
-          _it(b ? l->begin() : l->end()), _l(l) { }
+	_it(b ? l->begin() : l->end()), _l(l) { }
       
     private:
       void increment() { 
@@ -545,10 +557,10 @@ namespace ikos {
     
   public:
     wto(CFG cfg): 
-        _wto_components(boost::make_shared<wto_component_list_t>()), 
-        _dfn_table(boost::make_shared<dfn_table_t>()), 
-        _num(0), _stack(boost::make_shared<stack_t>()), 
-        _nesting_table(boost::make_shared<nesting_table_t>()) {
+      _wto_components(boost::make_shared<wto_component_list_t>()), 
+      _dfn_table(boost::make_shared<dfn_table_t>()), 
+      _num(0), _stack(boost::make_shared<stack_t>()), 
+      _nesting_table(boost::make_shared<nesting_table_t>()) {
       crab::ScopedCrabStats __st__("Fixpo.WTO");
 
       this->visit(cfg, cfg.entry(), this->_wto_components);
@@ -557,12 +569,22 @@ namespace ikos {
       this->build_nesting();
     }
 
-    wto(const wto_t& other): _wto_components(other._wto_components), 
-                             _nesting_table(other._nesting_table) { }
+    // shallow copy
+    wto(const wto_t& other):
+      _wto_components(other._wto_components),
+      _dfn_table (other._dfn_table),
+      _num (other._num),
+      _stack (other._stack),
+      _nesting_table(other._nesting_table) { }
 
-    wto_t& operator=(wto_t other) {
-      this->_wto_components = other._wto_components;
-      this->_nesting_table = other._nesting_table;
+    wto_t& operator=(const wto_t &other) {
+      if (this != &other) {
+	this->_wto_components = other._wto_components;
+	this->_dfn_table = other._dfn_table;
+	this->_num = other._num;
+	this->_stack = other._stack;
+	this->_nesting_table = other._nesting_table;
+      }
       return *this;
     }
 
@@ -597,7 +619,14 @@ namespace ikos {
         if (it != this->end()) {
           o << " ";
         }
-      }
+      }      
+    }
+    
+    friend crab::crab_os& operator<<(crab::crab_os &o, const wto_t &wto) {
+      // FIXME: write method is not const
+      wto_t other (wto);
+      other.write(o);
+      return o;
     }    
     
   }; // class wto

@@ -47,8 +47,7 @@ namespace crab {
         public ikos::interleaved_fwd_fixpoint_iterator< typename CFG::basic_block_label_t, 
                                                         CFG, 
                                                         typename AbsTr::abs_dom_t >,
-        public boost::noncopyable
-    {
+        public boost::noncopyable {
 
      public:
 
@@ -62,13 +61,15 @@ namespace crab {
 
       typedef ikos::interleaved_fwd_fixpoint_iterator<basic_block_label_t, CFG, abs_dom_t>
       fwd_iterator_t;
-      typedef boost::unordered_map<basic_block_label_t, abs_dom_t> invariant_map_t;    
-
+      typedef boost::unordered_map<basic_block_label_t, abs_dom_t> invariant_map_t;
+      
      public:
 
       // liveness info
       typedef liveness<CFG> liveness_t;     
-
+      // WTO
+      typedef typename fwd_iterator_t::wto_t wto_t;
+      
      private:
 
       typedef typename liveness_t::set_t live_set_t;     
@@ -187,6 +188,16 @@ namespace crab {
         this->run (m_abs_tr->inv());         
       }      
 
+      // XXX: we prefer not to use a template parameter here
+      typedef std::map<basic_block_label_t, abs_dom_t> inv_map_t;
+      void Run (inv_map_t &inv_map)  {
+        // initialization of static data
+        domains::domain_traits<abs_dom_t>::do_initialization (this->get_cfg());
+        // XXX: inv was created before the static data is initialized
+        //      so it won't contain that data.	
+        this->run (m_abs_tr->inv(), inv_map);         
+      }      
+      
       //! Propagate inv through statements
       abs_tr_ptr get_abs_transformer (abs_dom_t &inv) {
 	/// XXX: set takes a reference to inv so no copies here
@@ -216,13 +227,24 @@ namespace crab {
         else 
           return it->second;      
       }
+
+      //! Return the WTO of the CFG. The WTO contains also how many
+      //! times each head was visited by the fixpoint iterator.
+      const wto_t& get_WTO () const {
+	return this->get_wto ();
+      }
+      
     }; 
 
     //////////////////////////////////////////////////////////////////
     //! Internal implementation of an intra-procedural forward analysis
+    //    
+    //  XXX: The main difference with fwd_analyzer class is that here
+    //  we create an abstract transformer instance while fwd_analyzer
+    //  does not.
     //////////////////////////////////////////////////////////////////    
     template<typename CFG, typename AbsDomain, typename AbsTr>
-    class intra_fwd_analyzer_impl
+    class intra_fwd_analyzer_internal
     {
       typedef fwd_analyzer<CFG, AbsTr> fwd_analyzer_t;
 
@@ -240,6 +262,7 @@ namespace crab {
       typedef typename CFG::varname_t varname_t;
       typedef typename CFG::number_t number_t;
       typedef typename fwd_analyzer_t::abs_tr_ptr abs_tr_ptr;
+      typedef typename fwd_analyzer_t::wto_t wto_t;      
       
     public:
       
@@ -248,14 +271,14 @@ namespace crab {
 
     public:
       
-      intra_fwd_analyzer_impl (CFG cfg,
-			       AbsDomain init,
-			       // liveness info
-			       const liveness_t* live = nullptr,
-			       // fixpoint parameters
-			       unsigned int widening_delay=1,
-			       unsigned int descending_iters=UINT_MAX,
-			       size_t jump_set_size=0):
+      intra_fwd_analyzer_internal (CFG cfg,
+				   AbsDomain init,
+				   // liveness info
+				   const liveness_t* live = nullptr,
+				   // fixpoint parameters
+				   unsigned int widening_delay=1,
+				   unsigned int descending_iters=UINT_MAX,
+				   size_t jump_set_size=0):
 	m_init (init),
 	m_abs_tr (&m_init),
 	m_analyzer (cfg, &m_abs_tr, 
@@ -287,14 +310,20 @@ namespace crab {
       { return m_analyzer.get_cfg (); }
       
       abs_tr_ptr get_abs_transformer (abs_dom_t &inv)
-      { return m_analyzer.get_abs_transformer (inv); }      
+      { return m_analyzer.get_abs_transformer (inv); }
+
+      const wto_t& get_wto () const {
+	return m_analyzer.get_WTO ();
+      }
+      
     };
 
     // c++11 alias templates
     template<typename CFG, typename AbsDomain>
-    using intra_fwd_analyzer = intra_fwd_analyzer_impl<CFG,
-						       AbsDomain,
-						       intra_abs_transformer<AbsDomain> >;
+    using intra_fwd_analyzer =
+      intra_fwd_analyzer_internal<CFG,
+				  AbsDomain,
+				  intra_abs_transformer<AbsDomain> >;
 
     
   } // end namespace
