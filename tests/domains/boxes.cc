@@ -259,7 +259,10 @@ int main (int argc, char** argv )
     crab::outs() << x << ":=" << y << " + " << z << "= \n";
     inv3.apply (OP_ADDITION, x, y, z);
     crab::outs() << inv3 << "\n";
-
+    
+    z_boxes_domain_t inv4 (inv3); // for later
+    z_boxes_domain_t inv5 (inv3); // for later
+    
     crab::outs() << x << ":=" << y << " - " << z << "= \n";
     inv3.apply (OP_SUBTRACTION, x, y, z);
     crab::outs() << inv3 << "\n";
@@ -272,28 +275,32 @@ int main (int argc, char** argv )
     inv3.apply (OP_DIVISION, x, y, z);
     crab::outs() << inv3 << "\n";
 
-    z_boxes_domain_t inv4 = z_boxes_domain_t::top ();    
+
     z_var cx (vfac["x"]);
     z_var cy (vfac["y"]);
     z_var cz (vfac["z"]);
 
+    
+    crab::outs() << "INV: " << inv4 << "\n";
     inv4 +=  (cx >= cy);
-    crab::outs() << "Added x >= y \n" << inv4 << "\n";    
+    crab::outs() << "ADDED x >= y \n" << inv4 << "\n";
+    crab::outs() << "INV: " << inv5<< "\n";
+    inv5 +=  (cx <= cy + cz - 1);
+    crab::outs() << "ADDED x <= y + z -1\n" << inv5 << "\n";
 
-    inv4 +=  (cx != 9);
-    crab::outs() << "Added x != 9\n" << inv4 << "\n";    
-
-    inv4 +=  (cy >=  9);
-    crab::outs() << "Added y >= 9\n" << inv4 << "\n";    
-
-    inv4 +=  (cy <=  9);
-    crab::outs() << "Added y <= 9\n" << inv4 << "\n";    
-
-    inv4 +=  (cz >= 10); 
-    crab::outs() << "Added z > 9\n" << inv4 << "\n";    
-
-    inv4 +=  (cz <= 8);
-    crab::outs() << "Added z < 9\n" << inv4 << "\n";    
+    
+    z_boxes_domain_t inv6;
+    crab::outs() << "INV: " << inv6 << "\n";
+    inv6 +=  (cx != 9);
+    crab::outs() << "ADDED x != 9\n" << inv6 << "\n";    
+    inv6 +=  (cy >=  9);
+    crab::outs() << "ADDED y >= 9\n" << inv6 << "\n";    
+    inv6 +=  (cy <=  9);
+    crab::outs() << "ADDED y <= 9\n" << inv6 << "\n";    
+    inv6 +=  (cz >= 10); 
+    crab::outs() << "ADDED z > 9\n" << inv6 << "\n";    
+    inv6 +=  (cz <= 8);
+    crab::outs() << "ADDED z < 9\n" << inv6 << "\n";    
   }
 #endif
   
