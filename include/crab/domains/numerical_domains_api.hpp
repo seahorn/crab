@@ -94,6 +94,46 @@ namespace ikos {
     virtual ~numerical_domain() { }
     
   }; // numerical_domain
+
+
+
+  template<typename Number, typename VariableName, typename NumAbsDom>
+  class backward_numerical_domain {
+    
+  public:
+    typedef linear_expression<Number, VariableName> linear_expression_t;
+    typedef linear_constraint<Number, VariableName> linear_constraint_t;
+    typedef linear_constraint_system<Number, VariableName> linear_constraint_system_t;
+    typedef variable<Number, VariableName> variable_t;
+    typedef Number number_t;
+    typedef VariableName varname_t;
+    
+  public:
+
+    // x = y op z
+    // Substitute x with y op z in the abstract value
+    // The result is meet with invariant.
+    virtual void backward_apply(operation_t op,
+				VariableName x, VariableName y, VariableName z,
+				NumAbsDom invariant) = 0; 
+
+    // x = y op k
+    // Substitute x with y op k in the abstract value
+    // The result is meet with invariant.    
+    virtual void backward_apply(operation_t op,
+				VariableName x, VariableName y, Number k,
+				NumAbsDom invariant) = 0; 
+
+    // x = e
+    // Substitute x with e in the abstract value
+    // The result is meet with invariant.    
+    virtual void backward_assign(VariableName x, linear_expression_t e,
+				 NumAbsDom invariant) = 0; 
+				 
+
+    virtual ~backward_numerical_domain() { }
+    
+  }; // numerical_domain
   
 } // namespace ikos
 

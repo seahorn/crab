@@ -31,6 +31,8 @@ namespace crab {
       class apron_domain: 
          public ikos::writeable, 
          public numerical_domain< Number, VariableName>,
+	 public backward_numerical_domain<Number, VariableName,
+					  apron_domain<Number,VariableName,ApronDom> >,
          public bitwise_operators< Number, VariableName >, 
          public division_operators< Number, VariableName >,
          public array_operators< Number, VariableName >,
@@ -124,6 +126,20 @@ namespace crab {
         void apply(div_operation_t op, VariableName x, VariableName y, Number k) 
         { CRAB_ERROR (APRON_NOT_FOUND); }
         
+        void backward_assign (VariableName x, linear_expression_t e,
+			      apron_domain_t invariant) 
+        { CRAB_ERROR (APRON_NOT_FOUND); }
+          
+        void backward_apply (operation_t op,
+			     VariableName x, VariableName y, Number z,
+			     apron_domain_t invariant) 
+        { CRAB_ERROR (APRON_NOT_FOUND); }
+        
+        void backward_apply(operation_t op,
+			    VariableName x, VariableName y, VariableName z,
+			    apron_domain_t invariant) 
+        { CRAB_ERROR (APRON_NOT_FOUND); }
+        
         linear_constraint_system_t to_linear_constraint_system ()
         { CRAB_ERROR (APRON_NOT_FOUND); }
         
@@ -153,12 +169,14 @@ namespace crab {
       template<typename Number, typename VariableName, apron_domain_id_t ApronDom>
       class apron_domain_: 
          public ikos::writeable, 
-         public numerical_domain< Number, VariableName>,
-         public bitwise_operators< Number, VariableName >, 
-         public division_operators< Number, VariableName >,
-         public array_operators< Number, VariableName >,
-         public pointer_operators< Number, VariableName >,
-	 public boolean_operators< Number, VariableName > {
+         public numerical_domain<Number, VariableName>,
+	 public backward_numerical_domain<Number,VariableName,
+					  apron_domain_<Number,VariableName,ApronDom> >,
+         public bitwise_operators<Number, VariableName>, 
+         public division_operators<Number, VariableName>,
+         public array_operators<Number, VariableName>,
+         public pointer_operators<Number, VariableName>,
+	 public boolean_operators<Number, VariableName> {
        public:
         using typename numerical_domain< Number, VariableName>::linear_expression_t;
         using typename numerical_domain< Number, VariableName>::linear_constraint_t;
@@ -187,7 +205,7 @@ namespace crab {
               case APRON_OCT: m_apman = oct_manager_alloc (); break;
               case (APRON_OPT_OCT): m_apman = opt_oct_manager_alloc (); break;
               case APRON_PK: m_apman = pk_manager_alloc (false); break;
-              default: CRAB_ERROR("ERROR: unknown apron domain");
+              default: CRAB_ERROR("unknown apron domain");
             }
           }
           return m_apman;
@@ -296,7 +314,7 @@ namespace crab {
         }
 
         var_map_t merge_var_map (const var_map_t& m_x, ap_state_ptr& s_x,
-                                   const var_map_t& m_y, ap_state_ptr& s_y) {
+				 const var_map_t& m_y, ap_state_ptr& s_y) {
 
           assert (m_x.size () == get_dims (s_x));
           assert (m_y.size () == get_dims (s_y));
@@ -328,9 +346,11 @@ namespace crab {
           ap_dimperm_t* perm_x = ap_dimperm_alloc (get_dims (s_x));
           ap_dimperm_t* perm_y = ap_dimperm_alloc (get_dims (s_x));
           char * xmap1 = (char *)calloc (get_dims (s_x), sizeof(char));
-          if (!xmap1) CRAB_ERROR ("calloc does not have more available memory");
+          if (!xmap1)
+	    CRAB_ERROR ("calloc does not have more available memory");
           char * xmap2 = (char *)calloc (get_dims (s_x), sizeof(char));
-          if (!xmap2) CRAB_ERROR ("calloc does not have more available memory");
+          if (!xmap2)
+	    CRAB_ERROR ("calloc does not have more available memory");
           for (auto const &px: m_x.left) {
             ap_dim_t ind = res.left.at (px.first);
             perm_x->dim [px.second] = ind;
@@ -471,11 +491,6 @@ namespace crab {
         }
 
         inline ap_tcons0_t const2tconst (linear_constraint_t cst)  {
-	  if (cst.is_tautology ())
-	    CRAB_ERROR("Tautologies not supported");
-	  if (cst.is_contradiction ())
-	    CRAB_ERROR("Contradictions not supported");
-	  
           linear_expression_t exp = cst.expression();
           if (cst.is_equality ()) {
             return ap_tcons0_make (AP_CONS_EQ, expr2texpr (exp), NULL);            
@@ -485,7 +500,7 @@ namespace crab {
           }
           else  { 
             assert (cst.is_disequation ());
-            return ap_tcons0_make (AP_CONS_DISEQ, expr2texpr (exp), NULL);            
+            return ap_tcons0_make (AP_CONS_DISEQ, expr2texpr (exp), NULL);
           }
         }
 		
@@ -519,7 +534,7 @@ namespace crab {
 	    return res;
           }
           else
-            CRAB_ERROR ("ERROR: apron translation only covers double or mpq scalars");
+            CRAB_ERROR ("apron translation only covers double or mpq scalars");
         }
 
         linear_expression_t term2expr (ap_coeff_t* coeff, ap_dim_t i) {
@@ -883,7 +898,7 @@ namespace crab {
               case APRON_INT:
               case APRON_PK:
               default:
-                CRAB_WARN (" used meet instead of narrowing: \n",
+                CRAB_WARN ("used meet instead of narrowing: \n",
                            "make sure only a finite number of descending iterations are run.");
                 return apron_domain_t (apPtr (get_man(), 
                                               ap_abstract0_meet (get_man(), false, 
@@ -1043,7 +1058,7 @@ namespace crab {
               }
             }
             else 
-              CRAB_ERROR ("ERROR: apron translation only covers double or mpq scalars");
+              CRAB_ERROR ("apron translation only covers double or mpq scalars");
           }
           else 
             return interval_t::top ();
@@ -1083,9 +1098,18 @@ namespace crab {
 
           if(is_bottom()) return;
 
+	  // quick pass to find false
+          for (auto cst : csts) {
+	    if (cst.is_contradiction ()) {
+	      *this = bottom ();
+	      return;
+	    }
+	  }
+	  
           ap_tcons0_array_t array = ap_tcons0_array_make (csts.size ());
           unsigned i=0;
-          for (auto cst : csts) { 
+
+          for (auto cst : csts) {
             ap_tcons0_t tcons = const2tconst (cst);
             array.p[i] = tcons;
             ++i;
@@ -1114,7 +1138,8 @@ namespace crab {
 
           ap_tcons0_array_clear(&array);
           CRAB_LOG("apron", 
-                   crab::outs() << "--- "<< "Assume "<<csts<< " --> "<< *this<<"\n";);
+                   crab::outs() << "--- " << "Assume " << csts << " --> "
+		                 << *this << "\n";);
         }
        
         void assign (VariableName x, linear_expression_t e) {
@@ -1151,7 +1176,7 @@ namespace crab {
             case OP_SUBTRACTION: res = SUB (a, b); break;
             case OP_MULTIPLICATION: res = MUL (a, b); break;
             case OP_DIVISION: res = DIV (a, b); break;
-            default: CRAB_ERROR("ERROR apron: operation not supported");
+            default: CRAB_ERROR("apron operation not supported");
           }
           assert (res);
 
@@ -1180,15 +1205,16 @@ namespace crab {
             case OP_SUBTRACTION: res = SUB (a, b); break;
             case OP_MULTIPLICATION: res = MUL (a, b); break;
             case OP_DIVISION: res = DIV (a, b); break;
-            default: CRAB_ERROR("ERROR apron: operation not supported");
+            default: CRAB_ERROR("apron operation not supported");
           }
           assert (res);
 
           auto dim_x = get_var_dim_insert (x);
-          m_apstate = apPtr (get_man (), ap_abstract0_assign_texpr(get_man (), false, 
-                                                                   &*m_apstate, 
-                                                                   dim_x, res, NULL));
-
+          m_apstate = apPtr (get_man (),
+			     ap_abstract0_assign_texpr(get_man (), false, 
+						       &*m_apstate, 
+						       dim_x, res, NULL));
+	  
           ap_texpr0_free (res);
           CRAB_LOG("apron",
                    crab::outs() << "--- "<< x<< ":="<< y<< op<< z<< " --> "<< *this<<"\n";);
@@ -1209,15 +1235,16 @@ namespace crab {
             case OP_SUBTRACTION: res = SUB (a, b); break;
             case OP_MULTIPLICATION: res = MUL (a, b); break;
             case OP_DIVISION: res = DIV (a, b); break;
-            default: CRAB_ERROR("ERROR apron: operation not supported");
+            default: CRAB_ERROR("apron operation not supported");
           }
           assert (res);
 
           auto dim_x = get_var_dim_insert (x);
-          m_apstate = apPtr (get_man (), ap_abstract0_assign_texpr(get_man (), false, 
-                                                                   &*m_apstate, 
-                                                                   dim_x, res, NULL));
-
+          m_apstate = apPtr (get_man (),
+			     ap_abstract0_assign_texpr(get_man (), false, 
+						       &*m_apstate, 
+						       dim_x, res, NULL));
+	  
           ap_texpr0_free (res);
           CRAB_LOG("apron",
                    crab::outs() << "--- "<< x<< ":="<< x<< op<< k<< " --> "<< *this<<"\n";);
@@ -1250,7 +1277,7 @@ namespace crab {
             case OP_SHL: xi = yi.Shl(zi); break; 
             case OP_LSHR: xi = yi.LShr(zi); break;
             case OP_ASHR: xi = yi.AShr(zi); break;
-            default: CRAB_ERROR("ERROR apron: operation not supported");
+            default: CRAB_ERROR("apron operation not supported");
           }
           set(x, xi);
         }
@@ -1270,7 +1297,7 @@ namespace crab {
             case OP_SHL: xi = yi.Shl(zi); break; 
             case OP_LSHR: xi = yi.LShr(zi); break;
             case OP_ASHR: xi = yi.AShr(zi); break;
-            default: CRAB_ERROR("ERROR apron: operation not supported");
+            default: CRAB_ERROR("apron operation not supported");
           }
           set(x, xi);
         }
@@ -1292,13 +1319,14 @@ namespace crab {
               case OP_UDIV: xi = yi.UDiv(zi); break;
               case OP_SREM: xi = yi.SRem(zi); break;
               case OP_UREM: xi = yi.URem(zi); break;
-              default: CRAB_ERROR("ERROR apron: operation not supported");
+              default: CRAB_ERROR("apron operation not supported");
             }
             set(x, xi);
           }
         }
         
-        void apply(div_operation_t op, VariableName x, VariableName y, Number k) {
+        void apply(div_operation_t op,
+		   VariableName x, VariableName y, Number k) {
           crab::CrabStats::count (getDomainName() + ".count.apply");
           crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1314,12 +1342,117 @@ namespace crab {
               case OP_UDIV: xi = yi.UDiv(zi); break;
               case OP_SREM: xi = yi.SRem(zi); break;
               case OP_UREM: xi = yi.URem(zi); break;
-              default: CRAB_ERROR("ERROR apron: operation not supported");
+              default: CRAB_ERROR("apron operation not supported");
             }
             set(x, xi);
           }
         }
 
+        void backward_assign (VariableName x, linear_expression_t e,
+			      apron_domain_t invariant) {
+          crab::CrabStats::count (getDomainName() + ".count.backward_assign");
+          crab::ScopedCrabStats __st__(getDomainName() + ".backward_assign");
+
+          if(is_bottom()) return;
+
+          ap_texpr0_t* t = expr2texpr (e);
+          assert (t);
+          auto dim_x = get_var_dim_insert (x);
+
+	  m_var_map = merge_var_map (m_var_map, m_apstate,
+				     invariant.m_var_map,
+				     invariant.m_apstate);
+	  
+          m_apstate = apPtr (get_man (), 
+                             ap_abstract0_substitute_texpr(get_man (), false, 
+							   &*m_apstate, 
+							   dim_x, t,
+							   &*invariant.m_apstate));
+                                                       
+          ap_texpr0_free (t);
+          CRAB_LOG("apron",
+                   crab::outs() << "--- "<< x<< " :=_bwd " << e << " --> "
+		                << *this<<"\n";);
+        }
+          
+        void backward_apply (operation_t op,
+			     VariableName x, VariableName y, Number z,
+			     apron_domain_t invariant) {
+          crab::CrabStats::count (getDomainName() + ".count.backward_apply");
+          crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
+
+          if(is_bottom()) return;
+
+          ap_texpr0_t* a = var2texpr (y);
+          ap_texpr0_t* b = num2texpr (z);
+          ap_texpr0_t* res = nullptr;
+          
+          switch (op){
+            case OP_ADDITION: res = ADD (a, b); break;
+            case OP_SUBTRACTION: res = SUB (a, b); break;
+            case OP_MULTIPLICATION: res = MUL (a, b); break;
+            case OP_DIVISION: res = DIV (a, b); break;
+            default: CRAB_ERROR("apron operation not supported");
+          }
+          assert (res);
+
+          auto dim_x = get_var_dim_insert (x);
+
+	  m_var_map = merge_var_map (m_var_map, m_apstate,
+				     invariant.m_var_map,
+				     invariant.m_apstate);
+	  
+          m_apstate = apPtr (get_man (),
+			     ap_abstract0_substitute_texpr(get_man (), false, 
+							   &*m_apstate, 
+							   dim_x, res,
+							   &*invariant.m_apstate));
+	  
+          ap_texpr0_free (res);
+          CRAB_LOG("apron",
+                   crab::outs() << "--- "<< x << " :=_bwd " << y << op << z
+		                << " --> " << *this<<"\n";);
+        }
+        
+        void backward_apply(operation_t op,
+			    VariableName x, VariableName y, VariableName z,
+			    apron_domain_t invariant)  {
+          crab::CrabStats::count (getDomainName() + ".count.backward_apply");
+          crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
+
+          if(is_bottom()) return;
+
+          ap_texpr0_t* a = var2texpr (y);
+          ap_texpr0_t* b = var2texpr (z);
+          ap_texpr0_t* res = nullptr;
+          
+          switch (op){
+            case OP_ADDITION: res = ADD (a, b); break;
+            case OP_SUBTRACTION: res = SUB (a, b); break;
+            case OP_MULTIPLICATION: res = MUL (a, b); break;
+            case OP_DIVISION: res = DIV (a, b); break;
+            default: CRAB_ERROR("apron operation not supported");
+          }
+          assert (res);
+
+          auto dim_x = get_var_dim_insert (x);
+
+	  m_var_map = merge_var_map (m_var_map, m_apstate,
+				     invariant.m_var_map,
+				     invariant.m_apstate);
+	  
+          m_apstate = apPtr (get_man (),
+			     ap_abstract0_substitute_texpr(get_man (), false, 
+							   &*m_apstate, 
+							   dim_x, res,
+							   &*invariant.m_apstate));
+
+          ap_texpr0_free (res);
+          CRAB_LOG("apron",
+                   crab::outs() << "--- " << x << ":=_bwd " << y << op << z
+		                << " --> "<< *this <<"\n";);
+        }
+        	
 	interval_domain_t to_interval_domain () {
 	  if (is_bottom ()) return interval_domain_t::bottom();
 	  if (is_top ())    return interval_domain_t::top();	  
@@ -1401,20 +1534,24 @@ namespace crab {
       #else 
       // Quick wrapper which uses shared references with copy-on-write.
       template<class Number, class VariableName, apron_domain_id_t ApronDom>
-      class apron_domain : public ikos::writeable,
-                           public numerical_domain<Number, VariableName >,
-                           public bitwise_operators<Number,VariableName >,
-                           public division_operators<Number, VariableName >,
-                           public array_operators< Number, VariableName >,
-                           public pointer_operators< Number, VariableName >,
-			   public boolean_operators< Number, VariableName > {
-       public:
-        using typename numerical_domain< Number, VariableName >::linear_expression_t;
-        using typename numerical_domain< Number, VariableName >::linear_constraint_t;
-        using typename numerical_domain< Number, VariableName >::linear_constraint_system_t;
-        using typename numerical_domain< Number, VariableName >::variable_t;
-        using typename numerical_domain< Number, VariableName >::number_t;
-        using typename numerical_domain< Number, VariableName >::varname_t;
+      class apron_domain :
+       public ikos::writeable,
+       public numerical_domain<Number, VariableName>,
+       public backward_numerical_domain<Number, VariableName,
+				       apron_domain<Number,VariableName,ApronDom> >,
+       public bitwise_operators<Number,VariableName>,
+       public division_operators<Number, VariableName>,
+       public array_operators<Number, VariableName>,
+       public pointer_operators<Number, VariableName>,
+       public boolean_operators<Number, VariableName> {
+	
+      public:
+        using typename numerical_domain<Number,VariableName >::linear_expression_t;
+        using typename numerical_domain<Number,VariableName >::linear_constraint_t;
+        using typename numerical_domain<Number,VariableName >::linear_constraint_system_t;
+        using typename numerical_domain<Number,VariableName >::variable_t;
+        using typename numerical_domain<Number,VariableName >::number_t;
+        using typename numerical_domain<Number,VariableName >::varname_t;
         typedef typename linear_constraint_t::kind_t constraint_kind_t;
         typedef interval<Number>  interval_t;
 
@@ -1428,13 +1565,11 @@ namespace crab {
 	
         apron_domain(apron_domain_ref_t ref) : _ref(ref) { }
         
-        apron_domain_t create(apron_domain_impl_t&& t)
-        {
+        apron_domain_t create(apron_domain_impl_t&& t) {
           return std::make_shared<apron_domain_impl_t>(std::move(t));
         }
         
-        void detach(void)
-        {          
+        void detach(void) {
           if(!_ref || !_ref.unique())
 	    _ref = std::make_shared<apron_domain_impl_t>(*_ref);
         }
@@ -1463,63 +1598,105 @@ namespace crab {
         bool is_top() { return ref().is_top(); }
         bool operator<=(apron_domain_t& o) { return ref() <= o.ref(); }
         void operator|=(apron_domain_t o) { detach(); ref() |= o.ref(); }
-        apron_domain_t operator|(apron_domain_t o) { return create(ref() | o.ref()); }
-        apron_domain_t operator||(apron_domain_t o) { return create(ref() || o.ref()); }
-        apron_domain_t operator&(apron_domain_t o) { return create(ref() & o.ref()); }
-        apron_domain_t operator&&(apron_domain_t o) { return create(ref() && o.ref()); }
+        apron_domain_t operator|(apron_domain_t o)
+	{ return create(ref() | o.ref()); }
+        apron_domain_t operator||(apron_domain_t o)
+	{ return create(ref() || o.ref()); }
+        apron_domain_t operator&(apron_domain_t o)
+	{ return create(ref() & o.ref()); }
+        apron_domain_t operator&&(apron_domain_t o)
+	{ return create(ref() && o.ref()); }
         
         template<typename Thresholds>
-        apron_domain_t widening_thresholds (apron_domain_t o, const Thresholds &ts) {
+        apron_domain_t widening_thresholds(apron_domain_t o, const Thresholds &ts) {
           return create(ref().template widening_thresholds<Thresholds>(o.ref(), ts));
         }
         
         void normalize() { detach (); ref().normalize(); }
-        void operator+=(linear_constraint_system_t csts) { detach(); ref() += csts; } 
-        void operator-=(VariableName v) { detach(); ref() -= v; }
-        interval_t operator[](VariableName x) { return ref()[x]; }
-        void set(VariableName x, interval_t intv) { detach(); ref().set(x, intv); }
+        void operator+=(linear_constraint_system_t csts) {
+	  detach(); ref() += csts;
+	}
+        void operator-=(VariableName v) {
+	  detach(); ref() -= v;
+	}
+        interval_t operator[](VariableName x) {
+	  return ref()[x];
+	}
+        void set(VariableName x, interval_t intv) {
+	  detach(); ref().set(x, intv);
+	}
         
         template<typename Range>
         void forget (Range vs) { detach(); ref().forget(vs); }
-        void assign(VariableName x, linear_expression_t e) { detach(); ref().assign(x, e); }
-        void apply(operation_t op, VariableName x, VariableName y, Number k) {
+        void assign(VariableName x, linear_expression_t e) {
+	  detach(); ref().assign(x, e);
+	}
+        void apply(operation_t op,
+		   VariableName x, VariableName y, Number k) {
           detach(); ref().apply(op, x, y, k);
         }
-        void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width) {
+        void apply(operation_t op,
+		   VariableName x, VariableName y, VariableName z) {
+          detach(); ref().apply(op, x, y, z);
+        }	
+        void apply(conv_operation_t op,
+		   VariableName x, VariableName y, unsigned width) {
           detach(); ref().apply(op, x, y, width);
         }
-        void apply(conv_operation_t op, VariableName x, Number k, unsigned width) {
+        void apply(conv_operation_t op,
+		   VariableName x, Number k, unsigned width) {
           detach(); ref().apply(op, x, k, width);
         }
-        void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k) {
+        void apply(bitwise_operation_t op,
+		   VariableName x, VariableName y, Number k) {
           detach(); ref().apply(op, x, y, k);
         }
-        void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) {
+        void apply(bitwise_operation_t op,
+		   VariableName x, VariableName y, VariableName z) {
           detach(); ref().apply(op, x, y, z);
         }
-        void apply(operation_t op, VariableName x, VariableName y, VariableName z) {
+        void apply(div_operation_t op,
+		   VariableName x, VariableName y, VariableName z) {
           detach(); ref().apply(op, x, y, z);
         }
-        void apply(div_operation_t op, VariableName x, VariableName y, VariableName z) {
-          detach(); ref().apply(op, x, y, z);
-        }
-        void apply(div_operation_t op, VariableName x, VariableName y, Number k) {
+        void apply(div_operation_t op,
+		   VariableName x, VariableName y, Number k) {
           detach(); ref().apply(op, x, y, k);
         }
-        void expand (VariableName x, VariableName y) { detach(); ref().expand(x, y); }
+        void backward_assign(VariableName x, linear_expression_t e,
+				     apron_domain_t invariant) {
+	  detach(); ref().backward_assign(x, e, invariant.ref());
+	}
+        void backward_apply(operation_t op,
+			    VariableName x, VariableName y, Number k,
+			    apron_domain_t invariant) {
+          detach(); ref().backward_apply(op, x, y, k, invariant.ref());
+        }
+        void backward_apply(operation_t op,
+			    VariableName x, VariableName y, VariableName z,
+			    apron_domain_t invariant) {
+          detach(); ref().backward_apply(op, x, y, z, invariant.ref());
+        }	
+        void expand (VariableName x, VariableName y) {
+	  detach(); ref().expand(x, y);
+	}
         
         template<typename Range>
         void project (Range vs) { detach(); ref().project(vs); }
         
         template <typename NumDomain>
-        void push (const VariableName& x, NumDomain&inv){ detach(); ref().push(x, inv); }
+        void push (const VariableName& x, NumDomain&inv){
+	  detach(); ref().push(x, inv);
+	}
         
         void write(crab_os& o) { ref().write(o); }
         
         linear_constraint_system_t to_linear_constraint_system () {
           return ref().to_linear_constraint_system();
         }
-        static std::string getDomainName () { return apron_domain_impl_t::getDomainName(); }
+        static std::string getDomainName () {
+	  return apron_domain_impl_t::getDomainName();
+	}
 
       };
 
@@ -1531,23 +1708,23 @@ namespace crab {
         typedef apron_domain<Number, VariableName, ApronDom> apron_domain_t;
         
         template<class CFG>
-        static void do_initialization (CFG cfg) { }
+        static void do_initialization(CFG cfg) { }
 
-        static void normalize (apron_domain_t& inv) { 
+        static void normalize(apron_domain_t& inv) { 
           inv.normalize ();
         }
         
         template <typename Iter>
-        static void forget (apron_domain_t& inv, Iter it, Iter end) {
+        static void forget(apron_domain_t& inv, Iter it, Iter end) {
           inv.forget (boost::make_iterator_range (it, end));
         }
         
         template <typename Iter >
-        static void project (apron_domain_t& inv, Iter it, Iter end) {
+        static void project(apron_domain_t& inv, Iter it, Iter end) {
           inv.project (boost::make_iterator_range (it, end));
         }
         
-        static void expand (apron_domain_t& inv, VariableName x, VariableName new_x) {
+        static void expand(apron_domain_t& inv, VariableName x, VariableName new_x) {
           inv.expand (x, new_x);
         }		
       };
