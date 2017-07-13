@@ -38,10 +38,15 @@ namespace crab {
       }
       return res;
     }
-        
-    //! Perform a standard forward flow-sensitive analysis.
-    //  AbsTr defines the abstract transfer functions as well as which
-    //  operations are modelled.
+
+    /**
+     * Only for internal use.
+     * Implementation of an intra-procedural forward analysis.
+     * 
+     * Perform a standard forward flow-sensitive analysis. AbsTr
+     * defines the abstract transfer functions as well as which
+     * operations are modelled.
+     **/
     template< typename CFG, typename AbsTr>
     class fwd_analyzer: 
         public ikos::interleaved_fwd_fixpoint_iterator< typename CFG::basic_block_label_t, 
@@ -188,14 +193,13 @@ namespace crab {
         this->run (m_abs_tr->inv());         
       }      
 
-      // XXX: we prefer not to use a template parameter here
-      typedef std::map<basic_block_label_t, abs_dom_t> inv_map_t;
-      void Run (inv_map_t &inv_map)  {
+      template <typename Range>
+      void Run (Range invariants)  {
         // initialization of static data
         domains::domain_traits<abs_dom_t>::do_initialization (this->get_cfg());
         // XXX: inv was created before the static data is initialized
         //      so it won't contain that data.	
-        this->run (m_abs_tr->inv(), inv_map);         
+        this->run (m_abs_tr->inv(), invariants);         
       }      
       
       //! Propagate inv through statements
@@ -236,13 +240,13 @@ namespace crab {
       
     }; 
 
-    //////////////////////////////////////////////////////////////////
-    //! Internal implementation of an intra-procedural forward analysis
-    //    
-    //  XXX: The main difference with fwd_analyzer class is that here
-    //  we create an abstract transformer instance while fwd_analyzer
-    //  does not.
-    //////////////////////////////////////////////////////////////////    
+    /**
+     * Only for internal use.
+     *   
+     * Wrapper for fwd_analyzer_class. The main difference with
+     * fwd_analyzer class is that here we create an abstract
+     * transformer instance while fwd_analyzer does not.
+     **/
     template<typename CFG, typename AbsDomain, typename AbsTr>
     class intra_fwd_analyzer_internal
     {
@@ -296,6 +300,9 @@ namespace crab {
       const_iterator post_end ()   const { return m_analyzer.post_end();}
 
       void run () { m_analyzer.Run ();}
+
+      template<typename Range> 
+      void run (Range refinement) { m_analyzer.Run (refinement);}
       
       abs_dom_t operator[] (basic_block_label_t b) const
       { return m_analyzer[b]; }
@@ -315,10 +322,13 @@ namespace crab {
       const wto_t& get_wto () const {
 	return m_analyzer.get_WTO ();
       }
-      
+
     };
 
-    // c++11 alias templates
+
+    /**
+     * External api
+     **/
     template<typename CFG, typename AbsDomain>
     using intra_fwd_analyzer =
       intra_fwd_analyzer_internal<CFG,
