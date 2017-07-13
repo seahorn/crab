@@ -102,6 +102,7 @@ inline void ___print___(ArgTypes... args)
 
 #define CRAB_ERROR(...)              \
   do {                               \
+    crab::errs() << "CRAB ERROR: ";  \
     ___print___(__VA_ARGS__);        \
     crab::errs() << "\n";            \
     std::exit (EXIT_FAILURE);        \
@@ -109,7 +110,7 @@ inline void ___print___(ArgTypes... args)
 
 #define CRAB_WARN(...)               \
   do {                               \
-    crab::errs() << "WARNING:";      \
+    crab::errs() << "CRAB WARNING: ";\
     ___print___(__VA_ARGS__);        \
     crab::errs() << "\n";            \
   } while (0)
