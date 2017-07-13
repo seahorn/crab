@@ -45,8 +45,8 @@
 #ifndef IKOS_FWD_FIXPOINT_ITERATORS_HPP
 #define IKOS_FWD_FIXPOINT_ITERATORS_HPP
 
-#include <map>
 #include <boost/shared_ptr.hpp>
+#include <boost/unordered_map.hpp>
 #include <crab/common/types.hpp>
 #include <crab/common/debug.hpp>
 #include <crab/common/stats.hpp>
@@ -76,8 +76,8 @@ namespace ikos {
     typedef wto< NodeName, CFG> wto_t;
 
   private:
-    typedef std::map< NodeName, AbstractValue > invariant_table_t;
-    typedef boost::shared_ptr< invariant_table_t > invariant_table_ptr;
+    typedef boost::unordered_map<NodeName,AbstractValue> invariant_table_t;
+    typedef boost::shared_ptr<invariant_table_t> invariant_table_ptr;
     typedef interleaved_fwd_fixpoint_iterator_impl::wto_iterator< NodeName, CFG, AbstractValue > wto_iterator_t;
     typedef interleaved_fwd_fixpoint_iterator_impl::wto_processor< NodeName, CFG, AbstractValue > wto_processor_t;
     typedef crab::iterators::thresholds_t thresholds_t;
@@ -135,8 +135,6 @@ namespace ikos {
                  crab::outs() << "Prev   : " << before << "\n"
                            << "Current: " << after << "\n"
                            << "Res    : " << widen_res << "\n");
-        //crab::CrabStats::count (AbstractValue::getDomainName() + ".count.join");
-        //crab::ScopedCrabStats __st__(AbstractValue::getDomainName() + ".join");
         return before | after; 
       } else {
         CRAB_LOG("fixpo",
@@ -148,15 +146,11 @@ namespace ikos {
           CRAB_LOG("fixpo",
                    auto widen_res = before.widening_thresholds (after, _jump_set);
                    crab::outs() << "Res    : " << widen_res << "\n");
-          //crab::CrabStats::count (AbstractValue::getDomainName() + ".count.widening");
-          //crab::ScopedCrabStats __st__(AbstractValue::getDomainName() + ".widening");
           return before.widening_thresholds (after, _jump_set);
         } else {
           CRAB_LOG("fixpo",
                    auto widen_res = before || after;
                    crab::outs() << "Res    : " << widen_res << "\n");
-          //crab::CrabStats::count (AbstractValue::getDomainName() + ".count.widening");
-          //crab::ScopedCrabStats __st__(AbstractValue::getDomainName() + ".widening");
           return before || after;
         }
       }
@@ -175,8 +169,6 @@ namespace ikos {
                  crab::outs() << "Prev   : " << before << "\n"
                            << "Current: " << after << "\n"
                            << "Res    : " << narrow_res << "\n");
-        //crab::CrabStats::count (AbstractValue::getDomainName() + ".count.meet");
-        //crab::ScopedCrabStats __st__(AbstractValue::getDomainName() + ".meet");
         return before & after; 
       } else {
         CRAB_LOG("fixpo",
@@ -185,8 +177,6 @@ namespace ikos {
                  crab::outs() << "Prev   : " << before << "\n"
                  << "Current: " << after << "\n"
                            << "Res    : " << narrow_res << "\n");
-        //crab::CrabStats::count (AbstractValue::getDomainName() + ".count.narrowing");
-        //crab::ScopedCrabStats __st__(AbstractValue::getDomainName() + ".narrowing");
         return before && after; 
       }
     }
@@ -240,10 +230,11 @@ namespace ikos {
       reset ();
     }
 
-    void run(AbstractValue init,
-	     std::map<NodeName,AbstractValue> &invars) {
+    template<typename Range>
+    void run(AbstractValue init, Range refine) {
       crab::ScopedCrabStats __st__("Fixpo");
       this->set_pre(this->_cfg.entry(), init);
+      invariant_table_t invars(refine.begin(), refine.end());
       wto_iterator_t iterator(this, &invars);
       this->_wto.accept(&iterator);
       wto_processor_t processor(this);
@@ -260,20 +251,36 @@ namespace ikos {
   namespace interleaved_fwd_fixpoint_iterator_impl {
     
     template< typename NodeName, typename CFG, typename AbstractValue >
-    class wto_iterator: public wto_component_visitor< NodeName, CFG > {
+    class wto_iterator: public wto_component_visitor<NodeName, CFG> {
       
     public:
-      typedef interleaved_fwd_fixpoint_iterator< NodeName, CFG, AbstractValue > interleaved_iterator_t;
-      typedef wto_vertex< NodeName, CFG > wto_vertex_t;
-      typedef wto_cycle< NodeName, CFG > wto_cycle_t;
-      typedef wto< NodeName, CFG > wto_t;
+      typedef interleaved_fwd_fixpoint_iterator<NodeName, CFG, AbstractValue> interleaved_iterator_t;
+      typedef wto_vertex<NodeName, CFG> wto_vertex_t;
+      typedef wto_cycle<NodeName, CFG> wto_cycle_t;
+      typedef wto<NodeName, CFG> wto_t;
       typedef typename wto_t::wto_nesting_t wto_nesting_t;
-      typedef std::map<NodeName,AbstractValue> strengthening_table_t;
+      typedef boost::unordered_map<NodeName,AbstractValue> strengthening_table_t;
       
     private:
       interleaved_iterator_t *_iterator;
       strengthening_table_t *_s_table;
-      
+
+      inline AbstractValue strengthen (NodeName n, AbstractValue inv) {
+	if (_s_table) {
+	  auto it = _s_table->find(n);
+	  if (it != _s_table->end ()) {
+	    CRAB_LOG ("fixpo",
+		      crab::outs() << "Before strengthening at " << n << ":"
+		                   << inv << "\n");
+	    inv = inv & it->second;
+	    CRAB_LOG ("fixpo",
+		      crab::outs() << "After strengthening at " << n << ":"
+		                   << inv << "\n");
+	  }
+	}
+	return inv;
+      }
+		  
     public:
       wto_iterator(interleaved_iterator_t *iterator):
 	_iterator(iterator), _s_table (nullptr) { }
@@ -290,15 +297,16 @@ namespace ikos {
         } else {
           auto prev_nodes = this->_iterator->_cfg.prev_nodes(node);
           pre = AbstractValue::bottom();
-          CRAB_LOG ("fixpo", crab::outs() << "Joining predecessors ...\n");
+          CRAB_LOG ("fixpo",
+		    crab::outs() << "Joining predecessors of " << node << "...\n");
           for (NodeName prev : prev_nodes) {
-            //crab::CrabStats::count (AbstractValue::getDomainName() + ".count.join");
-            //crab::ScopedCrabStats __st__(AbstractValue::getDomainName() + ".join");
             pre |= this->_iterator->get_post(prev);  
           }
+	  pre = strengthen (node, pre);	  
           this->_iterator->set_pre(node, pre);
         }
-        CRAB_LOG ("fixpo", crab::outs() << "Analyzing node ...\n");
+	
+        CRAB_LOG ("fixpo", crab::outs() << "Analyzing node " << node << "...\n");
         this->_iterator->analyze(node, pre);
         this->_iterator->set_post(node, pre);
       }
@@ -308,27 +316,15 @@ namespace ikos {
         wto_nesting_t cycle_nesting = this->_iterator->_wto.nesting(head);
         auto prev_nodes = this->_iterator->_cfg.prev_nodes(head);
         AbstractValue pre = AbstractValue::bottom();
-        CRAB_LOG ("fixpo", crab::outs() << "Merging predecessors at widening point ...\n");
+        CRAB_LOG ("fixpo",
+		  crab::outs() << "Merging predecessors at widening point "
+		               << head << "...\n");
         for (NodeName prev : prev_nodes) {
           if (!(this->_iterator->_wto.nesting(prev) > cycle_nesting)) {
-            //crab::CrabStats::count (AbstractValue::getDomainName() + ".count.join");
-            //crab::ScopedCrabStats __st__(AbstractValue::getDomainName() + ".join");
             pre |= this->_iterator->get_post(prev); 
           }
         }
-
-	{ // strengthen the abstract state at the cycle head
-	  if (_s_table) {
-	    auto it = _s_table->find(head);
-	    if (it != _s_table->end ()) {
-	      CRAB_LOG ("fixpo",
-			crab::outs () << "Before strengthening at " << head << ":" << pre << "\n");
-	      pre = pre & it->second;
-	      CRAB_LOG ("fixpo",
-			crab::outs () << "After strengthening at " << head << ":" << pre << "\n");
-	    }
-	  }
-	}
+	pre = strengthen (head, pre);
 	
         for(unsigned int iteration = 1; ; ++iteration) {
 	  // keep track of how many times the cycle is visited by the fixpoint
@@ -337,56 +333,55 @@ namespace ikos {
           // Increasing iteration sequence with widening
           this->_iterator->set_pre(head, pre);
           AbstractValue post(pre); 
-          CRAB_LOG ("fixpo", crab::outs() << "Analyzing node ...\n");
+          CRAB_LOG ("fixpo", crab::outs() << "Analyzing node " << head << "...\n");
           this->_iterator->analyze(head, post);
           this->_iterator->set_post(head, post);
-          for (typename wto_cycle_t::iterator it = cycle.begin(); it != cycle.end(); ++it) {
+          for (typename wto_cycle_t::iterator it = cycle.begin();
+	       it != cycle.end(); ++it) {
             it->accept(this);
           }
           AbstractValue new_pre = AbstractValue::bottom();
           for (NodeName prev : prev_nodes) {
-            //crab::CrabStats::count (AbstractValue::getDomainName() + ".count.join");
-            //crab::ScopedCrabStats __st__(AbstractValue::getDomainName() + ".join");
             new_pre |= this->_iterator->get_post(prev); 
           }
-          //crab::CrabStats::count (AbstractValue::getDomainName() + ".count.leq");
-          //crab::CrabStats::resume (AbstractValue::getDomainName() + ".leq");
           if (new_pre <= pre) {
-            //crab::CrabStats::stop (AbstractValue::getDomainName() + ".leq");
             // Post-fixpoint reached
             CRAB_LOG ("fixpo", crab::outs() << "post-fixpoint reached\n");
             this->_iterator->set_pre(head, new_pre);
             pre = new_pre;
             break;
           } else {
-            //crab::CrabStats::stop (AbstractValue::getDomainName() + ".leq");
             pre = this->_iterator->extrapolate(head, iteration, pre, new_pre);
           }
         }
+
+	
+	if (this->_iterator->_descending_iterations == 0) {
+	  // no narrowing
+	  return;
+	}
+	
         for(unsigned int iteration = 1; ; ++iteration) {
           // Decreasing iteration sequence with narrowing
           AbstractValue post(pre); 
-          CRAB_LOG ("fixpo", crab::outs() << "Analyzing node ...\n");
+          CRAB_LOG ("fixpo",
+		    crab::outs() << "Analyzing node " << head << "...\n");
           this->_iterator->analyze(head, post);
           this->_iterator->set_post(head, post);
-          for (typename wto_cycle_t::iterator it = cycle.begin(); it != cycle.end(); ++it) {
+          for (typename wto_cycle_t::iterator it = cycle.begin();
+	       it != cycle.end(); ++it) {
             it->accept(this);
           }
           AbstractValue new_pre = AbstractValue::bottom();
           for (NodeName prev : prev_nodes) {
-            //crab::CrabStats::count (AbstractValue::getDomainName() + ".count.join");
-            //crab::ScopedCrabStats __st__(AbstractValue::getDomainName() + ".join");
             new_pre |= this->_iterator->get_post(prev); 
           }
-          //crab::CrabStats::count (AbstractValue::getDomainName() + ".count.leq");
-          //crab::CrabStats::resume (AbstractValue::getDomainName() + ".leq");
           if (pre <= new_pre) {
-            //crab::CrabStats::stop (AbstractValue::getDomainName() + ".leq");
-            CRAB_LOG ("fixpo", crab::outs() << "No more refinement possible.\n");
+            CRAB_LOG ("fixpo",
+		      crab::outs() << "No more refinement possible.\n");
             // No more refinement possible (pre == new_pre)
             break;
           } else {
-            //crab::CrabStats::stop (AbstractValue::getDomainName() + ".leq");
             if (iteration > this->_iterator->_descending_iterations) break; 
             pre = this->_iterator->refine(head, iteration, pre, new_pre);
             this->_iterator->set_pre(head, pre);
