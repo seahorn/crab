@@ -1,8 +1,10 @@
-# Create libraries  that contain all the crab stuff
+# Create libraries that contain all the crab stuff
 add_library(IntraCrab ${CRAB_LIBS_TYPE} crab.cpp)
 target_link_libraries(IntraCrab ${CRAB_LIBS})
 add_library(InterCrab ${CRAB_LIBS_TYPE} icrab.cpp)
 target_link_libraries(InterCrab ${CRAB_LIBS})
+add_library(BackwardCrab ${CRAB_LIBS_TYPE} bcrab.cpp)
+target_link_libraries(BackwardCrab ${CRAB_LIBS})
 
 function (AddTest testSrc dirName)
   #Extract the filename without an extension (NAME_WE)
@@ -12,7 +14,9 @@ function (AddTest testSrc dirName)
   #link with crab libraries
   if (${dirName} MATCHES "inter")
     target_link_libraries(${testName} ${Boost_PROGRAM_OPTIONS_LIBRARY} InterCrab)
-  else ()
+  elseif (${dirName} MATCHES "preconditions")
+    target_link_libraries(${testName} ${Boost_PROGRAM_OPTIONS_LIBRARY} BackwardCrab)
+  else ()  
     target_link_libraries(${testName} ${Boost_PROGRAM_OPTIONS_LIBRARY} IntraCrab)
   endif ()
   #move testing binaries into a test-bin directory
@@ -37,3 +41,4 @@ AddTestDir (cg)
 AddTestDir (cfg)
 AddTestDir (thresholds)
 AddTestDir (checkers)
+AddTestDir (preconditions)

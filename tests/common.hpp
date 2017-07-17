@@ -5,5 +5,6 @@
 #include "./crab_dom.hpp"
 #include "./crab.hpp"
 #include "./icrab.hpp"
+#include "./bcrab.hpp"
 
 #endif /*__TESTS_COMMON__*/

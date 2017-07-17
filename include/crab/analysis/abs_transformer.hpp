@@ -50,9 +50,11 @@ namespace crab {
 
   namespace analyzer {
 
-  //! API abstract transformer
+  /**
+   * API abstract transformer
+   **/
   template<typename Number, typename VariableName>
-  class abs_transformer_api: public cfg::statement_visitor <Number, VariableName>
+  class abs_transformer_api: public cfg::statement_visitor<Number, VariableName>
   {
    public:
 
@@ -159,13 +161,14 @@ namespace crab {
   };
 
 
-  //! Abstract transformer for all statements except function calls
-  //! which are ingnored in a sound manner.
+  /** 
+   * Abstract forward transformer for all statements. Function calls
+   * which are ingnored in a sound manner.
+   **/
   template<class AbsD>
   class intra_abs_transformer: 
-      public abs_transformer_api <typename AbsD::number_t, typename AbsD::varname_t>,
-      public boost::noncopyable
-  {
+      public abs_transformer_api<typename AbsD::number_t, typename AbsD::varname_t>,
+      public boost::noncopyable {
     
    public:
     typedef AbsD abs_dom_t;
@@ -207,8 +210,7 @@ namespace crab {
 
     
    protected:
-    /// XXX: the transformer does not own m_inv and it does never copy
-    ///      its content.
+    /// XXX: the transformer does not own m_inv.
     abs_dom_t *m_inv;
 
    private:
@@ -225,208 +227,368 @@ namespace crab {
       else if (op3) inv.apply (*op3, x, y, z);
       else CRAB_ERROR("unsupported binary operator", op);
     }
-    
-   public:
 
-    intra_abs_transformer (abs_dom_t* inv):
-      m_inv (inv) {
+    abs_dom_t *get_inv () {
       if (!m_inv)
 	CRAB_ERROR ("Invariant passed to transformer cannot be null!");
+      return m_inv;
     }
+    
+   public:
+    
+    intra_abs_transformer (abs_dom_t* inv):
+      m_inv (inv) { }
     
     virtual ~intra_abs_transformer () { }
 
     void set (abs_dom_t& inv) { m_inv = &inv;}
-    abs_dom_t& inv () { assert(m_inv); return *m_inv; }
     
-
-    void exec (bin_op_t& stmt)
-    {
-      assert(m_inv);
-      
+    abs_dom_t& inv () { return *get_inv(); }
+    
+    void exec (bin_op_t& stmt) {
       auto op1 = stmt.left ();
       auto op2 = stmt.right ();
-      if (op1.get_variable () && op2.get_variable ())
-      {
-        apply (*m_inv, stmt.op (), 
+      if (op1.get_variable () && op2.get_variable ()) {
+        apply (*get_inv(), stmt.op (), 
                stmt.lhs ().name(), 
                (*op1.get_variable ()).name(), 
                (*op2.get_variable ()).name());
-      }
-      else
-      {
+      } else {
         assert (op1.get_variable () && op2.is_constant ());
-        apply (*m_inv, stmt.op (), 
+        apply (*get_inv(), stmt.op (), 
                stmt.lhs ().name (), 
                (*op1.get_variable ()).name(), 
                op2.constant ()); 
       }      
     }
     
-    void exec (select_t& stmt)
-    {
-      assert(m_inv);
-      
-      abs_dom_t inv1 (*m_inv);
-      abs_dom_t inv2 (*m_inv);
+    void exec (select_t& stmt) {
+      abs_dom_t inv1 (*get_inv());
+      abs_dom_t inv2 (*get_inv());
       inv1 += stmt.cond ();
       inv2 += stmt.cond ().negate ();
       if (inv2.is_bottom()) {
         inv1.assign (stmt.lhs().name (),stmt.left());
-        *m_inv = inv1;
+        *get_inv() = inv1;
       }
       else if (inv1.is_bottom ()) {
         inv2.assign (stmt.lhs().name (),stmt.right());
-        *m_inv = inv2;
+        *get_inv() = inv2;
       }
       else {
         inv1.assign (stmt.lhs().name (),stmt.left());
         inv2.assign (stmt.lhs().name (),stmt.right());
-        *m_inv = inv1 | inv2;
+        *get_inv() = inv1 | inv2;
       }
     }
     
-    void exec (assign_t& stmt)
-    {
-      assert(m_inv);
-      
-      m_inv->assign (stmt.lhs().name (), lin_exp_t (stmt.rhs()));
-      
+    void exec (assign_t& stmt) {
+      get_inv()->assign (stmt.lhs().name (), lin_exp_t (stmt.rhs()));
     }
     
-    void exec (assume_t& stmt)
-    {
-      assert(m_inv);
-      
-      *m_inv += stmt.constraint();
+    void exec (assume_t& stmt) {
+      *get_inv() += stmt.constraint();
     }
     
-    void exec (assert_t& stmt)
-    {
-      assert(m_inv);
-      
+    void exec (assert_t& stmt) {
       abs_dom_t cst;
       cst += stmt.constraint();
-      abs_dom_t meet = cst & *m_inv;
-      if (meet.is_bottom ())
-        *m_inv = abs_dom_t::bottom (); // assertion does not definitely hold.
-      else
-	*m_inv += stmt.constraint ();
+      abs_dom_t meet = cst & *get_inv();
+      if (meet.is_bottom ()) {
+	// assertion does not definitely hold.
+        *get_inv() = abs_dom_t::bottom (); 
+      } else {
+	*get_inv() += stmt.constraint ();
+      }
     }
         
-    void exec (bool_assign_cst_t& stmt)
-    {
-      assert(m_inv);
-      (*m_inv).assign_bool_cst (stmt.lhs (), stmt.rhs ());
+    void exec (bool_assign_cst_t& stmt) {
+      (*get_inv()).assign_bool_cst (stmt.lhs (), stmt.rhs ());
     }
 
-    void exec (bool_assign_var_t& stmt)
-    {
-      assert(m_inv);
-      (*m_inv).assign_bool_var (stmt.lhs (), stmt.rhs ());      
+    void exec (bool_assign_var_t& stmt) {
+      (*get_inv()).assign_bool_var (stmt.lhs (), stmt.rhs ());      
     }
 
-    void exec (bool_bin_op_t& stmt)
-    {
-      assert(m_inv);
+    void exec (bool_bin_op_t& stmt) {
       if (auto op = conv_op<domains::bool_operation_t> (stmt.op()))
-	(*m_inv).apply_binary_bool (*op, stmt.lhs(), stmt.left(), stmt.right ());
+	(*get_inv()).apply_binary_bool (*op, stmt.lhs(),
+					stmt.left(), stmt.right ());
     }
     
     
-    void exec (bool_assume_t& stmt)
-    {
-      assert(m_inv);
-      (*m_inv).assume_bool (stmt.cond(), stmt.is_negated ());
+    void exec (bool_assume_t& stmt) {
+      (*get_inv()).assume_bool (stmt.cond(), stmt.is_negated ());
     }
 
-    void exec (bool_select_t& stmt)
-    {
-      assert(m_inv);
+    void exec (bool_select_t& stmt) {
       CRAB_WARN ("TODO: transformer for bool select");	                  
     }
 
-    void exec (bool_assert_t& stmt)
-    {
-      assert(m_inv);
+    void exec (bool_assert_t& stmt) {
       abs_dom_t inv;
       inv.assume_bool (stmt.cond (), false);
-      abs_dom_t meet = inv & *m_inv;
-      if (meet.is_bottom ())
-        *m_inv = abs_dom_t::bottom (); // assertion does not definitely hold.
-      else
-	(*m_inv).assume_bool (stmt.cond(), false);
+      abs_dom_t meet = inv & *get_inv();
+      if (meet.is_bottom ()) {
+	// assertion does not definitely hold.	
+        *get_inv() = abs_dom_t::bottom (); 
+      } else {
+	(*get_inv()).assume_bool (stmt.cond(), false);
+      }
     }
     
     void exec (havoc_t& stmt)
-    { assert(m_inv); (*m_inv) -= stmt.variable(); }
+    { (*get_inv()) -= stmt.variable(); }
     
     void exec (unreach_t& stmt)
-    { assert(m_inv); *m_inv = abs_dom_t::bottom (); }
+    { *get_inv() = abs_dom_t::bottom (); }
 
-    void exec (arr_assume_t &stmt)
-    { assert(m_inv);
-      m_inv->array_assume (stmt.array (), stmt.array_type (), 
+    void exec (arr_assume_t &stmt) {
+      get_inv()->array_assume (stmt.array (), stmt.array_type (), 
 			   stmt.lb_index (), stmt.ub_index (), 
 			   stmt.var ());
     }
     
-    void exec (arr_store_t &stmt)
-    { assert(m_inv);
-      m_inv->array_store (stmt.array(), stmt.array_type (), 
+    void exec (arr_store_t &stmt) {
+      get_inv()->array_store (stmt.array(), stmt.array_type (), 
 			  stmt.index (), stmt.value (),
 			  stmt.elem_size(), stmt.is_singleton ());
     }
     
-    void exec (arr_load_t  &stmt)
-    { assert(m_inv);
-      m_inv->array_load (stmt.lhs (), 
+    void exec (arr_load_t  &stmt) {
+      get_inv()->array_load (stmt.lhs (), 
 			 stmt.array (), stmt.array_type (), 
 			 stmt.index(), stmt.elem_size());
     }
     
-    void exec (arr_assign_t  &stmt)
-    { assert(m_inv);
-      m_inv->array_assign (stmt.lhs (), stmt.rhs (), stmt.array_type ());
+    void exec (arr_assign_t  &stmt) {
+      get_inv()->array_assign (stmt.lhs (), stmt.rhs (), stmt.array_type ());
     }
     
     void exec (ptr_null_t & stmt)
-    { assert(m_inv); m_inv->pointer_mk_null (stmt.lhs ()); }
+    { get_inv()->pointer_mk_null (stmt.lhs ()); }
     
     void exec (ptr_object_t & stmt)
-    { assert(m_inv); m_inv->pointer_mk_obj (stmt.lhs (), stmt.rhs()); }
+    { get_inv()->pointer_mk_obj (stmt.lhs (), stmt.rhs()); }
     
     void exec (ptr_assign_t & stmt)
-    { assert(m_inv); m_inv->pointer_assign (stmt.lhs (), stmt.rhs (), stmt.offset ()); }
+    { get_inv()->pointer_assign (stmt.lhs (), stmt.rhs (), stmt.offset ()); }
     
     void exec (ptr_function_t & stmt)
-    { assert(m_inv); m_inv->pointer_function (stmt.lhs (), stmt.rhs ()); }
+    { get_inv()->pointer_function (stmt.lhs (), stmt.rhs ()); }
     
     void exec (ptr_load_t & stmt)
-    { assert(m_inv); m_inv->pointer_load (stmt.lhs (), stmt.rhs ()); }
+    { get_inv()->pointer_load (stmt.lhs (), stmt.rhs ()); }
     
     void exec (ptr_store_t & stmt)
-    { assert(m_inv); m_inv->pointer_store (stmt.lhs (), stmt.rhs ()); }
+    { get_inv()->pointer_store (stmt.lhs (), stmt.rhs ()); }
     
     void exec (ptr_assume_t& stmt)
-    { assert(m_inv); m_inv->pointer_assume (stmt.constraint ()); }
+    { get_inv()->pointer_assume (stmt.constraint ()); }
     
     void exec (ptr_assert_t& stmt)
-    { assert(m_inv); m_inv->pointer_assert (stmt.constraint ()); }
+    { get_inv()->pointer_assert (stmt.constraint ()); }
     
-    virtual void exec (callsite_t &cs)
-    {
-      assert(m_inv);
+    virtual void exec (callsite_t &cs) {
       for (auto vt: cs.get_lhs())
-	(*m_inv) -= vt.first;  // havoc
+	(*get_inv()) -= vt.first;  // havoc
     }
   }; 
 
+
+  /**
+   * Abstract transformer to compute necessary preconditions of error
+   * states.
+   **/ 
+  template<class AbsD, class InvT>
+  class intra_necessary_preconditions_abs_transformer: 
+      public abs_transformer_api<typename AbsD::number_t,
+				 typename AbsD::varname_t>,
+      public boost::noncopyable {
+    
+   public:
+    typedef AbsD abs_dom_t;
+    typedef typename abs_dom_t::number_t number_t;
+    typedef typename abs_dom_t::varname_t varname_t;
+    typedef cfg::statement<number_t, varname_t> statement_t;    
+    typedef abs_transformer_api <number_t, varname_t> abs_transform_api_t;
+    using typename abs_transform_api_t::var_t;
+    using typename abs_transform_api_t::lin_exp_t;
+    using typename abs_transform_api_t::lin_cst_t;
+    using typename abs_transform_api_t::lin_cst_sys_t;
+    using typename abs_transform_api_t::havoc_t;
+    using typename abs_transform_api_t::unreach_t;    
+    using typename abs_transform_api_t::bin_op_t;
+    using typename abs_transform_api_t::assign_t;
+    using typename abs_transform_api_t::assume_t;
+    using typename abs_transform_api_t::select_t;
+    using typename abs_transform_api_t::assert_t;
+    using typename abs_transform_api_t::callsite_t;
+    using typename abs_transform_api_t::arr_assume_t;
+    using typename abs_transform_api_t::arr_load_t;
+    using typename abs_transform_api_t::arr_store_t;
+    using typename abs_transform_api_t::arr_assign_t;
+    using typename abs_transform_api_t::ptr_load_t;
+    using typename abs_transform_api_t::ptr_store_t;
+    using typename abs_transform_api_t::ptr_assign_t;
+    using typename abs_transform_api_t::ptr_object_t;
+    using typename abs_transform_api_t::ptr_function_t;
+    using typename abs_transform_api_t::ptr_null_t;
+    using typename abs_transform_api_t::ptr_assume_t;
+    using typename abs_transform_api_t::ptr_assert_t;
+    using typename abs_transform_api_t::bool_bin_op_t;
+    using typename abs_transform_api_t::bool_assign_cst_t;
+    using typename abs_transform_api_t::bool_assign_var_t;    
+    using typename abs_transform_api_t::bool_assume_t;
+    using typename abs_transform_api_t::bool_select_t;
+    using typename abs_transform_api_t::bool_assert_t;
+
+    
+   protected:
+    
+    // used to compute the (necessary) preconditions
+    abs_dom_t *m_post;
+    // used to refine the preconditions: map from statement_t to
+    // abs_dom_t.
+    InvT &m_invariants; 
+
+   public:
+
+    intra_necessary_preconditions_abs_transformer(abs_dom_t* post,
+						  InvT &invars)
+      : m_post (post), m_invariants (invars) {
+      if (!m_post)
+	CRAB_ERROR ("Postcondition cannot be null!");
+    }
+    
+    virtual ~intra_necessary_preconditions_abs_transformer () { }
+
+    abs_dom_t& preconditions () { return *m_post; }
+    
+    void exec (bin_op_t& stmt) {
+      
+      auto op = conv_op<ikos::operation_t> (stmt.op ());
+      if (!op) {
+	CRAB_WARN ("backward operation ", stmt.op(), " not implemented");
+	return;
+      }
+      
+      auto op1 = stmt.left ();
+      auto op2 = stmt.right ();
+      abs_dom_t invariant = m_invariants[&stmt];
+      
+      if (op1.get_variable () && op2.get_variable ()) {
+        m_post->backward_apply (*op, 
+				stmt.lhs ().name(), 
+				(*op1.get_variable ()).name(), 
+				(*op2.get_variable ()).name(),
+				invariant);
+      } else {
+        assert (op1.get_variable () && op2.is_constant ());
+        m_post->backward_apply (*op, 
+				stmt.lhs ().name (), 
+				(*op1.get_variable ()).name(), 
+				op2.constant (),
+				invariant); 
+      }      
+    }
+    
+    // wlp(x := f? e1: e2, Q)= (f and Q[e1/x]) or (not f and Q[e2/x])
+    void exec (select_t& stmt) {
+      abs_dom_t old_pre = m_invariants[&stmt];
+
+      abs_dom_t else_inv (old_pre);
+      else_inv += stmt.cond ().negate();
+      if (else_inv.is_bottom()) {
+	*m_post += stmt.cond ();
+        m_post->backward_assign (stmt.lhs().name(),stmt.left(),old_pre);
+	return;
+      }
+
+      abs_dom_t then_inv (old_pre);                  
+      then_inv += stmt.cond();      
+      if (then_inv.is_bottom()) {
+	*m_post += stmt.cond().negate();
+        m_post->backward_assign (stmt.lhs().name(),stmt.right(),old_pre);
+	return;
+      }
+
+      abs_dom_t inv1 (*m_post);
+      inv1 += stmt.cond();
+      inv1.backward_assign(stmt.lhs().name(),stmt.left(),old_pre);
+      
+      abs_dom_t inv2 (*m_post);
+      inv2 += stmt.cond().negate();
+      inv2.backward_assign(stmt.lhs().name(),stmt.right(),old_pre);
+      
+      *m_post = inv1 | inv2;
+    }
+
+    // wlp (x := e, Q) = Q[e/x]
+    void exec (assign_t& stmt) {
+      abs_dom_t invariant = m_invariants[&stmt];
+      m_post->backward_assign (stmt.lhs().name (),
+			       lin_exp_t (stmt.rhs()),
+			       invariant);
+    }
+
+    // wlp (assume(C),Q) = C and Q
+    void exec (assume_t& stmt) {
+      *m_post += stmt.constraint();
+    }
+
+    // wlp (assert(C),Q) =  (C and Q) or (not C and false) = C and Q
+    // 
+    // We are interested in computing preconditions of the error
+    // states. Thus, we propagate backwards the negation of the
+    // condition which represents the error states.
+    void exec (assert_t& stmt) {
+      *m_post += stmt.constraint().negate ();            
+    }
         
+    // wlp (abort, Q) = false
+    // 
+    // We are interested in computing preconditions of the error states.
+    // Thus, an unreachable state is always safe so we propagate true.
+    void exec (unreach_t& stmt) {
+      *m_post = abs_dom_t::top ();
+    }
+
+    // wlp (x := *, Q) = Q
+    void exec (havoc_t& stmt) {
+      // do nothing
+    }
+    
+    virtual void exec (callsite_t &cs) {
+      CRAB_WARN ("Backward function calls not implemented");      
+    }
+
+    void exec (bool_assign_cst_t& stmt) { }
+    void exec (bool_assign_var_t& stmt) { }
+    void exec (bool_bin_op_t& stmt) { }
+    void exec (bool_assume_t& stmt) { }
+    void exec (bool_select_t& stmt) { }
+    void exec (bool_assert_t& stmt) { }
+    void exec (arr_assume_t &stmt) { }
+    void exec (arr_store_t &stmt) { }
+    void exec (arr_load_t  &stmt) { }
+    void exec (arr_assign_t  &stmt) { }
+    void exec (ptr_null_t & stmt) { }
+    void exec (ptr_object_t & stmt) { }
+    void exec (ptr_assign_t & stmt) { }
+    void exec (ptr_function_t & stmt) { }
+    void exec (ptr_load_t & stmt) { }
+    void exec (ptr_store_t & stmt) { }
+    void exec (ptr_assume_t& stmt) { }
+    void exec (ptr_assert_t& stmt) { }
+  }; 
+
+    
   // Helper for function calls.
   template <typename AbsDom>
   static void unify (AbsDom &inv, variable_type ty,
-		     typename AbsDom::varname_t lhs, typename AbsDom::varname_t rhs)
+		     typename AbsDom::varname_t lhs,
+		     typename AbsDom::varname_t rhs)
   {
     typedef typename AbsDom::linear_expression_t linear_expression_t;
     typedef typename AbsDom::number_t number_t;
@@ -450,8 +612,10 @@ namespace crab {
     }
   }
     
-  //! Transformer specialized for computing summaries.
-  //  class SumTable stores the summaries
+  /**
+   * Abstract transformer specialized for computing summaries.
+   * class SumTable stores the summaries
+   **/
   template<class SumTable> 
   class bu_summ_abs_transformer: 
       public intra_abs_transformer <typename SumTable::abs_domain_t> {
@@ -586,9 +750,11 @@ namespace crab {
     { to += cst; }
   }
 
-  // Transformer specialized for performing top-down forward traversal
-  // while reusing summaries at the callsites.
-  // class CallCtxTable stores the calling context.
+  /**
+   * Abstract transformer specialized for performing top-down forward
+   * traversal while reusing summaries at the callsites.
+   * class CallCtxTable stores the calling context.
+   **/
   template<class SumTable, class CallCtxTable> 
   class td_summ_abs_transformer: 
       public intra_abs_transformer<typename CallCtxTable::abs_domain_t> {
@@ -616,7 +782,8 @@ namespace crab {
 
    public:
     
-    td_summ_abs_transformer (abs_dom_t* inv, SumTable* sum_tbl, CallCtxTable* call_tbl)
+    td_summ_abs_transformer (abs_dom_t* inv,
+			     SumTable* sum_tbl, CallCtxTable* call_tbl)
         : intra_abs_transform_t(inv), 
           m_sum_tbl (sum_tbl), m_call_tbl (call_tbl) { }
           
