@@ -99,17 +99,10 @@ namespace ikos {
 
   template<typename Number, typename VariableName, typename NumAbsDom>
   class backward_numerical_domain {
-    
   public:
+    
     typedef linear_expression<Number, VariableName> linear_expression_t;
-    typedef linear_constraint<Number, VariableName> linear_constraint_t;
-    typedef linear_constraint_system<Number, VariableName> linear_constraint_system_t;
-    typedef variable<Number, VariableName> variable_t;
-    typedef Number number_t;
-    typedef VariableName varname_t;
     
-  public:
-
     // x = y op z
     // Substitute x with y op z in the abstract value
     // The result is meet with invariant.
