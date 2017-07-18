@@ -840,66 +840,85 @@ namespace crab {
       }
 
       template<typename Dom1, typename Dom2>
-      void propagate_between_weight_and_scalar(Dom1 src, typename Dom1::varname_t src_var, 
-                                               variable_type ty, 
-                                               Dom2 &dst, typename Dom2::varname_t dst_var) {
+      void propagate_between_weight_and_scalar
+      (Dom1 src,
+       typename Dom1::linear_expression_t src_e, 
+       variable_type ty, 
+       Dom2 &dst,
+       typename Dom2::varname_t dst_var) {
+	
         if (ty == ARR_INT_TYPE) {
           // --- XXX: simplification wrt Gange et.al.:
           //     Only non-relational numerical invariants are
           //     propagated from the graph domain to the scalar domain.
-          dst.set (dst_var, eval_interval(src, typename Dom1::variable_t(src_var))); 
+          dst.set (dst_var, eval_interval(src, src_e)); 
         } else {
           CRAB_WARN ("Missing propagation between weight and scalar domains");
         }
       }
 
       template<typename BaseDom>
-      void propagate_between_weight_and_scalar(numerical_nullity_domain<BaseDom> src,
-                                               typename BaseDom::varname_t src_var, 
-                                               variable_type ty, 
-                                               numerical_nullity_domain<BaseDom> &dst, 
-                                               typename BaseDom::varname_t dst_var) {
+      void propagate_between_weight_and_scalar
+      (numerical_nullity_domain<BaseDom> src,
+       typename BaseDom::linear_expression_t src_e, 
+       variable_type ty, 
+       numerical_nullity_domain<BaseDom> &dst, 
+       typename BaseDom::varname_t dst_var) {
+	
         if (ty == ARR_INT_TYPE) {
           // --- XXX: simplification wrt Gange et.al.:
           //     Only non-relational numerical invariants are
           //     propagated from the graph domain to the scalar domain.
-          dst.set (dst_var, eval_interval(src, typename BaseDom::variable_t(src_var))); 
+          dst.set (dst_var, eval_interval(src, src_e)); 
         } else if (ty == ARR_PTR_TYPE) {
-          auto &null_dom = dst.second ();
-          null_dom.set_nullity (dst_var, src.get_nullity (src_var));
+	  if (auto src_var = src_e.get_variable()) {
+	    auto &null_dom = dst.second ();
+	    null_dom.set_nullity(dst_var,
+				 src.get_nullity((*src_var).name()));
+	  }
         } else {
           CRAB_WARN ("Missing propagation between weight and scalar domains");
         }
       }
 
       template<typename BaseDom>
-      void propagate_between_weight_and_scalar(nullity_domain<typename BaseDom::number_t,
-                                                              typename BaseDom::varname_t> src,
-                                               typename BaseDom::varname_t src_var, 
-                                               variable_type ty, 
-                                               numerical_nullity_domain<BaseDom> &dst, 
-                                               typename BaseDom::varname_t dst_var) {
+      void propagate_between_weight_and_scalar
+      (nullity_domain<typename BaseDom::number_t,
+       typename BaseDom::varname_t> src,
+       typename BaseDom::linear_expression_t src_e, 
+       variable_type ty, 
+       numerical_nullity_domain<BaseDom> &dst, 
+       typename BaseDom::varname_t dst_var) {
+	
         if (ty == ARR_INT_TYPE) {
           // do nothing
         } else if (ty == ARR_PTR_TYPE) {
-          auto &null_dom = dst.second ();
-          null_dom.set_nullity (dst_var, src.get_nullity (src_var));
+	  if (auto src_var = src_e.get_variable ()) {
+	    auto &null_dom = dst.second ();
+	    null_dom.set_nullity(dst_var,
+				 src.get_nullity((*src_var).name()));
+	  }
         } else {
           CRAB_WARN ("Missing propagation between weight and scalar domains");
         }
       }
 
       template<typename BaseDom>
-      void propagate_between_weight_and_scalar(numerical_nullity_domain<BaseDom> src, 
-                                               typename BaseDom::varname_t src_var, 
-                                               variable_type ty, 
-                                               nullity_domain<typename BaseDom::number_t,
-                                                              typename BaseDom::varname_t> &dst,
-                                               typename BaseDom::varname_t dst_var) {
+      void propagate_between_weight_and_scalar
+      (numerical_nullity_domain<BaseDom> src, 
+       typename BaseDom::linear_expression_t src_e, 
+       variable_type ty, 
+       nullity_domain<typename BaseDom::number_t,
+       typename BaseDom::varname_t> &dst,
+       typename BaseDom::varname_t dst_var) {
+	
         if (ty == ARR_INT_TYPE) {
           // do nothing
         } else if (ty == ARR_PTR_TYPE) {
-          dst.set_nullity (dst_var, src.second ().get_nullity (src_var));
+	  if (auto src_var = src_e.get_variable()) {
+	    dst.set_nullity(dst_var,
+			    src.second().get_nullity((*src_var).name()));
+	  }
         } else {
           CRAB_WARN ("Missing propagation between weight and scalar domains");
         }
@@ -2252,27 +2271,29 @@ namespace crab {
       // array_operators_api       
 
       virtual void array_assume (VariableName a, variable_type a_ty, 
-                                 linear_expression_t lb_idx, linear_expression_t ub_idx, 
-                                 VariableName var) override {
+                                 linear_expression_t lb_idx,
+				 linear_expression_t ub_idx, 
+                                 linear_expression_t val) override {
         
         auto lb_var_opt = lb_idx.get_variable ();
         auto ub_var_opt = ub_idx.get_variable ();
 
-        if (lb_idx.is_constant () && ub_idx.is_constant ())
-          array_assume (a, a_ty, lb_idx.constant (), ub_idx.constant (), var);
+        if (lb_idx.is_constant() && ub_idx.is_constant())
+          array_assume (a, a_ty, lb_idx.constant(), ub_idx.constant(), val);
         else if (lb_idx.is_constant () && ub_var_opt)
-          array_assume (a, a_ty, lb_idx.constant (), (*ub_var_opt).name(), var);
-        else if (lb_var_opt && ub_idx.is_constant ())
-          array_assume (a, a_ty, (*lb_var_opt).name(), ub_idx.constant (), var);
+          array_assume (a, a_ty, lb_idx.constant(), (*ub_var_opt).name(), val);
+        else if (lb_var_opt && ub_idx.is_constant())
+          array_assume (a, a_ty, (*lb_var_opt).name(), ub_idx.constant(), val);
         else if (lb_var_opt && ub_var_opt)
-          array_assume (a, a_ty, (*lb_var_opt).name(), (*ub_var_opt).name(), var);
+          array_assume (a, a_ty, (*lb_var_opt).name(), (*ub_var_opt).name(), val);
         else
-          CRAB_WARN ("array_sparse_graph only supports assume_array with number or cst indexes");
+          CRAB_ERROR ("unreachable");
       }
 
-      virtual void array_load (VariableName lhs, VariableName a, crab::variable_type a_ty,
-                               linear_expression_t i, z_number nbytes) override 
-      {
+      virtual void array_load (VariableName lhs, VariableName a,
+			       crab::variable_type a_ty,
+                               linear_expression_t i,
+			       z_number nbytes) override  {
 
         crab::CrabStats::count (getDomainName() + ".count.load");
         crab::ScopedCrabStats __st__(getDomainName() + ".load");
@@ -2312,7 +2333,9 @@ namespace crab {
           _expressions.set (lhs, w[a]);
         }
 
-        array_sparse_graph_impl::propagate_between_weight_and_scalar(w, a, a_ty, _scalar, lhs);
+        array_sparse_graph_impl::
+	  propagate_between_weight_and_scalar(w, variable_t(a), a_ty,
+					      _scalar, lhs);
         
         // if normalize_offset created a landmark we remove it here to
         // keep smaller array graph
@@ -2330,8 +2353,10 @@ namespace crab {
       }
 
       virtual void array_store (VariableName a, crab::variable_type a_ty,
-                                linear_expression_t i, VariableName val, 
-                                z_number nbytes, bool /*is_singleton*/) override {
+                                linear_expression_t i,
+				linear_expression_t val, 
+                                z_number nbytes,
+				bool /*is_singleton*/) override {
         crab::CrabStats::count (getDomainName() + ".count.store");
         crab::ScopedCrabStats __st__(getDomainName() + ".store");
 
@@ -2342,7 +2367,8 @@ namespace crab {
         }
 
         Weight w = Weight::top ();
-        array_sparse_graph_impl::propagate_between_weight_and_scalar(_scalar, val, a_ty, w, a);
+        array_sparse_graph_impl::
+	  propagate_between_weight_and_scalar(_scalar, val, a_ty, w, a);
 
         auto p = normalize_offset ((*vi).name(), nbytes);
         VariableName norm_idx = p.first;
@@ -2354,14 +2380,16 @@ namespace crab {
         // the scalar domain I think we don't need to reduce here.
 
         CRAB_LOG("array-sgraph-domain",
-                 crab::outs() << "Array write "<<a<<"["<<i<<"] := "<<val<< " ==> "
+                 crab::outs() << "Array write "<<a<<"["<<i<<"] := "
+		              << val << " ==> "
                               << *this <<"\n";);
       }
 
       // T1 and T2 are either VariableName or z_number
       template<typename T1, typename T2>
-      void array_assume (VariableName arr, variable_type arr_ty, T1 src, T2 dst,
-			 VariableName val)
+      void array_assume (VariableName arr, variable_type arr_ty,
+			 T1 src, T2 dst,
+			 linear_expression_t val)
       {
         if (!is_landmark (src)) {
           crab::outs () << "WARNING no landmark found for " << src << "\n";

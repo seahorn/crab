@@ -732,15 +732,16 @@ namespace crab {
       virtual void array_assume (V a, crab::variable_type a_ty, 
                                  linear_expression_t lb_idx,
 				 linear_expression_t ub_idx,
-                                 V var) override
-      { this->_product.array_assume (a, a_ty, lb_idx, ub_idx, var); }
+                                 linear_expression_t val) override
+      { this->_product.array_assume (a, a_ty, lb_idx, ub_idx, val); }
       
       virtual void array_load (V lhs, V a, crab::variable_type a_ty, 
                                linear_expression_t i, ikos::z_number bytes) override
       { this->_product.array_load (lhs, a, a_ty, i, bytes); }
       
       virtual void array_store (V a, crab::variable_type a_ty, 
-                                linear_expression_t i, V val, 
+                                linear_expression_t i,
+				linear_expression_t val, 
                                 ikos::z_number bytes, bool is_singleton) override
       { this->_product.array_store (a, a_ty, i, val, bytes, is_singleton); }
       

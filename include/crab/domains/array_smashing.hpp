@@ -68,19 +68,25 @@ namespace crab {
             ikos::writeable (), 
             _inv (inv) { }
         
-        void strong_update (VariableName a, crab::variable_type a_ty, VariableName rhs ) {
+        void strong_update (VariableName a, crab::variable_type a_ty,
+			    linear_expression_t rhs ) {
           if (a_ty == ARR_INT_TYPE)
-            _inv.assign (a, linear_expression_t (rhs));
-          else
-            _inv.pointer_assign (a, rhs, Number(0));
+            _inv.assign (a, rhs);
+          else {
+	    if (auto rhs_v = rhs.get_variable())
+	      _inv.pointer_assign (a, (*rhs_v).name(), Number(0));
+	  }
         }
         
-        void weak_update (VariableName a, crab::variable_type a_ty, VariableName rhs) {
+        void weak_update (VariableName a, crab::variable_type a_ty,
+			  linear_expression_t rhs) {
           NumDomain other (_inv);
           if (a_ty == ARR_INT_TYPE)
-            other.assign (a, linear_expression_t (rhs));
-          else 
-            other.pointer_assign (a, rhs, Number(0));
+            other.assign (a, rhs);
+          else  {
+	    if (auto rhs_v = rhs.get_variable ())
+	      other.pointer_assign (a, (*rhs_v).name(), Number(0));
+	  }
           _inv = _inv | other;
         }
         
@@ -273,20 +279,28 @@ namespace crab {
 
         // All the array elements are assumed to be equal to var
         virtual void array_assume (VariableName a, variable_type a_ty, 
-                                   linear_expression_t /*lb_idx*/, linear_expression_t /*ub_idx*/, 
-                                   VariableName var) override {
+                                   linear_expression_t /*lb_idx*/,
+				   linear_expression_t /*ub_idx*/, 
+                                   linear_expression_t val) override {
           // XXX: this is imprecise since we don't check first whether
           // the elements of a are consistent with var.
           if (a_ty == ARR_INT_TYPE)
-            _inv.assign (a, linear_expression_t(var));
-          else 
-            _inv.pointer_assign (a, var, Number(0));
+            _inv.assign (a, val);
+          else {
+	    if (auto var = val.get_variable ()) {
+	      _inv.pointer_assign (a, (*var).name(), Number(0));
+	    }
+	  }
           
-          CRAB_LOG("smashing", crab::outs() << "forall i:: " << a << "[i]==" << var << " -- " << *this <<"\n";);
+          CRAB_LOG("smashing",
+		   crab::outs() << "forall i:: " << a << "[i]==" << val
+		                << " -- " << *this <<"\n";);
         }
         
-        virtual void array_load (VariableName lhs, VariableName a, crab::variable_type a_ty,
-                                 linear_expression_t i, z_number /*bytes*/) override {
+        virtual void array_load (VariableName lhs, VariableName a,
+				 crab::variable_type a_ty,
+                                 linear_expression_t i,
+				 z_number /*bytes*/) override {
 
           crab::CrabStats::count (getDomainName() + ".count.load");
           crab::ScopedCrabStats __st__(getDomainName() + ".load");
@@ -304,13 +318,17 @@ namespace crab {
 
           _inv -= a_prime; 
           
-          CRAB_LOG("smashing", crab::outs() << lhs << ":=" << a <<"[" << i << "]  -- "  << *this <<"\n";);
+          CRAB_LOG("smashing",
+		   crab::outs() << lhs << ":=" << a <<"[" << i << "]  -- "
+		                << *this <<"\n";);
         }
         
         
         virtual void array_store (VariableName a, crab::variable_type a_ty,
-                                  linear_expression_t i, VariableName val, 
-                                  z_number /*bytes*/, bool is_singleton) override {
+                                  linear_expression_t i,
+				  linear_expression_t val, 
+                                  z_number /*bytes*/,
+				  bool is_singleton) override {
                                   
 
           crab::CrabStats::count (getDomainName() + ".count.store");
@@ -321,7 +339,9 @@ namespace crab {
           else 
             weak_update (a, a_ty, val);
           
-          CRAB_LOG("smashing", crab::outs() << a << "[" << i << "]:=" << val << " -- " << *this <<"\n";);
+          CRAB_LOG("smashing",
+		   crab::outs() << a << "[" << i << "]:="
+		                << val << " -- " << *this <<"\n";);
         }
 
         virtual void array_assign (VariableName lhs, VariableName rhs, 

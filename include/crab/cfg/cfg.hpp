@@ -96,87 +96,7 @@ namespace crab {
       tmp.write (o);
       return o;
     }
-  
-    // // A C++ datatype to wrap variables and numbers
-    // enum numvar_kind_t { NV_NUM, NV_VAR};
-    // template<class V, class N>
-    // class numvar {
-    //  protected:
-    //   numvar_kind_t _kind;
-    //   numvar(numvar_kind_t kind): _kind(kind) { }
-    //  public:
-    //   virtual ~numvar() { }
-    //   numvar_kind_t kind() const { return _kind;} 
-    //   virtual bool operator==(const numvar<V,N>& o) const = 0;
-    //   virtual bool operator<(const numvar<V,N>& o) const = 0;
-    //   virtual void write(crab_os&o) const = 0;
-    //   virtual std::size_t hash () const = 0;
-    // };
-
-    // template<class V, class N>
-    // class numvar_n: public numvar<V,N> {
-    //   N _n;
-    //   typedef numvar<V,N> numvar_t;
-    //   typedef numvar_n<V,N> numvar_n_t;
-
-    //  public:
-    //   numvar_n (N n): numvar_t(numvar_kind_t::NV_NUM), _n(n) {}
-
-    //   bool operator==(const numvar_t& o) const {
-    //     if (this->_kind != o.kind()) return false;
-
-    //     assert (o.kind () == numvar_kind_t::NV_NUM);
-    //     auto o_ptr =  static_cast<const numvar_n_t*>(&o);
-    //     return (_n == o_ptr->_n);
-    //   }
-
-    //   bool operator<(const numvar_t& o) const {
-    //     if (this->_kind != o.kind()) return true;
-
-    //     assert (o.kind () == numvar_kind_t::NV_NUM);
-    //     return (_n < static_cast<const numvar_n_t*>(&o)->_n);
-    //   }
-
-    //   void write(crab_os&o) const { o << _n; }
-
-    //   std::size_t hash() const { return hash_value(_n);}
-
-    //   N get_num () const { return _n;}
-    // };
-
-    // template<class V, class N>
-    // class numvar_v: public numvar<V,N> {
-    //   V _v;
-    //   typedef numvar<V,N> numvar_t;
-    //   typedef numvar_v<V,N> numvar_v_t;
-
-    //  public:
-    //   numvar_v (V v) : numvar_t(numvar_kind_t::NV_VAR), _v(v) {}
-
-    //   bool operator==(const numvar_t& o) const {
-    //     if (this->_kind != o.kind()) return false;
-
-    //     assert (o.kind () == numvar_kind_t::NV_VAR);
-    //     auto o_ptr = static_cast<const numvar_v_t*>(&o);
-    //     return (_v == o_ptr->_v);
-    //   }
-
-    //   bool operator<(const numvar_t& o) const {
-    //     if (this->_kind != o.kind()) return false;
-
-    //     assert (o.kind () == numvar_kind_t::NV_VAR);
-    //     auto o_ptr =  static_cast<const numvar_v_t*>(&o);
-    //     return (_v < o_ptr->_v);
-    //   }
-
-    //   void write(crab_os&o) const { o << _v; }
-
-    //   std::size_t hash() const { return hash_value(_v);}
-
-    //   V get_var () const { return _v;}
-    // };
-
-  
+    
     template< typename VariableName>
     class Live
     {
@@ -723,30 +643,56 @@ namespace crab {
     // variables are non-integers except array indexes.
     
     
-    //! Assume all the array elements are equal to some variable
+    //! Assume all the array elements are equal to some variable or
+    //! number.
     template<class Number, class VariableName>
     class array_assume_stmt: public statement<Number, VariableName> 
     {
      public:
 
       typedef statement<Number,VariableName> statement_t;                  
-      typedef ikos::linear_expression<Number, VariableName > linear_expression_t;
+      typedef ikos::linear_expression<Number, VariableName>
+      linear_expression_t;
 
      private:
 
-      // forall i \in [lb,ub]. arr[i] == var
+      // forall i \in [lb,ub]. arr[i] == val
       VariableName m_arr; 
       variable_type m_arr_ty;
       linear_expression_t m_lb;
       linear_expression_t m_ub;
-      VariableName m_var;
+      linear_expression_t m_val;
+
+      inline bool is_number_or_variable (linear_expression_t e)  const {
+	return (e.is_constant() || e.get_variable());
+      }
       
      public:
       
       array_assume_stmt (VariableName arr, variable_type arr_ty, 
-                         linear_expression_t lb, linear_expression_t ub, VariableName var): 
+                         linear_expression_t lb, linear_expression_t ub,
+			 linear_expression_t val): 
           statement_t (ARR_ASSUME),
-          m_arr (arr), m_arr_ty (arr_ty), m_lb (lb) , m_ub (ub), m_var (var)  { }
+          m_arr (arr), m_arr_ty (arr_ty),
+	  m_lb (lb) , m_ub (ub), m_val (val)  {
+	
+	if (!is_number_or_variable (m_lb))
+	  CRAB_ERROR("array_assume third parameter can only be number or variable");
+	
+	if (!is_number_or_variable (m_ub))
+	  CRAB_ERROR("array_assume forth parameter can only be number or variable");
+
+	if (!is_number_or_variable (m_val))
+	  CRAB_ERROR("array_assume fifth parameter can only be number or variable");
+
+        this->m_live.add_use (m_arr);
+        for(auto v: m_lb.variables()) 
+          this->m_live.add_use (v.name());
+        for(auto v: m_ub.variables()) 
+          this->m_live.add_use (v.name());
+	for(auto v: m_val.variables())
+	  this->m_live.add_use (v.name());
+      }
       
       VariableName array () const { return m_arr; }
       
@@ -756,7 +702,7 @@ namespace crab {
       
       linear_expression_t ub_index () const { return m_ub;}
 
-      VariableName var () const { return m_var; }
+      linear_expression_t val () const { return m_val;}
       
       virtual void accept (statement_visitor<Number, VariableName> *v) {
         v->visit (*this);
@@ -766,13 +712,14 @@ namespace crab {
       {
         typedef array_assume_stmt <Number, VariableName> array_assume_t;
         return boost::static_pointer_cast< statement_t, array_assume_t >
-            (boost::make_shared<array_assume_t>(m_arr, m_arr_ty, m_lb, m_ub, m_var));
+            (boost::make_shared<array_assume_t>(m_arr, m_arr_ty,
+						m_lb, m_ub, m_val));
       }
       
       void write (crab_os& o) const
       {
         o << "assume (forall l in [" << m_lb << "," << m_ub << "] :: " 
-          << m_arr << "[l]=" << m_var << ")";          
+          << m_arr << "[l]=" << m_val << ")";          
         return;
       }
     }; 
@@ -783,43 +730,52 @@ namespace crab {
      public:
 
       typedef statement<Number,VariableName> statement_t;                  
-      typedef ikos::linear_expression<Number, VariableName > linear_expression_t;
+      typedef ikos::linear_expression<Number, VariableName>
+      linear_expression_t;
       
      private:
       
       VariableName m_arr;
       variable_type m_arr_ty;
       linear_expression_t m_index;
-      // For generality of the language, array contents are stored via
-      // temporary variables
-      VariableName m_value;
+      linear_expression_t m_value;
       ikos::z_number m_elem_size; //! size in bytes
       bool m_is_singleton; //! whether the store writes to a singleton
                            //  cell. If unknown set to false.
+
+      inline bool is_number_or_variable (linear_expression_t e)  const {
+	return (e.is_constant() || e.get_variable());
+      }
+      
      public:
       
       array_store_stmt (VariableName arr, variable_type arr_ty,
-                        linear_expression_t index, VariableName value,  
+                        linear_expression_t index,
+			linear_expression_t value,  
                         ikos::z_number elem_size, bool is_sing = false)
           : statement_t(ARR_STORE),
             m_arr (arr), m_arr_ty (arr_ty), m_index (index), 
             m_value (value), m_elem_size (elem_size),  
-            m_is_singleton (is_sing)
-      {
-        if (! (m_arr_ty == ARR_INT_TYPE || m_arr_ty == ARR_PTR_TYPE))
-          CRAB_ERROR ("Crab only supports arrays of integers or pointers");
-        
+            m_is_singleton (is_sing) {
+	
+        if (!(m_arr_ty == ARR_INT_TYPE || m_arr_ty == ARR_PTR_TYPE))
+          CRAB_ERROR ("array_store only arrays of integers or pointers");
+
+	if (!is_number_or_variable (m_value))
+	  CRAB_ERROR ("array_store forth parameter only number or variable");
+	
         this->m_live.add_use (m_arr);
         for(auto v: m_index.variables()) 
           this->m_live.add_use (v.name());
-        this->m_live.add_use (m_value);
+	for(auto v: m_value.variables())
+	  this->m_live.add_use (v.name());
       }
       
       VariableName array () const { return m_arr; }
       
       linear_expression_t index () const { return m_index; }
       
-      VariableName value () const { return m_value; }
+      linear_expression_t value () const { return m_value; }
       
       variable_type array_type () const { return m_arr_ty; }
 
@@ -835,8 +791,9 @@ namespace crab {
       virtual boost::shared_ptr<statement_t> clone () const
       {
         typedef array_store_stmt <Number, VariableName> array_store_t;
-        return boost::static_pointer_cast< statement_t, array_store_t>
-            (boost::make_shared<array_store_t>(m_arr, m_arr_ty, m_index, m_value, 
+        return boost::static_pointer_cast<statement_t, array_store_t>
+            (boost::make_shared<array_store_t>(m_arr, m_arr_ty, m_index,
+					       m_value, 
                                                m_elem_size, m_is_singleton));
       }
       
@@ -869,7 +826,8 @@ namespace crab {
      public:
       
       array_load_stmt (VariableName lhs, 
-                       VariableName arr, variable_type arr_ty, linear_expression_t index, 
+                       VariableName arr, variable_type arr_ty,
+		       linear_expression_t index, 
                        ikos::z_number elem_size)
           : statement_t (ARR_LOAD),
             m_lhs (lhs), m_array (arr), m_arr_ty (arr_ty),
@@ -903,12 +861,12 @@ namespace crab {
       {
         typedef array_load_stmt <Number, VariableName> array_load_t;
         return boost::static_pointer_cast< statement_t, array_load_t>
-            (boost::make_shared<array_load_t>(m_lhs, m_array, m_arr_ty, m_index, m_elem_size));
+            (boost::make_shared<array_load_t>(m_lhs, m_array, m_arr_ty,
+					      m_index, m_elem_size));
                                               
       }
       
-      virtual void write(crab_os& o) const
-      {
+      virtual void write(crab_os& o) const {
         o << m_lhs << " = " 
           << "array_load(" << m_array << "," << m_index  << ")"; 
         return;
@@ -2485,18 +2443,33 @@ namespace crab {
             
 
       void array_assume (VariableName a, variable_type arr_ty, 
-                         lin_exp_t lb_idx, lin_exp_t ub_idx, VariableName v) {
+                         lin_exp_t lb_idx, lin_exp_t ub_idx, variable_t v) {
+        if (m_track_prec == ARR)
+          insert (boost::static_pointer_cast<statement_t, arr_assume_t> 
+                  (boost::make_shared<arr_assume_t> (a, arr_ty, lb_idx, ub_idx, v)));
+      }
+
+      void array_assume (VariableName a, variable_type arr_ty, 
+                         lin_exp_t lb_idx, lin_exp_t ub_idx, ikos::z_number n) {
         if (m_track_prec == ARR)
           insert (boost::static_pointer_cast< statement_t, arr_assume_t> 
-                  (boost::make_shared<arr_assume_t> (a, arr_ty, lb_idx, ub_idx, v)));
+                  (boost::make_shared<arr_assume_t> (a, arr_ty, lb_idx, ub_idx, n)));
       }
       
       void array_store (VariableName arr, variable_type arr_ty, 
-                        lin_exp_t idx, VariableName val, 
+                        lin_exp_t idx, variable_t v, 
                         ikos::z_number elem_size, bool is_singleton = false)  {
         if (m_track_prec == ARR)
           insert(boost::static_pointer_cast< statement_t, arr_store_t >
-                 (boost::make_shared<arr_store_t>(arr, arr_ty, idx, val, elem_size, is_singleton)));
+                 (boost::make_shared<arr_store_t>(arr, arr_ty, idx, v, elem_size, is_singleton)));
+      }
+
+      void array_store (VariableName arr, variable_type arr_ty, 
+                        lin_exp_t idx, ikos::z_number n, 
+                        ikos::z_number elem_size, bool is_singleton = false)  {
+        if (m_track_prec == ARR)
+          insert(boost::static_pointer_cast< statement_t, arr_store_t >
+                 (boost::make_shared<arr_store_t>(arr, arr_ty, idx, n, elem_size, is_singleton)));
       }
       
       void array_load (VariableName lhs, VariableName arr, variable_type arr_ty, 

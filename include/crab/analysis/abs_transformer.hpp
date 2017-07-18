@@ -345,24 +345,25 @@ namespace crab {
 
     void exec (arr_assume_t &stmt) {
       get_inv()->array_assume (stmt.array (), stmt.array_type (), 
-			   stmt.lb_index (), stmt.ub_index (), 
-			   stmt.var ());
+			       stmt.lb_index (), stmt.ub_index (), 
+			       stmt.val ());
     }
     
     void exec (arr_store_t &stmt) {
       get_inv()->array_store (stmt.array(), stmt.array_type (), 
-			  stmt.index (), stmt.value (),
-			  stmt.elem_size(), stmt.is_singleton ());
+			      stmt.index (), stmt.value (),
+			      stmt.elem_size(), stmt.is_singleton ());
     }
     
     void exec (arr_load_t  &stmt) {
       get_inv()->array_load (stmt.lhs (), 
-			 stmt.array (), stmt.array_type (), 
-			 stmt.index(), stmt.elem_size());
+			     stmt.array (), stmt.array_type (), 
+			     stmt.index(), stmt.elem_size());
     }
     
     void exec (arr_assign_t  &stmt) {
-      get_inv()->array_assign (stmt.lhs (), stmt.rhs (), stmt.array_type ());
+      get_inv()->array_assign (stmt.lhs (), stmt.rhs (),
+			       stmt.array_type ());
     }
     
     void exec (ptr_null_t & stmt)
