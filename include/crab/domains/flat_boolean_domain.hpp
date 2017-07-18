@@ -503,11 +503,13 @@ namespace crab {
      public:
       
       static bool_num_domain_t top() {
-        return bool_num_domain_t (domain_product2_t::top(), var_to_csts_map_t());
+        return bool_num_domain_t (domain_product2_t::top(),
+				  var_to_csts_map_t());
       }
       
       static bool_num_domain_t bottom() {
-        return bool_num_domain_t(domain_product2_t::bottom(), var_to_csts_map_t());
+        return bool_num_domain_t(domain_product2_t::bottom(),
+				 var_to_csts_map_t());
       }
       
      public:
@@ -587,8 +589,18 @@ namespace crab {
             
       interval_t operator[](V v)
       { // domain_product2 does not define [] method
-	// TODO: if v is bool and it is not top then we can convert it to an interval.
-	return this->_product.second()[v];
+	boolean_value bv = this->_product.first().get_bool (v);
+	interval_t isecond = this->_product.second()[v];
+
+	if (bv.is_bottom() || isecond.is_bottom())
+	  return interval_t::bottom();
+
+	if (bv.is_true())
+	  return interval_t(number_t(1)) & isecond;
+	else if (bv.is_false())
+	  return interval_t(number_t(0)) & isecond;
+	else
+	  return isecond;
       }
 
       void operator-=(V v)
@@ -609,16 +621,18 @@ namespace crab {
 	NumDom inv1 (this->_product.second ());
 	inv1 += cst;
 	if (inv1.is_bottom ()) {
-	  // XXX: definitely false
+	  // -- definitely false
 	  this->_product.first().set_bool (x, boolean_value::get_false ());
 	} else {
-	  // XXX: definitely true	  
 	  NumDom inv2 (this->_product.second ());
 	  inv2  += cst.negate();
-	  if (inv2.is_bottom ())
+	  if (inv2.is_bottom ()) {
+	    // -- definitely true	  
 	    this->_product.first().set_bool (x, boolean_value::get_true ());
-	  else
+	  } else {
+	    // -- inconclusive
 	    this->_product.first().set_bool (x, boolean_value::top ());
+	  }
 	}
 	this->_var_to_csts.set (x, cst);
 	CRAB_LOG ("flat-boolean",
@@ -641,7 +655,8 @@ namespace crab {
 	// to the numerical domain.
 	if (op == OP_BAND)
 	{
-	  this->_var_to_csts.set (x, this->_var_to_csts [y] | this->_var_to_csts [z]);
+	  this->_var_to_csts.set
+	    (x, this->_var_to_csts [y] | this->_var_to_csts [z]);
 	  return;
 	}
 
@@ -715,7 +730,8 @@ namespace crab {
       // array_operators_api
       
       virtual void array_assume (V a, crab::variable_type a_ty, 
-                                 linear_expression_t lb_idx, linear_expression_t ub_idx,
+                                 linear_expression_t lb_idx,
+				 linear_expression_t ub_idx,
                                  V var) override
       { this->_product.array_assume (a, a_ty, lb_idx, ub_idx, var); }
       
@@ -769,10 +785,11 @@ namespace crab {
       
       void expand(V x, V new_x) {
         crab::domains::domain_traits<bool_domain_t>::
-	  expand (this->_product.first(), x, new_x);
+	  expand (this->_product.first(), x, new_x);	
         crab::domains::domain_traits<NumDom>::
 	  expand (this->_product.second(), x, new_x);
-	// TODO: var_to_csts_map
+	
+	this->_var_to_csts.set (new_x, this->_var_to_csts [x]);
       }
       
       void normalize() {
@@ -788,7 +805,8 @@ namespace crab {
 	  forget(this->_product.first(), vars.begin (), vars.end());
         crab::domains::domain_traits<NumDom>::
 	  forget(this->_product.second(), vars.begin (), vars.end());
-	// TODO: var_to_csts_map	
+	
+	for (auto v: vars) { this->_var_to_csts -= v; }
       }
       
       template <typename Range>
@@ -797,7 +815,12 @@ namespace crab {
 	  project(this->_product.first(), vars.begin(), vars.end());
         crab::domains::domain_traits<NumDom>::
 	  project(this->_product.second(), vars.begin(), vars.end());
-	// TODO: var_to_csts_map	
+	
+	var_to_csts_map_t new_var_to_csts;
+	for (auto v: vars) {
+	  new_var_to_csts.set(v, this->_var_to_csts[v]);
+	}
+	std::swap(this->_var_to_csts, new_var_to_csts);
       }
       
     }; // class flat_boolean_numerical_domain
