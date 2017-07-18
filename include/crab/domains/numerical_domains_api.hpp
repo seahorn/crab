@@ -101,8 +101,6 @@ namespace ikos {
   class backward_numerical_domain {
   public:
     
-    typedef linear_expression<Number, VariableName> linear_expression_t;
-    
     // x = y op z
     // Substitute x with y op z in the abstract value
     // The result is meet with invariant.
@@ -120,7 +118,8 @@ namespace ikos {
     // x = e
     // Substitute x with e in the abstract value
     // The result is meet with invariant.    
-    virtual void backward_assign(VariableName x, linear_expression_t e,
+    virtual void backward_assign(VariableName x,
+				 linear_expression<Number, VariableName> e,
 				 NumAbsDom invariant) = 0; 
 				 
 
