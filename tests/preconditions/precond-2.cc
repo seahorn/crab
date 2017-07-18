@@ -49,13 +49,24 @@ int main (int argc, char** argv )
   z_cfg_t* cfg = prog(vfac);
   crab::outs() << *cfg << "\n";
 
-  z_box_apron_domain_t initial_states, final_states;
-  z_var x (vfac ["x"]);  
-  final_states += (x <= 5);
-  final_states += (x >= -5);    
-  backward_run<z_box_apron_domain_t>
-    (cfg, initial_states, final_states, 1, 2, 20, stats_enabled);
+  {
+    z_box_apron_domain_t initial_states, final_states;
+    z_var x (vfac ["x"]);  
+    final_states += (x <= 5);
+    final_states += (x >= -5);    
+    backward_run<z_box_apron_domain_t>
+      (cfg, initial_states, final_states, 1, 2, 20, stats_enabled);
+  }
 
+  {
+    z_boxes_domain_t initial_states, final_states;
+    z_var x (vfac ["x"]);  
+    final_states += (x <= 5);
+    final_states += (x >= -5);    
+    backward_run<z_boxes_domain_t>
+      (cfg, initial_states, final_states, 1, 2, 20, stats_enabled);
+  }
+  
   // free the CFG
   delete cfg;
 

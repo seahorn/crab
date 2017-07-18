@@ -24,6 +24,8 @@ namespace crab {
       class boxes_domain: 
          public ikos::writeable, 
          public numerical_domain< Number, VariableName>,
+	 public backward_numerical_domain<Number, VariableName,
+					  boxes_domain<Number,VariableName,LddSize>,
          public bitwise_operators< Number, VariableName >, 
          public division_operators< Number, VariableName >,
          public array_operators< Number, VariableName>,
@@ -101,6 +103,20 @@ namespace crab {
         void apply(operation_t op, VariableName x, Number k) 
         { CRAB_ERROR (LDD_NOT_FOUND); }
 
+        void backward_assign (VariableName x, linear_expression_t e,
+			      boxes_domain_t invariant) 
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+          
+        void backward_apply (operation_t op,
+			     VariableName x, VariableName y, Number z,
+			     boxes_domain_t invariant) 
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+        
+        void backward_apply(operation_t op,
+			    VariableName x, VariableName y, VariableName z,
+			    boxes_domain_t invariant)
+        { CRAB_ERROR (LDD_NOT_FOUND); }
+	
         void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width) 
         { CRAB_ERROR (LDD_NOT_FOUND); }
         
@@ -145,6 +161,7 @@ namespace crab {
 #include <crab/domains/ldd/ldd.hpp>
 #include <crab/domains/ldd/ldd_print.hpp>
 #include <crab/domains/domain_traits.hpp>
+#include <crab/domains/backward_assign_operations.hpp>
 #include <boost/bimap.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/range/algorithm/set_algorithm.hpp>
@@ -171,6 +188,8 @@ namespace crab {
       class boxes_domain_: 
          public ikos::writeable, 
          public numerical_domain< Number, VariableName>,
+	 public backward_numerical_domain<Number,VariableName,
+				          boxes_domain_<Number,VariableName,LddSize> >,	 
          public bitwise_operators< Number, VariableName >, 
          public division_operators< Number, VariableName >,
          public array_operators< Number, VariableName>,
@@ -178,6 +197,7 @@ namespace crab {
 	 public boolean_operators< Number, VariableName>{
 
         typedef interval_domain <Number, VariableName> interval_domain_t;
+	
        public:
         using typename numerical_domain< Number, VariableName>::linear_expression_t;
         using typename numerical_domain< Number, VariableName>::linear_constraint_t;
@@ -192,6 +212,7 @@ namespace crab {
         typedef interval <Number> interval_t;
 
        private:
+	
         // --- map from crab variable index to ldd term index
         typedef boost::bimap< VariableName , int > var_map_t;
         typedef typename var_map_t::value_type binding_t;
@@ -573,16 +594,17 @@ namespace crab {
 	}
 	
 	
-        boxes_domain_ (LddNodePtr ldd): m_ldd (ldd) {
+        boxes_domain_ (LddNodePtr ldd): m_ldd (ldd) {	
 	  // TODO: one of the template parameters of boxes should be
 	  // an user option to choose when the size of the ldd should
 	  // be reduced.
           const int CST_FACTOR = 10; /* JN: some magic constant factor */
           int threshold = num_of_vars () * CST_FACTOR;
 	  unsigned num_paths = Ldd_PathSize (NULL, &*m_ldd);
-	  if (num_paths > threshold) {
+	  if ((threshold >= 20*CST_FACTOR) && (num_paths > threshold)) {
 	    convex_approx ();                
-	    CRAB_WARN ("ldd size was too large: ", num_paths, ". Made ldd convex.");
+	    CRAB_WARN ("ldd size was too large: ", num_paths,
+		       ". Made ldd convex.");
 	  }
         }
 
@@ -1182,7 +1204,58 @@ namespace crab {
 	  }
 	}
 	
-        
+        void backward_assign (VariableName x, linear_expression_t e,
+			      boxes_domain_t invariant) {
+          crab::CrabStats::count (getDomainName() + ".count.backward_assign");
+          crab::ScopedCrabStats __st__(getDomainName() + ".backward_assign");
+
+          if(is_bottom()) return;
+
+	  CRAB_LOG("boxes",
+		   crab::outs () << "Backward " << x << ":=" << e
+ 		                 << "\n\tPOST=" << *this << "\n");
+	  BackwardAssignOps<boxes_domain_t>::assign (*this, x, e, invariant);
+	  CRAB_LOG("boxes",
+		   crab::outs () << "\tPRE=" << *this << "\n");
+	}
+
+        void backward_apply (operation_t op,
+			     VariableName x, VariableName y, Number z,
+			     boxes_domain_t invariant) {
+          crab::CrabStats::count (getDomainName() + ".count.backward_apply");
+          crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
+
+          if(is_bottom()) return;
+
+	  CRAB_LOG("boxes",
+		   crab::outs () << "Backward " << x << ":=" << y << op << z 
+ 		                 << "\n\tPOST=" << *this << "\n");
+	  BackwardAssignOps<boxes_domain_t>::apply(*this, op, x, y, z,
+						   invariant);
+	  CRAB_LOG("boxes",
+		   crab::outs () << "\tPRE=" << *this << "\n");
+	  
+	}
+
+        void backward_apply(operation_t op,
+			    VariableName x, VariableName y, VariableName z,
+			    boxes_domain_t invariant)  {
+          crab::CrabStats::count (getDomainName() + ".count.backward_apply");
+          crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
+
+          if(is_bottom()) return;
+
+
+	  CRAB_LOG("boxes",
+		   crab::outs () << "Backward " << x << ":=" << y << op << z 
+ 		                 << "\n\tPOST=" << *this << "\n");
+	  BackwardAssignOps<boxes_domain_t>::apply(*this, op, x, y, z,
+						   invariant);
+	  CRAB_LOG("boxes",
+		   crab::outs () << "\tPRE=" << *this << "\n");
+	  
+	}	
+	
         // bitwise_operators_api
         void apply(conv_operation_t op,
 		   VariableName x, VariableName y, unsigned width) {
@@ -1191,7 +1264,8 @@ namespace crab {
           assign(x, linear_expression_t(y));
         }
         
-        void apply(conv_operation_t op, VariableName x, Number k, unsigned width) {
+        void apply(conv_operation_t op,
+		   VariableName x, Number k, unsigned width) {
           // since reasoning about infinite precision we simply assign
           // and ignore the width.
           assign(x, k);
@@ -1492,6 +1566,8 @@ namespace crab {
     template<class Number, class VariableName, size_t LddSize=3000>
     class boxes_domain: public writeable,
                public numerical_domain<Number, VariableName >,
+			public backward_numerical_domain<Number, VariableName,
+							 boxes_domain<Number,VariableName,LddSize> >,
                public bitwise_operators<Number,VariableName >,
                public division_operators<Number, VariableName >,
                public array_operators<Number, VariableName >,
@@ -1574,13 +1650,25 @@ namespace crab {
       interval_t operator[](VariableName x) { return ref()[x]; }
       void set(VariableName x, interval_t intv) { detach(); ref().set(x, intv); }
 
-      template<typename Iterator>
-      void forget (Iterator vIt, Iterator vEt)
-      { detach(); ref().forget(vIt, vEt); }
       void assign(VariableName x, linear_expression_t e)
       { detach(); ref().assign(x, e); }
       void apply(operation_t op, VariableName x, VariableName y, Number k)
       { detach(); ref().apply(op, x, y, k); }
+      void apply(operation_t op, VariableName x, VariableName y, VariableName z)
+      { detach(); ref().apply(op, x, y, z); }
+      
+      void backward_assign(VariableName x, linear_expression_t e,
+			   boxes_domain_t invariant)
+      { detach(); ref().backward_assign(x, e, invariant.ref()); }
+      void backward_apply(operation_t op,
+			  VariableName x, VariableName y, Number k,
+			  boxes_domain_t invariant)
+      { detach(); ref().backward_apply(op, x, y, k, invariant.ref()); }
+      void backward_apply(operation_t op,
+			  VariableName x, VariableName y, VariableName z,
+			  boxes_domain_t invariant)
+      { detach(); ref().backward_apply(op, x, y, z, invariant.ref()); }
+      
       void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width)
       { detach(); ref().apply(op, x, y, width); }
       void apply(conv_operation_t op, VariableName x, Number k, unsigned width)
@@ -1588,8 +1676,6 @@ namespace crab {
       void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k)
       { detach(); ref().apply(op, x, y, k); }
       void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z)
-      { detach(); ref().apply(op, x, y, z); }
-      void apply(operation_t op, VariableName x, VariableName y, VariableName z)
       { detach(); ref().apply(op, x, y, z); }
       void apply(div_operation_t op, VariableName x, VariableName y, VariableName z)
       { detach(); ref().apply(op, x, y, z); }
@@ -1604,9 +1690,14 @@ namespace crab {
       { detach(); ref().apply_binary_bool(op,x,y,z);}
       void assume_bool (VariableName x, bool is_negated)
       { detach(); ref().assume_bool(x,is_negated);}
+
+      template<typename Iterator>
+      void forget (Iterator vIt, Iterator vEt)
+      { detach(); ref().forget(vIt, vEt); }
       
       template<typename Iterator>
-      void project (Iterator vIt, Iterator vEt) { detach(); ref().project(vIt, vEt); }
+      void project (Iterator vIt, Iterator vEt)
+      { detach(); ref().project(vIt, vEt); }
 
       void write(crab_os& o) { ref().write(o); }
 
