@@ -158,46 +158,39 @@ namespace crab {
          // hook for generating indexed_string's without being
          // associated with a particular T (w/o caching).
          // XXX: do not use it unless strictly necessary.
-         virtual indexed_string get ()
-         {
+         virtual indexed_string get () {
            indexed_string is (_next_id++, this);
            _shadow_vars.push_back (is);
            return is;
          }
          
-         // hook for generating indexed_string's without being
-         // associated with a particular T (w/ caching).
-         // XXX: do not use it unless strictly necessary.
-         virtual indexed_string get (index_t key)
-         {
+         // generate a shadow indexed_string's from another
+         // indexed_string's key
+         virtual indexed_string get (index_t key) {
            auto it = _shadow_map.find (key);
-           if (it == _shadow_map.end()) 
-           {
+           if (it == _shadow_map.end()) {
              indexed_string is (_next_id++, this);
              _shadow_map.insert (typename shadow_map_t::value_type (key, is));
              _shadow_vars.push_back (is);
              return is;
-           }
-           else 
+           } else {
              return it->second;
+	   }
          }
          
-         virtual indexed_string operator[](T s) 
-         {
+         virtual indexed_string operator[](T s) {
            auto it = _map.find (s);
-           if (it == _map.end()) 
-           {
+           if (it == _map.end()) { 
              indexed_string is (s, _next_id++, this);
              _map.insert (typename t_map_t::value_type (s, is));
              return is;
-           }
-           else 
+           } else  {
              return it->second;
+	   }
          }
 
          // return all the shadow variables created by the factory.
-         virtual const_var_range get_shadow_vars () const 
-         {
+         virtual const_var_range get_shadow_vars () const {
            return boost::make_iterator_range (_shadow_vars.begin (),
                                               _shadow_vars.end ());
          }
@@ -219,8 +212,7 @@ namespace crab {
        }; 
       
        //! Specialized factory for integers
-       class int_variable_factory : public boost::noncopyable  
-       {
+       class int_variable_factory : public boost::noncopyable { 
         public: 
          typedef int varname_t;
          
