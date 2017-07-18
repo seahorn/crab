@@ -598,8 +598,8 @@ namespace crab {
 	  // TODO: one of the template parameters of boxes should be
 	  // an user option to choose when the size of the ldd should
 	  // be reduced.
-          const int CST_FACTOR = 10; /* JN: some magic constant factor */
-          int threshold = num_of_vars () * CST_FACTOR;
+          const unsigned CST_FACTOR = 10; /* JN: some magic constant factor */
+          unsigned threshold = num_of_vars () * CST_FACTOR;
 	  unsigned num_paths = Ldd_PathSize (NULL, &*m_ldd);
 	  if ((threshold >= 20*CST_FACTOR) && (num_paths > threshold)) {
 	    convex_approx ();                
