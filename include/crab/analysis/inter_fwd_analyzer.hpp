@@ -278,9 +278,7 @@ namespace crab {
 
       //! Propagate inv through statements
       td_abs_tr_ptr get_abs_transformer (TD_Dom &inv) {
-        // pass inv by ref to avoid copies
-        auto vis = boost::make_shared<td_abs_tr>(inv, &m_summ_tbl, &m_call_tbl);        
-        return vis;
+        return boost::make_shared<td_abs_tr>(&inv, &m_summ_tbl, &m_call_tbl);        
       }
 
       //! Return true if there is a summary for cfg
