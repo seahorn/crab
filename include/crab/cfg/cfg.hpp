@@ -1311,16 +1311,17 @@ namespace crab {
      public:
       
       callsite_stmt (VariableName func_name, const std::vector<typed_variable_t> &args)
-	: statement_t (CALLSITE), m_func_name (func_name)
-      {
+	: statement_t (CALLSITE), m_func_name (func_name) {
+	
         std::copy (args.begin (), args.end (), std::back_inserter (m_args));
         for (auto arg:  m_args) { this->m_live.add_use (arg.first); }
       }
       
       callsite_stmt (const std::vector<typed_variable_t> &lhs, 
-                     VariableName func_name, const std::vector<typed_variable_t> &args)
-	: statement_t (CALLSITE), m_func_name (func_name)
-      {
+                     VariableName func_name,
+		     const std::vector<typed_variable_t> &args)
+	: statement_t (CALLSITE), m_func_name (func_name) {
+	
         std::copy (args.begin (), args.end (), std::back_inserter(m_args));
         for (auto arg:  m_args) { this->m_live.add_use (arg.first); }
 
@@ -2782,22 +2783,39 @@ namespace crab {
       
      public:
       
-      function_decl (variable_type lhs_type, VariableName func_name, 
+      function_decl (variable_type lhs_type,
+		     VariableName func_name, 
                      std::vector<typed_variable_t> params)
-          : m_func_name (func_name)
-      {
+	: m_func_name (func_name) {
+	
         m_lhs_types.push_back (lhs_type);
-        std::copy (params.begin (), params.end (), std::back_inserter (m_params));
+        std::copy (params.begin (), params.end (),
+		   std::back_inserter (m_params));
+      }
+
+      function_decl (std::vector<variable_type> lhs_types,
+		     VariableName func_name, 
+                     std::vector<typed_variable_t> params)
+	: m_func_name (func_name) {
+	
+        std::copy(lhs_types.begin(), lhs_types.end(),
+		  std::back_inserter (m_lhs_types));	
+        std::copy(params.begin(), params.end(),
+		  std::back_inserter (m_params));
       }
       
-      const std::vector<variable_type>& get_lhs_types () const { return m_lhs_types; }
+      const std::vector<variable_type>& get_lhs_types () const
+      { return m_lhs_types; }
       
-      VariableName get_func_name () const { return m_func_name;  }
+      VariableName get_func_name () const
+      { return m_func_name; }
 
       
-      const std::vector<typed_variable_t>& get_params () const { return m_params; }
+      const std::vector<typed_variable_t>& get_params () const
+      { return m_params; }
 
-      unsigned get_num_params () const { return m_params.size (); }
+      unsigned get_num_params () const
+      { return m_params.size (); }
       
       VariableName get_param_name (unsigned idx) const { 
         if (idx >= m_params.size ())
@@ -2822,7 +2840,9 @@ namespace crab {
           o << *(m_lhs_types.begin());
         } else {
           o << "(";
-          for (auto It = m_lhs_types.begin (), Et=m_lhs_types.end (); It!=Et; )
+          for (auto It = m_lhs_types.begin (),
+		 Et=m_lhs_types.end (); It!=Et; )
+	       
           {
             o << *It;
             ++It;
@@ -2833,7 +2853,9 @@ namespace crab {
         }
 
         o << " declare " << m_func_name << "(";
-        for (const_param_iterator It = m_params.begin (), Et=m_params.end (); It!=Et; )
+        for (const_param_iterator It = m_params.begin (),
+	       Et=m_params.end (); It!=Et; )
+	     
         {
           o << It->first << ":" << It->second;
           ++It;
@@ -2845,8 +2867,8 @@ namespace crab {
         return;
       }
       
-      friend crab_os& operator<<(crab_os& o, const function_decl<VariableName> &decl)
-      { 
+      friend crab_os& operator<<(crab_os& o,
+				 const function_decl<VariableName> &decl) {
         decl.write (o);
         return o;
       }
