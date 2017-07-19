@@ -126,11 +126,11 @@ namespace crab {
         if (it == m_pre_map.end())
         {          
           if (inv.is_bottom ())
-            m_pre_map.insert(make_pair (node, abs_dom_t::bottom ()));
+            m_pre_map.insert(std::make_pair (node, abs_dom_t::bottom ()));
           else if (inv.is_top ())
-            m_pre_map.insert(make_pair (node, abs_dom_t::top ()));
+            m_pre_map.insert(std::make_pair (node, abs_dom_t::top ()));
           else
-            m_pre_map.insert(make_pair (node, inv));
+            m_pre_map.insert(std::make_pair (node, inv));
         }
       }
       
@@ -140,11 +140,11 @@ namespace crab {
         if (it == m_post_map.end())
         {
           if (inv.is_bottom ())
-            m_post_map.insert(make_pair (node, abs_dom_t::bottom ()));
+            m_post_map.insert(std::make_pair (node, abs_dom_t::bottom ()));
           else if (inv.is_top ())
-            m_post_map.insert(make_pair (node, abs_dom_t::top ()));
+            m_post_map.insert(std::make_pair (node, abs_dom_t::top ()));
           else
-            m_post_map.insert(make_pair (node, inv));
+            m_post_map.insert(std::make_pair (node, inv));
         }
       }
       
