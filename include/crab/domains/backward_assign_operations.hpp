@@ -47,50 +47,62 @@ namespace crab {
       // pre: dom is not bottom
       static void assign(AbsDom& dom, varname_t x, linear_expression_t e,
 			 AbsDom inv) {
+	crab::CrabStats::count (AbsDom::getDomainName() + ".count.backward_assign");
+	crab::ScopedCrabStats __st__(AbsDom::getDomainName() + ".backward_assign");
+	
+	if(dom.is_bottom()) return;
+	
 	if (e.variables() >= variable_t(x)) {
 	  CRAB_WARN("backwards x:=e when x appears in e not implemented");
+	  dom -= x;
 	} else {
-	  dom = dom & inv;
 	  linear_expression_t x_e = e - variable_t(x);
 	  dom += linear_constraint_t(x_e, linear_constraint_t::EQUALITY);
 	  dom -= x;
 	}
+	dom = dom & inv;
       }
 
       // x := y op k
       // pre: dom is not bottom
       static void apply(AbsDom& dom, operation_t op,
-			varname_t x, varname_t y, number_t k,
+			varname_t x, varname_t y, number_t k,			
 			AbsDom inv) {
+	crab::CrabStats::count (AbsDom::getDomainName() + ".count.backward_apply");
+	crab::ScopedCrabStats __st__(AbsDom::getDomainName() + ".backward_apply");
+	
+	if(dom.is_bottom()) return;
+
 	switch(op) {
 	  case OP_ADDITION: {
-	    dom = dom & inv;	
 	    dom.apply(OP_SUBTRACTION, y, x, k);
 	    break;
 	  }
    	  case OP_SUBTRACTION: {
-	    dom = dom & inv;		    
 	    dom.apply(OP_ADDITION, y, x, k);
 	    break;
 	  }
 	  case OP_MULTIPLICATION: { 
 	    if(k != 0) {
-	      dom = dom & inv;		      
 	      dom.apply(OP_DIVISION, y, x, k);
-	    } else
+	    } else {
 	      CRAB_WARN("backwards x:= y * k is not invertible");
+	      dom -= x;
+	    }
 	    break;
 	  }
 	  case OP_DIVISION: { 
 	    if(k != 0) {
-	      dom = dom & inv;		      
 	      dom.apply(OP_MULTIPLICATION, y, x, k);	      
-	    } else
+	    } else {
 	      CRAB_WARN("backwards x:= y / k is not invertible");
+	      dom -= x;
+	    }
 	    break;
 	  }
   	  default:;;  
 	}
+	dom = dom & inv;	
 	return;
       }
 
@@ -98,30 +110,37 @@ namespace crab {
       static void apply(AbsDom& dom, operation_t op,
 			varname_t x, varname_t y, varname_t z,
 			AbsDom inv) {
+	crab::CrabStats::count (AbsDom::getDomainName() + ".count.backward_apply");
+	crab::ScopedCrabStats __st__(AbsDom::getDomainName() + ".backward_apply");
+	
+	if(dom.is_bottom()) return;
+	
 	if (x == y || x == z) {
 	  CRAB_WARN("backwards x:=e when x appears in e not implemented");
+	  dom -= x;
 	} else {
 	  switch(op) {
 	  case OP_ADDITION:
-	    dom = dom & inv;	
 	    dom += linear_constraint_t(variable_t(y) + variable_t(z) - variable_t(x),
 				       linear_constraint_t::EQUALITY);
 	    dom -= x;
 	    break;
 	  case OP_SUBTRACTION:
-	    dom = dom & inv;		    
 	    dom += linear_constraint_t(variable_t(y) - variable_t(z) - variable_t(x),
 				       linear_constraint_t::EQUALITY);
 	    dom -= x;
 	    break;
 	  case OP_MULTIPLICATION:
 	    CRAB_WARN("backwards x = y * z not implemented");
+	    dom -= x;
 	    break;	    
 	  case OP_DIVISION:
 	    CRAB_WARN("backwards x = y / z not implemented");
+	    dom -= x;	    
 	    break;
 	  }
 	}
+	dom = dom & inv;		    	    
       }
     };
 
