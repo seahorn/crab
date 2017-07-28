@@ -20,7 +20,7 @@ void backward_run_internal (CFG* cfg,
   crab::outs() << "Necessary preconditions using "
 	       << Dom::getDomainName () << "\n";
   IntraBwdAnalyzer a (*cfg); 
-  a.run (initial_states, final_states, widening, narrowing, jump_set_size); 
+  a.run (initial_states, final_states, false, widening, narrowing, jump_set_size); 
   
   // Print preconditions
   for (auto &b : *cfg) {
