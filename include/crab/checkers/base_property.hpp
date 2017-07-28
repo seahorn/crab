@@ -198,7 +198,7 @@ namespace crab {
     typedef typename Analyzer::number_t number_t;
     typedef typename Analyzer::abs_dom_t abs_dom_t;
 
-    typedef ikos::variable <number_t,varname_t> var_t;
+    typedef ikos::variable<number_t,varname_t> var_t;
     typedef ikos::linear_expression<number_t,varname_t> lin_exp_t;
     typedef ikos::linear_constraint<number_t,varname_t> lin_cst_t;
     typedef ikos::linear_constraint_system<number_t,varname_t> lin_cst_sys_t;
@@ -207,7 +207,8 @@ namespace crab {
     typedef cfg::assignment<number_t,varname_t>        assign_t;
     typedef cfg::assume_stmt<number_t,varname_t>       assume_t;
     typedef cfg::assert_stmt<number_t,varname_t>       assert_t;
-    typedef cfg::select_stmt <number_t,varname_t>      select_t;    
+    typedef cfg::int_cast_stmt<varname_t>              int_cast_t;    
+    typedef cfg::select_stmt<number_t,varname_t>       select_t;    
     typedef cfg::havoc_stmt<number_t,varname_t>        havoc_t;
     typedef cfg::unreachable_stmt<number_t,varname_t>  unreach_t;
     typedef cfg::callsite_stmt<number_t,varname_t>     callsite_t;
@@ -228,7 +229,7 @@ namespace crab {
     typedef cfg::bool_assign_var<number_t,varname_t>   bool_assign_var_t;    
     typedef cfg::bool_assume_stmt<number_t,varname_t>  bool_assume_t;
     typedef cfg::bool_assert_stmt<number_t,varname_t>  bool_assert_t;
-    typedef cfg::bool_select_stmt <number_t,varname_t> bool_select_t;    
+    typedef cfg::bool_select_stmt<number_t,varname_t>  bool_select_t;    
 
     typedef std::set<std::pair<cfg::debug_info, check_kind_t> > check_results_db;
  
@@ -262,6 +263,11 @@ namespace crab {
       if (!this->m_abs_tr) return;        
         s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
     }
+
+    virtual void check (int_cast_t& s) { 
+      if (!this->m_abs_tr) return;        
+        s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
+    }
     
     virtual void check (havoc_t& s) { 
       if (!this->m_abs_tr) return;        
@@ -287,7 +293,7 @@ namespace crab {
       if (!this->m_abs_tr) return;        
         s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
     }
-      
+    
     virtual void check (arr_store_t& s) { 
       if (!this->m_abs_tr) return;        
         s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
@@ -375,7 +381,8 @@ namespace crab {
     void visit (assign_t &s) { check (s); }
     void visit (assume_t &s) { check (s); }
     void visit (select_t &s) { check (s); }
-    void visit (assert_t &s) { check (s); }    
+    void visit (assert_t &s) { check (s); }
+    void visit (int_cast_t &s) { check (s); }        
     void visit (havoc_t &s) { check (s); }
     void visit (unreach_t &s) { check (s); }
     void visit (callsite_t &s) { check (s); }
