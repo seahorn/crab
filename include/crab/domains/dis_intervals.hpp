@@ -1274,21 +1274,27 @@ namespace crab {
        this->_env.set(x, xi);
        //crab::outs() << "result=" << *this << "\n";
      }
-     
+
      void backward_assign (VariableName x, linear_expression_t e,
-			   dis_interval_domain_t invariant) 
-     { CRAB_WARN ("backward assign not implemented"); }
+			   dis_interval_domain_t inv) { 
+       crab::domains::BackwardAssignOps<dis_interval_domain_t>::
+	 assign (*this, x, e, inv);
+     }
      
      void backward_apply (operation_t op,
 			  VariableName x, VariableName y, Number z,
-			  dis_interval_domain_t invariant) 
-     { CRAB_WARN ("backward apply not implemented"); }
+			  dis_interval_domain_t inv) {
+       crab::domains::BackwardAssignOps<dis_interval_domain_t>::
+	 apply(*this, op, x, y, z, inv);
+     }
      
      void backward_apply(operation_t op,
 			 VariableName x, VariableName y, VariableName z,
-			 dis_interval_domain_t invariant) 
-     { CRAB_WARN ("backward apply not implemented"); }
-     
+			 dis_interval_domain_t inv) {
+       crab::domains::BackwardAssignOps<dis_interval_domain_t>::
+	 apply(*this, op, x, y, z, inv);
+     }
+          
      void apply(int_conv_operation_t /*op*/,
 		VariableName dst, unsigned /*dst_width*/,
 		VariableName src, unsigned /*src_width*/)  {

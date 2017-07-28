@@ -1272,21 +1272,27 @@ namespace crab {
         CRAB_LOG("zones-sparse",
                  crab::outs() << "---"<< x<< ":="<< y<< op<< k<<"\n"<< *this<<"\n";);
       }
-      
+
       void backward_assign (VariableName x, linear_expression_t e,
-			    DBM_t invariant) 
-      { CRAB_WARN ("backward assign not implemented"); }
+			    DBM_t inv) { 
+	crab::domains::BackwardAssignOps<DBM_t>::
+	  assign (*this, x, e, inv);
+      }
       
       void backward_apply (operation_t op,
 			   VariableName x, VariableName y, Number z,
-			   DBM_t invariant) 
-      { CRAB_WARN ("backward apply not implemented"); }
+			   DBM_t inv) {
+	crab::domains::BackwardAssignOps<DBM_t>::
+	  apply(*this, op, x, y, z, inv);
+      }
       
       void backward_apply(operation_t op,
 			  VariableName x, VariableName y, VariableName z,
-			  DBM_t invariant) 
-      { CRAB_WARN ("backward apply not implemented"); }
-
+			  DBM_t inv) {
+	crab::domains::BackwardAssignOps<DBM_t>::
+	  apply(*this, op, x, y, z, inv);
+      }
+      
       bool add_linear_leq(const linear_expression_t& exp)
       {
         CRAB_LOG("zones-sparse",

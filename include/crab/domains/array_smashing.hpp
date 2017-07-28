@@ -193,20 +193,26 @@ namespace crab {
           CRAB_LOG("smashing",
                    crab::outs() << "apply "<< x<< " := "<< x<< " "<< op<< " "<< k<< *this <<"\n";);
         }
-
+	   	
 	void backward_assign (VariableName x, linear_expression_t e,
-			      array_smashing_t invariant) 
-	{ CRAB_WARN ("backward assign not implemented"); }
+			      array_smashing_t inv) { 
+	  crab::domains::BackwardAssignOps<array_smashing_t>::
+	  assign (*this, x, e, inv);
+	}
 	
 	void backward_apply (operation_t op,
 			     VariableName x, VariableName y, Number z,
-			     array_smashing_t invariant) 
-	{ CRAB_WARN ("backward apply not implemented"); }
+			     array_smashing_t inv) {
+	  crab::domains::BackwardAssignOps<array_smashing_t>::
+	    apply(*this, op, x, y, z, inv);
+	}
 	
 	void backward_apply(operation_t op,
 			    VariableName x, VariableName y, VariableName z,
-			    array_smashing_t invariant) 
-	{ CRAB_WARN ("backward apply not implemented"); }
+			    array_smashing_t inv) {
+	  crab::domains::BackwardAssignOps<array_smashing_t>::
+	    apply(*this, op, x, y, z, inv);
+	}
 	
         void apply(int_conv_operation_t op,
 		   VariableName dst, unsigned dst_width, VariableName src, unsigned src_width) {

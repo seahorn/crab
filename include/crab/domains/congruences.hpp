@@ -1036,19 +1036,24 @@ public:
   }
 
   void backward_assign (VariableName x, linear_expression_t e,
-			congruence_domain_t invariant) 
-  { CRAB_WARN ("backward assign not implemented"); }
+			congruence_domain_t inv) { 
+    crab::domains::BackwardAssignOps<congruence_domain_t>::
+      assign (*this, x, e, inv);
+  }
   
   void backward_apply (operation_t op,
 		       VariableName x, VariableName y, Number z,
-		       congruence_domain_t invariant) 
-  { CRAB_WARN ("backward apply not implemented"); }
+		       congruence_domain_t inv) {
+    crab::domains::BackwardAssignOps<congruence_domain_t>::
+      apply(*this, op, x, y, z, inv);
+  }
   
   void backward_apply(operation_t op,
 		      VariableName x, VariableName y, VariableName z,
-		      congruence_domain_t invariant) 
-  { CRAB_WARN ("backward apply not implemented"); }
-  
+		      congruence_domain_t inv) {
+    crab::domains::BackwardAssignOps<congruence_domain_t>::
+      apply(*this, op, x, y, z, inv);
+  }
 
   // cast_operators_api  
   

@@ -1233,22 +1233,26 @@ namespace crab {
          return;
        }
 
-
        void backward_assign (VariableName x, linear_expression_t e,
-			     term_domain_t invariant) 
-       { CRAB_WARN ("backward assign not implemented"); }
+			     term_domain_t inv) { 
+	 crab::domains::BackwardAssignOps<term_domain_t>::
+	   assign (*this, x, e, inv);
+       }
        
        void backward_apply (operation_t op,
 			    VariableName x, VariableName y, Number z,
-			    term_domain_t invariant) 
-       { CRAB_WARN ("backward apply not implemented"); }
-       
+			    term_domain_t inv) {
+	 crab::domains::BackwardAssignOps<term_domain_t>::
+	   apply(*this, op, x, y, z, inv);
+       }
+      
        void backward_apply(operation_t op,
 			   VariableName x, VariableName y, VariableName z,
-			   term_domain_t invariant) 
-       { CRAB_WARN ("backward apply not implemented"); }
+			   term_domain_t inv) {
+	 crab::domains::BackwardAssignOps<term_domain_t>::
+	   apply(*this, op, x, y, z, inv);
+       }
        
-
        void operator+=(linear_constraint_t cst) {  
          crab::CrabStats::count (getDomainName() + ".count.add_constraints");
          crab::ScopedCrabStats __st__(getDomainName() + ".add_constraints");
