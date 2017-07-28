@@ -69,12 +69,13 @@ namespace crab {
     typedef cfg::havoc_stmt<number_t,VariableName>        havoc_t;
     typedef cfg::unreachable_stmt<number_t,VariableName>  unreach_t;
     
-    typedef cfg::binary_op<number_t,VariableName>        bin_op_t;
-    typedef cfg::assignment<number_t,VariableName>       assign_t;
-    typedef cfg::assume_stmt<number_t,VariableName>      assume_t;
-    typedef cfg::select_stmt<number_t,VariableName>      select_t;
-    typedef cfg::assert_stmt<number_t,VariableName>      assert_t;
-    
+    typedef cfg::binary_op<number_t,VariableName>         bin_op_t;
+    typedef cfg::assignment<number_t,VariableName>        assign_t;
+    typedef cfg::assume_stmt<number_t,VariableName>       assume_t;
+    typedef cfg::select_stmt<number_t,VariableName>       select_t;
+    typedef cfg::assert_stmt<number_t,VariableName>       assert_t;
+
+    typedef cfg::int_cast_stmt<VariableName>              int_cast_t;
     typedef cfg::callsite_stmt<number_t,VariableName>     callsite_t;
     typedef cfg::return_stmt<number_t,VariableName>       return_t;
     
@@ -92,12 +93,12 @@ namespace crab {
     typedef cfg::ptr_assume_stmt<number_t,VariableName>   ptr_assume_t;
     typedef cfg::ptr_assert_stmt<number_t,VariableName>   ptr_assert_t;
 
-    typedef cfg::bool_binary_op<number_t,VariableName>   bool_bin_op_t;
-    typedef cfg::bool_assign_cst<number_t,VariableName>  bool_assign_cst_t;
-    typedef cfg::bool_assign_var<number_t,VariableName>  bool_assign_var_t;    
-    typedef cfg::bool_assume_stmt<number_t,VariableName> bool_assume_t;
-    typedef cfg::bool_select_stmt<number_t,VariableName> bool_select_t;
-    typedef cfg::bool_assert_stmt<number_t,VariableName> bool_assert_t;
+    typedef cfg::bool_binary_op<number_t,VariableName>    bool_bin_op_t;
+    typedef cfg::bool_assign_cst<number_t,VariableName>   bool_assign_cst_t;
+    typedef cfg::bool_assign_var<number_t,VariableName>   bool_assign_var_t;    
+    typedef cfg::bool_assume_stmt<number_t,VariableName>  bool_assume_t;
+    typedef cfg::bool_select_stmt<number_t,VariableName>  bool_select_t;
+    typedef cfg::bool_assert_stmt<number_t,VariableName>  bool_assert_t;
     
    protected: 
 
@@ -108,6 +109,7 @@ namespace crab {
     virtual void exec (assume_t&) { }
     virtual void exec (select_t&) { }
     virtual void exec (assert_t&) { }
+    virtual void exec (int_cast_t&) { }
     virtual void exec (callsite_t&) { }
     virtual void exec (return_t&) { }
     virtual void exec (arr_assume_t&) { }
@@ -138,6 +140,7 @@ namespace crab {
     void visit (assume_t &s) { exec (s); }
     void visit (select_t &s) { exec (s); }
     void visit (assert_t &s) { exec (s); }
+    void visit (int_cast_t &s) { exec (s); }    
     void visit (callsite_t &s) { exec (s); }
     void visit (return_t &s) { exec (s); }
     void visit (arr_assume_t &s) { exec (s); }
@@ -188,6 +191,7 @@ namespace crab {
     using typename abs_transform_api_t::assume_t;
     using typename abs_transform_api_t::select_t;
     using typename abs_transform_api_t::assert_t;
+    using typename abs_transform_api_t::int_cast_t;    
     using typename abs_transform_api_t::callsite_t;
     using typename abs_transform_api_t::arr_assume_t;
     using typename abs_transform_api_t::arr_load_t;
@@ -301,13 +305,23 @@ namespace crab {
 	*get_inv() += stmt.constraint ();
       }
     }
-        
+
+    void exec (int_cast_t &stmt){
+      if (auto op = conv_op<crab::domains::int_conv_operation_t>(stmt.op())) {
+	get_inv()->apply(*op,
+			 stmt.dst(), stmt.dst_width(),
+			 stmt.src(), stmt.src_width());
+      } else {
+	CRAB_ERROR("unsupported cast operator ", stmt.op());
+      }
+    }
+    
     void exec (bool_assign_cst_t& stmt) {
       (*get_inv()).assign_bool_cst (stmt.lhs (), stmt.rhs ());
     }
 
     void exec (bool_assign_var_t& stmt) {
-      (*get_inv()).assign_bool_var (stmt.lhs (), stmt.rhs ());      
+      (*get_inv()).assign_bool_var (stmt.lhs (), stmt.rhs (), stmt.is_rhs_negated());      
     }
 
     void exec (bool_bin_op_t& stmt) {
@@ -322,7 +336,24 @@ namespace crab {
     }
 
     void exec (bool_select_t& stmt) {
-      CRAB_WARN ("TODO: transformer for bool select");	                  
+      abs_dom_t inv1 (*get_inv());
+      abs_dom_t inv2 (*get_inv());
+      const bool negate = true;
+      inv1.assume_bool(stmt.cond (), !negate);
+      inv2.assume_bool(stmt.cond (), negate);
+      if (inv2.is_bottom()) {
+        inv1.assign_bool_var(stmt.lhs(),stmt.left(), !negate);
+        *get_inv() = inv1;
+      }
+      else if (inv1.is_bottom ()) {
+        inv2.assign_bool_var(stmt.lhs(),stmt.right(), !negate);
+        *get_inv() = inv2;
+      }
+      else {
+        inv1.assign_bool_var(stmt.lhs(),stmt.left(), !negate);
+        inv2.assign_bool_var(stmt.lhs(),stmt.right(), !negate);
+        *get_inv() = inv1 | inv2;
+      }
     }
 
     void exec (bool_assert_t& stmt) {
@@ -342,7 +373,7 @@ namespace crab {
     
     void exec (unreach_t& stmt)
     { *get_inv() = abs_dom_t::bottom (); }
-
+    
     void exec (arr_assume_t &stmt) {
       get_inv()->array_assume (stmt.array (), stmt.array_type (), 
 			       stmt.lb_index (), stmt.ub_index (), 
@@ -424,6 +455,7 @@ namespace crab {
     using typename abs_transform_api_t::assume_t;
     using typename abs_transform_api_t::select_t;
     using typename abs_transform_api_t::assert_t;
+    using typename abs_transform_api_t::int_cast_t;
     using typename abs_transform_api_t::callsite_t;
     using typename abs_transform_api_t::arr_assume_t;
     using typename abs_transform_api_t::arr_load_t;
@@ -448,7 +480,7 @@ namespace crab {
    protected:
     
     // used to compute the (necessary) preconditions
-    abs_dom_t *m_post;
+    abs_dom_t *m_pre;
     // used to refine the preconditions: map from statement_t to
     // abs_dom_t.
     InvT &m_invariants; 
@@ -457,131 +489,197 @@ namespace crab {
 
     intra_necessary_preconditions_abs_transformer(abs_dom_t* post,
 						  InvT &invars)
-      : m_post (post), m_invariants (invars) {
-      if (!m_post)
+      : m_pre (post), m_invariants (invars) {
+      if (!m_pre)
 	CRAB_ERROR ("Postcondition cannot be null!");
     }
     
     virtual ~intra_necessary_preconditions_abs_transformer () { }
 
-    abs_dom_t& preconditions () { return *m_post; }
+    abs_dom_t& preconditions () { return *m_pre; }
     
     void exec (bin_op_t& stmt) {
-      
+
       auto op = conv_op<ikos::operation_t> (stmt.op ());
       if (!op) {
 	CRAB_WARN ("backward operation ", stmt.op(), " not implemented");
+	(*m_pre) -= stmt.lhs().name();
 	return;
       }
       
       auto op1 = stmt.left ();
       auto op2 = stmt.right ();
       abs_dom_t invariant = m_invariants[&stmt];
+
+      CRAB_LOG("backward",
+	       crab::outs () << "** " << stmt.lhs () << " := "
+	                     << op1 << " " << *op << " " << op2 << "\n"
+ 	                     << "FORWARD INV=" << invariant << "\n"
+	                     << "POST=" << *m_pre << "\n");	       
       
       if (op1.get_variable () && op2.get_variable ()) {
-        m_post->backward_apply (*op, 
+        m_pre->backward_apply (*op, 
 				stmt.lhs ().name(), 
 				(*op1.get_variable ()).name(), 
 				(*op2.get_variable ()).name(),
 				invariant);
       } else {
         assert (op1.get_variable () && op2.is_constant ());
-        m_post->backward_apply (*op, 
+        m_pre->backward_apply (*op, 
 				stmt.lhs ().name (), 
 				(*op1.get_variable ()).name(), 
 				op2.constant (),
 				invariant); 
-      }      
+      }
+      CRAB_LOG("backward",
+	       crab::outs () << "PRE=" << *m_pre << "\n");
+      
     }
     
-    // wlp(x := f? e1: e2, Q)= (f and Q[e1/x]) or (not f and Q[e2/x])
+    // select(x := cond ? e1: e2, post) can be reduced to
+    //   pre: goto b_then;
+    //   pre: goto b_else;
+    //   b_then:
+    //     assume(cond);
+    //     x := e1;
+    //     goto post;
+    //   b_else:
+    //     assume(not(cond));
+    //     x := e2;
+    //     goto post;
+    //   post: ....
     void exec (select_t& stmt) {
       abs_dom_t old_pre = m_invariants[&stmt];
 
-      abs_dom_t else_inv (old_pre);
-      else_inv += stmt.cond ().negate();
-      if (else_inv.is_bottom()) {
-	*m_post += stmt.cond ();
-        m_post->backward_assign (stmt.lhs().name(),stmt.left(),old_pre);
-	return;
-      }
-
+      // -- one of the two branches is false
       abs_dom_t then_inv (old_pre);                  
       then_inv += stmt.cond();      
       if (then_inv.is_bottom()) {
-	*m_post += stmt.cond().negate();
-        m_post->backward_assign (stmt.lhs().name(),stmt.right(),old_pre);
+        m_pre->backward_assign (stmt.lhs().name(),stmt.right(),old_pre);	
+	*m_pre += stmt.cond().negate();
+	return;
+      }
+      
+      abs_dom_t else_inv (old_pre);
+      else_inv += stmt.cond ().negate();
+      if (else_inv.is_bottom()) {
+        m_pre->backward_assign (stmt.lhs().name(),stmt.left(),old_pre);	
+	*m_pre += stmt.cond ();
 	return;
       }
 
-      abs_dom_t inv1 (*m_post);
-      inv1 += stmt.cond();
-      inv1.backward_assign(stmt.lhs().name(),stmt.left(),old_pre);
+      // -- both branches can be possible so we join them
+      abs_dom_t pre_then (*m_pre);
+      pre_then.backward_assign(stmt.lhs().name(),stmt.left(),old_pre);      
+      pre_then += stmt.cond();
       
-      abs_dom_t inv2 (*m_post);
-      inv2 += stmt.cond().negate();
-      inv2.backward_assign(stmt.lhs().name(),stmt.right(),old_pre);
+      abs_dom_t pre_else (*m_pre);
+      pre_else.backward_assign(stmt.lhs().name(),stmt.right(),old_pre);      
+      pre_else += stmt.cond().negate();
       
-      *m_post = inv1 | inv2;
+      *m_pre = pre_then | pre_else;
     }
 
-    // wlp (x := e, Q) = Q[e/x]
+    // x := e
     void exec (assign_t& stmt) {
       abs_dom_t invariant = m_invariants[&stmt];
-      m_post->backward_assign (stmt.lhs().name (),
-			       lin_exp_t (stmt.rhs()),
-			       invariant);
+      
+      CRAB_LOG("backward",
+	       auto rhs = stmt.rhs();
+	       crab::outs () << "** " << stmt.lhs () << " := " << rhs << "\n"
+ 	                     << "FORWARD INV=" << invariant << "\n"
+	                     << "POST=" << *m_pre << "\n");	       
+      
+      m_pre->backward_assign (stmt.lhs().name (),
+			      lin_exp_t (stmt.rhs()),
+			      invariant);
+      CRAB_LOG("backward",
+	       crab::outs () << "PRE=" << *m_pre << "\n");
     }
 
-    // wlp (assume(C),Q) = C and Q
+    // assume(c)
+    // the precondition must contain c so forward and backward are the same.
     void exec (assume_t& stmt) {
-      *m_post += stmt.constraint();
+      CRAB_LOG("backward",
+	       auto csts = stmt.constraint();
+	       crab::outs () << "** assume(" << csts << ")\n"
+	                     << "POST=" << *m_pre << "\n");	       
+      
+      *m_pre += stmt.constraint();
+
+      CRAB_LOG("backward",
+	       crab::outs () << "PRE=" << *m_pre << "\n");
+      
     }
 
-    // wlp (assert(C),Q) =  (C and Q) or (not C and false) = C and Q
-    // 
     // We are interested in computing preconditions of the error
     // states. Thus, we propagate backwards the negation of the
     // condition which represents the error states.
     void exec (assert_t& stmt) {
-      *m_post += stmt.constraint().negate ();            
+      CRAB_LOG("backward",
+	       auto csts = stmt.constraint();
+	       crab::outs () << "** assert(" << csts << ")\n"
+	                     << "POST=" << *m_pre << "\n");	       
+      
+      *m_pre += stmt.constraint().negate ();
+      
+      CRAB_LOG("backward",
+	       crab::outs () << "PRE=" << *m_pre << "\n");
     }
         
-    // wlp (abort, Q) = false
-    // 
     // We are interested in computing preconditions of the error states.
     // Thus, an unreachable state is always safe so we propagate true.
     void exec (unreach_t& stmt) {
-      *m_post = abs_dom_t::top ();
+      *m_pre = abs_dom_t::top ();
     }
 
-    // wlp (x := *, Q) = Q
+    // x := *
+    // x can be anything before the assignment
     void exec (havoc_t& stmt) {
-      // do nothing
+      *m_pre -= stmt.variable();
+    }
+
+    // ret := *
+    virtual void exec (callsite_t &cs) {
+      for (auto vt: cs.get_lhs())
+	*m_pre -= vt.first;  
+    }
+
+    // we replace for now all statements wth lhs := *;
+    void exec (int_cast_t &stmt)
+    { *m_pre -= stmt.dst(); }
+    void exec (bool_assign_cst_t &stmt)
+    { *m_pre -= stmt.lhs(); }
+    void exec (bool_assign_var_t &stmt)
+    { *m_pre -= stmt.lhs(); }
+    void exec (bool_bin_op_t &stmt)
+    { *m_pre -= stmt.lhs(); }
+    void exec (bool_select_t &stmt)
+    { *m_pre -= stmt.lhs(); }
+    
+    void exec (bool_assume_t &stmt) {
+      // same as forward
+      m_pre->assume_bool (stmt.cond(), stmt.is_negated ());
     }
     
-    virtual void exec (callsite_t &cs) {
-      CRAB_WARN ("Backward function calls not implemented");      
+    void exec (bool_assert_t &stmt) {
+      m_pre->assume_bool (stmt.cond(), true /*negated*/);
     }
 
-    void exec (bool_assign_cst_t& stmt) { }
-    void exec (bool_assign_var_t& stmt) { }
-    void exec (bool_bin_op_t& stmt) { }
-    void exec (bool_assume_t& stmt) { }
-    void exec (bool_select_t& stmt) { }
-    void exec (bool_assert_t& stmt) { }
+    void exec (arr_load_t  &stmt)
+    { *m_pre -= stmt.lhs(); }          
+    // NOT IMPLEMENTED
     void exec (arr_assume_t &stmt) { }
     void exec (arr_store_t &stmt) { }
-    void exec (arr_load_t  &stmt) { }
     void exec (arr_assign_t  &stmt) { }
-    void exec (ptr_null_t & stmt) { }
-    void exec (ptr_object_t & stmt) { }
-    void exec (ptr_assign_t & stmt) { }
-    void exec (ptr_function_t & stmt) { }
-    void exec (ptr_load_t & stmt) { }
-    void exec (ptr_store_t & stmt) { }
-    void exec (ptr_assume_t& stmt) { }
-    void exec (ptr_assert_t& stmt) { }
+    void exec (ptr_null_t &stmt) { }
+    void exec (ptr_object_t &stmt) { }
+    void exec (ptr_assign_t &stmt) { }
+    void exec (ptr_function_t &stmt) { }
+    void exec (ptr_load_t &stmt) { }
+    void exec (ptr_store_t &stmt) { }
+    void exec (ptr_assume_t &stmt) { }
+    void exec (ptr_assert_t &stmt) { }
   }; 
 
     
@@ -743,10 +841,13 @@ namespace crab {
 
   template<typename Domain1, typename Domain2>
   inline void convert_domains (Domain1 from, Domain2& to) {
-    CRAB_WARN("Converting from " + Domain1::getDomainName () + " to " +
-              Domain2::getDomainName () + " might lose precision " +
-              "if " + Domain1::getDomainName () + " is an abstraction of " +
-              Domain2::getDomainName ());
+    CRAB_LOG("inter",
+	     crab::outs () << "Converting from "
+	                   << Domain1::getDomainName () << " to "
+	                   << Domain2::getDomainName () << " might lose precision if "
+	                   << Domain1::getDomainName () << " is more precise than "
+	                   << Domain2::getDomainName () << "\n");
+	     
     for (auto cst : from.to_linear_constraint_system ())
     { to += cst; }
   }
