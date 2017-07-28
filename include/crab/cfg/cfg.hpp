@@ -25,6 +25,14 @@
  *   client must ensure that types are compatible.
  * 
  * TODO: support arrays of reals.
+ * 
+ * Limitations:
+ *
+ * - The CFG language does not allow to express integer widths for
+ *   machine arithmetic.
+ * 
+ * - The CFG language does not allow to express floating point
+ *   operations.
  */
 
 #include <boost/shared_ptr.hpp>
@@ -76,7 +84,9 @@ namespace crab {
       HAVOC = 60,
       // boolean
       BOOL_BIN_OP = 70, BOOL_ASSIGN_CST = 71, BOOL_ASSIGN_VAR = 72,
-      BOOL_ASSUME = 73, BOOL_SELECT = 74, BOOL_ASSERT = 75
+      BOOL_ASSUME = 73, BOOL_SELECT = 74, BOOL_ASSERT = 75,
+      // casts
+      INT_CAST = 80
     }; 
 
     template<typename Number, typename VariableName>
@@ -89,8 +99,8 @@ namespace crab {
     }
 
     template<typename Number, typename VariableName>
-    inline crab_os& operator<< (crab_os &o, 
-                                const ikos::linear_constraint<Number, VariableName> &c)
+    inline crab_os& operator<<(crab_os &o, 
+			       const ikos::linear_constraint<Number, VariableName> &c)
     {
       auto tmp (c);
       tmp.write (o);
@@ -223,6 +233,9 @@ namespace crab {
       bool is_assert () const { 
         return (m_stmt_code == ASSERT); 
       }
+      bool is_int_cast () const { 
+        return (m_stmt_code == INT_CAST); 
+      }
       bool is_return () const { 
         return m_stmt_code == RETURN; 
       }
@@ -316,13 +329,12 @@ namespace crab {
      public:
       
       binary_op (variable_t lhs, 
-                binary_operation_t op, 
-                linear_expression_t op1, 
-                linear_expression_t op2,
-                debug_info dbg_info = debug_info ())
+		 binary_operation_t op, 
+		 linear_expression_t op1, 
+		 linear_expression_t op2,
+		 debug_info dbg_info = debug_info ())
   	: statement_t (BIN_OP, dbg_info),
-	m_lhs(lhs), m_op(op), m_op1(op1), m_op2(op2) 
-      { 
+	  m_lhs(lhs), m_op(op), m_op1(op1), m_op2(op2) {
         this->m_live.add_def (m_lhs.name());
         for (auto v: m_op1.variables()){ this->m_live.add_use (v.name()); }         
         for (auto v: m_op2.variables()){ this->m_live.add_use (v.name()); }         
@@ -345,7 +357,8 @@ namespace crab {
       {
         typedef binary_op<Number, VariableName> binary_op_t;
         return boost::static_pointer_cast<statement_t, binary_op_t>
-            (boost::make_shared<binary_op_t>(m_lhs, m_op, m_op1, m_op2));
+	  (boost::make_shared<binary_op_t>(m_lhs, m_op, m_op1, m_op2,
+					   this->m_dbg_info));
       }
       
       virtual void write (crab_os& o) const
@@ -362,8 +375,8 @@ namespace crab {
      public:
 
       typedef statement<Number,VariableName> statement_t;            
-      typedef ikos::variable< Number, VariableName >          variable_t;
-      typedef ikos::linear_expression< Number, VariableName > linear_expression_t;
+      typedef ikos::variable<Number, VariableName> variable_t;
+      typedef ikos::linear_expression<Number, VariableName> linear_expression_t;
       
      private:
       
@@ -541,9 +554,9 @@ namespace crab {
      public:
       
       select_stmt (variable_t lhs, 
-              linear_constraint_t cond, 
-              linear_expression_t e1, 
-              linear_expression_t e2): 
+		   linear_constraint_t cond, 
+		   linear_expression_t e1, 
+		   linear_expression_t e2): 
           statement_t(SELECT),
           m_lhs(lhs), m_cond(cond), m_e1(e1), m_e2(e2) 
       { 
@@ -619,7 +632,7 @@ namespace crab {
       {
         typedef assert_stmt <Number, VariableName> assert_t;
         return boost::static_pointer_cast< statement_t, assert_t >
-            (boost::make_shared<assert_t>(m_cst));
+	  (boost::make_shared<assert_t>(m_cst, this->m_dbg_info));
       }
       
       virtual void write (crab_os & o) const
@@ -629,6 +642,59 @@ namespace crab {
       }
     }; 
 
+    template<class VariableName>
+    class int_cast_stmt: public statement<ikos::z_number,VariableName> {
+     public:
+
+      typedef statement<ikos::z_number,VariableName> statement_t;      
+      
+     private:
+      
+      cast_operation_t  m_op;
+      VariableName m_src;
+      unsigned m_src_width;
+      VariableName m_dst;
+      unsigned m_dst_width;      
+      
+     public:
+      
+      int_cast_stmt (cast_operation_t op,
+		     VariableName src, unsigned src_width,
+		     VariableName dst, unsigned dst_width,
+		     debug_info dbg_info = debug_info ())
+  	: statement_t (INT_CAST, dbg_info),
+	  m_op(op),
+	  m_src(src), m_src_width(src_width),
+	  m_dst(dst), m_dst_width(dst_width)  {
+	
+        this->m_live.add_def (m_src);
+        this->m_live.add_use (m_dst);	
+      }
+      
+      cast_operation_t op() const {return m_op;}
+      VariableName src() const {return m_src;}
+      unsigned src_width() const {return m_src_width;}
+      VariableName dst() const {return m_dst;}
+      unsigned dst_width() const {return m_dst_width;}      
+      
+      virtual void accept(statement_visitor<ikos::z_number,VariableName> *v) {
+        v->visit(*this);
+      }
+      
+      virtual boost::shared_ptr<statement_t> clone () const {
+        typedef int_cast_stmt<VariableName> int_cast_t;
+        return boost::static_pointer_cast<statement_t, int_cast_t>
+	  (boost::make_shared<int_cast_t>(m_op, m_src, m_src_width, m_dst, m_dst_width,
+					  this->m_dbg_info));
+      }
+      
+      virtual void write (crab_os& o) const {
+	o << m_op << " " 
+	  << m_src << ":" << m_src_width << " to " << m_dst << ":" << m_dst_width;
+        return;
+      }
+    }; 
+    
     /*
       Array statements 
     */
@@ -961,7 +1027,7 @@ namespace crab {
       {
         typedef ptr_load_stmt <Number, VariableName> ptr_load_t;
         return boost::static_pointer_cast< statement_t, ptr_load_t >
-            (boost::make_shared<ptr_load_t>(m_lhs, m_rhs));
+	  (boost::make_shared<ptr_load_t>(m_lhs, m_rhs, this->m_dbg_info));
       }
       
       virtual void write(crab_os& o) const
@@ -1276,7 +1342,7 @@ namespace crab {
       {
         typedef ptr_assert_stmt <Number, VariableName> ptr_assert_t;
         return boost::static_pointer_cast< statement_t, ptr_assert_t>
-            (boost::make_shared<ptr_assert_t>(m_cst));
+	  (boost::make_shared<ptr_assert_t>(m_cst, this->m_dbg_info));
       }
       
       virtual void write(crab_os& o) const
@@ -1531,11 +1597,14 @@ namespace crab {
       VariableName        m_lhs; // pre: BOOL_TYPE
       VariableName        m_rhs; // pre: BOOL_TYPE
       
+      // if m_is_rhs_negated is true then lhs := not(rhs).
+      bool m_is_rhs_negated;
+      
      public:
       
-      bool_assign_var (VariableName lhs, VariableName rhs)
-	: statement_t (BOOL_ASSIGN_VAR), m_lhs(lhs), m_rhs(rhs) 
-      {
+      bool_assign_var (VariableName lhs, VariableName rhs, bool is_not_rhs)
+	: statement_t (BOOL_ASSIGN_VAR),
+	  m_lhs(lhs), m_rhs(rhs), m_is_rhs_negated (is_not_rhs) {
         this->m_live.add_def (m_lhs);
 	this->m_live.add_use (m_rhs);
       }
@@ -1543,6 +1612,10 @@ namespace crab {
       VariableName lhs () const { return m_lhs; }
       
       VariableName rhs () const { return m_rhs; }
+
+      bool is_rhs_negated () const {
+	return m_is_rhs_negated;
+      }
       
       virtual void accept(statement_visitor <Number, VariableName> *v) 
       { v->visit(*this); }
@@ -1551,11 +1624,16 @@ namespace crab {
       {
         typedef bool_assign_var <Number, VariableName> bool_assign_var_t;
         return boost::static_pointer_cast< statement_t, bool_assign_var_t >
-	  (boost::make_shared<bool_assign_var_t>(m_lhs, m_rhs));
+	  (boost::make_shared<bool_assign_var_t>(m_lhs, m_rhs, m_is_rhs_negated));
       }
       
-      virtual void write(crab_os& o) const
-      { o << m_lhs << " = " << m_rhs; }
+      virtual void write(crab_os& o) const {
+	o << m_lhs << " = "	;
+	if (is_rhs_negated ())
+	  o << "not(" << m_rhs << ")";
+	else
+	  o <<  m_rhs;	  
+      }
     }; 
     
     template< class Number, class VariableName>
@@ -1564,7 +1642,6 @@ namespace crab {
       // b1:= b2 and b3
       // b1:= b2 or b3
       // b1:= b2 xor b3
-      // Note that b1 := not b2   ----> b1 := b2 xor true
      public:
 
       typedef statement<Number,VariableName> statement_t;
@@ -1604,7 +1681,8 @@ namespace crab {
       {
         typedef bool_binary_op<Number, VariableName> bool_binary_op_t;
         return boost::static_pointer_cast<statement_t, bool_binary_op_t>
-            (boost::make_shared<bool_binary_op_t>(m_lhs, m_op, m_op1, m_op2));
+	  (boost::make_shared<bool_binary_op_t>(m_lhs, m_op, m_op1, m_op2,
+						this->m_dbg_info));
       }
       
       virtual void write (crab_os& o) const
@@ -1735,7 +1813,7 @@ namespace crab {
       {
         typedef bool_assert_stmt <Number, VariableName> bool_assert_t;
         return boost::static_pointer_cast< statement_t, bool_assert_t >
-            (boost::make_shared<bool_assert_t>(m_var));
+	  (boost::make_shared<bool_assert_t>(m_var, this->m_dbg_info));
       }
       
       virtual void write (crab_os & o) const
@@ -1793,6 +1871,7 @@ namespace crab {
       typedef assume_stmt<Number,VariableName> assume_t;
       typedef select_stmt<Number,VariableName> select_t;
       typedef assert_stmt<Number,VariableName> assert_t;
+      typedef int_cast_stmt<VariableName>      int_cast_t;
       // Functions
       typedef callsite_stmt<Number, VariableName> callsite_t;
       typedef return_stmt<Number, VariableName> return_t;
@@ -1828,6 +1907,7 @@ namespace crab {
       typedef boost::shared_ptr<assume_t> assume_ptr;
       typedef boost::shared_ptr<select_t> select_ptr;
       typedef boost::shared_ptr<assert_t> assert_ptr;
+      typedef boost::shared_ptr<int_cast_t> int_cast_ptr;      
       
       typedef boost::shared_ptr<callsite_t> callsite_ptr;      
       typedef boost::shared_ptr<return_t> return_ptr;      
@@ -2403,6 +2483,24 @@ namespace crab {
 		(boost::make_shared<assert_t> (cst, di)));
       }
 
+      void truncate(VariableName src, unsigned src_width,
+		    VariableName dst, unsigned dst_width) {
+	insert (boost::static_pointer_cast<statement_t, int_cast_t >
+		(boost::make_shared<int_cast_t>(CAST_TRUNC,src,src_width,dst,dst_width)));
+      }
+
+      void sext(VariableName src, unsigned src_width,
+		VariableName dst, unsigned dst_width) {
+	insert (boost::static_pointer_cast<statement_t, int_cast_t >
+		(boost::make_shared<int_cast_t>(CAST_SEXT,src,src_width,dst,dst_width)));
+      }
+
+      void zext(VariableName src, unsigned src_width,
+		VariableName dst, unsigned dst_width) {
+	insert (boost::static_pointer_cast<statement_t, int_cast_t >
+		(boost::make_shared<int_cast_t>(CAST_ZEXT,src,src_width,dst,dst_width)));
+      }
+      
       void callsite (VariableName func, 
                      const std::vector<std::pair <VariableName,variable_type> > &args) 
       {
@@ -2431,7 +2529,7 @@ namespace crab {
       
       void ret (VariableName var, variable_type ty) 
       {
-        std::vector<std::pair <VariableName,variable_type> > ret_vals = { std::make_pair(var,ty) };        
+        std::vector<std::pair<VariableName,variable_type> > ret_vals = {std::make_pair(var,ty)};
         insert(boost::static_pointer_cast< statement_t, return_t >
                (boost::make_shared<return_t>(ret_vals)));
       }
@@ -2462,7 +2560,7 @@ namespace crab {
                         ikos::z_number elem_size, bool is_singleton = false)  {
         if (m_track_prec == ARR)
           insert(boost::static_pointer_cast< statement_t, arr_store_t >
-                 (boost::make_shared<arr_store_t>(arr, arr_ty, idx, v, elem_size, is_singleton)));
+               (boost::make_shared<arr_store_t>(arr, arr_ty, idx, v, elem_size, is_singleton)));
       }
 
       void array_store (VariableName arr, variable_type arr_ty, 
@@ -2470,7 +2568,7 @@ namespace crab {
                         ikos::z_number elem_size, bool is_singleton = false)  {
         if (m_track_prec == ARR)
           insert(boost::static_pointer_cast< statement_t, arr_store_t >
-                 (boost::make_shared<arr_store_t>(arr, arr_ty, idx, n, elem_size, is_singleton)));
+               (boost::make_shared<arr_store_t>(arr, arr_ty, idx, n, elem_size, is_singleton)));
       }
       
       void array_load (VariableName lhs, VariableName arr, variable_type arr_ty, 
@@ -2557,10 +2655,10 @@ namespace crab {
       }
 
 
-      void bool_assign (VariableName lhs, VariableName rhs) 
+      void bool_assign (VariableName lhs, VariableName rhs, bool is_not_rhs = false) 
       {
         insert (boost::static_pointer_cast< statement_t, bool_assign_var_t >
-                (boost::make_shared<bool_assign_var_t> (lhs, rhs)));
+                (boost::make_shared<bool_assign_var_t> (lhs, rhs, is_not_rhs)));
       }
       
       void bool_assume (VariableName c) 
@@ -2575,10 +2673,10 @@ namespace crab {
                 (boost::make_shared<bool_assume_t> (c, true)));
       }
       
-      void bool_assert (VariableName c) 
+      void bool_assert (VariableName c, debug_info di = debug_info ()) 
       {
         insert (boost::static_pointer_cast< statement_t, bool_assert_t >
-                (boost::make_shared<bool_assert_t> (c)));
+                (boost::make_shared<bool_assert_t> (c, di)));
       }
 
       void bool_select (VariableName lhs, VariableName cond, VariableName b1, VariableName b2) 
@@ -2695,11 +2793,12 @@ namespace crab {
     struct statement_visitor
     {
 
-      typedef binary_op <Number,VariableName> bin_op_t;
-      typedef assignment <Number,VariableName> assign_t;
-      typedef assume_stmt <Number,VariableName> assume_t;
+      typedef binary_op<Number,VariableName> bin_op_t;
+      typedef assignment<Number,VariableName> assign_t;
+      typedef assume_stmt<Number,VariableName> assume_t;
       typedef select_stmt<Number,VariableName> select_t;
-      typedef assert_stmt <Number,VariableName> assert_t;
+      typedef assert_stmt<Number,VariableName> assert_t;
+      typedef int_cast_stmt<VariableName> int_cast_t;      
 
       typedef havoc_stmt<Number, VariableName> havoc_t;
       typedef unreachable_stmt<Number, VariableName> unreach_t;
@@ -2733,6 +2832,7 @@ namespace crab {
       virtual void visit (assume_t&) {};
       virtual void visit (select_t&) {};
       virtual void visit (assert_t&) {};
+      virtual void visit (int_cast_t&) {};      
 
       virtual void visit (unreach_t&) {};
       virtual void visit (havoc_t&) {};
@@ -3239,16 +3339,6 @@ namespace crab {
         return thresholds;
       }
 
-      // void reverse()
-      // {
-      //   if (!m_has_exit)
-      //     CRAB_ERROR ("cfg cannot be reversed: no exit block found");
-        
-      //   std::swap (m_entry, m_exit);
-      //   for (auto &p: *this) 
-      //     p.reverse (); 
-      // }
-      
       void write (crab_os& o) const
       {
         print_block f (o);
@@ -3293,7 +3383,7 @@ namespace crab {
         typedef typename statement_visitor<number_t, VariableName>::unreach_t unreach_t;
         typedef typename statement_visitor<number_t, VariableName>::select_t select_t;
         typedef typename statement_visitor<number_t, VariableName>::arr_load_t arr_load_t;
-        typedef typename statement_visitor<number_t, VariableName>::bool_assume_t bool_assume_t;	
+        typedef typename statement_visitor<number_t, VariableName>::bool_assume_t bool_assume_t;
         
         bool _do_not_simplify;
         donot_simplify_visitor (): _do_not_simplify(false) { }
