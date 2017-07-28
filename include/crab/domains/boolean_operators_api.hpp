@@ -15,7 +15,7 @@ namespace crab {
        OP_BAND, 
        OP_BOR, 
        OP_BXOR
-     } bool_operation_t;
+    } bool_operation_t;
 
      inline crab::crab_os& operator<<(crab::crab_os&o, bool_operation_t op) {
        switch (op) {
@@ -37,10 +37,11 @@ namespace crab {
        
        virtual ~boolean_operators () {};
        
-       virtual void assign_bool_cst(VariableName lhs, lin_cst_t rhs) {};
-       virtual void assign_bool_var(VariableName lhs, VariableName rhs) {}       
-       virtual void apply_binary_bool(bool_operation_t op,VariableName x,VariableName y,VariableName z) {}
-       virtual void assume_bool (VariableName v, bool is_negated) {};
+       virtual void assign_bool_cst(VariableName lhs, lin_cst_t rhs) {}
+       virtual void assign_bool_var(VariableName lhs, VariableName rhs, bool is_not_rhs) {}
+       virtual void apply_binary_bool(bool_operation_t op,
+				      VariableName x,VariableName y,VariableName z) {}
+       virtual void assume_bool(VariableName v, bool is_negated) {}
      };
 
    } // namespace domains  
