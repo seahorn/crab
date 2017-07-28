@@ -180,20 +180,8 @@ namespace ikos {
         return before && after; 
       }
     }
-    
-  public:
-    interleaved_fwd_fixpoint_iterator(CFG cfg, 
-                                      unsigned int widening_delay,
-                                      unsigned int descending_iterations,
-                                      size_t jump_set_size): 
-        _cfg(cfg),
-        _wto(cfg),
-        _pre(boost::make_shared<invariant_table_t>()),
-        _post(boost::make_shared<invariant_table_t>()),
-        _widening_delay(widening_delay),
-        _descending_iterations(descending_iterations),
-        _use_widening_jump_set (jump_set_size > 0) {
 
+    void initialize_thresholds(size_t jump_set_size) {
       if (_use_widening_jump_set) {
         crab::CrabStats::resume ("Fixpo");
         // select statically some widening points to jump to.
@@ -201,7 +189,22 @@ namespace ikos {
         crab::CrabStats::stop ("Fixpo");
       }      
     }
-
+    
+  public:
+    interleaved_fwd_fixpoint_iterator(CFG cfg, const wto_t *wto,
+                                      unsigned int widening_delay,
+                                      unsigned int descending_iterations,
+                                      size_t jump_set_size): 
+        _cfg(cfg),
+        _wto(!wto ? cfg: *wto),
+        _pre(boost::make_shared<invariant_table_t>()),
+        _post(boost::make_shared<invariant_table_t>()),
+        _widening_delay(widening_delay),
+        _descending_iterations(descending_iterations),
+        _use_widening_jump_set (jump_set_size > 0) {
+      initialize_thresholds(jump_set_size);
+    }
+    
     virtual ~interleaved_fwd_fixpoint_iterator() { }
     
     CFG get_cfg() const {

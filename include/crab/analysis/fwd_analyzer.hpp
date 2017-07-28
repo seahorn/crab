@@ -66,10 +66,11 @@ namespace crab {
 
       typedef ikos::interleaved_fwd_fixpoint_iterator<basic_block_label_t, CFG, abs_dom_t>
       fwd_iterator_t;
-      typedef boost::unordered_map<basic_block_label_t, abs_dom_t> invariant_map_t;
       
      public:
 
+      typedef boost::unordered_map<basic_block_label_t, abs_dom_t> invariant_map_t;
+      
       // liveness info
       typedef liveness<CFG> liveness_t;     
       // WTO
@@ -150,16 +151,16 @@ namespace crab {
       
      public:
 
-      fwd_analyzer (CFG cfg, abs_tr_ptr abs_tr,
+      fwd_analyzer (CFG cfg, const wto_t *wto, abs_tr_ptr abs_tr,
 		    // fixpoint parameters
                     unsigned int widening_delay,
                     unsigned int descending_iters,
                     size_t jump_set_size,
 		    // live can be nullptr if no live info is available
 		    const liveness_t* live)
-          : fwd_iterator_t (cfg, widening_delay, descending_iters, jump_set_size), 
-            m_abs_tr (abs_tr),
-	    m_live (live) {
+	: fwd_iterator_t (cfg, wto, widening_delay, descending_iters, jump_set_size), 
+	  m_abs_tr (abs_tr),
+	  m_live (live) {
         
         if (live)
 	{
@@ -241,14 +242,12 @@ namespace crab {
     }; 
 
     /**
-     * Only for internal use.
-     *   
      * Wrapper for fwd_analyzer_class. The main difference with
      * fwd_analyzer class is that here we create an abstract
      * transformer instance while fwd_analyzer does not.
      **/
     template<typename CFG, typename AbsDomain, typename AbsTr>
-    class intra_fwd_analyzer_internal
+    class intra_fwd_analyzer_wrapper
     {
       typedef fwd_analyzer<CFG, AbsTr> fwd_analyzer_t;
 
@@ -269,25 +268,44 @@ namespace crab {
       typedef typename fwd_analyzer_t::wto_t wto_t;      
       
     public:
-      
+
+      typedef typename fwd_analyzer_t::invariant_map_t invariant_map_t;
       typedef typename fwd_analyzer_t::iterator iterator;
       typedef typename fwd_analyzer_t::const_iterator const_iterator;
 
     public:
       
-      intra_fwd_analyzer_internal (CFG cfg,
-				   AbsDomain init,
-				   // liveness info
-				   const liveness_t* live = nullptr,
-				   // fixpoint parameters
-				   unsigned int widening_delay=1,
-				   unsigned int descending_iters=UINT_MAX,
-				   size_t jump_set_size=0):
+      intra_fwd_analyzer_wrapper (CFG cfg, AbsDomain init,
+				  // liveness info
+				  const liveness_t* live = nullptr,
+				  // fixpoint parameters
+				  unsigned int widening_delay=1,
+				  unsigned int descending_iters=UINT_MAX,
+				  size_t jump_set_size=0):
 	m_init (init),
 	m_abs_tr (&m_init),
-	m_analyzer (cfg, &m_abs_tr, 
+	m_analyzer (cfg, nullptr, &m_abs_tr, 
 		    widening_delay, descending_iters, jump_set_size,
 		    live) { }
+
+      intra_fwd_analyzer_wrapper (CFG cfg,
+				  // avoid precompute wto if already available
+				  // it can be null				  
+				  const wto_t *wto, 
+				  AbsDomain init,
+				  // liveness info
+				  const liveness_t* live = nullptr,
+				  // fixpoint parameters
+				  unsigned int widening_delay=1,
+				  unsigned int descending_iters=UINT_MAX,
+				  size_t jump_set_size=0):
+	m_init (init),
+	m_abs_tr (&m_init),
+	m_analyzer (cfg, wto, &m_abs_tr, 
+		    widening_delay, descending_iters, jump_set_size,
+		    live) { }
+      
+      
       
       iterator       pre_begin ()       { return m_analyzer.pre_begin();} 
       iterator       pre_end ()         { return m_analyzer.pre_end();}
@@ -331,9 +349,8 @@ namespace crab {
      **/
     template<typename CFG, typename AbsDomain>
     using intra_fwd_analyzer =
-      intra_fwd_analyzer_internal<CFG,
-				  AbsDomain,
-				  intra_abs_transformer<AbsDomain> >;
+      intra_fwd_analyzer_wrapper<CFG, AbsDomain,
+				 intra_abs_transformer<AbsDomain> >;
 
     
   } // end namespace

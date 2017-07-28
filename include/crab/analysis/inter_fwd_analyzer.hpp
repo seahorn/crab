@@ -135,7 +135,7 @@ namespace crab {
                       crab::outs() << "--- Analyzing " << (*fdecl).get_func_name () << "\n");
 
 	    auto abs_tr = boost::make_shared<td_abs_tr> (&init, &m_summ_tbl, &m_call_tbl);
-            auto a = boost::make_shared<td_analyzer> (cfg, &*abs_tr,
+            auto a = boost::make_shared<td_analyzer> (cfg, nullptr, &*abs_tr,
                                                       m_widening_delay,
                                                       m_descending_iters,
                                                       m_jump_set_size,
@@ -169,7 +169,7 @@ namespace crab {
               // --- run the analysis
 	      auto init_inv = BU_Dom::top ();
 	      bu_abs_tr abs_tr (&init_inv, &m_summ_tbl);
-              bu_analyzer a (cfg, &abs_tr, 
+              bu_analyzer a (cfg, nullptr, &abs_tr, 
                              m_widening_delay, m_descending_iters, m_jump_set_size,
 			     get_live (cfg)) ; 
               a.Run ();
@@ -236,7 +236,7 @@ namespace crab {
             }
 
 	    auto abs_tr = boost::make_shared<td_abs_tr> (&init_inv, &m_summ_tbl, &m_call_tbl);
-            auto a = boost::make_shared<td_analyzer> (cfg, &*abs_tr, 
+            auto a = boost::make_shared<td_analyzer> (cfg, nullptr, &*abs_tr, 
                                                       m_widening_delay,
 						      m_descending_iters,
 						      m_jump_set_size,
