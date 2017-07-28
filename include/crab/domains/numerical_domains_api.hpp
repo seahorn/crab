@@ -64,14 +64,14 @@ namespace ikos {
     return o;
   }
   
-  template< typename Number, typename VariableName >
+  template<typename Number, typename VariableName>
   class numerical_domain {
     
   public:
-    typedef linear_expression< Number, VariableName > linear_expression_t;
-    typedef linear_constraint< Number, VariableName > linear_constraint_t;
-    typedef linear_constraint_system< Number, VariableName > linear_constraint_system_t;
-    typedef variable< Number, VariableName > variable_t;
+    typedef linear_expression<Number, VariableName> linear_expression_t;
+    typedef linear_constraint<Number, VariableName> linear_constraint_t;
+    typedef linear_constraint_system<Number, VariableName> linear_constraint_system_t;
+    typedef variable<Number, VariableName> variable_t;
     typedef Number number_t;
     typedef VariableName varname_t;
     
@@ -96,7 +96,35 @@ namespace ikos {
   }; // numerical_domain
 
 
+  typedef enum { 
+    OP_SDIV, 
+    OP_UDIV, 
+    OP_SREM, 
+    OP_UREM
+  } div_operation_t;
 
+  inline crab::crab_os& operator<<(crab::crab_os&o, div_operation_t op) {
+    switch (op) {
+      case OP_SDIV: o << "/"; break;
+      case OP_UDIV: o << "/_u"; break;
+      case OP_SREM: o << "%"; break;
+      default: o << "%_u"; break;
+    }
+    return o;
+  }
+
+  template<typename Number, typename VariableName>
+  class division_operators {
+
+  public:
+    virtual void apply(div_operation_t op, VariableName x, VariableName y, VariableName z) = 0;
+    virtual void apply(div_operation_t op, VariableName x, VariableName y, Number z) = 0;
+    virtual ~division_operators() { }
+
+  }; // class division_operators
+  
+
+  
   template<typename Number, typename VariableName, typename NumAbsDom>
   class backward_numerical_domain {
   public:
@@ -141,6 +169,19 @@ namespace crab {
     default: return boost::optional<ikos::operation_t> ();
     }
   }
+
+  template<>
+  inline boost::optional<ikos::div_operation_t> 
+  conv_op (binary_operation_t op) {     
+    switch (op) {
+      case BINOP_SDIV: return ikos::OP_SDIV;
+      case BINOP_UDIV: return ikos::OP_UDIV;
+      case BINOP_SREM: return ikos::OP_SREM;
+      case BINOP_UREM: return ikos::OP_UREM;
+      default: return boost::optional<ikos::div_operation_t> ();
+    }
+  }
+  
 }
 
 #endif // IKOS_NUMERICAL_DOMAINS_API_HPP
