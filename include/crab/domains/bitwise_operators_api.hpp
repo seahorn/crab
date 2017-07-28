@@ -44,21 +44,6 @@
 namespace ikos {
 
   typedef enum  { 
-    OP_TRUNC, 
-    OP_SEXT, 
-    OP_ZEXT 
-  } conv_operation_t;
-
-  inline crab::crab_os& operator<<(crab::crab_os&o, conv_operation_t op) {
-    switch (op) {
-      case OP_TRUNC: o << "trunc"; break;
-      case OP_SEXT: o << "sext"; break;
-      default: o << "zext"; break;
-    }
-    return o;
-  }
-
-  typedef enum  { 
     OP_AND, 
     OP_OR, 
     OP_XOR, 
@@ -82,8 +67,6 @@ namespace ikos {
   template< typename Number, typename VariableName >
   class bitwise_operators {
    public:
-    virtual void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width) = 0;
-    virtual void apply(conv_operation_t op, VariableName x, Number y, unsigned width) = 0;
     virtual void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) = 0;
     virtual void apply(bitwise_operation_t op, VariableName x, VariableName y, Number z) = 0;
     virtual ~bitwise_operators() { }
