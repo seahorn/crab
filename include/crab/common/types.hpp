@@ -150,6 +150,10 @@ namespace crab {
    typedef enum { 
      BINOP_BAND, BINOP_BOR, BINOP_BXOR
    } bool_binary_operation_t;
+
+   typedef enum { 
+     CAST_TRUNC, CAST_SEXT, CAST_ZEXT
+   } cast_operation_t;
   
    inline crab::crab_os& operator<<(crab::crab_os&o, binary_operation_t op) {
      switch (op) {
@@ -180,12 +184,25 @@ namespace crab {
       }
      return o;
    }
+
+   inline crab::crab_os& operator<<(crab::crab_os&o, cast_operation_t op) {
+     switch (op) {
+       case CAST_TRUNC: o << "trunc"; break;
+       case CAST_SEXT: o << "sext"; break;
+       case CAST_ZEXT: o << "zext"; break;
+       default: CRAB_ERROR("unreachable");
+      }
+     return o;
+   }
   
   template<typename T>
   inline boost::optional<T> conv_op (binary_operation_t op); 
 
   template<typename T>
   inline boost::optional<T> conv_op (bool_binary_operation_t op); 
+
+  template<typename T>
+  inline boost::optional<T> conv_op (cast_operation_t op); 
   
 
   // toy language for pointer constraints
