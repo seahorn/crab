@@ -574,18 +574,17 @@ public:
 
   // cast operations
 
-  congruence_t Trunc(unsigned width) {
-    if (this->is_bottom())
-      return congruence_t::bottom();
-    else if (this->is_top())
-      return congruence_t::top();
-    else
-      return congruence_t(gcd(1 << width, _a), _b);
-  }
+  // congruence_t Trunc(unsigned width) {
+  //   if (this->is_bottom())
+  //     return congruence_t::bottom();
+  //   else if (this->is_top())
+  //     return congruence_t::top();
+  //   else
+  //     return congruence_t(gcd(1 << width, _a), _b);
+  // }
 
-  congruence_t ZExt(unsigned width) { return *this; }
-
-  congruence_t SExt(unsigned width) { return *this; }
+  // congruence_t ZExt(unsigned width) { return *this; }
+  // congruence_t SExt(unsigned width) { return *this; }
 
   void write(crab::crab_os& o) {
     if (is_bottom()) {
@@ -791,34 +790,33 @@ public:
 }; // class equality_congruence_solver
 
 template < typename Number, typename VariableName, int typeSize = -1 >
-class congruence_domain : public writeable,
-                          public numerical_domain< Number, VariableName >,
-                          public bitwise_operators< Number, VariableName >,
-                          public division_operators< Number, VariableName >,
-                          public crab::domains::array_operators< Number, VariableName >,
-                          public crab::domains::pointer_operators< Number, VariableName >,
-			  public crab::domains::boolean_operators< Number, VariableName >{
+class congruence_domain :
+    public crab::domains::abstract_domain<Number, VariableName,
+					  congruence_domain<Number,VariableName,
+							    typeSize> > {
 public:
-  typedef congruence< Number, typeSize > congruence_t;
+  typedef congruence<Number, typeSize> congruence_t;
+
+private:
   // note that this is assuming that all variables have the same bit
   // width which is unrealistic.
-  typedef congruence_domain< Number, VariableName, typeSize >
-      congruence_domain_t;
+  typedef congruence_domain<Number, VariableName, typeSize>
+  congruence_domain_t;
+  typedef crab::domains::abstract_domain<Number,VariableName,congruence_domain_t>
+  abstract_domain_t;
 
 public:
-  using typename numerical_domain< Number, VariableName >::linear_expression_t;
-  using typename numerical_domain< Number, VariableName >::linear_constraint_t;
-  using typename numerical_domain< Number, VariableName >::linear_constraint_system_t;
-  using typename numerical_domain< Number, VariableName >::variable_t;
-  using typename numerical_domain< Number, VariableName >::number_t;
-  using typename numerical_domain< Number, VariableName >::varname_t;
+  using typename abstract_domain_t::linear_expression_t;
+  using typename abstract_domain_t::linear_constraint_t;
+  using typename abstract_domain_t::linear_constraint_system_t;
+  using typename abstract_domain_t::variable_t;
+  using typename abstract_domain_t::number_t;
+  using typename abstract_domain_t::varname_t;
 
 private:
   typedef separate_domain< VariableName, congruence_t > separate_domain_t;
-  typedef equality_congruence_solver< Number,
-                                      VariableName,
-                                      separate_domain_t,
-                                      typeSize > solver_t;
+  typedef equality_congruence_solver<Number, VariableName,
+				     separate_domain_t, typeSize> solver_t;
 
 public:
   typedef typename separate_domain_t::iterator iterator;
@@ -1037,58 +1035,32 @@ public:
     this->_env.set(x, xi);
   }
 
+  void backward_assign (VariableName x, linear_expression_t e,
+			congruence_domain_t invariant) 
+  { CRAB_WARN ("backward assign not implemented"); }
+  
+  void backward_apply (operation_t op,
+		       VariableName x, VariableName y, Number z,
+		       congruence_domain_t invariant) 
+  { CRAB_WARN ("backward apply not implemented"); }
+  
+  void backward_apply(operation_t op,
+		      VariableName x, VariableName y, VariableName z,
+		      congruence_domain_t invariant) 
+  { CRAB_WARN ("backward apply not implemented"); }
+  
+
+  // cast_operators_api  
+  
+  void apply(crab::domains::int_conv_operation_t /*op*/,
+	     VariableName dst, unsigned /*dst_width*/,
+	     VariableName src, unsigned /*src_width*/) {
+    // ignore widths
+    assign(dst, linear_expression_t(src));
+  }
+
   // bitwise_operators_api
   
-  void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width) {
-    crab::CrabStats::count (getDomainName() + ".count.apply");
-    crab::ScopedCrabStats __st__(getDomainName() + ".apply");
-
-    congruence_t yi = this->_env[y];
-    congruence_t xi = congruence_t::bottom();
-
-    switch (op) {
-      case OP_TRUNC: {
-        xi = yi.Trunc(width);
-        break;
-      }
-      case OP_ZEXT: {
-        xi = yi.ZExt(width);
-        break;
-      }
-      case OP_SEXT: {
-        xi = yi.SExt(width);
-        break;
-      }
-      default: { CRAB_ERROR("unreachable"); }
-    }
-    this->_env.set(x, xi);
-  }
-
-  void apply(conv_operation_t op, VariableName x, Number k, unsigned width) {
-    crab::CrabStats::count (getDomainName() + ".count.apply");
-    crab::ScopedCrabStats __st__(getDomainName() + ".apply");
-
-    congruence_t yi(k);
-    congruence_t xi = congruence_t::bottom();
-
-    switch (op) {
-      case OP_TRUNC: {
-        xi = yi.Trunc(width);
-        break;
-      }
-      case OP_ZEXT: {
-        xi = yi.ZExt(width);
-        break;
-      }
-      case OP_SEXT: {
-        xi = yi.SExt(width);
-        break;
-      }
-      default: { CRAB_ERROR("unreachable"); }
-    }
-    this->_env.set(x, xi);
-  }
-
   void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) {
     crab::CrabStats::count (getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");

@@ -116,14 +116,9 @@ namespace crab {
 
   // Abstract domain for nullity
   template <typename Number, typename VariableName>
-  class nullity_domain : 
-        public ikos::writeable,
-        public numerical_domain<Number, VariableName >,
-        public bitwise_operators<Number,VariableName >,
-        public division_operators<Number, VariableName >,
-        public array_operators< Number, VariableName >,
-        public pointer_operators< Number, VariableName >,
-	public boolean_operators< Number, VariableName >{
+  class nullity_domain :
+      public abstract_domain<Number, VariableName,
+			     nullity_domain<Number,VariableName> > {
     
     typedef separate_domain< VariableName, nullity_value > separate_domain_t;
     typedef nullity_domain<Number, VariableName> nullity_domain_t;
@@ -160,7 +155,7 @@ namespace crab {
     nullity_domain() : _env(separate_domain_t::top()) {}
 
     nullity_domain(const nullity_domain_t& e) : 
-        writeable(), _env(e._env) {}
+      _env(e._env) {}
     
     nullity_domain_t& operator=(const nullity_domain_t& o) {
       if (this != &o)
@@ -299,6 +294,12 @@ namespace crab {
     void apply(operation_t op, VariableName x, VariableName y, VariableName z) {}
     void apply(operation_t op, VariableName x, VariableName y, Number k) {}
     void assign(VariableName x, linear_expression_t e) {}
+    void backward_assign (VariableName x, linear_expression_t e,
+			  nullity_domain_t invariant)  {}
+    void backward_apply (operation_t op, VariableName x, VariableName y, Number z,
+			 nullity_domain_t invariant)  {}
+    void backward_apply(operation_t op, VariableName x, VariableName y, VariableName z,
+			nullity_domain_t invariant) {}
     void operator+=(linear_constraint_system_t csts) {}
     void operator+=(linear_constraint_t cst) {}
     // not part of the numerical_domains api but it should be
@@ -310,10 +311,10 @@ namespace crab {
     void apply(div_operation_t op, VariableName x, VariableName y, VariableName z) {}
     void apply(div_operation_t op, VariableName x, VariableName y, Number z) {}
     
-    // bitwise_operators_api
+    // int_cast_operators_api and bitwise_operators_api
     // XXX: needed for making a reduced product with a numerical domain
-    void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width) {}
-    void apply(conv_operation_t op, VariableName x, Number y, unsigned width) {}
+    void apply(int_conv_operation_t op,
+	       VariableName dst, unsigned dst_width, VariableName src, unsigned src_width) {}
     void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) {}
     void apply(bitwise_operation_t op, VariableName x, VariableName y, Number z) {}
 
@@ -330,14 +331,17 @@ namespace crab {
       equality (lhs, nullity_value::non_null ());
     } 
 
-    virtual void pointer_assign (VariableName lhs, VariableName rhs, lin_exp_t /*offset*/) override {
+    virtual void pointer_assign (VariableName lhs, VariableName rhs,
+				 lin_exp_t /*offset*/) override {
       set_nullity (lhs, rhs);
-      CRAB_LOG("nullity", crab::outs () << "After " << lhs << ":=" << rhs << "=" << *this << "\n");
+      CRAB_LOG("nullity",
+	       crab::outs () << "After " << lhs << ":=" << rhs << "=" << *this << "\n");
     }
 
     virtual void pointer_mk_obj (VariableName lhs, ikos::index_t /*address*/) override {
       set_nullity (lhs, nullity_value::non_null ());
-      CRAB_LOG("nullity", crab::outs () << "After " << lhs << ":= mk_object()" << "=" << *this << "\n");
+      CRAB_LOG("nullity",
+	       crab::outs () << "After " << lhs << ":= mk_object()" << "=" << *this << "\n");
     }
 
     virtual void pointer_function (VariableName lhs, VariableName /*func*/) override {
@@ -346,7 +350,8 @@ namespace crab {
     
     virtual void pointer_mk_null (VariableName lhs) override {
       set_nullity (lhs, nullity_value::null ());
-      CRAB_LOG("nullity", crab::outs () << "After " << lhs << ":= NULL" << "=" << *this << "\n");
+      CRAB_LOG("nullity",
+	       crab::outs () << "After " << lhs << ":= NULL" << "=" << *this << "\n");
     }
     
     virtual void pointer_assume (ptr_cst_t cst) override {

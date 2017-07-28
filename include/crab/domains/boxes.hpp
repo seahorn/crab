@@ -21,37 +21,32 @@
 namespace crab {
    namespace domains {
       template<typename Number, typename VariableName, size_t LddSize = 100>
-      class boxes_domain: 
-         public ikos::writeable, 
-         public numerical_domain< Number, VariableName>,
-	 public backward_numerical_domain<Number, VariableName,
-					  boxes_domain<Number,VariableName,LddSize>,
-         public bitwise_operators< Number, VariableName >, 
-         public division_operators< Number, VariableName >,
-         public array_operators< Number, VariableName>,
-         public pointer_operators< Number, VariableName>,
-	 public boolean_operators< Number, VariableName> {
-              
+      class boxes_domain:
+       public abstract_domain<Number, VariableName,
+			      boxes_domain<Number,VariableName,LddSize> > {
+	
+        typedef boxes_domain<Number, VariableName, LddSize> boxes_domain_t;
+	typedef abstract_domain<Number, VariableName, boxes_domain_t> abstract_domain_t;
+	
        public:
-        using typename numerical_domain< Number, VariableName>::linear_expression_t;
-        using typename numerical_domain< Number, VariableName>::linear_constraint_t;
-        using typename numerical_domain< Number, VariableName>::linear_constraint_system_t;
+	
+        using typename abstract_domain_t::linear_expression_t;
+        using typename abstract_domain_t::linear_constraint_t;
+        using typename abstract_domain_t::linear_constraint_system_t;
 	typedef disjunctive_linear_constraint_system<Number, VariableName>
 	disjunctive_linear_constraint_system_t;
-        using typename numerical_domain< Number, VariableName>::variable_t;
-        using typename numerical_domain< Number, VariableName>::number_t;
-        using typename numerical_domain< Number, VariableName>::varname_t;
-        typedef boxes_domain <Number, VariableName, LddSize> boxes_domain_t;
+        using typename abstract_domain_t::variable_t;
+        using typename abstract_domain_t::number_t;
+        using typename abstract_domain_t::varname_t;
         typedef interval <Number> interval_t;
 
-        boxes_domain(): ikos::writeable() { }    
+        boxes_domain() {}    
 
         static boxes_domain_t top() { CRAB_ERROR (LDD_NOT_FOUND); }
 
         static boxes_domain_t bottom() { CRAB_ERROR (LDD_NOT_FOUND); }
 
-        boxes_domain (const boxes_domain_t& other): 
-            ikos::writeable() { }
+        boxes_domain (const boxes_domain_t& other): {}
         
         bool is_bottom() { CRAB_ERROR (LDD_NOT_FOUND); }
 
@@ -117,12 +112,10 @@ namespace crab {
 			    boxes_domain_t invariant)
         { CRAB_ERROR (LDD_NOT_FOUND); }
 	
-        void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width) 
+        void apply(int_conv_operation_t op,
+		   VariableName dst, unsigned dst_width, VariableName src, unsigned src_width) 
         { CRAB_ERROR (LDD_NOT_FOUND); }
-        
-        void apply(conv_operation_t op, VariableName x, Number k, unsigned width) 
-        { CRAB_ERROR (LDD_NOT_FOUND); }
-        
+                
         void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) 
         { CRAB_ERROR (LDD_NOT_FOUND); }
         
@@ -185,30 +178,24 @@ namespace crab {
        * FIXME: Ldd_TermReplace seems to leak memory sometimes.
        */
       template<typename Number, typename VariableName, size_t LddSize>
-      class boxes_domain_: 
-         public ikos::writeable, 
-         public numerical_domain< Number, VariableName>,
-	 public backward_numerical_domain<Number,VariableName,
-				          boxes_domain_<Number,VariableName,LddSize> >,	 
-         public bitwise_operators< Number, VariableName >, 
-         public division_operators< Number, VariableName >,
-         public array_operators< Number, VariableName>,
-         public pointer_operators< Number, VariableName>,
-	 public boolean_operators< Number, VariableName>{
+      class boxes_domain_:
+       public abstract_domain<Number,VariableName,
+			      boxes_domain_<Number,VariableName,LddSize> > {
 
-        typedef interval_domain <Number, VariableName> interval_domain_t;
+        typedef interval_domain<Number, VariableName> interval_domain_t;
+        typedef boxes_domain_<Number, VariableName, LddSize> boxes_domain_t;
+	typedef abstract_domain<Number,VariableName,boxes_domain_t> abstract_domain_t;
 	
        public:
-        using typename numerical_domain< Number, VariableName>::linear_expression_t;
-        using typename numerical_domain< Number, VariableName>::linear_constraint_t;
-        using typename numerical_domain< Number, VariableName>::linear_constraint_system_t;
+	
+        using typename abstract_domain_t::linear_expression_t;
+        using typename abstract_domain_t::linear_constraint_t;
+        using typename abstract_domain_t::linear_constraint_system_t;
 	typedef disjunctive_linear_constraint_system<Number, VariableName>
 	disjunctive_linear_constraint_system_t;
-        using typename numerical_domain< Number, VariableName>::variable_t;
-        using typename numerical_domain< Number, VariableName>::number_t;
-        using typename numerical_domain< Number, VariableName>::varname_t;
-
-        typedef boxes_domain_ <Number, VariableName, LddSize> boxes_domain_t;
+        using typename abstract_domain_t::variable_t;
+        using typename abstract_domain_t::number_t;
+        using typename abstract_domain_t::varname_t;
         typedef interval <Number> interval_t;
 
        private:
@@ -413,7 +400,7 @@ namespace crab {
 	cst_from_ldd_strict_cons (linear_expression<ikos::z_number,VariableName> l,
 				  linear_expression<ikos::z_number,VariableName> r) {
 	  // l < r <-> l+1 <= r
-	  linear_expression<ikos::z_number,VariableName> e = l +1;
+	  linear_expression<ikos::z_number,VariableName> e = l + 1;
 	  e = e - r;
 	  return linear_constraint<ikos::z_number,VariableName>
 	    (e, linear_constraint_t::INEQUALITY);
@@ -422,7 +409,10 @@ namespace crab {
 	linear_constraint<ikos::q_number,VariableName>
 	cst_from_ldd_strict_cons (linear_expression<ikos::q_number,VariableName> l,
 				  linear_expression<ikos::q_number,VariableName> r) {
-	  CRAB_WARN ("Crab does not support strict inequalities");
+	  CRAB_LOG("boxes",
+		   crab::outs () << "Crab does not support strict inequality "
+		                 << l << " < " << r << "\n";);
+	  //CRAB_WARN ("Crab does not support strict inequalities");
 	  return linear_constraint<ikos::q_number,VariableName>::get_true();
 	}
 	
@@ -434,6 +424,7 @@ namespace crab {
           num_from_ldd_cst(get_theory()->get_constant(lincons), rhs);
 
           if (get_theory()->is_strict (lincons)) {
+	    // lhs < rhs
 	    return cst_from_ldd_strict_cons (lhs, rhs);
           } else  {
             // lhs <= rhs
@@ -449,17 +440,15 @@ namespace crab {
           LddNode *N = Ldd_Regular (n);
           if (N == Ldd_GetTrue (get_ldd_man ())) return;
 
-
-          auto cst = cst_from_ldd_cons (Ldd_GetCons(get_ldd_man (), N));
-
+	  lincons_t lincons = Ldd_GetCons(get_ldd_man (), N);
           if (Ldd_Regular (Ldd_T(N)) == Ldd_GetTrue (get_ldd_man ()) &&
-              Ldd_Regular (Ldd_E(N)) == Ldd_GetTrue (get_ldd_man ()))
-            csts += cst;
-          else if (Ldd_Regular (Ldd_T(N)) == Ldd_GetTrue (get_ldd_man ()))
-            csts += cst.negate ();
-          else
-            csts += cst;
-            
+              Ldd_Regular (Ldd_E(N)) == Ldd_GetTrue (get_ldd_man ())) {
+	    csts += cst_from_ldd_cons(lincons);
+	  } else if (Ldd_Regular (Ldd_T(N)) == Ldd_GetTrue (get_ldd_man ())) {
+	    csts += cst_from_ldd_cons(get_theory()->negate_cons(lincons));
+	  } else {
+	    csts += cst_from_ldd_cons(lincons);
+	  }
           to_lin_cst_sys_recur (Ldd_T (N), csts);
           to_lin_cst_sys_recur (Ldd_E (N), csts);
 
@@ -594,18 +583,19 @@ namespace crab {
 	}
 	
 	
-        boxes_domain_ (LddNodePtr ldd): m_ldd (ldd) {	
+        boxes_domain_ (LddNodePtr ldd): m_ldd (ldd) {
+	  #if 1
 	  // TODO: one of the template parameters of boxes should be
 	  // an user option to choose when the size of the ldd should
 	  // be reduced.
-          const unsigned CST_FACTOR = 10; /* JN: some magic constant factor */
+          const unsigned CST_FACTOR = 300; /* JN: some magic number */
           unsigned threshold = num_of_vars () * CST_FACTOR;
 	  unsigned num_paths = Ldd_PathSize (NULL, &*m_ldd);
 	  if ((threshold >= 20*CST_FACTOR) && (num_paths > threshold)) {
 	    convex_approx ();                
-	    CRAB_WARN ("ldd size was too large: ", num_paths,
-		       ". Made ldd convex.");
+	    CRAB_WARN ("ldd size was too large: ", num_paths, ". Made ldd convex.");
 	  }
+	  #endif 
         }
 
 	void to_disjunctive_linear_constraint_system_aux
@@ -701,16 +691,16 @@ namespace crab {
        }
 
         // return x >= 1 or $0 >=1 if !x
-	inline LddNode* gen_true_var (boost::optional<VariableName> x)
+	inline LddNode* gen_is_true (boost::optional<VariableName> x)
 	{ // x >=1 <--> -x <= -1
 	  if (x) {
-	    auto r = gen_unit_constraint (Number(-1), variable_t(*x),
+	    LddNodePtr r = gen_unit_constraint (Number(-1), variable_t(*x),
 					  linear_constraint_t::INEQUALITY,
 					  Number(-1));
 	    return &*r;
 	  }
 	  else {
-	    auto r = gen_unit_constraint (Number(-1), 
+	    LddNodePtr r = gen_unit_constraint (Number(-1), 
 					  linear_constraint_t::INEQUALITY,
 					  Number(-1));
 	    return &*r;
@@ -718,50 +708,56 @@ namespace crab {
 	}
 
 	// return x <= 0 or $0 <= 0 if !x
-	inline LddNode* gen_false_var (boost::optional<VariableName> x)
+	inline LddNode* gen_is_false (boost::optional<VariableName> x)
 	{
 	  if (x) {
-	    auto r = gen_unit_constraint (Number(1), variable_t(*x),
-					  linear_constraint_t::INEQUALITY,
-					  Number(0));
+	    LddNodePtr r = gen_unit_constraint (Number(1), variable_t(*x),
+						linear_constraint_t::INEQUALITY,
+						Number(0));
 	    return &*r;
 	  } else {
-	    auto r = gen_unit_constraint (Number(1), 
-					  linear_constraint_t::INEQUALITY,
-					  Number(0));
+	    LddNodePtr r = gen_unit_constraint (Number(1), 
+						linear_constraint_t::INEQUALITY,
+						Number(0));
 	    return &*r;
 	  }
 	}
 
 	// return Ite(y>=1 Op z>=1, x>=1, x <= 0)
-	LddNode* gen_binary_bool(bool_operation_t op,
-				 boost::optional<VariableName> x,
-				 VariableName y, VariableName z)
+	LddNodePtr gen_binary_bool(bool_operation_t op,
+				   boost::optional<VariableName> x,
+				   VariableName y, VariableName z)
 	{
 	  switch (op) {
-	  case OP_BAND:
-	    return Ldd_Ite(get_ldd_man (),
-			   Ldd_And(get_ldd_man(), gen_true_var(y), gen_true_var(z)),
-			   gen_true_var(x), gen_false_var(x));
+	  case OP_BAND: {
+	    LddNodePtr c = lddPtr(get_ldd_man(),
+				  Ldd_And(get_ldd_man(), gen_is_true(y), gen_is_true(z)));
+	    return lddPtr(get_ldd_man(),
+			  Ldd_Ite(get_ldd_man (),
+				  &*c, gen_is_true(x), gen_is_false(x)));
 	    break;
-	  case OP_BOR:
-	    return Ldd_Ite(get_ldd_man (),
-			   Ldd_Or(get_ldd_man(), gen_true_var(y), gen_true_var(z)),
-			   gen_true_var(x), gen_false_var(x));
+	  }
+	  case OP_BOR: {
+	    LddNodePtr c = lddPtr(get_ldd_man(),
+				  Ldd_Or(get_ldd_man(), gen_is_true(y), gen_is_true(z)));
+	    return lddPtr(get_ldd_man(),
+			  Ldd_Ite(get_ldd_man (),
+				  &*c, gen_is_true(x), gen_is_false(x)));
 	    break;
-	  case OP_BXOR:
-	    return Ldd_Ite(get_ldd_man (),
-			   Ldd_Xor(get_ldd_man(), gen_true_var(y), gen_true_var(z)),
-			   gen_true_var(x), gen_false_var(x));
+	  }
+	  case OP_BXOR: {
+	    LddNodePtr c = lddPtr(get_ldd_man(),
+				  Ldd_Xor(get_ldd_man(), gen_is_true(y), gen_is_true(z)));
+	    return lddPtr(get_ldd_man(),
+			  Ldd_Ite(get_ldd_man (),
+				  &*c, gen_is_true(x), gen_is_false(x)));
+				  
 	    break;
+	  }
 	  default: CRAB_ERROR ("Unknown boolean operator");
 	  }
 	}
 	
-        LddNodePtr getLdd () { 
-          return m_ldd; 
-        }
-
         VariableName getVarName (int v) const {
           auto it = m_var_map.right.find (v);
           if (it != m_var_map.right.end ())
@@ -774,8 +770,7 @@ namespace crab {
 	
        public:
 
-        boxes_domain_()
-	  : ikos::writeable(),
+        boxes_domain_():
 	  m_ldd (lddPtr (get_ldd_man(), Ldd_GetTrue (get_ldd_man()))) {}
         
         ~boxes_domain_ () { 
@@ -801,7 +796,7 @@ namespace crab {
         }
         
         boxes_domain_ (const boxes_domain_t& other): 
-	  ikos::writeable(), m_ldd (other.m_ldd) { 
+	  m_ldd (other.m_ldd) { 
           crab::CrabStats::count (getDomainName () + ".count.copy");
           crab::ScopedCrabStats __st__(getDomainName() + ".copy");
         }
@@ -972,9 +967,10 @@ namespace crab {
           else if (size >= 2) {
 	    linear_constraint_system_t intvcsts;
 	    intvcst_from_lin_const (cst, intvcsts);
-	    crab::outs () << cst << " converted to interval constraints : "
-		          << intvcsts << "\n";
-	    this->operator+=(intvcsts);
+	    this->operator+=(intvcsts);	    
+	    CRAB_LOG("boxes",
+		     crab::outs () << cst << " converted to interval constraints : "
+		                   << intvcsts << "\n";);
           }
           
           CRAB_LOG("boxes",
@@ -1025,9 +1021,10 @@ namespace crab {
           linear_constraint_system_t csts;
 	  ldd = convex_approx (ldd);
           to_lin_cst_sys_recur (&*ldd, csts);
+	  
           interval_domain_t intv;
           for (auto cst: csts) {intv += cst;}
-	    
+
           // finally project onto v in the interval domain
           return intv[v];
         }
@@ -1050,7 +1047,10 @@ namespace crab {
             get_theory()->destroy_term(t);
           } else if (boost::optional<variable_t> v = e.get_variable()){
             VariableName y = (*v).name();
-            if (!(x==y)) copy_term(x,y); //apply_ldd (x, y, 1, 0);      
+            if (!(x==y)) {
+	      copy_term(x,y);
+	      //apply_ldd (x, y, 1, number_t(0));
+	    }
           } else {
 	    // XXX: this is not possible when program originated by clang/llvm
 	    CRAB_WARN("x:= linexp not implemented in boxes");
@@ -1133,8 +1133,7 @@ namespace crab {
           crab::CrabStats::count (getDomainName() + ".count.apply");
           crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 	  
-          if (is_bottom ()) 
-            return;
+          if (is_bottom ()) return; 
 
 	  // --- if z is a singleton we do not lose precision
 	  interval_t zi = operator[](z);
@@ -1158,7 +1157,7 @@ namespace crab {
 	    } else if (op == OP_SUBTRACTION) {
 	      // x = yi - z <--> x = -z + [yi.lb,yi.ub]
 	      apply_ldd (x, z, -1, *k);
-	      return;
+	      goto apply_end;
 	    }
 	  } 	  
 
@@ -1169,10 +1168,10 @@ namespace crab {
 	      // x = yi + z <--> x = z + yi
 	      apply_ldd (x, z, 1, yi);
 	    } else {        // abstract z
-	      // x = y + zi 
+	      // x = y + zi
 	      apply_ldd (x, y, 1, zi);
 	    }
-	    return;
+	    goto apply_end;
 	  }
 
 	  // -- We need to abstract either y or z and lose some
@@ -1185,7 +1184,7 @@ namespace crab {
 	      // x = y - zi 
 	      apply_ldd (x, y, 1, zi * number_t(-1));
 	    }
-	    return;
+	    goto apply_end;
 	  }
 
 	  // --- we go to intervals and lose precision	  
@@ -1202,15 +1201,16 @@ namespace crab {
 	    }
 	    default: CRAB_ERROR("unreachable");
 	  }
+
+	apply_end:
+          CRAB_LOG("boxes", 
+                   crab::outs() << "--- apply " << x << " := " << y << " " <<  op 
+		                << " " << z << " --- " <<  *this <<"\n";);
+	  
 	}
 	
         void backward_assign (VariableName x, linear_expression_t e,
 			      boxes_domain_t invariant) {
-          crab::CrabStats::count (getDomainName() + ".count.backward_assign");
-          crab::ScopedCrabStats __st__(getDomainName() + ".backward_assign");
-
-          if(is_bottom()) return;
-
 	  CRAB_LOG("boxes",
 		   crab::outs () << "Backward " << x << ":=" << e
  		                 << "\n\tPOST=" << *this << "\n");
@@ -1222,11 +1222,6 @@ namespace crab {
         void backward_apply (operation_t op,
 			     VariableName x, VariableName y, Number z,
 			     boxes_domain_t invariant) {
-          crab::CrabStats::count (getDomainName() + ".count.backward_apply");
-          crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
-
-          if(is_bottom()) return;
-
 	  CRAB_LOG("boxes",
 		   crab::outs () << "Backward " << x << ":=" << y << op << z 
  		                 << "\n\tPOST=" << *this << "\n");
@@ -1240,12 +1235,6 @@ namespace crab {
         void backward_apply(operation_t op,
 			    VariableName x, VariableName y, VariableName z,
 			    boxes_domain_t invariant)  {
-          crab::CrabStats::count (getDomainName() + ".count.backward_apply");
-          crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
-
-          if(is_bottom()) return;
-
-
 	  CRAB_LOG("boxes",
 		   crab::outs () << "Backward " << x << ":=" << y << op << z 
  		                 << "\n\tPOST=" << *this << "\n");
@@ -1256,21 +1245,14 @@ namespace crab {
 	  
 	}	
 	
-        // bitwise_operators_api
-        void apply(conv_operation_t op,
-		   VariableName x, VariableName y, unsigned width) {
+        void apply(int_conv_operation_t op,
+		   VariableName dst, unsigned /*dst_width*/,
+		   VariableName src, unsigned /*src_width*/) {
           // since reasoning about infinite precision we simply assign and
-          // ignore the width.
-          assign(x, linear_expression_t(y));
+          // ignore the widths.
+          assign(dst, linear_expression_t(src));
         }
-        
-        void apply(conv_operation_t op,
-		   VariableName x, Number k, unsigned width) {
-          // since reasoning about infinite precision we simply assign
-          // and ignore the width.
-          assign(x, k);
-        }      
-  
+	
         void apply(bitwise_operation_t op,
 		   VariableName x, VariableName y, VariableName z) {
           crab::CrabStats::count (getDomainName() + ".count.apply");
@@ -1383,15 +1365,15 @@ namespace crab {
 	  // XXX: lhs should not appear in cst so we can remove lhs
 	  // without losing precision
 	  this->operator-=(lhs);
-	  
+
 	  if (cst.is_tautology ()) {
 	    // m_ldd &= lhs >= 1	    
 	    m_ldd = lddPtr (get_ldd_man(),
-			    Ldd_And (get_ldd_man(), &*m_ldd, gen_true_var(lhs)));
+			    Ldd_And (get_ldd_man(), &*m_ldd, gen_is_true(lhs)));
 	  } else if (cst.is_contradiction ()) {
 	    // m_ldd &= lhs <= 0
 	    m_ldd = lddPtr (get_ldd_man(),
-			    Ldd_And (get_ldd_man(), &*m_ldd, gen_false_var(lhs)));
+			    Ldd_And (get_ldd_man(), &*m_ldd, gen_is_false(lhs)));
 	  } else {
 	    linear_expression_t exp = cst.expression();    
 	    unsigned int size = exp.size ();
@@ -1403,17 +1385,20 @@ namespace crab {
 		Number k = -exp.constant(); 
 		variable_t vx = it->second;
 		// m_ldd &= ite (cst, lhs >=1, lhs<=0);
+		LddNodePtr ldd_cst = gen_unit_constraint (cx, vx, cst.kind (),k);
+		LddNodePtr ldd_rhs = lddPtr(get_ldd_man(),
+					    Ldd_Ite(get_ldd_man (),
+						    &*(ldd_cst),
+						    gen_is_true(lhs), gen_is_false(lhs)));
 		m_ldd = lddPtr (get_ldd_man (),
-				Ldd_And (get_ldd_man(), &*m_ldd,
-				   Ldd_Ite(get_ldd_man (),
-					   &*(gen_unit_constraint (cx, vx, cst.kind (),k)),
-					   gen_true_var(lhs), gen_false_var(lhs))));
+				Ldd_And (get_ldd_man(), &*m_ldd, &*ldd_rhs));
+					 
 						 
 	      } else {
 		CRAB_WARN ("non-unit coefficients not implemented in boxes");
 	      }
 	    } else if (size >= 2) {
-	      CRAB_WARN ("non-unary constraints not implemented in boxes");
+	      CRAB_WARN ("non-unary constraints for boolean ops not implemented in boxes");
 	    }
 	  }
 	  
@@ -1421,14 +1406,22 @@ namespace crab {
 		   crab::outs () << lhs << ":=" << cst << "=\n" << *this << "\n");
 	}    
 	
-	void assign_bool_var (VariableName x, VariableName y) override {
+	void assign_bool_var (VariableName x, VariableName y, bool is_not_y) override {
           crab::CrabStats::count (getDomainName() + ".count.assign_bool_var");
           crab::ScopedCrabStats __st__(getDomainName() + ".assign_bool_var");
-	  
-	  copy_term (x, y);
+
+	  if (is_not_y)
+	    apply_ldd (x, y, number_t(-1), number_t(1));
+	  else
+	    copy_term (x, y);
 	  
 	  CRAB_LOG("boxes",
-		   crab::outs()  << x << ":=" << y << "=\n" << *this << "\n");
+		   crab::outs()  << x << ":=";
+		   if (is_not_y)
+		     crab::outs() << "not(" << y << ")";
+		   else
+		     crab::outs() << y;		     
+		   crab::outs() << "=\n" << *this << "\n");
 	}
 	
 	void apply_binary_bool(bool_operation_t op, VariableName x,
@@ -1448,8 +1441,9 @@ namespace crab {
 	  }
 	  
 	  m_ldd = lddPtr (get_ldd_man (),
-			  Ldd_And(get_ldd_man(), &*m_ldd,
-				  gen_binary_bool(op, lhs, y, z)));
+			  Ldd_And(get_ldd_man(),
+				  &*m_ldd,
+				  &*gen_binary_bool(op, lhs, y, z)));
 	  
 	  if ((x == y) || (x == z)) {
 	    // XXX: if we are here we added ite(y op z, $0 >=1, $0 <= 0);
@@ -1462,7 +1456,7 @@ namespace crab {
      		                 << *this << "\n");
 	  
 	}
-	
+
 	void assume_bool (VariableName x, bool is_negated) override {
           crab::CrabStats::count (getDomainName() + ".count.assume_bool");
           crab::ScopedCrabStats __st__(getDomainName() + ".assume_bool");
@@ -1470,7 +1464,7 @@ namespace crab {
 	  m_ldd = lddPtr (get_ldd_man(),
 			  Ldd_And (get_ldd_man(), &*m_ldd,
 				   ((is_negated) ?
-				    gen_false_var (x): gen_true_var (x))));
+				    gen_is_false (x): gen_is_true(x))));
 
 	  CRAB_LOG("boxes",
 		 if (!is_negated) 
@@ -1497,17 +1491,22 @@ namespace crab {
         }
 
 	disjunctive_linear_constraint_system_t
-	to_disjunctive_linear_constraint_system () {
-	  LddManager *ldd_man = getLddManager (m_ldd);
+	to_disjunctive_linear_constraint_system (LddNodePtr &ldd) {
+	  LddManager *ldd_man = getLddManager (ldd);
 	  
 	  std::vector<int> list;
 	  list.reserve (ldd_man->cudd->size);
 	  for (int i=0; i < ldd_man->cudd->size; i++) list.push_back(2);
 	  
 	  disjunctive_linear_constraint_system_t r;
-	  to_disjunctive_linear_constraint_system_aux (ldd_man, m_ldd.get (),
+	  to_disjunctive_linear_constraint_system_aux (ldd_man, ldd.get (),
 						       r, list);
 	  return r;
+	}
+
+	disjunctive_linear_constraint_system_t
+	to_disjunctive_linear_constraint_system () {
+	  return to_disjunctive_linear_constraint_system(m_ldd);
 	}
 	
 	void write (crab_os& o) {
@@ -1564,27 +1563,25 @@ namespace crab {
     #else 
     // Quick wrapper which uses shared references with copy-on-write.
     template<class Number, class VariableName, size_t LddSize=3000>
-    class boxes_domain: public writeable,
-               public numerical_domain<Number, VariableName >,
-			public backward_numerical_domain<Number, VariableName,
-							 boxes_domain<Number,VariableName,LddSize> >,
-               public bitwise_operators<Number,VariableName >,
-               public division_operators<Number, VariableName >,
-               public array_operators<Number, VariableName >,
-	       public pointer_operators<Number, VariableName >,
-               public boolean_operators<Number, VariableName > {
+    class boxes_domain: 
+       public abstract_domain<Number, VariableName,
+			      boxes_domain<Number,VariableName,LddSize> > {
+      typedef boxes_domain<Number, VariableName, LddSize> boxes_domain_t;
+      typedef abstract_domain<Number, VariableName, boxes_domain_t> abstract_domain_t;
+      
       public:
-      using typename numerical_domain< Number, VariableName >::linear_expression_t;
-      using typename numerical_domain< Number, VariableName >::linear_constraint_t;
-      using typename numerical_domain< Number, VariableName >::linear_constraint_system_t;
+      
+      using typename abstract_domain_t::linear_expression_t;
+      using typename abstract_domain_t::linear_constraint_t;
+      using typename abstract_domain_t::linear_constraint_system_t;
       typedef disjunctive_linear_constraint_system<Number, VariableName>
       disjunctive_linear_constraint_system_t;
-      using typename numerical_domain< Number, VariableName >::variable_t;
-      using typename numerical_domain< Number, VariableName >::number_t;
-      using typename numerical_domain< Number, VariableName >::varname_t;
+      using typename abstract_domain_t::variable_t;
+      using typename abstract_domain_t::number_t;
+      using typename abstract_domain_t::varname_t;
       typedef typename linear_constraint_t::kind_t constraint_kind_t;
       typedef interval<Number>  interval_t;
-      typedef boxes_domain <Number, VariableName, LddSize> boxes_domain_t;      
+
 
     private:
       
@@ -1669,10 +1666,9 @@ namespace crab {
 			  boxes_domain_t invariant)
       { detach(); ref().backward_apply(op, x, y, z, invariant.ref()); }
       
-      void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width)
-      { detach(); ref().apply(op, x, y, width); }
-      void apply(conv_operation_t op, VariableName x, Number k, unsigned width)
-      { detach(); ref().apply(op, x, k, width); }
+      void apply(int_conv_operation_t op,
+		 VariableName dst, unsigned dst_width, VariableName src, unsigned src_width)
+      { detach(); ref().apply(op, dst, dst_width, src, src_width); }
       void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k)
       { detach(); ref().apply(op, x, y, k); }
       void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z)
@@ -1684,8 +1680,8 @@ namespace crab {
 
       void assign_bool_cst (VariableName x, linear_constraint_t cst)
       { detach(); ref().assign_bool_cst(x,cst);}
-      void assign_bool_var (VariableName x, VariableName y)
-      { detach(); ref().assign_bool_var(x,y);}
+      void assign_bool_var (VariableName x, VariableName y, bool is_not_y)
+      { detach(); ref().assign_bool_var(x,y,is_not_y);}
       void apply_binary_bool(bool_operation_t op,VariableName x, VariableName y, VariableName z)
       { detach(); ref().apply_binary_bool(op,x,y,z);}
       void assume_bool (VariableName x, bool is_negated)

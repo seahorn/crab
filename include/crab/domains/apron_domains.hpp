@@ -29,35 +29,26 @@ namespace crab {
    namespace domains {
       template<typename Number, typename VariableName, apron_domain_id_t ApronDom>
       class apron_domain: 
-         public ikos::writeable, 
-         public numerical_domain< Number, VariableName>,
-	 public backward_numerical_domain<Number, VariableName,
-					  apron_domain<Number,VariableName,ApronDom> >,
-         public bitwise_operators< Number, VariableName >, 
-         public division_operators< Number, VariableName >,
-         public array_operators< Number, VariableName >,
-         public pointer_operators< Number, VariableName >,
-	 public boolean_operators< Number, VariableName > {
+	public abstract_domain<Number,VariableName,apron_domain<Number,VariableName,ApronDom> > {
               
        public:
-        using typename numerical_domain< Number, VariableName>::linear_expression_t;
-        using typename numerical_domain< Number, VariableName>::linear_constraint_t;
-        using typename numerical_domain< Number, VariableName>::linear_constraint_system_t;
-        using typename numerical_domain< Number, VariableName>::variable_t;
-        using typename numerical_domain< Number, VariableName>::number_t;
-        using typename numerical_domain< Number, VariableName>::varname_t;
-        typedef apron_domain <Number, VariableName, ApronDom> apron_domain_t;
+        typedef apron_domain<Number, VariableName, ApronDom> apron_domain_t;
+	typedef abstract_domain<Number, VariableName, apron_domain_t> abstract_domain_t;
+        using typename abstract_domain_t::linear_expression_t;
+        using typename abstract_domain_t::linear_constraint_t;
+        using typename abstract_domain_t::linear_constraint_system_t;
+        using typename abstract_domain_t::variable_t;
+        using typename abstract_domain_t::number_t;
+        using typename abstract_domain_t::varname_t;
         typedef interval <Number> interval_t;
 
-        apron_domain(): ikos::writeable() { }    
+        apron_domain() {}    
 
         static apron_domain_t top() { CRAB_ERROR (APRON_NOT_FOUND); }
 
         static apron_domain_t bottom() { CRAB_ERROR (APRON_NOT_FOUND); }
 
-        apron_domain (const apron_domain_t& other): 
-            ikos::writeable() { 
-        }
+        apron_domain (const apron_domain_t& other) {}
         
         bool is_bottom() { CRAB_ERROR (APRON_NOT_FOUND); }
 
@@ -108,12 +99,10 @@ namespace crab {
         void apply(operation_t op, VariableName x, Number k) 
         { CRAB_ERROR (APRON_NOT_FOUND); }
 
-        void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width) 
+        void apply(int_conv_operation_t op,
+		   VariableName dst, unsigned dst_width, VariableName src, unsigned src_width) 
         { CRAB_ERROR (APRON_NOT_FOUND); }
-        
-        void apply(conv_operation_t op, VariableName x, Number k, unsigned width) 
-        { CRAB_ERROR (APRON_NOT_FOUND); }
-        
+	
         void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) 
         { CRAB_ERROR (APRON_NOT_FOUND); }
         
@@ -167,27 +156,22 @@ namespace crab {
      using namespace apron;
 
       template<typename Number, typename VariableName, apron_domain_id_t ApronDom>
-      class apron_domain_: 
-         public ikos::writeable, 
-         public numerical_domain<Number, VariableName>,
-	 public backward_numerical_domain<Number,VariableName,
-					  apron_domain_<Number,VariableName,ApronDom> >,
-         public bitwise_operators<Number, VariableName>, 
-         public division_operators<Number, VariableName>,
-         public array_operators<Number, VariableName>,
-         public pointer_operators<Number, VariableName>,
-	 public boolean_operators<Number, VariableName> {
+      class apron_domain_:
+         public abstract_domain<Number,VariableName,
+				apron_domain_<Number,VariableName,ApronDom> > {
+
+        typedef apron_domain_<Number, VariableName, ApronDom> apron_domain_t;
+	typedef abstract_domain<Number,VariableName,apron_domain_t> abstract_domain_t;
        public:
-        using typename numerical_domain< Number, VariableName>::linear_expression_t;
-        using typename numerical_domain< Number, VariableName>::linear_constraint_t;
-        using typename numerical_domain< Number, VariableName>::linear_constraint_system_t;
-        using typename numerical_domain< Number, VariableName>::variable_t;
-        using typename numerical_domain< Number, VariableName>::number_t;
-        using typename numerical_domain< Number, VariableName>::varname_t;
+        using typename abstract_domain_t::linear_expression_t;
+        using typename abstract_domain_t::linear_constraint_t;
+        using typename abstract_domain_t::linear_constraint_system_t;
+        using typename abstract_domain_t::variable_t;
+        using typename abstract_domain_t::number_t;
+        using typename abstract_domain_t::varname_t;
         typedef interval <Number> interval_t;
 
        private:
-        typedef apron_domain_ <Number, VariableName, ApronDom> apron_domain_t;
         typedef interval_domain <Number, VariableName> interval_domain_t;
         typedef bound <Number> bound_t;
         typedef boost::bimap< VariableName , ap_dim_t > var_map_t;
@@ -624,11 +608,9 @@ namespace crab {
 
        private:
 
-        apron_domain_ (ap_state_ptr apState, var_map_t varMap): 
-            ikos::writeable (), 
-            m_apstate (apState), 
-            m_var_map (varMap) { 
-
+        apron_domain_ (ap_state_ptr apState, var_map_t varMap):
+	  m_apstate (apState), m_var_map (varMap) {
+	  
           std::vector<ap_dim_t> dims;
           var_map_t res;
           /// XXX: we must iterate on the dimension id's to preserve
@@ -651,10 +633,9 @@ namespace crab {
         }
 
 
-        apron_domain_ (ap_state_ptr&& apState, var_map_t&& varMap): 
-            ikos::writeable (), 
-            m_apstate (std::move (apState)), 
-            m_var_map (std::move (varMap)) { 
+        apron_domain_ (ap_state_ptr&& apState, var_map_t&& varMap):
+	  m_apstate (std::move (apState)), 
+	  m_var_map (std::move (varMap)) { 
 
           std::vector<ap_dim_t> dims;
           var_map_t res;
@@ -680,18 +661,15 @@ namespace crab {
 
        public:
 
-        apron_domain_ (bool isBot = false): 
-            ikos::writeable (),
-            m_apstate (apPtr (get_man(), 
-                              (isBot ? 
-                               ap_abstract0_bottom (get_man(), 0, 0) : 
-                               ap_abstract0_top (get_man(), 0, 0))))
-        { }
+        apron_domain_ (bool isBot = false):
+	  m_apstate (apPtr (get_man(), 
+			    (isBot ? 
+			     ap_abstract0_bottom (get_man(), 0, 0) : 
+			     ap_abstract0_top (get_man(), 0, 0)))) {}
 
-        ~apron_domain_ () { }
+        ~apron_domain_ () {}
 
         apron_domain_ (const apron_domain_t& o): 
-            ikos::writeable(), 
             m_apstate (apPtr (get_man (), ap_abstract0_copy (get_man (), &*(o.m_apstate)))),
             m_var_map (o.m_var_map)
         {  
@@ -700,7 +678,6 @@ namespace crab {
         }
 
         apron_domain_ (apron_domain_t&& o): 
-            ikos::writeable(), 
             m_apstate (std::move (o.m_apstate)), 
             m_var_map (std::move (o.m_var_map)) { }
         
@@ -1250,18 +1227,14 @@ namespace crab {
                    crab::outs() << "--- "<< x<< ":="<< x<< op<< k<< " --> "<< *this<<"\n";);
         }
 
-        void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width) {
+        void apply(int_conv_operation_t op,
+		   VariableName dst, unsigned /*dst_width*/,
+		   VariableName src, unsigned /*src_width*/) {
           // since reasoning about infinite precision we simply assign and
-          // ignore the width.
-          assign(x, linear_expression_t(y));
-        }
-        
-        void apply(conv_operation_t op, VariableName x, Number k, unsigned width) {
-          // since reasoning about infinite precision we simply assign and
-          // ignore the width.
-          assign(x, k);
-        }
-        
+          // ignore the widths.
+          assign(dst, linear_expression_t(src));
+	}
+
         void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) {
           crab::CrabStats::count (getDomainName() + ".count.apply");
           crab::ScopedCrabStats __st__(getDomainName() + ".apply");
@@ -1535,23 +1508,19 @@ namespace crab {
       // Quick wrapper which uses shared references with copy-on-write.
       template<class Number, class VariableName, apron_domain_id_t ApronDom>
       class apron_domain :
-       public ikos::writeable,
-       public numerical_domain<Number, VariableName>,
-       public backward_numerical_domain<Number, VariableName,
-				       apron_domain<Number,VariableName,ApronDom> >,
-       public bitwise_operators<Number,VariableName>,
-       public division_operators<Number, VariableName>,
-       public array_operators<Number, VariableName>,
-       public pointer_operators<Number, VariableName>,
-       public boolean_operators<Number, VariableName> {
-	
+       public abstract_domain<Number, VariableName,
+			      apron_domain<Number,VariableName,ApronDom> > {
+
+        typedef apron_domain<Number, VariableName, ApronDom> apron_domain_t;
+	typedef abstract_domain<Number, VariableName, apron_domain_t> abstract_domain_t;
       public:
-        using typename numerical_domain<Number,VariableName >::linear_expression_t;
-        using typename numerical_domain<Number,VariableName >::linear_constraint_t;
-        using typename numerical_domain<Number,VariableName >::linear_constraint_system_t;
-        using typename numerical_domain<Number,VariableName >::variable_t;
-        using typename numerical_domain<Number,VariableName >::number_t;
-        using typename numerical_domain<Number,VariableName >::varname_t;
+	
+        using typename abstract_domain_t::linear_expression_t;
+        using typename abstract_domain_t::linear_constraint_t;
+        using typename abstract_domain_t::linear_constraint_system_t;
+        using typename abstract_domain_t::variable_t;
+        using typename abstract_domain_t::number_t;
+        using typename abstract_domain_t::varname_t;
         typedef typename linear_constraint_t::kind_t constraint_kind_t;
         typedef interval<Number>  interval_t;
 
@@ -1559,7 +1528,6 @@ namespace crab {
 	
         typedef apron_domain_<Number, VariableName, ApronDom> apron_domain_impl_t;
         typedef std::shared_ptr<apron_domain_impl_t> apron_domain_ref_t;
-        typedef apron_domain<Number, VariableName, ApronDom> apron_domain_t;
 
         apron_domain_ref_t _ref;  
 	
@@ -1639,13 +1607,9 @@ namespace crab {
 		   VariableName x, VariableName y, VariableName z) {
           detach(); ref().apply(op, x, y, z);
         }	
-        void apply(conv_operation_t op,
-		   VariableName x, VariableName y, unsigned width) {
-          detach(); ref().apply(op, x, y, width);
-        }
-        void apply(conv_operation_t op,
-		   VariableName x, Number k, unsigned width) {
-          detach(); ref().apply(op, x, k, width);
+        void apply(int_conv_operation_t op,
+		   VariableName dst, unsigned dst_width, VariableName src, unsigned src_width) {
+          detach(); ref().apply(op, dst, dst_width, src, src_width);
         }
         void apply(bitwise_operation_t op,
 		   VariableName x, VariableName y, Number k) {

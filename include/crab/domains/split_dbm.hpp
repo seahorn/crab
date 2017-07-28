@@ -122,20 +122,20 @@ namespace crab {
 
 
     template<class Number, class VariableName, class Params = SDBM_impl::DefaultParams<Number> >
-    class SplitDBM_ : public writeable,
-		      public numerical_domain<Number, VariableName >,
-		      public bitwise_operators<Number,VariableName >,
-		      public division_operators<Number, VariableName >,
-		      public array_operators<Number, VariableName >,
-		      public pointer_operators<Number, VariableName >,
-		      public boolean_operators<Number, VariableName > {
+    class SplitDBM_ :
+      public abstract_domain<Number, VariableName,
+			     SplitDBM_<Number,VariableName,Params> > {
+
+      typedef SplitDBM_<Number, VariableName, Params> DBM_t;
+      typedef abstract_domain<Number, VariableName, DBM_t> abstract_domain_t;
+      
      public:
-      using typename numerical_domain< Number, VariableName >::linear_expression_t;
-      using typename numerical_domain< Number, VariableName >::linear_constraint_t;
-      using typename numerical_domain< Number, VariableName >::linear_constraint_system_t;
-      using typename numerical_domain< Number, VariableName >::variable_t;
-      using typename numerical_domain< Number, VariableName >::number_t;
-      using typename numerical_domain< Number, VariableName >::varname_t;
+      using typename abstract_domain_t::linear_expression_t;
+      using typename abstract_domain_t::linear_constraint_t;
+      using typename abstract_domain_t::linear_constraint_system_t;
+      using typename abstract_domain_t::variable_t;
+      using typename abstract_domain_t::number_t;
+      using typename abstract_domain_t::varname_t;
       
       typedef typename linear_constraint_t::kind_t constraint_kind_t;
       typedef interval<Number>  interval_t;
@@ -146,25 +146,18 @@ namespace crab {
       // retrofit some operations onto the join.
       typedef patricia_tree< VariableName, interval_t > ranges_t;
       typedef typename ranges_t::key_binary_op_t key_binary_op_t;
-   
       typedef typename Params::Wt Wt;
       typedef typename Params::graph_t graph_t;
-
       typedef SDBM_impl::NtoV<Number, Wt> ntov;
-
       typedef typename graph_t::vert_id vert_id;
       typedef boost::container::flat_map<variable_t, vert_id> vert_map_t;
       typedef typename vert_map_t::value_type vmap_elt_t;
       typedef std::vector< boost::optional<variable_t> > rev_map_t;
-
-      typedef SplitDBM_<Number, VariableName, Params> DBM_t;
-
       typedef GraphOps<graph_t> GrOps;
       typedef GraphPerm<graph_t> GrPerm;
       typedef typename GrOps::edge_vector edge_vector;
       // < <x, y>, k> == x - y <= k.
       typedef std::pair< std::pair<VariableName, VariableName>, Wt > diffcst_t;
-
       typedef std::unordered_set<vert_id> vert_set_t;
 
       protected:
@@ -183,8 +176,8 @@ namespace crab {
       bool _is_bottom;
 
    public:
-      SplitDBM_(bool is_bottom = false):
-        writeable(), _is_bottom(is_bottom)
+      
+      SplitDBM_(bool is_bottom = false): _is_bottom(is_bottom)
       {
         g.growTo(1);  // Allocate the zero vector
         potential.push_back(Wt(0));
@@ -1669,6 +1662,20 @@ namespace crab {
         */
       }
 
+      void backward_assign (VariableName x, linear_expression_t e,
+			    DBM_t invariant) 
+      { CRAB_WARN ("backward assign not implemented"); }
+      
+      void backward_apply (operation_t op,
+			   VariableName x, VariableName y, Number z,
+			   DBM_t invariant) 
+      { CRAB_WARN ("backward apply not implemented"); }
+      
+      void backward_apply(operation_t op,
+			  VariableName x, VariableName y, VariableName z,
+			  DBM_t invariant) 
+      { CRAB_WARN ("backward apply not implemented"); }
+      
       void operator+=(linear_constraint_t cst) {
         crab::CrabStats::count (getDomainName() + ".count.add_constraints");
         crab::ScopedCrabStats __st__(getDomainName() + ".add_constraints");
@@ -1805,19 +1812,17 @@ namespace crab {
         }
       }
 
-      // bitwise_operators_api
-      void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width) {
+      // int_cast_operators_api
+
+      void apply(int_conv_operation_t /*op*/,
+		 VariableName dst, unsigned /*dst_width*/,
+		 VariableName src, unsigned /*src_width*/) {
         // since reasoning about infinite precision we simply assign and
-        // ignore the width.
-        assign(x, linear_expression_t(y));
+        // ignore the widths.
+        assign(dst, linear_expression_t(src));
       }
 
-      void apply(conv_operation_t op, VariableName x, Number k, unsigned width) {
-        // since reasoning about infinite precision we simply assign
-        // and ignore the width.
-        assign(x, k);
-      }
-
+      // bitwise_operators_api      
       void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) {
         crab::CrabStats::count (getDomainName() + ".count.apply");
         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
@@ -2402,47 +2407,46 @@ namespace crab {
 
     // Quick wrapper which uses shared references with copy-on-write.
     template<class Number, class VariableName, class Params=SDBM_impl::DefaultParams <Number> >
-    class SplitDBM : public writeable,
-               public numerical_domain<Number, VariableName>,
-               public bitwise_operators<Number,VariableName>,
-               public division_operators<Number, VariableName>,
-               public array_operators<Number, VariableName>,
-	       public pointer_operators<Number, VariableName>,
-               public boolean_operators<Number, VariableName> {
-      public:
-      using typename numerical_domain< Number, VariableName>::linear_expression_t;
-      using typename numerical_domain< Number, VariableName>::linear_constraint_t;
-      using typename numerical_domain< Number, VariableName>::linear_constraint_system_t;
-      using typename numerical_domain< Number, VariableName>::variable_t;
-      using typename numerical_domain< Number, VariableName>::number_t;
-      using typename numerical_domain< Number, VariableName>::varname_t;
+    class SplitDBM:
+      public abstract_domain<Number, VariableName,
+			     SplitDBM<Number,VariableName,Params> > {
+
+      typedef SplitDBM<Number, VariableName, Params> DBM_t;
+      typedef abstract_domain<Number,VariableName,DBM_t> abstract_domain_t;
+      
+    public:
+      
+      using typename abstract_domain_t::linear_expression_t;
+      using typename abstract_domain_t::linear_constraint_t;
+      using typename abstract_domain_t::linear_constraint_system_t;
+      using typename abstract_domain_t::variable_t;
+      using typename abstract_domain_t::number_t;
+      using typename abstract_domain_t::varname_t;
       typedef typename linear_constraint_t::kind_t constraint_kind_t;
       typedef interval<Number>  interval_t;
 
+    public:
+      
       typedef SplitDBM_<Number, VariableName, Params> dbm_impl_t;
       typedef std::shared_ptr<dbm_impl_t> dbm_ref_t;
-      typedef SplitDBM<Number, VariableName, Params> DBM_t;
 
       SplitDBM(dbm_ref_t _ref) : norm_ref(_ref) { }
 
       SplitDBM(dbm_ref_t _base, dbm_ref_t _norm) 
-        : base_ref(_base), norm_ref(_norm)
-      { }
+        : base_ref(_base), norm_ref(_norm) { }
+       
 
-      DBM_t create(dbm_impl_t&& t)
-      {
+      DBM_t create(dbm_impl_t&& t) {
         return std::make_shared<dbm_impl_t>(std::move(t));
       }
 
-      DBM_t create_base(dbm_impl_t&& t)
-      {
+      DBM_t create_base(dbm_impl_t&& t) {
         dbm_ref_t base = std::make_shared<dbm_impl_t>(t);
         dbm_ref_t norm = std::make_shared<dbm_impl_t>(std::move(t));  
         return DBM_t(base, norm);
       }
 
-      void lock(void)
-      {
+      void lock(void) {
         // Allocate a fresh copy.
         if(!norm_ref.unique())
           norm_ref = std::make_shared<dbm_impl_t>(*norm_ref);
@@ -2503,11 +2507,23 @@ namespace crab {
       void apply(operation_t op, VariableName x, VariableName y, Number k) {
         lock(); norm().apply(op, x, y, k);
       }
-      void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width) {
-        lock(); norm().apply(op, x, y, width);
+      void backward_assign(VariableName x, linear_expression_t e,
+			   DBM_t invariant) {
+	lock(); norm().backward_assign(x, e, invariant.norm());
       }
-      void apply(conv_operation_t op, VariableName x, Number k, unsigned width) {
-        lock(); norm().apply(op, x, k, width);
+      void backward_apply(operation_t op,
+			  VariableName x, VariableName y, Number k,
+			  DBM_t invariant) {
+	lock(); norm().backward_apply(op, x, y, k, invariant.norm());
+      }
+      void backward_apply(operation_t op,
+			  VariableName x, VariableName y, VariableName z,
+			  DBM_t invariant) {
+	lock(); norm().backward_apply(op, x, y, z, invariant.norm());
+      }	
+      void apply(int_conv_operation_t op,
+		 VariableName dst, unsigned dst_width, VariableName src, unsigned src_width) {
+        lock(); norm().apply(op, dst, dst_width, src, src_width);
       }
       void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k) {
         lock(); norm().apply(op, x, y, k);

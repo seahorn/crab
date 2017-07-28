@@ -23,38 +23,31 @@ namespace crab {
       //! Abstract domain to reason about summarized variables. All array
       //  elements are `smashed` into a single cell.
       template<typename NumDomain>
-      class array_smashing: 
-         public ikos::writeable, 
-         public numerical_domain<typename NumDomain::number_t,
-                                 typename NumDomain::varname_t>,
-         public bitwise_operators<typename NumDomain::number_t, 
-                                  typename NumDomain::varname_t>, 
-         public division_operators<typename NumDomain::number_t,
-                                   typename NumDomain::varname_t>,
-         public array_operators<typename NumDomain::number_t,
-                                typename NumDomain::varname_t >,
-         public pointer_operators<typename NumDomain::number_t,
-                                  typename NumDomain::varname_t >,
-	 public boolean_operators<typename NumDomain::number_t,
-				  typename NumDomain::varname_t >	
-      {
-              
-       public:
-
-        typedef typename NumDomain::number_t Number;
+      class array_smashing:
+       public abstract_domain<typename NumDomain::number_t,
+			      typename NumDomain::varname_t,
+			      array_smashing<NumDomain> > {
+	
+      public:
+	
+	typedef typename NumDomain::number_t Number;
         typedef typename NumDomain::varname_t VariableName;
 
-        using typename numerical_domain< Number, VariableName>::linear_expression_t;
-        using typename numerical_domain< Number, VariableName>::linear_constraint_t;
-        using typename numerical_domain< Number, VariableName>::linear_constraint_system_t;
-        using typename numerical_domain< Number, VariableName>::variable_t;
-        using typename numerical_domain< Number, VariableName>::number_t;
-        using typename numerical_domain< Number, VariableName>::varname_t;
+      private:
+	
+        typedef array_smashing<NumDomain> array_smashing_t;
+	typedef abstract_domain<Number,VariableName,array_smashing_t> abstract_domain_t;
+	  
+      public:
+
+        using typename abstract_domain_t::linear_expression_t;
+        using typename abstract_domain_t::linear_constraint_t;
+        using typename abstract_domain_t::linear_constraint_system_t;
+        using typename abstract_domain_t::variable_t;
+        using typename abstract_domain_t::number_t;
+        using typename abstract_domain_t::varname_t;
         typedef crab::pointer_constraint<VariableName> ptr_cst_t;
-
-        typedef array_smashing <NumDomain> array_smashing_t;
         typedef NumDomain content_domain_t;
-
         typedef interval <Number> interval_t;
         
        private:
@@ -64,10 +57,8 @@ namespace crab {
         //! scalar and summarized array variables        
         NumDomain _inv; 
         
-        array_smashing (NumDomain inv): 
-            ikos::writeable (), 
-            _inv (inv) { }
-        
+        array_smashing (NumDomain inv): _inv (inv) { }
+	  
         void strong_update (VariableName a, crab::variable_type a_ty,
 			    linear_expression_t rhs ) {
           if (a_ty == ARR_INT_TYPE)
@@ -92,7 +83,7 @@ namespace crab {
         
        public:
         
-        array_smashing(): ikos::writeable(), _inv (NumDomain::top()) { }    
+        array_smashing(): _inv (NumDomain::top()) { }    
         
         static array_smashing_t top() { 
           return array_smashing (NumDomain::top ()); 
@@ -103,8 +94,7 @@ namespace crab {
         }
         
         array_smashing (const array_smashing_t& other): 
-            ikos::writeable(), 
-            _inv (other._inv) { 
+	  _inv (other._inv) { 
           crab::CrabStats::count (getDomainName() + ".count.copy");
           crab::ScopedCrabStats __st__(getDomainName() + ".copy");
         }
@@ -204,27 +194,39 @@ namespace crab {
                    crab::outs() << "apply "<< x<< " := "<< x<< " "<< op<< " "<< k<< *this <<"\n";);
         }
 
-        // bitwise_operators_api
-        void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width) {
-          _inv.apply (op, x, y, width);
+	void backward_assign (VariableName x, linear_expression_t e,
+			      array_smashing_t invariant) 
+	{ CRAB_WARN ("backward assign not implemented"); }
+	
+	void backward_apply (operation_t op,
+			     VariableName x, VariableName y, Number z,
+			     array_smashing_t invariant) 
+	{ CRAB_WARN ("backward apply not implemented"); }
+	
+	void backward_apply(operation_t op,
+			    VariableName x, VariableName y, VariableName z,
+			    array_smashing_t invariant) 
+	{ CRAB_WARN ("backward apply not implemented"); }
+	
+        void apply(int_conv_operation_t op,
+		   VariableName dst, unsigned dst_width, VariableName src, unsigned src_width) {
+          _inv.apply (op, dst, dst_width, src, src_width);
         }
-        
-        void apply(conv_operation_t op, VariableName x, Number k, unsigned width) {
-          _inv.apply (op, x, k, width);
-        }
-        
+                
         void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) {
           _inv.apply (op, x, y, z);
 
           CRAB_LOG("smashing",
-                   crab::outs() << "apply "<< x<< " := "<< y<< " "<< op<< " "<< z<< *this <<"\n";);
+                   crab::outs() << "apply "<< x<< " := "<< y<< " "
+		                << op<< " "<< z<< *this <<"\n";);
         }
         
         void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k) {
           _inv.apply (op, x, y, k);
 
           CRAB_LOG("smashing",
-                   crab::outs() << "apply "<< x<< " := "<< y<< " "<< op<< " "<< k<< *this <<"\n";);
+                   crab::outs() << "apply "<< x<< " := "<< y<< " "
+		                << op<< " "<< k<< *this <<"\n";);
         }
         
         // division_operators_api
@@ -242,6 +244,24 @@ namespace crab {
                    crab::outs() << "apply "<< x<< " := "<< y<< " "<< op<< " "<< k<< *this <<"\n";);
         }
 
+	// boolean operators
+	virtual void assign_bool_cst (VariableName lhs, linear_constraint_t rhs) override {
+	  _inv.assign_bool_cst (lhs, rhs);
+	}    
+	
+	virtual void assign_bool_var(VariableName lhs, VariableName rhs, bool is_not_rhs) override {
+	  _inv.assign_bool_var (lhs, rhs, is_not_rhs);
+	}    
+	
+	virtual void apply_binary_bool (bool_operation_t op,VariableName x,
+					VariableName y,VariableName z) override {
+	  _inv.apply_binary_bool (op, x, y, z);
+	}    
+	
+	virtual void assume_bool (VariableName v, bool is_negated) override {
+	  _inv.assume_bool (v, is_negated);
+	}    
+	
         // pointer_operators_api
         virtual void pointer_load (VariableName lhs, VariableName rhs) override {
           _inv.pointer_load(lhs,rhs);

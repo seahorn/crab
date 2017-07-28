@@ -200,24 +200,23 @@ namespace crab {
     // Provided by Ikos
     // Reduced product of two arbitrary domains with all operations.
     template< typename Number, typename VariableName, typename Domain1, typename Domain2 >
-    class domain_product2: public writeable,
-                           public numerical_domain< Number, VariableName >,
-                           public bitwise_operators< Number, VariableName >, 
-                           public division_operators< Number, VariableName >,
-                           public crab::domains::array_operators< Number, VariableName >,
-                           public crab::domains::pointer_operators< Number, VariableName >,
-			   public crab::domains::boolean_operators< Number, VariableName >{
+    class domain_product2:
+      public abstract_domain<Number,VariableName,
+			     domain_product2<Number,VariableName,
+					     Domain1,Domain2> > {
      public:
-      typedef domain_product2< Number, VariableName, Domain1, Domain2 > domain_product2_t;
+      
+      typedef domain_product2<Number, VariableName, Domain1, Domain2> domain_product2_t;
+      typedef abstract_domain<Number, VariableName, domain_product2_t> abstract_domain_t;
       typedef Domain1 first_type;
       typedef Domain2 second_type;
       
-      using typename numerical_domain< Number, VariableName >::linear_expression_t;
-      using typename numerical_domain< Number, VariableName >::linear_constraint_t;
-      using typename numerical_domain< Number, VariableName >::linear_constraint_system_t;
-      using typename numerical_domain< Number, VariableName >::variable_t;
-      using typename numerical_domain< Number, VariableName >::number_t;
-      using typename numerical_domain< Number, VariableName >::varname_t;
+      using typename abstract_domain_t::linear_expression_t;
+      using typename abstract_domain_t::linear_constraint_t;
+      using typename abstract_domain_t::linear_constraint_system_t;
+      using typename abstract_domain_t::variable_t;
+      using typename abstract_domain_t::number_t;
+      using typename abstract_domain_t::varname_t;
       
       typedef crab::pointer_constraint<VariableName> ptr_cst_t;
       
@@ -250,12 +249,10 @@ namespace crab {
       domain_product2(): _product() { }
       
       domain_product2(Domain1 first, Domain2 second): 
-          _product(basic_domain_product2_t(first, second)) { }
+	_product(basic_domain_product2_t(first, second)) { }
       
       domain_product2(const domain_product2_t& other): 
-          writeable(), 
-          numerical_domain< Number, VariableName >(), 
-          _product(other._product) { }
+	_product(other._product) { }
       
       domain_product2_t& operator=(const domain_product2_t& other) {
         if (this != &other)
@@ -331,6 +328,29 @@ namespace crab {
         this->_product.second().apply(op, x, y, k);
         this->reduce();
       }
+
+      void backward_assign (VariableName x, linear_expression_t e,
+			    domain_product2_t invariant)  {
+        this->_product.first().backward_assign(x, e, invariant.first());
+        this->_product.second().backward_assign(x, e, invariant.second());
+        this->reduce();
+      }
+      
+      void backward_apply (operation_t op,
+			   VariableName x, VariableName y, Number k,
+			   domain_product2_t invariant)  {
+        this->_product.first().backward_apply(op, x, y, k, invariant.first());
+        this->_product.second().backward_apply(op, x, y, k, invariant.second());
+        this->reduce();
+      }
+      
+      void backward_apply(operation_t op,
+			  VariableName x, VariableName y, VariableName z,
+			  domain_product2_t invariant)  {
+        this->_product.first().backward_apply(op, x, y, z, invariant.first());
+        this->_product.second().backward_apply(op, x, y, z, invariant.second());
+        this->reduce();	
+      }
       
       void operator+=(linear_constraint_system_t csts) {
         this->_product.first() += csts;
@@ -343,19 +363,16 @@ namespace crab {
         this->_product.second() -= v;
       }
       
+      // cast_operators_api
+      
+      void apply(int_conv_operation_t op,
+		 VariableName dst, unsigned dst_width, VariableName src, unsigned src_width) {
+        this->_product.first().apply(op, dst, dst_width, src, src_width);
+        this->_product.second().apply(op, dst, dst_width, src, src_width);
+        this->reduce();
+      }
+      
       // bitwise_operators_api
-      
-      void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width) {
-        this->_product.first().apply(op, x, y, width);
-        this->_product.second().apply(op, x, y, width);
-        this->reduce();
-      }
-      
-      void apply(conv_operation_t op, VariableName x, Number k, unsigned width) {
-        this->_product.first().apply(op, x, k, width);
-        this->_product.second().apply(op, x, k, width);
-        this->reduce();
-      }
       
       void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) {
         this->_product.first().apply(op, x, y, z);
@@ -476,9 +493,9 @@ namespace crab {
         this->reduce ();
       }    
 
-      virtual void assign_bool_var (VariableName lhs, VariableName rhs) override {
-        this->_product.first().assign_bool_var (lhs, rhs);
-        this->_product.second().assign_bool_var (lhs, rhs);
+      virtual void assign_bool_var(VariableName lhs, VariableName rhs, bool is_not_rhs) override {
+        this->_product.first().assign_bool_var (lhs, rhs, is_not_rhs);
+        this->_product.second().assign_bool_var (lhs, rhs, is_not_rhs);
         this->reduce ();
       }    
 
@@ -509,30 +526,26 @@ namespace crab {
     // This domain is similar to domain_product2 but it uses a more
     // precise reduction operation.
     template<typename Domain1, typename Domain2 >
-    class reduced_numerical_domain_product2: 
-       public writeable,
-       public numerical_domain<typename Domain1::number_t, typename Domain1::varname_t>,
-       public bitwise_operators<typename Domain1::number_t, typename Domain1::varname_t>, 
-       public division_operators<typename Domain1::number_t, typename Domain1::varname_t>,
-       public array_operators<typename Domain1::number_t, typename Domain1::varname_t>,
-       public pointer_operators<typename Domain1::number_t, typename Domain1::varname_t>,
-       public boolean_operators<typename Domain1::number_t, typename Domain1::varname_t>{
-      
+    class reduced_numerical_domain_product2:
+      public abstract_domain<typename Domain1::number_t, typename Domain1::varname_t,
+			     reduced_numerical_domain_product2<Domain1,Domain2> > {
      public:
       // Assume that Domain1 and Domain2 have the same types for
       // number_t and varname_t
       typedef typename Domain1::number_t Number;
       typedef typename Domain1::varname_t VariableName;
-
-      using typename numerical_domain< Number, VariableName >::linear_expression_t;
-      using typename numerical_domain< Number, VariableName >::linear_constraint_t;
-      using typename numerical_domain< Number, VariableName >::linear_constraint_system_t;
-      using typename numerical_domain< Number, VariableName >::variable_t;
-      using typename numerical_domain< Number, VariableName >::number_t;
-      using typename numerical_domain< Number, VariableName >::varname_t;
+      typedef reduced_numerical_domain_product2<Domain1,Domain2>
+      reduced_numerical_domain_product2_t;
+      typedef abstract_domain<Number,VariableName,reduced_numerical_domain_product2_t>
+      abstract_domain_t;
+      using typename abstract_domain_t::linear_expression_t;
+      using typename abstract_domain_t::linear_constraint_t;
+      using typename abstract_domain_t::linear_constraint_system_t;
+      using typename abstract_domain_t::variable_t;
+      using typename abstract_domain_t::number_t;
+      using typename abstract_domain_t::varname_t;
       
       typedef interval<number_t> interval_t;
-      typedef reduced_numerical_domain_product2<Domain1,Domain2> reduced_numerical_domain_product2_t;
       
      private:
       
@@ -742,18 +755,41 @@ namespace crab {
 	CRAB_LOG("combined-domain", 
 		 crab::outs () << x << ":=" << y << op << k << "=" << *this << "\n");
       }
+
+      void backward_assign (VariableName x, linear_expression_t e,
+			    reduced_numerical_domain_product2_t invariant)  {
+        this->_product.backward_assign(x, e, invariant._product);
+	// reduce the variables in the right-hand side
+	for (auto v: e.variables())
+	  this->reduce_variable(v.name());	
+      }
+      
+      void backward_apply (operation_t op,
+			   VariableName x, VariableName y, Number k,
+			   reduced_numerical_domain_product2_t invariant)  {
+        this->_product.backward_apply(op, x, y, k, invariant._product);
+	// reduce the variables in the right-hand side	
+        this->reduce_variable(y);		
+      }
+      
+      void backward_apply(operation_t op,
+			  VariableName x, VariableName y, VariableName z,
+			  reduced_numerical_domain_product2_t invariant)  {
+        this->_product.backward_apply(op, x, y, z, invariant._product);
+	// reduce the variables in the right-hand side		
+        this->reduce_variable(y);
+	this->reduce_variable(z);			
+      }
+
+      // cast_operators_api
+      
+      void apply(int_conv_operation_t op,
+		 varname_t dst, unsigned dst_width, varname_t src, unsigned src_width) {
+        this->_product.apply(op, dst, dst_width, src, src_width);
+        this->reduce_variable(dst);
+      }
       
       // bitwise_operators_api
-      
-      void apply(conv_operation_t op, varname_t x, varname_t y, unsigned width) {
-        this->_product.apply(op, x, y, width);
-        this->reduce_variable(x);
-      }
-      
-      void apply(conv_operation_t op, varname_t x, number_t k, unsigned width) {
-        this->_product.apply(op, x, k, width);
-        this->reduce_variable(x);
-      }
       
       void apply(bitwise_operation_t op, varname_t x, varname_t y, varname_t z) {
         this->_product.apply(op, x, y, z);
@@ -1107,31 +1143,23 @@ namespace crab {
     // not realistic.
     template < typename NumAbsDom, int typeSize=-1 >
     class numerical_congruence_domain:
-        public writeable,
-        public numerical_domain<typename NumAbsDom::number_t, 
-                                typename NumAbsDom::varname_t>,
-        public bitwise_operators<typename NumAbsDom::number_t, 
-                                 typename NumAbsDom::varname_t>,
-        public division_operators<typename NumAbsDom::number_t,
-                                  typename NumAbsDom::varname_t>,
-        public array_operators<typename NumAbsDom::number_t,
-                               typename NumAbsDom::varname_t>,
-        public pointer_operators<typename NumAbsDom::number_t,
-                                 typename NumAbsDom::varname_t>,
-	public boolean_operators<typename NumAbsDom::number_t,
-				 typename NumAbsDom::varname_t> {
-     private:
+      public abstract_domain<typename NumAbsDom::number_t,
+			     typename NumAbsDom::varname_t,
+			     numerical_congruence_domain<NumAbsDom,typeSize> > {
+
       typedef typename NumAbsDom::number_t N;
       typedef typename NumAbsDom::varname_t V;
-      
-     public:
       typedef numerical_congruence_domain< NumAbsDom, typeSize > rnc_domain_t;
-      using typename numerical_domain< N, V>::linear_expression_t;
-      using typename numerical_domain< N, V>::linear_constraint_t;
-      using typename numerical_domain< N, V>::linear_constraint_system_t;
-      using typename numerical_domain< N, V>::variable_t;
-      using typename numerical_domain< N, V>::number_t;
-      using typename numerical_domain< N, V>::varname_t;
+      typedef abstract_domain<N,V,rnc_domain_t> abstract_domain_t;
+
+    public:
+      
+      using typename abstract_domain_t::linear_expression_t;
+      using typename abstract_domain_t::linear_constraint_t;
+      using typename abstract_domain_t::linear_constraint_system_t;
+      using typename abstract_domain_t::variable_t;
+      using typename abstract_domain_t::number_t;
+      using typename abstract_domain_t::varname_t;
 
       typedef congruence_domain<number_t, varname_t, typeSize> congruence_domain_t;
       typedef interval_congruence<number_t, typeSize> interval_congruence_t;
@@ -1282,18 +1310,42 @@ namespace crab {
         this->_product.apply(op, x, y, k);
         this->reduce_variable(x);
       }
+
+      void backward_assign (varname_t x, linear_expression_t e,
+			    rnc_domain_t invariant)  {
+        this->_product.backward_assign(x, e, invariant._product);
+	// reduce the variables in the right-hand side
+	for (auto v: e.variables())
+	  this->reduce_variable(v.name());	
+      }
       
+      void backward_apply (operation_t op,
+			   varname_t x, varname_t y, number_t k,
+			   rnc_domain_t invariant)  {
+        this->_product.backward_apply(op, x, y, k, invariant._product);
+	// reduce the variables in the right-hand side	
+        this->reduce_variable(y);		
+      }
+      
+      void backward_apply(operation_t op,
+			  varname_t x, varname_t y, varname_t z,
+			  rnc_domain_t invariant)  {
+        this->_product.backward_apply(op, x, y, z, invariant._product);
+	// reduce the variables in the right-hand side		
+        this->reduce_variable(y);
+	this->reduce_variable(z);			
+      }
+
+      // cast_operators_api
+      
+      void apply(int_conv_operation_t op,
+		 varname_t dst, unsigned dst_width, varname_t src, unsigned src_width) {
+	this->_product.apply(op, dst, dst_width, src, src_width);
+	this->reduce_variable(dst);
+      }
+      
+
       // bitwise_operators_api
-      
-      void apply(conv_operation_t op, varname_t x, varname_t y, unsigned width) {
-         this->_product.apply(op, x, y, width);
-         this->reduce_variable(x);
-      }
-      
-      void apply(conv_operation_t op, varname_t x, number_t k, unsigned width) {
-        this->_product.apply(op, x, k, width);
-        this->reduce_variable(x);
-      }
       
       void apply(bitwise_operation_t op, varname_t x, varname_t y, varname_t z) {
         this->_product.apply(op, x, y, z);
@@ -1336,32 +1388,24 @@ namespace crab {
     // Reduction is done by as in domain_product2.
     template < typename NumAbsDom>
     class numerical_nullity_domain:
-        public writeable,
-        public numerical_domain<typename NumAbsDom::number_t, 
-                                typename NumAbsDom::varname_t>,
-        public bitwise_operators<typename NumAbsDom::number_t, 
-                                 typename NumAbsDom::varname_t>,
-        public division_operators<typename NumAbsDom::number_t,
-                                  typename NumAbsDom::varname_t>,
-        public array_operators<typename NumAbsDom::number_t,
-                               typename NumAbsDom::varname_t>,
-        public pointer_operators<typename NumAbsDom::number_t,
-                                 typename NumAbsDom::varname_t>,
-        public boolean_operators<typename NumAbsDom::number_t,
-                                 typename NumAbsDom::varname_t> 
-    {
-     private:
+      public abstract_domain<typename NumAbsDom::number_t, 
+			     typename NumAbsDom::varname_t,
+			     numerical_nullity_domain<NumAbsDom> > {
+    private:
+      
       typedef typename NumAbsDom::number_t N;
       typedef typename NumAbsDom::varname_t V;
-      
-     public:
       typedef numerical_nullity_domain<NumAbsDom> nn_domain_t;
-      using typename numerical_domain<N, V>::linear_expression_t;
-      using typename numerical_domain<N, V>::linear_constraint_t;
-      using typename numerical_domain<N, V>::linear_constraint_system_t;
-      using typename numerical_domain<N, V>::variable_t;
-      using typename numerical_domain<N, V>::number_t;
-      using typename numerical_domain<N, V>::varname_t;
+      typedef abstract_domain<N,V,nn_domain_t> abstract_domain_t;
+      
+    public:
+      
+      using typename abstract_domain_t::linear_expression_t;
+      using typename abstract_domain_t::linear_constraint_t;
+      using typename abstract_domain_t::linear_constraint_system_t;
+      using typename abstract_domain_t::variable_t;
+      using typename abstract_domain_t::number_t;
+      using typename abstract_domain_t::varname_t;
       typedef interval<N> interval_t;
       typedef crab::pointer_constraint<V> ptr_cst_t;
       
@@ -1456,6 +1500,23 @@ namespace crab {
       void assign(varname_t x, linear_expression_t e) {
         this->_product.assign(x, e);
       }
+
+      void backward_assign (varname_t x, linear_expression_t e,
+			    nn_domain_t invariant)  {
+        this->_product.backward_assign(x, e, invariant._product);
+      }
+      
+      void backward_apply (operation_t op,
+			   varname_t x, varname_t y, number_t k,
+			   nn_domain_t invariant)  {
+        this->_product.backward_apply(op, x, y, k, invariant._product);
+      }
+      
+      void backward_apply(operation_t op,
+			  varname_t x, varname_t y, varname_t z,
+			  nn_domain_t invariant)  {
+        this->_product.backward_apply(op, x, y, z, invariant._product);
+      }
       
       void operator+=(linear_constraint_system_t csts) {
         this->_product += csts;
@@ -1470,16 +1531,15 @@ namespace crab {
       interval_t operator[](varname_t v) {
         return this->_product.first()[v];
       }
+
+      // cast_operators_api
+      
+      void apply(int_conv_operation_t op,
+		 varname_t dst, unsigned dst_width, varname_t src, unsigned src_width) {
+	this->_product.apply(op, dst, dst_width, src, src_width);
+      }
       
       // bitwise_operators_api
-      
-      void apply(conv_operation_t op, varname_t x, varname_t y, unsigned width) {
-         this->_product.apply(op, x, y, width);
-      }
-      
-      void apply(conv_operation_t op, varname_t x, number_t k, unsigned width) {
-        this->_product.apply(op, x, k, width);
-      }
       
       void apply(bitwise_operation_t op, varname_t x, varname_t y, varname_t z) {
         this->_product.apply(op, x, y, z);

@@ -117,49 +117,44 @@ namespace crab {
 
     template<class Number, class VariableName,
 	     class Params = SpDBM_impl::DefaultParams <Number> >
-    class SparseDBM_: public ikos::writeable,
-               public ikos::numerical_domain<Number, VariableName >,
-               public ikos::bitwise_operators<Number,VariableName >,
-               public ikos::division_operators<Number, VariableName >,
-               public array_operators<Number, VariableName >,
-	       public pointer_operators<Number, VariableName >,
-	       public boolean_operators<Number, VariableName > {
+    class SparseDBM_:
+      public abstract_domain<Number, VariableName,
+			     SparseDBM_<Number,VariableName,Params> > {
+
+      typedef SparseDBM_<Number, VariableName, Params> DBM_t;
+      typedef abstract_domain<Number, VariableName, DBM_t> abstract_domain_t;
+      
      public:
-      using typename ikos::numerical_domain< Number, VariableName >::linear_expression_t;
-      using typename ikos::numerical_domain< Number, VariableName >::linear_constraint_t;
-      using typename ikos::numerical_domain< Number, VariableName >::linear_constraint_system_t;
-      using typename ikos::numerical_domain< Number, VariableName >::variable_t;
-      using typename ikos::numerical_domain< Number, VariableName >::number_t;
-      using typename ikos::numerical_domain< Number, VariableName >::varname_t;
+      
+      using typename abstract_domain_t::linear_expression_t;
+      using typename abstract_domain_t::linear_constraint_t;
+      using typename abstract_domain_t::linear_constraint_system_t;
+      using typename abstract_domain_t::variable_t;
+      using typename abstract_domain_t::number_t;
+      using typename abstract_domain_t::varname_t;
       
       typedef typename linear_constraint_t::kind_t constraint_kind_t;
       typedef ikos::interval<Number>  interval_t;
 
      private:
+      
       typedef ikos::bound<Number>  bound_t;
       // Can't use separate_domain directly, as we need to
       // retrofit some operations onto the join.
       typedef ikos::patricia_tree< VariableName, interval_t > ranges_t;
       typedef typename ranges_t::key_binary_op_t key_binary_op_t;
-
       typedef typename Params::Wt Wt;
       typedef typename Params::graph_t graph_t;
-      
       typedef SpDBM_impl::NtoV<Number, Wt> ntov;
-
       typedef typename graph_t::vert_id vert_id;
       typedef boost::container::flat_map<variable_t, vert_id> vert_map_t;
       typedef typename vert_map_t::value_type vmap_elt_t;
       typedef std::vector< boost::optional<variable_t> > rev_map_t;
-
-      typedef SparseDBM_<Number, VariableName, Params> DBM_t;
-
       typedef GraphOps<graph_t> GrOps;
       typedef GraphPerm<graph_t> GrPerm;
       typedef typename GrOps::edge_vector edge_vector;
       // < <x, y>, k> == x - y <= k.
       typedef std::pair< std::pair<VariableName, VariableName>, Wt > diffcst_t;
-
       typedef std::unordered_set<vert_id> vert_set_t;
 
       protected:
@@ -1278,6 +1273,20 @@ namespace crab {
                  crab::outs() << "---"<< x<< ":="<< y<< op<< k<<"\n"<< *this<<"\n";);
       }
       
+      void backward_assign (VariableName x, linear_expression_t e,
+			    DBM_t invariant) 
+      { CRAB_WARN ("backward assign not implemented"); }
+      
+      void backward_apply (operation_t op,
+			   VariableName x, VariableName y, Number z,
+			   DBM_t invariant) 
+      { CRAB_WARN ("backward apply not implemented"); }
+      
+      void backward_apply(operation_t op,
+			  VariableName x, VariableName y, VariableName z,
+			  DBM_t invariant) 
+      { CRAB_WARN ("backward apply not implemented"); }
+
       bool add_linear_leq(const linear_expression_t& exp)
       {
         CRAB_LOG("zones-sparse",
@@ -1512,19 +1521,18 @@ namespace crab {
         }
       }
 
-      // bitwise_operators_api
-      void apply(ikos::conv_operation_t op, VariableName x, VariableName y, unsigned width) {
+      // cast_operators_api
+
+      void apply(int_conv_operation_t /*op*/,
+		 VariableName dst, unsigned /*dst_width*/,
+		 VariableName src, unsigned /*src_width*/) {
         // since reasoning about infinite precision we simply assign and
-        // ignore the width.
-        assign(x, linear_expression_t(y));
+        // ignore the widths.
+        assign(dst, linear_expression_t(src));
       }
 
-      void apply(ikos::conv_operation_t op, VariableName x, Number k, unsigned width) {
-        // since reasoning about infinite precision we simply assign
-        // and ignore the width.
-        assign(x, k);
-      }
-
+      // bitwise_operators_api
+      
       void apply(ikos::bitwise_operation_t op, VariableName x, VariableName y, VariableName z) {
         crab::CrabStats::count (getDomainName() + ".count.apply");
         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
@@ -2040,26 +2048,27 @@ namespace crab {
     // Quick wrapper which uses shared references with copy-on-write.
     template<class Number, class VariableName,
 	     class Params = SpDBM_impl::DefaultParams<Number> >
-    class SparseDBM : public ikos::writeable,
-               public ikos::numerical_domain<Number, VariableName >,
-               public ikos::bitwise_operators<Number,VariableName >,
-               public ikos::division_operators<Number, VariableName >,
-               public array_operators<Number, VariableName >,
-	       public pointer_operators<Number, VariableName >,
-	       public boolean_operators<Number, VariableName >  {
-      public:
-      using typename ikos::numerical_domain< Number, VariableName >::linear_expression_t;
-      using typename ikos::numerical_domain< Number, VariableName >::linear_constraint_t;
-      using typename ikos::numerical_domain< Number, VariableName >::linear_constraint_system_t;
-      using typename ikos::numerical_domain< Number, VariableName >::variable_t;
-      using typename ikos::numerical_domain< Number, VariableName >::number_t;
-      using typename ikos::numerical_domain< Number, VariableName >::varname_t;
+    class SparseDBM :
+      public abstract_domain<Number, VariableName,
+			     SparseDBM<Number,VariableName,Params> > {
+
+      typedef SparseDBM<Number, VariableName, Params> DBM_t;
+      typedef abstract_domain<Number, VariableName, DBM_t> abstract_domain_t;
+      
+    public:
+      using typename abstract_domain_t::linear_expression_t;
+      using typename abstract_domain_t::linear_constraint_t;
+      using typename abstract_domain_t::linear_constraint_system_t;
+      using typename abstract_domain_t::variable_t;
+      using typename abstract_domain_t::number_t;
+      using typename abstract_domain_t::varname_t;
       typedef typename linear_constraint_t::kind_t constraint_kind_t;
       typedef ikos::interval<Number>  interval_t;
 
+    public:
+      
       typedef SparseDBM_<Number, VariableName> dbm_impl_t;
       typedef std::shared_ptr<dbm_impl_t> dbm_ref_t;
-      typedef SparseDBM<Number, VariableName, Params> DBM_t;
 
       SparseDBM(dbm_ref_t _ref) : norm_ref(_ref) { }
 
@@ -2141,12 +2150,21 @@ namespace crab {
       void apply(ikos::operation_t op, VariableName x, VariableName y, Number k) {
         lock(); norm().apply(op, x, y, k);
       }
-      void apply(ikos::conv_operation_t op, VariableName x, VariableName y, unsigned width) {
-        lock(); norm().apply(op, x, y, width);
+      void apply(int_conv_operation_t op,
+		 VariableName dst, unsigned dst_width, VariableName src, unsigned src_width) {
+        lock(); norm().apply(op, dst, dst_width, src, src_width);	
       }
-      void apply(ikos::conv_operation_t op, VariableName x, Number k, unsigned width) {
-        lock(); norm().apply(op, x, k, width);
+      void backward_assign(VariableName x, linear_expression_t e, DBM_t invariant) {
+	lock(); norm().backward_assign(x, e, invariant.norm());
       }
+      void backward_apply(operation_t op,
+			  VariableName x, VariableName y, Number k, DBM_t invariant) {
+	lock(); norm().backward_apply(op, x, y, k, invariant.norm());
+      }
+      void backward_apply(operation_t op,
+			  VariableName x, VariableName y, VariableName z, DBM_t invariant) {
+	lock(); norm().backward_apply(op, x, y, z, invariant.norm());
+      }	
       void apply(ikos::bitwise_operation_t op, VariableName x, VariableName y, Number k) {
         lock(); norm().apply(op, x, y, k);
       }

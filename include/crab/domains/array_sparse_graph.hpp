@@ -1256,28 +1256,30 @@ namespace crab {
              not, e.g., for inlining.
     */
     template<typename NumDom, typename Weight, bool IsDistWeight = false>
-    class array_sparse_graph_domain: 
-        public writeable,
-        public numerical_domain<typename NumDom::number_t, typename NumDom::varname_t>,
-        public bitwise_operators<typename NumDom::number_t, typename NumDom::varname_t>, 
-        public division_operators<typename NumDom::number_t, typename NumDom::varname_t>,
-        public array_operators<typename NumDom::number_t, typename NumDom::varname_t>,
-        public pointer_operators<typename NumDom::number_t, typename NumDom::varname_t>,
-	public boolean_operators<typename NumDom::number_t, typename NumDom::varname_t>	
-    {
-      
+    class array_sparse_graph_domain:
+      public abstract_domain<typename NumDom::number_t,
+			     typename NumDom::varname_t,
+			     array_sparse_graph_domain<NumDom,Weight,IsDistWeight> > {
      public:
+      
       typedef typename NumDom::number_t Number;
       typedef typename NumDom::varname_t VariableName;
-      
+
+     private:
+
       // WARNING: assume NumDom::number_t = Weight::number_t and
-      //                 NumDom::varname_t = Weight::varname_t
-      using typename numerical_domain< Number, VariableName>::linear_expression_t;
-      using typename numerical_domain< Number, VariableName>::linear_constraint_t;
-      using typename numerical_domain< Number, VariableName>::linear_constraint_system_t;
-      using typename numerical_domain< Number, VariableName>::variable_t;
-      using typename numerical_domain< Number, VariableName>::number_t;
-      using typename numerical_domain< Number, VariableName>::varname_t;
+      //                 NumDom::varname_t = Weight::varname_t      
+      typedef array_sparse_graph_domain<NumDom,Weight,IsDistWeight> array_sgraph_domain_t;
+      typedef abstract_domain<Number,VariableName,array_sgraph_domain_t> abstract_domain_t;
+      
+     public:
+      
+      using typename abstract_domain_t::linear_expression_t;
+      using typename abstract_domain_t::linear_constraint_t;
+      using typename abstract_domain_t::linear_constraint_system_t;
+      using typename abstract_domain_t::variable_t;
+      using typename abstract_domain_t::number_t;
+      using typename abstract_domain_t::varname_t;
       typedef crab::pointer_constraint<VariableName> ptr_cst_t;
       typedef interval<Number> interval_t;
       
@@ -1286,7 +1288,6 @@ namespace crab {
       typedef landmark_varprime<VariableName,Number> landmark_var_prime_t;
       typedef landmark_ref<VariableName,Number> landmark_ref_t;
       typedef array_sparse_graph<landmark_ref_t,Weight,IsDistWeight> array_sgraph_t;
-      typedef array_sparse_graph_domain<NumDom,Weight,IsDistWeight> array_sgraph_domain_t;
 
       //// XXX: make this a template parameter later
       typedef crab::cfg::var_factory_impl::str_var_alloc_col::varname_t str_varname_t;
@@ -1295,6 +1296,7 @@ namespace crab {
       typedef term_domain<idom_info> expression_domain_t;  
 
      private:
+      
       typedef typename array_sgraph_t::mut_val_ref_t mut_val_ref_t;
 
       // Quick wrapper to perform efficient unsat queries on the
@@ -2042,7 +2044,7 @@ namespace crab {
 
 
         std::set<VariableName> keep_vars (vIt, vEt);
-        auto active_vars = array_sgraph_domain_traits<NumDom>::active_variables(_scalar);        
+        auto active_vars = array_sgraph_domain_traits<NumDom>::active_variables(_scalar);
         for (auto v: active_vars) {
           if (!keep_vars.count (v)) {
             array_forget (v);
@@ -2179,19 +2181,32 @@ namespace crab {
 		              << *this<<"\n";);
       }
 
-      void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width) {
-        _expressions.apply (op, x, y, width);
-        // assume unlimited precision so width is ignored.
-        assign(x, variable_t (y), false);
+      void backward_assign (VariableName x, linear_expression_t e,
+			    array_sgraph_domain_t invariant) 
+      { CRAB_WARN ("backward assign not implemented"); }
+      
+      void backward_apply (operation_t op,
+			   VariableName x, VariableName y, Number z,
+			   array_sgraph_domain_t invariant) 
+      { CRAB_WARN ("backward apply not implemented"); }
+      
+      void backward_apply(operation_t op,
+			  VariableName x, VariableName y, VariableName z,
+			  array_sgraph_domain_t invariant) 
+      { CRAB_WARN ("backward apply not implemented"); }
+
+
+      // cast_operators_api
+      
+      void apply(int_conv_operation_t op,
+		 VariableName dst, unsigned dst_width, VariableName src, unsigned src_width) {
+        _expressions.apply (op, dst, dst_width, src, src_width);
+        // assume unlimited precision so widths are ignored.
+        assign(dst, linear_expression_t(src), false);
       }
       
-      void apply(conv_operation_t op, VariableName x, Number k, unsigned width) {
-        _expressions.apply (op, x, k, width);
-        // assume unlimited precision so width is ignored.
-        assign(x, k, false);
-      }
-
-      // bitwise_operators_api      
+      // bitwise_operators_api
+      
       void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) {
         crab::CrabStats::count (getDomainName() + ".count.apply");
         crab::ScopedCrabStats __st__(getDomainName() + ".apply");

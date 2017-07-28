@@ -58,6 +58,7 @@
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/domains/separate_domains.hpp>
 #include <crab/domains/operators_api.hpp>
+#include <crab/domains/backward_assign_operations.hpp>
 
 namespace ikos {
 
@@ -613,19 +614,6 @@ namespace ikos {
     }
 
     // bitwise operations
-
-    interval_t Trunc(unsigned /* width */) const {
-      return *this;
-    }
-
-    interval_t ZExt(unsigned /* width */) const {
-      return *this;
-    }
-    
-    interval_t SExt(unsigned /* width */) const {
-      return *this;
-    }
-
     interval_t And(interval_t x) const {
       if (this->is_bottom() || x.is_bottom()) {
         return this->bottom();
@@ -1177,28 +1165,26 @@ namespace ikos {
     
   }; // class linear_interval_solver
 
-  template< typename Number, typename VariableName, std::size_t max_reduction_cycles = 10 >
-  class interval_domain: public writeable, 
-                         public numerical_domain< Number, VariableName >,
-                         public bitwise_operators< Number, VariableName >, 
-                         public division_operators< Number, VariableName >,
-                         public crab::domains::array_operators< Number, VariableName >,
-                         public crab::domains::pointer_operators< Number, VariableName >,
-			 public crab::domains::boolean_operators< Number, VariableName >  {
-    
+  template<typename Number, typename VariableName, std::size_t max_reduction_cycles = 10>
+  class interval_domain:
+    public crab::domains::
+    abstract_domain<Number, VariableName,
+		    interval_domain<Number,VariableName,max_reduction_cycles> >  {
   public:
-    using typename numerical_domain< Number, VariableName >::linear_expression_t;
-    using typename numerical_domain< Number, VariableName >::linear_constraint_t;
-    using typename numerical_domain< Number, VariableName >::linear_constraint_system_t;
-    using typename numerical_domain< Number, VariableName >::variable_t;
-    using typename numerical_domain< Number, VariableName >::number_t;
-    using typename numerical_domain< Number, VariableName >::varname_t;
-    typedef interval< Number > interval_t;
-    typedef interval_domain< Number, VariableName > interval_domain_t;
+    typedef interval_domain<Number, VariableName, max_reduction_cycles> interval_domain_t;
+    typedef crab::domains::
+    abstract_domain<Number,VariableName,interval_domain_t> abstract_domain_t;
+    using typename abstract_domain_t::linear_expression_t;
+    using typename abstract_domain_t::linear_constraint_t;
+    using typename abstract_domain_t::linear_constraint_system_t;
+    using typename abstract_domain_t::variable_t;
+    using typename abstract_domain_t::number_t;
+    using typename abstract_domain_t::varname_t;
+    typedef interval<Number> interval_t;
     
   private:
-    typedef separate_domain< VariableName, interval_t > separate_domain_t;
-    typedef linear_interval_solver< Number, VariableName, separate_domain_t > solver_t;
+    typedef separate_domain<VariableName, interval_t> separate_domain_t;
+    typedef linear_interval_solver<Number, VariableName, separate_domain_t> solver_t;
     
   public:
     typedef typename separate_domain_t::iterator iterator;
@@ -1206,7 +1192,7 @@ namespace ikos {
   private:
     separate_domain_t _env;
 
-  private:
+
     interval_domain(separate_domain_t env): _env(env) { }
 
   public:
@@ -1421,52 +1407,37 @@ namespace ikos {
       this->_env.set(x, xi);
     }
 
+    void backward_assign (VariableName x, linear_expression_t e,
+			  interval_domain_t inv) {
+      crab::domains::BackwardAssignOps<interval_domain_t>::
+	assign (*this, x, e, inv);
+    }      
+    
+    void backward_apply (operation_t op,
+			 VariableName x, VariableName y, Number z,
+			 interval_domain_t inv) {
+      crab::domains::BackwardAssignOps<interval_domain_t>::
+	apply(*this, op, x, y, z, inv);
+    }      
+    
+    void backward_apply(operation_t op,
+			VariableName x, VariableName y, VariableName z,
+			interval_domain_t inv) {
+      crab::domains::BackwardAssignOps<interval_domain_t>::
+	apply(*this, op, x, y, z, inv);
+    }
+    
+    // cast_operators_api
+    
+    void apply(crab::domains::int_conv_operation_t /*op*/,
+	       VariableName dst, unsigned /*dst_width*/,
+	       VariableName src, unsigned /*src_width*/){
+      // ignore the widths 
+      assign(dst, linear_expression_t(src));
+    }
+
     // bitwise_operators_api
     
-    void apply(conv_operation_t op, VariableName x, VariableName y, unsigned width){
-      crab::CrabStats::count (getDomainName() + ".count.apply");
-      crab::ScopedCrabStats __st__(getDomainName() + ".apply");
-
-      interval_t yi = this->_env[y];
-      interval_t xi = interval_t::bottom();
-      switch(op){
-        case OP_TRUNC:
-          xi = yi.Trunc(width);
-          break;  
-        case OP_ZEXT:
-          xi = yi.ZExt(width);
-          break;        
-        case OP_SEXT:
-          xi = yi.SExt(width);
-          break;
-        default: 
-          CRAB_ERROR("unreachable");
-      }      
-      this->_env.set(x, xi);
-    }
-
-    void apply(conv_operation_t op, VariableName x, Number k, unsigned width){
-      crab::CrabStats::count (getDomainName() + ".count.apply");
-      crab::ScopedCrabStats __st__(getDomainName() + ".apply");
-
-      interval_t yi(k);
-      interval_t xi = interval_t::bottom();
-      switch(op){
-        case OP_TRUNC:
-          xi = yi.Trunc(width);
-          break;  
-        case OP_ZEXT:
-          xi = yi.ZExt(width);
-          break;        
-        case OP_SEXT:
-          xi = yi.SExt(width);
-          break;
-        default: 
-          CRAB_ERROR("unreachable");
-      }      
-      this->_env.set(x, xi);
-    }
-
     void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z){
       crab::CrabStats::count (getDomainName() + ".count.apply");
       crab::ScopedCrabStats __st__(getDomainName() + ".apply");

@@ -65,62 +65,52 @@ namespace crab {
 
      template< typename Info >
      class term_domain:
-        public writeable,
-	public numerical_domain<typename Info::Number, typename Info::VariableName >, 
-	public bitwise_operators< typename Info::Number, typename Info::VariableName >,
-	public division_operators< typename Info::Number, typename Info::VariableName >,
-	public array_operators< typename Info::Number, typename Info::VariableName >,
-	public pointer_operators< typename Info::Number, typename Info::VariableName >,
-	public boolean_operators< typename Info::Number, typename Info::VariableName >
-     {
+      public abstract_domain<typename Info::Number, typename Info::VariableName, 
+			     term_domain<Info> > {
+       
        friend class TermNormalizer<Info, typename Info::domain_t>;
-      private:
+       
        // Number and VariableName can be different from
        // dom_t::number_t and dom_t::varname_t although currently
        // Number and dom_t::number_t must be the same type.
        typedef typename Info::Number Number;
        typedef typename Info::VariableName VariableName;
        typedef typename Info::domain_t dom_t;
-       
        typedef typename dom_t::variable_t dom_var_t;
        typedef typename Info::Alloc dom_var_alloc_t;
        typedef typename dom_var_alloc_t::varname_t dom_varname_t;
        typedef patricia_tree_set< dom_var_t > domvar_set_t;
-       
        typedef bound<Number> bound_t;
-       typedef interval<Number> interval_t;
+       
+       typedef term_domain<Info> term_domain_t;
+       typedef abstract_domain<Number, VariableName, term_domain_t> abstract_domain_t;
        
       public:
-       using typename numerical_domain< Number, VariableName >::linear_expression_t;
-       using typename numerical_domain< Number, VariableName >::linear_constraint_t;
-       using typename numerical_domain< Number, VariableName >::linear_constraint_system_t;
-       using typename numerical_domain< Number, VariableName >::variable_t;
-       using typename numerical_domain< Number, VariableName >::number_t;
-       using typename numerical_domain< Number, VariableName >::varname_t;
-
-       typedef term_domain<Info> term_domain_t;
-       typedef term::term_table< Number, binary_operation_t > ttbl_t;
-       typedef typename ttbl_t::term_id_t term_id_t;
-       typedef patricia_tree_set< VariableName >  varname_set_t;
+       
+       using typename abstract_domain_t::linear_expression_t;
+       using typename abstract_domain_t::linear_constraint_t;
+       using typename abstract_domain_t::linear_constraint_system_t;
+       using typename abstract_domain_t::variable_t;
+       using typename abstract_domain_t::number_t;
+       using typename abstract_domain_t::varname_t;
+       typedef interval<Number> interval_t;
        
       private:
+
+       typedef term::term_table< Number, binary_operation_t > ttbl_t;
+       typedef typename ttbl_t::term_id_t term_id_t;
 
        // WARNING: assumes the underlying domain uses the same number type.
        typedef typename Info::Number                      dom_number;
        typedef typename dom_t::linear_constraint_t        dom_lincst_t;
        typedef typename dom_t::linear_constraint_system_t dom_linsys_t;
        typedef typename dom_t::linear_expression_t        dom_linexp_t;
-       
        typedef typename linear_expression_t::component_t linterm_t;
-       
        typedef boost::container::flat_map< term_id_t, dom_var_t > term_map_t;
        typedef boost::container::flat_map< dom_var_t, variable_t > rev_map_t;
        typedef boost::container::flat_set< term_id_t > term_set_t;
        typedef boost::container::flat_map< variable_t, term_id_t > var_map_t;
-
        typedef term::NumSimplifier<Number> simplifier_t;
-
-      private:
 
        bool _is_bottom;
        // Uses a single state of the underlying domain.
@@ -138,7 +128,8 @@ namespace crab {
        term_domain(bool is_top): _is_bottom(!is_top) { }
        
        term_domain(dom_var_alloc_t alloc, var_map_t vm, ttbl_t tbl, term_map_t tmap, dom_t impl)
-           : _is_bottom((impl.is_bottom ())? true: false), _ttbl(tbl), _impl(impl), _alloc(alloc), 
+           : _is_bottom((impl.is_bottom ())? true: false),
+	     _ttbl(tbl), _impl(impl), _alloc(alloc), 
              _var_map(vm), _term_map(tmap)
        { check_terms(); }
        
@@ -493,7 +484,26 @@ namespace crab {
          else
            return boost::optional<linear_constraint_t>();
        }
-       
+
+       boost::optional<std::pair<variable_t, variable_t> >
+       get_eq_or_diseq (linear_constraint_t cst) {
+         if (cst.is_equality () || cst.is_disequation ()) {
+           if (cst.size () == 2 && cst.constant () == 0) {
+             auto it = cst.begin ();
+             auto nx = it->first;
+             auto vx = it->second;
+             ++it;
+             assert (it != cst.end ());
+             auto ny = it->first;
+             auto vy = it->second;
+             if (nx == (ny * -1 )) {
+               return std::make_pair(vx, vy);
+             } 
+           }
+         } 
+         return boost::optional<std::pair<variable_t, variable_t> > ();
+       }
+
       public:
 
        static term_domain_t top() {
@@ -1223,28 +1233,21 @@ namespace crab {
          return;
        }
 
-      private:
 
-       boost::optional<std::pair<variable_t, variable_t> >
-       get_eq_or_diseq (linear_constraint_t cst) {
-         if (cst.is_equality () || cst.is_disequation ()) {
-           if (cst.size () == 2 && cst.constant () == 0) {
-             auto it = cst.begin ();
-             auto nx = it->first;
-             auto vx = it->second;
-             ++it;
-             assert (it != cst.end ());
-             auto ny = it->first;
-             auto vy = it->second;
-             if (nx == (ny * -1 )) {
-               return std::make_pair(vx, vy);
-             } 
-           }
-         } 
-         return boost::optional<std::pair<variable_t, variable_t> > ();
-       }
-
-      public:
+       void backward_assign (VariableName x, linear_expression_t e,
+			     term_domain_t invariant) 
+       { CRAB_WARN ("backward assign not implemented"); }
+       
+       void backward_apply (operation_t op,
+			    VariableName x, VariableName y, Number z,
+			    term_domain_t invariant) 
+       { CRAB_WARN ("backward apply not implemented"); }
+       
+       void backward_apply(operation_t op,
+			   VariableName x, VariableName y, VariableName z,
+			   term_domain_t invariant) 
+       { CRAB_WARN ("backward apply not implemented"); }
+       
 
        void operator+=(linear_constraint_t cst) {  
          crab::CrabStats::count (getDomainName() + ".count.add_constraints");
@@ -1420,16 +1423,12 @@ namespace crab {
        }
 
 
-       void apply(conv_operation_t /*op*/, VariableName x, VariableName y, unsigned width){
+       void apply(int_conv_operation_t /*op*/,
+		  VariableName dst, unsigned /*dst_width*/,
+		  VariableName src, unsigned /*src_width*/){
          // since reasoning about infinite precision we simply assign and
-         // ignore the width.
-         assign(x, linear_expression_t(y));
-       }
-
-       void apply(conv_operation_t /*op*/, VariableName x, Number k, unsigned width){
-         // since reasoning about infinite precision we simply assign
-         // and ignore the width.
-         assign(x, k);
+         // ignore the widths.
+         assign(dst, linear_expression_t(src));
        }
 
        void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z){
