@@ -570,13 +570,32 @@ namespace ikos {
     }
 
     // shallow copy
-    wto(const wto_t& other):
-      _wto_components(other._wto_components),
-      _dfn_table (other._dfn_table),
-      _num (other._num),
-      _stack (other._stack),
-      _nesting_table(other._nesting_table) { }
+    // wto(const wto_t& other):
+    //   _wto_components(other._wto_components),
+    //   _dfn_table (other._dfn_table),
+    //   _num (other._num),
+    //   _stack (other._stack),
+    //   _nesting_table(other._nesting_table) { }
 
+    // deep copy
+    wto(const wto_t &other):
+      _wto_components(boost::make_shared<wto_component_list_t>(*other._wto_components)),
+      _dfn_table(other._dfn_table ?
+		 boost::make_shared<dfn_table_t>(*other._dfn_table):
+		 nullptr),
+      _num(other._num),
+      _stack(other._stack ?
+	     boost::make_shared<stack_t>(*other._stack):
+	     nullptr),
+      _nesting_table(boost::make_shared<nesting_table_t>(*other._nesting_table)) { }
+
+    wto(const wto_t &&other):
+      _wto_components(boost::move(other._wto_components)),
+      _dfn_table(boost::move(other._dfn_table)),
+      _num(other._num),
+      _stack(boost::move(other._stack)),
+      _nesting_table(boost::move(other._nesting_table)) { }      
+      
     wto_t& operator=(const wto_t &other) {
       if (this != &other) {
 	this->_wto_components = other._wto_components;
