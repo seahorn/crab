@@ -61,10 +61,21 @@ namespace crab {
 	  
         void strong_update (VariableName a, crab::variable_type a_ty,
 			    linear_expression_t rhs ) {
-          if (a_ty == ARR_INT_TYPE)
+	  if (a_ty == ARR_BOOL_TYPE) {
+	    if (rhs.is_constant()) {
+	      if (rhs.constant() >= Number(1))
+		_inv.assign_bool_cst(a, linear_constraint_t::get_true());
+	      else
+		_inv.assign_bool_cst(a, linear_constraint_t::get_false());
+	    } else if (auto rhs_v = rhs.get_variable ()) {
+	      _inv.assign_bool_var (a, (*rhs_v).name(), false);
+	    }
+	  } else if (a_ty == ARR_INT_TYPE || a_ty == ARR_REAL_TYPE) {
             _inv.assign (a, rhs);
-          else {
-	    if (auto rhs_v = rhs.get_variable())
+	  } else if (a_ty == ARR_PTR_TYPE) {
+	    if (rhs.is_constant() && rhs.constant() == Number(0))
+	      _inv.pointer_mk_null(a);
+	    else if (auto rhs_v = rhs.get_variable())	     
 	      _inv.pointer_assign (a, (*rhs_v).name(), Number(0));
 	  }
         }
@@ -72,12 +83,25 @@ namespace crab {
         void weak_update (VariableName a, crab::variable_type a_ty,
 			  linear_expression_t rhs) {
           NumDomain other (_inv);
-          if (a_ty == ARR_INT_TYPE)
+
+	  if (a_ty == ARR_BOOL_TYPE) {
+	    if (rhs.is_constant()) {
+	      if (rhs.constant() >= Number(1))
+		other.assign_bool_cst(a, linear_constraint_t::get_true());
+	      else
+		other.assign_bool_cst(a, linear_constraint_t::get_false());
+	    } else if (auto rhs_v = rhs.get_variable ()) {
+	      other.assign_bool_var (a, (*rhs_v).name(), false);
+	    }
+	  } else if (a_ty == ARR_INT_TYPE || a_ty == ARR_REAL_TYPE) {
             other.assign (a, rhs);
-          else  {
-	    if (auto rhs_v = rhs.get_variable ())
+	  } else if (a_ty == ARR_PTR_TYPE) {
+	    if (rhs.is_constant() && rhs.constant() == Number(0))
+	      other.pointer_mk_null(a);
+	    else if (auto rhs_v = rhs.get_variable())	     
 	      other.pointer_assign (a, (*rhs_v).name(), Number(0));
 	  }
+	  
           _inv = _inv | other;
         }
         
@@ -303,17 +327,26 @@ namespace crab {
         
         // array_operators_api 
 
-        // All the array elements are assumed to be equal to var
+        // All the array elements are assumed to be equal to val
         virtual void array_assume (VariableName a, variable_type a_ty, 
                                    linear_expression_t /*lb_idx*/,
 				   linear_expression_t /*ub_idx*/, 
                                    linear_expression_t val) override {
-          // XXX: this is imprecise since we don't check first whether
-          // the elements of a are consistent with var.
-          if (a_ty == ARR_INT_TYPE)
+	  if (a_ty == ARR_BOOL_TYPE)  {
+	    if (val.is_constant()) {
+	      if (val.constant() >= Number(1))
+		_inv.assign_bool_cst(a, linear_constraint_t::get_true());
+	      else
+		_inv.assign_bool_cst(a, linear_constraint_t::get_false());
+	    } else if (auto var = val.get_variable ()) {
+	      _inv.assign_bool_var (a, (*var).name(), false);
+	    }
+	  } else if (a_ty == ARR_INT_TYPE || a_ty == ARR_REAL_TYPE) {
             _inv.assign (a, val);
-          else {
-	    if (auto var = val.get_variable ()) {
+	  } else if (a_ty == ARR_PTR_TYPE) {
+	    if (val.is_constant() && val.constant() == Number(0))
+	      _inv.pointer_mk_null(a);
+	    else if (auto var = val.get_variable ()) {
 	      _inv.pointer_assign (a, (*var).name(), Number(0));
 	    }
 	  }
@@ -337,10 +370,13 @@ namespace crab {
           /* ask for a temp var */
           VariableName a_prime = a.get_var_factory().get(); 
           domain_traits<NumDomain>::expand (_inv, a, a_prime);
-          if (a_ty == ARR_INT_TYPE)
+	  if (a_ty == ARR_BOOL_TYPE) {
+	    _inv.assign_bool_var(lhs, a_prime, false);
+	  } else if (a_ty == ARR_INT_TYPE || a_ty == ARR_REAL_TYPE) {
             _inv.assign (lhs, linear_expression_t (a_prime));
-          else 
+	  } else if (a_ty == ARR_PTR_TYPE) {
             _inv.pointer_assign (lhs, a_prime, Number(0));
+	  }
 
           _inv -= a_prime; 
           
@@ -372,10 +408,13 @@ namespace crab {
 
         virtual void array_assign (VariableName lhs, VariableName rhs, 
                                    crab::variable_type ty) override {
-          if (ty == ARR_INT_TYPE)
+	  if (ty == ARR_BOOL_TYPE) {
+	    _inv.assign_bool_var(lhs, rhs, false);
+	  } else if (ty == ARR_INT_TYPE || ty == ARR_REAL_TYPE) {
             _inv.assign (lhs, linear_expression_t(rhs));
-          else 
+	  } else  if (ty == ARR_PTR_TYPE) {
             _inv.pointer_assign (lhs, rhs, Number(0));
+	  }
         }
         
         linear_constraint_system_t to_linear_constraint_system (){

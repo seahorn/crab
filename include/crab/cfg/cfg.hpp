@@ -5,26 +5,36 @@
  * Build a CFG to interface with the abstract domains and fixpoint
  * iterators.
  * 
- * In Crab, variables can only be one of the these types: integers,
- * reals, pointers, array of integers, or array of pointers.
- *
+ * In Crab, variables can only be one of the these types: 
+ * 
+ * - booleans,
+ * - integers,
+ * - reals, 
+ * - pointers, 
+ * - array of booleans,
+ * - array of integers, 
+ * - array of reals, and 
+ * - array of pointers.
+ * 
  * Crab CFG supports the modelling of:
- *   - arithmetic operations over integers and reals and boolean operations
- *   - C-like pointers 
- *   - uni-dimensional arrays of integers or pointers (useful for
- *     C-like arrays and heap abstractions)
+ * 
+ *   - arithmetic operations over integers or reals,
+ *   - boolean operations,
+ *   - C-like pointers, 
+ *   - uni-dimensional arrays of booleans, integers or pointers
+ *     (useful for C-like arrays and heap abstractions),
  *   - and functions 
  * 
  * Important notes: 
  * 
- * - objects of the class cfg are not copyable. Instead, we provide a
+ * - Objects of the class cfg are not copyable. Instead, we provide a
  *   class cfg_ref that wraps cfg references into copyable and
  *   assignable objects.
  * 
- * - During the construction of a cfg there is no type checking so the
- *   client must ensure that types are compatible.
- * 
- * TODO: support arrays of reals.
+ * - Most of the cfg statements are untyped (with some exceptions such
+ *   as array statements). Therefore, during the construction of a cfg
+ *   there is almost no type checking so the client must ensure that
+ *   types are compatible.
  * 
  * Limitations:
  *
@@ -824,8 +834,8 @@ namespace crab {
             m_value (value), m_elem_size (elem_size),  
             m_is_singleton (is_sing) {
 	
-        if (!(m_arr_ty == ARR_INT_TYPE || m_arr_ty == ARR_PTR_TYPE))
-          CRAB_ERROR ("array_store only arrays of integers or pointers");
+        if (m_arr_ty < ARR_BOOL_TYPE)
+          CRAB_ERROR ("array_store must have array type");
 
 	if (!is_number_or_variable (m_value))
 	  CRAB_ERROR ("array_store forth parameter only number or variable");
@@ -899,8 +909,8 @@ namespace crab {
             m_lhs (lhs), m_array (arr), m_arr_ty (arr_ty),
             m_index (index), m_elem_size (elem_size)
       {
-        if (! (m_arr_ty == ARR_INT_TYPE || m_arr_ty == ARR_PTR_TYPE))
-          CRAB_ERROR ("Crab only supports arrays of integers or pointers");          
+        if (m_arr_ty < ARR_BOOL_TYPE)
+          CRAB_ERROR ("array_load must have array type");
           
         this->m_live.add_def (lhs);
         this->m_live.add_use (m_array);
@@ -956,9 +966,10 @@ namespace crab {
           : statement_t (ARR_ASSIGN),
             m_lhs (lhs), m_rhs (rhs), m_ty (ty)
       {
-        if (! (m_ty == ARR_INT_TYPE || m_ty == ARR_PTR_TYPE))
-          CRAB_ERROR ("Crab only supports arrays of integers or pointers");          
 
+        if (m_ty < ARR_BOOL_TYPE)
+          CRAB_ERROR ("array_assign must have array type");
+	
         this->m_live.add_def (lhs);
         this->m_live.add_use (rhs);
       }

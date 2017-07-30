@@ -123,7 +123,10 @@ namespace crab {
      INT_TYPE,
      REAL_TYPE,
      PTR_TYPE,
-     ARR_INT_TYPE, ARR_PTR_TYPE,
+     ARR_BOOL_TYPE,
+     ARR_INT_TYPE,
+     ARR_REAL_TYPE,     
+     ARR_PTR_TYPE,
      UNK_TYPE};
 
    inline crab_os& operator<< (crab_os& o, variable_type t)
@@ -134,7 +137,9 @@ namespace crab {
        case INT_TYPE: o << "int"; break;
        case REAL_TYPE: o << "real"; break;	 
        case PTR_TYPE: o << "ptr"; break;
+       case ARR_BOOL_TYPE: o << "arr_bool"; break;	 
        case ARR_INT_TYPE: o << "arr_int"; break;
+       case ARR_REAL_TYPE: o << "arr_real"; break;	 
        case ARR_PTR_TYPE: o << "arr_ptr"; break;
        default: o << "unknown"; break;
      }

@@ -694,15 +694,18 @@ namespace crab {
     switch (ty)
     {
       case BOOL_TYPE:
-	CRAB_WARN ("TODO: unify bool types");	
+	inv.assign_bool_var(lhs, rhs, false);
 	break;      
       case INT_TYPE:
+      case REAL_TYPE:	
 	inv.assign (lhs, linear_expression_t (rhs));
 	break;
       case PTR_TYPE:
 	inv.pointer_assign (lhs, rhs, number_t (0));
 	break;
+      case ARR_BOOL_TYPE:
       case ARR_INT_TYPE:
+      case ARR_REAL_TYPE:
       case ARR_PTR_TYPE:
 	inv.array_assign (lhs, rhs, ty);
 	break;

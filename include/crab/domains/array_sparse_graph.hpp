@@ -847,13 +847,13 @@ namespace crab {
        Dom2 &dst,
        typename Dom2::varname_t dst_var) {
 	
-        if (ty == ARR_INT_TYPE) {
+        if (ty == ARR_INT_TYPE || ty == ARR_REAL_TYPE) {
           // --- XXX: simplification wrt Gange et.al.:
           //     Only non-relational numerical invariants are
           //     propagated from the graph domain to the scalar domain.
           dst.set (dst_var, eval_interval(src, src_e)); 
         } else {
-          CRAB_WARN ("Missing propagation between weight and scalar domains");
+          CRAB_WARN ("Unsupported array type: missing propagation between weight and scalar domains");
         }
       }
 
@@ -865,7 +865,7 @@ namespace crab {
        numerical_nullity_domain<BaseDom> &dst, 
        typename BaseDom::varname_t dst_var) {
 	
-        if (ty == ARR_INT_TYPE) {
+        if (ty == ARR_INT_TYPE || ARR_REAL_TYPE) {
           // --- XXX: simplification wrt Gange et.al.:
           //     Only non-relational numerical invariants are
           //     propagated from the graph domain to the scalar domain.
@@ -877,7 +877,7 @@ namespace crab {
 				 src.get_nullity((*src_var).name()));
 	  }
         } else {
-          CRAB_WARN ("Missing propagation between weight and scalar domains");
+          CRAB_WARN ("Unsupported array type: missing propagation between weight and scalar domains");	  
         }
       }
 
@@ -890,7 +890,7 @@ namespace crab {
        numerical_nullity_domain<BaseDom> &dst, 
        typename BaseDom::varname_t dst_var) {
 	
-        if (ty == ARR_INT_TYPE) {
+        if (ty == ARR_INT_TYPE || ty == ARR_REAL_TYPE) {
           // do nothing
         } else if (ty == ARR_PTR_TYPE) {
 	  if (auto src_var = src_e.get_variable ()) {
@@ -899,7 +899,7 @@ namespace crab {
 				 src.get_nullity((*src_var).name()));
 	  }
         } else {
-          CRAB_WARN ("Missing propagation between weight and scalar domains");
+          CRAB_WARN ("Unsupported array type: missing propagation between weight and scalar domains");	  	  
         }
       }
 
@@ -912,7 +912,7 @@ namespace crab {
        typename BaseDom::varname_t> &dst,
        typename BaseDom::varname_t dst_var) {
 	
-        if (ty == ARR_INT_TYPE) {
+        if (ty == ARR_INT_TYPE || ty == ARR_REAL_TYPE) {
           // do nothing
         } else if (ty == ARR_PTR_TYPE) {
 	  if (auto src_var = src_e.get_variable()) {
@@ -920,7 +920,7 @@ namespace crab {
 			    src.second().get_nullity((*src_var).name()));
 	  }
         } else {
-          CRAB_WARN ("Missing propagation between weight and scalar domains");
+          CRAB_WARN ("Unsupported array type: missing propagation between weight and scalar domains");	  	  	  
         }
       }
 
@@ -2342,7 +2342,7 @@ namespace crab {
 
         Weight w = array_edge (norm_idx);
 
-        if (a_ty == ARR_INT_TYPE) {
+        if (a_ty == ARR_INT_TYPE || a_ty == ARR_REAL_TYPE) {
           // Only non-relational numerical invariants are
           // propagated from the graph domain to the expressions domain.
           _expressions.set (lhs, w[a]);

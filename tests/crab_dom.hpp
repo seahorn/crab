@@ -59,6 +59,7 @@ namespace crab {
     typedef array_smashing<z_dis_interval_domain_t> z_as_dis_int_t;
     typedef array_smashing<z_sdbm_domain_t> z_as_sdbm_t;
     typedef array_smashing<z_num_null_domain_t> z_as_num_null_t;
+    typedef array_smashing<z_bool_num_domain_t> z_as_bool_num_t;    
     /// Numerical domains over rationals
     typedef interval_domain<ikos::q_number,varname_t > q_interval_domain_t;
     typedef apron_domain<ikos::q_number,varname_t,apron_domain_id_t::APRON_PK>

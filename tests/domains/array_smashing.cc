@@ -186,6 +186,51 @@ z_cfg_t* prog4(variable_factory_t &vfac)
   return cfg;
 }
 
+z_cfg_t* prog4b(variable_factory_t &vfac) 
+{
+
+  z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
+  z_basic_block_t& entry = cfg->insert("entry");
+  z_basic_block_t& bb1   = cfg->insert("bb1");
+  z_basic_block_t& bb1_t = cfg->insert("bb1_t");
+  z_basic_block_t& bb1_f = cfg->insert("bb1_f");
+  z_basic_block_t& bb2   = cfg->insert("bb2");
+  z_basic_block_t& ret   = cfg->insert("ret");
+  z_var n1(vfac["n1"]);
+  z_var i(vfac["i"]);
+  varname_t a = vfac["A"];
+  varname_t b = vfac["B"];  
+  varname_t tt = vfac["TRUE"];
+  varname_t ff = vfac["FALSE"];  
+  z_var tmp3(vfac["tmp3"]);
+  varname_t tmp5 = vfac["tmp5"];
+  varname_t tmp6 = vfac["tmp6"];
+
+  entry >> bb1;
+  bb1 >> bb1_t; bb1 >> bb1_f;
+  bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
+
+  // assume array element of 1 byte
+  entry.bool_assign (tt, z_lin_cst_t::get_true());
+  entry.bool_assign (ff, z_lin_cst_t::get_false());  
+  entry.array_assume (a,  crab::ARR_BOOL_TYPE, 0, 9, tt);
+  entry.array_assume (b,  crab::ARR_BOOL_TYPE, 0, 9, ff);
+
+  entry.assign(n1, 1);
+  entry.assign(i, 0);
+  ///////
+  bb1_t.assume(i <= 9);
+  bb1_f.assume(i >= 10);
+  bb2.array_store(a, crab::ARR_BOOL_TYPE, i, tt, 1);
+  bb2.array_store(b, crab::ARR_BOOL_TYPE, i, ff, 1);
+  bb2.add(i, i, n1);
+  ret.sub(tmp3, i, n1);
+  ret.array_load(tmp5, a, crab::ARR_BOOL_TYPE, tmp3, 1); 
+  ret.array_load(tmp6, b, crab::ARR_BOOL_TYPE, tmp3, 1); 
+  return cfg;
+}
+
+
 z_cfg_t* prog5(variable_factory_t &vfac) 
 {
   z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
@@ -560,6 +605,14 @@ void test10(){
   delete cfg;
 }
 
+void test11(){
+  variable_factory_t vfac;
+  z_cfg_t* cfg = prog4b(vfac);
+  crab::outs () << "Program 11: forall 0<= i< 10. a[i] = true and b[i] = false\n";
+  run<array_smashing<z_bool_num_domain_t> > (cfg,  false, 1, 2, 20, stats_enabled);
+  delete cfg;
+}
+
 int main(int argc, char **argv) 
 {
   SET_TEST_OPTIONS(argc,argv)
@@ -574,6 +627,7 @@ int main(int argc, char **argv)
   test8 ();
   test9 ();
   test10 ();
+  test11 ();  
 
   return 0;
 }
