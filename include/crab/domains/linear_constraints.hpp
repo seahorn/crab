@@ -317,7 +317,7 @@ namespace ikos {
         if (n == -1) {
           o << "-";
         } else if (n != 1) {
-          o << n;
+          o << n << "*";
         }
         o << v;
       }
