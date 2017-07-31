@@ -15,29 +15,29 @@ namespace crab {
 
   namespace analyzer {
 
-    template<typename CFG>
-    inline std::vector<typename CFG::varname_t> find_return_vars (const CFG& cfg)
-    {
-      typedef typename CFG::varname_t varname_t;
-      typedef typename CFG::number_t number_t;      
-      std::vector<varname_t> res;
+    // template<typename CFG>
+    // inline std::vector<typename CFG::varname_t> find_return_vars (const CFG& cfg)
+    // {
+    //   typedef typename CFG::varname_t varname_t;
+    //   typedef typename CFG::number_t number_t;      
+    //   std::vector<varname_t> res;
 
-      if (cfg.has_exit ()) {
-        auto const &bb = cfg.get_node (cfg.exit ());
-        for (auto const &s : boost::make_iterator_range (bb.begin(), bb.end())) {
-          if (s.is_return ()) {                
-            auto ret_stmt =
-	      static_cast<const cfg::return_stmt<number_t,varname_t> *> (&s);
-            auto const &ret_typed_vars = ret_stmt->get_ret_vals ();
-            res.reserve (ret_typed_vars.size ());
-            for (auto vt: ret_typed_vars)
-              res.push_back (vt.first);
-            return res;
-          }
-        }
-      }
-      return res;
-    }
+    //   if (cfg.has_exit ()) {
+    //     auto const &bb = cfg.get_node (cfg.exit ());
+    //     for (auto const &s : boost::make_iterator_range (bb.begin(), bb.end())) {
+    //       if (s.is_return ()) {                
+    //         auto ret_stmt =
+    // 	      static_cast<const cfg::return_stmt<number_t,varname_t> *> (&s);
+    //         auto const &ret_typed_vars = ret_stmt->get_ret_vals ();
+    //         res.reserve (ret_typed_vars.size ());
+    //         for (auto vt: ret_typed_vars)
+    //           res.push_back (vt.first);
+    //         return res;
+    //       }
+    //     }
+    //   }
+    //   return res;
+    // }
 
     /**
      * Only for internal use.
@@ -164,12 +164,12 @@ namespace crab {
         
         if (live)
 	{
-          // --- collect formal parameters and return values
+          // --- collect input and output parameters 
           if (auto fdecl = this->get_cfg ().get_func_decl ()) {
-	    for (unsigned i=0; i < (*fdecl).get_num_params();i++)
-	      m_formals += (*fdecl).get_param_name (i); 
-	    auto const& ret_vals = find_return_vars (this->get_cfg ());
-	    for (auto rv: ret_vals) {  m_formals += rv; }
+	    for (unsigned i=0; i < (*fdecl).get_num_inputs();i++)
+	      m_formals += (*fdecl).get_input_name (i);
+	    for (unsigned i=0; i < (*fdecl).get_num_outputs();i++)
+	      m_formals += (*fdecl).get_output_name (i);
 	  }
         }
 

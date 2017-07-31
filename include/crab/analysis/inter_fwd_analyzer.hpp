@@ -165,7 +165,8 @@ namespace crab {
             std::string fun_name = (*fdecl).get_func_name ().str();
             if (fun_name != "main" && cfg.has_exit ()) {
               CRAB_LOG ("inter", 
-                        crab::outs() << "--- Analyzing " << (*fdecl).get_func_name () << "\n");
+                        crab::outs() << "--- Analyzing "
+			             << (*fdecl).get_func_name () << "\n");
               // --- run the analysis
 	      auto init_inv = BU_Dom::top ();
 	      bu_abs_tr abs_tr (&init_inv, &m_summ_tbl);
@@ -176,20 +177,19 @@ namespace crab {
 	      
               // --- build the summary
               std::vector<varname_t> formals, inputs, outputs;
-              formals.reserve ((*fdecl).get_num_params() + (*fdecl).get_lhs_types().size ());
-              inputs.reserve ((*fdecl).get_num_params());
-              outputs.reserve ((*fdecl).get_lhs_types().size ());
+              formals.reserve ((*fdecl).get_num_inputs() + (*fdecl).get_num_outputs());
+              inputs.reserve ((*fdecl).get_num_inputs());
+              outputs.reserve ((*fdecl).get_num_outputs());
 
-              for (unsigned i=0; i < (*fdecl).get_num_params();i++) {
-                inputs.push_back ((*fdecl).get_param_name (i));
-                formals.push_back ((*fdecl).get_param_name (i));
+              for (unsigned i=0; i < (*fdecl).get_num_inputs();i++) {
+                inputs.push_back ((*fdecl).get_input_name (i));
+                formals.push_back ((*fdecl).get_input_name (i));
               }
-              auto const&ret_vals = find_return_vars (cfg);
-              for (auto rv: ret_vals)  {
-                outputs.push_back (rv);
-                formals.push_back (rv);
+              for (unsigned i=0; i < (*fdecl).get_num_outputs();i++) {
+                outputs.push_back ((*fdecl).get_output_name (i));
+                formals.push_back ((*fdecl).get_output_name (i));
               }
-
+	      
               // --- project onto formal parameters and return values
               auto inv = a.get_post (cfg.exit ());
               //crab::CrabStats::count (BU_Dom::getDomainName() + ".count.project");

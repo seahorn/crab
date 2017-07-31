@@ -22,9 +22,9 @@ typedef call_graph<z_cfg_ref_t> call_graph_t;
 typedef call_graph_ref<call_graph_t> call_graph_ref_t;
 
 z_cfg_t* foo (variable_factory_t &vfac) {
-  vector<pair<varname_t,crab::variable_type> > params;
-  params.push_back (make_pair (vfac["x"], crab::INT_TYPE));
-  function_decl<varname_t> decl (crab::INT_TYPE, vfac["foo"], params);
+  function_decl<varname_t> decl (vfac["foo"],
+				 {make_pair (vfac["x"], crab::INT_TYPE)},
+				 {make_pair (vfac["z"], crab::INT_TYPE)});
   // Defining program variables
   z_var x (vfac ["x"]);
   z_var y (vfac ["y"]);
@@ -45,9 +45,9 @@ z_cfg_t* foo (variable_factory_t &vfac) {
 
 
 z_cfg_t* bar (variable_factory_t &vfac) {
-  vector<pair<varname_t,crab::variable_type> > params;
-  params.push_back (make_pair (vfac["a"], crab::INT_TYPE));
-  function_decl<varname_t> decl (crab::INT_TYPE, vfac["bar"], params);
+  function_decl<varname_t> decl (vfac["bar"],
+				 {make_pair (vfac["a"], crab::INT_TYPE)},
+				 {make_pair (vfac["y"], crab::INT_TYPE)});
   // Defining program variables
   z_var a (vfac ["a"]);
   z_var x (vfac ["x"]);
@@ -69,8 +69,8 @@ z_cfg_t* bar (variable_factory_t &vfac) {
 }
 
 z_cfg_t* m (variable_factory_t &vfac)  {
-  vector<pair<varname_t,crab::variable_type> > params;
-  function_decl<varname_t> decl (crab::UNK_TYPE, vfac["main"], params);
+  vector<pair<varname_t,crab::variable_type> > inputs, outputs;
+  function_decl<varname_t> decl (vfac["main"], inputs, outputs);
   // Defining program variables
   z_var x (vfac ["x"]);
   z_var y (vfac ["y"]);

@@ -93,25 +93,24 @@ namespace crab {
         fdecl_t m_fdecl;
         // --- Summary involving only m_params + m_ret_vals variables
         abs_domain_t m_sum;
-        // --- Keep all the formal parameters of the function
-        std::vector <varname_t> m_params;
-        // --- Keep all the returned values of the function
-        std::vector <varname_t> m_ret_vals;
+        // --- Keep all the input parameters of the function
+        std::vector <varname_t> m_inputs;
+        // --- Keep all the output parameters of the function
+        std::vector <varname_t> m_outputs;
         
        public:
         
         Summary (fdecl_t fdecl,
                  abs_domain_t sum, 
-                 const std::vector<varname_t> &params,
-                 const std::vector<varname_t> &ret_vals):
+                 const std::vector<varname_t> &inputs,
+                 const std::vector<varname_t> &outputs):
             m_fdecl (fdecl), 
             m_sum (sum), 
-            m_params (params), 
-            m_ret_vals (ret_vals) {
-          
-          if (m_fdecl.get_params().size () != m_params.size ())
+            m_inputs (inputs), m_outputs (outputs) { 
+            
+          if (m_fdecl.get_num_inputs() != m_inputs.size ())
             CRAB_ERROR ("Mismatch between function declaration and summary parameters");
-          if (m_fdecl.get_lhs_types().size () != m_ret_vals.size ())
+          if (m_fdecl.get_num_outputs() != m_outputs.size ())
             CRAB_ERROR ("Mismatch between function declaration and summary return vals");
         }
         
@@ -119,40 +118,37 @@ namespace crab {
         
         abs_domain_t get_sum () const { return m_sum;}
         
-        const std::vector<varname_t>& get_params () const { return m_params;}
+        const std::vector<varname_t>& get_inputs () const { return m_inputs;}
 
-        const std::vector<varname_t>& get_ret_vals () const { return m_ret_vals;}
+        const std::vector<varname_t>& get_outputs () const { return m_outputs;}
 
         // Check type consistency between function declaration and callsite
         // XXXX: this is needed because we don't type check crab
         // programs.
         void check_type_consistency (callsite_t cs) const {
 
-          if (m_fdecl.get_params().size () != cs.get_num_args ()) 
+          if (m_fdecl.get_num_inputs() != cs.get_num_args()) 
             CRAB_ERROR ("Mismatch between number of callsite and summary parameters");
-          if (m_fdecl.get_lhs_types().size () != cs.get_lhs ().size ())
-            CRAB_ERROR ("Mismatch between number of callsite and summary return values");          
+          if (m_fdecl.get_num_outputs() != cs.get_lhs().size())
+            CRAB_ERROR ("Mismatch between number of callsite and summary return values");
          
-          auto const& fdecl_params = m_fdecl.get_params ();
           for (unsigned i=0; i < cs.get_num_args (); i++){
-            if (fdecl_params[i].second != cs.get_arg_type (i))
+            if (m_fdecl.get_input_type(i) != cs.get_arg_type (i))
               CRAB_ERROR ("Mismatch between type of callsite and summary parameter");
           }
 
-          auto const& fdecl_lhs = m_fdecl.get_lhs_types ();
-          auto const& cs_lhs = cs.get_lhs ();
-          for (unsigned i=0; i != fdecl_lhs.size (); i++){
-            if (fdecl_lhs[i] != cs_lhs[i].second)
+          for (unsigned i=0; i < cs.get_lhs().size(); i++){
+            if (m_fdecl.get_output_type(i) != cs.get_lhs()[i].second)
               CRAB_ERROR ("Mismatch between type of callsite and summary return value");
           }
         }
 
         void write(crab_os &o) const {
           o << m_fdecl << " --> " << " variables = {";
-          for (auto const &p: m_params) 
-            o << p << ";";
-          for (auto const &rv: m_ret_vals) 
-            o << rv << ";";
+          for (auto const &in: m_inputs) 
+            o << in << ";";
+          for (auto const &out: m_outputs) 
+            o << out << ";";
           o << "}";
           abs_domain_t tmp (m_sum);
           o << " summary = " << tmp;
@@ -174,12 +170,12 @@ namespace crab {
       // insert summary information
       void insert (fdecl_t d, 
                    AbsDomain sum,
-                   const std::vector<varname_t>& params,
-                   const std::vector<varname_t>& ret_vals) {
+                   const std::vector<varname_t>& inputs,
+                   const std::vector<varname_t>& outputs) {
 
-        std::vector<varname_t> ps (params.begin(), params.end ());
-        std::vector<varname_t> rvs (ret_vals.begin(), ret_vals.end ());
-        summary_ptr sum_tuple (new Summary (d, sum, ps, rvs));
+        std::vector<varname_t> ins(inputs.begin(), inputs.end ());
+        std::vector<varname_t> outs(outputs.begin(), outputs.end ());
+        summary_ptr sum_tuple (new Summary (d, sum, ins, outs));
         m_sum_table.insert (std::make_pair (cfg::cfg_hasher<CFG>::hash (d), sum_tuple));
       }
 

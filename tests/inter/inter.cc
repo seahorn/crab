@@ -12,9 +12,9 @@ using namespace crab::domain_impl;
 using namespace crab::cg;
 
 z_cfg_t* foo (variable_factory_t &vfac) {
-  vector<pair<varname_t,crab::variable_type> > params;
-  params.push_back (make_pair (vfac["x"], crab::INT_TYPE));
-  function_decl<varname_t> decl (crab::INT_TYPE, vfac["foo"], params);
+  function_decl<varname_t> decl (vfac["foo"],
+				 {make_pair(vfac["x"], crab::INT_TYPE)},
+				 {make_pair(vfac ["z"], crab::INT_TYPE)});
   // Defining program variables
   z_var x (vfac ["x"]);
   z_var y (vfac ["y"]);
@@ -34,9 +34,10 @@ z_cfg_t* foo (variable_factory_t &vfac) {
 }
 
 z_cfg_t* rec1 (variable_factory_t &vfac) {
-  vector<pair<varname_t,crab::variable_type> > params;
-  params.push_back (make_pair (vfac["s"], crab::INT_TYPE));
-  function_decl<varname_t> decl (crab::INT_TYPE, vfac["rec1"], params);
+  
+  function_decl<varname_t> decl (vfac["rec1"],
+				 {make_pair(vfac["s"], crab::INT_TYPE)},
+				 {make_pair(vfac["t"], crab::INT_TYPE)});
   // Defining program variables
   z_var r (vfac ["r"]);
   z_var s (vfac ["s"]);
@@ -58,9 +59,10 @@ z_cfg_t* rec1 (variable_factory_t &vfac) {
 }
 
 z_cfg_t* rec2 (variable_factory_t &vfac) {
-  vector<pair<varname_t,crab::variable_type> > params;
-  params.push_back (make_pair (vfac["s1"], crab::INT_TYPE));
-  function_decl<varname_t> decl (crab::INT_TYPE, vfac["rec2"], params);
+  
+  function_decl<varname_t> decl (vfac["rec2"],
+				 {make_pair(vfac["s1"], crab::INT_TYPE)},
+				 {make_pair(vfac["t1"], crab::INT_TYPE)});
   // Defining program variables
   z_var r (vfac ["r1"]);
   z_var s (vfac ["s1"]);
@@ -86,9 +88,9 @@ z_cfg_t* rec2 (variable_factory_t &vfac) {
 
 
 z_cfg_t* bar (variable_factory_t &vfac) {
-  vector<pair<varname_t,crab::variable_type> > params;
-  params.push_back (make_pair (vfac["a"], crab::INT_TYPE));
-  function_decl<varname_t> decl (crab::INT_TYPE, vfac["bar"], params);
+  function_decl<varname_t> decl (vfac["bar"],
+				 {make_pair(vfac["a"], crab::INT_TYPE)},
+				 {make_pair(vfac["y1"], crab::INT_TYPE)});
   // Defining program variables
   z_var a (vfac ["a"]);
   z_var x (vfac ["x1"]);
@@ -112,8 +114,10 @@ z_cfg_t* bar (variable_factory_t &vfac) {
 }
 
 z_cfg_t* m (variable_factory_t &vfac)  {
-  vector<pair<varname_t,crab::variable_type> > params;
-  function_decl<varname_t> decl (crab::INT_TYPE, vfac["main"], params);
+  function_decl<varname_t> decl (vfac["main"],
+				 {},
+				 {make_pair(vfac["w2"], crab::INT_TYPE)});
+				 
   // Defining program variables
   z_var x (vfac ["x2"]);
   z_var y (vfac ["y2"]);

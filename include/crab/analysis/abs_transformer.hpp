@@ -756,10 +756,10 @@ namespace crab {
 
       std::set<varname_t> actuals, formals;
       // --- matching formal and actual parameters
-      auto pars = summ.get_params ();
+      auto inputs = summ.get_inputs ();
       unsigned i=0;
       // XXX: propagating down
-      for (auto p : pars) {
+      for (auto p : inputs) {
         auto a = cs.get_arg_name (i);
         if (!(a == p)) {
           CRAB_LOG ("inter",
@@ -782,12 +782,12 @@ namespace crab {
       // XXX: propagate from the return values in the callee to the
       // lhs variables of the callsite in the caller.
       auto const &caller_vts = cs.get_lhs ();
-      auto const &callee_rs = summ.get_ret_vals ();
-      assert (caller_vts.size () == callee_rs.size ());
+      auto const &callee_outs = summ.get_outputs ();
+      assert (caller_vts.size () == callee_outs.size ());
       
       auto caller_it = caller_vts.begin();
       auto caller_et = caller_vts.end();
-      auto callee_it = callee_rs.begin();
+      auto callee_it = callee_outs.begin();
       
       // XXX: propagating up
       for (; caller_it != caller_et; ++caller_it, ++callee_it){
@@ -914,8 +914,8 @@ namespace crab {
         // --- matching formal and actual parameters
         // XXX: propagating down 	
         unsigned i=0;
-        auto pars = summ.get_params ();
-        for (varname_t p : pars) {
+        auto inputs = summ.get_inputs ();
+        for (varname_t p : inputs) {
           varname_t a = cs.get_arg_name (i);
           if (!(a == p))
 	    unify (callee_ctx_inv, cs.get_arg_type(i), p, a);
@@ -924,8 +924,8 @@ namespace crab {
 
         // --- project only onto formal parameters
         domains::domain_traits<abs_dom_t>::project (callee_ctx_inv, 
-                                                    pars.begin (),
-                                                    pars.end ());
+                                                    inputs.begin (),
+                                                    inputs.end ());
         // --- store the callee context
         CRAB_LOG ("inter", 
                   crab::outs() << "\t\tCallee context stored: " 

@@ -2861,86 +2861,85 @@ namespace crab {
     }; 
     
     template< class VariableName>
-    class function_decl
-    {
- 
+    class function_decl {
      public:
 
       typedef std::pair<VariableName,variable_type> typed_variable_t;
 
      private:
 
-      std::vector<variable_type> m_lhs_types;
       VariableName m_func_name;
-      std::vector<typed_variable_t> m_params;
+      std::vector<typed_variable_t> m_inputs;
+      std::vector<typed_variable_t> m_outputs;      
       
       typedef typename std::vector<typed_variable_t>::iterator param_iterator;
       typedef typename std::vector<typed_variable_t>::const_iterator const_param_iterator;
       
      public:
       
-      function_decl (variable_type lhs_type,
-		     VariableName func_name, 
-                     std::vector<typed_variable_t> params)
+      function_decl (VariableName func_name,
+                     std::vector<typed_variable_t> inputs,
+		     std::vector<typed_variable_t> outputs)
 	: m_func_name (func_name) {
 	
-        m_lhs_types.push_back (lhs_type);
-        std::copy (params.begin (), params.end (),
-		   std::back_inserter (m_params));
+        std::copy(inputs.begin(), inputs.end(),
+		  std::back_inserter(m_inputs));	
+        std::copy(outputs.begin(), outputs.end(),
+		  std::back_inserter(m_outputs));
       }
 
-      function_decl (std::vector<variable_type> lhs_types,
-		     VariableName func_name, 
-                     std::vector<typed_variable_t> params)
-	: m_func_name (func_name) {
-	
-        std::copy(lhs_types.begin(), lhs_types.end(),
-		  std::back_inserter (m_lhs_types));	
-        std::copy(params.begin(), params.end(),
-		  std::back_inserter (m_params));
-      }
-      
-      const std::vector<variable_type>& get_lhs_types () const
-      { return m_lhs_types; }
-      
       VariableName get_func_name () const
       { return m_func_name; }
+      
+      const std::vector<typed_variable_t>& get_inputs () const
+      { return m_inputs; }
 
-      
-      const std::vector<typed_variable_t>& get_params () const
-      { return m_params; }
+      const std::vector<typed_variable_t>& get_outputs () const
+      { return m_outputs; }
 
-      unsigned get_num_params () const
-      { return m_params.size (); }
+      unsigned get_num_inputs () const
+      { return m_inputs.size (); }
       
-      VariableName get_param_name (unsigned idx) const { 
-        if (idx >= m_params.size ())
-          CRAB_ERROR ("Out-of-bound access to function parameter");
-        
-        return m_params[idx].first;
-      }
+      unsigned get_num_outputs () const
+      { return m_outputs.size (); }
       
-      variable_type get_param_type (unsigned idx) const { 
-        if (idx >= m_params.size ())
-          CRAB_ERROR ("Out-of-bound access to function parameter");
-        
-        return m_params[idx].second;
+      VariableName get_input_name (unsigned idx) const { 
+        if (idx >= m_inputs.size ())
+          CRAB_ERROR ("Out-of-bound access to function input parameter");
+        return m_inputs[idx].first;
       }
 
-      void write(crab_os& o) const
-      {
+      variable_type get_input_type (unsigned idx) const { 
+        if (idx >= m_inputs.size ())
+          CRAB_ERROR ("Out-of-bound access to function output parameter");
+        return m_inputs[idx].second;
+      }
+      
+      VariableName get_output_name (unsigned idx) const { 
+        if (idx >= m_outputs.size ())
+          CRAB_ERROR ("Out-of-bound access to function input parameter");
+        return m_outputs[idx].first;
+      }
 
-        if (m_lhs_types.empty ()) {
+      variable_type get_output_type (unsigned idx) const { 
+        if (idx >= m_outputs.size ())
+          CRAB_ERROR ("Out-of-bound access to function output parameter");
+        return m_outputs[idx].second;
+      }
+      
+      void write(crab_os& o) const {
+
+        if (m_outputs.empty ()) {
           o << "void";
-        } else if (m_lhs_types.size () == 1) {
-          o << *(m_lhs_types.begin());
+        } else if (m_outputs.size () == 1) {
+	  auto out = *(m_outputs.begin());
+          o << out.first << ":" << out.second;
         } else {
           o << "(";
-          for (auto It = m_lhs_types.begin (),
-		 Et=m_lhs_types.end (); It!=Et; )
-	       
-          {
-            o << *It;
+          for (auto It = m_outputs.begin (),
+		 Et=m_outputs.end (); It!=Et; ) {
+	    auto out = *It;
+            o << out.first << ":" << out.second;
             ++It;
             if (It != Et)
               o << ",";
@@ -2949,10 +2948,8 @@ namespace crab {
         }
 
         o << " declare " << m_func_name << "(";
-        for (const_param_iterator It = m_params.begin (),
-	       Et=m_params.end (); It!=Et; )
-	     
-        {
+        for (const_param_iterator It = m_inputs.begin (),
+	       Et=m_inputs.end (); It!=Et; ) {
           o << It->first << ":" << It->second;
           ++It;
           if (It != Et)
@@ -3881,10 +3878,11 @@ namespace crab {
       
       static size_t hash (fdecl_t d)  {
         size_t res = hash_value (d.get_func_name ());
-        for (auto t: d.get_lhs_types ())
-          boost::hash_combine (res, t);
-        for(unsigned i=0; i<d.get_num_params (); i++)
-          boost::hash_combine (res, d.get_param_type (i));
+        for(unsigned i=0; i<d.get_num_inputs (); i++)
+          boost::hash_combine (res, d.get_input_type (i));
+        for(unsigned i=0; i<d.get_num_outputs (); i++)
+          boost::hash_combine (res, d.get_output_type (i));
+	
         return res;
       }      
     };
