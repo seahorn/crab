@@ -1382,8 +1382,8 @@ namespace crab {
 
      private:
 
+      VariableName m_func_name;      
       std::vector<typed_variable_t> m_lhs;
-      VariableName m_func_name;
       std::vector<typed_variable_t> m_args;
       
       typedef typename std::vector<typed_variable_t>::iterator iterator;
@@ -1398,8 +1398,8 @@ namespace crab {
         for (auto arg:  m_args) { this->m_live.add_use (arg.first); }
       }
       
-      callsite_stmt (const std::vector<typed_variable_t> &lhs, 
-                     VariableName func_name,
+      callsite_stmt (VariableName func_name,
+		     const std::vector<typed_variable_t> &lhs, 
 		     const std::vector<typed_variable_t> &args)
 	: statement_t (CALLSITE), m_func_name (func_name) {
 	
@@ -1446,7 +1446,7 @@ namespace crab {
       {
         typedef callsite_stmt <Number, VariableName> call_site_t;
         return boost::static_pointer_cast< statement_t, call_site_t>
-            (boost::make_shared<call_site_t> (m_lhs, m_func_name, m_args));
+            (boost::make_shared<call_site_t> (m_func_name, m_lhs, m_args));
       }
 
       virtual void write(crab_os& o) const
@@ -2517,40 +2517,21 @@ namespace crab {
       }
       
       void callsite (VariableName func, 
-                     const std::vector<std::pair <VariableName,variable_type> > &args) 
-      {
+		     const std::vector<std::pair<VariableName,variable_type> > &lhs, 
+                     const std::vector<std::pair<VariableName,variable_type> > &args) { 
         insert(boost::static_pointer_cast< statement_t, callsite_t >
-               (boost::make_shared<callsite_t>(func, args)));
+               (boost::make_shared<callsite_t>(func, lhs, args)));
       }
       
       
-      void callsite (std::pair<VariableName,variable_type> lhs, 
-                     VariableName func, 
-                     const std::vector<std::pair<VariableName,variable_type> > &args) 
-      {
-        std::vector<std::pair <VariableName,variable_type> > v_lhs = { lhs };
-        insert(boost::static_pointer_cast< statement_t, callsite_t >
-               (boost::make_shared<callsite_t>(v_lhs, func, args)));
-      }
-
-      void callsite (const std::vector<std::pair<VariableName,variable_type> > &lhs, 
-                     VariableName func, 
-                     const std::vector<std::pair<VariableName,variable_type> > &args) 
-      {
-        insert(boost::static_pointer_cast< statement_t, callsite_t >
-               (boost::make_shared<callsite_t>(lhs, func, args)));
-      }
-      
-      
-      void ret (VariableName var, variable_type ty) 
-      {
-        std::vector<std::pair<VariableName,variable_type> > ret_vals = {std::make_pair(var,ty)};
+      void ret (VariableName var, variable_type ty) {
+        std::vector<std::pair<VariableName,variable_type> >
+	  ret_vals = {std::make_pair(var,ty)};
         insert(boost::static_pointer_cast< statement_t, return_t >
                (boost::make_shared<return_t>(ret_vals)));
       }
 
-      void ret (const std::vector<std::pair<VariableName,variable_type> > &ret_vals) 
-      {
+      void ret (const std::vector<std::pair<VariableName,variable_type> > &ret_vals) {
         insert(boost::static_pointer_cast< statement_t, return_t >
                (boost::make_shared<return_t>(ret_vals)));
       }
@@ -2559,15 +2540,15 @@ namespace crab {
       void array_assume (VariableName a, variable_type arr_ty, uint64_t elem_size,
                          lin_exp_t lb_idx, lin_exp_t ub_idx, variable_t v) {
         if (m_track_prec == ARR)
-          insert (boost::static_pointer_cast<statement_t, arr_assume_t> 
-                  (boost::make_shared<arr_assume_t> (a, arr_ty, elem_size, lb_idx, ub_idx, v)));
+          insert(boost::static_pointer_cast<statement_t, arr_assume_t> 
+		(boost::make_shared<arr_assume_t>(a, arr_ty, elem_size, lb_idx, ub_idx, v)));
       }
 
       void array_assume (VariableName a, variable_type arr_ty, uint64_t elem_size,
                          lin_exp_t lb_idx, lin_exp_t ub_idx, ikos::z_number n) {
         if (m_track_prec == ARR)
           insert (boost::static_pointer_cast< statement_t, arr_assume_t> 
-                  (boost::make_shared<arr_assume_t> (a, arr_ty, elem_size, lb_idx, ub_idx, n)));
+		(boost::make_shared<arr_assume_t>(a, arr_ty, elem_size, lb_idx, ub_idx, n)));
       }
       
       void array_store (VariableName arr, variable_type arr_ty, 
@@ -2575,7 +2556,7 @@ namespace crab {
                         uint64_t elem_size, bool is_singleton = false)  {
         if (m_track_prec == ARR)
           insert(boost::static_pointer_cast< statement_t, arr_store_t >
-               (boost::make_shared<arr_store_t>(arr, arr_ty, idx, v, elem_size, is_singleton)));
+            (boost::make_shared<arr_store_t>(arr, arr_ty, idx, v, elem_size, is_singleton)));
       }
 
       void array_store (VariableName arr, variable_type arr_ty, 
@@ -2583,7 +2564,7 @@ namespace crab {
                         uint64_t elem_size, bool is_singleton = false)  {
         if (m_track_prec == ARR)
           insert(boost::static_pointer_cast< statement_t, arr_store_t >
-               (boost::make_shared<arr_store_t>(arr, arr_ty, idx, n, elem_size, is_singleton)));
+           (boost::make_shared<arr_store_t>(arr, arr_ty, idx, n, elem_size, is_singleton)));
       }
       
       void array_load (VariableName lhs, VariableName arr, variable_type arr_ty, 

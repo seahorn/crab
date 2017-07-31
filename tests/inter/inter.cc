@@ -50,9 +50,9 @@ z_cfg_t* rec1 (variable_factory_t &vfac) {
   entry >> exit;
   // adding statements
   entry.sub (r, s, 1);
-  vector<pair<varname_t,crab::variable_type> > args;
-  args.push_back (make_pair (vfac["r"], crab::INT_TYPE));
-  exit.callsite (make_pair (vfac["t"], crab::INT_TYPE), vfac ["rec2"], args);
+  exit.callsite (vfac ["rec2"],
+		 {make_pair (vfac["t"], crab::INT_TYPE)},
+		 {make_pair (vfac["r"], crab::INT_TYPE)});
   exit.ret (vfac["t"], crab::INT_TYPE);
   return cfg;
 }
@@ -74,12 +74,12 @@ z_cfg_t* rec2 (variable_factory_t &vfac) {
   entry >> exit;
   // adding statements
   entry.sub (r, s, 1);
-  vector<pair<varname_t,crab::variable_type> > args;
-  args.push_back (make_pair (vfac["r1"], crab::INT_TYPE));
-  exit.callsite (make_pair (vfac["t1"], crab::INT_TYPE), vfac ["rec1"], args);
-  args.clear ();
-  //args.push_back (make_pair (vfac["t1"], crab::INT_TYPE));
-  //exit.callsite (make_pair (vfac["t1"], crab::INT_TYPE), vfac ["foo"], args);
+  exit.callsite (vfac ["rec1"],
+		 {make_pair (vfac["t1"], crab::INT_TYPE)},
+		 {make_pair (vfac["r1"], crab::INT_TYPE)});
+  //exit.callsite (vfac ["foo"],
+  //               {make_pair (vfac["t1"], crab::INT_TYPE)},
+  //               {make_pair (vfac["t1"], crab::INT_TYPE)});
   exit.ret (vfac["t1"], crab::INT_TYPE);
   return cfg;
 }
@@ -102,9 +102,9 @@ z_cfg_t* bar (variable_factory_t &vfac) {
   // adding control flow
   entry >> exit;
   // adding statements
-  vector<pair<varname_t,crab::variable_type> > args;
-  args.push_back (make_pair (vfac["x1"], crab::INT_TYPE));
-  exit.callsite (make_pair (vfac["y1"], crab::INT_TYPE), vfac ["foo"], args);
+  exit.callsite (vfac ["foo"],
+		 {make_pair (vfac["y1"], crab::INT_TYPE)},
+		 {make_pair (vfac["x1"], crab::INT_TYPE)});
   entry.assign (x, a);
   entry.assign (w, 5);
   exit.ret (vfac["y1"], crab::INT_TYPE);
@@ -127,18 +127,18 @@ z_cfg_t* m (variable_factory_t &vfac)  {
   entry >> exit;
   // adding statements
   entry.assign(x, 3);
-  vector<pair<varname_t,crab::variable_type> > args;
-  args.push_back (make_pair (vfac["x2"], crab::INT_TYPE));
-  entry.callsite (make_pair (vfac["y2"], crab::INT_TYPE), vfac ["bar"], args);
-  args.clear ();
+  entry.callsite (vfac ["bar"],
+		  {make_pair (vfac["y2"], crab::INT_TYPE)},
+		  {make_pair (vfac["x2"], crab::INT_TYPE)});
   /////
-  args.push_back (make_pair (vfac["y2"], crab::INT_TYPE));
-  entry.callsite (make_pair (vfac["z3"], crab::INT_TYPE), vfac ["rec1"], args);
-  args.clear ();
+  entry.callsite (vfac ["rec1"],
+		  {make_pair (vfac["z3"], crab::INT_TYPE)},
+		  {make_pair (vfac["y2"], crab::INT_TYPE)});
   /////
   exit.add (z, y, 2);
-  args.push_back (make_pair (vfac["z2"], crab::INT_TYPE));
-  exit.callsite (make_pair (vfac["w2"], crab::INT_TYPE), vfac ["foo"], args);
+  exit.callsite (vfac ["foo"],
+		 {make_pair (vfac["w2"], crab::INT_TYPE)},
+		 {make_pair (vfac["z2"], crab::INT_TYPE)});
   exit.ret (vfac["w2"], crab::INT_TYPE);
   return cfg;
 }

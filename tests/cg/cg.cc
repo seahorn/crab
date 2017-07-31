@@ -60,9 +60,9 @@ z_cfg_t* bar (variable_factory_t &vfac) {
   // adding control flow
   entry >> exit;
   // adding statements
-  vector<pair<varname_t,crab::variable_type> > args;
-  args.push_back (make_pair (vfac["x"], crab::INT_TYPE));
-  exit.callsite (make_pair (vfac["y"], crab::INT_TYPE), vfac ["foo"], args);
+  exit.callsite (vfac ["foo"],
+		 {make_pair (vfac["y"], crab::INT_TYPE)},
+		 {make_pair (vfac["x"], crab::INT_TYPE)});
   entry.assign (x, a);
   exit.ret (vfac["y"], crab::INT_TYPE);
   return cfg;
@@ -84,9 +84,9 @@ z_cfg_t* m (variable_factory_t &vfac)  {
   entry >> exit;
   // adding statements
   entry.assign(x, 3);
-  vector<pair<varname_t,crab::variable_type> > args;
-  args.push_back (make_pair (vfac["x"], crab::INT_TYPE));
-  entry.callsite (make_pair (vfac["y"], crab::INT_TYPE), vfac ["bar"], args);
+  entry.callsite (vfac ["bar"],
+		  {make_pair (vfac["y"], crab::INT_TYPE)},
+		  {make_pair (vfac["x"], crab::INT_TYPE)});
   exit.add (z, y, 2);
   return cfg;
 }
