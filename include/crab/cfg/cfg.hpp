@@ -732,9 +732,10 @@ namespace crab {
 
      private:
 
-      // forall i \in [lb,ub]. arr[i] == val
+      // forall i \in [lb,ub] modulo elem_size. arr[i] == val
       VariableName m_arr; 
       variable_type m_arr_ty;
+      uint64_t m_elem_size;
       linear_expression_t m_lb;
       linear_expression_t m_ub;
       linear_expression_t m_val;
@@ -745,11 +746,11 @@ namespace crab {
       
      public:
       
-      array_assume_stmt (VariableName arr, variable_type arr_ty, 
+      array_assume_stmt (VariableName arr, variable_type arr_ty, uint64_t elem_size,
                          linear_expression_t lb, linear_expression_t ub,
 			 linear_expression_t val): 
           statement_t (ARR_ASSUME),
-          m_arr (arr), m_arr_ty (arr_ty),
+          m_arr (arr), m_arr_ty (arr_ty), m_elem_size (elem_size),
 	  m_lb (lb) , m_ub (ub), m_val (val)  {
 	
 	if (!is_number_or_variable (m_lb))
@@ -774,6 +775,8 @@ namespace crab {
       
       variable_type array_type () const { return m_arr_ty; }
 
+      uint64_t elem_size () const { return m_elem_size;}
+       
       linear_expression_t lb_index () const { return m_lb;}
       
       linear_expression_t ub_index () const { return m_ub;}
@@ -788,13 +791,14 @@ namespace crab {
       {
         typedef array_assume_stmt <Number, VariableName> array_assume_t;
         return boost::static_pointer_cast< statement_t, array_assume_t >
-            (boost::make_shared<array_assume_t>(m_arr, m_arr_ty,
-						m_lb, m_ub, m_val));
+	  (boost::make_shared<array_assume_t>(m_arr, m_arr_ty, m_elem_size,
+					      m_lb, m_ub, m_val));
       }
       
       void write (crab_os& o) const
       {
-        o << "assume (forall l in [" << m_lb << "," << m_ub << "] :: " 
+        o << "assume (forall l in [" << m_lb << "," << m_ub << "] % " << m_elem_size
+	  << " :: " 
           << m_arr << "[l]=" << m_val << ")";          
         return;
       }
@@ -815,7 +819,7 @@ namespace crab {
       variable_type m_arr_ty;
       linear_expression_t m_index;
       linear_expression_t m_value;
-      ikos::z_number m_elem_size; //! size in bytes
+      uint64_t m_elem_size; //! size in bytes
       bool m_is_singleton; //! whether the store writes to a singleton
                            //  cell. If unknown set to false.
 
@@ -828,7 +832,7 @@ namespace crab {
       array_store_stmt (VariableName arr, variable_type arr_ty,
                         linear_expression_t index,
 			linear_expression_t value,  
-                        ikos::z_number elem_size, bool is_sing = false)
+                        uint64_t elem_size, bool is_sing = false)
           : statement_t(ARR_STORE),
             m_arr (arr), m_arr_ty (arr_ty), m_index (index), 
             m_value (value), m_elem_size (elem_size),  
@@ -855,7 +859,7 @@ namespace crab {
       
       variable_type array_type () const { return m_arr_ty; }
 
-      ikos::z_number elem_size () const { return m_elem_size; }
+      uint64_t elem_size () const { return m_elem_size; }
       
       bool is_singleton () const { return m_is_singleton;}
       
@@ -897,14 +901,14 @@ namespace crab {
       VariableName m_array;
       variable_type m_arr_ty;
       linear_expression_t m_index;
-      ikos::z_number m_elem_size; //! size in bytes
+      uint64_t m_elem_size; //! size in bytes
       
      public:
       
       array_load_stmt (VariableName lhs, 
                        VariableName arr, variable_type arr_ty,
 		       linear_expression_t index, 
-                       ikos::z_number elem_size)
+                       uint64_t elem_size)
           : statement_t (ARR_LOAD),
             m_lhs (lhs), m_array (arr), m_arr_ty (arr_ty),
             m_index (index), m_elem_size (elem_size)
@@ -926,7 +930,7 @@ namespace crab {
       
       linear_expression_t index () const { return m_index; }
       
-      ikos::z_number elem_size () const { return m_elem_size; }
+      uint64_t elem_size () const { return m_elem_size; }
       
       virtual void accept(statement_visitor <Number, VariableName> *v) 
       {
@@ -2552,23 +2556,23 @@ namespace crab {
       }
             
 
-      void array_assume (VariableName a, variable_type arr_ty, 
+      void array_assume (VariableName a, variable_type arr_ty, uint64_t elem_size,
                          lin_exp_t lb_idx, lin_exp_t ub_idx, variable_t v) {
         if (m_track_prec == ARR)
           insert (boost::static_pointer_cast<statement_t, arr_assume_t> 
-                  (boost::make_shared<arr_assume_t> (a, arr_ty, lb_idx, ub_idx, v)));
+                  (boost::make_shared<arr_assume_t> (a, arr_ty, elem_size, lb_idx, ub_idx, v)));
       }
 
-      void array_assume (VariableName a, variable_type arr_ty, 
+      void array_assume (VariableName a, variable_type arr_ty, uint64_t elem_size,
                          lin_exp_t lb_idx, lin_exp_t ub_idx, ikos::z_number n) {
         if (m_track_prec == ARR)
           insert (boost::static_pointer_cast< statement_t, arr_assume_t> 
-                  (boost::make_shared<arr_assume_t> (a, arr_ty, lb_idx, ub_idx, n)));
+                  (boost::make_shared<arr_assume_t> (a, arr_ty, elem_size, lb_idx, ub_idx, n)));
       }
       
       void array_store (VariableName arr, variable_type arr_ty, 
                         lin_exp_t idx, variable_t v, 
-                        ikos::z_number elem_size, bool is_singleton = false)  {
+                        uint64_t elem_size, bool is_singleton = false)  {
         if (m_track_prec == ARR)
           insert(boost::static_pointer_cast< statement_t, arr_store_t >
                (boost::make_shared<arr_store_t>(arr, arr_ty, idx, v, elem_size, is_singleton)));
@@ -2576,14 +2580,14 @@ namespace crab {
 
       void array_store (VariableName arr, variable_type arr_ty, 
                         lin_exp_t idx, ikos::z_number n, 
-                        ikos::z_number elem_size, bool is_singleton = false)  {
+                        uint64_t elem_size, bool is_singleton = false)  {
         if (m_track_prec == ARR)
           insert(boost::static_pointer_cast< statement_t, arr_store_t >
                (boost::make_shared<arr_store_t>(arr, arr_ty, idx, n, elem_size, is_singleton)));
       }
       
       void array_load (VariableName lhs, VariableName arr, variable_type arr_ty, 
-                       lin_exp_t idx, ikos::z_number elem_size) {
+                       lin_exp_t idx, uint64_t elem_size) {
         if (m_track_prec == ARR)
           insert(boost::static_pointer_cast< statement_t, arr_load_t >
                  (boost::make_shared<arr_load_t>(lhs, arr, arr_ty, idx, elem_size)));

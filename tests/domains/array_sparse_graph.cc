@@ -429,26 +429,26 @@ z_cfg_t* prog10(variable_factory_t &vfac)
   entry >> bb1;
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
-  // assume array element of 1 byte
-
+  
+  uint64_t elem_size = 1;
   entry.assume(n >= 1);
   // forall i :: is_not_null(a[i])
   // forall i :: is_not_null(b[i])
   entry.ptr_new_object (obj1, 0);
   entry.sub (max, n, 1); // max = n-1 
-  entry.array_assume (a, crab::ARR_PTR_TYPE, 0, max, z_var(obj1));
+  entry.array_assume (a, crab::ARR_PTR_TYPE, elem_size, 0, max, z_var(obj1));
   ///
   entry.assign(i, 0);
   ///////
   bb1_t.assume(i <= n - 1);
   bb1_f.assume(i >= n);
   // b[i] := a[i]
-  bb2.array_load(tmp1, a, crab::ARR_PTR_TYPE, i, 1);
-  bb2.array_store(b, crab::ARR_PTR_TYPE, i, z_var(tmp1), 1);
+  bb2.array_load(tmp1, a, crab::ARR_PTR_TYPE, i, elem_size);
+  bb2.array_store(b, crab::ARR_PTR_TYPE, i, z_var(tmp1), elem_size);
   bb2.add(i, i, 1);
   ret.sub(tmp3, i, 1);
   // read b[i-1] 
-  ret.array_load(tmp2, b, crab::ARR_PTR_TYPE, tmp3, 1); 
+  ret.array_load(tmp2, b, crab::ARR_PTR_TYPE, tmp3, elem_size); 
   return cfg;
 }
 
