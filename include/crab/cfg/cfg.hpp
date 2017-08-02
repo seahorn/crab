@@ -34,7 +34,9 @@
  * - Most of the cfg statements are untyped (with some exceptions such
  *   as array statements). Therefore, during the construction of a cfg
  *   there is almost no type checking so the client must ensure that
- *   types are compatible.
+ *   types are compatible. Similarly, argument consistency between
+ *   callsites and their function declarations.
+ * 
  * 
  * Limitations:
  *
@@ -2886,6 +2888,17 @@ namespace crab {
 		  std::back_inserter(m_inputs));	
         std::copy(outputs.begin(), outputs.end(),
 		  std::back_inserter(m_outputs));
+
+	// CFG restriction: inputs and outputs must be disjoint,
+	// otherwise we cannot produce meaningful input-output
+	// relations.
+	std::set<VariableName> s;
+	for(auto &tv: m_inputs) {s.insert(tv.first);}
+	for(auto &tv: m_outputs){s.insert(tv.first);}	
+	if (s.size () != (m_inputs.size () + m_outputs.size ())) {
+	  CRAB_ERROR("interprocedural analysis requires that for each function ",
+		     "its set of inputs and outputs must be disjoint.");
+	}
       }
 
       VariableName get_func_name () const
@@ -3131,7 +3144,6 @@ namespace crab {
       
       BasicBlockLabel exit()  const { 
         if (has_exit ()) return m_exit; 
-        
         CRAB_ERROR ("cfg does not have an exit block");
       } 
       
