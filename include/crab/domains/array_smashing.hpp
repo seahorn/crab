@@ -46,6 +46,7 @@ namespace crab {
         using typename abstract_domain_t::variable_t;
         using typename abstract_domain_t::number_t;
         using typename abstract_domain_t::varname_t;
+	using typename abstract_domain_t::varname_vector_t;	
         typedef crab::pointer_constraint<VariableName> ptr_cst_t;
         typedef NumDomain content_domain_t;
         typedef interval <Number> interval_t;
@@ -435,7 +436,11 @@ namespace crab {
                             ")");
           return name;
         }  
-        
+
+	void rename(const varname_vector_t& from, const varname_vector_t &to){
+	  _inv.rename(from, to);
+	}
+	
       }; // end array_smashing
    
      template<typename BaseDomain>

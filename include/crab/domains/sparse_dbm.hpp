@@ -132,6 +132,7 @@ namespace crab {
       using typename abstract_domain_t::variable_t;
       using typename abstract_domain_t::number_t;
       using typename abstract_domain_t::varname_t;
+      using typename abstract_domain_t::varname_vector_t;      
       
       typedef typename linear_constraint_t::kind_t constraint_kind_t;
       typedef ikos::interval<Number>  interval_t;
@@ -1818,6 +1819,39 @@ namespace crab {
       }
       */
 
+      void rename(const varname_vector_t &from, const varname_vector_t &to) {
+	if (is_top () || is_bottom()) return;
+	
+	// renaming vert_map by creating a new vert_map since we are
+	// modifying the keys.
+	// rev_map is modified in-place since we only modify values.
+	CRAB_LOG("zones-sparse",
+		 crab::outs() << "Replacing {";
+		 for (auto v: from) crab::outs() << v << ";";
+		 crab::outs() << "} with ";
+		 for (auto v: to) crab::outs() << v << ";";
+		 crab::outs() << "}:\n";
+		 crab::outs() << *this << "\n";);
+	
+	vert_map_t new_vert_map;
+	for (auto kv: vert_map) {
+	  ptrdiff_t pos = std::distance(from.begin(),
+				 std::find(from.begin(), from.end(), kv.first.name()));
+	  if (pos < from.size()) {
+	    variable_t new_v(to[pos]);
+	    new_vert_map.insert(vmap_elt_t(new_v, kv.second));
+	    rev_map[kv.second] = new_v;
+	  } else {
+	    new_vert_map.insert(kv);
+	  }
+	}
+	std::swap(vert_map, new_vert_map);
+
+	CRAB_LOG("zones-sparse",
+		 crab::outs () << "RESULT=" << *this << "\n");
+      }
+
+      
       //! copy of x into a new fresh variable y
       void expand (VariableName x, VariableName y) {
         crab::CrabStats::count (getDomainName() + ".count.expand");
@@ -2068,6 +2102,7 @@ namespace crab {
       using typename abstract_domain_t::variable_t;
       using typename abstract_domain_t::number_t;
       using typename abstract_domain_t::varname_t;
+      using typename abstract_domain_t::varname_vector_t;      
       typedef typename linear_constraint_t::kind_t constraint_kind_t;
       typedef ikos::interval<Number>  interval_t;
 
@@ -2186,6 +2221,10 @@ namespace crab {
       void apply(ikos::div_operation_t op, VariableName x, VariableName y, Number k) {
         lock(); norm().apply(op, x, y, k);
       }
+
+      void rename(const varname_vector_t &from, const varname_vector_t &to)
+      { lock(); norm().rename(from, to); }
+      
       void expand (VariableName x, VariableName y) { lock(); norm().expand(x, y); }
 
       template<typename Iterator>

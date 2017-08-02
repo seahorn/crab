@@ -169,6 +169,7 @@ namespace crab {
         using typename abstract_domain_t::variable_t;
         using typename abstract_domain_t::number_t;
         using typename abstract_domain_t::varname_t;
+        using typename abstract_domain_t::varname_vector_t;	
         typedef interval <Number> interval_t;
 
        private:
@@ -1456,17 +1457,52 @@ namespace crab {
           }
           return csts;
         }
-        
+
+      void rename(const varname_vector_t &from, const varname_vector_t &to) {
+	if (is_top () || is_bottom()) return;
+	
+	// renaming m_var_map by creating a new map 
+	CRAB_LOG("apron",
+		 crab::outs() << "Replacing {";
+		 for (auto v: from) crab::outs() << v << ";";
+		 crab::outs() << "} with ";
+		 for (auto v: to) crab::outs() << v << ";";
+		 crab::outs() << "}:\n";
+		 crab::outs() << *this << "\n";);
+	
+	var_map_t new_var_map;
+	for (auto kv: m_var_map.left) {
+	  ptrdiff_t pos = std::distance(from.begin(),
+				 std::find(from.begin(), from.end(), kv.first));
+	  if (pos < from.size()) {
+	    new_var_map.insert(binding_t(to[pos], kv.second));
+	  } else {
+	    new_var_map.insert(binding_t(kv.first, kv.second));
+	  }
+	}
+	std::swap(m_var_map, new_var_map);
+
+	CRAB_LOG("apron",
+		 crab::outs () << "RESULT=" << *this << "\n");
+      }
+	
         void expand (VariableName x, VariableName dup) {
-          *this -= dup;
+	  if (is_bottom() || is_top()) return;
+	  
+          if (get_var_dim(dup)) {
+	    CRAB_ERROR("expand second parameter ", dup,
+		       " cannot be already a variable in the apron domain ", *this);
+	  }
+
           // --- increases number of dimensions by one
           auto dim_x = get_var_dim_insert (x);
           m_apstate = apPtr (get_man(),
                              ap_abstract0_expand(get_man (), false, &* m_apstate, 
                                                  dim_x, 1));
+	  
           // --- the additional dimension is put at the end of integer
           //     dimensions.
-          m_var_map.insert (binding_t (dup, get_dims () - 1));            
+          m_var_map.insert (binding_t (dup, get_dims () - 1));
         }
 
         void normalize () {
@@ -1521,6 +1557,7 @@ namespace crab {
         using typename abstract_domain_t::variable_t;
         using typename abstract_domain_t::number_t;
         using typename abstract_domain_t::varname_t;
+        using typename abstract_domain_t::varname_vector_t;	
         typedef typename linear_constraint_t::kind_t constraint_kind_t;
         typedef interval<Number>  interval_t;
 
@@ -1644,7 +1681,10 @@ namespace crab {
         void expand (VariableName x, VariableName y) {
 	  detach(); ref().expand(x, y);
 	}
-        
+
+	void rename(const varname_vector_t &from, const varname_vector_t &to)
+	{ detach(); ref().rename(from, to); }
+	
         template<typename Range>
         void project (Range vs) { detach(); ref().project(vs); }
         

@@ -8,6 +8,8 @@
 #include <crab/domains/pointer_operators_api.hpp>
 #include <crab/domains/boolean_operators_api.hpp>
 
+#include <crab/common/types.hpp>
+
 namespace crab {
 
   namespace domains {
@@ -36,9 +38,17 @@ namespace crab {
       typedef ikos::variable<N,V> variable_t;
       typedef N number_t;
       typedef V varname_t;
-
+      typedef std::vector<varname_t> varname_vector_t;
+            
       abstract_domain (): ikos::writeable() {}
       virtual ~abstract_domain() {};
+
+      // other operations
+      virtual void rename(const varname_vector_t &from, const varname_vector_t &to) {
+	CRAB_WARN("rename operation not implemented");
+      }
+
+      // TODO: move here all operations from domain_traits.hpp
       
     };
     

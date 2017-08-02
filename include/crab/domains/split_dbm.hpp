@@ -136,6 +136,7 @@ namespace crab {
       using typename abstract_domain_t::variable_t;
       using typename abstract_domain_t::number_t;
       using typename abstract_domain_t::varname_t;
+      using typename abstract_domain_t::varname_vector_t;
       
       typedef typename linear_constraint_t::kind_t constraint_kind_t;
       typedef interval<Number>  interval_t;
@@ -2193,6 +2194,38 @@ namespace crab {
         }
       }
 
+      void rename(const varname_vector_t &from, const varname_vector_t &to) {
+	if (is_top () || is_bottom()) return;
+	
+	// renaming vert_map by creating a new vert_map since we are
+	// modifying the keys.
+	// rev_map is modified in-place since we only modify values.
+	CRAB_LOG("zones-split",
+		 crab::outs() << "Replacing {";
+		 for (auto v: from) crab::outs() << v << ";";
+		 crab::outs() << "} with ";
+		 for (auto v: to) crab::outs() << v << ";";
+		 crab::outs() << "}:\n";
+		 crab::outs() << *this << "\n";);
+	
+	vert_map_t new_vert_map;
+	for (auto kv: vert_map) {
+	  ptrdiff_t pos = std::distance(from.begin(),
+				 std::find(from.begin(), from.end(), kv.first.name()));
+	  if (pos < from.size()) {
+	    variable_t new_v(to[pos]);
+	    new_vert_map.insert(vmap_elt_t(new_v, kv.second));
+	    rev_map[kv.second] = new_v;
+	  } else {
+	    new_vert_map.insert(kv);
+	  }
+	}
+	std::swap(vert_map, new_vert_map);
+
+	CRAB_LOG("zones-split",
+		 crab::outs () << "RESULT=" << *this << "\n");
+      }
+      
       
       template<typename G>
       bool is_eq (vert_id u, vert_id v, G& g) {
@@ -2401,7 +2434,6 @@ namespace crab {
 					linear_expression_t(g_excl.edge_val(s, d)));
           }
         }
-
         return csts;
       }
 
@@ -2412,7 +2444,8 @@ namespace crab {
     }; // class SplitDBM_
 
     // Quick wrapper which uses shared references with copy-on-write.
-    template<class Number, class VariableName, class Params=SDBM_impl::DefaultParams <Number> >
+    template<class Number, class VariableName,
+	     class Params=SDBM_impl::DefaultParams <Number> >
     class SplitDBM:
       public abstract_domain<Number, VariableName,
 			     SplitDBM<Number,VariableName,Params> > {
@@ -2428,6 +2461,7 @@ namespace crab {
       using typename abstract_domain_t::variable_t;
       using typename abstract_domain_t::number_t;
       using typename abstract_domain_t::varname_t;
+      using typename abstract_domain_t::varname_vector_t;      
       typedef typename linear_constraint_t::kind_t constraint_kind_t;
       typedef interval<Number>  interval_t;
 
@@ -2551,6 +2585,9 @@ namespace crab {
       template<typename Iterator>
       void project (Iterator vIt, Iterator vEt) { lock(); norm().project(vIt, vEt); }
 
+      void rename(const varname_vector_t &from, const varname_vector_t &to)
+      { lock(); norm().rename(from, to); }
+      
       template <typename NumDomain>
       void push (const VariableName& x, NumDomain&inv){ lock(); norm().push(x, inv); }
 

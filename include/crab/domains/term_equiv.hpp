@@ -93,6 +93,7 @@ namespace crab {
        using typename abstract_domain_t::variable_t;
        using typename abstract_domain_t::number_t;
        using typename abstract_domain_t::varname_t;
+       using typename abstract_domain_t::varname_vector_t;
        typedef interval<Number> interval_t;
        
       private:
@@ -1145,6 +1146,36 @@ namespace crab {
          }
        }
 
+      void rename(const varname_vector_t &from, const varname_vector_t &to) {
+	if (is_top () || is_bottom()) return;
+	
+	// renaming _var_map by creating a new map since we are
+	// modifying the keys.
+	CRAB_LOG("term",
+		 crab::outs() << "Replacing {";
+		 for (auto v: from) crab::outs() << v << ";";
+		 crab::outs() << "} with ";
+		 for (auto v: to) crab::outs() << v << ";";
+		 crab::outs() << "}:\n";
+		 crab::outs() << *this << "\n";);
+	
+	var_map_t new_var_map;
+	for (auto kv: _var_map) {
+	  ptrdiff_t pos = std::distance(from.begin(),
+				 std::find(from.begin(), from.end(), kv.first.name()));
+	  if (pos < from.size()) {
+	    variable_t new_v(to[pos]);
+	    new_var_map.insert(std::make_pair(new_v, kv.second));
+	  } else {
+	    new_var_map.insert(kv);
+	  }
+	}
+	std::swap(_var_map, new_var_map);
+
+	CRAB_LOG("term",
+		 crab::outs () << "RESULT=" << *this << "\n");
+      }
+       
        //! copy of x into a new fresh variable y
        void expand (VariableName x_name, VariableName y_name) {
          crab::CrabStats::count (getDomainName() + ".count.expand");

@@ -195,8 +195,8 @@ namespace crab {
   // A simple abstract domain for booleans
   template <typename Number, typename VariableName>
   class flat_boolean_domain :
-      public abstract_domain<Number,VariableName,
-			     flat_boolean_domain<Number,VariableName> > {
+    public abstract_domain<Number,VariableName,
+			   flat_boolean_domain<Number,VariableName> > {
     
     typedef separate_domain< VariableName, boolean_value> separate_domain_t;
     typedef flat_boolean_domain<Number, VariableName> flat_boolean_domain_t;
@@ -209,7 +209,10 @@ namespace crab {
     typedef linear_expression<Number, VariableName> linear_expression_t;
     typedef linear_constraint<Number, VariableName> linear_constraint_t;
     typedef linear_constraint_system<Number, VariableName> linear_constraint_system_t;
-    typedef interval<Number>  interval_t;    
+    typedef interval<Number>  interval_t;
+    typedef abstract_domain<Number,VariableName,
+			    flat_boolean_domain<Number,VariableName> > abstract_domain_t;
+    using typename abstract_domain_t::varname_vector_t;          
     typedef typename separate_domain_t::iterator iterator;
 
    private:
@@ -413,6 +416,24 @@ namespace crab {
 
     static std::string getDomainName () {return "Boolean"; }
     void write(crab_os& o) { _env.write(o); }
+
+    void rename(const varname_vector_t &from, const varname_vector_t &to) {
+      if (is_top () || is_bottom()) return;
+      
+      // we need to create a new separate_domain since it cannot be
+      // modified in-place.
+      separate_domain_t new_env;
+      for (auto kv: _env) {
+	ptrdiff_t pos = std::distance(std::find(from.begin(), from.end(), kv.first),
+				      from.begin());
+	if (pos < from.size()) {
+	  new_env.set(to[pos], kv.second);
+	} else {
+	  new_env.set(kv.first, kv.second);	    
+	}
+      }
+      std::swap(_env, new_env);
+    }
     
    }; // class flat_boolean_domain
 
@@ -478,6 +499,7 @@ namespace crab {
       using typename abstract_domain_t::linear_constraint_t;
       using typename abstract_domain_t::linear_constraint_system_t;
       using typename abstract_domain_t::variable_t;
+      using typename abstract_domain_t::varname_vector_t;      
       typedef typename NumDom::number_t number_t;
       typedef typename NumDom::varname_t varname_t;      
       typedef interval<N> interval_t;
@@ -910,6 +932,9 @@ namespace crab {
       static std::string getDomainName()
       { return domain_product2_t::getDomainName (); }
 
+      void rename(const varname_vector_t &from, const varname_vector_t &to)
+      { this->_product.rename(from, to); }
+	
       // domain_traits_api
       
       void expand(V x, V new_x) {

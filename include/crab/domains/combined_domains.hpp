@@ -217,6 +217,7 @@ namespace crab {
       using typename abstract_domain_t::variable_t;
       using typename abstract_domain_t::number_t;
       using typename abstract_domain_t::varname_t;
+      using typename abstract_domain_t::varname_vector_t;      
       
       typedef crab::pointer_constraint<VariableName> ptr_cst_t;
       
@@ -366,7 +367,8 @@ namespace crab {
       // cast_operators_api
       
       void apply(int_conv_operation_t op,
-		 VariableName dst, unsigned dst_width, VariableName src, unsigned src_width) {
+		 VariableName dst, unsigned dst_width, VariableName src,
+		 unsigned src_width) {
         this->_product.first().apply(op, dst, dst_width, src, src_width);
         this->_product.second().apply(op, dst, dst_width, src, src_width);
         this->reduce();
@@ -450,7 +452,8 @@ namespace crab {
         this->reduce ();
       } 
       
-      virtual void pointer_assign (VariableName lhs, VariableName rhs, linear_expression_t offset) override {
+      virtual void pointer_assign (VariableName lhs, VariableName rhs,
+				   linear_expression_t offset) override {
         this->_product.first().pointer_assign (lhs, rhs, offset);
         this->_product.second().pointer_assign (lhs, rhs, offset);
         this->reduce ();
@@ -493,7 +496,8 @@ namespace crab {
         this->reduce ();
       }    
 
-      virtual void assign_bool_var(VariableName lhs, VariableName rhs, bool is_not_rhs) override {
+      virtual void assign_bool_var(VariableName lhs, VariableName rhs,
+				   bool is_not_rhs) override {
         this->_product.first().assign_bool_var (lhs, rhs, is_not_rhs);
         this->_product.second().assign_bool_var (lhs, rhs, is_not_rhs);
         this->reduce ();
@@ -510,6 +514,12 @@ namespace crab {
         this->_product.first().assume_bool (v, is_negated);
         this->_product.second().assume_bool (v, is_negated);
         this->reduce ();
+      }    
+
+      virtual void rename (const varname_vector_t& from,
+			   const varname_vector_t& to) override {
+        this->_product.first().rename(from, to);
+        this->_product.second().rename(from, to);
       }    
       
       void write(crab::crab_os& o) {
@@ -544,6 +554,7 @@ namespace crab {
       using typename abstract_domain_t::variable_t;
       using typename abstract_domain_t::number_t;
       using typename abstract_domain_t::varname_t;
+      using typename abstract_domain_t::varname_vector_t;
       
       typedef interval<number_t> interval_t;
       
@@ -813,6 +824,10 @@ namespace crab {
         this->reduce_variable(x);
       }
       
+      void rename (const varname_vector_t& from,
+		   const varname_vector_t& to)  {
+        this->_product.rename(from, to);
+      }    
       
       // domain_traits_api
       
@@ -1160,6 +1175,7 @@ namespace crab {
       using typename abstract_domain_t::variable_t;
       using typename abstract_domain_t::number_t;
       using typename abstract_domain_t::varname_t;
+      using typename abstract_domain_t::varname_vector_t;
 
       typedef congruence_domain<number_t, varname_t, typeSize> congruence_domain_t;
       typedef interval_congruence<number_t, typeSize> interval_congruence_t;
@@ -1372,7 +1388,7 @@ namespace crab {
       void write(crab_os& o) { 
         this->_product.write(o); 
        }
-      
+
       linear_constraint_system_t to_linear_constraint_system() {
         return this->_product.first().to_linear_constraint_system();
       }
@@ -1380,6 +1396,11 @@ namespace crab {
       static std::string getDomainName() { 
         return domain_product2_t::getDomainName (); 
       }
+
+      void rename (const varname_vector_t& from,
+		   const varname_vector_t& to)  {
+        this->_product.rename(from, to);
+      }          
       
     }; // class numerical_congruence_domain
 
@@ -1406,6 +1427,7 @@ namespace crab {
       using typename abstract_domain_t::variable_t;
       using typename abstract_domain_t::number_t;
       using typename abstract_domain_t::varname_t;
+      using typename abstract_domain_t::varname_vector_t;
       typedef interval<N> interval_t;
       typedef crab::pointer_constraint<V> ptr_cst_t;
       
@@ -1599,7 +1621,8 @@ namespace crab {
         this->_product.pointer_store (lhs, rhs);
       } 
       
-      virtual void pointer_assign (varname_t lhs, varname_t rhs, linear_expression_t offset) override {
+      virtual void pointer_assign (varname_t lhs, varname_t rhs,
+				   linear_expression_t offset) override {
         this->_product.pointer_assign (lhs, rhs, offset);
       }
       
@@ -1635,6 +1658,11 @@ namespace crab {
         return domain_product2_t::getDomainName (); 
       }
 
+      void rename (const varname_vector_t& from,
+		   const varname_vector_t& to)  {
+        this->_product.rename(from, to);
+      }    
+      
       // domain_traits_api
       
       void expand(varname_t x, varname_t new_x) {
