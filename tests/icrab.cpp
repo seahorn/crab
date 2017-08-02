@@ -18,7 +18,7 @@ void inter_run_impl (CG* cg,
   
   crab::outs() << "Running " 
 	       << "summary domain=" << BUDom::getDomainName () 
-	       << "and forward domain=" << TDDom::getDomainName () << "\n";
+	       << " and forward domain=" << TDDom::getDomainName () << "\n";
   
   InterFwdAnalyzer a (cg_ref, nullptr /*live*/, widening, narrowing, jump_set_size);
   a.Run ();
@@ -40,11 +40,8 @@ void inter_run_impl (CG* cg,
   for (auto &v: boost::make_iterator_range (cg_ref.nodes())) {
     auto cfg = v.get_cfg ();
     if (a.has_summary (cfg)) {
-      auto fdecl_opt = cfg.get_func_decl ();
-      assert (fdecl_opt);
-      crab::outs() << "Summary for " << *fdecl_opt << ": "; 
       auto sum = a.get_summary (cfg);
-      crab::outs() << sum << "\n";
+      crab::outs() << "Summary " << *sum << "\n";
     }
   }
   

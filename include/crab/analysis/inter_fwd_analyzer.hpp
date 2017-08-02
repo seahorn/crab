@@ -55,7 +55,9 @@ namespace crab {
       typedef boost::shared_ptr<td_abs_tr> td_abs_tr_ptr;
       typedef fwd_analyzer<cfg_t, bu_abs_tr> bu_analyzer;
       typedef fwd_analyzer<cfg_t, td_abs_tr> td_analyzer;
-
+      typedef typename summ_tbl_t::Summary summary_t;
+      typedef boost::shared_ptr<summary_t> summary_ptr;
+      
      public:
 
       // for communication with checkers
@@ -115,7 +117,7 @@ namespace crab {
         if (has_noedges) {
           // -- Special case when the program has been inlined.
           CRAB_LOG("inter",
-                   crab::outs() << "Call graph has no edges so no summaries are computed.\n");
+                   crab::outs() << "Callgraph has no edges so no summaries are computed.\n");
 
           CRAB_LOG("inter", 
                    m_cg.write(crab::outs());
@@ -235,7 +237,7 @@ namespace crab {
   		                    << *fdecl <<  " with " << init_inv << "\n");
             }
 
-	    auto abs_tr = boost::make_shared<td_abs_tr> (&init_inv, &m_summ_tbl, &m_call_tbl);
+	    auto abs_tr = boost::make_shared<td_abs_tr>(&init_inv, &m_summ_tbl, &m_call_tbl);
             auto a = boost::make_shared<td_analyzer> (cfg, nullptr, &*abs_tr, 
                                                       m_widening_delay,
 						      m_descending_iters,
@@ -281,24 +283,23 @@ namespace crab {
         return boost::make_shared<td_abs_tr>(&inv, &m_summ_tbl, &m_call_tbl);        
       }
 
-      //! Return true if there is a summary for cfg
+      //! Return true if there is a summary for a function
       bool has_summary (const cfg_t &cfg) const {
         if (auto fdecl = cfg.get_func_decl ())
           return m_summ_tbl.hasSummary (*fdecl);
         return false;
       }
 
-      //! Return the summary for cfg
-      BU_Dom get_summary(const cfg_t &cfg) const {
+      //! Return the summary for a function
+      summary_ptr get_summary(const cfg_t &cfg) const {
         if (auto fdecl = cfg.get_func_decl ()) {
           if (m_summ_tbl.hasSummary (*fdecl)) {
-            auto summ = m_summ_tbl.get (*fdecl);
-            return summ.get_sum ();
+            summary_t summ = m_summ_tbl.get (*fdecl);
+            return boost::make_shared<summary_t>(summ);
           }
         }
-        
         CRAB_WARN("Summary not found");
-        return BU_Dom::top ();
+        return nullptr;
       }
         
     }; 
