@@ -744,19 +744,22 @@ namespace crab {
     static void reuse_summary (abs_dom_t& caller, 
                                const callsite_t& cs,
                                const typename SumTable::Summary& summ) {
+      // Before a summary is plug-in we rename it with unique variable
+      // names so we avoid naming clashes in cases like for instance
+      // summary variables have same names as lhs of callsites.
 
+      
       // error if cs and function declaration associated with summ are
       // not type consistent
       summ.check_type_consistency (cs);
 
       CRAB_LOG("inter", 
                crab::outs () << "    Reuse summary at " << cs << "\n";
-               crab::outs () << "    Summary:";  summ.write(crab::outs ()); 
-               crab::outs () << "\n");
+               crab::outs () << "    Summary:" << summ << "\n";); 
 
       std::set<varname_t> actuals, formals;
       // --- matching formal and actual parameters
-      auto inputs = summ.get_inputs ();
+      auto inputs = summ.get_renamed_inputs ();
       unsigned i=0;
       // XXX: propagating down
       for (auto p : inputs) {
@@ -772,7 +775,7 @@ namespace crab {
       }
 
       // --- meet caller's inv with summ
-      auto sum_inv = summ.get_sum ();
+      auto sum_inv = summ.get_renamed_sum ();
       caller = caller & sum_inv;
       CRAB_LOG("inter",
 	       crab::outs() << "\t\tAfter meet caller and summary: "
@@ -782,9 +785,9 @@ namespace crab {
       // XXX: propagate from the return values in the callee to the
       // lhs variables of the callsite in the caller.
       auto const &caller_vts = cs.get_lhs ();
-      auto const &callee_outs = summ.get_outputs ();
+      auto const &callee_outs = summ.get_renamed_outputs ();
       assert (caller_vts.size () == callee_outs.size ());
-      
+	
       auto caller_it = caller_vts.begin();
       auto caller_et = caller_vts.end();
       auto callee_it = callee_outs.begin();
@@ -824,7 +827,7 @@ namespace crab {
       else
       {
 	if (m_sum_tbl->hasSummary (cs)) {
-	  auto &summ = m_sum_tbl->get (cs);
+	  auto summ = m_sum_tbl->get (cs);
 	  reuse_summary (*(this->m_inv), cs, summ);
 	}
 	else
@@ -897,14 +900,16 @@ namespace crab {
       if (!m_sum_tbl) {
         CRAB_WARN ("The summary table is empty");
       } else if (m_sum_tbl->hasSummary (cs)) {
-        auto &summ = m_sum_tbl->get (cs);
+        auto summ = m_sum_tbl->get (cs);
 
         // error if cs and function declaration associated with summ
         // are not type consistent
         summ.check_type_consistency (cs);
         
         CRAB_LOG ("inter", 
-                  crab::outs () << "    Pluging caller context into callee\n");
+                  crab::outs () << "    Pluging caller context into callee\n"
+		                << "    Summary: " << summ << "\n");
+	
         ///////
         /// Generate the callee context and store it.
         ///////
@@ -939,7 +944,13 @@ namespace crab {
         // --- convert this->m_inv to the language of summ_abs_dom_t (summ)
         summ_abs_domain_t caller_ctx_inv;
         convert_domains(*(this->m_inv), caller_ctx_inv);
-        
+	// forget the variables of the lhs of the callsite, otherwise
+	// caller_ctx_inv and m_inv may be inconsistent if the lhs
+	// variables are constrained before the callsite (e.g., x=-5;
+	// x := abs(x);)
+	for (auto vt: cs.get_lhs())
+	{ *(this->m_inv) -= vt.first; }
+	
         CRAB_LOG ("inter",
                   crab::outs() << "\t\tCaller context: " <<  caller_ctx_inv << "\n");
         
@@ -949,7 +960,7 @@ namespace crab {
         CRAB_LOG ("inter",
                   crab::outs() << "\t\tCaller context after plugin summary: " 
                                << caller_ctx_inv << "\n");
-        
+	
         // --- convert back inv to the language of abs_dom_t
         convert_domains(caller_ctx_inv, *(this->m_inv));
         CRAB_LOG ("inter",
@@ -961,9 +972,9 @@ namespace crab {
       }
         
       // We could not reuse a summary so we just havoc lhs of the call
-      // site.
+      // site.      
       for (auto vt: cs.get_lhs())
-        *(this->m_inv) -= vt.first; 
+      { *(this->m_inv) -= vt.first; }
     }
   }; 
 
