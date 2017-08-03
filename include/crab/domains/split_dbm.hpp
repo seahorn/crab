@@ -2146,7 +2146,8 @@ namespace crab {
           return;
         
         CRAB_LOG ("zones-split",
-                  crab::outs() << "Before expand " << x << " into " << y << ":\n"<< *this <<"\n");
+                  crab::outs() << "Before expand " << x << " into " << y << ":\n"
+		               << *this <<"\n");
 
         auto it = vert_map.find(variable_t(y));
         if(it != vert_map.end()) {
@@ -2162,8 +2163,11 @@ namespace crab {
         for (auto edge : g.e_succs(ii))  
           g.add_edge (jj, edge.val, edge.vert);
 
+	potential[jj] = potential[ii];
+	
         CRAB_LOG ("zones-split",
-                  crab::outs() << "After expand " << x << " into " << y << ":\n"<< *this <<"\n");
+                  crab::outs() << "After expand " << x << " into " << y << ":\n"
+		               << *this <<"\n");
       }
 
       // dual of forget: remove all variables except [vIt,...vEt)

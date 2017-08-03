@@ -1878,6 +1878,8 @@ namespace crab {
         for (auto edge : g.e_succs(ii))  
           g.add_edge (jj, edge.val, edge.vert);
 
+	potential[jj] = potential[ii];
+	
         CRAB_LOG ("zones-sparse",
                   crab::outs() << "After expand " << x << " into " << y << ":\n"
 		               << *this <<"\n");
