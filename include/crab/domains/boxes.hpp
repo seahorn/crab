@@ -936,6 +936,24 @@ namespace crab {
           forget (s3.begin (), s3.end ());
         }
 
+	void expand(VariableName v, VariableName new_v) {
+          if (is_top () || is_bottom ()) return ;
+
+          crab::CrabStats::count (getDomainName() + ".count.expand");
+          crab::ScopedCrabStats __st__(getDomainName() + ".expand");
+	  
+	  // new_v should be completely unconstrained
+	  this->operator-=(new_v); 
+	  
+          linterm_t lnew_v = term_from_var (new_v);
+          linterm_t lv = term_from_var (v);
+	  
+          m_ldd = lddPtr(get_ldd_man(), 
+                         Ldd_TermCopy(get_ldd_man(), &(*m_ldd), lnew_v, lv));
+          Ldd_GetTheory (get_ldd_man())->destroy_term(lnew_v);
+          Ldd_GetTheory (get_ldd_man())->destroy_term(lv);
+	}
+	  
         void operator+=(linear_constraint_t cst)
         {
           crab::CrabStats::count (getDomainName() + ".count.add_constraints");
@@ -1048,8 +1066,8 @@ namespace crab {
           } else if (boost::optional<variable_t> v = e.get_variable()){
             VariableName y = (*v).name();
             if (!(x==y)) {
-	      copy_term(x,y);
-	      //apply_ldd (x, y, 1, number_t(0));
+	      //copy_term(x,y);
+	      apply_ldd (x, y, 1, number_t(0));
 	    }
           } else {
 	    // XXX: this is not possible when program originated by clang/llvm
@@ -1551,7 +1569,7 @@ namespace crab {
        }
 
        static void expand(boxes_domain_t& inv, VariableName x, VariableName new_x) {
-         CRAB_WARN ("expand operation not implemented in boxes");
+	 inv.expand(x, new_x);         
        }
 
      };
@@ -1695,6 +1713,9 @@ namespace crab {
       void project (Iterator vIt, Iterator vEt)
       { detach(); ref().project(vIt, vEt); }
 
+      void expand (VariableName x, VariableName new_x)
+      { detach(); ref().expand(x,new_x);}
+      
       void write(crab_os& o) { ref().write(o); }
 
       linear_constraint_system_t to_linear_constraint_system ()
@@ -1727,7 +1748,7 @@ namespace crab {
       { inv.project (it, end); }
       
       static void expand (boxes_domain_t& inv, VariableName x, VariableName new_x)
-      { CRAB_WARN ("expand operation not implemented in boxes"); }
+      { inv.expand(x, new_x); }
     };
     #endif
 
