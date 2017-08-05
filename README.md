@@ -82,7 +82,7 @@ To install Crab with Boxes and Apron, type:
     cmake --build . --target install 	
 
 The `tests` directory contains many examples of how to build CFGs and
-compute invariants using different abstract domains. To run these tests
+compute invariants using different abstract domains. To compile these tests
 type:
 
 	mkdir build && cd build
@@ -113,8 +113,9 @@ program:
 ``` 
 
 This is the C++ code to build the corresponding Crab CFG and run the
-analysis using the Zones domain (this code will not compile like it
-is. Go to `tests` directory for real examples):
+analysis using the Zones domain (note: this code has been simplified
+for presentation purposes and it might not compile like it is. Go to
+`tests` directory for real examples):
 
 ```c++
     // CFG-based language
@@ -124,7 +125,7 @@ is. Go to `tests` directory for real examples):
     // Intra forward analyzer	
     #include <crab/analysis/fwd_analyzer.hpp>
     // Zones domain
-    #include <crab/domains/split_dbm.hpp>
+	#include <crab/domains/split_dbm.hpp>
 
 	/* 
 	To define a Control-Flow Graph (CFG) users need to define :
@@ -183,8 +184,8 @@ is. Go to `tests` directory for real examples):
        bb2.add(i,i,1);
 
        // Build an analyzer and run the zones domain
-	   zones_domain_t inv;  // initially top
-	   intra_zones_analyzer_t a (cfg, inv, ...);
+       zones_domain_t inv;  // initially top
+       intra_zones_analyzer_t a (cfg, inv, ...);
        a.run();
        cout << "Invariants using " << zones_domain_t::getDomainName() << "\n";
 	
@@ -194,7 +195,7 @@ is. Go to `tests` directory for real examples):
          auto inv = a[b.label()];
          cout << get_label_str(b.label()) << "=" << inv << "\n";
        }
-	   return 0;
+       return 0;
     }
 ```
 
