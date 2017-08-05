@@ -1621,9 +1621,23 @@ namespace crab {
         return true;  
       }
    
-      void add_disequation(linear_expression_t exp)
-      {
+      void add_disequation(linear_expression_t exp) {
+	if (exp.size() == 1) {
+	  // almost no reasoning about disequations: we only make
+	  // bottom if exp implies x != k and we infer from the DBM
+	  // that x must be equal to k.
+	  auto it = exp.begin();
+	  number_t c1 = (*it).first;	  
+	  variable_t x1 = (*it).second;
+	  number_t n = -(exp.constant()) / c1;
+	  interval_t i = get_interval(x1);
+	  interval_t new_i = intervals_impl::trim_bound<interval_t, number_t>(i, n);
+	  if ((new_i).is_bottom()) {
+	    set_to_bottom();
+	  }
+	} 
         return;
+	
         /*
         // Can only exploit \sum_i c_i x_i \neq k if:
         // (1) exactly one x_i is unfixed
