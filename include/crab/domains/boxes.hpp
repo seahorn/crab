@@ -41,14 +41,14 @@ namespace crab {
         typedef interval <Number> interval_t;
 
         boxes_domain() {}    
-
+	
         static boxes_domain_t top() { CRAB_ERROR (LDD_NOT_FOUND); }
 
         static boxes_domain_t bottom() { CRAB_ERROR (LDD_NOT_FOUND); }
 
-        boxes_domain (const boxes_domain_t& other): {}
+        boxes_domain (const boxes_domain_t& other) {}
         
-        bool is_bottom() { CRAB_ERROR (LDD_NOT_FOUND); }
+	bool is_bottom() { CRAB_ERROR (LDD_NOT_FOUND); }
 
         bool is_top() { CRAB_ERROR (LDD_NOT_FOUND); }
 
