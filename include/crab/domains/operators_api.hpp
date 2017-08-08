@@ -35,6 +35,8 @@ namespace crab {
       typedef ikos::linear_expression<N,V> linear_expression_t;
       typedef ikos::linear_constraint<N,V> linear_constraint_t;
       typedef ikos::linear_constraint_system<N,V> linear_constraint_system_t;
+      typedef ikos::disjunctive_linear_constraint_system<N,V>
+      disjunctive_linear_constraint_system_t;      
       typedef ikos::variable<N,V> variable_t;
       typedef N number_t;
       typedef V varname_t;
@@ -44,8 +46,16 @@ namespace crab {
       virtual ~abstract_domain() {};
 
       // other operations
+      
+      virtual linear_constraint_system_t to_linear_constraint_system() = 0;
+
+      virtual disjunctive_linear_constraint_system_t
+      to_disjunctive_linear_constraint_system () {
+	CRAB_ERROR("to_disjunctive_linear_constraint_system operation not implemented");
+      }
+
       virtual void rename(const varname_vector_t &from, const varname_vector_t &to) {
-	CRAB_WARN("rename operation not implemented");
+	CRAB_ERROR("rename operation not implemented");
       }
 
       // TODO: move here all operations from domain_traits.hpp
