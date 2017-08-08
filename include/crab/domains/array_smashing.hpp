@@ -43,6 +43,7 @@ namespace crab {
         using typename abstract_domain_t::linear_expression_t;
         using typename abstract_domain_t::linear_constraint_t;
         using typename abstract_domain_t::linear_constraint_system_t;
+        using typename abstract_domain_t::disjunctive_linear_constraint_system_t;	
         using typename abstract_domain_t::variable_t;
         using typename abstract_domain_t::number_t;
         using typename abstract_domain_t::varname_t;
@@ -421,7 +422,12 @@ namespace crab {
         linear_constraint_system_t to_linear_constraint_system (){
           return _inv.to_linear_constraint_system ();
         }
-        
+
+        disjunctive_linear_constraint_system_t
+	to_disjunctive_linear_constraint_system (){
+          return _inv.to_disjunctive_linear_constraint_system ();
+        }
+	
         NumDomain  get_content_domain () const {      
           return _inv;
         }
