@@ -516,6 +516,13 @@ namespace crab {
         this->reduce ();
       }    
 
+      linear_constraint_system_t to_linear_constraint_system() {
+	linear_constraint_system_t csts;
+	csts += this->_product.first().to_linear_constraint_system();
+	csts += this->_product.second().to_linear_constraint_system();	
+        return csts;
+      }
+      
       virtual void rename (const varname_vector_t& from,
 			   const varname_vector_t& to) override {
         this->_product.first().rename(from, to);
@@ -864,8 +871,7 @@ namespace crab {
       }
       
       linear_constraint_system_t to_linear_constraint_system() {
-        // We can choose either first or second domain
-        return this->_product.second().to_linear_constraint_system();
+        return this->_product.to_linear_constraint_system();
       }
       
       static std::string getDomainName() { 
@@ -1390,7 +1396,7 @@ namespace crab {
        }
 
       linear_constraint_system_t to_linear_constraint_system() {
-        return this->_product.first().to_linear_constraint_system();
+        return this->_product.to_linear_constraint_system();
       }
       
       static std::string getDomainName() { 
@@ -1651,7 +1657,7 @@ namespace crab {
        }
       
       linear_constraint_system_t to_linear_constraint_system() {
-        return this->_product.first().to_linear_constraint_system();
+        return this->_product.to_linear_constraint_system();
       }
       
       static std::string getDomainName() { 
