@@ -379,7 +379,14 @@ namespace crab {
     virtual void pointer_assert (ptr_cst_t cst) override {
       CRAB_WARN ("nullity pointer_assert not implemented");
     }
-        
+
+    linear_constraint_system_t to_linear_constraint_system() {
+      if (is_bottom())
+	return linear_constraint_t::get_false();
+      else
+	return linear_constraint_t::get_true();
+    }
+    
     static std::string getDomainName () {
       return "Nullity";
     }    
@@ -387,6 +394,7 @@ namespace crab {
     void write(crab_os& o) {
       _env.write(o); 
     }
+
     
     }; // class nullity_domain
 

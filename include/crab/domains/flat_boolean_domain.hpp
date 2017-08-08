@@ -415,8 +415,31 @@ namespace crab {
     void apply(bitwise_operation_t op, VariableName x, VariableName y, Number z) {}
 
     static std::string getDomainName () {return "Boolean"; }
+
     void write(crab_os& o) { _env.write(o); }
 
+    linear_constraint_system_t to_linear_constraint_system() {
+      if (is_bottom())
+	return linear_constraint_t::get_false();
+
+      if (is_top())
+	return linear_constraint_t::get_true();
+
+      linear_constraint_system_t res;      
+      for (auto kv: _env) {
+	linear_expression_t v(kv.first);
+	if (kv.second.is_true()) {
+	  res += linear_constraint_t(v == number_t(1));
+	} else if (kv.second.is_false()) {
+	  res += linear_constraint_t(v == number_t(0));	  
+	} else {
+	  res += linear_constraint_t(v >= number_t(0));
+	  res += linear_constraint_t(v >= number_t(1));	  	  
+	}
+      }
+      return res;
+    }
+    
     void rename(const varname_vector_t &from, const varname_vector_t &to) {
       if (is_top () || is_bottom()) return;
       
@@ -926,8 +949,12 @@ namespace crab {
       void write(crab_os& o)
       { this->_product.write(o); }
       
-      linear_constraint_system_t to_linear_constraint_system()
-      { return this->_product.second().to_linear_constraint_system(); }
+      linear_constraint_system_t to_linear_constraint_system() {
+	linear_constraint_system_t res;
+	res += this->_product.first().to_linear_constraint_system();
+	res += this->_product.second().to_linear_constraint_system();
+	return res;
+      }
       
       static std::string getDomainName()
       { return domain_product2_t::getDomainName (); }
