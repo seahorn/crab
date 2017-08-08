@@ -221,23 +221,20 @@ namespace crab {
         }
 	   	
 	void backward_assign (VariableName x, linear_expression_t e,
-			      array_smashing_t inv) { 
-	  crab::domains::BackwardAssignOps<array_smashing_t>::
-	  assign (*this, x, e, inv);
+			      array_smashing_t inv) {
+	  _inv.backward_assign(x, e, inv.get_content_domain());
 	}
 	
 	void backward_apply (operation_t op,
 			     VariableName x, VariableName y, Number z,
 			     array_smashing_t inv) {
-	  crab::domains::BackwardAssignOps<array_smashing_t>::
-	    apply(*this, op, x, y, z, inv);
+	  _inv.backward_apply(op, x, y, z, inv.get_content_domain());
 	}
 	
 	void backward_apply(operation_t op,
 			    VariableName x, VariableName y, VariableName z,
 			    array_smashing_t inv) {
-	  crab::domains::BackwardAssignOps<array_smashing_t>::
-	    apply(*this, op, x, y, z, inv);
+	  _inv.backward_apply(op, x, y, z, inv.get_content_domain());
 	}
 	
         void apply(int_conv_operation_t op,
