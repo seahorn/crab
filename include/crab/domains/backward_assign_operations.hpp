@@ -73,13 +73,23 @@ namespace crab {
 	
 	if(dom.is_bottom()) return;
 
-	switch(op) {
+	CRAB_LOG("backward",
+		 crab::outs() << x << ":=" << y << " " << op << " " << k << "\n"
+		              << "BEFORE " << dom << "\n";);
+
+	if (x == y) {
+	  CRAB_WARN("backwards x:=e when x appears in e not implemented");
+	  dom -= x;
+	} else {	
+	  switch(op) {
 	  case OP_ADDITION: {
 	    dom.apply(OP_SUBTRACTION, y, x, k);
+	    dom -= x;	    
 	    break;
 	  }
    	  case OP_SUBTRACTION: {
 	    dom.apply(OP_ADDITION, y, x, k);
+	    dom -= x;
 	    break;
 	  }
 	  case OP_MULTIPLICATION: { 
@@ -101,8 +111,12 @@ namespace crab {
 	    break;
 	  }
   	  default:;;  
+	  }
 	}
-	dom = dom & inv;	
+
+	dom = dom & inv;
+	
+	CRAB_LOG("backward", crab::outs()<< "AFTER " << dom << "\n");
 	return;
       }
 
@@ -114,6 +128,10 @@ namespace crab {
 	crab::ScopedCrabStats __st__(AbsDom::getDomainName() + ".backward_apply");
 	
 	if(dom.is_bottom()) return;
+
+	CRAB_LOG("backward",
+		 crab::outs() << x << ":=" << y << " " << op << " " << z << "\n"
+		              << "BEFORE " << dom << "\n";);
 	
 	if (x == y || x == z) {
 	  CRAB_WARN("backwards x:=e when x appears in e not implemented");
@@ -140,7 +158,9 @@ namespace crab {
 	    break;
 	  }
 	}
-	dom = dom & inv;		    	    
+	dom = dom & inv;
+	
+	CRAB_LOG("backward", crab::outs()<< "AFTER " << dom << "\n");
       }
     };
 
