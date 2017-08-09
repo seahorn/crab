@@ -51,6 +51,7 @@ namespace crab {
               
        template<typename N>
        ikos::bound<N> get_next (ikos::bound<N> v1) const {
+	 if (v1.is_plus_infinity()) return v1;
 	 bound_t v = convert_bounds_impl<ikos::bound<N>, bound_t> (v1);
 	 bound_t t = m_thresholds [m_thresholds.size () - 1];	 
          auto ub = std::upper_bound (m_thresholds.begin (), m_thresholds.end (), v);         
@@ -61,6 +62,7 @@ namespace crab {
 
        template<typename N>
        ikos::bound<N> get_prev (ikos::bound<N> v1) const {
+	 if (v1.is_minus_infinity()) return v1;
 	 bound_t v = convert_bounds_impl<ikos::bound<N>, bound_t> (v1);	 
          auto lb = std::lower_bound (m_thresholds.begin (), m_thresholds.end (), v);         
          if (lb != m_thresholds.end ()) {
