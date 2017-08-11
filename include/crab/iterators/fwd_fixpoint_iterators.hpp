@@ -191,6 +191,9 @@ namespace ikos {
     }
     
   public:
+
+    typedef invariant_table_t assumption_map_t;
+    
     interleaved_fwd_fixpoint_iterator(CFG cfg, const wto_t *wto,
                                       unsigned int widening_delay,
                                       unsigned int descending_iterations,
@@ -233,12 +236,10 @@ namespace ikos {
       reset ();
     }
 
-    template<typename Range>
-    void run(AbstractValue init, Range refine) {
+    void run(AbstractValue init, assumption_map_t &assumptions) {
       crab::ScopedCrabStats __st__("Fixpo");
       this->set_pre(this->_cfg.entry(), init);
-      invariant_table_t invars(refine.begin(), refine.end());
-      wto_iterator_t iterator(this, &invars);
+      wto_iterator_t iterator(this, &assumptions);
       this->_wto.accept(&iterator);
       wto_processor_t processor(this);
       this->_wto.accept(&processor);
@@ -262,23 +263,24 @@ namespace ikos {
       typedef wto_cycle<NodeName, CFG> wto_cycle_t;
       typedef wto<NodeName, CFG> wto_t;
       typedef typename wto_t::wto_nesting_t wto_nesting_t;
-      typedef boost::unordered_map<NodeName,AbstractValue> strengthening_table_t;
+      typedef typename interleaved_iterator_t::assumption_map_t assumption_map_t;
       
     private:
       interleaved_iterator_t *_iterator;
-      strengthening_table_t *_s_table;
+      assumption_map_t *_assumptions;
 
       inline AbstractValue strengthen (NodeName n, AbstractValue inv) {
-	if (_s_table) {
-	  auto it = _s_table->find(n);
-	  if (it != _s_table->end ()) {
+	if (_assumptions) {
+	  auto it = _assumptions->find(n);
+	  if (it != _assumptions->end ()) {
 	    CRAB_LOG ("fixpo",
-		      crab::outs() << "Before strengthening at " << n << ":"
+	    	      crab::outs() << "Before assumption at " << n << ":"
 		                   << inv << "\n");
+		                   
 	    inv = inv & it->second;
 	    CRAB_LOG ("fixpo",
-		      crab::outs() << "After strengthening at " << n << ":"
-		                   << inv << "\n");
+	    	      crab::outs() << "After assumption at " << n << ":"
+	    	                   << inv << "\n");
 	  }
 	}
 	return inv;
@@ -286,11 +288,11 @@ namespace ikos {
 		  
     public:
       wto_iterator(interleaved_iterator_t *iterator):
-	_iterator(iterator), _s_table (nullptr) { }
+	_iterator(iterator), _assumptions (nullptr) { }
 
       wto_iterator(interleaved_iterator_t *iterator,
-		   strengthening_table_t *s_table):
-	_iterator(iterator), _s_table (s_table) { }      
+		   assumption_map_t *assumptions):
+	_iterator(iterator), _assumptions (assumptions) { }      
       
       void visit(wto_vertex_t& vertex) {
         AbstractValue pre;

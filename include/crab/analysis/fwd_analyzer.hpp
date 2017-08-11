@@ -66,11 +66,11 @@ namespace crab {
 
       typedef ikos::interleaved_fwd_fixpoint_iterator<basic_block_label_t, CFG, abs_dom_t>
       fwd_iterator_t;
+      typedef boost::unordered_map<basic_block_label_t, abs_dom_t> invariant_map_t;
       
      public:
 
-      typedef boost::unordered_map<basic_block_label_t, abs_dom_t> invariant_map_t;
-      
+      typedef typename fwd_iterator_t::assumption_map_t assumption_map_t;
       // liveness info
       typedef liveness<CFG> liveness_t;     
       // WTO
@@ -194,13 +194,12 @@ namespace crab {
         this->run (m_abs_tr->inv());         
       }      
 
-      template <typename Range>
-      void Run (Range invariants)  {
+      void Run (assumption_map_t &assumptions)  {
         // initialization of static data
         domains::domain_traits<abs_dom_t>::do_initialization (this->get_cfg());
         // XXX: inv was created before the static data is initialized
         //      so it won't contain that data.	
-        this->run (m_abs_tr->inv(), invariants);         
+        this->run (m_abs_tr->inv(), assumptions);         
       }      
       
       //! Propagate inv through statements
@@ -269,7 +268,7 @@ namespace crab {
       
     public:
 
-      typedef typename fwd_analyzer_t::invariant_map_t invariant_map_t;
+      typedef typename fwd_analyzer_t::assumption_map_t assumption_map_t;
       typedef typename fwd_analyzer_t::iterator iterator;
       typedef typename fwd_analyzer_t::const_iterator const_iterator;
 
@@ -319,8 +318,8 @@ namespace crab {
 
       void run () { m_analyzer.Run ();}
 
-      template<typename Range> 
-      void run (Range refinement) { m_analyzer.Run (refinement);}
+      void run (assumption_map_t &assumptions)
+      { m_analyzer.Run (assumptions);}
       
       abs_dom_t operator[] (basic_block_label_t b) const
       { return m_analyzer[b]; }

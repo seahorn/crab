@@ -166,11 +166,13 @@ namespace crab {
       typedef intra_fwd_analyzer<CFG, AbsDom> fwd_analyzer_t;
       typedef necessary_preconditions_fixpoint_iterator<bb_label_t, CFG, AbsDom>
       bwd_fixpoint_iterator_t;
-      typedef typename fwd_analyzer_t::invariant_map_t invariant_map_t;
+      typedef boost::unordered_map<bb_label_t, AbsDom> invariant_map_t; 
       typedef typename bwd_fixpoint_iterator_t::precond_map_t precond_map_t;
       typedef typename bwd_fixpoint_iterator_t::wto_t bwd_wto_t;
       
     public:
+      
+      typedef typename fwd_analyzer_t::assumption_map_t assumption_map_t;
       // bwd_wto_t and wto_t are different types because bwd_wto_t is
       // over the reversed CFG.
       typedef typename fwd_analyzer_t::wto_t wto_t;
@@ -226,6 +228,8 @@ namespace crab {
       void run (AbsDom init_states, AbsDom final_states,
 		// behaves as a standard forward analysis
 		bool only_forward,
+		// assumptions
+		assumption_map_t &assumptions,
 		// parameters for each forward or backward analysis
 		unsigned int widening_delay=1,
 		unsigned int descending_iters=UINT_MAX,
@@ -248,7 +252,7 @@ namespace crab {
 	  // run forward analysis computing invariants
 	  fwd_analyzer_t F (m_cfg, m_wto, init_states, nullptr /*no liveness*/,
 			    widening_delay, descending_iters, jump_set_size);
-	  F.run ();
+	  F.run (assumptions);
 	  crab::CrabStats::stop ("CombinedForwardBackward.ForwardPass");	  
 	  
 	  // reuse wto for next iteration
