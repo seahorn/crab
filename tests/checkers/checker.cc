@@ -5,6 +5,7 @@
 #include <crab/checkers/div_zero.hpp>
 #include <crab/checkers/assertion.hpp>
 #include <crab/checkers/checker.hpp>
+#include <crab/analysis/dataflow/assertion_crawler.hpp>
 
 using namespace std;
 using namespace crab::analyzer;
@@ -108,7 +109,7 @@ void check (z_cfg_ref_t cfg, variable_factory_t& vfac) {
   // Run liveness (optionally) and print cfg
   liveness<z_cfg_ref_t> live (cfg);  
   crab::outs() << cfg << "\n";
-
+  
   // Run nullity analysis
   null_analyzer_t null_a (cfg, z_num_null_domain_t::top (), &live);
   null_a.run ();
@@ -166,6 +167,13 @@ int main (int argc, char**argv) {
   z_cfg_t* p1 = cfg1 (vfac);
   check (*p1, vfac);
   z_cfg_t* p2 = cfg2 (vfac);
+
+  // To test the assertion crawler analysis: we do nothing with that
+  // for now.
+  crab::analyzer::assertion_crawler<z_cfg_ref_t> assert_crawler(*p2);
+  assert_crawler.exec();
+  crab::outs () << "\n" << assert_crawler << "\n";
+  
   check (*p2, vfac);
 
   delete p1;
