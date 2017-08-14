@@ -4,9 +4,9 @@
 #include <crab/cfg/cfg.hpp>
 #include <crab/cfg/var_factory.hpp>
 #include <crab/iterators/fwd_fixpoint_iterators.hpp>
-#include <crab/analysis/liveness.hpp>
 #include <crab/analysis/abs_transformer.hpp>
 #include <crab/analysis/inter_fwd_analyzer_ds.hpp>
+#include <crab/analysis/dataflow/liveness.hpp>
 #include <crab/domains/domain_traits.hpp>
 
 #include "boost/range/algorithm/set_algorithm.hpp"

@@ -18,8 +18,8 @@
 #include <crab/analysis/graphs/sccg.hpp>
 #include <crab/analysis/graphs/topo_order.hpp>
 #include <crab/analysis/fwd_analyzer.hpp>
-#include <crab/analysis/liveness.hpp>
 #include <crab/analysis/inter_fwd_analyzer_ds.hpp>
+#include <crab/analysis/dataflow/liveness.hpp>
 
 namespace crab {
 

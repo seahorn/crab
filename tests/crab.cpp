@@ -1,8 +1,8 @@
 #include "./crab_lang.hpp"
 #include "./crab_dom.hpp"
 
-#include <crab/analysis/liveness.hpp>
 #include <crab/analysis/fwd_analyzer.hpp>
+#include <crab/analysis/dataflow/liveness.hpp>
 
 // Helper
 template<typename CFG, typename Dom, typename IntraFwdAnalyzer>
