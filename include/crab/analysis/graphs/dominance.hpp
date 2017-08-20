@@ -7,6 +7,8 @@
 #include <boost/unordered_map.hpp>
 #include <boost/version.hpp>
 
+#include <crab/common/stats.hpp>
+
 /*
 
   - A node u dominates v if all paths from entry to v pass through
@@ -43,7 +45,7 @@ namespace crab {
        //      get(vertex_index, g) will fail.
        // FIXME: need to get around in older versions but for now we
        //        give up and report to user.
-       CRAB_WARN("Dominance queries require boost >= 1.62");
+       CRAB_ERROR("Dominance queries require boost >= 1.62");
 #else
        typedef typename G::node_t node_t;
        typedef typename boost::graph_traits<G>::vertices_size_type vertices_size_type_t;       
@@ -72,7 +74,7 @@ namespace crab {
 						boost::graph_traits<G>::null_vertex());
        pred_map_t dom_tree_pred_map(make_iterator_property_map(dom_tree_pred_vector.begin(),
 							       index_map));
-				    
+
        boost::lengauer_tarjan_dominator_tree(g,entry ,
 					     index_map, df_num_map, parent_map,
 					     vertices_by_df_num, dom_tree_pred_map);
@@ -101,12 +103,13 @@ namespace crab {
        // OUT: df is a map from nodes to their dominance frontier
        template<typename G, typename VectorMap>
        void dominance (G g, typename G::node_t entry, VectorMap &df) {
-	 typedef typename G::node_t node_t;
+	 typedef typename G::node_t node_t; 
 	 
 	 // map node to its idom node
 	 boost::unordered_map<node_t, node_t> idom;
+	 crab::CrabStats::resume("Dominator Tree");       	 	 
 	 dominator_tree (g, entry, idom);
-
+	 crab::CrabStats::stop("Dominator Tree");	 
 	 // // map node n to all its immediate dominated nodes
 	 // boost::unordered_map<node_t, std::vector<node_t> > dominated;
 	 // for (auto v: boost::make_iterator_range (vertices (g))) {
@@ -115,7 +118,8 @@ namespace crab {
 	 //     dom_vector.push_back (v);
 	 //   }
 	 // }
-	 
+
+	 crab::CrabStats::resume("Dominance Frontier");       	 
 	 // computer dominance frontier
 	 // use the iterative solution from Cooper/Torczon 
 	 for (auto n: boost::make_iterator_range (vertices (g))) {
@@ -132,7 +136,8 @@ namespace crab {
 	     }
 	   }
 	 } // end outer for       
-
+	 crab::CrabStats::stop("Dominance Frontier");
+	 
 	 CRAB_LOG ("dominance",
 		   for (auto &kv: df) {
 		     crab::outs () <<  crab::cfg_impl::get_label_str(kv.first)
