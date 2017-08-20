@@ -679,8 +679,8 @@ namespace crab {
 	  m_src(src), m_src_width(src_width),
 	  m_dst(dst), m_dst_width(dst_width)  {
 	
-        this->m_live.add_def (m_src);
-        this->m_live.add_use (m_dst);	
+        this->m_live.add_use (m_src);
+        this->m_live.add_def (m_dst);	
       }
       
       cast_operation_t op() const {return m_op;}
