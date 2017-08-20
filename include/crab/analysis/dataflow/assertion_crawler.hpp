@@ -123,8 +123,12 @@ namespace crab {
          typedef typename statement_visitor<N,V>::assume_t  assume_t;
          typedef typename statement_visitor<N,V>::select_t  select_t;
          typedef typename statement_visitor<N,V>::assert_t  assert_t;
+         typedef typename statement_visitor<N,V>::int_cast_t int_cast_t;	 
          typedef typename statement_visitor<N,V>::havoc_t   havoc_t;
          typedef typename statement_visitor<N,V>::unreach_t unreach_t;
+	 typedef typename statement_visitor<N,V>::bool_bin_op_t bool_bin_op_t;	 
+	 typedef typename statement_visitor<N,V>::bool_assign_cst_t bool_assign_cst_t;
+	 typedef typename statement_visitor<N,V>::bool_assign_var_t bool_assign_var_t;
 	 
 	 // Helper that applies function F to each pair's value of the
 	 // separate domain_t.
@@ -398,6 +402,46 @@ namespace crab {
 		    crab::outs () << "\tAFTER " << _inv << "\n";);	   
 	 }
 
+         void visit(int_cast_t &s){
+	   CRAB_LOG("assertion-crawler-step",
+		    crab::outs () << "*** " << s << "\n"
+	 	                  << "\tBEFORE: " << _inv << "\n");
+       	   apply_add_data_t f(add_data_deps (s.get_live ()));
+       	   _inv = f(_inv);
+	   CRAB_LOG("assertion-crawler-step",
+		    crab::outs () << "\tAFTER " << _inv << "\n";);
+       	 }
+
+         void visit(bool_bin_op_t &s){
+	   CRAB_LOG("assertion-crawler-step",
+		    crab::outs () << "*** " << s << "\n"
+	 	                  << "\tBEFORE: " << _inv << "\n");
+       	   apply_add_data_t f(add_data_deps(s.get_live ()));
+       	   _inv = f(_inv);
+	   CRAB_LOG("assertion-crawler-step",
+		    crab::outs () << "\tAFTER " << _inv << "\n";);
+       	 }
+
+         void visit(bool_assign_var_t &s){
+	   CRAB_LOG("assertion-crawler-step",
+		    crab::outs () << "*** " << s << "\n"
+	 	                  << "\tBEFORE: " << _inv << "\n");
+       	   apply_add_data_t f(add_data_deps(s.get_live ()));
+       	   _inv = f(_inv);
+	   CRAB_LOG("assertion-crawler-step",
+		    crab::outs () << "\tAFTER " << _inv << "\n";);
+       	 }
+
+         void visit(bool_assign_cst_t &s){
+	   CRAB_LOG("assertion-crawler-step",
+		    crab::outs () << "*** " << s << "\n"
+	 	                  << "\tBEFORE: " << _inv << "\n");
+       	   apply_add_data_t f(add_data_deps(s.get_live ()));
+       	   _inv = f(_inv);
+	   CRAB_LOG("assertion-crawler-step",
+		    crab::outs () << "\tAFTER " << _inv << "\n";);
+       	 }
+	 
        };
 
       private:
