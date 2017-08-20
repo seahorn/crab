@@ -459,6 +459,7 @@ namespace crab {
        virtual std::string name() override { return "assertion-crawler";}
 
        virtual void init_fixpoint() override {
+	 crab::ScopedCrabStats __st__("Control-Dependency Graph");
 	 crab::analyzer::graph_algo::control_dep_graph (this->_cfg, _cdg);
        }
 
