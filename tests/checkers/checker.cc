@@ -6,6 +6,7 @@
 #include <crab/checkers/assertion.hpp>
 #include <crab/checkers/checker.hpp>
 #include <crab/analysis/dataflow/assertion_crawler.hpp>
+#include <crab/analysis/dataflow/assumptions.hpp>
 
 using namespace std;
 using namespace crab::analyzer;
@@ -168,11 +169,20 @@ int main (int argc, char**argv) {
   check (*p1, vfac);
   z_cfg_t* p2 = cfg2 (vfac);
 
-  // To test the assertion crawler analysis: we do nothing with that
-  // for now.
+  // To test the assertion crawler analysis
   crab::analyzer::assertion_crawler<z_cfg_ref_t> assert_crawler(*p2);
   assert_crawler.exec();
-  crab::outs () << "\n" << assert_crawler << "\n";
+  crab::outs() << "\n" << assert_crawler << "\n";
+  
+  // To test the assumption analyses
+  crab::analyzer::assumption_naive_analysis<z_cfg_ref_t> assumption_naive_analyzer(*p2);
+  assumption_naive_analyzer.exec();
+  crab::outs() << "\n" << assumption_naive_analyzer << "\n";
+
+  crab::analyzer::assumption_dataflow_analysis<z_cfg_ref_t> assumption_dataflow_analyzer(*p2);
+  assumption_dataflow_analyzer.exec();
+  crab::outs() << "\n" << assumption_dataflow_analyzer << "\n";
+  
   
   check (*p2, vfac);
 

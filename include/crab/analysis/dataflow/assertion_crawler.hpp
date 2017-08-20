@@ -69,7 +69,9 @@ namespace crab {
       assert_wrapper (index_t _id, basic_block_label_t _bbl, assert_t* _a,
 		      assert_map_t *am, const cdg_t *cdg)
 	: id(_id), bbl(_bbl), a(_a), assert_map_ptr(am), cdg_ptr(cdg) {}
-      
+
+      assert_t* get() { return a;}
+      const assert_t* get() const { return a;}      
       index_t index() const { return id;}
       bool operator==(this_type o) const { return id == o.id;}
       bool operator< (this_type o) const { return id < o.id; }       
@@ -458,10 +460,15 @@ namespace crab {
        typedef crab::iterators::
        killgen_fixpoint_iterator<CFG,
 				 assertion_crawler_operations<CFG> > fixpo_t;
-       
+
+      public:
+
+       // map assertions to a set of variables
        typedef typename
        assertion_crawler_operations<CFG>::separate_domain_t separate_domain_t;
 
+      private:
+       
        boost::unordered_map<basic_block_label_t, separate_domain_t> m_map;
 
 
@@ -485,7 +492,7 @@ namespace crab {
 	 return it->second;
        }
 
-       // return the dataflow facts for every program point in bb
+       // return the dataflow facts of the pre-state at each program point in bb
        void get_assertions(basic_block_label_t b,
 			   std::map<typename CFG::statement_t*, separate_domain_t> &res) {
 	 auto it = m_map.find(b);
@@ -498,10 +505,14 @@ namespace crab {
 		   *(kv.first.cdg_ptr), *(kv.first.assert_map_ptr),
 		   bb);
 	     for (auto &s: boost::make_iterator_range(bb.rbegin(),bb.rend())) {
-	       auto out = vis.inv ();
-	       res.insert(std::make_pair(&s, out));
-	       // propagate backwards the facts
-	       s.accept (&vis);
+	       // -- post-state
+	       // auto out = vis.inv ();
+	       // res.insert(std::make_pair(&s,out));
+	       // s.accept (&vis);
+	       // -- pre-state
+	       s.accept (&vis);	       
+	       auto in = vis.inv ();
+	       res.insert(std::make_pair(&s,in));
 	     }
 	   }
 	 }
