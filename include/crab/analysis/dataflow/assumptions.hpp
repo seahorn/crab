@@ -149,11 +149,18 @@ namespace crab {
 
       static bool can_overflow(statement_t &s) {
 	// TODO: cover select/assume with conditions that can overflow
-	if (!s.is_bin_op ()) return false;
-	auto bin_op_s = static_cast<const typename CFG::basic_block_t::bin_op_t*>(&s);
-	return (bin_op_s->op () == crab::BINOP_ADD ||
-		bin_op_s->op () == crab::BINOP_SUB ||
-		bin_op_s->op () == crab::BINOP_MUL);
+	
+	if (s.is_int_cast()) {
+	  auto cast_stmt = static_cast<const typename CFG::basic_block_t::int_cast_t*>(&s);
+	  return (cast_stmt->op() == crab::CAST_TRUNC);
+	} else if (s.is_bin_op ()) {
+	  auto bin_op_s = static_cast<const typename CFG::basic_block_t::bin_op_t*>(&s);
+	  return (bin_op_s->op () == crab::BINOP_ADD ||
+		  bin_op_s->op () == crab::BINOP_SUB ||
+		  bin_op_s->op () == crab::BINOP_MUL);
+	} else {
+	  return false;
+	}
       }
 
       void insert_assumption(const assert_t *a, assumption_ptr as) {
