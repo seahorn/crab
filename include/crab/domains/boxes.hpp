@@ -208,6 +208,11 @@ namespace crab {
         static LddManager* m_ldd_man;
         static var_map_t m_var_map;
 
+	// -- bool reasoning is mostly based on disjunctions so for
+	//    efficiency we might want to disable it if precision
+	//    gains do not pay off.
+	const bool m_bool_reasoning = false;
+	
         static LddManager* get_ldd_man () {
           if (!m_ldd_man) {
             DdManager* cudd = Cudd_Init (0, 0, CUDD_UNIQUE_SLOTS, 127, 0);
@@ -260,7 +265,7 @@ namespace crab {
 			 Ldd_TermMinmaxApprox(get_ldd_man(), &*m_ldd));
         }
 
-        LddNodePtr convex_approx (LddNodePtr ldd) {
+        LddNodePtr convex_approx (LddNodePtr ldd) const {
           return lddPtr(get_ldd_man(),
 			Ldd_TermMinmaxApprox(get_ldd_man(), &*ldd));
         }
@@ -534,14 +539,14 @@ namespace crab {
 	// Given a constraint a1*x1 + ... + an*xn <= k and pivot xi,
         // it computes the interval:
 	//  k - intv (a1*x1 + ... + ai-1*xi-1 + ai+1*xi+1 + ... an*xn)
-	interval_t compute_residual(linear_constraint_t cst, variable_t pivot) {
+	interval_t compute_residual(interval_domain_t intervals,
+				    linear_constraint_t cst, variable_t pivot) {
 	  interval_t residual(cst.constant());
 	  for (typename linear_constraint_t::iterator it = cst.begin(); 
 	       it != cst.end(); ++it) {
 	    variable_t v = it->second;
 	    if (v.index() != pivot.index()) {
-	      residual =
-		residual - (interval_t (it->first) * this->operator[](v.name()));
+	      residual = residual - (interval_t (it->first) * intervals[v.name()]);
 	    }
 	  }
 	  return residual;
@@ -549,11 +554,12 @@ namespace crab {
 	
 	void intvcst_from_lin_const (linear_constraint_t cst,
 				     linear_constraint_system_t &intvcsts) {
+	  interval_domain_t intervals = to_intervals();
 	  for (typename linear_constraint_t::iterator it = cst.begin(); 
 	       it != cst.end(); ++it) {
 	    number_t c = it->first;
 	    variable_t pivot = it->second;
-	    interval_t rhs = compute_residual(cst, pivot) / interval_t(c);
+	    interval_t rhs = compute_residual(intervals, cst, pivot) / interval_t(c);
 									
 	    if (!(rhs.lb().is_finite () && rhs.ub().is_finite ())) continue;
 
@@ -584,20 +590,41 @@ namespace crab {
 	
 	
         boxes_domain_ (LddNodePtr ldd): m_ldd (ldd) {
-	  #if 1
+          #if 1
 	  // TODO: one of the template parameters of boxes should be
 	  // an user option to choose when the size of the ldd should
 	  // be reduced.
-          const unsigned CST_FACTOR = 300; /* JN: some magic number */
-          unsigned threshold = num_of_vars () * CST_FACTOR;
-	  unsigned num_paths = Ldd_PathSize (NULL, &*m_ldd);
-	  if ((threshold >= 20*CST_FACTOR) && (num_paths > threshold)) {
+	  const unsigned CST_FACTOR = 1000000; /* JN: some magic number */
+	  unsigned threshold = num_of_vars () * CST_FACTOR;
+	  //unsigned num_paths = Ldd_PathSize (NULL, &*m_ldd);
+	  unsigned num_paths = (unsigned) Cudd_CountPath(&*m_ldd);
+	  if (threshold > 0 && num_paths > threshold) {
 	    convex_approx ();                
 	    CRAB_WARN ("ldd size was too large: ", num_paths, ". Made ldd convex.");
 	  }
 	  #endif 
         }
 
+	interval_domain_t to_intervals() {
+          crab::CrabStats::count (getDomainName() + ".count.to_intervals");
+          crab::ScopedCrabStats __st__(getDomainName() + ".to_intervals");
+
+          if (is_bottom ()) 
+            return interval_domain_t::bottom ();
+          if (is_top ()) 
+            return interval_domain_t::top ();
+
+	  LddNodePtr ldd (m_ldd);
+          // convert to interval domain
+          linear_constraint_system_t csts;
+	  ldd = convex_approx (ldd);
+          to_lin_cst_sys_recur (&*ldd, csts);
+	  
+          interval_domain_t intv;
+          for (auto cst: csts) {intv += cst;}
+	  return intv;
+	}
+	
 	void to_disjunctive_linear_constraint_system_aux
 	(LddManager *ldd, LddNode *n,
 	 disjunctive_linear_constraint_system_t &e,
@@ -859,8 +886,8 @@ namespace crab {
           LddNodePtr v = join (m_ldd, other.m_ldd);
           LddNodePtr w = lddPtr (get_ldd_man (), 
                                  Ldd_BoxWiden2 (get_ldd_man (), &*m_ldd, &*v));
-          #if 1
-          /** ensure that 'w' is only the fronteer of the compution. 
+          #if 0
+          /** ensure that 'w' is only the fronteer of the computation.
               Not sure whether this is still a widening though 
           */
           w = lddPtr (get_ldd_man (), 
@@ -1022,8 +1049,7 @@ namespace crab {
           get_theory()->destroy_term(t);
         }
 
-        interval_t operator[](VariableName v) { 
-
+        interval_t operator[](VariableName v) {
           crab::CrabStats::count (getDomainName() + ".count.to_intervals");
           crab::ScopedCrabStats __st__(getDomainName() + ".to_intervals");
 
@@ -1042,8 +1068,7 @@ namespace crab {
 	  
           interval_domain_t intv;
           for (auto cst: csts) {intv += cst;}
-
-          // finally project onto v in the interval domain
+	  
           return intv[v];
         }
                 
@@ -1154,14 +1179,14 @@ namespace crab {
           if (is_bottom ()) return; 
 
 	  // --- if z is a singleton we do not lose precision
-	  interval_t zi = operator[](z);
+	  interval_t zi = this->operator[](z);
 	  if (auto k = zi.singleton ()) {
 	    apply (op, x, y, *k);
 	    return;
 	  }
 
 	  // --- if y or z is top then we give up
-	  interval_t yi = operator[](y);	    
+	  interval_t yi = this->operator[](y);	    
 	  if (yi.is_top () || zi.is_top()) {
 	    this->operator-=(x);
 	    return;
@@ -1280,8 +1305,8 @@ namespace crab {
             return;
 
           // Convert to intervals and perform the operation
-          interval_t yi = operator[](y);
-          interval_t zi = operator[](z);
+          interval_t yi = this->operator[](y);
+          interval_t zi = this->operator[](z);
           interval_t xi = interval_t::bottom();
           switch (op) {
             case OP_AND:  xi = yi.And(zi); break;
@@ -1331,8 +1356,8 @@ namespace crab {
           }
           else{
             // Convert to intervals and perform the operation
-            interval_t yi = operator[](y);
-            interval_t zi = operator[](z);
+            interval_t yi = this->operator[](y);
+            interval_t zi = this->operator[](z);
             interval_t xi = interval_t::bottom();
             switch (op) {
               case OP_UDIV: xi = yi.UDiv(zi); break;
@@ -1375,6 +1400,8 @@ namespace crab {
 	
 	void assign_bool_cst (VariableName lhs, linear_constraint_t cst) override
 	{
+	  if (!m_bool_reasoning) return;
+	  
           crab::CrabStats::count (getDomainName() + ".count.assign_bool_cst");
           crab::ScopedCrabStats __st__(getDomainName() + ".assign_bool_cst");
 	  
@@ -1425,6 +1452,8 @@ namespace crab {
 	}    
 	
 	void assign_bool_var (VariableName x, VariableName y, bool is_not_y) override {
+	  if (!m_bool_reasoning) return;
+	  
           crab::CrabStats::count (getDomainName() + ".count.assign_bool_var");
           crab::ScopedCrabStats __st__(getDomainName() + ".assign_bool_var");
 
@@ -1444,6 +1473,8 @@ namespace crab {
 	
 	void apply_binary_bool(bool_operation_t op, VariableName x,
 			       VariableName y, VariableName z) override {
+	  if (!m_bool_reasoning) return;
+	  
           crab::CrabStats::count (getDomainName() + ".count.apply_bin_bool");
           crab::ScopedCrabStats __st__(getDomainName() + ".apply_bin_bool");
 	  
@@ -1476,6 +1507,8 @@ namespace crab {
 	}
 
 	void assume_bool (VariableName x, bool is_negated) override {
+	  if (!m_bool_reasoning) return;
+	  
           crab::CrabStats::count (getDomainName() + ".count.assume_bool");
           crab::ScopedCrabStats __st__(getDomainName() + ".assume_bool");
 	  
