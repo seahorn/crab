@@ -211,7 +211,7 @@ namespace crab {
 	// -- bool reasoning is mostly based on disjunctions so for
 	//    efficiency we might want to disable it if precision
 	//    gains do not pay off.
-	const bool m_bool_reasoning = false;
+	const bool m_bool_reasoning = true;
 	
         static LddManager* get_ldd_man () {
           if (!m_ldd_man) {
