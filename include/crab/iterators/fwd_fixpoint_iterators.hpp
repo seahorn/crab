@@ -127,7 +127,7 @@ namespace ikos {
                               AbstractValue before, AbstractValue after) {
 
       CRAB_VERBOSE_IF(1, crab::outs() << "Increasing iteration=" << iteration << "\n"
-		                      << "Widening at " << node << "\n";);      
+		      << "Widening at " << crab::cfg_impl::get_label_str(node) << "\n";);      
 
       if (iteration <= _widening_delay) {
         CRAB_LOG("fixpo",
@@ -160,7 +160,7 @@ namespace ikos {
 
       CRAB_VERBOSE_IF(1, 
 		      crab::outs() << "Decreasing iteration=" << iteration << "\n"
-		                   << "Narrowing at " << node << "\n";);
+		      << "Narrowing at " << crab::cfg_impl::get_label_str(node) << "\n";);
 
       if (iteration == 1) {
         CRAB_LOG("fixpo",
@@ -305,7 +305,8 @@ namespace ikos {
           auto prev_nodes = this->_iterator->_cfg.prev_nodes(node);
           pre = AbstractValue::bottom();
           CRAB_VERBOSE_IF (1,
-		           crab::outs() << "Joining predecessors of " << node << "\n");
+		           crab::outs() << "Joining predecessors of "
+			   << crab::cfg_impl::get_label_str(node) << "\n");
           for (NodeName prev : prev_nodes) {
             pre |= this->_iterator->get_post(prev);  
           }
@@ -313,7 +314,8 @@ namespace ikos {
           this->_iterator->set_pre(node, pre);
         }
 	
-        CRAB_VERBOSE_IF (1, crab::outs() << "Analyzing node " << node << "\n");
+        CRAB_VERBOSE_IF (1, crab::outs() << "Analyzing node "
+			 << crab::cfg_impl::get_label_str(node) << "\n");
         this->_iterator->analyze(node, pre);
         this->_iterator->set_post(node, pre);
       }
@@ -321,12 +323,14 @@ namespace ikos {
       void visit(wto_cycle_t& cycle) {
         NodeName head = cycle.head();
         CRAB_VERBOSE_IF (1,
-			 crab::outs() << "** Analyzing loop with head " << head << "\n");
+			 crab::outs() << "** Analyzing loop with head "
+			 << crab::cfg_impl::get_label_str(head) << "\n");
 	
         wto_nesting_t cycle_nesting = this->_iterator->_wto.nesting(head);
         auto prev_nodes = this->_iterator->_cfg.prev_nodes(head);
         AbstractValue pre = AbstractValue::bottom();
-	CRAB_VERBOSE_IF (1, crab::outs() << "Joining predecessors of " << head << "\n");
+	CRAB_VERBOSE_IF (1, crab::outs() << "Joining predecessors of "
+			 << crab::cfg_impl::get_label_str(head) << "\n");
         for (NodeName prev : prev_nodes) {
           if (!(this->_iterator->_wto.nesting(prev) > cycle_nesting)) {
             pre |= this->_iterator->get_post(prev); 
@@ -341,7 +345,8 @@ namespace ikos {
           // Increasing iteration sequence with widening
           this->_iterator->set_pre(head, pre);
           AbstractValue post(pre); 
-          CRAB_VERBOSE_IF(1, crab::outs() << "Analyzing node " << head << "\n");
+          CRAB_VERBOSE_IF(1, crab::outs() << "Analyzing node "
+			  << crab::cfg_impl::get_label_str(head) << "\n");
           this->_iterator->analyze(head, post);
           this->_iterator->set_post(head, post);
           for (typename wto_cycle_t::iterator it = cycle.begin();
@@ -374,7 +379,8 @@ namespace ikos {
         for(unsigned int iteration = 1; ; ++iteration) {
           // Decreasing iteration sequence with narrowing
           AbstractValue post(pre); 
-          CRAB_VERBOSE_IF(1,crab::outs() << "Analyzing node " << head << "\n");
+          CRAB_VERBOSE_IF(1,crab::outs() << "Analyzing node "
+			  << crab::cfg_impl::get_label_str(head) << "\n");
           this->_iterator->analyze(head, post);
           this->_iterator->set_post(head, post);
           for (typename wto_cycle_t::iterator it = cycle.begin();
@@ -396,7 +402,8 @@ namespace ikos {
           }
         }
         CRAB_VERBOSE_IF (1,
-			 crab::outs() << "** Finished loop with head " << head << "\n");
+			 crab::outs() << "** Finished loop with head "
+			 << crab::cfg_impl::get_label_str(head) << "\n");
 	
       }
       
