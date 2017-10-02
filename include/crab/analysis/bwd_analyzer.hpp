@@ -6,6 +6,7 @@
 #include <crab/iterators/fwd_fixpoint_iterators.hpp>
 #include <crab/analysis/fwd_analyzer.hpp>
 #include <crab/analysis/abs_transformer.hpp>
+#include <crab/analysis/dataflow/liveness.hpp>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/unordered_map.hpp>
@@ -169,6 +170,7 @@ namespace crab {
       typedef boost::unordered_map<bb_label_t, AbsDom> invariant_map_t; 
       typedef typename bwd_fixpoint_iterator_t::precond_map_t precond_map_t;
       typedef typename bwd_fixpoint_iterator_t::wto_t bwd_wto_t;
+      typedef liveness<CFG> liveness_t;     
       
     public:
       
@@ -230,6 +232,8 @@ namespace crab {
 		bool only_forward,
 		// assumptions
 		assumption_map_t &assumptions,
+		// liveness information
+		const liveness_t* live, 
 		// parameters for each forward or backward analysis
 		unsigned int widening_delay=1,
 		unsigned int descending_iters=UINT_MAX,
@@ -250,7 +254,7 @@ namespace crab {
 
 	  crab::CrabStats::resume ("CombinedForwardBackward.ForwardPass");
 	  // run forward analysis computing invariants
-	  fwd_analyzer_t F (m_cfg, m_wto, init_states, nullptr /*no liveness*/,
+	  fwd_analyzer_t F (m_cfg, m_wto, init_states, live,
 			    widening_delay, descending_iters, jump_set_size);
 	  F.run (assumptions);
 	  crab::CrabStats::stop ("CombinedForwardBackward.ForwardPass");	  

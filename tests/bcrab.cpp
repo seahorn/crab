@@ -22,6 +22,7 @@ void backward_run_internal (CFG* cfg,
   IntraBwdAnalyzer a (*cfg);
   typename IntraBwdAnalyzer::assumption_map_t assumptions;
   a.run (initial_states, final_states, false, assumptions,
+	 nullptr /*liveness*/,
 	 widening, narrowing, jump_set_size); 
   
   // Print preconditions
