@@ -3192,7 +3192,7 @@ namespace crab {
       {
         auto it = m_blocks.find (bb_id);
         if (it == m_blocks.end ())
-          CRAB_ERROR ("Basic block not found in the CFG");
+          CRAB_ERROR ("Basic block ", bb_id, " not found in the CFG: ",__LINE__);
         
         return *(it->second);
       }
@@ -3201,7 +3201,7 @@ namespace crab {
       {
         auto it = m_blocks.find (bb_id);
         if (it == m_blocks.end ())
-          CRAB_ERROR ("Basic block not found in the CFG");
+          CRAB_ERROR ("Basic block ", bb_id, " not found in the CFG: ",__LINE__);	  
         
         return *(it->second);
       }
@@ -3721,7 +3721,7 @@ namespace crab {
           auto it = _rev_bbs.find(bb.label());
           if (it != _rev_bbs.end())
             return it->second;
-          CRAB_ERROR ("Basic block not found in the CFG");          
+          CRAB_ERROR ("Basic block ", bb.label(), " not found in the CFG: ",__LINE__);
         }
       }; 
 
@@ -3798,14 +3798,14 @@ namespace crab {
       basic_block_t& get_node (basic_block_label_t bb_id) {
         auto it = _rev_bbs.find (bb_id);
         if (it == _rev_bbs.end()) 
-          CRAB_ERROR ("Basic block not found in the CFG");
+          CRAB_ERROR ("Basic block ", bb_id, " not found in the CFG: ",__LINE__);
         return it->second;
       }
 
       const basic_block_t& get_node (basic_block_label_t bb_id) const {
         auto it = _rev_bbs.find (bb_id);
         if (it == _rev_bbs.end()) 
-          CRAB_ERROR ("Basic block not found in the CFG");
+          CRAB_ERROR ("Basic block ", bb_id, " not found in the CFG: ",__LINE__);
         return it->second;
       }
       
