@@ -101,6 +101,7 @@ namespace crab {
       //! Trigger the whole analysis
       void Run (TD_Dom init = TD_Dom::top ())  {
 
+	CRAB_VERBOSE_IF(1, crab::outs() << "Started inter-procedural analysis\n";);
         CRAB_LOG("inter", 
                  m_cg.write (crab::outs()); crab::outs () << "\n");
                  
@@ -134,7 +135,7 @@ namespace crab {
             if (fun_name != "main") continue;
             
             CRAB_LOG ("inter",
-                      crab::outs() << "--- Analyzing " << (*fdecl).get_func_name () << "\n");
+                   crab::outs() << "++ Analyzing function " << (*fdecl).get_func_name() << "\n");
 
 	    auto abs_tr = boost::make_shared<td_abs_tr> (&init, &m_summ_tbl, &m_call_tbl);
             auto a = boost::make_shared<td_analyzer> (cfg, nullptr, &*abs_tr,
@@ -153,8 +154,8 @@ namespace crab {
         std::vector<cg_node_t> rev_order;
 	graph_algo::scc_graph<CG> Scc_g (m_cg);
         graph_algo::rev_topo_sort<graph_algo::scc_graph<CG> > (Scc_g, rev_order);
-       
-        CRAB_LOG("inter",crab::outs() << "Bottom-up phase ...\n");
+
+        CRAB_VERBOSE_IF(1,crab::outs() << "== Bottom-up phase ...\n";);	
         for (auto n: rev_order) {
           crab::ScopedCrabStats __st__("Inter.BottomUp");
           std::vector<cg_node_t> &scc_mems = Scc_g.get_component_members (n);
@@ -166,9 +167,8 @@ namespace crab {
 
             std::string fun_name = (*fdecl).get_func_name ().str();
             if (fun_name != "main" && cfg.has_exit ()) {
-              CRAB_LOG ("inter", 
-                        crab::outs() << "--- Analyzing "
-			             << (*fdecl).get_func_name () << "\n");
+	      CRAB_VERBOSE_IF(1, crab::outs() << "++ Analyzing function "
+			                      << (*fdecl).get_func_name () << "\n";);
               // --- run the analysis
 	      auto init_inv = BU_Dom::top ();
 	      bu_abs_tr abs_tr (&init_inv, &m_summ_tbl);
@@ -204,7 +204,7 @@ namespace crab {
           }
         } 
 
-        CRAB_LOG ("inter", crab::outs() << "Top-down phase ...\n");
+        CRAB_VERBOSE_IF(1, crab::outs() << "== Top-down phase ...\n";);
         bool is_root = true;
         for (auto n: boost::make_iterator_range (rev_order.rbegin(),
                                                  rev_order.rend ())) {
@@ -214,9 +214,8 @@ namespace crab {
             auto cfg = m.get_cfg ();
             auto fdecl = cfg.get_func_decl ();
             assert (fdecl);
-            CRAB_LOG ("inter", 
-                      crab::outs() << "--- Analyzing " 
-                                   << (*fdecl).get_func_name () << "\n");
+	    CRAB_VERBOSE_IF(1, crab::outs() << "++ Analyzing function " 
+			                    << (*fdecl).get_func_name () << "\n";);
             if (scc_mems.size () > 1) {
               // If the node is recursive then what we have in m_call_tbl
               // is incomplete and therefore it is unsound to use it. To
@@ -247,6 +246,7 @@ namespace crab {
             m_inv_map.insert (std::make_pair (cfg::cfg_hasher<cfg_t>::hash(*fdecl), a));
           }
         }
+	CRAB_VERBOSE_IF(1,crab::outs() << "Finished inter-procedural analysis\n";);	
       }
 
       //! return the analyzed call graph

@@ -12,6 +12,8 @@ namespace {
   po.add_options()                                                                                    \
   ("log",  boost::program_options::value<std::vector<std::string> >(), "Enable specified log level"); \
   po.add_options()                                                                                    \
+  ("cverbose",  boost::program_options::value<unsigned>(), "Enable verbosity level");                 \
+  po.add_options()                                                                                    \
       ("stats",boost::program_options::bool_switch(&stats_enabled), "Enable stats");                  \
   boost::program_options::options_description cmmdline_options;                                       \
   cmmdline_options.add(po);                                                                           \
@@ -26,6 +28,9 @@ namespace {
     std::vector<std::string> loggers = vm ["log"].as<std::vector<std::string> > ();                   \
     for(unsigned int i=0; i<loggers.size (); i++)                                                     \
       crab::CrabEnableLog (loggers [i]);                                                              \
-  }                                                                                                   
+  }                                                                                                   \
+  if (vm.count("cverbose")) {						                              \
+      crab::CrabEnableVerbosity(vm["cverbose"].as<unsigned>());                                       \
+  }
 } //end namespace
 #endif

@@ -30,3 +30,7 @@ namespace crab
 void crab::CrabEnableLog (std::string x) { }
 #endif
 
+using namespace crab;
+unsigned crab::CrabVerbosity = 0;
+void crab::CrabEnableVerbosity (unsigned v) { CrabVerbosity=v;}
+

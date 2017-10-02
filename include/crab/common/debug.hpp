@@ -1,7 +1,7 @@
 #ifndef CRAB__DEBUG__HPP_
 #define CRAB__DEBUG__HPP_
 
-/* Code from Avy */
+/* Logging and debug messages */
 
 #include <string>
 #include <set>
@@ -17,5 +17,10 @@ void CrabEnableLog (std::string x);
 #define CRAB_LOG(TAG,CODE) do { } while (0)
 void CrabEnableLog (std::string x);
 #endif
+
+
+extern unsigned CrabVerbosity;
+void CrabEnableVerbosity(unsigned v);
+#define CRAB_VERBOSE_IF(LEVEL,CODE) do { if (::crab::CrabVerbosity >= LEVEL) { CODE; } } while (0) 
 }
 #endif
