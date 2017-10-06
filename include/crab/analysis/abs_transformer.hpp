@@ -620,7 +620,8 @@ namespace crab {
 	       auto csts = stmt.constraint();
 	       crab::outs () << "** assert(" << csts << ")\n"
 	                     << "POST=" << *m_pre << "\n");	       
-      
+
+      *m_pre = abs_dom_t::top();
       *m_pre += stmt.constraint().negate ();
       
       CRAB_LOG("backward",
