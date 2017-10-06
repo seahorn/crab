@@ -1211,8 +1211,7 @@ public:
   linear_constraint_system_t to_linear_constraint_system() {
     linear_constraint_system_t csts;
     if (is_bottom()) {
-      csts += linear_constraint_t(linear_expression_t(Number(1)) ==
-                                  linear_expression_t(Number(0)));
+      csts += linear_constraint_t::get_false();
       return csts;
     }
 
