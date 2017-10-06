@@ -248,9 +248,8 @@ namespace crab {
 	while (true) {
 	  iters++;
           crab::CrabStats::count ("CombinedForwardBackward.iterations");
-	  CRAB_LOG ("backward",
-		    crab::outs() << "Iteration " << iters << "\n"
-		                 << "Starting forward pass ...\n");
+	  CRAB_VERBOSE_IF(1, crab::outs() << "Iteration " << iters << "\n" 	  
+			                  << "Started forward analysis.\n";);
 
 	  crab::CrabStats::resume ("CombinedForwardBackward.ForwardPass");
 	  // run forward analysis computing invariants
@@ -261,9 +260,10 @@ namespace crab {
 	  
 	  // reuse wto for next iteration
 	  if (iters == 1) m_wto = new wto_t(F.get_wto ());
+
+	  CRAB_VERBOSE_IF(1, crab::outs () << "Finished forward analysis.\n";);
 	  
-	  CRAB_LOG("backward-verbose",
-		   crab::outs () << "Forward analysis done:\n";
+	  CRAB_LOG("backward",
 		   for (auto &kv: boost::make_iterator_range (F.pre_begin(),
 							      F.pre_end ())) {
 		     crab::outs () << cfg_impl::get_label_str (kv.first)
@@ -272,13 +272,11 @@ namespace crab {
 
 	  if (only_forward) {
 	    store_forward_analysis_results(F);
-	    CRAB_LOG("backward",
-		     crab::outs () << "\nSkipped backward pass.\n");
+	    CRAB_VERBOSE_IF(1, crab::outs () << "\nSkipped backward pass.\n";);
 	    break;
 	  }
 	  
-	  CRAB_LOG("backward",
-		   crab::outs () << "\nStarting backward pass ...\n";);
+	  CRAB_VERBOSE_IF(1, crab::outs () << "Started backward analysis.\n";);		   
 
 	  crab::CrabStats::resume ("CombinedForwardBackward.BackwardPass");	  
 	  // run backward analysis computing necessary preconditions
@@ -288,8 +286,9 @@ namespace crab {
 	  B.Run (boost::make_iterator_range(F.pre_begin(), F.pre_end()));
 	  crab::CrabStats::stop ("CombinedForwardBackward.BackwardPass");	  
 
-	  CRAB_LOG("backward-verbose",
-		   crab::outs () << "Backward analysis done:\n";
+	  CRAB_VERBOSE_IF(1, crab::outs () << "Finished backward analysis.\n";);
+	  
+	  CRAB_LOG("backward",
 		   for (auto &kv: boost::make_iterator_range (B.begin(),
 							      B.end ())) {
 		     crab::outs () << cfg_impl::get_label_str (kv.first)
@@ -299,8 +298,8 @@ namespace crab {
 	  
 	  AbsDom new_init_states = B[m_cfg.entry ()];
 	  if (init_states <= new_init_states) {
-            CRAB_LOG ("backward",
-		      crab::outs() << "Cannot refine more initial states.\n");
+            //CRAB_LOG ("backward",
+	    //           crab::outs() << "Cannot refine more initial states.\n");
 	    store_analysis_results(F,B);
 	    break;
 	  } else {
@@ -325,8 +324,8 @@ namespace crab {
 	  
 	} // end while true
 
-	CRAB_LOG ("backward",
-		  crab::outs() << "Done after " << iters << " iterations.\n");
+	CRAB_VERBOSE_IF(1, crab::outs() << "Combined forward+backward analysis done after "
+			                << iters << " iterations.\n";); 	
       }
 
       // Return the invariants that hold at the entry of b
