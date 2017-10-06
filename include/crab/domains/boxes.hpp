@@ -20,12 +20,12 @@
 #define LDD_NOT_FOUND "No LDD. Run cmake with -DUSE_LDD=ON"
 namespace crab {
    namespace domains {
-      template<typename Number, typename VariableName, size_t LddSize = 100>
+      template<typename Number, typename VariableName,int ConvexReduce=-1, size_t LddSize=100>
       class boxes_domain:
        public abstract_domain<Number, VariableName,
-			      boxes_domain<Number,VariableName,LddSize> > {
+			      boxes_domain<Number,VariableName,ConvexReduce,LddSize> > {
 	
-        typedef boxes_domain<Number, VariableName, LddSize> boxes_domain_t;
+        typedef boxes_domain<Number, VariableName, ConvexReduce, LddSize> boxes_domain_t;
 	typedef abstract_domain<Number, VariableName, boxes_domain_t> abstract_domain_t;
 	
        public:
@@ -177,13 +177,13 @@ namespace crab {
        *
        * FIXME: Ldd_TermReplace seems to leak memory sometimes.
        */
-      template<typename Number, typename VariableName, size_t LddSize>
+      template<typename Number, typename VariableName, int ConvexReduce, size_t LddSize>
       class boxes_domain_:
        public abstract_domain<Number,VariableName,
-			      boxes_domain_<Number,VariableName,LddSize> > {
+			      boxes_domain_<Number,VariableName,ConvexReduce,LddSize> > {
 
         typedef interval_domain<Number, VariableName> interval_domain_t;
-        typedef boxes_domain_<Number, VariableName, LddSize> boxes_domain_t;
+        typedef boxes_domain_<Number, VariableName, ConvexReduce, LddSize> boxes_domain_t;
 	typedef abstract_domain<Number,VariableName,boxes_domain_t> abstract_domain_t;
 	
        public:
@@ -590,19 +590,21 @@ namespace crab {
 	
 	
         boxes_domain_ (LddNodePtr ldd): m_ldd (ldd) {
-          #if 1
-	  // TODO: one of the template parameters of boxes should be
-	  // an user option to choose when the size of the ldd should
-	  // be reduced.
-	  const unsigned CST_FACTOR = 1000000; /* JN: some magic number */
-	  unsigned threshold = num_of_vars () * CST_FACTOR;
-	  //unsigned num_paths = Ldd_PathSize (NULL, &*m_ldd);
-	  unsigned num_paths = (unsigned) Cudd_CountPath(&*m_ldd);
-	  if (threshold > 0 && num_paths > threshold) {
-	    convex_approx ();                
-	    CRAB_WARN ("ldd size was too large: ", num_paths, ". Made ldd convex.");
+	  if (ConvexReduce > 0) {
+	    // TODO: one of the template parameters of boxes should be
+	    // an user option to choose when the size of the ldd should
+	    // be reduced.
+	    
+	    // XXX: the value of ConvexReduce is quite arbitrary. A
+	    // good value seems around 1000000
+	    unsigned threshold = num_of_vars () * ConvexReduce;
+	    //unsigned num_paths = Ldd_PathSize (NULL, &*m_ldd);
+	    unsigned num_paths = (unsigned) Cudd_CountPath(&*m_ldd);
+	    if (threshold > 0 && num_paths > threshold) {
+	      convex_approx ();                
+	      CRAB_WARN ("ldd size was too large: ", num_paths, ". Made ldd convex.");
+	    }
 	  }
-	  #endif 
         }
 
 	interval_domain_t to_intervals() {
@@ -1575,16 +1577,16 @@ namespace crab {
 	{ return "Boxes"; }        
       }; 
 
-     template<typename N, typename V, size_t S>
-     LddManager* boxes_domain_<N,V,S>::m_ldd_man = nullptr;
+     template<typename N, typename V, int R, size_t S>
+     LddManager* boxes_domain_<N,V,R,S>::m_ldd_man = nullptr;
 
-     template<typename N, typename V, size_t S>
-     typename boxes_domain_<N,V,S>::var_map_t boxes_domain_<N,V,S>::m_var_map;
+     template<typename N, typename V, int R, size_t S>
+     typename boxes_domain_<N,V,R,S>::var_map_t boxes_domain_<N,V,R,S>::m_var_map;
 
-     template<typename Number, typename VariableName, size_t LddSize>
-     class domain_traits <boxes_domain_<Number,VariableName, LddSize> > {
+     template<typename Number, typename VariableName, int ConvexReduce, size_t LddSize>
+     class domain_traits <boxes_domain_<Number,VariableName, ConvexReduce, LddSize> > {
       public:
-       typedef boxes_domain_<Number, VariableName, LddSize> boxes_domain_t;
+       typedef boxes_domain_<Number, VariableName, ConvexReduce, LddSize> boxes_domain_t;
 
        template<class CFG>
        static void do_initialization (CFG cfg) { }
@@ -1609,16 +1611,16 @@ namespace crab {
 
     #if 0
      // Without copy-on-write
-    template<typename Number, typename VariableName, size_t LddSize=3000>
-    using boxes_domain = boxes_domain_<Number,VariableName,LddSize>;     
+     template<typename Number, typename VariableName, int ConvexReduce=-1, size_t LddSize=3000>
+     using boxes_domain = boxes_domain_<Number,VariableName,ConvexReduce,LddSize>;     
     #else 
     // Quick wrapper which uses shared references with copy-on-write.
-    template<class Number, class VariableName, size_t LddSize=3000>
-    class boxes_domain: 
+     template<class Number, class VariableName, int ConvexReduce=-1, size_t LddSize=3000>
+     class boxes_domain: 
        public abstract_domain<Number, VariableName,
-			      boxes_domain<Number,VariableName,LddSize> > {
-      typedef boxes_domain<Number, VariableName, LddSize> boxes_domain_t;
-      typedef abstract_domain<Number, VariableName, boxes_domain_t> abstract_domain_t;
+			      boxes_domain<Number,VariableName,ConvexReduce,LddSize> > {
+       typedef boxes_domain<Number, VariableName, ConvexReduce, LddSize> boxes_domain_t;
+       typedef abstract_domain<Number, VariableName, boxes_domain_t> abstract_domain_t;
       
       public:
       
@@ -1636,7 +1638,7 @@ namespace crab {
 
     private:
       
-      typedef boxes_domain_ <Number, VariableName, LddSize> boxes_impl_t;
+      typedef boxes_domain_ <Number, VariableName, ConvexReduce, LddSize> boxes_impl_t;
       typedef std::shared_ptr<boxes_impl_t> boxes_ref_t;
 
       boxes_ref_t _ref;
@@ -1762,10 +1764,10 @@ namespace crab {
       
     };
      
-    template<typename Number, typename VariableName, size_t LddSize>
-    class domain_traits <boxes_domain<Number,VariableName, LddSize> > {
+    template<typename Number, typename VariableName, int ConvexReduce, size_t LddSize>
+    class domain_traits <boxes_domain<Number,VariableName,ConvexReduce,LddSize> > {
     public:
-      typedef boxes_domain<Number, VariableName, LddSize> boxes_domain_t;
+      typedef boxes_domain<Number, VariableName, ConvexReduce, LddSize> boxes_domain_t;
       
       template<class CFG>
       static void do_initialization (CFG cfg) {}
