@@ -449,7 +449,7 @@ namespace crab {
       for (auto kv: _env) {
 	ptrdiff_t pos = std::distance(std::find(from.begin(), from.end(), kv.first),
 				      from.begin());
-	if (pos < from.size()) {
+	if (pos < (int) from.size()) {
 	  new_env.set(to[pos], kv.second);
 	} else {
 	  new_env.set(kv.first, kv.second);	    

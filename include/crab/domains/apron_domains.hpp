@@ -1474,7 +1474,7 @@ namespace crab {
 	for (auto kv: m_var_map.left) {
 	  ptrdiff_t pos = std::distance(from.begin(),
 				 std::find(from.begin(), from.end(), kv.first));
-	  if (pos < from.size()) {
+	  if (pos < (int) from.size()) {
 	    new_var_map.insert(binding_t(to[pos], kv.second));
 	  } else {
 	    new_var_map.insert(binding_t(kv.first, kv.second));
