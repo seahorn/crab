@@ -654,11 +654,15 @@ namespace crab {
       }
     }; 
 
-    template<class VariableName>
-    class int_cast_stmt: public statement<ikos::z_number,VariableName> {
+    /* 
+       The semantics of this statement makes only sense if Number =
+       ikos::z_number
+    */
+    template<class Number, class VariableName>
+    class int_cast_stmt: public statement<Number,VariableName> {
      public:
 
-      typedef statement<ikos::z_number,VariableName> statement_t;      
+      typedef statement<Number,VariableName> statement_t;      
       
      private:
       
@@ -667,7 +671,7 @@ namespace crab {
       unsigned m_src_width;
       VariableName m_dst;
       unsigned m_dst_width;      
-      
+
      public:
       
       int_cast_stmt (cast_operation_t op,
@@ -678,7 +682,7 @@ namespace crab {
 	  m_op(op),
 	  m_src(src), m_src_width(src_width),
 	  m_dst(dst), m_dst_width(dst_width)  {
-	
+
         this->m_live.add_use (m_src);
         this->m_live.add_def (m_dst);	
       }
@@ -689,12 +693,12 @@ namespace crab {
       VariableName dst() const {return m_dst;}
       unsigned dst_width() const {return m_dst_width;}      
       
-      virtual void accept(statement_visitor<ikos::z_number,VariableName> *v) {
+      virtual void accept(statement_visitor<Number,VariableName> *v) {
         v->visit(*this);
       }
       
       virtual boost::shared_ptr<statement_t> clone () const {
-        typedef int_cast_stmt<VariableName> int_cast_t;
+        typedef int_cast_stmt<Number, VariableName> int_cast_t;
         return boost::static_pointer_cast<statement_t, int_cast_t>
 	  (boost::make_shared<int_cast_t>(m_op, m_src, m_src_width, m_dst, m_dst_width,
 					  this->m_dbg_info));
@@ -706,6 +710,7 @@ namespace crab {
         return;
       }
     }; 
+
     
     /*
       Array statements 
@@ -1888,7 +1893,7 @@ namespace crab {
       typedef assume_stmt<Number,VariableName> assume_t;
       typedef select_stmt<Number,VariableName> select_t;
       typedef assert_stmt<Number,VariableName> assert_t;
-      typedef int_cast_stmt<VariableName>      int_cast_t;
+      typedef int_cast_stmt<Number, VariableName> int_cast_t;
       // Functions
       typedef callsite_stmt<Number, VariableName> callsite_t;
       typedef return_stmt<Number, VariableName> return_t;
@@ -2796,7 +2801,7 @@ namespace crab {
       typedef assume_stmt<Number,VariableName> assume_t;
       typedef select_stmt<Number,VariableName> select_t;
       typedef assert_stmt<Number,VariableName> assert_t;
-      typedef int_cast_stmt<VariableName> int_cast_t;      
+      typedef int_cast_stmt<Number, VariableName> int_cast_t;      
 
       typedef havoc_stmt<Number, VariableName> havoc_t;
       typedef unreachable_stmt<Number, VariableName> unreach_t;

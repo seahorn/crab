@@ -75,7 +75,7 @@ namespace crab {
     typedef cfg::select_stmt<number_t,VariableName>       select_t;
     typedef cfg::assert_stmt<number_t,VariableName>       assert_t;
 
-    typedef cfg::int_cast_stmt<VariableName>              int_cast_t;
+    typedef cfg::int_cast_stmt<number_t,VariableName>     int_cast_t;
     typedef cfg::callsite_stmt<number_t,VariableName>     callsite_t;
     typedef cfg::return_stmt<number_t,VariableName>       return_t;
     

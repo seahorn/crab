@@ -207,7 +207,7 @@ namespace crab {
     typedef cfg::assignment<number_t,varname_t>        assign_t;
     typedef cfg::assume_stmt<number_t,varname_t>       assume_t;
     typedef cfg::assert_stmt<number_t,varname_t>       assert_t;
-    typedef cfg::int_cast_stmt<varname_t>              int_cast_t;    
+    typedef cfg::int_cast_stmt<number_t,varname_t>     int_cast_t;    
     typedef cfg::select_stmt<number_t,varname_t>       select_t;    
     typedef cfg::havoc_stmt<number_t,varname_t>        havoc_t;
     typedef cfg::unreachable_stmt<number_t,varname_t>  unreach_t;
