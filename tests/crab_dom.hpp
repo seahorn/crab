@@ -53,6 +53,7 @@ namespace crab {
     typedef numerical_nullity_domain<z_sdbm_domain_t> z_num_null_domain_t;
     // Boolean-numerical domain over integers
     typedef flat_boolean_numerical_domain<z_dbm_domain_t> z_bool_num_domain_t;
+    typedef flat_boolean_numerical_domain<z_interval_domain_t> z_bool_interval_domain_t;    
     // Arrays domains
     typedef array_sparse_graph_domain<z_sdbm_domain_t,z_interval_domain_t> z_ag_sdbm_intv_t;
     typedef array_sparse_graph_domain<z_num_null_domain_t,z_nullity_domain_t> z_ag_num_null_t;

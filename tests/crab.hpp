@@ -12,6 +12,14 @@ extern void run (crab::cfg_impl::z_cfg_t* cfg,
 		 unsigned jump_set_size,
 		 bool enable_stats);
 
+template<typename Dom>
+extern void run_and_check (crab::cfg_impl::z_cfg_t* cfg, 
+			   bool run_liveness,
+			   unsigned widening, 
+			   unsigned narrowing, 
+			   unsigned jump_set_size,
+			   bool enable_stats);
+
 // To run abstract domains defined over rationals
 template<typename Dom>
 extern void run (crab::cfg_impl::q_cfg_t* cfg, 

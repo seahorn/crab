@@ -1,8 +1,12 @@
 // Here all explicit instantiations
 
+// #define Z_RUNNER(DOM) \
+// template void run_and_check<DOM > \
+// (crab::cfg_impl::z_cfg_t*, bool, unsigned, unsigned, unsigned, bool);
+
 #define Z_RUNNER(DOM) \
-template void run<DOM > \
-(crab::cfg_impl::z_cfg_t*, bool, unsigned, unsigned, unsigned, bool);
+  template void run<DOM > \
+  (crab::cfg_impl::z_cfg_t*, bool, unsigned, unsigned, unsigned, bool);
 
 #define Q_RUNNER(DOM) \
 template void run<DOM > \
@@ -16,6 +20,7 @@ Z_RUNNER(crab::domain_impl::z_term_domain_t)
 Z_RUNNER(crab::domain_impl::z_term_dis_int_t)
 Z_RUNNER(crab::domain_impl::z_num_domain_t)
 Z_RUNNER(crab::domain_impl::z_bool_num_domain_t)
+Z_RUNNER(crab::domain_impl::z_bool_interval_domain_t)
 Z_RUNNER(crab::domain_impl::z_boxes_domain_t)
 Z_RUNNER(crab::domain_impl::z_dis_interval_domain_t)
 Z_RUNNER(crab::domain_impl::z_nullity_domain_t)
