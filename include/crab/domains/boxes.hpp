@@ -344,7 +344,7 @@ namespace crab {
 	 **  All the expressiveness about numerical operations with boxes 
 	 **  is limited to:
 	 **     v := a * x + [k.lb(),k.ub()], 
-	 **     where a is a constant, k an interval and and x variable 
+	 **     where a is a constant, k an interval and x variable 
 	 **  Each numerical operation is reduced to this form.
 	 */
         void apply_ldd (VariableName v, VariableName x, Number a, interval_t k) {
@@ -435,26 +435,26 @@ namespace crab {
           }
         }
 
-        // Pre: n is convex and cannot be bottom
-        void to_lin_cst_sys_recur(LddNode* n, 
-				  linear_constraint_system_t& csts) {
+        // // Pre: n is convex and cannot be bottom
+        // void to_lin_cst_sys_recur(LddNode* n, 
+	// 			  linear_constraint_system_t& csts) {
 
-          LddNode *N = Ldd_Regular (n);
-          if (N == Ldd_GetTrue (get_ldd_man ())) return;
+        //   LddNode *N = Ldd_Regular (n);
+        //   if (N == Ldd_GetTrue (get_ldd_man ())) return;
 
-	  lincons_t lincons = Ldd_GetCons(get_ldd_man (), N);
-          if (Ldd_Regular (Ldd_T(N)) == Ldd_GetTrue (get_ldd_man ()) &&
-              Ldd_Regular (Ldd_E(N)) == Ldd_GetTrue (get_ldd_man ())) {
-	    csts += cst_from_ldd_cons(lincons);
-	  } else if (Ldd_Regular (Ldd_T(N)) == Ldd_GetTrue (get_ldd_man ())) {
-	    csts += cst_from_ldd_cons(get_theory()->negate_cons(lincons));
-	  } else {
-	    csts += cst_from_ldd_cons(lincons);
-	  }
-          to_lin_cst_sys_recur (Ldd_T (N), csts);
-          to_lin_cst_sys_recur (Ldd_E (N), csts);
+	//   lincons_t lincons = Ldd_GetCons(get_ldd_man (), N);
+        //   if (Ldd_Regular (Ldd_T(N)) == Ldd_GetTrue (get_ldd_man ()) &&
+        //       Ldd_Regular (Ldd_E(N)) == Ldd_GetTrue (get_ldd_man ())) {
+	//     csts += cst_from_ldd_cons(lincons);
+	//   } else if (Ldd_Regular (Ldd_T(N)) == Ldd_GetTrue (get_ldd_man ())) {
+	//     csts += cst_from_ldd_cons(get_theory()->negate_cons(lincons));
+	//   } else {
+	//     csts += cst_from_ldd_cons(lincons);
+	//   }
+        //   to_lin_cst_sys_recur (Ldd_T (N), csts);
+        //   to_lin_cst_sys_recur (Ldd_E (N), csts);
 
-        }
+        // }
 
         // Create a new ldd representing the constraint e
         // where e can be one of 
@@ -560,7 +560,7 @@ namespace crab {
 	
 	void intvcst_from_lin_const (linear_constraint_t cst,
 				     linear_constraint_system_t &intvcsts) {
-	  interval_domain_t intervals = to_intervals();
+	  interval_domain_t intervals = to_intervals(m_ldd);
 	  for (typename linear_constraint_t::iterator it = cst.begin(); 
 	       it != cst.end(); ++it) {
 	    number_t c = it->first;
@@ -601,10 +601,6 @@ namespace crab {
 	
         boxes_domain_ (LddNodePtr ldd): m_ldd (ldd) {
 	  if (ConvexReduce > 0) {
-	    // TODO: one of the template parameters of boxes should be
-	    // an user option to choose when the size of the ldd should
-	    // be reduced.
-	    
 	    // XXX: the value of ConvexReduce is quite arbitrary. A
 	    // good value seems around 1000000
 	    unsigned threshold = num_of_vars () * ConvexReduce;
@@ -617,23 +613,26 @@ namespace crab {
 	  }
         }
 
-	interval_domain_t to_intervals() {
+	interval_domain_t to_intervals(LddNodePtr &ldd) {
           crab::CrabStats::count (getDomainName() + ".count.to_intervals");
           crab::ScopedCrabStats __st__(getDomainName() + ".to_intervals");
 
-          if (is_bottom ()) 
+          if (&*ldd == Ldd_GetFalse (get_ldd_man())) 
             return interval_domain_t::bottom ();
-          if (is_top ()) 
+          if (&*ldd == Ldd_GetTrue (get_ldd_man())) 
             return interval_domain_t::top ();
 
-	  LddNodePtr ldd (m_ldd);
-          // convert to interval domain
-          linear_constraint_system_t csts;
-	  ldd = convex_approx (ldd);
-          to_lin_cst_sys_recur (&*ldd, csts);
+	  LddNodePtr ldd_copy (ldd);
+	  ldd_copy = convex_approx (ldd_copy);
 	  
-          interval_domain_t intv;
-          for (auto cst: csts) {intv += cst;}
+	  auto disjs = to_disjunctive_linear_constraint_system(ldd_copy);
+	  if (disjs.size() != 1) 
+	  { CRAB_ERROR("Boxes::to_intervals: it should not be disjunctive"); }
+
+          interval_domain_t intv;	  
+	  for (auto c : *(disjs.begin()))
+	  { intv += c; }
+	  
 	  return intv;
 	}
 	
@@ -910,8 +909,10 @@ namespace crab {
           boxes_domain_t res (w); 
 
           CRAB_LOG ("boxes",
-                    crab::outs() << "Widening " <<  *this << " and " <<  other 
-                                 <<  "=" << res <<"\n";);
+                    crab::outs() << "Performed widening \n"
+		                 << "**" << *this  << "\n" 
+		                 << "** " << other  << "\n" 
+                                 << "= " << res <<"\n";);
           return res;
         }
 
@@ -928,9 +929,11 @@ namespace crab {
 
           boxes_domain_t res (*this & other);
           //CRAB_WARN (" boxes narrowing operator replaced with meet");
-          CRAB_LOG ("boxes", 
-                    crab::outs() << "Narrowing " << *this << " and " << other << "="
-		                 << res <<"\n";);
+          CRAB_LOG ("boxes",
+                    crab::outs() << "Performed narrowing \n"
+		                 << "**" << *this  << "\n" 
+		                 << "** " << other  << "\n" 
+                                 << "= " << res <<"\n";);
           return res;
         }
         
@@ -1069,19 +1072,15 @@ namespace crab {
             return interval_t::bottom ();
           if (is_top ()) 
             return interval_t::top ();
-
+	  
 	  LddNodePtr ldd (m_ldd);
 	  project (ldd, v);
-	  
-          // convert to interval domain
-          linear_constraint_system_t csts;
-	  ldd = convex_approx (ldd);
-          to_lin_cst_sys_recur (&*ldd, csts);
-	  
-          interval_domain_t intv;
-          for (auto cst: csts) {intv += cst;}
-	  
-          return intv[v];
+	  interval_domain_t intv = to_intervals(ldd);
+	  interval_t i = intv[v];
+	  CRAB_LOG("boxes-project",
+		   crab::outs () << "Before projecting on " << v << ": " << *this << "\n"
+		                 << "Projection " << i << "\n";);
+	  return i;
         }
                 
 	// x := e
@@ -1201,7 +1200,7 @@ namespace crab {
 	  interval_t yi = this->operator[](y);	    
 	  if (yi.is_top () || zi.is_top()) {
 	    this->operator-=(x);
-	    return;
+	    goto apply_end;
 	  }
 
 	  // --- if y is a singleton we do not lose precision
@@ -1236,7 +1235,7 @@ namespace crab {
 	      // x = yi - z <-->  x = -z + yi
 	      apply_ldd (x, z, -1, yi);
 	    } else {        // abstract z
-	      // x = y - zi 
+	      // x = y - zi
 	      apply_ldd (x, y, 1, zi * number_t(-1));
 	    }
 	    goto apply_end;
@@ -1249,7 +1248,7 @@ namespace crab {
 	      set (x,xi);
 	      break;
 	    }
-	    case OP_DIVISION: {  
+	    case OP_DIVISION: {
 	      interval_t xi = yi / zi;
 	      set (x,xi);
 	      break;
@@ -1546,10 +1545,16 @@ namespace crab {
             csts += linear_constraint_t::get_true();
           } else {
 	    // --- produce convex approximation
-	    LddNodePtr v = convex_approx (m_ldd);
+	    LddNodePtr ldd (m_ldd);	    
+	    ldd = convex_approx (ldd);
 	    // --- extract linear inequalities from the convex ldd
-	    to_lin_cst_sys_recur(&*v, csts);
+	    auto disjs = to_disjunctive_linear_constraint_system(ldd);
+	    if (disjs.size() != 1) 
+	    { CRAB_ERROR("Boxes::to_linear_constraint_system: it should not be disjunctive"); }
+	    for (auto c : *(disjs.begin()))
+	    { csts += c; }
 	  }
+	  
           return csts;
         }
 

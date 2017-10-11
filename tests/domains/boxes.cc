@@ -197,6 +197,36 @@ z_cfg_t* prog5 (variable_factory_t &vfac)  {
   return cfg;
 }
 
+z_cfg_t* prog6 (variable_factory_t &vfac)  {
+
+  // Definining program variables
+  z_var x (vfac ["x"]);
+  z_var y (vfac ["y"]);  
+  // entry and exit block
+  z_cfg_t* cfg = new z_cfg_t("entry","exit");
+  // adding blocks
+  z_basic_block_t& entry = cfg->insert ("entry");
+  z_basic_block_t& header   = cfg->insert ("header");
+  z_basic_block_t& body   = cfg->insert ("body");
+  z_basic_block_t& exit   = cfg->insert ("exit");
+  
+  // adding control flow 
+  entry >> header;
+  header >> body;
+  body >> header;
+  header >> exit;
+  
+  // adding statements
+  entry.assign (x, z_number(1));
+  entry.assign (y, z_number(0));
+  
+  body.add(x, x, y);
+  body.add(y, y, z_number(1));  
+
+  exit.assertion (x >= y);
+  return cfg;
+}
+
 /* Example of how to infer invariants from the above CFG */
 int main (int argc, char** argv )
 {
@@ -211,6 +241,7 @@ int main (int argc, char** argv )
   z_cfg_t* cfg3 = prog3 (vfac);
   z_cfg_t* cfg4 = prog4 (vfac);
   z_cfg_t* cfg5 = prog5 (vfac);
+  z_cfg_t* cfg6 = prog6 (vfac);  
 
   cfg1->simplify (); // this is optional
   crab::outs() << *cfg1 << "\n";
@@ -231,13 +262,17 @@ int main (int argc, char** argv )
   crab::outs() << *cfg5 << "\n";
   run<z_boxes_domain_t>(cfg5,  false, 10,2,20,stats_enabled);
 
+  crab::outs() << *cfg6 << "\n";
+  run<z_boxes_domain_t>(cfg6, false, 1,2,20,stats_enabled);
+  
   delete cfg1;
   delete cfg2;
   delete cfg3;
   delete cfg4;
   delete cfg5;
+  delete cfg6;
 
-  { 
+  if (true) { 
     crab::outs() << "Testing some boxes operations ...\n";
     varname_t x = vfac["x"];
     varname_t y = vfac["y"];
