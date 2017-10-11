@@ -1045,12 +1045,14 @@ namespace ikos {
 	  } else {
 	    refine(pivot, rhs.upper_half_line(), env);
 	  }
+	} else if (cst.is_strict_inequality()) {
+	  // do nothing
 	} else {
 	  // cst is a disequation
 	  boost::optional< Number > c = rhs.singleton();
 	  if (c) {
 	    Interval old_i = env[pivot.name()];
-              Interval new_i = intervals_impl::trim_bound (old_i, *c);
+	    Interval new_i = intervals_impl::trim_bound (old_i, *c);
 	    if (new_i.is_bottom()) {
 	      throw bottom_found();
 	    }
@@ -1122,9 +1124,18 @@ namespace ikos {
 	  continue;
 	} else {
 	  std::size_t cst_size = cst.size();
-	  this->_cst_table.push_back(cst);
-            // cost of one reduction step on the constraint in terms
-            // of accesses to the interval collection
+	  if (cst.is_strict_inequality()) {
+	    // convert e < c into {e <= c, e != c}
+	    linear_constraint_t c1(cst.expression(), linear_constraint_t::kind_t::INEQUALITY);
+	    linear_constraint_t c2(cst.expression(), linear_constraint_t::kind_t::DISEQUATION);
+	    this->_cst_table.push_back(c1);
+	    this->_cst_table.push_back(c2);
+	    cst_size = c1.size() + c2.size();
+	  } else {
+	    this->_cst_table.push_back(cst);
+	  }
+	  // cost of one reduction step on the constraint in terms
+	  // of accesses to the interval collection
 	  op_per_cycle += cst_size * cst_size; 
 	}
       }

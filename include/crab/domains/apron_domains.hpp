@@ -479,14 +479,14 @@ namespace crab {
           linear_expression_t exp = cst.expression();
           if (cst.is_equality ()) {
             return ap_tcons0_make (AP_CONS_EQ, expr2texpr (exp), NULL);            
-          }
-          else if (cst.is_inequality ()) {
+          } else if (cst.is_inequality ()) {
             return ap_tcons0_make (AP_CONS_SUPEQ, expr2texpr (-exp), NULL);
-          }
-          else  { 
-            assert (cst.is_disequation ());
+          } else if (cst.is_strict_inequality()) {
+            return ap_tcons0_make (AP_CONS_SUP, expr2texpr (-exp), NULL);
+	  } else  {
+	    assert(cst.is_disequation ());
             return ap_tcons0_make (AP_CONS_DISEQ, expr2texpr (exp), NULL);
-          }
+          } 
         }
 		
         // --- from apron to crab 
@@ -558,8 +558,8 @@ namespace crab {
               break;
             case AP_CONS_SUP:
               // e > k 
-              e = -e + 1;
-              res =  linear_constraint_t (e, linear_constraint_t::kind_t::INEQUALITY);
+              e = -e;
+              res =  linear_constraint_t (e, linear_constraint_t::kind_t::STRICT_INEQUALITY);
               break;
             case AP_CONS_EQMOD:
               res = T ();

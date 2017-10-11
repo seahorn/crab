@@ -414,11 +414,8 @@ namespace crab {
 	linear_constraint<ikos::q_number,VariableName>
 	cst_from_ldd_strict_cons (linear_expression<ikos::q_number,VariableName> l,
 				  linear_expression<ikos::q_number,VariableName> r) {
-	  CRAB_LOG("boxes",
-		   crab::outs () << "Crab does not support strict inequality "
-		                 << l << " < " << r << "\n";);
-	  //CRAB_WARN ("Crab does not support strict inequalities");
-	  return linear_constraint<ikos::q_number,VariableName>::get_true();
+	  return linear_constraint<ikos::q_number,VariableName>
+	    (l-r, linear_constraint_t::STRICT_INEQUALITY);
 	}
 	
         linear_constraint_t cst_from_ldd_cons(lincons_t lincons) {
@@ -496,8 +493,17 @@ namespace crab {
             LddNodePtr n = lddPtr (get_ldd_man(),
 				   get_theory()->to_ldd (get_ldd_man(), cons));
             get_theory()->destroy_lincons (cons);
+	    return n;	    
+          } else if (kind == kind_t::STRICT_INEQUALITY) {
+            // case 1:  x < k  
+            // case 2: -x < k
+            constant_t c = mk_cst (k);
+            lincons_t cons = get_theory()->create_cons (term, 1 /*strict*/, c);
+            LddNodePtr n = lddPtr (get_ldd_man(),
+	    			   get_theory()->to_ldd (get_ldd_man(), cons));
+	    get_theory()->destroy_lincons (cons);
 	    return n; 
-          } else { // assert (kind == kind_t::DISEQUALITY)
+           } else { // assert (kind == kind_t::DISEQUALITY)
             // case 1:  x != k  <->  x < k OR  x > k <->  x < k OR -x < -k
             // case 2: -x != k  <-> -x < k OR -x > k <-> -x < k OR  x < -k
             constant_t c1 = mk_cst (k);
@@ -578,6 +584,10 @@ namespace crab {
 	      }
 	      case kind_t::INEQUALITY: {
 		intvcsts += linear_constraint_t(term <= max);
+		break;
+	      }
+	      case kind_t::STRICT_INEQUALITY: {
+		intvcsts += linear_constraint_t(term < max);
 		break;
 	      }
 	      default:

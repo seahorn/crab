@@ -727,7 +727,7 @@ private:
 
       if (cst.is_equality()) {
         this->refine(pivot, rhs, env);
-      } else if (cst.is_inequality()) {
+      } else if (cst.is_inequality() || cst.is_strict_inequality()) {
         // Inequations (>=, <=, >, and <) do not work well with
         // congruences because for any number n there is always x and y
         // \in gamma(aZ+b) such that n < x and n > y.
@@ -737,7 +737,7 @@ private:
         // with intervals or constants should get those cases.
         continue;
       } else {
-        // TODO: cst is a disequation
+        // TODO: cst is a disequation 
       }
     }
   }
