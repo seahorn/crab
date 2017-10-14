@@ -876,11 +876,11 @@ namespace crab {
               case APRON_INT:
               case APRON_PK:
               default:
-                CRAB_WARN ("used meet instead of narrowing: \n",
-                           "make sure only a finite number of descending iterations are run.");
+                //CRAB_WARN ("used meet instead of narrowing: \n",
+		//           "make sure only a finite number of descending iterations are run.");
                 return apron_domain_t (apPtr (get_man(), 
-                                              ap_abstract0_meet (get_man(), false, 
-                                                               &*x, &*o.m_apstate)), m);
+                                              ap_abstract0_meet (get_man(), false,
+								 &*x, &*o.m_apstate)), m);
             }
           }
         }        
