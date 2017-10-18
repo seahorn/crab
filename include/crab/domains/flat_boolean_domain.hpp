@@ -902,6 +902,11 @@ namespace crab {
 		  crab::outs () << "Before reduction boolean --> numerical: "
 		                << this->_product.second () << "\n";);
 
+	#if 0
+	// FIXME: to perform this reduction we need to ensure that the
+	// variables involved in the constraints have not been
+	// modified since they were added to _var_to_csts.
+	
 	// Perform reduction from the flat boolean domain to the
 	// numerical domain.
 	if (!is_negated) {
@@ -916,6 +921,7 @@ namespace crab {
 	    this->_product.second() += cst.negate();
 	  }
 	}
+	#endif
 	
 	CRAB_LOG ("flat-boolean",
 		  crab::outs () << "After reduction boolean --> numerical: "
