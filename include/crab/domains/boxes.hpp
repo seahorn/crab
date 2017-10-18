@@ -1534,6 +1534,32 @@ namespace crab {
 		 else
 		   crab::outs () << "assume(not(" << x << "))=" << *this << "\n";); 
 	}
+
+	// Backward boolean operations
+	void backward_assign_bool_cst(VariableName lhs, linear_constraint_t rhs,
+				      boxes_domain_t inv){
+	  if (is_bottom()) return;
+
+	  /** TODO **/	  
+	  this->operator-=(lhs);
+	}
+	
+	void backward_assign_bool_var(VariableName lhs, VariableName rhs, bool is_not_rhs,
+				      boxes_domain_t inv) {
+	  if (is_bottom()) return;
+
+	  /** TODO **/	  
+	  this->operator-=(lhs);	  
+	}
+	
+	void backward_apply_binary_bool(bool_operation_t op,
+					VariableName x,VariableName y,VariableName z,
+					boxes_domain_t inv) {
+	  if (is_bottom()) return;
+
+	  /** TODO **/	  
+	  this->operator-=(x);	  
+	}
 	
         linear_constraint_system_t to_linear_constraint_system () {
           linear_constraint_system_t csts;
@@ -1755,6 +1781,17 @@ namespace crab {
       void assume_bool (VariableName x, bool is_negated)
       { detach(); ref().assume_bool(x,is_negated);}
 
+      void backward_assign_bool_cst(VariableName lhs, linear_constraint_t rhs,
+				    boxes_domain_t inv)
+      { detach(); ref().backward_assign_bool_cst(lhs,rhs,inv.ref()); }
+      void backward_assign_bool_var(VariableName lhs, VariableName rhs, bool is_not_rhs,
+				    boxes_domain_t inv)
+      { detach(); ref().backward_assign_bool_var(lhs,rhs,is_not_rhs,inv.ref()); }	
+      void backward_apply_binary_bool(bool_operation_t op,
+				      VariableName x,VariableName y,VariableName z,
+				      boxes_domain_t inv)
+      { detach(); ref().backward_apply_binary_bool(op,x,y,z,inv.ref()); }	
+       
       template<typename Iterator>
       void forget (Iterator vIt, Iterator vEt)
       { detach(); ref().forget(vIt, vEt); }

@@ -290,6 +290,23 @@ namespace crab {
 	virtual void assume_bool (VariableName v, bool is_negated) override {
 	  _inv.assume_bool (v, is_negated);
 	}    
+
+	// backward boolean operators
+	virtual void backward_assign_bool_cst(VariableName lhs, linear_constraint_t rhs,
+					      array_smashing_t inv){
+	  _inv.backward_assign_bool_cst(lhs, rhs, inv.get_content_domain());	  
+	}
+	
+	virtual void backward_assign_bool_var(VariableName lhs, VariableName rhs, bool is_not_rhs,
+					      array_smashing_t inv) {
+	  _inv.backward_assign_bool_var(lhs, rhs, is_not_rhs, inv.get_content_domain());	  	  
+	}
+	
+	virtual void backward_apply_binary_bool(bool_operation_t op,
+						VariableName x,VariableName y,VariableName z,
+						array_smashing_t inv) {
+	  _inv.backward_apply_binary_bool(op, x, y, z, inv.get_content_domain());
+	}
 	
         // pointer_operators_api
         virtual void pointer_load (VariableName lhs, VariableName rhs) override {

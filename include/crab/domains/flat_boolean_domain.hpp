@@ -234,9 +234,14 @@ namespace crab {
     flat_boolean_domain() : _env(separate_domain_t::top()) {}
 
     flat_boolean_domain(const flat_boolean_domain_t& e) : 
-      _env(e._env) {}
+      _env(e._env) {
+      crab::CrabStats::count (getDomainName() + ".count.copy");
+      crab::ScopedCrabStats __st__(getDomainName() + ".copy");      
+    }
     
     flat_boolean_domain_t& operator=(const flat_boolean_domain_t& o) {
+      crab::CrabStats::count (getDomainName() + ".count.copy");
+      crab::ScopedCrabStats __st__(getDomainName() + ".copy");
       if (this != &o)
         _env = o._env;
       return *this;
@@ -256,9 +261,16 @@ namespace crab {
     
     bool is_top() { return _env.is_top(); }
     
-    bool operator<=(flat_boolean_domain_t o) { return (_env <= o._env); }
+    bool operator<=(flat_boolean_domain_t o) {
+      crab::CrabStats::count (getDomainName() + ".count.leq");
+      crab::ScopedCrabStats __st__(getDomainName() + ".leq");
+      return (_env <= o._env);
+    }
     
     flat_boolean_domain_t operator|(flat_boolean_domain_t o) {
+      crab::CrabStats::count (getDomainName() + ".count.join");
+      crab::ScopedCrabStats __st__(getDomainName() + ".join");
+      
       flat_boolean_domain_t res (_env | o._env);
       CRAB_LOG("flat-boolean",
 	       crab::outs () << "After join " << *this << " and " << o << "="
@@ -267,6 +279,9 @@ namespace crab {
     }
 
     void operator|=(flat_boolean_domain_t o) {
+      crab::CrabStats::count (getDomainName() + ".count.join");
+      crab::ScopedCrabStats __st__(getDomainName() + ".join");
+      
       CRAB_LOG("flat-boolean",
 	       crab::outs () << "After join " << *this << " and "
 	                     << o << "=");
@@ -275,6 +290,9 @@ namespace crab {
     }
 
     flat_boolean_domain_t operator&(flat_boolean_domain_t o) {
+      crab::CrabStats::count (getDomainName() + ".count.meet");
+      crab::ScopedCrabStats __st__(getDomainName() + ".meet");
+      
       flat_boolean_domain_t res (_env & o._env);
       CRAB_LOG("flat-boolean",
 	       crab::outs () << "After meet " << *this << " and " << o
@@ -283,6 +301,9 @@ namespace crab {
     }
     
     flat_boolean_domain_t operator||(flat_boolean_domain_t o) {
+      crab::CrabStats::count (getDomainName() + ".count.widening");
+      crab::ScopedCrabStats __st__(getDomainName() + ".widening");
+      
       flat_boolean_domain_t res (_env || o._env);
       CRAB_LOG("flat-boolean",
 	       crab::outs () << "After widening " << *this << " and "
@@ -301,11 +322,15 @@ namespace crab {
       return res;
     }
     
-    flat_boolean_domain_t operator&&(flat_boolean_domain_t o)
-    { return (_env && o._env); }
+    flat_boolean_domain_t operator&&(flat_boolean_domain_t o) {
+      crab::CrabStats::count (getDomainName() + ".count.narrowing");
+      crab::ScopedCrabStats __st__(getDomainName() + ".narrowing");
+      return (_env && o._env);
+    }
       
-    void operator-=(VariableName v)
-    { 
+    void operator-=(VariableName v) {
+      crab::CrabStats::count (getDomainName() + ".count.forget");
+      crab::ScopedCrabStats __st__(getDomainName() + ".forget");
       if (!is_bottom ())
         _env -= v; 
     }
@@ -322,8 +347,9 @@ namespace crab {
 	       crab::outs () << x << ":=" << bx << "\n");
     }    
 
-    void assign_bool_var (VariableName x, VariableName y, bool is_not_y)
-    {
+    void assign_bool_var (VariableName x, VariableName y, bool is_not_y) {
+      crab::CrabStats::count (getDomainName() + ".count.assign_bool_var");
+      crab::ScopedCrabStats __st__(getDomainName() + ".assign_bool_var");          
       _env.set (x, (is_not_y ? _env[y].Negate() : _env [y]));
       CRAB_LOG("flat-boolean",
 	       auto bx = _env[x];
@@ -337,6 +363,9 @@ namespace crab {
 
     void apply_binary_bool(bool_operation_t op,
 			   VariableName x, VariableName y, VariableName z) {
+      crab::CrabStats::count (getDomainName() + ".count.apply_binary_bool");
+      crab::ScopedCrabStats __st__(getDomainName() + ".apply_binary_bool");          
+      
       switch (op) {
       case OP_BAND:
 	_env.set (x, _env [y].And (_env[z]));
@@ -358,6 +387,9 @@ namespace crab {
     }
 
     void assume_bool (VariableName x, bool is_negated) {
+      crab::CrabStats::count (getDomainName() + ".count.assume_bool");
+      crab::ScopedCrabStats __st__(getDomainName() + ".assume_bool");          
+      
       if (!is_negated)
 	_env.set (x,  _env[x] & boolean_value::get_true ());
       else 
@@ -382,7 +414,51 @@ namespace crab {
     
     boolean_value get_bool (VariableName x)
     { return _env[x];}
-        
+
+
+    // backward boolean operators
+    void backward_assign_bool_cst(VariableName lhs, linear_constraint_t rhs,
+				  flat_boolean_domain_t inv){
+      crab::CrabStats::count (getDomainName() + ".count.backward_assign_bool_cst");
+      crab::ScopedCrabStats __st__(getDomainName() + ".backward_assign_bool_cst");
+      if(is_bottom()) return;
+      
+      /* nothing to do: flat_boolean_domain ignores this */
+      _env -= lhs;
+    }
+    
+    void backward_assign_bool_var(VariableName lhs, VariableName rhs, bool is_not_rhs,
+				  flat_boolean_domain_t inv) {
+      crab::CrabStats::count (getDomainName() + ".count.backward_assign_bool_var");
+      crab::ScopedCrabStats __st__(getDomainName() + ".backward_assign_bool_var");
+	
+      if(is_bottom()) return;
+      /** TODO  **/
+      /* 
+	 assume (lhs == rhs);
+	 assume (lhs == not(rhs))
+      */
+      _env -= lhs;
+      *this = *this & inv;
+    }
+    
+    void backward_apply_binary_bool(bool_operation_t op,
+				    VariableName x,VariableName y,VariableName z,
+				    flat_boolean_domain_t inv) {
+      crab::CrabStats::count (getDomainName() + ".count.backward_apply_binary_bool");
+      crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply_binary_bool");
+      
+      if(is_bottom()) return;
+
+      /** TODO **/
+      /* 
+	 if x is true and op=AND then y=true and z=true
+         if x is false and op=OR then y=false and z=false
+      */
+      _env -= x;
+      *this = *this & inv;      
+    }
+    
     // numerical_domains_api
     // XXX: needed for making a reduced product with a numerical domain
     void apply(operation_t op, VariableName x, VariableName y, VariableName z) {}
@@ -756,10 +832,14 @@ namespace crab {
 	CRAB_LOG ("flat-boolean",
 		  auto bx = this->_product.first ().get_bool (x);
 		  crab::outs () << "Reduction numerical --> boolean: "
-		                << x << " := " << bx << "\n";);
+		                << x << " := " << bx << "\n";
+		  );
       }
 
       void assign_bool_var (V x, V y, bool is_not_y) {
+	
+	if (is_bottom()) return;
+	
 	this->_product.assign_bool_var (x, y, is_not_y);
 
 	if (!is_not_y)
@@ -779,8 +859,11 @@ namespace crab {
       }
 
       void apply_binary_bool(bool_operation_t op, V x, V y, V z) {
+	
+	if (is_bottom()) return;
+ 
 	this->_product.apply_binary_bool (op, x, y, z);
-
+	
 	// --- for reduction from boolean to the numerical domain
 	if (op == OP_BAND) {
 	  this->_var_to_csts.set
@@ -807,6 +890,8 @@ namespace crab {
 
       void assume_bool(V x, bool is_negated)
       {
+	if (is_bottom()) return;
+	
 	this->_product.assume_bool (x, is_negated);
 
 	if (this->_var_to_csts [x].is_top () ||
@@ -816,12 +901,13 @@ namespace crab {
 	CRAB_LOG ("flat-boolean",
 		  crab::outs () << "Before reduction boolean --> numerical: "
 		                << this->_product.second () << "\n";);
-	  
+
 	// Perform reduction from the flat boolean domain to the
 	// numerical domain.
 	if (!is_negated) {
-	  for (auto cst: this->_var_to_csts [x])
-	      this->_product.second() += cst;
+	  for (auto cst: this->_var_to_csts [x]) {
+	    this->_product.second() += cst;
+	  }
 	} else {
 	  // we only perform reduction if there is only one constraint
 	  auto csts = this->_var_to_csts[x];
@@ -835,7 +921,33 @@ namespace crab {
 		  crab::outs () << "After reduction boolean --> numerical: "
 				<< this->_product.second () << "\n";);
       }
-       	
+
+      void backward_assign_bool_cst(V lhs, linear_constraint_t rhs,
+				    bool_num_domain_t inv){
+	/** TODO **/
+	/* 
+	   if lhs is true than assume(rhs)
+           if lhs is false then assume(not rhs)
+	*/
+	/** TODO: this can be done better **/
+	this->_var_to_csts -= lhs;
+      }
+      
+      void backward_assign_bool_var(V lhs, V rhs, bool is_not_rhs,
+				    bool_num_domain_t inv) {
+	this->_product.backward_assign_bool_var(lhs, rhs, is_not_rhs, inv._product);
+	/** TODO: this can be done better **/
+	this->_var_to_csts -= lhs;
+      }
+      
+      void backward_apply_binary_bool(bool_operation_t op,
+				      V x,V y,V z,
+				      bool_num_domain_t inv) {
+	this->_product.backward_apply_binary_bool(op, x, y, z, inv._product);
+	/** TODO: this can be done better **/
+	this->_var_to_csts -= x;
+      }
+      
       // cast_operators_api
       
       void apply(int_conv_operation_t op,

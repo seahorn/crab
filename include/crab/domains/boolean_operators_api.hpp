@@ -44,6 +44,21 @@ namespace crab {
        virtual void assume_bool(VariableName v, bool is_negated) {}
      };
 
+     template<typename Number, typename VariableName, typename NumAbsDom>
+     class backward_boolean_operators {
+     public:
+       typedef ikos::linear_constraint<Number, VariableName> lin_cst_t;       
+       
+       virtual void backward_assign_bool_cst(VariableName lhs, lin_cst_t rhs,
+					     NumAbsDom invariant){}
+       virtual void backward_assign_bool_var(VariableName lhs, VariableName rhs, bool is_not_rhs,
+					     NumAbsDom invariant) {}
+       virtual void backward_apply_binary_bool(bool_operation_t op,
+					       VariableName x,VariableName y,VariableName z,
+					       NumAbsDom invariant) {}
+       virtual ~backward_boolean_operators () {};
+     };
+     
    } // namespace domains  
 } // namespace crab
 

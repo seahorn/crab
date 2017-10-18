@@ -28,7 +28,8 @@ namespace crab {
       public int_cast_operators<V>,
       public array_operators<N,V>,
       public pointer_operators<N,V>,
-      public boolean_operators<N,V> {
+      public boolean_operators<N,V>,
+      public backward_boolean_operators<N,V,Dom> {
       
     public:
       

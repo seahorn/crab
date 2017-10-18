@@ -516,6 +516,29 @@ namespace crab {
         this->reduce ();
       }    
 
+      // backward boolean operators
+      virtual void backward_assign_bool_cst(VariableName lhs, linear_constraint_t rhs,
+					    domain_product2_t inv){
+        this->_product.first().backward_assign_bool_cst(lhs, rhs, inv.first());
+        this->_product.second().backward_assign_bool_cst(lhs, rhs, inv.second());
+        this->reduce();
+      }
+	
+      virtual void backward_assign_bool_var(VariableName lhs, VariableName rhs, bool is_not_rhs,
+					    domain_product2_t inv) {
+	this->_product.first().backward_assign_bool_var(lhs, rhs, is_not_rhs, inv.first());
+	this->_product.second().backward_assign_bool_var(lhs, rhs, is_not_rhs, inv.second());
+	this->reduce();
+      }
+	
+      virtual void backward_apply_binary_bool(bool_operation_t op,
+					      VariableName x,VariableName y,VariableName z,
+					      domain_product2_t inv) {
+	this->_product.first().backward_apply_binary_bool(op, x, y, z, inv.first());
+	this->_product.second().backward_apply_binary_bool(op, x, y, z, inv.second());
+	this->reduce();
+      }
+      
       linear_constraint_system_t to_linear_constraint_system() {
 	linear_constraint_system_t csts;
 	csts += this->_product.first().to_linear_constraint_system();
@@ -1771,7 +1794,7 @@ namespace crab {
       static std::vector<typename Dom::varname_t> active_variables(num_null_domain_t &inv) 
       { return array_sgraph_domain_traits<Dom>::active_variables(inv.first()); }
     };
-      
+
   } // end namespace domains
 } // namespace crab
 
