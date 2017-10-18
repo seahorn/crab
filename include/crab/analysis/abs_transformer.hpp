@@ -646,9 +646,12 @@ namespace crab {
 	*m_pre -= vt.first;  
     }
 
-    // we replace for now all statements wth lhs := *;
-    void exec (int_cast_t &stmt)
-    { *m_pre -= stmt.dst(); }
+    void exec (int_cast_t &stmt) {
+      abs_dom_t invariant = m_invariants[&stmt];
+      // FIXME: treats cast as an assignment ignoring bitdwith
+      m_pre->backward_assign(stmt.dst(), lin_exp_t(stmt.src()), invariant);
+    }
+    
     void exec (bool_assign_cst_t &stmt)
     { *m_pre -= stmt.lhs(); }
     void exec (bool_assign_var_t &stmt)
@@ -664,6 +667,7 @@ namespace crab {
     }
     
     void exec (bool_assert_t &stmt) {
+      *m_pre = abs_dom_t::top();
       m_pre->assume_bool (stmt.cond(), true /*negated*/);
     }
 
