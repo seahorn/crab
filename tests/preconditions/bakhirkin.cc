@@ -73,7 +73,7 @@ int main (int argc, char** argv )
   z_cfg_t* cfg = prog(vfac);
   crab::outs() << *cfg << "\n";
 
-  if (false) {
+  if (true) {
     z_box_apron_domain_t initial_states, final_states;
     final_states = z_box_apron_domain_t::bottom();    
     backward_run<z_box_apron_domain_t>
