@@ -1,7 +1,10 @@
 /build/
 /debug/
+/install/
 /GPATH
 /GRTAGS
 /GTAGS
 *.pyc
 *.pyo
+*.NOCOMPILE
+*.out
