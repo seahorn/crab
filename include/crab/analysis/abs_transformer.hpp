@@ -267,10 +267,24 @@ namespace crab {
     }
     
     void exec (select_t& stmt) {
+      bool already_bot = false;
+      
+      if (get_inv()->is_bottom()) {
+	already_bot = true;
+      }
+      
       abs_dom_t inv1 (*get_inv());
       abs_dom_t inv2 (*get_inv());
+
       inv1 += stmt.cond ();
       inv2 += stmt.cond ().negate ();
+      
+      if (!already_bot &&
+	  (inv1.is_bottom() && inv2.is_bottom())) {
+	CRAB_ERROR("select condition and its negation cannot be false simultaneously ",
+		   stmt);
+      }
+      
       if (inv2.is_bottom()) {
         inv1.assign (stmt.lhs().name (),stmt.left());
         *get_inv() = inv1;
