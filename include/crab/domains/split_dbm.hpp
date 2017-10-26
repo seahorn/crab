@@ -1620,24 +1620,65 @@ namespace crab {
         // CRAB_WARN("SplitDBM::add_linear_leq not yet implemented.");
         return true;  
       }
-   
-      void add_disequation(linear_expression_t exp) {
-	if (exp.size() == 1) {
-	  // almost no reasoning about disequations: we only make
-	  // bottom if exp implies x != k and we infer from the DBM
-	  // that x must be equal to k.
-	  auto it = exp.begin();
-	  number_t c1 = (*it).first;	  
-	  variable_t x1 = (*it).second;
-	  number_t n = -(exp.constant()) / c1;
-	  interval_t i = get_interval(x1);
-	  interval_t new_i = intervals_impl::trim_bound<interval_t, number_t>(i, n);
-	  if ((new_i).is_bottom()) {
-	    set_to_bottom();
+
+      // x != n
+      void add_univar_disequation(variable_t x, number_t n) {
+	interval_t i = get_interval(x);
+	interval_t new_i = intervals_impl::trim_bound<interval_t, number_t>(i, n);
+	if (new_i.is_bottom()) {
+	  set_to_bottom();
+	} else if (!new_i.is_top() && (new_i <= i)) {
+	  vert_id v = get_vert(x.name());
+	  typename graph_t::mut_val_ref_t w;
+	  if(new_i.lb().is_finite()) {
+	    // strenghten lb
+	    Wt lb_val = ntov::ntov(-(*(new_i.lb().number())));
+	    if(g.lookup(v, 0, &w) && lb_val < w) {
+	      g.set_edge(v, lb_val, 0);
+	      if(!repair_potential(v, 0)) {
+		set_to_bottom();
+		return;
+	      }
+	      assert(check_potential(g, potential));
+	    }
 	  }
-	} 
-        return;
+	  if(new_i.ub().is_finite()) {	    
+	    // strengthen ub
+	    Wt ub_val = ntov::ntov(*(new_i.ub().number()));
+	    if(g.lookup(0, v, &w) && (ub_val < w)) {
+	      g.set_edge(0, ub_val, v);
+	      if(!repair_potential(0, v)) {
+		set_to_bottom();
+		return;
+	      }
+	      assert(check_potential(g, potential));
+	    }
+	  }
+	}
+      } 
+
+      interval_t compute_residual(linear_expression_t e, variable_t pivot) {
+	interval_t residual(-e.constant());
+	for (typename linear_expression_t::iterator it = e.begin(); it != e.end(); ++it) {
+	  variable_t v = it->second;
+	  if (v.index() != pivot.index()) {
+	    residual = residual - (interval_t (it->first) * this->operator[](v.name()));
+	  }
+	}
+	return residual;
+      }
+      
+      void add_disequation(linear_expression_t e) {
+	// XXX: similar precision as the interval domain
 	
+	for (typename linear_expression_t::iterator it = e.begin(); it != e.end(); ++it) {
+	  variable_t pivot = it->second;
+	  interval_t i = compute_residual(e, pivot) / interval_t(it->first);
+	  if (auto k = i.singleton()) {
+	    add_univar_disequation(pivot, *k);
+	  }
+	}
+        return;
         /*
         // Can only exploit \sum_i c_i x_i \neq k if:
         // (1) exactly one x_i is unfixed
