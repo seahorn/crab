@@ -125,15 +125,13 @@ for presentation purposes and it might not compile like it is. Go to
     // Intra forward analyzer	
     #include <crab/analysis/fwd_analyzer.hpp>
     // Zones domain
-	#include <crab/domains/split_dbm.hpp>
-
-	/* 
-	To define a Control-Flow Graph (CFG) users need to define :
-	(1) Type for a variable 
-	(2) Type for a basic block label
-	(3) Choose between integers or rationals (Crab cannot mix them)
-	*/
-	
+    #include <crab/domains/split_dbm.hpp
+    /* 
+      To define a Control-Flow Graph (CFG) users need to define :
+      (1) Type for a variable 
+      (2) Type for a basic block label
+      (3) Choose between integers or rationals (Crab cannot mix them)
+    */
     // (1) A variable factory based on strings
     typedef cfg::var_factory_impl::str_variable_factory variable_factory_t;
     typedef typename variable_factory_t::varname_t varname_t;
@@ -141,16 +139,16 @@ for presentation purposes and it might not compile like it is. Go to
     typedef std::string basic_block_label_t;
     // (3) CFG over integers
     typedef cfg::Cfg<basic_block_label_t, varname_t, z_number> z_cfg_t;
-	// Convenient wrapper for a CFG
+    // Convenient wrapper for a CFG
     typedef cfg:cfg_ref<z_cfg_t> z_cfg_ref_t;
 
-	// Abstract domain: zones or difference-constraints domain
+    // Abstract domain: zones or difference-constraints domain
     typedef SplitDBM<z_number, varname_t> zones_domain_t;
 
     /* 
-	Crab provides both intra- and inter-procedural analyses which 
-	are parametric on the abstract domain: we choose an
-	intra-procedural forward analysis with zones domain
+      Crab provides both intra- and inter-procedural analyses which 
+      are parametric on the abstract domain: we choose an
+      intra-procedural forward analysis with zones domain
     */
     typedef intra_fwd_analyzer<z_cfg_ref_t, zones_domain_t> intra_zones_analyzer_t;	
 
