@@ -1437,9 +1437,15 @@ namespace crab {
 	  if (is_bottom ()) return;
 	  
 	  if (cst.is_tautology ()) {
-	    assign(lhs, number_t(1));
+	    m_ldd = lddPtr (get_ldd_man (),
+			    Ldd_And (get_ldd_man(), &*m_ldd, mk_true(lhs)));
+	    
+	    //assign(lhs, number_t(1));
 	  } else if (cst.is_contradiction ()) {
-	    assign(lhs, number_t(0));
+	    m_ldd = lddPtr (get_ldd_man (),
+			    Ldd_And (get_ldd_man(), &*m_ldd, mk_false(lhs)));
+	    
+	    // assign(lhs, number_t(0));
 	  } else {
 	    linear_expression_t exp = cst.expression();    
 	    unsigned int size = exp.size ();
