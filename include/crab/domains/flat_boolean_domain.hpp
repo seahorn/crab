@@ -628,12 +628,16 @@ namespace crab {
 	bool is_top() { return m_set.is_bottom();}
 	bool is_bottom() { return m_set.is_top();}
 
-	bool operator<=(lin_cst_set_domain other)
-	{ return other.m_set <= m_set; }
-	
-	bool operator==(lin_cst_set_domain other)
-	{ return m_set == other.m_set; }
+	bool operator<=(lin_cst_set_domain other) {
+	  if (other.is_top() || is_bottom())
+	    return true;
+	  else
+	    return other.m_set <= m_set;
+	}
 
+	bool operator==(lin_cst_set_domain other)
+	{ return (*this <= other && other <= *this); }
+	
 	void operator|=(lin_cst_set_domain other)
 	{  m_set = m_set & other.m_set; }
 
@@ -693,8 +697,8 @@ namespace crab {
 
       // Simple wrapper for performing a must-forward dataflow
       // analysis that keeps track whether a variable has been
-      // modified from any path originated from the entry to the
-      // current location.
+      // modified from any path since the variable was defined up to
+      // the current location.
       class invariance_domain: public writeable {
 
       public:
@@ -727,12 +731,28 @@ namespace crab {
 	bool is_top() { return m_set.is_bottom();}
 	bool is_bottom() { return m_set.is_top();}
 
-	bool operator<=(invariance_domain other)
-	{ return other.m_set <= m_set; }
+	/*
+	         top  = everything might change
+              {x,y,z} = nothing changes
+	          {x} = everything might change except x
+	    
+                     top
+                    / | \
+                 {x} {y} {z}
+                 / \ / \ / \
+	       {x,y} {x,z} {y,z} 
+                  \   |   /
+                   {x,y,z}
+                      |
+                     bot
+	 */ 
+	bool operator<=(invariance_domain other) {
+	  if (other.is_top() || is_bottom())
+	    return true;
+	  else 
+	    return other.m_set <= m_set;
+	}
 	
-	bool operator==(invariance_domain other)
-	{ return m_set == other.m_set; }
-
 	void operator|=(invariance_domain other)
 	{  m_set = m_set & other.m_set; }
 
@@ -1065,7 +1085,7 @@ namespace crab {
 	    // -- we only apply reduction if we know that all the
 	    // constraint variables have not been modified since they
 	    // were added into _var_to_csts.
-	    if (invariance_domain(cst.variables()) <= _unchanged_vars) {
+	    if (_unchanged_vars <= cst.variables()) {
 	      _product.second() += cst;
 	      CRAB_LOG("flat-boolean",
 		       crab::outs () << "\t" << "Applied " << cst << "\n";);
@@ -1079,7 +1099,7 @@ namespace crab {
 	  auto csts = _var_to_csts[x];
 	  if (csts.size() == 1) {
 	    auto cst = *(csts.begin());
-	    if (invariance_domain(cst.variables()) <= _unchanged_vars) {
+	    if (_unchanged_vars <= cst.variables()) {
 	      _product.second() += cst.negate();
 	      CRAB_LOG("flat-boolean",
 		       crab::outs () << "\t" << "Applied " << cst << "\n";);
