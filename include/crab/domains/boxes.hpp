@@ -1437,11 +1437,13 @@ namespace crab {
 	  if (is_bottom ()) return;
 	  
 	  if (cst.is_tautology ()) {
+	    this->operator-=(lhs);
 	    m_ldd = lddPtr (get_ldd_man (),
 			    Ldd_And (get_ldd_man(), &*m_ldd, mk_true(lhs)));
 	    
 	    //assign(lhs, number_t(1));
 	  } else if (cst.is_contradiction ()) {
+	    this->operator-=(lhs);	    
 	    m_ldd = lddPtr (get_ldd_man (),
 			    Ldd_And (get_ldd_man(), &*m_ldd, mk_false(lhs)));
 	    
