@@ -44,7 +44,7 @@
 namespace ikos {
 
   template< typename NodeName, typename CFG, typename AbstractValue >
-  class forward_fixpoint_iterator {
+  class fixpoint_iterator {
 
   public:
     virtual void analyze(NodeName, AbstractValue&) = 0;
@@ -53,7 +53,7 @@ namespace ikos {
     
     virtual void process_post(NodeName, AbstractValue) = 0;
     
-    virtual ~forward_fixpoint_iterator() { }
+    virtual ~fixpoint_iterator() { }
     
   }; // class fixpoint_iterator
   

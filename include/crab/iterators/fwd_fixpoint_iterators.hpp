@@ -68,7 +68,7 @@ namespace ikos {
          
   template< typename NodeName, typename CFG, typename AbstractValue >
   class interleaved_fwd_fixpoint_iterator: 
-      public forward_fixpoint_iterator< NodeName, CFG, AbstractValue > {
+      public fixpoint_iterator< NodeName, CFG, AbstractValue > {
 
     friend class interleaved_fwd_fixpoint_iterator_impl::wto_iterator< NodeName, CFG, AbstractValue >;
 
