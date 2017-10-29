@@ -192,7 +192,7 @@ namespace ikos {
 	wto_thresholds_t wto_thresholds(_cfg, jump_set_size);
 	_wto.accept(&wto_thresholds);
 	_jump_set = wto_thresholds.get_thresholds_map();
-	CRAB_LOG("thresholds", crab::outs () << "Thresholds\n" << wto_thresholds << "\n");
+	CRAB_VERBOSE_IF(3, crab::outs () << "Thresholds\n" << wto_thresholds << "\n");
         crab::CrabStats::stop ("Fixpo");
       }      
     }
@@ -242,7 +242,7 @@ namespace ikos {
       wto_processor_t processor(this);
       this->_wto.accept(&processor);
       CRAB_VERBOSE_IF(2, crab::outs() << "== Fixpoint reached.\n");
-      CRAB_VERBOSE_IF(3, crab::outs() << "== Wto ==\n" << _wto << "\n");            
+      CRAB_VERBOSE_IF(3, crab::outs() << "Wto:\n" << _wto << "\n");            
       reset ();
     }
 
@@ -255,7 +255,7 @@ namespace ikos {
       wto_processor_t processor(this);
       this->_wto.accept(&processor);
       CRAB_VERBOSE_IF(2, crab::outs() << "== Fixpoint reached.\n");
-      CRAB_VERBOSE_IF(3, crab::outs() << "== Wto ==\n" << _wto << "\n");      
+      CRAB_VERBOSE_IF(3, crab::outs() << "Wto:\n" << _wto << "\n");      
       
     }
 
