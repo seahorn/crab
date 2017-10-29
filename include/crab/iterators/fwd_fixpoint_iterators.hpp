@@ -65,7 +65,7 @@ namespace ikos {
     class wto_processor;
     
   } // namespace interleaved_fwd_fixpoint_iterator_impl
-  
+         
   template< typename NodeName, typename CFG, typename AbstractValue >
   class interleaved_fwd_fixpoint_iterator: 
       public forward_fixpoint_iterator< NodeName, CFG, AbstractValue > {
@@ -81,6 +81,7 @@ namespace ikos {
     typedef interleaved_fwd_fixpoint_iterator_impl::wto_iterator< NodeName, CFG, AbstractValue > wto_iterator_t;
     typedef interleaved_fwd_fixpoint_iterator_impl::wto_processor< NodeName, CFG, AbstractValue > wto_processor_t;
     typedef crab::iterators::thresholds_t thresholds_t;
+    typedef crab::iterators::wto_thresholds<NodeName, CFG> wto_thresholds_t;
     
     CFG _cfg;
     wto_t _wto;
@@ -96,7 +97,7 @@ namespace ikos {
     // whether jump set is used for widening
     bool _use_widening_jump_set;    
     // set of thresholds to jump during widening
-    thresholds_t _jump_set;
+    typename wto_thresholds_t::thresholds_map_t _jump_set;
 
     void set(invariant_table_ptr table, NodeName node, const AbstractValue& v) {
       std::pair< typename invariant_table_t::iterator, bool > res = 
@@ -142,10 +143,15 @@ namespace ikos {
                            << "Current: " << after << "\n");
         
         if (_use_widening_jump_set) {
+	  auto it = _jump_set.find(node);
+	  if (it == _jump_set.end()) {
+	    CRAB_ERROR ("no thresholds found for ", crab::cfg_impl::get_label_str(node));
+	  }
+	  thresholds_t thresholds = it->second;
           CRAB_LOG("fixpo",
-                   auto widen_res = before.widening_thresholds (after, _jump_set);
+                   auto widen_res = before.widening_thresholds (after, thresholds);
                    crab::outs() << "Res    : " << widen_res << "\n");
-          return before.widening_thresholds (after, _jump_set);
+          return before.widening_thresholds (after, thresholds);
         } else {
           CRAB_LOG("fixpo",
                    auto widen_res = before || after;
@@ -166,15 +172,15 @@ namespace ikos {
         CRAB_LOG("fixpo",
                  auto narrow_res = before && after;
                  crab::outs() << "Prev   : " << before << "\n"
-                           << "Current: " << after << "\n"
-                           << "Res    : " << narrow_res << "\n");
+                              << "Current: " << after << "\n"
+                              << "Res    : " << narrow_res << "\n");
         return before & after; 
       } else {
         CRAB_LOG("fixpo",
                  auto narrow_res = before && after;
                  crab::outs() << "Prev   : " << before << "\n"
-                 << "Current: " << after << "\n"
-                           << "Res    : " << narrow_res << "\n");
+                              << "Current: " << after << "\n"
+                              << "Res    : " << narrow_res << "\n");
         return before && after; 
       }
     }
@@ -183,7 +189,10 @@ namespace ikos {
       if (_use_widening_jump_set) {
         crab::CrabStats::resume ("Fixpo");
         // select statically some widening points to jump to.
-        _jump_set = _cfg.initialize_thresholds_for_widening(jump_set_size);
+	wto_thresholds_t wto_thresholds(_cfg, jump_set_size);
+	_wto.accept(&wto_thresholds);
+	_jump_set = wto_thresholds.get_thresholds_map();
+	CRAB_LOG("thresholds", crab::outs () << "Thresholds\n" << wto_thresholds << "\n");
         crab::CrabStats::stop ("Fixpo");
       }      
     }
@@ -233,6 +242,7 @@ namespace ikos {
       wto_processor_t processor(this);
       this->_wto.accept(&processor);
       CRAB_VERBOSE_IF(2, crab::outs() << "== Fixpoint reached.\n");
+      CRAB_VERBOSE_IF(3, crab::outs() << "== Wto ==\n" << _wto << "\n");            
       reset ();
     }
 
@@ -244,7 +254,9 @@ namespace ikos {
       this->_wto.accept(&iterator);
       wto_processor_t processor(this);
       this->_wto.accept(&processor);
-      CRAB_VERBOSE_IF(2, crab::outs() << "== Fixpoint reached.\n");      
+      CRAB_VERBOSE_IF(2, crab::outs() << "== Fixpoint reached.\n");
+      CRAB_VERBOSE_IF(3, crab::outs() << "== Wto ==\n" << _wto << "\n");      
+      
     }
 
     void reset () {
@@ -439,7 +451,7 @@ namespace ikos {
       }
       
     }; // class wto_processor
-  
+    
   } // interleaved_fwd_fixpoint_iterator_impl  
 } // namespace ikos
 #endif // IKOS_FWD_FIXPOINT_ITERATORS

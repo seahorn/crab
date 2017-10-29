@@ -58,7 +58,6 @@
 
 #include <crab/common/types.hpp>
 #include <crab/common/bignums.hpp>
-#include <crab/iterators/thresholds.hpp>
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/domains/intervals.hpp>
 #include <crab/domains/discrete_domains.hpp>
@@ -2151,7 +2150,7 @@ namespace crab {
         
         return;
       }
-      
+
       /// To build statements
       
       void add (variable_t lhs, variable_t op1, variable_t op2) 
@@ -2706,7 +2705,6 @@ namespace crab {
                 (boost::make_shared<bool_bin_op_t>(lhs, BINOP_BXOR, op1, op2)));
       }
       
-      
       friend crab_os& operator<<(crab_os &o, const basic_block_t &b)
       {
         //b.write (o);
@@ -2734,7 +2732,7 @@ namespace crab {
       typedef typename BasicBlock::reverse_iterator iterator;
       typedef typename BasicBlock::const_reverse_iterator const_iterator;
       typedef ikos::discrete_domain<varname_t> live_domain_t;
-
+      
      private:
 
       BasicBlock& _bb;
@@ -3000,7 +2998,6 @@ namespace crab {
       typedef function_decl<varname_t> fdecl_t;
       typedef basic_block<BasicBlockLabel, VariableName, number_t> basic_block_t;   
       typedef statement<number_t, VariableName > statement_t;
-      typedef crab::iterators::thresholds_t thresholds_t;
 
       typedef typename basic_block_t::succ_iterator succ_iterator;
       typedef typename basic_block_t::pred_iterator pred_iterator;
@@ -3314,41 +3311,6 @@ namespace crab {
       
       size_t size () const { return std::distance (begin (), end ()); }
      
-      thresholds_t initialize_thresholds_for_widening (size_t size) const {
-	typedef ikos::bound<number_t> bound_t;
-	
-        thresholds_t thresholds (size);
-        for (auto const &b : boost::make_iterator_range (begin (), end ())) {
-          for (auto const&i : boost::make_iterator_range (b.begin (), b.end ())) {
-
-            bound_t t = bound_t::plus_infinity ();
-            if (i.is_assume ()) {
-              auto a = static_cast<const typename basic_block_t::assume_t*> (&i);
-	      t = bound_t(-(a->constraint ().expression ().constant ()));
-            }
-            else if (i.is_select ()) {
-              auto s = static_cast<const typename basic_block_t::select_t*> (&i);
-	      t = bound_t(-(s->cond ().expression ().constant ()));
-            }
-            else if (i.is_assign ()) {
-              auto a = static_cast<const typename basic_block_t::assign_t*> (&i);
-	      if (a->rhs ().is_constant ())
-		t = bound_t(-(a->rhs().constant ()));
-            }	    
-            
-            if (t != bound_t::plus_infinity ()) {
-              // XXX: for code pattern like this "if(x<k1) {x+=k2;}"
-              // note that the condition (x<k1) is translated to
-              // (x<=k1-1) so an useful threshold would be k1+1+k2.
-              // Since we don't keep track of how x is incremented or
-              // decremented we choose arbitrarily k2=1.
-	      thresholds.add(t+2);
-            }
-          }
-        }
-        return thresholds;
-      }
-
       void write (crab_os& o) const
       {
         print_block f (o);
@@ -3534,7 +3496,6 @@ namespace crab {
       typedef typename CFG::fdecl_t fdecl_t;
       typedef typename CFG::basic_block_t basic_block_t;   
       typedef typename CFG::statement_t statement_t;
-      typedef typename CFG::thresholds_t thresholds_t;
 
       typedef typename CFG::succ_iterator succ_iterator;
       typedef typename CFG::pred_iterator pred_iterator;
@@ -3596,11 +3557,6 @@ namespace crab {
       pred_range prev_nodes (basic_block_label_t bb) {
         assert (_ref);
         return (*_ref).get().prev_nodes(bb);
-      }
-
-      thresholds_t initialize_thresholds_for_widening (size_t size) const {
-        assert (_ref);
-        return (*_ref).get().initialize_thresholds_for_widening (size);
       }
 
       basic_block_t& get_node (basic_block_label_t bb) {
@@ -3699,7 +3655,6 @@ namespace crab {
       typedef typename CFGRef::number_t number_t;      
       typedef typename CFGRef::fdecl_t fdecl_t;
       typedef typename CFGRef::statement_t statement_t;
-      typedef typename CFGRef::thresholds_t thresholds_t;
 
       typedef typename CFGRef::succ_range pred_range;
       typedef typename CFGRef::pred_range succ_range;
@@ -3814,10 +3769,6 @@ namespace crab {
         return it->second;
       }
       
-      thresholds_t initialize_thresholds_for_widening (size_t size) const {
-        return _cfg.initialize_thresholds_for_widening (size);
-      }
-
       iterator begin() {
         return boost::make_transform_iterator (_cfg.begin(), getRev(_rev_bbs));
       }

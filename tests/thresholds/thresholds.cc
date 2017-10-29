@@ -1,5 +1,6 @@
 #include "../program_options.hpp"
 #include "../common.hpp"
+#include "crab/iterators/fwd_fixpoint_iterators.hpp"
 
 using namespace std;
 using namespace crab::analyzer;
@@ -17,48 +18,83 @@ z_cfg_t* prog (variable_factory_t &vfac)
   // Definining program variables
   z_var n (vfac ["n"]);
   z_var x (vfac ["x"]);
+  z_var y (vfac ["y"]);
   // entry and exit block
   z_cfg_t* cfg = new z_cfg_t("entry","ret");
   // adding blocks
   z_basic_block_t& entry = cfg->insert ("entry");
-  z_basic_block_t& loop_header = cfg->insert ("loop_header");
-  z_basic_block_t& loop_bb0 = cfg->insert ("loop_bb0");
-  z_basic_block_t& loop_bb1 = cfg->insert ("loop_bb1");
-  z_basic_block_t& loop_bb1_t = cfg->insert ("loop_bb1_t");
-  z_basic_block_t& loop_bb1_f = cfg->insert ("loop_bb1_f");
-  z_basic_block_t& loop_bb2 = cfg->insert ("loop_bb2");
-  z_basic_block_t& loop_bb3 = cfg->insert ("loop_bb3");
-  z_basic_block_t& loop_bb4 = cfg->insert ("loop_bb4");
+  z_basic_block_t& loop1_header = cfg->insert ("loop1_header");
+  z_basic_block_t& loop1_bb0 = cfg->insert ("loop1_bb0");
+  z_basic_block_t& loop1_bb1 = cfg->insert ("loop1_bb1");
+  z_basic_block_t& loop1_bb1_t = cfg->insert ("loop1_bb1_t");
+  z_basic_block_t& loop1_bb1_f = cfg->insert ("loop1_bb1_f");
+  z_basic_block_t& loop1_bb2 = cfg->insert ("loop1_bb2");
+  z_basic_block_t& loop1_bb3 = cfg->insert ("loop1_bb3");
+  z_basic_block_t& loop1_bb4 = cfg->insert ("loop1_bb4");
+  z_basic_block_t& cont = cfg->insert ("cont");  
+  z_basic_block_t& loop2_header = cfg->insert ("loop2_header");
+  z_basic_block_t& loop2_bb0 = cfg->insert ("loop2_bb0");
+  z_basic_block_t& loop2_bb1 = cfg->insert ("loop2_bb1");
+  z_basic_block_t& loop2_bb1_t = cfg->insert ("loop2_bb1_t");
+  z_basic_block_t& loop2_bb1_f = cfg->insert ("loop2_bb1_f");
+  z_basic_block_t& loop2_bb2 = cfg->insert ("loop2_bb2");
+  z_basic_block_t& loop2_bb3 = cfg->insert ("loop2_bb3");
+  z_basic_block_t& loop2_bb4 = cfg->insert ("loop2_bb4");
   z_basic_block_t& ret = cfg->insert ("ret");
   // adding control flow
-  entry >> loop_header;
-  loop_header >> loop_bb1; loop_header >> ret;
-  loop_header >> loop_bb0;
-  loop_bb0 >> loop_header;
-  loop_bb1 >> loop_bb1_t;  loop_bb1 >> loop_bb1_f; 
-  loop_bb1_t >> loop_bb2;  loop_bb1_f >> loop_bb3; 
-  loop_bb2 >> loop_bb4;
-  loop_bb3 >> loop_bb4;
-  loop_bb4 >> loop_header;
+  entry >> loop1_header;
 
+  loop1_header >> loop1_bb0; 
+  loop1_header >> loop1_bb1;
+  loop1_bb0 >> loop1_header;
+  loop1_bb1 >> loop1_bb1_t;  loop1_bb1 >> loop1_bb1_f; 
+  loop1_bb1_t >> loop1_bb2;  loop1_bb1_f >> loop1_bb3; 
+  loop1_bb2 >> loop1_bb4;
+  loop1_bb3 >> loop1_bb4;
+  loop1_bb4 >> loop1_header;
+  loop1_header >> cont;
+
+  cont >> loop2_header;
+  loop2_header >> loop2_bb0;
+  loop2_header >> loop2_bb1;  
+  loop2_bb0 >> loop2_header;
+  loop2_bb1 >> loop2_bb1_t;  loop2_bb1 >> loop2_bb1_f; 
+  loop2_bb1_t >> loop2_bb2;  loop2_bb1_f >> loop2_bb3; 
+  loop2_bb2 >> loop2_bb4;
+  loop2_bb3 >> loop2_bb4;
+  loop2_bb4 >> loop2_header;
+  loop2_header >> ret;
+  
   // adding statements
   entry.assign (n , 0);
-  loop_bb0.havoc (x.name ());
-  loop_bb0.assume (x >= 0);
-  loop_bb1_t.assume (n <= 60);
-  loop_bb1_f.assume (n >= 61);
-  loop_bb2.add(n, n, 1);
-  loop_bb3.assign(n, 0);
+  entry.assume(y <= 878);
+  
+  loop1_bb0.havoc (x.name ());
+  loop1_bb0.assume (x >= 0);
+  loop1_bb1_t.assume (n <= 60);
+  loop1_bb1_f.assume (n >= 61);
+  loop1_bb2.add(n, n, 1);
+  loop1_bb3.assign(n, 0);
+
+  cont.assign (n,0);
+  loop2_bb0.havoc (x.name ());
+  loop2_bb0.assume (x >= 10);
+  loop2_bb1_t.assume (n <= 160);
+  loop2_bb1_f.assume (n >= 161);
+  loop2_bb2.add(n, n, 2);
+  loop2_bb3.assign(n, 0);
+  
 
   return cfg;
 }
+
 
 int main (int argc, char**argv){
 
   SET_TEST_OPTIONS(argc,argv)
   
   // Simple operations on thresholds
-  typename z_cfg_t::thresholds_t thresholds;
+  crab::iterators::thresholds<ikos::z_number> thresholds;
   thresholds.add (z_bound(-89));
   thresholds.add (z_bound(1000));
   thresholds.add (z_bound(100));
@@ -93,12 +129,26 @@ int main (int argc, char**argv){
     z_cfg_t* cfg = prog (vfac);
     crab::outs() << *cfg << "\n";
 
-    // w/o thresholds
-    run<z_term_domain_t>(cfg, false, 1, 2, 0, stats_enabled);      
+    // Print thresholds 
+    typedef crab::cfg::cfg_ref<z_cfg_t> z_cfg_ref_t;
+    typedef ikos::wto<typename z_cfg_t::basic_block_label_t, z_cfg_ref_t> wto_t;
+    typedef crab::iterators::wto_thresholds<typename z_cfg_t::basic_block_label_t, z_cfg_ref_t> wto_thresholds_t;
+    
+    z_cfg_ref_t cfg_ref(*cfg);
+    wto_t wto(cfg_ref);
+    wto_thresholds_t thresholds(cfg_ref, 50);
+    wto.accept(&thresholds);
+    crab::outs() << "Thresholds per loop \n" << thresholds << "\n";
 
-    // w/thresholds
-    typename z_cfg_t::thresholds_t ts = cfg->initialize_thresholds_for_widening (50);
-    crab::outs() << "Thresholds=" << ts << "\n";
+    
+    ////////////////////////////////////////////////////////////
+    // -- w/o thresholds
+    ////////////////////////////////////////////////////////////    
+    run<z_term_domain_t>(cfg, false, 1, 2, 0, stats_enabled);
+
+    ////////////////////////////////////////////////////////////
+    // -- w/thresholds
+    ////////////////////////////////////////////////////////////        
     run<z_term_domain_t>(cfg, false, 1, 2, 20, stats_enabled);
 
 
