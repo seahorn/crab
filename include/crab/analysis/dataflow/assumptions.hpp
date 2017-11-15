@@ -14,6 +14,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/unordered_map.hpp>
+#include <boost/unordered_set.hpp>
 #include <boost/range/iterator_range.hpp>
 
 #include <map>
@@ -36,19 +37,31 @@ namespace crab {
       typedef typename CFG::basic_block_t::statement_t statement_t;
       
      protected:
-      
+
+      // unique id 
+      unsigned _id;
       // statement where the unsound assumption was assumed.
-       const statement_t * _s;       
+      const statement_t * _s;       
       // a subset of s' variables on which the unsound assumption was assumed.
       var_dom_t _vars;
       
     public:
       
-      assumption(const statement_t *s, var_dom_t vars): _s(s), _vars (vars) {}
-      virtual ~assumption() {}
-      var_dom_t get_vars () const { return _vars; }
-      virtual void write(crab::crab_os& o) = 0;
+      assumption(unsigned id, const statement_t *s, var_dom_t vars)
+	: _id(id), _s(s), _vars (vars) {}
       
+      virtual ~assumption() {}
+      
+      var_dom_t get_vars () const { return _vars; }
+      
+      const statement_t* get_statement() const { return _s;}
+
+      std::string get_id_str () const {
+	std::string res("a");
+	return res + std::to_string(_id);
+      }
+      
+      virtual void write(crab::crab_os& o) = 0;
     };
 
     template<typename CFG>
@@ -84,11 +97,11 @@ namespace crab {
       
     public:
       
-      overflow_assumption (const statement_t *s)
-	: base_type(s, _get_vars(s)) {}
+      overflow_assumption (unsigned id, const statement_t *s)
+	: base_type(id, s, _get_vars(s)) {}
       
       virtual void write (crab::crab_os& o) override {
-	o << "NotOverflow(" << this->_vars << ") in " << *(this->_s);
+	o << "assume NotOverflow(" << this->_vars << ")" << " as " << this->get_id_str();
       }
     };
 
@@ -132,21 +145,30 @@ namespace crab {
 	}
       };
       
-    protected:
+    public:
       
       typedef typename CFG::statement_t statement_t;
-      typedef cfg::assert_stmt<typename CFG::number_t,
-			  typename CFG::varname_t> assert_t;
+      typedef cfg::assert_stmt<typename CFG::number_t, typename CFG::varname_t> assert_t;
       typedef assumption<CFG> assumption_t;
       typedef boost::shared_ptr<assumption_t> assumption_ptr;
       typedef std::vector<assumption_ptr> vector_assumption_ptr;
-      typedef boost::unordered_map<const assert_t*, vector_assumption_ptr> assumption_map_t;
 
+    protected:
+      
+      // map an assert statement to its unjustified assumptions
+      typedef boost::unordered_map<const assert_t*, vector_assumption_ptr> assumption_map_t;
+      // map an arbitrary statement to the assumptions originated in that statement
+      typedef boost::unordered_map<const statement_t*, vector_assumption_ptr> assumption_origin_map_t;
+      
       /** the cfg **/
       CFG m_cfg;
       /** map each assertion to its unjustified assumptions **/
       assumption_map_t m_assumption_map;
-
+      /** map a statement to the set of assumptions originated by that statement **/
+      assumption_origin_map_t m_origin_map;
+      /** generate id's for assumptions **/           
+      unsigned m_id;
+      
       static bool can_overflow(statement_t &s) {
 	// TODO: cover select/assume with conditions that can overflow
 	
@@ -163,27 +185,55 @@ namespace crab {
 	}
       }
 
+    protected:
+      
       void insert_assumption(const assert_t *a, assumption_ptr as) {
 	auto it = m_assumption_map.find(a);
 	if (it != m_assumption_map.end()) {
 	  it->second.push_back(as);
 	} else {
-	  vector_assumption_ptr as_vector = {as};
-	  m_assumption_map.insert(std::make_pair(a, as_vector));
+	  vector_assumption_ptr assumes = {as};
+	  m_assumption_map.insert(std::make_pair(a, assumes));
 	}
+      }
+
+      // create a new overflow assumption
+      assumption_ptr new_assumption(const statement_t *s) {
+	assumption_ptr assume = boost::make_shared<overflow_assumption<CFG> >(m_id++, s);
+	auto it = m_origin_map.find(s);
+	if (it != m_origin_map.end()) {
+	  it->second.push_back(assume);
+	} else {
+	  vector_assumption_ptr assumes = {assume};
+	  m_origin_map.insert(std::make_pair(s, assumes));
+	}
+	return assume;
       }
       
     public:
       
-      typedef typename assumption_map_t::iterator iterator;
-      typedef typename assumption_map_t::const_iterator const_iterator;
-      
-      assumption_analysis(CFG cfg): m_cfg(cfg) {}
+      assumption_analysis(CFG cfg): m_cfg(cfg), m_id(0) {}
       
       virtual ~assumption_analysis() {}
       
       virtual void exec() = 0;
 
+      // return the assumptions originated in s
+      void get_originated_assumptions(const statement_t *s, std::vector<assumption_ptr> &out)  {
+	auto it = m_origin_map.find(s);
+	if (it != m_origin_map.end()) {
+	  std::copy(it->second.begin(), it->second.end(),std::back_inserter(out)); 
+	} 
+      }
+
+      // return the unjustified assumptions for assertion s
+      void get_assumptions(const assert_t *s, std::vector<assumption_ptr> &out)  {
+	auto it = m_assumption_map.find(s);
+	if (it != m_assumption_map.end()) {
+	  std::copy(it->second.begin(), it->second.end(),std::back_inserter(out)); 
+	} 
+      }
+      
       stats_t get_stats() const {
 	unsigned num_assertions = 0;
 	unsigned max_assumptions_per_assertion = 0;
@@ -205,27 +255,17 @@ namespace crab {
       }
       
       void write (crab::crab_os &o)  {
+	o << "******* UNJUSTIFIED ASSUMPTION ANALYSIS ********\n";
 	for (auto &kv: m_assumption_map) {
-	  o << *(kv.first) << "\n*** Unjustified assumptions\n";
+	  o << *(kv.first) << " with unjustified assumptions:\n";
 	  for (auto a: kv.second) {
-	    o << "\t" << *a << "\n";
+	    o << "\t" << *a << " in " << *(a->get_statement()) << "\n";
 	  }
 	}
+	o << "******************* STATS **********************\n";
 	auto stats = get_stats();
 	o << stats << "\n";
-      }
-      iterator begin()
-      { return m_assumption_map.begin();}
-
-      iterator end()
-      { return m_assumption_map.end();}
-      
-      const_iterator begin() const
-      { return m_assumption_map.begin();}
-      
-      const_iterator end() const
-      { return m_assumption_map.end();}
-      
+      }      
     };
 
     template<typename CFG>
@@ -252,7 +292,7 @@ namespace crab {
       typedef typename CFG::basic_block_label_t bb_label_t;
       typedef boost::unordered_set<bb_label_t> label_set_t;
       typedef typename CFG::basic_block_t bb_t;
-      
+
       void backward_reachable(bb_label_t r, const assert_t* a, label_set_t &visited){
 	auto ret = visited.insert(r);
 	if (!ret.second) return; // already in visited
@@ -262,8 +302,8 @@ namespace crab {
 	  if (static_cast<const assert_t*>(&s) == a) break;
 	  
 	  if (assumption_analysis_t::can_overflow(s)) {
-	    auto unjustified_assume = boost::make_shared<overflow_assumption<CFG> > (&s);
-	    assumption_analysis_t::insert_assumption(a, unjustified_assume);
+	    assumption_ptr assume = this->new_assumption(&s);
+	    assumption_analysis_t::insert_assumption(a, assume);
 	  }
 	}
 	
@@ -274,7 +314,7 @@ namespace crab {
       
     public:
 
-      assumption_naive_analysis(CFG cfg): assumption_analysis_t(cfg) {}
+      assumption_naive_analysis(CFG cfg) : assumption_analysis_t(cfg) {}
       
       virtual ~assumption_naive_analysis() {}
       
@@ -297,6 +337,7 @@ namespace crab {
 
       typedef assumption_analysis<CFG> assumption_analysis_t;
       using typename assumption_analysis_t::statement_t;
+      using typename assumption_analysis_t::assumption_ptr;
       typedef crab::analyzer::assertion_crawler<CFG> assertion_crawler_t;
       typedef typename assertion_crawler_t::separate_domain_t separate_domain_t;
       using typename assumption_analysis_t::vector_assumption_ptr;
@@ -353,11 +394,11 @@ namespace crab {
 	    //    dataflow analysis. If V intersect with the variables
 	    //    on the rhs of the arithmetic operation then we
 	    //    assume an assumption to the assertion.
-	    auto as = boost::make_shared<overflow_assumption<CFG> > (&s);	    
+	    assumption_ptr assume = this->new_assumption(&s);
 	    for (auto kv: boost::make_iterator_range (in.begin(), in.end ())) {
 	      auto vars = kv.second;
-	      if (!(vars & as->get_vars ()).is_bottom ())
-		assumption_analysis_t::insert_assumption(kv.first.get(), as);
+	      if (!(vars & assume->get_vars ()).is_bottom ())
+		assumption_analysis_t::insert_assumption(kv.first.get(), assume);
 	    }
 	  }
 	}
