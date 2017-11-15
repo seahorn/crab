@@ -351,9 +351,13 @@ namespace crab {
 	     auto it = _cdg.find (/*_bb*/ pred);
 	     if (it != _cdg.end ()) {
 	       auto const &children =  it->second;
+	       CRAB_LOG("assertion-crawler-step-control",
+			crab::outs () << "{";
+			for(auto &c: children) { crab::outs () << c << ";"; }
+			crab::outs () << "} control-dependent on " << pred << "\n";);	       
 	       apply_add_control_t cf(add_control_deps(_cdg, children, s.get_live()));
 	       _inv = cf(_inv);
-	       CRAB_LOG("assertion-crawler-step",
+	       CRAB_LOG("assertion-crawler-step-control",
 			crab::outs () << "\tAFTER control-dep " << _inv << "\n";);
 	     }
 	   }
