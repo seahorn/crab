@@ -26,6 +26,9 @@ namespace crab {
          public:
 
           Simplifier (term_table_t &term_table): _ttbl(term_table) {}
+
+	  virtual ~Simplifier () {}
+	  
           virtual void simplify () = 0;
 
           // This should not modify the term table

@@ -723,7 +723,6 @@ namespace ikos {
   inline interval< z_number > interval< z_number >::
   SRem(interval< z_number > x) const {
     // note that the sign of the divisor does not matter
-    typedef interval< z_number > z_interval;
     
     if (this->is_bottom() || x.is_bottom()) {
       return this->bottom();
@@ -761,7 +760,6 @@ namespace ikos {
   template <>
   inline interval< z_number > interval< z_number >::
   URem(interval< z_number > x) const {
-    typedef interval< z_number > z_interval;
     
     if (this->is_bottom() || x.is_bottom()) {
       return this->bottom();

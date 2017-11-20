@@ -15,7 +15,6 @@ void backward_run_internal (CFG* cfg,
 			    unsigned jump_set_size,
 			    bool enable_stats){
   
-  typedef crab::cfg::cfg_ref<CFG> cfg_ref_t;
   // Run backward analysis
   crab::outs() << "Necessary preconditions using "
 	       << Dom::getDomainName () << "\n";

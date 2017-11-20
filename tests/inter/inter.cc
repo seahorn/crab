@@ -172,7 +172,6 @@ int main (int argc, char** argv ) {
   cfgs.push_back(*t5);
 
   typedef call_graph<z_cfg_ref_t> callgraph_t;
-  typedef call_graph_ref<callgraph_t> callgraph_ref_t;
 
   boost::scoped_ptr<callgraph_t> cg(new callgraph_t(cfgs));
   inter_run<z_dbm_domain_t, z_interval_domain_t> (&*cg, false, 2, 2, 20, stats_enabled);

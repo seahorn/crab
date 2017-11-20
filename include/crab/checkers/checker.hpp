@@ -37,6 +37,8 @@ namespace crab {
    public:
 
     checker (prop_checker_vector checkers): m_checkers (checkers) { }
+
+    virtual ~checker (){ }
     
     virtual void run () = 0;
     
