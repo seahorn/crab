@@ -73,6 +73,7 @@ int main (int argc, char** argv )
   z_cfg_t* cfg = prog(vfac);
   crab::outs() << *cfg << "\n";
 
+  #ifdef HAVE_APRON
   if (true) {
     z_box_apron_domain_t initial_states, final_states;
     final_states = z_box_apron_domain_t::bottom();    
@@ -86,6 +87,7 @@ int main (int argc, char** argv )
     backward_run<z_pk_apron_domain_t>
       (cfg, initial_states, final_states, 1, 2, 20, stats_enabled);
   }
+  #endif
   
   // free the CFG
   delete cfg;
