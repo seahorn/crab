@@ -17,17 +17,17 @@ void intra_run_impl (CFG* cfg,
 		     unsigned jump_set_size,
 		     bool enable_stats,
 		     bool enable_checker){
-  typedef crab::cfg::cfg_ref<CFG> cfg_ref_t;  
-  crab::analyzer::liveness<cfg_ref_t> *live = nullptr;
+  typedef crab::cfg::cfg_ref<CFG> cfg_ref_t;
+  crab::analyzer::liveness<cfg_ref_t> live(*cfg);
   if (run_liveness) {
-    crab::analyzer::liveness<cfg_ref_t> live_(*cfg);
-    live_.exec ();
-    live=&live_;
+    live.exec ();
   }
   // Run fixpoint
   Dom inv = Dom::top ();        
   crab::outs() << "Invariants using " << inv.getDomainName () << "\n";
-  IntraFwdAnalyzer a (*cfg, inv, live, widening, narrowing, jump_set_size);
+  IntraFwdAnalyzer a (*cfg, inv,
+		      (run_liveness) ? &live : nullptr,
+		      widening, narrowing, jump_set_size);
   
   a.run ();
   
