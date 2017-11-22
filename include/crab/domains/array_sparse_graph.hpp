@@ -20,7 +20,11 @@
  * 1) landmarks must be kept as local state as part of each abstract
  *    state.
  * 
- * 2) reduction between scalar and weight domains must be done
+ * 2) When analyzing real programs, array indexes are usually
+ *    originated from pointer_assign rather than assign
+ *    assignments. The current implementation ignores pointer_assign.
+ * 
+ * 3) reduction between scalar and weight domains must be done
  *    incrementally. For that, we need some assumptions about the
  *    underlying scalar domain. For instance, if we assume zones then
  *    after each operation we know which are the indexes affected by
