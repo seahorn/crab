@@ -1149,7 +1149,7 @@ namespace crab {
       
       virtual void write(crab_os& o) const
       {
-        o << m_lhs << " = "  << m_rhs << " + ";
+        o << m_lhs << " = "  << "&(" << m_rhs << ") + ";
         linear_expression_t off (m_offset) ; // FIX: write method is not const in ikos 
         off.write (o);
         return;
