@@ -394,7 +394,7 @@ namespace crab {
           for(size_t i = 0;i < (size_t) get_theory()->term_size (term); i++) {
 	    Number k (0); // any value
             num_from_ldd_cst (get_theory()->term_get_coeff (term,i), k);
-            VariableName v =  getVarName (get_theory()->term_get_var(term,i));
+            variable_t v (getVarName (get_theory()->term_get_var(term,i)));
             e = e + (k * linear_expression_t (v));
           }
           return e;
@@ -1323,7 +1323,7 @@ namespace crab {
 		   VariableName src, unsigned /*src_width*/) {
           // since reasoning about infinite precision we simply assign and
           // ignore the widths.
-          assign(dst, linear_expression_t(src));
+          assign(dst, variable_t(src));
         }
 	
         void apply(bitwise_operation_t op,

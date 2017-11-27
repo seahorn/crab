@@ -1442,7 +1442,7 @@ namespace ikos {
 	       VariableName dst, unsigned /*dst_width*/,
 	       VariableName src, unsigned /*src_width*/){
       // ignore the widths 
-      assign(dst, linear_expression_t(src));
+      assign(dst, variable_t(src));
     }
 
     // bitwise_operators_api

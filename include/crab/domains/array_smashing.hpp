@@ -389,7 +389,7 @@ namespace crab {
 	  if (a_ty == ARR_BOOL_TYPE) {
 	    _inv.assign_bool_var(lhs, a_prime, false);
 	  } else if (a_ty == ARR_INT_TYPE || a_ty == ARR_REAL_TYPE) {
-            _inv.assign (lhs, linear_expression_t (a_prime));
+            _inv.assign (lhs, variable_t(a_prime));
 	  } else if (a_ty == ARR_PTR_TYPE) {
             _inv.pointer_assign (lhs, a_prime, Number(0));
 	  }
@@ -427,7 +427,7 @@ namespace crab {
 	  if (ty == ARR_BOOL_TYPE) {
 	    _inv.assign_bool_var(lhs, rhs, false);
 	  } else if (ty == ARR_INT_TYPE || ty == ARR_REAL_TYPE) {
-            _inv.assign (lhs, linear_expression_t(rhs));
+            _inv.assign (lhs, variable_t(rhs));
 	  } else  if (ty == ARR_PTR_TYPE) {
             _inv.pointer_assign (lhs, rhs, Number(0));
 	  }

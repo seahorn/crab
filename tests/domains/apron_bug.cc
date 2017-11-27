@@ -13,8 +13,8 @@ int main (int argc, char** argv ) {
   {
     q_pk_apron_domain_t inv = q_pk_apron_domain_t::top ();
     q_lin_cst_sys_t csts;
-    csts += (q_lin_t (vfac ["x"]) >= q_number(1));
-    csts += (q_lin_t (vfac ["x"]) <= q_number(1));
+    csts += (q_var (vfac ["x"]) >= q_number(1));
+    csts += (q_var (vfac ["x"]) <= q_number(1));
     crab::outs () << "INITIALLY=" << inv << "\n";
     crab::outs () << "ADDING CONSTRAINTS=" << csts << "\n";
     inv += csts;
@@ -25,8 +25,8 @@ int main (int argc, char** argv ) {
   {
     q_pk_apron_domain_t inv = q_pk_apron_domain_t::top ();
     q_lin_cst_sys_t csts;
-    csts += (q_lin_t (vfac ["x"]) >= q_number(0.5));
-    csts += (q_lin_t (vfac ["x"]) <= q_number(0.5));
+    csts += (q_var (vfac ["x"]) >= q_number(0.5));
+    csts += (q_var (vfac ["x"]) <= q_number(0.5));
     crab::outs () << "INITIALLY=" << inv << "\n";
     crab::outs () << "ADDING CONSTRAINTS=" << csts << "\n";
     inv += csts;

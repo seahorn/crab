@@ -1046,6 +1046,8 @@ namespace crab {
           crab::CrabStats::count (getDomainName() + ".count.assign");
           crab::ScopedCrabStats __st__(getDomainName() + ".assign");
 
+	  variable_t vv(v);
+	  
           // -- forget v
           *this -= v;
 
@@ -1055,14 +1057,14 @@ namespace crab {
           if (lb.is_finite ())  {
             // v >= lb <--> -v + lb <= 0
             assert (lb.number ());
-            linear_expression_t e = (Number(-1) * linear_expression_t (v)) + *(lb.number ());
+            linear_expression_t e = (Number(-1) * vv) + *(lb.number ());
             csts += (linear_constraint_t (e, linear_constraint_t::kind_t::INEQUALITY));
           }
           auto ub = ival.ub ();
           if (ub.is_finite ()) {
             // v <= ub <--> v - ub <= 0
             assert (ub.number ());
-            linear_expression_t e = (linear_expression_t (v) - *(ub.number ()));
+            linear_expression_t e = (vv - *(ub.number ()));
             csts += (linear_constraint_t (e, linear_constraint_t::kind_t::INEQUALITY));
           }
 
@@ -1233,7 +1235,7 @@ namespace crab {
 		   VariableName src, unsigned /*src_width*/) {
           // since reasoning about infinite precision we simply assign and
           // ignore the widths.
-          assign(dst, linear_expression_t(src));
+          assign(dst, variable_t(src));
 	}
 
         void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) {

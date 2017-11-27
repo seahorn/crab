@@ -456,6 +456,7 @@ namespace crab {
     typedef AbsD abs_dom_t;
     typedef typename abs_dom_t::number_t number_t;
     typedef typename abs_dom_t::varname_t varname_t;
+    typedef typename abs_dom_t::variable_t variable_t;    
     typedef cfg::statement<number_t, varname_t> statement_t;    
     typedef abs_transformer_api <number_t, varname_t> abs_transform_api_t;
     using typename abs_transform_api_t::var_t;
@@ -663,7 +664,7 @@ namespace crab {
     void exec (int_cast_t &stmt) {
       abs_dom_t invariant = m_invariants[&stmt];
       // FIXME: treats cast as an assignment ignoring bitdwith
-      m_pre->backward_assign(stmt.dst(), lin_exp_t(stmt.src()), invariant);
+      m_pre->backward_assign(stmt.dst(), variable_t(stmt.src()), invariant);
     }
     
     void exec (bool_assign_cst_t &stmt)
@@ -709,6 +710,7 @@ namespace crab {
 		     typename AbsDom::varname_t rhs)
   {
     typedef typename AbsDom::linear_expression_t linear_expression_t;
+    typedef typename AbsDom::variable_t variable_t;    
     typedef typename AbsDom::number_t number_t;
     switch (ty)
     {
@@ -717,7 +719,7 @@ namespace crab {
 	break;      
       case INT_TYPE:
       case REAL_TYPE:	
-	inv.assign (lhs, linear_expression_t (rhs));
+	inv.assign (lhs, variable_t(rhs));
 	break;
       case PTR_TYPE:
 	inv.pointer_assign (lhs, rhs, number_t (0));

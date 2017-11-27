@@ -1678,7 +1678,7 @@ namespace crab {
         landmark_ref_t lm_x_old_prime (x_old_prime, x_old.str());
         var_landmarks.insert(std::make_pair(lm_x_old, lm_x_old_prime));
         // x_old = x
-        _scalar.assign(x_old, linear_expression_t(x)); 
+        _scalar.assign(x_old, variable_t(x)); 
         // relation between x_old and x' 
         _scalar += make_prime_relation(lm_x_old_prime, lm_x_old);
         //_scalar += make_eq_cst(lm_x_old_prime, lm_x_prime);      
@@ -1761,7 +1761,7 @@ namespace crab {
 
         // --- create a fresh variable no such that no := o;
         VariableName no = o.get_var_factory().get();
-        _expressions.assign (no, linear_expression_t (o));
+        _expressions.assign (no, variable_t(o));
 
         // -- apply no := no / n; in the expressions domain
         _expressions.apply (operation_t::OP_DIVISION, no, no, n);
@@ -2125,6 +2125,9 @@ namespace crab {
       }
 
       void apply (operation_t op, VariableName x, VariableName y, Number z) {
+	//variable_t vx(x);
+	variable_t vy(y);
+	
         if (x == y) {
           crab::CrabStats::count (getDomainName() + ".count.apply");
           crab::ScopedCrabStats __st__(getDomainName() + ".apply");
@@ -2137,11 +2140,11 @@ namespace crab {
         else {
           switch (op) {
             case OP_ADDITION:
-              assign (x, linear_expression_t(y) + linear_expression_t(z)); break;
+              assign (x, vy + z); break;
             case OP_SUBTRACTION:
-              assign (x, linear_expression_t(y) - linear_expression_t(z)); break;
+              assign (x, vy - z); break;
             case OP_MULTIPLICATION:
-              assign (x, linear_expression_t(y) * z); break;
+              assign (x, vy * z); break;
             case OP_DIVISION:
               CRAB_WARN("Division operation not implemented in array-sgraph-domain\n");
             default: ;;
@@ -2150,6 +2153,10 @@ namespace crab {
       }
       
       void apply(operation_t op, VariableName x, VariableName y, VariableName z)  {
+	//variable_t vx(x);
+	variable_t vy(y);
+	variable_t vz(z); 
+	
         if (x==y) {
           crab::CrabStats::count (getDomainName() + ".count.apply");
           crab::ScopedCrabStats __st__(getDomainName() + ".apply");
@@ -2162,9 +2169,9 @@ namespace crab {
         else {
           switch (op) {
             case OP_ADDITION:
-              assign (x, linear_expression_t(y) + linear_expression_t(z)); break;
+              assign (x, vy + vz); break;
             case OP_SUBTRACTION:
-              assign (x, linear_expression_t(y) - linear_expression_t(z)); break;
+              assign (x, vy - vz); break;
             case OP_MULTIPLICATION:
               CRAB_WARN("Mutiplication not implemented in array-sgraph-domain\n"); break;
             case OP_DIVISION:              
@@ -2206,7 +2213,7 @@ namespace crab {
 		 VariableName dst, unsigned dst_width, VariableName src, unsigned src_width) {
         _expressions.apply (op, dst, dst_width, src, src_width);
         // assume unlimited precision so widths are ignored.
-        assign(dst, linear_expression_t(src), false);
+        assign(dst, variable_t(src), false);
       }
       
       // bitwise_operators_api

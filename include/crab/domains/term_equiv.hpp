@@ -596,7 +596,7 @@ namespace crab {
            for(auto p : gen_map)
            {
              // dom_var_t vt = _alloc.next();
-             dom_var_t vt = palloc.next();
+             dom_var_t vt(palloc.next());
              dom_var_t vx = domvar_of_term(p.second); 
              dom_var_t vy = o.domvar_of_term(p.first);
              
@@ -659,7 +659,7 @@ namespace crab {
            {
              auto txy = p.first;
              term_id_t tz = p.second;
-             dom_var_t vt = palloc.next();
+             dom_var_t vt(palloc.next());
              out_map.insert(std::make_pair(tz, vt));
              
              dom_var_t vx = domvar_of_term(txy.first);
@@ -735,7 +735,7 @@ namespace crab {
            {
              auto txy = p.first;
              term_id_t tz = p.second;
-             dom_var_t vt = palloc.next();
+             dom_var_t vt(palloc.next());
              out_map.insert(std::make_pair(tz, vt));
              
              dom_var_t vx = domvar_of_term(txy.first);
@@ -851,7 +851,7 @@ namespace crab {
            {
              auto txy = p.first;
              term_id_t tz = p.second;
-             dom_var_t vt = palloc.next();
+             dom_var_t vt(palloc.next());
              out_map.insert(std::make_pair(tz, vt));
              
              dom_var_t vx = domvar_of_term(txy.first);
@@ -1046,7 +1046,7 @@ namespace crab {
            for (auto p: out_vmap) {
              variable_t v = p.first;
              term_id_t t_new = p.second;
-             dom_var_t vt = palloc.next();
+             dom_var_t vt(palloc.next());
              out_map.insert (std::make_pair (t_new, vt));
              // renaming this's base domain
              auto xit = _var_map.find (v);
@@ -1092,7 +1092,8 @@ namespace crab {
          crab::CrabStats::count (getDomainName() + ".count.forget");
          crab::ScopedCrabStats __st__(getDomainName() + ".forget");
 
-         auto it(_var_map.find(v));
+	 variable_t vv(v);
+         auto it(_var_map.find(vv));
          if(it != _var_map.end())
          {
            term_id_t t = (*it).second;
@@ -1237,7 +1238,9 @@ namespace crab {
            return;   
          } else {
            variable_t vx(x);
-           term_id_t tx(build_term(op, term_of_var(y), term_of_var(z)));
+	   variable_t vy(y);
+	   variable_t vz(z);
+           term_id_t tx(build_term(op, term_of_var(vy), term_of_var(vz)));
            rebind_var(vx, tx);
          }
          check_terms();
@@ -1255,7 +1258,8 @@ namespace crab {
            return;   
          } else {
            variable_t vx(x);
-           term_id_t tx(build_term(op, term_of_var(y), term_of_const(k)));
+	   variable_t vy(y);
+           term_id_t tx(build_term(op, term_of_var(vy), term_of_const(k)));
            rebind_var(vx, tx);
          }
          check_terms();
@@ -1463,7 +1467,7 @@ namespace crab {
 		  VariableName src, unsigned /*src_width*/){
          // since reasoning about infinite precision we simply assign and
          // ignore the widths.
-         assign(dst, linear_expression_t(src));
+         assign(dst, variable_t(src));
        }
 
        void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z){
@@ -1474,7 +1478,9 @@ namespace crab {
            return;   
          } else {
            variable_t vx(x);
-           term_id_t tx(build_term(op, term_of_var(y), term_of_var(z)));
+	   variable_t vy(y);
+	   variable_t vz(z);
+           term_id_t tx(build_term(op, term_of_var(vy), term_of_var(vz)));
            rebind_var(vx, tx);
          }
          check_terms();
@@ -1491,7 +1497,8 @@ namespace crab {
            return;   
          } else {
            variable_t vx(x);
-           term_id_t tx(build_term(op, term_of_var(y), term_of_const(k)));
+	   variable_t vy(y);
+           term_id_t tx(build_term(op, term_of_var(vy), term_of_const(k)));
            rebind_var(vx, tx);
          }
 
@@ -1512,7 +1519,9 @@ namespace crab {
            return;   
          } else {
            variable_t vx(x);
-           term_id_t tx(build_term(op, term_of_var(y), term_of_var(z)));
+	   variable_t vy(y);
+	   variable_t vz(z);	   
+           term_id_t tx(build_term(op, term_of_var(vy), term_of_var(vz)));
            rebind_var(vx, tx);
          }
 
@@ -1529,7 +1538,8 @@ namespace crab {
            return;   
          } else {
            variable_t vx(x);
-           term_id_t tx(build_term(op, term_of_var(y), term_of_const(k)));
+           variable_t vy(y);	   
+           term_id_t tx(build_term(op, term_of_var(vy), term_of_const(k)));
            rebind_var(vx, tx);
          }
 

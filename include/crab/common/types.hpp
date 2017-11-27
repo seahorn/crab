@@ -387,9 +387,9 @@ namespace ikos {
 
    public:
     
-    variable(const VariableName& n): writeable (), _n(n) { }
+    explicit variable(const VariableName& n): writeable (), _n(n) { }
 
-    variable(VariableName&& o): _n(std::move(o)) { }
+    explicit variable(VariableName&& o): _n(std::move(o)) { }
     
     variable(const variable_t& v): writeable(), _n(v._n) { }
     

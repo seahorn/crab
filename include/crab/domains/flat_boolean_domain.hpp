@@ -206,6 +206,7 @@ namespace crab {
     typedef VariableName varname_t;
     typedef Number number_t;
     typedef boolean_value bool_t;
+    typedef variable<Number, VariableName> variable_t;
     typedef linear_expression<Number, VariableName> linear_expression_t;
     typedef linear_constraint<Number, VariableName> linear_constraint_t;
     typedef linear_constraint_system<Number, VariableName> linear_constraint_system_t;
@@ -503,7 +504,7 @@ namespace crab {
 
       linear_constraint_system_t res;      
       for (auto kv: _env) {
-	linear_expression_t v(kv.first);
+	variable_t v(kv.first);
 	if (kv.second.is_true()) {
 	  res += linear_constraint_t(v == number_t(1));
 	} else if (kv.second.is_false()) {
@@ -1288,7 +1289,8 @@ namespace crab {
 	  expand (_product.second(), x, new_x);
 	
 	_var_to_csts.set (new_x, _var_to_csts [x]);
-	if (_unchanged_vars[x]) _unchanged_vars += new_x;
+	if (_unchanged_vars[variable_t(x)])
+	  _unchanged_vars += variable_t(new_x);
       }
       
       void normalize() {

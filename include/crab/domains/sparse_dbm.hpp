@@ -397,24 +397,24 @@ namespace crab {
 
       vert_id get_vert(VariableName v)
       {
-        auto it = vert_map.find(variable_t(v));
+	variable_t vv(v);
+        auto it = vert_map.find(vv);
         if(it != vert_map.end())
           return (*it).second;
 
         vert_id vert(g.new_vertex());
-//        vert_map.insert(vmap_elt_t(variable_t(v), vert)); 
         // Initialize 
         assert(vert <= rev_map.size());
         if(vert < rev_map.size())
         {
           assert(!rev_map[vert]);
           potential[vert] = Wt(0);
-          rev_map[vert] = v;
+          rev_map[vert] = vv;
         } else {
           potential.push_back(Wt(0));
-          rev_map.push_back(variable_t(v));
+          rev_map.push_back(vv);
         }
-        vert_map.insert(vmap_elt_t(v, vert));
+        vert_map.insert(vmap_elt_t(vv, vert));
 
         assert(vert != 0);
 
@@ -791,7 +791,8 @@ namespace crab {
           return;
         normalize();
 
-        auto it = vert_map.find (v);
+	variable_t vv(v);
+        auto it = vert_map.find (vv);
         if (it != vert_map.end ()) {
           CRAB_LOG("zones-sparse",
                    crab::outs() << "Before forget "<< it->second<< ": "<< g<<"\n";);
@@ -799,7 +800,7 @@ namespace crab {
           CRAB_LOG("zones-sparse", crab::outs() << "After: " << g<<"\n";);
                    
           rev_map[it->second] = boost::none;
-          vert_map.erase(v);
+          vert_map.erase(vv);
         }
       }
 
@@ -809,7 +810,8 @@ namespace crab {
           return;
         // CRAB_WARN("forget not implemented.");
         for (auto v: boost::make_iterator_range (vIt,vEt)) {
-          auto it = vert_map.find (v);
+	  variable_t vv(v);
+          auto it = vert_map.find (vv);
           if (it != vert_map.end ()) {
             operator-=(v);
           }
@@ -1060,6 +1062,8 @@ namespace crab {
 
         assert(check_potential(g, potential));
 
+	variable_t vx(x);
+	
         // If it's a constant, just assign the interval.
         if (e.is_constant()){
           set(x, e.constant());
@@ -1078,11 +1082,11 @@ namespace crab {
               assert(v <= rev_map.size());
               if(v == rev_map.size())
               {
-                rev_map.push_back(variable_t(x));
+                rev_map.push_back(vx);
                 potential.push_back(potential[0] + eval_expression(e));
               } else {
                 potential[v] = potential[0] + eval_expression(e);
-                rev_map[v] = x;
+                rev_map[v] = vx;
               }
               
               edge_vector delta;
@@ -1111,18 +1115,18 @@ namespace crab {
 
               // Clear the old x vertex
               operator-=(x);
-              vert_map.insert(vmap_elt_t(variable_t(x), v));
+              vert_map.insert(vmap_elt_t(vx, v));
             } else {
               vert_id v = g.new_vertex();
               assert(v <= rev_map.size());
               if(v == rev_map.size())
               {
-                rev_map.push_back(variable_t(x));
+                rev_map.push_back(vx);
                 potential.push_back(Wt(0));
               } else {
                 assert(!rev_map[v]);
                 potential[v] = Wt(0);
-                rev_map[v] = x;
+                rev_map[v] = vx;
               }
               Wt_min min_op;
               edge_vector cst_edges;
@@ -1168,7 +1172,7 @@ namespace crab {
 
               // Clear the old x vertex
               operator-=(x);
-              vert_map.insert(vmap_elt_t(variable_t(x), v));
+              vert_map.insert(vmap_elt_t(vx, v));
             }
             assert(check_potential(g, potential));
           } else {
@@ -1189,6 +1193,10 @@ namespace crab {
         crab::CrabStats::count (getDomainName() + ".count.apply");
         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
+	//variable_t vx (x);
+	variable_t vy (y);
+	variable_t vz (z);	
+	
         if(is_bottom())
           return;
 
@@ -1198,25 +1206,25 @@ namespace crab {
         {
           case ikos::OP_ADDITION:
           {
-            linear_expression_t e(linear_expression_t(y) + linear_expression_t(z));
+            linear_expression_t e(vy + vz);
             assign(x, e);
             break;
           }
           case ikos::OP_SUBTRACTION:
           {
-            linear_expression_t e(linear_expression_t(y) - linear_expression_t(z));
+            linear_expression_t e(vy - vz);
             assign(x, e);
             break;
           }
           // For mul and div, we fall back on intervals.
           case ikos::OP_MULTIPLICATION:
           {
-            set(x, get_interval(/*ranges,*/y)*get_interval(/*ranges,*/z));
+            set(x, get_interval(vy)*get_interval(vz));
             break;
           }
           case ikos::OP_DIVISION:
           {
-            interval_t xi(get_interval(/*ranges,*/y)/get_interval(/*ranges,*/z));
+            interval_t xi(get_interval(vy)/get_interval(vz));
             if(xi.is_bottom())
               set_to_bottom();
             else
@@ -1233,6 +1241,9 @@ namespace crab {
         crab::CrabStats::count (getDomainName() + ".count.apply");
         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
+	//variable_t vx(x);
+	variable_t vy(y);
+	
         if(is_bottom())
           return;
 
@@ -1242,20 +1253,20 @@ namespace crab {
         {
           case ikos::OP_ADDITION:
           {
-            linear_expression_t e(linear_expression_t(y) + linear_expression_t(k));
+            linear_expression_t e(vy + k);
             assign(x, e);
             break;
           }
           case ikos::OP_SUBTRACTION:
           {
-            linear_expression_t e(linear_expression_t(y) - linear_expression_t(k));
+            linear_expression_t e(vy - k);
             assign(x, e);
             break;
           }
           // For mul and div, we fall back on intervals.
           case ikos::OP_MULTIPLICATION:
           {
-            set(x, get_interval(y)*k);
+            set(x, get_interval(vy)*k);
 
             break;
           }
@@ -1264,7 +1275,7 @@ namespace crab {
             if(k == Wt(0))
               set_to_bottom();
             else
-              set(x, get_interval(y)/k);
+              set(x, get_interval(vy)/k);
 
             break;
           }
@@ -1457,15 +1468,8 @@ namespace crab {
       interval_t get_interval(variable_t x) {
         return get_interval(vert_map, g, x);
       }
-      interval_t get_interval(VariableName x) {
-        return get_interval(vert_map, g, x);
-      }
 
       interval_t get_interval(vert_map_t& m, graph_t& r, variable_t x) {
-        return get_interval(m, r, x.name());
-      }
-
-      interval_t get_interval(vert_map_t& m, graph_t& r, VariableName x) {
         auto it = m.find(x);
         if(it == m.end())
         {
@@ -1490,13 +1494,11 @@ namespace crab {
         crab::ScopedCrabStats __st__(getDomainName() + ".to_intervals");
 
 	// if (is_top()) return interval_t::top();
-        if (is_bottom()) return interval_t::bottom();
-
-        if (this->is_bottom()) {
+        if (is_bottom()) {
             return interval_t::bottom();
         } else {
-          //return get_interval(ranges, x);
-          return get_interval(vert_map, g, x);
+	  variable_t vx(x);
+          return get_interval(vert_map, g, vx);
         }
       }
 
@@ -1535,7 +1537,7 @@ namespace crab {
 		 VariableName src, unsigned /*src_width*/) {
         // since reasoning about infinite precision we simply assign and
         // ignore the widths.
-        assign(dst, linear_expression_t(src));
+        assign(dst, variable_t(src));
       }
 
       // bitwise_operators_api
@@ -1901,7 +1903,8 @@ namespace crab {
         std::vector<bool> save(rev_map.size(), false);
         for(auto x : boost::make_iterator_range(vIt, vEt))
         {
-          auto it = vert_map.find(x);
+	  variable_t vx(x);
+          auto it = vert_map.find(vx);
           if(it != vert_map.end())
             save[(*it).second] = true;
         }

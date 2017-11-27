@@ -1299,7 +1299,7 @@ namespace crab {
 		VariableName dst, unsigned /*dst_width*/,
 		VariableName src, unsigned /*src_width*/)  {
        // ignore widths
-       assign(dst, linear_expression_t(src));
+       assign(dst, variable_t(src));
      }
           
      void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) {
