@@ -137,11 +137,11 @@ namespace crab {
 	  m_internal_inputs.reserve(m_inputs.size());
 	  m_internal_outputs.reserve(m_outputs.size());	  
 	  for (auto v: m_inputs) {
-	    variable_t fresh_v(v.name().get_var_factory().get());
+	    variable_t fresh_v(v.name().get_var_factory().get(), v.get_type());
 	    m_internal_inputs.push_back(fresh_v);
 	  }
 	  for (auto v: m_outputs) {
-	    variable_t fresh_v(v.name().get_var_factory().get());	    
+	    variable_t fresh_v(v.name().get_var_factory().get(), v.get_type());	    
 	    m_internal_outputs.push_back(fresh_v);
 	  }
 
@@ -200,7 +200,7 @@ namespace crab {
           }
 
           for (unsigned i=0; i < cs.get_lhs().size(); i++){
-            if (m_fdecl.get_output_type(i) != cs.get_lhs()[i].second)
+            if (m_fdecl.get_output_type(i) != cs.get_lhs()[i].get_type())
               CRAB_ERROR ("Mismatch between type of callsite and summary return value");
           }
         }

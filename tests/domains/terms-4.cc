@@ -14,10 +14,10 @@ int main (int argc, char** argv )
   variable_factory_t vfac;
   typedef interval< z_number> interval_t;
   
-  z_var x(vfac["x"]);
-  z_var y(vfac["y"]);
-  z_var w(vfac["w"]);
-  z_var z(vfac["z"]);
+  z_var x(vfac["x"], crab::INT_TYPE);
+  z_var y(vfac["y"], crab::INT_TYPE);
+  z_var w(vfac["w"], crab::INT_TYPE);
+  z_var z(vfac["z"], crab::INT_TYPE);
 
   {
 
@@ -66,8 +66,8 @@ int main (int argc, char** argv )
 
   {
     z_term_domain_t dom = z_term_domain_t::top ();
-    z_var zero(vfac["v0"]);
-    z_var one(vfac["v1"]);
+    z_var zero(vfac["v0"], crab::INT_TYPE);
+    z_var one(vfac["v1"], crab::INT_TYPE);
 
     dom.set (zero, interval_t (0,0));
     dom.set (one, interval_t (1,1));

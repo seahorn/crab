@@ -486,8 +486,7 @@ namespace crab {
     
     // int_cast_operators_api and bitwise_operators_api
     // XXX: needed for making a reduced product with a numerical domain
-    void apply(int_conv_operation_t op,
-	       variable_t dst, unsigned dst_width, variable_t src, unsigned src_width) {}
+    void apply(int_conv_operation_t op, variable_t dst, variable_t src) {}
     void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {}
     void apply(bitwise_operation_t op, variable_t x, variable_t y, Number z) {}
 
@@ -1145,15 +1144,13 @@ namespace crab {
       
       // cast_operators_api
       
-      void apply(int_conv_operation_t op,
-		 variable_t dst, unsigned dst_width, variable_t src, unsigned src_width) {
-
+      void apply(int_conv_operation_t op, variable_t dst, variable_t src) {
 	CRAB_LOG("flat-boolean",
-		 crab::outs () << src << ":" << src_width << " " << op << " "
-		               << dst << ":" << dst_width  << " with "
+		 crab::outs () << src << ":" << src.get_bitwidth() << " " << op << " "
+		               << dst << ":" << dst.get_bitwidth() << " with "
 		               << *this << "\n");
 	
- 	if (op == OP_TRUNC && (src_width > 1 && dst_width == 1)) {
+ 	if (op == OP_TRUNC && (src.get_bitwidth() > 1 && dst.get_bitwidth() == 1)) {
 	  // -- int to bool:
 	  // assume that zero is false and non-zero is true
 	  interval_t i_src = _product.second()[src];
@@ -1165,7 +1162,8 @@ namespace crab {
 	  } else {
 	    _product.first().set_bool(dst, boolean_value::top());
 	  }
-	} else if ((op == OP_ZEXT || op == OP_SEXT) && (src_width == 1 && dst_width > 1)) {
+	} else if ((op == OP_ZEXT || op == OP_SEXT) &&
+		   (src.get_bitwidth() == 1 && dst.get_bitwidth() > 1)) {
 	  // -- bool to int:
 	  // if OP_SEXT then true is -1 and false is zero
 	  // if OP_ZEXT then true is 1 and false is zero
@@ -1186,7 +1184,7 @@ namespace crab {
 	  }
 	  _unchanged_vars -= variable_t(dst);			
 	} else {
-	  _product.apply(op, dst, dst_width, src, src_width);
+	  _product.apply(op, dst, src);
 	  _unchanged_vars -= variable_t(dst);			
 	}
 	
@@ -1219,27 +1217,27 @@ namespace crab {
       
       // array_operators_api
       
-      virtual void array_assume (variable_t a, crab::variable_type a_ty, 
+      virtual void array_assume (variable_t a, 
                                  linear_expression_t lb_idx,
 				 linear_expression_t ub_idx,
                                  linear_expression_t val) override
-      { _product.array_assume (a, a_ty, lb_idx, ub_idx, val); }
+      { _product.array_assume (a, lb_idx, ub_idx, val); }
       
-      virtual void array_load (variable_t lhs, variable_t a, crab::variable_type a_ty, 
+      virtual void array_load (variable_t lhs, variable_t a, 
                                linear_expression_t i, ikos::z_number bytes) override {
-	_product.array_load (lhs, a, a_ty, i, bytes);
-	if (a_ty == ARR_INT_TYPE || a_ty == ARR_REAL_TYPE)
+	_product.array_load (lhs, a, i, bytes);
+	if (a.get_type() == ARR_INT_TYPE || a.get_type() == ARR_REAL_TYPE)
 	  _unchanged_vars -= variable_t(lhs);	      
       }
       
-      virtual void array_store (variable_t a, crab::variable_type a_ty, 
+      virtual void array_store (variable_t a, 
                                 linear_expression_t i,
 				linear_expression_t val, 
                                 ikos::z_number bytes, bool is_singleton) override
-      { _product.array_store (a, a_ty, i, val, bytes, is_singleton); }
+      { _product.array_store (a, i, val, bytes, is_singleton); }
       
-      virtual void array_assign (variable_t lhs, variable_t rhs, crab::variable_type ty) override
-      { _product.array_assign (lhs, rhs, ty); }
+      virtual void array_assign (variable_t lhs, variable_t rhs) override
+      { _product.array_assign (lhs, rhs); }
       
       // pointer_operators_api
       virtual void pointer_load (variable_t lhs, variable_t rhs) override

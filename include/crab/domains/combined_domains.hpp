@@ -365,11 +365,9 @@ namespace crab {
       
       // cast_operators_api
       
-      void apply(int_conv_operation_t op,
-		 variable_t dst, unsigned dst_width,
-		 variable_t src, unsigned src_width) {
-        this->_product.first().apply(op, dst, dst_width, src, src_width);
-        this->_product.second().apply(op, dst, dst_width, src, src_width);
+      void apply(int_conv_operation_t op, variable_t dst, variable_t src) { 
+        this->_product.first().apply(op, dst, src);
+        this->_product.second().apply(op, dst, src);
         this->reduce();
       }
       
@@ -403,38 +401,38 @@ namespace crab {
       
       // array_operators_api
       
-      virtual void array_assume (variable_t a, crab::variable_type a_ty, 
+      virtual void array_assume (variable_t a, 
                                  linear_expression_t lb_idx,
 				 linear_expression_t ub_idx, 
                                  linear_expression_t val) override {
-        this->_product.first().array_assume (a, a_ty, lb_idx, ub_idx, val);
-        this->_product.second().array_assume (a, a_ty, lb_idx, ub_idx, val);
+        this->_product.first().array_assume (a, lb_idx, ub_idx, val);
+        this->_product.second().array_assume (a, lb_idx, ub_idx, val);
         this->reduce ();
       }
       
       virtual void array_load (variable_t lhs,
-			       variable_t a, crab::variable_type a_ty, 
+			       variable_t a, 
                                linear_expression_t i,
 			       ikos::z_number bytes) override {
         
-        this->_product.first().array_load (lhs, a, a_ty, i, bytes);
-        this->_product.second().array_load (lhs, a, a_ty, i, bytes);
+        this->_product.first().array_load (lhs, a, i, bytes);
+        this->_product.second().array_load (lhs, a, i, bytes);
         this->reduce ();
       }
       
-      virtual void array_store (variable_t a, crab::variable_type a_ty, 
+      virtual void array_store (variable_t a, 
                                 linear_expression_t i,
 				linear_expression_t val, 
                                 ikos::z_number bytes,
 				bool is_singleton) override {
-        this->_product.first().array_store (a, a_ty, i, val, bytes, is_singleton);
-        this->_product.second().array_store (a, a_ty, i, val, bytes, is_singleton);
+        this->_product.first().array_store (a, i, val, bytes, is_singleton);
+        this->_product.second().array_store (a, i, val, bytes, is_singleton);
         this->reduce ();
       }
       
-      virtual void array_assign (variable_t lhs, variable_t rhs, crab::variable_type ty) override {
-        this->_product.first().array_assign (lhs, rhs, ty);
-        this->_product.second().array_assign (lhs, rhs, ty);
+      virtual void array_assign (variable_t lhs, variable_t rhs) override {
+        this->_product.first().array_assign (lhs, rhs);
+        this->_product.second().array_assign (lhs, rhs);
         this->reduce ();      
       }
       
@@ -823,9 +821,8 @@ namespace crab {
 
       // cast_operators_api
       
-      void apply(int_conv_operation_t op,
-		 variable_t dst, unsigned dst_width, variable_t src, unsigned src_width) {
-        this->_product.apply(op, dst, dst_width, src, src_width);
+      void apply(int_conv_operation_t op, variable_t dst, variable_t src) {
+        this->_product.apply(op, dst, src);
         this->reduce_variable(dst);
       }
       
@@ -1382,9 +1379,8 @@ namespace crab {
 
       // cast_operators_api
       
-      void apply(int_conv_operation_t op,
-		 variable_t dst, unsigned dst_width, variable_t src, unsigned src_width) {
-	this->_product.apply(op, dst, dst_width, src, src_width);
+      void apply(int_conv_operation_t op, variable_t dst, variable_t src) {
+	this->_product.apply(op, dst, src);
 	this->reduce_variable(dst);
       }
       
@@ -1584,9 +1580,8 @@ namespace crab {
 
       // cast_operators_api
       
-      void apply(int_conv_operation_t op,
-		 variable_t dst, unsigned dst_width, variable_t src, unsigned src_width) {
-	this->_product.apply(op, dst, dst_width, src, src_width);
+      void apply(int_conv_operation_t op, variable_t dst, variable_t src) {
+	this->_product.apply(op, dst, src);
       }
       
       // bitwise_operators_api
@@ -1612,32 +1607,29 @@ namespace crab {
       
       // array_operators_api
       
-      virtual void array_assume (variable_t a, crab::variable_type a_ty, 
+      virtual void array_assume (variable_t a, 
                                  linear_expression_t lb_idx,
 				 linear_expression_t ub_idx,
                                  linear_expression_t val) override {
-        this->_product.array_assume (a, a_ty, lb_idx, ub_idx, val);
+        this->_product.array_assume (a, lb_idx, ub_idx, val);
       }
       
       virtual void array_load (variable_t lhs, variable_t a,
-			       crab::variable_type a_ty, 
                                linear_expression_t i,
 			       ikos::z_number bytes) override {
-        
-        this->_product.array_load (lhs, a, a_ty, i, bytes);
+        this->_product.array_load (lhs, a, i, bytes);
       }
       
-      virtual void array_store (variable_t a, crab::variable_type a_ty, 
+      virtual void array_store (variable_t a, 
                                 linear_expression_t i,
 				linear_expression_t val, 
                                 ikos::z_number bytes,
 				bool is_singleton) override {
-        this->_product.array_store (a, a_ty, i, val, bytes, is_singleton);
+        this->_product.array_store (a, i, val, bytes, is_singleton);
       }
       
-      virtual void array_assign (variable_t lhs, variable_t rhs,
-				 crab::variable_type ty) override {
-        this->_product.array_assign (lhs, rhs, ty);
+      virtual void array_assign (variable_t lhs, variable_t rhs) override {
+        this->_product.array_assign (lhs, rhs);
       }
       
       // pointer_operators_api

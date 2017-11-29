@@ -58,8 +58,8 @@ z_cfg_t* prog (variable_factory_t &vfac)
   loop_body >> loop_head;
   loop_f >> ret;
 
-  z_var i(vfac["i"]);
-  z_var p(vfac["p"]);
+  z_var i(vfac["i"], crab::INT_TYPE);
+  z_var p(vfac["p"], crab::INT_TYPE);
 
   entry.assign (i, 0);
   entry.assign (p, 0);

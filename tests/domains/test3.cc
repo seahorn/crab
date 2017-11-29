@@ -47,7 +47,7 @@ z_cfg_t* prog (variable_factory_t &vfac)
   loop2_body >> loop2_head;
   loop2_f >> ret;
   
-  z_var i(vfac["i"]);
+  z_var i(vfac["i"], crab::INT_TYPE);
 
   entry.assign (i, 0);
   loop1_t.assume (i <= 10);

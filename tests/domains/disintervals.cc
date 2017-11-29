@@ -10,8 +10,8 @@ using namespace crab::domain_impl;
 z_cfg_t* prog (variable_factory_t &vfac)  {
 
   // Definining program variables
-  z_var i (vfac ["i"]);
-  z_var k (vfac ["k"]);
+  z_var i (vfac ["i"], crab::INT_TYPE);
+  z_var k (vfac ["k"], crab::INT_TYPE);
   // entry and exit block
   z_cfg_t* cfg = new z_cfg_t("entry","ret");
   // adding blocks

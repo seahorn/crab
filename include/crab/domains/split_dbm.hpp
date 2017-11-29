@@ -1850,9 +1850,7 @@ namespace crab {
 
       // int_cast_operators_api
 
-      void apply(int_conv_operation_t /*op*/,
-		 variable_t dst, unsigned /*dst_width*/,
-		 variable_t src, unsigned /*src_width*/) {
+      void apply(int_conv_operation_t /*op*/, variable_t dst, variable_t src) {
         // since reasoning about infinite precision we simply assign and
         // ignore the widths.
         assign(dst, src);
@@ -2568,9 +2566,8 @@ namespace crab {
 			  DBM_t invariant) {
 	lock(); norm().backward_apply(op, x, y, z, invariant.norm());
       }	
-      void apply(int_conv_operation_t op,
-		 variable_t dst, unsigned dst_width, variable_t src, unsigned src_width) {
-        lock(); norm().apply(op, dst, dst_width, src, src_width);
+      void apply(int_conv_operation_t op, variable_t dst, variable_t src) {
+        lock(); norm().apply(op, dst, src);
       }
       void apply(bitwise_operation_t op, variable_t x, variable_t y, Number k) {
         lock(); norm().apply(op, x, y, k);

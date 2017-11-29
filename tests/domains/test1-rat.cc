@@ -9,7 +9,7 @@ using namespace crab::domain_impl;
 q_cfg_t* prog (variable_factory_t &vfac)  {
 
   // Definining program variables
-  q_var i (vfac ["i"]);
+  q_var i (vfac ["i"], crab::REAL_TYPE);
   // entry and exit block
   q_cfg_t* cfg = new q_cfg_t("entry","ret");
   // adding blocks

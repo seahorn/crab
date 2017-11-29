@@ -31,11 +31,11 @@ z_cfg_t* cfg1 (variable_factory_t &vfac)
   
 
   // definining program variables
-  z_var p(vfac ["p"]);
-  z_var q1(vfac ["q1"]);
-  z_var q2(vfac ["q2"]);
-  z_var r(vfac ["r"]);
-  z_var nd(vfac ["nd"]);
+  z_var p(vfac ["p"], crab::PTR_TYPE);
+  z_var q1(vfac ["q1"], crab::PTR_TYPE);
+  z_var q2(vfac ["q2"], crab::PTR_TYPE);
+  z_var r(vfac ["r"], crab::PTR_TYPE);
+  z_var nd(vfac ["nd"], crab::INT_TYPE);
   // adding statements
   b0.ptr_new_object (p , 1);  // p = malloc (...);
   b0.ptr_new_object (q1, 2);  // q1 = malloc (...);
@@ -53,11 +53,11 @@ z_cfg_t* cfg1 (variable_factory_t &vfac)
 z_cfg_t* cfg2 (variable_factory_t &vfac)  {
 
   // Definining program variables
-  z_var i (vfac ["i"]);
-  z_var x (vfac ["x"]);
-  z_var y (vfac ["y"]);
-  z_var p (vfac ["p"]);
-  z_var q (vfac ["q"]);
+  z_var i (vfac ["i"], crab::INT_TYPE);
+  z_var x (vfac ["x"], crab::INT_TYPE);
+  z_var y (vfac ["y"], crab::INT_TYPE);
+  z_var p (vfac ["p"], crab::PTR_TYPE);
+  z_var q (vfac ["q"], crab::PTR_TYPE);
   // entry and exit block
   z_cfg_t* cfg = new z_cfg_t("entry","ret",PTR);
   // adding blocks

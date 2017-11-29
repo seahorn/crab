@@ -98,8 +98,7 @@ namespace crab {
         void apply(operation_t op, variable_t x, Number k) 
         { CRAB_ERROR (APRON_NOT_FOUND); }
 
-        void apply(int_conv_operation_t op,
-		   variable_t dst, unsigned dst_width, variable_t src, unsigned src_width) 
+        void apply(int_conv_operation_t op, variable_t dst, variable_t src) 
         { CRAB_ERROR (APRON_NOT_FOUND); }
 	
         void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) 
@@ -1229,9 +1228,7 @@ namespace crab {
                    crab::outs() << "--- "<< x<< ":="<< x<< op<< k<< " --> "<< *this<<"\n";);
         }
 
-        void apply(int_conv_operation_t op,
-		   variable_t dst, unsigned /*dst_width*/,
-		   variable_t src, unsigned /*src_width*/) {
+        void apply(int_conv_operation_t op, variable_t dst, variable_t src) {
           // since reasoning about infinite precision we simply assign and
           // ignore the widths.
           assign(dst, src);
@@ -1645,9 +1642,8 @@ namespace crab {
 		   variable_t x, variable_t y, variable_t z) {
           detach(); ref().apply(op, x, y, z);
         }	
-        void apply(int_conv_operation_t op,
-		   variable_t dst, unsigned dst_width, variable_t src, unsigned src_width) {
-          detach(); ref().apply(op, dst, dst_width, src, src_width);
+        void apply(int_conv_operation_t op, variable_t dst, variable_t src) {
+          detach(); ref().apply(op, dst, src);
         }
         void apply(bitwise_operation_t op,
 		   variable_t x, variable_t y, Number k) {

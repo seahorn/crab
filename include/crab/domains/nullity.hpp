@@ -319,8 +319,7 @@ namespace crab {
     
     // int_cast_operators_api and bitwise_operators_api
     // XXX: needed for making a reduced product with a numerical domain
-    void apply(int_conv_operation_t op,
-	       variable_t dst, unsigned dst_width, variable_t src, unsigned src_width) {}
+    void apply(int_conv_operation_t op, variable_t dst, variable_t src) {}
     void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {}
     void apply(bitwise_operation_t op, variable_t x, variable_t y, Number z) {}
 

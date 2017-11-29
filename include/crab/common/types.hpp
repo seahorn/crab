@@ -144,8 +144,6 @@ namespace crab {
      }
      return o;
    }
-
-  typedef uint8_t bitwidth_t;
   
    typedef enum { 
      BINOP_ADD, BINOP_SUB, BINOP_MUL, 
@@ -373,31 +371,81 @@ namespace ikos {
   // Container for typed variables used by the crab abstract domains
   // and linear_constraints.
   template< typename Number, typename VariableName >  
-  class variable {
+  class variable {    
     // XXX: template parameter Number is required even if the class
     // does not use it.  This allows, e.g., linear_constraint to
     // deduce the kind of Number from constraints like x < y.
-    VariableName _n;
-  
+
    public:
 
     typedef variable< Number, VariableName > variable_t;
     typedef typename VariableName::index_t index_t;
+    typedef uint8_t bitwidth_t;
+    typedef crab::variable_type type_t;
+
+  private:
+    
+    VariableName _n;
+    type_t _type;
+    bitwidth_t _width;
+    
+   public:
+
+    /** 
+     * DO NOT USE this constructor to create a CFG since all CFG
+     * statements must be strongly typed.  This constructor is
+     * intended to be used only abstract domains to generate temporary
+     * variables.
+     **/
+    explicit variable(const VariableName& n)
+      : _n(n), _type(crab::UNK_TYPE), _width(0) { }
 
    public:
     
-    explicit variable(const VariableName& n): _n(n) { }
+    variable(const VariableName& n, type_t type)
+      : _n(n), _type(type), _width(0) { }
 
-    explicit variable(VariableName&& o): _n(std::move(o)) { }
+    variable(const VariableName& n, type_t type, bitwidth_t width)
+      : _n(n), _type(type), _width(width) { }
     
-    variable(const variable_t& v): _n(v._n) { }
-    
+    variable(const variable_t& o)
+      : _n(o._n), _type(o._type), _width(o._width) { }
+
+    variable(variable_t &&o)
+      : _n(std::move(o._n)), _type(std::move(o._type)), _width(std::move(o._width)) { }
+
     variable_t& operator=(const variable_t &o) {
       if (this != &o) {
-        this->_n = o._n;
+        _n = o._n;
+	_type = o._type;
+	_width = o._width;
       }
       return *this;
     }
+
+    bool is_typed () const { return _type != crab::UNK_TYPE; }
+
+    bool is_array_type() const {
+      return is_typed() && _type >= crab::ARR_BOOL_TYPE;
+    }
+
+    bool is_int_type() const {
+      return _type == crab::INT_TYPE;
+    }
+
+    bool is_bool_type() const {
+      return _type == crab::BOOL_TYPE;
+    }
+
+    bool is_ptr_type() const {
+      return _type == crab::PTR_TYPE;
+    }
+
+    type_t get_type() const { return _type;}
+
+    bool has_bitwidth() const { return _width > 0; }
+    
+    bitwidth_t get_bitwidth() const { return _width;}
 
     const VariableName& name() const { return _n; }
 

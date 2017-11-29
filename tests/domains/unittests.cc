@@ -13,9 +13,9 @@ int main (int argc, char** argv )
 
   variable_factory_t vfac;
   {  
-    z_var x(vfac["x"]);
-    z_var A(vfac["A"]);
-    z_var x_prime(vfac["x\'"]);
+    z_var x(vfac["x"], crab::INT_TYPE);
+    z_var A(vfac["A"], crab::INT_TYPE);
+    z_var x_prime(vfac["x\'"], crab::INT_TYPE);
 
     z_dbm_domain_t dbm = z_dbm_domain_t::top ();
     // for all i. A[i] >= 0

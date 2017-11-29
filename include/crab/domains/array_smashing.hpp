@@ -60,9 +60,8 @@ namespace crab {
         
         array_smashing (NumDomain inv): _inv (inv) { }
 	  
-        void strong_update (variable_t a, crab::variable_type a_ty,
-			    linear_expression_t rhs) {
-	  if (a_ty == ARR_BOOL_TYPE) {
+        void strong_update (variable_t a, linear_expression_t rhs) {
+	  if (a.get_type() == ARR_BOOL_TYPE) {
 	    if (rhs.is_constant()) {
 	      if (rhs.constant() >= Number(1))
 		_inv.assign_bool_cst(a, linear_constraint_t::get_true());
@@ -71,9 +70,9 @@ namespace crab {
 	    } else if (auto rhs_v = rhs.get_variable ()) {
 	      _inv.assign_bool_var (a, (*rhs_v), false);
 	    }
-	  } else if (a_ty == ARR_INT_TYPE || a_ty == ARR_REAL_TYPE) {
+	  } else if (a.get_type() == ARR_INT_TYPE || a.get_type() == ARR_REAL_TYPE) {
             _inv.assign (a, rhs);
-	  } else if (a_ty == ARR_PTR_TYPE) {
+	  } else if (a.get_type() == ARR_PTR_TYPE) {
 	    if (rhs.is_constant() && rhs.constant() == Number(0))
 	      _inv.pointer_mk_null(a);
 	    else if (auto rhs_v = rhs.get_variable())	     
@@ -81,11 +80,10 @@ namespace crab {
 	  }
         }
         
-        void weak_update (variable_t a, crab::variable_type a_ty,
-			  linear_expression_t rhs) {
+        void weak_update (variable_t a, linear_expression_t rhs) {
           NumDomain other (_inv);
 
-	  if (a_ty == ARR_BOOL_TYPE) {
+	  if (a.get_type() == ARR_BOOL_TYPE) {
 	    if (rhs.is_constant()) {
 	      if (rhs.constant() >= Number(1))
 		other.assign_bool_cst(a, linear_constraint_t::get_true());
@@ -94,9 +92,9 @@ namespace crab {
 	    } else if (auto rhs_v = rhs.get_variable ()) {
 	      other.assign_bool_var (a, (*rhs_v), false);
 	    }
-	  } else if (a_ty == ARR_INT_TYPE || a_ty == ARR_REAL_TYPE) {
+	  } else if (a.get_type() == ARR_INT_TYPE || a.get_type() == ARR_REAL_TYPE) {
             other.assign (a, rhs);
-	  } else if (a_ty == ARR_PTR_TYPE) {
+	  } else if (a.get_type() == ARR_PTR_TYPE) {
 	    if (rhs.is_constant() && rhs.constant() == Number(0))
 	      other.pointer_mk_null(a);
 	    else if (auto rhs_v = rhs.get_variable())	     
@@ -236,9 +234,8 @@ namespace crab {
 	  _inv.backward_apply(op, x, y, z, inv.get_content_domain());
 	}
 	
-        void apply(int_conv_operation_t op,
-		   variable_t dst, unsigned dst_width, variable_t src, unsigned src_width) {
-          _inv.apply (op, dst, dst_width, src, src_width);
+        void apply(int_conv_operation_t op, variable_t dst, variable_t src) {
+          _inv.apply (op, dst, src);
         }
                 
         void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {
@@ -343,11 +340,13 @@ namespace crab {
         // array_operators_api 
 
         // All the array elements are assumed to be equal to val
-        virtual void array_assume (variable_t a, variable_type a_ty, 
+        virtual void array_assume (variable_t a, 
                                    linear_expression_t /*lb_idx*/,
 				   linear_expression_t /*ub_idx*/, 
                                    linear_expression_t val) override {
-	  if (a_ty == ARR_BOOL_TYPE)  {
+	  assert(a.is_array_type());
+	  
+	  if (a.get_type() == ARR_BOOL_TYPE)  {
 	    if (val.is_constant()) {
 	      if (val.constant() >= Number(1))
 		_inv.assign_bool_cst(a, linear_constraint_t::get_true());
@@ -356,9 +355,9 @@ namespace crab {
 	    } else if (auto var = val.get_variable ()) {
 	      _inv.assign_bool_var (a, (*var), false);
 	    }
-	  } else if (a_ty == ARR_INT_TYPE || a_ty == ARR_REAL_TYPE) {
+	  } else if (a.get_type() == ARR_INT_TYPE || a.get_type() == ARR_REAL_TYPE) {
             _inv.assign (a, val);
-	  } else if (a_ty == ARR_PTR_TYPE) {
+	  } else if (a.get_type() == ARR_PTR_TYPE) {
 	    if (val.is_constant() && val.constant() == Number(0))
 	      _inv.pointer_mk_null(a);
 	    else if (auto var = val.get_variable ()) {
@@ -372,24 +371,23 @@ namespace crab {
         }
         
         virtual void array_load (variable_t lhs, variable_t a,
-				 crab::variable_type a_ty,
-                                 linear_expression_t i,
-				 z_number /*bytes*/) override {
-
+                                 linear_expression_t i, z_number /*bytes*/) override {
           crab::CrabStats::count (getDomainName() + ".count.load");
           crab::ScopedCrabStats __st__(getDomainName() + ".load");
-          
+
+	  assert(a.is_array_type());
+ 
           // We need to be careful when assigning a summarized variable a
           // into a non-summarized variable lhs. Simply _inv.assign (lhs,
           // a) is not sound.
           /* ask for a temp var */
           variable_t a_prime(a.name().get_var_factory().get()); 
           domain_traits<NumDomain>::expand (_inv, a, a_prime);
-	  if (a_ty == ARR_BOOL_TYPE) {
+	  if (a.get_type() == ARR_BOOL_TYPE) {
 	    _inv.assign_bool_var(lhs, a_prime, false);
-	  } else if (a_ty == ARR_INT_TYPE || a_ty == ARR_REAL_TYPE) {
-            _inv.assign (lhs, variable_t(a_prime));
-	  } else if (a_ty == ARR_PTR_TYPE) {
+	  } else if (a.get_type() == ARR_INT_TYPE || a.get_type() == ARR_REAL_TYPE) {
+            _inv.assign (lhs, a_prime);
+	  } else if (a.get_type() == ARR_PTR_TYPE) {
             _inv.pointer_assign (lhs, a_prime, Number(0));
 	  }
 
@@ -401,33 +399,34 @@ namespace crab {
         }
         
         
-        virtual void array_store (variable_t a, crab::variable_type a_ty,
-                                  linear_expression_t i,
-				  linear_expression_t val, 
-                                  z_number /*bytes*/,
-				  bool is_singleton) override {
-                                  
-
+        virtual void array_store (variable_t a, 
+                                  linear_expression_t i, linear_expression_t val, 
+                                  z_number /*bytes*/, bool is_singleton) override {
           crab::CrabStats::count (getDomainName() + ".count.store");
           crab::ScopedCrabStats __st__(getDomainName() + ".store");
-          
-          if (is_singleton)
-            strong_update (a, a_ty, val);
-          else 
-            weak_update (a, a_ty, val);
+
+	  assert(a.is_array_type());
+ 
+          if (is_singleton) {
+            strong_update(a, val);
+	  } else {
+            weak_update(a, val);
+	  }
           
           CRAB_LOG("smashing",
 		   crab::outs() << a << "[" << i << "]:="
 		                << val << " -- " << *this <<"\n";);
         }
 
-        virtual void array_assign (variable_t lhs, variable_t rhs, 
-                                   crab::variable_type ty) override {
-	  if (ty == ARR_BOOL_TYPE) {
+        virtual void array_assign (variable_t lhs, variable_t rhs) override {
+	  assert(lhs.get_type() == rhs.get_type());
+	  assert(lhs.is_array_type());	  
+	  
+	  if (lhs.get_type() == ARR_BOOL_TYPE) {
 	    _inv.assign_bool_var(lhs, rhs, false);
-	  } else if (ty == ARR_INT_TYPE || ty == ARR_REAL_TYPE) {
-            _inv.assign (lhs, variable_t(rhs));
-	  } else  if (ty == ARR_PTR_TYPE) {
+	  } else if (lhs.get_type() == ARR_INT_TYPE || lhs.get_type() == ARR_REAL_TYPE) {
+            _inv.assign (lhs, rhs);
+	  } else  if (lhs.get_type() == ARR_PTR_TYPE) {
             _inv.pointer_assign (lhs, rhs, Number(0));
 	  }
         }

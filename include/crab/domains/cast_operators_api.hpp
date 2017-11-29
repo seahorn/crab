@@ -31,11 +31,7 @@ namespace crab {
     class int_cast_operators {
     public:
       typedef ikos::variable<Number, VariableName> variable_t;
-      
-      virtual void apply(int_conv_operation_t op,
-			 variable_t dst, unsigned dst_width,
-			 variable_t src, unsigned src_width)  = 0;
-
+      virtual void apply(int_conv_operation_t op, variable_t dst, variable_t src)  = 0;
       virtual ~int_cast_operators() { }
     }; 
     

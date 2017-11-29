@@ -1444,9 +1444,7 @@ namespace crab {
        }
 
 
-       void apply(int_conv_operation_t /*op*/,
-		  variable_t dst, unsigned /*dst_width*/,
-		  variable_t src, unsigned /*src_width*/){
+       void apply(int_conv_operation_t /*op*/, variable_t dst, variable_t src){  
          // since reasoning about infinite precision we simply assign and
          // ignore the widths.
          assign(dst, src);

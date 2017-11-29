@@ -1489,9 +1489,7 @@ namespace crab {
 
       // cast_operators_api
 
-      void apply(int_conv_operation_t /*op*/,
-		 variable_t dst, unsigned /*dst_width*/,
-		 variable_t src, unsigned /*src_width*/) {
+      void apply(int_conv_operation_t /*op*/, variable_t dst, variable_t src) {
         // since reasoning about infinite precision we simply assign and
         // ignore the widths.
         assign(dst, src);
@@ -2138,9 +2136,8 @@ namespace crab {
       void apply(ikos::operation_t op, variable_t x, variable_t y, Number k) {
         lock(); norm().apply(op, x, y, k);
       }
-      void apply(int_conv_operation_t op,
-		 variable_t dst, unsigned dst_width, variable_t src, unsigned src_width) {
-        lock(); norm().apply(op, dst, dst_width, src, src_width);	
+      void apply(int_conv_operation_t op, variable_t dst, variable_t src) {
+        lock(); norm().apply(op, dst, src);	
       }
       void backward_assign(variable_t x, linear_expression_t e, DBM_t invariant) {
 	lock(); norm().backward_assign(x, e, invariant.norm());

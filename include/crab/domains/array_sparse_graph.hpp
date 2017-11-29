@@ -1804,7 +1804,29 @@ namespace crab {
         return std::make_pair(no, true);
       }
 
+      // T1 and T2 are either variable_t or z_number
+      template<typename T1, typename T2>
+      void array_assume (variable_t arr, T1 src, T2 dst, linear_expression_t val)
+      {
+        if (!is_landmark (src)) {
+          crab::outs () << "WARNING no landmark found for " << src << "\n";
+          return;
+        }
 
+        if (!is_landmark(dst)) {
+          crab::outs () << "WARNING no landmark found for " << dst << "\n";
+          return;
+        }
+       
+        landmark_ref_t lm_src (src);
+        landmark_ref_t lm_dst (dst); 
+
+        Content w = Content::top ();
+        array_sparse_graph_impl::propagate_between_weight_and_scalar
+	  (_scalar, val, arr.get_type(), w, arr);
+        _g.update_edge(lm_src, w, lm_dst);        
+      }
+      
      public:
 
       // The reduction consists of detecting dead segments so it is
@@ -2204,9 +2226,8 @@ namespace crab {
 
       // cast_operators_api
       
-      void apply(int_conv_operation_t op,
-		 variable_t dst, unsigned dst_width, variable_t src, unsigned src_width) {
-        _expressions.apply (op, dst, dst_width, src, src_width);
+      void apply(int_conv_operation_t op, variable_t dst, variable_t src) {
+        _expressions.apply (op, dst, src);
         // assume unlimited precision so widths are ignored.
         assign(dst, src, false);
       }
@@ -2291,34 +2312,35 @@ namespace crab {
 
       // array_operators_api       
 
-      virtual void array_assume (variable_t a, variable_type a_ty, 
+      virtual void array_assume (variable_t a, 
                                  linear_expression_t lb_idx,
 				 linear_expression_t ub_idx, 
                                  linear_expression_t val) override {
-        
+
+	assert(a.is_array_type());
+	
         auto lb_var_opt = lb_idx.get_variable ();
         auto ub_var_opt = ub_idx.get_variable ();
 
         if (lb_idx.is_constant() && ub_idx.is_constant())
-          array_assume (a, a_ty, lb_idx.constant(), ub_idx.constant(), val);
+          array_assume (a, lb_idx.constant(), ub_idx.constant(), val);
         else if (lb_idx.is_constant () && ub_var_opt)
-          array_assume (a, a_ty, lb_idx.constant(), *ub_var_opt, val);
+          array_assume (a, lb_idx.constant(), *ub_var_opt, val);
         else if (lb_var_opt && ub_idx.is_constant())
-          array_assume (a, a_ty, *lb_var_opt, ub_idx.constant(), val);
+          array_assume (a, *lb_var_opt, ub_idx.constant(), val);
         else if (lb_var_opt && ub_var_opt)
-          array_assume (a, a_ty, *lb_var_opt, *ub_var_opt, val);
+          array_assume (a, *lb_var_opt, *ub_var_opt, val);
         else
           CRAB_ERROR ("unreachable");
       }
 
       virtual void array_load (variable_t lhs, variable_t a,
-			       crab::variable_type a_ty,
-                               linear_expression_t i,
-			       z_number nbytes) override  {
-
+                               linear_expression_t i, z_number nbytes) override  {
         crab::CrabStats::count (getDomainName() + ".count.load");
         crab::ScopedCrabStats __st__(getDomainName() + ".load");
 
+	assert(a.is_array_type());
+	
         auto vi = i.get_variable ();
         if (!vi) {
           CRAB_WARN ("TODO: array load index must be a variable");
@@ -2348,14 +2370,14 @@ namespace crab {
 
         Content w = array_edge (norm_idx);
 
-        if (a_ty == ARR_INT_TYPE || a_ty == ARR_REAL_TYPE) {
+        if (a.get_type() == ARR_INT_TYPE || a.get_type() == ARR_REAL_TYPE) {
           // Only non-relational numerical invariants are
           // propagated from the graph domain to the expressions domain.
           _expressions.set (lhs, w[a]);
         }
 
         array_sparse_graph_impl::
-	  propagate_between_weight_and_scalar(w, a, a_ty, _scalar, lhs);
+	  propagate_between_weight_and_scalar(w, a, a.get_type(), _scalar, lhs);
         
         // if normalize_offset created a landmark we remove it here to
         // keep smaller array graph
@@ -2372,14 +2394,15 @@ namespace crab {
                                << *this <<"\n";);    
       }
 
-      virtual void array_store (variable_t a, crab::variable_type a_ty,
-                                linear_expression_t i,
-				linear_expression_t val, 
+      virtual void array_store (variable_t a, 
+                                linear_expression_t i, linear_expression_t val, 
                                 z_number nbytes,
 				bool /*is_singleton*/) override {
         crab::CrabStats::count (getDomainName() + ".count.store");
         crab::ScopedCrabStats __st__(getDomainName() + ".store");
 
+	assert(a.is_array_type());
+	  
         auto vi = i.get_variable ();
         if (!vi) {
           CRAB_WARN ("TODO: array store index must be a variable");
@@ -2388,7 +2411,7 @@ namespace crab {
 
         Content w = Content::top ();
         array_sparse_graph_impl::
-	  propagate_between_weight_and_scalar(_scalar, val, a_ty, w, a);
+	  propagate_between_weight_and_scalar(_scalar, val, a.get_type(), w, a);
 
         auto p = normalize_offset (*vi, nbytes);
         variable_t norm_idx = p.first;
@@ -2405,30 +2428,13 @@ namespace crab {
                               << *this <<"\n";);
       }
 
-      // T1 and T2 are either variable_t or z_number
-      template<typename T1, typename T2>
-      void array_assume (variable_t arr, variable_type arr_ty,
-			 T1 src, T2 dst,
-			 linear_expression_t val)
-      {
-        if (!is_landmark (src)) {
-          crab::outs () << "WARNING no landmark found for " << src << "\n";
-          return;
-        }
-
-        if (!is_landmark(dst)) {
-          crab::outs () << "WARNING no landmark found for " << dst << "\n";
-          return;
-        }
-       
-        landmark_ref_t lm_src (src);
-        landmark_ref_t lm_dst (dst); 
-
-        Content w = Content::top ();
-        array_sparse_graph_impl::propagate_between_weight_and_scalar
-	  (_scalar, val, arr_ty, w, arr);
-        _g.update_edge(lm_src, w, lm_dst);        
+      virtual void array_assign (variable_t lhs, variable_t rhs) override {
+	assert (lhs.get_type() == rhs.get_type());
+	assert(lhs.is_array_type());
+	
+	CRAB_WARN("array_assign in array_sparse_graph is not implemented");
       }
+      
     
       void write(crab_os& o) {
         #if 1

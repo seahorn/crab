@@ -11,15 +11,15 @@ using namespace crab::domain_impl;
 z_cfg_t* prog1 (variable_factory_t &vfac)  {
 
   // Defining program variables
-  z_var i(vfac["i"]);
-  z_var nd(vfac["nd"]);
-  z_var inc(vfac["inc"]);
-  z_var b1(vfac["b1"]);
-  z_var b2(vfac["b2"]);
-  z_var b3(vfac["b3"]);
-  z_var b4(vfac["b4"]);    
-  z_var bfalse(vfac["bf"]);
-  z_var btrue(vfac["bt"]);      
+  z_var i(vfac["i"], crab::INT_TYPE);
+  z_var nd(vfac["nd"], crab::INT_TYPE);
+  z_var inc(vfac["inc"], crab::INT_TYPE);
+  z_var b1(vfac["b1"], crab::BOOL_TYPE);
+  z_var b2(vfac["b2"], crab::BOOL_TYPE);
+  z_var b3(vfac["b3"], crab::BOOL_TYPE);
+  z_var b4(vfac["b4"], crab::BOOL_TYPE);    
+  z_var bfalse(vfac["bf"], crab::BOOL_TYPE);
+  z_var btrue(vfac["bt"], crab::BOOL_TYPE);      
   
   // entry and exit block
   auto cfg = new z_cfg_t("entry","ret");
@@ -60,9 +60,9 @@ z_cfg_t* prog1 (variable_factory_t &vfac)  {
 z_cfg_t* prog2 (variable_factory_t &vfac)  {
 
   // Defining program variables
-  z_var i(vfac["i"]);
-  z_var b(vfac["b"]);
-  z_var n(vfac["n"]);
+  z_var i(vfac["i"], crab::INT_TYPE);
+  z_var b(vfac["b"], crab::BOOL_TYPE);
+  z_var n(vfac["n"], crab::INT_TYPE);
   
   // entry and exit block
   auto cfg = new z_cfg_t("entry","ret");
@@ -94,9 +94,9 @@ z_cfg_t* prog2 (variable_factory_t &vfac)  {
 z_cfg_t* prog3 (variable_factory_t &vfac)  {
 
   // Defining program variables
-  z_var i (vfac ["i"]);
-  z_var b (vfac ["b"]);
-  z_var n (vfac ["n"]);
+  z_var i (vfac ["i"], crab::INT_TYPE);
+  z_var b (vfac ["b"], crab::BOOL_TYPE);
+  z_var n (vfac ["n"], crab::INT_TYPE);
   
   // entry and exit block
   auto cfg = new z_cfg_t("entry","ret");

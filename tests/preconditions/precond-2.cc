@@ -11,9 +11,9 @@ using namespace crab::domain_impl;
 z_cfg_t* prog (variable_factory_t &vfac)  {
 
   // Defining program variables
-  z_var x (vfac ["x"]);
-  z_var y (vfac ["y"]);
-  z_var tmp (vfac ["tmp"]);    
+  z_var x (vfac ["x"], crab::INT_TYPE);
+  z_var y (vfac ["y"], crab::INT_TYPE);
+  z_var tmp (vfac ["tmp"], crab::INT_TYPE);    
   // entry and exit block
   auto cfg = new z_cfg_t("entry","bb3");
   // adding blocks
@@ -52,7 +52,7 @@ int main (int argc, char** argv )
   #ifdef HAVE_APRON  
   {
     z_box_apron_domain_t initial_states, final_states;
-    z_var x (vfac ["x"]);  
+    z_var x (vfac ["x"], crab::INT_TYPE);  
     final_states += (x <= 5);
     final_states += (x >= -5);    
     backward_run<z_box_apron_domain_t>
@@ -63,7 +63,7 @@ int main (int argc, char** argv )
   #ifdef HAVE_LDD  
   {
     z_boxes_domain_t initial_states, final_states;
-    z_var x (vfac ["x"]);  
+    z_var x (vfac ["x"], crab::INT_TYPE);  
     final_states += (x <= 5);
     final_states += (x >= -5);    
     backward_run<z_boxes_domain_t>

@@ -4,7 +4,10 @@
  * Build a CFG to interface with the abstract domains and fixpoint
  * iterators.
  * 
- * In Crab, variables can only be one of the these types: 
+ * All the CFG statements are strongly typed. However, only variables
+ * need to be typed. The types of constants can be inferred trivially
+ * from the context since they always appear together with at least
+ * one variable. Types form a **flat** lattice consisting of:
  * 
  * - booleans,
  * - integers,
@@ -30,20 +33,11 @@
  *   class cfg_ref that wraps cfg references into copyable and
  *   assignable objects.
  * 
- * - Most of the cfg statements are untyped (with some exceptions such
- *   as array statements). Therefore, during the construction of a cfg
- *   there is almost no type checking so the client must ensure that
- *   types are compatible. Similarly, argument consistency between
- *   callsites and their function declarations.
- * 
- * 
  * Limitations:
  *
- * - The CFG language does not allow to express integer widths for
- *   machine arithmetic.
- * 
  * - The CFG language does not allow to express floating point
  *   operations.
+ * 
  */
 
 #include <boost/shared_ptr.hpp>
@@ -661,50 +655,36 @@ namespace crab {
       }
     }; 
 
-    /* 
-       The semantics of this statement makes only sense if Number =
-       ikos::z_number
-    */
     template<class Number, class VariableName>
     class int_cast_stmt: public statement<Number,VariableName> {
      public:
 
       typedef ikos::variable<Number, VariableName> variable_t;
       typedef statement<Number,VariableName> statement_t;      
+      typedef typename variable_t::bitwidth_t bitwidth_t;
       
      private:
       
       cast_operation_t  m_op;
       variable_t m_src;
-      bitwidth_t m_src_width;
       variable_t m_dst;
-      bitwidth_t m_dst_width;      
 
      public:
       
       int_cast_stmt (cast_operation_t op,
-		     variable_t src, int src_width,
-		     variable_t dst, int dst_width,
+		     variable_t src, variable_t dst, 
 		     debug_info dbg_info = debug_info ())
   	: statement_t (INT_CAST, dbg_info),
-	  m_op(op),
-	  m_src(src), m_src_width((bitwidth_t) src_width),
-	  m_dst(dst), m_dst_width((bitwidth_t) dst_width)  {
-	
-	if (!(src_width > 0 && src_width < 256))
-	  CRAB_ERROR("src bitwidth is not in the range [1,...,255]");
-	if (!(dst_width > 0 && dst_width < 256))
-	  CRAB_ERROR("dst bitwidth is not in the range [1,...,255]");
-
+	  m_op(op), m_src(src), m_dst(dst) { 
         this->m_live.add_use (m_src);
         this->m_live.add_def (m_dst);	
       }
       
       cast_operation_t op() const {return m_op;}
       variable_t src() const {return m_src;}
-      bitwidth_t src_width() const {return m_src_width;}
+      bitwidth_t src_width() const {return m_src.get_bitwidth();}
       variable_t dst() const {return m_dst;}
-      bitwidth_t dst_width() const {return m_dst_width;}      
+      bitwidth_t dst_width() const {return m_dst.get_bitwidth();}      
       
       virtual void accept(statement_visitor<Number,VariableName> *v) {
         v->visit(*this);
@@ -713,15 +693,14 @@ namespace crab {
       virtual boost::shared_ptr<statement_t> clone () const {
         typedef int_cast_stmt<Number, VariableName> int_cast_t;
         return boost::static_pointer_cast<statement_t, int_cast_t>
-	  (boost::make_shared<int_cast_t>(m_op, m_src, m_src_width, m_dst, m_dst_width,
-					  this->m_dbg_info));
+	  (boost::make_shared<int_cast_t>(m_op, m_src, m_dst, this->m_dbg_info));
       }
       
       virtual void write (crab_os& o) const {
 	// bitwidths are casted to int, otherwise operator<< may try
 	// to print them as characters if bitwidth_t = uint8_t
 	o << m_op << " " 
-	  << m_src << ":" << (int) m_src_width << " to " << m_dst << ":" << (int) m_dst_width;
+	  << m_src << ":" << (int) src_width() << " to " << m_dst << ":" << (int) dst_width();
         return;
       }
     }; 
@@ -751,12 +730,12 @@ namespace crab {
       typedef statement<Number,VariableName> statement_t;                  
       typedef ikos::linear_expression<Number, VariableName> linear_expression_t;
       typedef ikos::variable<Number, VariableName> variable_t;
+      typedef typename variable_t::type_t type_t;
       
      private:
 
       // forall i \in [lb,ub] modulo elem_size. arr[i] == val
       variable_t m_arr; 
-      variable_type m_arr_ty;
       uint64_t m_elem_size;
       linear_expression_t m_lb;
       linear_expression_t m_ub;
@@ -768,11 +747,11 @@ namespace crab {
       
      public:
       
-      array_assume_stmt (variable_t arr, variable_type arr_ty, uint64_t elem_size,
+      array_assume_stmt (variable_t arr, uint64_t elem_size,
                          linear_expression_t lb, linear_expression_t ub,
 			 linear_expression_t val): 
           statement_t (ARR_ASSUME),
-          m_arr (arr), m_arr_ty (arr_ty), m_elem_size (elem_size),
+          m_arr (arr),  m_elem_size (elem_size),
 	  m_lb (lb) , m_ub (ub), m_val (val)  {
 	
 	if (!is_number_or_variable (m_lb))
@@ -795,7 +774,7 @@ namespace crab {
       
       variable_t array () const { return m_arr; }
       
-      variable_type array_type () const { return m_arr_ty; }
+      type_t array_type () const { return m_arr.get_type(); }
 
       uint64_t elem_size () const { return m_elem_size;}
        
@@ -813,7 +792,7 @@ namespace crab {
       {
         typedef array_assume_stmt <Number, VariableName> array_assume_t;
         return boost::static_pointer_cast< statement_t, array_assume_t >
-	  (boost::make_shared<array_assume_t>(m_arr, m_arr_ty, m_elem_size,
+	  (boost::make_shared<array_assume_t>(m_arr, m_elem_size,
 					      m_lb, m_ub, m_val));
       }
       
@@ -834,11 +813,11 @@ namespace crab {
       typedef statement<Number,VariableName> statement_t;                  
       typedef ikos::linear_expression<Number, VariableName> linear_expression_t;
       typedef ikos::variable<Number, VariableName> variable_t;
+      typedef typename variable_t::type_t type_t;
       
      private:
       
       variable_t m_arr;
-      variable_type m_arr_ty;
       linear_expression_t m_index;
       linear_expression_t m_value;
       uint64_t m_elem_size; //! size in bytes
@@ -851,16 +830,16 @@ namespace crab {
       
      public:
       
-      array_store_stmt (variable_t arr, variable_type arr_ty,
+      array_store_stmt (variable_t arr, 
                         linear_expression_t index,
 			linear_expression_t value,  
                         uint64_t elem_size, bool is_sing = false)
           : statement_t(ARR_STORE),
-            m_arr (arr), m_arr_ty (arr_ty), m_index (index), 
+            m_arr (arr), m_index (index), 
             m_value (value), m_elem_size (elem_size),  
             m_is_singleton (is_sing) {
 	
-        if (m_arr_ty < ARR_BOOL_TYPE)
+        if (array_type() < ARR_BOOL_TYPE)
           CRAB_ERROR ("array_store must have array type");
 
 	if (!is_number_or_variable (m_value))
@@ -879,7 +858,7 @@ namespace crab {
       
       linear_expression_t value () const { return m_value; }
       
-      variable_type array_type () const { return m_arr_ty; }
+      type_t array_type () const { return m_arr.get_type(); }
 
       uint64_t elem_size () const { return m_elem_size; }
       
@@ -894,9 +873,8 @@ namespace crab {
       {
         typedef array_store_stmt <Number, VariableName> array_store_t;
         return boost::static_pointer_cast<statement_t, array_store_t>
-            (boost::make_shared<array_store_t>(m_arr, m_arr_ty, m_index,
-					       m_value, 
-                                               m_elem_size, m_is_singleton));
+            (boost::make_shared<array_store_t>(m_arr, m_index,
+					       m_value, m_elem_size, m_is_singleton)); 
       }
       
       virtual void write(crab_os& o) const
@@ -917,23 +895,23 @@ namespace crab {
       typedef statement<Number,VariableName> statement_t;                        
       typedef ikos::linear_expression<Number, VariableName > linear_expression_t;
       typedef ikos::variable<Number, VariableName> variable_t;
+      typedef typename variable_t::type_t type_t;
       
      private:
 
       variable_t m_lhs;
       variable_t m_array;
-      variable_type m_arr_ty;
       linear_expression_t m_index;
       uint64_t m_elem_size; //! size in bytes
       
      public:
       
-      array_load_stmt (variable_t lhs, variable_t arr, variable_type arr_ty,
+      array_load_stmt (variable_t lhs, variable_t arr, 
 		       linear_expression_t index, uint64_t elem_size) 
 	: statement_t (ARR_LOAD),
-	  m_lhs (lhs), m_array (arr), m_arr_ty (arr_ty),
+	  m_lhs (lhs), m_array (arr), 
 	  m_index (index), m_elem_size (elem_size) {
-        if (m_arr_ty < ARR_BOOL_TYPE)
+        if (array_type() < ARR_BOOL_TYPE)
           CRAB_ERROR ("array_load must have array type");
           
         this->m_live.add_def (lhs);
@@ -946,7 +924,7 @@ namespace crab {
       
       variable_t array () const { return m_array; }
 
-      variable_type array_type () const { return m_arr_ty; }
+      type_t array_type () const { return m_array.get_type(); }
       
       linear_expression_t index () const { return m_index; }
       
@@ -961,7 +939,7 @@ namespace crab {
       {
         typedef array_load_stmt <Number, VariableName> array_load_t;
         return boost::static_pointer_cast< statement_t, array_load_t>
-            (boost::make_shared<array_load_t>(m_lhs, m_array, m_arr_ty,
+            (boost::make_shared<array_load_t>(m_lhs, m_array,
 					      m_index, m_elem_size));
                                               
       }
@@ -983,19 +961,19 @@ namespace crab {
       
       typedef statement<Number,VariableName> statement_t;                              
       typedef ikos::variable<Number, VariableName> variable_t;
-
+      typedef typename variable_t::type_t type_t;
+      
      private:
       
       variable_t m_lhs;
       variable_t m_rhs;
-      variable_type m_ty; // m_lhs and m_rhs have type m_ty      
 
      public:
       
-      array_assign_stmt (variable_t lhs, variable_t rhs, variable_type ty)
+      array_assign_stmt (variable_t lhs, variable_t rhs)
 	: statement_t (ARR_ASSIGN),
-	  m_lhs (lhs), m_rhs (rhs), m_ty (ty) {
-        if (m_ty < ARR_BOOL_TYPE)
+	  m_lhs (lhs), m_rhs (rhs) {
+        if (array_type() < ARR_BOOL_TYPE || m_lhs.get_type() != m_rhs().get_type())
           CRAB_ERROR ("array_assign must have array type");
 	
         this->m_live.add_def (lhs);
@@ -1006,7 +984,7 @@ namespace crab {
       
       variable_t rhs () const { return m_rhs; }
       
-      variable_type array_type () const { return m_ty; }
+      type_t array_type () const { return m_lhs.get_type(); }
 
       virtual void accept(statement_visitor <Number, VariableName> *v) 
       {
@@ -1017,7 +995,7 @@ namespace crab {
       {
         typedef array_assign_stmt <Number, VariableName> arr_assign_t;
         return boost::static_pointer_cast< statement_t, arr_assign_t >
-            (boost::make_shared<arr_assign_t>(m_lhs, m_rhs, m_ty));
+            (boost::make_shared<arr_assign_t>(m_lhs, m_rhs));
       }
       
       virtual void write(crab_os& o) const
@@ -1420,39 +1398,39 @@ namespace crab {
 
       typedef statement<Number,VariableName> statement_t;
       typedef ikos::variable<Number,VariableName> variable_t;
-      typedef std::pair<variable_t,variable_type> typed_variable_t; 
-
+      typedef typename variable_t::type_t type_t;
+      
      private:
 
       VariableName m_func_name;      
-      std::vector<typed_variable_t> m_lhs;
-      std::vector<typed_variable_t> m_args;
+      std::vector<variable_t> m_lhs;
+      std::vector<variable_t> m_args;
       
-      typedef typename std::vector<typed_variable_t>::iterator iterator;
-      typedef typename std::vector<typed_variable_t>::const_iterator const_iterator;
+      typedef typename std::vector<variable_t>::iterator iterator;
+      typedef typename std::vector<variable_t>::const_iterator const_iterator;
       
      public:
       
-      callsite_stmt (VariableName func_name, const std::vector<typed_variable_t> &args)
+      callsite_stmt (VariableName func_name, const std::vector<variable_t> &args)
 	: statement_t (CALLSITE), m_func_name (func_name) {
 	
         std::copy (args.begin (), args.end (), std::back_inserter (m_args));
-        for (auto arg:  m_args) { this->m_live.add_use (arg.first); }
+        for (auto arg:  m_args) { this->m_live.add_use (arg); }
       }
       
       callsite_stmt (VariableName func_name,
-		     const std::vector<typed_variable_t> &lhs, 
-		     const std::vector<typed_variable_t> &args)
+		     const std::vector<variable_t> &lhs, 
+		     const std::vector<variable_t> &args)
 	: statement_t (CALLSITE), m_func_name (func_name) {
 	
         std::copy (args.begin (), args.end (), std::back_inserter(m_args));
-        for (auto arg:  m_args) { this->m_live.add_use (arg.first); }
+        for (auto arg:  m_args) { this->m_live.add_use (arg); }
 
         std::copy (lhs.begin (), lhs.end (), std::back_inserter(m_lhs));
-        for (auto arg:  m_lhs) { this->m_live.add_def (arg.first); }
+        for (auto arg:  m_lhs) { this->m_live.add_def (arg); }
       }
       
-      const std::vector<typed_variable_t>& get_lhs () const { 
+      const std::vector<variable_t>& get_lhs () const { 
         return m_lhs;
       }
       
@@ -1460,7 +1438,7 @@ namespace crab {
         return m_func_name; 
       }
 
-      const std::vector<typed_variable_t>& get_args () const { 
+      const std::vector<variable_t>& get_args () const { 
         return m_args;
       }
 
@@ -1470,14 +1448,14 @@ namespace crab {
         if (idx >= m_args.size ())
           CRAB_ERROR ("Out-of-bound access to call site parameter");
         
-        return m_args[idx].first;
+        return m_args[idx];
       }
       
-      variable_type get_arg_type (unsigned idx) const { 
+      type_t get_arg_type (unsigned idx) const { 
         if (idx >= m_args.size ())
         CRAB_ERROR ("Out-of-bound access to call site parameter");
         
-        return m_args[idx].second;
+        return m_args[idx].get_type();
       }
       
       virtual void accept(statement_visitor <Number, VariableName> *v) {
@@ -1496,12 +1474,12 @@ namespace crab {
         if (m_lhs.empty ()) {
           // do nothing
         } else if (m_lhs.size () == 1) {
-          o << (*m_lhs.begin()).first << " =";
+          o << (*m_lhs.begin()) << " =";
         } else {
           o << "(";
           for (const_iterator It = m_lhs.begin (), Et=m_lhs.end (); It!=Et; )
           {
-            o << It->first;
+            o << (*It);
             ++It;
             if (It != Et) o << ",";
           }
@@ -1510,7 +1488,7 @@ namespace crab {
         o << " call " << m_func_name << "(";
         for (const_iterator It = m_args.begin (), Et=m_args.end (); It!=Et; )
         {
-          o << It->first << ":" << It->second;
+          o << *It << ":" << (*It).get_type();
           ++It;
           if (It != Et)
             o << ",";
@@ -1529,29 +1507,29 @@ namespace crab {
 
       typedef statement<Number,VariableName> statement_t;
       typedef ikos::variable<Number,VariableName> variable_t;
-      typedef std::pair<variable_t,variable_type> typed_variable_t; 
+      typedef typename variable_t::type_t type_t;
 
      private:
 
-      std::vector<typed_variable_t> m_ret;
+      std::vector<variable_t> m_ret;
       
      public:
       
-      return_stmt (variable_t var, variable_type type)
+      return_stmt (variable_t var)
           : statement_t (RETURN)
       {
-        m_ret.push_back (std::make_pair(var, type));
+        m_ret.push_back (var);
         this->m_live.add_use (var); 
       }
 
-      return_stmt (const std::vector<typed_variable_t> &ret_vals)
+      return_stmt (const std::vector<variable_t> &ret_vals)
           : statement_t (RETURN)
       {
         std::copy (ret_vals.begin (), ret_vals.end (), std::back_inserter(m_ret));
-        for (auto r:  m_ret) { this->m_live.add_use (r.first); }
+        for (auto r:  m_ret) { this->m_live.add_use (r); }
       }
       
-      const std::vector<typed_variable_t>& get_ret_vals () const {
+      const std::vector<variable_t>& get_ret_vals () const {
         return m_ret;
       }
       
@@ -1572,11 +1550,11 @@ namespace crab {
         o << "return ";
         
         if (m_ret.size () == 1) {
-          o << (*m_ret.begin()).first;
+          o << (*m_ret.begin());
         } else if (m_ret.size () > 1) {
           o << "(";
           for (auto It = m_ret.begin (), Et=m_ret.end (); It!=Et; ) {
-            o << It->first;
+            o << (*It);
             ++It;
             if (It != Et) o << ",";
           }
@@ -2545,83 +2523,79 @@ namespace crab {
 		(boost::make_shared<assert_t> (cst, di)));
       }
 
-      void truncate(variable_t src, int src_width, variable_t dst, int dst_width) {
+      void truncate(variable_t src, variable_t dst) {
 	insert (boost::static_pointer_cast<statement_t, int_cast_t >
-		(boost::make_shared<int_cast_t>(CAST_TRUNC,src,src_width,dst,dst_width)));
+		(boost::make_shared<int_cast_t>(CAST_TRUNC,src,dst)));
       }
       
-      void sext(variable_t src, int src_width, variable_t dst, int dst_width) {
+      void sext(variable_t src, variable_t dst) {
 	insert (boost::static_pointer_cast<statement_t, int_cast_t >
-		(boost::make_shared<int_cast_t>(CAST_SEXT,src,src_width,dst,dst_width)));
+		(boost::make_shared<int_cast_t>(CAST_SEXT,src,dst)));
       }
 
-      void zext(variable_t src, int src_width, variable_t dst, int dst_width) {
+      void zext(variable_t src, variable_t dst) {
 	insert (boost::static_pointer_cast<statement_t, int_cast_t >
-		(boost::make_shared<int_cast_t>(CAST_ZEXT,src,src_width,dst,dst_width)));
+		(boost::make_shared<int_cast_t>(CAST_ZEXT,src,dst)));
       }
       
       void callsite (VariableName func, 
-		     const std::vector<std::pair<variable_t,variable_type> > &lhs, 
-                     const std::vector<std::pair<variable_t,variable_type> > &args) { 
+		     const std::vector<variable_t> &lhs, 
+                     const std::vector<variable_t> &args) { 
         insert(boost::static_pointer_cast< statement_t, callsite_t >
                (boost::make_shared<callsite_t>(func, lhs, args)));
       }
-      
-      
-      void ret (variable_t var, variable_type ty) {
-        std::vector<std::pair<variable_t,variable_type> >
-	  ret_vals = {std::make_pair(var,ty)};
+            
+      void ret (variable_t var) {
+        std::vector<variable_t> ret_vals = {var};
         insert(boost::static_pointer_cast< statement_t, return_t >
                (boost::make_shared<return_t>(ret_vals)));
       }
 
-      void ret (const std::vector<std::pair<variable_t,variable_type> > &ret_vals) {
+      void ret (const std::vector<variable_t> &ret_vals) {
         insert(boost::static_pointer_cast< statement_t, return_t >
                (boost::make_shared<return_t>(ret_vals)));
       }
             
 
-      void array_assume (variable_t a, variable_type arr_ty, uint64_t elem_size,
+      void array_assume (variable_t a, uint64_t elem_size,
                          lin_exp_t lb_idx, lin_exp_t ub_idx, variable_t v) {
         if (m_track_prec == ARR)
           insert(boost::static_pointer_cast<statement_t, arr_assume_t> 
-		(boost::make_shared<arr_assume_t>(a, arr_ty, elem_size, lb_idx, ub_idx, v)));
+		(boost::make_shared<arr_assume_t>(a, elem_size, lb_idx, ub_idx, v)));
       }
 
-      void array_assume (variable_t a, variable_type arr_ty, uint64_t elem_size,
+      void array_assume (variable_t a, uint64_t elem_size,
                          lin_exp_t lb_idx, lin_exp_t ub_idx, ikos::z_number n) {
         if (m_track_prec == ARR)
           insert (boost::static_pointer_cast< statement_t, arr_assume_t> 
-		(boost::make_shared<arr_assume_t>(a, arr_ty, elem_size, lb_idx, ub_idx, n)));
+		(boost::make_shared<arr_assume_t>(a, elem_size, lb_idx, ub_idx, n)));
       }
       
-      void array_store (variable_t arr, variable_type arr_ty, 
-                        lin_exp_t idx, variable_t v, 
+      void array_store (variable_t arr, lin_exp_t idx, variable_t v, 
                         uint64_t elem_size, bool is_singleton = false)  {
         if (m_track_prec == ARR)
           insert(boost::static_pointer_cast< statement_t, arr_store_t >
-            (boost::make_shared<arr_store_t>(arr, arr_ty, idx, v, elem_size, is_singleton)));
+            (boost::make_shared<arr_store_t>(arr, idx, v, elem_size, is_singleton)));
       }
 
-      void array_store (variable_t arr, variable_type arr_ty, 
-                        lin_exp_t idx, ikos::z_number n, 
+      void array_store (variable_t arr, lin_exp_t idx, ikos::z_number n, 
                         uint64_t elem_size, bool is_singleton = false)  {
         if (m_track_prec == ARR)
           insert(boost::static_pointer_cast< statement_t, arr_store_t >
-           (boost::make_shared<arr_store_t>(arr, arr_ty, idx, n, elem_size, is_singleton)));
+           (boost::make_shared<arr_store_t>(arr, idx, n, elem_size, is_singleton)));
       }
       
-      void array_load (variable_t lhs, variable_t arr, variable_type arr_ty, 
+      void array_load (variable_t lhs, variable_t arr,
                        lin_exp_t idx, uint64_t elem_size) {
         if (m_track_prec == ARR)
           insert(boost::static_pointer_cast< statement_t, arr_load_t >
-                 (boost::make_shared<arr_load_t>(lhs, arr, arr_ty, idx, elem_size)));
+                 (boost::make_shared<arr_load_t>(lhs, arr, idx, elem_size)));
       }
 
-      void array_assign (variable_t lhs, variable_t rhs, variable_type ty) {
+      void array_assign (variable_t lhs, variable_t rhs) {
         if (m_track_prec == ARR)
           insert(boost::static_pointer_cast< statement_t, arr_assign_t >
-                 (boost::make_shared<arr_assign_t>(lhs, rhs, ty)));
+                 (boost::make_shared<arr_assign_t>(lhs, rhs)));
       }
             
       void ptr_store (variable_t lhs, variable_t rhs) 
@@ -2909,22 +2883,22 @@ namespace crab {
      public:
 
       typedef ikos::variable<Number, VariableName> variable_t;      
-      typedef std::pair<variable_t, variable_type> typed_variable_t;
+      typedef typename variable_t::type_t type_t;
       
      private:
 
       VariableName m_func_name;
-      std::vector<typed_variable_t> m_inputs;
-      std::vector<typed_variable_t> m_outputs;      
+      std::vector<variable_t> m_inputs;
+      std::vector<variable_t> m_outputs;      
       
-      typedef typename std::vector<typed_variable_t>::iterator param_iterator;
-      typedef typename std::vector<typed_variable_t>::const_iterator const_param_iterator;
+      typedef typename std::vector<variable_t>::iterator param_iterator;
+      typedef typename std::vector<variable_t>::const_iterator const_param_iterator;
       
      public:
       
       function_decl (VariableName func_name,
-                     std::vector<typed_variable_t> inputs,
-		     std::vector<typed_variable_t> outputs)
+                     std::vector<variable_t> inputs,
+		     std::vector<variable_t> outputs)
 	: m_func_name (func_name) {
 	
         std::copy(inputs.begin(), inputs.end(),
@@ -2936,8 +2910,8 @@ namespace crab {
 	// otherwise we cannot produce meaningful input-output
 	// relations.
 	std::set<variable_t> s;
-	for(auto &tv: m_inputs) {s.insert(tv.first);}
-	for(auto &tv: m_outputs){s.insert(tv.first);}	
+	for(auto &tv: m_inputs) {s.insert(tv);}
+	for(auto &tv: m_outputs){s.insert(tv);}	
 	if (s.size () != (m_inputs.size () + m_outputs.size ())) {
 	  CRAB_ERROR("interprocedural analysis requires that for each function ",
 		     "its set of inputs and outputs must be disjoint.");
@@ -2947,10 +2921,10 @@ namespace crab {
       VariableName get_func_name () const
       { return m_func_name; }
       
-      const std::vector<typed_variable_t>& get_inputs () const
+      const std::vector<variable_t>& get_inputs () const
       { return m_inputs; }
 
-      const std::vector<typed_variable_t>& get_outputs () const
+      const std::vector<variable_t>& get_outputs () const
       { return m_outputs; }
 
       unsigned get_num_inputs () const
@@ -2962,25 +2936,25 @@ namespace crab {
       variable_t get_input_name (unsigned idx) const { 
         if (idx >= m_inputs.size ())
           CRAB_ERROR ("Out-of-bound access to function input parameter");
-        return m_inputs[idx].first;
+        return m_inputs[idx];
       }
 
-      variable_type get_input_type (unsigned idx) const { 
+      type_t get_input_type (unsigned idx) const { 
         if (idx >= m_inputs.size ())
           CRAB_ERROR ("Out-of-bound access to function output parameter");
-        return m_inputs[idx].second;
+        return m_inputs[idx].get_type();
       }
       
       variable_t get_output_name (unsigned idx) const { 
         if (idx >= m_outputs.size ())
           CRAB_ERROR ("Out-of-bound access to function input parameter");
-        return m_outputs[idx].first;
+        return m_outputs[idx];
       }
 
-      variable_type get_output_type (unsigned idx) const { 
+      type_t get_output_type (unsigned idx) const { 
         if (idx >= m_outputs.size ())
           CRAB_ERROR ("Out-of-bound access to function output parameter");
-        return m_outputs[idx].second;
+        return m_outputs[idx].get_type();
       }
       
       void write(crab_os& o) const {
@@ -2989,13 +2963,13 @@ namespace crab {
           o << "void";
         } else if (m_outputs.size () == 1) {
 	  auto out = *(m_outputs.begin());
-          o << out.first << ":" << out.second;
+          o << out << ":" << out.get_type();
         } else {
           o << "(";
           for (auto It = m_outputs.begin (),
 		 Et=m_outputs.end (); It!=Et; ) {
 	    auto out = *It;
-            o << out.first << ":" << out.second;
+            o << out << ":" << out.get_type();
             ++It;
             if (It != Et)
               o << ",";
@@ -3006,7 +2980,7 @@ namespace crab {
         o << " declare " << m_func_name << "(";
         for (const_param_iterator It = m_inputs.begin (),
 	       Et=m_inputs.end (); It!=Et; ) {
-          o << It->first << ":" << It->second;
+          o << (*It) << ":" << (*It).get_type();
           ++It;
           if (It != Et)
             o << ",";
@@ -3880,7 +3854,7 @@ namespace crab {
       static size_t hash (callsite_t cs) {
         size_t res = hash_value (cs.get_func_name ());
         for (auto vt: cs.get_lhs ())
-          boost::hash_combine (res, vt.second);
+          boost::hash_combine (res, vt.get_type());
         for(unsigned i=0; i<cs.get_num_args (); i++)
           boost::hash_combine (res, cs.get_arg_type (i));
         return res;

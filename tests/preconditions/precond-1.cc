@@ -11,9 +11,9 @@ using namespace crab::domain_impl;
 z_cfg_t* prog (variable_factory_t &vfac)  {
 
   // Defining program variables
-  z_var x (vfac ["x"]);
-  z_var y (vfac ["y"]);
-  z_var tmp (vfac ["tmp"]);    
+  z_var x (vfac ["x"], crab::INT_TYPE);
+  z_var y (vfac ["y"], crab::INT_TYPE);
+  z_var tmp (vfac ["tmp"], crab::INT_TYPE);    
   // entry and exit block
   auto cfg = new z_cfg_t("entry","bb3");
   // adding blocks

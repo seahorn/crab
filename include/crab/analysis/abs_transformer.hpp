@@ -318,8 +318,7 @@ namespace crab {
 
     void exec (int_cast_t &stmt){
       if (auto op = conv_op<crab::domains::int_conv_operation_t>(stmt.op())) {
-	get_inv()->apply(*op,
-			 stmt.dst(), stmt.dst_width(), stmt.src(), stmt.src_width());
+	get_inv()->apply(*op, stmt.dst(), stmt.src());
       } else {
 	CRAB_ERROR("unsupported cast operator ", stmt.op());
       }
@@ -382,26 +381,20 @@ namespace crab {
     { *get_inv() = abs_dom_t::bottom (); }
     
     void exec (arr_assume_t &stmt) {
-      get_inv()->array_assume (stmt.array (), stmt.array_type (), 
-			       stmt.lb_index (), stmt.ub_index (), 
-			       stmt.val ());
+      get_inv()->array_assume (stmt.array (), stmt.lb_index (), stmt.ub_index (), stmt.val ());
     }
     
     void exec (arr_store_t &stmt) {
-      get_inv()->array_store (stmt.array(), stmt.array_type (), 
-			      stmt.index (), stmt.value (),
+      get_inv()->array_store (stmt.array(), stmt.index (), stmt.value (),
 			      stmt.elem_size(), stmt.is_singleton ());
     }
     
     void exec (arr_load_t  &stmt) {
-      get_inv()->array_load (stmt.lhs (), 
-			     stmt.array (), stmt.array_type (), 
-			     stmt.index(), stmt.elem_size());
+      get_inv()->array_load (stmt.lhs (), stmt.array (), stmt.index(), stmt.elem_size());
     }
     
     void exec (arr_assign_t  &stmt) {
-      get_inv()->array_assign (stmt.lhs (), stmt.rhs (),
-			       stmt.array_type ());
+      get_inv()->array_assign (stmt.lhs (), stmt.rhs ());
     }
     
     void exec (ptr_null_t & stmt)
@@ -430,7 +423,7 @@ namespace crab {
     
     virtual void exec (callsite_t &cs) {
       for (auto vt: cs.get_lhs())
-	(*get_inv()) -= vt.first;  // havoc
+	(*get_inv()) -= vt;  // havoc
     }
   }; 
 
@@ -649,12 +642,11 @@ namespace crab {
     // ret := *
     virtual void exec (callsite_t &cs) {
       for (auto vt: cs.get_lhs())
-	*m_pre -= vt.first;  
+	*m_pre -= vt;  
     }
 
     void exec (int_cast_t &stmt) {
       abs_dom_t invariant = m_invariants[&stmt];
-      // FIXME: treats cast as an assignment ignoring bitdwith
       m_pre->backward_assign(stmt.dst(), stmt.src(), invariant);
     }
     
@@ -718,7 +710,7 @@ namespace crab {
       case ARR_INT_TYPE:
       case ARR_REAL_TYPE:
       case ARR_PTR_TYPE:
-	inv.array_assign (lhs, rhs, ty);
+	inv.array_assign (lhs, rhs);
 	break;
       default:
 	CRAB_ERROR ("unsuported type");
@@ -810,9 +802,9 @@ namespace crab {
         auto r = *callee_it;
         CRAB_LOG ("inter",
                   crab::outs () << "\t\tPropagate from callee to caller " 
-		                << vt.first << ":=" << r << "\n");
-	unify (caller, vt.second, vt.first, r);
-        actuals.insert (vt.first); formals.insert (r);
+		                << vt << ":=" << r << "\n");
+	unify (caller, vt.get_type(), vt, r);
+        actuals.insert (vt); formals.insert (r);
       }
 
       // --- remove from caller only formal parameters so we can keep
@@ -847,7 +839,7 @@ namespace crab {
 	  CRAB_LOG("inter",
 		   crab::outs() << "\tSummary not found for " << cs << "\n");
 	  for (auto vt: cs.get_lhs())
-	    *(this->m_inv) -= vt.first;  // havoc 
+	    *(this->m_inv) -= vt;  // havoc 
 	}
       }
     }
@@ -961,7 +953,7 @@ namespace crab {
 	// variables are constrained before the callsite (e.g., x=-5;
 	// x := abs(x);)
 	for (auto vt: cs.get_lhs())
-	{ *(this->m_inv) -= vt.first; }
+	{ *(this->m_inv) -= vt; }
 	
         CRAB_LOG ("inter",
                   crab::outs() << "\t\tCaller context: " <<  caller_ctx_inv << "\n");
@@ -986,7 +978,7 @@ namespace crab {
       // We could not reuse a summary so we just havoc lhs of the call
       // site.      
       for (auto vt: cs.get_lhs())
-      { *(this->m_inv) -= vt.first; }
+      { *(this->m_inv) -= vt; }
     }
   }; 
 

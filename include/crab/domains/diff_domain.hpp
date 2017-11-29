@@ -297,11 +297,9 @@ namespace crab {
       
       // cast_operators_api
       
-      void apply(int_conv_operation_t op,
-		 variable_t dst, unsigned dst_width, variable_t src,
-		 unsigned src_width) {
+      void apply(int_conv_operation_t op, variable_t dst, variable_t src) {
 	bool r1= diff(__LINE__);	
-        this->_product.apply(op, dst, dst_width, src, src_width);
+        this->_product.apply(op, dst, src);
 	bool r2 = diff(__LINE__);
 	if (r1 && !r2) {
 	  CRAB_WARN("PRECISION LEAK of ",

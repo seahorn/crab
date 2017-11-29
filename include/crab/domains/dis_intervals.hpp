@@ -1294,9 +1294,7 @@ namespace crab {
 	 apply(*this, op, x, y, z, inv);
      }
           
-     void apply(int_conv_operation_t /*op*/,
-		variable_t dst, unsigned /*dst_width*/,
-		variable_t src, unsigned /*src_width*/)  {
+     void apply(int_conv_operation_t /*op*/, variable_t dst, variable_t src)  {
        // ignore widths
        assign(dst, src);
      }

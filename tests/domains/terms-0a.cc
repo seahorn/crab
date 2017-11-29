@@ -14,8 +14,8 @@ int main (int argc, char** argv )
 
   variable_factory_t vfac;
 
-  z_var x(vfac["x"]);
-  z_var y(vfac["y"]);
+  z_var x(vfac["x"], crab::INT_TYPE);
+  z_var y(vfac["y"], crab::INT_TYPE);
 
   {
     z_term_domain_t dom_left = z_term_domain_t::top ();
@@ -31,7 +31,7 @@ int main (int argc, char** argv )
   }
 
   {
-    z_var z(vfac["z"]);
+    z_var z(vfac["z"], crab::INT_TYPE);
 
     z_term_domain_t inv = z_term_domain_t::top ();
     inv.assign (x, 5);

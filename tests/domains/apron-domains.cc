@@ -10,10 +10,10 @@ using namespace crab::domain_impl;
 z_cfg_t* prog1 (variable_factory_t &vfac)  {
 
   // Definining program variables
-  z_var i (vfac ["i"]);
-  z_var k (vfac ["k"]);
-  z_var x1 (vfac ["x1"]);
-  z_var x2 (vfac ["x2"]);
+  z_var i (vfac ["i"], crab::INT_TYPE);
+  z_var k (vfac ["k"], crab::INT_TYPE);
+  z_var x1 (vfac ["x1"], crab::INT_TYPE);
+  z_var x2 (vfac ["x2"], crab::INT_TYPE);
   // entry and exit block
   z_cfg_t* cfg = new z_cfg_t("entry","ret");
   // adding blocks
@@ -63,9 +63,9 @@ z_cfg_t* prog2 (variable_factory_t &vfac)
   loop2_bb1 >> loop2_bb1_t; loop2_bb1 >> loop2_bb1_f;
   loop2_bb1_t >> loop2_bb2; loop2_bb2 >> loop2_bb1; loop2_bb1_f >> ret;
 
-  z_var i(vfac["i"]);
-  z_var j(vfac["j"]);
-  z_var k(vfac["k"]);
+  z_var i(vfac["i"], crab::INT_TYPE);
+  z_var j(vfac["j"], crab::INT_TYPE);
+  z_var k(vfac["k"], crab::INT_TYPE);
 
   loop1_entry.assign (i, 0);
   loop1_entry.assign (k, 30);
@@ -120,7 +120,7 @@ z_cfg_t* prog3 (variable_factory_t &vfac)
   loop2_body >> loop2_head;
   loop2_f >> ret;
   
-  z_var i(vfac["i"]);
+  z_var i(vfac["i"], crab::INT_TYPE);
 
   entry.assign (i, 0);
   loop1_t.assume (i <= 10);
@@ -155,8 +155,8 @@ z_cfg_t* prog4 (variable_factory_t &vfac)
   loop_body >> loop_head;
   loop_f >> ret;
 
-  z_var i(vfac["i"]);
-  z_var p(vfac["p"]);
+  z_var i(vfac["i"], crab::INT_TYPE);
+  z_var p(vfac["p"], crab::INT_TYPE);
 
   entry.assign (i, 0);
   entry.assign (p, 0);
@@ -173,9 +173,9 @@ z_cfg_t* prog4 (variable_factory_t &vfac)
 z_cfg_t* prog5 (variable_factory_t &vfac)  {
 
   // Definining program variables
-  z_var i (vfac ["i"]);
-  z_var k (vfac ["k"]);
-  z_var nd (vfac ["nd"]);
+  z_var i (vfac ["i"], crab::INT_TYPE);
+  z_var k (vfac ["k"], crab::INT_TYPE);
+  z_var nd (vfac ["nd"], crab::INT_TYPE);
   // entry and exit block
   z_cfg_t* cfg = new z_cfg_t("entry","ret");
   // adding blocks
@@ -338,8 +338,8 @@ int main (int argc, char** argv ) {
     variable_factory_t vfac;
     z_opt_oct_apron_domain_t inv1 = z_opt_oct_apron_domain_t::top ();
     z_opt_oct_apron_domain_t inv2 = z_opt_oct_apron_domain_t::top ();
-    z_var i(vfac ["i"]);
-    z_var k(vfac ["k"]);
+    z_var i(vfac ["i"], crab::INT_TYPE);
+    z_var k(vfac ["k"], crab::INT_TYPE);
 
     {
       z_lin_cst_sys_t csts;

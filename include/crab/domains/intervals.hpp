@@ -1437,8 +1437,7 @@ namespace ikos {
     // cast_operators_api
     
     void apply(crab::domains::int_conv_operation_t /*op*/,
-	       variable_t dst, unsigned /*dst_width*/,
-	       variable_t src, unsigned /*src_width*/){
+	       variable_t dst, variable_t src){
       // ignore the widths 
       assign(dst, src);
     }
