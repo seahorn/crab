@@ -1,5 +1,4 @@
-#ifndef ASSUMPTION_ANALYSIS_HPP
-#define ASSUMPTION_ANALYSIS_HPP
+#pragma once 
 
 /**
    Dataflow analysis that computes the set of unjustified assumptions
@@ -33,7 +32,7 @@ namespace crab {
       
     public:
       
-      typedef flat_killgen_domain<typename CFG::varname_t> var_dom_t;
+      typedef flat_killgen_domain<typename CFG::variable_t> var_dom_t;
       typedef typename CFG::basic_block_t::statement_t statement_t;
       
      protected:
@@ -407,4 +406,3 @@ namespace crab {
     
   } // end namespace
 } // end namespace
-#endif 

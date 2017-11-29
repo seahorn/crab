@@ -1,5 +1,4 @@
-#ifndef CRAB_COMMON_HPP
-#define CRAB_COMMON_HPP
+#pragma once 
 
 #include <iosfwd>
 #include <stdarg.h>
@@ -146,6 +145,8 @@ namespace crab {
      return o;
    }
 
+  typedef uint8_t bitwidth_t;
+  
    typedef enum { 
      BINOP_ADD, BINOP_SUB, BINOP_MUL, 
      BINOP_SDIV, BINOP_UDIV, BINOP_SREM, BINOP_UREM,
@@ -213,12 +214,12 @@ namespace crab {
   // toy language for pointer constraints
   typedef enum  { PTR_EQUALITY, PTR_DISEQUALITY } ptr_cst_kind_t;  
 
-  template<typename VariableName>
+  template<typename Variable>
   class pointer_constraint {
    public:
 
-    typedef pointer_constraint <VariableName> ptr_cst_t;
-    typedef boost::optional<VariableName> opt_var_t;
+    typedef pointer_constraint <Variable> ptr_cst_t;
+    typedef boost::optional<Variable> opt_var_t;
 
    private:
 
@@ -279,12 +280,12 @@ namespace crab {
       return (_lhs && _rhs);
     }
 
-    VariableName lhs () const {
+    Variable lhs () const {
       if (!_lhs) CRAB_ERROR ("pointer constraint lhs is null");
       return *_lhs;
     }
 
-    VariableName rhs () const {
+    Variable rhs () const {
       if (!_rhs) CRAB_ERROR ("pointer constraint rhs is null");
       return *_rhs;
     }
@@ -297,19 +298,19 @@ namespace crab {
       return ptr_cst_t (opt_var_t (), opt_var_t (), PTR_DISEQUALITY);
     }
 
-    static ptr_cst_t mk_eq_null (VariableName v)  {
+    static ptr_cst_t mk_eq_null (Variable v)  {
       return ptr_cst_t (opt_var_t (v), opt_var_t (), PTR_EQUALITY);
     }
 
-    static ptr_cst_t mk_diseq_null (VariableName v) {
+    static ptr_cst_t mk_diseq_null (Variable v) {
       return ptr_cst_t (opt_var_t (v), opt_var_t (), PTR_DISEQUALITY);
     }
 
-    static ptr_cst_t mk_eq (VariableName v1, VariableName v2)  {
+    static ptr_cst_t mk_eq (Variable v1, Variable v2)  {
       return ptr_cst_t (opt_var_t (v1), opt_var_t (v2), PTR_EQUALITY);
     }
 
-    static ptr_cst_t mk_diseq (VariableName v1, VariableName v2)  {
+    static ptr_cst_t mk_diseq (Variable v1, Variable v2)  {
       return ptr_cst_t (opt_var_t (v1), opt_var_t (v2), PTR_DISEQUALITY);
     }
 
@@ -336,8 +337,7 @@ namespace crab {
     }
   };
 
-  inline crab::crab_os& operator<<(crab::crab_os& o, 
-                                   const ptr_cst_kind_t &k) {
+  inline crab::crab_os& operator<<(crab::crab_os& o, const ptr_cst_kind_t &k) {
     if (k == PTR_EQUALITY ) 
       o << " == ";
     else 
@@ -345,9 +345,9 @@ namespace crab {
     return o;
   }
     
-  template<typename VariableName>  
+  template<typename Variable>  
   inline crab::crab_os& operator<<(crab::crab_os& o, 
-                                   const pointer_constraint<VariableName> &cst) {
+                                   const pointer_constraint<Variable> &cst) {
     cst.write (o);
     return o;
   }
@@ -370,14 +370,13 @@ namespace ikos {
     return o;
   }
 
-  // Container for _numerical_ variables used by the crab abstract
-  // domains and linear_constraints.  
-  // XXX: Number is required even if the class does not use it.  This
-  // allows, e.g., linear_constraint to deduce the kind of Number from
-  // constraints like x < y.
-  template< typename Number, typename VariableName >
-  class variable: public writeable {
-
+  // Container for typed variables used by the crab abstract domains
+  // and linear_constraints.
+  template< typename Number, typename VariableName >  
+  class variable {
+    // XXX: template parameter Number is required even if the class
+    // does not use it.  This allows, e.g., linear_constraint to
+    // deduce the kind of Number from constraints like x < y.
     VariableName _n;
   
    public:
@@ -387,47 +386,54 @@ namespace ikos {
 
    public:
     
-    explicit variable(const VariableName& n): writeable (), _n(n) { }
+    explicit variable(const VariableName& n): _n(n) { }
 
     explicit variable(VariableName&& o): _n(std::move(o)) { }
     
-    variable(const variable_t& v): writeable(), _n(v._n) { }
+    variable(const variable_t& v): _n(v._n) { }
     
     variable_t& operator=(const variable_t &o) {
-      if (this != &o)
+      if (this != &o) {
         this->_n = o._n;
+      }
       return *this;
     }
-    
+
     const VariableName& name() const { return _n; }
+
+    // Cannot be const because from VariableName we might want to
+    // access to its variable factory to create e.g., new
+    // VariableName's.
+    VariableName& name() { return _n;}
     
     index_t index() const { return _n.index(); }
+
+    bool operator==(const variable_t& o) const {
+      return _n.index () == o._n.index ();
+    }
+
+    bool operator!=(const variable_t& o) const {
+      return (!(operator==(o)));
+    }
     
     bool operator<(const variable_t& o) const {
       return _n.index () < o._n.index ();
     }
     
-    void write(crab::crab_os& o) { o << _n; }
+    void write(crab::crab_os& o) const {
+      o << _n;
+    }
         
   }; // class variable
 
   template< typename Number, typename VariableName >
   inline index_t hash_value (const variable<Number, VariableName> &v) {
-    // ignore type for computing hash value
     return v.index ();
   }
   
   template< typename Number, typename VariableName >
-  inline crab::crab_os& operator<<(crab::crab_os& o, variable<Number, VariableName> &v) {
+  inline crab::crab_os& operator<<(crab::crab_os& o, const variable<Number, VariableName> &v) {
     v.write(o);
-    return o;
-  }
-
-  template<typename Number, typename VariableName>
-  inline crab::crab_os& operator<<(crab::crab_os &o, const variable<Number, VariableName> &v)
-  {
-    auto tmp (v);
-    tmp.write (o);
     return o;
   }
 
@@ -439,4 +445,3 @@ namespace crab {
   }
 }
 
-#endif // CRAB_COMMON_HPP

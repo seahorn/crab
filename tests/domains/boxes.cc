@@ -274,9 +274,9 @@ int main (int argc, char** argv )
 
   if (true) { 
     crab::outs() << "Testing some boxes operations ...\n";
-    varname_t x = vfac["x"];
-    varname_t y = vfac["y"];
-    varname_t z = vfac["z"];
+    z_var x(vfac["x"]);
+    z_var y(vfac["y"]);
+    z_var z(vfac["z"]);
 
     z_boxes_domain_t inv1 = z_boxes_domain_t::top ();
 

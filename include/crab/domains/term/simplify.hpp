@@ -1,5 +1,4 @@
-#ifndef __TERM_SIMPLIFIER_HPP__
-#define __TERM_SIMPLIFIER_HPP__
+#pragma once
 
 #include <crab/common/types.hpp>
 #include <boost/optional.hpp>
@@ -106,4 +105,3 @@ namespace crab {
      } //end namespace term
   } //end namespace domains
 } // end namespace crab
-#endif

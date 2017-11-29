@@ -39,8 +39,8 @@ z_cfg_t* prog (variable_factory_t &vfac)  {
   entry.assign (w, 3);
   bb1_t.assume (i <= 99);
   bb1_f.assume (i >= 100);
-  bb2.havoc(nd1.name());
-  bb2.havoc(nd2.name());
+  bb2.havoc(nd1);
+  bb2.havoc(nd2);
   bb2.add(x,x,y);
   bb2.add(y,y,1);
   bb2.bitwise_xor(z,z,nd1);

@@ -1,5 +1,5 @@
-#ifndef __TERM_EXPR_H__
-#define __TERM_EXPR_H__
+#pragma once
+
 #include <map>
 #include <memory>
 #include <boost/optional.hpp>
@@ -709,4 +709,3 @@ namespace crab {
  } // end namepsace domains
 } // end namespace crab
 #pragma GCC diagnostic pop
-#endif

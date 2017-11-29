@@ -1,5 +1,4 @@
-#ifndef NULLITY_HPP
-#define NULLITY_HPP
+#pragma once
 
 /* A flat lattice for nullity */
 
@@ -120,7 +119,6 @@ namespace crab {
       public abstract_domain<Number, VariableName,
 			     nullity_domain<Number,VariableName> > {
     
-    typedef separate_domain< VariableName, nullity_value > separate_domain_t;
     typedef nullity_domain<Number, VariableName> nullity_domain_t;
     // lin_exp_t == linear_expression_t
     typedef typename pointer_operators <Number, VariableName>::lin_exp_t lin_exp_t;
@@ -130,6 +128,14 @@ namespace crab {
 
     typedef VariableName varname_t;
     typedef Number number_t;
+    typedef ikos::variable<number_t,varname_t> variable_t;
+
+   private:
+    
+    typedef separate_domain<variable_t, nullity_value> separate_domain_t;
+    
+   public:
+    
     typedef linear_expression<Number, VariableName> linear_expression_t;
     typedef linear_constraint<Number, VariableName> linear_constraint_t;
     typedef linear_constraint_system<Number, VariableName> linear_constraint_system_t;
@@ -223,28 +229,28 @@ namespace crab {
       return (_env && o._env);
     }
     
-    void set_nullity(VariableName v, nullity_value n) {
+    void set_nullity(variable_t v, nullity_value n) {
       if (!is_bottom())
         _env.set(v, n);
     }
 
-    void set_nullity(VariableName x, VariableName y) {
+    void set_nullity(variable_t x, variable_t y) {
       if (!is_bottom())
         _env.set (x, _env[y]);
 
       CRAB_LOG("nullity", crab::outs () << "After " << x << ":="  << y << "=" << *this <<"\n");
     }
     
-    nullity_value get_nullity(VariableName v) { 
+    nullity_value get_nullity(variable_t v) { 
       return _env[v]; 
     }
     
-    void operator-=(VariableName v) { 
+    void operator-=(variable_t v) { 
       if (!is_bottom ())
         _env -= v; 
     }
         
-    void equality (VariableName p, VariableName q) {
+    void equality (variable_t p, variable_t q) {
       if (is_bottom ()) return;
 
       // if (p == q) ...
@@ -255,14 +261,14 @@ namespace crab {
       CRAB_LOG("nullity", crab::outs () << "After " << p << "=="  << q << "=" << *this <<"\n");
     }
 
-    void equality (VariableName p, nullity_value v) {
+    void equality (variable_t p, nullity_value v) {
       if (!is_bottom ()) 
         _env.set(p, _env[p] & v);
 
       CRAB_LOG("nullity", crab::outs () << "After " << p << "=="  << v << "=" << *this <<"\n");
     }
     
-    void disequality (VariableName p, VariableName q) {
+    void disequality (variable_t p, variable_t q) {
       if (is_bottom ()) return;
 
       // if (p != q) ...
@@ -277,7 +283,7 @@ namespace crab {
       CRAB_LOG("nullity", crab::outs () << "After " << p << "!="  << q << "=" << *this <<"\n");
     }
     
-    void disequality (VariableName p, nullity_value v) {
+    void disequality (variable_t p, nullity_value v) {
       if (is_bottom ()) return;
 
       if (_env[p].is_null() && v.is_null()) {
@@ -291,64 +297,64 @@ namespace crab {
 
     // numerical_domains_api
     // XXX: needed for making a reduced product with a numerical domain
-    void apply(operation_t op, VariableName x, VariableName y, VariableName z) {}
-    void apply(operation_t op, VariableName x, VariableName y, Number k) {}
-    void assign(VariableName x, linear_expression_t e) {}
-    void backward_assign (VariableName x, linear_expression_t e,
+    void apply(operation_t op, variable_t x, variable_t y, variable_t z) {}
+    void apply(operation_t op, variable_t x, variable_t y, Number k) {}
+    void assign(variable_t x, linear_expression_t e) {}
+    void backward_assign (variable_t x, linear_expression_t e,
 			  nullity_domain_t invariant)  {}
-    void backward_apply (operation_t op, VariableName x, VariableName y, Number z,
+    void backward_apply (operation_t op, variable_t x, variable_t y, Number z,
 			 nullity_domain_t invariant)  {}
-    void backward_apply(operation_t op, VariableName x, VariableName y, VariableName z,
+    void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
 			nullity_domain_t invariant) {}
     void operator+=(linear_constraint_system_t csts) {}
     void operator+=(linear_constraint_t cst) {}
     // not part of the numerical_domains api but it should be
-    void set (VariableName x, interval_t intv) {}
-    interval_t operator[](VariableName x) { return interval_t::top ();}
+    void set (variable_t x, interval_t intv) {}
+    interval_t operator[](variable_t x) { return interval_t::top ();}
 
     // division_operators_api
     // XXX: needed for making a reduced product with a numerical domain
-    void apply(div_operation_t op, VariableName x, VariableName y, VariableName z) {}
-    void apply(div_operation_t op, VariableName x, VariableName y, Number z) {}
+    void apply(div_operation_t op, variable_t x, variable_t y, variable_t z) {}
+    void apply(div_operation_t op, variable_t x, variable_t y, Number z) {}
     
     // int_cast_operators_api and bitwise_operators_api
     // XXX: needed for making a reduced product with a numerical domain
     void apply(int_conv_operation_t op,
-	       VariableName dst, unsigned dst_width, VariableName src, unsigned src_width) {}
-    void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) {}
-    void apply(bitwise_operation_t op, VariableName x, VariableName y, Number z) {}
+	       variable_t dst, unsigned dst_width, variable_t src, unsigned src_width) {}
+    void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {}
+    void apply(bitwise_operation_t op, variable_t x, variable_t y, Number z) {}
 
     // pointer_operators_api 
-    virtual void pointer_load (VariableName /*lhs*/, VariableName rhs) override {
+    virtual void pointer_load (variable_t /*lhs*/, variable_t rhs) override {
       // XXX: assume after the load the rhs must be non-null otherwise
       // the program failed.
       equality (rhs, nullity_value::non_null ());
     }
 
-    virtual void pointer_store (VariableName lhs, VariableName /*rhs*/) override {
+    virtual void pointer_store (variable_t lhs, variable_t /*rhs*/) override {
       // XXX: assume after the store the lhs must be non-null
       // otherwise the program failed.
       equality (lhs, nullity_value::non_null ());
     } 
 
-    virtual void pointer_assign (VariableName lhs, VariableName rhs,
+    virtual void pointer_assign (variable_t lhs, variable_t rhs,
 				 lin_exp_t /*offset*/) override {
       set_nullity (lhs, rhs);
       CRAB_LOG("nullity",
 	       crab::outs () << "After " << lhs << ":=" << rhs << "=" << *this << "\n");
     }
 
-    virtual void pointer_mk_obj (VariableName lhs, ikos::index_t /*address*/) override {
+    virtual void pointer_mk_obj (variable_t lhs, ikos::index_t /*address*/) override {
       set_nullity (lhs, nullity_value::non_null ());
       CRAB_LOG("nullity",
 	       crab::outs () << "After " << lhs << ":= mk_object()" << "=" << *this << "\n");
     }
 
-    virtual void pointer_function (VariableName lhs, VariableName /*func*/) override {
+    virtual void pointer_function (variable_t lhs, VariableName /*func*/) override {
       set_nullity (lhs, nullity_value::non_null ());
     }
     
-    virtual void pointer_mk_null (VariableName lhs) override {
+    virtual void pointer_mk_null (variable_t lhs) override {
       set_nullity (lhs, nullity_value::null ());
       CRAB_LOG("nullity",
 	       crab::outs () << "After " << lhs << ":= NULL" << "=" << *this << "\n");
@@ -403,9 +409,11 @@ namespace crab {
    class domain_traits <nullity_domain<Number,VariableName> > {
 
      typedef nullity_domain<Number,VariableName> nullity_domain_t;
-
+     
     public:
 
+     typedef typename nullity_domain_t::variable_t variable_t;
+     
      template<class CFG>
      static void do_initialization (CFG cfg) { }
 
@@ -430,7 +438,7 @@ namespace crab {
      }
          
      // Make a new copy of x without relating x with new_x
-     static void expand (nullity_domain_t& inv, VariableName x, VariableName new_x) {
+     static void expand (nullity_domain_t& inv, variable_t x, variable_t new_x) {
        inv.set_nullity (new_x , inv.get_nullity (x));
      }
 
@@ -439,4 +447,3 @@ namespace crab {
   } // end namespace domains 
 } // end namespace crab
 
-#endif 

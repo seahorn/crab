@@ -1,5 +1,4 @@
-#ifndef FLAT_BOOLEAN_DOMAIN_HPP
-#define FLAT_BOOLEAN_DOMAIN_HPP
+#pragma once
 
 /* 
    A simple flat 3-valued boolean domain and a reduced product of this
@@ -198,7 +197,6 @@ namespace crab {
     public abstract_domain<Number,VariableName,
 			   flat_boolean_domain<Number,VariableName> > {
     
-    typedef separate_domain< VariableName, boolean_value> separate_domain_t;
     typedef flat_boolean_domain<Number, VariableName> flat_boolean_domain_t;
     
    public:
@@ -213,7 +211,9 @@ namespace crab {
     typedef interval<Number>  interval_t;
     typedef abstract_domain<Number,VariableName,
 			    flat_boolean_domain<Number,VariableName> > abstract_domain_t;
-    using typename abstract_domain_t::varname_vector_t;          
+    using typename abstract_domain_t::variable_vector_t;
+
+    typedef separate_domain<variable_t, boolean_value> separate_domain_t;
     typedef typename separate_domain_t::iterator iterator;
 
    private:
@@ -329,7 +329,7 @@ namespace crab {
       return (_env && o._env);
     }
       
-    void operator-=(VariableName v) {
+    void operator-=(variable_t v) {
       crab::CrabStats::count (getDomainName() + ".count.forget");
       crab::ScopedCrabStats __st__(getDomainName() + ".forget");
       if (!is_bottom ())
@@ -340,7 +340,7 @@ namespace crab {
 
     // XXX: the flat boolean domain cannot reason about linear
     // constraints so we assign top to x.
-    void assign_bool_cst (VariableName x, linear_constraint_t cst)
+    void assign_bool_cst (variable_t x, linear_constraint_t cst)
     {
       _env -= x;
       CRAB_LOG("flat-boolean",
@@ -348,7 +348,7 @@ namespace crab {
 	       crab::outs () << x << ":=" << bx << "\n");
     }    
 
-    void assign_bool_var (VariableName x, VariableName y, bool is_not_y) {
+    void assign_bool_var (variable_t x, variable_t y, bool is_not_y) {
       crab::CrabStats::count (getDomainName() + ".count.assign_bool_var");
       crab::ScopedCrabStats __st__(getDomainName() + ".assign_bool_var");          
       _env.set (x, (is_not_y ? _env[y].Negate() : _env [y]));
@@ -363,7 +363,7 @@ namespace crab {
     }
 
     void apply_binary_bool(bool_operation_t op,
-			   VariableName x, VariableName y, VariableName z) {
+			   variable_t x, variable_t y, variable_t z) {
       crab::CrabStats::count (getDomainName() + ".count.apply_binary_bool");
       crab::ScopedCrabStats __st__(getDomainName() + ".apply_binary_bool");          
       
@@ -387,7 +387,7 @@ namespace crab {
  	                                 << " --->" << x << "=" << bx << "\n");
     }
 
-    void assume_bool (VariableName x, bool is_negated) {
+    void assume_bool (variable_t x, bool is_negated) {
       crab::CrabStats::count (getDomainName() + ".count.assume_bool");
       crab::ScopedCrabStats __st__(getDomainName() + ".assume_bool");          
       
@@ -410,15 +410,15 @@ namespace crab {
     // api but they are used by flat_boolean_numerical_domain and
     // domain_traits.
     
-    void set_bool (VariableName x, boolean_value v)
+    void set_bool (variable_t x, boolean_value v)
     { _env.set(x, v); }
     
-    boolean_value get_bool (VariableName x)
+    boolean_value get_bool (variable_t x)
     { return _env[x];}
 
 
     // backward boolean operators
-    void backward_assign_bool_cst(VariableName lhs, linear_constraint_t rhs,
+    void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
 				  flat_boolean_domain_t inv){
       crab::CrabStats::count (getDomainName() + ".count.backward_assign_bool_cst");
       crab::ScopedCrabStats __st__(getDomainName() + ".backward_assign_bool_cst");
@@ -428,7 +428,7 @@ namespace crab {
       _env -= lhs;
     }
     
-    void backward_assign_bool_var(VariableName lhs, VariableName rhs, bool is_not_rhs,
+    void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
 				  flat_boolean_domain_t inv) {
       crab::CrabStats::count (getDomainName() + ".count.backward_assign_bool_var");
       crab::ScopedCrabStats __st__(getDomainName() + ".backward_assign_bool_var");
@@ -444,7 +444,7 @@ namespace crab {
     }
     
     void backward_apply_binary_bool(bool_operation_t op,
-				    VariableName x,VariableName y,VariableName z,
+				    variable_t x,variable_t y,variable_t z,
 				    flat_boolean_domain_t inv) {
       crab::CrabStats::count (getDomainName() + ".count.backward_apply_binary_bool");
       crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply_binary_bool");
@@ -462,34 +462,34 @@ namespace crab {
     
     // numerical_domains_api
     // XXX: needed for making a reduced product with a numerical domain
-    void apply(operation_t op, VariableName x, VariableName y, VariableName z) {}
-    void apply(operation_t op, VariableName x, VariableName y, Number k) {}
-    void assign(VariableName x, linear_expression_t e) {}
-    void backward_assign(VariableName x, linear_expression_t e,
+    void apply(operation_t op, variable_t x, variable_t y, variable_t z) {}
+    void apply(operation_t op, variable_t x, variable_t y, Number k) {}
+    void assign(variable_t x, linear_expression_t e) {}
+    void backward_assign(variable_t x, linear_expression_t e,
 			 flat_boolean_domain_t invariant)  {}
     void backward_apply(operation_t op,
-			VariableName x, VariableName y, Number z,
+			variable_t x, variable_t y, Number z,
 			flat_boolean_domain_t invariant) {}
     void backward_apply(operation_t op,
-			VariableName x, VariableName y, VariableName z,
+			variable_t x, variable_t y, variable_t z,
 			flat_boolean_domain_t invariant) {}
     void operator+=(linear_constraint_system_t csts) {}
     void operator+=(linear_constraint_t cst) {}
     // not part of the numerical_domains api but it should be
-    void set (VariableName x, interval_t intv) {}
-    interval_t operator[](VariableName x) { return interval_t::top ();}
+    void set (variable_t x, interval_t intv) {}
+    interval_t operator[](variable_t x) { return interval_t::top ();}
 
     // division_operators_api
     // XXX: needed for making a reduced product with a numerical domain
-    void apply(div_operation_t op, VariableName x, VariableName y, VariableName z) {}
-    void apply(div_operation_t op, VariableName x, VariableName y, Number z) {}
+    void apply(div_operation_t op, variable_t x, variable_t y, variable_t z) {}
+    void apply(div_operation_t op, variable_t x, variable_t y, Number z) {}
     
     // int_cast_operators_api and bitwise_operators_api
     // XXX: needed for making a reduced product with a numerical domain
     void apply(int_conv_operation_t op,
-	       VariableName dst, unsigned dst_width, VariableName src, unsigned src_width) {}
-    void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) {}
-    void apply(bitwise_operation_t op, VariableName x, VariableName y, Number z) {}
+	       variable_t dst, unsigned dst_width, variable_t src, unsigned src_width) {}
+    void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {}
+    void apply(bitwise_operation_t op, variable_t x, variable_t y, Number z) {}
 
     static std::string getDomainName () {return "Boolean"; }
 
@@ -517,7 +517,7 @@ namespace crab {
       return res;
     }
     
-    void rename(const varname_vector_t &from, const varname_vector_t &to) {
+    void rename(const variable_vector_t &from, const variable_vector_t &to) {
       if (is_top () || is_bottom()) return;
       
       // we need to create a new separate_domain since it cannot be
@@ -545,6 +545,8 @@ namespace crab {
 
     public:
 
+     typedef ikos::variable<Number, VariableName> variable_t;
+     
      template<class CFG>
      static void do_initialization (CFG cfg) { }
 
@@ -569,7 +571,7 @@ namespace crab {
      }
          
      // Make a new copy of x without relating x with new_x
-     static void expand (flat_boolean_domain_t& inv, VariableName x, VariableName new_x) {
+     static void expand (flat_boolean_domain_t& inv, variable_t x, variable_t new_x) {
        inv.set_bool (new_x , inv.get_bool (x));
      }
      
@@ -599,12 +601,12 @@ namespace crab {
       using typename abstract_domain_t::linear_constraint_t;
       using typename abstract_domain_t::linear_constraint_system_t;
       using typename abstract_domain_t::variable_t;
-      using typename abstract_domain_t::varname_vector_t;      
+      using typename abstract_domain_t::variable_vector_t;      
       typedef typename NumDom::number_t number_t;
       typedef typename NumDom::varname_t varname_t;      
       typedef interval<N> interval_t;
       typedef bound<N> bound_t;      
-      typedef crab::pointer_constraint<V> ptr_cst_t;
+      typedef crab::pointer_constraint<variable_t> ptr_cst_t;
       
      private:
 
@@ -679,7 +681,7 @@ namespace crab {
       // Map bool variables to sets of constraints such that if the
       // bool variable is true then the conjunction of the constraints
       // must be satisfiable.
-      typedef separate_domain<V, lin_cst_set_domain> var_lincons_map_t;
+      typedef separate_domain<variable_t, lin_cst_set_domain> var_lincons_map_t;
       /** we need to keep track which constraints still hold at the
 	  time the reduction from boolean variables to numerical ones
 	  is done. For instance,
@@ -886,34 +888,34 @@ namespace crab {
       
       // numerical_domains_api
 
-      void apply(operation_t op, V x, V y, V z) {
+      void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
 	_product.apply(op, x, y, z);
 	_unchanged_vars -= variable_t(x);
       }
       
-      void apply(operation_t op, V x, V y, N k) {
+      void apply(operation_t op, variable_t x, variable_t y, N k) {
 	_product.apply(op, x, y, k);
 	_unchanged_vars -= variable_t(x);	
       }
 
-      void assign(V x, linear_expression_t e) {
+      void assign(variable_t x, linear_expression_t e) {
 	_product.assign(x, e);
 	_unchanged_vars -= variable_t(x);	
       }
 
-      void backward_assign (V x, linear_expression_t e,
+      void backward_assign (variable_t x, linear_expression_t e,
 			    bool_num_domain_t invariant) override {
 	_product.backward_assign(x,e,invariant._product);
 	_unchanged_vars -= variable_t(x);		
       }
       
-      void backward_apply (operation_t op, V x, V y, N z,
+      void backward_apply (operation_t op, variable_t x, variable_t y, N z,
 			   bool_num_domain_t invariant) override {
 	_product.backward_apply(op,x,y,z,invariant._product);
 	_unchanged_vars -= variable_t(x);		
       }
      
-      void backward_apply(operation_t op, V x, V y, V z,
+      void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
 			  bool_num_domain_t invariant) override {
 	_product.backward_apply(op,x,y,z,invariant._product);
 	_unchanged_vars -= variable_t(x);		
@@ -924,13 +926,13 @@ namespace crab {
 	for (auto v: csts.variables()) { _unchanged_vars -= v;}
       }
       
-      void set (V x, interval_t intv)
+      void set (variable_t x, interval_t intv)
       { // domain_product2 does not define set method
 	_product.second().set(x, intv);  // only on the numerical domain
 	_unchanged_vars -= variable_t(x);		
       }
             
-      interval_t operator[](V v)
+      interval_t operator[](variable_t v)
       { // domain_product2 does not define [] method
 	boolean_value bv = _product.first().get_bool (v);
 	interval_t isecond = _product.second()[v];
@@ -946,7 +948,7 @@ namespace crab {
 	  return isecond;
       }
 
-      void operator-=(V v) {
+      void operator-=(variable_t v) {
 	_product -= v;
 	_var_to_csts -= v;
 	_unchanged_vars -= variable_t(v);			
@@ -954,7 +956,7 @@ namespace crab {
       
       // boolean_operators
       
-      void assign_bool_cst (V x, linear_constraint_t cst)
+      void assign_bool_cst (variable_t x, linear_constraint_t cst)
       { /// Reduction from the numerical domain to the flat boolean
 	/// domain
 	
@@ -1005,7 +1007,7 @@ namespace crab {
 		  
       }
 
-      void assign_bool_var (V x, V y, bool is_not_y) {
+      void assign_bool_var (variable_t x, variable_t y, bool is_not_y) {
 	
 	if (is_bottom()) return;
 	
@@ -1031,7 +1033,7 @@ namespace crab {
 		                << "\tconstraints for reduction=" << _var_to_csts << "\n";);
       }
 
-      void apply_binary_bool(bool_operation_t op, V x, V y, V z) {
+      void apply_binary_bool(bool_operation_t op, variable_t x, variable_t y, variable_t z) {
 	
 	if (is_bottom()) return;
  
@@ -1061,7 +1063,7 @@ namespace crab {
 	_var_to_csts -= x;
       }
 
-      void assume_bool(V x, bool is_negated)
+      void assume_bool(variable_t x, bool is_negated)
       {
 	if (is_bottom()) return;
 	
@@ -1115,7 +1117,7 @@ namespace crab {
 		  crab::outs () << "After reduction=" << _product.second () << "\n";);
       }
 
-      void backward_assign_bool_cst(V lhs, linear_constraint_t rhs,
+      void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
 				    bool_num_domain_t inv){
 	/** TODO **/
 	/* 
@@ -1126,7 +1128,7 @@ namespace crab {
 	_var_to_csts -= lhs;
       }
       
-      void backward_assign_bool_var(V lhs, V rhs, bool is_not_rhs,
+      void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
 				    bool_num_domain_t inv) {
 	_product.backward_assign_bool_var(lhs, rhs, is_not_rhs, inv._product);
 	/** TODO: this can be done better **/
@@ -1134,7 +1136,7 @@ namespace crab {
       }
       
       void backward_apply_binary_bool(bool_operation_t op,
-				      V x,V y,V z,
+				      variable_t x,variable_t y,variable_t z,
 				      bool_num_domain_t inv) {
 	_product.backward_apply_binary_bool(op, x, y, z, inv._product);
 	/** TODO: this can be done better **/
@@ -1144,7 +1146,7 @@ namespace crab {
       // cast_operators_api
       
       void apply(int_conv_operation_t op,
-		 V dst, unsigned dst_width, V src, unsigned src_width) {
+		 variable_t dst, unsigned dst_width, variable_t src, unsigned src_width) {
 
 	CRAB_LOG("flat-boolean",
 		 crab::outs () << src << ":" << src_width << " " << op << " "
@@ -1193,69 +1195,69 @@ namespace crab {
       
       // bitwise_operators_api
       
-      void apply(bitwise_operation_t op, V x, V y, V z) {
+      void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {
 	_product.apply(op, x, y, z);
 	_unchanged_vars -= variable_t(x);				
       }
       
-      void apply(bitwise_operation_t op, V x, V y, N k) {
+      void apply(bitwise_operation_t op, variable_t x, variable_t y, N k) {
 	_product.apply(op, x, y, k);
 	_unchanged_vars -= variable_t(x);
       }
       
       // division_operators_api
       
-      void apply(div_operation_t op, V x, V y, V z) {
+      void apply(div_operation_t op, variable_t x, variable_t y, variable_t z) {
 	_product.apply(op, x, y, z);
 	_unchanged_vars -= variable_t(x);	
       }
       
-      void apply(div_operation_t op, V x, V y, N k) {
+      void apply(div_operation_t op, variable_t x, variable_t y, N k) {
 	_product.apply(op, x, y, k);
 	_unchanged_vars -= variable_t(x);		
       }
       
       // array_operators_api
       
-      virtual void array_assume (V a, crab::variable_type a_ty, 
+      virtual void array_assume (variable_t a, crab::variable_type a_ty, 
                                  linear_expression_t lb_idx,
 				 linear_expression_t ub_idx,
                                  linear_expression_t val) override
       { _product.array_assume (a, a_ty, lb_idx, ub_idx, val); }
       
-      virtual void array_load (V lhs, V a, crab::variable_type a_ty, 
+      virtual void array_load (variable_t lhs, variable_t a, crab::variable_type a_ty, 
                                linear_expression_t i, ikos::z_number bytes) override {
 	_product.array_load (lhs, a, a_ty, i, bytes);
 	if (a_ty == ARR_INT_TYPE || a_ty == ARR_REAL_TYPE)
 	  _unchanged_vars -= variable_t(lhs);	      
       }
       
-      virtual void array_store (V a, crab::variable_type a_ty, 
+      virtual void array_store (variable_t a, crab::variable_type a_ty, 
                                 linear_expression_t i,
 				linear_expression_t val, 
                                 ikos::z_number bytes, bool is_singleton) override
       { _product.array_store (a, a_ty, i, val, bytes, is_singleton); }
       
-      virtual void array_assign (V lhs, V rhs, crab::variable_type ty) override
+      virtual void array_assign (variable_t lhs, variable_t rhs, crab::variable_type ty) override
       { _product.array_assign (lhs, rhs, ty); }
       
       // pointer_operators_api
-      virtual void pointer_load (V lhs, V rhs) override
+      virtual void pointer_load (variable_t lhs, variable_t rhs) override
       {  _product.pointer_load (lhs, rhs); }
       
-      virtual void pointer_store (V lhs, V rhs) override
+      virtual void pointer_store (variable_t lhs, variable_t rhs) override
       { _product.pointer_store (lhs, rhs); }
       
-      virtual void pointer_assign (V lhs, V rhs, linear_expression_t offset) override
+      virtual void pointer_assign (variable_t lhs, variable_t rhs, linear_expression_t offset) override
       { _product.pointer_assign (lhs, rhs, offset); }
       
-      virtual void pointer_mk_obj (V lhs, ikos::index_t address) override
+      virtual void pointer_mk_obj (variable_t lhs, ikos::index_t address) override
       { _product.pointer_mk_obj (lhs, address); }
       
-      virtual void pointer_function (V lhs, V func) override
+      virtual void pointer_function (variable_t lhs, V func) override
       { _product.pointer_function (lhs, func); }
       
-      virtual void pointer_mk_null (V lhs) override
+      virtual void pointer_mk_null (variable_t lhs) override
       { _product.pointer_mk_null (lhs); }
       
       virtual void pointer_assume (ptr_cst_t cst) override
@@ -1277,12 +1279,12 @@ namespace crab {
       static std::string getDomainName()
       { return domain_product2_t::getDomainName (); }
 
-      void rename(const varname_vector_t &from, const varname_vector_t &to)
+      void rename(const variable_vector_t &from, const variable_vector_t &to)
       { _product.rename(from, to); }
 	
       // domain_traits_api
       
-      void expand(V x, V new_x) {
+      void expand(variable_t x, variable_t new_x) {
         crab::domains::domain_traits<bool_domain_t>::
 	  expand (_product.first(), x, new_x);	
         crab::domains::domain_traits<NumDom>::
@@ -1338,6 +1340,7 @@ namespace crab {
 
       typedef flat_boolean_numerical_domain<Num> product_t;
       typedef typename product_t::varname_t V;
+      typedef typename product_t::variable_t variable_t;
 
       template<class CFG>
       static void do_initialization (CFG cfg) { }
@@ -1346,7 +1349,7 @@ namespace crab {
         inv.normalize();
       }
 
-      static void expand (product_t& inv, V x, V new_x) {
+      static void expand (product_t& inv, variable_t x, variable_t new_x) {
         inv.expand (x, new_x);
       }
       
@@ -1365,4 +1368,3 @@ namespace crab {
   } // end namespace domains 
 } // end namespace crab
 
-#endif 

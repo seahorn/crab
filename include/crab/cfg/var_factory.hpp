@@ -1,5 +1,4 @@
-#ifndef VARIABLE_FACTORY_HPP
-#define VARIABLE_FACTORY_HPP
+#pragma once 
 
 /*
  * Factories for variable names. 
@@ -315,4 +314,3 @@ namespace crab {
   } // end namespace cfg
 } // end namespace crab
 
-#endif 

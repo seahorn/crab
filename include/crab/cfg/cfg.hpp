@@ -1,5 +1,4 @@
-#ifndef CFG_HPP
-#define CFG_HPP
+#pragma once 
 
 /* 
  * Build a CFG to interface with the abstract domains and fixpoint
@@ -118,10 +117,17 @@ namespace crab {
       return o;
     }
     
-    template< typename VariableName>
+    template<typename Number, typename VariableName>
     class Live
     {
-      typedef std::vector < VariableName > live_set_t;
+      
+     public:
+
+      typedef ikos::variable<Number, VariableName> variable_t;
+
+     private:
+      
+      typedef std::vector <variable_t> live_set_t;
 
      public:
       
@@ -133,7 +139,7 @@ namespace crab {
       live_set_t m_uses;
       live_set_t m_defs;
 
-      void add (live_set_t & s, VariableName v)
+      void add (live_set_t & s, variable_t v)
       {
         auto it = find (s.begin (), s.end (), v);
         if (it == s.end ()) s.push_back (v);
@@ -143,17 +149,15 @@ namespace crab {
       
       Live() { }
       
-      void add_use(const VariableName v){ add (m_uses,v);}
-      void add_def(const VariableName v){ add (m_defs,v);}
+      void add_use(const variable_t v){ add (m_uses,v);}
+      void add_def(const variable_t v){ add (m_defs,v);}
       
       const_use_iterator uses_begin() const { return m_uses.begin (); }
       const_use_iterator uses_end()   const { return m_uses.end (); }
       const_use_iterator defs_begin() const { return m_defs.begin (); }
       const_use_iterator defs_end()   const { return m_defs.end (); }
 
-      friend crab_os& operator<<(crab_os &o, 
-                                 const Live< VariableName> &live )
-      {
+      friend crab_os& operator<<(crab_os &o, const Live<Number,VariableName> &live) {
         o << "Use={"; 
         for (auto const& v: boost::make_iterator_range (live.uses_begin (), 
                                                         live.uses_end ()))
@@ -215,7 +219,7 @@ namespace crab {
     {
       
      public:
-      typedef Live<VariableName> live_t ;
+      typedef Live<Number, VariableName> live_t ;
       
      protected:
       live_t m_live;
@@ -346,9 +350,9 @@ namespace crab {
 		 debug_info dbg_info = debug_info ())
   	: statement_t (BIN_OP, dbg_info),
 	  m_lhs(lhs), m_op(op), m_op1(op1), m_op2(op2) {
-        this->m_live.add_def (m_lhs.name());
-        for (auto v: m_op1.variables()){ this->m_live.add_use (v.name()); }         
-        for (auto v: m_op2.variables()){ this->m_live.add_use (v.name()); }         
+        this->m_live.add_def (m_lhs);
+        for (auto v: m_op1.variables()){ this->m_live.add_use (v); }         
+        for (auto v: m_op2.variables()){ this->m_live.add_use (v); }         
       }
       
       variable_t lhs () const { return m_lhs; }
@@ -399,9 +403,9 @@ namespace crab {
       assignment (variable_t lhs, linear_expression_t rhs)
 	: statement_t (ASSIGN), m_lhs(lhs), m_rhs(rhs) 
       {
-        this->m_live.add_def (m_lhs.name());
+        this->m_live.add_def (m_lhs);
         for(auto v: m_rhs.variables()) 
-          this->m_live.add_use (v.name());
+          this->m_live.add_use (v);
       }
       
       variable_t lhs () const { return m_lhs; }
@@ -448,7 +452,7 @@ namespace crab {
 	statement_t (ASSUME), m_cst(cst) 
       { 
         for(auto v: cst.variables())
-          this->m_live.add_use (v.name()); 
+          this->m_live.add_use (v); 
       }
       
       linear_constraint_t constraint() const { return m_cst; }
@@ -504,19 +508,23 @@ namespace crab {
     template<class Number, class VariableName>
     class havoc_stmt: public statement<Number, VariableName> 
     {
-      
-      VariableName m_lhs;
-      
+
      public:
 
       typedef statement<Number,VariableName> statement_t;
+      typedef ikos::variable<Number,VariableName> variable_t;
+
+     private:
       
-      havoc_stmt (VariableName lhs): 
-          statement_t(HAVOC), m_lhs(lhs)  {
+      variable_t m_lhs;
+
+     public:
+      
+      havoc_stmt (variable_t lhs): statement_t(HAVOC), m_lhs(lhs)  {
         this->m_live.add_def (m_lhs);
       }
       
-      VariableName variable () const { return m_lhs; }
+      variable_t variable () const { return m_lhs; }
       
       virtual void accept (statement_visitor<Number, VariableName> *v) 
       {
@@ -571,13 +579,13 @@ namespace crab {
           statement_t(SELECT),
           m_lhs(lhs), m_cond(cond), m_e1(e1), m_e2(e2) 
       { 
-        this->m_live.add_def (m_lhs.name());
+        this->m_live.add_def (m_lhs);
         for (auto v: m_cond.variables())
-          this->m_live.add_use (v.name()); 
+          this->m_live.add_use (v); 
         for (auto v: m_e1.variables())
-          this->m_live.add_use (v.name()); 
+          this->m_live.add_use (v); 
         for (auto v: m_e2.variables())
-          this->m_live.add_use (v.name());
+          this->m_live.add_use (v);
       }
       
       variable_t lhs () const { return m_lhs; }
@@ -629,7 +637,7 @@ namespace crab {
             m_cst(cst)
       { 
         for(auto v: cst.variables())
-          this->m_live.add_use (v.name()); 
+          this->m_live.add_use (v); 
       }
       
       linear_constraint_t constraint() const { return m_cst; }
@@ -661,36 +669,42 @@ namespace crab {
     class int_cast_stmt: public statement<Number,VariableName> {
      public:
 
+      typedef ikos::variable<Number, VariableName> variable_t;
       typedef statement<Number,VariableName> statement_t;      
       
      private:
       
       cast_operation_t  m_op;
-      VariableName m_src;
-      unsigned m_src_width;
-      VariableName m_dst;
-      unsigned m_dst_width;      
+      variable_t m_src;
+      bitwidth_t m_src_width;
+      variable_t m_dst;
+      bitwidth_t m_dst_width;      
 
      public:
       
       int_cast_stmt (cast_operation_t op,
-		     VariableName src, unsigned src_width,
-		     VariableName dst, unsigned dst_width,
+		     variable_t src, int src_width,
+		     variable_t dst, int dst_width,
 		     debug_info dbg_info = debug_info ())
   	: statement_t (INT_CAST, dbg_info),
 	  m_op(op),
-	  m_src(src), m_src_width(src_width),
-	  m_dst(dst), m_dst_width(dst_width)  {
+	  m_src(src), m_src_width((bitwidth_t) src_width),
+	  m_dst(dst), m_dst_width((bitwidth_t) dst_width)  {
+	
+	if (!(src_width > 0 && src_width < 256))
+	  CRAB_ERROR("src bitwidth is not in the range [1,...,255]");
+	if (!(dst_width > 0 && dst_width < 256))
+	  CRAB_ERROR("dst bitwidth is not in the range [1,...,255]");
 
         this->m_live.add_use (m_src);
         this->m_live.add_def (m_dst);	
       }
       
       cast_operation_t op() const {return m_op;}
-      VariableName src() const {return m_src;}
-      unsigned src_width() const {return m_src_width;}
-      VariableName dst() const {return m_dst;}
-      unsigned dst_width() const {return m_dst_width;}      
+      variable_t src() const {return m_src;}
+      bitwidth_t src_width() const {return m_src_width;}
+      variable_t dst() const {return m_dst;}
+      bitwidth_t dst_width() const {return m_dst_width;}      
       
       virtual void accept(statement_visitor<Number,VariableName> *v) {
         v->visit(*this);
@@ -704,8 +718,10 @@ namespace crab {
       }
       
       virtual void write (crab_os& o) const {
+	// bitwidths are casted to int, otherwise operator<< may try
+	// to print them as characters if bitwidth_t = uint8_t
 	o << m_op << " " 
-	  << m_src << ":" << m_src_width << " to " << m_dst << ":" << m_dst_width;
+	  << m_src << ":" << (int) m_src_width << " to " << m_dst << ":" << (int) m_dst_width;
         return;
       }
     }; 
@@ -733,13 +749,13 @@ namespace crab {
      public:
 
       typedef statement<Number,VariableName> statement_t;                  
-      typedef ikos::linear_expression<Number, VariableName>
-      linear_expression_t;
-
+      typedef ikos::linear_expression<Number, VariableName> linear_expression_t;
+      typedef ikos::variable<Number, VariableName> variable_t;
+      
      private:
 
       // forall i \in [lb,ub] modulo elem_size. arr[i] == val
-      VariableName m_arr; 
+      variable_t m_arr; 
       variable_type m_arr_ty;
       uint64_t m_elem_size;
       linear_expression_t m_lb;
@@ -752,7 +768,7 @@ namespace crab {
       
      public:
       
-      array_assume_stmt (VariableName arr, variable_type arr_ty, uint64_t elem_size,
+      array_assume_stmt (variable_t arr, variable_type arr_ty, uint64_t elem_size,
                          linear_expression_t lb, linear_expression_t ub,
 			 linear_expression_t val): 
           statement_t (ARR_ASSUME),
@@ -770,14 +786,14 @@ namespace crab {
 
         this->m_live.add_use (m_arr);
         for(auto v: m_lb.variables()) 
-          this->m_live.add_use (v.name());
+          this->m_live.add_use (v);
         for(auto v: m_ub.variables()) 
-          this->m_live.add_use (v.name());
+          this->m_live.add_use (v);
 	for(auto v: m_val.variables())
-	  this->m_live.add_use (v.name());
+	  this->m_live.add_use (v);
       }
       
-      VariableName array () const { return m_arr; }
+      variable_t array () const { return m_arr; }
       
       variable_type array_type () const { return m_arr_ty; }
 
@@ -816,12 +832,12 @@ namespace crab {
      public:
 
       typedef statement<Number,VariableName> statement_t;                  
-      typedef ikos::linear_expression<Number, VariableName>
-      linear_expression_t;
+      typedef ikos::linear_expression<Number, VariableName> linear_expression_t;
+      typedef ikos::variable<Number, VariableName> variable_t;
       
      private:
       
-      VariableName m_arr;
+      variable_t m_arr;
       variable_type m_arr_ty;
       linear_expression_t m_index;
       linear_expression_t m_value;
@@ -835,7 +851,7 @@ namespace crab {
       
      public:
       
-      array_store_stmt (VariableName arr, variable_type arr_ty,
+      array_store_stmt (variable_t arr, variable_type arr_ty,
                         linear_expression_t index,
 			linear_expression_t value,  
                         uint64_t elem_size, bool is_sing = false)
@@ -852,12 +868,12 @@ namespace crab {
 	
         this->m_live.add_use (m_arr);
         for(auto v: m_index.variables()) 
-          this->m_live.add_use (v.name());
+          this->m_live.add_use (v);
 	for(auto v: m_value.variables())
-	  this->m_live.add_use (v.name());
+	  this->m_live.add_use (v);
       }
       
-      VariableName array () const { return m_arr; }
+      variable_t array () const { return m_arr; }
       
       linear_expression_t index () const { return m_index; }
       
@@ -900,37 +916,35 @@ namespace crab {
 
       typedef statement<Number,VariableName> statement_t;                        
       typedef ikos::linear_expression<Number, VariableName > linear_expression_t;
+      typedef ikos::variable<Number, VariableName> variable_t;
       
      private:
 
-      VariableName m_lhs;
-      VariableName m_array;
+      variable_t m_lhs;
+      variable_t m_array;
       variable_type m_arr_ty;
       linear_expression_t m_index;
       uint64_t m_elem_size; //! size in bytes
       
      public:
       
-      array_load_stmt (VariableName lhs, 
-                       VariableName arr, variable_type arr_ty,
-		       linear_expression_t index, 
-                       uint64_t elem_size)
-          : statement_t (ARR_LOAD),
-            m_lhs (lhs), m_array (arr), m_arr_ty (arr_ty),
-            m_index (index), m_elem_size (elem_size)
-      {
+      array_load_stmt (variable_t lhs, variable_t arr, variable_type arr_ty,
+		       linear_expression_t index, uint64_t elem_size) 
+	: statement_t (ARR_LOAD),
+	  m_lhs (lhs), m_array (arr), m_arr_ty (arr_ty),
+	  m_index (index), m_elem_size (elem_size) {
         if (m_arr_ty < ARR_BOOL_TYPE)
           CRAB_ERROR ("array_load must have array type");
           
         this->m_live.add_def (lhs);
         this->m_live.add_use (m_array);
         for(auto v: m_index.variables()) 
-          this->m_live.add_use (v.name());
+          this->m_live.add_use (v);
       }
       
-      VariableName lhs () const { return m_lhs; }
+      variable_t lhs () const { return m_lhs; }
       
-      VariableName array () const { return m_array; }
+      variable_t array () const { return m_array; }
 
       variable_type array_type () const { return m_arr_ty; }
       
@@ -964,19 +978,23 @@ namespace crab {
     {
       //! a = b
 
-      VariableName m_lhs;
-      VariableName m_rhs;
-      variable_type m_ty; // m_lhs and m_rhs have type m_ty      
 
      public:
       
       typedef statement<Number,VariableName> statement_t;                              
-      
-      array_assign_stmt (VariableName lhs, VariableName rhs, variable_type ty)
-          : statement_t (ARR_ASSIGN),
-            m_lhs (lhs), m_rhs (rhs), m_ty (ty)
-      {
+      typedef ikos::variable<Number, VariableName> variable_t;
 
+     private:
+      
+      variable_t m_lhs;
+      variable_t m_rhs;
+      variable_type m_ty; // m_lhs and m_rhs have type m_ty      
+
+     public:
+      
+      array_assign_stmt (variable_t lhs, variable_t rhs, variable_type ty)
+	: statement_t (ARR_ASSIGN),
+	  m_lhs (lhs), m_rhs (rhs), m_ty (ty) {
         if (m_ty < ARR_BOOL_TYPE)
           CRAB_ERROR ("array_assign must have array type");
 	
@@ -984,9 +1002,9 @@ namespace crab {
         this->m_live.add_use (rhs);
       }
       
-      VariableName lhs () const { return m_lhs; }
+      variable_t lhs () const { return m_lhs; }
       
-      VariableName rhs () const { return m_rhs; }
+      variable_t rhs () const { return m_rhs; }
       
       variable_type array_type () const { return m_ty; }
 
@@ -1019,25 +1037,27 @@ namespace crab {
     {
       // p = *q
       
-      VariableName m_lhs;
-      VariableName m_rhs;
-      
      public:
 
       typedef statement<Number,VariableName> statement_t;
-      
-      ptr_load_stmt (VariableName lhs, VariableName rhs, 
-               debug_info dbg_info = debug_info ())
-          : statement_t (PTR_LOAD, dbg_info),
-            m_lhs (lhs), m_rhs (rhs)
-      {
+      typedef ikos::variable<Number, VariableName> variable_t;
+
+     private:
+
+      variable_t m_lhs;
+      variable_t m_rhs;
+
+     public:
+
+      ptr_load_stmt (variable_t lhs, variable_t rhs, debug_info dbg_info = debug_info ())
+	: statement_t (PTR_LOAD, dbg_info), m_lhs (lhs), m_rhs (rhs) {
         this->m_live.add_use (lhs);
         this->m_live.add_use (rhs);
       }
       
-      VariableName lhs () const { return m_lhs; }
+      variable_t lhs () const { return m_lhs; }
       
-      VariableName rhs () const { return m_rhs; }
+      variable_t rhs () const { return m_rhs; }
       
       virtual void accept(statement_visitor <Number, VariableName> *v) 
       {
@@ -1063,26 +1083,29 @@ namespace crab {
     class ptr_store_stmt: public statement<Number, VariableName>
     {
       // *p = q
-      
-      VariableName m_lhs;
-      VariableName m_rhs;
-      
+
      public:
 
       typedef statement<Number,VariableName> statement_t;
+      typedef ikos::variable<Number, VariableName> variable_t;
+
+     private:
       
-      ptr_store_stmt (VariableName lhs, VariableName rhs,
-                debug_info dbg_info = debug_info ())
-          : statement_t (PTR_STORE, dbg_info),
-            m_lhs (lhs), m_rhs (rhs)
-      {
+      variable_t m_lhs;
+      variable_t m_rhs;
+      
+     public:
+      
+      ptr_store_stmt (variable_t lhs, variable_t rhs,
+		      debug_info dbg_info = debug_info ())
+          : statement_t (PTR_STORE, dbg_info), m_lhs (lhs), m_rhs (rhs) {
         this->m_live.add_use (lhs);
         this->m_live.add_use (rhs);
       }
       
-      VariableName lhs () const { return m_lhs; }
+      variable_t lhs () const { return m_lhs; }
       
-      VariableName rhs () const { return m_rhs; }
+      variable_t rhs () const { return m_rhs; }
       
       virtual void accept(statement_visitor <Number, VariableName> *v) 
       {
@@ -1115,23 +1138,21 @@ namespace crab {
       
      private:
       
-      VariableName m_lhs;
-      VariableName m_rhs;
+      variable_t m_lhs;
+      variable_t m_rhs;
       linear_expression_t m_offset;
       
      public:
       
-      ptr_assign_stmt (VariableName lhs, VariableName rhs, linear_expression_t offset)
-          : statement_t (PTR_ASSIGN),
-            m_lhs (lhs), m_rhs (rhs), m_offset(offset)
-      {
+      ptr_assign_stmt (variable_t lhs, variable_t rhs, linear_expression_t offset)
+	: statement_t (PTR_ASSIGN), m_lhs (lhs), m_rhs (rhs), m_offset(offset) {
         this->m_live.add_def (lhs);
         this->m_live.add_use (rhs);
       }
       
-      VariableName lhs () const { return m_lhs; }
+      variable_t lhs () const { return m_lhs; }
       
-      VariableName rhs () const { return m_rhs; }
+      variable_t rhs () const { return m_rhs; }
       
       linear_expression_t offset () const { return m_offset; }
       
@@ -1160,21 +1181,25 @@ namespace crab {
     class ptr_object_stmt: public statement<Number, VariableName>
     {
       //! lhs = &a;
-      VariableName m_lhs;
+
+     public:
+      
+      typedef statement<Number,VariableName> statement_t;
+      typedef ikos::variable<Number, VariableName> variable_t;
+
+     private:
+      
+      variable_t m_lhs;
       ikos::index_t m_address;
       
      public:
       
-      typedef statement<Number,VariableName> statement_t;
-      
-      ptr_object_stmt (VariableName lhs, ikos::index_t address)
-          : statement_t (PTR_OBJECT),
-            m_lhs (lhs), m_address (address)
-      {
-        this->m_live.add_def (lhs);
+      ptr_object_stmt (variable_t lhs, ikos::index_t address)
+	: statement_t (PTR_OBJECT), m_lhs (lhs), m_address (address) {
+        this->m_live.add_def(lhs);
       }
       
-      VariableName lhs () const { return m_lhs; }
+      variable_t lhs () const { return m_lhs; }
       
       ikos::index_t rhs () const { return m_address; }
       
@@ -1201,21 +1226,25 @@ namespace crab {
     class ptr_function_stmt: public statement<Number, VariableName>
     {
       // lhs = &func;
-      VariableName m_lhs;
-      VariableName m_func; // Pre: function names are unique 
       
      public:
 
       typedef statement<Number,VariableName> statement_t;
+      typedef ikos::variable<Number, VariableName> variable_t;
+
+     private:
       
-      ptr_function_stmt (VariableName lhs, VariableName func)
-          : statement_t (PTR_FUNCTION),
-            m_lhs (lhs), m_func (func)
-      {
-        this->m_live.add_def (lhs);
+      variable_t m_lhs;
+      VariableName m_func; // Pre: function names are unique 
+      
+     public:
+      
+      ptr_function_stmt (variable_t lhs, VariableName func)
+	: statement_t (PTR_FUNCTION), m_lhs (lhs), m_func (func) {
+        this->m_live.add_def(lhs);
       }
       
-      VariableName lhs () const { return m_lhs; }
+      variable_t lhs () const { return m_lhs; }
       
       VariableName rhs () const { return m_func; }
       
@@ -1242,19 +1271,24 @@ namespace crab {
     class ptr_null_stmt: public statement<Number, VariableName>
     {
       //! lhs := null;
-      VariableName m_lhs;
-
+      
      public:
 
       typedef statement<Number,VariableName> statement_t;
+      typedef ikos::variable<Number, VariableName> variable_t;
+
+     private:
       
-      ptr_null_stmt (VariableName lhs)
-          : statement_t (PTR_NULL), m_lhs (lhs) 
-      {
-        this->m_live.add_def (m_lhs);
+      variable_t m_lhs;
+
+     public:
+      
+      ptr_null_stmt (variable_t lhs)
+	: statement_t (PTR_NULL), m_lhs (lhs) {
+        this->m_live.add_def(m_lhs);
       }
       
-      VariableName lhs () const { return m_lhs; }
+      variable_t lhs () const { return m_lhs; }
       
       virtual void accept(statement_visitor <Number, VariableName> *v) 
       {
@@ -1280,8 +1314,10 @@ namespace crab {
     {
      public:
 
-      typedef statement<Number,VariableName> statement_t;                                    
-      typedef pointer_constraint<VariableName> ptr_cst_t;
+      
+      typedef statement<Number,VariableName> statement_t;
+      typedef ikos::variable<Number,VariableName> variable_t;
+      typedef pointer_constraint<variable_t> ptr_cst_t;
 
      private:
 
@@ -1290,15 +1326,14 @@ namespace crab {
      public:
       
       ptr_assume_stmt (ptr_cst_t cst)
-          : statement_t (PTR_ASSUME),
-            m_cst (cst) 
-      {
+	: statement_t (PTR_ASSUME),
+	  m_cst (cst) { 
         if (!cst.is_tautology () && !cst.is_contradiction ()) {
           if (cst.is_unary ()) {
-            this->m_live.add_use (cst.lhs ());
+            this->m_live.add_use (cst.lhs());
           } else {
-            this->m_live.add_use (cst.lhs ());
-            this->m_live.add_use (cst.rhs ());
+            this->m_live.add_use (cst.lhs());
+            this->m_live.add_use (cst.rhs());
           }
         }
       }
@@ -1329,8 +1364,9 @@ namespace crab {
     {
      public:
 
-      typedef statement<Number,VariableName> statement_t;                                    
-      typedef pointer_constraint<VariableName> ptr_cst_t;
+      typedef statement<Number,VariableName> statement_t;
+      typedef ikos::variable<Number,VariableName> variable_t;
+      typedef pointer_constraint<variable_t> ptr_cst_t;
 
      private:
 
@@ -1340,14 +1376,13 @@ namespace crab {
       
       ptr_assert_stmt (ptr_cst_t cst, debug_info dbg_info = debug_info ())
           : statement_t(PTR_ASSERT, dbg_info),
-            m_cst (cst) 
-      {
+            m_cst (cst) { 
         if (!cst.is_tautology () && !cst.is_contradiction ()) {
           if (cst.is_unary ()) {
-            this->m_live.add_use (cst.lhs ());
+            this->m_live.add_use (cst.lhs());
           } else {
-            this->m_live.add_use (cst.lhs ());
-            this->m_live.add_use (cst.rhs ());
+            this->m_live.add_use (cst.lhs());
+            this->m_live.add_use (cst.rhs());
           }
         }
       }
@@ -1383,8 +1418,9 @@ namespace crab {
     {
      public:
 
-      typedef statement<Number,VariableName> statement_t;                                    
-      typedef std::pair<VariableName,variable_type> typed_variable_t; 
+      typedef statement<Number,VariableName> statement_t;
+      typedef ikos::variable<Number,VariableName> variable_t;
+      typedef std::pair<variable_t,variable_type> typed_variable_t; 
 
      private:
 
@@ -1430,7 +1466,7 @@ namespace crab {
 
       unsigned get_num_args () const { return m_args.size (); }
 
-      VariableName get_arg_name (unsigned idx) const { 
+      variable_t get_arg_name (unsigned idx) const { 
         if (idx >= m_args.size ())
           CRAB_ERROR ("Out-of-bound access to call site parameter");
         
@@ -1491,8 +1527,9 @@ namespace crab {
 
      public:
 
-      typedef statement<Number,VariableName> statement_t;                                    
-      typedef std::pair<VariableName,variable_type> typed_variable_t; 
+      typedef statement<Number,VariableName> statement_t;
+      typedef ikos::variable<Number,VariableName> variable_t;
+      typedef std::pair<variable_t,variable_type> typed_variable_t; 
 
      private:
 
@@ -1500,7 +1537,7 @@ namespace crab {
       
      public:
       
-      return_stmt (VariableName var, variable_type type)
+      return_stmt (variable_t var, variable_type type)
           : statement_t (RETURN)
       {
         m_ret.push_back (std::make_pair(var, type));
@@ -1559,25 +1596,26 @@ namespace crab {
       
      public:
 
-      typedef statement<Number,VariableName> statement_t;            
-      typedef ikos::linear_constraint< Number, VariableName > linear_constraint_t;
+      typedef statement<Number,VariableName> statement_t;
+      typedef ikos::variable<Number,VariableName> variable_t;
+      typedef ikos::linear_constraint<Number,VariableName> linear_constraint_t;
       
      private:
       
-      VariableName        m_lhs; // pre: BOOL_TYPE
+      variable_t          m_lhs; // pre: BOOL_TYPE
       linear_constraint_t m_rhs;
       
      public:
       
-      bool_assign_cst (VariableName lhs, linear_constraint_t rhs)
+      bool_assign_cst (variable_t lhs, linear_constraint_t rhs)
 	: statement_t (BOOL_ASSIGN_CST), m_lhs(lhs), m_rhs(rhs) 
       {
         this->m_live.add_def (m_lhs);
         for(auto v: m_rhs.variables()) 
-          this->m_live.add_use (v.name());
+          this->m_live.add_use (v);
       }
       
-      VariableName lhs () const { return m_lhs; }
+      variable_t lhs () const { return m_lhs; }
       
       linear_constraint_t rhs () const { return m_rhs; }
       
@@ -1612,27 +1650,28 @@ namespace crab {
      public:
 
       typedef statement<Number,VariableName> statement_t;            
+      typedef ikos::variable<Number,VariableName> variable_t;
       
      private:
       
-      VariableName        m_lhs; // pre: BOOL_TYPE
-      VariableName        m_rhs; // pre: BOOL_TYPE
+      variable_t m_lhs; // pre: BOOL_TYPE
+      variable_t m_rhs; // pre: BOOL_TYPE
       
       // if m_is_rhs_negated is true then lhs := not(rhs).
       bool m_is_rhs_negated;
       
      public:
       
-      bool_assign_var (VariableName lhs, VariableName rhs, bool is_not_rhs)
+      bool_assign_var (variable_t lhs, variable_t rhs, bool is_not_rhs)
 	: statement_t (BOOL_ASSIGN_VAR),
 	  m_lhs(lhs), m_rhs(rhs), m_is_rhs_negated (is_not_rhs) {
         this->m_live.add_def (m_lhs);
 	this->m_live.add_use (m_rhs);
       }
       
-      VariableName lhs () const { return m_lhs; }
+      variable_t lhs () const { return m_lhs; }
       
-      VariableName rhs () const { return m_rhs; }
+      variable_t rhs () const { return m_rhs; }
 
       bool is_rhs_negated () const {
 	return m_is_rhs_negated;
@@ -1666,18 +1705,19 @@ namespace crab {
      public:
 
       typedef statement<Number,VariableName> statement_t;
+      typedef ikos::variable<Number,VariableName> variable_t;
       
      private:
       
-      VariableName      m_lhs; // pre: BOOL_TYPE
+      variable_t m_lhs; // pre: BOOL_TYPE
       bool_binary_operation_t m_op; 
-      VariableName      m_op1; // pre: BOOL_TYPE
-      VariableName      m_op2; // pre: BOOL_TYPE
+      variable_t m_op1; // pre: BOOL_TYPE
+      variable_t m_op2; // pre: BOOL_TYPE
       
      public:
       
-      bool_binary_op (VariableName lhs, 
-		      bool_binary_operation_t op, VariableName op1, VariableName op2,
+      bool_binary_op (variable_t lhs, 
+		      bool_binary_operation_t op, variable_t op1, variable_t op2,
 		      debug_info dbg_info = debug_info ())
   	: statement_t (BOOL_BIN_OP, dbg_info),
 	  m_lhs(lhs), m_op(op), m_op1(op1), m_op2(op2) 
@@ -1687,13 +1727,13 @@ namespace crab {
         this->m_live.add_use (m_op2);	
       }
       
-      VariableName lhs () const { return m_lhs; }
+      variable_t lhs () const { return m_lhs; }
       
       bool_binary_operation_t op () const { return m_op; }
       
-      VariableName left () const { return m_op1; }
+      variable_t left () const { return m_op1; }
       
-      VariableName right () const { return m_op2; }
+      variable_t right () const { return m_op2; }
       
       virtual void accept(statement_visitor <Number,VariableName> *v) 
       { v->visit(*this); }
@@ -1717,19 +1757,20 @@ namespace crab {
      public:
       
       typedef statement<Number,VariableName> statement_t;                  
+      typedef ikos::variable<Number,VariableName> variable_t;
       
      private:
       
-      VariableName m_var;  // pre: BOOL_TYPE
+      variable_t m_var;  // pre: BOOL_TYPE
       bool m_is_negated;
       
      public:
       
-      bool_assume_stmt (VariableName v, bool is_negated):
+      bool_assume_stmt (variable_t v, bool is_negated):
 	statement_t(BOOL_ASSUME), m_var(v), m_is_negated (is_negated) 
       { this->m_live.add_use (v); }
       
-      VariableName cond() const { return m_var; }
+      variable_t cond() const { return m_var; }
 
       bool is_negated () const { return m_is_negated;}
       
@@ -1761,20 +1802,19 @@ namespace crab {
      public:
 
       typedef statement<Number,VariableName> statement_t;      
+      typedef ikos::variable<Number,VariableName> variable_t;
       
      private:
       
-      VariableName m_lhs;  // pre: BOOL_TYPE
-      VariableName m_cond; // pre: BOOL_TYPE
-      VariableName m_b1;   // pre: BOOL_TYPE
-      VariableName m_b2;   // pre: BOOL_TYPE
+      variable_t m_lhs;  // pre: BOOL_TYPE
+      variable_t m_cond; // pre: BOOL_TYPE
+      variable_t m_b1;   // pre: BOOL_TYPE
+      variable_t m_b2;   // pre: BOOL_TYPE
       
      public:
       
-      bool_select_stmt (VariableName lhs, VariableName cond,
-			VariableName b1, VariableName b2): 
-	statement_t(BOOL_SELECT),
-	m_lhs(lhs), m_cond(cond), m_b1(b1), m_b2(b2) 
+      bool_select_stmt (variable_t lhs, variable_t cond, variable_t b1, variable_t b2)
+	: statement_t(BOOL_SELECT), m_lhs(lhs), m_cond(cond), m_b1(b1), m_b2(b2) 
       { 
         this->m_live.add_def (m_lhs);
 	this->m_live.add_use (m_cond); 
@@ -1782,13 +1822,13 @@ namespace crab {
 	this->m_live.add_use (m_b2);
       }
       
-      VariableName lhs () const { return m_lhs; }
+      variable_t lhs () const { return m_lhs; }
       
-      VariableName cond () const { return m_cond; }
+      variable_t cond () const { return m_cond; }
       
-      VariableName left () const { return m_b1; }
+      variable_t left () const { return m_b1; }
       
-      VariableName right () const { return m_b2; }
+      variable_t right () const { return m_b2; }
       
       virtual void accept(statement_visitor <Number, VariableName> *v) 
       { v->visit(*this); }
@@ -1813,19 +1853,20 @@ namespace crab {
       
      public:
 
-      typedef statement<Number,VariableName> statement_t;            
-      
+      typedef statement<Number,VariableName> statement_t;
+      typedef ikos::variable<Number,VariableName> variable_t;
+            
      private:
       
-      VariableName m_var;  // pre: BOOL_TYPE
+      variable_t m_var;  // pre: BOOL_TYPE
 
      public:
       
-      bool_assert_stmt (VariableName v, debug_info dbg_info = debug_info ())
+      bool_assert_stmt (variable_t v, debug_info dbg_info = debug_info ())
 	: statement_t (BOOL_ASSERT, dbg_info), m_var(v)
       { this->m_live.add_use (v); }
       
-      VariableName cond() const { return m_var; }
+      variable_t cond() const { return m_var; }
       
       virtual void accept(statement_visitor <Number, VariableName> *v) 
       { v->visit(*this); }
@@ -1880,7 +1921,7 @@ namespace crab {
       typedef boost::indirect_iterator< typename stmt_list_t::const_iterator > const_iterator;
       typedef boost::indirect_iterator< typename stmt_list_t::reverse_iterator > reverse_iterator;
       typedef boost::indirect_iterator< typename stmt_list_t::const_reverse_iterator > const_reverse_iterator;
-      typedef ikos::discrete_domain <VariableName> live_domain_t;
+      typedef ikos::discrete_domain<variable_t> live_domain_t;
       
      public:
 
@@ -2473,7 +2514,7 @@ namespace crab {
                 (boost::make_shared<assume_t> (cst)));
       }
       
-      void havoc(VariableName lhs) 
+      void havoc(variable_t lhs) 
       {
         insert (boost::static_pointer_cast< statement_t, havoc_t > 
                 (boost::make_shared<havoc_t> (lhs)));
@@ -2504,60 +2545,57 @@ namespace crab {
 		(boost::make_shared<assert_t> (cst, di)));
       }
 
-      void truncate(VariableName src, unsigned src_width,
-		    VariableName dst, unsigned dst_width) {
+      void truncate(variable_t src, int src_width, variable_t dst, int dst_width) {
 	insert (boost::static_pointer_cast<statement_t, int_cast_t >
 		(boost::make_shared<int_cast_t>(CAST_TRUNC,src,src_width,dst,dst_width)));
       }
-
-      void sext(VariableName src, unsigned src_width,
-		VariableName dst, unsigned dst_width) {
+      
+      void sext(variable_t src, int src_width, variable_t dst, int dst_width) {
 	insert (boost::static_pointer_cast<statement_t, int_cast_t >
 		(boost::make_shared<int_cast_t>(CAST_SEXT,src,src_width,dst,dst_width)));
       }
 
-      void zext(VariableName src, unsigned src_width,
-		VariableName dst, unsigned dst_width) {
+      void zext(variable_t src, int src_width, variable_t dst, int dst_width) {
 	insert (boost::static_pointer_cast<statement_t, int_cast_t >
 		(boost::make_shared<int_cast_t>(CAST_ZEXT,src,src_width,dst,dst_width)));
       }
       
       void callsite (VariableName func, 
-		     const std::vector<std::pair<VariableName,variable_type> > &lhs, 
-                     const std::vector<std::pair<VariableName,variable_type> > &args) { 
+		     const std::vector<std::pair<variable_t,variable_type> > &lhs, 
+                     const std::vector<std::pair<variable_t,variable_type> > &args) { 
         insert(boost::static_pointer_cast< statement_t, callsite_t >
                (boost::make_shared<callsite_t>(func, lhs, args)));
       }
       
       
-      void ret (VariableName var, variable_type ty) {
-        std::vector<std::pair<VariableName,variable_type> >
+      void ret (variable_t var, variable_type ty) {
+        std::vector<std::pair<variable_t,variable_type> >
 	  ret_vals = {std::make_pair(var,ty)};
         insert(boost::static_pointer_cast< statement_t, return_t >
                (boost::make_shared<return_t>(ret_vals)));
       }
 
-      void ret (const std::vector<std::pair<VariableName,variable_type> > &ret_vals) {
+      void ret (const std::vector<std::pair<variable_t,variable_type> > &ret_vals) {
         insert(boost::static_pointer_cast< statement_t, return_t >
                (boost::make_shared<return_t>(ret_vals)));
       }
             
 
-      void array_assume (VariableName a, variable_type arr_ty, uint64_t elem_size,
+      void array_assume (variable_t a, variable_type arr_ty, uint64_t elem_size,
                          lin_exp_t lb_idx, lin_exp_t ub_idx, variable_t v) {
         if (m_track_prec == ARR)
           insert(boost::static_pointer_cast<statement_t, arr_assume_t> 
 		(boost::make_shared<arr_assume_t>(a, arr_ty, elem_size, lb_idx, ub_idx, v)));
       }
 
-      void array_assume (VariableName a, variable_type arr_ty, uint64_t elem_size,
+      void array_assume (variable_t a, variable_type arr_ty, uint64_t elem_size,
                          lin_exp_t lb_idx, lin_exp_t ub_idx, ikos::z_number n) {
         if (m_track_prec == ARR)
           insert (boost::static_pointer_cast< statement_t, arr_assume_t> 
 		(boost::make_shared<arr_assume_t>(a, arr_ty, elem_size, lb_idx, ub_idx, n)));
       }
       
-      void array_store (VariableName arr, variable_type arr_ty, 
+      void array_store (variable_t arr, variable_type arr_ty, 
                         lin_exp_t idx, variable_t v, 
                         uint64_t elem_size, bool is_singleton = false)  {
         if (m_track_prec == ARR)
@@ -2565,7 +2603,7 @@ namespace crab {
             (boost::make_shared<arr_store_t>(arr, arr_ty, idx, v, elem_size, is_singleton)));
       }
 
-      void array_store (VariableName arr, variable_type arr_ty, 
+      void array_store (variable_t arr, variable_type arr_ty, 
                         lin_exp_t idx, ikos::z_number n, 
                         uint64_t elem_size, bool is_singleton = false)  {
         if (m_track_prec == ARR)
@@ -2573,76 +2611,76 @@ namespace crab {
            (boost::make_shared<arr_store_t>(arr, arr_ty, idx, n, elem_size, is_singleton)));
       }
       
-      void array_load (VariableName lhs, VariableName arr, variable_type arr_ty, 
+      void array_load (variable_t lhs, variable_t arr, variable_type arr_ty, 
                        lin_exp_t idx, uint64_t elem_size) {
         if (m_track_prec == ARR)
           insert(boost::static_pointer_cast< statement_t, arr_load_t >
                  (boost::make_shared<arr_load_t>(lhs, arr, arr_ty, idx, elem_size)));
       }
 
-      void array_assign (VariableName lhs, VariableName rhs, variable_type ty) {
+      void array_assign (variable_t lhs, variable_t rhs, variable_type ty) {
         if (m_track_prec == ARR)
           insert(boost::static_pointer_cast< statement_t, arr_assign_t >
                  (boost::make_shared<arr_assign_t>(lhs, rhs, ty)));
       }
             
-      void ptr_store (VariableName lhs, VariableName rhs) 
+      void ptr_store (variable_t lhs, variable_t rhs) 
       {
         if (m_track_prec >= PTR)
           insert(boost::static_pointer_cast< statement_t, ptr_store_t >
                  (boost::make_shared<ptr_store_t> (lhs, rhs)));
       }
       
-      void ptr_load (VariableName lhs, VariableName rhs) 
+      void ptr_load (variable_t lhs, variable_t rhs) 
       {
         if (m_track_prec >= PTR)
           insert(boost::static_pointer_cast< statement_t, ptr_load_t >
                  (boost::make_shared<ptr_load_t> (lhs, rhs)));
       }
       
-      void ptr_assign (VariableName lhs, VariableName rhs, lin_exp_t offset) 
+      void ptr_assign (variable_t lhs, variable_t rhs, lin_exp_t offset) 
       {
         if (m_track_prec >= PTR)
           insert(boost::static_pointer_cast< statement_t, ptr_assign_t >
                  (boost::make_shared<ptr_assign_t> (lhs, rhs, offset)));
       }
       
-      void ptr_new_object (VariableName lhs, ikos::index_t address) 
+      void ptr_new_object (variable_t lhs, ikos::index_t address) 
       {
         if (m_track_prec >= PTR)
           insert(boost::static_pointer_cast< statement_t, ptr_object_t >
                  (boost::make_shared<ptr_object_t> (lhs, address)));
       }
       
-      void ptr_new_func (VariableName lhs, ikos::index_t func) 
+      void ptr_new_func (variable_t lhs, ikos::index_t func) 
       {
         if (m_track_prec >= PTR)
           insert(boost::static_pointer_cast< statement_t, ptr_function_t >
                  (boost::make_shared<ptr_function_t> (lhs, func)));
       }
 
-      void ptr_null (VariableName lhs) 
+      void ptr_null (variable_t lhs) 
       {
         if (m_track_prec >= PTR)
           insert(boost::static_pointer_cast< statement_t, ptr_null_t >
                  (boost::make_shared<ptr_null_t> (lhs)));
       }
 
-      void ptr_assume (pointer_constraint<VariableName> cst) 
+      void ptr_assume (pointer_constraint<variable_t> cst) 
       {
         if (m_track_prec >= PTR)
           insert(boost::static_pointer_cast< statement_t, ptr_assume_t >
                  (boost::make_shared<ptr_assume_t> (cst)));
       }
 
-      void ptr_assertion (pointer_constraint<VariableName> cst) 
+      void ptr_assertion (pointer_constraint<variable_t> cst) 
       {
         if (m_track_prec >= PTR)
           insert(boost::static_pointer_cast< statement_t, ptr_assert_t >
                  (boost::make_shared<ptr_assert_t> (cst)));
       }
 
-      void ptr_assertion (pointer_constraint<VariableName> cst, debug_info di) 
+      void ptr_assertion (pointer_constraint<variable_t> cst, debug_info di) 
       {
         if (m_track_prec >= PTR)
           insert(boost::static_pointer_cast< statement_t, ptr_assert_t >
@@ -2650,56 +2688,56 @@ namespace crab {
       }
 
 
-      void bool_assign (VariableName lhs, ikos::linear_constraint<Number, VariableName> rhs) 
+      void bool_assign (variable_t lhs, ikos::linear_constraint<Number, VariableName> rhs) 
       {
         insert (boost::static_pointer_cast< statement_t, bool_assign_cst_t >
                 (boost::make_shared<bool_assign_cst_t> (lhs, rhs)));
       }
 
 
-      void bool_assign (VariableName lhs, VariableName rhs, bool is_not_rhs = false) 
+      void bool_assign (variable_t lhs, variable_t rhs, bool is_not_rhs = false) 
       {
         insert (boost::static_pointer_cast< statement_t, bool_assign_var_t >
                 (boost::make_shared<bool_assign_var_t> (lhs, rhs, is_not_rhs)));
       }
       
-      void bool_assume (VariableName c) 
+      void bool_assume (variable_t c) 
       {
         insert (boost::static_pointer_cast< statement_t, bool_assume_t >
                 (boost::make_shared<bool_assume_t> (c, false)));
       }
 
-      void bool_not_assume (VariableName c) 
+      void bool_not_assume (variable_t c) 
       {
         insert (boost::static_pointer_cast< statement_t, bool_assume_t >
                 (boost::make_shared<bool_assume_t> (c, true)));
       }
       
-      void bool_assert (VariableName c, debug_info di = debug_info ()) 
+      void bool_assert (variable_t c, debug_info di = debug_info ()) 
       {
         insert (boost::static_pointer_cast< statement_t, bool_assert_t >
                 (boost::make_shared<bool_assert_t> (c, di)));
       }
 
-      void bool_select (VariableName lhs, VariableName cond, VariableName b1, VariableName b2) 
+      void bool_select (variable_t lhs, variable_t cond, variable_t b1, variable_t b2) 
       {
         insert(boost::static_pointer_cast< statement_t, bool_select_t >
                (boost::make_shared<bool_select_t>(lhs, cond, b1, b2)));
       }
       
-      void bool_and (VariableName lhs, VariableName op1, VariableName op2) 
+      void bool_and (variable_t lhs, variable_t op1, variable_t op2) 
       {
         insert (boost::static_pointer_cast< statement_t, bool_bin_op_t >
                 (boost::make_shared<bool_bin_op_t>(lhs, BINOP_BAND, op1, op2)));
       }
 
-      void bool_or (VariableName lhs, VariableName op1, VariableName op2) 
+      void bool_or (variable_t lhs, variable_t op1, variable_t op2) 
       {
         insert (boost::static_pointer_cast< statement_t, bool_bin_op_t >
                 (boost::make_shared<bool_bin_op_t>(lhs, BINOP_BOR, op1, op2)));
       }
 
-      void bool_xor (VariableName lhs, VariableName op1, VariableName op2) 
+      void bool_xor (variable_t lhs, variable_t op1, variable_t op2) 
       {
         insert (boost::static_pointer_cast< statement_t, bool_bin_op_t >
                 (boost::make_shared<bool_bin_op_t>(lhs, BINOP_BXOR, op1, op2)));
@@ -2720,6 +2758,7 @@ namespace crab {
     class basic_block_rev {
      public:
       typedef typename BasicBlock::varname_t varname_t;
+      typedef typename BasicBlock::variable_t variable_t;
       typedef typename BasicBlock::basic_block_label_t basic_block_label_t;
 
       typedef basic_block_rev<BasicBlock> basic_block_rev_t;
@@ -2731,7 +2770,7 @@ namespace crab {
 
       typedef typename BasicBlock::reverse_iterator iterator;
       typedef typename BasicBlock::const_reverse_iterator const_iterator;
-      typedef ikos::discrete_domain<varname_t> live_domain_t;
+      typedef ikos::discrete_domain<variable_t> live_domain_t;
       
      private:
 
@@ -2865,12 +2904,13 @@ namespace crab {
       virtual ~statement_visitor () {}
     }; 
     
-    template< class VariableName>
+    template<class Number, class VariableName>
     class function_decl {
      public:
 
-      typedef std::pair<VariableName,variable_type> typed_variable_t;
-
+      typedef ikos::variable<Number, VariableName> variable_t;      
+      typedef std::pair<variable_t, variable_type> typed_variable_t;
+      
      private:
 
       VariableName m_func_name;
@@ -2895,7 +2935,7 @@ namespace crab {
 	// CFG restriction: inputs and outputs must be disjoint,
 	// otherwise we cannot produce meaningful input-output
 	// relations.
-	std::set<VariableName> s;
+	std::set<variable_t> s;
 	for(auto &tv: m_inputs) {s.insert(tv.first);}
 	for(auto &tv: m_outputs){s.insert(tv.first);}	
 	if (s.size () != (m_inputs.size () + m_outputs.size ())) {
@@ -2919,7 +2959,7 @@ namespace crab {
       unsigned get_num_outputs () const
       { return m_outputs.size (); }
       
-      VariableName get_input_name (unsigned idx) const { 
+      variable_t get_input_name (unsigned idx) const { 
         if (idx >= m_inputs.size ())
           CRAB_ERROR ("Out-of-bound access to function input parameter");
         return m_inputs[idx].first;
@@ -2931,7 +2971,7 @@ namespace crab {
         return m_inputs[idx].second;
       }
       
-      VariableName get_output_name (unsigned idx) const { 
+      variable_t get_output_name (unsigned idx) const { 
         if (idx >= m_outputs.size ())
           CRAB_ERROR ("Out-of-bound access to function input parameter");
         return m_outputs[idx].first;
@@ -2976,8 +3016,7 @@ namespace crab {
         return;
       }
       
-      friend crab_os& operator<<(crab_os& o,
-				 const function_decl<VariableName> &decl) {
+      friend crab_os& operator<<(crab_os& o, const function_decl<Number, VariableName> &decl) {
         decl.write (o);
         return o;
       }
@@ -2995,7 +3034,8 @@ namespace crab {
       typedef BasicBlockLabel basic_block_label_t;
       typedef basic_block_label_t node_t; // for Bgl graphs
       typedef VariableName varname_t;
-      typedef function_decl<varname_t> fdecl_t;
+      typedef ikos::variable<number_t, varname_t> variable_t;
+      typedef function_decl<number_t, varname_t> fdecl_t;
       typedef basic_block<BasicBlockLabel, VariableName, number_t> basic_block_t;   
       typedef statement<number_t, VariableName > statement_t;
 
@@ -3492,7 +3532,8 @@ namespace crab {
       typedef typename CFG::basic_block_label_t basic_block_label_t;
       typedef typename CFG::node_t node_t;
       typedef typename CFG::varname_t varname_t;
-      typedef typename CFG::number_t number_t;      
+      typedef typename CFG::number_t number_t;
+      typedef typename CFG::variable_t variable_t;            
       typedef typename CFG::fdecl_t fdecl_t;
       typedef typename CFG::basic_block_t basic_block_t;   
       typedef typename CFG::statement_t statement_t;
@@ -3652,7 +3693,8 @@ namespace crab {
       typedef basic_block_rev<typename CFGRef::basic_block_t> basic_block_t;
       typedef basic_block_label_t node_t; // for Bgl graphs
       typedef typename CFGRef::varname_t varname_t;
-      typedef typename CFGRef::number_t number_t;      
+      typedef typename CFGRef::number_t number_t;
+      typedef typename CFGRef::variable_t variable_t;
       typedef typename CFGRef::fdecl_t fdecl_t;
       typedef typename CFGRef::statement_t statement_t;
 
@@ -3901,5 +3943,4 @@ namespace crab {
   } // end namespace cfg
 }  // end namespace crab
 
-#endif /* CFG_HPP */
 

@@ -7,8 +7,7 @@
  * assumption does not hold in real programs.
  ******************************************************************************/
 
-#ifndef ARRAY_SMASHING_HPP
-#define ARRAY_SMASHING_HPP
+#pragma once
 
 #include <crab/common/types.hpp>
 #include <crab/common/debug.hpp>
@@ -32,7 +31,7 @@ namespace crab {
 	
 	typedef typename NumDomain::number_t Number;
         typedef typename NumDomain::varname_t VariableName;
-
+	
       private:
 	
         typedef array_smashing<NumDomain> array_smashing_t;
@@ -47,8 +46,8 @@ namespace crab {
         using typename abstract_domain_t::variable_t;
         using typename abstract_domain_t::number_t;
         using typename abstract_domain_t::varname_t;
-	using typename abstract_domain_t::varname_vector_t;	
-        typedef crab::pointer_constraint<VariableName> ptr_cst_t;
+	using typename abstract_domain_t::variable_vector_t;	
+        typedef crab::pointer_constraint<variable_t> ptr_cst_t;
         typedef NumDomain content_domain_t;
         typedef interval <Number> interval_t;
         
@@ -61,8 +60,8 @@ namespace crab {
         
         array_smashing (NumDomain inv): _inv (inv) { }
 	  
-        void strong_update (VariableName a, crab::variable_type a_ty,
-			    linear_expression_t rhs ) {
+        void strong_update (variable_t a, crab::variable_type a_ty,
+			    linear_expression_t rhs) {
 	  if (a_ty == ARR_BOOL_TYPE) {
 	    if (rhs.is_constant()) {
 	      if (rhs.constant() >= Number(1))
@@ -70,7 +69,7 @@ namespace crab {
 	      else
 		_inv.assign_bool_cst(a, linear_constraint_t::get_false());
 	    } else if (auto rhs_v = rhs.get_variable ()) {
-	      _inv.assign_bool_var (a, (*rhs_v).name(), false);
+	      _inv.assign_bool_var (a, (*rhs_v), false);
 	    }
 	  } else if (a_ty == ARR_INT_TYPE || a_ty == ARR_REAL_TYPE) {
             _inv.assign (a, rhs);
@@ -78,11 +77,11 @@ namespace crab {
 	    if (rhs.is_constant() && rhs.constant() == Number(0))
 	      _inv.pointer_mk_null(a);
 	    else if (auto rhs_v = rhs.get_variable())	     
-	      _inv.pointer_assign (a, (*rhs_v).name(), Number(0));
+	      _inv.pointer_assign (a, (*rhs_v), Number(0));
 	  }
         }
         
-        void weak_update (VariableName a, crab::variable_type a_ty,
+        void weak_update (variable_t a, crab::variable_type a_ty,
 			  linear_expression_t rhs) {
           NumDomain other (_inv);
 
@@ -93,7 +92,7 @@ namespace crab {
 	      else
 		other.assign_bool_cst(a, linear_constraint_t::get_false());
 	    } else if (auto rhs_v = rhs.get_variable ()) {
-	      other.assign_bool_var (a, (*rhs_v).name(), false);
+	      other.assign_bool_var (a, (*rhs_v), false);
 	    }
 	  } else if (a_ty == ARR_INT_TYPE || a_ty == ARR_REAL_TYPE) {
             other.assign (a, rhs);
@@ -101,7 +100,7 @@ namespace crab {
 	    if (rhs.is_constant() && rhs.constant() == Number(0))
 	      other.pointer_mk_null(a);
 	    else if (auto rhs_v = rhs.get_variable())	     
-	      other.pointer_assign (a, (*rhs_v).name(), Number(0));
+	      other.pointer_assign (a, (*rhs_v), Number(0));
 	  }
 	  
           _inv = _inv | other;
@@ -188,61 +187,61 @@ namespace crab {
           _inv += csts;
         }
 
-        void operator-=(VariableName var) {
+        void operator-=(variable_t var) {
           _inv -= var;
         }
         
-        void assign (VariableName x, linear_expression_t e) {
+        void assign (variable_t x, linear_expression_t e) {
           _inv.assign (x, e);
           
           CRAB_LOG("smashing",
                    crab::outs() << "apply "<< x<< " := "<< e<< *this <<"\n";);
         }
         
-        void apply (operation_t op, VariableName x, VariableName y, Number z) {
+        void apply (operation_t op, variable_t x, variable_t y, Number z) {
           _inv.apply (op, x, y, z);
           
           CRAB_LOG("smashing",
                    crab::outs() << "apply "<< x<< " := "<< y<< " "<< op<< " "<< z<< *this <<"\n";);
         }
         
-        void apply(operation_t op, VariableName x, VariableName y, VariableName z) {
+        void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
           _inv.apply (op, x, y, z);
           
           CRAB_LOG("smashing",
                    crab::outs() << "apply "<< x<< " := "<< y<< " "<< op<< " "<< z<< *this <<"\n";);
         }
         
-        void apply(operation_t op, VariableName x, Number k) {
+        void apply(operation_t op, variable_t x, Number k) {
           _inv.apply (op, x, k);
           
           CRAB_LOG("smashing",
                    crab::outs() << "apply "<< x<< " := "<< x<< " "<< op<< " "<< k<< *this <<"\n";);
         }
 	   	
-	void backward_assign (VariableName x, linear_expression_t e,
+	void backward_assign (variable_t x, linear_expression_t e,
 			      array_smashing_t inv) {
 	  _inv.backward_assign(x, e, inv.get_content_domain());
 	}
 	
 	void backward_apply (operation_t op,
-			     VariableName x, VariableName y, Number z,
+			     variable_t x, variable_t y, Number z,
 			     array_smashing_t inv) {
 	  _inv.backward_apply(op, x, y, z, inv.get_content_domain());
 	}
 	
 	void backward_apply(operation_t op,
-			    VariableName x, VariableName y, VariableName z,
+			    variable_t x, variable_t y, variable_t z,
 			    array_smashing_t inv) {
 	  _inv.backward_apply(op, x, y, z, inv.get_content_domain());
 	}
 	
         void apply(int_conv_operation_t op,
-		   VariableName dst, unsigned dst_width, VariableName src, unsigned src_width) {
+		   variable_t dst, unsigned dst_width, variable_t src, unsigned src_width) {
           _inv.apply (op, dst, dst_width, src, src_width);
         }
                 
-        void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) {
+        void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {
           _inv.apply (op, x, y, z);
 
           CRAB_LOG("smashing",
@@ -250,7 +249,7 @@ namespace crab {
 		                << op<< " "<< z<< *this <<"\n";);
         }
         
-        void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k) {
+        void apply(bitwise_operation_t op, variable_t x, variable_t y, Number k) {
           _inv.apply (op, x, y, k);
 
           CRAB_LOG("smashing",
@@ -259,14 +258,14 @@ namespace crab {
         }
         
         // division_operators_api
-        void apply(div_operation_t op, VariableName x, VariableName y, VariableName z) {
+        void apply(div_operation_t op, variable_t x, variable_t y, variable_t z) {
           _inv.apply (op, x, y, z);
 
           CRAB_LOG("smashing",
                    crab::outs() << "apply "<< x<< " := "<< y<< " "<< op<< " "<< z<< *this <<"\n";);
         }
         
-        void apply(div_operation_t op, VariableName x, VariableName y, Number k) {
+        void apply(div_operation_t op, variable_t x, variable_t y, Number k) {
           _inv.apply (op, x, y, k);
 
           CRAB_LOG("smashing",
@@ -274,62 +273,62 @@ namespace crab {
         }
 
 	// boolean operators
-	virtual void assign_bool_cst (VariableName lhs, linear_constraint_t rhs) override {
+	virtual void assign_bool_cst (variable_t lhs, linear_constraint_t rhs) override {
 	  _inv.assign_bool_cst (lhs, rhs);
 	}    
 	
-	virtual void assign_bool_var(VariableName lhs, VariableName rhs, bool is_not_rhs) override {
+	virtual void assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs) override {
 	  _inv.assign_bool_var (lhs, rhs, is_not_rhs);
 	}    
 	
-	virtual void apply_binary_bool (bool_operation_t op,VariableName x,
-					VariableName y,VariableName z) override {
+	virtual void apply_binary_bool (bool_operation_t op,variable_t x,
+					variable_t y,variable_t z) override {
 	  _inv.apply_binary_bool (op, x, y, z);
 	}    
 	
-	virtual void assume_bool (VariableName v, bool is_negated) override {
+	virtual void assume_bool (variable_t v, bool is_negated) override {
 	  _inv.assume_bool (v, is_negated);
 	}    
 
 	// backward boolean operators
-	virtual void backward_assign_bool_cst(VariableName lhs, linear_constraint_t rhs,
+	virtual void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
 					      array_smashing_t inv){
 	  _inv.backward_assign_bool_cst(lhs, rhs, inv.get_content_domain());	  
 	}
 	
-	virtual void backward_assign_bool_var(VariableName lhs, VariableName rhs, bool is_not_rhs,
+	virtual void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
 					      array_smashing_t inv) {
 	  _inv.backward_assign_bool_var(lhs, rhs, is_not_rhs, inv.get_content_domain());	  	  
 	}
 	
 	virtual void backward_apply_binary_bool(bool_operation_t op,
-						VariableName x,VariableName y,VariableName z,
+						variable_t x,variable_t y,variable_t z,
 						array_smashing_t inv) {
 	  _inv.backward_apply_binary_bool(op, x, y, z, inv.get_content_domain());
 	}
 	
         // pointer_operators_api
-        virtual void pointer_load (VariableName lhs, VariableName rhs) override {
+        virtual void pointer_load (variable_t lhs, variable_t rhs) override {
           _inv.pointer_load(lhs,rhs);
         }
         
-        virtual void pointer_store (VariableName lhs, VariableName rhs) override {
+        virtual void pointer_store (variable_t lhs, variable_t rhs) override {
           _inv.pointer_store(lhs,rhs);
         } 
         
-        virtual void pointer_assign (VariableName lhs, VariableName rhs, linear_expression_t offset) override {
+        virtual void pointer_assign (variable_t lhs, variable_t rhs, linear_expression_t offset) override {
           _inv.pointer_assign (lhs,rhs,offset);
         }
         
-        virtual void pointer_mk_obj (VariableName lhs, ikos::index_t address) override {
+        virtual void pointer_mk_obj (variable_t lhs, ikos::index_t address) override {
           _inv.pointer_mk_obj (lhs, address);
         }
         
-        virtual void pointer_function (VariableName lhs, VariableName func) override {
+        virtual void pointer_function (variable_t lhs, VariableName func) override {
           _inv.pointer_function (lhs, func);
         }
         
-        virtual void pointer_mk_null (VariableName lhs) override {
+        virtual void pointer_mk_null (variable_t lhs) override {
           _inv.pointer_mk_null (lhs);
         }
         
@@ -344,7 +343,7 @@ namespace crab {
         // array_operators_api 
 
         // All the array elements are assumed to be equal to val
-        virtual void array_assume (VariableName a, variable_type a_ty, 
+        virtual void array_assume (variable_t a, variable_type a_ty, 
                                    linear_expression_t /*lb_idx*/,
 				   linear_expression_t /*ub_idx*/, 
                                    linear_expression_t val) override {
@@ -355,7 +354,7 @@ namespace crab {
 	      else
 		_inv.assign_bool_cst(a, linear_constraint_t::get_false());
 	    } else if (auto var = val.get_variable ()) {
-	      _inv.assign_bool_var (a, (*var).name(), false);
+	      _inv.assign_bool_var (a, (*var), false);
 	    }
 	  } else if (a_ty == ARR_INT_TYPE || a_ty == ARR_REAL_TYPE) {
             _inv.assign (a, val);
@@ -363,7 +362,7 @@ namespace crab {
 	    if (val.is_constant() && val.constant() == Number(0))
 	      _inv.pointer_mk_null(a);
 	    else if (auto var = val.get_variable ()) {
-	      _inv.pointer_assign (a, (*var).name(), Number(0));
+	      _inv.pointer_assign (a, (*var), Number(0));
 	    }
 	  }
           
@@ -372,7 +371,7 @@ namespace crab {
 		                << " -- " << *this <<"\n";);
         }
         
-        virtual void array_load (VariableName lhs, VariableName a,
+        virtual void array_load (variable_t lhs, variable_t a,
 				 crab::variable_type a_ty,
                                  linear_expression_t i,
 				 z_number /*bytes*/) override {
@@ -384,7 +383,7 @@ namespace crab {
           // into a non-summarized variable lhs. Simply _inv.assign (lhs,
           // a) is not sound.
           /* ask for a temp var */
-          VariableName a_prime = a.get_var_factory().get(); 
+          variable_t a_prime(a.name().get_var_factory().get()); 
           domain_traits<NumDomain>::expand (_inv, a, a_prime);
 	  if (a_ty == ARR_BOOL_TYPE) {
 	    _inv.assign_bool_var(lhs, a_prime, false);
@@ -402,7 +401,7 @@ namespace crab {
         }
         
         
-        virtual void array_store (VariableName a, crab::variable_type a_ty,
+        virtual void array_store (variable_t a, crab::variable_type a_ty,
                                   linear_expression_t i,
 				  linear_expression_t val, 
                                   z_number /*bytes*/,
@@ -422,7 +421,7 @@ namespace crab {
 		                << val << " -- " << *this <<"\n";);
         }
 
-        virtual void array_assign (VariableName lhs, VariableName rhs, 
+        virtual void array_assign (variable_t lhs, variable_t rhs, 
                                    crab::variable_type ty) override {
 	  if (ty == ARR_BOOL_TYPE) {
 	    _inv.assign_bool_var(lhs, rhs, false);
@@ -457,7 +456,7 @@ namespace crab {
           return name;
         }  
 
-	void rename(const varname_vector_t& from, const varname_vector_t &to){
+	void rename(const variable_vector_t& from, const variable_vector_t &to){
 	  _inv.rename(from, to);
 	}
 	
@@ -469,6 +468,8 @@ namespace crab {
        
        typedef array_smashing<BaseDomain> array_smashing_t;
        typedef typename BaseDomain::varname_t VariableName;
+       typedef typename BaseDomain::variable_t variable_t;
+       
 
        template<class CFG>
        static void do_initialization (CFG cfg) { }
@@ -487,7 +488,7 @@ namespace crab {
          inv.project (it, end);
        }
 
-       static void expand (array_smashing_t& inv, VariableName x, VariableName new_x) {
+       static void expand (array_smashing_t& inv, variable_t x, variable_t new_x) {
          // -- lose precision if relational or disjunctive domain
          CRAB_WARN ("array smashing expand not implemented");
        }
@@ -496,4 +497,3 @@ namespace crab {
 
    } // namespace domains
 }// namespace crab
-#endif 

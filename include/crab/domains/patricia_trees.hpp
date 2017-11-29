@@ -40,8 +40,7 @@
  *
  ******************************************************************************/
 
-#ifndef IKOS_PATRICIA_TREES_HPP
-#define IKOS_PATRICIA_TREES_HPP
+#pragma once
 
 #include <algorithm>
 #include <deque>
@@ -1411,4 +1410,3 @@ public:
 
 } // namespace ikos
 
-#endif // IKOS_PATRICIA_TREES_HPP

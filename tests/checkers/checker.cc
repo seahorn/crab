@@ -31,16 +31,16 @@ z_cfg_t* cfg1 (variable_factory_t &vfac)
   
 
   // definining program variables
-  varname_t p = vfac ["p"];
-  varname_t q1 = vfac ["q1"];
-  varname_t q2 = vfac ["q2"];
-  varname_t r = vfac ["r"];
-  z_var nd (vfac ["nd"]);
+  z_var p(vfac ["p"]);
+  z_var q1(vfac ["q1"]);
+  z_var q2(vfac ["q2"]);
+  z_var r(vfac ["r"]);
+  z_var nd(vfac ["nd"]);
   // adding statements
   b0.ptr_new_object (p , 1);  // p = malloc (...);
   b0.ptr_new_object (q1, 2);  // q1 = malloc (...);
   b0.ptr_new_object (q2, 3);  // q2 = malloc (...);
-  b0.havoc (nd.name ());
+  b0.havoc (nd);
   b1.assume (nd >= 1);
   b2.assume (nd <= 0);
   b1.ptr_store (p, q1);  // *p = q1
@@ -56,8 +56,8 @@ z_cfg_t* cfg2 (variable_factory_t &vfac)  {
   z_var i (vfac ["i"]);
   z_var x (vfac ["x"]);
   z_var y (vfac ["y"]);
-  varname_t p (vfac ["p"]);
-  varname_t q (vfac ["q"]);
+  z_var p (vfac ["p"]);
+  z_var q (vfac ["q"]);
   // entry and exit block
   z_cfg_t* cfg = new z_cfg_t("entry","ret",PTR);
   // adding blocks
@@ -137,7 +137,6 @@ void check (z_cfg_ref_t cfg, variable_factory_t& vfac) {
               << post << "\n";
   }
 
-  
   // Run the checkers with several properties
   // A checker can take any property checker associated to same
   // analyzer.

@@ -1,5 +1,4 @@
-#ifndef ARRAY_GRAPH_OPERATIONS_HPP
-#define ARRAY_GRAPH_OPERATIONS_HPP
+#pragma once
 
 #include <crab/common/types.hpp>
 #include <crab/common/debug.hpp>
@@ -366,4 +365,3 @@ namespace crab {
   } // end namespace domains
 } // end namespace crab
 #pragma GCC diagnostic pop
-#endif 

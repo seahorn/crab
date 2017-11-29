@@ -1,5 +1,4 @@
-#ifndef APRON_DOMAINS_HPP
-#define APRON_DOMAINS_HPP
+#pragma once 
 
 #include "boost/range/algorithm/set_algorithm.hpp"
 
@@ -75,57 +74,57 @@ namespace crab {
         apron_domain_t operator&& (apron_domain_t other) 
         { CRAB_ERROR (APRON_NOT_FOUND); }
         
-        void operator-=(VariableName var) 
+        void operator-=(variable_t var) 
         { CRAB_ERROR (APRON_NOT_FOUND); }
 
-        interval_t operator[](VariableName v) 
+        interval_t operator[](variable_t v) 
         { CRAB_ERROR (APRON_NOT_FOUND); }
 
-        void set(VariableName v, interval_t ival) 
+        void set(variable_t v, interval_t ival) 
         { CRAB_ERROR (APRON_NOT_FOUND); }
 
         void operator += (linear_constraint_system_t csts) 
         { CRAB_ERROR (APRON_NOT_FOUND); }
         
-        void assign (VariableName x, linear_expression_t e) 
+        void assign (variable_t x, linear_expression_t e) 
         { CRAB_ERROR (APRON_NOT_FOUND); }
           
-        void apply (operation_t op, VariableName x, VariableName y, Number z) 
+        void apply (operation_t op, variable_t x, variable_t y, Number z) 
         { CRAB_ERROR (APRON_NOT_FOUND); }
         
-        void apply(operation_t op, VariableName x, VariableName y, VariableName z) 
+        void apply(operation_t op, variable_t x, variable_t y, variable_t z) 
         { CRAB_ERROR (APRON_NOT_FOUND); }
         
-        void apply(operation_t op, VariableName x, Number k) 
+        void apply(operation_t op, variable_t x, Number k) 
         { CRAB_ERROR (APRON_NOT_FOUND); }
 
         void apply(int_conv_operation_t op,
-		   VariableName dst, unsigned dst_width, VariableName src, unsigned src_width) 
+		   variable_t dst, unsigned dst_width, variable_t src, unsigned src_width) 
         { CRAB_ERROR (APRON_NOT_FOUND); }
 	
-        void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) 
+        void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) 
         { CRAB_ERROR (APRON_NOT_FOUND); }
         
-        void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k) 
+        void apply(bitwise_operation_t op, variable_t x, variable_t y, Number k) 
         { CRAB_ERROR (APRON_NOT_FOUND); }
         
-        void apply(div_operation_t op, VariableName x, VariableName y, VariableName z) 
+        void apply(div_operation_t op, variable_t x, variable_t y, variable_t z) 
         { CRAB_ERROR (APRON_NOT_FOUND); }
         
-        void apply(div_operation_t op, VariableName x, VariableName y, Number k) 
+        void apply(div_operation_t op, variable_t x, variable_t y, Number k) 
         { CRAB_ERROR (APRON_NOT_FOUND); }
         
-        void backward_assign (VariableName x, linear_expression_t e,
+        void backward_assign (variable_t x, linear_expression_t e,
 			      apron_domain_t invariant) 
         { CRAB_ERROR (APRON_NOT_FOUND); }
           
         void backward_apply (operation_t op,
-			     VariableName x, VariableName y, Number z,
+			     variable_t x, variable_t y, Number z,
 			     apron_domain_t invariant) 
         { CRAB_ERROR (APRON_NOT_FOUND); }
         
         void backward_apply(operation_t op,
-			    VariableName x, VariableName y, VariableName z,
+			    variable_t x, variable_t y, variable_t z,
 			    apron_domain_t invariant) 
         { CRAB_ERROR (APRON_NOT_FOUND); }
         
@@ -169,13 +168,13 @@ namespace crab {
         using typename abstract_domain_t::variable_t;
         using typename abstract_domain_t::number_t;
         using typename abstract_domain_t::varname_t;
-        using typename abstract_domain_t::varname_vector_t;	
+        using typename abstract_domain_t::variable_vector_t;	
         typedef interval <Number> interval_t;
 
        private:
         typedef interval_domain <Number, VariableName> interval_domain_t;
         typedef bound <Number> bound_t;
-        typedef boost::bimap< VariableName , ap_dim_t > var_map_t;
+        typedef boost::bimap<variable_t, ap_dim_t > var_map_t;
         typedef typename var_map_t::value_type binding_t;
 
         static ap_manager_t* m_apman;
@@ -204,7 +203,7 @@ namespace crab {
         size_t get_dims () const { return get_dims (m_apstate); }
 
         // If v is in the map then it maps v to a dimension, otherwise null
-        boost::optional<ap_dim_t> get_var_dim (const var_map_t& m, VariableName v) const {
+        boost::optional<ap_dim_t> get_var_dim (const var_map_t& m, variable_t v) const {
           auto it = m.left.find (v);
           if (it != m.left.end ())
             return it->second;
@@ -212,11 +211,11 @@ namespace crab {
             return boost::optional<ap_dim_t> ();
         }
 
-        boost::optional<ap_dim_t> get_var_dim (VariableName v) const {
+        boost::optional<ap_dim_t> get_var_dim (variable_t v) const {
           return get_var_dim (m_var_map, v);
         }
 
-        ap_dim_t get_var_dim_insert (VariableName v) {
+        ap_dim_t get_var_dim_insert (variable_t v) {
           assert (m_var_map.size () == get_dims ());
           if (auto dim = get_var_dim (v))
             return *dim;
@@ -229,23 +228,23 @@ namespace crab {
           }
         }
         
-        bool has_var_name (const var_map_t& m, ap_dim_t i) const {
+        bool has_variable (const var_map_t& m, ap_dim_t i) const {
           return m.right.find (i) != m.right.end ();
         }
 
-        bool has_var_name (ap_dim_t i) const {
-          return has_var_name (m_var_map, i);
+        bool has_variable (ap_dim_t i) const {
+          return has_variable (m_var_map, i);
         }
 
-        VariableName get_var_name (const var_map_t& m, ap_dim_t i) const {
+        variable_t get_variable (const var_map_t& m, ap_dim_t i) const {
           auto it = m.right.find (i);
           if (it != m.right.end ())
             return it->second;            
           CRAB_ERROR ("Apron dimension ", i, " is not used!");
         }
 
-        VariableName get_var_name (ap_dim_t i) const {
-          return get_var_name (m_var_map, i);
+        variable_t get_variable (ap_dim_t i) const {
+          return get_variable (m_var_map, i);
         }
 
         void add_dimensions (ap_state_ptr& s, size_t dims) const {
@@ -305,7 +304,7 @@ namespace crab {
           assert (m_y.size () == get_dims (s_y));
 
           // -- collect all vars from the two maps
-          std::set<VariableName> vars;
+          std::set<variable_t> vars;
           for (auto const& px: m_x.left)
             vars.insert (px.first);
           for (auto const& py: m_y.left)
@@ -442,7 +441,7 @@ namespace crab {
 	       	
         // --- from crab to apron
 	
-        inline ap_texpr0_t* var2texpr (VariableName v) { 
+        inline ap_texpr0_t* var2texpr (variable_t v) { 
           return ap_texpr0_dim (get_var_dim_insert (v));
         }
 
@@ -469,7 +468,7 @@ namespace crab {
           Number cst = e.constant ();
           ap_texpr0_t* res = num2texpr (cst);
           for (auto p: e) {
-            ap_texpr0_t* term = MUL (num2texpr (p.first), var2texpr (p.second.name ()));
+            ap_texpr0_t* term = MUL (num2texpr(p.first), var2texpr(p.second));
             res = ADD (res, term); 
           }
           return res;
@@ -523,7 +522,7 @@ namespace crab {
         }
 
         linear_expression_t term2expr (ap_coeff_t* coeff, ap_dim_t i) {
-          return variable_t (get_var_name (i)) * coeff2Num(coeff) ;
+          return variable_t (get_variable (i)) * coeff2Num(coeff) ;
         }
 
         linear_constraint_t tconst2const (ap_lincons0_t cons) {
@@ -536,7 +535,7 @@ namespace crab {
             ap_coeff_t* coeff = ap_linexpr0_coeffref (linexp, i);
             if (ap_coeff_zero (coeff)) continue;
             
-            if (!has_var_name (i)) continue; // unused dimension
+            if (!has_variable (i)) continue; // unused dimension
 
             e = e + term2expr ( coeff, i);
           }
@@ -588,8 +587,8 @@ namespace crab {
           std::vector<char*> names;
           for (unsigned i=0; i < get_dims (apstate) ; i++){
             std::string varname;
-            if (has_var_name (m, i))
-              varname = get_var_name (m, i).str ();
+            if (has_variable (m, i))
+              varname = get_variable (m, i).str ();
             else // unused dimension
               varname = std::string ("_x") + std::to_string (i);
             crab::outs() << i << " -> " << varname << ";";
@@ -924,7 +923,7 @@ namespace crab {
           std::swap (m_var_map, res);
         }
 
-        void operator-=(VariableName var) {
+        void operator-=(variable_t var) {
           std::vector<ap_dim_t> vector_dims;
           if (auto dim = get_var_dim (var)) {
             vector_dims.push_back (*dim);
@@ -956,14 +955,14 @@ namespace crab {
           crab::ScopedCrabStats __st__(getDomainName() + ".project");
 
           if (is_bottom ()) return;
-          std::set<VariableName> s1,s2,s3;
+          std::set<variable_t> s1,s2,s3;
           for (auto p: m_var_map.left) s1.insert (p.first);
           s2.insert (vars.begin (), vars.end ());
           boost::set_difference (s1,s2,std::inserter (s3, s3.end ()));
           forget (s3);
         }
 
-        interval_t operator[](VariableName v) {
+        interval_t operator[](variable_t v) {
           crab::CrabStats::count (getDomainName() + ".count.to_intervals");
           crab::ScopedCrabStats __st__(getDomainName() + ".to_intervals");
 
@@ -1042,7 +1041,7 @@ namespace crab {
             return interval_t::top ();
         }
 
-        void set(VariableName v, interval_t ival) {
+        void set(variable_t v, interval_t ival) {
           crab::CrabStats::count (getDomainName() + ".count.assign");
           crab::ScopedCrabStats __st__(getDomainName() + ".assign");
 
@@ -1100,8 +1099,8 @@ namespace crab {
 	  std::vector<char*> names;
 	  for (unsigned i=0; i < get_dims (m_apstate) ; i++){
 	    std::string varname;
-	    if (has_var_name (m_var_map, i))
-	      varname = get_var_name (m_var_map, i).str ();
+	    if (has_variable (m_var_map, i))
+	      varname = get_variable (m_var_map, i).str ();
 	    else // unused dimension
 	      varname = std::string ("_x") + std::to_string (i);
 	    char* name = new char [varname.length () + 1];
@@ -1122,7 +1121,7 @@ namespace crab {
 		                 << *this << "\n";);
         }
        
-        void assign (VariableName x, linear_expression_t e) {
+        void assign (variable_t x, linear_expression_t e) {
           crab::CrabStats::count (getDomainName() + ".count.assign");
           crab::ScopedCrabStats __st__(getDomainName() + ".assign");
 
@@ -1141,7 +1140,7 @@ namespace crab {
                    crab::outs() << "--- "<< x<< ":="<< e << " --> "<< *this<<"\n";);
         }
           
-        void apply (operation_t op, VariableName x, VariableName y, Number z) {
+        void apply (operation_t op, variable_t x, variable_t y, Number z) {
           crab::CrabStats::count (getDomainName() + ".count.apply");
           crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1170,7 +1169,7 @@ namespace crab {
                    crab::outs() << "--- "<< x<< ":="<< y<< op<< z<< " --> "<< *this<<"\n";);
         }
         
-        void apply(operation_t op, VariableName x, VariableName y, VariableName z) {
+        void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
           crab::CrabStats::count (getDomainName() + ".count.apply");
           crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1200,7 +1199,7 @@ namespace crab {
                    crab::outs() << "--- "<< x<< ":="<< y<< op<< z<< " --> "<< *this<<"\n";);
         }
         
-        void apply(operation_t op, VariableName x, Number k) {
+        void apply(operation_t op, variable_t x, Number k) {
           crab::CrabStats::count (getDomainName() + ".count.apply");
           crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1231,14 +1230,14 @@ namespace crab {
         }
 
         void apply(int_conv_operation_t op,
-		   VariableName dst, unsigned /*dst_width*/,
-		   VariableName src, unsigned /*src_width*/) {
+		   variable_t dst, unsigned /*dst_width*/,
+		   variable_t src, unsigned /*src_width*/) {
           // since reasoning about infinite precision we simply assign and
           // ignore the widths.
-          assign(dst, variable_t(src));
+          assign(dst, src);
 	}
 
-        void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) {
+        void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {
           crab::CrabStats::count (getDomainName() + ".count.apply");
           crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1258,7 +1257,7 @@ namespace crab {
           set(x, xi);
         }
         
-        void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k) {
+        void apply(bitwise_operation_t op, variable_t x, variable_t y, Number k) {
           crab::CrabStats::count (getDomainName() + ".count.apply");
           crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1278,7 +1277,7 @@ namespace crab {
           set(x, xi);
         }
         
-        void apply(div_operation_t op, VariableName x, VariableName y, VariableName z) {
+        void apply(div_operation_t op, variable_t x, variable_t y, variable_t z) {
           crab::CrabStats::count (getDomainName() + ".count.apply");
           crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1302,7 +1301,7 @@ namespace crab {
         }
         
         void apply(div_operation_t op,
-		   VariableName x, VariableName y, Number k) {
+		   variable_t x, variable_t y, Number k) {
           crab::CrabStats::count (getDomainName() + ".count.apply");
           crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1324,7 +1323,7 @@ namespace crab {
           }
         }
 
-        void backward_assign (VariableName x, linear_expression_t e,
+        void backward_assign (variable_t x, linear_expression_t e,
 			      apron_domain_t invariant) {
           crab::CrabStats::count (getDomainName() + ".count.backward_assign");
           crab::ScopedCrabStats __st__(getDomainName() + ".backward_assign");
@@ -1352,7 +1351,7 @@ namespace crab {
         }
           
         void backward_apply (operation_t op,
-			     VariableName x, VariableName y, Number z,
+			     variable_t x, variable_t y, Number z,
 			     apron_domain_t invariant) {
           crab::CrabStats::count (getDomainName() + ".count.backward_apply");
           crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
@@ -1391,7 +1390,7 @@ namespace crab {
         }
         
         void backward_apply(operation_t op,
-			    VariableName x, VariableName y, VariableName z,
+			    variable_t x, variable_t y, variable_t z,
 			    apron_domain_t invariant)  {
           crab::CrabStats::count (getDomainName() + ".count.backward_apply");
           crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
@@ -1460,7 +1459,7 @@ namespace crab {
           return csts;
         }
 
-      void rename(const varname_vector_t &from, const varname_vector_t &to) {
+      void rename(const variable_vector_t &from, const variable_vector_t &to) {
 	if (is_top () || is_bottom()) return;
 	
 	// renaming m_var_map by creating a new map 
@@ -1488,7 +1487,7 @@ namespace crab {
 		 crab::outs () << "RESULT=" << *this << "\n");
       }
 	
-        void expand (VariableName x, VariableName dup) {
+        void expand (variable_t x, variable_t dup) {
 	  if (is_bottom() || is_top()) return;
 	  
           if (get_var_dim(dup)) {
@@ -1559,7 +1558,7 @@ namespace crab {
         using typename abstract_domain_t::variable_t;
         using typename abstract_domain_t::number_t;
         using typename abstract_domain_t::varname_t;
-        using typename abstract_domain_t::varname_vector_t;	
+        using typename abstract_domain_t::variable_vector_t;	
         typedef typename linear_constraint_t::kind_t constraint_kind_t;
         typedef interval<Number>  interval_t;
 
@@ -1623,75 +1622,75 @@ namespace crab {
         void operator+=(linear_constraint_system_t csts) {
 	  detach(); ref() += csts;
 	}
-        void operator-=(VariableName v) {
+        void operator-=(variable_t v) {
 	  detach(); ref() -= v;
 	}
-        interval_t operator[](VariableName x) {
+        interval_t operator[](variable_t x) {
 	  return ref()[x];
 	}
-        void set(VariableName x, interval_t intv) {
+        void set(variable_t x, interval_t intv) {
 	  detach(); ref().set(x, intv);
 	}
         
         template<typename Range>
         void forget (Range vs) { detach(); ref().forget(vs); }
-        void assign(VariableName x, linear_expression_t e) {
+        void assign(variable_t x, linear_expression_t e) {
 	  detach(); ref().assign(x, e);
 	}
         void apply(operation_t op,
-		   VariableName x, VariableName y, Number k) {
+		   variable_t x, variable_t y, Number k) {
           detach(); ref().apply(op, x, y, k);
         }
         void apply(operation_t op,
-		   VariableName x, VariableName y, VariableName z) {
+		   variable_t x, variable_t y, variable_t z) {
           detach(); ref().apply(op, x, y, z);
         }	
         void apply(int_conv_operation_t op,
-		   VariableName dst, unsigned dst_width, VariableName src, unsigned src_width) {
+		   variable_t dst, unsigned dst_width, variable_t src, unsigned src_width) {
           detach(); ref().apply(op, dst, dst_width, src, src_width);
         }
         void apply(bitwise_operation_t op,
-		   VariableName x, VariableName y, Number k) {
+		   variable_t x, variable_t y, Number k) {
           detach(); ref().apply(op, x, y, k);
         }
         void apply(bitwise_operation_t op,
-		   VariableName x, VariableName y, VariableName z) {
+		   variable_t x, variable_t y, variable_t z) {
           detach(); ref().apply(op, x, y, z);
         }
         void apply(div_operation_t op,
-		   VariableName x, VariableName y, VariableName z) {
+		   variable_t x, variable_t y, variable_t z) {
           detach(); ref().apply(op, x, y, z);
         }
         void apply(div_operation_t op,
-		   VariableName x, VariableName y, Number k) {
+		   variable_t x, variable_t y, Number k) {
           detach(); ref().apply(op, x, y, k);
         }
-        void backward_assign(VariableName x, linear_expression_t e,
-				     apron_domain_t invariant) {
+        void backward_assign(variable_t x, linear_expression_t e,
+			     apron_domain_t invariant) {
 	  detach(); ref().backward_assign(x, e, invariant.ref());
 	}
         void backward_apply(operation_t op,
-			    VariableName x, VariableName y, Number k,
+			    variable_t x, variable_t y, Number k,
 			    apron_domain_t invariant) {
           detach(); ref().backward_apply(op, x, y, k, invariant.ref());
         }
         void backward_apply(operation_t op,
-			    VariableName x, VariableName y, VariableName z,
+			    variable_t x, variable_t y, variable_t z,
 			    apron_domain_t invariant) {
           detach(); ref().backward_apply(op, x, y, z, invariant.ref());
         }	
-        void expand (VariableName x, VariableName y) {
+        void expand (variable_t x, variable_t y) {
 	  detach(); ref().expand(x, y);
 	}
 
-	void rename(const varname_vector_t &from, const varname_vector_t &to)
+	void rename(const variable_vector_t &from, const variable_vector_t &to)
 	{ detach(); ref().rename(from, to); }
 	
         template<typename Range>
         void project (Range vs) { detach(); ref().project(vs); }
         
         template <typename NumDomain>
-        void push (const VariableName& x, NumDomain&inv){
+        void push (const variable_t& x, NumDomain&inv){
 	  detach(); ref().push(x, inv);
 	}
         
@@ -1712,7 +1711,8 @@ namespace crab {
        public:
         
         typedef apron_domain<Number, VariableName, ApronDom> apron_domain_t;
-        
+        typedef ikos::variable<Number, VariableName> variable_t;
+	
         template<class CFG>
         static void do_initialization(CFG cfg) { }
 
@@ -1730,7 +1730,7 @@ namespace crab {
           inv.project (boost::make_iterator_range (it, end));
         }
         
-        static void expand(apron_domain_t& inv, VariableName x, VariableName new_x) {
+        static void expand(apron_domain_t& inv, variable_t x, variable_t new_x) {
           inv.expand (x, new_x);
         }		
       };
@@ -1743,5 +1743,4 @@ namespace crab {
    
    } // namespace domains
 }// namespace crab
-#endif 
 #endif 

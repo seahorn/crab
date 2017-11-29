@@ -1,5 +1,4 @@
-#ifndef INTER_FWD_ANALYZER_HPP
-#define INTER_FWD_ANALYZER_HPP
+#pragma once 
 
 /* 
    A standard two-phase approach for _context-insensitive_
@@ -40,6 +39,7 @@ namespace crab {
       typedef typename cg_node_t::cfg_t cfg_t; // cfg_t is actually a wrap to Cfg&
       typedef typename cfg_t::varname_t varname_t;
       typedef typename cfg_t::number_t number_t;
+      typedef typename cfg_t::variable_t variable_t;
       typedef liveness<cfg_t> liveness_t;     
       typedef boost::unordered_map <cfg_t, const liveness_t*> liveness_map_t;
 
@@ -178,7 +178,7 @@ namespace crab {
               a.Run ();
 	      
               // --- build the summary
-              std::vector<varname_t> formals, inputs, outputs;
+              std::vector<variable_t> formals, inputs, outputs;
               formals.reserve ((*fdecl).get_num_inputs() + (*fdecl).get_num_outputs());
               inputs.reserve ((*fdecl).get_num_inputs());
               outputs.reserve ((*fdecl).get_num_outputs());
@@ -307,4 +307,3 @@ namespace crab {
   } // end namespace
 } // end namespace
 
-#endif /* INTER_FWD_ANALYZER_HPP*/

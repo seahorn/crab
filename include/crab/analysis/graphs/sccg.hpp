@@ -1,5 +1,4 @@
-#ifndef STRONGLY_CONNECTED_COMPONENT_GRAPH_HPP__
-#define STRONGLY_CONNECTED_COMPONENT_GRAPH_HPP__
+#pragma once 
 
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/graph_traits.hpp>
@@ -359,4 +358,3 @@ namespace crab {
    } // end namespace analyzer
 } // end namespace crab
 
-#endif 

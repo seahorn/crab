@@ -13,16 +13,18 @@
  * as array with scalar variables.
  ******************************************************************************/
 
-/* IMPORTANT
- * JN: the implementation works for toy programs but two main things
+/**
+ * TODOs:
+ * 
+ * The implementation works for toy programs but three main things
  * must to be done for being able to analyze real programs:
  *
  * 1) landmarks must be kept as local state as part of each abstract
  *    state.
  * 
- * 2) When analyzing real programs, array indexes are usually
- *    originated from pointer_assign rather than assign
- *    assignments. The current implementation ignores pointer_assign.
+ * 2) When analyzing real programs, array indexes are originated from
+ *    pointer_assign rather than assign statements. The current
+ *    implementation ignores pointer_assign.
  * 
  * 3) reduction between scalar and weight domains must be done
  *    incrementally. For that, we need some assumptions about the
@@ -33,10 +35,9 @@
  *    methods such as array_sgraph_domain_traits::is_unsat and
  *    array_sgraph_domain_traits::active_variables which are anyway
  *    domain dependent.
- */ 
+ **/ 
 
-#ifndef ARRAY_SPARSE_GRAPH_HPP
-#define ARRAY_SPARSE_GRAPH_HPP
+#pragma once 
 
 #include <crab/common/types.hpp>
 #include <crab/common/debug.hpp>
@@ -764,7 +765,7 @@ namespace crab {
         }
       }
 
-      void remove_from_weights(typename Weight::varname_t v) {
+      void remove_from_weights(typename Weight::variable_t v) {
         mut_val_ref_t w_pq;
         for(auto p : _g.verts()) 
           for(auto e : _g.e_succs(p)) {
@@ -839,7 +840,7 @@ namespace crab {
       {
         interval<typename Dom::number_t>  r = e.constant();
         for (auto p : e)
-          r += p.first * dom[p.second.name()];
+          r += p.first * dom[p.second];
         return r;
       }
 
@@ -849,7 +850,7 @@ namespace crab {
        typename Dom1::linear_expression_t src_e, 
        variable_type ty, 
        Dom2 &dst,
-       typename Dom2::varname_t dst_var) {
+       typename Dom2::variable_t dst_var) {
 	
         if (ty == ARR_INT_TYPE || ty == ARR_REAL_TYPE) {
           // --- XXX: simplification wrt Gange et.al.:
@@ -857,7 +858,8 @@ namespace crab {
           //     propagated from the graph domain to the scalar domain.
           dst.set (dst_var, eval_interval(src, src_e)); 
         } else {
-          CRAB_WARN ("Unsupported array type: missing propagation between weight and scalar domains");
+          CRAB_WARN ("Unsupported array type ", __LINE__, ":",
+		     "missing propagation between weight and scalar domains");
         }
       }
 
@@ -867,7 +869,7 @@ namespace crab {
        typename BaseDom::linear_expression_t src_e, 
        variable_type ty, 
        numerical_nullity_domain<BaseDom> &dst, 
-       typename BaseDom::varname_t dst_var) {
+       typename BaseDom::variable_t dst_var) {
 	
         if (ty == ARR_INT_TYPE || ARR_REAL_TYPE) {
           // --- XXX: simplification wrt Gange et.al.:
@@ -877,33 +879,32 @@ namespace crab {
         } else if (ty == ARR_PTR_TYPE) {
 	  if (auto src_var = src_e.get_variable()) {
 	    auto &null_dom = dst.second ();
-	    null_dom.set_nullity(dst_var,
-				 src.get_nullity((*src_var).name()));
+	    null_dom.set_nullity(dst_var, src.get_nullity(*src_var));
 	  }
         } else {
-          CRAB_WARN ("Unsupported array type: missing propagation between weight and scalar domains");	  
+          CRAB_WARN ("Unsupported array type ", __LINE__, ":",
+		     "missing propagation between weight and scalar domains");
         }
       }
 
       template<typename BaseDom>
       void propagate_between_weight_and_scalar
-      (nullity_domain<typename BaseDom::number_t,
-       typename BaseDom::varname_t> src,
+      (nullity_domain<typename BaseDom::number_t, typename BaseDom::varname_t> src,
        typename BaseDom::linear_expression_t src_e, 
        variable_type ty, 
        numerical_nullity_domain<BaseDom> &dst, 
-       typename BaseDom::varname_t dst_var) {
+       typename BaseDom::variable_t dst_var) {
 	
         if (ty == ARR_INT_TYPE || ty == ARR_REAL_TYPE) {
           // do nothing
         } else if (ty == ARR_PTR_TYPE) {
 	  if (auto src_var = src_e.get_variable ()) {
 	    auto &null_dom = dst.second ();
-	    null_dom.set_nullity(dst_var,
-				 src.get_nullity((*src_var).name()));
+	    null_dom.set_nullity(dst_var, src.get_nullity(*src_var));
 	  }
         } else {
-          CRAB_WARN ("Unsupported array type: missing propagation between weight and scalar domains");	  	  
+          CRAB_WARN ("Unsupported array type ", __LINE__, ":",
+		     "missing propagation between weight and scalar domains");
         }
       }
 
@@ -912,19 +913,19 @@ namespace crab {
       (numerical_nullity_domain<BaseDom> src, 
        typename BaseDom::linear_expression_t src_e, 
        variable_type ty, 
-       nullity_domain<typename BaseDom::number_t,
-       typename BaseDom::varname_t> &dst,
-       typename BaseDom::varname_t dst_var) {
+       nullity_domain<typename BaseDom::number_t, typename BaseDom::varname_t> &dst,
+       typename BaseDom::variable_t dst_var) {
 	
         if (ty == ARR_INT_TYPE || ty == ARR_REAL_TYPE) {
           // do nothing
         } else if (ty == ARR_PTR_TYPE) {
 	  if (auto src_var = src_e.get_variable()) {
 	    dst.set_nullity(dst_var,
-			    src.second().get_nullity((*src_var).name()));
+			    src.second().get_nullity(*src_var));
 	  }
         } else {
-          CRAB_WARN ("Unsupported array type: missing propagation between weight and scalar domains");	  	  	  
+          CRAB_WARN ("Unsupported array type ", __LINE__, ":",
+		     "missing propagation between weight and scalar domains");
         }
       }
 
@@ -1050,7 +1051,7 @@ namespace crab {
       // void update_edge_unclosed (Vertex s, Weight w, Vertex d) { lock(); norm().update_edge_unclosed(s,w,d); }
       void close_edge (Vertex s, Vertex d) { lock(); norm().close_edge(s,d); }
 
-      void remove_from_weights(typename Weight::varname_t v)
+      void remove_from_weights(typename Weight::variable_t v)
       { lock(); norm().remove_from_weights(v);}
 
       void operator-=(Vertex v) { lock(); norm() -= v; }
@@ -1259,21 +1260,21 @@ namespace crab {
              a summary-based inter-procedural analysis might be ok but
              not, e.g., for inlining.
     */
-    template<typename NumDom, typename Weight, bool IsDistWeight = false>
+    template<typename NumDom, typename Content, bool IsDistContent = false>
     class array_sparse_graph_domain:
       public abstract_domain<typename NumDom::number_t,
 			     typename NumDom::varname_t,
-			     array_sparse_graph_domain<NumDom,Weight,IsDistWeight> > {
+			     array_sparse_graph_domain<NumDom,Content,IsDistContent> > {
      public:
       
       typedef typename NumDom::number_t Number;
       typedef typename NumDom::varname_t VariableName;
-
+      
      private:
 
-      // WARNING: assume NumDom::number_t = Weight::number_t and
-      //                 NumDom::varname_t = Weight::varname_t      
-      typedef array_sparse_graph_domain<NumDom,Weight,IsDistWeight> array_sgraph_domain_t;
+      // WARNING: assume NumDom::number_t = Content::number_t and
+      //                 NumDom::varname_t = Content::varname_t      
+      typedef array_sparse_graph_domain<NumDom,Content,IsDistContent> array_sgraph_domain_t;
       typedef abstract_domain<Number,VariableName,array_sgraph_domain_t> abstract_domain_t;
       
      public:
@@ -1281,17 +1282,18 @@ namespace crab {
       using typename abstract_domain_t::linear_expression_t;
       using typename abstract_domain_t::linear_constraint_t;
       using typename abstract_domain_t::linear_constraint_system_t;
-      using typename abstract_domain_t::variable_t;
+      //using typename abstract_domain_t::variable_t;
+      typedef typename NumDom::variable_t variable_t;
       using typename abstract_domain_t::number_t;
       using typename abstract_domain_t::varname_t;
-      typedef crab::pointer_constraint<VariableName> ptr_cst_t;
+      typedef crab::pointer_constraint<variable_t> ptr_cst_t;
       typedef interval<Number> interval_t;
       
-      typedef landmark_cst<VariableName,Number> landmark_cst_t;
-      typedef landmark_var<VariableName,Number> landmark_var_t;
-      typedef landmark_varprime<VariableName,Number> landmark_var_prime_t;
-      typedef landmark_ref<VariableName,Number> landmark_ref_t;
-      typedef array_sparse_graph<landmark_ref_t,Weight,IsDistWeight> array_sgraph_t;
+      typedef landmark_cst<variable_t,Number> landmark_cst_t;
+      typedef landmark_var<variable_t,Number> landmark_var_t;
+      typedef landmark_varprime<variable_t,Number> landmark_var_prime_t;
+      typedef landmark_ref<variable_t,Number> landmark_ref_t;
+      typedef array_sparse_graph<landmark_ref_t,Content,IsDistContent> array_sgraph_t;
 
       //// XXX: make this a template parameter later
       typedef crab::cfg::var_factory_impl::str_var_alloc_col::varname_t str_varname_t;
@@ -1372,8 +1374,7 @@ namespace crab {
         typedef crab::analyzer::array_segmentation<CFG> array_segment_analysis_t;
         typedef typename array_segment_analysis_t::array_segment_domain_t
 	  array_segment_domain_t;
-        typedef crab::analyzer::array_constant_segment_visitor
-	  <typename CFG::number_t, array_segment_domain_t>
+        typedef crab::analyzer::array_constant_segment_visitor<CFG, array_segment_domain_t>
 	  array_cst_segment_visitor_t;
 
         std::set<landmark_ref_t> lms;
@@ -1390,7 +1391,7 @@ namespace crab {
         lms.insert(var_indexes.begin(), var_indexes.end());
 
         // get variable factory
-        auto &vfac = (*var_indexes.begin()).get_var_factory ();
+        auto &vfac = (*var_indexes.begin()).name().get_var_factory ();
 
         // add constants
         // make sure 0 is always considered as an array index
@@ -1422,15 +1423,15 @@ namespace crab {
           switch (lm.kind()) {
             case LMV: {
               auto v = boost::static_pointer_cast<const landmark_var_t>(lm._ref)->get_var();
-              varname_t v_prime = vfac.get(v.index());
-              landmark_ref_t lm_prime(v_prime, v.str());
+              variable_t v_prime(vfac.get(v.index()));
+              landmark_ref_t lm_prime(v_prime, v.name().str());
               var_landmarks.insert(std::make_pair(lm, lm_prime));
               num_vl++;
               break;
             }
             case LMC: {
               auto n = boost::static_pointer_cast<const landmark_cst_t>(lm._ref)->get_cst();
-              varname_t v_prime = vfac.get(); 
+              variable_t v_prime(vfac.get()); 
               landmark_ref_t lm_prime(v_prime, n.get_str());
               cst_landmarks.insert(std::make_pair(lm, lm_prime));
               num_cl++;
@@ -1460,10 +1461,11 @@ namespace crab {
 
      public: // public only for tests
 
-      void add_landmark(VariableName v)
+      void add_landmark(variable_t v)
       {
         landmark_ref_t lm_v (v);
-        landmark_ref_t lm_v_prime(v.get_var_factory().get(v.index()), v.str());
+        landmark_ref_t lm_v_prime(variable_t(v.name().get_var_factory().get(v.name().index())),
+				  v.name().str());
         // add pair  x -> x'
         var_landmarks.insert(std::make_pair(lm_v, lm_v_prime));
         // x' = x + 1
@@ -1484,7 +1486,7 @@ namespace crab {
                  crab::outs () << "Added landmark " << v << "\n";);
       }
 
-      void remove_landmark(VariableName v) {
+      void remove_landmark(variable_t v) {
         array_forget (v);
         forget_prime_var (v);
         var_landmarks.erase (landmark_ref_t (v));
@@ -1555,7 +1557,7 @@ namespace crab {
       }
 
       // return true if v is a landmark in the graph
-      bool is_landmark (VariableName v) const {
+      bool is_landmark (variable_t v) const {
         landmark_ref_t lm_v (v);       
         auto it = var_landmarks.find(lm_v);
         return (it != var_landmarks.end());
@@ -1569,7 +1571,7 @@ namespace crab {
       }
 
       // return the prime landmark of v
-      landmark_ref_t get_landmark_prime (VariableName v) const {
+      landmark_ref_t get_landmark_prime (variable_t v) const {
         landmark_ref_t lm_v (v);
         auto it = var_landmarks.find(lm_v);
         assert (it != var_landmarks.end());
@@ -1577,19 +1579,19 @@ namespace crab {
       }
 
       // Return the weight from the edge (i, i') otherwise top
-      Weight array_edge (VariableName i) {
-        if (is_bottom()) return Weight::bottom();
-        if (is_top() || !is_landmark (i)) return Weight::top();
+      Content array_edge (variable_t i) {
+        if (is_bottom()) return Content::bottom();
+        if (is_top() || !is_landmark (i)) return Content::top();
 
         mut_val_ref_t wi;   
         if (_g.lookup_edge(landmark_ref_t (i), get_landmark_prime(i), &wi))
-          return (Weight) wi;
+          return (Content) wi;
         else 
-          return Weight::top();
+          return Content::top();
       } 
 
       // Remove v from the edge (i,i')
-      void array_edge_forget(VariableName i, VariableName v) {
+      void array_edge_forget(variable_t i, variable_t v) {
         if (is_bottom()) return;
 
         if (!is_landmark (i)) return;
@@ -1598,7 +1600,7 @@ namespace crab {
         landmark_ref_t lm_i (i);
         landmark_ref_t lm_i_prime = get_landmark_prime (i);
         if (_g.lookup_edge(lm_i, lm_i_prime, &wi)) {
-          Weight w = (Weight) wi;
+          Content w = (Content) wi;
           w -= v;
           // XXX: update_edge closes the array graph
           _g.update_edge (lm_i, w, lm_i_prime);
@@ -1606,7 +1608,7 @@ namespace crab {
       }
 
       // Remove v from all vertices and edges
-      void array_forget(VariableName v) {
+      void array_forget(variable_t v) {
         if (is_bottom()) return;
         if (!is_landmark (v)) return;
 
@@ -1615,7 +1617,7 @@ namespace crab {
       }
 
       // Update the weight from the edge (i, i')
-      void array_edge_update (VariableName i, Weight w)
+      void array_edge_update (variable_t i, Content w)
       {
         if (is_bottom()) return;
         
@@ -1639,7 +1641,7 @@ namespace crab {
             auto q = e.vert;
             if ((p == lm_i) &&  (q == lm_i_prime)) 
               continue;
-            if (_g.lookup_edge(p, q, &w_pq) && ((Weight) w_pq).is_bottom())
+            if (_g.lookup_edge(p, q, &w_pq) && ((Content) w_pq).is_bottom())
               continue;
             // we know already that p < q in the array graph
 
@@ -1650,14 +1652,14 @@ namespace crab {
             if (solve.is_unsat(make_leq_cst(lm_i_prime, q)))
               continue;
 
-            w_pq = (Weight) w_pq | (Weight) wi;
+            w_pq = (Content) w_pq | (Content) wi;
           }
         }
       }
 
       // x := x op k 
       template<typename VarOrNum>
-      void apply_one_variable (operation_t op, VariableName x, VarOrNum k) { 
+      void apply_one_variable (operation_t op, variable_t x, VarOrNum k) { 
         if (is_bottom()) return;
 
         if (!is_landmark (x)) {
@@ -1672,13 +1674,13 @@ namespace crab {
         
         /// --- Add x_old and x_old' to store old values of x and x'
 
-        VariableName x_old = x.get_var_factory().get();      
-        VariableName x_old_prime = x.get_var_factory().get(); 
+        variable_t x_old(x.name().get_var_factory().get());      
+        variable_t x_old_prime(x.name().get_var_factory().get()); 
         landmark_ref_t lm_x_old (x_old);
-        landmark_ref_t lm_x_old_prime (x_old_prime, x_old.str());
+        landmark_ref_t lm_x_old_prime (x_old_prime, x_old.name().str());
         var_landmarks.insert(std::make_pair(lm_x_old, lm_x_old_prime));
         // x_old = x
-        _scalar.assign(x_old, variable_t(x)); 
+        _scalar.assign(x_old, x); 
         // relation between x_old and x' 
         _scalar += make_prime_relation(lm_x_old_prime, lm_x_old);
         //_scalar += make_eq_cst(lm_x_old_prime, lm_x_prime);      
@@ -1689,16 +1691,16 @@ namespace crab {
         //// x_old' has all the x' predecessors and successors 
         _g.expand(lm_x_prime, lm_x_old_prime); 
         //// edges between x and x_old 
-        _g.update_edge(lm_x, Weight::bottom(), lm_x_old);        
-        _g.update_edge(lm_x_old, Weight::bottom(), lm_x);        
+        _g.update_edge(lm_x, Content::bottom(), lm_x_old);        
+        _g.update_edge(lm_x_old, Content::bottom(), lm_x);        
         //// edges between x' and x_old' 
-        _g.update_edge(lm_x_prime, Weight::bottom(), lm_x_old_prime);        
-        _g.update_edge(lm_x_old_prime, Weight::bottom(), lm_x_prime);        
+        _g.update_edge(lm_x_prime, Content::bottom(), lm_x_old_prime);        
+        _g.update_edge(lm_x_old_prime, Content::bottom(), lm_x_prime);        
         //// edges between x_old and x_old'
         mut_val_ref_t w;   
         if (_g.lookup_edge(lm_x, lm_x_prime, &w))
-          _g.update_edge(lm_x_old, (Weight) w, lm_x_old_prime);        
-        _g.update_edge(lm_x_old_prime, Weight::bottom(), lm_x_old);        
+          _g.update_edge(lm_x_old, (Content) w, lm_x_old_prime);        
+        _g.update_edge(lm_x_old_prime, Content::bottom(), lm_x_old);        
 
         /// --- Remove x and x'
         _g -= lm_x;
@@ -1726,7 +1728,7 @@ namespace crab {
       }
 
       // remove v' from scalar and array graph
-      void forget_prime_var(VariableName v) {
+      void forget_prime_var(variable_t v) {
         if (!is_landmark(v)) return;
         
         landmark_ref_t lm_v_prime = get_landmark_prime (v);
@@ -1739,7 +1741,7 @@ namespace crab {
       // perform the operation in the scalar domain assuming that
       // nothing can be done in the graph domain.
       template<class Op, class K>
-      void apply_only_scalar(Op op, VariableName x, VariableName y, K k) {
+      void apply_only_scalar(Op op, variable_t x, variable_t y, K k) {
         _scalar.apply(op, x, y, k);
 
         // Abstract x in the array graph
@@ -1753,15 +1755,15 @@ namespace crab {
 
       // return a pair with the normalized offset and a bool that is
       // true if a new landmark was added in the array graph
-      std::pair<VariableName,bool> normalize_offset (VariableName o, z_number n)
+      std::pair<variable_t,bool> normalize_offset (variable_t o, z_number n)
       {
         CRAB_LOG("array-sgraph-domain-norm",
                  crab::outs() << "BEFORE NORMALIZE OFFSET: expressions="
 		              << _expressions << "\n");
 
         // --- create a fresh variable no such that no := o;
-        VariableName no = o.get_var_factory().get();
-        _expressions.assign (no, variable_t(o));
+        variable_t no(o.name().get_var_factory().get());
+        _expressions.assign (no, o);
 
         // -- apply no := no / n; in the expressions domain
         _expressions.apply (operation_t::OP_DIVISION, no, no, n);
@@ -1831,7 +1833,7 @@ namespace crab {
               //   - if i < j  unsat then i' < j unsat.
               //   - if i < j' unsat then i' < j unsat.
               if ((lm_s == lm_d) || solve.is_unsat (make_lt_cst(lm_s,lm_d))) {
-                g.update_edge(lm_s, Weight::bottom(), lm_d);
+                g.update_edge(lm_s, Content::bottom(), lm_d);
               }
             }
         }        
@@ -2017,7 +2019,7 @@ namespace crab {
         }
       }
 
-      void operator-=(VariableName v) {
+      void operator-=(variable_t v) {
         crab::CrabStats::count (getDomainName() + ".count.forget");
         crab::ScopedCrabStats __st__(getDomainName() + ".forget");
 
@@ -2047,7 +2049,7 @@ namespace crab {
         if (vIt == vEt) return;
 
 
-        std::set<VariableName> keep_vars (vIt, vEt);
+        std::set<variable_t> keep_vars (vIt, vEt);
         auto active_vars = array_sgraph_domain_traits<NumDom>::active_variables(_scalar);
         for (auto v: active_vars) {
           if (!keep_vars.count (v)) {
@@ -2079,7 +2081,7 @@ namespace crab {
                  crab::outs() << "Assume("<< csts<< ") --- "<< *this<<"\n";);
       }
 
-      void assign (VariableName x, linear_expression_t e) 
+      void assign (variable_t x, linear_expression_t e) 
       { assign (x, e, true); }
 
       // Perform the operation in the scalar (optionally expression)
@@ -2088,7 +2090,7 @@ namespace crab {
       // NOTE: if the assignment is something like i = i + k then we
       // will lose precision in the array graph. This kind of
       // assignments should be managed by the apply methods instead.
-      void assign (VariableName x, linear_expression_t e, bool update_expressions) 
+      void assign (variable_t x, linear_expression_t e, bool update_expressions) 
       {
         crab::CrabStats::count (getDomainName() + ".count.assign");
         crab::ScopedCrabStats __st__(getDomainName() + ".assign");
@@ -2097,7 +2099,7 @@ namespace crab {
 
         if (auto y = e.get_variable()) {
           // skip x:=x 
-          if ((*y).name() == x) 
+          if ((*y) == x) 
             return;
         }
             
@@ -2124,10 +2126,7 @@ namespace crab {
                  crab::outs() << "Assign "<<x<<" := "<<e<<" ==> "<<*this<<"\n";);
       }
 
-      void apply (operation_t op, VariableName x, VariableName y, Number z) {
-	//variable_t vx(x);
-	variable_t vy(y);
-	
+      void apply (operation_t op, variable_t x, variable_t y, Number z) {
         if (x == y) {
           crab::CrabStats::count (getDomainName() + ".count.apply");
           crab::ScopedCrabStats __st__(getDomainName() + ".apply");
@@ -2140,11 +2139,11 @@ namespace crab {
         else {
           switch (op) {
             case OP_ADDITION:
-              assign (x, vy + z); break;
+              assign (x, y + z); break;
             case OP_SUBTRACTION:
-              assign (x, vy - z); break;
+              assign (x, y - z); break;
             case OP_MULTIPLICATION:
-              assign (x, vy * z); break;
+              assign (x, y * z); break;
             case OP_DIVISION:
               CRAB_WARN("Division operation not implemented in array-sgraph-domain\n");
             default: ;;
@@ -2152,16 +2151,12 @@ namespace crab {
         }
       }
       
-      void apply(operation_t op, VariableName x, VariableName y, VariableName z)  {
-	//variable_t vx(x);
-	variable_t vy(y);
-	variable_t vz(z); 
-	
+      void apply(operation_t op, variable_t x, variable_t y, variable_t z)  {
         if (x==y) {
           crab::CrabStats::count (getDomainName() + ".count.apply");
           crab::ScopedCrabStats __st__(getDomainName() + ".apply");
           _expressions.apply (op, x, y, z);
-          apply_one_variable<VariableName> (op, x, z);
+          apply_one_variable<variable_t> (op, x, z);
           CRAB_LOG("array-sgraph-domain", 
                    crab::outs() << "Apply "<<x<<" := "<<y<<" "<<op<<" "<<z<<" ==> "
 		                << *this<<"\n";);
@@ -2169,9 +2164,9 @@ namespace crab {
         else {
           switch (op) {
             case OP_ADDITION:
-              assign (x, vy + vz); break;
+              assign (x, y + z); break;
             case OP_SUBTRACTION:
-              assign (x, vy - vz); break;
+              assign (x, y - z); break;
             case OP_MULTIPLICATION:
               CRAB_WARN("Mutiplication not implemented in array-sgraph-domain\n"); break;
             case OP_DIVISION:              
@@ -2181,7 +2176,7 @@ namespace crab {
         }
       }
 
-      void apply(operation_t op, VariableName x, Number k)  {
+      void apply(operation_t op, variable_t x, Number k)  {
         crab::CrabStats::count (getDomainName() + ".count.apply");
         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
         _expressions.apply (op, x, k);
@@ -2192,17 +2187,17 @@ namespace crab {
 		              << *this<<"\n";);
       }
 
-      void backward_assign (VariableName x, linear_expression_t e,
+      void backward_assign (variable_t x, linear_expression_t e,
 			    array_sgraph_domain_t invariant) 
       { CRAB_WARN ("backward assign not implemented"); }
       
       void backward_apply (operation_t op,
-			   VariableName x, VariableName y, Number z,
+			   variable_t x, variable_t y, Number z,
 			   array_sgraph_domain_t invariant) 
       { CRAB_WARN ("backward apply not implemented"); }
       
       void backward_apply(operation_t op,
-			  VariableName x, VariableName y, VariableName z,
+			  variable_t x, variable_t y, variable_t z,
 			  array_sgraph_domain_t invariant) 
       { CRAB_WARN ("backward apply not implemented"); }
 
@@ -2210,15 +2205,15 @@ namespace crab {
       // cast_operators_api
       
       void apply(int_conv_operation_t op,
-		 VariableName dst, unsigned dst_width, VariableName src, unsigned src_width) {
+		 variable_t dst, unsigned dst_width, variable_t src, unsigned src_width) {
         _expressions.apply (op, dst, dst_width, src, src_width);
         // assume unlimited precision so widths are ignored.
-        assign(dst, variable_t(src), false);
+        assign(dst, src, false);
       }
       
       // bitwise_operators_api
       
-      void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) {
+      void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {
         crab::CrabStats::count (getDomainName() + ".count.apply");
         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -2227,7 +2222,7 @@ namespace crab {
         apply_only_scalar (op, x, y, z);
       }
       
-      void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k) {
+      void apply(bitwise_operation_t op, variable_t x, variable_t y, Number k) {
         crab::CrabStats::count (getDomainName() + ".count.apply");
         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -2237,7 +2232,7 @@ namespace crab {
       }
       
       // division_operators_api
-      void apply(div_operation_t op, VariableName x, VariableName y, VariableName z) {
+      void apply(div_operation_t op, variable_t x, variable_t y, variable_t z) {
         crab::CrabStats::count (getDomainName() + ".count.apply");
         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -2246,7 +2241,7 @@ namespace crab {
         apply_only_scalar (op, x, y, z);
       }
       
-      void apply(div_operation_t op, VariableName x, VariableName y, Number k) {
+      void apply(div_operation_t op, variable_t x, variable_t y, Number k) {
         crab::CrabStats::count (getDomainName() + ".count.apply");
         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -2255,33 +2250,33 @@ namespace crab {
         apply_only_scalar (op, x, y, k);
       }
 
-      interval_t operator[](VariableName v)  {
+      interval_t operator[](variable_t v)  {
         return _scalar[v];
       }
 
       // pointer_operators_api
-      virtual void pointer_load (VariableName lhs, VariableName rhs) override {
+      virtual void pointer_load (variable_t lhs, variable_t rhs) override {
         _scalar.pointer_load(lhs,rhs);
       }
       
-      virtual void pointer_store (VariableName lhs, VariableName rhs) override {
+      virtual void pointer_store (variable_t lhs, variable_t rhs) override {
         _scalar.pointer_store(lhs,rhs);
       } 
       
-      virtual void pointer_assign (VariableName lhs, VariableName rhs,
+      virtual void pointer_assign (variable_t lhs, variable_t rhs,
 				   linear_expression_t offset) override {
         _scalar.pointer_assign (lhs,rhs,offset);
       }
       
-      virtual void pointer_mk_obj (VariableName lhs, ikos::index_t address) override {
+      virtual void pointer_mk_obj (variable_t lhs, ikos::index_t address) override {
         _scalar.pointer_mk_obj (lhs, address);
       }
       
-      virtual void pointer_function (VariableName lhs, VariableName func) override {
+      virtual void pointer_function (variable_t lhs, VariableName func) override {
         _scalar.pointer_function (lhs, func);
       }
       
-      virtual void pointer_mk_null (VariableName lhs) override {
+      virtual void pointer_mk_null (variable_t lhs) override {
         _scalar.pointer_mk_null (lhs);
       }
       
@@ -2296,7 +2291,7 @@ namespace crab {
 
       // array_operators_api       
 
-      virtual void array_assume (VariableName a, variable_type a_ty, 
+      virtual void array_assume (variable_t a, variable_type a_ty, 
                                  linear_expression_t lb_idx,
 				 linear_expression_t ub_idx, 
                                  linear_expression_t val) override {
@@ -2307,16 +2302,16 @@ namespace crab {
         if (lb_idx.is_constant() && ub_idx.is_constant())
           array_assume (a, a_ty, lb_idx.constant(), ub_idx.constant(), val);
         else if (lb_idx.is_constant () && ub_var_opt)
-          array_assume (a, a_ty, lb_idx.constant(), (*ub_var_opt).name(), val);
+          array_assume (a, a_ty, lb_idx.constant(), *ub_var_opt, val);
         else if (lb_var_opt && ub_idx.is_constant())
-          array_assume (a, a_ty, (*lb_var_opt).name(), ub_idx.constant(), val);
+          array_assume (a, a_ty, *lb_var_opt, ub_idx.constant(), val);
         else if (lb_var_opt && ub_var_opt)
-          array_assume (a, a_ty, (*lb_var_opt).name(), (*ub_var_opt).name(), val);
+          array_assume (a, a_ty, *lb_var_opt, *ub_var_opt, val);
         else
           CRAB_ERROR ("unreachable");
       }
 
-      virtual void array_load (VariableName lhs, VariableName a,
+      virtual void array_load (variable_t lhs, variable_t a,
 			       crab::variable_type a_ty,
                                linear_expression_t i,
 			       z_number nbytes) override  {
@@ -2332,8 +2327,8 @@ namespace crab {
 
         // -- normalization ensures that closure and reduction have
         // -- been applied.
-        auto p = normalize_offset ((*vi).name(), nbytes);
-        VariableName norm_idx = p.first;
+        auto p = normalize_offset (*vi, nbytes);
+        variable_t norm_idx = p.first;
 
         // #if 0
         // if (is_landmark (norm_idx)) {
@@ -2343,7 +2338,7 @@ namespace crab {
         //   _g.close_edge (lm_norm_idx, lm_norm_idx_prime);
         //   crab::outs () << "#### 1 " << _g << "\n"; 
           
-        //   Weight w;
+        //   Content w;
         //   w += linear_constraint_t(linear_expression_t(lhs) == linear_expression_t(a));
         //   crab::outs () << "#### 2 " << w << "\n";
         //   //_g.update_edge_unclosed(lm_norm_idx, w, lm_norm_idx_prime);
@@ -2351,7 +2346,7 @@ namespace crab {
         // }
         // #endif 
 
-        Weight w = array_edge (norm_idx);
+        Content w = array_edge (norm_idx);
 
         if (a_ty == ARR_INT_TYPE || a_ty == ARR_REAL_TYPE) {
           // Only non-relational numerical invariants are
@@ -2360,8 +2355,7 @@ namespace crab {
         }
 
         array_sparse_graph_impl::
-	  propagate_between_weight_and_scalar(w, variable_t(a), a_ty,
-					      _scalar, lhs);
+	  propagate_between_weight_and_scalar(w, a, a_ty, _scalar, lhs);
         
         // if normalize_offset created a landmark we remove it here to
         // keep smaller array graph
@@ -2378,7 +2372,7 @@ namespace crab {
                                << *this <<"\n";);    
       }
 
-      virtual void array_store (VariableName a, crab::variable_type a_ty,
+      virtual void array_store (variable_t a, crab::variable_type a_ty,
                                 linear_expression_t i,
 				linear_expression_t val, 
                                 z_number nbytes,
@@ -2392,12 +2386,12 @@ namespace crab {
           return;
         }
 
-        Weight w = Weight::top ();
+        Content w = Content::top ();
         array_sparse_graph_impl::
 	  propagate_between_weight_and_scalar(_scalar, val, a_ty, w, a);
 
-        auto p = normalize_offset ((*vi).name(), nbytes);
-        VariableName norm_idx = p.first;
+        auto p = normalize_offset (*vi, nbytes);
+        variable_t norm_idx = p.first;
 
         array_edge_forget (norm_idx, a);
         array_edge_update (norm_idx, w);
@@ -2411,9 +2405,9 @@ namespace crab {
                               << *this <<"\n";);
       }
 
-      // T1 and T2 are either VariableName or z_number
+      // T1 and T2 are either variable_t or z_number
       template<typename T1, typename T2>
-      void array_assume (VariableName arr, variable_type arr_ty,
+      void array_assume (variable_t arr, variable_type arr_ty,
 			 T1 src, T2 dst,
 			 linear_expression_t val)
       {
@@ -2430,7 +2424,7 @@ namespace crab {
         landmark_ref_t lm_src (src);
         landmark_ref_t lm_dst (dst); 
 
-        Weight w = Weight::top ();
+        Content w = Content::top ();
         array_sparse_graph_impl::propagate_between_weight_and_scalar
 	  (_scalar, val, arr_ty, w, arr);
         _g.update_edge(lm_src, w, lm_dst);        
@@ -2472,29 +2466,28 @@ namespace crab {
 
       static std::string getDomainName () {
         std::string name ("ArraySparseGraph(" + 
-			  NumDom::getDomainName () +  "," +  Weight::getDomainName () + ")");
+			  NumDom::getDomainName () +  "," +  Content::getDomainName () + ")");
         return name;
       }
 
     };
 
-    template<typename NumDom, typename Weight>
-    class domain_traits<array_sparse_graph_domain<NumDom,Weight,false> > {
+    template<typename NumDom, typename Content>
+    class domain_traits<array_sparse_graph_domain<NumDom,Content,false> > {
 
      public:
-      // WARNING: assume NumDom::number_t = Weight::number_t and
-      //                 NumDom::varname_t = Weight::varname_t
-      typedef typename NumDom::number_t N;
-      typedef typename NumDom::varname_t V;
       
-      typedef array_sparse_graph_domain<NumDom,Weight,false> array_sgraph_domain_t;
+      // WARNING: assume NumDom::variable_t = Content::variable_t
+      typedef typename NumDom::variable_t variable_t;
+      
+      typedef array_sparse_graph_domain<NumDom,Content,false> array_sgraph_domain_t;
 
       template<class CFG>
       static void do_initialization (CFG cfg) {
         array_sgraph_domain_t::do_initialization(cfg);
       }
 
-      static void expand (array_sgraph_domain_t& inv, V x, V new_x) {
+      static void expand (array_sgraph_domain_t& inv, variable_t x, variable_t new_x) {
         CRAB_WARN ("array_graph_domain expand not implemented");
       }
     
@@ -2515,18 +2508,17 @@ namespace crab {
     };
   
     // Static data allocation
-    template<class Dom, class Wt, bool IsDistWt>
-    boost::unordered_map<landmark_ref<typename Dom::varname_t, typename Dom::number_t>, 
-                         landmark_ref<typename Dom::varname_t, typename Dom::number_t> > 
-    array_sparse_graph_domain<Dom,Wt,IsDistWt>::var_landmarks;
+    template<class Dom, class Content, bool IsDistContent>
+    boost::unordered_map<landmark_ref<typename Dom::variable_t, typename Dom::number_t>, 
+                         landmark_ref<typename Dom::variable_t, typename Dom::number_t> > 
+    array_sparse_graph_domain<Dom,Content,IsDistContent>::var_landmarks;
 
-    template<class Dom, class Wt, bool IsDistWt>
-    boost::unordered_map<landmark_ref<typename Dom::varname_t, typename Dom::number_t>, 
-                         landmark_ref<typename Dom::varname_t, typename Dom::number_t> > 
-    array_sparse_graph_domain<Dom,Wt,IsDistWt>::cst_landmarks;
+    template<class Dom, class Content, bool IsDistContent>
+    boost::unordered_map<landmark_ref<typename Dom::variable_t, typename Dom::number_t>, 
+                         landmark_ref<typename Dom::variable_t, typename Dom::number_t> > 
+    array_sparse_graph_domain<Dom,Content,IsDistContent>::cst_landmarks;
 
   } // end namespace domains
  
 } // end namespace crab
 #pragma GCC diagnostic pop
-#endif 

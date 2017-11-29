@@ -1,5 +1,4 @@
-#ifndef BOXES_DOMAIN_HPP
-#define BOXES_DOMAIN_HPP
+#pragma once
 
 /************************************************************************** 
  * A wrapper for a disjunctive domain of intervals from "Boxes: A
@@ -74,58 +73,58 @@ namespace crab {
         boxes_domain_t operator&& (boxes_domain_t other) 
         { CRAB_ERROR (LDD_NOT_FOUND); }
         
-        void operator-=(VariableName var) 
+        void operator-=(variable_t var) 
         { CRAB_ERROR (LDD_NOT_FOUND); }
 
-        interval_t operator[](VariableName v) 
+        interval_t operator[](variable_t v) 
         { CRAB_ERROR (LDD_NOT_FOUND); }
 
-        void set(VariableName v, interval_t ival) 
+        void set(variable_t v, interval_t ival) 
         { CRAB_ERROR (LDD_NOT_FOUND); }
 
         void operator += (linear_constraint_system_t csts) 
         { CRAB_ERROR (LDD_NOT_FOUND); }
         
-        void assign (VariableName x, linear_expression_t e) 
+        void assign (variable_t x, linear_expression_t e) 
         { CRAB_ERROR (LDD_NOT_FOUND); }
           
-        void apply (operation_t op, VariableName x, VariableName y, Number z) 
+        void apply (operation_t op, variable_t x, variable_t y, Number z) 
         { CRAB_ERROR (LDD_NOT_FOUND); }
         
-        void apply(operation_t op, VariableName x, VariableName y, VariableName z) 
+        void apply(operation_t op, variable_t x, variable_t y, variable_t z) 
         { CRAB_ERROR (LDD_NOT_FOUND); }
         
-        void apply(operation_t op, VariableName x, Number k) 
+        void apply(operation_t op, variable_t x, Number k) 
         { CRAB_ERROR (LDD_NOT_FOUND); }
 
-        void backward_assign (VariableName x, linear_expression_t e,
+        void backward_assign (variable_t x, linear_expression_t e,
 			      boxes_domain_t invariant) 
         { CRAB_ERROR (LDD_NOT_FOUND); }
           
         void backward_apply (operation_t op,
-			     VariableName x, VariableName y, Number z,
+			     variable_t x, variable_t y, Number z,
 			     boxes_domain_t invariant) 
         { CRAB_ERROR (LDD_NOT_FOUND); }
         
         void backward_apply(operation_t op,
-			    VariableName x, VariableName y, VariableName z,
+			    variable_t x, variable_t y, variable_t z,
 			    boxes_domain_t invariant)
         { CRAB_ERROR (LDD_NOT_FOUND); }
 	
         void apply(int_conv_operation_t op,
-		   VariableName dst, unsigned dst_width, VariableName src, unsigned src_width) 
+		   variable_t dst, unsigned dst_width, variable_t src, unsigned src_width) 
         { CRAB_ERROR (LDD_NOT_FOUND); }
                 
-        void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) 
+        void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) 
         { CRAB_ERROR (LDD_NOT_FOUND); }
         
-        void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k) 
+        void apply(bitwise_operation_t op, variable_t x, variable_t y, Number k) 
         { CRAB_ERROR (LDD_NOT_FOUND); }
         
-        void apply(div_operation_t op, VariableName x, VariableName y, VariableName z) 
+        void apply(div_operation_t op, variable_t x, variable_t y, variable_t z) 
         { CRAB_ERROR (LDD_NOT_FOUND); }
         
-        void apply(div_operation_t op, VariableName x, VariableName y, Number k) 
+        void apply(div_operation_t op, variable_t x, variable_t y, Number k) 
         { CRAB_ERROR (LDD_NOT_FOUND); }
         
         linear_constraint_system_t to_linear_constraint_system ()
@@ -201,7 +200,7 @@ namespace crab {
        private:
 	
         // --- map from crab variable index to ldd term index
-        typedef boost::bimap< VariableName , int > var_map_t;
+        typedef boost::bimap<variable_t, int > var_map_t;
         typedef typename var_map_t::value_type binding_t;
 
         LddNodePtr m_ldd;
@@ -234,7 +233,7 @@ namespace crab {
           return m_var_map.left.size ();
         }
 
-        int get_var_dim (VariableName v) const {
+        int get_var_dim (variable_t v) const {
           auto it = m_var_map.left.find (v);
           if (it != m_var_map.left.end ()) {
             return it->second;
@@ -271,7 +270,7 @@ namespace crab {
         }
 	
         // pre: ldd is not either true or false
-        void project (LddNodePtr& ldd, VariableName v) const {
+        void project (LddNodePtr& ldd, variable_t v) const {
 	  
           std::vector<int> qvars;
 	  // num_of_vars is shared by all ldd's
@@ -290,7 +289,7 @@ namespace crab {
         }
 
         /** return term for variable v, neg for negation of variable */
-        linterm_t term_from_var(VariableName v, bool neg = false) 
+        linterm_t term_from_var(variable_t v, bool neg = false) 
         {
           int dim = get_var_dim (v);
           int sgn = neg ? -1 : 1;
@@ -309,7 +308,7 @@ namespace crab {
 	    create_linterm_sparse_si (&dim, &sgn, 1);
         }
 
-	void copy_term (VariableName v, boost::optional<VariableName> x)
+	void copy_term (variable_t v, boost::optional<variable_t> x)
 	{
           if (is_top () || is_bottom ()) return ;
 
@@ -347,7 +346,7 @@ namespace crab {
 	 **     where a is a constant, k an interval and x variable 
 	 **  Each numerical operation is reduced to this form.
 	 */
-        void apply_ldd (VariableName v, VariableName x, Number a, interval_t k) {
+        void apply_ldd (variable_t v, variable_t x, Number a, interval_t k) {
           if (is_top () || is_bottom ()) return ;
 
           linterm_t t = term_from_var (v);
@@ -528,7 +527,7 @@ namespace crab {
 
 	LddNodePtr gen_unit_constraint(Number coef, variable_t var, kind_t kind,
 				       Number k) {
-	  linterm_t term = term_from_var (var.name (), (coef == 1 ? false : true));
+	  linterm_t term = term_from_var (var, (coef == 1 ? false : true));
 	  return gen_unit_constraint(coef, term, kind, k);
 	}
 
@@ -553,7 +552,7 @@ namespace crab {
 	       it != cst.end(); ++it) {
 	    variable_t v = it->second;
 	    if (v.index() != pivot.index()) {
-	      residual = residual - (interval_t (it->first) * intervals[v.name()]);
+	      residual = residual - (interval_t (it->first) * intervals[v]);
 	    }
 	  }
 	  return residual;
@@ -736,7 +735,7 @@ namespace crab {
 	    return;
        }
 
-	inline LddNode* mk_true (boost::optional<VariableName> x) {
+	inline LddNode* mk_true (boost::optional<variable_t> x) {
 	  if (x) {
 	    // x >=1 <--> -x <= -1
 	    LddNodePtr  r = gen_unit_constraint (Number(-1), variable_t(*x),
@@ -753,7 +752,7 @@ namespace crab {
 	}
 
 	
-	inline LddNode* mk_false (boost::optional<VariableName> x) {
+	inline LddNode* mk_false (boost::optional<variable_t> x) {
 	  
 	  if (x) {
 	    // return x <= 0 
@@ -771,8 +770,8 @@ namespace crab {
 
 	// return Ite(y>=1 Op z>=1, x>= 1, x <= 0)
 	LddNodePtr gen_binary_bool(bool_operation_t op,
-				   boost::optional<VariableName> x,
-				   VariableName y, VariableName z)
+				   boost::optional<variable_t> x,
+				   variable_t y, variable_t z)
 	{
 	  switch (op) {
 	  case OP_BAND: {
@@ -804,7 +803,7 @@ namespace crab {
 	  }
 	}
 	
-        VariableName getVarName (int v) const {
+        variable_t getVarName (int v) const {
           auto it = m_var_map.right.find (v);
           if (it != m_var_map.right.end ())
              return it->second;
@@ -954,7 +953,7 @@ namespace crab {
           return res;
         }
         
-        void operator-=(VariableName var) {
+        void operator-=(variable_t var) {
           crab::CrabStats::count (getDomainName() + ".count.forget");
           crab::ScopedCrabStats __st__(getDomainName() + ".forget");
 
@@ -988,14 +987,14 @@ namespace crab {
 
           if (is_bottom ()) return;
 
-          std::set<VariableName> s1,s2,s3;
+          std::set<variable_t> s1,s2,s3;
           for (auto p: m_var_map.left) s1.insert (p.first);
           s2.insert (begin, end);
           boost::set_difference (s1,s2,std::inserter (s3, s3.end ()));
           forget (s3.begin (), s3.end ());
         }
 
-	void expand(VariableName v, VariableName new_v) {
+	void expand(variable_t v, variable_t new_v) {
           if (is_top () || is_bottom ()) return ;
 
           crab::CrabStats::count (getDomainName() + ".count.expand");
@@ -1061,7 +1060,7 @@ namespace crab {
           for (auto cst : csts) operator += (cst);
         }
 
-        void set (VariableName v, interval_t ival) {
+        void set (variable_t v, interval_t ival) {
           crab::CrabStats::count (getDomainName() + ".count.assign");
           crab::ScopedCrabStats __st__(getDomainName() + ".assign");
           
@@ -1083,7 +1082,7 @@ namespace crab {
           get_theory()->destroy_term(t);
         }
 
-        interval_t operator[](VariableName v) {
+        interval_t operator[](variable_t v) {
           crab::CrabStats::count (getDomainName() + ".count.to_intervals");
           crab::ScopedCrabStats __st__(getDomainName() + ".to_intervals");
 
@@ -1103,7 +1102,7 @@ namespace crab {
         }
                 
 	// x := e
-        void assign (VariableName x, linear_expression_t e) {
+        void assign (variable_t x, linear_expression_t e) {
           crab::CrabStats::count (getDomainName() + ".count.assign");
           crab::ScopedCrabStats __st__(getDomainName() + ".assign");
 	  
@@ -1119,7 +1118,7 @@ namespace crab {
             get_theory()->destroy_cst (c);
             get_theory()->destroy_term(t);
           } else if (boost::optional<variable_t> v = e.get_variable()){
-            VariableName y = (*v).name();
+            variable_t y = (*v);
             if (!(x==y)) {
 	      //copy_term(x,y);
 	      apply_ldd (x, y, 1, number_t(0));
@@ -1136,7 +1135,7 @@ namespace crab {
         }
 
 	// x := y op k
-        void apply (operation_t op, VariableName x, VariableName y, Number k) {
+        void apply (operation_t op, variable_t x, variable_t y, Number k) {
           crab::CrabStats::count (getDomainName() + ".count.apply");
           crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1170,7 +1169,7 @@ namespace crab {
         }
 
 	// x := x op k
-        void apply(operation_t op, VariableName x, Number k) {
+        void apply(operation_t op, variable_t x, Number k) {
           crab::CrabStats::count (getDomainName() + ".count.apply");
           crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1202,7 +1201,7 @@ namespace crab {
         }
 
 	// x := y op z
-        void apply(operation_t op, VariableName x, VariableName y, VariableName z) {
+        void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
           crab::CrabStats::count (getDomainName() + ".count.apply");
           crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 	  
@@ -1282,7 +1281,7 @@ namespace crab {
 	  
 	}
 	
-        void backward_assign (VariableName x, linear_expression_t e,
+        void backward_assign (variable_t x, linear_expression_t e,
 			      boxes_domain_t invariant) {
 	  CRAB_LOG("boxes",
 		   crab::outs () << "Backward " << x << ":=" << e
@@ -1293,7 +1292,7 @@ namespace crab {
 	}
 
         void backward_apply (operation_t op,
-			     VariableName x, VariableName y, Number z,
+			     variable_t x, variable_t y, Number z,
 			     boxes_domain_t invariant) {
 	  CRAB_LOG("boxes",
 		   crab::outs () << "Backward " << x << ":=" << y << op << z 
@@ -1306,7 +1305,7 @@ namespace crab {
 	}
 
         void backward_apply(operation_t op,
-			    VariableName x, VariableName y, VariableName z,
+			    variable_t x, variable_t y, variable_t z,
 			    boxes_domain_t invariant)  {
 	  CRAB_LOG("boxes",
 		   crab::outs () << "Backward " << x << ":=" << y << op << z 
@@ -1319,15 +1318,15 @@ namespace crab {
 	}	
 	
         void apply(int_conv_operation_t op,
-		   VariableName dst, unsigned /*dst_width*/,
-		   VariableName src, unsigned /*src_width*/) {
+		   variable_t dst, unsigned /*dst_width*/,
+		   variable_t src, unsigned /*src_width*/) {
           // since reasoning about infinite precision we simply assign and
           // ignore the widths.
-          assign(dst, variable_t(src));
+          assign(dst, src);
         }
 	
         void apply(bitwise_operation_t op,
-		   VariableName x, VariableName y, VariableName z) {
+		   variable_t x, variable_t y, variable_t z) {
           crab::CrabStats::count (getDomainName() + ".count.apply");
           crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1350,7 +1349,7 @@ namespace crab {
         }
         
         void apply(bitwise_operation_t op,
-		   VariableName x, VariableName y, Number k) {
+		   variable_t x, variable_t y, Number k) {
           crab::CrabStats::count (getDomainName() + ".count.apply");
           crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1374,7 +1373,7 @@ namespace crab {
         
         // division_operators_api
         void apply(div_operation_t op,
-		   VariableName x, VariableName y, VariableName z) {
+		   variable_t x, variable_t y, variable_t z) {
           crab::CrabStats::count (getDomainName() + ".count.apply");
           crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1399,7 +1398,7 @@ namespace crab {
           }
         }
         
-        void apply(div_operation_t op, VariableName x, VariableName y, Number k) {
+        void apply(div_operation_t op, variable_t x, variable_t y, Number k) {
           crab::CrabStats::count (getDomainName() + ".count.apply");
           crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1427,7 +1426,7 @@ namespace crab {
 	////////
 	//// boolean_operators_api
 	////////
-	void assign_bool_cst (VariableName lhs, linear_constraint_t cst) override
+	void assign_bool_cst (variable_t lhs, linear_constraint_t cst) override
 	{
 	  if (!m_bool_reasoning) return;
 	  
@@ -1484,7 +1483,7 @@ namespace crab {
 		   crab::outs () << lhs << ":= " << "(" << cst << ")\n" << *this << "\n");
 	}    
 	
-	void assign_bool_var (VariableName x, VariableName y, bool is_not_y) override {
+	void assign_bool_var (variable_t x, variable_t y, bool is_not_y) override {
 	  if (!m_bool_reasoning) return;
 	  
           crab::CrabStats::count (getDomainName() + ".count.assign_bool_var");
@@ -1504,8 +1503,8 @@ namespace crab {
 		   crab::outs() << "\n" << *this << "\n");
 	}
 	
-	void apply_binary_bool(bool_operation_t op, VariableName x,
-			       VariableName y, VariableName z) override {
+	void apply_binary_bool(bool_operation_t op, variable_t x,
+			       variable_t y, variable_t z) override {
 	  if (!m_bool_reasoning) return;
 	  
           crab::CrabStats::count (getDomainName() + ".count.apply_bin_bool");
@@ -1513,10 +1512,10 @@ namespace crab {
 	  
 	  // XXX: if *lhs is null then it represents the SPECIAL
 	  // variable $0.
-	  boost::optional<VariableName> lhs; 
+	  boost::optional<variable_t> lhs; 
 	  
 	  if (!(x == y) && !(x == z)) {
-	    lhs = boost::optional<VariableName> (x);
+	    lhs = boost::optional<variable_t> (x);
 	    // XXX: x does not appear on the rhs so we can remove it
 	    // without losing precision.
 	    this->operator-=(x);
@@ -1530,7 +1529,7 @@ namespace crab {
 	  if ((x == y) || (x == z)) {
 	    // XXX: if we are here we added ite(y op z, $0 >= 1, $0 <= 0);
 	    // so we still need to assign $0 to x:
-	    copy_term(x, boost::optional<VariableName>());
+	    copy_term(x, boost::optional<variable_t>());
 	  }
 
 	  CRAB_LOG("boxes",
@@ -1539,7 +1538,7 @@ namespace crab {
 	  
 	}
 
-	void assume_bool (VariableName x, bool is_negated) override {
+	void assume_bool (variable_t x, bool is_negated) override {
 	  if (!m_bool_reasoning) return;
 	  
           crab::CrabStats::count (getDomainName() + ".count.assume_bool");
@@ -1558,7 +1557,7 @@ namespace crab {
 	}
 	
 	// Backward boolean operations
-	void backward_assign_bool_cst(VariableName lhs, linear_constraint_t rhs,
+	void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
 				      boxes_domain_t inv){
 	  if (is_bottom()) return;
 
@@ -1566,7 +1565,7 @@ namespace crab {
 	  this->operator-=(lhs);
 	}
 	
-	void backward_assign_bool_var(VariableName lhs, VariableName rhs, bool is_not_rhs,
+	void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
 				      boxes_domain_t inv) {
 	  if (is_bottom()) return;
 
@@ -1575,7 +1574,7 @@ namespace crab {
 	}
 	
 	void backward_apply_binary_bool(bool_operation_t op,
-					VariableName x,VariableName y,VariableName z,
+					variable_t x,variable_t y,variable_t z,
 					boxes_domain_t inv) {
 	  if (is_bottom()) return;
 
@@ -1650,7 +1649,8 @@ namespace crab {
      class domain_traits <boxes_domain_<Number,VariableName, ConvexReduce, LddSize> > {
       public:
        typedef boxes_domain_<Number, VariableName, ConvexReduce, LddSize> boxes_domain_t;
-
+       typedef ikos::variable<Number, VariableName> variable_t;
+       
        template<class CFG>
        static void do_initialization (CFG cfg) { }
 
@@ -1666,7 +1666,7 @@ namespace crab {
          inv.project (it, end);
        }
 
-       static void expand(boxes_domain_t& inv, VariableName x, VariableName new_x) {
+       static void expand(boxes_domain_t& inv, variable_t x, variable_t new_x) {
 	 inv.expand(x, new_x);         
        }
 
@@ -1789,62 +1789,62 @@ namespace crab {
 	 _product += csts;
 	 //reduce(*this);
        } 
-       void operator-=(VariableName v) { _product -= v; }
-       interval_t operator[](VariableName x) { return _product.first()[x]; }
-       void set(VariableName x, interval_t intv) { _product.set(x, intv); }
+       void operator-=(variable_t v) { _product -= v; }
+       interval_t operator[](variable_t x) { return _product.first()[x]; }
+       void set(variable_t x, interval_t intv) { _product.set(x, intv); }
        
-       void assign(VariableName x, linear_expression_t e) {
+       void assign(variable_t x, linear_expression_t e) {
 	 _product.assign(x, e);
        }
-       void apply(operation_t op, VariableName x, VariableName y, Number k) {
+       void apply(operation_t op, variable_t x, variable_t y, Number k) {
 	 _product.apply(op, x, y, k);
        }
-       void apply(operation_t op, VariableName x, VariableName y, VariableName z) {
+       void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
 	 _product.apply(op, x, y, z);
        }
        
-       void backward_assign(VariableName x, linear_expression_t e,
+       void backward_assign(variable_t x, linear_expression_t e,
 			    boxes_intervals_domain_t invariant)
        { _product.backward_assign(x, e, invariant._product); }
        void backward_apply(operation_t op,
-			   VariableName x, VariableName y, Number k,
+			   variable_t x, variable_t y, Number k,
 			   boxes_intervals_domain_t invariant)
        { _product.backward_apply(op, x, y, k, invariant._product); }
        void backward_apply(operation_t op,
-			   VariableName x, VariableName y, VariableName z,
+			   variable_t x, variable_t y, variable_t z,
 			   boxes_intervals_domain_t invariant)
        { _product.backward_apply(op, x, y, z, invariant._product); }
        
        void apply(int_conv_operation_t op,
-		  VariableName dst, unsigned dst_width, VariableName src, unsigned src_width)
+		  variable_t dst, unsigned dst_width, variable_t src, unsigned src_width)
        { _product.apply(op, dst, dst_width, src, src_width); }
-       void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k)
+       void apply(bitwise_operation_t op, variable_t x, variable_t y, Number k)
        { _product.apply(op, x, y, k); }
-       void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z)
+       void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z)
        { _product.apply(op, x, y, z); }
-       void apply(div_operation_t op, VariableName x, VariableName y, VariableName z)
+       void apply(div_operation_t op, variable_t x, variable_t y, variable_t z)
        { _product.apply(op, x, y, z); }
-       void apply(div_operation_t op, VariableName x, VariableName y, Number k)
+       void apply(div_operation_t op, variable_t x, variable_t y, Number k)
        { _product.apply(op, x, y, k); }
        
-       void assign_bool_cst (VariableName x, linear_constraint_t cst)
+       void assign_bool_cst (variable_t x, linear_constraint_t cst)
        { _product.assign_bool_cst(x,cst);}
-       void assign_bool_var (VariableName x, VariableName y, bool is_not_y)
+       void assign_bool_var (variable_t x, variable_t y, bool is_not_y)
        { _product.assign_bool_var(x,y,is_not_y);}
-       void apply_binary_bool(bool_operation_t op,VariableName x, VariableName y, VariableName z)
+       void apply_binary_bool(bool_operation_t op,variable_t x, variable_t y, variable_t z)
        { _product.apply_binary_bool(op,x,y,z);}
-       void assume_bool (VariableName x, bool is_negated)
+       void assume_bool (variable_t x, bool is_negated)
        { _product.assume_bool(x,is_negated);}
        
        
-       void backward_assign_bool_cst(VariableName lhs, linear_constraint_t rhs,
+       void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
 				     boxes_intervals_domain_t inv)
        { _product.backward_assign_bool_cst(lhs,rhs,inv._product); }
-       void backward_assign_bool_var(VariableName lhs, VariableName rhs, bool is_not_rhs,
+       void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
 				     boxes_intervals_domain_t inv)
        { _product.backward_assign_bool_var(lhs,rhs,is_not_rhs,inv._product); }	
        void backward_apply_binary_bool(bool_operation_t op,
-				       VariableName x,VariableName y,VariableName z,
+				       variable_t x,variable_t y,variable_t z,
 				       boxes_intervals_domain_t inv)
        { _product.backward_apply_binary_bool(op,x,y,z,inv._product); }	
        
@@ -1860,7 +1860,7 @@ namespace crab {
 	 domain_traits<interval_domain_t>::project(_product.second(), vIt, vEt);
        }
        
-       void expand (VariableName x, VariableName new_x) {
+       void expand (variable_t x, variable_t new_x) {
  	 _product.first().expand(x,new_x);
 	 domain_traits<interval_domain_t>::expand(_product.second(), x,new_x);	 
        }
@@ -1885,6 +1885,8 @@ namespace crab {
      class domain_traits <boxes_intervals_domain<Number,VariableName, ConvexReduce, LddSize> > {
       public:
        typedef boxes_intervals_domain<Number, VariableName, ConvexReduce, LddSize> boxes_domain_t;
+       typedef ikos::variable<Number, VariableName> variable_t;
+       
        template<class CFG>
        static void do_initialization (CFG cfg) { }
        static void normalize (boxes_domain_t& inv) { }
@@ -1894,7 +1896,7 @@ namespace crab {
        template <typename Iter>
        static void project(boxes_domain_t& inv, Iter it, Iter end)
        { inv.project (it, end); }
-       static void expand(boxes_domain_t& inv, VariableName x, VariableName new_x)
+       static void expand(boxes_domain_t& inv, variable_t x, variable_t new_x)
        { inv.expand(x, new_x); }
      };
      #endif
@@ -1986,59 +1988,59 @@ namespace crab {
       }
      
       void operator+=(linear_constraint_system_t csts) { detach(); ref() += csts; } 
-      void operator-=(VariableName v) { detach(); ref() -= v; }
-      interval_t operator[](VariableName x) { return ref()[x]; }
-      void set(VariableName x, interval_t intv) { detach(); ref().set(x, intv); }
+      void operator-=(variable_t v) { detach(); ref() -= v; }
+      interval_t operator[](variable_t x) { return ref()[x]; }
+      void set(variable_t x, interval_t intv) { detach(); ref().set(x, intv); }
 
-      void assign(VariableName x, linear_expression_t e)
+      void assign(variable_t x, linear_expression_t e)
       { detach(); ref().assign(x, e); }
-      void apply(operation_t op, VariableName x, VariableName y, Number k)
+      void apply(operation_t op, variable_t x, variable_t y, Number k)
       { detach(); ref().apply(op, x, y, k); }
-      void apply(operation_t op, VariableName x, VariableName y, VariableName z)
+      void apply(operation_t op, variable_t x, variable_t y, variable_t z)
       { detach(); ref().apply(op, x, y, z); }
       
-      void backward_assign(VariableName x, linear_expression_t e,
+      void backward_assign(variable_t x, linear_expression_t e,
 			   boxes_domain_t invariant)
       { detach(); ref().backward_assign(x, e, invariant.ref()); }
       void backward_apply(operation_t op,
-			  VariableName x, VariableName y, Number k,
+			  variable_t x, variable_t y, Number k,
 			  boxes_domain_t invariant)
       { detach(); ref().backward_apply(op, x, y, k, invariant.ref()); }
       void backward_apply(operation_t op,
-			  VariableName x, VariableName y, VariableName z,
+			  variable_t x, variable_t y, variable_t z,
 			  boxes_domain_t invariant)
       { detach(); ref().backward_apply(op, x, y, z, invariant.ref()); }
       
       void apply(int_conv_operation_t op,
-		 VariableName dst, unsigned dst_width, VariableName src, unsigned src_width)
+		 variable_t dst, unsigned dst_width, variable_t src, unsigned src_width)
       { detach(); ref().apply(op, dst, dst_width, src, src_width); }
-      void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k)
+      void apply(bitwise_operation_t op, variable_t x, variable_t y, Number k)
       { detach(); ref().apply(op, x, y, k); }
-      void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z)
+      void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z)
       { detach(); ref().apply(op, x, y, z); }
-      void apply(div_operation_t op, VariableName x, VariableName y, VariableName z)
+      void apply(div_operation_t op, variable_t x, variable_t y, variable_t z)
       { detach(); ref().apply(op, x, y, z); }
-      void apply(div_operation_t op, VariableName x, VariableName y, Number k)
+      void apply(div_operation_t op, variable_t x, variable_t y, Number k)
       { detach(); ref().apply(op, x, y, k); }
 
-      void assign_bool_cst (VariableName x, linear_constraint_t cst)
+      void assign_bool_cst (variable_t x, linear_constraint_t cst)
       { detach(); ref().assign_bool_cst(x,cst);}
-      void assign_bool_var (VariableName x, VariableName y, bool is_not_y)
+      void assign_bool_var (variable_t x, variable_t y, bool is_not_y)
       { detach(); ref().assign_bool_var(x,y,is_not_y);}
-      void apply_binary_bool(bool_operation_t op,VariableName x, VariableName y, VariableName z)
+      void apply_binary_bool(bool_operation_t op,variable_t x, variable_t y, variable_t z)
       { detach(); ref().apply_binary_bool(op,x,y,z);}
-      void assume_bool (VariableName x, bool is_negated)
+      void assume_bool (variable_t x, bool is_negated)
       { detach(); ref().assume_bool(x,is_negated);}
 
       
-      void backward_assign_bool_cst(VariableName lhs, linear_constraint_t rhs,
+      void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
 				    boxes_domain_t inv)
       { detach(); ref().backward_assign_bool_cst(lhs,rhs,inv.ref()); }
-      void backward_assign_bool_var(VariableName lhs, VariableName rhs, bool is_not_rhs,
+      void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
 				    boxes_domain_t inv)
       { detach(); ref().backward_assign_bool_var(lhs,rhs,is_not_rhs,inv.ref()); }	
       void backward_apply_binary_bool(bool_operation_t op,
-				      VariableName x,VariableName y,VariableName z,
+				      variable_t x,variable_t y,variable_t z,
 				      boxes_domain_t inv)
       { detach(); ref().backward_apply_binary_bool(op,x,y,z,inv.ref()); }	
       
@@ -2050,7 +2052,7 @@ namespace crab {
       void project (Iterator vIt, Iterator vEt)
       { detach(); ref().project(vIt, vEt); }
 
-      void expand (VariableName x, VariableName new_x)
+      void expand (variable_t x, variable_t new_x)
       { detach(); ref().expand(x,new_x);}
       
       void write(crab_os& o) { ref().write(o); }
@@ -2070,6 +2072,7 @@ namespace crab {
     class domain_traits <boxes_domain<Number,VariableName,ConvexReduce,LddSize> > {
     public:
       typedef boxes_domain<Number, VariableName, ConvexReduce, LddSize> boxes_domain_t;
+      typedef ikos::variable<Number, VariableName> variable_t;
       
       template<class CFG>
       static void do_initialization (CFG cfg) {}
@@ -2084,7 +2087,7 @@ namespace crab {
       static void project (boxes_domain_t& inv, Iter it, Iter end)
       { inv.project (it, end); }
       
-      static void expand (boxes_domain_t& inv, VariableName x, VariableName new_x)
+      static void expand (boxes_domain_t& inv, variable_t x, variable_t new_x)
       { inv.expand(x, new_x); }
     };
     #endif
@@ -2093,4 +2096,3 @@ namespace crab {
    } // namespace domains
 }// namespace crab
 #endif /* HAVE_LDD */
-#endif 

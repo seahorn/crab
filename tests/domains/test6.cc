@@ -11,15 +11,15 @@ using namespace crab::domain_impl;
 z_cfg_t* prog1 (variable_factory_t &vfac)  {
 
   // Defining program variables
-  z_var i (vfac ["i"]);
-  z_var nd (vfac ["nd"]);
-  z_var inc (vfac ["inc"]);
-  auto b1 = vfac ["b1"];
-  auto b2 = vfac ["b2"];
-  auto b3 = vfac ["b3"];
-  auto b4 = vfac ["b4"];    
-  auto bfalse = vfac ["bf"];
-  auto btrue = vfac ["bt"];      
+  z_var i(vfac["i"]);
+  z_var nd(vfac["nd"]);
+  z_var inc(vfac["inc"]);
+  z_var b1(vfac["b1"]);
+  z_var b2(vfac["b2"]);
+  z_var b3(vfac["b3"]);
+  z_var b4(vfac["b4"]);    
+  z_var bfalse(vfac["bf"]);
+  z_var btrue(vfac["bt"]);      
   
   // entry and exit block
   auto cfg = new z_cfg_t("entry","ret");
@@ -35,18 +35,18 @@ z_cfg_t* prog1 (variable_factory_t &vfac)  {
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   // adding statements
-  entry.assign (i, 0);
+  entry.assign (i, z_number(0));
   entry.bool_assign (bfalse, z_lin_cst_t::get_false ());
   entry.bool_assign (btrue, z_lin_cst_t::get_true ());  
-  bb1_t.bool_assign (b1, i <= 99);  
+  bb1_t.bool_assign (b1, i <= z_number(99));  
   bb1_t.bool_assume (b1);
   bb1_t.bool_assert (b1);        // trivial
-  bb1_f.bool_assign (b2, i >= 100);  
+  bb1_f.bool_assign (b2, i >= z_number(100));  
   bb1_f.bool_assume (b2);
-  bb2.havoc(nd.name());
+  bb2.havoc(nd);
   bb2.select(inc,nd,1,2);
   bb2.add(i, i, inc);
-  bb2.bool_assign (b3, i >= 1);
+  bb2.bool_assign (b3, i >= z_number(1));
   bb2.bool_assign (b4, b3);  
   bb2.bool_or (b4, b4, bfalse);  // tautology
   bb2.bool_and (b4, b4, btrue);  // tautology
@@ -60,9 +60,9 @@ z_cfg_t* prog1 (variable_factory_t &vfac)  {
 z_cfg_t* prog2 (variable_factory_t &vfac)  {
 
   // Defining program variables
-  z_var i (vfac ["i"]);
-  auto b = vfac ["b"];
-  z_var n (vfac ["n"]);
+  z_var i(vfac["i"]);
+  z_var b(vfac["b"]);
+  z_var n(vfac["n"]);
   
   // entry and exit block
   auto cfg = new z_cfg_t("entry","ret");
@@ -78,15 +78,15 @@ z_cfg_t* prog2 (variable_factory_t &vfac)  {
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   // adding statements
-  entry.assign (i, 0);
-  entry.havoc(n.name()); 
+  entry.assign (i, z_number(0));
+  entry.havoc(n); 
   entry.bool_assign(b,  n == z_number(10));
   //entry.assign(n, z_number(1));
   entry.bool_assume(b);
   bb1_t.assume (i <= n);
   bb2.add(i,i,1);
   bb1_f.assume (i >= n + 1);
-  ret.assertion(i == 10);
+  ret.assertion(i == z_number(10));
 
   return cfg;
 }
@@ -95,7 +95,7 @@ z_cfg_t* prog3 (variable_factory_t &vfac)  {
 
   // Defining program variables
   z_var i (vfac ["i"]);
-  auto b = vfac ["b"];
+  z_var b (vfac ["b"]);
   z_var n (vfac ["n"]);
   
   // entry and exit block
@@ -117,8 +117,8 @@ z_cfg_t* prog3 (variable_factory_t &vfac)  {
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   // adding statements
-  entry.assign (i, 0);
-  entry.havoc(n.name()); 
+  entry.assign (i, z_number(0));
+  entry.havoc(n); 
   entry.bool_assign(b,  n == z_number(10));
   bb0.assign(n, z_number(1));
   entry_cnt.bool_assume(b);
@@ -141,7 +141,7 @@ int main (int argc, char** argv )
   {
     z_cfg_t* cfg = prog1(vfac);
     crab::outs() << *cfg << "\n";
-    
+
     run<z_interval_domain_t>(cfg,  false, 1, 2, 20, stats_enabled);
     run<z_bool_num_domain_t>(cfg,  false, 1, 2, 20, stats_enabled);
     #ifdef HAVE_LDD

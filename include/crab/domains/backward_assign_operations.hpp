@@ -1,5 +1,4 @@
-#ifndef GENERIC_BACKWARD_ASSIGNMENT_HPP
-#define GENERIC_BACKWARD_ASSIGNMENT_HPP
+#pragma once 
 
 /**
  * Implement generic backward assignments. Unless the assignment is
@@ -45,19 +44,18 @@ namespace crab {
       
       // x := e
       // pre: dom is not bottom
-      static void assign(AbsDom& dom, varname_t x, linear_expression_t e,
+      static void assign(AbsDom& dom, variable_t x, linear_expression_t e,
 			 AbsDom inv) {
 	crab::CrabStats::count (AbsDom::getDomainName() + ".count.backward_assign");
 	crab::ScopedCrabStats __st__(AbsDom::getDomainName() + ".backward_assign");
 	
 	if(dom.is_bottom()) return;
 	
-	if (e.variables() >= variable_t(x)) {
+	if (e.variables() >= x) {
 	  CRAB_WARN("backwards x:=e when x appears in e not implemented");
 	  dom -= x;
 	} else {
-	  linear_expression_t x_e = e - variable_t(x);
-	  dom += linear_constraint_t(x_e, linear_constraint_t::EQUALITY);
+	  dom += linear_constraint_t(e - x, linear_constraint_t::EQUALITY);
 	  dom -= x;
 	}
 	dom = dom & inv;
@@ -66,7 +64,7 @@ namespace crab {
       // x := y op k
       // pre: dom is not bottom
       static void apply(AbsDom& dom, operation_t op,
-			varname_t x, varname_t y, number_t k,			
+			variable_t x, variable_t y, number_t k,			
 			AbsDom inv) {
 	crab::CrabStats::count (AbsDom::getDomainName() + ".count.backward_apply");
 	crab::ScopedCrabStats __st__(AbsDom::getDomainName() + ".backward_apply");
@@ -122,7 +120,7 @@ namespace crab {
 
       // x = y op z
       static void apply(AbsDom& dom, operation_t op,
-			varname_t x, varname_t y, varname_t z,
+			variable_t x, variable_t y, variable_t z,
 			AbsDom inv) {
 	crab::CrabStats::count (AbsDom::getDomainName() + ".count.backward_apply");
 	crab::ScopedCrabStats __st__(AbsDom::getDomainName() + ".backward_apply");
@@ -139,13 +137,11 @@ namespace crab {
 	} else {
 	  switch(op) {
 	  case OP_ADDITION:
-	    dom += linear_constraint_t(variable_t(y) + variable_t(z) - variable_t(x),
-				       linear_constraint_t::EQUALITY);
+	    dom += linear_constraint_t(y + z - x, linear_constraint_t::EQUALITY);
 	    dom -= x;
 	    break;
 	  case OP_SUBTRACTION:
-	    dom += linear_constraint_t(variable_t(y) - variable_t(z) - variable_t(x),
-				       linear_constraint_t::EQUALITY);
+	    dom += linear_constraint_t(y - z - x, linear_constraint_t::EQUALITY);
 	    dom -= x;
 	    break;
 	  case OP_MULTIPLICATION:
@@ -167,4 +163,3 @@ namespace crab {
   } //end namespace domains
 } // end namespace crab
 
-#endif 

@@ -1,5 +1,4 @@
-#ifndef NULL_PROPERTY_CHECKER_HPP
-#define NULL_PROPERTY_CHECKER_HPP
+#pragma once 
 
 /* 
    Property checker for null-dereference
@@ -18,10 +17,10 @@ namespace crab {
        // arbitrary abstract domain without nullity information
        template<typename Domain>
        struct get_as {
-         typedef typename Domain::varname_t varname_t;
+         typedef typename Domain::variable_t variable_t;
          typedef crab::domains::nullity_value nullity_value_t;
          get_as (Domain&) { }
-         nullity_value_t operator[](varname_t v)
+         nullity_value_t operator[](variable_t v)
          { return nullity_value_t::top (); }
        };
   
@@ -30,14 +29,15 @@ namespace crab {
        class get_as <crab::domains::nullity_domain<Number, VariableName> > {
          typedef crab::domains::nullity_value nullity_value_t;
          typedef crab::domains::nullity_domain<Number, VariableName> nullity_domain_t;
-
+	 typedef typename nullity_domain_t::variable_t variable_t;
+	 
          nullity_domain_t &m_inv;
 
         public:
 
          get_as (nullity_domain_t &inv) : m_inv (inv) { }
 
-         nullity_value_t operator[](VariableName v)
+         nullity_value_t operator[](variable_t v)
          { return m_inv.get_nullity(v); }
        };
 
@@ -50,6 +50,7 @@ namespace crab {
          typedef crab::domains::nullity_domain<Number, VariableName> nullity_domain_t;
          typedef crab::domains::domain_product2<Number, VariableName, Dom, nullity_domain_t>
          domain_product2_t;
+	 typedef typename nullity_domain_t::variable_t variable_t;
          
          domain_product2_t &m_inv;
 
@@ -57,7 +58,7 @@ namespace crab {
 
          get_as (domain_product2_t& inv) : m_inv (inv) { }
 
-         nullity_value_t operator[](VariableName v)
+         nullity_value_t operator[](variable_t v)
          { return m_inv.second().get_nullity(v); }
        };
 
@@ -70,6 +71,7 @@ namespace crab {
 
          typedef typename domain_t::varname_t varname_t;
          typedef typename domain_t::number_t number_t;
+         typedef typename domain_t::variable_t variable_t;	 
 
          typedef crab::domains::nullity_value nullity_value_t;
          typedef crab::domains::nullity_domain<number_t, varname_t> nullity_domain_t;
@@ -80,7 +82,7 @@ namespace crab {
 
          get_as (domain_t& inv) : m_inv (inv) { }
 
-         nullity_value_t operator[](varname_t v)
+         nullity_value_t operator[](variable_t v)
          { return m_inv.second().get_nullity(v); }
        };
 
@@ -101,8 +103,8 @@ namespace crab {
       using typename base_checker_t::ptr_load_t;
       using typename base_checker_t::ptr_store_t;
 
-      std::string checked_prop_str (varname_t p) {
-        std::string res = p.str () + " != 0";
+      std::string checked_prop_str (var_t p) {
+        std::string res = p.name().str () + " != 0";
         return res;
       }
 
@@ -163,4 +165,3 @@ namespace crab {
   }; 
   } // end namespace
 } // end namespace
-#endif 

@@ -1,5 +1,4 @@
-#ifndef CRAB_DOMAIN_OPERATORS_API_HPP
-#define CRAB_DOMAIN_OPERATORS_API_HPP
+#pragma once
 
 #include <crab/domains/numerical_domains_api.hpp>
 #include <crab/domains/bitwise_operators_api.hpp>
@@ -25,7 +24,7 @@ namespace crab {
       public ikos::division_operators<N,V>,
       public backward_numerical_domain<N,V,Dom>,
       public ikos::bitwise_operators<N,V>,
-      public int_cast_operators<V>,
+      public int_cast_operators<N,V>,
       public array_operators<N,V>,
       public pointer_operators<N,V>,
       public boolean_operators<N,V>,
@@ -41,7 +40,7 @@ namespace crab {
       typedef ikos::variable<N,V> variable_t;
       typedef N number_t;
       typedef V varname_t;
-      typedef std::vector<varname_t> varname_vector_t;
+      typedef std::vector<variable_t> variable_vector_t;
             
       abstract_domain (): ikos::writeable() {}
       virtual ~abstract_domain() {};
@@ -55,7 +54,7 @@ namespace crab {
 	CRAB_ERROR("to_disjunctive_linear_constraint_system operation not implemented");
       }
 
-      virtual void rename(const varname_vector_t &from, const varname_vector_t &to) {
+      virtual void rename(const variable_vector_t &from, const variable_vector_t &to) {
 	CRAB_ERROR("rename operation not implemented");
       }
 
@@ -65,4 +64,3 @@ namespace crab {
     
   }
 }
-#endif 

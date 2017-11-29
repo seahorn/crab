@@ -42,8 +42,7 @@
  *
  ******************************************************************************/
 
-#ifndef IKOS_FWD_FIXPOINT_ITERATORS_HPP
-#define IKOS_FWD_FIXPOINT_ITERATORS_HPP
+#pragma once 
 
 #include <boost/shared_ptr.hpp>
 #include <boost/unordered_map.hpp>
@@ -454,4 +453,3 @@ namespace ikos {
     
   } // interleaved_fwd_fixpoint_iterator_impl  
 } // namespace ikos
-#endif // IKOS_FWD_FIXPOINT_ITERATORS

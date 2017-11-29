@@ -36,7 +36,7 @@ z_cfg_t* prog (variable_factory_t &vfac)
 
   // adding statements
   p0.assign (x, 50);
-  p0.havoc (y.name());
+  p0.havoc (y);
   p0.assume (y >= -1);
   p0.assume (y <= 1);
   p0.mul (z, x, y);

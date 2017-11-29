@@ -1,5 +1,4 @@
-#ifndef ASSERTION_CRAWLER_HPP
-#define ASSERTION_CRAWLER_HPP
+#pragma once 
 
 #include <crab/common/types.hpp>
 #include <crab/common/debug.hpp>
@@ -85,14 +84,14 @@ namespace crab {
     class assertion_crawler_operations:
       public killgen_operations_api<CFG,
 	     separate_killgen_domain<assert_wrapper<CFG>,
-				     flat_killgen_domain<typename CFG::varname_t> > > {
+				     flat_killgen_domain<typename CFG::variable_t> > > {
 
       friend class assertion_crawler<CFG>;
       
     public:
       
        typedef assert_wrapper<CFG> assert_wrapper_t;
-       typedef flat_killgen_domain<typename CFG::varname_t> var_dom_t;
+       typedef flat_killgen_domain<typename CFG::variable_t> var_dom_t;
        // -- key type: map an assertion to a set of variables 
        typedef separate_killgen_domain<assert_wrapper_t, var_dom_t> separate_domain_t;
 
@@ -114,7 +113,7 @@ namespace crab {
 				     std::vector<basic_block_label_t> > cdg_t;
        
        // set of uses and definitions of an instruction
-       typedef crab::cfg::Live<V> live_t;
+       typedef crab::cfg::Live<N,V> live_t;
 
        class transfer_function: public statement_visitor<N,V> {
 	
@@ -129,6 +128,7 @@ namespace crab {
 	 typedef typename statement_visitor<N,V>::bool_bin_op_t bool_bin_op_t;	 
 	 typedef typename statement_visitor<N,V>::bool_assign_cst_t bool_assign_cst_t;
 	 typedef typename statement_visitor<N,V>::bool_assign_var_t bool_assign_var_t;
+	 typedef typename CFG::variable_t variable_t;
 	 
 	 // Helper that applies function F to each pair's value of the
 	 // separate domain_t.
@@ -273,9 +273,9 @@ namespace crab {
 	   
 	 public:
 	   
-       	   remove_deps(V v): vars(var_dom_t::bottom()) { vars += v; }
+       	   remove_deps(variable_t v): vars(var_dom_t::bottom()) { vars += v; }
 	   
-	   remove_deps(const std::vector<V> &vs)
+	   remove_deps(const std::vector<variable_t> &vs)
 	     : vars(var_dom_t::bottom()) { for (auto v: vs) {vars += v; } }
 
 	   remove_deps(const remove_deps& o): vars (o.vars) {}
@@ -594,4 +594,3 @@ namespace crab {
   } // end namespace
 } // end namespace
 
-#endif

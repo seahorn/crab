@@ -2,8 +2,7 @@
  * Generic API for boolean operations
  ******************************************************************************/
 
-#ifndef BOOLEAN_OPERATORS_API_HPP
-#define BOOLEAN_OPERATORS_API_HPP
+#pragma once
 
 #include <crab/common/types.hpp>
 
@@ -34,27 +33,29 @@ namespace crab {
      class boolean_operators {
      public:
        typedef ikos::linear_constraint<Number, VariableName> lin_cst_t;       
+       typedef ikos::variable<Number, VariableName> variable_t;
        
        virtual ~boolean_operators () {};
        
-       virtual void assign_bool_cst(VariableName lhs, lin_cst_t rhs) {}
-       virtual void assign_bool_var(VariableName lhs, VariableName rhs, bool is_not_rhs) {}
+       virtual void assign_bool_cst(variable_t lhs, lin_cst_t rhs) {}
+       virtual void assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs) {}
        virtual void apply_binary_bool(bool_operation_t op,
-				      VariableName x,VariableName y,VariableName z) {}
-       virtual void assume_bool(VariableName v, bool is_negated) {}
+				      variable_t x,variable_t y,variable_t z) {}
+       virtual void assume_bool(variable_t v, bool is_negated) {}
      };
 
      template<typename Number, typename VariableName, typename NumAbsDom>
      class backward_boolean_operators {
      public:
        typedef ikos::linear_constraint<Number, VariableName> lin_cst_t;       
+       typedef ikos::variable<Number, VariableName> variable_t;
        
-       virtual void backward_assign_bool_cst(VariableName lhs, lin_cst_t rhs,
+       virtual void backward_assign_bool_cst(variable_t lhs, lin_cst_t rhs,
 					     NumAbsDom invariant){}
-       virtual void backward_assign_bool_var(VariableName lhs, VariableName rhs, bool is_not_rhs,
+       virtual void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
 					     NumAbsDom invariant) {}
        virtual void backward_apply_binary_bool(bool_operation_t op,
-					       VariableName x,VariableName y,VariableName z,
+					       variable_t x,variable_t y,variable_t z,
 					       NumAbsDom invariant) {}
        virtual ~backward_boolean_operators () {};
      };
@@ -75,4 +76,3 @@ namespace crab {
   }
 }
 
-#endif 

@@ -1,5 +1,4 @@
-#ifndef DIVISION_ZERO_PROPERTY_CHECKER_HPP
-#define DIVISION_ZERO_PROPERTY_CHECKER_HPP
+#pragma once 
 
 /* 
    Property checker for division by zero
@@ -59,7 +58,7 @@ namespace crab {
           }
           else if (auto var = divisor_expr.get_variable ()) {
             num_dom_detail::checker_ops<abs_dom_t> num_inv (inv);
-            interval_t divisor_intv = num_inv [(*var).name()];
+            interval_t divisor_intv = num_inv [(*var)];
             if (auto divisor = divisor_intv.singleton ()) {
               if (*divisor == number_t (0)) {
 		lin_cst_t e_cst(*var != number_t (0));
@@ -85,4 +84,3 @@ namespace crab {
   }; 
   } // end namespace
 } // end namespace
-#endif 

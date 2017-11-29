@@ -38,8 +38,7 @@
  *
  ******************************************************************************/
 
-#ifndef IKOS_BITWISE_OPERATORS_API_HPP
-#define IKOS_BITWISE_OPERATORS_API_HPP
+#pragma once
 
 namespace ikos {
 
@@ -67,8 +66,9 @@ namespace ikos {
   template< typename Number, typename VariableName >
   class bitwise_operators {
    public:
-    virtual void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) = 0;
-    virtual void apply(bitwise_operation_t op, VariableName x, VariableName y, Number z) = 0;
+    typedef ikos::variable<Number, VariableName> variable_t;
+    virtual void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) = 0;
+    virtual void apply(bitwise_operation_t op, variable_t x, variable_t y, Number z) = 0;
     virtual ~bitwise_operators() { }
 
   }; // class bitwise_operators
@@ -91,4 +91,3 @@ namespace crab {
   }
 
 }
-#endif // IKOS_BITWISE_OPERATORS_API_HPP

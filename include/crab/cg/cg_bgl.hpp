@@ -1,5 +1,4 @@
-#ifndef CALLGRAPH_BOOST_GRAPH_TRAITS_HPP__
-#define CALLGRAPH_BOOST_GRAPH_TRAITS_HPP__
+#pragma once 
 
 /* Convert a call_graph into BGL graph */
 
@@ -210,4 +209,3 @@ namespace crab {
 
   } // end namespace
 } // end namespace
-#endif 

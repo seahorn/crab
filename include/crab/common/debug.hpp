@@ -1,5 +1,4 @@
-#ifndef CRAB__DEBUG__HPP_
-#define CRAB__DEBUG__HPP_
+#pragma once 
 
 /* Logging and debug messages */
 
@@ -23,4 +22,3 @@ extern unsigned CrabVerbosity;
 void CrabEnableVerbosity(unsigned v);
 #define CRAB_VERBOSE_IF(LEVEL,CODE) do { if (::crab::CrabVerbosity >= LEVEL) { CODE; } } while (0) 
 }
-#endif

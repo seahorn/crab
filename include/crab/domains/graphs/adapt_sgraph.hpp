@@ -1,5 +1,5 @@
-#ifndef CRAB_ADAPT_SGRAPH_HPP
-#define CRAB_ADAPT_SGRAPH_HPP
+#pragma once
+
 #include <crab/domains/graphs/util/Vec.h>
 // Adaptive sparse-set based weighted graph implementation
 
@@ -674,4 +674,3 @@ namespace crab {
   };
 }
 #pragma GCC diagnostic pop
-#endif

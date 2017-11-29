@@ -1,5 +1,4 @@
-#ifndef SCC_GRAPH_BOOST_GRAPH_TRAITS_HPP__
-#define SCC_GRAPH_BOOST_GRAPH_TRAITS_HPP__
+#pragma once 
 
 /* Convert a Strongly connected component graph into BGL graph */
 
@@ -130,4 +129,3 @@ namespace crab {
  } // end namespace 
 } // end namespace 
 
-#endif 

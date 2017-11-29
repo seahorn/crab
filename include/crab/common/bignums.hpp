@@ -39,8 +39,7 @@
  *
  ******************************************************************************/
 
-#ifndef IKOS_BIGNUMS_HPP
-#define IKOS_BIGNUMS_HPP
+#pragma once 
 
 #include <climits>
 #include <gmpxx.h>
@@ -428,4 +427,3 @@ inline std::size_t hash_value(const q_number& n) {
 }
 }
 
-#endif // IKOS_BIGNUMS_HPP

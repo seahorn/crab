@@ -1,5 +1,4 @@
-#ifndef LIVENESS_ANALYSIS_HPP
-#define LIVENESS_ANALYSIS_HPP
+#pragma once 
 
 /* Liveness analysis */
 
@@ -21,11 +20,11 @@ namespace crab {
    template<class CFG>
    class liveness_ops:
       public crab::iterators::
-      killgen_operations_api<CFG, liveness_domain<typename CFG::varname_t> > {
+      killgen_operations_api<CFG, liveness_domain<typename CFG::variable_t> > {
 
    public:
      
-     typedef liveness_domain<typename CFG::varname_t> liveness_domain_t;
+     typedef liveness_domain<typename CFG::variable_t> liveness_domain_t;
      typedef typename CFG::basic_block_label_t basic_block_label_t;
 
    private:
@@ -177,4 +176,3 @@ namespace crab {
 
   } // end namespace analyzer
 } // end namespace crab
-#endif 

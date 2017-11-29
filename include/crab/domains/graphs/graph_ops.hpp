@@ -1,5 +1,5 @@
-#ifndef CRAB_GRAPH_OPS_HPP
-#define CRAB_GRAPH_OPS_HPP
+#pragma once
+
 #include <crab/domains/graphs/util/Heap.h>
 #include <boost/optional.hpp>
 //============================
@@ -1385,4 +1385,3 @@ r_not_dom:
 
 } // namespace crab
 #pragma GCC diagnostic pop
-#endif

@@ -38,7 +38,7 @@ z_cfg_t* prog (variable_factory_t &vfac)  {
   entry.assign (i, 0);
   bb1_t.assume (i <= 99);
   bb1_f.assume (i >= 100);
-  bb2.havoc(nd.name());
+  bb2.havoc(nd);
   bb2.select(inc,nd,1,2);
   bb2.add(i, i, inc);
 

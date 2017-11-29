@@ -20,15 +20,17 @@ using namespace boost;
 
 typedef call_graph<z_cfg_ref_t> call_graph_t;
 typedef call_graph_ref<call_graph_t> call_graph_ref_t;
+typedef ikos::variable<z_number, varname_t> variable_t;
 
 z_cfg_t* foo (variable_factory_t &vfac) {
-  function_decl<varname_t> decl (vfac["foo"],
-				 {make_pair (vfac["x"], crab::INT_TYPE)},
-				 {make_pair (vfac["z"], crab::INT_TYPE)});
   // Defining program variables
   z_var x (vfac ["x"]);
   z_var y (vfac ["y"]);
   z_var z (vfac ["z"]);
+  
+  function_decl<z_number, varname_t> decl (vfac["foo"],
+					   {make_pair (x, crab::INT_TYPE)},
+					   {make_pair (z, crab::INT_TYPE)});
   // entry and exit block
   z_cfg_t* cfg = new z_cfg_t("entry", "exit", decl);
   // adding blocks
@@ -39,19 +41,20 @@ z_cfg_t* foo (variable_factory_t &vfac) {
   // adding statements
   entry.add (y, x, 1);
   exit.add (z , y , 2);
-  exit.ret (vfac ["z"], crab::INT_TYPE);
+  exit.ret (z, crab::INT_TYPE);
   return cfg;
 }
 
 
 z_cfg_t* bar (variable_factory_t &vfac) {
-  function_decl<varname_t> decl (vfac["bar"],
-				 {make_pair (vfac["a"], crab::INT_TYPE)},
-				 {make_pair (vfac["y"], crab::INT_TYPE)});
   // Defining program variables
   z_var a (vfac ["a"]);
   z_var x (vfac ["x"]);
   z_var y (vfac ["y"]);
+  
+  function_decl<z_number, varname_t> decl (vfac["bar"],
+					   {make_pair (a, crab::INT_TYPE)},
+					   {make_pair (y, crab::INT_TYPE)});
   // entry and exit block
   z_cfg_t* cfg = new z_cfg_t("entry", "exit", decl);
   // adding blocks
@@ -61,20 +64,21 @@ z_cfg_t* bar (variable_factory_t &vfac) {
   entry >> exit;
   // adding statements
   exit.callsite (vfac ["foo"],
-		 {make_pair (vfac["y"], crab::INT_TYPE)},
-		 {make_pair (vfac["x"], crab::INT_TYPE)});
+		 {make_pair (y, crab::INT_TYPE)},
+		 {make_pair (x, crab::INT_TYPE)});
   entry.assign (x, a);
-  exit.ret (vfac["y"], crab::INT_TYPE);
+  exit.ret (y, crab::INT_TYPE);
   return cfg;
 }
 
 z_cfg_t* m (variable_factory_t &vfac)  {
-  vector<pair<varname_t,crab::variable_type> > inputs, outputs;
-  function_decl<varname_t> decl (vfac["main"], inputs, outputs);
   // Defining program variables
   z_var x (vfac ["x"]);
   z_var y (vfac ["y"]);
   z_var z (vfac ["z"]);
+  
+  vector<pair<variable_t,crab::variable_type> > inputs, outputs;
+  function_decl<z_number, varname_t> decl (vfac["main"], inputs, outputs);
   // entry and exit block
   z_cfg_t* cfg = new z_cfg_t("entry", "exit", decl);
   // adding blocks
@@ -85,8 +89,8 @@ z_cfg_t* m (variable_factory_t &vfac)  {
   // adding statements
   entry.assign(x, 3);
   entry.callsite (vfac ["bar"],
-		  {make_pair (vfac["y"], crab::INT_TYPE)},
-		  {make_pair (vfac["x"], crab::INT_TYPE)});
+		  {make_pair (y, crab::INT_TYPE)},
+		  {make_pair (x, crab::INT_TYPE)});
   exit.add (z, y, 2);
   return cfg;
 }

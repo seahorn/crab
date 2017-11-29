@@ -4,8 +4,7 @@
    C++ interface for LDD library kindly provided by Ufo
  */
 
-#ifndef _LDD_CPLUS_HPP_
-#define _LDD_CPLUS_HPP_
+#pragma once
 
 #include "cuddInt.h"
 #include "ldd.h"
@@ -100,7 +99,3 @@ namespace boost
       }
     };
 }
-
-
-
-#endif

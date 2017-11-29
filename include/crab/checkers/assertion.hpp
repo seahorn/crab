@@ -1,5 +1,4 @@
-#ifndef ASSERT_PROPERTY_CHECKER_HPP
-#define ASSERT_PROPERTY_CHECKER_HPP
+#pragma once 
 
 /* 
    User-definable assertion checker
@@ -84,4 +83,3 @@ namespace crab {
     }; 
   } // end namespace
 } // end namespace
-#endif 

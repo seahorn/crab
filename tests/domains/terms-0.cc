@@ -17,8 +17,8 @@ int main (int argc, char** argv )
   z_term_domain_t dom_right = z_term_domain_t::top ();
 
 
-  varname_t x = vfac["x"];
-  varname_t y = vfac["y"];
+  z_var x(vfac["x"]);
+  z_var y(vfac["y"]);
   
   dom_left.assign(y, z_number(8));
   dom_left.apply(OP_MULTIPLICATION, x, y, z_number(5));

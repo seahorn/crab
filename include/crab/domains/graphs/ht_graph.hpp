@@ -1,5 +1,5 @@
-#ifndef CRAB_HT_GRAPH_HPP
-#define CRAB_HT_GRAPH_HPP
+#pragma once
+
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
@@ -545,4 +545,3 @@ class HtGraph : public ikos::writeable {
 };
 
 }
-#endif

@@ -1,5 +1,4 @@
-#ifndef CRAB_THRESHOLDS_HPP
-#define CRAB_THRESHOLDS_HPP
+#pragma once
 
 #include <crab/common/bignums.hpp>
 #include <crab/domains/intervals.hpp>
@@ -233,4 +232,3 @@ namespace crab {
      
    } // end namespace iterators
 } // end namespace crab
-#endif 

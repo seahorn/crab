@@ -1,6 +1,4 @@
-#ifndef CRAB_DIFF_DOMAIN_HPP
-#define CRAB_DIFF_DOMAIN_HPP
-
+#pragma once
 
 #include <crab/common/types.hpp>
 #include <crab/common/stats.hpp>
@@ -29,7 +27,7 @@ namespace crab {
       using typename abstract_domain_t::variable_t;
       using typename abstract_domain_t::number_t;
       using typename abstract_domain_t::varname_t;
-      using typename abstract_domain_t::varname_vector_t;      
+      using typename abstract_domain_t::variable_vector_t;      
 
      private:
       
@@ -177,7 +175,7 @@ namespace crab {
         return diff_domain_t(this->_product && other._product);
       }
       
-      void assign(varname_t x, linear_expression_t e) {
+      void assign(variable_t x, linear_expression_t e) {
 	bool r1 = diff(__LINE__);	
         this->_product.assign(x, e);
 	bool r2 = diff(__LINE__);
@@ -189,7 +187,7 @@ namespace crab {
 	
       }
       
-      void apply(operation_t op, varname_t x, varname_t y, varname_t z) {
+      void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
 	bool r1 = diff(__LINE__);	
         this->_product.apply(op, x, y, z);
 	bool r2 = diff(__LINE__);
@@ -201,7 +199,7 @@ namespace crab {
 	
       }
       
-      void apply(operation_t op, varname_t x, varname_t y, number_t k) {
+      void apply(operation_t op, variable_t x, variable_t y, number_t k) {
 	bool r1 = diff(__LINE__);	
         this->_product.apply(op, x, y, k);
 	bool r2 = diff(__LINE__);
@@ -213,17 +211,17 @@ namespace crab {
 	
       }
 
-      void set (varname_t v, interval_t x) {
+      void set (variable_t v, interval_t x) {
 	//diff(__LINE__);	
         this->_product.set(v, x);
       }
       
-      interval_t operator[](varname_t v) {
+      interval_t operator[](variable_t v) {
 	//diff(__LINE__);	
         return this->_product.second()[v];
       }
             
-      virtual void backward_assign (varname_t x, linear_expression_t e,
+      virtual void backward_assign (variable_t x, linear_expression_t e,
 				    diff_domain_t invariant)  {
 	bool r1 = diff(__LINE__);	
         this->_product.backward_assign(x, e, invariant._product);
@@ -237,7 +235,7 @@ namespace crab {
       }
       
       virtual void backward_apply (operation_t op,
-				   varname_t x, varname_t y, number_t k,
+				   variable_t x, variable_t y, number_t k,
 				   diff_domain_t invariant)  {
 	bool r1 = diff(__LINE__);	
         this->_product.backward_apply(op, x, y, k, invariant._product);
@@ -251,7 +249,7 @@ namespace crab {
       }
       
       virtual void backward_apply(operation_t op,
-				  varname_t x, varname_t y, varname_t z,
+				  variable_t x, variable_t y, variable_t z,
 				  diff_domain_t invariant)  {
 	bool r1 = diff(__LINE__);	
         this->_product.backward_apply(op, x, y, z, invariant._product);
@@ -285,7 +283,7 @@ namespace crab {
 	
       }
       
-      void operator-=(varname_t v) {
+      void operator-=(variable_t v) {
 	//bool r1 = diff(__LINE__);	
         this->_product -= v;
 	//bool r2 = diff(__LINE__);
@@ -300,7 +298,7 @@ namespace crab {
       // cast_operators_api
       
       void apply(int_conv_operation_t op,
-		 varname_t dst, unsigned dst_width, varname_t src,
+		 variable_t dst, unsigned dst_width, variable_t src,
 		 unsigned src_width) {
 	bool r1= diff(__LINE__);	
         this->_product.apply(op, dst, dst_width, src, src_width);
@@ -315,7 +313,7 @@ namespace crab {
       
       // bitwise_operators_api
       
-      void apply(bitwise_operation_t op, varname_t x, varname_t y, varname_t z) {
+      void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {
 	//bool r1= diff(__LINE__);	
         this->_product.apply(op, x, y, z);
 	//bool r2= diff(__LINE__);
@@ -327,7 +325,7 @@ namespace crab {
 	
       }
       
-      void apply(bitwise_operation_t op, varname_t x, varname_t y, number_t k) {
+      void apply(bitwise_operation_t op, variable_t x, variable_t y, number_t k) {
 	//bool r1= diff(__LINE__);	
         this->_product.apply(op, x, y, k);
 	//bool r2= diff(__LINE__);
@@ -341,7 +339,7 @@ namespace crab {
       
       // division_operators_api
       
-      void apply(div_operation_t op, varname_t x, varname_t y, varname_t z) {
+      void apply(div_operation_t op, variable_t x, variable_t y, variable_t z) {
 	//bool r1 = diff(__LINE__);	
         this->_product.apply(op, x, y, z);
 	//bool r2 = diff(__LINE__);
@@ -353,7 +351,7 @@ namespace crab {
 	
       }
       
-      void apply(div_operation_t op, varname_t x, varname_t y, number_t k) {
+      void apply(div_operation_t op, variable_t x, variable_t y, number_t k) {
 	//bool r1 = diff(__LINE__);	
         this->_product.apply(op, x, y, k);
 	//bool r2 = diff(__LINE__);
@@ -367,7 +365,7 @@ namespace crab {
       
       // array_operators_api
       
-      virtual void array_assume (varname_t a, crab::variable_type a_ty, 
+      virtual void array_assume (variable_t a, crab::variable_type a_ty, 
                                  linear_expression_t lb_idx,
 				 linear_expression_t ub_idx, 
                                  linear_expression_t val) override {
@@ -382,8 +380,8 @@ namespace crab {
 	
       }
       
-      virtual void array_load (varname_t lhs,
-			       varname_t a, crab::variable_type a_ty, 
+      virtual void array_load (variable_t lhs,
+			       variable_t a, crab::variable_type a_ty, 
                                linear_expression_t i,
 			       ikos::z_number bytes) override {
 	bool r1 = diff(__LINE__);        
@@ -397,7 +395,7 @@ namespace crab {
 	
       }
       
-      virtual void array_store (varname_t a, crab::variable_type a_ty, 
+      virtual void array_store (variable_t a, crab::variable_type a_ty, 
                                 linear_expression_t i,
 				linear_expression_t val, 
                                 ikos::z_number bytes,
@@ -413,7 +411,7 @@ namespace crab {
 	
       }
       
-      virtual void array_assign (varname_t lhs, varname_t rhs,
+      virtual void array_assign (variable_t lhs, variable_t rhs,
 				 crab::variable_type ty) override {
 	bool r1 = diff(__LINE__);	
         this->_product.array_assign (lhs, rhs, ty);
@@ -429,7 +427,7 @@ namespace crab {
       // Ignored pointer_operators_api
 
       // boolean operators
-      virtual void assign_bool_cst (varname_t lhs, linear_constraint_t rhs) override {
+      virtual void assign_bool_cst (variable_t lhs, linear_constraint_t rhs) override {
 	bool r1 = diff(__LINE__);	
         this->_product.assign_bool_cst (lhs, rhs);
 	bool r2 = diff(__LINE__);
@@ -442,7 +440,7 @@ namespace crab {
 	
       }    
 
-      virtual void assign_bool_var(varname_t lhs, varname_t rhs,
+      virtual void assign_bool_var(variable_t lhs, variable_t rhs,
 				   bool is_not_rhs) override {
 	bool r1= diff(__LINE__);	
         this->_product.assign_bool_var (lhs, rhs, is_not_rhs);
@@ -456,8 +454,8 @@ namespace crab {
 	
       }    
 
-      virtual void apply_binary_bool (bool_operation_t op,varname_t x,
-				      varname_t y,varname_t z) override {
+      virtual void apply_binary_bool (bool_operation_t op,variable_t x,
+				      variable_t y,variable_t z) override {
 	bool r1= diff(__LINE__);	
         this->_product.apply_binary_bool (op, x, y, z);
 	bool r2 = diff(__LINE__);
@@ -470,7 +468,7 @@ namespace crab {
 	
       }    
 
-      virtual void assume_bool (varname_t v, bool is_negated) override {
+      virtual void assume_bool (variable_t v, bool is_negated) override {
 	bool r1 = diff(__LINE__);	
         this->_product.assume_bool (v, is_negated);
 	bool r2 = diff(__LINE__);
@@ -484,7 +482,7 @@ namespace crab {
       }    
 
       // backward boolean operators
-      virtual void backward_assign_bool_cst(varname_t lhs, linear_constraint_t rhs,
+      virtual void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
 					    diff_domain_t inv){
 	bool r1 = diff(__LINE__);	
         this->_product.backward_assign_bool_cst(lhs, rhs, inv._product);
@@ -497,7 +495,7 @@ namespace crab {
 	
       }
 	
-      virtual void backward_assign_bool_var(varname_t lhs, varname_t rhs, bool is_not_rhs,
+      virtual void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
 					    diff_domain_t inv) {
 	bool r1 = diff(__LINE__);	
 	this->_product.backward_assign_bool_var(lhs, rhs, is_not_rhs, inv._product);
@@ -511,7 +509,7 @@ namespace crab {
       }
 	
       virtual void backward_apply_binary_bool(bool_operation_t op,
-					      varname_t x,varname_t y,varname_t z,
+					      variable_t x,variable_t y,variable_t z,
 					      diff_domain_t inv) {
 	bool r1= diff(__LINE__);	
 	this->_product.backward_apply_binary_bool(op, x, y, z, inv._product);
@@ -531,8 +529,8 @@ namespace crab {
         return csts;
       }
       
-      virtual void rename (const varname_vector_t& from,
-			   const varname_vector_t& to) override {
+      virtual void rename (const variable_vector_t& from,
+			   const variable_vector_t& to) override {
 	//bool r1= diff(__LINE__);	
         this->_product.rename(from, to);
 	//bool r2= diff(__LINE__);
@@ -554,7 +552,7 @@ namespace crab {
 
       // domain_traits_api
       
-      void expand(varname_t x, varname_t new_x) {
+      void expand(variable_t x, variable_t new_x) {
 	//bool r1 = diff(__LINE__);	
         crab::domains::domain_traits<Domain1>::
 	  expand (this->_product.first(), x, new_x); 
@@ -613,7 +611,7 @@ namespace crab {
      public:
 
       typedef diff_domain<Domain1, Domain2> diff_domain_t;
-      typedef typename diff_domain_t::varname_t VariableName;
+      typedef typename diff_domain_t::variable_t variable_t;
 
       template<class CFG>
       static void do_initialization (CFG cfg) { }
@@ -622,7 +620,7 @@ namespace crab {
         inv.normalize();
       }
 
-      static void expand (diff_domain_t& inv, VariableName x, VariableName new_x) {
+      static void expand (diff_domain_t& inv, variable_t x, variable_t new_x) {
         inv.expand (x, new_x);
       }
       
@@ -640,4 +638,3 @@ namespace crab {
   } // end namespace domains
 } // namespace crab
 
-#endif 

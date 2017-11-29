@@ -55,8 +55,7 @@
  *
  ******************************************************************************/
 
-#ifndef IKOS_CONGRUENCES_HPP
-#define IKOS_CONGRUENCES_HPP
+#pragma once
 
 #include <crab/common/types.hpp>
 #include <crab/common/stats.hpp>
@@ -687,14 +686,13 @@ private:
 private:
   void refine(variable_t v, congruence_t i, 
               CongruenceCollection& env) {
-    VariableName n = v.name();
-    congruence_t old_i = env[n];
+    congruence_t old_i = env[v];
     congruence_t new_i = old_i & i;
     if (new_i.is_bottom()) {
       throw bottom_found();
     }
     if (old_i != new_i) {
-      env.set(n, new_i);
+      env.set(v, new_i);
       this->_refined_variables += v;
       ++(this->_op_count);
     }
@@ -708,8 +706,8 @@ private:
          it != cst.end();
          ++it) {
       variable_t v = it->second;
-      if (v.index() != pivot.index()) {
-        residual = residual - (it->first * env[v.name()]);
+      if (!(v == pivot)) {
+        residual = residual - (it->first * env[v]);
         ++(this->_op_count);
       }
     }
@@ -814,7 +812,7 @@ public:
   using typename abstract_domain_t::varname_t;
 
 private:
-  typedef separate_domain< VariableName, congruence_t > separate_domain_t;
+  typedef separate_domain<variable_t, congruence_t > separate_domain_t;
   typedef equality_congruence_solver<Number, VariableName,
 				     separate_domain_t, typeSize> solver_t;
 
@@ -903,34 +901,32 @@ public:
     return this->_env && e._env;
   }
 
-  void set(VariableName v, congruence_t i) { 
+  void set(variable_t v, congruence_t i) { 
     crab::CrabStats::count (getDomainName() + ".count.assign");
     crab::ScopedCrabStats __st__(getDomainName() + ".assign");
     this->_env.set(v, i); 
   }
 
-  void set(VariableName v, Number n) {
+  void set(variable_t v, Number n) {
     crab::CrabStats::count (getDomainName() + ".count.assign");
     crab::ScopedCrabStats __st__(getDomainName() + ".assign");
     this->_env.set(v, congruence_t(n)); 
   }
 
-  void operator-=(VariableName v) { 
+  void operator-=(variable_t v) { 
     crab::CrabStats::count (getDomainName() + ".count.forget");
     crab::ScopedCrabStats __st__(getDomainName() + ".forget");
     this->_env -= v; 
   }
 
-  void operator-=(std::vector< VariableName > vs) {
-    for (typename std::vector< VariableName >::iterator it = vs.begin(),
-                                                        end = vs.end();
-         it != end;
-         ++it) {
+  void operator-=(std::vector< variable_t > vs) {
+    for (typename std::vector< variable_t >::iterator it = vs.begin(),
+	   end = vs.end(); it != end; ++it) {
       this->operator-=* it;
     }
   }
 
-  congruence_t operator[](VariableName v) { return this->_env[v]; }
+  congruence_t operator[](variable_t v) { return this->_env[v]; }
 
   congruence_t operator[](linear_expression_t expr) {
     congruence_t r(expr.constant());
@@ -938,7 +934,7 @@ public:
          it != expr.end();
          ++it) {
       congruence_t c(it->first);
-      r = r + (c * this->_env[it->second.name()]);
+      r = r + (c * this->_env[it->second]);
     }
     return r;
   }
@@ -963,19 +959,19 @@ public:
     return e;
   }
 
-  void assign(VariableName x, linear_expression_t e) {
+  void assign(variable_t x, linear_expression_t e) {
     crab::CrabStats::count (getDomainName() + ".count.assign");
     crab::ScopedCrabStats __st__(getDomainName() + ".assign");
 
     congruence_t r = e.constant();
     for (typename linear_expression_t::iterator it = e.begin(); it != e.end();
          ++it) {
-      r = r + (it->first * this->_env[it->second.name()]);
+      r = r + (it->first * this->_env[it->second]);
     }
     this->_env.set(x, r);
   }
 
-  void apply(operation_t op, VariableName x, VariableName y, VariableName z) {
+  void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
     crab::CrabStats::count (getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1005,7 +1001,7 @@ public:
     this->_env.set(x, xi);
   }
 
-  void apply(operation_t op, VariableName x, VariableName y, Number k) {
+  void apply(operation_t op, variable_t x, variable_t y, Number k) {
     crab::CrabStats::count (getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1035,21 +1031,21 @@ public:
     this->_env.set(x, xi);
   }
 
-  void backward_assign (VariableName x, linear_expression_t e,
+  void backward_assign (variable_t x, linear_expression_t e,
 			congruence_domain_t inv) { 
     crab::domains::BackwardAssignOps<congruence_domain_t>::
       assign (*this, x, e, inv);
   }
   
   void backward_apply (operation_t op,
-		       VariableName x, VariableName y, Number z,
+		       variable_t x, variable_t y, Number z,
 		       congruence_domain_t inv) {
     crab::domains::BackwardAssignOps<congruence_domain_t>::
       apply(*this, op, x, y, z, inv);
   }
   
   void backward_apply(operation_t op,
-		      VariableName x, VariableName y, VariableName z,
+		      variable_t x, variable_t y, variable_t z,
 		      congruence_domain_t inv) {
     crab::domains::BackwardAssignOps<congruence_domain_t>::
       apply(*this, op, x, y, z, inv);
@@ -1058,15 +1054,15 @@ public:
   // cast_operators_api  
   
   void apply(crab::domains::int_conv_operation_t /*op*/,
-	     VariableName dst, unsigned /*dst_width*/,
-	     VariableName src, unsigned /*src_width*/) {
+	     variable_t dst, unsigned /*dst_width*/,
+	     variable_t src, unsigned /*src_width*/) {
     // ignore widths
     assign(dst, variable_t(src));
   }
 
   // bitwise_operators_api
   
-  void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) {
+  void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {
     crab::CrabStats::count (getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1104,7 +1100,7 @@ public:
     this->_env.set(x, xi);
   }
 
-  void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k) {
+  void apply(bitwise_operation_t op, variable_t x, variable_t y, Number k) {
     crab::CrabStats::count (getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1144,7 +1140,7 @@ public:
 
   // division_operators_api
 
-  void apply(div_operation_t op, VariableName x, VariableName y, VariableName z) {
+  void apply(div_operation_t op, variable_t x, variable_t y, variable_t z) {
     crab::CrabStats::count (getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1174,7 +1170,7 @@ public:
     this->_env.set(x, xi);
   }
 
-  void apply(div_operation_t op, VariableName x, VariableName y, Number k) {
+  void apply(div_operation_t op, variable_t x, variable_t y, Number k) {
     crab::CrabStats::count (getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1216,11 +1212,11 @@ public:
     }
 
     for (iterator it = this->_env.begin(); it != this->_env.end(); ++it) {
-      VariableName v = it->first;
+      variable_t v = it->first;
       congruence_t c = it->second;
       boost::optional< Number > n = c.singleton();
       if (n) {
-        csts += linear_constraint_t(variable_t(v) == *n);
+        csts += (v == *n);
       }
     }
     return csts;
@@ -1234,4 +1230,3 @@ public:
 
 } // namespace ikos
 
-#endif // IKOS_CONGRUENCES_HPP

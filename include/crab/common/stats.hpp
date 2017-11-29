@@ -1,5 +1,4 @@
-#ifndef CRAB_STATS__HPP_
-#define CRAB_STATS__HPP_
+#pragma once 
 
 /* Code from SeaHorn */
 
@@ -253,4 +252,3 @@ namespace crab
 #define CRAB_MEASURE_FN_LAST crab::ScopedCrabStats __stats_last__(__FUNCTION__, true)
 
 
-#endif

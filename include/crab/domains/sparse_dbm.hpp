@@ -6,8 +6,7 @@
  * Graeme Gange (gkgange@unimelb.edu.au)
  ******************************************************************************/
 
-#ifndef SPARSE_DBM_HPP
-#define SPARSE_DBM_HPP
+#pragma once
 
 #include <crab/common/types.hpp>
 #include <crab/common/stats.hpp>
@@ -132,7 +131,7 @@ namespace crab {
       using typename abstract_domain_t::variable_t;
       using typename abstract_domain_t::number_t;
       using typename abstract_domain_t::varname_t;
-      using typename abstract_domain_t::varname_vector_t;      
+      using typename abstract_domain_t::variable_vector_t;      
       
       typedef typename linear_constraint_t::kind_t constraint_kind_t;
       typedef ikos::interval<Number>  interval_t;
@@ -140,10 +139,6 @@ namespace crab {
      private:
       
       typedef ikos::bound<Number>  bound_t;
-      // Can't use separate_domain directly, as we need to
-      // retrofit some operations onto the join.
-      typedef ikos::patricia_tree< VariableName, interval_t > ranges_t;
-      typedef typename ranges_t::key_binary_op_t key_binary_op_t;
       typedef typename Params::Wt Wt;
       typedef typename Params::graph_t graph_t;
       typedef SpDBM_impl::NtoV<Number, Wt> ntov;
@@ -155,7 +150,7 @@ namespace crab {
       typedef GraphPerm<graph_t> GrPerm;
       typedef typename GrOps::edge_vector edge_vector;
       // < <x, y>, k> == x - y <= k.
-      typedef std::pair< std::pair<VariableName, VariableName>, Wt > diffcst_t;
+      typedef std::pair< std::pair<variable_t, variable_t>, Wt > diffcst_t;
       typedef std::unordered_set<vert_id> vert_set_t;
 
       protected:
@@ -163,8 +158,6 @@ namespace crab {
       //================
       // Domain data
       //================
-      // GKG: ranges are now maintained in the graph
-//      ranges_t ranges; // Intervals for each variable
       vert_map_t vert_map; // Mapping from variables to vertices
       rev_map_t rev_map;
       graph_t g; // The underlying relation graph
@@ -212,7 +205,7 @@ namespace crab {
 
       SparseDBM_(vert_map_t& _vert_map, rev_map_t& _rev_map, graph_t& _g,
 		 std::vector<Wt>& _potential, vert_set_t& _unstable)
-        : /* ranges(_ranges),*/ vert_map(_vert_map), rev_map(_rev_map), g(_g),
+        : vert_map(_vert_map), rev_map(_rev_map), g(_g),
 	  potential(_potential), unstable(_unstable), _is_bottom(false)
       {
         CRAB_WARN("Non-moving constructor.");
@@ -277,27 +270,12 @@ namespace crab {
       */
 
       void set_to_bottom() {
-        // ranges.clear();
         vert_map.clear();
         rev_map.clear();
         g.clear();
         potential.clear();
         unstable.clear();
         _is_bottom = true;
-      }
-
-      // check satisfiability of cst using intervals
-      // Only to be used if cst is too hard for dbm
-      bool intervals_check_sat(linear_constraint_t cst)  {
-        if (is_top())    return true;
-        if (is_bottom()) return false;
-
-        auto vars = cst.variables();
-        ranges_t inv;
-        for(auto v: vars)
-          inv.set (v.name(), operator[](v.name));
-        inv += cst;
-        return !inv.is_bottom();
       }
 
      public:
@@ -335,9 +313,6 @@ namespace crab {
           return false;
         else {
           normalize();
-	  // interval_po po;
-	  // if(!ranges.leq(o.ranges, po))
-	  //    return false;
 
           // CRAB_LOG("zones-sparse", crab::outs() << "operator<=: "<< *this<< "<=?"<< o << "\n");
 
@@ -395,10 +370,9 @@ namespace crab {
         bool default_is_absorbing() { return false; }
       };
 
-      vert_id get_vert(VariableName v)
+      vert_id get_vert(variable_t v)
       {
-	variable_t vv(v);
-        auto it = vert_map.find(vv);
+        auto it = vert_map.find(v);
         if(it != vert_map.end())
           return (*it).second;
 
@@ -409,12 +383,12 @@ namespace crab {
         {
           assert(!rev_map[vert]);
           potential[vert] = Wt(0);
-          rev_map[vert] = vv;
+          rev_map[vert] = v;
         } else {
           potential.push_back(Wt(0));
-          rev_map.push_back(vv);
+          rev_map.push_back(v);
         }
-        vert_map.insert(vmap_elt_t(vv, vert));
+        vert_map.insert(vmap_elt_t(v, vert));
 
         assert(vert != 0);
 
@@ -422,14 +396,14 @@ namespace crab {
       }
 
       vert_id get_vert(graph_t& g, vert_map_t& vmap, rev_map_t& rmap,
-          std::vector<Wt>& pot, VariableName v)
+          std::vector<Wt>& pot, variable_t v)
       {
-        auto it = vmap.find(variable_t(v));
+        auto it = vmap.find(v);
         if(it != vmap.end())
           return (*it).second;
 
         vert_id vert(g.new_vertex());
-//        vmap.insert(vmap_elt_t(variable_t(v), vert)); 
+//        vmap.insert(vmap_elt_t(v, vert)); 
         // Initialize 
         assert(vert <= rmap.size());
         if(vert < rmap.size())
@@ -439,7 +413,7 @@ namespace crab {
           rmap[vert] = v;
         } else {
           pot.push_back(Wt(0));
-          rmap.push_back(variable_t(v));
+          rmap.push_back(v);
         }
         vmap.insert(vmap_elt_t(v, vert));
 
@@ -783,7 +757,7 @@ namespace crab {
         unstable.clear();
       }
 
-      void operator-=(VariableName v) {
+      void operator-=(variable_t v) {
         crab::CrabStats::count (getDomainName() + ".count.forget");
         crab::ScopedCrabStats __st__(getDomainName() + ".forget");
 
@@ -791,8 +765,7 @@ namespace crab {
           return;
         normalize();
 
-	variable_t vv(v);
-        auto it = vert_map.find (vv);
+        auto it = vert_map.find (v);
         if (it != vert_map.end ()) {
           CRAB_LOG("zones-sparse",
                    crab::outs() << "Before forget "<< it->second<< ": "<< g<<"\n";);
@@ -800,7 +773,7 @@ namespace crab {
           CRAB_LOG("zones-sparse", crab::outs() << "After: " << g<<"\n";);
                    
           rev_map[it->second] = boost::none;
-          vert_map.erase(vv);
+          vert_map.erase(v);
         }
       }
 
@@ -810,8 +783,7 @@ namespace crab {
           return;
         // CRAB_WARN("forget not implemented.");
         for (auto v: boost::make_iterator_range (vIt,vEt)) {
-	  variable_t vv(v);
-          auto it = vert_map.find (vv);
+          auto it = vert_map.find (v);
           if (it != vert_map.end ()) {
             operator-=(v);
           }
@@ -828,7 +800,6 @@ namespace crab {
         return ((Wt) 0);
       }
 
-      //Wt pot_value(variable_t v, ranges_t& ranges, std::vector<Wt>& potential)
       Wt pot_value(variable_t v, std::vector<Wt>& potential)
       {
         auto it = vert_map.find(v); 
@@ -853,33 +824,32 @@ namespace crab {
       {
         interval_t r = e.constant();
         for (auto p : e)
-          r += p.first * operator[](p.second.name());
+          r += p.first * operator[](p.second);
 
         return r;
       }
 
       // Turn an assignment into a set of difference constraints.
-      void diffcsts_of_assign(VariableName x, linear_expression_t exp,
-			      std::vector<std::pair<VariableName, Wt> >& lb,
-			      std::vector<std::pair<VariableName,Wt> >& ub)
-      {
+      void diffcsts_of_assign(variable_t x, linear_expression_t exp,
+			      std::vector<std::pair<variable_t, Wt> >& lb,
+			      std::vector<std::pair<variable_t,Wt> >& ub) {
         {
           // Process upper bounds.
-          boost::optional<VariableName> unbounded_ubvar;
+          boost::optional<variable_t> unbounded_ubvar;
           Wt exp_ub(ntov::ntov(exp.constant()));
-          std::vector<std::pair<VariableName, Wt> > ub_terms;
+          std::vector<std::pair<variable_t, Wt> > ub_terms;
           for(auto p : exp)
           {
             Wt coeff(ntov::ntov(p.first));
             if(p.first < Wt(0))
             {
               // Can't do anything with negative coefficients.
-              bound_t y_lb = operator[](p.second.name()).lb();
+              bound_t y_lb = operator[](p.second).lb();
               if(y_lb.is_infinite())
                 goto assign_ub_finish;
               exp_ub += ntov::ntov(*(y_lb.number()))*coeff;
             } else {
-              VariableName y(p.second.name());
+              variable_t y(p.second);
               bound_t y_ub = operator[](y).ub(); 
               if(y_ub.is_infinite())
               {
@@ -908,21 +878,21 @@ namespace crab {
       assign_ub_finish:
 
         {
-          boost::optional<VariableName> unbounded_lbvar;
+          boost::optional<variable_t> unbounded_lbvar;
           Wt exp_lb(ntov::ntov(exp.constant()));
-          std::vector<std::pair<VariableName, Wt> > lb_terms;
+          std::vector<std::pair<variable_t, Wt> > lb_terms;
           for(auto p : exp)
           {
             Wt coeff(ntov::ntov(p.first));
             if(p.first < Wt(0))
             {
               // Again, can't do anything with negative coefficients.
-              bound_t y_ub = operator[](p.second.name()).ub();
+              bound_t y_ub = operator[](p.second).ub();
               if(y_ub.is_infinite())
                 goto assign_lb_finish;
               exp_lb += (ntov::ntov(*(y_ub.number())))*coeff;
             } else {
-              VariableName y(p.second.name());
+              variable_t y(p.second);
               bound_t y_lb = operator[](y).lb(); 
               if(y_lb.is_infinite())
               {
@@ -954,23 +924,23 @@ namespace crab {
       // GKG: I suspect there're some sign/bound direction errors in the 
       // following.
       void diffcsts_of_lin_leq(const linear_expression_t& exp, std::vector<diffcst_t>& csts,
-			       std::vector<std::pair<VariableName, Wt> >& lbs,
-			       std::vector<std::pair<VariableName, Wt> >& ubs)
+			       std::vector<std::pair<variable_t, Wt> >& lbs,
+			       std::vector<std::pair<variable_t, Wt> >& ubs)
       {
         // Process upper bounds.
         Wt unbounded_lbcoeff;
         Wt unbounded_ubcoeff;
-        boost::optional<VariableName> unbounded_lbvar;
-        boost::optional<VariableName> unbounded_ubvar;
+        boost::optional<variable_t> unbounded_lbvar;
+        boost::optional<variable_t> unbounded_ubvar;
         Wt exp_ub = - (ntov::ntov(exp.constant()));
-        std::vector<std::pair<std::pair<Wt, VariableName>, Wt> > pos_terms;
-        std::vector<std::pair<std::pair<Wt, VariableName>, Wt> > neg_terms;
+        std::vector<std::pair<std::pair<Wt, variable_t>, Wt> > pos_terms;
+        std::vector<std::pair<std::pair<Wt, variable_t>, Wt> > neg_terms;
         for(auto p : exp)
         {
           Wt coeff(ntov::ntov(p.first));
           if(coeff > Wt(0))
           {
-            VariableName y(p.second.name());
+            variable_t y(p.second);
             bound_t y_lb = operator[](y).lb();
             if(y_lb.is_infinite())
             {
@@ -985,7 +955,7 @@ namespace crab {
               pos_terms.push_back(std::make_pair(std::make_pair(coeff, y), ymin));
             }
           } else {
-            VariableName y(p.second.name());
+            variable_t y(p.second);
             bound_t y_ub = operator[](y).ub(); 
             if(y_ub.is_infinite())
             {
@@ -1003,12 +973,12 @@ namespace crab {
 
         if(unbounded_lbvar)
         {
-          VariableName x(*unbounded_lbvar);
+          variable_t x(*unbounded_lbvar);
           if(unbounded_ubvar)
           {
             if(unbounded_lbcoeff != Wt(1) || unbounded_ubcoeff != Wt(1))
               goto diffcst_finish;
-            VariableName y(*unbounded_ubvar);
+            variable_t y(*unbounded_ubvar);
             csts.push_back(std::make_pair(std::make_pair(x, y), exp_ub));
           } else {
             if(unbounded_lbcoeff == Wt(1))
@@ -1023,7 +993,7 @@ namespace crab {
         } else {
           if(unbounded_ubvar)
           {
-            VariableName y(*unbounded_ubvar);
+            variable_t y(*unbounded_ubvar);
             if(unbounded_ubcoeff == Wt(1))
             {
               for(auto p : pos_terms)
@@ -1048,7 +1018,7 @@ namespace crab {
       }
 
       // Assumption: state is currently feasible.
-      void assign(VariableName x, linear_expression_t e) {
+      void assign(variable_t x, linear_expression_t e) {
         crab::CrabStats::count (getDomainName() + ".count.assign");
         crab::ScopedCrabStats __st__(getDomainName() + ".assign");
 
@@ -1062,15 +1032,13 @@ namespace crab {
 
         assert(check_potential(g, potential));
 
-	variable_t vx(x);
-	
         // If it's a constant, just assign the interval.
         if (e.is_constant()){
           set(x, e.constant());
         } else {
           interval_t x_int = eval_interval(e);
-          std::vector<std::pair<VariableName, Wt> > diffs_lb;
-          std::vector<std::pair<VariableName, Wt> > diffs_ub;
+          std::vector<std::pair<variable_t, Wt> > diffs_lb;
+          std::vector<std::pair<variable_t, Wt> > diffs_ub;
           // Construct difference constraints from the assignment
           diffcsts_of_assign(x, e, diffs_lb, diffs_ub);
           if(diffs_lb.size() > 0 || diffs_ub.size() > 0)
@@ -1082,11 +1050,11 @@ namespace crab {
               assert(v <= rev_map.size());
               if(v == rev_map.size())
               {
-                rev_map.push_back(vx);
+                rev_map.push_back(x);
                 potential.push_back(potential[0] + eval_expression(e));
               } else {
                 potential[v] = potential[0] + eval_expression(e);
-                rev_map[v] = vx;
+                rev_map[v] = x;
               }
               
               edge_vector delta;
@@ -1115,18 +1083,18 @@ namespace crab {
 
               // Clear the old x vertex
               operator-=(x);
-              vert_map.insert(vmap_elt_t(vx, v));
+              vert_map.insert(vmap_elt_t(x, v));
             } else {
               vert_id v = g.new_vertex();
               assert(v <= rev_map.size());
               if(v == rev_map.size())
               {
-                rev_map.push_back(vx);
+                rev_map.push_back(x);
                 potential.push_back(Wt(0));
               } else {
                 assert(!rev_map[v]);
                 potential[v] = Wt(0);
-                rev_map[v] = vx;
+                rev_map[v] = x;
               }
               Wt_min min_op;
               edge_vector cst_edges;
@@ -1172,7 +1140,7 @@ namespace crab {
 
               // Clear the old x vertex
               operator-=(x);
-              vert_map.insert(vmap_elt_t(vx, v));
+              vert_map.insert(vmap_elt_t(x, v));
             }
             assert(check_potential(g, potential));
           } else {
@@ -1189,14 +1157,10 @@ namespace crab {
                  crab::outs() << "---"<< x<< ":="<< e<<"\n"<<*this<<"\n";);
       }
 
-      void apply(ikos::operation_t op, VariableName x, VariableName y, VariableName z){	
+      void apply(ikos::operation_t op, variable_t x, variable_t y, variable_t z){	
         crab::CrabStats::count (getDomainName() + ".count.apply");
         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
-	//variable_t vx (x);
-	variable_t vy (y);
-	variable_t vz (z);	
-	
         if(is_bottom())
           return;
 
@@ -1206,25 +1170,23 @@ namespace crab {
         {
           case ikos::OP_ADDITION:
           {
-            linear_expression_t e(vy + vz);
-            assign(x, e);
+            assign(x, y+z);
             break;
           }
           case ikos::OP_SUBTRACTION:
           {
-            linear_expression_t e(vy - vz);
-            assign(x, e);
+            assign(x, y-z);
             break;
           }
           // For mul and div, we fall back on intervals.
           case ikos::OP_MULTIPLICATION:
           {
-            set(x, get_interval(vy)*get_interval(vz));
+            set(x, get_interval(y)*get_interval(z));
             break;
           }
           case ikos::OP_DIVISION:
           {
-            interval_t xi(get_interval(vy)/get_interval(vz));
+            interval_t xi(get_interval(y)/get_interval(z));
             if(xi.is_bottom())
               set_to_bottom();
             else
@@ -1237,13 +1199,10 @@ namespace crab {
       }
 
     
-      void apply(ikos::operation_t op, VariableName x, VariableName y, Number k) {	
+      void apply(ikos::operation_t op, variable_t x, variable_t y, Number k) {	
         crab::CrabStats::count (getDomainName() + ".count.apply");
         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
-	//variable_t vx(x);
-	variable_t vy(y);
-	
         if(is_bottom())
           return;
 
@@ -1253,20 +1212,18 @@ namespace crab {
         {
           case ikos::OP_ADDITION:
           {
-            linear_expression_t e(vy + k);
-            assign(x, e);
+            assign(x, y+k);
             break;
           }
           case ikos::OP_SUBTRACTION:
           {
-            linear_expression_t e(vy - k);
-            assign(x, e);
+            assign(x, y-k);
             break;
           }
           // For mul and div, we fall back on intervals.
           case ikos::OP_MULTIPLICATION:
           {
-            set(x, get_interval(vy)*k);
+            set(x, get_interval(y)*k);
 
             break;
           }
@@ -1275,7 +1232,7 @@ namespace crab {
             if(k == Wt(0))
               set_to_bottom();
             else
-              set(x, get_interval(vy)/k);
+              set(x, get_interval(y)/k);
 
             break;
           }
@@ -1285,21 +1242,21 @@ namespace crab {
                  crab::outs() << "---"<< x<< ":="<< y<< op<< k<<"\n"<< *this<<"\n";);
       }
 
-      void backward_assign (VariableName x, linear_expression_t e,
+      void backward_assign (variable_t x, linear_expression_t e,
 			    DBM_t inv) { 
 	crab::domains::BackwardAssignOps<DBM_t>::
 	  assign (*this, x, e, inv);
       }
       
       void backward_apply (operation_t op,
-			   VariableName x, VariableName y, Number z,
+			   variable_t x, variable_t y, Number z,
 			   DBM_t inv) {
 	crab::domains::BackwardAssignOps<DBM_t>::
 	  apply(*this, op, x, y, z, inv);
       }
       
       void backward_apply(operation_t op,
-			  VariableName x, VariableName y, VariableName z,
+			  variable_t x, variable_t y, variable_t z,
 			  DBM_t inv) {
 	crab::domains::BackwardAssignOps<DBM_t>::
 	  apply(*this, op, x, y, z, inv);
@@ -1310,8 +1267,8 @@ namespace crab {
         CRAB_LOG("zones-sparse",
                  linear_expression_t exp_tmp (exp);
                  crab::outs() << "Adding: "<< exp_tmp << "<= 0" << "\n");
-        std::vector<std::pair<VariableName, Wt> > lbs;
-        std::vector<std::pair<VariableName, Wt> > ubs;
+        std::vector<std::pair<variable_t, Wt> > lbs;
+        std::vector<std::pair<variable_t, Wt> > ubs;
         std::vector<diffcst_t> csts;
         diffcsts_of_lin_leq(exp, csts, lbs, ubs);
 
@@ -1385,7 +1342,7 @@ namespace crab {
 
         // Found one unfixed variable; collect the rest.
         Wt ucoeff = (*it).first;
-        VariableName uvar((*it).second;
+        variable_t uvar((*it).second;
         interval_t u_int = get_interval(ranges, uvar);
         // We need at least one side of u to be finite.
         if(u_int.lb().is_infinite() && u_int.ub().is_infinite())
@@ -1489,7 +1446,7 @@ namespace crab {
           */
       }
 
-      interval_t operator[](VariableName x) { 
+      interval_t operator[](variable_t x) { 
         crab::CrabStats::count (getDomainName() + ".count.to_intervals");
         crab::ScopedCrabStats __st__(getDomainName() + ".to_intervals");
 
@@ -1502,7 +1459,7 @@ namespace crab {
         }
       }
 
-      void set(VariableName x, interval_t intv) {
+      void set(variable_t x, interval_t intv) {
         crab::CrabStats::count (getDomainName() + ".count.assign");
         crab::ScopedCrabStats __st__(getDomainName() + ".assign");
 
@@ -1533,16 +1490,16 @@ namespace crab {
       // cast_operators_api
 
       void apply(int_conv_operation_t /*op*/,
-		 VariableName dst, unsigned /*dst_width*/,
-		 VariableName src, unsigned /*src_width*/) {
+		 variable_t dst, unsigned /*dst_width*/,
+		 variable_t src, unsigned /*src_width*/) {
         // since reasoning about infinite precision we simply assign and
         // ignore the widths.
-        assign(dst, variable_t(src));
+        assign(dst, src);
       }
 
       // bitwise_operators_api
       
-      void apply(ikos::bitwise_operation_t op, VariableName x, VariableName y, VariableName z) {
+      void apply(ikos::bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {
         crab::CrabStats::count (getDomainName() + ".count.apply");
         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1584,7 +1541,7 @@ namespace crab {
         set(x, xi);
       }
     
-      void apply(ikos::bitwise_operation_t op, VariableName x, VariableName y, Number k) {
+      void apply(ikos::bitwise_operation_t op, variable_t x, variable_t y, Number k) {
         crab::CrabStats::count (getDomainName() + ".count.apply");
         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1627,7 +1584,7 @@ namespace crab {
     
       // division_operators_api
     
-      void apply(ikos::div_operation_t op, VariableName x, VariableName y, VariableName z) {
+      void apply(ikos::div_operation_t op, variable_t x, variable_t y, variable_t z) {
         crab::CrabStats::count (getDomainName() + ".count.apply");
         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1661,7 +1618,7 @@ namespace crab {
         }
       }
 
-      void apply(ikos::div_operation_t op, VariableName x, VariableName y, Number k) {
+      void apply(ikos::div_operation_t op, variable_t x, variable_t y, Number k) {
         crab::CrabStats::count (getDomainName() + ".count.apply");
         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1821,7 +1778,7 @@ namespace crab {
       }
       */
 
-      void rename(const varname_vector_t &from, const varname_vector_t &to) {
+      void rename(const variable_vector_t &from, const variable_vector_t &to) {
 	if (is_top () || is_bottom()) return;
 	
 	// renaming vert_map by creating a new vert_map since we are
@@ -1838,7 +1795,7 @@ namespace crab {
 	vert_map_t new_vert_map;
 	for (auto kv: vert_map) {
 	  ptrdiff_t pos = std::distance(from.begin(),
-				 std::find(from.begin(), from.end(), kv.first.name()));
+					std::find(from.begin(), from.end(), kv.first));
 	  if (pos < from.size()) {
 	    variable_t new_v(to[pos]);
 	    new_vert_map.insert(vmap_elt_t(new_v, kv.second));
@@ -1855,7 +1812,7 @@ namespace crab {
 
       
       //! copy of x into a new fresh variable y
-      void expand (VariableName x, VariableName y) {
+      void expand (variable_t x, variable_t y) {
         crab::CrabStats::count (getDomainName() + ".count.expand");
         crab::ScopedCrabStats __st__(getDomainName() + ".expand");
 
@@ -1866,7 +1823,7 @@ namespace crab {
                   crab::outs() << "Before expand " << x << " into " << y << ":\n"
 		               << *this <<"\n");
 
-        auto it = vert_map.find(variable_t(y));
+        auto it = vert_map.find(y);
         if(it != vert_map.end()) {
           CRAB_ERROR("sparse_dbm expand operation failed because y already exists");
         }
@@ -1903,8 +1860,7 @@ namespace crab {
         std::vector<bool> save(rev_map.size(), false);
         for(auto x : boost::make_iterator_range(vIt, vEt))
         {
-	  variable_t vx(x);
-          auto it = vert_map.find(vx);
+          auto it = vert_map.find(x);
           if(it != vert_map.end())
             save[(*it).second] = true;
         }
@@ -1912,12 +1868,12 @@ namespace crab {
         for(vert_id v = 0; v < rev_map.size(); v++)
         {
           if(!save[v] && rev_map[v])
-            operator-=((*rev_map[v]).name());
+            operator-=((*rev_map[v]));
         }
       }
 
       template <typename NumDomain>
-      void push (const VariableName& x, NumDomain&inv){
+      void push (const variable_t& x, NumDomain&inv){
 	crab::CrabStats::count (getDomainName() + ".count.push");
         crab::ScopedCrabStats __st__(getDomainName() + ".push");
 
@@ -2035,25 +1991,11 @@ namespace crab {
         linear_constraint_system_t csts;
     
         if(is_bottom ()) {
-          csts += linear_constraint_t (linear_expression_t (Number(1)) == 
-                                       linear_expression_t (Number(0)));
+          csts += linear_constraint_t::get_false();
           return csts;
         }
 
         // Extract all the edges
-
-        /* 
-        for(auto p : ranges)
-        {
-          variable_t x = p.first;
-          interval_t b = p.second;
-
-          if(b.lb().is_finite())
-            csts += linear_constraint_t(linear_expression_t(x) >= linear_expression_t(*(b.lb().number())));
-          if(b.ub().is_finite())
-            csts += linear_constraint_t(linear_expression_t(x) <= linear_expression_t(*(b.ub().number())));
-        }
-        */
 
         SubGraph<graph_t> g_excl(g, 0);
 
@@ -2107,7 +2049,7 @@ namespace crab {
       using typename abstract_domain_t::variable_t;
       using typename abstract_domain_t::number_t;
       using typename abstract_domain_t::varname_t;
-      using typename abstract_domain_t::varname_vector_t;      
+      using typename abstract_domain_t::variable_vector_t;      
       typedef typename linear_constraint_t::kind_t constraint_kind_t;
       typedef ikos::interval<Number>  interval_t;
 
@@ -2186,57 +2128,57 @@ namespace crab {
 
       void normalize() { norm().normalize(); }
       void operator+=(linear_constraint_system_t csts) { lock(); norm() += csts; } 
-      void operator-=(VariableName v) { lock(); norm() -= v; }
-      interval_t operator[](VariableName x) { return norm()[x]; }
-      void set(VariableName x, interval_t intv) { lock(); norm().set(x, intv); }
+      void operator-=(variable_t v) { lock(); norm() -= v; }
+      interval_t operator[](variable_t x) { return norm()[x]; }
+      void set(variable_t x, interval_t intv) { lock(); norm().set(x, intv); }
 
       template<typename Iterator>
       void forget (Iterator vIt, Iterator vEt) { lock(); norm().forget(vIt, vEt); }
-      void assign(VariableName x, linear_expression_t e) { lock(); norm().assign(x, e); }
-      void apply(ikos::operation_t op, VariableName x, VariableName y, Number k) {
+      void assign(variable_t x, linear_expression_t e) { lock(); norm().assign(x, e); }
+      void apply(ikos::operation_t op, variable_t x, variable_t y, Number k) {
         lock(); norm().apply(op, x, y, k);
       }
       void apply(int_conv_operation_t op,
-		 VariableName dst, unsigned dst_width, VariableName src, unsigned src_width) {
+		 variable_t dst, unsigned dst_width, variable_t src, unsigned src_width) {
         lock(); norm().apply(op, dst, dst_width, src, src_width);	
       }
-      void backward_assign(VariableName x, linear_expression_t e, DBM_t invariant) {
+      void backward_assign(variable_t x, linear_expression_t e, DBM_t invariant) {
 	lock(); norm().backward_assign(x, e, invariant.norm());
       }
       void backward_apply(operation_t op,
-			  VariableName x, VariableName y, Number k, DBM_t invariant) {
+			  variable_t x, variable_t y, Number k, DBM_t invariant) {
 	lock(); norm().backward_apply(op, x, y, k, invariant.norm());
       }
       void backward_apply(operation_t op,
-			  VariableName x, VariableName y, VariableName z, DBM_t invariant) {
+			  variable_t x, variable_t y, variable_t z, DBM_t invariant) {
 	lock(); norm().backward_apply(op, x, y, z, invariant.norm());
       }	
-      void apply(ikos::bitwise_operation_t op, VariableName x, VariableName y, Number k) {
+      void apply(ikos::bitwise_operation_t op, variable_t x, variable_t y, Number k) {
         lock(); norm().apply(op, x, y, k);
       }
-      void apply(ikos::bitwise_operation_t op, VariableName x, VariableName y, VariableName z) {
+      void apply(ikos::bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {
         lock(); norm().apply(op, x, y, z);
       }
-      void apply(ikos::operation_t op, VariableName x, VariableName y, VariableName z) {
+      void apply(ikos::operation_t op, variable_t x, variable_t y, variable_t z) {
         lock(); norm().apply(op, x, y, z);
       }
-      void apply(ikos::div_operation_t op, VariableName x, VariableName y, VariableName z) {
+      void apply(ikos::div_operation_t op, variable_t x, variable_t y, variable_t z) {
         lock(); norm().apply(op, x, y, z);
       }
-      void apply(ikos::div_operation_t op, VariableName x, VariableName y, Number k) {
+      void apply(ikos::div_operation_t op, variable_t x, variable_t y, Number k) {
         lock(); norm().apply(op, x, y, k);
       }
 
-      void rename(const varname_vector_t &from, const varname_vector_t &to)
+      void rename(const variable_vector_t &from, const variable_vector_t &to)
       { lock(); norm().rename(from, to); }
       
-      void expand (VariableName x, VariableName y) { lock(); norm().expand(x, y); }
+      void expand (variable_t x, variable_t y) { lock(); norm().expand(x, y); }
 
       template<typename Iterator>
       void project (Iterator vIt, Iterator vEt) { lock(); norm().project(vIt, vEt); }
 
       template <typename NumDomain>
-      void push (const VariableName& x, NumDomain&inv){ lock(); norm().push(x, inv); }
+      void push (const variable_t& x, NumDomain&inv){ lock(); norm().push(x, inv); }
 
       void write(crab_os& o) { norm().write(o); }
 
@@ -2254,11 +2196,12 @@ namespace crab {
      public:
 
       typedef SparseDBM<Number,VariableName,Params> sdbm_domain_t;
-
+      typedef ikos::variable<Number, VariableName> variable_t;
+      
       template<class CFG>
       static void do_initialization (CFG cfg) { }
 
-      static void expand (sdbm_domain_t& inv, VariableName x, VariableName new_x) {
+      static void expand (sdbm_domain_t& inv, variable_t x, variable_t new_x) {
         inv.expand (x, new_x);
       }
     
@@ -2299,8 +2242,9 @@ namespace crab {
       typedef typename Domain::varname_t varname_t;
       typedef SparseDBM<typename Domain::number_t, 
                         typename Domain::varname_t,Params> sdbm_domain_t;
+      typedef typename Domain::variable_t variable_t;      
       
-      static void push (const varname_t& x, sdbm_domain_t from, Domain& to){
+      static void push (const variable_t& x, sdbm_domain_t from, Domain& to){
         from.push (x, to);
       }
     };
@@ -2311,4 +2255,3 @@ namespace crab {
 } // namespace crab
 
 #pragma GCC diagnostic pop
-#endif // SPARSE_DBM_HPP

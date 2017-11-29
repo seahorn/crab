@@ -9,8 +9,7 @@
  * Contributors: Jorge A. Navas (jorge.navas@sri.com)
  ******************************************************************************/
 
-#ifndef TERM_DOMAIN_HPP
-#define TERM_DOMAIN_HPP
+#pragma once
 
 #include <utility>
 #include <algorithm>
@@ -93,7 +92,7 @@ namespace crab {
        using typename abstract_domain_t::variable_t;
        using typename abstract_domain_t::number_t;
        using typename abstract_domain_t::varname_t;
-       using typename abstract_domain_t::varname_vector_t;
+       using typename abstract_domain_t::variable_vector_t;
        typedef interval<Number> interval_t;
        
       private:
@@ -145,7 +144,7 @@ namespace crab {
          
          term_id_t t_itv = _ttbl.fresh_var();
          dom_var_t dom_itv = domvar_of_term(t_itv);
-         _impl.set(dom_itv.name (), interval_t (lb, ub));
+         _impl.set(dom_itv, interval_t (lb, ub));
          return t_itv;
        }
        
@@ -160,13 +159,13 @@ namespace crab {
        //     // Otherwise, assign the term, and evaluate.
        //     term_id_t tx = _ttbl.apply_ftor(op, ty, tz);
        //     _impl.apply(op,
-       //                 domvar_of_term(tx).name(),
-       //                 domvar_of_term(ty).name(), domvar_of_term(tz).name());
+       //                 domvar_of_term(tx),
+       //                 domvar_of_term(ty), domvar_of_term(tz));
        //     return tx;
        //   }
        // }
               
-       // void apply(operation_t op, VariableName x, VariableName y, bound_t lb, bound_t ub){	
+       // void apply(operation_t op, variable_t x, variable_t y, bound_t lb, bound_t ub){	
        //   term_id_t t_x = term_of_expr(op, term_of_var(y), term_of_itv(lb, ub));
        //   // JNL: check with Graeme
        //   //      insert only adds an entry if the key does not exist
@@ -177,7 +176,7 @@ namespace crab {
 
       
        void apply (dom_t& dom, binary_operation_t op,
-                   dom_varname_t x, dom_varname_t y, dom_varname_t z) {
+                   dom_var_t x, dom_var_t y, dom_var_t z) {
          auto op1 = conv_op <operation_t> (op);
          auto op2 = conv_op <div_operation_t> (op);
          auto op3 = conv_op <bitwise_operation_t> (op);
@@ -206,9 +205,7 @@ namespace crab {
            std::vector<term_id_t>& args(term::term_args(t_ptr));
            assert(args.size() == 2);
            apply (dom, op, 
-                  domvar_of_term(t).name(),
-                  domvar_of_term(args[0]).name(),
-                  domvar_of_term(args[1]).name());
+                  domvar_of_term(t), domvar_of_term(args[0]), domvar_of_term(args[1]));
          }
        }
        
@@ -225,11 +222,9 @@ namespace crab {
            assert(args.size() == 2);
 
            if (boost::optional<operation_t> arith_op = conv_op <operation_t> (op)) {           
-             term::InverseOps<dom_number, dom_varname_t, dom_t>::
+             term::InverseOps<dom_number, dom_var_t, dom_t>::
                  apply(dom, *arith_op,
-                       domvar_of_term(t).name(),
-                       domvar_of_term(args[0]).name(),
-                       domvar_of_term(args[1]).name());
+                       domvar_of_term(t), domvar_of_term(args[0]), domvar_of_term(args[1])); 
            }
          }
        }
@@ -293,7 +288,7 @@ namespace crab {
            typename term_map_t::iterator it(_term_map.find(f));
            if(it != _term_map.end())
            {
-             _impl -= (*it).second.name();
+             _impl -= (*it).second;
              _term_map.erase(it);
            }
          }
@@ -327,7 +322,7 @@ namespace crab {
            dom_var_t v = domvar_of_term(term_n);
 
            dom_linexp_t exp(n);
-           _impl.assign(v.name(), exp);
+           _impl.assign(v, exp);
            return term_n;
          }
        }
@@ -383,10 +378,10 @@ namespace crab {
            // Set up the evaluation.
            CRAB_LOG("term", crab::outs() << "Prev: " << _impl <<"\n");
 
-           _impl.apply(op, v.name(), y.name(), z.name());
+           _impl.apply(op, v, y, z);
 
            CRAB_LOG("term", 
-                    crab::outs() << "Should have " << v.name() << " := " << y.name() << op  << z.name() <<"\n");
+                    crab::outs() << "Should have " << v << " := " << y << op  << z <<"\n");
            CRAB_LOG("term", crab::outs() << _impl <<"\n");
 
            return tx;
@@ -413,7 +408,7 @@ namespace crab {
          }
 
          CRAB_LOG("term", 
-                  crab::outs() << "Should have " << domvar_of_term(t).name() << " := " 
+                  crab::outs() << "Should have " << domvar_of_term(t) << " := " 
                   << e << "\n" << _impl <<"\n");
          return t;       
        }
@@ -592,7 +587,7 @@ namespace crab {
            dom_t y_impl(o._impl);
            
            // Perform the mapping
-           std::vector<typename dom_t::varname_t> out_varnames;
+           std::vector<dom_var_t> out_varnames;
            for(auto p : gen_map)
            {
              // dom_var_t vt = _alloc.next();
@@ -600,10 +595,10 @@ namespace crab {
              dom_var_t vx = domvar_of_term(p.second); 
              dom_var_t vy = o.domvar_of_term(p.first);
              
-             out_varnames.push_back (vt.name ());
+             out_varnames.push_back (vt);
 
-             x_impl.assign(vt.name(), dom_linexp_t(vx));
-             y_impl.assign(vt.name(), dom_linexp_t(vy));
+             x_impl.assign(vt, vx);
+             y_impl.assign(vt, vy);
            }
            domain_traits<dom_t>::project (x_impl, out_varnames.begin (), out_varnames.end ());
            domain_traits<dom_t>::project (y_impl, out_varnames.begin (), out_varnames.end ());
@@ -654,7 +649,7 @@ namespace crab {
            // Rename the common terms together
            // Perform the mapping
            term_map_t out_map;
-           std::vector<typename dom_t::varname_t> out_varnames;
+           std::vector<dom_var_t> out_varnames;
            for(auto p : gener_map)
            {
              auto txy = p.first;
@@ -665,10 +660,10 @@ namespace crab {
              dom_var_t vx = domvar_of_term(txy.first);
              dom_var_t vy = o.domvar_of_term(txy.second);
              
-             out_varnames.push_back (vt.name ());             
+             out_varnames.push_back (vt);             
              
-             _impl.assign(vt.name(), dom_linexp_t(vx));
-             o._impl.assign(vt.name(), dom_linexp_t(vy));
+             _impl.assign(vt, vx);
+             o._impl.assign(vt, vy);
            }
            
            domain_traits<dom_t>::project (_impl, out_varnames.begin (), out_varnames.end ());
@@ -730,7 +725,7 @@ namespace crab {
            
            // Perform the mapping
            term_map_t out_map;
-           std::vector<typename dom_t::varname_t> out_varnames;
+           std::vector<dom_var_t> out_varnames;
            for(auto p : gener_map)
            {
              auto txy = p.first;
@@ -741,10 +736,10 @@ namespace crab {
              dom_var_t vx = domvar_of_term(txy.first);
              dom_var_t vy = o.domvar_of_term(txy.second);
              
-             out_varnames.push_back (vt.name ());
+             out_varnames.push_back (vt);
              
-             x_impl.assign(vt.name(), dom_linexp_t(vx));
-             y_impl.assign(vt.name(), dom_linexp_t(vy));
+             x_impl.assign(vt, vx);
+             y_impl.assign(vt, vy);
            }
            
            CRAB_LOG("term", 
@@ -846,7 +841,7 @@ namespace crab {
            
            // Perform the mapping
            term_map_t out_map;
-           std::vector<typename dom_t::varname_t> out_varnames;
+           std::vector<dom_var_t> out_varnames;
            for(auto p : gener_map)
            {
              auto txy = p.first;
@@ -857,10 +852,10 @@ namespace crab {
              dom_var_t vx = domvar_of_term(txy.first);
              dom_var_t vy = o.domvar_of_term(txy.second);
              
-             out_varnames.push_back (vt.name ());             
+             out_varnames.push_back (vt);             
 
-             x_impl.assign(vt.name(), dom_linexp_t(vx));
-             y_impl.assign(vt.name(), dom_linexp_t(vy));
+             x_impl.assign(vt, vx);
+             y_impl.assign(vt, vy);
            }
 
            domain_traits<dom_t>::project (x_impl, out_varnames.begin (), out_varnames.end ());
@@ -1042,7 +1037,7 @@ namespace crab {
            dom_t x_impl (_impl); 
            dom_t y_impl (o._impl); 
            term_map_t out_map; // map term to dom var
-           std::vector<typename dom_t::varname_t> out_varnames;
+           std::vector<dom_var_t> out_varnames;
            for (auto p: out_vmap) {
              variable_t v = p.first;
              term_id_t t_new = p.second;
@@ -1052,15 +1047,15 @@ namespace crab {
              auto xit = _var_map.find (v);
              if (xit != _var_map.end ()) {
                dom_var_t vx = domvar_of_term(xit->second);
-               x_impl.assign(vt.name(), dom_linexp_t(vx));
+               x_impl.assign(vt, vx);
              }
              // renaming o's base domain
              auto yit = o._var_map.find (v);
              if (yit != o._var_map.end ()) {
                dom_var_t vy = o.domvar_of_term(yit->second);
-               y_impl.assign(vt.name(), dom_linexp_t(vy));
+               y_impl.assign(vt, vy);
              }
-             out_varnames.push_back (vt.name ());
+             out_varnames.push_back (vt);
            }
 
            domain_traits<dom_t>::project (x_impl, out_varnames.begin (), out_varnames.end ());
@@ -1088,12 +1083,11 @@ namespace crab {
        } 
 
        // Remove a variable from the scope
-       void operator-=(VariableName v) {
+       void operator-=(variable_t v) {
          crab::CrabStats::count (getDomainName() + ".count.forget");
          crab::ScopedCrabStats __st__(getDomainName() + ".forget");
 
-	 variable_t vv(v);
-         auto it(_var_map.find(vv));
+         auto it(_var_map.find(v));
          if(it != _var_map.end())
          {
            term_id_t t = (*it).second;
@@ -1120,14 +1114,14 @@ namespace crab {
 
          if (is_bottom ()) return;
          
-         std::set<VariableName> s1,s2,s3;
-         for (auto p: _var_map) s1.insert (p.first.name ());
+         std::set<variable_t> s1,s2,s3;
+         for (auto p: _var_map) s1.insert (p.first);
          s2.insert (vs.begin (), vs.end ());
          boost::set_difference (s1,s2,std::inserter (s3, s3.end ()));
          forget (s3);
        }
 
-       void assign(VariableName x_name, linear_expression_t e) {
+       void assign(variable_t x, linear_expression_t e) {
          crab::CrabStats::count (getDomainName() + ".count.assign");
          crab::ScopedCrabStats __st__(getDomainName() + ".assign");
 
@@ -1136,18 +1130,17 @@ namespace crab {
          } else {
            //dom_linexp_t dom_e(rename_linear_expr(e));
            term_id_t tx(build_linexpr(e));
-           variable_t x(x_name);
            rebind_var(x, tx);
 
            check_terms();
 
            CRAB_LOG("term", 
-                    crab::outs() << "*** Assign " << x_name << ":=" << e << ":" << *this << "\n");
+                    crab::outs() << "*** Assign " << x << ":=" << e << ":" << *this << "\n");
            return;
          }
        }
 
-      void rename(const varname_vector_t &from, const varname_vector_t &to) {
+      void rename(const variable_vector_t &from, const variable_vector_t &to) {
 	if (is_top () || is_bottom()) return;
 	
 	// renaming _var_map by creating a new map since we are
@@ -1163,7 +1156,7 @@ namespace crab {
 	var_map_t new_var_map;
 	for (auto kv: _var_map) {
 	  ptrdiff_t pos = std::distance(from.begin(),
-				 std::find(from.begin(), from.end(), kv.first.name()));
+					std::find(from.begin(), from.end(), kv.first));
 	  if (pos < from.size()) {
 	    variable_t new_v(to[pos]);
 	    new_var_map.insert(std::make_pair(new_v, kv.second));
@@ -1178,7 +1171,7 @@ namespace crab {
       }
        
        //! copy of x into a new fresh variable y
-       void expand (VariableName x_name, VariableName y_name) {
+       void expand (variable_t x, variable_t y) {
          crab::CrabStats::count (getDomainName() + ".count.expand");
          crab::ScopedCrabStats __st__(getDomainName() + ".expand");
 
@@ -1186,8 +1179,6 @@ namespace crab {
            return;
          }
          else {
-           variable_t x(x_name);
-           variable_t y(y_name);
            linear_expression_t e(x);
            term_id_t tx(build_linexpr(e));
            rebind_var(y, tx);
@@ -1197,7 +1188,7 @@ namespace crab {
        }
 
        template<typename NumDomain>
-       void push (const VariableName& x, NumDomain& inv) {
+       void push (const variable_t& x, NumDomain& inv) {
          crab::CrabStats::count (getDomainName() + ".count.push");
          crab::ScopedCrabStats __st__(getDomainName() + ".push");
 
@@ -1206,19 +1197,17 @@ namespace crab {
          if (is_bottom () || inv.is_bottom ()) return;
 
          // add equivalences
-         variable_t vx (x);
-         auto it = _var_map.find (vx);
+         auto it = _var_map.find (x);
          linear_constraint_system_t csts;
          if (it != _var_map.end ()) {
            term_id_t tx = it->second;
            std::vector< std::pair<variable_t, variable_t> > equivs;
            for(auto p : _var_map) {
-             if ((p.first.index() != vx.index()) && (p.second == tx)) {
-               linear_constraint_t cst(vx == p.first);
+             if ((p.first.index() != x.index()) && (p.second == tx)) {
+               linear_constraint_t cst(linear_expression_t(x) == p.first);
                CRAB_LOG("terms",
 			crab::outs() << "Propagating " << cst << " to "
     			             << inv.getDomainName () << "\n");
-
                csts += cst;
              }
            }
@@ -1230,18 +1219,15 @@ namespace crab {
        // Apply operations to variables.
 
        // x = y op z
-       void apply(operation_t op, VariableName x, VariableName y, VariableName z){	
+       void apply(operation_t op, variable_t x, variable_t y, variable_t z){	
          crab::CrabStats::count (getDomainName() + ".count.apply");
          crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
          if (this->is_bottom()) {
            return;   
          } else {
-           variable_t vx(x);
-	   variable_t vy(y);
-	   variable_t vz(z);
-           term_id_t tx(build_term(op, term_of_var(vy), term_of_var(vz)));
-           rebind_var(vx, tx);
+           term_id_t tx(build_term(op, term_of_var(y), term_of_var(z)));
+           rebind_var(x, tx);
          }
          check_terms();
          CRAB_LOG("term", 
@@ -1250,17 +1236,15 @@ namespace crab {
        }
     
        // x = y op k
-       void apply(operation_t op, VariableName x, VariableName y, Number k){	
+       void apply(operation_t op, variable_t x, variable_t y, Number k){	
          crab::CrabStats::count (getDomainName() + ".count.apply");
          crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
          if (this->is_bottom()) {
            return;   
          } else {
-           variable_t vx(x);
-	   variable_t vy(y);
-           term_id_t tx(build_term(op, term_of_var(vy), term_of_const(k)));
-           rebind_var(vx, tx);
+           term_id_t tx(build_term(op, term_of_var(y), term_of_const(k)));
+           rebind_var(x, tx);
          }
          check_terms();
          CRAB_LOG("term",
@@ -1268,21 +1252,21 @@ namespace crab {
          return;
        }
 
-       void backward_assign (VariableName x, linear_expression_t e,
+       void backward_assign (variable_t x, linear_expression_t e,
 			     term_domain_t inv) { 
 	 crab::domains::BackwardAssignOps<term_domain_t>::
 	   assign (*this, x, e, inv);
        }
        
        void backward_apply (operation_t op,
-			    VariableName x, VariableName y, Number z,
+			    variable_t x, variable_t y, Number z,
 			    term_domain_t inv) {
 	 crab::domains::BackwardAssignOps<term_domain_t>::
 	   apply(*this, op, x, y, z, inv);
        }
       
        void backward_apply(operation_t op,
-			   VariableName x, VariableName y, VariableName z,
+			   variable_t x, variable_t y, variable_t z,
 			   term_domain_t inv) {
 	 crab::domains::BackwardAssignOps<term_domain_t>::
 	   apply(*this, op, x, y, z, inv);
@@ -1315,7 +1299,7 @@ namespace crab {
              std::vector<int> stack;
              std::map <int, term_id_t> cache;
              dom_t x_impl (_impl); 
-             std::vector<typename dom_t::varname_t> out_varnames;
+             std::vector<dom_var_t> out_varnames;
              // new map from variable to an acyclic term
              // and also renaming of the base domain
              for(auto p : _var_map) {
@@ -1328,8 +1312,8 @@ namespace crab {
                dom_var_t vt = domvar_of_term(t_new);
                dom_var_t vx = domvar_of_term(t_old);
 	       
-               out_varnames.push_back (vt.name());
-               x_impl.assign(vt.name(), dom_linexp_t(vx));
+               out_varnames.push_back (vt);
+               x_impl.assign(vt, vx);
 
                rebind_var (v, t_new);
              }
@@ -1380,7 +1364,7 @@ namespace crab {
          TermNormalizer<Info, typename Info::domain_t>::normalize(*this); 
        }
 
-       interval_t operator[](VariableName x) { 
+       interval_t operator[](variable_t x) { 
          crab::CrabStats::count (getDomainName() + ".count.to_intervals");
          crab::ScopedCrabStats __st__(getDomainName() + ".to_intervals");
 
@@ -1389,22 +1373,20 @@ namespace crab {
 
          if (is_bottom ()) return interval_t::bottom ();
 
-         variable_t vx (x);
-         auto it = _var_map.find (vx);
+         auto it = _var_map.find (x);
          if (it == _var_map.end ()) 
            return interval_t::top ();
       
          dom_var_t dom_x = domvar_of_term(it->second);
 
-         return _impl[dom_x.name()];
+         return _impl[dom_x];
        } 
 
-       void set (VariableName x, interval_t intv){
+       void set (variable_t x, interval_t intv){
          crab::CrabStats::count (getDomainName() + ".count.assign");
          crab::ScopedCrabStats __st__(getDomainName() + ".assign");
 
-         variable_t vx (x);
-         rebind_var (vx, term_of_itv (intv.lb (), intv.ub ()));
+         rebind_var (x, term_of_itv (intv.lb (), intv.ub ()));
        }
     
        void operator+=(linear_constraint_system_t cst) {
@@ -1438,7 +1420,7 @@ namespace crab {
          for(auto p : _term_map) {
            dom_var_t dv = p.second;
            if(rev_map.find(dv) == rev_map.end())
-             d_vis -= dv.name();
+             d_vis -= dv;
          }
 
          // Now build and rename the constraint system, plus equivalences.
@@ -1463,25 +1445,22 @@ namespace crab {
 
 
        void apply(int_conv_operation_t /*op*/,
-		  VariableName dst, unsigned /*dst_width*/,
-		  VariableName src, unsigned /*src_width*/){
+		  variable_t dst, unsigned /*dst_width*/,
+		  variable_t src, unsigned /*src_width*/){
          // since reasoning about infinite precision we simply assign and
          // ignore the widths.
-         assign(dst, variable_t(src));
+         assign(dst, src);
        }
 
-       void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z){
+       void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z){
          crab::CrabStats::count (getDomainName() + ".count.apply");
          crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
          if (this->is_bottom()) {
            return;   
          } else {
-           variable_t vx(x);
-	   variable_t vy(y);
-	   variable_t vz(z);
-           term_id_t tx(build_term(op, term_of_var(vy), term_of_var(vz)));
-           rebind_var(vx, tx);
+           term_id_t tx(build_term(op, term_of_var(y), term_of_var(z)));
+           rebind_var(x, tx);
          }
          check_terms();
          CRAB_LOG("term", 
@@ -1489,17 +1468,15 @@ namespace crab {
                   << " " << z << ":" << *this << "\n");
        }
     
-       void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k){
+       void apply(bitwise_operation_t op, variable_t x, variable_t y, Number k){
          crab::CrabStats::count (getDomainName() + ".count.apply");
          crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
          if (this->is_bottom()) {
            return;   
          } else {
-           variable_t vx(x);
-	   variable_t vy(y);
-           term_id_t tx(build_term(op, term_of_var(vy), term_of_const(k)));
-           rebind_var(vx, tx);
+           term_id_t tx(build_term(op, term_of_var(y), term_of_const(k)));
+           rebind_var(x, tx);
          }
 
          check_terms();
@@ -1511,18 +1488,15 @@ namespace crab {
     
        // division_operators_api
     
-       void apply(div_operation_t op, VariableName x, VariableName y, VariableName z){
+       void apply(div_operation_t op, variable_t x, variable_t y, variable_t z){
          crab::CrabStats::count (getDomainName() + ".count.apply");
          crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
          if (this->is_bottom()) {
            return;   
          } else {
-           variable_t vx(x);
-	   variable_t vy(y);
-	   variable_t vz(z);	   
-           term_id_t tx(build_term(op, term_of_var(vy), term_of_var(vz)));
-           rebind_var(vx, tx);
+           term_id_t tx(build_term(op, term_of_var(y), term_of_var(z)));
+           rebind_var(x, tx);
          }
 
          check_terms();
@@ -1530,17 +1504,15 @@ namespace crab {
                   crab::outs() << "*** "<< x<< ":="<< y<< " "<< op<< " "<< z<< ":"<< *this << "\n");
        }
 
-       void apply(div_operation_t op, VariableName x, VariableName y, Number k){
+       void apply(div_operation_t op, variable_t x, variable_t y, Number k){
          crab::CrabStats::count (getDomainName() + ".count.apply");
          crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
          if (this->is_bottom()) {
            return;   
          } else {
-           variable_t vx(x);
-           variable_t vy(y);	   
-           term_id_t tx(build_term(op, term_of_var(vy), term_of_const(k)));
-           rebind_var(vx, tx);
+           term_id_t tx(build_term(op, term_of_var(y), term_of_const(k)));
+           rebind_var(x, tx);
          }
 
          check_terms();
@@ -1552,10 +1524,9 @@ namespace crab {
        /// XXX: should be part of array_sgraph_domain_traits
        /// Simplify the term associated with x by given the standard
        /// arithmetic meaning to the functors
-       bool simplify (VariableName x) 
+       bool simplify (variable_t x) 
        {
-         variable_t vx(x);
-         auto it = _var_map.find (vx);
+         auto it = _var_map.find (x);
          if (it != _var_map.end ())
          {
            term_id_t t = it->second;
@@ -1563,7 +1534,7 @@ namespace crab {
            auto nt = simp.simplify_term (t);  
            if (nt) 
            {
-             rebind_var(vx, *nt); 
+             rebind_var(x, *nt); 
              return true;
            }
          }
@@ -1594,7 +1565,7 @@ namespace crab {
            else
              o << ", ";
            o << p.first << " -> t" << p.second
-             << "[" << domvar_of_term(p.second).name() << "]";
+             << "[" << domvar_of_term(p.second) << "]";
          }
          o << "}";
      
@@ -1792,7 +1763,7 @@ namespace crab {
               interval_t v_upd(impl[v]);
               if(!(arg_intervals[ci] <= v_upd))
               {
-                impl.set(v.name(), arg_intervals[ci]&v_upd);
+                impl.set(v, arg_intervals[ci]&v_upd);
                 if(abs.changed_terms.find(c) == abs.changed_terms.end())
                 {
                   abs.changed_terms.insert(c);
@@ -1833,7 +1804,7 @@ namespace crab {
             interval_t v_upd = impl[v];
             if(!(v_interval <= v_upd))
             {
-              impl.set(v.name(), v_interval&v_upd);
+              impl.set(v, v_interval&v_upd);
               for(term_id_t p : ttbl.parents(t))
               {
                 if(up_terms.find(p) == up_terms.end())
@@ -1888,10 +1859,10 @@ namespace crab {
     class product_domain_traits<term_domain<Info>, Domain> {
      public:
       
-      typedef typename Domain::varname_t varname_t;
+      typedef typename Domain::variable_t variable_t;
       typedef term_domain<Info> term_domain_t;
       
-      static void push (const varname_t& x, term_domain_t from, Domain& to){
+      static void push (const variable_t& x, term_domain_t from, Domain& to){
         from.push (x, to);
       }
     };
@@ -1900,4 +1871,3 @@ namespace crab {
 } // namespace crab
 
 #pragma GCC diagnostic pop
-#endif // TERM_DOMAIN_HPP

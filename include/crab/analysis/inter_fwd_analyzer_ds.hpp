@@ -1,5 +1,4 @@
-#ifndef INTER_FWD_ANALYSIS_DATASTRUCTURES_HPP
-#define INTER_FWD_ANALYSIS_DATASTRUCTURES_HPP
+#pragma once 
 
 #include <boost/optional.hpp>
 #include <boost/unordered_map.hpp>
@@ -31,6 +30,7 @@ namespace crab {
       typedef typename CFG::basic_block_t::callsite_t callsite_t;
       typedef typename CFG::fdecl_t fdecl_t;
       typedef typename CFG::varname_t varname_t;
+      typedef typename CFG::variable_t variable_t;      
       typedef AbsDomain abs_domain_t;
 
      private:
@@ -82,7 +82,7 @@ namespace crab {
       typedef typename CFG::basic_block_t::callsite_t callsite_t;
       typedef typename CFG::fdecl_t fdecl_t;
       typedef AbsDomain abs_domain_t;
-      typedef typename CFG::varname_t varname_t;
+      typedef typename CFG::variable_t variable_t;
 
       // A summary is an input-output relationship between function
       // parameters. The relationship can be as expressive as
@@ -94,29 +94,29 @@ namespace crab {
         // --- Summary involving only m_params + m_ret_vals variables
         abs_domain_t m_sum;
         // --- Keep all the input original parameters of the function
-        std::vector <varname_t> m_inputs;
+        std::vector <variable_t> m_inputs;
         // --- Keep a copy of all input original parameters of the function
-        std::vector <varname_t> m_internal_inputs;	
+        std::vector <variable_t> m_internal_inputs;	
         // --- Keep all the output original parameters of the function
-        std::vector <varname_t> m_outputs;
+        std::vector <variable_t> m_outputs;
         // --- Keep a copy of all output original parameters of the function
-        std::vector <varname_t> m_internal_outputs;
+        std::vector <variable_t> m_internal_outputs;
 
 	// - m_sum is defined in terms of m_internal_inputs  and m_internal_outputs.
 	// - m_fdecl is defined in terms of m_inputs and m_outputs.
 
 	// helper to rename summaries
 	void rename (abs_domain_t &abs,
-		     const std::vector<varname_t> &from_inputs,
-		     const std::vector<varname_t> &from_outputs,
-		     const std::vector<varname_t> &to_inputs,
-		     const std::vector<varname_t> &to_outputs) const {
+		     const std::vector<variable_t> &from_inputs,
+		     const std::vector<variable_t> &from_outputs,
+		     const std::vector<variable_t> &to_inputs,
+		     const std::vector<variable_t> &to_outputs) const {
 	  
 	  assert (from_inputs.size() == to_inputs.size());
 	  assert (from_outputs.size() == to_outputs.size());
 	  
 	  // append inputs and outputs
-	  std::vector<varname_t> from_vars, to_vars;
+	  std::vector<variable_t> from_vars, to_vars;
 	  from_vars.reserve(from_inputs.size() + from_outputs.size()); 
 	  from_vars.insert(from_vars.end(), from_inputs.begin(), from_inputs.end() );
 	  from_vars.insert(from_vars.end(), from_outputs.begin(), from_outputs.end() );
@@ -130,16 +130,20 @@ namespace crab {
         
         Summary (fdecl_t fdecl,
                  abs_domain_t sum, 
-                 const std::vector<varname_t> &inputs,
-                 const std::vector<varname_t> &outputs):
+                 const std::vector<variable_t> &inputs,
+                 const std::vector<variable_t> &outputs):
 	  m_fdecl(fdecl), m_sum(sum), m_inputs(inputs), m_outputs(outputs) {  
 	  
 	  m_internal_inputs.reserve(m_inputs.size());
 	  m_internal_outputs.reserve(m_outputs.size());	  
-	  for (auto v: m_inputs) 
-	    m_internal_inputs.push_back(v.get_var_factory().get());
-	  for (auto v: m_outputs)
-	    m_internal_outputs.push_back(v.get_var_factory().get());
+	  for (auto v: m_inputs) {
+	    variable_t fresh_v(v.name().get_var_factory().get());
+	    m_internal_inputs.push_back(fresh_v);
+	  }
+	  for (auto v: m_outputs) {
+	    variable_t fresh_v(v.name().get_var_factory().get());	    
+	    m_internal_outputs.push_back(fresh_v);
+	  }
 
           if (m_fdecl.get_num_inputs() != m_inputs.size ())
             CRAB_ERROR ("mismatch between function declaration and summary parameters");
@@ -156,11 +160,11 @@ namespace crab {
         abs_domain_t get_sum () const { return m_sum;}
 
 	// return the input variables of the summary
-        const std::vector<varname_t>& get_inputs () const
+        const std::vector<variable_t>& get_inputs () const
 	{ return m_inputs;}
 
 	// return the output variables of the summary
-        const std::vector<varname_t>& get_outputs () const
+        const std::vector<variable_t>& get_outputs () const
 	{ return m_outputs;}
 
 	// -- The summary, input, and output variables are renamed so
@@ -175,10 +179,10 @@ namespace crab {
 	  return res;
 	}
 	
-        const std::vector<varname_t>& get_renamed_inputs() const
+        const std::vector<variable_t>& get_renamed_inputs() const
 	{ return m_internal_inputs;}
 
-        const std::vector<varname_t>& get_renamed_outputs() const
+        const std::vector<variable_t>& get_renamed_outputs() const
 	{ return m_internal_outputs;}
 	
         // Check type consistency between function declaration and callsite
@@ -235,11 +239,11 @@ namespace crab {
       // insert summary information
       void insert (fdecl_t d, 
                    AbsDomain sum,
-                   const std::vector<varname_t>& inputs,
-                   const std::vector<varname_t>& outputs) {
+                   const std::vector<variable_t>& inputs,
+                   const std::vector<variable_t>& outputs) {
 
-        std::vector<varname_t> ins(inputs.begin(), inputs.end ());
-        std::vector<varname_t> outs(outputs.begin(), outputs.end ());
+        std::vector<variable_t> ins(inputs.begin(), inputs.end ());
+        std::vector<variable_t> outs(outputs.begin(), outputs.end ());
         summary_ptr sum_tuple (new Summary (d, sum, ins, outs));
         m_sum_table.insert (std::make_pair (cfg::cfg_hasher<CFG>::hash (d), sum_tuple));
       }
@@ -296,4 +300,3 @@ namespace crab {
   } // end namespace
 } // end namespace
 
-#endif 

@@ -1,5 +1,4 @@
-#ifndef ARRAY_SEGMENTATION_HPP
-#define ARRAY_SEGMENTATION_HPP
+#pragma once
 
 /* 
    Quick analysis to collect the set of variables and constants that might
@@ -23,17 +22,18 @@ namespace crab {
      template<class CFG>
      class array_segment_ops:
        public crab::iterators::killgen_operations_api
-              <CFG,domains::flat_killgen_domain<typename CFG::varname_t> > {
+              <CFG,domains::flat_killgen_domain<typename CFG::variable_t> > {
        
        typedef crab::iterators::killgen_operations_api
-              <CFG,domains::flat_killgen_domain<typename CFG::varname_t> >
+              <CFG,domains::flat_killgen_domain<typename CFG::variable_t> >
               killgen_operations_api_t;
        
       public:
 
        typedef typename CFG::basic_block_label_t basic_block_label_t;
        typedef typename CFG::number_t N;
-       typedef typename CFG::varname_t V;              
+       typedef typename CFG::varname_t V;
+       typedef typename CFG::variable_t variable_t;                     
        typedef typename killgen_operations_api_t::killgen_domain_t array_segment_domain_t;
 
       private:
@@ -59,13 +59,13 @@ namespace crab {
          
          array_segment_domain_t get_variables (linear_expression_t e) {
            array_segment_domain_t res;
-           for (auto v: e.variables()) res += v.name();
+           for (auto v: e.variables()) res += v;
            return res;
          }
 
          array_segment_domain_t get_variables (linear_constraint_t c) {
            array_segment_domain_t res;
-           for (auto v: c.variables()) res += v.name();
+           for (auto v: c.variables()) res += v;
            return res;
          }
 
@@ -77,14 +77,14 @@ namespace crab {
              : _indexes(inv) { }
          
          void visit(bin_op_t &s){ 
-           if (!(_indexes & s.lhs().name()).is_bottom()) {
+           if (!(_indexes & s.lhs()).is_bottom()) {
              _indexes += get_variables(s.left());
              _indexes += get_variables(s.right());
            }
          }  
          
          void visit(assign_t &s) {
-           if (!(_indexes & s.lhs().name()).is_bottom()) {
+           if (!(_indexes & s.lhs()).is_bottom()) {
              _indexes += get_variables(s.rhs());
            }
          }
@@ -197,22 +197,24 @@ namespace crab {
 
      // Visitor for finding constants that might appear as array
      // segment boundaries.
-     template<class N, class ArraySegmentDom>
+     template<class CFG, class ArraySegmentDom>
      class array_constant_segment_visitor: 
-       public cfg::statement_visitor<N, typename ArraySegmentDom::element_t> {
-       typedef typename ArraySegmentDom::element_t E;
-       typedef typename cfg::statement_visitor<N,E>::bin_op_t   bin_op_t;
-       typedef typename cfg::statement_visitor<N,E>::assign_t   assign_t;
-       typedef typename cfg::statement_visitor<N,E>::assume_t   assume_t;
-       typedef typename cfg::statement_visitor<N,E>::havoc_t    havoc_t;
-       typedef typename cfg::statement_visitor<N,E>::unreach_t  unreach_t;
-       typedef typename cfg::statement_visitor<N,E>::select_t   select_t;
-       typedef typename cfg::statement_visitor<N,E>::callsite_t callsite_t;
-       typedef typename cfg::statement_visitor<N,E>::assert_t   assert_t;
+       public cfg::statement_visitor<typename CFG::number_t, typename CFG::varname_t> {
+       
+       typedef typename CFG::number_t N;
+       typedef typename CFG::varname_t V;
+       typedef typename cfg::statement_visitor<N,V>::bin_op_t   bin_op_t;
+       typedef typename cfg::statement_visitor<N,V>::assign_t   assign_t;
+       typedef typename cfg::statement_visitor<N,V>::assume_t   assume_t;
+       typedef typename cfg::statement_visitor<N,V>::havoc_t    havoc_t;
+       typedef typename cfg::statement_visitor<N,V>::unreach_t  unreach_t;
+       typedef typename cfg::statement_visitor<N,V>::select_t   select_t;
+       typedef typename cfg::statement_visitor<N,V>::callsite_t callsite_t;
+       typedef typename cfg::statement_visitor<N,V>::assert_t   assert_t;
 
-       typedef typename cfg::statement_visitor<N,E>::arr_assume_t arr_assume_t;
-       typedef typename cfg::statement_visitor<N,E>::arr_load_t   arr_load_t;
-       typedef typename cfg::statement_visitor<N,E>::arr_store_t  arr_store_t;
+       typedef typename cfg::statement_visitor<N,V>::arr_assume_t arr_assume_t;
+       typedef typename cfg::statement_visitor<N,V>::arr_load_t   arr_load_t;
+       typedef typename cfg::statement_visitor<N,V>::arr_store_t  arr_store_t;
        
        typedef typename bin_op_t::linear_expression_t linear_expression_t;
        typedef typename linear_expression_t::number_t number_t;
@@ -234,7 +236,7 @@ namespace crab {
 
        /// XXX: we focus for now only on assignments
        void visit(assign_t &s) {
-         if (!(_dom & s.lhs().name()).is_bottom()) {
+         if (!(_dom & s.lhs()).is_bottom()) {
            if (s.rhs().is_constant() && s.rhs().constant() >= 0 &&
                std::find(_csts.begin(), _csts.end(), s.rhs().constant()) == _csts.end()) {
              _csts.push_back(s.rhs().constant());
@@ -258,4 +260,3 @@ namespace crab {
 
   } // end namespace analyzer
 } // end namespace crab
-#endif 

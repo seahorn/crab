@@ -1,5 +1,4 @@
-#ifndef CRAB_CHECKER_HPP
-#define CRAB_CHECKER_HPP
+#pragma once 
 
 /* 
    A generic forward checker for properties
@@ -156,4 +155,3 @@ namespace crab {
 
   } // end namespace
 } // end namespace
-#endif 

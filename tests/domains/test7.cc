@@ -11,10 +11,10 @@ using namespace crab::domain_impl;
 z_cfg_t* prog (variable_factory_t &vfac)  {
 
   // Defining program variables
-  z_var i (vfac ["i"]);
-  auto b1 = vfac ["b1"];
-  auto n = vfac ["n"];
-  auto n1 = vfac ["n1"];
+  z_var i(vfac ["i"]);
+  z_var b1(vfac ["b1"]);
+  z_var n(vfac ["n"]);
+  z_var n1(vfac ["n1"]);
   
   // entry and exit block
   auto cfg = new z_cfg_t("entry","ret");
@@ -30,14 +30,14 @@ z_cfg_t* prog (variable_factory_t &vfac)  {
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   // adding statements
-  entry.assign (i, 0);
+  entry.assign (i, z_number(0));
   entry.havoc(n);
   entry.truncate(n, 64, n1, 32);
-  entry.bool_assign(b1, z_var(n1) == 9);
+  entry.bool_assign(b1, n1 == z_number(9));
   entry.bool_assume(b1);
-  bb1_t.assume (i <= z_var(n));
+  bb1_t.assume (i <= n);
   bb2.add(i,i,1);
-  bb1_f.assume (i >= z_var(n) + 1);
+  bb1_f.assume (i >= n + 1);
   ret.assertion(i == 10);
 
   return cfg;

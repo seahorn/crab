@@ -11,11 +11,11 @@ z_cfg_t* prog1 (variable_factory_t &vfac)
 {
   z_var n1(vfac["n1"]);
   z_var i(vfac["i"]);
-  varname_t a = vfac["A0"];
+  z_var a(vfac["A0"]);
   z_var a_p(vfac["A0_prop"]);
   z_var tmp3(vfac["tmp3"]);
-  varname_t tmp5 = vfac["tmp5"];
-  varname_t tmp6 = vfac["tmp6"];
+  z_var tmp5(vfac["tmp5"]);
+  z_var tmp6(vfac["tmp6"]);
   z_var val(vfac["val"]);
 
   z_cfg_t* cfg = new z_cfg_t("entry","ret", ARR);
@@ -63,11 +63,11 @@ z_cfg_t* prog2(variable_factory_t &vfac)
   z_var n1(vfac["n1"]);
   z_var n9(vfac["n9"]);
   z_var i(vfac["i"]);
-  varname_t a = vfac["A"];
+  z_var a(vfac["A"]);
   z_var a_p(vfac["A_p"]);
   z_var tmp3(vfac["tmp3"]);
-  varname_t tmp4 = vfac["tmp4"];
-  varname_t tmp5 = vfac["tmp5"];
+  z_var tmp4(vfac["tmp4"]);
+  z_var tmp5(vfac["tmp5"]);
   z_var val(vfac["val"]);
 
   uint64_t elem_size = 1; 
@@ -110,13 +110,13 @@ z_cfg_t* prog3(variable_factory_t &vfac)
 
   z_var n1(vfac["n1"]);
   z_var i(vfac["i"]);
-  varname_t a = vfac["A"];
+  z_var a(vfac["A"]);
   z_var a_p(vfac["A_p"]);
-  varname_t b = vfac["B"];
-  varname_t tmp1 = vfac["tmp1"];
+  z_var b(vfac["B"]);
+  z_var tmp1(vfac["tmp1"]);
   z_var tmp2(vfac["tmp2"]);
-  varname_t tmp3 = vfac["tmp3"];
-  varname_t tmp4 = vfac["tmp4"];
+  z_var tmp3(vfac["tmp3"]);
+  z_var tmp4(vfac["tmp4"]);
   z_var val(vfac["val"]);
 
   uint64_t elem_size = 1;
@@ -153,12 +153,12 @@ z_cfg_t* prog4(variable_factory_t &vfac)
   z_basic_block_t& ret   = cfg->insert("ret");
   z_var n1(vfac["n1"]);
   z_var i(vfac["i"]);
-  varname_t a = vfac["A"];
+  z_var a(vfac["A"]);
   z_var a_p(vfac["A_p"]);
-  varname_t b = vfac["B"];
+  z_var b(vfac["B"]);
   z_var tmp3(vfac["tmp3"]);
-  varname_t tmp5 = vfac["tmp5"];
-  varname_t tmp6 = vfac["tmp6"];
+  z_var tmp5(vfac["tmp5"]);
+  z_var tmp6(vfac["tmp6"]);
   z_var x(vfac["x"]);
   z_var val1(vfac["val1"]);
   z_var val2(vfac["val2"]);
@@ -201,21 +201,21 @@ z_cfg_t* prog4b(variable_factory_t &vfac)
   z_basic_block_t& ret   = cfg->insert("ret");
   z_var n1(vfac["n1"]);
   z_var i(vfac["i"]);
-  varname_t a = vfac["A"];
-  varname_t b = vfac["B"];  
+  z_var a(vfac["A"]);
+  z_var b(vfac["B"]);  
   z_var tt(vfac["TRUE"]);
   z_var ff(vfac["FALSE"]);  
   z_var tmp3(vfac["tmp3"]);
-  varname_t tmp5 = vfac["tmp5"];
-  varname_t tmp6 = vfac["tmp6"];
+  z_var tmp5(vfac["tmp5"]);
+  z_var tmp6(vfac["tmp6"]);
 
   entry >> bb1;
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
 
   uint64_t elem_size = 1; 
-  entry.bool_assign (tt.name(), z_lin_cst_t::get_true());
-  entry.bool_assign (ff.name(), z_lin_cst_t::get_false());  
+  entry.bool_assign (tt, z_lin_cst_t::get_true());
+  entry.bool_assign (ff, z_lin_cst_t::get_false());  
   entry.array_assume (a,  crab::ARR_BOOL_TYPE, elem_size, 0, 9, tt);
   entry.array_assume (b,  crab::ARR_BOOL_TYPE, elem_size, 0, 9, ff);
 
@@ -246,10 +246,10 @@ z_cfg_t* prog5(variable_factory_t &vfac)
   z_var n1(vfac["n1"]);
   z_var i(vfac["i"]);
   z_var n(vfac["n"]);
-  varname_t a = vfac["A"];
+  z_var a(vfac["A"]);
   z_var a_p(vfac["A_p"]);
   z_var tmp1(vfac["tmp1"]);
-  varname_t tmp2 = vfac["tmp2"];
+  z_var tmp2(vfac["tmp2"]);
   z_var val(vfac["val"]);
 
   entry >> bb1;
@@ -284,12 +284,12 @@ z_cfg_t* prog6(variable_factory_t &vfac)
   z_basic_block_t& bb2   = cfg->insert("bb2");
   z_basic_block_t& ret   = cfg->insert("ret");
   z_var i(vfac["i"]);
-  varname_t a = vfac["A"];
+  z_var a(vfac["A"]);
   z_var a_p(vfac["A_p"]);
   z_var tmp(vfac["tmp"]);
   z_var offset(vfac["o"]);
   z_var tmp2(vfac["tmp2"]);
-  varname_t tmp4 = vfac["tmp4"];
+  z_var tmp4(vfac["tmp4"]);
   z_var val(vfac["val"]);
 
   entry >> bb1;
@@ -324,12 +324,12 @@ z_cfg_t* prog7(variable_factory_t &vfac)
   z_var n1(vfac["n1"]);
   z_var i(vfac["i"]);
   z_var n(vfac["n"]);
-  varname_t a = vfac["A"];
+  z_var a(vfac["A"]);
   z_var a_p(vfac["A_p"]);
   z_var tmp1(vfac["tmp1"]);
-  varname_t tmp2 = vfac["tmp2"];
+  z_var tmp2(vfac["tmp2"]);
   z_var tmp3(vfac["tmp3"]);
-  varname_t tmp4 = vfac["tmp4"];
+  z_var tmp4(vfac["tmp4"]);
   z_var x(vfac["x"]);
   z_var val(vfac["val"]);
 
@@ -377,10 +377,10 @@ z_cfg_t* prog8(variable_factory_t &vfac)
   z_var i(vfac["i"]);
   z_var i1(vfac["i1"]);
   z_var n(vfac["n"]);
-  varname_t a = vfac["A"];
+  z_var a(vfac["A"]);
   z_var a_p(vfac["A_p"]);
   z_var tmp1(vfac["tmp1"]);
-  varname_t tmp2 = vfac["tmp2"];
+  z_var tmp2(vfac["tmp2"]);
   z_var tmp3(vfac["tmp3"]);
   z_var val(vfac["val"]);
 
@@ -431,10 +431,10 @@ z_cfg_t* prog9(variable_factory_t &vfac)
   z_var i1(vfac["i1"]);
   z_var i2(vfac["i2"]);
   z_var n(vfac["n"]);
-  varname_t a = vfac["A"];
+  z_var a(vfac["A"]);
   z_var a_p(vfac["A_p"]);
   z_var tmp1(vfac["tmp1"]);
-  varname_t tmp2 = vfac["tmp2"];
+  z_var tmp2(vfac["tmp2"]);
   z_var nd(vfac["nd"]);
   z_var val(vfac["val"]);
 
@@ -454,7 +454,7 @@ z_cfg_t* prog9(variable_factory_t &vfac)
   // while (i1 < n && i2 < n){
   bb1_t.assume(i1 <= n -1);
   bb1_t.assume(i2 <= n -1);
-  bb1_t.havoc (nd.name ());
+  bb1_t.havoc (nd);
 
   // if (*)
   bb2_a.assume (nd >= 1);
@@ -485,11 +485,11 @@ z_cfg_t* prog10(variable_factory_t &vfac)
   z_basic_block_t& ret   = cfg->insert("ret");
   z_var i(vfac["i"]);
   z_var n(vfac["n"]);
-  varname_t a = vfac["A"];
-  varname_t b = vfac["B"];
-  varname_t obj1 = vfac["obj1"];
-  varname_t tmp1 = vfac["tmp1"];
-  varname_t tmp2 = vfac["tmp2"];
+  z_var a(vfac["A"]);
+  z_var b(vfac["B"]);
+  z_var obj1(vfac["obj1"]);
+  z_var tmp1(vfac["tmp1"]);
+  z_var tmp2(vfac["tmp2"]);
   z_var tmp3(vfac["tmp3"]);
 
   entry >> bb1;

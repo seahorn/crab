@@ -4,8 +4,7 @@
  * stay here.
  ******************************************************************************/
 
-#ifndef DOMAINS_TRAITS_HPP
-#define DOMAINS_TRAITS_HPP
+#pragma once
 
 #include <crab/common/bignums.hpp>
 #include <crab/domains/intervals.hpp>
@@ -53,8 +52,8 @@ namespace crab {
      }
          
      // Make a new copy of x without relating x with new_x
-     template <typename VariableName>
-     static void expand (Domain& inv, VariableName x, VariableName new_x) {
+     static void expand (Domain& inv,
+			 typename Domain::variable_t x, typename Domain::variable_t new_x) {
        // -- lose precision if relational or disjunctive domain
        inv.set (new_x , inv [x]);
      }
@@ -66,8 +65,7 @@ namespace crab {
     public:
 
      // To perform reduction between domains
-     template <typename VariableName>
-     static void push (const VariableName& x, Domain1 from, Domain2& to){ }
+     static void push (const typename Domain1::variable_t& x, Domain1 from, Domain2& to){ }
      
    };
 
@@ -83,7 +81,7 @@ namespace crab {
        return copy.is_bottom();
      }
 
-     static std::vector<typename Domain::varname_t> active_variables(Domain &inv) {
+     static std::vector<typename Domain::variable_t> active_variables(Domain &inv) {
        CRAB_ERROR("operation active_variables not implemented");
      }
      
@@ -93,4 +91,3 @@ namespace crab {
  } // end namespace domains   
 }// end namespace crab
 
-#endif 

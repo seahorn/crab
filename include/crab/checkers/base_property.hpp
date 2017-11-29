@@ -1,5 +1,4 @@
-#ifndef PROPERTY_CHECKER_HPP
-#define PROPERTY_CHECKER_HPP
+#pragma once 
 
 /* 
    Base class for a property checker
@@ -149,13 +148,15 @@ namespace crab {
      struct checker_ops {
        typedef typename Domain::varname_t varname_t;
        typedef typename Domain::number_t number_t;
-       
+
+       typedef ikos::variable<number_t,varname_t> variable_t;
        typedef ikos::interval<number_t> interval_t;
        typedef ikos::linear_constraint<number_t, varname_t> z_lin_cst_t;
+       
        Domain& m_inv;
        checker_ops (Domain& inv): m_inv (inv) { }
 
-       interval_t operator[](varname_t v){ return m_inv [v]; }
+       interval_t operator[](variable_t v){ return m_inv [v]; }
 
        // if the domain is not numerical then return always false
        bool entails(z_lin_cst_t cst) { 
@@ -427,4 +428,3 @@ namespace crab {
   };  
   } // end namespace
 } // end namespace
-#endif 

@@ -1,5 +1,4 @@
-#ifndef ABSTRACT_TRANSFORMER_HPP
-#define ABSTRACT_TRANSFORMER_HPP
+#pragma once 
 
 /* 
    Implementation of the abstract transfer functions by reducing them
@@ -177,6 +176,7 @@ namespace crab {
     typedef AbsD abs_dom_t;
     typedef typename abs_dom_t::number_t number_t;
     typedef typename abs_dom_t::varname_t varname_t;
+    typedef typename abs_dom_t::variable_t variable_t;
 
    public:
     typedef abs_transformer_api <number_t, varname_t> abs_transform_api_t;
@@ -221,7 +221,7 @@ namespace crab {
 
     template <typename NumOrVar>
     void apply (abs_dom_t &inv, binary_operation_t op, 
-		varname_t x, varname_t y, NumOrVar z)
+		variable_t x, variable_t y, NumOrVar z)
     {
       auto op1 = conv_op<ikos::operation_t> (op);
       auto op2 = conv_op<ikos::div_operation_t> (op);
@@ -253,16 +253,12 @@ namespace crab {
       auto op1 = stmt.left ();
       auto op2 = stmt.right ();
       if (op1.get_variable () && op2.get_variable ()) {
-        apply (*get_inv(), stmt.op (), 
-               stmt.lhs ().name(), 
-               (*op1.get_variable ()).name(), 
-               (*op2.get_variable ()).name());
+        apply(*get_inv(), stmt.op (), 
+	      stmt.lhs(), (*op1.get_variable()), (*op2.get_variable()));  
       } else {
         assert (op1.get_variable () && op2.is_constant ());
-        apply (*get_inv(), stmt.op (), 
-               stmt.lhs ().name (), 
-               (*op1.get_variable ()).name(), 
-               op2.constant ()); 
+        apply(*get_inv(), stmt.op (), 
+	      stmt.lhs(), (*op1.get_variable ()), op2.constant ());  
       }      
     }
     
@@ -286,22 +282,22 @@ namespace crab {
       }
       
       if (inv2.is_bottom()) {
-        inv1.assign (stmt.lhs().name (),stmt.left());
+        inv1.assign (stmt.lhs(), stmt.left());
         *get_inv() = inv1;
       }
       else if (inv1.is_bottom ()) {
-        inv2.assign (stmt.lhs().name (),stmt.right());
+        inv2.assign (stmt.lhs(), stmt.right());
         *get_inv() = inv2;
       }
       else {
-        inv1.assign (stmt.lhs().name (),stmt.left());
-        inv2.assign (stmt.lhs().name (),stmt.right());
+        inv1.assign (stmt.lhs(), stmt.left());
+        inv2.assign (stmt.lhs(), stmt.right());
         *get_inv() = inv1 | inv2;
       }
     }
     
     void exec (assign_t& stmt) {
-      get_inv()->assign (stmt.lhs().name (), lin_exp_t (stmt.rhs()));
+      get_inv()->assign(stmt.lhs(), stmt.rhs());
     }
     
     void exec (assume_t& stmt) {
@@ -323,27 +319,24 @@ namespace crab {
     void exec (int_cast_t &stmt){
       if (auto op = conv_op<crab::domains::int_conv_operation_t>(stmt.op())) {
 	get_inv()->apply(*op,
-			 stmt.dst(), stmt.dst_width(),
-			 stmt.src(), stmt.src_width());
+			 stmt.dst(), stmt.dst_width(), stmt.src(), stmt.src_width());
       } else {
 	CRAB_ERROR("unsupported cast operator ", stmt.op());
       }
     }
     
     void exec (bool_assign_cst_t& stmt) {
-      (*get_inv()).assign_bool_cst (stmt.lhs (), stmt.rhs ());
+      (*get_inv()).assign_bool_cst (stmt.lhs(), stmt.rhs ());
     }
 
     void exec (bool_assign_var_t& stmt) {
-      (*get_inv()).assign_bool_var (stmt.lhs (), stmt.rhs (), stmt.is_rhs_negated());      
+      (*get_inv()).assign_bool_var (stmt.lhs(), stmt.rhs(), stmt.is_rhs_negated());
     }
 
     void exec (bool_bin_op_t& stmt) {
       if (auto op = conv_op<domains::bool_operation_t> (stmt.op()))
-	(*get_inv()).apply_binary_bool (*op, stmt.lhs(),
-					stmt.left(), stmt.right ());
+	(*get_inv()).apply_binary_bool (*op, stmt.lhs(), stmt.left(), stmt.right());
     }
-    
     
     void exec (bool_assume_t& stmt) {
       (*get_inv()).assume_bool (stmt.cond(), stmt.is_negated ());
@@ -353,26 +346,26 @@ namespace crab {
       abs_dom_t inv1 (*get_inv());
       abs_dom_t inv2 (*get_inv());
       const bool negate = true;
-      inv1.assume_bool(stmt.cond (), !negate);
-      inv2.assume_bool(stmt.cond (), negate);
+      inv1.assume_bool(stmt.cond(), !negate);
+      inv2.assume_bool(stmt.cond(), negate);
       if (inv2.is_bottom()) {
-        inv1.assign_bool_var(stmt.lhs(),stmt.left(), !negate);
+        inv1.assign_bool_var(stmt.lhs(), stmt.left(), !negate);
         *get_inv() = inv1;
       }
       else if (inv1.is_bottom ()) {
-        inv2.assign_bool_var(stmt.lhs(),stmt.right(), !negate);
+        inv2.assign_bool_var(stmt.lhs(), stmt.right(), !negate);
         *get_inv() = inv2;
       }
       else {
-        inv1.assign_bool_var(stmt.lhs(),stmt.left(), !negate);
-        inv2.assign_bool_var(stmt.lhs(),stmt.right(), !negate);
+        inv1.assign_bool_var(stmt.lhs(), stmt.left(), !negate);
+        inv2.assign_bool_var(stmt.lhs(), stmt.right(), !negate);
         *get_inv() = inv1 | inv2;
       }
     }
 
     void exec (bool_assert_t& stmt) {
       abs_dom_t inv;
-      inv.assume_bool (stmt.cond (), false);
+      inv.assume_bool (stmt.cond(), false);
       abs_dom_t meet = inv & *get_inv();
       if (meet.is_bottom ()) {
 	// assertion does not definitely hold.	
@@ -518,7 +511,7 @@ namespace crab {
       auto op = conv_op<ikos::operation_t> (stmt.op ());
       if (!op) {
 	CRAB_WARN ("backward operation ", stmt.op(), " not implemented");
-	(*m_pre) -= stmt.lhs().name();
+	(*m_pre) -= stmt.lhs();
 	return;
       }
       
@@ -534,17 +527,17 @@ namespace crab {
       
       if (op1.get_variable () && op2.get_variable ()) {
         m_pre->backward_apply (*op, 
-				stmt.lhs ().name(), 
-				(*op1.get_variable ()).name(), 
-				(*op2.get_variable ()).name(),
-				invariant);
+			       stmt.lhs (), 
+			       (*op1.get_variable ()), 
+			       (*op2.get_variable ()),
+			       invariant);
       } else {
         assert (op1.get_variable () && op2.is_constant ());
         m_pre->backward_apply (*op, 
-				stmt.lhs ().name (), 
-				(*op1.get_variable ()).name(), 
-				op2.constant (),
-				invariant); 
+			       stmt.lhs(), 
+			       (*op1.get_variable ()), 
+			       op2.constant(),
+			       invariant); 
       }
       CRAB_LOG("backward",
 	       crab::outs () << "PRE=" << *m_pre << "\n");
@@ -570,7 +563,7 @@ namespace crab {
       abs_dom_t then_inv (old_pre);                  
       then_inv += stmt.cond();      
       if (then_inv.is_bottom()) {
-        m_pre->backward_assign (stmt.lhs().name(),stmt.right(),old_pre);	
+        m_pre->backward_assign (stmt.lhs(),stmt.right(),old_pre);	
 	*m_pre += stmt.cond().negate();
 	return;
       }
@@ -578,18 +571,18 @@ namespace crab {
       abs_dom_t else_inv (old_pre);
       else_inv += stmt.cond ().negate();
       if (else_inv.is_bottom()) {
-        m_pre->backward_assign (stmt.lhs().name(),stmt.left(),old_pre);	
+        m_pre->backward_assign (stmt.lhs(),stmt.left(),old_pre);	
 	*m_pre += stmt.cond ();
 	return;
       }
 
       // -- both branches can be possible so we join them
       abs_dom_t pre_then (*m_pre);
-      pre_then.backward_assign(stmt.lhs().name(),stmt.left(),old_pre);      
+      pre_then.backward_assign(stmt.lhs(),stmt.left(),old_pre);      
       pre_then += stmt.cond();
       
       abs_dom_t pre_else (*m_pre);
-      pre_else.backward_assign(stmt.lhs().name(),stmt.right(),old_pre);      
+      pre_else.backward_assign(stmt.lhs(),stmt.right(),old_pre);      
       pre_else += stmt.cond().negate();
       
       *m_pre = pre_then | pre_else;
@@ -605,9 +598,7 @@ namespace crab {
  	                     << "FORWARD INV=" << invariant << "\n"
 	                     << "POST=" << *m_pre << "\n");	       
       
-      m_pre->backward_assign (stmt.lhs().name (),
-			      lin_exp_t (stmt.rhs()),
-			      invariant);
+      m_pre->backward_assign (stmt.lhs(), stmt.rhs(), invariant);
       CRAB_LOG("backward",
 	       crab::outs () << "PRE=" << *m_pre << "\n");
     }
@@ -664,7 +655,7 @@ namespace crab {
     void exec (int_cast_t &stmt) {
       abs_dom_t invariant = m_invariants[&stmt];
       // FIXME: treats cast as an assignment ignoring bitdwith
-      m_pre->backward_assign(stmt.dst(), variable_t(stmt.src()), invariant);
+      m_pre->backward_assign(stmt.dst(), stmt.src(), invariant);
     }
     
     void exec (bool_assign_cst_t &stmt)
@@ -706,9 +697,8 @@ namespace crab {
   // Helper for function calls.
   template <typename AbsDom>
   static void unify (AbsDom &inv, variable_type ty,
-		     typename AbsDom::varname_t lhs,
-		     typename AbsDom::varname_t rhs)
-  {
+		     typename AbsDom::variable_t lhs, typename AbsDom::variable_t rhs) {
+    
     typedef typename AbsDom::linear_expression_t linear_expression_t;
     typedef typename AbsDom::variable_t variable_t;    
     typedef typename AbsDom::number_t number_t;
@@ -719,7 +709,7 @@ namespace crab {
 	break;      
       case INT_TYPE:
       case REAL_TYPE:	
-	inv.assign (lhs, variable_t(rhs));
+	inv.assign (lhs, rhs);
 	break;
       case PTR_TYPE:
 	inv.pointer_assign (lhs, rhs, number_t (0));
@@ -754,6 +744,7 @@ namespace crab {
     typedef intra_abs_transformer<abs_dom_t> intra_abs_transform_t;
     typedef typename intra_abs_transform_t::abs_transform_api_t abs_transform_api_t;
     typedef typename abs_dom_t::varname_t varname_t;
+    typedef typename abs_dom_t::variable_t variable_t;    
     typedef typename abs_dom_t::linear_expression_t linear_expression_t;    
     
     SumTable* m_sum_tbl;
@@ -778,7 +769,7 @@ namespace crab {
                crab::outs () << "    Reuse summary at " << cs << "\n";
                crab::outs () << "    Summary:" << summ << "\n";); 
 
-      std::set<varname_t> actuals, formals;
+      std::set<variable_t> actuals, formals;
       // --- matching formal and actual parameters
       auto inputs = summ.get_renamed_inputs ();
       unsigned i=0;
@@ -826,7 +817,7 @@ namespace crab {
 
       // --- remove from caller only formal parameters so we can keep
       //     as much context from the caller as possible
-      std::set<varname_t> vs;
+      std::set<variable_t> vs;
       boost::set_difference (formals, actuals, std::inserter(vs, vs.end ()));
       domains::domain_traits<abs_dom_t>::forget (caller, vs.begin (), vs.end ());
 
@@ -934,15 +925,15 @@ namespace crab {
         ///////
         /// Generate the callee context and store it.
         ///////
-	typedef typename abs_dom_t::varname_t varname_t;
+	typedef typename abs_dom_t::variable_t variable_t;
 	
         abs_dom_t callee_ctx_inv (*(this->m_inv));
         // --- matching formal and actual parameters
         // XXX: propagating down 	
         unsigned i=0;
         auto inputs = summ.get_inputs ();
-        for (varname_t p : inputs) {
-          varname_t a = cs.get_arg_name (i);
+        for (variable_t p : inputs) {
+          variable_t a = cs.get_arg_name (i);
           if (!(a == p))
 	    unify (callee_ctx_inv, cs.get_arg_type(i), p, a);
           ++i;
@@ -1001,4 +992,3 @@ namespace crab {
 
   } // end namespace
 } // end namespace
-#endif 

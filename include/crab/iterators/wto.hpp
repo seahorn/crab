@@ -42,8 +42,7 @@
  *
  ******************************************************************************/
 
-#ifndef IKOS_WTO_HPP
-#define IKOS_WTO_HPP
+#pragma once 
 
 #include <vector>
 #include <deque>
@@ -652,4 +651,3 @@ namespace ikos {
 
 } // namespace ikos
 
-#endif // IKOS_WTO_HPP

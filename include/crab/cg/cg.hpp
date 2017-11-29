@@ -1,5 +1,4 @@
-#ifndef CALL_GRAPH_HPP__
-#define CALL_GRAPH_HPP__
+#pragma once 
 
 /* 
    Build a call graph (CG)
@@ -424,4 +423,3 @@ namespace crab {
    } //end namespace cg
 } // end namespace crab
 
-#endif 

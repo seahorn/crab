@@ -1,9 +1,8 @@
-#ifndef KILLGEN_FIXPOINT_ITERATOR_HPP
-#define KILLGEN_FIXPOINT_ITERATOR_HPP
+#pragma once
 
 /**
   * Specialized fixpoint iterators and domains for kill-gen problems.
-  */
+**/
 
 #include <crab/common/stats.hpp>
 #include <crab/common/debug.hpp>
@@ -535,4 +534,3 @@ namespace crab {
   } // end namespace iterators
 } // end namespace crab
 
-#endif 

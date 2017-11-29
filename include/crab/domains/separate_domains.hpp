@@ -38,8 +38,7 @@
  *
  ******************************************************************************/
 
-#ifndef IKOS_SEPARATE_DOMAINS_HPP
-#define IKOS_SEPARATE_DOMAINS_HPP
+#pragma once
 
 #include <crab/common/types.hpp>
 #include <crab/domains/patricia_trees.hpp>
@@ -374,4 +373,3 @@ namespace ikos {
   
 } // namespace ikos
 
-#endif // IKOS_SEPARATE_DOMAINS_HPP

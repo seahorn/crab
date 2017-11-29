@@ -1,5 +1,4 @@
-#ifndef __TERM_INVERSE_HPP__
-#define __TERM_INVERSE_HPP__
+#pragma once
 
 /* To propagate down, our domain needs to provide
  * operations for computing predecessor states of operations. */
@@ -184,4 +183,3 @@ namespace crab {
      } //end namespace term
   } //end namespace domains
 } // end namespace crab
-#endif

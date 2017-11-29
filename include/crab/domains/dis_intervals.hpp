@@ -1,5 +1,4 @@
-#ifndef DISJUNCTIVE_INTERVALS_HPP
-#define DISJUNCTIVE_INTERVALS_HPP
+#pragma once
 
 /* 
   DisIntervals: a domain of disjunction of intervals described in the
@@ -1067,7 +1066,7 @@ namespace crab {
 
     private:
 
-     typedef separate_domain< VariableName, dis_interval_t > separate_domain_t;
+     typedef separate_domain<variable_t, dis_interval_t > separate_domain_t;
      typedef linear_interval_solver< Number, VariableName, separate_domain_t > solver_t;
 
     public:
@@ -1187,14 +1186,14 @@ namespace crab {
        return res;
      }
      
-     void operator-=(VariableName v) {
+     void operator-=(variable_t v) {
        crab::CrabStats::count (getDomainName() + ".count.forget");
        crab::ScopedCrabStats __st__(getDomainName() + ".forget");
 
        this->_env -= v;
      }
 
-     interval_t operator[](VariableName v)  {
+     interval_t operator[](variable_t v)  {
        crab::CrabStats::count (getDomainName() + ".count.to_intervals");
        crab::ScopedCrabStats __st__(getDomainName() + ".to_intervals");
 
@@ -1202,7 +1201,7 @@ namespace crab {
        return x.approx ();
      }
      
-     void set(VariableName v, interval_t intv) {
+     void set(variable_t v, interval_t intv) {
        crab::CrabStats::count (getDomainName() + ".count.assign");
        crab::ScopedCrabStats __st__(getDomainName() + ".assign");
 
@@ -1222,24 +1221,24 @@ namespace crab {
        }
      }
 
-     void assign (VariableName x, linear_expression_t e)  {
+     void assign (variable_t x, linear_expression_t e)  {
        crab::CrabStats::count (getDomainName() + ".count.assign");
        crab::ScopedCrabStats __st__(getDomainName() + ".assign");
 
        //crab::outs() << "*** " <<  x << ":=" << e << " in " << *this << "\n";
        if (boost::optional<variable_t> v = e.get_variable ()) {
-         this->_env.set(x, this->_env [(*v).name ()]);
+         this->_env.set(x, this->_env [(*v)]);
        }
        else {
          dis_interval_t r (e.constant());
          for (auto t: e)
-           r += dis_interval_t (t.first) * this->_env[t.second.name()];
+           r += dis_interval_t (t.first) * this->_env[t.second];
          this->_env.set(x, r);
        }
        //crab::outs() << "result=" << *this << "\n";
      }
      
-     void apply (operation_t op, VariableName x, VariableName y, Number z) {
+     void apply (operation_t op, variable_t x, variable_t y, Number z) {
        crab::CrabStats::count (getDomainName() + ".count.apply");
        crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1257,7 +1256,7 @@ namespace crab {
        //crab::outs() << "result=" << *this << "\n";
      }
 
-     void apply(operation_t op, VariableName x, VariableName y, VariableName z) {
+     void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
        crab::CrabStats::count (getDomainName() + ".count.apply");
        crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1275,34 +1274,34 @@ namespace crab {
        //crab::outs() << "result=" << *this << "\n";
      }
 
-     void backward_assign (VariableName x, linear_expression_t e,
+     void backward_assign (variable_t x, linear_expression_t e,
 			   dis_interval_domain_t inv) { 
        crab::domains::BackwardAssignOps<dis_interval_domain_t>::
 	 assign (*this, x, e, inv);
      }
      
      void backward_apply (operation_t op,
-			  VariableName x, VariableName y, Number z,
+			  variable_t x, variable_t y, Number z,
 			  dis_interval_domain_t inv) {
        crab::domains::BackwardAssignOps<dis_interval_domain_t>::
 	 apply(*this, op, x, y, z, inv);
      }
      
      void backward_apply(operation_t op,
-			 VariableName x, VariableName y, VariableName z,
+			 variable_t x, variable_t y, variable_t z,
 			 dis_interval_domain_t inv) {
        crab::domains::BackwardAssignOps<dis_interval_domain_t>::
 	 apply(*this, op, x, y, z, inv);
      }
           
      void apply(int_conv_operation_t /*op*/,
-		VariableName dst, unsigned /*dst_width*/,
-		VariableName src, unsigned /*src_width*/)  {
+		variable_t dst, unsigned /*dst_width*/,
+		variable_t src, unsigned /*src_width*/)  {
        // ignore widths
-       assign(dst, variable_t(src));
+       assign(dst, src);
      }
           
-     void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z) {
+     void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {
        crab::CrabStats::count (getDomainName() + ".count.apply");
        crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1320,7 +1319,7 @@ namespace crab {
        this->_env.set(x, xi);
      }
         
-     void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k) {
+     void apply(bitwise_operation_t op, variable_t x, variable_t y, Number k) {
        crab::CrabStats::count (getDomainName() + ".count.apply");
        crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1338,7 +1337,7 @@ namespace crab {
        this->_env.set(x, xi);
      }
      
-     void apply(div_operation_t op, VariableName x, VariableName y, VariableName z) {
+     void apply(div_operation_t op, variable_t x, variable_t y, variable_t z) {
        crab::CrabStats::count (getDomainName() + ".count.apply");
        crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1355,7 +1354,7 @@ namespace crab {
        this->_env.set(x, xi);
      }
      
-     void apply(div_operation_t op, VariableName x, VariableName y, Number k) {
+     void apply(div_operation_t op, variable_t x, variable_t y, Number k) {
        crab::CrabStats::count (getDomainName() + ".count.apply");
        crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1373,7 +1372,7 @@ namespace crab {
 
      }
 
-     void expand (VariableName x, VariableName new_x) {
+     void expand (variable_t x, variable_t new_x) {
        crab::CrabStats::count (getDomainName() + ".count.expand");
        crab::ScopedCrabStats __st__(getDomainName() + ".expand");
 
@@ -1438,6 +1437,7 @@ namespace crab {
     public:
      
      typedef dis_interval_domain<Number, VariableName> dis_interval_domain_t;
+     typedef ikos::variable<Number, VariableName> variable_t;
      
      template<class CFG>
      static void do_initialization (CFG cfg) { }
@@ -1451,7 +1451,7 @@ namespace crab {
        inv.project (boost::make_iterator_range (begin, end));
      }
      
-     static void expand (dis_interval_domain_t& inv, VariableName x, VariableName new_x) {
+     static void expand (dis_interval_domain_t& inv, variable_t x, variable_t new_x) {
        inv.expand (x, new_x);
      }
 
@@ -1466,4 +1466,3 @@ namespace crab {
 
   } // namespace domains   
 }// namespace crab
-#endif 

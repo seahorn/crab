@@ -69,7 +69,7 @@ z_cfg_t* prog (variable_factory_t &vfac)
   entry.assign (n , 0);
   entry.assume(y <= 878);
   
-  loop1_bb0.havoc (x.name ());
+  loop1_bb0.havoc (x);
   loop1_bb0.assume (x >= 0);
   loop1_bb1_t.assume (n <= 60);
   loop1_bb1_f.assume (n >= 61);
@@ -77,7 +77,7 @@ z_cfg_t* prog (variable_factory_t &vfac)
   loop1_bb3.assign(n, 0);
 
   cont.assign (n,0);
-  loop2_bb0.havoc (x.name ());
+  loop2_bb0.havoc (x);
   loop2_bb0.assume (x >= 10);
   loop2_bb1_t.assume (n <= 160);
   loop2_bb1_f.assume (n >= 161);

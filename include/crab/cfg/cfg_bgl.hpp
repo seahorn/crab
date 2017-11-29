@@ -1,5 +1,4 @@
-#ifndef CFG_BOOST_GRAPH_TRAITS_HPP
-#define CFG_BOOST_GRAPH_TRAITS_HPP
+#pragma once 
 
 /*
  * Convert a CFG into a BGL (Boost Graph Library) graph
@@ -406,4 +405,3 @@ namespace crab {
  } // namespace cfg
 } // namespace crab
 
-#endif 

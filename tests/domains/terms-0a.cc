@@ -14,8 +14,8 @@ int main (int argc, char** argv )
 
   variable_factory_t vfac;
 
-  varname_t x = vfac["x"];
-  varname_t y = vfac["y"];
+  z_var x(vfac["x"]);
+  z_var y(vfac["y"]);
 
   {
     z_term_domain_t dom_left = z_term_domain_t::top ();
@@ -31,13 +31,13 @@ int main (int argc, char** argv )
   }
 
   {
-    varname_t z = vfac["z"];
+    z_var z(vfac["z"]);
 
     z_term_domain_t inv = z_term_domain_t::top ();
     inv.assign (x, 5);
     inv.assign (y, 5);
     inv.assign (z, 9);
-    std::vector <varname_t> vs;
+    std::vector<z_var> vs;
     vs.push_back (x);
     vs.push_back (y);
     crab::outs() << "Before project " << inv << "\n";

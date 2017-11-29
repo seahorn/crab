@@ -2,8 +2,7 @@
  * Generic API for cast operations
  ******************************************************************************/
 
-#ifndef CAST_OPERATORS_API_HPP
-#define CAST_OPERATORS_API_HPP
+#pragma once
 
 #include <crab/common/types.hpp>
 #include <crab/common/bignums.hpp>
@@ -28,12 +27,14 @@ namespace crab {
       return o;
     }
 
-    template<typename VariableName >
+    template<typename Number, typename VariableName >
     class int_cast_operators {
     public:
+      typedef ikos::variable<Number, VariableName> variable_t;
+      
       virtual void apply(int_conv_operation_t op,
-			 VariableName dst, unsigned dst_width,
-			 VariableName src, unsigned src_width)  = 0;
+			 variable_t dst, unsigned dst_width,
+			 variable_t src, unsigned src_width)  = 0;
 
       virtual ~int_cast_operators() { }
     }; 
@@ -52,4 +53,3 @@ namespace crab {
   }
   
 } // end namespace crab
-#endif 

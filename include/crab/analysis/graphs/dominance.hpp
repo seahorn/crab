@@ -1,5 +1,4 @@
-#ifndef DOMINANCE_HPP__
-#define DOMINANCE_HPP__
+#pragma once 
 
 #include <algorithm>
 #include <boost/property_map/property_map.hpp>
@@ -174,4 +173,3 @@ namespace crab {
    } // end namespace
   } // end namespace
 } // end namespace
-#endif 

@@ -1,5 +1,4 @@
-#ifndef CRAB_BACKWARD_ANALYZER_HPP
-#define CRAB_BACKWARD_ANALYZER_HPP
+#pragma once 
 
 #include <crab/cfg/cfg.hpp>
 #include <crab/cfg/var_factory.hpp>
@@ -381,4 +380,3 @@ namespace crab {
   } // end namespace
 } // end namespace
 
-#endif

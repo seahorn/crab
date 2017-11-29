@@ -38,8 +38,7 @@
  *
  ******************************************************************************/
 
-#ifndef IKOS_NUMERICAL_DOMAINS_API_HPP
-#define IKOS_NUMERICAL_DOMAINS_API_HPP
+#pragma once
 
 #include <crab/common/types.hpp>
 #include <crab/domains/linear_constraints.hpp>
@@ -76,15 +75,21 @@ namespace ikos {
     typedef VariableName varname_t;
     
   public:
-    virtual void apply(operation_t op, VariableName x, VariableName y, VariableName z) = 0; // x = y op z
+    
+    // x = y op z    
+    virtual void apply(operation_t op, variable_t x, variable_t y, variable_t z) = 0; 
 
-    virtual void apply(operation_t op, VariableName x, VariableName y, Number k) = 0; // x = y op k
+    // x = y op k    
+    virtual void apply(operation_t op, variable_t x, variable_t y, Number k) = 0; 
 
-    virtual void assign(VariableName x, linear_expression_t e) = 0; // x = e
+    // x = e    
+    virtual void assign(variable_t x, linear_expression_t e) = 0; 
 
+    // add constraints
     virtual void operator+=(linear_constraint_system_t csts) = 0;
 
-    virtual void operator-=(VariableName v) = 0;
+    // forget
+    virtual void operator-=(variable_t v) = 0;
 
     void operator+=(linear_constraint_t cst) {
       linear_constraint_system_t csts(cst);
@@ -117,8 +122,10 @@ namespace ikos {
   class division_operators {
 
   public:
-    virtual void apply(div_operation_t op, VariableName x, VariableName y, VariableName z) = 0;
-    virtual void apply(div_operation_t op, VariableName x, VariableName y, Number z) = 0;
+    typedef ikos::variable<Number, VariableName> variable_t;
+    
+    virtual void apply(div_operation_t op, variable_t x, variable_t y, variable_t z) = 0;
+    virtual void apply(div_operation_t op, variable_t x, variable_t y, Number z) = 0;
     virtual ~division_operators() { }
 
   }; // class division_operators
@@ -128,25 +135,26 @@ namespace ikos {
   template<typename Number, typename VariableName, typename NumAbsDom>
   class backward_numerical_domain {
   public:
+    typedef ikos::variable<Number, VariableName> variable_t;
     
     // x = y op z
     // Substitute x with y op z in the abstract value
     // The result is meet with invariant.
     virtual void backward_apply(operation_t op,
-				VariableName x, VariableName y, VariableName z,
+				variable_t x, variable_t y, variable_t z,
 				NumAbsDom invariant) = 0; 
 
     // x = y op k
     // Substitute x with y op k in the abstract value
     // The result is meet with invariant.    
     virtual void backward_apply(operation_t op,
-				VariableName x, VariableName y, Number k,
+				variable_t x, variable_t y, Number k,
 				NumAbsDom invariant) = 0; 
 
     // x = e
     // Substitute x with e in the abstract value
     // The result is meet with invariant.    
-    virtual void backward_assign(VariableName x,
+    virtual void backward_assign(variable_t x,
 				 linear_expression<Number, VariableName> e,
 				 NumAbsDom invariant) = 0; 
 				 
@@ -183,5 +191,3 @@ namespace crab {
   }
   
 }
-
-#endif // IKOS_NUMERICAL_DOMAINS_API_HPP

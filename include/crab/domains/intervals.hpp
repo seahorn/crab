@@ -45,8 +45,7 @@
  *
  ******************************************************************************/
 
-#ifndef IKOS_INTERVALS_HPP
-#define IKOS_INTERVALS_HPP
+#pragma once
 
 #include <vector>
 #include <set>
@@ -1002,14 +1001,13 @@ namespace ikos {
 
   private:
     void refine(variable_t v, Interval i, IntervalCollection& env) {
-      VariableName n = v.name();
-      Interval old_i = env[n];
+      Interval old_i = env[v];
       Interval new_i = old_i & i;
       if (new_i.is_bottom()) {
 	throw bottom_found();
       }
       if (!(old_i == new_i)) {
-	env.set(n, new_i);
+	env.set(v, new_i);
 	this->_refined_variables += v;
 	++(this->_op_count);
       }
@@ -1022,7 +1020,7 @@ namespace ikos {
            it != cst.end(); ++it) {
 	variable_t v = it->second;
 	if (v.index() != pivot.index()) {
-	  residual = residual - (Interval (it->first) * env[v.name()]);
+	  residual = residual - (Interval (it->first) * env[v]);
 	  ++(this->_op_count);
 	}
       }
@@ -1049,13 +1047,13 @@ namespace ikos {
 	  // cst is a disequation
 	  boost::optional< Number > c = rhs.singleton();
 	  if (c) {
-	    Interval old_i = env[pivot.name()];
+	    Interval old_i = env[pivot];
 	    Interval new_i = intervals_impl::trim_bound (old_i, *c);
 	    if (new_i.is_bottom()) {
 	      throw bottom_found();
 	    }
 	    if (!(old_i == new_i)) {
-	      env.set(pivot.name(), new_i);
+	      env.set(pivot, new_i);
 	      this->_refined_variables += pivot;
 	    }
 	    ++(this->_op_count);
@@ -1192,7 +1190,7 @@ namespace ikos {
     typedef interval<Number> interval_t;
     
   private:
-    typedef separate_domain<VariableName, interval_t> separate_domain_t;
+    typedef separate_domain<variable_t, interval_t> separate_domain_t;
     typedef linear_interval_solver<Number, VariableName, separate_domain_t> solver_t;
     
   public:
@@ -1289,25 +1287,25 @@ namespace ikos {
       return (this->_env && e._env);
     }
 
-    void set(VariableName v, interval_t i) {
+    void set(variable_t v, interval_t i) {
       crab::CrabStats::count (getDomainName() + ".count.assign");
       crab::ScopedCrabStats __st__(getDomainName() + ".assign");
       this->_env.set(v, i);
     }
 
-    void set(VariableName v, Number n) {
+    void set(variable_t v, Number n) {
       crab::CrabStats::count (getDomainName() + ".count.assign");
       crab::ScopedCrabStats __st__(getDomainName() + ".assign");
       this->_env.set(v, interval_t(n));
     }
 
-    void operator-=(VariableName v) {
+    void operator-=(variable_t v) {
       crab::CrabStats::count (getDomainName() + ".count.forget");
       crab::ScopedCrabStats __st__(getDomainName() + ".forget");
       this->_env -= v;
     }
     
-    interval_t operator[](VariableName v) {
+    interval_t operator[](variable_t v) {
       return this->_env[v];
     }
 
@@ -1316,7 +1314,7 @@ namespace ikos {
       for (typename linear_expression_t::iterator it = expr.begin(); 
            it != expr.end(); ++it) {
 	interval_t c(it->first);
-	r += c * this->_env[it->second.name()];
+	r += c * this->_env[it->second];
       }
       return r;
     }
@@ -1341,24 +1339,24 @@ namespace ikos {
       return e;
     }
     
-    void assign(VariableName x, linear_expression_t e) {
+    void assign(variable_t x, linear_expression_t e) {
       crab::CrabStats::count (getDomainName() + ".count.assign");
       crab::ScopedCrabStats __st__(getDomainName() + ".assign");
 
       if (boost::optional<variable_t> v = e.get_variable ()) {
-        this->_env.set(x, this->_env [(*v).name ()]);
+        this->_env.set(x, this->_env [(*v)]);
       }
       else {
         interval_t r = e.constant();
         for (typename linear_expression_t::iterator it = e.begin(); 
              it != e.end(); ++it) {
-	r += it->first * this->_env[it->second.name()];
+	r += it->first * this->_env[it->second];
         }
         this->_env.set(x, r);
       }
     }
 
-    void apply(operation_t op, VariableName x, VariableName y, VariableName z) {
+    void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
       crab::CrabStats::count (getDomainName() + ".count.apply");
       crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1387,7 +1385,7 @@ namespace ikos {
       this->_env.set(x, xi);
     }
 
-    void apply(operation_t op, VariableName x, VariableName y, Number k) {
+    void apply(operation_t op, variable_t x, variable_t y, Number k) {
       crab::CrabStats::count (getDomainName() + ".count.apply");
       crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1416,21 +1414,21 @@ namespace ikos {
       this->_env.set(x, xi);
     }
 
-    void backward_assign (VariableName x, linear_expression_t e,
+    void backward_assign (variable_t x, linear_expression_t e,
 			  interval_domain_t inv) {
       crab::domains::BackwardAssignOps<interval_domain_t>::
 	assign (*this, x, e, inv);
     }      
     
     void backward_apply (operation_t op,
-			 VariableName x, VariableName y, Number z,
+			 variable_t x, variable_t y, Number z,
 			 interval_domain_t inv) {
       crab::domains::BackwardAssignOps<interval_domain_t>::
 	apply(*this, op, x, y, z, inv);
     }      
     
     void backward_apply(operation_t op,
-			VariableName x, VariableName y, VariableName z,
+			variable_t x, variable_t y, variable_t z,
 			interval_domain_t inv) {
       crab::domains::BackwardAssignOps<interval_domain_t>::
 	apply(*this, op, x, y, z, inv);
@@ -1439,15 +1437,15 @@ namespace ikos {
     // cast_operators_api
     
     void apply(crab::domains::int_conv_operation_t /*op*/,
-	       VariableName dst, unsigned /*dst_width*/,
-	       VariableName src, unsigned /*src_width*/){
+	       variable_t dst, unsigned /*dst_width*/,
+	       variable_t src, unsigned /*src_width*/){
       // ignore the widths 
-      assign(dst, variable_t(src));
+      assign(dst, src);
     }
 
     // bitwise_operators_api
     
-    void apply(bitwise_operation_t op, VariableName x, VariableName y, VariableName z){
+    void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z){
       crab::CrabStats::count (getDomainName() + ".count.apply");
       crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1486,7 +1484,7 @@ namespace ikos {
       this->_env.set(x, xi);
     }
     
-    void apply(bitwise_operation_t op, VariableName x, VariableName y, Number k){
+    void apply(bitwise_operation_t op, variable_t x, variable_t y, Number k){
       crab::CrabStats::count (getDomainName() + ".count.apply");
       crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1526,7 +1524,7 @@ namespace ikos {
     
     // division_operators_api
     
-    void apply(div_operation_t op, VariableName x, VariableName y, VariableName z){
+    void apply(div_operation_t op, variable_t x, variable_t y, variable_t z){
       crab::CrabStats::count (getDomainName() + ".count.apply");
       crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1558,7 +1556,7 @@ namespace ikos {
 
     }
 
-    void apply(div_operation_t op, VariableName x, VariableName y, Number k){
+    void apply(div_operation_t op, variable_t x, variable_t y, Number k){
       crab::CrabStats::count (getDomainName() + ".count.apply");
       crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1596,21 +1594,19 @@ namespace ikos {
     {
       linear_constraint_system_t csts;
       
-      if (this->is_bottom())
-      {
-        csts += linear_constraint_t (linear_expression_t (Number(1)) == 
-                                     linear_expression_t (Number(0)));
+      if (this->is_bottom()) {
+        csts += linear_constraint_t::get_false();
         return csts;
       }
 
       for (iterator it = this->_env.begin(); it != this->_env.end(); ++it)
       {
-        VariableName v = it->first;
+        variable_t v = it->first;
         interval_t   i = it->second;
         boost::optional<Number> lb = i.lb().number();
         boost::optional<Number> ub = i.ub().number();
-        if (lb) csts += linear_constraint_t( variable_t(v) >= *lb );
-        if (ub) csts += linear_constraint_t( variable_t(v) <= *ub );
+        if (lb) csts += linear_constraint_t(v >= *lb);
+        if (ub) csts += linear_constraint_t(v <= *ub);
       }
       return csts;
     }
@@ -1623,4 +1619,3 @@ namespace ikos {
   
 } // namespace ikos
 
-#endif // IKOS_INTERVALS_HPP

@@ -1,5 +1,5 @@
-#ifndef CRAB_SPARSE_GRAPH_HPP
-#define CRAB_SPARSE_GRAPH_HPP
+#pragma once
+
 #include <vector>
 #include <crab/common/types.hpp>
 
@@ -700,4 +700,3 @@ class SparseWtGraph : public ikos::writeable {
 };
 
 }
-#endif

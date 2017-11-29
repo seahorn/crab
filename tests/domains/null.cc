@@ -25,17 +25,17 @@ z_cfg_t* cfg1 (variable_factory_t &vfac)
   b0 >> b1; b0 >> b2; b1 >> b3; b2 >> b3;
 
   // definining program variables
-  varname_t p = vfac ["p"];
-  varname_t q = vfac ["q"];
-  varname_t r = vfac ["r"];
-  varname_t s = vfac ["s"];
+  z_var p(vfac ["p"]);
+  z_var q(vfac ["q"]);
+  z_var r(vfac ["r"]);
+  z_var s(vfac ["s"]);
   // adding statements
   b0.ptr_new_object (p, 1);
   b0.havoc (r);
   b0.havoc (s);
-  b1.ptr_assume (ptr_cst_t::mk_eq_null (r));
-  b1.ptr_assume (ptr_cst_t::mk_eq (r,s));
-  b2.ptr_assume (ptr_cst_t::mk_diseq (r,s));
+  b1.ptr_assume (z_ptr_cst_t::mk_eq_null (r));
+  b1.ptr_assume (z_ptr_cst_t::mk_eq (r,s));
+  b2.ptr_assume (z_ptr_cst_t::mk_diseq (r,s));
   b2.ptr_new_object (q, 2);
   b2.ptr_assign (p, q, z_number(4));
   return cfg;
@@ -56,16 +56,16 @@ z_cfg_t* cfg2 (variable_factory_t &vfac)
   
 
   // definining program variables
-  varname_t p = vfac ["p"];
-  varname_t q1 = vfac ["q1"];
-  varname_t q2 = vfac ["q2"];
-  varname_t r = vfac ["r"];
-  z_var nd (vfac ["nd"]);
+  z_var p(vfac ["p"]);
+  z_var q1(vfac ["q1"]);
+  z_var q2(vfac ["q2"]);
+  z_var r(vfac ["r"]);
+  z_var nd(vfac ["nd"]);
   // adding statements
   b0.ptr_new_object (p , 1);  // p = malloc (...);
   b0.ptr_new_object (q1, 2);  // q1 = malloc (...);
   b0.ptr_new_object (q2, 3);  // q2 = malloc (...);
-  b0.havoc (nd.name ());
+  b0.havoc (nd);
   b1.assume (nd >= 1);
   b2.assume (nd <= 0);
   b1.ptr_store (p, q1);  // *p = q1
@@ -81,8 +81,8 @@ z_cfg_t* cfg3 (variable_factory_t &vfac)  {
   z_var i (vfac ["i"]);
   z_var x (vfac ["x"]);
   z_var y (vfac ["y"]);
-  varname_t p (vfac ["p"]);
-  varname_t q (vfac ["q"]);
+  z_var p (vfac ["p"]);
+  z_var q (vfac ["q"]);
   // entry and exit block
   z_cfg_t* cfg = new z_cfg_t("entry","ret",PTR);
   // adding blocks

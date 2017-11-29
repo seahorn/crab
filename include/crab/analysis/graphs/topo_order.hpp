@@ -1,5 +1,4 @@
-#ifndef TOPOLOGICAL_ORDER_HPP__
-#define TOPOLOGICAL_ORDER_HPP__
+#pragma once 
 
 #include <boost/graph/topological_sort.hpp>
 #include <crab/analysis/graphs/sccg_bgl.hpp>
@@ -75,4 +74,3 @@ namespace crab {
   } // end namespace analyzer
 } // end namespace crab
 
-#endif 

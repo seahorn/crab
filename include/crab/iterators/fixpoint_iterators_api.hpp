@@ -37,9 +37,7 @@
  * UNILATERAL TERMINATION OF THIS AGREEMENT.
  *
  ******************************************************************************/
-
-#ifndef IKOS_FIXPOINT_ITERATORS_API_HPP
-#define IKOS_FIXPOINT_ITERATORS_API_HPP
+#pragma once 
 
 namespace ikos {
 
@@ -59,4 +57,3 @@ namespace ikos {
   
 } // namespace ikos
 
-#endif // IKOS_FIXPOINT_ITERATORS_API_HPP

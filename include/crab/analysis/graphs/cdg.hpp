@@ -1,5 +1,4 @@
-#ifndef CONTROL_DEPENDENCE_GRAPH_HPP__
-#define CONTROL_DEPENDENCE_GRAPH_HPP__
+#pragma once 
 
 #include <crab/analysis/graphs/dominance.hpp>
 
@@ -45,4 +44,3 @@ namespace crab {
    } // end namespace
   } // end namespace
 } // end namespace
-#endif 

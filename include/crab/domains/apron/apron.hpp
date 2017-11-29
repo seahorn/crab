@@ -1,5 +1,4 @@
-#ifndef _APRON_HPP_
-#define _APRON_HPP_
+#pragma once
 
 #include "ap_global0.h"
 #include "box.h"
@@ -50,4 +49,3 @@ namespace crab {
      }
   }
 }
-#endif

@@ -1,5 +1,5 @@
-#ifndef CRAB_PT_GRAPH_HPP
-#define CRAB_PT_GRAPH_HPP
+#pragma once
+
 #include <vector>
 #include <crab/domains/patricia_trees.hpp>
 
@@ -579,4 +579,3 @@ class PtGraph : public ikos::writeable {
 };
 
 }
-#endif

@@ -38,8 +38,7 @@
  *
  ******************************************************************************/
 
-#ifndef IKOS_LINEAR_CONSTRAINTS_HPP
-#define IKOS_LINEAR_CONSTRAINTS_HPP
+#pragma once
 
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
@@ -1414,4 +1413,3 @@ namespace ikos {
   
 } // namespace ikos
 
-#endif // IKOS_LINEAR_CONSTRAINTS_HPP

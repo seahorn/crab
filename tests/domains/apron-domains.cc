@@ -338,8 +338,8 @@ int main (int argc, char** argv ) {
     variable_factory_t vfac;
     z_opt_oct_apron_domain_t inv1 = z_opt_oct_apron_domain_t::top ();
     z_opt_oct_apron_domain_t inv2 = z_opt_oct_apron_domain_t::top ();
-    varname_t i = vfac ["i"];
-    varname_t k = vfac ["k"];
+    z_var i(vfac ["i"]);
+    z_var k(vfac ["k"]);
 
     {
       z_lin_cst_sys_t csts;
