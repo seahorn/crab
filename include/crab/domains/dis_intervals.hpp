@@ -12,6 +12,7 @@
 #include <crab/common/stats.hpp>
 #include <crab/common/types.hpp>
 #include <crab/domains/linear_constraints.hpp>
+#include <crab/domains/linear_interval_solver.hpp>
 #include <crab/domains/separate_domains.hpp>
 #include <crab/domains/operators_api.hpp>
 #include <crab/domains/domain_traits.hpp>
@@ -993,7 +994,7 @@ namespace crab {
 } // end namespace crab 
  
 namespace ikos {
-  namespace intervals_impl {
+  namespace linear_interval_solver_impl {
      /// --- for interval solver of disequalities
 
      typedef crab::domains::dis_interval <z_number> dis_z_interval_t;
@@ -1038,7 +1039,7 @@ namespace ikos {
       return i;
     }
 
-  } // end namespace intervals_impl
+  } // end namespace linear_interval_solver_impl
 } // end namespace ikos
 
 namespace crab {
