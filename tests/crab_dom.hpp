@@ -4,7 +4,8 @@
 #include "./crab_lang.hpp"
 
 #include <crab/domains/linear_constraints.hpp> 
-#include <crab/domains/intervals.hpp>                      
+#include <crab/domains/intervals.hpp>
+#include <crab/domains/wrapped_interval_domain.hpp>
 #include <crab/domains/sparse_dbm.hpp>                      
 #include <crab/domains/split_dbm.hpp>
 #include <crab/domains/boxes.hpp>                      
@@ -60,7 +61,9 @@ namespace crab {
     typedef array_smashing<z_dis_interval_domain_t> z_as_dis_int_t;
     typedef array_smashing<z_sdbm_domain_t> z_as_sdbm_t;
     typedef array_smashing<z_num_null_domain_t> z_as_num_null_t;
-    typedef array_smashing<z_bool_num_domain_t> z_as_bool_num_t;    
+    typedef array_smashing<z_bool_num_domain_t> z_as_bool_num_t;
+    // machine arithmetic domains
+    typedef wrapped_interval_domain<ikos::z_number, varname_t> z_wrapped_interval_domain_t;
     /// Numerical domains over rationals
     typedef interval_domain<ikos::q_number,varname_t > q_interval_domain_t;
     typedef apron_domain<ikos::q_number,varname_t,apron_domain_id_t::APRON_PK>

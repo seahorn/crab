@@ -35,7 +35,9 @@ function (AddTestDir dirName)
   endforeach(testSrc)
 endfunction ()  
 
+
 AddTestDir (domains)
+AddTestDir (domains/wrapint)
 AddTestDir (inter)
 AddTestDir (cg)
 AddTestDir (cfg)
