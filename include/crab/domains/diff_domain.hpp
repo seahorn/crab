@@ -363,12 +363,12 @@ namespace crab {
       
       // array_operators_api
       
-      virtual void array_assume (variable_t a, crab::variable_type a_ty, 
+      virtual void array_assume (variable_t a, 
                                  linear_expression_t lb_idx,
 				 linear_expression_t ub_idx, 
                                  linear_expression_t val) override {
 	bool r1 = diff(__LINE__);	
-        this->_product.array_assume (a, a_ty, lb_idx, ub_idx, val);
+        this->_product.array_assume (a, lb_idx, ub_idx, val);
 	bool r2 = diff(__LINE__);
 	if (r1 && !r2) {
 	  CRAB_WARN("PRECISION LEAK of ",
@@ -378,12 +378,10 @@ namespace crab {
 	
       }
       
-      virtual void array_load (variable_t lhs,
-			       variable_t a, crab::variable_type a_ty, 
-                               linear_expression_t i,
-			       ikos::z_number bytes) override {
+      virtual void array_load (variable_t lhs, variable_t a, 
+                               linear_expression_t i, ikos::z_number bytes) override {
 	bool r1 = diff(__LINE__);        
-        this->_product.array_load (lhs, a, a_ty, i, bytes);
+        this->_product.array_load (lhs, a, i, bytes);
 	bool r2 = diff(__LINE__);
 	if (r1 && !r2) {
 	  CRAB_WARN("PRECISION LEAK of ",
@@ -393,13 +391,13 @@ namespace crab {
 	
       }
       
-      virtual void array_store (variable_t a, crab::variable_type a_ty, 
+      virtual void array_store (variable_t a, 
                                 linear_expression_t i,
 				linear_expression_t val, 
                                 ikos::z_number bytes,
 				bool is_singleton) override {
 	bool r1 = diff(__LINE__);	
-        this->_product.array_store (a, a_ty, i, val, bytes, is_singleton);
+        this->_product.array_store (a, i, val, bytes, is_singleton);
 	bool r2 = diff(__LINE__);
 	if (r1 && !r2) {
 	  CRAB_WARN("PRECISION LEAK of ",
@@ -409,10 +407,9 @@ namespace crab {
 	
       }
       
-      virtual void array_assign (variable_t lhs, variable_t rhs,
-				 crab::variable_type ty) override {
+      virtual void array_assign (variable_t lhs, variable_t rhs) override {
 	bool r1 = diff(__LINE__);	
-        this->_product.array_assign (lhs, rhs, ty);
+        this->_product.array_assign (lhs, rhs);
 	bool r2 = diff(__LINE__);
 	if (r1 && !r2) {
 	  CRAB_WARN("PRECISION LEAK of ",
