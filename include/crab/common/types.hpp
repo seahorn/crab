@@ -3,6 +3,7 @@
 #include <iosfwd>
 #include <stdarg.h>
 #include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
 #include <boost/optional.hpp>
 #include <boost/noncopyable.hpp>
 
@@ -486,21 +487,14 @@ namespace ikos {
 
   private:
     
-    variable_t *m_v;
+    boost::shared_ptr<variable_t> m_v;
     
    public:
 
-    variable_ref()
-      : m_v(nullptr) {}
-    
-    variable_ref(variable_t v)
-      : m_v(new variable_t(v)) { }
-    
-    ~variable_ref() {
-      if (m_v) {
-	delete m_v;
-      }
-    }
+    variable_ref(): m_v(nullptr) {}
+      
+    variable_ref(variable_t v): m_v(boost::make_shared<variable_t>(v)) { }
+
     bool is_null() const {
       return !m_v;
     }
