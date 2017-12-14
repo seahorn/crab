@@ -2153,19 +2153,27 @@ namespace crab {
         m_live = m_live | other.m_live;
       }
       
-      void write(crab_os& o) const
-      {
+      void write(crab_os& o) const {
         o << cfg_impl::get_label_str (m_bb_id) << ":\n";	
-        
-        for (auto const &s: *this)
-          o << "  " << s << ";\n"; 
-        
-        o << "--> [";
-        
-        for (auto const &n : boost::make_iterator_range (next_blocks ()))
-          o << cfg_impl::get_label_str (n) << ";";
-        
-        o << "]\n";
+        for (auto const &s: *this) {
+          o << "  " << s << ";\n";
+	}
+	std::pair<const_succ_iterator, const_succ_iterator> p = next_blocks();
+	const_succ_iterator it = p.first;
+	const_succ_iterator et = p.second;
+	if (it != et) {
+	  o << "  " << "goto ";
+	  for (; it != et; ) {
+	    o << cfg_impl::get_label_str (*it);
+	    ++it;
+	    if (it == et) {
+	      o << ";";
+	    } else {
+	      o << ",";
+	    }
+	  }
+	}
+	o << "\n";
         
         return;
       }
