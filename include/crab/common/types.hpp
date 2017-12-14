@@ -474,8 +474,124 @@ namespace ikos {
         
   }; // class variable
 
+  template< typename Number, typename VariableName >  
+  class variable_ref {    
+   public:
+
+    typedef variable< Number, VariableName > variable_t;
+    typedef typename VariableName::index_t index_t;
+    typedef uint8_t bitwidth_t;
+    typedef crab::variable_type type_t;
+    typedef variable_ref<Number, VariableName> variable_ref_t;
+
+  private:
+    
+    variable_t *m_v;
+    
+   public:
+
+    variable_ref()
+      : m_v(nullptr) {}
+    
+    variable_ref(variable_t v)
+      : m_v(new variable_t(v)) { }
+    
+    ~variable_ref() {
+      if (m_v) {
+	delete m_v;
+      }
+    }
+    bool is_null() const {
+      return !m_v;
+    }
+
+    variable_t get() const {
+      assert(!is_null());
+      return *m_v;
+    }
+    
+    bool is_typed () const {
+      assert(!is_null());
+      return m_v->is_typed();
+    }
+
+    bool is_array_type() const {
+      assert(!is_null());      
+      return m_v->is_array_type();
+    }
+
+    bool is_int_type() const {
+      assert(!is_null());      
+      return m_v->is_int_type();
+    }
+
+    bool is_bool_type() const {
+      assert(!is_null());
+      return m_v->is_bool_type();
+    }
+
+    bool is_ptr_type() const {
+      assert(!is_null());
+      return m_v->is_ptr_type();
+    }
+
+    type_t get_type() const {
+      assert(!is_null());            
+      return m_v->get_type();
+    }
+    
+    bool has_bitwidth() const {
+      assert(!is_null());            
+      return m_v->has_bitwidth();
+    }
+    
+    bitwidth_t get_bitwidth() const {
+      assert(!is_null());            
+      return m_v->get_bitwidth();
+    }
+
+    const VariableName& name() const {
+      assert(!is_null());            
+      return m_v->name();
+    }
+
+    VariableName& name() {
+      assert(!is_null());            
+      return m_v->name();
+    }
+    
+    index_t index() const {
+      assert(!is_null());            
+      return m_v->index();
+    }
+
+    bool operator==(const variable_ref_t& o) const {
+      assert(!is_null());            
+      return m_v->operator==(o);
+    }
+
+    bool operator!=(const variable_ref_t& o) const {
+      assert(!is_null());            
+      return m_v->operator!=(o);      
+    }
+    
+    bool operator<(const variable_ref_t& o) const {
+      assert(!is_null());            
+      return m_v->operator<(o);            
+    }
+    
+    void write(crab::crab_os& o) const {
+      return m_v->write(o);
+    }        
+  }; // class variable_ref
+  
   template< typename Number, typename VariableName >
   inline index_t hash_value (const variable<Number, VariableName> &v) {
+    return v.index ();
+  }
+
+  template< typename Number, typename VariableName >
+  inline index_t hash_value (const variable_ref<Number, VariableName> &v) {
     return v.index ();
   }
   
@@ -485,6 +601,12 @@ namespace ikos {
     return o;
   }
 
+  template< typename Number, typename VariableName >
+  inline crab::crab_os& operator<<(crab::crab_os& o, const variable_ref<Number, VariableName> &v) {
+    v.write(o);
+    return o;
+  }
+  
 } // end namespace 
 
 namespace crab {
