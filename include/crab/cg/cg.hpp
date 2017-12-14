@@ -54,16 +54,10 @@ namespace crab {
           
           int index () const { return m_id; }
           
-          varname_t name () const {
+	  std::string name () const {
             auto d_opt = m_cfg.get_func_decl ();
             if (!d_opt) CRAB_ERROR("No function name found");
             return (*d_opt).get_func_name ();
-          }
-
-          std::string str_name () const {
-            auto d_opt = m_cfg.get_func_decl ();
-            if (!d_opt) CRAB_ERROR("No function name found");
-            return (*d_opt).get_func_name ().str ();
           }
 
           bool operator==(const cg_node &o) const {
@@ -75,7 +69,7 @@ namespace crab {
           }
           
           friend crab_os& operator<<(crab_os& o, cg_node n) {
-            o << n.str_name ();
+            o << n.name ();
             return o;
           }
           

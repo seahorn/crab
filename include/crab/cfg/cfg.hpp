@@ -713,7 +713,7 @@ namespace crab {
     // XXX: the array statements array_assume_stmt, array_store_stmt,
     // and array_load_stmt take as one of their template parameters
     // Number which is the type for the array indexes. Although array
-    // indexes should always integers we keep it as a template
+    // indexes should be always integers we keep it as a template
     // parameter in case an analysis over a type different from
     // integers (e.g., reals) is done. Note that we don't allow mixing
     // non-integers and integers so we cannot have analysis where all
@@ -1402,7 +1402,7 @@ namespace crab {
       
      private:
 
-      VariableName m_func_name;      
+      std::string m_func_name;      
       std::vector<variable_t> m_lhs;
       std::vector<variable_t> m_args;
       
@@ -1411,14 +1411,14 @@ namespace crab {
       
      public:
       
-      callsite_stmt (VariableName func_name, const std::vector<variable_t> &args)
+      callsite_stmt (std::string func_name, const std::vector<variable_t> &args)
 	: statement_t (CALLSITE), m_func_name (func_name) {
 	
         std::copy (args.begin (), args.end (), std::back_inserter (m_args));
         for (auto arg:  m_args) { this->m_live.add_use (arg); }
       }
       
-      callsite_stmt (VariableName func_name,
+      callsite_stmt (std::string func_name,
 		     const std::vector<variable_t> &lhs, 
 		     const std::vector<variable_t> &args)
 	: statement_t (CALLSITE), m_func_name (func_name) {
@@ -1434,7 +1434,7 @@ namespace crab {
         return m_lhs;
       }
       
-      VariableName get_func_name () const { 
+      std::string get_func_name () const { 
         return m_func_name; 
       }
 
@@ -2538,7 +2538,7 @@ namespace crab {
 		(boost::make_shared<int_cast_t>(CAST_ZEXT,src,dst)));
       }
       
-      void callsite (VariableName func, 
+      void callsite (std::string func, 
 		     const std::vector<variable_t> &lhs, 
                      const std::vector<variable_t> &args) { 
         insert(boost::static_pointer_cast< statement_t, callsite_t >
@@ -2558,33 +2558,19 @@ namespace crab {
             
 
       void array_assume (variable_t a, uint64_t elem_size,
-                         lin_exp_t lb_idx, lin_exp_t ub_idx, variable_t v) {
+                         lin_exp_t lb_idx, lin_exp_t ub_idx, lin_exp_t v) {
         if (m_track_prec == ARR)
           insert(boost::static_pointer_cast<statement_t, arr_assume_t> 
 		(boost::make_shared<arr_assume_t>(a, elem_size, lb_idx, ub_idx, v)));
       }
 
-      void array_assume (variable_t a, uint64_t elem_size,
-                         lin_exp_t lb_idx, lin_exp_t ub_idx, ikos::z_number n) {
-        if (m_track_prec == ARR)
-          insert (boost::static_pointer_cast< statement_t, arr_assume_t> 
-		(boost::make_shared<arr_assume_t>(a, elem_size, lb_idx, ub_idx, n)));
-      }
-      
-      void array_store (variable_t arr, lin_exp_t idx, variable_t v, 
+      void array_store (variable_t arr, lin_exp_t idx, lin_exp_t v, 
                         uint64_t elem_size, bool is_singleton = false)  {
         if (m_track_prec == ARR)
           insert(boost::static_pointer_cast< statement_t, arr_store_t >
             (boost::make_shared<arr_store_t>(arr, idx, v, elem_size, is_singleton)));
       }
 
-      void array_store (variable_t arr, lin_exp_t idx, ikos::z_number n, 
-                        uint64_t elem_size, bool is_singleton = false)  {
-        if (m_track_prec == ARR)
-          insert(boost::static_pointer_cast< statement_t, arr_store_t >
-           (boost::make_shared<arr_store_t>(arr, idx, n, elem_size, is_singleton)));
-      }
-      
       void array_load (variable_t lhs, variable_t arr,
                        lin_exp_t idx, uint64_t elem_size) {
         if (m_track_prec == ARR)
@@ -2887,7 +2873,7 @@ namespace crab {
       
      private:
 
-      VariableName m_func_name;
+      std::string m_func_name;
       std::vector<variable_t> m_inputs;
       std::vector<variable_t> m_outputs;      
       
@@ -2896,7 +2882,7 @@ namespace crab {
       
      public:
       
-      function_decl (VariableName func_name,
+      function_decl (std::string func_name,
                      std::vector<variable_t> inputs,
 		     std::vector<variable_t> outputs)
 	: m_func_name (func_name) {
@@ -2918,7 +2904,7 @@ namespace crab {
 	}
       }
 
-      VariableName get_func_name () const
+      std::string get_func_name () const
       { return m_func_name; }
       
       const std::vector<variable_t>& get_inputs () const
@@ -3851,21 +3837,21 @@ namespace crab {
       typedef typename CFG::basic_block_t::callsite_t callsite_t;
       typedef typename CFG::fdecl_t fdecl_t;
       
-      static size_t hash (callsite_t cs) {
-        size_t res = hash_value (cs.get_func_name ());
+      static size_t hash(callsite_t cs) {
+	size_t res = boost::hash_value(cs.get_func_name());
         for (auto vt: cs.get_lhs ())
-          boost::hash_combine (res, vt.get_type());
+          boost::hash_combine(res, vt.get_type());
         for(unsigned i=0; i<cs.get_num_args (); i++)
-          boost::hash_combine (res, cs.get_arg_type (i));
+          boost::hash_combine(res, cs.get_arg_type (i));
         return res;
       }
       
-      static size_t hash (fdecl_t d)  {
-        size_t res = hash_value (d.get_func_name ());
+      static size_t hash(fdecl_t d)  {
+        size_t res = boost::hash_value(d.get_func_name ());
         for(unsigned i=0; i<d.get_num_inputs (); i++)
-          boost::hash_combine (res, d.get_input_type (i));
+          boost::hash_combine(res, d.get_input_type (i));
         for(unsigned i=0; i<d.get_num_outputs (); i++)
-          boost::hash_combine (res, d.get_output_type (i));
+          boost::hash_combine(res, d.get_output_type (i));
 	
         return res;
       }      

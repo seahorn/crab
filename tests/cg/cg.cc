@@ -28,7 +28,7 @@ z_cfg_t* foo (variable_factory_t &vfac) {
   z_var y (vfac ["y"], crab::INT_TYPE);
   z_var z (vfac ["z"], crab::INT_TYPE);
   
-  function_decl<z_number, varname_t> decl (vfac["foo"], {x}, {z});
+  function_decl<z_number, varname_t> decl ("foo", {x}, {z});
   // entry and exit block
   z_cfg_t* cfg = new z_cfg_t("entry", "exit", decl);
   // adding blocks
@@ -50,7 +50,7 @@ z_cfg_t* bar (variable_factory_t &vfac) {
   z_var x (vfac ["x"], crab::INT_TYPE);
   z_var y (vfac ["y"], crab::INT_TYPE);
   
-  function_decl<z_number, varname_t> decl (vfac["bar"], {a}, {y});
+  function_decl<z_number, varname_t> decl ("bar", {a}, {y});
   // entry and exit block
   z_cfg_t* cfg = new z_cfg_t("entry", "exit", decl);
   // adding blocks
@@ -59,7 +59,7 @@ z_cfg_t* bar (variable_factory_t &vfac) {
   // adding control flow
   entry >> exit;
   // adding statements
-  exit.callsite (vfac ["foo"], {y}, {x});
+  exit.callsite ("foo", {y}, {x});
   entry.assign (x, a);
   exit.ret (y);
   return cfg;
@@ -72,7 +72,7 @@ z_cfg_t* m (variable_factory_t &vfac)  {
   z_var z (vfac ["z"], crab::INT_TYPE);
   
   vector<variable_t> inputs, outputs;
-  function_decl<z_number, varname_t> decl (vfac["main"], inputs, outputs);
+  function_decl<z_number, varname_t> decl ("main", inputs, outputs);
   // entry and exit block
   z_cfg_t* cfg = new z_cfg_t("entry", "exit", decl);
   // adding blocks
@@ -82,7 +82,7 @@ z_cfg_t* m (variable_factory_t &vfac)  {
   entry >> exit;
   // adding statements
   entry.assign(x, 3);
-  entry.callsite (vfac ["bar"], {y}, {x});
+  entry.callsite ("bar", {y}, {x});
   exit.add (z, y, 2);
   return cfg;
 }

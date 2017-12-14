@@ -131,7 +131,7 @@ namespace crab {
             auto cfg = v.get_cfg ();
             auto fdecl = cfg.get_func_decl ();
             assert (fdecl);
-            std::string fun_name = (*fdecl).get_func_name ().str();
+            std::string fun_name = (*fdecl).get_func_name();
             if (fun_name != "main") continue;
             
             CRAB_LOG ("inter",
@@ -165,7 +165,7 @@ namespace crab {
             auto fdecl = cfg.get_func_decl ();            
             assert (fdecl);
 
-            std::string fun_name = (*fdecl).get_func_name ().str();
+            std::string fun_name = (*fdecl).get_func_name ();
             if (fun_name != "main" && cfg.has_exit ()) {
 	      CRAB_VERBOSE_IF(1, crab::outs() << "++ Analyzing function "
 			                      << (*fdecl).get_func_name () << "\n";);
