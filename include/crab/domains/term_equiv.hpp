@@ -54,6 +54,7 @@ namespace crab {
          public:
           typedef Num Number;
           typedef VName VariableName;
+	  typedef variable<Num, VName> variable_t;
           typedef cfg::var_factory_impl::str_var_alloc_col Alloc;
           typedef Abs domain_t; 
         };
@@ -1829,7 +1830,7 @@ namespace crab {
     public:
 
      typedef term_domain<Info> term_domain_t;
-     typedef typename Info::VariableName  VariableName;
+     typedef typename Info::variable_t variable_t;
 
      template<class CFG>
      static void do_initialization (CFG cfg) { }
@@ -1848,7 +1849,7 @@ namespace crab {
        inv.project (boost::make_iterator_range (it, end));
      }
  
-     static void expand (term_domain_t& inv, VariableName x, VariableName new_x) {
+     static void expand (term_domain_t& inv, variable_t x, variable_t new_x) {
        inv.expand (x, new_x);
      }
    };

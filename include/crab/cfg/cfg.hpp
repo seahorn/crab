@@ -973,7 +973,7 @@ namespace crab {
       array_assign_stmt (variable_t lhs, variable_t rhs)
 	: statement_t (ARR_ASSIGN),
 	  m_lhs (lhs), m_rhs (rhs) {
-        if (array_type() < ARR_BOOL_TYPE || m_lhs.get_type() != m_rhs().get_type())
+        if (array_type() < ARR_BOOL_TYPE || m_lhs.get_type() != m_rhs.get_type())
           CRAB_ERROR ("array_assign must have array type");
 	
         this->m_live.add_def (lhs);
