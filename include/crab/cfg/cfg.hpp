@@ -2180,353 +2180,142 @@ namespace crab {
 
       /// To build statements
       
-      void add (variable_t lhs, variable_t op1, variable_t op2) 
-      {
+      void add (variable_t lhs, variable_t op1, variable_t op2) {
         insert(boost::static_pointer_cast< statement_t, bin_op_t >
                (boost::make_shared<bin_op_t>(lhs, BINOP_ADD, op1, op2)));
       }
       
-      void add (variable_t lhs, variable_t op1, Number op2) 
-      {
+      void add (variable_t lhs, variable_t op1, Number op2) {
         insert(boost::static_pointer_cast< statement_t, bin_op_t > 
                (boost::make_shared<bin_op_t>(lhs, BINOP_ADD, op1,  op2)));
       }
       
-      void add (variable_t lhs, lin_exp_t op1, lin_exp_t op2) 
-      {
-        if  (op1.get_variable () && op2.get_variable ())
-          add (lhs, (*op1.get_variable ()), (*op2.get_variable ()));
-        
-        else if (op1.get_variable () && op2.is_constant ())
-          add (lhs, (*op1.get_variable ()), op2.constant ());
-        
-        else if (op1.is_constant () && op2.get_variable ())
-          add (lhs, (*op2.get_variable ()), op1.constant ());
-
-        else if (op1.is_constant () && op2.is_constant ()) 
-        {
-          lin_exp_t rhs(Number(op1.constant () + op2.constant ()));
-          insert(boost::static_pointer_cast< statement_t, assign_t >
-                 (boost::make_shared<assign_t>(lhs, rhs)));
-        }
-        else
-          CRAB_ERROR("add operands unexpected");
-      }
-
-      void sub (variable_t lhs, variable_t op1, variable_t op2) 
-      {
+      void sub (variable_t lhs, variable_t op1, variable_t op2) {
         insert (boost::static_pointer_cast< statement_t, bin_op_t >
                 (boost::make_shared<bin_op_t>(lhs, BINOP_SUB, op1, op2)));
       }
       
-      void sub (variable_t lhs, variable_t op1, Number op2) 
-      {
+      void sub (variable_t lhs, variable_t op1, Number op2) {
         insert (boost::static_pointer_cast< statement_t, bin_op_t >
                 (boost::make_shared<bin_op_t>(lhs, BINOP_SUB, op1, op2)));
       }
       
-      void sub (variable_t lhs, lin_exp_t op1, lin_exp_t op2) 
-      {
-        if (op1.get_variable () && op2.get_variable ())
-          sub (lhs, (*op1.get_variable ()), (*op2.get_variable ()));
-        
-        else if (op1.get_variable () && op2.is_constant ())
-          sub (lhs, (*op1.get_variable ()), op2.constant ());        
-        
-        else if (op1.is_constant () && op2.is_constant ()) 
-        {
-          lin_exp_t rhs (Number (op1.constant () - op2.constant ()));
-          insert (boost::static_pointer_cast< statement_t, assign_t >
-                  (boost::make_shared<assign_t>(lhs, rhs)));
-        }
-        else
-          CRAB_ERROR("sub operands unexpected");
-      }
-
-      void mul (variable_t lhs, variable_t op1, variable_t op2) 
-      {
+      void mul (variable_t lhs, variable_t op1, variable_t op2) {
         insert(boost::static_pointer_cast< statement_t, bin_op_t >
                (boost::make_shared<bin_op_t>(lhs, BINOP_MUL, op1, op2)));
       }
       
-      void mul (variable_t lhs, variable_t op1, Number op2) 
-      {
+      void mul (variable_t lhs, variable_t op1, Number op2) {
         insert (boost::static_pointer_cast< statement_t, bin_op_t >
                 (boost::make_shared<bin_op_t>(lhs, BINOP_MUL, op1, op2)));
       }
       
-      void mul(variable_t lhs, lin_exp_t op1, lin_exp_t op2) 
-      {
-        if (op1.get_variable () && op2.get_variable ())
-          mul (lhs, (*op1.get_variable ()), (*op2.get_variable ()));
-        
-        else if (op1.get_variable () && op2.is_constant ())
-          mul (lhs, (*op1.get_variable()), op2.constant());
-        
-        else if (op1.is_constant () && op2.get_variable ())
-          mul (lhs, (*op2.get_variable ()), op1.constant ());
-        
-        else if (op1.is_constant () && op2.is_constant ()) 
-        {
-          lin_exp_t rhs(Number(op1.constant () * op2.constant ()));
-          insert(boost::static_pointer_cast< statement_t, assign_t >
-                 (boost::make_shared<assign_t>(lhs, rhs)));
-        }
-        else
-          CRAB_ERROR("mul operands unexpected");
-      }
-
       // signed division
-      void div (variable_t lhs, variable_t op1, variable_t op2) 
-      {
+      void div (variable_t lhs, variable_t op1, variable_t op2) {
         insert (boost::static_pointer_cast< statement_t, bin_op_t >
                 (boost::make_shared<bin_op_t>(lhs, BINOP_SDIV, op1, op2)));
       }
       
-      void div (variable_t lhs, variable_t op1, Number op2) 
-      {
+      void div (variable_t lhs, variable_t op1, Number op2) {
         insert (boost::static_pointer_cast< statement_t, bin_op_t >
                 (boost::make_shared<bin_op_t>(lhs, BINOP_SDIV, op1, op2)));
       }
       
-      void div (variable_t lhs, lin_exp_t op1, lin_exp_t op2) 
-      {
-        if (op1.get_variable () && op2.get_variable ())
-          div (lhs, (*op1.get_variable ()), (*op2.get_variable ()));
-        
-        else if (op1.get_variable () && op2.is_constant ())
-          div (lhs, (*op1.get_variable ()), op2.constant ());
-        
-        else if (op1.is_constant () && op2.is_constant ()) 
-        {
-          lin_exp_t rhs (Number (op1.constant() / op2.constant()));
-          insert (boost::static_pointer_cast< statement_t, assign_t >
-                  (boost::make_shared<assign_t>(lhs, rhs)));
-        }
-        else
-          CRAB_ERROR("div operands unexpected");
-      }
-
       // unsigned division
-      void udiv (variable_t lhs, variable_t op1, variable_t op2) 
-      {
+      void udiv (variable_t lhs, variable_t op1, variable_t op2) {
         insert (boost::static_pointer_cast< statement_t, bin_op_t >
                 (boost::make_shared<bin_op_t>(lhs, BINOP_UDIV, op1, op2)));
       }
       
-      void udiv (variable_t lhs, variable_t op1, Number op2) 
-      {
+      void udiv (variable_t lhs, variable_t op1, Number op2) {
         insert (boost::static_pointer_cast< statement_t, bin_op_t >
                 (boost::make_shared<bin_op_t>(lhs, BINOP_UDIV, op1, op2)));
       }
       
-      void udiv (variable_t lhs, lin_exp_t op1, lin_exp_t op2) 
-      {
-        if (op1.get_variable () && op2.get_variable ())
-          udiv (lhs, (*op1.get_variable ()), (*op2.get_variable ()));
-        
-        else if (op1.get_variable () && op2.is_constant ())
-          udiv (lhs, (*op1.get_variable ()), op2.constant ());
-        
-        else
-          CRAB_ERROR("udiv operands unexpected");
-      }
-
       // signed rem
-      void rem (variable_t lhs, variable_t op1, variable_t op2) 
-      {
+      void rem (variable_t lhs, variable_t op1, variable_t op2) {
         insert (boost::static_pointer_cast< statement_t, bin_op_t >
                 (boost::make_shared<bin_op_t>(lhs, BINOP_SREM, op1, op2)));
       }
       
-      void rem (variable_t lhs, variable_t op1, Number op2) 
-      {
+      void rem (variable_t lhs, variable_t op1, Number op2) {
         insert (boost::static_pointer_cast< statement_t, bin_op_t >
                 (boost::make_shared<bin_op_t>(lhs, BINOP_SREM, op1, op2)));
       }
       
-      void rem (variable_t lhs, lin_exp_t op1, lin_exp_t op2) 
-      {
-        if (op1.get_variable () && op2.get_variable ())
-          rem (lhs, (*op1.get_variable ()), (*op2.get_variable ()));
-        
-        else if (op1.get_variable () && op2.is_constant ())
-          rem (lhs, (*op1.get_variable ()), op2.constant ());
-        
-        else if (op1.is_constant () && op2.is_constant ()) 
-        {
-          lin_exp_t rhs (Number (op1.constant() % op2.constant()));
-          insert (boost::static_pointer_cast< statement_t, assign_t >
-                  (boost::make_shared<assign_t> (lhs, rhs)));
-        }
-        else
-          CRAB_ERROR("rem operands unexpected");
-      }
-
       // unsigned rem
-      void urem (variable_t lhs, variable_t op1, variable_t op2) 
-      {
+      void urem (variable_t lhs, variable_t op1, variable_t op2) {
         insert (boost::static_pointer_cast< statement_t, bin_op_t >
                 (boost::make_shared<bin_op_t>(lhs, BINOP_UREM, op1, op2)));
       }
       
-      void urem (variable_t lhs, variable_t op1, Number op2) 
-      {
+      void urem (variable_t lhs, variable_t op1, Number op2) {
         insert (boost::static_pointer_cast< statement_t, bin_op_t >
                 (boost::make_shared<bin_op_t>(lhs, BINOP_UREM, op1, op2)));
       }
       
-      void urem (variable_t lhs, lin_exp_t op1, lin_exp_t op2) 
-      {
-        if (op1.get_variable () && op2.get_variable ())
-          urem (lhs, (*op1.get_variable ()), (*op2.get_variable ()));
-        
-        else if (op1.get_variable () && op2.is_constant ())
-          urem (lhs, (*op1.get_variable ()), op2.constant ());
-        
-        else
-          CRAB_ERROR("urem operands unexpected");
-      }
-
-      
-      void bitwise_and (variable_t lhs, variable_t op1, variable_t op2) 
-      {
+      void bitwise_and (variable_t lhs, variable_t op1, variable_t op2) {
         insert (boost::static_pointer_cast< statement_t, bin_op_t >
                 (boost::make_shared<bin_op_t>(lhs, BINOP_AND, op1, op2)));
       }
       
-      void bitwise_and (variable_t lhs, variable_t op1, Number op2) 
-      {
+      void bitwise_and (variable_t lhs, variable_t op1, Number op2) {
         insert (boost::static_pointer_cast< statement_t, bin_op_t >
                 (boost::make_shared<bin_op_t> (lhs, BINOP_AND, op1, op2)));
       }
       
-      void bitwise_and (variable_t lhs, lin_exp_t op1, lin_exp_t op2) 
-      {
-        if (op1.get_variable () && op2.get_variable ())
-          bitwise_and (lhs, (*op1.get_variable ()), (*op2.get_variable ()));
-        
-        else if (op1.get_variable () && op2.is_constant ())
-          bitwise_and (lhs, (*op1.get_variable ()), op2.constant ());        
-        
-        else if (op1.is_constant () && op2.get_variable ())
-          bitwise_and (lhs, (*op2.get_variable ()), op1.constant ());
-
-        else if (op1.is_constant () && op2.is_constant ()) 
-        {
-          lin_exp_t rhs (Number (op1.constant () & op2.constant ()));
-          insert (boost::static_pointer_cast< statement_t, assign_t >
-                  (boost::make_shared<assign_t>(lhs, rhs)));
-        }
-        else
-          CRAB_ERROR("and operands unexpected");
-      }
-
-      void bitwise_or (variable_t lhs, variable_t op1, variable_t op2) 
-      {
+      void bitwise_or (variable_t lhs, variable_t op1, variable_t op2) {
         insert (boost::static_pointer_cast< statement_t, bin_op_t >
                 (boost::make_shared<bin_op_t> (lhs, BINOP_OR, op1, op2)));
       }
       
-      void bitwise_or (variable_t lhs, variable_t op1, Number op2) 
-      {
+      void bitwise_or (variable_t lhs, variable_t op1, Number op2) {
         insert (boost::static_pointer_cast< statement_t, bin_op_t >
                 (boost::make_shared<bin_op_t>(lhs, BINOP_OR, op1, op2)));
       }
       
-      void bitwise_or (variable_t lhs, lin_exp_t op1, lin_exp_t op2) 
-      {
-        if (op1.get_variable () && op2.get_variable ())
-          bitwise_or (lhs, (*op1.get_variable ()), (*op2.get_variable ()));
-        
-        else if (op1.get_variable () && op2.is_constant ())
-          bitwise_or (lhs, (*op1.get_variable ()), op2.constant ());        
-
-        else if (op1.is_constant () && op2.get_variable ())
-          bitwise_or (lhs, (*op2.get_variable ()), op1.constant ());
-        
-        else if (op1.is_constant () && op2.is_constant ()) 
-        {
-          lin_exp_t rhs (Number (op1.constant () | op2.constant ()));
-          insert (boost::static_pointer_cast< statement_t, assign_t >
-                  (boost::make_shared<assign_t>(lhs, rhs)));
-        }
-        else
-          CRAB_ERROR("or operands unexpected");
-      }
-
-      void bitwise_xor (variable_t lhs, variable_t op1, variable_t op2) 
-      {
+      void bitwise_xor (variable_t lhs, variable_t op1, variable_t op2) {
         insert (boost::static_pointer_cast< statement_t, bin_op_t >
                 (boost::make_shared<bin_op_t>(lhs, BINOP_XOR, op1, op2)));
       }
       
-      void bitwise_xor (variable_t lhs, variable_t op1, Number op2) 
-      {
+      void bitwise_xor (variable_t lhs, variable_t op1, Number op2) {
         insert (boost::static_pointer_cast< statement_t, bin_op_t >
                 (boost::make_shared<bin_op_t>(lhs, BINOP_XOR, op1, op2)));
       }
-      
-      void bitwise_xor (variable_t lhs, lin_exp_t op1, lin_exp_t op2) 
-      {
-        if (op1.get_variable () && op2.get_variable ())
-          bitwise_xor (lhs, (*op1.get_variable ()), (*op2.get_variable ()));
-        
-        else if (op1.get_variable () && op2.is_constant ())
-          bitwise_xor (lhs, (*op1.get_variable ()), op2.constant ());        
-
-        else if (op1.is_constant () && op2.get_variable ())
-          bitwise_xor (lhs, (*op2.get_variable ()), op1.constant ());
-        
-        else if (op1.is_constant () && op2.is_constant ()) 
-        {
-          lin_exp_t rhs (Number (op1.constant () ^ op2.constant ()));
-          insert (boost::static_pointer_cast< statement_t, assign_t >
-                  (boost::make_shared<assign_t> (lhs, rhs)));
-        }
-        else
-          CRAB_ERROR("xor operands unexpected");
-      }
-      
-      void assign (variable_t lhs, lin_exp_t rhs) 
-      {
+            
+      void assign (variable_t lhs, lin_exp_t rhs) {
         insert (boost::static_pointer_cast< statement_t, assign_t >
                 (boost::make_shared<assign_t> (lhs, rhs)));
       }
 
-      void assume (lin_cst_t cst) 
-      {
+      void assume (lin_cst_t cst) {
         insert (boost::static_pointer_cast< statement_t, assume_t >
                 (boost::make_shared<assume_t> (cst)));
       }
       
-      void havoc(variable_t lhs) 
-      {
+      void havoc(variable_t lhs) {
         insert (boost::static_pointer_cast< statement_t, havoc_t > 
                 (boost::make_shared<havoc_t> (lhs)));
       }
       
-      void unreachable() 
-      {
+      void unreachable() {
         insert (boost::static_pointer_cast< statement_t, unreach_t > 
                 (boost::make_shared<unreach_t> ()));
       }
       
-      void select (variable_t lhs, variable_t v, lin_exp_t e1, lin_exp_t e2) 
-      {
+      void select (variable_t lhs, variable_t v, lin_exp_t e1, lin_exp_t e2) {
         lin_cst_t cond = (v >= Number(1));
         insert(boost::static_pointer_cast< statement_t, select_t >
                (boost::make_shared<select_t>(lhs, cond, e1, e2)));
       }
       
-      void select (variable_t lhs, lin_cst_t cond, lin_exp_t e1, lin_exp_t e2) 
-      {
+      void select (variable_t lhs, lin_cst_t cond, lin_exp_t e1, lin_exp_t e2) {
         insert(boost::static_pointer_cast< statement_t, select_t >
                (boost::make_shared<select_t>(lhs, cond, e1, e2)));
       }
 
-      void assertion (lin_cst_t cst, debug_info di = debug_info ()) 
-      {
+      void assertion (lin_cst_t cst, debug_info di = debug_info ()) {
 	insert (boost::static_pointer_cast< statement_t, assert_t >
 		(boost::make_shared<assert_t> (cst, di)));
       }
@@ -2592,127 +2381,108 @@ namespace crab {
                  (boost::make_shared<arr_assign_t>(lhs, rhs)));
       }
             
-      void ptr_store (variable_t lhs, variable_t rhs) 
-      {
+      void ptr_store (variable_t lhs, variable_t rhs) {
         if (m_track_prec >= PTR)
           insert(boost::static_pointer_cast< statement_t, ptr_store_t >
                  (boost::make_shared<ptr_store_t> (lhs, rhs)));
       }
       
-      void ptr_load (variable_t lhs, variable_t rhs) 
-      {
+      void ptr_load (variable_t lhs, variable_t rhs) {
         if (m_track_prec >= PTR)
           insert(boost::static_pointer_cast< statement_t, ptr_load_t >
                  (boost::make_shared<ptr_load_t> (lhs, rhs)));
       }
       
-      void ptr_assign (variable_t lhs, variable_t rhs, lin_exp_t offset) 
-      {
+      void ptr_assign (variable_t lhs, variable_t rhs, lin_exp_t offset) {
         if (m_track_prec >= PTR)
           insert(boost::static_pointer_cast< statement_t, ptr_assign_t >
                  (boost::make_shared<ptr_assign_t> (lhs, rhs, offset)));
       }
       
-      void ptr_new_object (variable_t lhs, ikos::index_t address) 
-      {
+      void ptr_new_object (variable_t lhs, ikos::index_t address) {
         if (m_track_prec >= PTR)
           insert(boost::static_pointer_cast< statement_t, ptr_object_t >
                  (boost::make_shared<ptr_object_t> (lhs, address)));
       }
       
-      void ptr_new_func (variable_t lhs, ikos::index_t func) 
-      {
+      void ptr_new_func (variable_t lhs, ikos::index_t func) {
         if (m_track_prec >= PTR)
           insert(boost::static_pointer_cast< statement_t, ptr_function_t >
                  (boost::make_shared<ptr_function_t> (lhs, func)));
       }
 
-      void ptr_null (variable_t lhs) 
-      {
+      void ptr_null (variable_t lhs) {
         if (m_track_prec >= PTR)
           insert(boost::static_pointer_cast< statement_t, ptr_null_t >
                  (boost::make_shared<ptr_null_t> (lhs)));
       }
 
-      void ptr_assume (pointer_constraint<variable_t> cst) 
-      {
+      void ptr_assume (pointer_constraint<variable_t> cst) {
         if (m_track_prec >= PTR)
           insert(boost::static_pointer_cast< statement_t, ptr_assume_t >
                  (boost::make_shared<ptr_assume_t> (cst)));
       }
 
-      void ptr_assertion (pointer_constraint<variable_t> cst) 
-      {
+      void ptr_assertion (pointer_constraint<variable_t> cst) {
         if (m_track_prec >= PTR)
           insert(boost::static_pointer_cast< statement_t, ptr_assert_t >
                  (boost::make_shared<ptr_assert_t> (cst)));
       }
 
-      void ptr_assertion (pointer_constraint<variable_t> cst, debug_info di) 
-      {
+      void ptr_assertion (pointer_constraint<variable_t> cst, debug_info di) {
         if (m_track_prec >= PTR)
           insert(boost::static_pointer_cast< statement_t, ptr_assert_t >
                  (boost::make_shared<ptr_assert_t> (cst, di)));
       }
 
 
-      void bool_assign (variable_t lhs, ikos::linear_constraint<Number, VariableName> rhs) 
-      {
+      void bool_assign (variable_t lhs, ikos::linear_constraint<Number, VariableName> rhs) {
         insert (boost::static_pointer_cast< statement_t, bool_assign_cst_t >
                 (boost::make_shared<bool_assign_cst_t> (lhs, rhs)));
       }
 
 
-      void bool_assign (variable_t lhs, variable_t rhs, bool is_not_rhs = false) 
-      {
+      void bool_assign (variable_t lhs, variable_t rhs, bool is_not_rhs = false) {
         insert (boost::static_pointer_cast< statement_t, bool_assign_var_t >
                 (boost::make_shared<bool_assign_var_t> (lhs, rhs, is_not_rhs)));
       }
       
-      void bool_assume (variable_t c) 
-      {
+      void bool_assume (variable_t c) {
         insert (boost::static_pointer_cast< statement_t, bool_assume_t >
                 (boost::make_shared<bool_assume_t> (c, false)));
       }
 
-      void bool_not_assume (variable_t c) 
-      {
+      void bool_not_assume (variable_t c) {
         insert (boost::static_pointer_cast< statement_t, bool_assume_t >
                 (boost::make_shared<bool_assume_t> (c, true)));
       }
       
-      void bool_assert (variable_t c, debug_info di = debug_info ()) 
-      {
+      void bool_assert (variable_t c, debug_info di = debug_info ()) {
         insert (boost::static_pointer_cast< statement_t, bool_assert_t >
                 (boost::make_shared<bool_assert_t> (c, di)));
       }
 
-      void bool_select (variable_t lhs, variable_t cond, variable_t b1, variable_t b2) 
-      {
+      void bool_select (variable_t lhs, variable_t cond, variable_t b1, variable_t b2) {
         insert(boost::static_pointer_cast< statement_t, bool_select_t >
                (boost::make_shared<bool_select_t>(lhs, cond, b1, b2)));
       }
       
-      void bool_and (variable_t lhs, variable_t op1, variable_t op2) 
-      {
+      void bool_and (variable_t lhs, variable_t op1, variable_t op2) {
         insert (boost::static_pointer_cast< statement_t, bool_bin_op_t >
                 (boost::make_shared<bool_bin_op_t>(lhs, BINOP_BAND, op1, op2)));
       }
 
-      void bool_or (variable_t lhs, variable_t op1, variable_t op2) 
-      {
+      void bool_or (variable_t lhs, variable_t op1, variable_t op2) {
         insert (boost::static_pointer_cast< statement_t, bool_bin_op_t >
                 (boost::make_shared<bool_bin_op_t>(lhs, BINOP_BOR, op1, op2)));
       }
 
-      void bool_xor (variable_t lhs, variable_t op1, variable_t op2) 
-      {
+      void bool_xor (variable_t lhs, variable_t op1, variable_t op2) {
         insert (boost::static_pointer_cast< statement_t, bool_bin_op_t >
                 (boost::make_shared<bool_bin_op_t>(lhs, BINOP_BXOR, op1, op2)));
       }
       
-      friend crab_os& operator<<(crab_os &o, const basic_block_t &b)
-      {
+      friend crab_os& operator<<(crab_os &o, const basic_block_t &b) {
         //b.write (o);
         o << cfg_impl::get_label_str (b);
         return o;
