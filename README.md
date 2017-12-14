@@ -155,9 +155,9 @@ for presentation purposes and it might not compile like it is. Go to
     int main (int argc, char**argv) {
        // Declare variables i,x, and y
        variable_factory_t vfac;	
-       z_var i (vfac ["i"]);
-       z_var x (vfac ["x"]);
-       z_var y (vfac ["y"]);
+       z_var i (vfac ["i"], INT_TYPE, 32);
+       z_var x (vfac ["x"], INT_TYPE, 32);
+       z_var y (vfac ["y"], INT_TYPE, 32);
        // Create an empty CFG marking "entry" and "exit" are the labels
        // for the entry and exit blocks.
        cfg_t cfg ("entry","ret");
@@ -219,9 +219,10 @@ analyzer that infers invariants from LLVM-based languages using Crab.
 - [SeaHorn](https://github.com/seahorn) is a verification framework
 that uses Crab-Llvm to supply invariants to the back-end solvers.
 
-# Publications #
+# References #
 
-- "An Abstract Domain of Uninterpreted Functions" [(PDF)](http://www.clip.dia.fi.upm.es/~jorge/docs/terms-vmcai16.pdf). VMCAI'16.
-
-- "Exploiting Sparsity in Difference-Bounds Matrices" [(PDF)](http://www.clip.dia.fi.upm.es/~jorge/docs/zones-SAS16.pdf). SAS'16.
+- "Exploiting Sparsity in Difference-Bounds Matrices" [(PDF)](https://jorgenavas.github.io/papers/zones-SAS16.pdf) by G. Gange, Jorge A. Navas, P.Schachte, H. Sondergaard, and P. Stuckey. SAS'16.
+- "An Abstract Domain of Uninterpreted Functions" [(PDF)](https://jorgenavas.github.io/papers/terms-vmcai16.pdf) by G. Gange, Jorge A. Navas, P.Schachte, H. Sondergaard, and P. Stuckey. VMCAI'16.
+- "Signedness-Agnostic Program Analysis: Precise Integer Bounds for Low-Level Code" [(PDF)] (https://jorgenavas.github.io/papers/wrapped-intervals-aplas12.pdf) by Jorge A. Navas, P.Schachte, H. Sondergaard, and P. Stuckey. APLAS'12.
+- "Boxes: A Symbolic Abstract Domain of Boxes" [(PDF)] (https://pdfs.semanticscholar.org/93da/8102c5ca512126d1a45ee81da1ab0b0fd47c.pdf) by A. Gurfinkel and S. Chacki. SAS'10.
 
