@@ -9,14 +9,14 @@ using namespace crab::domain_impl;
 
 z_cfg_t* prog1 (variable_factory_t &vfac, bool temp_add) 
 {
-  z_var n1(vfac["n1"], crab::INT_TYPE);
-  z_var i(vfac["i"], crab::INT_TYPE);
-  z_var i1(vfac["i1"], crab::INT_TYPE);
-  z_var a(vfac["A0"], crab::ARR_INT_TYPE);
-  z_var tmp3(vfac["tmp3"], crab::INT_TYPE);
-  z_var val(vfac["val"], crab::INT_TYPE);
-  z_var tmp5(vfac["tmp5"], crab::INT_TYPE);
-  z_var tmp6(vfac["tmp6"], crab::INT_TYPE);
+  z_var n1(vfac["n1"], crab::INT_TYPE, 32);
+  z_var i(vfac["i"], crab::INT_TYPE, 32);
+  z_var i1(vfac["i1"], crab::INT_TYPE, 32);
+  z_var a(vfac["A0"], crab::ARR_INT_TYPE, 32);
+  z_var tmp3(vfac["tmp3"], crab::INT_TYPE, 32);
+  z_var val(vfac["val"], crab::INT_TYPE, 32);
+  z_var tmp5(vfac["tmp5"], crab::INT_TYPE, 32);
+  z_var tmp6(vfac["tmp6"], crab::INT_TYPE, 32);
 
   z_cfg_t* cfg = new z_cfg_t("entry","ret", ARR);
   z_basic_block_t& entry = cfg->insert ("entry");
@@ -62,16 +62,16 @@ z_cfg_t* prog2(variable_factory_t &vfac, bool temp_sub)
   z_basic_block_t& bb1_f = cfg->insert("bb1_f");
   z_basic_block_t& bb2   = cfg->insert("bb2");
   z_basic_block_t& ret   = cfg->insert("ret");
-  z_var n0(vfac["n0"], crab::INT_TYPE);
-  z_var n9(vfac["n9"], crab::INT_TYPE);
-  z_var i(vfac["i"], crab::INT_TYPE);
-  z_var i1(vfac["i1"], crab::INT_TYPE);
-  z_var i2(vfac["i2"], crab::INT_TYPE);
-  z_var  a(vfac["A"], crab::ARR_INT_TYPE);
-  z_var tmp3(vfac["tmp3"], crab::INT_TYPE);
-  z_var tmp4(vfac["tmp4"], crab::INT_TYPE);
-  z_var tmp5(vfac["tmp5"], crab::INT_TYPE);
-  z_var val(vfac["val"], crab::INT_TYPE);
+  z_var n0(vfac["n0"], crab::INT_TYPE, 32);
+  z_var n9(vfac["n9"], crab::INT_TYPE, 32);
+  z_var i(vfac["i"], crab::INT_TYPE, 32);
+  z_var i1(vfac["i1"], crab::INT_TYPE, 32);
+  z_var i2(vfac["i2"], crab::INT_TYPE, 32);
+  z_var  a(vfac["A"], crab::ARR_INT_TYPE, 32);
+  z_var tmp3(vfac["tmp3"], crab::INT_TYPE, 32);
+  z_var tmp4(vfac["tmp4"], crab::INT_TYPE, 32);
+  z_var tmp5(vfac["tmp5"], crab::INT_TYPE, 32);
+  z_var val(vfac["val"], crab::INT_TYPE, 32);
 
   entry >> bb1;
   bb1 >> bb1_t; bb1 >> bb1_f;
@@ -111,15 +111,15 @@ z_cfg_t* prog3(variable_factory_t &vfac)
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
 
-  z_var n1(vfac["n1"], crab::INT_TYPE);
-  z_var i(vfac["i"], crab::INT_TYPE);
-  z_var a(vfac["A"], crab::ARR_INT_TYPE);
-  z_var b(vfac["B"], crab::ARR_INT_TYPE);
-  z_var tmp1(vfac["tmp1"], crab::INT_TYPE);
-  z_var tmp2(vfac["tmp2"], crab::INT_TYPE);
-  z_var val(vfac["val"], crab::INT_TYPE);
-  z_var tmp3(vfac["tmp3"], crab::INT_TYPE);
-  z_var tmp4(vfac["tmp4"], crab::INT_TYPE);
+  z_var n1(vfac["n1"], crab::INT_TYPE, 32);
+  z_var i(vfac["i"], crab::INT_TYPE, 32);
+  z_var a(vfac["A"], crab::ARR_INT_TYPE, 32);
+  z_var b(vfac["B"], crab::ARR_INT_TYPE, 32);
+  z_var tmp1(vfac["tmp1"], crab::INT_TYPE, 32);
+  z_var tmp2(vfac["tmp2"], crab::INT_TYPE, 32);
+  z_var val(vfac["val"], crab::INT_TYPE, 32);
+  z_var tmp3(vfac["tmp3"], crab::INT_TYPE, 32);
+  z_var tmp4(vfac["tmp4"], crab::INT_TYPE, 32);
 
   // assume array element of 1 byte
   entry.assign(n1, 1);
@@ -148,15 +148,15 @@ z_cfg_t* prog4(variable_factory_t &vfac)
   z_basic_block_t& bb1_f = cfg->insert("bb1_f");
   z_basic_block_t& bb2   = cfg->insert("bb2");
   z_basic_block_t& ret   = cfg->insert("ret");
-  z_var n1(vfac["n1"], crab::INT_TYPE);
-  z_var i(vfac["i"], crab::INT_TYPE);
-  z_var a(vfac["A"], crab::ARR_INT_TYPE);
-  z_var b(vfac["B"], crab::ARR_INT_TYPE);
-  z_var tmp3(vfac["tmp3"], crab::INT_TYPE);
-  z_var tmp5(vfac["tmp5"], crab::INT_TYPE);
-  z_var tmp6(vfac["tmp6"], crab::INT_TYPE);
-  z_var val1(vfac["val1"], crab::INT_TYPE);
-  z_var val2(vfac["val2"], crab::INT_TYPE);
+  z_var n1(vfac["n1"], crab::INT_TYPE, 32);
+  z_var i(vfac["i"], crab::INT_TYPE, 32);
+  z_var a(vfac["A"], crab::ARR_INT_TYPE, 32);
+  z_var b(vfac["B"], crab::ARR_INT_TYPE, 32);
+  z_var tmp3(vfac["tmp3"], crab::INT_TYPE, 32);
+  z_var tmp5(vfac["tmp5"], crab::INT_TYPE, 32);
+  z_var tmp6(vfac["tmp6"], crab::INT_TYPE, 32);
+  z_var val1(vfac["val1"], crab::INT_TYPE, 32);
+  z_var val2(vfac["val2"], crab::INT_TYPE, 32);
 
   entry >> bb1;
   bb1 >> bb1_t; bb1 >> bb1_f;
@@ -189,13 +189,13 @@ z_cfg_t* prog5(variable_factory_t &vfac)
   z_basic_block_t& bb1_f = cfg->insert("bb1_f");
   z_basic_block_t& bb2   = cfg->insert("bb2");
   z_basic_block_t& ret   = cfg->insert("ret");
-  z_var n1(vfac["n1"], crab::INT_TYPE);
-  z_var i(vfac["i"], crab::INT_TYPE);
-  z_var n(vfac["n"], crab::INT_TYPE);
-  z_var a(vfac["A"], crab::ARR_INT_TYPE);
-  z_var tmp1(vfac["tmp1"], crab::INT_TYPE);
-  z_var val(vfac["val"], crab::INT_TYPE);
-  z_var tmp2(vfac["tmp2"], crab::INT_TYPE);
+  z_var n1(vfac["n1"], crab::INT_TYPE, 32);
+  z_var i(vfac["i"], crab::INT_TYPE, 32);
+  z_var n(vfac["n"], crab::INT_TYPE, 32);
+  z_var a(vfac["A"], crab::ARR_INT_TYPE, 32);
+  z_var tmp1(vfac["tmp1"], crab::INT_TYPE, 32);
+  z_var val(vfac["val"], crab::INT_TYPE, 32);
+  z_var tmp2(vfac["tmp2"], crab::INT_TYPE, 32);
 
   entry >> bb1;
   bb1 >> bb1_t; bb1 >> bb1_f;
@@ -225,14 +225,14 @@ z_cfg_t* prog6(variable_factory_t &vfac)
   z_basic_block_t& bb1_f = cfg->insert("bb1_f");
   z_basic_block_t& bb2   = cfg->insert("bb2");
   z_basic_block_t& ret   = cfg->insert("ret");
-  z_var i(vfac["i"], crab::INT_TYPE);
-  z_var a(vfac["A"], crab::ARR_INT_TYPE);
-  z_var tmp(vfac["tmp"], crab::INT_TYPE);
-  z_var offset(vfac["o"], crab::INT_TYPE);
-  z_var tmp2(vfac["tmp2"], crab::INT_TYPE);
-  z_var val(vfac["val"], crab::INT_TYPE);
-  z_var tmp4(vfac["tmp4"], crab::INT_TYPE);
-  z_var tmp5(vfac["tmp5"], crab::INT_TYPE);
+  z_var i(vfac["i"], crab::INT_TYPE, 32);
+  z_var a(vfac["A"], crab::ARR_INT_TYPE, 32);
+  z_var tmp(vfac["tmp"], crab::INT_TYPE, 32);
+  z_var offset(vfac["o"], crab::INT_TYPE, 32);
+  z_var tmp2(vfac["tmp2"], crab::INT_TYPE, 32);
+  z_var val(vfac["val"], crab::INT_TYPE, 32);
+  z_var tmp4(vfac["tmp4"], crab::INT_TYPE, 32);
+  z_var tmp5(vfac["tmp5"], crab::INT_TYPE, 32);
 
   entry >> bb1;
   bb1 >> bb1_t; bb1 >> bb1_f;
@@ -263,15 +263,15 @@ z_cfg_t* prog7(variable_factory_t &vfac)
   z_basic_block_t& bb1_f = cfg->insert("bb1_f");
   z_basic_block_t& bb2   = cfg->insert("bb2");
   z_basic_block_t& ret   = cfg->insert("ret");
-  z_var n1(vfac["n1"], crab::INT_TYPE);
-  z_var i(vfac["i"], crab::INT_TYPE);
-  z_var n(vfac["n"], crab::INT_TYPE);
-  z_var a(vfac["A"], crab::ARR_INT_TYPE);
-  z_var tmp1(vfac["tmp1"], crab::INT_TYPE);
-  z_var tmp2(vfac["tmp2"], crab::INT_TYPE);
-  z_var tmp3(vfac["tmp3"], crab::INT_TYPE);
-  z_var val(vfac["val"], crab::INT_TYPE);
-  z_var tmp4(vfac["tmp4"], crab::INT_TYPE);
+  z_var n1(vfac["n1"], crab::INT_TYPE, 32);
+  z_var i(vfac["i"], crab::INT_TYPE, 32);
+  z_var n(vfac["n"], crab::INT_TYPE, 32);
+  z_var a(vfac["A"], crab::ARR_INT_TYPE, 32);
+  z_var tmp1(vfac["tmp1"], crab::INT_TYPE, 32);
+  z_var tmp2(vfac["tmp2"], crab::INT_TYPE, 32);
+  z_var tmp3(vfac["tmp3"], crab::INT_TYPE, 32);
+  z_var val(vfac["val"], crab::INT_TYPE, 32);
+  z_var tmp4(vfac["tmp4"], crab::INT_TYPE, 32);
 
   entry >> bb1;
   bb1 >> bb1_t; bb1 >> bb1_f;
@@ -309,16 +309,16 @@ z_cfg_t* prog8(variable_factory_t &vfac)
   z_basic_block_t& bb1_f = cfg->insert("bb1_f");
   z_basic_block_t& bb2   = cfg->insert("bb2");
   z_basic_block_t& ret   = cfg->insert("ret");
-  z_var n1(vfac["n1"], crab::INT_TYPE);
-  z_var n2(vfac["n2"], crab::INT_TYPE);
-  z_var i(vfac["i"], crab::INT_TYPE);
-  z_var i1(vfac["i1"], crab::INT_TYPE);
-  z_var n(vfac["n"], crab::INT_TYPE);
-  z_var a(vfac["A"], crab::ARR_INT_TYPE);
-  z_var tmp1(vfac["tmp1"], crab::INT_TYPE);
-  z_var val(vfac["val"], crab::INT_TYPE);
-  z_var tmp2(vfac["tmp2"], crab::INT_TYPE);
-  z_var tmp3(vfac["tmp3"], crab::INT_TYPE);
+  z_var n1(vfac["n1"], crab::INT_TYPE, 32);
+  z_var n2(vfac["n2"], crab::INT_TYPE, 32);
+  z_var i(vfac["i"], crab::INT_TYPE, 32);
+  z_var i1(vfac["i1"], crab::INT_TYPE, 32);
+  z_var n(vfac["n"], crab::INT_TYPE, 32);
+  z_var a(vfac["A"], crab::ARR_INT_TYPE, 32);
+  z_var tmp1(vfac["tmp1"], crab::INT_TYPE, 32);
+  z_var val(vfac["val"], crab::INT_TYPE, 32);
+  z_var tmp2(vfac["tmp2"], crab::INT_TYPE, 32);
+  z_var tmp3(vfac["tmp3"], crab::INT_TYPE, 32);
 
   entry >> bb1;
   bb1 >> bb1_t; bb1 >> bb1_f;
@@ -363,14 +363,14 @@ z_cfg_t* prog9(variable_factory_t &vfac)
   z_basic_block_t& bb2_b   = cfg->insert("bb2b");
   z_basic_block_t& bb3   = cfg->insert("bb3");
   z_basic_block_t& ret     = cfg->insert("ret");
-  z_var i1(vfac["i1"], crab::INT_TYPE);
-  z_var i2(vfac["i2"], crab::INT_TYPE);
-  z_var n(vfac["n"], crab::INT_TYPE);
-  z_var a(vfac["A"], crab::ARR_INT_TYPE);
-  z_var tmp1(vfac["tmp1"], crab::INT_TYPE);
-  z_var val(vfac["val"], crab::INT_TYPE);
-  z_var tmp2(vfac["tmp2"], crab::INT_TYPE);
-  z_var nd(vfac["nd"], crab::INT_TYPE);
+  z_var i1(vfac["i1"], crab::INT_TYPE, 32);
+  z_var i2(vfac["i2"], crab::INT_TYPE, 32);
+  z_var n(vfac["n"], crab::INT_TYPE, 32);
+  z_var a(vfac["A"], crab::ARR_INT_TYPE, 32);
+  z_var tmp1(vfac["tmp1"], crab::INT_TYPE, 32);
+  z_var val(vfac["val"], crab::INT_TYPE, 32);
+  z_var tmp2(vfac["tmp2"], crab::INT_TYPE, 32);
+  z_var nd(vfac["nd"], crab::INT_TYPE, 32);
 
   entry >> bb1;
   bb1 >> bb1_t; bb1 >> bb1_f1; bb1 >> bb1_f2;
@@ -414,15 +414,15 @@ z_cfg_t* prog10(variable_factory_t &vfac)
   z_basic_block_t& bb1_f = cfg->insert("bb1_f");
   z_basic_block_t& bb2   = cfg->insert("bb2");
   z_basic_block_t& ret   = cfg->insert("ret");
-  z_var i(vfac["i"], crab::INT_TYPE);
-  z_var n(vfac["n"], crab::INT_TYPE);
-  z_var max(vfac["max"], crab::INT_TYPE);
+  z_var i(vfac["i"], crab::INT_TYPE, 32);
+  z_var n(vfac["n"], crab::INT_TYPE, 32);
+  z_var max(vfac["max"], crab::INT_TYPE, 32);
   z_var a(vfac["A"], crab::ARR_PTR_TYPE);
   z_var b(vfac["B"], crab::ARR_PTR_TYPE);
   z_var obj1(vfac["obj1"], crab::PTR_TYPE);
   z_var tmp1(vfac["tmp1"], crab::PTR_TYPE);
   z_var tmp2(vfac["tmp2"], crab::PTR_TYPE);
-  z_var tmp3(vfac["tmp3"], crab::INT_TYPE);
+  z_var tmp3(vfac["tmp3"], crab::INT_TYPE, 32);
 
   entry >> bb1;
   bb1 >> bb1_t; bb1 >> bb1_f;

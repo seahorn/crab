@@ -32,9 +32,9 @@ z_cfg_t* prog (variable_factory_t &vfac)
   loop2_bb1 >> loop2_bb1_t; loop2_bb1 >> loop2_bb1_f;
   loop2_bb1_t >> loop2_bb2; loop2_bb2 >> loop2_bb1; loop2_bb1_f >> ret;
 
-  z_var i(vfac["i"], crab::INT_TYPE);
-  z_var j(vfac["j"], crab::INT_TYPE);
-  z_var k(vfac["k"], crab::INT_TYPE);
+  z_var i(vfac["i"], crab::INT_TYPE, 32);
+  z_var j(vfac["j"], crab::INT_TYPE, 32);
+  z_var k(vfac["k"], crab::INT_TYPE, 32);
 
   loop1_entry.assign (i, 0);
   loop1_entry.assign (k, 30);

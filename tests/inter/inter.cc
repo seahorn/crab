@@ -13,9 +13,9 @@ using namespace crab::cg;
 
 z_cfg_t* foo (variable_factory_t &vfac) {
   // Defining program variables
-  z_var x (vfac ["x"], crab::INT_TYPE);
-  z_var y (vfac ["y"], crab::INT_TYPE);
-  z_var z (vfac ["z"], crab::INT_TYPE);
+  z_var x (vfac ["x"], crab::INT_TYPE, 32);
+  z_var y (vfac ["y"], crab::INT_TYPE, 32);
+  z_var z (vfac ["z"], crab::INT_TYPE, 32);
   
   function_decl<z_number, varname_t> decl ("foo", {x}, {z});
   // entry and exit block
@@ -34,9 +34,9 @@ z_cfg_t* foo (variable_factory_t &vfac) {
 
 z_cfg_t* rec1 (variable_factory_t &vfac) {
   // Defining program variables
-  z_var r (vfac ["r"], crab::INT_TYPE);
-  z_var s (vfac ["s"], crab::INT_TYPE);
-  z_var t (vfac ["t"], crab::INT_TYPE);
+  z_var r (vfac ["r"], crab::INT_TYPE, 32);
+  z_var s (vfac ["s"], crab::INT_TYPE, 32);
+  z_var t (vfac ["t"], crab::INT_TYPE, 32);
   
   function_decl<z_number, varname_t> decl ("rec1", {s},{t});
   // entry and exit block
@@ -55,9 +55,9 @@ z_cfg_t* rec1 (variable_factory_t &vfac) {
 
 z_cfg_t* rec2 (variable_factory_t &vfac) {
   // Defining program variables
-  z_var r (vfac ["r1"], crab::INT_TYPE);
-  z_var s (vfac ["s1"], crab::INT_TYPE);
-  z_var t (vfac ["t1"], crab::INT_TYPE);
+  z_var r (vfac ["r1"], crab::INT_TYPE, 32);
+  z_var s (vfac ["s1"], crab::INT_TYPE, 32);
+  z_var t (vfac ["t1"], crab::INT_TYPE, 32);
   
   function_decl<z_number, varname_t> decl ("rec2", {s},{t});
   // entry and exit block
@@ -78,10 +78,10 @@ z_cfg_t* rec2 (variable_factory_t &vfac) {
 
 z_cfg_t* bar (variable_factory_t &vfac) {
   // Defining program variables
-  z_var a (vfac ["a"], crab::INT_TYPE);
-  z_var x (vfac ["x1"], crab::INT_TYPE);
-  z_var y (vfac ["y1"], crab::INT_TYPE);
-  z_var w (vfac ["w1"], crab::INT_TYPE);
+  z_var a (vfac ["a"], crab::INT_TYPE, 32);
+  z_var x (vfac ["x1"], crab::INT_TYPE, 32);
+  z_var y (vfac ["y1"], crab::INT_TYPE, 32);
+  z_var w (vfac ["w1"], crab::INT_TYPE, 32);
   
   function_decl<z_number, varname_t> decl ("bar",{a},{y});
   // entry and exit block
@@ -101,11 +101,11 @@ z_cfg_t* bar (variable_factory_t &vfac) {
 
 z_cfg_t* m (variable_factory_t &vfac)  {
   // Defining program variables
-  z_var x (vfac ["x2"], crab::INT_TYPE);
-  z_var y (vfac ["y2"], crab::INT_TYPE);
-  z_var z (vfac ["z2"], crab::INT_TYPE);
-  z_var z1 (vfac ["z3"], crab::INT_TYPE);  
-  z_var w (vfac ["w2"], crab::INT_TYPE);  
+  z_var x (vfac ["x2"], crab::INT_TYPE, 32);
+  z_var y (vfac ["y2"], crab::INT_TYPE, 32);
+  z_var z (vfac ["z2"], crab::INT_TYPE, 32);
+  z_var z1 (vfac ["z3"], crab::INT_TYPE, 32);  
+  z_var w (vfac ["w2"], crab::INT_TYPE, 32);  
   
   function_decl<z_number, varname_t> decl ("main", {}, {w});
 				 

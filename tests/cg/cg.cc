@@ -24,9 +24,9 @@ typedef ikos::variable<z_number, varname_t> variable_t;
 
 z_cfg_t* foo (variable_factory_t &vfac) {
   // Defining program variables
-  z_var x (vfac ["x"], crab::INT_TYPE);
-  z_var y (vfac ["y"], crab::INT_TYPE);
-  z_var z (vfac ["z"], crab::INT_TYPE);
+  z_var x (vfac ["x"], crab::INT_TYPE, 32);
+  z_var y (vfac ["y"], crab::INT_TYPE, 32);
+  z_var z (vfac ["z"], crab::INT_TYPE, 32);
   
   function_decl<z_number, varname_t> decl ("foo", {x}, {z});
   // entry and exit block
@@ -46,9 +46,9 @@ z_cfg_t* foo (variable_factory_t &vfac) {
 
 z_cfg_t* bar (variable_factory_t &vfac) {
   // Defining program variables
-  z_var a (vfac ["a"], crab::INT_TYPE);
-  z_var x (vfac ["x"], crab::INT_TYPE);
-  z_var y (vfac ["y"], crab::INT_TYPE);
+  z_var a (vfac ["a"], crab::INT_TYPE, 32);
+  z_var x (vfac ["x"], crab::INT_TYPE, 32);
+  z_var y (vfac ["y"], crab::INT_TYPE, 32);
   
   function_decl<z_number, varname_t> decl ("bar", {a}, {y});
   // entry and exit block
@@ -67,9 +67,9 @@ z_cfg_t* bar (variable_factory_t &vfac) {
 
 z_cfg_t* m (variable_factory_t &vfac)  {
   // Defining program variables
-  z_var x (vfac ["x"], crab::INT_TYPE);
-  z_var y (vfac ["y"], crab::INT_TYPE);
-  z_var z (vfac ["z"], crab::INT_TYPE);
+  z_var x (vfac ["x"], crab::INT_TYPE, 32);
+  z_var y (vfac ["y"], crab::INT_TYPE, 32);
+  z_var z (vfac ["z"], crab::INT_TYPE, 32);
   
   vector<variable_t> inputs, outputs;
   function_decl<z_number, varname_t> decl ("main", inputs, outputs);

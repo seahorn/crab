@@ -12,7 +12,7 @@ z_cfg_t* prog (variable_factory_t &vfac)  {
 
   // Defining program variables
   z_var i(vfac ["i"], crab::INT_TYPE, 64);
-  z_var b1(vfac ["b1"], crab::INT_TYPE, 64);
+  z_var b1(vfac ["b1"], crab::BOOL_TYPE, 1);
   z_var n(vfac ["n"], crab::INT_TYPE, 64);
   z_var n1(vfac ["n1"], crab::INT_TYPE, 32);
   

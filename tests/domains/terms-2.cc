@@ -14,11 +14,11 @@ z_cfg_t* prog (variable_factory_t &vfac)
   ////
 
   // Definining program variables
-  z_var x (vfac ["x"], crab::INT_TYPE);
-  z_var y (vfac ["y"], crab::INT_TYPE);
-  z_var z (vfac ["z"], crab::INT_TYPE);
-  z_var z0 (vfac ["z0"], crab::INT_TYPE);
-  z_var y0 (vfac ["y0"], crab::INT_TYPE);
+  z_var x (vfac ["x"], crab::INT_TYPE, 32);
+  z_var y (vfac ["y"], crab::INT_TYPE, 32);
+  z_var z (vfac ["z"], crab::INT_TYPE, 32);
+  z_var z0 (vfac ["z0"], crab::INT_TYPE, 32);
+  z_var y0 (vfac ["y0"], crab::INT_TYPE, 32);
   // entry and exit block
   z_cfg_t* cfg = new z_cfg_t("p0","ret");
   // adding blocks
