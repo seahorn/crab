@@ -5,9 +5,9 @@
  * iterators.
  * 
  * All the CFG statements are strongly typed. However, only variables
- * need to be typed. The types of constants can be inferred trivially
- * from the context since they always appear together with at least
- * one variable. Types form a **flat** lattice consisting of:
+ * need to be typed. The types of constants can be inferred from the
+ * context since they always appear together with at least one
+ * variable. Types form a **flat** lattice consisting of:
  * 
  * - booleans,
  * - integers,
@@ -1871,7 +1871,8 @@ namespace crab {
       friend class Cfg< BasicBlockLabel, VariableName, Number>;
       
      public:
-      
+
+      typedef Number number_t;
       typedef VariableName varname_t;
       typedef BasicBlockLabel basic_block_label_t;
 
@@ -2034,10 +2035,8 @@ namespace crab {
         m_insert_point_at_front = true;
       }
       
-      boost::shared_ptr<basic_block_t> clone () const
-      {
-        boost::shared_ptr<basic_block_t> b (new basic_block_t(label (), m_track_prec));
-        
+      boost::shared_ptr<basic_block_t> clone () const {     
+        boost::shared_ptr<basic_block_t> b (new basic_block_t(label (), m_track_prec));        
         for (auto &s : boost::make_iterator_range (begin (), end ()))
           b->m_stmts.push_back (s.clone ()); 
         
@@ -2093,6 +2092,10 @@ namespace crab {
         return m_live;
       }
 
+      void accept(statement_visitor<Number, VariableName> *v) {
+	v->visit(*this);
+      }
+      
       std::pair<succ_iterator, succ_iterator> next_blocks ()
       { 
         return std::make_pair (m_next.begin (), m_next.end ());
@@ -2495,6 +2498,7 @@ namespace crab {
     template<class BasicBlock> 
     class basic_block_rev {
      public:
+      typedef typename BasicBlock::number_t number_t;      
       typedef typename BasicBlock::varname_t varname_t;
       typedef typename BasicBlock::variable_t variable_t;
       typedef typename BasicBlock::basic_block_label_t basic_block_label_t;
@@ -2532,6 +2536,10 @@ namespace crab {
       
       std::size_t size() const { return std::distance ( begin (), end ()); }
 
+      void accept(statement_visitor<number_t, varname_t> *v) {
+	v->visit(*this);
+      }
+      
       live_domain_t& live () { return _bb.live(); }
 
       live_domain_t live () const { return _bb.live(); }
@@ -2604,7 +2612,7 @@ namespace crab {
       typedef bool_assume_stmt <Number,VariableName> bool_assume_t;
       typedef bool_select_stmt<Number,VariableName> bool_select_t;
       typedef bool_assert_stmt <Number,VariableName> bool_assert_t;
-      
+
       virtual void visit (bin_op_t&) {};
       virtual void visit (assign_t&) {};
       virtual void visit (assume_t&) {};
@@ -2638,6 +2646,20 @@ namespace crab {
       virtual void visit (bool_assume_t&) {};
       virtual void visit (bool_select_t&) {};
       virtual void visit (bool_assert_t&) {};
+
+      template<typename BasicBlockLabel>
+      void visit (basic_block<BasicBlockLabel, VariableName, Number> &b) {
+	for (auto &s: b) {
+	  s.accept(this);
+	}
+      }
+
+      template<typename BasicBlock>
+      void visit (basic_block_rev<BasicBlock> &b) {
+	for (auto &s: b) {
+	  s.accept(this);
+	}
+      }
       
       virtual ~statement_visitor () {}
     }; 
@@ -2763,7 +2785,7 @@ namespace crab {
     // forward declarations
     template<class Any> class cfg_rev;
     template<class Any> class cfg_ref;
-     
+         
     template< class BasicBlockLabel, class VariableName, class Number>
     class Cfg: public boost::noncopyable {
      public:
@@ -3105,18 +3127,17 @@ namespace crab {
         return o;
       }
       
-      void simplify ()
-      {
-        merge_blocks ();        
-        remove_unreachable_blocks ();
-        remove_useless_blocks ();
+      void simplify() {
+        merge_blocks();        
+        remove_unreachable_blocks();
+        remove_useless_blocks();
         //after removing useless blocks there can be opportunities to
         //merge more blocks.
-        merge_blocks ();
-        merge_blocks ();
+        merge_blocks();
+        merge_blocks();
       }
-      
-     private:
+
+    private:
       
       ////
       // cfg simplifications
@@ -3347,7 +3368,12 @@ namespace crab {
         assert (_ref);
         return (*_ref).get().get_node(bb);
       }
- 
+
+      size_t size () const {
+        assert (_ref);
+        return (*_ref).get().size();
+      }
+      
       iterator begin() {
         assert (_ref);
         return (*_ref).get().begin();
@@ -3409,7 +3435,7 @@ namespace crab {
         o << cfg.get();
         return o;
       }
-      
+
       void simplify () {
         if (_ref) (*_ref).get().simplify();
       }
@@ -3451,7 +3477,7 @@ namespace crab {
 
      private:
 
-      struct getRev : public std::unary_function<typename CFGRef::basic_block_t, basic_block_t> {
+      struct getRev: public std::unary_function<typename CFGRef::basic_block_t, basic_block_t> {
         const boost::unordered_map<basic_block_label_t, basic_block_t>& _rev_bbs;
 
         getRev(const boost::unordered_map<basic_block_label_t, basic_block_t>& rev_bbs)
@@ -3604,8 +3630,8 @@ namespace crab {
         cfg.write(o);
         return o;
       }
-      
-      void simplify () { }
+
+      void simplify() { }
       
     };
 
@@ -3635,6 +3661,348 @@ namespace crab {
       }      
     };
 
+
+    template<class CFG>
+    class type_checker {
+
+    public:
+
+      type_checker(CFG cfg): m_cfg(cfg) {}
+      
+      void run() {
+	CRAB_LOG("type-check", crab::outs () << "Type checking CFG ...\n";);
+	
+	// some sanity checks about the CFG
+	if (m_cfg.size() == 0) 
+	  CRAB_ERROR("CFG must have at least one basic block");
+	if (!m_cfg.has_exit())
+	  CRAB_ERROR("CFG must have exit block");
+	if (m_cfg.size() == 1) {
+	  if (!(m_cfg.exit() == m_cfg.entry()))
+	    CRAB_ERROR("CFG entry and exit must be the same");
+	}
+	// check all statement are well typed
+	type_checker_visitor vis;
+	for (auto &b: boost::make_iterator_range(m_cfg.begin(), m_cfg.end())) {
+	  b.accept(&vis);
+	}
+	
+	CRAB_LOG("type-check", crab::outs () << "CFG is well-typed!\n";);
+      }
+      
+     private:
+
+      typedef typename CFG::varname_t V;
+      typedef typename CFG::number_t N;
+
+      CFG m_cfg;
+      
+      struct type_checker_visitor: public statement_visitor<N,V> {
+	typedef typename statement_visitor<N,V>::bin_op_t bin_op_t;
+	typedef typename statement_visitor<N,V>::assign_t assign_t;
+	typedef typename statement_visitor<N,V>::assume_t assume_t;
+	typedef typename statement_visitor<N,V>::assert_t assert_t;
+	typedef typename statement_visitor<N,V>::int_cast_t int_cast_t;    
+	typedef typename statement_visitor<N,V>::select_t select_t;    
+	typedef typename statement_visitor<N,V>::havoc_t havoc_t;
+	typedef typename statement_visitor<N,V>::unreach_t unreach_t;
+	typedef typename statement_visitor<N,V>::callsite_t callsite_t;
+	typedef typename statement_visitor<N,V>::return_t return_t;
+	typedef typename statement_visitor<N,V>::arr_assume_t arr_assume_t;
+	typedef typename statement_visitor<N,V>::arr_store_t arr_store_t;
+	typedef typename statement_visitor<N,V>::arr_load_t arr_load_t;
+	typedef typename statement_visitor<N,V>::arr_assign_t arr_assign_t;	
+	typedef typename statement_visitor<N,V>::ptr_store_t ptr_store_t;
+	typedef typename statement_visitor<N,V>::ptr_load_t ptr_load_t;
+	typedef typename statement_visitor<N,V>::ptr_assign_t ptr_assign_t;
+	typedef typename statement_visitor<N,V>::ptr_object_t ptr_object_t;
+	typedef typename statement_visitor<N,V>::ptr_function_t ptr_function_t;
+	typedef typename statement_visitor<N,V>::ptr_null_t ptr_null_t;
+	typedef typename statement_visitor<N,V>::ptr_assume_t ptr_assume_t;
+	typedef typename statement_visitor<N,V>::ptr_assert_t ptr_assert_t;
+	typedef typename statement_visitor<N,V>::bool_bin_op_t bool_bin_op_t;
+	typedef typename statement_visitor<N,V>::bool_assign_cst_t bool_assign_cst_t;
+	typedef typename statement_visitor<N,V>::bool_assign_var_t bool_assign_var_t;    
+	typedef typename statement_visitor<N,V>::bool_assume_t bool_assume_t;
+	typedef typename statement_visitor<N,V>::bool_assert_t bool_assert_t;
+	typedef typename statement_visitor<N,V>::bool_select_t bool_select_t;
+
+	typedef typename CFG::statement_t statement_t;    
+
+	typedef ikos::linear_expression<N,V> lin_exp_t;
+	typedef ikos::linear_constraint<N,V> lin_cst_t;
+	typedef ikos::variable<N,V> variable_t;
+	typedef ikos::variable_ref<N,V> variable_ref_t;		
+	
+        type_checker_visitor () {}
+
+	void check_num(variable_t v, std::string msg, statement_t& s) {
+	  if (v.get_type() != INT_TYPE && v.get_type() != REAL_TYPE) {
+	    crab::crab_string_os os;
+	    os << "(type checking) " << msg << " in " << s;
+	    CRAB_ERROR(os.str());
+	  }
+	}
+
+	void check_int_or_bool(variable_t v, std::string msg, statement_t& s) {
+	  if (v.get_type() != INT_TYPE && v.get_type() != BOOL_TYPE) {
+	    crab::crab_string_os os;
+	    os << "(type checking) " << msg << " in " << s;
+	    CRAB_ERROR(os.str());
+	  }
+	}
+	
+	void check_int(variable_t v, std::string msg, statement_t& s) {
+	  if ((v.get_type() != INT_TYPE) || (v.get_bitwidth() <= 1)) {
+	    crab::crab_string_os os;
+	    os << "(type checking) " << msg << " in " << s;
+	    CRAB_ERROR(os.str());
+	  }
+	}
+
+	void check_bool(variable_t v, std::string msg, statement_t& s) {
+	  if ((v.get_type() != BOOL_TYPE) || (v.get_bitwidth() != 1)) {
+	    crab::crab_string_os os;
+	    os << "(type checking) " << msg << " in " << s;
+	    CRAB_ERROR(os.str());
+	  }
+	}
+
+	// static void check_ptr(variable_t v, std::string msg, statement_t& s) {
+	//   if ((v.get_type() != PTR_TYPE)) {
+	//     CRAB_ERROR("(type checking) ",msg," in ",s);
+	//   }
+	// }
+	
+	void check_bitwidth_if_int(variable_t v, std::string msg, statement_t& s) {
+	  if (v.get_type() == INT_TYPE) {
+	    if (v.get_bitwidth() <= 1) {
+	      crab::crab_string_os os;
+	      os << "(type checking) " << msg << " in " << s;
+	      CRAB_ERROR(os.str());
+	    }
+	  }
+	}
+
+	void check_bitwidth_if_bool(variable_t v, std::string msg, statement_t& s) {
+	  if (v.get_type() == BOOL_TYPE) {
+	    if (v.get_bitwidth() != 1) {
+	      crab::crab_string_os os;
+	      os << "(type checking) " << msg << " in " << s;
+	      CRAB_ERROR(os.str());
+	    }
+	  }
+	}
+	
+	void check_same_type(variable_t v1, variable_t v2, std::string msg, statement_t& s) {
+	  if (v1.get_type() != v2.get_type()) {
+	    crab::crab_string_os os;
+	    os << "(type checking) " << msg << " in " << s;
+	    CRAB_ERROR(os.str());
+	  }
+	}
+
+        void check_same_bitwidth(variable_t v1, variable_t v2, std::string msg, statement_t& s) {
+	  // assume v1 and v2 have same type
+	  if (v1.get_type() == INT_TYPE || v1.get_type() == BOOL_TYPE) {
+	    if (v1.get_bitwidth() != v2.get_bitwidth()) {
+	      crab::crab_string_os os;
+	      os << "(type checking) " << msg << " in " << s;
+	      CRAB_ERROR(os.str());
+	    }
+	  }
+	}
+	
+        void visit(bin_op_t& s){
+	  variable_t lhs = s.lhs(); 
+	  lin_exp_t op1 = s.left();
+	  lin_exp_t op2 = s.right();	  
+
+	  check_num(lhs, "lhs must be integer or real", s);
+	  check_bitwidth_if_int(lhs, "lhs must be have bitwidth > 1", s);
+	  
+	  if (boost::optional<variable_t> v1 = op1.get_variable()) {
+	    check_same_type(lhs, *v1, "first operand cannot have different type from lhs", s);
+	    check_same_bitwidth(lhs, *v1, "first operand cannot have different bitwidth from lhs", s);
+	  } else {
+	    CRAB_ERROR("(type checking) first binary operand must be a variable in ",s);
+	  }  
+	  if (boost::optional<variable_t> v2 = op2.get_variable()) {
+	    check_same_type(lhs, *v2, "second operand cannot have different type from lhs", s);
+	    check_same_bitwidth(lhs, *v2, "second operand cannot have different bitwidth from lhs", s);
+	  } else {
+	    // TODO: we can still check that we use z_number
+	    // (q_number) of INT_TYPE (REAL_TYPE)
+	  }
+	}
+	
+        void visit(assign_t& s) {
+	  variable_t lhs = s.lhs();
+	  lin_exp_t rhs = s.rhs();
+
+	  check_num(lhs, "lhs must be integer or real", s);
+	  check_bitwidth_if_int(lhs, "lhs must be have bitwidth > 1", s);
+	  
+	  typename lin_exp_t::variable_set_t vars = rhs.variables();
+	  for (auto const &v: vars) {
+	    check_same_type(lhs, v, "variable cannot have different type from lhs", s);
+	    check_same_bitwidth(lhs, v, "variable cannot have different bitwidth from lhs", s);
+	  }
+	}
+	
+        void visit(assume_t& s) {
+	  typename lin_exp_t::variable_set_t vars = s.constraint().variables();
+	  bool first = true;
+	  variable_ref_t first_var;
+	  for (auto const &v: vars) {
+	    check_num(v, "assume variables must be integer or real", s);	    
+	    if (first) {
+	      first_var = variable_ref_t(v);
+	      first = false;	      
+	    }
+	    check_same_type(first_var.get(), v, "inconsistent types in assume variables", s);
+	    check_same_bitwidth(first_var.get(), v, "inconsistent bitwidths in assume variables", s);
+	  }
+	}
+	
+        void visit(assert_t& s) {
+	  typename lin_exp_t::variable_set_t vars = s.constraint().variables();
+	  bool first = true;
+	  variable_ref_t first_var;
+	  for (auto const &v: vars) {
+	    check_num(v, "assert variables must be integer or real", s);	    
+	    if (first) {
+	      first_var = variable_ref_t(v);
+	      first = false;	      
+	    }
+	    check_same_type(first_var.get(), v, "inconsistent types in assert variables", s);
+	    check_same_bitwidth(first_var.get(), v, "inconsistent bitwidths in assert variables", s);
+	  }
+	}
+
+	void visit(select_t& s){
+	  check_num(s.lhs(), "lhs must be integer or real", s);
+	  check_bitwidth_if_int(s.lhs(), "lhs must be have bitwidth > 1", s);	  
+	  
+	  typename lin_exp_t::variable_set_t left_vars = s.left().variables();
+	  for (auto const &v: left_vars) {
+	    check_same_type(s.lhs(), v, "inconsistent types in select variables", s);
+	    check_same_bitwidth(s.lhs(), v, "inconsistent bitwidths in select variables", s);
+	  }
+	  typename lin_exp_t::variable_set_t right_vars = s.right().variables();
+	  for (auto const &v: right_vars) {
+	    check_same_type(s.lhs(), v, "inconsistent types in select variables", s);
+	    check_same_bitwidth(s.lhs(), v, "inconsistent bitwidths in select variables", s);
+	  }
+
+	  // -- The condition can have different bitwidth from
+	  //    lhs/left/right operands but must have same type.
+	  typename lin_exp_t::variable_set_t cond_vars = s.cond().variables();
+	  bool first = true;
+	  variable_ref_t first_var;
+	  for (auto const &v: cond_vars) {
+	    check_num(v, "assume variables must be integer or real", s);	    
+	    if (first) {
+	      first_var = variable_ref_t(v);
+	      first = false;	      
+	    }
+	    check_same_type(s.lhs(), v, "inconsistent types in select condition variables", s);	    	    
+	    check_same_type(first_var.get(), v, "inconsistent types in select condition variables", s);
+	    check_same_bitwidth(first_var.get(), v, "inconsistent bitwidths in select condition variables", s);
+	  }
+	}
+	
+        void visit(int_cast_t& s) {
+	  variable_t src = s.src();
+	  variable_t dst = s.dst();
+	  switch (s.op()) {
+	  case CAST_TRUNC:
+	    check_int(src, "source operand must be integer", s);
+	    check_int_or_bool(dst, "destination must be integer or bool", s);
+	    check_bitwidth_if_bool(dst, "type and bitwidth of destination operand do not match", s);
+	    check_bitwidth_if_int(dst, "type and bitwidth of destination operand do not match", s);	    
+	    if (src.get_bitwidth() <= dst.get_bitwidth()) {
+	      CRAB_ERROR("(type checking) bitwidth of source operand must be greater than destination in ",s);
+	    }
+	    break;
+	  case CAST_SEXT:
+	  case CAST_ZEXT:
+	    check_int(dst, "destination operand must be integer", s);
+	    check_int_or_bool(src, "source must be integer or bool", s);
+	    check_bitwidth_if_bool(src, "type and bitwidth of source operand do not match", s);
+	    check_bitwidth_if_int(src, "type and bitwidth of source operand do not match", s);	    
+	    if (dst.get_bitwidth() <= src.get_bitwidth()) {
+	      CRAB_ERROR("(type checking) bitwidth of destination must be greater than source in ",s);
+	    }
+	    break;
+	  default:;; /*unreachable*/  
+	  }
+	}
+	
+        void visit(havoc_t &) {}
+        void visit(unreach_t&){}
+
+	void visit(bool_bin_op_t& s) {
+	  check_bool(s.lhs(), "lhs must be boolean", s);
+	  check_bool(s.left(), "first operand must be boolean", s);
+	  check_bool(s.right(), "second operand must be boolean", s);	  
+	};
+	
+	void visit(bool_assign_cst_t& s) {
+	  check_bool(s.lhs(), "lhs must be boolean", s);
+
+	  typename lin_exp_t::variable_set_t vars = s.rhs().variables();
+	  bool first = true;
+	  variable_ref_t first_var;
+	  for (auto const &v: vars) {
+	    check_num(v, "rhs variables must be integer or real", s);	    
+	    if (first) {
+	      first_var = variable_ref_t(v);
+	      first = false;	      
+	    }
+	    check_same_type(first_var.get(), v, "inconsistent types in rhs variables", s);
+	    check_same_bitwidth(first_var.get(), v, "inconsistent bitwidths in rhs variables", s);
+	  }
+	};
+	
+	void visit(bool_assign_var_t& s) {
+	  check_bool(s.lhs(), "lhs must be boolean", s);
+	  check_bool(s.rhs(), "rhs must be boolean", s);
+	};
+	
+	void visit(bool_assume_t& s) {
+	  check_bool(s.cond(), "condition must be boolean", s);
+	};
+
+	void visit(bool_assert_t& s) {
+	  check_bool(s.cond(), "condition must be boolean", s);	  
+	};
+	
+	void visit(bool_select_t& s) {
+	  check_bool(s.lhs(), "lhs must be boolean", s);
+	  check_bool(s.lhs(), "condition must be boolean", s);	  
+	  check_bool(s.left(), "first operand must be boolean", s);
+	  check_bool(s.right(), "second operand must be boolean", s);	  
+	};
+	
+	/** TODO: type checking of the following statements: **/
+	void visit(callsite_t&) {};
+	void visit(return_t&) {};
+	void visit(arr_assume_t&) {};
+	void visit(arr_store_t&) {};
+	void visit(arr_load_t&) {};
+	void visit(arr_assign_t&) {};
+	void visit(ptr_store_t&) {};
+	void visit(ptr_load_t&) {};
+	void visit(ptr_assign_t&) {};
+	void visit(ptr_object_t&) {};
+	void visit(ptr_function_t&) {};
+	void visit(ptr_null_t&) {};
+	void visit(ptr_assume_t&) {};
+	void visit(ptr_assert_t&) {};
+      }; // end class type_checker_visitor
+    }; // end class type_checker
+      
     // extending boost::hash for cfg class
     template<class B, class V, class N>
     std::size_t hash_value(Cfg<B,V,N> const& _cfg) {

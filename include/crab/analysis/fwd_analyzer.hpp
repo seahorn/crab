@@ -104,9 +104,7 @@ namespace crab {
         auto dead = m_live->dead_exit (node);       
 
         dead -= m_formals;
-        domains::domain_traits<abs_dom_t>::forget (inv, 
-                                                   dead.begin (), 
-                                                   dead.end ());
+        domains::domain_traits<abs_dom_t>::forget(inv, dead.begin(), dead.end()); 
       }
 
       //! Given a basic block and the invariant at the entry it produces
@@ -160,9 +158,11 @@ namespace crab {
 	: fwd_iterator_t (cfg, wto, widening_delay, descending_iters, jump_set_size), 
 	  m_abs_tr (abs_tr),
 	  m_live (live) {
-        
-        if (live)
-	{
+
+	cfg::type_checker<CFG> tc(this->_cfg);
+	tc.run();
+	
+        if (live) {
           // --- collect input and output parameters 
           if (auto fdecl = this->get_cfg ().get_func_decl ()) {
 	    for (unsigned i=0; i < (*fdecl).get_num_inputs();i++)
@@ -185,7 +185,7 @@ namespace crab {
       const_iterator post_end ()   const { return m_post_map.end();   }
       
       //! Trigger the fixpoint computation 
-      void Run ()  {
+      void Run ()  {	
         // initialization of static data
         domains::domain_traits<abs_dom_t>::do_initialization (this->get_cfg());
         // XXX: inv was created before the static data is initialized
