@@ -81,6 +81,8 @@ namespace ikos {
     typedef interleaved_fwd_fixpoint_iterator_impl::wto_processor< NodeName, CFG, AbstractValue > wto_processor_t;
     typedef crab::iterators::thresholds_t thresholds_t;
     typedef crab::iterators::wto_thresholds<NodeName, CFG> wto_thresholds_t;
+
+  protected:
     
     CFG _cfg;
     wto_t _wto;
@@ -98,6 +100,8 @@ namespace ikos {
     // set of thresholds to jump during widening
     typename wto_thresholds_t::thresholds_map_t _jump_set;
 
+  private:
+    
     void set(invariant_table_ptr table, NodeName node, const AbstractValue& v) {
       std::pair< typename invariant_table_t::iterator, bool > res = 
           table->insert(std::make_pair(node, v));
