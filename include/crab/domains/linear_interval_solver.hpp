@@ -52,6 +52,7 @@
 #include <crab/common/types.hpp>
 #include <crab/common/stats.hpp>
 #include <crab/common/bignums.hpp>
+#include <crab/common/wrapint.hpp>
 #include <crab/domains/linear_constraints.hpp>
 
 namespace ikos {
@@ -62,7 +63,7 @@ namespace ikos {
     inline Interval trim_bound(Interval i, Number c);
 
     template<typename Interval, typename Number>
-    inline Interval mk_interval(Number n, uint8_t /*bitwidth*/) {
+    inline Interval mk_interval(Number n, typename crab::wrapint::bitwidth_t /*bitwidth*/) {
       // default implementation ignores bitwidth
       return Interval(n);
     }

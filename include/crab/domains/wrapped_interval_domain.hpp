@@ -470,13 +470,13 @@ namespace linear_interval_solver_impl {
 
   template<>
   inline crab::domains::wrapped_interval<z_number>
-  mk_interval(z_number c, typename wrapint::bitwidth_t w) {
+  mk_interval(z_number c, typename crab::wrapint::bitwidth_t w) {
     return crab::domains::wrapped_interval<z_number>(c, w);
   }
 
   template<>
   inline crab::domains::wrapped_interval<q_number>
-  mk_interval(q_number c, typename wrapint::bitwidth_t w) {
+  mk_interval(q_number c, typename crab::wrapint::bitwidth_t w) {
     return crab::domains::wrapped_interval<q_number>(c, w);
   }
   
