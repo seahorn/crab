@@ -3675,12 +3675,15 @@ namespace crab {
 	// some sanity checks about the CFG
 	if (m_cfg.size() == 0) 
 	  CRAB_ERROR("CFG must have at least one basic block");
-	if (!m_cfg.has_exit())
-	  CRAB_ERROR("CFG must have exit block");
-	if (m_cfg.size() == 1) {
-	  if (!(m_cfg.exit() == m_cfg.entry()))
-	    CRAB_ERROR("CFG entry and exit must be the same");
-	}
+
+	// -- LLVM does not enforce having a return instruction so a CFG
+	//    might not have an exit block.
+	// if (!m_cfg.has_exit())
+	//   CRAB_ERROR("CFG must have exit block");
+	// if (m_cfg.size() == 1) {
+	//   if (!(m_cfg.exit() == m_cfg.entry()))
+	//     CRAB_ERROR("CFG entry and exit must be the same");
+	// }
 	// check all statement are well typed
 	type_checker_visitor vis;
 	for (auto &b: boost::make_iterator_range(m_cfg.begin(), m_cfg.end())) {
