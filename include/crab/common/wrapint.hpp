@@ -16,7 +16,7 @@ class wrapint {
 
 public:
   
-  typedef uint8_t bitwidth_t;
+  typedef unsigned bitwidth_t;
   
 private:
   
@@ -33,7 +33,7 @@ private:
       CRAB_ERROR("no bitwidth found for a wrapint");
     }
     if (_width > 64) {
-      CRAB_ERROR((int)_width, " is a too big bitwidth for a wrapint");
+      CRAB_ERROR(_width, " is a too big bitwidth for a wrapint");
     }
   }
 
