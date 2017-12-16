@@ -2286,7 +2286,37 @@ namespace crab {
         insert (boost::static_pointer_cast< statement_t, bin_op_t >
                 (boost::make_shared<bin_op_t>(lhs, BINOP_XOR, op1, op2)));
       }
-            
+
+      void shl(variable_t lhs, variable_t op1, variable_t op2) {
+        insert (boost::static_pointer_cast< statement_t, bin_op_t >
+                (boost::make_shared<bin_op_t>(lhs, BINOP_SHL, op1, op2)));
+      }
+      
+      void shl(variable_t lhs, variable_t op1, Number op2) {
+        insert (boost::static_pointer_cast< statement_t, bin_op_t >
+                (boost::make_shared<bin_op_t>(lhs, BINOP_SHL, op1, op2)));
+      }
+
+      void lshr(variable_t lhs, variable_t op1, variable_t op2) {
+        insert (boost::static_pointer_cast< statement_t, bin_op_t >
+                (boost::make_shared<bin_op_t>(lhs, BINOP_LSHR, op1, op2)));
+      }
+      
+      void lshr(variable_t lhs, variable_t op1, Number op2) {
+        insert (boost::static_pointer_cast< statement_t, bin_op_t >
+                (boost::make_shared<bin_op_t>(lhs, BINOP_LSHR, op1, op2)));
+      }
+
+      void ashr(variable_t lhs, variable_t op1, variable_t op2) {
+        insert (boost::static_pointer_cast< statement_t, bin_op_t >
+                (boost::make_shared<bin_op_t>(lhs, BINOP_ASHR, op1, op2)));
+      }
+      
+      void ashr(variable_t lhs, variable_t op1, Number op2) {
+        insert (boost::static_pointer_cast< statement_t, bin_op_t >
+                (boost::make_shared<bin_op_t>(lhs, BINOP_ASHR, op1, op2)));
+      }      
+      
       void assign (variable_t lhs, lin_exp_t rhs) {
         insert (boost::static_pointer_cast< statement_t, assign_t >
                 (boost::make_shared<assign_t> (lhs, rhs)));
