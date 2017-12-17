@@ -906,19 +906,20 @@ namespace ikos {
     if (this->is_bottom() || x.is_bottom()) {
       return this->bottom();
     } else {
-      boost::optional< z_number > shift = x.singleton();
-      z_number k = *shift;
-      if (k < 0) {
-	CRAB_ERROR("lshr shift operand cannot be negative");
-      }
-      // Some crazy linux drivers generate lshr instructions with
-      // huge shifts.  We limit the number of times the loop is run
-      // to avoid wasting too much time on it.
-      if (k <= 128) {
-	if (this->lb() >= 0 && this->ub().is_finite() && shift) {
-	  z_number lb = *this->lb().number();
-	  z_number ub = *this->ub().number();
-	  return interval< z_number >(lb >> k, ub >> k);
+      if (boost::optional< z_number > shift = x.singleton()) {
+	z_number k = *shift;
+	if (k < 0) {
+	  CRAB_ERROR("lshr shift operand cannot be negative");
+	}
+	// Some crazy linux drivers generate lshr instructions with
+	// huge shifts.  We limit the number of times the loop is run
+	// to avoid wasting too much time on it.
+	if (k <= 128) {
+	  if (this->lb() >= 0 && this->ub().is_finite() && shift) {
+	    z_number lb = *this->lb().number();
+	    z_number ub = *this->ub().number();
+	    return interval< z_number >(lb >> k, ub >> k);
+	  }
 	}
       }
       return this->top();
