@@ -15,6 +15,7 @@
 #include <crab/domains/intervals.hpp>
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/domains/linear_interval_solver.hpp>
+#include <crab/domains/domain_traits.hpp>
 #include <boost/optional.hpp>
 
 #define PRINT_WRAPINT_AS_SIGNED
@@ -45,7 +46,7 @@ class wrapped_interval {
       CRAB_ERROR("inconsistent bitwidths in wrapped interval");
     }
   }
-  
+    
 public:
 
   typedef wrapint::bitwidth_t bitwidth_t;
@@ -76,6 +77,20 @@ public:
     // the wrapint is irrelevant.
     wrapint i(0,1);
     return wrapped_interval_t(i,i, true);
+  }
+
+  // return true if interval [0111...1, 1000....0] is included
+  bool cross_signed_limits() const {
+    wrapped_interval_t i(wrapint::get_signed_max(get_bitwidth()),
+			 wrapint::get_signed_min(get_bitwidth()));
+    return (i <= *this);
+  }
+
+  // return true if interval [1111...1, 0000....0] is included
+  bool cross_unsigned_limits() const {
+    wrapped_interval_t i(wrapint::get_unsigned_max(get_bitwidth()),
+			 wrapint::get_unsigned_min(get_bitwidth()));
+    return (i <= *this);
   }
   
   bitwidth_t get_bitwidth() const {
@@ -110,6 +125,17 @@ public:
     return (!_is_bottom && (_stop - _start == maxspan));
   }
 
+  interval<Number> to_interval() const {
+    typedef interval<Number> interval_t;
+    if (is_bottom()) {
+      return interval_t::bottom();
+    } else if (is_top() || (cross_signed_limits () || cross_unsigned_limits())) {
+      return interval_t::top();
+    } else {
+      return interval_t(_start.get_bignum(), _stop.get_bignum());
+    }
+  }
+  
   /** begin needed by interval constraint solver **/
   wrapped_interval_t lower_half_line() const {
     if (is_top() || is_bottom()) return *this;
@@ -650,6 +676,21 @@ public:
     this->_env -= v;
   }
 
+  template<typename Iterator>
+  void project(Iterator it, Iterator et) {
+    separate_domain_t projected_env = separate_domain_t::top();
+    for (; it!=et; ++it) {
+      variable_t v = *it;
+      projected_env.set(v, this->_env[v]);
+    }
+    std::swap(this->_env, projected_env);
+  }
+
+
+  void expand(variable_t x, variable_t new_x) {
+    set(new_x, this->_env[x]);
+  }
+
   void set(variable_t v, wrapped_interval_t i) {
     crab::CrabStats::count (getDomainName() + ".count.assign");
     crab::ScopedCrabStats __st__(getDomainName() + ".assign");
@@ -684,10 +725,9 @@ public:
 	     crab::outs() << v << ":=" << n << "=" << _env[v] << "\n");    
   }
   
-  // interval_t operator[](variable_t v) {
-  //   return this->_env[v];
-  // }
-    
+  interval_t operator[](variable_t v) {
+    return this->_env[v].to_interval();
+  }
   
   void assign(variable_t x, linear_expression_t e) {
     crab::CrabStats::count (getDomainName() + ".count.assign");
@@ -976,6 +1016,38 @@ public:
   }
   
 }; // class wrapped_interval_domain
+
+
+template<typename Number, typename VariableName>
+class domain_traits <wrapped_interval_domain<Number,VariableName> > {
+public:
+
+  typedef wrapped_interval_domain<Number,VariableName> wrapped_interval_domain_t;
+  typedef ikos::variable<Number, VariableName> variable_t;
+  
+  template<class CFG>
+  static void do_initialization (CFG cfg) { }
+
+  static void expand (wrapped_interval_domain_t& inv, variable_t x, variable_t new_x) {
+    inv.expand(x, new_x);
+  }
+  
+  static void normalize (wrapped_interval_domain_t& inv) {}
+  
+  template <typename Iter>
+  static void forget (wrapped_interval_domain_t& inv, Iter it, Iter end){
+    for(;it!=end; ++it) {
+      inv -= *it;
+    }
+  }
+  
+  template <typename Iter>
+  static void project (wrapped_interval_domain_t& inv, Iter it, Iter end) {
+    inv.project(it, end);
+  }
+  
+};
+
   
 }
 }
