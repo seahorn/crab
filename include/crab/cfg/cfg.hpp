@@ -741,10 +741,6 @@ namespace crab {
       linear_expression_t m_ub;
       linear_expression_t m_val;
 
-      inline bool is_number_or_variable (linear_expression_t e)  const {
-	return (e.is_constant() || e.get_variable());
-      }
-      
      public:
       
       array_assume_stmt (variable_t arr, uint64_t elem_size,
@@ -754,15 +750,6 @@ namespace crab {
           m_arr (arr),  m_elem_size (elem_size),
 	  m_lb (lb) , m_ub (ub), m_val (val)  {
 	
-	if (!is_number_or_variable (m_lb))
-	  CRAB_ERROR("array_assume third parameter can only be number or variable");
-	
-	if (!is_number_or_variable (m_ub))
-	  CRAB_ERROR("array_assume forth parameter can only be number or variable");
-
-	if (!is_number_or_variable (m_val))
-	  CRAB_ERROR("array_assume fifth parameter can only be number or variable");
-
         this->m_live.add_use (m_arr);
         for(auto v: m_lb.variables()) 
           this->m_live.add_use (v);
@@ -824,10 +811,6 @@ namespace crab {
       bool m_is_singleton; //! whether the store writes to a singleton
                            //  cell. If unknown set to false.
 
-      inline bool is_number_or_variable (linear_expression_t e)  const {
-	return (e.is_constant() || e.get_variable());
-      }
-      
      public:
       
       array_store_stmt (variable_t arr, 
@@ -838,12 +821,6 @@ namespace crab {
             m_arr (arr), m_index (index), 
             m_value (value), m_elem_size (elem_size),  
             m_is_singleton (is_sing) {
-	
-        if (array_type() < ARR_BOOL_TYPE)
-          CRAB_ERROR ("array_store must have array type");
-
-	if (!is_number_or_variable (m_value))
-	  CRAB_ERROR ("array_store forth parameter only number or variable");
 	
         this->m_live.add_use (m_arr);
         for(auto v: m_index.variables()) 
@@ -911,8 +888,6 @@ namespace crab {
 	: statement_t (ARR_LOAD),
 	  m_lhs (lhs), m_array (arr), 
 	  m_index (index), m_elem_size (elem_size) {
-        if (array_type() < ARR_BOOL_TYPE)
-          CRAB_ERROR ("array_load must have array type");
           
         this->m_live.add_def (lhs);
         this->m_live.add_use (m_array);
@@ -956,7 +931,6 @@ namespace crab {
     {
       //! a = b
 
-
      public:
       
       typedef statement<Number,VariableName> statement_t;                              
@@ -973,9 +947,6 @@ namespace crab {
       array_assign_stmt (variable_t lhs, variable_t rhs)
 	: statement_t (ARR_ASSIGN),
 	  m_lhs (lhs), m_rhs (rhs) {
-        if (array_type() < ARR_BOOL_TYPE || m_lhs.get_type() != m_rhs.get_type())
-          CRAB_ERROR ("array_assign must have array type");
-	
         this->m_live.add_def (lhs);
         this->m_live.add_use (rhs);
       }
@@ -3845,6 +3816,62 @@ namespace crab {
 	    }
 	  }
 	}
+
+	void check_num_or_var(lin_exp_t e, std::string msg, statement_t& s){
+	  if (!(e.is_constant() || e.get_variable())) {
+	    crab::crab_string_os os;
+	    os << "(type checking) " << msg << " in " << s;
+	    CRAB_ERROR(os.str());
+	  }
+	}
+
+	void check_array(variable_t v, statement_t& s){
+	  switch(v.get_type()) {
+	  case ARR_BOOL_TYPE:
+	    break;
+	  case ARR_INT_TYPE:
+	    break;	    
+	  case ARR_REAL_TYPE:
+	    break;	    
+	  case ARR_PTR_TYPE:
+	    break;	    
+	  default:
+	    {
+	      crab::crab_string_os os;
+	      os << "(type checking) " << v << " must be an array variable in " << s;
+	      CRAB_ERROR(os.str());
+	    }
+	  }
+	}
+	
+	// v1 is array type and v2 is a scalar type consistent with v1
+        void check_array_and_scalar_type_and_bitwidth(variable_t v1, variable_t v2, statement_t& s) {
+	  switch(v1.get_type()) {
+	  case ARR_BOOL_TYPE:
+	    if (v2.get_type() == BOOL_TYPE &&
+		v1.get_bitwidth() == v2.get_bitwidth()) return;
+	    break;
+	  case ARR_INT_TYPE:
+	    if (v2.get_type() == INT_TYPE &&
+	     	v1.get_bitwidth() == v2.get_bitwidth()) return;
+	    break;	    
+	  case ARR_REAL_TYPE:
+	    if (v2.get_type() == REAL_TYPE) return;
+	    break;	    
+	  case ARR_PTR_TYPE:
+	    if (v2.get_type() == PTR_TYPE) return;
+	    break;	    
+	  default:
+	    {
+	      crab::crab_string_os os;
+	      os << "(type checking) " << v1 << " must be an array variable in " << s;
+	      CRAB_ERROR(os.str());
+	    }
+	  }
+	  crab::crab_string_os os;
+	  os << "(type checking) " << v1 << " and " << v2 << " do not have consistent types in " << s;
+	  CRAB_ERROR(os.str());
+	}
 	
         void visit(bin_op_t& s){
 	  variable_t lhs = s.lhs(); 
@@ -4018,13 +4045,49 @@ namespace crab {
 	  check_bool(s.right(), "second operand must be boolean", s);	  
 	};
 	
+	void visit(arr_assume_t& s) {
+	  variable_t a = s.array();
+	  lin_exp_t lb = s.lb_index();
+	  lin_exp_t ub = s.ub_index();
+	  lin_exp_t  v = s.val();
+	  check_array(a, s);	  
+	  check_num_or_var(lb, "array lower bound must be number or variable", s);
+	  check_num_or_var(ub, "array upper bound must be number or variable", s);
+	  check_num_or_var(v, "array value must be number or variable", s);
+	  if (boost::optional<variable_t> vv = v.get_variable()) {
+	    check_array_and_scalar_type_and_bitwidth(a, *vv, s);
+	  }
+	}
+	
+	void visit(arr_store_t& s) {
+	  variable_t a = s.array();
+	  lin_exp_t  v = s.value();
+	  check_array(a, s);
+	  check_num_or_var(v, "array value must be number or variable", s);
+	  if (boost::optional<variable_t> vv = v.get_variable()) {
+	    check_array_and_scalar_type_and_bitwidth(a, *vv, s);
+	  }
+	}
+	
+	void visit(arr_load_t& s) {
+	  variable_t a = s.array();
+	  variable_t lhs = s.lhs();
+	  check_array(a, s);	  
+	  check_array_and_scalar_type_and_bitwidth(a, lhs, s);
+	}
+	  
+	void visit(arr_assign_t& s) {
+	  variable_t lhs = s.lhs();
+	  variable_t rhs = s.rhs();
+	  check_array(lhs, s);
+	  check_array(rhs, s);
+	  check_same_type(lhs, rhs, "array variables must have same type", s);
+	  check_same_bitwidth(lhs, rhs, "array variables must have same bitwidth", s);
+	}
+
 	/** TODO: type checking of the following statements: **/
 	void visit(callsite_t&) {};
-	void visit(return_t&) {};
-	void visit(arr_assume_t&) {};
-	void visit(arr_store_t&) {};
-	void visit(arr_load_t&) {};
-	void visit(arr_assign_t&) {};
+	void visit(return_t&) {};      
 	void visit(ptr_store_t&) {};
 	void visit(ptr_load_t&) {};
 	void visit(ptr_assign_t&) {};
