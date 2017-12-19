@@ -79,18 +79,60 @@ public:
     return wrapped_interval_t(i,i, true);
   }
 
-  // return true if interval [0111...1, 1000....0] is included
-  bool cross_signed_limits() const {
-    wrapped_interval_t i(wrapint::get_signed_max(get_bitwidth()),
-			 wrapint::get_signed_min(get_bitwidth()));
-    return (i <= *this);
+  // return interval [0111...1, 1000....0]  
+  static wrapped_interval_t signed_limit(bitwidth_t b) {
+    return wrapped_interval_t (wrapint::get_signed_max(b), wrapint::get_signed_min(b));
   }
 
-  // return true if interval [1111...1, 0000....0] is included
-  bool cross_unsigned_limits() const {
-    wrapped_interval_t i(wrapint::get_unsigned_max(get_bitwidth()),
-			 wrapint::get_unsigned_min(get_bitwidth()));
-    return (i <= *this);
+  // return interval [1111...1, 0000....0]
+  static wrapped_interval_t unsigned_limit(bitwidth_t b) {
+    return wrapped_interval_t(wrapint::get_unsigned_max(b), wrapint::get_unsigned_min(b));
+  }
+  
+  bool cross_signed_limit() const {
+    return (signed_limit(get_bitwidth()) <= *this);
+  }
+
+  bool cross_unsigned_limit() const {
+    return (unsigned_limit(get_bitwidth()) <= *this);
+  }
+
+  void signed_split(std::vector<wrapped_interval_t> &intervals) const {
+    if (is_bottom()) return;
+
+    bitwidth_t b = get_bitwidth();
+    if (is_top()) {
+      intervals.push_back(wrapped_interval_t(wrapint::get_unsigned_min(b),
+					     wrapint::get_signed_max(b)));
+      intervals.push_back(wrapped_interval_t(wrapint::get_signed_min(b),
+					     wrapint::get_unsigned_max(b)));
+    } else {
+      if (signed_limit(b) <= *this) {
+	intervals.push_back(wrapped_interval_t(_start, wrapint::get_signed_max(b)));
+	intervals.push_back(wrapped_interval_t(wrapint::get_signed_min(b), _stop));
+      } else {
+	intervals.push_back(*this);
+      }
+    }
+  }
+
+  void unsigned_split(std::vector<wrapped_interval_t> &intervals) const {
+    if (is_bottom()) return;
+
+    bitwidth_t b = get_bitwidth();
+    if (is_top()) {
+      intervals.push_back(wrapped_interval_t(wrapint::get_signed_min(b),
+					     wrapint::get_unsigned_max(b)));
+      intervals.push_back(wrapped_interval_t(wrapint::get_unsigned_min(b),
+					     wrapint::get_signed_max(b)));
+    } else {
+      if (unsigned_limit(b) <= *this) {
+	intervals.push_back(wrapped_interval_t(_start, wrapint::get_unsigned_max(b)));
+	intervals.push_back(wrapped_interval_t(wrapint::get_unsigned_min(b), _stop));
+      } else {
+	intervals.push_back(*this);
+      }
+    }
   }
   
   bitwidth_t get_bitwidth() const {
@@ -129,7 +171,7 @@ public:
     typedef interval<Number> interval_t;
     if (is_bottom()) {
       return interval_t::bottom();
-    } else if (is_top() || (cross_signed_limits () || cross_unsigned_limits())) {
+    } else if (is_top() || (cross_signed_limit () || cross_unsigned_limit())) {
       return interval_t::top();
     } else {
       return interval_t(_start.get_bignum(), _stop.get_bignum());
@@ -433,6 +475,47 @@ public:
   wrapped_interval_t URem(wrapped_interval_t x)  const
   { return default_implementation(x); }    
 
+  /** cast operations **/
+  wrapped_interval_t ZExt(unsigned bits_to_add)  const {
+    std::vector<wrapped_interval_t> intervals;
+    unsigned_split(intervals);
+    
+    wrapped_interval_t res = wrapped_interval_t::bottom();
+    for (typename std::vector<wrapped_interval_t>::iterator it = intervals.begin(),
+	   et = intervals.end();
+	 it!=et; ++it) {
+      // this should not happen
+      if ((*it).is_bottom() || (*it).is_top()) continue;
+      
+      wrapint a = (*it).start();
+      wrapint b = (*it).stop();
+      res = res | wrapped_interval_t(a.zext(bits_to_add), b.zext(bits_to_add));
+    }
+    return res;
+  }
+
+  wrapped_interval_t SExt(unsigned bits_to_add)  const {
+    std::vector<wrapped_interval_t> intervals;
+    signed_split(intervals);
+    
+    wrapped_interval_t res = wrapped_interval_t::bottom();
+    for (typename std::vector<wrapped_interval_t>::iterator it = intervals.begin(),
+	   et = intervals.end();
+	 it!=et; ++it) {
+      // this should not happen
+      if ((*it).is_bottom() || (*it).is_top()) continue;
+      
+      wrapint a = (*it).start();
+      wrapint b = (*it).stop();
+      res = res | wrapped_interval_t(a.sext(bits_to_add), b.sext(bits_to_add));
+    }
+    return res;
+  }
+
+  wrapped_interval_t Trunc(unsigned bits_to_keep) const
+  { return default_implementation(*this); }
+  
+  
   /** bitwise operations **/
   
   wrapped_interval_t And(wrapped_interval_t x) const
@@ -827,9 +910,41 @@ public:
   
   // cast_operators_api
   
-  void apply(crab::domains::int_conv_operation_t op, variable_t dst, variable_t src){ 
-    // TODOX
-    *this -= dst;
+  void apply(crab::domains::int_conv_operation_t op, variable_t dst, variable_t src){
+
+    wrapped_interval_t src_i = this->_env[src];
+    wrapped_interval_t dst_i;
+
+    if (src_i.is_bottom() || src_i.is_top()) {
+      dst_i = src_i;
+    } else {
+      switch (op) {
+      case crab::domains::OP_ZEXT:
+      case crab::domains::OP_SEXT:
+	{
+	  if (dst.get_bitwidth() < src.get_bitwidth()) {
+	    CRAB_ERROR("destination must be larger than source in sext/zext");
+	  }
+	  unsigned bits_to_add = dst.get_bitwidth() - src.get_bitwidth();
+	  dst_i = (op == crab::domains::OP_SEXT ?
+		   src_i.SExt(bits_to_add) : src_i.ZExt(bits_to_add));
+	}
+	break;
+      case crab::domains::OP_TRUNC:
+	{
+	  if (src.get_bitwidth() < dst.get_bitwidth()) {
+	    CRAB_ERROR("destination must be smaller than source in truncate");
+	  }
+	  unsigned bits_to_keep = dst.get_bitwidth();
+	  wrapped_interval_t dst_i;
+	  dst_i = src_i.Trunc(bits_to_keep);
+	}
+	break;
+      default:
+	CRAB_ERROR("unexpected operation: ", op);
+      }
+    }
+    set(dst, dst_i);
   }
   
   // bitwise_operators_api

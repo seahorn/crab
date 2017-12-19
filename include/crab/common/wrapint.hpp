@@ -43,6 +43,12 @@ private:
     }
   }
 
+  // return true iff most significant bit is 1.
+  bool msb() const {
+    uint64_t r = _n & (1 << (_width - 1));
+    return (r != 0);
+  }
+	   
   void compute_mod() {
     assert (_width <= 64);
     switch (_width){
@@ -303,8 +309,36 @@ public:
     return wrapint(_n >> x._n, _width, _mod);
   }
 
+  
+  wrapint sext(bitwidth_t bits_to_add) {
+    bitwidth_t new_width = _width + bits_to_add;
+    if (new_width > 64) {
+      CRAB_ERROR("cannot signed extend: ", new_width, " is a too big bitwidth for a wrapint");
+    }
+
+    if (msb()) {
+      // -- fill upper bits with ones
+      // 111...1
+      uint64_t all_ones = (new_width < 64  ? (1 << new_width) - 1 : UINT64_MAX);
+      // 1110..0
+      uint64_t only_upper_bits_ones = all_ones << _width;
+      return wrapint(_n | only_upper_bits_ones, new_width);
+    } else {
+      // -- fill upper bits with zeros
+      return wrapint(_n, _width + bits_to_add);       
+    }
+  }
+
+  wrapint zext(bitwidth_t bits_to_add) const {
+    bitwidth_t new_width = _width + bits_to_add;
+    if (new_width > 64) {
+      CRAB_ERROR("cannot unsigned extend: ", new_width, " is a too big bitwidth for a wrapint");
+    }
+    return wrapint(_n, new_width); 
+  }
+  
   void write(crab::crab_os& o) {
-    o << get_str();    
+    o << get_str();
   }
 
 }; // class wrapint
