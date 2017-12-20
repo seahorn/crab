@@ -857,7 +857,8 @@ namespace ikos {
       if (boost::optional<z_number> shift = x.singleton()) {
 	z_number k = *shift;
 	if (k < 0) {
-	  CRAB_ERROR("lshr shift operand cannot be negative");
+	  //CRAB_ERROR("lshr shift operand cannot be negative");
+	  return this->top();
 	}
 	// Some crazy linux drivers generate shl instructions with
 	// huge shifts.  We limit the number of times the loop is run
@@ -883,7 +884,8 @@ namespace ikos {
       if (boost::optional<z_number> shift = x.singleton()) {
 	z_number k = *shift;
 	if (k < 0) {
-	  CRAB_ERROR("ashr shift operand cannot be negative");
+	  //CRAB_ERROR("ashr shift operand cannot be negative");
+	  return this->top();
 	}	  
 	// Some crazy linux drivers generate ashr instructions with
 	// huge shifts.  We limit the number of times the loop is run
@@ -909,7 +911,8 @@ namespace ikos {
       if (boost::optional< z_number > shift = x.singleton()) {
 	z_number k = *shift;
 	if (k < 0) {
-	  CRAB_ERROR("lshr shift operand cannot be negative");
+	  //CRAB_ERROR("lshr shift operand cannot be negative");
+	  return this->top();
 	}
 	// Some crazy linux drivers generate lshr instructions with
 	// huge shifts.  We limit the number of times the loop is run
