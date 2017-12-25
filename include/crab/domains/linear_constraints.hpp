@@ -1276,7 +1276,7 @@ namespace ikos {
       if (_csts.empty ())
 	return false; // empty is considered true
       
-      for (auto it = this->begin(); it != this->end();) {
+      for (auto it = this->begin(); it != this->end(); ++it) {
         auto c = *it;
 	if (!c.is_contradiction ()) {
 	  return false;
