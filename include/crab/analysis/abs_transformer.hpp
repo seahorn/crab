@@ -216,7 +216,8 @@ namespace crab {
    protected:
     /// XXX: the transformer does not own m_inv.
     abs_dom_t *m_inv;
-
+    bool m_ignore_assert;
+    
    private:
 
     template <typename NumOrVar>
@@ -240,8 +241,8 @@ namespace crab {
     
    public:
     
-    intra_abs_transformer (abs_dom_t* inv):
-      m_inv (inv) { }
+    intra_abs_transformer (abs_dom_t* inv, bool ignore_assert = false):
+      m_inv (inv), m_ignore_assert(ignore_assert) { }
     
     virtual ~intra_abs_transformer () { }
 
@@ -305,6 +306,8 @@ namespace crab {
     }
     
     void exec (assert_t& stmt) {
+      if (m_ignore_assert) return;
+      
       abs_dom_t cst;
       cst += stmt.constraint();
       abs_dom_t meet = cst & *get_inv();
@@ -363,6 +366,8 @@ namespace crab {
     }
 
     void exec (bool_assert_t& stmt) {
+      if (m_ignore_assert) return;
+ 
       abs_dom_t inv;
       inv.assume_bool (stmt.cond(), false);
       abs_dom_t meet = inv & *get_inv();
@@ -418,8 +423,10 @@ namespace crab {
     void exec (ptr_assume_t& stmt)
     { get_inv()->pointer_assume (stmt.constraint ()); }
     
-    void exec (ptr_assert_t& stmt)
-    { get_inv()->pointer_assert (stmt.constraint ()); }
+    void exec (ptr_assert_t& stmt) {
+      if (m_ignore_assert) return;
+      get_inv()->pointer_assert (stmt.constraint ());
+    }
     
     virtual void exec (callsite_t &cs) {
       for (auto vt: cs.get_lhs())
@@ -485,12 +492,13 @@ namespace crab {
     // used to refine the preconditions: map from statement_t to
     // abs_dom_t.
     InvT &m_invariants; 
-
+    bool m_ignore_assert;
    public:
 
-    intra_necessary_preconditions_abs_transformer(abs_dom_t* post,
-						  InvT &invars)
-      : m_pre (post), m_invariants (invars) {
+    intra_necessary_preconditions_abs_transformer(abs_dom_t* post, InvT &invars,
+						  bool ignore_assert = false)
+						  
+      : m_pre (post), m_invariants (invars), m_ignore_assert (ignore_assert) {
       if (!m_pre)
 	CRAB_ERROR ("Postcondition cannot be null!");
     }
@@ -615,6 +623,8 @@ namespace crab {
     // states. Thus, we propagate backwards the negation of the
     // condition which represents the error states.
     void exec (assert_t& stmt) {
+      if (m_ignore_assert) return;
+      
       CRAB_LOG("backward",
 	       auto csts = stmt.constraint();
 	       crab::outs () << "** assert(" << csts << ")\n"
@@ -665,6 +675,8 @@ namespace crab {
     }
     
     void exec (bool_assert_t &stmt) {
+      if (m_ignore_assert) return;
+ 
       *m_pre = abs_dom_t::top();
       m_pre->assume_bool (stmt.cond(), true /*negated*/);
     }
