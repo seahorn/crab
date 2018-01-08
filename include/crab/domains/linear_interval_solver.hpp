@@ -106,6 +106,7 @@ namespace ikos {
 
   private:
     void refine(variable_t v, Interval i, IntervalCollection& env) {
+      crab::ScopedCrabStats __st__("Linear Interval Solver.Solving refinement");      
       Interval old_i = env[v];
       Interval new_i = old_i & i;
       if (new_i.is_bottom()) {
@@ -118,30 +119,39 @@ namespace ikos {
       }
     }
 
-    Interval compute_residual(linear_constraint_t cst, variable_t pivot, 
+    Interval compute_residual(const linear_constraint_t &cst, variable_t pivot, 
                               IntervalCollection& env) {
+      crab::ScopedCrabStats __st__("Linear Interval Solver.Solving computing residual");      
       bitwidth_t w = pivot.get_bitwidth();
       Interval residual= linear_interval_solver_impl::mk_interval<Interval>(cst.constant(), w);
-      for (typename linear_constraint_t::iterator it = cst.begin(); 
-           it != cst.end(); ++it) {
+      for (typename linear_constraint_t::iterator it = cst.begin(); it != cst.end(); ++it) {
 	variable_t v = it->second;
 	if (!(v == pivot)) {
-	  residual = residual - (linear_interval_solver_impl::mk_interval<Interval>(it->first, w) * env[v]);
+	  residual = residual -
+	    (linear_interval_solver_impl::mk_interval<Interval>(it->first, w) * env[v]);
 	  ++(this->_op_count);
+	  if (residual.is_top()) break;
 	}
       }
       return residual;
     }
     
-    void propagate(linear_constraint_t cst, IntervalCollection& env) {
-      for (typename linear_constraint_t::iterator it = cst.begin(); 
-           it != cst.end(); ++it) {
+    void propagate(const linear_constraint_t &cst, IntervalCollection& env) {
+      crab::ScopedCrabStats __st__("Linear Interval Solver.Solving propagation");
+      for (typename linear_constraint_t::iterator it = cst.begin(), et = cst.end();
+	   it != et; ++it) {
 	Number c = it->first;
-	variable_t pivot = it->second;	
-	Interval ic = linear_interval_solver_impl::mk_interval<Interval>(c, pivot.get_bitwidth());	
-	Interval rhs = compute_residual(cst, pivot, env) / ic;
+	variable_t pivot = it->second;
+	Interval res = compute_residual(cst, pivot, env);
+	Interval rhs = Interval::top();
+	if (!res.is_top()) {
+	  Interval ic =
+	    linear_interval_solver_impl::mk_interval<Interval>(c, pivot.get_bitwidth());
+	  rhs = res / ic;
+	}
+	
 	if (cst.is_equality()) {
-	  this->refine(pivot, rhs, env);
+	  refine(pivot, rhs, env);
 	} else if (cst.is_inequality()) {
 	  if (c > 0) {
 	    refine(pivot, rhs.lower_half_line(), env);
@@ -208,17 +218,18 @@ namespace ikos {
     
   public:
 
-    linear_interval_solver(linear_constraint_system_t csts, 
-                           std::size_t max_cycles): 
-        _max_cycles(max_cycles), 
+    linear_interval_solver(const linear_constraint_system_t &csts, std::size_t max_cycles)
+      : _max_cycles(max_cycles), 
         _is_contradiction(false), 
         _is_large_system(false), 
         _op_count(0) {
 
+      crab::ScopedCrabStats __st_a__("Linear Interval Solver");
+      crab::ScopedCrabStats __st_b__("Linear Interval Solver.Preprocessing");      
       std::size_t op_per_cycle = 0;
       for (typename linear_constraint_system_t::iterator it = csts.begin(); 
            it != csts.end(); ++it) {
-	linear_constraint_t cst = *it;
+	const linear_constraint_t &cst = *it;
 	if (cst.is_contradiction()) {
 	  this->_is_contradiction = true;
 	  return;
@@ -249,10 +260,9 @@ namespace ikos {
       if (!this->_is_contradiction && this->_is_large_system) {
 	this->_max_op = op_per_cycle * max_cycles;
 	for (unsigned int i = 0; i < this->_cst_table.size(); ++i) {
-	  linear_constraint_t cst = this->_cst_table.at(i);
+	  const linear_constraint_t& cst = this->_cst_table.at(i);
 	  variable_set_t vars = cst.variables();
-	  for (typename variable_set_t::iterator it = vars.begin(); 
-                 it != vars.end(); ++it) {
+	  for (typename variable_set_t::iterator it = vars.begin(); it != vars.end(); ++it) {
 	    this->_trigger_table[*it].insert(i);
 	  }
 	}
@@ -260,6 +270,8 @@ namespace ikos {
     }
     
     void run(IntervalCollection& env) {
+      crab::ScopedCrabStats __st_a__("Linear Interval Solver");
+      crab::ScopedCrabStats __st_b__("Linear Interval Solver.Solving");
       if (this->_is_contradiction) {
         env.set_to_bottom();
       } else {
