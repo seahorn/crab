@@ -685,6 +685,20 @@ namespace ikos {
     if (this->is_bottom() || x.is_bottom()) {
       return this->bottom();
     } else {
+      // Divisor is a singleton:
+      //   the linear interval solver can perform many divisions where
+      //   the divisor is a singleton interval. We optimize for this case.
+      if (boost::optional<z_number> n = x.singleton()) {
+	z_number c = *n;
+	if (c == 1) {
+	  return *this;
+	} else if (c > 0) {
+	  return interval_t(_lb / c, _ub / c);
+	} else if (c < 0) {
+	  return interval_t(_ub / c, _lb / c);
+	} else {}
+      }
+      // Divisor is not a singleton
       typedef interval< z_number > z_interval;
       if (x[0]) {
         z_interval l(x._lb, z_bound(-1));
@@ -705,7 +719,7 @@ namespace ikos {
 	bound_t ul = a._ub / x._lb;
 	bound_t uu = a._ub / x._ub;
 	return interval_t(bound_t::min(ll, lu, ul, uu), 
-                            bound_t::max(ll, lu, ul, uu));	
+			  bound_t::max(ll, lu, ul, uu));	
       }
     }
   }
