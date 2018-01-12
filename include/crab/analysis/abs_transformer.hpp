@@ -511,7 +511,7 @@ namespace crab {
 
       auto op = conv_op<ikos::operation_t> (stmt.op ());
       if (!op) {
-	CRAB_WARN ("backward operation ", stmt.op(), " not implemented");
+	//CRAB_WARN ("backward operation ", stmt.op(), " not implemented");
 	(*m_pre) -= stmt.lhs();
 	return;
       }
