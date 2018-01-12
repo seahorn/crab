@@ -76,8 +76,7 @@ namespace crab {
       BIN_OP = 20, ASSIGN = 21, ASSUME = 22, UNREACH = 23, SELECT = 24,
       ASSERT = 25,
       // arrays 
-      ARR_INIT = 30, ARR_ASSUME = 31, 
-      ARR_STORE = 32, ARR_LOAD = 33, ARR_ASSIGN = 34,
+      ARR_ASSUME = 30, ARR_STORE = 31, ARR_LOAD = 32, ARR_ASSIGN = 33, 
       // pointers
       PTR_LOAD = 40, PTR_STORE = 41, PTR_ASSIGN = 42, 
       PTR_OBJECT = 43, PTR_FUNCTION = 44, PTR_NULL=45, 
@@ -248,6 +247,9 @@ namespace crab {
       bool is_return () const { 
         return m_stmt_code == RETURN; 
       }
+      bool is_arr_assume () const { 
+        return (m_stmt_code == ARR_ASSUME);
+      }      
       bool is_arr_read () const { 
         return (m_stmt_code == ARR_LOAD);
       }
