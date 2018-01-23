@@ -47,6 +47,135 @@ class wrapped_interval {
     }
   }
     
+  // nsplit in the APLAS'12 paper
+  void signed_split(std::vector<wrapped_interval_t> &intervals) const {
+    if (is_bottom()) return;
+
+    bitwidth_t b = get_bitwidth();
+    if (is_top()) {
+      intervals.push_back(wrapped_interval_t(wrapint::get_unsigned_min(b),
+					     wrapint::get_signed_max(b)));
+      intervals.push_back(wrapped_interval_t(wrapint::get_signed_min(b),
+					     wrapint::get_unsigned_max(b)));
+    } else {
+      if (signed_limit(b) <= *this) {
+	intervals.push_back(wrapped_interval_t(_start, wrapint::get_signed_max(b)));
+	intervals.push_back(wrapped_interval_t(wrapint::get_signed_min(b), _stop));
+      } else {
+	intervals.push_back(*this);
+      }
+    }
+  }
+
+  // ssplit in the APLAS'12 paper
+  void unsigned_split(std::vector<wrapped_interval_t> &intervals) const {
+    if (is_bottom()) return;
+
+    bitwidth_t b = get_bitwidth();
+    if (is_top()) {
+      intervals.push_back(wrapped_interval_t(wrapint::get_signed_min(b),
+					     wrapint::get_unsigned_max(b)));
+      intervals.push_back(wrapped_interval_t(wrapint::get_unsigned_min(b),
+					     wrapint::get_signed_max(b)));
+    } else {
+      if (unsigned_limit(b) <= *this) {
+	intervals.push_back(wrapped_interval_t(_start, wrapint::get_unsigned_max(b)));
+	intervals.push_back(wrapped_interval_t(wrapint::get_unsigned_min(b), _stop));
+      } else {
+	intervals.push_back(*this);
+      }
+    }
+  }
+
+  // cut in the APLAS'12 paper
+  void signed_and_unsigned_split(std::vector<wrapped_interval_t>& out) const {
+    std::vector<wrapped_interval_t> ssplit;
+    signed_split(ssplit);
+    for(unsigned i=0, e=ssplit.size(); i<e; ++i) {
+      ssplit[i].unsigned_split(out);
+    }
+  }
+  
+  wrapped_interval_t signed_mul(wrapped_interval_t x) const {
+    bool msb_start = _start.msb();
+    bool msb_stop = _stop.msb();    
+    bool msb_x_start = x._start.msb();
+    bool msb_x_stop = x._stop.msb();    
+    
+    if (msb_start == msb_stop && msb_stop == msb_x_start && msb_x_start == msb_x_stop) {
+      // the two intervals do not cross any limit
+      return unsigned_mul(x);
+    }
+    
+    // each interval cannot cross the limit
+    wrapped_interval_t res = wrapped_interval_t::top();    
+    if (!(msb_start != msb_stop || msb_x_start != msb_x_stop)) {
+      if (msb_start && !msb_x_start) {
+	res = wrapped_interval_t(_start * x._stop, _stop * x._start);
+      } else if (!msb_start && msb_x_start) {
+	res = wrapped_interval_t(_stop * x._start, _start * x._stop);
+      } else { /*already top*/
+      }
+    }
+    CRAB_LOG("wrapped-int-mul",
+	     crab::outs() << "Signed " << *this << " * " << x << "=" << res << "\n";);    
+    return res;
+  }
+
+  wrapped_interval_t unsigned_mul(wrapped_interval_t x) const {
+    // check for overflow first
+    wrapint max_sz = _stop * x._stop;
+    wrapint min_sz = _start * x._start;
+    bitwidth_t b = get_bitwidth();
+    wrapped_interval_t res = wrapped_interval_t::top();
+    if (!(max_sz - min_sz >= wrapint::get_unsigned_max(b))) {
+      res = wrapped_interval_t(_start * x._start, _stop * x._stop);
+    }
+    CRAB_LOG("wrapped-int-mul",
+	     crab::outs() << "Unsigned " << *this << " * " << x << "=" << res << "\n";);        
+    return res;
+  }
+
+  // if out is empty then the intersection is empty
+  void exact_meet(wrapped_interval_t x, std::vector<wrapped_interval_t>& out) const {
+    if (is_bottom() || x.is_bottom()){
+      // bottom
+    } else if (*this == x || is_top()) {
+      out.push_back(x);
+    } else if (x.is_top()) {
+      out.push_back(*this);
+    } else if (x[_start] && x[_stop] && operator[](x._start) && operator[](x._stop)) {
+      out.push_back(wrapped_interval_t(_start, x._stop));
+      out.push_back(wrapped_interval_t(x._start, _stop));
+    } else if (x[_start] && x[_stop]) {
+      out.push_back(*this);
+    } else if (operator[](x._start) && operator[](x._stop)) {
+      out.push_back(x);
+    } else if (x[_start] && operator[](x._stop) && !x[_stop] && operator[](x._start)) {
+      out.push_back(wrapped_interval_t(_start, x._stop));
+    } else if (x[_stop] && operator[](x._start) && !x[_start] && operator[](x._stop)) {
+      out.push_back(wrapped_interval_t(x._start, _stop));
+    } else {
+      // bottom
+    }
+  }
+
+  // Perform the reduced product of signed and unsigned multiplication.
+  // It uses exact meet rather than abstract meet.
+  void reduced_signed_unsigned_mul(wrapped_interval_t x,
+				   std::vector<wrapped_interval_t>& out) const {
+    wrapped_interval_t s = signed_mul(x);
+    wrapped_interval_t u = unsigned_mul(x);
+    s.exact_meet(u, out);
+    CRAB_LOG("wrapped-int-mul",
+	     crab::outs() << "Exact signed x unsigned " << s << " * " << u << "=\n";
+	     for(unsigned i=0;i<out.size();++i) {
+	       crab::outs () << "\t" << out[i] << "\n";
+	     });
+  }
+
+  
+  
 public:
 
   typedef wrapint::bitwidth_t bitwidth_t;
@@ -79,12 +208,14 @@ public:
     return wrapped_interval_t(i,i, true);
   }
 
-  // return interval [0111...1, 1000....0]  
+  // return interval [0111...1, 1000....0]
+  // In the APLAS'12 paper "signed limit" corresponds to "north pole".
   static wrapped_interval_t signed_limit(bitwidth_t b) {
     return wrapped_interval_t (wrapint::get_signed_max(b), wrapint::get_signed_min(b));
   }
 
   // return interval [1111...1, 0000....0]
+  // In the APLAS'12 paper "unsigned limit" corresponds to "south pole".  
   static wrapped_interval_t unsigned_limit(bitwidth_t b) {
     return wrapped_interval_t(wrapint::get_unsigned_max(b), wrapint::get_unsigned_min(b));
   }
@@ -95,44 +226,6 @@ public:
 
   bool cross_unsigned_limit() const {
     return (unsigned_limit(get_bitwidth()) <= *this);
-  }
-
-  void signed_split(std::vector<wrapped_interval_t> &intervals) const {
-    if (is_bottom()) return;
-
-    bitwidth_t b = get_bitwidth();
-    if (is_top()) {
-      intervals.push_back(wrapped_interval_t(wrapint::get_unsigned_min(b),
-					     wrapint::get_signed_max(b)));
-      intervals.push_back(wrapped_interval_t(wrapint::get_signed_min(b),
-					     wrapint::get_unsigned_max(b)));
-    } else {
-      if (signed_limit(b) <= *this) {
-	intervals.push_back(wrapped_interval_t(_start, wrapint::get_signed_max(b)));
-	intervals.push_back(wrapped_interval_t(wrapint::get_signed_min(b), _stop));
-      } else {
-	intervals.push_back(*this);
-      }
-    }
-  }
-
-  void unsigned_split(std::vector<wrapped_interval_t> &intervals) const {
-    if (is_bottom()) return;
-
-    bitwidth_t b = get_bitwidth();
-    if (is_top()) {
-      intervals.push_back(wrapped_interval_t(wrapint::get_signed_min(b),
-					     wrapint::get_unsigned_max(b)));
-      intervals.push_back(wrapped_interval_t(wrapint::get_unsigned_min(b),
-					     wrapint::get_signed_max(b)));
-    } else {
-      if (unsigned_limit(b) <= *this) {
-	intervals.push_back(wrapped_interval_t(_start, wrapint::get_unsigned_max(b)));
-	intervals.push_back(wrapped_interval_t(wrapint::get_unsigned_min(b), _stop));
-      } else {
-	intervals.push_back(*this);
-      }
-    }
   }
   
   bitwidth_t get_bitwidth() const {
@@ -273,7 +366,7 @@ public:
 	  if (span_a < span_b  || (span_a == span_b &&  _start <= x._start)) {
 	    return *this;
 	  } else {
-	    return x;
+	    return x; // imprecision here {(_stop, x._stop), (x._start, start)}
 	  }
 	} else {
 	  if (x[_stop]) {
@@ -285,7 +378,7 @@ public:
       } else {
 	if (operator[](x._start)) {
 	  if (operator[](x._stop)) {
-	    return x;
+	    return x; // imprecision here {(x._start, _stop), (_start, x._stop)}
 	  } else {
 	    return wrapped_interval_t(x._start, _stop);
 	  }
@@ -396,22 +489,36 @@ public:
     } if (is_top() || x.is_top()) {
       return wrapped_interval_t::top();
     } else {
-      // temporary special cases 
-      wrapped_interval_t one(1, x.get_bitwidth());
-      wrapped_interval_t minus_one(-1, x.get_bitwidth());          
-      if (x == one)
-	return *this;
-      else if (*this == one)
-	return x;
-      else if (x == minus_one) {
-	return -(*this);
-      } else if (*this == minus_one) {
-	return -x;
-      } else {
-	// TODOX
-	CRAB_WARN("Skipped ", *this, " * ", x);
-	return wrapped_interval_t::top();
+      std::vector<wrapped_interval_t> cuts, x_cuts;
+      signed_and_unsigned_split(cuts);
+      x.signed_and_unsigned_split(x_cuts);
+      assert(!cuts.empty());
+      assert(!x_cuts.empty());
+
+      CRAB_LOG("wrapped-int-mul",
+	       crab::outs () << "cuts for " << *this << "\n";
+	       for(unsigned i=0, ie=cuts.size(); i < ie; ++i) {
+		 crab::outs() << "\t" << cuts[i] << "\n";
+	       }
+	       crab::outs () << "cuts for " << x << "\n";
+	       for(unsigned i=0, ie=x_cuts.size(); i < ie; ++i) {
+		 crab::outs() << "\t" << x_cuts[i] << "\n";
+	       });
+		 
+      wrapped_interval_t res = wrapped_interval_t::bottom();      
+      for(unsigned i=0, ie=cuts.size(); i < ie; ++i) {
+	for(unsigned j=0, je=x_cuts.size(); j < je; ++j) {
+	  std::vector<wrapped_interval_t> exact_reduct;
+	  cuts[i].reduced_signed_unsigned_mul(x_cuts[j], exact_reduct);
+	  for (unsigned k=0; k < exact_reduct.size(); ++k) {
+	    res = res | exact_reduct[k];
+	  }
+	}
       }
+
+      CRAB_LOG("wrapped-int-mul",
+	       crab::outs () << *this << " * " << x << " = " << res << "\n");
+      return res;
     }
   }
   
@@ -594,7 +701,7 @@ namespace linear_interval_solver_impl {
 
 namespace crab{
 namespace domains {
-
+  
 template<typename Number, typename VariableName, std::size_t max_reduction_cycles = 10>
 class wrapped_interval_domain:
     public crab::domains::
@@ -807,11 +914,11 @@ public:
     CRAB_LOG("wrapped-int",
 	     crab::outs() << v << ":=" << n << "=" << _env[v] << "\n");    
   }
-  
+
   interval_t operator[](variable_t v) {
     return this->_env[v].to_interval();
   }
-  
+
   void assign(variable_t x, linear_expression_t e) {
     crab::CrabStats::count (getDomainName() + ".count.assign");
     crab::ScopedCrabStats __st__(getDomainName() + ".assign");
@@ -1162,7 +1269,6 @@ public:
   }
   
 };
-
   
 }
 }
