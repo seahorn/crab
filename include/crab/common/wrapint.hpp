@@ -42,12 +42,6 @@ private:
       CRAB_ERROR("two wrapint numbers with different bitwidths");
     }
   }
-
-  // return true iff most significant bit is 1.
-  bool msb() const {
-    uint64_t r = _n & (1 << (_width - 1));
-    return (r != 0);
-  }
 	   
   void compute_mod() {
     assert (_width <= 64);
@@ -94,6 +88,12 @@ public:
 
   bitwidth_t get_bitwidth() const { return _width;}
 
+  // return true iff most significant bit is 1.
+  bool msb() const {
+    uint64_t r = _n & (1 << (_width - 1));
+    return (r != 0);
+  }
+  
   // return 01111...1
   static wrapint get_signed_max(bitwidth_t w)  {
     return wrapint((1 << (w-1)) - 1, w);
