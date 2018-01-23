@@ -915,10 +915,16 @@ public:
 	     crab::outs() << v << ":=" << n << "=" << _env[v] << "\n");    
   }
 
+  // Return unlimited interval
   interval_t operator[](variable_t v) {
     return this->_env[v].to_interval();
   }
 
+  // Return wrapped interval
+  wrapped_interval_t get_wrapped_interval(variable_t v) {
+    return this->_env[v];
+  }
+  
   void assign(variable_t x, linear_expression_t e) {
     crab::CrabStats::count (getDomainName() + ".count.assign");
     crab::ScopedCrabStats __st__(getDomainName() + ".assign");
