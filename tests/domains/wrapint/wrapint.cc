@@ -126,6 +126,87 @@ int main (int argc, char *argv[]) {
     std::cout << "zext of n1 to 64 bits " << std::bitset<64>(n5.get_uint64_t()) << "\n";
     std::cout << "zext of n2 to 64 bits " << std::bitset<64>(n6.get_uint64_t()) << "\n";
   }
+
+  { // signed vs unsigned division
+    wrapint n1(9, 4);
+    wrapint n2(2, 4);
+    wrapint n3 = n1.sdiv(n2);
+    wrapint n4 = n1.udiv(n2);    
+    std::cout << std::bitset<4>(n1.get_uint64_t()) << " /_s "
+	      << std::bitset<4>(n2.get_uint64_t())
+	      << " =" << std::bitset<4>(n3.get_uint64_t()) << "\n";
+    std::cout << std::bitset<4>(n1.get_uint64_t()) << " /_u "
+	      << std::bitset<4>(n2.get_uint64_t())
+	      << " =" << std::bitset<4>(n4.get_uint64_t()) << "\n";
+  }
+
+  { // signed remainder
+    wrapint n1(7, 4);  // 7
+    wrapint n2(3, 4);  // 3
+    wrapint n3(13, 4); // -3   
+    wrapint n4(9, 4);  // -7  
+    
+    wrapint n5 = n1.srem(n2);
+    wrapint n6 = n1.srem(n3);
+    wrapint n7 = n4.srem(n2);
+    wrapint n8 = n4.srem(n3);
+
+    // 7 %_s 3 = 1
+    std::cout << std::bitset<4>(n1.get_uint64_t()) << " %_s "
+	      << std::bitset<4>(n2.get_uint64_t())
+	      << " =" << std::bitset<4>(n5.get_uint64_t());
+    crab::outs() << " (" << n5.get_signed_bignum() << ") \n";
+
+    // 7 %_s -3 = 1
+    std::cout << std::bitset<4>(n1.get_uint64_t()) << " %_s "
+	      << std::bitset<4>(n3.get_uint64_t())
+	      << " =" << std::bitset<4>(n6.get_uint64_t());
+    crab::outs() << " (" << n6.get_signed_bignum() << ") \n";      
+
+    // -7 %_s 3 = -1
+    std::cout << std::bitset<4>(n4.get_uint64_t()) << " %_s "
+	      << std::bitset<4>(n2.get_uint64_t())
+	      << " =" << std::bitset<4>(n7.get_uint64_t());
+    crab::outs() << " (" << n7.get_signed_bignum() << ") \n";      
+
+    // -7 %_s -3 = -1    
+    std::cout << std::bitset<4>(n4.get_uint64_t()) << " %_s "
+	      << std::bitset<4>(n3.get_uint64_t())
+	      << " =" << std::bitset<4>(n8.get_uint64_t());
+    crab::outs() << " (" << n8.get_signed_bignum() << ") \n";      
+  }
+
+  { // unsigned remainder
+    wrapint n1(7, 4);  // 7
+    wrapint n2(3, 4);  // 3
+    wrapint n3(13, 4); // 13
+    wrapint n4(9, 4);  // 9  
+    
+    wrapint n5 = n1.urem(n2);
+    wrapint n6 = n1.urem(n3);
+    wrapint n7 = n4.urem(n2);
+    wrapint n8 = n4.urem(n3);
+
+    // 7 %_u 3 = 1
+    std::cout << std::bitset<4>(n1.get_uint64_t()) << " %_u "
+	      << std::bitset<4>(n2.get_uint64_t())
+	      << " =" << std::bitset<4>(n5.get_uint64_t()) << "\n";
+
+    // 7 %_s 13 = 7
+    std::cout << std::bitset<4>(n1.get_uint64_t()) << " %_u "
+	      << std::bitset<4>(n3.get_uint64_t())
+	      << " =" << std::bitset<4>(n6.get_uint64_t()) << "\n";
+
+    // 9 %_s 3 = 0
+    std::cout << std::bitset<4>(n4.get_uint64_t()) << " %_s "
+	      << std::bitset<4>(n2.get_uint64_t())
+	      << " =" << std::bitset<4>(n7.get_uint64_t()) << "\n";
+
+    // 9 %_s 13 = 9
+    std::cout << std::bitset<4>(n4.get_uint64_t()) << " %_s "
+	      << std::bitset<4>(n3.get_uint64_t())
+	      << " =" << std::bitset<4>(n8.get_uint64_t()) << "\n";
+  }
   
   
   return 0;

@@ -122,18 +122,36 @@ public:
   
 public:
 
-  std::string get_str () const {
-    return std::to_string(_n);
+  // return the wrapint as an unsigned number
+  std::string get_unsigned_str () const {
+    return get_unsigned_bignum().get_str();
   }
 
+  // return the wrapint as a signed number
+  std::string get_signed_str () const {
+    return get_signed_bignum().get_str();
+  }
+  
   uint64_t get_uint64_t() const {
     return _n;
   }
-  
-  ikos::z_number get_bignum() const {
+
+  // return the wrapint as an unsigned big number
+  ikos::z_number get_unsigned_bignum() const {
     return ikos::z_number(_n);
   }
 
+  // return the wrapint as a signed big number
+  ikos::z_number get_signed_bignum() const {
+    if (msb()) {
+      // get two's complement and negate
+      wrapint r = *this ^ get_unsigned_max(get_bitwidth());
+      return ikos::z_number(-(r.get_unsigned_bignum()+1));
+    } else {
+      return get_unsigned_bignum();
+    }
+  }
+  
   bool is_zero() const {
     return _n == 0;
   }
@@ -164,27 +182,66 @@ public:
     return wrapint(r, _width, _mod);
   }
 
+  // signed division
   wrapint operator/(wrapint x) const {
+    return sdiv(x);
+  }
+
+  // signed division: rounding towards 0
+  wrapint sdiv(wrapint x) const {
     sanity_check_bitwidths(x);    
-    if (x._n == 0) {
-      CRAB_ERROR("wrapint: division by zero ", __LINE__);
+    if (x.is_zero()) {
+      CRAB_ERROR("wrapint: signed division by zero ", __LINE__);
     } else {
-      
+      ikos::z_number dividend = get_signed_bignum();
+      ikos::z_number divisor = x.get_signed_bignum();
+      ikos::z_number r = dividend / divisor;
+      return wrapint(r, get_bitwidth());
+    }
+  }
+
+  // unsigned division: rounding towards 0
+  wrapint udiv(wrapint x) const {
+    sanity_check_bitwidths(x);    
+    if (x.is_zero()) {
+      CRAB_ERROR("wrapint: unsigned division by zero ", __LINE__);
+    } else {
       uint64_t r = (_width == 64 ? _n / x._n : (_n / x._n) % _mod);
       return wrapint(r, _width, _mod);
     }
   }
 
+  // signed remainder
   wrapint operator%(wrapint x) const {
+    return srem(x);
+  }
+
+  // signed rem: is the remainder of the signed division so rounding
+  // also towards 0.
+  wrapint srem(wrapint x) const {
+    sanity_check_bitwidths(x);    
+    if (x.is_zero()) {
+      CRAB_ERROR("wrapint: signed division by zero ", __LINE__);
+    } else {
+      ikos::z_number dividend = get_signed_bignum();
+      ikos::z_number divisor = x.get_signed_bignum();
+      ikos::z_number r = dividend % divisor;
+      return wrapint(r, get_bitwidth());
+    }
+  }
+
+  // unsigned rem: is the remainder of unsigned division so rounding
+  // also towards 0.
+  wrapint urem(wrapint x) const {
     sanity_check_bitwidths(x);
-    if (x._n == 0) {
-      CRAB_ERROR("wrapint: division by zero ", __LINE__);
+    if (x.is_zero()) {
+      CRAB_ERROR("wrapint: unisnged division by zero ", __LINE__);
     } else {
       uint64_t r = (_width == 64 ? _n % x._n: (_n % x._n) % _mod);
       return wrapint(r, _width, _mod);
     }
   }
-
+  
   wrapint& operator+=(wrapint x) {
     sanity_check_bitwidths(x);
     _n += x._n;
@@ -206,27 +263,6 @@ public:
     return *this;
   }
 
-  wrapint& operator/=(wrapint x) {
-    sanity_check_bitwidths(x);
-    if (x._n == 0) {
-      CRAB_ERROR("wraping: division by zero ", __LINE__);
-    } else {
-      _n /= x._n;
-      if (_width < 64) _n = _n % _mod;
-      return *this;
-    }
-  }
-
-  wrapint& operator%=(wrapint x) {
-    sanity_check_bitwidths(x);
-    if (x._n == 0) {
-      CRAB_ERROR("wrapint: division by zero ", __LINE__);
-    } else {
-      _n %= x._n;
-      if (_width < 64) _n = _n % _mod;
-      return *this;
-    }
-  }
 
   wrapint& operator--() {
     --(_n);
@@ -338,7 +374,7 @@ public:
   }
   
   void write(crab::crab_os& o) {
-    o << get_str();
+    o << get_unsigned_str();
   }
 
 }; // class wrapint
@@ -351,7 +387,7 @@ inline crab::crab_os& operator<<(crab::crab_os& o, wrapint z) {
 
 inline std::size_t hash_value(const wrapint& n) {
   boost::hash<std::string> hasher;
-  return hasher(n.get_str());
+  return hasher(n.get_unsigned_str());
 }
 
 } // end namespace crab
