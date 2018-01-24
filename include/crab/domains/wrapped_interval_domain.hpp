@@ -95,8 +95,10 @@ class wrapped_interval {
       ssplit[i].unsigned_split(out);
     }
   }
-  
+
   wrapped_interval_t signed_mul(wrapped_interval_t x) const {
+    assert(!is_bottom() && !x.is_bottom());
+    
     bool msb_start = _start.msb();
     bool msb_stop = _stop.msb();    
     bool msb_x_start = x._start.msb();
@@ -123,6 +125,8 @@ class wrapped_interval {
   }
 
   wrapped_interval_t unsigned_mul(wrapped_interval_t x) const {
+    assert(!is_bottom() && !x.is_bottom());
+ 
     // check for overflow first
     wrapint max_sz = _stop * x._stop;
     wrapint min_sz = _start * x._start;
@@ -164,6 +168,10 @@ class wrapped_interval {
   // It uses exact meet rather than abstract meet.
   void reduced_signed_unsigned_mul(wrapped_interval_t x,
 				   std::vector<wrapped_interval_t>& out) const {
+    if (is_bottom() || x.is_bottom()) {
+      return;
+    }
+    
     wrapped_interval_t s = signed_mul(x);
     wrapped_interval_t u = unsigned_mul(x);
     s.exact_meet(u, out);
@@ -174,7 +182,60 @@ class wrapped_interval {
 	     });
   }
 
+  wrapped_interval_t unsigned_div(wrapped_interval_t x) const {
+    CRAB_LOG("wrapped-int-div", crab::outs () << *this << " /_u " << x  << "=";);
+    assert(!x[wrapint(0, x.get_bitwidth())]);
+    assert(!is_bottom() && !x.is_bottom());
+    wrapped_interval_t res = wrapped_interval_t(_start.udiv(x._stop), _stop.udiv(x._start));
+    CRAB_LOG("wrapped-int-div", crab::outs () << res << "\n";);
+    return res;
+  }
+
+  wrapped_interval_t signed_div(wrapped_interval_t x) const {
+    CRAB_LOG("wrapped-int-div", crab::outs () << *this << " /_s " << x  << "=";);    
+    assert(!x[wrapint(0, x.get_bitwidth())]);
+    assert(!is_bottom() && !x.is_bottom());
+
+    bool msb_start = _start.msb();
+    bool msb_x_start = x._start.msb();
+
+    wrapped_interval_t res;
+    if (msb_start == msb_x_start) {
+      if (msb_start) { //both negative
+	res = wrapped_interval_t(_stop.sdiv(x._start), _start.sdiv(x._stop));	
+      } else {  //both positive
+	res = wrapped_interval_t(_start.sdiv(x._stop), _stop.sdiv(x._start));
+      }
+    } else {
+      if (msb_start) { 
+	assert(!msb_x_start);
+	res = wrapped_interval_t(_start.sdiv(x._start), _stop.sdiv(x._stop));
+      } else {
+	assert(msb_x_start);
+	res = wrapped_interval_t(_stop.sdiv(x._stop), _start.sdiv(x._start));
+      }
+    }
+    CRAB_LOG("wrapped-int-div", crab::outs () << res << "\n";);    
+    return res;
+  }
   
+  // FIXME: this is sound only if wrapped interval defined over
+  //        z_number.
+  void trim_zero(std::vector<wrapped_interval_t>& out) const {
+    wrapint zero(0, get_bitwidth());
+    if (!is_bottom() && (!(*this == zero))) {
+      if (start() == zero) {
+	out.push_back(wrapped_interval_t(wrapint(1, get_bitwidth()), stop()));
+      } else if (stop() == zero) {
+	out.push_back(wrapped_interval_t(start(),wrapint(-1, get_bitwidth())));
+      } else if (operator[](zero)) {
+	out.push_back(wrapped_interval_t(start(), wrapint(-1, get_bitwidth())));
+	out.push_back(wrapped_interval_t(wrapint(1, get_bitwidth()), stop()));
+      } else {
+	out.push_back(*this);
+      }
+    }
+  }
   
 public:
 
@@ -260,21 +321,23 @@ public:
     return (!_is_bottom && (_stop - _start == maxspan));
   }
 
+  // Important: we make the choice here that we interpret wrapint as
+  // signed mathematical integers.
   interval<Number> to_interval() const {
     typedef interval<Number> interval_t;
     if (is_bottom()) {
       return interval_t::bottom();
-    } else if (is_top() || (cross_signed_limit () || cross_unsigned_limit())) {
+    } else if (is_top() || (cross_signed_limit ())) {
       return interval_t::top();
     } else {
-      return interval_t(_start.get_bignum(), _stop.get_bignum());
+      return interval_t(_start.get_signed_bignum(), _stop.get_signed_bignum());
     }
   }
   
   /** begin needed by interval constraint solver **/
   wrapped_interval_t lower_half_line() const {
     if (is_top() || is_bottom()) return *this;
-    // FIXME: we assume here signed intervals
+    // FIXME: we assume unsoundly signed intervals
     wrapint smin = wrapint::get_signed_min(get_bitwidth());
     wrapped_interval_t res = wrapped_interval_t(smin, _stop);
     return res;
@@ -282,7 +345,7 @@ public:
   
   wrapped_interval_t upper_half_line() const {
     if (is_top() || is_bottom()) return *this;
-    // FIXME: we assume here signed intervals
+    // FIXME: we assume unsoundly signed intervals
     wrapint smax = wrapint::get_signed_max(get_bitwidth());
     wrapped_interval_t res = wrapped_interval_t(_start, smax);
     return res;
@@ -290,7 +353,8 @@ public:
 
   boost::optional<Number> singleton() const {
     if (!is_bottom() && !is_top() && _start == _stop) {
-      return Number(_start.get_str());
+      // FIXME: we assume unsoundly signed intervals
+      return Number(_start.get_signed_str());
     } else {
       return boost::optional<Number>();
     }
@@ -528,53 +592,65 @@ public:
 
   // signed division
   wrapped_interval_t operator/(wrapped_interval_t x) const {
-    wrapped_interval_t one(1, x.get_bitwidth());
-    wrapped_interval_t minus_one(-1, x.get_bitwidth());    
-    // temporary special case;
-    if (x == one)
-      return *this;
-    else if (x == minus_one) {
-      return -(*this);
-    } else {
-      // TODOX
-      CRAB_WARN("Skipped ", *this, " / ", x);      
-      return default_implementation(x);
-    }
+    return SDiv(x);
   }
   
   wrapped_interval_t& operator/=(wrapped_interval_t x) {
     return this->operator=(this->operator/(x));
   }   
-
-  void write(crab::crab_os& o) const {
-    if (is_bottom()) {
-      o << "_|_";
-    } else if (is_top()) {
-      o << "top";
-    } else {
-      #ifdef PRINT_WRAPINT_AS_SIGNED
-      // print the wrapints as a signed number (easier to read)
-      uint64_t x = _start.get_uint64_t();
-      uint64_t y = _stop.get_uint64_t();
-      if (get_bitwidth() == 32) {
-	o << "[[" << (int) x << ", " << (int) y << "]]_";
-      } else if (get_bitwidth() == 8) {
-	o << "[[" << (int) static_cast<signed char>(x) << ", "
-	          << (int) static_cast<signed char>(y) << "]]_";	
-      } else {
-	// TODO: print the wrapint as a signed number
-	o << "[[" << _start << ", " << _stop << "]]_";
-      }
-      #else
-      o << "[[" << _start << ", " << _stop << "]]_";
-      #endif
-      o << (int) get_bitwidth();
-    }
-  }    
     
   /** division and remainder operations **/
-  wrapped_interval_t UDiv(wrapped_interval_t x ) const
-  { return default_implementation(x); }
+  wrapped_interval_t SDiv(wrapped_interval_t x ) const {
+    if (is_bottom() || x.is_bottom()) {
+      return wrapped_interval_t::bottom();
+    } if (is_top() || x.is_top()) {
+      return wrapped_interval_t::top();
+    } else {
+      std::vector<wrapped_interval_t> cuts, x_cuts;
+      signed_and_unsigned_split(cuts);
+      x.signed_and_unsigned_split(x_cuts);
+      assert(!cuts.empty());
+      assert(!x_cuts.empty());
+      wrapped_interval_t res = wrapped_interval_t::bottom();      
+      for(unsigned i=0, ie=cuts.size(); i < ie; ++i) {
+	for(unsigned j=0, je=x_cuts.size(); j < je; ++j) {
+	  std::vector<wrapped_interval_t> trimmed_divisors;
+	  x_cuts[j].trim_zero(trimmed_divisors);
+	  for(unsigned k=0, ke = trimmed_divisors.size(); k < ke; ++k) {
+	    wrapped_interval_t d = trimmed_divisors[k];
+	    res = res | cuts[i].signed_div(d);	    
+	  }
+	}
+      }
+      return res;
+    }
+  }
+  
+  wrapped_interval_t UDiv(wrapped_interval_t x ) const {
+    if (is_bottom() || x.is_bottom()) {
+      return wrapped_interval_t::bottom();
+    } if (is_top() || x.is_top()) {
+      return wrapped_interval_t::top();
+    } else {
+      std::vector<wrapped_interval_t> ssplits, x_ssplits;
+      signed_split(ssplits);
+      x.signed_split(x_ssplits);
+      assert(!ssplits.empty());
+      assert(!x_ssplits.empty());
+      wrapped_interval_t res = wrapped_interval_t::bottom();      
+      for(unsigned i=0, ie=ssplits.size(); i < ie; ++i) {
+	for(unsigned j=0, je=x_ssplits.size(); j < je; ++j) {
+	  std::vector<wrapped_interval_t> trimmed_divisors;
+	  x_ssplits[j].trim_zero(trimmed_divisors);
+	  for(unsigned k=0, ke = trimmed_divisors.size(); k < ke; ++k) {
+	    wrapped_interval_t d = trimmed_divisors[k];
+	    res = res | ssplits[i].unsigned_div(d);	    
+	  }
+	}
+      }
+      return res;
+    }
+  }
   
   wrapped_interval_t SRem(wrapped_interval_t x)  const
   { return default_implementation(x); }    
@@ -642,6 +718,32 @@ public:
 
   wrapped_interval_t AShr(wrapped_interval_t  x) const
   { return default_implementation(x); }    
+
+  void write(crab::crab_os& o) const {
+    if (is_bottom()) {
+      o << "_|_";
+    } else if (is_top()) {
+      o << "top";
+    } else {
+      #ifdef PRINT_WRAPINT_AS_SIGNED
+      // print the wrapints as a signed number (easier to read)
+      uint64_t x = _start.get_uint64_t();
+      uint64_t y = _stop.get_uint64_t();
+      if (get_bitwidth() == 32) {
+	o << "[[" << (int) x << ", " << (int) y << "]]_";
+      } else if (get_bitwidth() == 8) {
+	o << "[[" << (int) static_cast<signed char>(x) << ", "
+	          << (int) static_cast<signed char>(y) << "]]_";	
+      } else {
+	o << "[[" << _start.get_signed_bignum() << ", "
+	  << _stop.get_signed_bignum() << "]]_";
+      }
+      #else
+      o << "[[" << _start << ", " << _stop << "]]_";
+      #endif
+      o << (int) get_bitwidth();
+    }
+  }    
   
 };
 
@@ -1220,7 +1322,9 @@ public:
   void write(crab::crab_os& o) {
     this->_env.write(o);
   }
-  
+
+  // Important: we make the choice here that we interpret wrapint as
+  // signed mathematical integers.
   linear_constraint_system_t to_linear_constraint_system () {
     linear_constraint_system_t csts;
     if (this->is_bottom()) {
@@ -1231,9 +1335,9 @@ public:
     for (iterator it = this->_env.begin(); it != this->_env.end(); ++it) {
       variable_t v = it->first;
       wrapped_interval_t i = it->second;
-      if (!i.is_top()) {	
-	csts += linear_constraint_t(v >= Number(i.start().get_str()));
-	csts += linear_constraint_t(v <= Number(i.stop().get_str()));
+      if (!i.is_top() && !i.cross_signed_limit()) {	
+	csts += linear_constraint_t(v >= i.start().get_signed_bignum());
+	csts += linear_constraint_t(v <= i.stop().get_signed_bignum());
       }
     }
     return csts;
