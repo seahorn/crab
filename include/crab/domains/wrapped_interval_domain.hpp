@@ -15,6 +15,7 @@
 #include <crab/domains/intervals.hpp>
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/domains/linear_interval_solver.hpp>
+#include <crab/domains/discrete_domains.hpp>
 #include <crab/domains/domain_traits.hpp>
 #include <boost/optional.hpp>
 
@@ -1380,5 +1381,578 @@ public:
   
 };
   
+}
+}
+
+
+namespace crab {
+namespace domains {
+
+// Simple lattice to represent which limits (if any) have been crossed
+// by a wrapped interval.
+class wrapped_interval_limit_value: public ikos::writeable {
+    /*
+                      csu
+                      /  \
+                    cs    cu
+                     \    /
+                       nc
+                       |
+                     bottom
+
+     nc: no cross either signed or unsigned limits.
+     cs: cross signed limit.
+     cu: cross unsigned limit.
+     csu: cross both signed and unsigned limits.	
+
+     where signed limit   is the interval [0111...1, 1000....0]  
+           unsigned limit is the interval [1111...1, 0000....0]
+    */
+  
+  // bottom is left outside intentionally so the join (meet) is simply
+  // bitwise-or (and).
+  typedef enum {
+    NC  = 0x0,
+    CS  = 0x1,
+    CU  = 0x2,
+    CSU = 0x3 /*top*/
+  } kind_t;
+  
+  kind_t _value;
+  bool   _is_bottom;
+  
+  wrapped_interval_limit_value(kind_t v, bool is_bottom)
+    : _value(v), _is_bottom(is_bottom) { }
+  
+public:
+  
+  wrapped_interval_limit_value(): _value(CSU), _is_bottom(false) {}
+  
+  static wrapped_interval_limit_value bottom() {
+    return wrapped_interval_limit_value(NC/*any value*/, true);
+  }
+  
+  static wrapped_interval_limit_value top() {
+    return wrapped_interval_limit_value(CSU, false);
+  }
+  
+  static wrapped_interval_limit_value cross_signed_limit() {
+      return wrapped_interval_limit_value(CS, false);
+  }
+  
+  static wrapped_interval_limit_value cross_unsigned_limit() {
+    return wrapped_interval_limit_value(CU, false);
+  }
+  
+  static wrapped_interval_limit_value do_not_cross() {
+    return wrapped_interval_limit_value(NC, false);
+  }
+  
+  template<typename N>
+  static wrapped_interval_limit_value convert(const wrapped_interval<N>& i) {
+    if (i.is_bottom()) {
+      return wrapped_interval_limit_value::bottom();
+    } else if (i.is_top()) {
+      return wrapped_interval_limit_value::top();      
+    } else if (i.cross_unsigned_limit()) {
+      return wrapped_interval_limit_value::cross_unsigned_limit();
+    } else if (i.cross_signed_limit()) {
+      return wrapped_interval_limit_value::cross_signed_limit();
+    } else {
+      return wrapped_interval_limit_value::do_not_cross();
+    }
+  }
+  
+  wrapped_interval_limit_value(const wrapped_interval_limit_value& o)
+    : _value(o._value), _is_bottom(o._is_bottom) {}
+  
+  wrapped_interval_limit_value& operator=(const wrapped_interval_limit_value& o) {
+    if (this != &o) {
+      _value = o._value;
+      _is_bottom = o._is_bottom;
+    }
+    return *this;
+  }
+  
+  bool is_bottom() const { return _is_bottom;}
+  
+  // the wrapped interval might have crossed both limits
+  bool is_top() const { return !_is_bottom && _value == CSU;}
+  
+  // the wrapped interval might have crossed the signed limit
+  bool is_crossing_signed_limit() const
+  { return (!is_bottom() && (_value == CS || _value == CSU)); }
+  
+  // the wrapped interval might have crossed the unsigned limit  
+  bool is_crossing_unsigned_limit() const
+  { return (!is_bottom() && (_value == CU || _value == CSU)); }
+  
+  bool operator<=(const wrapped_interval_limit_value& o) const {
+    if (is_bottom() || o.is_top()) {
+      return true;
+    } else if (o.is_bottom()) {
+      return false;
+    } else if (is_top()) {
+      return o.is_top();
+    } else if (_value == CS) {
+      return (o._value == CS || o.is_top());
+    } else if (_value == CU) {
+      return (o._value == CU || o.is_top());
+    }
+    
+    assert(false && "unreachable");   
+    return false;
+  }
+  
+  bool operator==(const wrapped_interval_limit_value& o) const {
+    return (_value == o._value && is_bottom() == o.is_bottom());
+  }
+    
+  wrapped_interval_limit_value operator|(wrapped_interval_limit_value o) {
+    if (is_bottom()) {
+      return o;
+    } else if (o.is_bottom()) {
+      return *this;
+    } else {
+      return wrapped_interval_limit_value(static_cast<kind_t>(
+	     static_cast<int>(_value) | static_cast<int>(o._value)), false);
+    }
+  }
+    
+  // the lattice satisfy ACC so join is the widening
+  wrapped_interval_limit_value operator||(wrapped_interval_limit_value o) { 
+    return this->operator|(o); 
+  }
+  
+  wrapped_interval_limit_value operator&(wrapped_interval_limit_value o) {
+    if (is_bottom() || o.is_bottom()) {
+      return bottom();
+    } else {
+      return wrapped_interval_limit_value(static_cast<kind_t>(
+	     static_cast<int>(_value) & static_cast<int>(o._value)), false);
+    }
+  }
+  
+  // the lattice satisfy DCC so meet is the narrowing
+  wrapped_interval_limit_value operator&&(wrapped_interval_limit_value o) { 
+    return this->operator&(o); 
+  }
+  
+  void write(crab_os& o) {
+    if (is_bottom()) {
+      o << "_|_";
+    } else {
+      switch (_value) {
+      case NC:  o << "no-cross"; break;
+      case CS:  o << "cross-signed"; break;
+      case CU:  o << "cross-unsigned"; break;
+      default:/*top*/ o << "top";  
+      }
+    }
+  }
+};
+    
+/** 
+    Wrapped interval domain augmented with an abstraction of the
+    execution history: it keeps track of which variable crossed which
+    signed/unsigned limits.
+**/
+template <typename Number, typename VariableName, std::size_t max_reduction_cycles = 10>
+class wrapped_interval_limits_domain:
+    public abstract_domain<Number, VariableName,
+	   wrapped_interval_limits_domain<Number, VariableName, max_reduction_cycles> > {
+  
+  typedef wrapped_interval_limits_domain<Number, VariableName, max_reduction_cycles> this_type;
+  typedef abstract_domain<Number,VariableName,this_type> abstract_domain_t;
+  
+public:
+    
+  using typename abstract_domain_t::linear_expression_t;
+  using typename abstract_domain_t::linear_constraint_t;
+  using typename abstract_domain_t::linear_constraint_system_t;
+  using typename abstract_domain_t::variable_t;
+  using typename abstract_domain_t::variable_vector_t;
+  typedef Number number_t;
+  typedef VariableName varname_t;
+  typedef interval<number_t> interval_t;
+  typedef wrapped_interval<number_t> wrapped_interval_t;  
+  
+private:
+
+  typedef wrapped_interval_domain<Number, VariableName, max_reduction_cycles>
+  wrapped_interval_domain_t;
+
+  typedef separate_domain<variable_t, wrapped_interval_limit_value> separate_domain_t; 
+  typedef discrete_domain<variable_t> discrete_domain_t;
+
+  wrapped_interval_domain_t _w_int_dom;
+  // Map each variable to which limit was crossed.
+  separate_domain_t _limit_env;
+  // Set of may-initialized variables
+  discrete_domain_t _init_set;
+
+  wrapped_interval_limits_domain(const wrapped_interval_domain_t& dom,
+				 const separate_domain_t& limit_env,
+				 const discrete_domain_t& init_set)
+    : _w_int_dom(dom), _limit_env(limit_env), _init_set(init_set) {}
+  
+public:
+  
+  static this_type top() {
+    return this_type(wrapped_interval_domain_t::top(),
+		     separate_domain_t::top(),
+		     discrete_domain_t::bottom() /*empty set*/);
+  }
+  
+  static this_type bottom() {
+    return this_type(wrapped_interval_domain_t::bottom(),
+		     separate_domain_t::bottom(),
+		     discrete_domain_t::bottom() /*empty set*/);
+  }
+  
+  wrapped_interval_limits_domain()
+    : _w_int_dom(), _limit_env(), _init_set(discrete_domain_t::bottom() /*empty set*/) {}
+    
+  wrapped_interval_limits_domain(const this_type& o)
+    : _w_int_dom(o._w_int_dom),
+      _limit_env(o._limit_env),
+      _init_set(o._init_set) {}
+
+  wrapped_interval_limits_domain(const this_type&& o)
+    : _w_int_dom(std::move(o._w_int_dom)),
+      _limit_env(std::move(o._limit_env)),
+      _init_set(std::move(o._init_set)) {}
+  
+  this_type& operator=(const this_type& o) {
+    if (this != &o) {
+      _w_int_dom = o._w_int_dom;
+      _limit_env = o._limit_env;
+      _init_set = o._init_set;
+    }
+    return *this;
+  }
+
+  bool is_bottom() {
+    // XXX: ignore _limit_env
+    return _w_int_dom.is_bottom();
+  }
+  
+  bool is_top() {
+    // XXX: ignore _limit_env
+    return _w_int_dom.is_top();
+  }
+      
+  bool operator<=(this_type o) {
+    return (_w_int_dom <= o._w_int_dom &&
+	    _limit_env <= o._limit_env);
+  }
+  
+  bool operator==(this_type o) {
+    return (*this <= o && o <= *this);
+  }
+  
+  void operator|=(this_type o) {
+    _w_int_dom |= o._w_int_dom;
+    _limit_env = _limit_env | o._limit_env;
+    _init_set = _init_set | o._init_set;
+  }
+  
+  this_type operator|(this_type o) {
+    return this_type(_w_int_dom | o._w_int_dom,
+		     _limit_env | o._limit_env,
+		     _init_set  | o._init_set);
+  }
+
+  this_type operator&(this_type o) {
+    return this_type(_w_int_dom & o._w_int_dom,
+		     _limit_env & o._limit_env,
+		     _init_set  & o._init_set);    
+  }
+
+  this_type operator||(this_type o) {
+    return this_type(_w_int_dom || o._w_int_dom,
+		     _limit_env || o._limit_env,
+		     _init_set  || o._init_set);    
+  }
+
+  this_type operator&&(this_type o) {
+    return this_type(_w_int_dom && o._w_int_dom,
+		     _limit_env && o._limit_env,
+		     _init_set  && o._init_set);
+  }
+  
+  template<typename Thresholds>
+  this_type widening_thresholds(this_type o, const Thresholds& ts) {
+    return this_type(_w_int_dom.widening_thresholds (o._w_int_dom, ts),
+		     _limit_env || o._limit_env,
+		     _init_set  || o._init_set);
+  } 
+
+  void set (variable_t x, interval_t i) {
+    _w_int_dom.set(x, i);    
+    if (i.singleton()) {
+      _limit_env.set(x, wrapped_interval_limit_value::do_not_cross());            
+    } else {
+      CRAB_WARN("TODO: set operation with unlimited interval");
+      _limit_env -= x;
+    }
+    _init_set += x;
+
+    CRAB_LOG("wrapped-int2",
+	     crab::outs() << x << ":=" << i << " => " << *this<<"\n";);
+  }
+  
+  void set (variable_t x, wrapped_interval_t i) {
+    _w_int_dom.set(x, i);
+    _limit_env.set(x, wrapped_interval_limit_value::convert(i));
+    _init_set += x;
+    CRAB_LOG("wrapped-int2",
+	     crab::outs() << x << ":=" << i << " => " << *this<<"\n";);
+  }
+
+  void set (variable_t x, Number n) {
+    _w_int_dom.set(x, n);
+    _limit_env.set(x, wrapped_interval_limit_value::do_not_cross());
+    _init_set += x; 
+    CRAB_LOG("wrapped-int2",
+	     crab::outs() << x << ":=" << n << " => " << *this<<"\n";);
+  }
+  
+  
+  interval_t operator[](variable_t v) {
+    return _w_int_dom[v];
+  }
+
+  wrapped_interval_t get_wrapped_interval(variable_t v) {
+    return _w_int_dom.get_wrapped_interval(v);
+  }
+  
+  wrapped_interval_limit_value get_limit_value(variable_t x) const {
+    return _limit_env[x];
+  }
+  
+  void operator-=(variable_t v) {
+    _w_int_dom -= v;
+    _limit_env -= v;
+    // XXX: we never remove a variable from _init_set
+    // _init_set -= v;
+  }
+  
+  // numerical_domains_api
+
+  void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
+    wrapped_interval_limit_value pre = wrapped_interval_limit_value::bottom();
+    if (discrete_domain_t(x) <= _init_set) { pre = _limit_env[x]; }
+    _w_int_dom.apply(op, x, y, z);
+    // weak update to keep past history    
+    _limit_env.set(x, pre |
+    		   wrapped_interval_limit_value::convert(_w_int_dom.get_wrapped_interval(x)));
+    _init_set += x;
+    CRAB_LOG("wrapped-int2",
+	     crab::outs() << x << ":=" << y << " " << op << " " << z
+	                  << " => " << *this<<"\n";);
+  }
+  
+  void apply(operation_t op, variable_t x, variable_t y, number_t k) {
+    wrapped_interval_limit_value pre = wrapped_interval_limit_value::bottom();
+    if (discrete_domain_t(x) <= _init_set) { pre = _limit_env[x]; }
+    _w_int_dom.apply(op, x, y, k);
+    // weak update to keep past history    
+    _limit_env.set(x, pre |
+    		   wrapped_interval_limit_value::convert(_w_int_dom.get_wrapped_interval(x)));
+    _init_set += x;
+    CRAB_LOG("wrapped-int2",
+	     crab::outs() << x << ":=" << y << " " << op << " " << k
+	                  << " => " << *this <<"\n";);    
+  }
+  
+  void assign(variable_t x, linear_expression_t e) {
+    wrapped_interval_limit_value pre = wrapped_interval_limit_value::bottom();
+    if (discrete_domain_t(x) <= _init_set) { pre = _limit_env[x]; }
+    _w_int_dom.assign(x, e);
+    // weak update to keep past history    
+    _limit_env.set(x, pre |
+    		   wrapped_interval_limit_value::convert(_w_int_dom.get_wrapped_interval(x)));
+    _init_set += x;
+    CRAB_LOG("wrapped-int2",
+	     crab::outs() << x << ":=" << e << " => " << *this<<"\n";);    
+    
+  }
+  
+  void backward_assign (variable_t x, linear_expression_t e, this_type invariant) {
+    _w_int_dom.backward_assign(x, e, invariant._w_int_dom);
+    // XXX: ignore _limit_env
+  }
+  
+  void backward_apply (operation_t op, variable_t x, variable_t y, number_t z,
+		       this_type invariant) {
+    _w_int_dom.backward_apply(op, x, y, z, invariant._w_int_dom);
+    // XXX: ignore _limit_env    
+  }
+  
+  void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
+		      this_type invariant) {
+    _w_int_dom.backward_apply(op, x, y, z, invariant._w_int_dom);
+    // XXX: ignore _limit_env    
+  }
+  
+  void operator+=(linear_constraint_system_t csts) {
+    typename linear_constraint_system_t::variable_set_t variables = csts.variables();
+    std::vector<wrapped_interval_limit_value> pre_values;
+    pre_values.reserve(variables.size());
+    for (auto v: variables) {
+      if (discrete_domain_t(v) <= _init_set) {
+	pre_values.push_back(_limit_env[v]);
+      } else {
+	pre_values.push_back(wrapped_interval_limit_value::bottom());
+      }
+    }
+    _w_int_dom += csts;
+    // weak update to keep past history        
+    unsigned i=0;
+    for (auto v: variables) {
+      _limit_env.set(v, pre_values[i] |
+		     wrapped_interval_limit_value::convert(_w_int_dom.get_wrapped_interval(v)));
+      _init_set += v;
+      ++i;
+    }
+    CRAB_LOG("wrapped-int2",
+	     crab::outs() << "assume(" << csts << ") => " << *this << "\n";);        
+  }
+  
+  // cast_operators_api
+  
+  void apply(int_conv_operation_t op, variable_t dst, variable_t src) {
+    wrapped_interval_limit_value pre = wrapped_interval_limit_value::bottom();
+    if (discrete_domain_t(dst) <= _init_set) { pre = _limit_env[dst]; }
+    _w_int_dom.apply(op, dst, src);
+    // weak update to keep past history    
+    _limit_env.set(dst, pre |
+    		   wrapped_interval_limit_value::convert(_w_int_dom.get_wrapped_interval(dst)));
+    _init_set += dst;
+    CRAB_LOG("wrapped-int2",
+	     crab::outs() << dst << ":=" << op << " " << src << " => " << *this<<"\n";);    
+    
+  }
+      
+  // bitwise_operators_api
+  
+  void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {
+    wrapped_interval_limit_value pre = wrapped_interval_limit_value::bottom();
+    if (discrete_domain_t(x) <= _init_set) { pre = _limit_env[x]; }
+    _w_int_dom.apply(op, x, y, z);
+    // weak update to keep past history    
+    _limit_env.set(x, pre |
+    		   wrapped_interval_limit_value::convert(_w_int_dom.get_wrapped_interval(x)));
+    _init_set += x;
+    CRAB_LOG("wrapped-int2",
+	     crab::outs() << x << ":=" << y << " " << op << " " << z
+	                  << " => " << *this<<"\n";);
+  }
+  
+  void apply(bitwise_operation_t op, variable_t x, variable_t y, number_t k) {
+    wrapped_interval_limit_value pre = wrapped_interval_limit_value::bottom();
+    if (discrete_domain_t(x) <= _init_set) { pre = _limit_env[x]; }
+    _w_int_dom.apply(op, x, y, k);
+    // weak update to keep past history    
+    _limit_env.set(x, pre |
+    		   wrapped_interval_limit_value::convert(_w_int_dom.get_wrapped_interval(x)));
+    _init_set += x;
+    CRAB_LOG("wrapped-int2",
+	     crab::outs() << x << ":=" << y << " " << op << " " << k
+	                  << " => " << *this<<"\n";);    
+  }
+      
+  // division_operators_api
+  
+  void apply(div_operation_t op, variable_t x, variable_t y, variable_t z) {
+    wrapped_interval_limit_value pre = wrapped_interval_limit_value::bottom();
+    if (discrete_domain_t(x) <= _init_set) { pre = _limit_env[x]; }
+    _w_int_dom.apply(op, x, y, z);
+    // weak update to keep past history    
+    _limit_env.set(x, pre |
+    		   wrapped_interval_limit_value::convert(_w_int_dom.get_wrapped_interval(x)));
+    _init_set += x;
+    CRAB_LOG("wrapped-int2",
+	     crab::outs() << x << ":=" << y << " " << op << " " << z
+	                  << " => " << *this<<"\n";);    
+  }
+  
+  void apply(div_operation_t op, variable_t x, variable_t y, number_t k) {
+    wrapped_interval_limit_value pre = wrapped_interval_limit_value::bottom();
+    if (discrete_domain_t(x) <= _init_set) { pre = _limit_env[x]; }
+    _w_int_dom.apply(op, x, y, k);
+    // weak update to keep past history    
+    _limit_env.set(x, pre |
+    		   wrapped_interval_limit_value::convert(_w_int_dom.get_wrapped_interval(x)));
+    _init_set += x;
+    CRAB_LOG("wrapped-int2",
+	     crab::outs() << x << ":=" << y << " " << op << " " << k
+	                  << " => " << *this<<"\n";);    
+  }
+  
+  void write(crab_os& o) {
+    //o << "(" << _w_int_dom << "," << _limit_env << "," << _init_set << ")";
+    o << "(" << _w_int_dom << "," << _limit_env << ")";
+  }
+  
+  linear_constraint_system_t to_linear_constraint_system() {
+    return _w_int_dom.to_linear_constraint_system();
+  }
+      
+  static std::string getDomainName() 
+  { return "Wrapped Intervals with some history"; }
+  
+  // domain_traits_api
+  
+  void expand(variable_t x, variable_t new_x) {
+    _w_int_dom.expand(x, new_x);
+    _limit_env.set(new_x, _limit_env[x]);
+  }
+  
+  template <typename Range>
+  void project(Range vars) {
+    _w_int_dom.project(vars.begin(), vars.end());
+    
+    separate_domain_t projected_env = separate_domain_t::top();
+    for (variable_t v: vars) {
+      projected_env.set(v, _limit_env[v]);
+    }
+    std::swap(_limit_env, projected_env);
+  }
+  
+}; 
+  
+
+template<typename Number, typename VariableName>
+class domain_traits <wrapped_interval_limits_domain<Number,VariableName> > {
+public:
+
+  typedef wrapped_interval_limits_domain<Number,VariableName> wrapped_interval_domain_t;
+  typedef ikos::variable<Number, VariableName> variable_t;
+  
+  template<class CFG>
+  static void do_initialization (CFG cfg) { }
+
+  static void expand (wrapped_interval_domain_t& inv, variable_t x, variable_t new_x) {
+    inv.expand(x, new_x);
+  }
+  
+  static void normalize (wrapped_interval_domain_t& inv) {}
+  
+  template <typename Iter>
+  static void forget (wrapped_interval_domain_t& inv, Iter it, Iter end){
+    for(;it!=end; ++it) {
+      inv -= *it;
+    }
+  }
+  
+  template <typename Iter>
+  static void project (wrapped_interval_domain_t& inv, Iter it, Iter end) {
+    inv.project(it, end);
+  }
+  
+};
+
 }
 }
