@@ -247,6 +247,9 @@ namespace crab {
       bool is_return () const { 
         return m_stmt_code == RETURN; 
       }
+      bool is_havoc () const { 
+        return m_stmt_code == HAVOC; 
+      }
       bool is_arr_assume () const { 
         return (m_stmt_code == ARR_ASSUME);
       }      
