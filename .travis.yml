@@ -40,7 +40,8 @@ script:
   - /usr/bin/cmake --build . --target apron && cmake ..	
   - /usr/bin/cmake --build . --target install
   - env CTEST_OUTPUT_ON_FAILURE=1 /usr/bin/cmake --build . --target test
-
+  - ../tests/run_tests.sh ../tests/expected_results.out ./
+  
 notifications:
   email:
     recipients:
