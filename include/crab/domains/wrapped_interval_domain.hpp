@@ -96,7 +96,7 @@ class wrapped_interval {
       ssplit[i].unsigned_split(out);
     }
   }
-
+  
   wrapped_interval_t signed_mul(wrapped_interval_t x) const {
     assert(!is_bottom() && !x.is_bottom());
     
@@ -104,22 +104,42 @@ class wrapped_interval {
     bool msb_stop = _stop.msb();    
     bool msb_x_start = x._start.msb();
     bool msb_x_stop = x._stop.msb();    
-    
+    bitwidth_t b = get_bitwidth();
+
+    wrapped_interval_t res = wrapped_interval_t::top();                
     if (msb_start == msb_stop && msb_stop == msb_x_start && msb_x_start == msb_x_stop) {
-      // the two intervals do not cross any limit
-      return unsigned_mul(x);
-    }
-    
-    // each interval cannot cross the limit
-    wrapped_interval_t res = wrapped_interval_t::top();    
-    if (!(msb_start != msb_stop || msb_x_start != msb_x_stop)) {
-      if (msb_start && !msb_x_start) {
-	res = wrapped_interval_t(_start * x._stop, _stop * x._start);
-      } else if (!msb_start && msb_x_start) {
-	res = wrapped_interval_t(_stop * x._start, _start * x._stop);
-      } else { /*already top*/
+      // the two intervals are in the same hemisphere
+      if (!msb_start) {
+	return unsigned_mul(x);
+      } else {
+	if ((_start.get_unsigned_bignum() * x._start.get_unsigned_bignum()) -
+	    (_stop.get_unsigned_bignum() * x._stop.get_unsigned_bignum())
+	    < wrapint::get_unsigned_max(b).get_unsigned_bignum()) {
+	  res = wrapped_interval_t(_stop * x._stop, _start * x._start);
+	}
+	goto EXIT_SIGNED_MUL;
       }
     }
+
+    // each interval cannot cross the limit: one interval in a
+    // different hemisphere.
+    if (!(msb_start != msb_stop || msb_x_start != msb_x_stop)) {
+      if (msb_start && !msb_x_start) {
+	if ((_stop.get_unsigned_bignum() * x._start.get_unsigned_bignum()) -
+	    (_start.get_unsigned_bignum() * x._stop.get_unsigned_bignum())
+	    < wrapint::get_unsigned_max(b).get_unsigned_bignum()) {
+	  res = wrapped_interval_t(_start * x._stop, _stop * x._start);
+	}
+      } else if (!msb_start && msb_x_start) {
+	if ((_start.get_unsigned_bignum() * x._stop.get_unsigned_bignum()) -
+	    (_stop.get_unsigned_bignum() * x._start.get_unsigned_bignum())
+	    < wrapint::get_unsigned_max(b).get_unsigned_bignum()) {
+	  res = wrapped_interval_t(_stop * x._start, _start * x._stop);
+	}
+      } 
+    }
+    
+  EXIT_SIGNED_MUL:
     CRAB_LOG("wrapped-int-mul",
 	     crab::outs() << "Signed " << *this << " * " << x << "=" << res << "\n";);    
     return res;
@@ -128,12 +148,11 @@ class wrapped_interval {
   wrapped_interval_t unsigned_mul(wrapped_interval_t x) const {
     assert(!is_bottom() && !x.is_bottom());
  
-    // check for overflow first
-    wrapint max_sz = _stop * x._stop;
-    wrapint min_sz = _start * x._start;
     bitwidth_t b = get_bitwidth();
     wrapped_interval_t res = wrapped_interval_t::top();
-    if (!(max_sz - min_sz >= wrapint::get_unsigned_max(b))) {
+    if ((_stop.get_unsigned_bignum() * x._stop.get_unsigned_bignum()) -
+	(_start.get_unsigned_bignum() * x._start.get_unsigned_bignum())
+	< wrapint::get_unsigned_max(b).get_unsigned_bignum()) {
       res = wrapped_interval_t(_start * x._start, _stop * x._stop);
     }
     CRAB_LOG("wrapped-int-mul",
@@ -501,7 +520,7 @@ public:
     } else if (is_top () || x.is_top()) {
       return wrapped_interval_t::top();
     } else {
-      // -- check if the addition will wrap
+      // -- check if the addition will overflow
       wrapint x_sz = x._stop - x._start;
       wrapint sz = _stop - _start;
       wrapint one(1, x_sz.get_bitwidth());
@@ -533,7 +552,7 @@ public:
     } else if (is_top() || x.is_top()) {
       return wrapped_interval_t::top();
     } else {
-      // -- check if the subtraction will wrap
+      // -- check if the subtraction will overflow
       wrapint x_sz = x._stop - x._start;
       wrapint sz = _stop - _start;
       wrapint one(1, x_sz.get_bitwidth());
