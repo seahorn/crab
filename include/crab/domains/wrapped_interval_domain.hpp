@@ -354,33 +354,30 @@ public:
     }
   }
   
-  /** begin needed by interval constraint solver **/
-  wrapped_interval_t lower_half_line() const {
+  wrapped_interval_t lower_half_line(bool is_signed) const {
     if (is_top() || is_bottom()) return *this;
-    // FIXME: we assume unsoundly signed intervals
     wrapint smin = wrapint::get_signed_min(get_bitwidth());
+    if (!is_signed) {
+      smin = wrapint::get_unsigned_min(get_bitwidth());
+    }
     wrapped_interval_t res = wrapped_interval_t(smin, _stop);
     return res;
   }
   
-  wrapped_interval_t upper_half_line() const {
+  wrapped_interval_t upper_half_line(bool is_signed) const {
     if (is_top() || is_bottom()) return *this;
-    // FIXME: we assume unsoundly signed intervals
     wrapint smax = wrapint::get_signed_max(get_bitwidth());
+    if (!is_signed) {
+      smax = wrapint::get_unsigned_max(get_bitwidth());
+    }
     wrapped_interval_t res = wrapped_interval_t(_start, smax);
     return res;
   }
 
-  boost::optional<Number> singleton() const {
-    if (!is_bottom() && !is_top() && _start == _stop) {
-      // FIXME: we assume unsoundly signed intervals
-      return Number(_start.get_signed_str());
-    } else {
-      return boost::optional<Number>();
-    }
+  bool is_singleton() const {
+    return (!is_bottom() && !is_top() && _start == _stop);
   }
-  /** end needed by interval constraint solver **/
-
+  
   // Starting from _start and going clock-wise x is encountered
   // before than _stop.
   bool operator[](wrapint x) const {
@@ -777,45 +774,60 @@ inline crab::crab_os& operator<<(crab::crab_os& o, const wrapped_interval<Number
 
 namespace ikos{ 
 namespace linear_interval_solver_impl {
+  typedef crab::domains::wrapped_interval<z_number> z_wrapped_interval_t;
+  typedef crab::domains::wrapped_interval<q_number> q_wrapped_interval_t;
 
   template<>
-  inline crab::domains::wrapped_interval<z_number>
-  trim_bound(crab::domains::wrapped_interval<z_number> i, z_number c) {
-    // pre: c is a singleton
-    
+  inline z_wrapped_interval_t
+  mk_interval(z_number c, typename crab::wrapint::bitwidth_t w)
+  { return z_wrapped_interval_t(c, w); }
+
+  template<>
+  inline q_wrapped_interval_t
+  mk_interval(q_number c, typename crab::wrapint::bitwidth_t w)
+  { return q_wrapped_interval_t(c, w); }
+  
+  template<>
+  inline z_wrapped_interval_t trim_interval(z_wrapped_interval_t i, z_wrapped_interval_t j) {
     if (i.is_bottom()) return i;
     // XXX: not sure if we can be more precise here.
-    // trim_bound is used by the linear interval solver which knows whether
-    // the interval is over signed or unsigned. In that case we can refine top.
     if (i.is_top()) return i;
-
-    crab::wrapint k(c, i.get_bitwidth());
+    if (!j.is_singleton()) return i;
+    
+    crab::wrapint k = j.start();
     if (i.start() == k) {
-      return crab::domains::wrapped_interval<z_number>(k++, i.stop());
+      return z_wrapped_interval_t(k++, i.stop());
     } else if (i.stop() == k) {
-      return crab::domains::wrapped_interval<z_number>(i.start(), k--);
+      return z_wrapped_interval_t(i.start(), k--);
     } else {
       return i;
     }
   }
-
+  
   template<>
-  inline crab::domains::wrapped_interval<q_number>
-  trim_bound(crab::domains::wrapped_interval<q_number> i, q_number /* c */) { 
+  inline q_wrapped_interval_t trim_interval(q_wrapped_interval_t i, q_wrapped_interval_t j) { 
     // No refinement possible for disequations over rational numbers
     return i;
   }
 
   template<>
-  inline crab::domains::wrapped_interval<z_number>
-  mk_interval(z_number c, typename crab::wrapint::bitwidth_t w) {
-    return crab::domains::wrapped_interval<z_number>(c, w);
+  inline z_wrapped_interval_t lower_half_line(z_wrapped_interval_t i, bool is_signed) {
+    return i.lower_half_line(is_signed);
   }
-
+  
   template<>
-  inline crab::domains::wrapped_interval<q_number>
-  mk_interval(q_number c, typename crab::wrapint::bitwidth_t w) {
-    return crab::domains::wrapped_interval<q_number>(c, w);
+  inline q_wrapped_interval_t lower_half_line(q_wrapped_interval_t i, bool is_signed) {
+    return i.lower_half_line(is_signed);    
+  }
+  
+  template<>
+  inline z_wrapped_interval_t upper_half_line(z_wrapped_interval_t i, bool is_signed) {
+    return i.upper_half_line(is_signed);        
+  }
+  
+  template<>
+  inline q_wrapped_interval_t upper_half_line(q_wrapped_interval_t i, bool is_signed) {
+    return i.upper_half_line(is_signed);        
   }
   
 } // namespace linear_interval_solver_impl

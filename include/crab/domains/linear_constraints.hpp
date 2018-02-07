@@ -492,12 +492,20 @@ namespace ikos {
   private:
     kind_t _kind;
     linear_expression_t _expr;
+    // This flag has meaning only if _kind == INEQUALITY or STRICT_INEQUALITY.
+    // If true the inequality is signed otherwise unsigned.
+    // By default all constraints are signed.
+    bool _signedness;
 
-  public:
-    linear_constraint(): _kind(EQUALITY) { }
+    linear_constraint(const linear_expression_t &expr, kind_t kind, bool signedness)
+      : _kind(kind), _expr(expr), _signedness(signedness) { }    
+
     
-    linear_constraint(const linear_expression_t &expr, 
-                      kind_t kind): _kind(kind), _expr(expr) { }    
+  public:
+    linear_constraint(): _kind(EQUALITY), _signedness(true) { }
+    
+    linear_constraint(const linear_expression_t &expr, kind_t kind)
+      : _kind(kind), _expr(expr), _signedness(true) { }    
 
     static linear_constraint_t get_true () {
       linear_constraint_t res(linear_expression_t(Number(0)), EQUALITY);
@@ -563,6 +571,34 @@ namespace ikos {
       return this->_kind;
     }
 
+    bool is_signed() const {
+      // Only meaninful if _kind == INEQUALITY or STRICT_INEQUALITY
+      if (_kind != INEQUALITY && _kind != STRICT_INEQUALITY) {
+	CRAB_WARN("Only inequalities have signedness");	
+      }
+      return _signedness;
+    }
+
+    bool is_unsigned() const {
+      return (!is_signed());
+    }
+    
+    bool set_signed() {
+      if (_kind == INEQUALITY || _kind == STRICT_INEQUALITY) {
+	_signedness = true;
+      } else {
+	CRAB_WARN("Only inequalities have signedness");
+      }
+    }
+
+    bool set_unsigned() {
+      if (_kind == INEQUALITY || _kind == STRICT_INEQUALITY) {
+	_signedness = false;
+      } else {
+	CRAB_WARN("Only inequalities have signedness");
+      }
+    }
+    
     iterator begin() const {
       return this->_expr.begin();
     }
@@ -583,6 +619,9 @@ namespace ikos {
       size_t res = 0;
       boost::hash_combine (res, _expr);
       boost::hash_combine (res, _kind);
+      if (_kind == INEQUALITY || _kind == STRICT_INEQUALITY) {
+	boost::hash_combine (res, _signedness);
+      }
       return res;
     }
 
@@ -601,21 +640,21 @@ namespace ikos {
 
     linear_constraint_t negate () const {
       if (is_tautology ())
-         return linear_constraint_t ( linear_expression_t (0) >= linear_expression_t (1));
+	return get_false();
       else if (is_contradiction ())
-         return linear_constraint_t ( linear_expression_t (1) >= linear_expression_t (0));
+	return get_true();
       else {
         switch (kind ()) {
           case INEQUALITY: {
 	    // WARNING: it assumes integer arithmetic
 	    // negate(x + y <= 0) <-->  x + y > 0 <--> -x -y < 0 <--> -x-y <= -1 (if integer)
             linear_expression_t e = -(this->_expr - 1);
-            return linear_constraint_t (e, INEQUALITY);
+            return linear_constraint_t (e, INEQUALITY, is_signed());
           }
           case STRICT_INEQUALITY: {
 	    // negate(x + y < 0)  <-->  x + y >= 0 <--> -x -y <= 0
             linear_expression_t e = -this->_expr;
-            return linear_constraint_t (e, INEQUALITY);
+            return linear_constraint_t (e, INEQUALITY, is_signed());
           }
           case EQUALITY:
             return linear_constraint_t (this->_expr, DISEQUATION);
@@ -632,7 +671,7 @@ namespace ikos {
 
       boost::optional<linear_expression_t> e = this->_expr.rename(map);
       if (e) {
-        return linear_constraint_t(*e, this->_kind);
+        return linear_constraint_t(*e, this->_kind, is_signed());
       } else {
         return boost::optional<linear_constraint_t>();
       }
@@ -649,13 +688,21 @@ namespace ikos {
         o << e;
         switch (this->_kind) {
 	case INEQUALITY: {
-            o << " <= ";
-            break;
-          }
+	  if (is_signed()) {
+	    o << " <= ";
+	  } else {
+	    o << " <=_u ";
+	  } 
+	  break;
+	}
 	case STRICT_INEQUALITY: {
-            o << " < ";
-            break;
-          }	  
+	  if (is_signed()) {
+	    o << " < ";
+	  } else {
+	    o << " <_u ";
+	  }
+	  break;
+	}	  
 	case EQUALITY: {
             o << " = ";
             break;

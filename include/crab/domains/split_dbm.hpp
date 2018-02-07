@@ -1607,7 +1607,8 @@ namespace crab {
       // x != n
       void add_univar_disequation(variable_t x, number_t n) {
 	interval_t i = get_interval(x);
-	interval_t new_i = linear_interval_solver_impl::trim_bound<interval_t, number_t>(i, n);
+	interval_t new_i =
+	  linear_interval_solver_impl::trim_interval<interval_t>(i, interval_t(n));
 	if (new_i.is_bottom()) {
 	  set_to_bottom();
 	} else if (!new_i.is_top() && (new_i <= i)) {

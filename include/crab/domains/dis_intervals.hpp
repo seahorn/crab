@@ -319,7 +319,6 @@ namespace crab {
        }
      }
 
-     // for the interval solver
      boost::optional< Number > singleton() const {
        interval_t i = approx ();
        return i.singleton ();
@@ -1001,13 +1000,15 @@ namespace ikos {
      typedef crab::domains::dis_interval <q_number> dis_q_interval_t;
 
      template<>
-     inline dis_z_interval_t trim_bound(dis_z_interval_t  x, z_number c) {
-
+     inline dis_z_interval_t trim_interval(dis_z_interval_t  x, dis_z_interval_t y) {
        if (x.is_bottom ())
          return x;
 
+       boost::optional<z_number> s = y.singleton();
+       if (!s) return x;
+       z_number c = *s;
+       
        dis_z_interval_t res = dis_z_interval_t::bottom ();
-
        if (x.is_top ()) {
          res = res | dis_z_interval_t (z_interval(c-1).lower_half_line ());
          res = res | dis_z_interval_t (z_interval(c+1).upper_half_line ());
@@ -1034,11 +1035,31 @@ namespace ikos {
      }
 
     template<>
-    inline dis_q_interval_t trim_bound(dis_q_interval_t i, q_number /* c */) { 
+    inline dis_q_interval_t trim_interval(dis_q_interval_t i, dis_q_interval_t /* j */) { 
       // No refinement possible for disequations over rational numbers
       return i;
     }
 
+    template<>
+    inline dis_z_interval_t lower_half_line(dis_z_interval_t i, bool /*is_signed*/) {
+      return i.lower_half_line();
+    }
+    
+    template<>
+    inline dis_q_interval_t lower_half_line(dis_q_interval_t i, bool /*is_signed*/) {
+      return i.lower_half_line();
+    }
+
+    template<>
+    inline dis_z_interval_t upper_half_line(dis_z_interval_t i, bool /*is_signed*/) {
+      return i.upper_half_line();
+    }
+    
+    template<>
+    inline dis_q_interval_t upper_half_line(dis_q_interval_t i, bool /*is_signed*/) {
+      return i.upper_half_line();
+    }
+    
   } // end namespace linear_interval_solver_impl
 } // end namespace ikos
 

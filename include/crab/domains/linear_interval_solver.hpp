@@ -57,16 +57,24 @@
 
 namespace ikos {
 
+  // Interval traits:
+  // The solver is parametric on the kind of Interval
   namespace linear_interval_solver_impl {
-
+    // gamma(i) \ gamma(j) 
+    template<typename Interval>
+    inline Interval trim_interval(Interval i, Interval j);
+    
     template<typename Interval, typename Number>
-    inline Interval trim_bound(Interval i, Number c);
-
-    template<typename Interval, typename Number>
-    inline Interval mk_interval(Number n, typename crab::wrapint::bitwidth_t /*bitwidth*/) {
+    inline Interval mk_interval(Number n, typename crab::wrapint::bitwidth_t bitwidth) {
       // default implementation ignores bitwidth
       return Interval(n);
     }
+
+    template<typename Interval>
+    Interval lower_half_line(Interval i, bool is_signed);
+
+    template<typename Interval>
+    Interval upper_half_line(Interval i, bool is_signed);
   } 
 
   template< typename Number, typename VariableName, typename IntervalCollection >
@@ -121,14 +129,14 @@ namespace ikos {
 
     Interval compute_residual(const linear_constraint_t &cst, variable_t pivot, 
                               IntervalCollection& env) {
-      crab::ScopedCrabStats __st__("Linear Interval Solver.Solving computing residual");      
+      crab::ScopedCrabStats __st__("Linear Interval Solver.Solving computing residual");
+      namespace interval_traits = linear_interval_solver_impl;      
       bitwidth_t w = pivot.get_bitwidth();
-      Interval residual= linear_interval_solver_impl::mk_interval<Interval>(cst.constant(), w);
+      Interval residual= interval_traits::mk_interval<Interval>(cst.constant(), w);
       for (typename linear_constraint_t::iterator it = cst.begin(); it != cst.end(); ++it) {
 	variable_t v = it->second;
 	if (!(v == pivot)) {
-	  residual = residual -
-	    (linear_interval_solver_impl::mk_interval<Interval>(it->first, w) * env[v]);
+	  residual = residual - (interval_traits::mk_interval<Interval>(it->first, w) * env[v]);
 	  ++(this->_op_count);
 	  if (residual.is_top()) break;
 	}
@@ -138,6 +146,8 @@ namespace ikos {
     
     void propagate(const linear_constraint_t &cst, IntervalCollection& env) {
       crab::ScopedCrabStats __st__("Linear Interval Solver.Solving propagation");
+      namespace interval_traits = linear_interval_solver_impl;
+      
       for (typename linear_constraint_t::iterator it = cst.begin(), et = cst.end();
 	   it != et; ++it) {
 	Number c = it->first;
@@ -145,8 +155,7 @@ namespace ikos {
 	Interval res = compute_residual(cst, pivot, env);
 	Interval rhs = Interval::top();
 	if (!res.is_top()) {
-	  Interval ic =
-	    linear_interval_solver_impl::mk_interval<Interval>(c, pivot.get_bitwidth());
+	  Interval ic = interval_traits::mk_interval<Interval>(c, pivot.get_bitwidth());
 	  rhs = res / ic;
 	}
 	
@@ -154,27 +163,24 @@ namespace ikos {
 	  refine(pivot, rhs, env);
 	} else if (cst.is_inequality()) {
 	  if (c > 0) {
-	    refine(pivot, rhs.lower_half_line(), env);
+	    refine(pivot, interval_traits::lower_half_line(rhs, cst.is_signed()), env);
 	  } else {
-	    refine(pivot, rhs.upper_half_line(), env);
+	    refine(pivot, interval_traits::upper_half_line(rhs, cst.is_signed()), env);
 	  }
 	} else if (cst.is_strict_inequality()) {
 	  // do nothing
 	} else {
 	  // cst is a disequation
-	  boost::optional<Number> c = rhs.singleton();
-	  if (c) {
-	    Interval old_i = env[pivot];
-	    Interval new_i = linear_interval_solver_impl::trim_bound (old_i, *c);
-	    if (new_i.is_bottom()) {
-	      throw bottom_found();
-	    }
-	    if (!(old_i == new_i)) {
-	      env.set(pivot, new_i);
-	      this->_refined_variables += pivot;
-	    }
-	    ++(this->_op_count);
+	  Interval old_i = env[pivot];
+	  Interval new_i = interval_traits::trim_interval(old_i, rhs);
+	  if (new_i.is_bottom()) {
+	    throw bottom_found();
 	  }
+	  if (!(old_i == new_i)) {
+	    env.set(pivot, new_i);
+	    this->_refined_variables += pivot;
+	  }
+	  ++(this->_op_count);
 	}
       }
     }
