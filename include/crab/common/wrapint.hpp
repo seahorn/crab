@@ -340,11 +340,25 @@ public:
     return wrapint(r, _width, _mod);
   }
 
-  wrapint operator>>(wrapint x) const {
+  // logical right shift: blanks filled by 0's
+  wrapint lshr(wrapint x) const {
     sanity_check_bitwidths(x);
     return wrapint(_n >> x._n, _width, _mod);
   }
 
+  // arithmetic right shift
+  wrapint ashr(wrapint x) const {
+    sanity_check_bitwidths(x);
+    if (!msb()) {
+      return wrapint(_n >> x._n, _width, _mod);      
+    } else {
+      // fill blanks with 1's
+      uint64_t all_ones = (_width < 64  ? (1 << _width) - 1 : UINT64_MAX);
+      // 1110..0
+      uint64_t only_upper_bits_ones = all_ones << (_width - x._n);
+      return wrapint(only_upper_bits_ones | (_n >> x._n), _width, _mod);
+    }
+  }
   
   wrapint sext(bitwidth_t bits_to_add) {
     bitwidth_t new_width = _width + bits_to_add;
@@ -371,6 +385,11 @@ public:
       CRAB_ERROR("cannot unsigned extend: ", new_width, " is a too big bitwidth for a wrapint");
     }
     return wrapint(_n, new_width); 
+  }
+
+  wrapint keep_lower(bitwidth_t bits_to_keep) const {
+    if (bits_to_keep >= _width) return *this;
+    return wrapint(_n & ((1 << (bits_to_keep+1)) -1), bits_to_keep);
   }
   
   void write(crab::crab_os& o) {

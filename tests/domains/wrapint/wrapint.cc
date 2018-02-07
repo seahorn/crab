@@ -127,6 +127,25 @@ int main (int argc, char *argv[]) {
     std::cout << "zext of n2 to 64 bits " << std::bitset<64>(n6.get_uint64_t()) << "\n";
   }
 
+  { // shift operators
+    wrapint n1(13, 4); // 
+    wrapint n2(2, 4);  //
+    
+    wrapint n3 = n1 << n2;
+    std::cout << std::bitset<4>(n1.get_uint64_t()) << " << "
+	      << std::bitset<4>(n2.get_uint64_t()) << "="
+	      << std::bitset<4>(n3.get_uint64_t()) << "\n";
+    wrapint n4 = n1.ashr(n2);
+    std::cout << std::bitset<4>(n1.get_uint64_t()) << " >>_a "
+	      << std::bitset<4>(n2.get_uint64_t()) << "="
+	      << std::bitset<4>(n4.get_uint64_t()) << "\n";
+    wrapint n5 = n1.lshr(n2);
+    std::cout << std::bitset<4>(n1.get_uint64_t()) << " >>_l "
+	      << std::bitset<4>(n2.get_uint64_t()) << "="
+	      << std::bitset<4>(n5.get_uint64_t()) << "\n";
+  }
+
+  
   { // signed vs unsigned division
     wrapint n1(9, 4);
     wrapint n2(2, 4);

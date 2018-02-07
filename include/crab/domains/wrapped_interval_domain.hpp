@@ -256,6 +256,42 @@ class wrapped_interval {
       }
     }
   }
+
+  wrapped_interval_t Shl(uint64_t k) const {
+    bitwidth_t b = get_bitwidth();
+    wrapped_interval_t y = Trunc(b - k);
+    if (!y.is_top()) {
+      wrapint wk(k, b);
+      return wrapped_interval_t(start() << wk, stop() << wk);
+    } else {
+      // TODO: return (0, 1..10..0) where #1's = b-k and #0's= k
+      return wrapped_interval_t::top();
+    }
+  }
+
+  wrapped_interval_t LShr(uint64_t k) const {
+    bitwidth_t b = get_bitwidth();
+    if (!cross_unsigned_limit()) {
+      wrapint wk(k, b);
+      return wrapped_interval_t(start().lshr(wk), stop().lshr(wk));
+    } else {
+      // TODO: return (0, 0..01..1 where #0's = k and #1's = b-k
+      return wrapped_interval_t::top();
+    }
+  }
+
+  wrapped_interval_t AShr(uint64_t k) const {
+    bitwidth_t b = get_bitwidth();
+    if (!cross_signed_limit()) {
+      wrapint wk(k, b);
+      return wrapped_interval_t(start().ashr(wk), stop().ashr(wk));
+    } else {
+      // TODO: return (1...10..0,        0..01..1)
+      //               #1's=k #0's=b-k   #0's=k #1's=b-k
+      return wrapped_interval_t::top();
+    }    
+  }
+  
   
 public:
 
@@ -712,11 +748,56 @@ public:
     return res;
   }
 
-  wrapped_interval_t Trunc(unsigned bits_to_keep) const
-  { return default_implementation(*this); }
-  
+  wrapped_interval_t Trunc(unsigned bits_to_keep) const {
+    bitwidth_t w = get_bitwidth();
+    if (_start.ashr(wrapint(bits_to_keep,w)) == _stop.ashr(wrapint(bits_to_keep,w))) {
+      wrapint lower_start = _start.keep_lower(bits_to_keep);
+      wrapint lower_stop = _stop.keep_lower(bits_to_keep);
+      if (lower_start <= lower_stop) {
+	return wrapped_interval_t(lower_start, lower_stop);
+      }
+    }
+    // note that _start is a wrapint so after +1 it can wraparound
+    else  if ((_start.ashr(wrapint(bits_to_keep,w))++) == _stop.ashr(wrapint(bits_to_keep,w))) {
+      wrapint lower_start = _start.keep_lower(bits_to_keep);
+      wrapint lower_stop = _stop.keep_lower(bits_to_keep);
+      if (!(lower_start <= lower_stop)) {
+	return wrapped_interval_t(lower_start, lower_stop);
+      }
+    }
+    return wrapped_interval_t::top();
+  }  
   
   /** bitwise operations **/
+  // Notes:
+  // - Shl, LShr, and AShr: shifts are treated as unsigned numbers
+  
+  wrapped_interval_t Shl(wrapped_interval_t x) const {
+    // only if shift is constant    
+    if (x.is_singleton()) {
+      return Shl(x.start().get_uint64_t());
+    } else {
+      return wrapped_interval_t::top();
+    }
+  }
+  
+  wrapped_interval_t LShr(wrapped_interval_t  x) const {
+    // only if shift is constant
+    if (x.is_singleton()) {
+      return LShr(x.start().get_uint64_t());
+    } else {
+      return wrapped_interval_t::top();
+    }
+  }
+  
+  wrapped_interval_t AShr(wrapped_interval_t  x) const {
+    // only if shift is constant    
+    if (x.is_singleton()) {
+      return AShr(x.start().get_uint64_t());
+    } else {
+      return wrapped_interval_t::top();
+    }
+  }
   
   wrapped_interval_t And(wrapped_interval_t x) const
   { return default_implementation(x); }    
@@ -727,14 +808,6 @@ public:
   wrapped_interval_t Xor(wrapped_interval_t x) const
   { return default_implementation(x); }    
     
-  wrapped_interval_t Shl(wrapped_interval_t x) const
-  { return default_implementation(x); }    
-  
-  wrapped_interval_t LShr(wrapped_interval_t  x) const
-  { return default_implementation(x); }    
-
-  wrapped_interval_t AShr(wrapped_interval_t  x) const
-  { return default_implementation(x); }    
 
   void write(crab::crab_os& o) const {
     if (is_bottom()) {
