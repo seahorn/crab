@@ -1708,11 +1708,11 @@ public:
     is assigned to a constant value.
 **/
 template <typename Number, typename VariableName, std::size_t max_reduction_cycles = 10>
-class wrapped_interval_limits_domain:
+class wrapped_interval_with_history_domain:
     public abstract_domain<Number, VariableName,
-	   wrapped_interval_limits_domain<Number, VariableName, max_reduction_cycles> > {
+	   wrapped_interval_with_history_domain<Number, VariableName, max_reduction_cycles> > {
   
-  typedef wrapped_interval_limits_domain<Number, VariableName, max_reduction_cycles> this_type;
+  typedef wrapped_interval_with_history_domain<Number, VariableName, max_reduction_cycles> this_type;
   typedef abstract_domain<Number,VariableName,this_type> abstract_domain_t;
   
 public:
@@ -1742,9 +1742,9 @@ private:
   // Set of may-initialized variables
   discrete_domain_t _init_set;
 
-  wrapped_interval_limits_domain(const wrapped_interval_domain_t& dom,
-				 const separate_domain_t& limit_env,
-				 const discrete_domain_t& init_set)
+  wrapped_interval_with_history_domain(const wrapped_interval_domain_t& dom,
+				       const separate_domain_t& limit_env,
+				       const discrete_domain_t& init_set)
     : _w_int_dom(dom), _limit_env(limit_env), _init_set(init_set) {}
 
   inline bool may_be_initialized(variable_t x)
@@ -1799,15 +1799,15 @@ public:
 		     discrete_domain_t::bottom() /*empty set*/);
   }
   
-  wrapped_interval_limits_domain()
+  wrapped_interval_with_history_domain()
     : _w_int_dom(), _limit_env(), _init_set(discrete_domain_t::bottom() /*empty set*/) {}
     
-  wrapped_interval_limits_domain(const this_type& o)
+  wrapped_interval_with_history_domain(const this_type& o)
     : _w_int_dom(o._w_int_dom),
       _limit_env(o._limit_env),
       _init_set(o._init_set) {}
 
-  wrapped_interval_limits_domain(const this_type&& o)
+  wrapped_interval_with_history_domain(const this_type&& o)
     : _w_int_dom(std::move(o._w_int_dom)),
       _limit_env(std::move(o._limit_env)),
       _init_set(std::move(o._init_set)) {}
@@ -2105,10 +2105,10 @@ public:
   
 
 template<typename Number, typename VariableName>
-class domain_traits <wrapped_interval_limits_domain<Number,VariableName> > {
+class domain_traits <wrapped_interval_with_history_domain<Number,VariableName> > {
 public:
 
-  typedef wrapped_interval_limits_domain<Number,VariableName> wrapped_interval_domain_t;
+  typedef wrapped_interval_with_history_domain<Number,VariableName> wrapped_interval_domain_t;
   typedef ikos::variable<Number, VariableName> variable_t;
   
   template<class CFG>
