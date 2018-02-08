@@ -1703,6 +1703,9 @@ public:
     Wrapped interval domain augmented with an abstraction of the
     execution history: it keeps track of which variable crossed which
     signed/unsigned limits.
+
+    The only case where the history of a variable is reset is when it
+    is assigned to a constant value.
 **/
 template <typename Number, typename VariableName, std::size_t max_reduction_cycles = 10>
 class wrapped_interval_limits_domain:
@@ -1731,7 +1734,8 @@ private:
 
   typedef separate_domain<variable_t, wrapped_interval_limit_value> separate_domain_t; 
   typedef discrete_domain<variable_t> discrete_domain_t;
-
+  typedef typename linear_constraint_system_t::variable_set_t variable_set_t;
+  
   wrapped_interval_domain_t _w_int_dom;
   // Map each variable to which limit was crossed.
   separate_domain_t _limit_env;
@@ -1742,7 +1746,45 @@ private:
 				 const separate_domain_t& limit_env,
 				 const discrete_domain_t& init_set)
     : _w_int_dom(dom), _limit_env(limit_env), _init_set(init_set) {}
+
+  inline bool may_be_initialized(variable_t x)
+  { return (discrete_domain_t(x) <= _init_set); }
   
+  // This hoare triple holds {x = old_i} x := ... { x = new_i}
+  inline void update_limits(variable_t x, wrapped_interval_t old_i, wrapped_interval_t new_i) {
+    wrapped_interval_limit_value old_l = wrapped_interval_limit_value::bottom();
+    wrapped_interval_limit_value new_l;
+    
+    if (may_be_initialized(x)) {
+      old_l = _limit_env[x];
+      // XXX: it's not enough to convert only new_i. E.g., char x = 127; x++;
+      //  convert([127,127])   = no-cross
+      //  convert([-128,-128]) = no-cross
+      new_l = wrapped_interval_limit_value::convert(old_i | new_i);
+    } else {
+      new_l = wrapped_interval_limit_value::convert(new_i);
+    }
+
+    // -- weak update to keep past history
+    _limit_env.set(x, old_l | new_l);
+
+    // -- mark x as initialized
+    _init_set += x;
+  }
+
+  void update_limits(const variable_set_t &vars,
+		     const std::vector<wrapped_interval_t>& old_intervals,
+		     const std::vector<wrapped_interval_t>& new_intervals) {
+    assert(vars.size() == old_intervals.size());
+    assert(old_intervals.size() == new_intervals.size());
+    
+    unsigned i=0;
+    for(auto const& v: vars) {
+      update_limits(v, old_intervals[i], new_intervals[i]);
+      ++i;
+    }
+  }
+		     
 public:
   
   static this_type top() {
@@ -1838,6 +1880,7 @@ public:
   void set (variable_t x, interval_t i) {
     _w_int_dom.set(x, i);    
     if (i.singleton()) {
+      // XXX: x's history is reset
       _limit_env.set(x, wrapped_interval_limit_value::do_not_cross());            
     } else {
       CRAB_WARN("TODO: set operation with unlimited interval");
@@ -1851,6 +1894,7 @@ public:
   
   void set (variable_t x, wrapped_interval_t i) {
     _w_int_dom.set(x, i);
+    // XXX: x's history is reset    
     _limit_env.set(x, wrapped_interval_limit_value::convert(i));
     _init_set += x;
     CRAB_LOG("wrapped-int2",
@@ -1859,13 +1903,13 @@ public:
 
   void set (variable_t x, Number n) {
     _w_int_dom.set(x, n);
+    // XXX: x's history is reset    
     _limit_env.set(x, wrapped_interval_limit_value::do_not_cross());
     _init_set += x; 
     CRAB_LOG("wrapped-int2",
 	     crab::outs() << x << ":=" << n << " => " << *this<<"\n";);
   }
-  
-  
+    
   interval_t operator[](variable_t v) {
     return _w_int_dom[v];
   }
@@ -1881,49 +1925,48 @@ public:
   void operator-=(variable_t v) {
     _w_int_dom -= v;
     _limit_env -= v;
-    // XXX: we never remove a variable from _init_set
+    // XXX: we never remove a variable from _init_set.
+    //      This avoids, e.g. to mark as uninitialized a variable that
+    //      have been havoc'ed.
     // _init_set -= v;
   }
   
   // numerical_domains_api
-
+  
   void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
-    wrapped_interval_limit_value pre = wrapped_interval_limit_value::bottom();
-    if (discrete_domain_t(x) <= _init_set) { pre = _limit_env[x]; }
+    wrapped_interval_t old_i = get_wrapped_interval(x);
     _w_int_dom.apply(op, x, y, z);
-    // weak update to keep past history    
-    _limit_env.set(x, pre |
-    		   wrapped_interval_limit_value::convert(_w_int_dom.get_wrapped_interval(x)));
-    _init_set += x;
+    wrapped_interval_t new_i = get_wrapped_interval(x);    
+    update_limits(x, old_i, new_i);
     CRAB_LOG("wrapped-int2",
 	     crab::outs() << x << ":=" << y << " " << op << " " << z
 	                  << " => " << *this<<"\n";);
   }
   
   void apply(operation_t op, variable_t x, variable_t y, number_t k) {
-    wrapped_interval_limit_value pre = wrapped_interval_limit_value::bottom();
-    if (discrete_domain_t(x) <= _init_set) { pre = _limit_env[x]; }
+    wrapped_interval_t old_i = get_wrapped_interval(x);
     _w_int_dom.apply(op, x, y, k);
-    // weak update to keep past history    
-    _limit_env.set(x, pre |
-    		   wrapped_interval_limit_value::convert(_w_int_dom.get_wrapped_interval(x)));
-    _init_set += x;
+    wrapped_interval_t new_i = get_wrapped_interval(x);    
+    update_limits(x, old_i, new_i);
     CRAB_LOG("wrapped-int2",
 	     crab::outs() << x << ":=" << y << " " << op << " " << k
 	                  << " => " << *this <<"\n";);    
   }
   
   void assign(variable_t x, linear_expression_t e) {
-    wrapped_interval_limit_value pre = wrapped_interval_limit_value::bottom();
-    if (discrete_domain_t(x) <= _init_set) { pre = _limit_env[x]; }
-    _w_int_dom.assign(x, e);
-    // weak update to keep past history    
-    _limit_env.set(x, pre |
-    		   wrapped_interval_limit_value::convert(_w_int_dom.get_wrapped_interval(x)));
-    _init_set += x;
+    if (e.is_constant()) {
+      // XXX: x's history is reset          
+      _w_int_dom.assign(x, e);
+      _limit_env.set(x, wrapped_interval_limit_value::do_not_cross());
+      _init_set += x; 
+    } else {
+      wrapped_interval_t old_i = get_wrapped_interval(x);
+      _w_int_dom.assign(x, e);
+      wrapped_interval_t new_i = get_wrapped_interval(x);    
+      update_limits(x, old_i, new_i);
+    }
     CRAB_LOG("wrapped-int2",
 	     crab::outs() << x << ":=" << e << " => " << *this<<"\n";);    
-    
   }
   
   void backward_assign (variable_t x, linear_expression_t e, this_type invariant) {
@@ -1944,25 +1987,23 @@ public:
   }
   
   void operator+=(linear_constraint_system_t csts) {
-    typename linear_constraint_system_t::variable_set_t variables = csts.variables();
-    std::vector<wrapped_interval_limit_value> pre_values;
-    pre_values.reserve(variables.size());
+    variable_set_t variables = csts.variables();
+    
+    std::vector<wrapped_interval_t> old_intervals;
+    old_intervals.reserve(variables.size());
     for (auto v: variables) {
-      if (discrete_domain_t(v) <= _init_set) {
-	pre_values.push_back(_limit_env[v]);
-      } else {
-	pre_values.push_back(wrapped_interval_limit_value::bottom());
-      }
+      old_intervals.push_back(get_wrapped_interval(v));
     }
+    
     _w_int_dom += csts;
-    // weak update to keep past history        
-    unsigned i=0;
+
+    std::vector<wrapped_interval_t> new_intervals;
+    new_intervals.reserve(variables.size());
     for (auto v: variables) {
-      _limit_env.set(v, pre_values[i] |
-		     wrapped_interval_limit_value::convert(_w_int_dom.get_wrapped_interval(v)));
-      _init_set += v;
-      ++i;
+      new_intervals.push_back(get_wrapped_interval(v));
     }
+
+    update_limits(variables, old_intervals, new_intervals);
     CRAB_LOG("wrapped-int2",
 	     crab::outs() << "assume(" << csts << ") => " << *this << "\n";);        
   }
@@ -1970,41 +2011,31 @@ public:
   // cast_operators_api
   
   void apply(int_conv_operation_t op, variable_t dst, variable_t src) {
-    wrapped_interval_limit_value pre = wrapped_interval_limit_value::bottom();
-    if (discrete_domain_t(dst) <= _init_set) { pre = _limit_env[dst]; }
+    wrapped_interval_t old_i = get_wrapped_interval(dst);
     _w_int_dom.apply(op, dst, src);
-    // weak update to keep past history    
-    _limit_env.set(dst, pre |
-    		   wrapped_interval_limit_value::convert(_w_int_dom.get_wrapped_interval(dst)));
-    _init_set += dst;
+    wrapped_interval_t new_i = get_wrapped_interval(dst);    
+    update_limits(dst, old_i, new_i);
     CRAB_LOG("wrapped-int2",
 	     crab::outs() << dst << ":=" << op << " " << src << " => " << *this<<"\n";);    
-    
   }
       
   // bitwise_operators_api
   
   void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {
-    wrapped_interval_limit_value pre = wrapped_interval_limit_value::bottom();
-    if (discrete_domain_t(x) <= _init_set) { pre = _limit_env[x]; }
+    wrapped_interval_t old_i = get_wrapped_interval(x);
     _w_int_dom.apply(op, x, y, z);
-    // weak update to keep past history    
-    _limit_env.set(x, pre |
-    		   wrapped_interval_limit_value::convert(_w_int_dom.get_wrapped_interval(x)));
-    _init_set += x;
+    wrapped_interval_t new_i = get_wrapped_interval(x);    
+    update_limits(x, old_i, new_i);
     CRAB_LOG("wrapped-int2",
 	     crab::outs() << x << ":=" << y << " " << op << " " << z
 	                  << " => " << *this<<"\n";);
   }
   
   void apply(bitwise_operation_t op, variable_t x, variable_t y, number_t k) {
-    wrapped_interval_limit_value pre = wrapped_interval_limit_value::bottom();
-    if (discrete_domain_t(x) <= _init_set) { pre = _limit_env[x]; }
+    wrapped_interval_t old_i = get_wrapped_interval(x);
     _w_int_dom.apply(op, x, y, k);
-    // weak update to keep past history    
-    _limit_env.set(x, pre |
-    		   wrapped_interval_limit_value::convert(_w_int_dom.get_wrapped_interval(x)));
-    _init_set += x;
+    wrapped_interval_t new_i = get_wrapped_interval(x);    
+    update_limits(x, old_i, new_i);
     CRAB_LOG("wrapped-int2",
 	     crab::outs() << x << ":=" << y << " " << op << " " << k
 	                  << " => " << *this<<"\n";);    
@@ -2013,26 +2044,20 @@ public:
   // division_operators_api
   
   void apply(div_operation_t op, variable_t x, variable_t y, variable_t z) {
-    wrapped_interval_limit_value pre = wrapped_interval_limit_value::bottom();
-    if (discrete_domain_t(x) <= _init_set) { pre = _limit_env[x]; }
+    wrapped_interval_t old_i = get_wrapped_interval(x);
     _w_int_dom.apply(op, x, y, z);
-    // weak update to keep past history    
-    _limit_env.set(x, pre |
-    		   wrapped_interval_limit_value::convert(_w_int_dom.get_wrapped_interval(x)));
-    _init_set += x;
+    wrapped_interval_t new_i = get_wrapped_interval(x);    
+    update_limits(x, old_i, new_i);
     CRAB_LOG("wrapped-int2",
 	     crab::outs() << x << ":=" << y << " " << op << " " << z
 	                  << " => " << *this<<"\n";);    
   }
   
   void apply(div_operation_t op, variable_t x, variable_t y, number_t k) {
-    wrapped_interval_limit_value pre = wrapped_interval_limit_value::bottom();
-    if (discrete_domain_t(x) <= _init_set) { pre = _limit_env[x]; }
+    wrapped_interval_t old_i = get_wrapped_interval(x);
     _w_int_dom.apply(op, x, y, k);
-    // weak update to keep past history    
-    _limit_env.set(x, pre |
-    		   wrapped_interval_limit_value::convert(_w_int_dom.get_wrapped_interval(x)));
-    _init_set += x;
+    wrapped_interval_t new_i = get_wrapped_interval(x);    
+    update_limits(x, old_i, new_i);
     CRAB_LOG("wrapped-int2",
 	     crab::outs() << x << ":=" << y << " " << op << " " << k
 	                  << " => " << *this<<"\n";);    
@@ -2048,24 +2073,32 @@ public:
   }
       
   static std::string getDomainName() 
-  { return "Wrapped Intervals with some history"; }
+  { return "Wrapped Intervals with abstraction of execution history"; }
   
   // domain_traits_api
   
   void expand(variable_t x, variable_t new_x) {
     _w_int_dom.expand(x, new_x);
     _limit_env.set(new_x, _limit_env[x]);
+    if (may_be_initialized(x)) {
+      _init_set += new_x;
+    }
   }
   
   template <typename Range>
   void project(Range vars) {
     _w_int_dom.project(vars.begin(), vars.end());
-    
+
     separate_domain_t projected_env = separate_domain_t::top();
+    discrete_domain_t projected_init_set = discrete_domain_t::bottom();    
     for (variable_t v: vars) {
       projected_env.set(v, _limit_env[v]);
+      if (may_be_initialized(v)) {
+	projected_init_set += v;
+      }
     }
     std::swap(_limit_env, projected_env);
+    std::swap(_init_set, projected_init_set);
   }
   
 }; 
