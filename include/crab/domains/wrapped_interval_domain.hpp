@@ -52,7 +52,7 @@ class wrapped_interval {
   void signed_split(std::vector<wrapped_interval_t> &intervals) const {
     if (is_bottom()) return;
 
-    bitwidth_t b = get_bitwidth();
+    bitwidth_t b = get_bitwidth(__LINE__);
     if (is_top()) {
       intervals.push_back(wrapped_interval_t(wrapint::get_unsigned_min(b),
 					     wrapint::get_signed_max(b)));
@@ -72,7 +72,7 @@ class wrapped_interval {
   void unsigned_split(std::vector<wrapped_interval_t> &intervals) const {
     if (is_bottom()) return;
 
-    bitwidth_t b = get_bitwidth();
+    bitwidth_t b = get_bitwidth(__LINE__);
     if (is_top()) {
       intervals.push_back(wrapped_interval_t(wrapint::get_signed_min(b),
 					     wrapint::get_unsigned_max(b)));
@@ -104,7 +104,7 @@ class wrapped_interval {
     bool msb_stop = _stop.msb();    
     bool msb_x_start = x._start.msb();
     bool msb_x_stop = x._stop.msb();    
-    bitwidth_t b = get_bitwidth();
+    bitwidth_t b = get_bitwidth(__LINE__);
 
     wrapped_interval_t res = wrapped_interval_t::top();                
     if (msb_start == msb_stop && msb_stop == msb_x_start && msb_x_start == msb_x_stop) {
@@ -148,7 +148,7 @@ class wrapped_interval {
   wrapped_interval_t unsigned_mul(wrapped_interval_t x) const {
     assert(!is_bottom() && !x.is_bottom());
  
-    bitwidth_t b = get_bitwidth();
+    bitwidth_t b = get_bitwidth(__LINE__);
     wrapped_interval_t res = wrapped_interval_t::top();
     if ((_stop.get_unsigned_bignum() * x._stop.get_unsigned_bignum()) -
 	(_start.get_unsigned_bignum() * x._start.get_unsigned_bignum())
@@ -204,7 +204,7 @@ class wrapped_interval {
 
   wrapped_interval_t unsigned_div(wrapped_interval_t x) const {
     CRAB_LOG("wrapped-int-div", crab::outs () << *this << " /_u " << x  << "=";);
-    assert(!x[wrapint(0, x.get_bitwidth())]);
+    assert(!x[wrapint(0, x.get_bitwidth(__LINE__))]);
     assert(!is_bottom() && !x.is_bottom());
     wrapped_interval_t res = wrapped_interval_t(_start.udiv(x._stop), _stop.udiv(x._start));
     CRAB_LOG("wrapped-int-div", crab::outs () << res << "\n";);
@@ -213,7 +213,7 @@ class wrapped_interval {
 
   wrapped_interval_t signed_div(wrapped_interval_t x) const {
     CRAB_LOG("wrapped-int-div", crab::outs () << *this << " /_s " << x  << "=";);    
-    assert(!x[wrapint(0, x.get_bitwidth())]);
+    assert(!x[wrapint(0, x.get_bitwidth(__LINE__))]);
     assert(!is_bottom() && !x.is_bottom());
 
     bool msb_start = _start.msb();
@@ -242,15 +242,15 @@ class wrapped_interval {
   // FIXME: this is sound only if wrapped interval defined over
   //        z_number.
   void trim_zero(std::vector<wrapped_interval_t>& out) const {
-    wrapint zero(0, get_bitwidth());
+    wrapint zero(0, get_bitwidth(__LINE__));
     if (!is_bottom() && (!(*this == zero))) {
       if (start() == zero) {
-	out.push_back(wrapped_interval_t(wrapint(1, get_bitwidth()), stop()));
+	out.push_back(wrapped_interval_t(wrapint(1, get_bitwidth(__LINE__)), stop()));
       } else if (stop() == zero) {
-	out.push_back(wrapped_interval_t(start(),wrapint(-1, get_bitwidth())));
+	out.push_back(wrapped_interval_t(start(),wrapint(-1, get_bitwidth(__LINE__))));
       } else if (operator[](zero)) {
-	out.push_back(wrapped_interval_t(start(), wrapint(-1, get_bitwidth())));
-	out.push_back(wrapped_interval_t(wrapint(1, get_bitwidth()), stop()));
+	out.push_back(wrapped_interval_t(start(), wrapint(-1, get_bitwidth(__LINE__))));
+	out.push_back(wrapped_interval_t(wrapint(1, get_bitwidth(__LINE__)), stop()));
       } else {
 	out.push_back(*this);
       }
@@ -258,7 +258,12 @@ class wrapped_interval {
   }
 
   wrapped_interval_t Shl(uint64_t k) const {
-    bitwidth_t b = get_bitwidth();
+    if (is_bottom()) return *this;
+
+    // XXX: we need the check is_top before calling get_bitwidth();
+    if (is_top()) return *this;
+    
+    bitwidth_t b = get_bitwidth(__LINE__);
     wrapped_interval_t y = Trunc(b - k);
     if (!y.is_top()) {
       wrapint wk(k, b);
@@ -270,8 +275,14 @@ class wrapped_interval {
   }
 
   wrapped_interval_t LShr(uint64_t k) const {
-    bitwidth_t b = get_bitwidth();
+    if (is_bottom()) return *this;
+
+    // XXX: we need the check is_top before cross_signed_limit calls
+    // get_bitwidth();
+    if (is_top()) return *this;
+    
     if (!cross_unsigned_limit()) {
+      bitwidth_t b = get_bitwidth(__LINE__);
       wrapint wk(k, b);
       return wrapped_interval_t(start().lshr(wk), stop().lshr(wk));
     } else {
@@ -281,8 +292,14 @@ class wrapped_interval {
   }
 
   wrapped_interval_t AShr(uint64_t k) const {
-    bitwidth_t b = get_bitwidth();
+    if (is_bottom()) return *this;
+
+    // XXX: we need the check is_top before cross_signed_limit calls
+    // get_bitwidth();
+    if (is_top()) return *this;
+    
     if (!cross_signed_limit()) {
+      bitwidth_t b = get_bitwidth(__LINE__);
       wrapint wk(k, b);
       return wrapped_interval_t(start().ashr(wk), stop().ashr(wk));
     } else {
@@ -338,18 +355,18 @@ public:
   }
   
   bool cross_signed_limit() const {
-    return (signed_limit(get_bitwidth()) <= *this);
+    return (signed_limit(get_bitwidth(__LINE__)) <= *this);
   }
 
   bool cross_unsigned_limit() const {
-    return (unsigned_limit(get_bitwidth()) <= *this);
+    return (unsigned_limit(get_bitwidth(__LINE__)) <= *this);
   }
   
-  bitwidth_t get_bitwidth() const {
+  bitwidth_t get_bitwidth(int line) const {
     if (is_bottom()) {
-      CRAB_ERROR("get_bitwidth() cannot be called from a bottom element");
+      CRAB_ERROR("get_bitwidth() cannot be called from a bottom element at line ", line);
     } else if (is_top()) {
-      CRAB_ERROR("get_bitwidth() cannot be called from a top element");
+      CRAB_ERROR("get_bitwidth() cannot be called from a top element at line ", line);
     } else {
       assert (_start.get_bitwidth() == _stop.get_bitwidth());
       return _start.get_bitwidth();
@@ -392,9 +409,9 @@ public:
   
   wrapped_interval_t lower_half_line(bool is_signed) const {
     if (is_top() || is_bottom()) return *this;
-    wrapint smin = wrapint::get_signed_min(get_bitwidth());
+    wrapint smin = wrapint::get_signed_min(get_bitwidth(__LINE__));
     if (!is_signed) {
-      smin = wrapint::get_unsigned_min(get_bitwidth());
+      smin = wrapint::get_unsigned_min(get_bitwidth(__LINE__));
     }
     wrapped_interval_t res = wrapped_interval_t(smin, _stop);
     return res;
@@ -402,9 +419,9 @@ public:
   
   wrapped_interval_t upper_half_line(bool is_signed) const {
     if (is_top() || is_bottom()) return *this;
-    wrapint smax = wrapint::get_signed_max(get_bitwidth());
+    wrapint smax = wrapint::get_signed_max(get_bitwidth(__LINE__));
     if (!is_signed) {
-      smax = wrapint::get_unsigned_max(get_bitwidth());
+      smax = wrapint::get_unsigned_max(get_bitwidth(__LINE__));
     }
     wrapped_interval_t res = wrapped_interval_t(_start, smax);
     return res;
@@ -516,16 +533,18 @@ public:
     } else if (x <= *this) {
       return *this;
     }
-    assert (get_bitwidth() == x.get_bitwidth());
-    bitwidth_t w = x.get_bitwidth();
+    assert (get_bitwidth(__LINE__) == x.get_bitwidth(__LINE__));
+    bitwidth_t w = x.get_bitwidth(__LINE__);
     if ((_stop - _start) >= wrapint::get_signed_min(w))
       return wrapped_interval_t::top();
     
     wrapped_interval_t join = *this | x;
     if (join == wrapped_interval_t(_start, x._stop)) {
+      // increase by twice the size of the old interval
       wrapped_interval_t doubled_old(_start, (_stop * wrapint(2,w)) - _start + wrapint(1,w));
       return join | doubled_old;
     } else if (join == wrapped_interval_t(x._start, _stop)) {
+      // decrease by twice the size of the old interval      
       wrapped_interval_t doubled_old((_start * wrapint(2,w)) - _stop - wrapint(1,w), _stop);
       return join | doubled_old;
     } else if (x[_start] && x[_stop]) {
@@ -749,7 +768,11 @@ public:
   }
 
   wrapped_interval_t Trunc(unsigned bits_to_keep) const {
-    bitwidth_t w = get_bitwidth();
+    if (is_bottom() || is_top()) {
+      return *this;
+    }
+    
+    bitwidth_t w = get_bitwidth(__LINE__);
     if (_start.ashr(wrapint(bits_to_keep,w)) == _stop.ashr(wrapint(bits_to_keep,w))) {
       wrapint lower_start = _start.keep_lower(bits_to_keep);
       wrapint lower_stop = _stop.keep_lower(bits_to_keep);
@@ -765,6 +788,7 @@ public:
 	return wrapped_interval_t(lower_start, lower_stop);
       }
     }
+    
     return wrapped_interval_t::top();
   }  
   
@@ -773,6 +797,8 @@ public:
   // - Shl, LShr, and AShr: shifts are treated as unsigned numbers
   
   wrapped_interval_t Shl(wrapped_interval_t x) const {
+    if (is_bottom()) return *this;
+    
     // only if shift is constant    
     if (x.is_singleton()) {
       return Shl(x.start().get_uint64_t());
@@ -782,6 +808,8 @@ public:
   }
   
   wrapped_interval_t LShr(wrapped_interval_t  x) const {
+    if (is_bottom()) return *this;
+ 
     // only if shift is constant
     if (x.is_singleton()) {
       return LShr(x.start().get_uint64_t());
@@ -791,6 +819,8 @@ public:
   }
   
   wrapped_interval_t AShr(wrapped_interval_t  x) const {
+    if (is_bottom()) return *this;
+ 
     // only if shift is constant    
     if (x.is_singleton()) {
       return AShr(x.start().get_uint64_t());
@@ -819,9 +849,9 @@ public:
       // print the wrapints as a signed number (easier to read)
       uint64_t x = _start.get_uint64_t();
       uint64_t y = _stop.get_uint64_t();
-      if (get_bitwidth() == 32) {
+      if (get_bitwidth(__LINE__) == 32) {
 	o << "[[" << (int) x << ", " << (int) y << "]]_";
-      } else if (get_bitwidth() == 8) {
+      } else if (get_bitwidth(__LINE__) == 8) {
 	o << "[[" << (int) static_cast<signed char>(x) << ", "
 	          << (int) static_cast<signed char>(y) << "]]_";	
       } else {
@@ -831,7 +861,7 @@ public:
       #else
       o << "[[" << _start << ", " << _stop << "]]_";
       #endif
-      o << (int) get_bitwidth();
+      o << (int) get_bitwidth(__LINE__);
     }
   }    
   
