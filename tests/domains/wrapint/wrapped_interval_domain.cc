@@ -7,7 +7,7 @@ using namespace crab::cfg;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
-z_cfg_t* prog (variable_factory_t &vfac)  {
+z_cfg_t* prog1 (variable_factory_t &vfac)  {
 
   // Defining program variables
   z_var x (vfac["x"], crab::INT_TYPE, 8);
@@ -47,22 +47,69 @@ z_cfg_t* prog (variable_factory_t &vfac)  {
   return cfg;
 }
 
-/* Example of how to infer invariants from the above CFG */
+z_cfg_t* prog2 (variable_factory_t &vfac, bool is_signed)  {
+  // Defining program variables
+  z_var x (vfac["x"], crab::INT_TYPE, 8);
+  // entry and exit block
+  auto cfg = new z_cfg_t("entry","ret");
+  // adding blocks
+  z_basic_block_t& entry = cfg->insert ("entry");
+  z_basic_block_t& bb_if = cfg->insert ("if");
+  z_basic_block_t& bb_then = cfg->insert ("then");
+  z_basic_block_t& ret = cfg->insert ("ret");      
+  // adding control flow
+  entry >> bb_if;
+  entry >> bb_then;
+  bb_if >> ret;
+  bb_then >> ret;
+  // adding statements
+  entry.assign(x, z_number(127));
+  entry.add(x,x,1);
+  z_lin_cst_t c1(x <= z_number(1));
+  if (is_signed) {
+    c1.set_signed();
+  } else {
+    c1.set_unsigned();
+  }
+  bb_if.assume(c1);
+  bb_if.assign(x, z_number(10));
+  z_lin_cst_t c2(x >= z_number(2));
+  if (is_signed) {
+    c2.set_signed();
+  } else {
+    c2.set_unsigned();
+  }
+  bb_then.assume(c2);
+  bb_then.assign(x, z_number(-10));
+  return cfg;
+}
+
 int main (int argc, char** argv )
 {
   SET_TEST_OPTIONS(argc,argv)
-
-  variable_factory_t vfac;
-  z_cfg_t* cfg = prog(vfac);
-  crab::outs() << *cfg << "\n";
-
-  // unsound result
-  run<z_interval_domain_t>(cfg,  false, 1, 2, 20, stats_enabled);
-  // sound result
-  run<z_wrapped_interval_domain_t>(cfg,  false, 1, 2, 20, stats_enabled);
-
-  // free the CFG
-  delete cfg;
-
+  {
+    variable_factory_t vfac;
+    z_cfg_t* cfg = prog1(vfac);
+    crab::outs() << *cfg << "\n";
+    // unsound result
+    run<z_interval_domain_t>(cfg,  false, 1, 2, 20, stats_enabled);
+    // sound result
+    run<z_wrapped_interval_domain_t>(cfg,  false, 1, 2, 20, stats_enabled);
+    delete cfg;
+  }
+  {
+    variable_factory_t vfac;
+    z_cfg_t* cfg = prog2(vfac, true);
+    crab::outs() << *cfg << "\n";
+    run<z_wrapped_interval_domain_t>(cfg,  false, 1, 2, 20, stats_enabled);
+    delete cfg;
+  }
+  {
+    variable_factory_t vfac;
+    z_cfg_t* cfg = prog2(vfac, false);
+    crab::outs() << *cfg << "\n";
+    run<z_wrapped_interval_domain_t>(cfg,  false, 1, 2, 20, stats_enabled);
+    delete cfg;
+  }
   return 0;
 }

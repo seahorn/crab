@@ -572,7 +572,6 @@ namespace ikos {
     }
 
     bool is_signed() const {
-      // Only meaninful if _kind == INEQUALITY or STRICT_INEQUALITY
       if (_kind != INEQUALITY && _kind != STRICT_INEQUALITY) {
 	CRAB_WARN("Only inequalities have signedness");	
       }
@@ -583,7 +582,7 @@ namespace ikos {
       return (!is_signed());
     }
     
-    bool set_signed() {
+    void set_signed() {
       if (_kind == INEQUALITY || _kind == STRICT_INEQUALITY) {
 	_signedness = true;
       } else {
@@ -591,7 +590,7 @@ namespace ikos {
       }
     }
 
-    bool set_unsigned() {
+    void set_unsigned() {
       if (_kind == INEQUALITY || _kind == STRICT_INEQUALITY) {
 	_signedness = false;
       } else {

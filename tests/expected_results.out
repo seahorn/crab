@@ -2960,6 +2960,50 @@ bb1_f={x -> [[0, -119]]_8; y -> [[-10, -10]]_8}
 entry={}
 Abstract trace: entry bb_nd bb_nd_ff bb_nd_tt (bb1 bb1_t bb2)^{3} bb1_f ret
 
+entry:
+  x = 127;
+  x = x+1;
+  goto if,then;
+if:
+  assume (x <= 1);
+  x = 10;
+  goto ret;
+ret:
+
+then:
+  assume (-x <= -2);
+  x = -10;
+  goto ret;
+
+Invariants using Wrapped Intervals
+ret={x -> [[10, 10]]_8}
+then={x -> [[-128, -128]]_8}
+if={x -> [[-128, -128]]_8}
+entry={}
+Abstract trace: entry then if ret
+
+entry:
+  x = 127;
+  x = x+1;
+  goto if,then;
+if:
+  assume (x <=_u 1);
+  x = 10;
+  goto ret;
+ret:
+
+then:
+  assume (-x <=_u -2);
+  x = -10;
+  goto ret;
+
+Invariants using Wrapped Intervals
+ret={x -> [[-10, -10]]_8}
+then={x -> [[-128, -128]]_8}
+if={x -> [[-128, -128]]_8}
+entry={}
+Abstract trace: entry then if ret
+
 i1=[[-10, 10]]_8
 i2=[[0, 20]]_8
 -i2=[[-20, 0]]_8
