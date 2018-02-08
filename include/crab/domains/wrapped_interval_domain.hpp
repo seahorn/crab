@@ -779,23 +779,23 @@ public:
       if (lower_start <= lower_stop) {
 	return wrapped_interval_t(lower_start, lower_stop);
       }
-    }
-    // note that _start is a wrapint so after +1 it can wraparound
-    else  if ((_start.ashr(wrapint(bits_to_keep,w))++) == _stop.ashr(wrapint(bits_to_keep,w))) {
-      wrapint lower_start = _start.keep_lower(bits_to_keep);
-      wrapint lower_stop = _stop.keep_lower(bits_to_keep);
-      if (!(lower_start <= lower_stop)) {
-	return wrapped_interval_t(lower_start, lower_stop);
+    } else {
+      // note that _start is a wrapint so after +1 it can wraparound
+      wrapint y(_start.ashr(wrapint(bits_to_keep, w)));
+      ++y;
+      if (y == _stop.ashr(wrapint(bits_to_keep,w))) {
+	wrapint lower_start = _start.keep_lower(bits_to_keep);
+	wrapint lower_stop = _stop.keep_lower(bits_to_keep);
+	if (!(lower_start <= lower_stop)) {
+	  return wrapped_interval_t(lower_start, lower_stop);
+	}
       }
     }
-    
     return wrapped_interval_t::top();
   }  
   
   /** bitwise operations **/
-  // Notes:
-  // - Shl, LShr, and AShr: shifts are treated as unsigned numbers
-  
+  // Shl, LShr, and AShr shifts are treated as unsigned numbers
   wrapped_interval_t Shl(wrapped_interval_t x) const {
     if (is_bottom()) return *this;
     
@@ -893,15 +893,28 @@ namespace linear_interval_solver_impl {
   template<>
   inline z_wrapped_interval_t trim_interval(z_wrapped_interval_t i, z_wrapped_interval_t j) {
     if (i.is_bottom()) return i;
-    // XXX: not sure if we can be more precise here.
+    // XXX: TODO: gamma(top()) \ gamma(j) can be expressed in a
+    //            wrapped interval.
     if (i.is_top()) return i;
     if (!j.is_singleton()) return i;
     
     crab::wrapint k = j.start();
     if (i.start() == k) {
-      return z_wrapped_interval_t(k++, i.stop());
+      if (i.is_singleton()){
+	return z_wrapped_interval_t::bottom();
+      }
+      crab::wrapint k_plus(k);
+      ++k_plus;
+      z_wrapped_interval_t trimmed_res = z_wrapped_interval_t(k_plus, i.stop());
+      return trimmed_res;
     } else if (i.stop() == k) {
-      return z_wrapped_interval_t(i.start(), k--);
+      if (i.is_singleton()){
+	return z_wrapped_interval_t::bottom();
+      }
+      crab::wrapint k_minus(k);
+      --k_minus;
+      z_wrapped_interval_t trimmed_res = z_wrapped_interval_t(i.start(), k_minus);
+      return trimmed_res;
     } else {
       return i;
     }
