@@ -308,7 +308,7 @@ endif ()
   
 include_directories (${CMAKE_BINARY_DIR}/include)
 
-configure_file( include/crab/config.h.cmake
+configure_file(include/crab/config.h.cmake
                 ${CMAKE_BINARY_DIR}/include/crab/config.h )
 
 add_subdirectory(lib)
@@ -318,11 +318,15 @@ if (ENABLE_TESTS)
    add_subdirectory(tests)
 endif ()
 
-install(DIRECTORY include/ DESTINATION include)
+install(DIRECTORY include/
+        DESTINATION include
+        PATTERN "config.h.cmake" EXCLUDE)
+install(FILES ${CMAKE_BINARY_DIR}/include/crab/config.h DESTINATION include/crab)
 
 if (TopLevel)
    install(FILES LICENSE DESTINATION .)
    install(FILES README.md DESTINATION .)
+   install(FILES IKOS_LICENSE.pdf DESTINATION .)
 endif () 
 
 
