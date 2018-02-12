@@ -335,7 +335,7 @@ namespace ikos {
       return *this;
     }
     
-    Value operator[](Key k) {
+    Value operator[](Key k) const {
       if (this->is_bottom()) {
         return Value::bottom();
       } else {
