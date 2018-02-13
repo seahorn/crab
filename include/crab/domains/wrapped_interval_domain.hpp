@@ -1093,7 +1093,8 @@ public:
   }
   
   template<typename Thresholds>
-  wrapped_interval_domain_t widening_thresholds (wrapped_interval_domain_t e, const Thresholds &ts) {
+  wrapped_interval_domain_t widening_thresholds (wrapped_interval_domain_t e,
+						 const Thresholds &ts) {
     crab::CrabStats::count (getDomainName() + ".count.widening");
     crab::ScopedCrabStats __st__(getDomainName() + ".widening");
     CRAB_LOG("wrapped-int",
@@ -1166,12 +1167,13 @@ public:
   }
 
   // Return unlimited interval
-  interval_t operator[](variable_t v) {
-    return this->_env[v].to_interval();
+  interval_t operator[](variable_t v) const {
+    wrapped_interval_t w_i = this->_env[v];
+    return w_i.to_interval();
   }
 
   // Return wrapped interval
-  wrapped_interval_t get_wrapped_interval(variable_t v) {
+  wrapped_interval_t get_wrapped_interval(variable_t v) const {
     return this->_env[v];
   }
   
@@ -1633,6 +1635,9 @@ public:
   // the wrapped interval might have crossed the unsigned limit  
   bool is_crossing_unsigned_limit() const
   { return (!is_bottom() && (_value == CU || _value == CSU)); }
+
+  bool is_not_crossing_limit() const
+  { return (!is_bottom() && (_value == NC)); }
   
   bool operator<=(const wrapped_interval_limit_value& o) const {
     if (is_bottom() || o.is_top()) {
@@ -1832,8 +1837,7 @@ public:
   }
       
   bool operator<=(this_type o) {
-    return (_w_int_dom <= o._w_int_dom &&
-	    _limit_env <= o._limit_env);
+    return (_w_int_dom <= o._w_int_dom && _limit_env <= o._limit_env);
   }
   
   bool operator==(this_type o) {
@@ -1910,11 +1914,11 @@ public:
 	     crab::outs() << x << ":=" << n << " => " << *this<<"\n";);
   }
     
-  interval_t operator[](variable_t v) {
+  interval_t operator[](variable_t v) const {
     return _w_int_dom[v];
   }
 
-  wrapped_interval_t get_wrapped_interval(variable_t v) {
+  wrapped_interval_t get_wrapped_interval(variable_t v) const {
     return _w_int_dom.get_wrapped_interval(v);
   }
   
@@ -1930,7 +1934,7 @@ public:
     //      have been havoc'ed.
     // _init_set -= v;
   }
-  
+
   // numerical_domains_api
   
   void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
@@ -2085,8 +2089,8 @@ public:
     }
   }
   
-  template <typename Range>
-  void project(Range vars) {
+  template <typename VarRange>
+  void project(VarRange vars) {
     _w_int_dom.project(vars.begin(), vars.end());
 
     separate_domain_t projected_env = separate_domain_t::top();
@@ -2120,19 +2124,19 @@ public:
   
   static void normalize (wrapped_interval_domain_t& inv) {}
   
-  template <typename Iter>
-  static void forget (wrapped_interval_domain_t& inv, Iter it, Iter end){
+  template <typename VarIter>
+  static void forget (wrapped_interval_domain_t& inv, VarIter it, VarIter end){
     for(;it!=end; ++it) {
       inv -= *it;
     }
   }
   
-  template <typename Iter>
-  static void project (wrapped_interval_domain_t& inv, Iter it, Iter end) {
-    inv.project(it, end);
+  template <typename VarIter>
+  static void project (wrapped_interval_domain_t& inv, VarIter it, VarIter end) {
+    inv.project(boost::make_iterator_range(it, end));
   }
   
 };
-
+  
 }
 }
