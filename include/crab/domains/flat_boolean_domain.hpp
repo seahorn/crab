@@ -959,9 +959,10 @@ namespace crab {
       { /// Reduction from the numerical domain to the flat boolean
 	/// domain
 	
-	if (_product.is_bottom ())
-	  return;
+	if (_product.is_bottom ()) return;
 
+	_product.assign_bool_cst(x, cst);
+	
 	NumDom inv1 (_product.second ());
 	inv1 += cst;
 	if (inv1.is_bottom ()) {
