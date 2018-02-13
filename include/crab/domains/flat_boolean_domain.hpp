@@ -10,6 +10,7 @@
 #include <crab/domains/separate_domains.hpp>
 #include <crab/domains/discrete_domains.hpp>
 #include <crab/domains/combined_domains.hpp>
+#include <crab/domains/domain_traits.hpp>
 #include <crab/domains/intervals.hpp>
 
 namespace crab {
@@ -1334,7 +1335,7 @@ namespace crab {
     }; // class flat_boolean_numerical_domain
 
     template<typename Num>
-    class domain_traits <flat_boolean_numerical_domain<Num> > {
+    class domain_traits<flat_boolean_numerical_domain<Num>> {
      public:
 
       typedef flat_boolean_numerical_domain<Num> product_t;
@@ -1360,6 +1361,22 @@ namespace crab {
       template <typename Iter>
       static void project (product_t& inv, Iter it, Iter end) {
         inv.project (boost::make_iterator_range (it, end));
+      }
+    };
+
+    template<typename NumDom>
+    class checker_domain_traits<flat_boolean_numerical_domain<NumDom>> {
+    public:
+      typedef flat_boolean_numerical_domain<NumDom> this_type;
+      typedef typename this_type::linear_constraint_t linear_constraint_t;
+      
+      static bool entail(this_type& inv, const linear_constraint_t& cst) {
+	NumDom& dom = inv.second();
+	return checker_domain_traits<NumDom>::entail(dom, cst);
+      }
+      static bool intersect(this_type& inv, const linear_constraint_t& cst) {
+	NumDom& dom = inv.second();
+	return checker_domain_traits<NumDom>::intersect(dom, cst);
       }
     };
     

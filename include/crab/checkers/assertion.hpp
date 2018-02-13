@@ -6,7 +6,7 @@
 
 #include <crab/common/types.hpp>
 #include <crab/checkers/base_property.hpp>
-#include <crab/checkers/checker_operations.hpp>
+#include <crab/domains/domain_traits.hpp>
 
 namespace crab {
 
@@ -61,9 +61,9 @@ namespace crab {
           return;
         }
         
-        if (checker_operations::entail(inv, cst)) {
+        if (crab::domains::checker_domain_traits<abs_dom_t>::entail(inv, cst)) {
           LOG_SAFE(this->m_verbose, inv, cst, s.get_debug_info());
-        } else if (checker_operations::intersect(cst, inv)) {
+        } else if (crab::domains::checker_domain_traits<abs_dom_t>::intersect(inv, cst)) {
           LOG_WARN(this->m_verbose, inv, cst, s.get_debug_info());
         } else {
           LOG_ERR(this->m_verbose, inv, cst, s.get_debug_info());

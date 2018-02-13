@@ -462,7 +462,7 @@ namespace crab {
       }; // end array_smashing
    
      template<typename BaseDomain>
-     class domain_traits <array_smashing<BaseDomain> > {
+     class domain_traits<array_smashing<BaseDomain>> {
       public:
        
        typedef array_smashing<BaseDomain> array_smashing_t;
@@ -494,5 +494,22 @@ namespace crab {
 
      };
 
+    template<typename BaseDom>
+    class checker_domain_traits<array_smashing<BaseDom>> {
+    public:
+      typedef array_smashing<BaseDom> this_type;
+      typedef typename this_type::linear_constraint_t linear_constraint_t;
+      
+      static bool entail(this_type& inv, const linear_constraint_t& cst) {
+	BaseDom dom = inv.get_content_domain();
+	return checker_domain_traits<BaseDom>::entail(dom, cst);
+      }
+      static bool intersect(this_type& inv, const linear_constraint_t& cst) {
+	BaseDom dom = inv.get_content_domain();	
+	return checker_domain_traits<BaseDom>::intersect(dom, cst);
+      }
+      
+    };
+     
    } // namespace domains
 }// namespace crab

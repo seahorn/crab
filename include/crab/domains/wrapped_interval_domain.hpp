@@ -1731,11 +1731,10 @@ public:
   typedef VariableName varname_t;
   typedef interval<number_t> interval_t;
   typedef wrapped_interval<number_t> wrapped_interval_t;  
-  
-private:
-
   typedef wrapped_interval_domain<Number, VariableName, max_reduction_cycles>
   wrapped_interval_domain_t;
+  
+private:
 
   typedef separate_domain<variable_t, wrapped_interval_limit_value> separate_domain_t; 
   typedef discrete_domain<variable_t> discrete_domain_t;
@@ -1925,6 +1924,14 @@ public:
   wrapped_interval_limit_value get_limit_value(variable_t x) const {
     return _limit_env[x];
   }
+
+  wrapped_interval_domain_t& get_wrapped_interval_domain() {
+    return _w_int_dom;
+  }
+
+  const wrapped_interval_domain_t& get_wrapped_interval_domain() const {
+    return _w_int_dom;
+  }
   
   void operator-=(variable_t v) {
     _w_int_dom -= v;
@@ -2078,6 +2085,21 @@ public:
       
   static std::string getDomainName() 
   { return "Wrapped Intervals with abstraction of execution history"; }
+
+  // checker_domain_traits
+
+  bool entail(const linear_constraint_t& cst) {
+    if (is_bottom()) return true;
+    if (cst.is_tautology ()) return true;
+    if (cst.is_contradiction ()) return false;
+    
+    this_type cst_inv;
+    cst_inv += cst;
+    // cst cannot be represented by the domain.
+    if (cst_inv.is_top ()) return false;
+    
+    return get_wrapped_interval_domain() <= cst_inv.get_wrapped_interval_domain(); 
+  }
   
   // domain_traits_api
   
@@ -2108,34 +2130,46 @@ public:
 }; 
   
 
-template<typename Number, typename VariableName>
-class domain_traits <wrapped_interval_with_history_domain<Number,VariableName> > {
+template<typename N, typename V, std::size_t M>
+class domain_traits<wrapped_interval_with_history_domain<N,V,M>> {
 public:
-
-  typedef wrapped_interval_with_history_domain<Number,VariableName> wrapped_interval_domain_t;
-  typedef ikos::variable<Number, VariableName> variable_t;
+  typedef wrapped_interval_with_history_domain<N,V,M> wrapped_interval_domain_t;
+  typedef ikos::variable<N,V> variable_t;
   
   template<class CFG>
   static void do_initialization (CFG cfg) { }
 
-  static void expand (wrapped_interval_domain_t& inv, variable_t x, variable_t new_x) {
-    inv.expand(x, new_x);
-  }
+  static void expand (wrapped_interval_domain_t& inv, variable_t x, variable_t new_x)
+  { inv.expand(x, new_x); }
   
   static void normalize (wrapped_interval_domain_t& inv) {}
   
   template <typename VarIter>
-  static void forget (wrapped_interval_domain_t& inv, VarIter it, VarIter end){
-    for(;it!=end; ++it) {
-      inv -= *it;
-    }
-  }
+  static void forget (wrapped_interval_domain_t& inv, VarIter it, VarIter end)
+  { for(;it!=end; ++it) { inv -= *it; } }
   
   template <typename VarIter>
-  static void project (wrapped_interval_domain_t& inv, VarIter it, VarIter end) {
-    inv.project(boost::make_iterator_range(it, end));
-  }
+  static void project (wrapped_interval_domain_t& inv, VarIter it, VarIter end)
+  { inv.project(boost::make_iterator_range(it, end)); }
+};
+
+template<typename N, typename V, std::size_t M>
+class checker_domain_traits<wrapped_interval_with_history_domain<N,V,M>> {
+public:
+  typedef wrapped_interval_with_history_domain<N,V,M> this_type;
+  typedef typename this_type::linear_constraint_t linear_constraint_t;
   
+  static bool entail(this_type& inv, const linear_constraint_t& cst)
+  { return inv.entail(cst); }
+  
+  static bool intersect(this_type& inv, const linear_constraint_t& cst) {
+    // default code
+    if (inv.is_bottom () || cst.is_contradiction ()) return false;
+    if (inv.is_top () || cst.is_tautology ()) return true;
+    this_type cst_inv;
+    cst_inv += cst;
+    return (!(cst_inv & inv).is_bottom ());
+  }
 };
   
 }
