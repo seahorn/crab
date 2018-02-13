@@ -57,8 +57,7 @@ namespace crab {
             }
           }
           else if (auto var = divisor_expr.get_variable ()) {
-            num_dom_detail::checker_ops<abs_dom_t> num_inv (inv);
-            interval_t divisor_intv = num_inv [(*var)];
+            interval_t divisor_intv = inv[(*var)];
             if (auto divisor = divisor_intv.singleton ()) {
               if (*divisor == number_t (0)) {
 		lin_cst_t e_cst(*var != number_t (0));

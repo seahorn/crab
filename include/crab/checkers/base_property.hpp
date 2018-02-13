@@ -141,54 +141,6 @@ namespace crab {
     }                                                     \
   } while (false); 
 
-
-  namespace num_dom_detail {
-
-     template<typename Domain>
-     struct checker_ops {
-       typedef typename Domain::varname_t varname_t;
-       typedef typename Domain::number_t number_t;
-
-       typedef ikos::variable<number_t,varname_t> variable_t;
-       typedef ikos::interval<number_t> interval_t;
-       typedef ikos::linear_constraint<number_t, varname_t> z_lin_cst_t;
-       
-       Domain& m_inv;
-       checker_ops (Domain& inv): m_inv (inv) { }
-
-       interval_t operator[](variable_t v){ return m_inv [v]; }
-
-       // if the domain is not numerical then return always false
-       bool entails(z_lin_cst_t cst) { 
-         // special cases first
-         if (m_inv.is_bottom()) return true;
-
-         if (cst.is_tautology ()) return true;
-
-         if (cst.is_contradiction ()) return false;
-
-         Domain inv;
-         inv += cst;
-         if (inv.is_top ()) return false;
-         return m_inv <= inv; 
-       }
-
-       // if the domain is not numerical then return always true
-       bool intersect(z_lin_cst_t cst) {
-         // special cases first
-         if (m_inv.is_bottom () || cst.is_contradiction ()) return false;
-
-         if (m_inv.is_top () || cst.is_tautology ()) return true;
-
-         Domain inv;
-         inv += cst;
-         Domain meet = m_inv & inv;
-         return (!meet.is_bottom ());
-       }
-     };
-
-  } // end num_dom_detail namespace
-
   template<typename Analyzer>
   class property_checker:
       public cfg::statement_visitor <typename Analyzer::number_t,
