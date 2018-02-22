@@ -1188,34 +1188,31 @@ namespace crab {
          }
        }
 
-       template<typename NumDomain>
-       void push (const variable_t& x, NumDomain& inv) {
-         crab::CrabStats::count (getDomainName() + ".count.push");
-         crab::ScopedCrabStats __st__(getDomainName() + ".push");
+       void extract(const variable_t& x, linear_constraint_system_t& csts,
+		    bool only_equalities /*unused*/) {
+         crab::CrabStats::count (getDomainName() + ".count.extract");
+         crab::ScopedCrabStats __st__(getDomainName() + ".extract");
 
          if (!is_normalized ()) normalize ();
 
-         if (is_bottom () || inv.is_bottom ()) return;
+         if (is_bottom ()) {
+	   return;
+	 }
 
          // add equivalences
          auto it = _var_map.find (x);
-         linear_constraint_system_t csts;
          if (it != _var_map.end ()) {
            term_id_t tx = it->second;
            std::vector< std::pair<variable_t, variable_t> > equivs;
            for(auto p : _var_map) {
              if ((p.first.index() != x.index()) && (p.second == tx)) {
                linear_constraint_t cst(linear_expression_t(x) == p.first);
-               CRAB_LOG("terms",
-			crab::outs() << "Propagating " << cst << " to "
-    			             << inv.getDomainName () << "\n");
+               CRAB_LOG("terms", crab::outs() << "Extracting " << cst << "\n";);
                csts += cst;
              }
            }
          }         
-         inv += csts;
        }
-
 
        // Apply operations to variables.
 
@@ -1854,17 +1851,17 @@ namespace crab {
      }
    };
 
-    template<typename Info, typename Domain>
-    class product_domain_traits<term_domain<Info>, Domain> {
-     public:
-      
-      typedef typename Domain::variable_t variable_t;
-      typedef term_domain<Info> term_domain_t;
-      
-      static void push (const variable_t& x, term_domain_t from, Domain& to){
-        from.push (x, to);
-      }
-    };
+   template<typename Info>    
+   class reduced_domain_traits<term_domain<Info>> {
+   public:
+     typedef term_domain<Info> term_domain_t;
+     typedef typename term_domain_t::variable_t variable_t;
+     typedef typename term_domain_t::linear_constraint_system_t linear_constraint_system_t;
+     
+     static void extract(term_domain_t& dom, const variable_t& x,
+			 linear_constraint_system_t& csts, bool only_equalities)
+     { dom.extract(x, csts, only_equalities); }
+   };
 
   }// namespace domains
 } // namespace crab

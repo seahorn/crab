@@ -649,8 +649,13 @@ namespace crab {
           // propagate other constraints expressed by the domains
           //////
 
-          crab::domains::product_domain_traits<Domain1,Domain2>::push (v, inv1, inv2);
-          crab::domains::product_domain_traits<Domain2,Domain1>::push (v, inv2, inv1);
+	  linear_constraint_system_t csts1, csts2;
+	  crab::domains::reduced_domain_traits<Domain1>::
+	    extract(inv1, v, csts1, /*only_equalities=*/ false);
+	  inv2 += csts1;
+	  crab::domains::reduced_domain_traits<Domain2>::
+	    extract(inv2, v, csts2, /*only_equalities=*/ false);
+	  inv1 += csts2;
         }
       }
       
@@ -1778,12 +1783,13 @@ namespace crab {
     struct array_sgraph_domain_traits <numerical_nullity_domain<Dom> > {
       typedef numerical_nullity_domain<Dom> num_null_domain_t;
       typedef typename num_null_domain_t::linear_constraint_t linear_constraint_t;
-
+      typedef typename Dom::variable_t variable_t;
+      
       static bool is_unsat(num_null_domain_t &inv, linear_constraint_t cst) 
       { return array_sgraph_domain_traits<Dom>::is_unsat(inv.first(), cst); }
       
-      static std::vector<typename Dom::variable_t> active_variables(num_null_domain_t &inv) 
-      { return array_sgraph_domain_traits<Dom>::active_variables(inv.first()); }
+      static void active_variables(num_null_domain_t &inv, std::vector<variable_t>& out) 
+      { array_sgraph_domain_traits<Dom>::active_variables(inv.first(), out); }
     };
 
   } // end namespace domains

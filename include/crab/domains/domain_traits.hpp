@@ -58,7 +58,7 @@ namespace crab {
      }
    };
 
-   // For domains used by the checker
+   // Special operations needed by the checker
    template<typename Domain>
    class checker_domain_traits{
    public:
@@ -89,17 +89,25 @@ namespace crab {
        return (!(cst_inv & inv).is_bottom ());
      }
    };
-   
-   template<typename Domain1, typename Domain2>
-   class product_domain_traits {
+
+   // Special operations for applying reduction between domains.
+   template<typename Domain>
+   class reduced_domain_traits {
     public:
-     typedef typename Domain1::variable_t variable_t;
-     
-     // Perform customized reduction between domains.
-     static void push (const variable_t& x, Domain1 from, Domain2& to){ }
+     typedef typename Domain::variable_t variable_t;     
+     typedef typename Domain::linear_constraint_t linear_constraint_t;     
+     typedef typename Domain::linear_constraint_t linear_constraint_system_t;
+
+     // extract linear constraints from dom involving x and store in
+     // ctsts
+     static void extract(Domain& dom, const variable_t& x, 
+			 linear_constraint_system_t& csts,
+			 bool only_equalities){ }
    };
 
-   // Special operations needed by the array_sparse_graph domain
+   // Experimental:
+   // 
+   // Special operations needed by the array_sparse_graph domain.
    // TO BE REMOVED
    template<typename Domain>
    class array_sgraph_domain_traits {
@@ -107,14 +115,14 @@ namespace crab {
      typedef typename Domain::linear_constraint_t linear_constraint_t;
      typedef typename Domain::variable_t variable_t;
 
-     // This does similar thing to checker_domain_traits<Domain>::entail
-     static bool is_unsat(Domain &inv, linear_constraint_t cst) { 
+     // FIXME: this does similar thing to checker_domain_traits<Domain>::entail
+     static bool is_unsat(Domain& inv, linear_constraint_t cst) { 
        Domain copy(inv);
        copy += cst;
        return copy.is_bottom();
      }
 
-     static std::vector<variable_t> active_variables(Domain &inv)
+     static void active_variables(Domain& inv, std::vector<variable_t>& out)
      { CRAB_ERROR("operation active_variables not implemented"); }
    };
 

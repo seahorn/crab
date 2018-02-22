@@ -6,6 +6,7 @@
 #include <crab/domains/intervals.hpp>
 #include <crab/domains/separate_domains.hpp>
 #include <crab/domains/operators_api.hpp>
+#include <crab/domains/domain_traits.hpp>
 
 namespace crab {
 

@@ -1506,7 +1506,8 @@ namespace crab {
           landmarks.push_back (p.first);
           landmarks.push_back (p.second);
         }
-        auto active_vars = array_sgraph_domain_traits<NumDom>::active_variables(scalar);        
+	std::vector<variable_t> active_vars;
+        array_sgraph_domain_traits<NumDom>::active_variables(scalar, active_vars);        
         for (auto v: active_vars) {
           auto it = var_landmarks.find(landmark_ref_t(v));
           if (it != var_landmarks.end()){
@@ -1793,7 +1794,10 @@ namespace crab {
                  crab::outs() << "NORMALIZATION DONE! using the expression abstraction\n");
                 
         // -- propagate equalities from _expressions to _scalar
-        product_domain_traits<expression_domain_t, NumDom>::push(no, _expressions, _scalar);
+	linear_constraint_system_t e_csts;
+	reduced_domain_traits<expression_domain_t>::
+	  extract(_expressions, no, e_csts, /*only_equalities=*/ false);
+	_scalar += e_csts;
         
         // -- add landmark for the new array index
         add_landmark (no);

@@ -361,14 +361,12 @@ namespace crab {
         }
       }
 
-      std::vector<variable_t> active_variables() const {
-        std::vector<variable_t> res;
-        res.reserve(g.size());
+      void active_variables(std::vector<variable_t>& out) const {
+        out.reserve(g.size());
         for (auto v: g.verts()) {
           if (rev_map[v]) 
-            res.push_back((*(rev_map[v])));
+            out.push_back((*(rev_map[v])));
         }
-        return res;
       }
 
      public:
@@ -2269,15 +2267,16 @@ namespace crab {
         }
       }
 
-      template <typename NumDomain>
-      void push (const variable_t& x, NumDomain&inv){
-        crab::CrabStats::count (getDomainName() + ".count.push");
-        crab::ScopedCrabStats __st__(getDomainName() + ".push");
+      void extract(const variable_t& x, linear_constraint_system_t& csts,
+		   bool only_equalities){
+        crab::CrabStats::count (getDomainName() + ".count.extract");
+        crab::ScopedCrabStats __st__(getDomainName() + ".extract");
 
         normalize ();
-        if (is_bottom () || inv.is_bottom ()) return;
+        if (is_bottom ()) {
+	  return;
+	}
 
-        linear_constraint_system_t csts;     
         auto it = vert_map.find(x);
         if(it != vert_map.end()) {
           vert_id s = (*it).second;
@@ -2293,27 +2292,21 @@ namespace crab {
                     g_excl.edge_val(s, d) == 0 &&
 		    g_excl.edge_val(d, s) == 0) {
                   linear_constraint_t cst (linear_expression_t(vs) == vd);
-                  //crab::outs() << "Propagating " << cst << " to " << inv.getDomainName () << "\n";
                   csts += cst;
-		  continue;
-                }
-		
-		if (g_excl.elem (s, d)) {
-                  linear_constraint_t cst (vd - vs <= g_excl.edge_val(s, d));
-                  //crab::outs() << "Propagating " << cst << " to " << inv.getDomainName () << "\n";
-                  csts += cst;
-                }
-		
-		if (g_excl.elem (d, s)) {
-                  linear_constraint_t cst (vs - vd <= g_excl.edge_val(d, s));
-                  //crab::outs() << "Propagating " << cst << " to " << inv.getDomainName () << "\n";
-                  csts += cst;
-                }
+                } else {
+		  if (!only_equalities && g_excl.elem (s, d)) {
+		    linear_constraint_t cst (vd - vs <= g_excl.edge_val(s, d));
+		    csts += cst;
+		  }
+		  if (!only_equalities && g_excl.elem (d, s)) {
+		    linear_constraint_t cst (vs - vd <= g_excl.edge_val(d, s));
+		    csts += cst;
+		  }
+		}
               }
             }
           }
         }
-        inv += csts;
       }
 
       // Output function
@@ -2593,12 +2586,13 @@ namespace crab {
       void rename(const variable_vector_t &from, const variable_vector_t &to)
       { lock(); norm().rename(from, to); }
       
-      template <typename NumDomain>
-      void push (const variable_t& x, NumDomain&inv){ lock(); norm().push(x, inv); }
+      void extract(const variable_t& x, linear_constraint_system_t& csts,
+		   bool only_equalities)
+      { lock(); norm().extract(x, csts, only_equalities); }
 
       bool is_unsat (linear_constraint_t cst){ lock(); return norm().is_unsat(cst);}
 
-      std::vector<variable_t> active_variables(){ return norm().active_variables();}
+      void active_variables(std::vector<variable_t>& out){ norm().active_variables(out);}
 
       void write(crab_os& o) { norm().write(o); }
 
@@ -2642,21 +2636,18 @@ namespace crab {
     };
 
 
-    template<typename Domain>
-    class product_domain_traits<SplitDBM<typename Domain::number_t, 
-                                         typename Domain::varname_t>, Domain> {
-
-     public:
-      typedef typename Domain::number_t number_t;      
-      typedef typename Domain::varname_t varname_t;
-      typedef SplitDBM<number_t, varname_t> sdbm_domain_t;
-      typedef ikos::variable<number_t, varname_t> variable_t;
+    template<typename Number, typename VariableName, typename Params>    
+    class reduced_domain_traits<SplitDBM<Number, VariableName, Params>> {
+    public:
+      typedef SplitDBM<Number, VariableName, Params> sdbm_domain_t;
+      typedef typename sdbm_domain_t::variable_t variable_t;
+      typedef typename sdbm_domain_t::linear_constraint_system_t linear_constraint_system_t;
       
-      static void push (const variable_t& x, sdbm_domain_t from, Domain& to){
-        from.push (x, to);
-      }
+      static void extract(sdbm_domain_t& dom, const variable_t& x,
+			  linear_constraint_system_t& csts, bool only_equalities)
+      { dom.extract(x, csts, only_equalities); }
     };
-
+  
     template<typename Number, typename VariableName>
     struct array_sgraph_domain_traits <SplitDBM<Number,VariableName> > {
       typedef SplitDBM<Number,VariableName> sdbm_domain_t;
@@ -2666,8 +2657,8 @@ namespace crab {
       static bool is_unsat(sdbm_domain_t &inv, linear_constraint_t cst) 
       { return inv.is_unsat(cst); }
       
-      static std::vector<variable_t> active_variables(sdbm_domain_t &inv) 
-      { return inv.active_variables(); }
+      static void active_variables(sdbm_domain_t &inv, std::vector<variable_t>& out) 
+      { inv.active_variables(out); }
     };
   
   } // namespace domains

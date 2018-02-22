@@ -1361,7 +1361,7 @@ namespace crab {
       void operator+=(linear_constraint_t cst) {
         crab::CrabStats::count (getDomainName() + ".count.add_constraints");
         crab::ScopedCrabStats __st__(getDomainName() + ".add_constraints");
-
+	
         if(is_bottom())
           return;
 
@@ -1870,15 +1870,15 @@ namespace crab {
         }
       }
 
-      template <typename NumDomain>
-      void push (const variable_t& x, NumDomain&inv){
-	crab::CrabStats::count (getDomainName() + ".count.push");
-        crab::ScopedCrabStats __st__(getDomainName() + ".push");
+      void extract(const variable_t& x, linear_constraint_system_t& csts,
+		   bool only_equalities) {
+	crab::CrabStats::count (getDomainName() + ".count.extract");
+        crab::ScopedCrabStats __st__(getDomainName() + ".extract");
 
         normalize ();
-        if (is_bottom () || inv.is_bottom ()) return;
-
-        linear_constraint_system_t csts;     
+        if (is_bottom ()) {
+	  return;
+	}
 
         auto it = vert_map.find(x);
         if(it != vert_map.end()) {
@@ -1895,30 +1895,21 @@ namespace crab {
                     g_excl.edge_val(s, d) == 0 &&
 		    g_excl.edge_val(d, s) == 0) {
                   linear_constraint_t cst (vs == vd);
-                  //crab::outs() << "Propagating " << cst << " to " << inv.getDomainName ()
-		  //             << "\n";
                   csts += cst;
-		  continue;
-                }
-		
-		if (g_excl.elem (s, d)) {
-                  linear_constraint_t cst (vd - vs <= g_excl.edge_val(s, d));
-                  //crab::outs() << "Propagating " << cst << " to " << inv.getDomainName ()
-		  //             << "\n";
-                  csts += cst;
-                }
-		
-		if (g_excl.elem (d, s)) {
-                  linear_constraint_t cst (vs - vd <= g_excl.edge_val(d, s));
-                  //crab::outs() << "Propagating " << cst << " to " << inv.getDomainName ()
-		  //             << "\n";
-                  csts += cst;
-                }
+                } else {
+		  if (!only_equalities && g_excl.elem (s, d)) {
+		    linear_constraint_t cst (vd - vs <= g_excl.edge_val(s, d));
+		    csts += cst;
+		  }
+		  if (!only_equalities && g_excl.elem (d, s)) {
+		    linear_constraint_t cst (vs - vd <= g_excl.edge_val(d, s));
+		    csts += cst;
+		  }
+		}
               }
             }
           }
         }
-        inv += csts;
       }
 
       // Output function
@@ -2175,7 +2166,8 @@ namespace crab {
       void project (Iterator vIt, Iterator vEt) { lock(); norm().project(vIt, vEt); }
 
       template <typename NumDomain>
-      void push (const variable_t& x, NumDomain&inv){ lock(); norm().push(x, inv); }
+      void extract(const variable_t& x, linear_constraint_system_t&csts, bool only_equalities)
+      { norm().extract(x, csts, only_equalities); }
 
       void write(crab_os& o) { norm().write(o); }
 
@@ -2231,19 +2223,16 @@ namespace crab {
 
     };
 
-    template<typename Domain, typename Params>
-    class product_domain_traits<SparseDBM<typename Domain::number_t, 
-                                          typename Domain::varname_t,Params>, Domain> {
-
-     public:
-      typedef typename Domain::varname_t varname_t;
-      typedef SparseDBM<typename Domain::number_t, 
-                        typename Domain::varname_t,Params> sdbm_domain_t;
-      typedef typename Domain::variable_t variable_t;      
+    template<typename Number, typename VariableName, typename Params>    
+    class reduced_domain_traits<SparseDBM<Number, VariableName, Params>> {
+    public:
+      typedef SparseDBM<Number, VariableName, Params> sdbm_domain_t;
+      typedef typename sdbm_domain_t::variable_t variable_t;
+      typedef typename sdbm_domain_t::linear_constraint_system_t linear_constraint_system_t;
       
-      static void push (const variable_t& x, sdbm_domain_t from, Domain& to){
-        from.push (x, to);
-      }
+      static void extract(sdbm_domain_t& dom, const variable_t& x,
+			  linear_constraint_system_t& csts, bool only_equalities)
+      { dom.extract(x, csts, only_equalities); }
     };
   
 
