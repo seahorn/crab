@@ -50,6 +50,7 @@
 #include <map>
 #include <boost/optional.hpp>
 #include <crab/common/types.hpp>
+#include <crab/common/debug.hpp>
 #include <crab/common/stats.hpp>
 #include <crab/common/bignums.hpp>
 #include <crab/common/wrapint.hpp>
@@ -69,7 +70,7 @@ namespace ikos {
       // default implementation ignores bitwidth
       return Interval(n);
     }
-
+    
     template<typename Interval>
     Interval lower_half_line(Interval i, bool is_signed);
 
@@ -114,9 +115,13 @@ namespace ikos {
 
   private:
     void refine(variable_t v, Interval i, IntervalCollection& env) {
-      crab::ScopedCrabStats __st__("Linear Interval Solver.Solving refinement");      
+      crab::ScopedCrabStats __st__("Linear Interval Solver.Solving refinement");
+      CRAB_LOG("integer-solver",
+	       crab::outs() << "\tRefine " << v << " with " << i << "\n";);
       Interval old_i = env[v];
       Interval new_i = old_i & i;
+      CRAB_LOG("integer-solver",
+	       crab::outs() << "\tOld=" << old_i << " New=" << new_i << "\n";);
       if (new_i.is_bottom()) {
 	throw bottom_found();
       }
@@ -147,6 +152,11 @@ namespace ikos {
     void propagate(const linear_constraint_t &cst, IntervalCollection& env) {
       crab::ScopedCrabStats __st__("Linear Interval Solver.Solving propagation");
       namespace interval_traits = linear_interval_solver_impl;
+
+      CRAB_LOG("integer-solver",
+	       linear_constraint_t tmp(cst);
+	       crab::outs() << "Integer solver processing " << tmp << "\n";);
+	       
       
       for (typename linear_constraint_t::iterator it = cst.begin(), et = cst.end();
 	   it != et; ++it) {
