@@ -175,6 +175,32 @@ namespace ikos {
       return res;
     }
 
+    // syntactic equality
+    bool equal(const linear_expression_t& o) const {
+      if (is_constant()) {
+	if (!o.is_constant()) {
+	  return false;
+	} else {
+	  return (constant() == o.constant());
+	}
+      } else {
+	if (constant() != o.constant()) {
+	  return false;
+	}
+	
+	if (size() != o.size()) {
+	  return false;
+	} else {
+	  for (iterator it=begin(), jt=o.begin(), et=end (); it!=et; ++it,++jt) {
+	    if (((*it).first != (*jt).first) || ((*it).second != (*jt).second)) {
+	      return false;
+	    }
+	  }
+	  return true;
+	}
+      }
+    }
+    
     bool is_constant() const {
       return (this->_map->size() == 0);
     }
@@ -614,6 +640,13 @@ namespace ikos {
       return this->_expr.size();
     }
 
+    // syntactic equality
+    bool equal(const linear_constraint_t& o) const {
+      return (_kind == o._kind &&
+	      _signedness == o._signedness &&
+	      _expr.equal(o._expr));
+    }
+    
     size_t hash () const {
       size_t res = 0;
       boost::hash_combine (res, _expr);
@@ -1262,7 +1295,7 @@ namespace ikos {
     typedef patricia_tree_set< variable_t > variable_set_t;
 
   private:
-    typedef std::vector< linear_constraint_t > cst_collection_t;
+    typedef std::vector<linear_constraint_t> cst_collection_t;
 
   public:
     typedef typename cst_collection_t::const_iterator iterator;
@@ -1284,15 +1317,24 @@ namespace ikos {
         : _csts (std::move(o._csts)) { }
 
     linear_constraint_system_t& 
-    operator+=(const linear_constraint_t &cst) {
-      this->_csts.push_back(cst);
+    operator+=(const linear_constraint_t &c) {
+      if (!std::any_of(_csts.begin(),_csts.end(),
+		       [c](const linear_constraint_t& c1)
+		       {return c1.equal(c);})) {
+	_csts.push_back(c);
+      }
       return *this;
     }
 
     linear_constraint_system_t& 
     operator+=(const linear_constraint_system_t &s) {
-      for (auto c: s)
-        this->_csts.push_back(c);
+      for (auto c: s) {
+	if (!std::any_of(_csts.begin(),_csts.end(),
+			 [c](const linear_constraint_t& c1)
+			 {return c1.equal(c);})) {	
+	  _csts.push_back(c);
+	}
+      }
       return *this;
     }
 
