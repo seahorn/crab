@@ -1070,18 +1070,25 @@ namespace crab {
             *this += csts;
         }
 
-        void operator += (linear_constraint_system_t csts) {
+        void operator+=(linear_constraint_system_t _csts) {
           crab::CrabStats::count (getDomainName() + ".count.add_constraints");
           crab::ScopedCrabStats __st__(getDomainName() + ".add_constraints");
 
           if(is_bottom()) return;
 
-	  // quick pass to find false
-          for (auto cst : csts) {
-	    if (cst.is_contradiction ()) {
-	      *this = bottom ();
-	      return;
+	  if (_csts.is_false()) {
+	    *this = bottom ();
+	    return;
+	  }
+
+	  // XXX: filter out unsigned linear inequalities
+	  linear_constraint_system_t csts;
+	  for (auto const& c: _csts) {
+	    if (c.is_inequality() && c.is_unsigned()) {
+	      CRAB_WARN("unsigned inequality skipped");
+	      continue;
 	    }
+	    csts += c;
 	  }
 	  
           ap_tcons0_array_t array = ap_tcons0_array_make (csts.size ());

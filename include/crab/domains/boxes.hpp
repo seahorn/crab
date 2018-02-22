@@ -1024,6 +1024,13 @@ namespace crab {
             return;
           }
 
+	  // XXX: we do nothing with unsigned linear inequalities
+	  // TODO: we can express these constraints with disjunctions.
+	  if (cst.is_inequality() && cst.is_unsigned()) {
+	    CRAB_WARN("unsigned inequality skipped");	  
+	    return;
+	  }
+	  
           linear_expression_t exp = cst.expression();    
           unsigned int size = exp.size ();
           if (size == 0) return; // this should not happen

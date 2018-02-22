@@ -1190,7 +1190,16 @@ namespace ikos {
     void add(linear_constraint_system_t csts, 
              std::size_t threshold = max_reduction_cycles) {
       if (!this->is_bottom()) {
-	solver_t solver(csts, threshold);
+	// XXX: filter out unsigned linear inequalities
+	linear_constraint_system_t signed_csts;
+	for (auto const& c: csts) {
+	  if (c.is_inequality() && c.is_unsigned()) {
+	    CRAB_WARN("unsigned inequality skipped");
+	    continue;
+	  }
+	  signed_csts += c;
+	}
+	solver_t solver(signed_csts, threshold);
 	solver.run(this->_env);
       }
     }

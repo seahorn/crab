@@ -1724,6 +1724,12 @@ namespace crab {
         crab::CrabStats::count (getDomainName() + ".count.add_constraints");
         crab::ScopedCrabStats __st__(getDomainName() + ".add_constraints");
 
+	// XXX: we do nothing with unsigned linear inequalities
+	if (cst.is_inequality() && cst.is_unsigned()) {
+	  CRAB_WARN("unsigned inequality skipped");	  
+	  return;
+	}
+	
         if(is_bottom())
           return;
         normalize();
