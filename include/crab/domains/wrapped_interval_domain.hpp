@@ -16,6 +16,7 @@
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/domains/linear_interval_solver.hpp>
 #include <crab/domains/discrete_domains.hpp>
+#include <crab/domains/combined_domains.hpp>
 #include <crab/domains/domain_traits.hpp>
 #include <boost/optional.hpp>
 
@@ -409,9 +410,22 @@ public:
   
   wrapped_interval_t lower_half_line(bool is_signed) const {
     if (is_top() || is_bottom()) return *this;
-    wrapint smin = wrapint::get_signed_min(get_bitwidth(__LINE__));
+
+    bitwidth_t b = get_bitwidth(__LINE__);
+
+    if (is_signed) {
+      if (this->operator[](wrapint::get_signed_max(b))) {
+	return wrapped_interval_t::top();
+      }
+    } else {
+      if (this->operator[](wrapint::get_unsigned_max(b))) {
+	return wrapped_interval_t::top();
+      }      
+    }
+    
+    wrapint smin = wrapint::get_signed_min(b);
     if (!is_signed) {
-      smin = wrapint::get_unsigned_min(get_bitwidth(__LINE__));
+      smin = wrapint::get_unsigned_min(b);
     }
     wrapped_interval_t res = wrapped_interval_t(smin, _stop);
     return res;
@@ -419,9 +433,22 @@ public:
   
   wrapped_interval_t upper_half_line(bool is_signed) const {
     if (is_top() || is_bottom()) return *this;
-    wrapint smax = wrapint::get_signed_max(get_bitwidth(__LINE__));
+    
+    bitwidth_t b = get_bitwidth(__LINE__);
+
+    if (is_signed) {
+      if (this->operator[](wrapint::get_signed_min(b))) {
+	return wrapped_interval_t::top();
+      }
+    } else {
+      if (this->operator[](wrapint::get_unsigned_min(b))) {
+	return wrapped_interval_t::top();
+      }      
+    }
+    
+    wrapint smax = wrapint::get_signed_max(b);
     if (!is_signed) {
-      smax = wrapint::get_unsigned_max(get_bitwidth(__LINE__));
+      smax = wrapint::get_unsigned_max(b);
     }
     wrapped_interval_t res = wrapped_interval_t(_start, smax);
     return res;
@@ -1494,7 +1521,7 @@ public:
   }
   
   static std::string getDomainName () {
-    return "Wrapped Intervals";
+    return "WrappedIntervals";
   }
   
 }; // class wrapped_interval_domain
@@ -1646,6 +1673,8 @@ public:
       return false;
     } else if (is_top()) {
       return o.is_top();
+    } else if (_value == NC) {
+      return true;
     } else if (_value == CS) {
       return (o._value == CS || o.is_top());
     } else if (_value == CU) {
@@ -1942,6 +1971,39 @@ public:
     // _init_set -= v;
   }
 
+  // filter variables that do not cross any limit
+  void get_not_cross_variables(std::vector<variable_t> &out) const {
+    for(typename separate_domain_t::iterator it =  _limit_env.begin(),
+	  et = _limit_env.end(); it != et; ++it) {
+      wrapped_interval_limit_value val = it->second;
+      if (val.is_not_crossing_limit()) {
+	out.push_back(it->first);
+      }
+    }
+  }
+
+  // filter variables that cross only signed limit
+  void get_cross_signed_variables(std::vector<variable_t> &out) const {
+    for(typename separate_domain_t::iterator it =  _limit_env.begin(),
+	  et = _limit_env.end(); it != et; ++it) {
+      wrapped_interval_limit_value val = it->second;
+      if (val.is_crossing_signed_limit()) {
+	out.push_back(it->first);
+      }
+    }
+  }
+
+  // filter variables that cross only unsigned limit  
+  void get_cross_unsigned_variables(std::vector<variable_t> &out) const {
+    for(typename separate_domain_t::iterator it =  _limit_env.begin(),
+	  et = _limit_env.end(); it != et; ++it) {
+      wrapped_interval_limit_value val = it->second;
+      if (val.is_crossing_unsigned_limit()) {
+	out.push_back(it->first);
+      }
+    }
+  }
+  
   // numerical_domains_api
   
   void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
@@ -2084,7 +2146,7 @@ public:
   }
       
   static std::string getDomainName() 
-  { return "Wrapped Intervals with abstraction of execution history"; }
+  { return "WrappedIntervals+HistoryAbstraction"; }
 
   // checker_domain_traits
 
@@ -2170,6 +2232,537 @@ public:
     cst_inv += cst;
     return (!(cst_inv & inv).is_bottom ());
   }
+};
+
+/* 
+   Combine the wrapped interval domain + history abstraction with a
+   (relational) numerical domain defined over (signed) mathematical
+   integers. The result of this combination preserves the nice
+   features of the wrapped interval domain (mainly it's sound wrt
+   machine arithmetics) while gaining some extra (sound)
+   (in)equalities inferred by the numerical domain.
+*/
+template <typename NumDom, std::size_t max_reduction_cycles=10>
+class wrapped_numerical_domain:
+    public abstract_domain<typename NumDom::number_t,
+			   typename NumDom::varname_t,
+			   wrapped_numerical_domain<NumDom> > {
+private:
+  
+  typedef typename NumDom::number_t N;
+  typedef typename NumDom::varname_t V;
+  typedef wrapped_numerical_domain<NumDom> wrapped_numerical_domain_t;
+  typedef abstract_domain<N,V,wrapped_numerical_domain_t> abstract_domain_t;
+  typedef wrapped_interval_with_history_domain<N,V,max_reduction_cycles>
+  wrapped_interval_domain_t;
+  
+public:
+      
+  using typename abstract_domain_t::linear_expression_t;
+  using typename abstract_domain_t::linear_constraint_t;
+  using typename abstract_domain_t::linear_constraint_system_t;
+  using typename abstract_domain_t::variable_t;
+  using typename abstract_domain_t::variable_vector_t;
+  typedef typename linear_constraint_system_t::variable_set_t variable_set_t;
+  typedef typename NumDom::number_t number_t;
+  typedef typename NumDom::varname_t varname_t;      
+  typedef interval<N> interval_t;
+  typedef crab::pointer_constraint<variable_t> ptr_cst_t;
+      
+private:
+
+  typedef enum { UNKNOWN_SIGNEDNESS, SIGNED, UNSIGNED} signedness_t;
+  typedef domain_product2<N,V,wrapped_interval_domain_t,NumDom> domain_product2_t;
+  domain_product2_t _product;
+      
+  wrapped_numerical_domain(const domain_product2_t& product)
+    : _product(product) { }
+
+  // return true iff v can overflow given some signedness interpretation
+  bool may_overflow(variable_t v, signedness_t signedness) {
+    wrapped_interval_domain_t& wrapped_intervals =  _product.first();
+    wrapped_interval_limit_value val = wrapped_intervals.get_limit_value(v);
+    return (val.is_top() ||
+	    (val.is_crossing_signed_limit() &&
+	     (signedness == SIGNED || signedness == UNKNOWN_SIGNEDNESS)) ||
+	    (val.is_crossing_unsigned_limit() &&
+	     (signedness == UNSIGNED || signedness == UNKNOWN_SIGNEDNESS)));
+  }
+
+  // return true iff all variables in vars have the same bitwidth
+  static bool has_same_bitwidth(const variable_set_t& vars)  {
+    bool first = true;
+    typename variable_t::bitwidth_t b;
+    bool same_bitwidth = true;
+    for (auto const& v: vars) {
+      if (first) {
+	b = v.get_bitwidth();
+	first = false;
+      } else {
+	if (b != v.get_bitwidth()) {
+	  same_bitwidth = false;
+	  break;
+	}
+      }
+    }
+    return same_bitwidth;
+  }
+  
+  // If the wrapped domain + history abstraction cannot tell that v
+  // does not overflow then v is forgotten from the numerical domain.
+  //
+  // This operation can be called before any operation. However, since
+  // we are only interested in preserving reachability and for
+  // accuracy, we only apply it on operations with explicit signedness
+  // interpretation (branches, div, and rem).
+  void safening(const variable_t& v, signedness_t signedness) {
+    CRAB_LOG("wrapped-num",
+	     crab::outs() << "Safening " << v;
+	     if (signedness == SIGNED){ crab::outs() << " signed: \n";}
+	     else if (signedness == UNSIGNED) { crab::outs() << " unsigned: \n";}
+	     else {crab::outs() << " unknown unsignedness: \n";});
+    if (may_overflow(v, signedness)) { 
+      _product.second() -= v;
+      CRAB_LOG("wrapped-num",
+	       crab::outs() << "\t" << v << " may overflow!\n";);
+    } else {
+      CRAB_LOG("wrapped-num",
+	       crab::outs() << "\t" << v << " cannot overflow\n";);
+    }
+  }
+
+  
+  void safening(const linear_constraint_t& cst) {
+    signedness_t signedness = UNKNOWN_SIGNEDNESS;   
+    if (cst.is_inequality() || cst.is_strict_inequality()) {
+      signedness = cst.is_signed() ? SIGNED: UNSIGNED;
+    }
+    for (auto const& v: cst.variables()) {
+      safening(v, signedness);
+    }
+  }
+ 
+  // Reduction from a potentially unsound numerical domain to the
+  // wrapped interval domain. It consists of propagating linear
+  // (in)equalities involving vars from the numerical domain to the
+  // wrapped interval domain: I believe this step is sound as long as:
+  //
+  // (1) all variables in vars have the same bitwidth.
+  // (2) none of the variables in vars can overflow
+  // 
+  // In addition, all the relationships inferred by the numerical
+  // domain were produced using either a signed or unsigned
+  // interpretation but not a mixed interpretation.
+  // 
+  void reduce(const variable_set_t rel_vars, signedness_t signedness) {
+    if (is_bottom() || is_top()) {
+      return;
+    }
+
+    // -- extract all constraints involving any variable in rel_vars
+    linear_constraint_system_t  csts;
+    for (auto const& v: rel_vars) {
+      reduced_domain_traits<NumDom>::extract(_product.second(), v, csts,
+    					     /* only equalities=*/ false);
+    }
+
+    // -- filter out constraints that shouldn't be propagated to the
+    // -- wrapped interval domain
+    for (auto const& c: csts) {
+      variable_set_t vars = c.variables();
+      if (!has_same_bitwidth(vars)) {
+	continue;
+      }
+      
+      if (std::any_of(vars.begin(), vars.end(),
+		      [this, signedness](const variable_t& v) {
+			return this->may_overflow(v, signedness);
+		      })) {
+      	continue;
+      }
+
+      /* TOFIX
+	 x = [[1,7]]_4,  y=[[2,2]]_4
+         y <= x+1
+
+       */
+      CRAB_LOG("wrapped-num",
+      	       linear_constraint_t tmp(c);
+      	       crab::outs () << "** reduction propagating " << tmp
+      	                     << " to wrapped intervals\n";);
+      CRAB_LOG("wrapped-num-reduction",
+	       crab::outs() << "\tBEFORE" << *this << "\n";);            
+      _product.first() += c;
+      CRAB_LOG("wrapped-num-reduction",
+	       crab::outs() << "\tAFTER" << *this << "\n";);
+    }
+  }
+
+  void reduce(const variable_t& x, signedness_t signedness = UNKNOWN_SIGNEDNESS) {
+    variable_set_t vars;
+    vars += x;
+    reduce(vars, signedness);
+  }
+  
+public:
+      
+  static wrapped_numerical_domain_t top() {
+    return wrapped_numerical_domain_t(domain_product2_t::top());
+  }
+
+  static wrapped_numerical_domain_t bottom() {
+    return wrapped_numerical_domain_t(domain_product2_t::bottom());
+  }
+  
+  wrapped_numerical_domain(): _product() {}
+      
+  wrapped_numerical_domain(const wrapped_numerical_domain_t& other) :
+    _product(other._product) {}
+      
+  wrapped_numerical_domain_t& operator=(const wrapped_numerical_domain_t& other) {
+    if (this != &other) {
+      _product = other._product;
+    }
+    return *this;
+  }
+      
+  bool is_bottom() { return _product.is_bottom(); }
+  
+  bool is_top() { return _product.is_top(); }
+      
+  wrapped_numerical_domain_t& first() { return _product.first(); }
+      
+  NumDom& second() { return _product.second(); }
+      
+  bool operator<=(wrapped_numerical_domain_t other)
+  { return _product <= other._product; }
+    
+  bool operator==(wrapped_numerical_domain_t other)
+  { return _product == other._product; }
+  
+  void operator|=(wrapped_numerical_domain_t other)
+  { _product |= other._product; }
+  
+  wrapped_numerical_domain_t operator|(wrapped_numerical_domain_t other)
+  { return wrapped_numerical_domain_t(_product | other._product); }
+      
+  wrapped_numerical_domain_t operator&(wrapped_numerical_domain_t other)
+  { return wrapped_numerical_domain_t(_product & other._product); }
+  
+  wrapped_numerical_domain_t operator||(wrapped_numerical_domain_t other)
+  { return wrapped_numerical_domain_t(_product || other._product); }
+       
+  template<typename Thresholds>
+  wrapped_numerical_domain_t widening_thresholds(wrapped_numerical_domain_t other,
+						 const Thresholds& ts)
+  { return wrapped_numerical_domain_t(_product.widening_thresholds (other._product, ts)); }
+      
+  wrapped_numerical_domain_t operator&&(wrapped_numerical_domain_t other)
+  { return wrapped_numerical_domain_t(_product && other._product); }
+      
+  // numerical_domains_api
+
+  void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
+    if (op == OP_DIVISION) {
+      // signed division
+      safening(y, SIGNED);
+      safening(z, SIGNED);            
+    }
+    _product.apply(op, x, y, z);
+    CRAB_LOG("wrapped-num",
+	     crab::outs()  << "Reduction after " << x << ":=" << y << " " << op
+	                   << " " << z <<"\n";);
+    reduce(x);
+  }
+      
+  void apply(operation_t op, variable_t x, variable_t y, N k) {
+    if (op == OP_DIVISION) {
+      // signed division
+      safening(y, SIGNED);
+    }    
+    _product.apply(op, x, y, k);
+    CRAB_LOG("wrapped-num",
+	     crab::outs()  << "Reduction after " << x << ":=" << y << " " << op
+	                   << " " << k <<"\n";);
+    reduce(x);
+  }
+
+  void assign(variable_t x, linear_expression_t e) {
+    _product.assign(x, e);
+    CRAB_LOG("wrapped-num",
+	     crab::outs()  << "Reduction after " << x << ":=" << e << "\n");
+    
+    if (!e.is_constant()) {
+      reduce(x);
+    }
+  }
+
+  void backward_assign (variable_t x, linear_expression_t e,
+			wrapped_numerical_domain_t invariant) override {
+    CRAB_WARN("backward assign not implemented");
+    //_product.backward_assign(x,e,invariant._product);
+  }
+      
+  void backward_apply (operation_t op, variable_t x, variable_t y, N z,
+		       wrapped_numerical_domain_t invariant) override {
+    CRAB_WARN("backward apply not implemented");    
+    // _product.backward_apply(op,x,y,z,invariant._product);
+    // if (op == OP_DIVISION) {
+    //   // signed division
+    //   _product.second() -= x;
+    // }        
+  }
+     
+  void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
+		      wrapped_numerical_domain_t invariant) override {
+    CRAB_WARN("backward apply not implemented");        
+    // _product.backward_apply(op,x,y,z,invariant._product);
+    // if (op == OP_DIVISION) {
+    //   // signed division
+    //   _product.second() -= x;
+    // }        
+  }
+      
+  void operator+=(linear_constraint_system_t csts) {
+    linear_constraint_system_t filtered_csts;
+    for (auto cst: csts) {
+      safening(cst);
+      if (!(cst.is_inequality() && cst.is_unsigned())) {
+	filtered_csts += cst;
+      }
+    }
+    _product.first() += csts;
+    // make sure that the (unsound) numerical domain ignores unsigned
+    // constraints.
+    _product.second() += filtered_csts;
+  }
+      
+  void set (variable_t x, interval_t intv)
+  { // domain_product2 does not define set method
+    _product.first().set(x, intv); 
+    _product.second().set(x, intv);
+  }
+            
+  interval_t operator[](variable_t v)
+  { // domain_product2 does not define [] method
+    return (_product.first()[v] & _product.second()[v]);
+  }
+
+  void operator-=(variable_t v)
+  {  _product -= v; }
+   
+  // boolean_operators
+  
+  void assign_bool_cst (variable_t x, linear_constraint_t cst) override {
+    safening(cst);
+    _product.assign_bool_cst(x, cst);
+  }
+  
+  void assign_bool_var (variable_t x, variable_t y, bool is_not_y) override
+  { _product.assign_bool_var(x,y,is_not_y); }
+  
+  void apply_binary_bool(bool_operation_t op, variable_t x, variable_t y, variable_t z) override
+  { _product.apply_binary_bool(op,x,y,z); }
+  
+  void assume_bool(variable_t x, bool is_negated) override
+  { _product.assume_bool(x, is_negated); }
+ 
+  // backward operators
+  void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
+				wrapped_numerical_domain_t inv) {
+    CRAB_WARN("backward assign bool constraint not implemented");
+    // _product.backward_assign_bool_cst(lhs, rhs, inv._product);
+    // // TODO: safening rhs
+  }
+      
+  void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
+				wrapped_numerical_domain_t inv) {
+    CRAB_WARN("backward assign bool variable not implemented");
+    //_product.backward_assign_bool_var(lhs, rhs, is_not_rhs, inv._product);
+  }
+  
+  void backward_apply_binary_bool(bool_operation_t op,
+				  variable_t x,variable_t y,variable_t z,
+				  wrapped_numerical_domain_t inv) {
+    CRAB_WARN("backward apply binary bool not implemented");
+    //_product.backward_apply_binary_bool(op, x, y, z, inv._product);
+  }
+  
+  // cast_operators_api
+  
+  void apply(int_conv_operation_t op, variable_t dst, variable_t src) {
+    // FIXME/TODO: we might need to throw away relationships between dst and src
+    _product.apply(op, dst, src);
+  }
+      
+  // bitwise_operators_api
+      
+  void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z)
+  { _product.apply(op, x, y, z); }
+      
+  void apply(bitwise_operation_t op, variable_t x, variable_t y, N k)
+  { _product.apply(op, x, y, k); }
+      
+  // division_operators_api
+  
+  void apply(div_operation_t op, variable_t x, variable_t y, variable_t z) {
+    safening(y, (op == OP_SDIV || op == OP_SREM) ? SIGNED: UNSIGNED);
+    safening(z, (op == OP_SDIV || op == OP_SREM) ? SIGNED: UNSIGNED);
+    if (op == OP_UDIV || op == OP_UREM) {
+      // if unsigned division then we only apply it on wrapped intervals
+      _product.first().apply(op, x, y, z);
+    } else {
+      _product.apply(op, x, y, z);
+    }
+    CRAB_LOG("wrapped-num",
+	     crab::outs()  << "Reduction after " << x << ":=" << y << " " << op
+	                   << " " << z <<"\n";);        
+    reduce(x);
+  }
+    
+  void apply(div_operation_t op, variable_t x, variable_t y, N k) {
+    safening(y, (op == OP_SDIV || op == OP_SREM) ? SIGNED: UNSIGNED);
+    if (op == OP_UDIV || op == OP_UREM) {
+      // if unsigned division then we only apply it on wrapped intervals
+      _product.first().apply(op, x, y, k);
+    } else {
+      _product.apply(op, x, y, k);
+    }
+    CRAB_LOG("wrapped-num",
+	     crab::outs()  << "Reduction after " << x << ":=" << y << " " << op
+	                   << " " << k <<"\n";);        
+    reduce(x);
+  }
+      
+  // array_operators_api
+  
+  virtual void array_assume (variable_t a, 
+			     linear_expression_t lb_idx,
+			     linear_expression_t ub_idx,
+			     linear_expression_t val) override
+  { _product.array_assume (a, lb_idx, ub_idx, val); }
+  
+  virtual void array_load (variable_t lhs, variable_t a, 
+			   linear_expression_t i, ikos::z_number bytes) override
+  { _product.array_load (lhs, a, i, bytes); }
+    
+  virtual void array_store (variable_t a, 
+			    linear_expression_t i,
+			    linear_expression_t val, 
+			    ikos::z_number bytes, bool is_singleton) override
+  { _product.array_store (a, i, val, bytes, is_singleton); }
+  
+  virtual void array_assign (variable_t lhs, variable_t rhs) override
+  { _product.array_assign (lhs, rhs); }
+  
+  // pointer_operators_api
+  virtual void pointer_load (variable_t lhs, variable_t rhs) override
+  {  _product.pointer_load (lhs, rhs); }
+  
+  virtual void pointer_store (variable_t lhs, variable_t rhs) override
+  { _product.pointer_store (lhs, rhs); }
+  
+  virtual void pointer_assign (variable_t lhs, variable_t rhs,
+			       linear_expression_t offset) override
+  { _product.pointer_assign (lhs, rhs, offset); }
+  
+  virtual void pointer_mk_obj (variable_t lhs, ikos::index_t address) override
+  { _product.pointer_mk_obj (lhs, address); }
+  
+  virtual void pointer_function (variable_t lhs, V func) override
+  { _product.pointer_function (lhs, func); }
+  
+  virtual void pointer_mk_null (variable_t lhs) override
+  { _product.pointer_mk_null (lhs); }
+  
+  virtual void pointer_assume (ptr_cst_t cst) override
+  { _product.pointer_assume (cst); }
+  
+  virtual void pointer_assert (ptr_cst_t cst) override
+  { _product.pointer_assert (cst); }
+  
+  void write(crab_os& o)
+  { _product.write(o); }
+  
+  linear_constraint_system_t to_linear_constraint_system() {
+    linear_constraint_system_t res;
+    res += _product.first().to_linear_constraint_system();
+    res += _product.second().to_linear_constraint_system();
+    return res;
+  }
+      
+  static std::string getDomainName()
+  { return domain_product2_t::getDomainName (); }
+
+  void rename(const variable_vector_t &from, const variable_vector_t &to)
+  { _product.rename(from, to); }
+	
+  // domain_traits_api
+      
+  void expand(variable_t x, variable_t new_x) {
+    crab::domains::domain_traits<wrapped_interval_domain_t>::
+      expand(_product.first(), x, new_x);	
+    crab::domains::domain_traits<NumDom>::
+      expand(_product.second(), x, new_x);
+  }
+  
+  void normalize()
+  { crab::domains::domain_traits<NumDom>::normalize(_product.second());}
+      
+  template <typename VarRange>
+  void forget(VarRange vars){
+    crab::domains::domain_traits<wrapped_interval_domain_t>::
+      forget(_product.first(), vars.begin(), vars.end());
+    crab::domains::domain_traits<NumDom>::
+      forget(_product.second(), vars.begin(), vars.end());
+  }
+  
+  template <typename VarRange>
+  void project(VarRange vars) {
+    crab::domains::domain_traits<wrapped_interval_domain_t>::
+      project(_product.first(), vars.begin(), vars.end());
+    crab::domains::domain_traits<NumDom>::
+      project(_product.second(), vars.begin(), vars.end());
+  }
+}; // class wrapped_numerical_domain
+
+template<typename AbsDom>
+class domain_traits<wrapped_numerical_domain<AbsDom>> {
+public:
+  typedef wrapped_numerical_domain<AbsDom> this_type;
+  typedef typename this_type::varname_t V;
+  typedef typename this_type::variable_t variable_t;
+    
+  template<class CFG>
+  static void do_initialization (CFG cfg) { }
+  
+  static void normalize (this_type& inv)
+  { inv.normalize(); }
+    
+  static void expand (this_type& inv, variable_t x, variable_t new_x)
+  { inv.expand (x, new_x); }
+      
+  template <typename VarIter>
+  static void forget (this_type& inv, VarIter it, VarIter end)
+  { inv.forget (boost::make_iterator_range (it, end)); }
+  
+  template <typename VarIter>
+  static void project (this_type& inv, VarIter it, VarIter end) {
+    inv.project (boost::make_iterator_range (it, end));
+  }
+};
+
+template<typename AbsDom>
+class checker_domain_traits<wrapped_numerical_domain<AbsDom>> {
+public:
+  typedef wrapped_numerical_domain<AbsDom> this_type;
+  typedef typename this_type::linear_constraint_t linear_constraint_t;
+  
+  static bool entail(this_type& inv, const linear_constraint_t& cst)
+  { return checker_domain_traits<AbsDom>::entail(inv.second(), cst); }
+  
+  static bool intersect(this_type& inv, const linear_constraint_t& cst)
+  { return checker_domain_traits<AbsDom>::intersect(inv.second(), cst); }    
 };
   
 }

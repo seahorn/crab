@@ -2948,7 +2948,7 @@ bb1_f={x -> [0, +oo]; y -> [-10, -10]}
 entry={}
 Abstract trace: entry bb_nd bb_nd_ff bb_nd_tt (bb1 bb1_t bb2)^{3} bb1_f ret
 
-Invariants using Wrapped Intervals
+Invariants using WrappedIntervals
 ret={x -> [[-128, -119]]_8; y -> [[-10, -10]]_8}
 bb2={x -> [[0, 127]]_8; y -> [[-10, -10]]_8}
 bb1_t={x -> [[0, -119]]_8; y -> [[-10, -10]]_8}
@@ -2975,7 +2975,7 @@ then:
   x = -10;
   goto ret;
 
-Invariants using Wrapped Intervals
+Invariants using WrappedIntervals
 ret={x -> [[10, 10]]_8}
 then={x -> [[-128, -128]]_8}
 if={x -> [[-128, -128]]_8}
@@ -2997,7 +2997,7 @@ then:
   x = -10;
   goto ret;
 
-Invariants using Wrapped Intervals
+Invariants using WrappedIntervals
 ret={x -> [[-10, -10]]_8}
 then={x -> [[-128, -128]]_8}
 if={x -> [[-128, -128]]_8}
