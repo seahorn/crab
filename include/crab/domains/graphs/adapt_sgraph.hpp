@@ -319,6 +319,7 @@ namespace crab {
     typedef Weight Wt;
 
     AdaptGraph(void)
+      : edge_count(0)
     { }
 
     AdaptGraph(AdaptGraph<Wt>&& o)
