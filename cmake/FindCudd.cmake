@@ -15,15 +15,14 @@ mark_as_advanced (CUDD_INCLUDE_DIR CUDD_INT_INCLUDE_DIR)
 find_library(CUDD_CUDD_LIBRARY   NAMES cudd   PATHS  ${CUDD_ROOT}/lib)
 find_library(CUDD_EPD_LIBRARY   NAMES epd   PATHS  ${CUDD_ROOT}/lib)
 find_library(CUDD_ST_LIBRARY   NAMES st   PATHS  ${CUDD_ROOT}/lib)
-find_library(CUDD_UTIL_LIBRARY   NAMES util   PATHS  ${CUDD_ROOT}/lib NO_DEFAULT_PATH)
-find_library(CUDD_MTR_LIBRARY   NAMES mtr   PATHS  ${CUDD_ROOT}/lib)
-
-# find_library(CUDD_CUDD_LIBRARY   NAMES cudd   PATHS  ${CUDD_ROOT}/cudd)
-# find_library(CUDD_DDDMP_LIBRARY   NAMES dddmp   PATHS  ${CUDD_ROOT}/dddmp)
-# find_library(CUDD_EPD_LIBRARY   NAMES epd   PATHS  ${CUDD_ROOT}/epd)
-# find_library(CUDD_ST_LIBRARY   NAMES st   PATHS  ${CUDD_ROOT}/st)
-# find_library(CUDD_UTIL_LIBRARY   NAMES util   PATHS  ${CUDD_ROOT}/util NO_DEFAULT_PATH)
-# find_library(CUDD_MTR_LIBRARY   NAMES mtr   PATHS  ${CUDD_ROOT}/mtr)
+## Hack: In some linux systems, the library /lib64/libutil.so exists
+## but it has nothing to do with cudd. Even if we use NO_DEFAULT_PATH
+## when CUDD_ROOT is not defined CUDD_UTIL_LIBRARY can be set to the
+## wrong library.
+if (CUDD_CUDD_LIBRARY)
+   find_library(CUDD_UTIL_LIBRARY util PATHS ${CUDD_ROOT}/lib NO_DEFAULT_PATH)
+endif()
+find_library(CUDD_MTR_LIBRARY NAMES mtr PATHS ${CUDD_ROOT}/lib)
 
 mark_as_advanced (CUDD_CUDD_LIBRARY CUDD_DDDMP_LIBRARY CUDD_EPD_LIBRARY
   CUDD_ST_LIBRARY CUDD_UTIL_LIBRARY CUDD_MTR_LIBRARY)
