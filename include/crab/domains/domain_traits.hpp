@@ -96,13 +96,24 @@ namespace crab {
     public:
      typedef typename Domain::variable_t variable_t;     
      typedef typename Domain::linear_constraint_t linear_constraint_t;     
-     typedef typename Domain::linear_constraint_t linear_constraint_system_t;
+     typedef typename Domain::linear_constraint_system_t linear_constraint_system_t;
 
      // extract linear constraints from dom involving x and store in
      // ctsts
      static void extract(Domain& dom, const variable_t& x, 
 			 linear_constraint_system_t& csts,
-			 bool only_equalities){ }
+			 bool only_equalities){ 
+       auto all_csts = dom.to_linear_constraint_system();
+       for(auto cst: all_csts) {
+       	 if (only_equalities && (!cst.is_equality())) {
+       	   continue;
+       	 }
+       	 auto vars = cst.variables();
+       	 if (vars[x]) {
+       	   csts += cst;
+       	 }
+       }
+     }
    };
 
    // Experimental:
