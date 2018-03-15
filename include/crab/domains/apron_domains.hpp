@@ -8,6 +8,7 @@
 #include <crab/common/types.hpp>
 #include <crab/domains/operators_api.hpp>
 #include <crab/domains/domain_traits.hpp>
+#include <crab/domains/intervals.hpp>
 
 namespace crab {
    namespace domains {
@@ -1083,14 +1084,32 @@ namespace crab {
 
 	  // XXX: filter out unsigned linear inequalities
 	  linear_constraint_system_t csts;
+	  bool has_disequality = false;
 	  for (auto const& c: _csts) {
 	    if (c.is_inequality() && c.is_unsigned()) {
 	      CRAB_WARN("unsigned inequality skipped");
 	      continue;
 	    }
+	    if (c.is_disequation()) {
+	      has_disequality = true;
+	    }
 	    csts += c;
 	  }
-	  
+
+	  if (has_disequality) {
+	    // trivial reduction between the apron domain and
+	    // intervals. This is done because most of the apron
+	    // domains ignore disequalities. Of course, more things
+	    // can be done here to improve precision.
+	    interval_domain_t intvs;
+	    intvs = to_interval_domain();
+	    intvs += csts;
+	    if (intvs.is_bottom()) {
+	      *this = bottom ();
+	      return;
+	    }
+	  }
+
           ap_tcons0_array_t array = ap_tcons0_array_make (csts.size ());
           unsigned i=0;
 
