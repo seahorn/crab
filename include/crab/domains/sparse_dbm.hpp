@@ -1900,7 +1900,7 @@ namespace crab {
                 if (g_excl.elem (s, d) && g_excl.elem (d, s) &&
                     g_excl.edge_val(s, d) == 0 &&
 		    g_excl.edge_val(d, s) == 0) {
-                  linear_constraint_t cst (vs == vd);
+                  linear_constraint_t cst (linear_expression_t(vs) == vd);
                   csts += cst;
                 } else {
 		  if (!only_equalities && g_excl.elem (s, d)) {
@@ -2171,7 +2171,6 @@ namespace crab {
       template<typename Iterator>
       void project (Iterator vIt, Iterator vEt) { lock(); norm().project(vIt, vEt); }
 
-      template <typename NumDomain>
       void extract(const variable_t& x, linear_constraint_system_t&csts, bool only_equalities)
       { norm().extract(x, csts, only_equalities); }
 
