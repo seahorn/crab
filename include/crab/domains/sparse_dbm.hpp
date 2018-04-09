@@ -1315,47 +1315,64 @@ namespace crab {
         assert(check_potential(g, potential));
         return true;  
       }
-   
-      void add_disequation(linear_expression_t exp)
-      {
-        return;
-        /*
-        // Can only exploit \sum_i c_i x_i \neq k if:
-        // (1) exactly one x_i is unfixed
-        // (2) lb(x_i) or ub(x_i) = k - \sum_i' c_i' x_i'
-        Wt k = exp.constant();
-        auto it = exp.begin();
-        for(; it != exp.end(); ++it)
-        {
-          if(!var_is_fixed((*it).second)) 
-            break;
-          k -= (*it).first*get_value((*it).second);
-        }
 
-        // All variables are fixed
-        if(it == exp.end())
-        {
-          if(k == Wt(0))
-            set_to_bottom();
-          return;
-        }
+      // x != n
+      void add_univar_disequation(variable_t x, number_t n) {
+	interval_t i = get_interval(x);
+	interval_t new_i =
+	  linear_interval_solver_impl::trim_interval<interval_t>(i, interval_t(n));
+	if (new_i.is_bottom()) {
+	  set_to_bottom();
+	} else if (!new_i.is_top() && (new_i <= i)) {
+	  vert_id v = get_vert(x);
+	  typename graph_t::mut_val_ref_t w;
+	  if(new_i.lb().is_finite()) {
+	    // strenghten lb
+	    Wt lb_val = ntov::ntov(-(*(new_i.lb().number())));
+	    if(g.lookup(v, 0, &w) && lb_val < w) {
+	      g.set_edge(v, lb_val, 0);
+	      if(!repair_potential(v, 0)) {
+		set_to_bottom();
+		return;
+	      }
+	      assert(check_potential(g, potential));
+	    }
+	  }
+	  if(new_i.ub().is_finite()) {	    
+	    // strengthen ub
+	    Wt ub_val = ntov::ntov(*(new_i.ub().number()));
+	    if(g.lookup(0, v, &w) && (ub_val < w)) {
+	      g.set_edge(0, ub_val, v);
+	      if(!repair_potential(0, v)) {
+		set_to_bottom();
+		return;
+	      }
+	      assert(check_potential(g, potential));
+	    }
+	  }
+	}
+      } 
 
-        // Found one unfixed variable; collect the rest.
-        Wt ucoeff = (*it).first;
-        variable_t uvar((*it).second;
-        interval_t u_int = get_interval(ranges, uvar);
-        // We need at least one side of u to be finite.
-        if(u_int.lb().is_infinite() && u_int.ub().is_infinite())
-          return;
-
-        for(++it; it != exp.end(); ++it)
-        {
-          // Two unfixed variables; nothing we can do.
-          if(!var_is_fixed((*it).second))
-            return;
-          k -= (*it).first*get_value((*it).second);
-        }
-        */
+      interval_t compute_residual(linear_expression_t e, variable_t pivot) {
+	interval_t residual(-e.constant());
+	for (typename linear_expression_t::iterator it = e.begin(); it != e.end(); ++it) {
+	  variable_t v = it->second;
+	  if (v.index() != pivot.index()) {
+	    residual = residual - (interval_t (it->first) * this->operator[](v));
+	  }
+	}
+	return residual;
+      }
+      
+      void add_disequation(linear_expression_t e) {
+	// XXX: similar precision as the interval domain
+	for (typename linear_expression_t::iterator it = e.begin(); it != e.end(); ++it) {
+	  variable_t pivot = it->second;
+	  interval_t i = compute_residual(e, pivot) / interval_t(it->first);
+	  if (auto k = i.singleton()) {
+	    add_univar_disequation(pivot, *k);
+	  }
+	}	
       }
 
       void operator+=(linear_constraint_t cst) {
@@ -1376,7 +1393,7 @@ namespace crab {
         if (cst.is_tautology())
           return;
 
-//        g.check_adjs();
+	// g.check_adjs();
       
         if (cst.is_contradiction()){
           set_to_bottom();
@@ -1387,7 +1404,7 @@ namespace crab {
         {
           if(!add_linear_leq(cst.expression()))
             set_to_bottom();
-//          g.check_adjs();
+	  // g.check_adjs();
           CRAB_LOG("zones-sparse",
                    crab::outs() << "--- "<< cst<< "\n"<< *this<<"\n";);
           return;
