@@ -51,7 +51,8 @@ namespace crab {
 
       AdaptSMap(const AdaptSMap& o)
         : sz(o.sz),
-          dense_maxsz(o.dense_maxsz), sparse_ub(o.sparse_ub),
+          dense_maxsz(o.dense_maxsz),
+	  sparse_ub(o.sparse_ub),
           dense((elt_t*) malloc(sizeof(elt_t)*dense_maxsz)),
           sparse(nullptr)
       {
@@ -67,29 +68,32 @@ namespace crab {
 
       AdaptSMap& operator=(const AdaptSMap& o)
       {
-        if(dense_maxsz < o.dense_maxsz)
-        {
-          dense_maxsz = o.dense_maxsz;
-          dense = (elt_t*) realloc(dense, sizeof(elt_t)*dense_maxsz);
-        }
-        sz = o.sz;
-        memcpy(dense, o.dense, sizeof(elt_t)*sz);
-
-        if(o.sparse)
-        {
-          if(!sparse || sparse_ub < o.sparse_ub)
-          {
-            sparse_ub = o.sparse_ub;
-            sparse = (key_t*) realloc(sparse, sizeof(key_t)*sparse_ub);
-          }
-        }
-
-        if(sparse)
-        {
-          for(key_t idx = 0; idx < sz; idx++)
-            sparse[dense[idx].key] = idx;
-        }
-        return *this;
+	if (this != &o) {
+	  if(dense_maxsz < o.dense_maxsz)
+	    {
+	      dense_maxsz = o.dense_maxsz;
+	      dense = (elt_t*) realloc(dense, sizeof(elt_t)*dense_maxsz);
+	    }
+	  sz = o.sz;
+	  memcpy(dense, o.dense, sizeof(elt_t)*sz);
+	  
+	  if(o.sparse)
+	    {
+	      if(!sparse || sparse_ub < o.sparse_ub)
+		{
+		  sparse_ub = o.sparse_ub;
+		  sparse = (key_t*) realloc(sparse, sizeof(key_t)*sparse_ub);
+		}
+	    }
+	  
+	  if(sparse)
+	    {
+	      for(key_t idx = 0; idx < sz; idx++)
+		sparse[dense[idx].key] = idx;
+	    }
+	}
+	
+	return *this;
       }
 
       AdaptSMap& operator=(AdaptSMap&& o)
@@ -324,7 +328,8 @@ namespace crab {
 
     AdaptGraph(AdaptGraph<Wt>&& o)
       : _preds(std::move(o._preds)), _succs(std::move(o._succs)), _ws(std::move(o._ws)),
-        edge_count(o.edge_count), is_free(std::move(o.is_free)), free_id(std::move(o.free_id)),
+        edge_count(o.edge_count), is_free(std::move(o.is_free)),
+	free_id(std::move(o.free_id)),
         free_widx(std::move(o.free_widx))
     { } 
 
@@ -336,13 +341,15 @@ namespace crab {
 
     AdaptGraph<Wt>& operator=(const AdaptGraph<Wt>& o)
     {
-      _preds = o._preds;
-      _succs = o._succs;
-      _ws = o._ws;
-      edge_count = o.edge_count;
-      is_free = o.is_free;
-      free_id = o.free_id;
-      free_widx = o.free_widx;  
+      if (this != &o) {
+	_preds = o._preds;
+	_succs = o._succs;
+	_ws = o._ws;
+	edge_count = o.edge_count;
+	is_free = o.is_free;
+	free_id = o.free_id;
+	free_widx = o.free_widx;
+      }
       return *this;
     }
 
