@@ -541,7 +541,7 @@ namespace crab {
       }
 
       // FIXME: can be done more efficient
-      void operator|=(DBM_t& o) {
+      void operator|=(DBM_t o) {
         *this = *this | o;
       }
 
