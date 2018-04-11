@@ -71,7 +71,7 @@ namespace crab {
          enum { widen_restabilize = 1 };
          enum { special_assign = 1 };
 
-         //typedef Number Wt;
+	 // use long as graph weights	 
          typedef long Wt;
 
          typedef typename std::conditional< 
@@ -96,6 +96,7 @@ namespace crab {
          enum { widen_restabilize = 0 };
          enum { special_assign = 0 };
 
+	 // use long as graph weights	 
          typedef long Wt;
 
          typedef typename std::conditional< 
@@ -112,6 +113,34 @@ namespace crab {
              >::type 
            >::type graph_t;
        };
+
+       // We don't use GraphRep::adapt_ss because having problems
+       // realloc'ed Number objects.      
+       template<typename Number, GraphRep Graph = GraphRep::ss>
+       class BigNumDefaultParams {
+       public:
+         enum { chrome_dijkstra = 1 };
+         enum { widen_restabilize = 1 };
+         enum { special_assign = 1 };
+
+	 // Use Number as graph weights	 
+         typedef Number Wt;
+	 
+         typedef typename std::conditional< 
+           (Graph == ss), 
+           SparseWtGraph<Wt>,
+           typename std::conditional< 
+             (Graph == adapt_ss), 
+             AdaptGraph<Wt>,
+             typename std::conditional< 
+               (Graph == pt), 
+               PtGraph<Wt>, 
+               HtGraph<Wt> 
+               >::type 
+             >::type 
+           >::type graph_t;
+       };
+      
      }; // end namespace SpDBM_impl
 
     template<class Number, class VariableName,
@@ -1702,7 +1731,7 @@ namespace crab {
           {
             if(g.lookup(se, jj, &w))
             {
-              if(w <= wt_sij)
+              if(w.get() <= wt_sij)
                 continue;
 
               w = wt_sij;
@@ -1743,7 +1772,7 @@ namespace crab {
           {
             if(g.lookup(ii, de, &w))
             {
-              if(w <= wt_ijd)
+              if(w.get() <= wt_ijd)
                 continue;
               w = wt_ijd;
             } else {
@@ -1765,7 +1794,7 @@ namespace crab {
             Wt wt_sijd = wt_sij + d_p.second; 
             if(g.lookup(se, de, &w))
             {
-              if(w <= wt_sijd)
+              if(w.get() <= wt_sijd)
                 continue;
               w = wt_sijd;
             } else {

@@ -188,6 +188,8 @@ class PtGraph : public ikos::writeable {
         return w; 
       }
 
+      Wt get() const { assert(g); return w;}
+
       void operator=(const mut_val_ref_t& o) {
         if (this != &o) {
           g = o.g;

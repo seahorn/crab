@@ -870,9 +870,9 @@ r_not_dom:
         {
           char mark = 0;
           vert_id d = e.vert;
-          if(l.lookup(s, d, &w) && w == e.val)
+          if(l.lookup(s, d, &w) && w.get() == e.val)
             mark |= E_LEFT;
-          if(r.lookup(s, d, &w) && w == e.val)
+          if(r.lookup(s, d, &w) && w.get() == e.val)
             mark |= E_RIGHT;
           // Add them to the appropriate coloured successor list 
           // Could do it inline, but this'll do.
@@ -954,7 +954,7 @@ r_not_dom:
         int es = heap.removeMin();
         Wt es_cost = dists[es] + p[es]; // If it's on the queue, distance is not infinite.
         Wt es_val = es_cost - p[src];
-        if(!g.lookup(src, es, &w) || w > es_val)
+        if(!g.lookup(src, es, &w) || w.get() > es_val)
           out.push_back( std::make_pair(es, es_val) );
 
         for(auto e_ed : g.e_succs(es))
@@ -1028,7 +1028,7 @@ r_not_dom:
         int es = heap.removeMin();
         Wt es_cost = dists[es] + p[es]; // If it's on the queue, distance is not infinite.
         Wt es_val = es_cost - p[src];
-        if(!g.lookup(src, es, &w) || w > es_val)
+        if(!g.lookup(src, es, &w) || w.get() > es_val)
           out.push_back( std::make_pair(es, es_val) );
 
         if(vert_marks[es] == (E_LEFT|E_RIGHT))
@@ -1100,7 +1100,7 @@ r_not_dom:
         int es = heap.removeMin();
         Wt es_cost = dists[es] + p[es]; // If it's on the queue, distance is not infinite.
         Wt es_val = es_cost - p[src];
-        if(!g.lookup(src, es, &w) || w > es_val)
+        if(!g.lookup(src, es, &w) || w.get() > es_val)
           out.push_back( std::make_pair(es, es_val) );
 
         if(vert_marks[es] == V_STABLE)

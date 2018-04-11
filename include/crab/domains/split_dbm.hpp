@@ -82,8 +82,8 @@ namespace crab {
          enum { widen_restabilize = 1 };
          enum { special_assign = 1 };
 
-         //typedef Number Wt;
-         typedef long Wt;
+	 // use long as graph weights
+         typedef long Wt; 
 
          typedef typename std::conditional< 
            (Graph == ss), 
@@ -108,6 +108,33 @@ namespace crab {
          enum { special_assign = 0 };
 
          typedef long Wt;
+
+         typedef typename std::conditional< 
+           (Graph == ss), 
+           SparseWtGraph<Wt>,
+           typename std::conditional< 
+             (Graph == adapt_ss), 
+             AdaptGraph<Wt>,
+             typename std::conditional< 
+               (Graph == pt), 
+               PtGraph<Wt>, 
+               HtGraph<Wt> 
+               >::type 
+             >::type 
+           >::type graph_t;
+       };
+
+       // We don't use GraphRep::adapt_ss because having problems
+       // realloc'ed Number objects.
+       template<typename Number, GraphRep Graph = GraphRep::ss>
+       class BigNumDefaultParams {
+       public:
+         enum { chrome_dijkstra = 1 };
+         enum { widen_restabilize = 1 };
+         enum { special_assign = 1 };
+
+	 // Use Number as graph weights
+         typedef Number Wt;
 
          typedef typename std::conditional< 
            (Graph == ss), 
@@ -444,12 +471,12 @@ namespace crab {
               vert_id y = vert_renaming[oy];
               Wt ow = edge.val;
 
-              if(g.lookup(x, y, &wx) && (wx <= ow))
+              if(g.lookup(x, y, &wx) && (wx.get() <= ow))
                 continue;
 
               if(!g.lookup(x, 0, &wx) || !g.lookup(0, y, &wy)) 
                 return false;
-              if(!(wx + wy <= ow)) 
+              if(!(wx.get() + wy.get() <= ow)) 
                 return false;
               
             }
@@ -617,8 +644,9 @@ namespace crab {
             for(vert_id d : gy_excl.succs(s))
             {
               typename graph_t::mut_val_ref_t ws; typename graph_t::mut_val_ref_t wd;
-              if(gx.lookup(s, 0, &ws) && gx.lookup(0, d, &wd))
-                g_ix_ry.add_edge(s, ws + wd, d);
+              if(gx.lookup(s, 0, &ws) && gx.lookup(0, d, &wd)) {
+                g_ix_ry.add_edge(s, ws.get() + wd.get(), d);
+	      }
             }
           }
           // Apply the deferred relations, and re-close.
@@ -645,7 +673,7 @@ namespace crab {
               // Assumption: gx.mem(s, d) -> gx.edge_val(s, d) <= ranges[var(s)].ub() - ranges[var(d)].lb()
               // That is, if the relation exists, it's at least as strong as the bounds.
               if(gy.lookup(s, 0, &ws) && gy.lookup(0, d, &wd))
-                g_rx_iy.add_edge(s, ws + wd, d);
+                g_rx_iy.add_edge(s, ws.get() + wd.get(), d);
             }
           }
           delta.clear();
@@ -678,16 +706,16 @@ namespace crab {
           {
             if(gx.lookup(0, v, &wx) && gy.lookup(0, v, &wy))
             {
-              if(wx < wy)
+              if(wx.get() < wy.get())
                 ub_up.push_back(v);
-              if(wy < wx)
+              if(wy.get() < wx.get())
                 ub_down.push_back(v);
             }
             if(gx.lookup(v, 0, &wx) && gy.lookup(v, 0, &wy))
             {
-              if(wx < wy)
+              if(wx.get() < wy.get())
                 lb_down.push_back(v);
-              if(wy < wx)
+              if(wy.get() < wx.get())
                 lb_up.push_back(v);
             }
           }
@@ -1509,7 +1537,7 @@ namespace crab {
                    crab::outs() << p.first<< ">="<< p.second <<"\n");
           variable_t x(p.first);
           vert_id v = get_vert(p.first);
-          if(g.lookup(v, 0, &w) && w <= -p.second)
+          if(g.lookup(v, 0, &w) && w.get() <= -p.second)
             continue;
           g.set_edge(v, -p.second, 0);
           if(!repair_potential(v, 0))
@@ -1542,7 +1570,7 @@ namespace crab {
                    crab::outs() << p.first<< "<="<< p.second <<"\n");
           variable_t x(p.first);
           vert_id v = get_vert(p.first);
-          if(g.lookup(0, v, &w) && w <= p.second)
+          if(g.lookup(0, v, &w) && w.get() <= p.second)
             continue;
           g.set_edge(0, p.second, v);
           if(!repair_potential(0, v))
@@ -1615,7 +1643,7 @@ namespace crab {
 	  if(new_i.lb().is_finite()) {
 	    // strenghten lb
 	    Wt lb_val = ntov::ntov(-(*(new_i.lb().number())));
-	    if(g.lookup(v, 0, &w) && lb_val < w) {
+	    if(g.lookup(v, 0, &w) && lb_val < w.get()) {
 	      g.set_edge(v, lb_val, 0);
 	      if(!repair_potential(v, 0)) {
 		set_to_bottom();
@@ -1627,7 +1655,7 @@ namespace crab {
 	  if(new_i.ub().is_finite()) {	    
 	    // strengthen ub
 	    Wt ub_val = ntov::ntov(*(new_i.ub().number()));
-	    if(g.lookup(0, v, &w) && (ub_val < w)) {
+	    if(g.lookup(0, v, &w) && (ub_val < w.get())) {
 	      g.set_edge(0, ub_val, v);
 	      if(!repair_potential(0, v)) {
 		set_to_bottom();
@@ -2033,9 +2061,9 @@ namespace crab {
         typename graph_t::mut_val_ref_t w;
 #ifdef CLOSE_BOUNDS_INLINE
         if(g.lookup(0, ii, &w))
-          g.update_edge(0, w + c, jj, min_op);
+          g.update_edge(0, w.get() + c, jj, min_op);
         if(g.lookup(jj, 0, &w))
-          g.update_edge(ii, w + c, 0, min_op);
+          g.update_edge(ii, w.get() + c, 0, min_op);
 #endif
 
         // There may be a cheaper way to do this.
@@ -2051,7 +2079,7 @@ namespace crab {
           {
             if(g_excl.lookup(se, jj, &w))
             {
-              if(w <= wt_sij)
+              if(w.get() <= wt_sij)
                 continue;
 
               w = wt_sij;
@@ -2062,9 +2090,9 @@ namespace crab {
             src_dec.push_back(std::make_pair(se, edge.val));  
 #ifdef CLOSE_BOUNDS_INLINE
             if(g.lookup(0, se, &w))
-              g.update_edge(0, w + wt_sij, jj, min_op);
+              g.update_edge(0, w.get() + wt_sij, jj, min_op);
             if(g.lookup(jj, 0, &w))
-              g.update_edge(se, w + wt_sij, 0, min_op);
+              g.update_edge(se, w.get() + wt_sij, 0, min_op);
 #endif
 
 /*
@@ -2103,7 +2131,7 @@ namespace crab {
           {
             if(g_excl.lookup(ii, de, &w))
             {
-              if(w <= wt_ijd)
+              if(w.get() <= wt_ijd)
                 continue;
               w = wt_ijd;
             } else {
@@ -2112,9 +2140,9 @@ namespace crab {
             dest_dec.push_back(std::make_pair(de, edge.val));
 #ifdef CLOSE_BOUNDS_INLINE
             if(g.lookup(0,  ii, &w))
-              g.update_edge(0, w + wt_ijd, de, min_op);
+              g.update_edge(0, w.get() + wt_ijd, de, min_op);
             if(g.lookup(de, 0, &w))
-              g.update_edge(ii, w + wt_ijd, 0, min_op);
+              g.update_edge(ii, w.get() + wt_ijd, 0, min_op);
 #endif
           }
         }
@@ -2129,7 +2157,7 @@ namespace crab {
             Wt wt_sijd = wt_sij + d_p.second; 
             if(g.lookup(se, de, &w))
             {
-              if(w <= wt_sijd)
+              if(w.get() <= wt_sijd)
                 continue;
               w = wt_sijd;
             } else {
@@ -2137,9 +2165,9 @@ namespace crab {
             }
 #ifdef CLOSE_BOUNDS_INLINE
             if(g.lookup(0, se, &w))
-              g.update_edge(0, w + wt_sijd, de, min_op);
+              g.update_edge(0, w.get() + wt_sijd, de, min_op);
             if(g.lookup(de, 0, &w))
-              g.update_edge(se, w + wt_sijd, 0, min_op);
+              g.update_edge(se, w.get() + wt_sijd, 0, min_op);
 #endif
           }
         }

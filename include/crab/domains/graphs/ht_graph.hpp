@@ -169,6 +169,7 @@ class HtGraph : public ikos::writeable {
 
       mut_val_ref_t(): w(nullptr) { }
       operator Wt () const { assert (w); return *w; }
+      Wt get() const { assert(w); return *w;}      
       void operator=(Wt* _w) { w = _w; } 
       void operator=(Wt _w) { assert (w); *w = _w; } 
 
