@@ -2044,6 +2044,11 @@ namespace crab {
       }
     }; // class SparseDBM_
 
+    #if 1
+    template<class Number, class VariableName,
+	       class Params = SpDBM_impl::DefaultParams<Number>>
+    using SparseDBM = SparseDBM_<Number,VariableName,Params>;     
+    #else
     // Quick wrapper which uses shared references with copy-on-write.
     template<class Number, class VariableName,
 	     class Params = SpDBM_impl::DefaultParams<Number> >
@@ -2110,9 +2115,10 @@ namespace crab {
       { }
 
       SparseDBM& operator=(const DBM_t& o) {
-        base_ref = o.base_ref;
-        norm_ref = o.norm_ref;
-
+	if (this != &o) {
+	  base_ref = o.base_ref;
+	  norm_ref = o.norm_ref;
+	}
         return *this;
       }
 
@@ -2129,13 +2135,15 @@ namespace crab {
       bool operator<=(DBM_t& o) { return norm() <= o.norm(); }
       void operator|=(DBM_t o) { lock(); norm() |= o.norm(); }
       DBM_t operator|(DBM_t o) { return create(norm() | o.norm()); }
-      DBM_t operator||(DBM_t o) { return create_base(base() || o.norm()); }
+      //DBM_t operator||(DBM_t o) { return create_base(base() || o.norm()); }
+      DBM_t operator||(DBM_t o) { return create(norm() || o.norm()); }
       DBM_t operator&(DBM_t o) { return create(norm() & o.norm()); }
       DBM_t operator&&(DBM_t o) { return create(norm() && o.norm()); }
 
       template<typename Thresholds>
       DBM_t widening_thresholds (DBM_t o, const Thresholds &ts) {
-        return create_base(base().template widening_thresholds<Thresholds>(o.norm(), ts));
+        //return create_base(base().template widening_thresholds<Thresholds>(o.norm(), ts));
+	return create(norm().template widening_thresholds<Thresholds>(o.norm(), ts));
       }
 
       void normalize() { norm().normalize(); }
@@ -2201,7 +2209,8 @@ namespace crab {
       dbm_ref_t base_ref;  
       dbm_ref_t norm_ref;
     };
-
+    #endif
+    
     template<typename Number, typename VariableName, typename Params>
     class domain_traits <SparseDBM<Number,VariableName,Params> > {
      public:

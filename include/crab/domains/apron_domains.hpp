@@ -1560,7 +1560,7 @@ namespace crab {
         }
       }; 
 
-      #if 0
+      #if 1
       // Without copy-on-write
       template<class Number, class VariableName, apron_domain_id_t ApronDom>
       using apron_domain = apron_domain_<Number,VariableName,ApronDom>;     
@@ -1599,7 +1599,7 @@ namespace crab {
         }
         
         void detach(void) {
-          if(!_ref || !_ref.unique())
+          if(!_ref.unique())
 	    _ref = std::make_shared<apron_domain_impl_t>(*_ref);
         }
         
@@ -1616,7 +1616,9 @@ namespace crab {
             : _ref(o._ref) { }
         
         apron_domain& operator=(const apron_domain_t& o) {
-          _ref = o._ref;
+	  if (this != &o) {
+	    _ref = o._ref;
+	  }
           return *this;
         }
         
@@ -1642,6 +1644,7 @@ namespace crab {
         }
         
         void normalize() { detach (); ref().normalize(); }
+	
         void operator+=(linear_constraint_system_t csts) {
 	  detach(); ref() += csts;
 	}
@@ -1657,6 +1660,7 @@ namespace crab {
         
         template<typename Range>
         void forget (Range vs) { detach(); ref().forget(vs); }
+	
         void assign(variable_t x, linear_expression_t e) {
 	  detach(); ref().assign(x, e);
 	}

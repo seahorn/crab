@@ -2448,9 +2448,14 @@ namespace crab {
 
     }; // class SplitDBM_
 
+    #if 1
+    template<class Number, class VariableName,
+	     class Params = SDBM_impl::DefaultParams<Number>>
+    using SplitDBM = SplitDBM_<Number,VariableName,Params>;     
+    #else
     // Quick wrapper which uses shared references with copy-on-write.
     template<class Number, class VariableName,
-	     class Params=SDBM_impl::DefaultParams <Number> >
+	     class Params=SDBM_impl::DefaultParams<Number>>
     class SplitDBM:
       public abstract_domain<Number, VariableName,
 			     SplitDBM<Number,VariableName,Params> > {
@@ -2512,9 +2517,10 @@ namespace crab {
       { }
 
       SplitDBM& operator=(const DBM_t& o) {
-        base_ref = o.base_ref;
-        norm_ref = o.norm_ref;
-
+	if (this != &o) {
+	  base_ref = o.base_ref;
+	  norm_ref = o.norm_ref;
+	}
         return *this;
       }
 
@@ -2531,16 +2537,18 @@ namespace crab {
       bool operator<=(DBM_t& o) { return norm() <= o.norm(); }
       void operator|=(DBM_t o) { lock(); norm() |= o.norm(); }
       DBM_t operator|(DBM_t o) { return create(norm() | o.norm()); }
-      DBM_t operator||(DBM_t o) { return create_base(base() || o.norm()); }
+      //DBM_t operator||(DBM_t o) { return create_base(base() || o.norm()); }
+      DBM_t operator||(DBM_t o) { return create(norm() || o.norm()); }
       DBM_t operator&(DBM_t o) { return create(norm() & o.norm()); }
       DBM_t operator&&(DBM_t o) { return create(norm() && o.norm()); }
 
       template<typename Thresholds>
       DBM_t widening_thresholds (DBM_t o, const Thresholds &ts) {
-        return create_base(base().template widening_thresholds<Thresholds>(o.norm(), ts));
+        //return create_base(base().template widening_thresholds<Thresholds>(o.norm(), ts));
+	return create(norm().template widening_thresholds<Thresholds>(o.norm(), ts));
       }
 
-      void normalize() { norm(); }
+      void normalize() { norm().normalize(); }
       void operator+=(linear_constraint_system_t csts) { lock(); norm() += csts; } 
       void operator-=(variable_t v) { lock(); norm() -= v; }
       interval_t operator[](variable_t x) { return norm()[x]; }
@@ -2596,21 +2604,21 @@ namespace crab {
 		   bool only_equalities)
       { lock(); norm().extract(x, csts, only_equalities); }
 
-      bool is_unsat (linear_constraint_t cst){ lock(); return norm().is_unsat(cst);}
-
-      void active_variables(std::vector<variable_t>& out){ norm().active_variables(out);}
-
       void write(crab_os& o) { norm().write(o); }
 
       linear_constraint_system_t to_linear_constraint_system () {
         return norm().to_linear_constraint_system();
       }
       static std::string getDomainName () { return dbm_impl_t::getDomainName(); }
+
+      bool is_unsat (linear_constraint_t cst){ return norm().is_unsat(cst);}
+      void active_variables(std::vector<variable_t>& out){ norm().active_variables(out);}
+      
     protected:  
       dbm_ref_t base_ref;  
       dbm_ref_t norm_ref;
     };
-
+    #endif 
 
     template<typename Number, typename VariableName>
     class domain_traits <SplitDBM<Number,VariableName> > {
