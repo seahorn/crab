@@ -1649,33 +1649,6 @@ namespace crab {
      template<typename N, typename V, int R, size_t S>
      typename boxes_domain_<N,V,R,S>::var_map_t boxes_domain_<N,V,R,S>::m_var_map;
 
-     template<typename Number, typename VariableName, int ConvexReduce, size_t LddSize>
-     class domain_traits <boxes_domain_<Number,VariableName, ConvexReduce, LddSize> > {
-      public:
-       typedef boxes_domain_<Number, VariableName, ConvexReduce, LddSize> boxes_domain_t;
-       typedef ikos::variable<Number, VariableName> variable_t;
-       
-       template<class CFG>
-       static void do_initialization (CFG cfg) { }
-
-       static void normalize (boxes_domain_t& inv) { }
-
-       template <typename Iter>
-       static void forget(boxes_domain_t& inv, Iter it, Iter end) {
-         inv.forget (it, end);
-       }
-       
-       template <typename Iter>
-       static void project(boxes_domain_t& inv, Iter it, Iter end) {
-         inv.project (it, end);
-       }
-
-       static void expand(boxes_domain_t& inv, variable_t x, variable_t new_x) {
-	 inv.expand(x, new_x);         
-       }
-
-     };
-
      #if 0
      #include <crab/domains/combined_domains.hpp>
 
@@ -1904,7 +1877,7 @@ namespace crab {
      };
      #endif
      
-     #if 0
+     #if 1
      // Without copy-on-write
      template<typename Number, typename VariableName, int ConvexReduce=-1, size_t LddSize=3000>
      using boxes_domain = boxes_domain_<Number,VariableName,ConvexReduce,LddSize>;     
@@ -2069,6 +2042,7 @@ namespace crab {
       static std::string getDomainName () { return boxes_impl_t::getDomainName(); }
       
     };
+    #endif
      
     template<typename Number, typename VariableName, int ConvexReduce, size_t LddSize>
     class domain_traits <boxes_domain<Number,VariableName,ConvexReduce,LddSize> > {
@@ -2092,8 +2066,6 @@ namespace crab {
       static void expand (boxes_domain_t& inv, variable_t x, variable_t new_x)
       { inv.expand(x, new_x); }
     };
-    #endif
-
      
    } // namespace domains
 }// namespace crab
