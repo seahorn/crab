@@ -43,7 +43,7 @@ namespace crab {
          m_thresholds.push_back (bound_t::minus_infinity ());
          m_thresholds.push_back (0);
 	 // useful thresholds for wrapped domains
-	 #if 1
+	 #if 0
 	 m_thresholds.push_back (bound_t("-2147483648"));	 
 	 m_thresholds.push_back (bound_t("-32768"));
 	 m_thresholds.push_back (bound_t("-128"));
