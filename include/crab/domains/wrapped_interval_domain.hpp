@@ -562,30 +562,221 @@ public:
     }
     assert (get_bitwidth(__LINE__) == x.get_bitwidth(__LINE__));
     bitwidth_t w = x.get_bitwidth(__LINE__);
-    if ((_stop - _start) >= wrapint::get_signed_min(w))
+
+    /** 
+	TODO: make it template parameter.
+	growth_rate should be power of 2. Currently only 2,4,8, or 16.
+    **/
+    const unsigned growth_rate = 8;
+    wrapint max(0, w);
+    switch (growth_rate) {
+    case 4:
+      if (w > 2) {
+	max = wrapint(1 << (w-2), w);
+	break;
+      }
+    case 8:
+      if (w > 3) {
+	max = wrapint(1 << (w-3), w);
+	break;
+      }
+    case 16:
+      if (w > 4) {
+	max = wrapint(1 << (w-4), w);
+	break;
+      }
+    case 2:
+    default:
+      assert(w > 1);
+      max = wrapint(1 << (w-1), w);
+    }
+    if ((_stop - _start) >= max) {
       return wrapped_interval_t::top();
-    
+    }
     wrapped_interval_t join = *this | x;
     if (join == wrapped_interval_t(_start, x._stop)) {
-      // increase by twice the size of the old interval
-      wrapped_interval_t doubled_old(_start, (_stop * wrapint(2,w)) - _start + wrapint(1,w));
-      return join | doubled_old;
+      // increase by some power of 2 the size of the old interval
+      wrapint new_stop(0,w);
+      switch (growth_rate) {
+      case 4:
+	new_stop = (_stop * wrapint(4,w)) - (_start * wrapint(3,w)) + wrapint(3,w);
+	break;
+      case 8:
+	new_stop = (_stop * wrapint(8,w)) - (_start * wrapint(7,w)) + wrapint(7,w);
+	break;
+      case 16:	
+	new_stop = (_stop * wrapint(16,w)) - (_start * wrapint(15,w)) + wrapint(15,w);
+	break;
+      case 2:
+      default:	
+	new_stop = (_stop * wrapint(2,w)) - _start + wrapint(1,w);
+      }
+      return join | wrapped_interval_t(_start, new_stop);
     } else if (join == wrapped_interval_t(x._start, _stop)) {
-      // decrease by twice the size of the old interval      
-      wrapped_interval_t doubled_old((_start * wrapint(2,w)) - _stop - wrapint(1,w), _stop);
-      return join | doubled_old;
+      // decrease by some power of 2 the size of the old interval
+      wrapint new_start(0,w);
+      switch (growth_rate) {
+      case 4:
+	new_start = (_start * wrapint(4,w)) - (_stop * wrapint(3,w)) - wrapint(3,w);
+	break;
+      case 8:
+	new_start = (_start * wrapint(8,w)) - (_stop * wrapint(7,w)) - wrapint(7,w);
+	break;
+      case 16:
+	new_start = (_start * wrapint(16,w)) - (_stop * wrapint(15,w)) - wrapint(15,w); 
+	break;
+      case 2:
+      default:
+	new_start = (_start * wrapint(2,w)) - _stop - wrapint(1,w);
+      }
+      return join | wrapped_interval_t(new_start, _stop);
     } else if (x[_start] && x[_stop]) {
-      wrapped_interval_t y(x._start, x._start +  (_stop * wrapint(2,w)) - (_start * wrapint(2,w)) + wrapint(1,w));
-      return x | y;
+      // in principle we should increase by some power of two the stop
+      // point while reducing by the same power of two the start
+      // one. We just increase the stop and this will eventually reach
+      // the start point.
+      wrapint delta(0, w);
+      switch (growth_rate) {
+      case 4:
+	delta = (_stop * wrapint(4,w)) - (_start * wrapint(4,w)) + wrapint(3,w);	
+	break;
+      case 8:
+	delta  = (_stop * wrapint(8,w)) - (_start * wrapint(8,w)) + wrapint(7,w);
+	break;
+      case 16:
+	delta = (_stop * wrapint(16,w)) - (_start * wrapint(16,w)) + wrapint(15,w);
+	break;
+      case 2:
+      default:
+	delta = (_stop * wrapint(2,w)) - (_start * wrapint(2,w)) + wrapint(1,w);
+      }
+      return x | wrapped_interval_t(x._start, x._start + delta);
     } else {
       return wrapped_interval_t::top();
     }
   }
-  
+
+  // TODO: factorize code with operator||
   template<typename Thresholds>
   wrapped_interval_t widening_thresholds (wrapped_interval_t x, const Thresholds &ts) {
-    // TODO: for now we call the widening operator without thresholds
-    return (this->operator||(x));
+    
+    if (is_bottom()) {
+      return x;
+    } else if (x.is_bottom()) {
+      return *this;
+    } else if (is_top() || x.is_top()) {
+      return wrapped_interval_t::top();
+    } else if (x <= *this) {
+      return *this;
+    }
+    assert (get_bitwidth(__LINE__) == x.get_bitwidth(__LINE__));
+    bitwidth_t w = x.get_bitwidth(__LINE__);
+
+    /** 
+	TODO: make it template parameter.
+	growth_rate should be power of 2. Currently only 2,4,8, or 16.
+    **/
+    const unsigned growth_rate = 8;
+    wrapint max(0, w);
+    switch (growth_rate) {
+    case 4:
+      if (w > 2) {
+	max = wrapint(1 << (w-2), w);
+	break;
+      }
+    case 8:
+      if (w > 3) {
+	max = wrapint(1 << (w-3), w);
+	break;
+      }
+    case 16:
+      if (w > 4) {
+	max = wrapint(1 << (w-4), w);
+	break;
+      }
+    case 2:
+    default:
+      assert(w > 1);
+      max = wrapint(1 << (w-1), w);
+    }
+    if ((_stop - _start) >= max) {
+      return wrapped_interval_t::top();
+    }
+    wrapped_interval_t join = *this | x;
+    if (join == wrapped_interval_t(_start, x._stop)) {
+      // increase by some power of 2 the size of the old interval
+      wrapint new_stop(0,w);
+      switch (growth_rate) {
+      case 4:
+	new_stop = (_stop * wrapint(4,w)) - (_start * wrapint(3,w)) + wrapint(3,w);
+	break;
+      case 8:
+	new_stop = (_stop * wrapint(8,w)) - (_start * wrapint(7,w)) + wrapint(7,w);
+	break;
+      case 16:	
+	new_stop = (_stop * wrapint(16,w)) - (_start * wrapint(15,w)) + wrapint(15,w);
+	break;
+      case 2:
+      default:	
+	new_stop = (_stop * wrapint(2,w)) - _start + wrapint(1,w);
+      }
+      // Apply thresholds
+      typedef typename interval<Number>::bound_t bound_t;
+      bound_t next_stop_bound_guess = ts.get_next(bound_t(x._stop.get_unsigned_bignum()));
+      if (boost::optional<Number> n = next_stop_bound_guess.number()) {
+	wrapint new_stop_guess(*n, w);
+	if (new_stop_guess <= new_stop) {
+	  CRAB_LOG("wrapped-int-widening-thresholds",
+		   crab::outs() << "Widening with thresholds jumped to "
+		                << new_stop_guess << " instead of " << new_stop << "\n";); 
+	  new_stop = new_stop_guess;
+	}
+      } 
+      return join | wrapped_interval_t(_start, new_stop);
+    } else if (join == wrapped_interval_t(x._start, _stop)) {
+      // decrease by some power of 2 the size of the old interval
+      wrapint new_start(0,w);
+      switch (growth_rate) {
+      case 4:
+	new_start = (_start * wrapint(4,w)) - (_stop * wrapint(3,w)) - wrapint(3,w);
+	break;
+      case 8:
+	new_start = (_start * wrapint(8,w)) - (_stop * wrapint(7,w)) - wrapint(7,w);
+	break;
+      case 16:
+	new_start = (_start * wrapint(16,w)) - (_stop * wrapint(15,w)) - wrapint(15,w); 
+	break;
+      case 2:
+      default:
+	new_start = (_start * wrapint(2,w)) - _stop - wrapint(1,w);
+      }
+      // TODO: apply thresholds
+      return join | wrapped_interval_t(new_start, _stop);
+    } else if (x[_start] && x[_stop]) {
+      // in principle we should increase by some power of two the stop
+      // point while reducing by the same power of two the start
+      // one. We just increase the stop and this will eventually reach
+      // the start point.
+      wrapint delta(0, w);
+      switch (growth_rate) {
+      case 4:
+	delta = (_stop * wrapint(4,w)) - (_start * wrapint(4,w)) + wrapint(3,w);	
+	break;
+      case 8:
+	delta  = (_stop * wrapint(8,w)) - (_start * wrapint(8,w)) + wrapint(7,w);
+	break;
+      case 16:
+	delta = (_stop * wrapint(16,w)) - (_start * wrapint(16,w)) + wrapint(15,w);
+	break;
+      case 2:
+      default:
+	delta = (_stop * wrapint(2,w)) - (_start * wrapint(2,w)) + wrapint(1,w);
+      }
+      // TODO: apply thresholds      
+      return x | wrapped_interval_t(x._start, x._start + delta);
+    } else {
+      return wrapped_interval_t::top();
+    }
   }
   
   wrapped_interval_t operator&&(wrapped_interval_t x) const {
