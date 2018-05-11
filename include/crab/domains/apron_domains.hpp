@@ -1730,6 +1730,7 @@ namespace crab {
 	}
 
       };
+      #endif
 
       // -- domain traits
       template<typename Number, typename VariableName, apron_domain_id_t ApronDom>
@@ -1760,7 +1761,6 @@ namespace crab {
           inv.expand (x, new_x);
         }		
       };
-       #endif
      
       // --- global datastructures
       template<typename N, typename V, apron_domain_id_t D>
