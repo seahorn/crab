@@ -1169,7 +1169,7 @@ namespace linear_interval_solver_impl {
 
 namespace crab{
 namespace domains {
-  
+
 template<typename Number, typename VariableName, std::size_t max_reduction_cycles = 10>
 class wrapped_interval_domain:
     public crab::domains::
@@ -1751,7 +1751,11 @@ public:
 }
 }
 
-
+/*
+ *
+ EXPERIMENTAL CODE: USE IT ON YOUR OWN RISK!
+ *
+ */
 namespace crab {
 namespace domains {
 
@@ -1973,12 +1977,32 @@ private:
 
   inline bool may_be_initialized(variable_t x)
   { return (discrete_domain_t(x) <= _init_set); }
-  
-  // This hoare triple holds {x = old_i} x := ... { x = new_i}
-  inline void update_limits(variable_t x, wrapped_interval_t old_i, wrapped_interval_t new_i) {
+
+  // Decide whether x might cross a pole based on the intervals before
+  // and after an operation occurred.
+  inline void update_limits(variable_t x, wrapped_interval_t old_i, wrapped_interval_t new_i){
+    if (is_bottom()) {
+      return;
+    }
+
+    if (may_be_initialized(x) && (old_i.is_top() && !new_i.is_top())) {
+      // This tries to capture the following pattern:
+      //  bb:  x:=0; goto bb1;
+      //  bb1: ...   goto bb2;
+      //  bb2: y:=x+1; x:=y; goto bb1;
+      //
+      //  y is alive only in bb2. The first time we analyze y:=x+1, y
+      //  is uninitialized. However, the second time, the interval for
+      //  y before the assignment is top since at bb1 we joined bb
+      //  (where y is not defined and hence top) and bb2 (where y is
+      //  precisely captured). Because of this, we cannot keep track
+      //  of y.
+      _limit_env.set(x, wrapped_interval_limit_value::convert(new_i));
+      return;
+    }
+    
     wrapped_interval_limit_value old_l = wrapped_interval_limit_value::bottom();
     wrapped_interval_limit_value new_l;
-    
     if (may_be_initialized(x)) {
       old_l = _limit_env[x];
       // XXX: it's not enough to convert only new_i. E.g., char x = 127; x++;
@@ -1991,9 +2015,6 @@ private:
 
     // -- weak update to keep past history
     _limit_env.set(x, old_l | new_l);
-
-    // -- mark x as initialized
-    _init_set += x;
   }
 
   void update_limits(const variable_set_t &vars,
@@ -2155,11 +2176,11 @@ public:
   
   void operator-=(variable_t v) {
     _w_int_dom -= v;
-    _limit_env -= v;
+    _limit_env -= v;    
     // XXX: we never remove a variable from _init_set.
     //      This avoids, e.g. to mark as uninitialized a variable that
     //      have been havoc'ed.
-    // _init_set -= v;
+    //_init_set -= v;
   }
 
   // filter variables that do not cross any limit
@@ -2202,6 +2223,8 @@ public:
     _w_int_dom.apply(op, x, y, z);
     wrapped_interval_t new_i = get_wrapped_interval(x);    
     update_limits(x, old_i, new_i);
+    // -- mark x as initialized
+    _init_set += x;    
     CRAB_LOG("wrapped-int2",
 	     crab::outs() << x << ":=" << y << " " << op << " " << z
 	                  << " => " << *this<<"\n";);
@@ -2212,6 +2235,8 @@ public:
     _w_int_dom.apply(op, x, y, k);
     wrapped_interval_t new_i = get_wrapped_interval(x);    
     update_limits(x, old_i, new_i);
+    // -- mark x as initialized
+    _init_set += x;        
     CRAB_LOG("wrapped-int2",
 	     crab::outs() << x << ":=" << y << " " << op << " " << k
 	                  << " => " << *this <<"\n";);    
@@ -2222,13 +2247,15 @@ public:
       // XXX: x's history is reset          
       _w_int_dom.assign(x, e);
       _limit_env.set(x, wrapped_interval_limit_value::do_not_cross());
-      _init_set += x; 
     } else {
-      wrapped_interval_t old_i = get_wrapped_interval(x);
+
+      wrapped_interval_t old_i = get_wrapped_interval(x); 
       _w_int_dom.assign(x, e);
       wrapped_interval_t new_i = get_wrapped_interval(x);    
       update_limits(x, old_i, new_i);
     }
+    // -- mark x as initialized
+    _init_set += x;        
     CRAB_LOG("wrapped-int2",
 	     crab::outs() << x << ":=" << e << " => " << *this<<"\n";);    
   }
@@ -2279,6 +2306,8 @@ public:
     _w_int_dom.apply(op, dst, src);
     wrapped_interval_t new_i = get_wrapped_interval(dst);    
     update_limits(dst, old_i, new_i);
+    // -- mark x as initialized
+    _init_set += dst;    
     CRAB_LOG("wrapped-int2",
 	     crab::outs() << dst << ":=" << op << " " << src << " => " << *this<<"\n";);    
   }
@@ -2290,6 +2319,8 @@ public:
     _w_int_dom.apply(op, x, y, z);
     wrapped_interval_t new_i = get_wrapped_interval(x);    
     update_limits(x, old_i, new_i);
+    // -- mark x as initialized
+    _init_set += x;    
     CRAB_LOG("wrapped-int2",
 	     crab::outs() << x << ":=" << y << " " << op << " " << z
 	                  << " => " << *this<<"\n";);
@@ -2300,6 +2331,8 @@ public:
     _w_int_dom.apply(op, x, y, k);
     wrapped_interval_t new_i = get_wrapped_interval(x);    
     update_limits(x, old_i, new_i);
+    // -- mark x as initialized
+    _init_set += x;    
     CRAB_LOG("wrapped-int2",
 	     crab::outs() << x << ":=" << y << " " << op << " " << k
 	                  << " => " << *this<<"\n";);    
@@ -2312,6 +2345,8 @@ public:
     _w_int_dom.apply(op, x, y, z);
     wrapped_interval_t new_i = get_wrapped_interval(x);    
     update_limits(x, old_i, new_i);
+    // -- mark x as initialized
+    _init_set += x;    
     CRAB_LOG("wrapped-int2",
 	     crab::outs() << x << ":=" << y << " " << op << " " << z
 	                  << " => " << *this<<"\n";);    
@@ -2322,6 +2357,8 @@ public:
     _w_int_dom.apply(op, x, y, k);
     wrapped_interval_t new_i = get_wrapped_interval(x);    
     update_limits(x, old_i, new_i);
+    // -- mark x as initialized
+    _init_set += x;    
     CRAB_LOG("wrapped-int2",
 	     crab::outs() << x << ":=" << y << " " << op << " " << k
 	                  << " => " << *this<<"\n";);    
@@ -2446,6 +2483,7 @@ private:
   typedef abstract_domain<N,V,wrapped_numerical_domain_t> abstract_domain_t;
   typedef wrapped_interval_with_history_domain<N,V,max_reduction_cycles>
   wrapped_interval_domain_t;
+  typedef wrapped_interval<N> wrapped_interval_t;
   
 public:
       
@@ -2459,7 +2497,7 @@ public:
   typedef typename NumDom::varname_t varname_t;      
   typedef interval<N> interval_t;
   typedef crab::pointer_constraint<variable_t> ptr_cst_t;
-      
+  typedef typename variable_t::bitwidth_t bitwidth_t;
 private:
 
   typedef enum { UNKNOWN_SIGNEDNESS, SIGNED, UNSIGNED} signedness_t;
@@ -2469,7 +2507,7 @@ private:
   wrapped_numerical_domain(const domain_product2_t& product)
     : _product(product) { }
 
-  // return true iff v can overflow given some signedness interpretation
+  // return true iff v can overflow 
   bool may_overflow(variable_t v, signedness_t signedness) {
     wrapped_interval_domain_t& wrapped_intervals =  _product.first();
     wrapped_interval_limit_value val = wrapped_intervals.get_limit_value(v);
@@ -2480,6 +2518,37 @@ private:
 	     (signedness == UNSIGNED || signedness == UNKNOWN_SIGNEDNESS)));
   }
 
+  // return true iff linear expression e can overflow
+  ////////
+  // FIXME: we need to consider the constraint, not the expression and
+  // then check that each refine after compute_residual does not
+  // overflow.
+  ////////
+  bool may_overflow(linear_expression_t e, signedness_t signedness) {
+    auto e_vars = e.variables();
+    if (e.is_constant() || e_vars.size() == 0) {
+      // Only variables have bitwidth information.
+      // 
+      // We shouldn't have a constraint with an expression without
+      // variables unless it's a tautology or contradiction. Thus,
+      // it's safe to return false here.
+      return false;
+    }
+    
+    bitwidth_t b = (*(e_vars.begin())).get_bitwidth();
+    wrapped_interval_t wint(wrapint(e.constant(), b));
+    for (typename linear_expression_t::iterator it = e.begin(); it != e.end(); ++it) {
+      wrapped_interval_t c(wrapint(it->first,  b));
+      wint += c * _product.first().get_wrapped_interval(it->second);
+    }
+    auto val = wrapped_interval_limit_value::convert(wint);
+    return (val.is_top() ||
+	    (val.is_crossing_signed_limit() &&
+	     (signedness == SIGNED || signedness == UNKNOWN_SIGNEDNESS)) ||
+	    (val.is_crossing_unsigned_limit() &&
+	     (signedness == UNSIGNED || signedness == UNKNOWN_SIGNEDNESS)));
+  }
+  
   // return true iff all variables in vars have the same bitwidth
   static bool has_same_bitwidth(const variable_set_t& vars)  {
     bool first = true;
@@ -2506,9 +2575,9 @@ private:
   // we are only interested in preserving reachability and for
   // accuracy, we only apply it on operations with explicit signedness
   // interpretation (branches, div, and rem).
-  void safening(const variable_t& v, signedness_t signedness) {
+  void rectify(const variable_t& v, signedness_t signedness) {
     CRAB_LOG("wrapped-num",
-	     crab::outs() << "Safening " << v;
+	     crab::outs() << "Correcting " << v;
 	     if (signedness == SIGNED){ crab::outs() << " signed: \n";}
 	     else if (signedness == UNSIGNED) { crab::outs() << " unsigned: \n";}
 	     else {crab::outs() << " unknown unsignedness: \n";});
@@ -2521,42 +2590,20 @@ private:
 	       crab::outs() << "\t" << v << " cannot overflow\n";);
     }
   }
-
-  
-  void safening(const linear_constraint_t& cst) {
-    signedness_t signedness = UNKNOWN_SIGNEDNESS;   
-    if (cst.is_inequality() || cst.is_strict_inequality()) {
-      signedness = cst.is_signed() ? SIGNED: UNSIGNED;
-    }
-    for (auto const& v: cst.variables()) {
-      safening(v, signedness);
-    }
-  }
- 
+    
   // Reduction from a potentially unsound numerical domain to the
   // wrapped interval domain. It consists of propagating linear
-  // (in)equalities involving vars from the numerical domain to the
-  // wrapped interval domain: I believe this step is sound as long as:
-  //
-  // (1) all variables in vars have the same bitwidth.
-  // (2) none of the variables in vars can overflow
-  // 
-  // In addition, all the relationships inferred by the numerical
-  // domain were produced using either a signed or unsigned
-  // interpretation but not a mixed interpretation.
-  // 
-  void reduce(const variable_set_t rel_vars, signedness_t signedness) {
+  // (in)equalities.
+  void strengthen(const variable_set_t rel_vars, signedness_t signedness) {
     if (is_bottom() || is_top()) {
       return;
     }
-
     // -- extract all constraints involving any variable in rel_vars
     linear_constraint_system_t  csts;
     for (auto const& v: rel_vars) {
       reduced_domain_traits<NumDom>::extract(_product.second(), v, csts,
     					     /* only equalities=*/ false);
     }
-
     // -- filter out constraints that shouldn't be propagated to the
     // -- wrapped interval domain
     for (auto const& c: csts) {
@@ -2564,19 +2611,11 @@ private:
       if (!has_same_bitwidth(vars)) {
 	continue;
       }
-      
-      if (std::any_of(vars.begin(), vars.end(),
-		      [this, signedness](const variable_t& v) {
-			return this->may_overflow(v, signedness);
-		      })) {
-      	continue;
+      // FIXME: I think we need to inspect the constraint not only the
+      // expression.
+      if (may_overflow(c.expression(), signedness)) {
+	continue;
       }
-
-      /* TOFIX
-	 x = [[1,7]]_4,  y=[[2,2]]_4
-         y <= x+1
-
-       */
       CRAB_LOG("wrapped-num",
       	       linear_constraint_t tmp(c);
       	       crab::outs () << "** reduction propagating " << tmp
@@ -2589,10 +2628,10 @@ private:
     }
   }
 
-  void reduce(const variable_t& x, signedness_t signedness = UNKNOWN_SIGNEDNESS) {
+  void strengthen(const variable_t& x, signedness_t signedness = UNKNOWN_SIGNEDNESS) {
     variable_set_t vars;
     vars += x;
-    reduce(vars, signedness);
+    strengthen(vars, signedness);
   }
   
 public:
@@ -2656,26 +2695,26 @@ public:
   void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
     if (op == OP_DIVISION) {
       // signed division
-      safening(y, SIGNED);
-      safening(z, SIGNED);            
+      rectify(y, SIGNED);
+      rectify(z, SIGNED);            
     }
     _product.apply(op, x, y, z);
     CRAB_LOG("wrapped-num",
 	     crab::outs()  << "Reduction after " << x << ":=" << y << " " << op
 	                   << " " << z <<"\n";);
-    reduce(x);
+    strengthen(x);
   }
       
   void apply(operation_t op, variable_t x, variable_t y, N k) {
     if (op == OP_DIVISION) {
       // signed division
-      safening(y, SIGNED);
+      rectify(y, SIGNED);
     }    
     _product.apply(op, x, y, k);
     CRAB_LOG("wrapped-num",
 	     crab::outs()  << "Reduction after " << x << ":=" << y << " " << op
 	                   << " " << k <<"\n";);
-    reduce(x);
+    strengthen(x);
   }
 
   void assign(variable_t x, linear_expression_t e) {
@@ -2684,7 +2723,7 @@ public:
 	     crab::outs()  << "Reduction after " << x << ":=" << e << "\n");
     
     if (!e.is_constant()) {
-      reduce(x);
+      strengthen(x);
     }
   }
 
@@ -2715,17 +2754,27 @@ public:
   }
       
   void operator+=(linear_constraint_system_t csts) {
-    linear_constraint_system_t filtered_csts;
-    for (auto cst: csts) {
-      safening(cst);
-      if (!(cst.is_inequality() && cst.is_unsigned())) {
-	filtered_csts += cst;
+    linear_constraint_system_t non_overflow_csts;
+    for (auto c: csts) {
+      // rectify of the unsound numerical domain
+      signedness_t signedness = UNKNOWN_SIGNEDNESS;   
+      if (c.is_inequality() || c.is_strict_inequality()) {
+	signedness = c.is_signed() ? SIGNED: UNSIGNED;
+      }
+      for (auto const& v: c.variables()) {
+	rectify(v, signedness);
+      }
+
+      // add constraint in the unsound numerical domain only if
+      // expr(c) cannot overflow.
+      
+      if (!may_overflow(c.expression(), signedness)) {
+	non_overflow_csts += c;
       }
     }
-    _product.first() += csts;
-    // make sure that the (unsound) numerical domain ignores unsigned
-    // constraints.
-    _product.second() += filtered_csts;
+    
+    _product.first()  += csts;
+    _product.second() += non_overflow_csts;
   }
       
   void set (variable_t x, interval_t intv)
@@ -2745,8 +2794,16 @@ public:
   // boolean_operators
   
   void assign_bool_cst (variable_t x, linear_constraint_t cst) override {
-    safening(cst);
-    _product.assign_bool_cst(x, cst);
+    signedness_t signedness = UNKNOWN_SIGNEDNESS;   
+    if (cst.is_inequality() || cst.is_strict_inequality()) {
+      signedness = cst.is_signed() ? SIGNED: UNSIGNED;
+    }
+    for (auto const& v: cst.variables()) {
+      rectify(v, signedness);
+    }
+    if (!may_overflow(cst.expression(), signedness)) {
+      _product.assign_bool_cst(x, cst);
+    }
   }
   
   void assign_bool_var (variable_t x, variable_t y, bool is_not_y) override
@@ -2763,7 +2820,7 @@ public:
 				wrapped_numerical_domain_t inv) {
     CRAB_WARN("backward assign bool constraint not implemented");
     // _product.backward_assign_bool_cst(lhs, rhs, inv._product);
-    // // TODO: safening rhs
+    // // TODO: rectify rhs
   }
       
   void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
@@ -2797,8 +2854,8 @@ public:
   // division_operators_api
   
   void apply(div_operation_t op, variable_t x, variable_t y, variable_t z) {
-    safening(y, (op == OP_SDIV || op == OP_SREM) ? SIGNED: UNSIGNED);
-    safening(z, (op == OP_SDIV || op == OP_SREM) ? SIGNED: UNSIGNED);
+    rectify(y, (op == OP_SDIV || op == OP_SREM) ? SIGNED: UNSIGNED);
+    rectify(z, (op == OP_SDIV || op == OP_SREM) ? SIGNED: UNSIGNED);
     if (op == OP_UDIV || op == OP_UREM) {
       // if unsigned division then we only apply it on wrapped intervals
       _product.first().apply(op, x, y, z);
@@ -2808,11 +2865,11 @@ public:
     CRAB_LOG("wrapped-num",
 	     crab::outs()  << "Reduction after " << x << ":=" << y << " " << op
 	                   << " " << z <<"\n";);        
-    reduce(x);
+    strengthen(x);
   }
     
   void apply(div_operation_t op, variable_t x, variable_t y, N k) {
-    safening(y, (op == OP_SDIV || op == OP_SREM) ? SIGNED: UNSIGNED);
+    rectify(y, (op == OP_SDIV || op == OP_SREM) ? SIGNED: UNSIGNED);
     if (op == OP_UDIV || op == OP_UREM) {
       // if unsigned division then we only apply it on wrapped intervals
       _product.first().apply(op, x, y, k);
@@ -2822,7 +2879,7 @@ public:
     CRAB_LOG("wrapped-num",
 	     crab::outs()  << "Reduction after " << x << ":=" << y << " " << op
 	                   << " " << k <<"\n";);        
-    reduce(x);
+    strengthen(x);
   }
       
   // array_operators_api
