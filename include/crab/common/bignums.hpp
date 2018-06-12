@@ -114,6 +114,14 @@ public:
     return _n.get_str();
   }
 
+  bool fits_sint() const {
+    return _n.fits_sint_p();
+  }
+
+  bool fits_slong() const {
+    return _n.fits_slong_p();
+  }
+
   z_number operator+(z_number x) const {
     mpz_class r = this->_n + x._n;
     return z_number(r);
