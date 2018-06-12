@@ -61,32 +61,70 @@ public:
 
   wrapint(uint64_t n, bitwidth_t width) : _n(n), _width(width), _mod(0) {
     sanity_check_bitwidth();
+    assert(_width <= 64);
     compute_mod();
-    if (_width < 64) _n = _n % _mod;
+
+    if (_width < 64) {
+      _n = _n % _mod;
+    }
   }
 
-  wrapint(ikos::z_number n, bitwidth_t width) : _n((long) n), _width(width), _mod(0) {
+  wrapint(ikos::z_number n, bitwidth_t width) : _n(0), _width(width), _mod(0) {
     sanity_check_bitwidth();
+    assert(_width <= 64);
     compute_mod();
-    if (_width < 64) _n = _n % _mod;
+    if (!n.fits_slong()) {
+      CRAB_ERROR(n, " does not fit in a signed long integer");
+    }
+
+    if (_width == 64) {
+      _n = (long) n;
+    } else {
+      _n = ((long) n) % _mod;
+    }
   }
 
-  wrapint(ikos::q_number n, bitwidth_t width)
-    : _n((long) n.round_to_upper()), _width(width), _mod(0) {
+  wrapint(ikos::q_number n, bitwidth_t width) : _n(0), _width(width), _mod(0) {
     sanity_check_bitwidth();
+    assert(_width <= 64);
     compute_mod();
-    if (_width < 64) _n = _n % _mod;
+    ikos::z_number i = n.round_to_upper();
+    if (!i.fits_slong()) {
+      CRAB_ERROR(n, " does not fit in a signed long integer");
+    }
+    if (_width == 64) {
+      _n = (long) i;
+    } else {
+      _n = ((long) i) % _mod;
+    }
+    
   }
   
   wrapint(std::string s, bitwidth_t width): _n(0), _width(width), _mod(0) {
     sanity_check_bitwidth();
+    assert(_width <= 64);
+    compute_mod();
     std::istringstream iss(s);
     iss >> _n;
-    compute_mod();
-    if (_width < 64) _n = _n % _mod;
+
+    if (_width < 64) {
+      _n = _n % _mod;
+    }
   }
 
   bitwidth_t get_bitwidth() const { return _width;}
+
+  // Needed because wrapint has limited precision
+  static bool fits_wrapint(ikos::z_number n, bitwidth_t width) {
+    if (width > 64) return false;
+    return n.fits_slong();
+  }
+
+  // Needed because wrapint has limited precision
+  static bool fits_wrapint(ikos::q_number n, bitwidth_t width) {
+    if (width > 64) return false;
+    return n.round_to_upper().fits_slong();
+  }
 
   // return true iff most significant bit is 1.
   bool msb() const {
