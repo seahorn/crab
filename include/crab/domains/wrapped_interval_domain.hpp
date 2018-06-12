@@ -310,6 +310,9 @@ class wrapped_interval {
     }    
   }
   
+  // // Can raise runtime error if n does not fit into a wrapint
+  // wrapped_interval(Number n, bitwidth_t w)
+  //   : _start(wrapint(n,w)), _stop(wrapint(n, w)), _is_bottom(false) {}
   
 public:
 
@@ -325,14 +328,34 @@ public:
     }
   }
 
-  wrapped_interval(Number n, bitwidth_t w)
-    : _start(wrapint(n,w)), _stop(wrapint(n, w)), _is_bottom(false) {}
-  
   // To represent top, the particular bitwidth here is irrelevant. We
   // just make sure that _stop - _start == get_max()
   wrapped_interval()
     : _start(wrapint(0,3)), _stop(7,3), _is_bottom(false) { }
-  
+    
+  // return top if n does not fit into a wrapint. No runtime errors.
+  static wrapped_interval_t mk_winterval(Number n, bitwidth_t width) {
+    if (wrapint::fits_wrapint(n, width)) {
+      return wrapped_interval_t(wrapint(n, width));
+    } else {
+      CRAB_WARN(n, " does not fit into a wrapint. Returned top wrapped interval");
+      return wrapped_interval_t::top();
+    }
+  }
+
+  // Return top if lb or ub do not fit into a wrapint. No runtime errors.
+  static wrapped_interval_t mk_winterval(Number lb, Number ub, bitwidth_t width) {
+    if (!wrapint::fits_wrapint(lb, width)) {
+      CRAB_WARN(lb, " does not fit into a wrapint. Returned top wrapped interval");
+      return wrapped_interval_t::top();
+    } else if (!wrapint::fits_wrapint(ub, width)) {
+      CRAB_WARN(ub, " does not fit into a wrapint. Returned top wrapped interval");
+      return wrapped_interval_t::top();
+    } else {
+      return wrapped_interval_t(wrapint(lb, width), wrapint(ub, width));
+    } 
+  }
+
   static wrapped_interval_t top () {
     return wrapped_interval_t(wrapint(0,3), wrapint(7,3), false); 
   }
@@ -724,12 +747,14 @@ public:
       typedef typename interval<Number>::bound_t bound_t;
       bound_t next_stop_bound_guess = ts.get_next(bound_t(x._stop.get_unsigned_bignum()));
       if (boost::optional<Number> n = next_stop_bound_guess.number()) {
-	wrapint new_stop_guess(*n, w);
-	if (new_stop_guess <= new_stop) {
-	  CRAB_LOG("wrapped-int-widening-thresholds",
-		   crab::outs() << "Widening with thresholds jumped to "
-		                << new_stop_guess << " instead of " << new_stop << "\n";); 
-	  new_stop = new_stop_guess;
+	if (wrapint::fits_wrapint(*n, w)) {
+	  wrapint new_stop_guess(*n, w);
+	  if (new_stop_guess <= new_stop) {
+	    CRAB_LOG("wrapped-int-widening-thresholds",
+		     crab::outs() << "Widening with thresholds jumped to "
+		                  << new_stop_guess << " instead of " << new_stop << "\n";); 
+	    new_stop = new_stop_guess;
+	  }
 	}
       } 
       return join | wrapped_interval_t(_start, new_stop);
@@ -1101,12 +1126,12 @@ namespace linear_interval_solver_impl {
   template<>
   inline z_wrapped_interval_t
   mk_interval(z_number c, typename crab::wrapint::bitwidth_t w)
-  { return z_wrapped_interval_t(c, w); }
+  { return z_wrapped_interval_t::mk_winterval(c, w); }
 
   template<>
   inline q_wrapped_interval_t
   mk_interval(q_number c, typename crab::wrapint::bitwidth_t w)
-  { return q_wrapped_interval_t(c, w); }
+  { return q_wrapped_interval_t::mk_winterval(c, w); }
   
   template<>
   inline z_wrapped_interval_t trim_interval(z_wrapped_interval_t i, z_wrapped_interval_t j) {
@@ -1194,7 +1219,7 @@ private:
   
 public:
   typedef typename separate_domain_t::iterator iterator;
-  
+
 private:
   separate_domain_t _env;
   
@@ -1208,10 +1233,10 @@ private:
   }
 
   wrapped_interval_t eval_expr(linear_expression_t expr, bitwidth_t width) {
-    wrapped_interval_t r(wrapint(expr.constant(), width));
+    wrapped_interval_t r = wrapped_interval_t::mk_winterval(expr.constant(), width);
     for (typename linear_expression_t::iterator it = expr.begin(); 
   	 it != expr.end(); ++it) {
-      wrapped_interval_t c(wrapint(it->first,  width));
+      wrapped_interval_t c = wrapped_interval_t::mk_winterval(it->first,  width);
       // eval_expr should be "const" but operator[] in _env is not marked as "const"
       r += c * this->_env[it->second];
     }
@@ -1362,9 +1387,8 @@ public:
     crab::CrabStats::count (getDomainName() + ".count.assign");
     crab::ScopedCrabStats __st__(getDomainName() + ".assign");
     if (i.lb().is_finite() && i.ub.is_finite()) {
-      wrapint start(i.lb(), v.get_bitwidth());
-      wrapint stop(i.ub(), v.get_bitwidth());
-      this->_env.set(v, wrapped_interval_t(start, stop));
+      wrapped_interval_t rhs = wrapped_interval_t::mk_winterval(i.lb(), i.ub(), v.get_bitwidth());
+      this->_env.set(v, rhs);
       CRAB_LOG("wrapped-int",
 	       crab::outs() << v << ":=" << i << "=" << _env[v] << "\n");    
     } else {
@@ -1376,10 +1400,7 @@ public:
   void set(variable_t v, Number n) {
     crab::CrabStats::count (getDomainName() + ".count.assign");
     crab::ScopedCrabStats __st__(getDomainName() + ".assign");
-
-    wrapint start(n, v.get_bitwidth());
-    wrapint stop(n, v.get_bitwidth());
-    this->_env.set(v, wrapped_interval_t(start, stop));
+    this->_env.set(v, wrapped_interval_t::mk_winterval(n, v.get_bitwidth()));
     CRAB_LOG("wrapped-int",
 	     crab::outs() << v << ":=" << n << "=" << _env[v] << "\n");    
   }
@@ -1444,7 +1465,7 @@ public:
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
     
     wrapped_interval_t yi = this->_env[y];
-    wrapped_interval_t zi(wrapint(k, x.get_bitwidth()), wrapint(k,x.get_bitwidth()));
+    wrapped_interval_t zi = wrapped_interval_t::mk_winterval(k, x.get_bitwidth());
     wrapped_interval_t xi = wrapped_interval_t::bottom();
     
     switch (op) {
@@ -1576,7 +1597,7 @@ public:
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
     
     wrapped_interval_t yi = this->_env[y];
-    wrapped_interval_t zi(wrapint(k, x.get_bitwidth()));
+    wrapped_interval_t zi = wrapped_interval_t::mk_winterval(k, x.get_bitwidth());
     wrapped_interval_t xi = wrapped_interval_t::bottom();
     switch (op) {
       case OP_AND: {
@@ -1647,7 +1668,7 @@ public:
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
     
     wrapped_interval_t yi = this->_env[y];
-    wrapped_interval_t zi(wrapint(k, x.get_bitwidth()));
+    wrapped_interval_t zi = wrapped_interval_t::mk_winterval(k, x.get_bitwidth());
     wrapped_interval_t xi = wrapped_interval_t::bottom();
     switch (op) {
       case OP_SDIV: {
@@ -1677,8 +1698,7 @@ public:
     crab::ScopedCrabStats __st__(getDomainName() + ".add_constraints");
     this->add(csts);
     CRAB_LOG("wrapped-int",
-	     crab::outs() << "Added " << csts << " = " << *this << "\n");        
-    
+	     crab::outs() << "Added " << csts << " = " << *this << "\n");            
   }
   
   wrapped_interval_domain_t operator+(linear_constraint_system_t csts) {
@@ -1998,6 +2018,10 @@ private:
       //  precisely captured). Because of this, we cannot keep track
       //  of y.
       _limit_env.set(x, wrapped_interval_limit_value::convert(new_i));
+      CRAB_LOG("wrapped-int-hist",
+	       auto v = _limit_env[x];
+	       crab::outs() << x << " may be initialized, old val=top,  and new val != top) = "
+	                    << v << "\n";);
       return;
     }
     
@@ -2009,7 +2033,13 @@ private:
       //  convert([127,127])   = no-cross
       //  convert([-128,-128]) = no-cross
       new_l = wrapped_interval_limit_value::convert(old_i | new_i);
+      CRAB_LOG("wrapped-int-hist",
+	       crab::outs () << x << " may be initialized. "
+	                     << "old val=" << old_l << " U new val=" << new_l << "\n";);
     } else {
+      CRAB_LOG("wrapped-int-hist",
+	       crab::outs () << x << " is not initialized. "
+	                     << "new val=" << new_l << "\n";);
       new_l = wrapped_interval_limit_value::convert(new_i);
     }
 
@@ -2507,10 +2537,11 @@ private:
   wrapped_numerical_domain(const domain_product2_t& product)
     : _product(product) { }
 
-  // return true iff v can overflow 
-  bool may_overflow(variable_t v, signedness_t signedness) {
+  // return true if v may have overflow in the past
+  // Use the history abstraction to answer the query.
+  inline bool may_have_overflow(variable_t v, signedness_t signedness)  {
     wrapped_interval_domain_t& wrapped_intervals =  _product.first();
-    wrapped_interval_limit_value val = wrapped_intervals.get_limit_value(v);
+    wrapped_interval_limit_value val = wrapped_intervals.get_limit_value(v); 
     return (val.is_top() ||
 	    (val.is_crossing_signed_limit() &&
 	     (signedness == SIGNED || signedness == UNKNOWN_SIGNEDNESS)) ||
@@ -2518,37 +2549,107 @@ private:
 	     (signedness == UNSIGNED || signedness == UNKNOWN_SIGNEDNESS)));
   }
 
-  // return true iff linear expression e can overflow
-  ////////
-  // FIXME: we need to consider the constraint, not the expression and
-  // then check that each refine after compute_residual does not
-  // overflow.
-  ////////
-  bool may_overflow(linear_expression_t e, signedness_t signedness) {
-    auto e_vars = e.variables();
-    if (e.is_constant() || e_vars.size() == 0) {
-      // Only variables have bitwidth information.
-      // 
-      // We shouldn't have a constraint with an expression without
-      // variables unless it's a tautology or contradiction. Thus,
-      // it's safe to return false here.
+  // return true if interval i fits in [min(b), max(b)]
+  inline bool fit(interval_t i, bitwidth_t b, signedness_t signedness) const {
+    // TODO: cache min and max 
+    if (signedness == SIGNED) {
+      auto max = wrapint::get_signed_max(b).get_signed_bignum();
+      auto min = wrapint::get_signed_min(b).get_signed_bignum();
+      CRAB_LOG("wrapped-num-reduction",
+	       crab::outs () << "\t** checking " << i << " <= " << interval_t(min,max) << "\n";);
+      return (i <= interval_t(min, max));
+    } else if (signedness == UNSIGNED) {
+      auto max = wrapint::get_unsigned_max(b).get_unsigned_bignum();
+      auto min = wrapint::get_unsigned_min(b).get_unsigned_bignum();
+      CRAB_LOG("wrapped-num-reduction",
+	       crab::outs () << "\t** checking " << i << " <= " << interval_t(min,max) << "\n";);
+      return (i <= interval_t(min, max));
+    } else {
+      CRAB_LOG("wrapped-num-reduction",
+	       crab::outs () << "\t** no signedness available. Assume may not fit\n";);
       return false;
     }
-    
-    bitwidth_t b = (*(e_vars.begin())).get_bitwidth();
-    wrapped_interval_t wint(wrapint(e.constant(), b));
-    for (typename linear_expression_t::iterator it = e.begin(); it != e.end(); ++it) {
-      wrapped_interval_t c(wrapint(it->first,  b));
-      wint += c * _product.first().get_wrapped_interval(it->second);
-    }
-    auto val = wrapped_interval_limit_value::convert(wint);
-    return (val.is_top() ||
-	    (val.is_crossing_signed_limit() &&
-	     (signedness == SIGNED || signedness == UNKNOWN_SIGNEDNESS)) ||
-	    (val.is_crossing_unsigned_limit() &&
-	     (signedness == UNSIGNED || signedness == UNKNOWN_SIGNEDNESS)));
+  }
+
+  // E.g., if cst is c1*x1 + c2*x2 <= k then we have two residuals:
+  //     x1 <= (k - c2*x2) / c1
+  //     x2 <= (k - c1*x1) / c2
+  // We check whether any of the computations on the rhs of each
+  // residual may overflow.
+  // We might not need to check for overflow after each intermediate
+  // operation, specially if the constraint is interpreted over
+  // unsigned integers.
+  bool may_overflow_residuals(const linear_constraint_t &cst, 
+			      number_t coef_pivot, variable_t pivot,
+			      signedness_t signedness) {
+      bitwidth_t b = pivot.get_bitwidth();
+      interval_t residual = cst.constant();
+      if (!fit(residual, b, signedness)) {
+	// If the constant is to large we bail out
+	return true;
+      }
+
+      bool res = false;
+      for (typename linear_constraint_t::iterator it = cst.begin(); it != cst.end(); ++it) {
+	variable_t v = it->second;
+	number_t coef_v = it->first;
+	if (!(v == pivot)) {
+	  CRAB_LOG("wrapped-num-reduction",
+		   linear_constraint_t cst_tmp(cst);
+		   crab::outs() << "Checking overflow of residual " << cst_tmp << " and " 
+                                << v << "\n";);
+	  interval_t tmp = coef_v * _product.first()[v];
+	  // check if multiplication can overflow
+	  CRAB_LOG("wrapped-num-reduction",
+		   crab::outs() << "\tChecking overflow of " << coef_v << " * " 
+		                << _product.first()[v]<< "=" << tmp << "\n";);
+	  if (!fit(tmp, b, signedness)) { res=true; break; }
+
+	  CRAB_LOG("wrapped-num-reduction",
+		   crab::outs() << "\tChecking overflow of " << residual << " - " 
+		                << tmp << "=";);
+	  residual = residual - tmp;
+	  CRAB_LOG("wrapped-num-reduction", crab::outs () << residual << "\n";);
+	  // check if subtraction can overflow
+	  if (!fit(residual, b, signedness)) { res=true; break; }
+
+
+	  CRAB_LOG("wrapped-num-reduction",
+		   crab::outs() << "\tChecking overflow of " << residual << " / " 
+		                << coef_pivot << "=";);
+	  residual = residual / coef_pivot;
+	  CRAB_LOG("wrapped-num-reduction", crab::outs () << residual << "\n";);
+	  // check if division can overflow
+	  if (!fit(residual, b, signedness)) { res=true; break; }
+	}
+      }
+      CRAB_LOG("wrapped-num-reduction",
+	       if(res) {
+		 crab::outs() << "Last intermediate computation may overflow!\n";
+	       } else {
+		 crab::outs() << "None of the residuals overflow\n";
+	       });
+      
+      return res;
   }
   
+  // return true iff any residual computation of cst may overflow.
+  bool may_overflow(const linear_constraint_t &cst, signedness_t signedness) {
+    if (cst.is_tautology() || cst.is_contradiction()) {
+      return false;
+    }
+
+    for (typename linear_constraint_t::iterator it = cst.begin(), et = cst.end();
+	 it != et; ++it) {
+      number_t c = it->first;
+      variable_t pivot = it->second;
+      if (may_overflow_residuals(cst, c, pivot, signedness)) {
+	return true;
+      }
+    }
+    return false;
+  }
+    
   // return true iff all variables in vars have the same bitwidth
   static bool has_same_bitwidth(const variable_set_t& vars)  {
     bool first = true;
@@ -2581,7 +2682,7 @@ private:
 	     if (signedness == SIGNED){ crab::outs() << " signed: \n";}
 	     else if (signedness == UNSIGNED) { crab::outs() << " unsigned: \n";}
 	     else {crab::outs() << " unknown unsignedness: \n";});
-    if (may_overflow(v, signedness)) { 
+    if (may_have_overflow(v, signedness)) { 
       _product.second() -= v;
       CRAB_LOG("wrapped-num",
 	       crab::outs() << "\t" << v << " may overflow!\n";);
@@ -2591,10 +2692,12 @@ private:
     }
   }
     
-  // Reduction from a potentially unsound numerical domain to the
+  // Reduction from a potentially "unsound" numerical domain to the
   // wrapped interval domain. It consists of propagating linear
-  // (in)equalities.
-  void strengthen(const variable_set_t rel_vars, signedness_t signedness) {
+  // (in)equalities. We quote unsound because the domain is unsound
+  // wrt to machine arithmetic although the domain is sound wrt
+  // mathematical integers.
+  void strengthen(const variable_set_t rel_vars) {
     if (is_bottom() || is_top()) {
       return;
     }
@@ -2604,6 +2707,10 @@ private:
       reduced_domain_traits<NumDom>::extract(_product.second(), v, csts,
     					     /* only equalities=*/ false);
     }
+
+    // IMPORTANT: we mark as SIGNED here because all the "unsound"
+    // numerical domains in Crab interpret numbers as signed.
+    const signedness_t signedness = SIGNED;
     // -- filter out constraints that shouldn't be propagated to the
     // -- wrapped interval domain
     for (auto const& c: csts) {
@@ -2611,9 +2718,7 @@ private:
       if (!has_same_bitwidth(vars)) {
 	continue;
       }
-      // FIXME: I think we need to inspect the constraint not only the
-      // expression.
-      if (may_overflow(c.expression(), signedness)) {
+      if (may_overflow(c, signedness)) {
 	continue;
       }
       CRAB_LOG("wrapped-num",
@@ -2626,12 +2731,28 @@ private:
       CRAB_LOG("wrapped-num-reduction",
 	       crab::outs() << "\tAFTER" << *this << "\n";);
     }
+
+
+    #if 0
+    { // Propagate wrapped intervals to the relational domain. 
+      linear_constraint_system_t csts;
+      for (auto const& v: rel_vars) {
+	interval_t i = _product.first()[v];
+	boost::optional<number_t> lb = i.lb().number();
+	boost::optional<number_t> ub = i.ub().number();
+	if (lb) csts += linear_constraint_t(v >= *lb);
+	if (ub) csts += linear_constraint_t(v <= *ub);
+      }
+      _product.second() += csts;
+    }
+    #endif 
+    
   }
 
-  void strengthen(const variable_t& x, signedness_t signedness = UNKNOWN_SIGNEDNESS) {
+  void strengthen(const variable_t& x) {
     variable_set_t vars;
     vars += x;
-    strengthen(vars, signedness);
+    strengthen(vars);
   }
   
 public:
@@ -2670,25 +2791,54 @@ public:
   bool operator==(wrapped_numerical_domain_t other)
   { return _product == other._product; }
   
-  void operator|=(wrapped_numerical_domain_t other)
-  { _product |= other._product; }
+  void operator|=(wrapped_numerical_domain_t other) {
+    CRAB_LOG("wrapped-num",
+	     crab::outs() << _product << " U " << other._product << " = ");
+    _product |= other._product; 
+    CRAB_LOG("wrapped-num", crab::outs() << _product << "\n";);
+  }
   
-  wrapped_numerical_domain_t operator|(wrapped_numerical_domain_t other)
-  { return wrapped_numerical_domain_t(_product | other._product); }
+  wrapped_numerical_domain_t operator|(wrapped_numerical_domain_t other) {
+    CRAB_LOG("wrapped-num",
+	     crab::outs() << _product << " U " << other._product << " = ");
+    wrapped_numerical_domain_t res(_product | other._product); 
+    CRAB_LOG("wrapped-num", crab::outs() << res << "\n";);
+    return res;
+  }
       
-  wrapped_numerical_domain_t operator&(wrapped_numerical_domain_t other)
-  { return wrapped_numerical_domain_t(_product & other._product); }
+  wrapped_numerical_domain_t operator&(wrapped_numerical_domain_t other) {
+    CRAB_LOG("wrapped-num",
+	     crab::outs() << "MEET "<< _product << " " << other._product << " = ");
+    wrapped_numerical_domain_t res(_product & other._product); 
+    CRAB_LOG("wrapped-num", crab::outs() << res << "\n";);
+    return res;
+  }
   
-  wrapped_numerical_domain_t operator||(wrapped_numerical_domain_t other)
-  { return wrapped_numerical_domain_t(_product || other._product); }
+  wrapped_numerical_domain_t operator||(wrapped_numerical_domain_t other) {
+    CRAB_LOG("wrapped-num",
+	     crab::outs() << "WIDENING " << _product << "and " << other._product << " = ");    
+    wrapped_numerical_domain_t res(_product || other._product);
+    CRAB_LOG("wrapped-num", crab::outs() << res << "\n";);
+    return res;
+  }
        
   template<typename Thresholds>
   wrapped_numerical_domain_t widening_thresholds(wrapped_numerical_domain_t other,
-						 const Thresholds& ts)
-  { return wrapped_numerical_domain_t(_product.widening_thresholds (other._product, ts)); }
+						 const Thresholds& ts) {
+    CRAB_LOG("wrapped-num",
+	     crab::outs() << "WIDENING " << _product << "and " << other._product << " = ");    
+    wrapped_numerical_domain_t res(_product.widening_thresholds (other._product, ts)); 
+    CRAB_LOG("wrapped-num", crab::outs() << res << "\n";);
+    return res;
+  }
       
-  wrapped_numerical_domain_t operator&&(wrapped_numerical_domain_t other)
-  { return wrapped_numerical_domain_t(_product && other._product); }
+  wrapped_numerical_domain_t operator&&(wrapped_numerical_domain_t other) {
+    CRAB_LOG("wrapped-num",
+	     crab::outs() << "NARROWING " << _product << "and " << other._product << " = ");    
+    wrapped_numerical_domain_t res(_product && other._product); 
+    CRAB_LOG("wrapped-num", crab::outs() << res << "\n";);
+    return res;
+  }
       
   // numerical_domains_api
 
@@ -2700,8 +2850,7 @@ public:
     }
     _product.apply(op, x, y, z);
     CRAB_LOG("wrapped-num",
-	     crab::outs()  << "Reduction after " << x << ":=" << y << " " << op
-	                   << " " << z <<"\n";);
+	     crab::outs() << x << ":=" << y << " " << op << " " << z <<"=" << _product << "\n";);
     strengthen(x);
   }
       
@@ -2712,15 +2861,14 @@ public:
     }    
     _product.apply(op, x, y, k);
     CRAB_LOG("wrapped-num",
-	     crab::outs()  << "Reduction after " << x << ":=" << y << " " << op
-	                   << " " << k <<"\n";);
+	     crab::outs() << x << ":=" << y << " " << op << " " << k <<"=" << _product << "\n";);
     strengthen(x);
   }
 
   void assign(variable_t x, linear_expression_t e) {
     _product.assign(x, e);
     CRAB_LOG("wrapped-num",
-	     crab::outs()  << "Reduction after " << x << ":=" << e << "\n");
+	     crab::outs()  << x << ":=" << e << "=" << _product << "\n";);
     
     if (!e.is_constant()) {
       strengthen(x);
@@ -2754,9 +2902,19 @@ public:
   }
       
   void operator+=(linear_constraint_system_t csts) {
+    // Add first the constraint in the wrapped interval domain
+    _product.first()  += csts;
+
     linear_constraint_system_t non_overflow_csts;
+    CRAB_LOG("wrapped-num",
+	     crab::outs() << "BEGIN add constraints {";
+	     for (auto c: csts) {
+	       crab::outs() << c << ";";
+	     }
+	     crab::outs() << "}\n";);
+
     for (auto c: csts) {
-      // rectify of the unsound numerical domain
+      // rectify of the "unsound" numerical domain
       signedness_t signedness = UNKNOWN_SIGNEDNESS;   
       if (c.is_inequality() || c.is_strict_inequality()) {
 	signedness = c.is_signed() ? SIGNED: UNSIGNED;
@@ -2764,17 +2922,19 @@ public:
       for (auto const& v: c.variables()) {
 	rectify(v, signedness);
       }
-
-      // add constraint in the unsound numerical domain only if
-      // expr(c) cannot overflow.
-      
-      if (!may_overflow(c.expression(), signedness)) {
+      // add constraint in the "unsound" numerical domain only if
+      // c cannot overflow.
+      if (!may_overflow(c, signedness)) {
 	non_overflow_csts += c;
+	CRAB_LOG("wrapped-num",
+		 crab::outs() << "** added constraint: " << c << "\n");        
+
       }
     }
-    
-    _product.first()  += csts;
     _product.second() += non_overflow_csts;
+
+    CRAB_LOG("wrapped-num",
+	     crab::outs() << "END add constraints: " << _product<< "\n");        
   }
       
   void set (variable_t x, interval_t intv)
@@ -2794,6 +2954,9 @@ public:
   // boolean_operators
   
   void assign_bool_cst (variable_t x, linear_constraint_t cst) override {
+    // Add first the constraint in the wrapped interval domain
+    _product.first().assign_bool_cst(x, cst);
+
     signedness_t signedness = UNKNOWN_SIGNEDNESS;   
     if (cst.is_inequality() || cst.is_strict_inequality()) {
       signedness = cst.is_signed() ? SIGNED: UNSIGNED;
@@ -2801,8 +2964,8 @@ public:
     for (auto const& v: cst.variables()) {
       rectify(v, signedness);
     }
-    if (!may_overflow(cst.expression(), signedness)) {
-      _product.assign_bool_cst(x, cst);
+    if (!may_overflow(cst, signedness)) {
+      _product.second().assign_bool_cst(x, cst);
     }
   }
   
