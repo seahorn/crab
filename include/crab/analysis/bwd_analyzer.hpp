@@ -237,7 +237,7 @@ namespace crab {
 	       unsigned int widening_delay=1,
 	       unsigned int descending_iters=UINT_MAX,
 	       size_t jump_set_size=0) {
-	run(m_cfg->entry(), init_states, final_states, only_forward, assumptions,
+	run(m_cfg.entry(), init_states, final_states, only_forward, assumptions,
 	    live, widening_delay, descending_iters, jump_set_size);
       }
       
