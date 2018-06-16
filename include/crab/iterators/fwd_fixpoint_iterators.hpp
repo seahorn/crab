@@ -316,6 +316,7 @@ namespace ikos {
         NodeName node = vertex.node();
         if (node == this->_iterator->get_cfg().entry()) {
           pre = this->_iterator->get_pre(node);
+	  pre = strengthen (node, pre);	  	  
         } else {
           auto prev_nodes = this->_iterator->_cfg.prev_nodes(node);
           pre = AbstractValue::bottom();
