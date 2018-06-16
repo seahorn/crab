@@ -60,10 +60,10 @@ int main (int argc, char** argv )
   crab::outs() << *cfg << "\n";
   crab::outs() << "\n";
 
-  run<z_dbm_domain_t>(cfg,true,1,2,20,stats_enabled);
-  run<z_sdbm_domain_t>(cfg,true,1,2,20,stats_enabled);
-  run<z_term_dis_int_t>(cfg,true,1,2,20,stats_enabled);
-  run<z_num_domain_t>(cfg,true,1,2,20,stats_enabled);
+  run<z_dbm_domain_t>(cfg,cfg->entry(),true,1,2,20,stats_enabled);
+  run<z_sdbm_domain_t>(cfg,cfg->entry(),true,1,2,20,stats_enabled);
+  run<z_term_dis_int_t>(cfg,cfg->entry(),true,1,2,20,stats_enabled);
+  run<z_num_domain_t>(cfg,cfg->entry(),true,1,2,20,stats_enabled);
   delete cfg;
   return 0;
 }

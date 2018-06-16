@@ -142,24 +142,24 @@ int main (int argc, char** argv )
     z_cfg_t* cfg = prog1(vfac);
     crab::outs() << *cfg << "\n";
 
-    run<z_interval_domain_t>(cfg,  false, 1, 2, 20, stats_enabled);
-    run<z_bool_num_domain_t>(cfg,  false, 1, 2, 20, stats_enabled);
+    run<z_interval_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
+    run<z_bool_num_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
     #ifdef HAVE_LDD
-    run<z_boxes_domain_t>(cfg,  false, 1, 2, 20, stats_enabled);
+    run<z_boxes_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
     #endif
     delete cfg;    
   }
   { // precise
     z_cfg_t* cfg = prog2(vfac);
     crab::outs() << *cfg << "\n";
-    run<z_bool_interval_domain_t>(cfg,  false, 1, 2, 20, stats_enabled);
+    run<z_bool_interval_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
     delete cfg;    
   }
   {
     // imprecise
     z_cfg_t* cfg = prog3(vfac);
     crab::outs() << *cfg << "\n";
-    run<z_bool_interval_domain_t>(cfg,  false, 1, 2, 20, stats_enabled);
+    run<z_bool_interval_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
     delete cfg;    
   }
   

@@ -6,6 +6,7 @@
 // To run abstract domains defined over integers
 template<typename Dom>
 extern void backward_run (crab::cfg_impl::z_cfg_t* cfg,
+			  crab::cfg_impl::basic_block_label_t entry,
 			  Dom initial_states,
 			  Dom final_states,
 			  unsigned widening, 

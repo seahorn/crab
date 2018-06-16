@@ -53,7 +53,7 @@ int main (int argc, char** argv )
   #ifdef HAVE_APRON  
   z_box_apron_domain_t initial_states, final_states;
   backward_run<z_box_apron_domain_t>
-    (cfg, initial_states, final_states, 1, 2, 20, stats_enabled);
+    (cfg,cfg->entry(),initial_states,final_states,1,2,20,stats_enabled);
   #endif
   
   // free the CFG

@@ -8,6 +8,7 @@
 // Helper
 template<typename CFG, typename Dom, typename IntraBwdAnalyzer>
 void backward_run_internal (CFG* cfg,
+			    crab::cfg_impl::basic_block_label_t entry,
 			    Dom initial_states,
 			    Dom final_states,
 			    unsigned widening, 
@@ -20,9 +21,9 @@ void backward_run_internal (CFG* cfg,
 	       << Dom::getDomainName () << "\n";
   IntraBwdAnalyzer a (*cfg);
   typename IntraBwdAnalyzer::assumption_map_t assumptions;
-  a.run (initial_states, final_states, false, assumptions,
-	 nullptr /*liveness*/,
-	 widening, narrowing, jump_set_size); 
+  a.run(entry, initial_states, final_states, false, assumptions,
+	nullptr /*liveness*/,
+	widening, narrowing, jump_set_size); 
   
   // Print preconditions
   for (auto &b : *cfg) {
@@ -51,6 +52,7 @@ void backward_run_internal (CFG* cfg,
 // To run abstract domains defined over integers
 template<typename Dom>
 void backward_run (crab::cfg_impl::z_cfg_t* cfg,
+		   crab::cfg_impl::basic_block_label_t entry,		   
 		   Dom initial_states,
 		   Dom final_states,
 		   unsigned widening, 
@@ -61,7 +63,7 @@ void backward_run (crab::cfg_impl::z_cfg_t* cfg,
   typedef intra_forward_backward_analyzer<crab::cfg_impl::z_cfg_ref_t, Dom>
     backward_analyzer_t;
   backward_run_internal<crab::cfg_impl::z_cfg_t, Dom, backward_analyzer_t>
-    (cfg, initial_states, final_states, 
+    (cfg, entry, initial_states, final_states, 
      widening, narrowing, jump_set_size, enable_stats);   
 }
 

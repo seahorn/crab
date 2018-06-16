@@ -56,7 +56,7 @@ int main (int argc, char** argv )
     final_states += (x <= 5);
     final_states += (x >= -5);    
     backward_run<z_box_apron_domain_t>
-      (cfg, initial_states, final_states, 1, 2, 20, stats_enabled);
+      (cfg,cfg->entry(),initial_states,final_states,1,2,20,stats_enabled);
   }
   #endif
 
@@ -67,7 +67,7 @@ int main (int argc, char** argv )
     final_states += (x <= 5);
     final_states += (x >= -5);    
     backward_run<z_boxes_domain_t>
-      (cfg, initial_states, final_states, 1, 2, 20, stats_enabled);
+      (cfg,cfg->entry(),initial_states,final_states,1,2,20,stats_enabled);
   }
   #endif 
   

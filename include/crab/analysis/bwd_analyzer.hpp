@@ -115,9 +115,9 @@ namespace crab {
 	  m_postcond (postcond) { }
      
       template <typename Range>
-      void Run (Range invariants) {
+      void Run(Range invariants) {
 	m_invariants = bb_abstract_map_t(invariants.begin(), invariants.end());
-	this->run (m_postcond);
+	this->run(m_postcond);
       }
       
       iterator begin () { return m_preconditions.begin(); } 
@@ -198,7 +198,7 @@ namespace crab {
 
       void store_forward_analysis_results (fwd_analyzer_t &f) {
 	m_pre_invariants = invariant_map_t(f.pre_begin(), f.pre_end());
-	m_post_invariants = invariant_map_t(f.post_begin(), f.post_end());	    
+	m_post_invariants = invariant_map_t(f.post_begin(), f.post_end());
       }
       
       void store_analysis_results (fwd_analyzer_t &f, bwd_fixpoint_iterator_t &b) {
@@ -226,17 +226,33 @@ namespace crab {
       /**
        * Perform the refining forward-backward loop.
        **/
-      void run (AbsDom init_states, AbsDom final_states,
-		// behaves as a standard forward analysis
-		bool only_forward,
-		// assumptions
-		assumption_map_t &assumptions,
-		// liveness information
-		const liveness_t* live, 
-		// parameters for each forward or backward analysis
-		unsigned int widening_delay=1,
-		unsigned int descending_iters=UINT_MAX,
-		size_t jump_set_size=0) {
+      void run(AbsDom init_states, AbsDom final_states,
+	       // behaves as a standard forward analysis
+	       bool only_forward,
+	       // assumptions
+	       assumption_map_t &assumptions,
+	       // liveness information
+	       const liveness_t* live, 
+	       // parameters for each forward or backward analysis
+	       unsigned int widening_delay=1,
+	       unsigned int descending_iters=UINT_MAX,
+	       size_t jump_set_size=0) {
+	run(m_cfg->entry(), init_states, final_states, only_forward, assumptions,
+	    live, widening_delay, descending_iters, jump_set_size);
+      }
+      
+      void run(bb_label_t entry, // only used for the forward pass.
+	       AbsDom init_states, AbsDom final_states,
+	       // behaves as a standard forward analysis
+	       bool only_forward,
+	       // assumptions
+	       assumption_map_t &assumptions,
+	       // liveness information
+	       const liveness_t* live, 
+	       // parameters for each forward or backward analysis
+	       unsigned int widening_delay=1,
+	       unsigned int descending_iters=UINT_MAX,
+	       size_t jump_set_size=0) {
 
 	CRAB_LOG ("backward",
 		  crab::outs() << "Initial states=" << init_states << "\n";
@@ -247,15 +263,15 @@ namespace crab {
 	while (true) {
 	  iters++;
           crab::CrabStats::count ("CombinedForwardBackward.iterations");
-	  CRAB_VERBOSE_IF(1, crab::outs() << "Iteration " << iters << "\n" 	  
+	  CRAB_VERBOSE_IF(1, crab::outs() << "Iteration " << iters << "\n" 
 			                  << "Started forward analysis.\n";);
 
 	  crab::CrabStats::resume ("CombinedForwardBackward.ForwardPass");
 	  // run forward analysis computing invariants
-	  fwd_analyzer_t F (m_cfg, m_wto, init_states, live,
-			    widening_delay, descending_iters, jump_set_size);
-	  F.run (assumptions);
-	  crab::CrabStats::stop ("CombinedForwardBackward.ForwardPass");	  
+	  fwd_analyzer_t F(m_cfg, m_wto, init_states, live,
+			   widening_delay, descending_iters, jump_set_size);
+	  F.run(entry, assumptions);
+	  crab::CrabStats::stop ("CombinedForwardBackward.ForwardPass");
 	  
 	  // reuse wto for next iteration
 	  if (iters == 1) m_wto = new wto_t(F.get_wto ());
@@ -275,15 +291,16 @@ namespace crab {
 	    break;
 	  }
 	  
-	  CRAB_VERBOSE_IF(1, crab::outs () << "Started backward analysis.\n";);		   
+	  CRAB_VERBOSE_IF(1, crab::outs () << "Started backward analysis.\n";);
 
-	  crab::CrabStats::resume ("CombinedForwardBackward.BackwardPass");	  
+	  crab::CrabStats::resume ("CombinedForwardBackward.BackwardPass");
 	  // run backward analysis computing necessary preconditions
 	  // refined with invariants
-	  bwd_fixpoint_iterator_t B (m_cfg, m_b_wto, final_states,
-				     widening_delay, descending_iters, jump_set_size);
-	  B.Run (boost::make_iterator_range(F.pre_begin(), F.pre_end()));
-	  crab::CrabStats::stop ("CombinedForwardBackward.BackwardPass");	  
+	  bwd_fixpoint_iterator_t B
+	    (m_cfg, m_b_wto, final_states,
+	     widening_delay, descending_iters, jump_set_size);
+	  B.Run(boost::make_iterator_range(F.pre_begin(), F.pre_end()));
+	  crab::CrabStats::stop ("CombinedForwardBackward.BackwardPass"); 
 
 	  CRAB_VERBOSE_IF(1, crab::outs () << "Finished backward analysis.\n";);
 	  

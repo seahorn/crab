@@ -190,15 +190,15 @@ namespace crab {
         domains::domain_traits<abs_dom_t>::do_initialization (this->get_cfg());
         // XXX: inv was created before the static data is initialized
         //      so it won't contain that data.
-        this->run (m_abs_tr->inv());         
+        this->run(m_abs_tr->inv());         
       }      
 
-      void Run (assumption_map_t &assumptions)  {
+      void Run (basic_block_label_t entry, assumption_map_t &assumptions)  {
         // initialization of static data
         domains::domain_traits<abs_dom_t>::do_initialization (this->get_cfg());
         // XXX: inv was created before the static data is initialized
         //      so it won't contain that data.	
-        this->run (m_abs_tr->inv(), assumptions);         
+        this->run(entry, m_abs_tr->inv(), assumptions);         
       }      
       
       //! Propagate inv through statements
@@ -315,10 +315,10 @@ namespace crab {
       const_iterator post_begin () const { return m_analyzer.post_begin();}
       const_iterator post_end ()   const { return m_analyzer.post_end();}
 
-      void run () { m_analyzer.Run ();}
+      void run() { m_analyzer.Run();}
 
-      void run (assumption_map_t &assumptions)
-      { m_analyzer.Run (assumptions);}
+      void run(basic_block_label_t entry, assumption_map_t &assumptions)
+      { m_analyzer.Run(entry, assumptions);}
       
       abs_dom_t operator[] (basic_block_label_t b) const
       { return m_analyzer[b]; }

@@ -5,7 +5,8 @@
 
 // To run abstract domains defined over integers
 template<typename Dom>
-extern void run (crab::cfg_impl::z_cfg_t* cfg, 
+extern void run (crab::cfg_impl::z_cfg_t* cfg,
+		 crab::cfg_impl::basic_block_label_t entry,
 		 bool run_liveness,
 		 unsigned widening, 
 		 unsigned narrowing, 
@@ -13,7 +14,8 @@ extern void run (crab::cfg_impl::z_cfg_t* cfg,
 		 bool enable_stats);
 
 template<typename Dom>
-extern void run_and_check (crab::cfg_impl::z_cfg_t* cfg, 
+extern void run_and_check (crab::cfg_impl::z_cfg_t* cfg,
+			   crab::cfg_impl::basic_block_label_t entry,
 			   bool run_liveness,
 			   unsigned widening, 
 			   unsigned narrowing, 
@@ -22,7 +24,8 @@ extern void run_and_check (crab::cfg_impl::z_cfg_t* cfg,
 
 // To run abstract domains defined over rationals
 template<typename Dom>
-extern void run (crab::cfg_impl::q_cfg_t* cfg, 
+extern void run (crab::cfg_impl::q_cfg_t* cfg,
+		 crab::cfg_impl::basic_block_label_t entry,
 		 bool run_liveness,
 		 unsigned widening, 
 		 unsigned narrowing, 

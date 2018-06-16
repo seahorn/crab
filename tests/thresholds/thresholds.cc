@@ -144,12 +144,12 @@ int main (int argc, char**argv){
     ////////////////////////////////////////////////////////////
     // -- w/o thresholds
     ////////////////////////////////////////////////////////////    
-    run<z_term_domain_t>(cfg, false, 1, 2, 0, stats_enabled);
+    run<z_term_domain_t>(cfg,cfg->entry(),false,1,2,0,stats_enabled);
 
     ////////////////////////////////////////////////////////////
     // -- w/thresholds
     ////////////////////////////////////////////////////////////        
-    run<z_term_domain_t>(cfg, false, 1, 2, 20, stats_enabled);
+    run<z_term_domain_t>(cfg,cfg->entry(),false,1,2,20,stats_enabled);
 
 
     delete cfg;

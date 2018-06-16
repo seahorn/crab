@@ -92,23 +92,23 @@ int main (int argc, char** argv )
     z_cfg_t* cfg = prog1(vfac);
     crab::outs() << *cfg << "\n";
     // unsound result
-    run<z_interval_domain_t>(cfg,  false, 1, 2, 20, stats_enabled);
+    run<z_interval_domain_t>(cfg,cfg->entry(),false,1,2,20,stats_enabled);
     // sound result
-    run<z_wrapped_interval_domain_t>(cfg,  false, 1, 2, 20, stats_enabled);
+    run<z_wrapped_interval_domain_t>(cfg,cfg->entry(),false,1,2,20,stats_enabled);
     delete cfg;
   }
   {
     variable_factory_t vfac;
     z_cfg_t* cfg = prog2(vfac, true);
     crab::outs() << *cfg << "\n";
-    run<z_wrapped_interval_domain_t>(cfg,  false, 1, 2, 20, stats_enabled);
+    run<z_wrapped_interval_domain_t>(cfg,cfg->entry(),false,1,2,20,stats_enabled);
     delete cfg;
   }
   {
     variable_factory_t vfac;
     z_cfg_t* cfg = prog2(vfac, false);
     crab::outs() << *cfg << "\n";
-    run<z_wrapped_interval_domain_t>(cfg,  false, 1, 2, 20, stats_enabled);
+    run<z_wrapped_interval_domain_t>(cfg,cfg->entry(),false,1,2,20,stats_enabled);
     delete cfg;
   }
   return 0;

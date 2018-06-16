@@ -249,11 +249,14 @@ namespace ikos {
       reset ();
     }
 
-    void run(AbstractValue init, assumption_map_t &assumptions) {
+    void run(NodeName entry, AbstractValue init, assumption_map_t &assumptions) {
       crab::ScopedCrabStats __st__("Fixpo");
-      CRAB_VERBOSE_IF(2, crab::outs() << "== Started fixpoint\n");      
-      this->set_pre(this->_cfg.entry(), init);
-      wto_iterator_t iterator(this, &assumptions);
+      CRAB_VERBOSE_IF(2,
+	     crab::outs() << "== Started fixpoint at block "
+		          << crab::cfg_impl::get_label_str(entry)
+		          << " with initial value=" << init << "\n";);      
+      this->set_pre(entry, init);
+      wto_iterator_t iterator(this, entry, &assumptions);
       this->_wto.accept(&iterator);
       wto_processor_t processor(this);
       this->_wto.accept(&processor);
@@ -284,8 +287,12 @@ namespace ikos {
       
     private:
       interleaved_iterator_t *_iterator;
+      // Initial entry point of the analysis
+      NodeName _entry;      
       assumption_map_t *_assumptions;
-
+      // Used to skip the analysis until _entry is found
+      bool _skip; 
+      
       inline AbstractValue strengthen (NodeName n, AbstractValue inv) {
 	if (_assumptions) {
 	  auto it = _assumptions->find(n);
@@ -302,19 +309,65 @@ namespace ikos {
 	}
 	return inv;
       }
-		  
+
+      // Simple visitor to check if node is a member of the wto component.
+      class member_component_visitor:
+	public wto_component_visitor<NodeName, CFG> {
+	NodeName _node;
+	bool _found;
+      public:
+	member_component_visitor(NodeName node): _node(node), _found(false) {}
+	
+	void visit(wto_vertex_t& c) {
+	  if (!_found) { _found = (c.node() == _node); }
+	}
+	
+	void visit(wto_cycle_t& c) {
+	  if (!_found) {
+	    _found = (c.head() == _node);
+	    if (!_found) {
+	      for(typename wto_cycle_t::iterator it = c.begin(), et = c.end(); it!=et; ++it) {
+		if (_found) break;
+		it->accept(this);
+	      }
+	    }
+	  }
+	}
+	
+	bool is_member() const { return _found;}
+      }; 
+      
     public:
-      wto_iterator(interleaved_iterator_t *iterator):
-	_iterator(iterator), _assumptions (nullptr) { }
+      wto_iterator(interleaved_iterator_t *iterator)
+	: _iterator(iterator),
+	  _entry(_iterator->get_cfg().entry()),	  
+	  _assumptions (nullptr),
+	  _skip(true) { }
 
       wto_iterator(interleaved_iterator_t *iterator,
-		   assumption_map_t *assumptions):
-	_iterator(iterator), _assumptions (assumptions) { }      
+		   NodeName entry,
+		   assumption_map_t *assumptions)
+	: _iterator(iterator),
+	  _entry(entry),	  
+	  _assumptions (assumptions),
+	  _skip(true) { }      
       
       void visit(wto_vertex_t& vertex) {
-        AbstractValue pre;
         NodeName node = vertex.node();
-        if (node == this->_iterator->get_cfg().entry()) {
+
+	/** decide whether skip vertex or not **/	
+	if (_skip && (node == _entry)) {
+	  _skip = false;
+	}
+	if (_skip) {
+	  CRAB_VERBOSE_IF (2,
+		crab::outs() << "** Skipped analysis of  "
+			     << crab::cfg_impl::get_label_str(node) << "\n");
+	  return;
+	}
+       
+        AbstractValue pre;
+        if (node == _entry) {
           pre = this->_iterator->get_pre(node);
 	  pre = strengthen (node, pre);	  	  
         } else {
@@ -338,20 +391,47 @@ namespace ikos {
       
       void visit(wto_cycle_t& cycle) {
         NodeName head = cycle.head();
+
+	/** decide whether skip cycle or not **/
+	bool entry_in_this_cycle = false;
+	if (_skip) {
+	  // We only skip the analysis of cycle is _entry is not a
+	  // component of it, included nested components.
+	  member_component_visitor vis(_entry);
+	  cycle.accept(&vis);
+	  entry_in_this_cycle = vis.is_member();
+	  _skip = !entry_in_this_cycle;
+	  if (_skip) {
+	    CRAB_VERBOSE_IF (2,
+		 crab::outs() << "** Skipped analysis of WTO cycle rooted at  "
+			      << crab::cfg_impl::get_label_str(head) << "\n");
+	    return;
+	  }
+	}
+	
         CRAB_VERBOSE_IF (2,
 			 crab::outs() << "** Analyzing loop with head "
 			 << crab::cfg_impl::get_label_str(head) << "\n");
 	
-        wto_nesting_t cycle_nesting = this->_iterator->_wto.nesting(head);
         auto prev_nodes = this->_iterator->_cfg.prev_nodes(head);
         AbstractValue pre = AbstractValue::bottom();
-	CRAB_VERBOSE_IF (2, crab::outs() << "Joining predecessors of "
-			 << crab::cfg_impl::get_label_str(head) << "\n");
-        for (NodeName prev : prev_nodes) {
-          if (!(this->_iterator->_wto.nesting(prev) > cycle_nesting)) {
-            pre |= this->_iterator->get_post(prev); 
-          }
-        }
+
+	if (entry_in_this_cycle) {
+	  CRAB_VERBOSE_IF (2,
+		    crab::outs() << "Skipped predecessors of "
+		  	         << crab::cfg_impl::get_label_str(head) << "\n");
+	  pre = _iterator->get_pre(_entry);
+	} else {
+	  CRAB_VERBOSE_IF (2,
+		    crab::outs() << "Joining predecessors of "
+		  	         << crab::cfg_impl::get_label_str(head) << "\n");
+	  wto_nesting_t cycle_nesting = this->_iterator->_wto.nesting(head);	
+	  for (NodeName prev : prev_nodes) {
+	    if (!(this->_iterator->_wto.nesting(prev) > cycle_nesting)) {
+	      pre |= this->_iterator->get_post(prev); 
+	    }
+	  }
+	}
 	pre = strengthen (head, pre);
 	
         for(unsigned int iteration = 1; ; ++iteration) {

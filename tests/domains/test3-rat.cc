@@ -48,12 +48,12 @@ int main (int argc, char** argv )
   q_cfg_t* cfg = prog (vfac);
   crab::outs() << *cfg << "\n";
 
-  run<q_interval_domain_t>(cfg,false,1,2,20,stats_enabled);
+  run<q_interval_domain_t>(cfg,cfg->entry(),false,1,2,20,stats_enabled);
   #ifdef HAVE_APRON
-  run<q_pk_apron_domain_t>(cfg,false,1,2,20,stats_enabled);
+  run<q_pk_apron_domain_t>(cfg,cfg->entry(),false,1,2,20,stats_enabled);
   #endif
   #ifdef HAVE_LDD
-  run<q_boxes_domain_t>(cfg,false,1,2,20,stats_enabled);
+  run<q_boxes_domain_t>(cfg,cfg->entry(),false,1,2,20,stats_enabled);
   #endif   
   return 0;
 }

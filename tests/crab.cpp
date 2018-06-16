@@ -10,7 +10,8 @@
 
 // Helper
 template<typename CFG, typename Dom, typename IntraFwdAnalyzer>
-void intra_run_impl (CFG* cfg, 
+void intra_run_impl (CFG* cfg,
+		     crab::cfg_impl::basic_block_label_t entry,		     
 		     bool run_liveness,
 		     unsigned widening, 
 		     unsigned narrowing, 
@@ -28,8 +29,9 @@ void intra_run_impl (CFG* cfg,
   IntraFwdAnalyzer a (*cfg, inv,
 		      (run_liveness) ? &live : nullptr,
 		      widening, narrowing, jump_set_size);
-  
-  a.run ();
+
+  typename IntraFwdAnalyzer::assumption_map_t assumptions;
+  a.run(entry, assumptions);
   
   // Print invariants
   for (auto &b : *cfg) {
@@ -63,7 +65,8 @@ void intra_run_impl (CFG* cfg,
 
 // To run abstract domains defined over integers
 template<typename Dom>
-void run (crab::cfg_impl::z_cfg_t* cfg, 
+void run (crab::cfg_impl::z_cfg_t* cfg,
+	  crab::cfg_impl::basic_block_label_t entry,	  
 	  bool run_liveness,
 	  unsigned widening, 
 	  unsigned narrowing, 
@@ -72,11 +75,12 @@ void run (crab::cfg_impl::z_cfg_t* cfg,
   using namespace crab::analyzer;
   typedef intra_fwd_analyzer<crab::cfg_impl::z_cfg_ref_t, Dom> intra_fwd_analyzer_t;
   intra_run_impl<crab::cfg_impl::z_cfg_t, Dom, intra_fwd_analyzer_t>
-    (cfg, run_liveness, widening, narrowing, jump_set_size, enable_stats, false);
+    (cfg, entry, run_liveness, widening, narrowing, jump_set_size, enable_stats, false);
 }
 
 template<typename Dom>
-void run_and_check (crab::cfg_impl::z_cfg_t* cfg, 
+void run_and_check (crab::cfg_impl::z_cfg_t* cfg,
+		    crab::cfg_impl::basic_block_label_t entry,		    
 		    bool run_liveness,
 		    unsigned widening, 
 		    unsigned narrowing, 
@@ -85,12 +89,13 @@ void run_and_check (crab::cfg_impl::z_cfg_t* cfg,
   using namespace crab::analyzer;
   typedef intra_fwd_analyzer<crab::cfg_impl::z_cfg_ref_t, Dom> intra_fwd_analyzer_t;
   intra_run_impl<crab::cfg_impl::z_cfg_t, Dom, intra_fwd_analyzer_t>
-    (cfg, run_liveness, widening, narrowing, jump_set_size, enable_stats, true);
+    (cfg, entry, run_liveness, widening, narrowing, jump_set_size, enable_stats, true);
 }
 
 // To run abstract domains defined over rationals
 template<typename Dom>
-void run (crab::cfg_impl::q_cfg_t* cfg, 
+void run (crab::cfg_impl::q_cfg_t* cfg,
+	  crab::cfg_impl::basic_block_label_t entry,	  
 	  bool run_liveness,
 	  unsigned widening, 
 	  unsigned narrowing, 
@@ -99,7 +104,7 @@ void run (crab::cfg_impl::q_cfg_t* cfg,
   using namespace crab::analyzer;
   typedef intra_fwd_analyzer<crab::cfg_impl::q_cfg_ref_t,Dom> intra_fwd_analyzer_t;
   intra_run_impl<crab::cfg_impl::q_cfg_t, Dom, intra_fwd_analyzer_t>
-    (cfg, run_liveness, widening, narrowing, jump_set_size, enable_stats, false);
+    (cfg, entry, run_liveness, widening, narrowing, jump_set_size, enable_stats, false);
 }
 
 ////////

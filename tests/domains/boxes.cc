@@ -245,25 +245,25 @@ int main (int argc, char** argv )
 
   cfg1->simplify (); // this is optional
   crab::outs() << *cfg1 << "\n";
-  run<z_boxes_domain_t>(cfg1,  false, 10,2,20,stats_enabled);
+  run<z_boxes_domain_t>(cfg1,cfg1->entry(),false,10,2,20,stats_enabled);
 
   cfg2->simplify (); // this is optional
   crab::outs() << *cfg2 << "\n";
-  run<z_boxes_domain_t>(cfg2,  false, 10,2,20,stats_enabled);
+  run<z_boxes_domain_t>(cfg2,cfg2->entry(),false,10,2,20,stats_enabled);
   
   cfg3->simplify (); // this is optional
   crab::outs() << *cfg3 << "\n";
-  run<z_boxes_domain_t>(cfg3,  false, 10,2,20,stats_enabled);
+  run<z_boxes_domain_t>(cfg3,cfg3->entry(),false,10,2,20,stats_enabled);
 
   cfg4->simplify (); // this is optional
   crab::outs() << *cfg4 << "\n";
-  run<z_boxes_domain_t>(cfg4,  false, 10,2,20,stats_enabled);
+  run<z_boxes_domain_t>(cfg4,cfg4->entry(),false,10,2,20,stats_enabled);
 
   crab::outs() << *cfg5 << "\n";
-  run<z_boxes_domain_t>(cfg5,  false, 10,2,20,stats_enabled);
+  run<z_boxes_domain_t>(cfg5,cfg5->entry(),false,10,2,20,stats_enabled);
 
   crab::outs() << *cfg6 << "\n";
-  run<z_boxes_domain_t>(cfg6, false, 1,2,20,stats_enabled);
+  run<z_boxes_domain_t>(cfg6,cfg6->entry(),false,1,2,20,stats_enabled);
   
   delete cfg1;
   delete cfg2;

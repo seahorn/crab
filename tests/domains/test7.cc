@@ -52,8 +52,8 @@ int main (int argc, char** argv )
   z_cfg_t* cfg = prog(vfac);
   crab::outs() << *cfg << "\n";
 
-  run<z_bool_interval_domain_t>(cfg,  false, 1, 2, 20, stats_enabled);
-  run<z_bool_num_domain_t>(cfg,  false, 1, 2, 20, stats_enabled);  
+  run<z_bool_interval_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
+  run<z_bool_num_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);  
   
   // free the CFG
   delete cfg;

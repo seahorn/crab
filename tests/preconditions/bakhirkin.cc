@@ -78,14 +78,14 @@ int main (int argc, char** argv )
     z_box_apron_domain_t initial_states, final_states;
     final_states = z_box_apron_domain_t::bottom();    
     backward_run<z_box_apron_domain_t>
-      (cfg, initial_states, final_states, 1, 2, 20, stats_enabled);
+      (cfg, cfg->entry(), initial_states, final_states, 1, 2, 20, stats_enabled);
   }
   
   if (true) {
     z_pk_apron_domain_t initial_states, final_states;
     final_states = z_pk_apron_domain_t::bottom();
     backward_run<z_pk_apron_domain_t>
-      (cfg, initial_states, final_states, 1, 2, 20, stats_enabled);
+      (cfg, cfg->entry(), initial_states, final_states, 1, 2, 20, stats_enabled);
   }
   #endif
   

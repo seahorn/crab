@@ -120,13 +120,13 @@ int main (int argc, char** argv) {
   variable_factory_t vfac;
   z_cfg_t* cfg_1 = cfg1 (vfac);
   crab::outs () << *cfg_1 << "\n";
-  run<z_nullity_domain_t>(cfg_1,  false, 1, 2, 20, stats_enabled);
+  run<z_nullity_domain_t>(cfg_1,cfg_1->entry(),false,1,2,20,stats_enabled);
   z_cfg_t* cfg_2 = cfg2 (vfac);
   crab::outs () << *cfg_2 << "\n";
-  run<z_nullity_domain_t>(cfg_2,  false, 1, 2, 20, stats_enabled);
+  run<z_nullity_domain_t>(cfg_2,cfg_2->entry(),false,1,2,20,stats_enabled);
   z_cfg_t* cfg_3 = cfg3 (vfac);
   crab::outs () << *cfg_3 << "\n";
-  run<z_nullity_domain_t>(cfg_3,  false, 1, 2, 20, stats_enabled);
+  run<z_nullity_domain_t>(cfg_3,cfg_3->entry(),false,1,2,20,stats_enabled);
   
   delete cfg_1;
   delete cfg_2;

@@ -2,7 +2,7 @@
 
 #define Z_BWD_RUNNER(DOM) \
 template void backward_run<DOM> \
- (crab::cfg_impl::z_cfg_t*, DOM, DOM, unsigned, unsigned, unsigned, bool);
+ (crab::cfg_impl::z_cfg_t*, crab::cfg_impl::basic_block_label_t, DOM, DOM, unsigned, unsigned, unsigned, bool);
 
 //Z_BWD_RUNNER(crab::domain_impl::z_interval_domain_t)
 //Z_BWD_RUNNER(crab::domain_impl::z_sdbm_domain_t)

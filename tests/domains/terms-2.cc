@@ -61,8 +61,8 @@ int main (int argc, char** argv )
   cfg->simplify ();
   crab::outs() << *cfg << "\n";
 
-  run<z_interval_domain_t>(cfg,  true, 1, 2, 20, stats_enabled);
-  run<z_term_domain_t>(cfg,  true, 1, 2, 20, stats_enabled);
+  run<z_interval_domain_t>(cfg,cfg->entry(),true,1,2,20,stats_enabled);
+  run<z_term_domain_t>(cfg,cfg->entry(),true,1,2,20,stats_enabled);
 
   return 0;
 }
