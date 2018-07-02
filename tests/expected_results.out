@@ -33,7 +33,7 @@ bb1_t={-i <= 0; i <= 100; -k <= 0}
 bb1={-i <= 0; i <= 100; -k <= 0}
 bb1_f={-i <= 0; i <= 100; -k <= 0}
 entry={}
-Abstract trace: entry (bb1 bb1_t bb2)^{4} bb1_f ret
+Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Invariants using ApronOctagon
 ret={-i <= -100; i <= 100; i-k <= 0; -i-k <= -200; -k <= -100; i+k <= 200; -i+k <= 0; k <= 100}
@@ -323,7 +323,7 @@ loop_f={-i <= 0; i <= 10; -p <= 0}
 loop_head={-i <= 0; i <= 10; -p <= 0}
 loop_t={-i <= 0; i <= 10; -p <= 0}
 entry={}
-Abstract trace: entry (loop_head loop_t loop_body)^{4} loop_f ret
+Abstract trace: entry (loop_head loop_t loop_body)^{3} loop_f ret
 
 Invariants using ApronOctagon
 ret={-i <= -10; i <= 10; i-p <= 0; -i-p <= -20; -p <= -10}
@@ -332,7 +332,7 @@ loop_f={-i <= 0; i <= 10; i-p <= 0; -i-p <= 0; -p <= 0}
 loop_head={-i <= 0; i <= 10; i-p <= 0; -i-p <= 0; -p <= 0}
 loop_t={-i <= 0; i <= 10; i-p <= 0; -i-p <= 0; -p <= 0}
 entry={}
-Abstract trace: entry (loop_head loop_t loop_body)^{4} loop_f ret
+Abstract trace: entry (loop_head loop_t loop_body)^{3} loop_f ret
 
 Invariants using ApronOptimizedOctagon
 ret={-i <= -10; i <= 10; i-p <= 0; -i-p <= -20; -p <= -10}
@@ -341,7 +341,7 @@ loop_f={-i <= 0; i <= 10; i-p <= 0; -i-p <= 0; -p <= 0}
 loop_head={-i <= 0; i <= 10; i-p <= 0; -i-p <= 0; -p <= 0}
 loop_t={-i <= 0; i <= 10; i-p <= 0; -i-p <= 0; -p <= 0}
 entry={}
-Abstract trace: entry (loop_head loop_t loop_body)^{4} loop_f ret
+Abstract trace: entry (loop_head loop_t loop_body)^{3} loop_f ret
 
 Invariants using ApronNewPolka
 ret={p = 40; i = 10}
@@ -350,7 +350,7 @@ loop_f={-4*i+p = 0; i <= 10; -i <= 0}
 loop_head={-4*i+p = 0; i <= 10; -i <= 0}
 loop_t={-4*i+p = 0; i <= 10; -i <= 0}
 entry={}
-Abstract trace: entry (loop_head loop_t loop_body)^{4} loop_f ret
+Abstract trace: entry (loop_head loop_t loop_body)^{3} loop_f ret
 
 entry:
   k = 0;
@@ -387,7 +387,7 @@ bb1_t={-i <= 0; -k <= 0}
 bb1={-i <= 0; -k <= 0}
 bb1_f={-i <= 0; -k <= 0}
 entry={}
-Abstract trace: entry (bb1 bb1_t bb2)^{4} bb1_f ret
+Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Invariants using ApronOctagon
 ret={-i <= -9; i <= 9; i-k <= 0; -i-k <= -18; -k <= -9; i+k <= 18; -i+k <= 0; k <= 9}
@@ -396,7 +396,7 @@ bb1_t={-i <= 0; i-k <= 0; -i-k <= 0; -k <= 0; -i+k <= 0}
 bb1={-i <= 0; i-k <= 0; -i-k <= 0; -k <= 0; -i+k <= 0}
 bb1_f={-i <= 0; i-k <= 0; -i-k <= 0; -k <= 0; -i+k <= 0}
 entry={}
-Abstract trace: entry (bb1 bb1_t bb2)^{4} bb1_f ret
+Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Invariants using ApronOptimizedOctagon
 ret={-i <= -9; i <= 9; i-k <= 0; -i-k <= -18; -k <= -9; i+k <= 18; -i+k <= 0; k <= 9}
@@ -405,7 +405,7 @@ bb1_t={-i <= 0; i-k <= 0; -i-k <= 0; -k <= 0; -i+k <= 0}
 bb1={-i <= 0; i-k <= 0; -i-k <= 0; -k <= 0; -i+k <= 0}
 bb1_f={-i <= 0; i-k <= 0; -i-k <= 0; -k <= 0; -i+k <= 0}
 entry={}
-Abstract trace: entry (bb1 bb1_t bb2)^{4} bb1_f ret
+Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Invariants using ApronNewPolka
 ret={k = 9; i = 9}
@@ -414,7 +414,7 @@ bb1_t={-i+k = 0; -i <= 0}
 bb1={-i+k = 0; -i <= 0}
 bb1_f={-i+k = 0; -i <= 0}
 entry={}
-Abstract trace: entry (bb1 bb1_t bb2)^{4} bb1_f ret
+Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 INITIALLY={}
 ADDING CONSTRAINTS={-x <= -1; x <= 1}
@@ -2249,9 +2249,9 @@ entry={}
 Abstract trace: entry (bb1)^{4}
 
 Invariants using ApronNewPolka
-bb1={x+2*y = 1; x <= 1; -x <= 0}
+bb1={x+2*y = 1; -x <= 0}
 entry={}
-Abstract trace: entry (bb1)^{4}
+Abstract trace: entry (bb1)^{3}
 
 Invariants using Boxes
 bb1={-x < 0; y <= 1/4} or 
@@ -2424,11 +2424,11 @@ entry={}
 Abstract trace: entry (header body)^{3} exit
 
 Invariants using ApronNewPolka
-exit={-y <= 0; -x+4*y <= 9; -x+3*y <= 5; -x+2*y <= 2; -x+y <= 0; -x <= -1}
-body={-y <= 0; -x+4*y <= 9; -x+3*y <= 5; -x+2*y <= 2; -x+y <= 0; -x <= -1}
-header={-y <= 0; -x+4*y <= 9; -x+3*y <= 5; -x+2*y <= 2; -x+y <= 0; -x <= -1}
+exit={}
+body={}
+header={}
 entry={}
-Abstract trace: entry (header body)^{4} exit
+Abstract trace: entry (header body)^{6} exit
 
 Invariants using Boxes
 exit={}

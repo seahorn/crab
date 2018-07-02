@@ -823,18 +823,25 @@ namespace crab {
             return *this;
           else {
             ap_state_ptr x = apPtr (get_man (), ap_abstract0_copy (get_man (), &*m_apstate));
-            var_map_t  m = merge_var_map (m_var_map, x, o.m_var_map, o.m_apstate);	    
-	    #if 1
+            var_map_t  m = merge_var_map (m_var_map, x, o.m_var_map, o.m_apstate);
+	    //////
+	    // We cannot refine the result of widening with
+	    // widening w/ thresholds over intervals because it might
+	    // cause non-termination.
+	    ///// 
+	    // This causes a loss of precision in a couple of tests:
+	    // - tests/domains/test2-rat.cc
+	    // - tests/domains/test3-rat.cc
+	    /////
+	    #if 0
 	    // widening w/o thresholds in the apron domain
             apron_domain_t res (apPtr (get_man(), 
-					 ap_abstract0_widening (get_man(), 
-								&*x, &*o.m_apstate)), m);
-
+	    				 ap_abstract0_widening(get_man(), 
+	    						       &*x, &*o.m_apstate)), m);
 	    // widening w/ thresholds in the interval domain
 	    auto intv_this  = this->to_interval_domain ();
 	    auto intv_o     = o.to_interval_domain ();
 	    auto intv_widen = intv_this.widening_thresholds (intv_o, ts);	    
-	    
 	    // refine the apron domain using the widen intervals
 	    apron_domain_t apron_intv_widen;
 	    apron_intv_widen += intv_widen.to_linear_constraint_system ();
