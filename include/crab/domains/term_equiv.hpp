@@ -1592,13 +1592,18 @@ namespace crab {
       typedef typename term_domain_t::ttbl_t ttbl_t;
       typedef boost::container::flat_set< term_id_t > term_set_t;
       
-      static void queue_push(ttbl_t& tbl, std::vector< std::vector<term_id_t> >& queue, term_id_t t)
-      {
+      static void queue_push(ttbl_t& tbl, std::vector< std::vector<term_id_t> >& queue,
+			     term_id_t t) {
         int d = tbl.depth(t);
-        while(queue.size() <= d)
-        queue.push_back(std::vector<term_id_t>());
+	if (d == 0) {
+	  // if depth 0 then t is a free variable: nothing to propagate.
+	  return;
+	}
+        while(queue.size() <= d) {
+	  queue.push_back(std::vector<term_id_t>());
+	}
         queue[d].push_back(t);
-    }
+      }
       
       static void normalize(term_domain_t& abs){
         // First propagate down, then up.   
@@ -1614,8 +1619,7 @@ namespace crab {
         
         dom_t d_prime = impl;
         // Propagate information to children.
-        // Don't need to propagate level 0, since
-        //
+        // Don't need to propagate level 0, since it's for free variables
         for(int d = queue.size()-1; d > 0; d--)
         {
           for(term_id_t t : queue[d])
@@ -1708,18 +1712,23 @@ namespace crab {
       
       typedef typename dom_t::interval_t interval_t;
       
-      static void queue_push(ttbl_t& tbl, std::vector< std::vector<term_id_t> >& queue, term_id_t t)
-      {
+      static void queue_push(ttbl_t& tbl, std::vector< std::vector<term_id_t> >& queue,
+			     term_id_t t) {
         int d = tbl.depth(t);
-        while(queue.size() <= d)
+	if (d == 0) {
+	  // if depth 0 then t is a free variable: nothing to
+	  // propagate.
+	  return;
+	}
+        while(queue.size() <= d) {
           queue.push_back(std::vector<term_id_t>());
+	}
         queue[d].push_back(t);
       }
       
       static void normalize(term_domain_t& abs){
         // First propagate down, then up.
         std::vector< std::vector< term_id_t > > queue;
-        //    fprintf(stdout, "Specialized for term<interval>\n");
         
         ttbl_t& ttbl(abs._ttbl);
         dom_t& impl = abs._impl;
@@ -1735,8 +1744,7 @@ namespace crab {
         }
         
         // Propagate information to children.
-        // Don't need to propagate level 0, since
-        //
+        // Don't need to propagate level 0, since it's for free variables
         for(int d = queue.size()-1; d > 0; d--)
         {
           for(term_id_t t : queue[d])
