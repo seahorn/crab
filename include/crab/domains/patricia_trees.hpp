@@ -43,7 +43,7 @@
 #pragma once
 
 #include <algorithm>
-#include <deque>
+#include <vector>
 #include <boost/shared_ptr.hpp>
 #include <boost/optional.hpp>
 #include <boost/iterator/iterator_facade.hpp>
@@ -189,7 +189,7 @@ public:
 
   private:
     typedef std::pair< tree_ptr, int > branching_t;
-    typedef std::deque< branching_t > branching_stack_t;
+    typedef std::vector< branching_t > branching_stack_t;
 
   private:
     tree_ptr _current;
@@ -1409,4 +1409,3 @@ public:
 }; // class patricia_tree_set
 
 } // namespace ikos
-
