@@ -383,7 +383,9 @@ namespace ikos {
     typedef typename VariableName::index_t index_t;
     typedef unsigned bitwidth_t;
     typedef crab::variable_type type_t;
-
+    typedef Number number_t;
+    typedef VariableName varname_t;
+    
   private:
     
     VariableName _n;
@@ -484,6 +486,8 @@ namespace ikos {
     typedef typename variable_t::bitwidth_t bitwidth_t;
     typedef typename variable_t::type_t type_t;
     typedef variable_ref<Number, VariableName> variable_ref_t;
+    typedef Number number_t;
+    typedef VariableName varname_t;
 
   private:
     
