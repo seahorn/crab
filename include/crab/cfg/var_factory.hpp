@@ -55,39 +55,45 @@ namespace crab {
           private:
 	   boost::optional<T> _s;
            index_t _id;
+	   std::string _name; // optional string name associated with _id
            variable_factory* _vfac;
-           
+
+	   // NOT IMPLEMENTED
            indexed_string();
            
-           indexed_string(index_t id, variable_factory *vfac): 
-	     _id(id), _vfac(vfac) { }
+           indexed_string(index_t id, variable_factory *vfac, std::string name = ""): 
+	     _id(id), _name(name), _vfac(vfac) { }
 	   
            indexed_string(T s, index_t id, variable_factory *vfac): 
-	     _s(s), _id(id), _vfac(vfac) { }
+	     _s(s), _id(id), _name(""), _vfac(vfac) { }
            
           public:
 
 	   ~indexed_string () {}
 	   
            indexed_string(const indexed_string& is)
-               : _s(is._s), _id(is._id), _vfac(is._vfac) { }
+	     : _s(is._s), _id(is._id), _name(is._name), _vfac(is._vfac) { }
            
            indexed_string& operator=(indexed_string is) {
              _s = is._s;
              _id = is._id;
+	     _name = is._name;
              _vfac = is._vfac;
              return *this;
            }
            
            index_t index() const { return this->_id; }
            
-           std::string str() const 
-           { 
+           std::string str() const {
              if (_s) {
 	       return indexed_string_impl::get_str<T>(*_s);
 	     } else {
-	       // unlikely prefix
-               return "@V_" + std::to_string(_id);
+	       if (_name != "") {
+		 return _name;
+	       } else {
+		 // unlikely prefix
+		 return "@V_" + std::to_string(_id);
+	       }
              }
            }
            
@@ -104,9 +110,7 @@ namespace crab {
            { return (_id == s._id);}
            
            void write(crab_os& o) 
-           {
-             o << str();
-           }
+           { o << str(); }
            
            friend crab_os& operator<<(crab_os& o, indexed_string s) 
            {
@@ -165,10 +169,10 @@ namespace crab {
          
          // generate a shadow indexed_string's from another
          // indexed_string's key
-         virtual indexed_string get (index_t key) {
+         virtual indexed_string get (index_t key, std::string name = "") {
            auto it = _shadow_map.find (key);
            if (it == _shadow_map.end()) {
-             indexed_string is (_next_id++, this);
+             indexed_string is (_next_id++, this, name);
              _shadow_map.insert (typename shadow_map_t::value_type (key, is));
              _shadow_vars.push_back (is);
              return is;
