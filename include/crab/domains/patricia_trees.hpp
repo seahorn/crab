@@ -1110,7 +1110,6 @@ class patricia_tree {
 private:
   typedef patricia_trees_impl::tree< Key, Value > tree_t;
   typedef typename tree_t::ptr tree_ptr;
-  typedef typename tree_t::binding_t binding_t;
 
 public:
   typedef patricia_tree< Key, Value > patricia_tree_t;
@@ -1118,6 +1117,7 @@ public:
   typedef typename tree_t::binary_op_t binary_op_t;
   typedef typename tree_t::key_binary_op_t key_binary_op_t;
   typedef typename tree_t::partial_order_t partial_order_t;
+  typedef typename tree_t::binding_t binding_t;
 
 private:
   tree_ptr _tree;
