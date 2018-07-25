@@ -65,18 +65,36 @@ namespace crab {
      typedef typename Domain::linear_constraint_t linear_constraint_t;
      
      // Return true if inv entails cst.
-     // if cst cannot be represented by Domain then return false.    
      static bool entail(Domain& inv, const linear_constraint_t& cst) {
        if (inv.is_bottom()) return true;
        if (cst.is_tautology ()) return true;
        if (cst.is_contradiction ()) return false;
+
+       CRAB_LOG("checker-entailment",
+		linear_constraint_t tmp(cst);
+		crab::outs() << "Checking whether\n" << inv << "\nentails " << tmp << "\n";);
        
-       Domain cst_inv;
-       cst_inv += cst;
-       // cst cannot be represented by the domain.
-       if (cst_inv.is_top ()) return false;
-      
-       return inv <= cst_inv; 
+       linear_constraint_t neg_cst = cst.negate();
+       Domain cst_inv = inv;
+       cst_inv += neg_cst;
+       bool res = cst_inv.is_bottom();
+
+       CRAB_LOG("checker-entailment",
+		if (res) {
+		  crab::outs() << "\t**entailment holds.\n";
+		} else  {
+		  crab::outs() << "\t**entailment does not hold.\n";
+		});
+
+       // Note: we cannot convert cst into Domain and then use the <=
+       //       operator. The problem is that we cannot know for sure
+       //       whether Domain can represent precisely cst. It is not
+       //       enough to do something like
+       // 
+       //       Dom dom = cst;
+       //       if (dom.is_top()) { ... }
+       
+       return res; 
      }
      
      // Return true if inv intersects with cst.
