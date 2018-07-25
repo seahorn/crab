@@ -3850,15 +3850,13 @@ namespace crab {
 	}
 	
 	// v1 is array type and v2 is a scalar type consistent with v1
-        void check_array_and_scalar_type_and_bitwidth(variable_t v1, variable_t v2, statement_t& s) {
+        void check_array_and_scalar_type(variable_t v1, variable_t v2, statement_t& s) {
 	  switch(v1.get_type()) {
 	  case ARR_BOOL_TYPE:
-	    if (v2.get_type() == BOOL_TYPE &&
-		v1.get_bitwidth() == v2.get_bitwidth()) return;
+	    if (v2.get_type() == BOOL_TYPE) return;
 	    break;
 	  case ARR_INT_TYPE:
-	    if (v2.get_type() == INT_TYPE &&
-	     	v1.get_bitwidth() == v2.get_bitwidth()) return;
+	    if (v2.get_type() == INT_TYPE) return;
 	    break;	    
 	  case ARR_REAL_TYPE:
 	    if (v2.get_type() == REAL_TYPE) return;
@@ -4060,7 +4058,7 @@ namespace crab {
 	  check_num_or_var(ub, "array upper bound must be number or variable", s);
 	  check_num_or_var(v, "array value must be number or variable", s);
 	  if (boost::optional<variable_t> vv = v.get_variable()) {
-	    check_array_and_scalar_type_and_bitwidth(a, *vv, s);
+	    check_array_and_scalar_type(a, *vv, s);
 	  }
 	}
 	
@@ -4070,7 +4068,7 @@ namespace crab {
 	  check_array(a, s);
 	  check_num_or_var(v, "array value must be number or variable", s);
 	  if (boost::optional<variable_t> vv = v.get_variable()) {
-	    check_array_and_scalar_type_and_bitwidth(a, *vv, s);
+	    check_array_and_scalar_type(a, *vv, s);
 	  }
 	}
 	
@@ -4078,7 +4076,7 @@ namespace crab {
 	  variable_t a = s.array();
 	  variable_t lhs = s.lhs();
 	  check_array(a, s);	  
-	  check_array_and_scalar_type_and_bitwidth(a, lhs, s);
+	  check_array_and_scalar_type(a, lhs, s);
 	}
 	  
 	void visit(arr_assign_t& s) {
