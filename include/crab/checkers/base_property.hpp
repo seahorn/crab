@@ -7,9 +7,6 @@
 #include <crab/common/types.hpp>
 #include <crab/common/debug.hpp>
 #include <crab/cfg/cfg.hpp>
-#include <crab/domains/linear_constraints.hpp>
-#include <crab/domains/intervals.hpp>
-#include <crab/domains/nullity.hpp>
 
 namespace crab {
 
@@ -151,10 +148,10 @@ namespace crab {
     typedef typename Analyzer::number_t number_t;
     typedef typename Analyzer::abs_dom_t abs_dom_t;
 
-    typedef ikos::variable<number_t,varname_t> var_t;
-    typedef ikos::linear_expression<number_t,varname_t> lin_exp_t;
-    typedef ikos::linear_constraint<number_t,varname_t> lin_cst_t;
-    typedef ikos::linear_constraint_system<number_t,varname_t> lin_cst_sys_t;
+    typedef typename abs_dom_t::variable_t var_t;
+    typedef typename abs_dom_t::linear_expression_t lin_exp_t;
+    typedef typename abs_dom_t::linear_constraint_t lin_cst_t;
+    typedef typename abs_dom_t::linear_constraint_system_t lin_cst_sys_t;
 
     typedef cfg::binary_op<number_t,varname_t>         bin_op_t;
     typedef cfg::assignment<number_t,varname_t>        assign_t;
