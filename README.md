@@ -153,8 +153,11 @@ for presentation purposes and it might not compile like it is. Go to
     typedef intra_fwd_analyzer<z_cfg_ref_t, zones_domain_t> intra_zones_analyzer_t;	
 
     int main (int argc, char**argv) {
-       // Declare variables i,x, and y
+	   // Create variable factory. 
+	   // Important: only one variable factory should be used to build a CFG. 
+	   // Moreover, the variable factory should be alive while the CFG is in use.
        variable_factory_t vfac;	
+       // Declare variables i,x, and y
        z_var i (vfac ["i"], INT_TYPE, 32);
        z_var x (vfac ["x"], INT_TYPE, 32);
        z_var y (vfac ["y"], INT_TYPE, 32);
