@@ -1767,6 +1767,11 @@ bb1_f={i -> [0, 100]; k -> [0, +oo]}
 entry={}
 Abstract trace: entry (bb1 bb1_t bb2)^{4} bb1_f ret
 
+{x -> [5, 10]} does not entail x = 7
+{x -> [5, 10]} does not entail x = 11
+{x -> [5, 5], y -> [0, 10]} entails x = 5
+{x -> [5, 5], y -> [0, 10]} does not entail x = 7
+{x -> [5, 5], y -> [0, 10]} entails y != 42
 z:int declare foo(x:int)
 entry:
   y = x+1;

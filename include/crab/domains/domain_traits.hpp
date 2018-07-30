@@ -57,13 +57,40 @@ namespace crab {
        inv.set (new_x , inv [x]);
      }
    };
-
+      
    // Special operations needed by the checker
    template<typename Domain>
    class checker_domain_traits{
    public:
+
+     typedef typename Domain::varname_t varname_t;
+     typedef typename Domain::number_t number_t;
      typedef typename Domain::linear_constraint_t linear_constraint_t;
+     typedef typename Domain::linear_constraint_system_t linear_constraint_system_t;
+
+   private:
+
+     struct entailment {
+       Domain _dom;
+       
+       entailment(Domain dom): _dom(dom) {}
+       
+       bool operator()(const linear_constraint_t& cst) {
+	 Domain dom = _dom; //copy is necessary 
+	 linear_constraint_t neg_cst = cst.negate();
+	 dom += neg_cst;
+	 return dom.is_bottom();
+       }
+     };
      
+     static bool entail_all_of(Domain& inv, const linear_constraint_system_t& csts) {
+       entailment op(inv);
+       return std::all_of(csts.begin(), csts.end(), op);
+     }
+
+     
+     public:
+	 
      // Return true if inv entails cst.
      static bool entail(Domain& inv, const linear_constraint_t& cst) {
        if (inv.is_bottom()) return true;
@@ -73,11 +100,20 @@ namespace crab {
        CRAB_LOG("checker-entailment",
 		linear_constraint_t tmp(cst);
 		crab::outs() << "Checking whether\n" << inv << "\nentails " << tmp << "\n";);
-       
-       linear_constraint_t neg_cst = cst.negate();
-       Domain cst_inv = inv;
-       cst_inv += neg_cst;
-       bool res = cst_inv.is_bottom();
+
+       bool res;
+       if (cst.is_equality()) {
+	 // inv entails (e == 0) iff inv entails (e <= 0) AND inv entails (e >= 0)
+	 linear_constraint_system_t csts;       	 
+	 csts += linear_constraint_t(cst.expression(),
+				     linear_constraint_t::INEQUALITY);
+	 csts += linear_constraint_t(cst.expression() * number_t(-1),
+				     linear_constraint_t::INEQUALITY);
+	 res = entail_all_of(inv, csts);
+       } else {
+	 entailment op(inv);
+	 res = op(cst);
+       }
 
        CRAB_LOG("checker-entailment",
 		if (res) {
