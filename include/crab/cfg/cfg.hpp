@@ -826,7 +826,8 @@ namespace crab {
             m_arr (arr), m_index (index), 
             m_value (value), m_elem_size (elem_size),  
             m_is_singleton (is_sing) {
-	
+
+	this->m_live.add_def (m_arr);	
         this->m_live.add_use (m_arr);
         for(auto v: m_index.variables()) 
           this->m_live.add_use (v);
