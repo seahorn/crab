@@ -7,132 +7,6 @@ using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 using namespace ikos;
 
-template<typename Vector>
-static void print_vector(const Vector& v) {
-  crab::outs() << "{";
-  for (unsigned i=0, e=v.size(); i<e; ) {
-    crab::outs() << v[i];
-    ++i;
-    if (i < e) {
-      crab::outs() << ",";
-    }
-  }
-  crab::outs() << "}";
-}
-
-class pt_key {
-  index_t _k;
-public:
-  pt_key(index_t k): _k(k) {};
-  index_t index() const { return _k; }
-  bool operator==(const pt_key& o) const
-  { return _k == o._k; }
-  bool operator!=(const pt_key& o) const
-  { return (!(operator==(o))); }
-  bool operator<(const pt_key& o) const
-  { return _k<o._k; }
-  void write(crab::crab_os&o) const
-  { o << _k; } 
-  friend crab::crab_os& operator<<(crab::crab_os& o, const pt_key& p) {
-    p.write(o);
-    return o;
-  }
- 
-};
-
-static void test_patricia_trees() {
-  crab::outs () << "===============================\n";
-  crab::outs () << "Playing with patricia trees    \n";
-  crab::outs () << "===============================\n";  
-  
-  typedef patricia_tree<pt_key, std::string> tree_t;
-  typedef typename tree_t::iterator iterator;
-  tree_t t;
-  t.insert(-5, "v6");
-  t.insert(10, "v5");    
-  t.insert(0, "v1");
-  t.insert(-2, "v7");    
-  t.insert(5, "v4");
-  t.insert(2, "v3");    
-  t.insert(1, "v2");
-
-  for(auto it = t.begin(), et=t.end(); it!=et; ++it) {
-    it->first.write(crab::outs());
-    crab::outs () << " -> " << it->second << "\n";
-  }
-  // crab::outs () << "---------------\n";
-  // for(auto it = t.rbegin(), et=t.rend(); it!=et; ++it) {
-  //   it->first.write(crab::outs());
-  //   crab::outs () << " -> " << it->second << "\n";
-  // }
-  
-  int steps = std::distance(t.begin(), t.end()) / 2;
-  auto middle = t.begin();
-  while (steps > 0) {
-    ++middle;
-    steps--;
-  }
-  crab::outs() << "Mid=" << middle->first << "\n";
-  
-  // crab::outs () << "Before:\n";
-  // for (auto it = middle, et = iterator::iterator(); it != et; --it) {
-  //   crab::outs() << it->first << "\n";
-  // }
-  
-  crab::outs () << "After:\n";
-  for (auto it = ++middle, et = t.end(); it != et; ++it) {
-    crab::outs() << it->first << "\n";
-  }  
-
-}
-
-// To test offset maps
-static void test_offset_maps() {
-
-  variable_factory_t vfac;  
-  crab::outs () << "===========================\n";
-  crab::outs () << " Testing offset maps       \n";
-  crab::outs () << "===========================\n";  
-  typedef offset_map<z_var> offset_map_t;
-  typedef typename offset_map_t::cell_t cell_t;
-  offset_map_t m1;
-  m1.mk_cell(offset_t(4),4);
-  m1.mk_cell(offset_t(8),4);
-  m1.mk_cell(offset_t(12),4);
-  m1.mk_cell(offset_t(8),4);
-  m1.mk_cell(offset_t(6),4);
-  crab::outs () << "Map m1:\n" << m1 << "\n";
-
-  std::vector<cell_t> overlaps_with_6, overlaps_with_4, overlaps_with_8;
-  crab::outs() << "Overlapping cells with offset 6 and size 4:\n";      
-  m1.get_overlap_cells(offset_t(6), 4, overlaps_with_6);
-  print_vector(overlaps_with_6);
-  crab::outs () << "\n";
-  crab::outs() << "Overlapping cells with offset 4 and size 4:\n";    
-  m1.get_overlap_cells(offset_t(4), 4, overlaps_with_4);
-  print_vector(overlaps_with_4);  
-  crab::outs () << "\n";  
-  crab::outs() << "Overlapping cells with offset 8 and size 4:\n";  
-  m1.get_overlap_cells(offset_t(8), 4, overlaps_with_8);
-  print_vector(overlaps_with_8);
-  crab::outs () << "\n";  
-
-  offset_map_t m2;
-  m2.mk_cell(offset_t(5),4);
-  m2.mk_cell(offset_t(12),4);
-  m2.mk_cell(offset_t(6),1);
-  crab::outs () << "Map m2:\n" << m2 << "\n";
-  
-  offset_map_t m3 = m1 | m2;
-  crab::outs () << "Map m3 (join of m1 and m2):\n" << m3 << "\n";
-
-  offset_map_t m4;
-  crab::outs () << "Map m4:\n" << m4 << "\n";
-  
-  offset_map_t m5 = m3 | m4;
-  crab::outs () << "Map m5 (join of m3 and m4):\n" << m5 << "\n";  
-}
-
 // to test array_expansion domain
 z_cfg_t* prog1(variable_factory_t &vfac) 
 { // no overlapping, no joins
@@ -528,6 +402,89 @@ z_cfg_t* prog6(variable_factory_t &vfac) {
   return cfg;
 }
 
+
+z_cfg_t* prog7(variable_factory_t &vfac) {
+  // same sequence of bytes in different arrays 
+  crab::outs () << "===================================\n";  
+  crab::outs () << " Test 7 for array expansion domain \n";
+  crab::outs () << "===================================\n";    
+  z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
+  z_basic_block_t& entry = cfg->insert ("entry");
+  z_basic_block_t& ret = cfg->insert ("ret");
+  z_var m1(vfac["Mem1"], crab::ARR_INT_TYPE);
+  z_var m2(vfac["Mem2"], crab::ARR_INT_TYPE);
+  z_var m3(vfac["Mem3"], crab::ARR_INT_TYPE);
+  z_var x(vfac["x"], crab::INT_TYPE, 32);
+  z_var y(vfac["y"], crab::INT_TYPE, 32);
+  z_var z(vfac["z"], crab::INT_TYPE, 32);
+  z_var val(vfac["val"], crab::INT_TYPE, 32);
+  z_var tmp1(vfac["tmp1"], crab::INT_TYPE, 32);
+  z_var tmp2(vfac["tmp2"], crab::INT_TYPE, 32);
+  z_var tmp3(vfac["tmp3"], crab::INT_TYPE, 32);
+
+  entry >> ret;
+  
+  entry.assign(x, 4); // index in mem1
+  entry.assign(y, 4); // index in mem2
+  entry.assign(z, 4); // index in mem3
+  
+  entry.assign(val, 42);
+  entry.array_store(m1, x, val, 4);
+  entry.assign(val, 43);  
+  entry.array_store(m2, y, val, 4);
+  entry.assign(val, 44);  
+  entry.array_store(m3, z, val, 4);
+
+  entry.array_load(tmp1, m1, x, 4);
+  entry.array_load(tmp2, m2, y, 4);
+  entry.array_load(tmp3, m3, z, 4);
+  
+  ret.assertion(z_lin_t(tmp1) < tmp2);
+  ret.assertion(z_lin_t(tmp2) < tmp3);  
+  return cfg;
+}
+
+z_cfg_t* prog8(variable_factory_t &vfac) {
+  // same sequence of bytes in different arrays 
+  crab::outs () << "===================================\n";  
+  crab::outs () << " Test 8 for array expansion domain \n";
+  crab::outs () << "===================================\n";    
+  z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
+  z_basic_block_t& entry = cfg->insert ("entry");
+  z_basic_block_t& ret = cfg->insert ("ret");
+  z_var m1(vfac["Mem1"], crab::ARR_INT_TYPE);
+  z_var m2(vfac["Mem2"], crab::ARR_INT_TYPE);
+  z_var m3(vfac["Mem3"], crab::ARR_INT_TYPE);
+  z_var x(vfac["x"], crab::INT_TYPE, 32);
+  z_var y(vfac["y"], crab::INT_TYPE, 32);
+  z_var z(vfac["z"], crab::INT_TYPE, 32);
+  z_var val(vfac["val"], crab::INT_TYPE, 32);
+  z_var tmp1(vfac["tmp1"], crab::INT_TYPE, 32);
+  z_var tmp2(vfac["tmp2"], crab::INT_TYPE, 32);
+  z_var tmp3(vfac["tmp3"], crab::INT_TYPE, 32);
+
+  entry >> ret;
+  
+  entry.assign(x, 4); // index in mem1
+  entry.assign(y, 5); // index in mem2
+  entry.assign(z, 6); // index in mem3
+  
+  entry.assign(val, 42);
+  entry.array_store(m1, x, val, 4);
+  entry.assign(val, 43);  
+  entry.array_store(m2, y, val, 4);
+  entry.assign(val, 44);  
+  entry.array_store(m3, z, val, 4);
+
+  entry.array_load(tmp1, m1, x, 4);
+  entry.array_load(tmp2, m2, y, 4);
+  entry.array_load(tmp3, m3, z, 4);
+  
+  ret.assertion(z_lin_t(tmp1) < tmp2);
+  ret.assertion(z_lin_t(tmp2) < tmp3);  
+  return cfg;
+}
+
 void test_array_expansion(int test) {
   variable_factory_t vfac;
   z_cfg_t* cfg = nullptr;
@@ -537,7 +494,9 @@ void test_array_expansion(int test) {
   case 3: cfg = prog3(vfac); break;
   case 4: cfg = prog4(vfac); break;
   case 5: cfg = prog5(vfac); break;
-  case 6: cfg = prog6(vfac); break;            
+  case 6: cfg = prog6(vfac); break;
+  case 7: cfg = prog7(vfac); break;
+  case 8: cfg = prog8(vfac); break;                    
   default:
     crab::outs() << "No test selected\n";
   }
@@ -551,13 +510,13 @@ void test_array_expansion(int test) {
 int main (int argc, char** argv) {
   SET_TEST_OPTIONS(argc,argv)
 
-  test_patricia_trees();    
-  test_offset_maps();
   test_array_expansion(1);
   test_array_expansion(2);
   test_array_expansion(3);
   test_array_expansion(4);
   test_array_expansion(5);
-  test_array_expansion(6);      
+  test_array_expansion(6);
+  test_array_expansion(7);
+  test_array_expansion(8);          
   return 0;
 }

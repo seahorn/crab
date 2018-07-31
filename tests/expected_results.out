@@ -425,57 +425,6 @@ INITIALLY={}
 ADDING CONSTRAINTS={-x <= -1/2; x <= 1/2}
 EXPECTED={x = 1/2}
 RESULT=_|_
-===============================
-Playing with patricia trees    
-===============================
-0 -> v1
-1 -> v2
-2 -> v3
-5 -> v4
-10 -> v5
-18446744073709551611 -> v6
-18446744073709551614 -> v7
-Mid=5
-After:
-10
-18446744073709551611
-18446744073709551614
-===========================
- Testing offset maps       
-===========================
-Map m1:
-{[4, 7] -> _}
-{[6, 9] -> _}
-{[8, 11] -> _}
-{[12, 15] -> _}
-
-Overlapping cells with offset 6 and size 4:
-{[4, 7] -> _,[8, 11] -> _}
-Overlapping cells with offset 4 and size 4:
-{[6, 9] -> _}
-Overlapping cells with offset 8 and size 4:
-{[6, 9] -> _}
-Map m2:
-{[5, 8] -> _}
-{[6, 6] -> _}
-{[12, 15] -> _}
-
-Map m3 (join of m1 and m2):
-{[4, 7] -> _}
-{[5, 8] -> _}
-{[6, 6] -> _,[6, 9] -> _}
-{[8, 11] -> _}
-{[12, 15] -> _}
-
-Map m4:
-empty
-Map m5 (join of m3 and m4):
-{[4, 7] -> _}
-{[5, 8] -> _}
-{[6, 6] -> _,[6, 9] -> _}
-{[8, 11] -> _}
-{[12, 15] -> _}
-
 ===================================
  Test 1 for array expansion domain 
 ===================================
@@ -632,6 +581,48 @@ Invariant: {Mem_base -> t0[_x0], i -> t2[_x3], j -> t4[_x5], ii -> t6[_x7], jj -
  --- SAFE -----------------
 Property : *j = 10
 Invariant: {Mem_base -> t0[_x0], i -> t2[_x3], j -> t4[_x5], ii -> t6[_x7], jj -> t8[_x9], *i -> t9[_x11], *j -> t11[_x1], val0 -> t0[_x0], Mem[18446744073709551592...18446744073709551595] -> t6[_x7], Mem[18446744073709551588...18446744073709551591] -> t8[_x9], Mem[18446744073709551492...18446744073709551495] -> t9[_x11], Mem[18446744073709551488...18446744073709551491] -> t11[_x1]}{_x0 -> [0, 0]; _x1 -> [10, 10]; _x2 -> [24, 24]; _x3 -> [-24, -24]; _x4 -> [28, 28]; _x5 -> [-28, -28]; _x6 -> [124, 124]; _x7 -> [-124, -124]; _x8 -> [128, 128]; _x9 -> [-128, -128]; _x11 -> [10, 10]}
+ -----------------------------
+user-defined assertion checker using ArrayExpansion(Term(Intervals))
+2  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+
+===================================
+ Test 7 for array expansion domain 
+===================================
+Invariants using ArrayExpansion(Term(Intervals))
+ret={x -> t0[_x0], y -> t0[_x0], z -> t0[_x0], val -> t3[_x3], tmp1 -> t1[_x1], tmp2 -> t2[_x2], tmp3 -> t3[_x3], Mem1[4...7] -> t1[_x1], Mem2[4...7] -> t2[_x2], Mem3[4...7] -> t3[_x3]}{_x0 -> [4, 4]; _x1 -> [42, 42]; _x2 -> [43, 43]; _x3 -> [44, 44]}
+entry={}
+Abstract trace: entry ret
+ --- SAFE -----------------
+Property : tmp1-tmp2 < 0
+Invariant: {x -> t0[_x0], y -> t0[_x0], z -> t0[_x0], val -> t3[_x3], tmp1 -> t1[_x1], tmp2 -> t2[_x2], tmp3 -> t3[_x3], Mem1[4...7] -> t1[_x1], Mem2[4...7] -> t2[_x2], Mem3[4...7] -> t3[_x3]}{_x0 -> [4, 4]; _x1 -> [42, 42]; _x2 -> [43, 43]; _x3 -> [44, 44]}
+ -----------------------------
+ --- SAFE -----------------
+Property : tmp2-tmp3 < 0
+Invariant: {x -> t0[_x0], y -> t0[_x0], z -> t0[_x0], val -> t3[_x3], tmp1 -> t1[_x1], tmp2 -> t2[_x2], tmp3 -> t3[_x3], Mem1[4...7] -> t1[_x1], Mem2[4...7] -> t2[_x2], Mem3[4...7] -> t3[_x3]}{_x0 -> [4, 4]; _x1 -> [42, 42]; _x2 -> [43, 43]; _x3 -> [44, 44]}
+ -----------------------------
+user-defined assertion checker using ArrayExpansion(Term(Intervals))
+2  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+
+===================================
+ Test 8 for array expansion domain 
+===================================
+Invariants using ArrayExpansion(Term(Intervals))
+ret={x -> t0[_x0], y -> t1[_x1], z -> t2[_x2], val -> t5[_x5], tmp1 -> t3[_x3], tmp2 -> t4[_x4], tmp3 -> t5[_x5], Mem1[4...7] -> t3[_x3], Mem2[5...8] -> t4[_x4], Mem3[6...9] -> t5[_x5]}{_x0 -> [4, 4]; _x1 -> [5, 5]; _x2 -> [6, 6]; _x3 -> [42, 42]; _x4 -> [43, 43]; _x5 -> [44, 44]}
+entry={}
+Abstract trace: entry ret
+ --- SAFE -----------------
+Property : tmp1-tmp2 < 0
+Invariant: {x -> t0[_x0], y -> t1[_x1], z -> t2[_x2], val -> t5[_x5], tmp1 -> t3[_x3], tmp2 -> t4[_x4], tmp3 -> t5[_x5], Mem1[4...7] -> t3[_x3], Mem2[5...8] -> t4[_x4], Mem3[6...9] -> t5[_x5]}{_x0 -> [4, 4]; _x1 -> [5, 5]; _x2 -> [6, 6]; _x3 -> [42, 42]; _x4 -> [43, 43]; _x5 -> [44, 44]}
+ -----------------------------
+ --- SAFE -----------------
+Property : tmp2-tmp3 < 0
+Invariant: {x -> t0[_x0], y -> t1[_x1], z -> t2[_x2], val -> t5[_x5], tmp1 -> t3[_x3], tmp2 -> t4[_x4], tmp3 -> t5[_x5], Mem1[4...7] -> t3[_x3], Mem2[5...8] -> t4[_x4], Mem3[6...9] -> t5[_x5]}{_x0 -> [4, 4]; _x1 -> [5, 5]; _x2 -> [6, 6]; _x3 -> [42, 42]; _x4 -> [43, 43]; _x5 -> [44, 44]}
  -----------------------------
 user-defined assertion checker using ArrayExpansion(Term(Intervals))
 2  Number of total safe checks

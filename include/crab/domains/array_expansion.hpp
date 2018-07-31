@@ -78,9 +78,14 @@ namespace domains {
   
 
   /* 
-     A cell should be uniquely identified by its offset and size.
-     Thus, given a fixed offset and size the scalar variable should be
-     *always* the same.
+     Conceptually, a cell is tuple of an array, offset, size, and
+     scalar variable such that:
+
+         _scalar = array[_offset, _offset+1,...,_offset+_size-1]
+	 
+     For simplicity, we don't carry the array inside the cell class.
+     Only, offset_map objects can create cells. They will consider the
+     array when generating the scalar variable.
   */
   template<typename Variable>
   class cell {
@@ -91,7 +96,6 @@ namespace domains {
     
     offset_t _offset;
     unsigned _size;
-    // _scalar represents the contents of [_offset, _offset+1,...,_offset+_size-1]       
     boost::optional<Variable> _scalar;
     
     // Only offset_map<Variable> can create cells
@@ -220,6 +224,7 @@ namespace domains {
     
     typedef offset_map<Variable> offset_map_t;
     typedef std::set<cell_t> cell_set_t;
+    typedef crab::variable_type type_t;
     
     /*
       The keys in the patricia tree are processing in big-endian
@@ -333,16 +338,60 @@ namespace domains {
       return cell_t();
     }
 
-    template<typename VariableFactory>
-    cell_t mk_cell(offset_t o, unsigned size,
-		   // info to create a new crab variable
-		   VariableFactory& vfac, ikos::index_t var_index, 
-		   variable_type vtype, std::string vname = "") {
+    static std::string mk_scalar_name(Variable a, offset_t o, unsigned size) {
+      crab::crab_string_os os;
+      os << a << "[";
+      if (size == 1) {
+	os << o;
+      } else {
+	os << o << "..." << o.index() + size -1;
+      }
+      os << "]";
+      return os.str();
+    }
+
+    static type_t get_array_element_type(type_t array_type) {
+      if (array_type == ARR_BOOL_TYPE) {
+	return BOOL_TYPE;
+      } else if (array_type == ARR_INT_TYPE) {
+	return INT_TYPE;
+      } else if (array_type == ARR_REAL_TYPE) {
+	return REAL_TYPE;
+      } else {
+	assert(array_type == ARR_PTR_TYPE);
+	return PTR_TYPE;
+      }
+    }    
+
+    // global state to map the same triple of array, offset and size
+    // to same index
+    static std::map<std::pair<ikos::index_t, std::pair<offset_t, unsigned>>,
+		    ikos::index_t> _index_map;
+    
+    ikos::index_t get_index(Variable a, offset_t o, unsigned size) {
+      auto it = _index_map.find({a.index(), {o, size}});
+      if (it != _index_map.end()) {
+	return it->second;
+      } else {
+	ikos::index_t res = _index_map.size();
+	_index_map.insert({{a.index(), {o, size}},res});
+	return res;
+      }
+    }
+    
+    cell_t mk_cell(Variable array, offset_t o, unsigned size) {
+      // TODO: check array is the array associated to this offset map
+      
       cell_t c = get_cell(o, size);
       if (c.is_null()) {
+	auto& vfac = array.name().get_var_factory();
+	std::string vname = mk_scalar_name(array, o, size);
+	type_t vtype = get_array_element_type(array.get_type());
+	ikos::index_t vindex = get_index(array, o, size);
+	
 	// create a new scalar variable for representing the contents
-	// of bytes [o,o+1,..., o+size-1]
-	Variable scalar_var(vfac.get(var_index, vname), vtype, size);
+	// of bytes array[o,o+1,..., o+size-1]
+	Variable scalar_var(vfac.get(vindex, vname), vtype, size);
 	c = cell_t(o, scalar_var);
 	insert_cell(c);
 	CRAB_LOG("array-expansion", crab::outs() << "**Created cell " << c << "\n";);
@@ -526,15 +575,6 @@ namespace domains {
       return o;
     }
 
-    /* Used only for debugging */
-    void mk_cell(offset_t o, unsigned size) {
-      cell_t c = get_cell(o, size);
-      if (c.is_null()) {
-	c = cell_t(o, size);
-	insert_cell(c, false /*no sanity checks*/);      	
-      }
-    }
-        
     /* Operations needed if used as value in a separate_domain */
     bool operator==(const offset_map_t& o) const
     { return *this <= o && o <= *this; }
@@ -549,7 +589,11 @@ namespace domains {
     static offset_map_t bottom() { return offset_map_t();}
     static offset_map_t top() { return offset_map_t();}       
   };
-     
+
+  template<typename Var>
+  std::map<std::pair<ikos::index_t, std::pair<offset_t, unsigned>>,
+	   ikos::index_t> offset_map<Var>::_index_map;
+       
   template<typename NumDomain>
   class array_expansion_domain:
     public abstract_domain<typename NumDomain::number_t,
@@ -591,49 +635,10 @@ namespace domains {
     separate_domain_t _array_map;
     // scalar domain
     NumDomain _inv; 
-    // global state to map the same pair of offset and size to same index
-    static std::map<std::pair<offset_t, unsigned>, ikos::index_t> _index_map;
-    
-    ikos::index_t get_index(offset_t o, unsigned size) {
-      auto it = _index_map.find({o, size});
-      if (it != _index_map.end()) {
-	return it->second;
-      } else {
-	ikos::index_t res = _index_map.size();
-	_index_map.insert({{o, size},res});
-	return res;
-      }
-    }
     
     array_expansion_domain (separate_domain_t array_map, NumDomain inv)
       : _array_map(array_map), _inv (inv) { }
 	 
-
-    static type_t get_array_element_type(type_t array_type) {
-      if (array_type == ARR_BOOL_TYPE) {
-	return BOOL_TYPE;
-      } else if (array_type == ARR_INT_TYPE) {
-	return INT_TYPE;
-      } else if (array_type == ARR_REAL_TYPE) {
-	return REAL_TYPE;
-      } else {
-	assert(array_type == ARR_PTR_TYPE);
-	return PTR_TYPE;
-      }
-    }
-
-    static std::string mk_scalar_name(variable_t a, offset_t o, unsigned size) {
-      crab::crab_string_os os;
-      os << a << "[";
-      if (size == 1) {
-	os << o;
-      } else {
-	os << o << "..." << o.index() + size -1;
-      }
-      os << "]";
-      return os.str();
-    }
-
     interval_t to_interval(linear_expression_t expr) {
       interval_t r(expr.constant());
       for (typename linear_expression_t::iterator it = expr.begin(); 
@@ -948,12 +953,8 @@ namespace domains {
 	    precise if we choose between little- and big-endian.
 	  */
 	} else {
-	  auto &vfac = a.name().get_var_factory();
-	  type_t vtype = get_array_element_type(a.get_type());
-	  std::string vname = mk_scalar_name(a, o, size);
-	  cell_t c = offset_map.mk_cell(o, size, vfac, get_index(o, size), vtype, vname);
+	  cell_t c = offset_map.mk_cell(a, o, size);
 	  assert(c.has_scalar());
-	  
 	  // Here it's ok to do assignment because c is not a summarized
 	  // variable. Otherwise, it would be unsound.
 	  _inv.assign(lhs, c.get_scalar());
@@ -1010,12 +1011,9 @@ namespace domains {
 	}
 	
 	// Perform scalar update	   
-	auto &vfac = a.name().get_var_factory();
-	type_t vtype = get_array_element_type(a.get_type());
-	std::string vname = mk_scalar_name(a, o, size);
-	// create a new cell it there is no one already
-	cell_t c = offset_map.mk_cell(o, size, vfac, get_index(o, size), vtype, vname);
-	// strong update
+	// -- create a new cell it there is no one already
+	cell_t c = offset_map.mk_cell(a, o, size);
+	// -- strong update
 	_inv.assign(c.get_scalar(), val);
 	_array_map.set(a, offset_map);
 	
@@ -1070,9 +1068,6 @@ namespace domains {
     }
        
   }; // end array_expansion_domain
-
-  template<typename Dom>
-  std::map<std::pair<offset_t, unsigned>, ikos::index_t> array_expansion_domain<Dom>::_index_map;
   
   template<typename BaseDomain>
   class domain_traits<array_expansion_domain<BaseDomain>> {
