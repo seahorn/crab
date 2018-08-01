@@ -739,23 +739,28 @@ namespace crab {
       
      private:
 
-      // forall i \in [lb,ub] modulo elem_size. arr[i] == val
+      // forall i \in [lb,ub] % elem_size :: arr[i] == val
       variable_t m_arr; 
-      uint64_t m_elem_size;
+      linear_expression_t m_elem_size; //! size in bytes
       linear_expression_t m_lb;
       linear_expression_t m_ub;
       linear_expression_t m_val;
 
      public:
       
-      array_assume_stmt (variable_t arr, uint64_t elem_size,
+      array_assume_stmt (variable_t arr, linear_expression_t elem_size,
                          linear_expression_t lb, linear_expression_t ub,
-			 linear_expression_t val): 
-          statement_t (ARR_ASSUME),
-          m_arr (arr),  m_elem_size (elem_size),
-	  m_lb (lb) , m_ub (ub), m_val (val)  {
+			 linear_expression_t val)
+	: statement_t (ARR_ASSUME)
+	, m_arr (arr)
+	, m_elem_size (elem_size)
+	, m_lb (lb)
+	, m_ub (ub)
+	, m_val (val)  {
 	
         this->m_live.add_use (m_arr);
+        for(auto v: m_elem_size.variables()) 
+          this->m_live.add_use (v);
         for(auto v: m_lb.variables()) 
           this->m_live.add_use (v);
         for(auto v: m_ub.variables()) 
@@ -768,7 +773,7 @@ namespace crab {
       
       type_t array_type () const { return m_arr.get_type(); }
 
-      uint64_t elem_size () const { return m_elem_size;}
+      linear_expression_t elem_size () const { return m_elem_size;}
        
       linear_expression_t lb_index () const { return m_lb;}
       
@@ -810,25 +815,30 @@ namespace crab {
      private:
       
       variable_t m_arr;
+      linear_expression_t m_elem_size; //! size in bytes
       linear_expression_t m_index;
       linear_expression_t m_value;
-      uint64_t m_elem_size; //! size in bytes
       bool m_is_singleton; //! whether the store writes to a singleton
                            //  cell. If unknown set to false.
 
      public:
       
-      array_store_stmt (variable_t arr, 
+      array_store_stmt (variable_t arr,
+			linear_expression_t elem_size,			
                         linear_expression_t index,
 			linear_expression_t value,  
-                        uint64_t elem_size, bool is_sing = false)
-          : statement_t(ARR_STORE),
-            m_arr (arr), m_index (index), 
-            m_value (value), m_elem_size (elem_size),  
-            m_is_singleton (is_sing) {
+			bool is_sing = false)
+	: statement_t(ARR_STORE)
+	, m_arr (arr)
+	, m_elem_size (elem_size)
+	, m_index (index)
+	, m_value (value)
+	, m_is_singleton (is_sing) {
 
 	this->m_live.add_def (m_arr);	
         this->m_live.add_use (m_arr);
+        for(auto v: m_elem_size.variables()) 
+          this->m_live.add_use (v);
         for(auto v: m_index.variables()) 
           this->m_live.add_use (v);
 	for(auto v: m_value.variables())
@@ -843,7 +853,7 @@ namespace crab {
       
       type_t array_type () const { return m_arr.get_type(); }
 
-      uint64_t elem_size () const { return m_elem_size; }
+      linear_expression_t elem_size () const { return m_elem_size; }
       
       bool is_singleton () const { return m_is_singleton;}
       
@@ -884,19 +894,25 @@ namespace crab {
 
       variable_t m_lhs;
       variable_t m_array;
+      linear_expression_t m_elem_size; //! size in bytes      
       linear_expression_t m_index;
-      uint64_t m_elem_size; //! size in bytes
       
      public:
       
-      array_load_stmt (variable_t lhs, variable_t arr, 
-		       linear_expression_t index, uint64_t elem_size) 
-	: statement_t (ARR_LOAD),
-	  m_lhs (lhs), m_array (arr), 
-	  m_index (index), m_elem_size (elem_size) {
-          
+      array_load_stmt (variable_t lhs,
+		       variable_t arr,
+		       linear_expression_t elem_size,
+		       linear_expression_t index) 
+	: statement_t (ARR_LOAD)
+	, m_lhs (lhs)
+	, m_array (arr)
+	, m_elem_size (elem_size)
+	, m_index (index) {
+	  
         this->m_live.add_def (lhs);
         this->m_live.add_use (m_array);
+        for(auto v: m_elem_size.variables()) 
+          this->m_live.add_use (v);
         for(auto v: m_index.variables()) 
           this->m_live.add_use (v);
       }
@@ -909,7 +925,7 @@ namespace crab {
       
       linear_expression_t index () const { return m_index; }
       
-      uint64_t elem_size () const { return m_elem_size; }
+      linear_expression_t elem_size () const { return m_elem_size; }
       
       virtual void accept(statement_visitor <Number, VariableName> *v) 
       {
@@ -2364,85 +2380,98 @@ namespace crab {
       }
             
 
-      void array_assume (variable_t a, uint64_t elem_size,
+      void array_assume (variable_t a, lin_exp_t elem_size,
                          lin_exp_t lb_idx, lin_exp_t ub_idx, lin_exp_t v) {
-        if (m_track_prec == ARR)
+        if (m_track_prec == ARR) {
           insert(boost::static_pointer_cast<statement_t, arr_assume_t> 
 		(boost::make_shared<arr_assume_t>(a, elem_size, lb_idx, ub_idx, v)));
+	}
       }
 
       void array_store (variable_t arr, lin_exp_t idx, lin_exp_t v, 
-                        uint64_t elem_size, bool is_singleton = false)  {
-        if (m_track_prec == ARR)
+                        lin_exp_t elem_size, bool is_singleton = false)  {
+        if (m_track_prec == ARR) {
           insert(boost::static_pointer_cast< statement_t, arr_store_t >
-            (boost::make_shared<arr_store_t>(arr, idx, v, elem_size, is_singleton)));
+		 (boost::make_shared<arr_store_t>(arr, elem_size, idx, v, is_singleton)));
+	}
       }
 
       void array_load (variable_t lhs, variable_t arr,
-                       lin_exp_t idx, uint64_t elem_size) {
-        if (m_track_prec == ARR)
+                       lin_exp_t idx, lin_exp_t elem_size) {
+        if (m_track_prec == ARR) {
           insert(boost::static_pointer_cast< statement_t, arr_load_t >
-                 (boost::make_shared<arr_load_t>(lhs, arr, idx, elem_size)));
+                 (boost::make_shared<arr_load_t>(lhs, arr, elem_size, idx)));
+	}
       }
 
       void array_assign (variable_t lhs, variable_t rhs) {
-        if (m_track_prec == ARR)
+        if (m_track_prec == ARR) {
           insert(boost::static_pointer_cast< statement_t, arr_assign_t >
                  (boost::make_shared<arr_assign_t>(lhs, rhs)));
+	}
       }
             
       void ptr_store (variable_t lhs, variable_t rhs) {
-        if (m_track_prec >= PTR)
+        if (m_track_prec >= PTR) {
           insert(boost::static_pointer_cast< statement_t, ptr_store_t >
                  (boost::make_shared<ptr_store_t> (lhs, rhs)));
+	}
       }
       
       void ptr_load (variable_t lhs, variable_t rhs) {
-        if (m_track_prec >= PTR)
+        if (m_track_prec >= PTR) {
           insert(boost::static_pointer_cast< statement_t, ptr_load_t >
                  (boost::make_shared<ptr_load_t> (lhs, rhs)));
+	}
       }
       
       void ptr_assign (variable_t lhs, variable_t rhs, lin_exp_t offset) {
-        if (m_track_prec >= PTR)
+        if (m_track_prec >= PTR) {
           insert(boost::static_pointer_cast< statement_t, ptr_assign_t >
                  (boost::make_shared<ptr_assign_t> (lhs, rhs, offset)));
+	}
       }
       
       void ptr_new_object (variable_t lhs, ikos::index_t address) {
-        if (m_track_prec >= PTR)
+        if (m_track_prec >= PTR) {
           insert(boost::static_pointer_cast< statement_t, ptr_object_t >
                  (boost::make_shared<ptr_object_t> (lhs, address)));
+	}
       }
       
       void ptr_new_func (variable_t lhs, ikos::index_t func) {
-        if (m_track_prec >= PTR)
+        if (m_track_prec >= PTR) {
           insert(boost::static_pointer_cast< statement_t, ptr_function_t >
                  (boost::make_shared<ptr_function_t> (lhs, func)));
+	}
       }
 
       void ptr_null (variable_t lhs) {
-        if (m_track_prec >= PTR)
+        if (m_track_prec >= PTR) {
           insert(boost::static_pointer_cast< statement_t, ptr_null_t >
                  (boost::make_shared<ptr_null_t> (lhs)));
+	}
       }
 
       void ptr_assume (pointer_constraint<variable_t> cst) {
-        if (m_track_prec >= PTR)
+        if (m_track_prec >= PTR) {
           insert(boost::static_pointer_cast< statement_t, ptr_assume_t >
                  (boost::make_shared<ptr_assume_t> (cst)));
+	}
       }
 
       void ptr_assertion (pointer_constraint<variable_t> cst) {
-        if (m_track_prec >= PTR)
+        if (m_track_prec >= PTR) {
           insert(boost::static_pointer_cast< statement_t, ptr_assert_t >
                  (boost::make_shared<ptr_assert_t> (cst)));
+	}
       }
 
       void ptr_assertion (pointer_constraint<variable_t> cst, debug_info di) {
-        if (m_track_prec >= PTR)
+        if (m_track_prec >= PTR) {
           insert(boost::static_pointer_cast< statement_t, ptr_assert_t >
                  (boost::make_shared<ptr_assert_t> (cst, di)));
+	}
       }
 
 
@@ -3812,7 +3841,8 @@ namespace crab {
 	  }
 	}
 
-        void check_same_bitwidth(variable_t v1, variable_t v2, std::string msg, statement_t& s) {
+        void check_same_bitwidth(variable_t v1, variable_t v2, std::string msg,
+				 statement_t& s) {
 	  // assume v1 and v2 have same type
 	  if (v1.get_type() == INT_TYPE || v1.get_type() == BOOL_TYPE) {
 	    if (v1.get_bitwidth() != v2.get_bitwidth()) {
@@ -3868,12 +3898,14 @@ namespace crab {
 	  default:
 	    {
 	      crab::crab_string_os os;
-	      os << "(type checking) " << v1 << " must be an array variable in " << s;
+	      os << "(type checking) " << v1
+		 << " must be an array variable in " << s;
 	      CRAB_ERROR(os.str());
 	    }
 	  }
 	  crab::crab_string_os os;
-	  os << "(type checking) " << v1 << " and " << v2 << " do not have consistent types in " << s;
+	  os << "(type checking) " << v1 << " and " << v2
+	     << " do not have consistent types in " << s;
 	  CRAB_ERROR(os.str());
 	}
 	
@@ -4051,13 +4083,15 @@ namespace crab {
 	
 	void visit(arr_assume_t& s) {
 	  variable_t a = s.array();
+	  lin_exp_t e_sz = s.elem_size();
 	  lin_exp_t lb = s.lb_index();
 	  lin_exp_t ub = s.ub_index();
 	  lin_exp_t  v = s.val();
-	  check_array(a, s);	  
-	  check_num_or_var(lb, "array lower bound must be number or variable", s);
-	  check_num_or_var(ub, "array upper bound must be number or variable", s);
-	  check_num_or_var(v, "array value must be number or variable", s);
+	  check_array(a, s);
+	  check_num_or_var(e_sz, "element size must be number or variable", s);
+	  check_num_or_var(lb  , "array lower bound must be number or variable", s);
+	  check_num_or_var(ub  , "array upper bound must be number or variable", s);
+	  check_num_or_var(v   , "array value must be number or variable", s);
 	  if (boost::optional<variable_t> vv = v.get_variable()) {
 	    check_array_and_scalar_type(a, *vv, s);
 	  }
@@ -4065,9 +4099,11 @@ namespace crab {
 	
 	void visit(arr_store_t& s) {
 	  variable_t a = s.array();
+	  lin_exp_t e_sz = s.elem_size();	  
 	  lin_exp_t  v = s.value();
 	  check_array(a, s);
-	  check_num_or_var(v, "array value must be number or variable", s);
+	  check_num_or_var(e_sz, "element size must be number or variable", s);
+	  check_num_or_var(v   , "array value must be number or variable", s);
 	  if (boost::optional<variable_t> vv = v.get_variable()) {
 	    check_array_and_scalar_type(a, *vv, s);
 	  }
@@ -4075,8 +4111,10 @@ namespace crab {
 	
 	void visit(arr_load_t& s) {
 	  variable_t a = s.array();
+	  lin_exp_t e_sz = s.elem_size();	  	  
 	  variable_t lhs = s.lhs();
-	  check_array(a, s);	  
+	  check_array(a, s);
+	  check_num_or_var(e_sz, "element size must be number or variable", s);	  
 	  check_array_and_scalar_type(a, lhs, s);
 	}
 	  

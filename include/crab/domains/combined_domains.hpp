@@ -401,32 +401,30 @@ namespace crab {
       
       // array_operators_api
       
-      virtual void array_assume (variable_t a, 
+      virtual void array_assume (variable_t a, linear_expression_t elem_size,
                                  linear_expression_t lb_idx,
 				 linear_expression_t ub_idx, 
                                  linear_expression_t val) override {
-        this->_product.first().array_assume (a, lb_idx, ub_idx, val);
-        this->_product.second().array_assume (a, lb_idx, ub_idx, val);
+        this->_product.first().array_assume (a, elem_size, lb_idx, ub_idx, val);
+        this->_product.second().array_assume (a, elem_size,  lb_idx, ub_idx, val);
         this->reduce ();
       }
       
       virtual void array_load (variable_t lhs,
-			       variable_t a, 
-                               linear_expression_t i,
-			       ikos::z_number bytes) override {
+			       variable_t a, linear_expression_t elem_size,
+                               linear_expression_t i) override {
         
-        this->_product.first().array_load (lhs, a, i, bytes);
-        this->_product.second().array_load (lhs, a, i, bytes);
+        this->_product.first().array_load (lhs, a, elem_size, i);
+        this->_product.second().array_load (lhs, a, elem_size, i);
         this->reduce ();
       }
       
-      virtual void array_store (variable_t a, 
+      virtual void array_store (variable_t a, linear_expression_t elem_size,
                                 linear_expression_t i,
 				linear_expression_t val, 
-                                ikos::z_number bytes,
 				bool is_singleton) override {
-        this->_product.first().array_store (a, i, val, bytes, is_singleton);
-        this->_product.second().array_store (a, i, val, bytes, is_singleton);
+        this->_product.first().array_store (a, elem_size, i, val, is_singleton);
+        this->_product.second().array_store (a, elem_size, i, val, is_singleton);
         this->reduce ();
       }
       
@@ -1612,25 +1610,26 @@ namespace crab {
       
       // array_operators_api
       
-      virtual void array_assume (variable_t a, 
+      virtual void array_assume (variable_t a, linear_expression_t elem_size,
                                  linear_expression_t lb_idx,
 				 linear_expression_t ub_idx,
                                  linear_expression_t val) override {
-        this->_product.array_assume (a, lb_idx, ub_idx, val);
+        this->_product.array_assume (a, elem_size, lb_idx, ub_idx, val);
       }
       
-      virtual void array_load (variable_t lhs, variable_t a,
-                               linear_expression_t i,
-			       ikos::z_number bytes) override {
-        this->_product.array_load (lhs, a, i, bytes);
+      virtual void array_load (variable_t lhs,
+			       variable_t a, linear_expression_t elem_size,
+                               linear_expression_t i) override {
+			       
+        this->_product.array_load (lhs, a, elem_size, i);
       }
       
-      virtual void array_store (variable_t a, 
+      virtual void array_store (variable_t a,
+				linear_expression_t elem_size,
                                 linear_expression_t i,
 				linear_expression_t val, 
-                                ikos::z_number bytes,
 				bool is_singleton) override {
-        this->_product.array_store (a, i, val, bytes, is_singleton);
+        this->_product.array_store (a, elem_size, i, val, is_singleton);
       }
       
       virtual void array_assign (variable_t lhs, variable_t rhs) override {

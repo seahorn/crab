@@ -3047,21 +3047,22 @@ public:
       
   // array_operators_api
   
-  virtual void array_assume (variable_t a, 
+  virtual void array_assume (variable_t a, linear_expression_t elem_size,
 			     linear_expression_t lb_idx,
 			     linear_expression_t ub_idx,
 			     linear_expression_t val) override
-  { _product.array_assume (a, lb_idx, ub_idx, val); }
+  { _product.array_assume (a, elem_size, lb_idx, ub_idx, val); }
   
-  virtual void array_load (variable_t lhs, variable_t a, 
-			   linear_expression_t i, ikos::z_number bytes) override
-  { _product.array_load (lhs, a, i, bytes); }
+  virtual void array_load (variable_t lhs, variable_t a, linear_expression_t elem_size,
+			   linear_expression_t i) override
+  { _product.array_load (lhs, a, elem_size, i); }
     
-  virtual void array_store (variable_t a, 
+  virtual void array_store (variable_t a,
+			    linear_expression_t elem_size,
 			    linear_expression_t i,
 			    linear_expression_t val, 
-			    ikos::z_number bytes, bool is_singleton) override
-  { _product.array_store (a, i, val, bytes, is_singleton); }
+			    bool is_singleton) override
+  { _product.array_store (a, elem_size, i, val, is_singleton); }
   
   virtual void array_assign (variable_t lhs, variable_t rhs) override
   { _product.array_assign (lhs, rhs); }

@@ -340,7 +340,8 @@ namespace crab {
         // array_operators_api 
 
         // All the array elements are assumed to be equal to val
-        virtual void array_assume (variable_t a, 
+        virtual void array_assume (variable_t a,
+				   linear_expression_t /*elem_size*/,
                                    linear_expression_t /*lb_idx*/,
 				   linear_expression_t /*ub_idx*/, 
                                    linear_expression_t val) override {
@@ -370,8 +371,9 @@ namespace crab {
 		                << " -- " << *this <<"\n";);
         }
         
-        virtual void array_load (variable_t lhs, variable_t a,
-                                 linear_expression_t i, z_number /*bytes*/) override {
+        virtual void array_load (variable_t lhs,
+				 variable_t a, linear_expression_t /*elem_size*/,
+                                 linear_expression_t i) override {
           crab::CrabStats::count (getDomainName() + ".count.load");
           crab::ScopedCrabStats __st__(getDomainName() + ".load");
 
@@ -399,9 +401,9 @@ namespace crab {
         }
         
         
-        virtual void array_store (variable_t a, 
+        virtual void array_store (variable_t a, linear_expression_t /*elem_size*/,
                                   linear_expression_t i, linear_expression_t val, 
-                                  z_number /*bytes*/, bool is_singleton) override {
+                                  bool is_singleton) override {
           crab::CrabStats::count (getDomainName() + ".count.store");
           crab::ScopedCrabStats __st__(getDomainName() + ".store");
 

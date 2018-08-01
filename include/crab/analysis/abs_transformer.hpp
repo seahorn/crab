@@ -386,16 +386,17 @@ namespace crab {
     { *get_inv() = abs_dom_t::bottom (); }
     
     void exec (arr_assume_t &stmt) {
-      get_inv()->array_assume (stmt.array (), stmt.lb_index (), stmt.ub_index (), stmt.val ());
+      get_inv()->array_assume (stmt.array (), stmt.elem_size(),
+			       stmt.lb_index (), stmt.ub_index (), stmt.val ());
     }
     
     void exec (arr_store_t &stmt) {
-      get_inv()->array_store (stmt.array(), stmt.index (), stmt.value (),
-			      stmt.elem_size(), stmt.is_singleton ());
+      get_inv()->array_store (stmt.array(), stmt.elem_size(),
+			      stmt.index (), stmt.value (), stmt.is_singleton ());
     }
     
     void exec (arr_load_t  &stmt) {
-      get_inv()->array_load (stmt.lhs (), stmt.array (), stmt.index(), stmt.elem_size());
+      get_inv()->array_load (stmt.lhs (), stmt.array (), stmt.elem_size(), stmt.index());
     }
     
     void exec (arr_assign_t  &stmt) {

@@ -916,7 +916,8 @@ namespace domains {
     // array_operators_api 
        
     // All the array elements are assumed to be equal to val
-    virtual void array_assume (variable_t a, 
+    virtual void array_assume (variable_t a,
+			       linear_expression_t elem_size,
 			       linear_expression_t lb_idx,
 			       linear_expression_t ub_idx, 
 			       linear_expression_t val) override {
@@ -928,7 +929,8 @@ namespace domains {
     }
     
     virtual void array_load (variable_t lhs, variable_t a,
-			     linear_expression_t i, z_number n_bytes) override {
+			     linear_expression_t elem_size,
+			     linear_expression_t i) override {
       crab::CrabStats::count (getDomainName() + ".count.load");
       crab::ScopedCrabStats __st__(getDomainName() + ".load");
 
@@ -937,8 +939,14 @@ namespace domains {
       interval_t ii = to_interval(i);
       if (boost::optional<number_t> n = ii.singleton()) {
 	offset_map_t offset_map = _array_map[a];
-	offset_t o((long) *n);
-	unsigned size = (long) n_bytes;
+	offset_t o((long) *n);	
+	interval_t i_elem_size = to_interval(elem_size);
+	boost::optional<number_t> n_bytes = i_elem_size.singleton();
+	if (!n_bytes) {
+	  CRAB_WARN("array expansion ignored array load because element size is not constant");
+	  return;
+	}
+	unsigned size = (long)*n_bytes;
 	
 	std::vector<cell_t> cells;
 	offset_map.get_overlap_cells(o, size, cells);
@@ -976,9 +984,9 @@ namespace domains {
     }
         
         
-    virtual void array_store (variable_t a, 
+    virtual void array_store (variable_t a, linear_expression_t elem_size,
 			      linear_expression_t i, linear_expression_t val, 
-			      z_number n_bytes, bool /*is_singleton*/) override {
+			      bool /*is_singleton*/) override {
       crab::CrabStats::count (getDomainName() + ".count.store");
       crab::ScopedCrabStats __st__(getDomainName() + ".store");
 
@@ -988,8 +996,15 @@ namespace domains {
       if (boost::optional<number_t> n = ii.singleton()) {
 	offset_map_t offset_map = _array_map[a];
 	offset_t o((long) *n);
-	unsigned size = (long) n_bytes;
 
+	interval_t i_elem_size = to_interval(elem_size);
+	boost::optional<number_t> n_bytes = i_elem_size.singleton();
+	if (!n_bytes) {
+	  CRAB_WARN("array expansion ignored array store because element size is not constant");
+	  return;
+	}
+	unsigned size = (long)*n_bytes;
+	
 	// kill overlapping cells
 	std::vector<cell_t> cells;
 	offset_map.get_overlap_cells(o, size, cells);

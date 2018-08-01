@@ -1830,6 +1830,16 @@ namespace crab {
 	  (_scalar, val, arr.get_type(), w, arr);
         _g.update_edge(lm_src, w, lm_dst);        
       }
+
+      interval_t to_interval(linear_expression_t expr) {
+	interval_t r(expr.constant());
+	for (typename linear_expression_t::iterator it = expr.begin(); 
+	     it != expr.end(); ++it) {
+	  interval_t c(it->first);
+	  r += c * _scalar[it->second];
+	}
+	return r;
+      }
       
      public:
 
@@ -2316,7 +2326,7 @@ namespace crab {
 
       // array_operators_api       
 
-      virtual void array_assume (variable_t a, 
+      virtual void array_assume (variable_t a, linear_expression_t /*elem_size*/,
                                  linear_expression_t lb_idx,
 				 linear_expression_t ub_idx, 
                                  linear_expression_t val) override {
@@ -2338,8 +2348,9 @@ namespace crab {
           CRAB_ERROR ("unreachable");
       }
 
-      virtual void array_load (variable_t lhs, variable_t a,
-                               linear_expression_t i, z_number nbytes) override  {
+      virtual void array_load (variable_t lhs,
+			       variable_t a, linear_expression_t elem_size,
+                               linear_expression_t i) override  {
         crab::CrabStats::count (getDomainName() + ".count.load");
         crab::ScopedCrabStats __st__(getDomainName() + ".load");
 
@@ -2353,7 +2364,14 @@ namespace crab {
 
         // -- normalization ensures that closure and reduction have
         // -- been applied.
-        auto p = normalize_offset (*vi, nbytes);
+	interval_t i_elem_size = to_interval(elem_size);
+	boost::optional<number_t> n_elem_size = i_elem_size.singleton();
+	if (!n_elem_size) {
+	  CRAB_WARN("array_graph ignored array load because element size is not constant");
+	  return;
+	}
+	unsigned num_bytes = (long)*n_elem_size; 
+        auto p = normalize_offset (*vi, num_bytes); 
         variable_t norm_idx = p.first;
 
         // #if 0
@@ -2398,9 +2416,8 @@ namespace crab {
                                << *this <<"\n";);    
       }
 
-      virtual void array_store (variable_t a, 
+      virtual void array_store (variable_t a, linear_expression_t elem_size,
                                 linear_expression_t i, linear_expression_t val, 
-                                z_number nbytes,
 				bool /*is_singleton*/) override {
         crab::CrabStats::count (getDomainName() + ".count.store");
         crab::ScopedCrabStats __st__(getDomainName() + ".store");
@@ -2417,7 +2434,14 @@ namespace crab {
         array_sparse_graph_impl::
 	  propagate_between_weight_and_scalar(_scalar, val, a.get_type(), w, a);
 
-        auto p = normalize_offset (*vi, nbytes);
+	interval_t i_elem_size = to_interval(elem_size);
+	boost::optional<number_t> n_elem_size = i_elem_size.singleton();
+	if (!n_elem_size) {
+	  CRAB_WARN("array_graph ignored array store because element size is not constant");
+	  return;
+	}
+	unsigned num_bytes = (long)*n_elem_size; 
+        auto p = normalize_offset (*vi, num_bytes);
         variable_t norm_idx = p.first;
 
         array_edge_forget (norm_idx, a);
