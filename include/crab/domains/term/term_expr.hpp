@@ -1,10 +1,13 @@
 #pragma once
 
-#include <map>
-#include <memory>
-#include <boost/optional.hpp>
-
 #include <crab/common/types.hpp>
+
+#include <map>
+#include <vector>
+#include <forward_list>
+#include <memory>
+
+#include <boost/optional.hpp>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsign-compare"
@@ -197,7 +200,7 @@ namespace crab {
         // For establishing a mapping between tables
         typedef std::map<term_id, term_id> term_map_t;
         typedef std::map<std::pair<term_id, term_id>, term_id> gener_map_t;
-        
+
         term_table(void)
             : free_var(0)
         { }
@@ -299,10 +302,13 @@ namespace crab {
             free_terms.push_back(t);
             term_ref_t ref(terms[t]);
             _map.erase(ref);
-            if(ref.p.get()->kind() == TERM_APP)
-            {
-              for(term_id c : term_args(ref.p.get()))
+            if(ref.p.get()->kind() == TERM_APP) {            
+              for(term_id c : term_args(ref.p.get())) {
+		// remove t as parent of c before going down child
+		auto &c_parents = parents(c);
+		c_parents.remove(t);
                 deref(c, forgotten);
+	      }
             }
           }
         }
@@ -436,7 +442,7 @@ namespace crab {
           }
         }
 
-        std::vector<term_id_t>& parents(term_id_t id)
+        std::forward_list<term_id_t>& parents(term_id_t id)
         {
           return _parents[id];
         }
@@ -484,7 +490,7 @@ namespace crab {
             term_id t = terms.size();
             terms.push_back(ref);
             _ref_count.push_back(0);
-            _parents.push_back(std::vector<term_id>());
+            _parents.push_back(std::forward_list<term_id>());
             _depth.push_back(0);
             return t;
           }
@@ -506,13 +512,14 @@ namespace crab {
               {
                 assert(c < _ref_count.size());
                 _ref_count[c] += 1;
-                _parents[c].push_back(id);
+		// do not keep order between parents
+                _parents[c].push_front(id);
                 c_depth = std::max(c_depth, _depth[c]);
               }
               _depth[id] = 1+c_depth;
             }
-              /* Not true, as we're garbage collecting terms */
-//            assert(_map.size() == id+1);
+            /* Not true, as we're garbage collecting terms */
+	    // assert(_map.size() == id+1);
             return id;
           }
         }
@@ -520,7 +527,7 @@ namespace crab {
         int free_var;
         std::map<term_ref_t, term_id> _map;
         std::vector<term_ref_t> terms;
-        std::vector< std::vector<term_id_t> > _parents;
+        std::vector<std::forward_list<term_id_t>> _parents;
         std::vector<unsigned int> _ref_count;
         std::vector<unsigned int> _depth;
         std::vector<term_id> free_terms;
@@ -609,7 +616,7 @@ namespace crab {
           }
         }
 
-        std::vector<term_id_t>& get_parents (term_id_t t){
+        std::forward_list<term_id_t>& get_parents (term_id_t t){
           return _ttbl->parents (t);
         }
 
@@ -651,15 +658,15 @@ namespace crab {
           term_t* t1_ptr = _ttbl->get_term_ptr(t1);
           assert (t1_ptr);
           if (t1_ptr->kind () == TERM_APP) {
-            std::vector<term_id_t>& par1 = get_parents (t1);
-            ccpar2.insert (par1.begin (), par1.end());
+            auto& t1_parents = get_parents (t1);
+            ccpar2.insert (t1_parents.begin (), t1_parents.end());
           }
 
           term_t* t2_ptr = _ttbl->get_term_ptr(t2);
           assert (t2_ptr);
           if (t2_ptr->kind () == TERM_APP) {
-            std::vector<term_id_t>& par2 = get_parents (t2);
-            ccpar2.insert (par2.begin (), par2.end());
+            auto& t2_parents = get_parents (t2);
+            ccpar2.insert (t2_parents.begin (), t2_parents.end());
           }
           ccpar1.clear ();
         }
