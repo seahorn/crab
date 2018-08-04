@@ -38,20 +38,20 @@ namespace crab {
 
       private:
        
-       class array_segment_visitor: public cfg::statement_visitor<N,V> {
-         typedef typename cfg::statement_visitor<N,V>::bin_op_t bin_op_t;
-         typedef typename cfg::statement_visitor<N,V>::assign_t assign_t;
-         typedef typename cfg::statement_visitor<N,V>::assume_t assume_t;
-         typedef typename cfg::statement_visitor<N,V>::select_t select_t;
-         typedef typename cfg::statement_visitor<N,V>::assert_t assert_t;
+       class array_segment_visitor: public crab::cfg::statement_visitor<N,V> {
+         typedef typename crab::cfg::statement_visitor<N,V>::bin_op_t bin_op_t;
+         typedef typename crab::cfg::statement_visitor<N,V>::assign_t assign_t;
+         typedef typename crab::cfg::statement_visitor<N,V>::assume_t assume_t;
+         typedef typename crab::cfg::statement_visitor<N,V>::select_t select_t;
+         typedef typename crab::cfg::statement_visitor<N,V>::assert_t assert_t;
 	 
-         typedef typename cfg::statement_visitor<N,V>::havoc_t    havoc_t;
-         typedef typename cfg::statement_visitor<N,V>::unreach_t  unreach_t;
-         typedef typename cfg::statement_visitor<N,V>::callsite_t callsite_t;
+         typedef typename crab::cfg::statement_visitor<N,V>::havoc_t    havoc_t;
+         typedef typename crab::cfg::statement_visitor<N,V>::unreach_t  unreach_t;
+         typedef typename crab::cfg::statement_visitor<N,V>::callsite_t callsite_t;
 
-         typedef typename cfg::statement_visitor<N,V>::arr_assume_t arr_assume_t;
-         typedef typename cfg::statement_visitor<N,V>::arr_load_t   arr_load_t;
-         typedef typename cfg::statement_visitor<N,V>::arr_store_t  arr_store_t;
+         typedef typename crab::cfg::statement_visitor<N,V>::arr_assume_t arr_assume_t;
+         typedef typename crab::cfg::statement_visitor<N,V>::arr_load_t   arr_load_t;
+         typedef typename crab::cfg::statement_visitor<N,V>::arr_store_t  arr_store_t;
 
          // assume all statements have the same type expression_t;
          typedef typename bin_op_t::linear_expression_t linear_expression_t;
@@ -199,22 +199,22 @@ namespace crab {
      // segment boundaries.
      template<class CFG, class ArraySegmentDom>
      class array_constant_segment_visitor: 
-       public cfg::statement_visitor<typename CFG::number_t, typename CFG::varname_t> {
+       public crab::cfg::statement_visitor<typename CFG::number_t, typename CFG::varname_t> {
        
        typedef typename CFG::number_t N;
        typedef typename CFG::varname_t V;
-       typedef typename cfg::statement_visitor<N,V>::bin_op_t   bin_op_t;
-       typedef typename cfg::statement_visitor<N,V>::assign_t   assign_t;
-       typedef typename cfg::statement_visitor<N,V>::assume_t   assume_t;
-       typedef typename cfg::statement_visitor<N,V>::havoc_t    havoc_t;
-       typedef typename cfg::statement_visitor<N,V>::unreach_t  unreach_t;
-       typedef typename cfg::statement_visitor<N,V>::select_t   select_t;
-       typedef typename cfg::statement_visitor<N,V>::callsite_t callsite_t;
-       typedef typename cfg::statement_visitor<N,V>::assert_t   assert_t;
+       typedef typename crab::cfg::statement_visitor<N,V>::bin_op_t   bin_op_t;
+       typedef typename crab::cfg::statement_visitor<N,V>::assign_t   assign_t;
+       typedef typename crab::cfg::statement_visitor<N,V>::assume_t   assume_t;
+       typedef typename crab::cfg::statement_visitor<N,V>::havoc_t    havoc_t;
+       typedef typename crab::cfg::statement_visitor<N,V>::unreach_t  unreach_t;
+       typedef typename crab::cfg::statement_visitor<N,V>::select_t   select_t;
+       typedef typename crab::cfg::statement_visitor<N,V>::callsite_t callsite_t;
+       typedef typename crab::cfg::statement_visitor<N,V>::assert_t   assert_t;
 
-       typedef typename cfg::statement_visitor<N,V>::arr_assume_t arr_assume_t;
-       typedef typename cfg::statement_visitor<N,V>::arr_load_t   arr_load_t;
-       typedef typename cfg::statement_visitor<N,V>::arr_store_t  arr_store_t;
+       typedef typename crab::cfg::statement_visitor<N,V>::arr_assume_t arr_assume_t;
+       typedef typename crab::cfg::statement_visitor<N,V>::arr_load_t   arr_load_t;
+       typedef typename crab::cfg::statement_visitor<N,V>::arr_store_t  arr_store_t;
        
        typedef typename bin_op_t::linear_expression_t linear_expression_t;
        typedef typename linear_expression_t::number_t number_t;
