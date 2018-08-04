@@ -27,7 +27,7 @@ namespace crab {
 
 
     /// To define CFG over integers
-    typedef cfg::Cfg<basic_block_label_t, varname_t, ikos::z_number> z_cfg_t;
+    typedef cfg::cfg<basic_block_label_t, varname_t, ikos::z_number> z_cfg_t;
     typedef cfg::cfg_ref<z_cfg_t> z_cfg_ref_t;
     typedef cfg::cfg_rev<z_cfg_ref_t> z_cfg_rev_t;
     typedef z_cfg_t::basic_block_t z_basic_block_t;
@@ -36,7 +36,7 @@ namespace crab {
     typedef ikos::linear_constraint<ikos::z_number, varname_t> z_lin_cst_t;
     
     /// To define CFG over rationals    
-    typedef cfg::Cfg<basic_block_label_t, varname_t, ikos::q_number> q_cfg_t;
+    typedef cfg::cfg<basic_block_label_t, varname_t, ikos::q_number> q_cfg_t;
     typedef cfg::cfg_ref<q_cfg_t> q_cfg_ref_t;
     typedef cfg::cfg_rev<q_cfg_ref_t> q_cfg_rev_t;
     typedef q_cfg_t::basic_block_t q_basic_block_t;    

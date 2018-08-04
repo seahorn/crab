@@ -22,10 +22,6 @@ namespace crab {
   
   namespace analyzer {
     
-    using namespace crab::iterators;
-    using namespace crab::domains;
-    using namespace crab::cfg;
-    
     // A class to represent an unjustified assumption 
     template<class CFG>
     class assumption {
@@ -147,7 +143,7 @@ namespace crab {
     public:
       
       typedef typename CFG::statement_t statement_t;
-      typedef cfg::assert_stmt<typename CFG::number_t, typename CFG::varname_t> assert_t;
+      typedef crab::cfg::assert_stmt<typename CFG::number_t, typename CFG::varname_t> assert_t;
       typedef assumption<CFG> assumption_t;
       typedef boost::shared_ptr<assumption_t> assumption_ptr;
       typedef std::vector<assumption_ptr> vector_assumption_ptr;

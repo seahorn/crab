@@ -46,8 +46,8 @@ namespace boost {
 
      // cfg
      template<typename BasicBlockLabel, typename VariableName, typename Number>
-     struct graph_traits<crab::cfg::Cfg <BasicBlockLabel, VariableName, Number> >  {
-       typedef crab::cfg::Cfg<BasicBlockLabel, VariableName, Number> graph_t;
+     struct graph_traits<crab::cfg::cfg <BasicBlockLabel, VariableName, Number> >  {
+       typedef crab::cfg::cfg<BasicBlockLabel, VariableName, Number> graph_t;
        typedef BasicBlockLabel vertex_descriptor;
        typedef std::pair<vertex_descriptor, vertex_descriptor> edge_descriptor;
        typedef std::pair<const vertex_descriptor, 
@@ -175,27 +175,27 @@ namespace crab {
      // cfg
      template<typename BasicBlockLabel, typename VariableName, typename Number>
      inline std::pair<typename
-		 boost::graph_traits<Cfg<BasicBlockLabel,VariableName,Number> >::
+		 boost::graph_traits<cfg<BasicBlockLabel,VariableName,Number> >::
 		 vertex_iterator, 
                  typename
-		 boost::graph_traits<Cfg<BasicBlockLabel,VariableName,Number> >::
+		 boost::graph_traits<cfg<BasicBlockLabel,VariableName,Number> >::
 		 vertex_iterator > 
-     vertices (Cfg<BasicBlockLabel,VariableName,Number> g) {
+     vertices (cfg<BasicBlockLabel,VariableName,Number> g) {
        return std::make_pair (g.label_begin (), g.label_end ());
      }
    
      template<typename BasicBlockLabel, typename VariableName, typename Number>
      inline std::pair< typename
-		  boost::graph_traits<Cfg<BasicBlockLabel,VariableName,Number> >::
+		  boost::graph_traits<cfg<BasicBlockLabel,VariableName,Number> >::
 		  out_edge_iterator, 
                   typename
-		  boost::graph_traits<Cfg<BasicBlockLabel,VariableName,Number> >::
+		  boost::graph_traits<cfg<BasicBlockLabel,VariableName,Number> >::
 		  out_edge_iterator >
      out_edges (typename
-		boost::graph_traits<Cfg<BasicBlockLabel,VariableName,Number> >::
+		boost::graph_traits<cfg<BasicBlockLabel,VariableName,Number> >::
 		vertex_descriptor v, 
-                Cfg<BasicBlockLabel,VariableName,Number> g) {
-       typedef Cfg<BasicBlockLabel,VariableName,Number> G;
+                cfg<BasicBlockLabel,VariableName,Number> g) {
+       typedef cfg<BasicBlockLabel,VariableName,Number> G;
        
        auto& node = g.get_node (v);
        auto p = node.next_blocks ();
@@ -208,16 +208,16 @@ namespace crab {
    
      template<typename BasicBlockLabel, typename VariableName, typename Number>
      inline std::pair< typename
-		  boost::graph_traits<Cfg<BasicBlockLabel,VariableName,Number> >::
+		  boost::graph_traits<cfg<BasicBlockLabel,VariableName,Number> >::
 		  in_edge_iterator, 
                   typename
-		  boost::graph_traits<Cfg<BasicBlockLabel,VariableName,Number> >::
+		  boost::graph_traits<cfg<BasicBlockLabel,VariableName,Number> >::
 		  in_edge_iterator >
      in_edges (typename
-	       boost::graph_traits<Cfg<BasicBlockLabel,VariableName,Number> >::
+	       boost::graph_traits<cfg<BasicBlockLabel,VariableName,Number> >::
 	       vertex_descriptor v, 
-               Cfg<BasicBlockLabel,VariableName,Number> g) {
-       typedef Cfg<BasicBlockLabel,VariableName,Number> G;
+               cfg<BasicBlockLabel,VariableName,Number> g) {
+       typedef cfg<BasicBlockLabel,VariableName,Number> G;
        
        auto& node = g.get_node (v);
        auto p = node.prev_blocks ();
@@ -230,41 +230,41 @@ namespace crab {
      }
    
      template<typename BasicBlockLabel, typename VariableName, typename Number>
-     typename boost::graph_traits<Cfg<BasicBlockLabel,VariableName, Number> >::
+     typename boost::graph_traits<cfg<BasicBlockLabel,VariableName, Number> >::
      vertices_size_type
-     num_vertices (Cfg<BasicBlockLabel,VariableName, Number> g) {
+     num_vertices (cfg<BasicBlockLabel,VariableName, Number> g) {
        return std::distance (g.label_begin (), g.label_end ());
      }
    
      template<typename BasicBlockLabel, typename VariableName, typename Number>
-     typename boost::graph_traits<Cfg<BasicBlockLabel,VariableName,Number> >::
+     typename boost::graph_traits<cfg<BasicBlockLabel,VariableName,Number> >::
      degree_size_type
      in_degree (typename
-		boost::graph_traits<Cfg<BasicBlockLabel,VariableName,Number> >::
+		boost::graph_traits<cfg<BasicBlockLabel,VariableName,Number> >::
 		vertex_descriptor v, 
-                Cfg<BasicBlockLabel,VariableName,Number> g) {
+                cfg<BasicBlockLabel,VariableName,Number> g) {
        auto preds = g.prev_nodes (v);
        return std::distance (preds.begin (), preds.end ());
      }
    
      template<typename BasicBlockLabel, typename VariableName, typename Number>
-     typename boost::graph_traits<Cfg<BasicBlockLabel,VariableName,Number> >::
+     typename boost::graph_traits<cfg<BasicBlockLabel,VariableName,Number> >::
      degree_size_type
      out_degree (typename
-		 boost::graph_traits<Cfg<BasicBlockLabel,VariableName,Number> >::
+		 boost::graph_traits<cfg<BasicBlockLabel,VariableName,Number> >::
 		 vertex_descriptor v, 
-                 Cfg<BasicBlockLabel,VariableName,Number> g) {
+                 cfg<BasicBlockLabel,VariableName,Number> g) {
        auto succs = g.next_nodes (v);
        return std::distance (succs.begin (), succs.end ());
      }
    
      template<typename BasicBlockLabel, typename VariableName, typename Number>
-     typename boost::graph_traits<Cfg<BasicBlockLabel,VariableName,Number> >::
+     typename boost::graph_traits<cfg<BasicBlockLabel,VariableName,Number> >::
      degree_size_type
      degree (typename
-	     boost::graph_traits<Cfg<BasicBlockLabel,VariableName,Number> >::
+	     boost::graph_traits<cfg<BasicBlockLabel,VariableName,Number> >::
 	     vertex_descriptor v, 
-             Cfg<BasicBlockLabel,VariableName,Number> g) {
+             cfg<BasicBlockLabel,VariableName,Number> g) {
        return out_degree (v, g) + in_degree (v, g);
      }
 

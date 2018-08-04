@@ -1854,14 +1854,14 @@ namespace crab {
     }; 
     
     template< class BasicBlockLabel, class VariableName, class Number>
-    class Cfg;
+    class cfg;
   
     template< class BasicBlockLabel, class VariableName, class Number>
     class basic_block: public boost::noncopyable
     {
       
       // TODO: support for removing statements 
-      friend class Cfg< BasicBlockLabel, VariableName, Number>;
+      friend class cfg< BasicBlockLabel, VariableName, Number>;
       
      public:
 
@@ -2823,7 +2823,7 @@ namespace crab {
     template<class Any> class cfg_ref;
          
     template< class BasicBlockLabel, class VariableName, class Number>
-    class Cfg: public boost::noncopyable {
+    class cfg: public boost::noncopyable {
      public:
 
       typedef Number number_t; 
@@ -2847,7 +2847,7 @@ namespace crab {
       
      private:
       
-      typedef Cfg<BasicBlockLabel, VariableName, Number> cfg_t;
+      typedef cfg<BasicBlockLabel, VariableName, Number> cfg_t;
       typedef boost::shared_ptr< basic_block_t > basic_block_ptr;
       typedef boost::unordered_map< BasicBlockLabel, basic_block_ptr > basic_block_map_t;
       typedef typename basic_block_map_t::value_type binding_t;
@@ -2922,9 +2922,9 @@ namespace crab {
      public:
       
       // --- needed by crab::cg::call_graph<CFG>::cg_node
-      Cfg () { }
+      cfg () { }
       
-      Cfg (BasicBlockLabel entry, tracked_precision track_prec = NUM)
+      cfg (BasicBlockLabel entry, tracked_precision track_prec = NUM)
           : m_entry  (entry),  
             m_has_exit (false),
             m_track_prec (track_prec) {
@@ -2932,7 +2932,7 @@ namespace crab {
                                     basic_block_t::create (m_entry, m_track_prec)));
       }
       
-      Cfg (BasicBlockLabel entry, BasicBlockLabel exit, 
+      cfg (BasicBlockLabel entry, BasicBlockLabel exit, 
            tracked_precision track_prec = NUM)
           : m_entry  (entry), 
             m_exit   (exit), 
@@ -2942,7 +2942,7 @@ namespace crab {
                                     basic_block_t::create (m_entry, m_track_prec)));
       }
       
-      Cfg (BasicBlockLabel entry, BasicBlockLabel exit, 
+      cfg (BasicBlockLabel entry, BasicBlockLabel exit, 
            fdecl_t func_decl, 
            tracked_precision track_prec = NUM)
           : m_entry (entry), 
@@ -3157,7 +3157,7 @@ namespace crab {
       }
       
       friend crab_os& operator<<(crab_os &o, 
-                                 const Cfg< BasicBlockLabel, VariableName, Number> &cfg)
+                                 const cfg< BasicBlockLabel, VariableName, Number> &cfg)
       {
         cfg.write (o);
         return o;
@@ -4143,12 +4143,12 @@ namespace crab {
       
     // extending boost::hash for cfg class
     template<class B, class V, class N>
-    std::size_t hash_value(Cfg<B,V,N> const& _cfg) {
+    std::size_t hash_value(cfg<B,V,N> const& _cfg) {
       auto fdecl = _cfg.get_func_decl ();            
       if (!fdecl)
         CRAB_ERROR ("cannot hash a cfg because function declaration is missing");
 
-      return cfg_hasher<Cfg<B,V,N> >::hash(*fdecl);
+      return cfg_hasher<cfg<B,V,N> >::hash(*fdecl);
     }
 
     template<class CFG>
@@ -4170,7 +4170,7 @@ namespace crab {
     }
 
     template<class B, class V, class N>
-    bool operator==(Cfg<B,V,N> const& a, Cfg<B,V,N> const& b) {
+    bool operator==(cfg<B,V,N> const& a, cfg<B,V,N> const& b) {
       return hash_value (a) == hash_value (b);
     }
 

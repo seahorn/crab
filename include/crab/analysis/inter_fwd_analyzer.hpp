@@ -36,7 +36,7 @@ namespace crab {
      public:
 
       typedef CG cg_t;
-      typedef typename cg_node_t::cfg_t cfg_t; // cfg_t is actually a wrap to Cfg&
+      typedef typename cg_node_t::cfg_t cfg_t; // cfg_t is actually a wrap to cfg&
       typedef typename cfg_t::varname_t varname_t;
       typedef typename cfg_t::number_t number_t;
       typedef typename cfg_t::variable_t variable_t;
