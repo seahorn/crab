@@ -113,7 +113,7 @@ namespace crab {
 				     std::vector<basic_block_label_t> > cdg_t;
        
        // set of uses and definitions of an instruction
-       typedef crab::cfg::Live<N,V> live_t;
+       typedef crab::cfg::live<N,V> live_t;
 
        class transfer_function: public statement_visitor<N,V> {
 	

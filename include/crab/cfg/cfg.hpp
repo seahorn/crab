@@ -111,7 +111,7 @@ namespace crab {
     }
     
     template<typename Number, typename VariableName>
-    class Live
+    class live
     {
       
      public:
@@ -140,7 +140,7 @@ namespace crab {
       
      public:
       
-      Live() { }
+      live() { }
       
       void add_use(const variable_t v){ add (m_uses,v);}
       void add_def(const variable_t v){ add (m_defs,v);}
@@ -150,7 +150,7 @@ namespace crab {
       const_use_iterator defs_begin() const { return m_defs.begin (); }
       const_use_iterator defs_end()   const { return m_defs.end (); }
 
-      friend crab_os& operator<<(crab_os &o, const Live<Number,VariableName> &live) {
+      friend crab_os& operator<<(crab_os &o, const live<Number,VariableName> &live) {
         o << "Use={"; 
         for (auto const& v: boost::make_iterator_range (live.uses_begin (), 
                                                         live.uses_end ()))
@@ -212,7 +212,7 @@ namespace crab {
     {
       
      public:
-      typedef Live<Number, VariableName> live_t ;
+      typedef live<Number, VariableName> live_t ;
       
      protected:
       live_t m_live;
