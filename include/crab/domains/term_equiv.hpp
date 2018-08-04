@@ -610,7 +610,6 @@ namespace crab {
        
        // Optimized version of | that avoids some unnecessary copies
        void operator|=(term_domain_t o) {
-
          crab::CrabStats::count (getDomainName() + ".count.join");
          crab::ScopedCrabStats __st__(getDomainName() + ".join");
          
@@ -687,7 +686,7 @@ namespace crab {
        term_domain_t operator|(term_domain_t o) {
          crab::CrabStats::count (getDomainName() + ".count.join");
          crab::ScopedCrabStats __st__(getDomainName() + ".join");
-
+	 
          // Requires normalization of both operands
          normalize();
          o.normalize();
@@ -1096,6 +1095,8 @@ namespace crab {
 
            deref(t);
          }
+	 CRAB_LOG("term",
+		  crab::outs () << "After removing " << v << ": " << *this << "\n";);
        }
 
        // Remove a range of variables from the scope
@@ -1230,7 +1231,7 @@ namespace crab {
          check_terms();
          CRAB_LOG("term", 
                   crab::outs() << "*** " << x << ":=" <<  y <<  " " <<  op <<  " "
-                  <<  z <<  ":" <<  *this << "\n");
+                               <<  z <<  ":" <<  *this << "\n");
        }
     
        // x = y op k
@@ -1246,7 +1247,8 @@ namespace crab {
          }
          check_terms();
          CRAB_LOG("term",
-                  crab::outs() << "*** " << x << ":=" << y << " " << op << " " << k <<  ":" << *this << "\n");
+                  crab::outs() << "*** " << x << ":=" << y << " " << op << " "
+		               << k <<  ":" << *this << "\n");
          return;
        }
 
@@ -1274,6 +1276,9 @@ namespace crab {
          crab::CrabStats::count (getDomainName() + ".count.add_constraints");
          crab::ScopedCrabStats __st__(getDomainName() + ".add_constraints");
 
+         CRAB_LOG("term",
+		  crab::outs() << "*** Before assume " << cst << ":" << *this << "\n");
+	 
          typedef std::pair<variable_t,variable_t> pair_var_t;
 
          if (boost::optional<pair_var_t> eq = get_eq_or_diseq(cst)) {
@@ -1282,7 +1287,8 @@ namespace crab {
            if (cst.is_disequation ()) {
 	     if (tx == ty) {
 	       set_to_bottom ();
-	       CRAB_LOG("term", crab::outs() << "*** Assume 1 " << cst << ":" <<  *this << "\n");
+	       CRAB_LOG("term",
+			crab::outs() << "*** After assume " << cst << ":" <<  *this << "\n");
 	       return;
 	     }
            } else {
@@ -1293,7 +1299,7 @@ namespace crab {
              term::congruence_closure_solver<ttbl_t> solver (&_ttbl);
              std::vector<std::pair<term_id_t, term_id_t> > eqs = { std::make_pair (tx,ty) };
              solver.run (eqs);
-             
+	     
              std::vector<int> stack;
              std::map <int, term_id_t> cache;
              dom_t x_impl (_impl); 
@@ -1315,24 +1321,27 @@ namespace crab {
 
                rebind_var (v, t_new);
              }
-             
              domain_traits<dom_t>::project (x_impl, out_varnames.begin (), out_varnames.end ());
              std::swap (_impl, x_impl);
            }
-         } 
+         }
 
          dom_lincst_t cst_rn(rename_linear_cst(cst));
          _impl += cst_rn;
-
          // Possibly tightened some variable in cst
          for(auto v : cst.expression().variables()) {
+	   CRAB_LOG("term-normalization",
+		    crab::outs () << "Added to the normalization queue " 
+		                  << "t" << term_of_var(v)
+		                  << "[" << domvar_of_term(term_of_var(v)) << "] "
+		                  << "from variable " << v << "\n";);
            changed_terms.insert(term_of_var(v));
          }
 
          // Probably doesn't need to done so eagerly.
          normalize();
 
-         CRAB_LOG("term", crab::outs() << "*** Assume 2 " << cst << ":" << *this << "\n");
+         CRAB_LOG("term", crab::outs() << "*** After assume " << cst << ":" << *this << "\n");
          return;
        }
        
@@ -1461,7 +1470,7 @@ namespace crab {
          check_terms();
          CRAB_LOG("term", 
                   crab::outs() << "*** " << x << ":=" << y << " " << op 
-                  << " " << z << ":" << *this << "\n");
+                               << " " << z << ":" << *this << "\n");
        }
     
        void apply(bitwise_operation_t op, variable_t x, variable_t y, Number k){
@@ -1478,7 +1487,7 @@ namespace crab {
          check_terms();
          CRAB_LOG("term", 
                   crab::outs() << "*** " << x << ":=" << y << " "<< op << " " << k 
-                  << ":" << *this << "\n");
+                               << ":" << *this << "\n");
          return;
        }
     
@@ -1497,7 +1506,8 @@ namespace crab {
 
          check_terms();
          CRAB_LOG("term", 
-                  crab::outs() << "*** "<< x<< ":="<< y<< " "<< op<< " "<< z<< ":"<< *this << "\n");
+                  crab::outs() << "*** "<< x<< ":="<< y<< " "<< op<< " "<< z
+		               << ":"<< *this << "\n");
        }
 
        void apply(div_operation_t op, variable_t x, variable_t y, Number k){
@@ -1513,7 +1523,8 @@ namespace crab {
 
          check_terms();
          CRAB_LOG("term",
-                  crab::outs() << "*** "<< x<< ":="<< y<< " "<< op<< " "<< k<< ":"<< *this << "\n");
+                  crab::outs() << "*** "<< x<< ":="<< y<< " "<< op<< " "<< k<< ":"
+		               << *this << "\n");
          return;
        }
 
@@ -1621,14 +1632,33 @@ namespace crab {
         // Propagate information to children.
         // Don't need to propagate level 0, since it's for free variables
         for(int d = queue.size()-1; d > 0; d--)
-        {
+        {	  
           for(term_id_t t : queue[d])
           {
+            typename ttbl_t::term_t* t_ptr = ttbl.get_term_ptr(t);
+            if(t_ptr->kind() != term::TERM_APP)
+              continue;
+
+	    CRAB_LOG("term-normalization",
+		     crab::outs () << "Propagate to children ";
+		     t_ptr->write(crab::outs());
+		     crab::outs () << "\n";
+		     crab::outs () << "\tTerm table: ";
+		     ttbl.write(crab::outs());
+		     crab::outs () << "\n";);
+	    
             abs.eval_ftor_down(d_prime, ttbl, t);
             if(!(abs._impl <= d_prime))
             {
               impl = d_prime;
-              
+	      
+	      CRAB_LOG("term-normalization",
+		       crab::outs () << "\trefinement done: enqueue children.\n";
+		       if (impl.is_bottom()) {
+			 crab::outs () << "\tfound bottom\n";
+		       });
+	      
+	      
               // Enqueue the args.
               typename ttbl_t::term_t* t_ptr = ttbl.get_term_ptr(t); 
               std::vector<term_id_t>& args(term::term_args(t_ptr));
@@ -1640,7 +1670,11 @@ namespace crab {
                   queue[ttbl.depth(c)].push_back(c);
                 }
               }
-            }
+            } else {
+	      CRAB_LOG("term-normalization",
+		       crab::outs () << "\tno refinement done.\n";);
+	      
+	    }
           }
         }
         
@@ -1654,6 +1688,11 @@ namespace crab {
             if(up_terms.find(p) == up_terms.end())
             {
               up_terms.insert(p);
+	      CRAB_LOG("term-normalization",
+		       crab::outs () << "t" << p << "[" << abs.domvar_of_term(p) << "]"
+		                     << " is a parent of "
+		                     << "t" << t << "[" << abs.domvar_of_term(t) << "]\n";
+		       );
               queue_push(ttbl, up_queue, p);
             }
           }
@@ -1669,14 +1708,34 @@ namespace crab {
           for(term_id_t t : up_queue[d])
           {
             abs.eval_ftor(d_prime, ttbl, t);
+	    CRAB_LOG("term-normalization",
+		     typename ttbl_t::term_t* t_ptr = ttbl.get_term_ptr(t);
+		     crab::outs () << "Propagate to parent ";
+		     t_ptr->write(crab::outs());
+		     crab::outs () << "\n";
+		     crab::outs () << "\tTerm table: ";
+		     ttbl.write(crab::outs());
+		     crab::outs () << "\n";);
+	    
             if(!(impl <= d_prime))
             {
+	      CRAB_LOG("term-normalization",
+		       crab::outs() << "Before up propagation: " << impl << "\n";
+		       crab::outs() << "After up propagation : " << d_prime << "\n";);
+	      
               // We need to do a meet here, as
               // impl and F(stmt)impl may be
               // incomparable
               impl = impl&d_prime;
-              // impl = d_prime; // Old code
-              
+              //impl = d_prime; // Old code
+
+	      CRAB_LOG("term-normalization",
+		       crab::outs () << "\trefinement done: enqueue parents.\n";
+		       if (impl.is_bottom()) {
+			 crab::outs () << "\tfound bottom\n";
+		       });
+		       
+	      
               for(term_id_t p : ttbl.parents(t))
               {
                 if(up_terms.find(p) == up_terms.end())
@@ -1685,7 +1744,10 @@ namespace crab {
                   queue_push(ttbl, up_queue, p);
                 }
               }
-            }
+            } else {
+	      CRAB_LOG("term-normalization",
+		       crab::outs () << "\tno refinement done.\n";);
+	    }
           }
         }
         
