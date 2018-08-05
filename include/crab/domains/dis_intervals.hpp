@@ -65,7 +65,7 @@ namespace crab {
      }
      
      static bool overlap (const interval_t& i1, const interval_t& i2) {
-       return (i2.lb () <= i1.ub () && i1.lb () <= i2.ub ());
+       return !((i1 & i2).is_bottom());
      }
 
      struct IsOnTheLeft{
@@ -129,9 +129,10 @@ namespace crab {
          return l;
        }
        
-       IsOnTheLeft comp;
-       std::sort (l.begin (), l.end(), comp);
-       
+       std::sort (l.begin (), l.end(), [](const interval_t& a, const interval_t& b){
+	   return (a.lb() <= b.lb() && a.lb() != b.lb());
+	 });
+              
        list_intervals_t res;
        interval_t prev = interval_t::top (); 
        unsigned int bottoms = 0;
