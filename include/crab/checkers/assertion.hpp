@@ -75,8 +75,27 @@ namespace crab {
 
       virtual void check (bool_assert_t& s) override { 
         if (!this->m_abs_tr) return;        
-        
-	CRAB_WARN ("TODO: checker with bool assertions");
+
+        auto inv = this->m_abs_tr->inv ();
+
+        if (inv.is_bottom ()) {
+          this->m_db.add (_UNREACH);
+          return;
+        }
+	
+	auto bvar = s.cond();
+	inv.assume_bool(bvar, true /*is_negated*/);
+	if (inv.is_bottom()) {
+	  LOG_SAFE(this->m_verbose, inv, s, s.get_debug_info());	  
+	} else  {
+	  inv = this->m_abs_tr->inv ();
+	  inv.assume_bool(bvar, false /*is_negated*/);
+	  if (inv.is_bottom()) {
+	    LOG_ERR(this->m_verbose, inv, s, s.get_debug_info());	  
+	  } else {
+	    LOG_WARN(this->m_verbose, inv, s, s.get_debug_info());
+	  }
+	}
         s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
       }
       
