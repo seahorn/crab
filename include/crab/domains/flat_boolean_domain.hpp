@@ -578,12 +578,26 @@ namespace crab {
    };
 
 
-    // Reduced product of the flat boolean domain with an arbitrary
-    // numerical domain.
+    // Simple reduced product of the flat boolean domain with an
+    // arbitrary numerical domain.
     // The reduction happens in two situations:
-    //    (1) when bvar := linear_constraint
-    //    (2) when assume (bvar) or assume (!bar)
+    //    (1) when bvar := linear_constraint from numerical to boolean
+    //    (2) when assume_bool(bvar) from boolean to numerical
     // The step (2) is quite weak.
+    //
+    // For instance, code like this won't trigger any propagation so
+    // we won't know the value of x:
+    // 
+    //   havoc(x);
+    //   b1 = (x >= 0);
+    //   y  = zext b1 to i32
+    //   assume (y >= 1);
+    //
+    // Instead, the code should be rewritten like this:
+    //   havoc(x);
+    //   b1 = (x >= 0);
+    //   assume_bool(b1);
+    // 
     template <typename NumDom>
     class flat_boolean_numerical_domain:
       public abstract_domain<typename NumDom::number_t,
