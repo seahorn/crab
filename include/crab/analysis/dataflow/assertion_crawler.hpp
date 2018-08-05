@@ -569,18 +569,39 @@ namespace crab {
 
        void write (crab_os &o) {
 	 o << "Assertion Crawler Analysis \n";
-	 for (auto &kv: m_map) {
-	   o << "Block " << kv.first << "\n";
-	   #if 1
-	   o << "\t" << kv.second << "\n";
-	   #else
-	   std::map<typename CFG::statement_t*, separate_domain_t> pp_map;
-	   get_assertions(kv.first, pp_map);
-	   for (auto &kv: pp_map) {
-	     o << "\t" << *(kv.first) << " --> " << kv.second << "\n";
+
+	 // Print invariants in DFS to enforce a fixed order
+	 std::set<basic_block_label_t> visited;
+	 std::vector<basic_block_label_t> worklist;
+	 worklist.push_back(this->_cfg.entry());
+	 visited.insert(this->_cfg.entry());
+	 while (!worklist.empty()) {
+	   auto cur_label = worklist.back();
+	   worklist.pop_back();
+	   
+	   auto inv = m_map[cur_label];
+	   crab::outs() << crab::cfg_impl::get_label_str (cur_label) << "=" << inv << "\n";
+	   
+	   auto const &cur_node = this->_cfg.get_node (cur_label);
+	   for (auto const kid_label : boost::make_iterator_range (cur_node.next_blocks ())) {
+	     if (visited.insert(kid_label).second) {
+	       worklist.push_back(kid_label);
+	     }
 	   }
-	   #endif 
 	 }
+
+	 // for (auto &kv: m_map) {
+	 //   o << "Block " << kv.first << "\n";
+	 //   #if 1
+	 //   o << "\t" << kv.second << "\n";
+	 //   #else
+	 //   std::map<typename CFG::statement_t*, separate_domain_t> pp_map;
+	 //   get_assertions(kv.first, pp_map);
+	 //   for (auto &kv: pp_map) {
+	 //     o << "\t" << *(kv.first) << " --> " << kv.second << "\n";
+	 //   }
+	 //   #endif 
+	 // }
        }
        
      };

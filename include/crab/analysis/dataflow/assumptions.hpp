@@ -250,13 +250,35 @@ namespace crab {
       }
       
       void write (crab::crab_os &o)  {
-	o << "******* UNJUSTIFIED ASSUMPTION ANALYSIS ********\n";
+	// We order the assertions so that we always print them in the same order.
+	std::vector<const assert_t*> assertions;
+	assertions.reserve(m_assumption_map.size());
 	for (auto &kv: m_assumption_map) {
-	  o << *(kv.first) << " with unjustified assumptions:\n";
-	  for (auto a: kv.second) {
+	  assertions.push_back(kv.first);
+	}
+	std::sort(assertions.begin(), assertions.end(),
+		  [](const assert_t* a1, const assert_t* a2) {
+		    crab_string_os oss1, oss2;
+		    oss1 << *a1;
+		    oss2 << *a2;
+		    return oss1.str() < oss2.str();
+		  });
+	
+	o << "******* UNJUSTIFIED ASSUMPTION ANALYSIS ********\n";
+	for (const assert_t* assertion: assertions) {
+	  o << *assertion << " with unjustified assumptions:\n";
+	  auto assumptions = m_assumption_map[assertion];
+	  for (assumption_ptr a: assumptions) {
 	    o << "\t" << *a << " in " << *(a->get_statement()) << "\n";
 	  }
 	}
+	// for (auto &kv: m_assumption_map) {
+	//   o << *(kv.first) << " with unjustified assumptions:\n";
+	//   for (auto a: kv.second) {
+	//     o << "\t" << *a << " in " << *(a->get_statement()) << "\n";
+	//   }
+	// }
+	
 	o << "******************* STATS **********************\n";
 	auto stats = get_stats();
 	o << stats << "\n";

@@ -33,12 +33,30 @@ void intra_run_impl (CFG* cfg,
   typename IntraFwdAnalyzer::assumption_map_t assumptions;
   a.run(entry, assumptions);
   
-  // Print invariants
-  for (auto &b : *cfg) {
-    auto inv = a[b.label ()];
-    crab::outs() << crab::cfg_impl::get_label_str (b.label ()) << "="
-		 << inv << "\n";
+  // Print invariants in DFS to enforce a fixed order
+  std::set<crab::cfg_impl::basic_block_label_t> visited;
+  std::vector<crab::cfg_impl::basic_block_label_t> worklist;
+  worklist.push_back(cfg->entry());
+  visited.insert(cfg->entry());
+  while (!worklist.empty()) {
+    auto cur_label = worklist.back();
+    worklist.pop_back();
+    auto inv = a[cur_label];
+    crab::outs() << crab::cfg_impl::get_label_str (cur_label) << "=" << inv << "\n";
+    auto const &cur_node = cfg->get_node (cur_label);
+    for (auto const kid_label : boost::make_iterator_range (cur_node.next_blocks ())) {
+      if (visited.insert(kid_label).second) {
+	worklist.push_back(kid_label);
+      }
+    }
   }
+  
+  // for (auto &b : *cfg) {
+  //   auto inv = a[b.label ()];
+  //   crab::outs() << crab::cfg_impl::get_label_str (b.label ()) << "="
+  // 		 << inv << "\n";
+  // }
+  
   // Print abstract trace.
   // We consider as an abtract trace the WTO annotated with how many
   // times a cycle is visited by the fixpoint.

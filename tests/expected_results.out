@@ -1,3 +1,12 @@
+INITIALLY={}
+ADDING CONSTRAINTS={-x <= -1; x <= 1}
+EXPECTED={x = 1}
+RESULT={x = 1}
+------------------------------------
+INITIALLY={}
+ADDING CONSTRAINTS={-x <= -1/2; x <= 1/2}
+EXPECTED={x = 1/2}
+RESULT=_|_
 entry:
   k = 0;
   i = 0;
@@ -18,48 +27,48 @@ ret:
 
 
 Invariants using Intervals
-ret={i -> [100, 100]; k -> [0, +oo]}
-bb2={i -> [0, 99]; k -> [0, +oo]}
-bb1_t={i -> [0, 100]; k -> [0, +oo]}
+entry={}
 bb1={i -> [0, 100]; k -> [0, +oo]}
 bb1_f={i -> [0, 100]; k -> [0, +oo]}
-entry={}
+ret={i -> [100, 100]; k -> [0, +oo]}
+bb1_t={i -> [0, 100]; k -> [0, +oo]}
+bb2={i -> [0, 99]; k -> [0, +oo]}
 Abstract trace: entry (bb1 bb1_t bb2)^{4} bb1_f ret
 
 Invariants using ApronIntervals
-ret={i = 100; -k <= 0}
-bb2={-i <= 0; i <= 99; -k <= 0}
-bb1_t={-i <= 0; i <= 100; -k <= 0}
+entry={}
 bb1={-i <= 0; i <= 100; -k <= 0}
 bb1_f={-i <= 0; i <= 100; -k <= 0}
-entry={}
+ret={i = 100; -k <= 0}
+bb1_t={-i <= 0; i <= 100; -k <= 0}
+bb2={-i <= 0; i <= 99; -k <= 0}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Invariants using ApronOctagon
-ret={-i <= -100; i <= 100; i-k <= 0; -i-k <= -200; -k <= -100; i+k <= 200; -i+k <= 0; k <= 100}
-bb2={-i <= 0; i <= 99; i-k <= 0; -i-k <= 0; -k <= 0; i+k <= 198; -i+k <= 0; k <= 99}
-bb1_t={-i <= 0; i <= 100; i-k <= 0; -i-k <= 0; -k <= 0; i+k <= 200; -i+k <= 0; k <= 100}
+entry={}
 bb1={-i <= 0; i <= 100; i-k <= 0; -i-k <= 0; -k <= 0; i+k <= 200; -i+k <= 0; k <= 100}
 bb1_f={-i <= 0; i <= 100; i-k <= 0; -i-k <= 0; -k <= 0; i+k <= 200; -i+k <= 0; k <= 100}
-entry={}
+ret={-i <= -100; i <= 100; i-k <= 0; -i-k <= -200; -k <= -100; i+k <= 200; -i+k <= 0; k <= 100}
+bb1_t={-i <= 0; i <= 100; i-k <= 0; -i-k <= 0; -k <= 0; i+k <= 200; -i+k <= 0; k <= 100}
+bb2={-i <= 0; i <= 99; i-k <= 0; -i-k <= 0; -k <= 0; i+k <= 198; -i+k <= 0; k <= 99}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Invariants using ApronOptimizedOctagon
-ret={-i <= -100; i <= 100; i-k <= 0; -i-k <= -200; -k <= -100; i+k <= 200; -i+k <= 0; k <= 100}
-bb2={-i <= 0; i <= 99; i-k <= 0; -i-k <= 0; -k <= 0; i+k <= 198; -i+k <= 0; k <= 99}
-bb1_t={-i <= 0; i <= 100; i-k <= 0; -i-k <= 0; -k <= 0; i+k <= 200; -i+k <= 0; k <= 100}
+entry={}
 bb1={-i <= 0; i <= 100; i-k <= 0; -i-k <= 0; -k <= 0; i+k <= 200; -i+k <= 0; k <= 100}
 bb1_f={-i <= 0; i <= 100; i-k <= 0; -i-k <= 0; -k <= 0; i+k <= 200; -i+k <= 0; k <= 100}
-entry={}
+ret={-i <= -100; i <= 100; i-k <= 0; -i-k <= -200; -k <= -100; i+k <= 200; -i+k <= 0; k <= 100}
+bb1_t={-i <= 0; i <= 100; i-k <= 0; -i-k <= 0; -k <= 0; i+k <= 200; -i+k <= 0; k <= 100}
+bb2={-i <= 0; i <= 99; i-k <= 0; -i-k <= 0; -k <= 0; i+k <= 198; -i+k <= 0; k <= 99}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Invariants using ApronNewPolka
-ret={k = 100; i = 100}
-bb2={-i+k = 0; i <= 99; -i <= 0}
-bb1_t={-i+k = 0; i <= 100; -i <= 0}
+entry={}
 bb1={-i+k = 0; i <= 100; -i <= 0}
 bb1_f={-i+k = 0; i <= 100; -i <= 0}
-entry={}
+ret={k = 100; i = 100}
+bb1_t={-i+k = 0; i <= 100; -i <= 0}
+bb2={-i+k = 0; i <= 99; -i <= 0}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 loop1_entry:
@@ -95,73 +104,73 @@ ret:
 
 
 Invariants using Intervals
-loop2_bb2={i -> [10, 10]; j -> [0, 9]; k -> [30, 30]}
+loop1_entry={}
+loop1_bb1={i -> [0, 10]; k -> [30, 30]}
+loop1_bb1_f={i -> [0, 10]; k -> [30, 30]}
+loop2_entry={i -> [10, 10]; k -> [30, 30]}
+loop2_bb1={i -> [10, 10]; j -> [0, 10]; k -> [30, 30]}
 loop2_bb1_f={i -> [10, 10]; j -> [0, 10]; k -> [30, 30]}
 ret={i -> [10, 10]; j -> [10, 10]; k -> [30, 30]}
 loop2_bb1_t={i -> [10, 10]; j -> [0, 10]; k -> [30, 30]}
-loop2_entry={i -> [10, 10]; k -> [30, 30]}
-loop2_bb1={i -> [10, 10]; j -> [0, 10]; k -> [30, 30]}
-loop1_bb2={i -> [0, 9]; k -> [30, 30]}
-loop1_bb1_f={i -> [0, 10]; k -> [30, 30]}
+loop2_bb2={i -> [10, 10]; j -> [0, 9]; k -> [30, 30]}
 loop1_bb1_t={i -> [0, 10]; k -> [30, 30]}
-loop1_bb1={i -> [0, 10]; k -> [30, 30]}
-loop1_entry={}
+loop1_bb2={i -> [0, 9]; k -> [30, 30]}
 Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t loop1_bb2)^{3} loop1_bb1_f loop2_entry (loop2_bb1 loop2_bb1_t loop2_bb2)^{3} loop2_bb1_f ret
 
 Invariants using ApronIntervals
-loop2_bb2={i = 10; -j <= 0; j <= 9; k = 30}
+loop1_entry={}
+loop1_bb1={-i <= 0; i <= 10; k = 30}
+loop1_bb1_f={-i <= 0; i <= 10; k = 30}
+loop2_entry={i = 10; k = 30}
+loop2_bb1={i = 10; -j <= 0; j <= 10; k = 30}
 loop2_bb1_f={i = 10; -j <= 0; j <= 10; k = 30}
 ret={i = 10; j = 10; k = 30}
 loop2_bb1_t={i = 10; -j <= 0; j <= 10; k = 30}
-loop2_entry={i = 10; k = 30}
-loop2_bb1={i = 10; -j <= 0; j <= 10; k = 30}
-loop1_bb2={-i <= 0; i <= 9; k = 30}
-loop1_bb1_f={-i <= 0; i <= 10; k = 30}
+loop2_bb2={i = 10; -j <= 0; j <= 9; k = 30}
 loop1_bb1_t={-i <= 0; i <= 10; k = 30}
-loop1_bb1={-i <= 0; i <= 10; k = 30}
-loop1_entry={}
+loop1_bb2={-i <= 0; i <= 9; k = 30}
 Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t loop1_bb2)^{3} loop1_bb1_f loop2_entry (loop2_bb1 loop2_bb1_t loop2_bb2)^{3} loop2_bb1_f ret
 
 Invariants using ApronOctagon
-loop2_bb2={-i <= -10; i <= 10; i-j <= 10; -i-j <= -10; -j <= 0; i+j <= 19; -i+j <= -1; j <= 9; i-k <= -20; -i-k <= -40; j-k <= -21; -j-k <= -30; -k <= -30; i+k <= 40; -i+k <= 20; j+k <= 39; -j+k <= 30; k <= 30}
+loop1_entry={}
+loop1_bb1={-i <= 0; i <= 10; i-k <= -20; -i-k <= -30; -k <= -30; i+k <= 40; -i+k <= 30; k <= 30}
+loop1_bb1_f={-i <= 0; i <= 10; i-k <= -20; -i-k <= -30; -k <= -30; i+k <= 40; -i+k <= 30; k <= 30}
+loop2_entry={-i <= -10; i <= 10; i-k <= -20; -i-k <= -40; -k <= -30; i+k <= 40; -i+k <= 20; k <= 30}
+loop2_bb1={-i <= -10; i <= 10; i-j <= 10; -i-j <= -10; -j <= 0; i+j <= 20; -i+j <= 0; j <= 10; i-k <= -20; -i-k <= -40; j-k <= -20; -j-k <= -30; -k <= -30; i+k <= 40; -i+k <= 20; j+k <= 40; -j+k <= 30; k <= 30}
 loop2_bb1_f={-i <= -10; i <= 10; i-j <= 10; -i-j <= -10; -j <= 0; i+j <= 20; -i+j <= 0; j <= 10; i-k <= -20; -i-k <= -40; j-k <= -20; -j-k <= -30; -k <= -30; i+k <= 40; -i+k <= 20; j+k <= 40; -j+k <= 30; k <= 30}
 ret={-i <= -10; i <= 10; i-j <= 0; -i-j <= -20; -j <= -10; i+j <= 20; -i+j <= 0; j <= 10; i-k <= -20; -i-k <= -40; j-k <= -20; -j-k <= -40; -k <= -30; i+k <= 40; -i+k <= 20; j+k <= 40; -j+k <= 20; k <= 30}
 loop2_bb1_t={-i <= -10; i <= 10; i-j <= 10; -i-j <= -10; -j <= 0; i+j <= 20; -i+j <= 0; j <= 10; i-k <= -20; -i-k <= -40; j-k <= -20; -j-k <= -30; -k <= -30; i+k <= 40; -i+k <= 20; j+k <= 40; -j+k <= 30; k <= 30}
-loop2_entry={-i <= -10; i <= 10; i-k <= -20; -i-k <= -40; -k <= -30; i+k <= 40; -i+k <= 20; k <= 30}
-loop2_bb1={-i <= -10; i <= 10; i-j <= 10; -i-j <= -10; -j <= 0; i+j <= 20; -i+j <= 0; j <= 10; i-k <= -20; -i-k <= -40; j-k <= -20; -j-k <= -30; -k <= -30; i+k <= 40; -i+k <= 20; j+k <= 40; -j+k <= 30; k <= 30}
-loop1_bb2={-i <= 0; i <= 9; i-k <= -21; -i-k <= -30; -k <= -30; i+k <= 39; -i+k <= 30; k <= 30}
-loop1_bb1_f={-i <= 0; i <= 10; i-k <= -20; -i-k <= -30; -k <= -30; i+k <= 40; -i+k <= 30; k <= 30}
+loop2_bb2={-i <= -10; i <= 10; i-j <= 10; -i-j <= -10; -j <= 0; i+j <= 19; -i+j <= -1; j <= 9; i-k <= -20; -i-k <= -40; j-k <= -21; -j-k <= -30; -k <= -30; i+k <= 40; -i+k <= 20; j+k <= 39; -j+k <= 30; k <= 30}
 loop1_bb1_t={-i <= 0; i <= 10; i-k <= -20; -i-k <= -30; -k <= -30; i+k <= 40; -i+k <= 30; k <= 30}
-loop1_bb1={-i <= 0; i <= 10; i-k <= -20; -i-k <= -30; -k <= -30; i+k <= 40; -i+k <= 30; k <= 30}
-loop1_entry={}
+loop1_bb2={-i <= 0; i <= 9; i-k <= -21; -i-k <= -30; -k <= -30; i+k <= 39; -i+k <= 30; k <= 30}
 Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t loop1_bb2)^{3} loop1_bb1_f loop2_entry (loop2_bb1 loop2_bb1_t loop2_bb2)^{3} loop2_bb1_f ret
 
 Invariants using ApronOptimizedOctagon
-loop2_bb2={-i <= -10; i <= 10; i-j <= 10; -i-j <= -10; -j <= 0; i+j <= 19; -i+j <= -1; j <= 9; i-k <= -20; -i-k <= -40; j-k <= -21; -j-k <= -30; -k <= -30; i+k <= 40; -i+k <= 20; j+k <= 39; -j+k <= 30; k <= 30}
+loop1_entry={}
+loop1_bb1={-i <= 0; i <= 10; i-k <= -20; -i-k <= -30; -k <= -30; i+k <= 40; -i+k <= 30; k <= 30}
+loop1_bb1_f={-i <= 0; i <= 10; i-k <= -20; -i-k <= -30; -k <= -30; i+k <= 40; -i+k <= 30; k <= 30}
+loop2_entry={-i <= -10; i <= 10; i-k <= -20; -i-k <= -40; -k <= -30; i+k <= 40; -i+k <= 20; k <= 30}
+loop2_bb1={-i <= -10; i <= 10; i-j <= 10; -i-j <= -10; -j <= 0; i+j <= 20; -i+j <= 0; j <= 10; i-k <= -20; -i-k <= -40; j-k <= -20; -j-k <= -30; -k <= -30; i+k <= 40; -i+k <= 20; j+k <= 40; -j+k <= 30; k <= 30}
 loop2_bb1_f={-i <= -10; i <= 10; i-j <= 10; -i-j <= -10; -j <= 0; i+j <= 20; -i+j <= 0; j <= 10; i-k <= -20; -i-k <= -40; j-k <= -20; -j-k <= -30; -k <= -30; i+k <= 40; -i+k <= 20; j+k <= 40; -j+k <= 30; k <= 30}
 ret={-i <= -10; i <= 10; i-j <= 0; -i-j <= -20; -j <= -10; i+j <= 20; -i+j <= 0; j <= 10; i-k <= -20; -i-k <= -40; j-k <= -20; -j-k <= -40; -k <= -30; i+k <= 40; -i+k <= 20; j+k <= 40; -j+k <= 20; k <= 30}
 loop2_bb1_t={-i <= -10; i <= 10; i-j <= 10; -i-j <= -10; -j <= 0; i+j <= 20; -i+j <= 0; j <= 10; i-k <= -20; -i-k <= -40; j-k <= -20; -j-k <= -30; -k <= -30; i+k <= 40; -i+k <= 20; j+k <= 40; -j+k <= 30; k <= 30}
-loop2_entry={-i <= -10; i <= 10; i-k <= -20; -i-k <= -40; -k <= -30; i+k <= 40; -i+k <= 20; k <= 30}
-loop2_bb1={-i <= -10; i <= 10; i-j <= 10; -i-j <= -10; -j <= 0; i+j <= 20; -i+j <= 0; j <= 10; i-k <= -20; -i-k <= -40; j-k <= -20; -j-k <= -30; -k <= -30; i+k <= 40; -i+k <= 20; j+k <= 40; -j+k <= 30; k <= 30}
-loop1_bb2={-i <= 0; i <= 9; i-k <= -21; -i-k <= -30; -k <= -30; i+k <= 39; -i+k <= 30; k <= 30}
-loop1_bb1_f={-i <= 0; i <= 10; i-k <= -20; -i-k <= -30; -k <= -30; i+k <= 40; -i+k <= 30; k <= 30}
+loop2_bb2={-i <= -10; i <= 10; i-j <= 10; -i-j <= -10; -j <= 0; i+j <= 19; -i+j <= -1; j <= 9; i-k <= -20; -i-k <= -40; j-k <= -21; -j-k <= -30; -k <= -30; i+k <= 40; -i+k <= 20; j+k <= 39; -j+k <= 30; k <= 30}
 loop1_bb1_t={-i <= 0; i <= 10; i-k <= -20; -i-k <= -30; -k <= -30; i+k <= 40; -i+k <= 30; k <= 30}
-loop1_bb1={-i <= 0; i <= 10; i-k <= -20; -i-k <= -30; -k <= -30; i+k <= 40; -i+k <= 30; k <= 30}
-loop1_entry={}
+loop1_bb2={-i <= 0; i <= 9; i-k <= -21; -i-k <= -30; -k <= -30; i+k <= 39; -i+k <= 30; k <= 30}
 Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t loop1_bb2)^{3} loop1_bb1_f loop2_entry (loop2_bb1 loop2_bb1_t loop2_bb2)^{3} loop2_bb1_f ret
 
 Invariants using ApronNewPolka
-loop2_bb2={k = 30; i = 10; j <= 9; -j <= 0}
+loop1_entry={}
+loop1_bb1={k = 30; i <= 10; -i <= 0}
+loop1_bb1_f={k = 30; i <= 10; -i <= 0}
+loop2_entry={k = 30; i = 10}
+loop2_bb1={k = 30; i = 10; j <= 10; -j <= 0}
 loop2_bb1_f={k = 30; i = 10; j <= 10; -j <= 0}
 ret={k = 30; j = 10; i = 10}
 loop2_bb1_t={k = 30; i = 10; j <= 10; -j <= 0}
-loop2_entry={k = 30; i = 10}
-loop2_bb1={k = 30; i = 10; j <= 10; -j <= 0}
-loop1_bb2={k = 30; i <= 9; -i <= 0}
-loop1_bb1_f={k = 30; i <= 10; -i <= 0}
+loop2_bb2={k = 30; i = 10; j <= 9; -j <= 0}
 loop1_bb1_t={k = 30; i <= 10; -i <= 0}
-loop1_bb1={k = 30; i <= 10; -i <= 0}
-loop1_entry={}
+loop1_bb2={k = 30; i <= 9; -i <= 0}
 Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t loop1_bb2)^{3} loop1_bb1_f loop2_entry (loop2_bb1 loop2_bb1_t loop2_bb2)^{3} loop2_bb1_f ret
 
 entry:
@@ -204,88 +213,88 @@ ret:
 
 
 Invariants using Intervals
-ret=_|_
-loop2_f=_|_
-loop2_head=_|_
-loop1_body_x={i -> [0, 8]}
-loop2_body=_|_
-loop1_body_f={i -> [1, 9]}
-loop1_body={i -> [0, 8]}
+entry={}
+loop1_head={i -> [0, 8]}
 loop1_f={i -> [0, 8]}
 cont=_|_
-loop1_t={i -> [0, 8]}
+loop2_head=_|_
+loop2_f=_|_
+ret=_|_
 loop2_t=_|_
+loop2_body=_|_
+loop1_t={i -> [0, 8]}
+loop1_body={i -> [0, 8]}
+loop1_body_f={i -> [1, 9]}
+loop1_body_x={i -> [0, 8]}
 loop1_body_t={i -> [1, 9]}
-loop1_head={i -> [0, 8]}
-entry={}
 Abstract trace: entry (loop1_head loop1_t loop1_body loop1_body_f loop1_body_t loop1_body_x)^{3} loop1_f cont (loop2_head loop2_t loop2_body)^{1} loop2_f ret
 
 Invariants using ApronIntervals
-ret=_|_
-loop2_f=_|_
-loop2_head=_|_
-loop1_body_x={-i <= 0; i <= 8}
-loop2_body=_|_
-loop1_body_f={-i <= -1; i <= 9}
-loop1_body={-i <= 0; i <= 8}
+entry={}
+loop1_head={-i <= 0; i <= 8}
 loop1_f={-i <= 0; i <= 8}
 cont=_|_
-loop1_t={-i <= 0; i <= 8}
+loop2_head=_|_
+loop2_f=_|_
+ret=_|_
 loop2_t=_|_
+loop2_body=_|_
+loop1_t={-i <= 0; i <= 8}
+loop1_body={-i <= 0; i <= 8}
+loop1_body_f={-i <= -1; i <= 9}
+loop1_body_x={-i <= 0; i <= 8}
 loop1_body_t={-i <= -1; i <= 9}
-loop1_head={-i <= 0; i <= 8}
-entry={}
 Abstract trace: entry (loop1_head loop1_t loop1_body loop1_body_f loop1_body_t loop1_body_x)^{3} loop1_f cont (loop2_head loop2_t loop2_body)^{1} loop2_f ret
 
 Invariants using ApronOctagon
-ret=_|_
-loop2_f=_|_
-loop2_head=_|_
-loop1_body_x={-i <= 0; i <= 8}
-loop2_body=_|_
-loop1_body_f={-i <= -1; i <= 9}
-loop1_body={-i <= 0; i <= 8}
+entry={}
+loop1_head={-i <= 0; i <= 8}
 loop1_f={-i <= 0; i <= 8}
 cont=_|_
-loop1_t={-i <= 0; i <= 8}
+loop2_head=_|_
+loop2_f=_|_
+ret=_|_
 loop2_t=_|_
+loop2_body=_|_
+loop1_t={-i <= 0; i <= 8}
+loop1_body={-i <= 0; i <= 8}
+loop1_body_f={-i <= -1; i <= 9}
+loop1_body_x={-i <= 0; i <= 8}
 loop1_body_t={-i <= -1; i <= 9}
-loop1_head={-i <= 0; i <= 8}
-entry={}
 Abstract trace: entry (loop1_head loop1_t loop1_body loop1_body_f loop1_body_t loop1_body_x)^{3} loop1_f cont (loop2_head loop2_t loop2_body)^{1} loop2_f ret
 
 Invariants using ApronOptimizedOctagon
-ret=_|_
-loop2_f=_|_
-loop2_head=_|_
-loop1_body_x={-i <= 0; i <= 8}
-loop2_body=_|_
-loop1_body_f={-i <= -1; i <= 9}
-loop1_body={-i <= 0; i <= 8}
+entry={}
+loop1_head={-i <= 0; i <= 8}
 loop1_f={-i <= 0; i <= 8}
 cont=_|_
-loop1_t={-i <= 0; i <= 8}
+loop2_head=_|_
+loop2_f=_|_
+ret=_|_
 loop2_t=_|_
+loop2_body=_|_
+loop1_t={-i <= 0; i <= 8}
+loop1_body={-i <= 0; i <= 8}
+loop1_body_f={-i <= -1; i <= 9}
+loop1_body_x={-i <= 0; i <= 8}
 loop1_body_t={-i <= -1; i <= 9}
-loop1_head={-i <= 0; i <= 8}
-entry={}
 Abstract trace: entry (loop1_head loop1_t loop1_body loop1_body_f loop1_body_t loop1_body_x)^{3} loop1_f cont (loop2_head loop2_t loop2_body)^{1} loop2_f ret
 
 Invariants using ApronNewPolka
-ret=_|_
-loop2_f=_|_
-loop2_head=_|_
-loop1_body_x={i <= 8; -i <= 0}
-loop2_body=_|_
-loop1_body_f={i <= 9; -i <= -1}
-loop1_body={i <= 8; -i <= 0}
+entry={}
+loop1_head={i <= 8; -i <= 0}
 loop1_f={i <= 8; -i <= 0}
 cont=_|_
-loop1_t={i <= 8; -i <= 0}
+loop2_head=_|_
+loop2_f=_|_
+ret=_|_
 loop2_t=_|_
+loop2_body=_|_
+loop1_t={i <= 8; -i <= 0}
+loop1_body={i <= 8; -i <= 0}
+loop1_body_f={i <= 9; -i <= -1}
+loop1_body_x={i <= 8; -i <= 0}
 loop1_body_t={i <= 9; -i <= -1}
-loop1_head={i <= 8; -i <= 0}
-entry={}
 Abstract trace: entry (loop1_head loop1_t loop1_body loop1_body_f loop1_body_t loop1_body_x)^{3} loop1_f cont (loop2_head loop2_t loop2_body)^{1} loop2_f ret
 
 entry:
@@ -308,48 +317,48 @@ ret:
 
 
 Invariants using Intervals
-ret={i -> [10, 10]; p -> [0, +oo]}
-loop_body={i -> [0, 9]; p -> [0, +oo]}
-loop_f={i -> [0, 10]; p -> [0, +oo]}
-loop_head={i -> [0, 10]; p -> [0, +oo]}
-loop_t={i -> [0, 10]; p -> [0, +oo]}
 entry={}
+loop_head={i -> [0, 10]; p -> [0, +oo]}
+loop_f={i -> [0, 10]; p -> [0, +oo]}
+ret={i -> [10, 10]; p -> [0, +oo]}
+loop_t={i -> [0, 10]; p -> [0, +oo]}
+loop_body={i -> [0, 9]; p -> [0, +oo]}
 Abstract trace: entry (loop_head loop_t loop_body)^{4} loop_f ret
 
 Invariants using ApronIntervals
-ret={i = 10; -p <= 0}
-loop_body={-i <= 0; i <= 9; -p <= 0}
-loop_f={-i <= 0; i <= 10; -p <= 0}
-loop_head={-i <= 0; i <= 10; -p <= 0}
-loop_t={-i <= 0; i <= 10; -p <= 0}
 entry={}
+loop_head={-i <= 0; i <= 10; -p <= 0}
+loop_f={-i <= 0; i <= 10; -p <= 0}
+ret={i = 10; -p <= 0}
+loop_t={-i <= 0; i <= 10; -p <= 0}
+loop_body={-i <= 0; i <= 9; -p <= 0}
 Abstract trace: entry (loop_head loop_t loop_body)^{3} loop_f ret
 
 Invariants using ApronOctagon
-ret={-i <= -10; i <= 10; i-p <= 0; -i-p <= -20; -p <= -10}
-loop_body={-i <= 0; i <= 9; i-p <= 0; -i-p <= 0; -p <= 0}
-loop_f={-i <= 0; i <= 10; i-p <= 0; -i-p <= 0; -p <= 0}
-loop_head={-i <= 0; i <= 10; i-p <= 0; -i-p <= 0; -p <= 0}
-loop_t={-i <= 0; i <= 10; i-p <= 0; -i-p <= 0; -p <= 0}
 entry={}
+loop_head={-i <= 0; i <= 10; i-p <= 0; -i-p <= 0; -p <= 0}
+loop_f={-i <= 0; i <= 10; i-p <= 0; -i-p <= 0; -p <= 0}
+ret={-i <= -10; i <= 10; i-p <= 0; -i-p <= -20; -p <= -10}
+loop_t={-i <= 0; i <= 10; i-p <= 0; -i-p <= 0; -p <= 0}
+loop_body={-i <= 0; i <= 9; i-p <= 0; -i-p <= 0; -p <= 0}
 Abstract trace: entry (loop_head loop_t loop_body)^{3} loop_f ret
 
 Invariants using ApronOptimizedOctagon
-ret={-i <= -10; i <= 10; i-p <= 0; -i-p <= -20; -p <= -10}
-loop_body={-i <= 0; i <= 9; i-p <= 0; -i-p <= 0; -p <= 0}
-loop_f={-i <= 0; i <= 10; i-p <= 0; -i-p <= 0; -p <= 0}
-loop_head={-i <= 0; i <= 10; i-p <= 0; -i-p <= 0; -p <= 0}
-loop_t={-i <= 0; i <= 10; i-p <= 0; -i-p <= 0; -p <= 0}
 entry={}
+loop_head={-i <= 0; i <= 10; i-p <= 0; -i-p <= 0; -p <= 0}
+loop_f={-i <= 0; i <= 10; i-p <= 0; -i-p <= 0; -p <= 0}
+ret={-i <= -10; i <= 10; i-p <= 0; -i-p <= -20; -p <= -10}
+loop_t={-i <= 0; i <= 10; i-p <= 0; -i-p <= 0; -p <= 0}
+loop_body={-i <= 0; i <= 9; i-p <= 0; -i-p <= 0; -p <= 0}
 Abstract trace: entry (loop_head loop_t loop_body)^{3} loop_f ret
 
 Invariants using ApronNewPolka
-ret={p = 40; i = 10}
-loop_body={-4*i+p = 0; i <= 9; -i <= 0}
-loop_f={-4*i+p = 0; i <= 10; -i <= 0}
-loop_head={-4*i+p = 0; i <= 10; -i <= 0}
-loop_t={-4*i+p = 0; i <= 10; -i <= 0}
 entry={}
+loop_head={-4*i+p = 0; i <= 10; -i <= 0}
+loop_f={-4*i+p = 0; i <= 10; -i <= 0}
+ret={p = 40; i = 10}
+loop_t={-4*i+p = 0; i <= 10; -i <= 0}
+loop_body={-4*i+p = 0; i <= 9; -i <= 0}
 Abstract trace: entry (loop_head loop_t loop_body)^{3} loop_f ret
 
 entry:
@@ -372,67 +381,58 @@ ret:
 
 
 Invariants using Intervals
-ret={i -> [9, 9]; k -> [0, +oo]}
-bb2={i -> [0, +oo]; k -> [0, +oo]}
-bb1_t={i -> [0, +oo]; k -> [0, +oo]}
+entry={}
 bb1={i -> [0, +oo]; k -> [0, +oo]}
 bb1_f={i -> [0, +oo]; k -> [0, +oo]}
-entry={}
+ret={i -> [9, 9]; k -> [0, +oo]}
+bb1_t={i -> [0, +oo]; k -> [0, +oo]}
+bb2={i -> [0, +oo]; k -> [0, +oo]}
 Abstract trace: entry (bb1 bb1_t bb2)^{4} bb1_f ret
 
 Invariants using ApronIntervals
-ret={i = 9; -k <= 0}
-bb2={-i <= 0; -k <= 0}
-bb1_t={-i <= 0; -k <= 0}
+entry={}
 bb1={-i <= 0; -k <= 0}
 bb1_f={-i <= 0; -k <= 0}
-entry={}
+ret={i = 9; -k <= 0}
+bb1_t={-i <= 0; -k <= 0}
+bb2={-i <= 0; -k <= 0}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Invariants using ApronOctagon
-ret={-i <= -9; i <= 9; i-k <= 0; -i-k <= -18; -k <= -9; i+k <= 18; -i+k <= 0; k <= 9}
-bb2={-i <= 0; i-k <= 0; -i-k <= 0; -k <= 0; -i+k <= 0}
-bb1_t={-i <= 0; i-k <= 0; -i-k <= 0; -k <= 0; -i+k <= 0}
+entry={}
 bb1={-i <= 0; i-k <= 0; -i-k <= 0; -k <= 0; -i+k <= 0}
 bb1_f={-i <= 0; i-k <= 0; -i-k <= 0; -k <= 0; -i+k <= 0}
-entry={}
+ret={-i <= -9; i <= 9; i-k <= 0; -i-k <= -18; -k <= -9; i+k <= 18; -i+k <= 0; k <= 9}
+bb1_t={-i <= 0; i-k <= 0; -i-k <= 0; -k <= 0; -i+k <= 0}
+bb2={-i <= 0; i-k <= 0; -i-k <= 0; -k <= 0; -i+k <= 0}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Invariants using ApronOptimizedOctagon
-ret={-i <= -9; i <= 9; i-k <= 0; -i-k <= -18; -k <= -9; i+k <= 18; -i+k <= 0; k <= 9}
-bb2={-i <= 0; i-k <= 0; -i-k <= 0; -k <= 0; -i+k <= 0}
-bb1_t={-i <= 0; i-k <= 0; -i-k <= 0; -k <= 0; -i+k <= 0}
+entry={}
 bb1={-i <= 0; i-k <= 0; -i-k <= 0; -k <= 0; -i+k <= 0}
 bb1_f={-i <= 0; i-k <= 0; -i-k <= 0; -k <= 0; -i+k <= 0}
-entry={}
+ret={-i <= -9; i <= 9; i-k <= 0; -i-k <= -18; -k <= -9; i+k <= 18; -i+k <= 0; k <= 9}
+bb1_t={-i <= 0; i-k <= 0; -i-k <= 0; -k <= 0; -i+k <= 0}
+bb2={-i <= 0; i-k <= 0; -i-k <= 0; -k <= 0; -i+k <= 0}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Invariants using ApronNewPolka
-ret={k = 9; i = 9}
-bb2={-i+k = 0; -i <= 0}
-bb1_t={-i+k = 0; -i <= 0}
+entry={}
 bb1={-i+k = 0; -i <= 0}
 bb1_f={-i+k = 0; -i <= 0}
-entry={}
+ret={k = 9; i = 9}
+bb1_t={-i+k = 0; -i <= 0}
+bb2={-i+k = 0; -i <= 0}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
-INITIALLY={}
-ADDING CONSTRAINTS={-x <= -1; x <= 1}
-EXPECTED={x = 1}
-RESULT={x = 1}
-------------------------------------
-INITIALLY={}
-ADDING CONSTRAINTS={-x <= -1/2; x <= 1/2}
-EXPECTED={x = 1/2}
-RESULT=_|_
 ===================================
  Test 1 for array expansion domain 
 ===================================
 Invariants using ArrayExpansion(Term(Intervals))
-bb3={x -> t0[_y0], y -> t1[_y1], z -> t2[_y2], val -> t3[_y4], Mem[2...5] -> t4[_y3], Mem[6...9] -> t1[_y1], Mem[10...13] -> t3[_y4]}{_y0 -> [2, 2]; _y1 -> [6, 6]; _y2 -> [10, 10]; _y3 -> [5, 5]; _y4 -> [7, 7]}
-bb2={x -> t0[_x0], y -> t1[_x1], z -> t2[_x2], val -> t4[_x4], Mem[2...5] -> t3[_x3], Mem[6...9] -> t1[_x1], Mem[10...13] -> t4[_x4]}{_x0 -> [2, 2]; _x1 -> [6, 6]; _x2 -> [10, 10]; _x3 -> [5, 5]; _x4 -> [7, 7]}
-bb1={x -> t0[_x0], y -> t1[_x1], z -> t2[_x2], val -> t4[_x4], Mem[2...5] -> t3[_x3], Mem[6...9] -> t1[_x1], Mem[10...13] -> t4[_x4]}{_x0 -> [2, 2]; _x1 -> [6, 6]; _x2 -> [10, 10]; _x3 -> [5, 5]; _x4 -> [7, 7]}
 bb0={}
+bb2={x -> t0[_x0], y -> t1[_x1], z -> t2[_x2], val -> t4[_x4], Mem[2...5] -> t3[_x3], Mem[6...9] -> t1[_x1], Mem[10...13] -> t4[_x4]}{_x0 -> [2, 2]; _x1 -> [6, 6]; _x2 -> [10, 10]; _x3 -> [5, 5]; _x4 -> [7, 7]}
+bb3={x -> t0[_y0], y -> t1[_y1], z -> t2[_y2], val -> t3[_y4], Mem[2...5] -> t4[_y3], Mem[6...9] -> t1[_y1], Mem[10...13] -> t3[_y4]}{_y0 -> [2, 2]; _y1 -> [6, 6]; _y2 -> [10, 10]; _y3 -> [5, 5]; _y4 -> [7, 7]}
+bb1={x -> t0[_x0], y -> t1[_x1], z -> t2[_x2], val -> t4[_x4], Mem[2...5] -> t3[_x3], Mem[6...9] -> t1[_x1], Mem[10...13] -> t4[_x4]}{_x0 -> [2, 2]; _x1 -> [6, 6]; _x2 -> [10, 10]; _x3 -> [5, 5]; _x4 -> [7, 7]}
 Abstract trace: bb0 bb2 bb1 bb3
  --- SAFE -----------------
 Property : tmp1-tmp2 = -2
@@ -448,10 +448,10 @@ user-defined assertion checker using ArrayExpansion(Term(Intervals))
  Test 2 for array expansion domain 
 ===================================
 Invariants using ArrayExpansion(Term(Intervals))
-bb3={x -> t0[_y0], y -> t1[_y1], z -> t2[_y2], val -> t3[_y3], Mem[6...9] -> t1[_y1], Mem[10...13] -> t3[_y3]}{_y0 -> [4, 4]; _y1 -> [6, 6]; _y2 -> [10, 10]; _y3 -> [7, 7]}
-bb2={x -> t0[_x0], y -> t1[_x1], z -> t2[_x2], val -> t3[_x4], Mem[6...9] -> t1[_x1], Mem[10...13] -> t3[_x4]}{_x0 -> [4, 4]; _x1 -> [6, 6]; _x2 -> [10, 10]; _x4 -> [7, 7]}
-bb1={x -> t0[_x0], y -> t1[_x1], z -> t2[_x2], val -> t3[_x4], Mem[6...9] -> t1[_x1], Mem[10...13] -> t3[_x4]}{_x0 -> [4, 4]; _x1 -> [6, 6]; _x2 -> [10, 10]; _x4 -> [7, 7]}
 bb0={}
+bb2={x -> t0[_x0], y -> t1[_x1], z -> t2[_x2], val -> t3[_x4], Mem[6...9] -> t1[_x1], Mem[10...13] -> t3[_x4]}{_x0 -> [4, 4]; _x1 -> [6, 6]; _x2 -> [10, 10]; _x4 -> [7, 7]}
+bb3={x -> t0[_y0], y -> t1[_y1], z -> t2[_y2], val -> t3[_y3], Mem[6...9] -> t1[_y1], Mem[10...13] -> t3[_y3]}{_y0 -> [4, 4]; _y1 -> [6, 6]; _y2 -> [10, 10]; _y3 -> [7, 7]}
+bb1={x -> t0[_x0], y -> t1[_x1], z -> t2[_x2], val -> t3[_x4], Mem[6...9] -> t1[_x1], Mem[10...13] -> t3[_x4]}{_x0 -> [4, 4]; _x1 -> [6, 6]; _x2 -> [10, 10]; _x4 -> [7, 7]}
 Abstract trace: bb0 bb2 bb1 bb3
  --- WARNING -----------------
 Property : tmp1-tmp2 = -1
@@ -471,10 +471,10 @@ user-defined assertion checker using ArrayExpansion(Term(Intervals))
  Test 3 for array expansion domain 
 ===================================
 Invariants using ArrayExpansion(Term(Intervals))
-bb3={x -> t0[_y0], x1 -> t0[_y0], x2 -> t1[_y1], x3 -> t2[_y2], x4 -> t3[_y3], val -> t4[_y4], Mem[4...11] -> t4[_y4]}{_y0 -> [4, 4]; _y1 -> [6, 6]; _y2 -> [8, 8]; _y3 -> [10, 10]; _y4 -> [0, 0]}
-bb2={x -> t0[_x0], x1 -> t0[_x0], x2 -> t1[_x1], x3 -> t2[_x2], x4 -> t3[_x3], val -> t4[_x4], Mem[4...11] -> t4[_x4]}{_x0 -> [4, 4]; _x1 -> [6, 6]; _x2 -> [8, 8]; _x3 -> [10, 10]; _x4 -> [0, 0]}
-bb1={x -> t0[_x0], x1 -> t0[_x0], x2 -> t1[_x1], x3 -> t2[_x2], x4 -> t3[_x3], val -> t4[_x4], Mem[4...11] -> t4[_x4]}{_x0 -> [4, 4]; _x1 -> [6, 6]; _x2 -> [8, 8]; _x3 -> [10, 10]; _x4 -> [0, 0]}
 bb0={}
+bb2={x -> t0[_x0], x1 -> t0[_x0], x2 -> t1[_x1], x3 -> t2[_x2], x4 -> t3[_x3], val -> t4[_x4], Mem[4...11] -> t4[_x4]}{_x0 -> [4, 4]; _x1 -> [6, 6]; _x2 -> [8, 8]; _x3 -> [10, 10]; _x4 -> [0, 0]}
+bb3={x -> t0[_y0], x1 -> t0[_y0], x2 -> t1[_y1], x3 -> t2[_y2], x4 -> t3[_y3], val -> t4[_y4], Mem[4...11] -> t4[_y4]}{_y0 -> [4, 4]; _y1 -> [6, 6]; _y2 -> [8, 8]; _y3 -> [10, 10]; _y4 -> [0, 0]}
+bb1={x -> t0[_x0], x1 -> t0[_x0], x2 -> t1[_x1], x3 -> t2[_x2], x4 -> t3[_x3], val -> t4[_x4], Mem[4...11] -> t4[_x4]}{_x0 -> [4, 4]; _x1 -> [6, 6]; _x2 -> [8, 8]; _x3 -> [10, 10]; _x4 -> [0, 0]}
 Abstract trace: bb0 bb2 bb1 bb3
  --- WARNING -----------------
 Property : tmp1 = 0
@@ -502,17 +502,17 @@ user-defined assertion checker using ArrayExpansion(Term(Intervals))
  Test 4 for array expansion domain 
 ===================================
 Invariants using ArrayExpansion(Term(Intervals))
-loop2_bb2={Mem_base -> t0[_x0], i -> t2[_x2], j -> t4[_x4], *i -> t5[_x7], *j -> t7[_x6], val0 -> t6[_x5], Mem[108...111] -> t5[_x7], Mem[112...115] -> t7[_x6]}{_x0 -> [100, 100]; _x1 -> [8, 8]; _x2 -> [108, 108]; _x3 -> [12, 12]; _x4 -> [112, 112]; _x5 -> [0, 0]; _x6 -> [0, 9]; _x7 -> [10, 10]}
+loop1_entry={}
+loop1_bb1={Mem_base -> t0[_y0], i -> t2[_y2], j -> t4[_y4], val0 -> t5[_y5], Mem[108...111] -> t6[_y6]}{_y0 -> [100, 100]; _y1 -> [8, 8]; _y2 -> [108, 108]; _y3 -> [12, 12]; _y4 -> [112, 112]; _y5 -> [0, 0]; _y6 -> [0, 10]}
+loop1_bb1_f={Mem_base -> t0[_y0], i -> t2[_y2], j -> t4[_y4], val0 -> t5[_y5], Mem[108...111] -> t6[_y6]}{_y0 -> [100, 100]; _y1 -> [8, 8]; _y2 -> [108, 108]; _y3 -> [12, 12]; _y4 -> [112, 112]; _y5 -> [0, 0]; _y6 -> [0, 10]}
+loop2_entry={Mem_base -> t0[_y0], i -> t2[_y2], j -> t4[_y4], *i -> t6[_y6], val0 -> t5[_y5], Mem[108...111] -> t6[_y6]}{_y0 -> [100, 100]; _y1 -> [8, 8]; _y2 -> [108, 108]; _y3 -> [12, 12]; _y4 -> [112, 112]; _y5 -> [0, 0]; _y6 -> [10, 10]}
+loop2_bb1={Mem_base -> t0[_x0], i -> t2[_x2], j -> t4[_x4], *i -> t5[_x7], val0 -> t6[_x5], Mem[108...111] -> t5[_x7], Mem[112...115] -> t7[_x6]}{_x0 -> [100, 100]; _x1 -> [8, 8]; _x2 -> [108, 108]; _x3 -> [12, 12]; _x4 -> [112, 112]; _x5 -> [0, 0]; _x6 -> [0, 10]; _x7 -> [10, 10]}
 loop2_bb1_f={Mem_base -> t0[_x0], i -> t2[_x2], j -> t4[_x4], *i -> t5[_x7], val0 -> t6[_x5], Mem[108...111] -> t5[_x7], Mem[112...115] -> t7[_x6]}{_x0 -> [100, 100]; _x1 -> [8, 8]; _x2 -> [108, 108]; _x3 -> [12, 12]; _x4 -> [112, 112]; _x5 -> [0, 0]; _x6 -> [0, 10]; _x7 -> [10, 10]}
 ret={Mem_base -> t0[_x0], i -> t2[_x2], j -> t4[_x4], *i -> t5[_x7], *j -> t7[_x6], val0 -> t6[_x5], Mem[108...111] -> t5[_x7], Mem[112...115] -> t7[_x6]}{_x0 -> [100, 100]; _x1 -> [8, 8]; _x2 -> [108, 108]; _x3 -> [12, 12]; _x4 -> [112, 112]; _x5 -> [0, 0]; _x6 -> [10, 10]; _x7 -> [10, 10]}
 loop2_bb1_t={Mem_base -> t0[_x0], i -> t2[_x2], j -> t4[_x4], *i -> t5[_x7], val0 -> t6[_x5], Mem[108...111] -> t5[_x7], Mem[112...115] -> t7[_x6]}{_x0 -> [100, 100]; _x1 -> [8, 8]; _x2 -> [108, 108]; _x3 -> [12, 12]; _x4 -> [112, 112]; _x5 -> [0, 0]; _x6 -> [0, 10]; _x7 -> [10, 10]}
-loop2_entry={Mem_base -> t0[_y0], i -> t2[_y2], j -> t4[_y4], *i -> t6[_y6], val0 -> t5[_y5], Mem[108...111] -> t6[_y6]}{_y0 -> [100, 100]; _y1 -> [8, 8]; _y2 -> [108, 108]; _y3 -> [12, 12]; _y4 -> [112, 112]; _y5 -> [0, 0]; _y6 -> [10, 10]}
-loop2_bb1={Mem_base -> t0[_x0], i -> t2[_x2], j -> t4[_x4], *i -> t5[_x7], val0 -> t6[_x5], Mem[108...111] -> t5[_x7], Mem[112...115] -> t7[_x6]}{_x0 -> [100, 100]; _x1 -> [8, 8]; _x2 -> [108, 108]; _x3 -> [12, 12]; _x4 -> [112, 112]; _x5 -> [0, 0]; _x6 -> [0, 10]; _x7 -> [10, 10]}
-loop1_bb2={Mem_base -> t0[_y0], i -> t2[_y2], j -> t4[_y4], *i -> t6[_y6], val0 -> t5[_y5], Mem[108...111] -> t6[_y6]}{_y0 -> [100, 100]; _y1 -> [8, 8]; _y2 -> [108, 108]; _y3 -> [12, 12]; _y4 -> [112, 112]; _y5 -> [0, 0]; _y6 -> [0, 9]}
-loop1_bb1_f={Mem_base -> t0[_y0], i -> t2[_y2], j -> t4[_y4], val0 -> t5[_y5], Mem[108...111] -> t6[_y6]}{_y0 -> [100, 100]; _y1 -> [8, 8]; _y2 -> [108, 108]; _y3 -> [12, 12]; _y4 -> [112, 112]; _y5 -> [0, 0]; _y6 -> [0, 10]}
+loop2_bb2={Mem_base -> t0[_x0], i -> t2[_x2], j -> t4[_x4], *i -> t5[_x7], *j -> t7[_x6], val0 -> t6[_x5], Mem[108...111] -> t5[_x7], Mem[112...115] -> t7[_x6]}{_x0 -> [100, 100]; _x1 -> [8, 8]; _x2 -> [108, 108]; _x3 -> [12, 12]; _x4 -> [112, 112]; _x5 -> [0, 0]; _x6 -> [0, 9]; _x7 -> [10, 10]}
 loop1_bb1_t={Mem_base -> t0[_y0], i -> t2[_y2], j -> t4[_y4], val0 -> t5[_y5], Mem[108...111] -> t6[_y6]}{_y0 -> [100, 100]; _y1 -> [8, 8]; _y2 -> [108, 108]; _y3 -> [12, 12]; _y4 -> [112, 112]; _y5 -> [0, 0]; _y6 -> [0, 10]}
-loop1_bb1={Mem_base -> t0[_y0], i -> t2[_y2], j -> t4[_y4], val0 -> t5[_y5], Mem[108...111] -> t6[_y6]}{_y0 -> [100, 100]; _y1 -> [8, 8]; _y2 -> [108, 108]; _y3 -> [12, 12]; _y4 -> [112, 112]; _y5 -> [0, 0]; _y6 -> [0, 10]}
-loop1_entry={}
+loop1_bb2={Mem_base -> t0[_y0], i -> t2[_y2], j -> t4[_y4], *i -> t6[_y6], val0 -> t5[_y5], Mem[108...111] -> t6[_y6]}{_y0 -> [100, 100]; _y1 -> [8, 8]; _y2 -> [108, 108]; _y3 -> [12, 12]; _y4 -> [112, 112]; _y5 -> [0, 0]; _y6 -> [0, 9]}
 Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t loop1_bb2)^{3} loop1_bb1_f loop2_entry (loop2_bb1 loop2_bb1_t loop2_bb2)^{3} loop2_bb1_f ret
  --- SAFE -----------------
 Property : *i = 10
@@ -532,17 +532,17 @@ user-defined assertion checker using ArrayExpansion(Term(Intervals))
  Test 5 for array expansion domain 
 ===================================
 Invariants using ArrayExpansion(Term(Intervals))
-loop2_bb2={Mem_base -> t0[_x0], i -> t2[_x3], j -> t4[_x5], ii -> t6[_x7], jj -> t8[_x10], *i -> t9[_x14], *j -> t14[_x12], val0 -> t13[_x13], Mem[124...127] -> t6[_x7], Mem[128...131] -> t8[_x10], Mem[224...227] -> t9[_x14], Mem[228...231] -> t14[_x12]}{_x0 -> [100, 100]; _x2 -> [24, 24]; _x3 -> [124, 124]; _x4 -> [28, 28]; _x5 -> [128, 128]; _x6 -> [124, 124]; _x7 -> [224, 224]; _x8 -> [128, 128]; _x10 -> [228, 228]; _x12 -> [0, 9]; _x13 -> [0, 0]; _x14 -> [10, 10]}
+loop1_entry={}
+loop1_bb1={Mem_base -> t0[_y0], i -> t2[_y3], j -> t4[_y5], ii -> t6[_y8], jj -> t8[_y11], *i -> t11[_y9], val0 -> t12[_y13], Mem[124...127] -> t6[_y8], Mem[128...131] -> t8[_y11], Mem[224...227] -> t13[_y12]}{_y0 -> [100, 100]; _y1 -> [0, 100]; _y2 -> [24, 24]; _y3 -> [124, 124]; _y4 -> [28, 28]; _y5 -> [128, 128]; _y6 -> [124, 124]; _y7 -> [1, 124]; _y8 -> [224, 224]; _y9 -> [1, 224]; _y10 -> [128, 128]; _y11 -> [228, 228]; _y12 -> [0, 10]; _y13 -> [0, 0]}
+loop1_bb1_f={Mem_base -> t0[_y0], i -> t2[_y3], j -> t4[_y5], ii -> t6[_y8], jj -> t8[_y11], *i -> t11[_y9], val0 -> t12[_y13], Mem[124...127] -> t6[_y8], Mem[128...131] -> t8[_y11], Mem[224...227] -> t13[_y12]}{_y0 -> [100, 100]; _y1 -> [0, 100]; _y2 -> [24, 24]; _y3 -> [124, 124]; _y4 -> [28, 28]; _y5 -> [128, 128]; _y6 -> [124, 124]; _y7 -> [1, 124]; _y8 -> [224, 224]; _y9 -> [1, 224]; _y10 -> [128, 128]; _y11 -> [228, 228]; _y12 -> [0, 10]; _y13 -> [0, 0]}
+loop2_entry={Mem_base -> t0[_y0], i -> t2[_y3], j -> t4[_y5], ii -> t6[_y8], jj -> t8[_y11], *i -> t13[_y12], val0 -> t12[_y13], Mem[124...127] -> t6[_y8], Mem[128...131] -> t8[_y11], Mem[224...227] -> t13[_y12]}{_y0 -> [100, 100]; _y2 -> [24, 24]; _y3 -> [124, 124]; _y4 -> [28, 28]; _y5 -> [128, 128]; _y6 -> [124, 124]; _y8 -> [224, 224]; _y10 -> [128, 128]; _y11 -> [228, 228]; _y12 -> [10, 10]; _y13 -> [0, 0]}
+loop2_bb1={Mem_base -> t0[_x0], i -> t2[_x3], j -> t4[_x5], ii -> t6[_x7], jj -> t8[_x10], *i -> t9[_x14], *j -> t12[_x11], val0 -> t13[_x13], Mem[124...127] -> t6[_x7], Mem[128...131] -> t8[_x10], Mem[224...227] -> t9[_x14], Mem[228...231] -> t14[_x12]}{_x0 -> [100, 100]; _x1 -> [0, 100]; _x2 -> [24, 24]; _x3 -> [124, 124]; _x4 -> [28, 28]; _x5 -> [128, 128]; _x6 -> [124, 124]; _x7 -> [224, 224]; _x8 -> [128, 128]; _x9 -> [1, 128]; _x10 -> [228, 228]; _x11 -> [1, 228]; _x12 -> [0, 10]; _x13 -> [0, 0]; _x14 -> [10, 10]}
 loop2_bb1_f={Mem_base -> t0[_x0], i -> t2[_x3], j -> t4[_x5], ii -> t6[_x7], jj -> t8[_x10], *i -> t9[_x14], *j -> t12[_x11], val0 -> t13[_x13], Mem[124...127] -> t6[_x7], Mem[128...131] -> t8[_x10], Mem[224...227] -> t9[_x14], Mem[228...231] -> t14[_x12]}{_x0 -> [100, 100]; _x1 -> [0, 100]; _x2 -> [24, 24]; _x3 -> [124, 124]; _x4 -> [28, 28]; _x5 -> [128, 128]; _x6 -> [124, 124]; _x7 -> [224, 224]; _x8 -> [128, 128]; _x9 -> [1, 128]; _x10 -> [228, 228]; _x11 -> [1, 228]; _x12 -> [0, 10]; _x13 -> [0, 0]; _x14 -> [10, 10]}
 ret={Mem_base -> t0[_x0], i -> t2[_x3], j -> t4[_x5], ii -> t6[_x7], jj -> t8[_x10], *i -> t9[_x14], *j -> t14[_x12], val0 -> t13[_x13], Mem[124...127] -> t6[_x7], Mem[128...131] -> t8[_x10], Mem[224...227] -> t9[_x14], Mem[228...231] -> t14[_x12]}{_x0 -> [100, 100]; _x2 -> [24, 24]; _x3 -> [124, 124]; _x4 -> [28, 28]; _x5 -> [128, 128]; _x6 -> [124, 124]; _x7 -> [224, 224]; _x8 -> [128, 128]; _x10 -> [228, 228]; _x12 -> [10, 10]; _x13 -> [0, 0]; _x14 -> [10, 10]}
 loop2_bb1_t={Mem_base -> t0[_x0], i -> t2[_x3], j -> t4[_x5], ii -> t6[_x7], jj -> t8[_x10], *i -> t9[_x14], *j -> t12[_x11], val0 -> t13[_x13], Mem[124...127] -> t6[_x7], Mem[128...131] -> t8[_x10], Mem[224...227] -> t9[_x14], Mem[228...231] -> t14[_x12]}{_x0 -> [100, 100]; _x1 -> [0, 100]; _x2 -> [24, 24]; _x3 -> [124, 124]; _x4 -> [28, 28]; _x5 -> [128, 128]; _x6 -> [124, 124]; _x7 -> [224, 224]; _x8 -> [128, 128]; _x9 -> [1, 128]; _x10 -> [228, 228]; _x11 -> [1, 228]; _x12 -> [0, 10]; _x13 -> [0, 0]; _x14 -> [10, 10]}
-loop2_entry={Mem_base -> t0[_y0], i -> t2[_y3], j -> t4[_y5], ii -> t6[_y8], jj -> t8[_y11], *i -> t13[_y12], val0 -> t12[_y13], Mem[124...127] -> t6[_y8], Mem[128...131] -> t8[_y11], Mem[224...227] -> t13[_y12]}{_y0 -> [100, 100]; _y2 -> [24, 24]; _y3 -> [124, 124]; _y4 -> [28, 28]; _y5 -> [128, 128]; _y6 -> [124, 124]; _y8 -> [224, 224]; _y10 -> [128, 128]; _y11 -> [228, 228]; _y12 -> [10, 10]; _y13 -> [0, 0]}
-loop2_bb1={Mem_base -> t0[_x0], i -> t2[_x3], j -> t4[_x5], ii -> t6[_x7], jj -> t8[_x10], *i -> t9[_x14], *j -> t12[_x11], val0 -> t13[_x13], Mem[124...127] -> t6[_x7], Mem[128...131] -> t8[_x10], Mem[224...227] -> t9[_x14], Mem[228...231] -> t14[_x12]}{_x0 -> [100, 100]; _x1 -> [0, 100]; _x2 -> [24, 24]; _x3 -> [124, 124]; _x4 -> [28, 28]; _x5 -> [128, 128]; _x6 -> [124, 124]; _x7 -> [224, 224]; _x8 -> [128, 128]; _x9 -> [1, 128]; _x10 -> [228, 228]; _x11 -> [1, 228]; _x12 -> [0, 10]; _x13 -> [0, 0]; _x14 -> [10, 10]}
-loop1_bb2={Mem_base -> t0[_y0], i -> t2[_y3], j -> t4[_y5], ii -> t6[_y8], jj -> t8[_y11], *i -> t13[_y12], val0 -> t12[_y13], Mem[124...127] -> t6[_y8], Mem[128...131] -> t8[_y11], Mem[224...227] -> t13[_y12]}{_y0 -> [100, 100]; _y2 -> [24, 24]; _y3 -> [124, 124]; _y4 -> [28, 28]; _y5 -> [128, 128]; _y6 -> [124, 124]; _y8 -> [224, 224]; _y10 -> [128, 128]; _y11 -> [228, 228]; _y12 -> [0, 9]; _y13 -> [0, 0]}
-loop1_bb1_f={Mem_base -> t0[_y0], i -> t2[_y3], j -> t4[_y5], ii -> t6[_y8], jj -> t8[_y11], *i -> t11[_y9], val0 -> t12[_y13], Mem[124...127] -> t6[_y8], Mem[128...131] -> t8[_y11], Mem[224...227] -> t13[_y12]}{_y0 -> [100, 100]; _y1 -> [0, 100]; _y2 -> [24, 24]; _y3 -> [124, 124]; _y4 -> [28, 28]; _y5 -> [128, 128]; _y6 -> [124, 124]; _y7 -> [1, 124]; _y8 -> [224, 224]; _y9 -> [1, 224]; _y10 -> [128, 128]; _y11 -> [228, 228]; _y12 -> [0, 10]; _y13 -> [0, 0]}
+loop2_bb2={Mem_base -> t0[_x0], i -> t2[_x3], j -> t4[_x5], ii -> t6[_x7], jj -> t8[_x10], *i -> t9[_x14], *j -> t14[_x12], val0 -> t13[_x13], Mem[124...127] -> t6[_x7], Mem[128...131] -> t8[_x10], Mem[224...227] -> t9[_x14], Mem[228...231] -> t14[_x12]}{_x0 -> [100, 100]; _x2 -> [24, 24]; _x3 -> [124, 124]; _x4 -> [28, 28]; _x5 -> [128, 128]; _x6 -> [124, 124]; _x7 -> [224, 224]; _x8 -> [128, 128]; _x10 -> [228, 228]; _x12 -> [0, 9]; _x13 -> [0, 0]; _x14 -> [10, 10]}
 loop1_bb1_t={Mem_base -> t0[_y0], i -> t2[_y3], j -> t4[_y5], ii -> t6[_y8], jj -> t8[_y11], *i -> t11[_y9], val0 -> t12[_y13], Mem[124...127] -> t6[_y8], Mem[128...131] -> t8[_y11], Mem[224...227] -> t13[_y12]}{_y0 -> [100, 100]; _y1 -> [0, 100]; _y2 -> [24, 24]; _y3 -> [124, 124]; _y4 -> [28, 28]; _y5 -> [128, 128]; _y6 -> [124, 124]; _y7 -> [1, 124]; _y8 -> [224, 224]; _y9 -> [1, 224]; _y10 -> [128, 128]; _y11 -> [228, 228]; _y12 -> [0, 10]; _y13 -> [0, 0]}
-loop1_bb1={Mem_base -> t0[_y0], i -> t2[_y3], j -> t4[_y5], ii -> t6[_y8], jj -> t8[_y11], *i -> t11[_y9], val0 -> t12[_y13], Mem[124...127] -> t6[_y8], Mem[128...131] -> t8[_y11], Mem[224...227] -> t13[_y12]}{_y0 -> [100, 100]; _y1 -> [0, 100]; _y2 -> [24, 24]; _y3 -> [124, 124]; _y4 -> [28, 28]; _y5 -> [128, 128]; _y6 -> [124, 124]; _y7 -> [1, 124]; _y8 -> [224, 224]; _y9 -> [1, 224]; _y10 -> [128, 128]; _y11 -> [228, 228]; _y12 -> [0, 10]; _y13 -> [0, 0]}
-loop1_entry={}
+loop1_bb2={Mem_base -> t0[_y0], i -> t2[_y3], j -> t4[_y5], ii -> t6[_y8], jj -> t8[_y11], *i -> t13[_y12], val0 -> t12[_y13], Mem[124...127] -> t6[_y8], Mem[128...131] -> t8[_y11], Mem[224...227] -> t13[_y12]}{_y0 -> [100, 100]; _y2 -> [24, 24]; _y3 -> [124, 124]; _y4 -> [28, 28]; _y5 -> [128, 128]; _y6 -> [124, 124]; _y8 -> [224, 224]; _y10 -> [128, 128]; _y11 -> [228, 228]; _y12 -> [0, 9]; _y13 -> [0, 0]}
 Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t loop1_bb2)^{3} loop1_bb1_f loop2_entry (loop2_bb1 loop2_bb1_t loop2_bb2)^{3} loop2_bb1_f ret
  --- SAFE -----------------
 Property : *i = 10
@@ -562,17 +562,17 @@ user-defined assertion checker using ArrayExpansion(Term(Intervals))
  Test 6 for array expansion domain 
 ===================================
 Invariants using ArrayExpansion(Term(Intervals))
-loop2_bb2={Mem_base -> t0[_x0], i -> t2[_x3], j -> t4[_x5], ii -> t6[_x7], jj -> t8[_x9], *i -> t9[_x11], *j -> t11[_x1], val0 -> t0[_x0], Mem[18446744073709551592...18446744073709551595] -> t6[_x7], Mem[18446744073709551588...18446744073709551591] -> t8[_x9], Mem[18446744073709551492...18446744073709551495] -> t9[_x11], Mem[18446744073709551488...18446744073709551491] -> t11[_x1]}{_x0 -> [0, 0]; _x1 -> [0, 9]; _x2 -> [24, 24]; _x3 -> [-24, -24]; _x4 -> [28, 28]; _x5 -> [-28, -28]; _x6 -> [124, 124]; _x7 -> [-124, -124]; _x8 -> [128, 128]; _x9 -> [-128, -128]; _x11 -> [10, 10]}
+loop1_entry={}
+loop1_bb1={Mem_base -> t0[_y0], i -> t2[_y3], j -> t4[_y5], ii -> t6[_y7], jj -> t8[_y10], *i -> t9[_y8], val0 -> t0[_y0], Mem[18446744073709551592...18446744073709551595] -> t6[_y7], Mem[18446744073709551588...18446744073709551591] -> t8[_y10], Mem[18446744073709551492...18446744073709551495] -> t10[_y1]}{_y0 -> [0, 0]; _y1 -> [0, 10]; _y2 -> [24, 24]; _y3 -> [-24, -24]; _y4 -> [28, 28]; _y5 -> [-28, -28]; _y6 -> [124, 124]; _y7 -> [-124, -124]; _y8 -> [-124, 10]; _y9 -> [128, 128]; _y10 -> [-128, -128]}
+loop1_bb1_f={Mem_base -> t0[_y0], i -> t2[_y3], j -> t4[_y5], ii -> t6[_y7], jj -> t8[_y10], *i -> t9[_y8], val0 -> t0[_y0], Mem[18446744073709551592...18446744073709551595] -> t6[_y7], Mem[18446744073709551588...18446744073709551591] -> t8[_y10], Mem[18446744073709551492...18446744073709551495] -> t10[_y1]}{_y0 -> [0, 0]; _y1 -> [0, 10]; _y2 -> [24, 24]; _y3 -> [-24, -24]; _y4 -> [28, 28]; _y5 -> [-28, -28]; _y6 -> [124, 124]; _y7 -> [-124, -124]; _y8 -> [-124, 10]; _y9 -> [128, 128]; _y10 -> [-128, -128]}
+loop2_entry={Mem_base -> t0[_y0], i -> t2[_y3], j -> t4[_y5], ii -> t6[_y7], jj -> t8[_y10], *i -> t10[_y1], val0 -> t0[_y0], Mem[18446744073709551592...18446744073709551595] -> t6[_y7], Mem[18446744073709551588...18446744073709551591] -> t8[_y10], Mem[18446744073709551492...18446744073709551495] -> t10[_y1]}{_y0 -> [0, 0]; _y1 -> [10, 10]; _y2 -> [24, 24]; _y3 -> [-24, -24]; _y4 -> [28, 28]; _y5 -> [-28, -28]; _y6 -> [124, 124]; _y7 -> [-124, -124]; _y9 -> [128, 128]; _y10 -> [-128, -128]}
+loop2_bb1={Mem_base -> t0[_x0], i -> t2[_x3], j -> t4[_x5], ii -> t6[_x7], jj -> t8[_x9], *i -> t9[_x11], *j -> t10[_x10], val0 -> t0[_x0], Mem[18446744073709551592...18446744073709551595] -> t6[_x7], Mem[18446744073709551588...18446744073709551591] -> t8[_x9], Mem[18446744073709551492...18446744073709551495] -> t9[_x11], Mem[18446744073709551488...18446744073709551491] -> t11[_x1]}{_x0 -> [0, 0]; _x1 -> [0, 10]; _x2 -> [24, 24]; _x3 -> [-24, -24]; _x4 -> [28, 28]; _x5 -> [-28, -28]; _x6 -> [124, 124]; _x7 -> [-124, -124]; _x8 -> [128, 128]; _x9 -> [-128, -128]; _x10 -> [-128, 10]; _x11 -> [10, 10]}
 loop2_bb1_f={Mem_base -> t0[_x0], i -> t2[_x3], j -> t4[_x5], ii -> t6[_x7], jj -> t8[_x9], *i -> t9[_x11], *j -> t10[_x10], val0 -> t0[_x0], Mem[18446744073709551592...18446744073709551595] -> t6[_x7], Mem[18446744073709551588...18446744073709551591] -> t8[_x9], Mem[18446744073709551492...18446744073709551495] -> t9[_x11], Mem[18446744073709551488...18446744073709551491] -> t11[_x1]}{_x0 -> [0, 0]; _x1 -> [0, 10]; _x2 -> [24, 24]; _x3 -> [-24, -24]; _x4 -> [28, 28]; _x5 -> [-28, -28]; _x6 -> [124, 124]; _x7 -> [-124, -124]; _x8 -> [128, 128]; _x9 -> [-128, -128]; _x10 -> [-128, 10]; _x11 -> [10, 10]}
 ret={Mem_base -> t0[_x0], i -> t2[_x3], j -> t4[_x5], ii -> t6[_x7], jj -> t8[_x9], *i -> t9[_x11], *j -> t11[_x1], val0 -> t0[_x0], Mem[18446744073709551592...18446744073709551595] -> t6[_x7], Mem[18446744073709551588...18446744073709551591] -> t8[_x9], Mem[18446744073709551492...18446744073709551495] -> t9[_x11], Mem[18446744073709551488...18446744073709551491] -> t11[_x1]}{_x0 -> [0, 0]; _x1 -> [10, 10]; _x2 -> [24, 24]; _x3 -> [-24, -24]; _x4 -> [28, 28]; _x5 -> [-28, -28]; _x6 -> [124, 124]; _x7 -> [-124, -124]; _x8 -> [128, 128]; _x9 -> [-128, -128]; _x11 -> [10, 10]}
 loop2_bb1_t={Mem_base -> t0[_x0], i -> t2[_x3], j -> t4[_x5], ii -> t6[_x7], jj -> t8[_x9], *i -> t9[_x11], *j -> t10[_x10], val0 -> t0[_x0], Mem[18446744073709551592...18446744073709551595] -> t6[_x7], Mem[18446744073709551588...18446744073709551591] -> t8[_x9], Mem[18446744073709551492...18446744073709551495] -> t9[_x11], Mem[18446744073709551488...18446744073709551491] -> t11[_x1]}{_x0 -> [0, 0]; _x1 -> [0, 10]; _x2 -> [24, 24]; _x3 -> [-24, -24]; _x4 -> [28, 28]; _x5 -> [-28, -28]; _x6 -> [124, 124]; _x7 -> [-124, -124]; _x8 -> [128, 128]; _x9 -> [-128, -128]; _x10 -> [-128, 10]; _x11 -> [10, 10]}
-loop2_entry={Mem_base -> t0[_y0], i -> t2[_y3], j -> t4[_y5], ii -> t6[_y7], jj -> t8[_y10], *i -> t10[_y1], val0 -> t0[_y0], Mem[18446744073709551592...18446744073709551595] -> t6[_y7], Mem[18446744073709551588...18446744073709551591] -> t8[_y10], Mem[18446744073709551492...18446744073709551495] -> t10[_y1]}{_y0 -> [0, 0]; _y1 -> [10, 10]; _y2 -> [24, 24]; _y3 -> [-24, -24]; _y4 -> [28, 28]; _y5 -> [-28, -28]; _y6 -> [124, 124]; _y7 -> [-124, -124]; _y9 -> [128, 128]; _y10 -> [-128, -128]}
-loop2_bb1={Mem_base -> t0[_x0], i -> t2[_x3], j -> t4[_x5], ii -> t6[_x7], jj -> t8[_x9], *i -> t9[_x11], *j -> t10[_x10], val0 -> t0[_x0], Mem[18446744073709551592...18446744073709551595] -> t6[_x7], Mem[18446744073709551588...18446744073709551591] -> t8[_x9], Mem[18446744073709551492...18446744073709551495] -> t9[_x11], Mem[18446744073709551488...18446744073709551491] -> t11[_x1]}{_x0 -> [0, 0]; _x1 -> [0, 10]; _x2 -> [24, 24]; _x3 -> [-24, -24]; _x4 -> [28, 28]; _x5 -> [-28, -28]; _x6 -> [124, 124]; _x7 -> [-124, -124]; _x8 -> [128, 128]; _x9 -> [-128, -128]; _x10 -> [-128, 10]; _x11 -> [10, 10]}
-loop1_bb2={Mem_base -> t0[_y0], i -> t2[_y3], j -> t4[_y5], ii -> t6[_y7], jj -> t8[_y10], *i -> t10[_y1], val0 -> t0[_y0], Mem[18446744073709551592...18446744073709551595] -> t6[_y7], Mem[18446744073709551588...18446744073709551591] -> t8[_y10], Mem[18446744073709551492...18446744073709551495] -> t10[_y1]}{_y0 -> [0, 0]; _y1 -> [0, 9]; _y2 -> [24, 24]; _y3 -> [-24, -24]; _y4 -> [28, 28]; _y5 -> [-28, -28]; _y6 -> [124, 124]; _y7 -> [-124, -124]; _y9 -> [128, 128]; _y10 -> [-128, -128]}
-loop1_bb1_f={Mem_base -> t0[_y0], i -> t2[_y3], j -> t4[_y5], ii -> t6[_y7], jj -> t8[_y10], *i -> t9[_y8], val0 -> t0[_y0], Mem[18446744073709551592...18446744073709551595] -> t6[_y7], Mem[18446744073709551588...18446744073709551591] -> t8[_y10], Mem[18446744073709551492...18446744073709551495] -> t10[_y1]}{_y0 -> [0, 0]; _y1 -> [0, 10]; _y2 -> [24, 24]; _y3 -> [-24, -24]; _y4 -> [28, 28]; _y5 -> [-28, -28]; _y6 -> [124, 124]; _y7 -> [-124, -124]; _y8 -> [-124, 10]; _y9 -> [128, 128]; _y10 -> [-128, -128]}
+loop2_bb2={Mem_base -> t0[_x0], i -> t2[_x3], j -> t4[_x5], ii -> t6[_x7], jj -> t8[_x9], *i -> t9[_x11], *j -> t11[_x1], val0 -> t0[_x0], Mem[18446744073709551592...18446744073709551595] -> t6[_x7], Mem[18446744073709551588...18446744073709551591] -> t8[_x9], Mem[18446744073709551492...18446744073709551495] -> t9[_x11], Mem[18446744073709551488...18446744073709551491] -> t11[_x1]}{_x0 -> [0, 0]; _x1 -> [0, 9]; _x2 -> [24, 24]; _x3 -> [-24, -24]; _x4 -> [28, 28]; _x5 -> [-28, -28]; _x6 -> [124, 124]; _x7 -> [-124, -124]; _x8 -> [128, 128]; _x9 -> [-128, -128]; _x11 -> [10, 10]}
 loop1_bb1_t={Mem_base -> t0[_y0], i -> t2[_y3], j -> t4[_y5], ii -> t6[_y7], jj -> t8[_y10], *i -> t9[_y8], val0 -> t0[_y0], Mem[18446744073709551592...18446744073709551595] -> t6[_y7], Mem[18446744073709551588...18446744073709551591] -> t8[_y10], Mem[18446744073709551492...18446744073709551495] -> t10[_y1]}{_y0 -> [0, 0]; _y1 -> [0, 10]; _y2 -> [24, 24]; _y3 -> [-24, -24]; _y4 -> [28, 28]; _y5 -> [-28, -28]; _y6 -> [124, 124]; _y7 -> [-124, -124]; _y8 -> [-124, 10]; _y9 -> [128, 128]; _y10 -> [-128, -128]}
-loop1_bb1={Mem_base -> t0[_y0], i -> t2[_y3], j -> t4[_y5], ii -> t6[_y7], jj -> t8[_y10], *i -> t9[_y8], val0 -> t0[_y0], Mem[18446744073709551592...18446744073709551595] -> t6[_y7], Mem[18446744073709551588...18446744073709551591] -> t8[_y10], Mem[18446744073709551492...18446744073709551495] -> t10[_y1]}{_y0 -> [0, 0]; _y1 -> [0, 10]; _y2 -> [24, 24]; _y3 -> [-24, -24]; _y4 -> [28, 28]; _y5 -> [-28, -28]; _y6 -> [124, 124]; _y7 -> [-124, -124]; _y8 -> [-124, 10]; _y9 -> [128, 128]; _y10 -> [-128, -128]}
-loop1_entry={}
+loop1_bb2={Mem_base -> t0[_y0], i -> t2[_y3], j -> t4[_y5], ii -> t6[_y7], jj -> t8[_y10], *i -> t10[_y1], val0 -> t0[_y0], Mem[18446744073709551592...18446744073709551595] -> t6[_y7], Mem[18446744073709551588...18446744073709551591] -> t8[_y10], Mem[18446744073709551492...18446744073709551495] -> t10[_y1]}{_y0 -> [0, 0]; _y1 -> [0, 9]; _y2 -> [24, 24]; _y3 -> [-24, -24]; _y4 -> [28, 28]; _y5 -> [-28, -28]; _y6 -> [124, 124]; _y7 -> [-124, -124]; _y9 -> [128, 128]; _y10 -> [-128, -128]}
 Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t loop1_bb2)^{3} loop1_bb1_f loop2_entry (loop2_bb1 loop2_bb1_t loop2_bb2)^{3} loop2_bb1_f ret
  --- SAFE -----------------
 Property : *i = 10
@@ -592,8 +592,8 @@ user-defined assertion checker using ArrayExpansion(Term(Intervals))
  Test 7 for array expansion domain 
 ===================================
 Invariants using ArrayExpansion(Term(Intervals))
-ret={x -> t0[_x0], y -> t0[_x0], z -> t0[_x0], val -> t3[_x3], tmp1 -> t1[_x1], tmp2 -> t2[_x2], tmp3 -> t3[_x3], Mem1[4...7] -> t1[_x1], Mem2[4...7] -> t2[_x2], Mem3[4...7] -> t3[_x3]}{_x0 -> [4, 4]; _x1 -> [42, 42]; _x2 -> [43, 43]; _x3 -> [44, 44]}
 entry={}
+ret={x -> t0[_x0], y -> t0[_x0], z -> t0[_x0], val -> t3[_x3], tmp1 -> t1[_x1], tmp2 -> t2[_x2], tmp3 -> t3[_x3], Mem1[4...7] -> t1[_x1], Mem2[4...7] -> t2[_x2], Mem3[4...7] -> t3[_x3]}{_x0 -> [4, 4]; _x1 -> [42, 42]; _x2 -> [43, 43]; _x3 -> [44, 44]}
 Abstract trace: entry ret
  --- SAFE -----------------
 Property : tmp1-tmp2 < 0
@@ -613,8 +613,8 @@ user-defined assertion checker using ArrayExpansion(Term(Intervals))
  Test 8 for array expansion domain 
 ===================================
 Invariants using ArrayExpansion(Term(Intervals))
-ret={x -> t0[_x0], y -> t1[_x1], z -> t2[_x2], val -> t5[_x5], tmp1 -> t3[_x3], tmp2 -> t4[_x4], tmp3 -> t5[_x5], Mem1[4...7] -> t3[_x3], Mem2[5...8] -> t4[_x4], Mem3[6...9] -> t5[_x5]}{_x0 -> [4, 4]; _x1 -> [5, 5]; _x2 -> [6, 6]; _x3 -> [42, 42]; _x4 -> [43, 43]; _x5 -> [44, 44]}
 entry={}
+ret={x -> t0[_x0], y -> t1[_x1], z -> t2[_x2], val -> t5[_x5], tmp1 -> t3[_x3], tmp2 -> t4[_x4], tmp3 -> t5[_x5], Mem1[4...7] -> t3[_x3], Mem2[5...8] -> t4[_x4], Mem3[6...9] -> t5[_x5]}{_x0 -> [4, 4]; _x1 -> [5, 5]; _x2 -> [6, 6]; _x3 -> [42, 42]; _x4 -> [43, 43]; _x5 -> [44, 44]}
 Abstract trace: entry ret
  --- SAFE -----------------
 Property : tmp1-tmp2 < 0
@@ -632,315 +632,315 @@ user-defined assertion checker using ArrayExpansion(Term(Intervals))
 
 Program 1: forall 0<= i< 10. a[i] = 123456
 Invariants using ArraySmashing(DisjunctiveIntervals)
-ret={n1 -> [1, 1]; i -> [10, 10]; A0 -> [0, 0] | [123456, 123456]; A0_prop -> [0, 0]}
-bb2={n1 -> [1, 1]; i -> [0, 9]; A0 -> [0, 0] | [123456, 123456]; A0_prop -> [0, 0]}
-bb1_t={n1 -> [1, 1]; i -> [0, 10]; A0 -> [0, 0] | [123456, 123456]; A0_prop -> [0, 0]}
+entry={}
 bb1={n1 -> [1, 1]; i -> [0, 10]; A0 -> [0, 0] | [123456, 123456]; A0_prop -> [0, 0]}
 bb1_f={n1 -> [1, 1]; i -> [0, 10]; A0 -> [0, 0] | [123456, 123456]; A0_prop -> [0, 0]}
-entry={}
+ret={n1 -> [1, 1]; i -> [10, 10]; A0 -> [0, 0] | [123456, 123456]; A0_prop -> [0, 0]}
+bb1_t={n1 -> [1, 1]; i -> [0, 10]; A0 -> [0, 0] | [123456, 123456]; A0_prop -> [0, 0]}
+bb2={n1 -> [1, 1]; i -> [0, 9]; A0 -> [0, 0] | [123456, 123456]; A0_prop -> [0, 0]}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Invariants using ArraySmashing(SplitDBM)
-ret={n1 -> [1, 1], i -> [10, 10], A0 -> [0, 123456], A0_prop -> [0, 0], i-n1<=9, n1-i<=1, A0-i<=123455, A0_prop-i<=0, A0_prop-A0<=0, A0-A0_prop<=123456}
-bb2={n1 -> [1, 1], i -> [0, 9], A0 -> [0, 123456], A0_prop -> [0, 0], i-n1<=9, n1-i<=1, A0-i<=123455, A0_prop-i<=0, A0_prop-A0<=0, A0-A0_prop<=123456}
-bb1_t={n1 -> [1, 1], i -> [0, 10], A0 -> [0, 123456], A0_prop -> [0, 0], i-n1<=9, n1-i<=1, A0-i<=123455, A0_prop-i<=0, A0_prop-A0<=0, A0-A0_prop<=123456}
+entry={}
 bb1={n1 -> [1, 1], i -> [0, 10], A0 -> [0, 123456], A0_prop -> [0, 0], i-n1<=9, n1-i<=1, A0-i<=123455, A0_prop-i<=0, A0_prop-A0<=0, A0-A0_prop<=123456}
 bb1_f={n1 -> [1, 1], i -> [0, 10], A0 -> [0, 123456], A0_prop -> [0, 0], i-n1<=9, n1-i<=1, A0-i<=123455, A0_prop-i<=0, A0_prop-A0<=0, A0-A0_prop<=123456}
-entry={}
+ret={n1 -> [1, 1], i -> [10, 10], A0 -> [0, 123456], A0_prop -> [0, 0], i-n1<=9, n1-i<=1, A0-i<=123455, A0_prop-i<=0, A0_prop-A0<=0, A0-A0_prop<=123456}
+bb1_t={n1 -> [1, 1], i -> [0, 10], A0 -> [0, 123456], A0_prop -> [0, 0], i-n1<=9, n1-i<=1, A0-i<=123455, A0_prop-i<=0, A0_prop-A0<=0, A0-A0_prop<=123456}
+bb2={n1 -> [1, 1], i -> [0, 9], A0 -> [0, 123456], A0_prop -> [0, 0], i-n1<=9, n1-i<=1, A0-i<=123455, A0_prop-i<=0, A0_prop-A0<=0, A0-A0_prop<=123456}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 2: forall 0<= i< 10. a[i] = b[i] = x and x = 123456
 Invariants using ArraySmashing(DisjunctiveIntervals)
-ret={n1 -> [1, 1]; i -> [10, 10]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]; B -> [0, 0] | [123456, 123456]}
-bb2={n1 -> [1, 1]; i -> [0, 9]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]; B -> [0, 0] | [123456, 123456]}
-bb1_t={n1 -> [1, 1]; i -> [0, 10]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]; B -> [0, 0] | [123456, 123456]}
+entry={}
 bb1={n1 -> [1, 1]; i -> [0, 10]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]; B -> [0, 0] | [123456, 123456]}
 bb1_f={n1 -> [1, 1]; i -> [0, 10]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]; B -> [0, 0] | [123456, 123456]}
-entry={}
+ret={n1 -> [1, 1]; i -> [10, 10]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]; B -> [0, 0] | [123456, 123456]}
+bb1_t={n1 -> [1, 1]; i -> [0, 10]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]; B -> [0, 0] | [123456, 123456]}
+bb2={n1 -> [1, 1]; i -> [0, 9]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]; B -> [0, 0] | [123456, 123456]}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Invariants using ArraySmashing(SplitDBM)
-ret={n1 -> [1, 1], i -> [10, 10], A -> [0, 123456], A_p -> [0, 0], B -> [0, 123456], i-n1<=9, n1-i<=1, A-i<=123455, B-i<=123455, A_p-i<=0, A_p-A<=0, B-A<=123456, A-A_p<=123456, B-A_p<=123456, A_p-B<=0, A-B<=123456}
-bb2={n1 -> [1, 1], i -> [0, 9], A -> [0, 123456], A_p -> [0, 0], B -> [0, 123456], i-n1<=9, n1-i<=1, A-i<=123455, B-i<=123455, A_p-i<=0, A_p-A<=0, B-A<=123456, A-A_p<=123456, B-A_p<=123456, A_p-B<=0, A-B<=123456}
-bb1_t={n1 -> [1, 1], i -> [0, 10], A -> [0, 123456], A_p -> [0, 0], B -> [0, 123456], i-n1<=9, n1-i<=1, A-i<=123455, B-i<=123455, A_p-i<=0, A_p-A<=0, B-A<=123456, A-A_p<=123456, B-A_p<=123456, A_p-B<=0, A-B<=123456}
+entry={}
 bb1={n1 -> [1, 1], i -> [0, 10], A -> [0, 123456], A_p -> [0, 0], B -> [0, 123456], i-n1<=9, n1-i<=1, A-i<=123455, B-i<=123455, A_p-i<=0, A_p-A<=0, B-A<=123456, A-A_p<=123456, B-A_p<=123456, A_p-B<=0, A-B<=123456}
 bb1_f={n1 -> [1, 1], i -> [0, 10], A -> [0, 123456], A_p -> [0, 0], B -> [0, 123456], i-n1<=9, n1-i<=1, A-i<=123455, B-i<=123455, A_p-i<=0, A_p-A<=0, B-A<=123456, A-A_p<=123456, B-A_p<=123456, A_p-B<=0, A-B<=123456}
-entry={}
+ret={n1 -> [1, 1], i -> [10, 10], A -> [0, 123456], A_p -> [0, 0], B -> [0, 123456], i-n1<=9, n1-i<=1, A-i<=123455, B-i<=123455, A_p-i<=0, A_p-A<=0, B-A<=123456, A-A_p<=123456, B-A_p<=123456, A_p-B<=0, A-B<=123456}
+bb1_t={n1 -> [1, 1], i -> [0, 10], A -> [0, 123456], A_p -> [0, 0], B -> [0, 123456], i-n1<=9, n1-i<=1, A-i<=123455, B-i<=123455, A_p-i<=0, A_p-A<=0, B-A<=123456, A-A_p<=123456, B-A_p<=123456, A_p-B<=0, A-B<=123456}
+bb2={n1 -> [1, 1], i -> [0, 9], A -> [0, 123456], A_p -> [0, 0], B -> [0, 123456], i-n1<=9, n1-i<=1, A-i<=123455, B-i<=123455, A_p-i<=0, A_p-A<=0, B-A<=123456, A-A_p<=123456, B-A_p<=123456, A_p-B<=0, A-B<=123456}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 3: forall 0<= i< 10. a[i] = 8 and b[i] = 5
 Invariants using ArraySmashing(DisjunctiveIntervals)
-ret={n1 -> [1, 1]; i -> [10, 10]; A -> [0, 0] | [8, 8]; A_p -> [0, 0]; B -> [0, 0] | [5, 5]}
-bb2={n1 -> [1, 1]; i -> [0, 9]; A -> [0, 0] | [8, 8]; A_p -> [0, 0]; B -> [0, 0] | [5, 5]}
-bb1_t={n1 -> [1, 1]; i -> [0, 10]; A -> [0, 0] | [8, 8]; A_p -> [0, 0]; B -> [0, 0] | [5, 5]}
+entry={}
 bb1={n1 -> [1, 1]; i -> [0, 10]; A -> [0, 0] | [8, 8]; A_p -> [0, 0]; B -> [0, 0] | [5, 5]}
 bb1_f={n1 -> [1, 1]; i -> [0, 10]; A -> [0, 0] | [8, 8]; A_p -> [0, 0]; B -> [0, 0] | [5, 5]}
-entry={}
+ret={n1 -> [1, 1]; i -> [10, 10]; A -> [0, 0] | [8, 8]; A_p -> [0, 0]; B -> [0, 0] | [5, 5]}
+bb1_t={n1 -> [1, 1]; i -> [0, 10]; A -> [0, 0] | [8, 8]; A_p -> [0, 0]; B -> [0, 0] | [5, 5]}
+bb2={n1 -> [1, 1]; i -> [0, 9]; A -> [0, 0] | [8, 8]; A_p -> [0, 0]; B -> [0, 0] | [5, 5]}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Invariants using ArraySmashing(SplitDBM)
-ret={n1 -> [1, 1], i -> [10, 10], A -> [0, 8], A_p -> [0, 0], B -> [0, 5], i-n1<=9, n1-i<=1, A-i<=7, B-i<=4, A_p-i<=0, A_p-A<=0, B-A<=5, A-A_p<=8, B-A_p<=5, A_p-B<=0, A-B<=8}
-bb2={n1 -> [1, 1], i -> [0, 9], A -> [0, 8], A_p -> [0, 0], B -> [0, 5], i-n1<=9, n1-i<=1, A-i<=7, B-i<=4, A_p-i<=0, A_p-A<=0, B-A<=5, A-A_p<=8, B-A_p<=5, A_p-B<=0, A-B<=8}
-bb1_t={n1 -> [1, 1], i -> [0, 10], A -> [0, 8], A_p -> [0, 0], B -> [0, 5], i-n1<=9, n1-i<=1, A-i<=7, B-i<=4, A_p-i<=0, A_p-A<=0, B-A<=5, A-A_p<=8, B-A_p<=5, A_p-B<=0, A-B<=8}
+entry={}
 bb1={n1 -> [1, 1], i -> [0, 10], A -> [0, 8], A_p -> [0, 0], B -> [0, 5], i-n1<=9, n1-i<=1, A-i<=7, B-i<=4, A_p-i<=0, A_p-A<=0, B-A<=5, A-A_p<=8, B-A_p<=5, A_p-B<=0, A-B<=8}
 bb1_f={n1 -> [1, 1], i -> [0, 10], A -> [0, 8], A_p -> [0, 0], B -> [0, 5], i-n1<=9, n1-i<=1, A-i<=7, B-i<=4, A_p-i<=0, A_p-A<=0, B-A<=5, A-A_p<=8, B-A_p<=5, A_p-B<=0, A-B<=8}
-entry={}
+ret={n1 -> [1, 1], i -> [10, 10], A -> [0, 8], A_p -> [0, 0], B -> [0, 5], i-n1<=9, n1-i<=1, A-i<=7, B-i<=4, A_p-i<=0, A_p-A<=0, B-A<=5, A-A_p<=8, B-A_p<=5, A_p-B<=0, A-B<=8}
+bb1_t={n1 -> [1, 1], i -> [0, 10], A -> [0, 8], A_p -> [0, 0], B -> [0, 5], i-n1<=9, n1-i<=1, A-i<=7, B-i<=4, A_p-i<=0, A_p-A<=0, B-A<=5, A-A_p<=8, B-A_p<=5, A_p-B<=0, A-B<=8}
+bb2={n1 -> [1, 1], i -> [0, 9], A -> [0, 8], A_p -> [0, 0], B -> [0, 5], i-n1<=9, n1-i<=1, A-i<=7, B-i<=4, A_p-i<=0, A_p-A<=0, B-A<=5, A-A_p<=8, B-A_p<=5, A_p-B<=0, A-B<=8}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 4: forall 0<= i < n. a[i] = 123456 (unbounded loop)
 Invariants using ArraySmashing(DisjunctiveIntervals)
-ret={n1 -> [1, 1]; i -> [1, +oo]; n -> [1, +oo]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
-bb2={n1 -> [1, 1]; i -> [0, +oo]; n -> [1, +oo]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
-bb1_t={n1 -> [1, 1]; i -> [0, +oo]; n -> [1, +oo]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
+entry={}
 bb1={n1 -> [1, 1]; i -> [0, +oo]; n -> [1, +oo]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
 bb1_f={n1 -> [1, 1]; i -> [0, +oo]; n -> [1, +oo]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
-entry={}
+ret={n1 -> [1, 1]; i -> [1, +oo]; n -> [1, +oo]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
+bb1_t={n1 -> [1, 1]; i -> [0, +oo]; n -> [1, +oo]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
+bb2={n1 -> [1, 1]; i -> [0, +oo]; n -> [1, +oo]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Invariants using ArraySmashing(SplitDBM)
-ret={n1 -> [1, 1], i -> [1, +oo], n -> [1, +oo], A -> [0, 123456], A_p -> [0, 0], n1-i<=0, A-i<=123455, A_p-i<=-1, n-i<=0, i-n<=0, n1-n<=0, A-n<=123455, A_p-n<=-1, A_p-A<=0, A-A_p<=123456}
-bb2={n1 -> [1, 1], i -> [0, +oo], n -> [1, +oo], A -> [0, 123456], A_p -> [0, 0], n1-i<=1, A-i<=123455, A_p-i<=0, i-n<=-1, n1-n<=0, A-n<=123454, A_p-n<=-1, A_p-A<=0, A-A_p<=123456}
-bb1_t={n1 -> [1, 1], i -> [0, +oo], n -> [1, +oo], A -> [0, 123456], A_p -> [0, 0], n1-i<=1, A-i<=123455, A_p-i<=0, i-n<=0, n1-n<=0, A-n<=123455, A_p-n<=-1, A_p-A<=0, A-A_p<=123456}
+entry={}
 bb1={n1 -> [1, 1], i -> [0, +oo], n -> [1, +oo], A -> [0, 123456], A_p -> [0, 0], n1-i<=1, A-i<=123455, A_p-i<=0, i-n<=0, n1-n<=0, A-n<=123455, A_p-n<=-1, A_p-A<=0, A-A_p<=123456}
 bb1_f={n1 -> [1, 1], i -> [0, +oo], n -> [1, +oo], A -> [0, 123456], A_p -> [0, 0], n1-i<=1, A-i<=123455, A_p-i<=0, i-n<=0, n1-n<=0, A-n<=123455, A_p-n<=-1, A_p-A<=0, A-A_p<=123456}
-entry={}
+ret={n1 -> [1, 1], i -> [1, +oo], n -> [1, +oo], A -> [0, 123456], A_p -> [0, 0], n1-i<=0, A-i<=123455, A_p-i<=-1, n-i<=0, i-n<=0, n1-n<=0, A-n<=123455, A_p-n<=-1, A_p-A<=0, A-A_p<=123456}
+bb1_t={n1 -> [1, 1], i -> [0, +oo], n -> [1, +oo], A -> [0, 123456], A_p -> [0, 0], n1-i<=1, A-i<=123455, A_p-i<=0, i-n<=0, n1-n<=0, A-n<=123455, A_p-n<=-1, A_p-A<=0, A-A_p<=123456}
+bb2={n1 -> [1, 1], i -> [0, +oo], n -> [1, +oo], A -> [0, 123456], A_p -> [0, 0], n1-i<=1, A-i<=123455, A_p-i<=0, i-n<=-1, n1-n<=0, A-n<=123454, A_p-n<=-1, A_p-A<=0, A-A_p<=123456}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 5: for all 0<= i< 10. a[i] = 123456 (assume elem size of 4 bytes)
 Invariants using ArraySmashing(DisjunctiveIntervals)
-ret={i -> [10, 10]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
-bb2={i -> [0, 9]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
-bb1_t={i -> [0, 10]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
+entry={}
 bb1={i -> [0, 10]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
 bb1_f={i -> [0, 10]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
-entry={}
+ret={i -> [10, 10]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
+bb1_t={i -> [0, 10]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
+bb2={i -> [0, 9]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Invariants using ArraySmashing(SplitDBM)
-ret={i -> [10, 10], A -> [0, 123456], A_p -> [0, 0], A-i<=123455, A_p-i<=0, A_p-A<=0, A-A_p<=123456}
-bb2={i -> [0, 9], A -> [0, 123456], A_p -> [0, 0], A-i<=123455, A_p-i<=0, A_p-A<=0, A-A_p<=123456}
-bb1_t={i -> [0, 10], A -> [0, 123456], A_p -> [0, 0], A-i<=123455, A_p-i<=0, A_p-A<=0, A-A_p<=123456}
+entry={}
 bb1={i -> [0, 10], A -> [0, 123456], A_p -> [0, 0], A-i<=123455, A_p-i<=0, A_p-A<=0, A-A_p<=123456}
 bb1_f={i -> [0, 10], A -> [0, 123456], A_p -> [0, 0], A-i<=123455, A_p-i<=0, A_p-A<=0, A-A_p<=123456}
-entry={}
+ret={i -> [10, 10], A -> [0, 123456], A_p -> [0, 0], A-i<=123455, A_p-i<=0, A_p-A<=0, A-A_p<=123456}
+bb1_t={i -> [0, 10], A -> [0, 123456], A_p -> [0, 0], A-i<=123455, A_p-i<=0, A_p-A<=0, A-A_p<=123456}
+bb2={i -> [0, 9], A -> [0, 123456], A_p -> [0, 0], A-i<=123455, A_p-i<=0, A_p-A<=0, A-A_p<=123456}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 6: a[0] = 89 and for all 1<= i < n. a[i] = a[i-1]
 Invariants using ArraySmashing(DisjunctiveIntervals)
-ret={n1 -> [1, 1]; i -> [2, +oo]; n -> [2, +oo]; A -> [0, 0] | [89, 89]; A_p -> [0, 0]; val -> [89, 89]}
-bb2={n1 -> [1, 1]; i -> [1, +oo]; n -> [2, +oo]; A -> [0, 0] | [89, 89]; A_p -> [0, 0]; val -> [89, 89]}
-bb1_t={n1 -> [1, 1]; i -> [1, +oo]; n -> [2, +oo]; A -> [0, 0] | [89, 89]; A_p -> [0, 0]; val -> [89, 89]}
+entry={}
 bb1={n1 -> [1, 1]; i -> [1, +oo]; n -> [2, +oo]; A -> [0, 0] | [89, 89]; A_p -> [0, 0]; val -> [89, 89]}
 bb1_f={n1 -> [1, 1]; i -> [1, +oo]; n -> [2, +oo]; A -> [0, 0] | [89, 89]; A_p -> [0, 0]; val -> [89, 89]}
-entry={}
+ret={n1 -> [1, 1]; i -> [2, +oo]; n -> [2, +oo]; A -> [0, 0] | [89, 89]; A_p -> [0, 0]; val -> [89, 89]}
+bb1_t={n1 -> [1, 1]; i -> [1, +oo]; n -> [2, +oo]; A -> [0, 0] | [89, 89]; A_p -> [0, 0]; val -> [89, 89]}
+bb2={n1 -> [1, 1]; i -> [1, +oo]; n -> [2, +oo]; A -> [0, 0] | [89, 89]; A_p -> [0, 0]; val -> [89, 89]}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Invariants using ArraySmashing(SplitDBM)
-ret={n1 -> [1, 1], i -> [2, +oo], n -> [2, +oo], A -> [0, 89], A_p -> [0, 0], val -> [89, 89], n1-i<=-1, n-i<=0, i-n<=0, n1-n<=-1, A_p-A<=0, val-A<=89, A-A_p<=89, val-A_p<=89, A-val<=0, A_p-val<=-89}
-bb2={n1 -> [1, 1], i -> [1, +oo], n -> [2, +oo], A -> [0, 89], A_p -> [0, 0], val -> [89, 89], n1-i<=0, i-n<=-1, n1-n<=-1, A_p-A<=0, val-A<=89, A-A_p<=89, val-A_p<=89, A-val<=0, A_p-val<=-89}
-bb1_t={n1 -> [1, 1], i -> [1, +oo], n -> [2, +oo], A -> [0, 89], A_p -> [0, 0], val -> [89, 89], n1-i<=0, i-n<=0, n1-n<=-1, A_p-A<=0, val-A<=89, A-A_p<=89, val-A_p<=89, A-val<=0, A_p-val<=-89}
+entry={}
 bb1={n1 -> [1, 1], i -> [1, +oo], n -> [2, +oo], A -> [0, 89], A_p -> [0, 0], val -> [89, 89], n1-i<=0, i-n<=0, n1-n<=-1, A_p-A<=0, val-A<=89, A-A_p<=89, val-A_p<=89, A-val<=0, A_p-val<=-89}
 bb1_f={n1 -> [1, 1], i -> [1, +oo], n -> [2, +oo], A -> [0, 89], A_p -> [0, 0], val -> [89, 89], n1-i<=0, i-n<=0, n1-n<=-1, A_p-A<=0, val-A<=89, A-A_p<=89, val-A_p<=89, A-val<=0, A_p-val<=-89}
-entry={}
+ret={n1 -> [1, 1], i -> [2, +oo], n -> [2, +oo], A -> [0, 89], A_p -> [0, 0], val -> [89, 89], n1-i<=-1, n-i<=0, i-n<=0, n1-n<=-1, A_p-A<=0, val-A<=89, A-A_p<=89, val-A_p<=89, A-val<=0, A_p-val<=-89}
+bb1_t={n1 -> [1, 1], i -> [1, +oo], n -> [2, +oo], A -> [0, 89], A_p -> [0, 0], val -> [89, 89], n1-i<=0, i-n<=0, n1-n<=-1, A_p-A<=0, val-A<=89, A-A_p<=89, val-A_p<=89, A-val<=0, A_p-val<=-89}
+bb2={n1 -> [1, 1], i -> [1, +oo], n -> [2, +oo], A -> [0, 89], A_p -> [0, 0], val -> [89, 89], n1-i<=0, i-n<=-1, n1-n<=-1, A_p-A<=0, val-A<=89, A-A_p<=89, val-A_p<=89, A-val<=0, A_p-val<=-89}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 7: forall 0<= i< 10 and i % 2 = 0. a[i] = 123456
 Invariants using ArraySmashing(DisjunctiveIntervals)
-ret={n1 -> [1, 1]; n2 -> [2, 2]; i -> [10, 11]; n -> [1, +oo]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
-bb2={n1 -> [1, 1]; n2 -> [2, 2]; i -> [0, 0] | [2, 2] | [4, 4] | [6, 6] | [8, 9]; n -> [1, +oo]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
-bb1_t={n1 -> [1, 1]; n2 -> [2, 2]; i -> [0, 0] | [2, 2] | [4, 4] | [6, 6] | [8, 11]; n -> [1, +oo]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
+entry={}
 bb1={n1 -> [1, 1]; n2 -> [2, 2]; i -> [0, 0] | [2, 2] | [4, 4] | [6, 6] | [8, 11]; n -> [1, +oo]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
 bb1_f={n1 -> [1, 1]; n2 -> [2, 2]; i -> [0, 0] | [2, 2] | [4, 4] | [6, 6] | [8, 11]; n -> [1, +oo]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
-entry={}
+ret={n1 -> [1, 1]; n2 -> [2, 2]; i -> [10, 11]; n -> [1, +oo]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
+bb1_t={n1 -> [1, 1]; n2 -> [2, 2]; i -> [0, 0] | [2, 2] | [4, 4] | [6, 6] | [8, 11]; n -> [1, +oo]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
+bb2={n1 -> [1, 1]; n2 -> [2, 2]; i -> [0, 0] | [2, 2] | [4, 4] | [6, 6] | [8, 9]; n -> [1, +oo]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Invariants using ArraySmashing(SplitDBM)
-ret={n1 -> [1, 1], n2 -> [2, 2], i -> [10, 11], n -> [1, +oo], A -> [0, 123456], A_p -> [0, 0], i-n2<=9, n2-i<=2, A-i<=123454, A_p-i<=0, A_p-A<=0, A-A_p<=123456}
-bb2={n1 -> [1, 1], n2 -> [2, 2], i -> [0, 9], n -> [1, +oo], A -> [0, 123456], A_p -> [0, 0], i-n2<=9, n2-i<=2, A-i<=123454, A_p-i<=0, A_p-A<=0, A-A_p<=123456}
-bb1_t={n1 -> [1, 1], n2 -> [2, 2], i -> [0, 11], n -> [1, +oo], A -> [0, 123456], A_p -> [0, 0], i-n2<=9, n2-i<=2, A-i<=123454, A_p-i<=0, A_p-A<=0, A-A_p<=123456}
+entry={}
 bb1={n1 -> [1, 1], n2 -> [2, 2], i -> [0, 11], n -> [1, +oo], A -> [0, 123456], A_p -> [0, 0], i-n2<=9, n2-i<=2, A-i<=123454, A_p-i<=0, A_p-A<=0, A-A_p<=123456}
 bb1_f={n1 -> [1, 1], n2 -> [2, 2], i -> [0, 11], n -> [1, +oo], A -> [0, 123456], A_p -> [0, 0], i-n2<=9, n2-i<=2, A-i<=123454, A_p-i<=0, A_p-A<=0, A-A_p<=123456}
-entry={}
+ret={n1 -> [1, 1], n2 -> [2, 2], i -> [10, 11], n -> [1, +oo], A -> [0, 123456], A_p -> [0, 0], i-n2<=9, n2-i<=2, A-i<=123454, A_p-i<=0, A_p-A<=0, A-A_p<=123456}
+bb1_t={n1 -> [1, 1], n2 -> [2, 2], i -> [0, 11], n -> [1, +oo], A -> [0, 123456], A_p -> [0, 0], i-n2<=9, n2-i<=2, A-i<=123454, A_p-i<=0, A_p-A<=0, A-A_p<=123456}
+bb2={n1 -> [1, 1], n2 -> [2, 2], i -> [0, 9], n -> [1, +oo], A -> [0, 123456], A_p -> [0, 0], i-n2<=9, n2-i<=2, A-i<=123454, A_p-i<=0, A_p-A<=0, A-A_p<=123456}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 8: forall 0<= i < n. 1 <= a[i] <= 2
 Invariants using ArraySmashing(DisjunctiveIntervals)
+entry={}
+bb1={n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A -> [0, 2]; A_p -> [0, 0]}
+bb1_f2={n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A -> [0, 2]; A_p -> [0, 0]}
+bb1_f={n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A -> [0, 2]; A_p -> [0, 0]}
 ret={n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A -> [0, 2]; A_p -> [0, 0]}
-bb2a={n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A -> [0, 2]; A_p -> [0, 0]}
-bb2b={n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A -> [0, 2]; A_p -> [0, 0]}
-bb2={n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A -> [0, 2]; A_p -> [0, 0]}
 bb1_f1={n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A -> [0, 2]; A_p -> [0, 0]}
 bb1_t={n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A -> [0, 2]; A_p -> [0, 0]}
-bb1={n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A -> [0, 2]; A_p -> [0, 0]}
-bb1_f={n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A -> [0, 2]; A_p -> [0, 0]}
-bb1_f2={n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A -> [0, 2]; A_p -> [0, 0]}
-entry={}
+bb2={n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A -> [0, 2]; A_p -> [0, 0]}
+bb2b={n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A -> [0, 2]; A_p -> [0, 0]}
+bb2a={n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A -> [0, 2]; A_p -> [0, 0]}
 Abstract trace: entry (bb1 bb1_t bb2 bb2b bb2a)^{3} bb1_f2 bb1_f1 bb1_f ret
 
 Invariants using ArraySmashing(SplitDBM)
+entry={}
+bb1={n1 -> [1, 1], i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], A -> [0, 2], A_p -> [0, 0], n1-i1<=1, A-i1<=2, n1-i2<=1, A-i2<=1, i1-n<=0, i2-n<=0, n1-n<=0, A-n<=1, A_p-A<=0, A-A_p<=2}
+bb1_f2={n1 -> [1, 1], i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], A -> [0, 2], A_p -> [0, 0], n1-i1<=1, A-i1<=2, n1-i2<=1, A-i2<=1, i1-n<=0, i2-n<=0, n1-n<=0, A-n<=1, A_p-A<=0, A-A_p<=2}
+bb1_f={n1 -> [1, 1], i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], A -> [0, 2], A_p -> [0, 0], n1-i1<=1, A-i1<=2, n1-i2<=1, A-i2<=1, i1-n<=0, i2-n<=0, n1-n<=0, A-n<=1, A_p-A<=0, A-A_p<=2}
 ret={n1 -> [1, 1], i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], A -> [0, 2], A_p -> [0, 0], n1-i1<=1, A-i1<=2, n1-i2<=1, A-i2<=1, i1-n<=0, i2-n<=0, n1-n<=0, A-n<=1, A_p-A<=0, A-A_p<=2}
-bb2a={n1 -> [1, 1], i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], A -> [0, 2], A_p -> [0, 0], n1-i1<=1, A-i1<=2, n1-i2<=1, A-i2<=1, i1-n<=-1, i2-n<=-1, n1-n<=0, A-n<=0, A_p-A<=0, A-A_p<=2}
-bb2b={n1 -> [1, 1], i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], A -> [0, 2], A_p -> [0, 0], n1-i1<=1, A-i1<=2, n1-i2<=1, A-i2<=1, i1-n<=-1, i2-n<=-1, n1-n<=0, A-n<=0, A_p-A<=0, A-A_p<=2}
-bb2={n1 -> [1, 1], i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], A -> [0, 2], A_p -> [0, 0], n1-i1<=1, A-i1<=2, n1-i2<=1, A-i2<=1, i1-n<=-1, i2-n<=-1, n1-n<=0, A-n<=0, A_p-A<=0, A-A_p<=2}
 bb1_f1={n1 -> [1, 1], i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], A -> [0, 2], A_p -> [0, 0], n1-i1<=1, A-i1<=2, n1-i2<=1, A-i2<=1, i1-n<=0, i2-n<=0, n1-n<=0, A-n<=1, A_p-A<=0, A-A_p<=2}
 bb1_t={n1 -> [1, 1], i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], A -> [0, 2], A_p -> [0, 0], n1-i1<=1, A-i1<=2, n1-i2<=1, A-i2<=1, i1-n<=0, i2-n<=0, n1-n<=0, A-n<=1, A_p-A<=0, A-A_p<=2}
-bb1={n1 -> [1, 1], i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], A -> [0, 2], A_p -> [0, 0], n1-i1<=1, A-i1<=2, n1-i2<=1, A-i2<=1, i1-n<=0, i2-n<=0, n1-n<=0, A-n<=1, A_p-A<=0, A-A_p<=2}
-bb1_f={n1 -> [1, 1], i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], A -> [0, 2], A_p -> [0, 0], n1-i1<=1, A-i1<=2, n1-i2<=1, A-i2<=1, i1-n<=0, i2-n<=0, n1-n<=0, A-n<=1, A_p-A<=0, A-A_p<=2}
-bb1_f2={n1 -> [1, 1], i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], A -> [0, 2], A_p -> [0, 0], n1-i1<=1, A-i1<=2, n1-i2<=1, A-i2<=1, i1-n<=0, i2-n<=0, n1-n<=0, A-n<=1, A_p-A<=0, A-A_p<=2}
-entry={}
+bb2={n1 -> [1, 1], i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], A -> [0, 2], A_p -> [0, 0], n1-i1<=1, A-i1<=2, n1-i2<=1, A-i2<=1, i1-n<=-1, i2-n<=-1, n1-n<=0, A-n<=0, A_p-A<=0, A-A_p<=2}
+bb2b={n1 -> [1, 1], i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], A -> [0, 2], A_p -> [0, 0], n1-i1<=1, A-i1<=2, n1-i2<=1, A-i2<=1, i1-n<=-1, i2-n<=-1, n1-n<=0, A-n<=0, A_p-A<=0, A-A_p<=2}
+bb2a={n1 -> [1, 1], i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], A -> [0, 2], A_p -> [0, 0], n1-i1<=1, A-i1<=2, n1-i2<=1, A-i2<=1, i1-n<=-1, i2-n<=-1, n1-n<=0, A-n<=0, A_p-A<=0, A-A_p<=2}
 Abstract trace: entry (bb1 bb1_t bb2 bb2b bb2a)^{3} bb1_f2 bb1_f1 bb1_f ret
 
 Program 9: forall 0<= i < n. a[i] == 123456 (decrementing loop)
 Invariants using ArraySmashing(DisjunctiveIntervals)
-ret={n0 -> [0, 0]; n1 -> [1, 1]; n9 -> [9, 9]; i -> [-1, -1]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
-bb2={n0 -> [0, 0]; n1 -> [1, 1]; n9 -> [9, 9]; i -> [0, 9]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
-bb1_t={n0 -> [0, 0]; n1 -> [1, 1]; n9 -> [9, 9]; i -> [-1, 9]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
+entry={}
 bb1={n0 -> [0, 0]; n1 -> [1, 1]; n9 -> [9, 9]; i -> [-1, 9]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
 bb1_f={n0 -> [0, 0]; n1 -> [1, 1]; n9 -> [9, 9]; i -> [-1, 9]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
-entry={}
+ret={n0 -> [0, 0]; n1 -> [1, 1]; n9 -> [9, 9]; i -> [-1, -1]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
+bb1_t={n0 -> [0, 0]; n1 -> [1, 1]; n9 -> [9, 9]; i -> [-1, 9]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
+bb2={n0 -> [0, 0]; n1 -> [1, 1]; n9 -> [9, 9]; i -> [0, 9]; A -> [0, 0] | [123456, 123456]; A_p -> [0, 0]}
 Abstract trace: entry (bb1 bb1_t bb2)^{5} bb1_f ret
 
 Invariants using ArraySmashing(SplitDBM)
-ret={n0 -> [0, 0], n1 -> [1, 1], n9 -> [9, 9], i -> [-1, -1], A -> [0, 123456], A_p -> [0, 0], i-n9<=0, n9-i<=10, A_p-A<=0, A-A_p<=123456}
-bb2={n0 -> [0, 0], n1 -> [1, 1], n9 -> [9, 9], i -> [0, 9], A -> [0, 123456], A_p -> [0, 0], i-n9<=0, n9-i<=10, A_p-A<=0, A-A_p<=123456}
-bb1_t={n0 -> [0, 0], n1 -> [1, 1], n9 -> [9, 9], i -> [-1, 9], A -> [0, 123456], A_p -> [0, 0], i-n9<=0, n9-i<=10, A_p-A<=0, A-A_p<=123456}
+entry={}
 bb1={n0 -> [0, 0], n1 -> [1, 1], n9 -> [9, 9], i -> [-1, 9], A -> [0, 123456], A_p -> [0, 0], i-n9<=0, n9-i<=10, A_p-A<=0, A-A_p<=123456}
 bb1_f={n0 -> [0, 0], n1 -> [1, 1], n9 -> [9, 9], i -> [-1, 9], A -> [0, 123456], A_p -> [0, 0], i-n9<=0, n9-i<=10, A_p-A<=0, A-A_p<=123456}
-entry={}
+ret={n0 -> [0, 0], n1 -> [1, 1], n9 -> [9, 9], i -> [-1, -1], A -> [0, 123456], A_p -> [0, 0], i-n9<=0, n9-i<=10, A_p-A<=0, A-A_p<=123456}
+bb1_t={n0 -> [0, 0], n1 -> [1, 1], n9 -> [9, 9], i -> [-1, 9], A -> [0, 123456], A_p -> [0, 0], i-n9<=0, n9-i<=10, A_p-A<=0, A-A_p<=123456}
+bb2={n0 -> [0, 0], n1 -> [1, 1], n9 -> [9, 9], i -> [0, 9], A -> [0, 123456], A_p -> [0, 0], i-n9<=0, n9-i<=10, A_p-A<=0, A-A_p<=123456}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 10: forall 0<= i < n. is_not_null(a[i]) &&  is_not_null(b[i]) 
 Invariants using ArraySmashing(Product(SplitDBM,Nullity))
-ret=({i -> [1, +oo], n -> [1, +oo], n-i<=0, i-n<=0}, {A -> NN; B -> NN; obj1 -> NN})
-bb2=({i -> [0, +oo], n -> [1, +oo], i-n<=-1}, {A -> NN; B -> NN; obj1 -> NN})
-bb1_t=({i -> [0, +oo], n -> [1, +oo], i-n<=0}, {A -> NN; B -> NN; obj1 -> NN})
+entry=({}, {})
 bb1=({i -> [0, +oo], n -> [1, +oo], i-n<=0}, {A -> NN; B -> NN; obj1 -> NN})
 bb1_f=({i -> [0, +oo], n -> [1, +oo], i-n<=0}, {A -> NN; B -> NN; obj1 -> NN})
-entry=({}, {})
+ret=({i -> [1, +oo], n -> [1, +oo], n-i<=0, i-n<=0}, {A -> NN; B -> NN; obj1 -> NN})
+bb1_t=({i -> [0, +oo], n -> [1, +oo], i-n<=0}, {A -> NN; B -> NN; obj1 -> NN})
+bb2=({i -> [0, +oo], n -> [1, +oo], i-n<=-1}, {A -> NN; B -> NN; obj1 -> NN})
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 11: forall 0<= i< 10. a[i] = true and b[i] = false
 Invariants using ArraySmashing(Product(Boolean,SparseDBM))
-ret=({A -> true; B -> false; TRUE -> true; FALSE -> false}, {n1 -> [1, 1], i -> [10, 10], i-n1<=9, n1-i<=-9})
-bb2=({A -> true; B -> false; TRUE -> true; FALSE -> false}, {n1 -> [1, 1], i -> [0, 9], i-n1<=8, n1-i<=1})
-bb1_t=({A -> true; B -> false; TRUE -> true; FALSE -> false}, {n1 -> [1, 1], i -> [0, 10], i-n1<=9, n1-i<=1})
+entry=({}, {})
 bb1=({A -> true; B -> false; TRUE -> true; FALSE -> false}, {n1 -> [1, 1], i -> [0, 10], i-n1<=9, n1-i<=1})
 bb1_f=({A -> true; B -> false; TRUE -> true; FALSE -> false}, {n1 -> [1, 1], i -> [0, 10], i-n1<=9, n1-i<=1})
-entry=({}, {})
+ret=({A -> true; B -> false; TRUE -> true; FALSE -> false}, {n1 -> [1, 1], i -> [10, 10], i-n1<=9, n1-i<=-9})
+bb1_t=({A -> true; B -> false; TRUE -> true; FALSE -> false}, {n1 -> [1, 1], i -> [0, 10], i-n1<=9, n1-i<=1})
+bb2=({A -> true; B -> false; TRUE -> true; FALSE -> false}, {n1 -> [1, 1], i -> [0, 9], i-n1<=8, n1-i<=1})
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 1: forall 0<= i< 10. a[i] = 123456Invariants using ArraySparseGraph(SplitDBM,Intervals)
-ret=({n1 -> [1, 1], i -> [10, 10], i-n1<=9, n1-i<=1},{[0,i)=>{A0 -> [123456, 123456]}, [0,2)=>{A0 -> [123456, 123456]}, [0,1)=>{A0 -> [123456, 123456]}, [0,n1)=>{A0 -> [123456, 123456]}, [1,i)=>{A0 -> [123456, 123456]}, [1,2)=>{A0 -> [123456, 123456]}, [2,i)=>{A0 -> [123456, 123456]}, [n1,i)=>{A0 -> [123456, 123456]}, [n1,2)=>{A0 -> [123456, 123456]}})
-bb2=({n1 -> [1, 1], i -> [0, 9], i-n1<=9, n1-i<=1},{[0,i)=>{A0 -> [123456, 123456]}, [1,i)=>{A0 -> [123456, 123456]}, [2,i)=>{A0 -> [123456, 123456]}, [n1,i)=>{A0 -> [123456, 123456]}})
-bb1_t=({n1 -> [1, 1], i -> [0, 10], i-n1<=9, n1-i<=1},{[0,i)=>{A0 -> [123456, 123456]}, [1,i)=>{A0 -> [123456, 123456]}, [2,i)=>{A0 -> [123456, 123456]}, [n1,i)=>{A0 -> [123456, 123456]}})
+entry=({},{})
 bb1=({n1 -> [1, 1], i -> [0, 10], i-n1<=9, n1-i<=1},{[0,i)=>{A0 -> [123456, 123456]}, [1,i)=>{A0 -> [123456, 123456]}, [2,i)=>{A0 -> [123456, 123456]}, [n1,i)=>{A0 -> [123456, 123456]}})
 bb1_f=({n1 -> [1, 1], i -> [0, 10], i-n1<=9, n1-i<=1},{[0,i)=>{A0 -> [123456, 123456]}, [1,i)=>{A0 -> [123456, 123456]}, [2,i)=>{A0 -> [123456, 123456]}, [n1,i)=>{A0 -> [123456, 123456]}})
-entry=({},{})
+ret=({n1 -> [1, 1], i -> [10, 10], i-n1<=9, n1-i<=1},{[0,i)=>{A0 -> [123456, 123456]}, [0,2)=>{A0 -> [123456, 123456]}, [0,1)=>{A0 -> [123456, 123456]}, [0,n1)=>{A0 -> [123456, 123456]}, [1,i)=>{A0 -> [123456, 123456]}, [1,2)=>{A0 -> [123456, 123456]}, [2,i)=>{A0 -> [123456, 123456]}, [n1,i)=>{A0 -> [123456, 123456]}, [n1,2)=>{A0 -> [123456, 123456]}})
+bb1_t=({n1 -> [1, 1], i -> [0, 10], i-n1<=9, n1-i<=1},{[0,i)=>{A0 -> [123456, 123456]}, [1,i)=>{A0 -> [123456, 123456]}, [2,i)=>{A0 -> [123456, 123456]}, [n1,i)=>{A0 -> [123456, 123456]}})
+bb2=({n1 -> [1, 1], i -> [0, 9], i-n1<=9, n1-i<=1},{[0,i)=>{A0 -> [123456, 123456]}, [1,i)=>{A0 -> [123456, 123456]}, [2,i)=>{A0 -> [123456, 123456]}, [n1,i)=>{A0 -> [123456, 123456]}})
 Abstract trace: entry (bb1 bb1_t bb2)^{4} bb1_f ret
 
 Program 2: forall 0<= i< 10. a[i] = b[i] = x and x = 123456Invariants using ArraySparseGraph(SplitDBM,Intervals)
-ret=({n1 -> [1, 1], i -> [10, 10], i-n1<=9, n1-i<=1},{[0,i)=>{A -> [123456, 123456]; B -> [123456, 123456]}, [0,2)=>{A -> [123456, 123456]; B -> [123456, 123456]}, [0,1)=>{A -> [123456, 123456]; B -> [123456, 123456]}, [0,n1)=>{A -> [123456, 123456]; B -> [123456, 123456]}, [1,i)=>{A -> [123456, 123456]; B -> [123456, 123456]}, [1,2)=>{A -> [123456, 123456]; B -> [123456, 123456]}, [2,i)=>{A -> [123456, 123456]; B -> [123456, 123456]}, [n1,i)=>{A -> [123456, 123456]; B -> [123456, 123456]}, [n1,2)=>{A -> [123456, 123456]; B -> [123456, 123456]}})
-bb2=({n1 -> [1, 1], i -> [0, 9], i-n1<=9, n1-i<=1},{[0,i)=>{A -> [123456, 123456]; B -> [123456, 123456]}, [1,i)=>{A -> [123456, 123456]; B -> [123456, 123456]}, [2,i)=>{A -> [123456, 123456]; B -> [123456, 123456]}, [n1,i)=>{A -> [123456, 123456]; B -> [123456, 123456]}})
-bb1_t=({n1 -> [1, 1], i -> [0, 10], i-n1<=9, n1-i<=1},{[0,i)=>{A -> [123456, 123456]; B -> [123456, 123456]}, [1,i)=>{A -> [123456, 123456]; B -> [123456, 123456]}, [2,i)=>{A -> [123456, 123456]; B -> [123456, 123456]}, [n1,i)=>{A -> [123456, 123456]; B -> [123456, 123456]}})
+entry=({},{})
 bb1=({n1 -> [1, 1], i -> [0, 10], i-n1<=9, n1-i<=1},{[0,i)=>{A -> [123456, 123456]; B -> [123456, 123456]}, [1,i)=>{A -> [123456, 123456]; B -> [123456, 123456]}, [2,i)=>{A -> [123456, 123456]; B -> [123456, 123456]}, [n1,i)=>{A -> [123456, 123456]; B -> [123456, 123456]}})
 bb1_f=({n1 -> [1, 1], i -> [0, 10], i-n1<=9, n1-i<=1},{[0,i)=>{A -> [123456, 123456]; B -> [123456, 123456]}, [1,i)=>{A -> [123456, 123456]; B -> [123456, 123456]}, [2,i)=>{A -> [123456, 123456]; B -> [123456, 123456]}, [n1,i)=>{A -> [123456, 123456]; B -> [123456, 123456]}})
-entry=({},{})
+ret=({n1 -> [1, 1], i -> [10, 10], i-n1<=9, n1-i<=1},{[0,i)=>{A -> [123456, 123456]; B -> [123456, 123456]}, [0,2)=>{A -> [123456, 123456]; B -> [123456, 123456]}, [0,1)=>{A -> [123456, 123456]; B -> [123456, 123456]}, [0,n1)=>{A -> [123456, 123456]; B -> [123456, 123456]}, [1,i)=>{A -> [123456, 123456]; B -> [123456, 123456]}, [1,2)=>{A -> [123456, 123456]; B -> [123456, 123456]}, [2,i)=>{A -> [123456, 123456]; B -> [123456, 123456]}, [n1,i)=>{A -> [123456, 123456]; B -> [123456, 123456]}, [n1,2)=>{A -> [123456, 123456]; B -> [123456, 123456]}})
+bb1_t=({n1 -> [1, 1], i -> [0, 10], i-n1<=9, n1-i<=1},{[0,i)=>{A -> [123456, 123456]; B -> [123456, 123456]}, [1,i)=>{A -> [123456, 123456]; B -> [123456, 123456]}, [2,i)=>{A -> [123456, 123456]; B -> [123456, 123456]}, [n1,i)=>{A -> [123456, 123456]; B -> [123456, 123456]}})
+bb2=({n1 -> [1, 1], i -> [0, 9], i-n1<=9, n1-i<=1},{[0,i)=>{A -> [123456, 123456]; B -> [123456, 123456]}, [1,i)=>{A -> [123456, 123456]; B -> [123456, 123456]}, [2,i)=>{A -> [123456, 123456]; B -> [123456, 123456]}, [n1,i)=>{A -> [123456, 123456]; B -> [123456, 123456]}})
 Abstract trace: entry (bb1 bb1_t bb2)^{4} bb1_f ret
 
 Program 3: forall 0<= i< 10. a[i] = 8 and b[i] = 5Invariants using ArraySparseGraph(SplitDBM,Intervals)
-ret=({n1 -> [1, 1], i -> [10, 10], i-n1<=9, n1-i<=1},{[0,i)=>{A -> [8, 8]; B -> [5, 5]}, [0,2)=>{A -> [8, 8]; B -> [5, 5]}, [0,1)=>{A -> [8, 8]; B -> [5, 5]}, [0,n1)=>{A -> [8, 8]; B -> [5, 5]}, [1,i)=>{A -> [8, 8]; B -> [5, 5]}, [1,2)=>{A -> [8, 8]; B -> [5, 5]}, [2,i)=>{A -> [8, 8]; B -> [5, 5]}, [n1,i)=>{A -> [8, 8]; B -> [5, 5]}, [n1,2)=>{A -> [8, 8]; B -> [5, 5]}})
-bb2=({n1 -> [1, 1], i -> [0, 9], i-n1<=9, n1-i<=1},{[0,i)=>{A -> [8, 8]; B -> [5, 5]}, [1,i)=>{A -> [8, 8]; B -> [5, 5]}, [2,i)=>{A -> [8, 8]; B -> [5, 5]}, [n1,i)=>{A -> [8, 8]; B -> [5, 5]}})
-bb1_t=({n1 -> [1, 1], i -> [0, 10], i-n1<=9, n1-i<=1},{[0,i)=>{A -> [8, 8]; B -> [5, 5]}, [1,i)=>{A -> [8, 8]; B -> [5, 5]}, [2,i)=>{A -> [8, 8]; B -> [5, 5]}, [n1,i)=>{A -> [8, 8]; B -> [5, 5]}})
+entry=({},{})
 bb1=({n1 -> [1, 1], i -> [0, 10], i-n1<=9, n1-i<=1},{[0,i)=>{A -> [8, 8]; B -> [5, 5]}, [1,i)=>{A -> [8, 8]; B -> [5, 5]}, [2,i)=>{A -> [8, 8]; B -> [5, 5]}, [n1,i)=>{A -> [8, 8]; B -> [5, 5]}})
 bb1_f=({n1 -> [1, 1], i -> [0, 10], i-n1<=9, n1-i<=1},{[0,i)=>{A -> [8, 8]; B -> [5, 5]}, [1,i)=>{A -> [8, 8]; B -> [5, 5]}, [2,i)=>{A -> [8, 8]; B -> [5, 5]}, [n1,i)=>{A -> [8, 8]; B -> [5, 5]}})
-entry=({},{})
+ret=({n1 -> [1, 1], i -> [10, 10], i-n1<=9, n1-i<=1},{[0,i)=>{A -> [8, 8]; B -> [5, 5]}, [0,2)=>{A -> [8, 8]; B -> [5, 5]}, [0,1)=>{A -> [8, 8]; B -> [5, 5]}, [0,n1)=>{A -> [8, 8]; B -> [5, 5]}, [1,i)=>{A -> [8, 8]; B -> [5, 5]}, [1,2)=>{A -> [8, 8]; B -> [5, 5]}, [2,i)=>{A -> [8, 8]; B -> [5, 5]}, [n1,i)=>{A -> [8, 8]; B -> [5, 5]}, [n1,2)=>{A -> [8, 8]; B -> [5, 5]}})
+bb1_t=({n1 -> [1, 1], i -> [0, 10], i-n1<=9, n1-i<=1},{[0,i)=>{A -> [8, 8]; B -> [5, 5]}, [1,i)=>{A -> [8, 8]; B -> [5, 5]}, [2,i)=>{A -> [8, 8]; B -> [5, 5]}, [n1,i)=>{A -> [8, 8]; B -> [5, 5]}})
+bb2=({n1 -> [1, 1], i -> [0, 9], i-n1<=9, n1-i<=1},{[0,i)=>{A -> [8, 8]; B -> [5, 5]}, [1,i)=>{A -> [8, 8]; B -> [5, 5]}, [2,i)=>{A -> [8, 8]; B -> [5, 5]}, [n1,i)=>{A -> [8, 8]; B -> [5, 5]}})
 Abstract trace: entry (bb1 bb1_t bb2)^{4} bb1_f ret
 
 Program 4: forall 0<= i < n. a[i] = 123456 (unbounded loop)Invariants using ArraySparseGraph(SplitDBM,Intervals)
-ret=({n1 -> [1, 1], i -> [1, +oo], n -> [1, +oo], n-i<=0, n1-i<=0, i-n<=0, n1-n<=0},{[0,i)=>{A -> [123456, 123456]}, [0,1)=>{A -> [123456, 123456]}, [0,n1)=>{A -> [123456, 123456]}, [0,n)=>{A -> [123456, 123456]}, [1,i)=>{A -> [123456, 123456]}, [1,n)=>{A -> [123456, 123456]}, [2,n)=>{A -> [123456, 123456]}, [2,i)=>{A -> [123456, 123456]}, [n1,i)=>{A -> [123456, 123456]}, [n1,n)=>{A -> [123456, 123456]}})
-bb2=({n1 -> [1, 1], i -> [0, +oo], n -> [1, +oo], n1-i<=1, i-n<=-1, n1-n<=0},{[0,i)=>{A -> [123456, 123456]}, [1,i)=>{A -> [123456, 123456]}, [2,i)=>{A -> [123456, 123456]}, [n1,i)=>{A -> [123456, 123456]}})
-bb1_t=({n1 -> [1, 1], i -> [0, +oo], n -> [1, +oo], n1-i<=1, i-n<=0, n1-n<=0},{[0,i)=>{A -> [123456, 123456]}, [1,i)=>{A -> [123456, 123456]}, [2,i)=>{A -> [123456, 123456]}, [n1,i)=>{A -> [123456, 123456]}})
+entry=({},{})
 bb1=({n1 -> [1, 1], i -> [0, +oo], n -> [1, +oo], n1-i<=1, i-n<=0, n1-n<=0},{[0,i)=>{A -> [123456, 123456]}, [1,i)=>{A -> [123456, 123456]}, [2,i)=>{A -> [123456, 123456]}, [n1,i)=>{A -> [123456, 123456]}})
 bb1_f=({n1 -> [1, 1], i -> [0, +oo], n -> [1, +oo], n1-i<=1, i-n<=0, n1-n<=0},{[0,i)=>{A -> [123456, 123456]}, [1,i)=>{A -> [123456, 123456]}, [2,i)=>{A -> [123456, 123456]}, [n1,i)=>{A -> [123456, 123456]}})
-entry=({},{})
+ret=({n1 -> [1, 1], i -> [1, +oo], n -> [1, +oo], n-i<=0, n1-i<=0, i-n<=0, n1-n<=0},{[0,i)=>{A -> [123456, 123456]}, [0,1)=>{A -> [123456, 123456]}, [0,n1)=>{A -> [123456, 123456]}, [0,n)=>{A -> [123456, 123456]}, [1,i)=>{A -> [123456, 123456]}, [1,n)=>{A -> [123456, 123456]}, [2,n)=>{A -> [123456, 123456]}, [2,i)=>{A -> [123456, 123456]}, [n1,i)=>{A -> [123456, 123456]}, [n1,n)=>{A -> [123456, 123456]}})
+bb1_t=({n1 -> [1, 1], i -> [0, +oo], n -> [1, +oo], n1-i<=1, i-n<=0, n1-n<=0},{[0,i)=>{A -> [123456, 123456]}, [1,i)=>{A -> [123456, 123456]}, [2,i)=>{A -> [123456, 123456]}, [n1,i)=>{A -> [123456, 123456]}})
+bb2=({n1 -> [1, 1], i -> [0, +oo], n -> [1, +oo], n1-i<=1, i-n<=-1, n1-n<=0},{[0,i)=>{A -> [123456, 123456]}, [1,i)=>{A -> [123456, 123456]}, [2,i)=>{A -> [123456, 123456]}, [n1,i)=>{A -> [123456, 123456]}})
 Abstract trace: entry (bb1 bb1_t bb2)^{4} bb1_f ret
 
 Program 5: for all 0<= i< 10. a[i] = 123456 (assume elem size of 4 bytes)Invariants using ArraySparseGraph(SplitDBM,Intervals)
-ret=({i -> [10, 10]},{[0,i)=>{A -> [123456, 123456]}, [0,8)=>{A -> [123456, 123456]}, [0,1)=>{A -> [123456, 123456]}, [0,9)=>{A -> [123456, 123456]}, [1,i)=>{A -> [123456, 123456]}, [1,8)=>{A -> [123456, 123456]}, [1,9)=>{A -> [123456, 123456]}, [8,i)=>{A -> [123456, 123456]}, [8,9)=>{A -> [123456, 123456]}, [9,i)=>{A -> [123456, 123456]}})
-bb2=({i -> [0, 9]},{[0,i)=>{A -> [123456, 123456]}, [1,i)=>{A -> [123456, 123456]}, [8,i)=>{A -> [123456, 123456]}})
-bb1_t=({i -> [0, 10]},{[0,i)=>{A -> [123456, 123456]}, [1,i)=>{A -> [123456, 123456]}, [8,i)=>{A -> [123456, 123456]}, [9,i)=>{A -> [123456, 123456]}})
+entry=({},{})
 bb1=({i -> [0, 10]},{[0,i)=>{A -> [123456, 123456]}, [1,i)=>{A -> [123456, 123456]}, [8,i)=>{A -> [123456, 123456]}, [9,i)=>{A -> [123456, 123456]}})
 bb1_f=({i -> [0, 10]},{[0,i)=>{A -> [123456, 123456]}, [1,i)=>{A -> [123456, 123456]}, [8,i)=>{A -> [123456, 123456]}, [9,i)=>{A -> [123456, 123456]}})
-entry=({},{})
+ret=({i -> [10, 10]},{[0,i)=>{A -> [123456, 123456]}, [0,8)=>{A -> [123456, 123456]}, [0,1)=>{A -> [123456, 123456]}, [0,9)=>{A -> [123456, 123456]}, [1,i)=>{A -> [123456, 123456]}, [1,8)=>{A -> [123456, 123456]}, [1,9)=>{A -> [123456, 123456]}, [8,i)=>{A -> [123456, 123456]}, [8,9)=>{A -> [123456, 123456]}, [9,i)=>{A -> [123456, 123456]}})
+bb1_t=({i -> [0, 10]},{[0,i)=>{A -> [123456, 123456]}, [1,i)=>{A -> [123456, 123456]}, [8,i)=>{A -> [123456, 123456]}, [9,i)=>{A -> [123456, 123456]}})
+bb2=({i -> [0, 9]},{[0,i)=>{A -> [123456, 123456]}, [1,i)=>{A -> [123456, 123456]}, [8,i)=>{A -> [123456, 123456]}})
 Abstract trace: entry (bb1 bb1_t bb2)^{5} bb1_f ret
 
 Program 6: a[0] = 89 and for all 1<= i < n. a[i] = a[i-1]Invariants using ArraySparseGraph(SplitDBM,Intervals)
-ret=({n1 -> [1, 1], i -> [2, +oo], n -> [2, +oo], val -> [89, 89], n-i<=0, n1-i<=-1, i-n<=0, n1-n<=-1},{[0,n1)=>{A -> [89, 89]}, [0,1)=>{A -> [89, 89]}, [0,i)=>{A -> [89, 89]}, [0,2)=>{A -> [89, 89]}, [0,n)=>{A -> [89, 89]}, [1,i)=>{A -> [89, 89]}, [1,2)=>{A -> [89, 89]}, [1,n)=>{A -> [89, 89]}, [2,n)=>{A -> [89, 89]}, [2,i)=>{A -> [89, 89]}, [n1,i)=>{A -> [89, 89]}, [n1,2)=>{A -> [89, 89]}, [n1,n)=>{A -> [89, 89]}})
-bb2=({n1 -> [1, 1], i -> [1, +oo], n -> [2, +oo], val -> [89, 89], n1-i<=0, i-n<=-1, n1-n<=-1},{[0,n1)=>{A -> [89, 89]}, [0,1)=>{A -> [89, 89]}, [0,i)=>{A -> [89, 89]}, [1,i)=>{A -> [89, 89]}, [2,i)=>{A -> [89, 89]}, [n1,i)=>{A -> [89, 89]}})
-bb1_t=({n1 -> [1, 1], i -> [1, +oo], n -> [2, +oo], val -> [89, 89], n1-i<=0, i-n<=0, n1-n<=-1},{[0,n1)=>{A -> [89, 89]}, [0,1)=>{A -> [89, 89]}, [0,i)=>{A -> [89, 89]}, [1,i)=>{A -> [89, 89]}, [2,i)=>{A -> [89, 89]}, [n1,i)=>{A -> [89, 89]}})
+entry=({},{})
 bb1=({n1 -> [1, 1], i -> [1, +oo], n -> [2, +oo], val -> [89, 89], n1-i<=0, i-n<=0, n1-n<=-1},{[0,n1)=>{A -> [89, 89]}, [0,1)=>{A -> [89, 89]}, [0,i)=>{A -> [89, 89]}, [1,i)=>{A -> [89, 89]}, [2,i)=>{A -> [89, 89]}, [n1,i)=>{A -> [89, 89]}})
 bb1_f=({n1 -> [1, 1], i -> [1, +oo], n -> [2, +oo], val -> [89, 89], n1-i<=0, i-n<=0, n1-n<=-1},{[0,n1)=>{A -> [89, 89]}, [0,1)=>{A -> [89, 89]}, [0,i)=>{A -> [89, 89]}, [1,i)=>{A -> [89, 89]}, [2,i)=>{A -> [89, 89]}, [n1,i)=>{A -> [89, 89]}})
-entry=({},{})
+ret=({n1 -> [1, 1], i -> [2, +oo], n -> [2, +oo], val -> [89, 89], n-i<=0, n1-i<=-1, i-n<=0, n1-n<=-1},{[0,n1)=>{A -> [89, 89]}, [0,1)=>{A -> [89, 89]}, [0,i)=>{A -> [89, 89]}, [0,2)=>{A -> [89, 89]}, [0,n)=>{A -> [89, 89]}, [1,i)=>{A -> [89, 89]}, [1,2)=>{A -> [89, 89]}, [1,n)=>{A -> [89, 89]}, [2,n)=>{A -> [89, 89]}, [2,i)=>{A -> [89, 89]}, [n1,i)=>{A -> [89, 89]}, [n1,2)=>{A -> [89, 89]}, [n1,n)=>{A -> [89, 89]}})
+bb1_t=({n1 -> [1, 1], i -> [1, +oo], n -> [2, +oo], val -> [89, 89], n1-i<=0, i-n<=0, n1-n<=-1},{[0,n1)=>{A -> [89, 89]}, [0,1)=>{A -> [89, 89]}, [0,i)=>{A -> [89, 89]}, [1,i)=>{A -> [89, 89]}, [2,i)=>{A -> [89, 89]}, [n1,i)=>{A -> [89, 89]}})
+bb2=({n1 -> [1, 1], i -> [1, +oo], n -> [2, +oo], val -> [89, 89], n1-i<=0, i-n<=-1, n1-n<=-1},{[0,n1)=>{A -> [89, 89]}, [0,1)=>{A -> [89, 89]}, [0,i)=>{A -> [89, 89]}, [1,i)=>{A -> [89, 89]}, [2,i)=>{A -> [89, 89]}, [n1,i)=>{A -> [89, 89]}})
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Program 7: forall 0<= i< 10 and i % 2 = 0. a[i] = 123456Invariants using ArraySparseGraph(SplitDBM,Intervals)
-ret=({n1 -> [1, 1], n2 -> [2, 2], i -> [10, 11], n -> [1, +oo], i-n2<=9, n2-i<=2},{})
-bb2=({n1 -> [1, 1], n2 -> [2, 2], i -> [0, 9], n -> [1, +oo], i-n2<=9, n2-i<=2},{})
-bb1_t=({n1 -> [1, 1], n2 -> [2, 2], i -> [0, 11], n -> [1, +oo], i-n2<=9, n2-i<=2},{})
+entry=({},{})
 bb1=({n1 -> [1, 1], n2 -> [2, 2], i -> [0, 11], n -> [1, +oo], i-n2<=9, n2-i<=2},{})
 bb1_f=({n1 -> [1, 1], n2 -> [2, 2], i -> [0, 11], n -> [1, +oo], i-n2<=9, n2-i<=2},{})
-entry=({},{})
+ret=({n1 -> [1, 1], n2 -> [2, 2], i -> [10, 11], n -> [1, +oo], i-n2<=9, n2-i<=2},{})
+bb1_t=({n1 -> [1, 1], n2 -> [2, 2], i -> [0, 11], n -> [1, +oo], i-n2<=9, n2-i<=2},{})
+bb2=({n1 -> [1, 1], n2 -> [2, 2], i -> [0, 9], n -> [1, +oo], i-n2<=9, n2-i<=2},{})
 Abstract trace: entry (bb1 bb1_t bb2)^{4} bb1_f ret
 
 Program 8: forall 0<= i < n. 1 <= a[i] <= 2Invariants using ArraySparseGraph(SplitDBM,Intervals)
+entry=({},{})
+bb1=({i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], i1-n<=0, i2-n<=0},{[0,i1)=>{A -> [-oo, 2]}, [0,i2)=>{A -> [1, +oo]}, [1,i1)=>{A -> [-oo, 2]}, [1,i2)=>{A -> [1, +oo]}, [i1,i2)=>{A -> [2, 2]}, [i2,i1)=>{A -> [1, 1]}})
+bb1_f2=({i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], i1-n<=0, i2-n<=0},{[0,i1)=>{A -> [-oo, 2]}, [0,i2)=>{A -> [1, +oo]}, [1,i1)=>{A -> [-oo, 2]}, [1,i2)=>{A -> [1, +oo]}, [i1,i2)=>{A -> [2, 2]}, [i2,i1)=>{A -> [1, 1]}})
+bb1_f=({i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], i1-n<=0, i2-n<=0},{[0,i1)=>{A -> [-oo, 2]}, [0,i2)=>{A -> [1, +oo]}, [1,i1)=>{A -> [-oo, 2]}, [1,i2)=>{A -> [1, +oo]}, [i1,i2)=>{A -> [2, 2]}, [i1,1)=>{A -> [2, 2]}, [i1,n)=>{A -> [2, 2]}, [i2,i1)=>{A -> [1, 1]}, [i2,1)=>{A -> [1, 1]}, [i2,n)=>{A -> [1, 1]}})
 ret=({i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], i1-n<=0, i2-n<=0},{[0,i1)=>{A -> [-oo, 2]}, [0,i2)=>{A -> [1, +oo]}, [1,i1)=>{A -> [-oo, 2]}, [1,i2)=>{A -> [1, +oo]}, [i1,i2)=>{A -> [2, 2]}, [i1,1)=>{A -> [2, 2]}, [i1,n)=>{A -> [2, 2]}, [i2,i1)=>{A -> [1, 1]}, [i2,1)=>{A -> [1, 1]}, [i2,n)=>{A -> [1, 1]}})
-bb3=({i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], val -> [1, 2], val-i2<=1, i1-n<=0, i2-n<=0},{[0,i2)=>{A -> [1, +oo]}, [0,i1)=>{A -> [-oo, 2]}, [1,i1)=>{A -> [-oo, 2]}, [1,i2)=>{A -> [1, +oo]}, [i1,1)=>{A -> [2, 2]}, [i1,i2)=>{A -> [2, 2]}, [i2,1)=>{A -> [1, 1]}, [i2,i1)=>{A -> [1, 1]}})
-bb2a=({i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], i1-n<=-1, i2-n<=-1},{[0,i1)=>{A -> [-oo, 2]}, [0,i2)=>{A -> [1, +oo]}, [1,i1)=>{A -> [-oo, 2]}, [1,i2)=>{A -> [1, +oo]}, [i1,i2)=>{A -> [2, 2]}, [i2,i1)=>{A -> [1, 1]}})
-bb2b=({i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], i1-n<=-1, i2-n<=-1},{[0,i1)=>{A -> [-oo, 2]}, [0,i2)=>{A -> [1, +oo]}, [1,i1)=>{A -> [-oo, 2]}, [1,i2)=>{A -> [1, +oo]}, [i1,i2)=>{A -> [2, 2]}, [i2,i1)=>{A -> [1, 1]}})
-bb2=({i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], i1-n<=-1, i2-n<=-1},{[0,i1)=>{A -> [-oo, 2]}, [0,i2)=>{A -> [1, +oo]}, [1,i1)=>{A -> [-oo, 2]}, [1,i2)=>{A -> [1, +oo]}, [i1,i2)=>{A -> [2, 2]}, [i2,i1)=>{A -> [1, 1]}})
 bb1_f1=({i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], i1-n<=0, i2-n<=0},{[0,i1)=>{A -> [-oo, 2]}, [0,i2)=>{A -> [1, +oo]}, [1,i1)=>{A -> [-oo, 2]}, [1,i2)=>{A -> [1, +oo]}, [i1,i2)=>{A -> [2, 2]}, [i2,i1)=>{A -> [1, 1]}})
 bb1_t=({i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], i1-n<=0, i2-n<=0},{[0,i1)=>{A -> [-oo, 2]}, [0,i2)=>{A -> [1, +oo]}, [1,i1)=>{A -> [-oo, 2]}, [1,i2)=>{A -> [1, +oo]}, [i1,i2)=>{A -> [2, 2]}, [i2,i1)=>{A -> [1, 1]}})
-bb1=({i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], i1-n<=0, i2-n<=0},{[0,i1)=>{A -> [-oo, 2]}, [0,i2)=>{A -> [1, +oo]}, [1,i1)=>{A -> [-oo, 2]}, [1,i2)=>{A -> [1, +oo]}, [i1,i2)=>{A -> [2, 2]}, [i2,i1)=>{A -> [1, 1]}})
-bb1_f=({i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], i1-n<=0, i2-n<=0},{[0,i1)=>{A -> [-oo, 2]}, [0,i2)=>{A -> [1, +oo]}, [1,i1)=>{A -> [-oo, 2]}, [1,i2)=>{A -> [1, +oo]}, [i1,i2)=>{A -> [2, 2]}, [i1,1)=>{A -> [2, 2]}, [i1,n)=>{A -> [2, 2]}, [i2,i1)=>{A -> [1, 1]}, [i2,1)=>{A -> [1, 1]}, [i2,n)=>{A -> [1, 1]}})
-bb1_f2=({i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], i1-n<=0, i2-n<=0},{[0,i1)=>{A -> [-oo, 2]}, [0,i2)=>{A -> [1, +oo]}, [1,i1)=>{A -> [-oo, 2]}, [1,i2)=>{A -> [1, +oo]}, [i1,i2)=>{A -> [2, 2]}, [i2,i1)=>{A -> [1, 1]}})
-entry=({},{})
+bb2=({i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], i1-n<=-1, i2-n<=-1},{[0,i1)=>{A -> [-oo, 2]}, [0,i2)=>{A -> [1, +oo]}, [1,i1)=>{A -> [-oo, 2]}, [1,i2)=>{A -> [1, +oo]}, [i1,i2)=>{A -> [2, 2]}, [i2,i1)=>{A -> [1, 1]}})
+bb2b=({i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], i1-n<=-1, i2-n<=-1},{[0,i1)=>{A -> [-oo, 2]}, [0,i2)=>{A -> [1, +oo]}, [1,i1)=>{A -> [-oo, 2]}, [1,i2)=>{A -> [1, +oo]}, [i1,i2)=>{A -> [2, 2]}, [i2,i1)=>{A -> [1, 1]}})
+bb3=({i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], val -> [1, 2], val-i2<=1, i1-n<=0, i2-n<=0},{[0,i2)=>{A -> [1, +oo]}, [0,i1)=>{A -> [-oo, 2]}, [1,i1)=>{A -> [-oo, 2]}, [1,i2)=>{A -> [1, +oo]}, [i1,1)=>{A -> [2, 2]}, [i1,i2)=>{A -> [2, 2]}, [i2,1)=>{A -> [1, 1]}, [i2,i1)=>{A -> [1, 1]}})
+bb2a=({i1 -> [0, +oo], i2 -> [0, +oo], n -> [1, +oo], i1-n<=-1, i2-n<=-1},{[0,i1)=>{A -> [-oo, 2]}, [0,i2)=>{A -> [1, +oo]}, [1,i1)=>{A -> [-oo, 2]}, [1,i2)=>{A -> [1, +oo]}, [i1,i2)=>{A -> [2, 2]}, [i2,i1)=>{A -> [1, 1]}})
 Abstract trace: entry (bb1 bb1_t bb2 bb2b bb2a bb3)^{4} bb1_f2 bb1_f1 bb1_f ret
 
 Program 9: forall 0<= i < n. a[i] == 123456 (decrementing loop)Invariants using ArraySparseGraph(SplitDBM,Intervals)
-ret=({i -> [-1, -1]},{[0,10)=>{A -> [123456, 123456]}, [0,5)=>{A -> [123456, 123456]}, [0,6)=>{A -> [123456, 123456]}, [0,9)=>{A -> [123456, 123456]}, [5,10)=>{A -> [123456, 123456]}, [5,6)=>{A -> [123456, 123456]}, [5,9)=>{A -> [123456, 123456]}, [6,10)=>{A -> [123456, 123456]}, [6,9)=>{A -> [123456, 123456]}, [9,10)=>{A -> [123456, 123456]}})
-bb2=({i -> [0, 9]},{})
-bb1_t=({i -> [-1, 9]},{})
+entry=({},{})
 bb1=({i -> [-1, 9]},{})
 bb1_f=({i -> [-1, 9]},{})
-entry=({},{})
+ret=({i -> [-1, -1]},{[0,10)=>{A -> [123456, 123456]}, [0,5)=>{A -> [123456, 123456]}, [0,6)=>{A -> [123456, 123456]}, [0,9)=>{A -> [123456, 123456]}, [5,10)=>{A -> [123456, 123456]}, [5,6)=>{A -> [123456, 123456]}, [5,9)=>{A -> [123456, 123456]}, [6,10)=>{A -> [123456, 123456]}, [6,9)=>{A -> [123456, 123456]}, [9,10)=>{A -> [123456, 123456]}})
+bb1_t=({i -> [-1, 9]},{})
+bb2=({i -> [0, 9]},{})
 Abstract trace: entry (bb1 bb1_t bb2)^{5} bb1_f ret
 
 Program 10: forall 0<= i < n. a[i] == 123456 (decrementing loop w/ temp vars)Invariants using ArraySparseGraph(SplitDBM,Intervals)
-ret=({i -> [-1, -1]},{[0,10)=>{A -> [123456, 123456]}, [0,5)=>{A -> [123456, 123456]}, [0,6)=>{A -> [123456, 123456]}, [0,9)=>{A -> [123456, 123456]}, [5,10)=>{A -> [123456, 123456]}, [5,6)=>{A -> [123456, 123456]}, [5,9)=>{A -> [123456, 123456]}, [6,10)=>{A -> [123456, 123456]}, [6,9)=>{A -> [123456, 123456]}, [9,10)=>{A -> [123456, 123456]}})
-bb2=({i -> [0, 9]},{})
-bb1_t=({i -> [-1, 9]},{})
+entry=({},{})
 bb1=({i -> [-1, 9]},{})
 bb1_f=({i -> [-1, 9]},{})
-entry=({},{})
+ret=({i -> [-1, -1]},{[0,10)=>{A -> [123456, 123456]}, [0,5)=>{A -> [123456, 123456]}, [0,6)=>{A -> [123456, 123456]}, [0,9)=>{A -> [123456, 123456]}, [5,10)=>{A -> [123456, 123456]}, [5,6)=>{A -> [123456, 123456]}, [5,9)=>{A -> [123456, 123456]}, [6,10)=>{A -> [123456, 123456]}, [6,9)=>{A -> [123456, 123456]}, [9,10)=>{A -> [123456, 123456]}})
+bb1_t=({i -> [-1, 9]},{})
+bb2=({i -> [0, 9]},{})
 Abstract trace: entry (bb1 bb1_t bb2)^{5} bb1_f ret
 
 Program 11: forall 0<= i< 10. a[i] = 123456 (w/ temp vars)Invariants using ArraySparseGraph(SplitDBM,Intervals)
-ret=({n1 -> [1, 1], i -> [10, 10], i-n1<=9, n1-i<=1},{[0,i)=>{A0 -> [123456, 123456]}, [0,2)=>{A0 -> [123456, 123456]}, [0,1)=>{A0 -> [123456, 123456]}, [0,n1)=>{A0 -> [123456, 123456]}, [1,i)=>{A0 -> [123456, 123456]}, [1,2)=>{A0 -> [123456, 123456]}, [2,i)=>{A0 -> [123456, 123456]}, [n1,i)=>{A0 -> [123456, 123456]}, [n1,2)=>{A0 -> [123456, 123456]}})
-bb2=({n1 -> [1, 1], i -> [0, 9], i-n1<=9, n1-i<=1},{[0,i)=>{A0 -> [123456, 123456]}, [1,i)=>{A0 -> [123456, 123456]}, [2,i)=>{A0 -> [123456, 123456]}, [n1,i)=>{A0 -> [123456, 123456]}})
-bb1_t=({n1 -> [1, 1], i -> [0, 10], i-n1<=9, n1-i<=1},{[0,i)=>{A0 -> [123456, 123456]}, [1,i)=>{A0 -> [123456, 123456]}, [2,i)=>{A0 -> [123456, 123456]}, [n1,i)=>{A0 -> [123456, 123456]}})
+entry=({},{})
 bb1=({n1 -> [1, 1], i -> [0, 10], i-n1<=9, n1-i<=1},{[0,i)=>{A0 -> [123456, 123456]}, [1,i)=>{A0 -> [123456, 123456]}, [2,i)=>{A0 -> [123456, 123456]}, [n1,i)=>{A0 -> [123456, 123456]}})
 bb1_f=({n1 -> [1, 1], i -> [0, 10], i-n1<=9, n1-i<=1},{[0,i)=>{A0 -> [123456, 123456]}, [1,i)=>{A0 -> [123456, 123456]}, [2,i)=>{A0 -> [123456, 123456]}, [n1,i)=>{A0 -> [123456, 123456]}})
-entry=({},{})
+ret=({n1 -> [1, 1], i -> [10, 10], i-n1<=9, n1-i<=1},{[0,i)=>{A0 -> [123456, 123456]}, [0,2)=>{A0 -> [123456, 123456]}, [0,1)=>{A0 -> [123456, 123456]}, [0,n1)=>{A0 -> [123456, 123456]}, [1,i)=>{A0 -> [123456, 123456]}, [1,2)=>{A0 -> [123456, 123456]}, [2,i)=>{A0 -> [123456, 123456]}, [n1,i)=>{A0 -> [123456, 123456]}, [n1,2)=>{A0 -> [123456, 123456]}})
+bb1_t=({n1 -> [1, 1], i -> [0, 10], i-n1<=9, n1-i<=1},{[0,i)=>{A0 -> [123456, 123456]}, [1,i)=>{A0 -> [123456, 123456]}, [2,i)=>{A0 -> [123456, 123456]}, [n1,i)=>{A0 -> [123456, 123456]}})
+bb2=({n1 -> [1, 1], i -> [0, 9], i-n1<=9, n1-i<=1},{[0,i)=>{A0 -> [123456, 123456]}, [1,i)=>{A0 -> [123456, 123456]}, [2,i)=>{A0 -> [123456, 123456]}, [n1,i)=>{A0 -> [123456, 123456]}})
 Abstract trace: entry (bb1 bb1_t bb2)^{4} bb1_f ret
 
 Program 12: forall 0<= i < n. is_not_null(a[i]) &&  is_not_null(b[i]) 
 Invariants using ArraySparseGraph(Product(SplitDBM,Nullity),Nullity)
-ret=(({i -> [1, +oo], n -> [1, +oo], max -> [0, +oo], max-i<=-1, n-i<=0, max-n<=-1, i-n<=0, n-max<=1, i-max<=1}, {obj1 -> NN}),{[0,max)=>{A -> NN}, [1,max)=>{A -> NN}})
-bb2=(({i -> [0, +oo], n -> [1, +oo], max -> [0, +oo], max-n<=-1, i-n<=-1, n-max<=1, i-max<=0}, {obj1 -> NN}),{[0,max)=>{A -> NN}, [0,i)=>{A -> NN}, [1,max)=>{A -> NN}, [1,i)=>{A -> NN}, [i,max)=>{A -> NN}})
-bb1_t=(({i -> [0, +oo], n -> [1, +oo], max -> [0, +oo], max-n<=-1, i-n<=0, n-max<=1, i-max<=1}, {obj1 -> NN}),{[0,max)=>{A -> NN}, [1,max)=>{A -> NN}, [i,max)=>{A -> NN}})
+entry=(({}, {}),{})
 bb1=(({i -> [0, +oo], n -> [1, +oo], max -> [0, +oo], max-n<=-1, i-n<=0, n-max<=1, i-max<=1}, {obj1 -> NN}),{[0,max)=>{A -> NN}, [1,max)=>{A -> NN}, [i,max)=>{A -> NN}})
 bb1_f=(({i -> [0, +oo], n -> [1, +oo], max -> [0, +oo], max-n<=-1, i-n<=0, n-max<=1, i-max<=1}, {obj1 -> NN}),{[0,max)=>{A -> NN}, [1,max)=>{A -> NN}, [i,max)=>{A -> NN}})
-entry=(({}, {}),{})
+ret=(({i -> [1, +oo], n -> [1, +oo], max -> [0, +oo], max-i<=-1, n-i<=0, max-n<=-1, i-n<=0, n-max<=1, i-max<=1}, {obj1 -> NN}),{[0,max)=>{A -> NN}, [1,max)=>{A -> NN}})
+bb1_t=(({i -> [0, +oo], n -> [1, +oo], max -> [0, +oo], max-n<=-1, i-n<=0, n-max<=1, i-max<=1}, {obj1 -> NN}),{[0,max)=>{A -> NN}, [1,max)=>{A -> NN}, [i,max)=>{A -> NN}})
+bb2=(({i -> [0, +oo], n -> [1, +oo], max -> [0, +oo], max-n<=-1, i-n<=-1, n-max<=1, i-max<=0}, {obj1 -> NN}),{[0,max)=>{A -> NN}, [0,i)=>{A -> NN}, [1,max)=>{A -> NN}, [1,i)=>{A -> NN}, [i,max)=>{A -> NN}})
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 entry:
@@ -1007,23 +1007,7 @@ ret:
 
 
 Invariants using Boxes
-ret={-k <= -15; -i <= -100; i <= 100}
-bb1_t={-k <= -15; -i <= -14; i <= 100} or 
-{-k <= -14; k <= 14; -i <= -14; i <= 14} or 
-{-k <= -13; k <= 13; -i <= -13; i <= 13} or 
-{-k <= -12; k <= 12; -i <= -12; i <= 12} or 
-{-k <= -11; k <= 11; -i <= -11; i <= 11} or 
-{-k <= -10; k <= 10; -i <= -10; i <= 10} or 
-{-k <= -9; k <= 9; -i <= -9; i <= 9} or 
-{-k <= -8; k <= 8; -i <= -8; i <= 8} or 
-{-k <= -7; k <= 7; -i <= -7; i <= 7} or 
-{-k <= -6; k <= 6; -i <= -6; i <= 6} or 
-{-k <= -5; k <= 5; -i <= -5; i <= 5} or 
-{-k <= -4; k <= 4; -i <= -4; i <= 4} or 
-{-k <= -3; k <= 3; -i <= -3; i <= 3} or 
-{-k <= -2; k <= 2; -i <= -2; i <= 2} or 
-{-k <= -1; k <= 1; -i <= -1; i <= 1} or 
-{-k <= 0; k <= 0; -i <= 0; i <= 0}
+entry={}
 bb1={-k <= -15; -i <= -14; i <= 100} or 
 {-k <= -14; k <= 14; -i <= -14; i <= 14} or 
 {-k <= -13; k <= 13; -i <= -13; i <= 13} or 
@@ -1056,7 +1040,23 @@ bb1_f={-k <= -15; -i <= -14; i <= 100} or
 {-k <= -2; k <= 2; -i <= -2; i <= 2} or 
 {-k <= -1; k <= 1; -i <= -1; i <= 1} or 
 {-k <= 0; k <= 0; -i <= 0; i <= 0}
-entry={}
+ret={-k <= -15; -i <= -100; i <= 100}
+bb1_t={-k <= -15; -i <= -14; i <= 100} or 
+{-k <= -14; k <= 14; -i <= -14; i <= 14} or 
+{-k <= -13; k <= 13; -i <= -13; i <= 13} or 
+{-k <= -12; k <= 12; -i <= -12; i <= 12} or 
+{-k <= -11; k <= 11; -i <= -11; i <= 11} or 
+{-k <= -10; k <= 10; -i <= -10; i <= 10} or 
+{-k <= -9; k <= 9; -i <= -9; i <= 9} or 
+{-k <= -8; k <= 8; -i <= -8; i <= 8} or 
+{-k <= -7; k <= 7; -i <= -7; i <= 7} or 
+{-k <= -6; k <= 6; -i <= -6; i <= 6} or 
+{-k <= -5; k <= 5; -i <= -5; i <= 5} or 
+{-k <= -4; k <= 4; -i <= -4; i <= 4} or 
+{-k <= -3; k <= 3; -i <= -3; i <= 3} or 
+{-k <= -2; k <= 2; -i <= -2; i <= 2} or 
+{-k <= -1; k <= 1; -i <= -1; i <= 1} or 
+{-k <= 0; k <= 0; -i <= 0; i <= 0}
 Abstract trace: entry (bb1 bb1_t)^{13} bb1_f ret
 
 loop1_entry:
@@ -1086,14 +1086,14 @@ ret:
 
 
 Invariants using Boxes
+loop1_entry={}
+loop1_bb1={-k <= -30; k <= 30; -i <= 0; i <= 10}
+loop1_bb1_f={-k <= -30; k <= 30; -i <= 0; i <= 10}
+loop2_bb1={-k <= -30; k <= 30; -i <= -10; i <= 10; -j <= 0; j <= 10}
 loop2_bb1_f={-k <= -30; k <= 30; -i <= -10; i <= 10; -j <= 0; j <= 10}
 ret={-k <= -30; k <= 30; -i <= -10; i <= 10; -j <= -10; j <= 10}
 loop2_bb1_t={-k <= -30; k <= 30; -i <= -10; i <= 10; -j <= 0; j <= 10}
-loop2_bb1={-k <= -30; k <= 30; -i <= -10; i <= 10; -j <= 0; j <= 10}
-loop1_bb1_f={-k <= -30; k <= 30; -i <= 0; i <= 10}
 loop1_bb1_t={-k <= -30; k <= 30; -i <= 0; i <= 10}
-loop1_bb1={-k <= -30; k <= 30; -i <= 0; i <= 10}
-loop1_entry={}
 Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t)^{11} loop1_bb1_f (loop2_bb1 loop2_bb1_t)^{11} loop2_bb1_f ret
 
 entry:
@@ -1132,18 +1132,18 @@ ret:
 
 
 Invariants using Boxes
-ret=_|_
-loop2_f=_|_
-loop2_head=_|_
-loop1_body_x={-i <= 0; i <= 8}
-loop1_body_f={-i <= -1; i <= 9}
-loop1_body={-i <= 0; i <= 8}
-loop1_f={-i <= 0; i <= 8}
-loop1_t={-i <= 0; i <= 8}
-loop2_t=_|_
-loop1_body_t={-i <= -1; i <= 9}
-loop1_head={-i <= 0; i <= 8}
 entry={}
+loop1_head={-i <= 0; i <= 8}
+loop1_f={-i <= 0; i <= 8}
+loop2_head=_|_
+loop2_f=_|_
+ret=_|_
+loop2_t=_|_
+loop1_t={-i <= 0; i <= 8}
+loop1_body={-i <= 0; i <= 8}
+loop1_body_f={-i <= -1; i <= 9}
+loop1_body_x={-i <= 0; i <= 8}
+loop1_body_t={-i <= -1; i <= 9}
 Abstract trace: entry (loop1_head loop1_t loop1_body loop1_body_f loop1_body_t loop1_body_x)^{9} loop1_f (loop2_head loop2_t)^{1} loop2_f ret
 
 entry:
@@ -1164,18 +1164,7 @@ ret:
 
 
 Invariants using Boxes
-ret={-i <= -10; i <= 10; -p <= -40; p <= 40}
-loop_f={-i <= -10; i <= 10; -p <= -40; p <= 40} or 
-{-i <= -9; i <= 9; -p <= -36; p <= 36} or 
-{-i <= -8; i <= 8; -p <= -32; p <= 32} or 
-{-i <= -7; i <= 7; -p <= -28; p <= 28} or 
-{-i <= -6; i <= 6; -p <= -24; p <= 24} or 
-{-i <= -5; i <= 5; -p <= -20; p <= 20} or 
-{-i <= -4; i <= 4; -p <= -16; p <= 16} or 
-{-i <= -3; i <= 3; -p <= -12; p <= 12} or 
-{-i <= -2; i <= 2; -p <= -8; p <= 8} or 
-{-i <= -1; i <= 1; -p <= -4; p <= 4} or 
-{-i <= 0; i <= 0; -p <= 0; p <= 0}
+entry={}
 loop_head={-i <= -10; i <= 10; -p <= -40; p <= 40} or 
 {-i <= -9; i <= 9; -p <= -36; p <= 36} or 
 {-i <= -8; i <= 8; -p <= -32; p <= 32} or 
@@ -1187,6 +1176,18 @@ loop_head={-i <= -10; i <= 10; -p <= -40; p <= 40} or
 {-i <= -2; i <= 2; -p <= -8; p <= 8} or 
 {-i <= -1; i <= 1; -p <= -4; p <= 4} or 
 {-i <= 0; i <= 0; -p <= 0; p <= 0}
+loop_f={-i <= -10; i <= 10; -p <= -40; p <= 40} or 
+{-i <= -9; i <= 9; -p <= -36; p <= 36} or 
+{-i <= -8; i <= 8; -p <= -32; p <= 32} or 
+{-i <= -7; i <= 7; -p <= -28; p <= 28} or 
+{-i <= -6; i <= 6; -p <= -24; p <= 24} or 
+{-i <= -5; i <= 5; -p <= -20; p <= 20} or 
+{-i <= -4; i <= 4; -p <= -16; p <= 16} or 
+{-i <= -3; i <= 3; -p <= -12; p <= 12} or 
+{-i <= -2; i <= 2; -p <= -8; p <= 8} or 
+{-i <= -1; i <= 1; -p <= -4; p <= 4} or 
+{-i <= 0; i <= 0; -p <= 0; p <= 0}
+ret={-i <= -10; i <= 10; -p <= -40; p <= 40}
 loop_t={-i <= -10; i <= 10; -p <= -40; p <= 40} or 
 {-i <= -9; i <= 9; -p <= -36; p <= 36} or 
 {-i <= -8; i <= 8; -p <= -32; p <= 32} or 
@@ -1198,7 +1199,6 @@ loop_t={-i <= -10; i <= 10; -p <= -40; p <= 40} or
 {-i <= -2; i <= 2; -p <= -8; p <= 8} or 
 {-i <= -1; i <= 1; -p <= -4; p <= 4} or 
 {-i <= 0; i <= 0; -p <= 0; p <= 0}
-entry={}
 Abstract trace: entry (loop_head loop_t)^{11} loop_f ret
 
 entry:
@@ -1221,26 +1221,7 @@ ret:
 
 
 Invariants using Boxes
-ret={-k <= -9; k <= 9; -i <= -9; i <= 9}
-bb2={-k <= -8; k <= 8; -i <= -8; i <= 8} or 
-{-k <= -7; k <= 7; -i <= -7; i <= 7} or 
-{-k <= -6; k <= 6; -i <= -6; i <= 6} or 
-{-k <= -5; k <= 5; -i <= -5; i <= 5} or 
-{-k <= -4; k <= 4; -i <= -4; i <= 4} or 
-{-k <= -3; k <= 3; -i <= -3; i <= 3} or 
-{-k <= -2; k <= 2; -i <= -2; i <= 2} or 
-{-k <= -1; k <= 1; -i <= -1; i <= 1} or 
-{-k <= 0; k <= 0; -i <= 0; i <= 0}
-bb1_t={-k <= -9; k <= 9; -i <= -9; i <= 9} or 
-{-k <= -8; k <= 8; -i <= -8; i <= 8} or 
-{-k <= -7; k <= 7; -i <= -7; i <= 7} or 
-{-k <= -6; k <= 6; -i <= -6; i <= 6} or 
-{-k <= -5; k <= 5; -i <= -5; i <= 5} or 
-{-k <= -4; k <= 4; -i <= -4; i <= 4} or 
-{-k <= -3; k <= 3; -i <= -3; i <= 3} or 
-{-k <= -2; k <= 2; -i <= -2; i <= 2} or 
-{-k <= -1; k <= 1; -i <= -1; i <= 1} or 
-{-k <= 0; k <= 0; -i <= 0; i <= 0}
+entry={}
 bb1={-k <= -9; k <= 9; -i <= -9; i <= 9} or 
 {-k <= -8; k <= 8; -i <= -8; i <= 8} or 
 {-k <= -7; k <= 7; -i <= -7; i <= 7} or 
@@ -1261,7 +1242,26 @@ bb1_f={-k <= -9; k <= 9; -i <= -9; i <= 9} or
 {-k <= -2; k <= 2; -i <= -2; i <= 2} or 
 {-k <= -1; k <= 1; -i <= -1; i <= 1} or 
 {-k <= 0; k <= 0; -i <= 0; i <= 0}
-entry={}
+ret={-k <= -9; k <= 9; -i <= -9; i <= 9}
+bb1_t={-k <= -9; k <= 9; -i <= -9; i <= 9} or 
+{-k <= -8; k <= 8; -i <= -8; i <= 8} or 
+{-k <= -7; k <= 7; -i <= -7; i <= 7} or 
+{-k <= -6; k <= 6; -i <= -6; i <= 6} or 
+{-k <= -5; k <= 5; -i <= -5; i <= 5} or 
+{-k <= -4; k <= 4; -i <= -4; i <= 4} or 
+{-k <= -3; k <= 3; -i <= -3; i <= 3} or 
+{-k <= -2; k <= 2; -i <= -2; i <= 2} or 
+{-k <= -1; k <= 1; -i <= -1; i <= 1} or 
+{-k <= 0; k <= 0; -i <= 0; i <= 0}
+bb2={-k <= -8; k <= 8; -i <= -8; i <= 8} or 
+{-k <= -7; k <= 7; -i <= -7; i <= 7} or 
+{-k <= -6; k <= 6; -i <= -6; i <= 6} or 
+{-k <= -5; k <= 5; -i <= -5; i <= 5} or 
+{-k <= -4; k <= 4; -i <= -4; i <= 4} or 
+{-k <= -3; k <= 3; -i <= -3; i <= 3} or 
+{-k <= -2; k <= 2; -i <= -2; i <= 2} or 
+{-k <= -1; k <= 1; -i <= -1; i <= 1} or 
+{-k <= 0; k <= 0; -i <= 0; i <= 0}
 Abstract trace: entry (bb1 bb1_t bb2)^{10} bb1_f ret
 
 entry:
@@ -1279,13 +1279,13 @@ exit:
 
 
 Invariants using Boxes
+entry={}
+header={-x <= -2; -y <= -1} or 
+{-x <= -1; x <= 1; -y <= 0}
 exit={-x <= -2; -y <= -1} or 
 {-x <= -1; x <= 1; -y <= 0}
 body={-x <= -2; -y <= -1} or 
 {-x <= -1; x <= 1; -y <= 0}
-header={-x <= -2; -y <= -1} or 
-{-x <= -1; x <= 1; -y <= 0}
-entry={}
 Abstract trace: entry (header body)^{4} exit
 
 Testing some boxes operations ...
@@ -1607,21 +1607,19 @@ user-defined assertion checker using SplitDBM
 0  Number of total unreachable checks
 
 Assertion Crawler Analysis 
-Block bb2
-	{"assert (-x <= -200)" -> {x; y}; "assert (-x+y <= 0)" -> {x; y}; "assert (-i <= -200)" -> {i}; "assert (i = 100)" -> {i}}
-Block bb1_t
-	{"assert (-x <= -200)" -> {x; y}; "assert (-x+y <= 0)" -> {x; y}; "assert (-i <= -200)" -> {i}; "assert (i = 100)" -> {i}}
-Block ret
-	_|_
-Block bb1_f
-	{"assert (-x <= -200)" -> {x; y}; "assert (-x+y <= 0)" -> {x; y}; "assert (-i <= -200)" -> {i}; "assert (i = 100)" -> {i}}
-Block entry
-	{"assert (-x <= -200)" -> {x; y}; "assert (-x+y <= 0)" -> {x; y}; "assert (-i <= -200)" -> {i}; "assert (i = 100)" -> {i}}
-Block bb1
-	{"assert (-x <= -200)" -> {x; y}; "assert (-x+y <= 0)" -> {x; y}; "assert (-i <= -200)" -> {i}; "assert (i = 100)" -> {i}}
+entry={"assert (-x <= -200)" -> {x; y}; "assert (-x+y <= 0)" -> {x; y}; "assert (-i <= -200)" -> {i}; "assert (i = 100)" -> {i}}
+bb1={"assert (-x <= -200)" -> {x; y}; "assert (-x+y <= 0)" -> {x; y}; "assert (-i <= -200)" -> {i}; "assert (i = 100)" -> {i}}
+bb1_f={"assert (-x <= -200)" -> {x; y}; "assert (-x+y <= 0)" -> {x; y}; "assert (-i <= -200)" -> {i}; "assert (i = 100)" -> {i}}
+ret=_|_
+bb1_t={"assert (-x <= -200)" -> {x; y}; "assert (-x+y <= 0)" -> {x; y}; "assert (-i <= -200)" -> {i}; "assert (i = 100)" -> {i}}
+bb2={"assert (-x <= -200)" -> {x; y}; "assert (-x+y <= 0)" -> {x; y}; "assert (-i <= -200)" -> {i}; "assert (i = 100)" -> {i}}
 
 
 ******* UNJUSTIFIED ASSUMPTION ANALYSIS ********
+assert (-i <= -200) with unjustified assumptions:
+	assume NotOverflow({x; y}) as a3 in x = x+y
+	assume NotOverflow({y}) as a4 in y = y+1
+	assume NotOverflow({i}) as a5 in i = i+1
 assert (-x <= -200) with unjustified assumptions:
 	assume NotOverflow({x; y}) as a9 in x = x+y
 	assume NotOverflow({y}) as a10 in y = y+1
@@ -1630,10 +1628,6 @@ assert (-x+y <= 0) with unjustified assumptions:
 	assume NotOverflow({x; y}) as a6 in x = x+y
 	assume NotOverflow({y}) as a7 in y = y+1
 	assume NotOverflow({i}) as a8 in i = i+1
-assert (-i <= -200) with unjustified assumptions:
-	assume NotOverflow({x; y}) as a3 in x = x+y
-	assume NotOverflow({y}) as a4 in y = y+1
-	assume NotOverflow({i}) as a5 in i = i+1
 assert (i = 100) with unjustified assumptions:
 	assume NotOverflow({x; y}) as a0 in x = x+y
 	assume NotOverflow({y}) as a1 in y = y+1
@@ -1647,16 +1641,16 @@ BRUNCH_STAT AvgAssumptionsPerAssertion 3
 
 
 ******* UNJUSTIFIED ASSUMPTION ANALYSIS ********
-assert (i = 100) with unjustified assumptions:
-	assume NotOverflow({i}) as a2 in i = i+1
 assert (-i <= -200) with unjustified assumptions:
 	assume NotOverflow({i}) as a2 in i = i+1
-assert (-x+y <= 0) with unjustified assumptions:
-	assume NotOverflow({x; y}) as a0 in x = x+y
-	assume NotOverflow({y}) as a1 in y = y+1
 assert (-x <= -200) with unjustified assumptions:
 	assume NotOverflow({x; y}) as a0 in x = x+y
 	assume NotOverflow({y}) as a1 in y = y+1
+assert (-x+y <= 0) with unjustified assumptions:
+	assume NotOverflow({x; y}) as a0 in x = x+y
+	assume NotOverflow({y}) as a1 in y = y+1
+assert (i = 100) with unjustified assumptions:
+	assume NotOverflow({i}) as a2 in i = i+1
 ******************* STATS **********************
 BRUNCH_STAT Assertions 4
 BRUNCH_STAT Assumptions 6
@@ -1750,12 +1744,12 @@ ret:
 
 
 Invariants using DisjunctiveIntervals
-ret={i -> [100, 100]; k -> [0, +oo]}
-bb2={i -> [0, 99]; k -> [0, +oo]}
-bb1_t={i -> [0, 100]; k -> [0, +oo]}
+entry={}
 bb1={i -> [0, 100]; k -> [0, +oo]}
 bb1_f={i -> [0, 100]; k -> [0, +oo]}
-entry={}
+ret={i -> [100, 100]; k -> [0, +oo]}
+bb1_t={i -> [0, 100]; k -> [0, +oo]}
+bb2={i -> [0, 99]; k -> [0, +oo]}
 Abstract trace: entry (bb1 bb1_t bb2)^{4} bb1_f ret
 
 {x -> [5, 10]} does not entail x = 7
@@ -1954,10 +1948,10 @@ b2:
   goto b3;
 
 Invariants using Nullity
-b3={p -> NN}
-b2={p -> NN}
-b1={p -> NN}
 b0={}
+b2={p -> NN}
+b3={p -> NN}
+b1={p -> NN}
 Abstract trace: b0 b2 b1 b3
 
 b0:
@@ -1979,10 +1973,10 @@ b2:
   goto b3;
 
 Invariants using Nullity
-b3={p -> NN; q1 -> NN; q2 -> NN}
-b2={p -> NN; q1 -> NN; q2 -> NN}
-b1={p -> NN; q1 -> NN; q2 -> NN}
 b0={}
+b2={p -> NN; q1 -> NN; q2 -> NN}
+b3={p -> NN; q1 -> NN; q2 -> NN}
+b1={p -> NN; q1 -> NN; q2 -> NN}
 Abstract trace: b0 b2 b1 b3
 
 entry:
@@ -2011,12 +2005,12 @@ ret:
 
 
 Invariants using Nullity
-ret={}
-bb2={}
-bb1_t={}
+entry={}
 bb1={}
 bb1_f={}
-entry={}
+ret={}
+bb1_t={}
+bb2={}
 Abstract trace: entry (bb1 bb1_t bb2)^{2} bb1_f ret
 
 entry:
@@ -2137,19 +2131,19 @@ ret:
 
 
 Invariants using Intervals
-ret={i -> [100, 100]; k -> [50, 50]}
+x0={}
 bb1={i -> [0, 100]; k -> [50, 50]}
 bb1_f={i -> [0, 100]; k -> [50, 50]}
+ret={i -> [100, 100]; k -> [50, 50]}
 bb1_t={i -> [0, 100]; k -> [50, 50]}
-x0={}
 Abstract trace: x0 (bb1 bb1_t)^{3} bb1_f ret
 
 Invariants using Term(Intervals)
-ret={i -> t0[_y1], k -> t1[_y0]}{_y0 -> [50, 50]; _y1 -> [100, 100]}
+x0={}
 bb1={i -> t0[_y1], k -> t1[_y0]}{_y0 -> [50, 50]; _y1 -> [0, 100]}
 bb1_f={i -> t0[_y1], k -> t1[_y0]}{_y0 -> [50, 50]; _y1 -> [0, 100]}
+ret={i -> t0[_y1], k -> t1[_y0]}{_y0 -> [50, 50]; _y1 -> [100, 100]}
 bb1_t={i -> t0[_y1], k -> t1[_y0]}{_y0 -> [50, 50]; _y1 -> [0, 100]}
-x0={}
 Abstract trace: x0 (bb1 bb1_t)^{3} bb1_f ret
 
 p0:
@@ -2174,19 +2168,19 @@ p_neg:
   goto exit;
 
 Invariants using Intervals
+p0={}
+p_neg={y -> [-1, 1]; z -> [-50, 50]}
 exit={y -> [-1, 1]; z -> [-50, 50]}
 ret={y -> [-1, 1]; z -> [-50, 50]; z0 -> [-50, 50]; y0 -> [-1, 1]}
 p_pos={y -> [-1, 1]; z -> [-50, 50]}
-p_neg={y -> [-1, 1]; z -> [-50, 50]}
-p0={}
 Abstract trace: p0 p_neg p_pos exit ret
 
 Invariants using Term(Intervals)
+p0={}
+p_neg={y -> t1[_x1], z -> t2[_x2]}{_x0 -> [50, 50]; _x1 -> [-1, 1]; _x2 -> [-50, 50]}
 exit={y -> t0[_y0], z -> t3[_y3]}{_y0 -> [-1, 1]; _y1 -> [-50, 50]; _y2 -> [-1, 1]; _y3 -> [0, 50]}
 ret={y -> t0[_y0], z -> t3[_y3], z0 -> t3[_y3], y0 -> t0[_y0]}{_y0 -> [-1, 1]; _y1 -> [-50, 50]; _y2 -> [-1, 1]; _y3 -> [0, 50]}
 p_pos={y -> t1[_x1], z -> t2[_x2]}{_x0 -> [50, 50]; _x1 -> [-1, 1]; _x2 -> [-50, 50]}
-p_neg={y -> t1[_x1], z -> t2[_x2]}{_x0 -> [50, 50]; _x1 -> [-1, 1]; _x2 -> [-50, 50]}
-p0={}
 Abstract trace: p0 p_neg p_pos exit ret
 
 entry:
@@ -2219,27 +2213,27 @@ ret:
 
 
 Invariants using Intervals
-ret={i -> [100, 100]}
-bb1_t={i -> [0, 100]}
+entry={}
 bb1={i -> [0, 100]}
 bb1_f={i -> [0, 100]}
-entry={}
+ret={i -> [100, 100]}
+bb1_t={i -> [0, 100]}
 Abstract trace: entry (bb1 bb1_t)^{3} bb1_f ret
 
 Invariants using SparseDBM
-ret={i -> [100, 100]}
-bb1_t={i -> [0, 100]}
+entry={}
 bb1={i -> [0, 100]}
 bb1_f={i -> [0, 100]}
-entry={}
+ret={i -> [100, 100]}
+bb1_t={i -> [0, 100]}
 Abstract trace: entry (bb1 bb1_t)^{3} bb1_f ret
 
 Invariants using Term(Intervals)
-ret={i -> t0[_y1], x -> t1[_y2], y -> t1[_y2], z -> t2[_y3], w -> t2[_y3], s -> t3[_y0], t -> t3[_y0]}{_y1 -> [100, 100]}
-bb1_t={i -> t0[_y1], x -> t1[_y2], y -> t1[_y2], z -> t2[_y3], w -> t2[_y3], s -> t3[_y0], t -> t3[_y0]}{_y1 -> [0, 100]}
+entry={}
 bb1={i -> t0[_y1], x -> t1[_y2], y -> t1[_y2], z -> t2[_y3], w -> t2[_y3], s -> t3[_y0], t -> t3[_y0]}{_y1 -> [0, 100]}
 bb1_f={i -> t0[_y1], x -> t1[_y2], y -> t1[_y2], z -> t2[_y3], w -> t2[_y3], s -> t3[_y0], t -> t3[_y0]}{_y1 -> [0, 100]}
-entry={}
+ret={i -> t0[_y1], x -> t1[_y2], y -> t1[_y2], z -> t2[_y3], w -> t2[_y3], s -> t3[_y0], t -> t3[_y0]}{_y1 -> [100, 100]}
+bb1_t={i -> t0[_y1], x -> t1[_y2], y -> t1[_y2], z -> t2[_y3], w -> t2[_y3], s -> t3[_y0], t -> t3[_y0]}{_y1 -> [0, 100]}
 Abstract trace: entry (bb1 bb1_t)^{3} bb1_f ret
 
 Meet
@@ -2274,51 +2268,51 @@ ret:
 
 
 Invariants using Intervals
-ret={i -> [100, 101]; k -> [2147483648, 2147483648]}
+x0={}
 bb1={i -> [0, 101]; k -> [2147483648, 2147483648]}
 bb1_f={i -> [0, 101]; k -> [2147483648, 2147483648]}
+ret={i -> [100, 101]; k -> [2147483648, 2147483648]}
 bb1_t={i -> [0, 101]; k -> [2147483648, 2147483648]}
-x0={}
 Abstract trace: x0 (bb1 bb1_t)^{3} bb1_f ret
 
 Invariants using SparseDBM
-ret={i -> [100, 101], k -> [2147483648, 2147483648], k-i<=2147483548, i-k<=-2147483547}
+x0={}
 bb1={i -> [0, 101], k -> [2147483648, 2147483648], k-i<=2147483648, i-k<=-2147483547}
 bb1_f={i -> [0, 101], k -> [2147483648, 2147483648], k-i<=2147483648, i-k<=-2147483547}
+ret={i -> [100, 101], k -> [2147483648, 2147483648], k-i<=2147483548, i-k<=-2147483547}
 bb1_t={i -> [0, 101], k -> [2147483648, 2147483648], k-i<=2147483648, i-k<=-2147483547}
-x0={}
 Abstract trace: x0 (bb1 bb1_t)^{3} bb1_f ret
 
 Invariants using SplitDBM
-ret={i -> [100, 101], k -> [2147483648, 2147483648]}
+x0={}
 bb1={i -> [0, 101], k -> [2147483648, 2147483648]}
 bb1_f={i -> [0, 101], k -> [2147483648, 2147483648]}
+ret={i -> [100, 101], k -> [2147483648, 2147483648]}
 bb1_t={i -> [0, 101], k -> [2147483648, 2147483648]}
-x0={}
 Abstract trace: x0 (bb1 bb1_t)^{3} bb1_f ret
 
 Invariants using Product(Intervals,Congruences)
-ret=({i -> [100, 101]; k -> [2147483648, 2147483648]}, {k -> 2147483648})
+x0=({}, {})
 bb1=({i -> [0, 101]; k -> [2147483648, 2147483648]}, {k -> 2147483648})
 bb1_f=({i -> [0, 101]; k -> [2147483648, 2147483648]}, {k -> 2147483648})
+ret=({i -> [100, 101]; k -> [2147483648, 2147483648]}, {k -> 2147483648})
 bb1_t=({i -> [0, 101]; k -> [2147483648, 2147483648]}, {k -> 2147483648})
-x0=({}, {})
 Abstract trace: x0 (bb1 bb1_t)^{3} bb1_f ret
 
 Invariants using Term(Intervals)
-ret={i -> t0[_z1], k -> t1[_z0]}{_z0 -> [2147483648, 2147483648]; _z1 -> [100, 101]}
+x0={}
 bb1={i -> t0[_z1], k -> t1[_z0]}{_z0 -> [2147483648, 2147483648]; _z1 -> [0, 101]}
 bb1_f={i -> t0[_z1], k -> t1[_z0]}{_z0 -> [2147483648, 2147483648]; _z1 -> [0, 101]}
+ret={i -> t0[_z1], k -> t1[_z0]}{_z0 -> [2147483648, 2147483648]; _z1 -> [100, 101]}
 bb1_t={i -> t0[_z1], k -> t1[_z0]}{_z0 -> [2147483648, 2147483648]; _z1 -> [0, 101]}
-x0={}
 Abstract trace: x0 (bb1 bb1_t)^{3} bb1_f ret
 
 Invariants using DisjunctiveIntervals
-ret={i -> [100, 101]; k -> [2147483648, 2147483648]}
+x0={}
 bb1={i -> [0, 101]; k -> [2147483648, 2147483648]}
 bb1_f={i -> [0, 101]; k -> [2147483648, 2147483648]}
+ret={i -> [100, 101]; k -> [2147483648, 2147483648]}
 bb1_t={i -> [0, 101]; k -> [2147483648, 2147483648]}
-x0={}
 Abstract trace: x0 (bb1 bb1_t)^{3} bb1_f ret
 
 entry:
@@ -2337,19 +2331,19 @@ ret:
 
 
 Invariants using Intervals
-ret={i -> [10, 6136154492292301/562949953421312]}
-bb1_t={i -> [0, 6136154492292301/562949953421312]}
+entry={}
 bb1={i -> [0, 6136154492292301/562949953421312]}
 bb1_f={i -> [0, 6136154492292301/562949953421312]}
-entry={}
+ret={i -> [10, 6136154492292301/562949953421312]}
+bb1_t={i -> [0, 6136154492292301/562949953421312]}
 Abstract trace: entry (bb1 bb1_t)^{3} bb1_f ret
 
 Invariants using ApronNewPolka
-ret={i = 10}
-bb1_t={i <= 10; -i <= 0}
+entry={}
 bb1={i <= 10; -i <= 0}
 bb1_f={i <= 10; -i <= 0}
-entry={}
+ret={i = 10}
+bb1_t={i <= 10; -i <= 0}
 Abstract trace: entry (bb1 bb1_t)^{3} bb1_f ret
 
 loop1_entry:
@@ -2379,69 +2373,69 @@ ret:
 
 
 Invariants using Intervals
+loop1_entry={}
+loop1_bb1={i -> [0, 10]; k -> [30, 30]}
+loop1_bb1_f={i -> [0, 10]; k -> [30, 30]}
+loop2_bb1={i -> [10, 10]; j -> [0, 10]; k -> [30, 30]}
 loop2_bb1_f={i -> [10, 10]; j -> [0, 10]; k -> [30, 30]}
 ret={i -> [10, 10]; j -> [10, 10]; k -> [30, 30]}
 loop2_bb1_t={i -> [10, 10]; j -> [0, 10]; k -> [30, 30]}
-loop2_bb1={i -> [10, 10]; j -> [0, 10]; k -> [30, 30]}
-loop1_bb1_f={i -> [0, 10]; k -> [30, 30]}
 loop1_bb1_t={i -> [0, 10]; k -> [30, 30]}
-loop1_bb1={i -> [0, 10]; k -> [30, 30]}
-loop1_entry={}
 Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t)^{3} loop1_bb1_f (loop2_bb1 loop2_bb1_t)^{3} loop2_bb1_f ret
 
 Invariants using SparseDBM
+loop1_entry={}
+loop1_bb1={i -> [0, 10], k -> [30, 30], k-i<=30, i-k<=-20}
+loop1_bb1_f={i -> [0, 10], k -> [30, 30], k-i<=30, i-k<=-20}
+loop2_bb1={i -> [10, 10], j -> [0, 10], k -> [30, 30], k-i<=20, j-i<=0, i-j<=10, k-j<=30, i-k<=-20, j-k<=-20}
 loop2_bb1_f={i -> [10, 10], j -> [0, 10], k -> [30, 30], k-i<=20, j-i<=0, i-j<=10, k-j<=30, i-k<=-20, j-k<=-20}
 ret={i -> [10, 10], j -> [10, 10], k -> [30, 30], k-i<=20, j-i<=0, i-j<=0, k-j<=20, i-k<=-20, j-k<=-20}
 loop2_bb1_t={i -> [10, 10], j -> [0, 10], k -> [30, 30], k-i<=20, j-i<=0, i-j<=10, k-j<=30, i-k<=-20, j-k<=-20}
-loop2_bb1={i -> [10, 10], j -> [0, 10], k -> [30, 30], k-i<=20, j-i<=0, i-j<=10, k-j<=30, i-k<=-20, j-k<=-20}
-loop1_bb1_f={i -> [0, 10], k -> [30, 30], k-i<=30, i-k<=-20}
 loop1_bb1_t={i -> [0, 10], k -> [30, 30], k-i<=30, i-k<=-20}
-loop1_bb1={i -> [0, 10], k -> [30, 30], k-i<=30, i-k<=-20}
-loop1_entry={}
 Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t)^{3} loop1_bb1_f (loop2_bb1 loop2_bb1_t)^{3} loop2_bb1_f ret
 
 Invariants using SplitDBM
+loop1_entry={}
+loop1_bb1={i -> [0, 10], k -> [30, 30]}
+loop1_bb1_f={i -> [0, 10], k -> [30, 30]}
+loop2_bb1={i -> [10, 10], j -> [0, 10], k -> [30, 30]}
 loop2_bb1_f={i -> [10, 10], j -> [0, 10], k -> [30, 30]}
 ret={i -> [10, 10], j -> [10, 10], k -> [30, 30]}
 loop2_bb1_t={i -> [10, 10], j -> [0, 10], k -> [30, 30]}
-loop2_bb1={i -> [10, 10], j -> [0, 10], k -> [30, 30]}
-loop1_bb1_f={i -> [0, 10], k -> [30, 30]}
 loop1_bb1_t={i -> [0, 10], k -> [30, 30]}
-loop1_bb1={i -> [0, 10], k -> [30, 30]}
-loop1_entry={}
 Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t)^{3} loop1_bb1_f (loop2_bb1 loop2_bb1_t)^{3} loop2_bb1_f ret
 
 Invariants using Product(Intervals,Congruences)
+loop1_entry=({}, {})
+loop1_bb1=({i -> [0, 10]; k -> [30, 30]}, {k -> 30})
+loop1_bb1_f=({i -> [0, 10]; k -> [30, 30]}, {k -> 30})
+loop2_bb1=({i -> [10, 10]; j -> [0, 10]; k -> [30, 30]}, {i -> 10; k -> 30})
 loop2_bb1_f=({i -> [10, 10]; j -> [0, 10]; k -> [30, 30]}, {i -> 10; k -> 30})
 ret=({i -> [10, 10]; j -> [10, 10]; k -> [30, 30]}, {i -> 10; j -> 10; k -> 30})
 loop2_bb1_t=({i -> [10, 10]; j -> [0, 10]; k -> [30, 30]}, {i -> 10; k -> 30})
-loop2_bb1=({i -> [10, 10]; j -> [0, 10]; k -> [30, 30]}, {i -> 10; k -> 30})
-loop1_bb1_f=({i -> [0, 10]; k -> [30, 30]}, {k -> 30})
 loop1_bb1_t=({i -> [0, 10]; k -> [30, 30]}, {k -> 30})
-loop1_bb1=({i -> [0, 10]; k -> [30, 30]}, {k -> 30})
-loop1_entry=({}, {})
 Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t)^{3} loop1_bb1_f (loop2_bb1 loop2_bb1_t)^{3} loop2_bb1_f ret
 
 Invariants using Term(Intervals)
+loop1_entry={}
+loop1_bb1={i -> t0[_y0], k -> t1[_y1]}{_y0 -> [0, 10]; _y1 -> [30, 30]}
+loop1_bb1_f={i -> t0[_y0], k -> t1[_y1]}{_y0 -> [0, 10]; _y1 -> [30, 30]}
+loop2_bb1={i -> t0[_x0], j -> t1[_x2], k -> t2[_x1]}{_x0 -> [10, 10]; _x1 -> [30, 30]; _x2 -> [0, 10]}
 loop2_bb1_f={i -> t0[_x0], j -> t1[_x2], k -> t2[_x1]}{_x0 -> [10, 10]; _x1 -> [30, 30]; _x2 -> [0, 10]}
 ret={i -> t0[_x0], j -> t1[_x2], k -> t2[_x1]}{_x0 -> [10, 10]; _x1 -> [30, 30]; _x2 -> [10, 10]}
 loop2_bb1_t={i -> t0[_x0], j -> t1[_x2], k -> t2[_x1]}{_x0 -> [10, 10]; _x1 -> [30, 30]; _x2 -> [0, 10]}
-loop2_bb1={i -> t0[_x0], j -> t1[_x2], k -> t2[_x1]}{_x0 -> [10, 10]; _x1 -> [30, 30]; _x2 -> [0, 10]}
-loop1_bb1_f={i -> t0[_y0], k -> t1[_y1]}{_y0 -> [0, 10]; _y1 -> [30, 30]}
 loop1_bb1_t={i -> t0[_y0], k -> t1[_y1]}{_y0 -> [0, 10]; _y1 -> [30, 30]}
-loop1_bb1={i -> t0[_y0], k -> t1[_y1]}{_y0 -> [0, 10]; _y1 -> [30, 30]}
-loop1_entry={}
 Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t)^{3} loop1_bb1_f (loop2_bb1 loop2_bb1_t)^{3} loop2_bb1_f ret
 
 Invariants using DisjunctiveIntervals
+loop1_entry={}
+loop1_bb1={i -> [0, 10]; k -> [30, 30]}
+loop1_bb1_f={i -> [0, 10]; k -> [30, 30]}
+loop2_bb1={i -> [10, 10]; j -> [0, 10]; k -> [30, 30]}
 loop2_bb1_f={i -> [10, 10]; j -> [0, 10]; k -> [30, 30]}
 ret={i -> [10, 10]; j -> [10, 10]; k -> [30, 30]}
 loop2_bb1_t={i -> [10, 10]; j -> [0, 10]; k -> [30, 30]}
-loop2_bb1={i -> [10, 10]; j -> [0, 10]; k -> [30, 30]}
-loop1_bb1_f={i -> [0, 10]; k -> [30, 30]}
 loop1_bb1_t={i -> [0, 10]; k -> [30, 30]}
-loop1_bb1={i -> [0, 10]; k -> [30, 30]}
-loop1_entry={}
 Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t)^{3} loop1_bb1_f (loop2_bb1 loop2_bb1_t)^{3} loop2_bb1_f ret
 
 entry:
@@ -2454,21 +2448,21 @@ bb1:
   goto bb1;
 
 Invariants using Intervals
-bb1={x -> [0, +oo]; y -> [0, 1/2]}
 entry={}
+bb1={x -> [0, +oo]; y -> [0, 1/2]}
 Abstract trace: entry (bb1)^{4}
 
 Invariants using ApronNewPolka
-bb1={x+2*y = 1; -x <= 0}
 entry={}
+bb1={x+2*y = 1; -x <= 0}
 Abstract trace: entry (bb1)^{3}
 
 Invariants using Boxes
+entry={}
 bb1={-x < 0; y <= 1/4} or 
 {-x <= 0; x <= 0; -y <= -1/2; y <= 1/2} or 
 {-x <= 0; x <= 0; y <= 1/4} or 
 {x < 0; y <= 1/4}
-entry={}
 Abstract trace: entry (bb1)^{4}
 
 entry:
@@ -2511,105 +2505,105 @@ ret:
 
 
 Invariants using Intervals
-ret=_|_
-loop2_f=_|_
-loop2_head=_|_
-loop1_body_x={i -> [0, 8]}
-loop2_body=_|_
-loop1_body_f={i -> [1, 9]}
-loop1_body={i -> [0, 8]}
+entry={}
+loop1_head={i -> [0, 8]}
 loop1_f={i -> [0, 8]}
 cont=_|_
-loop1_t={i -> [0, 8]}
+loop2_head=_|_
+loop2_f=_|_
+ret=_|_
 loop2_t=_|_
+loop2_body=_|_
+loop1_t={i -> [0, 8]}
+loop1_body={i -> [0, 8]}
+loop1_body_f={i -> [1, 9]}
+loop1_body_x={i -> [0, 8]}
 loop1_body_t={i -> [1, 9]}
-loop1_head={i -> [0, 8]}
-entry={}
 Abstract trace: entry (loop1_head loop1_t loop1_body loop1_body_f loop1_body_t loop1_body_x)^{3} loop1_f cont (loop2_head loop2_t loop2_body)^{1} loop2_f ret
 
 Invariants using SparseDBM
-ret=_|_
-loop2_f=_|_
-loop2_head=_|_
-loop1_body_x={i -> [0, 8]}
-loop2_body=_|_
-loop1_body_f={i -> [1, 9]}
-loop1_body={i -> [0, 8]}
+entry={}
+loop1_head={i -> [0, 8]}
 loop1_f={i -> [0, 8]}
 cont=_|_
-loop1_t={i -> [0, 8]}
+loop2_head=_|_
+loop2_f=_|_
+ret=_|_
 loop2_t=_|_
+loop2_body=_|_
+loop1_t={i -> [0, 8]}
+loop1_body={i -> [0, 8]}
+loop1_body_f={i -> [1, 9]}
+loop1_body_x={i -> [0, 8]}
 loop1_body_t={i -> [1, 9]}
-loop1_head={i -> [0, 8]}
-entry={}
 Abstract trace: entry (loop1_head loop1_t loop1_body loop1_body_f loop1_body_t loop1_body_x)^{3} loop1_f cont (loop2_head loop2_t loop2_body)^{1} loop2_f ret
 
 Invariants using SplitDBM
-ret=_|_
-loop2_f=_|_
-loop2_head=_|_
-loop1_body_x={i -> [0, 8]}
-loop2_body=_|_
-loop1_body_f={i -> [1, 9]}
-loop1_body={i -> [0, 8]}
+entry={}
+loop1_head={i -> [0, 8]}
 loop1_f={i -> [0, 8]}
 cont=_|_
-loop1_t={i -> [0, 8]}
+loop2_head=_|_
+loop2_f=_|_
+ret=_|_
 loop2_t=_|_
+loop2_body=_|_
+loop1_t={i -> [0, 8]}
+loop1_body={i -> [0, 8]}
+loop1_body_f={i -> [1, 9]}
+loop1_body_x={i -> [0, 8]}
 loop1_body_t={i -> [1, 9]}
-loop1_head={i -> [0, 8]}
-entry={}
 Abstract trace: entry (loop1_head loop1_t loop1_body loop1_body_f loop1_body_t loop1_body_x)^{3} loop1_f cont (loop2_head loop2_t loop2_body)^{1} loop2_f ret
 
 Invariants using Product(Intervals,Congruences)
-ret=_|_
-loop2_f=_|_
-loop2_head=_|_
-loop1_body_x=({i -> [0, 8]}, {})
-loop2_body=_|_
-loop1_body_f=({i -> [1, 9]}, {})
-loop1_body=({i -> [0, 8]}, {})
+entry=({}, {})
+loop1_head=({i -> [0, 8]}, {})
 loop1_f=({i -> [0, 8]}, {})
 cont=_|_
-loop1_t=({i -> [0, 8]}, {})
+loop2_head=_|_
+loop2_f=_|_
+ret=_|_
 loop2_t=_|_
+loop2_body=_|_
+loop1_t=({i -> [0, 8]}, {})
+loop1_body=({i -> [0, 8]}, {})
+loop1_body_f=({i -> [1, 9]}, {})
+loop1_body_x=({i -> [0, 8]}, {})
 loop1_body_t=({i -> [1, 9]}, {})
-loop1_head=({i -> [0, 8]}, {})
-entry=({}, {})
 Abstract trace: entry (loop1_head loop1_t loop1_body loop1_body_f loop1_body_t loop1_body_x)^{3} loop1_f cont (loop2_head loop2_t loop2_body)^{1} loop2_f ret
 
 Invariants using Term(Intervals)
-ret=_|_
-loop2_f=_|_
-loop2_head=_|_
-loop1_body_x={i -> t0[_x0]}{_x0 -> [0, 8]}
-loop2_body=_|_
-loop1_body_f={i -> t2[_z2]}{_z0 -> [0, 8]; _z1 -> [1, 1]; _z2 -> [1, 9]}
-loop1_body={i -> t0[_z0]}{_z0 -> [0, 8]}
+entry={}
+loop1_head={i -> t0[_z0]}{_z0 -> [0, 8]}
 loop1_f={i -> t0[_z0]}{_z0 -> [0, 8]}
 cont=_|_
-loop1_t={i -> t0[_z0]}{_z0 -> [0, 8]}
+loop2_head=_|_
+loop2_f=_|_
+ret=_|_
 loop2_t=_|_
+loop2_body=_|_
+loop1_t={i -> t0[_z0]}{_z0 -> [0, 8]}
+loop1_body={i -> t0[_z0]}{_z0 -> [0, 8]}
+loop1_body_f={i -> t2[_z2]}{_z0 -> [0, 8]; _z1 -> [1, 1]; _z2 -> [1, 9]}
+loop1_body_x={i -> t0[_x0]}{_x0 -> [0, 8]}
 loop1_body_t={i -> t2[_z2]}{_z0 -> [0, 8]; _z1 -> [1, 1]; _z2 -> [1, 9]}
-loop1_head={i -> t0[_z0]}{_z0 -> [0, 8]}
-entry={}
 Abstract trace: entry (loop1_head loop1_t loop1_body loop1_body_f loop1_body_t loop1_body_x)^{3} loop1_f cont (loop2_head loop2_t loop2_body)^{1} loop2_f ret
 
 Invariants using DisjunctiveIntervals
-ret=_|_
-loop2_f=_|_
-loop2_head=_|_
-loop1_body_x={i -> [0, 8]}
-loop2_body=_|_
-loop1_body_f={i -> [1, 9]}
-loop1_body={i -> [0, 8]}
+entry={}
+loop1_head={i -> [0, 8]}
 loop1_f={i -> [0, 8]}
 cont=_|_
-loop1_t={i -> [0, 8]}
+loop2_head=_|_
+loop2_f=_|_
+ret=_|_
 loop2_t=_|_
+loop2_body=_|_
+loop1_t={i -> [0, 8]}
+loop1_body={i -> [0, 8]}
+loop1_body_f={i -> [1, 9]}
+loop1_body_x={i -> [0, 8]}
 loop1_body_t={i -> [1, 9]}
-loop1_head={i -> [0, 8]}
-entry={}
 Abstract trace: entry (loop1_head loop1_t loop1_body loop1_body_f loop1_body_t loop1_body_x)^{3} loop1_f cont (loop2_head loop2_t loop2_body)^{1} loop2_f ret
 
 entry:
@@ -2627,24 +2621,24 @@ exit:
 
 
 Invariants using Intervals
+entry={}
+header={x -> [1, +oo]; y -> [0, +oo]}
 exit={x -> [1, +oo]; y -> [0, +oo]}
 body={x -> [1, +oo]; y -> [0, +oo]}
-header={x -> [1, +oo]; y -> [0, +oo]}
-entry={}
 Abstract trace: entry (header body)^{3} exit
 
 Invariants using ApronNewPolka
+entry={}
+header={}
 exit={}
 body={}
-header={}
-entry={}
 Abstract trace: entry (header body)^{6} exit
 
 Invariants using Boxes
+entry={}
+header={}
 exit={}
 body={}
-header={}
-entry={}
 Abstract trace: entry (header body)^{6} exit
 
 entry:
@@ -2665,51 +2659,51 @@ ret:
 
 
 Invariants using Intervals
-ret={i -> [10, 10]; p -> [0, +oo]}
-loop_f={i -> [0, 10]; p -> [0, +oo]}
-loop_head={i -> [0, 10]; p -> [0, +oo]}
-loop_t={i -> [0, 10]; p -> [0, +oo]}
 entry={}
+loop_head={i -> [0, 10]; p -> [0, +oo]}
+loop_f={i -> [0, 10]; p -> [0, +oo]}
+ret={i -> [10, 10]; p -> [0, +oo]}
+loop_t={i -> [0, 10]; p -> [0, +oo]}
 Abstract trace: entry (loop_head loop_t)^{4} loop_f ret
 
 Invariants using SparseDBM
-ret={i -> [10, 10], p -> [10, +oo], i-p<=0}
-loop_f={i -> [0, 10], p -> [0, +oo], i-p<=0}
-loop_head={i -> [0, 10], p -> [0, +oo], i-p<=0}
-loop_t={i -> [0, 10], p -> [0, +oo], i-p<=0}
 entry={}
+loop_head={i -> [0, 10], p -> [0, +oo], i-p<=0}
+loop_f={i -> [0, 10], p -> [0, +oo], i-p<=0}
+ret={i -> [10, 10], p -> [10, +oo], i-p<=0}
+loop_t={i -> [0, 10], p -> [0, +oo], i-p<=0}
 Abstract trace: entry (loop_head loop_t)^{3} loop_f ret
 
 Invariants using SplitDBM
-ret={i -> [10, 10], p -> [10, +oo], i-p<=0}
-loop_f={i -> [0, 10], p -> [0, +oo], i-p<=0}
-loop_head={i -> [0, 10], p -> [0, +oo], i-p<=0}
-loop_t={i -> [0, 10], p -> [0, +oo], i-p<=0}
 entry={}
+loop_head={i -> [0, 10], p -> [0, +oo], i-p<=0}
+loop_f={i -> [0, 10], p -> [0, +oo], i-p<=0}
+ret={i -> [10, 10], p -> [10, +oo], i-p<=0}
+loop_t={i -> [0, 10], p -> [0, +oo], i-p<=0}
 Abstract trace: entry (loop_head loop_t)^{3} loop_f ret
 
 Invariants using Product(Intervals,Congruences)
-ret=({i -> [10, 10]; p -> [0, +oo]}, {i -> 10; p -> 4Z+ 0})
-loop_f=({i -> [0, 10]; p -> [0, +oo]}, {p -> 4Z+ 0})
-loop_head=({i -> [0, 10]; p -> [0, +oo]}, {p -> 4Z+ 0})
-loop_t=({i -> [0, 10]; p -> [0, +oo]}, {p -> 4Z+ 0})
 entry=({}, {})
+loop_head=({i -> [0, 10]; p -> [0, +oo]}, {p -> 4Z+ 0})
+loop_f=({i -> [0, 10]; p -> [0, +oo]}, {p -> 4Z+ 0})
+ret=({i -> [10, 10]; p -> [0, +oo]}, {i -> 10; p -> 4Z+ 0})
+loop_t=({i -> [0, 10]; p -> [0, +oo]}, {p -> 4Z+ 0})
 Abstract trace: entry (loop_head loop_t)^{4} loop_f ret
 
 Invariants using Term(Intervals)
-ret={i -> t0[_y0], p -> t1[_y1]}{_y0 -> [10, 10]; _y1 -> [0, +oo]}
-loop_f={i -> t0[_y0], p -> t1[_y1]}{_y0 -> [0, 10]; _y1 -> [0, +oo]}
-loop_head={i -> t0[_y0], p -> t1[_y1]}{_y0 -> [0, 10]; _y1 -> [0, +oo]}
-loop_t={i -> t0[_y0], p -> t1[_y1]}{_y0 -> [0, 10]; _y1 -> [0, +oo]}
 entry={}
+loop_head={i -> t0[_y0], p -> t1[_y1]}{_y0 -> [0, 10]; _y1 -> [0, +oo]}
+loop_f={i -> t0[_y0], p -> t1[_y1]}{_y0 -> [0, 10]; _y1 -> [0, +oo]}
+ret={i -> t0[_y0], p -> t1[_y1]}{_y0 -> [10, 10]; _y1 -> [0, +oo]}
+loop_t={i -> t0[_y0], p -> t1[_y1]}{_y0 -> [0, 10]; _y1 -> [0, +oo]}
 Abstract trace: entry (loop_head loop_t)^{4} loop_f ret
 
 Invariants using DisjunctiveIntervals
-ret={i -> [10, 10]; p -> [0, 0] | [4, 4] | [8, 8] | [12, 12] | [16, +oo]}
-loop_f={i -> [0, 10]; p -> [0, 0] | [4, 4] | [8, 8] | [12, 12] | [16, +oo]}
-loop_head={i -> [0, 10]; p -> [0, 0] | [4, 4] | [8, 8] | [12, 12] | [16, +oo]}
-loop_t={i -> [0, 10]; p -> [0, 0] | [4, 4] | [8, 8] | [12, 12] | [16, +oo]}
 entry={}
+loop_head={i -> [0, 10]; p -> [0, 0] | [4, 4] | [8, 8] | [12, 12] | [16, +oo]}
+loop_f={i -> [0, 10]; p -> [0, 0] | [4, 4] | [8, 8] | [12, 12] | [16, +oo]}
+ret={i -> [10, 10]; p -> [0, 0] | [4, 4] | [8, 8] | [12, 12] | [16, +oo]}
+loop_t={i -> [0, 10]; p -> [0, 0] | [4, 4] | [8, 8] | [12, 12] | [16, +oo]}
 Abstract trace: entry (loop_head loop_t)^{4} loop_f ret
 
 entry:
@@ -2744,43 +2738,43 @@ ret:
 
 
 Invariants using SparseDBM
-ret={x -> [100, 100], y -> [100, 100], y-x<=0, x-y<=0}
-exit={x -> [100, +oo], y -> [100, 100], y-x<=0}
-bb2={i -> [0, 99], x -> [1, +oo], y -> [0, 99], y-i<=0, i-x<=0, y-x<=0, i-y<=0}
-bb1_t={i -> [0, 100], x -> [1, +oo], y -> [0, 100], y-i<=0, i-x<=0, y-x<=0, i-y<=0}
+entry={}
 bb1={i -> [0, 100], x -> [1, +oo], y -> [0, 100], y-i<=0, i-x<=0, y-x<=0, i-y<=0}
 bb1_f={i -> [0, 100], x -> [1, +oo], y -> [0, 100], y-i<=0, i-x<=0, y-x<=0, i-y<=0}
-entry={}
+exit={x -> [100, +oo], y -> [100, 100], y-x<=0}
+ret={x -> [100, 100], y -> [100, 100], y-x<=0, x-y<=0}
+bb1_t={i -> [0, 100], x -> [1, +oo], y -> [0, 100], y-i<=0, i-x<=0, y-x<=0, i-y<=0}
+bb2={i -> [0, 99], x -> [1, +oo], y -> [0, 99], y-i<=0, i-x<=0, y-x<=0, i-y<=0}
 Abstract trace: entry (bb1 bb1_t bb2)^{4} bb1_f exit ret
 
 Invariants using SplitDBM
-ret={x -> [100, 100], y -> [100, 100], y-x<=0, x-y<=0}
-exit={x -> [100, +oo], y -> [100, 100], y-x<=0}
-bb2={i -> [0, 99], x -> [1, +oo], y -> [0, 99], y-i<=0, y-x<=0, i-x<=0, i-y<=0}
-bb1_t={i -> [0, 100], x -> [1, +oo], y -> [0, 100], y-i<=0, y-x<=0, i-x<=0, i-y<=0}
+entry={}
 bb1={i -> [0, 100], x -> [1, +oo], y -> [0, 100], y-i<=0, y-x<=0, i-x<=0, i-y<=0}
 bb1_f={i -> [0, 100], x -> [1, +oo], y -> [0, 100], y-i<=0, y-x<=0, i-x<=0, i-y<=0}
-entry={}
+exit={x -> [100, +oo], y -> [100, 100], y-x<=0}
+ret={x -> [100, 100], y -> [100, 100], y-x<=0, x-y<=0}
+bb1_t={i -> [0, 100], x -> [1, +oo], y -> [0, 100], y-i<=0, y-x<=0, i-x<=0, i-y<=0}
+bb2={i -> [0, 99], x -> [1, +oo], y -> [0, 99], y-i<=0, y-x<=0, i-x<=0, i-y<=0}
 Abstract trace: entry (bb1 bb1_t bb2)^{4} bb1_f exit ret
 
 Invariants using Term(DisjunctiveIntervals)
-ret={x -> t1[_y1], y -> t0[_y0], z -> t2[_y2], w -> t2[_y2]}{_y0 -> [100, 100]; _y1 -> [1, 100]}
-exit={x -> t1[_y1], y -> t0[_y0], z -> t2[_y2], w -> t2[_y2]}{_y0 -> [100, 100]; _y1 -> [1, +oo]}
-bb2={i -> t0[_y0], x -> t1[_y1], y -> t0[_y0], z -> t2[_y2], w -> t2[_y2]}{_y0 -> [0, 99]; _y1 -> [1, +oo]}
-bb1_t={i -> t0[_y0], x -> t1[_y1], y -> t0[_y0], z -> t2[_y2], w -> t2[_y2]}{_y0 -> [0, 100]; _y1 -> [1, +oo]}
+entry={}
 bb1={i -> t0[_y0], x -> t1[_y1], y -> t0[_y0], z -> t2[_y2], w -> t2[_y2]}{_y0 -> [0, 100]; _y1 -> [1, +oo]}
 bb1_f={i -> t0[_y0], x -> t1[_y1], y -> t0[_y0], z -> t2[_y2], w -> t2[_y2]}{_y0 -> [0, 100]; _y1 -> [1, +oo]}
-entry={}
+exit={x -> t1[_y1], y -> t0[_y0], z -> t2[_y2], w -> t2[_y2]}{_y0 -> [100, 100]; _y1 -> [1, +oo]}
+ret={x -> t1[_y1], y -> t0[_y0], z -> t2[_y2], w -> t2[_y2]}{_y0 -> [100, 100]; _y1 -> [1, 100]}
+bb1_t={i -> t0[_y0], x -> t1[_y1], y -> t0[_y0], z -> t2[_y2], w -> t2[_y2]}{_y0 -> [0, 100]; _y1 -> [1, +oo]}
+bb2={i -> t0[_y0], x -> t1[_y1], y -> t0[_y0], z -> t2[_y2], w -> t2[_y2]}{_y0 -> [0, 99]; _y1 -> [1, +oo]}
 Abstract trace: entry (bb1 bb1_t bb2)^{4} bb1_f exit ret
 
 Invariants using ReducedProduct(Term(DisjunctiveIntervals),SplitDBM)
-ret=({x -> t3[_y3], y -> t3[_y3], z -> t0[_y4], w -> t0[_y4]}{_y3 -> [100, 100]}, {x -> [100, 100], y -> [100, 100], y-x<=0, x-y<=0, w-z<=0, z-w<=0})
-exit=({x -> t1[_y1], y -> t0[_y0], z -> t2[_y2], w -> t2[_y2]}{_y0 -> [100, 100]; _y1 -> [100, +oo]}, {x -> [100, +oo], y -> [100, 100], y-x<=0, w-z<=0, z-w<=0})
-bb2=({i -> t0[_y0], x -> t1[_y1], y -> t0[_y0], z -> t2[_y2], w -> t2[_y2]}{_y0 -> [0, 99]; _y1 -> [1, +oo]}, {i -> [0, 99], x -> [1, +oo], y -> [0, 99], y-i<=0, y-x<=0, i-x<=0, i-y<=0, w-z<=0, z-w<=0})
-bb1_t=({i -> t0[_y0], x -> t1[_y1], y -> t0[_y0], z -> t2[_y2], w -> t2[_y2]}{_y0 -> [0, 100]; _y1 -> [1, +oo]}, {i -> [0, 100], x -> [1, +oo], y -> [0, 100], y-i<=0, y-x<=0, i-x<=0, i-y<=0, w-z<=0, z-w<=0})
+entry=({}, {})
 bb1=({i -> t0[_y0], x -> t1[_y1], y -> t0[_y0], z -> t2[_y2], w -> t2[_y2]}{_y0 -> [0, 100]; _y1 -> [1, +oo]}, {i -> [0, 100], x -> [1, +oo], y -> [0, 100], y-i<=0, y-x<=0, i-x<=0, i-y<=0, w-z<=0, z-w<=0})
 bb1_f=({i -> t0[_y0], x -> t1[_y1], y -> t0[_y0], z -> t2[_y2], w -> t2[_y2]}{_y0 -> [0, 100]; _y1 -> [1, +oo]}, {i -> [0, 100], x -> [1, +oo], y -> [0, 100], y-i<=0, y-x<=0, i-x<=0, i-y<=0, w-z<=0, z-w<=0})
-entry=({}, {})
+exit=({x -> t1[_y1], y -> t0[_y0], z -> t2[_y2], w -> t2[_y2]}{_y0 -> [100, 100]; _y1 -> [100, +oo]}, {x -> [100, +oo], y -> [100, 100], y-x<=0, w-z<=0, z-w<=0})
+ret=({x -> t3[_y3], y -> t3[_y3], z -> t0[_y4], w -> t0[_y4]}{_y3 -> [100, 100]}, {x -> [100, 100], y -> [100, 100], y-x<=0, x-y<=0, w-z<=0, z-w<=0})
+bb1_t=({i -> t0[_y0], x -> t1[_y1], y -> t0[_y0], z -> t2[_y2], w -> t2[_y2]}{_y0 -> [0, 100]; _y1 -> [1, +oo]}, {i -> [0, 100], x -> [1, +oo], y -> [0, 100], y-i<=0, y-x<=0, i-x<=0, i-y<=0, w-z<=0, z-w<=0})
+bb2=({i -> t0[_y0], x -> t1[_y1], y -> t0[_y0], z -> t2[_y2], w -> t2[_y2]}{_y0 -> [0, 99]; _y1 -> [1, +oo]}, {i -> [0, 99], x -> [1, +oo], y -> [0, 99], y-i<=0, y-x<=0, i-x<=0, i-y<=0, w-z<=0, z-w<=0})
 Abstract trace: entry (bb1 bb1_t bb2)^{4} bb1_f exit ret
 
 entry:
@@ -2814,39 +2808,39 @@ ret:
 
 
 Invariants using Intervals
-ret={i -> [0, +oo]}
-bb2={i -> [0, +oo]}
-bb1_t={i -> [0, +oo]}
+entry={}
 bb1={i -> [0, +oo]}
 bb1_f={i -> [0, +oo]}
-entry={}
+ret={i -> [0, +oo]}
+bb1_t={i -> [0, +oo]}
+bb2={i -> [0, +oo]}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Invariants using Product(Boolean,SparseDBM)
-ret=({b2 -> true; bf -> false; bt -> true}, {i -> [100, 101]})
-bb2=({b1 -> true; bf -> false; bt -> true}, {i -> [0, 99]})
-bb1_t=({bf -> false; bt -> true}, {i -> [0, 101]})
+entry=({}, {})
 bb1=({bf -> false; bt -> true}, {i -> [0, 101]})
 bb1_f=({bf -> false; bt -> true}, {i -> [0, 101]})
-entry=({}, {})
+ret=({b2 -> true; bf -> false; bt -> true}, {i -> [100, 101]})
+bb1_t=({bf -> false; bt -> true}, {i -> [0, 101]})
+bb2=({b1 -> true; bf -> false; bt -> true}, {i -> [0, 99]})
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Invariants using Boxes
-ret={-i <= -100; i <= 101; -bf <= 0; bf <= 0; -bt <= -1; bt <= 1; -b1 <= -1; -nd <= -1; -inc <= -1; inc <= 1; -b3 <= -1; -b4 <= -1; -b2 <= -1} or 
-{-i <= -100; i <= 101; -bf <= 0; bf <= 0; -bt <= -1; bt <= 1; -b1 <= -1; nd <= 0; -inc <= -2; inc <= 2; -b3 <= -1; -b4 <= -1; -b2 <= -1}
-bb2={-i <= -1; i <= 99; -bf <= 0; bf <= 0; -bt <= -1; bt <= 1; -b1 <= -1; -nd <= -1; -inc <= -1; inc <= 1; -b3 <= -1; -b4 <= -1} or 
-{-i <= -1; i <= 99; -bf <= 0; bf <= 0; -bt <= -1; bt <= 1; -b1 <= -1; nd <= 0; -inc <= -2; inc <= 2; -b3 <= -1; -b4 <= -1} or 
-{-i <= 0; i <= 0; -bf <= 0; bf <= 0; -bt <= -1; bt <= 1; -b1 <= -1}
-bb1_t={-i <= -1; i <= 101; -bf <= 0; bf <= 0; -bt <= -1; bt <= 1; -b1 <= -1; -nd <= -1; -inc <= -1; inc <= 1; -b3 <= -1; -b4 <= -1} or 
-{-i <= -1; i <= 101; -bf <= 0; bf <= 0; -bt <= -1; bt <= 1; -b1 <= -1; nd <= 0; -inc <= -2; inc <= 2; -b3 <= -1; -b4 <= -1} or 
-{-i <= 0; i <= 0; -bf <= 0; bf <= 0; -bt <= -1; bt <= 1}
+entry={}
 bb1={-i <= -1; i <= 101; -bf <= 0; bf <= 0; -bt <= -1; bt <= 1; -b1 <= -1; -nd <= -1; -inc <= -1; inc <= 1; -b3 <= -1; -b4 <= -1} or 
 {-i <= -1; i <= 101; -bf <= 0; bf <= 0; -bt <= -1; bt <= 1; -b1 <= -1; nd <= 0; -inc <= -2; inc <= 2; -b3 <= -1; -b4 <= -1} or 
 {-i <= 0; i <= 0; -bf <= 0; bf <= 0; -bt <= -1; bt <= 1}
 bb1_f={-i <= -1; i <= 101; -bf <= 0; bf <= 0; -bt <= -1; bt <= 1; -b1 <= -1; -nd <= -1; -inc <= -1; inc <= 1; -b3 <= -1; -b4 <= -1} or 
 {-i <= -1; i <= 101; -bf <= 0; bf <= 0; -bt <= -1; bt <= 1; -b1 <= -1; nd <= 0; -inc <= -2; inc <= 2; -b3 <= -1; -b4 <= -1} or 
 {-i <= 0; i <= 0; -bf <= 0; bf <= 0; -bt <= -1; bt <= 1}
-entry={}
+ret={-i <= -100; i <= 101; -bf <= 0; bf <= 0; -bt <= -1; bt <= 1; -b1 <= -1; -nd <= -1; -inc <= -1; inc <= 1; -b3 <= -1; -b4 <= -1; -b2 <= -1} or 
+{-i <= -100; i <= 101; -bf <= 0; bf <= 0; -bt <= -1; bt <= 1; -b1 <= -1; nd <= 0; -inc <= -2; inc <= 2; -b3 <= -1; -b4 <= -1; -b2 <= -1}
+bb1_t={-i <= -1; i <= 101; -bf <= 0; bf <= 0; -bt <= -1; bt <= 1; -b1 <= -1; -nd <= -1; -inc <= -1; inc <= 1; -b3 <= -1; -b4 <= -1} or 
+{-i <= -1; i <= 101; -bf <= 0; bf <= 0; -bt <= -1; bt <= 1; -b1 <= -1; nd <= 0; -inc <= -2; inc <= 2; -b3 <= -1; -b4 <= -1} or 
+{-i <= 0; i <= 0; -bf <= 0; bf <= 0; -bt <= -1; bt <= 1}
+bb2={-i <= -1; i <= 99; -bf <= 0; bf <= 0; -bt <= -1; bt <= 1; -b1 <= -1; -nd <= -1; -inc <= -1; inc <= 1; -b3 <= -1; -b4 <= -1} or 
+{-i <= -1; i <= 99; -bf <= 0; bf <= 0; -bt <= -1; bt <= 1; -b1 <= -1; nd <= 0; -inc <= -2; inc <= 2; -b3 <= -1; -b4 <= -1} or 
+{-i <= 0; i <= 0; -bf <= 0; bf <= 0; -bt <= -1; bt <= 1; -b1 <= -1}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 entry:
@@ -2871,12 +2865,12 @@ ret:
 
 
 Invariants using Product(Boolean,Intervals)
-ret=({b -> true}, {i -> [11, 11]; n -> [10, 10]})
-bb2=({b -> true}, {i -> [0, 10]; n -> [10, 10]})
-bb1_t=({b -> true}, {i -> [0, 11]; n -> [10, 10]})
+entry=({}, {})
 bb1=({b -> true}, {i -> [0, 11]; n -> [10, 10]})
 bb1_f=({b -> true}, {i -> [0, 11]; n -> [10, 10]})
-entry=({}, {})
+ret=({b -> true}, {i -> [11, 11]; n -> [10, 10]})
+bb1_t=({b -> true}, {i -> [0, 11]; n -> [10, 10]})
+bb2=({b -> true}, {i -> [0, 10]; n -> [10, 10]})
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 entry:
@@ -2906,14 +2900,14 @@ ret:
 
 
 Invariants using Product(Boolean,Intervals)
-ret=({b -> true}, {i -> [0, +oo]})
-bb2=({b -> true}, {i -> [0, +oo]; n -> [0, +oo]})
-bb1=({b -> true}, {i -> [0, +oo]})
-bb1_t=({b -> true}, {i -> [0, +oo]})
-entry_cnt=({}, {i -> [0, 0]})
-bb0=({}, {i -> [0, 0]})
-bb1_f=({b -> true}, {i -> [0, +oo]})
 entry=({}, {})
+entry_cnt=({}, {i -> [0, 0]})
+bb1=({b -> true}, {i -> [0, +oo]})
+bb1_f=({b -> true}, {i -> [0, +oo]})
+ret=({b -> true}, {i -> [0, +oo]})
+bb1_t=({b -> true}, {i -> [0, +oo]})
+bb2=({b -> true}, {i -> [0, +oo]; n -> [0, +oo]})
+bb0=({}, {i -> [0, 0]})
 Abstract trace: entry bb0 entry_cnt (bb1 bb1_t bb2)^{3} bb1_f ret
 
 entry:
@@ -2939,21 +2933,21 @@ ret:
 
 
 Invariants using Product(Boolean,Intervals)
-ret=({b1 -> true}, {i -> [0, +oo]; n1 -> [9, 9]})
-bb2=({b1 -> true}, {i -> [0, +oo]; n -> [0, +oo]; n1 -> [9, 9]})
-bb1_t=({b1 -> true}, {i -> [0, +oo]; n1 -> [9, 9]})
+entry=({}, {})
 bb1=({b1 -> true}, {i -> [0, +oo]; n1 -> [9, 9]})
 bb1_f=({b1 -> true}, {i -> [0, +oo]; n1 -> [9, 9]})
-entry=({}, {})
+ret=({b1 -> true}, {i -> [0, +oo]; n1 -> [9, 9]})
+bb1_t=({b1 -> true}, {i -> [0, +oo]; n1 -> [9, 9]})
+bb2=({b1 -> true}, {i -> [0, +oo]; n -> [0, +oo]; n1 -> [9, 9]})
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Invariants using Product(Boolean,SparseDBM)
-ret=({b1 -> true}, {i -> [10, 10], n -> [9, 9], n1 -> [9, 9], n1-i<=-1, n-i<=-1, n1-n<=0, i-n<=1, n-n1<=0, i-n1<=1})
-bb2=({b1 -> true}, {i -> [0, 9], n -> [9, 9], n1 -> [9, 9], n1-i<=9, n-i<=9, n1-n<=0, i-n<=0, n-n1<=0, i-n1<=0})
-bb1_t=({b1 -> true}, {i -> [0, 10], n -> [9, 9], n1 -> [9, 9], n1-i<=9, n-i<=9, n1-n<=0, i-n<=1, n-n1<=0, i-n1<=1})
+entry=({}, {})
 bb1=({b1 -> true}, {i -> [0, 10], n -> [9, 9], n1 -> [9, 9], n1-i<=9, n-i<=9, n1-n<=0, i-n<=1, n-n1<=0, i-n1<=1})
 bb1_f=({b1 -> true}, {i -> [0, 10], n -> [9, 9], n1 -> [9, 9], n1-i<=9, n-i<=9, n1-n<=0, i-n<=1, n-n1<=0, i-n1<=1})
-entry=({}, {})
+ret=({b1 -> true}, {i -> [10, 10], n -> [9, 9], n1 -> [9, 9], n1-i<=-1, n-i<=-1, n1-n<=0, i-n<=1, n-n1<=0, i-n1<=1})
+bb1_t=({b1 -> true}, {i -> [0, 10], n -> [9, 9], n1 -> [9, 9], n1-i<=9, n-i<=9, n1-n<=0, i-n<=1, n-n1<=0, i-n1<=1})
+bb2=({b1 -> true}, {i -> [0, 9], n -> [9, 9], n1 -> [9, 9], n1-i<=9, n-i<=9, n1-n<=0, i-n<=0, n-n1<=0, i-n1<=0})
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 loop1_entry:
@@ -2990,47 +2984,47 @@ ret:
 
 Starting at the entry of CFG:
 Invariants using Intervals
-loop2_bb2={i -> [10, 10]; j -> [0, 9]; k -> [30, 30]}
+loop1_entry={}
+loop1_bb1={i -> [0, 10]; k -> [30, 30]}
+loop1_bb1_f={i -> [0, 10]; k -> [30, 30]}
+loop2_entry={i -> [10, 10]; k -> [30, 30]}
+loop2_bb1={i -> [10, 10]; j -> [0, 10]; k -> [30, 30]}
 loop2_bb1_f={i -> [10, 10]; j -> [0, 10]; k -> [30, 30]}
 ret={i -> [10, 10]; j -> [10, 10]; k -> [30, 30]}
 loop2_bb1_t={i -> [10, 10]; j -> [0, 10]; k -> [30, 30]}
-loop2_entry={i -> [10, 10]; k -> [30, 30]}
-loop2_bb1={i -> [10, 10]; j -> [0, 10]; k -> [30, 30]}
-loop1_bb2={i -> [0, 9]; k -> [30, 30]}
-loop1_bb1_f={i -> [0, 10]; k -> [30, 30]}
+loop2_bb2={i -> [10, 10]; j -> [0, 9]; k -> [30, 30]}
 loop1_bb1_t={i -> [0, 10]; k -> [30, 30]}
-loop1_bb1={i -> [0, 10]; k -> [30, 30]}
-loop1_entry={}
+loop1_bb2={i -> [0, 9]; k -> [30, 30]}
 Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t loop1_bb2)^{3} loop1_bb1_f loop2_entry (loop2_bb1 loop2_bb1_t loop2_bb2)^{3} loop2_bb1_f ret
 
 Starting at the entry of the second loop:
 Invariants using Intervals
-loop2_bb2={j -> [0, 9]}
+loop1_entry=_|_
+loop1_bb1=_|_
+loop1_bb1_f=_|_
+loop2_entry={}
+loop2_bb1={j -> [0, 10]}
 loop2_bb1_f={j -> [0, 10]}
 ret={j -> [10, 10]}
 loop2_bb1_t={j -> [0, 10]}
-loop2_entry={}
-loop2_bb1={j -> [0, 10]}
-loop1_bb2=_|_
-loop1_bb1_f=_|_
+loop2_bb2={j -> [0, 9]}
 loop1_bb1_t=_|_
-loop1_bb1=_|_
-loop1_entry=_|_
+loop1_bb2=_|_
 Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t loop1_bb2) loop1_bb1_f loop2_entry (loop2_bb1 loop2_bb1_t loop2_bb2)^{3} loop2_bb1_f ret
 
 Starting at the middle of the second loop:
 Invariants using Intervals
-loop2_bb2={}
+loop1_entry=_|_
+loop1_bb1=_|_
+loop1_bb1_f=_|_
+loop2_entry=_|_
+loop2_bb1={}
 loop2_bb1_f={}
 ret={j -> [10, +oo]}
 loop2_bb1_t={}
-loop2_entry=_|_
-loop2_bb1={}
-loop1_bb2=_|_
-loop1_bb1_f=_|_
+loop2_bb2={}
 loop1_bb1_t=_|_
-loop1_bb1=_|_
-loop1_entry=_|_
+loop1_bb2=_|_
 Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t loop1_bb2) loop1_bb1_f loop2_entry (loop2_bb1 loop2_bb1_t loop2_bb2)^{1} loop2_bb1_f ret
 
 Thresholds= {-oo,-999,-89,-10,0,5,10,100,1000,+oo}
@@ -3102,47 +3096,47 @@ loop2_header={-oo,-159,-8,0,2,162,+oo}
 loop1_header={-oo,-59,0,2,62,880,+oo}
 
 Invariants using Term(Intervals)
-ret={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, +oo]; _y1 -> [-oo, 878]}
-loop2_bb3={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [161, +oo]; _y1 -> [-oo, 878]}
-loop2_bb2={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, 160]; _y1 -> [-oo, 878]}
-loop2_bb1_f={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, +oo]; _y1 -> [-oo, 878]}
-loop2_bb1_t={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, +oo]; _y1 -> [-oo, 878]}
-cont={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, +oo]; _z1 -> [-oo, 878]}
-loop1_bb4={n -> t0[_x1], y -> t1[_x0]}{_x0 -> [-oo, 878]; _x1 -> [0, 61]}
-loop1_bb1_f={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, +oo]; _z1 -> [-oo, 878]}
-loop2_bb4={n -> t0[_x1], y -> t1[_x0]}{_x0 -> [-oo, 878]; _x1 -> [0, 162]}
-loop1_bb1={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, +oo]; _z1 -> [-oo, 878]}
-loop2_header={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, +oo]; _y1 -> [-oo, 878]}
-loop1_bb1_t={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, +oo]; _z1 -> [-oo, 878]}
-loop2_bb0={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, +oo]; _y1 -> [-oo, 878]}
-loop1_bb0={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, +oo]; _z1 -> [-oo, 878]}
-loop1_header={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, +oo]; _z1 -> [-oo, 878]}
 entry={}
+loop1_header={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, +oo]; _z1 -> [-oo, 878]}
+cont={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, +oo]; _z1 -> [-oo, 878]}
+loop2_header={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, +oo]; _y1 -> [-oo, 878]}
+ret={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, +oo]; _y1 -> [-oo, 878]}
 loop2_bb1={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, +oo]; _y1 -> [-oo, 878]}
-loop1_bb2={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, 60]; _z1 -> [-oo, 878]}
+loop2_bb1_f={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, +oo]; _y1 -> [-oo, 878]}
+loop2_bb3={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [161, +oo]; _y1 -> [-oo, 878]}
+loop2_bb4={n -> t0[_x1], y -> t1[_x0]}{_x0 -> [-oo, 878]; _x1 -> [0, 162]}
+loop2_bb1_t={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, +oo]; _y1 -> [-oo, 878]}
+loop2_bb2={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, 160]; _y1 -> [-oo, 878]}
+loop2_bb0={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, +oo]; _y1 -> [-oo, 878]}
+loop1_bb1={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, +oo]; _z1 -> [-oo, 878]}
+loop1_bb1_f={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, +oo]; _z1 -> [-oo, 878]}
 loop1_bb3={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [61, +oo]; _z1 -> [-oo, 878]}
+loop1_bb4={n -> t0[_x1], y -> t1[_x0]}{_x0 -> [-oo, 878]; _x1 -> [0, 61]}
+loop1_bb1_t={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, +oo]; _z1 -> [-oo, 878]}
+loop1_bb2={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, 60]; _z1 -> [-oo, 878]}
+loop1_bb0={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, +oo]; _z1 -> [-oo, 878]}
 Abstract trace: entry (loop1_header loop1_bb1 loop1_bb1_f loop1_bb3 loop1_bb1_t loop1_bb2 loop1_bb4 loop1_bb0)^{3} cont (loop2_header loop2_bb1 loop2_bb1_f loop2_bb3 loop2_bb1_t loop2_bb2 loop2_bb4 loop2_bb0)^{3} ret
 
 Invariants using Term(Intervals)
-ret={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, 162]; _y1 -> [-oo, 878]}
-loop2_bb3={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [161, 162]; _y1 -> [-oo, 878]}
-loop2_bb2={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, 160]; _y1 -> [-oo, 878]}
-loop2_bb1_f={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, 162]; _y1 -> [-oo, 878]}
-loop2_bb1_t={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, 162]; _y1 -> [-oo, 878]}
-cont={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, 62]; _z1 -> [-oo, 878]}
-loop1_bb4={n -> t0[_x1], y -> t1[_x0]}{_x0 -> [-oo, 878]; _x1 -> [0, 61]}
-loop1_bb1_f={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, 62]; _z1 -> [-oo, 878]}
-loop2_bb4={n -> t0[_x1], y -> t1[_x0]}{_x0 -> [-oo, 878]; _x1 -> [0, 162]}
-loop1_bb1={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, 62]; _z1 -> [-oo, 878]}
-loop2_header={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, 162]; _y1 -> [-oo, 878]}
-loop1_bb1_t={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, 62]; _z1 -> [-oo, 878]}
-loop2_bb0={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, 162]; _y1 -> [-oo, 878]}
-loop1_bb0={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, 62]; _z1 -> [-oo, 878]}
-loop1_header={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, 62]; _z1 -> [-oo, 878]}
 entry={}
+loop1_header={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, 62]; _z1 -> [-oo, 878]}
+cont={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, 62]; _z1 -> [-oo, 878]}
+loop2_header={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, 162]; _y1 -> [-oo, 878]}
+ret={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, 162]; _y1 -> [-oo, 878]}
 loop2_bb1={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, 162]; _y1 -> [-oo, 878]}
-loop1_bb2={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, 60]; _z1 -> [-oo, 878]}
+loop2_bb1_f={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, 162]; _y1 -> [-oo, 878]}
+loop2_bb3={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [161, 162]; _y1 -> [-oo, 878]}
+loop2_bb4={n -> t0[_x1], y -> t1[_x0]}{_x0 -> [-oo, 878]; _x1 -> [0, 162]}
+loop2_bb1_t={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, 162]; _y1 -> [-oo, 878]}
+loop2_bb2={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, 160]; _y1 -> [-oo, 878]}
+loop2_bb0={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, 162]; _y1 -> [-oo, 878]}
+loop1_bb1={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, 62]; _z1 -> [-oo, 878]}
+loop1_bb1_f={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, 62]; _z1 -> [-oo, 878]}
 loop1_bb3={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [61, 62]; _z1 -> [-oo, 878]}
+loop1_bb4={n -> t0[_x1], y -> t1[_x0]}{_x0 -> [-oo, 878]; _x1 -> [0, 61]}
+loop1_bb1_t={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, 62]; _z1 -> [-oo, 878]}
+loop1_bb2={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, 60]; _z1 -> [-oo, 878]}
+loop1_bb0={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, 62]; _z1 -> [-oo, 878]}
 Abstract trace: entry (loop1_header loop1_bb1 loop1_bb1_f loop1_bb3 loop1_bb1_t loop1_bb2 loop1_bb4 loop1_bb0)^{3} cont (loop2_header loop2_bb1 loop2_bb1_f loop2_bb3 loop2_bb1_t loop2_bb2 loop2_bb4 loop2_bb0)^{3} ret
 
 {A -> [0, +oo], x -> [0, 0], x-A<=0}
@@ -3224,27 +3218,27 @@ bb_nd_ff:
   goto bb1;
 
 Invariants using Intervals
-ret=_|_
-bb2={x -> [0, +oo]; y -> [-10, -10]}
-bb1_t={x -> [0, +oo]; y -> [-10, -10]}
-bb1={x -> [0, +oo]; y -> [-10, -10]}
-bb_nd_ff={y -> [-10, -10]}
-bb_nd_tt={y -> [-10, -10]}
-bb_nd={y -> [-10, -10]}
-bb1_f={x -> [0, +oo]; y -> [-10, -10]}
 entry={}
+bb_nd={y -> [-10, -10]}
+bb_nd_ff={y -> [-10, -10]}
+bb1={x -> [0, +oo]; y -> [-10, -10]}
+bb1_f={x -> [0, +oo]; y -> [-10, -10]}
+ret=_|_
+bb1_t={x -> [0, +oo]; y -> [-10, -10]}
+bb2={x -> [0, +oo]; y -> [-10, -10]}
+bb_nd_tt={y -> [-10, -10]}
 Abstract trace: entry bb_nd bb_nd_ff bb_nd_tt (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Invariants using WrappedIntervals
-ret={x -> [[-128, -119]]_8; y -> [[-10, -10]]_8}
-bb2={x -> [[0, 127]]_8; y -> [[-10, -10]]_8}
-bb1_t={x -> [[0, -119]]_8; y -> [[-10, -10]]_8}
-bb1={x -> [[0, -119]]_8; y -> [[-10, -10]]_8}
-bb_nd_ff={y -> [[-10, -10]]_8}
-bb_nd_tt={y -> [[-10, -10]]_8}
-bb_nd={y -> [[-10, -10]]_8}
-bb1_f={x -> [[0, -119]]_8; y -> [[-10, -10]]_8}
 entry={}
+bb_nd={y -> [[-10, -10]]_8}
+bb_nd_ff={y -> [[-10, -10]]_8}
+bb1={x -> [[0, -119]]_8; y -> [[-10, -10]]_8}
+bb1_f={x -> [[0, -119]]_8; y -> [[-10, -10]]_8}
+ret={x -> [[-128, -119]]_8; y -> [[-10, -10]]_8}
+bb1_t={x -> [[0, -119]]_8; y -> [[-10, -10]]_8}
+bb2={x -> [[0, 127]]_8; y -> [[-10, -10]]_8}
+bb_nd_tt={y -> [[-10, -10]]_8}
 Abstract trace: entry bb_nd bb_nd_ff bb_nd_tt (bb1 bb1_t bb2)^{3} bb1_f ret
 
 entry:
@@ -3263,10 +3257,10 @@ then:
   goto ret;
 
 Invariants using WrappedIntervals
-ret={x -> [[10, 10]]_8}
-then={x -> [[-128, -128]]_8}
-if={x -> [[-128, -128]]_8}
 entry={}
+then={x -> [[-128, -128]]_8}
+ret={x -> [[10, 10]]_8}
+if={x -> [[-128, -128]]_8}
 Abstract trace: entry then if ret
 
 entry:
@@ -3285,10 +3279,10 @@ then:
   goto ret;
 
 Invariants using WrappedIntervals
-ret={x -> [[-10, -10]]_8}
-then={x -> [[-128, -128]]_8}
-if={x -> [[-128, -128]]_8}
 entry={}
+then={x -> [[-128, -128]]_8}
+ret={x -> [[-10, -10]]_8}
+if={x -> [[-128, -128]]_8}
 Abstract trace: entry then if ret
 
 i1=[[-10, 10]]_8
