@@ -236,7 +236,7 @@ namespace crab {
          eval_ftor(ret, tbl, t);
          return ret;
        }  
-
+       
        binary_operation_t conv2binop (operation_t op) {
          switch (op) {
            case OP_ADDITION: return BINOP_ADD;
@@ -362,8 +362,7 @@ namespace crab {
 
        // OpTy = [operation_t | div_operation_t | bitwise_operation_t]
        template<typename OpTy> 
-       term_id_t build_term(OpTy op, term_id_t ty, term_id_t tz)
-       {
+       term_id_t build_term(OpTy op, term_id_t ty, term_id_t tz) {
          // Check if the term already exists
          binary_operation_t binop = conv2binop (op);
          boost::optional<term_id_t> eopt(_ttbl.find_ftor(binop, ty, tz));
@@ -376,19 +375,30 @@ namespace crab {
            dom_var_t y(domvar_of_term(ty));
            dom_var_t z(domvar_of_term(tz));
 
-           // Set up the evaluation.
-           CRAB_LOG("term", crab::outs() << "Prev: " << _impl <<"\n");
-
-           _impl.apply(op, v, y, z);
-
+	   // Set evaluation
+	   CRAB_LOG("term", crab::outs() << "Prev: " << _impl <<"\n");
+	   _impl.apply(op, v, y, z);
+	   
            CRAB_LOG("term", 
-                    crab::outs() << "Should have " << v << " := " << y << op  << z <<"\n");
-           CRAB_LOG("term", crab::outs() << _impl <<"\n");
-
+                    crab::outs() << "Should have " << v << " := " << y << op  << z <<"\n";
+		    crab::outs() << _impl <<"\n";);
            return tx;
          }
        }
 
+       term_id_t build_function(term_id_t ty, term_id_t tz) {
+	 binary_operation_t op = BINOP_FUNCTION;
+         // Check if the term already exists
+         boost::optional<term_id_t> eopt(_ttbl.find_ftor(op, ty, tz));
+         if(eopt) {
+           return *eopt;
+         } else {
+           // Create the term
+           term_id_t tx = _ttbl.apply_ftor(op, ty, tz);
+           return tx;
+         }
+       }
+       
        term_id_t build_linexpr(linear_expression_t& e)
        {
          Number cst = e.constant();
@@ -1343,6 +1353,67 @@ namespace crab {
 
          CRAB_LOG("term", crab::outs() << "*** After assume " << cst << ":" << *this << "\n");
          return;
+       }
+
+       /* Array operations */
+
+
+       virtual void array_assume (variable_t /*a*/,
+				  linear_expression_t /*elem_size*/,
+				  linear_expression_t /*lb_idx*/,
+				  linear_expression_t /*ub_idx*/, 
+				  linear_expression_t /*val*/) override {
+	 // do nothing
+       }
+	 
+       virtual void array_load (variable_t lhs,
+				variable_t a, linear_expression_t /*elem_size*/,
+				linear_expression_t i) override {
+	 crab::CrabStats::count (getDomainName() + ".count.load");
+	 crab::ScopedCrabStats __st__(getDomainName() + ".load");
+
+	 if (this->is_bottom()) {
+	   return;   
+	 } else {
+	   /* We treat the array load as an uninterpreted function
+ 	      lhs := array_load(a, i) -->  lhs := f(a,i)
+	    */
+	   term_id_t t_uf(build_function(term_of_var(a), build_linexpr(i)));
+	   rebind_var(lhs, t_uf);
+	 }
+	 check_terms();
+	 CRAB_LOG("term",
+		  crab::outs() << lhs << ":=" << a <<"[" << i << "]  -- " << *this <<"\n";);
+       }
+
+       virtual void array_store (variable_t a, linear_expression_t /*elem_size*/,
+				 linear_expression_t i, linear_expression_t val, 
+				 bool /*is_singleton*/) override {
+	 crab::CrabStats::count (getDomainName() + ".count.store");
+	 crab::ScopedCrabStats __st__(getDomainName() + ".store");
+
+	 if (this->is_bottom()) {
+	   return;   
+	 } else {
+	   /* We treat the array store as an uninterpreted function
+	      array_store(a, i, val) -->  tmp := f(a,i); assume(tmp == val);
+	    */
+	   term_id_t t_uf(build_function(term_of_var(a), build_linexpr(i)));
+
+	   // tmp := f(a,i)
+	   auto &vfac = a.name().get_var_factory();
+	   variable_t a_tmp(vfac.get(a.index()));
+	   rebind_var(a_tmp, t_uf);
+	   // assume(tmp == val)
+	   *this += (val == a_tmp);
+	 }
+	 check_terms();
+	 CRAB_LOG("term",
+		  crab::outs() << a << "[" << i << "]:=" << val << " -- " << *this <<"\n";);
+       }
+
+       virtual void array_assign (variable_t lhs, variable_t rhs) override {
+	 // do nothing
        }
        
        /*

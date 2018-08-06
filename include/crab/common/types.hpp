@@ -149,7 +149,8 @@ namespace crab {
    typedef enum { 
      BINOP_ADD, BINOP_SUB, BINOP_MUL, 
      BINOP_SDIV, BINOP_UDIV, BINOP_SREM, BINOP_UREM,
-     BINOP_AND, BINOP_OR, BINOP_XOR, BINOP_SHL, BINOP_LSHR, BINOP_ASHR
+     BINOP_AND, BINOP_OR, BINOP_XOR, BINOP_SHL, BINOP_LSHR, BINOP_ASHR,
+     BINOP_FUNCTION
    } binary_operation_t;
 
    typedef enum { 
@@ -175,6 +176,7 @@ namespace crab {
        case BINOP_SHL: o << "<<"; break;
        case BINOP_LSHR: o << ">>_l"; break;
        case BINOP_ASHR: o << ">>_r"; break;
+       case BINOP_FUNCTION: o << "uf"; break;
        default: CRAB_ERROR("unreachable");
       }
      return o;

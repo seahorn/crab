@@ -85,5 +85,30 @@ int main (int argc, char** argv )
     crab::outs() << "Result=" << dom << "\n";
   }
 
+
+  {
+    crab::outs () << "Test with arrays\n";
+    z_term_domain_t dom = z_term_domain_t::top ();
+    z_var a(vfac["A"], crab::ARR_INT_TYPE, 32);    
+    z_var x(vfac["x"], crab::INT_TYPE, 32);
+    z_var y(vfac["y"], crab::INT_TYPE, 32);
+    z_var z(vfac["z"], crab::INT_TYPE, 32);    
+
+    dom.array_store(a, 4, x, 5, false);
+    dom.array_store(a, 4, y, 42, false);
+    dom.array_load(z, a, 4, y);
+
+    crab::outs() << dom << "\n";    
+    z_lin_cst_t c1 (z_lin_t(z) == 42);
+    crab::outs() << "Added " << c1 << "\n";
+    dom += c1;
+    crab::outs() << "Result=" << dom << "\n";
+    
+    z_lin_cst_t c2 (z_lin_t(z) == 5);
+    crab::outs() << "Added " << c2 << "\n";
+    dom += c2;
+    crab::outs() << "Result=" << dom << "\n";    
+  }
+  
   return 0;
 }
