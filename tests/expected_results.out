@@ -2249,6 +2249,12 @@ Added x-y = 0
 Result={x -> t6[_x4], y -> t6[_x4], v0 -> t5[_x5], v1 -> t4[_x6]}{_x4 -> [1, 1]; _x5 -> [0, 0]; _x6 -> [1, 1]}
 Added x-y != 0
 Result=_|_
+Test with arrays
+{x -> t1[_x2], y -> t3[_x4], z -> t4[_x3], A -> t0[_x1], @V_8 -> t4[_x3]}{_x3 -> [42, 42]}
+Added z = 42
+Result={x -> t1[_x2], y -> t3[_x4], z -> t4[_x3], A -> t0[_x1], @V_8 -> t4[_x3]}{_x3 -> [42, 42]}
+Added z = 5
+Result=_|_
 x0:
   k = 2147483648;
   i = 0;
