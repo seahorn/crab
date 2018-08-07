@@ -132,11 +132,11 @@ namespace crab {
 
           mk_edge_vis (cg_t &cg, vertex_map_t &vertex_map, fdecl_t &from): 
               m_cg (cg), m_vertex_map (vertex_map), 
-              m_from (cfg::cfg_hasher<CFG>::hash (from)) { 
+              m_from (crab::cfg::cfg_hasher<CFG>::hash (from)) { 
           }
           
           void visit(callsite_t& cs) { 
-            size_t to = cfg::cfg_hasher<CFG>::hash (cs);
+            size_t to = crab::cfg::cfg_hasher<CFG>::hash (cs);
             auto it_from = m_vertex_map.find (m_from);
             auto it_to = m_vertex_map.find (to);
 
@@ -228,7 +228,7 @@ namespace crab {
             if (!decl_opt)
               CRAB_ERROR("Could not compute call graph: function info is missing.");
             
-            size_t k = cfg::cfg_hasher<CFG>::hash (*decl_opt);
+            size_t k = crab::cfg::cfg_hasher<CFG>::hash (*decl_opt);
             vertex_descriptor_t v = add_vertex (*m_cg);
             m_vertex_map.insert (std::make_pair (k,v));
             node_t f (cfg, m_id++);

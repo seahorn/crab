@@ -25,10 +25,10 @@ namespace crab {
     template <typename NodeName, typename CFG, typename AbsDom>
     class necessary_preconditions_fixpoint_iterator:
       public ikos::interleaved_fwd_fixpoint_iterator
-                   <NodeName, cfg::cfg_rev<CFG>, AbsDom> {
+                   <NodeName, crab::cfg::cfg_rev<CFG>, AbsDom> {
       
       typedef ikos::interleaved_fwd_fixpoint_iterator
-      <NodeName, cfg::cfg_rev<CFG>, AbsDom> fixpoint_iterator_t;
+      <NodeName, crab::cfg::cfg_rev<CFG>, AbsDom> fixpoint_iterator_t;
       
       typedef intra_abs_transformer<AbsDom> abs_fwd_tr_t;	
       typedef typename CFG::basic_block_label_t bb_label_t;
@@ -109,7 +109,7 @@ namespace crab {
        unsigned int widening_delay,
        unsigned int descending_iterations,
        size_t jump_set_size)
-	: fixpoint_iterator_t(cfg::cfg_rev<CFG> (cfg), wto,
+	: fixpoint_iterator_t(crab::cfg::cfg_rev<CFG> (cfg), wto,
 			      widening_delay, descending_iterations, jump_set_size),
 	  m_cfg (cfg),
 	  m_postcond (postcond) { }

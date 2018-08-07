@@ -26,7 +26,7 @@ namespace crab {
     //     for (auto const &s : boost::make_iterator_range (bb.begin(), bb.end())) {
     //       if (s.is_return ()) {                
     //         auto ret_stmt =
-    // 	      static_cast<const cfg::return_stmt<number_t,varname_t> *> (&s);
+    // 	      static_cast<const crab::cfg::return_stmt<number_t,varname_t> *> (&s);
     //         auto const &ret_typed_vars = ret_stmt->get_ret_vals ();
     //         res.reserve (ret_typed_vars.size ());
     //         for (auto vt: ret_typed_vars)
@@ -159,7 +159,7 @@ namespace crab {
 	  m_abs_tr (abs_tr),
 	  m_live (live) {
 
-	cfg::type_checker<CFG> tc(this->_cfg);
+	crab::cfg::type_checker<CFG> tc(this->_cfg);
 	tc.run();
 	
         if (live) {

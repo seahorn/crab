@@ -55,7 +55,7 @@ namespace crab {
           typedef Num Number;
           typedef VName VariableName;
 	  typedef variable<Num, VName> variable_t;
-          typedef cfg::var_factory_impl::str_var_alloc_col Alloc;
+          typedef crab::cfg::var_factory_impl::str_var_alloc_col Alloc;
           typedef Abs domain_t; 
         };
      }

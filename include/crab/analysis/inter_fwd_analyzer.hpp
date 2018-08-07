@@ -135,7 +135,8 @@ namespace crab {
             if (fun_name != "main") continue;
             
             CRAB_LOG ("inter",
-                   crab::outs() << "++ Analyzing function " << (*fdecl).get_func_name() << "\n");
+		      crab::outs() << "++ Analyzing function "
+		                   << (*fdecl).get_func_name() << "\n");
 
 	    auto abs_tr = boost::make_shared<td_abs_tr> (&init, &m_summ_tbl, &m_call_tbl);
             auto a = boost::make_shared<td_analyzer> (cfg, nullptr, &*abs_tr,
@@ -145,7 +146,7 @@ namespace crab {
 						      get_live (cfg));
 						      
             a->Run ();
-            m_inv_map.insert (std::make_pair (cfg::cfg_hasher<cfg_t>::hash(*fdecl), a));
+            m_inv_map.insert (std::make_pair (crab::cfg::cfg_hasher<cfg_t>::hash(*fdecl), a));
           }
           return;
         }
@@ -243,7 +244,7 @@ namespace crab {
 						      m_jump_set_size,
 						      get_live (cfg));
 	    a->Run();
-            m_inv_map.insert (std::make_pair (cfg::cfg_hasher<cfg_t>::hash(*fdecl), a));
+            m_inv_map.insert (std::make_pair (crab::cfg::cfg_hasher<cfg_t>::hash(*fdecl), a));
           }
         }
 	CRAB_VERBOSE_IF(1,crab::outs() << "Finished inter-procedural analysis\n";);	
@@ -259,7 +260,7 @@ namespace crab {
                       typename cfg_t::basic_block_label_t b) const { 
 
         if (auto fdecl = cfg.get_func_decl ()) {
-          auto const it = m_inv_map.find (cfg::cfg_hasher<cfg_t>::hash(*fdecl));
+          auto const it = m_inv_map.find (crab::cfg::cfg_hasher<cfg_t>::hash(*fdecl));
           if (it != m_inv_map.end ())
             return it->second->get_pre (b);
         }
@@ -271,7 +272,7 @@ namespace crab {
                        typename cfg_t::basic_block_label_t b) const {
         
         if (auto fdecl = cfg.get_func_decl ()) {
-          auto const it = m_inv_map.find (cfg::cfg_hasher<cfg_t>::hash(*fdecl));
+          auto const it = m_inv_map.find (crab::cfg::cfg_hasher<cfg_t>::hash(*fdecl));
           if (it != m_inv_map.end ())
             return it->second->get_post (b);
         }

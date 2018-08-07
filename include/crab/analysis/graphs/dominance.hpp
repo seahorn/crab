@@ -163,7 +163,7 @@ namespace crab {
      template<typename G, typename VectorMap>
      void post_dominance (G g, VectorMap &rdf) {
        if (!g.has_exit ()) return;
-       cfg::cfg_rev<G> rev_g (g);
+       crab::cfg::cfg_rev<G> rev_g (g);
        CRAB_LOG("dominance", crab::outs () << "Post-Dominance Frontiers\n");
        graph_algo_impl::dominance (rev_g, rev_g.entry (), rdf);
        
