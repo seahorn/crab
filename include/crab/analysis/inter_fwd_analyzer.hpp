@@ -32,6 +32,7 @@ namespace crab {
     class inter_fwd_analyzer: public boost::noncopyable {
 
       typedef typename CG::node_t cg_node_t;
+      typedef typename CG::edge_t cg_edge_t;
 
      public:
 
@@ -211,31 +212,40 @@ namespace crab {
                                                  rev_order.rend ())) {
           crab::ScopedCrabStats __st__("Inter.TopDown");
           std::vector<cg_node_t> &scc_mems = Scc_g.get_component_members (n);
+	  
+	  // The SCC is recursive if it has more than one element or
+	  // there is only one that calls directly to itself.
+	  bool is_recursive = (scc_mems.size () > 1) ||
+	    std::any_of(m_cg.succs(n).first, m_cg.succs(n).second,
+	  		[n](const cg_edge_t& e) {
+	  		  return (n == e.dest());
+	  		});
+
           for (auto m: scc_mems) {
             auto cfg = m.get_cfg ();
             auto fdecl = cfg.get_func_decl ();
             assert (fdecl);
 	    CRAB_VERBOSE_IF(1, crab::outs() << "++ Analyzing function " 
 			                    << (*fdecl).get_func_name () << "\n";);
-            if (scc_mems.size () > 1) {
-              // If the node is recursive then what we have in m_call_tbl
-              // is incomplete and therefore it is unsound to use it. To
-              // remedy it, we insert another calling context with top
-              // value that approximates all the possible calling
-              // contexts during the recursive calls.
+            if (is_recursive) {
+              // If the SCC is recursive then what we have in
+              // m_call_tbl is incomplete and therefore it is unsound
+              // to use it. To remedy it, we insert another calling
+              // context with top value that approximates all the
+              // possible calling contexts during the recursive calls.
               m_call_tbl.insert (*fdecl, TD_Dom::top ());
             }
 	   
 	    auto init_inv = init;	    
-            if (is_root)
+            if (is_root) {
               is_root = false;
-            else
-	    {
-	      init_inv = m_call_tbl.get_call_ctx (*fdecl);	      
-              CRAB_LOG("inter",
-                       crab::outs() << "    Starting analysis of "
-  		                    << *fdecl <<  " with " << init_inv << "\n");
+	    } else {
+	      init_inv = m_call_tbl.get_call_ctx (*fdecl);
             }
+	    
+	    CRAB_LOG("inter",
+		     crab::outs() << "    Starting analysis of "
+  		                  << *fdecl <<  " with " << init_inv << "\n");
 
 	    auto abs_tr = boost::make_shared<td_abs_tr>(&init_inv, &m_summ_tbl, &m_call_tbl);
             auto a = boost::make_shared<td_analyzer> (cfg, nullptr, &*abs_tr, 
