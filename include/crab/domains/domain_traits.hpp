@@ -56,8 +56,33 @@ namespace crab {
        // -- lose precision if relational or disjunctive domain
        inv.set (new_x , inv [x]);
      }
+
    };
-      
+
+   // Perform constraint simplifications depending on the abstract
+   // domain. 
+   template<typename Domain>
+   class constraint_simp_domain_traits {
+   public:
+
+     typedef typename Domain::number_t number_t;
+     typedef typename Domain::linear_constraint_t linear_constraint_t;
+     typedef typename Domain::linear_constraint_system_t linear_constraint_system_t;
+     
+     // Convert an equality into two inequalities. This is not
+     // possible for machine arithmetic domains.
+     static void lower_equality(linear_constraint_t cst, linear_constraint_system_t& csts) {
+       if (cst.is_equality()) {
+	 csts += linear_constraint_t(cst.expression(), linear_constraint_t::INEQUALITY);
+	 csts += linear_constraint_t(cst.expression() * number_t(-1),
+				     linear_constraint_t::INEQUALITY);
+       } else {
+	 csts += cst;
+       }
+     }
+   };
+   
+   
    // Special operations needed by the checker
    template<typename Domain>
    class checker_domain_traits{
@@ -76,7 +101,7 @@ namespace crab {
        entailment(Domain dom): _dom(dom) {}
        
        bool operator()(const linear_constraint_t& cst) {
-	 Domain dom = _dom; //copy is necessary 
+	 Domain dom(_dom); //copy is necessary
 	 linear_constraint_t neg_cst = cst.negate();
 	 dom += neg_cst;
 	 return dom.is_bottom();
@@ -103,12 +128,10 @@ namespace crab {
 
        bool res;
        if (cst.is_equality()) {
-	 // inv entails (e == 0) iff inv entails (e <= 0) AND inv entails (e >= 0)
-	 linear_constraint_system_t csts;       	 
-	 csts += linear_constraint_t(cst.expression(),
-				     linear_constraint_t::INEQUALITY);
-	 csts += linear_constraint_t(cst.expression() * number_t(-1),
-				     linear_constraint_t::INEQUALITY);
+	 // try to convert the equality into inequalities so when it's
+	 // negated we do not have disequalities.
+	 linear_constraint_system_t csts;
+	 constraint_simp_domain_traits<Domain>::lower_equality(cst, csts);
 	 res = entail_all_of(inv, csts);
        } else {
 	 entailment op(inv);

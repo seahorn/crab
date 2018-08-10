@@ -1765,7 +1765,22 @@ public:
   static void project (wrapped_interval_domain_t& inv, Iter it, Iter end) {
     inv.project(it, end);
   }
+};
+
+
+template<typename Number, typename VariableName>
+class constraint_simp_domain_traits <wrapped_interval_domain<Number,VariableName> > {
+public:
   
+  typedef ikos::linear_constraint<Number, VariableName> linear_constraint_t;
+  typedef ikos::linear_constraint_system<Number, VariableName> linear_constraint_system_t;
+  
+  static void lower_equality(linear_constraint_t cst, linear_constraint_system_t& csts) {
+    // We cannot convert an equality into inequalities because we
+    // don't know the interpretation (signed/unsigned) for those
+    // inequalities.
+    csts += cst;
+  }
 };
   
 }
