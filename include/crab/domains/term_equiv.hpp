@@ -1358,12 +1358,13 @@ namespace crab {
        /* Array operations */
 
 
-       virtual void array_assume (variable_t /*a*/,
-				  linear_expression_t /*elem_size*/,
-				  linear_expression_t /*lb_idx*/,
-				  linear_expression_t /*ub_idx*/, 
-				  linear_expression_t /*val*/) override {
-	 // do nothing
+       virtual void array_init (variable_t /*a*/,
+				linear_expression_t /*elem_size*/,
+				linear_expression_t /*lb_idx*/,
+				linear_expression_t /*ub_idx*/, 
+				linear_expression_t /*val*/) override {
+	 // TODO: perform a loop of array stores if [lb_idx, ub_idx]
+	 //       is finite.
        }
 	 
        virtual void array_load (variable_t lhs,

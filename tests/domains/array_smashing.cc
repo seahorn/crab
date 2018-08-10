@@ -33,7 +33,7 @@ z_cfg_t* prog1 (variable_factory_t &vfac)
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   ////////
   entry.assign (a_p, 0);
-  entry.array_assume (a, elem_size, 0, 9, a_p);
+  entry.array_init (a, elem_size, 0, 9, a_p);
   /////////
   entry.assign(n1, 1);
   entry.assign(i, 0);
@@ -77,7 +77,7 @@ z_cfg_t* prog2(variable_factory_t &vfac)
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
   ////////
   entry.assign (a_p, 0);
-  entry.array_assume (a, elem_size, 0, 9, a_p);
+  entry.array_init (a, elem_size, 0, 9, a_p);
   /////////
   entry.assign(n0, 0); // we need it to be considered as graph node
   entry.assign(n1, 1); 
@@ -122,8 +122,8 @@ z_cfg_t* prog3(variable_factory_t &vfac)
   uint64_t elem_size = 1;
   
   entry.assign (a_p, 0);
-  entry.array_assume (a, elem_size, 0, 9, a_p);
-  entry.array_assume (b, elem_size, 0, 9, a_p);
+  entry.array_init (a, elem_size, 0, 9, a_p);
+  entry.array_init (b, elem_size, 0, 9, a_p);
 
   entry.assign(n1, 1);
   entry.assign(i, 0);
@@ -169,8 +169,8 @@ z_cfg_t* prog4(variable_factory_t &vfac)
   uint64_t elem_size = 1; 
   
   entry.assign (a_p, 0);
-  entry.array_assume (a, elem_size, 0, 9, a_p);
-  entry.array_assume (b, elem_size, 0, 9, a_p);
+  entry.array_init (a, elem_size, 0, 9, a_p);
+  entry.array_init (b, elem_size, 0, 9, a_p);
 
   entry.assign(n1, 1);
   entry.assign(i, 0);
@@ -215,8 +215,8 @@ z_cfg_t* prog4b(variable_factory_t &vfac)
   uint64_t elem_size = 1; 
   entry.bool_assign (tt, z_lin_cst_t::get_true());
   entry.bool_assign (ff, z_lin_cst_t::get_false());  
-  entry.array_assume (a, elem_size, 0, 9, tt);
-  entry.array_assume (b, elem_size, 0, 9, ff);
+  entry.array_init (a, elem_size, 0, 9, tt);
+  entry.array_init (b, elem_size, 0, 9, ff);
 
   entry.assign(n1, 1);
   entry.assign(i, 0);
@@ -257,7 +257,7 @@ z_cfg_t* prog5(variable_factory_t &vfac)
 
   uint64_t elem_size = 1;   
   entry.assign (a_p, 0);
-  entry.array_assume (a, elem_size, 0, n, a_p);
+  entry.array_init (a, elem_size, 0, n, a_p);
 
   entry.assume(n >= 1);
   entry.assign(n1, 1);
@@ -297,7 +297,7 @@ z_cfg_t* prog6(variable_factory_t &vfac)
   
   uint64_t elem_size = 4;   
   entry.assign (a_p, 0);
-  entry.array_assume (a, elem_size, 0, 9 , a_p);
+  entry.array_init (a, elem_size, 0, 9 , a_p);
   entry.assign(i, 0);
   ///////
   bb1_t.assume(i <= 9);
@@ -338,7 +338,7 @@ z_cfg_t* prog7(variable_factory_t &vfac)
   uint64_t elem_size = 1;     
   // assume (forall i. a[i] =0);
   entry.assign (a_p, 0);
-  entry.array_assume (a, elem_size, 0, n, a_p);
+  entry.array_init (a, elem_size, 0, n, a_p);
   //////
   entry.assume(n >= 2);
   entry.assign(n1, 1);
@@ -388,7 +388,7 @@ z_cfg_t* prog8(variable_factory_t &vfac)
 
   uint64_t elem_size = 1;       
   entry.assign(a_p, 0);
-  entry.array_assume (a, elem_size, 0, 10, a_p);
+  entry.array_init (a, elem_size, 0, 10, a_p);
   entry.assume(n >= 1);
   entry.assign(n1, 1);
   entry.assign(n2, 2);
@@ -443,7 +443,7 @@ z_cfg_t* prog9(variable_factory_t &vfac)
 
   uint64_t elem_size = 1;         
   entry.assign (a_p, 0);
-  entry.array_assume (a, elem_size, 0, n, a_p);
+  entry.array_init (a, elem_size, 0, n, a_p);
   entry.assume(n >= 1);
   entry.assign(n1, 1);
   entry.assign(i1, 0);
@@ -499,8 +499,8 @@ z_cfg_t* prog10(variable_factory_t &vfac)
   // forall i :: is_not_null(a[i])
   // forall i :: is_not_null(b[i])
   entry.ptr_new_object (obj1, 0);
-  entry.array_assume (a, elem_size, 0, n, obj1);
-  entry.array_assume (b, elem_size, 0, n, obj1);
+  entry.array_init (a, elem_size, 0, n, obj1);
+  entry.array_init (b, elem_size, 0, n, obj1);
   ///
   entry.assume(n >= 1);
   entry.assign(i, 0);

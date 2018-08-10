@@ -295,7 +295,7 @@ namespace crab {
 	
 	virtual void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
 					      array_smashing_t inv) {
-	  _inv.backward_assign_bool_var(lhs, rhs, is_not_rhs, inv.get_content_domain());	  	  
+	  _inv.backward_assign_bool_var(lhs, rhs, is_not_rhs, inv.get_content_domain()); 
 	}
 	
 	virtual void backward_apply_binary_bool(bool_operation_t op,
@@ -339,14 +339,12 @@ namespace crab {
         
         // array_operators_api 
 
-        // All the array elements are assumed to be equal to val
-        virtual void array_assume (variable_t a,
-				   linear_expression_t /*elem_size*/,
-                                   linear_expression_t /*lb_idx*/,
-				   linear_expression_t /*ub_idx*/, 
-                                   linear_expression_t val) override {
-	  assert(a.is_array_type());
-	  
+        // All the array elements are initialized to val
+        virtual void array_init (variable_t a,
+				 linear_expression_t /*elem_size*/,
+				 linear_expression_t /*lb_idx*/,
+				 linear_expression_t /*ub_idx*/, 
+				 linear_expression_t val) override {
 	  if (a.get_type() == ARR_BOOL_TYPE)  {
 	    if (val.is_constant()) {
 	      if (val.constant() >= Number(1))
@@ -377,8 +375,6 @@ namespace crab {
           crab::CrabStats::count (getDomainName() + ".count.load");
           crab::ScopedCrabStats __st__(getDomainName() + ".load");
 
-	  assert(a.is_array_type());
- 
           // We need to be careful when assigning a summarized variable a
           // into a non-summarized variable lhs. Simply _inv.assign (lhs,
           // a) is not sound.
@@ -407,8 +403,6 @@ namespace crab {
           crab::CrabStats::count (getDomainName() + ".count.store");
           crab::ScopedCrabStats __st__(getDomainName() + ".store");
 
-	  assert(a.is_array_type());
- 
           if (is_singleton) {
             strong_update(a, val);
 	  } else {
@@ -421,9 +415,6 @@ namespace crab {
         }
 
         virtual void array_assign (variable_t lhs, variable_t rhs) override {
-	  assert(lhs.get_type() == rhs.get_type());
-	  assert(lhs.is_array_type());	  
-	  
 	  if (lhs.get_type() == ARR_BOOL_TYPE) {
 	    _inv.assign_bool_var(lhs, rhs, false);
 	  } else if (lhs.get_type() == ARR_INT_TYPE || lhs.get_type() == ARR_REAL_TYPE) {

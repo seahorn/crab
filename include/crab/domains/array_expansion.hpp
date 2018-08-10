@@ -916,16 +916,15 @@ namespace domains {
     // array_operators_api 
        
     // All the array elements are assumed to be equal to val
-    virtual void array_assume (variable_t a,
+    virtual void array_init (variable_t a,
 			       linear_expression_t elem_size,
 			       linear_expression_t lb_idx,
 			       linear_expression_t ub_idx, 
 			       linear_expression_t val) override {
-      assert(a.is_array_type());
-      CRAB_WARN("TODO: array_assume operation");
+      CRAB_WARN("TODO: array_init operation");
       CRAB_LOG("array-expansion",
-	       crab::outs() << "forall i:: " << a << "[i]==" << val
-	       << " -- " << *this <<"\n";);
+	       crab::outs() << a << "[" << lb_idx << "..." << ub_idx << "] := " << val
+	                    << " -- " << *this <<"\n";);
     }
     
     virtual void array_load (variable_t lhs, variable_t a,
@@ -1043,9 +1042,6 @@ namespace domains {
     }
        
     virtual void array_assign (variable_t lhs, variable_t rhs) override {
-      assert(lhs.get_type() == rhs.get_type());
-      assert(lhs.is_array_type());
-      
       _array_map[lhs] = _array_map[rhs];
     }
        

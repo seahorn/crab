@@ -1810,7 +1810,7 @@ namespace crab {
 
       // T1 and T2 are either variable_t or z_number
       template<typename T1, typename T2>
-      void array_assume (variable_t arr, T1 src, T2 dst, linear_expression_t val)
+      void array_init (variable_t arr, T1 src, T2 dst, linear_expression_t val)
       {
         if (!is_landmark (src)) {
           crab::outs () << "WARNING no landmark found for " << src << "\n";
@@ -2326,24 +2326,23 @@ namespace crab {
 
       // array_operators_api       
 
-      virtual void array_assume (variable_t a, linear_expression_t /*elem_size*/,
-                                 linear_expression_t lb_idx,
-				 linear_expression_t ub_idx, 
-                                 linear_expression_t val) override {
+      virtual void array_init (variable_t a,
+			       linear_expression_t /*elem_size*/,
+			       linear_expression_t lb_idx,
+			       linear_expression_t ub_idx, 
+			       linear_expression_t val) override {
 
-	assert(a.is_array_type());
-	
         auto lb_var_opt = lb_idx.get_variable ();
         auto ub_var_opt = ub_idx.get_variable ();
 
         if (lb_idx.is_constant() && ub_idx.is_constant())
-          array_assume (a, lb_idx.constant(), ub_idx.constant(), val);
+          array_init (a, lb_idx.constant(), ub_idx.constant(), val);
         else if (lb_idx.is_constant () && ub_var_opt)
-          array_assume (a, lb_idx.constant(), *ub_var_opt, val);
+          array_init (a, lb_idx.constant(), *ub_var_opt, val);
         else if (lb_var_opt && ub_idx.is_constant())
-          array_assume (a, *lb_var_opt, ub_idx.constant(), val);
+          array_init (a, *lb_var_opt, ub_idx.constant(), val);
         else if (lb_var_opt && ub_var_opt)
-          array_assume (a, *lb_var_opt, *ub_var_opt, val);
+          array_init (a, *lb_var_opt, *ub_var_opt, val);
         else
           CRAB_ERROR ("unreachable");
       }
@@ -2354,8 +2353,6 @@ namespace crab {
         crab::CrabStats::count (getDomainName() + ".count.load");
         crab::ScopedCrabStats __st__(getDomainName() + ".load");
 
-	assert(a.is_array_type());
-	
         auto vi = i.get_variable ();
         if (!vi) {
           CRAB_WARN ("TODO: array load index must be a variable");
@@ -2422,8 +2419,6 @@ namespace crab {
         crab::CrabStats::count (getDomainName() + ".count.store");
         crab::ScopedCrabStats __st__(getDomainName() + ".store");
 
-	assert(a.is_array_type());
-	  
         auto vi = i.get_variable ();
         if (!vi) {
           CRAB_WARN ("TODO: array store index must be a variable");
@@ -2457,9 +2452,6 @@ namespace crab {
       }
 
       virtual void array_assign (variable_t lhs, variable_t rhs) override {
-	assert (lhs.get_type() == rhs.get_type());
-	assert(lhs.is_array_type());
-	
 	CRAB_WARN("array_assign in array_sparse_graph is not implemented");
       }
       

@@ -15,8 +15,9 @@
      x := select (cond, y, z);
 
    ARRAYS
-     a[i] = v;    (v can be either an integer or pointer)
-     v = a[i];
+     a[l...u] := v
+     a[i] := v;    (v can be either an integer or pointer)
+     v := a[i];
      a := b       (a and b arrays)
 
    POINTERS
@@ -78,7 +79,7 @@ namespace crab {
     typedef crab::cfg::callsite_stmt<number_t,VariableName>     callsite_t;
     typedef crab::cfg::return_stmt<number_t,VariableName>       return_t;
     
-    typedef crab::cfg::array_assume_stmt<number_t,VariableName> arr_assume_t;
+    typedef crab::cfg::array_init_stmt<number_t,VariableName>   arr_init_t;
     typedef crab::cfg::array_store_stmt<number_t,VariableName>  arr_store_t;
     typedef crab::cfg::array_load_stmt<number_t,VariableName>   arr_load_t;
     typedef crab::cfg::array_assign_stmt<number_t,VariableName> arr_assign_t;
@@ -111,7 +112,7 @@ namespace crab {
     virtual void exec (int_cast_t&) { }
     virtual void exec (callsite_t&) { }
     virtual void exec (return_t&) { }
-    virtual void exec (arr_assume_t&) { }
+    virtual void exec (arr_init_t&) { }
     virtual void exec (arr_store_t&) { }
     virtual void exec (arr_load_t&) { }
     virtual void exec (arr_assign_t&) { }
@@ -142,7 +143,7 @@ namespace crab {
     void visit (int_cast_t &s) { exec (s); }    
     void visit (callsite_t &s) { exec (s); }
     void visit (return_t &s) { exec (s); }
-    void visit (arr_assume_t &s) { exec (s); }
+    void visit (arr_init_t &s) { exec (s); }
     void visit (arr_store_t &s) { exec (s); }
     void visit (arr_load_t &s) { exec (s); }
     void visit (arr_assign_t &s) { exec (s); }
@@ -193,7 +194,7 @@ namespace crab {
     using typename abs_transform_api_t::assert_t;
     using typename abs_transform_api_t::int_cast_t;    
     using typename abs_transform_api_t::callsite_t;
-    using typename abs_transform_api_t::arr_assume_t;
+    using typename abs_transform_api_t::arr_init_t;
     using typename abs_transform_api_t::arr_load_t;
     using typename abs_transform_api_t::arr_store_t;
     using typename abs_transform_api_t::arr_assign_t;
@@ -385,9 +386,9 @@ namespace crab {
     void exec (unreach_t& stmt)
     { *get_inv() = abs_dom_t::bottom (); }
     
-    void exec (arr_assume_t &stmt) {
-      get_inv()->array_assume (stmt.array (), stmt.elem_size(),
-			       stmt.lb_index (), stmt.ub_index (), stmt.val ());
+    void exec (arr_init_t &stmt) {
+      get_inv()->array_init (stmt.array (), stmt.elem_size(),
+			     stmt.lb_index (), stmt.ub_index (), stmt.val ());
     }
     
     void exec (arr_store_t &stmt) {
@@ -466,7 +467,7 @@ namespace crab {
     using typename abs_transform_api_t::assert_t;
     using typename abs_transform_api_t::int_cast_t;
     using typename abs_transform_api_t::callsite_t;
-    using typename abs_transform_api_t::arr_assume_t;
+    using typename abs_transform_api_t::arr_init_t;
     using typename abs_transform_api_t::arr_load_t;
     using typename abs_transform_api_t::arr_store_t;
     using typename abs_transform_api_t::arr_assign_t;
@@ -685,7 +686,7 @@ namespace crab {
     void exec (arr_load_t  &stmt)
     { *m_pre -= stmt.lhs(); }          
     // NOT IMPLEMENTED
-    void exec (arr_assume_t &stmt) { }
+    void exec (arr_init_t &stmt) { }
     void exec (arr_store_t &stmt) { }
     void exec (arr_assign_t  &stmt) { }
     void exec (ptr_null_t &stmt) { }

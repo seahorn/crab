@@ -363,13 +363,13 @@ namespace crab {
       
       // array_operators_api
       
-      virtual void array_assume (variable_t a,
-				 linear_expression_t elem_size,
-                                 linear_expression_t lb_idx,
-				 linear_expression_t ub_idx, 
-                                 linear_expression_t val) override {
+      virtual void array_init (variable_t a,
+			       linear_expression_t elem_size,
+			       linear_expression_t lb_idx,
+			       linear_expression_t ub_idx, 
+			       linear_expression_t val) override {
 	bool r1 = diff(__LINE__);	
-        this->_product.array_assume (a, elem_size, lb_idx, ub_idx, val);
+        this->_product.array_init (a, elem_size, lb_idx, ub_idx, val);
 	bool r2 = diff(__LINE__);
 	if (r1 && !r2) {
 	  CRAB_WARN("PRECISION LEAK of ",

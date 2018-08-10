@@ -434,7 +434,7 @@ z_cfg_t* prog10(variable_factory_t &vfac)
   // forall i :: is_not_null(b[i])
   entry.ptr_new_object (obj1, 0);
   entry.sub (max, n, 1); // max = n-1 
-  entry.array_assume (a, elem_size, 0, max, obj1);
+  entry.array_init (a, elem_size, 0, max, obj1);
   ///
   entry.assign(i, 0);
   ///////

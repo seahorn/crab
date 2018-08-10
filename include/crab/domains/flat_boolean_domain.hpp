@@ -1233,12 +1233,12 @@ namespace crab {
       
       // array_operators_api
       
-      virtual void array_assume (variable_t a,
-				 linear_expression_t elem_size,
-                                 linear_expression_t lb_idx,
-				 linear_expression_t ub_idx,
-                                 linear_expression_t val) override
-      { _product.array_assume (a, elem_size, lb_idx, ub_idx, val); }
+      virtual void array_init (variable_t a,
+			       linear_expression_t elem_size,
+			       linear_expression_t lb_idx,
+			       linear_expression_t ub_idx,
+			       linear_expression_t val) override
+      { _product.array_init (a, elem_size, lb_idx, ub_idx, val); }
       
       virtual void array_load (variable_t lhs,
 			       variable_t a, linear_expression_t elem_size,
@@ -1264,7 +1264,8 @@ namespace crab {
       virtual void pointer_store (variable_t lhs, variable_t rhs) override
       { _product.pointer_store (lhs, rhs); }
       
-      virtual void pointer_assign (variable_t lhs, variable_t rhs, linear_expression_t offset) override
+      virtual void pointer_assign (variable_t lhs, variable_t rhs,
+				   linear_expression_t offset) override
       { _product.pointer_assign (lhs, rhs, offset); }
       
       virtual void pointer_mk_obj (variable_t lhs, ikos::index_t address) override

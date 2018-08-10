@@ -25,10 +25,11 @@ namespace crab {
 
         virtual ~array_operators () { }
 
-        // assume all array contents in [lb_idx,ub_idx] are equal to val
-        virtual void array_assume (variable_t a, _linear_exp_t elem_size,
-				   _linear_exp_t lb_idx, _linear_exp_t ub_idx, 
-                                   _linear_exp_t val) {}
+        // initialize all array contents in [lb_idx,ub_idx] to val
+        // where elem_size is in bytes.
+        virtual void array_init (variable_t a, _linear_exp_t elem_size,
+				 _linear_exp_t lb_idx, _linear_exp_t ub_idx, 
+				 _linear_exp_t val) {}
 
         // lhs := a[i] where elem_size is in bytes
         virtual void array_load (variable_t lhs,

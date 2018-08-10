@@ -49,7 +49,7 @@ namespace crab {
          typedef typename crab::cfg::statement_visitor<N,V>::unreach_t  unreach_t;
          typedef typename crab::cfg::statement_visitor<N,V>::callsite_t callsite_t;
 
-         typedef typename crab::cfg::statement_visitor<N,V>::arr_assume_t arr_assume_t;
+         typedef typename crab::cfg::statement_visitor<N,V>::arr_init_t   arr_init_t;
          typedef typename crab::cfg::statement_visitor<N,V>::arr_load_t   arr_load_t;
          typedef typename crab::cfg::statement_visitor<N,V>::arr_store_t  arr_store_t;
 
@@ -95,7 +95,7 @@ namespace crab {
              _indexes += vars;
          }
 
-         void visit(arr_assume_t &s) {
+         void visit(arr_init_t &s) {
            _indexes += get_variables(s.lb_index());
            _indexes += get_variables(s.ub_index());
          }
@@ -212,9 +212,9 @@ namespace crab {
        typedef typename crab::cfg::statement_visitor<N,V>::callsite_t callsite_t;
        typedef typename crab::cfg::statement_visitor<N,V>::assert_t   assert_t;
 
-       typedef typename crab::cfg::statement_visitor<N,V>::arr_assume_t arr_assume_t;
-       typedef typename crab::cfg::statement_visitor<N,V>::arr_load_t   arr_load_t;
-       typedef typename crab::cfg::statement_visitor<N,V>::arr_store_t  arr_store_t;
+       typedef typename crab::cfg::statement_visitor<N,V>::arr_init_t  arr_init_t;
+       typedef typename crab::cfg::statement_visitor<N,V>::arr_load_t  arr_load_t;
+       typedef typename crab::cfg::statement_visitor<N,V>::arr_store_t arr_store_t;
        
        typedef typename bin_op_t::linear_expression_t linear_expression_t;
        typedef typename linear_expression_t::number_t number_t;
@@ -248,7 +248,7 @@ namespace crab {
 
        void visit(bin_op_t &s){}         
        void visit(assume_t &s) {}
-       void visit(arr_assume_t &s) {}
+       void visit(arr_init_t &s) {}
        void visit(arr_load_t &s) {}
        void visit(arr_store_t &s) {}
        void visit(select_t&) {}

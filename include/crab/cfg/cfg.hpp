@@ -76,7 +76,7 @@ namespace crab {
       BIN_OP = 20, ASSIGN = 21, ASSUME = 22, UNREACH = 23, SELECT = 24,
       ASSERT = 25,
       // arrays 
-      ARR_ASSUME = 30, ARR_STORE = 31, ARR_LOAD = 32, ARR_ASSIGN = 33, 
+      ARR_INIT = 30, ARR_STORE = 31, ARR_LOAD = 32, ARR_ASSIGN = 33, 
       // pointers
       PTR_LOAD = 40, PTR_STORE = 41, PTR_ASSIGN = 42, 
       PTR_OBJECT = 43, PTR_FUNCTION = 44, PTR_NULL=45, 
@@ -250,8 +250,8 @@ namespace crab {
       bool is_havoc () const { 
         return m_stmt_code == HAVOC; 
       }
-      bool is_arr_assume () const { 
-        return (m_stmt_code == ARR_ASSUME);
+      bool is_arr_init () const { 
+        return (m_stmt_code == ARR_INIT);
       }      
       bool is_arr_read () const { 
         return (m_stmt_code == ARR_LOAD);
@@ -715,7 +715,7 @@ namespace crab {
       Array statements 
     */
   
-    // XXX: the array statements array_assume_stmt, array_store_stmt,
+    // XXX: the array statements array_init_stmt, array_store_stmt,
     // and array_load_stmt take as one of their template parameters
     // Number which is the type for the array indexes. Although array
     // indexes should be always integers we keep it as a template
@@ -725,10 +725,10 @@ namespace crab {
     // variables are non-integers except array indexes.
     
     
-    //! Assume all the array elements are equal to some variable or
-    //! number.
+    //! Initialize all array elements to some variable or number.
+    //  The semantics is similar to constant arrays in SMT.
     template<class Number, class VariableName>
-    class array_assume_stmt: public statement<Number, VariableName> 
+    class array_init_stmt: public statement<Number, VariableName> 
     {
      public:
 
@@ -739,7 +739,7 @@ namespace crab {
       
      private:
 
-      // forall i \in [lb,ub] % elem_size :: arr[i] == val
+      // for each i \in [lb,ub] % elem_size :: arr[i] := val
       variable_t m_arr; 
       linear_expression_t m_elem_size; //! size in bytes
       linear_expression_t m_lb;
@@ -748,10 +748,10 @@ namespace crab {
 
      public:
       
-      array_assume_stmt (variable_t arr, linear_expression_t elem_size,
-                         linear_expression_t lb, linear_expression_t ub,
-			 linear_expression_t val)
-	: statement_t (ARR_ASSUME)
+      array_init_stmt (variable_t arr, linear_expression_t elem_size,
+		       linear_expression_t lb, linear_expression_t ub,
+		       linear_expression_t val)
+	: statement_t (ARR_INIT)
 	, m_arr (arr)
 	, m_elem_size (elem_size)
 	, m_lb (lb)
@@ -787,18 +787,14 @@ namespace crab {
       
       virtual boost::shared_ptr<statement_t> clone () const
       {
-        typedef array_assume_stmt <Number, VariableName> array_assume_t;
-        return boost::static_pointer_cast< statement_t, array_assume_t >
-	  (boost::make_shared<array_assume_t>(m_arr, m_elem_size,
-					      m_lb, m_ub, m_val));
+        typedef array_init_stmt <Number, VariableName> array_init_t;
+        return boost::static_pointer_cast< statement_t, array_init_t >
+	  (boost::make_shared<array_init_t>(m_arr, m_elem_size,
+					    m_lb, m_ub, m_val));
       }
       
-      void write (crab_os& o) const
-      {
-        o << "assume (forall l in [" << m_lb << "," << m_ub << "] % " << m_elem_size
-	  << " :: " 
-          << m_arr << "[l]=" << m_val << ")";          
-        return;
+      void write (crab_os& o) const {
+        o << m_arr << "[" << m_lb << "..." << m_ub << "] := " << m_val;
       }
     }; 
     
@@ -1910,7 +1906,7 @@ namespace crab {
       typedef callsite_stmt<Number, VariableName> callsite_t;
       typedef return_stmt<Number, VariableName> return_t;
       // Arrays
-      typedef array_assume_stmt<Number,VariableName>  arr_assume_t; 
+      typedef array_init_stmt<Number,VariableName>    arr_init_t; 
       typedef array_store_stmt<Number,VariableName>   arr_store_t;
       typedef array_load_stmt<Number,VariableName>    arr_load_t;
       typedef array_assign_stmt<Number, VariableName> arr_assign_t;
@@ -1945,7 +1941,7 @@ namespace crab {
       
       typedef boost::shared_ptr<callsite_t> callsite_ptr;      
       typedef boost::shared_ptr<return_t> return_ptr;      
-      typedef boost::shared_ptr<arr_assume_t> arr_assume_ptr;
+      typedef boost::shared_ptr<arr_init_t> arr_init_ptr;
       typedef boost::shared_ptr<arr_store_t> arr_store_ptr;
       typedef boost::shared_ptr<arr_load_t> arr_load_ptr;    
       typedef boost::shared_ptr<arr_assign_t> arr_assign_ptr;    
@@ -2380,11 +2376,11 @@ namespace crab {
       }
             
 
-      void array_assume (variable_t a, lin_exp_t elem_size,
-                         lin_exp_t lb_idx, lin_exp_t ub_idx, lin_exp_t v) {
+      void array_init (variable_t a, lin_exp_t elem_size,
+		       lin_exp_t lb_idx, lin_exp_t ub_idx, lin_exp_t v) {
         if (m_track_prec == ARR) {
-          insert(boost::static_pointer_cast<statement_t, arr_assume_t> 
-		(boost::make_shared<arr_assume_t>(a, elem_size, lb_idx, ub_idx, v)));
+          insert(boost::static_pointer_cast<statement_t, arr_init_t> 
+		 (boost::make_shared<arr_init_t>(a, elem_size, lb_idx, ub_idx, v)));
 	}
       }
 
@@ -2628,7 +2624,7 @@ namespace crab {
       typedef callsite_stmt<Number, VariableName> callsite_t;
       typedef return_stmt<Number, VariableName> return_t;
       
-      typedef array_assume_stmt<Number,VariableName> arr_assume_t;
+      typedef array_init_stmt<Number,VariableName> arr_init_t;
       typedef array_store_stmt<Number,VariableName> arr_store_t;
       typedef array_load_stmt<Number,VariableName> arr_load_t;
       typedef array_assign_stmt<Number, VariableName> arr_assign_t;
@@ -2662,7 +2658,7 @@ namespace crab {
       virtual void visit (callsite_t&) {};
       virtual void visit (return_t&) {};
 
-      virtual void visit (arr_assume_t&) {};
+      virtual void visit (arr_init_t&) {};
       virtual void visit (arr_store_t&) {};
       virtual void visit (arr_load_t&) {};
       virtual void visit (arr_assign_t&) {};
@@ -3747,7 +3743,7 @@ namespace crab {
 	typedef typename statement_visitor<N,V>::unreach_t unreach_t;
 	typedef typename statement_visitor<N,V>::callsite_t callsite_t;
 	typedef typename statement_visitor<N,V>::return_t return_t;
-	typedef typename statement_visitor<N,V>::arr_assume_t arr_assume_t;
+	typedef typename statement_visitor<N,V>::arr_init_t arr_init_t;
 	typedef typename statement_visitor<N,V>::arr_store_t arr_store_t;
 	typedef typename statement_visitor<N,V>::arr_load_t arr_load_t;
 	typedef typename statement_visitor<N,V>::arr_assign_t arr_assign_t;	
@@ -4081,7 +4077,7 @@ namespace crab {
 	  check_bool(s.right(), "second operand must be boolean", s);	  
 	};
 	
-	void visit(arr_assume_t& s) {
+	void visit(arr_init_t& s) {
 	  variable_t a = s.array();
 	  lin_exp_t e_sz = s.elem_size();
 	  lin_exp_t lb = s.lb_index();
