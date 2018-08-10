@@ -630,6 +630,23 @@ user-defined assertion checker using ArrayExpansion(Term(Intervals))
 0  Number of total warning checks
 0  Number of total unreachable checks
 
+===================================
+ Test 9 for array expansion domain 
+===================================
+Invariants using ArrayExpansion(Term(Intervals))
+entry={}
+ret={m1_lb -> t0[_x0], m1_ub -> t1[_x1], x -> t3[_x3], y -> t4[_x4], tmp1 -> t2[_x2], tmp2 -> t2[_x2], Mem1[20...23] -> t2[_x2], Mem1[24...27] -> t2[_x2], Mem1[28...31] -> t2[_x2], Mem1[32...35] -> t2[_x2], Mem1[36...39] -> t2[_x2], Mem1[40...43] -> t2[_x2], Mem1[44...47] -> t2[_x2], Mem1[48...51] -> t2[_x2], Mem1[52...55] -> t2[_x2], Mem1[56...59] -> t2[_x2], Mem1[60...63] -> t2[_x2], Mem1[64...67] -> t2[_x2], Mem1[68...71] -> t2[_x2], Mem1[72...75] -> t2[_x2], Mem1[76...79] -> t2[_x2]}{_x0 -> [20, 20]; _x1 -> [80, 80]; _x2 -> [42, 42]; _x3 -> [24, 24]; _x4 -> [76, 76]}
+Abstract trace: entry ret
+ --- SAFE -----------------
+Property : tmp1-tmp2 = 0
+Invariant: {m1_lb -> t0[_x0], m1_ub -> t1[_x1], x -> t3[_x3], y -> t4[_x4], tmp1 -> t2[_x2], tmp2 -> t2[_x2], Mem1[20...23] -> t2[_x2], Mem1[24...27] -> t2[_x2], Mem1[28...31] -> t2[_x2], Mem1[32...35] -> t2[_x2], Mem1[36...39] -> t2[_x2], Mem1[40...43] -> t2[_x2], Mem1[44...47] -> t2[_x2], Mem1[48...51] -> t2[_x2], Mem1[52...55] -> t2[_x2], Mem1[56...59] -> t2[_x2], Mem1[60...63] -> t2[_x2], Mem1[64...67] -> t2[_x2], Mem1[68...71] -> t2[_x2], Mem1[72...75] -> t2[_x2], Mem1[76...79] -> t2[_x2]}{_x0 -> [20, 20]; _x1 -> [80, 80]; _x2 -> [42, 42]; _x3 -> [24, 24]; _x4 -> [76, 76]}
+ -----------------------------
+user-defined assertion checker using ArrayExpansion(Term(Intervals))
+1  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+
 Program 1: forall 0<= i< 10. a[i] = 123456
 Invariants using ArraySmashing(DisjunctiveIntervals)
 entry={}

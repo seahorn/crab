@@ -485,6 +485,38 @@ z_cfg_t* prog8(variable_factory_t &vfac) {
   return cfg;
 }
 
+z_cfg_t* prog9(variable_factory_t &vfac) {
+  // array initialization
+  crab::outs () << "===================================\n";  
+  crab::outs () << " Test 9 for array expansion domain \n";
+  crab::outs () << "===================================\n";    
+  z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
+  z_basic_block_t& entry = cfg->insert ("entry");
+  z_basic_block_t& ret = cfg->insert ("ret");
+  z_var m1(vfac["Mem1"], crab::ARR_INT_TYPE);
+  z_var m1_lb(vfac["m1_lb"], crab::INT_TYPE, 32);
+  z_var m1_ub(vfac["m1_ub"], crab::INT_TYPE, 32);
+  z_var x(vfac["x"], crab::INT_TYPE, 32);
+  z_var y(vfac["y"], crab::INT_TYPE, 32);
+  z_var tmp1(vfac["tmp1"], crab::INT_TYPE, 32);
+  z_var tmp2(vfac["tmp2"], crab::INT_TYPE, 32);
+
+  entry >> ret;
+
+  entry.assign(m1_lb, 20);
+  entry.assign(m1_ub, 80);
+  
+  entry.array_init(m1, 4, m1_lb, m1_ub, 42);
+
+  entry.assign(x, 24);
+  entry.assign(y, 76);
+  entry.array_load(tmp1, m1, x, 4);
+  entry.array_load(tmp2, m1, y, 4);
+  
+  ret.assertion(z_lin_t(tmp1) == z_lin_t(tmp2));
+  return cfg;
+}
+
 void test_array_expansion(int test) {
   variable_factory_t vfac;
   z_cfg_t* cfg = nullptr;
@@ -496,7 +528,8 @@ void test_array_expansion(int test) {
   case 5: cfg = prog5(vfac); break;
   case 6: cfg = prog6(vfac); break;
   case 7: cfg = prog7(vfac); break;
-  case 8: cfg = prog8(vfac); break;                    
+  case 8: cfg = prog8(vfac); break;
+  case 9: cfg = prog9(vfac); break;                        
   default:
     crab::outs() << "No test selected\n";
   }
@@ -517,6 +550,7 @@ int main (int argc, char** argv) {
   test_array_expansion(5);
   test_array_expansion(6);
   test_array_expansion(7);
-  test_array_expansion(8);          
+  test_array_expansion(8);
+  test_array_expansion(9);            
   return 0;
 }

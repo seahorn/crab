@@ -17,8 +17,6 @@
  * 
  * (1) array store/load with a non-constant index are conservatively ignored.
  * (2) array load from a cell that overlaps with other cells return top.
- * (3) array store to a cell c that overlaps with other cells c',
- *     delete cells c' before adding c.
  ******************************************************************************/
 
 #pragma once
@@ -917,11 +915,60 @@ namespace domains {
        
     // All the array elements are assumed to be equal to val
     virtual void array_init (variable_t a,
-			       linear_expression_t elem_size,
-			       linear_expression_t lb_idx,
-			       linear_expression_t ub_idx, 
-			       linear_expression_t val) override {
-      CRAB_WARN("TODO: array_init operation");
+			     linear_expression_t elem_size,
+			     linear_expression_t lb_idx,
+			     linear_expression_t ub_idx, 
+			     linear_expression_t val) override {
+
+      crab::CrabStats::count (getDomainName() + ".count.array_init");
+      crab::ScopedCrabStats __st__(getDomainName() + ".array_init");
+
+      if (is_bottom() || is_top()) return;
+      
+      interval_t lb_i = to_interval(lb_idx);
+      auto lb = lb_i.singleton();
+      if (!lb) {
+	CRAB_WARN("array expansion initialization ignored because ",
+		  "lower bound is not constant");
+	return;
+      }
+      
+      interval_t ub_i = to_interval(ub_idx);
+      auto ub = ub_i.singleton();
+      if (!ub) {
+	CRAB_WARN("array expansion initialization ignored because ",
+		  "upper bound is not constant");
+	return;
+      }
+
+      interval_t n_i = to_interval(elem_size);
+      auto n = n_i.singleton();
+      if (!n) {
+	CRAB_WARN("array expansion initialization ignored because ",
+		  "elem size is not constant");
+		  
+	return;
+      }
+	
+      if ((*ub - *lb) % *n != 0) {
+	CRAB_WARN("array expansion initialization ignored because ",
+		  "the number of elements must be divisible by ", *n);
+	return;
+      }
+
+      const number_t max_num_elems = 512;
+      if (*ub - *lb > max_num_elems) {
+	CRAB_WARN("array expansion initialization ignored because ",
+		  "the number of elements is larger than default limit of ",
+		  max_num_elems);
+	return;
+      }
+
+      for(number_t i = *lb, e = *ub; i < e; ) {
+	array_store(a, elem_size, i, val, false);
+	i = i + *n;
+      }
+      
       CRAB_LOG("array-expansion",
 	       crab::outs() << a << "[" << lb_idx << "..." << ub_idx << "] := " << val
 	                    << " -- " << *this <<"\n";);
@@ -1007,9 +1054,11 @@ namespace domains {
 	// kill overlapping cells
 	std::vector<cell_t> cells;
 	offset_map.get_overlap_cells(o, size, cells);
-	if (cells.size() > 0) { 
-	  CRAB_WARN("array expansion killed ", cells.size(), " overlapping cells with ",
-		    "[", o, "...", o.index()+size-1,"]", " before writing.");
+	if (cells.size() > 0) {
+	  CRAB_LOG("array-expansion",
+		   CRAB_WARN("array expansion killed ", cells.size(),
+			     " overlapping cells with ",
+			     "[", o, "...", o.index()+size-1,"]", " before writing."));
 	  
 	  // Forget the scalars from the numerical domain
 	  for (unsigned i=0, e=cells.size(); i<e; ++i) {
