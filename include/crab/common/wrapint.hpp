@@ -176,7 +176,13 @@ public:
 
   // return the wrapint as an unsigned big number
   ikos::z_number get_unsigned_bignum() const {
-    return ikos::z_number(_n);
+    // XXX: cannot use here ikos::z_number(_n) because it will cast _n
+    // implicitly to a signed number. Thus, max unsigned will become
+    // signed -1.
+    //
+    // In some platforms uint64_t may not be the same as unsigned
+    // long.
+    return ikos::z_number::from_ulong(_n);
   }
 
   // return the wrapint as a signed big number
