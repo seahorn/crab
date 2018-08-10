@@ -685,7 +685,7 @@ namespace crab {
           crab::CrabStats::count (getDomainName() + ".count.copy");
           crab::ScopedCrabStats __st__(getDomainName() + ".copy");
           if (this != &o) {
-            m_apstate = o.m_apstate;
+            m_apstate = apPtr(get_man(), ap_abstract0_copy (get_man (), &*(o.m_apstate)));
             m_var_map = o.m_var_map;
           }
           return *this;
