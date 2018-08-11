@@ -2889,26 +2889,23 @@ namespace crab {
       
       typedef boost::unordered_set< BasicBlockLabel > visited_t;
       template<typename T>
-      void dfs_rec (BasicBlockLabel curId, visited_t &visited, T f) const
-      {
-        if (visited.find (curId) != visited.end ()) return;
-        visited.insert (curId);
+      void dfs_rec (BasicBlockLabel curId, visited_t &visited, T f) const {
+        if (!visited.insert(curId).second) return;
         
         const basic_block_t &cur = get_node (curId);
         f (cur);
-        for (auto const n : boost::make_iterator_range (cur.next_blocks ()))
+        for (auto const n : boost::make_iterator_range (cur.next_blocks ())) {
           dfs_rec (n, visited, f);
+	}
       }
       
       template<typename T>
-      void dfs (T f) const 
-      {
+      void dfs (T f) const  {
         visited_t visited;
         dfs_rec (m_entry, visited, f);
       }
       
-      struct print_block 
-      {
+      struct print_block {
         crab_os &m_o;
         print_block (crab_os& o) : m_o (o) { }
         void operator () (const basic_block_t& B){ B.write (m_o); }
@@ -3143,13 +3140,13 @@ namespace crab {
       
       size_t size () const { return std::distance (begin (), end ()); }
      
-      void write (crab_os& o) const
-      {
-        print_block f (o);
-        if (m_func_decl)
+      void write (crab_os& o) const {
+        if (m_func_decl) {
           o << *m_func_decl << "\n";
-        dfs (f);
-        return;
+	}
+
+        print_block f(o);	
+        dfs(f);
       }
       
       friend crab_os& operator<<(crab_os &o, 
@@ -3523,6 +3520,30 @@ namespace crab {
         }
       }; 
 
+      typedef boost::unordered_set<basic_block_label_t> visited_t;
+      
+      template<typename T>
+      void dfs_rec(basic_block_label_t curId, visited_t &visited, T f) const {
+        if (!visited.insert(curId).second) return;
+        const basic_block_t& cur = get_node(curId);
+        f (cur);
+        for (auto const n : next_nodes(curId)) {
+          dfs_rec (n, visited, f);
+	}
+      }
+      
+      template<typename T>
+      void dfs (T f) const  {
+        visited_t visited;
+        dfs_rec (entry(), visited, f);
+      }
+      
+      struct print_block {
+        crab_os &m_o;
+        print_block (crab_os& o) : m_o (o) { }
+        void operator () (const basic_block_t& B){ B.write (m_o); }
+      };
+      
      public:
 
       typedef boost::transform_iterator<getRev, typename CFGRef::iterator> iterator;
@@ -3652,10 +3673,12 @@ namespace crab {
       }
 
       void write(crab_os& o) const {
-        if (get_func_decl())
+        if (get_func_decl()) {
           o << *get_func_decl() << "\n";
-        for (auto &bb: *this)
-        { bb.write(o); }
+	}
+
+        print_block f(o);	
+        dfs(f);
       }
 
       friend crab_os& operator<<(crab_os &o, const cfg_rev<CFGRef> &cfg) {

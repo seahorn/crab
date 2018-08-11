@@ -93,6 +93,34 @@ z_cfg_t* cfg2 (variable_factory_t &vfac)  {
   return cfg;
 }
 
+// Print invariants by traversing the cfg in dfs.
+template<typename Analyzer>
+static void print_invariants(z_cfg_ref_t cfg, Analyzer& analyser) {
+  std::set<crab::cfg_impl::basic_block_label_t> visited;
+  std::vector<crab::cfg_impl::basic_block_label_t> worklist;
+  worklist.push_back(cfg.entry());
+  visited.insert(cfg.entry());
+  while (!worklist.empty()) {
+    auto cur_label = worklist.back();
+    worklist.pop_back();
+    
+    auto pre = analyser.get_pre (cur_label);
+    auto post = analyser.get_post (cur_label);
+    crab::outs() << get_label_str (cur_label) << "=" 
+              << pre 
+              << " ==> "
+              << post << "\n";
+    
+    auto const &cur_node = cfg.get_node (cur_label);
+    for (auto const kid_label : boost::make_iterator_range(cur_node.next_blocks())) {
+      if (visited.insert(kid_label).second) {
+	worklist.push_back(kid_label);
+      }
+    }
+  }
+
+}
+
 void check (z_cfg_ref_t cfg, variable_factory_t& vfac) {
 
   // Each checker is associated to one analyzer
@@ -115,27 +143,31 @@ void check (z_cfg_ref_t cfg, variable_factory_t& vfac) {
   null_analyzer_t null_a (cfg, z_num_null_domain_t::top (), &live);
   null_a.run ();
   crab::outs() << "Analysis using " << z_num_null_domain_t::getDomainName () << "\n";
-  for (auto &b : cfg)  {
-    auto pre = null_a.get_pre (b.label ());
-    auto post = null_a.get_post (b.label ());
-    crab::outs() << get_label_str (b.label ()) << "=" 
-              << pre 
-              << " ==> "
-              << post << "\n";
-  }
+  print_invariants(cfg, null_a);
+  
+  // for (auto &b : cfg)  {
+  //   auto pre = null_a.get_pre (b.label ());
+  //   auto post = null_a.get_post (b.label ());
+  //   crab::outs() << get_label_str (b.label ()) << "=" 
+  //             << pre 
+  //             << " ==> "
+  //             << post << "\n";
+  // }
 
   // Run numerical analysis
   num_analyzer_t num_a (cfg, z_sdbm_domain_t::top (),  &live);
   num_a.run ();
   crab::outs() << "Analysis using " << z_sdbm_domain_t::getDomainName () << "\n";
-  for (auto &b : cfg)  {
-    auto pre = num_a.get_pre (b.label ());
-    auto post = num_a.get_post (b.label ());
-    crab::outs() << get_label_str (b.label ()) << "=" 
-              << pre 
-              << " ==> "
-              << post << "\n";
-  }
+  print_invariants(cfg, num_a);
+
+  // for (auto &b : cfg)  {
+  //   auto pre = num_a.get_pre (b.label ());
+  //   auto post = num_a.get_post (b.label ());
+  //   crab::outs() << get_label_str (b.label ()) << "=" 
+  //             << pre 
+  //             << " ==> "
+  //             << post << "\n";
+  // }
 
   // Run the checkers with several properties
   // A checker can take any property checker associated to same
