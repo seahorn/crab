@@ -985,26 +985,26 @@ ret:
 
 
 Necessary preconditions using ApronIntervals
+entry=_|_
+header1=_|_
+exit1=_|_
 ret=_|_
+ifxpos=_|_
 header2=_|_
 exit2=_|_
 body2=_|_
-ifxpos=_|_
-exit1=_|_
-header1=_|_
 body1=_|_
-entry=_|_
 
 Necessary preconditions using ApronNewPolka
+entry=_|_
+header1=_|_
+exit1=_|_
 ret=_|_
+ifxpos=_|_
 header2=_|_
 exit2=_|_
 body2=_|_
-ifxpos=_|_
-exit1=_|_
-header1=_|_
 body1=_|_
-entry=_|_
 
 entry:
   k = 0;
@@ -1418,31 +1418,31 @@ ret:
 Reversed CFG
 ret:
 --> [bb1_f;]
+bb1_f:
+  assume (-i <= -100);
+--> [bb1;]
+bb1:
+--> [entry;bb2;]
+entry:
+  i = 0;
+--> [x3;]
+x3:
+--> [x2;]
+x2:
+--> [x1;]
+x1:
+--> [x0;]
+x0:
+  k = 2147483648;
+--> []
 bb2:
   i = i+inc;
   inc = ite(-nd <= -1,1,2);
   nd =* ;
 --> [bb1_t;]
-bb1:
---> [entry;bb2;]
-bb1_f:
-  assume (-i <= -100);
---> [bb1;]
-entry:
-  i = 0;
---> [x3;]
-x2:
---> [x1;]
 bb1_t:
   assume (i <= 99);
 --> [bb1;]
-x1:
---> [x0;]
-x3:
---> [x2;]
-x0:
-  k = 2147483648;
---> []
 
 Weak reversed topological order of CFG 
 ret -- bb1_f -- bb2 -- bb1_t -- bb1 -- entry -- x3 -- x2 -- x1 -- x0
@@ -1472,21 +1472,21 @@ ret:
 Reversed simplified CFG
 ret:
 --> [bb1_f;]
-bb1:
---> [x0;bb1_t;]
 bb1_f:
   assume (-i <= -100);
 --> [bb1;]
+bb1:
+--> [x0;bb1_t;]
+x0:
+  i = 0;
+  k = 2147483648;
+--> []
 bb1_t:
   i = i+inc;
   inc = ite(-nd <= -1,1,2);
   nd =* ;
   assume (i <= 99);
 --> [bb1;]
-x0:
-  i = 0;
-  k = 2147483648;
---> []
 
 CFG
 entry:
@@ -1586,15 +1586,15 @@ b2:
   goto b3;
 
 Analysis using Product(SplitDBM,Nullity)
-b3=({}, {p -> NN; q1 -> NN; q2 -> NN}) ==> ({}, {p -> NN; q1 -> NN; q2 -> NN})
-b2=({}, {p -> NN; q1 -> NN; q2 -> NN}) ==> ({nd -> [-oo, 0]}, {p -> NN; q1 -> NN; q2 -> NN})
-b1=({}, {p -> NN; q1 -> NN; q2 -> NN}) ==> ({nd -> [1, +oo]}, {p -> NN; q1 -> NN; q2 -> NN})
 b0=({}, {}) ==> ({}, {p -> NN; q1 -> NN; q2 -> NN})
+b2=({}, {p -> NN; q1 -> NN; q2 -> NN}) ==> ({nd -> [-oo, 0]}, {p -> NN; q1 -> NN; q2 -> NN})
+b3=({}, {p -> NN; q1 -> NN; q2 -> NN}) ==> ({}, {p -> NN; q1 -> NN; q2 -> NN})
+b1=({}, {p -> NN; q1 -> NN; q2 -> NN}) ==> ({nd -> [1, +oo]}, {p -> NN; q1 -> NN; q2 -> NN})
 Analysis using SplitDBM
-b3={} ==> {}
-b2={} ==> {nd -> [-oo, 0]}
-b1={} ==> {nd -> [1, +oo]}
 b0={} ==> {}
+b2={} ==> {nd -> [-oo, 0]}
+b3={} ==> {}
+b1={} ==> {nd -> [1, +oo]}
  --- SAFE -----------------
 Property : p != 0
 Invariant: ({}, {p -> NN; q1 -> NN; q2 -> NN})
@@ -1705,19 +1705,19 @@ ret:
 
 
 Analysis using Product(SplitDBM,Nullity)
-ret=({i -> [100, 100], x -> [100, +oo], y -> [100, 100], y-i<=0, y-x<=0, i-x<=0, i-y<=0}, {}) ==> _|_
-bb2=({i -> [0, 99], x -> [1, +oo], y -> [0, 99], y-i<=0, y-x<=0, i-x<=0, i-y<=0}, {}) ==> ({y -> [1, 100], i -> [1, 100], x -> [1, +oo], i-y<=0, y-i<=0, y-x<=0, i-x<=0}, {p -> NN; q -> NN})
-bb1_t=({i -> [0, 100], x -> [1, +oo], y -> [0, 100], y-i<=0, y-x<=0, i-x<=0, i-y<=0}, {}) ==> ({i -> [0, 99], x -> [1, +oo], y -> [0, 99], y-i<=0, y-x<=0, i-x<=0, i-y<=0}, {})
+entry=({}, {}) ==> ({i -> [0, 0], x -> [1, 1], y -> [0, 0]}, {p -> N})
 bb1=({i -> [0, 100], x -> [1, +oo], y -> [0, 100], y-i<=0, y-x<=0, i-x<=0, i-y<=0}, {}) ==> ({i -> [0, 100], x -> [1, +oo], y -> [0, 100], y-i<=0, y-x<=0, i-x<=0, i-y<=0}, {})
 bb1_f=({i -> [0, 100], x -> [1, +oo], y -> [0, 100], y-i<=0, y-x<=0, i-x<=0, i-y<=0}, {}) ==> ({i -> [100, 100], x -> [100, +oo], y -> [100, 100], y-i<=0, y-x<=0, i-x<=0, i-y<=0}, {})
-entry=({}, {}) ==> ({i -> [0, 0], x -> [1, 1], y -> [0, 0]}, {p -> N})
+ret=({i -> [100, 100], x -> [100, +oo], y -> [100, 100], y-i<=0, y-x<=0, i-x<=0, i-y<=0}, {}) ==> _|_
+bb1_t=({i -> [0, 100], x -> [1, +oo], y -> [0, 100], y-i<=0, y-x<=0, i-x<=0, i-y<=0}, {}) ==> ({i -> [0, 99], x -> [1, +oo], y -> [0, 99], y-i<=0, y-x<=0, i-x<=0, i-y<=0}, {})
+bb2=({i -> [0, 99], x -> [1, +oo], y -> [0, 99], y-i<=0, y-x<=0, i-x<=0, i-y<=0}, {}) ==> ({y -> [1, 100], i -> [1, 100], x -> [1, +oo], i-y<=0, y-i<=0, y-x<=0, i-x<=0}, {p -> NN; q -> NN})
 Analysis using SplitDBM
-ret={i -> [100, 100], x -> [100, +oo], y -> [100, 100], y-i<=0, y-x<=0, i-x<=0, i-y<=0} ==> _|_
-bb2={i -> [0, 99], x -> [1, +oo], y -> [0, 99], y-i<=0, y-x<=0, i-x<=0, i-y<=0} ==> {y -> [1, 100], i -> [1, 100], x -> [1, +oo], i-y<=0, y-i<=0, y-x<=0, i-x<=0}
-bb1_t={i -> [0, 100], x -> [1, +oo], y -> [0, 100], y-i<=0, y-x<=0, i-x<=0, i-y<=0} ==> {i -> [0, 99], x -> [1, +oo], y -> [0, 99], y-i<=0, y-x<=0, i-x<=0, i-y<=0}
+entry={} ==> {i -> [0, 0], x -> [1, 1], y -> [0, 0]}
 bb1={i -> [0, 100], x -> [1, +oo], y -> [0, 100], y-i<=0, y-x<=0, i-x<=0, i-y<=0} ==> {i -> [0, 100], x -> [1, +oo], y -> [0, 100], y-i<=0, y-x<=0, i-x<=0, i-y<=0}
 bb1_f={i -> [0, 100], x -> [1, +oo], y -> [0, 100], y-i<=0, y-x<=0, i-x<=0, i-y<=0} ==> {i -> [100, 100], x -> [100, +oo], y -> [100, 100], y-i<=0, y-x<=0, i-x<=0, i-y<=0}
-entry={} ==> {i -> [0, 0], x -> [1, 1], y -> [0, 0]}
+ret={i -> [100, 100], x -> [100, +oo], y -> [100, 100], y-i<=0, y-x<=0, i-x<=0, i-y<=0} ==> _|_
+bb1_t={i -> [0, 100], x -> [1, +oo], y -> [0, 100], y-i<=0, y-x<=0, i-x<=0, i-y<=0} ==> {i -> [0, 99], x -> [1, +oo], y -> [0, 99], y-i<=0, y-x<=0, i-x<=0, i-y<=0}
+bb2={i -> [0, 99], x -> [1, +oo], y -> [0, 99], y-i<=0, y-x<=0, i-x<=0, i-y<=0} ==> {y -> [1, 100], i -> [1, 100], x -> [1, +oo], i-y<=0, y-i<=0, y-x<=0, i-x<=0}
 null-dereference checker
 0  Number of total safe checks
 0  Number of total error checks
@@ -2047,10 +2047,10 @@ bb2:
   goto bb3;
 
 Necessary preconditions using ApronIntervals
-bb3=_|_
-bb2=_|_
-bb1=_|_
 entry=_|_
+bb2=_|_
+bb3=_|_
+bb1=_|_
 
 entry:
   goto bb1,bb2;
@@ -2068,16 +2068,16 @@ bb2:
   goto bb3;
 
 Necessary preconditions using ApronIntervals
-bb3=_|_
-bb2=_|_
-bb1=_|_
 entry=_|_
+bb2=_|_
+bb3=_|_
+bb1=_|_
 
 Necessary preconditions using Boxes
-bb3={-x <= 5; x <= 0; -tmp <= 0; tmp <= 0; -y <= 0; y <= 5}
-bb2={-x <= 5; x <= 0}
-bb1={-x <= 5; x <= 0}
 entry={-x <= 5; x <= 0}
+bb2={-x <= 5; x <= 0}
+bb3={-x <= 5; x <= 0; -tmp <= 0; tmp <= 0; -y <= 0; y <= 5}
+bb1={-x <= 5; x <= 0}
 
 bb1:
   x = 0;
@@ -2096,10 +2096,10 @@ bb4:
 
 
 Necessary preconditions using ApronIntervals
+bb1={}
+bb2={-x <= 0; x <= 100; -y <= 0}
 bb4={-x <= 0; x <= 100; -y <= 0}
 bb3={-x <= 0; x <= 100; -y <= 0}
-bb2={-x <= 0; x <= 100; -y <= 0}
-bb1={}
 
 bb1:
   x = 0;
@@ -2116,16 +2116,16 @@ bb4:
 
 
 Necessary preconditions using ApronIntervals
+bb1=_|_
+bb2=_|_
 bb4=_|_
 bb3=_|_
-bb2=_|_
-bb1=_|_
 
 Necessary preconditions using Boxes
+bb1={}
+bb2={-x <= 0; x <= 100}
 bb4={-x <= 0}
 bb3={-x <= 0}
-bb2={-x <= 0; x <= 100}
-bb1={}
 
 {x -> t2[_x2], y -> t0[_x0]}{_x0 -> [8, 8]; _x1 -> [5, 5]; _x2 -> [40, 40]} | {x -> t2[_x1], y -> t0[_x2]}{_x0 -> [5, 5]} = {x -> t2[_y2], y -> t0[_y0]}{_y1 -> [5, 5]}
 {x -> t0[_x0]}{_x0 -> [1, 1]} | {x -> t1[_x1]}{_x0 -> [1, 1]; _x1 -> [2, 2]} = {x -> t0[_y0]}{_y0 -> [1, 2]}
