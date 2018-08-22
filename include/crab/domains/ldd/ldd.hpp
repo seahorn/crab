@@ -12,6 +12,11 @@
 #undef FALSE
 #include "tvpi.h"
 
+// ugly but it disables cudd macro that might conflict with boost::lexical_cast
+#ifdef fail
+#undef fail
+#endif
+
 #include "boost/functional/hash.hpp"
 #include "boost/shared_ptr.hpp"
 

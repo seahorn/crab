@@ -3,6 +3,11 @@
 #include "util.h"
 #include "lddInt.h"
 
+// ugly but it disables cudd macro that might conflict with boost::lexical_cast
+#ifdef fail
+#undef fail
+#endif
+
 namespace crab{
   namespace domains{
     namespace ldd {
