@@ -32,12 +32,9 @@
 #include <crab/domains/domain_traits.hpp>
 
 #include <type_traits>
-#include <unordered_set>
 
 #include <boost/optional.hpp>
 #include <boost/unordered_set.hpp>
-#include <boost/unordered_map.hpp>
-#include <boost/lexical_cast.hpp>
 #include <boost/container/flat_map.hpp>
 
 #define CLOSE_BOUNDS_INLINE
@@ -187,7 +184,7 @@ namespace crab {
       typedef typename GrOps::edge_vector edge_vector;
       // < <x, y>, k> == x - y <= k.
       typedef std::pair< std::pair<variable_t, variable_t>, Wt > diffcst_t;
-      typedef std::unordered_set<vert_id> vert_set_t;
+      typedef boost::unordered_set<vert_id> vert_set_t;
 
       protected:
         
@@ -1617,7 +1614,7 @@ namespace crab {
         normalize();
 
         assert(check_potential(g, potential));
-	
+
         // If it's a constant, just assign the interval.
         if (e.is_constant()){
           set(x, e.constant());

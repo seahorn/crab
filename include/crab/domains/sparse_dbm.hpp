@@ -23,12 +23,8 @@
 #include <crab/domains/operators_api.hpp>
 #include <crab/domains/domain_traits.hpp>
 
-#include <unordered_set>
-
 #include <boost/optional.hpp>
 #include <boost/unordered_set.hpp>
-#include <boost/unordered_map.hpp>
-#include <boost/lexical_cast.hpp>
 #include <boost/container/flat_map.hpp>
 
 //#define CHECK_POTENTIAL
@@ -181,7 +177,7 @@ namespace crab {
       typedef typename GrOps::edge_vector edge_vector;
       // < <x, y>, k> == x - y <= k.
       typedef std::pair< std::pair<variable_t, variable_t>, Wt > diffcst_t;
-      typedef std::unordered_set<vert_id> vert_set_t;
+      typedef boost::unordered_set<vert_id> vert_set_t;
 
       protected:
         
