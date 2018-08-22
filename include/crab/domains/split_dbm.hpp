@@ -1615,9 +1615,10 @@ namespace crab {
 
         assert(check_potential(g, potential));
 
+	interval_t rhs_intv = eval_interval(e);
         // If it's a constant, just assign the interval.
-        if (e.is_constant()){
-          set(x, e.constant());
+        if (boost::optional<number_t> k = rhs_intv.singleton()) {
+          set(x, *k);
         } else {
           interval_t x_int = eval_interval(e);
           std::vector<std::pair<variable_t, Wt> > diffs_lb;
