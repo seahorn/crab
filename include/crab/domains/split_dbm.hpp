@@ -199,11 +199,761 @@ namespace crab {
       rev_map_t rev_map;
       graph_t g; // The underlying relation graph
       std::vector<Wt> potential; // Stored potential for the vertex
-
       vert_set_t unstable;
-
       bool _is_bottom;
 
+
+      void set_to_bottom() {
+        vert_map.clear();
+        rev_map.clear();
+        g.clear();
+        potential.clear();
+        unstable.clear();
+        _is_bottom = true;
+      }
+
+      boost::optional<std::pair<vert_id,std::pair<vert_id, Wt> > >
+      diffcst_of_leq(linear_constraint_t cst) {
+
+        assert (cst.size() > 0);
+        assert (cst.is_inequality());
+
+        std::vector<std::pair<vert_id,std::pair<vert_id, Wt> > > diffcsts;
+
+        typename linear_expression_t::iterator it1 = cst.begin();
+        typename linear_expression_t::iterator it2 = ++cst.begin();
+        vert_id i, j;
+        
+        if (cst.size() == 1 && it1->first == 1) {
+          i = get_vert(it1->second);
+          j = 0;
+        } else if (cst.size() == 1 && it1->first == -1) {
+          i = 0;
+          j = get_vert(it1->second);
+        } else if (cst.size() == 2 && it1->first == 1 && it2->first == -1) {
+          i = get_vert(it1->second);
+          j = get_vert(it2->second);
+        } else if (cst.size() == 2 && it1->first == -1 && it2->first == 1) {
+          i = get_vert(it2->second);
+          j = get_vert(it1->second);
+        } else { 
+          // the constraint cannot be expressed as a difference constraint
+          return boost::none;
+        }
+        return std::make_pair(j, std::make_pair(i, Wt(cst.constant())));
+      }
+
+      class Wt_max {
+      public:
+       Wt_max() { } 
+       Wt apply(const Wt& x, const Wt& y) { return std::max(x, y); }
+       bool default_is_absorbing() { return true; }
+      };
+
+      class Wt_min {
+      public:
+        Wt_min() { }
+        Wt apply(const Wt& x, const Wt& y) { return std::min(x, y); }
+        bool default_is_absorbing() { return false; }
+      };
+
+      vert_id get_vert(variable_t v) {
+        auto it = vert_map.find(v);
+        if(it != vert_map.end())
+          return (*it).second;
+
+        vert_id vert(g.new_vertex());
+        vert_map.insert(vmap_elt_t(v, vert)); 
+        // Initialize 
+        assert(vert <= rev_map.size());
+        if(vert < rev_map.size())
+        {
+          potential[vert] = Wt(0);
+          rev_map[vert] = v;
+        } else {
+          potential.push_back(Wt(0));
+          rev_map.push_back(v);
+        }
+        vert_map.insert(vmap_elt_t(v, vert));
+
+        assert(vert != 0);
+
+        return vert;
+      }
+
+      vert_id get_vert(graph_t& g, vert_map_t& vmap, rev_map_t& rmap,
+		       std::vector<Wt>& pot, variable_t v) {
+        auto it = vmap.find(v);
+        if(it != vmap.end())
+          return (*it).second;
+
+        vert_id vert(g.new_vertex());
+        vmap.insert(vmap_elt_t(v, vert)); 
+        // Initialize 
+        assert(vert <= rmap.size());
+        if(vert < rmap.size())
+        {
+          pot[vert] = Wt(0);
+          rmap[vert] = v;
+        } else {
+          pot.push_back(Wt(0));
+          rmap.push_back(v);
+        }
+        vmap.insert(vmap_elt_t(v, vert));
+
+        return vert;
+      }
+
+      template<class G, class P>
+      inline bool check_potential(G& g, P& p)
+      {
+        #ifdef CHECK_POTENTIAL
+        for(vert_id v : g.verts())
+        {
+          for(vert_id d : g.succs(v))
+          {
+            if(p[v] + g.edge_val(v, d) - p[d] < Wt(0))
+            {
+              assert(0 && "Invalid potential.");
+              return false;
+            }
+          }
+        }
+        #endif
+        return true;
+      }
+
+      class vert_set_wrap_t {
+      public:
+        vert_set_wrap_t(const vert_set_t& _vs)
+          : vs(_vs)
+        { }
+
+        bool operator[](vert_id v) const {
+          return vs.find(v) != vs.end();
+        }
+        const vert_set_t& vs;
+      };
+
+      // Evaluate the potential value of a variable.
+      Wt pot_value(variable_t v) {
+        auto it = vert_map.find(v); 
+        if(it != vert_map.end())
+          return potential[(*it).second];
+        return ((Wt) 0);
+      }
+
+      Wt pot_value(variable_t v, std::vector<Wt>& potential) {
+        auto it = vert_map.find(v); 
+        if(it != vert_map.end())
+          return potential[(*it).second];
+        return ((Wt) 0);
+      }
+
+      // Evaluate an expression under the chosen potentials
+      Wt eval_expression(linear_expression_t e) {
+        Wt v(ntov::ntov(e.constant())); 
+        for(auto p : e) {
+          v += (pot_value(p.second) - potential[0])*(ntov::ntov(p.first));
+        }
+        return v;
+      }
+      
+      interval_t eval_interval(linear_expression_t e) {
+        interval_t r = e.constant();
+        for (auto p : e)
+          r += p.first * operator[](p.second);
+        return r;
+      }
+
+      interval_t compute_residual(linear_expression_t e, variable_t pivot) {
+	interval_t residual(-e.constant());
+	for (typename linear_expression_t::iterator it = e.begin(); it != e.end(); ++it) {
+	  variable_t v = it->second;
+	  if (v.index() != pivot.index()) {
+	    residual = residual - (interval_t (it->first) * this->operator[](v));
+	  }
+	}
+	return residual;
+      }
+      
+      // Turn an assignment into a set of difference constraints.
+      void diffcsts_of_assign(variable_t x, linear_expression_t exp,
+			      std::vector<std::pair<variable_t, Wt> >& lb,
+			      std::vector<std::pair<variable_t,Wt> >& ub) {
+        {
+          // Process upper bounds.
+          boost::optional<variable_t> unbounded_ubvar;
+          Wt exp_ub(ntov::ntov(exp.constant()));
+          std::vector< std::pair<variable_t, Wt> > ub_terms;
+          for(auto p : exp)
+          {
+            Wt coeff(ntov::ntov(p.first));
+            if(p.first < Wt(0))
+            {
+              // Can't do anything with negative coefficients.
+              bound_t y_lb = operator[](p.second).lb();
+              if(y_lb.is_infinite())
+                goto assign_ub_finish;
+              exp_ub += ntov::ntov(*(y_lb.number()))*coeff;
+            } else {
+              variable_t y(p.second);
+              bound_t y_ub = operator[](y).ub(); 
+              if(y_ub.is_infinite())
+              {
+                if(unbounded_ubvar || coeff != Wt(1))
+                  goto assign_ub_finish;
+                unbounded_ubvar = y;
+              } else {
+                Wt ymax(ntov::ntov(*(y_ub.number())));
+                exp_ub += ymax*coeff;
+                ub_terms.push_back(std::make_pair(y, ymax));
+              }
+            }
+          }
+
+          if(unbounded_ubvar)
+          {
+            // There is exactly one unbounded variable. 
+            ub.push_back(std::make_pair(*unbounded_ubvar, exp_ub));
+          } else {
+            for(auto p : ub_terms)
+            {
+              ub.push_back(std::make_pair(p.first, exp_ub - p.second));
+            }
+          }
+        }
+      assign_ub_finish:
+
+        {
+          boost::optional<variable_t> unbounded_lbvar;
+          Wt exp_lb(ntov::ntov(exp.constant()));
+          std::vector< std::pair<variable_t, Wt> > lb_terms;
+          for(auto p : exp)
+          {
+            Wt coeff(ntov::ntov(p.first));
+            if(p.first < Wt(0))
+            {
+              // Again, can't do anything with negative coefficients.
+              bound_t y_ub = operator[](p.second).ub();
+              if(y_ub.is_infinite())
+                goto assign_lb_finish;
+              exp_lb += (ntov::ntov(*(y_ub.number())))*coeff;
+            } else {
+              variable_t y(p.second);
+              bound_t y_lb = operator[](y).lb(); 
+              if(y_lb.is_infinite())
+              {
+                if(unbounded_lbvar || coeff != Wt(1))
+                  goto assign_lb_finish;
+                unbounded_lbvar = y;
+              } else {
+                Wt ymin(ntov::ntov(*(y_lb.number())));
+                exp_lb += ymin*coeff;
+                lb_terms.push_back(std::make_pair(y, ymin));
+              }
+            }
+          }
+
+          if(unbounded_lbvar)
+          {
+            lb.push_back(std::make_pair(*unbounded_lbvar, exp_lb));
+          } else {
+            for(auto p : lb_terms)
+            {
+              lb.push_back(std::make_pair(p.first, exp_lb - p.second));
+            }
+          }
+        }
+      assign_lb_finish:
+        return;
+      }
+   
+      // GKG: I suspect there're some sign/bound direction errors in the 
+      // following.
+      void diffcsts_of_lin_leq(const linear_expression_t& exp, std::vector<diffcst_t>& csts,
+			       std::vector<std::pair<variable_t, Wt> >& lbs,
+			       std::vector<std::pair<variable_t, Wt> >& ubs) {
+        // Process upper bounds.
+        Wt unbounded_lbcoeff;
+        Wt unbounded_ubcoeff;
+        boost::optional<variable_t> unbounded_lbvar;
+        boost::optional<variable_t> unbounded_ubvar;
+        Wt exp_ub = - (ntov::ntov(exp.constant()));
+        std::vector< std::pair< std::pair<Wt, variable_t>, Wt> > pos_terms;
+        std::vector< std::pair< std::pair<Wt, variable_t>, Wt> > neg_terms;
+        for(auto p : exp)
+        {
+          Wt coeff(ntov::ntov(p.first));
+          if(coeff > Wt(0))
+          {
+            variable_t y(p.second);
+            bound_t y_lb = operator[](y).lb();
+            if(y_lb.is_infinite())
+            {
+              if(unbounded_lbvar)
+                goto diffcst_finish;
+              unbounded_lbvar = y;
+              unbounded_lbcoeff = coeff;
+            } else {
+              Wt ymin(ntov::ntov(*(y_lb.number())));
+              // Coeff is negative, so it's still add
+              exp_ub -= ymin*coeff;
+              pos_terms.push_back(std::make_pair(std::make_pair(coeff, y), ymin));
+            }
+          } else {
+            variable_t y(p.second);
+            bound_t y_ub = operator[](y).ub(); 
+            if(y_ub.is_infinite())
+            {
+              if(unbounded_ubvar)
+                goto diffcst_finish;
+              unbounded_ubvar = y;
+              unbounded_ubcoeff = -(ntov::ntov(coeff));
+            } else {
+              Wt ymax(ntov::ntov(*(y_ub.number())));
+              exp_ub -= ymax*coeff;
+              neg_terms.push_back(std::make_pair(std::make_pair(-coeff, y), ymax));
+            }
+          }
+        }
+
+        if(unbounded_lbvar)
+        {
+          variable_t x(*unbounded_lbvar);
+          if(unbounded_ubvar)
+          {
+            if(unbounded_lbcoeff != Wt(1) || unbounded_ubcoeff != Wt(1))
+              goto diffcst_finish;
+            variable_t y(*unbounded_ubvar);
+            csts.push_back(std::make_pair(std::make_pair(x, y), exp_ub));
+          } else {
+            if(unbounded_lbcoeff == Wt(1))
+            {
+              for(auto p : neg_terms)
+                csts.push_back(std::make_pair(std::make_pair(x, p.first.second),
+					      exp_ub - p.second));
+            }
+            // Add bounds for x
+            ubs.push_back(std::make_pair(x, exp_ub/unbounded_lbcoeff));
+          }
+        } else {
+          if(unbounded_ubvar)
+          {
+            variable_t y(*unbounded_ubvar);
+            if(unbounded_ubcoeff == Wt(1))
+            {
+              for(auto p : pos_terms)
+                csts.push_back(std::make_pair(std::make_pair(p.first.second, y),
+					      exp_ub + p.second));
+            }
+            // Bounds for y
+            lbs.push_back(std::make_pair(y, -exp_ub/unbounded_ubcoeff));
+          } else {
+            for(auto pl : neg_terms)
+              for(auto pu : pos_terms)
+                csts.push_back(std::make_pair(std::make_pair(pu.first.second, pl.first.second),
+					 exp_ub - pl.second + pu.second));
+            for(auto pl : neg_terms)
+              lbs.push_back(std::make_pair(pl.first.second, -exp_ub/pl.first.first + pl.second));
+            for(auto pu : pos_terms)
+              ubs.push_back(std::make_pair(pu.first.second, exp_ub/pu.first.first + pu.second));
+          }
+        }
+    diffcst_finish:
+        return;
+      }
+      
+
+      bool add_linear_leq(const linear_expression_t& exp)
+      {
+        CRAB_LOG("zones-split",
+                 linear_expression_t exp_tmp (exp);
+                 crab::outs() << "Adding: "<< exp_tmp << "<= 0" <<"\n");
+        std::vector< std::pair<variable_t, Wt> > lbs;
+        std::vector< std::pair<variable_t, Wt> > ubs;
+        std::vector<diffcst_t> csts;
+        diffcsts_of_lin_leq(exp, csts, lbs, ubs);
+
+        assert(check_potential(g, potential));
+
+        Wt_min min_op;
+        typename graph_t::mut_val_ref_t w;
+        for(auto p : lbs)
+        {
+          CRAB_LOG("zones-split",
+                   crab::outs() << p.first<< ">="<< p.second <<"\n");
+          variable_t x(p.first);
+          vert_id v = get_vert(p.first);
+          if(g.lookup(v, 0, &w) && w.get() <= -p.second)
+            continue;
+          g.set_edge(v, -p.second, 0);
+          if(!repair_potential(v, 0))
+          {
+            set_to_bottom();
+            return false;
+          }
+          assert(check_potential(g, potential));
+          // Compute other updated bounds
+          #ifdef CLOSE_BOUNDS_INLINE
+          for(auto e : g.e_preds(v))
+          {
+            if(e.vert == 0)
+              continue;
+            g.update_edge(e.vert, e.val - p.second, 0, min_op);
+
+	    if(!repair_potential(e.vert, 0))
+	    {
+	      set_to_bottom();
+	      return false;
+	    }
+	    assert(check_potential(g, potential));
+          }
+          #endif
+        }
+        for(auto p : ubs)
+        {
+          CRAB_LOG("zones-split",
+                   crab::outs() << p.first<< "<="<< p.second <<"\n");
+          variable_t x(p.first);
+          vert_id v = get_vert(p.first);
+          if(g.lookup(0, v, &w) && w.get() <= p.second)
+            continue;
+          g.set_edge(0, p.second, v);
+          if(!repair_potential(0, v))
+          {
+            set_to_bottom();
+            return false;
+          }
+          assert(check_potential(g, potential));
+
+          #ifdef CLOSE_BOUNDS_INLINE
+          for(auto e : g.e_succs(v))
+          {
+            if(e.vert == 0)
+              continue;
+            g.update_edge(0, e.val + p.second, e.vert, min_op);
+	    if(!repair_potential(0, e.vert))
+	    {
+	      set_to_bottom();
+	      return false;
+	    }
+	    assert(check_potential(g, potential));
+          }
+          #endif
+        }
+
+        for(auto diff : csts)
+        {
+          CRAB_LOG("zones-split",
+                   crab::outs() << diff.first.first<< "-"<< diff.first.second<< "<="
+		                << diff.second <<"\n");
+
+          vert_id src = get_vert(diff.first.second);
+          vert_id dest = get_vert(diff.first.first);
+          g.update_edge(src, diff.second, dest, min_op);
+          if(!repair_potential(src, dest))
+          {
+            set_to_bottom();
+            return false;
+          }
+          assert(check_potential(g, potential));
+          
+          close_over_edge(src, dest);
+          assert(check_potential(g, potential));
+        }
+        // Collect bounds
+        // GKG: Now done in close_over_edge
+
+        #ifndef CLOSE_BOUNDS_INLINE
+        edge_vector delta;
+        GrOps::close_after_assign(g, potential, 0, delta);
+        GrOps::apply_delta(g, delta);
+        #endif
+
+        assert(check_potential(g, potential));
+        // CRAB_WARN("SplitDBM::add_linear_leq not yet implemented.");
+        return true;  
+      }
+
+      // x != n
+      void add_univar_disequation(variable_t x, number_t n) {
+	interval_t i = get_interval(x);
+	interval_t new_i =
+	  linear_interval_solver_impl::trim_interval<interval_t>(i, interval_t(n));
+	if (new_i.is_bottom()) {
+	  set_to_bottom();
+	} else if (!new_i.is_top() && (new_i <= i)) {
+	  vert_id v = get_vert(x);
+	  typename graph_t::mut_val_ref_t w;
+	  if(new_i.lb().is_finite()) {
+	    // strenghten lb
+	    Wt lb_val = ntov::ntov(-(*(new_i.lb().number())));
+	    if(g.lookup(v, 0, &w) && lb_val < w.get()) {
+	      g.set_edge(v, lb_val, 0);
+	      if(!repair_potential(v, 0)) {
+		set_to_bottom();
+		return;
+	      }
+	      assert(check_potential(g, potential));
+	    }
+	  }
+	  if(new_i.ub().is_finite()) {	    
+	    // strengthen ub
+	    Wt ub_val = ntov::ntov(*(new_i.ub().number()));
+	    if(g.lookup(0, v, &w) && (ub_val < w.get())) {
+	      g.set_edge(0, ub_val, v);
+	      if(!repair_potential(0, v)) {
+		set_to_bottom();
+		return;
+	      }
+	      assert(check_potential(g, potential));
+	    }
+	  }
+	}
+      } 
+      
+      void add_disequation(linear_expression_t e) {
+	// XXX: similar precision as the interval domain
+	
+	for (typename linear_expression_t::iterator it = e.begin(); it != e.end(); ++it) {
+	  variable_t pivot = it->second;
+	  interval_t i = compute_residual(e, pivot) / interval_t(it->first);
+	  if (auto k = i.singleton()) {
+	    add_univar_disequation(pivot, *k);
+	  }
+	}
+        return;
+        /*
+        // Can only exploit \sum_i c_i x_i \neq k if:
+        // (1) exactly one x_i is unfixed
+        // (2) lb(x_i) or ub(x_i) = k - \sum_i' c_i' x_i'
+        Wt k = exp.constant();
+        auto it = exp.begin();
+        for(; it != exp.end(); ++it)
+        {
+          if(!var_is_fixed((*it).second)) 
+            break;
+          k -= (*it).first*get_value((*it).second);
+        }
+
+        // All variables are fixed
+        if(it == exp.end())
+        {
+          if(k == Wt(0))
+            set_to_bottom();
+          return;
+        }
+
+        // Found one unfixed variable; collect the rest.
+        Wt ucoeff = (*it).first;
+        VariableName uvar((*it).second;
+        interval_t u_int = get_interval(ranges, uvar);
+        // We need at least one side of u to be finite.
+        if(u_int.lb().is_infinite() && u_int.ub().is_infinite())
+          return;
+
+        for(++it; it != exp.end(); ++it)
+        {
+          // Two unfixed variables; nothing we can do.
+          if(!var_is_fixed((*it).second))
+            return;
+          k -= (*it).first*get_value((*it).second);
+        }
+        */
+      }
+
+      interval_t get_interval(variable_t x) {
+        return get_interval(vert_map, g, x);
+      }
+
+      interval_t get_interval(vert_map_t& m, graph_t& r, variable_t x) {
+        auto it = m.find(x);
+        if(it == m.end())
+        {
+          return interval_t::top();
+        }
+        vert_id v = (*it).second;
+        interval_t x_out = interval_t(
+            r.elem(v, 0) ? -Number(r.edge_val(v, 0)) : bound_t::minus_infinity(),
+            r.elem(0, v) ? Number(r.edge_val(0, v)) : bound_t::plus_infinity());
+        return x_out;
+        /*
+        boost::optional< interval_t > v = r.lookup(x);
+        if(v)
+          return *v;
+        else
+          return interval_t::top();
+	*/
+      }
+
+      // Resore potential after an edge addition
+      bool repair_potential(vert_id src, vert_id dest)
+      {
+        return GrOps::repair_potential(g, potential, src, dest);
+      }
+
+      // Restore closure after a single edge addition
+      void close_over_edge(vert_id ii, vert_id jj)
+      {
+        Wt_min min_op;
+
+        assert(ii != 0 && jj != 0);
+        SubGraph<graph_t> g_excl(g, 0);
+
+        Wt c = g_excl.edge_val(ii,jj);
+
+        typename graph_t::mut_val_ref_t w;
+        #ifdef CLOSE_BOUNDS_INLINE
+        if(g.lookup(0, ii, &w))
+          g.update_edge(0, w.get() + c, jj, min_op);
+        if(g.lookup(jj, 0, &w))
+          g.update_edge(ii, w.get() + c, 0, min_op);
+        #endif
+
+        // There may be a cheaper way to do this.
+        // GKG: Now implemented.
+        std::vector<std::pair<vert_id, Wt> > src_dec;
+        for(auto edge : g_excl.e_preds(ii))
+        {
+          vert_id se = edge.vert;
+          Wt wt_sij = edge.val + c;
+
+          assert(g_excl.succs(se).begin() != g_excl.succs(se).end());
+          if(se != jj)
+          {
+            if(g_excl.lookup(se, jj, &w))
+            {
+              if(w.get() <= wt_sij)
+                continue;
+
+              w = wt_sij;
+              // g_excl.set_edge(se, wt_sij, jj);
+            } else {
+              g_excl.add_edge(se, wt_sij, jj);
+            }
+            src_dec.push_back(std::make_pair(se, edge.val));  
+            #ifdef CLOSE_BOUNDS_INLINE
+            if(g.lookup(0, se, &w))
+              g.update_edge(0, w.get() + wt_sij, jj, min_op);
+            if(g.lookup(jj, 0, &w))
+              g.update_edge(se, w.get() + wt_sij, 0, min_op);
+            #endif
+
+	    /*
+            for(auto edge : g_excl.e_succs(jj))
+            {
+              vert_id de = edge.vert;
+              if(se != de)
+              {
+                Wt wt_sijd = wt_sij + edge.val;
+                if(g_excl.lookup(se, de, &w))
+                {
+                  if((*w) <= wt_sijd)
+                    continue;
+                  (*w) = wt_sijd;
+                } else {
+                  g_excl.add_edge(se, wt_sijd, de);
+                }
+                #ifdef CLOSE_BOUNDS_INLINE
+                if(g.lookup(0, se, &w))
+                  g.update_edge(0, (*w) + wt_sijd, de, min_op);
+                if(g.lookup(de, 0, &w))
+                  g.update_edge(se, (*w) + wt_sijd, 0, min_op);
+                #endif
+              }
+            }
+            */
+          }
+        }
+
+        std::vector<std::pair<vert_id, Wt> > dest_dec;
+        for(auto edge : g_excl.e_succs(jj))
+        {
+          vert_id de = edge.vert;
+          Wt wt_ijd = edge.val + c;
+          if(de != ii)
+          {
+            if(g_excl.lookup(ii, de, &w))
+            {
+              if(w.get() <= wt_ijd)
+                continue;
+              w = wt_ijd;
+            } else {
+              g_excl.add_edge(ii, wt_ijd, de);
+            }
+            dest_dec.push_back(std::make_pair(de, edge.val));
+            #ifdef CLOSE_BOUNDS_INLINE
+            if(g.lookup(0,  ii, &w))
+              g.update_edge(0, w.get() + wt_ijd, de, min_op);
+            if(g.lookup(de, 0, &w))
+              g.update_edge(ii, w.get() + wt_ijd, 0, min_op);
+            #endif
+          }
+        }
+
+        for(auto s_p : src_dec)
+        {
+          vert_id se = s_p.first;
+          Wt wt_sij = c + s_p.second;
+          for(auto d_p : dest_dec)
+          {
+            vert_id de = d_p.first;
+            Wt wt_sijd = wt_sij + d_p.second; 
+            if(g.lookup(se, de, &w))
+            {
+              if(w.get() <= wt_sijd)
+                continue;
+              w = wt_sijd;
+            } else {
+              g.add_edge(se, wt_sijd, de);
+            }
+            #ifdef CLOSE_BOUNDS_INLINE
+            if(g.lookup(0, se, &w))
+              g.update_edge(0, w.get() + wt_sijd, de, min_op);
+            if(g.lookup(de, 0, &w))
+              g.update_edge(se, w.get() + wt_sijd, 0, min_op);
+            #endif
+          }
+        }
+
+        // Closure is now updated.
+      }
+    
+      // Restore closure after a variable assignment
+      // Assumption: x = f(y_1, ..., y_n) cannot induce non-trivial
+      // relations between (y_i, y_j)
+      /*
+      bool close_after_assign(vert_id v)
+      {
+        // Run Dijkstra's forward to collect successors of v,
+        // and backward to collect predecessors
+        edge_vector delta; 
+        if(!GrOps::close_after_assign(g, potential, v, delta))
+          return false;
+        GrOps::apply_delta(g, delta);
+        return true; 
+      }
+
+      bool closure(void)
+      {
+        // Full Johnson-style all-pairs shortest path
+        CRAB_ERROR("SparseWtGraph::closure not yet implemented."); 
+      }
+      */
+
+
+      template<typename G>
+      bool is_eq (vert_id u, vert_id v, G& g) {
+        // pre: rev_map[u] and rev_map[v]
+        if (g.elem (u, v) && g.elem (v, u)) {
+          return (g.edge_val(u, v) == g.edge_val(v, u));
+        } else {
+          return false;
+        }
+      }
+
+      
    public:
       
       SplitDBM_(bool is_bottom = false): _is_bottom(is_bottom)
@@ -293,117 +1043,11 @@ namespace crab {
         }
         return *this;
       }
-       
-     private:
-
-      void set_to_bottom() {
-        vert_map.clear();
-        rev_map.clear();
-        g.clear();
-        potential.clear();
-        unstable.clear();
-        _is_bottom = true;
-      }
-
-      
-      boost::optional<std::pair<vert_id,std::pair<vert_id, Wt> > >
-      diffcst_of_leq(linear_constraint_t cst) {
-
-        assert (cst.size() > 0);
-        assert (cst.is_inequality());
-
-        std::vector<std::pair<vert_id,std::pair<vert_id, Wt> > > diffcsts;
-
-        typename linear_expression_t::iterator it1 = cst.begin();
-        typename linear_expression_t::iterator it2 = ++cst.begin();
-        vert_id i, j;
-        
-        if (cst.size() == 1 && it1->first == 1) {
-          i = get_vert(it1->second);
-          j = 0;
-        } else if (cst.size() == 1 && it1->first == -1) {
-          i = 0;
-          j = get_vert(it1->second);
-        } else if (cst.size() == 2 && it1->first == 1 && it2->first == -1) {
-          i = get_vert(it1->second);
-          j = get_vert(it2->second);
-        } else if (cst.size() == 2 && it1->first == -1 && it2->first == 1) {
-          i = get_vert(it2->second);
-          j = get_vert(it1->second);
-        } else { 
-          // the constraint cannot be expressed as a difference constraint
-          return boost::none;
-        }
-        return std::make_pair(j, std::make_pair(i, Wt(cst.constant())));
-      }
-
-     public:
-
-      // -- Needed by array_sgraph_domain_traits
-
-      // return true iff inequality cst is unsatisfiable.
-      bool is_unsat(linear_constraint_t cst) {
-        if (is_bottom() || cst.is_contradiction()) 
-          return true;
-
-        if (is_top() || cst.is_tautology()) 
-          return false;
-
-        if (!cst.is_inequality()) {
-          CRAB_WARN("is_unsat only supports inequalities");
-          /// XXX: but it would be trivial to handle equalities
-          return false;
-        }
-                  
-        auto diffcst = diffcst_of_leq(cst);
-        if (!diffcst)
-          return false;
-
-        // x - y <= k
-        auto x = (*diffcst).first;
-        auto y = (*diffcst).second.first;
-        auto k = (*diffcst).second.second;
-
-        typename graph_t::mut_val_ref_t w;        
-        if (g.lookup(y,x,&w)) {
-          return ((w + k) < 0);
-        } else {
-          interval_t intv_x = interval_t::top();
-          interval_t intv_y = interval_t::top();
-          if (g.elem(0,x) || g.elem(x,0)) {
-            intv_x = interval_t(
-                g.elem(x, 0) ? -Number(g.edge_val(x, 0)) : bound_t::minus_infinity(),
-                g.elem(0, x) ?  Number(g.edge_val(0, x)) : bound_t::plus_infinity());
-          }
-          if (g.elem(0,y) || g.elem(y,0)) {
-            intv_y = interval_t(
-                g.elem(y, 0) ? -Number(g.edge_val(y, 0)) : bound_t::minus_infinity(),
-                g.elem(0, y) ?  Number(g.edge_val(0, y)) : bound_t::plus_infinity());
-          }
-          if (intv_x.is_top() || intv_y.is_top()) {
-            return false;
-          } else  {
-            return (!((intv_y - intv_x).lb() <= k));
-          }
-        }
-      }
-
-      void active_variables(std::vector<variable_t>& out) const {
-        out.reserve(g.size());
-        for (auto v: g.verts()) {
-          if (rev_map[v]) 
-            out.push_back((*(rev_map[v])));
-        }
-      }
-
-     public:
-
+             
       static DBM_t top() { return SplitDBM_(false); }
     
       static DBM_t bottom() { return SplitDBM_(true); }
     
-     public:
-
       bool is_bottom() const {
         return _is_bottom;
       }
@@ -455,7 +1099,7 @@ namespace crab {
           }
 
           assert(g.size() > 0);
-//          GrPerm g_perm(vert_renaming, g);
+	  // GrPerm g_perm(vert_renaming, g);
 
           for(vert_id ox : o.g.verts())
           {
@@ -484,89 +1128,7 @@ namespace crab {
           return true;
         }
       }
-
-      class Wt_max {
-      public:
-       Wt_max() { } 
-       Wt apply(const Wt& x, const Wt& y) { return std::max(x, y); }
-       bool default_is_absorbing() { return true; }
-      };
-
-      class Wt_min {
-      public:
-        Wt_min() { }
-        Wt apply(const Wt& x, const Wt& y) { return std::min(x, y); }
-        bool default_is_absorbing() { return false; }
-      };
-
-      vert_id get_vert(variable_t v)
-      {
-        auto it = vert_map.find(v);
-        if(it != vert_map.end())
-          return (*it).second;
-
-        vert_id vert(g.new_vertex());
-        vert_map.insert(vmap_elt_t(v, vert)); 
-        // Initialize 
-        assert(vert <= rev_map.size());
-        if(vert < rev_map.size())
-        {
-          potential[vert] = Wt(0);
-          rev_map[vert] = v;
-        } else {
-          potential.push_back(Wt(0));
-          rev_map.push_back(v);
-        }
-        vert_map.insert(vmap_elt_t(v, vert));
-
-        assert(vert != 0);
-
-        return vert;
-      }
-
-      vert_id get_vert(graph_t& g, vert_map_t& vmap, rev_map_t& rmap,
-          std::vector<Wt>& pot, variable_t v)
-      {
-        auto it = vmap.find(v);
-        if(it != vmap.end())
-          return (*it).second;
-
-        vert_id vert(g.new_vertex());
-        vmap.insert(vmap_elt_t(v, vert)); 
-        // Initialize 
-        assert(vert <= rmap.size());
-        if(vert < rmap.size())
-        {
-          pot[vert] = Wt(0);
-          rmap[vert] = v;
-        } else {
-          pot.push_back(Wt(0));
-          rmap.push_back(v);
-        }
-        vmap.insert(vmap_elt_t(v, vert));
-
-        return vert;
-      }
-
-      template<class G, class P>
-      inline bool check_potential(G& g, P& p)
-      {
-#ifdef CHECK_POTENTIAL
-        for(vert_id v : g.verts())
-        {
-          for(vert_id d : g.succs(v))
-          {
-            if(p[v] + g.edge_val(v, d) - p[d] < Wt(0))
-            {
-              assert(0 && "Invalid potential.");
-              return false;
-            }
-          }
-        }
-#endif
-        return true;
-      }
-
+      
       // FIXME: can be done more efficient
       void operator|=(DBM_t o) {
         *this = *this | o;
@@ -930,7 +1492,7 @@ namespace crab {
           {
             edge_vector delta;
             SubGraph<graph_t> meet_g_excl(meet_g, 0);
-//            GrOps::close_after_meet(meet_g_excl, meet_pi, gx, gy, delta);
+	    // GrOps::close_after_meet(meet_g_excl, meet_pi, gx, gy, delta);
 
             if(Params::chrome_dijkstra)
               GrOps::close_after_meet(meet_g_excl, meet_pi, gx, gy, delta);
@@ -990,29 +1552,17 @@ namespace crab {
         }
       }	
 
-      class vert_set_wrap_t {
-      public:
-        vert_set_wrap_t(const vert_set_t& _vs)
-          : vs(_vs)
-        { }
-
-        bool operator[](vert_id v) const {
-          return vs.find(v) != vs.end();
-        }
-        const vert_set_t& vs;
-      };
-
       void normalize() {
         // dbm_canonical(_dbm);
         // Always maintained in normal form, except for widening
-#ifdef SDBM_NO_NORMALIZE
+        #ifdef SDBM_NO_NORMALIZE
         return;
-#endif
+        #endif
         if(unstable.size() == 0)
           return;
 
         edge_vector delta;
-//        GrOps::close_after_widen(g, potential, vert_set_wrap_t(unstable), delta);
+	// GrOps::close_after_widen(g, potential, vert_set_wrap_t(unstable), delta);
         // GKG: Check
         SubGraph<graph_t> g_excl(g, 0);
         if(Params::widen_restabilize)
@@ -1053,232 +1603,6 @@ namespace crab {
             operator-=(v);
           }
         }
-      }
-
-      // Evaluate the potential value of a variable.
-      Wt pot_value(variable_t v)
-      {
-        auto it = vert_map.find(v); 
-        if(it != vert_map.end())
-          return potential[(*it).second];
-        return ((Wt) 0);
-      }
-
-      Wt pot_value(variable_t v, std::vector<Wt>& potential)
-      {
-        auto it = vert_map.find(v); 
-        if(it != vert_map.end())
-          return potential[(*it).second];
-        return ((Wt) 0);
-      }
-
-      // Evaluate an expression under the chosen potentials
-      Wt eval_expression(linear_expression_t e)
-      {
-        Wt v(ntov::ntov(e.constant())); 
-        for(auto p : e)
-        {
-          v += (pot_value(p.second) - potential[0])*(ntov::ntov(p.first));
-        }
-        return v;
-      }
-      
-      interval_t eval_interval(linear_expression_t e)
-      {
-        interval_t r = e.constant();
-        for (auto p : e)
-          r += p.first * operator[](p.second);
-
-        return r;
-      }
-
-      // Turn an assignment into a set of difference constraints.
-      void diffcsts_of_assign(variable_t x, linear_expression_t exp,
-			      std::vector<std::pair<variable_t, Wt> >& lb,
-			      std::vector<std::pair<variable_t,Wt> >& ub)
-      {
-        {
-          // Process upper bounds.
-          boost::optional<variable_t> unbounded_ubvar;
-          Wt exp_ub(ntov::ntov(exp.constant()));
-          std::vector< std::pair<variable_t, Wt> > ub_terms;
-          for(auto p : exp)
-          {
-            Wt coeff(ntov::ntov(p.first));
-            if(p.first < Wt(0))
-            {
-              // Can't do anything with negative coefficients.
-              bound_t y_lb = operator[](p.second).lb();
-              if(y_lb.is_infinite())
-                goto assign_ub_finish;
-              exp_ub += ntov::ntov(*(y_lb.number()))*coeff;
-            } else {
-              variable_t y(p.second);
-              bound_t y_ub = operator[](y).ub(); 
-              if(y_ub.is_infinite())
-              {
-                if(unbounded_ubvar || coeff != Wt(1))
-                  goto assign_ub_finish;
-                unbounded_ubvar = y;
-              } else {
-                Wt ymax(ntov::ntov(*(y_ub.number())));
-                exp_ub += ymax*coeff;
-                ub_terms.push_back(std::make_pair(y, ymax));
-              }
-            }
-          }
-
-          if(unbounded_ubvar)
-          {
-            // There is exactly one unbounded variable. 
-            ub.push_back(std::make_pair(*unbounded_ubvar, exp_ub));
-          } else {
-            for(auto p : ub_terms)
-            {
-              ub.push_back(std::make_pair(p.first, exp_ub - p.second));
-            }
-          }
-        }
-      assign_ub_finish:
-
-        {
-          boost::optional<variable_t> unbounded_lbvar;
-          Wt exp_lb(ntov::ntov(exp.constant()));
-          std::vector< std::pair<variable_t, Wt> > lb_terms;
-          for(auto p : exp)
-          {
-            Wt coeff(ntov::ntov(p.first));
-            if(p.first < Wt(0))
-            {
-              // Again, can't do anything with negative coefficients.
-              bound_t y_ub = operator[](p.second).ub();
-              if(y_ub.is_infinite())
-                goto assign_lb_finish;
-              exp_lb += (ntov::ntov(*(y_ub.number())))*coeff;
-            } else {
-              variable_t y(p.second);
-              bound_t y_lb = operator[](y).lb(); 
-              if(y_lb.is_infinite())
-              {
-                if(unbounded_lbvar || coeff != Wt(1))
-                  goto assign_lb_finish;
-                unbounded_lbvar = y;
-              } else {
-                Wt ymin(ntov::ntov(*(y_lb.number())));
-                exp_lb += ymin*coeff;
-                lb_terms.push_back(std::make_pair(y, ymin));
-              }
-            }
-          }
-
-          if(unbounded_lbvar)
-          {
-            lb.push_back(std::make_pair(*unbounded_lbvar, exp_lb));
-          } else {
-            for(auto p : lb_terms)
-            {
-              lb.push_back(std::make_pair(p.first, exp_lb - p.second));
-            }
-          }
-        }
-    assign_lb_finish:
-        return;
-      }
-   
-      // GKG: I suspect there're some sign/bound direction errors in the 
-      // following.
-      void diffcsts_of_lin_leq(const linear_expression_t& exp, std::vector<diffcst_t>& csts,
-			       std::vector<std::pair<variable_t, Wt> >& lbs,
-			       std::vector<std::pair<variable_t, Wt> >& ubs)
-      {
-        // Process upper bounds.
-        Wt unbounded_lbcoeff;
-        Wt unbounded_ubcoeff;
-        boost::optional<variable_t> unbounded_lbvar;
-        boost::optional<variable_t> unbounded_ubvar;
-        Wt exp_ub = - (ntov::ntov(exp.constant()));
-        std::vector< std::pair< std::pair<Wt, variable_t>, Wt> > pos_terms;
-        std::vector< std::pair< std::pair<Wt, variable_t>, Wt> > neg_terms;
-        for(auto p : exp)
-        {
-          Wt coeff(ntov::ntov(p.first));
-          if(coeff > Wt(0))
-          {
-            variable_t y(p.second);
-            bound_t y_lb = operator[](y).lb();
-            if(y_lb.is_infinite())
-            {
-              if(unbounded_lbvar)
-                goto diffcst_finish;
-              unbounded_lbvar = y;
-              unbounded_lbcoeff = coeff;
-            } else {
-              Wt ymin(ntov::ntov(*(y_lb.number())));
-              // Coeff is negative, so it's still add
-              exp_ub -= ymin*coeff;
-              pos_terms.push_back(std::make_pair(std::make_pair(coeff, y), ymin));
-            }
-          } else {
-            variable_t y(p.second);
-            bound_t y_ub = operator[](y).ub(); 
-            if(y_ub.is_infinite())
-            {
-              if(unbounded_ubvar)
-                goto diffcst_finish;
-              unbounded_ubvar = y;
-              unbounded_ubcoeff = -(ntov::ntov(coeff));
-            } else {
-              Wt ymax(ntov::ntov(*(y_ub.number())));
-              exp_ub -= ymax*coeff;
-              neg_terms.push_back(std::make_pair(std::make_pair(-coeff, y), ymax));
-            }
-          }
-        }
-
-        if(unbounded_lbvar)
-        {
-          variable_t x(*unbounded_lbvar);
-          if(unbounded_ubvar)
-          {
-            if(unbounded_lbcoeff != Wt(1) || unbounded_ubcoeff != Wt(1))
-              goto diffcst_finish;
-            variable_t y(*unbounded_ubvar);
-            csts.push_back(std::make_pair(std::make_pair(x, y), exp_ub));
-          } else {
-            if(unbounded_lbcoeff == Wt(1))
-            {
-              for(auto p : neg_terms)
-                csts.push_back(std::make_pair(std::make_pair(x, p.first.second),
-					      exp_ub - p.second));
-            }
-            // Add bounds for x
-            ubs.push_back(std::make_pair(x, exp_ub/unbounded_lbcoeff));
-          }
-        } else {
-          if(unbounded_ubvar)
-          {
-            variable_t y(*unbounded_ubvar);
-            if(unbounded_ubcoeff == Wt(1))
-            {
-              for(auto p : pos_terms)
-                csts.push_back(std::make_pair(std::make_pair(p.first.second, y),
-					      exp_ub + p.second));
-            }
-            // Bounds for y
-            lbs.push_back(std::make_pair(y, -exp_ub/unbounded_ubcoeff));
-          } else {
-            for(auto pl : neg_terms)
-              for(auto pu : pos_terms)
-                csts.push_back(std::make_pair(std::make_pair(pu.first.second, pl.first.second),
-					 exp_ub - pl.second + pu.second));
-            for(auto pl : neg_terms)
-              lbs.push_back(std::make_pair(pl.first.second, -exp_ub/pl.first.first + pl.second));
-            for(auto pu : pos_terms)
-              ubs.push_back(std::make_pair(pu.first.second, exp_ub/pu.first.first + pu.second));
-          }
-        }
-    diffcst_finish:
-        return;
       }
 
       // Assumption: state is currently feasible.
@@ -1406,7 +1730,7 @@ namespace crab {
           // this->operator-=(x);
         }
 
-//        g.check_adjs(); 
+	// g.check_adjs(); 
 
         assert(check_potential(g, potential));
         CRAB_LOG("zones-split", crab::outs() << "---"<< x<< ":="<< e<<"\n"<<*this <<"\n");
@@ -1517,217 +1841,6 @@ namespace crab {
                  crab::outs() << "---"<< x<< ":="<< y<< op<< k<<"\n"<< *this <<"\n");
       }
       
-      bool add_linear_leq(const linear_expression_t& exp)
-      {
-        CRAB_LOG("zones-split",
-                 linear_expression_t exp_tmp (exp);
-                 crab::outs() << "Adding: "<< exp_tmp << "<= 0" <<"\n");
-        std::vector< std::pair<variable_t, Wt> > lbs;
-        std::vector< std::pair<variable_t, Wt> > ubs;
-        std::vector<diffcst_t> csts;
-        diffcsts_of_lin_leq(exp, csts, lbs, ubs);
-
-        assert(check_potential(g, potential));
-
-        Wt_min min_op;
-        typename graph_t::mut_val_ref_t w;
-        for(auto p : lbs)
-        {
-          CRAB_LOG("zones-split",
-                   crab::outs() << p.first<< ">="<< p.second <<"\n");
-          variable_t x(p.first);
-          vert_id v = get_vert(p.first);
-          if(g.lookup(v, 0, &w) && w.get() <= -p.second)
-            continue;
-          g.set_edge(v, -p.second, 0);
-          if(!repair_potential(v, 0))
-          {
-            set_to_bottom();
-            return false;
-          }
-          assert(check_potential(g, potential));
-          // Compute other updated bounds
-#ifdef CLOSE_BOUNDS_INLINE
-          for(auto e : g.e_preds(v))
-          {
-            if(e.vert == 0)
-              continue;
-            g.update_edge(e.vert, e.val - p.second, 0, min_op);
-
-	    if(!repair_potential(e.vert, 0))
-	    {
-	      set_to_bottom();
-	      return false;
-	    }
-	    assert(check_potential(g, potential));
-          }
-
-#endif
-        }
-        for(auto p : ubs)
-        {
-          CRAB_LOG("zones-split",
-                   crab::outs() << p.first<< "<="<< p.second <<"\n");
-          variable_t x(p.first);
-          vert_id v = get_vert(p.first);
-          if(g.lookup(0, v, &w) && w.get() <= p.second)
-            continue;
-          g.set_edge(0, p.second, v);
-          if(!repair_potential(0, v))
-          {
-            set_to_bottom();
-            return false;
-          }
-          assert(check_potential(g, potential));
-
-#ifdef CLOSE_BOUNDS_INLINE
-          for(auto e : g.e_succs(v))
-          {
-            if(e.vert == 0)
-              continue;
-            g.update_edge(0, e.val + p.second, e.vert, min_op);
-	    if(!repair_potential(0, e.vert))
-	    {
-	      set_to_bottom();
-	      return false;
-	    }
-	    assert(check_potential(g, potential));
-          }
-#endif
-        }
-
-        for(auto diff : csts)
-        {
-          CRAB_LOG("zones-split",
-                   crab::outs() << diff.first.first<< "-"<< diff.first.second<< "<="
-		                << diff.second <<"\n");
-
-          vert_id src = get_vert(diff.first.second);
-          vert_id dest = get_vert(diff.first.first);
-          g.update_edge(src, diff.second, dest, min_op);
-          if(!repair_potential(src, dest))
-          {
-            set_to_bottom();
-            return false;
-          }
-          assert(check_potential(g, potential));
-          
-          close_over_edge(src, dest);
-          assert(check_potential(g, potential));
-        }
-        // Collect bounds
-        // GKG: Now done in close_over_edge
-
-#ifndef CLOSE_BOUNDS_INLINE
-        edge_vector delta;
-        GrOps::close_after_assign(g, potential, 0, delta);
-        GrOps::apply_delta(g, delta);
-#endif
-        /* */
-
-        assert(check_potential(g, potential));
-        // CRAB_WARN("SplitDBM::add_linear_leq not yet implemented.");
-        return true;  
-      }
-
-      // x != n
-      void add_univar_disequation(variable_t x, number_t n) {
-	interval_t i = get_interval(x);
-	interval_t new_i =
-	  linear_interval_solver_impl::trim_interval<interval_t>(i, interval_t(n));
-	if (new_i.is_bottom()) {
-	  set_to_bottom();
-	} else if (!new_i.is_top() && (new_i <= i)) {
-	  vert_id v = get_vert(x);
-	  typename graph_t::mut_val_ref_t w;
-	  if(new_i.lb().is_finite()) {
-	    // strenghten lb
-	    Wt lb_val = ntov::ntov(-(*(new_i.lb().number())));
-	    if(g.lookup(v, 0, &w) && lb_val < w.get()) {
-	      g.set_edge(v, lb_val, 0);
-	      if(!repair_potential(v, 0)) {
-		set_to_bottom();
-		return;
-	      }
-	      assert(check_potential(g, potential));
-	    }
-	  }
-	  if(new_i.ub().is_finite()) {	    
-	    // strengthen ub
-	    Wt ub_val = ntov::ntov(*(new_i.ub().number()));
-	    if(g.lookup(0, v, &w) && (ub_val < w.get())) {
-	      g.set_edge(0, ub_val, v);
-	      if(!repair_potential(0, v)) {
-		set_to_bottom();
-		return;
-	      }
-	      assert(check_potential(g, potential));
-	    }
-	  }
-	}
-      } 
-
-      interval_t compute_residual(linear_expression_t e, variable_t pivot) {
-	interval_t residual(-e.constant());
-	for (typename linear_expression_t::iterator it = e.begin(); it != e.end(); ++it) {
-	  variable_t v = it->second;
-	  if (v.index() != pivot.index()) {
-	    residual = residual - (interval_t (it->first) * this->operator[](v));
-	  }
-	}
-	return residual;
-      }
-      
-      void add_disequation(linear_expression_t e) {
-	// XXX: similar precision as the interval domain
-	
-	for (typename linear_expression_t::iterator it = e.begin(); it != e.end(); ++it) {
-	  variable_t pivot = it->second;
-	  interval_t i = compute_residual(e, pivot) / interval_t(it->first);
-	  if (auto k = i.singleton()) {
-	    add_univar_disequation(pivot, *k);
-	  }
-	}
-        return;
-        /*
-        // Can only exploit \sum_i c_i x_i \neq k if:
-        // (1) exactly one x_i is unfixed
-        // (2) lb(x_i) or ub(x_i) = k - \sum_i' c_i' x_i'
-        Wt k = exp.constant();
-        auto it = exp.begin();
-        for(; it != exp.end(); ++it)
-        {
-          if(!var_is_fixed((*it).second)) 
-            break;
-          k -= (*it).first*get_value((*it).second);
-        }
-
-        // All variables are fixed
-        if(it == exp.end())
-        {
-          if(k == Wt(0))
-            set_to_bottom();
-          return;
-        }
-
-        // Found one unfixed variable; collect the rest.
-        Wt ucoeff = (*it).first;
-        VariableName uvar((*it).second;
-        interval_t u_int = get_interval(ranges, uvar);
-        // We need at least one side of u to be finite.
-        if(u_int.lb().is_infinite() && u_int.ub().is_infinite())
-          return;
-
-        for(++it; it != exp.end(); ++it)
-        {
-          // Two unfixed variables; nothing we can do.
-          if(!var_is_fixed((*it).second))
-            return;
-          k -= (*it).first*get_value((*it).second);
-        }
-        */
-      }
-
       void backward_assign (variable_t x, linear_expression_t e,
 			    DBM_t inv) { 
 	crab::domains::BackwardAssignOps<DBM_t>::
@@ -1765,7 +1878,7 @@ namespace crab {
         if (cst.is_tautology())
           return;
 
-//        g.check_adjs();
+	// g.check_adjs();
       
         if (cst.is_contradiction()){
           set_to_bottom();
@@ -1776,7 +1889,7 @@ namespace crab {
         {
           if(!add_linear_leq(cst.expression()))
             set_to_bottom();
-//          g.check_adjs();
+	  //  g.check_adjs();
           CRAB_LOG("zones-split",
                    crab::outs() << "--- "<< cst<< "\n"<< *this <<"\n");
           return;
@@ -1790,7 +1903,7 @@ namespace crab {
             CRAB_LOG("zones-split", crab::outs() << " ~~> _|_" <<"\n");
             set_to_bottom();
           }
-//          g.check_adjs();
+	  // g.check_adjs();
           CRAB_LOG("zones-split",
                    crab::outs() << "--- "<< cst<< "\n"<< *this <<"\n");
           return;
@@ -1815,30 +1928,6 @@ namespace crab {
         for(auto cst: csts) {
           operator+=(cst);
         }
-      }
-
-      interval_t get_interval(variable_t x) {
-        return get_interval(vert_map, g, x);
-      }
-
-      interval_t get_interval(vert_map_t& m, graph_t& r, variable_t x) {
-        auto it = m.find(x);
-        if(it == m.end())
-        {
-          return interval_t::top();
-        }
-        vert_id v = (*it).second;
-        interval_t x_out = interval_t(
-            r.elem(v, 0) ? -Number(r.edge_val(v, 0)) : bound_t::minus_infinity(),
-            r.elem(0, v) ? Number(r.edge_val(0, v)) : bound_t::plus_infinity());
-        return x_out;
-        /*
-        boost::optional< interval_t > v = r.lookup(x);
-        if(v)
-          return *v;
-        else
-          return interval_t::top();
-          */
       }
 
       interval_t operator[](variable_t x) { 
@@ -2042,161 +2131,6 @@ namespace crab {
         }
       }
 
-      // Resore potential after an edge addition
-      bool repair_potential(vert_id src, vert_id dest)
-      {
-        return GrOps::repair_potential(g, potential, src, dest);
-      }
-
-      // Restore closure after a single edge addition
-      void close_over_edge(vert_id ii, vert_id jj)
-      {
-        Wt_min min_op;
-
-        assert(ii != 0 && jj != 0);
-        SubGraph<graph_t> g_excl(g, 0);
-
-        Wt c = g_excl.edge_val(ii,jj);
-
-        typename graph_t::mut_val_ref_t w;
-#ifdef CLOSE_BOUNDS_INLINE
-        if(g.lookup(0, ii, &w))
-          g.update_edge(0, w.get() + c, jj, min_op);
-        if(g.lookup(jj, 0, &w))
-          g.update_edge(ii, w.get() + c, 0, min_op);
-#endif
-
-        // There may be a cheaper way to do this.
-        // GKG: Now implemented.
-        std::vector<std::pair<vert_id, Wt> > src_dec;
-        for(auto edge : g_excl.e_preds(ii))
-        {
-          vert_id se = edge.vert;
-          Wt wt_sij = edge.val + c;
-
-          assert(g_excl.succs(se).begin() != g_excl.succs(se).end());
-          if(se != jj)
-          {
-            if(g_excl.lookup(se, jj, &w))
-            {
-              if(w.get() <= wt_sij)
-                continue;
-
-              w = wt_sij;
-              // g_excl.set_edge(se, wt_sij, jj);
-            } else {
-              g_excl.add_edge(se, wt_sij, jj);
-            }
-            src_dec.push_back(std::make_pair(se, edge.val));  
-#ifdef CLOSE_BOUNDS_INLINE
-            if(g.lookup(0, se, &w))
-              g.update_edge(0, w.get() + wt_sij, jj, min_op);
-            if(g.lookup(jj, 0, &w))
-              g.update_edge(se, w.get() + wt_sij, 0, min_op);
-#endif
-
-/*
-            for(auto edge : g_excl.e_succs(jj))
-            {
-              vert_id de = edge.vert;
-              if(se != de)
-              {
-                Wt wt_sijd = wt_sij + edge.val;
-                if(g_excl.lookup(se, de, &w))
-                {
-                  if((*w) <= wt_sijd)
-                    continue;
-                  (*w) = wt_sijd;
-                } else {
-                  g_excl.add_edge(se, wt_sijd, de);
-                }
-#ifdef CLOSE_BOUNDS_INLINE
-                if(g.lookup(0, se, &w))
-                  g.update_edge(0, (*w) + wt_sijd, de, min_op);
-                if(g.lookup(de, 0, &w))
-                  g.update_edge(se, (*w) + wt_sijd, 0, min_op);
-#endif
-              }
-            }
-            */
-          }
-        }
-
-        std::vector<std::pair<vert_id, Wt> > dest_dec;
-        for(auto edge : g_excl.e_succs(jj))
-        {
-          vert_id de = edge.vert;
-          Wt wt_ijd = edge.val + c;
-          if(de != ii)
-          {
-            if(g_excl.lookup(ii, de, &w))
-            {
-              if(w.get() <= wt_ijd)
-                continue;
-              w = wt_ijd;
-            } else {
-              g_excl.add_edge(ii, wt_ijd, de);
-            }
-            dest_dec.push_back(std::make_pair(de, edge.val));
-#ifdef CLOSE_BOUNDS_INLINE
-            if(g.lookup(0,  ii, &w))
-              g.update_edge(0, w.get() + wt_ijd, de, min_op);
-            if(g.lookup(de, 0, &w))
-              g.update_edge(ii, w.get() + wt_ijd, 0, min_op);
-#endif
-          }
-        }
-
-        for(auto s_p : src_dec)
-        {
-          vert_id se = s_p.first;
-          Wt wt_sij = c + s_p.second;
-          for(auto d_p : dest_dec)
-          {
-            vert_id de = d_p.first;
-            Wt wt_sijd = wt_sij + d_p.second; 
-            if(g.lookup(se, de, &w))
-            {
-              if(w.get() <= wt_sijd)
-                continue;
-              w = wt_sijd;
-            } else {
-              g.add_edge(se, wt_sijd, de);
-            }
-#ifdef CLOSE_BOUNDS_INLINE
-            if(g.lookup(0, se, &w))
-              g.update_edge(0, w.get() + wt_sijd, de, min_op);
-            if(g.lookup(de, 0, &w))
-              g.update_edge(se, w.get() + wt_sijd, 0, min_op);
-#endif
-          }
-        }
-
-        // Closure is now updated.
-      }
-    
-      // Restore closure after a variable assignment
-      // Assumption: x = f(y_1, ..., y_n) cannot induce non-trivial
-      // relations between (y_i, y_j)
-      /*
-      bool close_after_assign(vert_id v)
-      {
-        // Run Dijkstra's forward to collect successors of v,
-        // and backward to collect predecessors
-        edge_vector delta; 
-        if(!GrOps::close_after_assign(g, potential, v, delta))
-          return false;
-        GrOps::apply_delta(g, delta);
-        return true; 
-      }
-
-      bool closure(void)
-      {
-        // Full Johnson-style all-pairs shortest path
-        CRAB_ERROR("SparseWtGraph::closure not yet implemented."); 
-      }
-      */
-
       //! copy of x into a new fresh variable y
       void expand (variable_t x, variable_t y) {
         crab::CrabStats::count (getDomainName() + ".count.expand");
@@ -2289,18 +2223,7 @@ namespace crab {
 	CRAB_LOG("zones-split",
 		 crab::outs () << "RESULT=" << *this << "\n");
       }
-      
-      
-      template<typename G>
-      bool is_eq (vert_id u, vert_id v, G& g) {
-        // pre: rev_map[u] and rev_map[v]
-        if (g.elem (u, v) && g.elem (v, u)) {
-          return (g.edge_val(u, v) == g.edge_val(v, u));
-        } else {
-          return false;
-        }
-      }
-
+            
       void extract(const variable_t& x, linear_constraint_system_t& csts,
 		   bool only_equalities){
         crab::CrabStats::count (getDomainName() + ".count.extract");
@@ -2343,11 +2266,69 @@ namespace crab {
         }
       }
 
+      // -- begin array_sgraph_domain_traits
+
+      // return true iff inequality cst is unsatisfiable.
+      bool is_unsat(linear_constraint_t cst) {
+        if (is_bottom() || cst.is_contradiction()) 
+          return true;
+
+        if (is_top() || cst.is_tautology()) 
+          return false;
+
+        if (!cst.is_inequality()) {
+          CRAB_WARN("is_unsat only supports inequalities");
+          /// XXX: but it would be trivial to handle equalities
+          return false;
+        }
+                  
+        auto diffcst = diffcst_of_leq(cst);
+        if (!diffcst)
+          return false;
+
+        // x - y <= k
+        auto x = (*diffcst).first;
+        auto y = (*diffcst).second.first;
+        auto k = (*diffcst).second.second;
+
+        typename graph_t::mut_val_ref_t w;        
+        if (g.lookup(y,x,&w)) {
+          return ((w + k) < 0);
+        } else {
+          interval_t intv_x = interval_t::top();
+          interval_t intv_y = interval_t::top();
+          if (g.elem(0,x) || g.elem(x,0)) {
+            intv_x = interval_t(
+                g.elem(x, 0) ? -Number(g.edge_val(x, 0)) : bound_t::minus_infinity(),
+                g.elem(0, x) ?  Number(g.edge_val(0, x)) : bound_t::plus_infinity());
+          }
+          if (g.elem(0,y) || g.elem(y,0)) {
+            intv_y = interval_t(
+                g.elem(y, 0) ? -Number(g.edge_val(y, 0)) : bound_t::minus_infinity(),
+                g.elem(0, y) ?  Number(g.edge_val(0, y)) : bound_t::plus_infinity());
+          }
+          if (intv_x.is_top() || intv_y.is_top()) {
+            return false;
+          } else  {
+            return (!((intv_y - intv_x).lb() <= k));
+          }
+        }
+      }
+
+      void active_variables(std::vector<variable_t>& out) const {
+        out.reserve(g.size());
+        for (auto v: g.verts()) {
+          if (rev_map[v]) 
+            out.push_back((*(rev_map[v])));
+        }
+      }
+      // -- end array_sgraph_domain_traits
+      
       // Output function
       void write(crab_os& o) {
 
         normalize ();
-#if 0
+        #if 0
         o << "edges={";
         for(vert_id v : g.verts())
         {
@@ -2363,15 +2344,13 @@ namespace crab {
           }
         }
         o << "}";
-#endif
-#if 0
         crab::outs() << "rev_map={";
         for(unsigned i=0, e = rev_map.size(); i!=e; i++) {
           if (rev_map[i])
             crab::outs() << *(rev_map[i]) << "(" << i << ");";
         }
         crab::outs() << "}\n";
-#endif 
+        #endif 
 
         if(is_bottom()){
           o << "_|_";
@@ -2424,8 +2403,8 @@ namespace crab {
           }
           o << "}";
 
-//          linear_constraint_system_t inv = to_linear_constraint_system ();
-//          o << inv;
+	  // linear_constraint_system_t inv = to_linear_constraint_system ();
+	  // o << inv;
         }
       }
 
