@@ -37,7 +37,6 @@
 #include <boost/unordered_set.hpp>
 #include <boost/container/flat_map.hpp>
 
-#define CLOSE_BOUNDS_INLINE
 //#define CHECK_POTENTIAL
 //#define SDBM_NO_NORMALIZE
 
@@ -78,6 +77,7 @@ namespace crab {
          enum { chrome_dijkstra = 1 };
          enum { widen_restabilize = 1 };
          enum { special_assign = 1 };
+         enum { close_bounds_inline = 1 };	 
 
 	 // use long as graph weights
          typedef long Wt; 
@@ -103,6 +103,7 @@ namespace crab {
          enum { chrome_dijkstra = 0 };
          enum { widen_restabilize = 0 };
          enum { special_assign = 0 };
+         enum { close_bounds_inline = 1 };	 	 
 
          typedef long Wt;
 
@@ -129,6 +130,7 @@ namespace crab {
          enum { chrome_dijkstra = 1 };
          enum { widen_restabilize = 1 };
          enum { special_assign = 1 };
+         enum { close_bounds_inline = 1 };	 	 
 
 	 // Use Number as graph weights
          typedef Number Wt;
@@ -592,21 +594,21 @@ namespace crab {
           }
           assert(check_potential(g, potential));
           // Compute other updated bounds
-          #ifdef CLOSE_BOUNDS_INLINE
-          for(auto e : g.e_preds(v))
-          {
-            if(e.vert == 0)
-              continue;
-            g.update_edge(e.vert, e.val - p.second, 0, min_op);
-
-	    if(!repair_potential(e.vert, 0))
-	    {
-	      set_to_bottom();
-	      return false;
-	    }
-	    assert(check_potential(g, potential));
-          }
-          #endif
+	  if (Params::close_bounds_inline) {
+	    for(auto e : g.e_preds(v))
+	      {
+		if(e.vert == 0)
+		  continue;
+		g.update_edge(e.vert, e.val - p.second, 0, min_op);
+		
+		if(!repair_potential(e.vert, 0))
+		  {
+		    set_to_bottom();
+		    return false;
+		  }
+		assert(check_potential(g, potential));
+	      }
+	  }
         }
         for(auto p : ubs)
         {
@@ -624,20 +626,20 @@ namespace crab {
           }
           assert(check_potential(g, potential));
 
-          #ifdef CLOSE_BOUNDS_INLINE
-          for(auto e : g.e_succs(v))
-          {
-            if(e.vert == 0)
-              continue;
-            g.update_edge(0, e.val + p.second, e.vert, min_op);
-	    if(!repair_potential(0, e.vert))
-	    {
-	      set_to_bottom();
-	      return false;
-	    }
-	    assert(check_potential(g, potential));
-          }
-          #endif
+	  if (Params::close_bounds_inline) {	  
+	    for(auto e : g.e_succs(v))
+	      {
+		if(e.vert == 0)
+		  continue;
+		g.update_edge(0, e.val + p.second, e.vert, min_op);
+		if(!repair_potential(0, e.vert))
+		  {
+		    set_to_bottom();
+		    return false;
+		  }
+		assert(check_potential(g, potential));
+	      }
+	  }
         }
 
         for(auto diff : csts)
@@ -662,11 +664,11 @@ namespace crab {
         // Collect bounds
         // GKG: Now done in close_over_edge
 
-        #ifndef CLOSE_BOUNDS_INLINE
-        edge_vector delta;
-        GrOps::close_after_assign(g, potential, 0, delta);
-        GrOps::apply_delta(g, delta);
-        #endif
+	if (!Params::close_bounds_inline) {	  
+	  edge_vector delta;
+	  GrOps::close_after_assign(g, potential, 0, delta);
+	  GrOps::apply_delta(g, delta);
+	}
 
         assert(check_potential(g, potential));
         // CRAB_WARN("SplitDBM::add_linear_leq not yet implemented.");
@@ -801,12 +803,13 @@ namespace crab {
         Wt c = g_excl.edge_val(ii,jj);
 
         typename graph_t::mut_val_ref_t w;
-        #ifdef CLOSE_BOUNDS_INLINE
-        if(g.lookup(0, ii, &w))
-          g.update_edge(0, w.get() + c, jj, min_op);
-        if(g.lookup(jj, 0, &w))
-          g.update_edge(ii, w.get() + c, 0, min_op);
-        #endif
+	
+	if (Params::close_bounds_inline) {	  	
+	  if(g.lookup(0, ii, &w))
+	    g.update_edge(0, w.get() + c, jj, min_op);
+	  if(g.lookup(jj, 0, &w))
+	    g.update_edge(ii, w.get() + c, 0, min_op);
+	}
 
         // There may be a cheaper way to do this.
         // GKG: Now implemented.
@@ -830,12 +833,12 @@ namespace crab {
               g_excl.add_edge(se, wt_sij, jj);
             }
             src_dec.push_back(std::make_pair(se, edge.val));  
-            #ifdef CLOSE_BOUNDS_INLINE
-            if(g.lookup(0, se, &w))
-              g.update_edge(0, w.get() + wt_sij, jj, min_op);
-            if(g.lookup(jj, 0, &w))
-              g.update_edge(se, w.get() + wt_sij, 0, min_op);
-            #endif
+	    if (Params::close_bounds_inline) {	  		    
+	      if(g.lookup(0, se, &w))
+		g.update_edge(0, w.get() + wt_sij, jj, min_op);
+	      if(g.lookup(jj, 0, &w))
+		g.update_edge(se, w.get() + wt_sij, 0, min_op);
+	    }
 
 	    /*
             for(auto edge : g_excl.e_succs(jj))
@@ -852,12 +855,12 @@ namespace crab {
                 } else {
                   g_excl.add_edge(se, wt_sijd, de);
                 }
-                #ifdef CLOSE_BOUNDS_INLINE
-                if(g.lookup(0, se, &w))
-                  g.update_edge(0, (*w) + wt_sijd, de, min_op);
-                if(g.lookup(de, 0, &w))
-                  g.update_edge(se, (*w) + wt_sijd, 0, min_op);
-                #endif
+		if (Params::close_bounds_inline) {	  		    
+                  if(g.lookup(0, se, &w))
+		    g.update_edge(0, (*w) + wt_sijd, de, min_op);
+                  if(g.lookup(de, 0, &w))
+                    g.update_edge(se, (*w) + wt_sijd, 0, min_op);
+		}
               }
             }
             */
@@ -880,12 +883,12 @@ namespace crab {
               g_excl.add_edge(ii, wt_ijd, de);
             }
             dest_dec.push_back(std::make_pair(de, edge.val));
-            #ifdef CLOSE_BOUNDS_INLINE
-            if(g.lookup(0,  ii, &w))
-              g.update_edge(0, w.get() + wt_ijd, de, min_op);
-            if(g.lookup(de, 0, &w))
-              g.update_edge(ii, w.get() + wt_ijd, 0, min_op);
-            #endif
+	    if (Params::close_bounds_inline) {	  		    
+	      if(g.lookup(0,  ii, &w))
+		g.update_edge(0, w.get() + wt_ijd, de, min_op);
+	      if(g.lookup(de, 0, &w))
+		g.update_edge(ii, w.get() + wt_ijd, 0, min_op);
+	    }
           }
         }
 
@@ -905,12 +908,12 @@ namespace crab {
             } else {
               g.add_edge(se, wt_sijd, de);
             }
-            #ifdef CLOSE_BOUNDS_INLINE
-            if(g.lookup(0, se, &w))
-              g.update_edge(0, w.get() + wt_sijd, de, min_op);
-            if(g.lookup(de, 0, &w))
-              g.update_edge(se, w.get() + wt_sijd, 0, min_op);
-            #endif
+	    if (Params::close_bounds_inline) {	  		    	    
+	      if(g.lookup(0, se, &w))
+		g.update_edge(0, w.get() + wt_sijd, de, min_op);
+	      if(g.lookup(de, 0, &w))
+		g.update_edge(se, w.get() + wt_sijd, 0, min_op);
+	    }
           }
         }
 
@@ -1498,23 +1501,23 @@ namespace crab {
 
             GrOps::apply_delta(meet_g, delta);
 
-          // Recover updated LBs and UBs.
-          #ifdef CLOSE_BOUNDS_INLINE
-            Wt_min min_op;
-            for(auto e : delta)
-            {
-              if(meet_g.elem(0, e.first.first))
-                meet_g.update_edge(0, meet_g.edge_val(0, e.first.first) + e.second,
-				   e.first.second, min_op);
-              if(meet_g.elem(e.first.second, 0))
-                meet_g.update_edge(e.first.first, meet_g.edge_val(e.first.second, 0) + e.second,
-				   0, min_op);
-            }
-          #else
-            delta.clear();
-            GrOps::close_after_assign(meet_g, meet_pi, 0, delta);
-            GrOps::apply_delta(meet_g, delta);
-          #endif
+	    // Recover updated LBs and UBs.
+	    if (Params::close_bounds_inline) {	    
+	      Wt_min min_op;
+	      for(auto e : delta)
+		{
+		  if(meet_g.elem(0, e.first.first))
+		    meet_g.update_edge(0, meet_g.edge_val(0, e.first.first) + e.second,
+				       e.first.second, min_op);
+		  if(meet_g.elem(e.first.second, 0))
+		    meet_g.update_edge(e.first.first, meet_g.edge_val(e.first.second, 0) + e.second,
+				       0, min_op);
+		}
+	    } else {
+	      delta.clear();
+	      GrOps::close_after_assign(meet_g, meet_pi, 0, delta);
+	      GrOps::apply_delta(meet_g, delta);
+	    }
           }
           assert(check_potential(meet_g, meet_pi)); 
           DBM_t res(std::move(meet_verts), std::move(meet_rev), std::move(meet_g), 
@@ -1619,8 +1622,8 @@ namespace crab {
 	// between lhs and rhs if rhs is evaluated to a
 	// constant. However, it would make the meet operator to miss
 	// some non-redundant edges. These edges can be recovered if
-	// CLOSE_BOUNDS_INLINE is disabled. Need to investigate more
-	// this.
+	// Params::close_bounds_inline is disabled. Need to
+	// investigate more this.
 	
 	// interval_t rhs_intv = eval_interval(e);
         // if (boost::optional<number_t> k = rhs_intv.singleton()) {
