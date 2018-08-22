@@ -38,7 +38,7 @@
 #include <boost/container/flat_map.hpp>
 
 #define CLOSE_BOUNDS_INLINE
-// #define CHECK_POTENTIAL
+//#define CHECK_POTENTIAL
 //#define SDBM_NO_NORMALIZE
 
 #pragma GCC diagnostic push
@@ -1615,11 +1615,22 @@ namespace crab {
 
         assert(check_potential(g, potential));
 
-	interval_t rhs_intv = eval_interval(e);
+	// JN: it's tempting to use this code because it avoids edges
+	// between lhs and rhs if rhs is evaluated to a
+	// constant. However, it would make the meet operator to miss
+	// some non-redundant edges. These edges can be recovered if
+	// CLOSE_BOUNDS_INLINE is disabled. Need to investigate more
+	// this.
+	
+	// interval_t rhs_intv = eval_interval(e);
+        // if (boost::optional<number_t> k = rhs_intv.singleton()) {
+        //   set(x, *k);
+        // }
+
         // If it's a constant, just assign the interval.
-        if (boost::optional<number_t> k = rhs_intv.singleton()) {
-          set(x, *k);
-        } else {
+	if (e.is_constant()) {
+	  set(x, e.constant());
+	} else {
           interval_t x_int = eval_interval(e);
           std::vector<std::pair<variable_t, Wt> > diffs_lb;
           std::vector<std::pair<variable_t, Wt> > diffs_ub;
@@ -2374,7 +2385,7 @@ namespace crab {
             interval_t v_out = interval_t(
                 g.elem(v, 0) ? -Number(g.edge_val(v, 0)) : bound_t::minus_infinity(),
                 g.elem(0, v) ? Number(g.edge_val(0, v)) : bound_t::plus_infinity());
-            
+
             if(first)
               first = false;
             else
@@ -2392,6 +2403,7 @@ namespace crab {
               if(!rev_map[d])
                 continue;
               variable_t vd = *rev_map[d];
+
               if(first)
                 first = false;
               else
