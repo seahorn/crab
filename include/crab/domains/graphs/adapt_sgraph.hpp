@@ -56,7 +56,7 @@ namespace crab {
           dense((elt_t*) malloc(sizeof(elt_t)*dense_maxsz)),
           sparse(nullptr)
       {
-        memcpy(dense, o.dense, sizeof(elt_t)*sz);
+	memcpy(static_cast<void*>(dense), o.dense, sizeof(elt_t)*sz);
 
         if(o.sparse)
         {
@@ -72,17 +72,19 @@ namespace crab {
 	  if(dense_maxsz < o.dense_maxsz)
 	    {
 	      dense_maxsz = o.dense_maxsz;
-	      dense = (elt_t*) realloc(dense, sizeof(elt_t)*dense_maxsz);
+	      dense = (elt_t*) realloc(static_cast<void*>(dense),
+				       sizeof(elt_t)*dense_maxsz);
 	    }
 	  sz = o.sz;
-	  memcpy(dense, o.dense, sizeof(elt_t)*sz);
+	  memcpy(static_cast<void*>(dense), o.dense, sizeof(elt_t)*sz);
 	  
 	  if(o.sparse)
 	    {
 	      if(!sparse || sparse_ub < o.sparse_ub)
 		{
 		  sparse_ub = o.sparse_ub;
-		  sparse = (key_t*) realloc(sparse, sizeof(key_t)*sparse_ub);
+		  sparse = (key_t*) realloc(static_cast<void*>(sparse),
+					    sizeof(key_t)*sparse_ub);
 		}
 	    }
 	  
@@ -271,7 +273,8 @@ namespace crab {
 
         while(dense_maxsz < new_max)
           dense_maxsz *= 2;
-        elt_t* new_dense = (elt_t*) realloc(dense, sizeof(elt_t)*dense_maxsz);
+        elt_t* new_dense = (elt_t*) realloc(static_cast<void*>(dense),
+					    sizeof(elt_t)*dense_maxsz);
         if(!new_dense)
           CRAB_ERROR("Allocation failure.");
         dense = new_dense; 
