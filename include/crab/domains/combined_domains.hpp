@@ -558,18 +558,45 @@ namespace crab {
     }; // class domain_product2
   
 
+    namespace reduced_product_impl {    
+      class default_params {
+      public:
+	enum { left_propagate_equalities = 1 };
+	enum { right_propagate_equalities = 1 };
+	enum { left_propagate_inequalities = 1 };
+	enum { right_propagate_inequalities = 1 };      
+	enum { left_propagate_intervals = 1 };
+	enum { right_propagate_intervals = 1 };
+	enum { disable_reduction = 0 };
+	enum { apply_reduction_only_add_constraint = 0 };
+      };
+      
+      class term_dbm_params {
+      public:
+	enum { left_propagate_equalities = 1 };
+	enum { right_propagate_equalities = 1 };
+	enum { left_propagate_inequalities = 0 };
+	enum { right_propagate_inequalities = 0 };      
+	enum { left_propagate_intervals = 0 };
+	enum { right_propagate_intervals = 0 };
+	enum { disable_reduction = 0 };
+	enum { apply_reduction_only_add_constraint = 1 };      
+      };
+    }
+    
     // This domain is similar to domain_product2 but it uses a more
     // precise reduction operation.
-    template<typename Domain1, typename Domain2 >
+    template<typename Domain1, typename Domain2,
+	     class Params = reduced_product_impl::default_params>
     class reduced_numerical_domain_product2:
       public abstract_domain<typename Domain1::number_t, typename Domain1::varname_t,
-			     reduced_numerical_domain_product2<Domain1,Domain2> > {
+			     reduced_numerical_domain_product2<Domain1,Domain2,Params>> {
      public:
       // Assume that Domain1 and Domain2 have the same types for
       // number_t and varname_t
       typedef typename Domain1::number_t Number;
       typedef typename Domain1::varname_t VariableName;
-      typedef reduced_numerical_domain_product2<Domain1,Domain2>
+      typedef reduced_numerical_domain_product2<Domain1,Domain2,Params>
       reduced_numerical_domain_product2_t;
       typedef abstract_domain<Number,VariableName,reduced_numerical_domain_product2_t>
       abstract_domain_t;
@@ -593,8 +620,7 @@ namespace crab {
       reduced_numerical_domain_product2(const domain_product2_t& product):
           _product(product) {}
 
-      linear_constraint_system_t 
-      to_linear_constraints (variable_t v, interval_t i) const {
+      linear_constraint_system_t to_linear_constraints (variable_t v, interval_t i) const {
         linear_constraint_system_t csts;
         if (i.lb ().is_finite () && i.ub ().is_finite ()) {
           auto lb = *(i.lb ().number());
@@ -619,42 +645,49 @@ namespace crab {
         crab::CrabStats::count (getDomainName() + ".count.reduce");
         crab::ScopedCrabStats __st__(getDomainName() + ".reduce");
 
-        if (!is_bottom()) {
-          
+        if (!is_bottom() && !Params::disable_reduction) {
+	  
           // We just propagate from one domain to another.  We could
-          // propagate in the other direction ... and repeat it for a
-          // while ...
+          // propagate in the other direction ... and repeat it
+          // computing a fixpoint+narrowing of descending iterations.
 
           Domain1& inv1 = _product.first ();
           Domain2& inv2 = _product.second ();
 
-          // TODO?: having knowledge about the underlying domains we
-          // might want to push only certain constraints (e.g.,
-          // only equalities, only inequalities, etc). In that way, we
-          // can avoid propagating redundant constraints.
-
-          //////
-          // propagate interval constraints between domains
-          //////
-          interval_t i1 = inv1[v];
-          if (!i1.is_top ())
-            inv2 += to_linear_constraints (v, i1);
-          interval_t i2 = inv2[v];
-          if (!i2.is_top ())
-            inv1 += to_linear_constraints (v, i2);
+	  //////
+	  // propagate interval constraints between domains
+	  //////
+	  if (Params::left_propagate_intervals) {
+	    interval_t i1 = inv1[v];
+	    if (!i1.is_top ())
+	      inv2 += to_linear_constraints (v, i1);
+	  }
+	  if (Params::right_propagate_intervals) {
+	    interval_t i2 = inv2[v];
+	    if (!i2.is_top ())
+	      inv1 += to_linear_constraints (v, i2);
+	  }
           
           //////
           // propagate other constraints expressed by the domains
           //////
 
-	  linear_constraint_system_t csts1, csts2;
-	  crab::domains::reduced_domain_traits<Domain1>::
-	    extract(inv1, v, csts1, /*only_equalities=*/ false);
-	  inv2 += csts1;
-	  crab::domains::reduced_domain_traits<Domain2>::
-	    extract(inv2, v, csts2, /*only_equalities=*/ false);
-	  inv1 += csts2;
-        }
+	  if (Params::left_propagate_equalities || Params::left_propagate_inequalities) {
+	    linear_constraint_system_t csts1;
+	    const bool propagate_only_equalities = !Params::left_propagate_inequalities;
+	    crab::domains::reduced_domain_traits<Domain1>::
+	      extract(inv1, v, csts1, propagate_only_equalities);
+	    inv2 += csts1;
+	  }
+
+	  if (Params::right_propagate_equalities || Params::right_propagate_inequalities) {
+	    linear_constraint_system_t csts2;
+	    const bool propagate_only_equalities = !Params::right_propagate_inequalities;
+	    crab::domains::reduced_domain_traits<Domain2>::
+	      extract(inv2, v, csts2, propagate_only_equalities);
+	    inv1 += csts2;
+	  }
+	}
       }
       
      public:
@@ -725,7 +758,7 @@ namespace crab {
 	return res;
       }
       
-      reduced_numerical_domain_product2_t operator||(reduced_numerical_domain_product2_t other) {
+      reduced_numerical_domain_product2_t operator||(reduced_numerical_domain_product2_t other){
         reduced_numerical_domain_product2_t res(this->_product || other._product);
 	CRAB_LOG("combined-domain", 
 		 crab::outs() << "============ WIDENING ==================";
@@ -777,14 +810,18 @@ namespace crab {
             
       void assign(variable_t x, linear_expression_t e) {
         this->_product.assign(x, e);
-        this->reduce_variable(x);
+	if (!Params::apply_reduction_only_add_constraint) {
+	  this->reduce_variable(x);
+	}
 	CRAB_LOG("combined-domain", 
 		 crab::outs () << x << ":=" << e << "=" << *this << "\n");	
       }
       
       void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
         this->_product.apply(op, x, y, z);
-        this->reduce_variable(x);
+	if (!Params::apply_reduction_only_add_constraint) {	
+	  this->reduce_variable(x);
+	}
 	CRAB_LOG("combined-domain", 
 		 crab::outs () << x << ":=" << y << op << z << "=" << *this << "\n");
 	
@@ -792,7 +829,9 @@ namespace crab {
       
       void apply(operation_t op, variable_t x, variable_t y, number_t k) {
         this->_product.apply(op, x, y, k);
-        this->reduce_variable(x);
+	if (!Params::apply_reduction_only_add_constraint) {	
+	  this->reduce_variable(x);
+	}
 	CRAB_LOG("combined-domain", 
 		 crab::outs () << x << ":=" << y << op << k << "=" << *this << "\n");
       }
@@ -800,57 +839,73 @@ namespace crab {
       void backward_assign (variable_t x, linear_expression_t e,
 			    reduced_numerical_domain_product2_t invariant)  {
         this->_product.backward_assign(x, e, invariant._product);
-	// reduce the variables in the right-hand side
-	for (auto v: e.variables())
-	  this->reduce_variable(v);	
+	if (!Params::apply_reduction_only_add_constraint) {	
+	  // reduce the variables in the right-hand side
+	  for (auto v: e.variables())
+	    this->reduce_variable(v);
+	}
       }
       
       void backward_apply (operation_t op,
 			   variable_t x, variable_t y, Number k,
 			   reduced_numerical_domain_product2_t invariant)  {
         this->_product.backward_apply(op, x, y, k, invariant._product);
-	// reduce the variables in the right-hand side	
-        this->reduce_variable(y);		
+	if (!Params::apply_reduction_only_add_constraint) {	
+	  // reduce the variables in the right-hand side	
+	  this->reduce_variable(y);
+	}
       }
       
       void backward_apply(operation_t op,
 			  variable_t x, variable_t y, variable_t z,
 			  reduced_numerical_domain_product2_t invariant)  {
         this->_product.backward_apply(op, x, y, z, invariant._product);
-	// reduce the variables in the right-hand side		
-        this->reduce_variable(y);
-	this->reduce_variable(z);			
+	if (!Params::apply_reduction_only_add_constraint) {	
+	  // reduce the variables in the right-hand side		
+	  this->reduce_variable(y);
+	  this->reduce_variable(z);
+	}
       }
 
       // cast_operators_api
       
       void apply(int_conv_operation_t op, variable_t dst, variable_t src) {
         this->_product.apply(op, dst, src);
-        this->reduce_variable(dst);
+	if (!Params::apply_reduction_only_add_constraint) {	
+	  this->reduce_variable(dst);
+	}
       }
       
       // bitwise_operators_api
       
       void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {
         this->_product.apply(op, x, y, z);
-        this->reduce_variable(x);
+	if (!Params::apply_reduction_only_add_constraint) {	
+	  this->reduce_variable(x);
+	}
       }
       
       void apply(bitwise_operation_t op, variable_t x, variable_t y, number_t k) {
         this->_product.apply(op, x, y, k);
-        this->reduce_variable(x);
+	if (!Params::apply_reduction_only_add_constraint) {	
+	  this->reduce_variable(x);
+	}
       }
       
       // division_operators_api
       
       void apply(div_operation_t op, variable_t x, variable_t y, variable_t z) {
         this->_product.apply(op, x, y, z);
-        this->reduce_variable(x);
+	if (!Params::apply_reduction_only_add_constraint) {	
+	  this->reduce_variable(x);
+	}
       }
       
       void apply(div_operation_t op, variable_t x, variable_t y, number_t k) {
         this->_product.apply(op, x, y, k);
-        this->reduce_variable(x);
+	if (!Params::apply_reduction_only_add_constraint) {	
+	  this->reduce_variable(x);
+	}
       }
       
       void rename (const variable_vector_t& from,
