@@ -80,6 +80,7 @@ namespace crab {
         : base_checker_t (checkers), m_analyzer (analyzer) { }
     
     virtual void run () override {
+      CRAB_VERBOSE_IF(1, crab::outs() << "Started property checker.\n";);      
       crab::ScopedCrabStats __st__("Checker");
       cfg_t cfg = m_analyzer.get_cfg ();
 
@@ -100,6 +101,7 @@ namespace crab {
             stmt.accept (&*checker);
         }
       }
+      CRAB_VERBOSE_IF(1, crab::outs() << "Finished property checker.\n";);
     }
   };
 
@@ -127,6 +129,7 @@ namespace crab {
         : base_checker_t (checkers), m_analyzer (analyzer) { }
     
     virtual void run () override {
+      CRAB_VERBOSE_IF(1, crab::outs() << "Started property checker.\n";);
       crab::ScopedCrabStats __st__("Checker");
       cg_t& cg = m_analyzer.get_call_graph (); 
       for (auto &v: boost::make_iterator_range (vertices (cg))) {
@@ -150,6 +153,9 @@ namespace crab {
           }
         }
       }
+      CRAB_VERBOSE_IF(1, crab::outs() << "Finished property checker.";);
+
+      
     }
   };
 

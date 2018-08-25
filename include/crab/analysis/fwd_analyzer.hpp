@@ -98,6 +98,7 @@ namespace crab {
       invariant_map_t  m_post_map;
 
       void prune_dead_variables (abs_dom_t &inv, basic_block_label_t node) {
+	crab::ScopedCrabStats __st__("Pruning dead variables");		
         if (!m_live) return;
 
         if (inv.is_bottom() || inv.is_top()) return;
@@ -120,6 +121,7 @@ namespace crab {
       
       void process_pre (basic_block_label_t node, abs_dom_t inv) 
       {
+        crab::ScopedCrabStats __st__("Store invariants");	
         auto it = m_pre_map.find (node);
         if (it == m_pre_map.end())
         {          
@@ -134,6 +136,7 @@ namespace crab {
       
       void process_post (basic_block_label_t node, abs_dom_t inv) 
       {
+	crab::ScopedCrabStats __st__("Store invariants");		
         auto it = m_post_map.find (node);
         if (it == m_post_map.end())
         {
@@ -159,8 +162,12 @@ namespace crab {
 	  m_abs_tr (abs_tr),
 	  m_live (live) {
 
+	CRAB_VERBOSE_IF(1, crab::outs() << "Type checking CFG ... ";);
+	crab::CrabStats::resume("CFG type checking");
 	crab::cfg::type_checker<CFG> tc(this->_cfg);
 	tc.run();
+	crab::CrabStats::stop("CFG type checking");	
+	CRAB_VERBOSE_IF(1, crab::outs() << "OK\n";);
 	
         if (live) {
           // --- collect input and output parameters 
