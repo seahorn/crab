@@ -1255,6 +1255,7 @@ namespace crab {
          }
        }
 
+       // extract operation is used during reduction with other domains.       
        void extract(const variable_t& x, linear_constraint_system_t& csts,
 		    bool only_equalities /*unused*/) {
          crab::CrabStats::count (getDomainName() + ".count.extract");
@@ -1266,18 +1267,37 @@ namespace crab {
 	   return;
 	 }
 
+	 // TODO: make user parameter
+	 const unsigned max_eq = 10;
+	 // We limit the number of equalities via
+	 // constants. Otherwise, the number of equalities can be too
+	 // large (e.g., with domains like array_expansion) and it
+	 // would make the reduction very slow.
+	 
          // Extract equalities
          auto it = _var_map.find (x);
          if (it != _var_map.end ()) {
            term_id_t tx = it->second;
-	   auto &varset = _rev_var_map[tx];
-	   for (auto var: varset) {
-	     if (var.index() != x.index()) {
-	       linear_constraint_t cst(linear_expression_t(x) == linear_expression_t(var));
-               CRAB_LOG("terms", crab::outs() << "Extracting " << cst << "\n";);
-               csts += cst;	       
-             }
+	   auto tx_ptr = _ttbl.get_term_ptr(tx);
+
+	   bool active_threshold = false;
+	   if(tx_ptr->kind() == term::TERM_CONST) {
+	     active_threshold = true;
 	   }
+	   auto &varset = _rev_var_map[tx];
+	   unsigned num_eq = 0;
+	   for (auto var: varset) {
+	     if (active_threshold && num_eq > max_eq) {
+	       return;
+	     }
+	     if (var.index() != x.index()) {
+	       num_eq++;
+	       linear_constraint_t cst(linear_expression_t(x) == linear_expression_t(var));
+	       CRAB_LOG("terms", crab::outs() << "Extracting " << cst << "\n";);
+	       csts += cst;	       
+	     }
+	   }
+	   
 	 }
        }
 
