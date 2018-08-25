@@ -36,7 +36,7 @@ LOGDIR=$(mktemp -d "${TMPDIR:-/tmp/}$(basename $0).XXXXXXXXXXXX")
 LOG="$LOGDIR/log.txt"
 
 ## Diff the output of the tests with the expected output
-$DIFF -y --suppress-common-lines $OLDLOG $NEWLOG >& $LOG
+$DIFF --suppress-common-lines $OLDLOG $NEWLOG >& $LOG
 STATUS=$?
 
 ###################################################################

@@ -77,7 +77,7 @@ namespace crab {
          enum { chrome_dijkstra = 1 };
          enum { widen_restabilize = 1 };
          enum { special_assign = 1 };
-         enum { close_bounds_inline = 1 };	 
+         enum { close_bounds_inline = 0 };	 
 
 	 // use long as graph weights
          typedef long Wt; 
@@ -1605,143 +1605,137 @@ namespace crab {
         }
       }
 
-      // Assumption: state is currently feasible.
       void assign(variable_t x, linear_expression_t e) {
         crab::CrabStats::count (getDomainName() + ".count.assign");
         crab::ScopedCrabStats __st__(getDomainName() + ".assign");
 
-        if(is_bottom())
+        if(is_bottom()) {
           return;
+	}
+	
         CRAB_LOG("zones-split", crab::outs() << "Before assign: "<< *this <<"\n");
         CRAB_LOG("zones-split", crab::outs() << x<< ":="<< e <<"\n");
         normalize();
 
         assert(check_potential(g, potential));
 
-	// JN: it's tempting to use this code because it avoids edges
-	// between lhs and rhs if rhs is evaluated to a
-	// constant. However, it would make the meet operator to miss
-	// some non-redundant edges. These edges can be recovered if
-	// Params::close_bounds_inline is disabled. Need to
-	// investigate more this.
-	
-	// interval_t rhs_intv = eval_interval(e);
-        // if (boost::optional<number_t> k = rhs_intv.singleton()) {
-        //   set(x, *k);
-        // }
-
+	interval_t x_int = eval_interval(e);
+	bool is_rhs_constant = false;
         // If it's a constant, just assign the interval.
-	if (e.is_constant()) {
-	  set(x, e.constant());
+	if (!Params::close_bounds_inline) {
+	  // JN: it seems that we can only do this if
+	  // close_bounds_inline is disabled. Otherwise, the meet
+	  // operator misses some non-redundant edges. Need to
+	  // investigate more this.
+	  if (boost::optional<number_t> x_n = x_int.singleton()) {
+	    set(x, *x_n);
+	    is_rhs_constant = true;
+	  }
 	} else {
-          interval_t x_int = eval_interval(e);
-          std::vector<std::pair<variable_t, Wt> > diffs_lb;
-          std::vector<std::pair<variable_t, Wt> > diffs_ub;
-          // Construct difference constraints from the assignment
-          diffcsts_of_assign(x, e, diffs_lb, diffs_ub);
-          if(diffs_lb.size() > 0 || diffs_ub.size() > 0)
-          {
-            if(Params::special_assign)
-            {
-              // Allocate a new vertex for x
-              vert_id v = g.new_vertex();
-              assert(v <= rev_map.size());
-              if(v == rev_map.size())
-              {
-                rev_map.push_back(x);
-                potential.push_back(potential[0] + eval_expression(e));
-              } else {
-                potential[v] = potential[0] + eval_expression(e);
-                rev_map[v] = x;
-              }
-              
-              edge_vector delta;
-              for(auto diff : diffs_lb)
-              {
-                delta.push_back(std::make_pair(std::make_pair(v, get_vert(diff.first)),
+	  if (e.is_constant()) {
+	    set(x, e.constant());
+	    is_rhs_constant = true;	    
+	  }
+	}
+
+	if (!is_rhs_constant) {
+	  std::vector<std::pair<variable_t, Wt> > diffs_lb;
+	  std::vector<std::pair<variable_t, Wt> > diffs_ub;
+	  // Construct difference constraints from the assignment
+	  diffcsts_of_assign(x, e, diffs_lb, diffs_ub);
+	  if(diffs_lb.size() > 0 || diffs_ub.size() > 0) {
+	    if(Params::special_assign) {
+	      // Allocate a new vertex for x
+	      vert_id v = g.new_vertex();
+	      assert(v <= rev_map.size());
+	      if(v == rev_map.size()) {
+		rev_map.push_back(x);
+		potential.push_back(potential[0] + eval_expression(e));
+	      } else {
+		potential[v] = potential[0] + eval_expression(e);
+		rev_map[v] = x;
+	      }
+	      
+	      edge_vector delta;
+	      for(auto diff : diffs_lb) {
+		delta.push_back(std::make_pair(std::make_pair(v, get_vert(diff.first)),
 					       -diff.second));
-              }
-
-              for(auto diff : diffs_ub)
-              {
-                delta.push_back(std::make_pair(std::make_pair(get_vert(diff.first), v),
+	      }
+	      
+	      for(auto diff : diffs_ub) {
+		delta.push_back(std::make_pair(std::make_pair(get_vert(diff.first), v),
 					       diff.second));
-              }
-                 
-              // apply_delta should be safe here, as x has no edges in G.
-              GrOps::apply_delta(g, delta);
-              delta.clear();
-              SubGraph<graph_t> g_excl(g, 0);
-              GrOps::close_after_assign(g_excl, potential, v, delta);
-              GrOps::apply_delta(g, delta);
-
-              Wt_min min_op;
-              if(x_int.lb().is_finite())
-                g.update_edge(v, ntov::ntov(-(*(x_int.lb().number()))), 0, min_op);
-              if(x_int.ub().is_finite())
-                g.update_edge(0, ntov::ntov(*(x_int.ub().number())), v, min_op);
-              // Clear the old x vertex
+	      }
+	      
+	      // apply_delta should be safe here, as x has no edges in G.
+	      GrOps::apply_delta(g, delta);
+	      delta.clear();
+	      SubGraph<graph_t> g_excl(g, 0);
+	      GrOps::close_after_assign(g_excl, potential, v, delta);
+	      GrOps::apply_delta(g, delta);
+	      
+	      Wt_min min_op;
+	      if(x_int.lb().is_finite())
+		g.update_edge(v, ntov::ntov(-(*(x_int.lb().number()))), 0, min_op);
+	      if(x_int.ub().is_finite())
+		g.update_edge(0, ntov::ntov(*(x_int.ub().number())), v, min_op);
+	      // Clear the old x vertex
               operator-=(x);
               vert_map.insert(vmap_elt_t(x, v));
-            } else {
-              // Assignment as a sequence of edge additions.
-              vert_id v = g.new_vertex();
-              assert(v <= rev_map.size());
-              if(v == rev_map.size())
-              {
-                rev_map.push_back(x);
-                potential.push_back(Wt(0));
-              } else {
-                potential[v] = Wt(0);
-                rev_map[v] = x;
-              }
-              Wt_min min_op;
-              edge_vector cst_edges;
-
-              for(auto diff : diffs_lb)
-              {
-                cst_edges.push_back(std::make_pair(std::make_pair(v, get_vert(diff.first)),
+	    } else {
+	      // Assignment as a sequence of edge additions.
+	      vert_id v = g.new_vertex();
+	      assert(v <= rev_map.size());
+	      if(v == rev_map.size()) {
+		rev_map.push_back(x);
+		potential.push_back(Wt(0));
+	      } else {
+		potential[v] = Wt(0);
+		rev_map[v] = x;
+	      }
+	      Wt_min min_op;
+	      edge_vector cst_edges;
+	      
+	      for(auto diff : diffs_lb) {
+		cst_edges.push_back(std::make_pair(std::make_pair(v, get_vert(diff.first)),
 						   -diff.second));
-              }
-
-              for(auto diff : diffs_ub)
-              {
-                cst_edges.push_back(std::make_pair(std::make_pair(get_vert(diff.first), v),
+	      }
+	      
+	      for(auto diff : diffs_ub) {
+		cst_edges.push_back(std::make_pair(std::make_pair(get_vert(diff.first), v),
 						   diff.second));
-              }
-               
-              for(auto diff : cst_edges)
-              {
-                vert_id src = diff.first.first;
-                vert_id dest = diff.first.second;
-                g.update_edge(src, diff.second, dest, min_op);
-                if(!repair_potential(src, dest))
-                {
-                  assert(0 && "Unreachable");
-                  set_to_bottom();
-                }
-                assert(check_potential(g, potential));
-                
-                close_over_edge(src, dest);
-                assert(check_potential(g, potential));
-              }
-
-              if(x_int.lb().is_finite())
-                g.update_edge(v, ntov::ntov(-(*(x_int.lb().number()))), 0, min_op);
-              if(x_int.ub().is_finite())
-                g.update_edge(0, ntov::ntov(*(x_int.ub().number())), v, min_op);
-
-              // Clear the old x vertex
-              operator-=(x);
-              vert_map.insert(vmap_elt_t(x, v));
-            }
-          } else {
-            set(x, x_int);
-          }
-          // CRAB_WARN("DBM only supports a cst or var on the rhs of assignment");
-          // this->operator-=(x);
-        }
-
+	      }
+	      
+	      for(auto diff : cst_edges) {
+		vert_id src = diff.first.first;
+		vert_id dest = diff.first.second;
+		g.update_edge(src, diff.second, dest, min_op);
+		if(!repair_potential(src, dest)) {
+		  assert(0 && "Unreachable");
+		  set_to_bottom();
+		}
+		assert(check_potential(g, potential));
+		
+		close_over_edge(src, dest);
+		assert(check_potential(g, potential));
+	      }
+	      
+	      if(x_int.lb().is_finite())
+		g.update_edge(v, ntov::ntov(-(*(x_int.lb().number()))), 0, min_op);
+	      if(x_int.ub().is_finite())
+		g.update_edge(0, ntov::ntov(*(x_int.ub().number())), v, min_op);
+	      
+	      // Clear the old x vertex
+	      operator-=(x);
+	      vert_map.insert(vmap_elt_t(x, v));
+	    }
+	  } else {
+	    set(x, x_int);
+	  }
+	}
+	
+	// CRAB_WARN("DBM only supports a cst or var on the rhs of assignment");
+	// this->operator-=(x);
 	// g.check_adjs(); 
 
         assert(check_potential(g, potential));
