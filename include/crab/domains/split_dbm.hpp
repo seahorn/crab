@@ -2369,7 +2369,7 @@ namespace crab {
         else
         {
           // Intervals
-          bool first = true;
+          const char* sep = "";
           o << "{";
           // Extract all the edges
           SubGraph<graph_t> g_excl(g, 0);
@@ -2383,16 +2383,14 @@ namespace crab {
                 g.elem(v, 0) ? -Number(g.edge_val(v, 0)) : bound_t::minus_infinity(),
                 g.elem(0, v) ? Number(g.edge_val(0, v)) : bound_t::plus_infinity());
 
-            if(first)
-              first = false;
-            else
-              o << ", ";
-            o << *(rev_map[v]) << " -> " << v_out;
+            o << sep << *(rev_map[v]) << " -> " << v_out;
+            sep = ", ";
           }
 
+          boost::unordered_set<vert_id> skip;
           for(vert_id s : g_excl.verts())
           {
-            if(!rev_map[s])
+            if(!rev_map[s] || skip.count(s))
               continue;
             variable_t vs = *rev_map[s];
             for(vert_id d : g_excl.succs(s))
@@ -2401,11 +2399,23 @@ namespace crab {
                 continue;
               variable_t vd = *rev_map[d];
 
-              if(first)
-                first = false;
-              else
-                o << ", ";
-              o << vd << "-" << vs << "<=" << g_excl.edge_val(s, d);
+              auto val = g_excl.edge_val(s, d);
+              if(g_excl.elem(d, s) && val == -g_excl.edge_val(d, s)) {
+                if(val == 0) {
+                  skip.insert(d);
+                  o << sep << vd << "=" << vs;
+                  sep = ", ";
+                } else if(val > 0) { // otherwise will print in the reverse order
+                  o << sep << vd << "-" << vs << "=" << val;
+                  sep = ", ";
+                }
+              } else {
+                  if (val > 0)
+                    o << sep << vd << "-" << vs << "<=" << val;
+                  else 
+                    o << sep << vs << "-" << vd << "<=" << -val;
+                  sep = ", ";
+              }
             }
           }
           o << "}";
