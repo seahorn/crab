@@ -677,6 +677,9 @@ namespace crab {
 	    const bool propagate_only_equalities = !Params::left_propagate_inequalities;
 	    crab::domains::reduced_domain_traits<Domain1>::
 	      extract(inv1, v, csts1, propagate_only_equalities);
+	    std::string k(getDomainName() + ".count.reduce.equalities_from_" +
+			  _product.first().getDomainName());
+	    crab::CrabStats::uset(k, crab::CrabStats::get(k) + csts1.size());
 	    inv2 += csts1;
 	  }
 
@@ -685,6 +688,9 @@ namespace crab {
 	    const bool propagate_only_equalities = !Params::right_propagate_inequalities;
 	    crab::domains::reduced_domain_traits<Domain2>::
 	      extract(inv2, v, csts2, propagate_only_equalities);
+	    std::string k(getDomainName() + ".count.reduce.equalities_from_" +
+			  _product.second().getDomainName());
+	    crab::CrabStats::uset(k, crab::CrabStats::get(k) + csts2.size());
 	    inv1 += csts2;
 	  }
 	}
