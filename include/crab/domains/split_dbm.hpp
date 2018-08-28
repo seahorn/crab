@@ -685,6 +685,7 @@ namespace crab {
 	} else if (!new_i.is_top() && (new_i <= i)) {
 	  vert_id v = get_vert(x);
 	  typename graph_t::mut_val_ref_t w;
+	  Wt_min min_op;	  
 	  if(new_i.lb().is_finite()) {
 	    // strenghten lb
 	    Wt lb_val = ntov::ntov(-(*(new_i.lb().number())));
@@ -695,6 +696,16 @@ namespace crab {
 		return;
 	      }
 	      assert(check_potential(g, potential));
+	      // Update other bounds
+	      for(auto e : g.e_preds(v)) {
+		if(e.vert == 0) continue;
+		g.update_edge(e.vert, e.val + lb_val, 0, min_op);
+		if(!repair_potential(e.vert, 0)) {
+		  set_to_bottom();
+		  return;
+		}
+		assert(check_potential(g, potential));
+	      }
 	    }
 	  }
 	  if(new_i.ub().is_finite()) {	    
@@ -705,8 +716,18 @@ namespace crab {
 	      if(!repair_potential(0, v)) {
 		set_to_bottom();
 		return;
-	      }
+	      }	      
 	      assert(check_potential(g, potential));
+	      // Update other bounds
+	      for(auto e : g.e_succs(v)) {
+		if(e.vert == 0) continue;
+		g.update_edge(0, e.val + ub_val, e.vert, min_op);
+		if(!repair_potential(0, e.vert)) {
+		  set_to_bottom();
+		  return;
+		}
+		  assert(check_potential(g, potential));
+	      }
 	    }
 	  }
 	}

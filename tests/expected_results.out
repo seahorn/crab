@@ -3163,6 +3163,10 @@ loop1_bb0={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, 62]; _z1 -> [-oo, 878]}
 Abstract trace: entry (loop1_header loop1_bb1 loop1_bb1_f loop1_bb3 loop1_bb1_t loop1_bb2 loop1_bb4 loop1_bb0)^{3} cont (loop2_header loop2_bb1 loop2_bb1_f loop2_bb3 loop2_bb1_t loop2_bb2 loop2_bb4 loop2_bb0)^{3} ret
 
 {A -> [0, +oo], x -> [0, 0], x-A<=0}
+Before x != 0: {x -> [0, 10], y -> [0, 10], z -> [0, 10], y-x<=0, z-x<=0, x-y<=0, z-y<=0, x-z<=0, y-z<=0}
+After x != 0: {x -> [1, 10], y -> [1, 10], z -> [1, 10], y-x<=0, z-x<=0, x-y<=0, z-y<=0, x-z<=0, y-z<=0}
+Before x != 10: {x -> [0, 10], y -> [0, 10], z -> [0, 10], y-x<=0, z-x<=0, x-y<=0, z-y<=0, u-v<=0, v-u<=0, x-z<=0, y-z<=0}
+After x != 10: {x -> [0, 9], y -> [0, 9], z -> [0, 9], y-x<=0, z-x<=0, x-y<=0, z-y<=0, u-v<=0, v-u<=0, x-z<=0, y-z<=0}
 Bitwidth=3
 5+7=4
 5-7=6
