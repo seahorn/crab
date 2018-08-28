@@ -671,8 +671,52 @@ namespace crab {
           //////
           // propagate other constraints expressed by the domains
           //////
+	  if ((Params::left_propagate_equalities || Params::left_propagate_inequalities) &&
+	      (Params::right_propagate_equalities || Params::right_propagate_inequalities)) {
+	    linear_constraint_system_t csts1, csts2, filtered_csts1, filtered_csts2;
+	    bool propagate_only_equalities;
+	      
+	    propagate_only_equalities = !Params::left_propagate_inequalities;
+	    crab::domains::reduced_domain_traits<Domain1>::
+	      extract(inv1, v, csts1, propagate_only_equalities);
+	    
+	    propagate_only_equalities = !Params::right_propagate_inequalities;
+	    crab::domains::reduced_domain_traits<Domain2>::
+	      extract(inv2, v, csts2, propagate_only_equalities);
 
-	  if (Params::left_propagate_equalities || Params::left_propagate_inequalities) {
+	    // filter out those redundant constraints (i.e.,
+	    // constraints that the other domain already knows about)
+	    
+	    for (auto &c1: csts1) {
+	      if (std::find_if(csts2.begin(), csts2.end(),
+			       [c1](const linear_constraint_t& c2) {
+				 return c2.equal(c1);
+			       }) == csts2.end()) {
+		filtered_csts1 += c1;
+	      }
+	    }
+
+	    { std::string k(getDomainName() + ".count.reduce.equalities_from_" +
+			    _product.first().getDomainName());
+	      crab::CrabStats::uset(k, crab::CrabStats::get(k) + filtered_csts1.size());
+	    }
+	    inv2 += filtered_csts1;	    
+	    
+	    for (auto &c2: csts2) {
+	      if (std::find_if(csts1.begin(), csts1.end(),
+			       [c2](const linear_constraint_t& c1) {
+				 return c1.equal(c2);
+			       }) == csts1.end()) {
+		filtered_csts2 += c2;
+	      }
+	    }
+	    { std::string k(getDomainName() + ".count.reduce.equalities_from_" +
+			    _product.second().getDomainName());
+	      crab::CrabStats::uset(k, crab::CrabStats::get(k) + csts2.size());
+	    }
+	    inv1 += filtered_csts2;	    
+	  }
+	  else if (Params::left_propagate_equalities || Params::left_propagate_inequalities) {
 	    linear_constraint_system_t csts1;
 	    const bool propagate_only_equalities = !Params::left_propagate_inequalities;
 	    crab::domains::reduced_domain_traits<Domain1>::
@@ -681,9 +725,7 @@ namespace crab {
 			  _product.first().getDomainName());
 	    crab::CrabStats::uset(k, crab::CrabStats::get(k) + csts1.size());
 	    inv2 += csts1;
-	  }
-
-	  if (Params::right_propagate_equalities || Params::right_propagate_inequalities) {
+	  } else if (Params::right_propagate_equalities || Params::right_propagate_inequalities) { 
 	    linear_constraint_system_t csts2;
 	    const bool propagate_only_equalities = !Params::right_propagate_inequalities;
 	    crab::domains::reduced_domain_traits<Domain2>::
