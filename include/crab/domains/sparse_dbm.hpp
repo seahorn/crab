@@ -38,7 +38,14 @@ namespace crab {
   namespace domains {
 
     namespace SpDBM_impl {
-       // translate from Number to dbm val_t type
+       /*******************************************************************
+	* Translate from Number to dbm val_t type
+	*******************************************************************
+	* Important: Number might not fit into Wt type. If this is the
+        * case then a runtime error will be triggered when Number is
+        * casted to Wt
+	*******************************************************************
+	*/
        template<typename Number, typename Wt>
        class NtoV {
        public:
@@ -68,7 +75,15 @@ namespace crab {
          enum { widen_restabilize = 1 };
          enum { special_assign = 1 };
 
-	 // use long as graph weights	 
+	 /***********************************************************/
+	 // Use long as graph weights
+	 /***********************************************************/	 
+	 // The code does not check for overflows on weight
+	 // operations. Thus, use it on your own risk! If you think
+	 // that the program will have large constants then use
+	 // BigNumDefaultParams. Unfortunately, there will be a
+	 // performance penalty.
+	 /***********************************************************/	 
          typedef long Wt;
 
          typedef typename std::conditional< 
@@ -93,7 +108,15 @@ namespace crab {
          enum { widen_restabilize = 0 };
          enum { special_assign = 0 };
 
-	 // use long as graph weights	 
+	 /***********************************************************/
+	 // Use long as graph weights
+	 /***********************************************************/	 
+	 // The code does not check for overflows on weight
+	 // operations. Thus, use it on your own risk! If you think
+	 // that the program will have large constants then use
+	 // BigNumDefaultParams. Unfortunately, there will be a
+	 // performance penalty.
+	 /***********************************************************/	 
          typedef long Wt;
 
          typedef typename std::conditional< 
@@ -2110,7 +2133,7 @@ namespace crab {
 
     public:
       
-      typedef SparseDBM_<Number, VariableName> dbm_impl_t;
+      typedef SparseDBM_<Number, VariableName, Params> dbm_impl_t;
       typedef std::shared_ptr<dbm_impl_t> dbm_ref_t;
 
       SparseDBM(dbm_ref_t _ref) : norm_ref(_ref) { }

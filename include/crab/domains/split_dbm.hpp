@@ -48,7 +48,15 @@ namespace crab {
   namespace domains {
 
      namespace SDBM_impl {
-       // translate from Number to dbm val_t type
+       
+       /*******************************************************************
+	* Translate from Number to dbm val_t type
+	*******************************************************************
+	* Important: Number might not fit into Wt type. If this is the
+        * case then a runtime error will be triggered when Number is
+        * casted to Wt
+	*******************************************************************
+	*/
        template<typename Number, typename Wt>
        class NtoV {
        public:
@@ -79,7 +87,15 @@ namespace crab {
          enum { special_assign = 1 };
          enum { close_bounds_inline = 0 };	 
 
-	 // use long as graph weights
+	 /***********************************************************/
+	 // Use long as graph weights
+	 /***********************************************************/	 
+	 // The code does not check for overflows on weight
+	 // operations. Thus, use it on your own risk! If you think
+	 // that the program will have large constants then use
+	 // BigNumDefaultParams. Unfortunately, there will be a
+	 // performance penalty.
+	 /***********************************************************/	 
          typedef long Wt; 
 
          typedef typename std::conditional< 
@@ -105,6 +121,15 @@ namespace crab {
          enum { special_assign = 0 };
          enum { close_bounds_inline = 1 };	 	 
 
+	 /***********************************************************/
+	 // Use long as graph weights
+	 /***********************************************************/	 
+	 // The code does not check for overflows on weight
+	 // operations. Thus, use it on your own risk! If you think
+	 // that the program will have large constants then use
+	 // BigNumDefaultParams. Unfortunately, there will be a
+	 // performance penalty.
+	 /***********************************************************/	 
          typedef long Wt;
 
          typedef typename std::conditional< 
@@ -130,7 +155,7 @@ namespace crab {
          enum { chrome_dijkstra = 1 };
          enum { widen_restabilize = 1 };
          enum { special_assign = 1 };
-         enum { close_bounds_inline = 1 };	 	 
+         enum { close_bounds_inline = 0 };	 	 
 
 	 // Use Number as graph weights
          typedef Number Wt;
@@ -152,11 +177,9 @@ namespace crab {
      }; // end namespace SDBM_impl
 
 
-    template<class Number, class VariableName, class Params = SDBM_impl::DefaultParams<Number> >
+    template<class Number, class VariableName, class Params = SDBM_impl::DefaultParams<Number>>
     class SplitDBM_ :
-      public abstract_domain<Number, VariableName,
-			     SplitDBM_<Number,VariableName,Params> > {
-
+      public abstract_domain<Number, VariableName, SplitDBM_<Number,VariableName,Params>> {
       typedef SplitDBM_<Number, VariableName, Params> DBM_t;
       typedef abstract_domain<Number, VariableName, DBM_t> abstract_domain_t;
       
@@ -180,7 +203,7 @@ namespace crab {
       typedef typename graph_t::vert_id vert_id;
       typedef boost::container::flat_map<variable_t, vert_id> vert_map_t;
       typedef typename vert_map_t::value_type vmap_elt_t;
-      typedef std::vector< boost::optional<variable_t> > rev_map_t;
+      typedef std::vector< boost::optional<variable_t>> rev_map_t;
       typedef GraphOps<graph_t> GrOps;
       typedef GraphPerm<graph_t> GrPerm;
       typedef typename GrOps::edge_vector edge_vector;
@@ -211,13 +234,13 @@ namespace crab {
         _is_bottom = true;
       }
 
-      boost::optional<std::pair<vert_id,std::pair<vert_id, Wt> > >
+      boost::optional<std::pair<vert_id,std::pair<vert_id, Wt>>>
       diffcst_of_leq(linear_constraint_t cst) {
 
         assert (cst.size() > 0);
         assert (cst.is_inequality());
 
-        std::vector<std::pair<vert_id,std::pair<vert_id, Wt> > > diffcsts;
+        std::vector<std::pair<vert_id,std::pair<vert_id, Wt>>> diffcsts;
 
         typename linear_expression_t::iterator it1 = cst.begin();
         typename linear_expression_t::iterator it2 = ++cst.begin();
@@ -304,7 +327,7 @@ namespace crab {
       }
 
       template<class G, class P>
-      inline bool check_potential(G& g, P& p)
+      inline void check_potential(G& g, P& p, unsigned line)
       {
         #ifdef CHECK_POTENTIAL
         for(vert_id v : g.verts())
@@ -313,13 +336,14 @@ namespace crab {
           {
             if(p[v] + g.edge_val(v, d) - p[d] < Wt(0))
             {
-              assert(0 && "Invalid potential.");
-              return false;
+	      CRAB_ERROR("Invalid potential at line ", line, ":",
+			 "pot[", v , "]=", p[v], " ",
+			 "pot[", d , "]=", p[d], " ",
+			 "edge(",v,",",d,")=", g.edge_val(v,d));
             }
           }
         }
         #endif
-        return true;
       }
 
       class vert_set_wrap_t {
@@ -378,13 +402,13 @@ namespace crab {
       
       // Turn an assignment into a set of difference constraints.
       void diffcsts_of_assign(variable_t x, linear_expression_t exp,
-			      std::vector<std::pair<variable_t, Wt> >& lb,
-			      std::vector<std::pair<variable_t,Wt> >& ub) {
+			      std::vector<std::pair<variable_t, Wt>>& lb,
+			      std::vector<std::pair<variable_t,Wt>>& ub) {
         {
           // Process upper bounds.
           boost::optional<variable_t> unbounded_ubvar;
           Wt exp_ub(ntov::ntov(exp.constant()));
-          std::vector< std::pair<variable_t, Wt> > ub_terms;
+          std::vector< std::pair<variable_t, Wt>> ub_terms;
           for(auto p : exp)
           {
             Wt coeff(ntov::ntov(p.first));
@@ -427,7 +451,7 @@ namespace crab {
         {
           boost::optional<variable_t> unbounded_lbvar;
           Wt exp_lb(ntov::ntov(exp.constant()));
-          std::vector< std::pair<variable_t, Wt> > lb_terms;
+          std::vector< std::pair<variable_t, Wt>> lb_terms;
           for(auto p : exp)
           {
             Wt coeff(ntov::ntov(p.first));
@@ -574,7 +598,7 @@ namespace crab {
         std::vector<diffcst_t> csts;
         diffcsts_of_lin_leq(exp, csts, lbs, ubs);
 
-        assert(check_potential(g, potential));
+        check_potential(g, potential, __LINE__);
 
         Wt_min min_op;
         typename graph_t::mut_val_ref_t w;
@@ -592,7 +616,7 @@ namespace crab {
             set_to_bottom();
             return false;
           }
-          assert(check_potential(g, potential));
+          check_potential(g, potential, __LINE__);
           // Compute other updated bounds
 	  if (Params::close_bounds_inline) {
 	    for(auto e : g.e_preds(v))
@@ -606,7 +630,7 @@ namespace crab {
 		    set_to_bottom();
 		    return false;
 		  }
-		assert(check_potential(g, potential));
+		check_potential(g, potential, __LINE__);
 	      }
 	  }
         }
@@ -624,7 +648,7 @@ namespace crab {
             set_to_bottom();
             return false;
           }
-          assert(check_potential(g, potential));
+          check_potential(g, potential, __LINE__);
 
 	  if (Params::close_bounds_inline) {	  
 	    for(auto e : g.e_succs(v))
@@ -637,11 +661,11 @@ namespace crab {
 		    set_to_bottom();
 		    return false;
 		  }
-		assert(check_potential(g, potential));
+		check_potential(g, potential, __LINE__);
 	      }
 	  }
         }
-
+      
         for(auto diff : csts)
         {
           CRAB_LOG("zones-split",
@@ -656,13 +680,12 @@ namespace crab {
             set_to_bottom();
             return false;
           }
-          assert(check_potential(g, potential));
-          
+          check_potential(g, potential, __LINE__);          
           close_over_edge(src, dest);
-          assert(check_potential(g, potential));
+	  check_potential(g, potential, __LINE__);
         }
-        // Collect bounds
-        // GKG: Now done in close_over_edge
+      // Collect bounds
+      // GKG: Now done in close_over_edge
 
 	if (!Params::close_bounds_inline) {	  
 	  edge_vector delta;
@@ -670,7 +693,7 @@ namespace crab {
 	  GrOps::apply_delta(g, delta);
 	}
 
-        assert(check_potential(g, potential));
+        check_potential(g, potential, __LINE__);
         // CRAB_WARN("SplitDBM::add_linear_leq not yet implemented.");
         return true;  
       }
@@ -695,7 +718,7 @@ namespace crab {
 		set_to_bottom();
 		return;
 	      }
-	      assert(check_potential(g, potential));
+	      check_potential(g, potential, __LINE__);
 	      // Update other bounds
 	      for(auto e : g.e_preds(v)) {
 		if(e.vert == 0) continue;
@@ -704,7 +727,7 @@ namespace crab {
 		  set_to_bottom();
 		  return;
 		}
-		assert(check_potential(g, potential));
+		check_potential(g, potential, __LINE__);
 	      }
 	    }
 	  }
@@ -717,7 +740,7 @@ namespace crab {
 		set_to_bottom();
 		return;
 	      }	      
-	      assert(check_potential(g, potential));
+	      check_potential(g, potential, __LINE__);
 	      // Update other bounds
 	      for(auto e : g.e_succs(v)) {
 		if(e.vert == 0) continue;
@@ -726,7 +749,7 @@ namespace crab {
 		  set_to_bottom();
 		  return;
 		}
-		  assert(check_potential(g, potential));
+		check_potential(g, potential, __LINE__);
 	      }
 	    }
 	  }
@@ -1171,8 +1194,8 @@ namespace crab {
           normalize();
           o.normalize();
 
-          assert(check_potential(g, potential));
-          assert(check_potential(o.g, o.potential));
+          check_potential(g, potential, __LINE__);
+          check_potential(o.g, o.potential, __LINE__);
 
           // Figure out the common renaming, initializing the
           // resulting potentials as we go.
@@ -1236,7 +1259,7 @@ namespace crab {
           edge_vector delta;
           bool is_closed;
           graph_t g_rx(GrOps::meet(gx, g_ix_ry, is_closed));
-          assert(check_potential(g_rx, pot_rx));
+          check_potential(g_rx, pot_rx, __LINE__);
           if(!is_closed)
           {
             SubGraph<graph_t> g_rx_excl(g_rx, 0);
@@ -1262,7 +1285,7 @@ namespace crab {
           delta.clear();
           // Similarly, should use a SubGraph view.
           graph_t g_ry(GrOps::meet(gy, g_rx_iy, is_closed));
-          assert(check_potential(g_rx, pot_rx));
+          check_potential(g_rx, pot_rx, __LINE__);
           if(!is_closed)
           {
 
@@ -1447,7 +1470,10 @@ namespace crab {
 		                 <<"\n");
           normalize();
           o.normalize();
-          
+
+          check_potential(g, potential, __LINE__);
+          check_potential(o.g, o.potential, __LINE__);
+	  
           // We map vertices in the left operand onto a contiguous range.
           // This will often be the identity map, but there might be gaps.
           vert_map_t meet_verts;
@@ -1540,7 +1566,7 @@ namespace crab {
 	      GrOps::apply_delta(meet_g, delta);
 	    }
           }
-          assert(check_potential(meet_g, meet_pi)); 
+          check_potential(meet_g, meet_pi, __LINE__); 
           DBM_t res(std::move(meet_verts), std::move(meet_rev), std::move(meet_g), 
                     std::move(meet_pi), vert_set_t());
           CRAB_LOG ("zones-split",
@@ -1638,7 +1664,7 @@ namespace crab {
         CRAB_LOG("zones-split", crab::outs() << x<< ":="<< e <<"\n");
         normalize();
 
-        assert(check_potential(g, potential));
+        check_potential(g, potential, __LINE__);
 
 	interval_t x_int = eval_interval(e);
 	bool is_rhs_constant = false;
@@ -1735,10 +1761,9 @@ namespace crab {
 		  assert(0 && "Unreachable");
 		  set_to_bottom();
 		}
-		assert(check_potential(g, potential));
-		
+		check_potential(g, potential, __LINE__);		
 		close_over_edge(src, dest);
-		assert(check_potential(g, potential));
+		check_potential(g, potential, __LINE__);
 	      }
 	      
 	      if(x_int.lb().is_finite())
@@ -1759,7 +1784,7 @@ namespace crab {
 	// this->operator-=(x);
 	// g.check_adjs(); 
 
-        assert(check_potential(g, potential));
+        check_potential(g, potential, __LINE__);
         CRAB_LOG("zones-split", crab::outs() << "---"<< x<< ":="<< e<<"\n"<<*this <<"\n");
       }
 
@@ -2320,7 +2345,7 @@ namespace crab {
 
         typename graph_t::mut_val_ref_t w;        
         if (g.lookup(y,x,&w)) {
-          return ((w + k) < 0);
+          return ((w.get() + k) < 0);
         } else {
           interval_t intv_x = interval_t::top();
           interval_t intv_y = interval_t::top();
@@ -2655,11 +2680,11 @@ namespace crab {
     };
     #endif 
 
-    template<typename Number, typename VariableName>
-    class domain_traits <SplitDBM<Number,VariableName> > {
+    template<typename Number, typename VariableName, typename SplitDBMParams>
+    class domain_traits <SplitDBM<Number,VariableName,SplitDBMParams>> {
      public:
 
-      typedef SplitDBM<Number,VariableName> sdbm_domain_t;
+      typedef SplitDBM<Number,VariableName,SplitDBMParams> sdbm_domain_t;
       typedef ikos::variable<Number, VariableName> variable_t;
       
       template<class CFG>
@@ -2685,10 +2710,10 @@ namespace crab {
     };
 
 
-    template<typename Number, typename VariableName, typename Params>    
-    class reduced_domain_traits<SplitDBM<Number, VariableName, Params>> {
+    template<typename Number, typename VariableName, typename SplitDBMParams>    
+    class reduced_domain_traits<SplitDBM<Number, VariableName, SplitDBMParams>> {
     public:
-      typedef SplitDBM<Number, VariableName, Params> sdbm_domain_t;
+      typedef SplitDBM<Number, VariableName, SplitDBMParams> sdbm_domain_t;
       typedef typename sdbm_domain_t::variable_t variable_t;
       typedef typename sdbm_domain_t::linear_constraint_system_t linear_constraint_system_t;
       
@@ -2697,9 +2722,9 @@ namespace crab {
       { dom.extract(x, csts, only_equalities); }
     };
   
-    template<typename Number, typename VariableName>
-    struct array_sgraph_domain_traits <SplitDBM<Number,VariableName> > {
-      typedef SplitDBM<Number,VariableName> sdbm_domain_t;
+    template<typename Number, typename VariableName, typename SplitDBMParams>
+    struct array_sgraph_domain_traits <SplitDBM<Number,VariableName, SplitDBMParams>> {
+      typedef SplitDBM<Number,VariableName,SplitDBMParams> sdbm_domain_t;
       typedef typename sdbm_domain_t::linear_constraint_t linear_constraint_t;
       typedef ikos::variable<Number, VariableName> variable_t;
       
