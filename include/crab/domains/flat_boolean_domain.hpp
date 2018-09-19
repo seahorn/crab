@@ -1054,25 +1054,25 @@ namespace crab {
  
 	_product.apply_binary_bool (op, x, y, z);
 	
-	// --- for reduction from boolean to the numerical domain
-	if (op == OP_BAND) {
-	  _var_to_csts.set
-	    (x, _var_to_csts [y] & _var_to_csts [z]);
-	  return;
-	}
+	// // --- for reduction from boolean to the numerical domain
+	// if (op == OP_BAND) {
+	//   _var_to_csts.set
+	//     (x, _var_to_csts [y] & _var_to_csts [z]);
+	//   return;
+	// }
 
-	// we almost lose precision with or and xor except if one of
-	// the operands is false
-	if (op == OP_BOR || op == OP_BXOR) {
-	  if (_product.first().get_bool (y).is_false()) {
-	    _var_to_csts.set (x, _var_to_csts [z]);
-	    return;
-	  }
-	  if (_product.first().get_bool (z).is_false()) {
-	    _var_to_csts.set (x, _var_to_csts [y]);
-	    return;
-	  }
-	}
+	// // we almost lose precision with or and xor except if one of
+	// // the operands is false
+	// if (op == OP_BOR || op == OP_BXOR) {
+	//   if (_product.first().get_bool (y).is_false()) {
+	//     _var_to_csts.set (x, _var_to_csts [z]);
+	//     return;
+	//   }
+	//   if (_product.first().get_bool (z).is_false()) {
+	//     _var_to_csts.set (x, _var_to_csts [y]);
+	//     return;
+	//   }
+	// }
 	
 	/// otherwise we give up
 	_var_to_csts -= x;
