@@ -243,6 +243,12 @@ namespace crab {
       const wto_t& get_WTO () const {
 	return this->get_wto ();
       }
+
+      // clear all invariants (pre and post)
+      void clear() {
+	m_pre_map.clear();
+	m_post_map.clear();
+      }
       
     }; 
 
@@ -336,6 +342,8 @@ namespace crab {
       abs_dom_t get_post (basic_block_label_t b) const
       { return m_analyzer.get_post (b); }
 
+      void clear() { m_analyzer.clear(); }
+      
       CFG get_cfg ()
       { return m_analyzer.get_cfg (); }
       

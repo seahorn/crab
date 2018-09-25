@@ -289,6 +289,11 @@ namespace crab {
         return TD_Dom::top ();
       }
 
+      // clear all invariants
+      void clear() {
+	m_inv_map.clear();
+      }
+      
       //! Propagate inv through statements
       td_abs_tr_ptr get_abs_transformer (TD_Dom &inv) {
         return boost::make_shared<td_abs_tr>(&inv, &m_summ_tbl, &m_call_tbl);        

@@ -135,6 +135,12 @@ namespace crab {
 	else
 	  return AbsDom::top();
       }
+
+      // clear preconditions and forward invariants
+      void clear() {
+	m_preconditions.clear();
+	m_invariants.clear();
+      }
       
       const wto_t& get_WTO() const {
 	return this->get_wto();
@@ -375,7 +381,14 @@ namespace crab {
 	else
 	  return AbsDom::top();
       }
-
+      
+      // clear forward invariants and preconditions
+      void clear() {
+	m_pre_invariants.clear();
+	m_post_invariants.clear();
+	m_preconditions.clear();
+      }
+      
       // Return the wto of the cfg
       const wto_t& get_wto () const {
 	assert (m_wto);
