@@ -1431,6 +1431,11 @@ namespace ikos {
     bool is_false () const {
       return _is_false;
     }
+
+    void clear() {
+      _is_false = false;
+      _csts.clear();
+    }
     
     this_type& operator+=(const linear_constraint_system_t &cst) {
       if (_csts.empty () && cst.is_false ()) {
