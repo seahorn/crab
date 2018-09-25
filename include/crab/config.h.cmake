@@ -4,6 +4,9 @@
 /** Define whether lin-ldd is available */
 #cmakedefine HAVE_LDD ${HAVE_LDD}
 
+/** Define whether mdd is available */
+#cmakedefine HAVE_MDD ${HAVE_MDD}
+
 /** Define whether apron library is available */
 #cmakedefine HAVE_APRON ${HAVE_APRON}
 

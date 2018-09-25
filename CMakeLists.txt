@@ -40,6 +40,7 @@ endif()
 option (ENABLE_TESTS "Enable tests" OFF)
 option (USE_LDD   "Enable Ldd library" OFF)
 option (USE_APRON "Enable Apron library" OFF)
+option (USE_MDD   "Enable Mdd library" OFF)
 option (USE_STATS "Enable statistics" ON)
 option (USE_LOG   "Enable logging for debugging purposes" ON)
 option (BUILD_CRAB_LIBS_SHARED "Build all Crab libraries dynamically." ON)
@@ -177,6 +178,26 @@ else ()
 endif()
 endif()
 
+if (USE_MDD)
+if (GIT_FOUND)
+    set (MDD_TAG "origin/master" CACHE STRING "mdd tag to use")
+    set (MDD_REPO "https://bitbucket.org/gkgange/mdd-boxes.git"
+         CACHE STRING "mdd repository")
+    ExternalProject_Add(mdd
+      GIT_REPOSITORY ${MDD_REPO}
+      GIT_TAG ${MDD_TAG}
+      PREFIX ${CMAKE_BINARY_DIR}/mdd
+      INSTALL_DIR ${CMAKE_BINARY_DIR}/run/mdd
+      CONFIGURE_COMMAND ""
+      BUILD_COMMAND ""
+      INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/mdd/src/mdd <INSTALL_DIR>
+      LOG_DOWNLOAD 1
+      LOG_INSTALL 1)
+else ()
+  message (STATUS "Could not find git. Not downloading mdd")
+endif()
+endif ()
+
 if (USE_LDD)
   find_package(Ldd)
   if (LDD_FOUND)
@@ -206,13 +227,28 @@ if (USE_APRON)
   endif()
 endif ()
 
+if (USE_MDD)
+  find_package(Mdd)
+  if (MDD_FOUND)
+    include_directories (${MDD_INCLUDE_DIR})
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MDD_CXXFLAGS}")
+    set (MDD_LIBS ${MDD_LIBRARY})
+    set (HAVE_MDD TRUE)
+  else()
+     ExternalProject_Get_Property (mdd INSTALL_DIR)
+     set (MDD_ROOT ${INSTALL_DIR} CACHE FILEPATH "Forced location of mdd" FORCE)
+     message (WARNING "No mdd found. Run \n\tcmake --build . --target mdd && cmake ${CMAKE_SOURCE_DIR}")
+     return()
+  endif()
+endif ()
+
 include_directories (${Crab_SOURCE_DIR}/include)
 
 if (USE_LDD)
   set_target_properties(ldd PROPERTIES EXCLUDE_FROM_ALL ON)
-  message (STATUS "The boxes domain will be available")  
+  message (STATUS "The ldd-boxes domain will be available")  
 else ()
-  message (STATUS "The boxes domain will not be available")  
+  message (STATUS "The ldd-boxes domain will not be available")  
 endif ()
 
 if (USE_APRON)
@@ -221,6 +257,14 @@ if (USE_APRON)
 else ()
   message (STATUS "The apron domains will not be available")
 endif ()
+
+if (USE_MDD)
+  set_target_properties(mdd PROPERTIES EXCLUDE_FROM_ALL ON)
+  message (STATUS "The mdd-boxes domain will be available")  
+else ()
+  message (STATUS "The mdd-boxes domain will not be available")  
+endif ()
+
 
 if (NOT USE_STATS)
   set (HAVE_STATS FALSE)
@@ -284,6 +328,7 @@ endif ()
 set (CRAB_DEPS_LIBS
   ${LDD_LIBRARY} 
   ${APRON_LIBRARY}
+  ${MDD_LIBRARY}   
   ${MPFR_LIBRARIES} 
   ${GMPXX_LIB} 
   ${GMP_LIB})
@@ -303,6 +348,10 @@ else ()
   if (APRON_FOUND)
      set (_CRAB_INCLUDE_DIRS ${_CRAB_INCLUDE_DIRS} ${APRON_INCLUDE_DIR})
   endif ()
+  if (MDD_FOUND)
+     set (_CRAB_INCLUDE_DIRS ${_CRAB_INCLUDE_DIRS} ${MDD_INCLUDE_DIR})
+  endif ()
+   
   set (CRAB_INCLUDE_DIRS ${_CRAB_INCLUDE_DIRS} PARENT_SCOPE)  
 endif ()  
   

@@ -8,7 +8,8 @@
 #include <crab/domains/wrapped_interval_domain.hpp>
 #include <crab/domains/sparse_dbm.hpp>                      
 #include <crab/domains/split_dbm.hpp>
-#include <crab/domains/boxes.hpp>                      
+#include <crab/domains/boxes.hpp>
+#include <crab/domains/mdd_boxes.hpp>
 #include <crab/domains/apron_domains.hpp>                      
 #include <crab/domains/dis_intervals.hpp>
 #include <crab/domains/term_equiv.hpp>
@@ -40,6 +41,7 @@ namespace crab {
     typedef SDBM_impl::DefaultParams<ikos::z_number, SDBM_impl::GraphRep::adapt_ss> z_SplitDBMGraph;
     typedef SplitDBM<ikos::z_number,varname_t,z_SplitDBMGraph> z_sdbm_domain_t;
     typedef boxes_domain<ikos::z_number,varname_t> z_boxes_domain_t;
+    typedef mdd_boxes_domain<ikos::z_number,varname_t> z_mdd_boxes_domain_t;    
     typedef dis_interval_domain<ikos::z_number, varname_t > z_dis_interval_domain_t;
     typedef apron_domain<ikos::z_number,varname_t,apron_domain_id_t::APRON_INT> z_box_apron_domain_t;
     typedef apron_domain<ikos::z_number,varname_t,apron_domain_id_t::APRON_OCT> z_oct_apron_domain_t;
