@@ -574,30 +574,9 @@ void test_copy_assign(MDD_printer& v, mgr_t* m) {
 
 int main(int argc, char** argv) {
   mgr_t m;
-  /*
-  ref_t ttt(m.mdd_true());
-  ref_t fff(m.mdd_false());
-  node_t* p(make_range(m, 10, 100));
-  node_t* q(make_range(m, 15, 80));
-  node_t* r(make_range(m, 10, 100));
-
-  fprintf(stdout, "p: %p\n", p);
-  fprintf(stdout, "q: %p\n", q);
-  fprintf(stdout, "r: %p\n", r);
-
-  fprintf(stdout, "Invalidating p\n");
-  p->generation++;
-  node_t* pp(make_range(m, 10, 100));
-  fprintf(stdout, "p': %p\n", pp);
-
-  fprintf(stdout, "builtin cache: %p\n", mdd_operator_cache<int64_t>::get(&m));
-  */
-
-  //MDD_dot_vis vis(std::cout);
-
+  
   ShowNop<int64_t> nop;
   MDD_printer_t vis(std::cout, nop);
-  
   test_meet(vis, m);
   test_widen(vis, m);
   test_project(vis, m);
