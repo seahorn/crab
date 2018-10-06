@@ -140,6 +140,8 @@ namespace crab {
     typedef linear_expression<Number, VariableName> linear_expression_t;
     typedef linear_constraint<Number, VariableName> linear_constraint_t;
     typedef linear_constraint_system<Number, VariableName> linear_constraint_system_t;
+    typedef disjunctive_linear_constraint_system<Number, VariableName>
+    disjunctive_linear_constraint_system_t;
     typedef interval<Number>  interval_t;    
     typedef typename separate_domain_t::iterator iterator;
 

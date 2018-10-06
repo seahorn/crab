@@ -37,6 +37,7 @@ namespace crab {
         using typename abstract_domain_t::linear_expression_t;
         using typename abstract_domain_t::linear_constraint_t;
         using typename abstract_domain_t::linear_constraint_system_t;
+	using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
         using typename abstract_domain_t::variable_t;
         using typename abstract_domain_t::number_t;
         using typename abstract_domain_t::varname_t;
@@ -165,6 +166,7 @@ namespace crab {
         using typename abstract_domain_t::linear_expression_t;
         using typename abstract_domain_t::linear_constraint_t;
         using typename abstract_domain_t::linear_constraint_system_t;
+	using typename abstract_domain_t::disjunctive_linear_constraint_system_t;	
         using typename abstract_domain_t::variable_t;
         using typename abstract_domain_t::number_t;
         using typename abstract_domain_t::varname_t;
@@ -1585,6 +1587,7 @@ namespace crab {
         using typename abstract_domain_t::linear_expression_t;
         using typename abstract_domain_t::linear_constraint_t;
         using typename abstract_domain_t::linear_constraint_system_t;
+	using typename abstract_domain_t::disjunctive_linear_constraint_system_t;	
         using typename abstract_domain_t::variable_t;
         using typename abstract_domain_t::number_t;
         using typename abstract_domain_t::varname_t;

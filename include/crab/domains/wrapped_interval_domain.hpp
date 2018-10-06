@@ -1206,6 +1206,7 @@ public:
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::linear_constraint_t;
   using typename abstract_domain_t::linear_constraint_system_t;
+  using typename abstract_domain_t::disjunctive_linear_constraint_system_t;  
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::number_t;
   using typename abstract_domain_t::varname_t;
@@ -2493,9 +2494,19 @@ class checker_domain_traits<wrapped_interval_with_history_domain<N,V,M>> {
 public:
   typedef wrapped_interval_with_history_domain<N,V,M> this_type;
   typedef typename this_type::linear_constraint_t linear_constraint_t;
+  typedef typename this_type::disjunctive_linear_constraint_system_t
+  disjunctive_linear_constraint_system_t;    
+
+  static bool entail(this_type& lhs, const disjunctive_linear_constraint_system_t& rhs) {
+    CRAB_ERROR("TODO: entail operation in wrapper_interval_with_history_domain");
+  }
+
+  static bool entail(const disjunctive_linear_constraint_system_t& lhs, this_type& rhs) {
+    CRAB_ERROR("TODO: entail operation in wrapper_interval_with_history_domain");
+  }
   
-  static bool entail(this_type& inv, const linear_constraint_t& cst)
-  { return inv.entail(cst); }
+  static bool entail(this_type& lhs, const linear_constraint_t& rhs)
+  { return lhs.entail(rhs); }
   
   static bool intersect(this_type& inv, const linear_constraint_t& cst) {
     // default code
@@ -2535,6 +2546,7 @@ public:
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::linear_constraint_t;
   using typename abstract_domain_t::linear_constraint_system_t;
+  using typename abstract_domain_t::disjunctive_linear_constraint_system_t;  
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
   typedef typename linear_constraint_system_t::variable_set_t variable_set_t;
@@ -3184,6 +3196,14 @@ class checker_domain_traits<wrapped_numerical_domain<AbsDom>> {
 public:
   typedef wrapped_numerical_domain<AbsDom> this_type;
   typedef typename this_type::linear_constraint_t linear_constraint_t;
+  typedef typename this_type::disjunctive_linear_constraint_system_t
+  disjunctive_linear_constraint_system_t;
+  
+  static bool entail(this_type& lhs, const disjunctive_linear_constraint_system_t& rhs)
+  { return checker_domain_traits<AbsDom>::entail(lhs.second(), rhs); }
+  
+  static bool entail(const disjunctive_linear_constraint_system_t& lhs, this_type& rhs)
+  { return checker_domain_traits<AbsDom>::entail(lhs, rhs.second());}
   
   static bool entail(this_type& inv, const linear_constraint_t& cst)
   { return checker_domain_traits<AbsDom>::entail(inv.second(), cst); }

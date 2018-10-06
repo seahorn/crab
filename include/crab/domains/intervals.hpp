@@ -1046,6 +1046,7 @@ namespace ikos {
     using typename abstract_domain_t::linear_expression_t;
     using typename abstract_domain_t::linear_constraint_t;
     using typename abstract_domain_t::linear_constraint_system_t;
+    using typename abstract_domain_t::disjunctive_linear_constraint_system_t;    
     using typename abstract_domain_t::variable_t;
     using typename abstract_domain_t::number_t;
     using typename abstract_domain_t::varname_t;
@@ -1194,7 +1195,7 @@ namespace ikos {
 	linear_constraint_system_t signed_csts;
 	for (auto const& c: csts) {
 	  if (c.is_inequality() && c.is_unsigned()) {
-	    CRAB_WARN("unsigned inequality skipped");
+	    //CRAB_WARN("unsigned inequality skipped");
 	    continue;
 	  }
 	  signed_csts += c;

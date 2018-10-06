@@ -51,10 +51,14 @@ namespace crab {
 
       virtual disjunctive_linear_constraint_system_t
       to_disjunctive_linear_constraint_system () {
+	// If you see this error message then implement this operation
+	// in the corresponding abstract domain.
 	CRAB_ERROR("to_disjunctive_linear_constraint_system operation not implemented");
       }
 
       virtual void rename(const variable_vector_t &from, const variable_vector_t &to) {
+	// If you see this error message then implement this operation
+	// in the corresponding abstract domain.	
 	CRAB_ERROR("rename operation not implemented");
       }
 

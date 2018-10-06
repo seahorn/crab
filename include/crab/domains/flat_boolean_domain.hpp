@@ -202,6 +202,8 @@ namespace crab {
     
    public:
 
+    typedef abstract_domain<Number,VariableName,
+			    flat_boolean_domain<Number,VariableName> > abstract_domain_t;    
     typedef VariableName varname_t;
     typedef Number number_t;
     typedef boolean_value bool_t;
@@ -209,9 +211,8 @@ namespace crab {
     typedef linear_expression<Number, VariableName> linear_expression_t;
     typedef linear_constraint<Number, VariableName> linear_constraint_t;
     typedef linear_constraint_system<Number, VariableName> linear_constraint_system_t;
+    using typename abstract_domain_t::disjunctive_linear_constraint_system_t;          
     typedef interval<Number>  interval_t;
-    typedef abstract_domain<Number,VariableName,
-			    flat_boolean_domain<Number,VariableName> > abstract_domain_t;
     using typename abstract_domain_t::variable_vector_t;
 
     typedef separate_domain<variable_t, boolean_value> separate_domain_t;
@@ -614,6 +615,7 @@ namespace crab {
       using typename abstract_domain_t::linear_expression_t;
       using typename abstract_domain_t::linear_constraint_t;
       using typename abstract_domain_t::linear_constraint_system_t;
+      using typename abstract_domain_t::disjunctive_linear_constraint_system_t;       
       using typename abstract_domain_t::variable_t;
       using typename abstract_domain_t::variable_vector_t;      
       typedef typename NumDom::number_t number_t;
@@ -1386,11 +1388,24 @@ namespace crab {
     public:
       typedef flat_boolean_numerical_domain<NumDom> this_type;
       typedef typename this_type::linear_constraint_t linear_constraint_t;
+      typedef typename this_type::disjunctive_linear_constraint_system_t
+      disjunctive_linear_constraint_system_t;    
       
-      static bool entail(this_type& inv, const linear_constraint_t& cst) {
-	NumDom& dom = inv.second();
-	return checker_domain_traits<NumDom>::entail(dom, cst);
+      static bool entail(this_type& lhs, const disjunctive_linear_constraint_system_t& rhs) {
+	NumDom& lhs_dom = lhs.second();
+	return checker_domain_traits<NumDom>::entail(lhs_dom, rhs);
       }
+      
+      static bool entail(const disjunctive_linear_constraint_system_t& lhs, this_type& rhs) {
+	NumDom& rhs_dom = rhs.second();
+	return checker_domain_traits<NumDom>::entail(lhs, rhs_dom);      
+      }
+            
+      static bool entail(this_type& lhs, const linear_constraint_t& rhs) {
+	NumDom& lhs_dom = lhs.second();
+	return checker_domain_traits<NumDom>::entail(lhs_dom, rhs);
+      }
+      
       static bool intersect(this_type& inv, const linear_constraint_t& cst) {
 	NumDom& dom = inv.second();
 	return checker_domain_traits<NumDom>::intersect(dom, cst);

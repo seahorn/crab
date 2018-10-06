@@ -32,8 +32,7 @@ namespace crab {
         using typename abstract_domain_t::linear_expression_t;
         using typename abstract_domain_t::linear_constraint_t;
         using typename abstract_domain_t::linear_constraint_system_t;
-	typedef disjunctive_linear_constraint_system<Number, VariableName>
-	disjunctive_linear_constraint_system_t;
+	using typename abstract_domain_t::disjunctive_linear_constraint_system_t;	
         using typename abstract_domain_t::variable_t;
         using typename abstract_domain_t::number_t;
         using typename abstract_domain_t::varname_t;
@@ -189,8 +188,7 @@ namespace crab {
         using typename abstract_domain_t::linear_expression_t;
         using typename abstract_domain_t::linear_constraint_t;
         using typename abstract_domain_t::linear_constraint_system_t;
-	typedef disjunctive_linear_constraint_system<Number, VariableName>
-	disjunctive_linear_constraint_system_t;
+	using typename abstract_domain_t::disjunctive_linear_constraint_system_t;		
         using typename abstract_domain_t::variable_t;
         using typename abstract_domain_t::number_t;
         using typename abstract_domain_t::varname_t;
@@ -930,7 +928,7 @@ namespace crab {
                                  << "= " << res <<"\n";);
           return res;
         }
-
+	
         template<typename Thresholds>
         boxes_domain_t widening_thresholds (boxes_domain_t other, 
                                             const Thresholds & /*ts*/) {
@@ -951,7 +949,21 @@ namespace crab {
                                  << "= " << res <<"\n";);
           return res;
         }
-        
+
+	boxes_domain_t complement() const {
+          crab::CrabStats::count (getDomainName() + ".count.complement");
+          crab::ScopedCrabStats __st__(getDomainName() + ".complement");
+	  LddNodePtr w = lddPtr (get_ldd_man (), Ldd_Not (&*m_ldd));
+	  boxes_domain_t res(w);
+          CRAB_LOG ("boxes",
+		    boxes_domain_t tmp(*this);
+                    crab::outs() << "Performed complement \n"
+		                 << "**" << tmp  << "\n" 
+		                 << "= " << res <<"\n";);
+	  
+	  return res;
+	}
+	
         void operator-=(variable_t var) {
           crab::CrabStats::count (getDomainName() + ".count.forget");
           crab::ScopedCrabStats __st__(getDomainName() + ".forget");
@@ -1669,8 +1681,7 @@ namespace crab {
        using typename abstract_domain_t::linear_expression_t;
        using typename abstract_domain_t::linear_constraint_t;
        using typename abstract_domain_t::linear_constraint_system_t;
-       typedef disjunctive_linear_constraint_system<Number, VariableName>
-       disjunctive_linear_constraint_system_t;
+       using typename abstract_domain_t::disjunctive_linear_constraint_system_t;       
        using typename abstract_domain_t::variable_t;
        using typename abstract_domain_t::number_t;
        using typename abstract_domain_t::varname_t;
@@ -1895,8 +1906,7 @@ namespace crab {
       using typename abstract_domain_t::linear_expression_t;
       using typename abstract_domain_t::linear_constraint_t;
       using typename abstract_domain_t::linear_constraint_system_t;
-      typedef disjunctive_linear_constraint_system<Number, VariableName>
-      disjunctive_linear_constraint_system_t;
+      using typename abstract_domain_t::disjunctive_linear_constraint_system_t;        
       using typename abstract_domain_t::variable_t;
       using typename abstract_domain_t::number_t;
       using typename abstract_domain_t::varname_t;
@@ -2045,7 +2055,7 @@ namespace crab {
     #endif
      
     template<typename Number, typename VariableName, int ConvexReduce, size_t LddSize>
-    class domain_traits <boxes_domain<Number,VariableName,ConvexReduce,LddSize> > {
+    class domain_traits <boxes_domain<Number,VariableName,ConvexReduce,LddSize>> {
     public:
       typedef boxes_domain<Number, VariableName, ConvexReduce, LddSize> boxes_domain_t;
       typedef ikos::variable<Number, VariableName> variable_t;
@@ -2065,6 +2075,79 @@ namespace crab {
       
       static void expand (boxes_domain_t& inv, variable_t x, variable_t new_x)
       { inv.expand(x, new_x); }
+    };
+
+    template<typename Number, typename VariableName, int ConvexReduce, size_t LddSize>
+    class checker_domain_traits<boxes_domain<Number,VariableName,ConvexReduce,LddSize>> {
+    public:
+      typedef boxes_domain<Number, VariableName, ConvexReduce, LddSize> this_type;
+      typedef typename this_type::linear_constraint_t linear_constraint_t;
+      typedef typename this_type::disjunctive_linear_constraint_system_t
+      disjunctive_linear_constraint_system_t;    
+      
+      static bool entail(this_type& lhs, const disjunctive_linear_constraint_system_t& rhs) {
+	// -- trivial cases first
+	if (rhs.is_false()) {
+	  return false;
+	} else if (rhs.is_true()) {
+	  return true;
+	} else if (lhs.is_bottom()) {
+	  return true;
+	} else if (lhs.is_top()) {
+	  return false;
+	}
+	this_type inv = this_type::bottom();
+	for (auto const& csts: rhs) {
+	  this_type conj;
+	  conj += csts;
+	  inv  |= conj;
+	}
+	return (lhs & inv.complement()).is_bottom();
+      }
+      
+      static bool entail(const disjunctive_linear_constraint_system_t& lhs, this_type& rhs) {
+	// -- trivial cases first
+	if (rhs.is_bottom()) {
+	  return false;
+	} else if (rhs.is_top()) {
+	  return true;
+	} else if (lhs.is_false()) {
+	  return true;
+	} else if (lhs.is_true()) {
+	  return false;
+	}
+	this_type inv = this_type::bottom();
+	for (auto const& csts: lhs) {
+	  this_type conj;
+	  conj += csts;
+	  inv  |= conj;
+	}
+	return (inv & rhs.complement()).is_bottom();
+      }
+      
+      static bool entail(this_type& lhs, const linear_constraint_t& rhs) {
+	// -- trivial cases first
+	if (lhs.is_bottom()) return true;
+	if (rhs.is_tautology ()) return true;
+	if (rhs.is_contradiction ()) return false;
+
+	this_type inv(lhs);
+	inv += rhs.negate();
+	return inv.is_bottom();
+      }
+      
+      static bool intersect(this_type& inv, const linear_constraint_t& cst) {
+	// default code
+
+	// -- trivial cases first
+	if (inv.is_bottom () || cst.is_contradiction ()) return false;
+	if (inv.is_top () || cst.is_tautology ()) return true;
+	
+	this_type cst_inv;
+	cst_inv += cst;
+	return (!(cst_inv & inv).is_bottom ());
+      }
+      
     };
      
    } // namespace domains

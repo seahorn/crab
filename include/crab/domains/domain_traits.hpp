@@ -92,14 +92,13 @@ namespace crab {
      typedef typename Domain::number_t number_t;
      typedef typename Domain::linear_constraint_t linear_constraint_t;
      typedef typename Domain::linear_constraint_system_t linear_constraint_system_t;
-
+     typedef typename Domain::disjunctive_linear_constraint_system_t disjunctive_linear_constraint_system_t;
+     
    private:
 
      struct entailment {
        Domain _dom;
-       
        entailment(Domain dom): _dom(dom) {}
-       
        bool operator()(const linear_constraint_t& cst) {
 	 Domain dom(_dom); //copy is necessary
 	 linear_constraint_t neg_cst = cst.negate();
@@ -107,35 +106,97 @@ namespace crab {
 	 return dom.is_bottom();
        }
      };
-     
-     static bool entail_all_of(Domain& inv, const linear_constraint_system_t& csts) {
-       entailment op(inv);
-       return std::all_of(csts.begin(), csts.end(), op);
+
+     // Return true if (c1 or c2 or ... cn) entails (d1 and d2 and .. dn)
+     static bool __entail(const disjunctive_linear_constraint_system_t&lhs,
+			  const linear_constraint_system_t& rhs) {
+       // -- trivial cases first
+       if (rhs.is_false()) {
+	 return false;
+       } else if (rhs.is_true()) {
+	 return true;
+       } else if (lhs.is_false()) {
+	 return true;
+       } else if (lhs.is_true()) {
+	 return false;
+       }
+
+       // -- return true if for all ci :: ci entails (d1 and d2 and .. dn)
+       return std::all_of(lhs.begin(), lhs.end(),
+			  [&rhs](const linear_constraint_system_t& csts) {
+			    Domain lhs;
+			    lhs += csts;
+			    return std::all_of(rhs.begin(), rhs.end(),
+					       [&lhs](const linear_constraint_t& c) {
+						 return entail(lhs, c);
+					       });			    
+			      });
      }
+     
+   public:
+
+     /* 
+	Public API
+	
+	static bool entail(Domain&, const disjunctive_linear_constraint_system_t&);
+        static bool entail(const disjunctive_linear_constraint_system_t&, Domain&);
+        static bool entail(Domain&, const linear_constraint_t&);
+
+        static bool intersect(Domain&, const linear_constraint_t&);	
+      */
 
      
-     public:
-	 
-     // Return true if inv entails cst.
-     static bool entail(Domain& inv, const linear_constraint_t& cst) {
-       if (inv.is_bottom()) return true;
-       if (cst.is_tautology ()) return true;
-       if (cst.is_contradiction ()) return false;
+     // Return true if lhs entails (c1 or c2 or ... cn)
+     static bool entail(Domain& lhs, const disjunctive_linear_constraint_system_t& rhs) {
+       // -- trivial cases first
+       if (rhs.is_false()) {
+	 return false;
+       } else if (rhs.is_true()) {
+	 return true;
+       } else if (lhs.is_bottom()) {
+	 return true;
+       } else if (lhs.is_top()) {
+	 return false;
+       }
+       // -- return true if exists ci such that lhs entails ci
+       for(linear_constraint_system_t csts: rhs) {
+	 if (std::all_of(csts.begin(), csts.end(),
+			 [&lhs](const linear_constraint_t& c) {
+			   return entail(lhs, c);
+			 })) {
+	   return true;
+	 }
+       }
+       return false;
+     }
+     
+     // Return true if (c1 or c2 or ... cn) entails rhs
+     static bool entail(const disjunctive_linear_constraint_system_t& lhs, Domain& rhs) {
+       auto csts = rhs.to_linear_constraint_system();
+       return __entail(lhs, csts);
+     }
+     
+     
+     // Return true if lhs entails rhs.
+     static bool entail(Domain& lhs, const linear_constraint_t& rhs) {
+       if (lhs.is_bottom()) return true;
+       if (rhs.is_tautology ()) return true;
+       if (rhs.is_contradiction ()) return false;
 
        CRAB_LOG("checker-entailment",
-		linear_constraint_t tmp(cst);
-		crab::outs() << "Checking whether\n" << inv << "\nentails " << tmp << "\n";);
+		linear_constraint_t tmp(rhs);
+		crab::outs() << "Checking whether\n" << lhs << "\nentails " << tmp << "\n";);
 
        bool res;
-       if (cst.is_equality()) {
+       entailment op(lhs);       
+       if (rhs.is_equality()) {
 	 // try to convert the equality into inequalities so when it's
 	 // negated we do not have disequalities.
-	 linear_constraint_system_t csts;
-	 constraint_simp_domain_traits<Domain>::lower_equality(cst, csts);
-	 res = entail_all_of(inv, csts);
+	 linear_constraint_system_t inequalities;
+	 constraint_simp_domain_traits<Domain>::lower_equality(rhs, inequalities);
+	 res = std::all_of(inequalities.begin(), inequalities.end(), op);
        } else {
-	 entailment op(inv);
-	 res = op(cst);
+	 res = op(rhs);
        }
 
        CRAB_LOG("checker-entailment",
@@ -145,12 +206,12 @@ namespace crab {
 		  crab::outs() << "\t**entailment does not hold.\n";
 		});
 
-       // Note: we cannot convert cst into Domain and then use the <=
+       // Note: we cannot convert rhs into Domain and then use the <=
        //       operator. The problem is that we cannot know for sure
-       //       whether Domain can represent precisely cst. It is not
+       //       whether Domain can represent precisely rhs. It is not
        //       enough to do something like
        // 
-       //       Dom dom = cst;
+       //       Dom dom = rhs;
        //       if (dom.is_top()) { ... }
        
        return res; 
