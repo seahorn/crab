@@ -1372,6 +1372,10 @@ namespace ikos {
       }
       return true; // all constraints are false
     }
+
+    bool is_true() const {
+      return _csts.empty();
+    }
     
     std::size_t size() const { return _csts.size(); }
         
@@ -1391,7 +1395,7 @@ namespace ikos {
   }; // class linear_constraint_system
 
 
-  // This class contains a disjunction of linear constraints
+  // This class contains a disjunction of linear constraints (i.e., DNF form)
   template< typename Number, typename VariableName >
   class disjunctive_linear_constraint_system: public writeable {
 
@@ -1410,10 +1414,10 @@ namespace ikos {
   public:
     typedef typename cst_collection_t::const_iterator iterator;
 
-    disjunctive_linear_constraint_system()
-      : _is_false (false) {}
+    disjunctive_linear_constraint_system(bool is_false = false)
+      : _is_false (is_false) {}
 
-    disjunctive_linear_constraint_system(const linear_constraint_system_t &cst)
+    explicit disjunctive_linear_constraint_system(const linear_constraint_system_t &cst)
       : _is_false (false) {
       if (cst.is_false ()) {
 	_is_false = true;
@@ -1432,32 +1436,52 @@ namespace ikos {
       return _is_false;
     }
 
+    bool is_true () const {
+      return (!is_false() && _csts.empty());
+    }
+
+    // make true
     void clear() {
       _is_false = false;
       _csts.clear();
     }
-    
+
+    /*
+      c1 or ... or cn  += true  ==> error
+      c1 or ... or cn  += false ==> c1 or .. or cn
+      c1 or ... or cn  += c     ==> c1 or ... or cn or c
+    */
     this_type& operator+=(const linear_constraint_system_t &cst) {
-      if (_csts.empty () && cst.is_false ()) {
-	_is_false = true;
-      } else {
+      if (cst.is_true()) {
+	// adding true should make the whole thing true
+	// but we prefer to raise an error for now.
+	CRAB_ERROR("Disjunctive linear constraint: cannot add true");	
+      }
+
+      if (!cst.is_false()) {
 	_csts.push_back(cst);
 	_is_false = false;
       }
       return *this;
     }
 
+    /*
+      c1 or ... or cn  += true  ==> error
+      c1 or ... or cn  += false ==> c1 or .. or cn
+      c1 or ... or cn  += d1 or ... or dn   ==> c1 or ... or cn or d1 or ... or dn
+    */
     this_type& operator+=(const this_type &s) {
-      if (this->is_false ()) {
-	return s;
-      } else if (s.is_false ()) {
-	return *this;
-      } else { 
-	for (auto c: s) {
-	  _csts.push_back(c);
-	}
-	return *this;
+      if (s.is_true()) {
+	// adding true should make the whole thing true
+	// but we prefer to raise an error for now.
+	CRAB_ERROR("Disjunctive linear constraint: cannot add true");
       }
+      if (!s.is_false()) {
+	for (const linear_constraint_system_t& c: s) {
+	  this->operator+=(c);
+	}
+      }
+      return *this;
     }
 
     this_type operator+(const this_type &s) const {
@@ -1486,7 +1510,7 @@ namespace ikos {
     void write(crab::crab_os& o) {
       if (is_false ()) {
 	o << "_|_";
-      } else if (_csts.empty ()) {
+      } else if (is_true()) {
 	o << "{}";
       } else if (size () == 1) {
 	o << _csts[0];
