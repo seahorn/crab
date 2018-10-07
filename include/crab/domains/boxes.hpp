@@ -630,14 +630,21 @@ namespace crab {
 	  ldd_copy = convex_approx (ldd_copy);
 	  
 	  auto disjs = to_disjunctive_linear_constraint_system(ldd_copy);
-	  if (disjs.size() != 1) 
-	  { CRAB_ERROR("Boxes::to_intervals: it should not be disjunctive"); }
-
-          interval_domain_t intv;	  
-	  for (auto c : *(disjs.begin()))
-	  { intv += c; }
-	  
-	  return intv;
+	  if (disjs.is_true()) {
+	    return interval_domain_t::top();
+	  } else if (disjs.is_false()) {
+	    return interval_domain_t::bottom();	    
+	  } else {
+	    if (disjs.size() != 1) {
+	      CRAB_ERROR("Boxes::to_intervals: it should not be disjunctive ",
+			 disjs);
+	    }
+	    interval_domain_t intv;	  
+	    for (auto c : *(disjs.begin())) {
+	      intv += c;
+	    }
+	    return intv;
+	  }
 	}
 	
 	void to_disjunctive_linear_constraint_system_aux
@@ -716,7 +723,12 @@ namespace crab {
 		  ldd->theory->destroy_lincons (negc);	    
 		  negc = nullptr;
 		}
-		e += csts;
+
+		if (csts.is_true()) {
+		  // FIXME: if csts is true then e should become true
+		} else {
+		  e += csts;
+		}
 	      }
 	    } 
 	    else {
@@ -1612,10 +1624,19 @@ namespace crab {
 	    ldd = convex_approx (ldd);
 	    // --- extract linear inequalities from the convex ldd
 	    auto disjs = to_disjunctive_linear_constraint_system(ldd);
-	    if (disjs.size() != 1) 
-	    { CRAB_ERROR("Boxes::to_linear_constraint_system: it should not be disjunctive"); }
-	    for (auto c : *(disjs.begin()))
-	    { csts += c; }
+	    if (disjs.is_false()) {
+	      csts += linear_constraint_t::get_false();
+	    } else if (disjs.is_true()) {
+	      csts += linear_constraint_t::get_true();
+	    } else {
+	      if (disjs.size() != 1) {
+		CRAB_ERROR("Boxes::to_linear_constraint_system: it should not be disjunctive ",
+			   disjs);
+	      }
+	      for (auto c : *(disjs.begin())) {
+		csts += c;
+	      }
+	    }
 	  }
 	  
           return csts;
