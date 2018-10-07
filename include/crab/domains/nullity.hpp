@@ -394,6 +394,17 @@ namespace crab {
       else
 	return linear_constraint_t::get_true();
     }
+
+    disjunctive_linear_constraint_system_t to_disjunctive_linear_constraint_system() {
+      auto lin_csts = to_linear_constraint_system();
+      if (lin_csts.is_false()) {
+	return disjunctive_linear_constraint_system_t(true /*is_false*/); 
+      } else if (lin_csts.is_true()) {
+	return disjunctive_linear_constraint_system_t(false /*is_false*/);
+      } else {
+	return disjunctive_linear_constraint_system_t(lin_csts);
+      }
+    }
     
     static std::string getDomainName () {
       return "Nullity";

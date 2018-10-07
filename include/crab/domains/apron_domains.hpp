@@ -131,7 +131,10 @@ namespace crab {
         
         linear_constraint_system_t to_linear_constraint_system ()
         { CRAB_ERROR (APRON_NOT_FOUND); }
-        
+
+        disjunctive_linear_constraint_system_t to_disjunctive_linear_constraint_system ()
+        { CRAB_ERROR (APRON_NOT_FOUND); }
+	
         void write(crab_os& o) 
         { CRAB_ERROR (APRON_NOT_FOUND); }
           
@@ -1491,6 +1494,17 @@ namespace crab {
           return csts;
         }
 
+      disjunctive_linear_constraint_system_t to_disjunctive_linear_constraint_system() {
+	auto lin_csts = to_linear_constraint_system();
+	if (lin_csts.is_false()) {
+	  return disjunctive_linear_constraint_system_t(true /*is_false*/); 
+	} else if (lin_csts.is_true()) {
+	  return disjunctive_linear_constraint_system_t(false /*is_false*/);
+	} else {
+	  return disjunctive_linear_constraint_system_t(lin_csts);
+	}
+      }
+	
       void rename(const variable_vector_t &from, const variable_vector_t &to) {
 	if (is_top () || is_bottom()) return;
 	
@@ -1735,6 +1749,10 @@ namespace crab {
         linear_constraint_system_t to_linear_constraint_system () {
           return ref().to_linear_constraint_system();
         }
+        disjunctive_linear_constraint_system_t to_disjunctive_linear_constraint_system () {
+          return ref().to_disjunctive_linear_constraint_system();
+        }
+	
         static std::string getDomainName () {
 	  return apron_domain_impl_t::getDomainName();
 	}
