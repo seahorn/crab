@@ -19,13 +19,13 @@ function (AddTest testSrc dirName)
   else ()  
     target_link_libraries(${testName} ${Boost_PROGRAM_OPTIONS_LIBRARY} IntraCrab)
   endif ()
-  #move testing binaries into a test-bin directory
+  #move testing binaries into a ${TEST_DIR} directory
   set_target_properties(${testName} PROPERTIES 
-    RUNTIME_OUTPUT_DIRECTORY  ${CMAKE_BINARY_DIR}/test-bin)
+    RUNTIME_OUTPUT_DIRECTORY  ${TEST_DIR})
   #Finally add it to test execution
   add_test(NAME ${testName} 
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/test-bin
-    COMMAND ${CMAKE_BINARY_DIR}/test-bin/${testName} )
+    WORKING_DIRECTORY ${TEST_DIR}
+    COMMAND ${TEST_DIR}/${testName} )
 endfunction()
 
 function (AddTestDir dirName)

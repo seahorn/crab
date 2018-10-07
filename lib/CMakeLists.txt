@@ -6,8 +6,8 @@ add_library(Crab ${CRAB_LIBS_TYPE}
   )
 
 install(TARGETS Crab
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib)
+  LIBRARY DESTINATION crab/lib
+  ARCHIVE DESTINATION crab/lib)
 
 
 

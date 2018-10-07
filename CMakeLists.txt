@@ -44,10 +44,23 @@ option (USE_STATS "Enable statistics" ON)
 option (USE_LOG   "Enable logging for debugging purposes" ON)
 option (BUILD_CRAB_LIBS_SHARED "Build all Crab libraries dynamically." ON)
 
+# Directory where all (binary) tests will be located
+# Binary tests do not go to install directory by default
+if (ENABLE_TESTS)
+  if (NOT TEST_DIR)
+    set(TEST_DIR ${CMAKE_BINARY_DIR}/test-bin)
+  endif()  
+endif()
+
 if (NOT BUILD_CRAB_LIBS_SHARED)
    # put static libraries first unless we want dynamic libraries
    set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ${CMAKE_FIND_LIBRARY_SUFFIXES})
 endif ()   
+
+# To remember the last configuration
+if (EXISTS ${CMAKE_BINARY_DIR}/CMakeCache.txt)
+  message(STATUS "Last cmake configuration was: cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DUSE_APRON=${USE_APRON} -DUSE_LDD=${USE_LDD} -DENABLE_TESTS=${ENABLE_TESTS} -DTEST_DIR=${TEST_DIR}")
+endif()  
 
 if (BUILD_CRAB_LIBS_SHARED)
   message (STATUS "All crab libraries will be built dynamically")
@@ -319,9 +332,26 @@ if (ENABLE_TESTS)
 endif ()
 
 install(DIRECTORY include/
-        DESTINATION include
+        DESTINATION crab/include
         PATTERN "config.h.cmake" EXCLUDE)
-install(FILES ${CMAKE_BINARY_DIR}/include/crab/config.h DESTINATION include/crab)
+install(FILES ${CMAKE_BINARY_DIR}/include/crab/config.h DESTINATION crab/include/crab)
+
+if (USE_LDD)
+  ExternalProject_Get_Property (ldd INSTALL_DIR)  
+  install(DIRECTORY ${INSTALL_DIR}
+         DESTINATION .)
+endif()
+
+if (USE_APRON)
+  ExternalProject_Get_Property (apron INSTALL_DIR)  
+  install(DIRECTORY ${INSTALL_DIR}
+          DESTINATION .)
+endif()
+
+if (USE_APRON)
+
+endif()
+
 
 if (TopLevel)
    install(FILES LICENSE DESTINATION .)
