@@ -58,9 +58,7 @@ if (NOT BUILD_CRAB_LIBS_SHARED)
 endif ()   
 
 # To remember the last configuration
-if (EXISTS ${CMAKE_BINARY_DIR}/CMakeCache.txt)
-  message(STATUS "Last cmake configuration was: cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DUSE_APRON=${USE_APRON} -DUSE_LDD=${USE_LDD} -DENABLE_TESTS=${ENABLE_TESTS} -DTEST_DIR=${TEST_DIR}")
-endif()  
+message(STATUS "Last cmake configuration was: cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DUSE_APRON=${USE_APRON} -DUSE_LDD=${USE_LDD} -DENABLE_TESTS=${ENABLE_TESTS} -DTEST_DIR=${TEST_DIR}")
 
 if (BUILD_CRAB_LIBS_SHARED)
   message (STATUS "All crab libraries will be built dynamically")
