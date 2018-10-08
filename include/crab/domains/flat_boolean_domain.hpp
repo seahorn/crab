@@ -949,8 +949,61 @@ namespace crab {
       }
       
       void operator+=(linear_constraint_system_t csts) {
+	#if 0
 	_product += csts;
 	for (auto v: csts.variables()) { _unchanged_vars -= v;}
+	#else
+	// We split between boolean and non-boolean constraints.
+	// 
+	// When this operation is called from the fixpoint iterator
+	// csts only contains non-boolean constraints. However, this
+	// is not necessarily the case when this operation is called
+	// from elsewhere.
+	
+	if (csts.is_true()) return;
+	
+	linear_constraint_system_t non_bool_csts;
+	for (const linear_constraint_t& cst: csts) {
+	  if (cst.is_contradiction()) {
+	    *this = bottom(); // make bottom
+	    return;
+	  }
+	  
+	  auto variables = cst.variables();
+	  
+	  // update unchanged_vars
+	  for (auto v: variables){
+	    _unchanged_vars -= v;
+	  }	  
+	  
+	  if (std::any_of(variables.begin(), variables.end(),
+			  [](variable_t v) { return v.is_bool_type();})) {
+	    // boolean constraints
+	    typedef interval_domain<number_t, varname_t> interval_domain_t;
+	    typedef typename interval_domain_t::interval_t interval_t;
+	    interval_domain_t intervals;
+	    intervals += cst;
+	    for(typename interval_domain_t::iterator it = intervals.begin(),
+	    	  et = intervals.end(); it!=et; ++it) {
+	      variable_t v = it->first;
+	      interval_t i = it->second;
+	      if (v.is_bool_type()) {
+	      	if (boost::optional<number_t> opt_i = i.singleton()) {
+	      	  if (*opt_i == number_t(0)) {
+	      	    _product.first().assume_bool(v, true /*is_negated*/);
+	      	  } else if (*opt_i == number_t(1)) {
+	      	    _product.first().assume_bool(v, false /*is_negated*/);
+	      	  }
+	      	}
+	      }
+	    }
+	  } else {
+	    // non-boolean constraints
+	    non_bool_csts += cst;
+	  }
+	}
+	_product.second() += non_bool_csts;
+	#endif 
       }
       
       void set (variable_t x, interval_t intv)
