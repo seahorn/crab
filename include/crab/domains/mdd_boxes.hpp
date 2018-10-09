@@ -136,8 +136,134 @@ struct int64_repr {
   
   int64_t x;
 };
+
+// To dump a MDD to standard output for debugging
+template<class V>
+class MDD_print {
   
-}
+  typedef mdd_boxes::mdd_mgr<V>  mgr_t;
+  typedef mdd_boxes::mdd_node<V> node_t;
+  typedef mdd_boxes::MDD_ops<V>  mdd_ops_t;
+  
+  crab_os& o;
+  
+  // yet another class for representing an interval
+  class interval {
+    boost::optional<V> lb;
+    boost::optional<V> ub;
+    
+    // create an interval [lb, ub)
+    interval(boost::optional<V> _lb, boost::optional<V> _ub)
+      : lb(_lb), ub(_ub) {}
+    
+  public:
+    
+    // create an interval [lb, ub)
+    interval(V _lb, V _ub): lb(_lb), ub(_ub) {}
+    
+    // return (-oo, ub]
+    static interval lower_half_line(V ub)
+    { return interval(boost::optional<V>(), ub); }
+    
+    // return [lb, +oo)
+    static interval upper_half_line(V lb)
+    { return interval(lb, boost::optional<V>()); }
+    
+    void write(crab_os& o) const {
+      if (lb && ub) {
+	o << "[" << *lb << "," << *ub << ")";
+      } else if (!lb && ub) {
+	    o << "[" << "-oo" << "," << *ub << ")";
+      } else  {
+	assert (lb && !ub);
+	o << "[" << *lb << "," << "+oo" << ")";
+      }
+    }
+  };
+  
+  typedef std::vector<std::pair<node_t*, interval>> stack_t;
+  void rec_mdd_print(node_t* n, stack_t& stack) {
+    if (n == mdd_ops_t::MDD_TRUE) {
+      // end of the path: we print the stack
+      for (auto it = stack.begin(), et = stack.end(); it!=et; ) {
+	auto p = *it;
+	o << p.first->var;
+	o << "=";
+	p.second.write(o);
+	++it;
+	if (it != et) {
+	  o << " and ";
+	}
+      }
+      o << "\n";
+      return;
+    }
+    
+    auto it = n->edges.begin();
+    auto en = n->edges.end();
+    if(n->dest0 != mdd_ops_t::MDD_FALSE) {
+      // there is an edge  from n to dest0 with interval [-oo, (*it).lb)
+      stack.push_back(std::make_pair(n, interval::lower_half_line((*it).lb)));
+      rec_mdd_print(n->dest0, stack);
+      stack.pop_back();      
+    }
+    
+    V lb((*it).lb);
+    node_t* dest((*it).dest);    
+    for(++it; it != en; ++it) {
+      if(dest != mdd_ops_t::MDD_FALSE) {
+	// there is an edge from n to dest with interval [lb, (*it).lb)
+	stack.push_back(std::make_pair(n, interval(lb, (*it).lb)));	
+	rec_mdd_print(dest, stack);
+	stack.pop_back();
+      }
+      lb = (*it).lb;
+      dest = (*it).dest;
+    }
+    
+    if (dest != mdd_ops_t::MDD_FALSE) {
+      // there is an edge from n to dest with interval [(*it).lb, +oo)
+      stack.push_back(std::make_pair(n, interval::upper_half_line(lb)));      
+      rec_mdd_print(dest, stack);
+      stack.pop_back();
+    }
+  }
+  
+public:
+  
+  MDD_print(crab_os& _o): o(_o) { }
+  
+  void operator()(node_t* n) {
+    if(n == mdd_ops_t::MDD_FALSE) {
+      o << "_|_";
+    } else if(n == mdd_ops_t::MDD_TRUE) {
+      o << "{}";
+    } else {
+      stack_t stack;
+      rec_mdd_print(n, stack);
+    }
+  }      
+};
+
+// template<typename V, typename R>
+// inline crab::crab_os& operator<<(crab::crab_os&o, const mdd_boxes::num_interval<V,R>& i) {
+//   if (i.is_empty()) {
+//     o << "_|_";
+//   } else if (i.is_top()) {
+//     o << "{}";
+//   } else if (i.lb_is_finite() && i.ub_is_finite()) {
+//     o << "[" << i.lb() << "," << i.ub() << ")";
+//   } else if (i.lb_is_finite()) {
+//     o << "[" << i.lb() << ", +oo)"; 
+//   } else if (i.ub_is_finite()) {
+//     o << "[-oo, " << i.ub() << ")";     
+//   } else {
+//     assert(false && "unreachable");
+//   }
+//   return o;
+// }
+
+}  
 }  
 }
 
@@ -147,15 +273,9 @@ namespace std {
     size_t operator()(const crab::domains::mdd_boxes_impl::int64_repr& r) { return r.x; }
   };
 };
-
+   
 namespace crab {
-  namespace domains {
-    
-    template<typename N>
-    static mdd_boxes::mdd_mgr<N>& create_mdd_man(void) {
-      static mdd_boxes::mdd_mgr<N> man;
-      return man;
-    }
+namespace domains {
     
     template<typename Number, typename VariableName>
     class mdd_boxes_domain:
@@ -225,16 +345,25 @@ namespace crab {
       // assign division
       typedef mdd_boxes::mdd_assign_div<mdd_number_t, mdd_bound_t, mdd_interval_t> _mdd_assign_div_t;
       typedef mdd_transformer_t<_mdd_assign_div_t> mdd_assign_div_t;
-
+      
       // reference to a mdd node
       mdd_ref_t m_state;
       // map between crab variables and mdd variables
       var_map_t m_var_map;
       
       // return the mdd manager
-      mdd_mgr_t* get_man(void) { return &create_mdd_man<mdd_number_t>(); }
+      mdd_mgr_t* get_man(void) {
+	static mdd_mgr_t *man = new mdd_mgr_t();
+	return man;
+      }
+
+      // for debugging using gdb/lldb
+      void dump(mdd_ref_t r) const {
+	mdd_boxes_impl::MDD_print<mdd_number_t> vis(crab::outs());
+	vis(r.get());
+      }
       
-      static boost::optional<mdd_var_t> get_mdd_var(const var_map_t& m, variable_t v) {
+      static boost::optional<mdd_var_t> get_mdd_var(const var_map_t& m, const variable_t& v) {
 	auto it = m.left.find (v);
 	if (it != m.left.end ())
 	  return it->second;
@@ -242,7 +371,7 @@ namespace crab {
 	  return boost::optional<mdd_var_t>();
       }
 
-      static mdd_var_t get_mdd_var_insert(var_map_t& m, variable_t v) {
+      static mdd_var_t get_mdd_var_insert(var_map_t& m, const variable_t& v) {
 	if (auto opt_mdd_v = get_mdd_var(m, v)) {
 	  return *opt_mdd_v;
 	} else {
@@ -265,11 +394,11 @@ namespace crab {
       }
 
       
-      boost::optional<mdd_var_t> get_mdd_var(variable_t v) const {
+      boost::optional<mdd_var_t> get_mdd_var(const variable_t& v) const {
 	return get_mdd_var(m_var_map, v);
       }
 
-      mdd_var_t get_mdd_var_insert(variable_t v) {
+      mdd_var_t get_mdd_var_insert(const variable_t& v) {
 	return get_mdd_var_insert(m_var_map, v);
       }
       
@@ -312,26 +441,27 @@ namespace crab {
 	}
 
 	CRAB_LOG("mdd-boxes-merge-vars",
-		 crab::outs () << "Renaming map:\n";
+		 crab::outs () << "Before renaming\n";
+		 crab::outs () << "MDD1="; dump(m1);
+		 crab::outs () << "MDD2="; dump(m2);
+		 crab::outs () << "Renaming map MDD1:\n";
 		 for(unsigned i=0, e=rv1.size();i<e;++i) {
-		   crab::outs () << "\t" << rv1[i].from << " --> "
-				 << rv1[i].to << "\n";
+		   crab::outs () << "\t" << rv1[i].from << " --> " << rv1[i].to << "\n";
 		 }
-		 crab::outs () << "Renaming map:\n";
+		 crab::outs () << "Renaming map MDD2:\n";
 		 for(unsigned i=0, e=rv2.size();i<e;++i) {
-		   crab::outs () << "\t" << rv2[i].from << " --> "
-				 << rv2[i].to << "\n";
+		   crab::outs () << "\t" << rv2[i].from << " --> " << rv2[i].to << "\n";
 		 });
 
 
-	auto hrv1 = hc::lookup(rv1);
-	assert(hrv1);
-	auto hrv2 = hc::lookup(rv2);
-	assert(hrv2);
+	mdd_ref_t ren_m1(get_man(), mdd_rename_t::apply(get_man(), m1.get(), hc::lookup(rv1)));
+	mdd_ref_t ren_m2(get_man(), mdd_rename_t::apply(get_man(), m2.get(), hc::lookup(rv2)));
+
+	CRAB_LOG("mdd-boxes-merge-vars",
+		 crab::outs () << "After renaming\n";
+		 crab::outs () << "MDD1="; dump(ren_m1);
+		 crab::outs () << "MDD2="; dump(ren_m2););
 	
-	mdd_ref_t ren_m1(get_man(), mdd_rename_t::apply(get_man(), m1.get(), hrv1));
-	mdd_ref_t ren_m2(get_man(), mdd_rename_t::apply(get_man(), m2.get(), hrv2));
-							
 	std::swap(m1, ren_m1);
 	std::swap(m2, ren_m2);
 	
@@ -379,14 +509,13 @@ namespace crab {
       static void convert_crab_interval(interval<ikos::q_number> i, mdd_interval_t& res)
       { CRAB_ERROR("mdd-boxes not implemented for rationals");}	
       
-      std::pair<linterm_vector, mdd_number_t> expr2linterms(const linear_expression_t& e) const {
+      std::pair<linterm_vector, mdd_number_t> expr2linterms(const linear_expression_t& e)  {
 	linterm_vector linterms;
 	for (auto p: e) {
 	  mdd_number_t c;
 	  convert_crab_number(p.first, c);
-	  boost::optional<mdd_var_t> v = get_mdd_var(p.second);
-	  if (!v) CRAB_ERROR(p.second, " is not in the mdd.");
-	  linterms.push(linterm_t {c, *v});
+	  mdd_var_t v = get_mdd_var_insert(p.second);
+	  linterms.push(linterm_t {c, v});
 	}
 	mdd_number_t cst;
 	convert_crab_number(e.constant(), cst);
@@ -427,7 +556,6 @@ namespace crab {
       }
       static void convert_mdd_interval(mdd_interval_t i, interval<ikos::q_number>& res)
       { CRAB_ERROR("mdd-boxes not implemented for rationals");}	
-
       
       // Convert a MDD to DNF
       class mdd_to_dnf {
@@ -477,8 +605,8 @@ namespace crab {
 	  auto it = n->edges.begin();
 	  auto en = n->edges.end();
 	  if(n->dest0 != mdd_op_t::MDD_FALSE) {
-	    // -- there is an edge from n to dest0 with interval (-oo, (*it).lb]
-	    mdd_interval_t i = mdd_interval_t::le((*it).lb);
+	    // -- there is an edge from n to dest0 with interval [-oo, (*it).lb)
+	    mdd_interval_t i = mdd_interval_t::lt((*it).lb); 
 	    stack.push_back({n, i});
 	    mdd_to_dnf_rec(n->dest0, stack);
 	    stack.pop_back();      
@@ -500,7 +628,7 @@ namespace crab {
 	  
 	  if (dest != mdd_op_t::MDD_FALSE) {
 	    // -- there is an edge from n to dest with interval [(*it).lb, +oo)
-	    mdd_interval_t i = mdd_interval_t::ge((*it).lb); // DOUBLE CHECK: isn't lb?
+	    mdd_interval_t i = mdd_interval_t::ge(lb); 
 	    stack.push_back({n, i});      
 	    mdd_to_dnf_rec(dest, stack);
 	    stack.pop_back();
@@ -592,10 +720,10 @@ namespace crab {
       diffcst_finish:
         return;
       }
-      
+
+      #if 1
       bool add_linear_leq(const linear_expression_t& e) {
-	#if 1
-	auto p = expr2linterms(e);
+        auto p = expr2linterms(e);
 	linterm_vector xs(p.first);
 	mdd_number_t k = -p.second;
 	auto hxs = hc::lookup(xs);
@@ -603,13 +731,15 @@ namespace crab {
 	m_state = mdd_ref_t(get_man(),
 			    mdd_lin_leq_t::apply(get_man(), m_state.get(), hxs, k));
 	return !is_bottom();
-	#else
+      }
+      #else
+      bool add_linear_leq(const linear_expression_t& e) {
         std::vector<std::pair<variable_t, number_t>> lbs;
         std::vector<std::pair<variable_t, number_t>> ubs;
-	linear_expression_t::unitcsts_of_linexpr(e, lbs, ubs);
-	for (auto p: lbs) {
+        unitcsts_of_lin_leq(e, lbs, ubs);
+        for (auto p: lbs) {
           CRAB_LOG("mdd-boxes-add-leq",
-                   crab::outs() << "add constraint " << p.first<< ">="<< p.second <<"\n\t"
+                   crab::outs() << "add constraint " << p.first<< ">="<< p.second <<"\n"
 		                << *this << "\n";);
 
 	  mdd_var_t v = get_mdd_var_insert(p.first);
@@ -628,7 +758,7 @@ namespace crab {
 
 	for (auto p: ubs) {
           CRAB_LOG("mdd-boxes-add-leq",
-                   crab::outs() << "add constraint " << p.first<< "<="<< p.second <<"\n\t"
+                   crab::outs() << "add constraint " << p.first<< "<="<< p.second <<"\n"
 		                << *this << "\n";);
 
 	  mdd_var_t v = get_mdd_var_insert(p.first);
@@ -642,12 +772,12 @@ namespace crab {
 			      mdd_lin_leq_t::apply(get_man(), m_state.get(), hxs, k));
 	  if (is_bottom()) {
 	    return false;
-	  }
-	}
-	return true;
-	#endif 
+         }
+       } 
+       return true;
       }
-	      
+      #endif
+      
     private:
       
       mdd_boxes_domain(mdd_ref_t state, var_map_t varmap):
@@ -726,6 +856,7 @@ namespace crab {
 	} else if (is_top () && o.is_top ()) {
 	  return true;
 	} else {
+	  merge_var_map(m_var_map, m_state, o.m_var_map, o.m_state);
 	  return mdd_op_t::leq(get_man(), m_state.get(), o.m_state.get());
 	}
       }
@@ -738,9 +869,14 @@ namespace crab {
 	} else if (is_top () || o.is_bottom()) {
 	  return ;
 	} else {
+	  CRAB_LOG("mdd-boxes",
+		   crab::outs () << "Join\n" << "X=" << *this << "\n" << "Y=" << o << "\n";);
 	  m_var_map = merge_var_map(m_var_map, m_state, o.m_var_map, o.m_state);
 	  m_state = mdd_ref_t(get_man(),
 	  		      mdd_op_t::join(get_man(), m_state.get(), o.m_state.get()));
+	  CRAB_LOG("mdd-boxes",
+		   crab::outs () << "Result:\n" << *this << "\n";);
+	  
 	}
       }
         
@@ -753,9 +889,15 @@ namespace crab {
 	} else if (is_top () || o.is_bottom()) {
 	  return *this;
 	} else {
+	  CRAB_LOG("mdd-boxes",
+		   crab::outs () << "Join\n" << "X=" << *this << "\n" << "Y=" << o << "\n";);
 	  var_map_t m = merge_var_map(m_var_map, m_state, o.m_var_map, o.m_state);
 	  mdd_ref_t r(get_man(), mdd_op_t::join(get_man(), m_state.get(), o.m_state.get()));
-	  return mdd_boxes_domain_t(r, m);
+	  
+	  mdd_boxes_domain_t res(r, m);
+	  CRAB_LOG("mdd-boxes",
+		   crab::outs () << "Result:\n" << res << "\n";);
+	  return res; 	  
 	}
       }        
         
@@ -770,9 +912,14 @@ namespace crab {
 	} else if (o.is_top()) {
 	  return *this;
 	} else{
+	  CRAB_LOG("mdd-boxes",
+		   crab::outs () << "Meet\n" << "X=" << *this << "\n" << "Y=" << o << "\n";);
 	  var_map_t m = merge_var_map(m_var_map, m_state, o.m_var_map, o.m_state);
 	  mdd_ref_t r(get_man(), mdd_op_t::meet(get_man(), m_state.get(), o.m_state.get()));
-	  return mdd_boxes_domain_t(r, m);
+	  mdd_boxes_domain_t res(r, m);
+	  CRAB_LOG("mdd-boxes",
+		   crab::outs () << "Result:\n" << res << "\n";);
+	  return res;
 	}
       }        
         
@@ -785,9 +932,14 @@ namespace crab {
 	} else if (o.is_bottom()) {
 	  return *this;
 	} else {
+	  CRAB_LOG("mdd-boxes",
+		   crab::outs () << "Widening\n" << "X=" << *this << "\n" << "Y=" << o << "\n";);
 	  var_map_t m = merge_var_map(m_var_map, m_state, o.m_var_map, o.m_state);
 	  mdd_ref_t r(get_man(), mdd_op_t::widen(get_man(), m_state.get(), o.m_state.get()));
-	  return mdd_boxes_domain_t(r, m);	  
+	  mdd_boxes_domain_t res(r, m);
+	  CRAB_LOG("mdd-boxes",
+		   crab::outs () << "Result:\n" << res << "\n";);	  
+	  return res;
 	}
       }        
 
@@ -802,9 +954,15 @@ namespace crab {
 	  return *this;
 	} else {
 	  // TODO: consider thresholds
+	  CRAB_LOG("mdd-boxes",
+		  crab::outs() << "Widening w/ thresholds\n"
+		               << "X=" << *this << "\n" << "Y=" << o << "\n";);
 	  var_map_t m = merge_var_map(m_var_map, m_state, o.m_var_map, o.m_state);
 	  mdd_ref_t r(get_man(), mdd_op_t::widen(get_man(), m_state.get(), o.m_state.get()));
-	  return mdd_boxes_domain_t(r, m);	  
+	  mdd_boxes_domain_t res(r, m);
+	  CRAB_LOG("mdd-boxes",
+		   crab::outs () << "Result:\n" << res << "\n";);	  
+	  return res;
 	}
       }
 
@@ -877,8 +1035,9 @@ namespace crab {
 	  return interval_t::bottom ();
 	}
 
-	// p.second must be 0	
+	// p.second must be 0
 	auto p = expr2linterms(v);
+	
 	auto hlinterm = hc::lookup(p.first);
 	assert(hlinterm);
 	mdd_interval_t i = mdd_linex_eval_t::apply(get_man(), m_state.get(), hlinterm);
@@ -893,6 +1052,8 @@ namespace crab {
 	crab::CrabStats::count (getDomainName() + ".count.assign");
 	crab::ScopedCrabStats __st__(getDomainName() + ".assign");
 
+	CRAB_LOG("mdd-boxes", crab::outs () << v << ":=" << ival << "\n";);
+	
 	if (is_bottom ()) return;
 
 	mdd_var_t mdd_v = get_mdd_var_insert(v);
@@ -903,14 +1064,16 @@ namespace crab {
 			    mdd_assign_interval_t::apply(get_man(),
 							 m_state.get(), mdd_v, mdd_i));
 	
-	CRAB_LOG("mdd-boxes",
-		 crab::outs () << v << ":=" << ival << "--->\n\t" << *this << "\n";);
+	CRAB_LOG("mdd-boxes",crab::outs () << v << *this << "\n";);
+		 
       }
 
       void assign(variable_t v, linear_expression_t e) {
 	crab::CrabStats::count (getDomainName() + ".count.assign");
 	crab::ScopedCrabStats __st__(getDomainName() + ".assign");
 
+	CRAB_LOG("mdd-boxes", crab::outs() << v << ":=" << e << "\n";);	
+	
 	if(is_bottom()) return;
 
 	mdd_var_t mdd_v = get_mdd_var_insert(v);
@@ -931,14 +1094,15 @@ namespace crab {
 			      mdd_assign_linexpr_t::apply(get_man(),
 							  m_state.get(), mdd_v, hlinterms, k));
 	}
-	CRAB_LOG("mdd-boxes",
-		 crab::outs() << v << ":=" << e << "--->\n\t" << *this << "\n";);	
+	CRAB_LOG("mdd-boxes", crab::outs() << *this << "\n";);
+		 
       }
                 
       void operator+=(linear_constraint_system_t csts) {
 	crab::CrabStats::count (getDomainName() + ".count.add_constraints");
 	crab::ScopedCrabStats __st__(getDomainName() + ".add_constraints");
-
+        CRAB_LOG("mdd-boxes", crab::outs() << "assume(" << csts << ")\n";);
+	
 	if(is_bottom()) return;
 
 	if (csts.is_false()) {
@@ -955,6 +1119,7 @@ namespace crab {
 	  
 	  if (c.is_disequation()) {
 	    // TODO: disequality
+	    CRAB_WARN("mdd-boxes domain ignored ", c);
 	    continue;
 	  } else if (c.is_inequality()) {
 	    if (!add_linear_leq(c.expression())) {
@@ -968,8 +1133,7 @@ namespace crab {
 	  }
 	}
 
-        CRAB_LOG("mdd-boxes",
-                 crab::outs() << csts << " ---> \n\t" << *this <<"\n");
+        CRAB_LOG("mdd-boxes", crab::outs() << *this <<"\n");
       }
        
       void apply (operation_t op, variable_t x, variable_t y, Number z) {
@@ -987,22 +1151,24 @@ namespace crab {
 	  e = y - z;
 	  break;
 	case OP_MULTIPLICATION:
+	  // TODO mul	  
 	  CRAB_WARN("multiplication not implemented in mdd-boxes domain");
-	  // TODO mul
-	case OP_DIVISION:
-	  CRAB_WARN("division not implemented in mdd-boxes domain");
-	  // TODO div
-	default:
-	  //CRAB_ERROR("mdd-boxes operation not supported");	  
-	  *this -= x;
+	  *this -= x;	  
 	  goto apply_end;
+	case OP_DIVISION:
+	  // TODO div	  
+	  CRAB_WARN("division not implemented in mdd-boxes domain");
+	  *this -= x;	  
+	  goto apply_end;	  
+	default:
+	  CRAB_ERROR("mdd-boxes operation not supported");	  
 	}
 	assign(x, e);
 
-      apply_end:
-	CRAB_LOG("mdd-boxes",
-	 	 crab::outs() << x << ":= "<< y<< " " << op << " " << z << " --> "
-		              << *this <<"\n";);
+      apply_end: ;; 
+	// CRAB_LOG("mdd-boxes",
+	//  	 crab::outs() << x << ":= "<< y<< " " << op << " " << z << " --> "
+	// 	              << *this <<"\n";);
       }
         
       void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
@@ -1020,22 +1186,24 @@ namespace crab {
 	  e = y - z;
 	  break;
 	case OP_MULTIPLICATION:
+	  // TODO mul	  
 	  CRAB_WARN("multiplication not implemented in mdd-boxes domain");
-	  // TODO mul
+	  *this -= x;
+	  goto apply_end;	  
 	case OP_DIVISION:
-	  CRAB_WARN("division not implemented in mdd-boxes domain");
 	  // TODO div
-	default:
-	  //CRAB_ERROR("mdd-boxes operation not supported");
+	  CRAB_WARN("division not implemented in mdd-boxes domain");
 	  *this -= x;
 	  goto apply_end;
+	default:
+	  CRAB_ERROR("mdd-boxes operation not supported");
 	}
 	assign(x, e);
 
-      apply_end:
-	CRAB_LOG("mdd-boxes",
-	 	 crab::outs() << x << ":= "<< y<< " " << op << " " << z << " --> "
-		              << *this <<"\n";);
+      apply_end: ;;
+	// CRAB_LOG("mdd-boxes",
+	//  	 crab::outs() << x << ":= "<< y<< " " << op << " " << z << " --> "
+	// 	              << *this <<"\n";);
       }
         
       void apply(int_conv_operation_t op, variable_t dst, variable_t src) {
@@ -1170,7 +1338,7 @@ namespace crab {
       void rename(const variable_vector_t &from, const variable_vector_t &to) {
 	if (is_top () || is_bottom()) return;
 
-	CRAB_WARN("rename operation not implemented in mdd-boxes");
+	CRAB_ERROR("rename operation not implemented in mdd-boxes");
 	// TODO rename
 	
 	// // renaming m_var_map by creating a new map 
@@ -1201,7 +1369,7 @@ namespace crab {
       void expand (variable_t x, variable_t dup) {
 	if (is_bottom() || is_top()) return;
 
-	CRAB_WARN("expand operation not implemented in mdd-boxes");	
+	CRAB_ERROR("expand operation not implemented in mdd-boxes");	
 	// TODO expand
       
 	// if (get_var_dim(dup)) {
@@ -1222,7 +1390,8 @@ namespace crab {
     
       disjunctive_linear_constraint_system_t to_disjunctive_linear_constraint_system() {
 	disjunctive_linear_constraint_system_t res;
-	mdd_to_dnf(res, m_var_map);
+	mdd_to_dnf converter(res, m_var_map);
+	converter(m_state.get());
 	return res;
       }
       
@@ -1234,6 +1403,16 @@ namespace crab {
 	} else {
 	  auto csts = to_disjunctive_linear_constraint_system();
 	  o << csts;
+          #if 0
+	  if (m_var_map.left.empty()) {
+	    crab::outs() << "\nvariable map={}\n";
+	  } else {
+	    crab::outs() << "\nvariable map \n";
+	    for (auto &kv: m_var_map.left) {
+	      crab::outsy() << kv.first << ": " << kv.second << "\n";
+	    }
+	  }
+	  #endif
 	}
       }          
     
