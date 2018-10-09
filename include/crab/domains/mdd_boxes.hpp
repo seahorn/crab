@@ -499,7 +499,7 @@ namespace domains {
       static void convert_crab_number(ikos::z_number n, ikos::z_number &res) 
       { std::swap(res, n); }
       static void convert_crab_number(ikos::q_number n, ikos::q_number &res)
-      { std::swap(res, n); }
+      { std::swap(res, n); }      
       static void convert_crab_interval(interval<ikos::z_number> i, mdd_interval_t& res) {
 	if (i.is_bottom()) {
 	  res = mdd_interval_t::empty();
@@ -669,10 +669,12 @@ namespace domains {
 	}
       };
 
+	
+				    
       // adapted from split_dbm.hpp
-      void unitcsts_of_lin_leq(const linear_expression_t& exp, 
-			       std::vector<std::pair<variable_t, number_t>>& lbs,
-			       std::vector<std::pair<variable_t, number_t>>& ubs) {
+      void unitcsts_of_exp(const linear_expression_t& exp, 
+			   std::vector<std::pair<variable_t, number_t>>& lbs,
+			   std::vector<std::pair<variable_t, number_t>>& ubs) {
 	
         number_t unbounded_lbcoeff;
         number_t unbounded_ubcoeff;
@@ -752,7 +754,7 @@ namespace domains {
       bool add_linear_leq(const linear_expression_t& e) {
         std::vector<std::pair<variable_t, number_t>> lbs;
         std::vector<std::pair<variable_t, number_t>> ubs;
-        unitcsts_of_lin_leq(e, lbs, ubs);
+        unitcsts_of_exp(e, lbs, ubs);
         for (auto p: lbs) {
           CRAB_LOG("mdd-boxes-add-leq",
                    crab::outs() << "add constraint " << p.first<< ">="<< p.second <<"\n"
@@ -793,7 +795,52 @@ namespace domains {
        return true;
       }
       #endif
-      
+
+      void unitdiseq_of_exp(const linear_expression_t& e,
+			    std::vector<std::pair<variable_t, number_t>>& diseqs) {
+	// For now special case when e is already a unit constraint
+	if (e.size() == 1) {
+	  auto p = *(e.begin());
+	  number_t k = e.constant();
+	  number_t coef(p.first);	  
+	  variable_t v(p.second);
+	  if (k == 0) {
+	    diseqs.push_back({v, 0});
+	  } else if (coef == 1 || coef == -1) {
+	    diseqs.push_back({v, k/coef});
+	  }
+	} else {
+	  // TODO: extract disequalities if e is not a unit constraint
+	}
+      }
+
+      bool add_linear_diseq(const linear_expression_t&e) {
+	std::vector<std::pair<variable_t, number_t>> diseqs;
+	unitdiseq_of_exp(e, diseqs);
+	for (auto p: diseqs) {
+	  mdd_var_t v = get_mdd_var_insert(p.first);
+	  mdd_number_t k;
+	  // if rational this call fails so we can split on < k-1 and > k+1
+	  convert_crab_number(p.second, k);
+	  
+	  linterm_vector xs, ys;
+	  xs.push(linterm_t {1, v});
+	  mdd_ref_t m1(get_man(),
+		       mdd_lin_leq_t::apply(get_man(), m_state.get(), hc::lookup(xs), k-1));
+	  
+	  ys.push(linterm_t {-1, v});	  
+	  mdd_ref_t m2(get_man(),
+		       mdd_lin_leq_t::apply(get_man(), m_state.get(), hc::lookup(ys), -k-1));
+	  
+	  m_state = mdd_ref_t(get_man(),
+	  		      mdd_op_t::join(get_man(), m1.get(), m2.get()));
+	  if (is_bottom()) {
+	    return false;
+	  }
+	}
+	return true;
+      }
+
     private:
       
       mdd_boxes_domain(mdd_ref_t state, var_map_t varmap):
@@ -1113,7 +1160,7 @@ namespace domains {
 	CRAB_LOG("mdd-boxes", crab::outs() << *this << "\n";);
 		 
       }
-                
+			    
       void operator+=(linear_constraint_system_t csts) {
 	crab::CrabStats::count (getDomainName() + ".count.add_constraints");
 	crab::ScopedCrabStats __st__(getDomainName() + ".add_constraints");
@@ -1129,20 +1176,22 @@ namespace domains {
 	// XXX: filter out unsigned linear inequalities and disequalities
 	for (auto const& c: csts) {
 	  if (c.is_inequality() && c.is_unsigned()) {
+	    // These can be supported by adding more splits
 	    CRAB_WARN("unsigned inequality skipped in mdd-boxes domain");
 	    continue;
 	  }
 	  
 	  if (c.is_disequation()) {
-	    // TODO: disequality
-	    CRAB_WARN("mdd-boxes domain ignored ", c);
-	    continue;
+	    if (!add_linear_diseq(c.expression())) {
+	      break;
+	    }
 	  } else if (c.is_inequality()) {
 	    if (!add_linear_leq(c.expression())) {
 	      break;
 	    }
 	  } else if (c.is_equality()) {
 	    linear_expression_t exp = c.expression();
+	    // split equality into two inequalities
 	    if(!add_linear_leq(exp) || !add_linear_leq(-exp)) {
 	      break;
 	    }
