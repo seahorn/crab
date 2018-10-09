@@ -342,10 +342,10 @@ namespace std {
 };
 
 typedef num_interval<int64_t, int64_repr> int64_interval;
-typedef mdd_transformer<int64_t, mdd_assign_interval<int64_t, int64_interval> > assign_t;
-
-typedef mdd_transformer<int64_t, mdd_linexpr_lb<int64_t, int64_repr> > linex_lb;
-typedef mdd_transformer<int64_t, mdd_eval_linexpr<int64_t, int64_repr> > linex_eval;
+typedef mdd_transformer<int64_t, mdd_assign_interval<int64_t, int64_interval>> assign_t;
+typedef mdd_transformer<int64_t, mdd_linexpr_lb<int64_t, int64_repr>> linex_lb;
+typedef mdd_transformer<int64_t, mdd_eval_linexpr<int64_t, int64_repr>> linex_eval;
+typedef mdd_transformer<int64_t, mdd_lin_leq<int64_t, int64_repr>> lin_leq_t;
 
 template<typename MDD_printer>
 void test_assign(MDD_printer& vis, mgr_t* mgr) {
@@ -423,7 +423,7 @@ void test_assign(MDD_printer& vis, mgr_t* mgr) {
   {
     std::cout << "== Begin add linear inequality \n";
     vis(q.get());    
-    ref_t r(mgr, mdd_transformer< int64_t, mdd_lin_leq<int64_t, int64_repr> >::apply(mgr, q.get(), qt, 2000));
+    ref_t r(mgr, lin_leq_t::apply(mgr, q.get(), qt, 2000));
     std::cout << "\" 3*v_3 + 8*v_5 <= 2000 \"\n";
     vis(r.get());
     std::cout << "== End add linear inequality \n";        
@@ -506,30 +506,78 @@ typedef mdd_transformer<int64_t, mdd_rename<int64_t, int64_repr> > rename_t;
 template<typename MDD_printer>
 void test_rename(MDD_printer& vis, mgr_t* mgr) {
   std::cout << "== Begin test_rename\n";                
-  ref_t ttt(mgr->mdd_true());
 
-  int64_interval a(int64_interval::range(10, 20));
-  int64_interval b(int64_interval::range(80, 100));
-  int64_interval c(int64_interval::range(95, 300));
+  {
+    ref_t ttt(mgr->mdd_true());
+    int64_interval a(int64_interval::range(10, 20));
+    int64_interval b(int64_interval::range(80, 100));
+    int64_interval c(int64_interval::range(95, 300));
+    ref_t p(mgr, assign_t::apply(mgr, assign_t::apply(mgr, ttt.get(), 1, a), 2, b));
+    ref_t q(mgr, assign_t::apply(mgr, assign_t::apply(mgr, ttt.get(), 1, b), 2, c));
+    ref_t r(mgr, MDD_ops<int64_t>::join(mgr, p.get(), q.get()));
+    std::cout << "\"(v_1 = [10,20) and v_2 = [80,100)) or (v_1 = [80,100) and v_2 = [95,300)) \"\n";
+    vis(r.get());
+    vec<var_pair> pi;
+    pi.push(var_pair { 1, 3 });
+    pi.push(var_pair { 2, 1 });
+    pi.push(var_pair { 3, 2 });
+    ref_t s(mgr, rename_t::apply(mgr, r.get(), hc::lookup(pi)));
+    std::cout << "\"After renaming v_1 <-> v_3, v_2 <-> v_1, and v_3 <-> v_2\"\n";
+    vis(s.get());
+  }
 
-  ref_t p(mgr, assign_t::apply(mgr, assign_t::apply(mgr, ttt.get(), 1, a), 2, b));
-  ref_t q(mgr, assign_t::apply(mgr, assign_t::apply(mgr, ttt.get(), 1, b), 2, c));
+  {
+    ref_t ttt(mgr->mdd_true());
+    int64_interval a(int64_interval::cst(0));
+    int64_interval b(int64_interval::cst(1));
+    ref_t p(mgr, assign_t::apply(mgr, assign_t::apply(mgr, ttt.get(), 0, a), 1, a));
+    ref_t q(mgr, assign_t::apply(mgr, assign_t::apply(mgr, ttt.get(), 0, b), 1, b));
+    std::cout << "Before renaming: \n";
+    vis(p.get());
+    vis(q.get());
+    vec<var_pair> pi;
+    pi.push(var_pair { 0, 1 });
+    pi.push(var_pair { 1, 0 });
+    ref_t ren_p(mgr, rename_t::apply(mgr, p.get(), hc::lookup(pi)));
+    ref_t ren_q(mgr, rename_t::apply(mgr, q.get(), hc::lookup(pi)));
+    std::cout << "\"After renaming 0 <-> 1, 1 <-> 0\":\n";
+    vis(ren_p.get());
+    vis(ren_q.get());
+  }
 
-  ref_t r(mgr, MDD_ops<int64_t>::join(mgr, p.get(), q.get()));
-  std::cout << "\"(v_1 = [10,20) and v_2 = [80,100)) or (v_1 = [80,100) and v_2 = [95,300)) \"\n";
-  vis(r.get());
-
-  vec<var_pair> pi;
-  pi.push(var_pair { 1, 3 });
-  pi.push(var_pair { 2, 1 });
-  pi.push(var_pair { 3, 2 });
-
-  ref_t s(mgr, rename_t::apply(mgr, r.get(), hc::lookup(pi)));
-  std::cout << "\"After renaming v_1 <-> v_3, v_2 <-> v_1, and v_3 <-> v_2\"\n";
-  vis(s.get());
   std::cout << "== End test_rename\n";                  
 
 }
+
+template<typename MDD_printer>
+void test_lin_leq(MDD_printer& vis, mgr_t* mgr) {
+  std::cout << "== Begin test_lin_leq\n";                
+  {
+    ref_t ttt(mgr->mdd_true());
+    int64_interval a(int64_interval::cst(1));
+    int64_interval b(int64_interval::ge(0));
+    int64_interval c(int64_interval::ge(1));
+    int64_interval d(int64_interval::ge(2));    
+    ref_t p(mgr, assign_t::apply(mgr, assign_t::apply(mgr, ttt.get(), 0, a), 1, b));
+    ref_t q(mgr, assign_t::apply(mgr, assign_t::apply(mgr, ttt.get(), 0, d), 1, c));
+    ref_t r(mgr, MDD_ops<int64_t>::join(mgr, p.get(), q.get()));
+    
+  
+    std::cout << "Before v_0 >= 0 \n";
+    vis(r.get());
+
+    vec<linterm<int64_t>> xs;
+    xs.push(linterm<int64_t> {-1, 0});
+    auto hxs = hc::lookup(xs);
+    ref_t s(mgr, lin_leq_t::apply(mgr, r.get(), hxs, 0));
+    
+    std::cout << "After v_0 >= 0 \n";
+    vis(s.get());  }
+
+  std::cout << "== End test_lin_leq\n";                  
+
+}
+
 
 template<typename MDD_printer>
 void test_copy(MDD_printer& v, mgr_t* m) {
@@ -585,7 +633,8 @@ int main(int argc, char** argv) {
   test_convexify(vis, &m);
   test_rename(vis, &m);
   test_copy(vis, &m);
-  test_copy_assign(vis, &m);  
+  test_copy_assign(vis, &m);
+  test_lin_leq(vis, &m);
   return 0;
 }
 #endif
