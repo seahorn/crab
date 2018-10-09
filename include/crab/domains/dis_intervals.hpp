@@ -1079,6 +1079,7 @@ namespace crab {
      using typename abstract_domain_t::linear_expression_t;
      using typename abstract_domain_t::linear_constraint_t;
      using typename abstract_domain_t::linear_constraint_system_t;
+     using typename abstract_domain_t::disjunctive_linear_constraint_system_t;      
      using typename abstract_domain_t::variable_t;
      using typename abstract_domain_t::number_t;
      using typename abstract_domain_t::varname_t;
@@ -1451,6 +1452,18 @@ namespace crab {
      linear_constraint_system_t to_linear_constraint_system () {
        interval_domain_t intervals = this->approx ();
        return intervals.to_linear_constraint_system ();
+     }
+
+     disjunctive_linear_constraint_system_t to_disjunctive_linear_constraint_system() {
+       CRAB_ERROR("TODO: to_disjunctive_linear_constraint_system in dis_intervals");
+       // auto lin_csts = to_linear_constraint_system();
+       // if (lin_csts.is_false()) {
+       // 	 return disjunctive_linear_constraint_system_t(true /*is_false*/); 
+       // } else if (lin_csts.is_true()) {
+       // 	 return disjunctive_linear_constraint_system_t(false /*is_false*/);
+       // } else {
+       // 	 return disjunctive_linear_constraint_system_t(lin_csts);
+       // }
      }
      
      void write(crab_os& o) {

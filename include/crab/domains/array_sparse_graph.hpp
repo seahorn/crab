@@ -1285,6 +1285,7 @@ namespace crab {
       using typename abstract_domain_t::linear_expression_t;
       using typename abstract_domain_t::linear_constraint_t;
       using typename abstract_domain_t::linear_constraint_system_t;
+      using typename abstract_domain_t::disjunctive_linear_constraint_system_t;      
       //using typename abstract_domain_t::variable_t;
       typedef typename NumDom::variable_t variable_t;
       using typename abstract_domain_t::number_t;
@@ -2488,11 +2489,14 @@ namespace crab {
       // XXX: the array domain is disjunctive so it is not really
       // useful to express it through a conjunction of linear
       // constraints
-      linear_constraint_system_t to_linear_constraint_system (){
-        CRAB_WARN ("array-sgraph does not implement to_linear_constraint_system");
-        return linear_constraint_system_t();
+      linear_constraint_system_t to_linear_constraint_system(){
+        CRAB_ERROR("array-sgraph does not implement to_linear_constraint_system");
       }
 
+      disjunctive_linear_constraint_system_t to_disjunctive_linear_constraint_system(){
+        CRAB_ERROR("TODO: array-sgraph does not implement to_disjunctive_linear_constraint_system");
+      }
+      
       static std::string getDomainName () {
         std::string name ("ArraySparseGraph(" + 
 			  NumDom::getDomainName () +  "," +  Content::getDomainName () + ")");

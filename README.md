@@ -212,9 +212,9 @@ the entry of each basic block, should be something like this:
     bb2={i -> [0, 99], x -> [1, +oo], y -> [0, 99], y-i<=0, y-x<=0, i-x<=0, i-y<=0}
 	ret={i -> [100, 100], x -> [100, +oo], y -> [100, 100], y-i<=0, y-x<=0, i-x<=0, i-y<=0}
 
-# Integrating Crab in other verification tools #
+# Integrating Crab in other analysis tools #
 
-Check these projects:
+Read `external/README.md` or check these projects:
 
 - [Crab-Llvm](https://github.com/seahorn/crab-llvm) is a static
 analyzer that infers invariants from LLVM-based languages using Crab.

@@ -1046,6 +1046,7 @@ namespace ikos {
     using typename abstract_domain_t::linear_expression_t;
     using typename abstract_domain_t::linear_constraint_t;
     using typename abstract_domain_t::linear_constraint_system_t;
+    using typename abstract_domain_t::disjunctive_linear_constraint_system_t;    
     using typename abstract_domain_t::variable_t;
     using typename abstract_domain_t::number_t;
     using typename abstract_domain_t::varname_t;
@@ -1194,7 +1195,7 @@ namespace ikos {
 	linear_constraint_system_t signed_csts;
 	for (auto const& c: csts) {
 	  if (c.is_inequality() && c.is_unsigned()) {
-	    CRAB_WARN("unsigned inequality skipped");
+	    //CRAB_WARN("unsigned inequality skipped");
 	    continue;
 	  }
 	  signed_csts += c;
@@ -1460,8 +1461,7 @@ namespace ikos {
       this->_env.write(o);
     }
 
-    linear_constraint_system_t to_linear_constraint_system ()
-    {
+    linear_constraint_system_t to_linear_constraint_system() {
       linear_constraint_system_t csts;
       
       if (this->is_bottom()) {
@@ -1469,8 +1469,7 @@ namespace ikos {
         return csts;
       }
 
-      for (iterator it = this->_env.begin(); it != this->_env.end(); ++it)
-      {
+      for (iterator it = this->_env.begin(); it != this->_env.end(); ++it) {
         variable_t v = it->first;
         interval_t   i = it->second;
         boost::optional<Number> lb = i.lb().number();
@@ -1479,6 +1478,17 @@ namespace ikos {
         if (ub) csts += linear_constraint_t(v <= *ub);
       }
       return csts;
+    }
+
+    disjunctive_linear_constraint_system_t to_disjunctive_linear_constraint_system() {
+      auto lin_csts = to_linear_constraint_system();
+      if (lin_csts.is_false()) {
+	return disjunctive_linear_constraint_system_t(true /*is_false*/); 
+      } else if (lin_csts.is_true()) {
+	return disjunctive_linear_constraint_system_t(false /*is_false*/);
+      } else {
+	return disjunctive_linear_constraint_system_t(lin_csts);
+      }
     }
     
     static std::string getDomainName () {

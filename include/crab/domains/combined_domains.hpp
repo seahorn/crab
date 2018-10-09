@@ -213,6 +213,7 @@ namespace crab {
       using typename abstract_domain_t::linear_expression_t;
       using typename abstract_domain_t::linear_constraint_t;
       using typename abstract_domain_t::linear_constraint_system_t;
+      using typename abstract_domain_t::disjunctive_linear_constraint_system_t;      
       using typename abstract_domain_t::variable_t;
       using typename abstract_domain_t::number_t;
       using typename abstract_domain_t::varname_t;
@@ -534,10 +535,19 @@ namespace crab {
 	this->reduce();
       }
       
-      linear_constraint_system_t to_linear_constraint_system() {
+      virtual linear_constraint_system_t to_linear_constraint_system() {
 	linear_constraint_system_t csts;
+	// XXX: We might add redundant constraints.
 	csts += this->_product.first().to_linear_constraint_system();
 	csts += this->_product.second().to_linear_constraint_system();	
+        return csts;
+      }
+
+      virtual disjunctive_linear_constraint_system_t to_disjunctive_linear_constraint_system() {
+	disjunctive_linear_constraint_system_t csts;
+	// XXX: We might add redundant constraints.
+	csts += this->_product.first().to_disjunctive_linear_constraint_system();
+	csts += this->_product.second().to_disjunctive_linear_constraint_system();	
         return csts;
       }
       
@@ -603,6 +613,7 @@ namespace crab {
       using typename abstract_domain_t::linear_expression_t;
       using typename abstract_domain_t::linear_constraint_t;
       using typename abstract_domain_t::linear_constraint_system_t;
+      using typename abstract_domain_t::disjunctive_linear_constraint_system_t;      
       using typename abstract_domain_t::variable_t;
       using typename abstract_domain_t::number_t;
       using typename abstract_domain_t::varname_t;
@@ -998,6 +1009,10 @@ namespace crab {
       linear_constraint_system_t to_linear_constraint_system() {
         return this->_product.to_linear_constraint_system();
       }
+
+      disjunctive_linear_constraint_system_t to_disjunctive_linear_constraint_system() {
+        return this->_product.to_disjunctive_linear_constraint_system();
+      }
       
       static std::string getDomainName() { 
         std::string name = "ReducedProduct(" +
@@ -1303,6 +1318,7 @@ namespace crab {
       using typename abstract_domain_t::linear_expression_t;
       using typename abstract_domain_t::linear_constraint_t;
       using typename abstract_domain_t::linear_constraint_system_t;
+      using typename abstract_domain_t::disjunctive_linear_constraint_system_t;      
       using typename abstract_domain_t::variable_t;
       using typename abstract_domain_t::number_t;
       using typename abstract_domain_t::varname_t;
@@ -1522,6 +1538,10 @@ namespace crab {
       linear_constraint_system_t to_linear_constraint_system() {
         return this->_product.to_linear_constraint_system();
       }
+
+      disjunctive_linear_constraint_system_t to_disjunctive_linear_constraint_system() {
+        return this->_product.to_disjunctive_linear_constraint_system();
+      }
       
       static std::string getDomainName() { 
         return domain_product2_t::getDomainName (); 
@@ -1554,6 +1574,7 @@ namespace crab {
       using typename abstract_domain_t::linear_expression_t;
       using typename abstract_domain_t::linear_constraint_t;
       using typename abstract_domain_t::linear_constraint_system_t;
+      using typename abstract_domain_t::disjunctive_linear_constraint_system_t;      
       using typename abstract_domain_t::variable_t;
       using typename abstract_domain_t::number_t;
       using typename abstract_domain_t::varname_t;
@@ -1780,6 +1801,10 @@ namespace crab {
       
       linear_constraint_system_t to_linear_constraint_system() {
         return this->_product.to_linear_constraint_system();
+      }
+
+      disjunctive_linear_constraint_system_t to_disjunctive_linear_constraint_system() {
+        return this->_product.to_disjunctive_linear_constraint_system();
       }
       
       static std::string getDomainName() { 

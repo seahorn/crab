@@ -1103,10 +1103,12 @@ namespace domains {
       return _inv.to_disjunctive_linear_constraint_system ();
     }
        
-    NumDomain get_content_domain () const {      
-      return _inv;
-    }
-       
+    NumDomain get_content_domain () const
+    { return _inv; }      
+
+    NumDomain& get_content_domain ()
+    { return _inv; }      
+    
     void write(crab_os& o) {
       o << _inv;
     }
@@ -1167,13 +1169,26 @@ namespace domains {
   public:
     typedef array_expansion_domain<BaseDom> this_type;
     typedef typename this_type::linear_constraint_t linear_constraint_t;
-      
-    static bool entail(this_type& inv, const linear_constraint_t& cst) {
-      BaseDom dom = inv.get_content_domain();
-      return checker_domain_traits<BaseDom>::entail(dom, cst);
+    typedef typename this_type::disjunctive_linear_constraint_system_t
+    disjunctive_linear_constraint_system_t;    
+
+    static bool entail(this_type& lhs, const disjunctive_linear_constraint_system_t& rhs) {
+      BaseDom& lhs_dom = lhs.get_content_domain();
+      return checker_domain_traits<BaseDom>::entail(lhs_dom, rhs);
     }
+
+    static bool entail(const disjunctive_linear_constraint_system_t& lhs, this_type& rhs) {
+      BaseDom& rhs_dom = rhs.get_content_domain();
+      return checker_domain_traits<BaseDom>::entail(lhs, rhs_dom);      
+    }
+    
+    static bool entail(this_type& lhs, const linear_constraint_t& rhs) {
+      BaseDom& lhs_dom = lhs.get_content_domain();
+      return checker_domain_traits<BaseDom>::entail(lhs_dom, rhs);
+    }
+    
     static bool intersect(this_type& inv, const linear_constraint_t& cst) {
-      BaseDom dom = inv.get_content_domain();	
+      BaseDom& dom = inv.get_content_domain();	
       return checker_domain_traits<BaseDom>::intersect(dom, cst);
     }
       
