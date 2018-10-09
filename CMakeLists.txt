@@ -395,6 +395,12 @@ if (USE_APRON)
           DESTINATION .)
 endif()
 
+if (USE_MDD)
+  ExternalProject_Get_Property (mdd INSTALL_DIR)  
+  install(DIRECTORY ${INSTALL_DIR}
+          DESTINATION .)
+endif()
+
 if (TopLevel)
    install(FILES LICENSE DESTINATION .)
    install(FILES README.md DESTINATION .)
