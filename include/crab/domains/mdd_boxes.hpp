@@ -440,6 +440,22 @@ namespace domains {
 	  rv2.push(rename_pair_t { p.second, mdd_var_id });
 	}
 
+	// typical strict total ordering between pairs
+	auto compare_rename_pair = [](const rename_pair_t& p1, const rename_pair_t& p2) {
+	  if (p1.from < p2.from) {
+	    return true;
+	  } else if (p1.from == p2.from) {
+	    return p1.to < p2.to;
+	  } else {
+	    return false;
+	  }
+	};
+
+	// The renaming maps must be follow MDD ordering
+	// XXX: Is this preserving MDD ordering?
+	std::sort(rv1.begin(), rv1.end(), compare_rename_pair);
+	std::sort(rv2.begin(), rv2.end(), compare_rename_pair);	
+	
 	CRAB_LOG("mdd-boxes-merge-vars",
 		 crab::outs () << "Before renaming\n";
 		 crab::outs () << "MDD1="; dump(m1);
