@@ -506,7 +506,7 @@ typedef mdd_transformer<int64_t, mdd_rename<int64_t, int64_repr> > rename_t;
 template<typename MDD_printer>
 void test_rename(MDD_printer& vis, mgr_t* mgr) {
   std::cout << "== Begin test_rename\n";                
-
+  #if 0
   {
     ref_t ttt(mgr->mdd_true());
     int64_interval a(int64_interval::range(10, 20));
@@ -525,7 +525,8 @@ void test_rename(MDD_printer& vis, mgr_t* mgr) {
     std::cout << "\"After renaming v_1 <-> v_3, v_2 <-> v_1, and v_3 <-> v_2\"\n";
     vis(s.get());
   }
-
+  #endif
+  
   {
     ref_t ttt(mgr->mdd_true());
     int64_interval a(int64_interval::cst(0));
@@ -538,6 +539,10 @@ void test_rename(MDD_printer& vis, mgr_t* mgr) {
     vec<var_pair> pi;
     pi.push(var_pair { 0, 1 });
     pi.push(var_pair { 1, 0 });
+    std::cout << "Renaming map:\n";
+    for (auto &p: pi) {
+      std::cout << "\t" << p.from << " --> " << p.to << "\n";
+    }
     ref_t ren_p(mgr, rename_t::apply(mgr, p.get(), hc::lookup(pi)));
     ref_t ren_q(mgr, rename_t::apply(mgr, q.get(), hc::lookup(pi)));
     std::cout << "\"After renaming 0 <-> 1, 1 <-> 0\":\n";

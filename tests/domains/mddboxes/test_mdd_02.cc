@@ -245,15 +245,19 @@ int main (int argc, char** argv ) {
   z_cfg_t* cfg5 = prog5 (vfac);
   z_cfg_t* cfg6 = prog6 (vfac);  
 
+  cfg1->simplify (); // this is optional  
   crab::outs() << *cfg1 << "\n";
   run<z_mdd_boxes_domain_t>(cfg1,cfg1->entry(),false,10,2,20,stats_enabled);
 
+  cfg2->simplify (); // this is optional  
   crab::outs() << *cfg2 << "\n";
   run<z_mdd_boxes_domain_t>(cfg2,cfg2->entry(),false,10,2,20,stats_enabled);
-  
+
+  cfg3->simplify (); // this is optional  
   crab::outs() << *cfg3 << "\n";
   run<z_mdd_boxes_domain_t>(cfg3,cfg3->entry(),false,10,2,20,stats_enabled);
 
+  cfg4->simplify (); // this is optional  
   crab::outs() << *cfg4 << "\n";
   run<z_mdd_boxes_domain_t>(cfg4,cfg4->entry(),false,10,2,20,stats_enabled);
 
