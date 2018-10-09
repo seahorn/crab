@@ -102,7 +102,6 @@ namespace domains {
 #include "include/mdd_builtin_cache.hh"
 #include "include/mdd_ext_cache.hh"
 #include "include/MDD_ops.hh"
-#include "include/MDD_vis.hh"
 #include "include/MDD_visit.hh"
 #include "include/MDD_arith.hh"
 #include "include/interval.hh"
@@ -111,7 +110,7 @@ namespace domains {
 #include <boost/optional.hpp>
 #include <boost/bimap.hpp>
 #include <boost/range/iterator_range.hpp>
-#include "boost/range/algorithm/set_algorithm.hpp"
+#include <boost/range/algorithm/set_algorithm.hpp>
 #include <set>
 #include <vector>
 
