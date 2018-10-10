@@ -17,7 +17,7 @@ else
 endif
 
 # Lookup path for libCrab.so
-LDFLAGS := -Wl,-rpath,$(CRAB_INSTALL)/lib/
+LDFLAGS := -Wl,-rpath,$(CRAB_INSTALL)/crab/lib/
 
 LDD_LIBS := \
     $(CRAB_INSTALL)/ldd/lib/libldd.a \
