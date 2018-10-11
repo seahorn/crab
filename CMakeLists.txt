@@ -81,11 +81,8 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   # Mac OS X specific code
   set(CMAKE_MACOSX_RPATH TRUE)
 endif ()  
-
-if (TopLevel)
+if (NOT CMAKE_INSTALL_RPATH )
   set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/crab/lib")
-else()
-  set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX} "${CMAKE_INSTALL_PREFIX}/crab/lib"  PARENT_SCOPE)
 endif()
 
    
