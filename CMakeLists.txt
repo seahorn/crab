@@ -59,7 +59,7 @@ if (NOT BUILD_CRAB_LIBS_SHARED)
 endif ()   
 
 # To remember the last configuration
-message(STATUS "Last cmake configuration was: cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DUSE_APRON=${USE_APRON} -DUSE_LDD=${USE_LDD} -DUSE_MDD=${USE_MDD} -DENABLE_TESTS=${ENABLE_TESTS} -DTEST_DIR=${TEST_DIR}")
+message(STATUS "cmake configuration: cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DUSE_APRON=${USE_APRON} -DUSE_LDD=${USE_LDD} -DENABLE_TESTS=${ENABLE_TESTS} -DTEST_DIR=${TEST_DIR}")
 
 if (BUILD_CRAB_LIBS_SHARED)
   message (STATUS "All crab libraries will be built dynamically")
@@ -82,11 +82,11 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   # Mac OS X specific code
   set(CMAKE_MACOSX_RPATH TRUE)
 endif ()  
-if (NOT CMAKE_INSTALL_RPATH)
-  set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-endif ()
+if (NOT CMAKE_INSTALL_RPATH )
+  set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/crab/lib")
+endif()
 
-
+   
 if (NOT BUILD_CRAB_LIBS_SHARED)
    set (Boost_USE_STATIC_LIBS ON)
 endif ()  
