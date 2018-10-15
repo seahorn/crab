@@ -93,7 +93,7 @@ type:
 
 and then, for instance, to run `test1`:
 
-    ../tests/test-bin/test1
+    build/test-bin/test1
 
 # Example #
 
@@ -153,9 +153,9 @@ for presentation purposes and it might not compile like it is. Go to
     typedef intra_fwd_analyzer<z_cfg_ref_t, zones_domain_t> intra_zones_analyzer_t;	
 
     int main (int argc, char**argv) {
-	   // Create variable factory. 
-	   // Important: only one variable factory should be used to build a CFG. 
-	   // Moreover, the variable factory should be alive while the CFG is in use.
+       // Create variable factory. 
+       // Important: only one variable factory should be used to build a CFG. 
+       // Moreover, the variable factory should be alive while the CFG is in use.
        variable_factory_t vfac;	
        // Declare variables i,x, and y
        z_var i (vfac ["i"], INT_TYPE, 32);
@@ -214,7 +214,7 @@ the entry of each basic block, should be something like this:
 
 # Integrating Crab in other analysis tools #
 
-Read `external/README.md` or check these projects:
+Read [README.md](https://github.com/seahorn/crab/blob/master/external/README.md) for a trival example using `Makefile` or check these projects using `cmake`:
 
 - [Crab-Llvm](https://github.com/seahorn/crab-llvm) is a static
 analyzer that infers invariants from LLVM-based languages using Crab.
