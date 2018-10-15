@@ -918,8 +918,9 @@ namespace domains {
 	} else if (is_top () && o.is_top ()) {
 	  return true;
 	} else {
-	  merge_var_map(m_var_map, m_state, o.m_var_map, o.m_state);
-	  return mdd_op_t::leq(get_man(), m_state.get(), o.m_state.get());
+	  mdd_ref_t tmp(m_state);
+	  merge_var_map(m_var_map, tmp, o.m_var_map, o.m_state);
+	  return mdd_op_t::leq(get_man(), tmp.get(), o.m_state.get());
 	}
       }
 
@@ -1461,15 +1462,18 @@ namespace domains {
 	  o << "{}";
 	} else {
 	  CRAB_LOG("mdd-boxes-dump",
-	      dump(m_state);
-	      if (m_var_map.left.empty()) {
-		crab::outs() << "\nvariable map={}\n";
-	      } else {
-		crab::outs() << "\nvariable map \n";
-		for (auto &kv: m_var_map.left) {
-		  crab::outs() << kv.first << ": " << kv.second << "\n";
-		}
-	      });
+		   crab::outs() << "=====================\n";
+		   dump(m_state);
+		   if (m_var_map.left.empty()) {
+		     crab::outs() << "\nvariable map={}\n";
+		   } else {
+		     crab::outs() << "\nvariable map \n";
+		     for (auto &kv: m_var_map.left) {
+		       crab::outs() << kv.first << ": " << kv.second << "\n";
+		     }
+		   }
+		   crab::outs() << "=====================\n";		   
+		   );
 	  
 	  auto csts = to_disjunctive_linear_constraint_system();
 	  o << csts;
