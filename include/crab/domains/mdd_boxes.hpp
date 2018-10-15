@@ -606,7 +606,7 @@ namespace domains {
 	    for (auto p: stack) {
 	      auto it = m_var_map.right.find(p.first->var);
 	      if (it == m_var_map.right.end()) {
-		CRAB_ERROR("cannot convert mdd var");
+		CRAB_ERROR("cannot convert mdd var ", p.first->var);
 	      }
 	      variable_t v = it->second;
 	      interval_t i = interval_t::top();
@@ -1048,6 +1048,8 @@ namespace domains {
 	  if (auto mdd_v = get_mdd_var(v)) {
 	    pvars.push(*mdd_v);
 	    pvars_set.insert(*mdd_v);
+	    // remove the variable from the variable map
+	    m_var_map.right.erase(*mdd_v);
 	  }
 	}
 
@@ -1057,17 +1059,7 @@ namespace domains {
 	
 	m_state = mdd_ref_t(get_man(),
 			    mdd_op_t::forget(get_man(), m_state.get(),
-					     pvars.begin(), pvars.end()));
-	
-	var_map_t res;
-	for (auto const& p: m_var_map.right) {  
-	  if (pvars_set.count (p.first) <= 0) {
-	    mdd_var_t i = res.size ();
-	    res.insert(binding_t(p.second, i));
-	  }
-	}
-	
-	std::swap (m_var_map, res);
+					     pvars.begin(), pvars.end()));	
       }
 
       void operator-=(variable_t var) {
@@ -1468,9 +1460,8 @@ namespace domains {
 	} else if (is_top()){
 	  o << "{}";
 	} else {
-	  auto csts = to_disjunctive_linear_constraint_system();
-	  o << csts;
-	  CRAB_LOG("mdd-boxes-print-vars",
+	  CRAB_LOG("mdd-boxes-dump",
+	      dump(m_state);
 	      if (m_var_map.left.empty()) {
 		crab::outs() << "\nvariable map={}\n";
 	      } else {
@@ -1479,6 +1470,9 @@ namespace domains {
 		  crab::outs() << kv.first << ": " << kv.second << "\n";
 		}
 	      });
+	  
+	  auto csts = to_disjunctive_linear_constraint_system();
+	  o << csts;
 	}
       }          
     
