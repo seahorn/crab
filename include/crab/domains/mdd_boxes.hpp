@@ -1433,23 +1433,26 @@ namespace domains {
       void expand (variable_t x, variable_t dup) {
 	if (is_bottom() || is_top()) return;
 
-	CRAB_ERROR("expand operation not implemented in mdd-boxes");	
-	// TODO expand
-      
-	// if (get_var_dim(dup)) {
-	//   CRAB_ERROR("expand second parameter ", dup,
-	// 	       " cannot be already a variable in the apron domain ", *this);
-	// }
-      
-	// // --- increases number of dimensions by one
-	// auto dim_x = get_var_dim_insert (x);
-	// m_apstate = apPtr (get_man(),
-	//                    ap_abstract0_expand(get_man (), false, &* m_apstate, 
-	//                                        dim_x, 1));
-      
-	// // --- the additional dimension is put at the end of integer
-	// //     dimensions.
-	// m_var_map.insert (binding_t (dup, get_dims () - 1));
+	if (get_mdd_var(dup)) {
+	  CRAB_ERROR("expand second parameter ", dup,
+		     " cannot be already a variable in the mdd-boxes domain ", *this);
+	}
+
+	
+	mdd_var_t vdup = m_var_map.size ();
+	m_var_map.insert(binding_t (x, vdup));
+	
+	// x should in the variable map. If not then we silently exit
+	// and dup is left as top.
+	if (boost::optional<mdd_var_t> vx = get_mdd_var(x)) {
+	  linterm_vector linterms;	
+	  linterms.push(linterm_t {1, *vx});
+	  m_state = mdd_ref_t(get_man(),
+			      mdd_assign_linexpr_t::apply(get_man(),
+							  m_state.get(),
+							  vdup,
+							  hc::lookup(linterms), 0));
+	}
       }
     
       disjunctive_linear_constraint_system_t to_disjunctive_linear_constraint_system() {
@@ -1467,16 +1470,15 @@ namespace domains {
 	} else {
 	  auto csts = to_disjunctive_linear_constraint_system();
 	  o << csts;
-          #if 0
-	  if (m_var_map.left.empty()) {
-	    crab::outs() << "\nvariable map={}\n";
-	  } else {
-	    crab::outs() << "\nvariable map \n";
-	    for (auto &kv: m_var_map.left) {
-	      crab::outsy() << kv.first << ": " << kv.second << "\n";
-	    }
-	  }
-	  #endif
+	  CRAB_LOG("mdd-boxes-print-vars",
+	      if (m_var_map.left.empty()) {
+		crab::outs() << "\nvariable map={}\n";
+	      } else {
+		crab::outs() << "\nvariable map \n";
+		for (auto &kv: m_var_map.left) {
+		  crab::outs() << kv.first << ": " << kv.second << "\n";
+		}
+	      });
 	}
       }          
     
