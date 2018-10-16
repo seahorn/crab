@@ -442,7 +442,7 @@ void test_assign(MDD_printer& vis, mgr_t* mgr) {
                           num_interval<int64_t, int64_repr>> eval_prod_t;
     auto i = mdd_transformer<int64_t, eval_prod_t>::apply(mgr, q.get(), xs);
     std::cout << "Evaluation of (v_3 * v_5)=" << i << "\n";
-    std::cout << "\"v_12 =  (3*(v_3 * v_5)) + 1\"\n";
+    std::cout << "\"v_12 =  (3*(v_3 * v_5))\"\n";
     ref_t r(mgr, mdd_transformer< int64_t, mdd_assign_prod<int64_t, int64_repr, num_interval<int64_t, int64_repr> > >::apply(mgr, q.get(), 12, xs, 3));
     vis(r.get());
     std::cout << "== End multiplication \n";                
