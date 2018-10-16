@@ -344,6 +344,8 @@ namespace domains {
       // assign division
       typedef mdd_boxes::mdd_assign_div<mdd_number_t, mdd_bound_t, mdd_interval_t> _mdd_assign_div_t;
       typedef mdd_transformer_t<_mdd_assign_div_t> mdd_assign_div_t;
+      typedef mdd_boxes::mdd_assign_div_partial<mdd_number_t, mdd_bound_t, mdd_interval_t> _mdd_assign_div_partial_t;
+      typedef mdd_transformer_t<_mdd_assign_div_partial_t> mdd_assign_div_partial_t;
       
       // reference to a mdd node
       mdd_ref_t m_state;
@@ -1203,29 +1205,38 @@ namespace domains {
 	switch (op){
 	case OP_ADDITION:
 	  e = y + z;
-	  break;
+	  assign(x, e);
+	  return;
 	case OP_SUBTRACTION:
 	  e = y - z;
+	  assign(x, e);
+	  return;
+	case OP_MULTIPLICATION: {
+	  mdd_var_t vx = get_mdd_var_insert(x);
+	  mdd_var_t vy = get_mdd_var_insert(y);
+	  ::vec<mdd_var_t> xs;
+	  xs.push(vy);
+	  mdd_interval_t iz;
+	  convert_crab_interval(z, iz);
+	  mdd_assign_prod_t::apply(get_man(), m_state.get(), vx, hc::lookup(xs), iz);
 	  break;
-	case OP_MULTIPLICATION:
-	  // TODO mul	  
-	  CRAB_WARN("multiplication not implemented in mdd-boxes domain");
-	  *this -= x;	  
-	  goto apply_end;
-	case OP_DIVISION:
-	  // TODO div	  
-	  CRAB_WARN("division not implemented in mdd-boxes domain");
-	  *this -= x;	  
-	  goto apply_end;	  
+	}
+	case OP_DIVISION: {
+	  mdd_var_t vx = get_mdd_var_insert(x);
+	  mdd_var_t vy = get_mdd_var_insert(y);
+	  mdd_interval_t iz;	  	  
+	  convert_crab_interval(z, iz);
+	  // vx = vy / iz   (inverse to true puts iz as denominator)
+	  mdd_assign_div_partial_t::apply(get_man(), m_state.get(), vx, iz, vy, true /*inverse*/);
+	  break;
+	}
 	default:
 	  CRAB_ERROR("mdd-boxes operation not supported");	  
 	}
-	assign(x, e);
-
-      apply_end: ;; 
-	// CRAB_LOG("mdd-boxes",
-	//  	 crab::outs() << x << ":= "<< y<< " " << op << " " << z << " --> "
-	// 	              << *this <<"\n";);
+	
+	CRAB_LOG("mdd-boxes",
+	 	 crab::outs() << x << ":= " << y << " " << op << " " << z << "\n"
+		              << *this <<"\n";);
       }
         
       void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
@@ -1238,29 +1249,36 @@ namespace domains {
 	switch (op){
 	case OP_ADDITION:
 	  e = y + z;
-	  break;
+	  assign(x, e);
+	  return;
 	case OP_SUBTRACTION:
 	  e = y - z;
+	  assign(x, e);
+	  return;
+	case OP_MULTIPLICATION: {
+	  mdd_var_t vx = get_mdd_var_insert(x);
+	  mdd_var_t vy = get_mdd_var_insert(y);
+	  mdd_var_t vz = get_mdd_var_insert(z);
+	  ::vec<mdd_var_t> xs;
+	  xs.push(vy);
+	  xs.push(vz);
+	  mdd_assign_prod_t::apply(get_man(), m_state.get(), vx, hc::lookup(xs), 1);
 	  break;
-	case OP_MULTIPLICATION:
-	  // TODO mul	  
-	  CRAB_WARN("multiplication not implemented in mdd-boxes domain");
-	  *this -= x;
-	  goto apply_end;	  
-	case OP_DIVISION:
-	  // TODO div
-	  CRAB_WARN("division not implemented in mdd-boxes domain");
-	  *this -= x;
-	  goto apply_end;
+	}
+	case OP_DIVISION: {
+	  mdd_var_t vx = get_mdd_var_insert(x);
+	  mdd_var_t vy = get_mdd_var_insert(y);
+	  mdd_var_t vz = get_mdd_var_insert(z);	  
+	  mdd_assign_div_t::apply(get_man(), m_state.get(), vx, vy, vz);
+	  break;
+	}
 	default:
 	  CRAB_ERROR("mdd-boxes operation not supported");
 	}
-	assign(x, e);
 
-      apply_end: ;;
-	// CRAB_LOG("mdd-boxes",
-	//  	 crab::outs() << x << ":= "<< y<< " " << op << " " << z << " --> "
-	// 	              << *this <<"\n";);
+	CRAB_LOG("mdd-boxes",
+	 	 crab::outs() << x << ":= " << y << " " << op << " " << z << "\n"
+		              << *this <<"\n";);
       }
         
       void apply(int_conv_operation_t op, variable_t dst, variable_t src) {
@@ -1354,6 +1372,186 @@ namespace domains {
 	}
       }
 
+      ////////
+      //// boolean_operators_api
+      ////////
+      void assign_bool_cst (variable_t lhs, linear_constraint_t cst) override {
+	crab::CrabStats::count (getDomainName() + ".count.assign_bool_cst");
+	crab::ScopedCrabStats __st__(getDomainName() + ".assign_bool_cst");
+	
+	if (is_bottom ()) return;
+
+	CRAB_LOG("mdd-boxes",
+		 crab::outs () << lhs << ":= " << "(" << cst << ")\n";);
+	
+	if (cst.is_tautology ()) {
+	  assign(lhs, number_t(1));
+	} else if (cst.is_contradiction ()) {
+	  assign(lhs, number_t(0));
+	} else {
+	  // (cst and lhs := 1) or (not(cst) and lhs := 0)
+	  mdd_boxes_domain_t tt(*this);
+	  mdd_boxes_domain_t ff(*this);
+
+	  tt += cst;
+	  tt.assign(lhs, number_t(1));
+	  ff += cst.negate();
+	  ff.assign(lhs, number_t(0));
+	  
+	  *this = tt | ff;
+	}
+	
+	CRAB_LOG("mdd-boxes", crab::outs () << *this << "\n");
+      }    
+	
+      void assign_bool_var (variable_t x, variable_t y, bool is_not_y) override {
+	crab::CrabStats::count (getDomainName() + ".count.assign_bool_var");
+	crab::ScopedCrabStats __st__(getDomainName() + ".assign_bool_var");
+
+	if (is_bottom()) return;
+
+	CRAB_LOG("mdd-boxes",
+		   crab::outs()  << x << ":=";
+		   if (is_not_y)
+		     crab::outs() << "not(" << y << ")";
+		   else
+		     crab::outs() << y;		     
+		 crab::outs() << "\n");
+	
+	if (is_not_y) {
+	  // We could encode it like this:
+	  //    y = 0 -> x = 1
+	  //    y = 1 -> x = 0
+	  // 
+	  // but this should more efficient although we need to make
+	  // sure that x and y only take boolean values.
+	  assign(x, linear_expression_t(1 - y));
+	} else {
+	  assign(x, y);
+	}
+	
+	CRAB_LOG("mdd-boxes", crab::outs() << "\n");
+      }
+      
+      void apply_binary_bool(bool_operation_t op,
+			     variable_t x, variable_t y, variable_t z) override {
+			     
+	crab::CrabStats::count (getDomainName() + ".count.apply_bin_bool");
+	crab::ScopedCrabStats __st__(getDomainName() + ".apply_bin_bool");
+
+	if (is_bottom()) return;
+
+
+	CRAB_LOG("mdd-boxes",
+		 crab::outs () << x << ":= " << y << " " << op << " " << z << "\n";);
+	
+	switch (op) {
+	case OP_BAND: {
+	  // (y == 1 and z == 1 and x==1) or (not(y == 1 and z == 1) and x==0)
+	  mdd_boxes_domain_t dom1(*this);
+	  mdd_boxes_domain_t dom2(*this);
+	  {
+	    linear_constraint_system_t csts;
+	    csts += linear_constraint_t(y==1);
+	    csts += linear_constraint_t(z==1);
+	    *this += csts;
+	    this->assign(x, number_t(1));
+	  }
+	  {
+	    linear_constraint_system_t csts;
+	    csts += linear_constraint_t(y==0);
+	    dom1 += csts;
+	    dom1.assign(x, number_t(0));
+	  }
+	  {
+	    linear_constraint_system_t csts;
+	    csts += linear_constraint_t(z==0);
+	    dom2 += csts;
+	    dom2.assign(x, number_t(0));
+	  }
+
+	  *this |= dom1;
+	  *this |= dom2;
+	  break;
+	}
+	case OP_BOR: {
+	  // (y == 0 and z == 0 and x==0) or (not(y == 0 and z == 0) and x==1)
+	  mdd_boxes_domain_t dom1(*this);
+	  mdd_boxes_domain_t dom2(*this);	  
+	  {
+	    linear_constraint_system_t csts;
+	    csts += linear_constraint_t(y==0);
+	    csts += linear_constraint_t(z==0);
+	    *this += csts;
+	    this->assign(x, number_t(0));
+	  }
+	  {
+	    linear_constraint_system_t csts;
+	    csts += linear_constraint_t(y==1);
+	    dom1 += csts;
+	    dom1.assign(x, number_t(1));
+	  }
+	  {
+	    linear_constraint_system_t csts;
+	    csts += linear_constraint_t(z==1);
+	    dom2 += csts;
+	    dom2.assign(x, number_t(1));
+	  }
+
+	  *this |= dom1;
+	  *this |= dom2;
+	  break;
+	}
+	case OP_BXOR: {
+	  // (y == z and x == 0) or ( not(y==z) and x == 1)
+
+	  mdd_boxes_domain_t dom(*this);
+	  {
+	    linear_constraint_system_t csts;
+	    csts += linear_constraint_t(linear_expression_t(y)==linear_expression_t(z));
+	    *this += csts;
+	    this->assign(x, number_t(0));
+	  }
+	  {
+	    linear_constraint_system_t csts;
+	    csts += linear_constraint_t(linear_expression_t(y)!=linear_expression_t(z)); 
+	    dom += csts;
+	    dom.assign(x, number_t(1));
+	  }
+	  *this |= dom;
+	  break;
+	}
+	default: CRAB_ERROR ("Unknown boolean operator");	    
+	}
+	
+	CRAB_LOG("mdd-boxes", crab::outs() << *this << "\n");
+      }
+      
+      void assume_bool (variable_t x, bool is_negated) override {
+	crab::CrabStats::count (getDomainName() + ".count.assume_bool");
+	crab::ScopedCrabStats __st__(getDomainName() + ".assume_bool");
+
+	if (is_bottom()) return;
+
+	CRAB_LOG("mdd-boxes",
+		 if (!is_negated) {  
+		   crab::outs() << "--- bool_assume(" << x << ")" << "\n";
+		 } else {
+		   crab::outs() << "--- bool_assume(not(" << x << "))" << "\n";
+		 });
+	
+	if (is_negated) {
+	  *this += linear_constraint_t(x <= 0);
+	} else {
+	  *this += linear_constraint_t(x >= 1);	  
+	}
+
+	CRAB_LOG("mdd-boxes", crab::outs() << *this << "\n";);
+      }
+
+      ///////
+      //// Backward analysis API
+      ///////
       void backward_assign (variable_t x, linear_expression_t e,
 			    mdd_boxes_domain_t invariant) {
 	crab::CrabStats::count (getDomainName() + ".count.backward_assign");
@@ -1433,7 +1631,7 @@ namespace domains {
 
 	
 	mdd_var_t vdup = m_var_map.size ();
-	m_var_map.insert(binding_t (x, vdup));
+	m_var_map.insert(binding_t (dup, vdup));
 	
 	// x should in the variable map. If not then we silently exit
 	// and dup is left as top.
@@ -1446,6 +1644,8 @@ namespace domains {
 							  vdup,
 							  hc::lookup(linterms), 0));
 	}
+	CRAB_LOG("mdd-boxes",
+		 crab::outs() << "After expand " << x << " into " << dup << "\n" << *this <<"\n";);
       }
     
       disjunctive_linear_constraint_system_t to_disjunctive_linear_constraint_system() {
