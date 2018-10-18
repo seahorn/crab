@@ -1427,10 +1427,12 @@ namespace ikos {
     }
 
     disjunctive_linear_constraint_system(const this_type &o)
-        : _csts (o._csts) { }
+      : _csts (o._csts)
+      , _is_false(o._is_false) { }
 
     disjunctive_linear_constraint_system(this_type &&o)
-        : _csts (std::move(o._csts)) { }
+      : _csts (std::move(o._csts))
+      , _is_false(o._is_false) { }
 
     bool is_false () const {
       return _is_false;
