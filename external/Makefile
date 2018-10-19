@@ -4,7 +4,7 @@
 #  1. Set CRAB_INSTALL to the directory Crab was installed. If you
 #  have not installed Crab yet, then type `make crab_install`
 #  2. Type `make all`
-#  3. Type `./test`
+#  3. Type `./domain` or `./analysis`
 #------------------------------------------------------------------------------------#
 
 CRAB_INSTALL := ${HOME}/Repos/crab/install
@@ -52,21 +52,18 @@ CXXFLAGS := \
     -I $(CRAB_INSTALL)/apron/include \
     -O2 -g -std=c++11
 
-all: test
-
-SOURCES = $(wildcard *.cpp)
-C_SOURCES += $(wildcard *.c)
-
-OBJECTS = $(patsubst %.cpp,%.o,${SOURCES})
-OBJECTS += $(patsubst %.c,%.o,${C_SOURCES})
+all: domain analysis
 
 %.o:  $(CXX) $(CXXFLAGS) $< -c -o $@
 
-test: ${OBJECTS}
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(OBJECTS) $(LDLIBS) -o test 
+domain: domain.o
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) domain.o $(LDLIBS) -o domain
+
+analysis: analysis.o
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) analysis.o $(LDLIBS) -o analysis
 
 clean:
-	rm -f test *.a *.o
+	rm -f domain analysis  *.a *.o
 
 crab_install:
 	git clone https://github.com/seahorn/crab.git crab
