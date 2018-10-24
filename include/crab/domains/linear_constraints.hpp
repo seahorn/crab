@@ -1346,6 +1346,8 @@ namespace ikos {
       return r;
     }
 
+    void clear() { _csts.clear(); }
+    
     iterator begin() const { return _csts.begin(); }
 
     iterator end() const { return _csts.end(); }
