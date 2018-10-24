@@ -340,7 +340,7 @@ namespace domains {
       typedef mdd_boxes::mdd_assign_interval<mdd_number_t, mdd_interval_t> _mdd_assign_interval_t;
       typedef mdd_transformer_t<_mdd_assign_interval_t> mdd_assign_interval_t;
       // assign linear expression
-      typedef mdd_boxes::mdd_assign_linexpr<mdd_number_t, mdd_bound_t, mdd_interval_t> _mdd_assign_linexpr_t;
+      typedef mdd_boxes::mdd_assign_linexpr<mdd_number_t, mdd_bound_t, mdd_interval_t, true> _mdd_assign_linexpr_t;
       typedef mdd_transformer_t<_mdd_assign_linexpr_t> mdd_assign_linexpr_t;
       // assign multiplication
       typedef mdd_boxes::mdd_assign_prod<mdd_number_t, mdd_bound_t, mdd_interval_t> _mdd_assign_prod_t;
@@ -1334,9 +1334,9 @@ namespace domains {
 	  mdd_boxes_domain_t tt(dom);
 	  mdd_boxes_domain_t ff(dom);
 	  tt += cst;
-	  tt += lhs >= number_t(1);
+	  tt += (lhs == number_t(1));
 	  ff += cst.negate();
-	  ff += lhs <= number_t(0);
+	  ff += (lhs == number_t(0));
 	  *this = *this & (tt | ff);
 	}
 	
@@ -1358,13 +1358,36 @@ namespace domains {
 		 crab::outs() << "\n");
 	
 	if (is_not_y) {
-	  // We could encode it like this:
 	  //    y = 0 -> x = 1
 	  //    y = 1 -> x = 0
-	  // 
-	  // but this should more efficient although we need to make
+	  #if 1
+	  // this is more efficient although we need to make
 	  // sure that x and y only take boolean values.
 	  assign(x, linear_expression_t(1 - y));
+	  #else
+	  mdd_boxes_domain_t dom(*this);
+	  std::vector<variable_t> vars{y};
+	  dom.project(boost::make_iterator_range(vars.begin(), vars.end()));
+
+	  if (dom.is_top()) {
+	    this->operator-=(x);
+	    return;
+	  }
+	  
+	  mdd_boxes_domain_t d1(dom);
+	  mdd_boxes_domain_t d2(dom);
+	  linear_constraint_system_t csts;
+	  csts += (y == 0);
+	  csts += (x == 1);
+	  d1 += csts;
+
+	  csts.clear();
+	  csts += (y == 1);
+	  csts += (x == 0);
+	  d2 += csts;
+	  
+	  *this = *this & (d1 | d2);
+	  #endif 
 	} else {
 	  assign(x, y);
 	}
@@ -1402,19 +1425,19 @@ namespace domains {
 	  mdd_boxes_domain_t split2(dom);
 	  mdd_boxes_domain_t split3(dom);	
 	  
-	  csts += linear_constraint_t(y >= 1);
-	  csts += linear_constraint_t(z >= 1);
-	  csts += linear_constraint_t(x >= 1);
+	  csts += linear_constraint_t(y == 1);
+	  csts += linear_constraint_t(z == 1);
+	  csts += linear_constraint_t(x == 1);
 	  split1 += csts;
 	  
 	  csts.clear();
-	  csts += linear_constraint_t(y <= 0);
-	  csts += linear_constraint_t(x <= 0);
+	  csts += linear_constraint_t(y == 0);
+	  csts += linear_constraint_t(x == 0);
 	  split2 += csts;
 	  
 	  csts.clear();
-	  csts += linear_constraint_t(z <= 0);
-	  csts += linear_constraint_t(x <= 0);
+	  csts += linear_constraint_t(z == 0);
+	  csts += linear_constraint_t(x == 0);
 	  split3 += csts;
 
 	  *this = *this & (split1 | (split2 | split3));
@@ -1427,19 +1450,19 @@ namespace domains {
 	  mdd_boxes_domain_t split2(dom);
 	  mdd_boxes_domain_t split3(dom);	
 	  	  
-	  csts += linear_constraint_t(y <= 0);
-	  csts += linear_constraint_t(z <= 0);
-	  csts += linear_constraint_t(x <= 0);
+	  csts += linear_constraint_t(y == 0);
+	  csts += linear_constraint_t(z == 0);
+	  csts += linear_constraint_t(x == 0);
 	  split1 += csts;
 	  
 	  csts.clear();
-	  csts += linear_constraint_t(y >= 1);
-	  csts += linear_constraint_t(x >= 1);
+	  csts += linear_constraint_t(y == 1);
+	  csts += linear_constraint_t(x == 1);
 	  split2 += csts;
 	  
 	  csts.clear();
-	  csts += linear_constraint_t(z >= 1);
-	  csts += linear_constraint_t(x >= 1);
+	  csts += linear_constraint_t(z == 1);
+	  csts += linear_constraint_t(x == 1);
 	  split3 += csts;
 
 	  *this = *this & (split1 | (split2 | split3));
@@ -1454,12 +1477,12 @@ namespace domains {
 	  linear_expression_t lin_z(z);
 	  
 	  csts += linear_constraint_t(lin_y == lin_z);
-	  csts += linear_constraint_t(x <= 0);
+	  csts += linear_constraint_t(x == 0);
 	  split1 += csts;
 	  
 	  csts.clear();
 	  csts += linear_constraint_t(lin_y != lin_z);
-	  csts += linear_constraint_t(x >= 1);
+	  csts += linear_constraint_t(x == 1);
 	  split2 += csts;
 
 	  *this = *this & (split1 | split2);	  
@@ -1485,9 +1508,9 @@ namespace domains {
 		 });
 	
 	if (is_negated) {
-	  *this += linear_constraint_t(x <= 0);
+	  *this += linear_constraint_t(x == 0);
 	} else {
-	  *this += linear_constraint_t(x >= 1);	  
+	  *this += linear_constraint_t(x == 1);	  
 	}
 
 	CRAB_LOG("mdd-boxes", crab::outs() << *this << "\n";);
