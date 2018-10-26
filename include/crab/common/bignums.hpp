@@ -435,3 +435,23 @@ inline std::size_t hash_value(const q_number& n) {
 }
 }
 
+namespace std {
+
+  template<> struct hash<ikos::z_number> {
+    typedef ikos::z_number argument_type;
+    typedef size_t result_type;
+    result_type operator()(argument_type const& s) const noexcept {
+      return std::hash<std::string>{}(s.get_str());
+    }
+  };
+
+  template<> struct hash<ikos::q_number> {
+    typedef ikos::q_number argument_type;
+    typedef size_t result_type;
+    result_type operator()(argument_type const& s) const noexcept {
+      return std::hash<std::string>{}(s.get_str());
+    }
+  };
+  
+}
+
