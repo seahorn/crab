@@ -114,6 +114,8 @@ namespace domains {
 #include <set>
 #include <vector>
 
+#define MDD_BIGNUMS
+
 namespace crab {
 namespace domains {
 namespace mdd_boxes_impl {
@@ -136,6 +138,42 @@ struct int64_repr {
   int64_t x;
 };
 
+struct z_number_repr {
+  z_number_repr(void) : x(0), is_minus_infty(true) { }
+  z_number_repr(ikos::z_number _x) : x(_x), is_minus_infty(false) { }
+  bool operator==(const z_number_repr& o) const {
+    if (is_minus_infty && o.is_minus_infty) {
+      return true;
+    } else if (!is_minus_infty && !o.is_minus_infty) {
+      return x == o.x;
+    } else {
+      return false;
+    }
+  }
+
+  bool is_finite(void) const { return !is_minus_infty; }
+  z_number_repr operator+(ikos::z_number r) const { return z_number_repr(x+r); }
+  z_number_repr operator*(ikos::z_number c) const { return z_number_repr(x*c); }
+  bool operator<(const z_number_repr& o) const {
+    if (!o.is_finite()) {
+      return false;
+    } else if (!is_finite() && o.is_finite()) {
+      return true;
+    } else {
+      assert(is_finite() && o.is_finite());
+      return x < o.x;
+    }
+  }
+
+  static z_number_repr minus_infty(void) { return z_number_repr(); }
+  static ikos::z_number succ(ikos::z_number k) { return k+1; }
+  static ikos::z_number pred(ikos::z_number k) { return k-1; }
+  ikos::z_number value(void) const { return x; }
+  
+  ikos::z_number x;
+  bool is_minus_infty;
+};
+  
 // To dump a MDD to standard output for debugging
 template<class V>
 class MDD_print {
@@ -267,10 +305,22 @@ public:
 }
 
 namespace std {
+  
   template<>
   struct hash<crab::domains::mdd_boxes_impl::int64_repr> {
     size_t operator()(const crab::domains::mdd_boxes_impl::int64_repr& r) { return r.x; }
   };
+
+  template<>
+  struct hash<crab::domains::mdd_boxes_impl::z_number_repr> {
+    size_t operator()(const crab::domains::mdd_boxes_impl::z_number_repr& r) {
+      size_t h1 = (size_t)r.is_minus_infty;
+      size_t h2 = std::hash<ikos::z_number>{}(r.x);
+      return  h1 ^ (h2 << 1);
+    }
+  };
+  
+  
 };
    
 namespace crab {
@@ -301,8 +351,13 @@ namespace domains {
       
       /// -- MDD basic typedefs
       // TODO: make mdd_number_t an user parameter
+      #ifdef MDD_BIGNUMS  
+      typedef ikos::z_number mdd_number_t;
+      typedef mdd_boxes_impl::z_number_repr mdd_bound_t;
+      #else
       typedef int64_t mdd_number_t;
-      typedef mdd_boxes_impl::int64_repr mdd_bound_t; 
+      typedef mdd_boxes_impl::int64_repr mdd_bound_t;
+      #endif 
       typedef mdd_boxes::num_interval<mdd_number_t, mdd_bound_t> mdd_interval_t;
       typedef mdd_boxes::var_lb<mdd_number_t> mdd_var_lb_t;
       typedef mdd_boxes::var_ub<mdd_number_t> mdd_var_ub_t;      
@@ -404,19 +459,20 @@ namespace domains {
            
       // --- from crab to mdd
 
+      #ifndef MDD_BIGNUMS
       static void convert_crab_number(ikos::z_number n, mdd_number_t &res){
-	if (n.fits_slong()) {
-	  res = (long) n;
-	} else {
-	  CRAB_ERROR(n.get_str(), " does not fit into a mdd number");
-	}
+      	if (n.fits_slong()) {
+      	  res = (long) n;
+      	} else {
+      	  CRAB_ERROR(n.get_str(), " does not fit into a mdd number");
+      	}
       }
-      static void convert_crab_number(ikos::q_number n, mdd_number_t &res)
-      { CRAB_ERROR("mdd-boxes not implemented for rationals");}
+      #endif 
       static void convert_crab_number(ikos::z_number n, ikos::z_number &res) 
       { std::swap(res, n); }
-      static void convert_crab_number(ikos::q_number n, ikos::q_number &res)
-      { std::swap(res, n); }      
+      static void convert_crab_number(ikos::q_number n, mdd_number_t &res)
+      { CRAB_ERROR("mdd-boxes not implemented for rationals");}
+      
       static void convert_crab_interval(interval<ikos::z_number> i, mdd_interval_t& res) {
 	if (i.is_bottom()) {
 	  res = mdd_interval_t::empty();
