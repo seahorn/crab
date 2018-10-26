@@ -114,7 +114,7 @@ namespace domains {
 #include <set>
 #include <vector>
 
-#define MDD_BIGNUMS
+//#define MDD_BIGNUMS
 
 namespace crab {
 namespace domains {
@@ -1150,14 +1150,13 @@ namespace domains {
 	
 	if(is_bottom()) return;
 
-	if (csts.is_false()) {
-	  *this = bottom();
-	  return;
-	}
-
 	// XXX: filter out unsigned linear inequalities and disequalities
 	for (auto const& c: csts) {
-	  if (c.is_inequality() && c.is_unsigned()) {
+	  if (c.is_contradiction()) {
+	    *this = bottom();
+	    break;
+	  }
+	  if (c.is_inequality() &&  c.is_unsigned()) {
 	    // These can be supported by adding more splits
 	    CRAB_WARN("unsigned inequality skipped in mdd-boxes domain");
 	    continue;
