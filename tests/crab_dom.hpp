@@ -9,7 +9,8 @@
 #include <crab/domains/sparse_dbm.hpp>                      
 #include <crab/domains/split_dbm.hpp>
 #include <crab/domains/boxes.hpp>                      
-#include <crab/domains/apron_domains.hpp>                      
+#include <crab/domains/apron_domains.hpp>
+#include <crab/domains/elina_domains.hpp> 
 #include <crab/domains/dis_intervals.hpp>
 #include <crab/domains/term_equiv.hpp>
 #include <crab/domains/array_sparse_graph.hpp>                      
@@ -43,8 +44,10 @@ namespace crab {
     typedef dis_interval_domain<ikos::z_number, varname_t > z_dis_interval_domain_t;
     typedef apron_domain<ikos::z_number,varname_t,apron_domain_id_t::APRON_INT> z_box_apron_domain_t;
     typedef apron_domain<ikos::z_number,varname_t,apron_domain_id_t::APRON_OCT> z_oct_apron_domain_t;
-    typedef apron_domain<ikos::z_number,varname_t,apron_domain_id_t::APRON_OPT_OCT> z_opt_oct_apron_domain_t;
-    typedef apron_domain<ikos::z_number,varname_t,apron_domain_id_t::APRON_PK> z_pk_apron_domain_t;
+    typedef apron_domain<ikos::z_number,varname_t,apron_domain_id_t::APRON_PK>  z_pk_apron_domain_t;
+    typedef elina_domain<ikos::z_number,varname_t,elina_domain_id_t::ELINA_ZONES> z_zones_elina_domain_t;    
+    typedef elina_domain<ikos::z_number,varname_t,elina_domain_id_t::ELINA_OCT> z_oct_elina_domain_t;
+    typedef elina_domain<ikos::z_number,varname_t,elina_domain_id_t::ELINA_PK>  z_pk_elina_domain_t;
     typedef term_domain<term::TDomInfo<ikos::z_number,varname_t,z_interval_domain_t> > z_term_domain_t;
     typedef term_domain<term::TDomInfo<ikos::z_number,varname_t,z_sdbm_domain_t> > z_term_dbm_t;
     typedef term_domain<term::TDomInfo<ikos::z_number,varname_t,z_dis_interval_domain_t> > z_term_dis_int_t;

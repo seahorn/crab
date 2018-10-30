@@ -46,7 +46,7 @@ requirements are:
 - C++ compiler supporting c++11
 - Boost
 - GMP 
-- MPFR (if `-DUSE_APRON=ON`)
+- MPFR (if `-DUSE_APRON=ON` or `-DUSE_ELINA=ON`)
 
 In linux, you can install requirements typing the commands:
 
@@ -73,7 +73,12 @@ If you want to use the Boxes domain then add `-DUSE_LDD=ON` option.
 
 If you want to use the Apron library domains then add `-DUSE_APRON=ON` option.
 
-To install Crab with Boxes and Apron, type:
+If you want to use the Elina library domains then add `-DUSE_ELINA=ON` option.
+
+**Important:** Apron and Elina are currently not compatible so you
+cannot enable `-DUSE_APRON=ON` and `-DUSE_ELINA=ON` at the same time. 
+
+For instance, to install Crab with Boxes and Apron, type:
 
 	mkdir build && cd build
     cmake -DCMAKE_INSTALL_PREFIX=_DIR_ -DUSE_LDD=ON -DUSE_APRON=ON ../
