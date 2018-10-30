@@ -25,7 +25,7 @@ function (AddTest testSrc dirName)
   #Finally add it to test execution
   add_test(NAME ${testName} 
     WORKING_DIRECTORY ${TEST_DIR}
-    COMMAND ${TEST_DIR}/${testName} )
+    COMMAND ${TEST_DIR}/${testName} --disable-warnings)
 endfunction()
 
 function (AddTestDir dirName)

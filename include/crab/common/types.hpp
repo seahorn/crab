@@ -1,120 +1,14 @@
 #pragma once 
 
+#include <crab/common/os.hpp>
+#include <crab/common/debug.hpp>
+
 #include <iosfwd>
-#include <stdarg.h>
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/optional.hpp>
-#include <boost/noncopyable.hpp>
 
 /* Basic type definitions */
-
-namespace crab {
-  
-  // An adaptor for std::ostream that avoids polluting all crab header
-  // files with iostream stuff
-  class crab_os: boost::noncopyable {
-     
-   private:
-    
-    static boost::shared_ptr<crab_os> m_cout;
-    static boost::shared_ptr<crab_os> m_cerr;
-    
-   public:
-    
-    static boost::shared_ptr<crab_os> cout();
-    static boost::shared_ptr<crab_os> cerr();
-
-   private:
-    
-    std::ostream* m_os;
-    
-   protected:
-
-    crab_os();
-
-   public:
-
-    crab_os(std::ostream* os);    
-
-    virtual ~crab_os();
-    
-    virtual crab_os& operator<<(char C);
-    virtual crab_os& operator<<(unsigned char C);
-    virtual crab_os& operator<<(signed char C);
-    virtual crab_os& operator<<(const char *Str);
-    virtual crab_os& operator<<(const std::string& Str);
-    virtual crab_os& operator<<(unsigned long N);
-    virtual crab_os& operator<<(long N);
-    virtual crab_os& operator<<(unsigned long long N);
-    virtual crab_os& operator<<(long long N);
-    virtual crab_os& operator<<(const void *P);
-    virtual crab_os& operator<<(unsigned int N);
-    virtual crab_os& operator<<(int N);
-    virtual crab_os& operator<<(double N);
-  };
-
-  extern crab_os& outs();
-  extern crab_os& errs();
-
-  // An adaptor for std::ostringstream
-  class crab_string_os: public crab_os {
-
-    std::ostringstream* m_string_os;    
-
-   public:
-
-    crab_string_os();
-
-    ~crab_string_os();
-
-    std::string str();
-
-    crab_os& operator<<(char C);
-    crab_os& operator<<(unsigned char C);
-    crab_os& operator<<(signed char C);
-    crab_os& operator<<(const char *Str);
-    crab_os& operator<<(const std::string& Str);
-    crab_os& operator<<(unsigned long N);
-    crab_os& operator<<(long N);
-    crab_os& operator<<(unsigned long long N);
-    crab_os& operator<<(long long N);
-    crab_os& operator<<(const void *P);
-    crab_os& operator<<(unsigned int N);
-    crab_os& operator<<(int N);
-    crab_os& operator<<(double N);    
-  };
-
-}// end namespace
-
-template<typename... ArgTypes>
-inline void ___print___(ArgTypes... args)
-{
-  // trick to expand variadic argument pack without recursion
-  using expand_variadic_pack = int[];
-  // first zero is to prevent empty braced-init-list
-  // void() is to prevent overloaded operator, messing things up
-  // trick is to use the side effect of list-initializer to call a function
-  // on every argument.
-  // (void) is to suppress "statement has no effect" warnings
-  (void)expand_variadic_pack{0, ((crab::errs() << args), void(), 0)... };
-}
-
-#define CRAB_ERROR(...)              \
-  do {                               \
-    crab::errs() << "CRAB ERROR: ";  \
-    ___print___(__VA_ARGS__);        \
-    crab::errs() << "\n";            \
-    std::exit (EXIT_FAILURE);        \
-  } while (0)
-
-#define CRAB_WARN(...)               \
-  do {                               \
-    crab::errs() << "CRAB WARNING: ";\
-    ___print___(__VA_ARGS__);        \
-    crab::errs() << "\n";            \
-  } while (0)
-
 
 namespace crab {
 

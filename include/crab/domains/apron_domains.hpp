@@ -14,7 +14,6 @@ namespace crab {
    namespace domains {
       typedef enum { APRON_INT, 
                      APRON_OCT, 
-                     APRON_OPT_OCT, 
                      APRON_PK } apron_domain_id_t;
    }
 }
@@ -192,7 +191,6 @@ namespace crab {
             switch (ApronDom) {
               case APRON_INT: m_apman = box_manager_alloc (); break;
               case APRON_OCT: m_apman = oct_manager_alloc (); break;
-              case (APRON_OPT_OCT): m_apman = opt_oct_manager_alloc (); break;
               case APRON_PK: m_apman = pk_manager_alloc (false); break;
               default: CRAB_ERROR("unknown apron domain");
             }
@@ -566,7 +564,7 @@ namespace crab {
               res =  linear_constraint_t (e, linear_constraint_t::kind_t::STRICT_INEQUALITY);
               break;
             case AP_CONS_EQMOD:
-              res = T ();
+              res = linear_constraint_t::get_true();
               break;
             case AP_CONS_DISEQ:
               // e != k
@@ -574,16 +572,6 @@ namespace crab {
               break;
           }
           return res;
-        }
-
-        inline linear_constraint_t T () const {
-          return linear_constraint_t (linear_expression_t (Number(1)) == 
-                                      linear_expression_t (Number(1)));          
-        }
-
-        inline linear_constraint_t F () const {
-          return linear_constraint_t (linear_expression_t (Number(1)) == 
-                                      linear_expression_t (Number(0)));          
         }
 
         void dump (const var_map_t& m, ap_state_ptr apstate ) {  
@@ -877,13 +865,9 @@ namespace crab {
             var_map_t  m = merge_var_map (m_var_map, x, o.m_var_map, o.m_apstate);
             switch (ApronDom) {
               case APRON_OCT:
-                return apron_domain_t (apPtr (get_man(), 
-                                              ap_abstract0_oct_narrowing (get_man(),
-                                                                          &*x, &*o.m_apstate)), m);
-              case APRON_OPT_OCT:
-                return apron_domain_t (apPtr (get_man(), 
-                                              ap_abstract0_opt_oct_narrowing (get_man(),
-                                                                              &*x, &*o.m_apstate)), m);
+                return apron_domain_t(apPtr(get_man(), 
+					    ap_abstract0_oct_narrowing(get_man(),
+								       &*x, &*o.m_apstate)), m);
               case APRON_INT:
               case APRON_PK:
               default:
@@ -1476,10 +1460,10 @@ namespace crab {
         linear_constraint_system_t to_linear_constraint_system () {
           linear_constraint_system_t csts;
           if(is_bottom ())  {
-            csts += F ();
+            csts += linear_constraint_t::get_false();
           }
           else if(is_top ()) {
-            csts += T ();
+            csts += linear_constraint_t::get_true();
           }
           else {
             normalize ();
@@ -1576,7 +1560,6 @@ namespace crab {
           switch (ApronDom) {
             case APRON_INT:     return "ApronIntervals"; 
             case APRON_OCT:     return "ApronOctagon"; 
-            case APRON_OPT_OCT: return "ApronOptimizedOctagon"; 
             case APRON_PK:      return "ApronNewPolka";
             default: CRAB_ERROR("Unknown apron domain");
           }

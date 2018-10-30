@@ -19,6 +19,8 @@ namespace {
   ("verbose",  boost::program_options::value<unsigned>(), "Enable verbosity level");                  \
   po.add_options()                                                                                    \
   ("stats",boost::program_options::bool_switch(&stats_enabled), "Enable stats");                      \
+  po.add_options()                                                                                    \
+  ("disable-warnings", "Disable warning messages");                                                   \
   boost::program_options::options_description cmmdline_options;                                       \
   cmmdline_options.add(po);                                                                           \
   boost::program_options::variables_map vm;                                                           \
@@ -39,6 +41,9 @@ namespace {
   }                                                                                                   \
   if (vm.count("verbose")) {						                              \
       crab::CrabEnableVerbosity(vm["verbose"].as<unsigned>());                                        \
-  }
+  }									                              \
+  if (vm.count("disable-warnings")) {						                      \
+    crab::CrabEnableWarningMsg(false);					                              \
+  }	  
 } //end namespace
 #endif

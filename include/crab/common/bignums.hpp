@@ -41,10 +41,12 @@
 
 #pragma once 
 
+#include <crab/common/debug.hpp>
+
 #include <climits>
 #include <gmpxx.h>
 #include <boost/functional/hash.hpp>
-#include <crab/common/types.hpp>
+
 
 namespace ikos {
 

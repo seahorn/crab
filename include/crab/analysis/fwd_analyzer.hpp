@@ -285,6 +285,17 @@ namespace crab {
       typedef typename fwd_analyzer_t::const_iterator const_iterator;
 
     public:
+
+      // simplest API to trigger the intra-procedural forward analysis
+      intra_fwd_analyzer_wrapper(CFG cfg, 
+				 // fixpoint parameters
+				 unsigned int widening_delay=1,
+				 unsigned int descending_iters=UINT_MAX,
+				 size_t jump_set_size=0):
+	m_init(AbsDomain::top()),
+	m_abs_tr(&m_init),
+	m_analyzer(cfg, nullptr, &m_abs_tr, 
+		   widening_delay, descending_iters, jump_set_size, nullptr) { }
       
       intra_fwd_analyzer_wrapper (CFG cfg, AbsDomain init,
 				  // liveness info

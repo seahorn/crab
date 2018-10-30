@@ -10,6 +10,9 @@
 /** Define whether apron library is available */
 #cmakedefine HAVE_APRON ${HAVE_APRON}
 
+/** Define whether elina library is available */
+#cmakedefine HAVE_ELINA ${HAVE_ELINA}
+
 /** Define whether enable statistics about the analysis */
 #cmakedefine HAVE_STATS ${HAVE_STATS}
 
