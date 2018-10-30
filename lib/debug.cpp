@@ -1,8 +1,6 @@
 #include <crab/common/debug.hpp>
 
 #ifndef NCRABLOG
-#include <set>
-
 namespace crab {
   bool CrabLogFlag = false;
   std::set<std::string> CrabLog;
@@ -23,6 +21,9 @@ namespace crab {
 
 namespace crab {
   unsigned CrabVerbosity = 0;
-  void CrabEnableVerbosity (unsigned v) { CrabVerbosity=v;}
+  void CrabEnableVerbosity(unsigned v) { CrabVerbosity=v;}
+  
+  bool CrabWarningFlag = true;
+  void CrabEnableWarningMsg(bool v) { CrabWarningFlag=v;}
 }
 
