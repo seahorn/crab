@@ -402,9 +402,18 @@ endif()
 if (USE_ELINA)
   ExternalProject_Get_Property (elina INSTALL_DIR)  
   install(DIRECTORY ${INSTALL_DIR}
-          DESTINATION .)
-endif()
+    DESTINATION .)
 
+  if (NOT TopLevel)
+    ## This is ugly fix so that seahorn and crab-llvm can find elina's
+    ## shared libraries. It has to do with how CMAKE_INSTALL_RPATH is
+    ## handled by these tools.
+    foreach(library ${ELINA_LIBRARY})
+      get_filename_component(library_name ${library} NAME_WE)
+      file(COPY ${library} DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+    endforeach(library)	
+  endif()
+endif ()
 
 if (TopLevel)
    install(FILES LICENSE DESTINATION .)
