@@ -56,15 +56,15 @@ namespace crab {
 
       
       void insert (callsite_t cs, AbsDomain inv) {
-        insert_helper (cfg::cfg_hasher<CFG>::hash (cs), inv);
+        insert_helper (crab::cfg::cfg_hasher<CFG>::hash (cs), inv);
       }
 
       void insert (fdecl_t d, AbsDomain inv) {
-        insert_helper (cfg::cfg_hasher<CFG>::hash (d), inv);
+        insert_helper (crab::cfg::cfg_hasher<CFG>::hash (d), inv);
       }
 
       AbsDomain get_call_ctx (fdecl_t d) const {
-        auto it = m_call_table.find (cfg::cfg_hasher<CFG>::hash (d));
+        auto it = m_call_table.find (crab::cfg::cfg_hasher<CFG>::hash (d));
         if (it != m_call_table.end ())
           return it->second;
         else 
@@ -245,30 +245,30 @@ namespace crab {
         std::vector<variable_t> ins(inputs.begin(), inputs.end ());
         std::vector<variable_t> outs(outputs.begin(), outputs.end ());
         summary_ptr sum_tuple (new Summary (d, sum, ins, outs));
-        m_sum_table.insert (std::make_pair (cfg::cfg_hasher<CFG>::hash (d), sum_tuple));
+        m_sum_table.insert (std::make_pair (crab::cfg::cfg_hasher<CFG>::hash (d), sum_tuple));
       }
 
       // return true if there is a summary
       bool hasSummary (callsite_t cs) const {
-        auto it = m_sum_table.find (cfg::cfg_hasher<CFG>::hash (cs));
+        auto it = m_sum_table.find (crab::cfg::cfg_hasher<CFG>::hash (cs));
         return (it != m_sum_table.end ());
       }
 
       bool hasSummary (fdecl_t d) const {
-        auto it = m_sum_table.find (cfg::cfg_hasher<CFG>::hash (d));
+        auto it = m_sum_table.find (crab::cfg::cfg_hasher<CFG>::hash (d));
         return (it != m_sum_table.end ());
       }
 
       // get the summary
       Summary& get (callsite_t cs) const {
-        auto it = m_sum_table.find (cfg::cfg_hasher<CFG>::hash (cs));
+        auto it = m_sum_table.find (crab::cfg::cfg_hasher<CFG>::hash (cs));
         assert (it != m_sum_table.end ());
         
         return *(it->second);
       }
 
       Summary& get (fdecl_t d) const {
-        auto it = m_sum_table.find (cfg::cfg_hasher<CFG>::hash (d));
+        auto it = m_sum_table.find (crab::cfg::cfg_hasher<CFG>::hash (d));
         assert (it != m_sum_table.end ());
         
         return *(it->second);
