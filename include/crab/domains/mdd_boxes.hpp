@@ -115,6 +115,7 @@ namespace domains {
 #include <vector>
 
 //#define MDD_BIGNUMS
+//#define MDD_RIGHTBIAS_WIDENING
 
 namespace crab {
 namespace domains {
@@ -832,6 +833,10 @@ namespace domains {
       
       mdd_boxes_domain(mdd_ref_t state):
 	m_state(state) {
+	CRAB_LOG("mdd-boxes-size",
+		 auto p = mdd_op_t::mdd_size(m_state.get());
+		 crab::outs() << "#nodes = " << p.first << " #edges=" << p.second << "\n";
+		 );
       }
       
       mdd_boxes_domain(mdd_ref_t&& state):
@@ -977,8 +982,13 @@ namespace domains {
 	} else {
 	  CRAB_LOG("mdd-boxes",
 		   crab::outs () << "Widening\n" << "X=" << *this << "\n" << "Y=" << o << "\n";);
+	  #ifndef MDD_RIGHTBIAS_WIDENING
 	  mdd_ref_t r(get_man(), mdd_op_t::widen(get_man(), m_state.get(), o.m_state.get()));
+	  #else
+	  mdd_ref_t r(get_man(), mdd_op_t::widen_rightbias(get_man(), m_state.get(), o.m_state.get()));	  
+	  #endif 
 	  mdd_boxes_domain_t res(r);
+	  
 	  CRAB_LOG("mdd-boxes",
 		   crab::outs () << "Result:\n" << res << "\n";);	  
 	  return res;
