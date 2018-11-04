@@ -222,6 +222,7 @@ namespace crab
   inline crab_os &operator<< (crab_os &OS, const Averager &av){ return OS;}
   struct CrabStats
   {
+    static void reset(){}    
     static unsigned  get (const std::string &n){ return 0;}
     static double avg (const std::string &n, double v){ return 0.0;}
     static unsigned uset (const std::string &n, unsigned v){return 0;}
