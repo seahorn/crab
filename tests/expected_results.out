@@ -53,15 +53,6 @@ bb1_t={-i <= 0; i <= 100; i-k <= 0; -i-k <= 0; -k <= 0; i+k <= 200; -i+k <= 0; k
 bb2={-i <= 0; i <= 99; i-k <= 0; -i-k <= 0; -k <= 0; i+k <= 198; -i+k <= 0; k <= 99}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
-Invariants using ApronOptimizedOctagon
-entry={}
-bb1={-i <= 0; i <= 100; i-k <= 0; -i-k <= 0; -k <= 0; i+k <= 200; -i+k <= 0; k <= 100}
-bb1_f={-i <= 0; i <= 100; i-k <= 0; -i-k <= 0; -k <= 0; i+k <= 200; -i+k <= 0; k <= 100}
-ret={-i <= -100; i <= 100; i-k <= 0; -i-k <= -200; -k <= -100; i+k <= 200; -i+k <= 0; k <= 100}
-bb1_t={-i <= 0; i <= 100; i-k <= 0; -i-k <= 0; -k <= 0; i+k <= 200; -i+k <= 0; k <= 100}
-bb2={-i <= 0; i <= 99; i-k <= 0; -i-k <= 0; -k <= 0; i+k <= 198; -i+k <= 0; k <= 99}
-Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
-
 Invariants using ApronNewPolka
 entry={}
 bb1={-i+k = 0; i <= 100; -i <= 0}
@@ -132,20 +123,6 @@ loop1_bb2={-i <= 0; i <= 9; k = 30}
 Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t loop1_bb2)^{3} loop1_bb1_f loop2_entry (loop2_bb1 loop2_bb1_t loop2_bb2)^{3} loop2_bb1_f ret
 
 Invariants using ApronOctagon
-loop1_entry={}
-loop1_bb1={-i <= 0; i <= 10; i-k <= -20; -i-k <= -30; -k <= -30; i+k <= 40; -i+k <= 30; k <= 30}
-loop1_bb1_f={-i <= 0; i <= 10; i-k <= -20; -i-k <= -30; -k <= -30; i+k <= 40; -i+k <= 30; k <= 30}
-loop2_entry={-i <= -10; i <= 10; i-k <= -20; -i-k <= -40; -k <= -30; i+k <= 40; -i+k <= 20; k <= 30}
-loop2_bb1={-i <= -10; i <= 10; i-j <= 10; -i-j <= -10; -j <= 0; i+j <= 20; -i+j <= 0; j <= 10; i-k <= -20; -i-k <= -40; j-k <= -20; -j-k <= -30; -k <= -30; i+k <= 40; -i+k <= 20; j+k <= 40; -j+k <= 30; k <= 30}
-loop2_bb1_f={-i <= -10; i <= 10; i-j <= 10; -i-j <= -10; -j <= 0; i+j <= 20; -i+j <= 0; j <= 10; i-k <= -20; -i-k <= -40; j-k <= -20; -j-k <= -30; -k <= -30; i+k <= 40; -i+k <= 20; j+k <= 40; -j+k <= 30; k <= 30}
-ret={-i <= -10; i <= 10; i-j <= 0; -i-j <= -20; -j <= -10; i+j <= 20; -i+j <= 0; j <= 10; i-k <= -20; -i-k <= -40; j-k <= -20; -j-k <= -40; -k <= -30; i+k <= 40; -i+k <= 20; j+k <= 40; -j+k <= 20; k <= 30}
-loop2_bb1_t={-i <= -10; i <= 10; i-j <= 10; -i-j <= -10; -j <= 0; i+j <= 20; -i+j <= 0; j <= 10; i-k <= -20; -i-k <= -40; j-k <= -20; -j-k <= -30; -k <= -30; i+k <= 40; -i+k <= 20; j+k <= 40; -j+k <= 30; k <= 30}
-loop2_bb2={-i <= -10; i <= 10; i-j <= 10; -i-j <= -10; -j <= 0; i+j <= 19; -i+j <= -1; j <= 9; i-k <= -20; -i-k <= -40; j-k <= -21; -j-k <= -30; -k <= -30; i+k <= 40; -i+k <= 20; j+k <= 39; -j+k <= 30; k <= 30}
-loop1_bb1_t={-i <= 0; i <= 10; i-k <= -20; -i-k <= -30; -k <= -30; i+k <= 40; -i+k <= 30; k <= 30}
-loop1_bb2={-i <= 0; i <= 9; i-k <= -21; -i-k <= -30; -k <= -30; i+k <= 39; -i+k <= 30; k <= 30}
-Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t loop1_bb2)^{3} loop1_bb1_f loop2_entry (loop2_bb1 loop2_bb1_t loop2_bb2)^{3} loop2_bb1_f ret
-
-Invariants using ApronOptimizedOctagon
 loop1_entry={}
 loop1_bb1={-i <= 0; i <= 10; i-k <= -20; -i-k <= -30; -k <= -30; i+k <= 40; -i+k <= 30; k <= 30}
 loop1_bb1_f={-i <= 0; i <= 10; i-k <= -20; -i-k <= -30; -k <= -30; i+k <= 40; -i+k <= 30; k <= 30}
@@ -263,23 +240,6 @@ loop1_body_x={-i <= 0; i <= 8}
 loop1_body_t={-i <= -1; i <= 9}
 Abstract trace: entry (loop1_head loop1_t loop1_body loop1_body_f loop1_body_t loop1_body_x)^{3} loop1_f cont (loop2_head loop2_t loop2_body)^{1} loop2_f ret
 
-Invariants using ApronOptimizedOctagon
-entry={}
-loop1_head={-i <= 0; i <= 8}
-loop1_f={-i <= 0; i <= 8}
-cont=_|_
-loop2_head=_|_
-loop2_f=_|_
-ret=_|_
-loop2_t=_|_
-loop2_body=_|_
-loop1_t={-i <= 0; i <= 8}
-loop1_body={-i <= 0; i <= 8}
-loop1_body_f={-i <= -1; i <= 9}
-loop1_body_x={-i <= 0; i <= 8}
-loop1_body_t={-i <= -1; i <= 9}
-Abstract trace: entry (loop1_head loop1_t loop1_body loop1_body_f loop1_body_t loop1_body_x)^{3} loop1_f cont (loop2_head loop2_t loop2_body)^{1} loop2_f ret
-
 Invariants using ApronNewPolka
 entry={}
 loop1_head={i <= 8; -i <= 0}
@@ -343,15 +303,6 @@ loop_t={-i <= 0; i <= 10; i-p <= 0; -i-p <= 0; -p <= 0}
 loop_body={-i <= 0; i <= 9; i-p <= 0; -i-p <= 0; -p <= 0}
 Abstract trace: entry (loop_head loop_t loop_body)^{3} loop_f ret
 
-Invariants using ApronOptimizedOctagon
-entry={}
-loop_head={-i <= 0; i <= 10; i-p <= 0; -i-p <= 0; -p <= 0}
-loop_f={-i <= 0; i <= 10; i-p <= 0; -i-p <= 0; -p <= 0}
-ret={-i <= -10; i <= 10; i-p <= 0; -i-p <= -20; -p <= -10}
-loop_t={-i <= 0; i <= 10; i-p <= 0; -i-p <= 0; -p <= 0}
-loop_body={-i <= 0; i <= 9; i-p <= 0; -i-p <= 0; -p <= 0}
-Abstract trace: entry (loop_head loop_t loop_body)^{3} loop_f ret
-
 Invariants using ApronNewPolka
 entry={}
 loop_head={-4*i+p = 0; i <= 10; -i <= 0}
@@ -399,15 +350,6 @@ bb2={-i <= 0; -k <= 0}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 Invariants using ApronOctagon
-entry={}
-bb1={-i <= 0; i-k <= 0; -i-k <= 0; -k <= 0; -i+k <= 0}
-bb1_f={-i <= 0; i-k <= 0; -i-k <= 0; -k <= 0; -i+k <= 0}
-ret={-i <= -9; i <= 9; i-k <= 0; -i-k <= -18; -k <= -9; i+k <= 18; -i+k <= 0; k <= 9}
-bb1_t={-i <= 0; i-k <= 0; -i-k <= 0; -k <= 0; -i+k <= 0}
-bb2={-i <= 0; i-k <= 0; -i-k <= 0; -k <= 0; -i+k <= 0}
-Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
-
-Invariants using ApronOptimizedOctagon
 entry={}
 bb1={-i <= 0; i-k <= 0; -i-k <= 0; -k <= 0; -i+k <= 0}
 bb1_f={-i <= 0; i-k <= 0; -i-k <= 0; -k <= 0; -i+k <= 0}
@@ -1852,7 +1794,7 @@ Summary rec1(IN:{s:int},OUT:{t:int}) ==>
 {}
 Summary rec2(IN:{s1:int},OUT:{t1:int}) ==>
 {}
-Running summary domain=ApronOptimizedOctagon and forward domain=Intervals
+Running summary domain=ApronOctagon and forward domain=Intervals
 z:int declare foo(x:int)
 exit={x -> [3, 8]; y -> [4, 9]; z -> [6, 11]}
 entry={x -> [3, 8]; y -> [4, 9]}
