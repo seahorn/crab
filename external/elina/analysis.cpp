@@ -8,7 +8,7 @@
 
 // Abstract domains
 #include <crab/domains/intervals.hpp>
-#include <crab/domains/split_dbm.hpp>
+#include <crab/domains/elina_domains.hpp>
 
 // Analysis
 #include <crab/analysis/fwd_analyzer.hpp>
@@ -45,12 +45,12 @@ typedef linear_constraint_system<z_number, varname_t> lin_cst_sys_t;
 
 ///////// Begin Crab Abstract Domains /////////////
 typedef interval_domain<z_number,varname_t> interval_domain_t;
-typedef SplitDBM<z_number,varname_t> zones_domain_t;
+typedef elina_domain<z_number,varname_t, elina_domain_id_t::ELINA_PK> pk_domain_t;
 ///////// End Crab Abstract Domains /////////////
 
 ///////// Begin Analyses /////////////
 typedef intra_fwd_analyzer<cfg_ref_t, interval_domain_t> interval_analysis_t;
-typedef intra_fwd_analyzer<cfg_ref_t, zones_domain_t> zones_analysis_t;
+typedef intra_fwd_analyzer<cfg_ref_t, pk_domain_t> pk_analysis_t;
 ///////// End Analyses /////////////
 int main(int argc, char**argv) {
 
@@ -104,11 +104,11 @@ int main(int argc, char**argv) {
 
   {
     // Analysis of the CFG
-    zones_analysis_t ianalyzer(prog);
+    pk_analysis_t ianalyzer(prog);
     ianalyzer.run();
 
     // Print invariants
-    outs () << "Invariants using zones\n";        
+    outs () << "Invariants using polyhedra\n";        
     for (auto &bb : prog) {
       std::string bb_name = bb.label();
       auto inv = ianalyzer.get_pre(bb_name);

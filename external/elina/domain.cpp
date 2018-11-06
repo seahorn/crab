@@ -8,7 +8,7 @@
 
 // Abstract domains
 #include <crab/domains/intervals.hpp>
-#include <crab/domains/split_dbm.hpp>
+#include <crab/domains/elina_domains.hpp>
 
 using namespace crab;
 using namespace crab::domains;
@@ -33,7 +33,7 @@ typedef linear_constraint_system<z_number, varname_t> lin_cst_sys_t;
 
 ///////// Begin Crab Abstract Domains /////////////
 typedef interval_domain<z_number,varname_t> interval_domain_t;
-typedef SplitDBM<z_number,varname_t> zones_domain_t;
+typedef elina_domain<z_number,varname_t, elina_domain_id_t::ELINA_PK> pk_domain_t;
 ///////// End Crab Abstract Domains /////////////
 
 int main(int argc, char**argv) {
@@ -58,15 +58,15 @@ int main(int argc, char**argv) {
   }
 
   {
-    outs() << "Example using zones\n";
-    zones_domain_t inv1, inv2;
+    outs() << "Example using polyhedra\n";
+    pk_domain_t inv1, inv2;
     inv1.assign(x, 5);
     inv1.assign(y, 10);
     outs() << "inv1=" << inv1 << "\n";  
     inv2.assign(x, 10);
     inv2.assign(y, 20);
     outs() << "inv2=" << inv1 << "\n";    
-    zones_domain_t inv3 = inv1 | inv2;
+    pk_domain_t inv3 = inv1 | inv2;
     inv3.apply(OP_ADDITION, z, x, y);
     outs() << "inv1 | inv2 = " << inv3 << "\n";
   }
