@@ -1001,8 +1001,8 @@ namespace crab {
       
    public:
       
-      SplitDBM_(bool is_bottom = false): _is_bottom(is_bottom)
-      {
+      SplitDBM_(bool is_bottom = false)
+	: _is_bottom(is_bottom) {
         g.growTo(1);  // Allocate the zero vector
         potential.push_back(Wt(0));
         rev_map.push_back(boost::none);
@@ -1010,13 +1010,12 @@ namespace crab {
 
       // FIXME: Rewrite to avoid copying if o is _|_
       SplitDBM_(const DBM_t& o)
-        : vert_map(o.vert_map),
-          rev_map(o.rev_map),
-          g(o.g),
-          potential(o.potential),
-          unstable(o.unstable),
-          _is_bottom(false)
-      {
+        : vert_map(o.vert_map)
+	, rev_map(o.rev_map)
+	, g(o.g)
+	, potential(o.potential)
+	, unstable(o.unstable)
+	, _is_bottom(false) {      
         crab::CrabStats::count (getDomainName() + ".count.copy");
         crab::ScopedCrabStats __st__(getDomainName() + ".copy");
 
@@ -1028,40 +1027,57 @@ namespace crab {
       }
 
       SplitDBM_(DBM_t&& o)
-        : vert_map(std::move(o.vert_map)), rev_map(std::move(o.rev_map)),
-          g(std::move(o.g)), potential(std::move(o.potential)),
-          unstable(std::move(o.unstable)),
-          _is_bottom(o._is_bottom)
-      { }
+        : vert_map(std::move(o.vert_map))
+	, rev_map(std::move(o.rev_map))
+	, g(std::move(o.g))
+	, potential(std::move(o.potential))
+	, unstable(std::move(o.unstable))
+        , _is_bottom(o._is_bottom) {
+	crab::CrabStats::count (getDomainName() + ".count.copy");
+        crab::ScopedCrabStats __st__(getDomainName() + ".copy");
+      }
 
       // We should probably use the magical rvalue ownership semantics stuff.
       SplitDBM_(vert_map_t& _vert_map, rev_map_t& _rev_map, graph_t& _g,
-		std::vector<Wt>& _potential,
-        vert_set_t& _unstable)
-        : vert_map(_vert_map), rev_map(_rev_map), g(_g),
-	  potential(_potential), unstable(_unstable), _is_bottom(false)
-      {
+		std::vector<Wt>& _potential, vert_set_t& _unstable)
+        : vert_map(_vert_map)
+	, rev_map(_rev_map)
+	, g(_g)
+	, potential(_potential)
+	, unstable(_unstable)
+	, _is_bottom(false) {
+	
+	crab::CrabStats::count (getDomainName() + ".count.copy");
+        crab::ScopedCrabStats __st__(getDomainName() + ".copy");
+	
         CRAB_WARN("Non-moving constructor.");
         assert(g.size() > 0);
       }
       
       SplitDBM_(vert_map_t&& _vert_map, rev_map_t&& _rev_map, graph_t&& _g,
 		std::vector<Wt>&& _potential, vert_set_t&& _unstable)
-        : vert_map(std::move(_vert_map)), rev_map(std::move(_rev_map)), g(std::move(_g)),
-	  potential(std::move(_potential)), unstable(std::move(_unstable)), _is_bottom(false)
-      { assert(g.size() > 0); }
+        : vert_map(std::move(_vert_map))
+	, rev_map(std::move(_rev_map))
+	, g(std::move(_g))
+	, potential(std::move(_potential))
+	, unstable(std::move(_unstable))
+	, _is_bottom(false) {
+
+	crab::CrabStats::count (getDomainName() + ".count.copy");
+        crab::ScopedCrabStats __st__(getDomainName() + ".copy");
+	
+	assert(g.size() > 0);
+      }
 
 
-      SplitDBM_& operator=(const SplitDBM_& o)
-      {
+      SplitDBM_& operator=(const SplitDBM_& o) {     
         crab::CrabStats::count (getDomainName() + ".count.copy");
         crab::ScopedCrabStats __st__(getDomainName() + ".copy");
 
-        if(this != &o)
-        {
-          if(o._is_bottom)
+        if(this != &o) {
+          if(o._is_bottom) {
             set_to_bottom();
-          else {
+	  } else {
             _is_bottom = false;
             vert_map = o.vert_map;
             rev_map = o.rev_map;
@@ -1074,8 +1090,10 @@ namespace crab {
         return *this;
       }
 
-      SplitDBM_& operator=(SplitDBM_&& o)
-      {
+      SplitDBM_& operator=(SplitDBM_&& o) {
+        crab::CrabStats::count (getDomainName() + ".count.copy");
+        crab::ScopedCrabStats __st__(getDomainName() + ".copy");
+      
         if(o._is_bottom) {
           set_to_bottom();
         } else {
@@ -1601,6 +1619,9 @@ namespace crab {
       }	
 
       void normalize() {
+        crab::CrabStats::count (getDomainName() + ".count.normalize");
+        crab::ScopedCrabStats __st__(getDomainName() + ".normalize");
+	
         // dbm_canonical(_dbm);
         // Always maintained in normal form, except for widening
         #ifdef SDBM_NO_NORMALIZE
@@ -1626,6 +1647,9 @@ namespace crab {
       }
 
       void operator-=(variable_t v) {
+        crab::CrabStats::count (getDomainName() + ".count.forget");
+        crab::ScopedCrabStats __st__(getDomainName() + ".forget");
+	
         if (is_bottom ())
           return;
         normalize();
@@ -2246,6 +2270,9 @@ namespace crab {
       }
 
       void rename(const variable_vector_t &from, const variable_vector_t &to) {
+        crab::CrabStats::count (getDomainName() + ".count.rename");
+        crab::ScopedCrabStats __st__(getDomainName() + ".rename");
+	
 	if (is_top () || is_bottom()) return;
 	
 	// renaming vert_map by creating a new vert_map since we are
@@ -2463,6 +2490,8 @@ namespace crab {
       }
 
       linear_constraint_system_t to_linear_constraint_system () {
+        crab::CrabStats::count (getDomainName() + ".count.to_linear_constraints");
+        crab::ScopedCrabStats __st__(getDomainName() + ".to_linear_constraints");
 
         normalize ();
 

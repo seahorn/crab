@@ -591,13 +591,19 @@ namespace domains {
   template<typename Var>
   std::map<std::pair<ikos::index_t, std::pair<offset_t, unsigned>>,
 	   ikos::index_t> offset_map<Var>::_index_map;
-       
+
+  template<typename NumDomain>
+  class array_expansion_packing_domain;
+  
   template<typename NumDomain>
   class array_expansion_domain:
     public abstract_domain<typename NumDomain::number_t,
 			   typename NumDomain::varname_t,
 			   array_expansion_domain<NumDomain> > {
-       
+
+    template<typename D>
+    friend class array_expansion_packing_domain;
+    
   public:
        
     typedef typename NumDomain::number_t Number;
@@ -646,6 +652,10 @@ namespace domains {
       }
       return r;
     }
+
+    // for array_expansion_packing_domain
+    array_expansion_domain(NumDomain inv)
+      : _inv(inv) {}
     
   public:
        
@@ -665,7 +675,13 @@ namespace domains {
       crab::CrabStats::count (getDomainName() + ".count.copy");
       crab::ScopedCrabStats __st__(getDomainName() + ".copy");
     }
-        
+
+    array_expansion_domain (const array_expansion_domain_t&& other): 
+      _array_map(std::move(other._array_map)), _inv (std::move(other._inv)) { 
+      crab::CrabStats::count (getDomainName() + ".count.copy");
+      crab::ScopedCrabStats __st__(getDomainName() + ".copy");
+    }
+    
     array_expansion_domain_t& operator=(const array_expansion_domain_t& other) {
       crab::CrabStats::count (getDomainName() + ".count.copy");
       crab::ScopedCrabStats __st__(getDomainName() + ".copy");
@@ -675,7 +691,17 @@ namespace domains {
       }
       return *this;
     }
-       
+
+    array_expansion_domain_t& operator=(const array_expansion_domain_t&& other) {
+      crab::CrabStats::count (getDomainName() + ".count.copy");
+      crab::ScopedCrabStats __st__(getDomainName() + ".copy");
+      if (this != &other) {
+	_array_map = std::move(other._array_map);
+	_inv = std::move(other._inv);
+      }
+      return *this;
+    }
+    
     bool is_bottom() { 
       return (_inv.is_bottom ());
     }
@@ -685,35 +711,60 @@ namespace domains {
     }
        
     bool operator<=(array_expansion_domain_t other) {
+      crab::CrabStats::count (getDomainName() + ".count.leq");
+      crab::ScopedCrabStats __st__(getDomainName() + ".leq");
+      
       return (_inv <= other._inv);
     }
-       
+
+    bool operator==(array_expansion_domain_t other) {
+      return (_inv <= other._inv && other._inv <= _inv);
+    }
+    
     void operator|=(array_expansion_domain_t other) {
+      crab::CrabStats::count (getDomainName() + ".count.join");
+      crab::ScopedCrabStats __st__(getDomainName() + ".join");
+            
       _array_map = _array_map | other._array_map;
       _inv |= other._inv;
 	 
     }
        
     array_expansion_domain_t operator|(array_expansion_domain_t other) {
+      crab::CrabStats::count (getDomainName() + ".count.join");
+      crab::ScopedCrabStats __st__(getDomainName() + ".join");
+      
       return array_expansion_domain_t (_array_map | other._array_map, _inv | other._inv);
     }
        
     array_expansion_domain_t operator&(array_expansion_domain_t other) {
+      crab::CrabStats::count (getDomainName() + ".count.meet");
+      crab::ScopedCrabStats __st__(getDomainName() + ".meet");
+      
       return array_expansion_domain_t (_array_map & other._array_map, _inv & other._inv);
     }
        
     array_expansion_domain_t operator||(array_expansion_domain_t other) {
+      crab::CrabStats::count (getDomainName() + ".count.widening");
+      crab::ScopedCrabStats __st__(getDomainName() + ".widening");
+      
       return array_expansion_domain_t (_array_map | other._array_map, _inv || other._inv);
     }
        
     template<typename Thresholds>
     array_expansion_domain_t widening_thresholds (array_expansion_domain_t other, 
 						  const Thresholds &ts) {
+      crab::CrabStats::count (getDomainName() + ".count.widening");
+      crab::ScopedCrabStats __st__(getDomainName() + ".widening");
+      
       return array_expansion_domain_t (_array_map | other._array_map,
 				       _inv.widening_thresholds (other._inv, ts));
     }
     
     array_expansion_domain_t operator&& (array_expansion_domain_t other) {
+      crab::CrabStats::count (getDomainName() + ".count.narrowing");
+      crab::ScopedCrabStats __st__(getDomainName() + ".narrowing");
+      
       return array_expansion_domain_t (_array_map & other._array_map, _inv && other._inv);
     }
         
@@ -721,6 +772,9 @@ namespace domains {
     // remove all variables [begin,...end)
     template<typename Iterator>
     void forget (Iterator begin, Iterator end) {
+      crab::CrabStats::count (getDomainName() + ".count.forget");
+      crab::ScopedCrabStats __st__(getDomainName() + ".forget");
+      
       domain_traits<NumDomain>::forget (_inv, begin, end);
       
       for (auto it = begin, et = end; it!=et; ++it) {
@@ -733,6 +787,9 @@ namespace domains {
     // dual of forget: remove all variables except [begin,...end)
     template<typename Iterator>
     void project (Iterator begin, Iterator end) {
+      crab::CrabStats::count (getDomainName() + ".count.project");
+      crab::ScopedCrabStats __st__(getDomainName() + ".project");
+      
       domain_traits<NumDomain>::project (_inv, begin, end);
       
       for (auto it = begin, et = end; it!=et; ++it) {
@@ -743,6 +800,9 @@ namespace domains {
     }
        
     void operator += (linear_constraint_system_t csts) {
+      crab::CrabStats::count (getDomainName() + ".count.add_constraints");
+      crab::ScopedCrabStats __st__(getDomainName() + ".add_constraints");
+      
       _inv += csts;
       
       CRAB_LOG("array-expansion",
@@ -750,6 +810,9 @@ namespace domains {
     }
        
     void operator-=(variable_t var) {
+      crab::CrabStats::count (getDomainName() + ".count.forget");
+      crab::ScopedCrabStats __st__(getDomainName() + ".forget");
+      
       if (var.is_array_type()) {
 	_array_map -= var;
       } else {
@@ -758,6 +821,9 @@ namespace domains {
     }
        
     void assign (variable_t x, linear_expression_t e) {
+      crab::CrabStats::count (getDomainName() + ".count.assign");
+      crab::ScopedCrabStats __st__(getDomainName() + ".assign");
+      
       _inv.assign (x, e);
          
       CRAB_LOG("array-expansion",
@@ -765,6 +831,9 @@ namespace domains {
     }
        
     void apply (operation_t op, variable_t x, variable_t y, Number z) {
+      crab::CrabStats::count (getDomainName() + ".count.apply");
+      crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+      
       _inv.apply (op, x, y, z);
          
       CRAB_LOG("array-expansion",
@@ -773,6 +842,9 @@ namespace domains {
     }
        
     void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
+      crab::CrabStats::count (getDomainName() + ".count.apply");
+      crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+      
       _inv.apply (op, x, y, z);
           
       CRAB_LOG("array-expansion",
@@ -781,6 +853,9 @@ namespace domains {
     }
        
     void apply(operation_t op, variable_t x, Number k) {
+      crab::CrabStats::count (getDomainName() + ".count.apply");
+      crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+      
       _inv.apply (op, x, k);
 	  
       CRAB_LOG("array-expansion",
@@ -806,10 +881,16 @@ namespace domains {
     }
        
     void apply(int_conv_operation_t op, variable_t dst, variable_t src) {
+      crab::CrabStats::count (getDomainName() + ".count.apply");
+      crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+      
       _inv.apply (op, dst, src);
     }
        
     void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {
+      crab::CrabStats::count (getDomainName() + ".count.apply");
+      crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+      
       _inv.apply (op, x, y, z);
 	 
       CRAB_LOG("array-expansion",
@@ -818,6 +899,9 @@ namespace domains {
     }
        
     void apply(bitwise_operation_t op, variable_t x, variable_t y, Number k) {
+      crab::CrabStats::count (getDomainName() + ".count.apply");
+      crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+      
       _inv.apply (op, x, y, k);
 	 
       CRAB_LOG("array-expansion",
@@ -827,6 +911,9 @@ namespace domains {
        
     // division_operators_api
     void apply(div_operation_t op, variable_t x, variable_t y, variable_t z) {
+      crab::CrabStats::count (getDomainName() + ".count.apply");
+      crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+      
       _inv.apply (op, x, y, z);
 	 
       CRAB_LOG("array-expansion",
@@ -835,6 +922,9 @@ namespace domains {
     }
        
     void apply(div_operation_t op, variable_t x, variable_t y, Number k) {
+      crab::CrabStats::count (getDomainName() + ".count.apply");
+      crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+      
       _inv.apply (op, x, y, k);
 	 
       CRAB_LOG("array-expansion",
@@ -1095,6 +1185,9 @@ namespace domains {
     }
        
     linear_constraint_system_t to_linear_constraint_system (){
+      crab::CrabStats::count (getDomainName() + ".count.to_linear_constraints");
+      crab::ScopedCrabStats __st__(getDomainName() + ".to_linear_constraints");
+      
       return _inv.to_linear_constraint_system ();
     }
        
@@ -1193,6 +1286,6 @@ namespace domains {
     }
       
   };
-     
+
 } // namespace domains
 }// namespace crab
