@@ -347,6 +347,17 @@ namespace ikos {
         }
       }
     }
+
+    
+    std::size_t size() const {
+      if (is_bottom()) {
+	return 0;
+      } else if (is_top()) {
+	CRAB_ERROR("separate_domains::size() is undefined if top");
+      } else {
+	return this->_tree.size();
+      }
+    }
     
     void write(crab::crab_os& o) {
       if (this->is_bottom()) {
