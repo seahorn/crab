@@ -154,6 +154,7 @@ namespace crab {
 
 #include <crab/domains/elina/elina.hpp>
 #include <boost/bimap.hpp>
+#include <crab/domains/linear_interval_solver.hpp>
 
 namespace crab {
 namespace domains {
@@ -598,8 +599,49 @@ namespace domains {
     }
     
     void dump () { dump (m_var_map, m_apstate); }
+
+    // x != n
+    void inequalities_from_disequation(variable_t x, number_t n, linear_constraint_system_t& out) {
+      interval_t i = this->operator[](x);
+      interval_t new_i =
+	linear_interval_solver_impl::trim_interval<interval_t>(i, interval_t(n));
+      if (new_i.is_bottom()) {
+	out += linear_constraint_t::get_false();
+      } else if (!new_i.is_top() && (new_i <= i)) {
+	if(new_i.lb().is_finite()) {
+	  // strenghten lb
+	  out += linear_constraint_t(x >= *(new_i.lb().number()));
+	}
+	if(new_i.ub().is_finite()) {
+	  // strenghten ub
+	  out += linear_constraint_t(x <= *(new_i.ub().number()));	  
+	}
+      }
+    } 
+
+    interval_t compute_residual(linear_expression_t e, variable_t pivot) {
+      interval_t residual(-e.constant());
+      for (typename linear_expression_t::iterator it = e.begin(); it != e.end(); ++it) {
+	variable_t v = it->second;
+	if (v.index() != pivot.index()) {
+	  residual = residual - (interval_t (it->first) * this->operator[](v));
+	}
+      }
+      return residual;
+    }
+    
+    void inequalities_from_disequation(linear_expression_t e, linear_constraint_system_t& o) {
+      for (typename linear_expression_t::iterator it = e.begin(); it != e.end(); ++it) {
+	variable_t pivot = it->second;
+	interval_t i = compute_residual(e, pivot) / interval_t(it->first);
+	if (auto k = i.singleton()) {
+	  inequalities_from_disequation(pivot, *k, o);
+	}
+      }
+    }
     
   public:
+    
     void print_stats () { elina_abstract0_fprint (stdout, get_man (), &*m_apstate, NULL); }
     
   private:
@@ -922,6 +964,9 @@ namespace domains {
     }
     
     void operator-=(variable_t var) {
+      if (is_bottom() || is_top())
+	return;
+      
       std::vector<elina_dim_t> vector_dims;
       if (auto dim = get_var_dim (var)) {
 	vector_dims.push_back (*dim);
@@ -1080,32 +1125,27 @@ namespace domains {
 	return;
       }
       
-      // XXX: filter out unsigned linear inequalities
+      // XXX: filter out unsigned linear inequalities, and analyze
+      //      separately disequalities because elina does not support
+      //      them.
       linear_constraint_system_t csts;
-      bool has_disequality = false;
       for (auto const& c: _csts) {
 	if (c.is_inequality() && c.is_unsigned()) {
 	  CRAB_WARN("unsigned inequality skipped");
 	  continue;
 	}
 	if (c.is_disequation()) {
-	  has_disequality = true;
+	  inequalities_from_disequation(c.expression(), csts);
+	} else {
+	  csts += c;
 	}
-	csts += c;
       }
-      
-      if (has_disequality) {
-	// trivial reduction between the elina domain and
-	// intervals. This is done because most of the elina
-	// domains ignore disequalities. Of course, more things
-	// can be done here to improve precision.
-	interval_domain_t intvs;
-	intvs = to_interval_domain();
-	intvs += csts;
-	if (intvs.is_bottom()) {
-	  *this = bottom ();
-	  return;
-	}
+
+      if (csts.is_false()) {
+	// csts can be false after breaking disequalities into
+	// inequalities
+	*this = bottom();
+	return;
       }
       
       elina_tcons0_array_t array = elina_tcons0_array_make (csts.size ());
