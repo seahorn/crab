@@ -26,14 +26,15 @@ LDD_LIBS := \
     $(CRAB_INSTALL)/ldd/lib/libmtr.a \
     $(CRAB_INSTALL)/ldd/lib/libepd.a 
 
+# Elina shared libraries have extension .so even on mac
 ELINA_LIBS := \
-    $(CRAB_INSTALL)/elina/lib/libelinalinearize.${DYLIB} \
-    $(CRAB_INSTALL)/elina/lib/libelinaux.${DYLIB} \
-    $(CRAB_INSTALL)/elina/lib/liboptoct.${DYLIB} \
-    $(CRAB_INSTALL)/elina/lib/liboptpoly.${DYLIB} \
-    $(CRAB_INSTALL)/elina/lib/liboptzones.${DYLIB} \
-    $(CRAB_INSTALL)/elina/lib/libpartitions.${DYLIB} \
-    $(CRAB_INSTALL)/elina/lib/libzonotope.${DYLIB}
+    $(CRAB_INSTALL)/elina/lib/libelinalinearize.so \
+    $(CRAB_INSTALL)/elina/lib/libelinaux.so \
+    $(CRAB_INSTALL)/elina/lib/liboptoct.so \
+    $(CRAB_INSTALL)/elina/lib/liboptpoly.so \
+    $(CRAB_INSTALL)/elina/lib/liboptzones.so \
+    $(CRAB_INSTALL)/elina/lib/libpartitions.so \
+    $(CRAB_INSTALL)/elina/lib/libzonotope.so
 
 # Lookup paths for crab and elina shared libraries
 LDFLAGS := -Wl,-rpath,$(CRAB_INSTALL)/crab/lib/,-rpath,$(CRAB_INSTALL)/elina/lib/
