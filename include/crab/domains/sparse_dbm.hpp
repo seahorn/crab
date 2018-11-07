@@ -888,8 +888,14 @@ namespace crab {
 		 std::vector<Wt>&& _potential, vert_set_t&& _unstable)
         : vert_map(std::move(_vert_map)), rev_map(std::move(_rev_map)),
 	  g(std::move(_g)), potential(std::move(_potential)),
-          unstable(std::move(_unstable)), _is_bottom(false)
-      { assert(g.size() > 0); }
+          unstable(std::move(_unstable)), _is_bottom(false) {
+
+	CRAB_LOG("zones-sparse-size",
+                 auto p = size();
+                 crab::outs() << "#nodes = " << p.first << " #edges=" << p.second << "\n";);
+
+	assert(g.size() > 0);
+      }
 
 
       SparseDBM_& operator=(const SparseDBM_& o)
@@ -2111,10 +2117,16 @@ namespace crab {
 	  return disjunctive_linear_constraint_system_t(lin_csts);
 	}
       }
+
+      // return number of vertices and edges
+      std::pair<std::size_t, std::size_t> size() const {
+	return {g.size(), g.num_edges()};
+      }
       
       static std::string getDomainName () {
         return "SparseDBM";
       }
+      
     }; // class SparseDBM_
 
     #if 1
@@ -2274,7 +2286,7 @@ namespace crab {
       { norm().extract(x, csts, only_equalities); }
 
       void write(crab_os& o) { norm().write(o); }
-
+    
       linear_constraint_system_t to_linear_constraint_system () {
         return norm().to_linear_constraint_system();
       }
@@ -2283,6 +2295,11 @@ namespace crab {
       }
       
       static std::string getDomainName () { return dbm_impl_t::getDomainName(); }
+
+      std::pair<std::size_t, std::size_t> size() const {
+	return norm().size();
+      }
+      
     protected:  
       dbm_ref_t base_ref;  
       dbm_ref_t norm_ref;

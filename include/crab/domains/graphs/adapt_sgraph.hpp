@@ -498,6 +498,7 @@ namespace crab {
     // Management
     bool is_empty(void) const { return edge_count == 0; }
     size_t size(void) const { return _succs.size(); }
+    size_t num_edges(void) const { return edge_count;}
     vert_id new_vertex(void) {
       vert_id v;
       if(free_id.size() > 0)

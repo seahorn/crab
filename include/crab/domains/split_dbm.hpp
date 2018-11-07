@@ -1065,6 +1065,10 @@ namespace crab {
 
 	crab::CrabStats::count (getDomainName() + ".count.copy");
         crab::ScopedCrabStats __st__(getDomainName() + ".copy");
+
+	CRAB_LOG("zones-split-size",
+                 auto p = size();
+                 crab::outs() << "#nodes = " << p.first << " #edges=" << p.second << "\n";);
 	
 	assert(g.size() > 0);
       }
@@ -2543,6 +2547,11 @@ namespace crab {
 	}
       }
 
+      // return number of vertices and edges
+      std::pair<std::size_t, std::size_t> size() const {
+	return {g.size(), g.num_edges()};
+      }
+      
       static std::string getDomainName () {
         return "SplitDBM";
       }
@@ -2716,7 +2725,9 @@ namespace crab {
       }
       
       static std::string getDomainName () { return dbm_impl_t::getDomainName(); }
-
+      std::pair<std::size_t, std::size_t> size() const {
+	return norm().size();
+      }
       bool is_unsat (linear_constraint_t cst){ return norm().is_unsat(cst);}
       void active_variables(std::vector<variable_t>& out){ norm().active_variables(out);}
       
