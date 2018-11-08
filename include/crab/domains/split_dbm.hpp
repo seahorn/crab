@@ -2558,7 +2558,7 @@ namespace crab {
 
     }; // class SplitDBM_
 
-    #if 1
+    #if 0
     template<class Number, class VariableName,
 	     class Params = SDBM_impl::DefaultParams<Number>>
     using SplitDBM = SplitDBM_<Number,VariableName,Params>;     
@@ -2568,7 +2568,7 @@ namespace crab {
 	     class Params=SDBM_impl::DefaultParams<Number>>
     class SplitDBM:
       public abstract_domain<Number, VariableName,
-			     SplitDBM<Number,VariableName,Params> > {
+			     SplitDBM<Number,VariableName,Params>> {
 
       typedef SplitDBM<Number, VariableName, Params> DBM_t;
       typedef abstract_domain<Number,VariableName,DBM_t> abstract_domain_t;
@@ -2591,7 +2591,8 @@ namespace crab {
       typedef SplitDBM_<Number, VariableName, Params> dbm_impl_t;
       typedef std::shared_ptr<dbm_impl_t> dbm_ref_t;
 
-      SplitDBM(dbm_ref_t _ref) : norm_ref(_ref) { }
+      SplitDBM(dbm_ref_t _ref)
+	: norm_ref(_ref) { }
 
       SplitDBM(dbm_ref_t _base, dbm_ref_t _norm) 
         : base_ref(_base), norm_ref(_norm) { }
@@ -2659,7 +2660,7 @@ namespace crab {
 	return create(norm().template widening_thresholds<Thresholds>(o.norm(), ts));
       }
 
-      void normalize() { norm().normalize(); }
+      void normalize() { lock(); norm().normalize(); }
       void operator+=(linear_constraint_system_t csts) { lock(); norm() += csts; } 
       void operator-=(variable_t v) { lock(); norm() -= v; }
       interval_t operator[](variable_t x) { return norm()[x]; }

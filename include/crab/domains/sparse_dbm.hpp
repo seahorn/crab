@@ -2129,7 +2129,7 @@ namespace crab {
       
     }; // class SparseDBM_
 
-    #if 1
+    #if 0
     template<class Number, class VariableName,
 	       class Params = SpDBM_impl::DefaultParams<Number>>
     using SparseDBM = SparseDBM_<Number,VariableName,Params>;     
@@ -2232,7 +2232,7 @@ namespace crab {
 	return create(norm().template widening_thresholds<Thresholds>(o.norm(), ts));
       }
 
-      void normalize() { norm().normalize(); }
+      void normalize() { lock(); norm().normalize(); }
       void operator+=(linear_constraint_system_t csts) { lock(); norm() += csts; } 
       void operator-=(variable_t v) { lock(); norm() -= v; }
       interval_t operator[](variable_t x) { return norm()[x]; }
