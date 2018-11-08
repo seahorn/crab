@@ -964,6 +964,9 @@ namespace domains {
     }
     
     void operator-=(variable_t var) {
+      crab::CrabStats::count (getDomainName() + ".count.forget");
+      crab::ScopedCrabStats __st__(getDomainName() + ".forget");
+      
       if (is_bottom() || is_top())
 	return;
       
