@@ -104,6 +104,7 @@ namespace domains {
 #include "include/MDD_ops.hh"
 #include "include/MDD_visit.hh"
 #include "include/MDD_arith.hh"
+#include "include/MDD_bool.hh"
 #include "include/interval.hh"
 #include "util/hc-list.h"
 
@@ -116,6 +117,7 @@ namespace domains {
 
 //#define MDD_BIGNUMS
 //#define MDD_RIGHTBIAS_WIDENING
+#define MDD_REIFIED
 
 namespace crab {
 namespace domains {
@@ -406,6 +408,15 @@ namespace domains {
       typedef mdd_transformer_t<_mdd_assign_div_t> mdd_assign_div_t;
       typedef mdd_boxes::mdd_assign_div_partial<mdd_number_t, mdd_bound_t, mdd_interval_t> _mdd_assign_div_partial_t;
       typedef mdd_transformer_t<_mdd_assign_div_partial_t> mdd_assign_div_partial_t;
+      // boolean operators
+      typedef mdd_boxes::mdd_and_reif<mdd_number_t, mdd_bound_t> _bool_and_reif_t;
+      typedef mdd_transformer_t<_bool_and_reif_t> bool_and_reif_t;
+      typedef mdd_boxes::mdd_or_reif<mdd_number_t, mdd_bound_t> _bool_or_reif_t;
+      typedef mdd_transformer_t<_bool_or_reif_t> bool_or_reif_t;
+      typedef mdd_boxes::mdd_xor_vars<mdd_number_t, mdd_bound_t> _bool_xor_t;
+      typedef mdd_transformer_t<_bool_xor_t> bool_xor_t;
+      typedef mdd_boxes::mdd_reify_lin<mdd_number_t, mdd_bound_t> _mdd_reify_lin_t;
+      typedef mdd_transformer_t<_mdd_reify_lin_t> mdd_reify_lin_t;
       
       // reference to a mdd node
       mdd_ref_t m_state;
@@ -1259,6 +1270,7 @@ namespace domains {
 	  ::vec<mdd_var_t> xs;
 	  xs.push(vy);
 	  xs.push(vz);
+	  std::sort(xs.begin(), xs.end());
 	  mdd_assign_prod_t::apply(get_man(), m_state.get(), vx, hc::lookup(xs), 1);
 	  break;
 	}
@@ -1387,22 +1399,39 @@ namespace domains {
 	} else if (cst.is_contradiction ()) {
 	  assign(lhs, number_t(0));
 	} else {
+	  #ifdef MDD_REIFIED	  
+	  if (cst.is_inequality()) {
+	    mdd_var_t vlhs = get_mdd_var_insert(lhs);	  
+	    auto p = expr2linterms(cst.expression());
+	    linterm_vector xs(p.first);
+	    mdd_number_t k = -p.second;
+	    auto hxs = hc::lookup(xs);
+	    assert(hxs);
+	    m_state = mdd_ref_t(get_man(),
+	  			mdd_reify_lin_t::apply(get_man(), m_state.get(),
+	  					       vlhs, hxs, k));
+	  } else {
+	    CRAB_WARN("mdd_boxes::assign_bool_cst with (dis)equalities not implemented");
+	    this->operator-=(lhs);
+	  }
+	  #else
 	  mdd_boxes_domain_t dom(*this);
 	  auto cst_vars = cst.variables();
 	  dom.project(boost::make_iterator_range(cst_vars.begin(), cst_vars.end()));
-
+	  
 	  if (dom.is_top()) {
 	    this->operator-=(lhs);
 	    return;
 	  }
-	  
+	    
 	  mdd_boxes_domain_t tt(dom);
 	  mdd_boxes_domain_t ff(dom);
 	  tt += cst;
-	  tt += (lhs == number_t(1));
+	  tt += (lhs >= number_t(1));
 	  ff += cst.negate();
-	  ff += (lhs == number_t(0));
+	  ff += (lhs <= number_t(0));
 	  *this = *this & (tt | ff);
+	  #endif 
 	}
 	
 	CRAB_LOG("mdd-boxes", crab::outs () << "After:\n" << *this << "\n");
@@ -1411,25 +1440,33 @@ namespace domains {
       void assign_bool_var (variable_t x, variable_t y, bool is_not_y) override {
 	crab::CrabStats::count (getDomainName() + ".count.assign_bool_var");
 	crab::ScopedCrabStats __st__(getDomainName() + ".assign_bool_var");
-
 	if (is_bottom()) return;
 
 	CRAB_LOG("mdd-boxes",
-		   crab::outs()  << x << ":=";
-		   if (is_not_y)
-		     crab::outs() << "not(" << y << ")";
-		   else
-		     crab::outs() << y;		     
+		 crab::outs()  << x << ":=";
+		 if (is_not_y) {
+		   crab::outs() << "not(" << y << ")";
+		 } else {
+		   crab::outs() << y;
+		 }
 		 crab::outs() << "\n");
 	
 	if (is_not_y) {
-	  //    y = 0 -> x = 1
-	  //    y = 1 -> x = 0
-	  #if 1
-	  // this is more efficient although we need to make
-	  // sure that x and y only take boolean values.
+	  #ifdef MDD_REIFIED	  
+	  // x iff not(y) <--> not(x xor (not(y))) <--> x xor y
+	  this->operator-=(x);
+	  ::vec<mdd_var_t> xs;
+	  mdd_var_t vy = get_mdd_var_insert(y);	  
+	  xs.push(vy);
+	  bool_xor_t::apply(get_man(), m_state.get(), hc::lookup(xs));
+	  #else
+	  #if 0
+	  // this is more efficient but assume T is "== 1" and F "== 0"
 	  assign(x, linear_expression_t(1 - y));
 	  #else
+	  // y = F -> x = T
+	  // y = T -> x = F
+	  // assume T is ">= 1" and F "<= 0"
 	  mdd_boxes_domain_t dom(*this);
 	  std::vector<variable_t> vars{y};
 	  dom.project(boost::make_iterator_range(vars.begin(), vars.end()));
@@ -1442,16 +1479,17 @@ namespace domains {
 	  mdd_boxes_domain_t d1(dom);
 	  mdd_boxes_domain_t d2(dom);
 	  linear_constraint_system_t csts;
-	  csts += (y == 0);
-	  csts += (x == 1);
+	  csts += (y <= 0);
+	  csts += (x >= 1);
 	  d1 += csts;
 
 	  csts.clear();
-	  csts += (y == 1);
-	  csts += (x == 0);
+	  csts += (y >= 1);
+	  csts += (x <= 0);
 	  d2 += csts;
 	  
 	  *this = *this & (d1 | d2);
+	  #endif
 	  #endif 
 	} else {
 	  assign(x, y);
@@ -1472,6 +1510,49 @@ namespace domains {
 		 crab::outs () << x << ":= " << y << " " << op << " " << z << "\n"
 		               << "Before:\n" << *this << "\n";);
 
+        #ifdef MDD_REIFIED	  	
+	mdd_var_t vx = get_mdd_var_insert(x);
+	mdd_var_t vy = get_mdd_var_insert(y);
+	mdd_var_t vz = get_mdd_var_insert(z);
+	
+	switch (op) {
+	case OP_BAND: {
+	  ::vec<mdd_var_t> xs;
+	  xs.push(vy);
+	  xs.push(vz);
+	  std::sort(xs.begin(), xs.end());
+	  m_state = mdd_ref_t(get_man(),
+	  		      bool_and_reif_t::apply(get_man(),
+						     m_state.get(), vx, hc::lookup(xs)));
+	}
+	break;
+	case OP_BOR: {
+	  ::vec<mdd_var_t> xs;
+	  xs.push(vy);
+	  xs.push(vz);
+	  std::sort(xs.begin(), xs.end());
+	  m_state = mdd_ref_t(get_man(),
+	  		      bool_or_reif_t::apply(get_man(),
+						    m_state.get(), vx, hc::lookup(xs)));
+	}
+	  break;
+	case OP_BXOR: {
+	  // x iff (y xor z) <--> not(x xor (y xor z)) <--> 1 xor (x xor (y xor z))
+
+	  ::vec<mdd_var_t> xs;
+	  xs.push(vx);
+	  xs.push(vy);
+	  xs.push(vz);
+	  std::sort(xs.begin(), xs.end());
+
+	  this->operator-=(x);
+	  bool_xor_t::apply(get_man(), m_state.get(), hc::lookup(xs), 1);
+	}
+	  break;
+	default:
+	  CRAB_ERROR ("Unknown boolean operator");	    	  
+	}
+	#else
 	mdd_boxes_domain_t dom(*this);
 	std::vector<variable_t> vars {y,z};
 	dom.project(boost::make_iterator_range(vars.begin(), vars.end()));
@@ -1484,70 +1565,70 @@ namespace domains {
 	linear_constraint_system_t csts;
 	switch (op) {
 	case OP_BAND: {
-	  // (y == 1 and z == 1 and x==1) or (not(y == 1 and z == 1) and x==0)
+	  // (y == T and z == T and x==T) or (not(y == T and z == T) and x==F)
 	  
 	  mdd_boxes_domain_t split1(dom);
 	  mdd_boxes_domain_t split2(dom);
 	  mdd_boxes_domain_t split3(dom);	
 	  
-	  csts += linear_constraint_t(y == 1);
-	  csts += linear_constraint_t(z == 1);
-	  csts += linear_constraint_t(x == 1);
+	  csts += linear_constraint_t(y >= 1);
+	  csts += linear_constraint_t(z >= 1);
+	  csts += linear_constraint_t(x >= 1);
 	  split1 += csts;
 	  
 	  csts.clear();
-	  csts += linear_constraint_t(y == 0);
-	  csts += linear_constraint_t(x == 0);
+	  csts += linear_constraint_t(y <= 0);
+	  csts += linear_constraint_t(x <= 0);
 	  split2 += csts;
 	  
 	  csts.clear();
-	  csts += linear_constraint_t(z == 0);
-	  csts += linear_constraint_t(x == 0);
+	  csts += linear_constraint_t(z <= 0);
+	  csts += linear_constraint_t(x <= 0);
 	  split3 += csts;
 
 	  *this = *this & (split1 | (split2 | split3));
 	  break;
 	}
 	case OP_BOR: {
-	  // (y == 0 and z == 0 and x==0) or (not(y == 0 and z == 0) and x==1)
+	  // (y == F and z == F and x== F) or (not(y == F and z == F) and x==T)
 
 	  mdd_boxes_domain_t split1(dom);
 	  mdd_boxes_domain_t split2(dom);
 	  mdd_boxes_domain_t split3(dom);	
 	  	  
-	  csts += linear_constraint_t(y == 0);
-	  csts += linear_constraint_t(z == 0);
-	  csts += linear_constraint_t(x == 0);
+	  csts += linear_constraint_t(y <= 0);
+	  csts += linear_constraint_t(z <= 0);
+	  csts += linear_constraint_t(x <= 0);
 	  split1 += csts;
 	  
 	  csts.clear();
-	  csts += linear_constraint_t(y == 1);
-	  csts += linear_constraint_t(x == 1);
+	  csts += linear_constraint_t(y >= 1);
+	  csts += linear_constraint_t(x >= 1);
 	  split2 += csts;
 	  
 	  csts.clear();
-	  csts += linear_constraint_t(z == 1);
-	  csts += linear_constraint_t(x == 1);
+	  csts += linear_constraint_t(z >= 1);
+	  csts += linear_constraint_t(x >= 1);
 	  split3 += csts;
 
 	  *this = *this & (split1 | (split2 | split3));
 	  break;
 	}
 	case OP_BXOR: {
-	  // (y == z and x == 0) or ( not(y==z) and x == 1)
-
+	  // (y == z and x == F) or ( not(y==z) and x == T)
+	  
 	  mdd_boxes_domain_t split1(dom);
 	  mdd_boxes_domain_t split2(dom);
 	  linear_expression_t lin_y(y);
 	  linear_expression_t lin_z(z);
 	  
 	  csts += linear_constraint_t(lin_y == lin_z);
-	  csts += linear_constraint_t(x == 0);
+	  csts += linear_constraint_t(x <= 0);
 	  split1 += csts;
 	  
 	  csts.clear();
 	  csts += linear_constraint_t(lin_y != lin_z);
-	  csts += linear_constraint_t(x == 1);
+	  csts += linear_constraint_t(x >= 1);
 	  split2 += csts;
 
 	  *this = *this & (split1 | split2);	  
@@ -1555,10 +1636,11 @@ namespace domains {
 	}
 	default: CRAB_ERROR ("Unknown boolean operator");	    
 	}
-	
+	#endif 
 	CRAB_LOG("mdd-boxes", crab::outs() << "After:\n" << *this << "\n");
       }
-      
+
+      // x iff y
       void assume_bool (variable_t x, bool is_negated) override {
 	crab::CrabStats::count (getDomainName() + ".count.assume_bool");
 	crab::ScopedCrabStats __st__(getDomainName() + ".assume_bool");
@@ -1573,9 +1655,9 @@ namespace domains {
 		 });
 	
 	if (is_negated) {
-	  *this += linear_constraint_t(x == 0);
+	  *this += linear_constraint_t(x <= 0);
 	} else {
-	  *this += linear_constraint_t(x == 1);	  
+	  *this += linear_constraint_t(x >= 1);	  
 	}
 
 	CRAB_LOG("mdd-boxes", crab::outs() << *this << "\n";);
