@@ -2129,7 +2129,7 @@ namespace crab {
       
     }; // class SparseDBM_
 
-    #if 0
+    #if 1
     template<class Number, class VariableName,
 	       class Params = SpDBM_impl::DefaultParams<Number>>
     using SparseDBM = SparseDBM_<Number,VariableName,Params>;     
@@ -2218,18 +2218,18 @@ namespace crab {
 
       bool is_bottom() { return norm().is_bottom(); }
       bool is_top() { return norm().is_top(); }
-      bool operator<=(DBM_t& o) { return norm() <= o.norm(); }
+      bool operator<=(DBM_t o) { return norm() <= o.norm(); }
       void operator|=(DBM_t o) { lock(); norm() |= o.norm(); }
       DBM_t operator|(DBM_t o) { return create(norm() | o.norm()); }
-      //DBM_t operator||(DBM_t o) { return create_base(base() || o.norm()); }
-      DBM_t operator||(DBM_t o) { return create(norm() || o.norm()); }
+      DBM_t operator||(DBM_t o) { return create_base(base() || o.norm()); }
+      //DBM_t operator||(DBM_t o) { return create(norm() || o.norm()); }
       DBM_t operator&(DBM_t o) { return create(norm() & o.norm()); }
       DBM_t operator&&(DBM_t o) { return create(norm() && o.norm()); }
 
       template<typename Thresholds>
       DBM_t widening_thresholds (DBM_t o, const Thresholds &ts) {
-        //return create_base(base().template widening_thresholds<Thresholds>(o.norm(), ts));
-	return create(norm().template widening_thresholds<Thresholds>(o.norm(), ts));
+        return create_base(base().template widening_thresholds<Thresholds>(o.norm(), ts));
+	//return create(norm().template widening_thresholds<Thresholds>(o.norm(), ts));
       }
 
       void normalize() { lock(); norm().normalize(); }

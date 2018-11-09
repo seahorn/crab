@@ -2558,7 +2558,7 @@ namespace crab {
 
     }; // class SplitDBM_
 
-    #if 0
+    #if 1
     template<class Number, class VariableName,
 	     class Params = SDBM_impl::DefaultParams<Number>>
     using SplitDBM = SplitDBM_<Number,VariableName,Params>;     
@@ -2604,7 +2604,7 @@ namespace crab {
 
       DBM_t create_base(dbm_impl_t&& t) {
         dbm_ref_t base = std::make_shared<dbm_impl_t>(t);
-        dbm_ref_t norm = std::make_shared<dbm_impl_t>(std::move(t));  
+        dbm_ref_t norm = std::make_shared<dbm_impl_t>(std::move(t));
         return DBM_t(base, norm);
       }
 
@@ -2646,18 +2646,16 @@ namespace crab {
 
       bool is_bottom() { return norm().is_bottom(); }
       bool is_top() { return norm().is_top(); }
-      bool operator<=(DBM_t& o) { return norm() <= o.norm(); }
+      bool operator<=(DBM_t o) { return norm() <= o.norm(); }
       void operator|=(DBM_t o) { lock(); norm() |= o.norm(); }
       DBM_t operator|(DBM_t o) { return create(norm() | o.norm()); }
-      //DBM_t operator||(DBM_t o) { return create_base(base() || o.norm()); }
-      DBM_t operator||(DBM_t o) { return create(norm() || o.norm()); }
+      DBM_t operator||(DBM_t o) { return create_base(base() || o.norm()); }
       DBM_t operator&(DBM_t o) { return create(norm() & o.norm()); }
       DBM_t operator&&(DBM_t o) { return create(norm() && o.norm()); }
 
       template<typename Thresholds>
       DBM_t widening_thresholds (DBM_t o, const Thresholds &ts) {
-        //return create_base(base().template widening_thresholds<Thresholds>(o.norm(), ts));
-	return create(norm().template widening_thresholds<Thresholds>(o.norm(), ts));
+        return create_base(base().template widening_thresholds<Thresholds>(o.norm(), ts));
       }
 
       void normalize() { lock(); norm().normalize(); }
@@ -2672,17 +2670,13 @@ namespace crab {
       void apply(operation_t op, variable_t x, variable_t y, Number k) {
         lock(); norm().apply(op, x, y, k);
       }
-      void backward_assign(variable_t x, linear_expression_t e,
-			   DBM_t invariant) {
+      void backward_assign(variable_t x, linear_expression_t e, DBM_t invariant) {
 	lock(); norm().backward_assign(x, e, invariant.norm());
       }
-      void backward_apply(operation_t op,
-			  variable_t x, variable_t y, Number k,
-			  DBM_t invariant) {
+      void backward_apply(operation_t op, variable_t x, variable_t y, Number k, DBM_t invariant) {
 	lock(); norm().backward_apply(op, x, y, k, invariant.norm());
       }
-      void backward_apply(operation_t op,
-			  variable_t x, variable_t y, variable_t z,
+      void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
 			  DBM_t invariant) {
 	lock(); norm().backward_apply(op, x, y, z, invariant.norm());
       }	
