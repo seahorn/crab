@@ -57,13 +57,13 @@ In linux, you can install requirements typing the commands:
 To install Crab, type:
 
 	mkdir build && cd build
-    cmake -DCMAKE_INSTALL_PREFIX=_DIR_ ../
+    cmake -DCMAKE_INSTALL_PREFIX=_INSTALL_DIR_ ../
     cmake --build . --target install 
 
 To include Crab in your application you just need to include the
-corresponding C++ header files located at the `_DIR_/include`
+corresponding C++ header files located at the `_INSTALL_DIR_/include`
 directory and make sure that you link your application with the Crab
-libraries (`_DIR_/lib` directory).
+libraries (`_INSTALL_DIR_/lib` directory).
 
 The Boxes and Apron domains require third-party libraries. To avoid
 the burden to users who are not interested in those domains, the
@@ -78,10 +78,16 @@ If you want to use the Elina library domains then add `-DUSE_ELINA=ON` option.
 **Important:** Apron and Elina are currently not compatible so you
 cannot enable `-DUSE_APRON=ON` and `-DUSE_ELINA=ON` at the same time. 
 
+To use Elina on Linux, you will need to add `_INSTALL_DIR_/lib` in the
+environment variable `LD_LIBRARY_PATH` if Elina is installed in a
+non-standard directory:
+
+    export LD_LIBRARY_PATH=_INSTALL_DIR_/lib
+	
 For instance, to install Crab with Boxes and Apron, type:
 
 	mkdir build && cd build
-    cmake -DCMAKE_INSTALL_PREFIX=_DIR_ -DUSE_LDD=ON -DUSE_APRON=ON ../
+    cmake -DCMAKE_INSTALL_PREFIX=_INSTALL_DIR_ -DUSE_LDD=ON -DUSE_APRON=ON ../
 	cmake --build . --target ldd && cmake ..
 	cmake --build . --target apron && cmake ..	
     cmake --build . --target install 	
@@ -91,7 +97,7 @@ compute invariants using different abstract domains. To compile these tests
 type:
 
 	mkdir build && cd build
-    cmake -DCMAKE_INSTALL_PREFIX=_DIR_ -DUSE_LDD=ON -DUSE_APRON=ON -DENABLE_TESTS=ON ../
+    cmake -DCMAKE_INSTALL_PREFIX=_INSTALL_DIR_ -DUSE_LDD=ON -DUSE_APRON=ON -DENABLE_TESTS=ON ../
 	cmake --build . --target ldd && cmake ..
 	cmake --build . --target apron && cmake ..	
     cmake --build . --target install 	
