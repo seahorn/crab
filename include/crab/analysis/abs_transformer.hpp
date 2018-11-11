@@ -308,16 +308,34 @@ namespace crab {
     
     void exec (assert_t& stmt) {
       if (m_ignore_assert) return;
+
+      /* Given assert(cond) the abstract transformer is:
+
+	 if inv => not(cond) return bottom
+	 else return inv /\ cond
+
+	 inv => not(cond) is valid iff inv /\ not(not(cond)) is bottom
+                                   iff inv /\ cond is bottom
+	 Therefore, we can simplify the above if-then-else to 
+	 
+	 if (inv /\ cond) is bottom return bottom
+         else return inv /\ cond
+
+	 which can be further simplified to 
+
+         inv /\ cond
+      */
       
-      abs_dom_t cst;
-      cst += stmt.constraint();
-      abs_dom_t meet = cst & *get_inv();
-      if (meet.is_bottom ()) {
-	// assertion does not definitely hold.
-        *get_inv() = abs_dom_t::bottom (); 
-      } else {
-	*get_inv() += stmt.constraint ();
-      }
+      // abs_dom_t cst;
+      // cst += stmt.constraint();
+      // abs_dom_t meet = cst & *get_inv();
+      // if (meet.is_bottom ()) {
+      // 	// assertion does not definitely hold.
+      //   *get_inv() = abs_dom_t::bottom (); 
+      // } else {
+      // 	*get_inv() += stmt.constraint ();
+      // }
+      *get_inv() += stmt.constraint();
     }
 
     void exec (int_cast_t &stmt){
