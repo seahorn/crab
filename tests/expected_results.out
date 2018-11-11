@@ -1347,7 +1347,7 @@ bb1_t:
   assume (i <= 99);
   goto bb2;
 bb2:
-  nd =* ;
+  havoc(nd);
   inc = ite(-nd <= -1,1,2);
   i = i+inc;
   goto bb1;
@@ -1380,7 +1380,7 @@ x0:
 bb2:
   i = i+inc;
   inc = ite(-nd <= -1,1,2);
-  nd =* ;
+  havoc(nd);
 --> [bb1_t;]
 bb1_t:
   assume (i <= 99);
@@ -1401,7 +1401,7 @@ bb1:
   goto bb1_t,bb1_f;
 bb1_t:
   assume (i <= 99);
-  nd =* ;
+  havoc(nd);
   inc = ite(-nd <= -1,1,2);
   i = i+inc;
   goto bb1;
@@ -1426,7 +1426,7 @@ x0:
 bb1_t:
   i = i+inc;
   inc = ite(-nd <= -1,1,2);
-  nd =* ;
+  havoc(nd);
   assume (i <= 99);
 --> [bb1;]
 
@@ -1513,7 +1513,7 @@ b0:
   p = &(1);
   q1 = &(2);
   q2 = &(3);
-  nd =* ;
+  havoc(nd);
   goto b1,b2;
 b1:
   assume (-nd <= -1);
@@ -1891,8 +1891,8 @@ Widening of
 {-x <= 0; x <= 1/4; y <= 1/2}
 b0:
   p = &(1);
-  r =* ;
-  s =* ;
+  havoc(r);
+  havoc(s);
   goto b1,b2;
 b1:
   assume_ptr(r == NULL);
@@ -1917,7 +1917,7 @@ b0:
   p = &(1);
   q1 = &(2);
   q2 = &(3);
-  nd =* ;
+  havoc(nd);
   goto b1,b2;
 b1:
   assume (-nd <= -1);
@@ -2107,7 +2107,7 @@ Abstract trace: x0 (bb1 bb1_t)^{3} bb1_f ret
 
 p0:
   x = 50;
-  y =* ;
+  havoc(y);
   assume (-y <= 1);
   assume (y <= 1);
   z = x*y;
@@ -2155,8 +2155,8 @@ bb1:
   goto bb1_t,bb1_f;
 bb1_t:
   assume (i <= 99);
-  nd1 =* ;
-  nd2 =* ;
+  havoc(nd1);
+  havoc(nd2);
   x = x&nd1;
   y = y&nd1;
   z = z|nd1;
@@ -2222,7 +2222,7 @@ bb1:
   goto bb1_t,bb1_f;
 bb1_t:
   assume (i <= 99);
-  nd =* ;
+  havoc(nd);
   inc = ite(-nd <= -1,1,2);
   i = i+inc;
   goto bb1;
@@ -2684,8 +2684,8 @@ bb1_t:
   assume (i <= 99);
   goto bb2;
 bb2:
-  nd1 =* ;
-  nd2 =* ;
+  havoc(nd1);
+  havoc(nd2);
   x = x+y;
   y = y+1;
   z = z^nd1;
@@ -2755,7 +2755,7 @@ bb1_t:
   assert (b1);
   goto bb2;
 bb2:
-  nd =* ;
+  havoc(nd);
   inc = ite(-nd <= -1,1,2);
   i = i+inc;
   b3 = (-i <= -1);
@@ -2810,7 +2810,7 @@ Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 entry:
   i = 0;
-  n =* ;
+  havoc(n);
   b = (n = 10);
   assume (b);
   goto bb1;
@@ -2840,7 +2840,7 @@ Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 entry:
   i = 0;
-  n =* ;
+  havoc(n);
   b = (n = 10);
   goto bb0,entry_cnt;
 bb0:
@@ -2877,7 +2877,7 @@ Abstract trace: entry bb0 entry_cnt (bb1 bb1_t bb2)^{3} bb1_f ret
 
 entry:
   i = 0;
-  n =* ;
+  havoc(n);
   trunc n:64 to n1:32;
   b1 = (n1 = 9);
   assume (b1);
@@ -3009,7 +3009,7 @@ entry:
 loop1_header:
   goto loop1_bb0,loop1_bb1,cont;
 loop1_bb0:
-  x =* ;
+  havoc(x);
   assume (-x <= 0);
   goto loop1_header;
 loop1_bb1:
@@ -3034,7 +3034,7 @@ cont:
 loop2_header:
   goto loop2_bb0,loop2_bb1,ret;
 loop2_bb0:
-  x =* ;
+  havoc(x);
   assume (-x <= -10);
   goto loop2_header;
 loop2_bb1:
@@ -3160,7 +3160,7 @@ zext of n2 to 64 bits 0000000000000000000000000000000011111111111100001011110111
 1001 %_s 1101 =1001
 entry:
   y = -10;
-  nd =* ;
+  havoc(nd);
   goto bb_nd;
 bb_nd:
   goto bb_nd_tt,bb_nd_ff;

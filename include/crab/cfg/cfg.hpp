@@ -537,9 +537,8 @@ namespace crab {
             (boost::make_shared<havoc_t>(m_lhs));
       }
       
-      void write (crab_os& o) const
-      {
-        o << m_lhs << " =*" << " "; // << this->m_live;
+      void write (crab_os& o) const {
+	o << "havoc(" << m_lhs << ")";
         return;
       }
     }; 
