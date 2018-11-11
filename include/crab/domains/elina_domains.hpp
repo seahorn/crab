@@ -928,6 +928,8 @@ namespace domains {
     void forget (const Range &vars) {
       crab::CrabStats::count (getDomainName() + ".count.forget");
       crab::ScopedCrabStats __st__(getDomainName() + ".forget");
+
+      if (is_bottom() || is_top()) return;
       
       std::vector<elina_dim_t> vector_dims;
       std::set<elina_dim_t> set_dims;
@@ -961,6 +963,13 @@ namespace domains {
       
       remove_dimensions (m_apstate, vector_dims);
       std::swap (m_var_map, res);
+      CRAB_LOG("elina", 
+	       crab::outs() << "--- " << "Forget {";
+	       for(auto v: vars) {
+		 crab::outs() << v <<";";
+	       }
+	       crab::outs()<< "}\n";
+	       crab::outs()<< *this << "\n";);      
     }
     
     void operator-=(variable_t var) {
@@ -992,6 +1001,9 @@ namespace domains {
 	remove_dimensions (m_apstate, vector_dims);
 	std::swap (m_var_map, res);
       }
+      CRAB_LOG("elina", 
+	       crab::outs() << "--- " << "Forget " << var << "\n"
+	                    << *this << "\n";);
     }
     
     // remove all variables except vars
@@ -1115,6 +1127,11 @@ namespace domains {
       
       if (csts.size () > 0)
 	*this += csts;
+
+      CRAB_LOG("elina", 
+	       crab::outs() << "--- " << v << " := " << ival << "\n"
+	                    << *this << "\n";);
+      
     }
     
     void operator+=(linear_constraint_system_t _csts) {
