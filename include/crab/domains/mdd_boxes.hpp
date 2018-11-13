@@ -839,6 +839,24 @@ namespace domains {
 	}
 	return true;
       }
+
+      #if 1
+      // Follows C semantics: true is any value different from 0
+      inline linear_constraint_t make_true(variable_t lhs){
+      	return linear_constraint_t(lhs != 0);
+      }
+      // Follows C semantics: false is 0
+      inline linear_constraint_t make_false(variable_t lhs){
+      	return linear_constraint_t(lhs == 0);
+      }
+      #else
+      inline linear_constraint_t make_true(variable_t lhs){
+	return linear_constraint_t(lhs >= 1);
+      }
+      inline linear_constraint_t make_false(variable_t lhs){
+	return linear_constraint_t(lhs <= 0);
+      }
+      #endif 
       
     private:
       
@@ -1380,7 +1398,7 @@ namespace domains {
 	  set(x, xi);
 	}
       }
-
+      
       ////////
       //// boolean_operators_api
       ////////
@@ -1395,9 +1413,11 @@ namespace domains {
 		               << "Before:\n" << *this <<"\n";);
 	
 	if (cst.is_tautology ()) {
-	  assign(lhs, number_t(1));
+	  this->operator-=(lhs);
+	  this->operator+=(make_true(lhs));	  
 	} else if (cst.is_contradiction ()) {
-	  assign(lhs, number_t(0));
+	  this->operator-=(lhs);
+	  this->operator+=(make_false(lhs));	  
 	} else {
 	  #ifdef MDD_REIFIED	  
 	  if (cst.is_inequality()) {
@@ -1411,9 +1431,69 @@ namespace domains {
 	  			mdd_reify_lin_t::apply(get_man(), m_state.get(),
 	  					       vlhs, hxs, k));
 	  } else {
-	    CRAB_WARN("mdd_boxes::assign_bool_cst with (dis)equalities not implemented");
-	    this->operator-=(lhs);
+	    mdd_boxes_domain_t dom(*this);
+	    auto cst_vars = cst.variables();
+	    dom.project(boost::make_iterator_range(cst_vars.begin(), cst_vars.end()));
+	    
+	    if (dom.is_top()) {
+	      this->operator-=(lhs);
+	      return;
+	    }
+	    
+	    mdd_boxes_domain_t tt(dom);
+	    mdd_boxes_domain_t ff(dom);
+	    tt += cst;
+	    tt += make_true(lhs);
+	    ff += cst.negate();
+	    ff += make_false(lhs);
+	    *this = *this & (tt | ff);
 	  }
+	  // else if (cst.is_equality()) {
+	  //   // break equality into two inequalities and "and" them
+	  //   /* x := y == z <--> 
+	  //      t1 := y <= z; 
+          //      t2 := y >= z; 
+          //      lhs := t1 and t2
+	  //   */
+
+	  //   // --- create two temporary variables
+	  //   variable_t tmp1(lhs.name().get_var_factory().get(lhs.name().index()));
+	  //   variable_t tmp2(lhs.name().get_var_factory().get(tmp1.name().index()));
+
+	  //   // variable_t tmp1(lhs.name().get_var_factory().get());
+	  //   // variable_t tmp2(lhs.name().get_var_factory().get());
+	    
+	  //   mdd_var_t vtmp1 = get_mdd_var_insert(tmp1);	  
+	  //   mdd_var_t vtmp2 = get_mdd_var_insert(tmp2);	  
+	  //   { 
+	  //     auto p = expr2linterms(cst.expression());
+	  //     linterm_vector xs(p.first);
+	  //     m_state = mdd_ref_t(get_man(),
+	  // 			  mdd_reify_lin_t::apply(get_man(), m_state.get(),
+	  // 						 vtmp1, hc::lookup(xs), -p.second));
+	  //   }
+	  //   { 
+	  //     auto p = expr2linterms(-cst.expression());
+	  //     linterm_vector xs(p.first);
+	  //     m_state = mdd_ref_t(get_man(),
+	  // 			  mdd_reify_lin_t::apply(get_man(), m_state.get(),
+	  // 						 vtmp2, hc::lookup(xs), -p.second));
+	  //   }
+	  //   mdd_var_t vlhs = get_mdd_var_insert(lhs);
+	  //   ::vec<mdd_var_t> xs;
+	  //   xs.push(vtmp1);
+	  //   xs.push(vtmp2);
+	  //   std::sort(xs.begin(), xs.end());
+	  //   m_state = mdd_ref_t(get_man(),
+	  // 			bool_and_reif_t::apply(get_man(), m_state.get(),
+	  // 					       vlhs, hc::lookup(xs)));
+	  // } else if (cst.is_disequality()) {
+	  //     TODO
+	  // } 
+	  // else {
+	  //   CRAB_WARN("mdd_boxes::assign_bool_cst with ", cst, " not implemented");
+	  //   this->operator-=(lhs);
+	  // }
 	  #else
 	  mdd_boxes_domain_t dom(*this);
 	  auto cst_vars = cst.variables();
@@ -1427,9 +1507,9 @@ namespace domains {
 	  mdd_boxes_domain_t tt(dom);
 	  mdd_boxes_domain_t ff(dom);
 	  tt += cst;
-	  tt += (lhs >= number_t(1));
+	  tt += make_true(lhs);
 	  ff += cst.negate();
-	  ff += (lhs <= number_t(0));
+	  ff += make_false(lhs);
 	  *this = *this & (tt | ff);
 	  #endif 
 	}
@@ -1460,13 +1540,8 @@ namespace domains {
 	  xs.push(vy);
 	  bool_xor_t::apply(get_man(), m_state.get(), hc::lookup(xs));
 	  #else
-	  #if 0
-	  // this is more efficient but assume T is "== 1" and F "== 0"
-	  assign(x, linear_expression_t(1 - y));
-	  #else
 	  // y = F -> x = T
 	  // y = T -> x = F
-	  // assume T is ">= 1" and F "<= 0"
 	  mdd_boxes_domain_t dom(*this);
 	  std::vector<variable_t> vars{y};
 	  dom.project(boost::make_iterator_range(vars.begin(), vars.end()));
@@ -1479,18 +1554,17 @@ namespace domains {
 	  mdd_boxes_domain_t d1(dom);
 	  mdd_boxes_domain_t d2(dom);
 	  linear_constraint_system_t csts;
-	  csts += (y <= 0);
-	  csts += (x >= 1);
+	  csts += make_false(y);
+	  csts += make_true(x);
 	  d1 += csts;
 
 	  csts.clear();
-	  csts += (y >= 1);
-	  csts += (x <= 0);
+	  csts += make_true(y);
+	  csts += make_false(x);
 	  d2 += csts;
 	  
 	  *this = *this & (d1 | d2);
 	  #endif
-	  #endif 
 	} else {
 	  assign(x, y);
 	}
@@ -1571,19 +1645,19 @@ namespace domains {
 	  mdd_boxes_domain_t split2(dom);
 	  mdd_boxes_domain_t split3(dom);	
 	  
-	  csts += linear_constraint_t(y >= 1);
-	  csts += linear_constraint_t(z >= 1);
-	  csts += linear_constraint_t(x >= 1);
+	  csts += make_true(y);
+	  csts += make_true(z);
+	  csts += make_true(x);
 	  split1 += csts;
 	  
 	  csts.clear();
-	  csts += linear_constraint_t(y <= 0);
-	  csts += linear_constraint_t(x <= 0);
+	  csts += make_false(y);
+	  csts += make_false(x);
 	  split2 += csts;
 	  
 	  csts.clear();
-	  csts += linear_constraint_t(z <= 0);
-	  csts += linear_constraint_t(x <= 0);
+	  csts += make_false(z);
+	  csts += make_false(x);
 	  split3 += csts;
 
 	  *this = *this & (split1 | (split2 | split3));
@@ -1596,19 +1670,19 @@ namespace domains {
 	  mdd_boxes_domain_t split2(dom);
 	  mdd_boxes_domain_t split3(dom);	
 	  	  
-	  csts += linear_constraint_t(y <= 0);
-	  csts += linear_constraint_t(z <= 0);
-	  csts += linear_constraint_t(x <= 0);
+	  csts += make_false(y);
+	  csts += make_false(z);
+	  csts += make_false(x);
 	  split1 += csts;
 	  
 	  csts.clear();
-	  csts += linear_constraint_t(y >= 1);
-	  csts += linear_constraint_t(x >= 1);
+	  csts += make_true(y);
+	  csts += make_true(x);
 	  split2 += csts;
 	  
 	  csts.clear();
-	  csts += linear_constraint_t(z >= 1);
-	  csts += linear_constraint_t(x >= 1);
+	  csts += make_true(z);
+	  csts += make_true(x);
 	  split3 += csts;
 
 	  *this = *this & (split1 | (split2 | split3));
@@ -1623,12 +1697,12 @@ namespace domains {
 	  linear_expression_t lin_z(z);
 	  
 	  csts += linear_constraint_t(lin_y == lin_z);
-	  csts += linear_constraint_t(x <= 0);
+	  csts += make_false(x);
 	  split1 += csts;
 	  
 	  csts.clear();
 	  csts += linear_constraint_t(lin_y != lin_z);
-	  csts += linear_constraint_t(x >= 1);
+	  csts += make_true(x);
 	  split2 += csts;
 
 	  *this = *this & (split1 | split2);	  
@@ -1640,7 +1714,6 @@ namespace domains {
 	CRAB_LOG("mdd-boxes", crab::outs() << "After:\n" << *this << "\n");
       }
 
-      // x iff y
       void assume_bool (variable_t x, bool is_negated) override {
 	crab::CrabStats::count (getDomainName() + ".count.assume_bool");
 	crab::ScopedCrabStats __st__(getDomainName() + ".assume_bool");
@@ -1655,9 +1728,9 @@ namespace domains {
 		 });
 	
 	if (is_negated) {
-	  *this += linear_constraint_t(x <= 0);
+	  *this += make_false(x);
 	} else {
-	  *this += linear_constraint_t(x >= 1);	  
+	  *this += make_true(x);	  
 	}
 
 	CRAB_LOG("mdd-boxes", crab::outs() << *this << "\n";);
