@@ -1144,6 +1144,11 @@ namespace domains {
 	*this = bottom ();
 	return;
       }
+
+      if (_csts.is_true()) {
+	return;
+      }
+      
       
       // XXX: filter out unsigned linear inequalities, and analyze
       //      separately disequalities because elina does not support
@@ -1154,7 +1159,12 @@ namespace domains {
 	  CRAB_WARN("unsigned inequality skipped");
 	  continue;
 	}
-	if (c.is_disequation()) {
+        if (c.is_strict_inequality()) {
+	  // We try to convert a strict to non-strict.
+	  csts += linear_constraint_impl::strict_to_non_strict_inequality(c);
+	} else if (c.is_disequation()) {
+	  // We try to convert a disequation into conjunctive
+	  // inequalities
 	  inequalities_from_disequation(c.expression(), csts);
 	} else {
 	  csts += c;
@@ -1167,10 +1177,13 @@ namespace domains {
 	*this = bottom();
 	return;
       }
-      
+
+      if (csts.is_true()) {
+	return;
+      }
+
       elina_tcons0_array_t array = elina_tcons0_array_make (csts.size ());
       unsigned i=0;
-      
       for (auto cst : csts) {
 	elina_tcons0_t tcons = const2tconst (cst);
 	array.p[i] = tcons;
@@ -1183,7 +1196,7 @@ namespace domains {
       for (unsigned i=0; i < get_dims (m_apstate) ; i++){
 	std::string varname;
 	if (has_variable (m_var_map, i))
-	  varname = get_variable (m_var_map, i).str ();
+	  varname = get_variable (m_var_map, i).name().str ();
 	else // unused dimension
 	  varname = std::string ("_x") + std::to_string (i);
 	char* name = new char [varname.length () + 1];
@@ -1193,7 +1206,7 @@ namespace domains {
       elina_tcons0_array_fprint (stdout, &array, &names[0]);
       for (auto n : names) { delete n; }
       #endif 
-      
+
       m_apstate = elinaPtr (get_man (), 
 			    elina_abstract0_meet_tcons_array (get_man (), false, 
 							      &*m_apstate, &array));
