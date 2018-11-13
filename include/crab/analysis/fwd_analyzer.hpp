@@ -48,9 +48,9 @@ namespace crab {
      **/
     template< typename CFG, typename AbsTr>
     class fwd_analyzer: 
-        public ikos::interleaved_fwd_fixpoint_iterator< typename CFG::basic_block_label_t, 
-                                                        CFG, 
-                                                        typename AbsTr::abs_dom_t >,
+        public ikos::interleaved_fwd_fixpoint_iterator<typename CFG::basic_block_label_t, 
+						       CFG, 
+						       typename AbsTr::abs_dom_t>,
         public boost::noncopyable {
 
      public:
@@ -65,42 +65,28 @@ namespace crab {
 
       typedef ikos::interleaved_fwd_fixpoint_iterator<basic_block_label_t, CFG, abs_dom_t>
       fwd_iterator_t;
-      typedef boost::unordered_map<basic_block_label_t, abs_dom_t> invariant_map_t;
       
      public:
 
       typedef typename fwd_iterator_t::assumption_map_t assumption_map_t;
-      // liveness info
       typedef liveness<CFG> liveness_t;     
-      // WTO
       typedef typename fwd_iterator_t::wto_t wto_t;
+      typedef typename fwd_iterator_t::iterator iterator;
+      typedef typename fwd_iterator_t::const_iterator const_iterator;
+
+     private:
       
-     private:
-
       typedef typename liveness_t::set_t live_set_t;     
-
-     public:
-
-      typedef typename invariant_map_t::iterator iterator;        
-      typedef typename invariant_map_t::const_iterator const_iterator;        
-
-     private:
 
       abs_tr_ptr m_abs_tr; // the abstract transformer
       const liveness_t* m_live;
       live_set_t m_formals;
       
-      // Preserve invariants at the entry and exit. This might be
-      // expensive in terms of memory. To mitigate this, we could
-      // compute the invariants at the exit by propagating locally
-      // from the invariants at the entry.
-      invariant_map_t  m_pre_map;
-      invariant_map_t  m_post_map;
-
       void prune_dead_variables (abs_dom_t &inv, basic_block_label_t node) {
-	crab::ScopedCrabStats __st__("Pruning dead variables");		
         if (!m_live) return;
 
+	crab::ScopedCrabStats __st__("Pruning dead variables");
+	
         if (inv.is_bottom() || inv.is_top()) return;
         auto dead = m_live->dead_exit (node);       
 
@@ -110,8 +96,7 @@ namespace crab {
 
       //! Given a basic block and the invariant at the entry it produces
       //! the invariant at the exit of the block.
-      void analyze (basic_block_label_t node, abs_dom_t &inv) 
-      { 
+      void analyze (basic_block_label_t node, abs_dom_t &inv) {
         auto &b = this->get_cfg().get_node (node);
 	// XXX: set takes a reference to inv so no copies here
 	m_abs_tr->set (inv);
@@ -119,35 +104,8 @@ namespace crab {
         prune_dead_variables (inv, node);
       } 
       
-      void process_pre (basic_block_label_t node, abs_dom_t inv) 
-      {
-        crab::ScopedCrabStats __st__("Store invariants");	
-        auto it = m_pre_map.find (node);
-        if (it == m_pre_map.end())
-        {          
-          if (inv.is_bottom ())
-            m_pre_map.insert(std::make_pair (node, abs_dom_t::bottom ()));
-          else if (inv.is_top ())
-            m_pre_map.insert(std::make_pair (node, abs_dom_t::top ()));
-          else
-            m_pre_map.insert(std::make_pair (node, inv));
-        }
-      }
-      
-      void process_post (basic_block_label_t node, abs_dom_t inv) 
-      {
-	crab::ScopedCrabStats __st__("Store invariants");		
-        auto it = m_post_map.find (node);
-        if (it == m_post_map.end())
-        {
-          if (inv.is_bottom ())
-            m_post_map.insert(std::make_pair (node, abs_dom_t::bottom ()));
-          else if (inv.is_top ())
-            m_post_map.insert(std::make_pair (node, abs_dom_t::top ()));
-          else
-            m_post_map.insert(std::make_pair (node, inv));
-        }
-      }
+      void process_pre (basic_block_label_t node, abs_dom_t inv) {}
+      void process_post (basic_block_label_t node, abs_dom_t inv) {}
       
      public:
 
@@ -158,10 +116,11 @@ namespace crab {
                     size_t jump_set_size,
 		    // live can be nullptr if no live info is available
 		    const liveness_t* live)
-	: fwd_iterator_t (cfg, wto, widening_delay, descending_iters, jump_set_size), 
-	  m_abs_tr (abs_tr),
-	  m_live (live) {
-
+	: fwd_iterator_t(cfg, wto,
+			 widening_delay, descending_iters, jump_set_size,
+			 false /*disable processor*/), 
+	  m_abs_tr(abs_tr),
+	  m_live(live) {
 	CRAB_VERBOSE_IF(1, crab::outs() << "Type checking CFG ... ";);
 	crab::CrabStats::resume("CFG type checking");
 	crab::cfg::type_checker<CFG> tc(this->_cfg);
@@ -181,18 +140,18 @@ namespace crab {
 
       }
       
-      iterator       pre_begin ()       { return m_pre_map.begin(); } 
-      iterator       pre_end ()         { return m_pre_map.end();   }
-      const_iterator pre_begin () const { return m_pre_map.begin(); }
-      const_iterator pre_end ()   const { return m_pre_map.end();   }
+      iterator       pre_begin ()       { return this->_pre.begin(); } 
+      iterator       pre_end ()         { return this->_pre.end();   }
+      const_iterator pre_begin () const { return this->_pre.begin(); }
+      const_iterator pre_end ()   const { return this->_pre.end();   }
       
-      iterator       post_begin ()       { return m_post_map.begin(); } 
-      iterator       post_end ()         { return m_post_map.end();   }
-      const_iterator post_begin () const { return m_post_map.begin(); }
-      const_iterator post_end ()   const { return m_post_map.end();   }
+      iterator       post_begin ()       { return this->_post.begin(); } 
+      iterator       post_end ()         { return this->_post.end();   }
+      const_iterator post_begin () const { return this->_post.begin(); }
+      const_iterator post_end ()   const { return this->_post.end();   }
       
       //! Trigger the fixpoint computation 
-      void Run ()  {	
+      void Run ()  {
         // initialization of static data
         domains::domain_traits<abs_dom_t>::do_initialization (this->get_cfg());
         // XXX: inv was created before the static data is initialized
@@ -216,26 +175,37 @@ namespace crab {
       }
 
       //! Return the invariants that hold at the entry of b
-      abs_dom_t operator[] (basic_block_label_t b) const {
-        return get_pre (b);
+      inline abs_dom_t operator[](basic_block_label_t b) const {
+        return get_pre(b);
       }
       
       //! Return the invariants that hold at the entry of b
-      abs_dom_t get_pre (basic_block_label_t b) const { 
-        auto it = m_pre_map.find (b);
-        if (it == m_pre_map.end ())
-          return abs_dom_t::top ();
-        else
+      abs_dom_t get_pre(basic_block_label_t b) const {
+        auto it = this->_pre.find (b);
+        if (it == this->_pre.end ()) {
+          return abs_dom_t::bottom();
+	  // if the basic block is not in the invariant table it must
+	  // be because it was not reached by the analysis. We
+	  // returned top but it never had real effect because
+	  // process_pre made sure that all unreachable blocks were in
+	  // the invariant table with a bottom invariant. This was
+	  // just a waste of space.
+ 	  // 
+	  // return abs_dom_t::top ();
+	} else {
           return it->second;
+	}
       }
       
       //! Return the invariants that hold at the exit of b
-      abs_dom_t get_post (basic_block_label_t b) const {
-        auto it = m_post_map.find (b);
-        if (it == m_post_map.end ())
-          return abs_dom_t::top ();
-        else 
-          return it->second;      
+      abs_dom_t get_post(basic_block_label_t b) const {
+        auto it = this->_post.find (b);
+        if (it == this->_post.end ()) {
+          return abs_dom_t::bottom();	  
+          //return abs_dom_t::top ();
+	} else {
+          return it->second;
+	}
       }
 
       //! Return the WTO of the CFG. The WTO contains also how many
@@ -246,8 +216,8 @@ namespace crab {
 
       // clear all invariants (pre and post)
       void clear() {
-	m_pre_map.clear();
-	m_post_map.clear();
+	this->_pre.clear();
+	this->_post.clear();
       }
       
     }; 
@@ -304,11 +274,11 @@ namespace crab {
 				  unsigned int widening_delay=1,
 				  unsigned int descending_iters=UINT_MAX,
 				  size_t jump_set_size=0):
-	m_init (init),
-	m_abs_tr (&m_init),
-	m_analyzer (cfg, nullptr, &m_abs_tr, 
-		    widening_delay, descending_iters, jump_set_size,
-		    live) { }
+	m_init(init),
+	m_abs_tr(&m_init),
+	m_analyzer(cfg, nullptr, &m_abs_tr, 
+		   widening_delay, descending_iters, jump_set_size,
+		   live) { }
 
       intra_fwd_analyzer_wrapper (CFG cfg,
 				  // avoid precompute wto if already available
@@ -321,11 +291,11 @@ namespace crab {
 				  unsigned int widening_delay=1,
 				  unsigned int descending_iters=UINT_MAX,
 				  size_t jump_set_size=0):
-	m_init (init),
-	m_abs_tr (&m_init),
-	m_analyzer (cfg, wto, &m_abs_tr, 
-		    widening_delay, descending_iters, jump_set_size,
-		    live) { }
+	m_init(init),
+	m_abs_tr(&m_init),
+	m_analyzer(cfg, wto, &m_abs_tr, 
+		   widening_delay, descending_iters, jump_set_size,
+		   live) { }
       
       
       

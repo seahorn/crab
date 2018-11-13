@@ -537,9 +537,8 @@ namespace crab {
             (boost::make_shared<havoc_t>(m_lhs));
       }
       
-      void write (crab_os& o) const
-      {
-        o << m_lhs << " =*" << " "; // << this->m_live;
+      void write (crab_os& o) const {
+	o << "havoc(" << m_lhs << ")";
         return;
       }
     }; 
@@ -655,7 +654,10 @@ namespace crab {
       
       virtual void write (crab_os & o) const
       {
-        o << "assert (" << m_cst << ")"; 
+        o << "assert (" << m_cst << ")";
+	if (this->m_dbg_info.has_debug()) {
+	  o << " // line=" << this->m_dbg_info.m_line << " column=" << this->m_dbg_info.m_col;  
+	}
         return;
       }
     }; 
@@ -869,7 +871,7 @@ namespace crab {
       virtual void write(crab_os& o) const
       {
         o << "array_store(" 
-          << m_arr << "," << m_index << "," << m_value 
+          << m_arr << "," << m_index << "," << m_value  << ",sz=" << elem_size()
           << ")"; 
         return;
       }
@@ -939,7 +941,7 @@ namespace crab {
       
       virtual void write(crab_os& o) const {
         o << m_lhs << " = " 
-          << "array_load(" << m_array << "," << m_index  << ")"; 
+          << "array_load(" << m_array << "," << m_index  << ",sz=" << elem_size() << ")"; 
         return;
       }
     }; 

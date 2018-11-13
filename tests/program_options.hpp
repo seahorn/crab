@@ -21,6 +21,8 @@ namespace {
   ("stats",boost::program_options::bool_switch(&stats_enabled), "Enable stats");                      \
   po.add_options()                                                                                    \
   ("disable-warnings", "Disable warning messages");                                                   \
+  po.add_options()                                                                                    \
+  ("sanity", "Enable sanity checks");                                                                 \
   boost::program_options::options_description cmmdline_options;                                       \
   cmmdline_options.add(po);                                                                           \
   boost::program_options::variables_map vm;                                                           \
@@ -44,6 +46,10 @@ namespace {
   }									                              \
   if (vm.count("disable-warnings")) {						                      \
     crab::CrabEnableWarningMsg(false);					                              \
+  }									                              \
+  if (vm.count("sanity")) {						                              \
+    crab::CrabEnableSanityChecks(true);					                              \
   }	  
+  
 } //end namespace
 #endif

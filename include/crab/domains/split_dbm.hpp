@@ -1001,8 +1001,8 @@ namespace crab {
       
    public:
       
-      SplitDBM_(bool is_bottom = false): _is_bottom(is_bottom)
-      {
+      SplitDBM_(bool is_bottom = false)
+	: _is_bottom(is_bottom) {
         g.growTo(1);  // Allocate the zero vector
         potential.push_back(Wt(0));
         rev_map.push_back(boost::none);
@@ -1010,13 +1010,12 @@ namespace crab {
 
       // FIXME: Rewrite to avoid copying if o is _|_
       SplitDBM_(const DBM_t& o)
-        : vert_map(o.vert_map),
-          rev_map(o.rev_map),
-          g(o.g),
-          potential(o.potential),
-          unstable(o.unstable),
-          _is_bottom(false)
-      {
+        : vert_map(o.vert_map)
+	, rev_map(o.rev_map)
+	, g(o.g)
+	, potential(o.potential)
+	, unstable(o.unstable)
+	, _is_bottom(false) {      
         crab::CrabStats::count (getDomainName() + ".count.copy");
         crab::ScopedCrabStats __st__(getDomainName() + ".copy");
 
@@ -1028,40 +1027,61 @@ namespace crab {
       }
 
       SplitDBM_(DBM_t&& o)
-        : vert_map(std::move(o.vert_map)), rev_map(std::move(o.rev_map)),
-          g(std::move(o.g)), potential(std::move(o.potential)),
-          unstable(std::move(o.unstable)),
-          _is_bottom(o._is_bottom)
-      { }
+        : vert_map(std::move(o.vert_map))
+	, rev_map(std::move(o.rev_map))
+	, g(std::move(o.g))
+	, potential(std::move(o.potential))
+	, unstable(std::move(o.unstable))
+        , _is_bottom(o._is_bottom) {
+	crab::CrabStats::count (getDomainName() + ".count.copy");
+        crab::ScopedCrabStats __st__(getDomainName() + ".copy");
+      }
 
       // We should probably use the magical rvalue ownership semantics stuff.
       SplitDBM_(vert_map_t& _vert_map, rev_map_t& _rev_map, graph_t& _g,
-		std::vector<Wt>& _potential,
-        vert_set_t& _unstable)
-        : vert_map(_vert_map), rev_map(_rev_map), g(_g),
-	  potential(_potential), unstable(_unstable), _is_bottom(false)
-      {
+		std::vector<Wt>& _potential, vert_set_t& _unstable)
+        : vert_map(_vert_map)
+	, rev_map(_rev_map)
+	, g(_g)
+	, potential(_potential)
+	, unstable(_unstable)
+	, _is_bottom(false) {
+	
+	crab::CrabStats::count (getDomainName() + ".count.copy");
+        crab::ScopedCrabStats __st__(getDomainName() + ".copy");
+	
         CRAB_WARN("Non-moving constructor.");
         assert(g.size() > 0);
       }
       
       SplitDBM_(vert_map_t&& _vert_map, rev_map_t&& _rev_map, graph_t&& _g,
 		std::vector<Wt>&& _potential, vert_set_t&& _unstable)
-        : vert_map(std::move(_vert_map)), rev_map(std::move(_rev_map)), g(std::move(_g)),
-	  potential(std::move(_potential)), unstable(std::move(_unstable)), _is_bottom(false)
-      { assert(g.size() > 0); }
+        : vert_map(std::move(_vert_map))
+	, rev_map(std::move(_rev_map))
+	, g(std::move(_g))
+	, potential(std::move(_potential))
+	, unstable(std::move(_unstable))
+	, _is_bottom(false) {
+
+	crab::CrabStats::count (getDomainName() + ".count.copy");
+        crab::ScopedCrabStats __st__(getDomainName() + ".copy");
+
+	CRAB_LOG("zones-split-size",
+                 auto p = size();
+                 crab::outs() << "#nodes = " << p.first << " #edges=" << p.second << "\n";);
+	
+	assert(g.size() > 0);
+      }
 
 
-      SplitDBM_& operator=(const SplitDBM_& o)
-      {
+      SplitDBM_& operator=(const SplitDBM_& o) {     
         crab::CrabStats::count (getDomainName() + ".count.copy");
         crab::ScopedCrabStats __st__(getDomainName() + ".copy");
 
-        if(this != &o)
-        {
-          if(o._is_bottom)
+        if(this != &o) {
+          if(o._is_bottom) {
             set_to_bottom();
-          else {
+	  } else {
             _is_bottom = false;
             vert_map = o.vert_map;
             rev_map = o.rev_map;
@@ -1074,8 +1094,10 @@ namespace crab {
         return *this;
       }
 
-      SplitDBM_& operator=(SplitDBM_&& o)
-      {
+      SplitDBM_& operator=(SplitDBM_&& o) {
+        crab::CrabStats::count (getDomainName() + ".count.copy");
+        crab::ScopedCrabStats __st__(getDomainName() + ".copy");
+      
         if(o._is_bottom) {
           set_to_bottom();
         } else {
@@ -1601,6 +1623,9 @@ namespace crab {
       }	
 
       void normalize() {
+        crab::CrabStats::count (getDomainName() + ".count.normalize");
+        crab::ScopedCrabStats __st__(getDomainName() + ".normalize");
+	
         // dbm_canonical(_dbm);
         // Always maintained in normal form, except for widening
         #ifdef SDBM_NO_NORMALIZE
@@ -1626,6 +1651,9 @@ namespace crab {
       }
 
       void operator-=(variable_t v) {
+        crab::CrabStats::count (getDomainName() + ".count.forget");
+        crab::ScopedCrabStats __st__(getDomainName() + ".forget");
+	
         if (is_bottom ())
           return;
         normalize();
@@ -1920,7 +1948,7 @@ namespace crab {
 
 	// XXX: we do nothing with unsigned linear inequalities
 	if (cst.is_inequality() && cst.is_unsigned()) {
-	  CRAB_WARN("unsigned inequality skipped");	  
+	  CRAB_WARN("unsigned inequality ", cst, " skipped by split_dbm domain");	  
 	  return;
 	}
 	
@@ -1938,21 +1966,33 @@ namespace crab {
           return ;
         }
 
-        if (cst.is_inequality())
-        {
-          if(!add_linear_leq(cst.expression()))
+        if (cst.is_inequality()) {
+          if(!add_linear_leq(cst.expression())) {
             set_to_bottom();
+	  }
 	  //  g.check_adjs();
           CRAB_LOG("zones-split",
                    crab::outs() << "--- "<< cst<< "\n"<< *this <<"\n");
           return;
         }
 
-        if (cst.is_equality())
-        {
+        if (cst.is_strict_inequality()) {
+	  // We try to convert a strict to non-strict.
+	  auto nc = linear_constraint_impl::strict_to_non_strict_inequality(cst);
+	  if (nc.is_inequality()) {
+	    // here we succeed
+	    if(!add_linear_leq(nc.expression())) {
+	      set_to_bottom();
+	    }
+	    CRAB_LOG("zones-split",
+		     crab::outs() << "--- "<< cst<< "\n"<< *this <<"\n");
+	    return;
+	  }
+	}
+	
+        if (cst.is_equality()) {
           linear_expression_t exp = cst.expression();
-          if(!add_linear_leq(exp) || !add_linear_leq(-exp))
-          {
+          if(!add_linear_leq(exp) || !add_linear_leq(-exp)) {
             CRAB_LOG("zones-split", crab::outs() << " ~~> _|_" <<"\n");
             set_to_bottom();
           }
@@ -1962,14 +2002,12 @@ namespace crab {
           return;
         }
 
-        if (cst.is_disequation())
-        {
+        if (cst.is_disequation()) {
           add_disequation(cst.expression());
           return;
         }
 
-        CRAB_WARN("Unhandled constraint in SplitDBM");
-
+        CRAB_WARN("Unhandled constraint ", cst, " by split_dbm");
         CRAB_LOG("zones-split",
                  crab::outs() << "---"<< cst<< "\n"<< *this <<"\n");
         return;
@@ -2246,6 +2284,9 @@ namespace crab {
       }
 
       void rename(const variable_vector_t &from, const variable_vector_t &to) {
+        crab::CrabStats::count (getDomainName() + ".count.rename");
+        crab::ScopedCrabStats __st__(getDomainName() + ".rename");
+	
 	if (is_top () || is_bottom()) return;
 	
 	// renaming vert_map by creating a new vert_map since we are
@@ -2463,6 +2504,8 @@ namespace crab {
       }
 
       linear_constraint_system_t to_linear_constraint_system () {
+        crab::CrabStats::count (getDomainName() + ".count.to_linear_constraints");
+        crab::ScopedCrabStats __st__(getDomainName() + ".to_linear_constraints");
 
         normalize ();
 
@@ -2514,6 +2557,11 @@ namespace crab {
 	}
       }
 
+      // return number of vertices and edges
+      std::pair<std::size_t, std::size_t> size() const {
+	return {g.size(), g.num_edges()};
+      }
+      
       static std::string getDomainName () {
         return "SplitDBM";
       }
@@ -2530,7 +2578,7 @@ namespace crab {
 	     class Params=SDBM_impl::DefaultParams<Number>>
     class SplitDBM:
       public abstract_domain<Number, VariableName,
-			     SplitDBM<Number,VariableName,Params> > {
+			     SplitDBM<Number,VariableName,Params>> {
 
       typedef SplitDBM<Number, VariableName, Params> DBM_t;
       typedef abstract_domain<Number,VariableName,DBM_t> abstract_domain_t;
@@ -2553,7 +2601,8 @@ namespace crab {
       typedef SplitDBM_<Number, VariableName, Params> dbm_impl_t;
       typedef std::shared_ptr<dbm_impl_t> dbm_ref_t;
 
-      SplitDBM(dbm_ref_t _ref) : norm_ref(_ref) { }
+      SplitDBM(dbm_ref_t _ref)
+	: norm_ref(_ref) { }
 
       SplitDBM(dbm_ref_t _base, dbm_ref_t _norm) 
         : base_ref(_base), norm_ref(_norm) { }
@@ -2565,7 +2614,7 @@ namespace crab {
 
       DBM_t create_base(dbm_impl_t&& t) {
         dbm_ref_t base = std::make_shared<dbm_impl_t>(t);
-        dbm_ref_t norm = std::make_shared<dbm_impl_t>(std::move(t));  
+        dbm_ref_t norm = std::make_shared<dbm_impl_t>(std::move(t));
         return DBM_t(base, norm);
       }
 
@@ -2607,21 +2656,19 @@ namespace crab {
 
       bool is_bottom() { return norm().is_bottom(); }
       bool is_top() { return norm().is_top(); }
-      bool operator<=(DBM_t& o) { return norm() <= o.norm(); }
+      bool operator<=(DBM_t o) { return norm() <= o.norm(); }
       void operator|=(DBM_t o) { lock(); norm() |= o.norm(); }
       DBM_t operator|(DBM_t o) { return create(norm() | o.norm()); }
-      //DBM_t operator||(DBM_t o) { return create_base(base() || o.norm()); }
-      DBM_t operator||(DBM_t o) { return create(norm() || o.norm()); }
+      DBM_t operator||(DBM_t o) { return create_base(base() || o.norm()); }
       DBM_t operator&(DBM_t o) { return create(norm() & o.norm()); }
       DBM_t operator&&(DBM_t o) { return create(norm() && o.norm()); }
 
       template<typename Thresholds>
       DBM_t widening_thresholds (DBM_t o, const Thresholds &ts) {
-        //return create_base(base().template widening_thresholds<Thresholds>(o.norm(), ts));
-	return create(norm().template widening_thresholds<Thresholds>(o.norm(), ts));
+        return create_base(base().template widening_thresholds<Thresholds>(o.norm(), ts));
       }
 
-      void normalize() { norm().normalize(); }
+      void normalize() { lock(); norm().normalize(); }
       void operator+=(linear_constraint_system_t csts) { lock(); norm() += csts; } 
       void operator-=(variable_t v) { lock(); norm() -= v; }
       interval_t operator[](variable_t x) { return norm()[x]; }
@@ -2633,17 +2680,13 @@ namespace crab {
       void apply(operation_t op, variable_t x, variable_t y, Number k) {
         lock(); norm().apply(op, x, y, k);
       }
-      void backward_assign(variable_t x, linear_expression_t e,
-			   DBM_t invariant) {
+      void backward_assign(variable_t x, linear_expression_t e, DBM_t invariant) {
 	lock(); norm().backward_assign(x, e, invariant.norm());
       }
-      void backward_apply(operation_t op,
-			  variable_t x, variable_t y, Number k,
-			  DBM_t invariant) {
+      void backward_apply(operation_t op, variable_t x, variable_t y, Number k, DBM_t invariant) {
 	lock(); norm().backward_apply(op, x, y, k, invariant.norm());
       }
-      void backward_apply(operation_t op,
-			  variable_t x, variable_t y, variable_t z,
+      void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
 			  DBM_t invariant) {
 	lock(); norm().backward_apply(op, x, y, z, invariant.norm());
       }	
@@ -2687,7 +2730,9 @@ namespace crab {
       }
       
       static std::string getDomainName () { return dbm_impl_t::getDomainName(); }
-
+      std::pair<std::size_t, std::size_t> size() const {
+	return norm().size();
+      }
       bool is_unsat (linear_constraint_t cst){ return norm().is_unsat(cst);}
       void active_variables(std::vector<variable_t>& out){ norm().active_variables(out);}
       

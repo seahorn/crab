@@ -46,6 +46,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/unordered_map.hpp>
+
 #include <crab/common/types.hpp>
 #include <crab/common/debug.hpp>
 #include <crab/common/stats.hpp>
@@ -69,24 +70,29 @@ namespace ikos {
   class interleaved_fwd_fixpoint_iterator: 
       public fixpoint_iterator< NodeName, CFG, AbstractValue > {
 
-    friend class interleaved_fwd_fixpoint_iterator_impl::wto_iterator< NodeName, CFG, AbstractValue >;
+    friend class interleaved_fwd_fixpoint_iterator_impl::wto_iterator<NodeName, CFG, AbstractValue>;
 
   public:
+    
     typedef wto< NodeName, CFG> wto_t;
-
+    typedef boost::unordered_map<NodeName,AbstractValue> assumption_map_t;
+    
   private:
+    
     typedef boost::unordered_map<NodeName,AbstractValue> invariant_table_t;
-    typedef boost::shared_ptr<invariant_table_t> invariant_table_ptr;
-    typedef interleaved_fwd_fixpoint_iterator_impl::wto_iterator< NodeName, CFG, AbstractValue > wto_iterator_t;
-    typedef interleaved_fwd_fixpoint_iterator_impl::wto_processor< NodeName, CFG, AbstractValue > wto_processor_t;
+    typedef interleaved_fwd_fixpoint_iterator_impl::wto_iterator<NodeName, CFG, AbstractValue> wto_iterator_t;
+    typedef interleaved_fwd_fixpoint_iterator_impl::wto_processor<NodeName, CFG, AbstractValue> wto_processor_t;
     typedef crab::iterators::thresholds_t thresholds_t;
     typedef crab::iterators::wto_thresholds<NodeName, CFG> wto_thresholds_t;
 
   protected:
     
+    typedef typename invariant_table_t::iterator iterator;
+    typedef typename invariant_table_t::const_iterator const_iterator;
+    
     CFG _cfg;
     wto_t _wto;
-    invariant_table_ptr _pre, _post;
+    invariant_table_t _pre, _post;
     // number of iterations until triggering widening
     unsigned int _widening_delay;
     // number of narrowing iterations. If the narrowing operator is
@@ -96,31 +102,39 @@ namespace ikos {
     // termination.
     unsigned int _descending_iterations;
     // whether jump set is used for widening
-    bool _use_widening_jump_set;    
+    bool _use_widening_jump_set;
     // set of thresholds to jump during widening
     typename wto_thresholds_t::thresholds_map_t _jump_set;
+    // enable post-processing of the invariants
+    bool _enable_processor;
 
   private:
     
-    void set(invariant_table_ptr table, NodeName node, const AbstractValue& v) {
-      std::pair< typename invariant_table_t::iterator, bool > res = 
-          table->insert(std::make_pair(node, v));
+    void set(invariant_table_t& table, NodeName node, const AbstractValue& v) {
+      crab::CrabStats::count ("Fixpo.invariant_table.update");
+      crab::ScopedCrabStats __st__("Fixpo.invariant_table.update");
+      
+      std::pair<typename invariant_table_t::iterator, bool> res = 
+	table.emplace(std::make_pair(node, v));
       if (!res.second) {
-        (res.first)->second = v;
+        (res.first)->second = std::move(v);
       }
     }
     
-    void set_pre(NodeName node, const AbstractValue& v) {
+    inline void set_pre(NodeName node, const AbstractValue& v) {
       this->set(this->_pre, node, v);
     }
 
-    void set_post(NodeName node, const AbstractValue& v) {
+    inline void set_post(NodeName node, const AbstractValue& v) {
       this->set(this->_post, node, v);
     }
 
-    AbstractValue get(invariant_table_ptr table, NodeName n) {
-      typename invariant_table_t::iterator it = table->find(n);
-      if (it != table->end()) {
+    AbstractValue get(invariant_table_t& table, NodeName n) {
+      crab::CrabStats::count ("Fixpo.invariant_table.lookup");
+      crab::ScopedCrabStats __st__("Fixpo.invariant_table.lookup");
+      
+      typename invariant_table_t::iterator it = table.find(n);
+      if (it != table.end()) {
         return it->second;
       } else {
         return AbstractValue::bottom();
@@ -129,6 +143,8 @@ namespace ikos {
 
     AbstractValue extrapolate(NodeName node, unsigned int iteration, 
                               AbstractValue before, AbstractValue after) {
+      crab::CrabStats::count ("Fixpo.extrapolate");
+      crab::ScopedCrabStats __st__("Fixpo.extrapolate");
 
       CRAB_VERBOSE_IF(1, crab::outs() << "Increasing iteration=" << iteration << "\n"
 		      << "Widening at " << crab::cfg_impl::get_label_str(node) << "\n";);      
@@ -166,6 +182,8 @@ namespace ikos {
 
     AbstractValue refine(NodeName node, unsigned int iteration, 
                          AbstractValue before, AbstractValue after) {
+      crab::CrabStats::count ("Fixpo.refine");
+      crab::ScopedCrabStats __st__("Fixpo.refine");
 
       CRAB_VERBOSE_IF(2, 
 		      crab::outs() << "Decreasing iteration=" << iteration << "\n"
@@ -201,20 +219,18 @@ namespace ikos {
     }
     
   public:
-
-    typedef invariant_table_t assumption_map_t;
     
     interleaved_fwd_fixpoint_iterator(CFG cfg, const wto_t *wto,
                                       unsigned int widening_delay,
                                       unsigned int descending_iterations,
-                                      size_t jump_set_size): 
-        _cfg(cfg),
-        _wto(!wto ? cfg: *wto),
-        _pre(boost::make_shared<invariant_table_t>()),
-        _post(boost::make_shared<invariant_table_t>()),
-        _widening_delay(widening_delay),
-        _descending_iterations(descending_iterations),
-        _use_widening_jump_set (jump_set_size > 0) {
+                                      size_t jump_set_size,
+				      bool enable_processor = true)
+      : _cfg(cfg)
+      , _wto(!wto ? cfg: *wto)
+      , _widening_delay(widening_delay)
+      , _descending_iterations(descending_iterations)
+      , _use_widening_jump_set (jump_set_size > 0)
+      , _enable_processor(enable_processor) {
       initialize_thresholds(jump_set_size);
     }
     
@@ -242,11 +258,12 @@ namespace ikos {
       this->set_pre(this->_cfg.entry(), init);
       wto_iterator_t iterator(this);
       this->_wto.accept(&iterator);
-      wto_processor_t processor(this);
-      this->_wto.accept(&processor);
+      if (_enable_processor) {
+	wto_processor_t processor(this);
+	this->_wto.accept(&processor);
+      }
       CRAB_VERBOSE_IF(1, crab::outs() << "== Fixpoint reached.\n");
       CRAB_VERBOSE_IF(3, crab::outs() << "Wto:\n" << _wto << "\n");            
-      reset ();
     }
 
     void run(NodeName entry, AbstractValue init, assumption_map_t &assumptions) {
@@ -258,16 +275,18 @@ namespace ikos {
       this->set_pre(entry, init);
       wto_iterator_t iterator(this, entry, &assumptions);
       this->_wto.accept(&iterator);
-      wto_processor_t processor(this);
-      this->_wto.accept(&processor);
+      if (_enable_processor) {
+	wto_processor_t processor(this);
+	this->_wto.accept(&processor);
+      }
       CRAB_VERBOSE_IF(1, crab::outs() << "== Fixpoint reached.\n");
       CRAB_VERBOSE_IF(3, crab::outs() << "Wto:\n" << _wto << "\n");      
       
     }
 
-    void reset () {
-      this->_pre.reset();
-      this->_post.reset();      
+    void clear() {
+      this->_pre.clear();
+      this->_post.clear();      
     }
         
   }; // class interleaved_fwd_fixpoint_iterator
@@ -294,6 +313,9 @@ namespace ikos {
       bool _skip; 
       
       inline AbstractValue strengthen (NodeName n, AbstractValue inv) {
+	crab::CrabStats::count ("Fixpo.strengthen");
+	crab::ScopedCrabStats __st__("Fixpo.strengthen");
+
 	if (_assumptions) {
 	  auto it = _assumptions->find(n);
 	  if (it != _assumptions->end ()) {
@@ -369,9 +391,12 @@ namespace ikos {
         AbstractValue pre;
         if (node == _entry) {
           pre = this->_iterator->get_pre(node);
-	  pre = strengthen (node, pre);	  	  
+	  if (_assumptions) { // no necessary but it might avoid copies
+	    pre = strengthen (node, pre);
+	  }
         } else {
           auto prev_nodes = this->_iterator->_cfg.prev_nodes(node);
+	  crab::CrabStats::resume("Fixpo.join_predecessors");		  	  
           pre = AbstractValue::bottom();
           CRAB_VERBOSE_IF (2,
 		           crab::outs() << "Joining predecessors of "
@@ -379,15 +404,21 @@ namespace ikos {
           for (NodeName prev : prev_nodes) {
             pre |= this->_iterator->get_post(prev);  
           }
-	  pre = strengthen (node, pre);	  
+	  crab::CrabStats::stop("Fixpo.join_predecessors");
+	  if (_assumptions) { //no necessary but it might avoid copies
+	    pre = strengthen (node, pre);
+	  }
           this->_iterator->set_pre(node, pre);
         }
-	
+
+        crab::CrabStats::resume ("Fixpo.analyze_block");	
         CRAB_VERBOSE_IF (1, crab::outs() << "Analyzing node "
 			                 << crab::cfg_impl::get_label_str(node);
 			 auto &n = this->_iterator->_cfg.get_node(node);
 			 crab::outs () << " size=" << n.size() << "\n";);
         this->_iterator->analyze(node, pre);
+        crab::CrabStats::stop ("Fixpo.analyze_block");		
+	
         this->_iterator->set_post(node, pre);
       }
       
@@ -426,6 +457,8 @@ namespace ikos {
 		  	         << crab::cfg_impl::get_label_str(head) << "\n");
 	  pre = _iterator->get_pre(_entry);
 	} else {
+	  crab::CrabStats::count ("Fixpo.join_predecessors");
+	  crab::ScopedCrabStats __st__("Fixpo.join_predecessors");
 	  CRAB_VERBOSE_IF (2,
 		    crab::outs() << "Joining predecessors of "
 		  	         << crab::cfg_impl::get_label_str(head) << "\n");
@@ -436,7 +469,9 @@ namespace ikos {
 	    }
 	  }
 	}
-	pre = strengthen (head, pre);
+	if (_assumptions) { //no necessary but it might avoid copies
+	  pre = strengthen (head, pre);
+	}
 	
         for(unsigned int iteration = 1; ; ++iteration) {
 	  // keep track of how many times the cycle is visited by the fixpoint
@@ -444,22 +479,30 @@ namespace ikos {
 	  
           // Increasing iteration sequence with widening
           this->_iterator->set_pre(head, pre);
+	  crab::CrabStats::resume("Fixpo.analyze_block");		  
           AbstractValue post(pre); 
           CRAB_VERBOSE_IF(1, crab::outs() << "Analyzing node "
 			                  << crab::cfg_impl::get_label_str(head);
 			  auto &n = this->_iterator->_cfg.get_node(head);
 			  crab::outs () << " size=" << n.size() << "\n";);
           this->_iterator->analyze(head, post);
+	  crab::CrabStats::stop("Fixpo.analyze_block");		  	  
+	  
           this->_iterator->set_post(head, post);
           for (typename wto_cycle_t::iterator it = cycle.begin();
 	       it != cycle.end(); ++it) {
             it->accept(this);
           }
+	  crab::CrabStats::resume("Fixpo.join_predecessors");
           AbstractValue new_pre = AbstractValue::bottom();
           for (NodeName prev : prev_nodes) {
             new_pre |= this->_iterator->get_post(prev); 
           }
-          if (new_pre <= pre) {
+	  crab::CrabStats::stop("Fixpo.join_predecessors");
+	  crab::CrabStats::resume("Fixpo.check_fixpoint");	  	  
+	  bool fixpoint_reached = new_pre <= pre;
+	  crab::CrabStats::stop("Fixpo.check_fixpoint");	  	  
+          if (fixpoint_reached) {
             // Post-fixpoint reached
             CRAB_VERBOSE_IF(1, crab::outs() << "post-fixpoint reached\n");
             this->_iterator->set_pre(head, new_pre);
@@ -470,7 +513,6 @@ namespace ikos {
           }
         }
 
-	
 	if (this->_iterator->_descending_iterations == 0) {
 	  // no narrowing
 	  return;
@@ -480,6 +522,8 @@ namespace ikos {
 	
         for(unsigned int iteration = 1; ; ++iteration) {
           // Decreasing iteration sequence with narrowing
+
+	  crab::CrabStats::resume("Fixpo.analyze_block");		  
           AbstractValue post(pre); 
           CRAB_VERBOSE_IF(1,crab::outs() << "Analyzing node "
 			  << crab::cfg_impl::get_label_str(head);
@@ -487,15 +531,22 @@ namespace ikos {
 			  crab::outs () << " size=" << n.size() << "\n";);
           this->_iterator->analyze(head, post);
           this->_iterator->set_post(head, post);
+	  crab::CrabStats::stop("Fixpo.analyze_block");	
+	  
           for (typename wto_cycle_t::iterator it = cycle.begin();
 	       it != cycle.end(); ++it) {
             it->accept(this);
           }
+	  crab::CrabStats::resume("Fixpo.join_predecessors");	  
           AbstractValue new_pre = AbstractValue::bottom();
           for (NodeName prev : prev_nodes) {
             new_pre |= this->_iterator->get_post(prev); 
           }
-          if (pre <= new_pre) {
+	  crab::CrabStats::stop("Fixpo.join_predecessors");
+	  crab::CrabStats::resume("Fixpo.check_fixpoint");
+	  bool no_more_refinement = pre <= new_pre;
+	  crab::CrabStats::stop("Fixpo.check_fixpoint");	  
+          if (no_more_refinement) {
             CRAB_VERBOSE_IF(1, crab::outs() << "No more refinement possible.\n");
             // No more refinement possible (pre == new_pre)
             break;
@@ -528,12 +579,18 @@ namespace ikos {
       wto_processor(interleaved_iterator_t *iterator): _iterator(iterator) { }
       
       void visit(wto_vertex_t& vertex) {
+	crab::CrabStats::count ("Fixpo.process_invariants");
+	crab::ScopedCrabStats __st__("Fixpo.process_invariants");
+
         NodeName node = vertex.node();
         this->_iterator->process_pre(node, this->_iterator->get_pre(node));
         this->_iterator->process_post(node, this->_iterator->get_post(node));
       }
       
       void visit(wto_cycle_t& cycle) {
+	crab::CrabStats::count ("Fixpo.process_invariants");
+	crab::ScopedCrabStats __st__("Fixpo.process_invariants");
+	
         NodeName head = cycle.head();
         this->_iterator->process_pre(head, this->_iterator->get_pre(head));
         this->_iterator->process_post(head, this->_iterator->get_post(head));

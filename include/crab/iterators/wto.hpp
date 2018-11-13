@@ -45,11 +45,11 @@
 #pragma once 
 
 #include <vector>
-#include <deque>
-#include <map>
 #include <boost/shared_ptr.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/container/slist.hpp>
+#include <boost/unordered_map.hpp>
+
 #include <crab/common/types.hpp>
 #include <crab/common/stats.hpp>
 #include <crab/domains/intervals.hpp>
@@ -382,11 +382,11 @@ namespace ikos {
     typedef boost::container::slist< wto_component_ptr > wto_component_list_t;
     typedef boost::shared_ptr< wto_component_list_t > wto_component_list_ptr;
     typedef bound< z_number > dfn_t;
-    typedef std::map< NodeName, dfn_t > dfn_table_t;
+    typedef boost::unordered_map< NodeName, dfn_t > dfn_table_t;
     typedef boost::shared_ptr< dfn_table_t > dfn_table_ptr;
-    typedef std::deque< NodeName > stack_t;
+    typedef std::vector< NodeName > stack_t;
     typedef boost::shared_ptr< stack_t > stack_ptr;
-    typedef std::map< NodeName, wto_nesting_t > nesting_table_t;
+    typedef boost::unordered_map< NodeName, wto_nesting_t > nesting_table_t;
     typedef boost::shared_ptr< nesting_table_t > nesting_table_ptr;
     
   private:

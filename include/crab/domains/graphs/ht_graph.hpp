@@ -218,7 +218,10 @@ class HtGraph : public ikos::writeable {
     int size(void) const {
       return is_free.size();
     }
-
+  
+    // Number of edges
+    size_t num_edges(void) const { return edge_count;}  
+  
     // Assumption: (x, y) not in mtx
 
     void add_edge(vert_id x, Wt wt, vert_id y)

@@ -888,8 +888,14 @@ namespace crab {
 		 std::vector<Wt>&& _potential, vert_set_t&& _unstable)
         : vert_map(std::move(_vert_map)), rev_map(std::move(_rev_map)),
 	  g(std::move(_g)), potential(std::move(_potential)),
-          unstable(std::move(_unstable)), _is_bottom(false)
-      { assert(g.size() > 0); }
+          unstable(std::move(_unstable)), _is_bottom(false) {
+
+	CRAB_LOG("zones-sparse-size",
+                 auto p = size();
+                 crab::outs() << "#nodes = " << p.first << " #edges=" << p.second << "\n";);
+
+	assert(g.size() > 0);
+      }
 
 
       SparseDBM_& operator=(const SparseDBM_& o)
@@ -1594,7 +1600,7 @@ namespace crab {
 
 	// XXX: we do nothing with unsigned linear inequalities
 	if (cst.is_inequality() && cst.is_unsigned()) {
-	  CRAB_WARN("unsigned inequality skipped");	  
+	  CRAB_WARN("unsigned inequality ", cst, " skipped by split_dbm domain");	  
 	  return;
 	}
 	
@@ -1613,38 +1619,48 @@ namespace crab {
           return ;
         }
 
-        if (cst.is_inequality())
-        {
-          if(!add_linear_leq(cst.expression()))
+        if (cst.is_inequality()) {
+          if(!add_linear_leq(cst.expression())) {
             set_to_bottom();
+	  }
 	  // g.check_adjs();
           CRAB_LOG("zones-sparse",
                    crab::outs() << "--- "<< cst<< "\n"<< *this<<"\n";);
           return;
         }
 
-        if (cst.is_equality())
-        {
+        if (cst.is_strict_inequality()) {
+	  // We try to convert a strict to non-strict.
+	  auto nc = linear_constraint_impl::strict_to_non_strict_inequality(cst);
+	  if (nc.is_inequality()) {
+	    // here we succeed
+	    if(!add_linear_leq(nc.expression())) {
+	      set_to_bottom();
+	    }
+	    CRAB_LOG("zones-split",
+		     crab::outs() << "--- "<< cst<< "\n"<< *this <<"\n");
+	    return;
+	  }
+	}
+	
+        if (cst.is_equality()) {
           linear_expression_t exp = cst.expression();
-          if(!add_linear_leq(exp) || !add_linear_leq(-exp))
-          {
+          if(!add_linear_leq(exp) || !add_linear_leq(-exp)) {
             CRAB_LOG("zones-sparse", crab::outs() << " ~~> _|_"<<"\n";);
             set_to_bottom();
           }
-//          g.check_adjs();
+	  // g.check_adjs();
           CRAB_LOG("zones-sparse",
                    crab::outs() << "--- "<< cst<< "\n"<< *this<<"\n";);
           return;
         }
 
-        if (cst.is_disequation())
-        {
+        if (cst.is_disequation()) {
           add_disequation(cst.expression());
           return;
         }
 
-        CRAB_WARN("Unhandled constraint in SparseDBM");
-
+        CRAB_WARN("Unhandled constraint ", cst, " by split_dbm");	
         CRAB_LOG("zones-sparse",
                  crab::outs() << "---"<< cst<< "\n"<< *this<<"\n";);
         return;
@@ -2111,10 +2127,16 @@ namespace crab {
 	  return disjunctive_linear_constraint_system_t(lin_csts);
 	}
       }
+
+      // return number of vertices and edges
+      std::pair<std::size_t, std::size_t> size() const {
+	return {g.size(), g.num_edges()};
+      }
       
       static std::string getDomainName () {
         return "SparseDBM";
       }
+      
     }; // class SparseDBM_
 
     #if 1
@@ -2206,21 +2228,21 @@ namespace crab {
 
       bool is_bottom() { return norm().is_bottom(); }
       bool is_top() { return norm().is_top(); }
-      bool operator<=(DBM_t& o) { return norm() <= o.norm(); }
+      bool operator<=(DBM_t o) { return norm() <= o.norm(); }
       void operator|=(DBM_t o) { lock(); norm() |= o.norm(); }
       DBM_t operator|(DBM_t o) { return create(norm() | o.norm()); }
-      //DBM_t operator||(DBM_t o) { return create_base(base() || o.norm()); }
-      DBM_t operator||(DBM_t o) { return create(norm() || o.norm()); }
+      DBM_t operator||(DBM_t o) { return create_base(base() || o.norm()); }
+      //DBM_t operator||(DBM_t o) { return create(norm() || o.norm()); }
       DBM_t operator&(DBM_t o) { return create(norm() & o.norm()); }
       DBM_t operator&&(DBM_t o) { return create(norm() && o.norm()); }
 
       template<typename Thresholds>
       DBM_t widening_thresholds (DBM_t o, const Thresholds &ts) {
-        //return create_base(base().template widening_thresholds<Thresholds>(o.norm(), ts));
-	return create(norm().template widening_thresholds<Thresholds>(o.norm(), ts));
+        return create_base(base().template widening_thresholds<Thresholds>(o.norm(), ts));
+	//return create(norm().template widening_thresholds<Thresholds>(o.norm(), ts));
       }
 
-      void normalize() { norm().normalize(); }
+      void normalize() { lock(); norm().normalize(); }
       void operator+=(linear_constraint_system_t csts) { lock(); norm() += csts; } 
       void operator-=(variable_t v) { lock(); norm() -= v; }
       interval_t operator[](variable_t x) { return norm()[x]; }
@@ -2274,7 +2296,7 @@ namespace crab {
       { norm().extract(x, csts, only_equalities); }
 
       void write(crab_os& o) { norm().write(o); }
-
+    
       linear_constraint_system_t to_linear_constraint_system () {
         return norm().to_linear_constraint_system();
       }
@@ -2283,6 +2305,11 @@ namespace crab {
       }
       
       static std::string getDomainName () { return dbm_impl_t::getDomainName(); }
+
+      std::pair<std::size_t, std::size_t> size() const {
+	return norm().size();
+      }
+      
     protected:  
       dbm_ref_t base_ref;  
       dbm_ref_t norm_ref;

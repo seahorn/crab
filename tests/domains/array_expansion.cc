@@ -535,6 +535,7 @@ void test_array_expansion(int test) {
   }
   
   if (cfg) {
+    z_ae_term_int_t::clear_global_state();
     run_and_check<z_ae_term_int_t>(cfg,cfg->entry(),false,1,2,20,stats_enabled);
     delete cfg;
   }

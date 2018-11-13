@@ -59,5 +59,9 @@ void CrabEnableWarningMsg(bool b);
       crab::errs() << "\n";		\
     }                                   \
   } while(0)
+
+
+extern bool CrabSanityCheckFlag;
+void CrabEnableSanityChecks(bool b);
   
 } // end namespace crab

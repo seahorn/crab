@@ -59,6 +59,21 @@ int main (int argc, char** argv )
     dbm += (z_lin_t(x) != z_number(10));
     crab::outs() << "After x != 10: " << dbm << "\n";
   }
+
+  { // meet
+    z_var x(vfac["x"], crab::INT_TYPE, 32);
+    z_var y(vfac["y"], crab::INT_TYPE, 32);
+    z_var z(vfac["z"], crab::INT_TYPE, 32);
+    z_dbm_domain_t dbm1 = z_dbm_domain_t::top ();
+    dbm1 += (x == z_lin_t(y));
+    dbm1 += (x == z_number(1));
+    crab::outs() << "DBM1=" << dbm1 << "\n";
+    z_dbm_domain_t dbm2 = z_dbm_domain_t::top ();
+    dbm2 += (y >= z_number(1));
+    crab::outs() << "DBM2=" << dbm2 << "\n";    
+    z_dbm_domain_t dbm3 = dbm2 & dbm1;
+    crab::outs() << "DBM1 & DBM2=" << dbm3 << "\n";
+  }
   
   return 0;
 }
