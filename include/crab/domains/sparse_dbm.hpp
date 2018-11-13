@@ -1600,7 +1600,7 @@ namespace crab {
 
 	// XXX: we do nothing with unsigned linear inequalities
 	if (cst.is_inequality() && cst.is_unsigned()) {
-	  CRAB_WARN("unsigned inequality skipped");	  
+	  CRAB_WARN("unsigned inequality ", cst, " skipped by split_dbm domain");	  
 	  return;
 	}
 	
@@ -1619,38 +1619,48 @@ namespace crab {
           return ;
         }
 
-        if (cst.is_inequality())
-        {
-          if(!add_linear_leq(cst.expression()))
+        if (cst.is_inequality()) {
+          if(!add_linear_leq(cst.expression())) {
             set_to_bottom();
+	  }
 	  // g.check_adjs();
           CRAB_LOG("zones-sparse",
                    crab::outs() << "--- "<< cst<< "\n"<< *this<<"\n";);
           return;
         }
 
-        if (cst.is_equality())
-        {
+        if (cst.is_strict_inequality()) {
+	  // We try to convert a strict to non-strict.
+	  auto nc = linear_constraint_impl::strict_to_non_strict_inequality(cst);
+	  if (nc.is_inequality()) {
+	    // here we succeed
+	    if(!add_linear_leq(nc.expression())) {
+	      set_to_bottom();
+	    }
+	    CRAB_LOG("zones-split",
+		     crab::outs() << "--- "<< cst<< "\n"<< *this <<"\n");
+	    return;
+	  }
+	}
+	
+        if (cst.is_equality()) {
           linear_expression_t exp = cst.expression();
-          if(!add_linear_leq(exp) || !add_linear_leq(-exp))
-          {
+          if(!add_linear_leq(exp) || !add_linear_leq(-exp)) {
             CRAB_LOG("zones-sparse", crab::outs() << " ~~> _|_"<<"\n";);
             set_to_bottom();
           }
-//          g.check_adjs();
+	  // g.check_adjs();
           CRAB_LOG("zones-sparse",
                    crab::outs() << "--- "<< cst<< "\n"<< *this<<"\n";);
           return;
         }
 
-        if (cst.is_disequation())
-        {
+        if (cst.is_disequation()) {
           add_disequation(cst.expression());
           return;
         }
 
-        CRAB_WARN("Unhandled constraint in SparseDBM");
-
+        CRAB_WARN("Unhandled constraint ", cst, " by split_dbm");	
         CRAB_LOG("zones-sparse",
                  crab::outs() << "---"<< cst<< "\n"<< *this<<"\n";);
         return;
