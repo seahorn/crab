@@ -353,6 +353,11 @@ namespace ikos {
         o << this->_cst;
       }
     }
+
+    // for dgb
+    void dump() {
+      write(crab::outs());
+    }
     
   }; // class linear_expression
 
@@ -725,7 +730,13 @@ namespace ikos {
         Number c = -this->_expr.constant();
         o << c;
       }
-    }       
+    }
+
+    // for dgb
+    void dump() {
+      write(crab::outs());
+    }
+    
   }; // class linear_constraint
 
   namespace linear_constraint_impl{
@@ -1449,6 +1460,11 @@ namespace ikos {
       o << "}";
     }
 
+    // for dgb
+    void dump() {
+      write(crab::outs());
+    }
+    
   }; // class linear_constraint_system
 
 
