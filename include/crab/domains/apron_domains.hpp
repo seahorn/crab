@@ -596,6 +596,46 @@ namespace crab {
 
         void dump () { dump (m_var_map, m_apstate); }
 
+	// x != n
+	void inequalities_from_disequation(variable_t x, number_t n, linear_constraint_system_t& out) {
+	  interval_t i = this->operator[](x);
+	  interval_t new_i =
+	    linear_interval_solver_impl::trim_interval<interval_t>(i, interval_t(n));
+	  if (new_i.is_bottom()) {
+	    out += linear_constraint_t::get_false();
+	  } else if (!new_i.is_top() && (new_i <= i)) {
+	    if(new_i.lb().is_finite()) {
+	      // strenghten lb
+	      out += linear_constraint_t(x >= *(new_i.lb().number()));
+	}
+	    if(new_i.ub().is_finite()) {
+	      // strenghten ub
+	      out += linear_constraint_t(x <= *(new_i.ub().number()));	  
+	    }
+	  }
+	} 
+	
+	interval_t compute_residual(linear_expression_t e, variable_t pivot) {
+	  interval_t residual(-e.constant());
+	  for (typename linear_expression_t::iterator it = e.begin(); it != e.end(); ++it) {
+	    variable_t v = it->second;
+	    if (v.index() != pivot.index()) {
+	      residual = residual - (interval_t (it->first) * this->operator[](v));
+	    }
+	  }
+	  return residual;
+	}
+	
+	void inequalities_from_disequation(linear_expression_t e, linear_constraint_system_t& o) {
+	  for (typename linear_expression_t::iterator it = e.begin(); it != e.end(); ++it) {
+	    variable_t pivot = it->second;
+	    interval_t i = compute_residual(e, pivot) / interval_t(it->first);
+	    if (auto k = i.singleton()) {
+	      inequalities_from_disequation(pivot, *k, o);
+	    }
+	  }
+	}
+	
        public:
         void print_stats () { ap_abstract0_fprint (stdout, get_man (), &*m_apstate, NULL); }
 
@@ -1078,34 +1118,43 @@ namespace crab {
 	    return;
 	  }
 
-	  // XXX: filter out unsigned linear inequalities
+	  if (_csts.is_true()) {
+	    return;
+	  }
+	  
+	  // XXX: filter out unsigned linear inequalities, and analyze
+	  //      separately disequalities because apron does not seem
+	  //      to support them.
+	  
 	  linear_constraint_system_t csts;
-	  bool has_disequality = false;
 	  for (auto const& c: _csts) {
 	    if (c.is_inequality() && c.is_unsigned()) {
 	      CRAB_WARN("unsigned inequality skipped");
 	      continue;
 	    }
-	    if (c.is_disequation()) {
-	      has_disequality = true;
-	    }
-	    csts += c;
-	  }
-
-	  if (has_disequality) {
-	    // trivial reduction between the apron domain and
-	    // intervals. This is done because most of the apron
-	    // domains ignore disequalities. Of course, more things
-	    // can be done here to improve precision.
-	    interval_domain_t intvs;
-	    intvs = to_interval_domain();
-	    intvs += csts;
-	    if (intvs.is_bottom()) {
-	      *this = bottom ();
-	      return;
+	    if (c.is_strict_inequality()) {
+	      // We try to convert a strict to non-strict.
+	      csts += linear_constraint_impl::strict_to_non_strict_inequality(c);
+	    } else if (c.is_disequation()) {
+	      // We try to convert a disequation into conjunctive
+	      // inequalities	      
+	      inequalities_from_disequation(c.expression(), csts);
+	    } else {
+	      csts += c;
 	    }
 	  }
-
+	  
+	  if (csts.is_false()) {
+	    // csts can be false after breaking disequalities into
+	    // inequalities
+	    *this = bottom();
+	    return;
+	  }
+	  
+	  if (csts.is_true()) {
+	    return;
+	  }
+	  
           ap_tcons0_array_t array = ap_tcons0_array_make (csts.size ());
           unsigned i=0;
 
