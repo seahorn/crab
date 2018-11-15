@@ -148,13 +148,13 @@ namespace crab {
 
 /* 
  * Real implementation starts here.
- * The code is a copy-and-paste version of apron_domains.hpp.
- * Thanks to Gagandeep Singh. 
  */
 
 #include <crab/domains/elina/elina.hpp>
 #include <boost/bimap.hpp>
 #include <crab/domains/linear_interval_solver.hpp>
+
+#define USE_TREE_EXPR
 
 namespace crab {
 namespace domains {
@@ -414,50 +414,20 @@ namespace domains {
       
       return res;
     }
-    
-    // FIXME: dispatch based on Number ?
-    #if 0
-    static elina_texpr0_t* ADD(elina_texpr0_t* a, elina_texpr0_t*b)
-    { /// XXX: should not be the rounding direction ELINA_RDIR_ZERO 
-      ///      (i.e., truncation for integers) ?
-      return elina_texpr0_binop(ELINA_TEXPR_ADD,a,b,ELINA_RTYPE_INT,ELINA_RDIR_NEAREST);
-    }
-    static elina_texpr0_t* SUB(elina_texpr0_t* a, elina_texpr0_t*b)
-    { return elina_texpr0_binop(ELINA_TEXPR_SUB,a,b,ELINA_RTYPE_INT,ELINA_RDIR_NEAREST);}	  
-    static elina_texpr0_t* MUL(elina_texpr0_t* a, elina_texpr0_t*b)
-    { return elina_texpr0_binop(ELINA_TEXPR_MUL,a,b,ELINA_RTYPE_INT,ELINA_RDIR_NEAREST); }	  
-    static elina_texpr0_t* DIV(elina_texpr0_t* a, elina_texpr0_t*b)
-    { return elina_texpr0_binop(ELINA_TEXPR_DIV,a,b,ELINA_RTYPE_INT,ELINA_RDIR_NEAREST);}
-    #else
-    ///////////
-    // XXX: we approximate integers and rationals using reals
-    //////////
-    
-    static elina_texpr0_t* ADD(elina_texpr0_t* a, elina_texpr0_t*b)
-    { /// XXX: ELINA_RTYPE_REAL does not have rounding so we choose
-      ///      an arbitrary one
-      return elina_texpr0_binop(ELINA_TEXPR_ADD,a,b,ELINA_RTYPE_REAL,ELINA_RDIR_UP);
-    }
-    static elina_texpr0_t* SUB(elina_texpr0_t* a, elina_texpr0_t*b)	  
-    { return elina_texpr0_binop(ELINA_TEXPR_SUB,a,b,ELINA_RTYPE_REAL,ELINA_RDIR_UP);}
-    static elina_texpr0_t* MUL(elina_texpr0_t* a, elina_texpr0_t*b)	  
-    { return elina_texpr0_binop(ELINA_TEXPR_MUL,a,b,ELINA_RTYPE_REAL,ELINA_RDIR_UP);}
-    static elina_texpr0_t* DIV(elina_texpr0_t* a, elina_texpr0_t*b)	  
-    { return elina_texpr0_binop(ELINA_TEXPR_DIV,a,b,ELINA_RTYPE_REAL,ELINA_RDIR_UP);}
-    #endif
-	       	
+
     // --- from crab to elina
-    
-    inline elina_texpr0_t* var2texpr (variable_t v) { 
-      return elina_texpr0_dim (get_var_dim_insert (v));
-    }
-    
+
     inline void convert_crab_number (ikos::z_number n, mpq_class &res) const
     { res = mpq_class ((mpz_class) n); }
     
     inline void convert_crab_number (ikos::q_number n, mpq_class &res) const 
     { res = ((mpq_class) n); }
-    
+
+    //// from crab to tree expressions
+    inline elina_texpr0_t* var2texpr (variable_t v) { 
+      return elina_texpr0_dim (get_var_dim_insert (v));
+    }
+        
     inline elina_texpr0_t* num2texpr (Number i) const {  
       mpq_class n(0);
       convert_crab_number(i, n);
@@ -470,13 +440,26 @@ namespace domains {
       convert_crab_number(b, n2);
       return elina_texpr0_cst_interval_mpq (n1.get_mpq_t (), n2.get_mpq_t ());
     }
+
+    // XXX: we approximate integers and rationals using reals
+    static elina_texpr0_t* texpr_add(elina_texpr0_t* a, elina_texpr0_t*b) {
+      /// XXX: ELINA_RTYPE_REAL does not have rounding so we choose
+      ///      an arbitrary one
+      return elina_texpr0_binop(ELINA_TEXPR_ADD,a,b,ELINA_RTYPE_REAL,ELINA_RDIR_UP);
+    }
+    static elina_texpr0_t* texpr_sub(elina_texpr0_t* a, elina_texpr0_t*b)	  
+    { return elina_texpr0_binop(ELINA_TEXPR_SUB,a,b,ELINA_RTYPE_REAL,ELINA_RDIR_UP);}
+    static elina_texpr0_t* texpr_mul(elina_texpr0_t* a, elina_texpr0_t*b)	  
+    { return elina_texpr0_binop(ELINA_TEXPR_MUL,a,b,ELINA_RTYPE_REAL,ELINA_RDIR_UP);}
+    static elina_texpr0_t* texpr_div(elina_texpr0_t* a, elina_texpr0_t*b)	  
+    { return elina_texpr0_binop(ELINA_TEXPR_DIV,a,b,ELINA_RTYPE_REAL,ELINA_RDIR_UP);}
     
     inline elina_texpr0_t* expr2texpr (linear_expression_t e)  {
       Number cst = e.constant ();
       elina_texpr0_t* res = num2texpr (cst);
       for (auto p: e) {
-	elina_texpr0_t* term = MUL (num2texpr(p.first), var2texpr(p.second));
-	res = ADD (res, term); 
+	elina_texpr0_t* term = texpr_mul(num2texpr(p.first), var2texpr(p.second));
+	res = texpr_add(res, term); 
       }
       return res;
     }
@@ -494,7 +477,44 @@ namespace domains {
 	return elina_tcons0_make (ELINA_CONS_DISEQ, expr2texpr (exp), NULL);
       } 
     }
-    
+
+    //// from crab linear expressions and constraints
+    elina_linexpr0_t* crab_linexpr_to_elina(const linear_expression_t& e) {
+      elina_linexpr0_t* linexpr = elina_linexpr0_alloc(ELINA_LINEXPR_SPARSE, e.size());
+      if (!linexpr) {
+	CRAB_ERROR("elina cannot allocate linear expression");
+      }
+      mpq_class n(0);
+      convert_crab_number(e.constant(), n);
+      elina_scalar_set_mpq(linexpr->cst.val.scalar, n.get_mpq_t());
+      unsigned i=0;
+      for(typename linear_expression_t::iterator it=e.begin(), et=e.end(); it!=et; ++it, ++i) {
+	number_t crab_coeff = it->first;
+	variable_t crab_var = it->second;
+	elina_linterm_t* linterm = &linexpr->p.linterm[i];
+	linterm->dim = get_var_dim_insert(crab_var);
+	convert_crab_number(crab_coeff, n);
+	elina_scalar_set_mpq(linterm->coeff.val.scalar, n.get_mpq_t());
+      }
+      
+      return linexpr;
+    }
+
+    elina_lincons0_t crab_linconst_to_elina(const linear_constraint_t& c) {
+      const linear_expression_t& e = c.expression();
+      if (c.is_equality ()) {
+	return elina_lincons0_make (ELINA_CONS_EQ, crab_linexpr_to_elina(e), nullptr); 
+      } else if (c.is_inequality ()) {
+	return elina_lincons0_make (ELINA_CONS_SUPEQ, crab_linexpr_to_elina(-e), nullptr);
+      } else if (c.is_strict_inequality()) {
+	return elina_lincons0_make (ELINA_CONS_SUP, crab_linexpr_to_elina(-e), nullptr);
+      } else if (c.is_disequation ()) {
+	return elina_lincons0_make (ELINA_CONS_DISEQ, crab_linexpr_to_elina(e), nullptr);
+      } else {
+	CRAB_ERROR("unsupported linear constraint kind");
+      }
+    }
+
     // --- from elina to crab 
     
     inline void convert_elina_number (double n, ikos::z_number &res) const
@@ -585,7 +605,7 @@ namespace domains {
       for (unsigned i=0; i < get_dims (apstate) ; i++){
 	std::string varname;
 	if (has_variable (m, i))
-	  varname = get_variable (m, i).str ();
+	  varname = get_variable(m, i).name().str();
 	else // unused dimension
 	  varname = std::string ("_x") + std::to_string (i);
 	crab::outs() << i << " -> " << varname << ";";
@@ -601,7 +621,8 @@ namespace domains {
     void dump () { dump (m_var_map, m_apstate); }
 
     // x != n
-    void inequalities_from_disequation(variable_t x, number_t n, linear_constraint_system_t& out) {
+    void inequalities_from_disequation(variable_t x, number_t n,
+				       linear_constraint_system_t& out) {
       interval_t i = this->operator[](x);
       interval_t new_i =
 	linear_interval_solver_impl::trim_interval<interval_t>(i, interval_t(n));
@@ -638,6 +659,194 @@ namespace domains {
 	  inequalities_from_disequation(pivot, *k, o);
 	}
       }
+    }
+
+    // Using elina tree expressions
+    void assign_texpr(variable_t x, linear_expression_t e) {
+      elina_texpr0_t* t = expr2texpr (e);
+      assert(t);
+      auto dim_x = get_var_dim_insert (x);
+      m_apstate = elinaPtr (get_man (), 
+			    elina_abstract0_assign_texpr(get_man (), false, 
+							 &*m_apstate, 
+							 dim_x, t, NULL));
+      elina_texpr0_free (t);
+    }
+
+    // Using elina linear expresions
+    void assign_linexpr(variable_t x, linear_expression_t e) {
+      elina_linexpr0_t* t = crab_linexpr_to_elina(e);
+      assert(t);
+      auto dim_x = get_var_dim_insert (x);
+      m_apstate = elinaPtr(get_man (), 
+			   elina_abstract0_assign_linexpr(get_man (), false, 
+							  &*m_apstate, 
+							  dim_x, t, NULL));
+      elina_linexpr0_free(t);            
+    }
+
+    // Using elina tree expressions    
+    void apply_texpr(operation_t op, variable_t x, variable_t y, number_t z) {
+      elina_texpr0_t* a = var2texpr (y);
+      elina_texpr0_t* b = num2texpr (z);
+      elina_texpr0_t* res = nullptr;
+      
+      switch (op){
+       case OP_ADDITION:
+	 res = texpr_add(a, b);
+	 break;
+       case OP_SUBTRACTION:
+	 res = texpr_sub(a, b);
+	 break;
+       case OP_MULTIPLICATION:
+	 res = texpr_mul(a, b);
+	 break;
+       case OP_DIVISION:
+	 res = texpr_div(a, b);
+	 break;
+        default: CRAB_ERROR("elina operation ", op, " not supported");
+      }
+      assert (res);
+      auto dim_x = get_var_dim_insert (x);
+      m_apstate = elinaPtr (get_man (), elina_abstract0_assign_texpr(get_man (), false, 
+								     &*m_apstate, 
+								     dim_x, res, NULL));
+      elina_texpr0_free (res);
+    }
+
+    // Using elina linear expresions    
+    void apply_linexpr(operation_t op, variable_t x, variable_t y, number_t z) {
+      elina_linexpr0_t* rhs=nullptr;
+      switch (op){
+       case OP_ADDITION: 
+	 rhs = crab_linexpr_to_elina(y + z);
+	 break;
+       case OP_SUBTRACTION:
+	 rhs = crab_linexpr_to_elina(y - z);
+	 break;
+       case OP_MULTIPLICATION:
+	 rhs = crab_linexpr_to_elina(y * z);
+	 break;	 
+       case OP_DIVISION:
+	 apply_texpr(op, x, y, z);
+	 CRAB_LOG("elina",
+		  crab::outs() << "--- "<< x<< ":="<< y<< op<< z<< " --> "<< *this<<"\n";);
+	 return;
+       default:
+	 CRAB_ERROR("elina operation not supported");
+      }
+      assert(rhs);
+      auto dim_x = get_var_dim_insert (x);
+      m_apstate = elinaPtr (get_man (), 
+			    elina_abstract0_assign_linexpr(get_man (), false, 
+							   &*m_apstate, 
+							   dim_x, rhs, NULL));
+      elina_linexpr0_free(rhs);      
+    }
+
+    // Using elina tree expressions    
+    void apply_texpr(operation_t op, variable_t x, variable_t y, variable_t z) {
+      elina_texpr0_t* a = var2texpr (y);
+      elina_texpr0_t* b = var2texpr (z);
+      elina_texpr0_t* res = nullptr;
+      
+      switch (op){
+      case OP_ADDITION:
+	res = texpr_add(a, b);
+	break;
+      case OP_SUBTRACTION:
+	res = texpr_sub(a, b);
+	break;
+      case OP_MULTIPLICATION:
+	res = texpr_mul(a, b);
+	break;
+      case OP_DIVISION:
+	res = texpr_div (a, b); break;
+      default:
+	CRAB_ERROR("elina operation ", op, " not supported");
+      }
+      assert (res);
+      auto dim_x = get_var_dim_insert (x);
+      m_apstate = elinaPtr (get_man (),
+			    elina_abstract0_assign_texpr(get_man (), false, 
+							 &*m_apstate, 
+							 dim_x, res, NULL));
+      elina_texpr0_free (res);
+    }
+
+    // Using elina linear expresions    
+    void apply_linexpr(operation_t op, variable_t x, variable_t y, variable_t z) {
+      elina_linexpr0_t* rhs=nullptr;
+      switch (op){
+       case OP_ADDITION: 
+	 rhs = crab_linexpr_to_elina(y + z);
+	 break;
+       case OP_SUBTRACTION:
+	 rhs = crab_linexpr_to_elina(y - z);
+	 break;
+       case OP_MULTIPLICATION:
+       case OP_DIVISION:
+	 apply_texpr(op, x, y, z);
+	 CRAB_LOG("elina",
+		  crab::outs() << "--- "<< x<< ":="<< y<< op<< z<< " --> "<< *this<<"\n";);
+	 return;
+       default:
+	 CRAB_ERROR("elina operation not supported");
+      }
+      assert(rhs);
+      auto dim_x = get_var_dim_insert (x);
+      m_apstate = elinaPtr (get_man (), 
+			    elina_abstract0_assign_linexpr(get_man (), false, 
+							   &*m_apstate, 
+							   dim_x, rhs, NULL));
+      elina_linexpr0_free(rhs);      
+    }
+
+    // using tree expressions
+    void add_tcons(const linear_constraint_system_t& csts) {
+      elina_tcons0_array_t array = elina_tcons0_array_make (csts.size ());
+      unsigned i=0;
+      for (auto cst : csts) {
+	elina_tcons0_t tcons = const2tconst (cst);
+	array.p[i] = tcons;
+	++i;
+      }
+      
+      // ///// debugging
+      // std::vector<char*> names;
+      // for (unsigned i=0; i < get_dims (m_apstate) ; i++){
+      // 	std::string varname;
+      // 	if (has_variable (m_var_map, i))
+      // 	  varname = get_variable (m_var_map, i).name().str ();
+      // 	else // unused dimension
+      // 	  varname = std::string ("_x") + std::to_string (i);
+      // 	char* name = new char [varname.length () + 1];
+      // 	strcpy (name, varname.c_str ());
+      // 	names.push_back (name);
+      // }
+      // elina_tcons0_array_fprint (stdout, &array, &names[0]);
+      // for (auto n : names) { delete n; }
+
+      m_apstate = elinaPtr (get_man (), 
+			    elina_abstract0_meet_tcons_array (get_man (), false, 
+							      &*m_apstate, &array));
+      
+      elina_tcons0_array_clear(&array);
+    }
+    
+    // using linear expressions
+    void add_lincons(const linear_constraint_system_t& csts) {
+      elina_lincons0_array_t array = elina_lincons0_array_make (csts.size ());
+      unsigned i=0;
+      for (auto cst : csts) {
+	elina_lincons0_t tcons = crab_linconst_to_elina(cst);
+	array.p[i] = tcons;
+	++i;
+      }
+      m_apstate = elinaPtr (get_man (), 
+			    elina_abstract0_meet_lincons_array (get_man (), false, 
+								&*m_apstate, &array));
+      elina_lincons0_array_clear(&array);            
     }
     
   public:
@@ -782,10 +991,14 @@ namespace domains {
       else if (is_top () || o.is_bottom())
 	return ;
       else {
+	CRAB_LOG("elina",
+		 crab::outs() << "JOIN \n\t" << *this << "\n\t" << o << "\n";);
 	m_var_map = merge_var_map (m_var_map, m_apstate, o.m_var_map, o.m_apstate);
 	m_apstate = elinaPtr (get_man(), 
 			      elina_abstract0_join (get_man(), false, 
 						    &*m_apstate, &*o.m_apstate));
+	CRAB_LOG("elina",
+		 crab::outs() << "RESULT " << *this << "\n");
       }
     }
     
@@ -968,7 +1181,11 @@ namespace domains {
 	       for(auto v: vars) {
 		 crab::outs() << v <<";";
 	       }
-	       crab::outs()<< "}\n";
+	       // crab::outs()<< "} Elina dimensions ={";
+               // for(unsigned i=0,e=vector_dims.size();i<e;++i) {
+	       // 	 crab::outs() << vector_dims[i] << ";";
+	       // }
+	       crab::outs() << "}\n";
 	       crab::outs()<< *this << "\n";);      
     }
     
@@ -1000,10 +1217,13 @@ namespace domains {
 	}
 	remove_dimensions (m_apstate, vector_dims);
 	std::swap (m_var_map, res);
-      }
-      CRAB_LOG("elina", 
-	       crab::outs() << "--- " << "Forget " << var << "\n"
-	                    << *this << "\n";);
+
+	CRAB_LOG("elina", 
+		 crab::outs() << "--- " << "Forget " << var
+		              //<< " Elina dimension=" << *dim
+		              << "\n" << *this << "\n";);
+      } 
+	       
     }
     
     // remove all variables except vars
@@ -1024,9 +1244,14 @@ namespace domains {
       crab::CrabStats::count (getDomainName() + ".count.to_intervals");
       crab::ScopedCrabStats __st__(getDomainName() + ".to_intervals");
       
-      if (is_bottom ()) 
-	return interval_t::bottom ();
-      
+      if (is_bottom()) {
+	return interval_t::bottom();
+      }
+
+      if (is_top()) {
+	return interval_t::top();	
+      }
+	
       if (auto dim = get_var_dim (v)) {
 	
 	elina_interval_t* intv = elina_abstract0_bound_dimension (get_man (),
@@ -1102,6 +1327,10 @@ namespace domains {
     void set(variable_t v, interval_t ival) {
       crab::CrabStats::count (getDomainName() + ".count.assign");
       crab::ScopedCrabStats __st__(getDomainName() + ".assign");
+
+      if (is_bottom()) {
+	return;
+      }
       
       variable_t vv(v);
       
@@ -1182,39 +1411,18 @@ namespace domains {
 	return;
       }
 
-      elina_tcons0_array_t array = elina_tcons0_array_make (csts.size ());
-      unsigned i=0;
-      for (auto cst : csts) {
-	elina_tcons0_t tcons = const2tconst (cst);
-	array.p[i] = tcons;
-	++i;
-      }
-      
-      #if 0
-      ///// debugging
-      std::vector<char*> names;
-      for (unsigned i=0; i < get_dims (m_apstate) ; i++){
-	std::string varname;
-	if (has_variable (m_var_map, i))
-	  varname = get_variable (m_var_map, i).name().str ();
-	else // unused dimension
-	  varname = std::string ("_x") + std::to_string (i);
-	char* name = new char [varname.length () + 1];
-	strcpy (name, varname.c_str ());
-	names.push_back (name);
-      }
-      elina_tcons0_array_fprint (stdout, &array, &names[0]);
-      for (auto n : names) { delete n; }
-      #endif 
-
-      m_apstate = elinaPtr (get_man (), 
-			    elina_abstract0_meet_tcons_array (get_man (), false, 
-							      &*m_apstate, &array));
-      
-      elina_tcons0_array_clear(&array);
       CRAB_LOG("elina", 
-	       crab::outs() << "--- " << "Assume " << csts << " --> "
-	                    << *this << "\n";);
+	       crab::outs() << "--- " << "Assume " << csts << " --> ";);
+
+      // JN: we were using add_lincons always because polyhedra used
+      // to be buggy with add_tcons. Not sure if this is still true.
+      #ifdef USE_TREE_EXPR
+      add_tcons(csts);
+      #else
+      add_lincons(csts);
+      #endif 
+      
+      CRAB_LOG("elina", crab::outs() << *this << "\n";);
     }
     
     void assign (variable_t x, linear_expression_t e) {
@@ -1222,45 +1430,43 @@ namespace domains {
       crab::ScopedCrabStats __st__(getDomainName() + ".assign");
       
       if(is_bottom()) return;
-      
-      elina_texpr0_t* t = expr2texpr (e);
-      assert (t);
-      auto dim_x = get_var_dim_insert (x);
-      m_apstate = elinaPtr (get_man (), 
-			    elina_abstract0_assign_texpr(get_man (), false, 
-							 &*m_apstate, 
-							 dim_x, t, NULL));
-      
-      elina_texpr0_free (t);
+
       CRAB_LOG("elina",
-	       crab::outs() << "--- "<< x<< ":="<< e << " --> "<< *this<<"\n";);
+	       crab::outs() << "--- "<< x<< ":="<< e << " --> ";);
+
+      if (ElinaDom == ELINA_ZONES) {
+	// Zones domain does not implement assignment of linear
+	// expression
+	assign_texpr(x, e);
+      } else {
+        #ifdef USE_TREE_EXPR
+	assign_texpr(x, e);
+	#else
+	assign_linexpr(x, e);
+	#endif 
+      }
+      
+      CRAB_LOG("elina", crab::outs() << *this<<"\n";);
     }
     
-    void apply (operation_t op, variable_t x, variable_t y, Number z) {
+    void apply (operation_t op, variable_t x, variable_t y, number_t z) {
       crab::CrabStats::count (getDomainName() + ".count.apply");
       crab::ScopedCrabStats __st__(getDomainName() + ".apply");
       
       if(is_bottom()) return;
-      
-      elina_texpr0_t* a = var2texpr (y);
-      elina_texpr0_t* b = num2texpr (z);
-      elina_texpr0_t* res = nullptr;
-      
-      switch (op){
-      case OP_ADDITION: res = ADD (a, b); break;
-      case OP_SUBTRACTION: res = SUB (a, b); break;
-      case OP_MULTIPLICATION: res = MUL (a, b); break;
-      case OP_DIVISION: res = DIV (a, b); break;
-      default: CRAB_ERROR("elina operation not supported");
+
+      if (ElinaDom == ELINA_ZONES) {
+	// Zones domain does not implement assignment of linear
+	// expression
+	apply_texpr(op, x, y, z);
+      } else {
+        #ifdef USE_TREE_EXPR
+	apply_texpr(op, x, y, z);
+	#else
+	apply_linexpr(op, x, y, z);	
+	#endif 
       }
-      assert (res);
       
-      auto dim_x = get_var_dim_insert (x);
-      m_apstate = elinaPtr (get_man (), elina_abstract0_assign_texpr(get_man (), false, 
-								     &*m_apstate, 
-								     dim_x, res, NULL));
-      
-      elina_texpr0_free (res);
       CRAB_LOG("elina",
 	       crab::outs() << "--- "<< x<< ":="<< y<< op<< z<< " --> "<< *this<<"\n";);
     }
@@ -1270,61 +1476,23 @@ namespace domains {
       crab::ScopedCrabStats __st__(getDomainName() + ".apply");
       
       if(is_bottom()) return;
-      
-      elina_texpr0_t* a = var2texpr (y);
-      elina_texpr0_t* b = var2texpr (z);
-      elina_texpr0_t* res = nullptr;
-      
-      switch (op){
-      case OP_ADDITION: res = ADD (a, b); break;
-      case OP_SUBTRACTION: res = SUB (a, b); break;
-      case OP_MULTIPLICATION: res = MUL (a, b); break;
-      case OP_DIVISION: res = DIV (a, b); break;
-      default: CRAB_ERROR("elina operation not supported");
+
+      if (ElinaDom == ELINA_ZONES) {
+	// Zones domain does not implement assignment of linear
+	// expression
+	apply_texpr(op, x, y, z);
+      } else {
+        #ifdef USE_TREE_EXPR
+	apply_texpr(op, x, y, z);
+	#else
+	apply_linexpr(op, x, y, z);	
+	#endif 
       }
-      assert (res);
-      
-      auto dim_x = get_var_dim_insert (x);
-      m_apstate = elinaPtr (get_man (),
-			    elina_abstract0_assign_texpr(get_man (), false, 
-							 &*m_apstate, 
-							 dim_x, res, NULL));
-      
-      elina_texpr0_free (res);
+
       CRAB_LOG("elina",
 	       crab::outs() << "--- "<< x<< ":="<< y<< op<< z<< " --> "<< *this<<"\n";);
     }
-    
-    void apply(operation_t op, variable_t x, Number k) {
-      crab::CrabStats::count (getDomainName() + ".count.apply");
-      crab::ScopedCrabStats __st__(getDomainName() + ".apply");
-      
-      if(is_bottom()) return;
-      
-      elina_texpr0_t* a = var2texpr (x);
-      elina_texpr0_t* b = num2texpr (k);
-      elina_texpr0_t* res = nullptr;
-      
-      switch (op){
-      case OP_ADDITION: res = ADD (a, b); break;
-      case OP_SUBTRACTION: res = SUB (a, b); break;
-      case OP_MULTIPLICATION: res = MUL (a, b); break;
-      case OP_DIVISION: res = DIV (a, b); break;
-      default: CRAB_ERROR("elina operation not supported");
-      }
-      assert (res);
-
-      auto dim_x = get_var_dim_insert (x);
-      m_apstate = elinaPtr (get_man (),
-			    elina_abstract0_assign_texpr(get_man (), false, 
-							 &*m_apstate, 
-							 dim_x, res, NULL));
-      
-      elina_texpr0_free (res);
-      CRAB_LOG("elina",
-	       crab::outs() << "--- "<< x<< ":="<< x<< op<< k<< " --> "<< *this<<"\n";);
-    }
-    
+        
     void apply(int_conv_operation_t op, variable_t dst, variable_t src) {
       // since reasoning about infinite precision we simply assign and
       // ignore the widths.
@@ -1334,6 +1502,10 @@ namespace domains {
     void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {
       crab::CrabStats::count (getDomainName() + ".count.apply");
       crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+
+      if (is_bottom()) {
+	return;
+      }
       
       // Convert to intervals and perform the operation
       interval_t yi = operator[](y);
@@ -1354,6 +1526,10 @@ namespace domains {
     void apply(bitwise_operation_t op, variable_t x, variable_t y, Number k) {
       crab::CrabStats::count (getDomainName() + ".count.apply");
       crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+
+      if (is_bottom()) {
+	return;
+      }
       
       // Convert to intervals and perform the operation
       interval_t yi = operator[](y);
@@ -1374,11 +1550,14 @@ namespace domains {
     void apply(div_operation_t op, variable_t x, variable_t y, variable_t z) {
       crab::CrabStats::count (getDomainName() + ".count.apply");
       crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+
+      if (is_bottom()) {
+	return;
+      }
       
       if (op == OP_SDIV){
 	apply(OP_DIVISION, x, y, z);
-      }
-      else {
+      } else {
 	// Convert to intervals and perform the operation
 	interval_t yi = operator[](y);
 	interval_t zi = operator[](z);
@@ -1398,11 +1577,14 @@ namespace domains {
 	       variable_t x, variable_t y, Number k) {
       crab::CrabStats::count (getDomainName() + ".count.apply");
       crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+
+      if (is_bottom()) {
+	return;
+      }
       
       if (op == OP_SDIV){
 	apply(OP_DIVISION, x, y, k);
-      }
-      else {
+      } else {
 	// Convert to intervals and perform the operation
 	interval_t yi = operator[](y);
 	interval_t zi(k);
@@ -1457,11 +1639,19 @@ namespace domains {
       elina_texpr0_t* res = nullptr;
       
       switch (op){
-      case OP_ADDITION: res = ADD (a, b); break;
-      case OP_SUBTRACTION: res = SUB (a, b); break;
-      case OP_MULTIPLICATION: res = MUL (a, b); break;
-      case OP_DIVISION: res = DIV (a, b); break;
-      default: CRAB_ERROR("elina operation not supported");
+      case OP_ADDITION:
+	res = texpr_add(a, b);
+	break;
+      case OP_SUBTRACTION:
+	res = texpr_sub(a, b);
+	break;
+      case OP_MULTIPLICATION:
+	res = texpr_mul(a, b);
+	break;
+      case OP_DIVISION:
+	res = texpr_div(a, b);
+	break;
+      default: CRAB_ERROR("elina operation ", op, " not supported");
       }
       assert (res);
       
@@ -1496,27 +1686,32 @@ namespace domains {
       elina_texpr0_t* res = nullptr;
       
       switch (op){
-      case OP_ADDITION: res = ADD (a, b); break;
-      case OP_SUBTRACTION: res = SUB (a, b); break;
-      case OP_MULTIPLICATION: res = MUL (a, b); break;
-      case OP_DIVISION: res = DIV (a, b); break;
-      default: CRAB_ERROR("elina operation not supported");
+      case OP_ADDITION:
+	res = texpr_add(a, b);
+	break;
+      case OP_SUBTRACTION:
+	res = texpr_sub(a, b);
+	break;
+      case OP_MULTIPLICATION: 
+	res = texpr_mul(a, b);
+	break;
+      case OP_DIVISION:
+	res = texpr_div(a, b);
+	break;
+      default: CRAB_ERROR("elina operation ", op, " not supported");
       }
       assert (res);
-      
       auto dim_x = get_var_dim_insert (x);
-      
       m_var_map = merge_var_map (m_var_map, m_apstate,
 				 invariant.m_var_map,
 				 invariant.m_apstate);
-      
       m_apstate = elinaPtr (get_man (),
 			    elina_abstract0_substitute_texpr(get_man (), false, 
 							     &*m_apstate, 
 							     dim_x, res,
 							     &*invariant.m_apstate));
-      
       elina_texpr0_free (res);
+      
       CRAB_LOG("elina",
 	       crab::outs() << "--- " << x << ":=_bwd " << y << op << z
 	                    << " --> "<< *this <<"\n";);
@@ -1625,9 +1820,13 @@ namespace domains {
 	return;
       }
       else {
-	// dump ();
 	linear_constraint_system_t inv = to_linear_constraint_system ();
 	o << inv;
+	#if 0
+	o << "\nElina internal representation:";
+	dump();
+	#endif 
+	
       }
     }          
     
