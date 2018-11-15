@@ -334,7 +334,21 @@ namespace crab {
     
     void exec(assert_t& stmt) {
       if (m_ignore_assert) return;
+
+      bool pre_bot = false;
+      if (::crab::CrabSanityCheckFlag) {
+	pre_bot = get_inv()->is_bottom();
+      }
+      
       *get_inv() += stmt.constraint();
+
+      if (::crab::CrabSanityCheckFlag) {
+	bool post_bot = get_inv()->is_bottom();      
+	if (!(pre_bot || !post_bot)) {
+	  CRAB_WARN("Invariant became bottom after ", stmt, ".",
+		    " This might indicate that the assertion is violated");
+	}
+      }      
     }
 
     void exec(int_cast_t &stmt){
