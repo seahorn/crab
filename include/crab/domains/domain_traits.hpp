@@ -221,10 +221,10 @@ namespace crab {
      static bool intersect(Domain& inv, const linear_constraint_t& cst) {
        if (inv.is_bottom () || cst.is_contradiction ()) return false;
        if (inv.is_top () || cst.is_tautology ()) return true;
-       
-       Domain cst_inv;
-       cst_inv += cst;
-       return (!(cst_inv & inv).is_bottom ());
+
+       Domain dom(inv);
+       dom += cst;
+       return !dom.is_bottom();
      }
    };
 
