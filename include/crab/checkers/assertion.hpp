@@ -66,9 +66,25 @@ namespace crab {
         } else if (crab::domains::checker_domain_traits<abs_dom_t>::intersect(inv, cst)) {
           LOG_WARN(this->m_verbose, inv, cst, s.get_debug_info());
         } else {
-          LOG_ERR(this->m_verbose, inv, cst, s.get_debug_info());
+	  /* Instead this program:
+               x:=0; 
+	       y:=1;
+               if (x=34) {
+                 assert(y==2);
+               }
+             Suppose due to some abstraction we have:
+               havoc(x); 
+	       y:=1;
+               if (x=34) {
+                 assert(y==2);
+               }
+             As a result, we have inv={y=1,x=34}  and cst={y=2}
+	     Note that inv does not either entail or intersect with cst.
+             However, the original program does not violate the assertion.
+	   */
+	  LOG_WARN(this->m_verbose, inv, cst, s.get_debug_info());
+	  //LOG_ERR(this->m_verbose, inv, cst, s.get_debug_info());	  
         }
-        
         s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
       }
 
@@ -90,11 +106,13 @@ namespace crab {
 	} else  {
 	  inv = this->m_abs_tr->inv ();
 	  inv.assume_bool(bvar, false /*is_negated*/);
-	  if (inv.is_bottom()) {
-	    LOG_ERR(this->m_verbose, inv, s, s.get_debug_info());	  
-	  } else {
-	    LOG_WARN(this->m_verbose, inv, s, s.get_debug_info());
-	  }
+	  LOG_WARN(this->m_verbose, inv, s, s.get_debug_info());
+	  
+	  // if (inv.is_bottom()) {
+	  //   LOG_ERR(this->m_verbose, inv, s, s.get_debug_info());	  
+	  // } else {
+	  //   LOG_WARN(this->m_verbose, inv, s, s.get_debug_info());
+	  // }
 	}
         s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
       }
