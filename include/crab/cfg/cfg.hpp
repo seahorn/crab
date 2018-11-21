@@ -3700,20 +3700,23 @@ namespace crab {
       
       static size_t hash(callsite_t cs) {
 	size_t res = boost::hash_value(cs.get_func_name());
-        for (auto vt: cs.get_lhs ())
-          boost::hash_combine(res, vt.get_type());
-        for(unsigned i=0; i<cs.get_num_args (); i++)
+	for(unsigned i=0; i<cs.get_num_args (); i++) {
           boost::hash_combine(res, cs.get_arg_type (i));
+	}
+        for (auto vt: cs.get_lhs ()) {
+          boost::hash_combine(res, vt.get_type());
+	}
         return res;
       }
       
       static size_t hash(fdecl_t d)  {
         size_t res = boost::hash_value(d.get_func_name ());
-        for(unsigned i=0; i<d.get_num_inputs (); i++)
+        for(unsigned i=0; i<d.get_num_inputs (); i++) {
           boost::hash_combine(res, d.get_input_type (i));
-        for(unsigned i=0; i<d.get_num_outputs (); i++)
+	}
+	for(unsigned i=0; i<d.get_num_outputs (); i++) {
           boost::hash_combine(res, d.get_output_type (i));
-	
+	}
         return res;
       }      
     };

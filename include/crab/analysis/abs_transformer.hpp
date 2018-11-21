@@ -1136,6 +1136,10 @@ namespace crab {
         return;
       } else {
         // --- no summary found: do nothing
+	if (CrabWarningFlag) {
+	  crab::errs() << "CRAB WARNING: no summary found for callsite " << cs << "\n";
+	  m_sum_tbl->write(crab::errs());
+	}
       }
         
       // We could not reuse a summary so we just havoc lhs of the call
