@@ -244,9 +244,6 @@ namespace crab {
       bool is_int_cast () const { 
         return (m_stmt_code == INT_CAST); 
       }
-      bool is_return () const { 
-        return m_stmt_code == RETURN; 
-      }
       bool is_havoc () const { 
         return m_stmt_code == HAVOC; 
       }
@@ -294,6 +291,12 @@ namespace crab {
       }      
       bool is_bool_select () const { 
         return (m_stmt_code == BOOL_SELECT); 
+      }
+      bool is_callsite() const {
+	return (m_stmt_code == CALLSITE);
+      }
+      bool is_return() const {
+	return (m_stmt_code == RETURN);
       }
       
      public:
