@@ -254,7 +254,27 @@ namespace crab {
             }
           }
 
-        }
+
+	  if (::crab::CrabSanityCheckFlag) {
+	    // check each callsite has a corresponding function
+	    for (auto &cg_node: boost::make_iterator_range(nodes())) {
+	      CFG cfg = cg_node.get_cfg();
+	      for (auto &bb: boost::make_iterator_range(cfg.begin(), cfg.end())) {
+		for (auto &s: boost::make_iterator_range(bb.begin(), bb.end())) {
+		  if (s.is_callsite()) {
+		    //typedef typename CFG::basic_block_t::statement_t statement_t;
+		    typedef typename CFG::basic_block_t::callsite_t callsite_t;
+		    auto cs = static_cast<callsite_t*>(&s);
+		    size_t hcs = crab::cfg::cfg_hasher<CFG>::hash(*cs);
+		    if (m_vertex_map.find(hcs) == m_vertex_map.end()) {
+		      CRAB_ERROR("Function not found for callsite ", *cs); 
+		    }
+		  }
+		}
+	      }
+	    }
+	  }
+	}
 
         // call_graph (const call_graph& o)
         //     : m_cg (o.m_cg), // shallow copy
