@@ -343,10 +343,12 @@ namespace crab {
       *get_inv() += stmt.constraint();
 
       if (::crab::CrabSanityCheckFlag) {
-	bool post_bot = get_inv()->is_bottom();      
-	if (!(pre_bot || !post_bot)) {
-	  CRAB_WARN("Invariant became bottom after ", stmt, ".",
-		    " This might indicate that the assertion is violated");
+	if (!stmt.constraint().is_contradiction()) {
+	  bool post_bot = get_inv()->is_bottom();      
+	  if (!(pre_bot || !post_bot)) {
+	    CRAB_WARN("Invariant became bottom after ", stmt, ".",
+		      " This might indicate that the assertion is violated");
+	  }
 	}
       }      
     }
