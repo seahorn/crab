@@ -120,6 +120,8 @@ If you compile with Boxes/Apron/Elina you need also to include
 `_INSTALL_DIR_/xxx/include` and link with `_INSTALL_DIR_/xxx/lib`
 where `xxx=apron|elina|ldd`.
 
+Read [this](https://github.com/seahorn/crab/blob/master/external/Makefile) for a real Makefile.
+
 ## Example ## 
 
 Assume we want to perform static analysis on the following C-like
@@ -141,7 +143,7 @@ Next, we show a simplified version of the C++ code to build the
 corresponding Crab CFG and run the analysis using the Zones domain.
 
 **Note**: this code has been simplified for presentation purposes and
-it might not compile like it is. Read [README.md](https://github.com/seahorn/crab/blob/master/external/README.md) for details.
+it might not compile like it is. Read [this](https://github.com/seahorn/crab/blob/master/external/analysis.cpp) for real example.
 
 ```c++
     // CFG-based language
