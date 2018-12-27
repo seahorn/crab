@@ -1237,22 +1237,29 @@ namespace ikos {
       interval_t xi = interval_t::bottom();
       
       switch (op) {
-      case OP_ADDITION: {
-	xi = yi + zi;
-	break;
-      }
-      case OP_SUBTRACTION: {
-	xi = yi - zi;
-	break;
-      }
-      case OP_MULTIPLICATION: {
-	xi = yi * zi;
-	break;
-      }
-      case OP_DIVISION: {
-	xi = yi / zi;
-	break;
-      }
+        case OP_ADDITION: 
+	  xi = yi + zi;
+	  break;
+        case OP_SUBTRACTION: 
+	  xi = yi - zi;
+	  break;
+        case OP_MULTIPLICATION: 
+	  xi = yi * zi;
+	  break;
+        case OP_SDIV: 
+	  xi = yi / zi;
+	  break;
+        case OP_UDIV: 
+	  xi = yi.UDiv(zi);
+	  break;
+        case OP_SREM: 
+	  xi = yi.SRem(zi);
+	  break;
+        case OP_UREM: 
+	  xi = yi.URem(zi);
+	  break;
+        default:
+	  CRAB_ERROR("Operation ", op, " not supported");
       }
       this->_env.set(x, xi);
     }
@@ -1266,35 +1273,42 @@ namespace ikos {
       interval_t xi = interval_t::bottom();
       
       switch (op) {
-      case OP_ADDITION: {
-	xi = yi + zi;
-	break;
-      }
-      case OP_SUBTRACTION: {
-	xi = yi - zi;
-	break;
-      }
-      case OP_MULTIPLICATION: {
-	xi = yi * zi;
-	break;
-      }
-      case OP_DIVISION: {
-	xi = yi / zi;
-	break;
-      }
+        case OP_ADDITION: 
+	  xi = yi + zi;
+	  break;
+        case OP_SUBTRACTION:
+	  xi = yi - zi;
+	  break;
+        case OP_MULTIPLICATION: 
+	  xi = yi * zi;
+	  break;
+        case OP_SDIV: 
+	  xi = yi / zi;
+	  break;
+        case OP_UDIV: 
+	  xi = yi.UDiv(zi);
+	  break;
+        case OP_SREM: 
+	  xi = yi.SRem(zi);
+	  break;
+        case OP_UREM: 
+	  xi = yi.URem(zi);
+	  break;
+        default:
+          CRAB_ERROR("Operation ", op, " not supported");
       }
       this->_env.set(x, xi);
     }
 
-    void backward_assign (variable_t x, linear_expression_t e,
-			  interval_domain_t inv) {
+    void backward_assign(variable_t x, linear_expression_t e,
+			 interval_domain_t inv) {
       crab::domains::BackwardAssignOps<interval_domain_t>::
-	assign (*this, x, e, inv);
+	assign(*this, x, e, inv);
     }      
     
-    void backward_apply (operation_t op,
-			 variable_t x, variable_t y, Number z,
-			 interval_domain_t inv) {
+    void backward_apply(operation_t op,
+			variable_t x, variable_t y, Number z,
+			interval_domain_t inv) {
       crab::domains::BackwardAssignOps<interval_domain_t>::
 	apply(*this, op, x, y, z, inv);
     }      
@@ -1393,70 +1407,6 @@ namespace ikos {
       this->_env.set(x, xi);
     }
     
-    // division_operators_api
-    
-    void apply(div_operation_t op, variable_t x, variable_t y, variable_t z){
-      crab::CrabStats::count (getDomainName() + ".count.apply");
-      crab::ScopedCrabStats __st__(getDomainName() + ".apply");
-
-      interval_t yi = this->_env[y];
-      interval_t zi = this->_env[z];
-      interval_t xi = interval_t::bottom();
-      
-      switch (op) {
-        case OP_SDIV: {
-	xi = yi / zi;
-	break;
-        }
-        case OP_UDIV: {
-	xi = yi.UDiv(zi);
-	break;
-        }
-        case OP_SREM: {
-	xi = yi.SRem(zi);
-	break;
-        }
-        case OP_UREM: {
-	xi = yi.URem(zi);
-	break;
-        }
-        default: 
-          CRAB_ERROR("unreachable");
-      }
-      this->_env.set(x, xi);
-
-    }
-
-    void apply(div_operation_t op, variable_t x, variable_t y, Number k){
-      crab::CrabStats::count (getDomainName() + ".count.apply");
-      crab::ScopedCrabStats __st__(getDomainName() + ".apply");
-
-      interval_t yi = this->_env[y];
-      interval_t zi(k);
-      interval_t xi = interval_t::bottom();
-      switch (op) {
-        case OP_SDIV: {
-	xi = yi / zi;
-	break;
-        }
-        case OP_UDIV: {
-	xi = yi.UDiv(zi);
-	break;
-        }
-        case OP_SREM: {
-	xi = yi.SRem(zi);
-	break;
-        }
-        case OP_UREM: {
-	xi = yi.URem(zi);
-	break;
-        }
-        default: 
-          CRAB_ERROR("unreachable");
-      }
-      this->_env.set(x, xi);
-    }
-
     void write(crab::crab_os& o) {
       this->_env.write(o);
     }

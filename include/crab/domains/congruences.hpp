@@ -981,23 +981,29 @@ public:
     congruence_t xi = congruence_t::bottom();
 
     switch (op) {
-      case OP_ADDITION: {
+      case OP_ADDITION:
         xi = yi + zi;
         break;
-      }
-      case OP_SUBTRACTION: {
+      case OP_SUBTRACTION:
         xi = yi - zi;
         break;
-      }
-      case OP_MULTIPLICATION: {
+      case OP_MULTIPLICATION: 
         xi = yi * zi;
         break;
-      }
-      case OP_DIVISION: { // signed division
+      case OP_SDIV: 
         xi = yi / zi;
         break;
-      }
-      default: { CRAB_ERROR("unreachable"); }
+      case OP_UDIV: 
+        xi = yi.UDiv(zi);
+        break;
+      case OP_SREM: 
+        xi = yi.SRem(zi);
+        break;
+      case OP_UREM: 
+        xi = yi.URem(zi);
+        break;
+    default:
+      CRAB_ERROR("Operation ", op, " not supported");
     }
     this->_env.set(x, xi);
   }
@@ -1011,36 +1017,42 @@ public:
     congruence_t xi = congruence_t::bottom();
 
     switch (op) {
-      case OP_ADDITION: {
+      case OP_ADDITION: 
         xi = yi + zi;
         break;
-      }
-      case OP_SUBTRACTION: {
+      case OP_SUBTRACTION: 
         xi = yi - zi;
         break;
-      }
-      case OP_MULTIPLICATION: {
+      case OP_MULTIPLICATION:
         xi = yi * zi;
         break;
-      }
-      case OP_DIVISION: { // signed division
+      case OP_SDIV:
         xi = yi / zi;
         break;
-      }
-      default: { CRAB_ERROR("unreachable"); }
+      case OP_UDIV:
+        xi = yi.UDiv(zi);
+        break;
+      case OP_SREM:
+        xi = yi.SRem(zi);
+        break;
+      case OP_UREM:
+        xi = yi.URem(zi);
+        break;
+      default:
+	CRAB_ERROR("Operation ", op, " not supported");
     }
     this->_env.set(x, xi);
   }
 
-  void backward_assign (variable_t x, linear_expression_t e,
-			congruence_domain_t inv) { 
+  void backward_assign(variable_t x, linear_expression_t e,
+		       congruence_domain_t inv) { 
     crab::domains::BackwardAssignOps<congruence_domain_t>::
       assign (*this, x, e, inv);
   }
   
-  void backward_apply (operation_t op,
-		       variable_t x, variable_t y, Number z,
-		       congruence_domain_t inv) {
+  void backward_apply(operation_t op,
+		      variable_t x, variable_t y, Number z,
+		      congruence_domain_t inv) {
     crab::domains::BackwardAssignOps<congruence_domain_t>::
       apply(*this, op, x, y, z, inv);
   }
@@ -1131,68 +1143,6 @@ public:
       }
       case OP_ASHR: {
         xi = yi.AShr(zi);
-        break;
-      }
-      default: { CRAB_ERROR("unreachable"); }
-    }
-    this->_env.set(x, xi);
-  }
-
-  // division_operators_api
-
-  void apply(div_operation_t op, variable_t x, variable_t y, variable_t z) {
-    crab::CrabStats::count (getDomainName() + ".count.apply");
-    crab::ScopedCrabStats __st__(getDomainName() + ".apply");
-
-    congruence_t yi = this->_env[y];
-    congruence_t zi = this->_env[z];
-    congruence_t xi = congruence_t::bottom();
-
-    switch (op) {
-      case OP_SDIV: {
-        xi = yi / zi;
-        break;
-      }
-      case OP_UDIV: {
-        xi = yi.UDiv(zi);
-        break;
-      }
-      case OP_SREM: {
-        xi = yi.SRem(zi);
-        break;
-      }
-      case OP_UREM: {
-        xi = yi.URem(zi);
-        break;
-      }
-      default: { CRAB_ERROR("unreachable"); }
-    }
-    this->_env.set(x, xi);
-  }
-
-  void apply(div_operation_t op, variable_t x, variable_t y, Number k) {
-    crab::CrabStats::count (getDomainName() + ".count.apply");
-    crab::ScopedCrabStats __st__(getDomainName() + ".apply");
-
-    congruence_t yi = this->_env[y];
-    congruence_t zi(k);
-    congruence_t xi = congruence_t::bottom();
-
-    switch (op) {
-      case OP_SDIV: {
-        xi = yi / zi;
-        break;
-      }
-      case OP_UDIV: {
-        xi = yi.UDiv(zi);
-        break;
-      }
-      case OP_SREM: {
-        xi = yi.SRem(zi);
-        break;
-      }
-      case OP_UREM: {
-        xi = yi.URem(zi);
         break;
       }
       default: { CRAB_ERROR("unreachable"); }

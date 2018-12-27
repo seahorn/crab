@@ -1493,39 +1493,38 @@ namespace crab {
         crab::CrabStats::count (getDomainName() + ".count.apply");
         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
-        if(is_bottom())
+        if(is_bottom()) {
           return;
+	}
 
         normalize();
 
-        switch(op)
-        {
+        switch(op) {
           case ikos::OP_ADDITION:
-          {
             assign(x, y+z);
             break;
-          }
           case ikos::OP_SUBTRACTION:
-          {
             assign(x, y-z);
             break;
-          }
-          // For mul and div, we fall back on intervals.
+          // For the rest of operations, we fall back on intervals.
           case ikos::OP_MULTIPLICATION:
-          {
             set(x, get_interval(y)*get_interval(z));
             break;
-          }
-          case ikos::OP_DIVISION:
-          {
-            interval_t xi(get_interval(y)/get_interval(z));
-            if(xi.is_bottom())
-              set_to_bottom();
-            else
-              set(x, xi);
+  	  case ikos::OP_SDIV: 
+	    set(x, get_interval(y)/get_interval(z));
             break;
-          }
-        }
+          case ikos::OP_UDIV:
+	    set(x, get_interval(y).UDiv(get_interval(z)));
+	    break;
+          case ikos::OP_SREM:
+	    set(x, get_interval(y).SRem(get_interval(z)));
+	    break;
+          case ikos::OP_UREM:
+	    set(x, get_interval(y).URem(get_interval(z)));
+	    break;
+	  default:
+	    CRAB_ERROR("Operation ", op, " not supported");
+	}
         CRAB_LOG("zones-sparse",
                  crab::outs() << "---"<< x<< ":="<< y<< op<< z<<"\n"<< *this<<"\n";);
       }
@@ -1535,60 +1534,55 @@ namespace crab {
         crab::CrabStats::count (getDomainName() + ".count.apply");
         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
-        if(is_bottom())
+        if(is_bottom()) {
           return;
+	}
 
         normalize();
 
-        switch(op)
-        {
+        switch(op) {
           case ikos::OP_ADDITION:
-          {
             assign(x, y+k);
             break;
-          }
           case ikos::OP_SUBTRACTION:
-          {
             assign(x, y-k);
             break;
-          }
-          // For mul and div, we fall back on intervals.
+          // For the rest of operations, we fall back on intervals.
           case ikos::OP_MULTIPLICATION:
-          {
-            set(x, get_interval(y)*k);
-
+            set(x, get_interval(y)*interval_t(k));
             break;
-          }
-          case ikos::OP_DIVISION:
-          {
-            if(k == Wt(0))
-              set_to_bottom();
-            else
-              set(x, get_interval(y)/k);
-
+          case ikos::OP_SDIV:
+            set(x, get_interval(y)/interval_t(k));	    
             break;
-          }
-        }
+          case ikos::OP_UDIV:
+            set(x, get_interval(y).UDiv(interval_t(k)));	    
+            break;
+          case ikos::OP_SREM:
+            set(x, get_interval(y).SRem(interval_t(k)));	    
+            break;
+          case ikos::OP_UREM:
+            set(x, get_interval(y).URem(interval_t(k)));	    
+            break;
+	  default:
+	    CRAB_ERROR("Operation ", op, " not supported");
+	}
 
         CRAB_LOG("zones-sparse",
                  crab::outs() << "---"<< x<< ":="<< y<< op<< k<<"\n"<< *this<<"\n";);
       }
 
-      void backward_assign (variable_t x, linear_expression_t e,
-			    DBM_t inv) { 
+      void backward_assign(variable_t x, linear_expression_t e, DBM_t inv) { 
 	crab::domains::BackwardAssignOps<DBM_t>::
 	  assign (*this, x, e, inv);
       }
       
-      void backward_apply (operation_t op,
-			   variable_t x, variable_t y, Number z,
-			   DBM_t inv) {
+      void backward_apply(operation_t op, variable_t x, variable_t y, Number z,
+			  DBM_t inv) {
 	crab::domains::BackwardAssignOps<DBM_t>::
 	  apply(*this, op, x, y, z, inv);
       }
       
-      void backward_apply(operation_t op,
-			  variable_t x, variable_t y, variable_t z,
+      void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
 			  DBM_t inv) {
 	crab::domains::BackwardAssignOps<DBM_t>::
 	  apply(*this, op, x, y, z, inv);
@@ -1691,13 +1685,21 @@ namespace crab {
         crab::CrabStats::count (getDomainName() + ".count.assign");
         crab::ScopedCrabStats __st__(getDomainName() + ".assign");
 
-        if(is_bottom())
+        if(is_bottom()) {
           return;
+	}
+
+	if (intv.is_bottom()) {
+	  set_to_bottom();
+	  return;
+	}
+	
         this->operator-=(x);
 
-        if(intv.is_top())
-          return;
-
+	if (intv.is_top()) {
+	  return;
+	}
+	
         vert_id v = get_vert(x);
         if(intv.ub().is_finite())
         {
@@ -1807,76 +1809,7 @@ namespace crab {
         }
         set(x, xi);
       }
-    
-      // division_operators_api
-    
-      void apply(ikos::div_operation_t op, variable_t x, variable_t y, variable_t z) {
-        crab::CrabStats::count (getDomainName() + ".count.apply");
-        crab::ScopedCrabStats __st__(getDomainName() + ".apply");
-
-        if (op == ikos::OP_SDIV){
-          apply(ikos::OP_DIVISION, x, y, z);
-        }
-        else{
-          normalize();
-          // Convert to intervals and perform the operation
-          interval_t yi = operator[](y);
-          interval_t zi = operator[](z);
-          interval_t xi = interval_t::bottom();
-      
-          switch (op) {
-            case ikos::OP_UDIV: {
-              xi = yi.UDiv(zi);
-              break;
-            }
-            case ikos::OP_SREM: {
-              xi = yi.SRem(zi);
-              break;
-            }
-            case ikos::OP_UREM: {
-              xi = yi.URem(zi);
-              break;
-            }
-            default: 
-              CRAB_ERROR("spDBM: unreachable");
-          }
-          set(x, xi);
-        }
-      }
-
-      void apply(ikos::div_operation_t op, variable_t x, variable_t y, Number k) {
-        crab::CrabStats::count (getDomainName() + ".count.apply");
-        crab::ScopedCrabStats __st__(getDomainName() + ".apply");
-
-        if (op == ikos::OP_SDIV){
-          apply(ikos::OP_DIVISION, x, y, k);
-        }
-        else{
-          // Convert to intervals and perform the operation
-          interval_t yi = operator[](y);
-          interval_t zi(k);
-          interval_t xi = interval_t::bottom();
-      
-          switch (op) {
-            case ikos::OP_UDIV: {
-              xi = yi.UDiv(zi);
-              break;
-            }
-            case ikos::OP_SREM: {
-              xi = yi.SRem(zi);
-              break;
-            }
-            case ikos::OP_UREM: {
-              xi = yi.URem(zi);
-              break;
-            }
-            default: 
-              CRAB_ERROR("DBM: unreachable");
-          }
-          set(x, xi);
-        }
-      }
-
+        
       void rename(const variable_vector_t &from, const variable_vector_t &to) {
 	if (is_top () || is_bottom()) return;
 	
@@ -2254,6 +2187,9 @@ namespace crab {
       void apply(ikos::operation_t op, variable_t x, variable_t y, Number k) {
         lock(); norm().apply(op, x, y, k);
       }
+      void apply(ikos::operation_t op, variable_t x, variable_t y, variable_t z) {
+        lock(); norm().apply(op, x, y, z);
+      }      
       void apply(int_conv_operation_t op, variable_t dst, variable_t src) {
         lock(); norm().apply(op, dst, src);	
       }
@@ -2274,16 +2210,6 @@ namespace crab {
       void apply(ikos::bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {
         lock(); norm().apply(op, x, y, z);
       }
-      void apply(ikos::operation_t op, variable_t x, variable_t y, variable_t z) {
-        lock(); norm().apply(op, x, y, z);
-      }
-      void apply(ikos::div_operation_t op, variable_t x, variable_t y, variable_t z) {
-        lock(); norm().apply(op, x, y, z);
-      }
-      void apply(ikos::div_operation_t op, variable_t x, variable_t y, Number k) {
-        lock(); norm().apply(op, x, y, k);
-      }
-
       void rename(const variable_vector_t &from, const variable_vector_t &to)
       { lock(); norm().rename(from, to); }
       

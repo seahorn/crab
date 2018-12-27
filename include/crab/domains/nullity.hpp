@@ -303,9 +303,9 @@ namespace crab {
     void apply(operation_t op, variable_t x, variable_t y, variable_t z) {}
     void apply(operation_t op, variable_t x, variable_t y, Number k) {}
     void assign(variable_t x, linear_expression_t e) {}
-    void backward_assign (variable_t x, linear_expression_t e,
+    void backward_assign(variable_t x, linear_expression_t e,
 			  nullity_domain_t invariant)  {}
-    void backward_apply (operation_t op, variable_t x, variable_t y, Number z,
+    void backward_apply(operation_t op, variable_t x, variable_t y, Number z,
 			 nullity_domain_t invariant)  {}
     void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
 			nullity_domain_t invariant) {}
@@ -315,11 +315,6 @@ namespace crab {
     void set (variable_t x, interval_t intv) {}
     interval_t operator[](variable_t x) { return interval_t::top ();}
 
-    // division_operators_api
-    // XXX: needed for making a reduced product with a numerical domain
-    void apply(div_operation_t op, variable_t x, variable_t y, variable_t z) {}
-    void apply(div_operation_t op, variable_t x, variable_t y, Number z) {}
-    
     // int_cast_operators_api and bitwise_operators_api
     // XXX: needed for making a reduced product with a numerical domain
     void apply(int_conv_operation_t op, variable_t dst, variable_t src) {}

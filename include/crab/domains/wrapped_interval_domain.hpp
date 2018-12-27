@@ -1439,26 +1439,34 @@ public:
     wrapped_interval_t xi = wrapped_interval_t::bottom();
     
     switch (op) {
-    case OP_ADDITION: {
+    case OP_ADDITION:
       xi = yi + zi;
       break;
-    }
-    case OP_SUBTRACTION: {
+    case OP_SUBTRACTION: 
       xi = yi - zi;
       break;
-    }
-    case OP_MULTIPLICATION: {
+    case OP_MULTIPLICATION: 
       xi = yi * zi;
       break;
-    }
-    case OP_DIVISION: {
+    case OP_SDIV: 
       xi = yi / zi;
       break;
-    }
+    case OP_UDIV: 
+      xi = yi.UDiv(zi);
+      break;
+    case OP_SREM:
+      xi = yi.SRem(zi);
+      break;
+    case OP_UREM: 
+      xi = yi.URem(zi);
+      break;
+    default:
+      CRAB_ERROR("Operation ", op, " not supported");
     }
     this->_env.set(x, xi);
     CRAB_LOG("wrapped-int",
-	     crab::outs() << x << ":=" << y << " " << op << " " << z << "=" << _env[x] << "\n");        
+	     crab::outs() << x << ":=" << y << " " << op << " " << z << "="
+	                  << _env[x] << "\n");        
   }
   
   void apply(operation_t op, variable_t x, variable_t y, Number k) {
@@ -1470,22 +1478,29 @@ public:
     wrapped_interval_t xi = wrapped_interval_t::bottom();
     
     switch (op) {
-    case OP_ADDITION: {
+    case OP_ADDITION: 
       xi = yi + zi;
       break;
-    }
-    case OP_SUBTRACTION: {
+    case OP_SUBTRACTION:
       xi = yi - zi;
       break;
-    }
-    case OP_MULTIPLICATION: {
+    case OP_MULTIPLICATION: 
       xi = yi * zi;
       break;
-    }
-    case OP_DIVISION: { // signed division
+    case OP_SDIV: 
       xi = yi / zi;
       break;
-    }
+    case OP_UDIV: 
+      xi = yi.UDiv(zi);
+      break;
+    case OP_SREM: 
+      xi = yi.SRem(zi);
+      break;
+    case OP_UREM: 
+      xi = yi.URem(zi);
+      break;
+    default: 
+      CRAB_ERROR("Operation ", op, " not supported");
     }
     this->_env.set(x, xi);
     CRAB_LOG("wrapped-int",
@@ -1493,17 +1508,23 @@ public:
 	                  << _env[x] << "\n");        
   }
   
-  void backward_assign (variable_t x, linear_expression_t e,
-			wrapped_interval_domain_t inv) {
-    // crab::domains::BackwardAssignOps<wrapped_interval_domain_t>::
-    // 	assign (*this, x, e, inv);
-  }      
-  
-  void backward_apply (operation_t op,
-		       variable_t x, variable_t y, Number z,
+  void backward_assign(variable_t x, linear_expression_t e,
 		       wrapped_interval_domain_t inv) {
     // crab::domains::BackwardAssignOps<wrapped_interval_domain_t>::
+    // 	assign (*this, x, e, inv);
+    
+    this->operator-=(x);
+    CRAB_WARN("Backward assign for wrapped intervals not implemented");
+  }      
+  
+  void backward_apply(operation_t op,
+		      variable_t x, variable_t y, Number z,
+		      wrapped_interval_domain_t inv) {
+    // crab::domains::BackwardAssignOps<wrapped_interval_domain_t>::
     // 	apply(*this, op, x, y, z, inv);
+    
+    this->operator-=(x);
+    CRAB_WARN("Backward apply for wrapped intervals not implemented");
   }      
   
   void backward_apply(operation_t op,
@@ -1511,6 +1532,9 @@ public:
 		      wrapped_interval_domain_t inv) {
     // crab::domains::BackwardAssignOps<wrapped_interval_domain_t>::
     // 	apply(*this, op, x, y, z, inv);
+    
+    this->operator-=(x);
+    CRAB_WARN("Backward apply for wrapped intervals not implemented");    
   }
   
   // cast_operators_api
@@ -1631,69 +1655,6 @@ public:
     this->_env.set(x, xi);
   }
   
-  // division_operators_api
-  
-  void apply(div_operation_t op, variable_t x, variable_t y, variable_t z){
-    crab::CrabStats::count (getDomainName() + ".count.apply");
-    crab::ScopedCrabStats __st__(getDomainName() + ".apply");
-    
-    wrapped_interval_t yi = this->_env[y];
-    wrapped_interval_t zi = this->_env[z];
-    wrapped_interval_t xi = wrapped_interval_t::bottom();
-    
-    switch (op) {
-      case OP_SDIV: {
-    	xi = yi / zi;
-    	break;
-      }
-      case OP_UDIV: {
-    	xi = yi.UDiv(zi);
-    	break;
-      }
-      case OP_SREM: {
-    	xi = yi.SRem(zi);
-    	break;
-      }
-      case OP_UREM: {
-    	xi = yi.URem(zi);
-    	break;
-      }
-      default: 
-        CRAB_ERROR("unreachable");
-    }
-    this->_env.set(x, xi);
-  }
-  
-  void apply(div_operation_t op, variable_t x, variable_t y, Number k){
-    crab::CrabStats::count (getDomainName() + ".count.apply");
-    crab::ScopedCrabStats __st__(getDomainName() + ".apply");
-    
-    wrapped_interval_t yi = this->_env[y];
-    wrapped_interval_t zi = wrapped_interval_t::mk_winterval(k, x.get_bitwidth());
-    wrapped_interval_t xi = wrapped_interval_t::bottom();
-    switch (op) {
-      case OP_SDIV: {
-    	xi = yi / zi;
-    	break;
-      }
-      case OP_UDIV: {
-    	xi = yi.UDiv(zi);
-    	break;
-      }
-      case OP_SREM: {
-    	xi = yi.SRem(zi);
-    	break;
-      }
-      case OP_UREM: {
-    	xi = yi.URem(zi);
-    	break;
-      }
-      default: 
-        CRAB_ERROR("unreachable");
-    }
-    this->_env.set(x, xi);
-  }
-
   void operator+=(linear_constraint_system_t csts) {
     crab::CrabStats::count (getDomainName() + ".count.add_constraints");
     crab::ScopedCrabStats __st__(getDomainName() + ".add_constraints");
@@ -2318,13 +2279,13 @@ public:
 	     crab::outs() << x << ":=" << e << " => " << *this<<"\n";);    
   }
   
-  void backward_assign (variable_t x, linear_expression_t e, this_type invariant) {
+  void backward_assign(variable_t x, linear_expression_t e, this_type invariant) {
     _w_int_dom.backward_assign(x, e, invariant._w_int_dom);
     // XXX: ignore _limit_env
   }
   
-  void backward_apply (operation_t op, variable_t x, variable_t y, number_t z,
-		       this_type invariant) {
+  void backward_apply(operation_t op, variable_t x, variable_t y, number_t z,
+		      this_type invariant) {
     _w_int_dom.backward_apply(op, x, y, z, invariant._w_int_dom);
     // XXX: ignore _limit_env    
   }
@@ -2396,32 +2357,6 @@ public:
 	                  << " => " << *this<<"\n";);    
   }
       
-  // division_operators_api
-  
-  void apply(div_operation_t op, variable_t x, variable_t y, variable_t z) {
-    wrapped_interval_t old_i = get_wrapped_interval(x);
-    _w_int_dom.apply(op, x, y, z);
-    wrapped_interval_t new_i = get_wrapped_interval(x);    
-    update_limits(x, old_i, new_i);
-    // -- mark x as initialized
-    _init_set += x;    
-    CRAB_LOG("wrapped-int2",
-	     crab::outs() << x << ":=" << y << " " << op << " " << z
-	                  << " => " << *this<<"\n";);    
-  }
-  
-  void apply(div_operation_t op, variable_t x, variable_t y, number_t k) {
-    wrapped_interval_t old_i = get_wrapped_interval(x);
-    _w_int_dom.apply(op, x, y, k);
-    wrapped_interval_t new_i = get_wrapped_interval(x);    
-    update_limits(x, old_i, new_i);
-    // -- mark x as initialized
-    _init_set += x;    
-    CRAB_LOG("wrapped-int2",
-	     crab::outs() << x << ":=" << y << " " << op << " " << k
-	                  << " => " << *this<<"\n";);    
-  }
-  
   void write(crab_os& o) {
     //o << "(" << _w_int_dom << "," << _limit_env << "," << _init_set << ")";
     o << "(" << _w_int_dom << "," << _limit_env << ")";
@@ -2886,25 +2821,46 @@ public:
   // numerical_domains_api
 
   void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
-    if (op == OP_DIVISION) {
-      // signed division
+    if (op == OP_SDIV || op == OP_SREM) {
+      // signed division/rem
       rectify(y, SIGNED);
       rectify(z, SIGNED);            
+    } else if (op == OP_UDIV || op == OP_UREM) {
+      // unsigned division/rem
+      rectify(y, UNSIGNED);
+      rectify(z, UNSIGNED);            
     }
-    _product.apply(op, x, y, z);
+    if (op == OP_UDIV || op == OP_UREM) {
+      // if unsigned division then we only apply it on wrapped intervals
+      _product.first().apply(op, x, y, z);
+    } else {
+      _product.apply(op, x, y, z);
+    }
     CRAB_LOG("wrapped-num",
-	     crab::outs() << x << ":=" << y << " " << op << " " << z <<"=" << _product << "\n";);
+	     crab::outs() << x << ":=" << y << " " << op << " " << z << "="
+	                  << _product << "\n";);
     strengthen(x);
   }
       
   void apply(operation_t op, variable_t x, variable_t y, N k) {
-    if (op == OP_DIVISION) {
-      // signed division
+    if (op == OP_SDIV || op == OP_SREM) {
+      // signed division/rem
       rectify(y, SIGNED);
-    }    
-    _product.apply(op, x, y, k);
+    } else if (op == OP_UDIV || op == OP_UREM) {
+      // unsigned division/rem
+      rectify(y, UNSIGNED);
+    }
+
+    if (op == OP_UDIV || op == OP_UREM) {
+      // if unsigned division then we only apply it on wrapped intervals
+      _product.first().apply(op, x, y, k);
+    } else {
+
+      _product.apply(op, x, y, k);
+    }
     CRAB_LOG("wrapped-num",
-	     crab::outs() << x << ":=" << y << " " << op << " " << k <<"=" << _product << "\n";);
+	     crab::outs() << x << ":=" << y << " " << op << " " << k << "="
+	                  << _product << "\n";);
     strengthen(x);
   }
 
@@ -2920,26 +2876,31 @@ public:
 
   void backward_assign (variable_t x, linear_expression_t e,
 			wrapped_numerical_domain_t invariant) override {
+
     CRAB_WARN("backward assign not implemented");
+    this->operator-=(x);
+    
     //_product.backward_assign(x,e,invariant._product);
   }
       
-  void backward_apply (operation_t op, variable_t x, variable_t y, N z,
-		       wrapped_numerical_domain_t invariant) override {
-    CRAB_WARN("backward apply not implemented");    
+  void backward_apply(operation_t op, variable_t x, variable_t y, N z,
+		      wrapped_numerical_domain_t invariant) override {
+    CRAB_WARN("backward apply not implemented");
+    this->operator-=(x);
+    
     // _product.backward_apply(op,x,y,z,invariant._product);
-    // if (op == OP_DIVISION) {
-    //   // signed division
+    // if (op == OP_SDIV) {
     //   _product.second() -= x;
     // }        
   }
      
   void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
 		      wrapped_numerical_domain_t invariant) override {
-    CRAB_WARN("backward apply not implemented");        
+    CRAB_WARN("backward apply not implemented");
+    this->operator-=(x);
+    
     // _product.backward_apply(op,x,y,z,invariant._product);
-    // if (op == OP_DIVISION) {
-    //   // signed division
+    // if (op == OP_SDIV) {
     //   _product.second() -= x;
     // }        
   }
@@ -3025,21 +2986,20 @@ public:
   void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
 				wrapped_numerical_domain_t inv) {
     CRAB_WARN("backward assign bool constraint not implemented");
-    // _product.backward_assign_bool_cst(lhs, rhs, inv._product);
-    // // TODO: rectify rhs
+    this->operator-=(lhs);
   }
       
   void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
 				wrapped_numerical_domain_t inv) {
     CRAB_WARN("backward assign bool variable not implemented");
-    //_product.backward_assign_bool_var(lhs, rhs, is_not_rhs, inv._product);
+    this->operator-=(lhs);
   }
   
   void backward_apply_binary_bool(bool_operation_t op,
 				  variable_t x,variable_t y,variable_t z,
 				  wrapped_numerical_domain_t inv) {
     CRAB_WARN("backward apply binary bool not implemented");
-    //_product.backward_apply_binary_bool(op, x, y, z, inv._product);
+    this->operator-=(x);
   }
   
   // cast_operators_api
@@ -3057,37 +3017,7 @@ public:
   void apply(bitwise_operation_t op, variable_t x, variable_t y, N k)
   { _product.apply(op, x, y, k); }
       
-  // division_operators_api
-  
-  void apply(div_operation_t op, variable_t x, variable_t y, variable_t z) {
-    rectify(y, (op == OP_SDIV || op == OP_SREM) ? SIGNED: UNSIGNED);
-    rectify(z, (op == OP_SDIV || op == OP_SREM) ? SIGNED: UNSIGNED);
-    if (op == OP_UDIV || op == OP_UREM) {
-      // if unsigned division then we only apply it on wrapped intervals
-      _product.first().apply(op, x, y, z);
-    } else {
-      _product.apply(op, x, y, z);
-    }
-    CRAB_LOG("wrapped-num",
-	     crab::outs()  << "Reduction after " << x << ":=" << y << " " << op
-	                   << " " << z <<"\n";);        
-    strengthen(x);
-  }
     
-  void apply(div_operation_t op, variable_t x, variable_t y, N k) {
-    rectify(y, (op == OP_SDIV || op == OP_SREM) ? SIGNED: UNSIGNED);
-    if (op == OP_UDIV || op == OP_UREM) {
-      // if unsigned division then we only apply it on wrapped intervals
-      _product.first().apply(op, x, y, k);
-    } else {
-      _product.apply(op, x, y, k);
-    }
-    CRAB_LOG("wrapped-num",
-	     crab::outs()  << "Reduction after " << x << ":=" << y << " " << op
-	                   << " " << k <<"\n";);        
-    strengthen(x);
-  }
-      
   // array_operators_api
   
   virtual void array_init (variable_t a, linear_expression_t elem_size,

@@ -307,7 +307,7 @@ int main (int argc, char** argv )
     crab::outs() << inv3 << "\n";
 
     crab::outs() << x << ":=" << y << " / " << z << "= \n";
-    inv3.apply (OP_DIVISION, x, y, z);
+    inv3.apply (OP_SDIV, x, y, z);
     crab::outs() << inv3 << "\n";
 
 

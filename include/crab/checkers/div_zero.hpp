@@ -28,56 +28,56 @@ namespace crab {
 
      public:
       
-      div_zero_property_checker (int verbose = 0)
-          : base_checker_t (verbose) { }
+      div_zero_property_checker(int verbose = 0)
+          : base_checker_t(verbose) { }
       
-      std::string get_property_name () const override {
+      std::string get_property_name() const override {
         return "integer division by zero checker";
       }
 
-      void check (bin_op_t &s) override { 
+      void check(bin_op_t &s) override { 
         if (!this->m_abs_tr) return;        
 
-        if (s.op () == BINOP_SDIV || s.op () == BINOP_UDIV ||
-            s.op () == BINOP_SREM || s.op () == BINOP_UREM) {
+        if (s.op() == BINOP_SDIV || s.op() == BINOP_UDIV ||
+            s.op() == BINOP_SREM || s.op() == BINOP_UREM) {
          
-          auto &inv = this->m_abs_tr->inv ();
-          if (inv.is_bottom ()) {
-            this->m_db.add (_UNREACH);
+          auto &inv = *(this->m_abs_tr->get());
+          if (inv.is_bottom()) {
+            this->m_db.add(_UNREACH);
             return;
           }
 
-          auto divisor_expr = s.right ();
-          if (divisor_expr.is_constant ()) {
-            number_t divisor = divisor_expr.constant ();
-            if (divisor == number_t (0)) {
-              this->m_db.add (_ERR);             
+          auto divisor_expr = s.right();
+          if (divisor_expr.is_constant()) {
+            number_t divisor = divisor_expr.constant();
+            if (divisor == number_t(0)) {
+              this->m_db.add(_ERR);             
             } else {
-              this->m_db.add (_SAFE);
+              this->m_db.add(_SAFE);
             }
           }
-          else if (auto var = divisor_expr.get_variable ()) {
+          else if (auto var = divisor_expr.get_variable()) {
             interval_t divisor_intv = inv[(*var)];
-            if (auto divisor = divisor_intv.singleton ()) {
-              if (*divisor == number_t (0)) {
-		lin_cst_t e_cst(*var != number_t (0));
+            if (auto divisor = divisor_intv.singleton()) {
+              if (*divisor == number_t(0)) {
+		lin_cst_t e_cst(*var != number_t(0));
                 LOG_ERR(this->m_verbose, inv, e_cst, s.get_debug_info());
               } else {
-                this->m_db.add (_SAFE);
+                this->m_db.add(_SAFE);
               }
-            } else if (interval_t (number_t (0)) <= divisor_intv) {
-	      lin_cst_t w_cst(*var != number_t (0));
+            } else if (interval_t(number_t(0)) <= divisor_intv) {
+	      lin_cst_t w_cst(*var != number_t(0));
 	      LOG_WARN(this->m_verbose, inv, w_cst, s.get_debug_info());
                        
             } else {
-              this->m_db.add (_SAFE);
+              this->m_db.add(_SAFE);
             }
           }
           else 
-            CRAB_ERROR ("DivZero only supports constant or single var as divisor.");
+            CRAB_ERROR("DivZero only supports constant or single var as divisor.");
         }
 
-        s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
+        s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
       }      
 
   }; 

@@ -21,7 +21,6 @@ namespace crab {
     class abstract_domain:
       public ikos::writeable,
       public ikos::numerical_domain<N,V>,
-      public ikos::division_operators<N,V>,
       public backward_numerical_domain<N,V,Dom>,
       public ikos::bitwise_operators<N,V>,
       public int_cast_operators<N,V>,

@@ -4,6 +4,8 @@
  *
  * Author: Arnaud J. Venet (arnaud.j.venet@nasa.gov)
  *
+ * Contributors: Jorge A. Navas (jorge.navas@sri.com)
+ * 
  * Notices:
  *
  * Copyright (c) 2011 United States Government as represented by the
@@ -46,11 +48,15 @@
 namespace ikos {
 
   // Enumeration type for basic arithmetic operations
+  // Do not modify the order.
   typedef enum {
     OP_ADDITION,
     OP_SUBTRACTION,
     OP_MULTIPLICATION,
-    OP_DIVISION
+    OP_SDIV, 
+    OP_UDIV, 
+    OP_SREM, 
+    OP_UREM
   } operation_t;
 
   inline crab::crab_os& operator<<(crab::crab_os&o, operation_t op) {
@@ -58,11 +64,14 @@ namespace ikos {
       case OP_ADDITION: o << "+"; break;
       case OP_SUBTRACTION: o << "-"; break;
       case OP_MULTIPLICATION: o << "*"; break;
-    default: o << "/"; break;
+      case OP_SDIV: o << "/"; break;
+      case OP_UDIV: o << "/_u"; break;
+      case OP_SREM: o << "%"; break;
+      default: o << "%_u"; break;
     }
     return o;
   }
-  
+
   template<typename Number, typename VariableName>
   class numerical_domain {
     
@@ -73,7 +82,7 @@ namespace ikos {
     typedef variable<Number, VariableName> variable_t;
     typedef Number number_t;
     typedef VariableName varname_t;
-    
+
   public:
     
     // x = y op z    
@@ -99,38 +108,6 @@ namespace ikos {
     virtual ~numerical_domain() { }
     
   }; // numerical_domain
-
-
-  typedef enum { 
-    OP_SDIV, 
-    OP_UDIV, 
-    OP_SREM, 
-    OP_UREM
-  } div_operation_t;
-
-  inline crab::crab_os& operator<<(crab::crab_os&o, div_operation_t op) {
-    switch (op) {
-      case OP_SDIV: o << "/"; break;
-      case OP_UDIV: o << "/_u"; break;
-      case OP_SREM: o << "%"; break;
-      default: o << "%_u"; break;
-    }
-    return o;
-  }
-
-  template<typename Number, typename VariableName>
-  class division_operators {
-
-  public:
-    typedef ikos::variable<Number, VariableName> variable_t;
-    
-    virtual void apply(div_operation_t op, variable_t x, variable_t y, variable_t z) = 0;
-    virtual void apply(div_operation_t op, variable_t x, variable_t y, Number z) = 0;
-    virtual ~division_operators() { }
-
-  }; // class division_operators
-  
-
   
   template<typename Number, typename VariableName, typename NumAbsDom>
   class backward_numerical_domain {
@@ -173,21 +150,11 @@ namespace crab {
     case BINOP_ADD: return ikos::OP_ADDITION;
     case BINOP_SUB: return ikos::OP_SUBTRACTION;
     case BINOP_MUL: return ikos::OP_MULTIPLICATION;
-    case BINOP_SDIV: return ikos::OP_DIVISION;
+    case BINOP_SDIV: return ikos::OP_SDIV;
+    case BINOP_UDIV: return ikos::OP_UDIV;
+    case BINOP_SREM: return ikos::OP_SREM;
+    case BINOP_UREM: return ikos::OP_UREM;
     default: return boost::optional<ikos::operation_t> ();
     }
   }
-
-  template<>
-  inline boost::optional<ikos::div_operation_t> 
-  conv_op (binary_operation_t op) {     
-    switch (op) {
-      case BINOP_SDIV: return ikos::OP_SDIV;
-      case BINOP_UDIV: return ikos::OP_UDIV;
-      case BINOP_SREM: return ikos::OP_SREM;
-      case BINOP_UREM: return ikos::OP_UREM;
-      default: return boost::optional<ikos::div_operation_t> ();
-    }
-  }
-  
 }

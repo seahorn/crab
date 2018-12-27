@@ -336,32 +336,6 @@ namespace crab {
 	
       }
       
-      // division_operators_api
-      
-      void apply(div_operation_t op, variable_t x, variable_t y, variable_t z) {
-	//bool r1 = diff(__LINE__);	
-        this->_product.apply(op, x, y, z);
-	//bool r2 = diff(__LINE__);
-	// if (r1 && !r2) {
-	//   CRAB_WARN("PRECISION LEAK of ",
-	// 	    _product.second().getDomainName(), " at line ", __LINE__);
-	//   reduce();
-	// }
-	
-      }
-      
-      void apply(div_operation_t op, variable_t x, variable_t y, number_t k) {
-	//bool r1 = diff(__LINE__);	
-        this->_product.apply(op, x, y, k);
-	//bool r2 = diff(__LINE__);
-	// if (r1 && !r2) {
-	//   CRAB_WARN("PRECISION LEAK of ",
-	// 	    _product.second().getDomainName(), " at line ", __LINE__);
-	//   reduce();
-	// }
-	
-      }
-      
       // array_operators_api
       
       virtual void array_init (variable_t a,

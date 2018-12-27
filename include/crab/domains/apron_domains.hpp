@@ -44,100 +44,94 @@ namespace crab {
 
         apron_domain() {}    
 
-        static apron_domain_t top() { CRAB_ERROR (APRON_NOT_FOUND); }
+        static apron_domain_t top() { CRAB_ERROR(APRON_NOT_FOUND); }
 
-        static apron_domain_t bottom() { CRAB_ERROR (APRON_NOT_FOUND); }
+        static apron_domain_t bottom() { CRAB_ERROR(APRON_NOT_FOUND); }
 
-        apron_domain (const apron_domain_t& other) {}
+        apron_domain(const apron_domain_t& other) {}
         
-        bool is_bottom() { CRAB_ERROR (APRON_NOT_FOUND); }
+        bool is_bottom() { CRAB_ERROR(APRON_NOT_FOUND); }
 
-        bool is_top() { CRAB_ERROR (APRON_NOT_FOUND); }
+        bool is_top() { CRAB_ERROR(APRON_NOT_FOUND); }
 
-        bool operator<=(apron_domain_t other) { CRAB_ERROR (APRON_NOT_FOUND); }
+        bool operator<=(apron_domain_t other) { CRAB_ERROR(APRON_NOT_FOUND); }
 
         void operator|=(apron_domain_t other)
-        { CRAB_ERROR (APRON_NOT_FOUND); }
+        { CRAB_ERROR(APRON_NOT_FOUND); }
         
         apron_domain_t operator|(apron_domain_t other)
-        { CRAB_ERROR (APRON_NOT_FOUND); }
+        { CRAB_ERROR(APRON_NOT_FOUND); }
         
         apron_domain_t operator&(apron_domain_t other) 
-        { CRAB_ERROR (APRON_NOT_FOUND); }
+        { CRAB_ERROR(APRON_NOT_FOUND); }
         
         apron_domain_t operator||(apron_domain_t other)
-        { CRAB_ERROR (APRON_NOT_FOUND); }
+        { CRAB_ERROR(APRON_NOT_FOUND); }
         
         template<typename Thresholds>
-        apron_domain_t widening_thresholds (apron_domain_t e, const Thresholds &ts) 
-        { CRAB_ERROR (APRON_NOT_FOUND); }
+        apron_domain_t widening_thresholds(apron_domain_t e, const Thresholds &ts) 
+        { CRAB_ERROR(APRON_NOT_FOUND); }
 
-        apron_domain_t operator&& (apron_domain_t other) 
-        { CRAB_ERROR (APRON_NOT_FOUND); }
+        apron_domain_t operator&&(apron_domain_t other) 
+        { CRAB_ERROR(APRON_NOT_FOUND); }
         
         void operator-=(variable_t var) 
-        { CRAB_ERROR (APRON_NOT_FOUND); }
+        { CRAB_ERROR(APRON_NOT_FOUND); }
 
         interval_t operator[](variable_t v) 
-        { CRAB_ERROR (APRON_NOT_FOUND); }
+        { CRAB_ERROR(APRON_NOT_FOUND); }
 
         void set(variable_t v, interval_t ival) 
-        { CRAB_ERROR (APRON_NOT_FOUND); }
+        { CRAB_ERROR(APRON_NOT_FOUND); }
 
-        void operator += (linear_constraint_system_t csts) 
-        { CRAB_ERROR (APRON_NOT_FOUND); }
+        void operator +=(linear_constraint_system_t csts) 
+        { CRAB_ERROR(APRON_NOT_FOUND); }
         
-        void assign (variable_t x, linear_expression_t e) 
-        { CRAB_ERROR (APRON_NOT_FOUND); }
+        void assign(variable_t x, linear_expression_t e) 
+        { CRAB_ERROR(APRON_NOT_FOUND); }
           
-        void apply (operation_t op, variable_t x, variable_t y, Number z) 
-        { CRAB_ERROR (APRON_NOT_FOUND); }
+        void apply(operation_t op, variable_t x, variable_t y, Number z) 
+        { CRAB_ERROR(APRON_NOT_FOUND); }
         
         void apply(operation_t op, variable_t x, variable_t y, variable_t z) 
-        { CRAB_ERROR (APRON_NOT_FOUND); }
+        { CRAB_ERROR(APRON_NOT_FOUND); }
         
         void apply(operation_t op, variable_t x, Number k) 
-        { CRAB_ERROR (APRON_NOT_FOUND); }
+        { CRAB_ERROR(APRON_NOT_FOUND); }
 
         void apply(int_conv_operation_t op, variable_t dst, variable_t src) 
-        { CRAB_ERROR (APRON_NOT_FOUND); }
+        { CRAB_ERROR(APRON_NOT_FOUND); }
 	
         void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) 
-        { CRAB_ERROR (APRON_NOT_FOUND); }
+        { CRAB_ERROR(APRON_NOT_FOUND); }
         
         void apply(bitwise_operation_t op, variable_t x, variable_t y, Number k) 
-        { CRAB_ERROR (APRON_NOT_FOUND); }
+        { CRAB_ERROR(APRON_NOT_FOUND); }
         
-        void apply(div_operation_t op, variable_t x, variable_t y, variable_t z) 
-        { CRAB_ERROR (APRON_NOT_FOUND); }
-        
-        void apply(div_operation_t op, variable_t x, variable_t y, Number k) 
-        { CRAB_ERROR (APRON_NOT_FOUND); }
-        
-        void backward_assign (variable_t x, linear_expression_t e,
+        void backward_assign(variable_t x, linear_expression_t e,
 			      apron_domain_t invariant) 
-        { CRAB_ERROR (APRON_NOT_FOUND); }
+        { CRAB_ERROR(APRON_NOT_FOUND); }
           
-        void backward_apply (operation_t op,
+        void backward_apply(operation_t op,
 			     variable_t x, variable_t y, Number z,
 			     apron_domain_t invariant) 
-        { CRAB_ERROR (APRON_NOT_FOUND); }
+        { CRAB_ERROR(APRON_NOT_FOUND); }
         
         void backward_apply(operation_t op,
 			    variable_t x, variable_t y, variable_t z,
 			    apron_domain_t invariant) 
-        { CRAB_ERROR (APRON_NOT_FOUND); }
+        { CRAB_ERROR(APRON_NOT_FOUND); }
         
-        linear_constraint_system_t to_linear_constraint_system ()
-        { CRAB_ERROR (APRON_NOT_FOUND); }
+        linear_constraint_system_t to_linear_constraint_system()
+        { CRAB_ERROR(APRON_NOT_FOUND); }
 
-        disjunctive_linear_constraint_system_t to_disjunctive_linear_constraint_system ()
-        { CRAB_ERROR (APRON_NOT_FOUND); }
+        disjunctive_linear_constraint_system_t to_disjunctive_linear_constraint_system()
+        { CRAB_ERROR(APRON_NOT_FOUND); }
 	
         void write(crab_os& o) 
-        { CRAB_ERROR (APRON_NOT_FOUND); }
+        { CRAB_ERROR(APRON_NOT_FOUND); }
           
-        static std::string getDomainName () {
+        static std::string getDomainName() {
           return "Dummy Apron";
         }  
       }; 
@@ -186,110 +180,110 @@ namespace crab {
         ap_state_ptr m_apstate; 
         var_map_t m_var_map;
 
-        static ap_manager_t* get_man () {
+        static ap_manager_t* get_man() {
           if (!m_apman) {
             switch (ApronDom) {
-              case APRON_INT: m_apman = box_manager_alloc (); break;
-              case APRON_OCT: m_apman = oct_manager_alloc (); break;
-              case APRON_PK: m_apman = pk_manager_alloc (false); break;
+              case APRON_INT: m_apman = box_manager_alloc(); break;
+              case APRON_OCT: m_apman = oct_manager_alloc(); break;
+              case APRON_PK: m_apman = pk_manager_alloc(false); break;
               default: CRAB_ERROR("unknown apron domain");
             }
           }
           return m_apman;
         }
 
-        size_t get_dims (ap_state_ptr s) const {
-          ap_dimension_t dims = _ap_abstract0_dimension (&*s);
+        size_t get_dims(ap_state_ptr s) const {
+          ap_dimension_t dims = _ap_abstract0_dimension(&*s);
           return dims.intdim;
         }
 
-        size_t get_dims () const { return get_dims (m_apstate); }
+        size_t get_dims() const { return get_dims(m_apstate); }
 
         // If v is in the map then it maps v to a dimension, otherwise null
-        boost::optional<ap_dim_t> get_var_dim (const var_map_t& m, variable_t v) const {
-          auto it = m.left.find (v);
-          if (it != m.left.end ())
+        boost::optional<ap_dim_t> get_var_dim(const var_map_t& m, variable_t v) const {
+          auto it = m.left.find(v);
+          if(it != m.left.end())
             return it->second;
           else
-            return boost::optional<ap_dim_t> ();
+            return boost::optional<ap_dim_t>();
         }
 
-        boost::optional<ap_dim_t> get_var_dim (variable_t v) const {
-          return get_var_dim (m_var_map, v);
+        boost::optional<ap_dim_t> get_var_dim(variable_t v) const {
+          return get_var_dim(m_var_map, v);
         }
 
-        ap_dim_t get_var_dim_insert (variable_t v) {
-          assert (m_var_map.size () == get_dims ());
-          if (auto dim = get_var_dim (v))
+        ap_dim_t get_var_dim_insert(variable_t v) {
+          assert(m_var_map.size() == get_dims());
+          if (auto dim = get_var_dim(v))
             return *dim;
           else {
-            ap_dim_t i = m_var_map.size ();
-            m_var_map.insert (binding_t (v, i));
-            add_dimensions (m_apstate, 1);
-            assert (m_var_map.size () == get_dims ());
+            ap_dim_t i = m_var_map.size();
+            m_var_map.insert(binding_t(v, i));
+            add_dimensions(m_apstate, 1);
+            assert(m_var_map.size() == get_dims());
             return i;
           }
         }
         
-        bool has_variable (const var_map_t& m, ap_dim_t i) const {
-          return m.right.find (i) != m.right.end ();
+        bool has_variable(const var_map_t& m, ap_dim_t i) const {
+          return m.right.find(i) != m.right.end();
         }
 
-        bool has_variable (ap_dim_t i) const {
-          return has_variable (m_var_map, i);
+        bool has_variable(ap_dim_t i) const {
+          return has_variable(m_var_map, i);
         }
 
-        variable_t get_variable (const var_map_t& m, ap_dim_t i) const {
-          auto it = m.right.find (i);
-          if (it != m.right.end ())
+        variable_t get_variable(const var_map_t& m, ap_dim_t i) const {
+          auto it = m.right.find(i);
+          if (it != m.right.end())
             return it->second;            
-          CRAB_ERROR ("Apron dimension ", i, " is not used!");
+          CRAB_ERROR("Apron dimension ", i, " is not used!");
         }
 
-        variable_t get_variable (ap_dim_t i) const {
-          return get_variable (m_var_map, i);
+        variable_t get_variable(ap_dim_t i) const {
+          return get_variable(m_var_map, i);
         }
 
-        void add_dimensions (ap_state_ptr& s, size_t dims) const {
+        void add_dimensions(ap_state_ptr& s, size_t dims) const {
           if (dims <= 0) return;
 
-          ap_dimchange_t* dimchange =  ap_dimchange_alloc (dims, 0);
+          ap_dimchange_t* dimchange =  ap_dimchange_alloc(dims, 0);
           for (unsigned i=0 ; i<dims ; i++)
-            dimchange->dim[i] = get_dims (s); // add dimension at the end
+            dimchange->dim[i] = get_dims(s); // add dimension at the end
 
-          s = apPtr (get_man (), 
-                     ap_abstract0_add_dimensions(get_man (), false, 
+          s = apPtr(get_man(), 
+                     ap_abstract0_add_dimensions(get_man(), false, 
                                                  &*s, dimchange, false));
-          ap_dimchange_free (dimchange);
+          ap_dimchange_free(dimchange);
           
         }
 
-        void remove_dimensions (ap_state_ptr& s, std::vector<ap_dim_t> dims) const {
-          if (dims.empty ()) return;
+        void remove_dimensions(ap_state_ptr& s, std::vector<ap_dim_t> dims) const {
+          if (dims.empty()) return;
 
           // Apron assumption: make sure that the removing dimensions
           //                   are in ascending order.
           std::sort(dims.begin(), dims.end());
 
-          ap_dimchange_t* dimchange =  ap_dimchange_alloc (dims.size (), 0);
-          for (unsigned i=0; i<dims.size () ; i++) {
+          ap_dimchange_t* dimchange =  ap_dimchange_alloc(dims.size(), 0);
+          for (unsigned i=0; i<dims.size() ; i++) {
             // remove dimension dims[i] and shift to the left all the
             // dimensions greater than dims[i]
             dimchange->dim[i] = dims[i]; 
           }
 
-          s = apPtr (get_man (), 
-                     ap_abstract0_remove_dimensions(get_man (), false, 
+          s = apPtr(get_man(), 
+                     ap_abstract0_remove_dimensions(get_man(), false, 
                                                     &*s, dimchange));
-          ap_dimchange_free (dimchange);
+          ap_dimchange_free(dimchange);
 
           #if 0
-          crab::outs() << "Removed " << dims.size () << " dimensions\n";
-          crab::outs() << "Size = " << get_dims (s) << "\n";
+          crab::outs() << "Removed " << dims.size() << " dimensions\n";
+          crab::outs() << "Size = " << get_dims(s) << "\n";
           #endif           
         }
 
-        bool check_perm (ap_dimperm_t* perm, size_t size){
+        bool check_perm(ap_dimperm_t* perm, size_t size){
           // it does not check injectivity
           if (perm->size != size) return false;
           for (unsigned i=0; i<perm->size; i++){
@@ -300,56 +294,56 @@ namespace crab {
           return true;
         }
 
-        var_map_t merge_var_map (const var_map_t& m_x, ap_state_ptr& s_x,
+        var_map_t merge_var_map(const var_map_t& m_x, ap_state_ptr& s_x,
 				 const var_map_t& m_y, ap_state_ptr& s_y) {
 
-          assert (m_x.size () == get_dims (s_x));
-          assert (m_y.size () == get_dims (s_y));
+          assert(m_x.size() == get_dims(s_x));
+          assert(m_y.size() == get_dims(s_y));
 
           // -- collect all vars from the two maps
           std::set<variable_t> vars;
           for (auto const& px: m_x.left)
-            vars.insert (px.first);
+            vars.insert(px.first);
           for (auto const& py: m_y.left)
-            vars.insert (py.first);
+            vars.insert(py.first);
 
-          assert (vars.size () >= get_dims (s_x));
-          assert (vars.size () >= get_dims (s_y));
+          assert(vars.size() >= get_dims(s_x));
+          assert(vars.size() >= get_dims(s_y));
 
-          add_dimensions (s_x, vars.size () - get_dims (s_x));
-          add_dimensions (s_y, vars.size () - get_dims (s_y));
+          add_dimensions(s_x, vars.size() - get_dims(s_x));
+          add_dimensions(s_y, vars.size() - get_dims(s_y));
 
-          assert (get_dims (s_x) == get_dims (s_y));
+          assert(get_dims(s_x) == get_dims(s_y));
 
           // -- create a fresh map 
           var_map_t res;
           for (auto v: vars) {
-            ap_dim_t i = res.size ();
-            assert (i < get_dims (s_x));
-            res.insert (binding_t (v, i));
+            ap_dim_t i = res.size();
+            assert(i < get_dims(s_x));
+            res.insert(binding_t(v, i));
           }
           
           // build the permutations maps
-          ap_dimperm_t* perm_x = ap_dimperm_alloc (get_dims (s_x));
-          ap_dimperm_t* perm_y = ap_dimperm_alloc (get_dims (s_x));
-          char * xmap1 = (char *)calloc (get_dims (s_x), sizeof(char));
+          ap_dimperm_t* perm_x = ap_dimperm_alloc(get_dims(s_x));
+          ap_dimperm_t* perm_y = ap_dimperm_alloc(get_dims(s_x));
+          char * xmap1 =(char *)calloc(get_dims(s_x), sizeof(char));
           if (!xmap1)
-	    CRAB_ERROR ("calloc does not have more available memory");
-          char * xmap2 = (char *)calloc (get_dims (s_x), sizeof(char));
+	    CRAB_ERROR("calloc does not have more available memory");
+          char * xmap2 = (char *)calloc(get_dims(s_x), sizeof(char));
           if (!xmap2)
-	    CRAB_ERROR ("calloc does not have more available memory");
+	    CRAB_ERROR("calloc does not have more available memory");
           for (auto const &px: m_x.left) {
-            ap_dim_t ind = res.left.at (px.first);
+            ap_dim_t ind = res.left.at(px.first);
             perm_x->dim [px.second] = ind;
             // This sets 1 if the index that has been assigned
-            assert (px.second < get_dims(s_x));
+            assert(px.second < get_dims(s_x));
             xmap1[px.second] = 1;
             // This sets 1 if the value has been assigned
-            assert (ind < get_dims(s_x));
+            assert(ind < get_dims(s_x));
             xmap2[ind] = 1;
           }
           ap_dim_t i, counter = 0;
-          for(i=0; i < get_dims (s_x); i++){
+          for(i=0; i < get_dims(s_x); i++){
             // If the index has been assigned, skip
             if(xmap1[i]) continue;
             // Find the next available element that has not been assigned
@@ -358,24 +352,24 @@ namespace crab {
             perm_x->dim[i] = counter;
             counter++;
           }
-          free (xmap1);
-          free (xmap2);
+          free(xmap1);
+          free(xmap2);
 
-          char * ymap1 = (char *)calloc (get_dims (s_x), sizeof(char));
-          if (!ymap1) CRAB_ERROR ("calloc does not have more available memory");
-          char * ymap2 = (char *)calloc (get_dims (s_x), sizeof(char));
-          if (!ymap2) CRAB_ERROR ("calloc does not have more available memory");
+          char * ymap1 = (char *)calloc(get_dims(s_x), sizeof(char));
+          if (!ymap1) CRAB_ERROR("calloc does not have more available memory");
+          char * ymap2 = (char *)calloc(get_dims(s_x), sizeof(char));
+          if (!ymap2) CRAB_ERROR("calloc does not have more available memory");
           for (auto const &py: m_y.left) {
-            ap_dim_t ind = res.left.at (py.first);
+            ap_dim_t ind = res.left.at(py.first);
             perm_y->dim [py.second] = ind;
-            assert (py.second < get_dims(s_x));
+            assert(py.second < get_dims(s_x));
             ymap1[py.second] = 1;
-            assert (ind < get_dims(s_x));
+            assert(ind < get_dims(s_x));
             ymap2[ind] = 1; 
           }
 
           counter = 0;
-          for(i=0; i < get_dims (s_x); i++){
+          for(i=0; i < get_dims(s_x); i++){
             if(ymap1[i]) continue;
             while(ymap2[counter])
               counter++;
@@ -383,8 +377,8 @@ namespace crab {
             counter++;
           }
 
-          free (ymap1);
-          free (ymap2);
+          free(ymap1);
+          free(ymap2);
 
           #if 0          
           crab::outs() << "Permutations \n";
@@ -393,20 +387,20 @@ namespace crab {
           ap_dimperm_fprint(stdout, perm_y);          
           #endif 
 
-          assert (check_perm (perm_x, get_dims (s_x)));
-          assert (check_perm (perm_y, get_dims (s_x)));
+          assert(check_perm(perm_x, get_dims(s_x)));
+          assert(check_perm(perm_y, get_dims(s_x)));
 
           // apply the permutations
-          s_x = apPtr (get_man (), 
-                       ap_abstract0_permute_dimensions(get_man (), false, &*s_x, perm_x));
-          s_y = apPtr (get_man (), 
-                       ap_abstract0_permute_dimensions(get_man (), false, &*s_y, perm_y));
+          s_x = apPtr(get_man(), 
+                       ap_abstract0_permute_dimensions(get_man(), false, &*s_x, perm_x));
+          s_y = apPtr(get_man(), 
+                       ap_abstract0_permute_dimensions(get_man(), false, &*s_y, perm_y));
 
-          ap_dimperm_free (perm_x);
-          ap_dimperm_free (perm_y);
+          ap_dimperm_free(perm_x);
+          ap_dimperm_free(perm_y);
 
-          assert (res.size () == get_dims (s_x));
-          assert (res.size () == get_dims (s_y));
+          assert(res.size() == get_dims(s_x));
+          assert(res.size() == get_dims(s_y));
 
           return res;
         }
@@ -444,70 +438,70 @@ namespace crab {
 	       	
         // --- from crab to apron
 	
-        inline ap_texpr0_t* var2texpr (variable_t v) { 
-          return ap_texpr0_dim (get_var_dim_insert (v));
+        inline ap_texpr0_t* var2texpr(variable_t v) { 
+          return ap_texpr0_dim(get_var_dim_insert(v));
         }
 
-	inline void convert_crab_number (ikos::z_number n, mpq_class &res) const
-	{ res = mpq_class ((mpz_class) n); }
+	inline void convert_crab_number(ikos::z_number n, mpq_class &res) const
+	{ res = mpq_class((mpz_class) n); }
 
-	inline void convert_crab_number (ikos::q_number n, mpq_class &res) const 
-	{ res = ((mpq_class) n); }
+	inline void convert_crab_number(ikos::q_number n, mpq_class &res) const 
+	{ res =((mpq_class) n); }
 		
-        inline ap_texpr0_t* num2texpr (Number i) const {  
+        inline ap_texpr0_t* num2texpr(Number i) const {  
 	  mpq_class n(0);
 	  convert_crab_number(i, n);
-          return ap_texpr0_cst_scalar_mpq (n.get_mpq_t ());
+          return ap_texpr0_cst_scalar_mpq(n.get_mpq_t());
         }
 
-        inline ap_texpr0_t* intv2texpr (Number a, Number b) const {
+        inline ap_texpr0_t* intv2texpr(Number a, Number b) const {
 	  mpq_class n1(0), n2(0);
 	  convert_crab_number(a, n1);
 	  convert_crab_number(b, n2);
-          return ap_texpr0_cst_interval_mpq (n1.get_mpq_t (), n2.get_mpq_t ());
+          return ap_texpr0_cst_interval_mpq(n1.get_mpq_t(), n2.get_mpq_t());
         }
         
-        inline ap_texpr0_t* expr2texpr (linear_expression_t e)  {
-          Number cst = e.constant ();
-          ap_texpr0_t* res = num2texpr (cst);
+        inline ap_texpr0_t* expr2texpr(linear_expression_t e)  {
+          Number cst = e.constant();
+          ap_texpr0_t* res = num2texpr(cst);
           for (auto p: e) {
-            ap_texpr0_t* term = MUL (num2texpr(p.first), var2texpr(p.second));
-            res = ADD (res, term); 
+            ap_texpr0_t* term = MUL(num2texpr(p.first), var2texpr(p.second));
+            res = ADD(res, term); 
           }
           return res;
         }
 
-        inline ap_tcons0_t const2tconst (linear_constraint_t cst)  {
+        inline ap_tcons0_t const2tconst(linear_constraint_t cst)  {
           linear_expression_t exp = cst.expression();
-          if (cst.is_equality ()) {
-            return ap_tcons0_make (AP_CONS_EQ, expr2texpr (exp), NULL);            
-          } else if (cst.is_inequality ()) {
-            return ap_tcons0_make (AP_CONS_SUPEQ, expr2texpr (-exp), NULL);
+          if (cst.is_equality()) {
+            return ap_tcons0_make(AP_CONS_EQ, expr2texpr(exp), NULL);            
+          } else if (cst.is_inequality()) {
+            return ap_tcons0_make(AP_CONS_SUPEQ, expr2texpr(-exp), NULL);
           } else if (cst.is_strict_inequality()) {
-            return ap_tcons0_make (AP_CONS_SUP, expr2texpr (-exp), NULL);
+            return ap_tcons0_make(AP_CONS_SUP, expr2texpr(-exp), NULL);
 	  } else  {
-	    assert(cst.is_disequation ());
-            return ap_tcons0_make (AP_CONS_DISEQ, expr2texpr (exp), NULL);
+	    assert(cst.is_disequation());
+            return ap_tcons0_make(AP_CONS_DISEQ, expr2texpr(exp), NULL);
           } 
         }
 		
         // --- from apron to crab 
 
-	inline void convert_apron_number (double n, ikos::z_number &res) const
-	{ res = ikos::z_number ((long) n); }
+	inline void convert_apron_number(double n, ikos::z_number &res) const
+	{ res = ikos::z_number((long) n); }
 
-	inline void convert_apron_number (double n, ikos::q_number &res) const
-	{ res = ikos::q_number (n); }
+	inline void convert_apron_number(double n, ikos::q_number &res) const
+	{ res = ikos::q_number(n); }
 	
-	inline void convert_apron_number (mpq_ptr n, ikos::z_number &res) const
+	inline void convert_apron_number(mpq_ptr n, ikos::z_number &res) const
 	{ // FIXME: find a better way
-	  res = ikos::z_number (mpz_class(mpq_class(n)));
+	  res = ikos::z_number(mpz_class(mpq_class(n)));
 	}
-	inline void convert_apron_number (mpq_ptr n, ikos::q_number &res) const
-	{ res = ikos::q_number (mpq_class(n)); }	  
+	inline void convert_apron_number(mpq_ptr n, ikos::q_number &res) const
+	{ res = ikos::q_number(mpq_class(n)); }	  
 
-        Number coeff2Num (ap_coeff_t* coeff) {
-          assert (coeff->discr == AP_COEFF_SCALAR);
+        Number coeff2Num(ap_coeff_t* coeff) {
+          assert(coeff->discr == AP_COEFF_SCALAR);
 
 	  ap_scalar_t* scalar = coeff->val.scalar;	  
           if (scalar->discr == AP_SCALAR_DOUBLE) { // elina uses double
@@ -521,80 +515,80 @@ namespace crab {
 	    return res;
           }
           else
-            CRAB_ERROR ("apron translation only covers double or mpq scalars");
+            CRAB_ERROR("apron translation only covers double or mpq scalars");
         }
 
-        linear_expression_t term2expr (ap_coeff_t* coeff, ap_dim_t i) {
-          return variable_t (get_variable (i)) * coeff2Num(coeff) ;
+        linear_expression_t term2expr(ap_coeff_t* coeff, ap_dim_t i) {
+          return variable_t(get_variable(i)) * coeff2Num(coeff) ;
         }
 
-        linear_constraint_t tconst2const (ap_lincons0_t cons) {
-          assert (cons.scalar == NULL); // Not modulo form
+        linear_constraint_t tconst2const(ap_lincons0_t cons) {
+          assert(cons.scalar == NULL); // Not modulo form
           ap_linexpr0_t* linexp = cons.linexpr0;
-          assert (ap_linexpr0_is_linear (linexp));
+          assert(ap_linexpr0_is_linear(linexp));
 
-          linear_expression_t e (0);
-          for (unsigned i=0; i < get_dims (); ++i) {
-            ap_coeff_t* coeff = ap_linexpr0_coeffref (linexp, i);
-            if (ap_coeff_zero (coeff)) continue;
+          linear_expression_t e(0);
+          for (unsigned i=0; i < get_dims(); ++i) {
+            ap_coeff_t* coeff = ap_linexpr0_coeffref(linexp, i);
+            if (ap_coeff_zero(coeff)) continue;
             
-            if (!has_variable (i)) continue; // unused dimension
+            if (!has_variable(i)) continue; // unused dimension
 
-            e = e + term2expr ( coeff, i);
+            e = e + term2expr( coeff, i);
           }
 
           // add possible constant
-          ap_coeff_t* cst = ap_linexpr0_cstref (linexp);
-          if (!ap_coeff_zero (cst)) 
+          ap_coeff_t* cst = ap_linexpr0_cstref(linexp);
+          if (!ap_coeff_zero(cst)) 
             e = e + coeff2Num(cst);
           linear_constraint_t res;
           switch (cons.constyp) {
             case AP_CONS_EQ:
               // e == k 
-              res =  linear_constraint_t (e, linear_constraint_t::kind_t::EQUALITY);
+              res =  linear_constraint_t(e, linear_constraint_t::kind_t::EQUALITY);
               break;
             case AP_CONS_SUPEQ:
               // e >= k 
               e = -e;
-              res =  linear_constraint_t (e, linear_constraint_t::kind_t::INEQUALITY);
+              res =  linear_constraint_t(e, linear_constraint_t::kind_t::INEQUALITY);
               break;
             case AP_CONS_SUP:
               // e > k 
               e = -e;
-              res =  linear_constraint_t (e, linear_constraint_t::kind_t::STRICT_INEQUALITY);
+              res =  linear_constraint_t(e, linear_constraint_t::kind_t::STRICT_INEQUALITY);
               break;
             case AP_CONS_EQMOD:
               res = linear_constraint_t::get_true();
               break;
             case AP_CONS_DISEQ:
               // e != k
-              res =  linear_constraint_t (e, linear_constraint_t::kind_t::DISEQUATION);
+              res =  linear_constraint_t(e, linear_constraint_t::kind_t::DISEQUATION);
               break;
           }
           return res;
         }
 
-        void dump (const var_map_t& m, ap_state_ptr apstate ) {  
-          crab::outs() << "\nNumber of dimensions=" << get_dims (apstate) << "\n";
+        void dump(const var_map_t& m, ap_state_ptr apstate ) {  
+          crab::outs() << "\nNumber of dimensions=" << get_dims(apstate) << "\n";
           crab::outs() << "variable map ["; 
           std::vector<char*> names;
-          for (unsigned i=0; i < get_dims (apstate) ; i++){
+          for (unsigned i=0; i < get_dims(apstate) ; i++){
             std::string varname;
-            if (has_variable (m, i))
-              varname = get_variable (m, i).str ();
+            if (has_variable(m, i))
+              varname = get_variable(m, i).str();
             else // unused dimension
-              varname = std::string ("_x") + std::to_string (i);
+              varname = std::string("_x") + std::to_string(i);
             crab::outs() << i << " -> " << varname << ";";
-            char* name = new char [varname.length () + 1];
-            strcpy (name, varname.c_str ());
-            names.push_back (name);
+            char* name = new char [varname.length() + 1];
+            strcpy(name, varname.c_str());
+            names.push_back(name);
           }
           crab::outs() << "]\n";
-          ap_abstract0_fprint (stdout, get_man (), &*apstate, &names[0]);
+          ap_abstract0_fprint(stdout, get_man(), &*apstate, &names[0]);
           for (auto n : names) { delete n; }
         }
 
-        void dump () { dump (m_var_map, m_apstate); }
+        void dump() { dump(m_var_map, m_apstate); }
 
 	// x != n
 	void inequalities_from_disequation(variable_t x, number_t n, linear_constraint_system_t& out) {
@@ -603,7 +597,7 @@ namespace crab {
 	    linear_interval_solver_impl::trim_interval<interval_t>(i, interval_t(n));
 	  if (new_i.is_bottom()) {
 	    out += linear_constraint_t::get_false();
-	  } else if (!new_i.is_top() && (new_i <= i)) {
+	  } else if (!new_i.is_top() &&(new_i <= i)) {
 	    if(new_i.lb().is_finite()) {
 	      // strenghten lb
 	      out += linear_constraint_t(x >= *(new_i.lb().number()));
@@ -620,7 +614,7 @@ namespace crab {
 	  for (typename linear_expression_t::iterator it = e.begin(); it != e.end(); ++it) {
 	    variable_t v = it->second;
 	    if (v.index() != pivot.index()) {
-	      residual = residual - (interval_t (it->first) * this->operator[](v));
+	      residual = residual - (interval_t(it->first) * this->operator[](v));
 	    }
 	  }
 	  return residual;
@@ -637,88 +631,88 @@ namespace crab {
 	}
 	
        public:
-        void print_stats () { ap_abstract0_fprint (stdout, get_man (), &*m_apstate, NULL); }
+        void print_stats() { ap_abstract0_fprint(stdout, get_man(), &*m_apstate, NULL); }
 
        private:
 
-        apron_domain_ (ap_state_ptr apState, var_map_t varMap):
-	  m_apstate (apState), m_var_map (varMap) {
+        apron_domain_(ap_state_ptr apState, var_map_t varMap):
+	  m_apstate(apState), m_var_map(varMap) {
 	  
           std::vector<ap_dim_t> dims;
           var_map_t res;
           /// XXX: we must iterate on the dimension id's to preserve
           /// order between them
           for (auto const& p: m_var_map.right) {  
-            if (ap_abstract0_is_dimension_unconstrained (get_man (),
+            if (ap_abstract0_is_dimension_unconstrained(get_man(),
                                                          &*m_apstate, 
                                                          p.first)) {
-              dims.push_back (p.first);
+              dims.push_back(p.first);
             }
             else {
-              ap_dim_t i = res.size ();
-              res.insert (binding_t (p.second, i));
+              ap_dim_t i = res.size();
+              res.insert(binding_t(p.second, i));
             }
           }
-          remove_dimensions (m_apstate, dims);
-          std::swap (m_var_map, res);
+          remove_dimensions(m_apstate, dims);
+          std::swap(m_var_map, res);
 
-          assert (m_var_map.size () == get_dims ());
+          assert(m_var_map.size() == get_dims());
         }
 
 
-        apron_domain_ (ap_state_ptr&& apState, var_map_t&& varMap):
-	  m_apstate (std::move (apState)), 
-	  m_var_map (std::move (varMap)) { 
+        apron_domain_(ap_state_ptr&& apState, var_map_t&& varMap):
+	  m_apstate(std::move(apState)), 
+	  m_var_map(std::move(varMap)) { 
 
           std::vector<ap_dim_t> dims;
           var_map_t res;
           /// XXX: we must iterate on the dimension id's to preserve
           /// order between them
           for (auto const& p: m_var_map.right) {  
-            if (ap_abstract0_is_dimension_unconstrained (get_man (),
+            if (ap_abstract0_is_dimension_unconstrained(get_man(),
                                                          &*m_apstate, 
                                                          p.first)) {
-              dims.push_back (p.first);
+              dims.push_back(p.first);
             }
             else {
-              ap_dim_t i = res.size ();
-              res.insert (binding_t (p.second, i));
+              ap_dim_t i = res.size();
+              res.insert(binding_t(p.second, i));
             }
           }
-          remove_dimensions (m_apstate, dims);
-          std::swap (m_var_map, res);
+          remove_dimensions(m_apstate, dims);
+          std::swap(m_var_map, res);
 
-          assert (m_var_map.size () == get_dims ());
+          assert(m_var_map.size() == get_dims());
         }
 
 
        public:
 
-        apron_domain_ (bool isBot = false):
-	  m_apstate (apPtr (get_man(), 
-			    (isBot ? 
-			     ap_abstract0_bottom (get_man(), 0, 0) : 
-			     ap_abstract0_top (get_man(), 0, 0)))) {}
+        apron_domain_(bool isBot = false):
+	  m_apstate(apPtr(get_man(), 
+			   (isBot ? 
+			     ap_abstract0_bottom(get_man(), 0, 0) : 
+			     ap_abstract0_top(get_man(), 0, 0)))) {}
 
-        ~apron_domain_ () {}
+        ~apron_domain_() {}
 
-        apron_domain_ (const apron_domain_t& o): 
-            m_apstate (apPtr (get_man (), ap_abstract0_copy (get_man (), &*(o.m_apstate)))),
-            m_var_map (o.m_var_map)
+        apron_domain_(const apron_domain_t& o): 
+            m_apstate(apPtr(get_man(), ap_abstract0_copy(get_man(), &*(o.m_apstate)))),
+            m_var_map(o.m_var_map)
         {  
-          crab::CrabStats::count (getDomainName() + ".count.copy");
+          crab::CrabStats::count(getDomainName() + ".count.copy");
           crab::ScopedCrabStats __st__(getDomainName() + ".copy");
         }
 
-        apron_domain_ (apron_domain_t&& o): 
-            m_apstate (std::move (o.m_apstate)), 
-            m_var_map (std::move (o.m_var_map)) { }
+        apron_domain_(apron_domain_t&& o): 
+            m_apstate(std::move(o.m_apstate)), 
+            m_var_map(std::move(o.m_var_map)) { }
         
         apron_domain_t& operator=(const apron_domain_t& o) {
-          crab::CrabStats::count (getDomainName() + ".count.copy");
+          crab::CrabStats::count(getDomainName() + ".count.copy");
           crab::ScopedCrabStats __st__(getDomainName() + ".copy");
           if (this != &o) {
-            m_apstate = apPtr(get_man(), ap_abstract0_copy (get_man (), &*(o.m_apstate)));
+            m_apstate = apPtr(get_man(), ap_abstract0_copy(get_man(), &*(o.m_apstate)));
             m_var_map = o.m_var_map;
           }
           return *this;
@@ -726,103 +720,103 @@ namespace crab {
 
         apron_domain_t& operator=(apron_domain_t&& o) {
           if (this != &o) {
-            m_apstate = std::move (o.m_apstate);
-            m_var_map = std::move (o.m_var_map);
+            m_apstate = std::move(o.m_apstate);
+            m_var_map = std::move(o.m_var_map);
           }
           return *this;
         }
         
         static apron_domain_t top() { 
-          return apron_domain_t (false);
+          return apron_domain_t(false);
         }
 
         static apron_domain_t bottom() { 
-          return apron_domain_t (true);
+          return apron_domain_t(true);
         }
 
         bool is_bottom() { 
-          return ap_abstract0_is_bottom (get_man(), &*m_apstate);
+          return ap_abstract0_is_bottom(get_man(), &*m_apstate);
         }
 
         bool is_top() { 
-          return ap_abstract0_is_top (get_man(), &*m_apstate);
+          return ap_abstract0_is_top(get_man(), &*m_apstate);
         }
 
         bool operator<=(apron_domain_t o) { 
-          crab::CrabStats::count (getDomainName() + ".count.leq");
+          crab::CrabStats::count(getDomainName() + ".count.leq");
           crab::ScopedCrabStats __st__(getDomainName() + ".leq");
 
           if (is_bottom()) 
             return true;
           else if(o.is_bottom())
             return false;
-          else if (o.is_top ())
+          else if (o.is_top())
             return true;
-          else if (is_top () && !o.is_top ())
+          else if (is_top() && !o.is_top())
             return false;
-          else if (is_top () && o.is_top ())
+          else if (is_top() && o.is_top())
             return true;
           else { 
-            ap_state_ptr x = apPtr (get_man (), ap_abstract0_copy (get_man (), &*m_apstate));
-            merge_var_map (m_var_map, x, o.m_var_map, o.m_apstate);
-            return ap_abstract0_is_leq (get_man(), &*x, &*o.m_apstate);
+            ap_state_ptr x = apPtr (get_man(), ap_abstract0_copy(get_man(), &*m_apstate));
+            merge_var_map(m_var_map, x, o.m_var_map, o.m_apstate);
+            return ap_abstract0_is_leq(get_man(), &*x, &*o.m_apstate);
           }
         }
 
         void operator|=(apron_domain_t o) {
-          crab::CrabStats::count (getDomainName() + ".count.join");
+          crab::CrabStats::count(getDomainName() + ".count.join");
           crab::ScopedCrabStats __st__(getDomainName() + ".join");
 
-          if (is_bottom() || o.is_top ())
+          if (is_bottom() || o.is_top())
             *this = o;
-          else if (is_top () || o.is_bottom())
+          else if (is_top() || o.is_bottom())
             return ;
           else {
-            m_var_map = merge_var_map (m_var_map, m_apstate, o.m_var_map, o.m_apstate);
-            m_apstate = apPtr (get_man(), 
-                               ap_abstract0_join (get_man(), false, 
+            m_var_map = merge_var_map(m_var_map, m_apstate, o.m_var_map, o.m_apstate);
+            m_apstate = apPtr(get_man(), 
+                               ap_abstract0_join(get_man(), false, 
                                                   &*m_apstate, &*o.m_apstate));
           }
         }
         
         apron_domain_t operator|(apron_domain_t o) {
-          crab::CrabStats::count (getDomainName() + ".count.join");
+          crab::CrabStats::count(getDomainName() + ".count.join");
           crab::ScopedCrabStats __st__(getDomainName() + ".join");
 
-          if (is_bottom() || o.is_top ())
+          if(is_bottom() || o.is_top())
             return o;
-          else if (is_top () || o.is_bottom())
+          else if(is_top() || o.is_bottom())
             return *this;
           else {
-            ap_state_ptr x = apPtr (get_man (), ap_abstract0_copy (get_man (), &*m_apstate));
-            var_map_t  m = merge_var_map (m_var_map, x, o.m_var_map, o.m_apstate);
-            return apron_domain_t (apPtr (get_man(), 
-                                          ap_abstract0_join (get_man(), false, 
+            ap_state_ptr x = apPtr(get_man(), ap_abstract0_copy(get_man(), &*m_apstate));
+            var_map_t  m = merge_var_map(m_var_map, x, o.m_var_map, o.m_apstate);
+            return apron_domain_t(apPtr(get_man(), 
+                                          ap_abstract0_join(get_man(), false, 
                                                              &*x, &*o.m_apstate)), m);
           }
         }        
         
         apron_domain_t operator&(apron_domain_t o) {
-          crab::CrabStats::count (getDomainName() + ".count.meet");
+          crab::CrabStats::count(getDomainName() + ".count.meet");
           crab::ScopedCrabStats __st__(getDomainName() + ".meet");
 
           if (is_bottom() || o.is_bottom())
             return bottom();
-          else if (is_top())
+          else if(is_top())
             return o;
           else if (o.is_top())
             return *this;
           else{
-            ap_state_ptr x = apPtr (get_man (), ap_abstract0_copy (get_man (), &*m_apstate));
-            var_map_t  m = merge_var_map (m_var_map, x, o.m_var_map, o.m_apstate);
-            return apron_domain_t (apPtr (get_man(), 
-                                          ap_abstract0_meet (get_man(), false, 
+            ap_state_ptr x = apPtr(get_man(), ap_abstract0_copy(get_man(), &*m_apstate));
+            var_map_t  m = merge_var_map(m_var_map, x, o.m_var_map, o.m_apstate);
+            return apron_domain_t(apPtr(get_man(), 
+                                          ap_abstract0_meet(get_man(), false, 
                                                              &*x, &*o.m_apstate)), m);
           }
         }        
         
         apron_domain_t operator||(apron_domain_t o) {
-          crab::CrabStats::count (getDomainName() + ".count.widening");
+          crab::CrabStats::count(getDomainName() + ".count.widening");
           crab::ScopedCrabStats __st__(getDomainName() + ".widening");
 
           if (is_bottom())
@@ -830,24 +824,24 @@ namespace crab {
           else if (o.is_bottom())
             return *this;
           else {
-            ap_state_ptr x = apPtr (get_man (), ap_abstract0_copy (get_man (), &*m_apstate));
-            var_map_t  m = merge_var_map (m_var_map, x, o.m_var_map, o.m_apstate);
-            return apron_domain_t (apPtr (get_man(), 
-                                          ap_abstract0_widening (get_man(), 
+            ap_state_ptr x = apPtr(get_man(), ap_abstract0_copy(get_man(), &*m_apstate));
+            var_map_t  m = merge_var_map(m_var_map, x, o.m_var_map, o.m_apstate);
+            return apron_domain_t(apPtr(get_man(), 
+                                          ap_abstract0_widening(get_man(), 
                                                                  &*x, &*o.m_apstate)), m);
           }
         }        
 
         template<typename Thresholds>	
-	ap_lincons0_array_t make_thresholds (apron_domain_t o, const Thresholds &ts) {
+	ap_lincons0_array_t make_thresholds(apron_domain_t o, const Thresholds &ts) {
 	  // TODO: make some constraints using the constants from ts
 	  ap_lincons0_array_t csts = ap_lincons0_array_make(0);
 	  return csts;
 	}
 	
         template<typename Thresholds>
-        apron_domain_t widening_thresholds (apron_domain_t o, const Thresholds &ts) {
-          crab::CrabStats::count (getDomainName() + ".count.widening");
+        apron_domain_t widening_thresholds(apron_domain_t o, const Thresholds &ts) {
+          crab::CrabStats::count(getDomainName() + ".count.widening");
           crab::ScopedCrabStats __st__(getDomainName() + ".widening");
 
           if (is_bottom())
@@ -855,8 +849,8 @@ namespace crab {
           else if (o.is_bottom())
             return *this;
           else {
-            ap_state_ptr x = apPtr (get_man (), ap_abstract0_copy (get_man (), &*m_apstate));
-            var_map_t  m = merge_var_map (m_var_map, x, o.m_var_map, o.m_apstate);
+            ap_state_ptr x = apPtr(get_man(), ap_abstract0_copy(get_man(), &*m_apstate));
+            var_map_t  m = merge_var_map(m_var_map, x, o.m_var_map, o.m_apstate);
 	    //////
 	    // We cannot refine the result of widening with
 	    // widening w/ thresholds over intervals because it might
@@ -868,30 +862,30 @@ namespace crab {
 	    /////
 	    #if 0
 	    // widening w/o thresholds in the apron domain
-            apron_domain_t res (apPtr (get_man(), 
+            apron_domain_t res(apPtr(get_man(), 
 	    				 ap_abstract0_widening(get_man(), 
 	    						       &*x, &*o.m_apstate)), m);
 	    // widening w/ thresholds in the interval domain
-	    auto intv_this  = this->to_interval_domain ();
-	    auto intv_o     = o.to_interval_domain ();
-	    auto intv_widen = intv_this.widening_thresholds (intv_o, ts);	    
+	    auto intv_this  = this->to_interval_domain();
+	    auto intv_o     = o.to_interval_domain();
+	    auto intv_widen = intv_this.widening_thresholds(intv_o, ts);	    
 	    // refine the apron domain using the widen intervals
 	    apron_domain_t apron_intv_widen;
-	    apron_intv_widen += intv_widen.to_linear_constraint_system ();
+	    apron_intv_widen += intv_widen.to_linear_constraint_system();
 	    return res & apron_intv_widen;
 	    #else
-	    ap_lincons0_array_t csts = make_thresholds (o, ts);
-            apron_domain_t res (apPtr (get_man(), 
+	    ap_lincons0_array_t csts = make_thresholds(o, ts);
+            apron_domain_t res(apPtr(get_man(), 
 				       ap_abstract0_widening_threshold
-				       (get_man(), &*x, &*o.m_apstate, &csts)), m);
-	    ap_lincons0_array_clear (&csts);
+				      (get_man(), &*x, &*o.m_apstate, &csts)), m);
+	    ap_lincons0_array_clear(&csts);
 	    return res;
 	    #endif 
           }
         }
 
         apron_domain_t operator&&(apron_domain_t o) {
-          crab::CrabStats::count (getDomainName() + ".count.narrowing");
+          crab::CrabStats::count(getDomainName() + ".count.narrowing");
           crab::ScopedCrabStats __st__(getDomainName() + ".narrowing");
 
           if (is_bottom() || o.is_bottom())
@@ -901,8 +895,8 @@ namespace crab {
           else if (o.is_top())
             return *this;
           else{
-            ap_state_ptr x = apPtr (get_man (), ap_abstract0_copy (get_man (), &*m_apstate));
-            var_map_t  m = merge_var_map (m_var_map, x, o.m_var_map, o.m_apstate);
+            ap_state_ptr x = apPtr(get_man(), ap_abstract0_copy(get_man(), &*m_apstate));
+            var_map_t  m = merge_var_map(m_var_map, x, o.m_var_map, o.m_apstate);
             switch (ApronDom) {
               case APRON_OCT:
                 return apron_domain_t(apPtr(get_man(), 
@@ -911,34 +905,34 @@ namespace crab {
               case APRON_INT:
               case APRON_PK:
               default:
-                //CRAB_WARN ("used meet instead of narrowing: \n",
+                //CRAB_WARN("used meet instead of narrowing: \n",
 		//           "make sure only a finite number of descending iterations are run.");
-                return apron_domain_t (apPtr (get_man(), 
-                                              ap_abstract0_meet (get_man(), false,
+                return apron_domain_t(apPtr(get_man(), 
+                                              ap_abstract0_meet(get_man(), false,
 								 &*x, &*o.m_apstate)), m);
             }
           }
         }        
 
         template<typename Range>
-        void forget (const Range &vars) {
-          crab::CrabStats::count (getDomainName() + ".count.forget");
+        void forget(const Range &vars) {
+          crab::CrabStats::count(getDomainName() + ".count.forget");
           crab::ScopedCrabStats __st__(getDomainName() + ".forget");
 
           std::vector<ap_dim_t> vector_dims;
           std::set<ap_dim_t> set_dims;
 
           for (auto v: vars)  {
-            if (auto dim = get_var_dim (v)) {
-              vector_dims.push_back (*dim);
-              set_dims.insert (*dim);
+            if (auto dim = get_var_dim(v)) {
+              vector_dims.push_back(*dim);
+              set_dims.insert(*dim);
             }
           }
 
-          if (vector_dims.empty ()) return;
+          if (vector_dims.empty()) return;
 
-          m_apstate = apPtr (get_man (), 
-                             ap_abstract0_forget_array (get_man (), 
+          m_apstate = apPtr(get_man(), 
+                             ap_abstract0_forget_array(get_man(), 
                                                         false, 
                                                         &*m_apstate, 
                                                         &vector_dims[0], vector_dims.size(), 
@@ -949,22 +943,22 @@ namespace crab {
           /// XXX: we must iterate on the dimension id's to preserve
           /// order between them
           for (auto const& p: m_var_map.right) {  
-             if (set_dims.count (p.first) <= 0) {
-               ap_dim_t i = res.size ();
-               res.insert (binding_t (p.second, i));
+             if (set_dims.count(p.first) <= 0) {
+               ap_dim_t i = res.size();
+               res.insert(binding_t(p.second, i));
              }
           }
 
-          remove_dimensions (m_apstate, vector_dims);
-          std::swap (m_var_map, res);
+          remove_dimensions(m_apstate, vector_dims);
+          std::swap(m_var_map, res);
         }
 
         void operator-=(variable_t var) {
           std::vector<ap_dim_t> vector_dims;
-          if (auto dim = get_var_dim (var)) {
-            vector_dims.push_back (*dim);
-            m_apstate = apPtr (get_man (), 
-                               ap_abstract0_forget_array (get_man (), 
+          if (auto dim = get_var_dim(var)) {
+            vector_dims.push_back(*dim);
+            m_apstate = apPtr(get_man(), 
+                               ap_abstract0_forget_array(get_man(), 
                                                           false, 
                                                           &*m_apstate, 
                                                           &vector_dims[0], vector_dims.size(), 
@@ -975,44 +969,44 @@ namespace crab {
             /// order between them
             for (auto const& p: m_var_map.right) {  
               if (p.first != *dim) {
-                ap_dim_t i = res.size ();
-                res.insert (binding_t (p.second, i));
+                ap_dim_t i = res.size();
+                res.insert(binding_t(p.second, i));
               }
             }
-            remove_dimensions (m_apstate, vector_dims);
-            std::swap (m_var_map, res);
+            remove_dimensions(m_apstate, vector_dims);
+            std::swap(m_var_map, res);
           }
         }
 
         // remove all variables except vars
         template<typename Range>
-        void project (const Range& vars) {
-          crab::CrabStats::count (getDomainName() + ".count.project");
+        void project(const Range& vars) {
+          crab::CrabStats::count(getDomainName() + ".count.project");
           crab::ScopedCrabStats __st__(getDomainName() + ".project");
 
-          if (is_bottom ()) return;
+          if (is_bottom()) return;
           std::set<variable_t> s1,s2,s3;
-          for (auto p: m_var_map.left) s1.insert (p.first);
-          s2.insert (vars.begin (), vars.end ());
-          boost::set_difference (s1,s2,std::inserter (s3, s3.end ()));
-          forget (s3);
+          for (auto p: m_var_map.left) s1.insert(p.first);
+          s2.insert(vars.begin(), vars.end());
+          boost::set_difference(s1,s2,std::inserter(s3, s3.end()));
+          forget(s3);
         }
 
         interval_t operator[](variable_t v) {
-          crab::CrabStats::count (getDomainName() + ".count.to_intervals");
+          crab::CrabStats::count(getDomainName() + ".count.to_intervals");
           crab::ScopedCrabStats __st__(getDomainName() + ".to_intervals");
 
-          if (is_bottom ()) 
-            return interval_t::bottom ();
+          if(is_bottom()) 
+            return interval_t::bottom();
 
-          if (auto dim = get_var_dim (v)) {
+          if (auto dim = get_var_dim(v)) {
 
-            ap_interval_t* intv = ap_abstract0_bound_dimension (get_man (),
+            ap_interval_t* intv = ap_abstract0_bound_dimension(get_man(),
                                                                 &*m_apstate, 
                                                                 *dim);
-            if (ap_interval_is_top (intv)) {
-	      ap_interval_free (intv);
-              return interval_t::top ();
+            if (ap_interval_is_top(intv)) {
+	      ap_interval_free(intv);
+              return interval_t::top();
 	    }
 
             ap_scalar_t* lb = intv->inf;
@@ -1022,63 +1016,63 @@ namespace crab {
 
               if (ap_scalar_infty(lb) == -1) {     // [-oo, k]
 		Number sup;
-		convert_apron_number (ub->val.dbl, sup);
-		ap_interval_free (intv);
-                return interval_t (bound_t::minus_infinity (), sup);
+		convert_apron_number(ub->val.dbl, sup);
+		ap_interval_free(intv);
+                return interval_t(bound_t::minus_infinity(), sup);
               }
               else if (ap_scalar_infty(ub) == 1) { // [k, +oo]
 		Number inf;
-		convert_apron_number (lb->val.dbl, inf);
-		ap_interval_free (intv);
-                return interval_t (inf, bound_t::plus_infinity ());
+		convert_apron_number(lb->val.dbl, inf);
+		ap_interval_free(intv);
+                return interval_t(inf, bound_t::plus_infinity());
                                    
               }
               else { 
-                assert (ap_scalar_infty(lb) == 0); // lb is finite
-                assert (ap_scalar_infty(ub) == 0); // ub is finite
+                assert(ap_scalar_infty(lb) == 0); // lb is finite
+                assert(ap_scalar_infty(ub) == 0); // ub is finite
 		Number inf, sup;
 		convert_apron_number(lb->val.dbl, inf);
 		convert_apron_number(ub->val.dbl, sup);
-		ap_interval_free (intv);
-                return interval_t (inf, sup);
+		ap_interval_free(intv);
+                return interval_t(inf, sup);
               }
 
             }
             else if (lb->discr == AP_SCALAR_MPQ && ub->discr == AP_SCALAR_MPQ ) {
 
-              if (ap_scalar_infty(lb) == -1) {     // [-oo, k]
+              if(ap_scalar_infty(lb) == -1) {     // [-oo, k]
 		Number sup;
-		convert_apron_number (ub->val.mpq, sup);
-		ap_interval_free (intv);
-                return interval_t (bound_t::minus_infinity (), sup);
+		convert_apron_number(ub->val.mpq, sup);
+		ap_interval_free(intv);
+                return interval_t(bound_t::minus_infinity(), sup);
 
               }
               else if (ap_scalar_infty(ub) == 1) { // [k, +oo]
 		Number inf;
-		convert_apron_number (lb->val.mpq, inf);
-		ap_interval_free (intv);
-                return interval_t (inf, bound_t::plus_infinity ());
+		convert_apron_number(lb->val.mpq, inf);
+		ap_interval_free(intv);
+                return interval_t(inf, bound_t::plus_infinity());
               }
               else {
-                assert (ap_scalar_infty(lb) == 0); // lb is finite
-                assert (ap_scalar_infty(ub) == 0); // ub is finite
+                assert(ap_scalar_infty(lb) == 0); // lb is finite
+                assert(ap_scalar_infty(ub) == 0); // ub is finite
 
 		Number inf, sup;
-		convert_apron_number (lb->val.mpq, inf);
-		convert_apron_number (ub->val.mpq, sup);		
-		ap_interval_free (intv);
-                return interval_t (inf, sup);
+		convert_apron_number(lb->val.mpq, inf);
+		convert_apron_number(ub->val.mpq, sup);		
+		ap_interval_free(intv);
+                return interval_t(inf, sup);
               }
             }
             else 
-              CRAB_ERROR ("apron translation only covers double or mpq scalars");
+              CRAB_ERROR("apron translation only covers double or mpq scalars");
           }
           else 
-            return interval_t::top ();
+            return interval_t::top();
         }
 
         void set(variable_t v, interval_t ival) {
-          crab::CrabStats::count (getDomainName() + ".count.assign");
+          crab::CrabStats::count(getDomainName() + ".count.assign");
           crab::ScopedCrabStats __st__(getDomainName() + ".assign");
 
 	  variable_t vv(v);
@@ -1088,33 +1082,33 @@ namespace crab {
 
           // -- add constraints v >= lb and v <= ub
           linear_constraint_system_t csts;
-          auto lb = ival.lb ();
-          if (lb.is_finite ())  {
+          auto lb = ival.lb();
+          if(lb.is_finite())  {
             // v >= lb <--> -v + lb <= 0
-            assert (lb.number ());
-            linear_expression_t e = (Number(-1) * vv) + *(lb.number ());
-            csts += (linear_constraint_t (e, linear_constraint_t::kind_t::INEQUALITY));
+            assert(lb.number());
+            linear_expression_t e =(Number(-1) * vv) + *(lb.number());
+            csts +=(linear_constraint_t(e, linear_constraint_t::kind_t::INEQUALITY));
           }
-          auto ub = ival.ub ();
-          if (ub.is_finite ()) {
+          auto ub = ival.ub();
+          if(ub.is_finite()) {
             // v <= ub <--> v - ub <= 0
-            assert (ub.number ());
-            linear_expression_t e = (vv - *(ub.number ()));
-            csts += (linear_constraint_t (e, linear_constraint_t::kind_t::INEQUALITY));
+            assert(ub.number());
+            linear_expression_t e =(vv - *(ub.number()));
+            csts += (linear_constraint_t(e, linear_constraint_t::kind_t::INEQUALITY));
           }
 
-          if (csts.size () > 0)
+          if (csts.size() > 0)
             *this += csts;
         }
 
         void operator+=(linear_constraint_system_t _csts) {
-          crab::CrabStats::count (getDomainName() + ".count.add_constraints");
+          crab::CrabStats::count(getDomainName() + ".count.add_constraints");
           crab::ScopedCrabStats __st__(getDomainName() + ".add_constraints");
 
           if(is_bottom()) return;
 
 	  if (_csts.is_false()) {
-	    *this = bottom ();
+	    *this = bottom();
 	    return;
 	  }
 
@@ -1127,7 +1121,7 @@ namespace crab {
 	  //      to support them.
 	  
 	  linear_constraint_system_t csts;
-	  for (auto const& c: _csts) {
+	  for(auto const& c: _csts) {
 	    if (c.is_inequality() && c.is_unsigned()) {
 	      CRAB_WARN("unsigned inequality skipped");
 	      continue;
@@ -1155,11 +1149,11 @@ namespace crab {
 	    return;
 	  }
 	  
-          ap_tcons0_array_t array = ap_tcons0_array_make (csts.size ());
+          ap_tcons0_array_t array = ap_tcons0_array_make(csts.size());
           unsigned i=0;
 
           for (auto cst : csts) {
-            ap_tcons0_t tcons = const2tconst (cst);
+            ap_tcons0_t tcons = const2tconst(cst);
             array.p[i] = tcons;
             ++i;
           }
@@ -1167,22 +1161,22 @@ namespace crab {
 	  #if 0
 	  ///// debugging
 	  std::vector<char*> names;
-	  for (unsigned i=0; i < get_dims (m_apstate) ; i++){
+	  for (unsigned i=0; i < get_dims(m_apstate) ; i++){
 	    std::string varname;
-	    if (has_variable (m_var_map, i))
-	      varname = get_variable (m_var_map, i).str ();
+	    if (has_variable(m_var_map, i))
+	      varname = get_variable(m_var_map, i).str();
 	    else // unused dimension
-	      varname = std::string ("_x") + std::to_string (i);
-	    char* name = new char [varname.length () + 1];
-	    strcpy (name, varname.c_str ());
-	    names.push_back (name);
+	      varname = std::string("_x") + std::to_string(i);
+	    char* name = new char [varname.length() + 1];
+	    strcpy(name, varname.c_str());
+	    names.push_back(name);
 	  }
-	  ap_tcons0_array_fprint (stdout, &array, &names[0]);
+	  ap_tcons0_array_fprint(stdout, &array, &names[0]);
 	  for (auto n : names) { delete n; }
 	  #endif 
 	  
-          m_apstate = apPtr (get_man (), 
-                             ap_abstract0_meet_tcons_array (get_man (), false, 
+          m_apstate = apPtr(get_man(), 
+                             ap_abstract0_meet_tcons_array(get_man(), false, 
                                                             &*m_apstate, &array));
 
           ap_tcons0_array_clear(&array);
@@ -1191,113 +1185,112 @@ namespace crab {
 		                 << *this << "\n";);
         }
        
-        void assign (variable_t x, linear_expression_t e) {
-          crab::CrabStats::count (getDomainName() + ".count.assign");
+        void assign(variable_t x, linear_expression_t e) {
+          crab::CrabStats::count(getDomainName() + ".count.assign");
           crab::ScopedCrabStats __st__(getDomainName() + ".assign");
 
           if(is_bottom()) return;
 
-          ap_texpr0_t* t = expr2texpr (e);
-          assert (t);
-          auto dim_x = get_var_dim_insert (x);
-          m_apstate = apPtr (get_man (), 
-                             ap_abstract0_assign_texpr(get_man (), false, 
+          ap_texpr0_t* t = expr2texpr(e);
+          assert(t);
+          auto dim_x = get_var_dim_insert(x);
+          m_apstate = apPtr(get_man(), 
+                             ap_abstract0_assign_texpr(get_man(), false, 
                                                        &*m_apstate, 
                                                        dim_x, t, NULL));
                                                        
-          ap_texpr0_free (t);
+          ap_texpr0_free(t);
           CRAB_LOG("apron",
                    crab::outs() << "--- "<< x<< ":="<< e << " --> "<< *this<<"\n";);
         }
           
-        void apply (operation_t op, variable_t x, variable_t y, Number z) {
-          crab::CrabStats::count (getDomainName() + ".count.apply");
+        void apply(operation_t op, variable_t x, variable_t y, Number z) {
+          crab::CrabStats::count(getDomainName() + ".count.apply");
           crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
           if(is_bottom()) return;
 
-          ap_texpr0_t* a = var2texpr (y);
-          ap_texpr0_t* b = num2texpr (z);
-          ap_texpr0_t* res = nullptr;
-          
-          switch (op){
-            case OP_ADDITION: res = ADD (a, b); break;
-            case OP_SUBTRACTION: res = SUB (a, b); break;
-            case OP_MULTIPLICATION: res = MUL (a, b); break;
-            case OP_DIVISION: res = DIV (a, b); break;
+	  if (op >= OP_ADDITION && op <= OP_SDIV) {
+	    ap_texpr0_t* a = var2texpr(y);
+	    ap_texpr0_t* b = num2texpr(z);
+	    ap_texpr0_t* res = nullptr;
+	    
+	    switch (op){
+            case OP_ADDITION: res = ADD(a, b); break;
+            case OP_SUBTRACTION: res = SUB(a, b); break;
+            case OP_MULTIPLICATION: res = MUL(a, b); break;
+            case OP_SDIV: res = DIV(a, b); break;
             default: CRAB_ERROR("apron operation not supported");
-          }
-          assert (res);
-
-          auto dim_x = get_var_dim_insert (x);
-          m_apstate = apPtr (get_man (), ap_abstract0_assign_texpr(get_man (), false, 
-                                                                   &*m_apstate, 
-                                                                   dim_x, res, NULL));
-                                                                   
-          ap_texpr0_free (res);
-          CRAB_LOG("apron",
-                   crab::outs() << "--- "<< x<< ":="<< y<< op<< z<< " --> "<< *this<<"\n";);
+	    }
+	    assert(res);
+	    
+	    auto dim_x = get_var_dim_insert(x);
+	    m_apstate = apPtr(get_man(), ap_abstract0_assign_texpr(get_man(), false, 
+								     &*m_apstate, 
+								     dim_x, res, NULL));
+	    
+	    ap_texpr0_free(res);
+	    CRAB_LOG("apron",
+		     crab::outs() << "--- "<< x<< ":="<< y<< op<< z<< " --> "<< *this<<"\n";);
+	  } else {
+            // Convert to intervals and perform the operation
+            interval_t yi = operator[](y);
+            interval_t zi(z);
+            interval_t xi = interval_t::top();
+            
+            switch (op) {
+              case OP_UDIV: xi = yi.UDiv(zi); break;
+              case OP_SREM: xi = yi.SRem(zi); break;
+              case OP_UREM: xi = yi.URem(zi); break;
+              default: CRAB_ERROR("apron operation not supported");
+            }
+            set(x, xi);
+	  }
         }
         
         void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
-          crab::CrabStats::count (getDomainName() + ".count.apply");
+          crab::CrabStats::count(getDomainName() + ".count.apply");
           crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
           if(is_bottom()) return;
 
-          ap_texpr0_t* a = var2texpr (y);
-          ap_texpr0_t* b = var2texpr (z);
-          ap_texpr0_t* res = nullptr;
-          
-          switch (op){
-            case OP_ADDITION: res = ADD (a, b); break;
-            case OP_SUBTRACTION: res = SUB (a, b); break;
-            case OP_MULTIPLICATION: res = MUL (a, b); break;
-            case OP_DIVISION: res = DIV (a, b); break;
+	  if (op >= OP_ADDITION && op <= OP_SDIV) {
+	    ap_texpr0_t* a = var2texpr(y);
+	    ap_texpr0_t* b = var2texpr(z);
+	    ap_texpr0_t* res = nullptr;
+	    
+	    switch (op){
+            case OP_ADDITION: res = ADD(a, b); break;
+            case OP_SUBTRACTION: res = SUB(a, b); break;
+            case OP_MULTIPLICATION: res = MUL(a, b); break;
+            case OP_SDIV: res = DIV(a, b); break;
             default: CRAB_ERROR("apron operation not supported");
-          }
-          assert (res);
-
-          auto dim_x = get_var_dim_insert (x);
-          m_apstate = apPtr (get_man (),
-			     ap_abstract0_assign_texpr(get_man (), false, 
+	    }
+	    assert(res);
+	    
+	    auto dim_x = get_var_dim_insert(x);
+	    m_apstate = apPtr(get_man(),
+			       ap_abstract0_assign_texpr(get_man(), false, 
 						       &*m_apstate, 
-						       dim_x, res, NULL));
-	  
-          ap_texpr0_free (res);
+							 dim_x, res, NULL));	  	  
+          ap_texpr0_free(res);
           CRAB_LOG("apron",
                    crab::outs() << "--- "<< x<< ":="<< y<< op<< z<< " --> "<< *this<<"\n";);
-        }
-        
-        void apply(operation_t op, variable_t x, Number k) {
-          crab::CrabStats::count (getDomainName() + ".count.apply");
-          crab::ScopedCrabStats __st__(getDomainName() + ".apply");
-
-          if(is_bottom()) return;
-
-          ap_texpr0_t* a = var2texpr (x);
-          ap_texpr0_t* b = num2texpr (k);
-          ap_texpr0_t* res = nullptr;
-          
-          switch (op){
-            case OP_ADDITION: res = ADD (a, b); break;
-            case OP_SUBTRACTION: res = SUB (a, b); break;
-            case OP_MULTIPLICATION: res = MUL (a, b); break;
-            case OP_DIVISION: res = DIV (a, b); break;
-            default: CRAB_ERROR("apron operation not supported");
-          }
-          assert (res);
-
-          auto dim_x = get_var_dim_insert (x);
-          m_apstate = apPtr (get_man (),
-			     ap_abstract0_assign_texpr(get_man (), false, 
-						       &*m_apstate, 
-						       dim_x, res, NULL));
-	  
-          ap_texpr0_free (res);
-          CRAB_LOG("apron",
-                   crab::outs() << "--- "<< x<< ":="<< x<< op<< k<< " --> "<< *this<<"\n";);
-        }
+	  } else {
+            // Convert to intervals and perform the operation
+            interval_t yi = operator[](y);
+            interval_t zi = operator[](z);
+            interval_t xi = interval_t::top();
+            
+            switch(op) {
+              case OP_UDIV: xi = yi.UDiv(zi); break;
+              case OP_SREM: xi = yi.SRem(zi); break;
+              case OP_UREM: xi = yi.URem(zi); break;
+              default: CRAB_ERROR("apron operation not supported");
+            }
+            set(x, xi);
+	  }
+	}
 
         void apply(int_conv_operation_t op, variable_t dst, variable_t src) {
           // since reasoning about infinite precision we simply assign and
@@ -1306,7 +1299,7 @@ namespace crab {
 	}
 
         void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {
-          crab::CrabStats::count (getDomainName() + ".count.apply");
+          crab::CrabStats::count(getDomainName() + ".count.apply");
           crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
           // Convert to intervals and perform the operation
@@ -1326,7 +1319,7 @@ namespace crab {
         }
         
         void apply(bitwise_operation_t op, variable_t x, variable_t y, Number k) {
-          crab::CrabStats::count (getDomainName() + ".count.apply");
+          crab::CrabStats::count(getDomainName() + ".count.apply");
           crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
           // Convert to intervals and perform the operation
@@ -1345,184 +1338,162 @@ namespace crab {
           set(x, xi);
         }
         
-        void apply(div_operation_t op, variable_t x, variable_t y, variable_t z) {
-          crab::CrabStats::count (getDomainName() + ".count.apply");
-          crab::ScopedCrabStats __st__(getDomainName() + ".apply");
-
-          if (op == OP_SDIV){
-            apply(OP_DIVISION, x, y, z);
-          }
-          else {
-            // Convert to intervals and perform the operation
-            interval_t yi = operator[](y);
-            interval_t zi = operator[](z);
-            interval_t xi = interval_t::top ();
-            
-            switch (op) {
-              case OP_UDIV: xi = yi.UDiv(zi); break;
-              case OP_SREM: xi = yi.SRem(zi); break;
-              case OP_UREM: xi = yi.URem(zi); break;
-              default: CRAB_ERROR("apron operation not supported");
-            }
-            set(x, xi);
-          }
-        }
-        
-        void apply(div_operation_t op,
-		   variable_t x, variable_t y, Number k) {
-          crab::CrabStats::count (getDomainName() + ".count.apply");
-          crab::ScopedCrabStats __st__(getDomainName() + ".apply");
-
-          if (op == OP_SDIV){
-            apply(OP_DIVISION, x, y, k);
-          }
-          else {
-            // Convert to intervals and perform the operation
-            interval_t yi = operator[](y);
-            interval_t zi(k);
-            interval_t xi = interval_t::top ();
-            switch (op) {
-              case OP_UDIV: xi = yi.UDiv(zi); break;
-              case OP_SREM: xi = yi.SRem(zi); break;
-              case OP_UREM: xi = yi.URem(zi); break;
-              default: CRAB_ERROR("apron operation not supported");
-            }
-            set(x, xi);
-          }
-        }
-
-        void backward_assign (variable_t x, linear_expression_t e,
+        void backward_assign(variable_t x, linear_expression_t e,
 			      apron_domain_t invariant) {
-          crab::CrabStats::count (getDomainName() + ".count.backward_assign");
+          crab::CrabStats::count(getDomainName() + ".count.backward_assign");
           crab::ScopedCrabStats __st__(getDomainName() + ".backward_assign");
 
           if(is_bottom()) return;
 
-          ap_texpr0_t* t = expr2texpr (e);
+          ap_texpr0_t* t = expr2texpr(e);
           assert (t);
-          auto dim_x = get_var_dim_insert (x);
+          auto dim_x = get_var_dim_insert(x);
 
-	  m_var_map = merge_var_map (m_var_map, m_apstate,
+	  m_var_map = merge_var_map(m_var_map, m_apstate,
 				     invariant.m_var_map,
 				     invariant.m_apstate);
 	  
-          m_apstate = apPtr (get_man (), 
-                             ap_abstract0_substitute_texpr(get_man (), false, 
+          m_apstate = apPtr(get_man(), 
+                             ap_abstract0_substitute_texpr(get_man(), false, 
 							   &*m_apstate, 
 							   dim_x, t,
 							   &*invariant.m_apstate));
                                                        
-          ap_texpr0_free (t);
+          ap_texpr0_free(t);
           CRAB_LOG("apron",
                    crab::outs() << "--- "<< x<< " :=_bwd " << e << " --> "
 		                << *this<<"\n";);
         }
           
-        void backward_apply (operation_t op,
-			     variable_t x, variable_t y, Number z,
-			     apron_domain_t invariant) {
-          crab::CrabStats::count (getDomainName() + ".count.backward_apply");
+        void backward_apply(operation_t op, variable_t x, variable_t y, Number z,
+			    apron_domain_t invariant) {
+          crab::CrabStats::count(getDomainName() + ".count.backward_apply");
           crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
 
           if(is_bottom()) return;
 
-          ap_texpr0_t* a = var2texpr (y);
-          ap_texpr0_t* b = num2texpr (z);
-          ap_texpr0_t* res = nullptr;
-          
-          switch (op){
-            case OP_ADDITION: res = ADD (a, b); break;
-            case OP_SUBTRACTION: res = SUB (a, b); break;
-            case OP_MULTIPLICATION: res = MUL (a, b); break;
-            case OP_DIVISION: res = DIV (a, b); break;
-            default: CRAB_ERROR("apron operation not supported");
-          }
-          assert (res);
-
-          auto dim_x = get_var_dim_insert (x);
-
-	  m_var_map = merge_var_map (m_var_map, m_apstate,
-				     invariant.m_var_map,
-				     invariant.m_apstate);
-	  
-          m_apstate = apPtr (get_man (),
-			     ap_abstract0_substitute_texpr(get_man (), false, 
+	  if (op >= OP_ADDITION && op <= OP_SDIV) {
+	    
+	    ap_texpr0_t* a = var2texpr(y);
+	    ap_texpr0_t* b = num2texpr(z);
+	    ap_texpr0_t* res = nullptr;
+	    
+	    switch (op){
+            case OP_ADDITION:
+	      res = ADD(a, b);
+	      break;
+            case OP_SUBTRACTION:
+	      res = SUB(a, b);
+	      break;
+            case OP_MULTIPLICATION:
+	      res = MUL(a, b);
+	      break;
+	    default:
+	      res = DIV(a, b);
+	      break;
+	    }
+	    assert(res);
+	    
+	    auto dim_x = get_var_dim_insert(x);
+	    
+	    m_var_map = merge_var_map(m_var_map, m_apstate,
+				       invariant.m_var_map,
+				       invariant.m_apstate);
+	    
+	    m_apstate = apPtr(get_man(),
+			       ap_abstract0_substitute_texpr(get_man(), false, 
 							   &*m_apstate, 
-							   dim_x, res,
-							   &*invariant.m_apstate));
-	  
-          ap_texpr0_free (res);
-          CRAB_LOG("apron",
-                   crab::outs() << "--- "<< x << " :=_bwd " << y << op << z
-		                << " --> " << *this<<"\n";);
+							     dim_x, res,
+							     &*invariant.m_apstate));
+	    
+	    ap_texpr0_free(res);
+	    CRAB_LOG("apron",
+		     crab::outs() << "--- "<< x << " :=_bwd " << y << op << z
+		                  << " --> " << *this<<"\n";);
+	  } else {
+	    this->operator-=(x);
+	    CRAB_WARN("backward operation for ", op, " not implemented");
+	  }
         }
         
         void backward_apply(operation_t op,
 			    variable_t x, variable_t y, variable_t z,
 			    apron_domain_t invariant)  {
-          crab::CrabStats::count (getDomainName() + ".count.backward_apply");
+          crab::CrabStats::count(getDomainName() + ".count.backward_apply");
           crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
 
           if(is_bottom()) return;
 
-          ap_texpr0_t* a = var2texpr (y);
-          ap_texpr0_t* b = var2texpr (z);
-          ap_texpr0_t* res = nullptr;
-          
-          switch (op){
-            case OP_ADDITION: res = ADD (a, b); break;
-            case OP_SUBTRACTION: res = SUB (a, b); break;
-            case OP_MULTIPLICATION: res = MUL (a, b); break;
-            case OP_DIVISION: res = DIV (a, b); break;
-            default: CRAB_ERROR("apron operation not supported");
-          }
-          assert (res);
-
-          auto dim_x = get_var_dim_insert (x);
-
-	  m_var_map = merge_var_map (m_var_map, m_apstate,
-				     invariant.m_var_map,
-				     invariant.m_apstate);
+	  if (op >= OP_ADDITION && op <= OP_SDIV) {
+	    ap_texpr0_t* a = var2texpr(y);
+	    ap_texpr0_t* b = var2texpr(z);
+	    ap_texpr0_t* res = nullptr;
+	    
+	    switch (op){
+            case OP_ADDITION:
+	      res = ADD(a, b);
+	      break;
+            case OP_SUBTRACTION:
+	      res = SUB(a, b);
+	      break;
+            case OP_MULTIPLICATION:
+	      res = MUL(a, b);
+	      break;
+	    default:
+	      res = DIV(a, b);
+	      break;
+	    }
+	    assert(res);
+	    
+	    auto dim_x = get_var_dim_insert(x);
+	    
+	    m_var_map = merge_var_map(m_var_map, m_apstate,
+				       invariant.m_var_map,
+				       invariant.m_apstate);
 	  
-          m_apstate = apPtr (get_man (),
-			     ap_abstract0_substitute_texpr(get_man (), false, 
-							   &*m_apstate, 
-							   dim_x, res,
-							   &*invariant.m_apstate));
-
-          ap_texpr0_free (res);
-          CRAB_LOG("apron",
-                   crab::outs() << "--- " << x << ":=_bwd " << y << op << z
-		                << " --> "<< *this <<"\n";);
+	    m_apstate = apPtr(get_man(),
+			       ap_abstract0_substitute_texpr(get_man(), false, 
+							     &*m_apstate, 
+							     dim_x, res,
+							     &*invariant.m_apstate));
+	    
+	    ap_texpr0_free(res);
+	    CRAB_LOG("apron",
+		     crab::outs() << "--- " << x << ":=_bwd " << y << op << z
+	                          << " --> "<< *this <<"\n";);
+	  } else {
+	    this->operator-=(x);
+	    CRAB_WARN("backward operation for ", op, " not implemented");
+	  }
         }
         	
-	interval_domain_t to_interval_domain () {
-	  if (is_bottom ()) return interval_domain_t::bottom();
-	  if (is_top ())    return interval_domain_t::top();	  
+	interval_domain_t to_interval_domain() {
+	  if (is_bottom()) return interval_domain_t::bottom();
+	  if (is_top())    return interval_domain_t::top();	  
 	  
 	  interval_domain_t res;
 	  for (auto &px: m_var_map.left)
-	    res.set (px.first, this->operator[](px.first));
+	    res.set(px.first, this->operator[](px.first));
 	  return res;
 	}
 	
-        linear_constraint_system_t to_linear_constraint_system () {
+        linear_constraint_system_t to_linear_constraint_system() {
           linear_constraint_system_t csts;
-          if(is_bottom ())  {
+          if(is_bottom())  {
             csts += linear_constraint_t::get_false();
           }
-          else if(is_top ()) {
+          else if(is_top()) {
             csts += linear_constraint_t::get_true();
           }
           else {
-            normalize ();
+            normalize();
 
             ap_lincons0_array_t lcons_arr =
-	      ap_abstract0_to_lincons_array (get_man (), &*m_apstate);
+	      ap_abstract0_to_lincons_array(get_man(), &*m_apstate);
             for (unsigned i=0 ; i < lcons_arr.size; i++)
-              csts += tconst2const (lcons_arr.p[i]);
+              csts += tconst2const(lcons_arr.p[i]);
 
-            ap_lincons0_array_clear (&lcons_arr);
+            ap_lincons0_array_clear(&lcons_arr);
           }
           return csts;
         }
@@ -1531,7 +1502,7 @@ namespace crab {
 	auto lin_csts = to_linear_constraint_system();
 	if (lin_csts.is_false()) {
 	  return disjunctive_linear_constraint_system_t(true /*is_false*/); 
-	} else if (lin_csts.is_true()) {
+	} else if(lin_csts.is_true()) {
 	  return disjunctive_linear_constraint_system_t(false /*is_false*/);
 	} else {
 	  return disjunctive_linear_constraint_system_t(lin_csts);
@@ -1539,7 +1510,7 @@ namespace crab {
       }
 	
       void rename(const variable_vector_t &from, const variable_vector_t &to) {
-	if (is_top () || is_bottom()) return;
+	if (is_top() || is_bottom()) return;
 	
 	// renaming m_var_map by creating a new map 
 	CRAB_LOG("apron",
@@ -1563,10 +1534,10 @@ namespace crab {
 	std::swap(m_var_map, new_var_map);
 
 	CRAB_LOG("apron",
-		 crab::outs () << "RESULT=" << *this << "\n");
+		 crab::outs() << "RESULT=" << *this << "\n");
       }
 	
-        void expand (variable_t x, variable_t dup) {
+        void expand(variable_t x, variable_t dup) {
 	  if (is_bottom() || is_top()) return;
 	  
           if (get_var_dim(dup)) {
@@ -1575,18 +1546,18 @@ namespace crab {
 	  }
 
           // --- increases number of dimensions by one
-          auto dim_x = get_var_dim_insert (x);
-          m_apstate = apPtr (get_man(),
-                             ap_abstract0_expand(get_man (), false, &* m_apstate, 
+          auto dim_x = get_var_dim_insert(x);
+          m_apstate = apPtr(get_man(),
+                             ap_abstract0_expand(get_man(), false, &* m_apstate, 
                                                  dim_x, 1));
 	  
           // --- the additional dimension is put at the end of integer
           //     dimensions.
-          m_var_map.insert (binding_t (dup, get_dims () - 1));
+          m_var_map.insert(binding_t(dup, get_dims() - 1));
         }
 
-        void normalize () {
-          ap_abstract0_canonicalize (get_man (), &*m_apstate);
+        void normalize() {
+          ap_abstract0_canonicalize(get_man(), &*m_apstate);
         }
 
         void write(crab_os& o) {
@@ -1599,13 +1570,13 @@ namespace crab {
             return;
           }
           else {
-            // dump ();
-            linear_constraint_system_t inv = to_linear_constraint_system ();
+            // dump();
+            linear_constraint_system_t inv = to_linear_constraint_system();
             o << inv;
           }
         }          
 
-        static std::string getDomainName () {
+        static std::string getDomainName() {
           switch (ApronDom) {
             case APRON_INT:     return "ApronIntervals"; 
             case APRON_OCT:     return "ApronOctagon"; 
@@ -1699,7 +1670,7 @@ namespace crab {
           return create(ref().template widening_thresholds<Thresholds>(o.ref(), ts));
         }
         
-        void normalize() { detach (); ref().normalize(); }
+        void normalize() { detach(); ref().normalize(); }
 	
         void operator+=(linear_constraint_system_t csts) {
 	  detach(); ref() += csts;
@@ -1715,7 +1686,7 @@ namespace crab {
 	}
         
         template<typename Range>
-        void forget (Range vs) { detach(); ref().forget(vs); }
+        void forget(Range vs) { detach(); ref().forget(vs); }
 	
         void assign(variable_t x, linear_expression_t e) {
 	  detach(); ref().assign(x, e);
@@ -1739,14 +1710,6 @@ namespace crab {
 		   variable_t x, variable_t y, variable_t z) {
           detach(); ref().apply(op, x, y, z);
         }
-        void apply(div_operation_t op,
-		   variable_t x, variable_t y, variable_t z) {
-          detach(); ref().apply(op, x, y, z);
-        }
-        void apply(div_operation_t op,
-		   variable_t x, variable_t y, Number k) {
-          detach(); ref().apply(op, x, y, k);
-        }
         void backward_assign(variable_t x, linear_expression_t e,
 			     apron_domain_t invariant) {
 	  detach(); ref().backward_assign(x, e, invariant.ref());
@@ -1761,7 +1724,7 @@ namespace crab {
 			    apron_domain_t invariant) {
           detach(); ref().backward_apply(op, x, y, z, invariant.ref());
         }	
-        void expand (variable_t x, variable_t y) {
+        void expand(variable_t x, variable_t y) {
 	  detach(); ref().expand(x, y);
 	}
 
@@ -1769,23 +1732,23 @@ namespace crab {
 	{ detach(); ref().rename(from, to); }
 	
         template<typename Range>
-        void project (Range vs) { detach(); ref().project(vs); }
+        void project(Range vs) { detach(); ref().project(vs); }
         
         template <typename NumDomain>
-        void push (const variable_t& x, NumDomain&inv){
+        void push(const variable_t& x, NumDomain&inv){
 	  detach(); ref().push(x, inv);
 	}
         
         void write(crab_os& o) { ref().write(o); }
         
-        linear_constraint_system_t to_linear_constraint_system () {
+        linear_constraint_system_t to_linear_constraint_system() {
           return ref().to_linear_constraint_system();
         }
-        disjunctive_linear_constraint_system_t to_disjunctive_linear_constraint_system () {
+        disjunctive_linear_constraint_system_t to_disjunctive_linear_constraint_system() {
           return ref().to_disjunctive_linear_constraint_system();
         }
 	
-        static std::string getDomainName () {
+        static std::string getDomainName() {
 	  return apron_domain_impl_t::getDomainName();
 	}
 
@@ -1804,21 +1767,21 @@ namespace crab {
         static void do_initialization(CFG cfg) { }
 
         static void normalize(apron_domain_t& inv) { 
-          inv.normalize ();
+          inv.normalize();
         }
         
         template <typename Iter>
         static void forget(apron_domain_t& inv, Iter it, Iter end) {
-          inv.forget (boost::make_iterator_range (it, end));
+          inv.forget(boost::make_iterator_range(it, end));
         }
         
         template <typename Iter >
         static void project(apron_domain_t& inv, Iter it, Iter end) {
-          inv.project (boost::make_iterator_range (it, end));
+          inv.project(boost::make_iterator_range(it, end));
         }
         
         static void expand(apron_domain_t& inv, variable_t x, variable_t new_x) {
-          inv.expand (x, new_x);
+          inv.expand(x, new_x);
         }		
       };
      

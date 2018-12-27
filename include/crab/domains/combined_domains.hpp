@@ -330,16 +330,16 @@ namespace crab {
         this->reduce();
       }
 
-      void backward_assign (variable_t x, linear_expression_t e,
-			    domain_product2_t invariant)  {
+      void backward_assign(variable_t x, linear_expression_t e,
+			   domain_product2_t invariant)  {
         this->_product.first().backward_assign(x, e, invariant.first());
         this->_product.second().backward_assign(x, e, invariant.second());
         this->reduce();
       }
       
-      void backward_apply (operation_t op,
-			   variable_t x, variable_t y, Number k,
-			   domain_product2_t invariant)  {
+      void backward_apply(operation_t op,
+			  variable_t x, variable_t y, Number k,
+			  domain_product2_t invariant)  {
         this->_product.first().backward_apply(op, x, y, k, invariant.first());
         this->_product.second().backward_apply(op, x, y, k, invariant.second());
         this->reduce();
@@ -381,20 +381,6 @@ namespace crab {
       }
       
       void apply(bitwise_operation_t op, variable_t x, variable_t y, Number k) {
-        this->_product.first().apply(op, x, y, k);
-        this->_product.second().apply(op, x, y, k);
-        this->reduce();
-      }
-      
-      // division_operators_api
-      
-      void apply(div_operation_t op, variable_t x, variable_t y, variable_t z) {
-        this->_product.first().apply(op, x, y, z);
-        this->_product.second().apply(op, x, y, z);
-        this->reduce();
-      }
-      
-      void apply(div_operation_t op, variable_t x, variable_t y, Number k) {
         this->_product.first().apply(op, x, y, k);
         this->_product.second().apply(op, x, y, k);
         this->reduce();
@@ -499,14 +485,14 @@ namespace crab {
         this->reduce ();
       }    
 
-      virtual void apply_binary_bool (bool_operation_t op,variable_t x,
-				      variable_t y,variable_t z) override {
+      virtual void apply_binary_bool(bool_operation_t op,variable_t x,
+				     variable_t y,variable_t z) override {
         this->_product.first().apply_binary_bool (op, x, y, z);
         this->_product.second().apply_binary_bool (op, x, y, z);
         this->reduce ();
       }    
 
-      virtual void assume_bool (variable_t v, bool is_negated) override {
+      virtual void assume_bool(variable_t v, bool is_negated) override {
         this->_product.first().assume_bool (v, is_negated);
         this->_product.second().assume_bool (v, is_negated);
         this->reduce ();
@@ -945,22 +931,6 @@ namespace crab {
       }
       
       void apply(bitwise_operation_t op, variable_t x, variable_t y, number_t k) {
-        this->_product.apply(op, x, y, k);
-	if (!Params::apply_reduction_only_add_constraint) {	
-	  this->reduce_variable(x);
-	}
-      }
-      
-      // division_operators_api
-      
-      void apply(div_operation_t op, variable_t x, variable_t y, variable_t z) {
-        this->_product.apply(op, x, y, z);
-	if (!Params::apply_reduction_only_add_constraint) {	
-	  this->reduce_variable(x);
-	}
-      }
-      
-      void apply(div_operation_t op, variable_t x, variable_t y, number_t k) {
         this->_product.apply(op, x, y, k);
 	if (!Params::apply_reduction_only_add_constraint) {	
 	  this->reduce_variable(x);
@@ -1518,19 +1488,7 @@ namespace crab {
         this->_product.apply(op, x, y, k);
         this->reduce_variable(x);
       }
-      
-      // division_operators_api
-      
-      void apply(div_operation_t op, variable_t x, variable_t y, variable_t z) {
-        this->_product.apply(op, x, y, z);
-        this->reduce_variable(x);
-      }
-      
-      void apply(div_operation_t op, variable_t x, variable_t y, number_t k) {
-        this->_product.apply(op, x, y, k);
-        this->reduce_variable(x);
-      }
-      
+            
       void write(crab_os& o) { 
         this->_product.write(o); 
        }
@@ -1720,17 +1678,6 @@ namespace crab {
       void apply(bitwise_operation_t op, variable_t x, variable_t y, number_t k) {
         this->_product.apply(op, x, y, k);
       }
-      
-      // division_operators_api
-      
-      void apply(div_operation_t op, variable_t x, variable_t y, variable_t z) {
-        this->_product.apply(op, x, y, z);
-      }
-      
-      void apply(div_operation_t op, variable_t x, variable_t y, number_t k) {
-        this->_product.apply(op, x, y, k);
-      }
-      
       
       // array_operators_api
       

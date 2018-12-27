@@ -1821,59 +1821,39 @@ namespace crab {
         crab::CrabStats::count (getDomainName() + ".count.apply");
         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
-        if(is_bottom())
+        if(is_bottom()) {
           return;
+	}
 
         normalize();
 
-        switch(op)
-        {
+        switch(op) {
           case OP_ADDITION:
-          {
             assign(x, y + z);
             break;
-          }
           case OP_SUBTRACTION:
-          {
             assign(x, y - z);
             break;
-          }
-          // For mul and div, we fall back on intervals.
+          // For the rest of operations, we fall back on intervals.
           case OP_MULTIPLICATION:
-          {
             set(x, get_interval(y)*get_interval(z));
             break;
-          }
-          case OP_DIVISION:
-          {
-            interval_t xi(get_interval(y)/get_interval(z));
-            if(xi.is_bottom())
-              set_to_bottom();
-            else
-              set(x, xi);
+          case OP_SDIV:
+            set(x, get_interval(y)/get_interval(z));
             break;
-          }
+          case OP_UDIV:
+            set(x, get_interval(y).UDiv(get_interval(z)));
+            break;
+          case OP_SREM:
+            set(x, get_interval(y).SRem(get_interval(z)));
+            break;
+          case OP_UREM:
+            set(x, get_interval(y).URem(get_interval(z)));
+            break;
+	  default:
+	    CRAB_ERROR("Operation ", op, " not supported");
         }
-        /*
-        if (x == y){
-          // --- ensure lhs does not appear on the rhs
-          assign_tmp(y); 
-          apply(op, x, get_tmp(), get_dbm_index(z));
-          forget(get_tmp());
-        }
-        else if (x == z){
-          // --- ensure lhs does not appear on the rhs
-          assign_tmp(z); 
-          apply(op, x, get_dbm_index (y), get_tmp());
-          forget(get_tmp());
-        }
-        else{
-          if (x == y && y == z)
-            CRAB_ERROR("DBM: does not support x := x + x ");
-          else
-            apply(op, x, get_dbm_index(y), get_dbm_index(z));
-        }
-      */
+	
         CRAB_LOG("zones-split",
                  crab::outs() << "---"<< x<< ":="<< y<< op<< z<<"\n"<< *this <<"\n");
       }
@@ -1883,60 +1863,56 @@ namespace crab {
         crab::CrabStats::count (getDomainName() + ".count.apply");
         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
-        if(is_bottom())
+        if(is_bottom()) {
           return;
+	}
 
         normalize();
 
-        switch(op)
-        {
+        switch(op) {
           case OP_ADDITION:
-          {
             assign(x, y + k);
             break;
-          }
           case OP_SUBTRACTION:
-          {
             assign(x, y - k);
             break;
-          }
-          // For mul and div, we fall back on intervals.
+          // For the rest of operations, we fall back on intervals.
           case OP_MULTIPLICATION:
-          {
-            set(x, get_interval(y)*k);
-
+            set(x, get_interval(y)*interval_t(k));
             break;
-          }
-          case OP_DIVISION:
-          {
-            if(k == Wt(0))
-              set_to_bottom();
-            else
-              set(x, get_interval(y)/k);
-
+          case OP_SDIV:
+            set(x, get_interval(y)/interval_t(k));
             break;
-          }
+          case OP_UDIV:
+            set(x, get_interval(y).UDiv(interval_t(k)));
+            break;
+          case OP_SREM:
+            set(x, get_interval(y).SRem(interval_t(k)));
+            break;
+          case OP_UREM:
+            set(x, get_interval(y).URem(interval_t(k)));
+            break;
+	  default:
+	    CRAB_ERROR("Operation ", op, " not supported");
         }
 
         CRAB_LOG("zones-split",
                  crab::outs() << "---"<< x<< ":="<< y<< op<< k<<"\n"<< *this <<"\n");
       }
       
-      void backward_assign (variable_t x, linear_expression_t e,
-			    DBM_t inv) { 
+      void backward_assign(variable_t x, linear_expression_t e,
+			   DBM_t inv) { 
 	crab::domains::BackwardAssignOps<DBM_t>::
 	  assign (*this, x, e, inv);
       }
       
-      void backward_apply (operation_t op,
-			   variable_t x, variable_t y, Number z,
-			   DBM_t inv) {
+      void backward_apply(operation_t op, variable_t x, variable_t y, Number z,
+			  DBM_t inv) {
 	crab::domains::BackwardAssignOps<DBM_t>::
 	  apply(*this, op, x, y, z, inv);
       }
       
-      void backward_apply(operation_t op,
-			  variable_t x, variable_t y, variable_t z,
+      void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
 			  DBM_t inv) {
 	crab::domains::BackwardAssignOps<DBM_t>::
 	  apply(*this, op, x, y, z, inv);
@@ -2041,10 +2017,16 @@ namespace crab {
         if(is_bottom())
           return;
 
+	if (intv.is_bottom()) {
+	  set_to_bottom();
+	  return;
+	}
+	
         this->operator-=(x);
 
-        if(intv.is_top())
+        if(intv.is_top()) {
           return;
+	}
 
         vert_id v = get_vert(x);
         if(intv.ub().is_finite())
@@ -2153,75 +2135,6 @@ namespace crab {
         set(x, xi);
       }
     
-      // division_operators_api
-    
-      void apply(div_operation_t op, variable_t x, variable_t y, variable_t z) {
-        crab::CrabStats::count (getDomainName() + ".count.apply");
-        crab::ScopedCrabStats __st__(getDomainName() + ".apply");
-
-        if (op == OP_SDIV){
-          apply(OP_DIVISION, x, y, z);
-        }
-        else{
-          normalize();
-          // Convert to intervals and perform the operation
-          interval_t yi = operator[](y);
-          interval_t zi = operator[](z);
-          interval_t xi = interval_t::bottom();
-      
-          switch (op) {
-            case OP_UDIV: {
-              xi = yi.UDiv(zi);
-              break;
-            }
-            case OP_SREM: {
-              xi = yi.SRem(zi);
-              break;
-            }
-            case OP_UREM: {
-              xi = yi.URem(zi);
-              break;
-            }
-            default: 
-              CRAB_ERROR("spDBM: unreachable");
-          }
-          set(x, xi);
-        }
-      }
-
-      void apply(div_operation_t op, variable_t x, variable_t y, Number k) {
-        crab::CrabStats::count (getDomainName() + ".count.apply");
-        crab::ScopedCrabStats __st__(getDomainName() + ".apply");
-
-        if (op == OP_SDIV){
-          apply(OP_DIVISION, x, y, k);
-        }
-        else{
-          // Convert to intervals and perform the operation
-          interval_t yi = operator[](y);
-          interval_t zi(k);
-          interval_t xi = interval_t::bottom();
-      
-          switch (op) {
-            case OP_UDIV: {
-              xi = yi.UDiv(zi);
-              break;
-            }
-            case OP_SREM: {
-              xi = yi.SRem(zi);
-              break;
-            }
-            case OP_UREM: {
-              xi = yi.URem(zi);
-              break;
-            }
-            default: 
-              CRAB_ERROR("DBM: unreachable");
-          }
-          set(x, xi);
-        }
-      }
-
       //! copy of x into a new fresh variable y
       void expand (variable_t x, variable_t y) {
         crab::CrabStats::count (getDomainName() + ".count.expand");
@@ -2680,10 +2593,14 @@ namespace crab {
       void apply(operation_t op, variable_t x, variable_t y, Number k) {
         lock(); norm().apply(op, x, y, k);
       }
+      void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
+        lock(); norm().apply(op, x, y, z);
+      }
       void backward_assign(variable_t x, linear_expression_t e, DBM_t invariant) {
 	lock(); norm().backward_assign(x, e, invariant.norm());
       }
-      void backward_apply(operation_t op, variable_t x, variable_t y, Number k, DBM_t invariant) {
+      void backward_apply(operation_t op, variable_t x, variable_t y, Number k,
+			  DBM_t invariant) {
 	lock(); norm().backward_apply(op, x, y, k, invariant.norm());
       }
       void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
@@ -2698,15 +2615,6 @@ namespace crab {
       }
       void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {
         lock(); norm().apply(op, x, y, z);
-      }
-      void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
-        lock(); norm().apply(op, x, y, z);
-      }
-      void apply(div_operation_t op, variable_t x, variable_t y, variable_t z) {
-        lock(); norm().apply(op, x, y, z);
-      }
-      void apply(div_operation_t op, variable_t x, variable_t y, Number k) {
-        lock(); norm().apply(op, x, y, k);
       }
       void expand (variable_t x, variable_t y) { lock(); norm().expand(x, y); }
 

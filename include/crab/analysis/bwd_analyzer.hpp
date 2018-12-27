@@ -51,10 +51,10 @@ namespace crab {
 	typedef intra_necessary_preconditions_abs_transformer
 	  <AbsDom, pp_abstract_map_t> abs_bwd_tr_t;
 	
-	auto &bb = m_cfg.get_node (node);
+	auto &bb = m_cfg.get_node(node);
 
 	CRAB_LOG("backward-fixpoint",
-		 crab::outs () << "Post at " << cfg_impl::get_label_str(node) << ": "
+		 crab::outs() << "Post at " << cfg_impl::get_label_str(node) << ": "
 		               << precond << "\n");
 		 
 	// invariants that hold at the entry of the block
@@ -63,24 +63,25 @@ namespace crab {
 	abs_fwd_tr_t F(&invariant);
 	pp_abstract_map_t pp_invariants;
 	for(auto &s: boost::make_iterator_range(bb.begin(),bb.end())) {
-	  pp_invariants.insert (std::make_pair(&s, F.inv()));
+	  pp_invariants.insert(std::make_pair(&s, *(F.get())));
 	  CRAB_LOG("backward-fixpoint",
-		   crab::outs () << "\tRebuilding at statement " << s << " inv="
-		                 << F.inv() << "\n");
-	  s.accept (&F);	  	  
+		   crab::outs() << "\tRebuilding at statement " << s << " inv="
+		                 << *F.get() << "\n");
+	  s.accept(&F);	  	  
 	}
 	
 	CRAB_LOG("backward-fixpoint",
-		 crab::outs ()
+		 crab::outs()
 		 << "Done forward propagation at each program point \n"
 		 << "Starting backward propagation ... \n");
 
 	// compute precondition at the entry of the block
-	abs_bwd_tr_t B(&precond, pp_invariants); 
-	for(auto &s: boost::make_iterator_range(bb.rbegin(),bb.rend()))
-	  s.accept (&B);
+	abs_bwd_tr_t B(&precond, &pp_invariants); 
+	for(auto &s: boost::make_iterator_range(bb.rbegin(),bb.rend())) {
+	  s.accept(&B);
+	}
 	CRAB_LOG("backward-fixpoint",
-		 crab::outs () << "Pre at " << cfg_impl::get_label_str(node) << ": "
+		 crab::outs() << "Pre at " << cfg_impl::get_label_str(node) << ": "
 		               << precond << "\n");
 	
       }
@@ -91,9 +92,9 @@ namespace crab {
       /**
        *  Store necessary preconditions 
        **/
-      virtual void process_post (bb_label_t node,
+      virtual void process_post(bb_label_t node,
 				 AbsDom precond) override {
-	m_preconditions.insert(std::make_pair (node, precond));
+	m_preconditions.insert(std::make_pair(node, precond));
       }
       
     public:
@@ -109,10 +110,10 @@ namespace crab {
        unsigned int widening_delay,
        unsigned int descending_iterations,
        size_t jump_set_size)
-	: fixpoint_iterator_t(crab::cfg::cfg_rev<CFG> (cfg), wto,
+	: fixpoint_iterator_t(crab::cfg::cfg_rev<CFG>(cfg), wto,
 			      widening_delay, descending_iterations, jump_set_size),
-	  m_cfg (cfg),
-	  m_postcond (postcond) { }
+	  m_cfg(cfg),
+	  m_postcond(postcond) { }
      
       template <typename Range>
       void Run(Range invariants) {
@@ -120,16 +121,16 @@ namespace crab {
 	this->run(m_postcond);
       }
       
-      iterator begin () { return m_preconditions.begin(); } 
+      iterator begin() { return m_preconditions.begin(); } 
       
-      iterator end () { return m_preconditions.end();   }
+      iterator end() { return m_preconditions.end();   }
       
-      const_iterator begin () const { return m_preconditions.begin(); }
+      const_iterator begin() const { return m_preconditions.begin(); }
       
-      const_iterator end () const { return m_preconditions.end();   }
+      const_iterator end() const { return m_preconditions.end();   }
       
       AbsDom operator[](bb_label_t node) const {
-	auto it = m_preconditions.find (node);
+	auto it = m_preconditions.find(node);
 	if (it != m_preconditions.end())
 	  return it->second;
 	else
@@ -165,7 +166,7 @@ namespace crab {
       typedef typename CFG::number_t number_t;
       // used for checkers
       typedef AbsDom abs_dom_t;
-      typedef boost::shared_ptr<intra_abs_transformer<AbsDom> > abs_tr_ptr;
+      typedef intra_abs_transformer<AbsDom> abs_tr_t;
       
     private:
       
@@ -198,16 +199,12 @@ namespace crab {
       invariant_map_t m_post_invariants;
       precond_map_t m_preconditions;
       
-      // if a checker uses this analyzer to prove a property it will
-      // need an abstract transformer to rebuild local invariants.
-      abs_tr_ptr m_checker_abs_tr;
-
-      void store_forward_analysis_results (fwd_analyzer_t &f) {
+      void store_forward_analysis_results(fwd_analyzer_t &f) {
 	m_pre_invariants = invariant_map_t(f.pre_begin(), f.pre_end());
 	m_post_invariants = invariant_map_t(f.post_begin(), f.post_end());
       }
       
-      void store_analysis_results (fwd_analyzer_t &f, bwd_fixpoint_iterator_t &b) {
+      void store_analysis_results(fwd_analyzer_t &f, bwd_fixpoint_iterator_t &b) {
 	store_forward_analysis_results(f);
 	m_preconditions = precond_map_t(b.begin(), b.end());
       }
@@ -217,14 +214,13 @@ namespace crab {
       typedef typename bwd_fixpoint_iterator_t::iterator iterator;
       typedef typename bwd_fixpoint_iterator_t::const_iterator const_iterator;
 
-      intra_forward_backward_analyzer (CFG cfg)
+      intra_forward_backward_analyzer(CFG cfg)
 	: m_cfg(cfg),
 	  m_wto(nullptr),
-	  m_b_wto(nullptr),
-	  m_checker_abs_tr(new intra_abs_transformer<AbsDom> (nullptr))
+	  m_b_wto(nullptr)
       {}
 
-      ~intra_forward_backward_analyzer () {
+      ~intra_forward_backward_analyzer() {
 	if (m_wto) delete m_wto;
 	if (m_b_wto) delete m_b_wto;
       }
@@ -260,72 +256,72 @@ namespace crab {
 	       unsigned int descending_iters=UINT_MAX,
 	       size_t jump_set_size=0) {
 
-	CRAB_LOG ("backward",
+	CRAB_LOG("backward",
 		  crab::outs() << "Initial states=" << init_states << "\n";
 		  crab::outs() << "Final states=" << final_states << "\n");
 
-	crab::CrabStats::count ("CombinedForwardBackward.invocations");	
+	crab::CrabStats::count("CombinedForwardBackward.invocations");	
 	unsigned iters = 0;
 	while (true) {
 	  iters++;
-          crab::CrabStats::count ("CombinedForwardBackward.iterations");
+          crab::CrabStats::count("CombinedForwardBackward.iterations");
 	  CRAB_VERBOSE_IF(1, crab::outs() << "Iteration " << iters << "\n" 
 			                  << "Started forward analysis.\n";);
 
-	  crab::CrabStats::resume ("CombinedForwardBackward.ForwardPass");
+	  crab::CrabStats::resume("CombinedForwardBackward.ForwardPass");
 	  // run forward analysis computing invariants
 	  fwd_analyzer_t F(m_cfg, m_wto, init_states, live,
 			   widening_delay, descending_iters, jump_set_size);
 	  F.run(entry, assumptions);
-	  crab::CrabStats::stop ("CombinedForwardBackward.ForwardPass");
+	  crab::CrabStats::stop("CombinedForwardBackward.ForwardPass");
 	  
 	  // reuse wto for next iteration
-	  if (iters == 1) m_wto = new wto_t(F.get_wto ());
+	  if (iters == 1) m_wto = new wto_t(F.get_wto());
 
-	  CRAB_VERBOSE_IF(1, crab::outs () << "Finished forward analysis.\n";);
+	  CRAB_VERBOSE_IF(1, crab::outs() << "Finished forward analysis.\n";);
 	  
 	  CRAB_LOG("backward",
-		   for (auto &kv: boost::make_iterator_range (F.pre_begin(),
-							      F.pre_end ())) {
-		     crab::outs () << cfg_impl::get_label_str (kv.first)
+		   for (auto &kv: boost::make_iterator_range(F.pre_begin(),
+							      F.pre_end())) {
+		     crab::outs () << cfg_impl::get_label_str(kv.first)
 				   << ":\n" << kv.second << "\n";
 		   });
 
 	  if (only_forward) {
 	    store_forward_analysis_results(F);
-	    CRAB_VERBOSE_IF(1, crab::outs () << "\nSkipped backward pass.\n";);
+	    CRAB_VERBOSE_IF(1, crab::outs() << "\nSkipped backward pass.\n";);
 	    break;
 	  }
 	  
-	  CRAB_VERBOSE_IF(1, crab::outs () << "Started backward analysis.\n";);
+	  CRAB_VERBOSE_IF(1, crab::outs() << "Started backward analysis.\n";);
 
-	  crab::CrabStats::resume ("CombinedForwardBackward.BackwardPass");
+	  crab::CrabStats::resume("CombinedForwardBackward.BackwardPass");
 	  // run backward analysis computing necessary preconditions
 	  // refined with invariants
 	  bwd_fixpoint_iterator_t B
 	    (m_cfg, m_b_wto, final_states,
 	     widening_delay, descending_iters, jump_set_size);
 	  B.Run(boost::make_iterator_range(F.pre_begin(), F.pre_end()));
-	  crab::CrabStats::stop ("CombinedForwardBackward.BackwardPass"); 
+	  crab::CrabStats::stop("CombinedForwardBackward.BackwardPass"); 
 
-	  CRAB_VERBOSE_IF(1, crab::outs () << "Finished backward analysis.\n";);
+	  CRAB_VERBOSE_IF(1, crab::outs() << "Finished backward analysis.\n";);
 	  
 	  CRAB_LOG("backward",
-		   for (auto &kv: boost::make_iterator_range (B.begin(),
-							      B.end ())) {
-		     crab::outs () << cfg_impl::get_label_str (kv.first)
+		   for (auto &kv: boost::make_iterator_range(B.begin(),
+							      B.end())) {
+		     crab::outs() << cfg_impl::get_label_str(kv.first)
 				   << ":\n" << kv.second << "\n";
 		   }
-		   crab::outs () << "\n");
+		   crab::outs() << "\n");
 	  
-	  AbsDom new_init_states = B[m_cfg.entry ()];
+	  AbsDom new_init_states = B[m_cfg.entry()];
 	  if (init_states <= new_init_states) {
-            //CRAB_LOG ("backward",
+            //CRAB_LOG("backward",
 	    //           crab::outs() << "Cannot refine more initial states.\n");
 	    store_analysis_results(F,B);
 	    break;
 	  } else {
-            CRAB_LOG ("backward",
+            CRAB_LOG("backward",
 		      crab::outs() << "Initial state refined: \n"
 		                   << init_states << " ==> ");
 	    
@@ -336,13 +332,13 @@ namespace crab {
 	      init_states = init_states & new_init_states;
 	    }
 
-            CRAB_LOG ("backward",
+            CRAB_LOG("backward",
 		      crab::outs() << init_states << "\n");
 	    
 	  }
 
 	  // reuse wto for next iteration
-	  if (iters == 1) m_b_wto = new bwd_wto_t(B.get_WTO ());
+	  if (iters == 1) m_b_wto = new bwd_wto_t(B.get_WTO());
 	  
 	} // end while true
 
@@ -351,31 +347,31 @@ namespace crab {
       }
 
       // Return the invariants that hold at the entry of b
-      AbsDom operator[] (bb_label_t b) const {
-        return get_pre (b);
+      AbsDom operator[](bb_label_t b) const {
+        return get_pre(b);
       }
       
       // Return the invariants that hold at the entry of b
-      AbsDom get_pre (bb_label_t b) const { 
-        auto it = m_pre_invariants.find (b);
-        if (it == m_pre_invariants.end ())
-          return abs_dom_t::top ();
+      AbsDom get_pre(bb_label_t b) const { 
+        auto it = m_pre_invariants.find(b);
+        if(it == m_pre_invariants.end())
+          return abs_dom_t::top();
         else
           return it->second;
       }
       
       // Return the invariants that hold at the exit of b
-      AbsDom get_post (bb_label_t b) const {
-        auto it = m_post_invariants.find (b);
-        if (it == m_post_invariants.end ())
-          return abs_dom_t::top ();
+      AbsDom get_post(bb_label_t b) const {
+        auto it = m_post_invariants.find(b);
+        if (it == m_post_invariants.end())
+          return abs_dom_t::top();
         else 
           return it->second;      
       }
 
       // Return the necessary preconditions for basic block b
       AbsDom get_preconditions(bb_label_t b) const {
-	auto it = m_preconditions.find (b);
+	auto it = m_preconditions.find(b);
 	if (it != m_preconditions.end())
 	  return it->second;
 	else
@@ -390,18 +386,17 @@ namespace crab {
       }
       
       // Return the wto of the cfg
-      const wto_t& get_wto () const {
-	assert (m_wto);
+      const wto_t& get_wto() const {
+	assert(m_wto);
 	return *m_wto;
       }
       
       // API for checkers
-      CFG get_cfg (void) { return m_cfg; }
+      CFG get_cfg(void) { return m_cfg; }
 
       // API for checkers
-      abs_tr_ptr get_abs_transformer (AbsDom &inv) {
-	m_checker_abs_tr->set (inv);
-	return m_checker_abs_tr;
+      boost::shared_ptr<abs_tr_t> get_abs_transformer(AbsDom* inv) {
+	return boost::make_shared<abs_tr_t>(inv);
       }
       
 	      
