@@ -283,8 +283,8 @@ namespace crab {
       }
       
       //! Propagate inv through statements
-      boost::shared_ptr<abs_tr_t> get_abs_transformer(TD_Dom &inv) {
-        return boost::make_shared<abs_tr_t>(&inv, &m_summ_tbl, &m_call_tbl);
+      boost::shared_ptr<abs_tr_t> get_abs_transformer(TD_Dom* inv) {
+        return boost::make_shared<abs_tr_t>(inv, &m_summ_tbl, &m_call_tbl);
       }
 
       //! Return true if there is a summary for a function
