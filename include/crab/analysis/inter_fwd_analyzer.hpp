@@ -13,7 +13,6 @@
 #include <crab/common/stats.hpp>
 #include <crab/cfg/cfg.hpp>
 #include <crab/cg/cg.hpp>
-#include <crab/domains/domain_traits.hpp>
 #include <crab/analysis/graphs/sccg.hpp>
 #include <crab/analysis/graphs/topo_order.hpp>
 #include <crab/analysis/fwd_analyzer.hpp>
@@ -193,10 +192,7 @@ namespace crab {
               // --- project onto formal parameters and return values
               auto inv = a.get_post(cfg.exit());
               //crab::CrabStats::count(BU_Dom::getDomainName() + ".count.project");
-              domains::domain_traits<BU_Dom>::project(inv,
-                                                       formals.begin(), 
-                                                       formals.end());            
-
+	      inv.project(formals);
               m_summ_tbl.insert(*fdecl, inv, inputs, outputs);
             }
           }

@@ -541,47 +541,54 @@ namespace crab {
       }
       std::swap(_env, new_env);
     }
+
+    void forget(const variable_vector_t& variables) {
+      if (is_bottom() || is_top()) {
+	return;
+      }
+      
+      for (variable_t v : variables){
+	this->operator-=(v); 
+      }
+    }
+
+    void project(const variable_vector_t& variables){
+      crab::CrabStats::count(getDomainName() + ".count.project");
+      crab::ScopedCrabStats __st__(getDomainName() + ".project");
+
+      if (is_bottom() || is_top()) {
+	return;
+      }
+
+      flat_boolean_domain_t res;
+      for(variable_t v : variables) {
+         res.set_bool(v, get_bool(v));
+      }
+      std::swap(*this, res);
+    }
+         
+    void expand(variable_t x, variable_t new_x) {
+      crab::CrabStats::count(getDomainName() + ".count.expand");
+      crab::ScopedCrabStats __st__(getDomainName() + ".expand");
+
+      if (is_bottom() || is_top()) {
+	return;
+      }
+      
+      set_bool(new_x , get_bool(x));
+    }
+
+    void normalize() {}
     
    }; // class flat_boolean_domain
 
 
    template <typename Number, typename VariableName>
    class domain_traits <flat_boolean_domain<Number,VariableName> > {
-
-     typedef flat_boolean_domain<Number,VariableName> flat_boolean_domain_t;
-
     public:
-
-     typedef ikos::variable<Number, VariableName> variable_t;
-     
+     typedef flat_boolean_domain<Number,VariableName> flat_boolean_domain_t;
      template<class CFG>
      static void do_initialization(CFG cfg) { }
-
-     // Normalize the abstract domain if such notion exists.
-     static void normalize(flat_boolean_domain_t& inv) { }
-
-     // Remove all variables [begin, end)
-     template<typename Iter>
-     static void forget(flat_boolean_domain_t& inv, Iter begin, Iter end) {
-       for (auto v : boost::make_iterator_range(begin,end)){
-         inv -= v; 
-       }
-     }
-
-     // Forget all variables except [begin, end)
-     template <typename Iter>
-     static void project(flat_boolean_domain_t& inv, Iter begin, Iter end){
-       flat_boolean_domain_t res = flat_boolean_domain_t::top();
-       for(auto v : boost::make_iterator_range(begin, end))
-         res.set_bool(v, inv.get_bool(v)); 
-       std::swap(inv, res);
-     }
-         
-     // Make a new copy of x without relating x with new_x
-     static void expand(flat_boolean_domain_t& inv, variable_t x, variable_t new_x) {
-       inv.set_bool(new_x , inv.get_bool(x));
-     }
-     
    };
 
 
@@ -1349,92 +1356,77 @@ namespace crab {
 	return res;
       }
       
-      static std::string getDomainName()
-      { return domain_product2_t::getDomainName(); }
+      static std::string getDomainName() {
+	return domain_product2_t::getDomainName();
+      }
 
-      void rename(const variable_vector_t &from, const variable_vector_t &to)
-      { _product.rename(from, to); }
-	
-      // domain_traits_api
-      
-      void expand(variable_t x, variable_t new_x) {
-        crab::domains::domain_traits<bool_domain_t>::
-	  expand(_product.first(), x, new_x);	
-        crab::domains::domain_traits<NumDom>::
-	  expand(_product.second(), x, new_x);
-	
-	_var_to_csts.set(new_x, _var_to_csts [x]);
-	if (_unchanged_vars[variable_t(x)])
-	  _unchanged_vars += variable_t(new_x);
+      void rename(const variable_vector_t &from, const variable_vector_t &to) {
+	_product.rename(from, to);
       }
-      
+	
       void normalize() {
-        crab::domains::domain_traits<bool_domain_t>::
-	  normalize(_product.first());
-        crab::domains::domain_traits<NumDom>::
-	  normalize(_product.second());
+	_product.normalize();
       }
       
-      template <typename Range>
-      void forget(Range vars){
-        crab::domains::domain_traits<bool_domain_t>::
-	  forget(_product.first(), vars.begin(), vars.end());
-        crab::domains::domain_traits<NumDom>::
-	  forget(_product.second(), vars.begin(), vars.end());
+      void forget(const variable_vector_t& variables){
+	crab::CrabStats::count(getDomainName() + ".count.forget");
+	crab::ScopedCrabStats __st__(getDomainName() + ".forget");
 	
-	for (auto v: vars) {
+	if (is_bottom() || is_top()) {
+	  return;
+	}
+	
+	_product.forget(variables);
+	for (variable_t v: variables) {
 	  _var_to_csts -= v;
-	  _unchanged_vars -= variable_t(v);	      	  
+	  _unchanged_vars -= v;	      	  
 	}
       }
       
-      template <typename Range>
-      void project(Range vars) {
-        crab::domains::domain_traits<bool_domain_t>::
-	  project(_product.first(), vars.begin(), vars.end());
-        crab::domains::domain_traits<NumDom>::
-	  project(_product.second(), vars.begin(), vars.end());
+      void project(const variable_vector_t& variables) {
+	crab::CrabStats::count(getDomainName() + ".count.project");
+	crab::ScopedCrabStats __st__(getDomainName() + ".project");
+	
+	if (is_bottom() || is_top()) {
+	  return;
+	}
+	
+	_product.project(variables);
 	
 	var_lincons_map_t new_var_to_csts;
 	invariance_domain new_unchanged_vars;
-	for (auto v: vars) {
+	for (variable_t v: variables) {
 	  new_var_to_csts.set(v, _var_to_csts[v]);
-	  if (_unchanged_vars[v]) new_unchanged_vars += v;	  
+	  if (_unchanged_vars[v]) {
+	    new_unchanged_vars += v;
+	  }
 	}
 	std::swap(_var_to_csts, new_var_to_csts);
 	std::swap(_unchanged_vars, new_unchanged_vars);
       }
       
+      void expand(variable_t x, variable_t new_x) {
+	crab::CrabStats::count(getDomainName() + ".count.expand");
+	crab::ScopedCrabStats __st__(getDomainName() + ".expand");
+	
+	if (is_bottom() || is_top()) {
+	  return;
+	}
+	
+	_product.expand(x, new_x);
+	_var_to_csts.set(new_x, _var_to_csts [x]);
+	if (_unchanged_vars[variable_t(x)]) {
+	  _unchanged_vars += variable_t(new_x);
+	}
+      }
     }; // class flat_boolean_numerical_domain
 
     template<typename Num>
     class domain_traits<flat_boolean_numerical_domain<Num>> {
      public:
-
       typedef flat_boolean_numerical_domain<Num> product_t;
-      typedef typename product_t::varname_t V;
-      typedef typename product_t::variable_t variable_t;
-
       template<class CFG>
       static void do_initialization(CFG cfg) { }
-
-      static void normalize(product_t& inv) {
-        inv.normalize();
-      }
-
-      static void expand(product_t& inv, variable_t x, variable_t new_x) {
-        inv.expand(x, new_x);
-      }
-      
-      template <typename Iter>
-      static void forget(product_t& inv, Iter it, Iter end){
-        inv.forget(boost::make_iterator_range(it, end));
-      }
-      
-      template <typename Iter>
-      static void project(product_t& inv, Iter it, Iter end) {
-        inv.project(boost::make_iterator_range(it, end));
-      }
     };
 
     template<typename NumDom>

@@ -169,18 +169,22 @@ namespace crab {
         }
         
 
-        // remove all variables [begin,...end)
-        template<typename Iterator>
-        void forget(Iterator begin, Iterator end) {
-          domain_traits<NumDomain>::forget(_inv, begin, end);
+        void forget(const variable_vector_t& variables) {
+          _inv.forget(variables);
         }
 
-        // dual of forget: remove all variables except [begin,...end)
-        template<typename Iterator>
-        void project(Iterator begin, Iterator end) {
-          domain_traits<NumDomain>::project(_inv, begin, end);
+        void project(const variable_vector_t& variables) {
+          _inv.project(variables);
         }
-
+	
+	void expand(variable_t var, variable_t new_var) {
+	  CRAB_WARN("array smashing expand not implemented");
+       }
+	
+	void normalize() {
+	  _inv.normalize();
+	}
+	
         void operator +=(linear_constraint_system_t csts) {
           _inv += csts;
         }
@@ -359,8 +363,8 @@ namespace crab {
           // into a non-summarized variable lhs. Simply _inv.assign(lhs,
           // a) is not sound.
           /* ask for a temp var */
-          variable_t a_prime(a.name().get_var_factory().get()); 
-          domain_traits<NumDomain>::expand(_inv, a, a_prime);
+          variable_t a_prime(a.name().get_var_factory().get());
+	  _inv.expand(a, a_prime);
 	  if (a.get_type() == ARR_BOOL_TYPE) {
 	    _inv.assign_bool_var(lhs, a_prime, false);
 	  } else if (a.get_type() == ARR_INT_TYPE || a.get_type() == ARR_REAL_TYPE) {
@@ -439,34 +443,9 @@ namespace crab {
      template<typename BaseDomain>
      class domain_traits<array_smashing<BaseDomain>> {
       public:
-       
-       typedef array_smashing<BaseDomain> array_smashing_t;
-       typedef typename BaseDomain::varname_t VariableName;
-       typedef typename BaseDomain::variable_t variable_t;
-       
-
+       typedef array_smashing<BaseDomain> array_smashing_t;       
        template<class CFG>
-       static void do_initialization(CFG cfg) { }
-
-       static void normalize(array_smashing_t& inv) { 
-         CRAB_WARN("array smashing normalize not implemented");
-       }
-       
-       template <typename Iter>
-       static void forget(array_smashing_t& inv, Iter it, Iter end) {
-         inv.forget(it, end);
-       }
-       
-       template <typename Iter >
-       static void project(array_smashing_t& inv, Iter it, Iter end) {
-         inv.project(it, end);
-       }
-
-       static void expand(array_smashing_t& inv, variable_t x, variable_t new_x) {
-         // -- lose precision if relational or disjunctive domain
-         CRAB_WARN("array smashing expand not implemented");
-       }
-
+       static void do_initialization(CFG cfg) { }       
      };
 
     template<typename BaseDom>

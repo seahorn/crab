@@ -1208,6 +1208,7 @@ public:
   using typename abstract_domain_t::linear_constraint_system_t;
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;  
   using typename abstract_domain_t::variable_t;
+  using typename abstract_domain_t::variable_vector_t;
   using typename abstract_domain_t::number_t;
   using typename abstract_domain_t::varname_t;
   typedef interval<Number> interval_t;
@@ -1361,21 +1362,6 @@ public:
     this->_env -= v;
   }
 
-  template<typename Iterator>
-  void project(Iterator it, Iterator et) {
-    separate_domain_t projected_env = separate_domain_t::top();
-    for (; it!=et; ++it) {
-      variable_t v = *it;
-      projected_env.set(v, this->_env[v]);
-    }
-    std::swap(this->_env, projected_env);
-  }
-
-
-  void expand(variable_t x, variable_t new_x) {
-    set(new_x, this->_env[x]);
-  }
-
   void set(variable_t v, wrapped_interval_t i) {
     crab::CrabStats::count (getDomainName() + ".count.assign");
     crab::ScopedCrabStats __st__(getDomainName() + ".assign");
@@ -1388,7 +1374,8 @@ public:
     crab::CrabStats::count (getDomainName() + ".count.assign");
     crab::ScopedCrabStats __st__(getDomainName() + ".assign");
     if (i.lb().is_finite() && i.ub.is_finite()) {
-      wrapped_interval_t rhs = wrapped_interval_t::mk_winterval(i.lb(), i.ub(), v.get_bitwidth());
+      wrapped_interval_t rhs = wrapped_interval_t::mk_winterval(i.lb(), i.ub(),
+								v.get_bitwidth());
       this->_env.set(v, rhs);
       CRAB_LOG("wrapped-int",
 	       crab::outs() << v << ":=" << i << "=" << _env[v] << "\n");    
@@ -1668,6 +1655,42 @@ public:
     e += csts;
     return e;
   }
+
+  void forget(const variable_vector_t& variables) {
+    if (is_bottom() || is_top()) {
+      return;
+    }
+    for (variable_t var: variables){
+      this->operator-=(var); 
+    }
+  }
+  
+  void project(const variable_vector_t& variables) {
+    crab::CrabStats::count(getDomainName() + ".count.project");
+    crab::ScopedCrabStats __st__(getDomainName() + ".project");
+    
+    if (is_bottom() || is_top()) {
+      return;
+    }
+      
+    separate_domain_t projected_env;
+    for (variable_t v: variables) {
+      projected_env.set(v, this->_env[v]);
+    }
+    std::swap(this->_env, projected_env);
+  }
+
+  void expand(variable_t x, variable_t new_x) {
+    crab::CrabStats::count(getDomainName() + ".count.expand");
+    crab::ScopedCrabStats __st__(getDomainName() + ".expand");
+    
+    if (is_bottom() || is_top()) {
+      return;
+    }
+    
+    set(new_x, this->_env[x]);
+  }
+
   
   void write(crab::crab_os& o) {
     this->_env.write(o);
@@ -1712,37 +1735,16 @@ public:
 
 
 template<typename Number, typename VariableName>
-class domain_traits <wrapped_interval_domain<Number,VariableName> > {
+class domain_traits<wrapped_interval_domain<Number,VariableName>> {
 public:
-
   typedef wrapped_interval_domain<Number,VariableName> wrapped_interval_domain_t;
-  typedef ikos::variable<Number, VariableName> variable_t;
-  
   template<class CFG>
   static void do_initialization (CFG cfg) { }
-
-  static void expand (wrapped_interval_domain_t& inv, variable_t x, variable_t new_x) {
-    inv.expand(x, new_x);
-  }
-  
-  static void normalize (wrapped_interval_domain_t& inv) {}
-  
-  template <typename Iter>
-  static void forget (wrapped_interval_domain_t& inv, Iter it, Iter end){
-    for(;it!=end; ++it) {
-      inv -= *it;
-    }
-  }
-  
-  template <typename Iter>
-  static void project (wrapped_interval_domain_t& inv, Iter it, Iter end) {
-    inv.project(it, end);
-  }
 };
 
 
 template<typename Number, typename VariableName>
-class constraint_simp_domain_traits <wrapped_interval_domain<Number,VariableName> > {
+class constraint_simp_domain_traits<wrapped_interval_domain<Number,VariableName>> {
 public:
   
   typedef ikos::linear_constraint<Number, VariableName> linear_constraint_t;
@@ -2387,10 +2389,15 @@ public:
     
     return get_wrapped_interval_domain() <= cst_inv.get_wrapped_interval_domain(); 
   }
-  
-  // domain_traits_api
-  
+    
   void expand(variable_t x, variable_t new_x) {
+    crab::CrabStats::count(getDomainName() + ".count.expand");
+    crab::ScopedCrabStats __st__(getDomainName() + ".expand");
+
+    if (is_bottom() || is_top()) {
+      return;
+    }
+    
     _w_int_dom.expand(x, new_x);
     _limit_env.set(new_x, _limit_env[x]);
     if (may_be_initialized(x)) {
@@ -2398,9 +2405,15 @@ public:
     }
   }
   
-  template <typename VarRange>
-  void project(VarRange vars) {
-    _w_int_dom.project(vars.begin(), vars.end());
+  void project(const variable_vector_t& vars) {
+    crab::CrabStats::count(getDomainName() + ".count.project");
+    crab::ScopedCrabStats __st__(getDomainName() + ".project");
+
+    if (is_bottom() || is_top()) {
+      return;
+    }
+    
+    _w_int_dom.project(vars);
 
     separate_domain_t projected_env = separate_domain_t::top();
     discrete_domain_t projected_init_set = discrete_domain_t::bottom();    
@@ -2413,6 +2426,15 @@ public:
     std::swap(_limit_env, projected_env);
     std::swap(_init_set, projected_init_set);
   }
+
+  void forget(const variable_vector_t& variables) {
+    if (is_bottom() || is_top()) {
+      return;
+    }
+    for (variable_t var: variables){
+      this->operator-=(var); 
+    }
+  }
   
 }; 
   
@@ -2421,23 +2443,8 @@ template<typename N, typename V, std::size_t M>
 class domain_traits<wrapped_interval_with_history_domain<N,V,M>> {
 public:
   typedef wrapped_interval_with_history_domain<N,V,M> wrapped_interval_domain_t;
-  typedef ikos::variable<N,V> variable_t;
-  
   template<class CFG>
   static void do_initialization (CFG cfg) { }
-
-  static void expand (wrapped_interval_domain_t& inv, variable_t x, variable_t new_x)
-  { inv.expand(x, new_x); }
-  
-  static void normalize (wrapped_interval_domain_t& inv) {}
-  
-  template <typename VarIter>
-  static void forget (wrapped_interval_domain_t& inv, VarIter it, VarIter end)
-  { for(;it!=end; ++it) { inv -= *it; } }
-  
-  template <typename VarIter>
-  static void project (wrapped_interval_domain_t& inv, VarIter it, VarIter end)
-  { inv.project(boost::make_iterator_range(it, end)); }
 };
 
 template<typename N, typename V, std::size_t M>
@@ -3089,32 +3096,20 @@ public:
   void rename(const variable_vector_t &from, const variable_vector_t &to)
   { _product.rename(from, to); }
 	
-  // domain_traits_api
+  void normalize() {
+    _product.normalize();
+  }
       
   void expand(variable_t x, variable_t new_x) {
-    crab::domains::domain_traits<wrapped_interval_domain_t>::
-      expand(_product.first(), x, new_x);	
-    crab::domains::domain_traits<NumDom>::
-      expand(_product.second(), x, new_x);
+    _product.expand(x, new_x);
   }
   
-  void normalize()
-  { crab::domains::domain_traits<NumDom>::normalize(_product.second());}
-      
-  template <typename VarRange>
-  void forget(VarRange vars){
-    crab::domains::domain_traits<wrapped_interval_domain_t>::
-      forget(_product.first(), vars.begin(), vars.end());
-    crab::domains::domain_traits<NumDom>::
-      forget(_product.second(), vars.begin(), vars.end());
+  void forget(const variable_vector_t& vars){
+    _product.forget(vars);
   }
   
-  template <typename VarRange>
-  void project(VarRange vars) {
-    crab::domains::domain_traits<wrapped_interval_domain_t>::
-      project(_product.first(), vars.begin(), vars.end());
-    crab::domains::domain_traits<NumDom>::
-      project(_product.second(), vars.begin(), vars.end());
+  void project(const variable_vector_t& vars) {
+    _product.project(vars);
   }
 }; // class wrapped_numerical_domain
 
@@ -3122,26 +3117,8 @@ template<typename AbsDom>
 class domain_traits<wrapped_numerical_domain<AbsDom>> {
 public:
   typedef wrapped_numerical_domain<AbsDom> this_type;
-  typedef typename this_type::varname_t V;
-  typedef typename this_type::variable_t variable_t;
-    
   template<class CFG>
   static void do_initialization (CFG cfg) { }
-  
-  static void normalize (this_type& inv)
-  { inv.normalize(); }
-    
-  static void expand (this_type& inv, variable_t x, variable_t new_x)
-  { inv.expand (x, new_x); }
-      
-  template <typename VarIter>
-  static void forget (this_type& inv, VarIter it, VarIter end)
-  { inv.forget (boost::make_iterator_range (it, end)); }
-  
-  template <typename VarIter>
-  static void project (this_type& inv, VarIter it, VarIter end) {
-    inv.project (boost::make_iterator_range (it, end));
-  }
 };
 
 template<typename AbsDom>

@@ -33,6 +33,7 @@ namespace crab {
       typedef CFG cfg_t;
       typedef typename CFG::basic_block_label_t basic_block_label_t;
       typedef typename CFG::varname_t varname_t;
+      typedef typename CFG::variable_t variable_t;      
       typedef typename AbsTr::abs_dom_t abs_dom_t;
       typedef AbsTr abs_tr_t;
       
@@ -66,7 +67,8 @@ namespace crab {
         auto dead = m_live->dead_exit(node);       
 
         dead -= m_formals;
-        domains::domain_traits<abs_dom_t>::forget(inv, dead.begin(), dead.end()); 
+	std::vector<variable_t> dead_vec(dead.begin(), dead.end());
+	inv.forget(dead_vec);
       }
 
       //! Given a basic block and the invariant at the entry it produces

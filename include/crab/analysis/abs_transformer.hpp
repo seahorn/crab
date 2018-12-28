@@ -42,7 +42,6 @@
 #include <crab/common/debug.hpp>
 #include <crab/common/stats.hpp>
 #include <crab/cfg/cfg.hpp>
-#include <crab/domains/domain_traits.hpp>
 #include <crab/domains/linear_constraints.hpp>
 
 namespace crab {
@@ -982,9 +981,9 @@ namespace crab {
 
       // --- remove from caller only formal parameters so we can keep
       //     as much context from the caller as possible
-      std::set<variable_t> vs;
-      boost::set_difference(formals, actuals, std::inserter(vs, vs.end()));
-      domains::domain_traits<abs_dom_t>::forget(caller, vs.begin(), vs.end());
+      std::vector<variable_t> vs;
+      boost::set_difference(formals, actuals, std::back_inserter(vs));
+      caller.forget(vs);
 
       CRAB_LOG("inter", 
                 crab::outs() << "\t\tAfter forgetting formal parameters {";
@@ -1096,7 +1095,7 @@ namespace crab {
         // --- matching formal and actual parameters
         // XXX: propagating down 	
         unsigned i=0;
-        auto inputs = summ.get_inputs();
+        const std::vector<variable_t>& inputs = summ.get_inputs();
         for (variable_t p : inputs) {
           variable_t a = cs.get_arg_name(i);
           if (!(a == p))
@@ -1105,9 +1104,7 @@ namespace crab {
         }
 
         // --- project only onto formal parameters
-        domains::domain_traits<abs_dom_t>::project(callee_ctx_inv, 
-                                                    inputs.begin(),
-                                                    inputs.end());
+	callee_ctx_inv.project(inputs);
         // --- store the callee context
         CRAB_LOG("inter", 
                   crab::outs() << "\t\tCallee context stored: " 

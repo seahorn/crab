@@ -1288,6 +1288,7 @@ namespace crab {
       using typename abstract_domain_t::disjunctive_linear_constraint_system_t;      
       //using typename abstract_domain_t::variable_t;
       typedef typename NumDom::variable_t variable_t;
+      typedef typename NumDom::variable_vector_t variable_vector_t;
       using typename abstract_domain_t::number_t;
       using typename abstract_domain_t::varname_t;
       typedef crab::pointer_constraint<variable_t> ptr_cst_t;
@@ -1855,7 +1856,7 @@ namespace crab {
         crab::CrabStats::count(getDomainName() + ".count.reduce");
         crab::ScopedCrabStats __st__(getDomainName() + ".reduce");
 
-        domain_traits<NumDom>::normalize(scalar);
+        scalar.normalize();
         g.normalize();
 
         if (scalar.is_bottom() || g.is_bottom())
@@ -2079,18 +2080,20 @@ namespace crab {
       }
 
 
-      // remove all variables except [vIt,...vEt)
-      template<typename Iterator>
-      void project(Iterator vIt, Iterator vEt) {
+      void project(const variable_vector_t& variables) {
         crab::CrabStats::count(getDomainName() + ".count.project");
         crab::ScopedCrabStats __st__(getDomainName() + ".project");
 
-        if (is_bottom()) return;
-        if (vIt == vEt) return;
+        if (is_bottom() || is_top()) {
+	  return;
+	}
+        if (variables.empty()) {
+	  return;
+	}
 
-
-        std::set<variable_t> keep_vars(vIt, vEt);
-        auto active_vars = array_sgraph_domain_traits<NumDom>::active_variables(_scalar);
+        std::set<variable_t> keep_vars(variables.begin(), variables.end());
+	std::vector<variable_t> active_vars;	
+        array_sgraph_domain_traits<NumDom>::active_variables(_scalar, active_vars);
         for (auto v: active_vars) {
           if (!keep_vars.count(v)) {
             array_forget(v);
@@ -2098,11 +2101,27 @@ namespace crab {
           }
         }
 
-        domain_traits<NumDom>::project(_scalar, vIt, vEt);
-        domain_traits<expression_domain_t>::project(_expressions, vIt, vEt);
-
+        _scalar.project(variables);
+        _expressions.project(variables);
       }
 
+      void forget(const variable_vector_t& variables) {
+	if (is_bottom() || is_top()) {
+	  return;
+	}
+	for (variable_t v: variables) {
+	  this->operator-=(v);
+	}
+      }
+
+      void expand(variable_t var, variable_t new_var) {
+        CRAB_WARN("array_graph_domain expand not implemented");	
+      }
+
+      void normalize() {
+        CRAB_WARN("array_graph_domain normalize not implemented");
+      }          
+      
       void operator+=(linear_constraint_system_t csts) 
       {
         crab::CrabStats::count(getDomainName() + ".count.add_constraints");
@@ -2483,49 +2502,28 @@ namespace crab {
     };
 
     template<typename NumDom, typename Content>
-    class domain_traits<array_sparse_graph_domain<NumDom,Content,false> > {
-
+    class domain_traits<array_sparse_graph_domain<NumDom,Content,false>> {
      public:
       
       // WARNING: assume NumDom::variable_t = Content::variable_t
       typedef typename NumDom::variable_t variable_t;
-      
       typedef array_sparse_graph_domain<NumDom,Content,false> array_sgraph_domain_t;
 
       template<class CFG>
       static void do_initialization(CFG cfg) {
         array_sgraph_domain_t::do_initialization(cfg);
-      }
-
-      static void expand(array_sgraph_domain_t& inv, variable_t x, variable_t new_x) {
-        CRAB_WARN("array_graph_domain expand not implemented");
-      }
-    
-      static void normalize(array_sgraph_domain_t& inv) {
-        CRAB_WARN("array_graph_domain normalize not implemented");
-      }
-    
-      template <typename Iter>
-      static void forget(array_sgraph_domain_t& inv, Iter it, Iter end){
-        for (auto v: boost::make_iterator_range(it,end))
-        { inv -= v; }
-      }
-
-      template <typename Iter>
-      static void project(array_sgraph_domain_t& inv, Iter it, Iter end) {
-        inv.project(it, end);
-      }
+      }    
     };
   
     // Static data allocation
     template<class Dom, class Content, bool IsDistContent>
     boost::unordered_map<landmark_ref<typename Dom::variable_t, typename Dom::number_t>, 
-                         landmark_ref<typename Dom::variable_t, typename Dom::number_t> > 
+                         landmark_ref<typename Dom::variable_t, typename Dom::number_t>> 
     array_sparse_graph_domain<Dom,Content,IsDistContent>::var_landmarks;
 
     template<class Dom, class Content, bool IsDistContent>
     boost::unordered_map<landmark_ref<typename Dom::variable_t, typename Dom::number_t>, 
-                         landmark_ref<typename Dom::variable_t, typename Dom::number_t> > 
+                         landmark_ref<typename Dom::variable_t, typename Dom::number_t>> 
     array_sparse_graph_domain<Dom,Content,IsDistContent>::cst_landmarks;
 
   } // end namespace domains

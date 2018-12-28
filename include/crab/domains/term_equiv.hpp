@@ -652,9 +652,10 @@ namespace crab {
              x_impl.assign(vt, vx);
              y_impl.assign(vt, vy);
            }
-           domain_traits<dom_t>::project(x_impl, out_varnames.begin(), out_varnames.end());
-           domain_traits<dom_t>::project(y_impl, out_varnames.begin(), out_varnames.end());
-
+	   
+	   x_impl.project(out_varnames);
+	   y_impl.project(out_varnames);
+	   
            return x_impl <= y_impl;
          }
        } 
@@ -717,10 +718,10 @@ namespace crab {
              _impl.assign(vt, vx);
              o._impl.assign(vt, vy);
            }
-           
-           domain_traits<dom_t>::project(_impl, out_varnames.begin(), out_varnames.end());
-           domain_traits<dom_t>::project(o._impl, out_varnames.begin(), out_varnames.end());
 
+	   _impl.project(out_varnames);
+	   o._impl.project(out_varnames);
+	   
            _impl |= o._impl;
            
            for(auto p : out_vmap)
@@ -804,10 +805,10 @@ namespace crab {
                               << "y = " << o._impl
                               << "ren_0(x) = " << x_impl
                               << "ren_0(y) = " <<  y_impl <<"\n");
-           
-           domain_traits<dom_t>::project(x_impl, out_varnames.begin(), out_varnames.end());
-           domain_traits<dom_t>::project(y_impl, out_varnames.begin(), out_varnames.end());
-           
+
+	   x_impl.project(out_varnames);
+	   y_impl.project(out_varnames);
+	   
            dom_t x_join_y = x_impl|y_impl;
            
            for(auto p : out_vmap)
@@ -913,9 +914,9 @@ namespace crab {
              y_impl.assign(vt, vy);
            }
 
-           domain_traits<dom_t>::project(x_impl, out_varnames.begin(), out_varnames.end());
-           domain_traits<dom_t>::project(y_impl, out_varnames.begin(), out_varnames.end());
-                      
+	   x_impl.project(out_varnames);
+	   y_impl.project(out_varnames);
+	   
            dom_t x_widen_y = widen_op.apply(x_impl, y_impl);
            
            for(auto p : out_vmap)
@@ -1116,9 +1117,9 @@ namespace crab {
              out_varnames.push_back(vt);
            }
 
-           domain_traits<dom_t>::project(x_impl, out_varnames.begin(), out_varnames.end());
-           domain_traits<dom_t>::project(y_impl, out_varnames.begin(), out_varnames.end());
-
+	   x_impl.project(out_varnames);
+	   y_impl.project(out_varnames);
+	   
            dom_t x_meet_y = x_impl & y_impl;
            term_domain_t res(palloc, out_vmap, out_rvmap, out_ttbl, out_map, x_meet_y);
 
@@ -1156,31 +1157,7 @@ namespace crab {
 	 CRAB_LOG("term",
 		  crab::outs() << "After removing " << v << ": " << *this << "\n";);
        }
-
-       // Remove a range of variables from the scope
-       template<typename Range>
-       void forget(Range vs) {
-         if (is_bottom()) return;
-         
-         for (auto v:  vs)
-           *this -= v;
-       }
-
-       // Remove all variables except vs
-       template<typename Range>
-       void project(Range vs) {
-         crab::CrabStats::count(getDomainName() + ".count.project");
-         crab::ScopedCrabStats __st__(getDomainName() + ".project");
-
-         if (is_bottom()) return;
-         
-         std::set<variable_t> s1,s2,s3;
-         for (auto p: _var_map) s1.insert(p.first);
-         s2.insert(vs.begin(), vs.end());
-         boost::set_difference(s1,s2,std::inserter(s3, s3.end()));
-         forget(s3);
-       }
-
+       
        void assign(variable_t x, linear_expression_t e) {
          crab::CrabStats::count(getDomainName() + ".count.assign");
          crab::ScopedCrabStats __st__(getDomainName() + ".assign");
@@ -1234,23 +1211,6 @@ namespace crab {
 		 crab::outs() << "RESULT=" << *this << "\n");
       }
        
-       //! copy of x into a new fresh variable y
-       void expand(variable_t x, variable_t y) {
-         crab::CrabStats::count(getDomainName() + ".count.expand");
-         crab::ScopedCrabStats __st__(getDomainName() + ".expand");
-
-         if (is_bottom()) {
-           return;
-         }
-         else {
-           linear_expression_t e(x);
-           term_id_t tx(build_linexpr(e));
-           rebind_var(y, tx);
-
-           check_terms(__LINE__);
-         }
-       }
-
        // extract operation is used during reduction with other domains.       
        void extract(const variable_t& x, linear_constraint_system_t& csts,
 		    bool only_equalities /*unused*/) {
@@ -1403,7 +1363,7 @@ namespace crab {
 
                rebind_var(v, t_new);
              }
-             domain_traits<dom_t>::project(x_impl, out_varnames.begin(), out_varnames.end());
+	     x_impl.project(out_varnames);
              std::swap(_impl, x_impl);
            }
          }
@@ -1644,7 +1604,44 @@ namespace crab {
                                << ":" << *this << "\n");
          return;
        }
-    
+
+       void forget(const variable_vector_t& variables) {
+         if (is_bottom() || is_top()) return;
+         
+         for (auto v:  variables) {
+           *this -= v;
+	 }
+       }
+
+       void project(const variable_vector_t& variables) {
+         crab::CrabStats::count(getDomainName() + ".count.project");
+         crab::ScopedCrabStats __st__(getDomainName() + ".project");
+
+         if (is_bottom() || is_top()) return;
+         
+         std::set<variable_t> s1,s2;
+	 variable_vector_t s3;
+         for (auto p: _var_map) s1.insert(p.first);
+         s2.insert(variables.begin(), variables.end());
+         boost::set_difference(s1,s2,std::back_inserter(s3));
+         forget(s3);
+       }
+
+       void expand(variable_t x, variable_t y) {
+         crab::CrabStats::count(getDomainName() + ".count.expand");
+         crab::ScopedCrabStats __st__(getDomainName() + ".expand");
+
+         if (is_bottom() || is_top()) {
+           return;
+         }
+	 
+	 linear_expression_t e(x);
+	 term_id_t tx(build_linexpr(e));
+	 rebind_var(y, tx);
+	 
+	 check_terms(__LINE__);
+       }
+       
        /// XXX: should be part of array_sgraph_domain_traits
        /// Simplify the term associated with x by given the standard
        /// arithmetic meaning to the functors
@@ -2010,32 +2007,11 @@ namespace crab {
 
 
    template<typename Info>
-   class domain_traits <term_domain<Info> > {
+   class domain_traits<term_domain<Info>> {
     public:
-
      typedef term_domain<Info> term_domain_t;
-     typedef typename Info::variable_t variable_t;
-
      template<class CFG>
      static void do_initialization(CFG cfg) { }
-
-     static void normalize(term_domain_t& inv) {
-       inv.normalize();
-     }
-     
-     template <typename Iter>
-     static void forget(term_domain_t& inv, Iter it, Iter end) {
-       inv.forget(boost::make_iterator_range(it, end));
-     }
-     
-     template <typename Iter>
-     static void project(term_domain_t& inv, Iter it, Iter end) {
-       inv.project(boost::make_iterator_range(it, end));
-     }
- 
-     static void expand(term_domain_t& inv, variable_t x, variable_t new_x) {
-       inv.expand(x, new_x);
-     }
    };
 
    template<typename Info>    
@@ -2046,8 +2022,9 @@ namespace crab {
      typedef typename term_domain_t::linear_constraint_system_t linear_constraint_system_t;
      
      static void extract(term_domain_t& dom, const variable_t& x,
-			 linear_constraint_system_t& csts, bool only_equalities)
-     { dom.extract(x, csts, only_equalities); }
+			 linear_constraint_system_t& csts, bool only_equalities) {
+       dom.extract(x, csts, only_equalities);
+     }
    };
 
   }// namespace domains

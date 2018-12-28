@@ -29,7 +29,7 @@ namespace crab {
    namespace domains {
       template<typename Number, typename VariableName, elina_domain_id_t ElinaDom>
       class elina_domain: 
-	public abstract_domain<Number,VariableName,elina_domain<Number,VariableName,ElinaDom> > {
+	public abstract_domain<Number,VariableName,elina_domain<Number,VariableName,ElinaDom>> {
               
        public:
         typedef elina_domain<Number, VariableName, ElinaDom> elina_domain_t;
@@ -39,6 +39,7 @@ namespace crab {
         using typename abstract_domain_t::linear_constraint_system_t;
 	using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
         using typename abstract_domain_t::variable_t;
+	using typename abstract_domain_t::variable_vector_t;	
         using typename abstract_domain_t::number_t;
         using typename abstract_domain_t::varname_t;
         typedef interval <Number> interval_t;
@@ -125,6 +126,18 @@ namespace crab {
 
         disjunctive_linear_constraint_system_t to_disjunctive_linear_constraint_system()
         { CRAB_ERROR(ELINA_NOT_FOUND); }
+
+	void forget(const variable_vector_t& variables)
+	{ CRAB_ERROR(ELINA_NOT_FOUND); }
+
+	void project(const variable_vector_t& variables)
+	{ CRAB_ERROR(ELINA_NOT_FOUND); }
+
+	void expand(variable_t var, variable_t new_var)
+	{ CRAB_ERROR(ELINA_NOT_FOUND); }
+
+	void normalize()
+	{ CRAB_ERROR(ELINA_NOT_FOUND); }
 	
         void write(crab_os& o) 
         { CRAB_ERROR(ELINA_NOT_FOUND); }
@@ -165,9 +178,9 @@ namespace domains {
     using typename abstract_domain_t::linear_constraint_system_t;
     using typename abstract_domain_t::disjunctive_linear_constraint_system_t;    
     using typename abstract_domain_t::variable_t;
+    using typename abstract_domain_t::variable_vector_t;	
     using typename abstract_domain_t::number_t;
     using typename abstract_domain_t::varname_t;
-    using typename abstract_domain_t::variable_vector_t;	
     typedef interval <Number> interval_t;
     
   private:
@@ -1114,8 +1127,8 @@ namespace domains {
 	switch (ElinaDom) {
 	case ELINA_OCT:
 	  return elina_domain_t(elinaPtr(get_man(), 
-				      elina_abstract0_opt_oct_narrowing(get_man(),
-									&*x, &*o.m_apstate)), m);
+				   elina_abstract0_opt_oct_narrowing(get_man(),
+								     &*x, &*o.m_apstate)), m);
 	case ELINA_ZONES:  
 	case ELINA_PK:
 	default:
@@ -1127,9 +1140,21 @@ namespace domains {
 	}
       }
     }        
+
+    void project(const variable_vector_t& vars) {
+      crab::CrabStats::count(getDomainName() + ".count.project");
+      crab::ScopedCrabStats __st__(getDomainName() + ".project");
+      
+      if (is_bottom() || is_top()) return;
+      std::set<variable_t> s1,s2;
+      variable_vector_t s3;
+      for (auto p: m_var_map.left) s1.insert(p.first);
+      s2.insert(vars.begin(), vars.end());
+      boost::set_difference(s1,s2,std::back_inserter(s3));
+      forget(s3);
+    }
     
-    template<typename Range>
-    void forget(const Range &vars) {
+    void forget(const variable_vector_t& vars) {
       crab::CrabStats::count(getDomainName() + ".count.forget");
       crab::ScopedCrabStats __st__(getDomainName() + ".forget");
 
@@ -1138,7 +1163,7 @@ namespace domains {
       std::vector<elina_dim_t> vector_dims;
       std::set<elina_dim_t> set_dims;
       
-      for (auto v: vars)  {
+      for (variable_t v: vars)  {
 	if (auto dim = get_var_dim(v)) {
 	  vector_dims.push_back(*dim);
 	  set_dims.insert(*dim);
@@ -1169,7 +1194,7 @@ namespace domains {
       std::swap(m_var_map, res);
       CRAB_LOG("elina", 
 	       crab::outs() << "--- " << "Forget {";
-	       for(auto v: vars) {
+	       for(variable_t v: vars) {
 		 crab::outs() << v <<";";
 	       }
 	       // crab::outs()<< "} Elina dimensions ={";
@@ -1191,11 +1216,11 @@ namespace domains {
       if (auto dim = get_var_dim(var)) {
 	vector_dims.push_back(*dim);
 	m_apstate = elinaPtr(get_man(), 
-			      elina_abstract0_forget_array(get_man(), 
-							    false, 
-							    &*m_apstate, 
-							    &vector_dims[0], vector_dims.size(), 
-							    false));
+			     elina_abstract0_forget_array(get_man(), 
+							  false, 
+							  &*m_apstate, 
+							  &vector_dims[0], vector_dims.size(), 
+							  false));
 	// -- Remove forgotten dimensions while compacting
 	var_map_t res;
 	/// XXX: we must iterate on the dimension id's to preserve
@@ -1216,21 +1241,7 @@ namespace domains {
       } 
 	       
     }
-    
-    // remove all variables except vars
-    template<typename Range>
-    void project(const Range& vars) {
-      crab::CrabStats::count(getDomainName() + ".count.project");
-      crab::ScopedCrabStats __st__(getDomainName() + ".project");
-      
-      if (is_bottom()) return;
-      std::set<variable_t> s1,s2,s3;
-      for (auto p: m_var_map.left) s1.insert(p.first);
-      s2.insert(vars.begin(), vars.end());
-      boost::set_difference(s1,s2,std::inserter(s3, s3.end()));
-      forget(s3);
-    }
-    
+        
     interval_t operator[](variable_t v) {
       crab::CrabStats::count(getDomainName() + ".count.to_intervals");
       crab::ScopedCrabStats __st__(getDomainName() + ".to_intervals");
@@ -1464,7 +1475,7 @@ namespace domains {
       } else {
 	// Convert to intervals and perform the operation
 	interval_t yi = operator[](y);
-	interval_t zi(k);
+	interval_t zi(z);
 	interval_t xi = interval_t::top();
 	switch (op) {
 	  case OP_UDIV:
@@ -1920,10 +1931,7 @@ namespace domains {
     void set(variable_t x, interval_t intv) {
       detach(); ref().set(x, intv);
     }
-    
-    template<typename Range>
-    void forget(Range vs) { detach(); ref().forget(vs); }
-    
+        
     void assign(variable_t x, linear_expression_t e) {
       detach(); ref().assign(x, e);
     }
@@ -1956,6 +1964,15 @@ namespace domains {
 			elina_domain_t invariant) {
       detach(); ref().backward_apply(op, x, y, z, invariant.ref());
     }	
+
+    void forget(const variable_vector_t& vs) {
+      detach(); ref().forget(vs);
+    }
+    
+    void project(const variable_vector_t& vs) {
+      detach(); ref().project(vs);
+    }
+
     void expand(variable_t x, variable_t y) {
       detach(); ref().expand(x, y);
     }
@@ -1963,8 +1980,6 @@ namespace domains {
     void rename(const variable_vector_t &from, const variable_vector_t &to)
     { detach(); ref().rename(from, to); }
     
-    template<typename Range>
-    void project(Range vs) { detach(); ref().project(vs); }
     
     template <typename NumDomain>
     void push(const variable_t& x, NumDomain&inv){
@@ -1987,30 +2002,9 @@ namespace domains {
   template<typename Number, typename VariableName, elina_domain_id_t ElinaDom>
   class domain_traits <elina_domain<Number, VariableName, ElinaDom> > {
   public:
-    
     typedef elina_domain<Number, VariableName, ElinaDom> elina_domain_t;
-    typedef ikos::variable<Number, VariableName> variable_t;
-    
     template<class CFG>
     static void do_initialization(CFG cfg) { }
-    
-    static void normalize(elina_domain_t& inv) { 
-      inv.normalize();
-    }
-    
-    template <typename Iter>
-    static void forget(elina_domain_t& inv, Iter it, Iter end) {
-      inv.forget(boost::make_iterator_range(it, end));
-    }
-    
-    template <typename Iter >
-    static void project(elina_domain_t& inv, Iter it, Iter end) {
-      inv.project(boost::make_iterator_range(it, end));
-    }
-    
-    static void expand(elina_domain_t& inv, variable_t x, variable_t new_x) {
-      inv.expand(x, new_x);
-    }		
   };
      
   // --- global datastructures

@@ -40,7 +40,8 @@ namespace crab {
         using typename abstract_domain_t::variable_t;
         using typename abstract_domain_t::number_t;
         using typename abstract_domain_t::varname_t;
-        typedef interval <Number> interval_t;
+	using typename abstract_domain_t::variable_vector_t;
+        typedef interval<number_t> interval_t;
 
         apron_domain() {}    
 
@@ -127,6 +128,18 @@ namespace crab {
 
         disjunctive_linear_constraint_system_t to_disjunctive_linear_constraint_system()
         { CRAB_ERROR(APRON_NOT_FOUND); }
+
+	void forget(const variable_vector_t& variables)
+	{ CRAB_ERROR(APRON_NOT_FOUND); }
+
+	void project(const variable_vector_t& variables)
+	{ CRAB_ERROR(APRON_NOT_FOUND); }
+
+	void expand(variable_t var, variable_t new_var)
+	{ CRAB_ERROR(APRON_NOT_FOUND); }
+
+	void normalize()
+	{ CRAB_ERROR(APRON_NOT_FOUND); }
 	
         void write(crab_os& o) 
         { CRAB_ERROR(APRON_NOT_FOUND); }
@@ -914,15 +927,14 @@ namespace crab {
           }
         }        
 
-        template<typename Range>
-        void forget(const Range &vars) {
+        void forget(const variable_vector_t& vars) {
           crab::CrabStats::count(getDomainName() + ".count.forget");
           crab::ScopedCrabStats __st__(getDomainName() + ".forget");
 
           std::vector<ap_dim_t> vector_dims;
           std::set<ap_dim_t> set_dims;
 
-          for (auto v: vars)  {
+          for (variable_t v: vars)  {
             if (auto dim = get_var_dim(v)) {
               vector_dims.push_back(*dim);
               set_dims.insert(*dim);
@@ -979,16 +991,16 @@ namespace crab {
         }
 
         // remove all variables except vars
-        template<typename Range>
-        void project(const Range& vars) {
+        void project(const variable_vector_t& vars) {
           crab::CrabStats::count(getDomainName() + ".count.project");
           crab::ScopedCrabStats __st__(getDomainName() + ".project");
 
           if (is_bottom()) return;
-          std::set<variable_t> s1,s2,s3;
+          std::set<variable_t> s1,s2;
+	  variable_vector_t s3;
           for (auto p: m_var_map.left) s1.insert(p.first);
           s2.insert(vars.begin(), vars.end());
-          boost::set_difference(s1,s2,std::inserter(s3, s3.end()));
+          boost::set_difference(s1,s2,std::back_inserter(s3));
           forget(s3);
         }
 
@@ -1685,8 +1697,17 @@ namespace crab {
 	  detach(); ref().set(x, intv);
 	}
         
-        template<typename Range>
-        void forget(Range vs) { detach(); ref().forget(vs); }
+        void forget(const variable_vector_t& vs) {
+	  detach(); ref().forget(vs);
+	}
+	
+        void project(const variable_vector_t& vs) {
+	  detach(); ref().project(vs);
+	}
+
+        void expand(variable_t x, variable_t y) {
+	  detach(); ref().expand(x, y);
+	}
 	
         void assign(variable_t x, linear_expression_t e) {
 	  detach(); ref().assign(x, e);
@@ -1724,15 +1745,10 @@ namespace crab {
 			    apron_domain_t invariant) {
           detach(); ref().backward_apply(op, x, y, z, invariant.ref());
         }	
-        void expand(variable_t x, variable_t y) {
-	  detach(); ref().expand(x, y);
-	}
 
 	void rename(const variable_vector_t &from, const variable_vector_t &to)
 	{ detach(); ref().rename(from, to); }
 	
-        template<typename Range>
-        void project(Range vs) { detach(); ref().project(vs); }
         
         template <typename NumDomain>
         void push(const variable_t& x, NumDomain&inv){
@@ -1757,32 +1773,12 @@ namespace crab {
 
       // -- domain traits
       template<typename Number, typename VariableName, apron_domain_id_t ApronDom>
-      class domain_traits <apron_domain<Number, VariableName, ApronDom> > {
+      class domain_traits<apron_domain<Number, VariableName, ApronDom>> {
        public:
-        
         typedef apron_domain<Number, VariableName, ApronDom> apron_domain_t;
-        typedef ikos::variable<Number, VariableName> variable_t;
 	
         template<class CFG>
         static void do_initialization(CFG cfg) { }
-
-        static void normalize(apron_domain_t& inv) { 
-          inv.normalize();
-        }
-        
-        template <typename Iter>
-        static void forget(apron_domain_t& inv, Iter it, Iter end) {
-          inv.forget(boost::make_iterator_range(it, end));
-        }
-        
-        template <typename Iter >
-        static void project(apron_domain_t& inv, Iter it, Iter end) {
-          inv.project(boost::make_iterator_range(it, end));
-        }
-        
-        static void expand(apron_domain_t& inv, variable_t x, variable_t new_x) {
-          inv.expand(x, new_x);
-        }		
       };
      
       // --- global datastructures

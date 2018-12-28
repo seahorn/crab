@@ -118,7 +118,7 @@ namespace crab {
   template <typename Number, typename VariableName>
   class nullity_domain :
       public abstract_domain<Number, VariableName,
-			     nullity_domain<Number,VariableName> > {
+			     nullity_domain<Number,VariableName>> {
     
     typedef nullity_domain<Number, VariableName> nullity_domain_t;
     // lin_exp_t == linear_expression_t
@@ -127,9 +127,12 @@ namespace crab {
 
    public:
 
+    typedef abstract_domain<Number, VariableName,
+			    nullity_domain<Number,VariableName>> abstract_domain_t;
     typedef VariableName varname_t;
     typedef Number number_t;
     typedef ikos::variable<number_t,varname_t> variable_t;
+    using typename abstract_domain_t::variable_vector_t;      
 
    private:
     
@@ -193,30 +196,31 @@ namespace crab {
     
     nullity_domain_t operator|(nullity_domain_t o) {
       nullity_domain_t res (_env | o._env);
-
-      CRAB_LOG("nullity", crab::outs () << "After join " << *this << " and " << o << "=" << res << "\n";);
+      CRAB_LOG("nullity",
+	       crab::outs () << "After join " << *this << " and " << o << "=" << res << "\n";);
       return res;
     }
 
     void operator|=(nullity_domain_t o) {
-      CRAB_LOG("nullity", crab::outs () << "After join " << *this << " and " << o << "=");
-
+      CRAB_LOG("nullity",
+	       crab::outs () << "After join " << *this << " and " << o << "=");
       _env = _env  | o._env;
-
       CRAB_LOG("nullity", crab::outs () << *this << "\n");
     }
 
     nullity_domain_t operator&(nullity_domain_t o) {
       nullity_domain_t res (_env & o._env);
-      
-      CRAB_LOG("nullity", crab::outs () << "After meet " << *this << " and " << o << "=" << res << "\n");
+      CRAB_LOG("nullity",
+	       crab::outs () << "After meet " << *this << " and " << o << "=" << res << "\n");
       return res;
     }
     
     nullity_domain_t operator||(nullity_domain_t o) {
       nullity_domain_t res (_env || o._env);
 
-      CRAB_LOG("nullity", crab::outs () << "After widening " << *this << " and " << o << "=" << res << "\n");
+      CRAB_LOG("nullity",
+	       crab::outs () << "After widening " << *this << " and " << o << "="
+	                     << res << "\n");
       return res;
     }
 
@@ -224,7 +228,9 @@ namespace crab {
     nullity_domain_t widening_thresholds (nullity_domain_t o, const Thresholds &) {
       nullity_domain_t res (_env || o._env);
 
-      CRAB_LOG("nullity", crab::outs () << "After widening " << *this << " and " << o << "=" << res << "\n");
+      CRAB_LOG("nullity",
+	       crab::outs () << "After widening " << *this << " and " << o << "="
+	                     << res << "\n");
       return res;
     }
     
@@ -241,7 +247,8 @@ namespace crab {
       if (!is_bottom())
         _env.set (x, _env[y]);
 
-      CRAB_LOG("nullity", crab::outs () << "After " << x << ":="  << y << "=" << *this <<"\n");
+      CRAB_LOG("nullity",
+	       crab::outs () << "After " << x << ":="  << y << "=" << *this <<"\n");
     }
     
     nullity_value get_nullity(variable_t v) { 
@@ -322,42 +329,41 @@ namespace crab {
     void apply(bitwise_operation_t op, variable_t x, variable_t y, Number z) {}
 
     // pointer_operators_api 
-    virtual void pointer_load (variable_t /*lhs*/, variable_t rhs) override {
+    void pointer_load (variable_t /*lhs*/, variable_t rhs) {
       // XXX: assume after the load the rhs must be non-null otherwise
       // the program failed.
       equality (rhs, nullity_value::non_null ());
     }
 
-    virtual void pointer_store (variable_t lhs, variable_t /*rhs*/) override {
+    void pointer_store (variable_t lhs, variable_t /*rhs*/) {
       // XXX: assume after the store the lhs must be non-null
       // otherwise the program failed.
       equality (lhs, nullity_value::non_null ());
     } 
 
-    virtual void pointer_assign (variable_t lhs, variable_t rhs,
-				 lin_exp_t /*offset*/) override {
+    void pointer_assign (variable_t lhs, variable_t rhs, lin_exp_t /*offset*/) {
       set_nullity (lhs, rhs);
       CRAB_LOG("nullity",
 	       crab::outs () << "After " << lhs << ":=" << rhs << "=" << *this << "\n");
     }
 
-    virtual void pointer_mk_obj (variable_t lhs, ikos::index_t /*address*/) override {
+    void pointer_mk_obj (variable_t lhs, ikos::index_t /*address*/) {
       set_nullity (lhs, nullity_value::non_null ());
       CRAB_LOG("nullity",
 	       crab::outs () << "After " << lhs << ":= mk_object()" << "=" << *this << "\n");
     }
 
-    virtual void pointer_function (variable_t lhs, VariableName /*func*/) override {
+    void pointer_function (variable_t lhs, VariableName /*func*/) {
       set_nullity (lhs, nullity_value::non_null ());
     }
     
-    virtual void pointer_mk_null (variable_t lhs) override {
+    void pointer_mk_null (variable_t lhs) {
       set_nullity (lhs, nullity_value::null ());
       CRAB_LOG("nullity",
 	       crab::outs () << "After " << lhs << ":= NULL" << "=" << *this << "\n");
     }
     
-    virtual void pointer_assume (ptr_cst_t cst) override {
+    void pointer_assume (ptr_cst_t cst) {
       if (cst.is_tautology ()) return;
       
       if (cst.is_contradiction ()) {
@@ -379,10 +385,47 @@ namespace crab {
       }
     }
     
-    virtual void pointer_assert (ptr_cst_t cst) override {
+    void pointer_assert (ptr_cst_t cst) {
       CRAB_WARN ("nullity pointer_assert not implemented");
     }
 
+    void forget (const variable_vector_t& variables) {
+      if (is_bottom() || is_top()) {
+	return;
+      }
+      for (variable_t var: variables){
+	this->operator-=(var); 
+      }
+    }
+    
+    void project(const variable_vector_t& variables){
+      crab::CrabStats::count(getDomainName() + ".count.project");
+      crab::ScopedCrabStats __st__(getDomainName() + ".project");
+      
+      if (is_bottom() || is_top()) {
+	return;
+      }
+
+       nullity_domain_t res;
+       for (variable_t v : variables) {
+         res.set_nullity (v, get_nullity(v));
+       }
+       std::swap (*this, res);
+    }
+    
+    void expand(variable_t x, variable_t new_x) {
+      crab::CrabStats::count(getDomainName() + ".count.expand");
+      crab::ScopedCrabStats __st__(getDomainName() + ".expand");
+      
+      if (is_bottom() || is_top()) {
+	return;
+      }
+
+      set_nullity (new_x , get_nullity (x));      
+    }
+
+    void normalize() {}
+    
     linear_constraint_system_t to_linear_constraint_system() {
       if (is_bottom())
 	return linear_constraint_t::get_false();
@@ -415,40 +458,10 @@ namespace crab {
 
    template <typename Number, typename VariableName>
    class domain_traits <nullity_domain<Number,VariableName> > {
-
      typedef nullity_domain<Number,VariableName> nullity_domain_t;
-     
     public:
-
-     typedef typename nullity_domain_t::variable_t variable_t;
-     
      template<class CFG>
      static void do_initialization (CFG cfg) { }
-
-     // Normalize the abstract domain if such notion exists.
-     static void normalize (nullity_domain_t& inv) { }
-
-     // Remove all variables [begin, end)
-     template<typename Iter>
-     static void forget (nullity_domain_t& inv, Iter begin, Iter end) {
-       for (auto v : boost::make_iterator_range (begin,end)){
-         inv -= v; 
-       }
-     }
-
-     // Forget all variables except [begin, end)
-     template <typename Iter>
-     static void project(nullity_domain_t& inv, Iter begin, Iter end){
-       nullity_domain_t res = nullity_domain_t::top ();
-       for (auto v : boost::make_iterator_range (begin, end))
-         res.set_nullity (v, inv.get_nullity(v)); 
-       std::swap (inv, res);
-     }
-         
-     // Make a new copy of x without relating x with new_x
-     static void expand (nullity_domain_t& inv, variable_t x, variable_t new_x) {
-       inv.set_nullity (new_x , inv.get_nullity (x));
-     }
 
    };
  

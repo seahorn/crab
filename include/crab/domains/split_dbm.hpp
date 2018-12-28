@@ -1669,18 +1669,6 @@ namespace crab {
         }
       }
 
-      template<typename Iterator>
-      void forget (Iterator vIt, Iterator vEt) {
-        if (is_bottom ())
-          return;
-        for (auto v: boost::make_iterator_range (vIt,vEt)) {
-          auto it = vert_map.find (v);
-          if (it != vert_map.end ()) {
-            operator-=(v);
-          }
-        }
-      }
-
       void assign(variable_t x, linear_expression_t e) {
         crab::CrabStats::count (getDomainName() + ".count.assign");
         crab::ScopedCrabStats __st__(getDomainName() + ".assign");
@@ -2134,14 +2122,58 @@ namespace crab {
         }
         set(x, xi);
       }
-    
-      //! copy of x into a new fresh variable y
+
+      void project(const variable_vector_t& variables) {
+        crab::CrabStats::count (getDomainName() + ".count.project");
+        crab::ScopedCrabStats __st__(getDomainName() + ".project");
+
+        if (is_bottom() || is_top()) {
+          return;
+	}
+        if (variables.empty()) {
+          return;
+	}
+
+        normalize();
+
+        std::vector<bool> save(rev_map.size(), false);
+        for(auto x : variables) {
+          auto it = vert_map.find(x);
+          if(it != vert_map.end())
+            save[(*it).second] = true;
+        }
+
+        for(vert_id v = 0; v < rev_map.size(); v++) {
+          if(!save[v] && rev_map[v]) {
+            operator-=((*rev_map[v]));
+	  }
+        }
+      }
+
+      
+      void forget(const variable_vector_t& variables) {
+        crab::CrabStats::count (getDomainName() + ".count.forget");
+        crab::ScopedCrabStats __st__(getDomainName() + ".forget");
+	
+        if (is_bottom () || is_top()) {
+          return;
+	}
+	
+        for (auto v: variables) {
+          auto it = vert_map.find (v);
+          if (it != vert_map.end ()) {
+            operator-=(v);
+          }
+        }
+      }
+      
       void expand (variable_t x, variable_t y) {
         crab::CrabStats::count (getDomainName() + ".count.expand");
         crab::ScopedCrabStats __st__(getDomainName() + ".expand");
 
-        if(is_bottom()) 
+        if(is_bottom() || is_top()) {
           return;
+	}
         
         CRAB_LOG ("zones-split",
                   crab::outs() << "Before expand " << x << " into " << y << ":\n"
@@ -2155,45 +2187,19 @@ namespace crab {
         vert_id ii = get_vert(x);
         vert_id jj = get_vert(y);
 
-        for (auto edge : g.e_preds(ii))  
+        for (auto edge : g.e_preds(ii)) {   
           g.add_edge (edge.vert, edge.val, jj);
+	}
         
-        for (auto edge : g.e_succs(ii))  
+        for (auto edge : g.e_succs(ii)) {  
           g.add_edge (jj, edge.val, edge.vert);
+	}
 
 	potential[jj] = potential[ii];
 	
         CRAB_LOG ("zones-split",
                   crab::outs() << "After expand " << x << " into " << y << ":\n"
 		               << *this <<"\n");
-      }
-
-      // dual of forget: remove all variables except [vIt,...vEt)
-      template<typename Iterator>
-      void project (Iterator vIt, Iterator vEt) {
-        crab::CrabStats::count (getDomainName() + ".count.project");
-        crab::ScopedCrabStats __st__(getDomainName() + ".project");
-
-        if (is_bottom ())
-          return;
-        if (vIt == vEt) 
-          return;
-
-        normalize();
-
-        std::vector<bool> save(rev_map.size(), false);
-        for(auto x : boost::make_iterator_range(vIt, vEt))
-        {
-          auto it = vert_map.find(x);
-          if(it != vert_map.end())
-            save[(*it).second] = true;
-        }
-
-        for(vert_id v = 0; v < rev_map.size(); v++)
-	{
-          if(!save[v] && rev_map[v])
-            operator-=((*rev_map[v]));
-        }
       }
 
       void rename(const variable_vector_t &from, const variable_vector_t &to) {
@@ -2587,8 +2593,6 @@ namespace crab {
       interval_t operator[](variable_t x) { return norm()[x]; }
       void set(variable_t x, interval_t intv) { lock(); norm().set(x, intv); }
 
-      template<typename Iterator>
-      void forget (Iterator vIt, Iterator vEt) { lock(); norm().forget(vIt, vEt); }
       void assign(variable_t x, linear_expression_t e) { lock(); norm().assign(x, e); }
       void apply(operation_t op, variable_t x, variable_t y, Number k) {
         lock(); norm().apply(op, x, y, k);
@@ -2616,17 +2620,22 @@ namespace crab {
       void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {
         lock(); norm().apply(op, x, y, z);
       }
-      void expand (variable_t x, variable_t y) { lock(); norm().expand(x, y); }
-
-      template<typename Iterator>
-      void project (Iterator vIt, Iterator vEt) { lock(); norm().project(vIt, vEt); }
-
-      void rename(const variable_vector_t &from, const variable_vector_t &to)
-      { lock(); norm().rename(from, to); }
-      
+      void expand(variable_t x, variable_t y) {
+	lock(); norm().expand(x, y);
+      }
+      void forget(const variable_vector_t& vars) {
+	lock(); norm().forget(vars);
+      }
+      void project(const variable_vector_t& vars) {
+	lock(); norm().project(vars);
+      }
+      void rename(const variable_vector_t &from, const variable_vector_t &to) {
+	lock(); norm().rename(from, to);
+      }
       void extract(const variable_t& x, linear_constraint_system_t& csts,
-		   bool only_equalities)
-      { lock(); norm().extract(x, csts, only_equalities); }
+		   bool only_equalities) {
+	lock(); norm().extract(x, csts, only_equalities);
+      }
 
       void write(crab_os& o) { norm().write(o); }
 
@@ -2653,30 +2662,9 @@ namespace crab {
     template<typename Number, typename VariableName, typename SplitDBMParams>
     class domain_traits <SplitDBM<Number,VariableName,SplitDBMParams>> {
      public:
-
       typedef SplitDBM<Number,VariableName,SplitDBMParams> sdbm_domain_t;
-      typedef ikos::variable<Number, VariableName> variable_t;
-      
       template<class CFG>
       static void do_initialization (CFG cfg) { }
-
-      static void expand (sdbm_domain_t& inv, variable_t x, variable_t new_x) {
-        inv.expand (x, new_x);
-      }
-    
-      static void normalize (sdbm_domain_t& inv) {
-        inv.normalize();
-      }
-    
-      template <typename Iter>
-      static void forget (sdbm_domain_t& inv, Iter it, Iter end){
-        inv.forget (it, end);
-      }
-
-      template <typename Iter>
-      static void project (sdbm_domain_t& inv, Iter it, Iter end) {
-        inv.project (it, end);
-      }
     };
 
 
@@ -2688,8 +2676,9 @@ namespace crab {
       typedef typename sdbm_domain_t::linear_constraint_system_t linear_constraint_system_t;
       
       static void extract(sdbm_domain_t& dom, const variable_t& x,
-			  linear_constraint_system_t& csts, bool only_equalities)
-      { dom.extract(x, csts, only_equalities); }
+			  linear_constraint_system_t& csts, bool only_equalities) {
+	dom.extract(x, csts, only_equalities);
+      }
     };
   
     template<typename Number, typename VariableName, typename SplitDBMParams>
@@ -2698,11 +2687,13 @@ namespace crab {
       typedef typename sdbm_domain_t::linear_constraint_t linear_constraint_t;
       typedef ikos::variable<Number, VariableName> variable_t;
       
-      static bool is_unsat(sdbm_domain_t &inv, linear_constraint_t cst) 
-      { return inv.is_unsat(cst); }
+      static bool is_unsat(sdbm_domain_t &inv, linear_constraint_t cst) { 
+	return inv.is_unsat(cst);
+      }
       
-      static void active_variables(sdbm_domain_t &inv, std::vector<variable_t>& out) 
-      { inv.active_variables(out); }
+      static void active_variables(sdbm_domain_t &inv, std::vector<variable_t>& out) {
+	inv.active_variables(out);
+      }
     };
   
   } // namespace domains

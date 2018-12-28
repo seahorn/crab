@@ -41,19 +41,32 @@ namespace crab {
       typedef V varname_t;
       typedef std::vector<variable_t> variable_vector_t;
             
-      abstract_domain (): ikos::writeable() {}
+      abstract_domain(): ikos::writeable() {}
+      
       virtual ~abstract_domain() {};
 
-      // other operations
       virtual linear_constraint_system_t to_linear_constraint_system() = 0;
-      virtual disjunctive_linear_constraint_system_t to_disjunctive_linear_constraint_system() = 0;
+      
+      virtual disjunctive_linear_constraint_system_t
+      to_disjunctive_linear_constraint_system() = 0;
+      
       virtual void rename(const variable_vector_t &from, const variable_vector_t &to) {
 	// If you see this error message then implement this operation
 	// in the corresponding abstract domain.	
 	CRAB_ERROR("rename operation not implemented");
       }
 
-      // TODO: move here all operations from domain_traits.hpp
+      // Normalize the abstract domain if such notion exists.
+      virtual void normalize() { }
+      
+      // Forget variables form the abstract domain
+      virtual void forget(const variable_vector_t& variables) = 0;
+
+      // Project the abstract domain onto variables (dual to forget)
+      virtual void project(const variable_vector_t& variables) = 0;
+
+      // Make a new copy of var without relating var with new_var
+      virtual void expand(variable_t var, variable_t new_var) = 0;            
       
     };
     

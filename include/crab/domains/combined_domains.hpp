@@ -520,6 +520,26 @@ namespace crab {
 	this->_product.second().backward_apply_binary_bool(op, x, y, z, inv.second());
 	this->reduce();
       }
+
+      virtual void forget(const variable_vector_t& variables) {
+	this->_product.first().forget(variables);
+	this->_product.second().forget(variables);
+      }
+      
+      virtual void project(const variable_vector_t& variables) {
+	this->_product.first().project(variables);
+	this->_product.second().project(variables);	
+      }
+      
+      virtual void expand(variable_t var, variable_t new_var) {
+	this->_product.first().expand(var, new_var);
+	this->_product.second().expand(var, new_var);		
+      }
+
+      virtual void normalize() {
+	this->_product.first().normalize();
+	this->_product.second().normalize();		
+      }
       
       virtual linear_constraint_system_t to_linear_constraint_system() {
 	linear_constraint_system_t csts;
@@ -942,34 +962,21 @@ namespace crab {
         this->_product.rename(from, to);
       }    
       
-      // domain_traits_api
-      
-      void expand(variable_t x, variable_t new_x) {
-        crab::domains::domain_traits<Domain1>::expand (this->_product.first(), 
-                                                       x, new_x);
-        crab::domains::domain_traits<Domain2>::expand (this->_product.second(), 
-                                                       x, new_x);
+
+      void forget(const variable_vector_t& variables) {
+	this->_product.forget(variables);
       }
       
+      void project(const variable_vector_t& variables) {
+	this->_product.project(variables);	
+      }
+      
+      void expand(variable_t var, variable_t new_var) {
+	this->_product.expand(var, new_var);
+      }
+
       void normalize() {
-        crab::domains::domain_traits<Domain1>::normalize(this->_product.first());
-        crab::domains::domain_traits<Domain2>::normalize(this->_product.second());
-      }
-      
-      template <typename Range>
-      void forget(Range vars){
-        crab::domains::domain_traits<Domain1>::forget(this->_product.first(), 
-                                                      vars.begin (), vars.end());
-        crab::domains::domain_traits<Domain2>::forget(this->_product.second(), 
-                                                      vars.begin (), vars.end());
-      }
-      
-      template <typename Range>
-      void project(Range vars) {
-        crab::domains::domain_traits<Domain1>::project(this->_product.first(), 
-                                                       vars.begin(), vars.end());
-        crab::domains::domain_traits<Domain2>::project(this->_product.second(), 
-                                                       vars.begin(), vars.end());
+	this->_product.normalize();
       }
       
       void write(crab_os& o) { 
@@ -1488,7 +1495,19 @@ namespace crab {
         this->_product.apply(op, x, y, k);
         this->reduce_variable(x);
       }
-            
+
+      void forget(const variable_vector_t& variables) {
+	this->_product.forget(variables);
+      }
+      
+      void project(const variable_vector_t& variables) {
+	this->_product.project(variables);	
+      }
+      
+      void expand(variable_t var, variable_t new_var) {
+	this->_product.expand(var, new_var);
+      }
+      
       void write(crab_os& o) { 
         this->_product.write(o); 
        }
@@ -1762,96 +1781,39 @@ namespace crab {
 		   const variable_vector_t& to)  {
         this->_product.rename(from, to);
       }    
+
+      void forget(const variable_vector_t& variables) {
+	this->_product.forget(variables);
+      }
       
-      // domain_traits_api
+      void project(const variable_vector_t& variables) {
+	this->_product.project(variables);	
+      }
       
-      void expand(variable_t x, variable_t new_x) {
-        crab::domains::domain_traits<NumAbsDom>::expand (this->_product.first(), 
-                                                         x, new_x);
-        crab::domains::domain_traits<nullity_domain_t>::expand (this->_product.second(), 
-                                                                x, new_x);
+      void expand(variable_t var, variable_t new_var) {
+	this->_product.expand(var, new_var);
       }
       
       void normalize() {
-        crab::domains::domain_traits<NumAbsDom>::normalize(this->_product.first());
-        crab::domains::domain_traits<nullity_domain_t>::normalize(this->_product.second());
+	this->_product.normalize();
       }
-      
-      template <typename Range>
-      void forget(Range vars){
-        crab::domains::domain_traits<NumAbsDom>::forget(this->_product.first(), 
-                                                        vars.begin (), vars.end());
-        crab::domains::domain_traits<nullity_domain_t>::forget(this->_product.second(), 
-                                                               vars.begin (), vars.end());
-      }
-      
-      template <typename Range>
-      void project(Range vars) {
-        crab::domains::domain_traits<NumAbsDom>::project(this->_product.first(), 
-                                                         vars.begin(), vars.end());
-        crab::domains::domain_traits<nullity_domain_t>::project(this->_product.second(), 
-                                                                vars.begin(), vars.end());
-      }
-      
     }; // class numerical_nullity_domain
 
     template<typename Domain1, typename Domain2>
-    class domain_traits <reduced_numerical_domain_product2<Domain1,Domain2> > {
-     public:
-
+    class domain_traits <reduced_numerical_domain_product2<Domain1,Domain2>> {
       typedef reduced_numerical_domain_product2<Domain1,Domain2> product_t;
-      typedef typename product_t::variable_t variable_t;
-
+     public:
       template<class CFG>
       static void do_initialization (CFG cfg) { }
-
-      static void normalize (product_t& inv) {
-        inv.normalize();
-      }
-
-      static void expand (product_t& inv, variable_t x, variable_t new_x) {
-        inv.expand (x, new_x);
-      }
-      
-      template <typename Iter>
-      static void forget (product_t& inv, Iter it, Iter end){
-        inv.forget (boost::make_iterator_range (it, end));
-      }
-      
-      template <typename Iter>
-      static void project (product_t& inv, Iter it, Iter end) {
-        inv.project (boost::make_iterator_range (it, end));
-      }
     };
 
 
     template<typename Domain>
-    class domain_traits <numerical_nullity_domain<Domain> > {
-     public:
-
+    class domain_traits <numerical_nullity_domain<Domain>> {
       typedef numerical_nullity_domain<Domain> product_t;
-      typedef typename product_t::variable_t variable_t;
-
+     public:
       template<class CFG>
       static void do_initialization (CFG cfg) { }
-
-      static void normalize (product_t& inv) {
-        inv.normalize();
-      }
-
-      static void expand (product_t& inv, variable_t x, variable_t new_x) {
-        inv.expand (x, new_x);
-      }
-      
-      template <typename Iter>
-      static void forget (product_t& inv, Iter it, Iter end){
-        inv.forget (boost::make_iterator_range (it, end));
-      }
-      
-      template <typename Iter>
-      static void project (product_t& inv, Iter it, Iter end) {
-        inv.project (boost::make_iterator_range (it, end));
-      }
     };
 
     template<typename Dom>

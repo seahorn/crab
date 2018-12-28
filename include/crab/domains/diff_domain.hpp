@@ -65,8 +65,7 @@ namespace crab {
       // That is, second is always a refinement of first
       // FIXME: very expensive operation
       bool diff(int line) {
-	crab::domains::domain_traits<Domain1>::normalize(_product.first());
-	crab::domains::domain_traits<Domain2>::normalize(_product.second());
+	_product.normalize();
 	to_intervals<Domain1> inv1(_product.first());
 	to_intervals<Domain2> inv2(_product.second());
 	auto i1 = inv1();
@@ -521,14 +520,10 @@ namespace crab {
         return domain_product2_t::getDomainName ();
       }
 
-      // domain_traits_api
       
       void expand(variable_t x, variable_t new_x) {
-	//bool r1 = diff(__LINE__);	
-        crab::domains::domain_traits<Domain1>::
-	  expand (this->_product.first(), x, new_x); 
-        crab::domains::domain_traits<Domain2>::
-	  expand (this->_product.second(), x, new_x);
+	//bool r1 = diff(__LINE__);
+	this->_product.expand(x, new_x);
 	// bool r2= diff(__LINE__);
 	// if (r1 && !r2) {
 	//   CRAB_WARN("PRECISION LEAK of ",
@@ -538,20 +533,9 @@ namespace crab {
 	
       }
       
-      void normalize() {
-        crab::domains::domain_traits<Domain1>::
-	  normalize(this->_product.first());
-        crab::domains::domain_traits<Domain2>::
-	  normalize(this->_product.second());
-      }
-      
-      template <typename Range>
-      void forget(Range vars){
-	//bool r1= diff(__LINE__);	
-        crab::domains::domain_traits<Domain1>::
-	  forget(this->_product.first(), vars.begin (), vars.end());
-        crab::domains::domain_traits<Domain2>::
-	  forget(this->_product.second(), vars.begin (), vars.end());
+      void forget(const variable_vector_t& variables){
+	//bool r1= diff(__LINE__);
+	this->_product.forget(variables);
 	// bool r2 = diff(__LINE__);
 	// if (r1 && !r2) {
 	//   CRAB_WARN("PRECISION LEAK of ",
@@ -561,13 +545,9 @@ namespace crab {
 	
       }
       
-      template <typename Range>
-      void project(Range vars) {
-	//bool r1 = diff(__LINE__);	
-        crab::domains::domain_traits<Domain1>::
-	  project(this->_product.first(), vars.begin(), vars.end());
-        crab::domains::domain_traits<Domain2>::
-	  project(this->_product.second(), vars.begin(), vars.end());
+      void project(const variable_vector_t& variables) {
+	//bool r1 = diff(__LINE__);
+	this->_product.project(variables);
 	// bool r2 = diff(__LINE__);
 	// if (r1 && !r2) {
 	//   CRAB_WARN("PRECISION LEAK of ",
@@ -575,35 +555,18 @@ namespace crab {
 	//   reduce();
 	// }
       }
+
+      void normalize() {
+	this->_product.normalize();
+      }
     }; // class diff_domain
     
     template<typename Domain1, typename Domain2>
     class domain_traits <diff_domain<Domain1, Domain2> > {
      public:
-
       typedef diff_domain<Domain1, Domain2> diff_domain_t;
-      typedef typename diff_domain_t::variable_t variable_t;
-
       template<class CFG>
       static void do_initialization (CFG cfg) { }
-
-      static void normalize (diff_domain_t& inv) {
-        inv.normalize();
-      }
-
-      static void expand (diff_domain_t& inv, variable_t x, variable_t new_x) {
-        inv.expand (x, new_x);
-      }
-      
-      template <typename Iter>
-      static void forget (diff_domain_t& inv, Iter it, Iter end){
-        inv.forget (boost::make_iterator_range (it, end));
-      }
-      
-      template <typename Iter>
-      static void project (diff_domain_t& inv, Iter it, Iter end) {
-        inv.project (boost::make_iterator_range (it, end));
-      }
     };
     
   } // end namespace domains

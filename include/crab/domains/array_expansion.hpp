@@ -795,36 +795,48 @@ namespace domains {
     }
         
        
-    // remove all variables [begin,...end)
-    template<typename Iterator>
-    void forget(Iterator begin, Iterator end) {
+    void forget(const variable_vector_t& variables) {
       crab::CrabStats::count(getDomainName() + ".count.forget");
       crab::ScopedCrabStats __st__(getDomainName() + ".forget");
+
+      if (is_bottom() || is_top()) {
+	return;
+      }
       
-      domain_traits<NumDomain>::forget(_inv, begin, end);
+      _inv.forget(variables);
       
-      for (auto it = begin, et = end; it!=et; ++it) {
-	if ((*it).is_array_type()) {
-	  remove_array_map(*it);
+      for (variable_t v: variables) {
+	if (v.is_array_type()) {
+	  remove_array_map(v);
 	}
       }
     }
        
-    // dual of forget: remove all variables except [begin,...end)
-    template<typename Iterator>
-    void project(Iterator begin, Iterator end) {
+    void project(const variable_vector_t& variables) {
       crab::CrabStats::count(getDomainName() + ".count.project");
       crab::ScopedCrabStats __st__(getDomainName() + ".project");
+
+      if (is_bottom() || is_top()) {
+	return;
+      }
       
-      domain_traits<NumDomain>::project(_inv, begin, end);
+      _inv.project(variables);
       
-      for (auto it = begin, et = end; it!=et; ++it) {
-	if ((*it).is_array_type()) {
+      for (variable_t v: variables) {
+	if (v.is_array_type()) {
 	  CRAB_WARN("TODO: project onto an array variable");
 	}
       }
     }
-       
+
+    void expand(variable_t var, variable_t new_var) {
+      CRAB_WARN("array expansion expand not implemented");
+    }
+
+    void normalize() { 
+      CRAB_WARN("array expansion normalize not implemented");
+    }
+    
     void operator +=(linear_constraint_system_t csts) {
       crab::CrabStats::count(getDomainName() + ".count.add_constraints");
       crab::ScopedCrabStats __st__(getDomainName() + ".add_constraints");
@@ -1231,27 +1243,7 @@ namespace domains {
        
        
     template<class CFG>
-    static void do_initialization(CFG cfg) { }
-       
-    static void normalize(array_expansion_domain_t& inv) { 
-      CRAB_WARN("array expansion normalize not implemented");
-    }
-       
-    template <typename Iter>
-    static void forget(array_expansion_domain_t& inv, Iter it, Iter end) {
-      inv.forget(it, end);
-    }
-       
-    template <typename Iter >
-    static void project(array_expansion_domain_t& inv, Iter it, Iter end) {
-      inv.project(it, end);
-    }
-
-    static void expand(array_expansion_domain_t& inv, variable_t x, variable_t new_x) {
-      // -- lose precision if relational or disjunctive domain
-      CRAB_WARN("array expansion expand not implemented");
-    }
-
+    static void do_initialization(CFG cfg) { }       
   };
 
   template<typename BaseDom>

@@ -1048,6 +1048,7 @@ namespace ikos {
     using typename abstract_domain_t::linear_constraint_system_t;
     using typename abstract_domain_t::disjunctive_linear_constraint_system_t;    
     using typename abstract_domain_t::variable_t;
+    using typename abstract_domain_t::variable_vector_t;      
     using typename abstract_domain_t::number_t;
     using typename abstract_domain_t::varname_t;
     typedef interval<Number> interval_t;
@@ -1406,6 +1407,43 @@ namespace ikos {
       }
       this->_env.set(x, xi);
     }
+
+    void forget (const variable_vector_t& variables) {
+      if (is_bottom() || is_top()) {
+	return;
+      }
+      for (variable_t var: variables){
+	this->operator-=(var); 
+      }
+    }
+    
+    void project(const variable_vector_t& variables){
+      crab::CrabStats::count(getDomainName() + ".count.project");
+      crab::ScopedCrabStats __st__(getDomainName() + ".project");
+      
+      if (is_bottom() || is_top()) {
+	return;
+      }
+      
+      separate_domain_t env;
+      for (variable_t var : variables){
+	env.set(var, this->_env[var]); 
+      }
+      std::swap(_env, env);
+    }
+  
+    void expand (variable_t x, variable_t new_x) {
+      crab::CrabStats::count(getDomainName() + ".count.expand");
+      crab::ScopedCrabStats __st__(getDomainName() + ".expand");
+      
+      if (is_bottom() || is_top()) {
+	return;
+      }
+      
+      set(new_x , this->_env[x]);
+    }
+
+    void normalize() {}
     
     void write(crab::crab_os& o) {
       this->_env.write(o);

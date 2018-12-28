@@ -1081,6 +1081,7 @@ namespace crab {
      using typename abstract_domain_t::linear_constraint_system_t;
      using typename abstract_domain_t::disjunctive_linear_constraint_system_t;      
      using typename abstract_domain_t::variable_t;
+     using typename abstract_domain_t::variable_vector_t;     
      using typename abstract_domain_t::number_t;
      using typename abstract_domain_t::varname_t;
 
@@ -1378,21 +1379,37 @@ namespace crab {
        crab::CrabStats::count(getDomainName() + ".count.expand");
        crab::ScopedCrabStats __st__(getDomainName() + ".expand");
 
+       if (is_bottom() || is_top()) {
+	 return;
+       }       
        this->_env.set(new_x, this->_env [x]);
      }
 
-     template<typename Range>
-     void project(Range vs) {
+     void project(const variable_vector_t& variables) {
        crab::CrabStats::count(getDomainName() + ".count.project");
        crab::ScopedCrabStats __st__(getDomainName() + ".project");
 
+       if (is_bottom() || is_top()) {
+	 return;
+       }
+       
        separate_domain_t env;
-       for (auto v : vs) {
+       for (variable_t v : variables) {
          env.set(v, this->_env [v]);
        }
        std::swap(_env, env);
      }
 
+     void forget(const variable_vector_t& variables) {
+       if (is_bottom() || is_top()) {
+	 return;
+       }
+       
+       for (variable_t v : variables) {
+         this->operator-=(v);
+       }
+     }
+     
      void normalize() {
        crab::CrabStats::count(getDomainName() + ".count.normalize");
        crab::ScopedCrabStats __st__(getDomainName() + ".normalize");
@@ -1449,33 +1466,9 @@ namespace crab {
    template<typename Number, typename VariableName>
    class domain_traits <dis_interval_domain<Number, VariableName> > {
     public:
-     
      typedef dis_interval_domain<Number, VariableName> dis_interval_domain_t;
-     typedef ikos::variable<Number, VariableName> variable_t;
-     
      template<class CFG>
      static void do_initialization(CFG cfg) { }
-
-     static void normalize(dis_interval_domain_t& inv) {
-       inv.normalize();
-     }
-     
-     template <typename Iter>
-     static void project(dis_interval_domain_t& inv, Iter begin, Iter end) {
-       inv.project(boost::make_iterator_range(begin, end));
-     }
-     
-     static void expand(dis_interval_domain_t& inv, variable_t x, variable_t new_x) {
-       inv.expand(x, new_x);
-     }
-
-     template <typename Iter>
-     static void forget(dis_interval_domain_t& inv, Iter begin, Iter end){
-       for (auto v : boost::make_iterator_range(begin, end)){
-         inv -= v;
-       }
-     }
-     
    };
 
   } // namespace domains   

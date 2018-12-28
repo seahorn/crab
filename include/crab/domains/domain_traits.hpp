@@ -19,48 +19,12 @@ namespace crab {
    template<typename Domain>
    class domain_traits {
     public:
-     typedef typename Domain::variable_t variable_t;
-
-     // Initialization of static data 
-     // XXX: it doesn't take inv as argument because this method
-     // should only access to static data.
+     // Initialization of static data
      template<class CFG>
      static void do_initialization(CFG cfg) { }
-
-     // Normalize the abstract domain if such notion exists.
-     static void normalize (Domain& inv) { }
-
-     // Remove all variables [begin, end)
-     template<typename VarIter>
-     static void forget (Domain& inv, VarIter begin, VarIter end) {
-       // -- inefficient if after each forget the domain requires
-       //    normalization
-       for (auto v : boost::make_iterator_range (begin,end)){
-         inv -= v; 
-       }
-     }
-
-     // Forget all variables except [begin, end)
-     template <typename VarIter>
-     static void project(Domain& inv, VarIter begin, VarIter end){
-       // -- lose precision if relational or disjunctive domain
-       Domain res = Domain::top ();
-       for (auto v : boost::make_iterator_range (begin, end)){
-         res.set (v, inv[v]); 
-       }
-       std::swap (inv, res);
-     }
-         
-     // Make a new copy of x without relating x with new_x
-     static void expand (Domain& inv, variable_t x, variable_t new_x) {
-       // -- lose precision if relational or disjunctive domain
-       inv.set (new_x , inv [x]);
-     }
-
    };
 
-   // Perform constraint simplifications depending on the abstract
-   // domain. 
+   // Perform constraint simplifications depending on the abstract domain
    template<typename Domain>
    class constraint_simp_domain_traits {
    public:
@@ -92,7 +56,8 @@ namespace crab {
      typedef typename Domain::number_t number_t;
      typedef typename Domain::linear_constraint_t linear_constraint_t;
      typedef typename Domain::linear_constraint_system_t linear_constraint_system_t;
-     typedef typename Domain::disjunctive_linear_constraint_system_t disjunctive_linear_constraint_system_t;
+     typedef typename Domain::disjunctive_linear_constraint_system_t
+     disjunctive_linear_constraint_system_t;
      
    private:
 

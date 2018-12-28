@@ -41,7 +41,7 @@ int main (int argc, char** argv )
     vs.push_back (x);
     vs.push_back (y);
     crab::outs() << "Before project " << inv << "\n";
-    crab::domains::domain_traits<z_term_domain_t>::project (inv, vs.begin (), vs.end ());
+    inv.project(vs);
     crab::outs() << "After project " << inv << "\n";
 
 

@@ -34,6 +34,7 @@ namespace crab {
         using typename abstract_domain_t::linear_constraint_system_t;
 	using typename abstract_domain_t::disjunctive_linear_constraint_system_t;	
         using typename abstract_domain_t::variable_t;
+	using typename abstract_domain_t::variable_vector_t;
         using typename abstract_domain_t::number_t;
         using typename abstract_domain_t::varname_t;
         typedef interval <Number> interval_t;
@@ -115,7 +116,19 @@ namespace crab {
         
         void apply(bitwise_operation_t op, variable_t x, variable_t y, Number k) 
         { CRAB_ERROR(LDD_NOT_FOUND); }
-        
+
+	void forget(const variable_vector_t& variables)
+	{ CRAB_ERROR(LDD_NOT_FOUND); }
+
+	void project(const variable_vector_t& variables)
+	{ CRAB_ERROR(LDD_NOT_FOUND); }
+
+	void expand(variable_t var, variable_t new_var)
+	{ CRAB_ERROR(LDD_NOT_FOUND); }
+
+	void normalize()
+	{ CRAB_ERROR(LDD_NOT_FOUND); }
+	
         linear_constraint_system_t to_linear_constraint_system()
         { CRAB_ERROR(LDD_NOT_FOUND); }
 
@@ -181,6 +194,7 @@ namespace crab {
         using typename abstract_domain_t::linear_constraint_system_t;
 	using typename abstract_domain_t::disjunctive_linear_constraint_system_t;		
         using typename abstract_domain_t::variable_t;
+	using typename abstract_domain_t::variable_vector_t;	
         using typename abstract_domain_t::number_t;
         using typename abstract_domain_t::varname_t;
         typedef interval <Number> interval_t;
@@ -971,48 +985,49 @@ namespace crab {
           crab::CrabStats::count(getDomainName() + ".count.forget");
           crab::ScopedCrabStats __st__(getDomainName() + ".forget");
 
-          if (is_bottom()) return;
+          if (is_bottom() || is_top()) return;
 
           int id = get_var_dim(var);
           m_ldd =  lddPtr(get_ldd_man(), 
                            Ldd_ExistsAbstract(get_ldd_man(), &*m_ldd, id));
         }
 
-        // remove all variables [begin,...end)
-        template<typename Iterator>
-        void forget(Iterator begin, Iterator end) {
-          if (is_bottom()) return;
+        void forget(const variable_vector_t& variables) {
+          crab::CrabStats::count(getDomainName() + ".count.forget");
+          crab::ScopedCrabStats __st__(getDomainName() + ".forget");
+	  
+          if (is_bottom() || is_top()) return;
 
 	  std::vector<int> qvars;
-	  qvars.reserve(std::distance(begin, end));
-          for (auto v: boost::make_iterator_range(begin, end))
+	  qvars.reserve(variables.size());
+          for (variable_t v: variables) {
 	    qvars.push_back(get_var_dim(v));
+	  }
 
   	  m_ldd =  lddPtr(get_ldd_man(), 
 			   Ldd_MvExistAbstract(get_ldd_man(), &*m_ldd,
 						&qvars[0], qvars.size()));
         }
 
-        // dual of forget: remove all variables except [begin,...end)
-        template<typename Iterator>
-        void project(Iterator begin, Iterator end) {
+        void project(const variable_vector_t& variables) {
           crab::CrabStats::count(getDomainName() + ".count.project");
           crab::ScopedCrabStats __st__(getDomainName() + ".project");
 
-          if (is_bottom()) return;
+          if (is_bottom() || is_top()) return;
 
-          std::set<variable_t> s1,s2,s3;
+          std::set<variable_t> s1,s2;
+	  variable_vector_t s3;
           for (auto p: m_var_map.left) s1.insert(p.first);
-          s2.insert(begin, end);
-          boost::set_difference(s1,s2,std::inserter(s3, s3.end()));
-          forget(s3.begin(), s3.end());
+          s2.insert(variables.begin(), variables.end());
+          boost::set_difference(s1,s2,std::back_inserter(s3));
+          forget(s3);
         }
 
 	void expand(variable_t v, variable_t new_v) {
-          if (is_top() || is_bottom()) return ;
-
           crab::CrabStats::count(getDomainName() + ".count.expand");
           crab::ScopedCrabStats __st__(getDomainName() + ".expand");
+
+          if (is_top() || is_bottom()) return ;
 	  
 	  // new_v should be completely unconstrained
 	  this->operator-=(new_v); 
@@ -1026,8 +1041,7 @@ namespace crab {
           Ldd_GetTheory(get_ldd_man())->destroy_term(lv);
 	}
 	  
-        void operator+=(linear_constraint_t cst)
-        {
+        void operator+=(linear_constraint_t cst) {
           crab::CrabStats::count(getDomainName() + ".count.add_constraints");
           crab::ScopedCrabStats __st__(getDomainName() + ".add_constraints");
 
@@ -1076,6 +1090,8 @@ namespace crab {
 		   crab::outs() << "--- assume(" << cst << ") --> " <<  *this <<"\n";);
         }    
 
+	void normalize() {}
+	
         void operator+=(linear_constraint_system_t csts) {
           if (is_bottom()) return;
           for(auto cst : csts) operator += (cst);
@@ -1790,21 +1806,16 @@ namespace crab {
 				       boxes_intervals_domain_t inv)
        { _product.backward_apply_binary_bool(op,x,y,z,inv._product); }	
        
-       template<typename Iterator>
-       void forget(Iterator vIt, Iterator vEt) {
-	 _product.first().forget(vIt, vEt);
-	 domain_traits<interval_domain_t>::forget(_product.second(), vIt, vEt);
+       void forget(const variable_vector_t& variables) {
+	 _product.forget(variables);
        }
        
-       template<typename Iterator>
-       void project(Iterator vIt, Iterator vEt) {
-	 _product.first().project(vIt, vEt);
-	 domain_traits<interval_domain_t>::project(_product.second(), vIt, vEt);
+       void project(const variable_vector_t& variables) {
+	 _product.project(variables);
        }
        
        void expand(variable_t x, variable_t new_x) {
- 	 _product.first().expand(x,new_x);
-	 domain_traits<interval_domain_t>::expand(_product.second(), x,new_x);	 
+	 _product.expand(x, new_x);
        }
        
        void write(crab_os& o) {
@@ -1824,22 +1835,12 @@ namespace crab {
      };
 
      template<typename Number, typename VariableName, int ConvexReduce, size_t LddSize>
-     class domain_traits <boxes_intervals_domain<Number,VariableName, ConvexReduce, LddSize> > {
+     class domain_traits<boxes_intervals_domain<Number,VariableName, ConvexReduce, LddSize>> {
       public:
-       typedef boxes_intervals_domain<Number, VariableName, ConvexReduce, LddSize> boxes_domain_t;
-       typedef ikos::variable<Number, VariableName> variable_t;
+       typedef boxes_intervals_domain<Number,VariableName,ConvexReduce,LddSize> boxes_domain_t;
        
        template<class CFG>
        static void do_initialization(CFG cfg) { }
-       static void normalize(boxes_domain_t& inv) { }
-       template <typename Iter>
-       static void forget(boxes_domain_t& inv, Iter it, Iter end)
-       { inv.forget(it, end); }
-       template <typename Iter>
-       static void project(boxes_domain_t& inv, Iter it, Iter end)
-       { inv.project(it, end); }
-       static void expand(boxes_domain_t& inv, variable_t x, variable_t new_x)
-       { inv.expand(x, new_x); }
      };
      #endif
      
@@ -1980,13 +1981,11 @@ namespace crab {
 				      boxes_domain_t inv)
       { detach(); ref().backward_apply_binary_bool(op,x,y,z,inv.ref()); }	
       
-      template<typename Iterator>
-      void forget(Iterator vIt, Iterator vEt)
-      { detach(); ref().forget(vIt, vEt); }
+      void forget(const variable_vector_t& variables)
+      { detach(); ref().forget(variables); }
       
-      template<typename Iterator>
-      void project(Iterator vIt, Iterator vEt)
-      { detach(); ref().project(vIt, vEt); }
+      void project(const variable_vector_t& variables)
+      { detach(); ref().project(variables); }
 
       void expand(variable_t x, variable_t new_x)
       { detach(); ref().expand(x,new_x);}
@@ -2009,23 +2008,9 @@ namespace crab {
     class domain_traits <boxes_domain<Number,VariableName,ConvexReduce,LddSize>> {
     public:
       typedef boxes_domain<Number, VariableName, ConvexReduce, LddSize> boxes_domain_t;
-      typedef ikos::variable<Number, VariableName> variable_t;
       
       template<class CFG>
       static void do_initialization(CFG cfg) {}
-
-      static void normalize(boxes_domain_t& inv) {}
-
-      template <typename Iter>
-      static void forget(boxes_domain_t& inv, Iter it, Iter end)
-      { inv.forget(it, end); }
-      
-      template <typename Iter>
-      static void project(boxes_domain_t& inv, Iter it, Iter end)
-      { inv.project(it, end); }
-      
-      static void expand(boxes_domain_t& inv, variable_t x, variable_t new_x)
-      { inv.expand(x, new_x); }
     };
 
     template<typename Number, typename VariableName, int ConvexReduce, size_t LddSize>
