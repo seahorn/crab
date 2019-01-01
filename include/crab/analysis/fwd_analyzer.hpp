@@ -6,7 +6,7 @@
 #include <crab/analysis/abs_transformer.hpp>
 #include <crab/analysis/inter_fwd_analyzer_ds.hpp>
 #include <crab/analysis/dataflow/liveness.hpp>
-#include <crab/domains/domain_traits.hpp>
+#include <crab/domains/abstract_domain_specialized_traits.hpp>
 
 #include "boost/range/algorithm/set_algorithm.hpp"
 #include "boost/shared_ptr.hpp"
@@ -129,16 +129,20 @@ namespace crab {
       
       //! Trigger the fixpoint computation 
       void Run()  {
-        // initialization of static data
-        domains::domain_traits<abs_dom_t>::do_initialization(this->get_cfg());
+        // ugly hook to initialize some global state. This needs to be
+        // fixed properly.
+	domains::array_sgraph_domain_traits<abs_dom_t>::do_initialization(this->get_cfg());
+	  
         // XXX: inv was created before the static data is initialized
         //      so it won't contain that data.
         this->run(*m_abs_tr->get());         
       }      
 
       void Run(basic_block_label_t entry, assumption_map_t &assumptions)  {
-        // initialization of static data
-        domains::domain_traits<abs_dom_t>::do_initialization(this->get_cfg());
+        // ugly hook to initialize some global state. This needs to be
+        // fixed properly.
+	domains::array_sgraph_domain_traits<abs_dom_t>::do_initialization(this->get_cfg());
+	
         // XXX: inv was created before the static data is initialized
         //      so it won't contain that data.	
         this->run(entry, *m_abs_tr->get(), assumptions);         

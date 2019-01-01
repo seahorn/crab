@@ -6,8 +6,7 @@
 #include <crab/common/debug.hpp>
 #include <crab/common/stats.hpp>
 #include <crab/common/types.hpp>
-#include <crab/domains/operators_api.hpp>
-#include <crab/domains/domain_traits.hpp>
+#include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/intervals.hpp>
 
 namespace crab {
@@ -27,20 +26,21 @@ namespace crab {
 namespace crab {
    namespace domains {
       template<typename Number, typename VariableName, apron_domain_id_t ApronDom>
-      class apron_domain: 
-	public abstract_domain<Number,VariableName,apron_domain<Number,VariableName,ApronDom> > {
+      class apron_domain final: 
+	public abstract_domain<apron_domain<Number,VariableName,ApronDom>> {
               
        public:
         typedef apron_domain<Number, VariableName, ApronDom> apron_domain_t;
-	typedef abstract_domain<Number, VariableName, apron_domain_t> abstract_domain_t;
+	typedef abstract_domain<apron_domain_t> abstract_domain_t;
         using typename abstract_domain_t::linear_expression_t;
         using typename abstract_domain_t::linear_constraint_t;
         using typename abstract_domain_t::linear_constraint_system_t;
 	using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
         using typename abstract_domain_t::variable_t;
-        using typename abstract_domain_t::number_t;
-        using typename abstract_domain_t::varname_t;
 	using typename abstract_domain_t::variable_vector_t;
+	using typename abstract_domain_t::pointer_constraint_t;
+	typedef Number number_t;
+	typedef VariableName varname_t;
         typedef interval<number_t> interval_t;
 
         apron_domain() {}    
@@ -91,13 +91,13 @@ namespace crab {
         void assign(variable_t x, linear_expression_t e) 
         { CRAB_ERROR(APRON_NOT_FOUND); }
           
-        void apply(operation_t op, variable_t x, variable_t y, Number z) 
+        void apply(operation_t op, variable_t x, variable_t y, number_t z) 
         { CRAB_ERROR(APRON_NOT_FOUND); }
         
         void apply(operation_t op, variable_t x, variable_t y, variable_t z) 
         { CRAB_ERROR(APRON_NOT_FOUND); }
         
-        void apply(operation_t op, variable_t x, Number k) 
+        void apply(operation_t op, variable_t x, number_t k) 
         { CRAB_ERROR(APRON_NOT_FOUND); }
 
         void apply(int_conv_operation_t op, variable_t dst, variable_t src) 
@@ -106,7 +106,7 @@ namespace crab {
         void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) 
         { CRAB_ERROR(APRON_NOT_FOUND); }
         
-        void apply(bitwise_operation_t op, variable_t x, variable_t y, Number k) 
+        void apply(bitwise_operation_t op, variable_t x, variable_t y, number_t k) 
         { CRAB_ERROR(APRON_NOT_FOUND); }
         
         void backward_assign(variable_t x, linear_expression_t e,
@@ -114,7 +114,7 @@ namespace crab {
         { CRAB_ERROR(APRON_NOT_FOUND); }
           
         void backward_apply(operation_t op,
-			     variable_t x, variable_t y, Number z,
+			     variable_t x, variable_t y, number_t z,
 			     apron_domain_t invariant) 
         { CRAB_ERROR(APRON_NOT_FOUND); }
         
@@ -122,7 +122,73 @@ namespace crab {
 			    variable_t x, variable_t y, variable_t z,
 			    apron_domain_t invariant) 
         { CRAB_ERROR(APRON_NOT_FOUND); }
-        
+
+	void assign_bool_cst(variable_t lhs, linear_constraint_t rhs)
+        { CRAB_ERROR(APRON_NOT_FOUND); }
+	
+	void assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs)
+        { CRAB_ERROR(APRON_NOT_FOUND); }
+
+	void apply_binary_bool(bool_operation_t op, variable_t x,variable_t y,variable_t z)
+	{ CRAB_ERROR(APRON_NOT_FOUND); }
+	
+	void assume_bool(variable_t v, bool is_negated)
+        { CRAB_ERROR(APRON_NOT_FOUND); }
+	
+	void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
+				      apron_domain_t invariant)
+        { CRAB_ERROR(APRON_NOT_FOUND); }	  	  
+	
+	void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
+				      apron_domain_t invariant)
+	{ CRAB_ERROR(APRON_NOT_FOUND); }	  	  	  
+	void backward_apply_binary_bool(bool_operation_t op,
+					variable_t x,variable_t y,variable_t z,
+					apron_domain_t invariant)
+	{ CRAB_ERROR(APRON_NOT_FOUND); }
+	
+	void array_init(variable_t a, linear_expression_t elem_size,
+			linear_expression_t lb_idx, linear_expression_t ub_idx, 
+			linear_expression_t val)
+	{ CRAB_ERROR(APRON_NOT_FOUND); }
+	
+	void array_load(variable_t lhs,
+			variable_t a, linear_expression_t elem_size,
+			linear_expression_t i)
+	{ CRAB_ERROR(APRON_NOT_FOUND); }
+	
+	void array_store(variable_t a, linear_expression_t elem_size,
+			 linear_expression_t i, linear_expression_t v, 
+			 bool is_singleton)
+	{ CRAB_ERROR(APRON_NOT_FOUND); }
+	
+	void array_assign(variable_t lhs, variable_t rhs)
+	{ CRAB_ERROR(APRON_NOT_FOUND); }
+	
+	void pointer_load(variable_t lhs, variable_t rhs)
+	{ CRAB_ERROR(APRON_NOT_FOUND); }
+	
+	void pointer_store(variable_t lhs, variable_t rhs)
+	{ CRAB_ERROR(APRON_NOT_FOUND); }
+	
+	void pointer_assign(variable_t lhs, variable_t rhs, linear_expression_t offset)
+	{ CRAB_ERROR(APRON_NOT_FOUND); }	  
+	  
+	void pointer_mk_obj(variable_t lhs, ikos::index_t address)
+	{ CRAB_ERROR(APRON_NOT_FOUND); }
+	
+	void pointer_function(variable_t lhs, varname_t func)
+	{ CRAB_ERROR(APRON_NOT_FOUND); }
+	
+	void pointer_mk_null(variable_t lhs)
+	{ CRAB_ERROR(APRON_NOT_FOUND); }
+	
+	void pointer_assume(pointer_constraint_t cst)
+	{ CRAB_ERROR(APRON_NOT_FOUND); }
+	
+	void pointer_assert(pointer_constraint_t cst)
+	{ CRAB_ERROR(APRON_NOT_FOUND); }	
+		
         linear_constraint_system_t to_linear_constraint_system()
         { CRAB_ERROR(APRON_NOT_FOUND); }
 
@@ -159,32 +225,32 @@ namespace crab {
 #include <crab/domains/apron/apron.hpp>
 #include <boost/bimap.hpp>
 
+
 namespace crab {
    namespace domains {
 
      using namespace apron;
 
       template<typename Number, typename VariableName, apron_domain_id_t ApronDom>
-      class apron_domain_:
-         public abstract_domain<Number,VariableName,
-				apron_domain_<Number,VariableName,ApronDom> > {
-
+      class apron_domain_ final:
+        public abstract_domain<apron_domain_<Number,VariableName,ApronDom>> {
         typedef apron_domain_<Number, VariableName, ApronDom> apron_domain_t;
-	typedef abstract_domain<Number,VariableName,apron_domain_t> abstract_domain_t;
+	typedef abstract_domain<apron_domain_t> abstract_domain_t;
        public:
         using typename abstract_domain_t::linear_expression_t;
         using typename abstract_domain_t::linear_constraint_t;
         using typename abstract_domain_t::linear_constraint_system_t;
 	using typename abstract_domain_t::disjunctive_linear_constraint_system_t;	
         using typename abstract_domain_t::variable_t;
-        using typename abstract_domain_t::number_t;
-        using typename abstract_domain_t::varname_t;
-        using typename abstract_domain_t::variable_vector_t;	
-        typedef interval <Number> interval_t;
+        using typename abstract_domain_t::variable_vector_t;
+	using typename abstract_domain_t::pointer_constraint_t;
+	typedef Number number_t;
+	typedef VariableName varname_t;
+        typedef interval<number_t> interval_t;
 
        private:
-        typedef interval_domain <Number, VariableName> interval_domain_t;
-        typedef bound <Number> bound_t;
+        typedef interval_domain<number_t, varname_t> interval_domain_t;
+        typedef bound<number_t> bound_t;
         typedef boost::bimap<variable_t, ap_dim_t > var_map_t;
         typedef typename var_map_t::value_type binding_t;
 
@@ -418,7 +484,7 @@ namespace crab {
           return res;
         }
 	       	
-	// FIXME: dispatch based on Number ?
+	// FIXME: dispatch based on number_t ?
         #if 0
 	static ap_texpr0_t* ADD(ap_texpr0_t* a, ap_texpr0_t*b)
 	{ /// XXX: should not be the rounding direction AP_RDIR_ZERO 
@@ -461,13 +527,13 @@ namespace crab {
 	inline void convert_crab_number(ikos::q_number n, mpq_class &res) const 
 	{ res =((mpq_class) n); }
 		
-        inline ap_texpr0_t* num2texpr(Number i) const {  
+        inline ap_texpr0_t* num2texpr(number_t i) const {  
 	  mpq_class n(0);
 	  convert_crab_number(i, n);
           return ap_texpr0_cst_scalar_mpq(n.get_mpq_t());
         }
 
-        inline ap_texpr0_t* intv2texpr(Number a, Number b) const {
+        inline ap_texpr0_t* intv2texpr(number_t a, number_t b) const {
 	  mpq_class n1(0), n2(0);
 	  convert_crab_number(a, n1);
 	  convert_crab_number(b, n2);
@@ -475,7 +541,7 @@ namespace crab {
         }
         
         inline ap_texpr0_t* expr2texpr(linear_expression_t e)  {
-          Number cst = e.constant();
+          number_t cst = e.constant();
           ap_texpr0_t* res = num2texpr(cst);
           for (auto p: e) {
             ap_texpr0_t* term = MUL(num2texpr(p.first), var2texpr(p.second));
@@ -513,17 +579,17 @@ namespace crab {
 	inline void convert_apron_number(mpq_ptr n, ikos::q_number &res) const
 	{ res = ikos::q_number(mpq_class(n)); }	  
 
-        Number coeff2Num(ap_coeff_t* coeff) {
+        number_t coeff2Num(ap_coeff_t* coeff) {
           assert(coeff->discr == AP_COEFF_SCALAR);
 
 	  ap_scalar_t* scalar = coeff->val.scalar;	  
           if (scalar->discr == AP_SCALAR_DOUBLE) { // elina uses double
-	    Number res;
+	    number_t res;
 	    convert_apron_number(scalar->val.dbl, res);
 	    return res;
           }
           else if (scalar->discr == AP_SCALAR_MPQ) {
-	    Number res;
+	    number_t res;
 	    convert_apron_number(scalar->val.mpq, res);
 	    return res;
           }
@@ -918,8 +984,8 @@ namespace crab {
               case APRON_INT:
               case APRON_PK:
               default:
-                //CRAB_WARN("used meet instead of narrowing: \n",
-		//           "make sure only a finite number of descending iterations are run.");
+               //CRAB_WARN("used meet instead of narrowing: \n",
+	       //           "make sure only a finite number of descending iterations are run.");
                 return apron_domain_t(apPtr(get_man(), 
                                               ap_abstract0_meet(get_man(), false,
 								 &*x, &*o.m_apstate)), m);
@@ -1027,13 +1093,13 @@ namespace crab {
             if (lb->discr == AP_SCALAR_DOUBLE && ub->discr == AP_SCALAR_DOUBLE) { 
 
               if (ap_scalar_infty(lb) == -1) {     // [-oo, k]
-		Number sup;
+		number_t sup;
 		convert_apron_number(ub->val.dbl, sup);
 		ap_interval_free(intv);
                 return interval_t(bound_t::minus_infinity(), sup);
               }
               else if (ap_scalar_infty(ub) == 1) { // [k, +oo]
-		Number inf;
+		number_t inf;
 		convert_apron_number(lb->val.dbl, inf);
 		ap_interval_free(intv);
                 return interval_t(inf, bound_t::plus_infinity());
@@ -1042,7 +1108,7 @@ namespace crab {
               else { 
                 assert(ap_scalar_infty(lb) == 0); // lb is finite
                 assert(ap_scalar_infty(ub) == 0); // ub is finite
-		Number inf, sup;
+		number_t inf, sup;
 		convert_apron_number(lb->val.dbl, inf);
 		convert_apron_number(ub->val.dbl, sup);
 		ap_interval_free(intv);
@@ -1053,14 +1119,14 @@ namespace crab {
             else if (lb->discr == AP_SCALAR_MPQ && ub->discr == AP_SCALAR_MPQ ) {
 
               if(ap_scalar_infty(lb) == -1) {     // [-oo, k]
-		Number sup;
+		number_t sup;
 		convert_apron_number(ub->val.mpq, sup);
 		ap_interval_free(intv);
                 return interval_t(bound_t::minus_infinity(), sup);
 
               }
               else if (ap_scalar_infty(ub) == 1) { // [k, +oo]
-		Number inf;
+		number_t inf;
 		convert_apron_number(lb->val.mpq, inf);
 		ap_interval_free(intv);
                 return interval_t(inf, bound_t::plus_infinity());
@@ -1069,7 +1135,7 @@ namespace crab {
                 assert(ap_scalar_infty(lb) == 0); // lb is finite
                 assert(ap_scalar_infty(ub) == 0); // ub is finite
 
-		Number inf, sup;
+		number_t inf, sup;
 		convert_apron_number(lb->val.mpq, inf);
 		convert_apron_number(ub->val.mpq, sup);		
 		ap_interval_free(intv);
@@ -1098,7 +1164,7 @@ namespace crab {
           if(lb.is_finite())  {
             // v >= lb <--> -v + lb <= 0
             assert(lb.number());
-            linear_expression_t e =(Number(-1) * vv) + *(lb.number());
+            linear_expression_t e =(number_t(-1) * vv) + *(lb.number());
             csts +=(linear_constraint_t(e, linear_constraint_t::kind_t::INEQUALITY));
           }
           auto ub = ival.ub();
@@ -1216,7 +1282,7 @@ namespace crab {
                    crab::outs() << "--- "<< x<< ":="<< e << " --> "<< *this<<"\n";);
         }
           
-        void apply(operation_t op, variable_t x, variable_t y, Number z) {
+        void apply(operation_t op, variable_t x, variable_t y, number_t z) {
           crab::CrabStats::count(getDomainName() + ".count.apply");
           crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1330,7 +1396,7 @@ namespace crab {
           set(x, xi);
         }
         
-        void apply(bitwise_operation_t op, variable_t x, variable_t y, Number k) {
+        void apply(bitwise_operation_t op, variable_t x, variable_t y, number_t k) {
           crab::CrabStats::count(getDomainName() + ".count.apply");
           crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1377,7 +1443,7 @@ namespace crab {
 		                << *this<<"\n";);
         }
           
-        void backward_apply(operation_t op, variable_t x, variable_t y, Number z,
+        void backward_apply(operation_t op, variable_t x, variable_t y, number_t z,
 			    apron_domain_t invariant) {
           crab::CrabStats::count(getDomainName() + ".count.backward_apply");
           crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
@@ -1478,7 +1544,43 @@ namespace crab {
 	    CRAB_WARN("backward operation for ", op, " not implemented");
 	  }
         }
-        	
+
+	/* Begin unimplemented operations */
+	// boolean operations
+	void assign_bool_cst(variable_t lhs, linear_constraint_t rhs) {}
+	void assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs) {}
+	void apply_binary_bool(bool_operation_t op, variable_t x,variable_t y,variable_t z) {}
+	void assume_bool(variable_t v, bool is_negated) {}
+	// backward boolean operations
+	void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
+				      apron_domain_t invariant){}
+	void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
+				      apron_domain_t invariant) {}
+	void backward_apply_binary_bool(bool_operation_t op,
+					variable_t x,variable_t y,variable_t z,
+					apron_domain_t invariant) {}
+	// array operations
+	void array_init(variable_t a, linear_expression_t elem_size,
+			linear_expression_t lb_idx, linear_expression_t ub_idx, 
+			linear_expression_t val) {}      
+	void array_load(variable_t lhs,
+			variable_t a, linear_expression_t elem_size,
+			linear_expression_t i) {}
+	void array_store(variable_t a, linear_expression_t elem_size,
+			 linear_expression_t i, linear_expression_t v, 
+			 bool is_singleton) {}      
+	void array_assign(variable_t lhs, variable_t rhs) {}
+	// pointer operations
+	void pointer_load(variable_t lhs, variable_t rhs)  {}
+	void pointer_store(variable_t lhs, variable_t rhs) {} 
+	void pointer_assign(variable_t lhs, variable_t rhs, linear_expression_t offset) {}
+	void pointer_mk_obj(variable_t lhs, ikos::index_t address) {}
+	void pointer_function(variable_t lhs, varname_t func) {}
+	void pointer_mk_null(variable_t lhs) {}
+	void pointer_assume(pointer_constraint_t cst) {}
+	void pointer_assert(pointer_constraint_t cst) {}
+	/* End unimplemented operations */
+	
 	interval_domain_t to_interval_domain() {
 	  if (is_bottom()) return interval_domain_t::bottom();
 	  if (is_top())    return interval_domain_t::top();	  
@@ -1602,15 +1704,20 @@ namespace crab {
       // Without copy-on-write
       template<class Number, class VariableName, apron_domain_id_t ApronDom>
       using apron_domain = apron_domain_<Number,VariableName,ApronDom>;     
-      #else 
+      #else
+
+      template<typename Number, typename VariableName, apron_domain_id_t ApronDom>
+      struct abstract_domain_traits<apron_domain_<Number, VariableName, ApronDom>> {
+        typedef Number number_t;
+        typedef VariableName varname_t;       
+      };
+     
       // Quick wrapper which uses shared references with copy-on-write.
       template<class Number, class VariableName, apron_domain_id_t ApronDom>
-      class apron_domain :
-       public abstract_domain<Number, VariableName,
-			      apron_domain<Number,VariableName,ApronDom> > {
-
+      class apron_domain final:
+       public abstract_domain<apron_domain<Number,VariableName,ApronDom>> {
         typedef apron_domain<Number, VariableName, ApronDom> apron_domain_t;
-	typedef abstract_domain<Number, VariableName, apron_domain_t> abstract_domain_t;
+	typedef abstract_domain<apron_domain_t> abstract_domain_t;
       public:
 	
         using typename abstract_domain_t::linear_expression_t;
@@ -1618,15 +1725,16 @@ namespace crab {
         using typename abstract_domain_t::linear_constraint_system_t;
 	using typename abstract_domain_t::disjunctive_linear_constraint_system_t;	
         using typename abstract_domain_t::variable_t;
-        using typename abstract_domain_t::number_t;
-        using typename abstract_domain_t::varname_t;
-        using typename abstract_domain_t::variable_vector_t;	
+        using typename abstract_domain_t::variable_vector_t;
+	using typename abstract_domain_t::pointer_constraint_t;
         typedef typename linear_constraint_t::kind_t constraint_kind_t;
-        typedef interval<Number>  interval_t;
+	typedef Number number_t;
+	typedef VariableName varname_t;
+        typedef interval<number_t> interval_t;
 
       private:
 	
-        typedef apron_domain_<Number, VariableName, ApronDom> apron_domain_impl_t;
+        typedef apron_domain_<number_t, varname_t, ApronDom> apron_domain_impl_t;
         typedef std::shared_ptr<apron_domain_impl_t> apron_domain_ref_t;
 
         apron_domain_ref_t _ref;  
@@ -1666,7 +1774,7 @@ namespace crab {
         
         bool is_bottom() { return ref().is_bottom(); }
         bool is_top() { return ref().is_top(); }
-        bool operator<=(apron_domain_t& o) { return ref() <= o.ref(); }
+        bool operator<=(apron_domain_t o) { return ref() <= o.ref(); }
         void operator|=(apron_domain_t o) { detach(); ref() |= o.ref(); }
         apron_domain_t operator|(apron_domain_t o)
 	{ return create(ref() | o.ref()); }
@@ -1713,7 +1821,7 @@ namespace crab {
 	  detach(); ref().assign(x, e);
 	}
         void apply(operation_t op,
-		   variable_t x, variable_t y, Number k) {
+		   variable_t x, variable_t y, number_t k) {
           detach(); ref().apply(op, x, y, k);
         }
         void apply(operation_t op,
@@ -1724,7 +1832,7 @@ namespace crab {
           detach(); ref().apply(op, dst, src);
         }
         void apply(bitwise_operation_t op,
-		   variable_t x, variable_t y, Number k) {
+		   variable_t x, variable_t y, number_t k) {
           detach(); ref().apply(op, x, y, k);
         }
         void apply(bitwise_operation_t op,
@@ -1736,7 +1844,7 @@ namespace crab {
 	  detach(); ref().backward_assign(x, e, invariant.ref());
 	}
         void backward_apply(operation_t op,
-			    variable_t x, variable_t y, Number k,
+			    variable_t x, variable_t y, number_t k,
 			    apron_domain_t invariant) {
           detach(); ref().backward_apply(op, x, y, k, invariant.ref());
         }
@@ -1746,6 +1854,42 @@ namespace crab {
           detach(); ref().backward_apply(op, x, y, z, invariant.ref());
         }	
 
+	/* Begin unimplemented operations */
+	// boolean operations
+	void assign_bool_cst(variable_t lhs, linear_constraint_t rhs) {}
+	void assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs) {}
+	void apply_binary_bool(bool_operation_t op, variable_t x,variable_t y,variable_t z) {}	
+	void assume_bool(variable_t v, bool is_negated) {}
+	// backward boolean operations
+	void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
+				      apron_domain_t invariant){}
+	void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
+				      apron_domain_t invariant) {}
+	void backward_apply_binary_bool(crab::domains::bool_operation_t op,
+					variable_t x,variable_t y,variable_t z,
+					apron_domain_t invariant) {}
+	// array operations
+	void array_init(variable_t a, linear_expression_t elem_size,
+			linear_expression_t lb_idx, linear_expression_t ub_idx, 
+			linear_expression_t val) {}      
+	void array_load(variable_t lhs,
+			variable_t a, linear_expression_t elem_size,
+			linear_expression_t i) {}
+	void array_store(variable_t a, linear_expression_t elem_size,
+			 linear_expression_t i, linear_expression_t v, 
+			 bool is_singleton) {}      
+	void array_assign(variable_t lhs, variable_t rhs) {}
+	// pointer operations
+	void pointer_load(variable_t lhs, variable_t rhs)  {}
+	void pointer_store(variable_t lhs, variable_t rhs) {} 
+	void pointer_assign(variable_t lhs, variable_t rhs, linear_expression_t offset) {}
+	void pointer_mk_obj(variable_t lhs, ikos::index_t address) {}
+	void pointer_function(variable_t lhs, varname_t func) {}
+	void pointer_mk_null(variable_t lhs) {}
+	void pointer_assume(pointer_constraint_t cst) {}
+	void pointer_assert(pointer_constraint_t cst) {}
+	/* End unimplemented operations */
+	
 	void rename(const variable_vector_t &from, const variable_vector_t &to)
 	{ detach(); ref().rename(from, to); }
 	
@@ -1770,16 +1914,6 @@ namespace crab {
 
       };
       #endif
-
-      // -- domain traits
-      template<typename Number, typename VariableName, apron_domain_id_t ApronDom>
-      class domain_traits<apron_domain<Number, VariableName, ApronDom>> {
-       public:
-        typedef apron_domain<Number, VariableName, ApronDom> apron_domain_t;
-	
-        template<class CFG>
-        static void do_initialization(CFG cfg) { }
-      };
      
       // --- global datastructures
       template<typename N, typename V, apron_domain_id_t D>
@@ -1788,4 +1922,14 @@ namespace crab {
    
    } // namespace domains
 }// namespace crab
-#endif 
+#endif
+
+namespace crab {
+namespace domains {  
+  template<typename Number, typename VariableName, apron_domain_id_t ApronDom>
+  struct abstract_domain_traits<apron_domain<Number, VariableName, ApronDom>> {
+    typedef Number number_t;
+    typedef VariableName varname_t;       
+  };
+}
+}

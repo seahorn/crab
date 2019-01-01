@@ -6,8 +6,7 @@
 #include <crab/common/debug.hpp>
 #include <crab/common/stats.hpp>
 #include <crab/common/types.hpp>
-#include <crab/domains/operators_api.hpp>
-#include <crab/domains/domain_traits.hpp>
+#include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/intervals.hpp>
 
 namespace crab {
@@ -28,21 +27,22 @@ namespace crab {
 namespace crab {
    namespace domains {
       template<typename Number, typename VariableName, elina_domain_id_t ElinaDom>
-      class elina_domain: 
-	public abstract_domain<Number,VariableName,elina_domain<Number,VariableName,ElinaDom>> {
+      class elina_domain final:  
+	public abstract_domain<elina_domain<Number,VariableName,ElinaDom>> {
               
        public:
         typedef elina_domain<Number, VariableName, ElinaDom> elina_domain_t;
-	typedef abstract_domain<Number, VariableName, elina_domain_t> abstract_domain_t;
+	typedef abstract_domain<elina_domain_t> abstract_domain_t;
         using typename abstract_domain_t::linear_expression_t;
         using typename abstract_domain_t::linear_constraint_t;
         using typename abstract_domain_t::linear_constraint_system_t;
 	using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
         using typename abstract_domain_t::variable_t;
-	using typename abstract_domain_t::variable_vector_t;	
-        using typename abstract_domain_t::number_t;
-        using typename abstract_domain_t::varname_t;
-        typedef interval <Number> interval_t;
+	using typename abstract_domain_t::variable_vector_t;
+	using typename abstract_domain_t::pointer_constraint_t;
+	typedef Number number_t;
+	typedef VariableName varname_t;
+        typedef interval<number_t> interval_t;
 
         elina_domain() {}    
 
@@ -92,7 +92,7 @@ namespace crab {
         void assign (variable_t x, linear_expression_t e) 
         { CRAB_ERROR(ELINA_NOT_FOUND); }
           
-        void apply(operation_t op, variable_t x, variable_t y, Number z) 
+        void apply(operation_t op, variable_t x, variable_t y, number_t z) 
         { CRAB_ERROR(ELINA_NOT_FOUND); }
         
         void apply(operation_t op, variable_t x, variable_t y, variable_t z) 
@@ -104,7 +104,7 @@ namespace crab {
         void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) 
         { CRAB_ERROR(ELINA_NOT_FOUND); }
         
-        void apply(bitwise_operation_t op, variable_t x, variable_t y, Number k) 
+        void apply(bitwise_operation_t op, variable_t x, variable_t y, number_t k) 
         { CRAB_ERROR(ELINA_NOT_FOUND); }
         
         void backward_assign(variable_t x, linear_expression_t e,
@@ -112,7 +112,7 @@ namespace crab {
         { CRAB_ERROR(ELINA_NOT_FOUND); }
           
         void backward_apply(operation_t op,
-			     variable_t x, variable_t y, Number z,
+			     variable_t x, variable_t y, number_t z,
 			     elina_domain_t invariant) 
         { CRAB_ERROR(ELINA_NOT_FOUND); }
         
@@ -120,7 +120,73 @@ namespace crab {
 			    variable_t x, variable_t y, variable_t z,
 			    elina_domain_t invariant) 
         { CRAB_ERROR(ELINA_NOT_FOUND); }
-        
+
+	void assign_bool_cst(variable_t lhs, linear_constraint_t rhs)
+        { CRAB_ERROR(ELINA_NOT_FOUND); }
+	
+	void assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs)
+        { CRAB_ERROR(ELINA_NOT_FOUND); }
+
+	void apply_binary_bool(bool_operation_t op, variable_t x,variable_t y,variable_t z)
+	{ CRAB_ERROR(ELINA_NOT_FOUND); }
+	
+	void assume_bool(variable_t v, bool is_negated)
+        { CRAB_ERROR(ELINA_NOT_FOUND); }
+	
+	void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
+				      elina_domain_t invariant)
+        { CRAB_ERROR(ELINA_NOT_FOUND); }	  	  
+	
+	void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
+				      elina_domain_t invariant)
+	{ CRAB_ERROR(ELINA_NOT_FOUND); }	  	  	  
+	void backward_apply_binary_bool(bool_operation_t op,
+					variable_t x,variable_t y,variable_t z,
+					elina_domain_t invariant)
+	{ CRAB_ERROR(ELINA_NOT_FOUND); }
+	
+	void array_init(variable_t a, linear_expression_t elem_size,
+			linear_expression_t lb_idx, linear_expression_t ub_idx, 
+			linear_expression_t val)
+	{ CRAB_ERROR(ELINA_NOT_FOUND); }
+	
+	void array_load(variable_t lhs,
+			variable_t a, linear_expression_t elem_size,
+			linear_expression_t i)
+	{ CRAB_ERROR(ELINA_NOT_FOUND); }
+	
+	void array_store(variable_t a, linear_expression_t elem_size,
+			 linear_expression_t i, linear_expression_t v, 
+			 bool is_singleton)
+	{ CRAB_ERROR(ELINA_NOT_FOUND); }
+	
+	void array_assign(variable_t lhs, variable_t rhs)
+	{ CRAB_ERROR(ELINA_NOT_FOUND); }
+	
+	void pointer_load(variable_t lhs, variable_t rhs)
+	{ CRAB_ERROR(ELINA_NOT_FOUND); }
+	
+	void pointer_store(variable_t lhs, variable_t rhs)
+	{ CRAB_ERROR(ELINA_NOT_FOUND); }
+	
+	void pointer_assign(variable_t lhs, variable_t rhs, linear_expression_t offset)
+	{ CRAB_ERROR(ELINA_NOT_FOUND); }	  
+	  
+	void pointer_mk_obj(variable_t lhs, ikos::index_t address)
+	{ CRAB_ERROR(ELINA_NOT_FOUND); }
+	
+	void pointer_function(variable_t lhs, varname_t func)
+	{ CRAB_ERROR(ELINA_NOT_FOUND); }
+	
+	void pointer_mk_null(variable_t lhs)
+	{ CRAB_ERROR(ELINA_NOT_FOUND); }
+	
+	void pointer_assume(pointer_constraint_t cst)
+	{ CRAB_ERROR(ELINA_NOT_FOUND); }
+	
+	void pointer_assert(pointer_constraint_t cst)
+	{ CRAB_ERROR(ELINA_NOT_FOUND); }	
+	
         linear_constraint_system_t to_linear_constraint_system()
         { CRAB_ERROR(ELINA_NOT_FOUND); }
 
@@ -166,26 +232,25 @@ namespace domains {
   using namespace elina;
 
   template<typename Number, typename VariableName, elina_domain_id_t ElinaDom>
-  class elina_domain_:
-    public abstract_domain<Number,VariableName,
-			   elina_domain_<Number,VariableName,ElinaDom> > {
-    
+  class elina_domain_ final:
+    public abstract_domain<elina_domain_<Number,VariableName,ElinaDom>> {
     typedef elina_domain_<Number, VariableName, ElinaDom> elina_domain_t;
-    typedef abstract_domain<Number,VariableName,elina_domain_t> abstract_domain_t;
+    typedef abstract_domain<elina_domain_t> abstract_domain_t;
   public:
     using typename abstract_domain_t::linear_expression_t;
     using typename abstract_domain_t::linear_constraint_t;
     using typename abstract_domain_t::linear_constraint_system_t;
     using typename abstract_domain_t::disjunctive_linear_constraint_system_t;    
     using typename abstract_domain_t::variable_t;
-    using typename abstract_domain_t::variable_vector_t;	
-    using typename abstract_domain_t::number_t;
-    using typename abstract_domain_t::varname_t;
-    typedef interval <Number> interval_t;
+    using typename abstract_domain_t::variable_vector_t;
+    using typename abstract_domain_t::pointer_constraint_t;
+    typedef Number number_t;
+    typedef VariableName varname_t;
+    typedef interval<number_t> interval_t;
     
   private:
-    typedef interval_domain <Number, VariableName> interval_domain_t;
-    typedef bound <Number> bound_t;
+    typedef interval_domain<number_t, varname_t> interval_domain_t;
+    typedef bound<number_t> bound_t;
     typedef boost::bimap<variable_t, elina_dim_t > var_map_t;
     typedef typename var_map_t::value_type binding_t;
     
@@ -432,13 +497,13 @@ namespace domains {
       return elina_texpr0_dim(get_var_dim_insert(v));
     }
         
-    inline elina_texpr0_t* num2texpr(Number i) const {  
+    inline elina_texpr0_t* num2texpr(number_t i) const {  
       mpq_class n(0);
       convert_crab_number(i, n);
       return elina_texpr0_cst_scalar_mpq(n.get_mpq_t());
     }
     
-    inline elina_texpr0_t* intv2texpr(Number a, Number b) const {
+    inline elina_texpr0_t* intv2texpr(number_t a, number_t b) const {
       mpq_class n1(0), n2(0);
       convert_crab_number(a, n1);
       convert_crab_number(b, n2);
@@ -459,7 +524,7 @@ namespace domains {
     { return elina_texpr0_binop(ELINA_TEXPR_DIV,a,b,ELINA_RTYPE_REAL,ELINA_RDIR_UP);}
     
     inline elina_texpr0_t* expr2texpr(linear_expression_t e)  {
-      Number cst = e.constant();
+      number_t cst = e.constant();
       elina_texpr0_t* res = num2texpr(cst);
       for (auto p: e) {
 	elina_texpr0_t* term = texpr_mul(num2texpr(p.first), var2texpr(p.second));
@@ -534,17 +599,17 @@ namespace domains {
     inline void convert_elina_number(mpq_ptr n, ikos::q_number &res) const
     { res = ikos::q_number(mpq_class(n)); }	  
     
-    Number coeff2Num(elina_coeff_t* coeff) {
+    number_t coeff2Num(elina_coeff_t* coeff) {
       assert(coeff->discr == ELINA_COEFF_SCALAR);
       
       elina_scalar_t* scalar = coeff->val.scalar;	  
       if (scalar->discr == ELINA_SCALAR_DOUBLE) { // elina uses double
-	Number res;
+	number_t res;
 	convert_elina_number(scalar->val.dbl, res);
 	return res;
       }
       else if(scalar->discr == ELINA_SCALAR_MPQ) {
-	Number res;
+	number_t res;
 	convert_elina_number(scalar->val.mpq, res);
 	return res;
       }
@@ -1270,13 +1335,13 @@ namespace domains {
 	if (lb->discr == ELINA_SCALAR_DOUBLE && ub->discr == ELINA_SCALAR_DOUBLE) { 
 	  
 	  if (elina_scalar_infty(lb) == -1) {     // [-oo, k]
-	    Number sup;
+	    number_t sup;
 	    convert_elina_number(ub->val.dbl, sup);
 	    elina_interval_free(intv);
 	    return interval_t(bound_t::minus_infinity(), sup);
 	  }
 	  else if (elina_scalar_infty(ub) == 1) { // [k, +oo]
-	    Number inf;
+	    number_t inf;
 	    convert_elina_number(lb->val.dbl, inf);
 	    elina_interval_free(intv);
 	    return interval_t(inf, bound_t::plus_infinity());
@@ -1285,7 +1350,7 @@ namespace domains {
 	  else { 
 	    assert(elina_scalar_infty(lb) == 0); // lb is finite
 	    assert(elina_scalar_infty(ub) == 0); // ub is finite
-	    Number inf, sup;
+	    number_t inf, sup;
 	    convert_elina_number(lb->val.dbl, inf);
 	    convert_elina_number(ub->val.dbl, sup);
 	    elina_interval_free(intv);
@@ -1296,14 +1361,14 @@ namespace domains {
 	else if (lb->discr == ELINA_SCALAR_MPQ && ub->discr == ELINA_SCALAR_MPQ ) {
 	  
 	  if (elina_scalar_infty(lb) == -1) {     // [-oo, k]
-	    Number sup;
+	    number_t sup;
 	    convert_elina_number(ub->val.mpq, sup);
 	    elina_interval_free(intv);
 	    return interval_t(bound_t::minus_infinity(), sup);
 	    
 	  }
 	  else if (elina_scalar_infty(ub) == 1) { // [k, +oo]
-	    Number inf;
+	    number_t inf;
 	    convert_elina_number(lb->val.mpq, inf);
 	    elina_interval_free(intv);
 	    return interval_t(inf, bound_t::plus_infinity());
@@ -1312,7 +1377,7 @@ namespace domains {
 	    assert(elina_scalar_infty(lb) == 0); // lb is finite
 	    assert(elina_scalar_infty(ub) == 0); // ub is finite
 	    
-	    Number inf, sup;
+	    number_t inf, sup;
 	    convert_elina_number(lb->val.mpq, inf);
 	    convert_elina_number(ub->val.mpq, sup);		
 	    elina_interval_free(intv);
@@ -1345,7 +1410,7 @@ namespace domains {
       if (lb.is_finite())  {
 	// v >= lb <--> -v + lb <= 0
 	assert(lb.number());
-	linear_expression_t e = (Number(-1) * vv) + *(lb.number());
+	linear_expression_t e = (number_t(-1) * vv) + *(lb.number());
 	csts += (linear_constraint_t(e, linear_constraint_t::kind_t::INEQUALITY));
       }
       auto ub = ival.ub();
@@ -1568,7 +1633,7 @@ namespace domains {
       set(x, xi);
     }
     
-    void apply(bitwise_operation_t op, variable_t x, variable_t y, Number k) {
+    void apply(bitwise_operation_t op, variable_t x, variable_t y, number_t k) {
       crab::CrabStats::count(getDomainName() + ".count.apply");
       crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1620,7 +1685,7 @@ namespace domains {
     }
     
     void backward_apply(operation_t op,
-			 variable_t x, variable_t y, Number z,
+			 variable_t x, variable_t y, number_t z,
 			 elina_domain_t invariant) {
       crab::CrabStats::count(getDomainName() + ".count.backward_apply");
       crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
@@ -1709,6 +1774,43 @@ namespace domains {
 	       crab::outs() << "--- " << x << ":=_bwd " << y << op << z
 	                    << " --> "<< *this <<"\n";);
     }
+
+
+    /* Begin unimplemented operations */
+    // boolean operations
+    void assign_bool_cst(variable_t lhs, linear_constraint_t rhs) {}
+    void assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs) {}
+    void apply_binary_bool(bool_operation_t op, variable_t x,variable_t y,variable_t z) {}
+    void assume_bool(variable_t v, bool is_negated) {}
+    // backward boolean operations
+    void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
+				  elina_domain_t invariant){}
+    void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
+				  elina_domain_t invariant) {}
+    void backward_apply_binary_bool(bool_operation_t op,
+				    variable_t x,variable_t y,variable_t z,
+				    elina_domain_t invariant) {}
+    // array operations
+    void array_init(variable_t a, linear_expression_t elem_size,
+		    linear_expression_t lb_idx, linear_expression_t ub_idx, 
+		    linear_expression_t val) {}      
+    void array_load(variable_t lhs,
+		    variable_t a, linear_expression_t elem_size,
+		    linear_expression_t i) {}
+    void array_store(variable_t a, linear_expression_t elem_size,
+		     linear_expression_t i, linear_expression_t v, 
+		     bool is_singleton) {}      
+    void array_assign(variable_t lhs, variable_t rhs) {}
+    // pointer operations
+    void pointer_load(variable_t lhs, variable_t rhs)  {}
+    void pointer_store(variable_t lhs, variable_t rhs) {} 
+    void pointer_assign(variable_t lhs, variable_t rhs, linear_expression_t offset) {}
+    void pointer_mk_obj(variable_t lhs, ikos::index_t address) {}
+    void pointer_function(variable_t lhs, varname_t func) {}
+    void pointer_mk_null(variable_t lhs) {}
+    void pointer_assume(pointer_constraint_t cst) {}
+    void pointer_assert(pointer_constraint_t cst) {}
+    /* End unimplemented operations */
     
     interval_domain_t to_interval_domain() {
       if (is_bottom()) return interval_domain_t::bottom();
@@ -1837,31 +1939,38 @@ namespace domains {
   // Without copy-on-write
   template<class Number, class VariableName, elina_domain_id_t ElinaDom>
   using elina_domain = elina_domain_<Number,VariableName,ElinaDom>;     
-  #else 
+  #else
+
+  template<typename Number, typename VariableName, elina_domain_id_t ElinaDom>
+  struct abstract_domain_traits<elina_domain_<Number, VariableName, ElinaDom>> {
+    typedef Number number_t;
+    typedef VariableName varname_t;       
+  };
+  
   // Quick wrapper which uses shared references with copy-on-write.
   template<class Number, class VariableName, elina_domain_id_t ElinaDom>
-  class elina_domain :
-    public abstract_domain<Number, VariableName,
-			   elina_domain<Number, VariableName, ElinaDom> > {
-    
+  class elina_domain final:
+    public abstract_domain<elina_domain<Number, VariableName, ElinaDom>> {
     typedef elina_domain<Number, VariableName, ElinaDom> elina_domain_t;
-    typedef abstract_domain<Number, VariableName, elina_domain_t> abstract_domain_t;
+    typedef abstract_domain<elina_domain_t> abstract_domain_t;
     
   public:
     
     using typename abstract_domain_t::linear_expression_t;
     using typename abstract_domain_t::linear_constraint_t;
     using typename abstract_domain_t::linear_constraint_system_t;
+    using typename abstract_domain_t::disjunctive_linear_constraint_system_t;    
     using typename abstract_domain_t::variable_t;
-    using typename abstract_domain_t::number_t;
-    using typename abstract_domain_t::varname_t;
-    using typename abstract_domain_t::variable_vector_t;	
+    using typename abstract_domain_t::variable_vector_t;
+    using typename abstract_domain_t::pointer_constraint_t;	    
     typedef typename linear_constraint_t::kind_t constraint_kind_t;
-    typedef interval<Number>  interval_t;
+    typedef Number number_t;
+    typedef VariableName varname_t;
+    typedef interval<number_t>  interval_t;
     
   private:
     
-    typedef elina_domain_<Number, VariableName, ElinaDom> elina_domain_impl_t;
+    typedef elina_domain_<number_t, varname_t, ElinaDom> elina_domain_impl_t;
     typedef std::shared_ptr<elina_domain_impl_t> elina_domain_ref_t;
     
     elina_domain_ref_t _ref;  
@@ -1901,7 +2010,7 @@ namespace domains {
     
     bool is_bottom() { return ref().is_bottom(); }
     bool is_top() { return ref().is_top(); }
-    bool operator<=(elina_domain_t& o) { return ref() <= o.ref(); }
+    bool operator<=(elina_domain_t o) { return ref() <= o.ref(); }
     void operator|=(elina_domain_t o) { detach(); ref() |= o.ref(); }
     elina_domain_t operator|(elina_domain_t o)
     { return create(ref() | o.ref()); }
@@ -1914,7 +2023,7 @@ namespace domains {
     
     template<typename Thresholds>
     elina_domain_t widening_thresholds(elina_domain_t o, const Thresholds &ts) {
-          return create(ref().template widening_thresholds<Thresholds>(o.ref(), ts));
+      return create(ref().template widening_thresholds<Thresholds>(o.ref(), ts));
     }
     
     void normalize() { detach(); ref().normalize(); }
@@ -1935,7 +2044,7 @@ namespace domains {
     void assign(variable_t x, linear_expression_t e) {
       detach(); ref().assign(x, e);
     }
-    void apply(operation_t op, variable_t x, variable_t y, Number k) {
+    void apply(operation_t op, variable_t x, variable_t y, number_t k) {
       detach(); ref().apply(op, x, y, k);
     }
     void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
@@ -1944,7 +2053,7 @@ namespace domains {
     void apply(int_conv_operation_t op, variable_t dst, variable_t src) {
       detach(); ref().apply(op, dst, src);
     }
-    void apply(bitwise_operation_t op, variable_t x, variable_t y, Number k) {
+    void apply(bitwise_operation_t op, variable_t x, variable_t y, number_t k) {
       detach(); ref().apply(op, x, y, k);
     }
     void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {
@@ -1955,7 +2064,7 @@ namespace domains {
       detach(); ref().backward_assign(x, e, invariant.ref());
     }
     void backward_apply(operation_t op,
-			variable_t x, variable_t y, Number k,
+			variable_t x, variable_t y, number_t k,
 			elina_domain_t invariant) {
       detach(); ref().backward_apply(op, x, y, k, invariant.ref());
     }
@@ -1965,6 +2074,42 @@ namespace domains {
       detach(); ref().backward_apply(op, x, y, z, invariant.ref());
     }	
 
+    /* Begin unimplemented operations */
+    // boolean operations
+    void assign_bool_cst(variable_t lhs, linear_constraint_t rhs) {}
+    void assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs) {}
+    void apply_binary_bool(bool_operation_t op, variable_t x,variable_t y,variable_t z) {}	
+    void assume_bool(variable_t v, bool is_negated) {}
+    // backward boolean operations
+    void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
+				  elina_domain_t invariant){}
+    void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
+				  elina_domain_t invariant) {}
+    void backward_apply_binary_bool(crab::domains::bool_operation_t op,
+				    variable_t x,variable_t y,variable_t z,
+				    elina_domain_t invariant) {}
+    // array operations
+    void array_init(variable_t a, linear_expression_t elem_size,
+		    linear_expression_t lb_idx, linear_expression_t ub_idx, 
+		    linear_expression_t val) {}      
+    void array_load(variable_t lhs,
+		    variable_t a, linear_expression_t elem_size,
+		    linear_expression_t i) {}
+    void array_store(variable_t a, linear_expression_t elem_size,
+		     linear_expression_t i, linear_expression_t v, 
+		     bool is_singleton) {}      
+    void array_assign(variable_t lhs, variable_t rhs) {}
+    // pointer operations
+    void pointer_load(variable_t lhs, variable_t rhs)  {}
+    void pointer_store(variable_t lhs, variable_t rhs) {} 
+    void pointer_assign(variable_t lhs, variable_t rhs, linear_expression_t offset) {}
+    void pointer_mk_obj(variable_t lhs, ikos::index_t address) {}
+    void pointer_function(variable_t lhs, varname_t func) {}
+    void pointer_mk_null(variable_t lhs) {}
+    void pointer_assume(pointer_constraint_t cst) {}
+    void pointer_assert(pointer_constraint_t cst) {}
+    /* End unimplemented operations */
+    
     void forget(const variable_vector_t& vs) {
       detach(); ref().forget(vs);
     }
@@ -1991,22 +2136,18 @@ namespace domains {
     linear_constraint_system_t to_linear_constraint_system() {
       return ref().to_linear_constraint_system();
     }
+
+    disjunctive_linear_constraint_system_t to_disjunctive_linear_constraint_system() {
+      return ref().to_disjunctive_linear_constraint_system();
+    }
+    
     static std::string getDomainName() {
       return elina_domain_impl_t::getDomainName();
     }
     
   };
   #endif
-
-  // -- domain traits
-  template<typename Number, typename VariableName, elina_domain_id_t ElinaDom>
-  class domain_traits <elina_domain<Number, VariableName, ElinaDom> > {
-  public:
-    typedef elina_domain<Number, VariableName, ElinaDom> elina_domain_t;
-    template<class CFG>
-    static void do_initialization(CFG cfg) { }
-  };
-     
+  
   // --- global datastructures
   template<typename N, typename V, elina_domain_id_t D>
   elina_manager_t* elina_domain_<N,V,D>::m_apman = nullptr;
@@ -2015,3 +2156,14 @@ namespace domains {
 } // namespace domains
 }// namespace crab
 #endif
+
+namespace crab {
+namespace domains {
+  template<typename Number, typename VariableName, elina_domain_id_t ElinaDom>
+  struct abstract_domain_traits<elina_domain<Number, VariableName, ElinaDom>> {
+    typedef Number number_t;
+    typedef VariableName varname_t;       
+  };
+}
+}
+  

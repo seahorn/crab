@@ -23,10 +23,8 @@ namespace crab {
      ARR_PTR_TYPE,
      UNK_TYPE};
 
-   inline crab_os& operator<< (crab_os& o, variable_type t)
-   {
-     switch (t)
-     {
+  inline crab_os& operator<<(crab_os& o, variable_type t) {
+    switch (t) {
        case BOOL_TYPE: o << "bool"; break;       
        case INT_TYPE: o << "int"; break;
        case REAL_TYPE: o << "real"; break;	 
@@ -57,53 +55,53 @@ namespace crab {
   
    inline crab::crab_os& operator<<(crab::crab_os&o, binary_operation_t op) {
      switch (op) {
-       case BINOP_ADD: o << "+"; break;
-       case BINOP_SUB: o << "-"; break;
-       case BINOP_MUL: o << "*"; break;
-       case BINOP_SDIV: o << "/"; break;
-       case BINOP_UDIV: o << "/_u"; break;
-       case BINOP_SREM: o << "%"; break;
-       case BINOP_UREM: o << "%_u"; break;
-       case BINOP_AND: o << "&"; break;
-       case BINOP_OR: o << "|"; break;
-       case BINOP_XOR: o << "^"; break;
-       case BINOP_SHL: o << "<<"; break;
-       case BINOP_LSHR: o << ">>_l"; break;
-       case BINOP_ASHR: o << ">>_r"; break;
-       case BINOP_FUNCTION: o << "uf"; break;
-       default: CRAB_ERROR("unreachable");
-      }
+     case BINOP_ADD: o << "+"; break;
+     case BINOP_SUB: o << "-"; break;
+     case BINOP_MUL: o << "*"; break;
+     case BINOP_SDIV: o << "/"; break;
+     case BINOP_UDIV: o << "/_u"; break;
+     case BINOP_SREM: o << "%"; break;
+     case BINOP_UREM: o << "%_u"; break;
+     case BINOP_AND: o << "&"; break;
+     case BINOP_OR: o << "|"; break;
+     case BINOP_XOR: o << "^"; break;
+     case BINOP_SHL: o << "<<"; break;
+     case BINOP_LSHR: o << ">>_l"; break;
+     case BINOP_ASHR: o << ">>_r"; break;
+     case BINOP_FUNCTION: o << "uf"; break;
+     default: CRAB_ERROR("unexpected binary operation ", op);
+     }
      return o;
    }
 
    inline crab::crab_os& operator<<(crab::crab_os&o, bool_binary_operation_t op) {
      switch (op) {
-       case BINOP_BAND: o << "&"; break;
-       case BINOP_BOR: o << "|"; break;
-       case BINOP_BXOR: o << "^"; break;
-       default: CRAB_ERROR("unreachable");
-      }
+     case BINOP_BAND: o << "&"; break;
+     case BINOP_BOR: o << "|"; break;
+     case BINOP_BXOR: o << "^"; break;
+     default: CRAB_ERROR("unexpected boolean binary operation ", op);
+     }
      return o;
    }
-
+  
    inline crab::crab_os& operator<<(crab::crab_os&o, cast_operation_t op) {
      switch (op) {
-       case CAST_TRUNC: o << "trunc"; break;
-       case CAST_SEXT: o << "sext"; break;
-       case CAST_ZEXT: o << "zext"; break;
-       default: CRAB_ERROR("unreachable");
-      }
+     case CAST_TRUNC: o << "trunc"; break;
+     case CAST_SEXT: o << "sext"; break;
+     case CAST_ZEXT: o << "zext"; break;
+     default: CRAB_ERROR("unexpected cast operation", op);
+     }
      return o;
    }
   
   template<typename T>
-  inline boost::optional<T> conv_op (binary_operation_t op); 
+  inline boost::optional<T> conv_op(binary_operation_t op); 
 
   template<typename T>
-  inline boost::optional<T> conv_op (bool_binary_operation_t op); 
+  inline boost::optional<T> conv_op(bool_binary_operation_t op); 
 
   template<typename T>
-  inline boost::optional<T> conv_op (cast_operation_t op); 
+  inline boost::optional<T> conv_op(cast_operation_t op); 
   
 
   // toy language for pointer constraints
@@ -136,90 +134,90 @@ namespace crab {
        lhs, rhs, kind == PTR_DISEQUALITY   -> *lhs != *rhs
     */
 
-    pointer_constraint (opt_var_t lhs, opt_var_t rhs, ptr_cst_kind_t kind):
-        _lhs (lhs), _rhs (rhs), _kind (kind) {
+    pointer_constraint(opt_var_t lhs, opt_var_t rhs, ptr_cst_kind_t kind):
+        _lhs(lhs), _rhs(rhs), _kind(kind) {
       if (!_lhs && _rhs){ // normalize
-        std::swap (_lhs,_rhs);
+        std::swap(_lhs,_rhs);
       }
     }
 
    public:
 
-    pointer_constraint () : _kind (PTR_EQUALITY) { }
+    pointer_constraint() : _kind(PTR_EQUALITY) { }
     
     // return true iff null != null
-    bool is_contradiction () const {
+    bool is_contradiction() const {
       return (!_lhs && !_rhs && _kind == PTR_DISEQUALITY);
     }
 
     // return true iff null == null
-    bool is_tautology () const {
+    bool is_tautology() const {
       return (!_lhs && !_rhs && _kind == PTR_EQUALITY);
     }
 
-    bool is_equality () const {
+    bool is_equality() const {
       return (_kind == PTR_EQUALITY);
     }
 
-    bool is_disequality () const {
+    bool is_disequality() const {
       return (_kind == PTR_DISEQUALITY);
     }
 
     // return true iff  p == null or p != null
-    bool is_unary () const {
+    bool is_unary() const {
       return (_lhs && !_rhs);
     }
 
     // return true iff p == q or p != q
-    bool is_binary () const {
+    bool is_binary() const {
       return (_lhs && _rhs);
     }
 
-    Variable lhs () const {
-      if (!_lhs) CRAB_ERROR ("pointer constraint lhs is null");
+    Variable lhs() const {
+      if (!_lhs) CRAB_ERROR("pointer constraint lhs is null");
       return *_lhs;
     }
 
-    Variable rhs () const {
-      if (!_rhs) CRAB_ERROR ("pointer constraint rhs is null");
+    Variable rhs() const {
+      if (!_rhs) CRAB_ERROR("pointer constraint rhs is null");
       return *_rhs;
     }
 
-    static ptr_cst_t mk_true () {
-      return ptr_cst_t ();
+    static ptr_cst_t mk_true() {
+      return ptr_cst_t();
     }
 
-    static ptr_cst_t mk_false () {
-      return ptr_cst_t (opt_var_t (), opt_var_t (), PTR_DISEQUALITY);
+    static ptr_cst_t mk_false() {
+      return ptr_cst_t(opt_var_t(), opt_var_t(), PTR_DISEQUALITY);
     }
 
-    static ptr_cst_t mk_eq_null (Variable v)  {
-      return ptr_cst_t (opt_var_t (v), opt_var_t (), PTR_EQUALITY);
+    static ptr_cst_t mk_eq_null(Variable v)  {
+      return ptr_cst_t(opt_var_t(v), opt_var_t(), PTR_EQUALITY);
     }
 
-    static ptr_cst_t mk_diseq_null (Variable v) {
-      return ptr_cst_t (opt_var_t (v), opt_var_t (), PTR_DISEQUALITY);
+    static ptr_cst_t mk_diseq_null(Variable v) {
+      return ptr_cst_t(opt_var_t(v), opt_var_t(), PTR_DISEQUALITY);
     }
 
-    static ptr_cst_t mk_eq (Variable v1, Variable v2)  {
-      return ptr_cst_t (opt_var_t (v1), opt_var_t (v2), PTR_EQUALITY);
+    static ptr_cst_t mk_eq(Variable v1, Variable v2)  {
+      return ptr_cst_t(opt_var_t(v1), opt_var_t(v2), PTR_EQUALITY);
     }
 
-    static ptr_cst_t mk_diseq (Variable v1, Variable v2)  {
-      return ptr_cst_t (opt_var_t (v1), opt_var_t (v2), PTR_DISEQUALITY);
+    static ptr_cst_t mk_diseq(Variable v1, Variable v2)  {
+      return ptr_cst_t(opt_var_t(v1), opt_var_t(v2), PTR_DISEQUALITY);
     }
 
-    void write (crab::crab_os& o) const {
-      if (is_contradiction () ) {
+    void write(crab::crab_os& o) const {
+      if (is_contradiction() ) {
         o << "false";
-      } else if (is_tautology ()) {
+      } else if (is_tautology()) {
         o << "true";
       } else {
-        assert (_lhs);
+        assert(_lhs);
 
-        o << lhs ();
+        o << lhs();
         
-        if (_kind == PTR_EQUALITY) 
+        if(_kind == PTR_EQUALITY) 
           o << " == ";
         else 
           o << " != ";
@@ -227,7 +225,7 @@ namespace crab {
         if (!_rhs)
           o << "NULL";
         else 
-          o <<  rhs ();
+          o <<  rhs();
       }
     }
   };
@@ -243,11 +241,10 @@ namespace crab {
   template<typename Variable>  
   inline crab::crab_os& operator<<(crab::crab_os& o, 
                                    const pointer_constraint<Variable> &cst) {
-    cst.write (o);
+    cst.write(o);
     return o;
   }
-
-} // end namespace
+} // end namespace crab
  
 namespace ikos {
   // Numerical type for indexed objects
@@ -322,7 +319,7 @@ namespace ikos {
       return *this;
     }
 
-    bool is_typed () const { return _type != crab::UNK_TYPE; }
+    bool is_typed() const { return _type != crab::UNK_TYPE; }
 
     bool is_array_type() const {
       return is_typed() && _type >= crab::ARR_BOOL_TYPE;
@@ -356,7 +353,7 @@ namespace ikos {
     index_t index() const { return _n.index(); }
 
     bool operator==(const variable_t& o) const {
-      return _n.index () == o._n.index ();
+      return _n.index() == o._n.index();
     }
 
     bool operator!=(const variable_t& o) const {
@@ -364,7 +361,7 @@ namespace ikos {
     }
     
     bool operator<(const variable_t& o) const {
-      return _n.index () < o._n.index ();
+      return _n.index() < o._n.index();
     }
     
     void write(crab::crab_os& o) const {
@@ -404,7 +401,7 @@ namespace ikos {
       return *m_v;
     }
     
-    bool is_typed () const {
+    bool is_typed() const {
       assert(!is_null());
       return m_v->is_typed();
     }
@@ -480,28 +477,31 @@ namespace ikos {
   }; // class variable_ref
   
   template< typename Number, typename VariableName >
-  inline index_t hash_value (const variable<Number, VariableName> &v) {
-    return v.index ();
+  inline size_t hash_value(const variable<Number, VariableName> &v) {
+    return (size_t) v.index();
   }
 
   template< typename Number, typename VariableName >
-  inline index_t hash_value (const variable_ref<Number, VariableName> &v) {
-    return v.index ();
+  inline size_t hash_value(const variable_ref<Number, VariableName> &v) {
+    return (size_t) v.index();
   }
   
   template< typename Number, typename VariableName >
-  inline crab::crab_os& operator<<(crab::crab_os& o, const variable<Number, VariableName> &v) {
+  inline crab::crab_os& operator<<(crab::crab_os& o,
+				   const variable<Number, VariableName> &v) {
     v.write(o);
     return o;
   }
 
   template< typename Number, typename VariableName >
-  inline crab::crab_os& operator<<(crab::crab_os& o, const variable_ref<Number, VariableName> &v) {
+  inline crab::crab_os& operator<<(crab::crab_os& o,
+				   const variable_ref<Number, VariableName> &v) {
     v.write(o);
     return o;
   }
   
-} // end namespace 
+  
+} // end namespace ikos
 
 namespace crab {
   namespace domains {

@@ -89,11 +89,6 @@ namespace crab {
       crab::ScopedCrabStats __st__("Checker");
       cfg_t cfg = m_analyzer.get_cfg();
 
-      // --- initialization of static data
-      // XXX: static data is overwritten each time a new CFG is
-      // analyzed. Here we re-initialize the static data.
-      //domains::domain_traits<abs_dom_t>::do_initialization(cfg);
-        
       for (auto &bb: cfg) {
         for (auto checker: this->m_checkers) {
           crab::ScopedCrabStats __st__("Checker." + checker->get_property_name());
@@ -141,11 +136,6 @@ namespace crab {
       for (auto &v: boost::make_iterator_range(vertices(cg))) {
         cfg_t cfg = v.get_cfg();
 
-        // --- initialization of static data
-        // XXX: static data is overwritten each time a new CFG is
-        // analyzed. Here we re-initialize the static data.
-        //domains::domain_traits<abs_dom_t>::do_initialization(cfg);
-        
         for (auto &bb: cfg) {
           for (auto checker: this->m_checkers) {
             crab::ScopedCrabStats __st__("Checker." + checker->get_property_name());

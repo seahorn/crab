@@ -24,8 +24,8 @@
 #include <crab/common/types.hpp>
 #include <crab/common/debug.hpp>
 #include <crab/common/stats.hpp>
-#include <crab/domains/operators_api.hpp>
-#include <crab/domains/domain_traits.hpp>
+#include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_specialized_traits.hpp>
 
 #include <crab/domains/intervals.hpp>
 #include <crab/domains/patricia_trees.hpp>
@@ -36,9 +36,6 @@
 #include <set>
 #include <boost/optional.hpp>
 #include "boost/range/algorithm/set_algorithm.hpp"
-
-// temporary for debugging
-#include <crab/domains/split_dbm.hpp>
 
 namespace crab {
 namespace domains {
@@ -606,20 +603,18 @@ namespace domains {
   // }
   
   template<typename NumDomain>
-  class array_expansion_domain:
-    public abstract_domain<typename NumDomain::number_t,
-			   typename NumDomain::varname_t,
-			   array_expansion_domain<NumDomain> > {
-
+  class array_expansion_domain final:
+    public abstract_domain<array_expansion_domain<NumDomain>> {
+			   
   public:
        
-    typedef typename NumDomain::number_t Number;
-    typedef typename NumDomain::varname_t VariableName;
+    typedef typename NumDomain::number_t number_t;
+    typedef typename NumDomain::varname_t varname_t;
        
   private:
        
     typedef array_expansion_domain<NumDomain> array_expansion_domain_t;
-    typedef abstract_domain<Number,VariableName,array_expansion_domain_t> abstract_domain_t;
+    typedef abstract_domain<array_expansion_domain_t> abstract_domain_t;
        
   public:
        
@@ -628,15 +623,13 @@ namespace domains {
     using typename abstract_domain_t::linear_constraint_system_t;
     using typename abstract_domain_t::disjunctive_linear_constraint_system_t;	
     using typename abstract_domain_t::variable_t;
-    using typename abstract_domain_t::number_t;
-    using typename abstract_domain_t::varname_t;
     using typename abstract_domain_t::variable_vector_t;	
     typedef crab::pointer_constraint<variable_t> ptr_cst_t;
     typedef NumDomain content_domain_t;
-    typedef interval <Number> interval_t;
+    typedef interval<number_t> interval_t;
        
   private:
-    typedef bound <Number> bound_t;
+    typedef bound<number_t> bound_t;
     typedef crab::variable_type type_t;
     typedef offset_map<variable_t> offset_map_t;
     typedef cell<variable_t> cell_t;
@@ -868,7 +861,7 @@ namespace domains {
 	       crab::outs() << "apply "<< x<< " := "<< e<< " " << *this <<"\n";);
     }
        
-    void apply(operation_t op, variable_t x, variable_t y, Number z) {
+    void apply(operation_t op, variable_t x, variable_t y, number_t z) {
       crab::CrabStats::count(getDomainName() + ".count.apply");
       crab::ScopedCrabStats __st__(getDomainName() + ".apply");
       
@@ -896,7 +889,7 @@ namespace domains {
     }
     
     void backward_apply(operation_t op,
-			variable_t x, variable_t y, Number z,
+			variable_t x, variable_t y, number_t z,
 			array_expansion_domain_t inv) {
       _inv.backward_apply(op, x, y, z, inv.get_content_domain());
     }
@@ -925,7 +918,7 @@ namespace domains {
 	       << " " << z << " " << *this << "\n";);
     }
        
-    void apply(bitwise_operation_t op, variable_t x, variable_t y, Number k) {
+    void apply(bitwise_operation_t op, variable_t x, variable_t y, number_t k) {
       crab::CrabStats::count(getDomainName() + ".count.apply");
       crab::ScopedCrabStats __st__(getDomainName() + ".apply");
       
@@ -989,7 +982,7 @@ namespace domains {
       _inv.pointer_mk_obj(lhs, address);
     }
        
-    virtual void pointer_function(variable_t lhs, VariableName func) override {
+    virtual void pointer_function(variable_t lhs, varname_t func) override {
       _inv.pointer_function(lhs, func);
     }
        
@@ -1234,16 +1227,9 @@ namespace domains {
   }; // end array_expansion_domain
   
   template<typename BaseDomain>
-  class domain_traits<array_expansion_domain<BaseDomain>> {
-  public:
-       
-    typedef array_expansion_domain<BaseDomain> array_expansion_domain_t;
-    typedef typename BaseDomain::varname_t VariableName;
-    typedef typename BaseDomain::variable_t variable_t;
-       
-       
-    template<class CFG>
-    static void do_initialization(CFG cfg) { }       
+  struct abstract_domain_traits<array_expansion_domain<BaseDomain>> {
+    typedef typename BaseDomain::number_t number_t;       
+    typedef typename BaseDomain::varname_t varname_t;
   };
 
   template<typename BaseDom>

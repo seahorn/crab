@@ -60,7 +60,7 @@
 #include <crab/common/types.hpp>
 #include <crab/common/stats.hpp>
 #include <crab/domains/separate_domains.hpp>
-#include <crab/domains/operators_api.hpp>
+#include <crab/domains/abstract_domain.hpp>
 
 namespace ikos {
 
@@ -787,11 +787,9 @@ public:
 
 }; // class equality_congruence_solver
 
-template < typename Number, typename VariableName, int typeSize = -1 >
-class congruence_domain :
-    public crab::domains::abstract_domain<Number, VariableName,
-					  congruence_domain<Number,VariableName,
-							    typeSize> > {
+template < typename Number, typename VariableName, int typeSize = -1>
+class congruence_domain final:
+  public crab::domains::abstract_domain<congruence_domain<Number,VariableName,typeSize>> {
 public:
   typedef congruence<Number, typeSize> congruence_t;
 
@@ -800,7 +798,7 @@ private:
   // width which is unrealistic.
   typedef congruence_domain<Number, VariableName, typeSize>
   congruence_domain_t;
-  typedef crab::domains::abstract_domain<Number,VariableName,congruence_domain_t>
+  typedef crab::domains::abstract_domain<congruence_domain_t>
   abstract_domain_t;
 
 public:
@@ -809,13 +807,14 @@ public:
   using typename abstract_domain_t::linear_constraint_system_t;
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;   
   using typename abstract_domain_t::variable_t;
-  using typename abstract_domain_t::variable_vector_t;  
-  using typename abstract_domain_t::number_t;
-  using typename abstract_domain_t::varname_t;
+  using typename abstract_domain_t::variable_vector_t;
+  typedef Number number_t;
+  typedef VariableName varname_t;
+  using typename abstract_domain_t::pointer_constraint_t;
 
 private:
   typedef separate_domain<variable_t, congruence_t > separate_domain_t;
-  typedef equality_congruence_solver<Number, VariableName,
+  typedef equality_congruence_solver<number_t, varname_t,
 				     separate_domain_t, typeSize> solver_t;
 
 public:
@@ -909,7 +908,7 @@ public:
     this->_env.set(v, i); 
   }
 
-  void set(variable_t v, Number n) {
+  void set(variable_t v, number_t n) {
     crab::CrabStats::count (getDomainName() + ".count.assign");
     crab::ScopedCrabStats __st__(getDomainName() + ".assign");
     this->_env.set(v, congruence_t(n)); 
@@ -1009,7 +1008,7 @@ public:
     this->_env.set(x, xi);
   }
 
-  void apply(operation_t op, variable_t x, variable_t y, Number k) {
+  void apply(operation_t op, variable_t x, variable_t y, number_t k) {
     crab::CrabStats::count (getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1045,6 +1044,7 @@ public:
     this->_env.set(x, xi);
   }
 
+  // backward operations
   void backward_assign(variable_t x, linear_expression_t e,
 		       congruence_domain_t inv) { 
     crab::domains::BackwardAssignOps<congruence_domain_t>::
@@ -1052,7 +1052,7 @@ public:
   }
   
   void backward_apply(operation_t op,
-		      variable_t x, variable_t y, Number z,
+		      variable_t x, variable_t y, number_t z,
 		      congruence_domain_t inv) {
     crab::domains::BackwardAssignOps<congruence_domain_t>::
       apply(*this, op, x, y, z, inv);
@@ -1065,7 +1065,7 @@ public:
       apply(*this, op, x, y, z, inv);
   }
 
-  // cast_operators_api  
+  // cast operations
   
   void apply(crab::domains::int_conv_operation_t /*op*/,
 	     variable_t dst, variable_t src) {  
@@ -1073,7 +1073,7 @@ public:
     assign(dst, src);
   }
 
-  // bitwise_operators_api
+  // bitwise operations
   
   void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {
     crab::CrabStats::count (getDomainName() + ".count.apply");
@@ -1113,7 +1113,7 @@ public:
     this->_env.set(x, xi);
   }
 
-  void apply(bitwise_operation_t op, variable_t x, variable_t y, Number k) {
+  void apply(bitwise_operation_t op, variable_t x, variable_t y, number_t k) {
     crab::CrabStats::count (getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1150,7 +1150,44 @@ public:
     }
     this->_env.set(x, xi);
   }
-
+  
+  /* Begin unimplemented operations */
+  // boolean operations
+  void assign_bool_cst(variable_t lhs, linear_constraint_t rhs) {}
+  void assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs) {}
+  void apply_binary_bool(crab::domains::bool_operation_t op,
+			 variable_t x,variable_t y,variable_t z) {}
+  void assume_bool(variable_t v, bool is_negated) {}
+  // backward boolean operations
+  void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
+				congruence_domain_t invariant){}
+  void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
+				congruence_domain_t invariant) {}
+  void backward_apply_binary_bool(crab::domains::bool_operation_t op,
+				  variable_t x,variable_t y,variable_t z,
+				  congruence_domain_t invariant) {}
+  // array operations
+  void array_init(variable_t a, linear_expression_t elem_size,
+		  linear_expression_t lb_idx, linear_expression_t ub_idx, 
+		  linear_expression_t val) {}      
+  void array_load(variable_t lhs,
+		  variable_t a, linear_expression_t elem_size,
+		  linear_expression_t i) {}
+  void array_store(variable_t a, linear_expression_t elem_size,
+		   linear_expression_t i, linear_expression_t v, 
+		   bool is_singleton) {}      
+  void array_assign(variable_t lhs, variable_t rhs) {}
+  // pointer operations
+  void pointer_load(variable_t lhs, variable_t rhs)  {}
+  void pointer_store(variable_t lhs, variable_t rhs) {} 
+  void pointer_assign(variable_t lhs, variable_t rhs, linear_expression_t offset) {}
+  void pointer_mk_obj(variable_t lhs, ikos::index_t address) {}
+  void pointer_function(variable_t lhs, varname_t func) {}
+  void pointer_mk_null(variable_t lhs) {}
+  void pointer_assume(pointer_constraint_t cst) {}
+  void pointer_assert(pointer_constraint_t cst) {}
+  /* End unimplemented operations */
+  
   void forget(const variable_vector_t& variables) {
     if (is_bottom() || is_top()) {
       return;
@@ -1202,7 +1239,7 @@ public:
     for (iterator it = this->_env.begin(); it != this->_env.end(); ++it) {
       variable_t v = it->first;
       congruence_t c = it->second;
-      boost::optional< Number > n = c.singleton();
+      boost::optional<number_t> n = c.singleton();
       if (n) {
         csts += (v == *n);
       }
@@ -1228,4 +1265,16 @@ public:
 }; // class congruence_domain
 
 } // namespace ikos
+
+namespace crab {
+namespace domains {
+
+  template <typename Number, typename VariableName, int typeSize> 
+  struct abstract_domain_traits<ikos::congruence_domain<Number, VariableName, typeSize>> {
+    typedef Number number_t;
+    typedef VariableName varname_t;       
+  };
+  
+}
+}
 

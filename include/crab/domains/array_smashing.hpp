@@ -12,8 +12,8 @@
 #include <crab/common/types.hpp>
 #include <crab/common/debug.hpp>
 #include <crab/common/stats.hpp>
-#include <crab/domains/operators_api.hpp>
-#include <crab/domains/domain_traits.hpp>
+#include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_specialized_traits.hpp>
 
 namespace crab {
 
@@ -22,20 +22,18 @@ namespace crab {
       //! Abstract domain to reason about summarized variables. All array
       //  elements are `smashed` into a single cell.
       template<typename NumDomain>
-      class array_smashing:
-       public abstract_domain<typename NumDomain::number_t,
-			      typename NumDomain::varname_t,
-			      array_smashing<NumDomain> > {
+      class array_smashing final:
+       public abstract_domain<array_smashing<NumDomain>> {
 	
       public:
 	
-	typedef typename NumDomain::number_t Number;
-        typedef typename NumDomain::varname_t VariableName;
+	typedef typename NumDomain::number_t number_t;
+        typedef typename NumDomain::varname_t varname_t;
 	
       private:
 	
         typedef array_smashing<NumDomain> array_smashing_t;
-	typedef abstract_domain<Number,VariableName,array_smashing_t> abstract_domain_t;
+	typedef abstract_domain<array_smashing_t> abstract_domain_t;
 	  
       public:
 
@@ -44,16 +42,14 @@ namespace crab {
         using typename abstract_domain_t::linear_constraint_system_t;
         using typename abstract_domain_t::disjunctive_linear_constraint_system_t;	
         using typename abstract_domain_t::variable_t;
-        using typename abstract_domain_t::number_t;
-        using typename abstract_domain_t::varname_t;
 	using typename abstract_domain_t::variable_vector_t;	
         typedef crab::pointer_constraint<variable_t> ptr_cst_t;
         typedef NumDomain content_domain_t;
-        typedef interval <Number> interval_t;
+        typedef interval <number_t> interval_t;
         
        private:
         
-        typedef bound <Number> bound_t; 
+        typedef bound <number_t> bound_t; 
         
         //! scalar and summarized array variables        
         NumDomain _inv; 
@@ -63,7 +59,7 @@ namespace crab {
         void strong_update(variable_t a, linear_expression_t rhs) {
 	  if (a.get_type() == ARR_BOOL_TYPE) {
 	    if (rhs.is_constant()) {
-	      if (rhs.constant() >= Number(1))
+	      if (rhs.constant() >= number_t(1))
 		_inv.assign_bool_cst(a, linear_constraint_t::get_true());
 	      else
 		_inv.assign_bool_cst(a, linear_constraint_t::get_false());
@@ -73,10 +69,10 @@ namespace crab {
 	  } else if (a.get_type() == ARR_INT_TYPE || a.get_type() == ARR_REAL_TYPE) {
             _inv.assign(a, rhs);
 	  } else if(a.get_type() == ARR_PTR_TYPE) {
-	    if (rhs.is_constant() && rhs.constant() == Number(0))
+	    if (rhs.is_constant() && rhs.constant() == number_t(0))
 	      _inv.pointer_mk_null(a);
 	    else if (auto rhs_v = rhs.get_variable())	     
-	      _inv.pointer_assign(a,(*rhs_v), Number(0));
+	      _inv.pointer_assign(a,(*rhs_v), number_t(0));
 	  }
         }
         
@@ -85,7 +81,7 @@ namespace crab {
 
 	  if (a.get_type() == ARR_BOOL_TYPE) {
 	    if (rhs.is_constant()) {
-	      if (rhs.constant() >= Number(1))
+	      if (rhs.constant() >= number_t(1))
 		other.assign_bool_cst(a, linear_constraint_t::get_true());
 	      else
 		other.assign_bool_cst(a, linear_constraint_t::get_false());
@@ -95,10 +91,10 @@ namespace crab {
 	  } else if (a.get_type() == ARR_INT_TYPE || a.get_type() == ARR_REAL_TYPE) {
             other.assign(a, rhs);
 	  } else if (a.get_type() == ARR_PTR_TYPE) {
-	    if(rhs.is_constant() && rhs.constant() == Number(0))
+	    if(rhs.is_constant() && rhs.constant() == number_t(0))
 	      other.pointer_mk_null(a);
 	    else if (auto rhs_v = rhs.get_variable())	     
-	      other.pointer_assign(a,(*rhs_v), Number(0));
+	      other.pointer_assign(a,(*rhs_v), number_t(0));
 	  }
 	  
           _inv = _inv | other;
@@ -200,7 +196,7 @@ namespace crab {
                    crab::outs() << "apply "<< x<< " := "<< e<< *this <<"\n";);
         }
         
-        void apply(operation_t op, variable_t x, variable_t y, Number z) {
+        void apply(operation_t op, variable_t x, variable_t y, number_t z) {
           _inv.apply(op, x, y, z);
           
           CRAB_LOG("smashing",
@@ -222,7 +218,7 @@ namespace crab {
 	}
 	
 	void backward_apply(operation_t op,
-			    variable_t x, variable_t y, Number z,
+			    variable_t x, variable_t y, number_t z,
 			    array_smashing_t inv) {
 	  _inv.backward_apply(op, x, y, z, inv.get_content_domain());
 	}
@@ -245,7 +241,7 @@ namespace crab {
 		                << op<< " "<< z<< *this <<"\n";);
         }
         
-        void apply(bitwise_operation_t op, variable_t x, variable_t y, Number k) {
+        void apply(bitwise_operation_t op, variable_t x, variable_t y, number_t k) {
           _inv.apply(op, x, y, k);
 
           CRAB_LOG("smashing",
@@ -305,7 +301,7 @@ namespace crab {
           _inv.pointer_mk_obj(lhs, address);
         }
         
-        virtual void pointer_function(variable_t lhs, VariableName func) override {
+        virtual void pointer_function(variable_t lhs, varname_t func) override {
           _inv.pointer_function(lhs, func);
         }
         
@@ -331,7 +327,7 @@ namespace crab {
 				 linear_expression_t val) override {
 	  if (a.get_type() == ARR_BOOL_TYPE)  {
 	    if (val.is_constant()) {
-	      if (val.constant() >= Number(1))
+	      if (val.constant() >= number_t(1))
 		_inv.assign_bool_cst(a, linear_constraint_t::get_true());
 	      else
 		_inv.assign_bool_cst(a, linear_constraint_t::get_false());
@@ -341,10 +337,10 @@ namespace crab {
 	  } else if (a.get_type() == ARR_INT_TYPE || a.get_type() == ARR_REAL_TYPE) {
             _inv.assign(a, val);
 	  } else if (a.get_type() == ARR_PTR_TYPE) {
-	    if (val.is_constant() && val.constant() == Number(0))
+	    if (val.is_constant() && val.constant() == number_t(0))
 	      _inv.pointer_mk_null(a);
 	    else if (auto var = val.get_variable()) {
-	      _inv.pointer_assign(a,(*var), Number(0));
+	      _inv.pointer_assign(a,(*var), number_t(0));
 	    }
 	  }
           
@@ -370,7 +366,7 @@ namespace crab {
 	  } else if (a.get_type() == ARR_INT_TYPE || a.get_type() == ARR_REAL_TYPE) {
             _inv.assign(lhs, a_prime);
 	  } else if (a.get_type() == ARR_PTR_TYPE) {
-            _inv.pointer_assign(lhs, a_prime, Number(0));
+            _inv.pointer_assign(lhs, a_prime, number_t(0));
 	  }
 
           _inv -= a_prime; 
@@ -404,7 +400,7 @@ namespace crab {
 	  } else if (lhs.get_type() == ARR_INT_TYPE || lhs.get_type() == ARR_REAL_TYPE) {
             _inv.assign(lhs, rhs);
 	  } else  if (lhs.get_type() == ARR_PTR_TYPE) {
-            _inv.pointer_assign(lhs, rhs, Number(0));
+            _inv.pointer_assign(lhs, rhs, number_t(0));
 	  }
         }
         
@@ -441,42 +437,40 @@ namespace crab {
       }; // end array_smashing
    
      template<typename BaseDomain>
-     class domain_traits<array_smashing<BaseDomain>> {
-      public:
-       typedef array_smashing<BaseDomain> array_smashing_t;       
-       template<class CFG>
-       static void do_initialization(CFG cfg) { }       
+     struct abstract_domain_traits<array_smashing<BaseDomain>> {
+       typedef typename BaseDomain::number_t number_t;
+       typedef typename BaseDomain::varname_t varname_t;
      };
-
-    template<typename BaseDom>
-    class checker_domain_traits<array_smashing<BaseDom>> {
-    public:
-      typedef array_smashing<BaseDom> this_type;
-      typedef typename this_type::linear_constraint_t linear_constraint_t;
-      typedef typename this_type::disjunctive_linear_constraint_system_t
-      disjunctive_linear_constraint_system_t;    
-      
-      static bool entail(this_type& lhs, const disjunctive_linear_constraint_system_t& rhs) {
-	BaseDom& lhs_dom = lhs.get_content_domain();
-	return checker_domain_traits<BaseDom>::entail(lhs_dom, rhs);
-      }
-      
-      static bool entail(const disjunctive_linear_constraint_system_t& lhs, this_type& rhs) {
-	BaseDom& rhs_dom = rhs.get_content_domain();
-	return checker_domain_traits<BaseDom>::entail(lhs, rhs_dom);      
-      }
-      
-      static bool entail(this_type& lhs, const linear_constraint_t& rhs) {
-	BaseDom& lhs_dom = lhs.get_content_domain();
-	return checker_domain_traits<BaseDom>::entail(lhs_dom, rhs);
-      }
-      
-      static bool intersect(this_type& inv, const linear_constraint_t& cst) {
-	BaseDom& dom = inv.get_content_domain();	
-	return checker_domain_traits<BaseDom>::intersect(dom, cst);
-      }
-      
-    };
+     
+     template<typename BaseDom>
+     class checker_domain_traits<array_smashing<BaseDom>> {
+     public:
+       typedef array_smashing<BaseDom> this_type;
+       typedef typename this_type::linear_constraint_t linear_constraint_t;
+       typedef typename this_type::disjunctive_linear_constraint_system_t
+       disjunctive_linear_constraint_system_t;    
+       
+       static bool entail(this_type& lhs, const disjunctive_linear_constraint_system_t& rhs) {
+	 BaseDom& lhs_dom = lhs.get_content_domain();
+	 return checker_domain_traits<BaseDom>::entail(lhs_dom, rhs);
+       }
+       
+       static bool entail(const disjunctive_linear_constraint_system_t& lhs, this_type& rhs) {
+	 BaseDom& rhs_dom = rhs.get_content_domain();
+	 return checker_domain_traits<BaseDom>::entail(lhs, rhs_dom);      
+       }
+       
+       static bool entail(this_type& lhs, const linear_constraint_t& rhs) {
+	 BaseDom& lhs_dom = lhs.get_content_domain();
+	 return checker_domain_traits<BaseDom>::entail(lhs_dom, rhs);
+       }
+       
+       static bool intersect(this_type& inv, const linear_constraint_t& cst) {
+	 BaseDom& dom = inv.get_content_domain();	
+	 return checker_domain_traits<BaseDom>::intersect(dom, cst);
+       }
+       
+     };
      
    } // namespace domains
 }// namespace crab

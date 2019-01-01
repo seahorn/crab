@@ -49,7 +49,7 @@
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/domains/linear_interval_solver.hpp>
 #include <crab/domains/separate_domains.hpp>
-#include <crab/domains/operators_api.hpp>
+#include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
 
 namespace ikos {
@@ -1035,27 +1035,26 @@ namespace ikos {
   } // namespace linear_interval_solver_impl
 
   template<typename Number, typename VariableName, std::size_t max_reduction_cycles = 10>
-  class interval_domain:
+  class interval_domain final:
     public crab::domains::
-    abstract_domain<Number, VariableName,
-		    interval_domain<Number,VariableName,max_reduction_cycles> >  {
+    abstract_domain<interval_domain<Number,VariableName,max_reduction_cycles>>  {
   public:
     typedef interval_domain<Number, VariableName, max_reduction_cycles> interval_domain_t;
-    typedef crab::domains::
-    abstract_domain<Number,VariableName,interval_domain_t> abstract_domain_t;
+    typedef crab::domains::abstract_domain<interval_domain_t> abstract_domain_t;
     using typename abstract_domain_t::linear_expression_t;
     using typename abstract_domain_t::linear_constraint_t;
     using typename abstract_domain_t::linear_constraint_system_t;
     using typename abstract_domain_t::disjunctive_linear_constraint_system_t;    
     using typename abstract_domain_t::variable_t;
     using typename abstract_domain_t::variable_vector_t;      
-    using typename abstract_domain_t::number_t;
-    using typename abstract_domain_t::varname_t;
-    typedef interval<Number> interval_t;
+    using typename abstract_domain_t::pointer_constraint_t;
+    typedef Number number_t;
+    typedef VariableName varname_t;
+    typedef interval<number_t> interval_t;
     
   private:
     typedef separate_domain<variable_t, interval_t> separate_domain_t;
-    typedef linear_interval_solver<Number, VariableName, separate_domain_t> solver_t;
+    typedef linear_interval_solver<number_t, varname_t, separate_domain_t> solver_t;
     
   public:
     typedef typename separate_domain_t::iterator iterator;
@@ -1157,7 +1156,7 @@ namespace ikos {
       this->_env.set(v, i);
     }
 
-    void set(variable_t v, Number n) {
+    void set(variable_t v, number_t n) {
       crab::CrabStats::count (getDomainName() + ".count.assign");
       crab::ScopedCrabStats __st__(getDomainName() + ".assign");
       this->_env.set(v, interval_t(n));
@@ -1265,7 +1264,7 @@ namespace ikos {
       this->_env.set(x, xi);
     }
 
-    void apply(operation_t op, variable_t x, variable_t y, Number k) {
+    void apply(operation_t op, variable_t x, variable_t y, number_t k) {
       crab::CrabStats::count (getDomainName() + ".count.apply");
       crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1301,6 +1300,7 @@ namespace ikos {
       this->_env.set(x, xi);
     }
 
+    // backward arithmetic operations
     void backward_assign(variable_t x, linear_expression_t e,
 			 interval_domain_t inv) {
       crab::domains::BackwardAssignOps<interval_domain_t>::
@@ -1308,7 +1308,7 @@ namespace ikos {
     }      
     
     void backward_apply(operation_t op,
-			variable_t x, variable_t y, Number z,
+			variable_t x, variable_t y, number_t z,
 			interval_domain_t inv) {
       crab::domains::BackwardAssignOps<interval_domain_t>::
 	apply(*this, op, x, y, z, inv);
@@ -1320,17 +1320,52 @@ namespace ikos {
       crab::domains::BackwardAssignOps<interval_domain_t>::
 	apply(*this, op, x, y, z, inv);
     }
+
+    /* Begin unimplemented operations */
+    // boolean operations
+    void assign_bool_cst(variable_t lhs, linear_constraint_t rhs) {}
+    void assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs) {}
+    void apply_binary_bool(crab::domains::bool_operation_t op,
+			   variable_t x,variable_t y,variable_t z) {}
+    void assume_bool(variable_t v, bool is_negated) {}
+    // backward boolean operations
+    void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
+				  interval_domain_t invariant){}
+    void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
+				  interval_domain_t invariant) {}
+    void backward_apply_binary_bool(crab::domains::bool_operation_t op,
+				    variable_t x,variable_t y,variable_t z,
+				    interval_domain_t invariant) {}
+    // array operations
+    void array_init(variable_t a, linear_expression_t elem_size,
+		    linear_expression_t lb_idx, linear_expression_t ub_idx, 
+		    linear_expression_t val) {}      
+    void array_load(variable_t lhs,
+		    variable_t a, linear_expression_t elem_size,
+		    linear_expression_t i) {}
+    void array_store(variable_t a, linear_expression_t elem_size,
+		     linear_expression_t i, linear_expression_t v, 
+		     bool is_singleton) {}      
+    void array_assign(variable_t lhs, variable_t rhs) {}
+    // pointer operations
+    void pointer_load(variable_t lhs, variable_t rhs)  {}
+    void pointer_store(variable_t lhs, variable_t rhs) {} 
+    void pointer_assign(variable_t lhs, variable_t rhs, linear_expression_t offset) {}
+    void pointer_mk_obj(variable_t lhs, ikos::index_t address) {}
+    void pointer_function(variable_t lhs, varname_t func) {}
+    void pointer_mk_null(variable_t lhs) {}
+    void pointer_assume(pointer_constraint_t cst) {}
+    void pointer_assert(pointer_constraint_t cst) {}
+    /* End unimplemented operations */
     
-    // cast_operators_api
-    
+    // cast operations
     void apply(crab::domains::int_conv_operation_t /*op*/,
 	       variable_t dst, variable_t src){
       // ignore the widths 
       assign(dst, src);
     }
 
-    // bitwise_operators_api
-    
+    // bitwise operations
     void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z){
       crab::CrabStats::count (getDomainName() + ".count.apply");
       crab::ScopedCrabStats __st__(getDomainName() + ".apply");
@@ -1370,7 +1405,7 @@ namespace ikos {
       this->_env.set(x, xi);
     }
     
-    void apply(bitwise_operation_t op, variable_t x, variable_t y, Number k){
+    void apply(bitwise_operation_t op, variable_t x, variable_t y, number_t k){
       crab::CrabStats::count (getDomainName() + ".count.apply");
       crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1460,8 +1495,8 @@ namespace ikos {
       for (iterator it = this->_env.begin(); it != this->_env.end(); ++it) {
         variable_t v = it->first;
         interval_t   i = it->second;
-        boost::optional<Number> lb = i.lb().number();
-        boost::optional<Number> ub = i.ub().number();
+        boost::optional<number_t> lb = i.lb().number();
+        boost::optional<number_t> ub = i.ub().number();
         if (lb) csts += linear_constraint_t(v >= *lb);
         if (ub) csts += linear_constraint_t(v <= *ub);
       }
@@ -1483,7 +1518,18 @@ namespace ikos {
       return "Intervals";
     }
 
-  }; // class interval_domain
-  
+  }; // class interval_domain       
 } // namespace ikos
+
+namespace crab {
+namespace domains {
+
+  template <typename Number, typename VariableName> 
+  struct abstract_domain_traits<ikos::interval_domain<Number, VariableName>> {
+    typedef Number number_t;
+    typedef VariableName varname_t;       
+  };
+  
+}
+}
 

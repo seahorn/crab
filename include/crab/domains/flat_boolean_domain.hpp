@@ -6,11 +6,11 @@
 */
    
 #include <crab/common/types.hpp>
-#include <crab/domains/operators_api.hpp>
+#include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/separate_domains.hpp>
 #include <crab/domains/discrete_domains.hpp>
 #include <crab/domains/combined_domains.hpp>
-#include <crab/domains/domain_traits.hpp>
+#include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/intervals.hpp>
 
 namespace crab {
@@ -194,27 +194,25 @@ namespace crab {
 
   // A simple abstract domain for booleans
   template <typename Number, typename VariableName>
-  class flat_boolean_domain :
-    public abstract_domain<Number,VariableName,
-			   flat_boolean_domain<Number,VariableName> > {
-    
+  class flat_boolean_domain final:
+    public abstract_domain<flat_boolean_domain<Number,VariableName>> {
     typedef flat_boolean_domain<Number, VariableName> flat_boolean_domain_t;
     
    public:
 
-    typedef abstract_domain<Number,VariableName,
-			    flat_boolean_domain<Number,VariableName> > abstract_domain_t;    
-    typedef VariableName varname_t;
+    typedef abstract_domain<flat_boolean_domain_t> abstract_domain_t;
     typedef Number number_t;
-    typedef boolean_value bool_t;
-    typedef variable<Number, VariableName> variable_t;
-    typedef linear_expression<Number, VariableName> linear_expression_t;
-    typedef linear_constraint<Number, VariableName> linear_constraint_t;
-    typedef linear_constraint_system<Number, VariableName> linear_constraint_system_t;
-    using typename abstract_domain_t::disjunctive_linear_constraint_system_t;          
-    typedef interval<Number>  interval_t;
+    typedef VariableName varname_t;
+    using typename abstract_domain_t::variable_t;
+    using typename abstract_domain_t::linear_expression_t;
+    using typename abstract_domain_t::linear_constraint_t;
+    using typename abstract_domain_t::linear_constraint_system_t;
+    using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
     using typename abstract_domain_t::variable_vector_t;
-
+    using typename abstract_domain_t::pointer_constraint_t;
+    
+    typedef interval<number_t>  interval_t;
+    typedef boolean_value bool_t;    
     typedef separate_domain<variable_t, boolean_value> separate_domain_t;
     typedef typename separate_domain_t::iterator iterator;
 
@@ -461,16 +459,17 @@ namespace crab {
       _env -= x;
       *this = *this & inv;      
     }
-    
+
+    /* Begin unimplemented operations */    
     // numerical_domains_api
     // XXX: needed for making a reduced product with a numerical domain
     void apply(operation_t op, variable_t x, variable_t y, variable_t z) {}
-    void apply(operation_t op, variable_t x, variable_t y, Number k) {}
+    void apply(operation_t op, variable_t x, variable_t y, number_t k) {}
     void assign(variable_t x, linear_expression_t e) {}
     void backward_assign(variable_t x, linear_expression_t e,
 			 flat_boolean_domain_t invariant)  {}
     void backward_apply(operation_t op,
-			variable_t x, variable_t y, Number z,
+			variable_t x, variable_t y, number_t z,
 			flat_boolean_domain_t invariant) {}
     void backward_apply(operation_t op,
 			variable_t x, variable_t y, variable_t z,
@@ -485,8 +484,30 @@ namespace crab {
     // XXX: needed for making a reduced product with a numerical domain
     void apply(int_conv_operation_t op, variable_t dst, variable_t src) {}
     void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {}
-    void apply(bitwise_operation_t op, variable_t x, variable_t y, Number z) {}
+    void apply(bitwise_operation_t op, variable_t x, variable_t y, number_t z) {}
 
+    // array operations
+    void array_init(variable_t a, linear_expression_t elem_size,
+		    linear_expression_t lb_idx, linear_expression_t ub_idx, 
+		    linear_expression_t val) {}      
+    void array_load(variable_t lhs,
+		    variable_t a, linear_expression_t elem_size,
+		    linear_expression_t i) {}
+    void array_store(variable_t a, linear_expression_t elem_size,
+		     linear_expression_t i, linear_expression_t v, 
+		     bool is_singleton) {}      
+    void array_assign(variable_t lhs, variable_t rhs) {}
+    // pointer operations
+    void pointer_load(variable_t lhs, variable_t rhs)  {}
+    void pointer_store(variable_t lhs, variable_t rhs) {} 
+    void pointer_assign(variable_t lhs, variable_t rhs, linear_expression_t offset) {}
+    void pointer_mk_obj(variable_t lhs, ikos::index_t address) {}
+    void pointer_function(variable_t lhs, varname_t func) {}
+    void pointer_mk_null(variable_t lhs) {}
+    void pointer_assume(pointer_constraint_t cst) {}
+    void pointer_assert(pointer_constraint_t cst) {}
+    /* End unimplemented operations */
+    
     static std::string getDomainName() {return "Boolean"; }
 
     void write(crab_os& o) { _env.write(o); }
@@ -584,13 +605,10 @@ namespace crab {
 
 
    template <typename Number, typename VariableName>
-   class domain_traits <flat_boolean_domain<Number,VariableName> > {
-    public:
-     typedef flat_boolean_domain<Number,VariableName> flat_boolean_domain_t;
-     template<class CFG>
-     static void do_initialization(CFG cfg) { }
+   struct abstract_domain_traits<flat_boolean_domain<Number,VariableName>> {
+     typedef Number number_t;
+     typedef VariableName varname_t;     
    };
-
 
     // Simple reduced product of the flat boolean domain with an
     // arbitrary numerical domain.
@@ -613,29 +631,25 @@ namespace crab {
     //   assume_bool(b1);
     // 
     template <typename NumDom>
-    class flat_boolean_numerical_domain:
-      public abstract_domain<typename NumDom::number_t,
-			     typename NumDom::varname_t,
-			     flat_boolean_numerical_domain<NumDom> > {
-      
-      typedef typename NumDom::number_t N;
-      typedef typename NumDom::varname_t V;
+    class flat_boolean_numerical_domain final:
+      public abstract_domain<flat_boolean_numerical_domain<NumDom>> {
       typedef flat_boolean_numerical_domain<NumDom> bool_num_domain_t;
-      typedef abstract_domain<N,V,bool_num_domain_t> abstract_domain_t;
+      typedef abstract_domain<bool_num_domain_t> abstract_domain_t;
      public:
-      
-      typedef flat_boolean_domain <N,V> bool_domain_t;            
+
+      typedef typename NumDom::number_t number_t;
+      typedef typename NumDom::varname_t varname_t;
+      typedef flat_boolean_domain<number_t,varname_t> bool_domain_t;            
       using typename abstract_domain_t::linear_expression_t;
       using typename abstract_domain_t::linear_constraint_t;
       using typename abstract_domain_t::linear_constraint_system_t;
       using typename abstract_domain_t::disjunctive_linear_constraint_system_t;       
       using typename abstract_domain_t::variable_t;
-      using typename abstract_domain_t::variable_vector_t;      
-      typedef typename NumDom::number_t number_t;
-      typedef typename NumDom::varname_t varname_t;      
-      typedef interval<N> interval_t;
-      typedef bound<N> bound_t;      
-      typedef crab::pointer_constraint<variable_t> ptr_cst_t;
+      using typename abstract_domain_t::variable_vector_t;
+      using typename abstract_domain_t::pointer_constraint_t;      
+      
+      typedef interval<number_t> interval_t;
+      typedef bound<number_t> bound_t;      
       
      private:
 
@@ -703,7 +717,7 @@ namespace crab {
 	}
       };
       
-      typedef domain_product2<N,V,bool_domain_t,NumDom> domain_product2_t;
+      typedef domain_product2<number_t,varname_t,bool_domain_t,NumDom> domain_product2_t;
 
       // For performing reduction from the boolean domain to the
       // numerical one.
@@ -922,7 +936,7 @@ namespace crab {
 	_unchanged_vars -= variable_t(x);
       }
       
-      void apply(operation_t op, variable_t x, variable_t y, N k) {
+      void apply(operation_t op, variable_t x, variable_t y, number_t k) {
 	_product.apply(op, x, y, k);
 	_unchanged_vars -= variable_t(x);	
       }
@@ -938,7 +952,7 @@ namespace crab {
 	_unchanged_vars -= variable_t(x);		
       }
       
-      void backward_apply(operation_t op, variable_t x, variable_t y, N z,
+      void backward_apply(operation_t op, variable_t x, variable_t y, number_t z,
 			   bool_num_domain_t invariant) override {
 	_product.backward_apply(op,x,y,z,invariant._product);
 	_unchanged_vars -= variable_t(x);		
@@ -1062,7 +1076,7 @@ namespace crab {
 	    // check again if the negated constraint is bottom.  This
 	    // is useful because e.g., apron domains completely ignore
 	    // disequations. 
-	    interval_domain<N,V> inv3;
+	    interval_domain<number_t,varname_t> inv3;
 	    inv3 += cst.negate();	    
 	    for (auto c: _product.second().to_linear_constraint_system())
 	    { inv3 += c;}
@@ -1282,7 +1296,7 @@ namespace crab {
 	_unchanged_vars -= variable_t(x);				
       }
       
-      void apply(bitwise_operation_t op, variable_t x, variable_t y, N k) {
+      void apply(bitwise_operation_t op, variable_t x, variable_t y, number_t k) {
 	_product.apply(op, x, y, k);
 	_unchanged_vars -= variable_t(x);
       }
@@ -1327,16 +1341,16 @@ namespace crab {
       virtual void pointer_mk_obj(variable_t lhs, ikos::index_t address) override
       { _product.pointer_mk_obj(lhs, address); }
       
-      virtual void pointer_function(variable_t lhs, V func) override
+      virtual void pointer_function(variable_t lhs, varname_t func) override
       { _product.pointer_function(lhs, func); }
       
       virtual void pointer_mk_null(variable_t lhs) override
       { _product.pointer_mk_null(lhs); }
       
-      virtual void pointer_assume(ptr_cst_t cst) override
+      virtual void pointer_assume(pointer_constraint_t cst) override
       { _product.pointer_assume(cst); }
       
-      virtual void pointer_assert(ptr_cst_t cst) override
+      virtual void pointer_assert(pointer_constraint_t cst) override
       { _product.pointer_assert(cst); }
       
       void write(crab_os& o)
@@ -1422,11 +1436,9 @@ namespace crab {
     }; // class flat_boolean_numerical_domain
 
     template<typename Num>
-    class domain_traits<flat_boolean_numerical_domain<Num>> {
-     public:
-      typedef flat_boolean_numerical_domain<Num> product_t;
-      template<class CFG>
-      static void do_initialization(CFG cfg) { }
+    struct abstract_domain_traits<flat_boolean_numerical_domain<Num>> {
+      typedef typename Num::number_t number_t;
+      typedef typename Num::varname_t varname_t;
     };
 
     template<typename NumDom>

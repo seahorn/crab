@@ -28,8 +28,8 @@
 #include <crab/common/bignums.hpp>
 #include <crab/cfg/var_factory.hpp>
 #include <crab/domains/linear_constraints.hpp>
-#include <crab/domains/operators_api.hpp>
-#include <crab/domains/domain_traits.hpp>
+#include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/intervals.hpp>
 #include <crab/domains/term/term_expr.hpp>
 #include <crab/domains/term/inverse.hpp>
@@ -64,10 +64,8 @@ namespace crab {
      class TermNormalizer;
 
      template< typename Info >
-     class term_domain:
-      public abstract_domain<typename Info::Number, typename Info::VariableName, 
-			     term_domain<Info> > {
-       
+     class term_domain final:
+      public abstract_domain<term_domain<Info>> {
        friend class TermNormalizer<Info, typename Info::domain_t>;
        
        // Number and VariableName can be different from
@@ -83,7 +81,7 @@ namespace crab {
        typedef bound<Number> bound_t;
        
        typedef term_domain<Info> term_domain_t;
-       typedef abstract_domain<Number, VariableName, term_domain_t> abstract_domain_t;
+       typedef abstract_domain<term_domain_t> abstract_domain_t;
        
       public:
        
@@ -92,14 +90,16 @@ namespace crab {
        using typename abstract_domain_t::linear_constraint_system_t;
        using typename abstract_domain_t::disjunctive_linear_constraint_system_t;       
        using typename abstract_domain_t::variable_t;
-       using typename abstract_domain_t::number_t;
-       using typename abstract_domain_t::varname_t;
+       typedef Number number_t;
+       typedef VariableName varname_t;
        using typename abstract_domain_t::variable_vector_t;
-       typedef interval<Number> interval_t;
+       using typename abstract_domain_t::pointer_constraint_t;
+       
+       typedef interval<number_t> interval_t;
        
       private:
 
-       typedef term::term_table< Number, binary_operation_t > ttbl_t;
+       typedef term::term_table< number_t, binary_operation_t > ttbl_t;
        typedef typename ttbl_t::term_id_t term_id_t;
 
        // WARNING: assumes the underlying domain uses the same number type.
@@ -115,7 +115,7 @@ namespace crab {
        // the reverse of var_map: from term_id_t to a set of variable_t
        typedef std::set<variable_t> var_set_t;
        typedef boost::container::flat_map< term_id_t, var_set_t > rev_var_map_t; 
-       typedef term::NumSimplifier<Number> simplifier_t;
+       typedef term::NumSimplifier<number_t> simplifier_t;
 
        bool _is_bottom;
        // Uses a single state of the underlying domain.
@@ -145,10 +145,9 @@ namespace crab {
        { check_terms(__LINE__); }
        
        // x = y op [lb,ub]
-       term_id_t term_of_itv(bound_t lb, bound_t ub)
-       {
-         boost::optional<Number> n_lb = lb.number();
-         boost::optional<Number> n_ub = ub.number();
+       term_id_t term_of_itv(bound_t lb, bound_t ub) {
+         boost::optional<number_t> n_lb = lb.number();
+         boost::optional<number_t> n_ub = ub.number();
          
          if (n_lb && n_ub && (*n_lb == *n_ub))
            return term_of_const(*n_lb);
@@ -188,7 +187,6 @@ namespace crab {
       
        void apply(dom_t& dom, binary_operation_t op,
 		  dom_var_t x, dom_var_t y, dom_var_t z) {
-	 
          if (auto top = conv_op<operation_t>(op)) {
 	   dom.apply(*top, x, y, z);
 	 } else if (auto top = conv_op<bitwise_operation_t>(op)) {
@@ -203,14 +201,12 @@ namespace crab {
        // GKG: Looks the current implementation could actually
        // lose information; as it's not taking the meet with
        // the current value.
-       void eval_ftor(dom_t& dom, ttbl_t& tbl, term_id_t t)
-       {
+       void eval_ftor(dom_t& dom, ttbl_t& tbl, term_id_t t) {
          // Get the term info.
          typename ttbl_t::term_t* t_ptr = tbl.get_term_ptr(t); 
          
          // Only apply functors.
-         if(t_ptr->kind() == term::TERM_APP)
-         {
+         if(t_ptr->kind() == term::TERM_APP) {
            binary_operation_t op = term::term_ftor(t_ptr);
            
            std::vector<term_id_t>& args(term::term_args(t_ptr));
@@ -220,8 +216,7 @@ namespace crab {
          }
        }
        
-       void eval_ftor_down(dom_t& dom, ttbl_t& tbl, term_id_t t)
-       {
+       void eval_ftor_down(dom_t& dom, ttbl_t& tbl, term_id_t t) {
          // Get the term info.
          typename ttbl_t::term_t* t_ptr = tbl.get_term_ptr(t); 
          
@@ -240,8 +235,7 @@ namespace crab {
          }
        }
               
-       dom_t eval_ftor_copy(dom_t& dom, ttbl_t& tbl, term_id_t t)
-       {
+       dom_t eval_ftor_copy(dom_t& dom, ttbl_t& tbl, term_id_t t) {
          dom_t ret = dom;
          eval_ftor(ret, tbl, t);
          return ret;
@@ -271,8 +265,7 @@ namespace crab {
          }
        }
 
-       void check_terms(int line) const
-       {
+       void check_terms(int line) const {
          #ifdef DEBUG_VARMAP
          for(auto const p : _var_map) {
 	   if (!(p.second < _ttbl.size())) {
@@ -295,15 +288,12 @@ namespace crab {
 	 #endif
        }
 
-       void deref(term_id_t t)
-       {
+       void deref(term_id_t t) {
          std::vector<term_id_t> forgotten;
          _ttbl.deref(t, forgotten);
-         for(term_id_t f : forgotten)
-         {
+         for(term_id_t f : forgotten) {
            typename term_map_t::iterator it(_term_map.find(f));
-           if(it != _term_map.end())
-           {
+           if(it != _term_map.end()) {
              _impl -= (*it).second;
              _term_map.erase(it);
            }
@@ -349,8 +339,7 @@ namespace crab {
        // Build the tree for a linexpr, and ensure that
        // values for the subterms are sustained.
 
-       term_id_t term_of_const(const Number& n)
-       {
+       term_id_t term_of_const(const number_t& n) {
          dom_number dom_n(n);
          boost::optional<term_id_t> opt_n(_ttbl.find_const(dom_n));
          if(opt_n) {
@@ -365,7 +354,8 @@ namespace crab {
          }
        }
 
-       term_id_t term_of_var(variable_t v, var_map_t& var_map, rev_var_map_t& rvar_map, ttbl_t& ttbl) {
+       term_id_t term_of_var(variable_t v, var_map_t& var_map,
+			     rev_var_map_t& rvar_map, ttbl_t& ttbl) {
          auto it(var_map.find(v)); 
          if(it != var_map.end()) {
            // assert((*it).first == v);
@@ -381,15 +371,12 @@ namespace crab {
          }
        }
        
-       term_id_t term_of_var(variable_t v)
-       {
+       term_id_t term_of_var(variable_t v) {
          return term_of_var(v, _var_map, _rev_var_map, _ttbl);
        }
 
-       term_id_t term_of_linterm(linterm_t term)
-       {
-         if(term.first == 1)
-         {
+       term_id_t term_of_linterm(linterm_t term) {
+         if(term.first == 1) {
            return term_of_var(term.second);
          } else {
            return build_term(OP_MULTIPLICATION,
@@ -437,9 +424,8 @@ namespace crab {
          }
        }
        
-       term_id_t build_linexpr(linear_expression_t& e)
-       {
-         Number cst = e.constant();
+       term_id_t build_linexpr(linear_expression_t& e) {
+         number_t cst = e.constant();
          typename linear_expression_t::iterator it(e.begin());
          if(it == e.end())
            return term_of_const(cst);
@@ -462,8 +448,7 @@ namespace crab {
          return t;       
        }
 
-       dom_var_t domvar_of_term(term_id_t id)
-       {
+       dom_var_t domvar_of_term(term_id_t id) {
          typename term_map_t::iterator it(_term_map.find(id));
          if(it != _term_map.end()) {
            return(*it).second;
@@ -475,15 +460,13 @@ namespace crab {
          }
        }
 
-       dom_var_t domvar_of_var(variable_t v)
-       {
+       dom_var_t domvar_of_var(variable_t v) {
          return domvar_of_term(term_of_var(v));
        }
 
        // Remap a linear constraint to the domain.
-       dom_linexp_t rename_linear_expr(linear_expression_t exp)
-       {
-         Number cst(exp.constant());
+       dom_linexp_t rename_linear_expr(linear_expression_t exp) {
+         number_t cst(exp.constant());
          dom_linexp_t dom_exp(cst);
          for(auto v : exp.variables())
          {
@@ -502,9 +485,8 @@ namespace crab {
        // XXX JNL: exp can have variables that are not in rev_map (e.g.,
        // some generated by build_linexpr). 
        boost::optional<linear_expression_t> 
-       rename_linear_expr_rev(dom_linexp_t exp, rev_map_t rev_map) const
-       {
-         Number cst(exp.constant());
+       rename_linear_expr_rev(dom_linexp_t exp, rev_map_t rev_map) const {
+         number_t cst(exp.constant());
          linear_expression_t rev_exp(cst);
          for(auto v : exp.variables()) {
            auto it = rev_map.find(v);
@@ -519,8 +501,7 @@ namespace crab {
        }
 
        boost::optional<linear_constraint_t> 
-       rename_linear_cst_rev(dom_lincst_t cst, rev_map_t rev_map) const
-       {
+       rename_linear_cst_rev(dom_lincst_t cst, rev_map_t rev_map) const {
          boost::optional<linear_expression_t> e = 
              rename_linear_expr_rev(cst.expression(), rev_map);
          if (e)
@@ -547,6 +528,187 @@ namespace crab {
            }
          } 
          return boost::optional<std::pair<variable_t, variable_t> >();
+       }
+
+       struct WidenOp {
+         dom_t apply(dom_t before, dom_t after){ 
+           return before || after;
+         }
+       };
+
+       template<typename Thresholds>
+       struct WidenWithThresholdsOp {
+         const Thresholds & m_ts;
+
+         WidenWithThresholdsOp(const Thresholds &ts): m_ts(ts) { }
+
+         dom_t apply(dom_t before, dom_t after) { 
+           return before.widening_thresholds(after, m_ts);
+         }
+       };
+
+       template <typename WidenOp>
+       term_domain_t widening(term_domain_t o, WidenOp widen_op) {
+                             
+         // The left operand of the widenning cannot be closed, otherwise
+         // termination is not ensured. However, if the right operand is
+         // close precision may be improved.
+         o.normalize();
+         if (is_bottom()) {
+           return o;
+         } 
+         else if(o.is_bottom()) {
+           return *this;
+         } 
+         else {
+           // First, we need to compute the new term table.
+           ttbl_t out_tbl;
+           // Mapping of (term, term) pairs to terms in the join state
+           typename ttbl_t::gener_map_t gener_map;
+           
+           var_map_t out_vmap;
+           rev_var_map_t out_rvmap;
+           dom_var_alloc_t palloc(_alloc, o._alloc);
+           
+           // For each program variable in state, compute a generalization
+           for(auto p : _var_map)
+           {
+             variable_t v(p.first);
+             term_id_t tx(term_of_var(v));
+             term_id_t ty(o.term_of_var(v));
+             
+             term_id_t tz = _ttbl.generalize(o._ttbl, tx, ty, out_tbl, gener_map);
+             out_vmap[v] = tz;
+	     add_rev_var_map(out_rvmap, tz, v);
+           }
+           
+           // Rename the common terms together
+           dom_t x_impl(_impl);
+           dom_t y_impl(o._impl);
+           
+           // Perform the mapping
+           term_map_t out_map;
+           std::vector<dom_var_t> out_varnames;
+           for(auto p : gener_map)
+           {
+             auto txy = p.first;
+             term_id_t tz = p.second;
+             dom_var_t vt(palloc.next());
+             out_map.insert(std::make_pair(tz, vt));
+             
+             dom_var_t vx = domvar_of_term(txy.first);
+             dom_var_t vy = o.domvar_of_term(txy.second);
+             
+             out_varnames.push_back(vt);             
+
+             x_impl.assign(vt, vx);
+             y_impl.assign(vt, vy);
+           }
+
+	   x_impl.project(out_varnames);
+	   y_impl.project(out_varnames);
+	   
+           dom_t x_widen_y = widen_op.apply(x_impl, y_impl);
+           
+           for(auto p : out_vmap)
+             out_tbl.add_ref(p.second);
+           
+           term_domain_t res(palloc, out_vmap, out_rvmap, out_tbl, out_map, x_widen_y);
+           
+           CRAB_LOG("term", 
+                    crab::outs() << "============ WIDENING ==================";
+                    crab::outs() << x_impl << "\n~~~~~~~~~~~~~~~~";
+                    crab::outs() << y_impl << "\n----------------";
+                    crab::outs() << x_widen_y << "\n================" << "\n");
+           
+           return res;
+         }         
+       }
+
+       // Choose one non-var term from the equivalence class
+       // associated with t.
+       template<typename Range> 
+       boost::optional<term_id_t> choose_non_var(ttbl_t& ttbl, const Range& terms) {
+         std::vector<term_id_t> non_var_terms(terms.size());
+         auto it = std::copy_if(terms.begin(), terms.end(),  
+                                 non_var_terms.begin(),
+                                 [&ttbl](term_id_t t) {  
+                                   typename ttbl_t::term_t* t_ptr = ttbl.get_term_ptr(t);
+                                   return(t_ptr && t_ptr->kind() == term::TERM_APP);
+                                 });
+         non_var_terms.resize(std::distance(non_var_terms.begin(),it));
+         if (non_var_terms.empty()) {
+           return boost::optional <term_id_t>();
+         } else {
+           // TODO: the heuristics as described in the VMCAI'16 paper
+           // that chooses the one that has more references each class.
+           return *(non_var_terms.begin()); 
+         }
+       }
+
+       term_id_t build_dag_term(ttbl_t& ttbl, int t,
+                                 term::congruence_closure_solver<ttbl_t>& solver, 
+                                 ttbl_t& out_ttbl, std::vector<int>& stack, 
+                                 std::map <int, term_id_t>& cache) {
+
+         // already processed
+         auto it = cache.find(t);
+         if (it != cache.end()) {
+           #ifdef DEBUG_MEET
+           crab::outs() << "Found in cache: ";
+           crab::outs() << "t" << t << " --> " << "t" << it->second << "\n";
+           #endif 
+           return it->second;
+         }
+         
+         // break the cycle with a fresh variable
+         if (std::find(stack.begin(), stack.end(), t) != stack.end()) {
+           term_id_t v = out_ttbl.fresh_var();
+           #ifdef DEBUG_MEET
+           crab::outs() << "Detected cycle: ";
+           crab::outs() << "t" << t << " --> " << "t" << v << "\n";
+           #endif 
+           return v;
+         }
+
+         stack.push_back(t);
+         auto membs = solver.get_members(t);
+         boost::optional<term_id_t> f = choose_non_var(ttbl, membs);
+
+         if (!f) {
+           // no concrete definition exists return a fresh variable
+           term_id_t v = out_ttbl.fresh_var();
+           auto res = cache.insert(std::make_pair(t, v));
+           stack.pop_back();
+           #ifdef DEBUG_MEET
+           crab::outs() << "No concrete definition: ";
+           crab::outs() << "t" << t << " --> " << "t" <<(res.first)->second << "\n";
+           #endif 
+           return (res.first)->second;
+         } else {
+           // traverse recursively the term
+           typename ttbl_t::term_t* f_ptr = ttbl.get_term_ptr(*f); 
+           #ifdef DEBUG_MEET
+           crab::outs() << "Traversing recursively the term " << "t" << *f << ":";
+           crab::outs() << *f_ptr << "\n";
+           #endif 
+           std::vector<term_id_t>& args(term::term_args(f_ptr));
+           std::vector<term_id_t> res_args;
+           res_args.reserve(args.size());
+           for(term_id_t c : args) {
+               res_args.push_back(build_dag_term(ttbl,solver.get_class(c), 
+                                                   solver, out_ttbl, stack, cache));
+           }
+           auto res = cache.insert(std::make_pair(t, 
+                                    out_ttbl.apply_ftor(term::term_ftor(f_ptr), 
+                                                         res_args)));
+           stack.pop_back();
+           #ifdef DEBUG_MEET
+           crab::outs() << "Finished recursive case: ";
+           crab::outs() << "t" << t << " --> " << "t" <<(res.first)->second << "\n";
+           #endif 
+           return (res.first)->second;
+         }
        }
 
       public:
@@ -583,7 +745,7 @@ namespace crab {
          
          o.check_terms(__LINE__);
          if (this != &o) {
-           _is_bottom= o.is_bottom();
+           _is_bottom= o._is_bottom;
            _ttbl = o._ttbl;
            _impl = o._impl;
            _alloc = o._alloc;
@@ -596,11 +758,11 @@ namespace crab {
          return *this;
        }
        
-       bool is_bottom() const {
+       bool is_bottom() {
          return _is_bottom;
        }
        
-       bool is_top() const {
+       bool is_top() {
          return !_var_map.size() && !is_bottom();
        }
        
@@ -837,193 +999,6 @@ namespace crab {
          return this->widening(other, op);
        }
        
-      private:
-
-       struct WidenOp {
-         dom_t apply(dom_t before, dom_t after){ 
-           return before || after;
-         }
-       };
-
-       template<typename Thresholds>
-       struct WidenWithThresholdsOp {
-         const Thresholds & m_ts;
-
-         WidenWithThresholdsOp(const Thresholds &ts): m_ts(ts) { }
-
-         dom_t apply(dom_t before, dom_t after) { 
-           return before.widening_thresholds(after, m_ts);
-         }
-       };
-
-       template <typename WidenOp>
-       term_domain_t widening(term_domain_t o, WidenOp widen_op) {
-                             
-         // The left operand of the widenning cannot be closed, otherwise
-         // termination is not ensured. However, if the right operand is
-         // close precision may be improved.
-         o.normalize();
-         if (is_bottom()) {
-           return o;
-         } 
-         else if(o.is_bottom()) {
-           return *this;
-         } 
-         else {
-           // First, we need to compute the new term table.
-           ttbl_t out_tbl;
-           // Mapping of (term, term) pairs to terms in the join state
-           typename ttbl_t::gener_map_t gener_map;
-           
-           var_map_t out_vmap;
-           rev_var_map_t out_rvmap;
-           dom_var_alloc_t palloc(_alloc, o._alloc);
-           
-           // For each program variable in state, compute a generalization
-           for(auto p : _var_map)
-           {
-             variable_t v(p.first);
-             term_id_t tx(term_of_var(v));
-             term_id_t ty(o.term_of_var(v));
-             
-             term_id_t tz = _ttbl.generalize(o._ttbl, tx, ty, out_tbl, gener_map);
-             out_vmap[v] = tz;
-	     add_rev_var_map(out_rvmap, tz, v);
-           }
-           
-           // Rename the common terms together
-           dom_t x_impl(_impl);
-           dom_t y_impl(o._impl);
-           
-           // Perform the mapping
-           term_map_t out_map;
-           std::vector<dom_var_t> out_varnames;
-           for(auto p : gener_map)
-           {
-             auto txy = p.first;
-             term_id_t tz = p.second;
-             dom_var_t vt(palloc.next());
-             out_map.insert(std::make_pair(tz, vt));
-             
-             dom_var_t vx = domvar_of_term(txy.first);
-             dom_var_t vy = o.domvar_of_term(txy.second);
-             
-             out_varnames.push_back(vt);             
-
-             x_impl.assign(vt, vx);
-             y_impl.assign(vt, vy);
-           }
-
-	   x_impl.project(out_varnames);
-	   y_impl.project(out_varnames);
-	   
-           dom_t x_widen_y = widen_op.apply(x_impl, y_impl);
-           
-           for(auto p : out_vmap)
-             out_tbl.add_ref(p.second);
-           
-           term_domain_t res(palloc, out_vmap, out_rvmap, out_tbl, out_map, x_widen_y);
-           
-           CRAB_LOG("term", 
-                    crab::outs() << "============ WIDENING ==================";
-                    crab::outs() << x_impl << "\n~~~~~~~~~~~~~~~~";
-                    crab::outs() << y_impl << "\n----------------";
-                    crab::outs() << x_widen_y << "\n================" << "\n");
-           
-           return res;
-         }         
-       }
-
-      private:
-
-       // Choose one non-var term from the equivalence class
-       // associated with t.
-       template<typename Range> 
-       boost::optional<term_id_t> choose_non_var(ttbl_t& ttbl, const Range& terms) {
-         std::vector<term_id_t> non_var_terms(terms.size());
-         auto it = std::copy_if(terms.begin(), terms.end(),  
-                                 non_var_terms.begin(),
-                                 [&ttbl](term_id_t t) {  
-                                   typename ttbl_t::term_t* t_ptr = ttbl.get_term_ptr(t);
-                                   return(t_ptr && t_ptr->kind() == term::TERM_APP);
-                                 });
-         non_var_terms.resize(std::distance(non_var_terms.begin(),it));
-         if (non_var_terms.empty()) {
-           return boost::optional <term_id_t>();
-         } else {
-           // TODO: the heuristics as described in the VMCAI'16 paper
-           // that chooses the one that has more references each class.
-           return *(non_var_terms.begin()); 
-         }
-       }
-
-       term_id_t build_dag_term(ttbl_t& ttbl, int t,
-                                 term::congruence_closure_solver<ttbl_t>& solver, 
-                                 ttbl_t& out_ttbl, std::vector<int>& stack, 
-                                 std::map <int, term_id_t>& cache) {
-
-         // already processed
-         auto it = cache.find(t);
-         if (it != cache.end()) {
-           #ifdef DEBUG_MEET
-           crab::outs() << "Found in cache: ";
-           crab::outs() << "t" << t << " --> " << "t" << it->second << "\n";
-           #endif 
-           return it->second;
-         }
-         
-         // break the cycle with a fresh variable
-         if (std::find(stack.begin(), stack.end(), t) != stack.end()) {
-           term_id_t v = out_ttbl.fresh_var();
-           #ifdef DEBUG_MEET
-           crab::outs() << "Detected cycle: ";
-           crab::outs() << "t" << t << " --> " << "t" << v << "\n";
-           #endif 
-           return v;
-         }
-
-         stack.push_back(t);
-         auto membs = solver.get_members(t);
-         boost::optional<term_id_t> f = choose_non_var(ttbl, membs);
-
-         if (!f) {
-           // no concrete definition exists return a fresh variable
-           term_id_t v = out_ttbl.fresh_var();
-           auto res = cache.insert(std::make_pair(t, v));
-           stack.pop_back();
-           #ifdef DEBUG_MEET
-           crab::outs() << "No concrete definition: ";
-           crab::outs() << "t" << t << " --> " << "t" <<(res.first)->second << "\n";
-           #endif 
-           return (res.first)->second;
-         } else {
-           // traverse recursively the term
-           typename ttbl_t::term_t* f_ptr = ttbl.get_term_ptr(*f); 
-           #ifdef DEBUG_MEET
-           crab::outs() << "Traversing recursively the term " << "t" << *f << ":";
-           crab::outs() << *f_ptr << "\n";
-           #endif 
-           std::vector<term_id_t>& args(term::term_args(f_ptr));
-           std::vector<term_id_t> res_args;
-           res_args.reserve(args.size());
-           for(term_id_t c : args) {
-               res_args.push_back(build_dag_term(ttbl,solver.get_class(c), 
-                                                   solver, out_ttbl, stack, cache));
-           }
-           auto res = cache.insert(std::make_pair(t, 
-                                    out_ttbl.apply_ftor(term::term_ftor(f_ptr), 
-                                                         res_args)));
-           stack.pop_back();
-           #ifdef DEBUG_MEET
-           crab::outs() << "Finished recursive case: ";
-           crab::outs() << "t" << t << " --> " << "t" <<(res.first)->second << "\n";
-           #endif 
-           return (res.first)->second;
-         }
-       }
-
-      public:
-
        // Meet
        term_domain_t operator&(term_domain_t o) {
          crab::CrabStats::count(getDomainName() + ".count.meet");
@@ -1177,86 +1152,6 @@ namespace crab {
          }
        }
 
-      void rename(const variable_vector_t &from, const variable_vector_t &to) {
-	if (is_top() || is_bottom()) return;
-	
-	// renaming _var_map by creating a new map since we are
-	// modifying the keys.
-	CRAB_LOG("term",
-		 crab::outs() << "Replacing {";
-		 for (auto v: from) crab::outs() << v << ";";
-		 crab::outs() << "} with ";
-		 for (auto v: to) crab::outs() << v << ";";
-		 crab::outs() << "}:\n";
-		 crab::outs() << *this << "\n";);
-	
-	var_map_t new_var_map;
-	rev_var_map_t new_rev_var_map;
-	for (auto kv: _var_map) {
-	  ptrdiff_t pos = std::distance(from.begin(),
-					std::find(from.begin(), from.end(), kv.first));
-	  if (pos < from.size()) {
-	    variable_t new_v(to[pos]);
-	    new_var_map.insert(std::make_pair(new_v, kv.second));
-	    add_rev_var_map(new_rev_var_map, kv.second, new_v);
-	  } else {
-	    new_var_map.insert(kv);
-	    add_rev_var_map(new_rev_var_map, kv.second, kv.first);
-	  }
-	}
-	std::swap(_var_map, new_var_map);
-	std::swap(_rev_var_map, new_rev_var_map);
-	
-	CRAB_LOG("term",
-		 crab::outs() << "RESULT=" << *this << "\n");
-      }
-       
-       // extract operation is used during reduction with other domains.       
-       void extract(const variable_t& x, linear_constraint_system_t& csts,
-		    bool only_equalities /*unused*/) {
-         crab::CrabStats::count(getDomainName() + ".count.extract");
-         crab::ScopedCrabStats __st__(getDomainName() + ".extract");
-
-         if (!is_normalized()) normalize();
-
-         if (is_bottom()) {
-	   return;
-	 }
-
-	 // TODO: make user parameter
-	 const unsigned max_eq = 10;
-	 // We limit the number of equalities via
-	 // constants. Otherwise, the number of equalities can be too
-	 // large (e.g., with domains like array_expansion) and it
-	 // would make the reduction very slow.
-	 
-         // Extract equalities
-         auto it = _var_map.find(x);
-         if (it != _var_map.end()) {
-           term_id_t tx = it->second;
-	   auto tx_ptr = _ttbl.get_term_ptr(tx);
-
-	   bool active_threshold = false;
-	   if(tx_ptr->kind() == term::TERM_CONST) {
-	     active_threshold = true;
-	   }
-	   auto &varset = _rev_var_map[tx];
-	   unsigned num_eq = 0;
-	   for (auto var: varset) {
-	     if (active_threshold && num_eq > max_eq) {
-	       return;
-	     }
-	     if (var.index() != x.index()) {
-	       num_eq++;
-	       linear_constraint_t cst(linear_expression_t(x) == linear_expression_t(var));
-	       CRAB_LOG("terms", crab::outs() << "Extracting " << cst << "\n";);
-	       csts += cst;	       
-	     }
-	   }
-	   
-	 }
-       }
-
        // Apply operations to variables.
 
        // x = y op z
@@ -1277,7 +1172,7 @@ namespace crab {
        }
     
        // x = y op k
-       void apply(operation_t op, variable_t x, variable_t y, Number k){	
+       void apply(operation_t op, variable_t x, variable_t y, number_t k){	
          crab::CrabStats::count(getDomainName() + ".count.apply");
          crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1301,7 +1196,7 @@ namespace crab {
        }
        
        void backward_apply(operation_t op,
-			    variable_t x, variable_t y, Number z,
+			    variable_t x, variable_t y, number_t z,
 			    term_domain_t inv) {
 	 crab::domains::BackwardAssignOps<term_domain_t>::
 	   apply(*this, op, x, y, z, inv);
@@ -1387,8 +1282,96 @@ namespace crab {
          return;
        }
 
-       /* Array operations */
+       void operator+=(linear_constraint_system_t csts) {
+         for(auto cst: csts) {
+           this->operator+=(cst);
+         }
+       }
+              
+       /*
+       // If the children of t have changed, see if re-applying
+       // the definition of t tightens the domain.
+       void tighten_term(term_id_t t)
+       {
+       dom_t tight = _impl&eval_ftor_copy(_impl, _ttbl, t); 
+      
+       if(!(_impl <= tight))
+       {
+       // Applying the functor has changed the domain
+       _impl = tight;
+       for(term_id_t p : _ttbl.parents(t))
+       tighten_term(p);
+       }
+       check_terms(__LINE__);
+       }
+       */
+    
+       interval_t operator[](variable_t x) { 
+         crab::CrabStats::count(getDomainName() + ".count.to_intervals");
+         crab::ScopedCrabStats __st__(getDomainName() + ".to_intervals");
 
+         // Needed for accuracy
+         normalize();
+
+         if (is_bottom()) return interval_t::bottom();
+
+         auto it = _var_map.find (x);
+         if (it == _var_map.end()) 
+           return interval_t::top();
+      
+         dom_var_t dom_x = domvar_of_term(it->second);
+
+         return _impl[dom_x];
+       } 
+
+       void set(variable_t x, interval_t intv){
+         crab::CrabStats::count(getDomainName() + ".count.assign");
+         crab::ScopedCrabStats __st__(getDomainName() + ".assign");
+
+         rebind_var(x, term_of_itv(intv.lb(), intv.ub()));
+       }
+        
+       void apply(int_conv_operation_t /*op*/, variable_t dst, variable_t src){  
+         // since reasoning about infinite precision we simply assign and
+         // ignore the widths.
+         assign(dst, src);
+       }
+
+       void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z){
+         crab::CrabStats::count(getDomainName() + ".count.apply");
+         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+
+         if (this->is_bottom()) {
+           return;   
+         } else {
+           term_id_t tx(build_term(op, term_of_var(y), term_of_var(z)));
+           rebind_var(x, tx);
+         }
+         check_terms(__LINE__);
+         CRAB_LOG("term", 
+                  crab::outs() << "*** " << x << ":=" << y << " " << op 
+                               << " " << z << ":" << *this << "\n");
+       }
+    
+       void apply(bitwise_operation_t op, variable_t x, variable_t y, number_t k){
+         crab::CrabStats::count(getDomainName() + ".count.apply");
+         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+
+         if (this->is_bottom()) {
+           return;   
+         } else {
+           term_id_t tx(build_term(op, term_of_var(y), term_of_const(k)));
+           rebind_var(x, tx);
+         }
+
+         check_terms(__LINE__);
+         CRAB_LOG("term", 
+                  crab::outs() << "*** " << x << ":=" << y << " "<< op << " " << k 
+                               << ":" << *this << "\n");
+         return;
+       }
+
+       /* Array operations */
 
        virtual void array_init(variable_t /*a*/,
 				linear_expression_t /*elem_size*/,
@@ -1449,162 +1432,112 @@ namespace crab {
 	 // do nothing
        }
        
-       /*
-       // If the children of t have changed, see if re-applying
-       // the definition of t tightens the domain.
-       void tighten_term(term_id_t t)
-       {
-       dom_t tight = _impl&eval_ftor_copy(_impl, _ttbl, t); 
-      
-       if(!(_impl <= tight))
-       {
-       // Applying the functor has changed the domain
-       _impl = tight;
-       for(term_id_t p : _ttbl.parents(t))
-       tighten_term(p);
-       }
-       check_terms(__LINE__);
-       }
-       */
-    
-       // Propagate information from tightened terms to
-       // parents/children.
-       void normalize() { 
-         crab::CrabStats::count(getDomainName() + ".count.normalize");
-         crab::ScopedCrabStats __st__(getDomainName() + ".normalize");
-         TermNormalizer<Info, typename Info::domain_t>::normalize(*this); 
-       }
+       /* Begin unimplemented operations */
+       // boolean operations
+       void assign_bool_cst(variable_t lhs, linear_constraint_t rhs) {}
+       void assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs) {}
+       void apply_binary_bool(bool_operation_t op,
+			      variable_t x,variable_t y,variable_t z) {}
+       void assume_bool(variable_t v, bool is_negated) {}
+       // backward boolean operations
+       void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
+				     term_domain_t invariant){}
+       void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
+				     term_domain_t invariant) {}
+       void backward_apply_binary_bool(bool_operation_t op,
+				       variable_t x,variable_t y,variable_t z,
+				       term_domain_t invariant) {}
+       // pointer operations
+       void pointer_load(variable_t lhs, variable_t rhs)  {}
+       void pointer_store(variable_t lhs, variable_t rhs) {} 
+       void pointer_assign(variable_t lhs, variable_t rhs, linear_expression_t offset) {}
+       void pointer_mk_obj(variable_t lhs, ikos::index_t address) {}
+       void pointer_function(variable_t lhs, varname_t func) {}
+       void pointer_mk_null(variable_t lhs) {}
+       void pointer_assume(pointer_constraint_t cst) {}
+       void pointer_assert(pointer_constraint_t cst) {}
+       /* End unimplemented operations */
 
-       interval_t operator[](variable_t x) { 
-         crab::CrabStats::count(getDomainName() + ".count.to_intervals");
-         crab::ScopedCrabStats __st__(getDomainName() + ".to_intervals");
+      void rename(const variable_vector_t &from, const variable_vector_t &to) {
+	if (is_top() || is_bottom()) return;
+	
+	// renaming _var_map by creating a new map since we are
+	// modifying the keys.
+	CRAB_LOG("term",
+		 crab::outs() << "Replacing {";
+		 for (auto v: from) crab::outs() << v << ";";
+		 crab::outs() << "} with ";
+		 for (auto v: to) crab::outs() << v << ";";
+		 crab::outs() << "}:\n";
+		 crab::outs() << *this << "\n";);
+	
+	var_map_t new_var_map;
+	rev_var_map_t new_rev_var_map;
+	for (auto kv: _var_map) {
+	  ptrdiff_t pos = std::distance(from.begin(),
+					std::find(from.begin(), from.end(), kv.first));
+	  if (pos < from.size()) {
+	    variable_t new_v(to[pos]);
+	    new_var_map.insert(std::make_pair(new_v, kv.second));
+	    add_rev_var_map(new_rev_var_map, kv.second, new_v);
+	  } else {
+	    new_var_map.insert(kv);
+	    add_rev_var_map(new_rev_var_map, kv.second, kv.first);
+	  }
+	}
+	std::swap(_var_map, new_var_map);
+	std::swap(_rev_var_map, new_rev_var_map);
+	
+	CRAB_LOG("term",
+		 crab::outs() << "RESULT=" << *this << "\n");
+      }
+       
+       // extract operation is used during reduction with other domains.       
+       void extract(const variable_t& x, linear_constraint_system_t& csts,
+		    bool only_equalities /*unused*/) {
+         crab::CrabStats::count(getDomainName() + ".count.extract");
+         crab::ScopedCrabStats __st__(getDomainName() + ".extract");
 
-         // Needed for accuracy
-         normalize();
+         if (!is_normalized()) normalize();
 
-         if (is_bottom()) return interval_t::bottom();
+         if (is_bottom()) {
+	   return;
+	 }
 
-         auto it = _var_map.find (x);
-         if (it == _var_map.end()) 
-           return interval_t::top();
-      
-         dom_var_t dom_x = domvar_of_term(it->second);
+	 // TODO: make user parameter
+	 const unsigned max_eq = 10;
+	 // We limit the number of equalities via
+	 // constants. Otherwise, the number of equalities can be too
+	 // large (e.g., with domains like array_expansion) and it
+	 // would make the reduction very slow.
+	 
+         // Extract equalities
+         auto it = _var_map.find(x);
+         if (it != _var_map.end()) {
+           term_id_t tx = it->second;
+	   auto tx_ptr = _ttbl.get_term_ptr(tx);
 
-         return _impl[dom_x];
-       } 
-
-       void set(variable_t x, interval_t intv){
-         crab::CrabStats::count(getDomainName() + ".count.assign");
-         crab::ScopedCrabStats __st__(getDomainName() + ".assign");
-
-         rebind_var(x, term_of_itv(intv.lb(), intv.ub()));
-       }
-    
-       void operator+=(linear_constraint_system_t cst) {
-         for(typename linear_constraint_system_t::iterator it=cst.begin(); it!= cst.end(); ++it){
-           this->operator+=(*it);
-         }
-       }
-    
-       linear_constraint_system_t to_linear_constraint_system(void)
-       {
-         // Collect the visible terms
-         rev_map_t rev_map;
-         std::vector< std::pair<variable_t, variable_t> > equivs;
-         for(auto p : _var_map)
-         {
-           dom_var_t dv = domvar_of_term(p.second);
-
-           auto it = rev_map.find(dv);
-           if(it == rev_map.end()){
-             // The term has not yet been seen.
-             rev_map.insert(std::make_pair(dv, p.first));
-           } else {
-             // The term is already mapped to (*it).second,
-             // so add an equivalence.
-             equivs.push_back(std::make_pair((*it).second, p.first)); 
-           }
-         }
-
-         // Create a copy of _impl with only visible variables.
-         dom_t d_vis(_impl);
-         for(auto p : _term_map) {
-           dom_var_t dv = p.second;
-           if(rev_map.find(dv) == rev_map.end())
-             d_vis -= dv;
-         }
-
-         // Now build and rename the constraint system, plus equivalences.
-         dom_linsys_t dom_sys(d_vis.to_linear_constraint_system());
-
-         linear_constraint_system_t out_sys; 
-         for(dom_lincst_t cst : dom_sys) {
-           auto out_cst = rename_linear_cst_rev(cst, rev_map);
-           if (!out_cst) continue;
-           out_sys += *out_cst;
-         }
-      
-         for(auto p : equivs) {
-           CRAB_LOG("term", 
-                    crab::outs() << "Added equivalence " << p.first << "=" << p.second << "\n");
-           out_sys += (p.first - p.second == 0);
-         }
-
-         // Now rename it back into the external scope.
-         return out_sys;
-       }
-
-       disjunctive_linear_constraint_system_t to_disjunctive_linear_constraint_system() {
-	 auto lin_csts = to_linear_constraint_system();
-	 if (lin_csts.is_false()) {
-	   return disjunctive_linear_constraint_system_t(true /*is_false*/); 
-	 } else if (lin_csts.is_true()) {
-	   return disjunctive_linear_constraint_system_t(false /*is_false*/);
-	 } else {
-	   return disjunctive_linear_constraint_system_t(lin_csts);
+	   bool active_threshold = false;
+	   if(tx_ptr->kind() == term::TERM_CONST) {
+	     active_threshold = true;
+	   }
+	   auto &varset = _rev_var_map[tx];
+	   unsigned num_eq = 0;
+	   for (auto var: varset) {
+	     if (active_threshold && num_eq > max_eq) {
+	       return;
+	     }
+	     if (var.index() != x.index()) {
+	       num_eq++;
+	       linear_constraint_t cst(linear_expression_t(x) == linear_expression_t(var));
+	       CRAB_LOG("terms", crab::outs() << "Extracting " << cst << "\n";);
+	       csts += cst;	       
+	     }
+	   }
+	   
 	 }
        }
-
-       void apply(int_conv_operation_t /*op*/, variable_t dst, variable_t src){  
-         // since reasoning about infinite precision we simply assign and
-         // ignore the widths.
-         assign(dst, src);
-       }
-
-       void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z){
-         crab::CrabStats::count(getDomainName() + ".count.apply");
-         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
-
-         if (this->is_bottom()) {
-           return;   
-         } else {
-           term_id_t tx(build_term(op, term_of_var(y), term_of_var(z)));
-           rebind_var(x, tx);
-         }
-         check_terms(__LINE__);
-         CRAB_LOG("term", 
-                  crab::outs() << "*** " << x << ":=" << y << " " << op 
-                               << " " << z << ":" << *this << "\n");
-       }
-    
-       void apply(bitwise_operation_t op, variable_t x, variable_t y, Number k){
-         crab::CrabStats::count(getDomainName() + ".count.apply");
-         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
-
-         if (this->is_bottom()) {
-           return;   
-         } else {
-           term_id_t tx(build_term(op, term_of_var(y), term_of_const(k)));
-           rebind_var(x, tx);
-         }
-
-         check_terms(__LINE__);
-         CRAB_LOG("term", 
-                  crab::outs() << "*** " << x << ":=" << y << " "<< op << " " << k 
-                               << ":" << *this << "\n");
-         return;
-       }
-
+       
        void forget(const variable_vector_t& variables) {
          if (is_bottom() || is_top()) return;
          
@@ -1640,6 +1573,14 @@ namespace crab {
 	 rebind_var(y, tx);
 	 
 	 check_terms(__LINE__);
+       }
+
+       // Propagate information from tightened terms to
+       // parents/children.
+       void normalize() { 
+         crab::CrabStats::count(getDomainName() + ".count.normalize");
+         crab::ScopedCrabStats __st__(getDomainName() + ".normalize");
+         TermNormalizer<Info, typename Info::domain_t>::normalize(*this); 
        }
        
        /// XXX: should be part of array_sgraph_domain_traits
@@ -1699,6 +1640,64 @@ namespace crab {
          #endif 
        }
 
+       linear_constraint_system_t to_linear_constraint_system() {
+         // Collect the visible terms
+         rev_map_t rev_map;
+         std::vector< std::pair<variable_t, variable_t> > equivs;
+         for(auto p : _var_map)
+         {
+           dom_var_t dv = domvar_of_term(p.second);
+
+           auto it = rev_map.find(dv);
+           if(it == rev_map.end()){
+             // The term has not yet been seen.
+             rev_map.insert(std::make_pair(dv, p.first));
+           } else {
+             // The term is already mapped to (*it).second,
+             // so add an equivalence.
+             equivs.push_back(std::make_pair((*it).second, p.first)); 
+           }
+         }
+
+         // Create a copy of _impl with only visible variables.
+         dom_t d_vis(_impl);
+         for(auto p : _term_map) {
+           dom_var_t dv = p.second;
+           if(rev_map.find(dv) == rev_map.end())
+             d_vis -= dv;
+         }
+
+         // Now build and rename the constraint system, plus equivalences.
+         dom_linsys_t dom_sys(d_vis.to_linear_constraint_system());
+
+         linear_constraint_system_t out_sys; 
+         for(dom_lincst_t cst : dom_sys) {
+           auto out_cst = rename_linear_cst_rev(cst, rev_map);
+           if (!out_cst) continue;
+           out_sys += *out_cst;
+         }
+      
+         for(auto p : equivs) {
+           CRAB_LOG("term", 
+                    crab::outs() << "Added equivalence " << p.first << "=" << p.second << "\n");
+           out_sys += (p.first - p.second == 0);
+         }
+
+         // Now rename it back into the external scope.
+         return out_sys;
+       }
+
+       disjunctive_linear_constraint_system_t to_disjunctive_linear_constraint_system() {
+	 auto lin_csts = to_linear_constraint_system();
+	 if (lin_csts.is_false()) {
+	   return disjunctive_linear_constraint_system_t(true /*is_false*/); 
+	 } else if (lin_csts.is_true()) {
+	   return disjunctive_linear_constraint_system_t(false /*is_false*/);
+	 } else {
+	   return disjunctive_linear_constraint_system_t(lin_csts);
+	 }
+       }
+       
        static std::string getDomainName() { 
          std::string name("Term(" + dom_t::getDomainName() + ")");
          return name;
@@ -2006,26 +2005,24 @@ namespace crab {
     #endif
 
 
-   template<typename Info>
-   class domain_traits<term_domain<Info>> {
+    template<typename Info>    
+    struct abstract_domain_traits<term_domain<Info>> {
+      typedef typename Info::Number number_t;
+      typedef typename Info::VariableName varname_t;
+    };
+    
+    template<typename Info>    
+    class reduced_domain_traits<term_domain<Info>> {
     public:
-     typedef term_domain<Info> term_domain_t;
-     template<class CFG>
-     static void do_initialization(CFG cfg) { }
-   };
-
-   template<typename Info>    
-   class reduced_domain_traits<term_domain<Info>> {
-   public:
-     typedef term_domain<Info> term_domain_t;
-     typedef typename term_domain_t::variable_t variable_t;
-     typedef typename term_domain_t::linear_constraint_system_t linear_constraint_system_t;
-     
-     static void extract(term_domain_t& dom, const variable_t& x,
-			 linear_constraint_system_t& csts, bool only_equalities) {
+      typedef term_domain<Info> term_domain_t;
+      typedef typename term_domain_t::variable_t variable_t;
+      typedef typename term_domain_t::linear_constraint_system_t linear_constraint_system_t;
+      
+      static void extract(term_domain_t& dom, const variable_t& x,
+			  linear_constraint_system_t& csts, bool only_equalities) {
        dom.extract(x, csts, only_equalities);
-     }
-   };
+      }
+    };
 
   }// namespace domains
 } // namespace crab

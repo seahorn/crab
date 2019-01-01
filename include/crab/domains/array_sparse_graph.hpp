@@ -32,9 +32,9 @@
  *    after each operation we know which are the indexes affected by
  *    the operation. We can use that information for doing reduction
  *    only on those indexes. This would remove the need of having
- *    methods such as array_sgraph_domain_traits::is_unsat and
- *    array_sgraph_domain_traits::active_variables which are anyway
- *    domain dependent.
+ *    methods such as array_sgraph_domain_helper_traits::is_unsat and
+ *    array_sgraph_domain_helper_traits::active_variables which are
+ *    anyway domain dependent.
  **/ 
 
 #pragma once 
@@ -42,8 +42,8 @@
 #include <crab/common/types.hpp>
 #include <crab/common/debug.hpp>
 #include <crab/common/stats.hpp>
-#include <crab/domains/operators_api.hpp>
-#include <crab/domains/domain_traits.hpp>
+#include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/array_sparse_graph/array_segmentation.hpp>
 #include <crab/domains/array_sparse_graph/array_graph_ops.hpp>
 #include <crab/domains/graphs/adapt_sgraph.hpp>
@@ -1264,40 +1264,36 @@ namespace crab {
              not, e.g., for inlining.
     */
     template<typename NumDom, typename Content, bool IsDistContent = false>
-    class array_sparse_graph_domain:
-      public abstract_domain<typename NumDom::number_t,
-			     typename NumDom::varname_t,
-			     array_sparse_graph_domain<NumDom,Content,IsDistContent> > {
+    class array_sparse_graph_domain final: 
+      public abstract_domain<array_sparse_graph_domain<NumDom,Content,IsDistContent>> {
      public:
-      
-      typedef typename NumDom::number_t Number;
-      typedef typename NumDom::varname_t VariableName;
+
+      typedef typename NumDom::number_t number_t;
+      typedef typename NumDom::varname_t varname_t;
       
      private:
 
       // WARNING: assume NumDom::number_t = Content::number_t and
       //                 NumDom::varname_t = Content::varname_t      
       typedef array_sparse_graph_domain<NumDom,Content,IsDistContent> array_sgraph_domain_t;
-      typedef abstract_domain<Number,VariableName,array_sgraph_domain_t> abstract_domain_t;
+      typedef abstract_domain<array_sgraph_domain_t> abstract_domain_t;
       
      public:
       
       using typename abstract_domain_t::linear_expression_t;
       using typename abstract_domain_t::linear_constraint_t;
       using typename abstract_domain_t::linear_constraint_system_t;
-      using typename abstract_domain_t::disjunctive_linear_constraint_system_t;      
+      using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
+      using typename abstract_domain_t::pointer_constraint_t;            
       //using typename abstract_domain_t::variable_t;
       typedef typename NumDom::variable_t variable_t;
       typedef typename NumDom::variable_vector_t variable_vector_t;
-      using typename abstract_domain_t::number_t;
-      using typename abstract_domain_t::varname_t;
-      typedef crab::pointer_constraint<variable_t> ptr_cst_t;
-      typedef interval<Number> interval_t;
+      typedef interval<number_t> interval_t;
       
-      typedef landmark_cst<variable_t,Number> landmark_cst_t;
-      typedef landmark_var<variable_t,Number> landmark_var_t;
-      typedef landmark_varprime<variable_t,Number> landmark_var_prime_t;
-      typedef landmark_ref<variable_t,Number> landmark_ref_t;
+      typedef landmark_cst<variable_t,number_t> landmark_cst_t;
+      typedef landmark_var<variable_t,number_t> landmark_var_t;
+      typedef landmark_varprime<variable_t,number_t> landmark_var_prime_t;
+      typedef landmark_ref<variable_t,number_t> landmark_ref_t;
       typedef array_sparse_graph<landmark_ref_t,Content,IsDistContent> array_sgraph_t;
 
       //// XXX: make this a template parameter later
@@ -1319,7 +1315,7 @@ namespace crab {
         bool is_unsat(linear_constraint_t cst) {
           // XXX: it might modify _inv so that's why we make a copy in
           // the constructor.
-          return array_sgraph_domain_traits<NumDom>::is_unsat(_inv, cst);        
+          return array_sgraph_domain_helper_traits<NumDom>::is_unsat(_inv, cst);        
         }
       };
 
@@ -1512,7 +1508,7 @@ namespace crab {
           landmarks.push_back(p.second);
         }
 	std::vector<variable_t> active_vars;
-        array_sgraph_domain_traits<NumDom>::active_variables(scalar, active_vars);        
+        array_sgraph_domain_helper_traits<NumDom>::active_variables(scalar, active_vars);
         for (auto v: active_vars) {
           auto it = var_landmarks.find(landmark_ref_t(v));
           if (it != var_landmarks.end()){
@@ -1951,7 +1947,7 @@ namespace crab {
         return _scalar.is_bottom() || _expressions.is_bottom() || _g.is_bottom();
       }
 
-      bool operator<=(array_sgraph_domain_t &o) {
+      bool operator<=(array_sgraph_domain_t o) {
         crab::CrabStats::count(getDomainName() + ".count.leq");
         crab::ScopedCrabStats __st__(getDomainName() + ".leq");
 
@@ -1968,7 +1964,7 @@ namespace crab {
         *this = (*this | o);
       }
 
-      array_sgraph_domain_t operator|(array_sgraph_domain_t &o){
+      array_sgraph_domain_t operator|(array_sgraph_domain_t o){
         crab::CrabStats::count(getDomainName() + ".count.join");
         crab::ScopedCrabStats __st__(getDomainName() + ".join");
 
@@ -2003,7 +1999,7 @@ namespace crab {
         }
       }
 
-      array_sgraph_domain_t operator||(array_sgraph_domain_t &o){
+      array_sgraph_domain_t operator||(array_sgraph_domain_t o){
         crab::CrabStats::count(getDomainName() + ".count.widening");
         crab::ScopedCrabStats __st__(getDomainName() + ".widening");
 
@@ -2022,7 +2018,7 @@ namespace crab {
         }
       }
 
-      array_sgraph_domain_t operator&(array_sgraph_domain_t &o){
+      array_sgraph_domain_t operator&(array_sgraph_domain_t o){
         crab::CrabStats::count(getDomainName() + ".count.meet");
         crab::ScopedCrabStats __st__(getDomainName() + ".meet");
 
@@ -2041,7 +2037,7 @@ namespace crab {
         }
       }
 
-      array_sgraph_domain_t operator&&(array_sgraph_domain_t &o){
+      array_sgraph_domain_t operator&&(array_sgraph_domain_t o){
         crab::CrabStats::count(getDomainName() + ".count.narrowing");
         crab::ScopedCrabStats __st__(getDomainName() + ".narrowing");
 
@@ -2093,7 +2089,7 @@ namespace crab {
 
         std::set<variable_t> keep_vars(variables.begin(), variables.end());
 	std::vector<variable_t> active_vars;	
-        array_sgraph_domain_traits<NumDom>::active_variables(_scalar, active_vars);
+        array_sgraph_domain_helper_traits<NumDom>::active_variables(_scalar, active_vars);
         for (auto v: active_vars) {
           if (!keep_vars.count(v)) {
             array_forget(v);
@@ -2140,8 +2136,9 @@ namespace crab {
                  crab::outs() << "Assume("<< csts<< ") --- "<< *this<<"\n";);
       }
 
-      void assign(variable_t x, linear_expression_t e) 
-      { assign(x, e, true); }
+      void assign(variable_t x, linear_expression_t e) {
+	assign(x, e, true);
+      }
 
       // Perform the operation in the scalar (optionally expression)
       // domain and reduce.
@@ -2149,8 +2146,7 @@ namespace crab {
       // NOTE: if the assignment is something like i = i + k then we
       // will lose precision in the array graph. This kind of
       // assignments should be managed by the apply methods instead.
-      void assign(variable_t x, linear_expression_t e, bool update_expressions) 
-      {
+      void assign(variable_t x, linear_expression_t e, bool update_expressions)  {
         crab::CrabStats::count(getDomainName() + ".count.assign");
         crab::ScopedCrabStats __st__(getDomainName() + ".assign");
 
@@ -2185,12 +2181,12 @@ namespace crab {
                  crab::outs() << "Assign "<<x<<" := "<<e<<" ==> "<<*this<<"\n";);
       }
 
-      void apply(operation_t op, variable_t x, variable_t y, Number z) {
+      void apply(operation_t op, variable_t x, variable_t y, number_t z) {
         if(x == y) {
           crab::CrabStats::count(getDomainName() + ".count.apply");
           crab::ScopedCrabStats __st__(getDomainName() + ".apply");
           _expressions.apply(op, x, y, z);
-          apply_one_variable<Number>(op, x, z);
+          apply_one_variable<number_t>(op, x, z);
           CRAB_LOG("array-sgraph-domain",
                    crab::outs() << "Apply "<<x<<" := "<<y<<" "<<op<<" "<<z<<" ==> "
 		                << *this<<"\n";); 
@@ -2231,21 +2227,22 @@ namespace crab {
               assign(x, y - z);
 	      break;
    	    default:
-	      CRAB_WARN(op, "not implemented in array-sgraph-domain\n"); break;
+	      CRAB_WARN(op, "not implemented in array-sgraph-domain");
           }
         }
       }
+      // backward arithmetic operations
 
       void backward_assign(variable_t x, linear_expression_t e,
 			   array_sgraph_domain_t invariant)  {
-	this->operator-=(x);
+	operator-=(x);
 	CRAB_WARN("backward assign not implemented");
       }
       
       void backward_apply(operation_t op,
-			  variable_t x, variable_t y, Number z,
+			  variable_t x, variable_t y, number_t z,
 			  array_sgraph_domain_t invariant)  {
-	this->operator-=(x);
+	operator-=(x);
 	CRAB_WARN("backward apply not implemented");
       }
       
@@ -2253,11 +2250,51 @@ namespace crab {
 			  variable_t x, variable_t y, variable_t z,
 			  array_sgraph_domain_t invariant) {
 
-	this->operator-=(x);
+	operator-=(x);
 	CRAB_WARN("backward apply not implemented");
       }
 
-      // cast_operators_api
+      // boolean operations
+      void assign_bool_cst(variable_t lhs, linear_constraint_t rhs) {
+	operator-=(lhs);
+	CRAB_WARN("assign_bool_cst not implemented in array-sgraph-domain");	
+      }
+      
+      void assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs) {
+	operator-=(lhs);
+	CRAB_WARN("assign_bool_var not implemented in array-sgraph-domain");		
+      }
+      
+      void apply_binary_bool(bool_operation_t op, variable_t x,variable_t y,variable_t z) {
+	operator-=(x);
+	CRAB_WARN("apply_binary_bool not implemented in array-sgraph-domain");	
+      }
+      
+      void assume_bool(variable_t v, bool is_negated) {
+	CRAB_WARN("assume_bool not implemented in array-sgraph-domain");		
+      }
+      
+      // backward boolean operations
+      void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
+				    array_sgraph_domain_t invariant) {
+	operator-=(lhs);
+	CRAB_WARN("backward_assign_bool_cst not implemented in array-sgraph-domain");		
+      }
+      
+      void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
+				    array_sgraph_domain_t invariant) {
+	operator-=(lhs);
+	CRAB_WARN("backward_assign_bool_var not implemented in array-sgraph-domain");		
+      }
+      
+      void backward_apply_binary_bool(bool_operation_t op,
+				      variable_t x,variable_t y,variable_t z,
+				      array_sgraph_domain_t invariant) {
+	operator-=(x);
+	CRAB_WARN("backward_apply_binary_bool not implemented in array-sgraph-domain");		
+      }
+      
+      // cast operations
       
       void apply(int_conv_operation_t op, variable_t dst, variable_t src) {
         _expressions.apply(op, dst, src);
@@ -2265,7 +2302,7 @@ namespace crab {
         assign(dst, src, false);
       }
       
-      // bitwise_operators_api
+      // bitwise operations
       
       void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {
         crab::CrabStats::count(getDomainName() + ".count.apply");
@@ -2276,7 +2313,7 @@ namespace crab {
         apply_only_scalar(op, x, y, z);
       }
       
-      void apply(bitwise_operation_t op, variable_t x, variable_t y, Number k) {
+      void apply(bitwise_operation_t op, variable_t x, variable_t y, number_t k) {
         crab::CrabStats::count(getDomainName() + ".count.apply");
         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -2307,7 +2344,7 @@ namespace crab {
         _scalar.pointer_mk_obj(lhs, address);
       }
       
-      virtual void pointer_function(variable_t lhs, VariableName func) override {
+      virtual void pointer_function(variable_t lhs, varname_t func) override {
         _scalar.pointer_function(lhs, func);
       }
       
@@ -2315,11 +2352,11 @@ namespace crab {
         _scalar.pointer_mk_null(lhs);
       }
       
-      virtual void pointer_assume(ptr_cst_t cst) override {
+      virtual void pointer_assume(pointer_constraint_t cst) override {
         _scalar.pointer_assume(cst);
       }    
       
-      virtual void pointer_assert(ptr_cst_t cst) override {
+      virtual void pointer_assert(pointer_constraint_t cst) override {
         _scalar.pointer_assert(cst);
       }    
         
@@ -2501,17 +2538,19 @@ namespace crab {
 
     };
 
-    template<typename NumDom, typename Content>
-    class domain_traits<array_sparse_graph_domain<NumDom,Content,false>> {
+    template<typename Dom, typename Content, bool IsDistContent>
+    struct abstract_domain_traits<array_sparse_graph_domain<Dom,Content,IsDistContent>> {
+      // assume Dom::variable_t = Content::variable_t
+      typedef typename Dom::number_t number_t;      
+      typedef typename Dom::varname_t varname_t;
+    };
+    
+    template<typename Dom, typename Content, bool IsDistContent>
+    class array_sgraph_domain_traits<array_sparse_graph_domain<Dom,Content,IsDistContent>> {
      public:
-      
-      // WARNING: assume NumDom::variable_t = Content::variable_t
-      typedef typename NumDom::variable_t variable_t;
-      typedef array_sparse_graph_domain<NumDom,Content,false> array_sgraph_domain_t;
-
       template<class CFG>
       static void do_initialization(CFG cfg) {
-        array_sgraph_domain_t::do_initialization(cfg);
+        array_sparse_graph_domain<Dom,Content,IsDistContent>::do_initialization(cfg);
       }    
     };
   

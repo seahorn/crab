@@ -20,8 +20,8 @@
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/domains/intervals.hpp>
 #include <crab/domains/patricia_trees.hpp>
-#include <crab/domains/operators_api.hpp>
-#include <crab/domains/domain_traits.hpp>
+#include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_specialized_traits.hpp>
 
 #include <boost/optional.hpp>
 #include <boost/unordered_set.hpp>
@@ -165,12 +165,10 @@ namespace crab {
 
     template<class Number, class VariableName,
 	     class Params = SpDBM_impl::DefaultParams <Number> >
-    class SparseDBM_:
-      public abstract_domain<Number, VariableName,
-			     SparseDBM_<Number,VariableName,Params> > {
-
+    class SparseDBM_ final:
+      public abstract_domain<SparseDBM_<Number,VariableName,Params>> {
       typedef SparseDBM_<Number, VariableName, Params> DBM_t;
-      typedef abstract_domain<Number, VariableName, DBM_t> abstract_domain_t;
+      typedef abstract_domain<DBM_t> abstract_domain_t;
       
      public:
       
@@ -179,19 +177,19 @@ namespace crab {
       using typename abstract_domain_t::linear_constraint_system_t;
       using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
       using typename abstract_domain_t::variable_t;
-      using typename abstract_domain_t::number_t;
-      using typename abstract_domain_t::varname_t;
-      using typename abstract_domain_t::variable_vector_t;      
-      
+      using typename abstract_domain_t::variable_vector_t;
+      using typename abstract_domain_t::pointer_constraint_t;
+      typedef Number number_t;
+      typedef VariableName varname_t;
       typedef typename linear_constraint_t::kind_t constraint_kind_t;
-      typedef ikos::interval<Number>  interval_t;
+      typedef ikos::interval<number_t>  interval_t;
 
      private:
       
-      typedef ikos::bound<Number>  bound_t;
+      typedef ikos::bound<number_t>  bound_t;
       typedef typename Params::Wt Wt;
       typedef typename Params::graph_t graph_t;
-      typedef SpDBM_impl::NtoV<Number, Wt> ntov;
+      typedef SpDBM_impl::NtoV<number_t, Wt> ntov;
       typedef typename graph_t::vert_id vert_id;
       typedef boost::container::flat_map<variable_t, vert_id> vert_map_t;
       typedef typename vert_map_t::value_type vmap_elt_t;
@@ -387,8 +385,8 @@ namespace crab {
         }
         vert_id v = (*it).second;
         interval_t x_out = interval_t(
-            r.elem(v, 0) ? -Number(r.edge_val(v, 0)) : bound_t::minus_infinity(),
-            r.elem(0, v) ? Number(r.edge_val(0, v)) : bound_t::plus_infinity());
+            r.elem(v, 0) ? -number_t(r.edge_val(v, 0)) : bound_t::minus_infinity(),
+            r.elem(0, v) ? number_t(r.edge_val(0, v)) : bound_t::plus_infinity());
         return x_out;
         /*
         boost::optional< interval_t > v = r.lookup(x);
@@ -939,7 +937,7 @@ namespace crab {
     
       static DBM_t bottom() { return SparseDBM_(true); }
     
-      bool is_bottom() const {
+      bool is_bottom() {
 	// if(!_is_bottom && g.has_negative_cycle())
 	// _is_bottom = true;
         return _is_bottom;
@@ -951,7 +949,7 @@ namespace crab {
         return g.is_empty();
       }
     
-      bool operator<=(DBM_t& o)  {
+      bool operator<=(DBM_t o)  {
         crab::CrabStats::count (getDomainName() + ".count.leq");
         crab::ScopedCrabStats __st__(getDomainName() + ".leq");
 
@@ -1014,7 +1012,7 @@ namespace crab {
         *this = *this | o;
       }
 
-      DBM_t operator|(DBM_t& o) {
+      DBM_t operator|(DBM_t o) {
         crab::CrabStats::count (getDomainName() + ".count.join");
         crab::ScopedCrabStats __st__(getDomainName() + ".join");
 
@@ -1105,7 +1103,7 @@ namespace crab {
         }
       }
 
-      DBM_t operator||(DBM_t& o) {	
+      DBM_t operator||(DBM_t o) {	
         crab::CrabStats::count (getDomainName() + ".count.widening");
         crab::ScopedCrabStats __st__(getDomainName() + ".widening");
 
@@ -1167,7 +1165,7 @@ namespace crab {
         }
       }
 
-      DBM_t operator&(DBM_t& o) {
+      DBM_t operator&(DBM_t o) {
         crab::CrabStats::count (getDomainName() + ".count.meet");
         crab::ScopedCrabStats __st__(getDomainName() + ".meet");
 
@@ -1264,7 +1262,7 @@ namespace crab {
         }
       }
     
-      DBM_t operator&&(DBM_t& o) {
+      DBM_t operator&&(DBM_t o) {
         crab::CrabStats::count (getDomainName() + ".count.narrowing");
         crab::ScopedCrabStats __st__(getDomainName() + ".narrowing");
 
@@ -1518,7 +1516,7 @@ namespace crab {
       }
 
     
-      void apply(ikos::operation_t op, variable_t x, variable_t y, Number k) {	
+      void apply(ikos::operation_t op, variable_t x, variable_t y, number_t k) {	
         crab::CrabStats::count (getDomainName() + ".count.apply");
         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1557,23 +1555,6 @@ namespace crab {
 
         CRAB_LOG("zones-sparse",
                  crab::outs() << "---"<< x<< ":="<< y<< op<< k<<"\n"<< *this<<"\n";);
-      }
-
-      void backward_assign(variable_t x, linear_expression_t e, DBM_t inv) { 
-	crab::domains::BackwardAssignOps<DBM_t>::
-	  assign (*this, x, e, inv);
-      }
-      
-      void backward_apply(operation_t op, variable_t x, variable_t y, Number z,
-			  DBM_t inv) {
-	crab::domains::BackwardAssignOps<DBM_t>::
-	  apply(*this, op, x, y, z, inv);
-      }
-      
-      void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
-			  DBM_t inv) {
-	crab::domains::BackwardAssignOps<DBM_t>::
-	  apply(*this, op, x, y, z, inv);
       }
       
       void operator+=(linear_constraint_t cst) {
@@ -1705,7 +1686,25 @@ namespace crab {
         }
       }
 
-      // cast_operators_api
+      // backward arithmetic operators
+      void backward_assign(variable_t x, linear_expression_t e, DBM_t inv) { 
+	crab::domains::BackwardAssignOps<DBM_t>::
+	  assign (*this, x, e, inv);
+      }
+      
+      void backward_apply(operation_t op, variable_t x, variable_t y, number_t z,
+			  DBM_t inv) {
+	crab::domains::BackwardAssignOps<DBM_t>::
+	  apply(*this, op, x, y, z, inv);
+      }
+      
+      void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
+			  DBM_t inv) {
+	crab::domains::BackwardAssignOps<DBM_t>::
+	  apply(*this, op, x, y, z, inv);
+      }
+      
+      // cast operators
 
       void apply(int_conv_operation_t /*op*/, variable_t dst, variable_t src) {
         // since reasoning about infinite precision we simply assign and
@@ -1713,7 +1712,7 @@ namespace crab {
         assign(dst, src);
       }
 
-      // bitwise_operators_api
+      // bitwise operators
       
       void apply(ikos::bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {
         crab::CrabStats::count (getDomainName() + ".count.apply");
@@ -1757,7 +1756,7 @@ namespace crab {
         set(x, xi);
       }
     
-      void apply(ikos::bitwise_operation_t op, variable_t x, variable_t y, Number k) {
+      void apply(ikos::bitwise_operation_t op, variable_t x, variable_t y, number_t k) {
         crab::CrabStats::count (getDomainName() + ".count.apply");
         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1797,7 +1796,43 @@ namespace crab {
         }
         set(x, xi);
       }
-        
+
+      /* Begin unimplemented operations */
+      // boolean operations
+      void assign_bool_cst(variable_t lhs, linear_constraint_t rhs) {}
+      void assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs) {}
+      void apply_binary_bool(bool_operation_t op, variable_t x,variable_t y,variable_t z) {}
+      void assume_bool(variable_t v, bool is_negated) {}
+      // backward boolean operations
+      void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
+				    DBM_t invariant){}
+      void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
+				      DBM_t invariant) {}
+      void backward_apply_binary_bool(bool_operation_t op,
+				      variable_t x,variable_t y,variable_t z,
+				      DBM_t invariant) {}
+      // array operations
+      void array_init(variable_t a, linear_expression_t elem_size,
+		      linear_expression_t lb_idx, linear_expression_t ub_idx, 
+		      linear_expression_t val) {}      
+      void array_load(variable_t lhs,
+		      variable_t a, linear_expression_t elem_size,
+		      linear_expression_t i) {}
+      void array_store(variable_t a, linear_expression_t elem_size,
+		       linear_expression_t i, linear_expression_t v, 
+		       bool is_singleton) {}      
+      void array_assign(variable_t lhs, variable_t rhs) {}
+      // pointer operations
+      void pointer_load(variable_t lhs, variable_t rhs)  {}
+      void pointer_store(variable_t lhs, variable_t rhs) {} 
+      void pointer_assign(variable_t lhs, variable_t rhs, linear_expression_t offset) {}
+      void pointer_mk_obj(variable_t lhs, ikos::index_t address) {}
+      void pointer_function(variable_t lhs, varname_t func) {}
+      void pointer_mk_null(variable_t lhs) {}
+      void pointer_assume(pointer_constraint_t cst) {}
+      void pointer_assert(pointer_constraint_t cst) {}
+      /* End unimplemented operations */
+      
       void rename(const variable_vector_t &from, const variable_vector_t &to) {
 	if (is_top () || is_bottom()) return;
 	
@@ -1977,8 +2012,8 @@ namespace crab {
             if(!g.elem(0, v) && !g.elem(v, 0))
              continue; 
             interval_t v_out = interval_t(
-                g.elem(v, 0) ? -Number(g.edge_val(v, 0)) : bound_t::minus_infinity(),
-                g.elem(0, v) ? Number(g.edge_val(0, v)) : bound_t::plus_infinity());
+                g.elem(v, 0) ? -number_t(g.edge_val(v, 0)) : bound_t::minus_infinity(),
+                g.elem(0, v) ? number_t(g.edge_val(0, v)) : bound_t::plus_infinity());
             
             if(first)
               first = false;
@@ -2075,21 +2110,26 @@ namespace crab {
       }
       
     }; // class SparseDBM_
-
+    
     #if 1
     template<class Number, class VariableName,
 	       class Params = SpDBM_impl::DefaultParams<Number>>
-    using SparseDBM = SparseDBM_<Number,VariableName,Params>;     
+    using SparseDBM = SparseDBM_<Number,VariableName,Params>;    
     #else
+
+    template<typename Number, typename VariableName, typename Params>    
+    struct abstract_domain_traits<SparseDBM_<Number, VariableName, Params>> {
+      typedef Number number_t;
+      typedef VariableName varname_t;       
+    };
+    
     // Quick wrapper which uses shared references with copy-on-write.
     template<class Number, class VariableName,
-	     class Params = SpDBM_impl::DefaultParams<Number> >
-    class SparseDBM :
-      public abstract_domain<Number, VariableName,
-			     SparseDBM<Number,VariableName,Params> > {
-
+	     class Params = SpDBM_impl::DefaultParams<Number>>
+    class SparseDBM final:
+      public abstract_domain<SparseDBM<Number,VariableName,Params>> {
       typedef SparseDBM<Number, VariableName, Params> DBM_t;
-      typedef abstract_domain<Number, VariableName, DBM_t> abstract_domain_t;
+      typedef abstract_domain<DBM_t> abstract_domain_t;
       
     public:
       using typename abstract_domain_t::linear_expression_t;
@@ -2097,15 +2137,16 @@ namespace crab {
       using typename abstract_domain_t::linear_constraint_system_t;
       using typename abstract_domain_t::disjunctive_linear_constraint_system_t;      
       using typename abstract_domain_t::variable_t;
-      using typename abstract_domain_t::number_t;
-      using typename abstract_domain_t::varname_t;
-      using typename abstract_domain_t::variable_vector_t;      
+      using typename abstract_domain_t::variable_vector_t;
+      using typename abstract_domain_t::pointer_constraint_t;
+      typedef Number number_t;
+      typedef VariableName varname_t;
       typedef typename linear_constraint_t::kind_t constraint_kind_t;
-      typedef ikos::interval<Number>  interval_t;
+      typedef ikos::interval<number_t>  interval_t;
 
     public:
       
-      typedef SparseDBM_<Number, VariableName, Params> dbm_impl_t;
+      typedef SparseDBM_<number_t, varname_t, Params> dbm_impl_t;
       typedef std::shared_ptr<dbm_impl_t> dbm_ref_t;
 
       SparseDBM(dbm_ref_t _ref) : norm_ref(_ref) { }
@@ -2186,7 +2227,7 @@ namespace crab {
       void set(variable_t x, interval_t intv) { lock(); norm().set(x, intv); }
 
       void assign(variable_t x, linear_expression_t e) { lock(); norm().assign(x, e); }
-      void apply(ikos::operation_t op, variable_t x, variable_t y, Number k) {
+      void apply(ikos::operation_t op, variable_t x, variable_t y, number_t k) {
         lock(); norm().apply(op, x, y, k);
       }
       void apply(ikos::operation_t op, variable_t x, variable_t y, variable_t z) {
@@ -2199,19 +2240,56 @@ namespace crab {
 	lock(); norm().backward_assign(x, e, invariant.norm());
       }
       void backward_apply(operation_t op,
-			  variable_t x, variable_t y, Number k, DBM_t invariant) {
+			  variable_t x, variable_t y, number_t k, DBM_t invariant) {
 	lock(); norm().backward_apply(op, x, y, k, invariant.norm());
       }
       void backward_apply(operation_t op,
 			  variable_t x, variable_t y, variable_t z, DBM_t invariant) {
 	lock(); norm().backward_apply(op, x, y, z, invariant.norm());
       }	
-      void apply(ikos::bitwise_operation_t op, variable_t x, variable_t y, Number k) {
+      void apply(ikos::bitwise_operation_t op, variable_t x, variable_t y, number_t k) {
         lock(); norm().apply(op, x, y, k);
       }
       void apply(ikos::bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {
         lock(); norm().apply(op, x, y, z);
       }
+
+      /* Begin unimplemented operations */
+      // boolean operations
+      void assign_bool_cst(variable_t lhs, linear_constraint_t rhs) {}
+      void assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs) {}
+      void apply_binary_bool(bool_operation_t op, variable_t x,variable_t y,variable_t z) {}
+      void assume_bool(variable_t v, bool is_negated) {}
+      // backward boolean operations
+      void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
+				    DBM_t invariant){}
+      void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
+				      DBM_t invariant) {}
+      void backward_apply_binary_bool(bool_operation_t op,
+				      variable_t x,variable_t y,variable_t z,
+				      DBM_t invariant) {}
+      // array operations
+      void array_init(variable_t a, linear_expression_t elem_size,
+		      linear_expression_t lb_idx, linear_expression_t ub_idx, 
+		      linear_expression_t val) {}      
+      void array_load(variable_t lhs,
+		      variable_t a, linear_expression_t elem_size,
+		      linear_expression_t i) {}
+      void array_store(variable_t a, linear_expression_t elem_size,
+		       linear_expression_t i, linear_expression_t v, 
+		       bool is_singleton) {}      
+      void array_assign(variable_t lhs, variable_t rhs) {}
+      // pointer operations
+      void pointer_load(variable_t lhs, variable_t rhs)  {}
+      void pointer_store(variable_t lhs, variable_t rhs) {} 
+      void pointer_assign(variable_t lhs, variable_t rhs, linear_expression_t offset) {}
+      void pointer_mk_obj(variable_t lhs, ikos::index_t address) {}
+      void pointer_function(variable_t lhs, varname_t func) {}
+      void pointer_mk_null(variable_t lhs) {}
+      void pointer_assume(pointer_constraint_t cst) {}
+      void pointer_assert(pointer_constraint_t cst) {}
+      /* End unimplemented operations */
+      
       void rename(const variable_vector_t &from, const variable_vector_t &to) {
 	lock(); norm().rename(from, to);
       }
@@ -2251,15 +2329,14 @@ namespace crab {
       dbm_ref_t norm_ref;
     };
     #endif
-    
-    template<typename Number, typename VariableName, typename Params>
-    class domain_traits<SparseDBM<Number,VariableName,Params>> {
-     public:
-      typedef SparseDBM<Number,VariableName,Params> sdbm_domain_t;
-      template<class CFG>
-      static void do_initialization (CFG cfg) { }
-    };
 
+
+    template<typename Number, typename VariableName, typename Params>    
+    struct abstract_domain_traits<SparseDBM<Number, VariableName, Params>> {
+      typedef Number number_t;
+      typedef VariableName varname_t;       
+    };    
+    
     template<typename Number, typename VariableName, typename Params>    
     class reduced_domain_traits<SparseDBM<Number, VariableName, Params>> {
     public:

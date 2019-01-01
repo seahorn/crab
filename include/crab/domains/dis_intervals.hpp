@@ -11,11 +11,10 @@
 #include <crab/common/debug.hpp>
 #include <crab/common/stats.hpp>
 #include <crab/common/types.hpp>
+#include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/domains/linear_interval_solver.hpp>
 #include <crab/domains/separate_domains.hpp>
-#include <crab/domains/operators_api.hpp>
-#include <crab/domains/domain_traits.hpp>
 
 namespace crab {
    namespace domains {
@@ -1068,12 +1067,10 @@ namespace crab {
   namespace domains {
 
    template<typename Number, typename VariableName>
-   class dis_interval_domain:
-      public abstract_domain<Number, VariableName,
-			     dis_interval_domain<Number,VariableName> > {
-
+   class dis_interval_domain final:
+     public abstract_domain<dis_interval_domain<Number,VariableName>> {
      typedef dis_interval_domain<Number, VariableName> dis_interval_domain_t;
-     typedef abstract_domain<Number,VariableName, dis_interval_domain_t> abstract_domain_t;
+     typedef abstract_domain<dis_interval_domain_t> abstract_domain_t;
     public:
     
      using typename abstract_domain_t::linear_expression_t;
@@ -1082,17 +1079,17 @@ namespace crab {
      using typename abstract_domain_t::disjunctive_linear_constraint_system_t;      
      using typename abstract_domain_t::variable_t;
      using typename abstract_domain_t::variable_vector_t;     
-     using typename abstract_domain_t::number_t;
-     using typename abstract_domain_t::varname_t;
-
-     typedef interval <Number> interval_t;
-     typedef interval_domain <Number, VariableName> interval_domain_t;
-     typedef dis_interval <Number> dis_interval_t;
+     using typename abstract_domain_t::pointer_constraint_t;
+     typedef Number number_t;
+     typedef VariableName varname_t;
+     typedef interval<number_t> interval_t;
+     typedef interval_domain<number_t, varname_t> interval_domain_t;
+     typedef dis_interval<number_t> dis_interval_t;
 
     private:
 
      typedef separate_domain<variable_t, dis_interval_t > separate_domain_t;
-     typedef linear_interval_solver< Number, VariableName, separate_domain_t > solver_t;
+     typedef linear_interval_solver< number_t, varname_t, separate_domain_t > solver_t;
 
     public:
 
@@ -1130,11 +1127,11 @@ namespace crab {
        return *this;
      }
 
-     bool is_bottom() const {
+     bool is_bottom() {
        return this->_env.is_bottom();
      }
      
-     bool is_top() const {
+     bool is_top() {
        return this->_env.is_top();
      }
 
@@ -1272,7 +1269,7 @@ namespace crab {
        //crab::outs() << "result=" << *this << "\n";
      }
      
-     void apply(operation_t op, variable_t x, variable_t y, Number z) {
+     void apply(operation_t op, variable_t x, variable_t y, number_t z) {
        crab::CrabStats::count(getDomainName() + ".count.apply");
        crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1321,7 +1318,7 @@ namespace crab {
      }
      
      void backward_apply(operation_t op,
-			 variable_t x, variable_t y, Number z,
+			 variable_t x, variable_t y, number_t z,
 			 dis_interval_domain_t inv) {
        crab::domains::BackwardAssignOps<dis_interval_domain_t>::
 	 apply(*this, op, x, y, z, inv);
@@ -1357,7 +1354,7 @@ namespace crab {
        this->_env.set(x, xi);
      }
         
-     void apply(bitwise_operation_t op, variable_t x, variable_t y, Number k) {
+     void apply(bitwise_operation_t op, variable_t x, variable_t y, number_t k) {
        crab::CrabStats::count(getDomainName() + ".count.apply");
        crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1374,7 +1371,43 @@ namespace crab {
        }
        this->_env.set(x, xi);
      }
-         
+
+      /* Begin unimplemented operations */
+      // boolean operations
+      void assign_bool_cst(variable_t lhs, linear_constraint_t rhs) {}
+      void assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs) {}
+      void apply_binary_bool(bool_operation_t op, variable_t x,variable_t y,variable_t z) {}
+      void assume_bool(variable_t v, bool is_negated) {}
+      // backward boolean operations
+      void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
+				    dis_interval_domain_t invariant){}
+      void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
+				      dis_interval_domain_t invariant) {}
+      void backward_apply_binary_bool(bool_operation_t op,
+				      variable_t x,variable_t y,variable_t z,
+				      dis_interval_domain_t invariant) {}
+      // array operations
+      void array_init(variable_t a, linear_expression_t elem_size,
+		      linear_expression_t lb_idx, linear_expression_t ub_idx, 
+		      linear_expression_t val) {}      
+      void array_load(variable_t lhs,
+		      variable_t a, linear_expression_t elem_size,
+		      linear_expression_t i) {}
+      void array_store(variable_t a, linear_expression_t elem_size,
+		       linear_expression_t i, linear_expression_t v, 
+		       bool is_singleton) {}      
+      void array_assign(variable_t lhs, variable_t rhs) {}
+      // pointer operations
+      void pointer_load(variable_t lhs, variable_t rhs)  {}
+      void pointer_store(variable_t lhs, variable_t rhs) {} 
+      void pointer_assign(variable_t lhs, variable_t rhs, linear_expression_t offset) {}
+      void pointer_mk_obj(variable_t lhs, ikos::index_t address) {}
+      void pointer_function(variable_t lhs, varname_t func) {}
+      void pointer_mk_null(variable_t lhs) {}
+      void pointer_assume(pointer_constraint_t cst) {}
+      void pointer_assert(pointer_constraint_t cst) {}
+      /* End unimplemented operations */
+     
      void expand(variable_t x, variable_t new_x) {
        crab::CrabStats::count(getDomainName() + ".count.expand");
        crab::ScopedCrabStats __st__(getDomainName() + ".expand");
@@ -1424,9 +1457,9 @@ namespace crab {
      }
 
      interval_domain_t approx() const {
-       if (is_bottom()) 
+       if (_env.is_bottom()) 
          return interval_domain_t::bottom();
-       else if (is_top())
+       else if (_env.is_top())
          return interval_domain_t::top();
        else {
          interval_domain_t res;
@@ -1444,14 +1477,6 @@ namespace crab {
 
      disjunctive_linear_constraint_system_t to_disjunctive_linear_constraint_system() {
        CRAB_ERROR("TODO: to_disjunctive_linear_constraint_system in dis_intervals");
-       // auto lin_csts = to_linear_constraint_system();
-       // if (lin_csts.is_false()) {
-       // 	 return disjunctive_linear_constraint_system_t(true /*is_false*/); 
-       // } else if (lin_csts.is_true()) {
-       // 	 return disjunctive_linear_constraint_system_t(false /*is_false*/);
-       // } else {
-       // 	 return disjunctive_linear_constraint_system_t(lin_csts);
-       // }
      }
      
      void write(crab_os& o) {
@@ -1464,11 +1489,9 @@ namespace crab {
    }; 
 
    template<typename Number, typename VariableName>
-   class domain_traits <dis_interval_domain<Number, VariableName> > {
-    public:
-     typedef dis_interval_domain<Number, VariableName> dis_interval_domain_t;
-     template<class CFG>
-     static void do_initialization(CFG cfg) { }
+   struct abstract_domain_traits<dis_interval_domain<Number, VariableName>> {
+     typedef Number number_t;
+     typedef VariableName varname_t;     
    };
 
   } // namespace domains   

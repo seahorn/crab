@@ -22,8 +22,9 @@
 
 #include <crab/common/types.hpp>
 #include <crab/common/stats.hpp>
-#include <crab/domains/operators_api.hpp>
+#include <crab/domains/abstract_domain.hpp>
 
+#include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/congruences.hpp>
 #include <crab/domains/intervals.hpp>
 #include <crab/domains/nullity.hpp>
@@ -187,10 +188,10 @@ namespace crab {
         }
       }
       
-      static std::string getDomainName () { 
+      static std::string getDomainName() { 
         std::string name = "Product(" +
-            Domain1::getDomainName () + "," +
-            Domain2::getDomainName () + ")";
+            Domain1::getDomainName() + "," +
+            Domain2::getDomainName() + ")";
         return name;
       }
     }; // class basic_domain_product2
@@ -199,14 +200,12 @@ namespace crab {
     // Provided by Ikos
     // Reduced product of two arbitrary domains with all operations.
     template< typename Number, typename VariableName, typename Domain1, typename Domain2 >
-    class domain_product2:
-      public abstract_domain<Number,VariableName,
-			     domain_product2<Number,VariableName,
-					     Domain1,Domain2> > {
+    class domain_product2 final:
+      public abstract_domain<domain_product2<Number,VariableName, Domain1,Domain2>> {
      public:
       
       typedef domain_product2<Number, VariableName, Domain1, Domain2> domain_product2_t;
-      typedef abstract_domain<Number, VariableName, domain_product2_t> abstract_domain_t;
+      typedef abstract_domain<domain_product2_t> abstract_domain_t;
       typedef Domain1 first_type;
       typedef Domain2 second_type;
       
@@ -215,14 +214,14 @@ namespace crab {
       using typename abstract_domain_t::linear_constraint_system_t;
       using typename abstract_domain_t::disjunctive_linear_constraint_system_t;      
       using typename abstract_domain_t::variable_t;
-      using typename abstract_domain_t::number_t;
-      using typename abstract_domain_t::varname_t;
       using typename abstract_domain_t::variable_vector_t;      
+      using typename abstract_domain_t::pointer_constraint_t;
+      typedef Number number_t;
+      typedef VariableName varname_t;
       
-      typedef crab::pointer_constraint<variable_t> ptr_cst_t;
       
      private:
-      typedef basic_domain_product2< Domain1, Domain2 > basic_domain_product2_t;
+      typedef basic_domain_product2<Domain1, Domain2> basic_domain_product2_t;
       
      private:
       basic_domain_product2_t _product;
@@ -302,11 +301,11 @@ namespace crab {
       }
       
       template<typename Thresholds>
-      domain_product2_t widening_thresholds (domain_product2_t other,
+      domain_product2_t widening_thresholds(domain_product2_t other,
                                              const Thresholds& ts) {
-        return domain_product2_t (
-            this->_product.first ().widening_thresholds (other._product.first (), ts),
-            this->_product.second ().widening_thresholds (other._product.second (), ts));
+        return domain_product2_t(
+            this->_product.first().widening_thresholds(other._product.first(), ts),
+            this->_product.second().widening_thresholds(other._product.second(), ts));
       }
       
       domain_product2_t operator&&(domain_product2_t other) {
@@ -364,7 +363,7 @@ namespace crab {
         this->_product.second() -= v;
       }
       
-      // cast_operators_api
+      // cast operators
       
       void apply(int_conv_operation_t op, variable_t dst, variable_t src) { 
         this->_product.first().apply(op, dst, src);
@@ -372,7 +371,7 @@ namespace crab {
         this->reduce();
       }
       
-      // bitwise_operators_api
+      // bitwise operators
       
       void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {
         this->_product.first().apply(op, x, y, z);
@@ -386,116 +385,116 @@ namespace crab {
         this->reduce();
       }
       
-      // array_operators_api
+      // array operators
       
-      virtual void array_init (variable_t a, linear_expression_t elem_size,
+      virtual void array_init(variable_t a, linear_expression_t elem_size,
 			       linear_expression_t lb_idx,
 			       linear_expression_t ub_idx, 
 			       linear_expression_t val) override {
-        this->_product.first().array_init (a, elem_size, lb_idx, ub_idx, val);
-        this->_product.second().array_init (a, elem_size,  lb_idx, ub_idx, val);
-        this->reduce ();
+        this->_product.first().array_init(a, elem_size, lb_idx, ub_idx, val);
+        this->_product.second().array_init(a, elem_size,  lb_idx, ub_idx, val);
+        this->reduce();
       }
       
-      virtual void array_load (variable_t lhs,
+      virtual void array_load(variable_t lhs,
 			       variable_t a, linear_expression_t elem_size,
                                linear_expression_t i) override {
         
-        this->_product.first().array_load (lhs, a, elem_size, i);
-        this->_product.second().array_load (lhs, a, elem_size, i);
-        this->reduce ();
+        this->_product.first().array_load(lhs, a, elem_size, i);
+        this->_product.second().array_load(lhs, a, elem_size, i);
+        this->reduce();
       }
       
-      virtual void array_store (variable_t a, linear_expression_t elem_size,
+      virtual void array_store(variable_t a, linear_expression_t elem_size,
                                 linear_expression_t i,
 				linear_expression_t val, 
 				bool is_singleton) override {
-        this->_product.first().array_store (a, elem_size, i, val, is_singleton);
-        this->_product.second().array_store (a, elem_size, i, val, is_singleton);
-        this->reduce ();
+        this->_product.first().array_store(a, elem_size, i, val, is_singleton);
+        this->_product.second().array_store(a, elem_size, i, val, is_singleton);
+        this->reduce();
       }
       
-      virtual void array_assign (variable_t lhs, variable_t rhs) override {
-        this->_product.first().array_assign (lhs, rhs);
-        this->_product.second().array_assign (lhs, rhs);
-        this->reduce ();      
+      virtual void array_assign(variable_t lhs, variable_t rhs) override {
+        this->_product.first().array_assign(lhs, rhs);
+        this->_product.second().array_assign(lhs, rhs);
+        this->reduce();      
       }
       
-      // pointer_operators_api
-      virtual void pointer_load (variable_t lhs, variable_t rhs) override {
-        this->_product.first().pointer_load (lhs, rhs);
-        this->_product.second().pointer_load (lhs, rhs);
-        this->reduce ();
+      // pointer operators
+      virtual void pointer_load(variable_t lhs, variable_t rhs) override {
+        this->_product.first().pointer_load(lhs, rhs);
+        this->_product.second().pointer_load(lhs, rhs);
+        this->reduce();
       }
       
-      virtual void pointer_store (variable_t lhs, variable_t rhs) override {
-        this->_product.first().pointer_store (lhs, rhs);
-        this->_product.second().pointer_store (lhs, rhs);
-        this->reduce ();
+      virtual void pointer_store(variable_t lhs, variable_t rhs) override {
+        this->_product.first().pointer_store(lhs, rhs);
+        this->_product.second().pointer_store(lhs, rhs);
+        this->reduce();
       } 
       
-      virtual void pointer_assign (variable_t lhs, variable_t rhs,
+      virtual void pointer_assign(variable_t lhs, variable_t rhs,
 				   linear_expression_t offset) override {
-        this->_product.first().pointer_assign (lhs, rhs, offset);
-        this->_product.second().pointer_assign (lhs, rhs, offset);
-        this->reduce ();
+        this->_product.first().pointer_assign(lhs, rhs, offset);
+        this->_product.second().pointer_assign(lhs, rhs, offset);
+        this->reduce();
       }
       
-      virtual void pointer_mk_obj (variable_t lhs, ikos::index_t address) override {
-        this->_product.first().pointer_mk_obj (lhs, address);
-        this->_product.second().pointer_mk_obj (lhs, address);
-        this->reduce ();
+      virtual void pointer_mk_obj(variable_t lhs, ikos::index_t address) override {
+        this->_product.first().pointer_mk_obj(lhs, address);
+        this->_product.second().pointer_mk_obj(lhs, address);
+        this->reduce();
       }
       
-      virtual void pointer_function (variable_t lhs, varname_t func) override {
-        this->_product.first().pointer_function (lhs, func);
-        this->_product.second().pointer_function (lhs, func);
-        this->reduce ();
+      virtual void pointer_function(variable_t lhs, varname_t func) override {
+        this->_product.first().pointer_function(lhs, func);
+        this->_product.second().pointer_function(lhs, func);
+        this->reduce();
       }
       
-      virtual void pointer_mk_null (variable_t lhs) override {
-        this->_product.first().pointer_mk_null (lhs);
-        this->_product.second().pointer_mk_null (lhs);
-        this->reduce ();
+      virtual void pointer_mk_null(variable_t lhs) override {
+        this->_product.first().pointer_mk_null(lhs);
+        this->_product.second().pointer_mk_null(lhs);
+        this->reduce();
       }
       
-      virtual void pointer_assume (ptr_cst_t cst) override {
-        this->_product.first().pointer_assume (cst);
-        this->_product.second().pointer_assume (cst);
-        this->reduce ();
+      virtual void pointer_assume(pointer_constraint_t cst) override {
+        this->_product.first().pointer_assume(cst);
+        this->_product.second().pointer_assume(cst);
+        this->reduce();
       }    
       
-      virtual void pointer_assert (ptr_cst_t cst) override {
-        this->_product.first().pointer_assert (cst);
-        this->_product.second().pointer_assert (cst);
-        this->reduce ();
+      virtual void pointer_assert(pointer_constraint_t cst) override {
+        this->_product.first().pointer_assert(cst);
+        this->_product.second().pointer_assert(cst);
+        this->reduce();
       }    
 
       // boolean operators
-      virtual void assign_bool_cst (variable_t lhs, linear_constraint_t rhs) override {
-        this->_product.first().assign_bool_cst (lhs, rhs);
-        this->_product.second().assign_bool_cst (lhs, rhs);
-        this->reduce ();
+      virtual void assign_bool_cst(variable_t lhs, linear_constraint_t rhs) override {
+        this->_product.first().assign_bool_cst(lhs, rhs);
+        this->_product.second().assign_bool_cst(lhs, rhs);
+        this->reduce();
       }    
 
       virtual void assign_bool_var(variable_t lhs, variable_t rhs,
 				   bool is_not_rhs) override {
-        this->_product.first().assign_bool_var (lhs, rhs, is_not_rhs);
-        this->_product.second().assign_bool_var (lhs, rhs, is_not_rhs);
-        this->reduce ();
+        this->_product.first().assign_bool_var(lhs, rhs, is_not_rhs);
+        this->_product.second().assign_bool_var(lhs, rhs, is_not_rhs);
+        this->reduce();
       }    
 
       virtual void apply_binary_bool(bool_operation_t op,variable_t x,
 				     variable_t y,variable_t z) override {
-        this->_product.first().apply_binary_bool (op, x, y, z);
-        this->_product.second().apply_binary_bool (op, x, y, z);
-        this->reduce ();
+        this->_product.first().apply_binary_bool(op, x, y, z);
+        this->_product.second().apply_binary_bool(op, x, y, z);
+        this->reduce();
       }    
 
       virtual void assume_bool(variable_t v, bool is_negated) override {
-        this->_product.first().assume_bool (v, is_negated);
-        this->_product.second().assume_bool (v, is_negated);
-        this->reduce ();
+        this->_product.first().assume_bool(v, is_negated);
+        this->_product.second().assume_bool(v, is_negated);
+        this->reduce();
       }    
 
       // backward boolean operators
@@ -557,7 +556,7 @@ namespace crab {
         return csts;
       }
       
-      virtual void rename (const variable_vector_t& from,
+      virtual void rename(const variable_vector_t& from,
 			   const variable_vector_t& to) override {
         this->_product.first().rename(from, to);
         this->_product.second().rename(from, to);
@@ -567,8 +566,8 @@ namespace crab {
         this->_product.write(o);
       }
       
-      static std::string getDomainName () { 
-        return basic_domain_product2_t::getDomainName ();
+      static std::string getDomainName() { 
+        return basic_domain_product2_t::getDomainName();
       }
       
     }; // class domain_product2
@@ -604,85 +603,82 @@ namespace crab {
     // precise reduction operation.
     template<typename Domain1, typename Domain2,
 	     class Params = reduced_product_impl::default_params>
-    class reduced_numerical_domain_product2:
-      public abstract_domain<typename Domain1::number_t, typename Domain1::varname_t,
-			     reduced_numerical_domain_product2<Domain1,Domain2,Params>> {
+    class reduced_numerical_domain_product2 final:
+      public abstract_domain<reduced_numerical_domain_product2<Domain1,Domain2,Params>> {
+      
      public:
-      // Assume that Domain1 and Domain2 have the same types for
-      // number_t and varname_t
-      typedef typename Domain1::number_t Number;
-      typedef typename Domain1::varname_t VariableName;
       typedef reduced_numerical_domain_product2<Domain1,Domain2,Params>
       reduced_numerical_domain_product2_t;
-      typedef abstract_domain<Number,VariableName,reduced_numerical_domain_product2_t>
-      abstract_domain_t;
+      typedef abstract_domain<reduced_numerical_domain_product2_t> abstract_domain_t;
       using typename abstract_domain_t::linear_expression_t;
       using typename abstract_domain_t::linear_constraint_t;
       using typename abstract_domain_t::linear_constraint_system_t;
       using typename abstract_domain_t::disjunctive_linear_constraint_system_t;      
       using typename abstract_domain_t::variable_t;
-      using typename abstract_domain_t::number_t;
-      using typename abstract_domain_t::varname_t;
       using typename abstract_domain_t::variable_vector_t;
-      
+      using typename abstract_domain_t::pointer_constraint_t;
+      // Assume that Domain1 and Domain2 have the same types for
+      // number_t and varname_t
+      typedef typename Domain1::number_t number_t;
+      typedef typename Domain1::varname_t varname_t;
       typedef interval<number_t> interval_t;
       
      private:
       
       typedef patricia_tree_set<variable_t> variable_set_t;
-      typedef domain_product2<Number, VariableName, Domain1, Domain2> domain_product2_t; 
+      typedef domain_product2<number_t, varname_t, Domain1, Domain2> domain_product2_t; 
       
       domain_product2_t _product;
       
       reduced_numerical_domain_product2(const domain_product2_t& product):
           _product(product) {}
 
-      linear_constraint_system_t to_linear_constraints (variable_t v, interval_t i) const {
+      linear_constraint_system_t to_linear_constraints(variable_t v, interval_t i) const {
         linear_constraint_system_t csts;
-        if (i.lb ().is_finite () && i.ub ().is_finite ()) {
-          auto lb = *(i.lb ().number());
-          auto ub = *(i.ub ().number());
+        if (i.lb().is_finite() && i.ub().is_finite()) {
+          auto lb = *(i.lb().number());
+          auto ub = *(i.ub().number());
           if (lb == ub) {
-            csts += (v == lb);
+            csts +=(v == lb);
           } else {
             csts += (v >= lb);
             csts += (v <= ub);
           }
-        } else if (i.lb ().is_finite ()) {
-          auto lb = *(i.lb ().number());
+        } else if (i.lb().is_finite()) {
+          auto lb = *(i.lb().number());
           csts += (v >= lb);
-        } else if (i.ub ().is_finite ()) {
-          auto ub = *(i.ub ().number());
+        } else if (i.ub().is_finite()) {
+          auto ub = *(i.ub().number());
           csts += (v <= ub);
         }
         return csts;
       }
 
       void reduce_variable(const variable_t& v) {
-        crab::CrabStats::count (getDomainName() + ".count.reduce");
+        crab::CrabStats::count(getDomainName() + ".count.reduce");
         crab::ScopedCrabStats __st__(getDomainName() + ".reduce");
 
-        if (!is_bottom() && !Params::disable_reduction) {
+        if(!is_bottom() && !Params::disable_reduction) {
 	  
           // We just propagate from one domain to another.  We could
           // propagate in the other direction ... and repeat it
           // computing a fixpoint+narrowing of descending iterations.
 
-          Domain1& inv1 = _product.first ();
-          Domain2& inv2 = _product.second ();
+          Domain1& inv1 = _product.first();
+          Domain2& inv2 = _product.second();
 
 	  //////
 	  // propagate interval constraints between domains
 	  //////
 	  if (Params::left_propagate_intervals) {
 	    interval_t i1 = inv1[v];
-	    if (!i1.is_top ())
-	      inv2 += to_linear_constraints (v, i1);
+	    if (!i1.is_top())
+	      inv2 += to_linear_constraints(v, i1);
 	  }
 	  if (Params::right_propagate_intervals) {
 	    interval_t i2 = inv2[v];
-	    if (!i2.is_top ())
-	      inv1 += to_linear_constraints (v, i2);
+	    if (!i2.is_top())
+	      inv1 += to_linear_constraints(v, i2);
 	  }
           
           //////
@@ -758,7 +754,7 @@ namespace crab {
      public:
     
       static reduced_numerical_domain_product2_t top() {
-        return reduced_numerical_domain_product2_t (domain_product2_t::top());
+        return reduced_numerical_domain_product2_t(domain_product2_t::top());
       }
       
       static reduced_numerical_domain_product2_t bottom() {
@@ -835,7 +831,7 @@ namespace crab {
       template<typename Thresholds>
       reduced_numerical_domain_product2_t widening_thresholds 
       (reduced_numerical_domain_product2_t other, const Thresholds& ts) {
-	reduced_numerical_domain_product2_t res(this->_product.widening_thresholds (other._product, ts));
+	reduced_numerical_domain_product2_t res(this->_product.widening_thresholds(other._product, ts));
 	CRAB_LOG("combined-domain", 
 		 crab::outs() << "============ WIDENING ==================";
 		 crab::outs() << *this << "\n----------------";
@@ -852,7 +848,7 @@ namespace crab {
 	return res;
       }
       
-      void set (variable_t v, interval_t x) {
+      void set(variable_t v, interval_t x) {
         this->_product.first().set(v, x);
         this->_product.second().set(v, x);
       }
@@ -868,7 +864,7 @@ namespace crab {
           reduce_variable(v);
         }
 	CRAB_LOG("combined-domain", 
-		 crab::outs () << "Added constraints " << csts << "=" << *this << "\n");
+		 crab::outs() << "Added constraints " << csts << "=" << *this << "\n");
       }
       
       void operator-=(variable_t v) { this->_product -= v; }
@@ -879,16 +875,16 @@ namespace crab {
 	  this->reduce_variable(x);
 	}
 	CRAB_LOG("combined-domain", 
-		 crab::outs () << x << ":=" << e << "=" << *this << "\n");	
+		 crab::outs() << x << ":=" << e << "=" << *this << "\n");	
       }
       
       void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
         this->_product.apply(op, x, y, z);
-	if (!Params::apply_reduction_only_add_constraint) {	
+	if(!Params::apply_reduction_only_add_constraint) {	
 	  this->reduce_variable(x);
 	}
 	CRAB_LOG("combined-domain", 
-		 crab::outs () << x << ":=" << y << op << z << "=" << *this << "\n");
+		 crab::outs() << x << ":=" << y << op << z << "=" << *this << "\n");
 	
       }
       
@@ -898,24 +894,24 @@ namespace crab {
 	  this->reduce_variable(x);
 	}
 	CRAB_LOG("combined-domain", 
-		 crab::outs () << x << ":=" << y << op << k << "=" << *this << "\n");
+		 crab::outs() << x << ":=" << y << op << k << "=" << *this << "\n");
       }
 
-      void backward_assign (variable_t x, linear_expression_t e,
+      void backward_assign(variable_t x, linear_expression_t e,
 			    reduced_numerical_domain_product2_t invariant)  {
         this->_product.backward_assign(x, e, invariant._product);
 	if (!Params::apply_reduction_only_add_constraint) {	
 	  // reduce the variables in the right-hand side
-	  for (auto v: e.variables())
+	  for(auto v: e.variables())
 	    this->reduce_variable(v);
 	}
       }
       
-      void backward_apply (operation_t op,
-			   variable_t x, variable_t y, Number k,
+      void backward_apply(operation_t op,
+			   variable_t x, variable_t y, number_t k,
 			   reduced_numerical_domain_product2_t invariant)  {
         this->_product.backward_apply(op, x, y, k, invariant._product);
-	if (!Params::apply_reduction_only_add_constraint) {	
+	if(!Params::apply_reduction_only_add_constraint) {	
 	  // reduce the variables in the right-hand side	
 	  this->reduce_variable(y);
 	}
@@ -932,7 +928,7 @@ namespace crab {
 	}
       }
 
-      // cast_operators_api
+      // cast operators
       
       void apply(int_conv_operation_t op, variable_t dst, variable_t src) {
         this->_product.apply(op, dst, src);
@@ -941,7 +937,7 @@ namespace crab {
 	}
       }
       
-      // bitwise_operators_api
+      // bitwise operators
       
       void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {
         this->_product.apply(op, x, y, z);
@@ -956,8 +952,45 @@ namespace crab {
 	  this->reduce_variable(x);
 	}
       }
+
+      /* Begin unimplemented operations */
+      // boolean operations
+      void assign_bool_cst(variable_t lhs, linear_constraint_t rhs) {}
+      void assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs) {}
+      void apply_binary_bool(crab::domains::bool_operation_t op,
+			     variable_t x,variable_t y,variable_t z) {}
+      void assume_bool(variable_t v, bool is_negated) {}
+      // backward boolean operations
+      void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
+				    reduced_numerical_domain_product2_t invariant){}
+      void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
+				    reduced_numerical_domain_product2_t invariant) {}
+      void backward_apply_binary_bool(crab::domains::bool_operation_t op,
+				      variable_t x,variable_t y,variable_t z,
+				      reduced_numerical_domain_product2_t invariant) {}
+      // array operations
+      void array_init(variable_t a, linear_expression_t elem_size,
+		      linear_expression_t lb_idx, linear_expression_t ub_idx, 
+		      linear_expression_t val) {}      
+      void array_load(variable_t lhs,
+		      variable_t a, linear_expression_t elem_size,
+		      linear_expression_t i) {}
+      void array_store(variable_t a, linear_expression_t elem_size,
+		       linear_expression_t i, linear_expression_t v, 
+		       bool is_singleton) {}      
+      void array_assign(variable_t lhs, variable_t rhs) {}
+      // pointer operations
+      void pointer_load(variable_t lhs, variable_t rhs)  {}
+      void pointer_store(variable_t lhs, variable_t rhs) {} 
+      void pointer_assign(variable_t lhs, variable_t rhs, linear_expression_t offset) {}
+      void pointer_mk_obj(variable_t lhs, ikos::index_t address) {}
+      void pointer_function(variable_t lhs, varname_t func) {}
+      void pointer_mk_null(variable_t lhs) {}
+      void pointer_assume(pointer_constraint_t cst) {}
+      void pointer_assert(pointer_constraint_t cst) {}
+      /* End unimplemented operations */
       
-      void rename (const variable_vector_t& from,
+      void rename(const variable_vector_t& from,
 		   const variable_vector_t& to)  {
         this->_product.rename(from, to);
       }    
@@ -993,9 +1026,9 @@ namespace crab {
       
       static std::string getDomainName() { 
         std::string name = "ReducedProduct(" +
-                           Domain1::getDomainName () +
+                           Domain1::getDomainName() +
                            "," + 
-                           Domain2::getDomainName () + 
+                           Domain2::getDomainName() + 
                            ")";
         return name;
       }
@@ -1279,16 +1312,12 @@ namespace crab {
     // Reduced product of a numerical domain with congruences.
     // It assumes that all variables have the same bitwdith which is
     // not realistic.
-    template < typename NumAbsDom, int typeSize=-1 >
-    class numerical_congruence_domain:
-      public abstract_domain<typename NumAbsDom::number_t,
-			     typename NumAbsDom::varname_t,
-			     numerical_congruence_domain<NumAbsDom,typeSize> > {
+    template<typename NumAbsDom, int typeSize=-1>
+    class numerical_congruence_domain final:
+      public abstract_domain<numerical_congruence_domain<NumAbsDom,typeSize>> {
 
-      typedef typename NumAbsDom::number_t N;
-      typedef typename NumAbsDom::varname_t V;
-      typedef numerical_congruence_domain< NumAbsDom, typeSize > rnc_domain_t;
-      typedef abstract_domain<N,V,rnc_domain_t> abstract_domain_t;
+      typedef numerical_congruence_domain<NumAbsDom, typeSize> rnc_domain_t;
+      typedef abstract_domain<rnc_domain_t> abstract_domain_t;
 
     public:
       
@@ -1297,9 +1326,10 @@ namespace crab {
       using typename abstract_domain_t::linear_constraint_system_t;
       using typename abstract_domain_t::disjunctive_linear_constraint_system_t;      
       using typename abstract_domain_t::variable_t;
-      using typename abstract_domain_t::number_t;
-      using typename abstract_domain_t::varname_t;
       using typename abstract_domain_t::variable_vector_t;
+      using typename abstract_domain_t::pointer_constraint_t;
+      typedef typename NumAbsDom::number_t number_t;
+      typedef typename NumAbsDom::varname_t varname_t;
 
       typedef congruence_domain<number_t, varname_t, typeSize> congruence_domain_t;
       typedef interval_congruence<number_t, typeSize> interval_congruence_t;
@@ -1316,7 +1346,7 @@ namespace crab {
           _product(product) {}
       
       void reduce_variable(const variable_t& v) {
-        crab::CrabStats::count (getDomainName() + ".count.reduce");
+        crab::CrabStats::count(getDomainName() + ".count.reduce");
         crab::ScopedCrabStats __st__(getDomainName() + ".reduce");
 
         if (is_bottom())
@@ -1350,7 +1380,7 @@ namespace crab {
      public:
       
       static rnc_domain_t top() {
-        return rnc_domain_t (domain_product2_t::top());
+        return rnc_domain_t(domain_product2_t::top());
       }
       
       static rnc_domain_t bottom() {
@@ -1404,9 +1434,9 @@ namespace crab {
       }
        
       template<typename Thresholds>
-      rnc_domain_t widening_thresholds (rnc_domain_t other,
+      rnc_domain_t widening_thresholds(rnc_domain_t other,
                                         const Thresholds& ts) {
-        return rnc_domain_t(this->_product.widening_thresholds (other._product, ts));
+        return rnc_domain_t(this->_product.widening_thresholds(other._product, ts));
       }
       
       rnc_domain_t operator&&(rnc_domain_t other) {
@@ -1414,7 +1444,7 @@ namespace crab {
       }
       
       // pre: x is already reduced
-      void set (variable_t v, interval_congruence_t x) {
+      void set(variable_t v, interval_congruence_t x) {
         this->_product.first().set(v, x.first());
         this->_product.second().set(v, x.second());
        }
@@ -1425,8 +1455,8 @@ namespace crab {
       }
       
       interval_t operator[](variable_t v) {
-        interval_congruence_t x = get (v);
-        return x.first ();
+        interval_congruence_t x = get(v);
+        return x.first();
       }
       
       void operator+=(linear_constraint_system_t csts) {
@@ -1451,7 +1481,7 @@ namespace crab {
         this->reduce_variable(x);
       }
 
-      void backward_assign (variable_t x, linear_expression_t e,
+      void backward_assign(variable_t x, linear_expression_t e,
 			    rnc_domain_t invariant)  {
         this->_product.backward_assign(x, e, invariant._product);
 	// reduce the variables in the right-hand side
@@ -1459,7 +1489,7 @@ namespace crab {
 	  this->reduce_variable(v);	
       }
       
-      void backward_apply (operation_t op,
+      void backward_apply(operation_t op,
 			   variable_t x, variable_t y, number_t k,
 			   rnc_domain_t invariant)  {
         this->_product.backward_apply(op, x, y, k, invariant._product);
@@ -1476,7 +1506,7 @@ namespace crab {
 	this->reduce_variable(z);			
       }
 
-      // cast_operators_api
+      // cast operators
       
       void apply(int_conv_operation_t op, variable_t dst, variable_t src) {
 	this->_product.apply(op, dst, src);
@@ -1484,7 +1514,7 @@ namespace crab {
       }
       
 
-      // bitwise_operators_api
+      // bitwise operators
       
       void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {
         this->_product.apply(op, x, y, z);
@@ -1496,6 +1526,43 @@ namespace crab {
         this->reduce_variable(x);
       }
 
+      /* Begin unimplemented operations */
+      // boolean operations
+      void assign_bool_cst(variable_t lhs, linear_constraint_t rhs) {}
+      void assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs) {}
+      void apply_binary_bool(crab::domains::bool_operation_t op,
+			     variable_t x,variable_t y,variable_t z) {}
+      void assume_bool(variable_t v, bool is_negated) {}
+      // backward boolean operations
+      void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
+				    rnc_domain_t invariant){}
+      void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
+				    rnc_domain_t invariant) {}
+      void backward_apply_binary_bool(crab::domains::bool_operation_t op,
+				      variable_t x,variable_t y,variable_t z,
+				      rnc_domain_t invariant) {}
+      // array operations
+      void array_init(variable_t a, linear_expression_t elem_size,
+		      linear_expression_t lb_idx, linear_expression_t ub_idx, 
+		      linear_expression_t val) {}      
+      void array_load(variable_t lhs,
+		      variable_t a, linear_expression_t elem_size,
+		      linear_expression_t i) {}
+      void array_store(variable_t a, linear_expression_t elem_size,
+		       linear_expression_t i, linear_expression_t v, 
+		       bool is_singleton) {}      
+      void array_assign(variable_t lhs, variable_t rhs) {}
+      // pointer operations
+      void pointer_load(variable_t lhs, variable_t rhs)  {}
+      void pointer_store(variable_t lhs, variable_t rhs) {} 
+      void pointer_assign(variable_t lhs, variable_t rhs, linear_expression_t offset) {}
+      void pointer_mk_obj(variable_t lhs, ikos::index_t address) {}
+      void pointer_function(variable_t lhs, varname_t func) {}
+      void pointer_mk_null(variable_t lhs) {}
+      void pointer_assume(pointer_constraint_t cst) {}
+      void pointer_assert(pointer_constraint_t cst) {}
+      /* End unimplemented operations */
+      
       void forget(const variable_vector_t& variables) {
 	this->_product.forget(variables);
       }
@@ -1507,6 +1574,8 @@ namespace crab {
       void expand(variable_t var, variable_t new_var) {
 	this->_product.expand(var, new_var);
       }
+
+      void normalize() {}
       
       void write(crab_os& o) { 
         this->_product.write(o); 
@@ -1521,10 +1590,10 @@ namespace crab {
       }
       
       static std::string getDomainName() { 
-        return domain_product2_t::getDomainName (); 
+        return domain_product2_t::getDomainName(); 
       }
 
-      void rename (const variable_vector_t& from,
+      void rename(const variable_vector_t& from,
 		   const variable_vector_t& to)  {
         this->_product.rename(from, to);
       }          
@@ -1534,17 +1603,12 @@ namespace crab {
 
     // Reduced product of a numerical domain with nullity
     // Reduction is done by as in domain_product2.
-    template < typename NumAbsDom>
-    class numerical_nullity_domain:
-      public abstract_domain<typename NumAbsDom::number_t, 
-			     typename NumAbsDom::varname_t,
-			     numerical_nullity_domain<NumAbsDom> > {
-    private:
-      
-      typedef typename NumAbsDom::number_t N;
-      typedef typename NumAbsDom::varname_t V;
+    template<typename NumAbsDom>
+    class numerical_nullity_domain final:
+      public abstract_domain<numerical_nullity_domain<NumAbsDom>> {
+			     
       typedef numerical_nullity_domain<NumAbsDom> nn_domain_t;
-      typedef abstract_domain<N,V,nn_domain_t> abstract_domain_t;
+      typedef abstract_domain<nn_domain_t> abstract_domain_t;
       
     public:
       
@@ -1553,11 +1617,11 @@ namespace crab {
       using typename abstract_domain_t::linear_constraint_system_t;
       using typename abstract_domain_t::disjunctive_linear_constraint_system_t;      
       using typename abstract_domain_t::variable_t;
-      using typename abstract_domain_t::number_t;
-      using typename abstract_domain_t::varname_t;
       using typename abstract_domain_t::variable_vector_t;
-      typedef interval<N> interval_t;
-      typedef crab::pointer_constraint<variable_t> ptr_cst_t;
+      using typename abstract_domain_t::pointer_constraint_t;
+      typedef typename NumAbsDom::number_t number_t;
+      typedef typename NumAbsDom::varname_t varname_t;
+      typedef interval<number_t> interval_t;
       
      private:
 
@@ -1574,7 +1638,7 @@ namespace crab {
      public:
       
       static nn_domain_t top() {
-        return nn_domain_t (domain_product2_t::top());
+        return nn_domain_t(domain_product2_t::top());
       }
       
       static nn_domain_t bottom() {
@@ -1629,15 +1693,15 @@ namespace crab {
       }
        
       template<typename Thresholds>
-      nn_domain_t widening_thresholds (nn_domain_t other, const Thresholds& ts) {
-        return nn_domain_t(this->_product.widening_thresholds (other._product, ts));
+      nn_domain_t widening_thresholds(nn_domain_t other, const Thresholds& ts) {
+        return nn_domain_t(this->_product.widening_thresholds(other._product, ts));
       }
       
       nn_domain_t operator&&(nn_domain_t other) {
         return nn_domain_t(this->_product && other._product);
       }
       
-      // numerical_domains_api
+      // numerical_domains
 
       void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
         this->_product.apply(op, x, y, z);
@@ -1651,12 +1715,12 @@ namespace crab {
         this->_product.assign(x, e);
       }
 
-      void backward_assign (variable_t x, linear_expression_t e,
+      void backward_assign(variable_t x, linear_expression_t e,
 			    nn_domain_t invariant)  {
         this->_product.backward_assign(x, e, invariant._product);
       }
       
-      void backward_apply (operation_t op,
+      void backward_apply(operation_t op,
 			   variable_t x, variable_t y, number_t k,
 			   nn_domain_t invariant)  {
         this->_product.backward_apply(op, x, y, k, invariant._product);
@@ -1674,7 +1738,7 @@ namespace crab {
       
       void operator-=(variable_t v) { this->_product -= v; }
 
-      void set (variable_t v, interval_t intv) {
+      void set(variable_t v, interval_t intv) {
         this->_product.first().set(v, intv);
        }
             
@@ -1682,13 +1746,47 @@ namespace crab {
         return this->_product.first()[v];
       }
 
-      // cast_operators_api
+      // boolean operations
+      void assign_bool_cst(variable_t lhs, linear_constraint_t rhs) {
+	this->_product.assign_bool_cst(lhs, rhs);
+      }
+      
+      void assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs) {
+	this->_product.assign_bool_var(lhs, rhs, is_not_rhs);
+      }
+      
+      void apply_binary_bool(bool_operation_t op, variable_t x,variable_t y,variable_t z) {
+	this->_product.apply_binary_bool(op, x, y, z);
+      }
+      
+      void assume_bool(variable_t v, bool is_negated) {
+	this->_product.assume_bool(v, is_negated);
+      }
+      
+      // backward boolean operations
+      void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
+				    nn_domain_t invariant){
+	this->_product.backward_assign_bool_cst(lhs, rhs, invariant._product);
+      }
+      
+      void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
+				    nn_domain_t invariant) {
+	this->_product.backward_assign_bool_var(lhs, rhs, is_not_rhs, invariant._product);
+      }
+      
+      void backward_apply_binary_bool(bool_operation_t op,
+				      variable_t x,variable_t y,variable_t z,
+				      nn_domain_t invariant) {
+	this->_product.backward_apply_binary_bool(op, x, y, z, invariant._product);
+      }
+      
+      // cast operators
       
       void apply(int_conv_operation_t op, variable_t dst, variable_t src) {
 	this->_product.apply(op, dst, src);
       }
       
-      // bitwise_operators_api
+      // bitwise operators
       
       void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {
         this->_product.apply(op, x, y, z);
@@ -1698,67 +1796,67 @@ namespace crab {
         this->_product.apply(op, x, y, k);
       }
       
-      // array_operators_api
+      // array operators
       
-      virtual void array_init (variable_t a,
+      virtual void array_init(variable_t a,
 			       linear_expression_t elem_size,
 			       linear_expression_t lb_idx,
 			       linear_expression_t ub_idx,
 			       linear_expression_t val) override {
-        this->_product.array_init (a, elem_size, lb_idx, ub_idx, val);
+        this->_product.array_init(a, elem_size, lb_idx, ub_idx, val);
       }
       
-      virtual void array_load (variable_t lhs,
+      virtual void array_load(variable_t lhs,
 			       variable_t a,
 			       linear_expression_t elem_size,
                                linear_expression_t i) override {
-        this->_product.array_load (lhs, a, elem_size, i);
+        this->_product.array_load(lhs, a, elem_size, i);
       }
       
-      virtual void array_store (variable_t a,
+      virtual void array_store(variable_t a,
 				linear_expression_t elem_size,
                                 linear_expression_t i,
 				linear_expression_t val, 
 				bool is_singleton) override {
-        this->_product.array_store (a, elem_size, i, val, is_singleton);
+        this->_product.array_store(a, elem_size, i, val, is_singleton);
       }
       
-      virtual void array_assign (variable_t lhs, variable_t rhs) override {
-        this->_product.array_assign (lhs, rhs);
+      virtual void array_assign(variable_t lhs, variable_t rhs) override {
+        this->_product.array_assign(lhs, rhs);
       }
       
-      // pointer_operators_api
-      virtual void pointer_load (variable_t lhs, variable_t rhs) override {
-        this->_product.pointer_load (lhs, rhs);
+      // pointer operators
+      virtual void pointer_load(variable_t lhs, variable_t rhs) override {
+        this->_product.pointer_load(lhs, rhs);
       }
       
-      virtual void pointer_store (variable_t lhs, variable_t rhs) override {
-        this->_product.pointer_store (lhs, rhs);
+      virtual void pointer_store(variable_t lhs, variable_t rhs) override {
+        this->_product.pointer_store(lhs, rhs);
       } 
       
-      virtual void pointer_assign (variable_t lhs, variable_t rhs,
+      virtual void pointer_assign(variable_t lhs, variable_t rhs,
 				   linear_expression_t offset) override {
-        this->_product.pointer_assign (lhs, rhs, offset);
+        this->_product.pointer_assign(lhs, rhs, offset);
       }
       
-      virtual void pointer_mk_obj (variable_t lhs, ikos::index_t address) override {
-        this->_product.pointer_mk_obj (lhs, address);
+      virtual void pointer_mk_obj(variable_t lhs, ikos::index_t address) override {
+        this->_product.pointer_mk_obj(lhs, address);
       }
       
-      virtual void pointer_function (variable_t lhs, varname_t func) override {
-        this->_product.pointer_function (lhs, func);
+      virtual void pointer_function(variable_t lhs, varname_t func) override {
+        this->_product.pointer_function(lhs, func);
       }
       
-      virtual void pointer_mk_null (variable_t lhs) override {
-        this->_product.pointer_mk_null (lhs);
+      virtual void pointer_mk_null(variable_t lhs) override {
+        this->_product.pointer_mk_null(lhs);
       }
       
-      virtual void pointer_assume (ptr_cst_t cst) override {
-        this->_product.pointer_assume (cst);
+      virtual void pointer_assume(pointer_constraint_t cst) override {
+        this->_product.pointer_assume(cst);
       }    
       
-      virtual void pointer_assert (ptr_cst_t cst) override {
-        this->_product.pointer_assert (cst);
+      virtual void pointer_assert(pointer_constraint_t cst) override {
+        this->_product.pointer_assert(cst);
       }    
       
       void write(crab_os& o) { 
@@ -1774,10 +1872,10 @@ namespace crab {
       }
       
       static std::string getDomainName() { 
-        return domain_product2_t::getDomainName (); 
+        return domain_product2_t::getDomainName(); 
       }
 
-      void rename (const variable_vector_t& from,
+      void rename(const variable_vector_t& from,
 		   const variable_vector_t& to)  {
         this->_product.rename(from, to);
       }    
@@ -1799,34 +1897,43 @@ namespace crab {
       }
     }; // class numerical_nullity_domain
 
-    template<typename Domain1, typename Domain2>
-    class domain_traits <reduced_numerical_domain_product2<Domain1,Domain2>> {
-      typedef reduced_numerical_domain_product2<Domain1,Domain2> product_t;
-     public:
-      template<class CFG>
-      static void do_initialization (CFG cfg) { }
+    template<typename Number, typename VariableName, typename Domain1, typename Domain2>
+    struct abstract_domain_traits<domain_product2<Number,VariableName,Domain1,Domain2>> {
+      typedef Number number_t;
+      typedef VariableName varname_t;
+    };      
+    
+    template<typename Domain1, typename Domain2, class Params>
+    struct abstract_domain_traits<reduced_numerical_domain_product2<Domain1,Domain2,Params>> {
+      typedef typename Domain1::number_t number_t;
+      typedef typename Domain1::varname_t varname_t;
     };
 
-
+    template<typename NumAbsDom, int typeSize>    
+    struct abstract_domain_traits<numerical_congruence_domain<NumAbsDom, typeSize>> {
+      typedef typename NumAbsDom::number_t number_t;
+      typedef typename NumAbsDom::varname_t varname_t;
+    };
+    
     template<typename Domain>
-    class domain_traits <numerical_nullity_domain<Domain>> {
-      typedef numerical_nullity_domain<Domain> product_t;
-     public:
-      template<class CFG>
-      static void do_initialization (CFG cfg) { }
+    struct abstract_domain_traits<numerical_nullity_domain<Domain>> {
+      typedef typename Domain::number_t number_t;
+      typedef typename Domain::varname_t varname_t;
     };
 
     template<typename Dom>
-    struct array_sgraph_domain_traits <numerical_nullity_domain<Dom> > {
+    struct array_sgraph_domain_helper_traits<numerical_nullity_domain<Dom>> {
       typedef numerical_nullity_domain<Dom> num_null_domain_t;
       typedef typename num_null_domain_t::linear_constraint_t linear_constraint_t;
       typedef typename Dom::variable_t variable_t;
       
-      static bool is_unsat(num_null_domain_t &inv, linear_constraint_t cst) 
-      { return array_sgraph_domain_traits<Dom>::is_unsat(inv.first(), cst); }
+      static bool is_unsat(num_null_domain_t &inv, linear_constraint_t cst) {
+	return array_sgraph_domain_helper_traits<Dom>::is_unsat(inv.first(), cst);
+      }
       
-      static void active_variables(num_null_domain_t &inv, std::vector<variable_t>& out) 
-      { array_sgraph_domain_traits<Dom>::active_variables(inv.first(), out); }
+      static void active_variables(num_null_domain_t &inv, std::vector<variable_t>& out)  {
+	array_sgraph_domain_helper_traits<Dom>::active_variables(inv.first(), out);
+      }
     };
 
   } // end namespace domains

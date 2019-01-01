@@ -17,7 +17,7 @@ namespace crab {
    namespace iterators {
 
      /** 
-	 Class that represents a thresholds used by the widening operator
+	 Class that represents a set of thresholds used by the widening operator
      **/
      template<typename Number>
      class thresholds {
@@ -25,84 +25,84 @@ namespace crab {
       private:
 
        /// XXX: internal representation of a threshold
-       typedef ikos::bound <Number> bound_t;
+       typedef ikos::bound<Number> bound_t;
        
        std::vector<bound_t> m_thresholds;
        unsigned int m_size;
 
        template<class B1, class B2>
-       static B2 convert_bounds_impl (B1 b1) {
-	 B2 b2 (0); // some initial value it doesn't matter which one
-	 ikos::bounds_impl::convert_bounds (b1, b2);
+       static B2 convert_bounds_impl(B1 b1) {
+	 B2 b2(0); // some initial value it doesn't matter which one
+	 ikos::bounds_impl::convert_bounds(b1, b2);
 	 return b2;
        }
        
       public:
        
-       thresholds (int size = UINT_MAX) : m_size (size) { 
-         m_thresholds.push_back (bound_t::minus_infinity ());
-         m_thresholds.push_back (0);
+       thresholds(int size = UINT_MAX) : m_size(size) { 
+         m_thresholds.push_back(bound_t::minus_infinity());
+         m_thresholds.push_back(0);
 	 // useful thresholds for wrapped domains
 	 #if 0
-	 m_thresholds.push_back (bound_t("-2147483648"));	 
-	 m_thresholds.push_back (bound_t("-32768"));
-	 m_thresholds.push_back (bound_t("-128"));
-	 m_thresholds.push_back (bound_t("127"));
-	 m_thresholds.push_back (bound_t("255"));
-	 m_thresholds.push_back (bound_t("32767"));
-	 m_thresholds.push_back (bound_t("65535"));	 
-	 m_thresholds.push_back (bound_t("2147483647"));
+	 m_thresholds.push_back(bound_t("-2147483648"));	 
+	 m_thresholds.push_back(bound_t("-32768"));
+	 m_thresholds.push_back(bound_t("-128"));
+	 m_thresholds.push_back(bound_t("127"));
+	 m_thresholds.push_back(bound_t("255"));
+	 m_thresholds.push_back(bound_t("32767"));
+	 m_thresholds.push_back(bound_t("65535"));	 
+	 m_thresholds.push_back(bound_t("2147483647"));
 	 #endif 
-         m_thresholds.push_back (bound_t::plus_infinity ());	 
+         m_thresholds.push_back(bound_t::plus_infinity());	 
        }
 
-       unsigned size (void) const { return m_thresholds.size(); }
+       unsigned size(void) const { return m_thresholds.size(); }
        
        template<typename N>
-       void add (ikos::bound<N> v1) { 
-         if (m_thresholds.size () < m_size) {
+       void add(ikos::bound<N> v1) { 
+         if (m_thresholds.size() < m_size) {
        	   bound_t v = convert_bounds_impl<ikos::bound<N>, bound_t> (v1);
            if (std::find
-	       (m_thresholds.begin (), m_thresholds.end (), v) == m_thresholds.end ()) {
-             auto ub = std::upper_bound (m_thresholds.begin (), m_thresholds.end (), v);
-             m_thresholds.insert (ub, v);
+	       (m_thresholds.begin(), m_thresholds.end(), v) == m_thresholds.end()) {
+             auto ub = std::upper_bound(m_thresholds.begin(), m_thresholds.end(), v);
+             m_thresholds.insert(ub, v);
            }
          }
        }
               
        template<typename N>
-       ikos::bound<N> get_next (ikos::bound<N> v1) const {
+       ikos::bound<N> get_next(ikos::bound<N> v1) const {
 	 if (v1.is_plus_infinity()) return v1;
-	 bound_t v = convert_bounds_impl<ikos::bound<N>, bound_t> (v1);
-	 bound_t t = m_thresholds [m_thresholds.size () - 1];	 
-         auto ub = std::upper_bound (m_thresholds.begin (), m_thresholds.end (), v);         
-         if (ub != m_thresholds.end ())
+	 bound_t v = convert_bounds_impl<ikos::bound<N>, bound_t>(v1);
+	 bound_t t = m_thresholds [m_thresholds.size() - 1];	 
+         auto ub = std::upper_bound(m_thresholds.begin(), m_thresholds.end(), v);         
+         if (ub != m_thresholds.end())
 	   t = *ub;
-	 return convert_bounds_impl<bound_t, ikos::bound<N> > (t);
+	 return convert_bounds_impl<bound_t, ikos::bound<N>>(t);
        }
 
        template<typename N>
-       ikos::bound<N> get_prev (ikos::bound<N> v1) const {
+       ikos::bound<N> get_prev(ikos::bound<N> v1) const {
 	 if (v1.is_minus_infinity()) return v1;
-	 bound_t v = convert_bounds_impl<ikos::bound<N>, bound_t> (v1);	 
-         auto lb = std::lower_bound (m_thresholds.begin (), m_thresholds.end (), v);         
-         if (lb != m_thresholds.end ()) {
+	 bound_t v = convert_bounds_impl<ikos::bound<N>, bound_t>(v1);	 
+         auto lb = std::lower_bound(m_thresholds.begin(), m_thresholds.end(), v);         
+         if (lb != m_thresholds.end()) {
            --lb;
-           if (lb != m_thresholds.end ()) {
-	     return convert_bounds_impl<bound_t, ikos::bound<N> > (*lb);	 	     
+           if (lb != m_thresholds.end()) {
+	     return convert_bounds_impl<bound_t, ikos::bound<N>>(*lb);	 	     
 	   }
          }
-	 return convert_bounds_impl<bound_t, ikos::bound<N> > (m_thresholds [0]);
+	 return convert_bounds_impl<bound_t, ikos::bound<N>>(m_thresholds [0]);
        }
 
-       void write (crab_os &o) const { 
+       void write(crab_os &o) const { 
          o << "{";
-         for (typename std::vector<bound_t>::const_iterator it = m_thresholds.begin (), 
-                  et= m_thresholds.end (); it != et; ) {
-           bound_t b (*it);
-           b.write (o);
+         for (typename std::vector<bound_t>::const_iterator it = m_thresholds.begin(), 
+                  et= m_thresholds.end(); it != et; ) {
+           bound_t b(*it);
+           b.write(o);
            ++it;
-           if (it != m_thresholds.end ())
+           if (it != m_thresholds.end())
              o << ",";
          }
          o << "}";
@@ -111,8 +111,8 @@ namespace crab {
      };
 
      template<typename Number>
-     crab_os& operator<< (crab_os& o, const thresholds<Number>& t) {
-       t.write (o);
+     crab_os& operator<<(crab_os& o, const thresholds<Number>& t) {
+       t.write(o);
        return o;
      }
 
@@ -120,7 +120,7 @@ namespace crab {
      typedef thresholds<ikos::q_number> thresholds_t;     
      
      /**
-	Collect thresholds per wto cycle  (i.e. loop)
+	Collect thresholds per wto cycle (i.e. loop)
      **/
      template< typename NodeName, typename CFG>
      class wto_thresholds: public ikos::wto_component_visitor< NodeName, CFG > {
@@ -153,23 +153,23 @@ namespace crab {
        typedef crab::cfg::assignment<number_t,varname_t>  assign_t;
        
        void get_thresholds(const basic_block_t &bb, thresholds_t &thresholds) {
-	 for (auto const&i : boost::make_iterator_range (bb.begin (), bb.end ())) {
-	   bound_t t = bound_t::plus_infinity ();
-	   if (i.is_assume ()) {
-	     auto a = static_cast<const assume_t*> (&i);
-	     t = bound_t(-(a->constraint ().expression ().constant ()));
+	 for (auto const&i : boost::make_iterator_range(bb.begin(), bb.end())) {
+	   bound_t t = bound_t::plus_infinity();
+	   if (i.is_assume()) {
+	     auto a = static_cast<const assume_t*>(&i);
+	     t = bound_t(-(a->constraint().expression().constant()));
 	   }
-	   else if (i.is_select ()) {
-	     auto s = static_cast<const select_t*> (&i);
-	     t = bound_t(-(s->cond ().expression ().constant ()));
+	   else if (i.is_select()) {
+	     auto s = static_cast<const select_t*>(&i);
+	     t = bound_t(-(s->cond().expression().constant()));
 	   }
-	   else if (i.is_assign ()) {
-	     auto a = static_cast<const assign_t*> (&i);
-	     if (a->rhs ().is_constant ())
-	       t = bound_t(-(a->rhs().constant ()));
+	   else if (i.is_assign()) {
+	     auto a = static_cast<const assign_t*>(&i);
+	     if (a->rhs().is_constant())
+	       t = bound_t(-(a->rhs().constant()));
 	   }	    
 	   
-	   if (t != bound_t::plus_infinity ()) {
+	   if (t != bound_t::plus_infinity()) {
 	     // XXX: for code pattern like this "while(x<t) {x+=k;}"
 	     // note that the condition (x<t) is translated to
 	     // (x<=t-1) so an useful threshold would be t+1+k.
@@ -183,10 +183,10 @@ namespace crab {
      public:
        
        wto_thresholds(CFG cfg, size_t max_size)
-	 : m_cfg(cfg), m_max_size (max_size) { }
+	 : m_cfg(cfg), m_max_size(max_size) { }
        
        void visit(wto_vertex_t& vertex) {
-	 if (m_stack.empty()) return;
+	 if(m_stack.empty()) return;
 	 
 	 NodeName head = m_stack.back();
 	 auto it = m_head_to_thresholds.find(head);
@@ -227,7 +227,7 @@ namespace crab {
 	 return m_head_to_thresholds;
        }
        
-       void write (crab::crab_os& o) const {
+       void write(crab::crab_os& o) const {
 	 for (auto &kv: m_head_to_thresholds) {
 	   o << crab::cfg_impl::get_label_str(kv.first) << "=" << kv.second << "\n";
 	 }
@@ -237,7 +237,7 @@ namespace crab {
      
      template<typename NodeName, typename CFG>
      crab::crab_os& operator<<(crab::crab_os& o, const wto_thresholds<NodeName, CFG>& t) {
-       t.write (o);
+       t.write(o);
        return o;
      }
      

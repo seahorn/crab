@@ -1,7 +1,5 @@
 /*******************************************************************************
- * Extend abstract domains with non-standard operations.
- * Some of them might be moved into the domains later, others might
- * stay here.
+ * Extend abstract domains with very specialized operations.
  ******************************************************************************/
 
 #pragma once
@@ -15,14 +13,6 @@
 namespace crab {
 
  namespace domains {
-
-   template<typename Domain>
-   class domain_traits {
-    public:
-     // Initialization of static data
-     template<class CFG>
-     static void do_initialization(CFG cfg) { }
-   };
 
    // Perform constraint simplifications depending on the abstract domain
    template<typename Domain>
@@ -219,27 +209,37 @@ namespace crab {
      }
    };
 
-   // Experimental:
+   // Experimental (TO BE REMOVED):
    // 
-   // Special operations needed by the array_sparse_graph domain.
-   // TO BE REMOVED
+   // Special operations needed by array_sparse_graph domain's
+   // clients.
    template<typename Domain>
    class array_sgraph_domain_traits {
     public:
-     typedef typename Domain::linear_constraint_t linear_constraint_t;
-     typedef typename Domain::variable_t variable_t;
+     template<class CFG>
+     static void do_initialization(CFG cfg) {}
+   };
 
-     // FIXME: this does similar thing to checker_domain_traits<Domain>::entail
+   // Operations needed by the array_sparse_graph domain.
+   template<typename Domain>
+   class array_sgraph_domain_helper_traits {
+    public:
+     typedef typename Domain::linear_constraint_t linear_constraint_t;
+     typedef typename Domain::variable_vector_t variable_vector_t;
+
+     // FIXME: this does similar thing to
+     // checker_domain_traits<Domain>::entail
      static bool is_unsat(Domain& inv, linear_constraint_t cst) { 
        Domain copy(inv);
        copy += cst;
        return copy.is_bottom();
      }
 
-     static void active_variables(Domain& inv, std::vector<variable_t>& out)
-     { CRAB_ERROR("operation active_variables not implemented"); }
+     static void active_variables(Domain& inv, variable_vector_t& out) {
+       CRAB_ERROR("operation active_variables not implemented");
+     }
    };
-
+   
 
  } // end namespace domains   
 }// end namespace crab

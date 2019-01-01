@@ -10,7 +10,7 @@
 #include <crab/common/debug.hpp>
 #include <crab/common/stats.hpp>
 #include <crab/common/types.hpp>
-#include <crab/domains/operators_api.hpp>
+#include <crab/domains/abstract_domain.hpp>
 
 #ifndef HAVE_LDD
 /*
@@ -20,12 +20,10 @@
 namespace crab {
    namespace domains {
       template<typename Number, typename VariableName,int ConvexReduce=-1, size_t LddSize=100>
-      class boxes_domain:
-       public abstract_domain<Number, VariableName,
-			      boxes_domain<Number,VariableName,ConvexReduce,LddSize> > {
-	
+      class boxes_domain final:
+       public abstract_domain<boxes_domain<Number,VariableName,ConvexReduce,LddSize>> {
         typedef boxes_domain<Number, VariableName, ConvexReduce, LddSize> boxes_domain_t;
-	typedef abstract_domain<Number, VariableName, boxes_domain_t> abstract_domain_t;
+	typedef abstract_domain<boxes_domain_t> abstract_domain_t;
 	
        public:
 	
@@ -35,9 +33,10 @@ namespace crab {
 	using typename abstract_domain_t::disjunctive_linear_constraint_system_t;	
         using typename abstract_domain_t::variable_t;
 	using typename abstract_domain_t::variable_vector_t;
-        using typename abstract_domain_t::number_t;
-        using typename abstract_domain_t::varname_t;
-        typedef interval <Number> interval_t;
+	using typename abstract_domain_t::pointer_constraint_t;
+	typedef Number number_t;
+	typedef VariableName varname_t;	
+        typedef interval<number_t> interval_t;
 
         boxes_domain() {}    
 	
@@ -88,7 +87,7 @@ namespace crab {
         void assign(variable_t x, linear_expression_t e) 
         { CRAB_ERROR(LDD_NOT_FOUND); }
           
-        void apply(operation_t op, variable_t x, variable_t y, Number z) 
+        void apply(operation_t op, variable_t x, variable_t y, number_t z) 
         { CRAB_ERROR(LDD_NOT_FOUND); }
         
         void apply(operation_t op, variable_t x, variable_t y, variable_t z) 
@@ -99,7 +98,7 @@ namespace crab {
         { CRAB_ERROR(LDD_NOT_FOUND); }
           
         void backward_apply(operation_t op,
-			     variable_t x, variable_t y, Number z,
+			     variable_t x, variable_t y, number_t z,
 			     boxes_domain_t invariant) 
         { CRAB_ERROR(LDD_NOT_FOUND); }
         
@@ -114,9 +113,75 @@ namespace crab {
         void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) 
         { CRAB_ERROR(LDD_NOT_FOUND); }
         
-        void apply(bitwise_operation_t op, variable_t x, variable_t y, Number k) 
+        void apply(bitwise_operation_t op, variable_t x, variable_t y, number_t k) 
         { CRAB_ERROR(LDD_NOT_FOUND); }
 
+	void assign_bool_cst(variable_t lhs, linear_constraint_t rhs)
+        { CRAB_ERROR(LDD_NOT_FOUND); }
+	
+	void assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs)
+        { CRAB_ERROR(LDD_NOT_FOUND); }
+
+	void apply_binary_bool(bool_operation_t op, variable_t x,variable_t y,variable_t z)
+	{ CRAB_ERROR(LDD_NOT_FOUND); }
+	
+	void assume_bool(variable_t v, bool is_negated)
+        { CRAB_ERROR(LDD_NOT_FOUND); }
+	
+	void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
+				      boxes_domain_t invariant)
+        { CRAB_ERROR(LDD_NOT_FOUND); }	  	  
+	
+	void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
+				      boxes_domain_t invariant)
+	{ CRAB_ERROR(LDD_NOT_FOUND); }	  	  	  
+	void backward_apply_binary_bool(crab::domains::bool_operation_t op,
+					variable_t x,variable_t y,variable_t z,
+					boxes_domain_t invariant)
+	{ CRAB_ERROR(LDD_NOT_FOUND); }
+	
+	void array_init(variable_t a, linear_expression_t elem_size,
+			linear_expression_t lb_idx, linear_expression_t ub_idx, 
+			linear_expression_t val)
+	{ CRAB_ERROR(LDD_NOT_FOUND); }
+	
+	void array_load(variable_t lhs,
+			variable_t a, linear_expression_t elem_size,
+			linear_expression_t i)
+	{ CRAB_ERROR(LDD_NOT_FOUND); }
+	
+	void array_store(variable_t a, linear_expression_t elem_size,
+			 linear_expression_t i, linear_expression_t v, 
+			 bool is_singleton)
+	{ CRAB_ERROR(LDD_NOT_FOUND); }
+	
+	void array_assign(variable_t lhs, variable_t rhs)
+	{ CRAB_ERROR(LDD_NOT_FOUND); }
+	
+	void pointer_load(variable_t lhs, variable_t rhs)
+	{ CRAB_ERROR(LDD_NOT_FOUND); }
+	
+	void pointer_store(variable_t lhs, variable_t rhs)
+	{ CRAB_ERROR(LDD_NOT_FOUND); }
+	
+	void pointer_assign(variable_t lhs, variable_t rhs, linear_expression_t offset)
+	{ CRAB_ERROR(LDD_NOT_FOUND); }	  
+	  
+	void pointer_mk_obj(variable_t lhs, ikos::index_t address)
+	{ CRAB_ERROR(LDD_NOT_FOUND); }
+	
+	void pointer_function(variable_t lhs, varname_t func)
+	{ CRAB_ERROR(LDD_NOT_FOUND); }
+	
+	void pointer_mk_null(variable_t lhs)
+	{ CRAB_ERROR(LDD_NOT_FOUND); }
+	
+	void pointer_assume(pointer_constraint_t cst)
+	{ CRAB_ERROR(LDD_NOT_FOUND); }
+	
+	void pointer_assert(pointer_constraint_t cst)
+	{ CRAB_ERROR(LDD_NOT_FOUND); }	
+	
 	void forget(const variable_vector_t& variables)
 	{ CRAB_ERROR(LDD_NOT_FOUND); }
 
@@ -142,8 +207,7 @@ namespace crab {
         static std::string getDomainName() {
           return "Dummy Boxes";
         }  
-      }; 
-
+      };
    } // namespace domains
 }// namespace crab
 
@@ -154,7 +218,7 @@ namespace crab {
 
 #include <crab/domains/ldd/ldd.hpp>
 #include <crab/domains/ldd/ldd_print.hpp>
-#include <crab/domains/domain_traits.hpp>
+#include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
 #include <boost/bimap.hpp>
 #include <boost/shared_ptr.hpp>
@@ -179,25 +243,25 @@ namespace crab {
        * FIXME: Ldd_TermReplace seems to leak memory sometimes.
        */
       template<typename Number, typename VariableName, int ConvexReduce, size_t LddSize>
-      class boxes_domain_:
-       public abstract_domain<Number,VariableName,
-			      boxes_domain_<Number,VariableName,ConvexReduce,LddSize> > {
-
+      class boxes_domain_ final:
+       public abstract_domain<boxes_domain_<Number,VariableName,ConvexReduce,LddSize>> {
+	
         typedef interval_domain<Number, VariableName> interval_domain_t;
         typedef boxes_domain_<Number, VariableName, ConvexReduce, LddSize> boxes_domain_t;
-	typedef abstract_domain<Number,VariableName,boxes_domain_t> abstract_domain_t;
+	typedef abstract_domain<boxes_domain_t> abstract_domain_t;
 	
        public:
 	
+	typedef Number number_t;
+	typedef VariableName varname_t;
         using typename abstract_domain_t::linear_expression_t;
         using typename abstract_domain_t::linear_constraint_t;
         using typename abstract_domain_t::linear_constraint_system_t;
 	using typename abstract_domain_t::disjunctive_linear_constraint_system_t;		
         using typename abstract_domain_t::variable_t;
 	using typename abstract_domain_t::variable_vector_t;	
-        using typename abstract_domain_t::number_t;
-        using typename abstract_domain_t::varname_t;
-        typedef interval <Number> interval_t;
+	using typename abstract_domain_t::pointer_constraint_t;
+        typedef interval<number_t> interval_t;
 
        private:
 	
@@ -217,7 +281,7 @@ namespace crab {
         static LddManager* get_ldd_man() {
           if (!m_ldd_man) {
             DdManager* cudd = Cudd_Init(0, 0, CUDD_UNIQUE_SLOTS, 127, 0);
-            theory_t* theory = ldd::create_box_theory<Number>(LddSize);
+            theory_t* theory = ldd::create_box_theory<number_t>(LddSize);
             CRAB_LOG("boxes",
 		      crab::outs() << "Created a ldd of size " << LddSize <<"\n";);
             m_ldd_man = Ldd_Init(cudd, theory);
@@ -348,7 +412,7 @@ namespace crab {
 	 **     where a is a constant, k an interval and x variable 
 	 **  Each numerical operation is reduced to this form.
 	 */
-        void apply_ldd(variable_t v, variable_t x, Number a, interval_t k) {
+        void apply_ldd(variable_t v, variable_t x, number_t a, interval_t k) {
           if (is_top() || is_bottom()) return ;
 
           linterm_t t = term_from_var(v);
@@ -393,7 +457,7 @@ namespace crab {
         linear_expression_t expr_from_ldd_term(linterm_t term) {
           linear_expression_t e(0);
           for(size_t i = 0;i < (size_t) get_theory()->term_size(term); i++) {
-	    Number k(0); // any value
+	    number_t k(0); // any value
             num_from_ldd_cst(get_theory()->term_get_coeff(term,i), k);
             variable_t v(getVarName(get_theory()->term_get_var(term,i)));
             e = e + (k * linear_expression_t(v));
@@ -402,20 +466,20 @@ namespace crab {
         }
 
 
-	linear_constraint<ikos::z_number,VariableName>
-	cst_from_ldd_strict_cons(linear_expression<ikos::z_number,VariableName> l,
-				  linear_expression<ikos::z_number,VariableName> r) {
+	linear_constraint<ikos::z_number,varname_t>
+	cst_from_ldd_strict_cons(linear_expression<ikos::z_number,varname_t> l,
+				  linear_expression<ikos::z_number,varname_t> r) {
 	  // l < r <-> l+1 <= r
-	  linear_expression<ikos::z_number,VariableName> e = l + 1;
+	  linear_expression<ikos::z_number,varname_t> e = l + 1;
 	  e = e - r;
-	  return linear_constraint<ikos::z_number,VariableName>
+	  return linear_constraint<ikos::z_number,varname_t>
 	    (e, linear_constraint_t::INEQUALITY);
 	}
 
-	linear_constraint<ikos::q_number,VariableName>
-	cst_from_ldd_strict_cons(linear_expression<ikos::q_number,VariableName> l,
-				  linear_expression<ikos::q_number,VariableName> r) {
-	  return linear_constraint<ikos::q_number,VariableName>
+	linear_constraint<ikos::q_number,varname_t>
+	cst_from_ldd_strict_cons(linear_expression<ikos::q_number,varname_t> l,
+				  linear_expression<ikos::q_number,varname_t> r) {
+	  return linear_constraint<ikos::q_number,varname_t>
 	    (l-r, linear_constraint_t::STRICT_INEQUALITY);
 	}
 	
@@ -423,7 +487,7 @@ namespace crab {
 
           linear_expression_t lhs =
 	    expr_from_ldd_term(get_theory()->get_term(lincons));
-	  Number rhs(0); // any value
+	  number_t rhs(0); // any value
           num_from_ldd_cst(get_theory()->get_constant(lincons), rhs);
 
           if (get_theory()->is_strict(lincons)) {
@@ -463,8 +527,8 @@ namespace crab {
         //    and c is 1 or -1 and k is an integer constant
         typedef typename linear_constraint_t::kind_t kind_t;
 
-        LddNodePtr gen_unit_constraint(Number coef, linterm_t term, kind_t kind,
-					Number k) {
+        LddNodePtr gen_unit_constraint(number_t coef, linterm_t term, kind_t kind,
+					number_t k) {
 
           assert(coef == 1 || coef == -1);
           
@@ -527,19 +591,19 @@ namespace crab {
           }
         } 
 
-	LddNodePtr gen_unit_constraint(Number coef, variable_t var, kind_t kind,
-				       Number k) {
+	LddNodePtr gen_unit_constraint(number_t coef, variable_t var, kind_t kind,
+				       number_t k) {
 	  linterm_t term = term_from_var(var,(coef == 1 ? false : true));
 	  return gen_unit_constraint(coef, term, kind, k);
 	}
 
-	LddNodePtr gen_unit_constraint(Number coef, kind_t kind, Number k) {
+	LddNodePtr gen_unit_constraint(number_t coef, kind_t kind, number_t k) {
 	  linterm_t term = term_from_special_var((coef == 1 ? false : true));
 	  return gen_unit_constraint(coef, term, kind, k);
 	}
 	
 	
-        void add_unit_constraint(Number coef, variable_t x, kind_t kind, Number k) {
+        void add_unit_constraint(number_t coef, variable_t x, kind_t kind, number_t k) {
 	  LddNodePtr n = gen_unit_constraint(coef, x, kind, k);
 	  m_ldd = lddPtr(get_ldd_man(), Ldd_And(get_ldd_man(), &*m_ldd, &*n));
         } 
@@ -752,15 +816,15 @@ namespace crab {
 	inline LddNode* mk_true(boost::optional<variable_t> x) {
 	  if (x) {
 	    // x >=1 <--> -x <= -1
-	    LddNodePtr  r = gen_unit_constraint(Number(-1), variable_t(*x),
+	    LddNodePtr  r = gen_unit_constraint(number_t(-1), variable_t(*x),
 						 linear_constraint_t::INEQUALITY,
-						 Number(-1));
+						 number_t(-1));
 	    return &*r;
 	  }
 	  else {
-	    LddNodePtr  r = gen_unit_constraint(Number(-1), 
+	    LddNodePtr  r = gen_unit_constraint(number_t(-1), 
 						 linear_constraint_t::INEQUALITY,
-						 Number(-1));
+						 number_t(-1));
 	    return &*r;
 	  }
 	}
@@ -770,14 +834,14 @@ namespace crab {
 	  
 	  if (x) {
 	    // return x <= 0 
-	    LddNodePtr r = gen_unit_constraint(Number(1), variable_t(*x),
+	    LddNodePtr r = gen_unit_constraint(number_t(1), variable_t(*x),
 						linear_constraint_t::INEQUALITY,
-						Number(0));
+						number_t(0));
 	    return &*r;
 	  } else {
-	    LddNodePtr r = gen_unit_constraint(Number(1), 
+	    LddNodePtr r = gen_unit_constraint(number_t(1), 
 						linear_constraint_t::INEQUALITY,
-						Number(0));
+						number_t(0));
 	    return &*r;
 	  }
 	}
@@ -874,11 +938,11 @@ namespace crab {
           return *this;
         }
       	
-        bool is_bottom() const { 
+        bool is_bottom() { 
           return &*m_ldd == Ldd_GetFalse(get_ldd_man());
         }
         
-        bool is_top() const { 
+        bool is_top() { 
           return &*m_ldd == Ldd_GetTrue(get_ldd_man());
         }
         
@@ -1065,9 +1129,9 @@ namespace crab {
           if (size == 0) return; // this should not happen
           else if (size == 1) {
             auto it = exp.begin();
-            Number cx = it->first;
+            number_t cx = it->first;
             if (cx == 1 || cx == -1) {
-              Number k = -exp.constant(); 
+              number_t k = -exp.constant(); 
               variable_t x = it->second;      
               add_unit_constraint(cx, x, cst.kind(), k);
             } else {
@@ -1104,9 +1168,9 @@ namespace crab {
           if (is_bottom()) return ;
 
           constant_t kmin = NULL, kmax = NULL;       
-          if (boost::optional <Number> l = ival.lb().number())
+          if (boost::optional <number_t> l = ival.lb().number())
             kmin = mk_cst(*l);
-          if (boost::optional <Number> u = ival.ub().number())
+          if (boost::optional <number_t> u = ival.ub().number())
             kmax = mk_cst(*u);
           
           linterm_t t = term_from_var(v);
@@ -1172,7 +1236,7 @@ namespace crab {
         }
 
 	// x := y op k
-        void apply(operation_t op, variable_t x, variable_t y, Number k) {
+        void apply(operation_t op, variable_t x, variable_t y, number_t k) {
           crab::CrabStats::count(getDomainName() + ".count.apply");
           crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1330,7 +1394,7 @@ namespace crab {
 	}
 
         void backward_apply(operation_t op,
-			     variable_t x, variable_t y, Number z,
+			     variable_t x, variable_t y, number_t z,
 			     boxes_domain_t invariant) {
 	  CRAB_LOG("boxes",
 		   crab::outs() << "Backward " << x << ":=" << y << op << z 
@@ -1383,7 +1447,7 @@ namespace crab {
           set(x, xi);
         }
         
-        void apply(bitwise_operation_t op, variable_t x, variable_t y, Number k) {
+        void apply(bitwise_operation_t op, variable_t x, variable_t y, number_t k) {
           crab::CrabStats::count(getDomainName() + ".count.apply");
           crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1406,7 +1470,7 @@ namespace crab {
         }
         
 	////////
-	//// boolean_operators_api
+	//// boolean operations
 	////////
 	void assign_bool_cst(variable_t lhs, linear_constraint_t cst) override
 	{
@@ -1435,13 +1499,13 @@ namespace crab {
 	    if (size == 0) return; // this should not happen 
 	    else if (size == 1) {
 	      auto it = exp.begin();
-	      Number cx = it->first;
+	      number_t cx = it->first;
 	      if(cx == 1 || cx == -1) {
 		// XXX: lhs should not appear in cst so we can remove lhs
 		// without losing precision
 		this->operator-=(lhs);
 		
-		Number k = -exp.constant(); 
+		number_t k = -exp.constant(); 
 		variable_t vx = it->second;
 		// m_ldd &= ite (cst, lhs >= 1, lhs <= 0);
 		LddNodePtr ldd_cst = gen_unit_constraint(cx, vx, cst.kind(),k);
@@ -1532,10 +1596,11 @@ namespace crab {
 				    mk_false(x): mk_true(x))));
 
 	  CRAB_LOG("boxes",
-		 if (!is_negated) 
-		   crab::outs() << "--- bool_assume(" << x << ")" << "\n" << *this << "\n";
-		 else
-		   crab::outs() << "--- bool_assume(not(" << x << "))" << "\n" << *this << "\n";); 
+	     if (!is_negated)  {
+	       crab::outs() << "--- bool_assume(" << x << ")" << "\n" << *this << "\n";
+	     } else { 
+	       crab::outs() << "--- bool_assume(not(" << x << "))" << "\n" << *this << "\n";
+	     });
 	}
 	
 	// Backward boolean operations
@@ -1563,6 +1628,29 @@ namespace crab {
 	  this->operator-=(x);
 	  CRAB_WARN("boxes backward boolean apply not implemented");
 	}
+
+	/* Begin unimplemented operations */
+	// array operations
+	void array_init(variable_t a, linear_expression_t elem_size,
+			linear_expression_t lb_idx, linear_expression_t ub_idx, 
+			linear_expression_t val) {}      
+	void array_load(variable_t lhs,
+			variable_t a, linear_expression_t elem_size,
+			linear_expression_t i) {}
+	void array_store(variable_t a, linear_expression_t elem_size,
+			 linear_expression_t i, linear_expression_t v, 
+			 bool is_singleton) {}      
+	void array_assign(variable_t lhs, variable_t rhs) {}
+	// pointer operations
+	void pointer_load(variable_t lhs, variable_t rhs)  {}
+	void pointer_store(variable_t lhs, variable_t rhs) {} 
+	void pointer_assign(variable_t lhs, variable_t rhs, linear_expression_t offset) {}
+	void pointer_mk_obj(variable_t lhs, ikos::index_t address) {}
+	void pointer_function(variable_t lhs, varname_t func) {}
+	void pointer_mk_null(variable_t lhs) {}
+	void pointer_assume(pointer_constraint_t cst) {}
+	void pointer_assert(pointer_constraint_t cst) {}
+	/* End unimplemented operations */
 	
         linear_constraint_system_t to_linear_constraint_system() {
           linear_constraint_system_t csts;
@@ -1636,383 +1724,199 @@ namespace crab {
      template<typename N, typename V, int R, size_t S>
      typename boxes_domain_<N,V,R,S>::var_map_t boxes_domain_<N,V,R,S>::m_var_map;
 
-     #if 0
-     #include <crab/domains/combined_domains.hpp>
-
-     /* boxes domain with intervals.
-	In theory, boxes is more expressive than intervals. However,
-	intervals implement some operations that boxes does not (e.g.,
-	widening with thresholds)
-      */
-     template<class Number, class VariableName, int ConvexReduce, size_t LddSize>
-     class boxes_intervals_domain: 
-       public abstract_domain<Number, VariableName,
-			      boxes_intervals_domain<Number,VariableName,ConvexReduce,LddSize> > {
-       typedef boxes_intervals_domain<Number, VariableName, ConvexReduce, LddSize> boxes_intervals_domain_t;
-       typedef abstract_domain<Number, VariableName, boxes_intervals_domain_t> abstract_domain_t;
-       
-      public:
-       
-       using typename abstract_domain_t::linear_expression_t;
-       using typename abstract_domain_t::linear_constraint_t;
-       using typename abstract_domain_t::linear_constraint_system_t;
-       using typename abstract_domain_t::disjunctive_linear_constraint_system_t;       
-       using typename abstract_domain_t::variable_t;
-       using typename abstract_domain_t::number_t;
-       using typename abstract_domain_t::varname_t;
-       typedef typename linear_constraint_t::kind_t constraint_kind_t;
-       typedef interval<Number>  interval_t;
-
-       
-     private:
-       
-       typedef boxes_domain_<Number, VariableName, ConvexReduce, LddSize> boxes_domain_t;
-       typedef interval_domain<Number, VariableName> interval_domain_t;
-       typedef domain_product2<Number, VariableName, boxes_domain_t, interval_domain_t> domain_product_t;
-       
-      domain_product_t _product;
-      
-       boxes_intervals_domain()
-	 : _product() {}
-       
-       boxes_intervals_domain(const domain_product_t &product)
-	 : _product(product) {}
-
-       void reduce(boxes_intervals_domain_t &o) {
-	  if (_product.second().is_bottom() || _product.second().is_top())
-	    return;
-	 
-          crab::CrabStats::count(getDomainName() + ".reduce_with_intervals");
-          crab::ScopedCrabStats __st__(getDomainName() + ".reduce_with_intervals");
-
-	  //boxes_domain_t old(_product.first());
-	  
-	  boxes_domain_t &boxes = o._product.first();
-	  auto csts = _product.second().to_linear_constraint_system();
-	  for (auto cst: csts) { boxes+=cst; }
-	  
-	  //boxes_domain_t intervals;
-	  // for (auto const &kv : _product.second()){
-	  //   if (!kv.second.is_top()) {
-	  //     intervals.set(kv.first, kv.second);
-	  //   }
-	  // }
-	  //boxes = boxes & intervals;
-	  // if (boxes <= old && !(old <= boxes)) {
-	  //   crab::outs() << "Reduction improved precision\n";
-	  // }
-
-       }
-       
-     public:
-
-       static boxes_intervals_domain_t top() { return domain_product_t::top(); }
-    
-       static boxes_intervals_domain_t bottom() { return domain_product_t::bottom(); }
-
-       boxes_intervals_domain(const boxes_intervals_domain_t& o)
-	 : _product(o._product) {}
-      
-       boxes_intervals_domain_t& operator=(const boxes_intervals_domain_t& o) {
-	 if (this != &o) {
-	   _product = o._product;
-	 }
-	 return *this;
-       }
-
-       bool is_bottom() { return _product.is_bottom(); }
-       bool is_top() { return _product.is_top(); }
-       bool operator<=(boxes_intervals_domain_t& o)
-       { return _product <= o._product; }
-       void operator|=(boxes_intervals_domain_t o)
-       { _product |= o._product; }
-       boxes_intervals_domain_t operator|(boxes_intervals_domain_t o)
-       { return boxes_intervals_domain_t(_product | o._product); }
-       boxes_intervals_domain_t operator||(boxes_intervals_domain_t o) {
-	 boxes_intervals_domain_t res(_product || o._product);
-	 reduce(res);
-	 return res;
-       }	 
-       boxes_intervals_domain_t operator&(boxes_intervals_domain_t o)
-       { return boxes_intervals_domain_t(_product & o._product); }	 
-       boxes_intervals_domain_t operator&&(boxes_intervals_domain_t o) {
-	 boxes_intervals_domain_t res(_product && o._product);
-	 //reduce(res);
-	 return res;
-       }	 
-       template<typename Thresholds>
-       boxes_intervals_domain_t widening_thresholds(boxes_intervals_domain_t o,
-						     const Thresholds &ts) {
-	 boxes_intervals_domain_t res(_product.widening_thresholds(o._product, ts));
-	 reduce(res);
-	 return res;
-       }
-     
-       void operator+=(linear_constraint_system_t csts) {
-	 _product += csts;
-	 //reduce(*this);
-       } 
-       void operator-=(variable_t v) { _product -= v; }
-       interval_t operator[](variable_t x) { return _product.first()[x]; }
-       void set(variable_t x, interval_t intv) { _product.set(x, intv); }
-       
-       void assign(variable_t x, linear_expression_t e) {
-	 _product.assign(x, e);
-       }
-       void apply(operation_t op, variable_t x, variable_t y, Number k) {
-	 _product.apply(op, x, y, k);
-       }
-       void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
-	 _product.apply(op, x, y, z);
-       }
-       
-       void backward_assign(variable_t x, linear_expression_t e,
-			    boxes_intervals_domain_t invariant)
-       { _product.backward_assign(x, e, invariant._product); }
-       void backward_apply(operation_t op,
-			   variable_t x, variable_t y, Number k,
-			   boxes_intervals_domain_t invariant)
-       { _product.backward_apply(op, x, y, k, invariant._product); }
-       void backward_apply(operation_t op,
-			   variable_t x, variable_t y, variable_t z,
-			   boxes_intervals_domain_t invariant)
-       { _product.backward_apply(op, x, y, z, invariant._product); }
-       
-       void apply(int_conv_operation_t op, variable_t dst, variable_t src)
-       { _product.apply(op, dst, src); }
-       void apply(bitwise_operation_t op, variable_t x, variable_t y, Number k)
-       { _product.apply(op, x, y, k); }
-       void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z)
-       { _product.apply(op, x, y, z); }
-       
-       void assign_bool_cst(variable_t x, linear_constraint_t cst)
-       { _product.assign_bool_cst(x,cst);}
-       void assign_bool_var(variable_t x, variable_t y, bool is_not_y)
-       { _product.assign_bool_var(x,y,is_not_y);}
-       void apply_binary_bool(bool_operation_t op,variable_t x, variable_t y, variable_t z)
-       { _product.apply_binary_bool(op,x,y,z);}
-       void assume_bool(variable_t x, bool is_negated)
-       { _product.assume_bool(x,is_negated);}
-       
-       
-       void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
-				     boxes_intervals_domain_t inv)
-       { _product.backward_assign_bool_cst(lhs,rhs,inv._product); }
-       void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
-				     boxes_intervals_domain_t inv)
-       { _product.backward_assign_bool_var(lhs,rhs,is_not_rhs,inv._product); }	
-       void backward_apply_binary_bool(bool_operation_t op,
-				       variable_t x,variable_t y,variable_t z,
-				       boxes_intervals_domain_t inv)
-       { _product.backward_apply_binary_bool(op,x,y,z,inv._product); }	
-       
-       void forget(const variable_vector_t& variables) {
-	 _product.forget(variables);
-       }
-       
-       void project(const variable_vector_t& variables) {
-	 _product.project(variables);
-       }
-       
-       void expand(variable_t x, variable_t new_x) {
-	 _product.expand(x, new_x);
-       }
-       
-       void write(crab_os& o) {
-	 _product.first().write(o);
-	 //auto csts = to_linear_constraint_system();
-	 //o << csts;
-       }
-       
-       linear_constraint_system_t to_linear_constraint_system()
-       { return _product.first().to_linear_constraint_system(); }
-       
-       disjunctive_linear_constraint_system_t
-       to_disjunctive_linear_constraint_system()
-       { return _product.first().to_disjunctive_linear_constraint_system(); }
-       
-       static std::string getDomainName() { return "Boxes"; }
-     };
-
-     template<typename Number, typename VariableName, int ConvexReduce, size_t LddSize>
-     class domain_traits<boxes_intervals_domain<Number,VariableName, ConvexReduce, LddSize>> {
-      public:
-       typedef boxes_intervals_domain<Number,VariableName,ConvexReduce,LddSize> boxes_domain_t;
-       
-       template<class CFG>
-       static void do_initialization(CFG cfg) { }
-     };
-     #endif
-     
      #if 1
      // Without copy-on-write
      template<typename Number, typename VariableName, int ConvexReduce=-1, size_t LddSize=3000>
      using boxes_domain = boxes_domain_<Number,VariableName,ConvexReduce,LddSize>;     
-     #else 
-    // Quick wrapper which uses shared references with copy-on-write.
+     #else
+
+     template <typename Number, typename VariableName, int ConvexReduce, size_t LddSize> 
+     struct abstract_domain_traits<boxes_domain_<Number, VariableName, ConvexReduce, LddSize>> {
+       typedef Number number_t;
+       typedef VariableName varname_t;       
+     };
+     
+     // Quick wrapper which uses shared references with copy-on-write.
      template<class Number, class VariableName, int ConvexReduce=-1, size_t LddSize=3000>
-     class boxes_domain: 
-       public abstract_domain<Number, VariableName,
-			      boxes_domain<Number,VariableName,ConvexReduce,LddSize> > {
+     class boxes_domain final: 
+       public abstract_domain<boxes_domain<Number,VariableName,ConvexReduce,LddSize>> {
+			      
        typedef boxes_domain<Number, VariableName, ConvexReduce, LddSize> boxes_domain_t;
-       typedef abstract_domain<Number, VariableName, boxes_domain_t> abstract_domain_t;
+       typedef abstract_domain<boxes_domain_t> abstract_domain_t;
       
       public:
       
-      using typename abstract_domain_t::linear_expression_t;
-      using typename abstract_domain_t::linear_constraint_t;
-      using typename abstract_domain_t::linear_constraint_system_t;
-      using typename abstract_domain_t::disjunctive_linear_constraint_system_t;        
-      using typename abstract_domain_t::variable_t;
-      using typename abstract_domain_t::number_t;
-      using typename abstract_domain_t::varname_t;
-      typedef typename linear_constraint_t::kind_t constraint_kind_t;
-      typedef interval<Number>  interval_t;
+       using typename abstract_domain_t::linear_expression_t;
+       using typename abstract_domain_t::linear_constraint_t;
+       using typename abstract_domain_t::linear_constraint_system_t;
+       using typename abstract_domain_t::disjunctive_linear_constraint_system_t;        
+       using typename abstract_domain_t::variable_t;
+       using typename abstract_domain_t::variable_vector_t;
+       using typename abstract_domain_t::pointer_constraint_t;
+       typedef Number number_t;
+       typedef VariableName varname_t;
+       typedef typename linear_constraint_t::kind_t constraint_kind_t;
+       typedef interval<number_t>  interval_t;
 
 
-    private:
-      
-      typedef boxes_domain_<Number, VariableName, ConvexReduce, LddSize> boxes_impl_t;
-      typedef std::shared_ptr<boxes_impl_t> boxes_ref_t;
-
-      boxes_ref_t _ref;
-      
-      boxes_domain(boxes_ref_t ref) : _ref(ref) { }
-
-      boxes_domain_t create(boxes_impl_t&& t)
-      { return std::make_shared<boxes_impl_t>(std::move(t)); }
-        
-      void detach(void)
-      { 
-        if(!_ref || !_ref.unique())
-          _ref = std::make_shared<boxes_impl_t>(*_ref);
-      }
-      
-      boxes_impl_t& ref(void) { return *_ref; }
-
-      const boxes_impl_t& ref(void) const { return *_ref; }
-      
-    public:
-
-      boxes_domain(bool is_bottom = false): _ref(nullptr)
-      {
-	if (is_bottom) 
-	  _ref = std::make_shared<boxes_impl_t>(boxes_impl_t::bottom());
-	else 
+     private:
+       
+       typedef boxes_domain_<number_t, varname_t, ConvexReduce, LddSize> boxes_impl_t;
+       typedef std::shared_ptr<boxes_impl_t> boxes_ref_t;
+       
+       boxes_ref_t _ref;
+       
+       boxes_domain(boxes_ref_t ref) : _ref(ref) { }
+       
+       boxes_domain_t create(boxes_impl_t&& t) {
+	 return std::make_shared<boxes_impl_t>(std::move(t));
+       }
+       
+       void detach(void) {
+	 if(!_ref || !_ref.unique()) {
+	   _ref = std::make_shared<boxes_impl_t>(*_ref);
+	 }
+       }
+       
+       boxes_impl_t& ref(void) { return *_ref; }
+       
+       const boxes_impl_t& ref(void) const { return *_ref; }
+       
+     public:
+       
+       boxes_domain(bool is_bottom = false): _ref(nullptr) {
+	 if (is_bottom) {
+	   _ref = std::make_shared<boxes_impl_t>(boxes_impl_t::bottom());
+	 } else {
 	  _ref = std::make_shared<boxes_impl_t>(boxes_impl_t::top());
-      }
+	 }
+       }
+       
+       static boxes_domain_t top() { return boxes_domain(false); }
+       
+       static boxes_domain_t bottom() { return boxes_domain(true); }
+       
+       boxes_domain(const boxes_domain_t& o)
+	 : _ref(o._ref) { }
       
-      static boxes_domain_t top() { return boxes_domain(false); }
-    
-      static boxes_domain_t bottom() { return boxes_domain(true); }
-
-      boxes_domain(const boxes_domain_t& o)
-        : _ref(o._ref) { }
-      
-      boxes_domain_t& operator=(const boxes_domain_t& o) 
-      {
-        _ref = o._ref;
-        return *this;
-      }
-
-      bool is_bottom() { return ref().is_bottom(); }
-      bool is_top() { return ref().is_top(); }
-      bool operator<=(boxes_domain_t& o) { return ref() <= o.ref(); }
-      void operator|=(boxes_domain_t o) { detach(); ref() |= o.ref(); }
-      boxes_domain_t operator|(boxes_domain_t o) { return create(ref() | o.ref()); }
-      boxes_domain_t operator||(boxes_domain_t o) { return create(ref() || o.ref()); }
-      boxes_domain_t operator&(boxes_domain_t o) { return create(ref() & o.ref()); }
-      boxes_domain_t operator&&(boxes_domain_t o) { return create(ref() && o.ref()); }
-
-      template<typename Thresholds>
-      boxes_domain_t widening_thresholds(boxes_domain_t o, const Thresholds &ts) {
-        return create(ref().template widening_thresholds<Thresholds>(o.ref(), ts));
-      }
-     
-      void operator+=(linear_constraint_system_t csts) { detach(); ref() += csts; } 
-      void operator-=(variable_t v) { detach(); ref() -= v; }
-      interval_t operator[](variable_t x) { return ref()[x]; }
-      void set(variable_t x, interval_t intv) { detach(); ref().set(x, intv); }
-
-      void assign(variable_t x, linear_expression_t e)
-      { detach(); ref().assign(x, e); }
-      void apply(operation_t op, variable_t x, variable_t y, Number k)
-      { detach(); ref().apply(op, x, y, k); }
-      void apply(operation_t op, variable_t x, variable_t y, variable_t z)
-      { detach(); ref().apply(op, x, y, z); }
-      
-      void backward_assign(variable_t x, linear_expression_t e,
+       boxes_domain_t& operator=(const boxes_domain_t& o) {
+	 _ref = o._ref;
+	 return *this;
+       }
+       
+       bool is_bottom() { return ref().is_bottom(); }
+       bool is_top() { return ref().is_top(); }
+       bool operator<=(boxes_domain_t o) { return ref() <= o.ref(); }
+       void operator|=(boxes_domain_t o) { detach(); ref() |= o.ref(); }
+       boxes_domain_t operator|(boxes_domain_t o) { return create(ref() | o.ref()); }
+       boxes_domain_t operator||(boxes_domain_t o) { return create(ref() || o.ref()); }
+       boxes_domain_t operator&(boxes_domain_t o) { return create(ref() & o.ref()); }
+       boxes_domain_t operator&&(boxes_domain_t o) { return create(ref() && o.ref()); }
+       
+       template<typename Thresholds>
+       boxes_domain_t widening_thresholds(boxes_domain_t o, const Thresholds &ts) {
+	 return create(ref().template widening_thresholds<Thresholds>(o.ref(), ts));
+       }
+       
+       void operator+=(linear_constraint_system_t csts) { detach(); ref() += csts; } 
+       void operator-=(variable_t v) { detach(); ref() -= v; }
+       interval_t operator[](variable_t x) { return ref()[x]; }
+       void set(variable_t x, interval_t intv) { detach(); ref().set(x, intv); }
+       
+       void assign(variable_t x, linear_expression_t e)
+       { detach(); ref().assign(x, e); }
+       void apply(operation_t op, variable_t x, variable_t y, number_t k)
+       { detach(); ref().apply(op, x, y, k); }
+       void apply(operation_t op, variable_t x, variable_t y, variable_t z)
+       { detach(); ref().apply(op, x, y, z); }
+       
+       void backward_assign(variable_t x, linear_expression_t e,
+			    boxes_domain_t invariant)
+       { detach(); ref().backward_assign(x, e, invariant.ref()); }
+       void backward_apply(operation_t op,
+			   variable_t x, variable_t y, number_t k,
 			   boxes_domain_t invariant)
-      { detach(); ref().backward_assign(x, e, invariant.ref()); }
-      void backward_apply(operation_t op,
-			  variable_t x, variable_t y, Number k,
-			  boxes_domain_t invariant)
-      { detach(); ref().backward_apply(op, x, y, k, invariant.ref()); }
-      void backward_apply(operation_t op,
-			  variable_t x, variable_t y, variable_t z,
-			  boxes_domain_t invariant)
-      { detach(); ref().backward_apply(op, x, y, z, invariant.ref()); }
-      
-      void apply(int_conv_operation_t op, variable_t dst, variable_t src)
-      { detach(); ref().apply(op, dst, src); }
-      void apply(bitwise_operation_t op, variable_t x, variable_t y, Number k)
-      { detach(); ref().apply(op, x, y, k); }
-      void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z)
-      { detach(); ref().apply(op, x, y, z); }
-
-      void assign_bool_cst(variable_t x, linear_constraint_t cst)
-      { detach(); ref().assign_bool_cst(x,cst);}
-      void assign_bool_var(variable_t x, variable_t y, bool is_not_y)
-      { detach(); ref().assign_bool_var(x,y,is_not_y);}
-      void apply_binary_bool(bool_operation_t op,variable_t x, variable_t y, variable_t z)
-      { detach(); ref().apply_binary_bool(op,x,y,z);}
-      void assume_bool(variable_t x, bool is_negated)
-      { detach(); ref().assume_bool(x,is_negated);}
-
-      
-      void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
+       { detach(); ref().backward_apply(op, x, y, k, invariant.ref()); }
+       void backward_apply(operation_t op,
+			   variable_t x, variable_t y, variable_t z,
+			   boxes_domain_t invariant)
+       { detach(); ref().backward_apply(op, x, y, z, invariant.ref()); }
+       
+       void apply(int_conv_operation_t op, variable_t dst, variable_t src)
+       { detach(); ref().apply(op, dst, src); }
+       void apply(bitwise_operation_t op, variable_t x, variable_t y, number_t k)
+       { detach(); ref().apply(op, x, y, k); }
+       void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z)
+       { detach(); ref().apply(op, x, y, z); }
+       
+       void assign_bool_cst(variable_t x, linear_constraint_t cst)
+       { detach(); ref().assign_bool_cst(x,cst);}
+       void assign_bool_var(variable_t x, variable_t y, bool is_not_y)
+       { detach(); ref().assign_bool_var(x,y,is_not_y);}
+       void apply_binary_bool(bool_operation_t op,variable_t x, variable_t y, variable_t z)
+       { detach(); ref().apply_binary_bool(op,x,y,z);}
+       void assume_bool(variable_t x, bool is_negated)
+       { detach(); ref().assume_bool(x,is_negated);}
+       
+       void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
 				    boxes_domain_t inv)
-      { detach(); ref().backward_assign_bool_cst(lhs,rhs,inv.ref()); }
-      void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
-				    boxes_domain_t inv)
-      { detach(); ref().backward_assign_bool_var(lhs,rhs,is_not_rhs,inv.ref()); }	
-      void backward_apply_binary_bool(bool_operation_t op,
-				      variable_t x,variable_t y,variable_t z,
-				      boxes_domain_t inv)
-      { detach(); ref().backward_apply_binary_bool(op,x,y,z,inv.ref()); }	
-      
-      void forget(const variable_vector_t& variables)
-      { detach(); ref().forget(variables); }
-      
-      void project(const variable_vector_t& variables)
-      { detach(); ref().project(variables); }
+       { detach(); ref().backward_assign_bool_cst(lhs,rhs,inv.ref()); }
+       void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
+				     boxes_domain_t inv)
+       { detach(); ref().backward_assign_bool_var(lhs,rhs,is_not_rhs,inv.ref()); }	
+       void backward_apply_binary_bool(bool_operation_t op,
+				       variable_t x,variable_t y,variable_t z,
+				       boxes_domain_t inv)
+       { detach(); ref().backward_apply_binary_bool(op,x,y,z,inv.ref()); }	
+       
+       /* Begin unimplemented operations */
+       // array operations
+       void array_init(variable_t a, linear_expression_t elem_size,
+		       linear_expression_t lb_idx, linear_expression_t ub_idx, 
+		       linear_expression_t val) {}      
+       void array_load(variable_t lhs,
+		       variable_t a, linear_expression_t elem_size,
+		       linear_expression_t i) {}
+       void array_store(variable_t a, linear_expression_t elem_size,
+			linear_expression_t i, linear_expression_t v, 
+			bool is_singleton) {}      
+       void array_assign(variable_t lhs, variable_t rhs) {}
+       // pointer operations
+       void pointer_load(variable_t lhs, variable_t rhs)  {}
+       void pointer_store(variable_t lhs, variable_t rhs) {} 
+       void pointer_assign(variable_t lhs, variable_t rhs, linear_expression_t offset) {}
+       void pointer_mk_obj(variable_t lhs, ikos::index_t address) {}
+       void pointer_function(variable_t lhs, varname_t func) {}
+       void pointer_mk_null(variable_t lhs) {}
+       void pointer_assume(pointer_constraint_t cst) {}
+       void pointer_assert(pointer_constraint_t cst) {}
+       /* End unimplemented operations */
+       
+       void forget(const variable_vector_t& variables)
+       { detach(); ref().forget(variables); }
+       
+       void project(const variable_vector_t& variables)
+       { detach(); ref().project(variables); }
+       
+       void expand(variable_t x, variable_t new_x)
+       { detach(); ref().expand(x,new_x);}
 
-      void expand(variable_t x, variable_t new_x)
-      { detach(); ref().expand(x,new_x);}
-      
-      void write(crab_os& o) { ref().write(o); }
+       void normalize() {}
+       
+       void write(crab_os& o) { ref().write(o); }
+       
+       linear_constraint_system_t to_linear_constraint_system()
+       { return ref().to_linear_constraint_system(); }
 
-      linear_constraint_system_t to_linear_constraint_system()
-      { return ref().to_linear_constraint_system(); }
-
-      disjunctive_linear_constraint_system_t
-      to_disjunctive_linear_constraint_system()
-      { return ref().to_disjunctive_linear_constraint_system(); }
-      
-      static std::string getDomainName() { return boxes_impl_t::getDomainName(); }
-      
-    };
+       disjunctive_linear_constraint_system_t
+       to_disjunctive_linear_constraint_system()
+       { return ref().to_disjunctive_linear_constraint_system(); }
+       
+       static std::string getDomainName() { return boxes_impl_t::getDomainName(); }
+       
+    };     
     #endif
      
-    template<typename Number, typename VariableName, int ConvexReduce, size_t LddSize>
-    class domain_traits <boxes_domain<Number,VariableName,ConvexReduce,LddSize>> {
-    public:
-      typedef boxes_domain<Number, VariableName, ConvexReduce, LddSize> boxes_domain_t;
-      
-      template<class CFG>
-      static void do_initialization(CFG cfg) {}
-    };
-
     template<typename Number, typename VariableName, int ConvexReduce, size_t LddSize>
     class checker_domain_traits<boxes_domain<Number,VariableName,ConvexReduce,LddSize>> {
     public:
@@ -2089,3 +1993,14 @@ namespace crab {
    } // namespace domains
 }// namespace crab
 #endif /* HAVE_LDD */
+
+namespace crab {
+namespace domains {
+  template <typename Number, typename VariableName, int ConvexReduce, size_t LddSize> 
+  struct abstract_domain_traits<boxes_domain<Number, VariableName, ConvexReduce, LddSize>> {
+    typedef Number number_t;
+    typedef VariableName varname_t;       
+  };
+}
+}
+  
