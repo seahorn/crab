@@ -12,7 +12,7 @@
 #include <crab/common/stats.hpp>
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/separate_domains.hpp>
-#include <crab/domains/intervals.hpp>
+#include <crab/domains/interval.hpp>
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/domains/linear_interval_solver.hpp>
 #include <crab/domains/discrete_domains.hpp>

@@ -52,7 +52,7 @@
 
 #include <crab/common/types.hpp>
 #include <crab/common/stats.hpp>
-#include <crab/domains/intervals.hpp>
+#include <crab/domains/interval.hpp>
 
 namespace ikos {
 

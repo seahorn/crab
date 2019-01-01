@@ -3,7 +3,7 @@
 /* A flat lattice for nullity */
 
 #include <crab/common/types.hpp>
-#include <crab/domains/intervals.hpp>
+#include <crab/domains/interval.hpp>
 #include <crab/domains/separate_domains.hpp>
 #include <crab/domains/abstract_domain.hpp>
 

@@ -4,12 +4,6 @@
 
 #pragma once
 
-#include <crab/common/bignums.hpp>
-#include <crab/domains/intervals.hpp>
-
-#include <boost/range/iterator_range.hpp>
-#include <vector>
-
 namespace crab {
 
  namespace domains {

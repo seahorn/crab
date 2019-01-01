@@ -52,7 +52,7 @@
 #include <crab/common/types.hpp>
 #include <crab/common/bignums.hpp>
 #include <crab/domains/linear_constraints.hpp>
-#include <crab/domains/intervals.hpp>
+#include <crab/domains/interval.hpp>
 #include <crab/domains/discrete_domains.hpp>
 
 #include <functional> // for wrapper_reference

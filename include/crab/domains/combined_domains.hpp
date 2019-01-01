@@ -26,7 +26,7 @@
 
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/congruences.hpp>
-#include <crab/domains/intervals.hpp>
+#include <crab/domains/interval.hpp>
 #include <crab/domains/nullity.hpp>
 
 namespace crab {

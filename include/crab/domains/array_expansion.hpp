@@ -27,7 +27,7 @@
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 
-#include <crab/domains/intervals.hpp>
+#include <crab/domains/interval.hpp>
 #include <crab/domains/patricia_trees.hpp>
 #include <crab/domains/separate_domains.hpp>
 

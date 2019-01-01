@@ -61,14 +61,15 @@
 #include <crab/common/stats.hpp>
 #include <crab/domains/separate_domains.hpp>
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/backward_assign_operations.hpp>
 
 namespace ikos {
 
-template < typename Number,
-           int typeSize = -1 > //! typeSize = -1 means unlimited precision
+template <typename Number,
+	  int typeSize = -1> //! typeSize = -1 means unlimited precision
 class congruence : public writeable {
 public:
-  typedef congruence< Number, typeSize > congruence_t;
+  typedef congruence<Number, typeSize> congruence_t;
 
 private:
   bool _is_bottom;
@@ -181,16 +182,16 @@ public:
 
   bool is_top() { return _a == 1; }
 
-  std::pair< Number, Number > get() {
+  std::pair<Number, Number> get() {
     // aZ+b
     return std::make_pair(_a, _b);
   }
 
-  boost::optional< Number > singleton() {
+  boost::optional<Number> singleton() {
     if (!this->is_bottom() && _a == 0) {
-      return boost::optional< Number >(_b);
+      return boost::optional<Number>(_b);
     } else {
-      return boost::optional< Number >();
+      return boost::optional<Number>();
     }
   }
 
@@ -605,72 +606,72 @@ public:
   }
 }; // end class congruence
 
-template < typename Number, int typeSize >
-inline congruence< Number, typeSize > operator+(
-    Number c, congruence< Number, typeSize > x) {
-  return congruence< Number, typeSize >(c) + x;
+template <typename Number, int typeSize>
+inline congruence<Number, typeSize> operator+(
+    Number c, congruence<Number, typeSize> x) {
+  return congruence<Number, typeSize>(c) + x;
 }
 
-template < typename Number, int typeSize >
-inline congruence< Number, typeSize > operator+(
-    congruence< Number, typeSize > x, Number c) {
-  return x + congruence< Number, typeSize >(c);
+template <typename Number, int typeSize>
+inline congruence<Number, typeSize> operator+(
+    congruence<Number, typeSize> x, Number c) {
+  return x + congruence<Number, typeSize>(c);
 }
 
-template < typename Number, int typeSize >
-inline congruence< Number, typeSize > operator*(
-    Number c, congruence< Number, typeSize > x) {
-  return congruence< Number, typeSize >(c) * x;
+template <typename Number, int typeSize>
+inline congruence<Number, typeSize> operator*(
+    Number c, congruence<Number, typeSize> x) {
+  return congruence<Number, typeSize>(c) * x;
 }
 
-template < typename Number, int typeSize >
-inline congruence< Number, typeSize > operator*(
-    congruence< Number, typeSize > x, Number c) {
-  return x * congruence< Number, typeSize >(c);
+template <typename Number, int typeSize>
+inline congruence<Number, typeSize> operator*(
+    congruence<Number, typeSize> x, Number c) {
+  return x * congruence<Number, typeSize>(c);
 }
 
-template < typename Number, int typeSize >
-inline congruence< Number, typeSize > operator/(
-    Number c, congruence< Number, typeSize > x) {
-  return congruence< Number, typeSize >(c) / x;
+template <typename Number, int typeSize>
+inline congruence<Number, typeSize> operator/(
+    Number c, congruence<Number, typeSize> x) {
+  return congruence<Number, typeSize>(c) / x;
 }
 
-template < typename Number, int typeSize >
-inline congruence< Number, typeSize > operator/(
-    congruence< Number, typeSize > x, Number c) {
-  return x / congruence< Number, typeSize >(c);
+template <typename Number, int typeSize>
+inline congruence<Number, typeSize> operator/(
+    congruence<Number, typeSize> x, Number c) {
+  return x / congruence<Number, typeSize>(c);
 }
 
-template < typename Number, int typeSize >
-inline congruence< Number, typeSize > operator-(
-    Number c, congruence< Number, typeSize > x) {
-  return congruence< Number, typeSize >(c) - x;
+template <typename Number, int typeSize>
+inline congruence<Number, typeSize> operator-(
+    Number c, congruence<Number, typeSize> x) {
+  return congruence<Number, typeSize>(c) - x;
 }
 
-template < typename Number, int typeSize >
-inline congruence< Number, typeSize > operator-(
-    congruence< Number, typeSize > x, Number c) {
-  return x - congruence< Number, typeSize >(c);
+template <typename Number, int typeSize>
+inline congruence<Number, typeSize> operator-(
+    congruence<Number, typeSize> x, Number c) {
+  return x - congruence<Number, typeSize>(c);
 }
 
-template < typename Number,
+template <typename Number,
            typename VariableName,
            typename CongruenceCollection,
-           int typeSize = -1 >
+           int typeSize = -1>
 class equality_congruence_solver {
   // TODO: check correctness of the solver. Granger provides a sound
   // and more precise solver for equality linear congruences (see
   // Theorem 4.4).
 private:
-  typedef congruence< Number, typeSize > congruence_t;
-  typedef variable< Number, VariableName > variable_t;
-  typedef linear_expression< Number, VariableName > linear_expression_t;
-  typedef linear_constraint< Number, VariableName > linear_constraint_t;
-  typedef linear_constraint_system< Number, VariableName >
+  typedef congruence<Number, typeSize> congruence_t;
+  typedef variable<Number, VariableName> variable_t;
+  typedef linear_expression<Number, VariableName> linear_expression_t;
+  typedef linear_constraint<Number, VariableName> linear_constraint_t;
+  typedef linear_constraint_system<Number, VariableName>
       linear_constraint_system_t;
 
 private:
-  typedef std::vector< linear_constraint_t > cst_table_t;
+  typedef std::vector<linear_constraint_t> cst_table_t;
   typedef typename linear_constraint_t::variable_set_t variable_set_t;
 
 private:
@@ -787,7 +788,7 @@ public:
 
 }; // class equality_congruence_solver
 
-template < typename Number, typename VariableName, int typeSize = -1>
+template <typename Number, typename VariableName, int typeSize = -1>
 class congruence_domain final:
   public crab::domains::abstract_domain<congruence_domain<Number,VariableName,typeSize>> {
 public:
@@ -813,7 +814,7 @@ public:
   using typename abstract_domain_t::pointer_constraint_t;
 
 private:
-  typedef separate_domain<variable_t, congruence_t > separate_domain_t;
+  typedef separate_domain<variable_t, congruence_t> separate_domain_t;
   typedef equality_congruence_solver<number_t, varname_t,
 				     separate_domain_t, typeSize> solver_t;
 
@@ -920,8 +921,8 @@ public:
     this->_env -= v; 
   }
 
-  void operator-=(std::vector< variable_t > vs) {
-    for (typename std::vector< variable_t >::iterator it = vs.begin(),
+  void operator-=(std::vector<variable_t> vs) {
+    for (typename std::vector<variable_t>::iterator it = vs.begin(),
 	   end = vs.end(); it != end; ++it) {
       this->operator-=* it;
     }

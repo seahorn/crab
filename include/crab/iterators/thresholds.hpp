@@ -1,7 +1,7 @@
 #pragma once
 
 #include <crab/common/bignums.hpp>
-#include <crab/domains/intervals.hpp>
+#include <crab/domains/interval.hpp>
 #include <crab/common/debug.hpp>
 #include <crab/cfg/cfg.hpp>
 #include <crab/iterators/wto.hpp>
