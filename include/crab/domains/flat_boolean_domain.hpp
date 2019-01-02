@@ -224,12 +224,14 @@ namespace crab {
         
    public:
     
-    static flat_boolean_domain_t top() {
-      return flat_boolean_domain(separate_domain_t::top());
+    void set_to_top() {
+      flat_boolean_domain abs(separate_domain_t::top());
+      std::swap(*this, abs);
     }
     
-    static flat_boolean_domain_t bottom() {
-      return flat_boolean_domain(separate_domain_t::bottom());
+    void set_to_bottom() {
+      flat_boolean_domain abs(separate_domain_t::bottom());
+      std::swap(*this, abs);
     }
     
     flat_boolean_domain() : _env(separate_domain_t::top()) {}
@@ -851,20 +853,20 @@ namespace crab {
 
      public:
       
-      static bool_num_domain_t top() {
-        return bool_num_domain_t(domain_product2_t::top(),
-				  var_lincons_map_t::top(),
-				  invariance_domain::top());
+      void set_to_top() {
+        bool_num_domain_t abs(domain_product2_t::top(),
+			      var_lincons_map_t::top(),
+			      invariance_domain::top());
+	std::swap(*this, abs);
       }
       
-      static bool_num_domain_t bottom() {
-        return bool_num_domain_t(domain_product2_t::bottom(),
-				 var_lincons_map_t::bottom(),
-				 invariance_domain::bottom());
+      void set_to_bottom() {
+        bool_num_domain_t abs(domain_product2_t::bottom(),
+			      var_lincons_map_t::bottom(),
+			      invariance_domain::bottom());
+	std::swap(*this, abs);
       }
       
-     public:
-       
       flat_boolean_numerical_domain()
 	: _product(), _var_to_csts(), _unchanged_vars() {}
       

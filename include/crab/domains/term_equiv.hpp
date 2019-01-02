@@ -114,7 +114,7 @@ namespace crab {
        typedef boost::container::flat_map< variable_t, term_id_t > var_map_t;
        // the reverse of var_map: from term_id_t to a set of variable_t
        typedef std::set<variable_t> var_set_t;
-       typedef boost::container::flat_map< term_id_t, var_set_t > rev_var_map_t; 
+       typedef boost::container::flat_map< term_id_t, var_set_t > rev_var_map_t;
        typedef term::NumSimplifier<number_t> simplifier_t;
 
        bool _is_bottom;
@@ -126,11 +126,7 @@ namespace crab {
        rev_var_map_t _rev_var_map; // to extract equalities efficiently
        term_map_t _term_map;
        term_set_t changed_terms; 
-       
-       void set_to_bottom(){
-         this->_is_bottom = true;
-       }
-       
+              
        term_domain(bool is_top): _is_bottom(!is_top) { }
        
        term_domain(dom_var_alloc_t alloc, var_map_t vm, rev_var_map_t rvm,
@@ -713,16 +709,21 @@ namespace crab {
 
       public:
 
-       static term_domain_t top() {
-         return term_domain(true);
+       void set_to_top() {
+         term_domain abs(true);
+	 std::swap(*this, abs);
        }
        
-       static term_domain_t bottom() {
-         return term_domain(false);
+       void set_to_bottom() {
+         term_domain abs(false);
+	 std::swap(*this, abs);
        }
-       
-      public:
 
+       // void set_to_bottom(){
+       //   this->_is_bottom = true;
+       // }
+       
+       
        term_domain(): _is_bottom(false) { }
        
        term_domain(const term_domain_t& o): 
@@ -1006,7 +1007,7 @@ namespace crab {
 
          // Does not require normalization of any of the two operands
          if (is_bottom() || o.is_bottom()) {
-           return bottom();
+           return term_domain_t::bottom();
          } else if (is_top()) { 
            return o;
          } else if (o.is_top()) {

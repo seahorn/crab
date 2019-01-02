@@ -103,13 +103,15 @@ namespace crab {
        public:
         
         array_smashing(): _inv(NumDomain::top()) { }    
-        
-        static array_smashing_t top() { 
-          return array_smashing(NumDomain::top()); 
-        }
-        
-        static array_smashing_t bottom() {
-          return array_smashing(NumDomain::bottom());
+
+	void set_to_top() {
+	  array_smashing abs(NumDomain::top());
+	  std::swap(*this, abs);
+	}
+
+	void set_to_bottom() {
+          array_smashing abs(NumDomain::bottom());
+	  std::swap(*this, abs);
         }
         
         array_smashing(const array_smashing_t& other): 

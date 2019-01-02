@@ -46,9 +46,9 @@ namespace crab {
 
         elina_domain() {}    
 
-        static elina_domain_t top() { CRAB_ERROR(ELINA_NOT_FOUND); }
+        void set_to_top() { CRAB_ERROR(ELINA_NOT_FOUND); }
 
-        static elina_domain_t bottom() { CRAB_ERROR(ELINA_NOT_FOUND); }
+        void set_to_bottom() { CRAB_ERROR(ELINA_NOT_FOUND); }
 
         elina_domain (const elina_domain_t& other) {}
         
@@ -1014,12 +1014,14 @@ namespace domains {
       return *this;
     }
     
-    static elina_domain_t top() { 
-      return elina_domain_t(false);
+    void set_to_top() { 
+      elina_domain_t abs(false);
+      std::swap(*this, abs);
     }
     
-    static elina_domain_t bottom() { 
-      return elina_domain_t(true);
+    void set_to_bottom() { 
+      elina_domain_t abs(true);
+      std::swap(*this, abs);
     }
 
     bool is_bottom() { 
@@ -1093,7 +1095,7 @@ namespace domains {
       crab::ScopedCrabStats __st__(getDomainName() + ".meet");
       
       if (is_bottom() || o.is_bottom())
-	return bottom();
+	return elina_domain_t::bottom();
       else if (is_top())
 	return o;
       else if (o.is_top())
@@ -1181,7 +1183,7 @@ namespace domains {
       crab::ScopedCrabStats __st__(getDomainName() + ".narrowing");
       
       if (is_bottom() || o.is_bottom())
-	return bottom();
+	return elina_domain_t::bottom();
       else if (is_top())
 	return o;
       else if (o.is_top())
@@ -1437,7 +1439,7 @@ namespace domains {
       if(is_bottom()) return;
       
       if (_csts.is_false()) {
-	*this = bottom();
+	set_to_bottom();
 	return;
       }
 
@@ -1470,7 +1472,7 @@ namespace domains {
       if (csts.is_false()) {
 	// csts can be false after breaking disequalities into
 	// inequalities
-	*this = bottom();
+	set_to_bottom();
 	return;
       }
 
@@ -1988,9 +1990,15 @@ namespace domains {
     
   public:
     
-    static elina_domain_t top() { return elina_domain(false); }
+    void set_to_top() {
+      elina_domain abs(false);
+      std::swap(*this, abs);
+    }
     
-    static elina_domain_t bottom() { return elina_domain(true); }
+    void set_to_bottom() {
+      elina_domain abs(true);
+      std::swap(*this, abs);
+    }
     
     elina_domain(bool is_bottom = false)
       : _ref(std::make_shared<elina_domain_impl_t>(is_bottom)) { }

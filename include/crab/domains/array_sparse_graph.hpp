@@ -1518,12 +1518,6 @@ namespace crab {
         }
       }
 
-      void set_to_bottom(){
-        _scalar = NumDom::bottom();
-        _expressions = expression_domain_t::bottom();
-        _g.set_to_bottom();
-      }
-
       linear_expression_t make_expr(landmark_ref_t x) {
         switch (x.kind()) {
           case LMC: 
@@ -1877,16 +1871,23 @@ namespace crab {
         return (!g.is_bottom());
       }
 
+
       
-      static array_sgraph_domain_t top() {
-        return array_sgraph_domain_t(false);
+      void set_to_top() { 
+        array_sgraph_domain_t abs(false);
+	std::swap(*this, abs);
       }
 
-      static array_sgraph_domain_t bottom() {
-        return array_sgraph_domain_t(true);
+      void set_to_bottom() {
+        _scalar = NumDom::bottom();
+        _expressions = expression_domain_t::bottom();
+        _g.set_to_bottom();
       }
-
-     public:
+      
+      // void set_to_bottom() {
+      //   array_sgraph_domain_t abs(true);
+      // 	std::swap(*this, abs);
+      // }
 
       array_sparse_graph_domain(bool is_bottom=false)
           : _scalar(NumDom::top()), _expressions(expression_domain_t::top()), 

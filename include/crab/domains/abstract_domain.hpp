@@ -12,15 +12,15 @@ namespace crab {
     struct abstract_domain_traits;
     
     /** 
-     * All abstract domains must derive from abstract_domain class and
-     * expose publicly all its public typedef's.
+     * All abstract domains must derive from the abstract_domain class
+     * and expose publicly all its public typedef's.
      * 
      * This is a sample of how to implement a new abstract domain:
      * 
      * template<typename Number, typename VariableName>
      * class my_new_domain final: public abstract_domain<my_new_domain<Number,VariableName>> {
      *   ...
-     *   bool is_bottom() {..}
+     *   bool is_bottom() {...}
      *   bool is_top() {...}
      *   ...
      * };
@@ -51,41 +51,52 @@ namespace crab {
 	
       virtual ~abstract_domain() {};
 
-      /**************************** Lattice operations ****************************/
-      /*  TODO:
-	  virtual void make_top() = 0;
-	  virtual void make_bottom() = 0;
-       */
+      static Dom top() {
+	Dom abs;
+	abs.set_to_top();
+	return abs;
+      }
+
+      static Dom bottom() {
+	Dom abs;
+	abs.set_to_bottom();
+	return abs;
+      }
       
+      /**************************** Lattice operations ****************************/
+
+      // set *this to top 
+      virtual void set_to_top() = 0;
+      // set *this to bottom 
+      virtual void set_to_bottom() = 0;
       // return true if the abstract state is bottom
       virtual bool is_bottom() = 0;
       // return true if the abstract state is top
       virtual bool is_top() = 0;
 
-      // return true if *this is equal or more precise than abs
+      // Inclusion operator: return true if *this is equal or more precise than abs
       // TODO: add const reference 
       virtual bool operator<=(Dom abs) = 0;
+      // Join operator: join(*this, abs)
+      // TODO: add const reference and ideally const method
+      virtual Dom operator|(Dom abs) = 0;
       // *this = join(*this, abs)
       // TODO: add const reference 
       virtual void operator|=(Dom abs) = 0;
-      // meet(*this, abs)
+      // Meet operator: meet(*this, abs)
       // TODO: add const reference and ideally const method
       virtual Dom operator&(Dom abs) = 0;
-      // join(*this, abs)
-      // TODO: add const reference and ideally const method
-      virtual Dom operator|(Dom abs) = 0;
-      // widening(*this, abs)
+      // Widening operator: widening(*this, abs)
       // TODO: add const reference and ideally const method
       virtual Dom operator||(Dom abs) = 0 ;
-      // narrowing(*this, abs)
+      // Narrowing operator: narrowing(*this, abs)
       // TODO: add const reference and ideally const method      
       virtual Dom operator&&(Dom abs) = 0 ;
 
       // TODO:
-      //virtual Dom widening_thresholds(Dom abs,
-      //		                const crab::iterators::tresholds<number_t>& ts) = 0;
-      
-      
+      // virtual Dom widening_thresholds(Dom abs,
+      //	 	                 const crab::iterators::thresholds<number_t>& ts) = 0;
+            
       /**************************** Arithmetic operations *************************/
       // x := y op z    
       virtual void apply(operation_t op, variable_t x, variable_t y, variable_t z) = 0;       

@@ -237,15 +237,16 @@ namespace crab {
       }
       
      public:
-      static domain_product2_t top() {
-        return domain_product2_t(basic_domain_product2_t::top());
+      void set_to_top() {
+        domain_product2_t abs(basic_domain_product2_t::top());
+	std::swap(*this, abs);
       }
       
-      static domain_product2_t bottom() {
-        return domain_product2_t(basic_domain_product2_t::bottom());
-    }
+      void set_to_bottom() {
+        domain_product2_t abs(basic_domain_product2_t::bottom());
+	std::swap(*this, abs);
+      }
       
-     public:
       domain_product2(): _product() { }
       
       domain_product2(Domain1 first, Domain2 second): 
@@ -752,17 +753,18 @@ namespace crab {
       }
       
      public:
-    
-      static reduced_numerical_domain_product2_t top() {
-        return reduced_numerical_domain_product2_t(domain_product2_t::top());
+
+      
+      void set_to_top() {
+        reduced_numerical_domain_product2_t abs(domain_product2_t::top());
+	std::swap(*this, abs);
       }
       
-      static reduced_numerical_domain_product2_t bottom() {
-        return reduced_numerical_domain_product2_t(domain_product2_t::bottom());
+      void set_to_bottom() {
+        reduced_numerical_domain_product2_t abs(domain_product2_t::bottom());
+	std::swap(*this, abs);
       }
     
-     public:
-      
       reduced_numerical_domain_product2(): _product() {}
 	
       
@@ -1357,7 +1359,7 @@ namespace crab {
         interval_congruence_t val(i, c);
         
         if (val.is_bottom()) {
-          *this = bottom();
+	  set_to_bottom();
         } else {
           if (val.first() != i) { 
             // FIXME: this is imprecise for relational domains
@@ -1379,16 +1381,16 @@ namespace crab {
       
      public:
       
-      static rnc_domain_t top() {
-        return rnc_domain_t(domain_product2_t::top());
+      void set_to_top() {
+        rnc_domain_t abs(domain_product2_t::top());
+	std::swap(*this, abs);
       }
       
-      static rnc_domain_t bottom() {
-        return rnc_domain_t(domain_product2_t::bottom());
-      }
+      void set_to_bottom() {
+        rnc_domain_t abs(domain_product2_t::bottom());
+	std::swap(*this, abs);
+      }	
       
-     public:
-       
       numerical_congruence_domain() : _product() {}
       
       numerical_congruence_domain(const rnc_domain_t& other) :
@@ -1637,16 +1639,16 @@ namespace crab {
       
      public:
       
-      static nn_domain_t top() {
-        return nn_domain_t(domain_product2_t::top());
+      void set_to_top() {
+        nn_domain_t abs(domain_product2_t::top());
+	std::swap(*this, abs);
       }
       
-      static nn_domain_t bottom() {
-        return nn_domain_t(domain_product2_t::bottom());
+      void set_to_bottom() {
+        nn_domain_t abs(domain_product2_t::bottom());
+	std::swap(*this, abs);
       }
       
-     public:
-       
       numerical_nullity_domain() : _product() {}
 	
       

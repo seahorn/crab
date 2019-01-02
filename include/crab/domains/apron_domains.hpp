@@ -45,9 +45,9 @@ namespace crab {
 
         apron_domain() {}    
 
-        static apron_domain_t top() { CRAB_ERROR(APRON_NOT_FOUND); }
+        void set_to_top() { CRAB_ERROR(APRON_NOT_FOUND); }
 
-        static apron_domain_t bottom() { CRAB_ERROR(APRON_NOT_FOUND); }
+        void set_to_bottom() { CRAB_ERROR(APRON_NOT_FOUND); }
 
         apron_domain(const apron_domain_t& other) {}
         
@@ -804,14 +804,16 @@ namespace crab {
           }
           return *this;
         }
-        
-        static apron_domain_t top() { 
-          return apron_domain_t(false);
-        }
 
-        static apron_domain_t bottom() { 
-          return apron_domain_t(true);
-        }
+	void set_to_top() {
+	  apron_domain_t tmp(false);
+	  std::swap(*this, tmp);
+	}
+
+	void set_to_bottom() {
+	  apron_domain_t tmp(true);
+	  std::swap(*this, tmp);
+	}
 
         bool is_bottom() { 
           return ap_abstract0_is_bottom(get_man(), &*m_apstate);
@@ -880,7 +882,7 @@ namespace crab {
           crab::ScopedCrabStats __st__(getDomainName() + ".meet");
 
           if (is_bottom() || o.is_bottom())
-            return bottom();
+            return apron_domain_t::bottom();
           else if(is_top())
             return o;
           else if (o.is_top())
@@ -967,8 +969,8 @@ namespace crab {
           crab::CrabStats::count(getDomainName() + ".count.narrowing");
           crab::ScopedCrabStats __st__(getDomainName() + ".narrowing");
 
-          if (is_bottom() || o.is_bottom())
-            return bottom();
+	  if (is_bottom() || o.is_bottom())
+            return apron_domain_t::bottom();
           else if (is_top())
             return o;
           else if (o.is_top())
@@ -1186,7 +1188,7 @@ namespace crab {
           if(is_bottom()) return;
 
 	  if (_csts.is_false()) {
-	    *this = bottom();
+	    set_to_bottom();
 	    return;
 	  }
 
@@ -1219,7 +1221,7 @@ namespace crab {
 	  if (csts.is_false()) {
 	    // csts can be false after breaking disequalities into
 	    // inequalities
-	    *this = bottom();
+	    set_to_bottom();
 	    return;
 	  }
 	  
@@ -1751,11 +1753,17 @@ namespace crab {
         }
         
        public:
-        
-        static apron_domain_t top() { return apron_domain(false); }
-        
-        static apron_domain_t bottom() { return apron_domain(true); }
-        
+
+	void set_to_top() {
+	  apron_domain_t tmp(false);
+	  std::swap(*this, tmp);
+	}
+
+	void set_to_bottom() {
+	  apron_domain_t tmp(true);
+	  std::swap(*this, tmp);
+	}
+	
         apron_domain(bool is_bottom = false)
             : _ref(std::make_shared<apron_domain_impl_t>(is_bottom)) { }
         

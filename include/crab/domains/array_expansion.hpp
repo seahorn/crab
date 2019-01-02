@@ -646,7 +646,7 @@ namespace domains {
 
   public:
     /** 
-	Uggly this needs to be fixed: needed if multiple analyses are
+	Ugly this needs to be fixed: needed if multiple analyses are
 	run so we can clear the array map from one run to another.
     **/
     static void clear_global_state() {
@@ -689,15 +689,17 @@ namespace domains {
        
     array_expansion_domain()
       : _inv(NumDomain::top()) { }  
-       
-    static array_expansion_domain_t top() { 
-      return array_expansion_domain(NumDomain::top()); 
+
+    void set_to_top() {
+      array_expansion_domain abs(NumDomain::top());
+      std::swap(*this, abs);
     }
-       
-    static array_expansion_domain_t bottom() {
-      return array_expansion_domain(NumDomain::bottom());
+
+    void set_to_bottom() {
+      array_expansion_domain abs(NumDomain::bottom());
+      std::swap(*this, abs);
     }
-       
+    
     array_expansion_domain(const array_expansion_domain_t& other)
       : _inv(other._inv) {  
       crab::CrabStats::count(getDomainName() + ".count.copy");

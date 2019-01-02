@@ -1103,12 +1103,14 @@ namespace crab {
 
     public:
           
-     static dis_interval_domain_t top() {
-       return dis_interval_domain(separate_domain_t::top());
+     void set_to_top() {
+       dis_interval_domain abs(separate_domain_t::top());
+       std::swap(*this, abs);
      }
 
-     static dis_interval_domain_t bottom() {
-       return dis_interval_domain(separate_domain_t::bottom());
+     void set_to_bottom() {
+       dis_interval_domain abs(separate_domain_t::bottom());
+       std::swap(*this, abs);
      }
 
      dis_interval_domain(): _env(separate_domain_t::top()) { }    

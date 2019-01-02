@@ -130,15 +130,17 @@ namespace ikos {
     interval_domain(separate_domain_t env): _env(env) { }
 
   public:
-    static interval_domain_t top() {
-      return interval_domain(separate_domain_t::top());
+    
+    void set_to_top() {
+      interval_domain abs(separate_domain_t::top());
+      std::swap(*this, abs);
     }
     
-    static interval_domain_t bottom() {
-      return interval_domain(separate_domain_t::bottom());
+    void set_to_bottom() {
+      interval_domain abs(separate_domain_t::bottom());
+      std::swap(*this, abs);
     }
 
-  public:
     interval_domain(): _env(separate_domain_t::top()) { }
 
     interval_domain(const interval_domain_t& e): 

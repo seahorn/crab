@@ -828,15 +828,16 @@ private:
   congruence_domain(separate_domain_t env) : _env(env) {}
 
 public:
-  static congruence_domain_t top() {
-    return congruence_domain(separate_domain_t::top());
+  void set_to_top() {
+    congruence_domain abs(separate_domain_t::top());
+    std::swap(*this, abs);
   }
 
-  static congruence_domain_t bottom() {
-    return congruence_domain(separate_domain_t::bottom());
+  void set_to_bottom() {
+    congruence_domain abs(separate_domain_t::bottom());
+    std::swap(*this, abs);
   }
 
-public:
   congruence_domain() : _env(separate_domain_t::top()) {}
 
   congruence_domain(const congruence_domain_t& e)

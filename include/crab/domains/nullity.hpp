@@ -150,12 +150,14 @@ namespace crab {
         
    public:
     
-    static nullity_domain_t top() {
-      return nullity_domain(separate_domain_t::top());
+    void set_to_top() {
+      nullity_domain abs(separate_domain_t::top());
+      std::swap(*this, abs);
     }
     
-    static nullity_domain_t bottom() {
-      return nullity_domain(separate_domain_t::bottom());
+    void set_to_bottom() {
+      nullity_domain abs(separate_domain_t::bottom());
+      std::swap(*this, abs);      
     }
     
     nullity_domain() : _env(separate_domain_t::top()) {}
@@ -277,7 +279,7 @@ namespace crab {
 
       // if (p != q) ...
       if(_env[p].is_null() && _env[q].is_null()) {
-        *this = bottom();
+	set_to_bottom();
       } else if (_env[p].is_top() && _env[q].is_null()) {
         _env.set(p, nullity_value::non_null()); // refine p
       } else if (_env[q].is_top() && _env[p].is_null()) {
@@ -291,7 +293,7 @@ namespace crab {
       if (is_bottom()) return;
 
       if (_env[p].is_null() && v.is_null()) {
-        *this = bottom();
+	set_to_bottom();
       } else if(_env[p].is_top() && v.is_null()) { // refine p
         _env.set(p, nullity_value::non_null());
       }
@@ -388,7 +390,7 @@ namespace crab {
       if(cst.is_tautology()) return;
       
       if (cst.is_contradiction()) {
-        *this = bottom();
+	set_to_bottom();
         return;
       }
 

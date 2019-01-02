@@ -222,15 +222,6 @@ namespace crab {
       }
       */
 
-      void set_to_bottom() {
-        vert_map.clear();
-        rev_map.clear();
-        g.clear();
-        potential.clear();
-        unstable.clear();
-        _is_bottom = true;
-      }
-
       class Wt_max {
       public:
        Wt_max() { } 
@@ -933,9 +924,24 @@ namespace crab {
         return *this;
       }
        
-      static DBM_t top() { return SparseDBM_(false); }
-    
-      static DBM_t bottom() { return SparseDBM_(true); }
+      void set_to_top() {
+	SparseDBM_ abs(false);
+	std::swap(*this, abs);
+      }
+
+      void set_to_bottom() {
+        vert_map.clear();
+        rev_map.clear();
+        g.clear();
+        potential.clear();
+        unstable.clear();
+        _is_bottom = true;
+      }
+      
+      // void set_to_bottom() {
+      // 	SparseDBM_ abs(true);
+      // 	std::swap(*this, abs);	
+      // }
     
       bool is_bottom() {
 	// if(!_is_bottom && g.has_negative_cycle())
@@ -1170,7 +1176,7 @@ namespace crab {
         crab::ScopedCrabStats __st__(getDomainName() + ".meet");
 
         if (is_bottom() || o.is_bottom())
-          return bottom();
+          return DBM_t::bottom();
         else if (is_top())
           return o;
         else if (o.is_top())
@@ -1240,7 +1246,7 @@ namespace crab {
           if(!GrOps::select_potentials(meet_g, meet_pi))
           {
             // Potentials cannot be selected -- state is infeasible.
-            return bottom();
+            return DBM_t::bottom();
           }
 
           if(!is_closed)
@@ -1267,7 +1273,7 @@ namespace crab {
         crab::ScopedCrabStats __st__(getDomainName() + ".narrowing");
 
         if (is_bottom() || o.is_bottom())
-          return bottom();
+          return DBM_t::bottom();
         else if (is_top ())
           return o;
         else{
@@ -2177,10 +2183,16 @@ namespace crab {
       }
     public:
 
-      static DBM_t top() { return SparseDBM(false); }
-    
-      static DBM_t bottom() { return SparseDBM(true); }
+      void set_to_top() {
+	SparseDBM abs(false);
+	std::swap(*this, abs);
+      }
 
+      void set_to_bottom() {
+	SparseDBM abs(true);
+	std::swap(*this, abs);
+      }
+      
       SparseDBM(bool is_bottom = false)
         : norm_ref(std::make_shared<dbm_impl_t>(is_bottom)) { }
 

@@ -227,15 +227,6 @@ namespace crab {
       bool _is_bottom;
 
 
-      void set_to_bottom() {
-        vert_map.clear();
-        rev_map.clear();
-        g.clear();
-        potential.clear();
-        unstable.clear();
-        _is_bottom = true;
-      }
-
       boost::optional<std::pair<vert_id,std::pair<vert_id, Wt>>>
       diffcst_of_leq(linear_constraint_t cst) {
 
@@ -1112,9 +1103,24 @@ namespace crab {
         return *this;
       }
              
-      static DBM_t top() { return SplitDBM_(false); }
-    
-      static DBM_t bottom() { return SplitDBM_(true); }
+      void set_to_top() {
+	SplitDBM_ abs(false);
+	std::swap(*this, abs);
+      }
+
+      void set_to_bottom() {
+        vert_map.clear();
+        rev_map.clear();
+        g.clear();
+        potential.clear();
+        unstable.clear();
+        _is_bottom = true;
+      }
+      
+      // void set_to_bottom() {
+      // 	SplitDBM_ abs(true);
+      // 	std::swap(*this, abs);	
+      // }
     
       bool is_bottom() {
         return _is_bottom;
@@ -1483,7 +1489,7 @@ namespace crab {
         crab::ScopedCrabStats __st__(getDomainName() + ".meet");
 
         if (is_bottom() || o.is_bottom())
-          return bottom();
+          return DBM_t::bottom();
         else if (is_top())
           return o;
         else if (o.is_top())
@@ -1556,7 +1562,7 @@ namespace crab {
           if(!GrOps::select_potentials(meet_g, meet_pi))
           {
             // Potentials cannot be selected -- state is infeasible.
-            return bottom();
+            return DBM_t::bottom();
           }
 
           if(!is_closed)
@@ -1604,7 +1610,7 @@ namespace crab {
         crab::ScopedCrabStats __st__(getDomainName() + ".narrowing");
 
         if (is_bottom() || o.is_bottom())
-          return bottom();
+          return DBM_t::bottom();
         else if (is_top ())
           return o;
         else{
@@ -2589,9 +2595,15 @@ namespace crab {
 
     public:
 
-      static DBM_t top() { return SplitDBM(false); }
+      void set_to_top() {
+	SplitDBM abs(false);
+	std::swap(*this, abs);
+      }
     
-      static DBM_t bottom() { return SplitDBM(true); }
+      void set_to_bottom() {
+	SplitDBM abs(true);
+	std::swap(*this, abs);
+      }
 
       SplitDBM(bool is_bottom = false)
         : norm_ref(std::make_shared<dbm_impl_t>(is_bottom)) { }

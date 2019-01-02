@@ -1246,15 +1246,16 @@ private:
   }
   
 public:
-  static wrapped_interval_domain_t top() {
-    return wrapped_interval_domain(separate_domain_t::top());
+  void set_to_top() {
+    wrapped_interval_domain abs(separate_domain_t::top());
+    std::swap(*this, abs);
   }
   
-  static wrapped_interval_domain_t bottom() {
-    return wrapped_interval_domain(separate_domain_t::bottom());
+  void set_to_bottom() {
+    wrapped_interval_domain abs(separate_domain_t::bottom());
+    std::swap(*this, abs);
   }
   
-public:
   wrapped_interval_domain(): _env(separate_domain_t::top()) { }
 
   wrapped_interval_domain(const wrapped_interval_domain_t& e): 
@@ -2086,16 +2087,18 @@ private:
 		     
 public:
   
-  static this_type top() {
-    return this_type(wrapped_interval_domain_t::top(),
-		     separate_domain_t::top(),
-		     discrete_domain_t::bottom() /*empty set*/);
+  void set_to_top() {
+    this_type abs(wrapped_interval_domain_t::top(),
+		  separate_domain_t::top(),
+		  discrete_domain_t::bottom() /*empty set*/);
+    std::swap(*this, abs);
   }
   
-  static this_type bottom() {
-    return this_type(wrapped_interval_domain_t::bottom(),
-		     separate_domain_t::bottom(),
-		     discrete_domain_t::bottom() /*empty set*/);
+  void set_to_bottom() {
+    this_type abs(wrapped_interval_domain_t::bottom(),
+		  separate_domain_t::bottom(),
+		  discrete_domain_t::bottom() /*empty set*/);
+    std::swap(*this, abs);    
   }
   
   wrapped_interval_with_history_domain()
@@ -2808,12 +2811,14 @@ private:
   
 public:
       
-  static wrapped_numerical_domain_t top() {
-    return wrapped_numerical_domain_t(domain_product2_t::top());
+  void set_to_top() {
+    wrapped_numerical_domain_t abs(domain_product2_t::top());
+    std::swap(*this, abs);
   }
 
-  static wrapped_numerical_domain_t bottom() {
-    return wrapped_numerical_domain_t(domain_product2_t::bottom());
+  void set_to_bottom() {
+    wrapped_numerical_domain_t abs(domain_product2_t::bottom());
+    std::swap(*this, abs);
   }
   
   wrapped_numerical_domain(): _product() {}

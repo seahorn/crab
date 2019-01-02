@@ -40,9 +40,9 @@ namespace crab {
 
         boxes_domain() {}    
 	
-        static boxes_domain_t top() { CRAB_ERROR(LDD_NOT_FOUND); }
+        void set_to_top() { CRAB_ERROR(LDD_NOT_FOUND); }
 
-        static boxes_domain_t bottom() { CRAB_ERROR(LDD_NOT_FOUND); }
+        void set_to_bottom() { CRAB_ERROR(LDD_NOT_FOUND); }
 
         boxes_domain(const boxes_domain_t& other) {}
         
@@ -907,15 +907,18 @@ namespace crab {
           // if (theory) tvpi_destroy_theory(theory);
           // if (cudd) Cudd_Quit(cudd);
         }
-                
-        static boxes_domain_t top() { 
-	  return boxes_domain_t(lddPtr(get_ldd_man(),
-					 Ldd_GetTrue(get_ldd_man())));
+
+	
+        void set_to_top() { 
+	  boxes_domain_t abs(lddPtr(get_ldd_man(),
+				    Ldd_GetTrue(get_ldd_man())));
+	  std::swap(*this, abs);
         }
         
-        static boxes_domain_t bottom() {
-	  return boxes_domain_t(lddPtr(get_ldd_man(),
-					 Ldd_GetFalse(get_ldd_man())));
+        void set_to_bottom() {
+	  boxes_domain_t abs(lddPtr(get_ldd_man(),
+				    Ldd_GetFalse(get_ldd_man())));
+	  std::swap(*this, abs);
         }
         
         boxes_domain_(const boxes_domain_t& other): 
@@ -1792,9 +1795,15 @@ namespace crab {
 	 }
        }
        
-       static boxes_domain_t top() { return boxes_domain(false); }
+       void set_to_top() {
+	 boxes_domain abs(false);
+	 std::swap(*this, abs);
+       }
        
-       static boxes_domain_t bottom() { return boxes_domain(true); }
+       void set_to_bottom() {
+	 boxes_domain abs(true);
+	 std::swap(*this, abs);
+       }
        
        boxes_domain(const boxes_domain_t& o)
 	 : _ref(o._ref) { }
