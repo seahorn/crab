@@ -43,6 +43,7 @@
 #include <crab/common/stats.hpp>
 #include <crab/cfg/cfg.hpp>
 #include <crab/domains/linear_constraints.hpp>
+#include <crab/domains/abstract_domain_operators.hpp>
 
 namespace crab {
 
