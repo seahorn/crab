@@ -517,6 +517,79 @@ z_cfg_t* prog9(variable_factory_t &vfac) {
   return cfg;
 }
 
+
+z_cfg_t* prog10(variable_factory_t &vfac) {
+  // array write with a non-constant offset
+  crab::outs () << "===================================\n";  
+  crab::outs () << " Test 10 for array expansion domain \n";
+  crab::outs () << "===================================\n";    
+  z_cfg_t* cfg = new z_cfg_t("bb0","bb4",ARR);
+  z_basic_block_t& bb0 = cfg->insert ("bb0");
+  z_basic_block_t& bb1 = cfg->insert ("bb1");
+  z_basic_block_t& bb2 = cfg->insert ("bb2");
+  z_basic_block_t& bb3 = cfg->insert ("bb3");
+  z_basic_block_t& bb4 = cfg->insert ("bb4");    
+  
+  z_var m1(vfac["Mem1"], crab::ARR_INT_TYPE);
+  z_var i(vfac["i"], crab::INT_TYPE, 32);
+  z_var x(vfac["x"], crab::INT_TYPE, 32);
+
+  bb0 >> bb1;
+  bb0 >> bb2;
+  bb1 >> bb3;
+  bb2 >> bb3;
+  bb3 >> bb4;
+  
+  bb0.array_store(m1, 2, 42, 4);
+  //bb1.assign(i, 2);
+  bb3.array_store(m1, i, 50, 4);
+  bb3.array_load(x, m1, 2, 4);
+  // should be warning
+  bb3.assertion(z_lin_t(x) == 42);
+  
+  return cfg;
+}
+
+
+z_cfg_t* prog11(variable_factory_t &vfac) {
+  // array write with a non-constant offset
+  crab::outs () << "===================================\n";  
+  crab::outs () << " Test 11 for array expansion domain \n";
+  crab::outs () << "===================================\n";    
+  z_cfg_t* cfg = new z_cfg_t("bb0","bb4",ARR);
+  z_basic_block_t& bb0 = cfg->insert ("bb0");
+  z_basic_block_t& bb1 = cfg->insert ("bb1");
+  z_basic_block_t& bb2 = cfg->insert ("bb2");
+  z_basic_block_t& bb3 = cfg->insert ("bb3");
+  z_basic_block_t& bb4 = cfg->insert ("bb4");    
+  
+  z_var m1(vfac["Mem1"], crab::ARR_INT_TYPE);
+  z_var m2(vfac["Mem2"], crab::ARR_INT_TYPE);  
+  z_var i(vfac["i"], crab::INT_TYPE, 32);
+  z_var x(vfac["x"], crab::INT_TYPE, 32);
+  z_var y(vfac["y"], crab::INT_TYPE, 32);  
+
+  bb0 >> bb1;
+  bb0 >> bb2;
+  bb1 >> bb3;
+  bb2 >> bb3;
+  bb3 >> bb4;
+  
+  bb0.array_store(m1, 2, 42, 4);
+  bb0.array_store(m2, 2, 666, 4);
+  bb0.array_store(m1, 6, 50, 4);  
+  bb1.assume(i >= 10);
+  bb2.assume(i >= 20);  
+  bb3.array_store(m1, i, 666, 4);
+  bb3.array_load(x, m1, 2, 4);
+  bb3.array_load(y, m1, 6, 4);  
+  // should be ok
+  bb3.assertion(z_lin_t(x) == 42);
+  bb3.assertion(z_lin_t(y) == 50);  
+  
+  return cfg;
+}
+
 void test_array_expansion(int test) {
   variable_factory_t vfac;
   z_cfg_t* cfg = nullptr;
@@ -529,7 +602,9 @@ void test_array_expansion(int test) {
   case 6: cfg = prog6(vfac); break;
   case 7: cfg = prog7(vfac); break;
   case 8: cfg = prog8(vfac); break;
-  case 9: cfg = prog9(vfac); break;                        
+  case 9: cfg = prog9(vfac); break;
+  case 10: cfg = prog10(vfac); break;
+  case 11: cfg = prog11(vfac); break;                                
   default:
     crab::outs() << "No test selected\n";
   }
@@ -552,6 +627,8 @@ int main (int argc, char** argv) {
   test_array_expansion(6);
   test_array_expansion(7);
   test_array_expansion(8);
-  test_array_expansion(9);            
+  test_array_expansion(9);
+  test_array_expansion(10);
+  test_array_expansion(11);                
   return 0;
 }

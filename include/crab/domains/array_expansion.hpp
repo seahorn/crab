@@ -158,7 +158,9 @@ namespace domains {
 	return false;
       }
     }
-    
+
+    // Return true if [o, o+size) definitely overlaps with the cell,
+    // where o is a constant expression.
     bool overlap(const offset_t& o, unsigned size) const {
       interval_t x = to_interval();
       interval_t y = to_interval(o, size);
@@ -167,6 +169,51 @@ namespace domains {
 		  crab::outs() << "**Checking if " << x << " overlaps with "
 		               << y << "=" << res << "\n";);
       return res;
+    }
+
+    // Return true if [o, o+size) may overlap with the cell, where o
+    // is a non-constant expression.
+    template<typename Dom>
+    bool symbolic_overlap(const typename Dom::linear_expression_t& o, unsigned size, const Dom& dom) const {
+      typedef typename Dom::linear_expression_t linear_expression_t;
+      typedef typename Dom::number_t number_t;      
+
+      interval_t x = to_interval();
+      assert(x.lb().is_finite());
+      assert(x.ub().is_finite());
+      linear_expression_t lb(*(x.lb().number()));
+      linear_expression_t ub(*(x.ub().number()));		     
+
+      linear_expression_t symb_lb(o);
+      linear_expression_t symb_ub(o + number_t(size-1));
+
+      CRAB_LOG("array-expansion-overlap",
+	       Dom tmp(dom);
+	       crab::outs() << "**Checking if " << *this << " overlaps with symbolic "
+	                    << "[" << symb_lb << "," << symb_ub << "]"
+	                    << " with abstract state=" << tmp << "\n";);
+							
+      Dom tmp1(dom);
+      tmp1 += (lb >= symb_lb);
+      tmp1 += (lb <= symb_ub);
+      if (!tmp1.is_bottom()) {
+	CRAB_LOG("array-expansion-overlap",
+		 crab::outs() << "\tyes.\n";);
+	return true;
+      }
+      
+      Dom tmp2(dom);
+      tmp2 += (ub >= symb_lb);
+      tmp2 += (ub <= symb_ub);
+      if (!tmp2.is_bottom()) {
+	CRAB_LOG("array-expansion-overlap",
+		 crab::outs() << "\tyes.\n";);
+	return true;
+      }
+
+      CRAB_LOG("array-expansion-overlap",      
+	       crab::outs() << "\tno.\n";);
+      return false;
     }
     
     void write(crab::crab_os& o) const {
@@ -437,7 +484,7 @@ namespace domains {
 	this->operator-=(cells[i]);
       }
     }
-    
+			   
     // Return in out all cells that might overlap with (o, size).
     void get_overlap_cells(offset_t o, unsigned size, std::vector<cell_t>& out){
       compare_binding_t comp;
@@ -547,7 +594,46 @@ namespace domains {
 	       }
 	       crab::outs() << "}\n";);
     }
-       
+
+    template<typename Dom>
+    void get_overlap_cells_symbolic_offset(const Dom& dom,
+					   typename Dom::linear_expression_t offset, unsigned size,
+					   std::vector<cell_t>& out) const {
+
+      if (offset.is_constant()) {
+	CRAB_ERROR("Offset expected to be non-constant ", offset);
+      }
+      
+      for(auto it=_map.begin(), et=_map.end(); it!=et; ++it) {
+	const cell_set_t& o_cells = it->second;
+	// All cells in o_cells have the same offset. They only differ
+	// in the size. If the largest cell overlaps with [offset,
+	// offset + size) then the rest of cells are considered to
+	// overlap. This is an over-approximation because [offset,
+	// offset+size) can overlap with the largest cell but it
+	// doesn't necessarily overlap with smaller cells. For
+	// efficiency, we assume it overlaps with all.
+	cell_t largest_cell;
+	for (auto &c: o_cells) {
+	  if (largest_cell.is_null()) {
+	    largest_cell = c;
+	  } else {	  
+	    assert(c.get_offset() == largest_cell.get_offset());
+	    if (largest_cell < c) {
+	      largest_cell = c;
+	    }
+	  }
+	}
+	if (!largest_cell.is_null()) {
+	  if (largest_cell.symbolic_overlap(offset, size, dom)) {
+	    for (auto &c: o_cells) {
+	      out.push_back(c);
+	    }
+	  }
+	}
+      }
+    }
+    
     void write(crab::crab_os& o) const {
       if (_map.empty()) {
 	o << "empty";
@@ -684,6 +770,21 @@ namespace domains {
       return r;
     }
 
+    void kill_cells(const std::vector<cell_t>& cells, offset_map_t& offset_map, NumDomain& dom) {
+      if (!cells.empty()) {
+	// Forget the scalars from the numerical domain
+	for (unsigned i=0, e=cells.size(); i<e; ++i) {
+	  const cell_t& c = cells[i];
+	  if (c.has_scalar()) {
+	    dom -= c.get_scalar();
+	  } else {
+	    CRAB_ERROR("array expansion: cell without scalar variable in array store");
+	  }
+	}
+	// Remove the cells. If needed again they they will be re-created.
+	offset_map -= cells;
+      }
+    }
     
   public:
        
@@ -1012,7 +1113,7 @@ namespace domains {
       crab::CrabStats::count(getDomainName() + ".count.array_init");
       crab::ScopedCrabStats __st__(getDomainName() + ".array_init");
 
-      if (is_bottom() || is_top()) return;
+      if (is_bottom()) return;
       
       interval_t lb_i = to_interval(lb_idx);
       auto lb = lb_i.singleton();
@@ -1069,49 +1170,47 @@ namespace domains {
       crab::CrabStats::count(getDomainName() + ".count.load");
       crab::ScopedCrabStats __st__(getDomainName() + ".load");
 
-      if (is_bottom() || is_top()) return;
+      if (is_bottom()) return;
 
       interval_t ii = to_interval(i);
       if (boost::optional<number_t> n = ii.singleton()) {
 	offset_map_t& offset_map = lookup_array_map(a);
 	offset_t o((long) *n);	
-	interval_t i_elem_size = to_interval(elem_size);
-	boost::optional<number_t> n_bytes = i_elem_size.singleton();
-	if (!n_bytes) {
-	  CRAB_WARN("array expansion ignored array load because element size is not constant");
-	  return;
-	}
-	unsigned size =(long)*n_bytes;
-	
-	std::vector<cell_t> cells;
-	offset_map.get_overlap_cells(o, size, cells);
-	if (!cells.empty()) {
-	  CRAB_WARN("array expansion ignored read from cell ",
-		    a, "[", o, "...",o.index()+size-1,"]",
-		    " because it overlaps with ", cells.size(), " cells");
-
-	  // crab::outs() << "These are the overlapping cells:\n";
-	  // for (auto &c: cells) {
-	  //   crab::outs() << "\t" << c << "\n";
-	  // }
-	  /*
-	    TODO: we can apply here "Value Recomposition" 'a la'
-	    Mine'06 to construct values of some type from a sequence
-	    of bytes. It can be endian-independent but it would more
-	    precise if we choose between little- and big-endian.
-	  */
+	interval_t i_elem_size = to_interval(elem_size);			
+	if (boost::optional<number_t> n_bytes = i_elem_size.singleton()) {
+	  unsigned size =(long)*n_bytes;	  
+	  std::vector<cell_t> cells;
+	  offset_map.get_overlap_cells(o, size, cells);
+	  if (!cells.empty()) {
+	    CRAB_WARN("Ignored read from cell ",
+		      a, "[", o, "...",o.index()+size-1,"]",
+		      " because it overlaps with ", cells.size(), " cells");
+	    
+	    // crab::outs() << "These are the overlapping cells:\n";
+	    // for (auto &c: cells) {
+	    //   crab::outs() << "\t" << c << "\n";
+	    // }
+	    /*
+	       TODO: we can apply here "Value Recomposition" 'a la'
+	       Mine'06 to construct values of some type from a sequence
+	       of bytes. It can be endian-independent but it would more
+	       precise if we choose between little- and big-endian.
+	    */
+	  } else {
+	    cell_t c = offset_map.mk_cell(a, o, size);
+	    assert(c.has_scalar());
+	    // Here it's ok to do assignment because c is not a summarized
+	    // variable. Otherwise, it would be unsound.
+	    _inv.assign(lhs, c.get_scalar());
+	    //crab::outs() << "Created cell " << c << "\n";
+	    goto array_load_end;
+	  }
 	} else {
-	  cell_t c = offset_map.mk_cell(a, o, size);
-	  assert(c.has_scalar());
-	  // Here it's ok to do assignment because c is not a summarized
-	  // variable. Otherwise, it would be unsound.
-	  _inv.assign(lhs, c.get_scalar());
-	  //crab::outs() << "Created cell " << c << "\n";
-	  goto array_load_end;
+	  CRAB_ERROR("array expansion domain expects constant array element sizes");
 	}
       } else {
-	// TODO
-	CRAB_WARN("array expansion: ignored read because of non-constant array index ",i);
+	// TODO: we can be more precise here
+	CRAB_WARN("array expansion: ignored array load because of non-constant array index ",i);
       }
 
       _inv -= lhs;
@@ -1131,50 +1230,55 @@ namespace domains {
       crab::ScopedCrabStats __st__(getDomainName() + ".store");
 
       if (is_bottom()) return;
+
+      interval_t i_elem_size = to_interval(elem_size);
+      boost::optional<number_t> n_bytes = i_elem_size.singleton();
+      if (!n_bytes) {
+	CRAB_ERROR("array expansion domain expects constant array element sizes");	
+      }
       
+      unsigned size = (long)(*n_bytes);
+      offset_map_t& offset_map = lookup_array_map(a);
       interval_t ii = to_interval(i);
       if (boost::optional<number_t> n = ii.singleton()) {
-	offset_map_t& offset_map = lookup_array_map(a);
-	offset_t o((long) *n);
-
-	interval_t i_elem_size = to_interval(elem_size);
-	boost::optional<number_t> n_bytes = i_elem_size.singleton();
-	if (!n_bytes) {
-	  CRAB_WARN("array expansion ignored array store because element size is not constant");
-	  return;
-	}
-	unsigned size = (long)*n_bytes;
+	// -- Constant index
 	
 	// kill overlapping cells
 	std::vector<cell_t> cells;
+	offset_t o((long)*n);	
 	offset_map.get_overlap_cells(o, size, cells);
 	if (cells.size() > 0) {
 	  CRAB_LOG("array-expansion",
-		   CRAB_WARN("array expansion killed ", cells.size(),
+		   CRAB_WARN("Killed ", cells.size(),
 			     " overlapping cells with ",
 			     "[", o, "...", o.index()+size-1,"]", " before writing."));
-	  
-	  // Forget the scalars from the numerical domain
-	  for (unsigned i=0, e=cells.size(); i<e; ++i) {
-	    const cell_t& c = cells[i];
-	    if (c.has_scalar()) {
-	      _inv -= c.get_scalar();
-	    } else {
-	      CRAB_ERROR("array expansion: cell without scalar variable in array store");
-	    }
-	  }
-	  // Remove the cell. If needed again it will be re-created.
-	  offset_map -= cells;
+
+	  kill_cells(cells, offset_map, _inv); 
 	}
-	
 	// Perform scalar update	   
 	// -- create a new cell it there is no one already
 	cell_t c = offset_map.mk_cell(a, o, size);
 	// -- strong update
 	_inv.assign(c.get_scalar(), val);
       } else {
-	// TODO: weak update
-	CRAB_WARN("array expansion: ignored write because of non-constant array index ", i);
+	// -- Non-constant index
+	
+	// kill overlapping cells	
+	CRAB_WARN("array expansion: array write with non-constant index ", i);
+	// TODO: we don't need to kill them. We can perform weak update instead.
+	std::vector<cell_t> cells;	
+	offset_map.get_overlap_cells_symbolic_offset(_inv, i, size, cells);
+	CRAB_LOG("array-expansion",
+		 crab::outs() << "Killed cells: {";
+		 for(unsigned j=0; j<cells.size(); ) {
+		   crab::outs() << cells[j];
+		   ++j;
+		   if (j < cells.size()) {
+		     crab::outs() << ",";
+		   }
+		 }
+		 crab::outs() << "}\n";);
+	kill_cells(cells, offset_map, _inv);
       }
 
       CRAB_LOG("array-expansion",
