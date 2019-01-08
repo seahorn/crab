@@ -728,7 +728,14 @@ namespace crab {
     // integers (e.g., reals) is done. Note that we don't allow mixing
     // non-integers and integers so we cannot have analysis where all
     // variables are non-integers except array indexes.
-    
+    //
+    // Each of these statements requires an element size, that is, the
+    // number of bytes that are being accessed. If the front-end is
+    // LLVM, then the element size is always known at compilation
+    // time. However, with other front-ends (e.g., BPF programs) the
+    // element size is stored in a variable so that's why the type of
+    // the element size is not just a constant integer but it can also
+    // be a variable.
     
     //! Initialize all array elements to some variable or number.
     //  The semantics is similar to constant arrays in SMT.
