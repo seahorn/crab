@@ -633,6 +633,42 @@ user-defined assertion checker using ArrayExpansion(Term(Intervals))
 0  Number of total warning checks
 0  Number of total unreachable checks
 
+===================================
+ Test 12 for array expansion domain 
+===================================
+Invariants using ArrayExpansion(Term(Intervals))
+bb0={}
+Abstract trace: bb0
+ --- SAFE -----------------
+Property : x = 42
+Invariant: {x -> t0[_x0], y -> t1[_x1], Mem1[0...3] -> t0[_x0], Mem1[4...7] -> t1[_x1]}{_x0 -> [42, 42]; _x1 -> [50, 50]}
+ -----------------------------
+ --- SAFE -----------------
+Property : y = 50
+Invariant: {x -> t0[_x0], y -> t1[_x1], Mem1[0...3] -> t0[_x0], Mem1[4...7] -> t1[_x1]}{_x0 -> [42, 42]; _x1 -> [50, 50]}
+ -----------------------------
+ --- SAFE -----------------
+Property : x = 666
+Invariant: {i -> t2[_x2], j -> t3[_x3], x -> t4[_x4], y -> t4[_x4], Mem1[0...3] -> t4[_x4], Mem1[4...7] -> t4[_x4]}{_x2 -> [0, 0]; _x3 -> [8, 8]; _x4 -> [666, 666]}
+ -----------------------------
+ --- SAFE -----------------
+Property : y = 666
+Invariant: {i -> t2[_x2], j -> t3[_x3], x -> t4[_x4], y -> t4[_x4], Mem1[0...3] -> t4[_x4], Mem1[4...7] -> t4[_x4]}{_x2 -> [0, 0]; _x3 -> [8, 8]; _x4 -> [666, 666]}
+ -----------------------------
+ --- WARNING -----------------
+Property : y = 666
+Invariant: {i -> t1[_x5], j -> t3[_x3], x -> t2[_x6], y -> t0[_x7], Mem1[0...3] -> t2[_x6], Mem1[4...7] -> t0[_x7]}{_x3 -> [8, 8]; _x5 -> [2, 2]}
+ -----------------------------
+ --- WARNING -----------------
+Property : x = 666
+Invariant: {i -> t1[_x5], j -> t3[_x3], x -> t2[_x7], y -> t0[_x6], Mem1[0...3] -> t2[_x7], Mem1[4...7] -> t0[_x6]}{_x3 -> [8, 8]; _x5 -> [2, 2]; _x6 -> [666, 666]}
+ -----------------------------
+user-defined assertion checker using ArrayExpansion(Term(Intervals))
+4  Number of total safe checks
+0  Number of total error checks
+2  Number of total warning checks
+0  Number of total unreachable checks
+
 Program 1: forall 0<= i< 10. a[i] = 123456
 Invariants using ArraySmashing(DisjunctiveIntervals)
 entry={}
