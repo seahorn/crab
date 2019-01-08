@@ -589,6 +589,50 @@ user-defined assertion checker using ArrayExpansion(Term(Intervals))
 0  Number of total warning checks
 0  Number of total unreachable checks
 
+===================================
+ Test 10 for array expansion domain 
+===================================
+Invariants using ArrayExpansion(Term(Intervals))
+bb0={}
+bb2={Mem1[2...5] -> t0[_x0]}{_x0 -> [42, 42]}
+bb3={Mem1[2...5] -> t0[_y0]}{_y0 -> [42, 42]}
+bb4={x -> t0[_y1], Mem1[2...5] -> t0[_y1]}{_y1 -> [42, 42]}
+bb1={Mem1[2...5] -> t0[_x0]}{_x0 -> [42, 42]}
+Abstract trace: bb0 bb2 bb1 bb3 bb4
+ --- WARNING -----------------
+Property : x = 42
+Invariant: {x -> t0[_y1], Mem1[2...5] -> t0[_y1]}{}
+ -----------------------------
+user-defined assertion checker using ArrayExpansion(Term(Intervals))
+0  Number of total safe checks
+0  Number of total error checks
+1  Number of total warning checks
+0  Number of total unreachable checks
+
+===================================
+ Test 11 for array expansion domain 
+===================================
+Invariants using ArrayExpansion(Term(Intervals))
+bb0={}
+bb2={Mem1[2...5] -> t0[_x0], Mem2[2...5] -> t1[_x1], Mem1[6...9] -> t2[_x2]}{_x0 -> [42, 42]; _x1 -> [666, 666]; _x2 -> [50, 50]}
+bb3={i -> t0[_y3], Mem1[2...5] -> t1[_y0], Mem2[2...5] -> t2[_y1], Mem1[6...9] -> t3[_y2]}{_y0 -> [42, 42]; _y1 -> [666, 666]; _y2 -> [50, 50]; _y3 -> [10, +oo]}
+bb4={i -> t0[_y3], x -> t1[_y0], y -> t3[_y2], Mem1[2...5] -> t1[_y0], Mem2[2...5] -> t2[_y1], Mem1[6...9] -> t3[_y2]}{_y0 -> [42, 42]; _y1 -> [666, 666]; _y2 -> [50, 50]; _y3 -> [10, +oo]}
+bb1={Mem1[2...5] -> t0[_x0], Mem2[2...5] -> t1[_x1], Mem1[6...9] -> t2[_x2]}{_x0 -> [42, 42]; _x1 -> [666, 666]; _x2 -> [50, 50]}
+Abstract trace: bb0 bb2 bb1 bb3 bb4
+ --- SAFE -----------------
+Property : x = 42
+Invariant: {i -> t0[_y3], x -> t1[_y0], y -> t3[_y2], Mem1[2...5] -> t1[_y0], Mem2[2...5] -> t2[_y1], Mem1[6...9] -> t3[_y2]}{_y0 -> [42, 42]; _y1 -> [666, 666]; _y2 -> [50, 50]; _y3 -> [10, +oo]}
+ -----------------------------
+ --- SAFE -----------------
+Property : y = 50
+Invariant: {i -> t0[_y3], x -> t1[_y0], y -> t3[_y2], Mem1[2...5] -> t1[_y0], Mem2[2...5] -> t2[_y1], Mem1[6...9] -> t3[_y2]}{_y0 -> [42, 42]; _y1 -> [666, 666]; _y2 -> [50, 50]; _y3 -> [10, +oo]}
+ -----------------------------
+user-defined assertion checker using ArrayExpansion(Term(Intervals))
+2  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+
 Program 1: forall 0<= i< 10. a[i] = 123456
 Invariants using ArraySmashing(DisjunctiveIntervals)
 entry={}
