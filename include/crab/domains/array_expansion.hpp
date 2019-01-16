@@ -1112,76 +1112,26 @@ namespace domains {
        
     // array_operators_api 
        
-    // All the array elements are assumed to be equal to val
+    // array_init returns a fresh array where all elements between
+    // lb_idx and ub_idx are initialized to val. Thus, the first thing
+    // we need to do is to kill existing cells.
     virtual void array_init(variable_t a,
 			     linear_expression_t elem_size,
 			     linear_expression_t lb_idx,
 			     linear_expression_t ub_idx, 
 			     linear_expression_t val) override {
-
       crab::CrabStats::count(getDomainName() + ".count.array_init");
       crab::ScopedCrabStats __st__(getDomainName() + ".array_init");
 
       if (is_bottom()) return;
       
-      interval_t n_i = to_interval(elem_size);
-      auto n = n_i.singleton();
-      if (!n) {
-	CRAB_ERROR("array expansion domain expects constant array element sizes");		
-      }
-
-      // XXX: the semantics of array_init returns a fresh array where
-      // all elements between lb_idx and ub_idx are initialized to
-      // val. Thus, the first thing we need to do is to kill existing
-      // cells.
       offset_map_t& offset_map = lookup_array_map(a);
       std::vector<cell_t> old_cells = offset_map.get_all_cells();
       if (!old_cells.empty()) {
 	kill_cells(old_cells, offset_map, _inv);
       }
 
-      bool ignore_array_init = false;
-      interval_t lb_i = to_interval(lb_idx);
-      auto lb = lb_i.singleton();
-      if (!lb) {
-	CRAB_WARN("array expansion initialization ignored because ",
-		  "lower bound is not constant");
-	ignore_array_init = true;
-      }
-      
-      interval_t ub_i = to_interval(ub_idx);
-      auto ub = ub_i.singleton();
-      if (!ub) {
-	CRAB_WARN("array expansion initialization ignored because ",
-		  "upper bound is not constant");
-	ignore_array_init = true;	
-      }
-
-	
-      if ((*ub - *lb) % *n != 0) {
-	CRAB_WARN("array expansion initialization ignored because ",
-		  "the number of elements must be divisible by ", *n);
-	ignore_array_init = true;		
-      }
-
-      const number_t max_num_elems = 512;
-      if (*ub - *lb > max_num_elems) {
-	CRAB_WARN("array expansion initialization ignored because ",
-		  "the number of elements is larger than default limit of ",
-		  max_num_elems);
-	ignore_array_init = true;			
-      }
-
-      if (!ignore_array_init) {
-	for(number_t i = *lb, e = *ub; i < e; ) {
-	  array_store(a, elem_size, i, val, false);
-	  i = i + *n;
-	}
-      }
-      
-      // CRAB_LOG("array-expansion",
-      // 	       crab::outs() << a << "[" << lb_idx << "..." << ub_idx << "] := " << val
-      // 	                    << " -- " << *this <<"\n";);
+      array_store_range(a, elem_size, lb_idx, ub_idx, val); 
     }
     
     virtual void array_load(variable_t lhs, variable_t a,
@@ -1298,7 +1248,65 @@ namespace domains {
 	       crab::outs() << a << "[" << i << "..." << ub << "]:="
 	                    << val << " -- " << *this <<"\n";);
     }
-       
+
+    // Perform array stores over an array segment
+    virtual void array_store_range(variable_t a,
+				   linear_expression_t elem_size,
+				   linear_expression_t lb_idx,
+				   linear_expression_t ub_idx, 
+				   linear_expression_t val) override {
+
+      crab::CrabStats::count(getDomainName() + ".count.array_store");
+      crab::ScopedCrabStats __st__(getDomainName() + ".array_store");
+
+      if (is_bottom()) return;
+      
+      interval_t n_i = to_interval(elem_size);
+      auto n = n_i.singleton();
+      if (!n) {
+	CRAB_ERROR("array expansion domain expects constant array element sizes");		
+      }
+
+      bool ignore_array_store = false;
+      interval_t lb_i = to_interval(lb_idx);
+      auto lb = lb_i.singleton();
+      if (!lb) {
+	CRAB_WARN("array expansion store range ignored because ",
+		  "lower bound is not constant");
+	ignore_array_store = true;
+      }
+      
+      interval_t ub_i = to_interval(ub_idx);
+      auto ub = ub_i.singleton();
+      if (!ub) {
+	CRAB_WARN("array expansion store range ignored because ",
+		  "upper bound is not constant");
+	ignore_array_store = true;	
+      }
+
+	
+      if ((*ub - *lb) % *n != 0) {
+	CRAB_WARN("array expansion store range ignored because ",
+		  "the number of elements must be divisible by ", *n);
+	ignore_array_store = true;		
+      }
+
+      const number_t max_num_elems = 512;
+      if (*ub - *lb > max_num_elems) {
+	CRAB_WARN("array expansion store range ignored because ",
+		  "the number of elements is larger than default limit of ",
+		  max_num_elems);
+	ignore_array_store = true;			
+      }
+
+      if (!ignore_array_store) {
+	for(number_t i = *lb, e = *ub; i < e; ) {
+	  array_store(a, elem_size, i, val, false);
+	  i = i + *n;
+	}
+      }
+    }
+    
     virtual void array_assign(variable_t lhs, variable_t rhs) override {
       //_array_map[lhs] = _array_map[rhs];
       CRAB_ERROR("array_assign in array_expansion domain not implemented");

@@ -738,10 +738,9 @@ namespace crab {
     // be a variable.
     
     //! Initialize all array elements to some variable or number.
-    //  The semantics is similar to constant arrays in SMT.
+    //  The semantics is similar to constant arrays in SMT. 
     template<class Number, class VariableName>
-    class array_init_stmt: public statement<Number, VariableName> 
-    {
+    class array_init_stmt: public statement<Number, VariableName> {
      public:
 
       typedef statement<Number,VariableName> statement_t;                  
@@ -751,7 +750,8 @@ namespace crab {
       
      private:
 
-      // for each i \in [lb,ub] % elem_size :: arr[i] := val
+      // forall i \in [lb,ub) % elem_size :: arr[i] := val and
+      // forall j < lb or j >= ub :: arr[j] is undefined.
       variable_t m_arr; 
       linear_expression_t m_elem_size; //! size in bytes
       linear_expression_t m_lb;
@@ -771,14 +771,18 @@ namespace crab {
 	, m_val(val)  {
 	
         this->m_live.add_use(m_arr);
-        for(auto v: m_elem_size.variables()) 
+        for(auto v: m_elem_size.variables()) {
           this->m_live.add_use(v);
-        for(auto v: m_lb.variables()) 
+	}
+        for(auto v: m_lb.variables()) {
           this->m_live.add_use(v);
-        for(auto v: m_ub.variables()) 
+	}
+        for(auto v: m_ub.variables()) {
           this->m_live.add_use(v);
-	for(auto v: m_val.variables())
+	}
+	for(auto v: m_val.variables()) {
 	  this->m_live.add_use(v);
+	}
       }
       
       variable_t array() const { return m_arr; }
@@ -797,8 +801,7 @@ namespace crab {
         v->visit(*this);
       }
       
-      virtual boost::shared_ptr<statement_t> clone() const
-      {
+      virtual boost::shared_ptr<statement_t> clone() const {
         typedef array_init_stmt <Number, VariableName> array_init_t;
         return boost::static_pointer_cast< statement_t, array_init_t >
 	  (boost::make_shared<array_init_t>(m_arr, m_elem_size,
@@ -811,10 +814,11 @@ namespace crab {
     }; 
     
     template<class Number, class VariableName>
-    class array_store_stmt: public statement<Number, VariableName>
-    {
+    class array_store_stmt: public statement<Number, VariableName> {
      public:
 
+      // forall i \in [lb,ub) % elem_size :: arr[i] := val
+      
       typedef statement<Number,VariableName> statement_t;                  
       typedef ikos::linear_expression<Number, VariableName> linear_expression_t;
       typedef ikos::variable<Number, VariableName> variable_t;
@@ -824,38 +828,50 @@ namespace crab {
       
       variable_t m_arr;
       linear_expression_t m_elem_size; //! size in bytes
-      linear_expression_t m_index;
+      linear_expression_t m_lb;
+      linear_expression_t m_ub;      
       linear_expression_t m_value;
-      bool m_is_singleton; //! whether the store writes to a singleton
-                           //  cell. If unknown set to false.
+      bool m_is_singleton; // whether the store writes to a singleton
+                           // cell (size one). If unknown set to false.
+                           // Only makes sense if m_lb is equal to m_ub.
 
      public:
       
       array_store_stmt(variable_t arr,
-			linear_expression_t elem_size,			
-                        linear_expression_t index,
-			linear_expression_t value,  
-			bool is_sing = false)
+		       linear_expression_t elem_size,			
+		       linear_expression_t lb,
+		       linear_expression_t ub,		       
+		       linear_expression_t value,  
+		       bool is_singleton)
 	: statement_t(ARR_STORE)
 	, m_arr(arr)
 	, m_elem_size(elem_size)
-	, m_index(index)
+	, m_lb(lb)
+	, m_ub(ub)
 	, m_value(value)
-	, m_is_singleton(is_sing) {
+	, m_is_singleton(is_singleton) {
 
 	this->m_live.add_def(m_arr);	
         this->m_live.add_use(m_arr);
-        for(auto v: m_elem_size.variables()) 
+        for(auto v: m_elem_size.variables()) {
           this->m_live.add_use(v);
-        for(auto v: m_index.variables()) 
+	}
+	for(auto v: m_lb.variables()) {
           this->m_live.add_use(v);
-	for(auto v: m_value.variables())
+	}
+	for(auto v: m_ub.variables()) {
+          this->m_live.add_use(v);
+	}	
+	for(auto v: m_value.variables()) {
 	  this->m_live.add_use(v);
+	}
       }
       
       variable_t array() const { return m_arr; }
       
-      linear_expression_t index() const { return m_index; }
+      linear_expression_t lb_index() const { return m_lb; }
+
+      linear_expression_t ub_index() const { return m_ub; }      
       
       linear_expression_t value() const { return m_value; }
       
@@ -865,32 +881,32 @@ namespace crab {
       
       bool is_singleton() const { return m_is_singleton;}
       
-      virtual void accept(statement_visitor <Number, VariableName> *v) 
-      {
+      virtual void accept(statement_visitor <Number, VariableName> *v) {
         v->visit(*this);
       }
       
-      virtual boost::shared_ptr<statement_t> clone() const
-      {
+      virtual boost::shared_ptr<statement_t> clone() const {
         typedef array_store_stmt <Number, VariableName> array_store_t;
         return boost::static_pointer_cast<statement_t, array_store_t>
-            (boost::make_shared<array_store_t>(m_arr, m_index,
-					       m_value, m_elem_size, m_is_singleton)); 
+	  (boost::make_shared<array_store_t>(m_arr, m_lb, m_ub,
+					     m_value, m_elem_size, m_is_singleton)); 
       }
       
-      virtual void write(crab_os& o) const
-      {
-        o << "array_store(" 
-          << m_arr << "," << m_index << "," << m_value  << ",sz=" << elem_size()
-          << ")"; 
-        return;
+      virtual void write(crab_os& o) const {
+	if (m_lb.equal(m_ub)) {
+	  o << "array_store(" 
+	    << m_arr << "," << m_lb << "," << m_value  << ",sz=" << elem_size()
+	    << ")";
+	} else {
+	  o << "array_store(" 
+	    << m_arr << "," << m_lb << ".." << m_ub << "," << m_value  << ",sz=" << elem_size()
+	    << ")";
+	}
       }
     }; 
 
     template<class Number, class VariableName>
-    class array_load_stmt: public statement<Number, VariableName>
-    {
-      
+    class array_load_stmt: public statement<Number, VariableName> {
      public:
 
       typedef statement<Number,VariableName> statement_t;                        
@@ -919,10 +935,12 @@ namespace crab {
 	  
         this->m_live.add_def(lhs);
         this->m_live.add_use(m_array);
-        for(auto v: m_elem_size.variables()) 
+        for(auto v: m_elem_size.variables()) {
           this->m_live.add_use(v);
-        for(auto v: m_index.variables()) 
+	}
+        for(auto v: m_index.variables()) {
           this->m_live.add_use(v);
+	}
       }
       
       variable_t lhs() const { return m_lhs; }
@@ -935,13 +953,11 @@ namespace crab {
       
       linear_expression_t elem_size() const { return m_elem_size; }
       
-      virtual void accept(statement_visitor <Number, VariableName> *v) 
-      {
+      virtual void accept(statement_visitor <Number, VariableName> *v) {
         v->visit(*this);
       }
       
-      virtual boost::shared_ptr<statement_t> clone() const
-      {
+      virtual boost::shared_ptr<statement_t> clone() const {
         typedef array_load_stmt <Number, VariableName> array_load_t;
         return boost::static_pointer_cast< statement_t, array_load_t>
             (boost::make_shared<array_load_t>(m_lhs, m_array,
@@ -957,10 +973,8 @@ namespace crab {
     }; 
 
     template<class Number, class VariableName>
-    class array_assign_stmt: public statement<Number, VariableName>
-    {
+    class array_assign_stmt: public statement<Number, VariableName> {
       //! a = b
-
      public:
       
       typedef statement<Number,VariableName> statement_t;                              
@@ -987,20 +1001,17 @@ namespace crab {
       
       type_t array_type() const { return m_lhs.get_type(); }
 
-      virtual void accept(statement_visitor <Number, VariableName> *v) 
-      {
+      virtual void accept(statement_visitor <Number, VariableName> *v) {
         v->visit(*this);
       }
       
-      virtual boost::shared_ptr<statement_t> clone() const
-      {
+      virtual boost::shared_ptr<statement_t> clone() const {
         typedef array_assign_stmt <Number, VariableName> arr_assign_t;
         return boost::static_pointer_cast< statement_t, arr_assign_t >
             (boost::make_shared<arr_assign_t>(m_lhs, m_rhs));
       }
       
-      virtual void write(crab_os& o) const
-      {
+      virtual void write(crab_os& o) const {
         o << m_lhs << " = "  << m_rhs;
         return;
       }
@@ -2400,10 +2411,18 @@ namespace crab {
                         lin_exp_t elem_size, bool is_singleton = false)  {
         if (m_track_prec == ARR) {
           insert(boost::static_pointer_cast< statement_t, arr_store_t >
-		 (boost::make_shared<arr_store_t>(arr, elem_size, idx, v, is_singleton)));
+		 (boost::make_shared<arr_store_t>(arr, elem_size, idx, idx, v, is_singleton)));
 	}
       }
 
+      void array_store_range(variable_t arr, lin_exp_t lb_idx, lin_exp_t ub_idx,
+			     lin_exp_t v,  lin_exp_t elem_size)  {
+        if (m_track_prec == ARR) {
+          insert(boost::static_pointer_cast< statement_t, arr_store_t >
+		 (boost::make_shared<arr_store_t>(arr, elem_size, lb_idx, ub_idx, v, false)));
+	}
+      }
+      
       void array_load(variable_t lhs, variable_t arr,
                        lin_exp_t idx, lin_exp_t elem_size) {
         if (m_track_prec == ARR) {
@@ -4116,6 +4135,7 @@ namespace crab {
 	};
 	
 	void visit(arr_init_t& s) {
+	  // TODO: check that e_sz is the same number that v's bitwidth
 	  variable_t a = s.array();
 	  lin_exp_t e_sz = s.elem_size();
 	  lin_exp_t lb = s.lb_index();
@@ -4132,9 +4152,20 @@ namespace crab {
 	}
 	
 	void visit(arr_store_t& s) {
+	  // TODO: check that e_sz is the same number that v's bitwidth
+	  /// XXX: we allow linear expressions as indexes	  
 	  variable_t a = s.array();
 	  lin_exp_t e_sz = s.elem_size();	  
 	  lin_exp_t  v = s.value();
+	  if (s.is_singleton()) {
+	    if (!(s.lb_index().equal(s.ub_index()))) {
+	      crab::crab_string_os os;
+	      os << "(type checking) "
+		 << "lower and upper indexes must be equal because array is a singleton in "
+		 << s;
+	      CRAB_ERROR(os.str());
+	    }
+	  }
 	  check_array(a, s);
 	  check_num_or_var(e_sz, "element size must be number or variable", s);
 	  check_num_or_var(v   , "array value must be number or variable", s);
@@ -4144,6 +4175,8 @@ namespace crab {
 	}
 	
 	void visit(arr_load_t& s) {
+	  // TODO: check that e_sz is the same number that lhs's bitwidth
+	  /// XXX: we allow linear expressions as indexes	  	  
 	  variable_t a = s.array();
 	  lin_exp_t e_sz = s.elem_size();	  	  
 	  variable_t lhs = s.lhs();

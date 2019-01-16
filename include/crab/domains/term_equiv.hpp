@@ -1429,6 +1429,12 @@ namespace crab {
 		  crab::outs() << a << "[" << i << "]:=" << val << " -- " << *this <<"\n";);
        }
 
+       virtual void array_store_range(variable_t a, linear_expression_t elem_size,
+				      linear_expression_t i, linear_expression_t j,
+				      linear_expression_t v) override {
+	 // do nothing
+       }                  
+       
        virtual void array_assign(variable_t lhs, variable_t rhs) override {
 	 // do nothing
        }

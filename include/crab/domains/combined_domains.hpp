@@ -414,6 +414,14 @@ namespace crab {
         this->_product.second().array_store(a, elem_size, i, val, is_singleton);
         this->reduce();
       }
+
+      virtual void array_store_range(variable_t a, linear_expression_t elem_size,
+				     linear_expression_t i, linear_expression_t j,
+				     linear_expression_t val) override {
+        this->_product.first().array_store_range(a, elem_size, i, j, val);
+        this->_product.second().array_store_range(a, elem_size, i, j, val);
+        this->reduce();
+      }
       
       virtual void array_assign(variable_t lhs, variable_t rhs) override {
         this->_product.first().array_assign(lhs, rhs);
@@ -979,7 +987,10 @@ namespace crab {
 		      linear_expression_t i) {}
       void array_store(variable_t a, linear_expression_t elem_size,
 		       linear_expression_t i, linear_expression_t v, 
-		       bool is_singleton) {}      
+		       bool is_singleton) {}
+      void array_store_range(variable_t a, linear_expression_t elem_size,
+			     linear_expression_t i, linear_expression_t j,
+			     linear_expression_t val) {}
       void array_assign(variable_t lhs, variable_t rhs) {}
       // pointer operations
       void pointer_load(variable_t lhs, variable_t rhs)  {}
@@ -1552,7 +1563,10 @@ namespace crab {
 		      linear_expression_t i) {}
       void array_store(variable_t a, linear_expression_t elem_size,
 		       linear_expression_t i, linear_expression_t v, 
-		       bool is_singleton) {}      
+		       bool is_singleton) {}
+      void array_store_range(variable_t a, linear_expression_t elem_size,
+			     linear_expression_t i, linear_expression_t j,
+			     linear_expression_t val) {}
       void array_assign(variable_t lhs, variable_t rhs) {}
       // pointer operations
       void pointer_load(variable_t lhs, variable_t rhs)  {}
@@ -1821,6 +1835,12 @@ namespace crab {
 				linear_expression_t val, 
 				bool is_singleton) override {
         this->_product.array_store(a, elem_size, i, val, is_singleton);
+      }
+
+      virtual void array_store_range(variable_t a, linear_expression_t elem_size,
+				     linear_expression_t i, linear_expression_t j,
+				     linear_expression_t val) override {
+	this->_product.array_store_range(a, elem_size, i, j, val);
       }
       
       virtual void array_assign(variable_t lhs, variable_t rhs) override {

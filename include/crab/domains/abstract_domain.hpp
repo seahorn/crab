@@ -126,8 +126,9 @@ namespace crab {
       virtual void assume_bool(variable_t v, bool is_negated) = 0;
 
       /**************************** Array operations *******************************/      
-      // initialize all array contents in [lb_idx,ub_idx] to val
-      // where elem_size is in bytes.
+      // make a fresh array with contents a[j] initialized to val such that 
+      // j \in [lb_idx,ub_idx) and j % elem_size == 0.
+      // elem_size is in bytes.
       virtual void array_init(variable_t a, linear_expression_t elem_size,
 			      linear_expression_t lb_idx, linear_expression_t ub_idx, 
 			      linear_expression_t val) = 0;
@@ -138,8 +139,13 @@ namespace crab {
       // a[i] := v where elem_size is in bytes
       virtual void array_store(variable_t a, linear_expression_t elem_size,
 			       linear_expression_t i, linear_expression_t v, 
-			       bool is_singleton) = 0;  
-      // a := b (forall i :: a[i] := b[i])
+			       bool is_singleton) = 0;
+      // forall i<=k<j and k % elem_size == 0 :: a[k] := v.
+      // elem_size is in bytes
+      virtual void array_store_range(variable_t a, linear_expression_t elem_size,
+				     linear_expression_t i, linear_expression_t j,
+				     linear_expression_t v) = 0;
+      // forall i :: a[i] := b[i]
       virtual void array_assign(variable_t a, variable_t b) = 0;
       
       /**************************** Pointer operations ******************************/

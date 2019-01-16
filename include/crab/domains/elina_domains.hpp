@@ -159,7 +159,12 @@ namespace crab {
 			 linear_expression_t i, linear_expression_t v, 
 			 bool is_singleton)
 	{ CRAB_ERROR(ELINA_NOT_FOUND); }
-	
+
+	void array_store_range(variable_t a, linear_expression_t elem_size,
+			       linear_expression_t i, linear_expression_t j,
+			       linear_expression_t v) 
+	{ CRAB_ERROR(ELINA_NOT_FOUND); }
+		
 	void array_assign(variable_t lhs, variable_t rhs)
 	{ CRAB_ERROR(ELINA_NOT_FOUND); }
 	
@@ -1801,7 +1806,10 @@ namespace domains {
 		    linear_expression_t i) {}
     void array_store(variable_t a, linear_expression_t elem_size,
 		     linear_expression_t i, linear_expression_t v, 
-		     bool is_singleton) {}      
+		     bool is_singleton) {}
+    void array_store_range(variable_t a, linear_expression_t elem_size,
+			   linear_expression_t i, linear_expression_t j,
+			   linear_expression_t v) {}    
     void array_assign(variable_t lhs, variable_t rhs) {}
     // pointer operations
     void pointer_load(variable_t lhs, variable_t rhs)  {}
@@ -2105,7 +2113,10 @@ namespace domains {
 		    linear_expression_t i) {}
     void array_store(variable_t a, linear_expression_t elem_size,
 		     linear_expression_t i, linear_expression_t v, 
-		     bool is_singleton) {}      
+		     bool is_singleton) {}
+    void array_store_range(variable_t a, linear_expression_t elem_size,
+			   linear_expression_t i, linear_expression_t j,
+			   linear_expression_t v) {}
     void array_assign(variable_t lhs, variable_t rhs) {}
     // pointer operations
     void pointer_load(variable_t lhs, variable_t rhs)  {}

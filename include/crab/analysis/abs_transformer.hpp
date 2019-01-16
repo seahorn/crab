@@ -510,9 +510,14 @@ namespace crab {
       if (::crab::CrabSanityCheckFlag) {      
 	pre_bot = get()->is_bottom();
       }
-      
-      get()->array_store(stmt.array(), stmt.elem_size(),
-			     stmt.index(), stmt.value(), stmt.is_singleton());
+
+      if (stmt.lb_index().equal(stmt.ub_index())) {
+	get()->array_store(stmt.array(), stmt.elem_size(),
+			   stmt.lb_index(), stmt.value(), stmt.is_singleton());
+      } else {
+	get()->array_store_range(stmt.array(), stmt.elem_size(),
+				 stmt.lb_index(), stmt.ub_index(), stmt.value());	
+      } 
 
       if (::crab::CrabSanityCheckFlag) {
 	bool post_bot = get()->is_bottom();

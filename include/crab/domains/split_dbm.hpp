@@ -2153,7 +2153,10 @@ namespace crab {
 		      linear_expression_t i) {}
       void array_store(variable_t a, linear_expression_t elem_size,
 		       linear_expression_t i, linear_expression_t v, 
-		       bool is_singleton) {}      
+		       bool is_singleton) {}
+      void array_store_range(variable_t a, linear_expression_t elem_size,
+			     linear_expression_t i, linear_expression_t j,
+			     linear_expression_t v) {}                  
       void array_assign(variable_t lhs, variable_t rhs) {}
       // pointer operations
       void pointer_load(variable_t lhs, variable_t rhs)  {}
@@ -2699,7 +2702,10 @@ namespace crab {
 		      linear_expression_t i) {}
       void array_store(variable_t a, linear_expression_t elem_size,
 		       linear_expression_t i, linear_expression_t v, 
-		       bool is_singleton) {}      
+		       bool is_singleton) {}
+      void array_store_range(variable_t a, linear_expression_t elem_size,
+			     linear_expression_t i, linear_expression_t j,
+			     linear_expression_t v) {}                        
       void array_assign(variable_t lhs, variable_t rhs) {}
       // pointer operations
       void pointer_load(variable_t lhs, variable_t rhs)  {}

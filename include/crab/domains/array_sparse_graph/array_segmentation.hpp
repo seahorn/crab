@@ -105,7 +105,8 @@ namespace crab {
          }
          
          void visit(arr_store_t &s) {
-           _indexes += get_variables(s.index());
+           _indexes += get_variables(s.lb_index());
+	   _indexes += get_variables(s.ub_index());
          }
 
          void visit(unreach_t&) { }

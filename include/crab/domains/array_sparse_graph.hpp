@@ -2489,6 +2489,12 @@ namespace crab {
                               << *this <<"\n";);
       }
 
+      virtual void array_store_range(variable_t a, linear_expression_t elem_size,
+				     linear_expression_t i, linear_expression_t j, 
+				     linear_expression_t val) override {
+	CRAB_WARN("array_store_range in array_sparse_graph is not implemented");
+      }
+      
       virtual void array_assign(variable_t lhs, variable_t rhs) override {
 	CRAB_WARN("array_assign in array_sparse_graph is not implemented");
       }

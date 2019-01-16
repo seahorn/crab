@@ -396,6 +396,18 @@ namespace crab {
 		                << val << " -- " << *this <<"\n";);
         }
 
+        virtual void array_store_range(variable_t a, linear_expression_t /*elem_size*/,
+				       linear_expression_t i, linear_expression_t j,
+				       linear_expression_t val) override {
+          crab::CrabStats::count(getDomainName() + ".count.store");
+          crab::ScopedCrabStats __st__(getDomainName() + ".store");
+	  weak_update(a, val);
+          
+          CRAB_LOG("smashing",
+		   crab::outs() << a << "[" << i << ".." << j << "]:="
+		                << val << " -- " << *this <<"\n";);
+        }
+	
         virtual void array_assign(variable_t lhs, variable_t rhs) override {
 	  if (lhs.get_type() == ARR_BOOL_TYPE) {
 	    _inv.assign_bool_var(lhs, rhs, false);
