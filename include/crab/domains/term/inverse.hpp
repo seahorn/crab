@@ -28,55 +28,43 @@ namespace crab {
           
           // x = y op z
           static void apply(dom_t& dom, operation_t op, varname_t x, varname_t y, varname_t z) {
-            switch(op)
-            {
+            switch(op) {
               case OP_ADDITION:
-                {
-                  dom += lincst_t(var_t(y) + var_t(z) - var_t(x), lincst_t::EQUALITY);
-                  break;
-                }
+		dom += lincst_t(var_t(y) + var_t(z) - var_t(x), lincst_t::EQUALITY);
+		break;
               case OP_SUBTRACTION:
-                {
-                  dom += lincst_t(var_t(y) - var_t(z) - var_t(x), lincst_t::EQUALITY);
-                  break;
-                }
+		dom += lincst_t(var_t(y) - var_t(z) - var_t(x), lincst_t::EQUALITY);
+		break;
               case OP_MULTIPLICATION:
-                {
-                  break;
-                }
-              case OP_DIVISION:
-                {
-                  break;
-                }
+              case OP_SDIV:
+	      case OP_UDIV:
+	      case OP_SREM:
+	      case OP_UREM:
+		break;
             }
             return;         
           }
           
           // x = y op k
           static void apply(dom_t& dom, operation_t op, varname_t x, varname_t y, num_t k) {	
-            switch(op)
-            {
+            switch(op) {
               case OP_ADDITION:
-                {
-                  dom += lincst_t(var_t(y) + k - var_t(x), lincst_t::EQUALITY);
-                  break;
-                }
+		dom += lincst_t(var_t(y) + k - var_t(x), lincst_t::EQUALITY);
+		break;
               case OP_SUBTRACTION:
-                {
-                  dom += lincst_t(var_t(y) - k - var_t(x), lincst_t::EQUALITY);
-                  break;
-                }
-              case OP_MULTIPLICATION:
-                {
-                  dom += lincst_t(var_t(y)*k - var_t(x), lincst_t::EQUALITY); 
-                  break;
-                }
-              case OP_DIVISION:
-                {
-                  // dom += lincst_t(var_t(y) - var_t(x)*k, INEQUALITY);
-                  // What are the precise semantics of division?
-                  break;
-                }
+		dom += lincst_t(var_t(y) - k - var_t(x), lincst_t::EQUALITY);
+		break;
+	      case OP_MULTIPLICATION:
+		dom += lincst_t(var_t(y)*k - var_t(x), lincst_t::EQUALITY); 
+		break;
+              case OP_SDIV:
+		// dom += lincst_t(var_t(y) - var_t(x)*k, INEQUALITY);
+		// What are the precise semantics of division?
+		break;
+	      case OP_UDIV:
+	      case OP_SREM:
+	      case OP_UREM:
+		break;
             }
             return;
           }
@@ -104,77 +92,67 @@ namespace crab {
           }
           
           static void apply(dom_t& dom, operation_t op, varname_t x, varname_t y, varname_t z) {
-            switch(op)
-            {
+            switch(op) {
               case OP_ADDITION:
-                {
-                  dom += lincst_t(var_t(y) + var_t(z) - var_t(x), lincst_t::EQUALITY);
-                  break;
-                }
-              case OP_SUBTRACTION:
-                {
-                  dom += lincst_t(var_t(y) - var_t(z) - var_t(x), lincst_t::EQUALITY);
-                  break;
-                }
-                
+		dom += lincst_t(var_t(y) + var_t(z) - var_t(x), lincst_t::EQUALITY);
+		break;
+              case OP_SUBTRACTION: 
+		dom += lincst_t(var_t(y) - var_t(z) - var_t(x), lincst_t::EQUALITY);
+		break;
                 // FIXME: check this reflects the semantics correctly.
-              case OP_MULTIPLICATION:
-                {
-                  interval_t x0 = dom[x];
-                  interval_t y0 = dom[y];
-                  interval_t z0 = dom[z];
-                  
-                  // For x = yz, if 0 in x and 0 in y, we can't infer anything about z.
-                  if(!x0[0] || !z0[0])
-                    dom.set(y, y0 & (x0/z0));
-                  if(!x0[0] || !y0[0])
-                    dom.set(z, z0 & (x0/y0));
-                  break;
-                }
+	      case OP_MULTIPLICATION: {
+		interval_t x0 = dom[x];
+		interval_t y0 = dom[y];
+		interval_t z0 = dom[z];
                 
-                // This assumes we're always rounding towards -inf.
-                // Will have to fix if semantics round towards 0.
-              case OP_DIVISION:
-                {
-                  // Adjust for rounding.
-                  interval_t x0_relax = dom[x] + interval_t(num_t(0), num_t(1)); 
-                  interval_t y0 = dom[y];
-                  interval_t z0 = dom[z];
-                  
-                  dom.set(y, y0 & (x0_relax * z0));
-                  dom.set(z, z0 & (y0 / x0_relax));
-                  break;
-                }
+		// For x = yz, if 0 in x and 0 in y, we can't infer anything about z.
+		if(!x0[0] || !z0[0])
+		  dom.set(y, y0 & (x0/z0));
+		if(!x0[0] || !y0[0])
+		  dom.set(z, z0 & (x0/y0));
+		break;
+	      }
+              // This assumes we're always rounding towards -inf.
+              // Will have to fix if semantics round towards 0.
+	      case OP_SDIV: {
+		// Adjust for rounding.
+		interval_t x0_relax = dom[x] + interval_t(num_t(0), num_t(1)); 
+		interval_t y0 = dom[y];
+		interval_t z0 = dom[z];
+                
+		dom.set(y, y0 & (x0_relax * z0));
+		dom.set(z, z0 & (y0 / x0_relax));
+		break;
+	      }
+	      case OP_UDIV:
+	      case OP_SREM:
+	      case OP_UREM:
+		break;
             }
             return;         
           }
           
           // x = y op k
           static void apply(dom_t& dom, operation_t op, varname_t x, varname_t y, num_t k) {	
-            switch(op)
-            {
+            switch(op) {
               case OP_ADDITION:
-                {
-                  dom.set(y, dom[y]&(dom[x] - k));
-                  break;
-                }
-              case OP_SUBTRACTION:
-                {
-                  dom.set(y, dom[y]&(dom[x] + k));
-                  break;
-                }
+		dom.set(y, dom[y]&(dom[x] - k));
+		break;
+	      case OP_SUBTRACTION:
+		dom.set(y, dom[y]&(dom[x] + k));
+		break;
               case OP_MULTIPLICATION:
-                {
-                  if(k != 0)
-                    dom.set(y, dom[y]&(dom[x]/k));
-                  break;
-                }
-              case OP_DIVISION:
-                {
-                  // GKG: Again, potentially correct for round-towards-0.
-                  dom.set(y, dom[y]&((dom[x] + interval_t(num_t(0, 1)))*k));
-                  break;
-                }
+		if(k != 0)
+		  dom.set(y, dom[y]&(dom[x]/k));
+		break;
+              case OP_SDIV:
+		// GKG: Again, potentially correct for round-towards-0.
+		dom.set(y, dom[y]&((dom[x] + interval_t(num_t(0, 1)))*k));
+		break;
+	      case OP_UDIV:
+	      case OP_SREM:
+	      case OP_UREM:
+		break;
             }
             return;
           }

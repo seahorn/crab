@@ -19,9 +19,9 @@ namespace crab {
        struct get_as {
          typedef typename Domain::variable_t variable_t;
          typedef crab::domains::nullity_value nullity_value_t;
-         get_as (Domain&) { }
+         get_as(Domain&) { }
          nullity_value_t operator[](variable_t v)
-         { return nullity_value_t::top (); }
+         { return nullity_value_t::top(); }
        };
   
        // nullity domain
@@ -35,7 +35,7 @@ namespace crab {
 
         public:
 
-         get_as (nullity_domain_t &inv) : m_inv (inv) { }
+         get_as(nullity_domain_t &inv) : m_inv(inv) { }
 
          nullity_value_t operator[](variable_t v)
          { return m_inv.get_nullity(v); }
@@ -56,7 +56,7 @@ namespace crab {
 
         public:
 
-         get_as (domain_product2_t& inv) : m_inv (inv) { }
+         get_as(domain_product2_t& inv) : m_inv(inv) { }
 
          nullity_value_t operator[](variable_t v)
          { return m_inv.second().get_nullity(v); }
@@ -80,7 +80,7 @@ namespace crab {
 
         public:
 
-         get_as (domain_t& inv) : m_inv (inv) { }
+         get_as(domain_t& inv) : m_inv(inv) { }
 
          nullity_value_t operator[](variable_t v)
          { return m_inv.second().get_nullity(v); }
@@ -103,62 +103,62 @@ namespace crab {
       using typename base_checker_t::ptr_load_t;
       using typename base_checker_t::ptr_store_t;
 
-      std::string checked_prop_str (var_t p) {
-        std::string res = p.name().str () + " != 0";
+      std::string checked_prop_str(var_t p) {
+        std::string res = p.name().str() + " != 0";
         return res;
       }
 
      public:
       
-      null_property_checker (int verbose = 0): base_checker_t (verbose) { }
+      null_property_checker(int verbose = 0): base_checker_t(verbose) { }
       
-      std::string get_property_name () const override {
+      std::string get_property_name() const override {
         return "null-dereference checker";
       }
             
-      void check (ptr_store_t &s) override { 
+      void check(ptr_store_t &s) override { 
         if (!this->m_abs_tr) return;        
         
-        auto &inv = this->m_abs_tr->inv ();
-        auto ptr = s.lhs ();
-        null_detail::get_as<abs_dom_t> null_inv (inv);
+        auto &inv = *(this->m_abs_tr->get());
+        auto ptr = s.lhs();
+        null_detail::get_as<abs_dom_t> null_inv(inv);
         crab::domains::nullity_value val = null_inv [ptr];
 
-        if (val.is_bottom ()) {
-          this->m_db.add (_UNREACH);
-        } else if (val.is_non_null ()) {
+        if (val.is_bottom()) {
+          this->m_db.add(_UNREACH);
+        } else if (val.is_non_null()) {
           LOG_SAFE(this->m_verbose, inv, checked_prop_str(ptr), s.get_debug_info());
-          //this->m_db.add (_SAFE);
-        } else if (val.is_null ()) {
+          //this->m_db.add(_SAFE);
+        } else if (val.is_null()) {
           LOG_ERR(this->m_verbose, inv, checked_prop_str(ptr), s.get_debug_info());
-          //this->m_db.add (_ERR);
+          //this->m_db.add(_ERR);
         } else {
           LOG_WARN(this->m_verbose, inv, checked_prop_str(ptr), s.get_debug_info());
-          //this->m_db.add (_WARN);
+          //this->m_db.add(_WARN);
         }
         
-        s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
+        s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
       }
       
-      void check (ptr_load_t &s) override { 
+      void check(ptr_load_t &s) override { 
         if (!this->m_abs_tr) return;        
         
-        auto &inv = this->m_abs_tr->inv ();
-        auto ptr = s.rhs ();
-        null_detail::get_as<abs_dom_t> null_inv (inv);
+        auto &inv = *(this->m_abs_tr->get());
+        auto ptr = s.rhs();
+        null_detail::get_as<abs_dom_t> null_inv(inv);
         crab::domains::nullity_value val = null_inv [ptr];
         
-        if (val.is_bottom ()) {
-          this->m_db.add (_UNREACH);
-        } else if (val.is_non_null ()) {
+        if (val.is_bottom()) {
+          this->m_db.add(_UNREACH);
+        } else if (val.is_non_null()) {
           LOG_SAFE(this->m_verbose, inv, checked_prop_str(ptr), s.get_debug_info());
-        } else if (val.is_null ()) {
+        } else if (val.is_null()) {
           LOG_ERR(this->m_verbose, inv, checked_prop_str(ptr), s.get_debug_info());
         } else {
           LOG_WARN(this->m_verbose, inv, checked_prop_str(ptr), s.get_debug_info());
         }
         
-        s.accept (&*this->m_abs_tr); // propagate m_inv to the next stmt
+        s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
       }
 
       

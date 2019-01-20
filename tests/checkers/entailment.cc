@@ -1,6 +1,6 @@
 #include "../program_options.hpp"
 #include "../common.hpp"
-#include "crab/domains/domain_traits.hpp"
+#include "crab/domains/abstract_domain_specialized_traits.hpp"
 
 using namespace std;
 using namespace crab::cfg;

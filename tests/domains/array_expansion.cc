@@ -506,7 +506,7 @@ z_cfg_t* prog9(variable_factory_t &vfac) {
   entry.assign(m1_lb, 20);
   entry.assign(m1_ub, 80);
   
-  entry.array_init(m1, 4, m1_lb, m1_ub, 42);
+  entry.array_init(m1, m1_lb, m1_ub, 42, 4);
 
   entry.assign(x, 24);
   entry.assign(y, 76);
@@ -514,6 +514,161 @@ z_cfg_t* prog9(variable_factory_t &vfac) {
   entry.array_load(tmp2, m1, y, 4);
   
   ret.assertion(z_lin_t(tmp1) == z_lin_t(tmp2));
+  return cfg;
+}
+
+
+z_cfg_t* prog10(variable_factory_t &vfac) {
+  // array write with a non-constant offset
+  crab::outs () << "===================================\n";  
+  crab::outs () << " Test 10 for array expansion domain \n";
+  crab::outs () << "===================================\n";    
+  z_cfg_t* cfg = new z_cfg_t("bb0","bb4",ARR);
+  z_basic_block_t& bb0 = cfg->insert ("bb0");
+  z_basic_block_t& bb1 = cfg->insert ("bb1");
+  z_basic_block_t& bb2 = cfg->insert ("bb2");
+  z_basic_block_t& bb3 = cfg->insert ("bb3");
+  z_basic_block_t& bb4 = cfg->insert ("bb4");    
+  
+  z_var m1(vfac["Mem1"], crab::ARR_INT_TYPE);
+  z_var i(vfac["i"], crab::INT_TYPE, 32);
+  z_var x(vfac["x"], crab::INT_TYPE, 32);
+
+  bb0 >> bb1;
+  bb0 >> bb2;
+  bb1 >> bb3;
+  bb2 >> bb3;
+  bb3 >> bb4;
+  
+  bb0.array_store(m1, 2, 42, 4);
+  //bb1.assign(i, 2);
+  bb3.array_store(m1, i, 50, 4);
+  bb3.array_load(x, m1, 2, 4);
+  // should be warning
+  bb3.assertion(z_lin_t(x) == 42);
+  
+  return cfg;
+}
+
+
+z_cfg_t* prog11(variable_factory_t &vfac) {
+  // array write with a non-constant offset
+  crab::outs () << "===================================\n";  
+  crab::outs () << " Test 11 for array expansion domain \n";
+  crab::outs () << "===================================\n";    
+  z_cfg_t* cfg = new z_cfg_t("bb0","bb4",ARR);
+  z_basic_block_t& bb0 = cfg->insert ("bb0");
+  z_basic_block_t& bb1 = cfg->insert ("bb1");
+  z_basic_block_t& bb2 = cfg->insert ("bb2");
+  z_basic_block_t& bb3 = cfg->insert ("bb3");
+  z_basic_block_t& bb4 = cfg->insert ("bb4");    
+  
+  z_var m1(vfac["Mem1"], crab::ARR_INT_TYPE);
+  z_var m2(vfac["Mem2"], crab::ARR_INT_TYPE);  
+  z_var i(vfac["i"], crab::INT_TYPE, 32);
+  z_var x(vfac["x"], crab::INT_TYPE, 32);
+  z_var y(vfac["y"], crab::INT_TYPE, 32);  
+
+  bb0 >> bb1;
+  bb0 >> bb2;
+  bb1 >> bb3;
+  bb2 >> bb3;
+  bb3 >> bb4;
+  
+  bb0.array_store(m1, 2, 42, 4);
+  bb0.array_store(m2, 2, 666, 4);
+  bb0.array_store(m1, 6, 50, 4);  
+  bb1.assume(i >= 10);
+  bb2.assume(i >= 20);  
+  bb3.array_store(m1, i, 666, 4);
+  bb3.array_load(x, m1, 2, 4);
+  bb3.array_load(y, m1, 6, 4);  
+  // should be ok
+  bb3.assertion(z_lin_t(x) == 42);
+  bb3.assertion(z_lin_t(y) == 50);  
+  
+  return cfg;
+}
+
+z_cfg_t* prog12(variable_factory_t &vfac) {
+  // ignore array init
+  crab::outs () << "===================================\n";  
+  crab::outs () << " Test 12 for array expansion domain \n";
+  crab::outs () << "===================================\n";    
+  z_cfg_t* cfg = new z_cfg_t("bb0","bb0",ARR);
+  z_basic_block_t& bb0 = cfg->insert ("bb0");
+  
+  z_var m1(vfac["Mem1"], crab::ARR_INT_TYPE);
+  z_var i(vfac["i"], crab::INT_TYPE, 32);
+  z_var j(vfac["j"], crab::INT_TYPE, 32);  
+  z_var x(vfac["x"], crab::INT_TYPE, 32);
+  z_var y(vfac["y"], crab::INT_TYPE, 32);
+  
+  bb0.array_store(m1, 0, 42, 4);
+  bb0.array_store(m1, 4, 50, 4);
+  bb0.array_load(x, m1, 0, 4);    
+  bb0.array_load(y, m1, 4, 4);  
+  // should be ok
+  bb0.assertion(z_lin_t(x) == 42);  
+  bb0.assertion(z_lin_t(y) == 50);
+  bb0.assign(i, 0);
+  bb0.assign(j, 8);  
+  bb0.array_init(m1, i, j, 666, 4);
+  bb0.array_load(x, m1, 0, 4);    
+  bb0.array_load(y, m1, 4, 4);  
+  // should be ok
+  bb0.assertion(z_lin_t(x) == 666);  
+  bb0.assertion(z_lin_t(y) == 666);
+  bb0.assign(i, 2);
+  bb0.assign(j, 8);
+  // this array initialization should be ignored
+  // and kill m1[0..3] and m1[4..7]
+  bb0.array_init(m1, i, j, 777, 4);
+  bb0.array_load(x, m1, 0, 4);    
+  bb0.array_load(y, m1, 4, 4);  
+  // should be warnings
+  bb0.assertion(z_lin_t(y) == 666);
+  bb0.assertion(z_lin_t(x) == 666);  
+  return cfg;
+}
+
+
+z_cfg_t* prog13(variable_factory_t &vfac) {
+  // ignore array init
+  crab::outs () << "===================================\n";  
+  crab::outs () << " Test 13 for array expansion domain \n";
+  crab::outs () << "===================================\n";    
+  z_cfg_t* cfg = new z_cfg_t("bb0","bb0",ARR);
+  z_basic_block_t& bb0 = cfg->insert ("bb0");
+  
+  z_var m1(vfac["Mem1"], crab::ARR_INT_TYPE);
+  z_var i(vfac["i"], crab::INT_TYPE, 32);
+  z_var j(vfac["j"], crab::INT_TYPE, 32);  
+  z_var x(vfac["x"], crab::INT_TYPE, 32);
+  
+  bb0.array_store(m1, 0 , 42, 4);
+  bb0.array_store(m1, 4 , 99, 4);
+  bb0.array_store(m1, 8 , 99, 4);
+  bb0.array_store(m1, 12, 99, 4);
+  bb0.array_store(m1, 16, 50, 4);
+  
+  bb0.assign(i, 4);
+  bb0.assign(j, 16);
+  // it will write over a[4], a[8], and a[12]
+  bb0.array_store_range(m1, i, j, 0, 4);
+  
+  // should be ok
+  bb0.array_load(x, m1, 0, 4);
+  bb0.assertion(z_lin_t(x) == 42);
+  bb0.array_load(x, m1, 4, 4);
+  bb0.assertion(z_lin_t(x) == 0);
+  bb0.array_load(x, m1, 8, 4);
+  bb0.assertion(z_lin_t(x) == 0);
+  bb0.array_load(x, m1, 12, 4);
+  bb0.assertion(z_lin_t(x) == 0);
+  bb0.array_load(x, m1, 16, 4);
+  bb0.assertion(z_lin_t(x) == 50);
+  
   return cfg;
 }
 
@@ -529,7 +684,11 @@ void test_array_expansion(int test) {
   case 6: cfg = prog6(vfac); break;
   case 7: cfg = prog7(vfac); break;
   case 8: cfg = prog8(vfac); break;
-  case 9: cfg = prog9(vfac); break;                        
+  case 9: cfg = prog9(vfac); break;
+  case 10: cfg = prog10(vfac); break;
+  case 11: cfg = prog11(vfac); break;
+  case 12: cfg = prog12(vfac); break;
+  case 13: cfg = prog13(vfac); break;        
   default:
     crab::outs() << "No test selected\n";
   }
@@ -552,6 +711,10 @@ int main (int argc, char** argv) {
   test_array_expansion(6);
   test_array_expansion(7);
   test_array_expansion(8);
-  test_array_expansion(9);            
+  test_array_expansion(9);
+  test_array_expansion(10);
+  test_array_expansion(11);
+  test_array_expansion(12);
+  test_array_expansion(13);  
   return 0;
 }

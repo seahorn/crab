@@ -24,10 +24,10 @@
 #include <crab/common/types.hpp>
 #include <crab/common/debug.hpp>
 #include <crab/common/stats.hpp>
-#include <crab/domains/operators_api.hpp>
-#include <crab/domains/domain_traits.hpp>
+#include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/abstract_domain_specialized_traits.hpp>
 
-#include <crab/domains/intervals.hpp>
+#include <crab/domains/interval.hpp>
 #include <crab/domains/patricia_trees.hpp>
 #include <crab/domains/separate_domains.hpp>
 
@@ -36,9 +36,6 @@
 #include <set>
 #include <boost/optional.hpp>
 #include "boost/range/algorithm/set_algorithm.hpp"
-
-// temporary for debugging
-#include <crab/domains/split_dbm.hpp>
 
 namespace crab {
 namespace domains {
@@ -161,7 +158,9 @@ namespace domains {
 	return false;
       }
     }
-    
+
+    // Return true if [o, o+size) definitely overlaps with the cell,
+    // where o is a constant expression.
     bool overlap(const offset_t& o, unsigned size) const {
       interval_t x = to_interval();
       interval_t y = to_interval(o, size);
@@ -170,6 +169,52 @@ namespace domains {
 		  crab::outs() << "**Checking if " << x << " overlaps with "
 		               << y << "=" << res << "\n";);
       return res;
+    }
+
+    // Return true if [symb_lb, symb_ub] may overlap with the cell,
+    // where symb_lb and symb_ub are not constant expressions.
+    template<typename Dom>
+    bool symbolic_overlap(const typename Dom::linear_expression_t& symb_lb,
+			  const typename Dom::linear_expression_t& symb_ub,
+			  const Dom& dom) const {
+      typedef typename Dom::linear_expression_t linear_expression_t;
+      typedef typename Dom::number_t number_t;      
+
+      interval_t x = to_interval();
+      assert(x.lb().is_finite());
+      assert(x.ub().is_finite());
+      linear_expression_t lb(*(x.lb().number()));
+      linear_expression_t ub(*(x.ub().number()));		     
+
+      CRAB_LOG("array-expansion-overlap",
+	       Dom tmp(dom);
+	       linear_expression_t tmp_symb_lb(symb_lb);
+	       linear_expression_t tmp_symb_ub(symb_ub);	       
+	       crab::outs() << "**Checking if " << *this << " overlaps with symbolic "
+	                    << "[" << tmp_symb_lb << "," << tmp_symb_ub << "]"
+	                    << " with abstract state=" << tmp << "\n";);
+							
+      Dom tmp1(dom);
+      tmp1 += (lb >= symb_lb);
+      tmp1 += (lb <= symb_ub);
+      if (!tmp1.is_bottom()) {
+	CRAB_LOG("array-expansion-overlap",
+		 crab::outs() << "\tyes.\n";);
+	return true;
+      }
+      
+      Dom tmp2(dom);
+      tmp2 += (ub >= symb_lb);
+      tmp2 += (ub <= symb_ub);
+      if (!tmp2.is_bottom()) {
+	CRAB_LOG("array-expansion-overlap",
+		 crab::outs() << "\tyes.\n";);
+	return true;
+      }
+
+      CRAB_LOG("array-expansion-overlap",      
+	       crab::outs() << "\tno.\n";);
+      return false;
     }
     
     void write(crab::crab_os& o) const {
@@ -264,7 +309,7 @@ namespace domains {
     
     class join_op: public binary_op_t {
       // apply is called when two bindings (one each from a
-      // different map) have the same key (i.e., offset).
+      // different map) have the same key(i.e., offset).
       boost::optional<cell_set_t> apply(cell_set_t x, cell_set_t y) {
 	return cell_set_impl::set_union(x,y);
       }
@@ -440,6 +485,17 @@ namespace domains {
 	this->operator-=(cells[i]);
       }
     }
+
+    std::vector<cell_t> get_all_cells() const {
+      std::vector<cell_t> res;
+      for(auto it=_map.begin(), et=_map.end(); it!=et; ++it) {
+	auto const& o_cells = it->second;
+	for (auto &c: o_cells) {
+	  res.push_back(c);
+	}	
+      }
+      return res;
+    }
     
     // Return in out all cells that might overlap with (o, size).
     void get_overlap_cells(offset_t o, unsigned size, std::vector<cell_t>& out){
@@ -542,15 +598,51 @@ namespace domains {
 	       crab::outs() << "**Overlap set between \n" << *this << "\nand "
 	       << "(" << o << "," << size <<")={";
 	       for(unsigned i=0, e=out.size(); i<e;) {
-		 crab::outs () << out[i];
+		 crab::outs() << out[i];
 		 ++i;
 		 if (i<e) {
-		   crab::outs () << ",";
+		   crab::outs() << ",";
 		 }
 	       }
 	       crab::outs() << "}\n";);
     }
-       
+
+    template<typename Dom>
+    void get_overlap_cells_symbolic_offset(const Dom& dom,
+					   const typename Dom::linear_expression_t& symb_lb,
+					   const typename Dom::linear_expression_t& symb_ub,
+					   std::vector<cell_t>& out) const {
+
+      for(auto it=_map.begin(), et=_map.end(); it!=et; ++it) {
+	const cell_set_t& o_cells = it->second;
+	// All cells in o_cells have the same offset. They only differ
+	// in the size. If the largest cell overlaps with [offset,
+	// offset + size) then the rest of cells are considered to
+	// overlap. This is an over-approximation because [offset,
+	// offset+size) can overlap with the largest cell but it
+	// doesn't necessarily overlap with smaller cells. For
+	// efficiency, we assume it overlaps with all.
+	cell_t largest_cell;
+	for (auto &c: o_cells) {
+	  if (largest_cell.is_null()) {
+	    largest_cell = c;
+	  } else {	  
+	    assert(c.get_offset() == largest_cell.get_offset());
+	    if (largest_cell < c) {
+	      largest_cell = c;
+	    }
+	  }
+	}
+	if (!largest_cell.is_null()) {
+	  if (largest_cell.symbolic_overlap(symb_lb, symb_ub, dom)) {
+	    for (auto &c: o_cells) {
+	      out.push_back(c);
+	    }
+	  }
+	}
+      }
+    }
+    
     void write(crab::crab_os& o) const {
       if (_map.empty()) {
 	o << "empty";
@@ -606,20 +698,18 @@ namespace domains {
   // }
   
   template<typename NumDomain>
-  class array_expansion_domain:
-    public abstract_domain<typename NumDomain::number_t,
-			   typename NumDomain::varname_t,
-			   array_expansion_domain<NumDomain> > {
-
+  class array_expansion_domain final:
+    public abstract_domain<array_expansion_domain<NumDomain>> {
+			   
   public:
        
-    typedef typename NumDomain::number_t Number;
-    typedef typename NumDomain::varname_t VariableName;
+    typedef typename NumDomain::number_t number_t;
+    typedef typename NumDomain::varname_t varname_t;
        
   private:
        
     typedef array_expansion_domain<NumDomain> array_expansion_domain_t;
-    typedef abstract_domain<Number,VariableName,array_expansion_domain_t> abstract_domain_t;
+    typedef abstract_domain<array_expansion_domain_t> abstract_domain_t;
        
   public:
        
@@ -628,15 +718,13 @@ namespace domains {
     using typename abstract_domain_t::linear_constraint_system_t;
     using typename abstract_domain_t::disjunctive_linear_constraint_system_t;	
     using typename abstract_domain_t::variable_t;
-    using typename abstract_domain_t::number_t;
-    using typename abstract_domain_t::varname_t;
     using typename abstract_domain_t::variable_vector_t;	
     typedef crab::pointer_constraint<variable_t> ptr_cst_t;
     typedef NumDomain content_domain_t;
-    typedef interval <Number> interval_t;
+    typedef interval<number_t> interval_t;
        
   private:
-    typedef bound <Number> bound_t;
+    typedef bound<number_t> bound_t;
     typedef crab::variable_type type_t;
     typedef offset_map<variable_t> offset_map_t;
     typedef cell<variable_t> cell_t;
@@ -653,7 +741,7 @@ namespace domains {
 
   public:
     /** 
-	Uggly this needs to be fixed: needed if multiple analyses are
+	Ugly this needs to be fixed: needed if multiple analyses are
 	run so we can clear the array map from one run to another.
     **/
     static void clear_global_state() {
@@ -678,8 +766,8 @@ namespace domains {
       return map[v];
     }
     
-    array_expansion_domain (NumDomain inv)
-      : _inv (inv) { }
+    array_expansion_domain(NumDomain inv)
+      : _inv(inv) { }
     
     interval_t to_interval(linear_expression_t expr) {
       interval_t r(expr.constant());
@@ -691,43 +779,60 @@ namespace domains {
       return r;
     }
 
+    void kill_cells(const std::vector<cell_t>& cells, offset_map_t& offset_map, NumDomain& dom) {
+      if (!cells.empty()) {
+	// Forget the scalars from the numerical domain
+	for (unsigned i=0, e=cells.size(); i<e; ++i) {
+	  const cell_t& c = cells[i];
+	  if (c.has_scalar()) {
+	    dom -= c.get_scalar();
+	  } else {
+	    CRAB_ERROR("array expansion: cell without scalar variable in array store");
+	  }
+	}
+	// Remove the cells. If needed again they they will be re-created.
+	offset_map -= cells;
+      }
+    }
     
   public:
        
     array_expansion_domain()
-      : _inv (NumDomain::top()) { }  
-       
-    static array_expansion_domain_t top() { 
-      return array_expansion_domain (NumDomain::top ()); 
+      : _inv(NumDomain::top()) { }  
+
+    void set_to_top() {
+      array_expansion_domain abs(NumDomain::top());
+      std::swap(*this, abs);
     }
-       
-    static array_expansion_domain_t bottom() {
-      return array_expansion_domain (NumDomain::bottom ());
+
+    void set_to_bottom() {
+      array_expansion_domain abs(NumDomain::bottom());
+      std::swap(*this, abs);
     }
-       
-    array_expansion_domain (const array_expansion_domain_t& other)
-      : _inv (other._inv) {  
-      crab::CrabStats::count (getDomainName() + ".count.copy");
+    
+    array_expansion_domain(const array_expansion_domain_t& other)
+      : _inv(other._inv) {  
+      crab::CrabStats::count(getDomainName() + ".count.copy");
       crab::ScopedCrabStats __st__(getDomainName() + ".copy");
     }
 
-    array_expansion_domain (const array_expansion_domain_t&& other)
-      : _inv (std::move(other._inv)) {  
-      crab::CrabStats::count (getDomainName() + ".count.copy");
+    array_expansion_domain(const array_expansion_domain_t&& other)
+      : _inv(std::move(other._inv)) {  
+      crab::CrabStats::count(getDomainName() + ".count.copy");
       crab::ScopedCrabStats __st__(getDomainName() + ".copy");
     }
     
     array_expansion_domain_t& operator=(const array_expansion_domain_t& other) {
-      crab::CrabStats::count (getDomainName() + ".count.copy");
+      crab::CrabStats::count(getDomainName() + ".count.copy");
       crab::ScopedCrabStats __st__(getDomainName() + ".copy");
-      if (this != &other) {
+      if(this != &other) {
 	_inv = other._inv;
       }
       return *this;
     }
 
     array_expansion_domain_t& operator=(const array_expansion_domain_t&& other) {
-      crab::CrabStats::count (getDomainName() + ".count.copy");
+      crab::CrabStats::count(getDomainName() + ".count.copy");
       crab::ScopedCrabStats __st__(getDomainName() + ".copy");
       if (this != &other) {
 	_inv = std::move(other._inv);
@@ -736,7 +841,7 @@ namespace domains {
     }
     
     bool is_bottom() { 
-      return (_inv.is_bottom ());
+      return (_inv.is_bottom());
     }
        
     bool is_top() { 
@@ -744,7 +849,7 @@ namespace domains {
     }
        
     bool operator<=(array_expansion_domain_t other) {
-      crab::CrabStats::count (getDomainName() + ".count.leq");
+      crab::CrabStats::count(getDomainName() + ".count.leq");
       crab::ScopedCrabStats __st__(getDomainName() + ".leq");
       
       return (_inv <= other._inv);
@@ -755,78 +860,90 @@ namespace domains {
     }
     
     void operator|=(array_expansion_domain_t other) {
-      crab::CrabStats::count (getDomainName() + ".count.join");
+      crab::CrabStats::count(getDomainName() + ".count.join");
       crab::ScopedCrabStats __st__(getDomainName() + ".join");
       _inv |= other._inv;
     }
        
     array_expansion_domain_t operator|(array_expansion_domain_t other) {
-      crab::CrabStats::count (getDomainName() + ".count.join");
+      crab::CrabStats::count(getDomainName() + ".count.join");
       crab::ScopedCrabStats __st__(getDomainName() + ".join");
-      return array_expansion_domain_t (_inv | other._inv);
+      return array_expansion_domain_t(_inv | other._inv);
     }
        
     array_expansion_domain_t operator&(array_expansion_domain_t other) {
-      crab::CrabStats::count (getDomainName() + ".count.meet");
+      crab::CrabStats::count(getDomainName() + ".count.meet");
       crab::ScopedCrabStats __st__(getDomainName() + ".meet");
       
-      return array_expansion_domain_t (_inv & other._inv);
+      return array_expansion_domain_t(_inv & other._inv);
     }
        
     array_expansion_domain_t operator||(array_expansion_domain_t other) {
-      crab::CrabStats::count (getDomainName() + ".count.widening");
+      crab::CrabStats::count(getDomainName() + ".count.widening");
       crab::ScopedCrabStats __st__(getDomainName() + ".widening");
       
-      return array_expansion_domain_t (_inv || other._inv);
+      return array_expansion_domain_t(_inv || other._inv);
     }
        
     template<typename Thresholds>
-    array_expansion_domain_t widening_thresholds (array_expansion_domain_t other, 
+    array_expansion_domain_t widening_thresholds(array_expansion_domain_t other, 
 						  const Thresholds &ts) {
-      crab::CrabStats::count (getDomainName() + ".count.widening");
+      crab::CrabStats::count(getDomainName() + ".count.widening");
       crab::ScopedCrabStats __st__(getDomainName() + ".widening");
-      return array_expansion_domain_t (_inv.widening_thresholds (other._inv, ts));
+      return array_expansion_domain_t(_inv.widening_thresholds(other._inv, ts));
     }
     
-    array_expansion_domain_t operator&& (array_expansion_domain_t other) {
-      crab::CrabStats::count (getDomainName() + ".count.narrowing");
+    array_expansion_domain_t operator&&(array_expansion_domain_t other) {
+      crab::CrabStats::count(getDomainName() + ".count.narrowing");
       crab::ScopedCrabStats __st__(getDomainName() + ".narrowing");
-      return array_expansion_domain_t (_inv && other._inv);
+      return array_expansion_domain_t(_inv && other._inv);
     }
         
        
-    // remove all variables [begin,...end)
-    template<typename Iterator>
-    void forget (Iterator begin, Iterator end) {
-      crab::CrabStats::count (getDomainName() + ".count.forget");
+    void forget(const variable_vector_t& variables) {
+      crab::CrabStats::count(getDomainName() + ".count.forget");
       crab::ScopedCrabStats __st__(getDomainName() + ".forget");
+
+      if (is_bottom() || is_top()) {
+	return;
+      }
       
-      domain_traits<NumDomain>::forget (_inv, begin, end);
+      _inv.forget(variables);
       
-      for (auto it = begin, et = end; it!=et; ++it) {
-	if ((*it).is_array_type()) {
-	  remove_array_map(*it);
+      for (variable_t v: variables) {
+	if (v.is_array_type()) {
+	  remove_array_map(v);
 	}
       }
     }
        
-    // dual of forget: remove all variables except [begin,...end)
-    template<typename Iterator>
-    void project (Iterator begin, Iterator end) {
-      crab::CrabStats::count (getDomainName() + ".count.project");
+    void project(const variable_vector_t& variables) {
+      crab::CrabStats::count(getDomainName() + ".count.project");
       crab::ScopedCrabStats __st__(getDomainName() + ".project");
+
+      if (is_bottom() || is_top()) {
+	return;
+      }
       
-      domain_traits<NumDomain>::project (_inv, begin, end);
+      _inv.project(variables);
       
-      for (auto it = begin, et = end; it!=et; ++it) {
-	if ((*it).is_array_type()) {
+      for (variable_t v: variables) {
+	if (v.is_array_type()) {
 	  CRAB_WARN("TODO: project onto an array variable");
 	}
       }
     }
-       
-    void operator += (linear_constraint_system_t csts) {
-      crab::CrabStats::count (getDomainName() + ".count.add_constraints");
+
+    void expand(variable_t var, variable_t new_var) {
+      CRAB_WARN("array expansion expand not implemented");
+    }
+
+    void normalize() { 
+      CRAB_WARN("array expansion normalize not implemented");
+    }
+    
+    void operator +=(linear_constraint_system_t csts) {
+      crab::CrabStats::count(getDomainName() + ".count.add_constraints");
       crab::ScopedCrabStats __st__(getDomainName() + ".add_constraints");
       
       _inv += csts;
@@ -836,7 +953,7 @@ namespace domains {
     }
        
     void operator-=(variable_t var) {
-      crab::CrabStats::count (getDomainName() + ".count.forget");
+      crab::CrabStats::count(getDomainName() + ".count.forget");
       crab::ScopedCrabStats __st__(getDomainName() + ".forget");
       
       if (var.is_array_type()) {
@@ -846,21 +963,21 @@ namespace domains {
       }
     }
        
-    void assign (variable_t x, linear_expression_t e) {
-      crab::CrabStats::count (getDomainName() + ".count.assign");
+    void assign(variable_t x, linear_expression_t e) {
+      crab::CrabStats::count(getDomainName() + ".count.assign");
       crab::ScopedCrabStats __st__(getDomainName() + ".assign");
       
-      _inv.assign (x, e);
+      _inv.assign(x, e);
          
       CRAB_LOG("array-expansion",
 	       crab::outs() << "apply "<< x<< " := "<< e<< " " << *this <<"\n";);
     }
        
-    void apply (operation_t op, variable_t x, variable_t y, Number z) {
-      crab::CrabStats::count (getDomainName() + ".count.apply");
+    void apply(operation_t op, variable_t x, variable_t y, number_t z) {
+      crab::CrabStats::count(getDomainName() + ".count.apply");
       crab::ScopedCrabStats __st__(getDomainName() + ".apply");
       
-      _inv.apply (op, x, y, z);
+      _inv.apply(op, x, y, z);
          
       CRAB_LOG("array-expansion",
 	       crab::outs() << "apply "<< x<< " := "<< y<< " "<< op
@@ -868,38 +985,27 @@ namespace domains {
     }
        
     void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
-      crab::CrabStats::count (getDomainName() + ".count.apply");
+      crab::CrabStats::count(getDomainName() + ".count.apply");
       crab::ScopedCrabStats __st__(getDomainName() + ".apply");
       
-      _inv.apply (op, x, y, z);
+      _inv.apply(op, x, y, z);
           
       CRAB_LOG("array-expansion",
 	       crab::outs() << "apply "<< x<< " := "<< y<< " "<< op
 	       << " " << z << " " << *this << "\n";);
     }
        
-    void apply(operation_t op, variable_t x, Number k) {
-      crab::CrabStats::count (getDomainName() + ".count.apply");
-      crab::ScopedCrabStats __st__(getDomainName() + ".apply");
-      
-      _inv.apply (op, x, k);
-	  
-      CRAB_LOG("array-expansion",
-	       crab::outs() << "apply "<< x<< " := "<< x<< " "<< op
-	       << " " << k << " " << *this  <<"\n";);
-    }
-       
-    void backward_assign (variable_t x, linear_expression_t e,
-			  array_expansion_domain_t inv) {
+    void backward_assign(variable_t x, linear_expression_t e,
+			 array_expansion_domain_t inv) {
       _inv.backward_assign(x, e, inv.get_content_domain());
     }
-	
-    void backward_apply (operation_t op,
-			 variable_t x, variable_t y, Number z,
-			 array_expansion_domain_t inv) {
+    
+    void backward_apply(operation_t op,
+			variable_t x, variable_t y, number_t z,
+			array_expansion_domain_t inv) {
       _inv.backward_apply(op, x, y, z, inv.get_content_domain());
     }
-       
+    
     void backward_apply(operation_t op,
 			variable_t x, variable_t y, variable_t z,
 			array_expansion_domain_t inv) {
@@ -907,73 +1013,50 @@ namespace domains {
     }
        
     void apply(int_conv_operation_t op, variable_t dst, variable_t src) {
-      crab::CrabStats::count (getDomainName() + ".count.apply");
+      crab::CrabStats::count(getDomainName() + ".count.apply");
       crab::ScopedCrabStats __st__(getDomainName() + ".apply");
       
-      _inv.apply (op, dst, src);
+      _inv.apply(op, dst, src);
     }
        
     void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {
-      crab::CrabStats::count (getDomainName() + ".count.apply");
+      crab::CrabStats::count(getDomainName() + ".count.apply");
       crab::ScopedCrabStats __st__(getDomainName() + ".apply");
       
-      _inv.apply (op, x, y, z);
+      _inv.apply(op, x, y, z);
 	 
       CRAB_LOG("array-expansion",
 	       crab::outs() << "apply "<< x<< " := "<< y<< " " << op 
 	       << " " << z << " " << *this << "\n";);
     }
        
-    void apply(bitwise_operation_t op, variable_t x, variable_t y, Number k) {
-      crab::CrabStats::count (getDomainName() + ".count.apply");
+    void apply(bitwise_operation_t op, variable_t x, variable_t y, number_t k) {
+      crab::CrabStats::count(getDomainName() + ".count.apply");
       crab::ScopedCrabStats __st__(getDomainName() + ".apply");
       
-      _inv.apply (op, x, y, k);
+      _inv.apply(op, x, y, k);
 	 
       CRAB_LOG("array-expansion",
 	       crab::outs() << "apply "<< x<< " := "<< y<< " " << op
 	       << " "<< k << " " << *this <<"\n";);
     }
        
-    // division_operators_api
-    void apply(div_operation_t op, variable_t x, variable_t y, variable_t z) {
-      crab::CrabStats::count (getDomainName() + ".count.apply");
-      crab::ScopedCrabStats __st__(getDomainName() + ".apply");
-      
-      _inv.apply (op, x, y, z);
-	 
-      CRAB_LOG("array-expansion",
-	       crab::outs() << "apply "<< x<< " := "<< y<< " "<< op
-	       << " " << z << " " << *this <<"\n";);
-    }
-       
-    void apply(div_operation_t op, variable_t x, variable_t y, Number k) {
-      crab::CrabStats::count (getDomainName() + ".count.apply");
-      crab::ScopedCrabStats __st__(getDomainName() + ".apply");
-      
-      _inv.apply (op, x, y, k);
-	 
-      CRAB_LOG("array-expansion",
-	       crab::outs() << "apply "<< x<< " := "<< y<< " "<< op
-	       << " " << k << " " << *this <<"\n";);
-    }
-       
     // boolean operators
-    virtual void assign_bool_cst (variable_t lhs, linear_constraint_t rhs) override {
-      _inv.assign_bool_cst (lhs, rhs);
+    virtual void assign_bool_cst(variable_t lhs, linear_constraint_t rhs) override {
+      _inv.assign_bool_cst(lhs, rhs);
     }    
        
     virtual void assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs) override {
-      _inv.assign_bool_var (lhs, rhs, is_not_rhs);
+      _inv.assign_bool_var(lhs, rhs, is_not_rhs);
     }    
        
-    virtual void apply_binary_bool (bool_operation_t op,variable_t x,
+    virtual void apply_binary_bool(bool_operation_t op,variable_t x,
 				    variable_t y,variable_t z) override {
-      _inv.apply_binary_bool (op, x, y, z);
+      _inv.apply_binary_bool(op, x, y, z);
     }    
 	
-    virtual void assume_bool (variable_t v, bool is_negated) override {
-      _inv.assume_bool (v, is_negated);
+    virtual void assume_bool(variable_t v, bool is_negated) override {
+      _inv.assume_bool(v, is_negated);
     }    
        
     // backward boolean operators
@@ -994,151 +1077,105 @@ namespace domains {
     }
        
     // pointer_operators_api
-    virtual void pointer_load (variable_t lhs, variable_t rhs) override {
+    virtual void pointer_load(variable_t lhs, variable_t rhs) override {
       _inv.pointer_load(lhs,rhs);
     }
        
-    virtual void pointer_store (variable_t lhs, variable_t rhs) override {
+    virtual void pointer_store(variable_t lhs, variable_t rhs) override {
       _inv.pointer_store(lhs,rhs);
     } 
        
-    virtual void pointer_assign (variable_t lhs, variable_t rhs,
+    virtual void pointer_assign(variable_t lhs, variable_t rhs,
 				 linear_expression_t offset) override {
-      _inv.pointer_assign (lhs,rhs,offset);
+      _inv.pointer_assign(lhs,rhs,offset);
     }
         
-    virtual void pointer_mk_obj (variable_t lhs, ikos::index_t address) override {
-      _inv.pointer_mk_obj (lhs, address);
+    virtual void pointer_mk_obj(variable_t lhs, ikos::index_t address) override {
+      _inv.pointer_mk_obj(lhs, address);
     }
        
-    virtual void pointer_function (variable_t lhs, VariableName func) override {
-      _inv.pointer_function (lhs, func);
+    virtual void pointer_function(variable_t lhs, varname_t func) override {
+      _inv.pointer_function(lhs, func);
     }
        
-    virtual void pointer_mk_null (variable_t lhs) override {
-      _inv.pointer_mk_null (lhs);
+    virtual void pointer_mk_null(variable_t lhs) override {
+      _inv.pointer_mk_null(lhs);
     }
        
-    virtual void pointer_assume (ptr_cst_t cst) override {
-      _inv.pointer_assume (cst);
+    virtual void pointer_assume(ptr_cst_t cst) override {
+      _inv.pointer_assume(cst);
     }    
        
-    virtual void pointer_assert (ptr_cst_t cst) override {
-      _inv.pointer_assert (cst);
+    virtual void pointer_assert(ptr_cst_t cst) override {
+      _inv.pointer_assert(cst);
     }    
        
     // array_operators_api 
        
-    // All the array elements are assumed to be equal to val
-    virtual void array_init (variable_t a,
+    // array_init returns a fresh array where all elements between
+    // lb_idx and ub_idx are initialized to val. Thus, the first thing
+    // we need to do is to kill existing cells.
+    virtual void array_init(variable_t a,
 			     linear_expression_t elem_size,
 			     linear_expression_t lb_idx,
 			     linear_expression_t ub_idx, 
 			     linear_expression_t val) override {
-
-      crab::CrabStats::count (getDomainName() + ".count.array_init");
+      crab::CrabStats::count(getDomainName() + ".count.array_init");
       crab::ScopedCrabStats __st__(getDomainName() + ".array_init");
 
-      if (is_bottom() || is_top()) return;
+      if (is_bottom()) return;
       
-      interval_t lb_i = to_interval(lb_idx);
-      auto lb = lb_i.singleton();
-      if (!lb) {
-	CRAB_WARN("array expansion initialization ignored because ",
-		  "lower bound is not constant");
-	return;
-      }
-      
-      interval_t ub_i = to_interval(ub_idx);
-      auto ub = ub_i.singleton();
-      if (!ub) {
-	CRAB_WARN("array expansion initialization ignored because ",
-		  "upper bound is not constant");
-	return;
+      offset_map_t& offset_map = lookup_array_map(a);
+      std::vector<cell_t> old_cells = offset_map.get_all_cells();
+      if (!old_cells.empty()) {
+	kill_cells(old_cells, offset_map, _inv);
       }
 
-      interval_t n_i = to_interval(elem_size);
-      auto n = n_i.singleton();
-      if (!n) {
-	CRAB_WARN("array expansion initialization ignored because ",
-		  "elem size is not constant");
-		  
-	return;
-      }
-	
-      if ((*ub - *lb) % *n != 0) {
-	CRAB_WARN("array expansion initialization ignored because ",
-		  "the number of elements must be divisible by ", *n);
-	return;
-      }
-
-      const number_t max_num_elems = 512;
-      if (*ub - *lb > max_num_elems) {
-	CRAB_WARN("array expansion initialization ignored because ",
-		  "the number of elements is larger than default limit of ",
-		  max_num_elems);
-	return;
-      }
-
-      for(number_t i = *lb, e = *ub; i < e; ) {
-	array_store(a, elem_size, i, val, false);
-	i = i + *n;
-      }
-      
-      // CRAB_LOG("array-expansion",
-      // 	       crab::outs() << a << "[" << lb_idx << "..." << ub_idx << "] := " << val
-      // 	                    << " -- " << *this <<"\n";);
+      array_store_range(a, elem_size, lb_idx, ub_idx, val); 
     }
     
-    virtual void array_load (variable_t lhs, variable_t a,
+    virtual void array_load(variable_t lhs, variable_t a,
 			     linear_expression_t elem_size,
 			     linear_expression_t i) override {
-      crab::CrabStats::count (getDomainName() + ".count.load");
+      crab::CrabStats::count(getDomainName() + ".count.load");
       crab::ScopedCrabStats __st__(getDomainName() + ".load");
 
-      if (is_bottom() || is_top()) return;
+      if (is_bottom()) return;
 
       interval_t ii = to_interval(i);
       if (boost::optional<number_t> n = ii.singleton()) {
 	offset_map_t& offset_map = lookup_array_map(a);
 	offset_t o((long) *n);	
-	interval_t i_elem_size = to_interval(elem_size);
-	boost::optional<number_t> n_bytes = i_elem_size.singleton();
-	if (!n_bytes) {
-	  CRAB_WARN("array expansion ignored array load because element size is not constant");
-	  return;
-	}
-	unsigned size = (long)*n_bytes;
-	
-	std::vector<cell_t> cells;
-	offset_map.get_overlap_cells(o, size, cells);
-	if (!cells.empty()) {
-	  CRAB_WARN("array expansion ignored read from cell ",
-		    a, "[", o, "...",o.index()+size-1,"]",
-		    " because it overlaps with ", cells.size(), " cells");
-
-	  // crab::outs() << "These are the overlapping cells:\n";
-	  // for (auto &c: cells) {
-	  //   crab::outs() << "\t" << c << "\n";
-	  // }
-	  /*
-	    TODO: we can apply here "Value Recomposition" 'a la'
-	    Mine'06 to construct values of some type from a sequence
-	    of bytes. It can be endian-independent but it would more
-	    precise if we choose between little- and big-endian.
-	  */
+	interval_t i_elem_size = to_interval(elem_size);			
+	if (boost::optional<number_t> n_bytes = i_elem_size.singleton()) {
+	  unsigned size =(long)*n_bytes;	  
+	  std::vector<cell_t> cells;
+	  offset_map.get_overlap_cells(o, size, cells);
+	  if (!cells.empty()) {
+	    CRAB_WARN("Ignored read from cell ",
+		      a, "[", o, "...",o.index()+size-1,"]",
+		      " because it overlaps with ", cells.size(), " cells");
+	    /*
+	       TODO: we can apply here "Value Recomposition" 'a la'
+	       Mine'06 to construct values of some type from a sequence
+	       of bytes. It can be endian-independent but it would more
+	       precise if we choose between little- and big-endian.
+	    */
+	  } else {
+	    cell_t c = offset_map.mk_cell(a, o, size);
+	    assert(c.has_scalar());
+	    // Here it's ok to do assignment (instead of expand)
+	    // because c is not a summarized variable. Otherwise, it
+	    // would be unsound.
+	    _inv.assign(lhs, c.get_scalar());
+	    goto array_load_end;
+	  }
 	} else {
-	  cell_t c = offset_map.mk_cell(a, o, size);
-	  assert(c.has_scalar());
-	  // Here it's ok to do assignment because c is not a summarized
-	  // variable. Otherwise, it would be unsound.
-	  _inv.assign(lhs, c.get_scalar());
-	  //crab::outs() << "Created cell " << c << "\n";
-	  goto array_load_end;
+	  CRAB_ERROR("array expansion domain expects constant array element sizes");
 	}
       } else {
-	// TODO
-	CRAB_WARN("array expansion: ignored read because of non-constant array index ",i);
+	// TODO: we can be more precise here
+	CRAB_WARN("array expansion: ignored array load because of non-constant array index ",i);
       }
 
       _inv -= lhs;
@@ -1151,57 +1188,59 @@ namespace domains {
     }
         
         
-    virtual void array_store (variable_t a, linear_expression_t elem_size,
+    virtual void array_store(variable_t a, linear_expression_t elem_size,
 			      linear_expression_t i, linear_expression_t val, 
 			      bool /*is_singleton*/) override {
-      crab::CrabStats::count (getDomainName() + ".count.store");
+      crab::CrabStats::count(getDomainName() + ".count.store");
       crab::ScopedCrabStats __st__(getDomainName() + ".store");
 
       if (is_bottom()) return;
+
+      interval_t i_elem_size = to_interval(elem_size);
+      boost::optional<number_t> n_bytes = i_elem_size.singleton();
+      if (!n_bytes) {
+	CRAB_ERROR("array expansion domain expects constant array element sizes");	
+      }
       
+      unsigned size = (long)(*n_bytes);
+      offset_map_t& offset_map = lookup_array_map(a);
       interval_t ii = to_interval(i);
       if (boost::optional<number_t> n = ii.singleton()) {
-	offset_map_t& offset_map = lookup_array_map(a);
-	offset_t o((long) *n);
-
-	interval_t i_elem_size = to_interval(elem_size);
-	boost::optional<number_t> n_bytes = i_elem_size.singleton();
-	if (!n_bytes) {
-	  CRAB_WARN("array expansion ignored array store because element size is not constant");
-	  return;
-	}
-	unsigned size = (long)*n_bytes;
-	
-	// kill overlapping cells
+	// -- Constant index: kill overlapping cells + perform strong update
 	std::vector<cell_t> cells;
+	offset_t o((long)*n);	
 	offset_map.get_overlap_cells(o, size, cells);
 	if (cells.size() > 0) {
 	  CRAB_LOG("array-expansion",
-		   CRAB_WARN("array expansion killed ", cells.size(),
+		   CRAB_WARN("Killed ", cells.size(),
 			     " overlapping cells with ",
 			     "[", o, "...", o.index()+size-1,"]", " before writing."));
-	  
-	  // Forget the scalars from the numerical domain
-	  for (unsigned i=0, e=cells.size(); i<e; ++i) {
-	    const cell_t& c = cells[i];
-	    if (c.has_scalar()) {
-	      _inv -= c.get_scalar();
-	    } else {
-	      CRAB_ERROR("array expansion: cell without scalar variable in array store");
-	    }
-	  }
-	  // Remove the cell. If needed again it will be re-created.
-	  offset_map -= cells;
+
+	  kill_cells(cells, offset_map, _inv); 
 	}
-	
 	// Perform scalar update	   
 	// -- create a new cell it there is no one already
 	cell_t c = offset_map.mk_cell(a, o, size);
 	// -- strong update
 	_inv.assign(c.get_scalar(), val);
       } else {
-	// TODO: weak update
-	CRAB_WARN("array expansion: ignored write because of non-constant array index ", i);
+	// -- Non-constant index: kill overlapping cells
+	CRAB_WARN("array expansion ignored array write with non-constant index ", i);
+	linear_expression_t symb_lb(i);
+	linear_expression_t symb_ub(i + number_t(size-1));
+	std::vector<cell_t> cells;	
+	offset_map.get_overlap_cells_symbolic_offset(_inv, symb_lb, symb_ub, cells);
+	CRAB_LOG("array-expansion",
+		 crab::outs() << "Killed cells: {";
+		 for(unsigned j=0; j<cells.size(); ) {
+		   crab::outs() << cells[j];
+		   ++j;
+		   if (j < cells.size()) {
+		     crab::outs() << ",";
+		   }
+		 }
+		 crab::outs() << "}\n";);
+	kill_cells(cells, offset_map, _inv);
       }
 
       CRAB_LOG("array-expansion",
@@ -1209,37 +1248,95 @@ namespace domains {
 	       crab::outs() << a << "[" << i << "..." << ub << "]:="
 	                    << val << " -- " << *this <<"\n";);
     }
-       
-    virtual void array_assign (variable_t lhs, variable_t rhs) override {
+
+    // Perform array stores over an array segment
+    virtual void array_store_range(variable_t a,
+				   linear_expression_t elem_size,
+				   linear_expression_t lb_idx,
+				   linear_expression_t ub_idx, 
+				   linear_expression_t val) override {
+
+      crab::CrabStats::count(getDomainName() + ".count.array_store");
+      crab::ScopedCrabStats __st__(getDomainName() + ".array_store");
+
+      if (is_bottom()) return;
+      
+      interval_t n_i = to_interval(elem_size);
+      auto n = n_i.singleton();
+      if (!n) {
+	CRAB_ERROR("array expansion domain expects constant array element sizes");		
+      }
+
+      bool ignore_array_store = false;
+      interval_t lb_i = to_interval(lb_idx);
+      auto lb = lb_i.singleton();
+      if (!lb) {
+	CRAB_WARN("array expansion store range ignored because ",
+		  "lower bound is not constant");
+	ignore_array_store = true;
+      }
+      
+      interval_t ub_i = to_interval(ub_idx);
+      auto ub = ub_i.singleton();
+      if (!ub) {
+	CRAB_WARN("array expansion store range ignored because ",
+		  "upper bound is not constant");
+	ignore_array_store = true;	
+      }
+
+	
+      if ((*ub - *lb) % *n != 0) {
+	CRAB_WARN("array expansion store range ignored because ",
+		  "the number of elements must be divisible by ", *n);
+	ignore_array_store = true;		
+      }
+
+      const number_t max_num_elems = 512;
+      if (*ub - *lb > max_num_elems) {
+	CRAB_WARN("array expansion store range ignored because ",
+		  "the number of elements is larger than default limit of ",
+		  max_num_elems);
+	ignore_array_store = true;			
+      }
+
+      if (!ignore_array_store) {
+	for(number_t i = *lb, e = *ub; i < e; ) {
+	  array_store(a, elem_size, i, val, false);
+	  i = i + *n;
+	}
+      }
+    }
+    
+    virtual void array_assign(variable_t lhs, variable_t rhs) override {
       //_array_map[lhs] = _array_map[rhs];
       CRAB_ERROR("array_assign in array_expansion domain not implemented");
     }
        
-    linear_constraint_system_t to_linear_constraint_system (){
-      crab::CrabStats::count (getDomainName() + ".count.to_linear_constraints");
+    linear_constraint_system_t to_linear_constraint_system(){
+      crab::CrabStats::count(getDomainName() + ".count.to_linear_constraints");
       crab::ScopedCrabStats __st__(getDomainName() + ".to_linear_constraints");
       
-      return _inv.to_linear_constraint_system ();
+      return _inv.to_linear_constraint_system();
     }
        
     disjunctive_linear_constraint_system_t
-    to_disjunctive_linear_constraint_system (){
-      return _inv.to_disjunctive_linear_constraint_system ();
+    to_disjunctive_linear_constraint_system(){
+      return _inv.to_disjunctive_linear_constraint_system();
     }
        
-    NumDomain get_content_domain () const
+    NumDomain get_content_domain() const
     { return _inv; }      
 
-    NumDomain& get_content_domain ()
+    NumDomain& get_content_domain()
     { return _inv; }      
     
     void write(crab_os& o) {
       o << _inv;
     }
        
-    static std::string getDomainName () {
-      std::string name ("ArrayExpansion(" + 
-			NumDomain::getDomainName () + 
+    static std::string getDomainName() {
+      std::string name("ArrayExpansion(" + 
+			NumDomain::getDomainName() + 
 			")");
       return name;
     }  
@@ -1256,36 +1353,9 @@ namespace domains {
   }; // end array_expansion_domain
   
   template<typename BaseDomain>
-  class domain_traits<array_expansion_domain<BaseDomain>> {
-  public:
-       
-    typedef array_expansion_domain<BaseDomain> array_expansion_domain_t;
-    typedef typename BaseDomain::varname_t VariableName;
-    typedef typename BaseDomain::variable_t variable_t;
-       
-       
-    template<class CFG>
-    static void do_initialization (CFG cfg) { }
-       
-    static void normalize (array_expansion_domain_t& inv) { 
-      CRAB_WARN ("array expansion normalize not implemented");
-    }
-       
-    template <typename Iter>
-    static void forget (array_expansion_domain_t& inv, Iter it, Iter end) {
-      inv.forget (it, end);
-    }
-       
-    template <typename Iter >
-    static void project (array_expansion_domain_t& inv, Iter it, Iter end) {
-      inv.project (it, end);
-    }
-
-    static void expand (array_expansion_domain_t& inv, variable_t x, variable_t new_x) {
-      // -- lose precision if relational or disjunctive domain
-      CRAB_WARN ("array expansion expand not implemented");
-    }
-
+  struct abstract_domain_traits<array_expansion_domain<BaseDomain>> {
+    typedef typename BaseDomain::number_t number_t;       
+    typedef typename BaseDomain::varname_t varname_t;
   };
 
   template<typename BaseDom>

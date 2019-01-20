@@ -1,66 +1,14 @@
 /*******************************************************************************
- * Extend abstract domains with non-standard operations.
- * Some of them might be moved into the domains later, others might
- * stay here.
+ * Extend abstract domains with very specialized operations.
  ******************************************************************************/
 
 #pragma once
-
-#include <crab/common/bignums.hpp>
-#include <crab/domains/intervals.hpp>
-
-#include <boost/range/iterator_range.hpp>
-#include <vector>
 
 namespace crab {
 
  namespace domains {
 
-   template<typename Domain>
-   class domain_traits {
-    public:
-     typedef typename Domain::variable_t variable_t;
-
-     // Initialization of static data 
-     // XXX: it doesn't take inv as argument because this method
-     // should only access to static data.
-     template<class CFG>
-     static void do_initialization(CFG cfg) { }
-
-     // Normalize the abstract domain if such notion exists.
-     static void normalize (Domain& inv) { }
-
-     // Remove all variables [begin, end)
-     template<typename VarIter>
-     static void forget (Domain& inv, VarIter begin, VarIter end) {
-       // -- inefficient if after each forget the domain requires
-       //    normalization
-       for (auto v : boost::make_iterator_range (begin,end)){
-         inv -= v; 
-       }
-     }
-
-     // Forget all variables except [begin, end)
-     template <typename VarIter>
-     static void project(Domain& inv, VarIter begin, VarIter end){
-       // -- lose precision if relational or disjunctive domain
-       Domain res = Domain::top ();
-       for (auto v : boost::make_iterator_range (begin, end)){
-         res.set (v, inv[v]); 
-       }
-       std::swap (inv, res);
-     }
-         
-     // Make a new copy of x without relating x with new_x
-     static void expand (Domain& inv, variable_t x, variable_t new_x) {
-       // -- lose precision if relational or disjunctive domain
-       inv.set (new_x , inv [x]);
-     }
-
-   };
-
-   // Perform constraint simplifications depending on the abstract
-   // domain. 
+   // Perform constraint simplifications depending on the abstract domain
    template<typename Domain>
    class constraint_simp_domain_traits {
    public:
@@ -92,7 +40,8 @@ namespace crab {
      typedef typename Domain::number_t number_t;
      typedef typename Domain::linear_constraint_t linear_constraint_t;
      typedef typename Domain::linear_constraint_system_t linear_constraint_system_t;
-     typedef typename Domain::disjunctive_linear_constraint_system_t disjunctive_linear_constraint_system_t;
+     typedef typename Domain::disjunctive_linear_constraint_system_t
+     disjunctive_linear_constraint_system_t;
      
    private:
 
@@ -221,10 +170,10 @@ namespace crab {
      static bool intersect(Domain& inv, const linear_constraint_t& cst) {
        if (inv.is_bottom () || cst.is_contradiction ()) return false;
        if (inv.is_top () || cst.is_tautology ()) return true;
-       
-       Domain cst_inv;
-       cst_inv += cst;
-       return (!(cst_inv & inv).is_bottom ());
+
+       Domain dom(inv);
+       dom += cst;
+       return !dom.is_bottom();
      }
    };
 
@@ -254,27 +203,37 @@ namespace crab {
      }
    };
 
-   // Experimental:
+   // Experimental (TO BE REMOVED):
    // 
-   // Special operations needed by the array_sparse_graph domain.
-   // TO BE REMOVED
+   // Special operations needed by array_sparse_graph domain's
+   // clients.
    template<typename Domain>
    class array_sgraph_domain_traits {
     public:
-     typedef typename Domain::linear_constraint_t linear_constraint_t;
-     typedef typename Domain::variable_t variable_t;
+     template<class CFG>
+     static void do_initialization(CFG cfg) {}
+   };
 
-     // FIXME: this does similar thing to checker_domain_traits<Domain>::entail
+   // Operations needed by the array_sparse_graph domain.
+   template<typename Domain>
+   class array_sgraph_domain_helper_traits {
+    public:
+     typedef typename Domain::linear_constraint_t linear_constraint_t;
+     typedef typename Domain::variable_vector_t variable_vector_t;
+
+     // FIXME: this does similar thing to
+     // checker_domain_traits<Domain>::entail
      static bool is_unsat(Domain& inv, linear_constraint_t cst) { 
        Domain copy(inv);
        copy += cst;
        return copy.is_bottom();
      }
 
-     static void active_variables(Domain& inv, std::vector<variable_t>& out)
-     { CRAB_ERROR("operation active_variables not implemented"); }
+     static void active_variables(Domain& inv, variable_vector_t& out) {
+       CRAB_ERROR("operation active_variables not implemented");
+     }
    };
-
+   
 
  } // end namespace domains   
 }// end namespace crab

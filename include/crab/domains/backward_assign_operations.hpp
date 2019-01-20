@@ -63,13 +63,14 @@ namespace crab {
 
       // x := y op k
       // pre: dom is not bottom
-      static void apply(AbsDom& dom, operation_t op,
-			variable_t x, variable_t y, number_t k,			
+      static void apply(AbsDom& dom, operation_t op, variable_t x, variable_t y, number_t k,
 			AbsDom inv) {
 	crab::CrabStats::count (AbsDom::getDomainName() + ".count.backward_apply");
 	crab::ScopedCrabStats __st__(AbsDom::getDomainName() + ".backward_apply");
 	
-	if(dom.is_bottom()) return;
+	if(dom.is_bottom()) {
+	  return;
+	}
 
 	CRAB_LOG("backward",
 		 crab::outs() << x << ":=" << y << " " << op << " " << k << "\n"
@@ -80,26 +81,23 @@ namespace crab {
 	  dom -= x;
 	} else {	
 	  switch(op) {
-	  case OP_ADDITION: {
+	  case OP_ADDITION:
 	    dom.apply(OP_SUBTRACTION, y, x, k);
 	    dom -= x;	    
 	    break;
-	  }
-   	  case OP_SUBTRACTION: {
+   	  case OP_SUBTRACTION:
 	    dom.apply(OP_ADDITION, y, x, k);
 	    dom -= x;
 	    break;
-	  }
-	  case OP_MULTIPLICATION: { 
+	  case OP_MULTIPLICATION:
 	    if(k != 0) {
-	      dom.apply(OP_DIVISION, y, x, k);
+	      dom.apply(OP_SDIV, y, x, k);
 	    } else {
 	      CRAB_WARN("backwards x:= y * k is not invertible");
 	      dom -= x;
 	    }
 	    break;
-	  }
-	  case OP_DIVISION: { 
+	  case OP_SDIV: 
 	    if(k != 0) {
 	      dom.apply(OP_MULTIPLICATION, y, x, k);	      
 	    } else {
@@ -107,8 +105,12 @@ namespace crab {
 	      dom -= x;
 	    }
 	    break;
-	  }
-  	  default:;;  
+	  case OP_UDIV:
+	  case OP_SREM:
+	  case OP_UREM:
+  	  default:
+	    CRAB_WARN("backwards x:= y ", op, " k is not implemented");
+	    dom -= x;
 	  }
 	}
 
@@ -125,7 +127,9 @@ namespace crab {
 	crab::CrabStats::count (AbsDom::getDomainName() + ".count.backward_apply");
 	crab::ScopedCrabStats __st__(AbsDom::getDomainName() + ".backward_apply");
 	
-	if(dom.is_bottom()) return;
+	if(dom.is_bottom()) {
+	  return;
+	}
 
 	CRAB_LOG("backward",
 		 crab::outs() << x << ":=" << y << " " << op << " " << z << "\n"
@@ -145,11 +149,11 @@ namespace crab {
 	    dom -= x;
 	    break;
 	  case OP_MULTIPLICATION:
-	    CRAB_WARN("backwards x = y * z not implemented");
-	    dom -= x;
-	    break;	    
-	  case OP_DIVISION:
-	    CRAB_WARN("backwards x = y / z not implemented");
+	  case OP_SDIV:
+	  case OP_UDIV:
+	  case OP_SREM:
+	  case OP_UREM:	    
+	    CRAB_WARN("backwards x = y ", op, " z not implemented");
 	    dom -= x;	    
 	    break;
 	  }

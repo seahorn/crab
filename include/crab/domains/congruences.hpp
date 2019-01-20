@@ -60,15 +60,16 @@
 #include <crab/common/types.hpp>
 #include <crab/common/stats.hpp>
 #include <crab/domains/separate_domains.hpp>
-#include <crab/domains/operators_api.hpp>
+#include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/backward_assign_operations.hpp>
 
 namespace ikos {
 
-template < typename Number,
-           int typeSize = -1 > //! typeSize = -1 means unlimited precision
+template <typename Number,
+	  int typeSize = -1> //! typeSize = -1 means unlimited precision
 class congruence : public writeable {
 public:
-  typedef congruence< Number, typeSize > congruence_t;
+  typedef congruence<Number, typeSize> congruence_t;
 
 private:
   bool _is_bottom;
@@ -181,16 +182,16 @@ public:
 
   bool is_top() { return _a == 1; }
 
-  std::pair< Number, Number > get() {
+  std::pair<Number, Number> get() {
     // aZ+b
     return std::make_pair(_a, _b);
   }
 
-  boost::optional< Number > singleton() {
+  boost::optional<Number> singleton() {
     if (!this->is_bottom() && _a == 0) {
-      return boost::optional< Number >(_b);
+      return boost::optional<Number>(_b);
     } else {
-      return boost::optional< Number >();
+      return boost::optional<Number>();
     }
   }
 
@@ -605,72 +606,72 @@ public:
   }
 }; // end class congruence
 
-template < typename Number, int typeSize >
-inline congruence< Number, typeSize > operator+(
-    Number c, congruence< Number, typeSize > x) {
-  return congruence< Number, typeSize >(c) + x;
+template <typename Number, int typeSize>
+inline congruence<Number, typeSize> operator+(
+    Number c, congruence<Number, typeSize> x) {
+  return congruence<Number, typeSize>(c) + x;
 }
 
-template < typename Number, int typeSize >
-inline congruence< Number, typeSize > operator+(
-    congruence< Number, typeSize > x, Number c) {
-  return x + congruence< Number, typeSize >(c);
+template <typename Number, int typeSize>
+inline congruence<Number, typeSize> operator+(
+    congruence<Number, typeSize> x, Number c) {
+  return x + congruence<Number, typeSize>(c);
 }
 
-template < typename Number, int typeSize >
-inline congruence< Number, typeSize > operator*(
-    Number c, congruence< Number, typeSize > x) {
-  return congruence< Number, typeSize >(c) * x;
+template <typename Number, int typeSize>
+inline congruence<Number, typeSize> operator*(
+    Number c, congruence<Number, typeSize> x) {
+  return congruence<Number, typeSize>(c) * x;
 }
 
-template < typename Number, int typeSize >
-inline congruence< Number, typeSize > operator*(
-    congruence< Number, typeSize > x, Number c) {
-  return x * congruence< Number, typeSize >(c);
+template <typename Number, int typeSize>
+inline congruence<Number, typeSize> operator*(
+    congruence<Number, typeSize> x, Number c) {
+  return x * congruence<Number, typeSize>(c);
 }
 
-template < typename Number, int typeSize >
-inline congruence< Number, typeSize > operator/(
-    Number c, congruence< Number, typeSize > x) {
-  return congruence< Number, typeSize >(c) / x;
+template <typename Number, int typeSize>
+inline congruence<Number, typeSize> operator/(
+    Number c, congruence<Number, typeSize> x) {
+  return congruence<Number, typeSize>(c) / x;
 }
 
-template < typename Number, int typeSize >
-inline congruence< Number, typeSize > operator/(
-    congruence< Number, typeSize > x, Number c) {
-  return x / congruence< Number, typeSize >(c);
+template <typename Number, int typeSize>
+inline congruence<Number, typeSize> operator/(
+    congruence<Number, typeSize> x, Number c) {
+  return x / congruence<Number, typeSize>(c);
 }
 
-template < typename Number, int typeSize >
-inline congruence< Number, typeSize > operator-(
-    Number c, congruence< Number, typeSize > x) {
-  return congruence< Number, typeSize >(c) - x;
+template <typename Number, int typeSize>
+inline congruence<Number, typeSize> operator-(
+    Number c, congruence<Number, typeSize> x) {
+  return congruence<Number, typeSize>(c) - x;
 }
 
-template < typename Number, int typeSize >
-inline congruence< Number, typeSize > operator-(
-    congruence< Number, typeSize > x, Number c) {
-  return x - congruence< Number, typeSize >(c);
+template <typename Number, int typeSize>
+inline congruence<Number, typeSize> operator-(
+    congruence<Number, typeSize> x, Number c) {
+  return x - congruence<Number, typeSize>(c);
 }
 
-template < typename Number,
+template <typename Number,
            typename VariableName,
            typename CongruenceCollection,
-           int typeSize = -1 >
+           int typeSize = -1>
 class equality_congruence_solver {
   // TODO: check correctness of the solver. Granger provides a sound
   // and more precise solver for equality linear congruences (see
   // Theorem 4.4).
 private:
-  typedef congruence< Number, typeSize > congruence_t;
-  typedef variable< Number, VariableName > variable_t;
-  typedef linear_expression< Number, VariableName > linear_expression_t;
-  typedef linear_constraint< Number, VariableName > linear_constraint_t;
-  typedef linear_constraint_system< Number, VariableName >
+  typedef congruence<Number, typeSize> congruence_t;
+  typedef variable<Number, VariableName> variable_t;
+  typedef linear_expression<Number, VariableName> linear_expression_t;
+  typedef linear_constraint<Number, VariableName> linear_constraint_t;
+  typedef linear_constraint_system<Number, VariableName>
       linear_constraint_system_t;
 
 private:
-  typedef std::vector< linear_constraint_t > cst_table_t;
+  typedef std::vector<linear_constraint_t> cst_table_t;
   typedef typename linear_constraint_t::variable_set_t variable_set_t;
 
 private:
@@ -787,11 +788,9 @@ public:
 
 }; // class equality_congruence_solver
 
-template < typename Number, typename VariableName, int typeSize = -1 >
-class congruence_domain :
-    public crab::domains::abstract_domain<Number, VariableName,
-					  congruence_domain<Number,VariableName,
-							    typeSize> > {
+template <typename Number, typename VariableName, int typeSize = -1>
+class congruence_domain final:
+  public crab::domains::abstract_domain<congruence_domain<Number,VariableName,typeSize>> {
 public:
   typedef congruence<Number, typeSize> congruence_t;
 
@@ -800,7 +799,7 @@ private:
   // width which is unrealistic.
   typedef congruence_domain<Number, VariableName, typeSize>
   congruence_domain_t;
-  typedef crab::domains::abstract_domain<Number,VariableName,congruence_domain_t>
+  typedef crab::domains::abstract_domain<congruence_domain_t>
   abstract_domain_t;
 
 public:
@@ -809,12 +808,14 @@ public:
   using typename abstract_domain_t::linear_constraint_system_t;
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;   
   using typename abstract_domain_t::variable_t;
-  using typename abstract_domain_t::number_t;
-  using typename abstract_domain_t::varname_t;
+  using typename abstract_domain_t::variable_vector_t;
+  typedef Number number_t;
+  typedef VariableName varname_t;
+  using typename abstract_domain_t::pointer_constraint_t;
 
 private:
-  typedef separate_domain<variable_t, congruence_t > separate_domain_t;
-  typedef equality_congruence_solver<Number, VariableName,
+  typedef separate_domain<variable_t, congruence_t> separate_domain_t;
+  typedef equality_congruence_solver<number_t, varname_t,
 				     separate_domain_t, typeSize> solver_t;
 
 public:
@@ -827,15 +828,16 @@ private:
   congruence_domain(separate_domain_t env) : _env(env) {}
 
 public:
-  static congruence_domain_t top() {
-    return congruence_domain(separate_domain_t::top());
+  void set_to_top() {
+    congruence_domain abs(separate_domain_t::top());
+    std::swap(*this, abs);
   }
 
-  static congruence_domain_t bottom() {
-    return congruence_domain(separate_domain_t::bottom());
+  void set_to_bottom() {
+    congruence_domain abs(separate_domain_t::bottom());
+    std::swap(*this, abs);
   }
 
-public:
   congruence_domain() : _env(separate_domain_t::top()) {}
 
   congruence_domain(const congruence_domain_t& e)
@@ -908,7 +910,7 @@ public:
     this->_env.set(v, i); 
   }
 
-  void set(variable_t v, Number n) {
+  void set(variable_t v, number_t n) {
     crab::CrabStats::count (getDomainName() + ".count.assign");
     crab::ScopedCrabStats __st__(getDomainName() + ".assign");
     this->_env.set(v, congruence_t(n)); 
@@ -920,8 +922,8 @@ public:
     this->_env -= v; 
   }
 
-  void operator-=(std::vector< variable_t > vs) {
-    for (typename std::vector< variable_t >::iterator it = vs.begin(),
+  void operator-=(std::vector<variable_t> vs) {
+    for (typename std::vector<variable_t>::iterator it = vs.begin(),
 	   end = vs.end(); it != end; ++it) {
       this->operator-=* it;
     }
@@ -981,28 +983,34 @@ public:
     congruence_t xi = congruence_t::bottom();
 
     switch (op) {
-      case OP_ADDITION: {
+      case OP_ADDITION:
         xi = yi + zi;
         break;
-      }
-      case OP_SUBTRACTION: {
+      case OP_SUBTRACTION:
         xi = yi - zi;
         break;
-      }
-      case OP_MULTIPLICATION: {
+      case OP_MULTIPLICATION: 
         xi = yi * zi;
         break;
-      }
-      case OP_DIVISION: { // signed division
+      case OP_SDIV: 
         xi = yi / zi;
         break;
-      }
-      default: { CRAB_ERROR("unreachable"); }
+      case OP_UDIV: 
+        xi = yi.UDiv(zi);
+        break;
+      case OP_SREM: 
+        xi = yi.SRem(zi);
+        break;
+      case OP_UREM: 
+        xi = yi.URem(zi);
+        break;
+    default:
+      CRAB_ERROR("Operation ", op, " not supported");
     }
     this->_env.set(x, xi);
   }
 
-  void apply(operation_t op, variable_t x, variable_t y, Number k) {
+  void apply(operation_t op, variable_t x, variable_t y, number_t k) {
     crab::CrabStats::count (getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1011,36 +1019,43 @@ public:
     congruence_t xi = congruence_t::bottom();
 
     switch (op) {
-      case OP_ADDITION: {
+      case OP_ADDITION: 
         xi = yi + zi;
         break;
-      }
-      case OP_SUBTRACTION: {
+      case OP_SUBTRACTION: 
         xi = yi - zi;
         break;
-      }
-      case OP_MULTIPLICATION: {
+      case OP_MULTIPLICATION:
         xi = yi * zi;
         break;
-      }
-      case OP_DIVISION: { // signed division
+      case OP_SDIV:
         xi = yi / zi;
         break;
-      }
-      default: { CRAB_ERROR("unreachable"); }
+      case OP_UDIV:
+        xi = yi.UDiv(zi);
+        break;
+      case OP_SREM:
+        xi = yi.SRem(zi);
+        break;
+      case OP_UREM:
+        xi = yi.URem(zi);
+        break;
+      default:
+	CRAB_ERROR("Operation ", op, " not supported");
     }
     this->_env.set(x, xi);
   }
 
-  void backward_assign (variable_t x, linear_expression_t e,
-			congruence_domain_t inv) { 
+  // backward operations
+  void backward_assign(variable_t x, linear_expression_t e,
+		       congruence_domain_t inv) { 
     crab::domains::BackwardAssignOps<congruence_domain_t>::
       assign (*this, x, e, inv);
   }
   
-  void backward_apply (operation_t op,
-		       variable_t x, variable_t y, Number z,
-		       congruence_domain_t inv) {
+  void backward_apply(operation_t op,
+		      variable_t x, variable_t y, number_t z,
+		      congruence_domain_t inv) {
     crab::domains::BackwardAssignOps<congruence_domain_t>::
       apply(*this, op, x, y, z, inv);
   }
@@ -1052,7 +1067,7 @@ public:
       apply(*this, op, x, y, z, inv);
   }
 
-  // cast_operators_api  
+  // cast operations
   
   void apply(crab::domains::int_conv_operation_t /*op*/,
 	     variable_t dst, variable_t src) {  
@@ -1060,7 +1075,7 @@ public:
     assign(dst, src);
   }
 
-  // bitwise_operators_api
+  // bitwise operations
   
   void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {
     crab::CrabStats::count (getDomainName() + ".count.apply");
@@ -1100,7 +1115,7 @@ public:
     this->_env.set(x, xi);
   }
 
-  void apply(bitwise_operation_t op, variable_t x, variable_t y, Number k) {
+  void apply(bitwise_operation_t op, variable_t x, variable_t y, number_t k) {
     crab::CrabStats::count (getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1137,69 +1152,84 @@ public:
     }
     this->_env.set(x, xi);
   }
-
-  // division_operators_api
-
-  void apply(div_operation_t op, variable_t x, variable_t y, variable_t z) {
-    crab::CrabStats::count (getDomainName() + ".count.apply");
-    crab::ScopedCrabStats __st__(getDomainName() + ".apply");
-
-    congruence_t yi = this->_env[y];
-    congruence_t zi = this->_env[z];
-    congruence_t xi = congruence_t::bottom();
-
-    switch (op) {
-      case OP_SDIV: {
-        xi = yi / zi;
-        break;
-      }
-      case OP_UDIV: {
-        xi = yi.UDiv(zi);
-        break;
-      }
-      case OP_SREM: {
-        xi = yi.SRem(zi);
-        break;
-      }
-      case OP_UREM: {
-        xi = yi.URem(zi);
-        break;
-      }
-      default: { CRAB_ERROR("unreachable"); }
+  
+  /* Begin unimplemented operations */
+  // boolean operations
+  void assign_bool_cst(variable_t lhs, linear_constraint_t rhs) {}
+  void assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs) {}
+  void apply_binary_bool(crab::domains::bool_operation_t op,
+			 variable_t x,variable_t y,variable_t z) {}
+  void assume_bool(variable_t v, bool is_negated) {}
+  // backward boolean operations
+  void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
+				congruence_domain_t invariant){}
+  void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
+				congruence_domain_t invariant) {}
+  void backward_apply_binary_bool(crab::domains::bool_operation_t op,
+				  variable_t x,variable_t y,variable_t z,
+				  congruence_domain_t invariant) {}
+  // array operations
+  void array_init(variable_t a, linear_expression_t elem_size,
+		  linear_expression_t lb_idx, linear_expression_t ub_idx, 
+		  linear_expression_t val) {}      
+  void array_load(variable_t lhs,
+		  variable_t a, linear_expression_t elem_size,
+		  linear_expression_t i) {}
+  void array_store(variable_t a, linear_expression_t elem_size,
+		   linear_expression_t i, linear_expression_t v, 
+		   bool is_singleton) {}
+  void array_store_range(variable_t a, linear_expression_t elem_size,
+			 linear_expression_t i, linear_expression_t j,
+			 linear_expression_t v) {}
+  void array_assign(variable_t lhs, variable_t rhs) {}
+  // pointer operations
+  void pointer_load(variable_t lhs, variable_t rhs)  {}
+  void pointer_store(variable_t lhs, variable_t rhs) {} 
+  void pointer_assign(variable_t lhs, variable_t rhs, linear_expression_t offset) {}
+  void pointer_mk_obj(variable_t lhs, ikos::index_t address) {}
+  void pointer_function(variable_t lhs, varname_t func) {}
+  void pointer_mk_null(variable_t lhs) {}
+  void pointer_assume(pointer_constraint_t cst) {}
+  void pointer_assert(pointer_constraint_t cst) {}
+  /* End unimplemented operations */
+  
+  void forget(const variable_vector_t& variables) {
+    if (is_bottom() || is_top()) {
+      return;
     }
-    this->_env.set(x, xi);
+    for (variable_t var: variables){
+      this->operator-=(var); 
+    }
   }
 
-  void apply(div_operation_t op, variable_t x, variable_t y, Number k) {
-    crab::CrabStats::count (getDomainName() + ".count.apply");
-    crab::ScopedCrabStats __st__(getDomainName() + ".apply");
-
-    congruence_t yi = this->_env[y];
-    congruence_t zi(k);
-    congruence_t xi = congruence_t::bottom();
-
-    switch (op) {
-      case OP_SDIV: {
-        xi = yi / zi;
-        break;
-      }
-      case OP_UDIV: {
-        xi = yi.UDiv(zi);
-        break;
-      }
-      case OP_SREM: {
-        xi = yi.SRem(zi);
-        break;
-      }
-      case OP_UREM: {
-        xi = yi.URem(zi);
-        break;
-      }
-      default: { CRAB_ERROR("unreachable"); }
+  void project(const variable_vector_t& variables){
+    crab::CrabStats::count(getDomainName() + ".count.project");
+    crab::ScopedCrabStats __st__(getDomainName() + ".project");
+    
+    if (is_bottom() || is_top()) {
+      return;
     }
-    this->_env.set(x, xi);
+    
+    separate_domain_t env;
+    for (variable_t var : variables){
+      env.set(var, this->_env[var]); 
+    }
+    std::swap(_env, env);
+  }
+  
+  void expand(variable_t x, variable_t new_x) {
+    crab::CrabStats::count(getDomainName() + ".count.expand");
+    crab::ScopedCrabStats __st__(getDomainName() + ".expand");
+    
+    if (is_bottom() || is_top()) {
+      return;
+    }
+    
+    set(new_x , this->_env[x]);
   }
 
+  void normalize() {}
+  
   void write(crab::crab_os& o) { 
     this->_env.write(o); 
   }
@@ -1214,7 +1244,7 @@ public:
     for (iterator it = this->_env.begin(); it != this->_env.end(); ++it) {
       variable_t v = it->first;
       congruence_t c = it->second;
-      boost::optional< Number > n = c.singleton();
+      boost::optional<number_t> n = c.singleton();
       if (n) {
         csts += (v == *n);
       }
@@ -1240,4 +1270,16 @@ public:
 }; // class congruence_domain
 
 } // namespace ikos
+
+namespace crab {
+namespace domains {
+
+  template <typename Number, typename VariableName, int typeSize> 
+  struct abstract_domain_traits<ikos::congruence_domain<Number, VariableName, typeSize>> {
+    typedef Number number_t;
+    typedef VariableName varname_t;       
+  };
+  
+}
+}
 

@@ -7,7 +7,8 @@
  * Methods in Programming and Their Applications, 1993, pages 128-141.
  *
  * Author: Arnaud J. Venet (arnaud.j.venet@nasa.gov)
- *
+ * Contributors: Jorge A. Navas (jorge.navas@sri.com)
+ * 
  * Notices:
  *
  * Copyright (c) 2011 United States Government as represented by the
@@ -45,6 +46,7 @@
 #pragma once 
 
 #include <vector>
+#include <set>
 #include <boost/shared_ptr.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/container/slist.hpp>
@@ -52,7 +54,13 @@
 
 #include <crab/common/types.hpp>
 #include <crab/common/stats.hpp>
-#include <crab/domains/intervals.hpp>
+#include <crab/common/debug.hpp>
+#include <crab/domains/interval.hpp>
+
+
+// Define RECURSIVE_WTO to use older, recursive version.  It is
+// retained for a while for performance comparison purposes.
+// #define RECURSIVE_WTO
 
 namespace ikos {
 
@@ -471,6 +479,112 @@ namespace ikos {
       return wto_cycle_ptr(new wto_cycle_t(vertex, partition));
     }
     
+    #ifndef RECURSIVE_WTO
+    struct visit_stack_elem {
+      typedef typename CFG::succ_range succ_range;
+      typedef typename CFG::succ_iterator succ_iterator;      
+      NodeName _node;
+      succ_iterator _it; // begin iterator for node's successors
+      succ_iterator _et; // end iterator for node's successors
+      dfn_t _min;        // smallest dfn number of any (direct or
+			 // indirect) node's successor through node's
+			 // DFS subtree, included node.
+      
+      visit_stack_elem(NodeName node, succ_range succs, dfn_t min)
+	: _node(node)
+	, _it(succs.begin())
+	, _et(succs.end())
+	, _min(min) {}
+    };
+    
+    void visit(CFG cfg, NodeName vertex, wto_component_list_ptr partition) {
+      typedef std::vector<visit_stack_elem> visit_stack_t;      
+      visit_stack_t visit_stack;
+      std::set<NodeName> loop_nodes;
+      
+      /* discover vertex */
+      push(vertex);
+      _num += 1;
+      set_dfn(vertex, _num);
+      
+      visit_stack.push_back(visit_stack_elem(vertex, cfg.next_nodes(vertex), _num));
+      CRAB_LOG("wto-nonrec",
+	       crab::outs() << "WTO: Node " << vertex << ": dfs num=" << _num << "\n";);      
+      while (!visit_stack.empty()) {
+	/*
+	 * Perform dfs.
+	 * 
+	 * When this loop terminates, visit_stack.back()_node's children
+	 * have been processed.  For each loop iteration we push in
+	 * visit_stack one more descendant.
+	 */
+	while (visit_stack.back()._it != visit_stack.back()._et) {
+	  NodeName child = *visit_stack.back()._it++;
+	  dfn_t child_dfn = get_dfn(child);
+	  if (child_dfn == 0) {
+	    /* discover new vertex */
+	    push(child);
+	    _num += 1;
+	    set_dfn(child, _num);
+	    visit_stack.push_back(visit_stack_elem(child,cfg.next_nodes(child), _num));
+	    CRAB_LOG("wto-nonrec",
+		     crab::outs() << "WTO: Node " << child << ": dfs num=" << _num << "\n";);
+	  } else {
+	    if (child_dfn <= visit_stack.back()._min) {
+	      visit_stack.back()._min = child_dfn;
+	      CRAB_LOG("wto-nonrec",
+		       crab::outs() << "WTO: loop found " << child << "\n";);
+	      loop_nodes.insert(child);
+	    }
+	  }
+	}
+	
+
+	// propagate min from child to parent
+	NodeName visiting_node = visit_stack.back()._node;
+	dfn_t min_visiting_node = visit_stack.back()._min;
+	bool is_loop = loop_nodes.count(visiting_node) > 0;
+	visit_stack.pop_back();
+	if (!visit_stack.empty() && visit_stack.back()._min > min_visiting_node) {
+	  visit_stack.back()._min = min_visiting_node;
+	}
+
+	auto dfn_visiting_node = get_dfn(visiting_node);
+	CRAB_LOG("wto-nonrec",
+	    crab::outs() << "WTO: popped node " << visiting_node
+	                 << " dfs num= " <<  dfn_visiting_node 
+	                 << ": min=" << min_visiting_node << "\n";);
+	
+	if (min_visiting_node == get_dfn(visiting_node)) {
+	  CRAB_LOG("wto-nonrec",
+		   crab::outs() << "WTO: BEGIN building partition for node "
+	                        << visiting_node << "\n";);
+	  set_dfn(visiting_node, dfn_t::plus_infinity());
+	  NodeName element = pop();
+	  if (is_loop) {
+	    while (!(element == visiting_node)) {
+	      set_dfn(element, 0);
+	      CRAB_LOG("wto-nonrec",
+		       crab::outs () << "\tWTO: node " << element << ": dfn num=0\n";);
+	      element = pop();
+	    }
+	    CRAB_LOG("wto-nonrec",
+		     crab::outs() << "\tWTO: adding component starting from "
+		                 << visiting_node << "\n";);
+	    partition->push_front(boost::static_pointer_cast<wto_component_t,wto_cycle_t> 
+				  (component(cfg, visiting_node)));
+	  } else {
+	    CRAB_LOG("wto-nonrec",
+		     crab::outs() << "\tWTO: adding vertex " << visiting_node << "\n";);
+	    partition->push_front(boost::static_pointer_cast< wto_component_t, wto_vertex_t>
+				  (wto_vertex_ptr(new wto_vertex_t(visiting_node))));
+	  }
+	  CRAB_LOG("wto-nonrec", crab::outs() << "WTO: END building partition\n";);
+	}
+      } // end while (!visit_stack.empty())
+    }
+    
+    #else
     dfn_t visit(CFG cfg, NodeName vertex, wto_component_list_ptr partition) {
       dfn_t head = 0, min = 0;
       bool loop;
@@ -511,6 +625,7 @@ namespace ikos {
       }
       return head;
     }
+    #endif
     
     void build_nesting() {
       nesting_builder builder(this->_nesting_table);

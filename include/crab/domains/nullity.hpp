@@ -3,10 +3,9 @@
 /* A flat lattice for nullity */
 
 #include <crab/common/types.hpp>
-#include <crab/domains/intervals.hpp>
+#include <crab/domains/interval.hpp>
 #include <crab/domains/separate_domains.hpp>
-#include <crab/domains/operators_api.hpp>
-#include <crab/domains/domain_traits.hpp>
+#include <crab/domains/abstract_domain.hpp>
 
 namespace crab {
 
@@ -115,50 +114,50 @@ namespace crab {
 
 
   // Abstract domain for nullity
-  template <typename Number, typename VariableName>
-  class nullity_domain :
-      public abstract_domain<Number, VariableName,
-			     nullity_domain<Number,VariableName> > {
+  template<typename Number, typename VariableName>
+  class nullity_domain final:
+      public abstract_domain<nullity_domain<Number,VariableName>> {
     
     typedef nullity_domain<Number, VariableName> nullity_domain_t;
-    // lin_exp_t == linear_expression_t
-    typedef typename pointer_operators <Number, VariableName>::lin_exp_t lin_exp_t;
-    typedef typename pointer_operators <Number, VariableName>::ptr_cst_t ptr_cst_t;
-
+    typedef abstract_domain<nullity_domain_t> abstract_domain_t;
+    
    public:
 
-    typedef VariableName varname_t;
+    using typename abstract_domain_t::variable_t;
+    using typename abstract_domain_t::linear_expression_t;
+    using typename abstract_domain_t::linear_constraint_t;
+    using typename abstract_domain_t::linear_constraint_system_t;
+    using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
+    using typename abstract_domain_t::pointer_constraint_t;
+    using typename abstract_domain_t::variable_vector_t;
     typedef Number number_t;
-    typedef ikos::variable<number_t,varname_t> variable_t;
+    typedef VariableName varname_t;
+    typedef interval<number_t> interval_t;
 
-   private:
+  private:
     
     typedef separate_domain<variable_t, nullity_value> separate_domain_t;
+
+  public:
     
-   public:
-    
-    typedef linear_expression<Number, VariableName> linear_expression_t;
-    typedef linear_constraint<Number, VariableName> linear_constraint_t;
-    typedef linear_constraint_system<Number, VariableName> linear_constraint_system_t;
-    typedef disjunctive_linear_constraint_system<Number, VariableName>
-    disjunctive_linear_constraint_system_t;
-    typedef interval<Number>  interval_t;    
     typedef typename separate_domain_t::iterator iterator;
 
    private:
-
+    
     separate_domain_t _env;
     
     nullity_domain(separate_domain_t env) : _env(env) {}
         
    public:
     
-    static nullity_domain_t top() {
-      return nullity_domain(separate_domain_t::top());
+    void set_to_top() {
+      nullity_domain abs(separate_domain_t::top());
+      std::swap(*this, abs);
     }
     
-    static nullity_domain_t bottom() {
-      return nullity_domain(separate_domain_t::bottom());
+    void set_to_bottom() {
+      nullity_domain abs(separate_domain_t::bottom());
+      std::swap(*this, abs);      
     }
     
     nullity_domain() : _env(separate_domain_t::top()) {}
@@ -173,15 +172,15 @@ namespace crab {
     }
     
     iterator begin() { 
-      if (is_bottom ()) 
-        CRAB_ERROR ("Cannot return iterator from bottom");
+      if (is_bottom()) 
+        CRAB_ERROR("Cannot return iterator from bottom");
       
       return _env.begin(); 
     }
     
     iterator end() { 
-      if (is_bottom ()) 
-        CRAB_ERROR ("Cannot return iterator from bottom");
+      if (is_bottom()) 
+        CRAB_ERROR("Cannot return iterator from bottom");
       return _env.end(); 
     }
     
@@ -192,39 +191,42 @@ namespace crab {
     bool operator<=(nullity_domain_t o) { return (_env <= o._env); }
     
     nullity_domain_t operator|(nullity_domain_t o) {
-      nullity_domain_t res (_env | o._env);
-
-      CRAB_LOG("nullity", crab::outs () << "After join " << *this << " and " << o << "=" << res << "\n";);
+      nullity_domain_t res(_env | o._env);
+      CRAB_LOG("nullity",
+	       crab::outs() << "After join " << *this << " and " << o << "=" << res << "\n";);
       return res;
     }
 
     void operator|=(nullity_domain_t o) {
-      CRAB_LOG("nullity", crab::outs () << "After join " << *this << " and " << o << "=");
-
+      CRAB_LOG("nullity",
+	       crab::outs() << "After join " << *this << " and " << o << "=");
       _env = _env  | o._env;
-
-      CRAB_LOG("nullity", crab::outs () << *this << "\n");
+      CRAB_LOG("nullity", crab::outs() << *this << "\n");
     }
 
     nullity_domain_t operator&(nullity_domain_t o) {
-      nullity_domain_t res (_env & o._env);
-      
-      CRAB_LOG("nullity", crab::outs () << "After meet " << *this << " and " << o << "=" << res << "\n");
+      nullity_domain_t res(_env & o._env);
+      CRAB_LOG("nullity",
+	       crab::outs() << "After meet " << *this << " and " << o << "=" << res << "\n");
       return res;
     }
     
     nullity_domain_t operator||(nullity_domain_t o) {
-      nullity_domain_t res (_env || o._env);
+      nullity_domain_t res(_env || o._env);
 
-      CRAB_LOG("nullity", crab::outs () << "After widening " << *this << " and " << o << "=" << res << "\n");
+      CRAB_LOG("nullity",
+	       crab::outs() << "After widening " << *this << " and " << o << "="
+	                     << res << "\n");
       return res;
     }
 
     template<typename Thresholds>
-    nullity_domain_t widening_thresholds (nullity_domain_t o, const Thresholds &) {
-      nullity_domain_t res (_env || o._env);
+    nullity_domain_t widening_thresholds(nullity_domain_t o, const Thresholds &) {
+      nullity_domain_t res(_env || o._env);
 
-      CRAB_LOG("nullity", crab::outs () << "After widening " << *this << " and " << o << "=" << res << "\n");
+      CRAB_LOG("nullity",
+	       crab::outs() << "After widening " << *this << " and " << o << "="
+	                     << res << "\n");
       return res;
     }
     
@@ -239,9 +241,10 @@ namespace crab {
 
     void set_nullity(variable_t x, variable_t y) {
       if (!is_bottom())
-        _env.set (x, _env[y]);
+        _env.set(x, _env[y]);
 
-      CRAB_LOG("nullity", crab::outs () << "After " << x << ":="  << y << "=" << *this <<"\n");
+      CRAB_LOG("nullity",
+	       crab::outs() << "After " << x << ":="  << y << "=" << *this <<"\n");
     }
     
     nullity_value get_nullity(variable_t v) { 
@@ -249,145 +252,206 @@ namespace crab {
     }
     
     void operator-=(variable_t v) { 
-      if (!is_bottom ())
+      if (!is_bottom())
         _env -= v; 
     }
         
-    void equality (variable_t p, variable_t q) {
-      if (is_bottom ()) return;
+    void equality(variable_t p, variable_t q) {
+      if (is_bottom()) return;
 
       // if (p == q) ...
       nullity_value p_meet_q = _env[p] & _env[q];
       _env.set(p, p_meet_q);
       _env.set(q, p_meet_q);
 
-      CRAB_LOG("nullity", crab::outs () << "After " << p << "=="  << q << "=" << *this <<"\n");
+      CRAB_LOG("nullity", crab::outs() << "After " << p << "=="  << q << "=" << *this <<"\n");
     }
 
-    void equality (variable_t p, nullity_value v) {
-      if (!is_bottom ()) 
+    void equality(variable_t p, nullity_value v) {
+      if (!is_bottom()) 
         _env.set(p, _env[p] & v);
 
-      CRAB_LOG("nullity", crab::outs () << "After " << p << "=="  << v << "=" << *this <<"\n");
+      CRAB_LOG("nullity", crab::outs() << "After " << p << "=="  << v << "=" << *this <<"\n");
     }
     
-    void disequality (variable_t p, variable_t q) {
-      if (is_bottom ()) return;
+    void disequality(variable_t p, variable_t q) {
+      if (is_bottom()) return;
 
       // if (p != q) ...
-      if (_env[p].is_null() && _env[q].is_null()) {
-        *this = bottom();
+      if(_env[p].is_null() && _env[q].is_null()) {
+	set_to_bottom();
       } else if (_env[p].is_top() && _env[q].is_null()) {
         _env.set(p, nullity_value::non_null()); // refine p
       } else if (_env[q].is_top() && _env[p].is_null()) {
         _env.set(q, nullity_value::non_null()); // refine q
       }
 
-      CRAB_LOG("nullity", crab::outs () << "After " << p << "!="  << q << "=" << *this <<"\n");
+      CRAB_LOG("nullity", crab::outs() << "After " << p << "!="  << q << "=" << *this <<"\n");
     }
     
-    void disequality (variable_t p, nullity_value v) {
-      if (is_bottom ()) return;
+    void disequality(variable_t p, nullity_value v) {
+      if (is_bottom()) return;
 
       if (_env[p].is_null() && v.is_null()) {
-        *this = bottom();
-      } else if (_env[p].is_top() && v.is_null()) { // refine p
+	set_to_bottom();
+      } else if(_env[p].is_top() && v.is_null()) { // refine p
         _env.set(p, nullity_value::non_null());
       }
 
-      CRAB_LOG("nullity", crab::outs () << "After " << p << "!="  << v << "=" << *this <<"\n");
+      CRAB_LOG("nullity", crab::outs() << "After " << p << "!="  << v << "=" << *this <<"\n");
     }
 
-    // numerical_domains_api
+    /* Begin unimplemented operations */    
+    // arithmetic operations
     // XXX: needed for making a reduced product with a numerical domain
     void apply(operation_t op, variable_t x, variable_t y, variable_t z) {}
-    void apply(operation_t op, variable_t x, variable_t y, Number k) {}
+    void apply(operation_t op, variable_t x, variable_t y, number_t k) {}
     void assign(variable_t x, linear_expression_t e) {}
-    void backward_assign (variable_t x, linear_expression_t e,
+    void backward_assign(variable_t x, linear_expression_t e,
 			  nullity_domain_t invariant)  {}
-    void backward_apply (operation_t op, variable_t x, variable_t y, Number z,
+    void backward_apply(operation_t op, variable_t x, variable_t y, number_t z,
 			 nullity_domain_t invariant)  {}
     void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
 			nullity_domain_t invariant) {}
     void operator+=(linear_constraint_system_t csts) {}
     void operator+=(linear_constraint_t cst) {}
     // not part of the numerical_domains api but it should be
-    void set (variable_t x, interval_t intv) {}
-    interval_t operator[](variable_t x) { return interval_t::top ();}
+    void set(variable_t x, interval_t intv) {}
+    interval_t operator[](variable_t x) { return interval_t::top();}
 
-    // division_operators_api
-    // XXX: needed for making a reduced product with a numerical domain
-    void apply(div_operation_t op, variable_t x, variable_t y, variable_t z) {}
-    void apply(div_operation_t op, variable_t x, variable_t y, Number z) {}
-    
-    // int_cast_operators_api and bitwise_operators_api
+    // int cast operations and bitwise operations
     // XXX: needed for making a reduced product with a numerical domain
     void apply(int_conv_operation_t op, variable_t dst, variable_t src) {}
     void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {}
-    void apply(bitwise_operation_t op, variable_t x, variable_t y, Number z) {}
+    void apply(bitwise_operation_t op, variable_t x, variable_t y, number_t z) {}
 
-    // pointer_operators_api 
-    virtual void pointer_load (variable_t /*lhs*/, variable_t rhs) override {
+    // boolean operations
+    void assign_bool_cst(variable_t lhs, linear_constraint_t rhs) {}
+    void assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs) {}
+    void apply_binary_bool(bool_operation_t op, variable_t x,variable_t y,variable_t z) {}
+    void assume_bool(variable_t v, bool is_negated) {}
+    // backward boolean operations
+    void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
+				  nullity_domain_t invariant){}
+    void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
+				  nullity_domain_t invariant) {}
+    void backward_apply_binary_bool(bool_operation_t op,
+				    variable_t x,variable_t y,variable_t z,
+				    nullity_domain_t invariant) {}
+    // array operations
+    void array_init(variable_t a, linear_expression_t elem_size,
+		    linear_expression_t lb_idx, linear_expression_t ub_idx, 
+		    linear_expression_t val) {}      
+    void array_load(variable_t lhs,
+		    variable_t a, linear_expression_t elem_size,
+		    linear_expression_t i) {}
+    void array_store(variable_t a, linear_expression_t elem_size,
+		     linear_expression_t i, linear_expression_t v, 
+		     bool is_singleton) {}
+    void array_store_range(variable_t a, linear_expression_t elem_size,
+			   linear_expression_t i, linear_expression_t j,
+			   linear_expression_t v) {}    
+    void array_assign(variable_t lhs, variable_t rhs) {}
+      /* End unimplemented operations */    
+    
+    // pointer operations 
+    void pointer_load(variable_t /*lhs*/, variable_t rhs) {
       // XXX: assume after the load the rhs must be non-null otherwise
       // the program failed.
-      equality (rhs, nullity_value::non_null ());
+      equality(rhs, nullity_value::non_null());
     }
 
-    virtual void pointer_store (variable_t lhs, variable_t /*rhs*/) override {
+    void pointer_store(variable_t lhs, variable_t /*rhs*/) {
       // XXX: assume after the store the lhs must be non-null
       // otherwise the program failed.
-      equality (lhs, nullity_value::non_null ());
+      equality(lhs, nullity_value::non_null());
     } 
 
-    virtual void pointer_assign (variable_t lhs, variable_t rhs,
-				 lin_exp_t /*offset*/) override {
-      set_nullity (lhs, rhs);
+    void pointer_assign(variable_t lhs, variable_t rhs, linear_expression_t /*offset*/) {
+      set_nullity(lhs, rhs);
       CRAB_LOG("nullity",
-	       crab::outs () << "After " << lhs << ":=" << rhs << "=" << *this << "\n");
+	       crab::outs() << "After " << lhs << ":=" << rhs << "=" << *this << "\n");
     }
 
-    virtual void pointer_mk_obj (variable_t lhs, ikos::index_t /*address*/) override {
-      set_nullity (lhs, nullity_value::non_null ());
+    void pointer_mk_obj(variable_t lhs, ikos::index_t /*address*/) {
+      set_nullity(lhs, nullity_value::non_null());
       CRAB_LOG("nullity",
-	       crab::outs () << "After " << lhs << ":= mk_object()" << "=" << *this << "\n");
+	       crab::outs() << "After " << lhs << ":= mk_object()" << "=" << *this << "\n");
     }
 
-    virtual void pointer_function (variable_t lhs, VariableName /*func*/) override {
-      set_nullity (lhs, nullity_value::non_null ());
+    void pointer_function(variable_t lhs, varname_t /*func*/) {
+      set_nullity(lhs, nullity_value::non_null());
     }
     
-    virtual void pointer_mk_null (variable_t lhs) override {
-      set_nullity (lhs, nullity_value::null ());
+    void pointer_mk_null(variable_t lhs) {
+      set_nullity(lhs, nullity_value::null());
       CRAB_LOG("nullity",
-	       crab::outs () << "After " << lhs << ":= NULL" << "=" << *this << "\n");
+	       crab::outs() << "After " << lhs << ":= NULL" << "=" << *this << "\n");
     }
     
-    virtual void pointer_assume (ptr_cst_t cst) override {
-      if (cst.is_tautology ()) return;
+    void pointer_assume(pointer_constraint_t cst) {
+      if(cst.is_tautology()) return;
       
-      if (cst.is_contradiction ()) {
-        *this = bottom();
+      if (cst.is_contradiction()) {
+	set_to_bottom();
         return;
       }
 
-      if (cst.is_unary ()) {
-        if (cst.is_equality ()) 
-          equality (cst.lhs (), nullity_value::null ());
-        else // cst.is_disequality ();
-          disequality (cst.lhs (), nullity_value::null ());
+      if (cst.is_unary()) {
+        if (cst.is_equality()) 
+          equality (cst.lhs(), nullity_value::null());
+        else // cst.is_disequality();
+          disequality(cst.lhs(), nullity_value::null());
       } else { 
-        assert (cst.is_binary ());
-        if (cst.is_equality ()) 
-          equality (cst.lhs (), cst.rhs ());
-        else  // cst.is_disequality ();
-          disequality (cst.lhs (), cst.rhs ());
+        assert(cst.is_binary());
+        if (cst.is_equality()) 
+          equality(cst.lhs(), cst.rhs());
+        else  // cst.is_disequality();
+          disequality(cst.lhs(), cst.rhs());
       }
     }
     
-    virtual void pointer_assert (ptr_cst_t cst) override {
-      CRAB_WARN ("nullity pointer_assert not implemented");
+    void pointer_assert(pointer_constraint_t cst) {
+      CRAB_WARN("nullity pointer_assert not implemented");
     }
 
+    void forget(const variable_vector_t& variables) {
+      if (is_bottom() || is_top()) {
+	return;
+      }
+      for(variable_t var: variables){
+	this->operator-=(var); 
+      }
+    }
+    
+    void project(const variable_vector_t& variables){
+      crab::CrabStats::count(getDomainName() + ".count.project");
+      crab::ScopedCrabStats __st__(getDomainName() + ".project");
+      
+      if (is_bottom() || is_top()) {
+	return;
+      }
+
+       nullity_domain_t res;
+       for (variable_t v : variables) {
+         res.set_nullity(v, get_nullity(v));
+       }
+       std::swap(*this, res);
+    }
+    
+    void expand(variable_t x, variable_t new_x) {
+      crab::CrabStats::count(getDomainName() + ".count.expand");
+      crab::ScopedCrabStats __st__(getDomainName() + ".expand");
+      
+      if(is_bottom() || is_top()) {
+	return;
+      }
+
+      set_nullity(new_x , get_nullity(x));      
+    }
+
+    void normalize() {}
+    
     linear_constraint_system_t to_linear_constraint_system() {
       if (is_bottom())
 	return linear_constraint_t::get_false();
@@ -406,7 +470,7 @@ namespace crab {
       }
     }
     
-    static std::string getDomainName () {
+    static std::string getDomainName() {
       return "Nullity";
     }    
 
@@ -418,43 +482,10 @@ namespace crab {
     }; // class nullity_domain
 
 
-   template <typename Number, typename VariableName>
-   class domain_traits <nullity_domain<Number,VariableName> > {
-
-     typedef nullity_domain<Number,VariableName> nullity_domain_t;
-     
-    public:
-
-     typedef typename nullity_domain_t::variable_t variable_t;
-     
-     template<class CFG>
-     static void do_initialization (CFG cfg) { }
-
-     // Normalize the abstract domain if such notion exists.
-     static void normalize (nullity_domain_t& inv) { }
-
-     // Remove all variables [begin, end)
-     template<typename Iter>
-     static void forget (nullity_domain_t& inv, Iter begin, Iter end) {
-       for (auto v : boost::make_iterator_range (begin,end)){
-         inv -= v; 
-       }
-     }
-
-     // Forget all variables except [begin, end)
-     template <typename Iter>
-     static void project(nullity_domain_t& inv, Iter begin, Iter end){
-       nullity_domain_t res = nullity_domain_t::top ();
-       for (auto v : boost::make_iterator_range (begin, end))
-         res.set_nullity (v, inv.get_nullity(v)); 
-       std::swap (inv, res);
-     }
-         
-     // Make a new copy of x without relating x with new_x
-     static void expand (nullity_domain_t& inv, variable_t x, variable_t new_x) {
-       inv.set_nullity (new_x , inv.get_nullity (x));
-     }
-
+   template<typename Number, typename VariableName>
+   struct abstract_domain_traits<nullity_domain<Number,VariableName>> {
+     typedef Number number_t;
+     typedef VariableName varname_t;
    };
  
   } // end namespace domains 

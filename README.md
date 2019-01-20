@@ -1,21 +1,21 @@
 # Crab: A Language-Agnostic Library for Static Analysis #
 
-<a href="https://travis-ci.org/seahorn/crab"><img src="https://travis-ci.org/seahorn/crab.svg?branch=master" title="Ubuntu 12.04 LTS 64bit, g++-4.8"/></a>
+<a href="https://travis-ci.org/seahorn/crab"><img src="https://travis-ci.org/seahorn/crab.svg?branch=master" title="Ubuntu 12.04 LTS 64bit, g++-5.0"/></a>
 
 <img src="http://i.imgur.com/IDKhq5h.png" alt="crab logo" width=280 height=200 />
 
 # Description #
 
 
-Crab (CoRnucopia of ABstractions) allows to perform static analysis of programs based on
-[Abstract Interpretation](https://en.wikipedia.org/wiki/Abstract_interpretation).
+Crab (CoRnucopia of ABstractions) performs static analysis of programs
+based on [Abstract Interpretation](https://en.wikipedia.org/wiki/Abstract_interpretation).
 
-Crab does not analyze directly a mainstream programming language such as
-C, C++, or Java but instead it analyzes a simplified
+Crab does not analyze directly a mainstream programming language such
+as C, C++, or Java but instead it analyzes a simplified
 Control-Flow-Graph (CFG) based language which is
-language-independent. This can allow Crab analyzing different
-programming languages assuming a translator to the CFG-based language
-is available.
+language-independent. This allows Crab analyzing different programming
+languages assuming a translator to the CFG-based language is
+available.
 
 Crab has been designed to have two kind of users:
 
@@ -38,12 +38,12 @@ Open Static Analyzers) developed by NASA Ames Research Center.
 
 ![Crab Architecture](https://github.com/seahorn/crab/blob/master/Crab_arch.jpg?raw=true "Crab Architecture")
 
-# Installation and Usage #
+# Requirements #
 
-Crab is written in C++ and uses heavily the Boost library. The main
+Crab is written in C++ and relies on the Boost library. The main
 requirements are:
 
-- C++ compiler supporting c++11
+- Modern C++ compiler supporting c++11
 - Boost
 - GMP 
 - MPFR (if `-DUSE_APRON=ON` or `-DUSE_ELINA=ON`)
@@ -54,26 +54,25 @@ In linux, you can install requirements typing the commands:
     sudo apt-get install libgmp-dev
     sudo apt-get install libmpfr-dev	
 
+# Installation #
+
 To install Crab, type:
 
 	mkdir build && cd build
     cmake -DCMAKE_INSTALL_PREFIX=_INSTALL_DIR_ ../
     cmake --build . --target install 
 
-To include Crab in your application you just need to include the
-corresponding C++ header files located at the `_INSTALL_DIR_/include`
-directory and make sure that you link your application with the Crab
-libraries (`_INSTALL_DIR_/lib` directory).
-
-The Boxes and Apron domains require third-party libraries. To avoid
+The Boxes/Apron/Elina domains require third-party libraries. To avoid
 the burden to users who are not interested in those domains, the
 installation of the libraries is optional.
 
-If you want to use the Boxes domain then add `-DUSE_LDD=ON` option.
+- If you want to use the Boxes domain then add `-DUSE_LDD=ON` option.
 
-If you want to use the Apron library domains then add `-DUSE_APRON=ON` option.
+- If you want to use the Apron library domains then add
+  `-DUSE_APRON=ON` option.
 
-If you want to use the Elina library domains then add `-DUSE_ELINA=ON` option.
+- If you want to use the Elina library domains then add
+  `-DUSE_ELINA=ON` option.
 
 **Important:** Apron and Elina are currently not compatible so you
 cannot enable `-DUSE_APRON=ON` and `-DUSE_ELINA=ON` at the same time. 
@@ -106,7 +105,24 @@ and then, for instance, to run `test1`:
 
     build/test-bin/test1
 
-# Example #
+# Usage #
+
+To include Crab in your C++ application you need to:
+
+- include the C++ header files located at the
+`_INSTALL_DIR_/crab/include`, and
+ 
+- link your application with the Crab libraries installed in
+`_INSTALL_DIR_/crab/lib`.
+
+
+If you compile with Boxes/Apron/Elina you need also to include
+`_INSTALL_DIR_/xxx/include` and link with `_INSTALL_DIR_/xxx/lib`
+where `xxx=apron|elina|ldd`.
+
+Read [this](https://github.com/seahorn/crab/blob/master/external/Makefile) for a real Makefile.
+
+## Example ## 
 
 Assume we want to perform static analysis on the following C-like
 program:
@@ -123,10 +139,11 @@ program:
 	}	 
 ``` 
 
-This is the C++ code to build the corresponding Crab CFG and run the
-analysis using the Zones domain (note: this code has been simplified
-for presentation purposes and it might not compile like it is. Go to
-`tests` directory for real examples):
+Next, we show a simplified version of the C++ code to build the
+corresponding Crab CFG and run the analysis using the Zones domain.
+
+**Note**: this code has been simplified for presentation purposes and
+it might not compile like it is. Read [this](https://github.com/seahorn/crab/blob/master/external/analysis.cpp) for real example.
 
 ```c++
     // CFG-based language
@@ -223,9 +240,9 @@ the entry of each basic block, should be something like this:
     bb2={i -> [0, 99], x -> [1, +oo], y -> [0, 99], y-i<=0, y-x<=0, i-x<=0, i-y<=0}
 	ret={i -> [100, 100], x -> [100, +oo], y -> [100, 100], y-i<=0, y-x<=0, i-x<=0, i-y<=0}
 
-# Integrating Crab in other analysis tools #
+# Integration of Crab in other analysis tools #
 
-Read [README.md](https://github.com/seahorn/crab/blob/master/external/README.md) for a trival example using `Makefile` or check these projects using `cmake`:
+Crab has been integrated in these static analysis tools:
 
 - [Crab-Llvm](https://github.com/seahorn/crab-llvm) is a static
 analyzer that infers invariants from LLVM-based languages using Crab.

@@ -410,16 +410,17 @@ namespace ikos {
 	  }
           this->_iterator->set_pre(node, pre);
         }
-
-        crab::CrabStats::resume ("Fixpo.analyze_block");	
+	
+        crab::CrabStats::resume ("Fixpo.analyze_block");
+	AbstractValue post(pre); 	
         CRAB_VERBOSE_IF (1, crab::outs() << "Analyzing node "
 			                 << crab::cfg_impl::get_label_str(node);
 			 auto &n = this->_iterator->_cfg.get_node(node);
 			 crab::outs () << " size=" << n.size() << "\n";);
-        this->_iterator->analyze(node, pre);
+        this->_iterator->analyze(node, post);
         crab::CrabStats::stop ("Fixpo.analyze_block");		
 	
-        this->_iterator->set_post(node, pre);
+        this->_iterator->set_post(node, post);
       }
       
       void visit(wto_cycle_t& cycle) {

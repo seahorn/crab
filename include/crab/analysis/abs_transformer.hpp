@@ -38,13 +38,12 @@
 
 #include <boost/optional.hpp>
 #include <boost/range/algorithm/set_algorithm.hpp>
-#include <boost/noncopyable.hpp>
 
 #include <crab/common/debug.hpp>
 #include <crab/common/stats.hpp>
 #include <crab/cfg/cfg.hpp>
-#include <crab/domains/domain_traits.hpp>
 #include <crab/domains/linear_constraints.hpp>
+#include <crab/domains/abstract_domain_operators.hpp>
 
 namespace crab {
 
@@ -54,8 +53,7 @@ namespace crab {
    * API abstract transformer
    **/
   template<typename Number, typename VariableName>
-  class abs_transformer_api: public crab::cfg::statement_visitor<Number, VariableName>
-  {
+  class abs_transformer_api: public crab::cfg::statement_visitor<Number, VariableName> {
    public:
 
     typedef Number number_t;    
@@ -170,8 +168,7 @@ namespace crab {
    **/
   template<class AbsD>
   class intra_abs_transformer: 
-      public abs_transformer_api<typename AbsD::number_t, typename AbsD::varname_t>,
-      public boost::noncopyable {
+      public abs_transformer_api<typename AbsD::number_t, typename AbsD::varname_t> {
     
    public:
     typedef AbsD abs_dom_t;
@@ -216,7 +213,7 @@ namespace crab {
     
    protected:
     /// XXX: the transformer does not own m_inv.
-    abs_dom_t *m_inv;
+    abs_dom_t* m_inv;
     bool m_ignore_assert;
     
    private:
@@ -224,51 +221,54 @@ namespace crab {
     template <typename NumOrVar>
     void apply(abs_dom_t &inv, binary_operation_t op, 
 	       variable_t x, variable_t y, NumOrVar z) {
-      auto op1 = conv_op<ikos::operation_t>(op);
-      auto op2 = conv_op<ikos::div_operation_t>(op);
-      auto op3 = conv_op<ikos::bitwise_operation_t>(op);
-      if (op1)      inv.apply(*op1, x, y, z); 
-      else if (op2) inv.apply(*op2, x, y, z);
-      else if (op3) inv.apply(*op3, x, y, z);
-      else CRAB_ERROR("unsupported binary operator", op);
-    }
-
-    abs_dom_t *get_inv() {
-      if (!m_inv)
-	CRAB_ERROR("Invariant passed to transformer cannot be null!");
-      return m_inv;
+      if (auto top = conv_op<ikos::operation_t>(op)) {
+	inv.apply(*top, x, y, z);
+      } else if (auto top = conv_op<ikos::bitwise_operation_t>(op)) {
+	inv.apply(*top, x, y, z);
+      } else {
+	CRAB_ERROR("unsupported binary operator", op);
+      }
     }
     
    public:
     
-    intra_abs_transformer(abs_dom_t* inv, bool ignore_assert = false):
-      m_inv(inv), m_ignore_assert(ignore_assert) { }
-    
+    intra_abs_transformer(abs_dom_t* inv, bool ignore_assert = false)
+      : m_inv(inv)
+      , m_ignore_assert(ignore_assert) { }
+      
     virtual ~intra_abs_transformer() { }
 
-    void set(abs_dom_t& inv) { m_inv = &inv;}
-    
-    abs_dom_t& inv() { return *get_inv(); }
-    
+    void set(abs_dom_t* inv) {
+      m_inv = inv;
+    }
+
+    abs_dom_t* get() {
+      if (!m_inv) {
+	CRAB_ERROR("Invariant passed to transformer cannot be null!");
+      } else {
+	return m_inv;
+      }
+    }
+
     void exec(bin_op_t& stmt) {      
       bool pre_bot = false;
       if (::crab::CrabSanityCheckFlag) {
-	pre_bot = get_inv()->is_bottom();
+	pre_bot = get()->is_bottom();
       }
       
       auto op1 = stmt.left();
       auto op2 = stmt.right();
       if (op1.get_variable() && op2.get_variable()) {
-        apply(*get_inv(), stmt.op(), 
+        apply(*get(), stmt.op(), 
 	      stmt.lhs(), (*op1.get_variable()), (*op2.get_variable()));  
       } else {
         assert(op1.get_variable() && op2.is_constant());
-        apply(*get_inv(), stmt.op(), 
+        apply(*get(), stmt.op(), 
 	      stmt.lhs(), (*op1.get_variable()), op2.constant());  
       }
       
       if (::crab::CrabSanityCheckFlag) {
-	bool post_bot = get_inv()->is_bottom();
+	bool post_bot = get()->is_bottom();
 	if (!(pre_bot || !post_bot)) {
 	  CRAB_ERROR("Invariant became bottom after ", stmt);
 	}
@@ -276,10 +276,10 @@ namespace crab {
     }
     
     void exec(select_t& stmt) {
-      bool pre_bot = get_inv()->is_bottom();
+      bool pre_bot = get()->is_bottom();
       
-      abs_dom_t inv1(*get_inv());
-      abs_dom_t inv2(*get_inv());
+      abs_dom_t inv1(*get());
+      abs_dom_t inv2(*get());
 
       inv1 += stmt.cond();
       inv2 += stmt.cond().negate();
@@ -292,20 +292,20 @@ namespace crab {
       
       if (inv2.is_bottom()) {
         inv1.assign(stmt.lhs(), stmt.left());
-        *get_inv() = inv1;
+        *get() = inv1;
       }
       else if (inv1.is_bottom()) {
         inv2.assign(stmt.lhs(), stmt.right());
-        *get_inv() = inv2;
+        *get() = inv2;
       }
       else {
         inv1.assign(stmt.lhs(), stmt.left());
         inv2.assign(stmt.lhs(), stmt.right());
-        *get_inv() = inv1 | inv2;
+        *get() = inv1 | inv2;
       }
 
       if (::crab::CrabSanityCheckFlag) {
-	bool post_bot = get_inv()->is_bottom();      
+	bool post_bot = get()->is_bottom();      
 	if (!(pre_bot || !post_bot)) {
 	  CRAB_ERROR("Invariant became bottom after ", stmt);
 	}
@@ -315,13 +315,13 @@ namespace crab {
     void exec(assign_t& stmt) {
       bool pre_bot = false;
       if (::crab::CrabSanityCheckFlag) {
-	pre_bot = get_inv()->is_bottom();
+	pre_bot = get()->is_bottom();
       }
       
-      get_inv()->assign(stmt.lhs(), stmt.rhs());
+      get()->assign(stmt.lhs(), stmt.rhs());
       
       if (::crab::CrabSanityCheckFlag) {
-	bool post_bot = get_inv()->is_bottom();      
+	bool post_bot = get()->is_bottom();      
 	if (!(pre_bot || !post_bot)) {
 	  CRAB_ERROR("Invariant became bottom after ", stmt);
 	}
@@ -329,28 +329,44 @@ namespace crab {
     }
     
     void exec(assume_t& stmt) {
-      *get_inv() += stmt.constraint();
+      *get() += stmt.constraint();
     }
     
     void exec(assert_t& stmt) {
       if (m_ignore_assert) return;
-      *get_inv() += stmt.constraint();
+
+      bool pre_bot = false;
+      if (::crab::CrabSanityCheckFlag) {
+	pre_bot = get()->is_bottom();
+      }
+      
+      *get() += stmt.constraint();
+
+      if (::crab::CrabSanityCheckFlag) {
+	if (!stmt.constraint().is_contradiction()) {
+	  bool post_bot = get()->is_bottom();      
+	  if (!(pre_bot || !post_bot)) {
+	    CRAB_WARN("Invariant became bottom after ", stmt, ".",
+		      " This might indicate that the assertion is violated");
+	  }
+	}
+      }      
     }
 
     void exec(int_cast_t &stmt){
       bool pre_bot = false;
       if (::crab::CrabSanityCheckFlag) {      
-	pre_bot = get_inv()->is_bottom();
+	pre_bot = get()->is_bottom();
       }
       
       if (auto op = conv_op<crab::domains::int_conv_operation_t>(stmt.op())) {
-	get_inv()->apply(*op, stmt.dst(), stmt.src());
+	get()->apply(*op, stmt.dst(), stmt.src());
       } else {
 	CRAB_ERROR("unsupported cast operator ", stmt.op());	
       }
       
       if (::crab::CrabSanityCheckFlag) {      
-	bool post_bot = get_inv()->is_bottom();
+	bool post_bot = get()->is_bottom();
 	if (!(pre_bot || !post_bot)) {
 	  CRAB_ERROR("Invariant became bottom after ", stmt);
 	}
@@ -360,13 +376,13 @@ namespace crab {
     void exec(bool_assign_cst_t& stmt) {
       bool pre_bot = false;
       if (::crab::CrabSanityCheckFlag) {      
-	pre_bot = get_inv()->is_bottom();
+	pre_bot = get()->is_bottom();
       }
       
-      get_inv()->assign_bool_cst(stmt.lhs(), stmt.rhs());
+      get()->assign_bool_cst(stmt.lhs(), stmt.rhs());
       
       if (::crab::CrabSanityCheckFlag) {      
-	bool post_bot = get_inv()->is_bottom();
+	bool post_bot = get()->is_bottom();
 	if (!(pre_bot || !post_bot)) {
 	  CRAB_ERROR("Invariant became bottom after ", stmt);
 	}
@@ -376,13 +392,13 @@ namespace crab {
     void exec(bool_assign_var_t& stmt) {
       bool pre_bot = false;
       if (::crab::CrabSanityCheckFlag) {      
-	pre_bot = get_inv()->is_bottom();
+	pre_bot = get()->is_bottom();
       }
       
-      get_inv()->assign_bool_var(stmt.lhs(), stmt.rhs(), stmt.is_rhs_negated());
+      get()->assign_bool_var(stmt.lhs(), stmt.rhs(), stmt.is_rhs_negated());
       
       if (::crab::CrabSanityCheckFlag) {      
-	bool post_bot = get_inv()->is_bottom();
+	bool post_bot = get()->is_bottom();
 	if (!(pre_bot || !post_bot)) {
 	  CRAB_ERROR("Invariant became bottom after ", stmt);
 	}
@@ -392,17 +408,17 @@ namespace crab {
     void exec(bool_bin_op_t& stmt) {
       bool pre_bot = false;
       if (::crab::CrabSanityCheckFlag) {      
-	pre_bot = get_inv()->is_bottom();
+	pre_bot = get()->is_bottom();
       }
       
       if (auto op = conv_op<domains::bool_operation_t>(stmt.op())) {
-	get_inv()->apply_binary_bool(*op, stmt.lhs(), stmt.left(), stmt.right());
+	get()->apply_binary_bool(*op, stmt.lhs(), stmt.left(), stmt.right());
       } else {
 	CRAB_WARN("Unsupported statement ", stmt);
       }
       
       if (::crab::CrabSanityCheckFlag) {      
-	bool post_bot = get_inv()->is_bottom();
+	bool post_bot = get()->is_bottom();
 	if (!(pre_bot || !post_bot)) {
 	  CRAB_ERROR("Invariant became bottom after ", stmt);
 	}
@@ -410,36 +426,36 @@ namespace crab {
     }
     
     void exec(bool_assume_t& stmt) {
-      get_inv()->assume_bool(stmt.cond(), stmt.is_negated());
+      get()->assume_bool(stmt.cond(), stmt.is_negated());
     }
 
     void exec(bool_select_t& stmt) {
       bool pre_bot = false;
       if (::crab::CrabSanityCheckFlag) {      
-	pre_bot = get_inv()->is_bottom();
+	pre_bot = get()->is_bottom();
       }
       
-      abs_dom_t inv1(*get_inv());
-      abs_dom_t inv2(*get_inv());
+      abs_dom_t inv1(*get());
+      abs_dom_t inv2(*get());
       const bool negate = true;
       inv1.assume_bool(stmt.cond(), !negate);
       inv2.assume_bool(stmt.cond(), negate);
       if (inv2.is_bottom()) {
         inv1.assign_bool_var(stmt.lhs(), stmt.left(), !negate);
-        *get_inv() = inv1;
+        *get() = inv1;
       }
       else if (inv1.is_bottom()) {
         inv2.assign_bool_var(stmt.lhs(), stmt.right(), !negate);
-        *get_inv() = inv2;
+        *get() = inv2;
       }
       else {
         inv1.assign_bool_var(stmt.lhs(), stmt.left(), !negate);
         inv2.assign_bool_var(stmt.lhs(), stmt.right(), !negate);
-        *get_inv() = inv1 | inv2;
+        *get() = inv1 | inv2;
       }
       
       if (::crab::CrabSanityCheckFlag) {      
-	bool post_bot = get_inv()->is_bottom();
+	bool post_bot = get()->is_bottom();
 	if (!(pre_bot || !post_bot)) {
 	  CRAB_ERROR("Invariant became bottom after ", stmt);
 	}
@@ -449,19 +465,19 @@ namespace crab {
     void exec(bool_assert_t& stmt) {
       if (m_ignore_assert) return;
  
-      get_inv()->assume_bool(stmt.cond(), false);
+      get()->assume_bool(stmt.cond(), false);
     }
     
     void exec(havoc_t& stmt) {
       bool pre_bot = false;
       if (::crab::CrabSanityCheckFlag) {      
-	pre_bot = get_inv()->is_bottom();
+	pre_bot = get()->is_bottom();
       }
       
-      (*get_inv()) -= stmt.variable();
+      (*get()) -= stmt.variable();
 
       if (::crab::CrabSanityCheckFlag) {
-	bool post_bot = get_inv()->is_bottom();
+	bool post_bot = get()->is_bottom();
 	if (!(pre_bot || !post_bot)) {
 	  CRAB_ERROR("Invariant became bottom after ", stmt);
 	}
@@ -469,20 +485,20 @@ namespace crab {
     }
     
     void exec(unreach_t& stmt) {
-      *get_inv() = abs_dom_t::bottom();
+      *get() = abs_dom_t::bottom();
     }
     
     void exec(arr_init_t& stmt) {
       bool pre_bot = false;
       if (::crab::CrabSanityCheckFlag) {      
-	pre_bot = get_inv()->is_bottom();
+	pre_bot = get()->is_bottom();
       }
       
-      get_inv()->array_init(stmt.array(), stmt.elem_size(),
-			     stmt.lb_index(), stmt.ub_index(), stmt.val());
+      get()->array_init(stmt.array(), stmt.elem_size(),
+			    stmt.lb_index(), stmt.ub_index(), stmt.val());
 
       if (::crab::CrabSanityCheckFlag) {
-	bool post_bot = get_inv()->is_bottom();
+	bool post_bot = get()->is_bottom();
 	if (!(pre_bot || !post_bot)) {
 	  CRAB_ERROR("Invariant became bottom after ", stmt);
 	}
@@ -492,14 +508,19 @@ namespace crab {
     void exec(arr_store_t& stmt) {
       bool pre_bot = false;
       if (::crab::CrabSanityCheckFlag) {      
-	pre_bot = get_inv()->is_bottom();
+	pre_bot = get()->is_bottom();
       }
-      
-      get_inv()->array_store(stmt.array(), stmt.elem_size(),
-			      stmt.index(), stmt.value(), stmt.is_singleton());
+
+      if (stmt.lb_index().equal(stmt.ub_index())) {
+	get()->array_store(stmt.array(), stmt.elem_size(),
+			   stmt.lb_index(), stmt.value(), stmt.is_singleton());
+      } else {
+	get()->array_store_range(stmt.array(), stmt.elem_size(),
+				 stmt.lb_index(), stmt.ub_index(), stmt.value());	
+      } 
 
       if (::crab::CrabSanityCheckFlag) {
-	bool post_bot = get_inv()->is_bottom();
+	bool post_bot = get()->is_bottom();
 	if (!(pre_bot || !post_bot)) {
 	  CRAB_ERROR("Invariant became bottom after ", stmt);
 	}
@@ -509,13 +530,13 @@ namespace crab {
     void exec(arr_load_t& stmt) {
       bool pre_bot = false;
       if (::crab::CrabSanityCheckFlag) {      
-	pre_bot = get_inv()->is_bottom();
+	pre_bot = get()->is_bottom();
       }
       
-      get_inv()->array_load(stmt.lhs(), stmt.array(), stmt.elem_size(), stmt.index());
+      get()->array_load(stmt.lhs(), stmt.array(), stmt.elem_size(), stmt.index());
 
       if (::crab::CrabSanityCheckFlag) {
-	bool post_bot = get_inv()->is_bottom();
+	bool post_bot = get()->is_bottom();
 	if (!(pre_bot || !post_bot)) {
 	  CRAB_ERROR("Invariant became bottom after ", stmt);
 	}
@@ -525,13 +546,13 @@ namespace crab {
     void exec(arr_assign_t& stmt) {
       bool pre_bot = false;
       if (::crab::CrabSanityCheckFlag) {      
-	pre_bot = get_inv()->is_bottom();
+	pre_bot = get()->is_bottom();
       }
       
-      get_inv()->array_assign(stmt.lhs(), stmt.rhs());
+      get()->array_assign(stmt.lhs(), stmt.rhs());
 
       if (::crab::CrabSanityCheckFlag) {
-	bool post_bot = get_inv()->is_bottom();
+	bool post_bot = get()->is_bottom();
 	if (!(pre_bot || !post_bot)) {
 	  CRAB_ERROR("Invariant became bottom after ", stmt);
 	}
@@ -539,34 +560,34 @@ namespace crab {
     }
     
     void exec(ptr_null_t& stmt)
-    { get_inv()->pointer_mk_null(stmt.lhs()); }
+    { get()->pointer_mk_null(stmt.lhs()); }
     
     void exec(ptr_object_t& stmt)
-    { get_inv()->pointer_mk_obj(stmt.lhs(), stmt.rhs()); }
+    { get()->pointer_mk_obj(stmt.lhs(), stmt.rhs()); }
     
     void exec(ptr_assign_t& stmt)
-    { get_inv()->pointer_assign(stmt.lhs(), stmt.rhs(), stmt.offset()); }
+    { get()->pointer_assign(stmt.lhs(), stmt.rhs(), stmt.offset()); }
     
     void exec(ptr_function_t& stmt)
-    { get_inv()->pointer_function(stmt.lhs(), stmt.rhs()); }
+    { get()->pointer_function(stmt.lhs(), stmt.rhs()); }
     
     void exec(ptr_load_t& stmt)
-    { get_inv()->pointer_load(stmt.lhs(), stmt.rhs()); }
+    { get()->pointer_load(stmt.lhs(), stmt.rhs()); }
     
     void exec(ptr_store_t& stmt)
-    { get_inv()->pointer_store(stmt.lhs(), stmt.rhs()); }
+    { get()->pointer_store(stmt.lhs(), stmt.rhs()); }
     
     void exec(ptr_assume_t& stmt)
-    { get_inv()->pointer_assume(stmt.constraint()); }
+    { get()->pointer_assume(stmt.constraint()); }
     
     void exec(ptr_assert_t& stmt) {
       if (m_ignore_assert) return;
-      get_inv()->pointer_assert(stmt.constraint());
+      get()->pointer_assert(stmt.constraint());
     }
     
     virtual void exec(callsite_t& cs) {
       for (auto vt: cs.get_lhs()) {
-	(*get_inv()) -= vt;  // havoc
+	(*get()) -= vt;  // havoc
       }
     }
   }; 
@@ -578,10 +599,7 @@ namespace crab {
    **/ 
   template<class AbsD, class InvT>
   class intra_necessary_preconditions_abs_transformer: 
-      public abs_transformer_api<typename AbsD::number_t,
-				 typename AbsD::varname_t>,
-      public boost::noncopyable {
-    
+      public abs_transformer_api<typename AbsD::number_t, typename AbsD::varname_t> {
    public:
     typedef AbsD abs_dom_t;
     typedef typename abs_dom_t::number_t number_t;
@@ -625,37 +643,47 @@ namespace crab {
    protected:
     
     // used to compute the (necessary) preconditions
-    abs_dom_t *m_pre;
-    // used to refine the preconditions: map from statement_t to
-    // abs_dom_t.
-    InvT &m_invariants; 
+    abs_dom_t* m_pre;
+    // used to refine the preconditions: map from statement_t to abs_dom_t.
+    InvT* m_invariants; 
     bool m_ignore_assert;
+    
    public:
 
-    intra_necessary_preconditions_abs_transformer(abs_dom_t* post, InvT& invars,
+    intra_necessary_preconditions_abs_transformer(abs_dom_t* post, InvT* invars,
 						  bool ignore_assert = false)
 						  
-      : m_pre(post), m_invariants(invars), m_ignore_assert(ignore_assert) {
-      if (!m_pre)
-	CRAB_ERROR("Postcondition cannot be null!");
+      : m_pre(post)
+      , m_invariants(invars)
+      , m_ignore_assert(ignore_assert) {
+
+      if (!m_invariants) {
+	CRAB_ERROR("Invariant table cannot be null");
+      }
+      
+      if (!m_pre) {
+	CRAB_ERROR("Postcondition cannot be null");
+      }
     }
     
     virtual ~intra_necessary_preconditions_abs_transformer() { }
 
-    abs_dom_t& preconditions() { return *m_pre; }
+    abs_dom_t& preconditions() {
+      return *m_pre;
+    }
     
     void exec(bin_op_t& stmt) {
-
       auto op = conv_op<ikos::operation_t>(stmt.op());
-      if (!op) {
-	//CRAB_WARN("backward operation ", stmt.op(), " not implemented");
+      if (!op || op >= ikos::OP_UDIV) {
+	// ignore UDIV, SREM, UREM
+	// CRAB_WARN("backward operation ", stmt.op(), " not implemented");
 	(*m_pre) -= stmt.lhs();
 	return;
       }
       
       auto op1 = stmt.left();
       auto op2 = stmt.right();
-      abs_dom_t invariant = m_invariants[&stmt];
+      abs_dom_t invariant = (*m_invariants)[&stmt];
 
       CRAB_LOG("backward",
 	       crab::outs() << "** " << stmt.lhs() << " := "
@@ -695,7 +723,7 @@ namespace crab {
     //     goto post;
     //   post: ....
     void exec(select_t& stmt) {
-      abs_dom_t old_pre = m_invariants[&stmt];
+      abs_dom_t old_pre = (*m_invariants)[&stmt];
 
       // -- one of the two branches is false
       abs_dom_t then_inv(old_pre);                  
@@ -728,7 +756,7 @@ namespace crab {
 
     // x := e
     void exec(assign_t& stmt) {
-      abs_dom_t invariant = m_invariants[&stmt];
+      abs_dom_t invariant = (*m_invariants)[&stmt];
       
       CRAB_LOG("backward",
 	       auto rhs = stmt.rhs();
@@ -788,12 +816,13 @@ namespace crab {
 
     // ret := *
     virtual void exec(callsite_t& cs) {
-      for (auto vt: cs.get_lhs())
-	*m_pre -= vt;  
+      for (auto vt: cs.get_lhs()) {
+	*m_pre -= vt;
+      }
     }
 
     void exec(int_cast_t& stmt) {
-      abs_dom_t invariant = m_invariants[&stmt];
+      abs_dom_t invariant = (*m_invariants)[&stmt];
       m_pre->backward_assign(stmt.dst(), stmt.src(), invariant);
     }
     
@@ -819,7 +848,8 @@ namespace crab {
     }
 
     void exec(arr_load_t& stmt)
-    { *m_pre -= stmt.lhs(); }          
+    { *m_pre -= stmt.lhs(); }
+    
     // NOT IMPLEMENTED
     void exec(arr_init_t& stmt) { }
     void exec(arr_store_t& stmt) { }
@@ -843,8 +873,7 @@ namespace crab {
     typedef typename AbsDom::linear_expression_t linear_expression_t;
     typedef typename AbsDom::variable_t variable_t;    
     typedef typename AbsDom::number_t number_t;
-    switch(ty)
-    {
+    switch(ty) {
       case BOOL_TYPE:
 	inv.assign_bool_var(lhs, rhs, false);
 	break;      
@@ -872,7 +901,7 @@ namespace crab {
    **/
   template<class SumTable> 
   class bu_summ_abs_transformer: 
-      public intra_abs_transformer <typename SumTable::abs_domain_t> {
+      public intra_abs_transformer<typename SumTable::abs_domain_t> {
 				      
    public:
 
@@ -895,8 +924,8 @@ namespace crab {
     using typename abs_transform_api_t::callsite_t;
         
     static void reuse_summary(abs_dom_t& caller, 
-                               const callsite_t& cs,
-                               const typename SumTable::Summary& summ) {
+			      const callsite_t& cs,
+			      const typename SumTable::Summary& summ) {
       // Before a summary is plug-in we rename it with unique variable
       // names so we avoid naming clashes in cases like for instance
       // summary variables have same names as lhs of callsites.
@@ -958,9 +987,9 @@ namespace crab {
 
       // --- remove from caller only formal parameters so we can keep
       //     as much context from the caller as possible
-      std::set<variable_t> vs;
-      boost::set_difference(formals, actuals, std::inserter(vs, vs.end()));
-      domains::domain_traits<abs_dom_t>::forget(caller, vs.begin(), vs.end());
+      std::vector<variable_t> vs;
+      boost::set_difference(formals, actuals, std::back_inserter(vs));
+      caller.forget(vs);
 
       CRAB_LOG("inter", 
                 crab::outs() << "\t\tAfter forgetting formal parameters {";
@@ -971,24 +1000,23 @@ namespace crab {
    public:
 
     bu_summ_abs_transformer(abs_dom_t* inv, SumTable* sum_tbl)
-        : intra_abs_transform_t(inv), m_sum_tbl(sum_tbl) { }
+      : intra_abs_transform_t(inv)
+      , m_sum_tbl(sum_tbl) { }
     
-    virtual void exec(callsite_t& cs) override
-    {
-      if (!m_sum_tbl)
+    virtual void exec(callsite_t& cs) override {
+      if (!m_sum_tbl) {
         CRAB_WARN("The summary table is empty: ignored analysis of callsite");
-      else
-      {
+      } else {
 	if (m_sum_tbl->hasSummary(cs)) {
 	  auto summ = m_sum_tbl->get(cs);
 	  reuse_summary(*(this->m_inv), cs, summ);
 	}
-	else
-	{
+	else {
 	  CRAB_LOG("inter",
 		   crab::outs() << "\tSummary not found for " << cs << "\n");
-	  for (auto vt: cs.get_lhs())
-	    *(this->m_inv) -= vt;  // havoc 
+	  for (auto vt: cs.get_lhs()) {
+	    *(this->m_inv) -= vt;  // havoc
+	  }
 	}
       }
     }
@@ -1007,8 +1035,9 @@ namespace crab {
 	                   << Domain1::getDomainName() << " is more precise than "
 	                   << Domain2::getDomainName() << "\n");
 	     
-    for (auto cst : from.to_linear_constraint_system())
-    { to += cst; }
+    for (auto cst : from.to_linear_constraint_system()) {
+      to += cst;
+    }
   }
 
   /**
@@ -1044,12 +1073,12 @@ namespace crab {
    public:
     
     td_summ_abs_transformer(abs_dom_t* inv,
-			     SumTable* sum_tbl, CallCtxTable* call_tbl)
-        : intra_abs_transform_t(inv), 
-          m_sum_tbl(sum_tbl), m_call_tbl(call_tbl) { }
+			    SumTable* sum_tbl, CallCtxTable* call_tbl)
+      : intra_abs_transform_t(inv), 
+	m_sum_tbl(sum_tbl),
+	m_call_tbl(call_tbl) { }
           
-    virtual void exec(callsite_t& cs) override
-    {      
+    virtual void exec(callsite_t& cs) override {
       if (!m_sum_tbl) {
         CRAB_WARN("The summary table is empty");
       } else if(m_sum_tbl->hasSummary(cs)) {
@@ -1072,7 +1101,7 @@ namespace crab {
         // --- matching formal and actual parameters
         // XXX: propagating down 	
         unsigned i=0;
-        auto inputs = summ.get_inputs();
+        const std::vector<variable_t>& inputs = summ.get_inputs();
         for (variable_t p : inputs) {
           variable_t a = cs.get_arg_name(i);
           if (!(a == p))
@@ -1081,13 +1110,12 @@ namespace crab {
         }
 
         // --- project only onto formal parameters
-        domains::domain_traits<abs_dom_t>::project(callee_ctx_inv, 
-                                                    inputs.begin(),
-                                                    inputs.end());
+	callee_ctx_inv.project(inputs);
         // --- store the callee context
         CRAB_LOG("inter", 
                   crab::outs() << "\t\tCallee context stored: " 
                                << callee_ctx_inv << "\n");
+	
         m_call_tbl->insert(cs, callee_ctx_inv);          
         
         /////
@@ -1101,15 +1129,15 @@ namespace crab {
 	// caller_ctx_inv and m_inv may be inconsistent if the lhs
 	// variables are constrained before the callsite (e.g., x=-5;
 	// x := abs(x);)
-	for (auto vt: cs.get_lhs())
-	{ *(this->m_inv) -= vt; }
+	for (auto vt: cs.get_lhs()) {
+	  *(this->m_inv) -= vt;
+	}
 	
         CRAB_LOG("inter",
                   crab::outs() << "\t\tCaller context: " <<  caller_ctx_inv << "\n");
         
         // --- reuse summary to do the continuation
-        bu_summ_abs_transformer<SumTable>::
-	  reuse_summary(caller_ctx_inv, cs, summ);
+        bu_summ_abs_transformer<SumTable>::reuse_summary(caller_ctx_inv, cs, summ);
         CRAB_LOG("inter",
                   crab::outs() << "\t\tCaller context after plugin summary: " 
                                << caller_ctx_inv << "\n");
@@ -1122,12 +1150,17 @@ namespace crab {
         return;
       } else {
         // --- no summary found: do nothing
+	if (CrabWarningFlag) {
+	  crab::errs() << "CRAB WARNING: no summary found for callsite " << cs << "\n";
+	  m_sum_tbl->write(crab::errs());
+	}
       }
         
       // We could not reuse a summary so we just havoc lhs of the call
       // site.      
-      for(auto vt: cs.get_lhs())
-      { *(this->m_inv) -= vt; }
+      for(auto vt: cs.get_lhs()) {
+	*(this->m_inv) -= vt;
+      }
     }
   }; 
 
