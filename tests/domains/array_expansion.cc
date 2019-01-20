@@ -506,7 +506,7 @@ z_cfg_t* prog9(variable_factory_t &vfac) {
   entry.assign(m1_lb, 20);
   entry.assign(m1_ub, 80);
   
-  entry.array_init(m1, 4, m1_lb, m1_ub, 42);
+  entry.array_init(m1, m1_lb, m1_ub, 42, 4);
 
   entry.assign(x, 24);
   entry.assign(y, 76);
@@ -613,7 +613,7 @@ z_cfg_t* prog12(variable_factory_t &vfac) {
   bb0.assertion(z_lin_t(y) == 50);
   bb0.assign(i, 0);
   bb0.assign(j, 8);  
-  bb0.array_init(m1,  4, i, j, 666);
+  bb0.array_init(m1, i, j, 666, 4);
   bb0.array_load(x, m1, 0, 4);    
   bb0.array_load(y, m1, 4, 4);  
   // should be ok
@@ -623,7 +623,7 @@ z_cfg_t* prog12(variable_factory_t &vfac) {
   bb0.assign(j, 8);
   // this array initialization should be ignored
   // and kill m1[0..3] and m1[4..7]
-  bb0.array_init(m1,  4, i, j, 777);
+  bb0.array_init(m1, i, j, 777, 4);
   bb0.array_load(x, m1, 0, 4);    
   bb0.array_load(y, m1, 4, 4);  
   // should be warnings

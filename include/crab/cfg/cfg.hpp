@@ -2399,8 +2399,8 @@ namespace crab {
       }
             
 
-      void array_init(variable_t a, lin_exp_t elem_size,
-		       lin_exp_t lb_idx, lin_exp_t ub_idx, lin_exp_t v) {
+      void array_init(variable_t a, lin_exp_t lb_idx, lin_exp_t ub_idx, 
+		      lin_exp_t v, lin_exp_t elem_size) {
         if(m_track_prec == ARR) {
           insert(boost::static_pointer_cast<statement_t, arr_init_t> 
 		(boost::make_shared<arr_init_t>(a, elem_size, lb_idx, ub_idx, v)));
