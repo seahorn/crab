@@ -4,9 +4,8 @@
 #include <crab/common/debug.hpp>
 #include <crab/common/stats.hpp>
 #include <crab/common/types.hpp>
-#include <crab/domains/operators_api.hpp>
-#include <crab/domains/domain_traits.hpp>
-#include <crab/domains/intervals.hpp>
+#include <crab/domains/abstract_domain.hpp>
+#include <crab/domains/interval.hpp>
 
 #ifndef HAVE_MDD
 /*
@@ -18,75 +17,220 @@ namespace crab {
 namespace domains {
 
     template<typename Number, typename VariableName>
-    class mdd_boxes_domain: 
-    public abstract_domain<Number, VariableName,
-			   mdd_boxes_domain<Number,VariableName>> {
+    class mdd_boxes_domain final: 
+    public abstract_domain<mdd_boxes_domain<Number,VariableName>> {
     public:
       typedef mdd_boxes_domain<Number, VariableName> mdd_boxes_domain_t;
-      typedef abstract_domain<Number, VariableName, mdd_boxes_domain_t> abstract_domain_t;
-      using typename abstract_domain_t::variable_t;
-      using typename abstract_domain_t::number_t;
-      using typename abstract_domain_t::varname_t;      
+      typedef abstract_domain<mdd_boxes_domain_t> abstract_domain_t;
       using typename abstract_domain_t::linear_expression_t;
       using typename abstract_domain_t::linear_constraint_t;
       using typename abstract_domain_t::linear_constraint_system_t;
-      typedef disjunctive_linear_constraint_system<number_t, varname_t>
-      disjunctive_linear_constraint_system_t;
+      using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
+      using typename abstract_domain_t::variable_t;
+      using typename abstract_domain_t::variable_vector_t;
+      using typename abstract_domain_t::pointer_constraint_t;
+      typedef Number number_t;
+      typedef VariableName varname_t;
       typedef interval<number_t> interval_t;
       
-      mdd_boxes_domain() {}    
-      static mdd_boxes_domain_t top()    { CRAB_ERROR(MDD_NOT_FOUND); }
-      static mdd_boxes_domain_t bottom() { CRAB_ERROR(MDD_NOT_FOUND); }
-      mdd_boxes_domain(const mdd_boxes_domain_t& o) {}
+      mdd_boxes_domain() {}
+      
+      void set_to_top() {}
+      
+      void set_to_bottom() {}
+      
       bool is_bottom() { CRAB_ERROR(MDD_NOT_FOUND); }
-      bool is_top()    { CRAB_ERROR(MDD_NOT_FOUND); }
-      bool operator<=(mdd_boxes_domain_t other) { CRAB_ERROR(MDD_NOT_FOUND); }
+      
+      bool is_top() { CRAB_ERROR(MDD_NOT_FOUND); }
+      
+      bool operator<=(mdd_boxes_domain_t other)
+      { CRAB_ERROR(MDD_NOT_FOUND); }
+      
       void operator|=(mdd_boxes_domain_t other)
       { CRAB_ERROR(MDD_NOT_FOUND); }
+      
       mdd_boxes_domain_t operator|(mdd_boxes_domain_t other)
       { CRAB_ERROR(MDD_NOT_FOUND); }
+      
       mdd_boxes_domain_t operator&(mdd_boxes_domain_t other) 
       { CRAB_ERROR(MDD_NOT_FOUND); }
+      
       mdd_boxes_domain_t operator||(mdd_boxes_domain_t other)
       { CRAB_ERROR(MDD_NOT_FOUND); }
+      
       template<typename Thresholds>
       mdd_boxes_domain_t widening_thresholds(mdd_boxes_domain_t e, const Thresholds &ts) 
       { CRAB_ERROR(MDD_NOT_FOUND); }
+      
       mdd_boxes_domain_t operator&&(mdd_boxes_domain_t other) 
       { CRAB_ERROR(MDD_NOT_FOUND); }
-      void operator-=(variable_t var) { CRAB_ERROR (MDD_NOT_FOUND); } 
-      interval_t operator[](variable_t v)  { CRAB_ERROR (MDD_NOT_FOUND); }
-      void set(variable_t v, interval_t ival) { CRAB_ERROR (MDD_NOT_FOUND); } 
-      void operator+=(linear_constraint_system_t csts) { CRAB_ERROR (MDD_NOT_FOUND); }
-      void assign(variable_t x, linear_expression_t e) { CRAB_ERROR (MDD_NOT_FOUND); } 
-      void apply(operation_t op, variable_t x, variable_t y, Number z) 
-      { CRAB_ERROR(MDD_NOT_FOUND); }
-      void apply(operation_t op, variable_t x, variable_t y, variable_t z) 
-      { CRAB_ERROR(MDD_NOT_FOUND); }
-      void apply(operation_t op, variable_t x, Number k) 
-      { CRAB_ERROR(MDD_NOT_FOUND); }
-      void apply(int_conv_operation_t op, variable_t dst, variable_t src) 
-      { CRAB_ERROR(MDD_NOT_FOUND); }
-      void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) 
-      { CRAB_ERROR(MDD_NOT_FOUND); }
-      void apply(bitwise_operation_t op, variable_t x, variable_t y, Number k) 
-      { CRAB_ERROR(MDD_NOT_FOUND); }
-      void apply(div_operation_t op, variable_t x, variable_t y, variable_t z) 
-      { CRAB_ERROR(MDD_NOT_FOUND); }
-      void apply(div_operation_t op, variable_t x, variable_t y, Number k) 
-      { CRAB_ERROR(MDD_NOT_FOUND); }
-      void backward_assign (variable_t x, linear_expression_t e, mdd_boxes_domain_t invariant) 
-      { CRAB_ERROR(MDD_NOT_FOUND); }
+      
+      void operator-=(variable_t var) {
+	CRAB_ERROR (MDD_NOT_FOUND);
+      }
+      
+      void operator+=(linear_constraint_system_t csts) {
+	CRAB_ERROR (MDD_NOT_FOUND);
+      }
+      
+      void assign(variable_t x, linear_expression_t e) {
+	CRAB_ERROR (MDD_NOT_FOUND);
+      }
+      
+      void apply(operation_t op, variable_t x, variable_t y, number_t z) {
+	CRAB_ERROR(MDD_NOT_FOUND);
+      }
+      
+      void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
+	CRAB_ERROR(MDD_NOT_FOUND);
+      }
+      
+      void apply(int_conv_operation_t op, variable_t dst, variable_t src) {
+	CRAB_ERROR(MDD_NOT_FOUND);
+      }
+      
+      void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {
+	CRAB_ERROR(MDD_NOT_FOUND);
+      }
+      
+      void apply(bitwise_operation_t op, variable_t x, variable_t y, number_t k) {
+	CRAB_ERROR(MDD_NOT_FOUND);
+      }
+      
+      void backward_assign (variable_t x, linear_expression_t e, mdd_boxes_domain_t invariant) {
+	CRAB_ERROR(MDD_NOT_FOUND);
+      }
+      
       void backward_apply (operation_t op,
-			   variable_t x, variable_t y, Number z, mdd_boxes_domain_t invariant) 
-      { CRAB_ERROR(MDD_NOT_FOUND); }
+			   variable_t x, variable_t y, number_t z, mdd_boxes_domain_t invariant)  {
+	CRAB_ERROR(MDD_NOT_FOUND);
+      }
+      
       void backward_apply(operation_t op,
-			 variable_t x, variable_t y, variable_t z, mdd_boxes_domain_t invariant) 
-      { CRAB_ERROR(MDD_NOT_FOUND); }
-      linear_constraint_system_t to_linear_constraint_system () { CRAB_ERROR(MDD_NOT_FOUND); }
-      disjunctive_linear_constraint_system_t to_disjunctive_linear_constraint_system ()
-      { CRAB_ERROR(MDD_NOT_FOUND); }
-      void write(crab_os& o) { CRAB_ERROR(MDD_NOT_FOUND); } 
+			  variable_t x, variable_t y, variable_t z, mdd_boxes_domain_t invariant){ 
+	CRAB_ERROR(MDD_NOT_FOUND);
+      }
+
+      void assign_bool_cst(variable_t lhs, linear_constraint_t rhs) {
+	CRAB_ERROR(MDD_NOT_FOUND);
+      }
+      
+      void assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs) {
+	CRAB_ERROR(MDD_NOT_FOUND);
+      }
+      
+      void apply_binary_bool(bool_operation_t op, variable_t x,variable_t y,variable_t z) {
+	CRAB_ERROR(MDD_NOT_FOUND);
+      }
+      
+      void assume_bool(variable_t v, bool is_negated) {
+	CRAB_ERROR(MDD_NOT_FOUND);
+      }
+      
+      void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
+				    mdd_boxes_domain_t invariant) {
+	CRAB_ERROR(MDD_NOT_FOUND);
+      }	  	  
+      
+      void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
+				    mdd_boxes_domain_t invariant) {
+	CRAB_ERROR(MDD_NOT_FOUND);
+      }
+      
+      void backward_apply_binary_bool(bool_operation_t op,
+				      variable_t x,variable_t y,variable_t z,
+				      mdd_boxes_domain_t invariant) {
+	CRAB_ERROR(MDD_NOT_FOUND);
+      }
+      
+      void array_init(variable_t a, linear_expression_t elem_size,
+		      linear_expression_t lb_idx, linear_expression_t ub_idx, 
+		      linear_expression_t val) {
+	CRAB_ERROR(MDD_NOT_FOUND);
+      }
+      
+      void array_load(variable_t lhs,
+		      variable_t a, linear_expression_t elem_size,
+		      linear_expression_t i) {
+	CRAB_ERROR(MDD_NOT_FOUND);
+      }
+      
+      void array_store(variable_t a, linear_expression_t elem_size,
+		       linear_expression_t i, linear_expression_t v, 
+		       bool is_singleton) {
+	CRAB_ERROR(MDD_NOT_FOUND);
+      }
+      
+      void array_store_range(variable_t a, linear_expression_t elem_size,
+			     linear_expression_t i, linear_expression_t j,
+			     linear_expression_t v) {
+	CRAB_ERROR(MDD_NOT_FOUND);
+      }
+      
+      void array_assign(variable_t lhs, variable_t rhs) {
+	CRAB_ERROR(MDD_NOT_FOUND);
+      }
+      
+      void pointer_load(variable_t lhs, variable_t rhs) {
+	CRAB_ERROR(MDD_NOT_FOUND);
+      }
+      
+      void pointer_store(variable_t lhs, variable_t rhs) {
+	CRAB_ERROR(MDD_NOT_FOUND);
+      }
+      
+      void pointer_assign(variable_t lhs, variable_t rhs, linear_expression_t offset) {
+	CRAB_ERROR(MDD_NOT_FOUND);
+      }	  
+      
+      void pointer_mk_obj(variable_t lhs, ikos::index_t address) {
+	CRAB_ERROR(MDD_NOT_FOUND);
+      }
+      
+      void pointer_function(variable_t lhs, varname_t func) {
+	CRAB_ERROR(MDD_NOT_FOUND);
+      }
+      
+      void pointer_mk_null(variable_t lhs) {
+	CRAB_ERROR(MDD_NOT_FOUND);
+      }
+      
+      void pointer_assume(pointer_constraint_t cst) {
+	CRAB_ERROR(MDD_NOT_FOUND);
+      }
+      
+      void pointer_assert(pointer_constraint_t cst) {
+	CRAB_ERROR(MDD_NOT_FOUND);
+      }	
+      
+      void forget(const variable_vector_t& variables) {
+	CRAB_ERROR(MDD_NOT_FOUND);
+      }
+      
+      void project(const variable_vector_t& variables) {
+	CRAB_ERROR(MDD_NOT_FOUND);
+      }
+      
+      void expand(variable_t var, variable_t new_var) {
+	CRAB_ERROR(MDD_NOT_FOUND);
+      }
+      
+      void normalize() {
+	CRAB_ERROR(MDD_NOT_FOUND);
+      }
+      
+      linear_constraint_system_t to_linear_constraint_system() {
+	CRAB_ERROR(MDD_NOT_FOUND);
+      }
+      
+      disjunctive_linear_constraint_system_t to_disjunctive_linear_constraint_system() {
+	CRAB_ERROR(MDD_NOT_FOUND);
+      }
+      
+      void write(crab_os& o) {
+	CRAB_ERROR(MDD_NOT_FOUND);
+      }
+      
       static std::string getDomainName () { return "Dummy Mdd-boxes"; }
     }; 
 } // namespace domains
@@ -97,6 +241,7 @@ namespace domains {
  *  Real implementation starts here 
  */
 
+/* begin MDD stuff */
 #include "include/MDD.hh"
 #include "include/MDD.hpp"
 #include "include/mdd_builtin_cache.hh"
@@ -107,6 +252,7 @@ namespace domains {
 #include "include/MDD_bool.hh"
 #include "include/interval.hh"
 #include "util/hc-list.h"
+/* end MDD stuff */
 
 #include <boost/optional.hpp>
 #include <boost/bimap.hpp>
@@ -350,8 +496,6 @@ namespace domains {
       typedef interval<number_t> interval_t;
     
     private:
-      typedef interval_domain<number_t, varname_t> interval_domain_t;
-      
       /// -- MDD basic typedefs
       // TODO: make mdd_number_t an user parameter
       #ifdef MDD_BIGNUMS  
@@ -585,7 +729,7 @@ namespace domains {
 	  if (lb.is_finite ())  {
 	    // v >= lb <--> -v + lb <= 0
 	    assert (lb.number ());
-	    linear_expression_t e = (Number(-1) * v) + *(lb.number ());
+	    linear_expression_t e = (number_t(-1) * v) + *(lb.number ());
 	    csts += (linear_constraint_t (e, linear_constraint_t::kind_t::INEQUALITY));
 	  }
 	  auto ub = i.ub ();
@@ -1221,7 +1365,7 @@ namespace domains {
         CRAB_LOG("mdd-boxes", crab::outs() << *this <<"\n");
       }
        
-      void apply (operation_t op, variable_t x, variable_t y, Number z) {
+      void apply (operation_t op, variable_t x, variable_t y, number_t z) {
 	crab::CrabStats::count (getDomainName() + ".count.apply");
 	crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1334,7 +1478,7 @@ namespace domains {
 	set(x, xi);
       }
         
-      void apply(bitwise_operation_t op, variable_t x, variable_t y, Number k) {
+      void apply(bitwise_operation_t op, variable_t x, variable_t y, number_t k) {
 	crab::CrabStats::count (getDomainName() + ".count.apply");
 	crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1377,7 +1521,7 @@ namespace domains {
 	}
       }
         
-      void apply(div_operation_t op, variable_t x, variable_t y, Number k) {
+      void apply(div_operation_t op, variable_t x, variable_t y, number_t k) {
 	crab::CrabStats::count (getDomainName() + ".count.apply");
 	crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1747,7 +1891,7 @@ namespace domains {
       }
           
       void backward_apply (operation_t op,
-			   variable_t x, variable_t y, Number z,
+			   variable_t x, variable_t y, number_t z,
 			   mdd_boxes_domain_t invariant) {
 	crab::CrabStats::count (getDomainName() + ".count.backward_apply");
 	crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
@@ -3533,4 +3677,15 @@ namespace domains {
   
   } // namespace domains
 }// namespace crab
-#endif 
+#endif
+
+namespace crab {
+namespace domains {  
+  template<typename Number, typename VariableName>
+  struct abstract_domain_traits<mdd_boxes_domain<Number, VariableName>> {
+    typedef Number number_t;
+    typedef VariableName varname_t;       
+  };
+}
+}
+
