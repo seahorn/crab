@@ -918,6 +918,23 @@ r_not_dom:
       }
     }
 
+    /* 
+       Added for octagons. 
+       JN: Need to double check this. Typically apply_delta takes as
+       input edges that we know they already have more precise weights
+       than existing ones. If that's the case this function is
+       unnecessary.
+    */
+    static void update_delta(graph_t& g, edge_vector& delta) 
+    {
+      mut_val_ref_t w;
+      for(std::pair< std::pair<vert_id, vert_id>, Wt>& e : delta) {
+	if (!g.lookup(e.first.first, e.first.second, &w) || e.second < w){
+	  g.set_edge(e.first.first, Wt(e.second), e.first.second);
+	}
+      }
+    }
+    
     // Straight implementation of Dijkstra's algorithm
     template<class G, class P>
     static void dijkstra(G& g, const P& p, vert_id src,
