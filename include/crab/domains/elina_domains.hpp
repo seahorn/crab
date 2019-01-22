@@ -70,8 +70,8 @@ namespace crab {
         elina_domain_t operator||(elina_domain_t other)
         { CRAB_ERROR(ELINA_NOT_FOUND); }
         
-        template<typename Thresholds>
-        elina_domain_t widening_thresholds (elina_domain_t e, const Thresholds &ts) 
+        elina_domain_t widening_thresholds (elina_domain_t e,
+					    const iterators::thresholds<number_t> &ts) 
         { CRAB_ERROR(ELINA_NOT_FOUND); }
 
         elina_domain_t operator&& (elina_domain_t other) 
@@ -1131,15 +1131,15 @@ namespace domains {
       }
     }        
     
-    template<typename Thresholds>	
-    elina_lincons0_array_t make_thresholds(elina_domain_t o, const Thresholds &ts) {
+    elina_lincons0_array_t make_thresholds(elina_domain_t o,
+					   const iterators::thresholds<number_t>& ts) {
       // TODO: make some constraints using the constants from ts
       elina_lincons0_array_t csts = elina_lincons0_array_make(0);
       return csts;
     }
     
-    template<typename Thresholds>
-    elina_domain_t widening_thresholds(elina_domain_t o, const Thresholds &ts) {
+    elina_domain_t widening_thresholds(elina_domain_t o,
+				       const iterators::thresholds<number_t>& ts) {
       crab::CrabStats::count(getDomainName() + ".count.widening");
       crab::ScopedCrabStats __st__(getDomainName() + ".widening");
       
@@ -2037,9 +2037,8 @@ namespace domains {
     elina_domain_t operator&&(elina_domain_t o)
     { return create(ref() && o.ref()); }
     
-    template<typename Thresholds>
-    elina_domain_t widening_thresholds(elina_domain_t o, const Thresholds &ts) {
-      return create(ref().template widening_thresholds<Thresholds>(o.ref(), ts));
+    elina_domain_t widening_thresholds(elina_domain_t o, const iterators::thresholds<number_t>& ts) {
+      return create(ref().widening_thresholds(o.ref(), ts));
     }
     
     void normalize() { detach(); ref().normalize(); }

@@ -314,9 +314,8 @@ namespace crab {
       return res;
     }
 
-    template<typename Thresholds>
     flat_boolean_domain_t widening_thresholds(flat_boolean_domain_t o,
-					      const Thresholds &) {
+					      const iterators::thresholds<number_t>&) {
     
       flat_boolean_domain_t res(_env || o._env);
       CRAB_LOG("flat-boolean",
@@ -923,8 +922,8 @@ namespace crab {
 				 _var_to_csts || other._var_to_csts,
 				 _unchanged_vars || other._unchanged_vars);}
        
-      template<typename Thresholds>
-      bool_num_domain_t widening_thresholds(bool_num_domain_t other, const Thresholds& ts)
+      bool_num_domain_t widening_thresholds(bool_num_domain_t other,
+					    const iterators::thresholds<number_t>& ts)
       { return bool_num_domain_t(_product.widening_thresholds(other._product, ts),
 				 _var_to_csts || other._var_to_csts,
 				 _unchanged_vars || other._unchanged_vars);}

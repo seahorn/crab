@@ -156,9 +156,8 @@ namespace crab {
           return array_smashing_t(_inv || other._inv);
         }
 
-        template<typename Thresholds>
         array_smashing_t widening_thresholds(array_smashing_t other, 
-                                              const Thresholds &ts) {
+                                              const iterators::thresholds<number_t> &ts) {
           return array_smashing_t(_inv.widening_thresholds(other._inv, ts));
         }
         

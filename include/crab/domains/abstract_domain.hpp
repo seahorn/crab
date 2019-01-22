@@ -1,7 +1,7 @@
 #pragma once
 
 #include <crab/domains/abstract_domain_operators.hpp>
-//#include <crab/iterators/thresholds.hpp>
+#include <crab/iterators/thresholds.hpp>
 #include <vector>
 
 namespace crab {
@@ -92,10 +92,8 @@ namespace crab {
       // Narrowing operator: narrowing(*this, abs)
       // TODO: add const reference and ideally const method      
       virtual Dom operator&&(Dom abs) = 0 ;
-
-      // TODO:
-      // virtual Dom widening_thresholds(Dom abs,
-      //	 	                 const crab::iterators::thresholds<number_t>& ts) = 0;
+      // Widening with thresholds: widening_ts(*this, abs)
+      virtual Dom widening_thresholds(Dom abs, const crab::iterators::thresholds<number_t>& ts) = 0;				      
             
       /**************************** Arithmetic operations *************************/
       // x := y op z    

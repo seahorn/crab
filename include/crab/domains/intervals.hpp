@@ -203,8 +203,8 @@ namespace ikos {
       return (this->_env || e._env);
     }
 
-    template<typename Thresholds>
-    interval_domain_t widening_thresholds (interval_domain_t e, const Thresholds &ts) {
+    interval_domain_t widening_thresholds (interval_domain_t e,
+					   const crab::iterators::thresholds<number_t> &ts) {
       crab::CrabStats::count (getDomainName() + ".count.widening");
       crab::ScopedCrabStats __st__(getDomainName() + ".widening");
       return this->_env.widening_thresholds (e._env, ts);

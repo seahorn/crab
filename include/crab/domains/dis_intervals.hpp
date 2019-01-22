@@ -682,8 +682,8 @@ namespace crab {
      
      // pre: *this and o are normalized
      template<typename Thresholds>
-     dis_interval_t widening_thresholds(dis_interval_t o, const Thresholds &ts) {
-       WidenWithThresholdsOp <Thresholds> op(ts);
+     dis_interval_t widening_thresholds(dis_interval_t o, const Thresholds& ts) {
+       WidenWithThresholdsOp<Thresholds> op(ts);
        return widening(o, op);
      }
      
@@ -1189,8 +1189,8 @@ namespace crab {
        return res;
      }
      
-     template<typename Thresholds>
-     dis_interval_domain_t widening_thresholds(dis_interval_domain_t e, const Thresholds &ts) {
+     dis_interval_domain_t widening_thresholds(dis_interval_domain_t e,
+					       const iterators::thresholds<number_t>& ts) {
        crab::CrabStats::count(getDomainName() + ".count.widening");
        crab::ScopedCrabStats __st__(getDomainName() + ".widening");
 

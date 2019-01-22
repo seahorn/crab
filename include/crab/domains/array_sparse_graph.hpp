@@ -525,8 +525,7 @@ namespace crab {
       }
 
       template<typename Thresholds>
-      array_sparse_graph_t widening_thresholds(array_sparse_graph_t &o, 
-                                                const Thresholds & /*ts*/) {
+      array_sparse_graph_t widening_thresholds(array_sparse_graph_t &o, const Thresholds&) {
         return (*this || o);
       }
       
@@ -1024,7 +1023,7 @@ namespace crab {
       array_sgraph_t operator&&(array_sgraph_t o) { return create(norm() && o.norm()); }
 
       template<typename Thresholds>
-      array_sgraph_t widening_thresholds(array_sgraph_t o, const Thresholds &ts) {
+      array_sgraph_t widening_thresholds(array_sgraph_t o, const Thresholds& ts) {
         return create_base(base().template widening_thresholds<Thresholds>(o.norm(), ts));
       }
 
@@ -1978,9 +1977,8 @@ namespace crab {
         return join;
       }
 
-      template<typename Thresholds>
-      array_sgraph_domain_t widening_thresholds(array_sgraph_domain_t& o, 
-                                                 const Thresholds & ts) {
+      array_sgraph_domain_t widening_thresholds(array_sgraph_domain_t o, 
+                                                const iterators::thresholds<number_t>& ts) {
         crab::CrabStats::count(getDomainName() + ".count.widening");
         crab::ScopedCrabStats __st__(getDomainName() + ".widening");
 

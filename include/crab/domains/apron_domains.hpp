@@ -69,8 +69,8 @@ namespace crab {
         apron_domain_t operator||(apron_domain_t other)
         { CRAB_ERROR(APRON_NOT_FOUND); }
         
-        template<typename Thresholds>
-        apron_domain_t widening_thresholds(apron_domain_t e, const Thresholds &ts) 
+        apron_domain_t widening_thresholds(apron_domain_t e,
+					   const iterators::thresholds<number_t> &ts) 
         { CRAB_ERROR(APRON_NOT_FOUND); }
 
         apron_domain_t operator&&(apron_domain_t other) 
@@ -918,15 +918,15 @@ namespace crab {
           }
         }        
 
-        template<typename Thresholds>	
-	ap_lincons0_array_t make_thresholds(apron_domain_t o, const Thresholds &ts) {
+	ap_lincons0_array_t make_thresholds(apron_domain_t o,
+					    const iterators::thresholds<number_t> &ts) {
 	  // TODO: make some constraints using the constants from ts
 	  ap_lincons0_array_t csts = ap_lincons0_array_make(0);
 	  return csts;
 	}
 	
-        template<typename Thresholds>
-        apron_domain_t widening_thresholds(apron_domain_t o, const Thresholds &ts) {
+        apron_domain_t widening_thresholds(apron_domain_t o,
+					   const iterators::thresholds<number_t> &ts) {
           crab::CrabStats::count(getDomainName() + ".count.widening");
           crab::ScopedCrabStats __st__(getDomainName() + ".widening");
 
@@ -1801,9 +1801,9 @@ namespace crab {
         apron_domain_t operator&&(apron_domain_t o)
 	{ return create(ref() && o.ref()); }
         
-        template<typename Thresholds>
-        apron_domain_t widening_thresholds(apron_domain_t o, const Thresholds &ts) {
-          return create(ref().template widening_thresholds<Thresholds>(o.ref(), ts));
+        apron_domain_t widening_thresholds(apron_domain_t o,
+					   const iterators::thresholds<number_t> &ts) {
+          return create(ref().widening_thresholds(o.ref(), ts));
         }
         
         void normalize() { detach(); ref().normalize(); }
