@@ -2534,7 +2534,7 @@ namespace crab {
 	    } else if (s % 2 == 0 && d % 2 != 0) {
 	      csts += linear_constraint_t(- d_exp - s_exp <= w);
 	    } else if (s % 2 != 0 && d % 2 != 0) {
-	      csts += linear_constraint_t(- d_exp - d_exp <= w);
+	      csts += linear_constraint_t(- d_exp + s_exp <= w);
 	    }
 	  }
 	}
