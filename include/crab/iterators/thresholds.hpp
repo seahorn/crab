@@ -61,7 +61,7 @@ namespace crab {
        template<typename N>
        void add(ikos::bound<N> v1) { 
          if (m_thresholds.size() < m_size) {
-       	   bound_t v = convert_bounds_impl<ikos::bound<N>, bound_t> (v1);
+       	   bound_t v = convert_bounds_impl<ikos::bound<N>, bound_t>(v1);
            if (std::find
 	       (m_thresholds.begin(), m_thresholds.end(), v) == m_thresholds.end()) {
              auto ub = std::upper_bound(m_thresholds.begin(), m_thresholds.end(), v);
@@ -116,20 +116,17 @@ namespace crab {
        return o;
      }
 
-     // explicit instantiation
-     typedef thresholds<ikos::q_number> thresholds_t;     
-     
      /**
 	Collect thresholds per wto cycle (i.e. loop)
      **/
-     template< typename NodeName, typename CFG>
-     class wto_thresholds: public ikos::wto_component_visitor< NodeName, CFG > {
+     template<typename NodeName, typename CFG>
+     class wto_thresholds: public ikos::wto_component_visitor<NodeName, CFG> {
        
      public:
        
-       typedef ikos::wto_vertex< NodeName, CFG > wto_vertex_t;
-       typedef ikos::wto_cycle< NodeName, CFG > wto_cycle_t;
-       typedef crab::iterators::thresholds_t thresholds_t;      
+       typedef ikos::wto_vertex<NodeName, CFG> wto_vertex_t;
+       typedef ikos::wto_cycle<NodeName, CFG> wto_cycle_t;
+       typedef crab::iterators::thresholds<typename CFG::number_t> thresholds_t;
        typedef boost::unordered_map<NodeName, thresholds_t> thresholds_map_t;
        
      private:

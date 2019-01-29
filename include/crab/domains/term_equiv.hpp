@@ -992,11 +992,11 @@ namespace crab {
          return this->widening(other, op);
        }
        
-       template<typename Thresholds>
-       term_domain_t widening_thresholds(term_domain_t other, const Thresholds& ts) {
+       term_domain_t widening_thresholds(term_domain_t other,
+					 const iterators::thresholds<number_t>& ts) {
          crab::CrabStats::count(getDomainName() + ".count.widening");
          crab::ScopedCrabStats __st__(getDomainName() + ".widening");
-         WidenWithThresholdsOp<Thresholds> op(ts);
+         WidenWithThresholdsOp<iterators::thresholds<number_t>> op(ts);
          return this->widening(other, op);
        }
        

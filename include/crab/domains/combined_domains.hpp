@@ -301,9 +301,8 @@ namespace crab {
         return domain_product2_t(this->_product || other._product);
       }
       
-      template<typename Thresholds>
       domain_product2_t widening_thresholds(domain_product2_t other,
-                                             const Thresholds& ts) {
+					    const iterators::thresholds<number_t>& ts) {
         return domain_product2_t(
             this->_product.first().widening_thresholds(other._product.first(), ts),
             this->_product.second().widening_thresholds(other._product.second(), ts));
@@ -838,9 +837,8 @@ namespace crab {
 	return res;
       }
       
-      template<typename Thresholds>
       reduced_numerical_domain_product2_t widening_thresholds 
-      (reduced_numerical_domain_product2_t other, const Thresholds& ts) {
+      (reduced_numerical_domain_product2_t other, const iterators::thresholds<number_t>& ts) {
 	reduced_numerical_domain_product2_t res(this->_product.widening_thresholds(other._product, ts));
 	CRAB_LOG("combined-domain", 
 		 crab::outs() << "============ WIDENING ==================";
@@ -1446,9 +1444,8 @@ namespace crab {
         return rnc_domain_t(this->_product || other._product);
       }
        
-      template<typename Thresholds>
       rnc_domain_t widening_thresholds(rnc_domain_t other,
-                                        const Thresholds& ts) {
+				       const iterators::thresholds<number_t>& ts) {
         return rnc_domain_t(this->_product.widening_thresholds(other._product, ts));
       }
       
@@ -1708,8 +1705,8 @@ namespace crab {
         return nn_domain_t(this->_product || other._product);
       }
        
-      template<typename Thresholds>
-      nn_domain_t widening_thresholds(nn_domain_t other, const Thresholds& ts) {
+      nn_domain_t widening_thresholds(nn_domain_t other,
+				      const iterators::thresholds<number_t>& ts) {
         return nn_domain_t(this->_product.widening_thresholds(other._product, ts));
       }
       

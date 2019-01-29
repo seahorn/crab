@@ -1764,8 +1764,8 @@ namespace crab {
 	}
       }
 
-      template<typename Thresholds>
-      split_oct_domain_t widening_thresholds(split_oct_domain_t o, const Thresholds& ts) {
+      split_oct_domain_t widening_thresholds(split_oct_domain_t o,
+					     const iterators::thresholds<number_t>& ts) {
 	return (*this || o);
       }
 		    

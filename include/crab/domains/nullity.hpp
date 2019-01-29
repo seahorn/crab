@@ -220,8 +220,8 @@ namespace crab {
       return res;
     }
 
-    template<typename Thresholds>
-    nullity_domain_t widening_thresholds(nullity_domain_t o, const Thresholds &) {
+    nullity_domain_t widening_thresholds(nullity_domain_t o,
+					 const iterators::thresholds<number_t>&) {
       nullity_domain_t res(_env || o._env);
 
       CRAB_LOG("nullity",

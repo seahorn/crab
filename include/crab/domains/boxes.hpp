@@ -64,9 +64,8 @@ namespace crab {
         boxes_domain_t operator||(boxes_domain_t other)
         { CRAB_ERROR(LDD_NOT_FOUND); }
 
-        template<typename Thresholds>
         boxes_domain_t widening_thresholds(boxes_domain_t other, 
-                                            const Thresholds &ts)
+					   const iterators::thresholds<number_t> &ts)
         { CRAB_ERROR(LDD_NOT_FOUND); }
         
         boxes_domain_t operator&&(boxes_domain_t other) 
@@ -1018,13 +1017,12 @@ namespace crab {
           return res;
         }
 	
-        template<typename Thresholds>
         boxes_domain_t widening_thresholds(boxes_domain_t other, 
-                                            const Thresholds & /*ts*/) {
+					   const iterators::thresholds<number_t>& /*ts*/) {
           //CRAB_WARN(" boxes widening operator with thresholds not implemented");
           return(*this || other);
         }
-        
+
         boxes_domain_t operator&&(boxes_domain_t other) {
           crab::CrabStats::count(getDomainName() + ".count.narrowing");
           crab::ScopedCrabStats __st__(getDomainName() + ".narrowing");
@@ -1830,9 +1828,9 @@ namespace crab {
        boxes_domain_t operator&(boxes_domain_t o) { return create(ref() & o.ref()); }
        boxes_domain_t operator&&(boxes_domain_t o) { return create(ref() && o.ref()); }
        
-       template<typename Thresholds>
-       boxes_domain_t widening_thresholds(boxes_domain_t o, const Thresholds &ts) {
-	 return create(ref().template widening_thresholds<Thresholds>(o.ref(), ts));
+       boxes_domain_t widening_thresholds(boxes_domain_t o,
+					  const iterators::thresholds<number_t> &ts) {
+	 return create(ref().widening_thresholds(o.ref(), ts));
        }
        
        void operator+=(linear_constraint_system_t csts) { detach(); ref() += csts; } 

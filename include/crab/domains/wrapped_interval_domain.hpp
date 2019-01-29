@@ -681,7 +681,8 @@ public:
 
   // TODO: factorize code with operator||
   template<typename Thresholds>
-  wrapped_interval_t widening_thresholds(wrapped_interval_t x, const Thresholds &ts) {
+  wrapped_interval_t widening_thresholds(wrapped_interval_t x,
+					 const Thresholds& ts) {
     
     if (is_bottom()) {
       return x;
@@ -1338,9 +1339,8 @@ public:
     return res;
   }
   
-  template<typename Thresholds>
   wrapped_interval_domain_t widening_thresholds(wrapped_interval_domain_t e,
-						 const Thresholds &ts) {
+						const iterators::thresholds<number_t>& ts) {
     crab::CrabStats::count(getDomainName() + ".count.widening");
     crab::ScopedCrabStats __st__(getDomainName() + ".widening");
     CRAB_LOG("wrapped-int",
@@ -2174,8 +2174,7 @@ public:
 		     _init_set  && o._init_set);
   }
   
-  template<typename Thresholds>
-  this_type widening_thresholds(this_type o, const Thresholds& ts) {
+  this_type widening_thresholds(this_type o, const iterators::thresholds<number_t>& ts) {
     return this_type(_w_int_dom.widening_thresholds(o._w_int_dom, ts),
 		     _limit_env || o._limit_env,
 		     _init_set  || o._init_set);
@@ -2884,9 +2883,8 @@ public:
     return res;
   }
        
-  template<typename Thresholds>
   wrapped_numerical_domain_t widening_thresholds(wrapped_numerical_domain_t other,
-						 const Thresholds& ts) {
+						 const iterators::thresholds<number_t>& ts) {
     CRAB_LOG("wrapped-num",
 	     crab::outs() << "WIDENING " << _product << "and " << other._product << " = ");    
     wrapped_numerical_domain_t res(_product.widening_thresholds(other._product, ts)); 

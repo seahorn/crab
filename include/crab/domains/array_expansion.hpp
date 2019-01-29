@@ -885,9 +885,8 @@ namespace domains {
       return array_expansion_domain_t(_inv || other._inv);
     }
        
-    template<typename Thresholds>
     array_expansion_domain_t widening_thresholds(array_expansion_domain_t other, 
-						  const Thresholds &ts) {
+						 const iterators::thresholds<number_t> &ts) {
       crab::CrabStats::count(getDomainName() + ".count.widening");
       crab::ScopedCrabStats __st__(getDomainName() + ".widening");
       return array_expansion_domain_t(_inv.widening_thresholds(other._inv, ts));
