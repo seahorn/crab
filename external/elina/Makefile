@@ -1,13 +1,13 @@
 #------------------------------------------------------------------------------------#
 #                                  INSTRUCTIONS
 #------------------------------------------------------------------------------------#
-#  1. Set CRAB_INSTALL to the directory Crab was installed. If you
-#  have not installed Crab yet, then type `make crab_install`
+#  1. Type `make crab_install`
 #  2. Type `make all`
 #  3. Type `./domain` or `./analysis`
 #------------------------------------------------------------------------------------#
 
-CRAB_INSTALL := /home/jorge/install/crab
+PWD=$(shell pwd)
+CRAB_INSTALL=${PWD}/crab-install
 
 UNAME := $(shell uname)
 ifeq ($(UNAME),Darwin)
