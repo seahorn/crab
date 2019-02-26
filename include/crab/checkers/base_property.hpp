@@ -46,7 +46,7 @@ namespace crab {
     unsigned get_total_error() const { return m_total_err; }
 
     // add an entry in the database
-    void add(check_kind_t status, crab::cfg::debug_info dbg = crab::cfg::debug_info() ) {
+    void add(check_kind_t status, crab::cfg::debug_info dbg = crab::cfg::debug_info()){
       switch (status) {
         case _SAFE: m_total_safe++;break;
         case _ERR : m_total_err++;break;
@@ -107,49 +107,10 @@ namespace crab {
     
   };
 
-  #define LOG_SAFE(VERBOSE,INV,PROP,DEBUG_LOC)           \
-  do {                                                   \
-    this->m_db.add(_SAFE);                               \
-    if (VERBOSE >=3) {                                   \
-      crab::outs() << " --- SAFE -----------------\n";   \
-      if (DEBUG_LOC.has_debug())                         \
-         crab::outs() << DEBUG_LOC << "\n";              \
-      crab::outs() << "Property : " << PROP << "\n";     \
-      crab::outs() << "Invariant: " << INV << "\n";      \
-      crab::outs() << " -----------------------------\n";\
-    }                                                    \
-  } while (false);
-
-  #define LOG_WARN(VERBOSE,INV,PROP,DEBUG_LOC)            \
-  do {                                                    \
-    this->m_db.add(_WARN, DEBUG_LOC);                     \
-    if (VERBOSE >=2) {                                    \
-      crab::outs() << " --- WARNING -----------------\n"; \
-      if (DEBUG_LOC.has_debug())                          \
-         crab::outs() << DEBUG_LOC << "\n";               \
-      crab::outs() << "Property : " << PROP << "\n";      \
-      crab::outs() << "Invariant: " << INV << "\n";       \
-      crab::outs() << " -----------------------------\n"; \
-    }                                                     \
-  } while (false);  
-
-  #define LOG_ERR(VERBOSE,INV,PROP,DEBUG_LOC)             \
-  do {                                                    \
-    this->m_db.add(_ERR, DEBUG_LOC);                      \
-    if (VERBOSE >=1) {                                    \
-       crab::outs() << " --- ERROR -----------------\n";  \
-       if (DEBUG_LOC.has_debug())                         \
-           crab::outs() << DEBUG_LOC << "\n";             \
-       crab::outs() << "Property : " << PROP << "\n";     \
-       crab::outs() << "Invariant: " << INV << "\n";      \
-       crab::outs() << " -----------------------------\n";\
-    }                                                     \
-  } while (false); 
-
   template<typename Analyzer>
   class property_checker:
-      public crab::cfg::statement_visitor <typename Analyzer::number_t,
-					   typename Analyzer::varname_t> {
+      public crab::cfg::statement_visitor<typename Analyzer::number_t,
+					  typename Analyzer::varname_t> {
    public:
     typedef typename Analyzer::abs_tr_t abs_tr_t;
     typedef typename Analyzer::varname_t varname_t;
@@ -161,6 +122,7 @@ namespace crab {
     typedef typename abs_dom_t::linear_constraint_t lin_cst_t;
     typedef typename abs_dom_t::linear_constraint_system_t lin_cst_sys_t;
 
+    typedef crab::cfg::statement<number_t, varname_t>        statement_t;
     typedef crab::cfg::binary_op<number_t,varname_t>         bin_op_t;
     typedef crab::cfg::assignment<number_t,varname_t>        assign_t;
     typedef crab::cfg::assume_stmt<number_t,varname_t>       assume_t;
@@ -189,14 +151,61 @@ namespace crab {
     typedef crab::cfg::bool_assert_stmt<number_t,varname_t>  bool_assert_t;
     typedef crab::cfg::bool_select_stmt<number_t,varname_t>  bool_select_t;    
 
-    typedef std::set<std::pair<crab::cfg::debug_info, check_kind_t>> check_results_db;
- 
    protected: 
 
-    abs_tr_t* m_abs_tr; // it can be null
+    // The abstract transformer
+    abs_tr_t* m_abs_tr; 
+    // Verbosity to print user messages
     int m_verbose;
-    checks_db m_db; // Store debug information about the checks
-   
+    // Store debug information about the checks
+    checks_db m_db;
+    // Statements where checks occur
+    std::vector<const statement_t*> m_safe_checks;
+    std::vector<const statement_t*> m_warning_checks;
+    std::vector<const statement_t*> m_error_checks;    
+    
+    void add_safe(int verbosity, std::string msg, const statement_t* s) {
+      m_db.add(_SAFE);
+      m_safe_checks.push_back(s);
+      
+      if (verbosity >=3) {				
+	crab::outs() << " --- SAFE --------------------\n"; 
+	if (s->get_debug_info().has_debug()) {      
+	  crab::outs() << s->get_debug_info() << "\n";
+	}
+	crab::outs() << msg << "\n";
+	crab::outs() << " -----------------------------\n";
+      }
+    }
+
+    void add_warning(int verbosity, std::string msg, const statement_t* s) {
+      m_db.add(_WARN, s->get_debug_info());
+      m_warning_checks.push_back(s);
+      
+      if (verbosity >= 2) {				
+	crab::outs() << " --- WARNING -----------------\n"; 
+	if (s->get_debug_info().has_debug()) {      
+	  crab::outs() << s->get_debug_info() << "\n";
+	}
+	crab::outs() << msg << "\n";
+	crab::outs() << " -----------------------------\n";
+      }
+    }
+
+    void add_error(int verbosity, std::string msg, const statement_t* s) {
+      m_db.add(_ERR, s->get_debug_info());
+      m_error_checks.push_back(s);
+      
+      if (verbosity >= 1) {				
+	crab::outs() << " --- ERROR -------------------\n"; 
+	if (s->get_debug_info().has_debug()) {      
+	  crab::outs() << s->get_debug_info() << "\n";
+	}
+	crab::outs() << msg << "\n";
+	crab::outs() << " -----------------------------\n";
+      }
+    }
+    
     virtual void check(assert_t& s) { 
       if (!this->m_abs_tr) return;        
         s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
@@ -371,10 +380,26 @@ namespace crab {
       m_abs_tr = abs_tr;
     }
     
-    const checks_db& get_db() const { return m_db; }
+    const checks_db& get_db() const {
+      return m_db;
+    }
     
-    checks_db get_db() { return m_db; }
+    checks_db get_db() {
+      return m_db;
+    }
 
+    const std::vector<const statement_t*>& get_safe_checks() const {
+      return m_safe_checks;
+    }
+
+    const std::vector<const statement_t*>& get_warning_checks() const {
+      return m_warning_checks;
+    }
+
+    const std::vector<const statement_t*>& get_error_checks() const {
+      return m_error_checks;
+    }
+    
     virtual std::string get_property_name() const {
        return "dummy property";
     }

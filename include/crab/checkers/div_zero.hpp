@@ -61,14 +61,23 @@ namespace crab {
             if (auto divisor = divisor_intv.singleton()) {
               if (*divisor == number_t(0)) {
 		lin_cst_t e_cst(*var != number_t(0));
-                LOG_ERR(this->m_verbose, inv, e_cst, s.get_debug_info());
+		crab::crab_string_os os;
+		if (this->m_verbose >= 1) {		
+		  os << "Property : " << e_cst << "\n"; 
+		  os << "Invariant: " << inv;
+		}
+		this->add_error(this->m_verbose, os.str(), &s);
               } else {
                 this->m_db.add(_SAFE);
               }
             } else if (interval_t(number_t(0)) <= divisor_intv) {
 	      lin_cst_t w_cst(*var != number_t(0));
-	      LOG_WARN(this->m_verbose, inv, w_cst, s.get_debug_info());
-                       
+	      crab::crab_string_os os;
+	      if (this->m_verbose >= 2) {	      
+		os << "Property : " << w_cst << "\n"; 
+		os << "Invariant: " << inv;
+	      }
+	      this->add_warning(this->m_verbose, os.str(), &s);
             } else {
               this->m_db.add(_SAFE);
             }
