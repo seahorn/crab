@@ -99,7 +99,7 @@ and then, for instance, to run `test1`:
 
     build/test-bin/test1
 
-## Example ## 
+# Example #
 
 Assume we want to perform static analysis on the following C-like
 program:
@@ -143,7 +143,7 @@ it might not compile like it is. Read [this](https://github.com/seahorn/crab/blo
     // (2) CFG basic block labels
     typedef std::string basic_block_label_t;
     // (3) CFG over integers
-    typedef cfg::Cfg<basic_block_label_t, varname_t, z_number> z_cfg_t;
+    typedef cfg::cfg<basic_block_label_t, varname_t, z_number> z_cfg_t;
     // Convenient wrapper for a CFG
     typedef cfg:cfg_ref<z_cfg_t> z_cfg_ref_t;
 
@@ -163,19 +163,19 @@ it might not compile like it is. Read [this](https://github.com/seahorn/crab/blo
        // Moreover, the variable factory should be alive while the CFG is in use.
        variable_factory_t vfac;	
        // Declare variables i,x, and y
-       z_var i (vfac ["i"], INT_TYPE, 32);
-       z_var x (vfac ["x"], INT_TYPE, 32);
-       z_var y (vfac ["y"], INT_TYPE, 32);
+       z_var i(vfac ["i"], INT_TYPE, 32);
+       z_var x(vfac ["x"], INT_TYPE, 32);
+       z_var y(vfac ["y"], INT_TYPE, 32);
        // Create an empty CFG marking "entry" and "exit" are the labels
        // for the entry and exit blocks.
-       cfg_t cfg ("entry","ret");
+       cfg_t cfg("entry","ret");
        // Add blocks
-       basic_block_t& entry = cfg.insert ("entry");
-       basic_block_t& bb1   = cfg.insert ("bb1");
-       basic_block_t& bb1_t = cfg.insert ("bb1_t");
-       basic_block_t& bb1_f = cfg.insert ("bb1_f");
-       basic_block_t& bb2   = cfg.insert ("bb2");
-       basic_block_t& ret   = cfg.insert ("ret");
+       basic_block_t& entry = cfg.insert("entry");
+       basic_block_t& bb1   = cfg.insert("bb1");
+       basic_block_t& bb1_t = cfg.insert("bb1_t");
+       basic_block_t& bb1_f = cfg.insert("bb1_f");
+       basic_block_t& bb2   = cfg.insert("bb2");
+       basic_block_t& ret   = cfg.insert("ret");
        // Add control flow 
        entry >> bb1; bb1 >> bb1_t; bb1 >> bb1_f;
        bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
@@ -191,7 +191,7 @@ it might not compile like it is. Read [this](https://github.com/seahorn/crab/blo
 
        // Build an analyzer and run the zones domain
        zones_domain_t inv;  // initially top
-       intra_zones_analyzer_t a (cfg, inv, ...);
+       intra_zones_analyzer_t a(cfg, inv, ...);
        a.run();
        cout << "Invariants using " << zones_domain_t::getDomainName() << "\n";
 	
@@ -243,7 +243,7 @@ analyzer that infers invariants from LLVM-based languages using Crab.
 - [SeaHorn](https://github.com/seahorn) is a verification framework
 that uses Crab-Llvm to supply invariants to the back-end solvers.
 
-- [eBPF-verifier](https://github.com/vbpf/ebpf-verifier) a new eBPF verifier using Crab.
+- [eBPF-verifier](https://github.com/vbpf/ebpf-verifier) is a new [eBPF](https://lwn.net/Articles/740157/) verifier using Crab.
 
 # References #
 
