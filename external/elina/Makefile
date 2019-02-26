@@ -38,6 +38,9 @@ ELINA_LIBS := \
 
 # Lookup paths for crab and elina shared libraries
 LDFLAGS := -Wl,-rpath,$(CRAB_INSTALL)/crab/lib/,-rpath,$(CRAB_INSTALL)/elina/lib/
+ifeq ($(UNAME),Linux)
+    LDFLAGS += -Wl,--disable-new-dtags 
+endif
 
 LDLIBS := \
     $(CRAB_LIBS) $(LDD_LIBS) $(ELINA_LIBS) \

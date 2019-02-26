@@ -99,7 +99,7 @@ and then, for instance, to run `test1`:
 
     build/test-bin/test1
 
-# Usage #
+# Use Crab in your C++ Verification Tool #
 
 To include Crab in your C++ application you need to:
 
@@ -114,7 +114,7 @@ If you compile with Boxes/Apron/Elina you need also to include
 `_INSTALL_DIR_/xxx/include` and link with `_INSTALL_DIR_/xxx/lib`
 where `xxx=apron|elina|ldd`.
 
-Read [this](https://github.com/seahorn/crab/blob/master/external/Makefile) for a real Makefile.
+Read [this](https://github.com/seahorn/crab/blob/master/external/Makefile) for a sample Makefile.
 
 ## Example ## 
 
