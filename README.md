@@ -76,12 +76,6 @@ installation of the libraries is optional.
 
 **Important:** Apron and Elina are currently not compatible so you
 cannot enable `-DUSE_APRON=ON` and `-DUSE_ELINA=ON` at the same time. 
-
-To use Elina on Linux, you will need to add `_INSTALL_DIR_/lib` in the
-environment variable `LD_LIBRARY_PATH` if Elina is installed in a
-non-standard directory:
-
-    export LD_LIBRARY_PATH=_INSTALL_DIR_/lib
 	
 For instance, to install Crab with Boxes and Apron, type:
 
