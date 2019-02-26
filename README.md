@@ -251,7 +251,7 @@ analyzer that infers invariants from LLVM-based languages using Crab.
 that uses Crab-Llvm to supply invariants to the back-end solvers.
 
 - [eBPF-verifier](https://github.com/vbpf/ebpf-verifier) a new eBPF verifier using Crab.
-- 
+
 # References #
 
 - "Simple and Precise Static Analysis of Untrusted Linux Kernel Extensions" by E. Gershuni, N. Amit, A. Gurfinkel, N. Narodytska, J. A. Navas, N. Rinetzky, L. Ryzhyk and M. Sagiv. PLDI'19.
