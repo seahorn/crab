@@ -1,13 +1,13 @@
 #------------------------------------------------------------------------------------#
 #                                  INSTRUCTIONS
 #------------------------------------------------------------------------------------#
-#  1. Set CRAB_INSTALL to the directory Crab was installed. If you
-#  have not installed Crab yet, then type `make crab_install`
+#  1. Type `make crab_install`
 #  2. Type `make all`
 #  3. Type `./domain` or `./analysis`
 #------------------------------------------------------------------------------------#
 
-CRAB_INSTALL := /home/jorge/install/crab
+PWD=$(shell pwd)
+CRAB_INSTALL=${PWD}/crab-install
 
 UNAME := $(shell uname)
 ifeq ($(UNAME),Darwin)
@@ -38,6 +38,9 @@ ELINA_LIBS := \
 
 # Lookup paths for crab and elina shared libraries
 LDFLAGS := -Wl,-rpath,$(CRAB_INSTALL)/crab/lib/,-rpath,$(CRAB_INSTALL)/elina/lib/
+ifeq ($(UNAME),Linux)
+    LDFLAGS += -Wl,--disable-new-dtags 
+endif
 
 LDLIBS := \
     $(CRAB_LIBS) $(LDD_LIBS) $(ELINA_LIBS) \

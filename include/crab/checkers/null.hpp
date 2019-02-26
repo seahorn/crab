@@ -123,18 +123,30 @@ namespace crab {
         auto ptr = s.lhs();
         null_detail::get_as<abs_dom_t> null_inv(inv);
         crab::domains::nullity_value val = null_inv [ptr];
-
+	
         if (val.is_bottom()) {
           this->m_db.add(_UNREACH);
         } else if (val.is_non_null()) {
-          LOG_SAFE(this->m_verbose, inv, checked_prop_str(ptr), s.get_debug_info());
-          //this->m_db.add(_SAFE);
+	  crab::crab_string_os os;
+	  if (this->m_verbose >= 3) {	  
+	    os << "Property : " << checked_prop_str(ptr) << "\n"; 
+	    os << "Invariant: " << inv;
+	  }
+	  this->add_safe(this->m_verbose, os.str(), &s);
         } else if (val.is_null()) {
-          LOG_ERR(this->m_verbose, inv, checked_prop_str(ptr), s.get_debug_info());
-          //this->m_db.add(_ERR);
+	  crab::crab_string_os os;
+	  if (this->m_verbose >= 1) {	  
+	    os << "Property : " << checked_prop_str(ptr) << "\n"; 
+	    os << "Invariant: " << inv;
+	  }
+	  this->add_error(this->m_verbose, os.str(), &s);
         } else {
-          LOG_WARN(this->m_verbose, inv, checked_prop_str(ptr), s.get_debug_info());
-          //this->m_db.add(_WARN);
+	  crab::crab_string_os os;
+	  if (this->m_verbose >= 2) {	  
+	    os << "Property : " << checked_prop_str(ptr) << "\n"; 
+	    os << "Invariant: " << inv;
+	  }
+	  this->add_warning(this->m_verbose, os.str(), &s);
         }
         
         s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
@@ -151,11 +163,26 @@ namespace crab {
         if (val.is_bottom()) {
           this->m_db.add(_UNREACH);
         } else if (val.is_non_null()) {
-          LOG_SAFE(this->m_verbose, inv, checked_prop_str(ptr), s.get_debug_info());
+	  crab::crab_string_os os;
+	  if (this->m_verbose >= 3) {	  
+	    os << "Property : " << checked_prop_str(ptr) << "\n"; 
+	    os << "Invariant: " << inv;
+	  }
+	  this->add_safe(this->m_verbose, os.str(), &s);
         } else if (val.is_null()) {
-          LOG_ERR(this->m_verbose, inv, checked_prop_str(ptr), s.get_debug_info());
+	  crab::crab_string_os os;
+	  if (this->m_verbose >= 1) {	  
+	    os << "Property : " << checked_prop_str(ptr) << "\n"; 
+	    os << "Invariant: " << inv;
+	  }
+	  this->add_error(this->m_verbose, os.str(), &s);
         } else {
-          LOG_WARN(this->m_verbose, inv, checked_prop_str(ptr), s.get_debug_info());
+	  crab::crab_string_os os;
+	  if (this->m_verbose >= 2) {	  
+	    os << "Property : " << checked_prop_str(ptr) << "\n"; 
+	    os << "Invariant: " << inv;
+	  }
+	  this->add_warning(this->m_verbose, os.str(), &s);
         }
         
         s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt

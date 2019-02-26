@@ -1,13 +1,13 @@
 #------------------------------------------------------------------------------------#
 #                                  INSTRUCTIONS
 #------------------------------------------------------------------------------------#
-#  1. Set CRAB_INSTALL to the directory Crab was installed. If you
-#  have not installed Crab yet, then type `make crab_install`
+#  1. Type `make crab_install`
 #  2. Type `make all`
 #  3. Type `./domain` or `./analysis`
 #------------------------------------------------------------------------------------#
 
-CRAB_INSTALL := /home/jorge/install/crab
+PWD=$(shell pwd)
+CRAB_INSTALL=${PWD}/crab-install
 
 UNAME := $(shell uname)
 ifeq ($(UNAME),Darwin)
@@ -68,6 +68,7 @@ clean:
 crab_install:
 	git clone https://github.com/seahorn/crab.git crab
 	mkdir -p crab/build
+	@echo "Installing crab in ${CRAB_INSTALL} ... "
 	cd crab/build \
 	     && cmake -DCMAKE_INSTALL_PREFIX=$(CRAB_INSTALL) -DUSE_LDD=ON -DUSE_APRON=ON ../ \
 	     && cmake --build . --target ldd && cmake ../ \

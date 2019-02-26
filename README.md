@@ -76,12 +76,6 @@ installation of the libraries is optional.
 
 **Important:** Apron and Elina are currently not compatible so you
 cannot enable `-DUSE_APRON=ON` and `-DUSE_ELINA=ON` at the same time. 
-
-To use Elina on Linux, you will need to add `_INSTALL_DIR_/lib` in the
-environment variable `LD_LIBRARY_PATH` if Elina is installed in a
-non-standard directory:
-
-    export LD_LIBRARY_PATH=_INSTALL_DIR_/lib
 	
 For instance, to install Crab with Boxes and Apron, type:
 
@@ -105,24 +99,7 @@ and then, for instance, to run `test1`:
 
     build/test-bin/test1
 
-# Usage #
-
-To include Crab in your C++ application you need to:
-
-- include the C++ header files located at the
-`_INSTALL_DIR_/crab/include`, and
- 
-- link your application with the Crab libraries installed in
-`_INSTALL_DIR_/crab/lib`.
-
-
-If you compile with Boxes/Apron/Elina you need also to include
-`_INSTALL_DIR_/xxx/include` and link with `_INSTALL_DIR_/xxx/lib`
-where `xxx=apron|elina|ldd`.
-
-Read [this](https://github.com/seahorn/crab/blob/master/external/Makefile) for a real Makefile.
-
-## Example ## 
+# Example #
 
 Assume we want to perform static analysis on the following C-like
 program:
@@ -166,7 +143,7 @@ it might not compile like it is. Read [this](https://github.com/seahorn/crab/blo
     // (2) CFG basic block labels
     typedef std::string basic_block_label_t;
     // (3) CFG over integers
-    typedef cfg::Cfg<basic_block_label_t, varname_t, z_number> z_cfg_t;
+    typedef cfg::cfg<basic_block_label_t, varname_t, z_number> z_cfg_t;
     // Convenient wrapper for a CFG
     typedef cfg:cfg_ref<z_cfg_t> z_cfg_ref_t;
 
@@ -186,19 +163,19 @@ it might not compile like it is. Read [this](https://github.com/seahorn/crab/blo
        // Moreover, the variable factory should be alive while the CFG is in use.
        variable_factory_t vfac;	
        // Declare variables i,x, and y
-       z_var i (vfac ["i"], INT_TYPE, 32);
-       z_var x (vfac ["x"], INT_TYPE, 32);
-       z_var y (vfac ["y"], INT_TYPE, 32);
+       z_var i(vfac ["i"], INT_TYPE, 32);
+       z_var x(vfac ["x"], INT_TYPE, 32);
+       z_var y(vfac ["y"], INT_TYPE, 32);
        // Create an empty CFG marking "entry" and "exit" are the labels
        // for the entry and exit blocks.
-       cfg_t cfg ("entry","ret");
+       cfg_t cfg("entry","ret");
        // Add blocks
-       basic_block_t& entry = cfg.insert ("entry");
-       basic_block_t& bb1   = cfg.insert ("bb1");
-       basic_block_t& bb1_t = cfg.insert ("bb1_t");
-       basic_block_t& bb1_f = cfg.insert ("bb1_f");
-       basic_block_t& bb2   = cfg.insert ("bb2");
-       basic_block_t& ret   = cfg.insert ("ret");
+       basic_block_t& entry = cfg.insert("entry");
+       basic_block_t& bb1   = cfg.insert("bb1");
+       basic_block_t& bb1_t = cfg.insert("bb1_t");
+       basic_block_t& bb1_f = cfg.insert("bb1_f");
+       basic_block_t& bb2   = cfg.insert("bb2");
+       basic_block_t& ret   = cfg.insert("ret");
        // Add control flow 
        entry >> bb1; bb1 >> bb1_t; bb1 >> bb1_f;
        bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
@@ -214,7 +191,7 @@ it might not compile like it is. Read [this](https://github.com/seahorn/crab/blo
 
        // Build an analyzer and run the zones domain
        zones_domain_t inv;  // initially top
-       intra_zones_analyzer_t a (cfg, inv, ...);
+       intra_zones_analyzer_t a(cfg, inv, ...);
        a.run();
        cout << "Invariants using " << zones_domain_t::getDomainName() << "\n";
 	
@@ -240,7 +217,23 @@ the entry of each basic block, should be something like this:
     bb2={i -> [0, 99], x -> [1, +oo], y -> [0, 99], y-i<=0, y-x<=0, i-x<=0, i-y<=0}
 	ret={i -> [100, 100], x -> [100, +oo], y -> [100, 100], y-i<=0, y-x<=0, i-x<=0, i-y<=0}
 
-# Integration of Crab in other analysis tools #
+# Using Crab in your Verification Tool via Makefile #
+
+To include Crab in your C++ application you need to:
+
+- include the C++ header files located at the
+`_INSTALL_DIR_/crab/include`, and
+ 
+- link your application with the Crab libraries installed in
+`_INSTALL_DIR_/crab/lib`.
+
+If you compile with Boxes/Apron/Elina you need also to include
+`_INSTALL_DIR_/xxx/include` and link with `_INSTALL_DIR_/xxx/lib`
+where `xxx=apron|elina|ldd`.
+
+Read [this](https://github.com/seahorn/crab/blob/master/external/Makefile) for a sample Makefile.
+
+# Examples of Crab in other analysis tools #
 
 Crab has been integrated in these static analysis tools:
 
@@ -250,10 +243,13 @@ analyzer that infers invariants from LLVM-based languages using Crab.
 - [SeaHorn](https://github.com/seahorn) is a verification framework
 that uses Crab-Llvm to supply invariants to the back-end solvers.
 
+- [eBPF-verifier](https://github.com/vbpf/ebpf-verifier) is a new [eBPF](https://lwn.net/Articles/740157/) verifier using Crab.
+
 # References #
 
-- "Exploiting Sparsity in Difference-Bounds Matrices" [(PDF)](https://jorgenavas.github.io/papers/zones-SAS16.pdf) by G. Gange, Jorge A. Navas, P. Schachte, H. Sondergaard, and P. Stuckey. SAS'16.
-- "An Abstract Domain of Uninterpreted Functions" [(PDF)](https://jorgenavas.github.io/papers/terms-vmcai16.pdf) by G. Gange, Jorge A. Navas, P. Schachte, H. Sondergaard, and P. Stuckey. VMCAI'16.
-- "Signedness-Agnostic Program Analysis: Precise Integer Bounds for Low-Level Code" [(PDF)](https://jorgenavas.github.io/papers/wrapped-intervals-aplas12.pdf) by Jorge A. Navas, P. Schachte, H. Sondergaard, and P. Stuckey. APLAS'12.
+- "Simple and Precise Static Analysis of Untrusted Linux Kernel Extensions" by E. Gershuni, N. Amit, A. Gurfinkel, N. Narodytska, J. A. Navas, N. Rinetzky, L. Ryzhyk and M. Sagiv. PLDI'19.
+- "Exploiting Sparsity in Difference-Bounds Matrices" [(PDF)](https://jorgenavas.github.io/papers/zones-SAS16.pdf) by G. Gange, J. A. Navas, P. Schachte, H. Sondergaard, and P. Stuckey. SAS'16.
+- "An Abstract Domain of Uninterpreted Functions" [(PDF)](https://jorgenavas.github.io/papers/terms-vmcai16.pdf) by G. Gange, J. A. Navas, P. Schachte, H. Sondergaard, and P. Stuckey. VMCAI'16.
+- "Signedness-Agnostic Program Analysis: Precise Integer Bounds for Low-Level Code" [(PDF)](https://jorgenavas.github.io/papers/wrapped-intervals-aplas12.pdf) by J. A. Navas, P. Schachte, H. Sondergaard, and P. Stuckey. APLAS'12.
 - "Boxes: A Symbolic Abstract Domain of Boxes" [(PDF)](https://pdfs.semanticscholar.org/93da/8102c5ca512126d1a45ee81da1ab0b0fd47c.pdf) by A. Gurfinkel and S. Chaki. SAS'10.
 

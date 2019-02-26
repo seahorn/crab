@@ -46,11 +46,21 @@ namespace crab {
         lin_cst_t cst = s.constraint ();
 
         // Answering a reachability question
-        if (cst.is_contradiction()) {
+        if (cst.is_contradiction()) {	  
           if (this->m_abs_tr->get()->is_bottom()) {
-            LOG_SAFE(this->m_verbose, *(this->m_abs_tr->get()), cst, s.get_debug_info());
+	    crab::crab_string_os os;
+	    if (this->m_verbose >= 3) {
+	      os << "Property : " << cst << "\n"; 
+	      os << "Invariant: " << *(this->m_abs_tr->get());
+	    }
+	    this->add_safe(this->m_verbose, os.str(), &s);
           } else {
-            LOG_WARN(this->m_verbose, *(this->m_abs_tr->get()), cst, s.get_debug_info());
+	    crab::crab_string_os os;
+	    if (this->m_verbose >= 2) {
+	      os << "Property : " << cst << "\n"; 
+	      os << "Invariant: " << *(this->m_abs_tr->get());
+	    }	    
+	    this->add_warning(this->m_verbose, os.str(), &s);
           }
           return;
         }
@@ -62,9 +72,19 @@ namespace crab {
 
         abs_dom_t inv(*(this->m_abs_tr->get()));
         if (crab::domains::checker_domain_traits<abs_dom_t>::entail(inv, cst)) {
-          LOG_SAFE(this->m_verbose, inv, cst, s.get_debug_info());
+	  crab::crab_string_os os;
+	  if (this->m_verbose >= 3) {
+	    os << "Property : " << cst << "\n"; 
+	    os << "Invariant: " << inv;
+	  }
+	  this->add_safe(this->m_verbose, os.str(), &s);	  
         } else if (crab::domains::checker_domain_traits<abs_dom_t>::intersect(inv, cst)) {
-          LOG_WARN(this->m_verbose, inv, cst, s.get_debug_info());
+	  crab::crab_string_os os;
+	  if (this->m_verbose >= 2) {	  
+	    os << "Property : " << cst << "\n"; 
+	    os << "Invariant: " << inv;
+	  }
+	  this->add_warning(this->m_verbose, os.str(), &s);	  
         } else {
 	  /* Instead this program:
                x:=0; 
@@ -82,8 +102,12 @@ namespace crab {
 	     Note that inv does not either entail or intersect with cst.
              However, the original program does not violate the assertion.
 	   */
-	  LOG_WARN(this->m_verbose, inv, cst, s.get_debug_info());
-	  //LOG_ERR(this->m_verbose, inv, cst, s.get_debug_info());	  
+	  crab::crab_string_os os;
+	  if (this->m_verbose >= 2) {	  
+	    os << "Property : " << cst << "\n"; 
+	    os << "Invariant: " << inv;
+	  }
+	  this->add_warning(this->m_verbose, os.str(), &s);	  
         }
         s.accept(&*this->m_abs_tr); // propagate invariants to the next stmt
       }
@@ -103,11 +127,21 @@ namespace crab {
 	auto bvar = s.cond();
 	inv1.assume_bool(bvar, true /*is_negated*/);
 	if (inv1.is_bottom()) {
-	  LOG_SAFE(this->m_verbose, inv1, s, s.get_debug_info());	  
+	  crab::crab_string_os os;
+	  if (this->m_verbose >= 3) {	  
+	    os << "Property : " << s << "\n"; 
+	    os << "Invariant: " << inv1;
+	  }
+	  this->add_safe(this->m_verbose, os.str(), &s);	  
 	} else  {
 	  abs_dom_t inv2(*this->m_abs_tr->get());
 	  inv2.assume_bool(bvar, false /*is_negated*/);
-	  LOG_WARN(this->m_verbose, inv2, s, s.get_debug_info());
+	  crab::crab_string_os os;
+	  if (this->m_verbose >= 2) {	  
+	    os << "Property : " << s << "\n"; 
+	    os << "Invariant: " << inv2;
+	  }
+	  this->add_warning(this->m_verbose, os.str(), &s);	  
 	}
         s.accept (&*this->m_abs_tr); // propagate invariants to the next stmt
       }
