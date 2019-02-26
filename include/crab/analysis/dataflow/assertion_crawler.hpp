@@ -3,10 +3,9 @@
 #include <crab/common/types.hpp>
 #include <crab/common/debug.hpp>
 #include <crab/common/stats.hpp>
-
-#include <crab/cfg/cfg.hpp> 
+#include <crab/cfg/cfg.hpp>
+#include <crab/domains/killgen_domain.hpp> 
 #include <crab/iterators/killgen_fixpoint_iterator.hpp> 
-#include <crab/domains/separate_domains.hpp>
 #include <crab/analysis/graphs/cdg.hpp>
 
 #include <boost/unordered_map.hpp>
@@ -464,7 +463,7 @@ namespace crab {
 
        virtual void init_fixpoint() override {
 	 crab::ScopedCrabStats __st__("Control-Dependency Graph");
-	 crab::analyzer::graph_algo::control_dep_graph (this->_cfg, _cdg);
+	 crab::analyzer::graph_algo::control_dep_graph (this->m_cfg, _cdg);
        }
 
        virtual separate_domain_t entry() override {
@@ -477,7 +476,7 @@ namespace crab {
               
        virtual separate_domain_t
        analyze(basic_block_label_t bb_id, separate_domain_t out) override {
-         auto &bb = this->_cfg.get_node(bb_id);
+         auto &bb = this->m_cfg.get_node(bb_id);
          transfer_function vis(out,_cdg, _assert_map, bb);
 	 for (auto &s: boost::make_iterator_range(bb.rbegin(),bb.rend())) {
 	   s.accept (&vis);
@@ -548,7 +547,7 @@ namespace crab {
 	 if (it != m_map.end()) {
 	   if (!it->second.is_bottom()) {
 	     auto kv = *(it->second.begin());
-	     auto &bb = this->_cfg.get_node(b);
+	     auto &bb = this->m_cfg.get_node(b);
 	     typename assertion_crawler_operations<CFG>::transfer_function
 	       vis(it->second,
 		   *(kv.first.cdg_ptr), *(kv.first.assert_map_ptr),
@@ -573,8 +572,8 @@ namespace crab {
 	 // Print invariants in DFS to enforce a fixed order
 	 std::set<basic_block_label_t> visited;
 	 std::vector<basic_block_label_t> worklist;
-	 worklist.push_back(this->_cfg.entry());
-	 visited.insert(this->_cfg.entry());
+	 worklist.push_back(this->m_cfg.entry());
+	 visited.insert(this->m_cfg.entry());
 	 while (!worklist.empty()) {
 	   auto cur_label = worklist.back();
 	   worklist.pop_back();
@@ -582,7 +581,7 @@ namespace crab {
 	   auto inv = m_map[cur_label];
 	   crab::outs() << crab::cfg_impl::get_label_str (cur_label) << "=" << inv << "\n";
 	   
-	   auto const &cur_node = this->_cfg.get_node (cur_label);
+	   auto const &cur_node = this->m_cfg.get_node (cur_label);
 	   for (auto const kid_label : boost::make_iterator_range (cur_node.next_blocks ())) {
 	     if (visited.insert(kid_label).second) {
 	       worklist.push_back(kid_label);

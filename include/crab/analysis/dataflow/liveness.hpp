@@ -5,6 +5,7 @@
 #include <crab/common/stats.hpp>
 #include <crab/common/debug.hpp>
 #include <crab/common/types.hpp>
+#include <crab/domains/killgen_domain.hpp>
 #include <crab/iterators/killgen_fixpoint_iterator.hpp>
 
 #include <boost/noncopyable.hpp>
@@ -54,7 +55,7 @@ namespace crab {
      }
 
      virtual void init_fixpoint() {
-       for (auto &b: boost::make_iterator_range(this->_cfg.begin(),this->_cfg.end())){
+       for (auto &b: boost::make_iterator_range(this->m_cfg.begin(),this->m_cfg.end())){
 	 varset_domain_t kill, gen;
 	 for (auto &s: boost::make_iterator_range(b.rbegin(),b.rend())) { 
 	   auto live = s.get_live();
@@ -170,16 +171,16 @@ namespace crab {
       typedef liveness_analysis<CFG> liveness_analysis_t;
       
       // the cfg
-      CFG _cfg;
+      CFG m_cfg;
       
       // output of the analysis: map basic blocks to set of dead
       // variables at the end of the blocks
       boost::unordered_map<basic_block_label_t, varset_domain_t> _dead_map;
       
       // statistics 
-      unsigned _max_live;
-      unsigned _total_live;
-      unsigned _total_blks;
+      unsigned m_max_live;
+      unsigned m_total_live;
+      unsigned m_total_blocks;
       
     public:
       
@@ -188,22 +189,22 @@ namespace crab {
       typedef varset_domain_t set_t;
       
       liveness(CFG cfg)
-	: _cfg(cfg)
-	, _max_live(0)
-	, _total_live(0)
-	, _total_blks (0) { }
+	: m_cfg(cfg)
+	, m_max_live(0)
+	, m_total_live(0)
+	, m_total_blocks (0) { }
     
     
       void exec() {
 	/** Remove dead variables locally **/
 	
-	liveness_analysis_t live(_cfg);
+	liveness_analysis_t live(m_cfg);
 	live.exec();
-	for (auto &bb: boost::make_iterator_range(_cfg.begin(), _cfg.end())) {
+	for (auto &bb: boost::make_iterator_range(m_cfg.begin(), m_cfg.end())) {
 	  varset_domain_t live_set = live.get(bb.label());
 	  if (live_set.is_bottom()) continue;
 
-	  varset_domain_t dead_set = this->_cfg.get_node(bb.label()).live();
+	  varset_domain_t dead_set = m_cfg.get_node(bb.label()).live();
 	  // dead variables = (USE(bb) U DEF(bb)) \ live_out(bb)
 	  dead_set -= live_set;
 	  CRAB_LOG("liveness",
@@ -211,9 +212,9 @@ namespace crab {
 		                << " dead variables=" << dead_set <<"\n";);
 	  _dead_map.insert (std::make_pair(bb.label(), dead_set));
 	  // update statistics
-	  _total_live += live_set.size ();
-	  _max_live = std::max (_max_live, live_set.size ());
-	  _total_blks ++;
+	  m_total_live += live_set.size ();
+	  m_max_live = std::max (m_max_live, live_set.size ());
+	  m_total_blocks ++;
 	}      
       }
     
@@ -230,9 +231,9 @@ namespace crab {
       void get_stats(unsigned& total_live, 
 		     unsigned& max_live_per_blk,
 		     unsigned& avg_live_per_blk)  const {
-	total_live = _total_live;
-	max_live_per_blk = _max_live;
-	avg_live_per_blk = (_total_blks == 0 ? 0 : (int) _total_live / _total_blks);
+	total_live = m_total_live;
+	max_live_per_blk = m_max_live;
+	avg_live_per_blk = (m_total_blocks == 0 ? 0 : (int) m_total_live / m_total_blocks);
       }
       
       void write (crab_os &o) const {

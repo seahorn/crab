@@ -99,23 +99,6 @@ and then, for instance, to run `test1`:
 
     build/test-bin/test1
 
-# Use Crab in your C++ Verification Tool #
-
-To include Crab in your C++ application you need to:
-
-- include the C++ header files located at the
-`_INSTALL_DIR_/crab/include`, and
- 
-- link your application with the Crab libraries installed in
-`_INSTALL_DIR_/crab/lib`.
-
-
-If you compile with Boxes/Apron/Elina you need also to include
-`_INSTALL_DIR_/xxx/include` and link with `_INSTALL_DIR_/xxx/lib`
-where `xxx=apron|elina|ldd`.
-
-Read [this](https://github.com/seahorn/crab/blob/master/external/Makefile) for a sample Makefile.
-
 ## Example ## 
 
 Assume we want to perform static analysis on the following C-like
@@ -234,7 +217,23 @@ the entry of each basic block, should be something like this:
     bb2={i -> [0, 99], x -> [1, +oo], y -> [0, 99], y-i<=0, y-x<=0, i-x<=0, i-y<=0}
 	ret={i -> [100, 100], x -> [100, +oo], y -> [100, 100], y-i<=0, y-x<=0, i-x<=0, i-y<=0}
 
-# Integration of Crab in other analysis tools #
+# Using Crab in your Verification Tool via Makefile #
+
+To include Crab in your C++ application you need to:
+
+- include the C++ header files located at the
+`_INSTALL_DIR_/crab/include`, and
+ 
+- link your application with the Crab libraries installed in
+`_INSTALL_DIR_/crab/lib`.
+
+If you compile with Boxes/Apron/Elina you need also to include
+`_INSTALL_DIR_/xxx/include` and link with `_INSTALL_DIR_/xxx/lib`
+where `xxx=apron|elina|ldd`.
+
+Read [this](https://github.com/seahorn/crab/blob/master/external/Makefile) for a sample Makefile.
+
+# Examples of Crab in other analysis tools #
 
 Crab has been integrated in these static analysis tools:
 

@@ -8,8 +8,8 @@
 #include <crab/common/types.hpp>
 #include <crab/common/debug.hpp>
 #include <crab/common/stats.hpp>
-
-#include <crab/cfg/cfg.hpp> 
+#include <crab/cfg/cfg.hpp>
+#include <crab/domains/killgen_domain.hpp> 
 #include <crab/iterators/killgen_fixpoint_iterator.hpp> 
 
 #include <boost/unordered_map.hpp>
@@ -139,7 +139,7 @@ namespace crab {
        
        virtual array_segment_domain_t analyze (basic_block_label_t bb_id, 
                                                array_segment_domain_t in) override {
-         auto &bb = this->_cfg.get_node(bb_id);
+         auto &bb = this->m_cfg.get_node(bb_id);
          array_segment_visitor vis(in);
          for (auto &s: bb) { s.accept (&vis); }
          return vis._indexes;
