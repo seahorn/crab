@@ -250,10 +250,13 @@ analyzer that infers invariants from LLVM-based languages using Crab.
 - [SeaHorn](https://github.com/seahorn) is a verification framework
 that uses Crab-Llvm to supply invariants to the back-end solvers.
 
+- [eBPF-verifier](https://github.com/vbpf/ebpf-verifier) a new eBPF verifier using Crab.
+- 
 # References #
 
-- "Exploiting Sparsity in Difference-Bounds Matrices" [(PDF)](https://jorgenavas.github.io/papers/zones-SAS16.pdf) by G. Gange, Jorge A. Navas, P. Schachte, H. Sondergaard, and P. Stuckey. SAS'16.
-- "An Abstract Domain of Uninterpreted Functions" [(PDF)](https://jorgenavas.github.io/papers/terms-vmcai16.pdf) by G. Gange, Jorge A. Navas, P. Schachte, H. Sondergaard, and P. Stuckey. VMCAI'16.
-- "Signedness-Agnostic Program Analysis: Precise Integer Bounds for Low-Level Code" [(PDF)](https://jorgenavas.github.io/papers/wrapped-intervals-aplas12.pdf) by Jorge A. Navas, P. Schachte, H. Sondergaard, and P. Stuckey. APLAS'12.
+- "Simple and Precise Static Analysis of Untrusted Linux Kernel Extensions" by E. Gershuni, N. Amit, A. Gurfinkel, N. Narodytska, J. A. Navas, N. Rinetzky, L. Ryzhyk and M. Sagiv. PLDI'19.
+- "Exploiting Sparsity in Difference-Bounds Matrices" [(PDF)](https://jorgenavas.github.io/papers/zones-SAS16.pdf) by G. Gange, J. A. Navas, P. Schachte, H. Sondergaard, and P. Stuckey. SAS'16.
+- "An Abstract Domain of Uninterpreted Functions" [(PDF)](https://jorgenavas.github.io/papers/terms-vmcai16.pdf) by G. Gange, J. A. Navas, P. Schachte, H. Sondergaard, and P. Stuckey. VMCAI'16.
+- "Signedness-Agnostic Program Analysis: Precise Integer Bounds for Low-Level Code" [(PDF)](https://jorgenavas.github.io/papers/wrapped-intervals-aplas12.pdf) by J. A. Navas, P. Schachte, H. Sondergaard, and P. Stuckey. APLAS'12.
 - "Boxes: A Symbolic Abstract Domain of Boxes" [(PDF)](https://pdfs.semanticscholar.org/93da/8102c5ca512126d1a45ee81da1ab0b0fd47c.pdf) by A. Gurfinkel and S. Chaki. SAS'10.
 
