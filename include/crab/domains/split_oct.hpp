@@ -3,6 +3,7 @@
 /*******************************************************************************
  * Implementation of Octagons based on split normal form.
  * Author: Zequn Ma.
+ * Contributors: Jorge A. Navas
  *******************************************************************************/
 
 #include <crab/common/types.hpp>
@@ -30,204 +31,6 @@
 #pragma GCC diagnostic ignored "-Wsign-compare"
 
 namespace crab {
-  /* 
-     It was originally in graphs/graph_ops.hpp
-     This is similar to SubGraph but for DBMs adapted for Octagos.
-   */
-  
-  // View of a graph, omitting a given vertex
-  template<class G>
-  class SplitGraph {
-  public:
-    typedef typename G::vert_id vert_id;
-    typedef typename G::Wt Wt;
-
-    typedef typename G::pred_range g_pred_range;
-    typedef typename G::succ_range g_succ_range;
-
-    typedef typename G::e_pred_range g_e_pred_range;
-    typedef typename G::e_succ_range g_e_succ_range;
-
-    typedef typename G::mut_val_ref_t mut_val_ref_t;
-
-    SplitGraph(G& _g)
-      : g(_g)
-    { }
-
-     
-    bool elem(vert_id x, vert_id y) const {
-      return ((x / 2 != y / 2) && g.elem(x, y));
-    }
-
-    bool lookup(vert_id x, vert_id y, mut_val_ref_t* w) const {
-      return ((x / 2 != y / 2) && g.lookup(x, y, w));
-    }
-
-    Wt edge_val(vert_id x, vert_id y) const {
-      return g.edge_val(x, y);  
-    }
-
-    // Precondition: elem(x, y) is true.
-    Wt operator()(vert_id x, vert_id y) const {
-      return g(x, y);
-    }
-
-    void clear_edges(void) { g.clear_edges(); }
-
-    void clear(void)
-    {
-      assert(0 && "SplitGraph::clear not implemented.");       
-    }
-
-    // Number of allocated vertices
-    int size(void) const {
-      return g.size();
-    }
-
-    // Assumption: (x, y) not in mtx
-    void add_edge(vert_id x, Wt wt, vert_id y)
-    {
-//      assert(x != v_ex && y != v_ex);
-      g.add_edge(x, wt, y);
-    }
-
-    void set_edge(vert_id s, Wt w, vert_id d)
-    {
-//      assert(s != v_ex && d != v_ex);
-      g.set_edge(s, w, d);
-    }
-
-    template<class Op>
-    void update_edge(vert_id s, Wt w, vert_id d, Op& op)
-    {
-//      assert(s != v_ex && d != v_ex);
-      g.update_edge(s, w, d, op);
-    }
-
-    class vert_iterator {
-    public:
-      vert_iterator(const typename G::vert_iterator& _iG)
-        : iG(_iG)
-      { }
-
-      // Skipping of v_ex is done entirely by !=.
-      // So we _MUST_ test it != verts.end() before dereferencing.
-      vert_id operator*(void) { return *iG; }
-      vert_iterator operator++(void) { ++iG; return *this; } 
-      bool operator!=(const vert_iterator& o) {
-        return iG != o.iG;
-      }
-      
-      typename G::vert_iterator iG; 
-    };
-    class vert_range {
-    public:
-      vert_range(const typename G::vert_range& _rG)
-        : rG(_rG)
-      { }
-
-      vert_iterator begin(void) const { return vert_iterator(rG.begin()); }
-      vert_iterator end(void) const { return vert_iterator(rG.end()); }
-
-      typename G::vert_range rG;
-    };
-    vert_range verts(void) const { return vert_range(g.verts()); }
-
-    template<class It>
-    class adj_iterator {
-    public:
-      adj_iterator(const It& _iG, vert_id _v_ex)
-        : iG(_iG), v_ex(_v_ex)
-      { }
-      vert_id operator*(void) const { return *iG; }
-      adj_iterator& operator++(void) { ++iG; return *this; }
-      bool operator!=(const adj_iterator& o)
-      {
-        if(iG != o.iG && (*iG) == v_ex)
-          ++iG;
-        return iG != o.iG;
-      }
-
-      It iG;
-      vert_id v_ex;
-    };
-
-    template<class It>
-    class e_adj_iterator {
-    public:
-      typedef typename It::edge_ref edge_ref;
-
-      e_adj_iterator(const It& _iG, vert_id _v_ex)
-        : iG(_iG), v_ex(_v_ex)
-      { }
-      edge_ref operator*(void) const { return *iG; }
-      e_adj_iterator& operator++(void) { ++iG; return *this; }
-      bool operator!=(const e_adj_iterator& o)
-      {
-        if(iG != o.iG && (*iG).vert == v_ex)
-          ++iG;
-        return iG != o.iG;
-      }
-
-      It iG;
-      vert_id v_ex;
-    };
-
-    template<class R, class It>
-    class adj_list {
-    public: 
-      typedef typename R::iterator g_iter;
-      typedef It iterator;
-
-      adj_list(const R& _rG, vert_id _v_ex)
-        : rG(_rG), v_ex(_v_ex)
-      { }
-      iterator begin() const { return iterator(rG.begin(), v_ex); }
-      iterator end() const { return iterator(rG.end(), v_ex); }
-      
-    protected:
-      R rG;
-      vert_id v_ex;
-    };
-    typedef adj_list<g_pred_range,
-              adj_iterator<typename g_pred_range::iterator> > pred_range;
-    typedef adj_list<g_succ_range,
-              adj_iterator<typename g_succ_range::iterator> > succ_range;
-
-    typedef adj_list<g_e_pred_range,
-              e_adj_iterator<typename g_e_pred_range::iterator> > e_pred_range;
-    typedef adj_list<g_e_succ_range,
-              e_adj_iterator<typename g_e_succ_range::iterator> > e_succ_range;
-
-    succ_range succs(vert_id v) {
-      // assert(v != v_ex);
-      vert_id v_opp;
-      if (v % 2 == 0) v_opp = v + 1;
-      else v_opp = v - 1;
-      return succ_range(g.succs(v), v_opp);
-    }
-    pred_range preds(vert_id v) {
-      // assert(v != v_ex);
-      vert_id v_opp;
-      if (v % 2 == 0) v_opp = v + 1;
-      else v_opp = v - 1;
-      return pred_range(g.preds(v), v_opp);
-    }
-    e_succ_range e_succs(vert_id v) {
-      vert_id v_opp;
-      if (v % 2 == 0) v_opp = v + 1;
-      else v_opp = v - 1;
-      return e_succ_range(g.e_succs(v), v_opp);
-    }
-    e_pred_range e_preds(vert_id v) {
-      vert_id v_opp;
-      if (v % 2 == 0) v_opp = v + 1;
-      else v_opp = v - 1;
-      return e_pred_range(g.e_preds(v), v_opp);
-    }
-
-    G& g;
-  };
     
   namespace domains {
 
@@ -247,11 +50,6 @@ namespace crab {
 	pt = 3,
 	ht = 4
       };
-
-      // enum Sign {
-      // 	pos = 0,
-      // 	neg = 1,
-      // };
 
       template<typename Number, GraphRep Graph = GraphRep::adapt_ss>
       class DefaultParams {
@@ -293,6 +91,208 @@ namespace crab {
 	    >::type 
 	  >::type graph_t;
       };
+
+
+      /* 
+	 View a DBM that contains octagon constraints.
+      */
+      template<class G>
+      class SplitOctGraph {
+      public:
+	typedef typename G::vert_id vert_id;
+	typedef typename G::Wt Wt;
+	
+	typedef typename G::pred_range g_pred_range;
+	typedef typename G::succ_range g_succ_range;
+	
+	typedef typename G::e_pred_range g_e_pred_range;
+	typedef typename G::e_succ_range g_e_succ_range;
+	
+	typedef typename G::mut_val_ref_t mut_val_ref_t;
+	
+	SplitOctGraph(G& _g)
+	  : g(_g)
+	{ }
+	
+	
+	bool elem(vert_id x, vert_id y) const {
+	  return ((x / 2 != y / 2) && g.elem(x, y));
+	}
+	
+	bool lookup(vert_id x, vert_id y, mut_val_ref_t* w) const {
+	  return ((x / 2 != y / 2) && g.lookup(x, y, w));
+	}
+	
+	Wt edge_val(vert_id x, vert_id y) const {
+	  return g.edge_val(x, y);  
+	}
+	
+	// Precondition: elem(x, y) is true.
+	Wt operator()(vert_id x, vert_id y) const {
+	  return g(x, y);
+	}
+	
+	void clear_edges(void) { g.clear_edges(); }
+	
+	void clear(void) {
+	  assert(0 && "SplitOctGraph::clear not implemented.");       
+	}
+	
+	// Number of allocated vertices
+	int size(void) const {
+	  return g.size();
+	}
+	
+	// Assumption: (x, y) not in mtx
+	void add_edge(vert_id x, Wt wt, vert_id y) {
+	  // assert(x != v_ex && y != v_ex);
+	  g.add_edge(x, wt, y);
+	}
+	
+	void set_edge(vert_id s, Wt w, vert_id d) { 
+	  //  assert(s != v_ex && d != v_ex);
+	  g.set_edge(s, w, d);
+	}
+
+	template<class Op>
+	void update_edge(vert_id s, Wt w, vert_id d, Op& op) {
+	  //  assert(s != v_ex && d != v_ex);
+	  g.update_edge(s, w, d, op);
+	}
+
+	class vert_iterator {
+	public:
+	  vert_iterator(const typename G::vert_iterator& _iG)
+	    : iG(_iG)
+	  { }
+	  
+	  // Skipping of v_ex is done entirely by !=.
+	  // So we _MUST_ test it != verts.end() before dereferencing.
+	  vert_id operator*(void) { return *iG; }
+	  vert_iterator operator++(void) { ++iG; return *this; } 
+	  bool operator!=(const vert_iterator& o) {
+	    return iG != o.iG;
+	  }
+	  
+	  typename G::vert_iterator iG; 
+	};
+	
+	class vert_range {
+	public:
+	  vert_range(const typename G::vert_range& _rG)
+	    : rG(_rG)
+	  { }
+	  
+	  vert_iterator begin(void) const { return vert_iterator(rG.begin()); }
+	  vert_iterator end(void) const { return vert_iterator(rG.end()); }
+	  
+	  typename G::vert_range rG;
+	};
+	
+	vert_range verts(void) const { return vert_range(g.verts()); }
+	
+	/* exclude _v_ex from the view */
+	template<class It>
+	class adj_iterator {
+	public:
+	  adj_iterator(const It& _iG, vert_id _v_ex)
+	    : iG(_iG), v_ex(_v_ex)
+	  { }
+	  vert_id operator*(void) const { return *iG; }
+	  adj_iterator& operator++(void) { ++iG; return *this; }
+	  bool operator!=(const adj_iterator& o) {
+	    if(iG != o.iG && (*iG) == v_ex)
+	      ++iG;
+	    return iG != o.iG;
+	  }
+	  
+	  It iG;
+	  vert_id v_ex;
+	};
+	
+	/* exclude _v_ex from the view */    
+	template<class It>
+	class e_adj_iterator {
+	public:
+	  typedef typename It::edge_ref edge_ref;
+	  
+	  e_adj_iterator(const It& _iG, vert_id _v_ex)
+	    : iG(_iG), v_ex(_v_ex)
+	  { }
+	  edge_ref operator*(void) const { return *iG; }
+	  e_adj_iterator& operator++(void) { ++iG; return *this; }
+	  bool operator!=(const e_adj_iterator& o) { 
+	    if(iG != o.iG && (*iG).vert == v_ex)
+	      ++iG;
+	    return iG != o.iG;
+	  }
+	  
+	  It iG;
+	  vert_id v_ex;
+	};
+	
+	/* exclude _v_ex from the view */    
+	template<class R, class It>
+	class adj_list {
+	public: 
+	  typedef typename R::iterator g_iter;
+	  typedef It iterator;
+	  
+	  adj_list(const R& _rG, vert_id _v_ex)
+	    : rG(_rG), v_ex(_v_ex)
+	  { }
+	  iterator begin() const { return iterator(rG.begin(), v_ex); }
+	  iterator end() const { return iterator(rG.end(), v_ex); }
+	  
+	protected:
+	  R rG;
+	  vert_id v_ex;
+	};
+	
+	typedef adj_list<g_pred_range,
+			 adj_iterator<typename g_pred_range::iterator>> pred_range;
+	typedef adj_list<g_succ_range,
+			 adj_iterator<typename g_succ_range::iterator>> succ_range;
+	
+	typedef adj_list<g_e_pred_range,
+			 e_adj_iterator<typename g_e_pred_range::iterator>> e_pred_range;
+	typedef adj_list<g_e_succ_range,
+			 e_adj_iterator<typename g_e_succ_range::iterator>> e_succ_range;
+	
+	// If v is v+ (v-) then v- (v+) does not appear as a successor
+	succ_range succs(vert_id v) {
+	  // assert(v != v_ex);
+	  vert_id v_opp;
+	  if (v % 2 == 0) v_opp = v + 1;
+	  else v_opp = v - 1;
+	  return succ_range(g.succs(v), v_opp);
+	}
+	
+	// If v is v+ (v-) then v- (v+) does not appear as a predecessor
+	pred_range preds(vert_id v) {
+	  // assert(v != v_ex);
+	  vert_id v_opp;
+	  if (v % 2 == 0) v_opp = v + 1;
+	  else v_opp = v - 1;
+	  return pred_range(g.preds(v), v_opp);
+	}
+	
+	e_succ_range e_succs(vert_id v) {
+	  vert_id v_opp;
+	  if (v % 2 == 0) v_opp = v + 1;
+	  else v_opp = v - 1;
+	  return e_succ_range(g.e_succs(v), v_opp);
+	}
+	e_pred_range e_preds(vert_id v) {
+	  vert_id v_opp;
+	  if (v % 2 == 0) v_opp = v + 1;
+	  else v_opp = v - 1;
+	  return e_pred_range(g.e_preds(v), v_opp);
+	}
+	
+	G& g;
+      };
+      
     }; // end namespace split_octagons_impl
 
     template<class Number, class VariableName,
@@ -351,53 +351,7 @@ namespace crab {
 	bool default_is_absorbing() { return false; }
       };
       
-      // construct difference constraint (i, (j, k)) from a linear constraint
-      boost::optional<std::pair<vert_id, std::pair<vert_id, Wt>>>
-      diffcst_of_leq(linear_constraint_t cst) {
-	assert (cst.size() > 0);
-	assert(cst.is_inequality());
-
-	std::vector<std::pair<vert_id,std::pair<vert_id, Wt> > > diffcsts;
-	Wt weight = Wt(cst.constant());
-
-	typename linear_expression_t::iterator it1 = cst.begin();
-	typename linear_expression_t::iterator it2 = ++cst.begin();
-	vert_id i, j;
-
-	if (cst.size() == 1 && it1->first == 1) {
-	  i = get_vert(it1->second.name());
-	  j = i + 1;
-	  weight = 2 * weight;
-	} else if (cst.size() == 1 && it1->first == -1) {
-	  i = get_vert(it1->second.name()) + 1;
-	  j = i - 1;
-	  weight = 2 * weight;
-	} else if (cst.size() == 2 && it1->first == 1 && it2->first == -1) {
-	  i = get_vert(it1->second.name());
-	  j = get_vert(it2->second.name());
-	} else if (cst.size() == 2 && it1->first == -1 && it2->first == 1) {
-	  i = get_vert(it2->second.name());
-	  j = get_vert(it1->second.name());
-	} else if (cst.size() == 2 && it1->first == 1 && it2->first == 1) {
-	  i = get_vert(it1->second.name());
-	  j = get_vert(it2->second.name()) + 1;
-	} else if (cst.size() == 2 && it1->first == -1 && it2->first == -1) {
-	  i = get_vert(it2->second.name()) + 1;
-	  j = get_vert(it1->second.name());
-	} else {
-	  return boost::none;
-	}
-
-	if (abs(i) > abs(j)) {
-	  auto tmp = i;
-	  i = j;
-	  j = tmp;
-	}
-
-	return std::make_pair(j, std::make_pair(i, Wt(cst.constant())));
-      }
-
-      // get vert_id of both v+ and v- after creating verices in graph
+      // get vert_id of both v+ and v- after creating vertices in graph
       // return vert_id of positive node, negative node is positive + 1
       vert_id get_vert(variable_t v) {
 	auto it = vert_map.find(v);
@@ -443,7 +397,6 @@ namespace crab {
 	vert_id vert_pos(g.new_vertex());
 	vert_id vert_neg(g.new_vertex());
 	if (vert_pos > vert_neg) {
-	  //CRAB_LOG ("octagon-split", crab::outs() << "\tfixing pos and neg" << "\n");
 	  vert_id tmp = vert_pos;
 	  vert_pos = vert_neg;
 	  vert_neg = tmp;
@@ -522,94 +475,142 @@ namespace crab {
 	return r;
       }
 
-      // Turn an assignment into a set of difference constraints.
-      void diffcsts_of_assign(variable_t x, linear_expression_t exp,
-			      std::vector<std::pair<variable_t, Wt>>& lb,
-			      std::vector<std::pair<variable_t, Wt>>& ub) {
-	{
-	  boost::optional<variable_t> unbounded_ubvar;
-	  Wt exp_ub(ntov::ntov(exp.constant()));
-	  std::vector<std::pair<variable_t, Wt>> ub_terms;
-	  for (auto p : exp) {
-	    Wt coeff(ntov::ntov(p.first));
-	    if (p.first < Wt(0)) {
-	      bound_t y_lb = operator[](p.second).lb();
-	      if (y_lb.is_infinite()) goto assign_ub_finish;
-	      exp_ub += ntov::ntov(*(y_lb.number()))*coeff;
-	    } else {
-	      variable_t y(p.second);
-	      bound_t y_ub = operator[](y).ub();
-	      if (y_ub.is_infinite()) {
-		if (unbounded_ubvar || coeff != Wt(1))
-		  goto assign_ub_finish;
-		unbounded_ubvar = y;
-	      } else {
-		Wt ymax(ntov::ntov(*(y_ub.number())));
-		exp_ub += ymax*coeff;
-		ub_terms.push_back(std::make_pair(y, ymax));
-	      }
-	    }
-	  }
-	  if (unbounded_ubvar) {
-	    ub.push_back(std::make_pair(*unbounded_ubvar, exp_ub));
-	  } else {
-	    for (auto p : ub_terms)
-	      ub.push_back(std::make_pair(p.first, exp_ub - p.second));
-	  }
-	}
+      /**
+       *  Turn an assignment into a set of octagon constraints.
+       * 
+       *  Given v := a*x + b*y + E + k, we generate the octagon
+       *  constraints:
+       * 
+       *  if extract_upper_bounds
+       *     v - x <= ub((a-1)*x + b*y + E + k) if a >= 0
+       *     v + x <= ub((a-1)*x + b*y + E + k) if a < 0
+       *     v - y <= ub(a*x + (b-1)*y + E + k) if b >= 0
+       *     v + y <= ub(a*x + (b-1)*y + E + k) if b < 0
+       *  else
+       *     x - v <= lb((a-1)*x + b*y + E + k) if a >= 0
+       *     x + v <= lb((a-1)*x + b*y + E + k) if a < 0
+       *     y - v <= lb(a*x + (b-1)*y + E + k) if b >= 0
+       *     y + v <= lb(a*x + (b-1)*y + E + k) if b > 0
+       **/ 
+      void oct_csts_of_assign(variable_t x, linear_expression_t exp,
+			      /* if true then process the upper
+				 bounds, else the lower bounds */
+			      bool extract_upper_bounds,
+			      /* foreach {v, k} \in diff_csts we have
+				 the difference constraint v - k <= k */
+			      std::vector<std::pair<variable_t, Wt>>& diff_csts,
+			      /* foreach {v, k} \in oct_csts we have
+				 the difference constraint v + k <= k */			      
+			      std::vector<std::pair<variable_t, Wt>>& oct_csts) {
 
-      assign_ub_finish:
-	{
-	  boost::optional<variable_t> unbounded_lbvar;
-	  Wt exp_lb(ntov::ntov(exp.constant()));
-	  std::vector< std::pair<variable_t, Wt> > lb_terms;
-	  for(auto p : exp) {
-	    Wt coeff(ntov::ntov(p.first));
-	    if(p.first < Wt(0)) {
-	      // Again, can't do anything with negative coefficients.
-	      bound_t y_ub = operator[](p.second).ub();
-	      if(y_ub.is_infinite())
-		goto assign_lb_finish;
-	      exp_lb += (ntov::ntov(*(y_ub.number())))*coeff;
-	    } else {
-	      variable_t y(p.second);
-	      bound_t y_lb = operator[](y).lb(); 
-	      if(y_lb.is_infinite()) {
-		if(unbounded_lbvar || coeff != Wt(1))
-		  goto assign_lb_finish;
-		unbounded_lbvar = y;
-	      } else {
-		Wt ymin(ntov::ntov(*(y_lb.number())));
-		exp_lb += ymin*coeff;
-		lb_terms.push_back(std::make_pair(y, ymin));
+	boost::optional<variable_t> unbounded_pos_var, unbounded_neg_var;
+	std::vector< std::pair<variable_t, Wt>> diff_terms, oct_terms;
+	Wt residual(ntov::ntov(exp.constant()));
+	for(auto p : exp) {
+	  Wt coeff(ntov::ntov(p.first));
+	  variable_t y(p.second);	    
+	  
+	  if(p.first < Wt(0)) {
+	    bound_t y_val = (extract_upper_bounds ?
+			     operator[](y).lb():
+			     operator[](y).ub());
+	    
+	    if(y_val.is_infinite()) {
+	      if(unbounded_pos_var || unbounded_neg_var || coeff != Wt(1)) {
+		return;
 	      }
+	      unbounded_neg_var = y;
+	    } else {
+	      residual += ntov::ntov(*(y_val.number()))*coeff;
+	      oct_terms.push_back({y, ntov::ntov(*(y_val.number()))});
 	    }
-	  }
-
-	  if(unbounded_lbvar) {
-	    lb.push_back(std::make_pair(*unbounded_lbvar, exp_lb));
 	  } else {
-	    for(auto p : lb_terms) {
-	      lb.push_back(std::make_pair(p.first, exp_lb - p.second));
+	    bound_t y_val = (extract_upper_bounds ?
+			     operator[](y).ub():
+			     operator[](y).lb());
+
+	    if(y_val.is_infinite()) {
+	      if(unbounded_pos_var || unbounded_neg_var || coeff != Wt(1)) {
+		return;
+	      }
+	      unbounded_pos_var = y;
+	    } else {
+	      Wt ymax(ntov::ntov(*(y_val.number())));
+	      residual += ymax*coeff;
+	      diff_terms.push_back({y, ymax});
 	    }
 	  }
 	}
-
-      assign_lb_finish:
-	return;
+	
+	if(unbounded_pos_var) {
+	  // There is exactly one unbounded positive variable with
+	  // unit coefficient
+	  diff_csts.push_back({*unbounded_pos_var, residual});
+	  CRAB_LOG("octagon-assign",
+		   if (extract_upper_bounds) {
+		     crab::outs() << x << "-" << *unbounded_pos_var << "<=" <<  residual << ";";
+		   } else {
+		     crab::outs() << "-" << x << "+" << *unbounded_pos_var << "<=" <<  -residual << ";";
+		   });
+	} else if (unbounded_neg_var) {
+	  // There is exactly one unbounded negative variable with
+	  // unit coefficient.
+	  oct_csts.push_back({*unbounded_neg_var, residual});
+	  CRAB_LOG("octagon-assign",	    
+		   if (extract_upper_bounds) {
+		     crab::outs() << x << "+" << *unbounded_neg_var << "<=" <<  residual << ";";
+		   } else {
+		     crab::outs() << "-" << x << "-" << *unbounded_neg_var << "<=" <<  -residual << ";";
+		   });
+	} else {
+	  for(auto p : diff_terms) {
+	    diff_csts.push_back({p.first, residual - p.second});
+	    CRAB_LOG("octagon-assign",	    	    
+		     if (extract_upper_bounds) {
+		       crab::outs() << x << "-" << p.first << "<=" <<  residual - p.second << ";";
+		     } else {
+		       crab::outs() << "-" <<  x << "+" << p.first << "<=" <<  -(residual - p.second) << ";";
+		     });
+	  }
+	  for(auto p : oct_terms) {
+	    oct_csts.push_back({p.first, residual - p.second});
+	    CRAB_LOG("octagon-assign",	    	    	    
+		     if (extract_upper_bounds) {
+		       crab::outs() << x << "+" << p.first << "<=" <<  residual - p.second << ";";
+		     } else {
+		       crab::outs() << "-" <<  x << "-" << p.first << "<=" <<  -(residual - p.second) << ";";
+		     });
+	  }
+	}
       }
+      
+      // Turn an assignment into a set of octagon constraints.
+      void oct_csts_of_assign(variable_t x, linear_expression_t exp,
+			      std::vector<std::pair<variable_t, Wt>>& diff_lb,
+			      std::vector<std::pair<variable_t,Wt>>& oct_lb,
+			      std::vector<std::pair<variable_t, Wt>>& diff_ub,
+			      std::vector<std::pair<variable_t,Wt>>& oct_ub) {
+	oct_csts_of_assign(x, exp, true, diff_ub, oct_ub);
+	oct_csts_of_assign(x, exp, false, diff_lb, oct_lb);
+      }
+                              
+      // Turn a linear inequality into a set of octagon constraints
+      void oct_csts_of_lin_leq(const linear_expression_t& exp,
+			       std::vector<diffcst_t>& diff_csts,
+			       std::vector<diffcst_t>& pos_oct_csts,
+			       std::vector<diffcst_t>& neg_oct_csts,			       
+			       std::vector<std::pair<variable_t, Wt>>& lbs,
+			       std::vector<std::pair<variable_t, Wt>>& ubs) {
 
-      void oct_diffcsts_of_lin_leq(const linear_expression_t& exp,
-				   std::vector<diffcst_t>& csts, bool add) {
 	Wt unbounded_lbcoeff;
 	Wt unbounded_ubcoeff;
 	boost::optional<variable_t> unbounded_lbvar;
 	boost::optional<variable_t> unbounded_ubvar;
 	Wt exp_ub = - (ntov::ntov(exp.constant()));
-	std::vector< std::pair< std::pair<Wt, variable_t>, Wt> > pos_terms;
-	std::vector< std::pair< std::pair<Wt, variable_t>, Wt> > neg_terms;
-                            
-	for (auto p : exp) {
+	std::vector<std::pair< std::pair<Wt, variable_t>, Wt>> pos_terms;
+	std::vector<std::pair< std::pair<Wt, variable_t>, Wt>> neg_terms;
+
+	for(auto p : exp) {
 	  Wt coeff(ntov::ntov(p.first));
 	  if(coeff > Wt(0)) {
 	    variable_t y(p.second);
@@ -622,7 +623,7 @@ namespace crab {
 	      Wt ymin(ntov::ntov(*(y_lb.number())));
 	      // Coeff is negative, so it's still add
 	      exp_ub -= ymin*coeff;
-	      pos_terms.push_back(std::make_pair(std::make_pair(coeff, y), ymin));
+	      pos_terms.push_back({{coeff, y}, ymin});
 	    }
 	  } else {
 	    variable_t y(p.second);
@@ -634,69 +635,7 @@ namespace crab {
 	    } else {
 	      Wt ymax(ntov::ntov(*(y_ub.number())));
 	      exp_ub -= ymax*coeff;
-	      neg_terms.push_back(std::make_pair(std::make_pair(-coeff, y), ymax));
-	    }
-	  }
-	}
-                            
-	if (neg_terms.size() == 0 && add){
-	  for(auto pu1 : pos_terms)
-	    for(auto pu2 : pos_terms){
-	      if (pu1.first.second == pu2.first.second) continue;
-	      csts.push_back(std::make_pair(std::make_pair(pu1.first.second, pu2.first.second),
-					    exp_ub + pu1.second + pu2.second));
-	    }
-	}
-                            
-	if (pos_terms.size() == 0 && !add){
-	  for(auto pu1 : neg_terms)
-	    for(auto pu2 : neg_terms){
-	      if (pu1.first.second == pu2.first.second) continue;
-	      csts.push_back(std::make_pair(std::make_pair(pu1.first.second, pu2.first.second),
-					    exp_ub - pu1.second - pu2.second));
-	    }
-	}
-      }
-                        
-			
-      void diffcsts_of_lin_leq(const linear_expression_t& exp, std::vector<diffcst_t>& csts,
-			       std::vector<std::pair<variable_t, Wt> >& lbs,
-			       std::vector<std::pair<variable_t, Wt> >& ubs) {
-
-	Wt unbounded_lbcoeff;
-	Wt unbounded_ubcoeff;
-	boost::optional<variable_t> unbounded_lbvar;
-	boost::optional<variable_t> unbounded_ubvar;
-	Wt exp_ub = - (ntov::ntov(exp.constant()));
-	std::vector< std::pair< std::pair<Wt, variable_t>, Wt> > pos_terms;
-	std::vector< std::pair< std::pair<Wt, variable_t>, Wt> > neg_terms;
-
-	for(auto p : exp) {
-	  Wt coeff(ntov::ntov(p.first));
-	  if(coeff > Wt(0)) {
-	    variable_t y(p.second);
-	    bound_t y_lb = operator[](y).lb();
-	    if(y_lb.is_infinite()) {
-	      if(unbounded_lbvar) goto diffcst_finish;
-	      unbounded_lbvar = y;
-	      unbounded_lbcoeff = coeff;
-	    } else {
-	      Wt ymin(ntov::ntov(*(y_lb.number())));
-	      // Coeff is negative, so it's still add
-	      exp_ub -= ymin*coeff;
-	      pos_terms.push_back(std::make_pair(std::make_pair(coeff, y), ymin));
-	    }
-	  } else {
-	    variable_t y(p.second);
-	    bound_t y_ub = operator[](y).ub(); 
-	    if(y_ub.is_infinite()) {
-	      if(unbounded_ubvar) goto diffcst_finish;
-	      unbounded_ubvar = y;
-	      unbounded_ubcoeff = -(ntov::ntov(coeff));
-	    } else {
-	      Wt ymax(ntov::ntov(*(y_ub.number())));
-	      exp_ub -= ymax*coeff;
-	      neg_terms.push_back(std::make_pair(std::make_pair(-coeff, y), ymax));
+	      neg_terms.push_back({{-coeff, y}, ymax});
 	    }
 	  }
 	}
@@ -705,83 +644,94 @@ namespace crab {
 	  variable_t x(*unbounded_lbvar);
 	  if(unbounded_ubvar) {
 	    if(unbounded_lbcoeff != Wt(1) || unbounded_ubcoeff != Wt(1))
-	      goto diffcst_finish;
+	      return;
 	    variable_t y(*unbounded_ubvar);
-	    csts.push_back(std::make_pair(std::make_pair(x, y), exp_ub));
+	    diff_csts.push_back({{x, y}, exp_ub});
 	  } else {
 	    if(unbounded_lbcoeff == Wt(1)) {
-	      for(auto p : neg_terms)
-		csts.push_back(std::make_pair(std::make_pair(x, p.first.second),
-					      exp_ub - p.second));
+	      for(auto p : neg_terms) {
+		diff_csts.push_back({{x, p.first.second}, exp_ub - p.second});
+	      }
 	    }
-	    // Add bounds for x
-	    ubs.push_back(std::make_pair(x, exp_ub/unbounded_lbcoeff));
+	    // Bounds for x
+	    ubs.push_back({x, exp_ub/unbounded_lbcoeff});
 	  }
 	} else {
 	  if(unbounded_ubvar) {
 	    variable_t y(*unbounded_ubvar);
 	    if(unbounded_ubcoeff == Wt(1)) {
-	      for(auto p : pos_terms)
-		csts.push_back(std::make_pair(std::make_pair(p.first.second, y),
-					      exp_ub + p.second));
+	      for(auto p : pos_terms) {
+		diff_csts.push_back({{p.first.second, y}, exp_ub + p.second});
+	      }
 	    }
 	    // Bounds for y
 	    lbs.push_back(std::make_pair(y, -exp_ub/unbounded_ubcoeff));
 	  } else {
-	    for(auto pl : neg_terms)
-	      for(auto pu : pos_terms)
-		csts.push_back(std::make_pair(std::make_pair(pu.first.second, pl.first.second),
-					      exp_ub - pl.second + pu.second));
-	    for(auto pl : neg_terms)
-	      lbs.push_back(std::make_pair(pl.first.second,
-					   -exp_ub/pl.first.first + pl.second));
-	    for(auto pu : pos_terms)
-	      ubs.push_back(std::make_pair(pu.first.second,
-					   exp_ub/pu.first.first + pu.second));
+	    for(auto pl : neg_terms) {
+	      for(auto pu : pos_terms) {
+		diff_csts.push_back({{pu.first.second, pl.first.second},
+		                 exp_ub - pl.second + pu.second});
+	      }
+	    }
+
+	    for(auto pu1 : pos_terms) {
+	      for(auto pu2 : pos_terms){
+		if (pu1.first.second == pu2.first.second) continue;
+		pos_oct_csts.push_back({{pu1.first.second, pu2.first.second},
+		                         exp_ub + pu1.second + pu2.second});
+	      }
+	    }
+	    
+	    for(auto pu1 : neg_terms) {
+	      for(auto pu2 : neg_terms){
+		if (pu1.first.second == pu2.first.second) continue;
+		neg_oct_csts.push_back({{pu1.first.second, pu2.first.second},
+		                        exp_ub - pu1.second - pu2.second});
+	      }
+	    }
+	    
+	    for(auto pl : neg_terms) {
+	      lbs.push_back({pl.first.second,
+		             -exp_ub/pl.first.first + pl.second});
+		    
+	    }
+	    
+	    for(auto pu : pos_terms) {
+	      ubs.push_back({pu.first.second,
+		             exp_ub/pu.first.first + pu.second});
+	    }
 	  }
 	}
-      diffcst_finish:
-	return;
       }
 
       bool add_linear_leq(const linear_expression_t& exp) {
 	normalize();
-	CRAB_LOG("octagon-split", linear_expression_t exp_tmp(exp);
-		 crab::outs() << "Adding: "<< exp_tmp << "<= 0" <<"\n");
-	CRAB_LOG("octagon-add", linear_expression_t exp_tmp(exp);
-		 crab::outs() << "Adding: "<< exp_tmp << "<= 0" <<" to:\n"<<*this<<"\n");
+	CRAB_LOG("octagon-split",
+		 linear_expression_t exp_tmp(exp);
+		 crab::outs() << "Adding: "<< exp_tmp << "<= 0" <<" to:\n"<<*this<<"\n";);
 
-	std::vector< std::pair<variable_t, Wt> > lbs;
-	std::vector< std::pair<variable_t, Wt> > ubs;
+	std::vector< std::pair<variable_t, Wt>> lbs, ubs;
 	std::vector<diffcst_t> csts;
-	std::vector<diffcst_t> csts_add;
-	std::vector<diffcst_t> csts_min;
-	diffcsts_of_lin_leq(exp, csts, lbs, ubs);
-	oct_diffcsts_of_lin_leq(exp, csts_add, true);
-	oct_diffcsts_of_lin_leq(exp, csts_min, false);
+	std::vector<diffcst_t> pos_csts;
+	std::vector<diffcst_t> neg_csts;
+	oct_csts_of_lin_leq(exp, csts, pos_csts, neg_csts, lbs, ubs);
 
 	// assert(check_potential(graph, potential));
-
 	Wt_min min_op;
 	typename graph_t::mut_val_ref_t w;
 	for(auto p : lbs) {
-	  CRAB_LOG("octagon-split", crab::outs() << p.first<< ">="<< p.second <<"\n");
 	  variable_t x(p.first);
-	  // CRAB_LOG("octagon-split", crab::outs() << "declare variable " << p.first << "\n");
 	  vert_id v = get_vert(p.first);
-	  // CRAB_LOG("octagon-split", crab::outs() << "got vertex for " << p.first << " at " << v << "\n");
 	  if(graph.lookup(v, v+1, &w) && w <= -2*p.second) continue;
 	  graph.set_edge(v, -2*p.second, v+1);
-	  //CRAB_LOG("octagon-split", crab::outs() << "added edge for lower bound of " << p.first << "\n" << *this << "\n");
 	  if(!repair_potential(v, v+1)) {
 	    set_to_bottom();
 	    return false;
 	  }
-	  //CRAB_LOG("octagon-split", crab::outs() << "added edge for lower bound of " << p.first << "\n" << *this << "\n");
 
 	  assert(check_potential(graph, potential));
 	  // Compute other updated bounds
-#ifdef CLOSE_BOUNDS_INLINE
+          #ifdef CLOSE_BOUNDS_INLINE
 	  //for(auto e : graph.e_preds(v)) {
 	  //	if(e.vert == v+1) continue;
 	  //	graph.update_edge(e.vert, e.val - 2 * p.second, v+1, min_op);
@@ -803,12 +753,10 @@ namespace crab {
 	      assert(check_potential(graph, potential));
 	    }
 	  }
-
-#endif
+          #endif
 	}
 
 	for(auto p : ubs) {
-	  CRAB_LOG("octagon-split", crab::outs() << p.first<< "<="<< p.second <<"\n");
 	  CRAB_LOG("octagon-add", crab::outs() << p.first<< "<="<< p.second <<"\n");
 	  variable_t x(p.first);
 	  vert_id v = get_vert(p.first);
@@ -825,7 +773,7 @@ namespace crab {
 	    return false;
 	  }
 	  assert(check_potential(graph, potential));
-#ifdef CLOSE_BOUNDS_INLINE
+          #ifdef CLOSE_BOUNDS_INLINE
 	  //for(auto e : graph.e_succs(v)) {
 	  //	if(e.vert == v+1) continue;
 	  //	graph.update_edge(v+1, e.val + 2 * p.second, e.vert, min_op);
@@ -847,12 +795,10 @@ namespace crab {
 	      assert(check_potential(graph, potential));
 	    }
 	  }
-#endif
+          #endif
 	}
 
 	for(auto diff : csts) {
-	  CRAB_LOG("octagon-split", crab::outs() << diff.first.first<< "-"<< diff.first.second<< "<="
-		   << diff.second <<"\n");
 	  CRAB_LOG("octagon-add", crab::outs() << diff.first.first<< "-"<< diff.first.second<< "<="
 		   << diff.second <<"\n");
 
@@ -876,9 +822,7 @@ namespace crab {
 	  //assert(check_potential(graph, potential));
 	}
 				
-	for(auto diff : csts_add) {
-	  CRAB_LOG("octagon-split", crab::outs() << diff.first.first<< "+"<< diff.first.second<< "<="
-		   << diff.second <<"\n");
+	for(auto diff : pos_csts) {
 	  CRAB_LOG("octagon-add", crab::outs() << diff.first.first<< "+"<< diff.first.second<< "<="
 		   << diff.second <<"\n");
 
@@ -902,9 +846,7 @@ namespace crab {
 	  //assert(check_potential(graph, potential));
 	}
 				
-	for(auto diff : csts_min) {
-	  CRAB_LOG("octagon-split", crab::outs() << "-"<<diff.first.first<< "-"<< diff.first.second<< "<="
-		   << diff.second <<"\n");
+	for(auto diff : neg_csts) {
 	  CRAB_LOG("octagon-add", crab::outs() <<"-"<< diff.first.first<< "-"<< diff.first.second<< "<="
 		   << diff.second <<"\n");
 
@@ -931,20 +873,18 @@ namespace crab {
 	// GKG: Now done in close_over_edge
 
 	CRAB_LOG("octagon-add", crab::outs() << "after adding: " << *this << "\n" << "With graph" << graph << "\n");
-#ifndef CLOSE_BOUNDS_INLINE
+        #ifndef CLOSE_BOUNDS_INLINE
 	edge_vector delta;
 	for (vert_id v : gragh.verts()) {
 	  if (v % 2 != 0) continue;
 	  GrOps::close_after_assign(graph, potential, v, delta);
 	  GrOps::update_delta(graph, delta);
 	}
-#endif
-        /* */
+        #endif
 
 	assert(check_potential(graph, potential));
 	// CRAB_WARN("SplitDBM::add_linear_leq not yet implemented.");
 	CRAB_LOG("octagon-split", crab::outs() << "after adding: " << *this << "\n" << "With graph" << graph << "\n");
-	CRAB_LOG("octagon-add", crab::outs() << "after adding: " << *this << "\n" << "With graph" << graph << "\n");
 	return true;  
       }
 
@@ -1025,9 +965,9 @@ namespace crab {
 	Wt_min min_op;
 
 	assert(ii / 2 != jj / 2);
-	SplitGraph<graph_t> g_excl(graph);
+	split_octagons_impl::SplitOctGraph<graph_t> g_oct(graph);
 
-	Wt c = g_excl.edge_val(ii,jj);
+	Wt c = g_oct.edge_val(ii,jj);
 
 	typename graph_t::mut_val_ref_t w;
 
@@ -1056,17 +996,17 @@ namespace crab {
         #endif
 
 	std::vector<std::pair<vert_id, Wt> > src_dec;
-	for(auto edge : g_excl.e_preds(ii)) {
+	for(auto edge : g_oct.e_preds(ii)) {
 	  vert_id se = edge.vert;
 	  Wt wt_sij = edge.val + c;
 
-	  assert(g_excl.succs(se).begin() != g_excl.succs(se).end());
+	  assert(g_oct.succs(se).begin() != g_oct.succs(se).end());
 	  if(se != jj) {
-	    if(g_excl.lookup(se, jj, &w)) {
+	    if(g_oct.lookup(se, jj, &w)) {
 	      if(w <= wt_sij) continue;
 	      w = wt_sij;
 	    } else {
-	      g_excl.add_edge(se, wt_sij, jj);
+	      g_oct.add_edge(se, wt_sij, jj);
 	    }
 	    src_dec.push_back(std::make_pair(se, edge.val));  
             #ifdef CLOSE_BOUNDS_INLINE
@@ -1096,15 +1036,15 @@ namespace crab {
 	}
 
 	std::vector<std::pair<vert_id, Wt> > dest_dec;
-	for(auto edge : g_excl.e_succs(jj)) {
+	for(auto edge : g_oct.e_succs(jj)) {
 	  vert_id de = edge.vert;
 	  Wt wt_ijd = edge.val + c;
 	  if(de != ii) {
-	    if(g_excl.lookup(ii, de, &w)) {
+	    if(g_oct.lookup(ii, de, &w)) {
 	      if(w <= wt_ijd) continue;
 	      w = wt_ijd;
 	    } else {
-	      g_excl.add_edge(ii, wt_ijd, de);
+	      g_oct.add_edge(ii, wt_ijd, de);
 	    }
 	    dest_dec.push_back(std::make_pair(de, edge.val));
             #ifdef CLOSE_BOUNDS_INLINE
@@ -1270,8 +1210,10 @@ namespace crab {
 	else if (is_top()) return false;
 	else {
 	  normalize();
-
-	  if (vert_map.size() < o.vert_map.size()) return false;
+	  
+	  if (vert_map.size() < o.vert_map.size()) {
+	    return false;
+	  }
 	  typename graph_t::mut_val_ref_t wx;
 	  typename graph_t::mut_val_ref_t wy;
 	  typename graph_t::mut_val_ref_t wz;
@@ -1286,7 +1228,9 @@ namespace crab {
 	      continue;
 
 	    auto it = vert_map.find(p.first);
-	    if (it == vert_map.end()) return false;
+	    if (it == vert_map.end()) {
+	      return false;
+	    }
 	    vert_renaming[p.second.first] = (*it).second.first;
 	    vert_renaming[p.second.second] = (*it).second.second;
 	  }
@@ -1329,7 +1273,9 @@ namespace crab {
 		}
 	      }
 
-	      if (!broken) return false;
+	      if (!broken) {
+		return false;
+	      }
 	    }
 	  }
 	  return true;
@@ -1348,9 +1294,6 @@ namespace crab {
 	else if (is_top() || o.is_bottom()) return *this;
 	else {
 	  CRAB_LOG("octagon-split", 
-		    crab::outs() << "Before join:\n"<<"DBM 1\n"<<*this<<"\n"<<graph<<"\n"<<"DBM 2\n"
-		    << o <<"\n"<<o.graph<<"\n");
-	  CRAB_LOG("octagon-join", 
 		    crab::outs() << "Before join:\n"<<"DBM 1\n"<<*this<<"\n"<<graph<<"\n"<<"DBM 2\n"
 		    << o <<"\n"<<o.graph<<"\n");
 
@@ -1399,9 +1342,9 @@ namespace crab {
 	  // Compute the deferred relations
 	  graph_t g_ix_ry;
 	  g_ix_ry.growTo(sz);
-	  SplitGraph<GrPerm> gy_excl(gy);
-	  for (vert_id s : gy_excl.verts()) {
-	    for (vert_id d : gy_excl.succs(s)) {
+	  split_octagons_impl::SplitOctGraph<GrPerm> gy_oct(gy);
+	  for (vert_id s : gy_oct.verts()) {
+	    for (vert_id d : gy_oct.succs(s)) {
 	      typename graph_t::mut_val_ref_t ws;
 	      typename graph_t::mut_val_ref_t wd;
 	      typename graph_t::mut_val_ref_t wx;
@@ -1433,17 +1376,17 @@ namespace crab {
 	  graph_t g_rx(GrOps::meet(gx, g_ix_ry, is_closed));
 	  assert(check_potential(g_rx, pot_rx));
 	  if (!is_closed) {
-	    SplitGraph<graph_t> g_rx_excl(g_rx);
-	    GrOps::close_after_meet(g_rx_excl, pot_rx, gx, g_ix_ry, delta);
+	    split_octagons_impl::SplitOctGraph<graph_t> g_rx_oct(g_rx);
+	    GrOps::close_after_meet(g_rx_oct, pot_rx, gx, g_ix_ry, delta);
 	    GrOps::update_delta(g_rx, delta);
 	  }
 
 	  // Compute the deferred relations
 	  graph_t g_rx_iy;
 	  g_rx_iy.growTo(sz);
-	  SplitGraph<GrPerm> gx_excl(gx);
-	  for (vert_id s : gx_excl.verts()) {
-	    for (vert_id d : gx_excl.succs(s)) {
+	  split_octagons_impl::SplitOctGraph<GrPerm> gx_oct(gx);
+	  for (vert_id s : gx_oct.verts()) {
+	    for (vert_id d : gx_oct.succs(s)) {
 	      typename graph_t::mut_val_ref_t ws;
 	      typename graph_t::mut_val_ref_t wd;
 	      typename graph_t::mut_val_ref_t wy;
@@ -1476,8 +1419,8 @@ namespace crab {
 	  graph_t g_ry(GrOps::meet(gy, g_rx_iy, is_closed));
 	  CRAB_LOG("octagon-join", crab::outs()<<"\tMET g_ry:\n\t"<<g_ry<<"\n");
 	  if (!is_closed) {
-	    SplitGraph<graph_t> g_ry_excl(g_ry);
-	    GrOps::close_after_meet(g_ry_excl, pot_ry, gy, g_rx_iy, delta);
+	    split_octagons_impl::SplitOctGraph<graph_t> g_ry_oct(g_ry);
+	    GrOps::close_after_meet(g_ry_oct, pot_ry, gy, g_rx_iy, delta);
 	    GrOps::update_delta(g_ry, delta);
 	  }
 
@@ -1569,8 +1512,6 @@ namespace crab {
 				 std::move(pot_rx), vert_set_t());
 	  //join_g.check_adjs();
 	  CRAB_LOG("octagon-split", crab::outs() << "Result join:\n"<<res <<"\n");
-	  CRAB_LOG("octagon-join", crab::outs() << "Result join:\n"<<res <<"\n");
-
 	  return res;
 	}
       }
@@ -1627,14 +1568,14 @@ namespace crab {
 	  for(vert_id v : destabilized) widen_unstable.insert(v);
 
 	  split_oct_domain_t res(std::move(out_vmap), std::move(out_revmap), std::move(widen_g), 
-		    std::move(widen_pot), std::move(widen_unstable));
+				 std::move(widen_pot), std::move(widen_unstable));
 
 	  CRAB_LOG("octagon-split", crab::outs() << "Result widening:\n"<<res <<"\n");
 	  return res;
 	}
       }
 
-      // MEET
+      // meet
       split_oct_domain_t operator&(split_oct_domain_t o) {
 	crab::CrabStats::count(getDomainName() + ".count.meet");
 	crab::ScopedCrabStats __st__(getDomainName() + ".meet");
@@ -1712,13 +1653,13 @@ namespace crab {
 
 	  if(!is_closed) {
 	    edge_vector delta;
-	    SplitGraph<graph_t> meet_g_excl(meet_g);
-	    // GrOps::close_after_meet(meet_g_excl, meet_pi, gx, gy, delta);
+	    split_octagons_impl::SplitOctGraph<graph_t> meet_g_oct(meet_g);
+	    // GrOps::close_after_meet(meet_g_oct, meet_pi, gx, gy, delta);
 
 	    if(Params::chrome_dijkstra) {
-	      GrOps::close_after_meet(meet_g_excl, meet_pi, gx, gy, delta);
+	      GrOps::close_after_meet(meet_g_oct, meet_pi, gx, gy, delta);
 	    } else {
-	      GrOps::close_johnson(meet_g_excl, meet_pi, delta);
+	      GrOps::close_johnson(meet_g_oct, meet_pi, delta);
 	    }
 	    
 	    GrOps::update_delta(meet_g, delta);
@@ -1862,7 +1803,6 @@ namespace crab {
 	if (this->is_bottom()) {
 	  return interval_t::bottom();
 	} else {
-	  //return get_interval(ranges, x);
 	  return get_interval(vert_map, graph, x);
 	}
       }
@@ -1872,58 +1812,112 @@ namespace crab {
 	for (vert_id v : graph.verts()){
 	  for (vert_id w : graph.succs(v)){
 	    if (v / 2 == w / 2) continue;
+	    if (!graph.elem(v, w)) continue;
 	    Wt current = graph.edge_val(v, w);
 	    typename graph_t::mut_val_ref_t mirror;	
 	    if (v % 2 == 0 and w % 2 == 0) {
+	      //      w - v <= current
+	      //  pos(w) - pos(v) <= current
+	      //  neg(v) - neg(w) <= mirrow
 	      if (graph.lookup(w+1, v+1, &mirror)){
-		graph.update_edge(w+1, (mirror < current ? mirror : current), v+1, min_op);
-		graph.update_edge(v, (mirror < current ? mirror : current), w, min_op);
+		if (current == mirror) continue;
+		Wt min = (mirror < current ? mirror : current);		
+		graph.update_edge(w+1, min, v+1, min_op);
+		graph.update_edge(v, min, w, min_op);
+		if(!repair_potential(w+1, v+1)) {
+		  CRAB_LOG("octagon-normalize",		  		  
+			   crab::outs() << "Normalization 1 detected false with edge ("
+			                << w+1 << "," << v+1 << ")"
+			                << "\n" << graph << "\n";);
+		  set_to_bottom();
+		  return;
+		}	      		
 	      } else {
 		graph.add_edge(w+1, current, v+1);
-		if(!repair_potential(w+1, v+1)) {set_to_bottom();}
+		//if(!repair_potential(w+1, v+1)) {set_to_bottom(); return;}
 	      }
 	    } else if (v % 2 != 0 and w % 2 == 0) {
+	      //     w + v <= current
+	      // pos(w) - neg(v) <= current
+	      // pos(v) - neg(w) <= mirrow
 	      if (graph.lookup(w+1, v-1, &mirror)){
-		graph.update_edge(w+1, (mirror < current ? mirror : current), v-1, min_op);
-		graph.update_edge(v, (mirror < current ? mirror : current), w, min_op);
+		if (current == mirror) continue;		
+		Wt min = (mirror < current ? mirror : current);
+		graph.update_edge(w+1, min, v-1, min_op);
+		graph.update_edge(v, min, w, min_op);
+		if(!repair_potential(w+1, v-1)) {
+		  CRAB_LOG("octagon-normalize",		  
+			   crab::outs() << "Normalization 2 detected false with edge ("
+			                << w+1 << "," << v-1 << ")"
+			                << "\n" << graph << "\n";);
+		  set_to_bottom();
+		  return;
+		}	      		
 	      } else {
 		graph.add_edge(w+1, current, v-1);
-		if(!repair_potential(w+1, v-1)) {set_to_bottom();}
+		//if(!repair_potential(w+1, v-1)) {set_to_bottom(); return;}
 	      }
 	    } else if (v % 2 == 0 and w % 2 != 0) {
+	      //      -w - v  <= current
+	      // neg(w) - pos(v) <= current
+	      // neg(v) - neg(w) <= mirror
 	      if (graph.lookup(w-1, v+1, &mirror)){
-		graph.update_edge(w-1, (mirror < current ? mirror : current), v+1, min_op);
-		graph.update_edge(v, (mirror < current ? mirror : current), w, min_op);
+		if (current == mirror) continue;		
+		Wt min = (mirror < current ? mirror : current);		
+		graph.update_edge(w-1, min, v+1, min_op);
+		graph.update_edge(v, min, w, min_op);
+		if(!repair_potential(w-1, v+1)) {
+		  CRAB_LOG("octagon-normalize",
+			   crab::outs() << "Normalization 3 detected false with edge ("
+			                << w-1 << "," << v+1 << ")"
+			                << "\n" << graph << "\n";);		
+		  set_to_bottom();
+		  return;
+		}	      
 	      } else {
 		graph.add_edge(w-1, current, v+1);
-		if(!repair_potential(w-1, v+1)) {set_to_bottom();}
+		//if(!repair_potential(w-1, v+1)) {set_to_bottom(); return;}
 	      }
 	    } else if (v % 2 != 0 and w % 2 != 0) {
+	      //     -w + v <= current
+	      // neg(w) - neg(v) <= current
+	      // pos(v) - pos(w) <= mirror
 	      if (graph.lookup(w-1, v-1, &mirror)){
-		graph.update_edge(w-1, (mirror < current ? mirror : current), v-1, min_op);
-		graph.update_edge(v, (mirror < current ? mirror : current), w, min_op);
+		if (current == mirror) continue;		
+		Wt min = (mirror < current ? mirror : current);		
+		graph.update_edge(w-1, min, v-1, min_op);
+		graph.update_edge(v, min, w, min_op);
+		if(!repair_potential(w-1, v-1)) {
+		  CRAB_LOG("octagon-normalize",
+			   crab::outs() << "Normalization 4 detected false with edge ("
+			                << w-1 << "," << v-1 << ")"
+			                << "\n" << graph << "\n";);
+		  set_to_bottom();
+		  return;
+		}	      		
 	      } else {
 		graph.add_edge(w-1, current, v-1);
-		if(!repair_potential(w-1, v-1)) {set_to_bottom();}
+		//if(!repair_potential(w-1, v-1)) {set_to_bottom(); return;}
 	      }
 	    }
 	  }
 	}
-	//CRAB_LOG("octagon-split", crab::outs() << "--- graph after normalize " << graph <<"\n");
+	
         #ifdef SOCT_NO_NORMALIZE
 	return;
         #endif
 	
 	CRAB_LOG("octagon-unstable",
 		 crab::outs() << "Size of unstable list: " << unstable.size()
-		              << "\n\tWith domaim:\n\t" << *this << "\n\tand graph:\n\t" << graph <<"\n");
+		              << "\n\tWith domaim:\n\t" << *this << "\n\tand graph:\n\t"
+		              << graph <<"\n");
 	if (unstable.size() == 0) return;
 		    	
 	edge_vector delta;
-	SplitGraph<graph_t> g_excl(graph);
+	split_octagons_impl::SplitOctGraph<graph_t> g_oct(graph);
 	if (Params::widen_restabilize)
-	  GrOps::close_after_widen(g_excl,potential, vert_set_wrap_t(unstable), delta);
-	else GrOps::close_johnson(g_excl, potential, delta);
+	  GrOps::close_after_widen(g_oct,potential, vert_set_wrap_t(unstable), delta);
+	else GrOps::close_johnson(g_oct, potential, delta);
 	GrOps::update_delta(graph, delta);
 
 	unstable.clear();
@@ -1957,32 +1951,34 @@ namespace crab {
 	crab::ScopedCrabStats __st__(getDomainName() + ".assign");
 
 	if (is_bottom()) return;
-	CRAB_LOG("octagon-split", crab::outs() << "Before assign: "<< *this <<"\n");
-	CRAB_LOG("octagon-split", crab::outs() << x<< ":="<< e <<"\n");
-	CRAB_LOG("octagon-assign", crab::outs() << "Before assign: "<< *this <<"\n");
-	CRAB_LOG("octagon-assign", crab::outs() << x<< ":="<< e <<"\n");
 	normalize();
 	//assert(check_potential(graph, potential));
 
 	if (e.is_constant()) set(x, e.constant());
 	else {
 	  interval_t x_int = eval_interval(e);
-	  CRAB_LOG("octagon-assign", crab::outs() << "Interval of e is " << x_int <<"\n");
-	  std::vector<std::pair<variable_t, Wt>> diffs_lb;
-	  std::vector<std::pair<variable_t, Wt>> diffs_ub;
-	  diffcsts_of_assign(x, e, diffs_lb, diffs_ub);
-	  if (diffs_lb.size() > 0 || diffs_ub.size() > 0) {
+	  std::vector<std::pair<variable_t, Wt>> diffs_lb, diffs_ub;
+	  std::vector<std::pair<variable_t, Wt>> octs_lb, octs_ub;
+	  CRAB_LOG("octagon-assign",	
+		   crab::outs() << "Octagon constraints from " << x << ":=" << e << "={";);
+	  oct_csts_of_assign(x, e, diffs_lb, octs_lb, diffs_ub, octs_ub);
+	  CRAB_LOG("octagon-assign", crab::outs() << "}\n";);	
+		   
+
+	  if (diffs_lb.size() > 0 || diffs_ub.size() > 0 ||
+	      octs_lb.size() > 0 || octs_ub.size() > 0) {
 	    if (Params::special_assign) {
-	      CRAB_LOG("octagon-assign", crab::outs() << "Assigning " << x << " to " << x_int <<"\n");
+	      CRAB_LOG("octagon-assign",
+		       crab::outs() << "Assigning " << x << " to " << x_int <<"\n");
+	      // allocate a new vertex for pos(x) and neg(x)
 	      vert_id v = graph.new_vertex();
 	      vert_id w = graph.new_vertex();
-                                                        
 	      if (w < v){
-		vert_id tmp = v;
-		v = w;
-		w = tmp;
+		std::swap(w,v);
 	      }
-	      CRAB_LOG("octagon-assign", crab::outs() << "Assigning pos " << v << ", neg " << w <<"\n");
+	      
+	      CRAB_LOG("octagon-assign",
+		       crab::outs() << "Assigning pos " << v << ", neg " << w <<"\n");
 	      // assert(w <= rev_map.size());
 	      if (v == rev_map.size()) {
 		rev_map.push_back(x);
@@ -2001,42 +1997,77 @@ namespace crab {
 
 	      edge_vector delta;
 	      for (auto diff : diffs_lb) {
-		delta.push_back(std::make_pair(std::make_pair(v, get_vert(diff.first)),
-					       -diff.second));
+		variable_t y = diff.first;
+		Wt k = diff.second;
+		// x - y >= k ---> pos(Vy) - pos(Vx) <= -k --> edge(pos(Vx), -k, pos(Vy))
+		delta.push_back({{v, get_vert(y)}, -k});
 	      }
 
 	      for (auto diff : diffs_ub) {
-		delta.push_back(std::make_pair(std::make_pair(get_vert(diff.first), v),
-					       diff.second));
+		variable_t y = diff.first;
+		Wt k = diff.second;		
+		// x - y <= k ---> pos(Vx) - pos(Vy) <= k --> edge(pos(Vy), k, pos(Vx))		
+		delta.push_back({{get_vert(y), v},k});
 	      }
-	      CRAB_LOG("octagon-assign", crab::outs() << "Assigning before meet " << *this <<"\n");
+
+	      for (auto oct : octs_lb) {
+		variable_t y = oct.first;
+		Wt k = oct.second;				
+		// x + y >= k --> neg(Vx) - pos(Vy) <= -k --> edge(pos(Vy), -k, neg(Vx))
+		delta.push_back({{get_vert(y), w}, -k});
+	      }
+	      
+	      for (auto oct : octs_ub) {
+		variable_t y = oct.first;
+		Wt k = oct.second;						
+		// x + y <= k --> pos(Vx) - neg(Vy) <= k --> edge(neg(Vy), k, pos(Vx))
+		delta.push_back({{get_vert(y)+1, v}, k});
+	      }
+	      
+	      CRAB_LOG("octagon-assign",
+		       crab::outs() << "Mapping from DBM vertices to variables:\n";
+		       for(unsigned i=0, e=rev_map.size(); i<e; ++i) {
+			 if (i % 2 == 0) {
+			   crab::outs() << "\t" << i << " -> " << "pos(" << *(rev_map[i]) << ")\n";
+			 } else {
+			   crab::outs() << "\t" << i << " -> " << "neg(" << *(rev_map[i]) << ")\n"; 
+			 }
+		       }
+		       crab::outs() << "Assigning before applying delta: " << *this <<"\n"
+		                    << "with graph: " << graph << "\n";
+		       crab::outs() << "Delta={";
+		       for(auto p: delta) {
+			 vert_id src = p.first.first;
+			 vert_id dst = p.first.second;
+			 Wt k = p.second;
+			 crab::outs () << "v" << dst << "-" << "v" << src << " <=" << k << ";";
+		       }
+		       crab::outs() << "}\n";
+		       );
 	      GrOps::apply_delta(graph, delta);
 	      delta.clear();
-	      CRAB_LOG("octagon-assign", crab::outs() << "Assigning appied delta " << *this <<"\n");
-	      SplitGraph<graph_t> g_excl(graph);
-	      GrOps::close_after_assign(g_excl, potential, v, delta);
-	      CRAB_LOG("octagon-assign", crab::outs() << "Assigning closed " << *this <<"\n");
+	      CRAB_LOG("octagon-assign",
+		       crab::outs() << "Assigning after applied delta: " << graph <<"\n");
+	      
+	      split_octagons_impl::SplitOctGraph<graph_t> g_oct(graph);
+	      GrOps::close_after_assign(g_oct, potential, v, delta);
+	      CRAB_LOG("octagon-assign",
+		       crab::outs() << "Close after assign: " << graph <<"\n");
 	      GrOps::update_delta(graph, delta);
-	      CRAB_LOG("octagon-assign", crab::outs() << "Assigning appied closed delta " << *this << "\nwith graph: "<< graph <<"\n");
+	      CRAB_LOG("octagon-assign",
+		       crab::outs() << "After applying delta: " << *this << "\n"
+		                    << "with graph: "<< graph <<"\n");
 
+	      // interval constraints for x	      
 	      Wt_min min_op;
-							
-                                                        
 	      if (x_int.lb().is_finite()) {
-		CRAB_LOG("octagon-assign", crab::outs() << "Assigning " << x << " lb is " << ntov::ntov(-(*(x_int.lb().number()))) <<"\n");
-		CRAB_LOG("octagon-assign", crab::outs() << "Assigning pos " << v << ", neg " << w <<"\n");
 		graph.update_edge(v, 2*ntov::ntov(-(*(x_int.lb().number()))), w, min_op);
 	      }
 	      if (x_int.ub().is_finite()) {
-		CRAB_LOG("octagon-assign", crab::outs() << "Assigning " << x << " ub is " << ntov::ntov(*(x_int.ub().number())) <<"\n");
 		graph.update_edge(w, 2*ntov::ntov(*(x_int.ub().number())), v, min_op);
 	      }
-
-	      CRAB_LOG("octagon-assign", crab::outs() << "Assigning " << x << " to " << x_int << ", edge updated\n");
 	      operator-=(x);
-	      CRAB_LOG("octagon-assign", crab::outs() << "Add var to vert_map"<<"\n");
 	      vert_map.insert(vmap_elt_t(x, std::make_pair(v, w)));
-	      CRAB_LOG("octagon-assign", crab::outs() << "Added var to vert_map"<<"\n");
 	    } else {
 	      vert_id v = graph.new_vertex();
 	      vert_id w = graph.new_vertex();
@@ -2057,16 +2088,35 @@ namespace crab {
 	      }
 	      Wt_min min_op;
 	      edge_vector cst_edges;
+
 	      for (auto diff : diffs_lb) {
-		cst_edges.push_back(std::make_pair(std::make_pair(v, get_vert(diff.first)),
-						   -diff.second));
+		variable_t y = diff.first;
+		Wt k = diff.second;
+		// x - y >= k ---> pos(Vy) - pos(Vx) <= -k --> edge(pos(Vx), -k, pos(Vy))
+		cst_edges.push_back({{v, get_vert(y)}, -k});
 	      }
 
 	      for (auto diff : diffs_ub) {
-		cst_edges.push_back(std::make_pair(std::make_pair(get_vert(diff.first), v),
-						   diff.second));
+		variable_t y = diff.first;
+		Wt k = diff.second;		
+		// x - y <= k ---> pos(Vx) - pos(Vy) <= k --> edge(pos(Vy), k, pos(Vx))		
+		cst_edges.push_back({{get_vert(y), v},k});
 	      }
 
+	      for (auto oct : octs_lb) {
+		variable_t y = oct.first;
+		Wt k = oct.second;				
+		// x + y >= k --> neg(Vx) - pos(Vy) <= -k --> edge(pos(Vy), -k, neg(Vx)) 		
+		cst_edges.push_back({{get_vert(y), w}, -k});
+	      }
+	      
+	      for (auto oct : octs_ub) {
+		variable_t y = oct.first;
+		Wt k = oct.second;						
+		// x + y <= k --> pos(Vx) - neg(Vy) <= k --> edge(neg(Vy), k, pos(Vx))
+		cst_edges.push_back({{get_vert(y)+1, v}, k});
+	      }
+	      
 	      for(auto diff : cst_edges) {
 		vert_id src = diff.first.first;
 		vert_id dest = diff.first.second;
@@ -2095,8 +2145,8 @@ namespace crab {
 	  }
 	}
 	assert(check_potential(graph, potential));
-	CRAB_LOG("octagon-split", crab::outs() << "---"<< x<< ":="<< e<<"\n"<<*this <<"\n");
-	CRAB_LOG("octagon-assign", crab::outs() << "---"<< x<< ":="<< e<<"\n"<<*this <<"\n");
+	CRAB_LOG("octagon-split",
+		 crab::outs() << "---"<< x<< ":="<< e<<"\n"<<*this <<"\n";);
       }
 
       void forget(const variable_vector_t& vars) {
@@ -2381,25 +2431,25 @@ namespace crab {
 	  vert_id s = (*it).second;
 	  if (rev_map[s]) {
 	    variable_t vs = *rev_map[s];
-	    SplitGraph<graph_t> g_excl(graph);
-	    for (vert_id d : g_excl.vert()) {
+	    split_octagons_impl::SplitOctGraph<graph_t> g_oct(graph);
+	    for (vert_id d : g_oct.vert()) {
 	      if (rev_map[d]) {
 		variable_t vd = *rev_map[d];
-		if (g_excl.elem(s, d) && g_excl.elem(d, s) &&
-		    g_excl.edge_val(s, d) == 0 &&
-		    g_excl.edge_val(d, s) == 0) {
+		if (g_oct.elem(s, d) && g_oct.elem(d, s) &&
+		    g_oct.edge_val(s, d) == 0 &&
+		    g_oct.edge_val(d, s) == 0) {
 		  linear_constraint_t cst(vs == vd);
 		  csts += cst;
 		  continue;
 		}
 		
-		if (g_excl.elem(s, d)) {
-		  linear_constraint_t cst(vd - vs <= g_excl.edge_val(s, d));
+		if (g_oct.elem(s, d)) {
+		  linear_constraint_t cst(vd - vs <= g_oct.edge_val(s, d));
 		  csts += cst;
 		}
 		
-		if (g_excl.elem(d, s)) {
-		  linear_constraint_t cst(vs - vd <= g_excl.edge_val(d, s));
+		if (g_oct.elem(d, s)) {
+		  linear_constraint_t cst(vs - vd <= g_oct.edge_val(d, s));
 		  csts += cst;
 		}
 	      }
@@ -2449,6 +2499,15 @@ namespace crab {
       /* End unimplemented operations */
       
       void write(crab_os& o) {
+	#if 1
+	/// The normalization that happens in linear_constraint_t
+	/// removes redundant constraints (see below).
+	auto csts = to_linear_constraint_system();
+	o << csts;
+	#else
+	/// This code can print the same constraint twice. E.g., the
+	/// constraint x - y <= k can be printed if we have edges from
+	/// pos(y) to pos(x) and from neg(x) to neg(y).
 	typename graph_t::mut_val_ref_t w;
 	if (is_bottom()) {
 	  o << "_|_";
@@ -2459,9 +2518,8 @@ namespace crab {
 	} else {
 	  bool first = true;
 	  o << "{";
-	  SplitGraph<graph_t> g_excl(graph);
+	  split_octagons_impl::SplitOctGraph<graph_t> g_oct(graph);
 	  for (vert_id v : graph.verts()) {
-	    // CRAB_LOG("octagon-split", crab::outs() << "writing vertex " << v << "\n");
 	    if (v%2 != 0) continue;
 	    if (!rev_map[v]) continue;
 	    if (!graph.elem(v, v+1) && !graph.elem(v+1, v)) continue;
@@ -2479,26 +2537,27 @@ namespace crab {
 	  for (vert_id s : graph.verts()) {
 	    if (!rev_map[s]) continue;
 	    variable_t vs = *(rev_map[s]);
-	    for (vert_id d : g_excl.succs(s)) {
+	    for (vert_id d : g_oct.succs(s)) {
 	      if (!rev_map[d]) continue;
 	      variable_t vd = *(rev_map[d]);
 	      if (first) first = false;
 	      else o << ", ";
 
 	      if (s % 2 == 0 && d % 2 == 0) {
-		o << vd << "-" << vs << "<=" << g_excl.edge_val(s, d);
+		o << vd << "-" << vs << "<=" << g_oct.edge_val(s, d);
 	      } else if (s % 2 != 0 && d % 2 == 0) {
-		o << vd << "+" << vs << "<=" << g_excl.edge_val(s, d);
+		o << vd << "+" << vs << "<=" << g_oct.edge_val(s, d);
 	      } else if (s % 2 == 0 && d % 2 != 0) {
-		o << "-" << vd << "-" << vs << "<=" << g_excl.edge_val(s, d);
+		o << "-" << vd << "-" << vs << "<=" << g_oct.edge_val(s, d);
 	      } else if (s % 2 != 0 && d % 2 != 0) {
-		o << "-" << vd << "+" << vs << "<=" << g_excl.edge_val(s, d);
+		o << "-" << vd << "+" << vs << "<=" << g_oct.edge_val(s, d);
 	      }
 		    				
 	    }
 	  }
 	  o << '}';
 	}
+	#endif 
       }
 
       linear_constraint_system_t to_linear_constraint_system() {
@@ -2508,31 +2567,34 @@ namespace crab {
           csts += linear_constraint_t::get_false();	  
 	  return csts;
 	}
-	SplitGraph<graph_t> g_excl(graph);
-	for (vert_id v : g_excl.verts()) {
+	split_octagons_impl::SplitOctGraph<graph_t> g_oct(graph);
+	for (vert_id v : g_oct.verts()) {
 	  if (v%2 != 0) continue;
 	  if (!rev_map[v]) continue;
-	  if (graph.elem(v, v+1))
+	  if (graph.elem(v, v+1)) {
 	    csts += linear_constraint_t(linear_expression_t(*rev_map[v]) >= -(graph.edge_val(v, v+1)/2));
-	  if (graph.elem(v+1, v))
+	  }
+	  if (graph.elem(v+1, v)) {
 	    csts += linear_constraint_t(linear_expression_t(*rev_map[v]) <= (graph.edge_val(v+1, v)/2));
+	  }
 	}
-	for (vert_id s : g_excl.verts()) {
+
+	for (vert_id s : g_oct.verts()) {
 	  if (!rev_map[s]) continue;
 	  variable_t vs = *rev_map[s];
-	  auto s_exp = linear_expression_t(vs);
-	  for (vert_id d : g_excl.succs(s)){
+	  linear_expression_t s_exp(vs);
+	  for (vert_id d : g_oct.succs(s)){
 	    if (!rev_map[d]) continue;
 	    variable_t vd = *rev_map[d];
-	    auto d_exp = linear_expression_t(vd);
-	    auto w = g_excl.edge_val(s, d);
+	    linear_expression_t d_exp(vd);
+	    auto w = g_oct.edge_val(s, d);
 
 	    if (s % 2 == 0 && d % 2 == 0) {
 	      csts += linear_constraint_t(d_exp - s_exp <= w);
 	    } else if (s % 2 != 0 && d % 2 == 0) {
 	      csts += linear_constraint_t(d_exp + s_exp <= w);
 	    } else if (s % 2 == 0 && d % 2 != 0) {
-	      csts += linear_constraint_t(- d_exp - s_exp <= w);
+	      csts += linear_constraint_t(- d_exp - s_exp <= w); 
 	    } else if (s % 2 != 0 && d % 2 != 0) {
 	      csts += linear_constraint_t(- d_exp + s_exp <= w);
 	    }
@@ -2551,87 +2613,6 @@ namespace crab {
 	  return disjunctive_linear_constraint_system_t(lin_csts);
 	}
       }
-
-      /* Begin array_sgraph_domain_traits */ 
-      // return true iff inequality cst is unsatisfiable.
-      bool is_unsat(linear_constraint_t cst) {
-	if (is_bottom() || cst.is_contradiction()) return true;
-	if (is_top() || cst.is_tautology()) return false;
-
-	if (!cst.is_inequality()) {
-	  return false;
-	}
-
-	auto diffcst = diffcst_of_leq(cst);
-	if (!diffcst) return false;
-
-	// x - y <= k ?
-	auto x = (*diffcst).first;
-	auto y = (*diffcst).second.first;
-	auto k = (*diffcst).second.second;
-
-	typename graph_t::mut_val_ref_t w;
-	if (graph.lookup(y, x, &w)){
-	  return ((w + k) < 0);
-	} else {
-	  interval_t intv_x = interval_t::top();
-	  interval_t intv_y = interval_t::top();
-	  if (x % 2 == 0) {
-	    if (graph.elem(x, x+1) || graph.elem(x+1, x)){
-	      intv_x = interval_t(graph.elem(x+1, x) ?
-				  -number_t(graph.edge_val(x+1, x))/2 :
-				  bound_t::minus_infinity(),
-				  graph.elem(x, x+1) ?
-				  number_t(graph.edge_val(x, x+1))/2 :
-				  bound_t::plus_infinity());
-	    }
-	  } else {
-	    if (graph.elem(x, x-1) || graph.elem(x-1, x)){
-	      intv_x = interval_t(graph.elem(x, x-1) ?
-				  -number_t(graph.edge_val(x, x-1))/2 :
-				  bound_t::minus_infinity(),
-				  graph.elem(x-1, x) ?
-				  number_t(graph.edge_val(x-1, x))/2 :
-				  bound_t::plus_infinity());
-	    }
-	  }
-
-	  if (y % 2 == 0) {
-	    if (graph.elem(y, y+1) || graph.elem(y+1, y)){
-	      intv_y = interval_t(graph.elem(y+1, y) ?
-				  -number_t(graph.edge_val(y+1, y))/2 :
-				  bound_t::minus_infinity(),
-				  graph.elem(y, y+1) ?
-				  number_t(graph.edge_val(y, y+1))/2 :
-				  bound_t::plus_infinity());
-	    }
-	  } else {
-	    if (graph.elem(y, y-1) || graph.elem(y-1, y)){
-	      intv_y = interval_t(graph.elem(y, y-1) ?
-				  -number_t(graph.edge_val(y, y-1))/2 :
-				  bound_t::minus_infinity(),
-				  graph.elem(y-1, y) ?
-				  number_t(graph.edge_val(y-1, y))/2 :
-				  bound_t::plus_infinity());
-	    }
-	  }
-
-	  if (intv_x.is_top() || intv_y.is_top()) {
-	    return false;
-	  } else {
-	    return (!((intv_y - intv_x).lb() <= k));
-	  }
-	}
-      }
-		    
-      void active_variables(std::vector<variable_t>& out) const {
-	out.reserve(graph.size());
-	for (auto v: graph.verts()) {
-	  if (rev_map[v]) 
-	    out.push_back((*(rev_map[v])));
-	}
-      }
-      /* End array_sgraph_domain_traits */
       
       static std::string getDomainName() {
 	return "SplitOctagons";
@@ -2645,21 +2626,6 @@ namespace crab {
       typedef VariableName varname_t;       
     };        
     
-    template<typename Number, typename VariableName, typename Params>
-    struct array_sgraph_domain_helper_traits<split_oct_domain<Number, VariableName, Params>> {
-      typedef split_oct_domain<Number, VariableName, Params> soct_domain_t;
-      typedef typename soct_domain_t::linear_constraint_t linear_constraint_t;
-      typedef ikos::variable<Number, VariableName> variable_t;
-
-      static bool is_unsat(soct_domain_t& inv, linear_constraint_t cst) {
-	return inv.is_unsat(cst);
-      }
-
-      static void active_variables(soct_domain_t &inv, std::vector<variable_t>& out) {
-	inv.active_variables(out);
-      }
-    };
-
   } // end namespace domains
 } // end namespace crab
 
