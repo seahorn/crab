@@ -199,6 +199,48 @@ z_cfg_t* prog5 (variable_factory_t &vfac)  {
   return cfg;
 }
 
+z_cfg_t* prog6 (variable_factory_t &vfac)  {
+
+  // Definining program variables
+  z_var k(vfac ["k"], crab::INT_TYPE, 32);
+  z_var n(vfac ["n"], crab::INT_TYPE, 32);
+  z_var x(vfac ["x"], crab::INT_TYPE, 32);
+  z_var y(vfac ["y"], crab::INT_TYPE, 32);
+  z_var t(vfac ["t"], crab::INT_TYPE, 32);
+  // entry and exit block
+  z_cfg_t* cfg = new z_cfg_t("entry","ret");
+  // adding blocks
+  z_basic_block_t& entry = cfg->insert ("entry");
+  z_basic_block_t& loop = cfg->insert ("loop");
+  z_basic_block_t& loop_body_1 = cfg->insert ("loop_body_1");
+  z_basic_block_t& loop_body_2 = cfg->insert ("loop_body_2");
+  z_basic_block_t& loop_body_3 = cfg->insert ("loop_body_3");
+  z_basic_block_t& loop_body_4 = cfg->insert ("loop_body_4");  
+  z_basic_block_t& ret = cfg->insert ("ret");
+  // adding control flow
+  entry >> loop;
+  loop >> loop_body_1;
+  loop_body_1 >> loop_body_2;
+  loop_body_2 >> loop_body_3;
+  loop_body_3 >> loop_body_4;    
+  loop_body_4 >> loop;
+  loop >> ret;
+  // adding statements
+  //  entry.assign (x1, 1);
+  entry.assign(k, 200);
+  entry.assign(n, 100);
+  entry.assign(x, 0);
+  entry.assign(y, k);
+  loop_body_1.assume(x <= n - 1);
+  loop_body_2.add(x, x, 1);
+  loop_body_3.assign(t, 2*x);
+  loop_body_4.sub(y, k , t);
+  
+  ret.assume(x >= n);
+  ret.assertion(x + y <= k);
+  return cfg;
+}
+
 /* Example of how to infer invariants from the above CFG */
 int main (int argc, char** argv ) {
   SET_TEST_OPTIONS(argc,argv)
@@ -210,7 +252,6 @@ int main (int argc, char** argv ) {
     #ifdef HAVE_APRON
     run<z_oct_apron_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
     #endif
-    run<z_sdbm_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);            
     run<z_soct_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
     delete cfg;
   }
@@ -222,7 +263,6 @@ int main (int argc, char** argv ) {
     #ifdef HAVE_APRON    
     run<z_oct_apron_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
     #endif
-    run<z_sdbm_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);            
     run<z_soct_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);    
     delete cfg;
   }
@@ -234,7 +274,6 @@ int main (int argc, char** argv ) {
     #ifdef HAVE_APRON
     run<z_oct_apron_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
     #endif
-    run<z_sdbm_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);        
     run<z_soct_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);    
     delete cfg;
   }
@@ -246,7 +285,6 @@ int main (int argc, char** argv ) {
     #ifdef HAVE_APRON
     run<z_oct_apron_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
     #endif
-    run<z_sdbm_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);            
     run<z_soct_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);    
     delete cfg;
   }
@@ -258,7 +296,17 @@ int main (int argc, char** argv ) {
     #ifdef HAVE_APRON
     run<z_oct_apron_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
     #endif
-    run<z_sdbm_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);            
+    run<z_soct_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);    
+    delete cfg;
+  }
+
+  {
+    variable_factory_t vfac;
+    z_cfg_t* cfg = prog6 (vfac);
+    crab::outs() << *cfg << "\n";
+    #ifdef HAVE_APRON
+    run<z_oct_apron_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
+    #endif
     run<z_soct_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);    
     delete cfg;
   }
