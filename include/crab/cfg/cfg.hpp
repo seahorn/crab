@@ -815,8 +815,8 @@ namespace crab {
       }
       
       virtual statement_t* clone() const {
-        return new this_type(m_arr, m_lb, m_ub, m_value,
-			     m_elem_size, m_is_singleton); 
+        return new this_type(m_arr, m_elem_size, m_lb, m_ub, m_value,
+			     m_is_singleton); 
       }
       
       virtual void write(crab_os& o) const {
@@ -856,9 +856,9 @@ namespace crab {
       typedef typename variable_t::type_t type_t;
                  
       array_load_stmt(variable_t lhs,
-		       variable_t arr,
-		       linear_expression_t elem_size,
-		       linear_expression_t index) 
+		      variable_t arr,
+		      linear_expression_t elem_size,
+		      linear_expression_t index) 
 	: statement_t(ARR_LOAD)
 	, m_lhs(lhs)
 	, m_array(arr)
@@ -890,7 +890,7 @@ namespace crab {
       }
       
       virtual statement_t* clone() const {
-        return new this_type(m_lhs, m_array, m_index, m_elem_size);
+        return new this_type(m_lhs, m_array, m_elem_size,  m_index);
       }
       
       virtual void write(crab_os& o) const {
