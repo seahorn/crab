@@ -41,43 +41,57 @@ public:
 
   lower_safe_assertions(const std::set<const statement_t*>& safe_checks)
     : transform<CFG>()
-    , m_safe_checks(safe_checks) { }
+    , m_safe_checks(safe_checks) {
+    CRAB_LOG("lsa",
+	     crab::outs() << "Found " << safe_checks.size() << " assertions\n";);
+  }
   
   virtual bool run(CFG& cfg) override {
     bool change = false;
+    std::vector<std::pair<statement_t*, basic_block_t*>> to_replace;    
     for(auto b_it = cfg.begin(), b_et = cfg.end(); b_it != b_et; ++b_it) {
       basic_block_t& bb = *b_it;
-      std::vector<std::pair<statement_t*, basic_block_t*>> to_replace;
       for(auto s_it = bb.begin(), s_et = bb.end(); s_it != s_et; ++s_it) {
 	statement_t& s = *s_it;
 	if (is_assert(&s) && m_safe_checks.count(&s) > 0) {
+	  CRAB_LOG("lsa",
+		   crab::outs() << "Found assertion to be lowered: " << s << "\n";);
 	  to_replace.push_back({&s,&bb});
 	  change = true;
 	}
-      } // end inner for
-      
-      while(!to_replace.empty()) {
-	auto p = to_replace.back();
-	statement_t* s = p.first;
-	basic_block_t* parent = p.second;	
-	to_replace.pop_back();
-	if (s->is_assert()) {
-	  statement_t* new_s = new
-	    assume_t((static_cast<assert_t*>(s))->constraint());
-	  parent->replace(s, new_s);
-	} else if (s->is_ptr_assert()) {
-	  statement_t* new_s = new
-	    ptr_assume_t((static_cast<ptr_assert_t*>(s))->constraint());
-	  parent->replace(s, new_s);
-	} else if (s->is_bool_assert()) {
-	  statement_t* new_s = new
-	    bool_assert_t((static_cast<bool_assert_t*>(s))->cond());
-	  parent->replace(s, new_s);
-	} else {
-	  // unreachable
-	}
+      } 
+    }
+    
+    while(!to_replace.empty()) {
+      auto p = to_replace.back();
+      statement_t* s = p.first;
+      basic_block_t* parent = p.second;	
+      to_replace.pop_back();
+      if (s->is_assert()) {
+	statement_t* new_s = new
+	  assume_t((static_cast<assert_t*>(s))->constraint());
+	CRAB_LOG("lsa",
+		 crab::outs() << "Replacing " << *s << " with "
+		              << *new_s << "\n";);
+	parent->replace(s, new_s);
+      } else if (s->is_ptr_assert()) {
+	statement_t* new_s = new
+	  ptr_assume_t((static_cast<ptr_assert_t*>(s))->constraint());
+	CRAB_LOG("lsa",
+		 crab::outs() << "Replacing " << *s << " with "
+		              << *new_s << "\n";);	  
+	parent->replace(s, new_s);
+      } else if (s->is_bool_assert()) {
+	statement_t* new_s = new
+	  bool_assume_t((static_cast<bool_assert_t*>(s))->cond(), false /* not negated*/);
+	CRAB_LOG("lsa",
+		 crab::outs() << "Replacing " << *s << " with "
+		              << *new_s << "\n";);
+	parent->replace(s, new_s);
+      } else {
+	// unreachable
       }
-    }	
+    }
     return change;
   }
   
