@@ -1781,10 +1781,10 @@ namespace crab {
         switch(op) {
           case OP_ADDITION:
             assign(x, y + z);
-            break;
+            return;
           case OP_SUBTRACTION:
             assign(x, y - z);
-            break;
+            return;
           // For the rest of operations, we fall back on intervals.
           case OP_MULTIPLICATION:
             set(x, get_interval(y)*get_interval(z));
@@ -1823,14 +1823,14 @@ namespace crab {
         switch(op) {
           case OP_ADDITION:
             assign(x, y + k);
-            break;
+            return;
           case OP_SUBTRACTION:
             assign(x, y - k);
-            break;
-          // For the rest of operations, we fall back on intervals.
+            return;
           case OP_MULTIPLICATION:
-            set(x, get_interval(y)*interval_t(k));
-            break;
+	    assign(x, k * y);
+	    return;
+          // For the rest of operations, we fall back on intervals.	    
           case OP_SDIV:
             set(x, get_interval(y)/interval_t(k));
             break;
