@@ -337,9 +337,9 @@ class SparseWtGraph : public ikos::writeable {
     // Assumption: (x, y) not in mtx
     void add_edge(vert_id x, Wt wt, vert_id y)
     {
-//      assert(x < size() && y < size());
-//      assert(x != y);
-//      assert(!elem(x, y));
+      // assert(x < size() && y < size());
+      // assert(x != y);
+      assert(!elem(x, y));
       succs(x).add(y);
       preds(y).add(x);
       // Allocate a new Wt at the given offset.
@@ -349,7 +349,7 @@ class SparseWtGraph : public ikos::writeable {
 
     void set_edge(vert_id s, Wt w, vert_id d)
     {
-//      assert(s < size() && d < size());
+      // assert(s < size() && d < size());
       if(!elem(s, d))
         add_edge(s, w, d);
       else

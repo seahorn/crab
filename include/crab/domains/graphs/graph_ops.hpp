@@ -193,7 +193,7 @@ namespace crab {
           return false;
         return (*adj).mem(perm[v]); 
       }
-
+      
     protected:
       std::vector<vert_id>& perm;
       std::vector<vert_id>& inv;
@@ -239,7 +239,31 @@ namespace crab {
       else
         return e_pred_range(perm, inv, g.e_preds(perm[v]));
     }
-
+    
+    void write(crab_os& o) {
+      o << "[|";
+      bool first = true;
+      for(vert_id v : verts()) {
+	auto it = e_succs(v).begin();
+	auto end = e_succs(v).end();
+	
+	if(it != end) {
+	  if(first)
+	    first = false;
+	  else
+	    o << ", ";
+	  
+	  o << "[v" << v << " -> ";
+	  o << "(" << (*it).val << ":" << (*it).vert << ")";
+	  for(++it; it != end; ++it) {
+	    o << ", (" << (*it).val << ":" << (*it).vert << ")";
+	  }
+	  o << "]";
+	}
+      }
+      o << "|]";
+    }
+    
     G& g;
     std::vector<vert_id> perm;
     std::vector<vert_id> inv;
@@ -297,20 +321,21 @@ namespace crab {
     // Assumption: (x, y) not in mtx
     void add_edge(vert_id x, Wt wt, vert_id y)
     {
-//      assert(x != v_ex && y != v_ex);
+      //assert(x != v_ex && y != v_ex);
+      assert(!elem(x,y));
       g.add_edge(x, wt, y);
     }
 
     void set_edge(vert_id s, Wt w, vert_id d)
     {
-//      assert(s != v_ex && d != v_ex);
+      // assert(s != v_ex && d != v_ex);
       g.set_edge(s, w, d);
     }
 
     template<class Op>
     void update_edge(vert_id s, Wt w, vert_id d, Op& op)
     {
-//      assert(s != v_ex && d != v_ex);
+      // assert(s != v_ex && d != v_ex);
       g.update_edge(s, w, d, op);
     }
 
