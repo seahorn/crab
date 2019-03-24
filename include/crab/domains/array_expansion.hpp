@@ -1266,13 +1266,12 @@ namespace domains {
 	CRAB_ERROR("array expansion domain expects constant array element sizes");		
       }
 
-      bool ignore_array_store = false;
       interval_t lb_i = to_interval(lb_idx);
       auto lb = lb_i.singleton();
       if (!lb) {
 	CRAB_WARN("array expansion store range ignored because ",
 		  "lower bound is not constant");
-	ignore_array_store = true;
+	return;
       }
       
       interval_t ub_i = to_interval(ub_idx);
@@ -1280,29 +1279,28 @@ namespace domains {
       if (!ub) {
 	CRAB_WARN("array expansion store range ignored because ",
 		  "upper bound is not constant");
-	ignore_array_store = true;	
+	return;
       }
 
-	
       if ((*ub - *lb) % *n != 0) {
 	CRAB_WARN("array expansion store range ignored because ",
 		  "the number of elements must be divisible by ", *n);
-	ignore_array_store = true;		
+	return;
       }
 
+      // TODO: this should be an user parameter.
       const number_t max_num_elems = 512;
+      
       if (*ub - *lb > max_num_elems) {
 	CRAB_WARN("array expansion store range ignored because ",
 		  "the number of elements is larger than default limit of ",
 		  max_num_elems);
-	ignore_array_store = true;			
+	return;
       }
 
-      if (!ignore_array_store) {
-	for(number_t i = *lb, e = *ub; i < e; ) {
-	  array_store(a, elem_size, i, val, false);
-	  i = i + *n;
-	}
+      for(number_t i = *lb, e = *ub; i < e; ) {
+	array_store(a, elem_size, i, val, false);
+	i = i + *n;
       }
     }
     
