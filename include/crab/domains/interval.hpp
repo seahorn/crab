@@ -10,7 +10,7 @@
 #include <boost/optional.hpp>
 #include <crab/common/types.hpp>
 #include <crab/common/stats.hpp>
-#include <crab/common/bignums.hpp>
+#include <crab/numbers/bignums.hpp>
 
 namespace ikos {
 

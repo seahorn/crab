@@ -1,6 +1,6 @@
 #include <crab/config.h>
 #include <crab/common/types.hpp>
-#include <crab/common/wrapint.hpp>
+#include <crab/numbers/wrapint.hpp>
 
 #include <iostream>
 

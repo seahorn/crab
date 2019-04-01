@@ -2,7 +2,7 @@
 
 #include <type_traits>
 
-#include <crab/common/safeint.hpp>
+#include <crab/numbers/safeint.hpp>
 #include <crab/domains/graphs/adapt_sgraph.hpp>
 #include <crab/domains/graphs/sparse_graph.hpp>
 #include <crab/domains/graphs/ht_graph.hpp>

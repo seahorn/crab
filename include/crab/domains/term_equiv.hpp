@@ -25,7 +25,7 @@
 #include <crab/common/debug.hpp>
 #include <crab/common/stats.hpp>
 #include <crab/common/types.hpp>
-#include <crab/common/bignums.hpp>
+#include <crab/numbers/bignums.hpp>
 #include <crab/cfg/var_factory.hpp>
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/domains/abstract_domain.hpp>
