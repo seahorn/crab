@@ -789,7 +789,7 @@ namespace crab {
 	
         typename graph_t::mut_val_ref_t w;        
         if (g.lookup(y,x,&w)) {
-          return ((w.get() + k) < 0);
+          return ((w.get() + k) < Wt(0));
         } else {
           interval_t intv_x = interval_t::top();
           interval_t intv_y = interval_t::top();
@@ -806,7 +806,7 @@ namespace crab {
           if (intv_x.is_top() || intv_y.is_top()) {
             return false;
           } else  {
-            return (!((intv_y - intv_x).lb() <= k));
+            return (!((intv_y - intv_x).lb() <= (number_t) k));
           }
         }
       }
@@ -2125,8 +2125,8 @@ namespace crab {
                 // We give priority to equalities since some domains
                 // might not understand inequalities
                 if (g_excl.elem(s, d) && g_excl.elem(d, s) &&
-                    g_excl.edge_val(s, d) == 0 &&
-		    g_excl.edge_val(d, s) == 0) {
+                    g_excl.edge_val(s, d) == Wt(0) &&
+		    g_excl.edge_val(d, s) == Wt(0)) {
                   linear_constraint_t cst(linear_expression_t(vs) == vd);
                   csts += cst;
                 } else {

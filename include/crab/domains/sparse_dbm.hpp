@@ -391,7 +391,7 @@ namespace crab {
               if(unbounded_ubvar)
                 goto diffcst_finish;
               unbounded_ubvar = y;
-              unbounded_ubcoeff = -(ntow::convert(coeff));
+              unbounded_ubcoeff = -coeff;
             } else {
               Wt ymax(ntow::convert(*(y_ub.number())));
               exp_ub -= ymax*coeff;
@@ -1844,8 +1844,8 @@ namespace crab {
                 // We give priority to equalities since some domains
                 // might not understand inequalities
                 if (g_excl.elem(s, d) && g_excl.elem(d, s) &&
-                    g_excl.edge_val(s, d) == 0 &&
-		    g_excl.edge_val(d, s) == 0) {
+                    g_excl.edge_val(s, d) == Wt(0) &&
+		    g_excl.edge_val(d, s) == Wt(0)) {
                   linear_constraint_t cst(linear_expression_t(vs) == vd);
                   csts += cst;
                 } else {
