@@ -16,11 +16,11 @@ class safe_i64 {
   // is x86/64, but it wont' work with 32 bits.
   typedef __int128 wideint_t;
   
-  inline int64_t MAX() const {
+  inline int64_t get_max() const {
     return std::numeric_limits<int64_t>::max();
   }
   
-  inline int64_t MIN() const {
+  inline int64_t get_min() const {
     return std::numeric_limits<int64_t>::min();
   }
   
@@ -28,13 +28,13 @@ class safe_i64 {
     #if 1
     wideint_t lr = (wideint_t)a + (wideint_t)b;
     *rp = lr;
-    return lr > MAX() || lr < MIN();
+    return lr > get_max() || lr < get_min();
     #else
     // without wider integers
-    if (b > 0 && a > MAX() - b) {
+    if (b > 0 && a > get_max() - b) {
       return 1;
     }
-    if (b < 0 && a < MIN() - b) {
+    if (b < 0 && a < get_min() - b) {
       return 1;
     }
     int64_t lr = a + b;
@@ -46,19 +46,19 @@ class safe_i64 {
   int checked_sub(int64_t a, int64_t b, int64_t *rp) const {
     wideint_t lr = (wideint_t)a - (wideint_t)b;
     *rp = lr;
-    return lr > MAX() || lr < MIN();
+    return lr > get_max() || lr < get_min();
   }
   
   int checked_mul(int64_t a, int64_t b, int64_t *rp) const {
     wideint_t lr = (wideint_t)a * (wideint_t)b;
     *rp = lr;
-    return lr > MAX() || lr < MIN();
+    return lr > get_max() || lr < get_min();
   }
   
   int checked_div(int64_t a, int64_t b, int64_t *rp) const {
     wideint_t lr = (wideint_t)a / (wideint_t)b;
     *rp = lr;
-    return lr > MAX() || lr < MIN();
+    return lr > get_max() || lr < get_min();
   }
   
 public:
