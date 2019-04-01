@@ -2,6 +2,7 @@
 
 #include <type_traits>
 
+#include <crab/common/safeint.hpp>
 #include <crab/domains/graphs/adapt_sgraph.hpp>
 #include <crab/domains/graphs/sparse_graph.hpp>
 #include <crab/domains/graphs/ht_graph.hpp>
@@ -65,31 +66,6 @@ public:
     >::type graph_t;
 };
 
-template<typename Number, GraphRep Graph = GraphRep::adapt_ss>
-class SimpleParams {
-public:
-  enum { chrome_dijkstra = 0 };
-  enum { widen_restabilize = 0 };
-  enum { special_assign = 0 };
-  enum { close_bounds_inline = 1 };	 	 
-  
-  typedef long Wt;
-  
-  typedef typename std::conditional< 
-    (Graph == ss), 
-    SparseWtGraph<Wt>,
-    typename std::conditional< 
-      (Graph == adapt_ss), 
-      AdaptGraph<Wt>,
-      typename std::conditional< 
-	(Graph == pt), 
-	PtGraph<Wt>, 
-	HtGraph<Wt> 
-	>::type 
-      >::type 
-    >::type graph_t;
-};
-
 // We don't use GraphRep::adapt_ss because having problems
 // realloc'ed Number objects.
 template<typename Number, GraphRep Graph = GraphRep::ss>
@@ -117,6 +93,58 @@ public:
       >::type 
     >::type graph_t;
 };
+
+template<typename Number, GraphRep Graph = GraphRep::adapt_ss>
+class SafeInt64DefaultParams {
+public:
+  enum { chrome_dijkstra = 1 };
+  enum { widen_restabilize = 1 };
+  enum { special_assign = 1 };
+  enum { close_bounds_inline = 0 };	 
+  
+  typedef safe_i64 Wt;
+  
+  typedef typename std::conditional< 
+    (Graph == ss), 
+    SparseWtGraph<Wt>,
+    typename std::conditional< 
+      (Graph == adapt_ss), 
+      AdaptGraph<Wt>,
+      typename std::conditional< 
+	(Graph == pt), 
+	PtGraph<Wt>, 
+	HtGraph<Wt> 
+	>::type 
+      >::type 
+    >::type graph_t;
+};
+
+
+template<typename Number, GraphRep Graph = GraphRep::adapt_ss>
+class SimpleParams {
+public:
+  enum { chrome_dijkstra = 0 };
+  enum { widen_restabilize = 0 };
+  enum { special_assign = 0 };
+  enum { close_bounds_inline = 1 };	 	 
+  
+  typedef long Wt;
+  
+  typedef typename std::conditional< 
+    (Graph == ss), 
+    SparseWtGraph<Wt>,
+    typename std::conditional< 
+      (Graph == adapt_ss), 
+      AdaptGraph<Wt>,
+      typename std::conditional< 
+	(Graph == pt), 
+	PtGraph<Wt>, 
+	HtGraph<Wt> 
+	>::type 
+      >::type 
+    >::type graph_t;
+};
+
 
 /**
  * Helper to translate from Number (e.g., ikos::z_number) to DBM
