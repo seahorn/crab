@@ -1202,10 +1202,10 @@ r_not_dom:
     */
     template<class G, class P>
     static bool repair_potential(G& g, P& p, vert_id ii, vert_id jj)
-    { 
+    {
       // Ensure there's enough scratch space. 
       unsigned int sz = g.size();
-//      assert(src < (int) sz && dest < (int) sz);
+      // assert(src < (int) sz && dest < (int) sz);
       grow_scratch(sz);
 
       for(vert_id vi : g.verts())
@@ -1249,7 +1249,7 @@ r_not_dom:
           }
         }
       }
-      if(dists[ii] < 0)
+      if(dists[ii] < Wt(0))
         return false;
 
       for(vert_id v : g.verts())

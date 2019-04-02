@@ -12,10 +12,7 @@
 #include <crab/common/types.hpp>
 #include <crab/common/stats.hpp>
 #include <crab/common/debug.hpp>
-#include <crab/domains/graphs/sparse_graph.hpp>
-#include <crab/domains/graphs/adapt_sgraph.hpp>
-#include <crab/domains/graphs/ht_graph.hpp>
-#include <crab/domains/graphs/pt_graph.hpp>
+#include <crab/domains/graphs/graph_config.hpp>
 #include <crab/domains/graphs/graph_ops.hpp>
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/domains/interval.hpp>
@@ -37,134 +34,8 @@ namespace crab {
 
   namespace domains {
 
-    namespace SpDBM_impl {
-       /*******************************************************************
-	* Translate from Number to dbm val_t type
-	*******************************************************************
-	* Important: Number might not fit into Wt type. If this is the
-        * case then a runtime error will be triggered when Number is
-        * casted to Wt
-	*******************************************************************
-	*/
-       template<typename Number, typename Wt>
-       class NtoV {
-       public:
-         static Wt ntov(const Number& n) { 
-           return (Wt) n;
-         }
-       };
-
-       // All of these representations are implementations of a
-       // sparse weighted graph. They differ on the datastructures
-       // used to store successors and predecessors
-       enum GraphRep { 
-         // sparse-map and sparse-sets
-         ss = 1,        
-         // adaptive sparse-map and sparse-sets
-         adapt_ss = 2,  
-         // patricia tree-maps and patricia tree-sets
-         pt = 3,           
-         // hash table and hash sets
-         ht = 4
-       };          
-
-       template<typename Number, GraphRep Graph = GraphRep::adapt_ss>
-       class DefaultParams {
-       public:
-         enum { chrome_dijkstra = 1 };
-         enum { widen_restabilize = 1 };
-         enum { special_assign = 1 };
-
-	 /***********************************************************/
-	 // Use long as graph weights
-	 /***********************************************************/	 
-	 // The code does not check for overflows on weight
-	 // operations. Thus, use it on your own risk! If you think
-	 // that the program will have large constants then use
-	 // BigNumDefaultParams. Unfortunately, there will be a
-	 // performance penalty.
-	 /***********************************************************/	 
-         typedef long Wt;
-
-         typedef typename std::conditional< 
-           (Graph == ss), 
-           SparseWtGraph<Wt>,
-           typename std::conditional< 
-             (Graph == adapt_ss), 
-             AdaptGraph<Wt>,
-             typename std::conditional< 
-               (Graph == pt), 
-               PtGraph<Wt>, 
-               HtGraph<Wt> 
-               >::type 
-             >::type 
-           >::type graph_t;
-       };
-
-       template<typename Number, GraphRep Graph = GraphRep::adapt_ss>
-       class SimpleParams {
-       public:
-         enum { chrome_dijkstra = 0 };
-         enum { widen_restabilize = 0 };
-         enum { special_assign = 0 };
-
-	 /***********************************************************/
-	 // Use long as graph weights
-	 /***********************************************************/	 
-	 // The code does not check for overflows on weight
-	 // operations. Thus, use it on your own risk! If you think
-	 // that the program will have large constants then use
-	 // BigNumDefaultParams. Unfortunately, there will be a
-	 // performance penalty.
-	 /***********************************************************/	 
-         typedef long Wt;
-
-         typedef typename std::conditional< 
-           (Graph == ss), 
-           SparseWtGraph<Wt>,
-           typename std::conditional< 
-             (Graph == adapt_ss), 
-             AdaptGraph<Wt>,
-             typename std::conditional< 
-               (Graph == pt), 
-               PtGraph<Wt>, 
-               HtGraph<Wt> 
-               >::type 
-             >::type 
-           >::type graph_t;
-       };
-
-       // We don't use GraphRep::adapt_ss because having problems
-       // realloc'ed Number objects.      
-       template<typename Number, GraphRep Graph = GraphRep::ss>
-       class BigNumDefaultParams {
-       public:
-         enum { chrome_dijkstra = 1 };
-         enum { widen_restabilize = 1 };
-         enum { special_assign = 1 };
-
-	 // Use Number as graph weights	 
-         typedef Number Wt;
-	 
-         typedef typename std::conditional< 
-           (Graph == ss), 
-           SparseWtGraph<Wt>,
-           typename std::conditional< 
-             (Graph == adapt_ss), 
-             AdaptGraph<Wt>,
-             typename std::conditional< 
-               (Graph == pt), 
-               PtGraph<Wt>, 
-               HtGraph<Wt> 
-               >::type 
-             >::type 
-           >::type graph_t;
-       };
-      
-     }; // end namespace SpDBM_impl
-
     template<class Number, class VariableName,
-	     class Params = SpDBM_impl::DefaultParams <Number> >
+	     class Params = DBM_impl::DefaultParams<Number>>
     class SparseDBM_ final:
       public abstract_domain<SparseDBM_<Number,VariableName,Params>> {
       typedef SparseDBM_<Number, VariableName, Params> DBM_t;
@@ -189,7 +60,7 @@ namespace crab {
       typedef ikos::bound<number_t>  bound_t;
       typedef typename Params::Wt Wt;
       typedef typename Params::graph_t graph_t;
-      typedef SpDBM_impl::NtoV<number_t, Wt> ntov;
+      typedef DBM_impl::NtoW<number_t, Wt> ntow;
       typedef typename graph_t::vert_id vert_id;
       typedef boost::container::flat_map<variable_t, vert_id> vert_map_t;
       typedef typename vert_map_t::value_type vmap_elt_t;
@@ -338,9 +209,9 @@ namespace crab {
 
       // Evaluate an expression under the chosen potentials
       Wt eval_expression(linear_expression_t e) {
-        Wt v(ntov::ntov(e.constant())); 
+        Wt v(ntow::convert(e.constant())); 
         for(auto p : e) {
-          v += (pot_value(p.second) - potential[0])*(ntov::ntov(p.first));
+          v += (pot_value(p.second) - potential[0])*(ntow::convert(p.first));
         }
         return v;
       }
@@ -395,18 +266,18 @@ namespace crab {
         {
           // Process upper bounds.
           boost::optional<variable_t> unbounded_ubvar;
-          Wt exp_ub(ntov::ntov(exp.constant()));
+          Wt exp_ub(ntow::convert(exp.constant()));
           std::vector<std::pair<variable_t, Wt> > ub_terms;
           for(auto p : exp)
           {
-            Wt coeff(ntov::ntov(p.first));
-            if(p.first < Wt(0))
+            Wt coeff(ntow::convert(p.first));
+            if(coeff < Wt(0))
             {
               // Can't do anything with negative coefficients.
               bound_t y_lb = operator[](p.second).lb();
               if(y_lb.is_infinite())
                 goto assign_ub_finish;
-              exp_ub += ntov::ntov(*(y_lb.number()))*coeff;
+              exp_ub += ntow::convert(*(y_lb.number()))*coeff;
             } else {
               variable_t y(p.second);
               bound_t y_ub = operator[](y).ub(); 
@@ -416,7 +287,7 @@ namespace crab {
                   goto assign_ub_finish;
                 unbounded_ubvar = y;
               } else {
-                Wt ymax(ntov::ntov(*(y_ub.number())));
+                Wt ymax(ntow::convert(*(y_ub.number())));
                 exp_ub += ymax*coeff;
                 ub_terms.push_back(std::make_pair(y, ymax));
               }
@@ -438,18 +309,18 @@ namespace crab {
 
         {
           boost::optional<variable_t> unbounded_lbvar;
-          Wt exp_lb(ntov::ntov(exp.constant()));
+          Wt exp_lb(ntow::convert(exp.constant()));
           std::vector<std::pair<variable_t, Wt> > lb_terms;
           for(auto p : exp)
           {
-            Wt coeff(ntov::ntov(p.first));
-            if(p.first < Wt(0))
+            Wt coeff(ntow::convert(p.first));
+            if(coeff < Wt(0))
             {
               // Again, can't do anything with negative coefficients.
               bound_t y_ub = operator[](p.second).ub();
               if(y_ub.is_infinite())
                 goto assign_lb_finish;
-              exp_lb += (ntov::ntov(*(y_ub.number())))*coeff;
+              exp_lb += (ntow::convert(*(y_ub.number())))*coeff;
             } else {
               variable_t y(p.second);
               bound_t y_lb = operator[](y).lb(); 
@@ -459,7 +330,7 @@ namespace crab {
                   goto assign_lb_finish;
                 unbounded_lbvar = y;
               } else {
-                Wt ymin(ntov::ntov(*(y_lb.number())));
+                Wt ymin(ntow::convert(*(y_lb.number())));
                 exp_lb += ymin*coeff;
                 lb_terms.push_back(std::make_pair(y, ymin));
               }
@@ -490,12 +361,12 @@ namespace crab {
         Wt unbounded_ubcoeff;
         boost::optional<variable_t> unbounded_lbvar;
         boost::optional<variable_t> unbounded_ubvar;
-        Wt exp_ub = - (ntov::ntov(exp.constant()));
+        Wt exp_ub = -(ntow::convert(exp.constant()));
         std::vector<std::pair<std::pair<Wt, variable_t>, Wt> > pos_terms;
         std::vector<std::pair<std::pair<Wt, variable_t>, Wt> > neg_terms;
         for(auto p : exp)
         {
-          Wt coeff(ntov::ntov(p.first));
+          Wt coeff(ntow::convert(p.first));
           if(coeff > Wt(0))
           {
             variable_t y(p.second);
@@ -507,7 +378,7 @@ namespace crab {
               unbounded_lbvar = y;
               unbounded_lbcoeff = coeff;
             } else {
-              Wt ymin(ntov::ntov(*(y_lb.number())));
+              Wt ymin(ntow::convert(*(y_lb.number())));
               // Coeff is negative, so it's still add
               exp_ub -= ymin*coeff;
               pos_terms.push_back(std::make_pair(std::make_pair(coeff, y), ymin));
@@ -520,9 +391,9 @@ namespace crab {
               if(unbounded_ubvar)
                 goto diffcst_finish;
               unbounded_ubvar = y;
-              unbounded_ubcoeff = -(ntov::ntov(coeff));
+              unbounded_ubcoeff = -coeff;
             } else {
-              Wt ymax(ntov::ntov(*(y_ub.number())));
+              Wt ymax(ntow::convert(*(y_ub.number())));
               exp_ub -= ymax*coeff;
               neg_terms.push_back(std::make_pair(std::make_pair(-coeff, y), ymax));
             }
@@ -642,7 +513,7 @@ namespace crab {
 	  typename graph_t::mut_val_ref_t w;
 	  if(new_i.lb().is_finite()) {
 	    // strenghten lb
-	    Wt lb_val = ntov::ntov(-(*(new_i.lb().number())));
+	    Wt lb_val = ntow::convert(-(*(new_i.lb().number())));
 	    if(g.lookup(v, 0, &w) && lb_val < w) {
 	      g.set_edge(v, lb_val, 0);
 	      if(!repair_potential(v, 0)) {
@@ -664,7 +535,7 @@ namespace crab {
 	  }
 	  if(new_i.ub().is_finite()) {	    
 	    // strengthen ub
-	    Wt ub_val = ntov::ntov(*(new_i.ub().number()));
+	    Wt ub_val = ntow::convert(*(new_i.ub().number()));
 	    if(g.lookup(0, v, &w) && (ub_val < w)) {
 	      g.set_edge(0, ub_val, v);
 	      if(!repair_potential(0, v)) {
@@ -1394,10 +1265,10 @@ namespace crab {
               }
               if(x_int.lb().is_finite())
                 delta.push_back(std::make_pair(std::make_pair(v,0),
-					       ntov::ntov(-(*(x_int.lb().number())))));
+					       ntow::convert(-(*(x_int.lb().number())))));
               if(x_int.ub().is_finite())
                 delta.push_back(std::make_pair(std::make_pair(0,v),
-					       ntov::ntov(*(x_int.ub().number()))));
+					       ntow::convert(*(x_int.ub().number()))));
                  
               GrOps::apply_delta(g, delta);
               delta.clear();
@@ -1424,10 +1295,10 @@ namespace crab {
 
               if(x_int.lb().is_finite())
                 cst_edges.push_back(std::make_pair(std::make_pair(v,0),
-						   ntov::ntov(-(*(x_int.lb().number())))));
+						   ntow::convert(-(*(x_int.lb().number())))));
               if(x_int.ub().is_finite())
                 cst_edges.push_back(std::make_pair(std::make_pair(0,v),
-						   ntov::ntov(*(x_int.ub().number()))));
+						   ntow::convert(*(x_int.ub().number()))));
 
               for(auto diff : diffs_lb)
               {
@@ -1677,14 +1548,14 @@ namespace crab {
         vert_id v = get_vert(x);
         if(intv.ub().is_finite())
         {
-          Wt ub = ntov::ntov(*(intv.ub().number()));
+          Wt ub = ntow::convert(*(intv.ub().number()));
           potential[v] = potential[0] + ub;
           g.set_edge(0, ub, v);
           close_over_edge(0, v);
         }
         if(intv.lb().is_finite())
         {
-          Wt lb = ntov::ntov(*(intv.lb().number()));
+          Wt lb = ntow::convert(*(intv.lb().number()));
           potential[v] = potential[0] + lb;
           g.set_edge(v, -lb, 0);
           close_over_edge(v, 0);
@@ -1973,8 +1844,8 @@ namespace crab {
                 // We give priority to equalities since some domains
                 // might not understand inequalities
                 if (g_excl.elem(s, d) && g_excl.elem(d, s) &&
-                    g_excl.edge_val(s, d) == 0 &&
-		    g_excl.edge_val(d, s) == 0) {
+                    g_excl.edge_val(s, d) == Wt(0) &&
+		    g_excl.edge_val(d, s) == Wt(0)) {
                   linear_constraint_t cst(linear_expression_t(vs) == vd);
                   csts += cst;
                 } else {
@@ -2121,7 +1992,7 @@ namespace crab {
     
     #if 1
     template<class Number, class VariableName,
-	       class Params = SpDBM_impl::DefaultParams<Number>>
+	       class Params = DBM_impl::DefaultParams<Number>>
     using SparseDBM = SparseDBM_<Number,VariableName,Params>;    
     #else
 
@@ -2133,7 +2004,7 @@ namespace crab {
     
     // Quick wrapper which uses shared references with copy-on-write.
     template<class Number, class VariableName,
-	     class Params = SpDBM_impl::DefaultParams<Number>>
+	     class Params = DBM_impl::DefaultParams<Number>>
     class SparseDBM final:
       public abstract_domain<SparseDBM<Number,VariableName,Params>> {
       typedef SparseDBM<Number, VariableName, Params> DBM_t;

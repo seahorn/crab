@@ -52,8 +52,8 @@
 #include <crab/common/types.hpp>
 #include <crab/common/debug.hpp>
 #include <crab/common/stats.hpp>
-#include <crab/common/bignums.hpp>
-#include <crab/common/wrapint.hpp>
+#include <crab/numbers/bignums.hpp>
+#include <crab/numbers/wrapint.hpp>
 #include <crab/domains/linear_constraints.hpp>
 
 namespace ikos {

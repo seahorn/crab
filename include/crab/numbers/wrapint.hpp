@@ -8,7 +8,7 @@
 #include <sstream>
 #include <boost/functional/hash.hpp>
 #include <crab/common/types.hpp>
-#include <crab/common/bignums.hpp>
+#include <crab/numbers/bignums.hpp>
 
 namespace crab {
 

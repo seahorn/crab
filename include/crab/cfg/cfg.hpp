@@ -48,7 +48,7 @@
 #include <boost/unordered_map.hpp>
 
 #include <crab/common/types.hpp>
-#include <crab/common/bignums.hpp>
+#include <crab/numbers/bignums.hpp>
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/domains/interval.hpp>
 #include <crab/domains/discrete_domains.hpp>

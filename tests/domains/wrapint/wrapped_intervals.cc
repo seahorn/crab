@@ -1,6 +1,6 @@
 #include <crab/config.h>
 #include <crab/common/types.hpp>
-#include <crab/common/wrapint.hpp>
+#include <crab/numbers/wrapint.hpp>
 #include <crab/domains/wrapped_interval_domain.hpp>
 #include "../../program_options.hpp"
 

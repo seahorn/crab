@@ -7,7 +7,7 @@
  ** P.J.Stuckey published in APLAS'12.
  **/
 
-#include <crab/common/wrapint.hpp>
+#include <crab/numbers/wrapint.hpp>
 #include <crab/common/types.hpp>
 #include <crab/common/stats.hpp>
 #include <crab/domains/abstract_domain.hpp>

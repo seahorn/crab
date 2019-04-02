@@ -37,10 +37,10 @@ namespace crab {
     // Numerical domains over integers
     typedef interval_domain<ikos::z_number,varname_t> z_interval_domain_t;
     typedef numerical_congruence_domain<z_interval_domain_t> z_ric_domain_t;
-    typedef SpDBM_impl::DefaultParams<ikos::z_number,SpDBM_impl::GraphRep::adapt_ss> z_SparseDBMGraph;
-    typedef SparseDBM<ikos::z_number,varname_t,z_SparseDBMGraph> z_dbm_domain_t;
-    typedef SDBM_impl::DefaultParams<ikos::z_number, SDBM_impl::GraphRep::adapt_ss> z_SplitDBMGraph;
-    typedef SplitDBM<ikos::z_number,varname_t,z_SplitDBMGraph> z_sdbm_domain_t;
+    typedef DBM_impl::DefaultParams<ikos::z_number,DBM_impl::GraphRep::adapt_ss> z_SparseGraph;
+    typedef SparseDBM<ikos::z_number,varname_t,z_SparseGraph> z_dbm_domain_t;
+    typedef DBM_impl::DefaultParams<ikos::z_number,DBM_impl::GraphRep::adapt_ss> z_SplitGraph;
+    typedef SplitDBM<ikos::z_number,varname_t,z_SplitGraph> z_sdbm_domain_t;
     typedef split_octagons_impl::DefaultParams<ikos::z_number,
 					       split_octagons_impl::GraphRep::adapt_ss> z_SplitOctGraph;
     typedef split_oct_domain<ikos::z_number,varname_t,z_SplitOctGraph> z_soct_domain_t;
