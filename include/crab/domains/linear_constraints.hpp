@@ -316,6 +316,23 @@ namespace ikos {
       }
       return variables;
     }
+    
+    bool is_well_typed() const {
+      typename variable_t::bitwidth_t b;
+      crab::variable_type type;
+      for (iterator it = begin(), et = end(); it != et; ++it) {
+	variable_t v = it->second;
+	if (it == begin()) {
+	  b = v.get_bitwidth();
+	  type = v.get_type();
+	} else {
+	  if (v.get_bitwidth() != b || v.get_type() != type) {
+	    return false;
+	  }
+	}
+      }
+      return true;
+    }
 
     boost::optional<variable_t> get_variable() const {
       if (this->is_constant())
@@ -679,6 +696,10 @@ namespace ikos {
       return this->_expr.variables();
     }
 
+    bool is_well_typed() const {
+      return _expr.is_well_typed();
+    }
+    
     linear_constraint_t negate() const;
 
     template<typename VarMap>
