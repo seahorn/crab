@@ -56,11 +56,11 @@ namespace crab {
 	return res + std::to_string(_id);
       }
       
-      virtual void write(crab::crab_os& o) = 0;
+      virtual void write(crab::crab_os& o) const = 0;
     };
 
     template<typename CFG>
-    crab_os& operator<<(crab::crab_os&o, assumption<CFG> &a){
+    inline crab_os& operator<<(crab::crab_os&o, const assumption<CFG> &a){
       a.write(o);
       return o;
     }
@@ -95,7 +95,7 @@ namespace crab {
       overflow_assumption (unsigned id, const statement_t *s)
 	: base_type(id, s, _get_vars(s)) {}
       
-      virtual void write (crab::crab_os& o) override {
+      virtual void write (crab::crab_os& o) const override {
 	o << "assume NotOverflow(" << this->_vars << ")" << " as " << this->get_id_str();
       }
     };
@@ -123,7 +123,7 @@ namespace crab {
 	  max_assumptions_per_assertion(n2),
 	  avg_assumptions_per_assertion(n3) {}
 
-	void write(crab::crab_os&o) {
+	void write(crab::crab_os&o) const {
 	  o << "BRUNCH_STAT Assertions " << num_assertions << "\n";
 	  o << "BRUNCH_STAT Assumptions "
 	    << avg_assumptions_per_assertion * num_assertions << "\n";	  
@@ -134,7 +134,7 @@ namespace crab {
 	}
 
 	friend crab_os& operator<<(crab::crab_os&o,
-				   typename assumption_analysis<CFG>::stats_t &stats){
+				   const typename assumption_analysis<CFG>::stats_t &stats){
 	  stats.write(o);
 	  return o;
 	}
@@ -249,7 +249,7 @@ namespace crab {
 		       avg_assumptions_per_assertion);
       }
       
-      void write (crab::crab_os &o)  {
+      void write (crab::crab_os &o) const {
 	// We order the assertions so that we always print them in the same order.
 	std::vector<const assert_t*> assertions;
 	assertions.reserve(m_assumption_map.size());
@@ -267,7 +267,9 @@ namespace crab {
 	o << "******* UNJUSTIFIED ASSUMPTION ANALYSIS ********\n";
 	for (const assert_t* assertion: assertions) {
 	  o << *assertion << " with unjustified assumptions:\n";
-	  auto assumptions = m_assumption_map[assertion];
+	  auto it = m_assumption_map.find(assertion);
+	  assert(it != m_assumption_map.end());
+	  auto assumptions = it->second;
 	  for (assumption_ptr a: assumptions) {
 	    o << "\t" << *a << " in " << *(a->get_statement()) << "\n";
 	  }
@@ -286,7 +288,7 @@ namespace crab {
     };
 
     template<typename CFG>
-    crab_os& operator<<(crab::crab_os&o, assumption_analysis<CFG> &aa){
+    inline crab_os& operator<<(crab::crab_os&o, const assumption_analysis<CFG> &aa){
       aa.write(o);
       return o;
     }

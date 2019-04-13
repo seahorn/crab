@@ -40,7 +40,7 @@ namespace crab {
 
     // A wrapper to an assert statement 
     template<typename CFG>
-    struct assert_wrapper: public ikos::writeable {
+    struct assert_wrapper {
       
       typedef typename statement_visitor<typename CFG::number_t,
 					 typename CFG::varname_t>::assert_t assert_t;
@@ -73,8 +73,14 @@ namespace crab {
       index_t index() const { return id;}
       bool operator==(this_type o) const { return id == o.id;}
       bool operator< (this_type o) const { return id < o.id; }       
-      void write (crab::crab_os& o) { o << "\"" << *a << "\""; }
+      void write (crab::crab_os& o) const { o << "\"" << *a << "\""; }
     };
+
+    template<typename CFG>
+    inline crab::crab_os& operator<<(crab::crab_os& o, const assert_wrapper<CFG>& w) {
+      w.write(o);
+      return o;
+    }
 
     template<typename CFG> class assertion_crawler;
     
@@ -533,7 +539,7 @@ namespace crab {
        }
        
        // return the dataflow facts that hold at the exit of block bb
-       separate_domain_t& get_assertions(basic_block_label_t bb) {
+       const separate_domain_t& get_assertions(basic_block_label_t bb) {
 	 auto it = m_map.find(bb);
 	 if (it == m_map.end())
 	   CRAB_ERROR("Basic block ", bb, " not found");
@@ -566,7 +572,7 @@ namespace crab {
 	 }
        }
 
-       void write (crab_os &o) {
+       void write (crab_os &o) const {
 	 o << "Assertion Crawler Analysis \n";
 
 	 // Print invariants in DFS to enforce a fixed order
@@ -577,8 +583,10 @@ namespace crab {
 	 while (!worklist.empty()) {
 	   auto cur_label = worklist.back();
 	   worklist.pop_back();
-	   
-	   auto inv = m_map[cur_label];
+
+	   auto it = m_map.find(cur_label);
+	   assert(it != m_map.end());
+	   auto inv = it->second;
 	   crab::outs() << crab::cfg_impl::get_label_str (cur_label) << "=" << inv << "\n";
 	   
 	   auto const &cur_node = this->m_cfg.get_node (cur_label);
@@ -606,7 +614,7 @@ namespace crab {
      };
 
    template <typename CFG>
-   crab_os& operator<<(crab_os& o, assertion_crawler<CFG> &ac) {
+   inline crab_os& operator<<(crab_os& o, const assertion_crawler<CFG> &ac) {
      ac.write (o);
      return o;
    }

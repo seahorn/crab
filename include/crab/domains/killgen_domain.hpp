@@ -16,7 +16,7 @@ namespace domains {
 
   // A wrapper for discrete_domain (i.e,. set of Element)
   template<class Element>
-  class flat_killgen_domain: public ikos::writeable {
+  class flat_killgen_domain {
     
   private:
     
@@ -35,7 +35,7 @@ namespace domains {
   public:
     
     flat_killgen_domain(discrete_domain_t inv)
-      : ikos::writeable(), _inv(inv){ } 
+      : _inv(inv){ } 
     
     static flat_killgen_domain_t top() {
       return flat_killgen_domain(discrete_domain_t::top());
@@ -46,16 +46,16 @@ namespace domains {
     }
     
     flat_killgen_domain()
-      : ikos::writeable(), _inv(discrete_domain_t::bottom()){ }
+      : _inv(discrete_domain_t::bottom()){ }
     
     flat_killgen_domain(Element e)
-      : ikos::writeable(), _inv(e) { }
+      : _inv(e) { }
     
     flat_killgen_domain(const flat_killgen_domain_t &o)
-      : ikos::writeable(), _inv(o._inv) { } 
+      : _inv(o._inv) { } 
     
     flat_killgen_domain(flat_killgen_domain_t &&o)
-      : ikos::writeable(), _inv(std::move(o._inv)) { } 
+      : _inv(std::move(o._inv)) { } 
     
     flat_killgen_domain_t& operator=(const flat_killgen_domain_t &other) {
       if (this != &other) 
@@ -131,14 +131,20 @@ namespace domains {
       return (_inv & other._inv);
     }
     
-    void write(crab_os& o) { _inv.write(o); }
+    void write(crab_os& o) const { _inv.write(o); }
     
   };
-  
+
+  template<typename Elem>
+  inline crab_os& operator<<(crab_os& o, const flat_killgen_domain<Elem>& d) {
+    d.write(o);
+    return o;
+  }
+
   // To represent sets of pairs (Key,Value). 
   // Bottom means empty set rather than failure.
   template <typename Key, typename Value>
-  class separate_killgen_domain: public ikos::writeable {
+  class separate_killgen_domain {
     
   private:
     typedef ikos::patricia_tree<Key,Value> patricia_tree_t;
@@ -309,7 +315,7 @@ namespace domains {
       }
     }
     
-    void write(crab::crab_os& o) {
+    void write(crab::crab_os& o) const {
       if (this->is_top()) {
 	o << "{...}";
       } if (_tree.empty ()) {
@@ -333,7 +339,13 @@ namespace domains {
       }
     }
   }; // class separate_killgen_domain
-  
+
+  template<typename Key, typename Value>
+  inline crab_os& operator<<(crab_os& o, const separate_killgen_domain<Key,Value>& d) {
+    d.write(o);
+    return o;
+  }
+
 } // end namespace domains
 } // end namespace crab
   

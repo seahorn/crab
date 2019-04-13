@@ -260,11 +260,11 @@ public:
     return z_number(result);
   }
 
-  void write(crab::crab_os& o) { o << this->_n.get_str(); }
+  void write(crab::crab_os& o) const { o << this->_n.get_str(); }
 
 }; // class z_number
 
-inline crab::crab_os& operator<<(crab::crab_os& o, z_number z) {
+inline crab::crab_os& operator<<(crab::crab_os& o, const z_number& z) {
   z.write(o);
   return o;
 }
@@ -422,11 +422,11 @@ public:
     }
   }
 
-  void write(crab::crab_os& o) { o << this->_n.get_str(); }
+  void write(crab::crab_os& o) const { o << this->_n.get_str(); }
 
 }; // class q_number
 
-inline crab::crab_os& operator<<(crab::crab_os& o, q_number q) {
+inline crab::crab_os& operator<<(crab::crab_os& o, const q_number& q) {
   q.write(o);
   return o;
 }

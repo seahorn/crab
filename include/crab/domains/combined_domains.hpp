@@ -82,7 +82,6 @@ namespace crab {
       }
       
       basic_domain_product2(const basic_domain_product2_t& other): 
-          writeable(), 
           _is_bottom(other._is_bottom), 
           _first(other._first), _second(other._second) { }
       
@@ -1053,7 +1052,7 @@ namespace crab {
     *  Computer Mathematics, 1989.
     */
     template < typename Number, int typeSize = -1 >
-    class interval_congruence : public writeable {
+    class interval_congruence  {
      public:
       typedef interval_congruence< Number, typeSize > interval_congruence_t;
       
@@ -1068,9 +1067,8 @@ namespace crab {
       
      private:
       interval_congruence(bool is_bottom)
-          : writeable(),
-            _first(is_bottom ? interval_t::bottom() : interval_t::top()),
-            _second(is_bottom ? congruence_t::bottom() : congruence_t::top()) {}
+	: _first(is_bottom ? interval_t::bottom() : interval_t::top()),
+	  _second(is_bottom ? congruence_t::bottom() : congruence_t::top()) {}
       
      public:
       static interval_congruence_t top() { return interval_congruence(false); }
@@ -1214,7 +1212,7 @@ namespace crab {
         }
       }
       
-      void write(crab_os& o) {
+      void write(crab_os& o) const {
         o << "(" << this->_first << ", " << this->_second << ")";
       }
       
@@ -1319,6 +1317,13 @@ namespace crab {
                                      this->_second.AShr(x.second()));
       }
     };
+
+    template<typename Number, int typeSize>
+    inline crab::crab_os&
+    operator<<(crab::crab_os& o, const interval_congruence<Number,typeSize>& v) {
+      v.write(o);
+      return o;
+    }
 
     // Reduced product of a numerical domain with congruences.
     // It assumes that all variables have the same bitwdith which is

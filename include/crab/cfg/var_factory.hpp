@@ -109,7 +109,7 @@ namespace crab {
            bool operator==(indexed_string s) const 
            { return (_id == s._id);}
            
-           void write(crab_os& o) 
+           void write(crab_os& o) const
            { o << str(); }
            
            friend crab_os& operator<<(crab_os& o, indexed_string s) 

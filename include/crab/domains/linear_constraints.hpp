@@ -3,7 +3,8 @@
  * Data structures for the symbolic manipulation of linear constraints.
  *
  * Author: Arnaud J. Venet (arnaud.j.venet@nasa.gov)
- *
+ * Contributor: Jorge A. Navas (jorge.navas@sri.com)
+ * 
  * Notices:
  *
  * Copyright (c) 2011 United States Government as represented by the
@@ -43,35 +44,32 @@
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/container/flat_map.hpp>
-#include <boost/container/slist.hpp>
-#include <boost/iterator/iterator_facade.hpp>
+#include <boost/iterator/transform_iterator.hpp>
 #include <boost/functional/hash.hpp>
 #include <crab/common/types.hpp>
 #include <crab/domains/patricia_trees.hpp>
 
 namespace ikos {
   
-  template< typename Number, typename VariableName >
-  class linear_expression: public writeable {
+  template<typename Number, typename VariableName>
+  class linear_expression {
     
   public:
     typedef Number number_t;
     typedef VariableName varname_t;
-    typedef variable< Number, VariableName > variable_t;
-    typedef linear_expression< Number, VariableName > linear_expression_t;
-    typedef std::pair< Number, variable_t > component_t;
-    typedef patricia_tree_set< variable_t > variable_set_t;
+    typedef variable<Number, VariableName> variable_t;
+    typedef linear_expression<Number, VariableName> linear_expression_t;
+    typedef std::pair<Number, variable_t> component_t;
+    typedef patricia_tree_set<variable_t> variable_set_t;
     
   private:
-    typedef boost::container::flat_map< variable_t, Number > map_t;
-    typedef boost::shared_ptr< map_t > map_ptr;
+    typedef boost::container::flat_map<variable_t, Number> map_t;
+    typedef boost::shared_ptr<map_t> map_ptr;
     typedef typename map_t::value_type pair_t;
     
-  private:
     map_ptr _map;
     Number _cst;
     
-  private:
     linear_expression(map_ptr map, Number cst): 
         _map(map), _cst(cst) { }
     
@@ -95,42 +93,19 @@ namespace ikos {
         }
       }
     }
+
+    struct tr_value_ty:
+      public std::unary_function<typename map_t::value_type, component_t> {
+      tr_value_ty() {}
+      component_t operator()(const typename map_t::value_type &kv) const
+      { return {kv.second, kv.first}; }
+    }; 
     
    public:
-    class iterator: public boost::iterator_facade< iterator,
-                                                   component_t,
-                                                   boost::forward_traversal_tag,
-                                                   component_t> {
-      
-      friend class boost::iterator_core_access;
-      
-     private:
-      typename map_t::const_iterator _it;
-      map_ptr _m;
-      
-     public:
-      iterator(map_ptr m, bool b): _it(b ? m->begin() : m->end()), _m(m) { }
-      
-     private:
-      void increment() { 
-        ++this->_it;
-      }
-      
-      bool equal(const iterator& other) const {
-        return (this->_m == other._m && this->_it == other._it);
-      }
-      
-      component_t dereference() const {
-        if (this->_it != this->_m->end()) {
-          return component_t(this->_it->second, this->_it->first);
-        } else {
-          CRAB_ERROR("Linear expression: trying to dereference an empty iterator");
-        }
-      }
-      
-    }; // class iterator
+
+    typedef boost::transform_iterator<tr_value_ty, typename map_t::iterator> iterator;
+    typedef boost::transform_iterator<tr_value_ty, typename map_t::const_iterator> const_iterator;    
     
-  public:
     linear_expression(): 
         _map(map_ptr(new map_t)), _cst(0) { }
     
@@ -157,18 +132,26 @@ namespace ikos {
       }
       return *this;
     }
-    
-    iterator begin() const {
-      return iterator(this->_map, true);
+
+    const_iterator begin() const {
+      return boost::make_transform_iterator(_map->begin(), tr_value_ty());
     }
 
-    iterator end() const {
-      return iterator(this->_map, false);
+    const_iterator end() const {
+      return boost::make_transform_iterator(_map->end(), tr_value_ty());      
+    }
+    
+    iterator begin() {
+      return boost::make_transform_iterator(_map->begin(), tr_value_ty());
+    }
+
+    iterator end() {
+      return boost::make_transform_iterator(_map->end(), tr_value_ty());      
     }
 
     size_t hash () const {
       size_t res = 0;
-      for (iterator it=begin(), et=end (); it!=et; ++it) {
+      for (const_iterator it=begin(), et=end (); it!=et; ++it) {
         boost::hash_combine (res, std::make_pair((*it).second, (*it).first));
       }
       boost::hash_combine (res, _cst);
@@ -191,7 +174,7 @@ namespace ikos {
 	if (size() != o.size()) {
 	  return false;
 	} else {
-	  for (iterator it=begin(), jt=o.begin(), et=end (); it!=et; ++it,++jt) {
+	  for (const_iterator it=begin(), jt=o.begin(), et=end (); it!=et; ++it,++jt) {
 	    if (((*it).first != (*jt).first) || ((*it).second != (*jt).second)) {
 	      return false;
 	    }
@@ -311,7 +294,7 @@ namespace ikos {
     
     variable_set_t variables() const {
       variable_set_t variables;
-      for (iterator it = this->begin(); it != this->end(); ++it) {
+      for (const_iterator it = this->begin(); it != this->end(); ++it) {
 	variables += it->second;
       }
       return variables;
@@ -320,7 +303,7 @@ namespace ikos {
     bool is_well_typed() const {
       typename variable_t::bitwidth_t b;
       crab::variable_type type;
-      for (iterator it = begin(), et = end(); it != et; ++it) {
+      for (const_iterator it = begin(), et = end(); it != et; ++it) {
 	variable_t v = it->second;
 	if (it == begin()) {
 	  b = v.get_bitwidth();
@@ -339,7 +322,7 @@ namespace ikos {
         return boost::optional<variable_t>();
       else{
         if ((this->constant() == 0) && (this->size() == 1)){
-          typename linear_expression_t::iterator it = this->begin();
+          const_iterator it = this->begin();
           Number coeff = it->first;
           if (coeff == 1)
             return boost::optional<variable_t>(it->second);
@@ -348,8 +331,8 @@ namespace ikos {
       }
     }
     
-    void write(crab::crab_os& o) {
-      for (typename map_t::iterator it = this->_map->begin(); 
+    void write(crab::crab_os& o) const {
+      for (typename map_t::const_iterator it = this->_map->begin(); 
            it != this->_map->end(); ++it) {
         Number n = it->second;
         variable_t v = it->first;
@@ -375,160 +358,168 @@ namespace ikos {
     void dump() {
       write(crab::outs());
     }
-    
+
+ 
   }; // class linear_expression
 
+  template<typename Number, typename VariableName>
+  inline crab::crab_os&
+  operator<<(crab::crab_os& o, const linear_expression<Number, VariableName>& e) {
+    e.write(o);
+    return o;
+  }
+			  
   template<typename Number, typename VariableName>
   inline std::size_t hash_value(const linear_expression<Number,VariableName>& e) {
     return e.hash ();
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_expression< Number, VariableName > 
-  operator*(Number n, variable< Number, VariableName > x) {
-    return linear_expression< Number, VariableName >(n, x);
+  template<typename Number, typename VariableName>
+  inline linear_expression<Number, VariableName> 
+  operator*(Number n, variable<Number, VariableName> x) {
+    return linear_expression<Number, VariableName>(n, x);
   }
   
-  template< typename Number, typename VariableName >
-  inline linear_expression< Number, VariableName > 
-  operator*(int n, variable< Number, VariableName > x) {
-    return linear_expression< Number, VariableName >(Number(n), x);
+  template<typename Number, typename VariableName>
+  inline linear_expression<Number, VariableName> 
+  operator*(int n, variable<Number, VariableName> x) {
+    return linear_expression<Number, VariableName>(Number(n), x);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_expression< Number, VariableName > 
-  operator*(variable< Number, VariableName > x, Number n) {
-    return linear_expression< Number, VariableName >(n, x);
+  template<typename Number, typename VariableName>
+  inline linear_expression<Number, VariableName> 
+  operator*(variable<Number, VariableName> x, Number n) {
+    return linear_expression<Number, VariableName>(n, x);
   }
   
-  template< typename Number, typename VariableName >
-  inline linear_expression< Number, VariableName > 
-  operator*(variable< Number, VariableName > x, int n) {
-    return linear_expression< Number, VariableName >(Number(n), x);
+  template<typename Number, typename VariableName>
+  inline linear_expression<Number, VariableName> 
+  operator*(variable<Number, VariableName> x, int n) {
+    return linear_expression<Number, VariableName>(Number(n), x);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_expression< Number, VariableName > 
-  operator*(Number n, const linear_expression< Number, VariableName > &e) {
+  template<typename Number, typename VariableName>
+  inline linear_expression<Number, VariableName> 
+  operator*(Number n, const linear_expression<Number, VariableName> &e) {
     return e.operator*(n);
   }
   
-  template< typename Number, typename VariableName >
-  inline linear_expression< Number, VariableName > 
-  operator*(int n, const linear_expression< Number, VariableName > &e) {
+  template<typename Number, typename VariableName>
+  inline linear_expression<Number, VariableName> 
+  operator*(int n, const linear_expression<Number, VariableName> &e) {
     return e.operator*(n);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_expression< Number, VariableName > 
-  operator+(variable< Number, VariableName > x, Number n) {
-    return linear_expression< Number, VariableName >(x).operator+(n);
+  template<typename Number, typename VariableName>
+  inline linear_expression<Number, VariableName> 
+  operator+(variable<Number, VariableName> x, Number n) {
+    return linear_expression<Number, VariableName>(x).operator+(n);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_expression< Number, VariableName > 
-  operator+(variable< Number, VariableName > x, int n) {
-    return linear_expression< Number, VariableName >(x).operator+(n);
+  template<typename Number, typename VariableName>
+  inline linear_expression<Number, VariableName> 
+  operator+(variable<Number, VariableName> x, int n) {
+    return linear_expression<Number, VariableName>(x).operator+(n);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_expression< Number, VariableName > 
-  operator+(Number n, variable< Number, VariableName > x) {
-    return linear_expression< Number, VariableName >(x).operator+(n);
+  template<typename Number, typename VariableName>
+  inline linear_expression<Number, VariableName> 
+  operator+(Number n, variable<Number, VariableName> x) {
+    return linear_expression<Number, VariableName>(x).operator+(n);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_expression< Number, VariableName > 
-  operator+(int n, variable< Number, VariableName > x) {
-    return linear_expression< Number, VariableName >(x).operator+(n);
+  template<typename Number, typename VariableName>
+  inline linear_expression<Number, VariableName> 
+  operator+(int n, variable<Number, VariableName> x) {
+    return linear_expression<Number, VariableName>(x).operator+(n);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_expression< Number, VariableName > 
-  operator+(variable< Number, VariableName > x, 
-            variable< Number, VariableName > y) {
-    return linear_expression< Number, VariableName >(x).operator+(y);
+  template<typename Number, typename VariableName>
+  inline linear_expression<Number, VariableName> 
+  operator+(variable<Number, VariableName> x, 
+            variable<Number, VariableName> y) {
+    return linear_expression<Number, VariableName>(x).operator+(y);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_expression< Number, VariableName > 
-  operator+(Number n, const linear_expression< Number, VariableName > &e) {
+  template<typename Number, typename VariableName>
+  inline linear_expression<Number, VariableName> 
+  operator+(Number n, const linear_expression<Number, VariableName> &e) {
     return e.operator+(n);
   }
   
-  template< typename Number, typename VariableName >
-  inline linear_expression< Number, VariableName > 
-  operator+(int n, const linear_expression< Number, VariableName > &e) {
+  template<typename Number, typename VariableName>
+  inline linear_expression<Number, VariableName> 
+  operator+(int n, const linear_expression<Number, VariableName> &e) {
     return e.operator+(n);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_expression< Number, VariableName > 
-  operator+(variable< Number, VariableName > x, 
-            const linear_expression< Number, VariableName > &e) {
+  template<typename Number, typename VariableName>
+  inline linear_expression<Number, VariableName> 
+  operator+(variable<Number, VariableName> x, 
+            const linear_expression<Number, VariableName> &e) {
     return e.operator+(x);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_expression< Number, VariableName > 
-  operator-(variable< Number, VariableName > x, Number n) {
-    return linear_expression< Number, VariableName >(x).operator-(n);
+  template<typename Number, typename VariableName>
+  inline linear_expression<Number, VariableName> 
+  operator-(variable<Number, VariableName> x, Number n) {
+    return linear_expression<Number, VariableName>(x).operator-(n);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_expression< Number, VariableName > 
-  operator-(variable< Number, VariableName > x, int n) {
-    return linear_expression< Number, VariableName >(x).operator-(n);
+  template<typename Number, typename VariableName>
+  inline linear_expression<Number, VariableName> 
+  operator-(variable<Number, VariableName> x, int n) {
+    return linear_expression<Number, VariableName>(x).operator-(n);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_expression< Number, VariableName > 
-  operator-(Number n, variable< Number, VariableName > x) {
-    return linear_expression< Number, VariableName >(Number(-1), x).operator+(n);
+  template<typename Number, typename VariableName>
+  inline linear_expression<Number, VariableName> 
+  operator-(Number n, variable<Number, VariableName> x) {
+    return linear_expression<Number, VariableName>(Number(-1), x).operator+(n);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_expression< Number, VariableName > 
-  operator-(int n, variable< Number, VariableName > x) {
-    return linear_expression< Number, VariableName >(Number(-1), x).operator+(n);
+  template<typename Number, typename VariableName>
+  inline linear_expression<Number, VariableName> 
+  operator-(int n, variable<Number, VariableName> x) {
+    return linear_expression<Number, VariableName>(Number(-1), x).operator+(n);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_expression< Number, VariableName > 
-  operator-(variable< Number, VariableName > x, 
-            variable< Number, VariableName > y) {
-    return linear_expression< Number, VariableName >(x).operator-(y);
+  template<typename Number, typename VariableName>
+  inline linear_expression<Number, VariableName> 
+  operator-(variable<Number, VariableName> x, 
+            variable<Number, VariableName> y) {
+    return linear_expression<Number, VariableName>(x).operator-(y);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_expression< Number, VariableName > 
-  operator-(Number n, const linear_expression< Number, VariableName > &e) {
-    return linear_expression< Number, VariableName >(n).operator-(e);
+  template<typename Number, typename VariableName>
+  inline linear_expression<Number, VariableName> 
+  operator-(Number n, const linear_expression<Number, VariableName> &e) {
+    return linear_expression<Number, VariableName>(n).operator-(e);
   }
   
-  template< typename Number, typename VariableName >
-  inline linear_expression< Number, VariableName > 
-  operator-(int n, const linear_expression< Number, VariableName > &e) {
-    return linear_expression< Number, VariableName >(Number(n)).operator-(e);
+  template<typename Number, typename VariableName>
+  inline linear_expression<Number, VariableName> 
+  operator-(int n, const linear_expression<Number, VariableName> &e) {
+    return linear_expression<Number, VariableName>(Number(n)).operator-(e);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_expression< Number, VariableName > 
-  operator-(variable< Number, VariableName > x, 
-            const linear_expression< Number, VariableName > &e) {
-    return linear_expression< Number, VariableName >(Number(1), x).operator-(e);
+  template<typename Number, typename VariableName>
+  inline linear_expression<Number, VariableName> 
+  operator-(variable<Number, VariableName> x, 
+            const linear_expression<Number, VariableName> &e) {
+    return linear_expression<Number, VariableName>(Number(1), x).operator-(e);
   }
   
-  template< typename Number, typename VariableName >
-  class linear_constraint: public writeable {
+  template<typename Number, typename VariableName>
+  class linear_constraint {
     
   public:
     typedef Number number_t;
     typedef VariableName varname_t;
-    typedef linear_constraint< Number, VariableName > linear_constraint_t;
-    typedef variable< Number, VariableName > variable_t;
-    typedef linear_expression< Number, VariableName > linear_expression_t;
-    typedef patricia_tree_set< variable_t > variable_set_t;
+    typedef linear_constraint<Number, VariableName> linear_constraint_t;
+    typedef variable<Number, VariableName> variable_t;
+    typedef linear_expression<Number, VariableName> linear_expression_t;
+    typedef patricia_tree_set<variable_t> variable_set_t;
     typedef enum {
       EQUALITY,
       DISEQUATION,
@@ -536,6 +527,7 @@ namespace ikos {
       STRICT_INEQUALITY
     } kind_t;
     typedef typename linear_expression_t::iterator iterator;
+    typedef typename linear_expression_t::const_iterator const_iterator;    
     
   private:
     kind_t _kind;
@@ -650,14 +642,22 @@ namespace ikos {
       }
     }
     
-    iterator begin() const {
+    const_iterator begin() const {
       return this->_expr.begin();
     }
 
-    iterator end() const {
+    const_iterator end() const {
       return this->_expr.end();
     }
 
+    iterator begin() {
+      return this->_expr.begin();
+    }
+
+    iterator end() {
+      return this->_expr.end();
+    }
+    
     Number constant() const {
       return -this->_expr.constant();
     }
@@ -714,7 +714,7 @@ namespace ikos {
     }
 
     
-    void write(crab::crab_os& o) {
+    void write(crab::crab_os& o) const {
       if (this->is_contradiction()) {
         o << "false";
       } else if (this->is_tautology()) {
@@ -759,6 +759,13 @@ namespace ikos {
     }
     
   }; // class linear_constraint
+
+  template<typename Number, typename VariableName>
+  inline crab::crab_os&
+  operator<<(crab::crab_os& o, const linear_constraint<Number, VariableName>& c) {
+    c.write(o);
+    return o;
+  }
 
   namespace linear_constraint_impl{
     
@@ -846,179 +853,179 @@ namespace ikos {
     return e.hash ();
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator<=(const linear_expression< Number, VariableName > &e, Number n) {
-    return linear_constraint< Number, VariableName >
-        (e - n, linear_constraint< Number, VariableName >::INEQUALITY);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator<=(const linear_expression<Number, VariableName> &e, Number n) {
+    return linear_constraint<Number, VariableName>
+        (e - n, linear_constraint<Number, VariableName>::INEQUALITY);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator<=(const linear_expression< Number, VariableName > &e, int n) {
-    return linear_constraint< Number, VariableName >
-        (e - n, linear_constraint< Number, VariableName >::INEQUALITY);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator<=(const linear_expression<Number, VariableName> &e, int n) {
+    return linear_constraint<Number, VariableName>
+        (e - n, linear_constraint<Number, VariableName>::INEQUALITY);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator<=(Number n, const linear_expression< Number, VariableName > &e) {
-    return linear_constraint< Number, VariableName >
-        (n - e, linear_constraint< Number, VariableName >::INEQUALITY);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator<=(Number n, const linear_expression<Number, VariableName> &e) {
+    return linear_constraint<Number, VariableName>
+        (n - e, linear_constraint<Number, VariableName>::INEQUALITY);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator<=(int n, const linear_expression< Number, VariableName > &e) {
-    return linear_constraint< Number, VariableName >
-        (n - e, linear_constraint< Number, VariableName >::INEQUALITY);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator<=(int n, const linear_expression<Number, VariableName> &e) {
+    return linear_constraint<Number, VariableName>
+        (n - e, linear_constraint<Number, VariableName>::INEQUALITY);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator<=(const linear_expression< Number, VariableName > &e, 
-             variable< Number, VariableName > x) {
-    return linear_constraint< Number, VariableName >
-        (e - x, linear_constraint< Number, VariableName >::INEQUALITY);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator<=(const linear_expression<Number, VariableName> &e, 
+             variable<Number, VariableName> x) {
+    return linear_constraint<Number, VariableName>
+        (e - x, linear_constraint<Number, VariableName>::INEQUALITY);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator<=(variable< Number, VariableName > x, 
-             const linear_expression< Number, VariableName > &e) {
-    return linear_constraint< Number, VariableName >
-        (x - e, linear_constraint< Number, VariableName >::INEQUALITY);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator<=(variable<Number, VariableName> x, 
+             const linear_expression<Number, VariableName> &e) {
+    return linear_constraint<Number, VariableName>
+        (x - e, linear_constraint<Number, VariableName>::INEQUALITY);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator<=(variable< Number, VariableName > x, Number n) {
-    return linear_constraint< Number, VariableName >
-        (x - n, linear_constraint< Number, VariableName >::INEQUALITY);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator<=(variable<Number, VariableName> x, Number n) {
+    return linear_constraint<Number, VariableName>
+        (x - n, linear_constraint<Number, VariableName>::INEQUALITY);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator<=(variable< Number, VariableName > x, int n) {
-    return linear_constraint< Number, VariableName >
-        (x - n, linear_constraint< Number, VariableName >::INEQUALITY);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator<=(variable<Number, VariableName> x, int n) {
+    return linear_constraint<Number, VariableName>
+        (x - n, linear_constraint<Number, VariableName>::INEQUALITY);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator<=(Number n, variable< Number, VariableName > x) {
-    return linear_constraint< Number, VariableName >
-        (n - x, linear_constraint< Number, VariableName >::INEQUALITY);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator<=(Number n, variable<Number, VariableName> x) {
+    return linear_constraint<Number, VariableName>
+        (n - x, linear_constraint<Number, VariableName>::INEQUALITY);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator<=(int n, variable< Number, VariableName > x) {
-    return linear_constraint< Number, VariableName >
-        (n - x, linear_constraint< Number, VariableName >::INEQUALITY);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator<=(int n, variable<Number, VariableName> x) {
+    return linear_constraint<Number, VariableName>
+        (n - x, linear_constraint<Number, VariableName>::INEQUALITY);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator<=(variable< Number, VariableName > x, variable< Number, VariableName > y) {
-    return linear_constraint< Number, VariableName >
-        (x - y, linear_constraint< Number, VariableName >::INEQUALITY);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator<=(variable<Number, VariableName> x, variable<Number, VariableName> y) {
+    return linear_constraint<Number, VariableName>
+        (x - y, linear_constraint<Number, VariableName>::INEQUALITY);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator<=(const linear_expression< Number, VariableName >& e1, 
-             const linear_expression< Number, VariableName >& e2) {
-    return linear_constraint< Number, VariableName >
-        (e1 - e2, linear_constraint< Number, VariableName >::INEQUALITY);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator<=(const linear_expression<Number, VariableName>& e1, 
+             const linear_expression<Number, VariableName>& e2) {
+    return linear_constraint<Number, VariableName>
+        (e1 - e2, linear_constraint<Number, VariableName>::INEQUALITY);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator>=(const linear_expression< Number, VariableName > &e, Number n) {
-    return linear_constraint< Number, VariableName >
-        (n - e, linear_constraint< Number, VariableName >::INEQUALITY);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator>=(const linear_expression<Number, VariableName> &e, Number n) {
+    return linear_constraint<Number, VariableName>
+        (n - e, linear_constraint<Number, VariableName>::INEQUALITY);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator>=(const linear_expression< Number, VariableName > &e, int n) {
-    return linear_constraint< Number, VariableName >
-        (n - e, linear_constraint< Number, VariableName >::INEQUALITY);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator>=(const linear_expression<Number, VariableName> &e, int n) {
+    return linear_constraint<Number, VariableName>
+        (n - e, linear_constraint<Number, VariableName>::INEQUALITY);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator>=(Number n, const linear_expression< Number, VariableName > &e) {
-    return linear_constraint< Number, VariableName >
-        (e - n, linear_constraint< Number, VariableName >::INEQUALITY);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator>=(Number n, const linear_expression<Number, VariableName> &e) {
+    return linear_constraint<Number, VariableName>
+        (e - n, linear_constraint<Number, VariableName>::INEQUALITY);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator>=(int n, const linear_expression< Number, VariableName > &e) {
-    return linear_constraint< Number, VariableName >
-        (e - n, linear_constraint< Number, VariableName >::INEQUALITY);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator>=(int n, const linear_expression<Number, VariableName> &e) {
+    return linear_constraint<Number, VariableName>
+        (e - n, linear_constraint<Number, VariableName>::INEQUALITY);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator>=(const linear_expression< Number, VariableName > &e, 
-             variable< Number, VariableName > x) {
-    return linear_constraint< Number, VariableName >
-        (x - e, linear_constraint< Number, VariableName >::INEQUALITY);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator>=(const linear_expression<Number, VariableName> &e, 
+             variable<Number, VariableName> x) {
+    return linear_constraint<Number, VariableName>
+        (x - e, linear_constraint<Number, VariableName>::INEQUALITY);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator>=(variable< Number, VariableName > x,
-             const linear_expression< Number, VariableName > &e) {
-    return linear_constraint< Number, VariableName >
-        (e - x, linear_constraint< Number, VariableName >::INEQUALITY);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator>=(variable<Number, VariableName> x,
+             const linear_expression<Number, VariableName> &e) {
+    return linear_constraint<Number, VariableName>
+        (e - x, linear_constraint<Number, VariableName>::INEQUALITY);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator>=(variable< Number, VariableName > x, Number n) {
-    return linear_constraint< Number, VariableName >
-        (n - x, linear_constraint< Number, VariableName >::INEQUALITY);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator>=(variable<Number, VariableName> x, Number n) {
+    return linear_constraint<Number, VariableName>
+        (n - x, linear_constraint<Number, VariableName>::INEQUALITY);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator>=(variable< Number, VariableName > x, int n) {
-    return linear_constraint< Number, VariableName >
-        (n - x, linear_constraint< Number, VariableName >::INEQUALITY);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator>=(variable<Number, VariableName> x, int n) {
+    return linear_constraint<Number, VariableName>
+        (n - x, linear_constraint<Number, VariableName>::INEQUALITY);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator>=(Number n, variable< Number, VariableName > x) {
-    return linear_constraint< Number, VariableName >
-        (x - n, linear_constraint< Number, VariableName >::INEQUALITY);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator>=(Number n, variable<Number, VariableName> x) {
+    return linear_constraint<Number, VariableName>
+        (x - n, linear_constraint<Number, VariableName>::INEQUALITY);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator>=(int n, variable< Number, VariableName > x) {
-    return linear_constraint< Number, VariableName >
-        (x - n, linear_constraint< Number, VariableName >::INEQUALITY);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator>=(int n, variable<Number, VariableName> x) {
+    return linear_constraint<Number, VariableName>
+        (x - n, linear_constraint<Number, VariableName>::INEQUALITY);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator>=(variable< Number, VariableName > x, 
-             variable< Number, VariableName > y) {
-    return linear_constraint< Number, VariableName >
-        (y - x, linear_constraint< Number, VariableName >::INEQUALITY);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator>=(variable<Number, VariableName> x, 
+             variable<Number, VariableName> y) {
+    return linear_constraint<Number, VariableName>
+        (y - x, linear_constraint<Number, VariableName>::INEQUALITY);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator>=(const linear_expression< Number, VariableName > &e1, 
-             const linear_expression< Number, VariableName > &e2) {
-    return linear_constraint< Number, VariableName >
-        (e2 - e1, linear_constraint< Number, VariableName >::INEQUALITY);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator>=(const linear_expression<Number, VariableName> &e1, 
+             const linear_expression<Number, VariableName> &e2) {
+    return linear_constraint<Number, VariableName>
+        (e2 - e1, linear_constraint<Number, VariableName>::INEQUALITY);
   }
 
   template<typename Number, typename VariableName>
@@ -1196,198 +1203,199 @@ namespace ikos {
       (e2 - e1, linear_constraint<Number, VariableName>::STRICT_INEQUALITY);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator==(const linear_expression< Number, VariableName > &e, Number n) {
-    return linear_constraint< Number, VariableName >
-        (e - n, linear_constraint< Number, VariableName >::EQUALITY);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator==(const linear_expression<Number, VariableName> &e, Number n) {
+    return linear_constraint<Number, VariableName>
+        (e - n, linear_constraint<Number, VariableName>::EQUALITY);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator==(const linear_expression< Number, VariableName > &e, int n) {
-    return linear_constraint< Number, VariableName >
-        (e - n, linear_constraint< Number, VariableName >::EQUALITY);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator==(const linear_expression<Number, VariableName> &e, int n) {
+    return linear_constraint<Number, VariableName>
+        (e - n, linear_constraint<Number, VariableName>::EQUALITY);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator==(Number n, const linear_expression< Number, VariableName > &e) {
-    return linear_constraint< Number, VariableName >
-        (e - n, linear_constraint< Number, VariableName >::EQUALITY);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator==(Number n, const linear_expression<Number, VariableName> &e) {
+    return linear_constraint<Number, VariableName>
+        (e - n, linear_constraint<Number, VariableName>::EQUALITY);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator==(int n, const linear_expression< Number, VariableName > &e) {
-    return linear_constraint< Number, VariableName >
-        (e - n, linear_constraint< Number, VariableName >::EQUALITY);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator==(int n, const linear_expression<Number, VariableName> &e) {
+    return linear_constraint<Number, VariableName>
+        (e - n, linear_constraint<Number, VariableName>::EQUALITY);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator==(const linear_expression< Number, VariableName > &e, 
-             variable< Number, VariableName > x) {
-    return linear_constraint< Number, VariableName >
-        (e - x, linear_constraint< Number, VariableName >::EQUALITY);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator==(const linear_expression<Number, VariableName> &e, 
+             variable<Number, VariableName> x) {
+    return linear_constraint<Number, VariableName>
+        (e - x, linear_constraint<Number, VariableName>::EQUALITY);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator==(variable< Number, VariableName > x, 
-             const linear_expression< Number, VariableName > &e) {
-    return linear_constraint< Number, VariableName >
-        (e - x, linear_constraint< Number, VariableName >::EQUALITY);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator==(variable<Number, VariableName> x, 
+             const linear_expression<Number, VariableName> &e) {
+    return linear_constraint<Number, VariableName>
+        (e - x, linear_constraint<Number, VariableName>::EQUALITY);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator==(variable< Number, VariableName > x, Number n) {
-    return linear_constraint< Number, VariableName >
-        (x - n, linear_constraint< Number, VariableName >::EQUALITY);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator==(variable<Number, VariableName> x, Number n) {
+    return linear_constraint<Number, VariableName>
+        (x - n, linear_constraint<Number, VariableName>::EQUALITY);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator==(variable< Number, VariableName > x, int n) {
-    return linear_constraint< Number, VariableName >
-        (x - n, linear_constraint< Number, VariableName >::EQUALITY);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator==(variable<Number, VariableName> x, int n) {
+    return linear_constraint<Number, VariableName>
+        (x - n, linear_constraint<Number, VariableName>::EQUALITY);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator==(Number n, variable< Number, VariableName > x) {
-    return linear_constraint< Number, VariableName >
-        (x - n, linear_constraint< Number, VariableName >::EQUALITY);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator==(Number n, variable<Number, VariableName> x) {
+    return linear_constraint<Number, VariableName>
+        (x - n, linear_constraint<Number, VariableName>::EQUALITY);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator==(int n, variable< Number, VariableName > x) {
-    return linear_constraint< Number, VariableName >
-        (x - n, linear_constraint< Number, VariableName >::EQUALITY);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator==(int n, variable<Number, VariableName> x) {
+    return linear_constraint<Number, VariableName>
+        (x - n, linear_constraint<Number, VariableName>::EQUALITY);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator==(variable< Number, VariableName > x, 
-             variable< Number, VariableName > y) {
-    return linear_constraint< Number, VariableName >
-        (x - y, linear_constraint< Number, VariableName >::EQUALITY);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator==(variable<Number, VariableName> x, 
+             variable<Number, VariableName> y) {
+    return linear_constraint<Number, VariableName>
+        (x - y, linear_constraint<Number, VariableName>::EQUALITY);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator==(const linear_expression< Number, VariableName > &e1, 
-             const linear_expression< Number, VariableName > &e2) {
-    return linear_constraint< Number, VariableName >
-        (e1 - e2, linear_constraint< Number, VariableName >::EQUALITY);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator==(const linear_expression<Number, VariableName> &e1, 
+             const linear_expression<Number, VariableName> &e2) {
+    return linear_constraint<Number, VariableName>
+        (e1 - e2, linear_constraint<Number, VariableName>::EQUALITY);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator!=(const linear_expression< Number, VariableName > &e, Number n) {
-    return linear_constraint< Number, VariableName >
-        (e - n, linear_constraint< Number, VariableName >::DISEQUATION);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator!=(const linear_expression<Number, VariableName> &e, Number n) {
+    return linear_constraint<Number, VariableName>
+        (e - n, linear_constraint<Number, VariableName>::DISEQUATION);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator!=(const linear_expression< Number, VariableName > &e, int n) {
-    return linear_constraint< Number, VariableName >
-        (e - n, linear_constraint< Number, VariableName >::DISEQUATION);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator!=(const linear_expression<Number, VariableName> &e, int n) {
+    return linear_constraint<Number, VariableName>
+        (e - n, linear_constraint<Number, VariableName>::DISEQUATION);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator!=(Number n, const linear_expression< Number, VariableName > &e) {
-    return linear_constraint< Number, VariableName >
-        (e - n, linear_constraint< Number, VariableName >::DISEQUATION);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator!=(Number n, const linear_expression<Number, VariableName> &e) {
+    return linear_constraint<Number, VariableName>
+        (e - n, linear_constraint<Number, VariableName>::DISEQUATION);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator!=(int n, const linear_expression< Number, VariableName > &e) {
-    return linear_constraint< Number, VariableName >
-        (e - n, linear_constraint< Number, VariableName >::DISEQUATION);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator!=(int n, const linear_expression<Number, VariableName> &e) {
+    return linear_constraint<Number, VariableName>
+        (e - n, linear_constraint<Number, VariableName>::DISEQUATION);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator!=(const linear_expression< Number, VariableName > &e, 
-             variable< Number, VariableName > x) {
-    return linear_constraint< Number, VariableName >
-        (e - x, linear_constraint< Number, VariableName >::DISEQUATION);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator!=(const linear_expression<Number, VariableName> &e, 
+             variable<Number, VariableName> x) {
+    return linear_constraint<Number, VariableName>
+        (e - x, linear_constraint<Number, VariableName>::DISEQUATION);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator!=(variable< Number, VariableName > x, 
-             const linear_expression< Number, VariableName > &e) {
-    return linear_constraint< Number, VariableName >
-        (e - x, linear_constraint< Number, VariableName >::DISEQUATION);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator!=(variable<Number, VariableName> x, 
+             const linear_expression<Number, VariableName> &e) {
+    return linear_constraint<Number, VariableName>
+        (e - x, linear_constraint<Number, VariableName>::DISEQUATION);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator!=(variable< Number, VariableName > x, Number n) {
-    return linear_constraint< Number, VariableName >
-        (x - n, linear_constraint< Number, VariableName >::DISEQUATION);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator!=(variable<Number, VariableName> x, Number n) {
+    return linear_constraint<Number, VariableName>
+        (x - n, linear_constraint<Number, VariableName>::DISEQUATION);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator!=(variable< Number, VariableName > x, int n) {
-    return linear_constraint< Number, VariableName >
-        (x - n, linear_constraint< Number, VariableName >::DISEQUATION);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator!=(variable<Number, VariableName> x, int n) {
+    return linear_constraint<Number, VariableName>
+        (x - n, linear_constraint<Number, VariableName>::DISEQUATION);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator!=(Number n, variable< Number, VariableName > x) {
-    return linear_constraint< Number, VariableName >
-        (x - n, linear_constraint< Number, VariableName >::DISEQUATION);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator!=(Number n, variable<Number, VariableName> x) {
+    return linear_constraint<Number, VariableName>
+        (x - n, linear_constraint<Number, VariableName>::DISEQUATION);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator!=(int n, variable< Number, VariableName > x) {
-    return linear_constraint< Number, VariableName >
-        (x - n, linear_constraint< Number, VariableName >::DISEQUATION);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator!=(int n, variable<Number, VariableName> x) {
+    return linear_constraint<Number, VariableName>
+        (x - n, linear_constraint<Number, VariableName>::DISEQUATION);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator!=(variable< Number, VariableName > x, 
-             variable< Number, VariableName > y) {
-    return linear_constraint< Number, VariableName >
-        (x - y, linear_constraint< Number, VariableName >::DISEQUATION);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator!=(variable<Number, VariableName> x, 
+             variable<Number, VariableName> y) {
+    return linear_constraint<Number, VariableName>
+        (x - y, linear_constraint<Number, VariableName>::DISEQUATION);
   }
 
-  template< typename Number, typename VariableName >
-  inline linear_constraint< Number, VariableName > 
-  operator!=(const linear_expression< Number, VariableName > &e1, 
-             const linear_expression< Number, VariableName > &e2) {
-    return linear_constraint< Number, VariableName >
-        (e1 - e2, linear_constraint< Number, VariableName >::DISEQUATION);
+  template<typename Number, typename VariableName>
+  inline linear_constraint<Number, VariableName> 
+  operator!=(const linear_expression<Number, VariableName> &e1, 
+             const linear_expression<Number, VariableName> &e2) {
+    return linear_constraint<Number, VariableName>
+        (e1 - e2, linear_constraint<Number, VariableName>::DISEQUATION);
   }
 
-  template< typename Number, typename VariableName >
-  class linear_constraint_system: public writeable {
+  template<typename Number, typename VariableName>
+  class linear_constraint_system {
 
   public:
     typedef Number number_t;
     typedef VariableName varname_t;
-    typedef linear_constraint< Number, VariableName > linear_constraint_t;
-    typedef linear_constraint_system< Number, VariableName > linear_constraint_system_t;
-    typedef variable< Number, VariableName > variable_t;
-    typedef patricia_tree_set< variable_t > variable_set_t;
+    typedef linear_constraint<Number, VariableName> linear_constraint_t;
+    typedef linear_constraint_system<Number, VariableName> linear_constraint_system_t;
+    typedef variable<Number, VariableName> variable_t;
+    typedef patricia_tree_set<variable_t> variable_set_t;
 
   private:
     typedef std::vector<linear_constraint_t> cst_collection_t;
 
   public:
-    typedef typename cst_collection_t::const_iterator iterator;
+    typedef typename cst_collection_t::iterator iterator;
+    typedef typename cst_collection_t::const_iterator const_iterator;
 
   private:
     cst_collection_t _csts;
@@ -1435,10 +1443,14 @@ namespace ikos {
       return r;
     }
 
-    iterator begin() const { return _csts.begin(); }
+    const_iterator begin() const { return _csts.begin(); }
 
-    iterator end() const { return _csts.end(); }
+    const_iterator end() const { return _csts.end(); }
 
+    iterator begin() { return _csts.begin(); }
+
+    iterator end() { return _csts.end(); }
+    
     variable_set_t variables() const {
       variable_set_t variables;
       for (auto c: *this)
@@ -1468,9 +1480,9 @@ namespace ikos {
     
     std::size_t size() const { return _csts.size(); }
         
-    void write(crab::crab_os& o) {
+    void write(crab::crab_os& o) const {
       o << "{";
-      for (iterator it = this->begin(); it != this->end();) {
+      for (const_iterator it = this->begin(); it != this->end();) {
         auto c = *it;
         o << c;
         ++it;
@@ -1488,10 +1500,16 @@ namespace ikos {
     
   }; // class linear_constraint_system
 
+  template<typename Number, typename VariableName>
+  inline crab::crab_os& operator<<(crab::crab_os& o,
+				   const linear_constraint_system<Number, VariableName>& sys) {
+    sys.write(o);
+    return o;
+  }
 
   // This class contains a disjunction of linear constraints (i.e., DNF form)
-  template< typename Number, typename VariableName >
-  class disjunctive_linear_constraint_system: public writeable {
+  template<typename Number, typename VariableName>
+  class disjunctive_linear_constraint_system {
 
   public:
     typedef Number number_t;
@@ -1506,7 +1524,8 @@ namespace ikos {
     bool _is_false;
 
   public:
-    typedef typename cst_collection_t::const_iterator iterator;
+    typedef typename cst_collection_t::iterator iterator;
+    typedef typename cst_collection_t::const_iterator const_iterator;    
 
     disjunctive_linear_constraint_system(bool is_false = false)
       : _is_false (is_false) {}
@@ -1588,22 +1607,34 @@ namespace ikos {
     }
 
     // To enumerate all the conjunctions
-    iterator begin() const {      
+    const_iterator begin() const {      
       if (is_false ())
 	CRAB_ERROR("Disjunctive Linear constraint: trying to call begin() when false");
       return _csts.begin();
     }
 
-    iterator end() const {
+    const_iterator end() const {
       if (is_false ())
 	CRAB_ERROR("Disjunctive Linear constraint: trying to call end() when false");      
       return _csts.end();
     }
 
+    iterator begin() {      
+      if (is_false ())
+	CRAB_ERROR("Disjunctive Linear constraint: trying to call begin() when false");
+      return _csts.begin();
+    }
+
+    iterator end() {
+      if (is_false ())
+	CRAB_ERROR("Disjunctive Linear constraint: trying to call end() when false");      
+      return _csts.end();
+    }
+    
     // Return the number of conjunctions
     std::size_t size() const { return _csts.size(); }
         
-    void write(crab::crab_os& o) {
+    void write(crab::crab_os& o) const {
       if (is_false ()) {
 	o << "_|_";
       } else if (is_true()) {
@@ -1612,7 +1643,7 @@ namespace ikos {
 	o << _csts[0];
       } else {
 	assert (size () > 1);
-	for (iterator it = this->begin(); it != this->end();) {
+	for (const_iterator it = this->begin(); it != this->end();) {
 	  auto c = *it;
 	  o << c;
 	  ++it;
@@ -1622,7 +1653,14 @@ namespace ikos {
 	}
       }
     }
-  }; 
-  
+  };
+
+  template<typename Number, typename VariableName>
+  inline crab::crab_os& operator<<(crab::crab_os& o,
+			const disjunctive_linear_constraint_system<Number, VariableName>& sys) {
+    sys.write(o);
+    return o;
+  }
+
 } // namespace ikos
 

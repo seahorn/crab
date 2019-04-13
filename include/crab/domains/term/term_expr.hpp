@@ -23,20 +23,28 @@ namespace crab {
       enum term_kind { TERM_CONST, TERM_VAR, TERM_APP };
      
       template<class Num, class Ftor>
-      class term : public writeable {
+      class term {
        public:
         typedef term<Num, Ftor> term_t;
         typedef std::shared_ptr<term_t> term_ptr;
-        
+
+	virtual ~term() {}
+	
         virtual term_kind kind(void) = 0;
         
         bool operator<(term_t& other);
         
-        virtual void write(crab_os& o) = 0;
+        virtual void write(crab_os& o) const = 0;
 
         int depth;
       };
-   
+
+      template<class Num, class Ftor>
+      inline crab::crab_os& operator<<(crab::crab_os& o, const term<Num, Ftor>& t) {
+	t.write(o);
+	return o;
+      }
+ 
       template<class Num, class Ftor>
       class term_ref {
        public:
@@ -68,8 +76,7 @@ namespace crab {
         { }
         term_kind kind(void) { return TERM_CONST; }
         
-        void write(crab_os& o)
-        {
+        void write(crab_os& o) const {
           o << "c(" << val << ")";
         }
         Num val;
@@ -82,8 +89,7 @@ namespace crab {
             : var(_var)
         { }
         term_kind kind(void) { return TERM_VAR; }
-        void write(crab_os& o)
-        {
+        void write(crab_os& o) const {
           o << "v(" << var << ")";
         }
         var_id var;
@@ -96,13 +102,11 @@ namespace crab {
             : ftor(_f), args(_args)
         { }
         term_kind kind(void) { return TERM_APP; }
-        void write(crab_os& o)
-        {
+        void write(crab_os& o) const {
           //o << "<op>(";
           o << ftor << "(";
           bool first = true;
-          for(term_id c : args)
-          {
+          for(term_id c : args) {
             if(first)
               first = false;
             else
@@ -185,7 +189,7 @@ namespace crab {
       class congruence_closure_solver;
 
       template<class Num, class Ftor>
-      class term_table : public writeable {
+      class term_table {
        public:
         typedef term_table<Num, Ftor> term_table_t;
         typedef term<Num, Ftor> term_t;
@@ -447,7 +451,7 @@ namespace crab {
           return _parents[id];
         }
 
-        void write(crab_os& o) { 
+        void write(crab_os& o) const { 
           bool first = true;
           for(unsigned int ti = 0; ti < terms.size(); ti++)
           {
@@ -533,6 +537,11 @@ namespace crab {
         std::vector<term_id> free_terms;
       };
 
+      template<class Num, class Ftor>
+      inline crab::crab_os& operator<<(crab::crab_os& o, const term_table<Num, Ftor>& t) {
+	t.write(o);
+	return o;
+      }
 
       template<typename TermTable>
       class congruence_closure_solver : public boost::noncopyable {
@@ -605,7 +614,7 @@ namespace crab {
           return get_members (t).size ();
         }
 
-        void write (crab_os&o) {
+        void write (crab_os&o) const {
           for (auto t1: _terms) {
             o << "t" << t1 << " --> {";
             for (auto t2: _terms) {

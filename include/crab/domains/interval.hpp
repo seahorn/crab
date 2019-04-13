@@ -15,7 +15,7 @@
 namespace ikos {
 
   template<typename Number>
-  class bound: public writeable {
+  class bound {
   public:
     typedef bound<Number> bound_t;
     
@@ -85,7 +85,7 @@ namespace ikos {
 
     bound(Number n): _is_infinite(false), _n(n) { }
     
-    bound(const bound_t& o): writeable(), _is_infinite(o._is_infinite), _n(o._n) { }
+    bound(const bound_t& o): _is_infinite(o._is_infinite), _n(o._n) { }
     
     bound_t& operator=(const bound_t &o){
       if (this != &o) {
@@ -238,7 +238,7 @@ namespace ikos {
       }
     }
     
-    void write(crab::crab_os& o) {
+    void write(crab::crab_os& o) const {
       if (is_plus_infinity()) {
         o << "+oo";
       } else if (is_minus_infinity()) {
@@ -249,6 +249,12 @@ namespace ikos {
     }
     
   }; // class bound
+
+  template<typename Number>
+  inline crab::crab_os& operator<<(crab::crab_os& o, const bound<Number> &b) {
+    b.write(o);
+    return o;
+  }
 
   typedef bound<z_number> z_bound;
   typedef bound<q_number> q_bound;
@@ -284,7 +290,7 @@ namespace ikos {
 
   
   template<typename Number>
-  class interval: public writeable {
+  class interval {
     
   public:
     typedef bound<Number> bound_t;
@@ -336,7 +342,7 @@ namespace ikos {
       }
     }
 
-    interval(const interval_t& i): writeable(), _lb(i._lb), _ub(i._ub) { }
+    interval(const interval_t& i): _lb(i._lb), _ub(i._ub) { }
     
     interval_t& operator=(interval_t i){
       _lb = i._lb;
@@ -521,7 +527,7 @@ namespace ikos {
       }
     }
     
-    void write(crab::crab_os& o) {
+    void write(crab::crab_os& o) const {
       if (is_bottom()) {
         o << "_|_";
       } else {
@@ -934,7 +940,7 @@ namespace ikos {
   }
 
   template <typename Number>
-  inline crab::crab_os& operator<<(crab::crab_os& o, interval<Number> i) {
+  inline crab::crab_os& operator<<(crab::crab_os& o, const interval<Number>& i) {
     i.write(o);
     return o;
   }

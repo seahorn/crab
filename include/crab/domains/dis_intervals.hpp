@@ -20,7 +20,7 @@ namespace crab {
    namespace domains {
 
    template< typename Number >
-   class dis_interval: public writeable {
+   class dis_interval {
     
     public:
 
@@ -251,10 +251,9 @@ namespace crab {
      
     public:
 
-     dis_interval(): writeable(), _state(TOP) { }
+     dis_interval(): _state(TOP) { }
 
-     dis_interval(interval_t i): 
-         writeable(), _state(FINITE) { 
+     dis_interval(interval_t i): _state(FINITE) { 
        if (i.is_top()) 
          _state = TOP;
        else if (i.is_bottom())
@@ -264,12 +263,11 @@ namespace crab {
      }
 
      dis_interval(const dis_interval_t& i): 
-         writeable(), _state(i._state), _list(i._list) { }
+       _state(i._state), _list(i._list) { }
 
-     dis_interval(dis_interval_t&& i): 
-         writeable(), 
-         _state(std::move(i._state)),
-         _list(std::move(i._list)) { }
+     dis_interval(dis_interval_t&& i):         
+       _state(std::move(i._state)),
+       _list(std::move(i._list)) { }
      
      dis_interval_t& operator=(const dis_interval_t& i){
        if (this != &i){
@@ -878,7 +876,7 @@ namespace crab {
      }
 
      
-    void write(crab_os& o) {
+    void write(crab_os& o) const {
       if (is_bottom()) {
         o << "_|_";
       } else if(is_top()) {
@@ -887,7 +885,7 @@ namespace crab {
       else {
         assert(_state == FINITE);
 
-        for (typename list_intervals_t::iterator it = _list.begin(), 
+        for (typename list_intervals_t::const_iterator it = _list.begin(), 
                  et= _list.end(); it!=et; ){
           o << *it;
           ++it;
@@ -984,7 +982,7 @@ namespace crab {
    };//  class dis_interval
 
    template<typename N>
-   crab_os& operator<<(crab_os& o, dis_interval<N> i) {
+   inline crab_os& operator<<(crab_os& o, const dis_interval<N>& i) {
      i.write(o);
      return o;
    }

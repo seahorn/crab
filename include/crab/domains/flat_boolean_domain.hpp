@@ -17,7 +17,7 @@ namespace crab {
 
   namespace domains {  
 
-  class boolean_value : public ikos::writeable {
+  class boolean_value {
     /*
               Top
               / \
@@ -50,8 +50,7 @@ namespace crab {
 
     static boolean_value get_false() { return boolean_value(False); }
 
-    boolean_value(const boolean_value& other) : 
-        writeable(), _value(other._value) {}
+    boolean_value(const boolean_value& other): _value(other._value) {}
 
     boolean_value& operator=(const boolean_value& other) {
       if (this != &other) _value = other._value; 
@@ -180,7 +179,7 @@ namespace crab {
       return top();
     }    
     
-    void write(crab_os& o) {
+    void write(crab_os& o) const {
       switch (_value) {
         case Bottom:      o << "_|_"; break;
         case Top:         o << "*"; break;
@@ -191,6 +190,10 @@ namespace crab {
 
   }; // end class boolean_value
 
+  inline crab_os& operator<<(crab_os& o, const boolean_value& v) {
+    v.write(o);
+    return o;
+  }
 
   // A simple abstract domain for booleans
   template <typename Number, typename VariableName>

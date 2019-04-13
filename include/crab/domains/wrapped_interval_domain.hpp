@@ -1809,7 +1809,7 @@ namespace domains {
 
 // Simple lattice to represent which limits (if any) have been crossed
 // by a wrapped interval.
-class wrapped_interval_limit_value: public ikos::writeable {
+class wrapped_interval_limit_value {
     /*
                       csu
                       /  \
@@ -1962,7 +1962,7 @@ public:
     return this->operator&(o); 
   }
   
-  void write(crab_os& o) {
+  void write(crab_os& o) const {
     if (is_bottom()) {
       o << "_|_";
     } else {
@@ -1975,7 +1975,12 @@ public:
     }
   }
 };
-    
+
+inline crab_os& operator<<(crab_os& o, const wrapped_interval_limit_value& v) {
+  v.write(o);
+  return o;
+}
+
 /** 
     Wrapped interval domain augmented with an abstraction of the
     execution history: it keeps track of which variable crossed which

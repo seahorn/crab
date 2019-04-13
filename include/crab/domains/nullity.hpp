@@ -11,7 +11,7 @@ namespace crab {
 
   namespace domains {  
 
-  class nullity_value : public ikos::writeable {
+  class nullity_value {
     /*
               Top
               / \
@@ -45,7 +45,7 @@ namespace crab {
     static nullity_value null() { return nullity_value(Null); }
 
     nullity_value(const nullity_value& other) : 
-        writeable(), _value(other._value) {}
+      _value(other._value) {}
 
     nullity_value& operator=(const nullity_value& other) {
       if (this != &other) {
@@ -101,7 +101,7 @@ namespace crab {
       return this->operator&(other); 
     }
 
-    void write(crab_os& o) {
+    void write(crab_os& o) const {
       switch (_value) {
         case Bottom:     o << "_|_"; break;
         case Top:        o << "T"; break;
@@ -111,6 +111,11 @@ namespace crab {
     }
 
   }; // end class nullity_value
+
+  inline crab_os& operator<<(crab_os& o, const nullity_value& v) {
+    v.write(o);
+    return o;
+  }
 
 
   // Abstract domain for nullity

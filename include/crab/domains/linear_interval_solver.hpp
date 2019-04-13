@@ -138,7 +138,7 @@ namespace ikos {
       namespace interval_traits = linear_interval_solver_impl;      
       bitwidth_t w = pivot.get_bitwidth();
       Interval residual= interval_traits::mk_interval<Interval>(cst.constant(), w);
-      for (typename linear_constraint_t::iterator it = cst.begin(); it != cst.end(); ++it) {
+      for (typename linear_constraint_t::const_iterator it = cst.begin(); it!=cst.end(); ++it) {
 	variable_t v = it->second;
 	if (!(v == pivot)) {
 	  residual = residual - (interval_traits::mk_interval<Interval>(it->first, w) * env[v]);
@@ -158,7 +158,7 @@ namespace ikos {
 	       crab::outs() << "Integer solver processing " << tmp << "\n";);
 	       
       
-      for (typename linear_constraint_t::iterator it = cst.begin(), et = cst.end();
+      for (typename linear_constraint_t::const_iterator it = cst.begin(), et = cst.end();
 	   it != et; ++it) {
 	Number c = it->first;
 	variable_t pivot = it->second;
@@ -243,7 +243,7 @@ namespace ikos {
       crab::ScopedCrabStats __st_a__("Linear Interval Solver");
       crab::ScopedCrabStats __st_b__("Linear Interval Solver.Preprocessing");      
       std::size_t op_per_cycle = 0;
-      for (typename linear_constraint_system_t::iterator it = csts.begin(); 
+      for (typename linear_constraint_system_t::const_iterator it = csts.begin(); 
            it != csts.end(); ++it) {
 	const linear_constraint_t &cst = *it;
 	if (cst.is_contradiction()) {

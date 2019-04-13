@@ -110,7 +110,7 @@ namespace crab {
      };
 
      template<typename Number>
-     crab_os& operator<<(crab_os& o, const thresholds<Number>& t) {
+     inline crab_os& operator<<(crab_os& o, const thresholds<Number>& t) {
        t.write(o);
        return o;
      }
@@ -232,7 +232,7 @@ namespace crab {
      }; // class wto_thresholds
      
      template<typename NodeName, typename CFG>
-     crab::crab_os& operator<<(crab::crab_os& o, const wto_thresholds<NodeName, CFG>& t) {
+     inline crab::crab_os& operator<<(crab::crab_os& o, const wto_thresholds<NodeName,CFG>& t) {
        t.write(o);
        return o;
      }

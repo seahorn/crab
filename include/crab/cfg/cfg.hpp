@@ -89,22 +89,6 @@ namespace crab {
       // casts
       INT_CAST = 80
     }; 
-
-    template<typename Number, typename VariableName>
-    inline crab_os&
-    operator<<(crab_os &o, const ikos::linear_expression<Number, VariableName> &e) { 
-      auto tmp(e);
-      tmp.write(o);
-      return o;
-    }
-
-    template<typename Number, typename VariableName>
-    inline crab_os&
-    operator<<(crab_os &o, const ikos::linear_constraint<Number, VariableName> &c) {
-      auto tmp(c);
-      tmp.write(o);
-      return o;
-    }
     
     template<typename Number, typename VariableName>
     class live {

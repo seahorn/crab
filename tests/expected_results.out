@@ -3032,10 +3032,10 @@ Abstract trace: entry (loop_head loop_t)^{3} loop_f ret
 
 Invariants using Product(Intervals,Congruences)
 entry=({}, {})
-loop_head=({i -> [0, 10]; p -> [0, +oo]}, {p -> 4Z+ 0})
-loop_f=({i -> [0, 10]; p -> [0, +oo]}, {p -> 4Z+ 0})
-ret=({i -> [10, 10]; p -> [0, +oo]}, {i -> 10; p -> 4Z+ 0})
-loop_t=({i -> [0, 10]; p -> [0, +oo]}, {p -> 4Z+ 0})
+loop_head=({i -> [0, 10]; p -> [0, +oo]}, {p -> 4Z+0})
+loop_f=({i -> [0, 10]; p -> [0, +oo]}, {p -> 4Z+0})
+ret=({i -> [10, 10]; p -> [0, +oo]}, {i -> 10; p -> 4Z+0})
+loop_t=({i -> [0, 10]; p -> [0, +oo]}, {p -> 4Z+0})
 Abstract trace: entry (loop_head loop_t)^{4} loop_f ret
 
 Invariants using Term(Intervals)

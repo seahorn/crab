@@ -149,7 +149,7 @@ namespace crab {
     }; 
   
     template<typename CFG>
-    crab_os& operator<<(crab_os& o, const liveness_analysis<CFG> &l) {
+    inline crab_os& operator<<(crab_os& o, const liveness_analysis<CFG> &l) {
       l.write (o);
       return o;
     }
@@ -248,7 +248,7 @@ namespace crab {
     }; 
     
    template<typename CFG>
-   crab_os& operator<<(crab_os& o, const liveness<CFG> &l) {
+   inline crab_os& operator<<(crab_os& o, const liveness<CFG> &l) {
      l.write(o);
      return o;
    }

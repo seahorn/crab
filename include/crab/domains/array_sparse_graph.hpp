@@ -244,13 +244,12 @@ namespace crab {
      public:
 
       array_sparse_graph_(bool is_bottom = false)
-          : writeable(), _is_bottom(is_bottom) 
+	: _is_bottom(is_bottom) 
       { }
 
       array_sparse_graph_(const array_sparse_graph_t& o)
-          : writeable(),
-            _vert_map(o._vert_map), _rev_map(o._rev_map), _g(o._g),
-            _unstable(o._unstable), _is_bottom(false) 
+	: _vert_map(o._vert_map), _rev_map(o._rev_map), _g(o._g),
+	  _unstable(o._unstable), _is_bottom(false) 
       { 
         if (o._is_bottom)
           set_to_bottom();
@@ -263,16 +262,14 @@ namespace crab {
 
       array_sparse_graph_(vert_map_t& vert_map, rev_map_t& rev_map, graph_t& g,
 			  vert_set_t unstable)
-	: writeable(),
-	  _vert_map(vert_map), _rev_map(rev_map), _g(g), 
+	: _vert_map(vert_map), _rev_map(rev_map), _g(g), 
 	  _unstable(unstable), _is_bottom(false)
       { }
       
       array_sparse_graph_(vert_map_t&& vert_map, rev_map_t&& rev_map, graph_t&& g,
 			  vert_set_t &&unstable)
-          : writeable(),
-            _vert_map(std::move(vert_map)), _rev_map(std::move(rev_map)), _g(std::move(g)),
-            _unstable(std::move(unstable)), _is_bottom(false)
+	: _vert_map(std::move(vert_map)), _rev_map(std::move(rev_map)), _g(std::move(g)),
+	  _unstable(std::move(unstable)), _is_bottom(false)
       { }
 
       array_sparse_graph_t& operator=(const array_sparse_graph_t& o)

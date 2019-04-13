@@ -1224,7 +1224,7 @@ public:
 }; // class patricia_tree
 
 template < typename Element >
-class patricia_tree_set : public writeable {
+class patricia_tree_set {
 private:
   typedef patricia_tree< Element, bool > patricia_tree_t;
 
@@ -1311,7 +1311,7 @@ public:
   patricia_tree_set() {}
 
   patricia_tree_set(const patricia_tree_set_t& s)
-      : writeable(), _tree(s._tree) {}
+      : _tree(s._tree) {}
 
   patricia_tree_set_t& operator=(const patricia_tree_set_t& t) {
     this->_tree = t._tree;
@@ -1394,7 +1394,7 @@ public:
     return (this->operator<=(s) && s.operator<=(*this));
   }
 
-  void write(crab::crab_os& o) {
+  void write(crab::crab_os& o) const {
     o << "{";
     for (iterator it = begin(); it != end();) {
       it->write(o);
@@ -1406,6 +1406,10 @@ public:
     o << "}";
   }
 
+  friend crab::crab_os& operator<<(crab::crab_os&o, const patricia_tree_set<Element>& s) {
+    s.write(o);
+    return o;
+  }
+  
 }; // class patricia_tree_set
-
 } // namespace ikos

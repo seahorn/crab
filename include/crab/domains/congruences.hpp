@@ -67,7 +67,7 @@ namespace ikos {
 
 template <typename Number,
 	  int typeSize = -1> //! typeSize = -1 means unlimited precision
-class congruence : public writeable {
+class congruence {
 public:
   typedef congruence<Number, typeSize> congruence_t;
 
@@ -77,13 +77,12 @@ private:
 
   bool isUnlimited(int width) { return width == -1; }
 
-  congruence(bool b) : writeable(), _is_bottom(!b), _a(1), _b(0) {}
+  congruence(bool b) : _is_bottom(!b), _a(1), _b(0) {}
 
-  congruence(int x) : writeable(), _is_bottom(false), _a(0), _b(x) {}
+  congruence(int x) : _is_bottom(false), _a(0), _b(x) {}
 
   congruence(Number a, Number b)
-      : writeable(),
-        _is_bottom(false),
+      : _is_bottom(false),
         _a(a),
         // Set to standard form: 0 <= b < a for a != 0.
         _b((a == 0) ? b : ((b % a) < 0 ? (b % a) + a : b % a)) {}
@@ -164,12 +163,12 @@ public:
 
   static congruence_t bottom() { return congruence(false); }
 
-  congruence() : writeable(), _is_bottom(false), _a(1), _b(0) {}
+  congruence() : _is_bottom(false), _a(1), _b(0) {}
 
-  congruence(Number b) : writeable(), _is_bottom(false), _a(0), _b(b) {}
+  congruence(Number b) : _is_bottom(false), _a(0), _b(b) {}
 
   congruence(const congruence_t& o)
-      : writeable(), _is_bottom(o._is_bottom), _a(o._a), _b(o._b) {}
+      : _is_bottom(o._is_bottom), _a(o._a), _b(o._b) {}
 
   congruence_t operator=(congruence_t o) {
     _is_bottom = o._is_bottom;
@@ -178,9 +177,9 @@ public:
     return *this;
   }
 
-  bool is_bottom() { return _is_bottom; }
+  bool is_bottom() const { return _is_bottom; }
 
-  bool is_top() { return _a == 1; }
+  bool is_top() const { return _a == 1; }
 
   std::pair<Number, Number> get() {
     // aZ+b
@@ -586,7 +585,7 @@ public:
   // congruence_t ZExt(unsigned width) { return *this; }
   // congruence_t SExt(unsigned width) { return *this; }
 
-  void write(crab::crab_os& o) {
+  void write(crab::crab_os& o) const {
     if (is_bottom()) {
       o << "_|_";
       return;
@@ -596,15 +595,22 @@ public:
       o << _b;
       return;
     }
-
-    bool positive = true;
-    if (_b < 0) {
-      positive = false;
-      _b *= -1;
-    }
-    o << _a << "Z" << ((positive) ? "+ " : "- ") << _b;
+    // bool positive = true;
+    // if (_b < 0) {
+    //   positive = false;
+    //   _b *= -1;
+    // }
+    // o << _a << "Z" << ((positive) ? "+ " : "- ") << _b;
+    o << _a << "Z+" << _b;
+    
   }
 }; // end class congruence
+
+template<typename Number, int typeSize>
+inline crab::crab_os& operator<<(crab::crab_os& o, const congruence<Number, typeSize>& c) {
+  c.write(o);
+  return o;
+}
 
 template <typename Number, int typeSize>
 inline congruence<Number, typeSize> operator+(

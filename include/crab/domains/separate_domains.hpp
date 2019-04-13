@@ -46,7 +46,7 @@
 namespace ikos {
   
   template < typename Key, typename Value >
-  class separate_domain: public writeable {
+  class separate_domain {
     
   private:
     typedef patricia_tree< Key, Value > patricia_tree_t;
@@ -196,7 +196,7 @@ namespace ikos {
     separate_domain(): _is_bottom(false) { }
 
     separate_domain(const separate_domain_t& e): 
-        writeable(), _is_bottom(e._is_bottom), _tree(e._tree) { }
+        _is_bottom(e._is_bottom), _tree(e._tree) { }
     
     separate_domain_t& operator=(separate_domain_t e) {
       this->_is_bottom = e._is_bottom;
@@ -359,7 +359,7 @@ namespace ikos {
       }
     }
     
-    void write(crab::crab_os& o) {
+    void write(crab::crab_os& o) const {
       if (this->is_bottom()) {
         o << "_|_";
       } else {
@@ -380,6 +380,10 @@ namespace ikos {
       }
     }
     
+    friend crab::crab_os& operator<<(crab::crab_os&o, const separate_domain<Key,Value>& d) {
+      d.write(o);
+      return o;
+    }
   }; // class separate_domain
   
 } // namespace ikos

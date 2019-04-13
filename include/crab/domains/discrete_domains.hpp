@@ -48,14 +48,14 @@
 
 namespace ikos {
 
-  template< typename Element >
-  class discrete_domain: public writeable {
+  template<typename Element>
+  class discrete_domain {
     
   private:
-    typedef patricia_tree_set< Element > ptset_t;
+    typedef patricia_tree_set<Element> ptset_t;
 
   public:
-    typedef discrete_domain< Element > discrete_domain_t;
+    typedef discrete_domain<Element> discrete_domain_t;
     typedef typename ptset_t::iterator iterator;
 
   private:
@@ -80,7 +80,7 @@ namespace ikos {
     discrete_domain(): _is_top(true) { }
     
     discrete_domain(const discrete_domain_t& other): 
-        writeable(), _is_top(other._is_top), _set(other._set) { }
+      _is_top(other._is_top), _set(other._set) { }
 
     discrete_domain(Element s): _is_top(false), _set(s) { }
 
@@ -220,7 +220,7 @@ namespace ikos {
       }
     }
     
-    void write(crab::crab_os& o) {
+    void write(crab::crab_os& o) const {
       if (this->_is_top) {
 	o << "{...}";
       } else if (this->_set.empty()) {
@@ -231,6 +231,12 @@ namespace ikos {
     }
     
   }; // class discrete_domain
+
+  template<typename Elem>
+  inline crab::crab_os& operator<<(crab::crab_os&o, const discrete_domain<Elem> &d){
+    d.write(o);
+    return o;
+  }
 
 } // namespace ikos
 

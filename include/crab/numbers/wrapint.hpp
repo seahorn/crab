@@ -436,14 +436,14 @@ public:
     return wrapint(_n & ((1 << (bits_to_keep+1)) -1), bits_to_keep);
   }
   
-  void write(crab::crab_os& o) {
+  void write(crab::crab_os& o) const {
     o << get_unsigned_str();
   }
 
 }; // class wrapint
 
 
-inline crab::crab_os& operator<<(crab::crab_os& o, wrapint z) {
+inline crab::crab_os& operator<<(crab::crab_os& o, const wrapint& z) {
   z.write(o);
   return o;
 }
