@@ -1051,15 +1051,15 @@ namespace crab {
     *  Congruences" by P. Granger published in International Journal of
     *  Computer Mathematics, 1989.
     */
-    template < typename Number, int typeSize = -1 >
+    template <typename Number>
     class interval_congruence  {
      public:
-      typedef interval_congruence< Number, typeSize > interval_congruence_t;
+      typedef interval_congruence<Number> interval_congruence_t;
       
      private:
-      typedef interval< Number > interval_t;
-      typedef bound< Number > bound_t;
-      typedef congruence< Number, typeSize > congruence_t;
+      typedef interval<Number> interval_t;
+      typedef bound<Number> bound_t;
+      typedef congruence<Number> congruence_t;
       
      private:
       interval_t _first;
@@ -1090,15 +1090,15 @@ namespace crab {
       
       // R(c,a) is the least element of c greater or equal than a
       inline Number R(congruence_t c, Number a) {
-        Number m = c.get().first;
-        Number p = c.get().second;
+        Number m = c.get_modulo();
+        Number p = c.get_remainder();
         return a + mod(p - a, abs(m));
       }
       
       // L(c,a) is the greatest element of c smaller or equal than a
       inline Number L(congruence_t c, Number a) {
-        Number m = c.get().first;
-        Number p = c.get().second;
+        Number m = c.get_modulo();
+        Number p = c.get_remainder();
         return a - mod(a - p, abs(m));
       }
       
@@ -1172,10 +1172,10 @@ namespace crab {
           return;
          }
         
-        Number modulo = c.get().first;
+        Number modulo = c.get_modulo();
         if (modulo == 0) {
           // congruence is a singleton so we refine the interval
-          interval_t a(c.get().second);
+          interval_t a(c.get_remainder());
           if (!(a <= i)) {
             i = interval_t::bottom();
              c = congruence_t::bottom();
@@ -1318,21 +1318,19 @@ namespace crab {
       }
     };
 
-    template<typename Number, int typeSize>
+    template<typename Number>
     inline crab::crab_os&
-    operator<<(crab::crab_os& o, const interval_congruence<Number,typeSize>& v) {
+    operator<<(crab::crab_os& o, const interval_congruence<Number>& v) {
       v.write(o);
       return o;
     }
 
     // Reduced product of a numerical domain with congruences.
-    // It assumes that all variables have the same bitwdith which is
-    // not realistic.
-    template<typename NumAbsDom, int typeSize=-1>
+    template<typename NumAbsDom>
     class numerical_congruence_domain final:
-      public abstract_domain<numerical_congruence_domain<NumAbsDom,typeSize>> {
+      public abstract_domain<numerical_congruence_domain<NumAbsDom>> {
 
-      typedef numerical_congruence_domain<NumAbsDom, typeSize> rnc_domain_t;
+      typedef numerical_congruence_domain<NumAbsDom> rnc_domain_t;
       typedef abstract_domain<rnc_domain_t> abstract_domain_t;
 
     public:
@@ -1347,14 +1345,14 @@ namespace crab {
       typedef typename NumAbsDom::number_t number_t;
       typedef typename NumAbsDom::varname_t varname_t;
 
-      typedef congruence_domain<number_t, varname_t, typeSize> congruence_domain_t;
-      typedef interval_congruence<number_t, typeSize> interval_congruence_t;
+      typedef congruence_domain<number_t, varname_t> congruence_domain_t;
+      typedef interval_congruence<number_t> interval_congruence_t;
       typedef interval<number_t> interval_t;
       
      private:
-      typedef patricia_tree_set<variable_t > variable_set_t;
+      typedef patricia_tree_set<variable_t> variable_set_t;
       typedef domain_product2<number_t, varname_t, 
-                                        NumAbsDom, congruence_domain_t > domain_product2_t; 
+			      NumAbsDom, congruence_domain_t> domain_product2_t; 
       
       domain_product2_t _product;
       
@@ -1933,8 +1931,8 @@ namespace crab {
       typedef typename Domain1::varname_t varname_t;
     };
 
-    template<typename NumAbsDom, int typeSize>    
-    struct abstract_domain_traits<numerical_congruence_domain<NumAbsDom, typeSize>> {
+    template<typename NumAbsDom>    
+    struct abstract_domain_traits<numerical_congruence_domain<NumAbsDom>> {
       typedef typename NumAbsDom::number_t number_t;
       typedef typename NumAbsDom::varname_t varname_t;
     };
