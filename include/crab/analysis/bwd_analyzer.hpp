@@ -2,7 +2,7 @@
 
 #include <crab/cfg/cfg.hpp>
 #include <crab/cfg/var_factory.hpp>
-#include <crab/iterators/fwd_fixpoint_iterators.hpp>
+#include <crab/iterators/interleaved_fixpoint_iterator.hpp>
 #include <crab/analysis/fwd_analyzer.hpp>
 #include <crab/analysis/abs_transformer.hpp>
 #include <crab/analysis/dataflow/liveness.hpp>

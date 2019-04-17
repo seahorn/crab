@@ -1,12 +1,11 @@
 /*******************************************************************************
  *
- * Forward fixpoint iterators of varying complexity and precision.
- *
  * The interleaved fixpoint iterator is described in G. Amato and F. Scozzari's
  * paper: Localizing widening and narrowing. In Proceedings of SAS 2013,
  * pages 25-42. LNCS 7935, 2013.
  *
  * Author: Arnaud J. Venet (arnaud.j.venet@nasa.gov)
+ * Contributors: Jorge A. Navas (jorge.navas@sri.com)
  *
  * Notices:
  *
@@ -58,14 +57,15 @@ namespace ikos {
 
   namespace interleaved_fwd_fixpoint_iterator_impl {
     
-    template<typename NodeName, typename CFG, typename AbstractValue >
+    template<typename NodeName, typename CFG, typename AbstractValue>
     class wto_iterator;
 
-    template<typename NodeName, typename CFG, typename AbstractValue >
+    template<typename NodeName, typename CFG, typename AbstractValue>
     class wto_processor;
     
   } // namespace interleaved_fwd_fixpoint_iterator_impl
-         
+
+
   template<typename NodeName, typename CFG, typename AbstractValue>
   class interleaved_fwd_fixpoint_iterator: 
       public fixpoint_iterator<NodeName, CFG, AbstractValue> {
@@ -82,7 +82,6 @@ namespace ikos {
     typedef boost::unordered_map<NodeName,AbstractValue> invariant_table_t;
     typedef interleaved_fwd_fixpoint_iterator_impl::wto_iterator<NodeName, CFG, AbstractValue> wto_iterator_t;
     typedef interleaved_fwd_fixpoint_iterator_impl::wto_processor<NodeName, CFG, AbstractValue> wto_processor_t;
-    //typedef crab::iterators::thresholds_t thresholds_t;
     typedef crab::iterators::thresholds<typename CFG::number_t> thresholds_t;    
     typedef crab::iterators::wto_thresholds<NodeName, CFG> wto_thresholds_t;
 
@@ -294,7 +293,7 @@ namespace ikos {
 
   namespace interleaved_fwd_fixpoint_iterator_impl {
     
-    template<typename NodeName, typename CFG, typename AbstractValue >
+    template<typename NodeName, typename CFG, typename AbstractValue>
     class wto_iterator: public wto_component_visitor<NodeName, CFG> {
       
     public:
@@ -450,7 +449,8 @@ namespace ikos {
 	
         auto prev_nodes = this->_iterator->_cfg.prev_nodes(head);
         AbstractValue pre = AbstractValue::bottom();
-
+	wto_nesting_t cycle_nesting = this->_iterator->_wto.nesting(head);
+	
 	if (entry_in_this_cycle) {
 	  CRAB_VERBOSE_IF(2,
 		    crab::outs() << "Skipped predecessors of "
@@ -458,8 +458,7 @@ namespace ikos {
 	  pre = _iterator->get_pre(_entry);
 	} else {
 	  crab::CrabStats::count("Fixpo.join_predecessors");
-	  crab::ScopedCrabStats __st__("Fixpo.join_predecessors");
-	  wto_nesting_t cycle_nesting = this->_iterator->_wto.nesting(head);	
+	  crab::ScopedCrabStats __st__("Fixpo.join_predecessors");	  
 	  for (NodeName prev : prev_nodes) {
 	    if (!(this->_iterator->_wto.nesting(prev) > cycle_nesting)) {
 	      pre |= this->_iterator->get_post(prev); 
@@ -476,7 +475,7 @@ namespace ikos {
 	  
           // Increasing iteration sequence with widening
           this->_iterator->set_pre(head, pre);
-	  CRAB_VERBOSE_IF(4, crab::outs() << "PRE Invariants:\n" << pre << "\n");		  
+	  CRAB_VERBOSE_IF(4, crab::outs() << "PRE Invariants:\n" << pre << "\n"); 
 	  crab::CrabStats::resume("Fixpo.analyze_block");		  
           AbstractValue post(pre); 
           CRAB_VERBOSE_IF(1, crab::outs() << "Analyzing node "
@@ -495,7 +494,7 @@ namespace ikos {
 	  crab::CrabStats::resume("Fixpo.join_predecessors");
           AbstractValue new_pre = AbstractValue::bottom();
           for (NodeName prev : prev_nodes) {
-            new_pre |= this->_iterator->get_post(prev); 
+	    new_pre |= this->_iterator->get_post(prev);
           }
 	  crab::CrabStats::stop("Fixpo.join_predecessors");
 	  crab::CrabStats::resume("Fixpo.check_fixpoint");	  	  
@@ -541,7 +540,7 @@ namespace ikos {
 	  crab::CrabStats::resume("Fixpo.join_predecessors");	  
           AbstractValue new_pre = AbstractValue::bottom();
           for (NodeName prev : prev_nodes) {
-            new_pre |= this->_iterator->get_post(prev); 
+	    new_pre |= this->_iterator->get_post(prev);
           }
 	  crab::CrabStats::stop("Fixpo.join_predecessors");
 	  crab::CrabStats::resume("Fixpo.check_fixpoint");
@@ -565,13 +564,13 @@ namespace ikos {
       
     }; // class wto_iterator
   
-    template< typename NodeName, typename CFG, typename AbstractValue >
-    class wto_processor: public wto_component_visitor< NodeName, CFG > {
+    template<typename NodeName, typename CFG, typename AbstractValue>
+    class wto_processor: public wto_component_visitor<NodeName, CFG> {
 
     public:
-      typedef interleaved_fwd_fixpoint_iterator< NodeName, CFG, AbstractValue > interleaved_iterator_t;
-      typedef wto_vertex< NodeName, CFG > wto_vertex_t;
-      typedef wto_cycle< NodeName, CFG > wto_cycle_t;
+      typedef interleaved_fwd_fixpoint_iterator<NodeName, CFG, AbstractValue> interleaved_iterator_t;
+      typedef wto_vertex<NodeName, CFG> wto_vertex_t;
+      typedef wto_cycle<NodeName, CFG> wto_cycle_t;
 
     private:
       interleaved_iterator_t *_iterator;

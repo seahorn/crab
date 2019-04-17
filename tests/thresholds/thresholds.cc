@@ -1,6 +1,5 @@
 #include "../program_options.hpp"
 #include "../common.hpp"
-#include "crab/iterators/fwd_fixpoint_iterators.hpp"
 
 using namespace std;
 using namespace crab::analyzer;
