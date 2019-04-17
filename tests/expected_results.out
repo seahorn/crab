@@ -2272,6 +2272,144 @@ ret:
   assert(-x <= -200);
 
 
+entry:
+  i = 0;
+  goto l1;
+l1:
+  i = i+1;
+  j = 0;
+  goto l2;
+l2:
+  goto l2_body,l2_exit;
+l2_body:
+  assume(j <= 9);
+  assert(-i <= 0);
+  assert(i <= 10);
+  j = j+1;
+  goto l2;
+l2_exit:
+  assume(-j <= -10);
+  goto l1_reset,l1_dont_reset;
+l1_reset:
+  assume(-i <= -10);
+  i = 0;
+  goto l1;
+l1_dont_reset:
+  assume(i <= 9);
+  goto l1;
+
+Invariants using Intervals
+entry={}
+l1={i -> [0, 9]}
+l2={i -> [1, 10]; j -> [0, 10]}
+l2_exit={i -> [1, 10]; j -> [0, 10]}
+l1_dont_reset={i -> [1, 10]; j -> [10, 10]}
+l1_reset={i -> [1, 10]; j -> [10, 10]}
+l2_body={i -> [1, 10]; j -> [0, 10]}
+Abstract trace: entry (l1 (l2 l2_body)^{12} l2_exit l1_dont_reset l1_reset)^{3}
+ --- SAFE --------------------
+Property : -i <= 0
+Invariant: {i -> [1, 10]; j -> [0, 9]}
+ -----------------------------
+ --- SAFE --------------------
+Property : i <= 10
+Invariant: {i -> [1, 10]; j -> [0, 9]}
+ -----------------------------
+user-defined assertion checker using Intervals
+2  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+
+entry:
+  i = 0;
+  goto l1;
+l1:
+  assume(i <= 3);
+  j = 0;
+  goto l2;
+l2:
+  goto l2_body,l2_exit;
+l2_body:
+  assume(j <= 3);
+  assert(i-j <= 3);
+  i = i+1;
+  j = j+1;
+  goto l2;
+l2_exit:
+  assume(-j <= -4);
+  i = i-j+1;
+  goto l1;
+
+Invariants using Intervals
+entry={}
+l1={i -> [-oo, 4]}
+l2={i -> [-oo, 7]; j -> [0, 4]}
+l2_exit={i -> [-oo, 7]; j -> [0, 4]}
+l2_body={i -> [-oo, 7]; j -> [0, 4]}
+Abstract trace: entry (l1 (l2 l2_body)^{13} l2_exit)^{3}
+ --- WARNING -----------------
+Property : i-j <= 3
+Invariant: {i -> [-oo, 7]; j -> [0, 3]}
+ -----------------------------
+user-defined assertion checker using Intervals
+0  Number of total safe checks
+0  Number of total error checks
+1  Number of total warning checks
+0  Number of total unreachable checks
+
+Invariants using SplitDBM
+entry={}
+l1={i -> [0, 4]}
+l2={i -> [0, 7], j -> [0, 4], j-i<=0, i-j<=3}
+l2_exit={i -> [0, 7], j -> [0, 4], j-i<=0, i-j<=3}
+l2_body={i -> [0, 7], j -> [0, 4], j-i<=0, i-j<=3}
+Abstract trace: entry (l1 (l2 l2_body)^{12} l2_exit)^{3}
+ --- SAFE --------------------
+Property : i-j <= 3
+Invariant: {i -> [0, 6], j -> [0, 3], j-i<=0, i-j<=3}
+ -----------------------------
+user-defined assertion checker using SplitDBM
+1  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+
+entry:
+  i = 0;
+  goto l1;
+l1:
+  assert(-i <= 0);
+  j = 0;
+  goto l2;
+l2:
+  goto l2_body,l2_exit;
+l2_body:
+  assume(j <= 9);
+  j = j+1;
+  goto l2;
+l2_exit:
+  assume(-j <= -10);
+  i = i-j+11;
+  goto l1;
+
+Invariants using Intervals
+entry={}
+l1={i -> [0, +oo]}
+l2={i -> [0, +oo]; j -> [0, 10]}
+l2_exit={i -> [0, +oo]; j -> [0, 10]}
+l2_body={i -> [0, +oo]; j -> [0, 10]}
+Abstract trace: entry (l1 (l2 l2_body)^{12} l2_exit)^{3}
+ --- SAFE --------------------
+Property : -i <= 0
+Invariant: {i -> [0, +oo]}
+ -----------------------------
+user-defined assertion checker using Intervals
+1  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+
 b0:
   p = &(1);
   havoc(r);

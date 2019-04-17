@@ -42,6 +42,9 @@ Z_RUNNER(crab::domain_impl::z_as_bool_num_t)
 Z_RUNNER(crab::domain_impl::z_ag_sdbm_intv_t)
 Z_RUNNER(crab::domain_impl::z_ag_num_null_t)
 Z_RUNNER(crab::domain_impl::z_ae_term_int_t)
+
+Z_CHECKER(crab::domain_impl::z_interval_domain_t)
+Z_CHECKER(crab::domain_impl::z_sdbm_domain_t)
 Z_CHECKER(crab::domain_impl::z_ae_term_int_t)
 
 Q_RUNNER(crab::domain_impl::q_interval_domain_t)
