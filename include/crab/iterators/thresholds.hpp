@@ -1,6 +1,7 @@
 #pragma once
 
 #include <crab/domains/interval.hpp>
+#include <crab/domains/linear_constraints.hpp>
 #include <crab/common/debug.hpp>
 #include <crab/cfg/cfg.hpp>
 #include <crab/iterators/wto.hpp>
@@ -64,6 +65,24 @@ namespace crab {
            if (std::find
 	       (m_thresholds.begin(), m_thresholds.end(), v) == m_thresholds.end()) {
              auto ub = std::upper_bound(m_thresholds.begin(), m_thresholds.end(), v);
+
+	     // don't add consecutive thresholds	     
+	     if (v > 0) {
+	       auto prev = ub;
+	       --prev;
+	       if (prev != m_thresholds.begin()) {
+		 if (*prev + 1 == v) { 
+		   *prev = v;
+		   return;
+		 }
+	       }
+	     } else if (v < 0) {
+	       if (*ub - 1 == v) {
+		 *ub = v;
+		 return;
+	       }
+	     }
+	     
              m_thresholds.insert(ub, v);
            }
          }
@@ -141,39 +160,72 @@ namespace crab {
 
        typedef typename CFG::basic_block_t basic_block_t;
        typedef typename CFG::number_t number_t;
-       typedef typename CFG::varname_t varname_t;       
+       typedef typename CFG::varname_t varname_t;
+       typedef typename CFG::variable_t variable_t;
+       typedef ikos::linear_expression<number_t, varname_t> linear_expression_t;
+       typedef ikos::linear_constraint<number_t, varname_t> linear_constraint_t;
        typedef ikos::bound<number_t> bound_t;
 
        typedef crab::cfg::assume_stmt<number_t,varname_t> assume_t;
-       typedef crab::cfg::select_stmt<number_t,varname_t> select_t;
-       typedef crab::cfg::assignment<number_t,varname_t>  assign_t;
-       
-       void get_thresholds(const basic_block_t &bb, thresholds_t &thresholds) {
-	 for (auto const&i : boost::make_iterator_range(bb.begin(), bb.end())) {
-	   bound_t t = bound_t::plus_infinity();
-	   if (i.is_assume()) {
-	     auto a = static_cast<const assume_t*>(&i);
-	     t = bound_t(-(a->constraint().expression().constant()));
-	   }
-	   else if (i.is_select()) {
-	     auto s = static_cast<const select_t*>(&i);
-	     t = bound_t(-(s->cond().expression().constant()));
-	   }
-	   else if (i.is_assign()) {
-	     auto a = static_cast<const assign_t*>(&i);
-	     if (a->rhs().is_constant())
-	       t = bound_t(-(a->rhs().constant()));
-	   }	    
-	   
-	   if (t != bound_t::plus_infinity()) {
-	     // XXX: for code pattern like this "while(x<t) {x+=k;}"
-	     // note that the condition (x<t) is translated to
-	     // (x<=t-1) so an useful threshold would be t+1+k.
-	     // Since we don't keep track of how x is incremented or
-	     // decremented we choose arbitrarily k=1.
-	     thresholds.add(t+2);
+       //typedef crab::cfg::select_stmt<number_t,varname_t> select_t;
+       //typedef crab::cfg::assignment<number_t,varname_t>  assign_t;
+
+       void extract_bounds(const linear_expression_t& e,
+			   bool is_strict,
+			   std::vector<number_t>& lb_bounds,
+			   std::vector<number_t>& ub_bounds) const {
+	 if (e.size() == 1) {
+	   auto const & kv = *(e.begin());
+	   number_t coeff = kv.first;
+	   variable_t var = kv.second;
+	   number_t k = -e.constant();
+	   if (coeff > 0) {
+	     // e is c*var <= k and c > 0  <---> var <= k/coeff
+	     ub_bounds.push_back(!is_strict ? k/coeff : (k/coeff)-1);
+	     return;
+	   } else if (coeff < 0) {
+	     // e is c*var <= k  and c < 0 <---> var >= k/coeff
+	     lb_bounds.push_back(!is_strict ? k/coeff: (k/coeff)+1);
+	     return;
 	   }
 	 }
+       }
+       
+       void get_thresholds(const basic_block_t &bb, thresholds_t &thresholds) const {
+	 
+	 std::vector<number_t> lb_bounds, ub_bounds;
+	 for (auto const&i : boost::make_iterator_range(bb.begin(), bb.end())) {
+	   if (i.is_assume()) {
+	     auto a = static_cast<const assume_t*>(&i);
+	     linear_constraint_t cst = a->constraint();
+	     if (cst.is_inequality() || cst.is_strict_inequality()) {
+	       extract_bounds(cst.expression(), cst.is_strict_inequality(),
+			      lb_bounds, ub_bounds);
+	     }
+	   }
+	   // else if (i.is_select()) {
+	   //   auto s = static_cast<const select_t*>(&i);
+	   //   linear_constraint_t cst = s->cond();
+	   //   if (cst.is_inequality() || cst.is_strict_inequality()) {
+	   //     extract_bounds(cst.expression(), cst.is_strict_inequality(),
+	   // 		      lb_bounds, ub_bounds);
+	   //   }
+	   // }
+	 }   
+
+	 // Assuming that the variable is incremented/decremented by
+	 // some constant k, then we want to adjust the threshold to
+	 // +/- k so that we have more chance to stabilize in one
+	 // iteration after widening has been applied.
+	 int k = 1;
+	 for (auto n: lb_bounds) {
+	   thresholds.add(bound_t(n-k));
+	 }
+
+	 for (auto n: ub_bounds) {
+	   thresholds.add(bound_t(n+k));
+	 }
+	 
        }
        
      public:
