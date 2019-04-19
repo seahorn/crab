@@ -266,7 +266,7 @@ namespace ikos {
       CRAB_VERBOSE_IF(2, crab::outs() << "Wto:\n" << _wto << "\n");            
     }
 
-    void run(NodeName entry, AbstractValue init, assumption_map_t &assumptions) {
+    void run(NodeName entry, AbstractValue init, const assumption_map_t &assumptions) {
       crab::ScopedCrabStats __st__("Fixpo");
       CRAB_VERBOSE_IF(1,
 	     crab::outs() << "== Started fixpoint at block "
@@ -308,7 +308,7 @@ namespace ikos {
       interleaved_iterator_t *_iterator;
       // Initial entry point of the analysis
       NodeName _entry;      
-      assumption_map_t *_assumptions;
+      const assumption_map_t *_assumptions;
       // Used to skip the analysis until _entry is found
       bool _skip; 
       
@@ -368,7 +368,7 @@ namespace ikos {
 
       wto_iterator(interleaved_iterator_t *iterator,
 		   NodeName entry,
-		   assumption_map_t *assumptions)
+		   const assumption_map_t *assumptions)
 	: _iterator(iterator),
 	  _entry(entry),	  
 	  _assumptions(assumptions),

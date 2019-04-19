@@ -138,7 +138,7 @@ namespace crab {
         this->run(*m_abs_tr->get());         
       }      
 
-      void Run(basic_block_label_t entry, assumption_map_t &assumptions)  {
+      void Run(basic_block_label_t entry, const assumption_map_t &assumptions)  {
         // ugly hook to initialize some global state. This needs to be
         // fixed properly.
 	domains::array_sgraph_domain_traits<abs_dom_t>::do_initialization(this->get_cfg());
@@ -285,7 +285,7 @@ namespace crab {
 	m_analyzer.Run();
       }
 
-      void run(basic_block_label_t entry, assumption_map_t &assumptions) {
+      void run(basic_block_label_t entry, const assumption_map_t &assumptions) {
 	m_analyzer.Run(entry, assumptions);
       }
       

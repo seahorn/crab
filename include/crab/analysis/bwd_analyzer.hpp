@@ -232,7 +232,7 @@ namespace crab {
 	       // behaves as a standard forward analysis
 	       bool only_forward,
 	       // assumptions
-	       assumption_map_t &assumptions,
+	       const assumption_map_t &assumptions,
 	       // liveness information
 	       const liveness_t* live, 
 	       // parameters for each forward or backward analysis
@@ -248,7 +248,7 @@ namespace crab {
 	       // behaves as a standard forward analysis
 	       bool only_forward,
 	       // assumptions
-	       assumption_map_t &assumptions,
+	       const assumption_map_t &assumptions,
 	       // liveness information
 	       const liveness_t* live, 
 	       // parameters for each forward or backward analysis
