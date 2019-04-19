@@ -2,6 +2,7 @@
 
 #include <type_traits>
 
+#include <crab/numbers/bignums.hpp>
 #include <crab/numbers/safeint.hpp>
 #include <crab/domains/graphs/adapt_sgraph.hpp>
 #include <crab/domains/graphs/sparse_graph.hpp>
@@ -147,17 +148,49 @@ public:
 
 
 /**
- * Helper to translate from Number (e.g., ikos::z_number) to DBM
- * weight.  Number is the template parameter of the DBM-based abstract
- * domain to represent a number. Note that Number might not fit into
- * Wt type. If this is the case then a runtime error will be triggered
- * when Number is casted to Wt
+ * Helper to translate from Number to DBM Wt (graph weights).  Number
+ * is the template parameter of the DBM-based abstract domain to
+ * represent a number. Number might not fit into Wt type.
  **/
 template<typename Number, typename Wt>
-class NtoW {
-public:
-static Wt convert(const Number& n) { 
+struct NtoW {
+static Wt convert(const Number& n, bool& overflow) {
+  overflow = false;
   return (Wt) n;
+}
+};
+
+
+template<> struct NtoW<ikos::z_number, long> {
+static long convert(const ikos::z_number& n, bool& overflow) {
+  overflow = false;
+  if (!n.fits_slong()) {
+    overflow = true;
+    return 0;
+  }
+  return (long) n;
+}
+};
+
+template<> struct NtoW<ikos::z_number, int> {
+static int convert(const ikos::z_number& n, bool& overflow) {
+  overflow = false;
+  if (!n.fits_sint()) {
+    overflow = true;
+    return 0;
+  }
+  return (int) n;
+}
+};
+
+template<> struct NtoW<ikos::z_number, safe_i64> {
+static safe_i64 convert(const ikos::z_number& n, bool& overflow) {
+  overflow = false;
+  if (!n.fits_slong()) {
+    overflow = true;
+    return 0;
+  }
+  return safe_i64(n);
 }
 };
 
