@@ -73,6 +73,9 @@ namespace crab {
     typedef interval_domain<ikos::q_number,varname_t > q_interval_domain_t;
     typedef apron_domain<ikos::q_number,varname_t,apron_domain_id_t::APRON_PK>
     q_pk_apron_domain_t;
+    typedef elina_domain<ikos::q_number,varname_t,elina_domain_id_t::ELINA_PK>
+    q_pk_elina_domain_t;
+
     typedef boxes_domain<q_number, varname_t > q_boxes_domain_t;         
   } 
 }
