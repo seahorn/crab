@@ -562,7 +562,8 @@ namespace domains {
       convert_crab_number(e.constant(), n);
       elina_scalar_set_mpq(linexpr->cst.val.scalar, n.get_mpq_t());
       unsigned i=0;
-      for(typename linear_expression_t::iterator it=e.begin(), et=e.end(); it!=et; ++it, ++i) {
+      for(typename linear_expression_t::const_iterator it=e.begin(), et=e.end();
+	  it!=et; ++it, ++i) {
 	number_t crab_coeff = it->first;
 	variable_t crab_var = it->second;
 	elina_linterm_t* linterm = &linexpr->p.linterm[i];
