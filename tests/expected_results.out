@@ -1,12 +1,3 @@
-INITIALLY={}
-ADDING CONSTRAINTS={-x <= -1; x <= 1}
-EXPECTED={x = 1}
-RESULT={x = 1}
-------------------------------------
-INITIALLY={}
-ADDING CONSTRAINTS={-x <= -1/2; x <= 1/2}
-EXPECTED={x = 1/2}
-RESULT=_|_
 entry:
   k = 0;
   i = 0;
@@ -2826,10 +2817,10 @@ Abstract trace: entry (bb1 bb1_t)^{3} bb1_f ret
 
 Invariants using ApronNewPolka
 entry={}
-bb1={i <= 10; -i <= 0}
-bb1_f={i <= 10; -i <= 0}
-ret={i = 10}
-bb1_t={i <= 10; -i <= 0}
+bb1={562949953421312*i <= 6136154492292301; -i <= 0}
+bb1_f={562949953421312*i <= 6136154492292301; -i <= 0}
+ret={562949953421312*i <= 6136154492292301; -i <= -10}
+bb1_t={562949953421312*i <= 6136154492292301; -i <= 0}
 Abstract trace: entry (bb1 bb1_t)^{3} bb1_f ret
 
 loop1_entry:
@@ -3192,6 +3183,23 @@ ret={i -> [10, 10]; p -> [0, 0] | [4, 4] | [8, 8] | [12, 12] | [16, +oo]}
 loop_t={i -> [0, 10]; p -> [0, 0] | [4, 4] | [8, 8] | [12, 12] | [16, +oo]}
 Abstract trace: entry (loop_head loop_t)^{4} loop_f ret
 
+Running APRON
+
+INITIALLY={}
+ADDING CONSTRAINTS={-x <= -1; x <= 1}
+EXPECTED={x = 1}
+RESULT={x = 1}
+------------------------------------
+INITIALLY={}
+ADDING CONSTRAINTS={-x <= -1/2; x <= 1/2}
+EXPECTED={x = 1/2}
+RESULT={2*x = 1}
+------------------------------------
+INITIALLY={}
+ADDING CONSTRAINTS={-x <= -1/2; x <= 1/2}
+EXPECTED={x = 1/2}
+RESULT={-x <= -1/2; x <= 1/2}
+------------------------------------
 entry:
   i = 0;
   x = 1;
@@ -3525,7 +3533,46 @@ prev threshold for -78:-89
 prev threshold for -10000:-oo
 entry:
   n = 0;
-  assume(y <= 878);
+  goto l_1;
+l_1:
+  goto l_2;
+l_2:
+  goto l_1,l_3;
+l_3:
+  goto l_4,l_5;
+l_4:
+  assume(n <= 59);
+  n = n+1;
+  goto l_6;
+l_6:
+  goto l_1;
+l_5:
+  assume(-n <= -60);
+  n = 0;
+  goto l_6;
+
+Invariants using Intervals
+entry={}
+l_1={n -> [0, +oo]}
+l_2={n -> [0, +oo]}
+l_3={n -> [0, +oo]}
+l_5={n -> [0, +oo]}
+l_6={n -> [0, 60]}
+l_4={n -> [0, +oo]}
+Abstract trace: entry (l_1 l_2 l_3 l_5 l_4 l_6)^{3}
+
+Invariants using Intervals
+entry={}
+l_1={n -> [0, 60]}
+l_2={n -> [0, 60]}
+l_3={n -> [0, 60]}
+l_5={n -> [0, 60]}
+l_6={n -> [0, 60]}
+l_4={n -> [0, 60]}
+Abstract trace: entry (l_1 l_2 l_3 l_5 l_4 l_6)^{3}
+
+entry:
+  n = 0;
   goto loop1_header;
 loop1_header:
   goto loop1_bb0,loop1_bb1,cont;
@@ -3536,7 +3583,7 @@ loop1_bb0:
 loop1_bb1:
   goto loop1_bb1_t,loop1_bb1_f;
 loop1_bb1_t:
-  assume(n <= 60);
+  assume(n <= 59);
   goto loop1_bb2;
 loop1_bb2:
   n = n+1;
@@ -3544,7 +3591,7 @@ loop1_bb2:
 loop1_bb4:
   goto loop1_header;
 loop1_bb1_f:
-  assume(-n <= -61);
+  assume(-n <= -60);
   goto loop1_bb3;
 loop1_bb3:
   n = 0;
@@ -3579,51 +3626,7 @@ ret:
 
 Thresholds per loop 
 loop2_header={-oo,0,9,161,+oo}
-loop1_header={-oo,-1,61,879,+oo}
-
-Invariants using Term(Intervals)
-entry={}
-loop1_header={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, +oo]; _z1 -> [-oo, 878]}
-cont={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, +oo]; _z1 -> [-oo, 878]}
-loop2_header={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, +oo]; _y1 -> [-oo, 878]}
-ret={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, +oo]; _y1 -> [-oo, 878]}
-loop2_bb1={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, +oo]; _y1 -> [-oo, 878]}
-loop2_bb1_f={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, +oo]; _y1 -> [-oo, 878]}
-loop2_bb3={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [161, +oo]; _y1 -> [-oo, 878]}
-loop2_bb4={n -> t0[_x1], y -> t1[_x0]}{_x0 -> [-oo, 878]; _x1 -> [0, 162]}
-loop2_bb1_t={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, +oo]; _y1 -> [-oo, 878]}
-loop2_bb2={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, 160]; _y1 -> [-oo, 878]}
-loop2_bb0={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, +oo]; _y1 -> [-oo, 878]}
-loop1_bb1={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, +oo]; _z1 -> [-oo, 878]}
-loop1_bb1_f={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, +oo]; _z1 -> [-oo, 878]}
-loop1_bb3={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [61, +oo]; _z1 -> [-oo, 878]}
-loop1_bb4={n -> t0[_x1], y -> t1[_x0]}{_x0 -> [-oo, 878]; _x1 -> [0, 61]}
-loop1_bb1_t={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, +oo]; _z1 -> [-oo, 878]}
-loop1_bb2={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, 60]; _z1 -> [-oo, 878]}
-loop1_bb0={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, +oo]; _z1 -> [-oo, 878]}
-Abstract trace: entry (loop1_header loop1_bb1 loop1_bb1_f loop1_bb3 loop1_bb1_t loop1_bb2 loop1_bb4 loop1_bb0)^{3} cont (loop2_header loop2_bb1 loop2_bb1_f loop2_bb3 loop2_bb1_t loop2_bb2 loop2_bb4 loop2_bb0)^{3} ret
-
-Invariants using Term(Intervals)
-entry={}
-loop1_header={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, 61]; _z1 -> [-oo, 878]}
-cont={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, 61]; _z1 -> [-oo, 878]}
-loop2_header={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, +oo]; _y1 -> [-oo, 878]}
-ret={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, +oo]; _y1 -> [-oo, 878]}
-loop2_bb1={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, +oo]; _y1 -> [-oo, 878]}
-loop2_bb1_f={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, +oo]; _y1 -> [-oo, 878]}
-loop2_bb3={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [161, +oo]; _y1 -> [-oo, 878]}
-loop2_bb4={n -> t0[_x1], y -> t1[_x0]}{_x0 -> [-oo, 878]; _x1 -> [0, 162]}
-loop2_bb1_t={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, +oo]; _y1 -> [-oo, 878]}
-loop2_bb2={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, 160]; _y1 -> [-oo, 878]}
-loop2_bb0={n -> t0[_y0], y -> t1[_y1]}{_y0 -> [0, +oo]; _y1 -> [-oo, 878]}
-loop1_bb1={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, 61]; _z1 -> [-oo, 878]}
-loop1_bb1_f={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, 61]; _z1 -> [-oo, 878]}
-loop1_bb3={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [61, 61]; _z1 -> [-oo, 878]}
-loop1_bb4={n -> t0[_x1], y -> t1[_x0]}{_x0 -> [-oo, 878]; _x1 -> [0, 61]}
-loop1_bb1_t={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, 61]; _z1 -> [-oo, 878]}
-loop1_bb2={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, 60]; _z1 -> [-oo, 878]}
-loop1_bb0={n -> t0[_z0], y -> t1[_z1]}{_z0 -> [0, 61]; _z1 -> [-oo, 878]}
-Abstract trace: entry (loop1_header loop1_bb1 loop1_bb1_f loop1_bb3 loop1_bb1_t loop1_bb2 loop1_bb4 loop1_bb0)^{3} cont (loop2_header loop2_bb1 loop2_bb1_f loop2_bb3 loop2_bb1_t loop2_bb2 loop2_bb4 loop2_bb0)^{5} ret
+loop1_header={-oo,-1,60,+oo}
 
 {A -> [0, +oo], x -> [0, 0], x-A<=0}
 Before x != 0: {x -> [0, 10], y -> [0, 10], z -> [0, 10], y-x<=0, z-x<=0, x-y<=0, z-y<=0, x-z<=0, y-z<=0}

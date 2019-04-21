@@ -37,6 +37,20 @@ int main (int argc, char** argv ) {
     crab::outs () << "EXPECTED={x = 1/2}\n";
     crab::outs () << "RESULT=" << inv << "\n";
   }
+  crab::outs () << "------------------------------------\n";
+  {
+    q_oct_apron_domain_t inv = q_oct_apron_domain_t::top ();
+    q_lin_cst_sys_t csts;
+    csts += (q_var (vfac ["x"], crab::REAL_TYPE) >= q_number(0.5));
+    csts += (q_var (vfac ["x"], crab::REAL_TYPE) <= q_number(0.5));
+    crab::outs () << "INITIALLY=" << inv << "\n";
+    crab::outs () << "ADDING CONSTRAINTS=" << csts << "\n";
+    inv += csts;
+    crab::outs () << "EXPECTED={x = 1/2}\n";
+    crab::outs () << "RESULT=" << inv << "\n";
+  }
+  crab::outs () << "------------------------------------\n";
+  
 #endif
 
 #ifdef HAVE_ELINA
@@ -65,6 +79,20 @@ int main (int argc, char** argv ) {
     crab::outs () << "EXPECTED={x = 1/2}\n";
     crab::outs () << "RESULT=" << inv << "\n";
   }
+
+  crab::outs () << "------------------------------------\n";
+  {
+    q_oct_elina_domain_t inv = q_oct_elina_domain_t::top ();
+    q_lin_cst_sys_t csts;
+    csts += (q_var (vfac ["x"], crab::REAL_TYPE) >= q_number(0.5));
+    csts += (q_var (vfac ["x"], crab::REAL_TYPE) <= q_number(0.5));
+    crab::outs () << "INITIALLY=" << inv << "\n";
+    crab::outs () << "ADDING CONSTRAINTS=" << csts << "\n";
+    inv += csts;
+    crab::outs () << "EXPECTED={x = 1/2}\n";
+    crab::outs () << "RESULT=" << inv << "\n";
+  }
+  crab::outs () << "------------------------------------\n";  
 #endif  
   
   return 0;
