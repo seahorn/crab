@@ -48,6 +48,8 @@ Z_CHECKER(crab::domain_impl::z_sdbm_domain_t)
 Z_CHECKER(crab::domain_impl::z_ae_term_int_t)
 
 Q_RUNNER(crab::domain_impl::q_interval_domain_t)
+Q_RUNNER(crab::domain_impl::q_oct_apron_domain_t)
 Q_RUNNER(crab::domain_impl::q_pk_apron_domain_t)
+Q_RUNNER(crab::domain_impl::q_oct_elina_domain_t)
 Q_RUNNER(crab::domain_impl::q_pk_elina_domain_t)
 Q_RUNNER(crab::domain_impl::q_boxes_domain_t)  

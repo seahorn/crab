@@ -229,8 +229,19 @@ namespace crab {
 #include <boost/bimap.hpp>
 #include <crab/domains/linear_interval_solver.hpp>
 
+#include <type_traits>
+
+/**
+ * If enable we build all expressions using Elina tree
+ * expressions. Otherwise, we use linear expressions when possible.
+ **/
 #define USE_TREE_EXPR
 
+/**
+ * If template parameter Number is ikos::q_number then the Elina
+ * domain will use real variables. Otherwise, all variables are
+ * integers. 
+ **/
 namespace crab {
 namespace domains {
   
@@ -263,6 +274,14 @@ namespace domains {
     
     elina_state_ptr m_apstate; 
     var_map_t m_var_map;
+
+    bool is_real() const {
+      return std::is_same<Number, ikos::q_number>::value;
+    }
+    
+    bool is_integer() const {
+      return !is_real();
+    }
     
     static elina_manager_t* get_man() {
       if (!m_apman) {
@@ -275,10 +294,19 @@ namespace domains {
       }
       return m_apman;
     }
-    
+
+    // Elina assume dimensions [0..intdim-1] correspond to integer
+    // variables, and dimensions [intdim..intdim+realdim-1] to real
+    // variables. In our case, we don't allow mix. 
     size_t get_dims(elina_state_ptr s) const {
       elina_dimension_t dims = _elina_abstract0_dimension(&*s);
-      return dims.intdim;
+      if (is_real()) {
+	assert(dims.intdim == 0);
+	return dims.realdim;
+      } else {
+	assert(dims.realdim == 0);
+	return dims.intdim;
+      }
     }
     
     size_t get_dims() const { return get_dims(m_apstate); }
@@ -330,8 +358,13 @@ namespace domains {
     
     void add_dimensions(elina_state_ptr& s, size_t dims) const {
       if (dims <= 0) return;
-      
-      elina_dimchange_t* dimchange =  elina_dimchange_alloc(dims, 0);
+      elina_dimchange_t* dimchange = nullptr;
+      if (is_integer()) { 
+	dimchange = elina_dimchange_alloc(dims, 0);
+      } else {
+	assert(is_real());
+	dimchange = elina_dimchange_alloc(0, dims);
+      }
       for (unsigned i=0 ; i<dims ; i++)
 	dimchange->dim[i] = get_dims(s); // add dimension at the end
       
@@ -349,7 +382,13 @@ namespace domains {
       //                   are in ascending order.
       std::sort(dims.begin(), dims.end());
       
-      elina_dimchange_t* dimchange =  elina_dimchange_alloc(dims.size(), 0);
+      elina_dimchange_t* dimchange =  nullptr;
+      if (is_integer()) {
+	dimchange = elina_dimchange_alloc(dims.size(), 0);
+      } else {
+	assert(is_real());
+	dimchange = elina_dimchange_alloc(0, dims.size());
+      }
       for (unsigned i=0; i<dims.size() ; i++) {
 	// remove dimension dims[i] and shift to the left all the
 	// dimensions greater than dims[i]
@@ -497,7 +536,7 @@ namespace domains {
     inline void convert_crab_number(ikos::q_number n, mpq_class &res) const 
     { res = ((mpq_class) n); }
 
-    //// from crab to tree expressions
+    //// using tree expressions
     inline elina_texpr0_t* var2texpr(variable_t v) { 
       return elina_texpr0_dim(get_var_dim_insert(v));
     }
@@ -552,7 +591,7 @@ namespace domains {
       } 
     }
 
-    //// from crab linear expressions and constraints
+    //// Using linear expressions and constraints
     elina_linexpr0_t* crab_linexpr_to_elina(const linear_expression_t& e) {
       elina_linexpr0_t* linexpr = elina_linexpr0_alloc(ELINA_LINEXPR_SPARSE, e.size());
       if (!linexpr) {
@@ -605,7 +644,7 @@ namespace domains {
     inline void convert_elina_number(mpq_ptr n, ikos::q_number &res) const
     { res = ikos::q_number(mpq_class(n)); }	  
     
-    number_t coeff2Num(elina_coeff_t* coeff) {
+    number_t coeff_to_num(elina_coeff_t* coeff) {
       assert(coeff->discr == ELINA_COEFF_SCALAR);
       
       elina_scalar_t* scalar = coeff->val.scalar;	  
@@ -613,18 +652,17 @@ namespace domains {
 	number_t res;
 	convert_elina_number(scalar->val.dbl, res);
 	return res;
-      }
-      else if(scalar->discr == ELINA_SCALAR_MPQ) {
+      } else if(scalar->discr == ELINA_SCALAR_MPQ) {
 	number_t res;
 	convert_elina_number(scalar->val.mpq, res);
 	return res;
-      }
-      else
+      } else {
 	CRAB_ERROR("elina translation only covers double or mpq scalars");
+      }
     }
     
     linear_expression_t term2expr(elina_coeff_t* coeff, elina_dim_t i) {
-      return variable_t(get_variable(i)) * coeff2Num(coeff) ;
+      return variable_t(get_variable(i)) * coeff_to_num(coeff) ;
     }
     
     linear_constraint_t tconst2const(elina_lincons0_t cons) {
@@ -645,7 +683,7 @@ namespace domains {
       // add possible constant
       elina_coeff_t* cst = elina_linexpr0_cstref(linexp);
       if (!elina_coeff_zero(cst)) 
-	e = e + coeff2Num(cst);
+	e = e + coeff_to_num(cst);
       linear_constraint_t res;
       switch (cons.constyp) {
       case ELINA_CONS_EQ:

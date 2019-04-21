@@ -42,12 +42,12 @@ namespace crab {
     typedef SplitDBM<ikos::z_number,varname_t,z_SplitGraph> z_sdbm_domain_t;
     typedef boxes_domain<ikos::z_number,varname_t> z_boxes_domain_t;
     typedef dis_interval_domain<ikos::z_number, varname_t > z_dis_interval_domain_t;
-    typedef apron_domain<ikos::z_number,varname_t,apron_domain_id_t::APRON_INT> z_box_apron_domain_t;
-    typedef apron_domain<ikos::z_number,varname_t,apron_domain_id_t::APRON_OCT> z_oct_apron_domain_t;
-    typedef apron_domain<ikos::z_number,varname_t,apron_domain_id_t::APRON_PK>  z_pk_apron_domain_t;
-    typedef elina_domain<ikos::z_number,varname_t,elina_domain_id_t::ELINA_ZONES> z_zones_elina_domain_t;    
-    typedef elina_domain<ikos::z_number,varname_t,elina_domain_id_t::ELINA_OCT> z_oct_elina_domain_t;
-    typedef elina_domain<ikos::z_number,varname_t,elina_domain_id_t::ELINA_PK>  z_pk_elina_domain_t;
+    typedef apron_domain<ikos::z_number,varname_t,APRON_INT> z_box_apron_domain_t;
+    typedef apron_domain<ikos::z_number,varname_t,APRON_OCT> z_oct_apron_domain_t;
+    typedef apron_domain<ikos::z_number,varname_t,APRON_PK>  z_pk_apron_domain_t;
+    typedef elina_domain<ikos::z_number,varname_t,ELINA_ZONES> z_zones_elina_domain_t;    
+    typedef elina_domain<ikos::z_number,varname_t,ELINA_OCT> z_oct_elina_domain_t;
+    typedef elina_domain<ikos::z_number,varname_t,ELINA_PK>  z_pk_elina_domain_t;
     typedef term_domain<term::TDomInfo<ikos::z_number,varname_t,z_interval_domain_t> > z_term_domain_t;
     typedef term_domain<term::TDomInfo<ikos::z_number,varname_t,z_sdbm_domain_t> > z_term_dbm_t;
     typedef term_domain<term::TDomInfo<ikos::z_number,varname_t,z_dis_interval_domain_t> > z_term_dis_int_t;
@@ -67,16 +67,15 @@ namespace crab {
     typedef array_smashing<z_num_null_domain_t> z_as_num_null_t;
     typedef array_smashing<z_bool_num_domain_t> z_as_bool_num_t;
     typedef array_expansion_domain<z_term_domain_t> z_ae_term_int_t;
-    // machine arithmetic domains
+    // Machine integer arithmetic domains
     typedef wrapped_interval_domain<ikos::z_number, varname_t> z_wrapped_interval_domain_t;
-    /// Numerical domains over rationals
-    typedef interval_domain<ikos::q_number,varname_t > q_interval_domain_t;
-    typedef apron_domain<ikos::q_number,varname_t,apron_domain_id_t::APRON_PK>
-    q_pk_apron_domain_t;
-    typedef elina_domain<ikos::q_number,varname_t,elina_domain_id_t::ELINA_PK>
-    q_pk_elina_domain_t;
-
-    typedef boxes_domain<q_number, varname_t > q_boxes_domain_t;         
+    /// Numerical domains over real
+    typedef interval_domain<ikos::q_number,varname_t> q_interval_domain_t;
+    typedef boxes_domain<q_number, varname_t> q_boxes_domain_t;         
+    typedef apron_domain<ikos::q_number,varname_t,APRON_PK> q_pk_apron_domain_t;
+    typedef apron_domain<ikos::q_number,varname_t,APRON_OCT> q_oct_apron_domain_t;
+    typedef elina_domain<ikos::q_number,varname_t,ELINA_PK> q_pk_elina_domain_t;
+    typedef elina_domain<ikos::q_number,varname_t,ELINA_OCT> q_oct_elina_domain_t;
   } 
 }
 #endif /*__CRAB_DOMAINS__*/

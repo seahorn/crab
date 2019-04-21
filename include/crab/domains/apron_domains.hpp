@@ -230,6 +230,13 @@ namespace crab {
 #include <crab/domains/apron/apron.hpp>
 #include <boost/bimap.hpp>
 
+#include <type_traits>
+
+/**
+ * If template parameter Number is ikos::q_number then the Elina
+ * domain will use real variables. Otherwise, all variables are
+ * integers. 
+ **/
 
 namespace crab {
    namespace domains {
@@ -264,6 +271,14 @@ namespace crab {
         ap_state_ptr m_apstate; 
         var_map_t m_var_map;
 
+	bool is_real() const {
+	  return std::is_same<Number, ikos::q_number>::value;
+	}
+	
+	bool is_integer() const {
+	  return !is_real();
+	}
+	
         static ap_manager_t* get_man() {
           if (!m_apman) {
             switch (ApronDom) {
@@ -276,9 +291,18 @@ namespace crab {
           return m_apman;
         }
 
+	// Apron assume dimensions [0..intdim-1] correspond to integer
+	// variables, and dimensions [intdim..intdim+realdim-1] to real
+	// variables. In our case, we don't allow mix. 	
         size_t get_dims(ap_state_ptr s) const {
           ap_dimension_t dims = _ap_abstract0_dimension(&*s);
-          return dims.intdim;
+	  if (is_real()) {
+	    assert(dims.intdim == 0);
+	    return dims.realdim;
+	  } else {
+	    assert(dims.realdim == 0);
+	    return dims.intdim;
+	  }
         }
 
         size_t get_dims() const { return get_dims(m_apstate); }
@@ -331,7 +355,14 @@ namespace crab {
         void add_dimensions(ap_state_ptr& s, size_t dims) const {
           if (dims <= 0) return;
 
-          ap_dimchange_t* dimchange =  ap_dimchange_alloc(dims, 0);
+          ap_dimchange_t* dimchange = nullptr;
+	  if (is_integer()) {
+	    dimchange = ap_dimchange_alloc(dims, 0);
+	  } else {
+	    assert(is_real());
+	    dimchange = ap_dimchange_alloc(0, dims);
+	  }
+	  
           for (unsigned i=0 ; i<dims ; i++)
             dimchange->dim[i] = get_dims(s); // add dimension at the end
 
@@ -349,7 +380,15 @@ namespace crab {
           //                   are in ascending order.
           std::sort(dims.begin(), dims.end());
 
-          ap_dimchange_t* dimchange =  ap_dimchange_alloc(dims.size(), 0);
+          ap_dimchange_t* dimchange = nullptr;
+
+	  if (is_integer()) {
+	    dimchange =  ap_dimchange_alloc(dims.size(), 0);
+	  } else {
+	    assert(is_real());
+	    dimchange =  ap_dimchange_alloc(0, dims.size());	    
+	  }
+	  
           for (unsigned i=0; i<dims.size() ; i++) {
             // remove dimension dims[i] and shift to the left all the
             // dimensions greater than dims[i]
