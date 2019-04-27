@@ -30,6 +30,7 @@
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
+#include <crab/domains/backward_assign_operations.hpp>
 #include <crab/domains/intervals.hpp>
 #include <crab/domains/term/term_expr.hpp>
 #include <crab/domains/term/inverse.hpp>

@@ -18,6 +18,7 @@
 #include <crab/domains/interval.hpp>
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
+#include <crab/domains/backward_assign_operations.hpp>
 
 #include <boost/optional.hpp>
 #include <boost/unordered_set.hpp>

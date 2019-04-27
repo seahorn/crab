@@ -52,52 +52,6 @@
 
 namespace ikos {
 
-  
-  namespace linear_interval_solver_impl {
-
-    typedef interval<z_number> z_interval;
-    typedef interval<q_number> q_interval;  
-    
-    template<>
-    inline z_interval trim_interval(z_interval i, z_interval j) {
-      if (boost::optional<z_number> c = j.singleton()) {
-	if (i.lb() == *c) {
-	  return z_interval(*c + 1, i.ub());
-	} else if (i.ub() == *c) {
-	  return z_interval(i.lb(), *c - 1);
-	} else {
-	}	
-      }
-      return i;
-    }
-    
-    template<>
-    inline q_interval trim_interval(q_interval i, q_interval /* j */) { 
-      // No refinement possible for disequations over rational numbers
-      return i;
-    }
-
-    template<>
-    inline z_interval lower_half_line(z_interval i, bool /*is_signed*/) {
-      return i.lower_half_line();
-    }
-
-    template<>
-    inline q_interval lower_half_line(q_interval i, bool /*is_signed*/) {
-      return i.lower_half_line();
-    }
-
-    template<>
-    inline z_interval upper_half_line(z_interval i, bool /*is_signed*/) {
-      return i.upper_half_line();
-    }
-
-    template<>
-    inline q_interval upper_half_line(q_interval i, bool /*is_signed*/) {
-      return i.upper_half_line();
-    }
-  } // namespace linear_interval_solver_impl
-
   template<typename Number, typename VariableName, std::size_t max_reduction_cycles = 10>
   class interval_domain final:
     public crab::domains::

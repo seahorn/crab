@@ -11,6 +11,7 @@
 #include <crab/common/debug.hpp>
 #include <crab/common/stats.hpp>
 #include <crab/common/types.hpp>
+#include <crab/domains/abstract_domain_operators.hpp>
 
 namespace crab {
   namespace domains {
