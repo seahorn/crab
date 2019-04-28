@@ -5,29 +5,31 @@
    inter-procedural analysis.
 */
 
-#include "boost/noncopyable.hpp"
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
 
 #include <crab/common/debug.hpp>
 #include <crab/common/stats.hpp>
 #include <crab/cfg/cfg.hpp>
 #include <crab/cg/cg.hpp>
+#include <crab/cg/cg_bgl.hpp>
 #include <crab/analysis/graphs/sccg.hpp>
 #include <crab/analysis/graphs/topo_order.hpp>
 #include <crab/analysis/fwd_analyzer.hpp>
 #include <crab/analysis/inter_fwd_analyzer_ds.hpp>
 #include <crab/analysis/dataflow/liveness.hpp>
 
+#include <boost/noncopyable.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
+
 namespace crab {
 
   namespace analyzer {
 
-    template< typename CG, 
-              // abstract domain used for the bottom-up phase
-              typename BU_Dom, 
-              // abstract domain used for the top-down phase
-              typename TD_Dom>
+    template<typename CG, 
+	     // abstract domain used for the bottom-up phase
+	     typename BU_Dom, 
+	     // abstract domain used for the top-down phase
+	     typename TD_Dom>
     class inter_fwd_analyzer: public boost::noncopyable {
 
       typedef typename CG::node_t cg_node_t;
@@ -86,16 +88,16 @@ namespace crab {
      public:
       
       inter_fwd_analyzer(CG cg, const liveness_map_t* live,
-                          unsigned int widening_delay=1,
-                          unsigned int descending_iters=UINT_MAX,
-                          size_t jump_set_size=0)
+			 // fixpoint parameters
+			 unsigned int widening_delay=1,
+			 unsigned int descending_iters=UINT_MAX,
+			 size_t jump_set_size=0)
           : m_cg(cg), m_live(live),
             m_widening_delay(widening_delay), 
             m_descending_iters(descending_iters),
             m_jump_set_size(jump_set_size) { }
       
-      //! Trigger the whole analysis
-      void Run(TD_Dom init = TD_Dom::top())  {
+      void run(TD_Dom init = TD_Dom::top())  {
 
 	CRAB_VERBOSE_IF(1, crab::outs() << "Started inter-procedural analysis\n";);
         CRAB_LOG("inter", 
@@ -135,13 +137,12 @@ namespace crab {
 		                   << (*fdecl).get_func_name() << "\n");
 
 	    auto abs_tr = boost::make_shared<td_abs_tr>(&init, &m_summ_tbl, &m_call_tbl);
-            auto a = boost::make_shared<td_analyzer>(cfg, nullptr, &*abs_tr,
-                                                      m_widening_delay,
-                                                      m_descending_iters,
-                                                      m_jump_set_size,
-						      get_live(cfg));
+            auto a = boost::make_shared<td_analyzer>(cfg, nullptr, &*abs_tr, get_live(cfg),
+						     m_widening_delay,
+						     m_descending_iters,
+						     m_jump_set_size);
 						      
-            a->Run();
+            a->run_forward();
             m_inv_map.insert(std::make_pair(crab::cfg::cfg_hasher<cfg_t>::hash(*fdecl), a));
           }
           return;
@@ -169,10 +170,9 @@ namespace crab {
               // --- run the analysis
 	      auto init_inv = BU_Dom::top();
 	      bu_abs_tr abs_tr(&init_inv, &m_summ_tbl);
-              bu_analyzer a(cfg, nullptr, &abs_tr, 
-                             m_widening_delay, m_descending_iters, m_jump_set_size,
-			     get_live(cfg)) ; 
-              a.Run();
+              bu_analyzer a(cfg, nullptr, &abs_tr, get_live(cfg),
+			    m_widening_delay, m_descending_iters, m_jump_set_size);
+              a.run_forward();
 	      
               // --- build the summary
               std::vector<variable_t> formals, inputs, outputs;
@@ -240,12 +240,11 @@ namespace crab {
   		                  << *fdecl <<  " with " << init_inv << "\n");
 
 	    auto abs_tr = boost::make_shared<td_abs_tr>(&init_inv, &m_summ_tbl, &m_call_tbl);
-            auto a = boost::make_shared<td_analyzer>(cfg, nullptr, &*abs_tr, 
-                                                      m_widening_delay,
-						      m_descending_iters,
-						      m_jump_set_size,
-						      get_live(cfg));
-	    a->Run();
+            auto a = boost::make_shared<td_analyzer>(cfg, nullptr, &*abs_tr, get_live(cfg),
+						     m_widening_delay,
+						     m_descending_iters,
+						     m_jump_set_size);
+	    a->run_forward();
             m_inv_map.insert(std::make_pair(crab::cfg::cfg_hasher<cfg_t>::hash(*fdecl), a));
           }
         }

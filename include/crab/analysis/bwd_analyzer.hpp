@@ -17,18 +17,21 @@ namespace crab {
   namespace analyzer {
 
     /** 
-     * Compute necessary preconditions by computing the abstract
-     * least fixpoint of the reversed CFG. At each step the
-     * precondition is refined with an invariant computed by a
+     * Compute necessary preconditions by computing the abstract least
+     * fixpoint of the reversed CFG. Optionally, at each step the
+     * precondition can be refined with an invariant computed by a
      * forward analysis.
      **/      
-    template <typename NodeName, typename CFG, typename AbsDom>
+    template <typename CFG, typename AbsDom>
     class necessary_preconditions_fixpoint_iterator:
-      public ikos::interleaved_fwd_fixpoint_iterator
-                   <NodeName, crab::cfg::cfg_rev<CFG>, AbsDom> {
+      private ikos::interleaved_fwd_fixpoint_iterator
+                   <typename CFG::basic_block_label_t,
+		    crab::cfg::cfg_rev<CFG>,
+		    AbsDom> {
       
       typedef ikos::interleaved_fwd_fixpoint_iterator
-      <NodeName, crab::cfg::cfg_rev<CFG>, AbsDom> fixpoint_iterator_t;
+      <typename CFG::basic_block_label_t,
+       crab::cfg::cfg_rev<CFG>, AbsDom> fixpoint_iterator_t;
       
       typedef intra_abs_transformer<AbsDom> abs_fwd_tr_t;	
       typedef typename CFG::basic_block_label_t bb_label_t;
@@ -103,32 +106,49 @@ namespace crab {
       typedef bb_abstract_map_t precond_map_t;     
       typedef typename precond_map_t::iterator iterator;
       typedef typename precond_map_t::const_iterator const_iterator;
+
+      necessary_preconditions_fixpoint_iterator
+      (CFG cfg, AbsDom postcond,
+       /* fixpoint parameters */
+       unsigned int widening_delay=1,
+       unsigned int descending_iterations=UINT_MAX,
+       size_t jump_set_size=0)
+	: fixpoint_iterator_t(crab::cfg::cfg_rev<CFG>(cfg), nullptr,
+			      widening_delay, descending_iterations, jump_set_size),
+	  m_cfg(cfg),
+	  m_postcond(postcond) {}
+      
       
       necessary_preconditions_fixpoint_iterator
       (CFG cfg, const wto_t *wto, AbsDom postcond,
        /* fixpoint parameters */
-       unsigned int widening_delay,
-       unsigned int descending_iterations,
-       size_t jump_set_size)
+       unsigned int widening_delay=1,
+       unsigned int descending_iterations=UINT_MAX,
+       size_t jump_set_size=0)
 	: fixpoint_iterator_t(crab::cfg::cfg_rev<CFG>(cfg), wto,
 			      widening_delay, descending_iterations, jump_set_size),
 	  m_cfg(cfg),
-	  m_postcond(postcond) { }
-     
-      template <typename Range>
-      void Run(Range invariants) {
-	m_invariants = bb_abstract_map_t(invariants.begin(), invariants.end());
+	  m_postcond(postcond) {}
+
+      void run_backward() {
 	this->run(m_postcond);
       }
       
+      void run_backward(const boost::unordered_map
+			<typename CFG::basic_block_label_t,AbsDom>& fwd_invariants) {
+      	m_invariants.insert(fwd_invariants.begin(), fwd_invariants.end());
+      	run_backward();
+      }
+                  
       iterator begin() { return m_preconditions.begin(); } 
       
-      iterator end() { return m_preconditions.end();   }
+      iterator end() { return m_preconditions.end(); }
       
       const_iterator begin() const { return m_preconditions.begin(); }
       
       const_iterator end() const { return m_preconditions.end();   }
-      
+
+      // return the preconditions at basic block node
       AbsDom operator[](bb_label_t node) const {
 	auto it = m_preconditions.find(node);
 	if (it != m_preconditions.end())
@@ -137,11 +157,11 @@ namespace crab {
 	  return AbsDom::top();
       }
 
-      // clear preconditions and forward invariants
+      // clear preconditions and forward invariants (if any)
       void clear() {
 	m_preconditions.clear();
 	m_invariants.clear();
-      }
+     }
       
       const wto_t& get_WTO() const {
 	return this->get_wto();
@@ -150,11 +170,8 @@ namespace crab {
     };
 
     /**
-     *  A forward-backward analyzer to compute necessary
-     *  preconditions based on Cousot&Cousot's JLP'92
-     *
-     * The API of this class is such that from outside it looks pretty
-     * much like a forward analyzer.
+     *  A forward-backward analyzer to compute necessary preconditions
+     *  based on Cousot&Cousot's JLP'92.
      **/
     template<typename CFG, typename AbsDom>
     class intra_forward_backward_analyzer: public boost::noncopyable {
@@ -171,7 +188,7 @@ namespace crab {
     private:
       
       typedef intra_fwd_analyzer<CFG, AbsDom> fwd_analyzer_t;
-      typedef necessary_preconditions_fixpoint_iterator<bb_label_t, CFG, AbsDom>
+      typedef necessary_preconditions_fixpoint_iterator<CFG, AbsDom>
       bwd_fixpoint_iterator_t;
       typedef boost::unordered_map<bb_label_t, AbsDom> invariant_map_t; 
       typedef typename bwd_fixpoint_iterator_t::precond_map_t precond_map_t;
@@ -270,7 +287,7 @@ namespace crab {
 
 	  crab::CrabStats::resume("CombinedForwardBackward.ForwardPass");
 	  // run forward analysis computing invariants
-	  fwd_analyzer_t F(m_cfg, m_wto, init_states, live,
+	  fwd_analyzer_t F(m_cfg, init_states, live, m_wto, 
 			   widening_delay, descending_iters, jump_set_size);
 	  F.run(entry, assumptions);
 	  crab::CrabStats::stop("CombinedForwardBackward.ForwardPass");
@@ -301,7 +318,7 @@ namespace crab {
 	  bwd_fixpoint_iterator_t B
 	    (m_cfg, m_b_wto, final_states,
 	     widening_delay, descending_iters, jump_set_size);
-	  B.Run(boost::make_iterator_range(F.pre_begin(), F.pre_end()));
+	  B.run_backward(F.get_pre_invariants());
 	  crab::CrabStats::stop("CombinedForwardBackward.BackwardPass"); 
 
 	  CRAB_VERBOSE_IF(1, crab::outs() << "Finished backward analysis.\n";);

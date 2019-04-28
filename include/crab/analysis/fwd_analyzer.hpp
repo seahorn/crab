@@ -25,9 +25,9 @@ namespace crab {
      **/
     template< typename CFG, typename AbsTr>
     class fwd_analyzer: 
-        public ikos::interleaved_fwd_fixpoint_iterator<typename CFG::basic_block_label_t, 
-						       CFG, 
-						       typename AbsTr::abs_dom_t> {
+      private ikos::interleaved_fwd_fixpoint_iterator
+               <typename CFG::basic_block_label_t, 
+		CFG, typename AbsTr::abs_dom_t> { 
      public:
 
       typedef CFG cfg_t;
@@ -44,6 +44,7 @@ namespace crab {
       
      public:
 
+      typedef typename fwd_iterator_t::invariant_table_t invariant_table_t;      
       typedef typename fwd_iterator_t::assumption_map_t assumption_map_t;
       typedef liveness<CFG> liveness_t;
       typedef typename fwd_iterator_t::wto_t wto_t;
@@ -87,12 +88,13 @@ namespace crab {
      public:
 
       fwd_analyzer(CFG cfg, const wto_t *wto, abs_tr_t* abs_tr,
+		   // live can be nullptr if no live info is available
+		   const liveness_t* live,
 		   // fixpoint parameters
 		   unsigned int widening_delay,
 		   unsigned int descending_iters,
-		   size_t jump_set_size,
-		   // live can be nullptr if no live info is available
-		   const liveness_t* live)
+		   size_t jump_set_size)
+		   
 	: fwd_iterator_t(cfg, wto,
 			 widening_delay, descending_iters, jump_set_size,
 			 false /*disable processor*/), 
@@ -116,6 +118,39 @@ namespace crab {
         }
 
       }
+
+      //! Trigger the fixpoint computation 
+      void run_forward()  {
+        // ugly hook to initialize some global state. This needs to be
+        // fixed properly.
+	domains::array_sgraph_domain_traits<abs_dom_t>::do_initialization(this->get_cfg());
+	  
+        // XXX: inv was created before the static data is initialized
+        //      so it won't contain that data.
+        this->run(*m_abs_tr->get());         
+      }      
+
+      void run_forward(basic_block_label_t entry, const assumption_map_t &assumptions)  {
+        // ugly hook to initialize some global state. This needs to be
+        // fixed properly.
+	domains::array_sgraph_domain_traits<abs_dom_t>::do_initialization(this->get_cfg());
+	
+        // XXX: inv was created before the static data is initialized
+        //      so it won't contain that data.	
+        this->run(entry, *m_abs_tr->get(), assumptions);         
+      }      
+      
+      CFG get_cfg() const {
+	return this->_cfg;
+      }
+
+      const invariant_table_t& get_pre_invariants() const {
+	return this->_pre;
+      }
+      
+      const invariant_table_t& get_post_invariants() const {
+	return this->_post;
+      }
       
       iterator       pre_begin()       { return this->_pre.begin(); } 
       iterator       pre_end()         { return this->_pre.end();   }
@@ -127,27 +162,6 @@ namespace crab {
       const_iterator post_begin() const { return this->_post.begin(); }
       const_iterator post_end()   const { return this->_post.end();   }
       
-      //! Trigger the fixpoint computation 
-      void Run()  {
-        // ugly hook to initialize some global state. This needs to be
-        // fixed properly.
-	domains::array_sgraph_domain_traits<abs_dom_t>::do_initialization(this->get_cfg());
-	  
-        // XXX: inv was created before the static data is initialized
-        //      so it won't contain that data.
-        this->run(*m_abs_tr->get());         
-      }      
-
-      void Run(basic_block_label_t entry, const assumption_map_t &assumptions)  {
-        // ugly hook to initialize some global state. This needs to be
-        // fixed properly.
-	domains::array_sgraph_domain_traits<abs_dom_t>::do_initialization(this->get_cfg());
-	
-        // XXX: inv was created before the static data is initialized
-        //      so it won't contain that data.	
-        this->run(entry, *m_abs_tr->get(), assumptions);         
-      }      
-
       //! Return the invariants that hold at the entry of b
       inline abs_dom_t operator[](basic_block_label_t b) const {
         return get_pre(b);
@@ -184,8 +198,8 @@ namespace crab {
 
       //! Return the WTO of the CFG. The WTO contains also how many
       //! times each head was visited by the fixpoint iterator.
-      const wto_t& get_WTO() const {
-	return this->get_wto();
+      const wto_t& get_wto() const {
+	return fwd_iterator_t::get_wto();
       }
 
       // clear all invariants (pre and post)
@@ -197,9 +211,11 @@ namespace crab {
     }; 
 
     /**
-     * Wrapper for fwd_analyzer_class. The main difference with
-     * fwd_analyzer class is that here we create an abstract
-     * transformer instance while fwd_analyzer does not.
+     * Public wrapper for fwd_analyzer_class. 
+     * 
+     * The main difference with fwd_analyzer class is that here we
+     * create an abstract transformer instance while fwd_analyzer does
+     * not.
      **/
     template<typename CFG, typename AbsDomain, typename AbsTr>
     class intra_fwd_analyzer_wrapper {
@@ -217,6 +233,7 @@ namespace crab {
       typedef typename fwd_analyzer_t::wto_t wto_t;      
       
       typedef typename fwd_analyzer_t::assumption_map_t assumption_map_t;
+      typedef typename fwd_analyzer_t::invariant_table_t invariant_table_t;
       typedef typename fwd_analyzer_t::iterator iterator;
       typedef typename fwd_analyzer_t::const_iterator const_iterator;
 
@@ -228,7 +245,6 @@ namespace crab {
       
     public:
 
-      // simplest API to trigger the intra-procedural forward analysis
       intra_fwd_analyzer_wrapper(CFG cfg, 
 				 // fixpoint parameters
 				 unsigned int widening_delay=1,
@@ -236,41 +252,32 @@ namespace crab {
 				 size_t jump_set_size=0)
 	: m_init(AbsDomain::top()),
 	  m_abs_tr(boost::make_shared<abs_tr_t>(&m_init)),
-	  m_analyzer(cfg, nullptr, &*m_abs_tr, 
-		     widening_delay, descending_iters, jump_set_size,
-		     nullptr) { }
-      
-      intra_fwd_analyzer_wrapper(CFG cfg, AbsDomain init,
-				 // liveness info
-				 const liveness_t* live = nullptr,
-				 // fixpoint parameters
-				 unsigned int widening_delay=1,
-				 unsigned int descending_iters=UINT_MAX,
-				 size_t jump_set_size=0)
-	: m_init(init),
-	  m_abs_tr(boost::make_shared<abs_tr_t>(&m_init)),	  
-	  m_analyzer(cfg, nullptr, &*m_abs_tr, 
-		     widening_delay, descending_iters, jump_set_size,
-		     live) { }
+	  m_analyzer(cfg, nullptr, &*m_abs_tr, nullptr,
+		     widening_delay, descending_iters, jump_set_size) {}
       
       intra_fwd_analyzer_wrapper(CFG cfg,
-				 // avoid precompute wto if already available
-				 // it can be null				  
-				 const wto_t *wto, 
 				 AbsDomain init,
-				 // liveness info
+				 // live variables
 				 const liveness_t* live = nullptr,
+				 // avoid precompute wto if already available
+				 const wto_t *wto = nullptr, 
 				 // fixpoint parameters
 				 unsigned int widening_delay=1,
 				 unsigned int descending_iters=UINT_MAX,
 				 size_t jump_set_size=0)
 	: m_init(init),
 	  m_abs_tr(boost::make_shared<abs_tr_t>(&m_init)),	  	  
-	  m_analyzer(cfg, wto, &*m_abs_tr, 
-		     widening_delay, descending_iters, jump_set_size,
-		     live) { }
-      
-      
+	  m_analyzer(cfg, wto, &*m_abs_tr, live, 
+		     widening_delay, descending_iters, jump_set_size) {}
+
+      void run() {
+	m_analyzer.run_forward();
+      }
+
+      void run(basic_block_label_t entry, const assumption_map_t &assumptions) {
+	m_analyzer.run_forward(entry, assumptions);
+      }
+            
       iterator       pre_begin()       { return m_analyzer.pre_begin();} 
       iterator       pre_end()         { return m_analyzer.pre_end();}
       const_iterator pre_begin() const { return m_analyzer.pre_begin();}
@@ -281,12 +288,12 @@ namespace crab {
       const_iterator post_begin() const { return m_analyzer.post_begin();}
       const_iterator post_end()   const { return m_analyzer.post_end();}
 
-      void run() {
-	m_analyzer.Run();
+      const invariant_table_t& get_pre_invariants() const {
+	return m_analyzer.get_pre_invariants();
       }
-
-      void run(basic_block_label_t entry, const assumption_map_t &assumptions) {
-	m_analyzer.Run(entry, assumptions);
+      
+      const invariant_table_t& get_post_invariants() const {
+	return m_analyzer.get_post_invariants();
       }
       
       abs_dom_t operator[](basic_block_label_t b) const {
@@ -301,10 +308,6 @@ namespace crab {
 	return m_analyzer.get_post(b);
       }
 
-      void clear() {
-	m_analyzer.clear();
-      }
-      
       CFG get_cfg() {
 	return m_analyzer.get_cfg();
       }
@@ -315,9 +318,13 @@ namespace crab {
       }
       
       const wto_t& get_wto() const {
-	return m_analyzer.get_WTO();
+	return m_analyzer.get_wto();
       }
 
+      void clear() {
+	m_analyzer.clear();
+      }
+            
     };
 
 

@@ -76,10 +76,10 @@ namespace ikos {
     
     typedef wto<NodeName, CFG> wto_t;
     typedef boost::unordered_map<NodeName,AbstractValue> assumption_map_t;
+    typedef boost::unordered_map<NodeName,AbstractValue> invariant_table_t;
     
   private:
     
-    typedef boost::unordered_map<NodeName,AbstractValue> invariant_table_t;
     typedef interleaved_fwd_fixpoint_iterator_impl::wto_iterator<NodeName, CFG, AbstractValue> wto_iterator_t;
     typedef interleaved_fwd_fixpoint_iterator_impl::wto_processor<NodeName, CFG, AbstractValue> wto_processor_t;
     typedef crab::iterators::thresholds<typename CFG::number_t> thresholds_t;    
@@ -252,6 +252,14 @@ namespace ikos {
       return this->get(this->_post, node);
     }
 
+    const invariant_table_t& get_pre_invariants() const {
+      return this->_pre;
+    }
+
+    const invariant_table_t& get_post_invariants() const {
+      return this->_post;
+    }
+    
     void run(AbstractValue init) {
       crab::ScopedCrabStats __st__("Fixpo");
       CRAB_VERBOSE_IF(1, crab::outs() << "== Started fixpoint\n");

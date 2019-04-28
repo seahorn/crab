@@ -27,7 +27,7 @@ void intra_run_impl (CFG* cfg,
   Dom inv = Dom::top ();        
   crab::outs() << "Invariants using " << inv.getDomainName () << "\n";
   IntraFwdAnalyzer a (*cfg, inv,
-		      (run_liveness) ? &live : nullptr,
+		      (run_liveness) ? &live : nullptr, nullptr,
 		      widening, narrowing, jump_set_size);
 
   typename IntraFwdAnalyzer::assumption_map_t assumptions;

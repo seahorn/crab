@@ -21,7 +21,7 @@ void inter_run_impl (CG* cg,
 	       << " and forward domain=" << TDDom::getDomainName () << "\n";
   
   InterFwdAnalyzer a (cg_ref, nullptr /*live*/, widening, narrowing, jump_set_size);
-  a.Run ();
+  a.run ();
   
   // Print invariants
   for (auto &v: boost::make_iterator_range (cg_ref.nodes())) {
