@@ -2581,6 +2581,33 @@ bb2={-x <= 0; x <= 100}
 bb4={-x <= 0}
 bb3={-x <= 0}
 
+bb0:
+  goto bb1,bb2;
+bb1:
+  assume(-argc <= -3);
+  assert(-len <= -3);
+  goto bb3;
+bb3:
+  goto bb4,bb5;
+bb4:
+  assume(-argc <= -2);
+  assert(-len <= -2);
+  goto bb6;
+bb6:
+
+bb5:
+  goto bb6;
+bb2:
+  goto bb3;
+
+Necessary preconditions for failure using Polyhedra domain:
+bb6:_|_
+bb5:_|_
+bb4:{len <= 1; -argc <= -2}
+bb3:{len <= 1; -argc <= -2}
+bb2:{len <= 1; -argc <= -2}
+bb1:{len <= 2; -argc <= -3}
+bb0:{len <= 2; -argc+len <= -1; -argc <= -2}
 {x -> t2[_x2], y -> t0[_x0]}{_x0 -> [8, 8]; _x1 -> [5, 5]; _x2 -> [40, 40]} | {x -> t2[_x1], y -> t0[_x2]}{_x0 -> [5, 5]} = {x -> t2[_y2], y -> t0[_y0]}{_y1 -> [5, 5]}
 {x -> t0[_x0]}{_x0 -> [1, 1]} | {x -> t1[_x1]}{_x0 -> [1, 1]; _x1 -> [2, 2]} = {x -> t0[_y0]}{_y0 -> [1, 2]}
 Before project {x -> t0[_x0], y -> t0[_x0], z -> t1[_x1]}{_x0 -> [5, 5]; _x1 -> [9, 9]}

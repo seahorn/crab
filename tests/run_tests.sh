@@ -42,7 +42,7 @@ STATUS=$?
 ###################################################################
 ## Comment this line if we want to keep the generated output
 ###################################################################
-rm -f $NEWLOG
+#rm -f $NEWLOG
 
 if [ $STATUS -eq 0 ]; then
     echo "All tests passed successfully!"
