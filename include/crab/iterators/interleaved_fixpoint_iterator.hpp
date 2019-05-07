@@ -401,6 +401,7 @@ namespace ikos {
           pre = this->_iterator->get_pre(node);
 	  if (_assumptions) { // no necessary but it might avoid copies
 	    pre = strengthen(node, pre);
+	    this->_iterator->set_pre(node, pre);
 	  }
         } else {
           auto prev_nodes = this->_iterator->_cfg.prev_nodes(node);
