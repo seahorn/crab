@@ -35,8 +35,10 @@ namespace crab {
        *  case 2: if x does not appear in e
        *   1) add constraint x = e
        *   2) forget x
-       *  case 3: if x appears in e 
-       *   TODO: (this works only for very expressive domains)
+       *  case 3: if x appears in e  
+       *  TODO: 
+       *   This is a just a general recipe. Better to implement a more
+       *   precise transformer inside the domain.
        *   1) add new variable x'
        *   1) add constraint x = e[x'/x]
        *   3) forget x 

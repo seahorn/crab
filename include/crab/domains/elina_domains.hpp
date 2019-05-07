@@ -1709,14 +1709,16 @@ namespace domains {
       crab::ScopedCrabStats __st__(getDomainName() + ".backward_assign");
       
       if(is_bottom()) return;
+
+      // common renaming first
+      m_var_map = merge_var_map(m_var_map, m_apstate,
+				invariant.m_var_map,
+				invariant.m_apstate);
       
       elina_texpr0_t* t = expr2texpr(e);
       assert(t);
       auto dim_x = get_var_dim_insert(x);
       
-      m_var_map = merge_var_map(m_var_map, m_apstate,
-				     invariant.m_var_map,
-				     invariant.m_apstate);
       
       m_apstate = elinaPtr(get_man(), 
 			    elina_abstract0_substitute_texpr(get_man(), false, 
@@ -1737,6 +1739,11 @@ namespace domains {
       crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
       
       if(is_bottom()) return;
+
+      // common renaming first
+      m_var_map = merge_var_map(m_var_map, m_apstate,
+				invariant.m_var_map,
+				invariant.m_apstate);
       
       elina_texpr0_t* a = var2texpr(y);
       elina_texpr0_t* b = num2texpr(z);
@@ -1760,11 +1767,7 @@ namespace domains {
       assert(res);
       
       auto dim_x = get_var_dim_insert(x);
-      
-      m_var_map = merge_var_map(m_var_map, m_apstate,
-				 invariant.m_var_map,
-				 invariant.m_apstate);
-      
+            
       m_apstate = elinaPtr(get_man(),
 			    elina_abstract0_substitute_texpr(get_man(), false, 
 							     &*m_apstate, 
@@ -1784,6 +1787,11 @@ namespace domains {
       crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
       
       if(is_bottom()) return;
+
+      // common renaming first
+      m_var_map = merge_var_map(m_var_map, m_apstate,
+				invariant.m_var_map,
+				invariant.m_apstate);
       
       elina_texpr0_t* a = var2texpr(y);
       elina_texpr0_t* b = var2texpr(z);
@@ -1806,9 +1814,6 @@ namespace domains {
       }
       assert(res);
       auto dim_x = get_var_dim_insert(x);
-      m_var_map = merge_var_map(m_var_map, m_apstate,
-				 invariant.m_var_map,
-				 invariant.m_apstate);
       m_apstate = elinaPtr(get_man(),
 			    elina_abstract0_substitute_texpr(get_man(), false, 
 							     &*m_apstate, 

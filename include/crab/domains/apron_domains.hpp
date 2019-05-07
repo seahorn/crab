@@ -503,7 +503,7 @@ namespace crab {
           free(ymap1);
           free(ymap2);
 
-          #if 0          
+          #if 0
           crab::outs() << "Permutations \n";
           ap_dimperm_fprint(stdout, perm_x);          
           crab::outs() << "Permutations \n";
@@ -698,7 +698,7 @@ namespace crab {
           for (unsigned i=0; i < get_dims(apstate) ; i++){
             std::string varname;
             if (has_variable(m, i))
-              varname = get_variable(m, i).str();
+              varname = get_variable(m, i).name().str();
             else // unused dimension
               varname = std::string("_x") + std::to_string(i);
             crab::outs() << i << " -> " << varname << ";";
@@ -1469,13 +1469,15 @@ namespace crab {
 
           if(is_bottom()) return;
 
+	  // common renaming first
+	  m_var_map = merge_var_map(m_var_map, m_apstate,
+				     invariant.m_var_map,
+				     invariant.m_apstate);
+	  
           ap_texpr0_t* t = expr2texpr(e);
           assert (t);
           auto dim_x = get_var_dim_insert(x);
 
-	  m_var_map = merge_var_map(m_var_map, m_apstate,
-				     invariant.m_var_map,
-				     invariant.m_apstate);
 	  
           m_apstate = apPtr(get_man(), 
                              ap_abstract0_substitute_texpr(get_man(), false, 
@@ -1497,6 +1499,11 @@ namespace crab {
           if(is_bottom()) return;
 
 	  if (op >= OP_ADDITION && op <= OP_SDIV) {
+
+	    // common renaming first
+	    m_var_map = merge_var_map(m_var_map, m_apstate,
+				       invariant.m_var_map,
+				       invariant.m_apstate);
 	    
 	    ap_texpr0_t* a = var2texpr(y);
 	    ap_texpr0_t* b = num2texpr(z);
@@ -1520,13 +1527,9 @@ namespace crab {
 	    
 	    auto dim_x = get_var_dim_insert(x);
 	    
-	    m_var_map = merge_var_map(m_var_map, m_apstate,
-				       invariant.m_var_map,
-				       invariant.m_apstate);
-	    
 	    m_apstate = apPtr(get_man(),
 			       ap_abstract0_substitute_texpr(get_man(), false, 
-							   &*m_apstate, 
+							     &*m_apstate, 
 							     dim_x, res,
 							     &*invariant.m_apstate));
 	    
@@ -1549,6 +1552,11 @@ namespace crab {
           if(is_bottom()) return;
 
 	  if (op >= OP_ADDITION && op <= OP_SDIV) {
+	    // common renaming first
+	    m_var_map = merge_var_map(m_var_map, m_apstate,
+				       invariant.m_var_map,
+				       invariant.m_apstate);
+	    
 	    ap_texpr0_t* a = var2texpr(y);
 	    ap_texpr0_t* b = var2texpr(z);
 	    ap_texpr0_t* res = nullptr;
@@ -1570,11 +1578,7 @@ namespace crab {
 	    assert(res);
 	    
 	    auto dim_x = get_var_dim_insert(x);
-	    
-	    m_var_map = merge_var_map(m_var_map, m_apstate,
-				       invariant.m_var_map,
-				       invariant.m_apstate);
-	  
+	    	  
 	    m_apstate = apPtr(get_man(),
 			       ap_abstract0_substitute_texpr(get_man(), false, 
 							     &*m_apstate, 
