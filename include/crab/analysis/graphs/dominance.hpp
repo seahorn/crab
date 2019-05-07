@@ -32,19 +32,26 @@ namespace crab {
   namespace analyzer {
    namespace graph_algo {
 
+   struct dominator_tree_traits {
+#if BOOST_VERSION /100 % 100 < 62
+       // XXX: the boost dominator_tree class used by
+       //      lengauer_tarjan_dominator_tree ignores completely
+       //      index_map in versions older than 1.62 so calls to
+       //      get(vertex_index, g) will fail.
+       // FIXME: need to get around in older versions.
+     enum { can_compute_dominator_tree = 0};     
+#else
+     enum { can_compute_dominator_tree = 1};
+#endif      
+   };
+ 
      // Compute the dominator tree of a graph.
      // Out: idom is an associative container of pairs (u,v) where v
      //      is the immediate dominator of u. 
      template <typename G, typename Map>
      void dominator_tree(G g, typename G::node_t entry, Map &idom) {
 #if BOOST_VERSION /100 % 100 < 62
-       // XXX: the boost dominator_tree class used by
-       //      lengauer_tarjan_dominator_tree ignores completely
-       //      index_map in versions older than 1.62 so calls to
-       //      get(vertex_index, g) will fail.
-       // FIXME: need to get around in older versions but for now we
-       //        give up and report to user.
-       CRAB_ERROR("Dominance queries require boost >= 1.62");
+       return;
 #else
        typedef typename G::node_t node_t;
        typedef typename boost::graph_traits<G>::vertices_size_type vertices_size_type_t;       
@@ -57,14 +64,14 @@ namespace crab {
 
        // build a map that maps graph vertices to indexes
        std::map <node_t, int> imap;
-       index_map_t index_map (imap);
+       index_map_t index_map(imap);
        typename boost::graph_traits<G>::vertex_iterator It, Et;
        int j = 0;
        for (tie(It, Et) = vertices(g); It != Et; ++It, ++j) {
        	 put(index_map, *It, j);
        }
 
-       std::vector<vertices_size_type_t> df_num(num_vertices (g), 0);
+       std::vector<vertices_size_type_t> df_num(num_vertices(g), 0);
        time_map_t df_num_map(make_iterator_property_map(df_num.begin(), index_map));
        std::vector<node_t> parent(num_vertices(g),boost::graph_traits<G>::null_vertex());
        pred_map_t parent_map(make_iterator_property_map(parent.begin(), index_map));
@@ -79,19 +86,19 @@ namespace crab {
 					     vertices_by_df_num, dom_tree_pred_map);
 
 
-       for (auto v: boost::make_iterator_range (vertices (g))) {
+       for (auto v: boost::make_iterator_range(vertices(g))) {
 	 if (get(dom_tree_pred_map, v) != boost::graph_traits<G>::null_vertex()) {
-	   idom.insert (typename Map::value_type (v, get(dom_tree_pred_map, v)));
-	   CRAB_LOG ("dominator",
-		     crab::outs () << crab::cfg_impl::get_label_str(get(dom_tree_pred_map, v))
+	   idom.insert(typename Map::value_type(v, get(dom_tree_pred_map, v)));
+	   CRAB_LOG("dominator",
+		     crab::outs() << crab::cfg_impl::get_label_str(get(dom_tree_pred_map, v))
 		                   << " is the immediate dominator of "
  		                   << crab::cfg_impl::get_label_str(v)
 		                   << "\n";); 
              		           
 	 } else {
-	   idom.insert (typename Map::value_type (v, boost::graph_traits<G>::null_vertex()));
-	   CRAB_LOG ("dominator",
-		     crab::outs () << crab::cfg_impl::get_label_str(v)
+	   idom.insert(typename Map::value_type(v, boost::graph_traits<G>::null_vertex()));
+	   CRAB_LOG("dominator",
+		     crab::outs() << crab::cfg_impl::get_label_str(v)
 		                   << " is not dominated by anyone!\n");
 	 }
        }
@@ -101,50 +108,55 @@ namespace crab {
      namespace graph_algo_impl {       
        // OUT: df is a map from nodes to their dominance frontier
        template<typename G, typename VectorMap>
-       void dominance (G g, typename G::node_t entry, VectorMap &df) {
-	 typedef typename G::node_t node_t; 
+       void dominance(G g, typename G::node_t entry, VectorMap &df) {
+
+	 if (!dominator_tree_traits::can_compute_dominator_tree) {
+	   CRAB_WARN("Cannot compute dominator tree. Use boost >= 1.62");		   
+	   return;
+	 }
 	 
+	 typedef typename G::node_t node_t; 
 	 // map node to its idom node
 	 boost::unordered_map<node_t, node_t> idom;
 	 crab::CrabStats::resume("Dominator Tree");       	 	 
-	 dominator_tree (g, entry, idom);
+	 dominator_tree(g, entry, idom);
 	 crab::CrabStats::stop("Dominator Tree");	 
 	 // // map node n to all its immediate dominated nodes
 	 // boost::unordered_map<node_t, std::vector<node_t> > dominated;
-	 // for (auto v: boost::make_iterator_range (vertices (g))) {
+	 // for (auto v: boost::make_iterator_range(vertices(g))) {
 	 //   if (idom[v] != boost::graph_traits<G>::null_vertex()) {
 	 //     auto &dom_vector = dominated[idom[v]];
-	 //     dom_vector.push_back (v);
+	 //     dom_vector.push_back(v);
 	 //   }
 	 // }
 
 	 crab::CrabStats::resume("Dominance Frontier");       	 
 	 // computer dominance frontier
 	 // use the iterative solution from Cooper/Torczon 
-	 for (auto n: boost::make_iterator_range (vertices (g))) {
-	   for (auto e: boost::make_iterator_range (in_edges(n,g))) {
+	 for (auto n: boost::make_iterator_range(vertices(g))) {
+	   for (auto e: boost::make_iterator_range(in_edges(n,g))) {
 	     // Traverse backwards the dominator tree starting from
 	     // n's predecessors until found a node that immediate
 	     // dominates n.
-	     node_t runner = source (e, g);
+	     node_t runner = source(e, g);
 	     while (runner != boost::graph_traits<G>::null_vertex() &&
 		    runner != idom[n] && runner != n) {	       
 	       if (std::find(df[runner].begin(),df[runner].end(),n) == df[runner].end())
-		 df[runner].push_back (n);
+		 df[runner].push_back(n);
 	       runner = idom[runner];
 	     }
 	   }
 	 } // end outer for       
 	 crab::CrabStats::stop("Dominance Frontier");
 	 
-	 CRAB_LOG ("dominance",
-		   for (auto &kv: df) {
-		     crab::outs () <<  crab::cfg_impl::get_label_str(kv.first)
+	 CRAB_LOG("dominance",
+		   for(auto &kv: df) {
+		     crab::outs() <<  crab::cfg_impl::get_label_str(kv.first)
 				   << "={";
 		     for (auto v: kv.second) {
-		       crab::outs () << crab::cfg_impl::get_label_str(v) << ";";
+		       crab::outs() << crab::cfg_impl::get_label_str(v) << ";";
 		     }
-		     crab::outs () << "}\n";
+		     crab::outs() << "}\n";
 		   });
        }
 		 
@@ -153,20 +165,28 @@ namespace crab {
      
      // OUT: a map that for each node returns its dominance frontier.     
      template<typename G, typename VectorMap>
-     void dominance (G g, VectorMap &fdf) {
-       CRAB_LOG("dominance", crab::outs () << "Dominance Frontiers\n");       
-       graph_algo_impl::dominance (g, g.entry(), fdf);
+     void dominance(G g, VectorMap &fdf) {
+       CRAB_LOG("dominance", crab::outs() << "Dominance Frontiers\n");
+       if (dominator_tree_traits::can_compute_dominator_tree) {
+	 graph_algo_impl::dominance(g, g.entry(), fdf);
+       } else {
+	 CRAB_WARN("Cannot compute dominator tree. Use boost >= 1.62");
+       }
      }
 
      // OUT: a map that for each node returns its post-dominance
      // (reverse/inverse)frontier.
      template<typename G, typename VectorMap>
-     void post_dominance (G g, VectorMap &rdf) {
-       if (!g.has_exit ()) return;
-       crab::cfg::cfg_rev<G> rev_g (g);
-       CRAB_LOG("dominance", crab::outs () << "Post-Dominance Frontiers\n");
-       graph_algo_impl::dominance (rev_g, rev_g.entry (), rdf);
-       
+     void post_dominance(G g, VectorMap &rdf) {
+       if (!g.has_exit()) return;
+
+       if (dominator_tree_traits::can_compute_dominator_tree) {
+	 crab::cfg::cfg_rev<G> rev_g(g);
+	 CRAB_LOG("dominance", crab::outs() << "Post-Dominance Frontiers\n");
+	 graph_algo_impl::dominance(rev_g, rev_g.entry(), rdf);
+       } else {
+	 CRAB_WARN("Cannot compute dominator tree. Use boost >= 1.62");	 
+       }
      }
      
      
