@@ -1708,7 +1708,17 @@ namespace domains {
       crab::CrabStats::count(getDomainName() + ".count.backward_assign");
       crab::ScopedCrabStats __st__(getDomainName() + ".backward_assign");
       
-      if(is_bottom()) return;
+      if(is_bottom()) {
+	return;
+      }
+
+      if (invariant.is_bottom()) {
+	// bail out if invariant is bottom, otherwise
+	// substitute_texpr will complain about states with
+	// different dimensions.	    
+	set_to_bottom();
+	return;
+      }
 
       // common renaming first
       m_var_map = merge_var_map(m_var_map, m_apstate,
@@ -1718,8 +1728,6 @@ namespace domains {
       elina_texpr0_t* t = expr2texpr(e);
       assert(t);
       auto dim_x = get_var_dim_insert(x);
-      
-      
       m_apstate = elinaPtr(get_man(), 
 			    elina_abstract0_substitute_texpr(get_man(), false, 
 							     &*m_apstate, 
@@ -1738,8 +1746,18 @@ namespace domains {
       crab::CrabStats::count(getDomainName() + ".count.backward_apply");
       crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
       
-      if(is_bottom()) return;
-
+      if(is_bottom()) {
+	return;
+      }
+      
+      if (invariant.is_bottom()) {
+	// bail out if invariant is bottom, otherwise
+	// substitute_texpr will complain about states with
+	// different dimensions.	    
+	set_to_bottom();
+	return;
+      }
+      
       // common renaming first
       m_var_map = merge_var_map(m_var_map, m_apstate,
 				invariant.m_var_map,
@@ -1767,13 +1785,11 @@ namespace domains {
       assert(res);
       
       auto dim_x = get_var_dim_insert(x);
-            
       m_apstate = elinaPtr(get_man(),
 			    elina_abstract0_substitute_texpr(get_man(), false, 
 							     &*m_apstate, 
 							     dim_x, res,
 							     &*invariant.m_apstate));
-      
       elina_texpr0_free(res);
       CRAB_LOG("elina",
 	       crab::outs() << "--- "<< x << " :=_bwd " << y << op << z
@@ -1786,7 +1802,17 @@ namespace domains {
       crab::CrabStats::count(getDomainName() + ".count.backward_apply");
       crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
       
-      if(is_bottom()) return;
+      if(is_bottom()) {
+	return;
+      }
+
+      if (invariant.is_bottom()) {
+	// bail out if invariant is bottom, otherwise
+	// substitute_texpr will complain about states with
+	// different dimensions.	    
+	set_to_bottom();
+	return;
+      }      
 
       // common renaming first
       m_var_map = merge_var_map(m_var_map, m_apstate,
@@ -1813,6 +1839,7 @@ namespace domains {
       default: CRAB_ERROR("elina operation ", op, " not supported");
       }
       assert(res);
+      
       auto dim_x = get_var_dim_insert(x);
       m_apstate = elinaPtr(get_man(),
 			    elina_abstract0_substitute_texpr(get_man(), false, 
