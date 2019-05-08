@@ -27,7 +27,7 @@ If the domain is defined over rational instead of integers then use
         AddTestDir (cfg)
         AddTestDir (thresholds)
         AddTestDir (checkers)
-        AddTestDir (preconditions)
+        AddTestDir (backward)
         AddTestDir (domains/wrapint) # directory where your test is located
 
 Of course, if you put your test in the rest of the above directories

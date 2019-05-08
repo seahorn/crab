@@ -8,6 +8,9 @@
 #include <crab/common/debug.hpp>
 #include <crab/cfg/cfg.hpp>
 
+#include <set>
+#include <vector>
+
 namespace crab {
 
   namespace checker {
@@ -104,7 +107,6 @@ namespace crab {
         //   << " col " << p.first.m_col << "\n";
       }
     }
-    
   };
 
   template<typename Analyzer>
@@ -154,7 +156,9 @@ namespace crab {
    protected: 
 
     // The abstract transformer
-    abs_tr_t* m_abs_tr; 
+    abs_tr_t* m_abs_tr;
+    // Known safe assertions before start forward propagation (it can be empty)
+    std::set<const statement_t*> m_safe_assertions;
     // Verbosity to print user messages
     int m_verbose;
     // Store debug information about the checks
@@ -164,11 +168,11 @@ namespace crab {
     std::vector<const statement_t*> m_warning_checks;
     std::vector<const statement_t*> m_error_checks;    
     
-    void add_safe(int verbosity, std::string msg, const statement_t* s) {
+    void add_safe(std::string msg, const statement_t* s) {
       m_db.add(_SAFE);
       m_safe_checks.push_back(s);
       
-      if (verbosity >=3) {				
+      if (m_verbose >=3) {				
 	crab::outs() << " --- SAFE --------------------\n"; 
 	if (s->get_debug_info().has_debug()) {      
 	  crab::outs() << s->get_debug_info() << "\n";
@@ -178,11 +182,11 @@ namespace crab {
       }
     }
 
-    void add_warning(int verbosity, std::string msg, const statement_t* s) {
+    void add_warning(std::string msg, const statement_t* s) {
       m_db.add(_WARN, s->get_debug_info());
       m_warning_checks.push_back(s);
       
-      if (verbosity >= 2) {				
+      if (m_verbose >= 2) {				
 	crab::outs() << " --- WARNING -----------------\n"; 
 	if (s->get_debug_info().has_debug()) {      
 	  crab::outs() << s->get_debug_info() << "\n";
@@ -192,11 +196,11 @@ namespace crab {
       }
     }
 
-    void add_error(int verbosity, std::string msg, const statement_t* s) {
+    void add_error(std::string msg, const statement_t* s) {
       m_db.add(_ERR, s->get_debug_info());
       m_error_checks.push_back(s);
       
-      if (verbosity >= 1) {				
+      if (m_verbose >= 1) {				
 	crab::outs() << " --- ERROR -------------------\n"; 
 	if (s->get_debug_info().has_debug()) {      
 	  crab::outs() << s->get_debug_info() << "\n";
@@ -376,15 +380,16 @@ namespace crab {
       , m_verbose(verbose) { }
       
     
-    void set(abs_tr_t* abs_tr) {
+    void set(abs_tr_t* abs_tr, const std::set<const statement_t*>& safe_assertions) {
       m_abs_tr = abs_tr;
+      m_safe_assertions.insert(safe_assertions.begin(), safe_assertions.end());
     }
     
     const checks_db& get_db() const {
       return m_db;
     }
     
-    checks_db get_db() {
+    checks_db& get_db() {
       return m_db;
     }
 

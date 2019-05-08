@@ -1006,6 +1006,172 @@ bb2=(({i -> [0, +oo], n -> [1, +oo], max -> [0, +oo], max-n<=-1, i-n<=-1, n-max<
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
 entry:
+  goto bb1,bb2;
+bb1:
+  assume(-x <= 0);
+  y = x;
+  goto bb3;
+bb3:
+  assume(-y <= -1);
+  assert(x != 0);
+
+bb2:
+  assume(x <= -1);
+  tmp = 0;
+  y = tmp-x;
+  goto bb3;
+
+Invariants using ApronIntervals
+entry={}
+bb2={}
+bb3={-y <= 0}
+bb1={}
+ --- SAFE --------------------
+Property : x != 0
+Invariant: {-y <= -1}
+Note: it was proven by the forward+backward analysis
+ -----------------------------
+user-defined assertion checker using ApronIntervals
+1  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+
+entry:
+  goto bb1,bb2;
+bb1:
+  assume(-x <= -1);
+  y = x;
+  goto bb3;
+bb3:
+  assume(-y <= -6);
+  assert(x <= 5);
+  assert(-x <= 5);
+
+bb2:
+  assume(x <= 0);
+  tmp = 0;
+  y = tmp-x;
+  goto bb3;
+
+Invariants using ApronIntervals
+entry={}
+bb2={}
+bb3={-y <= 0}
+bb1={}
+ --- WARNING -----------------
+Property : x <= 5
+Invariant: {-y <= -6}
+ -----------------------------
+ --- WARNING -----------------
+Property : -x <= 5
+Invariant: {x <= 5; -y <= -6}
+ -----------------------------
+user-defined assertion checker using ApronIntervals
+0  Number of total safe checks
+0  Number of total error checks
+2  Number of total warning checks
+0  Number of total unreachable checks
+
+Invariants using Boxes
+entry={}
+bb2={}
+bb3={-x <= -1; -y <= -1} or 
+{x <= 0; -tmp <= 0; tmp <= 0; -y <= 0}
+bb1={}
+ --- WARNING -----------------
+Property : x <= 5
+Invariant: {-x <= -1; -y <= -6} or 
+{x <= 0; -tmp <= 0; tmp <= 0; -y <= -6}
+ -----------------------------
+ --- WARNING -----------------
+Property : -x <= 5
+Invariant: {-x <= -1; x <= 5; -y <= -6} or 
+{x <= 0; -tmp <= 0; tmp <= 0; -y <= -6}
+ -----------------------------
+user-defined assertion checker using Boxes
+0  Number of total safe checks
+0  Number of total error checks
+2  Number of total warning checks
+0  Number of total unreachable checks
+
+bb1:
+  x = 0;
+  y = 0;
+  goto bb2;
+bb2:
+  goto bb3,bb4;
+bb3:
+  assume(x <= 99);
+  x = x+1;
+  y = y+1;
+  goto bb2;
+bb4:
+  assume(-x <= -100);
+  assert(y <= 100);
+
+
+Invariants using ApronIntervals
+bb1={}
+bb2={-x <= 0; x <= 100; -y <= 0}
+bb4={-x <= 0; x <= 100; -y <= 0}
+bb3={-x <= 0; x <= 100; -y <= 0}
+ --- WARNING -----------------
+Property : y <= 100
+Invariant: {x = 100; -y <= 0}
+ -----------------------------
+user-defined assertion checker using ApronIntervals
+0  Number of total safe checks
+0  Number of total error checks
+1  Number of total warning checks
+0  Number of total unreachable checks
+
+bb1:
+  x = 0;
+  goto bb2;
+bb2:
+  goto bb3,bb4;
+bb3:
+  assume(x <= 99);
+  x = x+1;
+  goto bb2;
+bb4:
+  assume(-x <= -100);
+  assert(x <= 100);
+
+
+Invariants using ApronIntervals
+bb1={}
+bb2={-x <= 0; x <= 100}
+bb4={-x <= 0}
+bb3={-x <= 0}
+ --- SAFE --------------------
+Property : x <= 100
+Invariant: {-x <= -100}
+Note: it was proven by the forward+backward analysis
+ -----------------------------
+user-defined assertion checker using ApronIntervals
+1  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+
+Invariants using Boxes
+bb1={}
+bb2={-x <= 0; x <= 100}
+bb4={-x <= 0}
+bb3={-x <= 0}
+ --- WARNING -----------------
+Property : x <= 100
+Invariant: {-x <= -100}
+ -----------------------------
+user-defined assertion checker using Boxes
+0  Number of total safe checks
+0  Number of total error checks
+1  Number of total warning checks
+0  Number of total unreachable checks
+
+entry:
   x = 0;
   goto header1;
 header1:
@@ -1029,27 +1195,47 @@ exit2:
 ret:
 
 
-Necessary preconditions using ApronIntervals
-entry=_|_
-header1=_|_
-exit1=_|_
-ret=_|_
-ifxpos=_|_
-header2=_|_
-exit2=_|_
-body2=_|_
-body1=_|_
+Invariants using ApronIntervals
+entry={}
+header1={}
+exit1={}
+ret={}
+ifxpos={}
+header2={-x <= -1}
+exit2={-x <= -1}
+body2={-x <= -1}
+body1={}
+ --- SAFE --------------------
+Property : -y <= 0
+Invariant: {-x <= -1}
+Note: it was proven by the forward+backward analysis
+ -----------------------------
+user-defined assertion checker using ApronIntervals
+1  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
 
-Necessary preconditions using ApronNewPolka
-entry=_|_
-header1=_|_
-exit1=_|_
-ret=_|_
-ifxpos=_|_
-header2=_|_
-exit2=_|_
-body2=_|_
-body1=_|_
+Invariants using ApronNewPolka
+entry={}
+header1={}
+exit1={}
+ret={}
+ifxpos={}
+header2={-x <= -1}
+exit2={-x <= -1}
+body2={-x <= -1}
+body1={}
+ --- SAFE --------------------
+Property : -y <= 0
+Invariant: {-x <= -1}
+Note: it was proven by the forward+backward analysis
+ -----------------------------
+user-defined assertion checker using ApronNewPolka
+1  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
 
 entry:
   k = 0;
@@ -2484,103 +2670,6 @@ bb1_t={}
 bb2={}
 Abstract trace: entry (bb1 bb1_t bb2)^{2} bb1_f ret
 
-entry:
-  goto bb1,bb2;
-bb1:
-  assume(-x <= 0);
-  y = x;
-  goto bb3;
-bb3:
-  assume(-y <= -1);
-  assert(x != 0);
-
-bb2:
-  assume(x <= -1);
-  tmp = 0;
-  y = tmp-x;
-  goto bb3;
-
-Necessary preconditions using ApronIntervals
-entry=_|_
-bb2=_|_
-bb3=_|_
-bb1=_|_
-
-entry:
-  goto bb1,bb2;
-bb1:
-  assume(-x <= -1);
-  y = x;
-  goto bb3;
-bb3:
-  assume(-y <= -6);
-
-bb2:
-  assume(x <= 0);
-  tmp = 0;
-  y = tmp-x;
-  goto bb3;
-
-Necessary preconditions using ApronIntervals
-entry=_|_
-bb2=_|_
-bb3=_|_
-bb1=_|_
-
-Necessary preconditions using Boxes
-entry={-x <= 5; x <= 0}
-bb2={-x <= 5; x <= 0}
-bb3={-x <= 5; x <= 0; -tmp <= 0; tmp <= 0; -y <= 0; y <= 5}
-bb1={-x <= 5; x <= 0}
-
-bb1:
-  x = 0;
-  y = 0;
-  goto bb2;
-bb2:
-  goto bb3,bb4;
-bb3:
-  assume(x <= 99);
-  x = x+1;
-  y = y+1;
-  goto bb2;
-bb4:
-  assume(-x <= -100);
-  assert(y <= 100);
-
-
-Necessary preconditions using ApronIntervals
-bb1={}
-bb2={-x <= 0; x <= 100; -y <= 0}
-bb4={-x <= 0; x <= 100; -y <= 0}
-bb3={-x <= 0; x <= 100; -y <= 0}
-
-bb1:
-  x = 0;
-  goto bb2;
-bb2:
-  goto bb3,bb4;
-bb3:
-  assume(x <= 99);
-  x = x+1;
-  goto bb2;
-bb4:
-  assume(-x <= -100);
-  assert(x <= 100);
-
-
-Necessary preconditions using ApronIntervals
-bb1=_|_
-bb2=_|_
-bb4=_|_
-bb3=_|_
-
-Necessary preconditions using Boxes
-bb1={}
-bb2={-x <= 0; x <= 100}
-bb4={-x <= 0}
-bb3={-x <= 0}
-
 bb0:
   goto bb1,bb2;
 bb1:
@@ -2600,7 +2689,7 @@ bb5:
 bb2:
   goto bb3;
 
-Necessary preconditions for failure using Polyhedra domain:
+Necessary preconditions from error states using Polyhedra:
 bb6:_|_
 bb5:_|_
 bb4:{len <= 1; -argc <= -2}
@@ -2608,6 +2697,43 @@ bb3:{len <= 1; -argc <= -2}
 bb2:{len <= 1; -argc <= -2}
 bb1:{len <= 2; -argc <= -3}
 bb0:{len <= 2; -argc+len <= -1; -argc <= -2}
+Necessary preconditions from safe states using Polyhedra:
+bb6:{}
+bb5:{}
+bb4:{-argc <= -2; -len <= -2}
+bb3:{}
+bb2:{}
+bb1:{-argc <= -3; -len <= -3}
+bb0:{}
+bb1:
+  i = 0;
+  goto bb2;
+bb2:
+  goto bb3,bb5;
+bb3:
+  assume(i-n <= 0);
+  assert(-i <= 0);
+  assert(i-n <= -1);
+  i = i+1;
+  goto bb4;
+bb4:
+  goto bb2,bb5;
+bb5:
+  assume(-i <= -100);
+
+
+Necessary preconditions from error states using Polyhedra:
+bb5:_|_
+bb4:{i-n <= 0}
+bb3:{i-n <= 0}
+bb2:{i-n <= 0}
+bb1:{-n <= 0}
+Necessary preconditions from safe states using Polyhedra:
+bb5:{-i <= -100}
+bb4:{-i <= 0}
+bb3:{i-n <= -1; -i <= 0}
+bb2:{-i <= 0}
+bb1:{}
 {x -> t2[_x2], y -> t0[_x0]}{_x0 -> [8, 8]; _x1 -> [5, 5]; _x2 -> [40, 40]} | {x -> t2[_x1], y -> t0[_x2]}{_x0 -> [5, 5]} = {x -> t2[_y2], y -> t0[_y0]}{_y1 -> [5, 5]}
 {x -> t0[_x0]}{_x0 -> [1, 1]} | {x -> t1[_x1]}{_x0 -> [1, 1]; _x1 -> [2, 2]} = {x -> t0[_y0]}{_y0 -> [1, 2]}
 Before project {x -> t0[_x0], y -> t0[_x0], z -> t1[_x1]}{_x0 -> [5, 5]; _x1 -> [9, 9]}

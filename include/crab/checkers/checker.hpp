@@ -62,7 +62,7 @@ namespace crab {
   };
 
   template<typename Analyzer>  
-  class intra_checker: public checker <Analyzer> {
+  class intra_checker: public checker<Analyzer> {
    public:
 
     typedef checker<Analyzer> base_checker_t;
@@ -72,6 +72,7 @@ namespace crab {
    private:
 
     typedef typename Analyzer::cfg_t cfg_t;
+    typedef typename cfg_t::statement_t statement_t;
     typedef typename Analyzer::abs_dom_t abs_dom_t;
     typedef typename Analyzer::abs_tr_t abs_tr_t;
 
@@ -89,6 +90,13 @@ namespace crab {
       crab::ScopedCrabStats __st__("Checker");
       cfg_t cfg = m_analyzer.get_cfg();
 
+      // In some cases, the analyzer might know that an assertion is
+      // safe but it cannot be proven by propagating only
+      // invariants. This is common if the analyzer is based on a
+      // forward/backward refinement loop.
+      std::set<const statement_t*> safe_assertions;
+      m_analyzer.get_safe_assertions(safe_assertions);
+      
       for (auto &bb: cfg) {
         for (auto checker: this->m_checkers) {
           crab::ScopedCrabStats __st__("Checker." + checker->get_property_name());
@@ -96,9 +104,9 @@ namespace crab {
 	  boost::shared_ptr<abs_tr_t> abs_tr = m_analyzer.get_abs_transformer(&inv);
           // propagate forward the invariants from the block entry 
           // while checking the property
-          checker->set(&*abs_tr);
+          checker->set(&*abs_tr, safe_assertions);
           for (auto &stmt: bb) {
-            stmt.accept(&*checker);
+	    stmt.accept(&*checker);
 	  }
         }
       }

@@ -211,7 +211,7 @@ namespace crab {
     }; 
 
     /**
-     * Public wrapper for fwd_analyzer_class. 
+     * Wrapper for fwd_analyzer_class. 
      * 
      * The main difference with fwd_analyzer class is that here we
      * create an abstract transformer instance while fwd_analyzer does
@@ -229,9 +229,9 @@ namespace crab {
       typedef typename CFG::basic_block_label_t basic_block_label_t;
       typedef typename CFG::varname_t varname_t;
       typedef typename CFG::number_t number_t;
+      typedef typename CFG::statement_t stmt_t;                   
       typedef typename fwd_analyzer_t::abs_tr_t abs_tr_t;
       typedef typename fwd_analyzer_t::wto_t wto_t;      
-      
       typedef typename fwd_analyzer_t::assumption_map_t assumption_map_t;
       typedef typename fwd_analyzer_t::invariant_table_t invariant_table_t;
       typedef typename fwd_analyzer_t::iterator iterator;
@@ -308,14 +308,6 @@ namespace crab {
 	return m_analyzer.get_post(b);
       }
 
-      CFG get_cfg() {
-	return m_analyzer.get_cfg();
-      }
-
-      boost::shared_ptr<abs_tr_t> get_abs_transformer(abs_dom_t* inv) {
-	m_abs_tr->set(inv);
-	return m_abs_tr;
-      }
       
       const wto_t& get_wto() const {
 	return m_analyzer.get_wto();
@@ -324,7 +316,19 @@ namespace crab {
       void clear() {
 	m_analyzer.clear();
       }
-            
+
+      /** Extra API for checkers **/
+
+      CFG get_cfg() {
+	return m_analyzer.get_cfg();
+      }
+
+      boost::shared_ptr<abs_tr_t> get_abs_transformer(abs_dom_t* inv) {
+	m_abs_tr->set(inv);
+	return m_abs_tr;
+      }
+
+      void get_safe_assertions(std::set<const stmt_t*>& out) const {} 
     };
 
 

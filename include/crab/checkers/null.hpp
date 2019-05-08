@@ -132,21 +132,21 @@ namespace crab {
 	    os << "Property : " << checked_prop_str(ptr) << "\n"; 
 	    os << "Invariant: " << inv;
 	  }
-	  this->add_safe(this->m_verbose, os.str(), &s);
+	  this->add_safe(os.str(), &s);
         } else if (val.is_null()) {
 	  crab::crab_string_os os;
 	  if (this->m_verbose >= 1) {	  
 	    os << "Property : " << checked_prop_str(ptr) << "\n"; 
 	    os << "Invariant: " << inv;
 	  }
-	  this->add_error(this->m_verbose, os.str(), &s);
+	  this->add_error(os.str(), &s);
         } else {
 	  crab::crab_string_os os;
 	  if (this->m_verbose >= 2) {	  
 	    os << "Property : " << checked_prop_str(ptr) << "\n"; 
 	    os << "Invariant: " << inv;
 	  }
-	  this->add_warning(this->m_verbose, os.str(), &s);
+	  this->add_warning(os.str(), &s);
         }
         
         s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
@@ -168,21 +168,21 @@ namespace crab {
 	    os << "Property : " << checked_prop_str(ptr) << "\n"; 
 	    os << "Invariant: " << inv;
 	  }
-	  this->add_safe(this->m_verbose, os.str(), &s);
+	  this->add_safe(os.str(), &s);
         } else if (val.is_null()) {
 	  crab::crab_string_os os;
 	  if (this->m_verbose >= 1) {	  
 	    os << "Property : " << checked_prop_str(ptr) << "\n"; 
 	    os << "Invariant: " << inv;
 	  }
-	  this->add_error(this->m_verbose, os.str(), &s);
+	  this->add_error(os.str(), &s);
         } else {
 	  crab::crab_string_os os;
 	  if (this->m_verbose >= 2) {	  
 	    os << "Property : " << checked_prop_str(ptr) << "\n"; 
 	    os << "Invariant: " << inv;
 	  }
-	  this->add_warning(this->m_verbose, os.str(), &s);
+	  this->add_warning(os.str(), &s);
         }
         
         s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt

@@ -66,7 +66,7 @@ namespace crab {
 		  os << "Property : " << e_cst << "\n"; 
 		  os << "Invariant: " << inv;
 		}
-		this->add_error(this->m_verbose, os.str(), &s);
+		this->add_error(os.str(), &s);
               } else {
                 this->m_db.add(_SAFE);
               }
@@ -77,7 +77,7 @@ namespace crab {
 		os << "Property : " << w_cst << "\n"; 
 		os << "Invariant: " << inv;
 	      }
-	      this->add_warning(this->m_verbose, os.str(), &s);
+	      this->add_warning(os.str(), &s);
             } else {
               this->m_db.add(_SAFE);
             }
