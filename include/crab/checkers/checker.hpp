@@ -38,9 +38,9 @@ namespace crab {
     
    public:
 
-    checker(prop_checker_vector checkers): m_checkers(checkers) { }
+    checker(prop_checker_vector checkers): m_checkers(checkers) {}
 
-    virtual ~checker(){ }
+    virtual ~checker() {}
     
     virtual void run() = 0;
     
@@ -92,7 +92,7 @@ namespace crab {
 
       // In some cases, the analyzer might know that an assertion is
       // safe but it cannot be proven by propagating only
-      // invariants. This is common if the analyzer is based on a
+      // invariants. This is possible if the analyzer is based on a
       // forward/backward refinement loop.
       std::set<const statement_t*> safe_assertions;
       m_analyzer.get_safe_assertions(safe_assertions);
@@ -127,6 +127,7 @@ namespace crab {
 
     typedef typename Analyzer::cg_t cg_t;
     typedef typename Analyzer::cfg_t cfg_t;
+    typedef typename cfg_t::statement_t statement_t;    
     typedef typename Analyzer::abs_dom_t abs_dom_t;
     typedef typename Analyzer::abs_tr_t abs_tr_t;
     
@@ -143,15 +144,18 @@ namespace crab {
       cg_t& cg = m_analyzer.get_call_graph(); 
       for (auto &v: boost::make_iterator_range(vertices(cg))) {
         cfg_t cfg = v.get_cfg();
-
+	
         for (auto &bb: cfg) {
+	  // the forward+backward analyzer only works for
+	  // intra-procedural analysis.
+	  std::set<const statement_t*> safe_assertions;
           for (auto checker: this->m_checkers) {
             crab::ScopedCrabStats __st__("Checker." + checker->get_property_name());
             abs_dom_t inv = m_analyzer.get_pre(cfg, bb.label());
 	    boost::shared_ptr<abs_tr_t> abs_tr = m_analyzer.get_abs_transformer(&inv);
             // propagate forward the invariants from the block entry 
             // while checking the property
-            checker->set(&*abs_tr);
+            checker->set(&*abs_tr, safe_assertions);
             for (auto &stmt: bb) {
               stmt.accept(&*checker);
 	    }
