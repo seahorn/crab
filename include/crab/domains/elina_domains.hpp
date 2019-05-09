@@ -232,8 +232,8 @@ namespace crab {
 #include <type_traits>
 
 /**
- * If enable we build all expressions using Elina tree
- * expressions. Otherwise, we use linear expressions when possible.
+ * If enable we build (if possible) all expressions using Elina tree
+ * expressions. Otherwise, we use linear expressions.
  **/
 #define USE_TREE_EXPR
 
@@ -711,7 +711,7 @@ namespace domains {
       return res;
     }
         
-    void dump(const var_map_t& m, elina_state_ptr apstate ) {  
+    void dump(const var_map_t& m, elina_state_ptr apstate ) const {  
       crab::outs() << "\nNumber of dimensions=" << get_dims(apstate) << "\n";
       crab::outs() << "variable map ["; 
       std::vector<char*> names;
@@ -731,8 +731,6 @@ namespace domains {
       for (auto n : names) { delete n; }
     }
     
-    void dump() { dump(m_var_map, m_apstate); }
-
     // x != n
     void inequalities_from_disequation(variable_t x, number_t n,
 				       linear_constraint_system_t& out) {
@@ -1027,7 +1025,7 @@ namespace domains {
 			    elina_abstract0_bottom(get_man(), 0, 0) : 
 			    elina_abstract0_top(get_man(), 0, 0)))) {}
     
-    ~elina_domain_() {}
+    ~elina_domain_() = default;
     
     elina_domain_(const elina_domain_t& o): 
       m_apstate(elinaPtr(get_man(), elina_abstract0_copy(get_man(), &*(o.m_apstate)))),
@@ -1527,8 +1525,6 @@ namespace domains {
       CRAB_LOG("elina", 
 	       crab::outs() << "--- " << "Assume " << csts << " --> ";);
 
-      // JN: we were using add_lincons always because polyhedra used
-      // to be buggy with add_tcons. Not sure if this is still true.
       #ifdef USE_TREE_EXPR
       add_tcons(csts);
       #else
@@ -1704,7 +1700,7 @@ namespace domains {
     }
            
     void backward_assign(variable_t x, linear_expression_t e,
-			  elina_domain_t invariant) {
+			 elina_domain_t invariant) {
       crab::CrabStats::count(getDomainName() + ".count.backward_assign");
       crab::ScopedCrabStats __st__(getDomainName() + ".backward_assign");
       
@@ -1713,36 +1709,34 @@ namespace domains {
       }
 
       if (invariant.is_bottom()) {
-	// bail out if invariant is bottom, otherwise
-	// substitute_texpr will complain about states with
-	// different dimensions.	    
 	set_to_bottom();
 	return;
       }
+      
+      /// Elina substitution only implemented for linear expressions.
+      elina_linexpr0_t* rhs = crab_linexpr_to_elina(e);
+      auto dim_x = get_var_dim_insert(x);
 
-      // common renaming first
+      // ensure that m_apstate and invariant.m_apstate have the same
+      // dimensions.
       m_var_map = merge_var_map(m_var_map, m_apstate,
 				invariant.m_var_map,
 				invariant.m_apstate);
       
-      elina_texpr0_t* t = expr2texpr(e);
-      assert(t);
-      auto dim_x = get_var_dim_insert(x);
       m_apstate = elinaPtr(get_man(), 
-			    elina_abstract0_substitute_texpr(get_man(), false, 
-							     &*m_apstate, 
-							     dim_x, t,
-							     &*invariant.m_apstate));
-      
-      elina_texpr0_free(t);
+			    elina_abstract0_substitute_linexpr(get_man(), false, 
+							       &*m_apstate, 
+							       dim_x, rhs,
+							       &*invariant.m_apstate));
+      elina_linexpr0_free(rhs);      
       CRAB_LOG("elina",
 	       crab::outs() << "--- "<< x<< " :=_bwd " << e << " --> "
 	                    << *this<<"\n";);
     }
     
     void backward_apply(operation_t op,
-			 variable_t x, variable_t y, number_t z,
-			 elina_domain_t invariant) {
+			variable_t x, variable_t y, number_t z,
+			elina_domain_t invariant) {
       crab::CrabStats::count(getDomainName() + ".count.backward_apply");
       crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
       
@@ -1751,46 +1745,44 @@ namespace domains {
       }
       
       if (invariant.is_bottom()) {
-	// bail out if invariant is bottom, otherwise
-	// substitute_texpr will complain about states with
-	// different dimensions.	    
 	set_to_bottom();
 	return;
       }
       
-      // common renaming first
+      /// Elina substitution only implemented for linear expressions.
+      elina_linexpr0_t* rhs=nullptr;
+      switch (op){
+       case OP_ADDITION: 
+	 rhs = crab_linexpr_to_elina(y + z);
+	 break;
+       case OP_SUBTRACTION:
+	 rhs = crab_linexpr_to_elina(y - z);
+	 break;
+       case OP_MULTIPLICATION:
+	 rhs = crab_linexpr_to_elina(y * z);
+	 break;	 
+       case OP_SDIV:
+	 CRAB_WARN("backward signed division not implemented in elina");
+	 operator-=(x);
+	 return;
+       default:
+	CRAB_ERROR("elina operation ", op, " not supported");
+      }
+      assert(rhs);
+      auto dim_x = get_var_dim_insert(x);
+
+      // ensure that m_apstate and invariant.m_apstate have the same
+      // dimensions.
       m_var_map = merge_var_map(m_var_map, m_apstate,
 				invariant.m_var_map,
 				invariant.m_apstate);
       
-      elina_texpr0_t* a = var2texpr(y);
-      elina_texpr0_t* b = num2texpr(z);
-      elina_texpr0_t* res = nullptr;
-      
-      switch (op){
-      case OP_ADDITION:
-	res = texpr_add(a, b);
-	break;
-      case OP_SUBTRACTION:
-	res = texpr_sub(a, b);
-	break;
-      case OP_MULTIPLICATION:
-	res = texpr_mul(a, b);
-	break;
-      case OP_SDIV:
-	res = texpr_div(a, b);
-	break;
-      default: CRAB_ERROR("elina operation ", op, " not supported");
-      }
-      assert(res);
-      
-      auto dim_x = get_var_dim_insert(x);
-      m_apstate = elinaPtr(get_man(),
-			    elina_abstract0_substitute_texpr(get_man(), false, 
-							     &*m_apstate, 
-							     dim_x, res,
-							     &*invariant.m_apstate));
-      elina_texpr0_free(res);
+      m_apstate = elinaPtr(get_man(), 
+			    elina_abstract0_substitute_linexpr(get_man(), false, 
+							       &*m_apstate, 
+							       dim_x, rhs,
+							       &*invariant.m_apstate));
+      elina_linexpr0_free(rhs);            
       CRAB_LOG("elina",
 	       crab::outs() << "--- "<< x << " :=_bwd " << y << op << z
 	                    << " --> " << *this<<"\n";);
@@ -1807,47 +1799,42 @@ namespace domains {
       }
 
       if (invariant.is_bottom()) {
-	// bail out if invariant is bottom, otherwise
-	// substitute_texpr will complain about states with
-	// different dimensions.	    
 	set_to_bottom();
 	return;
       }      
+      
+      /// Elina substitution only implemented for linear expressions.
+      elina_linexpr0_t* rhs=nullptr;
+      switch (op){
+       case OP_ADDITION: 
+	 rhs = crab_linexpr_to_elina(y + z);
+	 break;
+       case OP_SUBTRACTION:
+	 rhs = crab_linexpr_to_elina(y - z);
+	 break;
+       case OP_MULTIPLICATION:
+       case OP_SDIV:
+	 CRAB_WARN("backward non-linear ", op, " not implemented in elina");	 	 
+	 operator-=(x);
+	 return;
+       default:
+	 CRAB_ERROR("elina operation ", op, " not supported");
+      }
+      assert(rhs);
+      auto dim_x = get_var_dim_insert(x);
 
-      // common renaming first
+      // ensure that m_apstate and invariant.m_apstate have the same
+      // dimensions.
       m_var_map = merge_var_map(m_var_map, m_apstate,
 				invariant.m_var_map,
 				invariant.m_apstate);
       
-      elina_texpr0_t* a = var2texpr(y);
-      elina_texpr0_t* b = var2texpr(z);
-      elina_texpr0_t* res = nullptr;
-      
-      switch (op){
-      case OP_ADDITION:
-	res = texpr_add(a, b);
-	break;
-      case OP_SUBTRACTION:
-	res = texpr_sub(a, b);
-	break;
-      case OP_MULTIPLICATION: 
-	res = texpr_mul(a, b);
-	break;
-      case OP_SDIV:
-	res = texpr_div(a, b);
-	break;
-      default: CRAB_ERROR("elina operation ", op, " not supported");
-      }
-      assert(res);
-      
-      auto dim_x = get_var_dim_insert(x);
-      m_apstate = elinaPtr(get_man(),
-			    elina_abstract0_substitute_texpr(get_man(), false, 
-							     &*m_apstate, 
-							     dim_x, res,
-							     &*invariant.m_apstate));
-      elina_texpr0_free(res);
-      
+      m_apstate = elinaPtr(get_man(), 
+			   elina_abstract0_substitute_linexpr(get_man(), false, 
+							      &*m_apstate, 
+							      dim_x, rhs,
+							      &*invariant.m_apstate));
+      elina_linexpr0_free(rhs);      
       CRAB_LOG("elina",
 	       crab::outs() << "--- " << x << ":=_bwd " << y << op << z
 	                    << " --> "<< *this <<"\n";);
@@ -1985,6 +1972,10 @@ namespace domains {
     void normalize() {
       elina_abstract0_canonicalize(get_man(), &*m_apstate);
     }
+
+    void dump() const {
+      dump(m_var_map, m_apstate);
+    }
     
     void write(crab_os& o) {
       if(is_bottom()){
@@ -2002,7 +1993,6 @@ namespace domains {
 	o << "\nElina internal representation:";
 	dump();
 	#endif 
-	
       }
     }          
     
