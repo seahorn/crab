@@ -50,6 +50,13 @@ int main(int argc, char** argv )
     (cfg,cfg->entry(),initial_states,1,0,0,stats_enabled);
   }
   #endif
+  #ifdef HAVE_ELINA
+  { z_oct_elina_domain_t initial_states;
+    // no thresholds, no narrowing  
+    backward_run<z_oct_elina_domain_t>
+    (cfg,cfg->entry(),initial_states,1,0,0,stats_enabled);
+  }
+  #endif  
   #ifdef HAVE_LDD  
   { z_boxes_domain_t initial_states;
     // no thresholds, no narrowing  

@@ -69,7 +69,14 @@ int main(int argc, char** argv )
       (cfg,cfg->entry(),initial_states,1,2,20,stats_enabled);
   }
   #endif
-
+  #ifdef HAVE_ELINA
+  {
+    z_oct_elina_domain_t initial_states;
+    z_var x(vfac ["x"], crab::INT_TYPE, 32);  
+    backward_run<z_oct_elina_domain_t>
+      (cfg,cfg->entry(),initial_states,1,2,20,stats_enabled);
+  }
+  #endif
   #ifdef HAVE_LDD  
   {
     z_boxes_domain_t initial_states;

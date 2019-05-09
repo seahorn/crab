@@ -86,7 +86,13 @@ int main(int argc, char** argv) {
       (cfg, cfg->entry(), initial_states, 1, 2, 20, stats_enabled);
   }
   #endif
-  
+  #ifdef HAVE_ELINA
+  {
+    z_oct_elina_domain_t initial_states;
+    backward_run<z_oct_elina_domain_t>
+      (cfg, cfg->entry(), initial_states, 1, 2, 20, stats_enabled);
+  }
+  #endif  
   // free the CFG
   delete cfg;
 
