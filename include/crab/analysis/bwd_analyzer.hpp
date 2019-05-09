@@ -218,11 +218,9 @@ namespace crab {
       typedef intra_fwd_analyzer<CFG, AbsDom> fwd_analyzer_t;
       typedef necessary_preconditions_fixpoint_iterator<CFG, AbsDom>
       bwd_fixpoint_iterator_t;
-      typedef boost::unordered_map<bb_label_t, AbsDom> invariant_map_t; 
       typedef typename bwd_fixpoint_iterator_t::precond_map_t precond_map_t;
       typedef typename bwd_fixpoint_iterator_t::wto_t bwd_wto_t;
       typedef liveness<CFG> liveness_t;
-      
       typedef boost::unordered_map<bb_label_t, std::set<bb_label_t>> idom_tree_t;
       typedef typename bb_t::assert_t assert_t;
       typedef typename bb_t::bool_assert_t bool_assert_t;
@@ -231,6 +229,7 @@ namespace crab {
     public:
       
       typedef typename fwd_analyzer_t::assumption_map_t assumption_map_t;
+      typedef typename fwd_analyzer_t::invariant_map_t invariant_map_t;      
       // bwd_wto_t and wto_t are different types because bwd_wto_t is
       // over the reversed CFG.
       typedef typename fwd_analyzer_t::wto_t wto_t;
@@ -510,7 +509,18 @@ namespace crab {
 				    // preconditions from error states
 				    false, 
 				    widening_delay, descending_iters, jump_set_size);
-	  B.run_backward(F.get_pre_invariants());
+
+	  const invariant_map_t& fwd_invariants = F.get_pre_invariants();
+	  crab::CrabStats::resume("CombinedForwardBackward.MinimizeInvariants");	  
+	  // Important for apron and elina domains.
+	  invariant_map_t minimized_fwd_invariants;
+	  for(auto &kv: fwd_invariants) {
+	    AbsDom dom(kv.second);
+	    dom.minimize();
+	    minimized_fwd_invariants.insert({kv.first, dom});
+	  }
+	  crab::CrabStats::stop("CombinedForwardBackward.MinimizeInvariants");
+	  B.run_backward(minimized_fwd_invariants);
 	  crab::CrabStats::stop("CombinedForwardBackward.BackwardPass"); 
 
 	  CRAB_VERBOSE_IF(1, crab::outs() << "Finished backward analysis.\n";);
