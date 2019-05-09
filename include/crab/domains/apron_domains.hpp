@@ -1472,21 +1472,20 @@ namespace crab {
 	  }
 
 	  if (invariant.is_bottom()) {
-	    // bail out if invariant is bottom, otherwise
-	    // substitute_texpr will complain about states with
-	    // different dimensions.
 	    set_to_bottom();
 	    return;
 	  }
 	  
-	  // common renaming first
-	  m_var_map = merge_var_map(m_var_map, m_apstate,
-				     invariant.m_var_map,
-				     invariant.m_apstate);
-	  
           ap_texpr0_t* t = expr2texpr(e);
           assert (t);
           auto dim_x = get_var_dim_insert(x);
+
+	  // ensure that m_apstate and invariant.m_apstate have the same
+	  // dimensions.	  
+	  m_var_map = merge_var_map(m_var_map, m_apstate,
+				    invariant.m_var_map,
+				    invariant.m_apstate);
+	  
           m_apstate = apPtr(get_man(), 
                              ap_abstract0_substitute_texpr(get_man(), false, 
 							   &*m_apstate, 
@@ -1508,24 +1507,15 @@ namespace crab {
 	  }
 
 	  if (invariant.is_bottom()) {
-	    // bail out if invariant is bottom, otherwise
-	    // substitute_texpr will complain about states with
-	    // different dimensions.	    
 	    set_to_bottom();
 	    return;
 	  }
 	  
 	  if (op >= OP_ADDITION && op <= OP_SDIV) {
-
-	    // common renaming first
-	    m_var_map = merge_var_map(m_var_map, m_apstate,
-				       invariant.m_var_map,
-				       invariant.m_apstate);
 	    
 	    ap_texpr0_t* a = var2texpr(y);
 	    ap_texpr0_t* b = num2texpr(z);
-	    ap_texpr0_t* res = nullptr;
-	    
+	    ap_texpr0_t* res = nullptr;	    
 	    switch (op){
             case OP_ADDITION:
 	      res = ADD(a, b);
@@ -1541,8 +1531,14 @@ namespace crab {
 	      break;
 	    }
 	    assert(res);
-	    
 	    auto dim_x = get_var_dim_insert(x);
+
+	    // ensure that m_apstate and invariant.m_apstate have the same
+	    // dimensions.	  
+	    m_var_map = merge_var_map(m_var_map, m_apstate,
+				      invariant.m_var_map,
+				      invariant.m_apstate);
+	    
 	    m_apstate = apPtr(get_man(),
 			       ap_abstract0_substitute_texpr(get_man(), false, 
 							     &*m_apstate, 
@@ -1570,23 +1566,15 @@ namespace crab {
 	  }
 
 	  if (invariant.is_bottom()) {
-	    // bail out if invariant is bottom, otherwise
-	    // substitute_texpr will complain about states with
-	    // different dimensions.	    
 	    set_to_bottom();
 	    return;
 	  }
 	  	  
 	  if (op >= OP_ADDITION && op <= OP_SDIV) {
-	    // common renaming first
-	    m_var_map = merge_var_map(m_var_map, m_apstate,
-				      invariant.m_var_map,
-				      invariant.m_apstate);
 	    
 	    ap_texpr0_t* a = var2texpr(y);
 	    ap_texpr0_t* b = var2texpr(z);
-	    ap_texpr0_t* res = nullptr;
-	    
+	    ap_texpr0_t* res = nullptr;	    
 	    switch (op){
             case OP_ADDITION:
 	      res = ADD(a, b);
@@ -1601,9 +1589,15 @@ namespace crab {
 	      res = DIV(a, b);
 	      break;
 	    }
-	    assert(res);
-	    
+	    assert(res);	    
 	    auto dim_x = get_var_dim_insert(x);
+
+	    // ensure that m_apstate and invariant.m_apstate have the same
+	    // dimensions.	  
+	    m_var_map = merge_var_map(m_var_map, m_apstate,
+				      invariant.m_var_map,
+				      invariant.m_apstate);
+	    
 	    m_apstate = apPtr(get_man(),
 			       ap_abstract0_substitute_texpr(get_man(), false, 
 							     &*m_apstate, 
