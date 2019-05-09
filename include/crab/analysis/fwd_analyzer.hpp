@@ -40,16 +40,16 @@ namespace crab {
      private:
 
       typedef ikos::interleaved_fwd_fixpoint_iterator<basic_block_label_t, CFG, abs_dom_t>
-      fwd_iterator_t;
+      fixpo_iterator_t;
       
      public:
 
-      typedef typename fwd_iterator_t::invariant_table_t invariant_table_t;      
-      typedef typename fwd_iterator_t::assumption_map_t assumption_map_t;
+      typedef typename fixpo_iterator_t::invariant_table_t invariant_map_t;      
+      typedef typename fixpo_iterator_t::assumption_map_t assumption_map_t;
       typedef liveness<CFG> liveness_t;
-      typedef typename fwd_iterator_t::wto_t wto_t;
-      typedef typename fwd_iterator_t::iterator iterator;
-      typedef typename fwd_iterator_t::const_iterator const_iterator;
+      typedef typename fixpo_iterator_t::wto_t wto_t;
+      typedef typename fixpo_iterator_t::iterator iterator;
+      typedef typename fixpo_iterator_t::const_iterator const_iterator;
 
      private:
       
@@ -95,9 +95,9 @@ namespace crab {
 		   unsigned int descending_iters,
 		   size_t jump_set_size)
 		   
-	: fwd_iterator_t(cfg, wto,
-			 widening_delay, descending_iters, jump_set_size,
-			 false /*disable processor*/), 
+	: fixpo_iterator_t(cfg, wto,
+			   widening_delay, descending_iters, jump_set_size,
+			   false /*disable processor*/), 
 	  m_abs_tr(abs_tr),
 	  m_live(live) {
 	CRAB_VERBOSE_IF(1, crab::outs() << "Type checking CFG ... ";);
@@ -144,11 +144,11 @@ namespace crab {
 	return this->_cfg;
       }
 
-      const invariant_table_t& get_pre_invariants() const {
+      const invariant_map_t& get_pre_invariants() const {
 	return this->_pre;
       }
       
-      const invariant_table_t& get_post_invariants() const {
+      const invariant_map_t& get_post_invariants() const {
 	return this->_post;
       }
       
@@ -199,7 +199,7 @@ namespace crab {
       //! Return the WTO of the CFG. The WTO contains also how many
       //! times each head was visited by the fixpoint iterator.
       const wto_t& get_wto() const {
-	return fwd_iterator_t::get_wto();
+	return fixpo_iterator_t::get_wto();
       }
 
       // clear all invariants (pre and post)
@@ -233,7 +233,7 @@ namespace crab {
       typedef typename fwd_analyzer_t::abs_tr_t abs_tr_t;
       typedef typename fwd_analyzer_t::wto_t wto_t;      
       typedef typename fwd_analyzer_t::assumption_map_t assumption_map_t;
-      typedef typename fwd_analyzer_t::invariant_table_t invariant_table_t;
+      typedef typename fwd_analyzer_t::invariant_map_t invariant_map_t;
       typedef typename fwd_analyzer_t::iterator iterator;
       typedef typename fwd_analyzer_t::const_iterator const_iterator;
 
@@ -288,11 +288,11 @@ namespace crab {
       const_iterator post_begin() const { return m_analyzer.post_begin();}
       const_iterator post_end()   const { return m_analyzer.post_end();}
 
-      const invariant_table_t& get_pre_invariants() const {
+      const invariant_map_t& get_pre_invariants() const {
 	return m_analyzer.get_pre_invariants();
       }
       
-      const invariant_table_t& get_post_invariants() const {
+      const invariant_map_t& get_post_invariants() const {
 	return m_analyzer.get_post_invariants();
       }
       
