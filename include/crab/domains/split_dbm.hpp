@@ -26,6 +26,7 @@
 #include <crab/domains/interval.hpp>
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
+#include <crab/domains/backward_assign_operations.hpp>
 
 #include <boost/optional.hpp>
 #include <boost/unordered_set.hpp>
@@ -74,7 +75,7 @@ namespace crab {
       typedef GraphPerm<graph_t> GrPerm;
       typedef typename GrOps::edge_vector edge_vector;
       // < <x, y>, k> == x - y <= k.
-      typedef std::pair< std::pair<variable_t, variable_t>, Wt > diffcst_t;
+      typedef std::pair<std::pair<variable_t, variable_t>, Wt> diffcst_t;
       typedef boost::unordered_set<vert_id> vert_set_t;
 
     protected:
@@ -347,8 +348,7 @@ namespace crab {
 	  return;
 	}
 	
-        std::vector<std::pair<std::pair<Wt, variable_t>, Wt>> pos_terms;
-        std::vector<std::pair<std::pair<Wt, variable_t>, Wt>> neg_terms;
+        std::vector<std::pair<std::pair<Wt, variable_t>, Wt>> pos_terms, neg_terms;
         for(auto p : exp) {
           Wt coeff(ntow::convert(p.first, overflow));
 	  if (overflow) {
@@ -440,8 +440,7 @@ namespace crab {
         CRAB_LOG("zones-split",
                  linear_expression_t exp_tmp(exp);
                  crab::outs() << "Adding: "<< exp_tmp << "<= 0" <<"\n");
-        std::vector< std::pair<variable_t, Wt> > lbs;
-        std::vector< std::pair<variable_t, Wt> > ubs;
+        std::vector<std::pair<variable_t, Wt>> lbs, ubs;
         std::vector<diffcst_t> csts;
         diffcsts_of_lin_leq(exp, csts, lbs, ubs);
 
@@ -703,7 +702,7 @@ namespace crab {
 
         // There may be a cheaper way to do this.
         // GKG: Now implemented.
-        std::vector<std::pair<vert_id, Wt> > src_dec;
+        std::vector<std::pair<vert_id, Wt>> src_dec;
         for(auto edge : g_excl.e_preds(ii))
         {
           vert_id se = edge.vert;
@@ -757,7 +756,7 @@ namespace crab {
           }
         }
 
-        std::vector<std::pair<vert_id, Wt> > dest_dec;
+        std::vector<std::pair<vert_id, Wt>> dest_dec;
         for(auto edge : g_excl.e_succs(jj))
         {
           vert_id de = edge.vert;
@@ -1449,15 +1448,14 @@ namespace crab {
 	    // Recover updated LBs and UBs.
 	    if (Params::close_bounds_inline) {	    
 	      Wt_min min_op;
-	      for(auto e : delta)
-		{
-		  if(meet_g.elem(0, e.first.first))
-		    meet_g.update_edge(0, meet_g.edge_val(0, e.first.first) + e.second,
-				       e.first.second, min_op);
-		  if(meet_g.elem(e.first.second, 0))
-		    meet_g.update_edge(e.first.first, meet_g.edge_val(e.first.second, 0) + e.second,
-				       0, min_op);
-		}
+	      for(auto e : delta) {
+		if(meet_g.elem(0, e.first.first))
+		  meet_g.update_edge(0, meet_g.edge_val(0, e.first.first) + e.second,
+				     e.first.second, min_op);
+		if(meet_g.elem(e.first.second, 0))
+		  meet_g.update_edge(e.first.first, meet_g.edge_val(e.first.second, 0) +
+				     e.second, 0, min_op);
+	      }
 	    } else {
 	      delta.clear();
 	      GrOps::close_after_assign(meet_g, meet_pi, 0, delta);
@@ -1600,8 +1598,7 @@ namespace crab {
 	}
 
 	if (!is_rhs_constant) {
-	  std::vector<std::pair<variable_t, Wt> > diffs_lb;
-	  std::vector<std::pair<variable_t, Wt> > diffs_ub;
+	  std::vector<std::pair<variable_t, Wt>> diffs_lb, diffs_ub;
 	  // Construct difference constraints from the assignment
 	  diffcsts_of_assign(x, e, diffs_lb, diffs_ub);
 	  if(diffs_lb.size() > 0 || diffs_ub.size() > 0) {
