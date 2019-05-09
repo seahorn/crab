@@ -1591,6 +1591,8 @@ namespace crab {
          TermNormalizer<Info, typename Info::domain_t>::normalize(*this); 
        }
        
+      void minimize() {}       
+       
        /// XXX: should be part of array_sgraph_domain_traits
        /// Simplify the term associated with x by given the standard
        /// arithmetic meaning to the functors

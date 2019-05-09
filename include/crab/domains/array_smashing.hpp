@@ -181,6 +181,10 @@ namespace crab {
 	void normalize() {
 	  _inv.normalize();
 	}
+
+	void minimize() {
+	  _inv.minimize();
+	}
 	
         void operator +=(linear_constraint_system_t csts) {
           _inv += csts;

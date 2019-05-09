@@ -197,6 +197,9 @@ namespace crab {
 
 	void normalize()
 	{ CRAB_ERROR(LDD_NOT_FOUND); }
+
+	void minimize()
+	{ CRAB_ERROR(LDD_NOT_FOUND); }
 	
         linear_constraint_system_t to_linear_constraint_system()
         { CRAB_ERROR(LDD_NOT_FOUND); }
@@ -1161,6 +1164,8 @@ namespace crab {
         }    
 
 	void normalize() {}
+
+	void minimize() {}
 	
         void operator+=(linear_constraint_system_t csts) {
           if (is_bottom()) return;
@@ -1920,6 +1925,8 @@ namespace crab {
        { detach(); ref().expand(x,new_x);}
 
        void normalize() {}
+
+       void minimize() {}       
        
        void write(crab_os& o) { ref().write(o); }
        

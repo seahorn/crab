@@ -1732,7 +1732,9 @@ public:
   }
 
   void normalize() {}
-        
+
+  void minimize() {}
+  
   void write(crab::crab_os& o) {
     this->_env.write(o);
   }
@@ -2519,7 +2521,8 @@ public:
   }
   
   void normalize() {}
- 
+  
+  void minimize() {}  
 }; 
   
 
@@ -3186,6 +3189,10 @@ public:
   void normalize() {
     _product.normalize();
   }
+
+  void minimize() {
+    _product.minimize();
+  }    
       
   void expand(variable_t x, variable_t new_x) {
     _product.expand(x, new_x);

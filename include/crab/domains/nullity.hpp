@@ -456,6 +456,8 @@ namespace crab {
     }
 
     void normalize() {}
+
+    void minimize() {}    
     
     linear_constraint_system_t to_linear_constraint_system() {
       if (is_bottom())

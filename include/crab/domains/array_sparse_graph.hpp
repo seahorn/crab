@@ -2113,6 +2113,11 @@ namespace crab {
       void normalize() {
         CRAB_WARN("array_graph_domain normalize not implemented");
       }          
+
+      void minimize() {
+	_scalar.minimize();
+	_expressions.minimize();
+      }          
       
       void operator+=(linear_constraint_system_t csts) 
       {

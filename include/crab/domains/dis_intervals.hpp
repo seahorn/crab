@@ -1459,7 +1459,9 @@ namespace crab {
        }
        std::swap(_env, env);
      }
-
+     
+     void minimize() {}
+     
      interval_domain_t approx() const {
        if (_env.is_bottom()) 
          return interval_domain_t::bottom();

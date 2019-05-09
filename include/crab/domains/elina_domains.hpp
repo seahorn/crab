@@ -209,6 +209,9 @@ namespace crab {
 
 	void normalize()
 	{ CRAB_ERROR(ELINA_NOT_FOUND); }
+
+	void minimize()
+	{ CRAB_ERROR(ELINA_NOT_FOUND); }
 	
         void write(crab_os& o) 
         { CRAB_ERROR(ELINA_NOT_FOUND); }
@@ -1970,9 +1973,35 @@ namespace domains {
     }
     
     void normalize() {
+      crab::CrabStats::count(getDomainName() + ".count.normalize");
+      crab::ScopedCrabStats __st__(getDomainName() + ".normalize");
+      
       elina_abstract0_canonicalize(get_man(), &*m_apstate);
     }
 
+    // reduce the size of the internal representation
+    void minimize() {
+      crab::CrabStats::count(getDomainName() + ".count.minimize");
+      crab::ScopedCrabStats __st__(getDomainName() + ".minimize");
+      
+      std::vector<elina_dim_t> dims;
+      var_map_t res;
+      for (auto const& p: m_var_map.right) {  
+	if (elina_abstract0_is_dimension_unconstrained(get_man(),
+						       &*m_apstate, 
+						       p.first)) {
+	  dims.push_back(p.first);
+	}
+	else {
+	  elina_dim_t i = res.size();
+	  res.insert(binding_t(p.second, i));
+	}
+      }
+      remove_dimensions(m_apstate, dims);
+      std::swap(m_var_map, res);
+      assert(m_var_map.size() == get_dims());
+    }
+    
     void dump() const {
       dump(m_var_map, m_apstate);
     }
@@ -2098,11 +2127,14 @@ namespace domains {
     elina_domain_t operator&&(elina_domain_t o)
     { return create(ref() && o.ref()); }
     
-    elina_domain_t widening_thresholds(elina_domain_t o, const iterators::thresholds<number_t>& ts) {
+    elina_domain_t widening_thresholds(elina_domain_t o,
+				       const iterators::thresholds<number_t>& ts) {
       return create(ref().widening_thresholds(o.ref(), ts));
     }
     
     void normalize() { detach(); ref().normalize(); }
+
+    void minimize() { detach(); ref().minimize(); }    
     
     void operator+=(linear_constraint_system_t csts) {
       detach(); ref() += csts;

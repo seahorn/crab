@@ -940,6 +940,10 @@ namespace domains {
     void normalize() { 
       CRAB_WARN("array expansion normalize not implemented");
     }
+
+    void minimize() {
+      _inv.minimize();
+    }
     
     void operator +=(linear_constraint_system_t csts) {
       crab::CrabStats::count(getDomainName() + ".count.add_constraints");

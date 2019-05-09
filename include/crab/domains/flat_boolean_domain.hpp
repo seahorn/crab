@@ -607,6 +607,8 @@ namespace crab {
     }
 
     void normalize() {}
+
+    void minimize() {}
     
    }; // class flat_boolean_domain
 
@@ -1392,6 +1394,10 @@ namespace crab {
 	
       void normalize() {
 	_product.normalize();
+      }
+
+      void minimize() {
+	_product.minimize();
       }
       
       void forget(const variable_vector_t& variables){

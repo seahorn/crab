@@ -546,6 +546,11 @@ namespace crab {
 	this->_product.first().normalize();
 	this->_product.second().normalize();		
       }
+
+      virtual void minimize() {
+	this->_product.first().minimize();
+	this->_product.second().minimize();		
+      }
       
       virtual linear_constraint_system_t to_linear_constraint_system() {
 	linear_constraint_system_t csts;
@@ -1020,6 +1025,10 @@ namespace crab {
 
       void normalize() {
 	this->_product.normalize();
+      }
+
+      void minimize() {
+	this->_product.minimize();
       }
       
       void write(crab_os& o) { 
@@ -1591,7 +1600,13 @@ namespace crab {
 	this->_product.expand(var, new_var);
       }
 
-      void normalize() {}
+      void normalize() {
+	this->_product.normalize();
+      }
+
+      void minimize() {
+	this->_product.minimize();	
+      }      
       
       void write(crab_os& o) { 
         this->_product.write(o); 
@@ -1917,6 +1932,11 @@ namespace crab {
       void normalize() {
 	this->_product.normalize();
       }
+
+      void minimize() {
+	this->_product.minimize();
+      }
+      
     }; // class numerical_nullity_domain
 
     template<typename Number, typename VariableName, typename Domain1, typename Domain2>

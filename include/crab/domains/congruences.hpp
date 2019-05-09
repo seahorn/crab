@@ -1184,6 +1184,8 @@ public:
   }
 
   void normalize() {}
+
+  void minimize() {}  
   
   void write(crab::crab_os& o) { 
     this->_env.write(o); 

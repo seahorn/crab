@@ -209,6 +209,9 @@ namespace crab {
 
       // Normalize the abstract domain if such notion exists.
       virtual void normalize() = 0;
+
+      // Reduce the size of the abstract domain representation.
+      virtual void minimize() = 0;
       
       // Forget variables form the abstract domain
       virtual void forget(const variable_vector_t& variables) = 0;
