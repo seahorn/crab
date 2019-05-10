@@ -86,7 +86,7 @@ namespace crab {
       
     
     virtual void run() override {
-      CRAB_VERBOSE_IF(1, crab::outs() << "Started property checker.\n";);      
+      CRAB_VERBOSE_IF(1, get_msg_stream() << "Started property checker.\n";);      
       crab::ScopedCrabStats __st__("Checker");
       cfg_t cfg = m_analyzer.get_cfg();
 
@@ -99,18 +99,20 @@ namespace crab {
       
       for (auto &bb: cfg) {
         for (auto checker: this->m_checkers) {
-          crab::ScopedCrabStats __st__("Checker." + checker->get_property_name());
-          abs_dom_t inv = m_analyzer[bb.label()];
-	  boost::shared_ptr<abs_tr_t> abs_tr = m_analyzer.get_abs_transformer(&inv);
-          // propagate forward the invariants from the block entry 
-          // while checking the property
-          checker->set(&*abs_tr, safe_assertions);
-          for (auto &stmt: bb) {
-	    stmt.accept(&*checker);
+	  if (checker->is_interesting(bb)) {
+	    crab::ScopedCrabStats __st__("Checker." + checker->get_property_name());
+	    abs_dom_t inv = m_analyzer[bb.label()];
+	    boost::shared_ptr<abs_tr_t> abs_tr = m_analyzer.get_abs_transformer(&inv);
+	    // propagate forward the invariants from the block entry 
+	    // while checking the property
+	    checker->set(&*abs_tr, safe_assertions);
+	    for (auto &stmt: bb) {
+	      stmt.accept(&*checker);
+	    }
 	  }
         }
       }
-      CRAB_VERBOSE_IF(1, crab::outs() << "Finished property checker.\n";);
+      CRAB_VERBOSE_IF(1, get_msg_stream() << "Finished property checker.\n";);
     }
   };
 
@@ -139,7 +141,7 @@ namespace crab {
         : base_checker_t(checkers), m_analyzer(analyzer) { }
     
     virtual void run() override {
-      CRAB_VERBOSE_IF(1, crab::outs() << "Started property checker.\n";);
+      CRAB_VERBOSE_IF(1, get_msg_stream() << "Started property checker.\n";);
       crab::ScopedCrabStats __st__("Checker");
       cg_t& cg = m_analyzer.get_call_graph(); 
       for (auto &v: boost::make_iterator_range(vertices(cg))) {
@@ -162,7 +164,7 @@ namespace crab {
           }
         }
       }
-      CRAB_VERBOSE_IF(1, crab::outs() << "Finished property checker.";);
+      CRAB_VERBOSE_IF(1, get_msg_stream() << "Finished property checker.";);
 
       
     }

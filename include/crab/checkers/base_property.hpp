@@ -124,6 +124,8 @@ namespace crab {
     typedef typename abs_dom_t::linear_constraint_t lin_cst_t;
     typedef typename abs_dom_t::linear_constraint_system_t lin_cst_sys_t;
 
+    typedef typename Analyzer::cfg_t cfg_t;
+    typedef typename cfg_t::basic_block_t basic_block_t;    
     typedef crab::cfg::statement<number_t, varname_t>        statement_t;
     typedef crab::cfg::binary_op<number_t,varname_t>         bin_op_t;
     typedef crab::cfg::assignment<number_t,varname_t>        assign_t;
@@ -379,7 +381,13 @@ namespace crab {
       : m_abs_tr(nullptr)
       , m_verbose(verbose) { }
       
-    
+
+    // whether the basic block is of interest for the checker
+    virtual bool is_interesting(const basic_block_t& b) const {
+      return true;
+    }
+
+    // set internal state for the checker
     void set(abs_tr_t* abs_tr, const std::set<const statement_t*>& safe_assertions) {
       m_abs_tr = abs_tr;
       m_safe_assertions.insert(safe_assertions.begin(), safe_assertions.end());

@@ -22,6 +22,7 @@ namespace crab {
       typedef typename Analyzer::abs_dom_t abs_dom_t;
       typedef property_checker<Analyzer> base_checker_t;
 
+      using typename base_checker_t::basic_block_t;
       using typename base_checker_t::var_t;
       using typename base_checker_t::lin_exp_t;
       using typename base_checker_t::lin_cst_t;
@@ -41,6 +42,15 @@ namespace crab {
 	  abs_dom_t::getDomainName();
       }
 
+      virtual bool is_interesting(const basic_block_t& bb) const override {
+	for (auto& s : bb) {
+	  if (s.is_assert() || s.is_bool_assert() || s.is_ptr_assert()) {
+	    return true;
+	  }
+	}
+	return false;
+      }
+      
       virtual void check(assert_t& s) override { 
         if (!this->m_abs_tr) return;        
 
