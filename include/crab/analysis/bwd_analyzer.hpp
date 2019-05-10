@@ -457,7 +457,7 @@ namespace crab {
 	while (true) {
 	  iters++;
           crab::CrabStats::count("CombinedForwardBackward.iterations");
-	  CRAB_VERBOSE_IF(1, crab::outs() << "Iteration " << iters << "\n" 
+	  CRAB_VERBOSE_IF(1, get_msg_stream() << "Iteration " << iters << "\n" 
 			                  << "Started forward analysis.\n";);
 
 	  crab::CrabStats::resume("CombinedForwardBackward.ForwardPass");
@@ -471,7 +471,7 @@ namespace crab {
 	  }
 	  crab::CrabStats::stop("CombinedForwardBackward.ForwardPass");
 	  
-	  CRAB_VERBOSE_IF(1, crab::outs() << "Finished forward analysis.\n";);
+	  CRAB_VERBOSE_IF(1, get_msg_stream() << "Finished forward analysis.\n";);
 	  
 	  CRAB_LOG("backward",
 		   crab::outs() << "Forward analysis: \n";
@@ -483,11 +483,11 @@ namespace crab {
 
 	  
 	  if (only_forward) {
-	    CRAB_VERBOSE_IF(1, crab::outs() << "\nSkipped backward refinement.\n";);
+	    CRAB_VERBOSE_IF(1, get_msg_stream() << "\nSkipped backward refinement.\n";);
 	    break;
 	  } else if (m_unproven_assertions.empty()) {
 	    CRAB_VERBOSE_IF(1,
-	       crab::outs() << "\nNo assertions found: skipped backward refinement.\n";);
+	       get_msg_stream() << "\nNo assertions found: skipped backward refinement.\n";);
 	    break;
 	  }
 
@@ -496,7 +496,7 @@ namespace crab {
 	    m_wto = new wto_t(F.get_wto());
 	  }
 	  
-	  CRAB_VERBOSE_IF(1, crab::outs() << "Started backward analysis.\n";);
+	  CRAB_VERBOSE_IF(1, get_msg_stream() << "Started backward analysis.\n";);
 
 	  crab::CrabStats::resume("CombinedForwardBackward.BackwardPass");
 	  // run backward analysis computing necessary preconditions
@@ -523,7 +523,7 @@ namespace crab {
 	  B.run_backward(minimized_fwd_invariants);
 	  crab::CrabStats::stop("CombinedForwardBackward.BackwardPass"); 
 
-	  CRAB_VERBOSE_IF(1, crab::outs() << "Finished backward analysis.\n";);
+	  CRAB_VERBOSE_IF(1, get_msg_stream() << "Finished backward analysis.\n";);
 	  
 	  CRAB_LOG("backward", 
 		crab::outs() << "Backward analysis:\n";
@@ -574,8 +574,9 @@ namespace crab {
 	  
 	} // end while true
 
-	CRAB_VERBOSE_IF(1, crab::outs() << "Combined forward+backward analysis done after "
-			                << iters << " iterations.\n";); 	
+	CRAB_VERBOSE_IF(1, get_msg_stream()
+			<< "Combined forward+backward analysis done after "
+			<< iters << " iterations.\n";); 	
       }
       
       // Return the invariants that hold at the entry of b

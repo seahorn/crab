@@ -100,12 +100,12 @@ namespace crab {
 			   false /*disable processor*/), 
 	  m_abs_tr(abs_tr),
 	  m_live(live) {
-	CRAB_VERBOSE_IF(1, crab::outs() << "Type checking CFG ... ";);
+	CRAB_VERBOSE_IF(1, get_msg_stream() << "Type checking CFG ... ";);
 	crab::CrabStats::resume("CFG type checking");
 	crab::cfg::type_checker<CFG> tc(this->_cfg);
 	tc.run();
 	crab::CrabStats::stop("CFG type checking");	
-	CRAB_VERBOSE_IF(1, crab::outs() << "OK\n";);
+	CRAB_VERBOSE_IF(1, get_msg_stream() << "OK\n";);
 	
         if (live) {
           // --- collect input and output parameters 

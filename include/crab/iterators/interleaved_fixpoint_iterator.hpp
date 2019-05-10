@@ -146,8 +146,9 @@ namespace ikos {
       crab::CrabStats::count("Fixpo.extrapolate");
       crab::ScopedCrabStats __st__("Fixpo.extrapolate");
 
-      CRAB_VERBOSE_IF(1, crab::outs() << "Increasing iteration=" << iteration << "\n"
-		      << "Widening at " << crab::cfg_impl::get_label_str(node) << "\n";);      
+      CRAB_VERBOSE_IF(1, crab::get_msg_stream() 
+		      << "Widening " << iteration << " at "
+		      << crab::cfg_impl::get_label_str(node) << "\n";);      
 
       if (iteration <= _widening_delay) {
 	auto widen_res = before | after;
@@ -186,7 +187,7 @@ namespace ikos {
       crab::ScopedCrabStats __st__("Fixpo.refine");
 
       CRAB_VERBOSE_IF(1, 
-		      crab::outs() << "Decreasing iteration=" << iteration << "\n"
+		      crab::get_msg_stream() << "Decreasing iteration=" << iteration << "\n"
 		      << "Narrowing at " << crab::cfg_impl::get_label_str(node) << "\n";);
 
       if (iteration == 1) {
@@ -262,7 +263,7 @@ namespace ikos {
     
     void run(AbstractValue init) {
       crab::ScopedCrabStats __st__("Fixpo");
-      CRAB_VERBOSE_IF(1, crab::outs() << "== Started fixpoint\n");
+      CRAB_VERBOSE_IF(1, crab::get_msg_stream() << "== Started fixpoint\n");
       this->set_pre(this->_cfg.entry(), init);
       wto_iterator_t iterator(this);
       this->_wto.accept(&iterator);
@@ -270,14 +271,14 @@ namespace ikos {
 	wto_processor_t processor(this);
 	this->_wto.accept(&processor);
       }
-      CRAB_VERBOSE_IF(1, crab::outs() << "== Fixpoint reached.\n");
+      CRAB_VERBOSE_IF(1, crab::get_msg_stream() << "== Fixpoint reached.\n");
       CRAB_VERBOSE_IF(2, crab::outs() << "Wto:\n" << _wto << "\n");            
     }
 
     void run(NodeName entry, AbstractValue init, const assumption_map_t &assumptions) {
       crab::ScopedCrabStats __st__("Fixpo");
       CRAB_VERBOSE_IF(1,
-	     crab::outs() << "== Started fixpoint at block "
+	     crab::get_msg_stream() << "== Started fixpoint at block "
 		          << crab::cfg_impl::get_label_str(entry)
 		          << " with initial value=" << init << "\n";);      
       this->set_pre(entry, init);
@@ -287,7 +288,7 @@ namespace ikos {
 	wto_processor_t processor(this);
 	this->_wto.accept(&processor);
       }
-      CRAB_VERBOSE_IF(1, crab::outs() << "== Fixpoint reached.\n");
+      CRAB_VERBOSE_IF(1, crab::get_msg_stream() << "== Fixpoint reached.\n");
       CRAB_VERBOSE_IF(2, crab::outs() << "Wto:\n" << _wto << "\n");      
       
     }
@@ -420,7 +421,7 @@ namespace ikos {
         CRAB_VERBOSE_IF(4, crab::outs() << "PRE Invariants:\n" << pre << "\n");	
         crab::CrabStats::resume ("Fixpo.analyze_block");
 	AbstractValue post(pre); 	
-        CRAB_VERBOSE_IF(1, crab::outs() << "Analyzing node "
+        CRAB_VERBOSE_IF(1, crab::get_msg_stream() << "Analyzing node "
 			                 << crab::cfg_impl::get_label_str(node);
 			 auto &n = this->_iterator->_cfg.get_node(node);
 			 crab::outs() << " size=" << n.size() << "\n";);
@@ -451,7 +452,7 @@ namespace ikos {
 	}
 	
         CRAB_VERBOSE_IF(1,
-			 crab::outs() << "** Analyzing loop with head "
+			 crab::get_msg_stream() << "** Analyzing loop with head "
 			              << crab::cfg_impl::get_label_str(head);
 			 auto &n = this->_iterator->_cfg.get_node(head);
 			 crab::outs() << " size=" << n.size() << "\n";);
@@ -487,7 +488,7 @@ namespace ikos {
 	  CRAB_VERBOSE_IF(4, crab::outs() << "PRE Invariants:\n" << pre << "\n"); 
 	  crab::CrabStats::resume("Fixpo.analyze_block");		  
           AbstractValue post(pre); 
-          CRAB_VERBOSE_IF(1, crab::outs() << "Analyzing node "
+          CRAB_VERBOSE_IF(1, crab::get_msg_stream() << "Analyzing node "
 			                  << crab::cfg_impl::get_label_str(head);
 			  auto &n = this->_iterator->_cfg.get_node(head);
 			  crab::outs() << " size=" << n.size() << "\n";);
@@ -511,7 +512,7 @@ namespace ikos {
 	  crab::CrabStats::stop("Fixpo.check_fixpoint");	  	  
           if (fixpoint_reached) {
             // Post-fixpoint reached
-            CRAB_VERBOSE_IF(1, crab::outs() << "post-fixpoint reached\n");
+            CRAB_VERBOSE_IF(1, crab::get_msg_stream() << "post-fixpoint reached\n");
             this->_iterator->set_pre(head, new_pre);
             pre = new_pre;
             break;
@@ -525,7 +526,7 @@ namespace ikos {
 	  return;
 	}
 
-	CRAB_VERBOSE_IF(1, crab::outs() << "Started narrowing phase\n";);
+	CRAB_VERBOSE_IF(1, crab::get_msg_stream() << "Started narrowing phase\n";);
 	
         for(unsigned int iteration = 1; ; ++iteration) {
           // Decreasing iteration sequence with narrowing
@@ -533,7 +534,7 @@ namespace ikos {
 	  CRAB_VERBOSE_IF(4, crab::outs() << "PRE Invariants:\n" << pre << "\n");	  
 	  crab::CrabStats::resume("Fixpo.analyze_block");		  
           AbstractValue post(pre); 
-          CRAB_VERBOSE_IF(1,crab::outs() << "Analyzing node "
+          CRAB_VERBOSE_IF(1,crab::get_msg_stream() << "Analyzing node "
 			  << crab::cfg_impl::get_label_str(head);
 			  auto &n = this->_iterator->_cfg.get_node(head);
 			  crab::outs() << " size=" << n.size() << "\n";);
@@ -556,7 +557,7 @@ namespace ikos {
 	  bool no_more_refinement = pre <= new_pre;
 	  crab::CrabStats::stop("Fixpo.check_fixpoint");	  
           if (no_more_refinement) {
-            CRAB_VERBOSE_IF(1, crab::outs() << "No more refinement possible.\n");
+            CRAB_VERBOSE_IF(1, crab::get_msg_stream() << "No more refinement possible.\n");
             // No more refinement possible(pre == new_pre)
             break;
           } else {
@@ -566,7 +567,7 @@ namespace ikos {
           }
         }
         CRAB_VERBOSE_IF(1,
-			 crab::outs() << "** Finished loop with head "
+			 crab::get_msg_stream() << "** Finished loop with head "
 			 << crab::cfg_impl::get_label_str(head) << "\n");
 	
       }

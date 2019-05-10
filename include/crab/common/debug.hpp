@@ -27,6 +27,8 @@ extern unsigned CrabVerbosity;
 void CrabEnableVerbosity(unsigned v);
 #define CRAB_VERBOSE_IF(LEVEL,CODE) do { if (::crab::CrabVerbosity >= LEVEL) { CODE; } } while (0)
 
+crab_os& get_msg_stream(bool timestamp = true);
+
 template<typename... ArgTypes>
 inline void ___print___(ArgTypes... args) {
   // trick to expand variadic argument pack without recursion

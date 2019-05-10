@@ -101,7 +101,7 @@ namespace crab {
       
       void run(TD_Dom init = TD_Dom::top())  {
 
-	CRAB_VERBOSE_IF(1, crab::outs() << "Started inter-procedural analysis\n";);
+	CRAB_VERBOSE_IF(1, get_msg_stream() << "Started inter-procedural analysis\n";);
         CRAB_LOG("inter", 
                  m_cg.write(crab::outs()); crab::outs() << "\n");
                  
@@ -155,7 +155,7 @@ namespace crab {
 	graph_algo::scc_graph<CG> Scc_g(m_cg);
         graph_algo::rev_topo_sort<graph_algo::scc_graph<CG>>(Scc_g, rev_order);
 
-        CRAB_VERBOSE_IF(1,crab::outs() << "== Bottom-up phase ...\n";);	
+        CRAB_VERBOSE_IF(1,get_msg_stream() << "== Bottom-up phase ...\n";);	
         for (auto n: rev_order) {
           crab::ScopedCrabStats __st__("Inter.BottomUp");
           std::vector<cg_node_t> &scc_mems = Scc_g.get_component_members(n);
@@ -167,7 +167,7 @@ namespace crab {
 
             std::string fun_name = (*fdecl).get_func_name();
             if (fun_name != "main" && cfg.has_exit()) {
-	      CRAB_VERBOSE_IF(1, crab::outs() << "++ Analyzing function "
+	      CRAB_VERBOSE_IF(1, get_msg_stream() << "++ Analyzing function "
 			                      << (*fdecl).get_func_name() << "\n";);
               // --- run the analysis
 	      auto init_inv = BU_Dom::top();
@@ -200,7 +200,7 @@ namespace crab {
           }
         } 
 
-        CRAB_VERBOSE_IF(1, crab::outs() << "== Top-down phase ...\n";);
+        CRAB_VERBOSE_IF(1, get_msg_stream() << "== Top-down phase ...\n";);
         bool is_root = true;
         for (auto n: boost::make_iterator_range(rev_order.rbegin(),
                                                  rev_order.rend())) {
@@ -219,7 +219,7 @@ namespace crab {
             auto cfg = m.get_cfg();
             auto fdecl = cfg.get_func_decl();
             assert(fdecl);
-	    CRAB_VERBOSE_IF(1, crab::outs() << "++ Analyzing function " 
+	    CRAB_VERBOSE_IF(1, get_msg_stream() << "++ Analyzing function " 
 			                    << (*fdecl).get_func_name() << "\n";);
             if (is_recursive) {
               // If the SCC is recursive then what we have in
@@ -250,7 +250,7 @@ namespace crab {
             m_inv_map.insert(std::make_pair(crab::cfg::cfg_hasher<cfg_t>::hash(*fdecl), a));
           }
         }
-	CRAB_VERBOSE_IF(1,crab::outs() << "Finished inter-procedural analysis\n";);	
+	CRAB_VERBOSE_IF(1,get_msg_stream() << "Finished inter-procedural analysis\n";);	
       }
 
       //! return the analyzed call graph
