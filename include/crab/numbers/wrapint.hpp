@@ -4,7 +4,8 @@
  *  A class for small, arbitrary-precision unsigned integers.
 **/
 
-#include <stdint.h>
+#include <climits>
+#include <cstdint>
 #include <sstream>
 #include <boost/functional/hash.hpp>
 #include <crab/common/types.hpp>
@@ -182,12 +183,15 @@ public:
   // return the wrapint as an unsigned big number
   ikos::z_number get_unsigned_bignum() const {
     // XXX: cannot use here ikos::z_number(_n) because it will cast _n
-    // implicitly to a signed number. Thus, max unsigned will become
-    // signed -1.
-    //
-    // FIXME: In some platforms uint64_t may not be the same as
-    // unsigned long.
-    return ikos::z_number::from_ulong(_n);
+    // implicitly to a signed integer.
+    
+    if (ULONG_MAX == UINT64_MAX) {
+      return ikos::z_number::from_ulong(_n);
+    } else {
+      std::stringstream ss;
+      ss << _n;
+      return ikos::z_number(ss.str());
+    }
   }
 
   // return the wrapint as a signed big number
