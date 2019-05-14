@@ -64,30 +64,31 @@
 
 namespace ikos {
 
-  template<typename NodeName, typename CFG>
+  template<typename CFG>
   class wto;
 
-  template<typename NodeName, typename CFG>
+  template<typename CFG>
   class wto_vertex;
 
-  template<typename NodeName, typename CFG>
+  template<typename CFG>
   class wto_cycle;
 
-  template<typename NodeName, typename CFG>
+  template<typename CFG>
   class wto_component_visitor;
 
-  template<typename NodeName, typename CFG>
+  template<typename CFG>
   class wto_nesting {
     
-    friend class wto<NodeName, CFG>;
-    friend class wto_vertex<NodeName, CFG>;
-    friend class wto_cycle<NodeName, CFG>;
+    friend class wto<CFG>;
+    friend class wto_vertex<CFG>;
+    friend class wto_cycle<CFG>;
     
   public:
-    typedef wto_nesting<NodeName, CFG> wto_nesting_t;
+    typedef wto_nesting<CFG> wto_nesting_t;
+    typedef typename CFG::basic_block_label_t basic_block_label_t;
     
   private:
-    typedef std::vector<NodeName> node_list_t;
+    typedef std::vector<basic_block_label_t> node_list_t;
     typedef boost::shared_ptr<node_list_t> node_list_ptr;
 
     node_list_ptr _nodes;
@@ -121,12 +122,12 @@ namespace ikos {
   public:
     wto_nesting(): _nodes(boost::make_shared<node_list_t>()) { }
 
-    void operator+=(NodeName n) {
+    void operator+=(basic_block_label_t n) {
       this->_nodes = boost::make_shared<node_list_t>(*(this->_nodes));
       this->_nodes->push_back(n);
     }
     
-    wto_nesting_t operator+(NodeName n) {
+    wto_nesting_t operator+(basic_block_label_t n) {
       wto_nesting_t res(this->_nodes);
       res._nodes->push_back(n);
       return res;
@@ -181,7 +182,7 @@ namespace ikos {
     void write(crab::crab_os& o) const {
       o << "[";
       for (const_iterator it = this->begin(); it != this->end(); ) {
-	NodeName n = *it;
+	basic_block_label_t n = *it;
 	o << n;
 	++it;
 	if (it != this->end()) {
@@ -192,19 +193,19 @@ namespace ikos {
     }
   }; // class nesting
 
-  template<typename NodeName, typename CFG>
-  inline crab::crab_os& operator<<(crab::crab_os& o, const wto_nesting<NodeName, CFG>& n) {
+  template<typename CFG>
+  inline crab::crab_os& operator<<(crab::crab_os& o, const wto_nesting<CFG>& n) {
     n.write(o);
     return o;
   }
 
-  template<typename NodeName, typename CFG>
+  template<typename CFG>
   class wto_component {
 
   public:
-    typedef wto_nesting<NodeName, CFG> wto_nesting_t;
+    typedef wto_nesting<CFG> wto_nesting_t;
     
-    virtual void accept(wto_component_visitor<NodeName, CFG> *) = 0;
+    virtual void accept(wto_component_visitor<CFG> *) = 0;
 
     virtual ~wto_component() { }
 
@@ -212,27 +213,31 @@ namespace ikos {
 
   }; // class wto_component
 
-  template<typename NodeName, typename CFG>
-  inline crab::crab_os& operator<<(crab::crab_os& o, const wto_component<NodeName, CFG>& c) {
+  template<typename CFG>
+  inline crab::crab_os& operator<<(crab::crab_os& o, const wto_component<CFG>& c) {
     c.write(o);
     return o;
   }
 
-  template<typename NodeName, typename CFG>
-  class wto_vertex: public wto_component<NodeName, CFG> {
+  template<typename CFG>
+  class wto_vertex: public wto_component<CFG> {
 
-    friend class wto<NodeName, CFG>;
+    friend class wto<CFG>;
 
-    NodeName _node;
+  public:    
+    typedef typename CFG::basic_block_label_t basic_block_label_t;
+    
+  private:
+    basic_block_label_t _node;
 
-    wto_vertex(NodeName node): _node(node) { }
+    wto_vertex(basic_block_label_t node): _node(node) { }
 
   public:
-    NodeName node() {
+    basic_block_label_t node() {
       return this->_node;
     }
 
-    void accept(wto_component_visitor<NodeName, CFG> *v) {
+    void accept(wto_component_visitor<CFG> *v) {
       v->visit(*this);
     }
     
@@ -242,25 +247,26 @@ namespace ikos {
 
   }; // class wto_vertex
 
-  template<typename NodeName, typename CFG>
-  class wto_cycle: public wto_component<NodeName, CFG> {
+  template<typename CFG>
+  class wto_cycle: public wto_component<CFG> {
 
-    friend class wto<NodeName, CFG>;
+    friend class wto<CFG>;
     
   public:
-    typedef wto_component<NodeName, CFG> wto_component_t;
+    typedef wto_component<CFG> wto_component_t;
+    typedef typename CFG::basic_block_label_t basic_block_label_t;
     
   private:
     typedef boost::shared_ptr<wto_component_t> wto_component_ptr;
     typedef boost::container::slist<wto_component_ptr> wto_component_list_t;
     typedef boost::shared_ptr<wto_component_list_t> wto_component_list_ptr;
 
-    NodeName _head;
+    basic_block_label_t _head;
     wto_component_list_ptr _wto_components;
     // number of times the wto cycle is analyzed by the fixpoint iterator
     unsigned _num_fixpo;
     
-    wto_cycle(NodeName head, 
+    wto_cycle(basic_block_label_t head, 
               wto_component_list_ptr wto_components): 
       _head(head), _wto_components(wto_components), _num_fixpo(0) { }
     
@@ -269,11 +275,11 @@ namespace ikos {
     typedef boost::indirect_iterator<typename wto_component_list_t::iterator> iterator;
     typedef boost::indirect_iterator<typename wto_component_list_t::const_iterator> const_iterator;
     
-    NodeName head() {
+    basic_block_label_t head() {
       return this->_head;
     }
     
-    void accept(wto_component_visitor<NodeName, CFG> *v) {
+    void accept(wto_component_visitor<CFG> *v) {
       v->visit(*this);
     }
     
@@ -321,12 +327,12 @@ namespace ikos {
     
   }; // class wto_cycle
   
-  template<typename NodeName, typename CFG>
+  template<typename CFG>
   class wto_component_visitor {
 
   public:
-    typedef wto_vertex<NodeName, CFG> wto_vertex_t;
-    typedef wto_cycle<NodeName, CFG> wto_cycle_t;
+    typedef wto_vertex<CFG> wto_vertex_t;
+    typedef wto_cycle<CFG> wto_cycle_t;
 
     virtual void visit(wto_vertex_t&) = 0;
     virtual void visit(wto_cycle_t&) = 0;
@@ -334,16 +340,17 @@ namespace ikos {
 
   }; // class wto_component_visitor
 
-  template<typename NodeName, typename CFG>
+  template<typename CFG>
   class wto {
     
   public:
-    typedef wto_nesting<NodeName, CFG> wto_nesting_t;
-    typedef wto_component<NodeName, CFG> wto_component_t;
-    typedef wto_vertex<NodeName, CFG> wto_vertex_t;
-    typedef wto_cycle<NodeName, CFG> wto_cycle_t;
-    typedef wto<NodeName, CFG> wto_t;
-  
+    typedef wto_nesting<CFG> wto_nesting_t;
+    typedef wto_component<CFG> wto_component_t;
+    typedef wto_vertex<CFG> wto_vertex_t;
+    typedef wto_cycle<CFG> wto_cycle_t;
+    typedef wto<CFG> wto_t;
+    typedef typename CFG::basic_block_label_t basic_block_label_t;
+    
   private:
     typedef boost::shared_ptr<wto_component_t> wto_component_ptr;
     typedef boost::shared_ptr<wto_vertex_t> wto_vertex_ptr;
@@ -351,11 +358,11 @@ namespace ikos {
     typedef boost::container::slist<wto_component_ptr> wto_component_list_t;
     typedef boost::shared_ptr<wto_component_list_t> wto_component_list_ptr;
     typedef bound<z_number> dfn_t;
-    typedef boost::unordered_map<NodeName, dfn_t> dfn_table_t;
+    typedef boost::unordered_map<basic_block_label_t, dfn_t> dfn_table_t;
     typedef boost::shared_ptr<dfn_table_t> dfn_table_ptr;
-    typedef std::vector<NodeName> stack_t;
+    typedef std::vector<basic_block_label_t> stack_t;
     typedef boost::shared_ptr<stack_t> stack_ptr;
-    typedef boost::unordered_map<NodeName, wto_nesting_t> nesting_table_t;
+    typedef boost::unordered_map<basic_block_label_t, wto_nesting_t> nesting_table_t;
     typedef boost::shared_ptr<nesting_table_t> nesting_table_ptr;
     
     wto_component_list_ptr _wto_components;
@@ -364,11 +371,11 @@ namespace ikos {
     stack_ptr _stack;
     nesting_table_ptr _nesting_table;
 
-    class nesting_builder: public wto_component_visitor<NodeName, CFG> {
+    class nesting_builder: public wto_component_visitor<CFG> {
       
     public:
-      typedef wto_vertex<NodeName, CFG> wto_vertex_t;
-      typedef wto_cycle<NodeName, CFG> wto_cycle_t;
+      typedef wto_vertex<CFG> wto_vertex_t;
+      typedef wto_cycle<CFG> wto_cycle_t;
       
     private:
       wto_nesting_t _nesting;
@@ -379,7 +386,7 @@ namespace ikos {
 	_nesting_table(nesting_table) { }
 
       void visit(wto_cycle_t& cycle) {
-        NodeName head = cycle.head();
+        basic_block_label_t head = cycle.head();
         wto_nesting_t previous_nesting = this->_nesting;
         this->_nesting_table->insert(std::make_pair(head, this->_nesting));
         this->_nesting += head;
@@ -395,7 +402,7 @@ namespace ikos {
       
     }; // class nesting_builder
 
-    dfn_t get_dfn(NodeName n) {
+    dfn_t get_dfn(basic_block_label_t n) {
       typename dfn_table_t::iterator it = this->_dfn_table->find(n);
       if (it == this->_dfn_table->end()) {
         return 0;
@@ -404,7 +411,7 @@ namespace ikos {
       }
     }
     
-    void set_dfn(NodeName n, dfn_t dfn) {
+    void set_dfn(basic_block_label_t n, dfn_t dfn) {
       std::pair<typename dfn_table_t::iterator, bool> res = 
 	this->_dfn_table->insert(std::make_pair(n, dfn));
       if (!res.second) {
@@ -412,24 +419,24 @@ namespace ikos {
       }
     }
     
-    NodeName pop() {
+    basic_block_label_t pop() {
       if (this->_stack->empty()) {
         CRAB_ERROR("WTO computation: empty stack");
       } else {
-        NodeName top = this->_stack->back();
+        basic_block_label_t top = this->_stack->back();
         this->_stack->pop_back();
         return top;
       }
     }
 
-    void push(NodeName n) {
+    void push(basic_block_label_t n) {
       this->_stack->push_back(n);
     }
 
-    wto_cycle_ptr component(CFG cfg, NodeName vertex) {
+    wto_cycle_ptr component(CFG cfg, basic_block_label_t vertex) {
       auto partition = boost::make_shared<wto_component_list_t>();
       auto next_nodes = cfg.next_nodes(vertex);
-      for (NodeName succ : next_nodes) {
+      for (basic_block_label_t succ : next_nodes) {
         if (this->get_dfn(succ) == 0) {
           this->visit(cfg, succ, partition);
         }
@@ -441,24 +448,24 @@ namespace ikos {
     struct visit_stack_elem {
       typedef typename CFG::succ_range succ_range;
       typedef typename CFG::succ_iterator succ_iterator;      
-      NodeName _node;
+      basic_block_label_t _node;
       succ_iterator _it; // begin iterator for node's successors
       succ_iterator _et; // end iterator for node's successors
       dfn_t _min;        // smallest dfn number of any (direct or
 			 // indirect) node's successor through node's
 			 // DFS subtree, included node.
       
-      visit_stack_elem(NodeName node, succ_range succs, dfn_t min)
+      visit_stack_elem(basic_block_label_t node, succ_range succs, dfn_t min)
 	: _node(node)
 	, _it(succs.begin())
 	, _et(succs.end())
 	, _min(min) {}
     };
     
-    void visit(CFG cfg, NodeName vertex, wto_component_list_ptr partition) {
+    void visit(CFG cfg, basic_block_label_t vertex, wto_component_list_ptr partition) {
       typedef std::vector<visit_stack_elem> visit_stack_t;      
       visit_stack_t visit_stack;
-      std::set<NodeName> loop_nodes;
+      std::set<basic_block_label_t> loop_nodes;
       
       /* discover vertex */
       push(vertex);
@@ -477,7 +484,7 @@ namespace ikos {
 	 * visit_stack one more descendant.
 	 */
 	while (visit_stack.back()._it != visit_stack.back()._et) {
-	  NodeName child = *visit_stack.back()._it++;
+	  basic_block_label_t child = *visit_stack.back()._it++;
 	  dfn_t child_dfn = get_dfn(child);
 	  if (child_dfn == 0) {
 	    /* discover new vertex */
@@ -499,7 +506,7 @@ namespace ikos {
 	
 
 	// propagate min from child to parent
-	NodeName visiting_node = visit_stack.back()._node;
+	basic_block_label_t visiting_node = visit_stack.back()._node;
 	dfn_t min_visiting_node = visit_stack.back()._min;
 	bool is_loop = loop_nodes.count(visiting_node)> 0;
 	visit_stack.pop_back();
@@ -518,7 +525,7 @@ namespace ikos {
 		   crab::outs() << "WTO: BEGIN building partition for node "
 	                        << visiting_node << "\n";);
 	  set_dfn(visiting_node, dfn_t::plus_infinity());
-	  NodeName element = pop();
+	  basic_block_label_t element = pop();
 	  if (is_loop) {
 	    while (!(element == visiting_node)) {
 	      set_dfn(element, 0);
@@ -543,10 +550,10 @@ namespace ikos {
     }
     
     #else
-    dfn_t visit(CFG cfg, NodeName vertex, wto_component_list_ptr partition) {
+    dfn_t visit(CFG cfg, basic_block_label_t vertex, wto_component_list_ptr partition) {
       dfn_t head = 0, min = 0;
       bool loop;
-      NodeName element;
+      basic_block_label_t element;
 
       this->push(vertex);
       this->_num += 1;
@@ -554,7 +561,7 @@ namespace ikos {
       this->set_dfn(vertex, head);
       loop = false;
       auto next_nodes = cfg.next_nodes(vertex);
-      for (NodeName succ: next_nodes) {
+      for (basic_block_label_t succ: next_nodes) {
         dfn_t succ_dfn = this->get_dfn(succ);
         if (succ_dfn == 0) {
           min = this->visit(cfg, succ, partition);
@@ -657,7 +664,7 @@ namespace ikos {
     }
 
 
-    wto_nesting_t nesting(NodeName n) {
+    wto_nesting_t nesting(basic_block_label_t n) {
       typename nesting_table_t::iterator it = this->_nesting_table->find(n);
       if (it == this->_nesting_table->end()) {
         CRAB_ERROR("WTO nesting: node ", n," not found");
@@ -666,7 +673,7 @@ namespace ikos {
       }
     }
 
-    void accept(wto_component_visitor<NodeName, CFG> *v) {
+    void accept(wto_component_visitor<CFG> *v) {
       for (iterator it = this->begin(); it != this->end(); ++it) {
         it->accept(v);
       }

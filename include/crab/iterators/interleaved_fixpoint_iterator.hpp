@@ -57,33 +57,34 @@ namespace ikos {
 
   namespace interleaved_fwd_fixpoint_iterator_impl {
     
-    template<typename NodeName, typename CFG, typename AbstractValue>
+    template<typename CFG, typename AbstractValue>
     class wto_iterator;
 
-    template<typename NodeName, typename CFG, typename AbstractValue>
+    template<typename CFG, typename AbstractValue>
     class wto_processor;
     
   } // namespace interleaved_fwd_fixpoint_iterator_impl
 
 
-  template<typename NodeName, typename CFG, typename AbstractValue>
+  template<typename CFG, typename AbstractValue>
   class interleaved_fwd_fixpoint_iterator: 
-      public fixpoint_iterator<NodeName, CFG, AbstractValue> {
+      public fixpoint_iterator<CFG, AbstractValue> {
 
-    friend class interleaved_fwd_fixpoint_iterator_impl::wto_iterator<NodeName, CFG, AbstractValue>;
+    friend class interleaved_fwd_fixpoint_iterator_impl::wto_iterator<CFG, AbstractValue>;
 
   public:
-    
-    typedef wto<NodeName, CFG> wto_t;
-    typedef boost::unordered_map<NodeName,AbstractValue> assumption_map_t;
-    typedef boost::unordered_map<NodeName,AbstractValue> invariant_table_t;
+
+    typedef typename CFG::basic_block_label_t basic_block_label_t;
+    typedef wto<CFG> wto_t;
+    typedef boost::unordered_map<basic_block_label_t,AbstractValue> assumption_map_t;
+    typedef boost::unordered_map<basic_block_label_t,AbstractValue> invariant_table_t;
     
   private:
     
-    typedef interleaved_fwd_fixpoint_iterator_impl::wto_iterator<NodeName, CFG, AbstractValue> wto_iterator_t;
-    typedef interleaved_fwd_fixpoint_iterator_impl::wto_processor<NodeName, CFG, AbstractValue> wto_processor_t;
+    typedef interleaved_fwd_fixpoint_iterator_impl::wto_iterator<CFG,AbstractValue> wto_iterator_t;
+    typedef interleaved_fwd_fixpoint_iterator_impl::wto_processor<CFG,AbstractValue> wto_processor_t;
     typedef crab::iterators::thresholds<typename CFG::number_t> thresholds_t;    
-    typedef crab::iterators::wto_thresholds<NodeName, CFG> wto_thresholds_t;
+    typedef crab::iterators::wto_thresholds<CFG> wto_thresholds_t;
 
   protected:
     
@@ -110,7 +111,7 @@ namespace ikos {
 
   private:
     
-    void set(invariant_table_t& table, NodeName node, const AbstractValue& v) {
+    void set(invariant_table_t& table, basic_block_label_t node, const AbstractValue& v) {
       crab::CrabStats::count("Fixpo.invariant_table.update");
       crab::ScopedCrabStats __st__("Fixpo.invariant_table.update");
       
@@ -121,15 +122,15 @@ namespace ikos {
       }
     }
     
-    inline void set_pre(NodeName node, const AbstractValue& v) {
+    inline void set_pre(basic_block_label_t node, const AbstractValue& v) {
       this->set(this->_pre, node, v);
     }
 
-    inline void set_post(NodeName node, const AbstractValue& v) {
+    inline void set_post(basic_block_label_t node, const AbstractValue& v) {
       this->set(this->_post, node, v);
     }
 
-    AbstractValue get(invariant_table_t& table, NodeName n) {
+    AbstractValue get(invariant_table_t& table, basic_block_label_t n) {
       crab::CrabStats::count("Fixpo.invariant_table.lookup");
       crab::ScopedCrabStats __st__("Fixpo.invariant_table.lookup");
       
@@ -141,7 +142,7 @@ namespace ikos {
       }
     }
 
-    AbstractValue extrapolate(NodeName node, unsigned int iteration, 
+    AbstractValue extrapolate(basic_block_label_t node, unsigned int iteration, 
                               AbstractValue before, AbstractValue after) {
       crab::CrabStats::count("Fixpo.extrapolate");
       crab::ScopedCrabStats __st__("Fixpo.extrapolate");
@@ -181,7 +182,7 @@ namespace ikos {
       }
     }
 
-    AbstractValue refine(NodeName node, unsigned int iteration, 
+    AbstractValue refine(basic_block_label_t node, unsigned int iteration, 
                          AbstractValue before, AbstractValue after) {
       crab::CrabStats::count("Fixpo.refine");
       crab::ScopedCrabStats __st__("Fixpo.refine");
@@ -245,11 +246,11 @@ namespace ikos {
       return this->_wto;
     }
 
-    AbstractValue get_pre(NodeName node) {
+    AbstractValue get_pre(basic_block_label_t node) {
       return this->get(this->_pre, node);
     }
     
-    AbstractValue get_post(NodeName node) {
+    AbstractValue get_post(basic_block_label_t node) {
       return this->get(this->_post, node);
     }
 
@@ -275,7 +276,7 @@ namespace ikos {
       CRAB_VERBOSE_IF(2, crab::outs() << "Wto:\n" << _wto << "\n");            
     }
 
-    void run(NodeName entry, AbstractValue init, const assumption_map_t &assumptions) {
+    void run(basic_block_label_t entry, AbstractValue init, const assumption_map_t &assumptions) {
       crab::ScopedCrabStats __st__("Fixpo");
       CRAB_VERBOSE_IF(1,
 	     crab::get_msg_stream() << "== Started fixpoint at block "
@@ -302,26 +303,27 @@ namespace ikos {
 
   namespace interleaved_fwd_fixpoint_iterator_impl {
     
-    template<typename NodeName, typename CFG, typename AbstractValue>
-    class wto_iterator: public wto_component_visitor<NodeName, CFG> {
+    template<typename CFG, typename AbstractValue>
+    class wto_iterator: public wto_component_visitor<CFG> {
       
     public:
-      typedef interleaved_fwd_fixpoint_iterator<NodeName, CFG, AbstractValue> interleaved_iterator_t;
-      typedef wto_vertex<NodeName, CFG> wto_vertex_t;
-      typedef wto_cycle<NodeName, CFG> wto_cycle_t;
-      typedef wto<NodeName, CFG> wto_t;
+      typedef interleaved_fwd_fixpoint_iterator<CFG, AbstractValue> interleaved_iterator_t;
+      typedef wto_vertex<CFG> wto_vertex_t;
+      typedef wto_cycle<CFG> wto_cycle_t;
+      typedef wto<CFG> wto_t;
+      typedef typename CFG::basic_block_label_t basic_block_label_t;      
       typedef typename wto_t::wto_nesting_t wto_nesting_t;
       typedef typename interleaved_iterator_t::assumption_map_t assumption_map_t;
       
     private:
       interleaved_iterator_t *_iterator;
       // Initial entry point of the analysis
-      NodeName _entry;      
+      basic_block_label_t _entry;      
       const assumption_map_t *_assumptions;
       // Used to skip the analysis until _entry is found
       bool _skip; 
       
-      inline AbstractValue strengthen(NodeName n, AbstractValue inv) {
+      inline AbstractValue strengthen(basic_block_label_t n, AbstractValue inv) {
 	crab::CrabStats::count("Fixpo.strengthen");
 	crab::ScopedCrabStats __st__("Fixpo.strengthen");
 
@@ -343,11 +345,11 @@ namespace ikos {
 
       // Simple visitor to check if node is a member of the wto component.
       class member_component_visitor:
-	public wto_component_visitor<NodeName, CFG> {
-	NodeName _node;
+	public wto_component_visitor<CFG> {
+	basic_block_label_t _node;
 	bool _found;
       public:
-	member_component_visitor(NodeName node): _node(node), _found(false) {}
+	member_component_visitor(basic_block_label_t node): _node(node), _found(false) {}
 	
 	void visit(wto_vertex_t& c) {
 	  if (!_found) { _found = (c.node() == _node); }
@@ -376,7 +378,7 @@ namespace ikos {
 	  _skip(true) { }
 
       wto_iterator(interleaved_iterator_t *iterator,
-		   NodeName entry,
+		   basic_block_label_t entry,
 		   const assumption_map_t *assumptions)
 	: _iterator(iterator),
 	  _entry(entry),	  
@@ -384,7 +386,7 @@ namespace ikos {
 	  _skip(true) { }      
       
       void visit(wto_vertex_t& vertex) {
-        NodeName node = vertex.node();
+        basic_block_label_t node = vertex.node();
 
 	/** decide whether skip vertex or not **/	
 	if (_skip && (node == _entry)) {
@@ -408,7 +410,7 @@ namespace ikos {
           auto prev_nodes = this->_iterator->_cfg.prev_nodes(node);
 	  crab::CrabStats::resume("Fixpo.join_predecessors");		  	  
           pre = AbstractValue::bottom();
-          for (NodeName prev : prev_nodes) {
+          for (basic_block_label_t prev : prev_nodes) {
             pre |= this->_iterator->get_post(prev);  
           }
 	  crab::CrabStats::stop("Fixpo.join_predecessors");
@@ -432,7 +434,7 @@ namespace ikos {
       }
       
       void visit(wto_cycle_t& cycle) {
-        NodeName head = cycle.head();
+        basic_block_label_t head = cycle.head();
 
 	/** decide whether skip cycle or not **/
 	bool entry_in_this_cycle = false;
@@ -469,7 +471,7 @@ namespace ikos {
 	} else {
 	  crab::CrabStats::count("Fixpo.join_predecessors");
 	  crab::ScopedCrabStats __st__("Fixpo.join_predecessors");	  
-	  for (NodeName prev : prev_nodes) {
+	  for (basic_block_label_t prev : prev_nodes) {
 	    if (!(this->_iterator->_wto.nesting(prev) > cycle_nesting)) {
 	      pre |= this->_iterator->get_post(prev); 
 	    }
@@ -503,7 +505,7 @@ namespace ikos {
           }
 	  crab::CrabStats::resume("Fixpo.join_predecessors");
           AbstractValue new_pre = AbstractValue::bottom();
-          for (NodeName prev : prev_nodes) {
+          for (basic_block_label_t prev : prev_nodes) {
 	    new_pre |= this->_iterator->get_post(prev);
           }
 	  crab::CrabStats::stop("Fixpo.join_predecessors");
@@ -549,7 +551,7 @@ namespace ikos {
           }
 	  crab::CrabStats::resume("Fixpo.join_predecessors");	  
           AbstractValue new_pre = AbstractValue::bottom();
-          for (NodeName prev : prev_nodes) {
+          for (basic_block_label_t prev : prev_nodes) {
 	    new_pre |= this->_iterator->get_post(prev);
           }
 	  crab::CrabStats::stop("Fixpo.join_predecessors");
@@ -574,14 +576,15 @@ namespace ikos {
       
     }; // class wto_iterator
   
-    template<typename NodeName, typename CFG, typename AbstractValue>
-    class wto_processor: public wto_component_visitor<NodeName, CFG> {
+    template<typename CFG, typename AbstractValue>
+    class wto_processor: public wto_component_visitor<CFG> {
 
     public:
-      typedef interleaved_fwd_fixpoint_iterator<NodeName, CFG, AbstractValue> interleaved_iterator_t;
-      typedef wto_vertex<NodeName, CFG> wto_vertex_t;
-      typedef wto_cycle<NodeName, CFG> wto_cycle_t;
-
+      typedef interleaved_fwd_fixpoint_iterator<CFG, AbstractValue> interleaved_iterator_t;
+      typedef wto_vertex<CFG> wto_vertex_t;
+      typedef wto_cycle<CFG> wto_cycle_t;
+      typedef typename CFG::basic_block_label_t basic_block_label_t;
+      
     private:
       interleaved_iterator_t *_iterator;
       
@@ -592,7 +595,7 @@ namespace ikos {
 	crab::CrabStats::count("Fixpo.process_invariants");
 	crab::ScopedCrabStats __st__("Fixpo.process_invariants");
 
-        NodeName node = vertex.node();
+        basic_block_label_t node = vertex.node();
         this->_iterator->process_pre(node, this->_iterator->get_pre(node));
         this->_iterator->process_post(node, this->_iterator->get_post(node));
       }
@@ -601,7 +604,7 @@ namespace ikos {
 	crab::CrabStats::count("Fixpo.process_invariants");
 	crab::ScopedCrabStats __st__("Fixpo.process_invariants");
 	
-        NodeName head = cycle.head();
+        basic_block_label_t head = cycle.head();
         this->_iterator->process_pre(head, this->_iterator->get_pre(head));
         this->_iterator->process_post(head, this->_iterator->get_post(head));
         for (typename wto_cycle_t::iterator it = cycle.begin(); it != cycle.end(); ++it) {

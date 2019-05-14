@@ -103,7 +103,7 @@ int main (int argc, char** argv )
     crab::outs() << "\n";
 
     crab::outs() << "Bourdoncle WTO of the reversed CFG\n";
-    ikos::wto<typename z_cfg_rev_t::node_t, z_cfg_rev_t> wto_g(rev_cfg);
+    ikos::wto<z_cfg_rev_t> wto_g(rev_cfg);
     crab::outs() << wto_g << "\n";
     
     cfg->simplify ();

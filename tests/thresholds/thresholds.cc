@@ -173,9 +173,9 @@ int main (int argc, char**argv){
 
     // Print thresholds 
     typedef crab::cfg::cfg_ref<z_cfg_t> z_cfg_ref_t;
-    typedef ikos::wto<typename z_cfg_t::basic_block_label_t, z_cfg_ref_t> wto_t;
-    typedef crab::iterators::wto_thresholds<typename z_cfg_t::basic_block_label_t,
-					    z_cfg_ref_t> wto_thresholds_t;
+    typedef ikos::wto<z_cfg_ref_t> wto_t;
+    typedef crab::iterators::wto_thresholds<z_cfg_ref_t> wto_thresholds_t;
+					    
     z_cfg_ref_t cfg_ref(*cfg);
     wto_t wto(cfg_ref);
     wto_thresholds_t thresholds(cfg_ref, 50);

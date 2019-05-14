@@ -137,15 +137,16 @@ namespace crab {
      /**
 	Collect thresholds per wto cycle (i.e. loop)
      **/
-     template<typename NodeName, typename CFG>
-     class wto_thresholds: public ikos::wto_component_visitor<NodeName, CFG> {
+     template<typename CFG>
+     class wto_thresholds: public ikos::wto_component_visitor<CFG> {
        
      public:
-       
-       typedef ikos::wto_vertex<NodeName, CFG> wto_vertex_t;
-       typedef ikos::wto_cycle<NodeName, CFG> wto_cycle_t;
+
+       typedef typename CFG::basic_block_label_t basic_block_label_t;
+       typedef ikos::wto_vertex<CFG> wto_vertex_t;
+       typedef ikos::wto_cycle<CFG> wto_cycle_t;
        typedef crab::iterators::thresholds<typename CFG::number_t> thresholds_t;
-       typedef boost::unordered_map<NodeName, thresholds_t> thresholds_map_t;
+       typedef boost::unordered_map<basic_block_label_t, thresholds_t> thresholds_map_t;
        
      private:
        
@@ -156,7 +157,7 @@ namespace crab {
        // keep a set of thresholds per wto head
        thresholds_map_t m_head_to_thresholds;
        // the top of the stack is the current wto head
-       std::vector<NodeName> m_stack;
+       std::vector<basic_block_label_t> m_stack;
 
        typedef typename CFG::basic_block_t basic_block_t;
        typedef typename CFG::number_t number_t;
@@ -236,7 +237,7 @@ namespace crab {
        void visit(wto_vertex_t& vertex) {
 	 if(m_stack.empty()) return;
 	 
-	 NodeName head = m_stack.back();
+	 basic_block_label_t head = m_stack.back();
 	 auto it = m_head_to_thresholds.find(head);
 	 if (it != m_head_to_thresholds.end()) {
 	   thresholds_t & thresholds = it->second;
@@ -283,8 +284,8 @@ namespace crab {
        
      }; // class wto_thresholds
      
-     template<typename NodeName, typename CFG>
-     inline crab::crab_os& operator<<(crab::crab_os& o, const wto_thresholds<NodeName,CFG>& t) {
+     template<typename CFG>
+     inline crab::crab_os& operator<<(crab::crab_os& o, const wto_thresholds<CFG>& t) {
        t.write(o);
        return o;
      }

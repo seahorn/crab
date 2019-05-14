@@ -26,8 +26,7 @@ namespace crab {
     template< typename CFG, typename AbsTr>
     class fwd_analyzer: 
       private ikos::interleaved_fwd_fixpoint_iterator
-               <typename CFG::basic_block_label_t, 
-		CFG, typename AbsTr::abs_dom_t> { 
+               <CFG, typename AbsTr::abs_dom_t> { 
      public:
 
       typedef CFG cfg_t;
@@ -39,7 +38,7 @@ namespace crab {
       
      private:
 
-      typedef ikos::interleaved_fwd_fixpoint_iterator<basic_block_label_t, CFG, abs_dom_t>
+      typedef ikos::interleaved_fwd_fixpoint_iterator<CFG, abs_dom_t>
       fixpo_iterator_t;
       
      public:

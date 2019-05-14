@@ -30,13 +30,10 @@ namespace crab {
     template <typename CFG, typename AbsDom>
     class necessary_preconditions_fixpoint_iterator:
       private ikos::interleaved_fwd_fixpoint_iterator
-                   <typename CFG::basic_block_label_t,
-		    crab::cfg::cfg_rev<CFG>, AbsDom> {
+                   <crab::cfg::cfg_rev<CFG>, AbsDom> {
       
       typedef ikos::interleaved_fwd_fixpoint_iterator
-      <typename CFG::basic_block_label_t,
-       crab::cfg::cfg_rev<CFG>, AbsDom> fixpoint_iterator_t;
-            
+      <crab::cfg::cfg_rev<CFG>, AbsDom> fixpoint_iterator_t;
       typedef typename CFG::basic_block_label_t bb_label_t;
       typedef typename CFG::statement_t stmt_t; 
       typedef boost::unordered_map<bb_label_t, AbsDom> bb_abstract_map_t;

@@ -41,15 +41,17 @@
 
 namespace ikos {
 
-  template< typename NodeName, typename CFG, typename AbstractValue >
+  template<typename CFG, typename AbstractValue>
   class fixpoint_iterator {
-
   public:
-    virtual void analyze(NodeName, AbstractValue&) = 0;
+
+    using basic_block_label_t = typename CFG::basic_block_label_t;
     
-    virtual void process_pre(NodeName, AbstractValue) = 0;
+    virtual void analyze(basic_block_label_t, AbstractValue&) = 0;
     
-    virtual void process_post(NodeName, AbstractValue) = 0;
+    virtual void process_pre(basic_block_label_t, AbstractValue) = 0;
+    
+    virtual void process_post(basic_block_label_t, AbstractValue) = 0;
     
     virtual ~fixpoint_iterator() { }
     
