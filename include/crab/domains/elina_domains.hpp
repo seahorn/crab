@@ -421,7 +421,7 @@ namespace domains {
     }
     
     var_map_t merge_var_map(const var_map_t& m_x, elina_state_ptr& s_x,
-			     const var_map_t& m_y, elina_state_ptr& s_y) {
+			    const var_map_t& m_y, elina_state_ptr& s_y) {
 	  
       assert(m_x.size() == get_dims(s_x));
       assert(m_y.size() == get_dims(s_y));
@@ -438,7 +438,7 @@ namespace domains {
       
       add_dimensions(s_x, vars.size() - get_dims(s_x));
       add_dimensions(s_y, vars.size() - get_dims(s_y));
-      
+											 
       assert(get_dims(s_x) == get_dims(s_y));
       
       // -- create a fresh map 
@@ -616,7 +616,24 @@ namespace domains {
       
       return linexpr;
     }
-
+    
+    // for debugging
+    void dump(elina_linexpr0_t* e, const var_map_t& m, elina_state_ptr apstate) const {
+      std::vector<char*> names;
+      for (unsigned i=0; i < get_dims(apstate) ; i++){
+	std::string varname;
+	if (has_variable(m, i))
+	  varname = get_variable(m, i).name().str();
+	else // unused dimension
+	  varname = std::string("_x") + std::to_string(i);
+	char* name = new char [varname.length() + 1];
+	strcpy(name, varname.c_str());
+	names.push_back(name);
+      }
+      elina_linexpr0_print(e, &names[0]);
+      for (auto n : names) { delete n; }      
+    }
+    
     elina_lincons0_t crab_linconst_to_elina(const linear_constraint_t& c) {
       const linear_expression_t& e = c.expression();
       if (c.is_equality()) {
@@ -714,7 +731,7 @@ namespace domains {
       return res;
     }
         
-    void dump(const var_map_t& m, elina_state_ptr apstate ) const {  
+    void dump(const var_map_t& m, elina_state_ptr apstate) const {  
       crab::outs() << "\nNumber of dimensions=" << get_dims(apstate) << "\n";
       crab::outs() << "variable map ["; 
       std::vector<char*> names;
@@ -1718,14 +1735,14 @@ namespace domains {
       
       /// Elina substitution only implemented for linear expressions.
       elina_linexpr0_t* rhs = crab_linexpr_to_elina(e);
-      auto dim_x = get_var_dim_insert(x);
+      elina_dim_t dim_x = get_var_dim_insert(x);
 
       // ensure that m_apstate and invariant.m_apstate have the same
       // dimensions.
       m_var_map = merge_var_map(m_var_map, m_apstate,
 				invariant.m_var_map,
 				invariant.m_apstate);
-      
+
       m_apstate = elinaPtr(get_man(), 
 			    elina_abstract0_substitute_linexpr(get_man(), false, 
 							       &*m_apstate, 
@@ -1742,6 +1759,9 @@ namespace domains {
 			elina_domain_t invariant) {
       crab::CrabStats::count(getDomainName() + ".count.backward_apply");
       crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
+
+      CRAB_LOG("elina",
+	       crab::outs() << "--- "<< x << " :=_bwd " << y << op << z << "\n";);
       
       if(is_bottom()) {
 	return;
@@ -1772,23 +1792,22 @@ namespace domains {
 	CRAB_ERROR("elina operation ", op, " not supported");
       }
       assert(rhs);
-      auto dim_x = get_var_dim_insert(x);
+      elina_dim_t dim_x = get_var_dim_insert(x);
 
       // ensure that m_apstate and invariant.m_apstate have the same
       // dimensions.
       m_var_map = merge_var_map(m_var_map, m_apstate,
 				invariant.m_var_map,
 				invariant.m_apstate);
-      
+
       m_apstate = elinaPtr(get_man(), 
 			    elina_abstract0_substitute_linexpr(get_man(), false, 
 							       &*m_apstate, 
 							       dim_x, rhs,
 							       &*invariant.m_apstate));
+								
       elina_linexpr0_free(rhs);            
-      CRAB_LOG("elina",
-	       crab::outs() << "--- "<< x << " :=_bwd " << y << op << z
-	                    << " --> " << *this<<"\n";);
+      CRAB_LOG("elina", crab::outs() << " --> " << *this<<"\n";);
     }
     
     void backward_apply(operation_t op,
@@ -1824,14 +1843,14 @@ namespace domains {
 	 CRAB_ERROR("elina operation ", op, " not supported");
       }
       assert(rhs);
-      auto dim_x = get_var_dim_insert(x);
+      elina_dim_t dim_x = get_var_dim_insert(x);
 
       // ensure that m_apstate and invariant.m_apstate have the same
       // dimensions.
       m_var_map = merge_var_map(m_var_map, m_apstate,
 				invariant.m_var_map,
 				invariant.m_apstate);
-      
+
       m_apstate = elinaPtr(get_man(), 
 			   elina_abstract0_substitute_linexpr(get_man(), false, 
 							      &*m_apstate, 
