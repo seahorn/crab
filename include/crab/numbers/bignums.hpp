@@ -50,6 +50,22 @@
 
 namespace ikos {
 
+// These are guaranteed by the C++11 standard:
+//  - unsigned/signed long at least 32 bits
+//  - unsigned/signed long long at least 64 bits
+
+
+//// Current limitation:
+// 
+// The implementation can convert bignums (z_number) to 64-bits
+// numbers assuming **long** integers are represented by 64 bits.
+// However, the C++11 standard does not guarantee that (at least 32
+// bits but not necessarily 64).
+//
+// TODO: check if long is 32 or 64 bits. If 32 bits then we should
+// extend z_number API to convert a z_number to int64_t.
+////
+
 class z_number {
   friend class q_number;
 
