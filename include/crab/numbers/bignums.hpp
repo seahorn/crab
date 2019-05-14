@@ -50,21 +50,25 @@
 
 namespace ikos {
 
-// These are guaranteed by the C++11 standard:
-//  - unsigned/signed long at least 32 bits
-//  - unsigned/signed long long at least 64 bits
-
-
-//// Current limitation:
-// 
-// The implementation can convert bignums (z_number) to 64-bits
-// numbers assuming **long** integers are represented by 64 bits.
-// However, the C++11 standard does not guarantee that (at least 32
-// bits but not necessarily 64).
+// GMP can convert directly from/to signed/unsigned long and
+// signed/unsigned int. However, the C++11 standard only guarantees:
 //
-// TODO: check if long is 32 or 64 bits. If 32 bits then we should
-// extend z_number API to convert a z_number to int64_t.
-////
+//  - unsigned/signed int  >= 16 bits.
+//  - unsigned/signed long >= 32 bits.
+//
+
+// TODO/FIXME:
+//
+// We don't have a conversion from GMP numbers to 64-bit integers,
+// because GMP cannot convert directly from/to int64_t or
+// uint64_t. For that, we need to use mpz_export and mpz_import but
+// they are significantly more expensive.
+// 
+// Note that the actual size of **long** integer varies depending on
+// the architecture and OS (see e.g.,
+// https://en.cppreference.com/w/cpp/language/types). For instance,
+// both Linux and mac OS on an Intel 64, the size of long integers is
+// 8 bytes. But for Windows on Intel 64, the size is 4 bytes.
 
 class z_number {
   friend class q_number;
@@ -76,16 +80,20 @@ public:
 
   z_number(mpz_class n) : _n(n) {}
 
+  // The mpz_class constructor can take any standard C++ type except
+  // long long.
   static z_number from_ulong(unsigned long n) {
     mpz_class b(n);
     return z_number(b);
   }
 
+  // The mpz_class constructor can take any standard C++ type except
+  // long long.
   static z_number from_slong(signed long n) {
     mpz_class b(n);
     return z_number(b);
   }
-
+  
   // overloaded typecast operators
   explicit operator long() const { 
     if (_n.fits_slong_p ()) {
@@ -112,8 +120,8 @@ public:
 
 public:
 
-  z_number() : _n(0) {}
-
+  z_number(): _n(0) {}
+  
   z_number(std::string s) {
     try {
       this->_n = s;

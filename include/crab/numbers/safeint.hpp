@@ -5,6 +5,7 @@
 **/
 
 #include <limits>
+#include <cstdint>
 
 namespace crab {
 
@@ -12,8 +13,9 @@ class safe_i64 {
   // Current implementation is based on
   // https://blog.regehr.org/archives/1139 using wider integers.
 
-  // Both clang and gcc supports __int128 if the targeted architecture
-  // is x86/64, but it wont' work with 32 bits.
+  // TODO/FIXME: the current code compiles assuming the type __int128
+  // exists. Both clang and gcc supports __int128 if the targeted
+  // architecture is x86/64, but it wont' work with 32 bits.
   typedef __int128 wideint_t;
   
   inline int64_t get_max() const {
