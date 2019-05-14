@@ -31,7 +31,7 @@ class wrapped_interval {
   wrapint _start;
   wrapint _stop;
   bool _is_bottom;
-
+  
   typedef wrapped_interval<Number> wrapped_interval_t;
   
   wrapped_interval_t default_implementation(wrapped_interval_t x) const {
@@ -113,6 +113,7 @@ class wrapped_interval {
       if (!msb_start) {
 	return unsigned_mul(x);
       } else {
+	// -- check if multiplication will overflow		
 	if ((_start.get_unsigned_bignum() * x._start.get_unsigned_bignum()) -
 	    (_stop.get_unsigned_bignum() * x._stop.get_unsigned_bignum())
 	    < wrapint::get_unsigned_max(b).get_unsigned_bignum()) {
@@ -126,12 +127,14 @@ class wrapped_interval {
     // different hemisphere.
     if (!(msb_start != msb_stop || msb_x_start != msb_x_stop)) {
       if (msb_start && !msb_x_start) {
+	// -- check if multiplication will overflow	
 	if ((_stop.get_unsigned_bignum() * x._start.get_unsigned_bignum()) -
 	    (_start.get_unsigned_bignum() * x._stop.get_unsigned_bignum())
 	    < wrapint::get_unsigned_max(b).get_unsigned_bignum()) {
 	  res = wrapped_interval_t(_start * x._stop, _stop * x._start);
 	}
       } else if (!msb_start && msb_x_start) {
+	// -- check if multiplication will overflow		
 	if ((_start.get_unsigned_bignum() * x._stop.get_unsigned_bignum()) -
 	    (_stop.get_unsigned_bignum() * x._start.get_unsigned_bignum())
 	    < wrapint::get_unsigned_max(b).get_unsigned_bignum()) {
@@ -151,6 +154,7 @@ class wrapped_interval {
  
     bitwidth_t b = get_bitwidth(__LINE__);
     wrapped_interval_t res = wrapped_interval_t::top();
+    // -- check if multiplication will overflow	    
     if ((_stop.get_unsigned_bignum() * x._stop.get_unsigned_bignum()) -
 	(_start.get_unsigned_bignum() * x._start.get_unsigned_bignum())
 	< wrapint::get_unsigned_max(b).get_unsigned_bignum()) {
@@ -220,20 +224,40 @@ class wrapped_interval {
     bool msb_start = _start.msb();
     bool msb_x_start = x._start.msb();
 
-    wrapped_interval_t res;
+    bitwidth_t b = get_bitwidth(__LINE__);    
+    wrapint smin = wrapint::get_signed_min(b);
+    wrapint minus_one(-1, b);
+    
+    wrapped_interval_t res = wrapped_interval_t::top();
     if (msb_start == msb_x_start) {
       if (msb_start) { //both negative
-	res = wrapped_interval_t(_stop.sdiv(x._start), _start.sdiv(x._stop));	
+	// -- check if division will overflow		
+	if (!((_stop ==  smin && x._start == minus_one) ||
+	      (_start == smin && x._stop == minus_one))) {
+	  res = wrapped_interval_t(_stop.sdiv(x._start), _start.sdiv(x._stop));
+	}
       } else {  //both positive
-	res = wrapped_interval_t(_start.sdiv(x._stop), _stop.sdiv(x._start));
+	// -- check if division will overflow			  
+	if (!((_start ==  smin && x._stop == minus_one) ||
+	      (_stop == smin && x._start == minus_one))) {
+	  res = wrapped_interval_t(_start.sdiv(x._stop), _stop.sdiv(x._start));
+	}
       }
     } else {
       if (msb_start) { 
 	assert(!msb_x_start);
-	res = wrapped_interval_t(_start.sdiv(x._start), _stop.sdiv(x._stop));
+	// -- check if division will overflow			
+	if (!((_start ==  smin && x._start == minus_one) ||
+	      (_stop == smin && x._stop == minus_one))) {	
+	  res = wrapped_interval_t(_start.sdiv(x._start), _stop.sdiv(x._stop));
+	}
       } else {
 	assert(msb_x_start);
-	res = wrapped_interval_t(_stop.sdiv(x._stop), _start.sdiv(x._start));
+	// -- check if division will overflow			
+	if (!((_stop ==  smin && x._stop == minus_one) ||
+	      (_start == smin && x._start == minus_one))) {		
+	  res = wrapped_interval_t(_stop.sdiv(x._stop), _start.sdiv(x._start));
+	}
       }
     }
     CRAB_LOG("wrapped-int-div", crab::outs() << res << "\n";);    
@@ -1107,7 +1131,7 @@ public:
       #endif
       o << (int) get_bitwidth(__LINE__);
     }
-  }    
+  }
   
 };
 
