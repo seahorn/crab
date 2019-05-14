@@ -227,6 +227,58 @@ int main (int argc, char *argv[]) {
 	      << " =" << std::bitset<4>(n8.get_uint64_t()) << "\n";
   }
   
-  
+  {
+    wrapint v1 = wrapint::get_unsigned_max(64);
+    wrapint v2 = wrapint::get_unsigned_min(64);
+    wrapint v3 = wrapint::get_signed_max(64);
+    wrapint v4 = wrapint::get_signed_min(64);
+    wrapint v5 = wrapint::get_unsigned_max(32);
+    wrapint v6 = wrapint::get_unsigned_min(32);
+    wrapint v7 = wrapint::get_signed_max(32);
+    wrapint v8 = wrapint::get_signed_min(32);
+    wrapint v9 = wrapint::get_unsigned_max(40);
+    wrapint v10 = wrapint::get_unsigned_min(40);
+    wrapint v11 = wrapint::get_signed_max(40);
+    wrapint v12 = wrapint::get_signed_min(40);
+    wrapint v13 = wrapint::get_unsigned_max(63);
+    wrapint v14 = wrapint::get_unsigned_min(63);
+    wrapint v15 = wrapint::get_signed_max(63);
+    wrapint v16 = wrapint::get_signed_min(63);
+    
+    crab::outs() << "UMAX(64)=" << v1 << "\n";
+    std::cout << std::bitset<64>(v1.get_uint64_t()) << "\n";    
+    crab::outs() << "UMIN(64)=" << v2 << "\n";
+    std::cout << std::bitset<64>(v2.get_uint64_t()) << "\n";
+    crab::outs() << "SMAX(64)=" << v3 << "\n";
+    std::cout << std::bitset<64>(v3.get_uint64_t()) << "\n";    
+    crab::outs() << "SMIN(64)=" << v4 << "\n";
+    std::cout << std::bitset<64>(v4.get_uint64_t()) << "\n";        
+    crab::outs() << "UMAX(32)=" << v5 << "\n";
+    std::cout << std::bitset<32>(v5.get_uint64_t()) << "\n";        
+    crab::outs() << "UMIN(32)=" << v6 << "\n";
+    std::cout << std::bitset<32>(v6.get_uint64_t()) << "\n";            
+    crab::outs() << "SMAX(32)=" << v7 << "\n";
+    std::cout << std::bitset<32>(v7.get_uint64_t()) << "\n";                
+    crab::outs() << "SMIN(32)=" << v8 << "\n";
+    std::cout << std::bitset<32>(v8.get_uint64_t()) << "\n";                
+    crab::outs() << "UMAX(40)=" << v9 << "\n";
+    std::cout << std::bitset<40>(v9.get_uint64_t()) << "\n";    
+    crab::outs() << "UMIN(40)=" << v10 << "\n";
+    std::cout << std::bitset<40>(v10.get_uint64_t()) << "\n";
+    crab::outs() << "SMAX(40)=" << v11 << "\n";
+    std::cout << std::bitset<40>(v11.get_uint64_t()) << "\n";    
+    crab::outs() << "SMIN(40)=" << v12 << "\n";
+    std::cout << std::bitset<40>(v12.get_uint64_t()) << "\n";
+    crab::outs() << "UMAX(63)=" << v13 << "\n";
+    std::cout << std::bitset<63>(v13.get_uint64_t()) << "\n";        
+    crab::outs() << "UMIN(63)=" << v14 << "\n";
+    std::cout << std::bitset<63>(v14.get_uint64_t()) << "\n";
+    crab::outs() << "SMAX(63)=" << v15 << "\n";
+    std::cout << std::bitset<63>(v15.get_uint64_t()) << "\n";    
+    crab::outs() << "SMIN(63)=" << v16 << "\n";
+    std::cout << std::bitset<63>(v16.get_uint64_t()) << "\n";
+    
+  }
+      
   return 0;
 }

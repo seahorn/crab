@@ -15,8 +15,11 @@ namespace crab {
 class wrapint {
 
 public:
-  
-  typedef unsigned bitwidth_t;
+
+  // bitwidth cannot be greater than 64 so even a char can represent
+  // all possible bitwidths. However, using uint64_t avoids uintended
+  // cast to smaller types that lead to unintended overflows.
+  typedef uint64_t bitwidth_t;
   
 private:
   
@@ -50,7 +53,7 @@ private:
     case 16: _mod = mod_16; break;
     case 32: _mod = mod_32; break;
     case 64: break; 
-    default: _mod = 1 << _width;
+    default: _mod = (uint64_t) 1 << (uint64_t) _width;
     }
   }
 
@@ -69,14 +72,16 @@ public:
     }
   }
 
-  wrapint(ikos::z_number n, bitwidth_t width) : _n(0), _width(width), _mod(0) {
+  wrapint(ikos::z_number n, bitwidth_t width)
+    : _n(0), _width(width), _mod(0) {
     sanity_check_bitwidth();
     assert(_width <= 64);
     compute_mod();
     if (!n.fits_slong()) {
-      CRAB_ERROR(n, " does not fit in a signed long integer");
+      // n is a signed integer over 64 bits that cannot be represented
+      // by the signed long type.
+      CRAB_ERROR(n, " does not fit in a signed long integer.");
     }
-
     if (_width == 64) {
       _n = (long) n;
     } else {
@@ -90,7 +95,9 @@ public:
     compute_mod();
     ikos::z_number i = n.round_to_upper();
     if (!i.fits_slong()) {
-      CRAB_ERROR(n, " does not fit in a signed long integer");
+      // n is a signed integer over 64 bits that cannot be represented
+      // by the signed long type.      
+      CRAB_ERROR(n, " does not fit in a signed long integer.");
     }
     if (_width == 64) {
       _n = (long) i;
@@ -122,24 +129,22 @@ public:
 
   // Needed because wrapint has limited precision
   static bool fits_wrapint(ikos::q_number n, bitwidth_t width) {
-    if (width > 64) return false;
-    return n.round_to_upper().fits_slong();
+    return fits_wrapint(n.round_to_upper(), width);
   }
 
   // return true iff most significant bit is 1.
   bool msb() const {
-    uint64_t r = _n & (1 << (_width - 1));
-    return (r != 0);
+    return (_n & ((uint64_t)1 << (uint64_t)(_width - 1)));
   }
   
   // return 01111...1
   static wrapint get_signed_max(bitwidth_t w)  {
-    return wrapint((1 << (w-1)) - 1, w);
+    return wrapint(((uint64_t)1 << (uint64_t)(w-1)) - 1, w);
   }
 
   // return 1000....0
   static wrapint get_signed_min(bitwidth_t w) {
-    return wrapint(1 << (w-1), w);
+    return wrapint((uint64_t)1 << (uint64_t)(w-1), w);
   }
 
   // return 1111....1
@@ -149,7 +154,7 @@ public:
     case 16: return wrapint(mod_16 - 1, w);
     case 32: return wrapint(mod_32 - 1, w);
     case 64: return wrapint(UINT64_MAX, w);
-    default: return wrapint((1 << w) - 1, w);
+    default: return wrapint(((uint64_t) 1 << (uint64_t)w) - 1, w);
     }
   }
 
@@ -180,8 +185,8 @@ public:
     // implicitly to a signed number. Thus, max unsigned will become
     // signed -1.
     //
-    // In some platforms uint64_t may not be the same as unsigned
-    // long.
+    // FIXME: In some platforms uint64_t may not be the same as
+    // unsigned long.
     return ikos::z_number::from_ulong(_n);
   }
 
@@ -279,7 +284,7 @@ public:
   wrapint urem(wrapint x) const {
     sanity_check_bitwidths(x);
     if (x.is_zero()) {
-      CRAB_ERROR("wrapint: unisnged division by zero ", __LINE__);
+      CRAB_ERROR("wrapint: unsigned division by zero ", __LINE__);
     } else {
       uint64_t r = (_width == 64 ? _n % x._n: (_n % x._n) % _mod);
       return wrapint(r, _width, _mod);
@@ -397,9 +402,11 @@ public:
       return wrapint(_n >> x._n, _width, _mod);      
     } else {
       // fill blanks with 1's
-      uint64_t all_ones = (_width < 64  ? (1 << _width) - 1 : UINT64_MAX);
+      uint64_t all_ones = (_width < 64
+			   ? ((uint64_t)1 << (uint64_t)_width) - 1
+			   : UINT64_MAX);
       // 1110..0
-      uint64_t only_upper_bits_ones = all_ones << (_width - x._n);
+      uint64_t only_upper_bits_ones = all_ones << (uint64_t)(_width - x._n);
       return wrapint(only_upper_bits_ones | (_n >> x._n), _width, _mod);
     }
   }
@@ -413,9 +420,11 @@ public:
     if (msb()) {
       // -- fill upper bits with ones
       // 111...1
-      uint64_t all_ones = (new_width < 64  ? (1 << new_width) - 1 : UINT64_MAX);
+      uint64_t all_ones = (new_width < 64
+			   ? ((uint64_t) 1 << (uint64_t) new_width) - 1
+			   : UINT64_MAX);
       // 1110..0
-      uint64_t only_upper_bits_ones = all_ones << _width;
+      uint64_t only_upper_bits_ones = all_ones << (uint64_t) _width;
       return wrapint(_n | only_upper_bits_ones, new_width);
     } else {
       // -- fill upper bits with zeros
@@ -433,7 +442,8 @@ public:
 
   wrapint keep_lower(bitwidth_t bits_to_keep) const {
     if (bits_to_keep >= _width) return *this;
-    return wrapint(_n & ((1 << (bits_to_keep+1)) -1), bits_to_keep);
+    return wrapint(_n & (((uint64_t) 1 << (uint64_t) (bits_to_keep+1)) -1),
+		   bits_to_keep);
   }
   
   void write(crab::crab_os& o) const {
