@@ -2,16 +2,16 @@
 
 /* Convert a Strongly connected component graph into BGL graph */
 
-#include <boost/graph/graph_traits.hpp>
-#include <boost/graph/graph_concepts.hpp>
-#include <boost/graph/properties.hpp>
+#include<boost/graph/graph_traits.hpp>
+#include<boost/graph/graph_concepts.hpp>
+#include<boost/graph/properties.hpp>
 
-#include <crab/analysis/graphs/sccg.hpp>
+#include<crab/analysis/graphs/sccg.hpp>
 
 namespace boost {
 
   template<class G>
-  struct graph_traits < crab::analyzer::graph_algo::scc_graph<G> >  {
+  struct graph_traits<crab::analyzer::graph_algo::scc_graph<G>>  {
 
     typedef crab::analyzer::graph_algo::scc_graph<G> sccg_t;
 
@@ -43,89 +43,88 @@ namespace boost {
 // XXX: should be boost namespace but for some reason gcc does not
 //      like it
 namespace crab {
-  namespace analyzer {
-   namespace graph_algo {
+namespace analyzer {
+namespace graph_algo {
 
-  // --- Functions for crab::analyzer::graph_algo::scc_graph<G>
+// --- Functions for crab::analyzer::graph_algo::scc_graph<G>
 
-  template<class G> 
-  typename boost::graph_traits<crab::analyzer::graph_algo::scc_graph<G> >::vertex_descriptor
-  source (typename
-	  boost::graph_traits<crab::analyzer::graph_algo::scc_graph<G> >::edge_descriptor e, 
-          const crab::analyzer::graph_algo::scc_graph<G> &g) {
-    return e.Src(); 
-  } 
+template<class G> 
+typename boost::graph_traits<crab::analyzer::graph_algo::scc_graph<G>>::vertex_descriptor
+source(typename
+       boost::graph_traits<crab::analyzer::graph_algo::scc_graph<G>>::edge_descriptor e, 
+       const crab::analyzer::graph_algo::scc_graph<G> &g) {
+  return e.Src(); 
+ } 
 
-  template<class G>
-  typename boost::graph_traits<crab::analyzer::graph_algo::scc_graph<G> >::vertex_descriptor
-  target (typename
-	  boost::graph_traits<crab::analyzer::graph_algo::scc_graph<G> >::edge_descriptor e, 
-          const crab::analyzer::graph_algo::scc_graph<G> &g) {
-    return e.Dest();
-  }
+template<class G>
+typename boost::graph_traits<crab::analyzer::graph_algo::scc_graph<G>>::vertex_descriptor
+target(typename
+       boost::graph_traits<crab::analyzer::graph_algo::scc_graph<G>>::edge_descriptor e, 
+       const crab::analyzer::graph_algo::scc_graph<G> &g) {
+  return e.Dest();
+}
 
-  template<class G>
-  std::pair<typename
-	    boost::graph_traits<crab::analyzer::graph_algo::scc_graph<G> >::in_edge_iterator, 
-	    typename
-	    boost::graph_traits<crab::analyzer::graph_algo::scc_graph<G> >::in_edge_iterator >
-  in_edges (typename
-	    boost::graph_traits<crab::analyzer::graph_algo::scc_graph<G> >::vertex_descriptor v, 
-            const crab::analyzer::graph_algo::scc_graph<G> &g) {
-    return g.preds (v);
-  }
+template<class G>
+std::pair<typename
+	  boost::graph_traits<crab::analyzer::graph_algo::scc_graph<G>>::in_edge_iterator, 
+	  typename
+	  boost::graph_traits<crab::analyzer::graph_algo::scc_graph<G>>::in_edge_iterator>
+in_edges(typename
+	 boost::graph_traits<crab::analyzer::graph_algo::scc_graph<G>>::vertex_descriptor v, 
+	 const crab::analyzer::graph_algo::scc_graph<G> &g) {
+  return g.preds(v);
+}
 
-  template<class G>
-  typename boost::graph_traits< crab::analyzer::graph_algo::scc_graph<G> >::degree_size_type
-  in_degree (typename
-	     boost::graph_traits<crab::analyzer::graph_algo::scc_graph<G> >::vertex_descriptor v, 
-             const crab::analyzer::graph_algo::scc_graph<G> &g) {
-    return g.num_preds (v);
-  }
+template<class G>
+typename boost::graph_traits<crab::analyzer::graph_algo::scc_graph<G>>::degree_size_type
+in_degree(typename
+	  boost::graph_traits<crab::analyzer::graph_algo::scc_graph<G>>::vertex_descriptor v, 
+	  const crab::analyzer::graph_algo::scc_graph<G> &g) {
+  return g.num_preds(v);
+}
 
-  template<class G>
-  typename boost::graph_traits< crab::analyzer::graph_algo::scc_graph<G> >::degree_size_type
-  out_degree (typename
-	      boost::graph_traits<crab::analyzer::graph_algo::scc_graph<G> >::vertex_descriptor v, 
-              const crab::analyzer::graph_algo::scc_graph<G> &g) { 
-    return g.num_succs (v);
-  }
+template<class G>
+typename boost::graph_traits<crab::analyzer::graph_algo::scc_graph<G>>::degree_size_type
+out_degree(typename
+	   boost::graph_traits<crab::analyzer::graph_algo::scc_graph<G>>::vertex_descriptor v, 
+	   const crab::analyzer::graph_algo::scc_graph<G> &g) { 
+  return g.num_succs(v);
+}
 
-  template<class G>
-  std::pair< typename
-	     boost::graph_traits<crab::analyzer::graph_algo::scc_graph<G> >::out_edge_iterator, 
-             typename
-	     boost::graph_traits<crab::analyzer::graph_algo::scc_graph<G> >::out_edge_iterator >
-  out_edges (typename
-	     boost::graph_traits<crab::analyzer::graph_algo::scc_graph<G> >::vertex_descriptor v,
-             const crab::analyzer::graph_algo::scc_graph<G> &g) {
-    return g.succs (v);
-  }
+template<class G>
+std::pair<typename
+	  boost::graph_traits<crab::analyzer::graph_algo::scc_graph<G>>::out_edge_iterator, 
+	  typename
+	  boost::graph_traits<crab::analyzer::graph_algo::scc_graph<G>>::out_edge_iterator>
+out_edges(typename
+	  boost::graph_traits<crab::analyzer::graph_algo::scc_graph<G>>::vertex_descriptor v,
+	  const crab::analyzer::graph_algo::scc_graph<G> &g) {
+  return g.succs(v);
+}
 
-  template<class G>
-  typename boost::graph_traits< crab::analyzer::graph_algo::scc_graph<G> >::degree_size_type
-  degree (typename
-	  boost::graph_traits< crab::analyzer::graph_algo::scc_graph<G> >::vertex_descriptor v, 
-          const crab::analyzer::graph_algo::scc_graph<G> &g) {
-    return g.num_preds (v) + g.num_succs (v);
-  }
+template<class G>
+typename boost::graph_traits<crab::analyzer::graph_algo::scc_graph<G>>::degree_size_type
+degree(typename
+       boost::graph_traits<crab::analyzer::graph_algo::scc_graph<G>>::vertex_descriptor v, 
+       const crab::analyzer::graph_algo::scc_graph<G> &g) {
+  return g.num_preds(v) + g.num_succs(v);
+}
 
-  template<class G>
-  std::pair<typename
-	    boost::graph_traits< crab::analyzer::graph_algo::scc_graph<G> >::vertex_iterator, 
-            typename
-	    boost::graph_traits< crab::analyzer::graph_algo::scc_graph<G> >::vertex_iterator > 
-  vertices (const crab::analyzer::graph_algo::scc_graph<G> &g) {
-    return g.nodes ();
-  }
-  
-  template<class G>
-  typename boost::graph_traits< crab::analyzer::graph_algo::scc_graph<G> >::vertices_size_type
-  num_vertices (const crab::analyzer::graph_algo::scc_graph<G> &g) {
-    return g.num_nodes ();
-  }
+template<class G>
+std::pair<typename
+	  boost::graph_traits<crab::analyzer::graph_algo::scc_graph<G>>::vertex_iterator, 
+	  typename
+	  boost::graph_traits<crab::analyzer::graph_algo::scc_graph<G>>::vertex_iterator> 
+vertices(const crab::analyzer::graph_algo::scc_graph<G> &g) {
+  return g.nodes();
+}
 
-  }  // end namespace 
- } // end namespace 
+template<class G>
+typename boost::graph_traits<crab::analyzer::graph_algo::scc_graph<G>>::vertices_size_type
+num_vertices(const crab::analyzer::graph_algo::scc_graph<G> &g) {
+  return g.num_nodes();
+}
+
+}  // end namespace 
 } // end namespace 
-
+} // end namespace 
