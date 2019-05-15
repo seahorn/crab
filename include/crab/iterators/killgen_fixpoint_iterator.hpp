@@ -6,10 +6,11 @@
 
 #include <crab/common/stats.hpp>
 #include <crab/common/debug.hpp>
-#include <crab/cfg/cfg_bgl.hpp>
-#include <crab/analysis/graphs/sccg.hpp>
 #include <crab/analysis/graphs/topo_order.hpp>
 #include <crab/domains/killgen_domain.hpp>
+
+#include <boost/unordered_map.hpp>
+#include <boost/range/iterator_range.hpp>
 
 namespace crab {  
 namespace iterators {
@@ -95,7 +96,7 @@ namespace iterators {
 		       unsigned &iterations){
       
       order = crab::analyzer::graph_algo::weak_topo_sort(m_cfg);
-      assert((int)order.size() == std::distance(m_cfg.begin(), m_cfg.end()));
+      assert((int)order.size() == m_cfg.size());
       bool change = true;
       iterations = 0;
       while(change) {
@@ -120,7 +121,7 @@ namespace iterators {
 		       unsigned &iterations){
       
       order = crab::analyzer::graph_algo::weak_rev_topo_sort(m_cfg);
-      assert((int)order.size() == std::distance(m_cfg.begin(), m_cfg.end()));
+      assert((int)order.size() == m_cfg.size());
       bool change = true;
       iterations = 0;
       while (change) {

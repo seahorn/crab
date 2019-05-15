@@ -4,6 +4,7 @@
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/common/debug.hpp>
 #include <crab/cfg/cfg.hpp>
+#include <crab/cfg/cfg_bgl.hpp> // needed by wto.hpp
 #include <crab/iterators/wto.hpp>
 
 #include <boost/unordered_map.hpp>

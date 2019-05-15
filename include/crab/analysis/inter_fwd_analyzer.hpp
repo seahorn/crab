@@ -8,9 +8,8 @@
 
 #include <crab/common/debug.hpp>
 #include <crab/common/stats.hpp>
-#include <crab/cfg/cfg.hpp>
-#include <crab/cg/cg.hpp>
-#include <crab/cg/cg_bgl.hpp>
+#include <crab/cfg/cfg.hpp>   // hasher of function declarations
+#include <crab/cg/cg_bgl.hpp> // for sccg.hpp 
 #include <crab/analysis/graphs/sccg.hpp>
 #include <crab/analysis/graphs/topo_order.hpp>
 #include <crab/analysis/fwd_analyzer.hpp>
@@ -40,7 +39,7 @@ namespace crab {
      public:
 
       typedef CG cg_t;
-      typedef typename cg_node_t::cfg_t cfg_t; // cfg_t is actually a wrap to cfg&
+      typedef typename cg_node_t::cfg_t cfg_t; 
       typedef typename cfg_t::varname_t varname_t;
       typedef typename cfg_t::number_t number_t;
       typedef typename cfg_t::variable_t variable_t;
@@ -108,11 +107,11 @@ namespace crab {
         crab::ScopedCrabStats __st__("Inter");
 
         bool has_noedges = true;
-        for (auto const &v: boost::make_iterator_range(vertices(m_cg))) {
-          if (out_degree(v, m_cg) > 0) {
-            has_noedges = false;
-            break;
-          }
+        for (auto const &n: boost::make_iterator_range(m_cg.nodes())) {
+          if (m_cg.num_succs(n) > 0) {
+	    has_noedges = false;
+	    break;
+	  }
         } 
         
         if (has_noedges) {
@@ -125,7 +124,7 @@ namespace crab {
                    crab::outs() << "\n";);
                    
 
-          for (auto &v: boost::make_iterator_range(vertices(m_cg))) {
+          for (auto &v: boost::make_iterator_range(m_cg.nodes())) {
             crab::ScopedCrabStats __st__("Inter.TopDown");
 
             auto cfg = v.get_cfg();
@@ -153,7 +152,7 @@ namespace crab {
         // -- General case 
         std::vector<cg_node_t> rev_order;
 	graph_algo::scc_graph<CG> Scc_g(m_cg);
-        graph_algo::rev_topo_sort<graph_algo::scc_graph<CG>>(Scc_g, rev_order);
+        graph_algo::rev_topo_sort(Scc_g, rev_order);
 
         CRAB_VERBOSE_IF(1,get_msg_stream() << "== Bottom-up phase ...\n";);	
         for (auto n: rev_order) {

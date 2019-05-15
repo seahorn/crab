@@ -172,13 +172,24 @@ namespace crab {
 namespace cfg {   
 
 // cfg
+
+//// boost/graph/graph_traits.hpp has already default source/target
+//// functions in case the edge_descriptor is std::pair.
+
+// this is not part of BGL but needed by Crab's algorithms
+template<typename BasicBlockLabel, typename VariableName, typename Number>
+typename boost::graph_traits<cfg<BasicBlockLabel,VariableName,Number>>::vertex_descriptor
+entry(const cfg<BasicBlockLabel,VariableName,Number> &g) {
+  return g.entry(); 
+} 
+
 template<typename BasicBlockLabel, typename VariableName, typename Number>
 inline std::pair<typename
 		 boost::graph_traits<cfg<BasicBlockLabel,VariableName,Number>>::
 		 vertex_iterator, 
                  typename
 		 boost::graph_traits<cfg<BasicBlockLabel,VariableName,Number>>::
-		 vertex_iterator > 
+		 vertex_iterator> 
 vertices(cfg<BasicBlockLabel,VariableName,Number> g) {
   return std::make_pair(g.label_begin(), g.label_end());
 }
@@ -189,7 +200,7 @@ inline std::pair< typename
 		  out_edge_iterator, 
                   typename
 		  boost::graph_traits<cfg<BasicBlockLabel,VariableName,Number>>::
-		  out_edge_iterator >
+		  out_edge_iterator>
 out_edges(typename
 	  boost::graph_traits<cfg<BasicBlockLabel,VariableName,Number>>::
 	  vertex_descriptor v, 
@@ -269,6 +280,16 @@ degree(typename
 
 // cfg_ref
 
+//// boost/graph/graph_traits.hpp has already default source/target
+//// functions in case the edge_descriptor is std::pair.
+
+// this is not part of BGL but needed by Crab's algorithms
+template<class CFG> 
+typename boost::graph_traits<cfg_ref<CFG>>::vertex_descriptor
+entry(const cfg_ref<CFG> &g) {
+  return g.entry(); 
+} 
+
 template<class CFG>
 inline std::pair<typename boost::graph_traits<cfg_ref<CFG>>::vertex_iterator, 
 		 typename boost::graph_traits<cfg_ref<CFG>>::vertex_iterator> 
@@ -335,6 +356,16 @@ degree(typename boost::graph_traits<cfg_ref<CFG>>::vertex_descriptor v,
 }
 
 // cfg_rev
+
+//// boost/graph/graph_traits.hpp has already default source/target
+//// functions in case the edge_descriptor is std::pair.
+
+// this is not part of BGL but needed by Crab's algorithms
+template<class CFG> 
+typename boost::graph_traits<cfg_rev<CFG>>::vertex_descriptor
+entry(const cfg_rev<CFG> &g) {
+  return g.entry(); 
+} 
 
 template<class CFG>
 inline std::pair<typename boost::graph_traits<cfg_rev<CFG>>::vertex_iterator, 

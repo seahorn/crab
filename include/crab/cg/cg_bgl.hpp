@@ -74,136 +74,150 @@ struct graph_traits<crab::cg::call_graph_ref<CG>>  {
 namespace crab {
 namespace cg {
 
-// --- Functions for crab::cg::call_graph
+// --- Functions for call_graph
+
+// this is not part of BGL but needed by Crab's algorithms
+template<class CFG> 
+typename boost::graph_traits<call_graph<CFG>>::vertex_descriptor
+entry(const call_graph<CFG> &g) {
+  return g.entry(); 
+} 
 
 template<class CFG> 
-typename boost::graph_traits<crab::cg::call_graph<CFG>>::vertex_descriptor
-source(typename boost::graph_traits<crab::cg::call_graph<CFG>>::edge_descriptor e, 
-       const crab::cg::call_graph<CFG> &g) {
+typename boost::graph_traits<call_graph<CFG>>::vertex_descriptor
+source(typename boost::graph_traits<call_graph<CFG>>::edge_descriptor e, 
+       const call_graph<CFG> &g) {
   return e.src(); 
 } 
 
 template<class CFG>
-typename boost::graph_traits<crab::cg::call_graph<CFG>>::vertex_descriptor
-target(typename boost::graph_traits<crab::cg::call_graph<CFG>>::edge_descriptor e, 
-       const crab::cg::call_graph<CFG> &g) {
+typename boost::graph_traits<call_graph<CFG>>::vertex_descriptor
+target(typename boost::graph_traits<call_graph<CFG>>::edge_descriptor e, 
+       const call_graph<CFG> &g) {
   return e.dest();
 }
 
 template<class CFG>
-std::pair<typename boost::graph_traits<crab::cg::call_graph<CFG>>::in_edge_iterator, 
-	  typename boost::graph_traits<crab::cg::call_graph<CFG>>::in_edge_iterator>
-in_edges(typename boost::graph_traits<crab::cg::call_graph<CFG>>::vertex_descriptor v, 
-	 const crab::cg::call_graph<CFG> &g) {
+std::pair<typename boost::graph_traits<call_graph<CFG>>::in_edge_iterator, 
+	  typename boost::graph_traits<call_graph<CFG>>::in_edge_iterator>
+in_edges(typename boost::graph_traits<call_graph<CFG>>::vertex_descriptor v, 
+	 const call_graph<CFG> &g) {
   return g.preds(v);
 }
 
 template<class CFG>
-typename boost::graph_traits<crab::cg::call_graph<CFG>>::degree_size_type
-in_degree(typename boost::graph_traits<crab::cg::call_graph<CFG>>::vertex_descriptor v, 
-	  const crab::cg::call_graph<CFG> &g) {
+typename boost::graph_traits<call_graph<CFG>>::degree_size_type
+in_degree(typename boost::graph_traits<call_graph<CFG>>::vertex_descriptor v, 
+	  const call_graph<CFG> &g) {
   return g.num_preds(v);
 }
 
 template<class CFG>
-std::pair<typename boost::graph_traits<crab::cg::call_graph<CFG>>::out_edge_iterator, 
-	  typename boost::graph_traits<crab::cg::call_graph<CFG>>::out_edge_iterator>
-out_edges(typename boost::graph_traits<crab::cg::call_graph<CFG>>::vertex_descriptor v, 
-	  const crab::cg::call_graph<CFG> &g) {
+std::pair<typename boost::graph_traits<call_graph<CFG>>::out_edge_iterator, 
+	  typename boost::graph_traits<call_graph<CFG>>::out_edge_iterator>
+out_edges(typename boost::graph_traits<call_graph<CFG>>::vertex_descriptor v, 
+	  const call_graph<CFG> &g) {
   return g.succs(v);
 }
 
 template<class CFG>
-typename boost::graph_traits<crab::cg::call_graph<CFG>>::degree_size_type
-out_degree(typename boost::graph_traits<crab::cg::call_graph<CFG>>::vertex_descriptor v, 
-	   const crab::cg::call_graph<CFG> &g) { 
+typename boost::graph_traits<call_graph<CFG>>::degree_size_type
+out_degree(typename boost::graph_traits<call_graph<CFG>>::vertex_descriptor v, 
+	   const call_graph<CFG> &g) { 
   return g.num_succs(v);
 }
 
 template<class CFG>
-typename boost::graph_traits<crab::cg::call_graph<CFG>>::degree_size_type
-degree(typename boost::graph_traits<crab::cg::call_graph<CFG>>::vertex_descriptor v, 
-       const crab::cg::call_graph<CFG> &g) {
+typename boost::graph_traits<call_graph<CFG>>::degree_size_type
+degree(typename boost::graph_traits<call_graph<CFG>>::vertex_descriptor v, 
+       const call_graph<CFG> &g) {
   return g.num_preds(v) + g.num_succs(v);
 }
 
 template<class CFG>
-std::pair<typename boost::graph_traits<crab::cg::call_graph<CFG>>::vertex_iterator, 
-	  typename boost::graph_traits<crab::cg::call_graph<CFG>>::vertex_iterator> 
-vertices(const crab::cg::call_graph<CFG> &g) {
+std::pair<typename boost::graph_traits<call_graph<CFG>>::vertex_iterator, 
+	  typename boost::graph_traits<call_graph<CFG>>::vertex_iterator> 
+vertices(const call_graph<CFG> &g) {
   return g.nodes();
 }
   
 template<class CFG>
-typename boost::graph_traits<crab::cg::call_graph<CFG>>::vertices_size_type
-num_vertices(const crab::cg::call_graph<CFG> &g) {
+typename boost::graph_traits<call_graph<CFG>>::vertices_size_type
+num_vertices(const call_graph<CFG> &g) {
   return g.num_nodes();
 }
 
 
-// --- Functions for crab::cg::call_graph_ref
+// --- Functions for call_graph_ref
+
+// this is not part of BGL but needed by Crab's algorithms
+template<class CFG> 
+typename boost::graph_traits<call_graph_ref<CFG>>::vertex_descriptor
+entry(const call_graph_ref<CFG> &g) {
+  return g.entry(); 
+} 
 
 template<class CG> 
-typename boost::graph_traits<crab::cg::call_graph_ref<CG>>::vertex_descriptor
-source(typename boost::graph_traits<crab::cg::call_graph_ref<CG>>::edge_descriptor e, 
-       const crab::cg::call_graph_ref<CG> &g) {
+typename boost::graph_traits<call_graph_ref<CG>>::vertex_descriptor
+source(typename boost::graph_traits<call_graph_ref<CG>>::edge_descriptor e, 
+       const call_graph_ref<CG> &g) {
   return e.src(); 
 } 
 
 template<class CG>
-typename boost::graph_traits<crab::cg::call_graph_ref<CG>>::vertex_descriptor
-target(typename boost::graph_traits<crab::cg::call_graph_ref<CG>>::edge_descriptor e, 
-       const crab::cg::call_graph_ref<CG> &g) {
+typename boost::graph_traits<call_graph_ref<CG>>::vertex_descriptor
+target(typename boost::graph_traits<call_graph_ref<CG>>::edge_descriptor e, 
+       const call_graph_ref<CG> &g) {
   return e.dest();
 }
 
 template<class CG>
-std::pair<typename boost::graph_traits<crab::cg::call_graph_ref<CG>>::in_edge_iterator, 
-	  typename boost::graph_traits<crab::cg::call_graph_ref<CG>>::in_edge_iterator>
-in_edges(typename boost::graph_traits<crab::cg::call_graph_ref<CG>>::vertex_descriptor v, 
-	 const crab::cg::call_graph_ref<CG> &g) {
+std::pair<typename boost::graph_traits<call_graph_ref<CG>>::in_edge_iterator, 
+	  typename boost::graph_traits<call_graph_ref<CG>>::in_edge_iterator>
+in_edges(typename boost::graph_traits<call_graph_ref<CG>>::vertex_descriptor v, 
+	 const call_graph_ref<CG> &g) {
   return g.preds(v);
 }
 
 template<class CG>
-typename boost::graph_traits<crab::cg::call_graph_ref<CG>>::degree_size_type
-in_degree(typename boost::graph_traits<crab::cg::call_graph_ref<CG>>::vertex_descriptor v, 
-	  const crab::cg::call_graph_ref<CG> &g) {
+typename boost::graph_traits<call_graph_ref<CG>>::degree_size_type
+in_degree(typename boost::graph_traits<call_graph_ref<CG>>::vertex_descriptor v, 
+	  const call_graph_ref<CG> &g) {
   return g.num_preds(v);
 }
 
 template<class CG>
-std::pair<typename boost::graph_traits<crab::cg::call_graph_ref<CG>>::out_edge_iterator, 
-	  typename boost::graph_traits<crab::cg::call_graph_ref<CG>>::out_edge_iterator>
-out_edges(typename boost::graph_traits<crab::cg::call_graph_ref<CG>>::vertex_descriptor v, 
-	  const crab::cg::call_graph_ref<CG> &g) {
+std::pair<typename boost::graph_traits<call_graph_ref<CG>>::out_edge_iterator, 
+	  typename boost::graph_traits<call_graph_ref<CG>>::out_edge_iterator>
+out_edges(typename boost::graph_traits<call_graph_ref<CG>>::vertex_descriptor v, 
+	  const call_graph_ref<CG> &g) {
   return g.succs(v);
 }
 
 template<class CG>
-typename boost::graph_traits<crab::cg::call_graph_ref<CG>>::degree_size_type
-out_degree(typename boost::graph_traits<crab::cg::call_graph_ref<CG>>::vertex_descriptor v, 
-	   const crab::cg::call_graph_ref<CG> &g) { 
+typename boost::graph_traits<call_graph_ref<CG>>::degree_size_type
+out_degree(typename boost::graph_traits<call_graph_ref<CG>>::vertex_descriptor v, 
+	   const call_graph_ref<CG> &g) { 
   return g.num_succs(v);
 }
 
 template<class CG>
-typename boost::graph_traits<crab::cg::call_graph_ref<CG>>::degree_size_type
-degree(typename boost::graph_traits<crab::cg::call_graph_ref<CG>>::vertex_descriptor v, 
-       const crab::cg::call_graph_ref<CG> &g) {
+typename boost::graph_traits<call_graph_ref<CG>>::degree_size_type
+degree(typename boost::graph_traits<call_graph_ref<CG>>::vertex_descriptor v, 
+       const call_graph_ref<CG> &g) {
   return g.num_preds(v) + g.num_succs(v);
 }
 
 template<class CG>
-std::pair<typename boost::graph_traits<crab::cg::call_graph_ref<CG>>::vertex_iterator, 
-	  typename boost::graph_traits<crab::cg::call_graph_ref<CG>>::vertex_iterator> 
-vertices(const crab::cg::call_graph_ref<CG> &g) {
+std::pair<typename boost::graph_traits<call_graph_ref<CG>>::vertex_iterator, 
+	  typename boost::graph_traits<call_graph_ref<CG>>::vertex_iterator> 
+vertices(const call_graph_ref<CG> &g) {
   return g.nodes();
 }
   
 template<class CG>
-typename boost::graph_traits<crab::cg::call_graph_ref<CG>>::vertices_size_type
-num_vertices(const crab::cg::call_graph_ref<CG> &g) {
+typename boost::graph_traits<call_graph_ref<CG>>::vertices_size_type
+num_vertices(const call_graph_ref<CG> &g) {
   return g.num_nodes();
 }
 

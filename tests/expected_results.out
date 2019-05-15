@@ -1753,7 +1753,8 @@ entry:
   goto exit;
 exit:
   z = y+2;
-  return z;
+  w = call barz(z:int);
+  return w;
 
 
 y:int declare bar(a:int)
@@ -1774,7 +1775,6 @@ exit:
   z = y+2;
 
 
-CG=
 bar--> foo
 main--> bar
 
@@ -1798,6 +1798,13 @@ main--> bar
 bar--> foo
 reverse topological sort: foo--bar--main--
 topological sort: main--bar--foo--
+Callgraph=
+foo--> barz
+bar--> foo
+main--> bar
+barz--> bar
+
+Weak topological ordering=main (bar foo barz)
 b0:
   p = &(1);
   q1 = &(2);

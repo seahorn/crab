@@ -5,9 +5,7 @@
 #include <crab/common/types.hpp>
 #include <crab/common/debug.hpp>
 #include <crab/cfg/cfg.hpp>
-#include <crab/cfg/cfg_bgl.hpp>
 #include <crab/cg/cg.hpp>
-#include <crab/cg/cg_bgl.hpp> 
 #include <crab/cfg/var_factory.hpp>
 
 namespace crab {

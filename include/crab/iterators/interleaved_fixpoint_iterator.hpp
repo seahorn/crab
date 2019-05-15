@@ -49,6 +49,7 @@
 #include <crab/common/types.hpp>
 #include <crab/common/debug.hpp>
 #include <crab/common/stats.hpp>
+#include <crab/cfg/cfg_bgl.hpp>  // needed by wto
 #include <crab/iterators/wto.hpp>
 #include <crab/iterators/fixpoint_iterators_api.hpp>
 #include <crab/iterators/thresholds.hpp>
@@ -276,7 +277,8 @@ namespace ikos {
       CRAB_VERBOSE_IF(2, crab::outs() << "Wto:\n" << _wto << "\n");            
     }
 
-    void run(basic_block_label_t entry, AbstractValue init, const assumption_map_t &assumptions) {
+    void run(basic_block_label_t entry, AbstractValue init,
+	     const assumption_map_t &assumptions) {
       crab::ScopedCrabStats __st__("Fixpo");
       CRAB_VERBOSE_IF(1,
 	     crab::get_msg_stream() << "== Started fixpoint at block "
