@@ -37,7 +37,7 @@ namespace analyzer {
  * class SumTable stores the summaries.
  **/
 template<class SumTable> 
-class bu_summ_abs_transformer: 
+class bu_summ_abs_transformer final: 
     public intra_abs_transformer<typename SumTable::abs_domain_t> {
 				      
 public:
@@ -185,7 +185,7 @@ inline void convert_domains(Domain1 from, Domain2& to) {
  * class CallCtxTable stores the calling context.
  **/
 template<class SumTable, class CallCtxTable> 
-class td_summ_abs_transformer: 
+class td_summ_abs_transformer final: 
     public intra_abs_transformer<typename CallCtxTable::abs_domain_t> {
 
 public:
