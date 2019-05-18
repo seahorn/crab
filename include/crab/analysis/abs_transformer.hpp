@@ -188,6 +188,7 @@ public:
   using typename abs_transform_api_t::assert_t;
   using typename abs_transform_api_t::int_cast_t;    
   using typename abs_transform_api_t::callsite_t;
+  using typename abs_transform_api_t::return_t;    
   using typename abs_transform_api_t::arr_init_t;
   using typename abs_transform_api_t::arr_load_t;
   using typename abs_transform_api_t::arr_store_t;
@@ -209,8 +210,12 @@ public:
 
     
 protected:
+  
   /// XXX: the transformer does not own m_inv.
+  /// We keep a pointer to avoid unnecessary copies. We don't use a
+  /// reference because we might reassign m_inv multiple times.
   abs_dom_t* m_inv;
+  
   bool m_ignore_assert;
     
 private:
@@ -587,6 +592,9 @@ public:
       (*get()) -= vt;  // havoc
     }
   }
+
+  virtual void exec(return_t& ret) {}
+  
 }; 
 
 ///////////////////////////////////////
@@ -636,9 +644,10 @@ public:
  * Abstract transformer to compute necessary preconditions.
  **/ 
 template<class AbsD, class InvT>
-class intra_necessary_preconditions_abs_transformer final: 
+class intra_necessary_preconditions_abs_transformer: 
     public abs_transformer_api<typename AbsD::number_t, typename AbsD::varname_t> {
 public:
+  
   typedef AbsD abs_dom_t;
   typedef typename abs_dom_t::number_t number_t;
   typedef typename abs_dom_t::varname_t varname_t;
@@ -658,6 +667,7 @@ public:
   using typename abs_transform_api_t::assert_t;
   using typename abs_transform_api_t::int_cast_t;
   using typename abs_transform_api_t::callsite_t;
+  using typename abs_transform_api_t::return_t;  
   using typename abs_transform_api_t::arr_init_t;
   using typename abs_transform_api_t::arr_load_t;
   using typename abs_transform_api_t::arr_store_t;
@@ -867,13 +877,6 @@ public:
     *m_pre -= stmt.variable();
   }
 
-  // ret := *
-  void exec(callsite_t& cs) {
-    for (auto vt: cs.get_lhs()) {
-      *m_pre -= vt;
-    }
-  }
-
   void exec(int_cast_t& stmt) {
     abs_dom_t invariant = (*m_invariants)[&stmt];
     m_pre->backward_assign(stmt.dst(), stmt.src(), invariant);
@@ -908,7 +911,7 @@ public:
 
   void exec(arr_load_t& stmt)
   { *m_pre -= stmt.lhs(); }
-    
+  
   // NOT IMPLEMENTED
   void exec(arr_init_t& stmt) { }
   void exec(arr_store_t& stmt) { }
@@ -921,6 +924,16 @@ public:
   void exec(ptr_store_t& stmt) { }
   void exec(ptr_assume_t& stmt) { }
   void exec(ptr_assert_t& stmt) { }
+
+  /// -- Call and return can be redefined by derived classes
+  
+  virtual void exec(callsite_t& cs) {
+    for (auto vt: cs.get_lhs()) {
+      *m_pre -= vt;
+    }
+  }  
+  virtual void exec(return_t& stmt) { }
+  
 }; 
 
 } // end namespace
