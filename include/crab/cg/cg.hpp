@@ -332,7 +332,24 @@ public:
       return entries[0];
     }
   }
+
   
+  std::vector<node_t> entries() const {
+    // TODO: any node without incoming edges should be considered an
+    // entry point. In addition, if all nodes have some incoming edges
+    // then it can be the case that the analysis should start from
+    // some SCC with multiple nodes. In that case, all SCC's
+    // components should be considered as entry point.
+
+    std::vector<node_t> out;
+    for (node_iterator it = nodes().first, et = nodes().second; it!=et; ++it) {
+      if (num_preds(*it) == 0) {
+	out.push_back(*it);
+      }
+    }
+    return out;
+  }
+
   std::pair<node_iterator, node_iterator> 
   nodes() const {
     auto p = boost::vertices(*m_cg);
@@ -424,6 +441,11 @@ public:
     return (*_ref).get().entry();
   }
 
+  std::vector<node_t> entries() const {
+    assert(_ref);
+    return (*_ref).get().entries();
+  }
+  
   std::pair<node_iterator, node_iterator> 
   nodes() const {
     assert(_ref);
