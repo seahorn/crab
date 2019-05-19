@@ -26,9 +26,8 @@ void inter_run_impl (CG* cg,
   // Print invariants
   for (auto &v: boost::make_iterator_range (cg_ref.nodes())) {
     auto cfg = v.get_cfg ();
-    auto fdecl_opt = cfg.get_func_decl ();
-    assert (fdecl_opt);
-    crab::outs() << *fdecl_opt << "\n";      
+    auto fdecl = cfg.get_func_decl ();
+    crab::outs() << fdecl << "\n";      
     for (auto &b : cfg) {
       auto inv = a.get_post (cfg, b.label ());
         crab::outs() <<  crab::cfg_impl::get_label_str (b.label ()) << "=" << inv << "\n";

@@ -405,14 +405,14 @@ public:
 	crab::ScopedCrabStats __st__("Inter.TopDown");
 
 	auto cfg = v.get_cfg();
+	assert(cfg.has_func_decl());
 	auto fdecl = cfg.get_func_decl();
-	assert(fdecl);
-	std::string fun_name =(*fdecl).get_func_name();
+	std::string fun_name = fdecl.get_func_name();
 	if (fun_name != "main") continue;
             
 	CRAB_LOG("inter",
 		 crab::outs() << "++ Analyzing function "
-		 << (*fdecl).get_func_name() << "\n");
+		 << fdecl.get_func_name() << "\n");
 
 	auto abs_tr = boost::make_shared<td_abs_tr>(&init, &m_summ_tbl, &m_call_tbl);
 	auto a = boost::make_shared<td_analyzer>(cfg, nullptr, &*abs_tr, get_live(cfg),
@@ -421,7 +421,7 @@ public:
 						 m_jump_set_size);
 						      
 	a->run_forward();
-	m_inv_map.insert(std::make_pair(crab::cfg::cfg_hasher<cfg_t>::hash(*fdecl), a));
+	m_inv_map.insert({crab::cfg::cfg_hasher<cfg_t>::hash(fdecl), a});
       }
       return;
     }
@@ -438,13 +438,12 @@ public:
       for (auto m: scc_mems) {
 
 	auto cfg = m.get_cfg();
+	assert(cfg.has_func_decl());
 	auto fdecl = cfg.get_func_decl();            
-	assert(fdecl);
-
-	std::string fun_name = (*fdecl).get_func_name();
+	std::string fun_name = fdecl.get_func_name();
 	if (fun_name != "main" && cfg.has_exit()) {
 	  CRAB_VERBOSE_IF(1, get_msg_stream() << "++ Analyzing function "
-			  << (*fdecl).get_func_name() << "\n";);
+			  << fdecl.get_func_name() << "\n";);
 	  // --- run the analysis
 	  auto init_inv = BU_Dom::top();
 	  bu_abs_tr abs_tr(&init_inv, &m_summ_tbl);
@@ -454,24 +453,24 @@ public:
 	      
 	  // --- build the summary
 	  std::vector<variable_t> formals, inputs, outputs;
-	  formals.reserve((*fdecl).get_num_inputs() +(*fdecl).get_num_outputs());
-	  inputs.reserve((*fdecl).get_num_inputs());
-	  outputs.reserve((*fdecl).get_num_outputs());
+	  formals.reserve(fdecl.get_num_inputs() + fdecl.get_num_outputs());
+	  inputs.reserve(fdecl.get_num_inputs());
+	  outputs.reserve(fdecl.get_num_outputs());
 
-	  for (unsigned i=0; i < (*fdecl).get_num_inputs();i++) {
-	    inputs.push_back((*fdecl).get_input_name(i));
-	    formals.push_back((*fdecl).get_input_name(i));
+	  for (unsigned i=0; i < fdecl.get_num_inputs();i++) {
+	    inputs.push_back(fdecl.get_input_name(i));
+	    formals.push_back(fdecl.get_input_name(i));
 	  }
-	  for (unsigned i=0; i < (*fdecl).get_num_outputs();i++) {
-	    outputs.push_back((*fdecl).get_output_name(i));
-	    formals.push_back((*fdecl).get_output_name(i));
+	  for (unsigned i=0; i < fdecl.get_num_outputs();i++) {
+	    outputs.push_back(fdecl.get_output_name(i));
+	    formals.push_back(fdecl.get_output_name(i));
 	  }
 	      
 	  // --- project onto formal parameters and return values
 	  auto inv = a.get_post(cfg.exit());
 	  //crab::CrabStats::count(BU_Dom::getDomainName() + ".count.project");
 	  inv.project(formals);
-	  m_summ_tbl.insert(*fdecl, inv, inputs, outputs);
+	  m_summ_tbl.insert(fdecl, inv, inputs, outputs);
 	}
       }
     } 
@@ -493,29 +492,29 @@ public:
 
       for (auto m: scc_mems) {
 	auto cfg = m.get_cfg();
+	assert(cfg.has_func_decl());
 	auto fdecl = cfg.get_func_decl();
-	assert(fdecl);
 	CRAB_VERBOSE_IF(1, get_msg_stream() << "++ Analyzing function " 
-			<< (*fdecl).get_func_name() << "\n";);
+			<< fdecl.get_func_name() << "\n";);
 	if (is_recursive) {
 	  // If the SCC is recursive then what we have in
 	  // m_call_tbl is incomplete and therefore it is unsound
 	  // to use it. To remedy it, we insert another calling
 	  // context with top value that approximates all the
 	  // possible calling contexts during the recursive calls.
-	  m_call_tbl.insert(*fdecl, TD_Dom::top());
+	  m_call_tbl.insert(fdecl, TD_Dom::top());
 	}
 	   
 	auto init_inv = init;	    
 	if (is_root) {
 	  is_root = false;
 	} else {
-	  init_inv = m_call_tbl.get_call_ctx(*fdecl);
+	  init_inv = m_call_tbl.get_call_ctx(fdecl);
 	}
 	    
 	CRAB_LOG("inter",
 		 crab::outs() << "    Starting analysis of "
-		 << *fdecl <<  " with " << init_inv << "\n");
+		 << fdecl <<  " with " << init_inv << "\n");
 
 	auto abs_tr = boost::make_shared<td_abs_tr>(&init_inv, &m_summ_tbl, &m_call_tbl);
 	auto a = boost::make_shared<td_analyzer>(cfg, nullptr, &*abs_tr, get_live(cfg),
@@ -523,7 +522,7 @@ public:
 						 m_descending_iters,
 						 m_jump_set_size);
 	a->run_forward();
-	m_inv_map.insert(std::make_pair(crab::cfg::cfg_hasher<cfg_t>::hash(*fdecl), a));
+	m_inv_map.insert(std::make_pair(crab::cfg::cfg_hasher<cfg_t>::hash(fdecl), a));
       }
     }
     CRAB_VERBOSE_IF(1,get_msg_stream() << "Finished inter-procedural analysis\n";);	
@@ -535,23 +534,27 @@ public:
   }
 
   //! Return the invariants that hold at the entry of b in cfg
-  TD_Dom get_pre(const cfg_t &cfg, typename cfg_t::basic_block_label_t b) const { 
-    if (auto fdecl = cfg.get_func_decl()) {
-      auto const it = m_inv_map.find(crab::cfg::cfg_hasher<cfg_t>::hash(*fdecl));
-      if (it != m_inv_map.end())
-	return it->second->get_pre(b);
+  TD_Dom get_pre(const cfg_t &cfg, typename cfg_t::basic_block_label_t b) const {
+    assert(cfg.has_func_decl());
+    auto fdecl = cfg.get_func_decl();
+    auto const it = m_inv_map.find(crab::cfg::cfg_hasher<cfg_t>::hash(fdecl));
+    if (it != m_inv_map.end()) {
+      return it->second->get_pre(b);
+    } else {
+      return TD_Dom::top();
     }
-    return TD_Dom::top();
   }
       
   //! Return the invariants that hold at the exit of b in cfg
-  TD_Dom get_post(const cfg_t &cfg, typename cfg_t::basic_block_label_t b) const { 
-    if (auto fdecl = cfg.get_func_decl()) {
-      auto const it = m_inv_map.find(crab::cfg::cfg_hasher<cfg_t>::hash(*fdecl));
-      if (it != m_inv_map.end())
-	return it->second->get_post(b);
+  TD_Dom get_post(const cfg_t &cfg, typename cfg_t::basic_block_label_t b) const {
+    assert(cfg.has_func_decl());
+    auto fdecl = cfg.get_func_decl();
+    auto const it = m_inv_map.find(crab::cfg::cfg_hasher<cfg_t>::hash(fdecl));
+    if (it != m_inv_map.end()) {
+      return it->second->get_post(b);
+    } else {
+      return TD_Dom::top();
     }
-    return TD_Dom::top();
   }
 
   // clear all invariants
@@ -566,21 +569,22 @@ public:
 
   //! Return true if there is a summary for a function
   bool has_summary(const cfg_t &cfg) const {
-    if (auto fdecl = cfg.get_func_decl())
-      return m_summ_tbl.hasSummary(*fdecl);
-    return false;
+    assert(cfg.has_func_decl());
+    auto fdecl = cfg.get_func_decl();
+    return m_summ_tbl.hasSummary(fdecl);
   }
 
   //! Return the summary for a function
   summary_ptr get_summary(const cfg_t &cfg) const {
-    if (auto fdecl = cfg.get_func_decl()) {
-      if (m_summ_tbl.hasSummary(*fdecl)) {
-	summary_t summ = m_summ_tbl.get(*fdecl);
-	return boost::make_shared<summary_t>(summ);
-      }
+    assert(cfg.has_func_decl());
+    auto fdecl = cfg.get_func_decl();
+    if (m_summ_tbl.hasSummary(fdecl)) {
+      summary_t summ = m_summ_tbl.get(fdecl);
+      return boost::make_shared<summary_t>(summ);
+    } else {
+      CRAB_WARN("Summary not found");
+      return nullptr;
     }
-    CRAB_WARN("Summary not found");
-    return nullptr;
   }
         
 }; 

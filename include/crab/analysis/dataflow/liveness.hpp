@@ -48,9 +48,10 @@ namespace crab {
 
      virtual varset_domain_t entry() {
        varset_domain_t res = varset_domain_t::bottom();
-       if (auto fdecl = this->m_cfg.get_func_decl()) {
-	 for(unsigned i=0, e=(*fdecl).get_num_outputs(); i<e; ++i) {
-	   res += (*fdecl).get_output_name(i);
+       if (this->m_cfg.has_func_decl()) {
+	 auto fdecl = this->m_cfg.get_func_decl();
+	 for(unsigned i=0, e= fdecl.get_num_outputs(); i<e; ++i) {
+	   res += fdecl.get_output_name(i);
 	 }
        }
       return res;

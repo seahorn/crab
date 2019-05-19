@@ -108,11 +108,12 @@ namespace crab {
 	
         if (live) {
           // --- collect input and output parameters 
-          if (auto fdecl = this->get_cfg().get_func_decl()) {
-	    for (unsigned i=0; i < (*fdecl).get_num_inputs();i++)
-	      m_formals += (*fdecl).get_input_name(i);
-	    for (unsigned i=0; i < (*fdecl).get_num_outputs();i++)
-	      m_formals += (*fdecl).get_output_name(i);
+          if (this->get_cfg().has_func_decl()) {
+	    auto fdecl = this->get_cfg().get_func_decl();
+	    for (unsigned i=0; i < fdecl.get_num_inputs();i++)
+	      m_formals += fdecl.get_input_name(i);
+	    for (unsigned i=0; i < fdecl.get_num_outputs();i++)
+	      m_formals += fdecl.get_output_name(i);
 	  }
         }
 

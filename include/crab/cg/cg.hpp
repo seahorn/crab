@@ -54,9 +54,10 @@ class call_graph: boost::noncopyable {
     int index() const { return m_id; }
     
     std::string name() const {
-      auto d_opt = m_cfg.get_func_decl();
-      if (!d_opt) CRAB_ERROR("No function name found");
-      return (*d_opt).get_func_name();
+      if (!m_cfg.has_func_decl()) {
+	CRAB_ERROR("No function name found");
+      }
+      return  m_cfg.get_func_decl().get_func_name();
     }
 
     bool operator==(const cg_node& o) const {
@@ -238,11 +239,12 @@ private:
 
     // --- add vertices in the call graph
     for (auto cfg: boost::make_iterator_range(I,E)) {
-      auto decl_opt = cfg.get_func_decl();
-      if (!decl_opt)
+      if (!cfg.has_func_decl()) {
 	CRAB_ERROR("Could not compute call graph: function info is missing.");
-            
-      size_t k = crab::cfg::cfg_hasher<CFG>::hash(*decl_opt);
+      }
+
+      auto decl = cfg.get_func_decl();      
+      size_t k = crab::cfg::cfg_hasher<CFG>::hash(decl);
       vertex_descriptor_t v = add_vertex(*m_cg);
       m_vertex_map.insert({k,v});
       node_t f(cfg, m_id++);
@@ -250,18 +252,18 @@ private:
       (*m_cg)[v].func = f;
 
       CRAB_LOG("cg", 
-	       crab::outs() << "Added call graph node " <<  *decl_opt 
+	       crab::outs() << "Added call graph node " << decl
 	       <<  "--- id=" <<  v << "\n";);
                      
     }
           
     // --- add edges in the call graph
     for (auto cfg: boost::make_iterator_range(I,E)) {
-      auto decl_opt = cfg.get_func_decl();
-      assert(decl_opt);
+      assert(cfg.has_func_decl());
+      auto decl = cfg.get_func_decl();
       for (auto const &bb :
 	     boost::make_iterator_range(cfg.begin(), cfg.end())) { 
-	mk_edge_vis vis(*m_cg, m_vertex_map, m_callee_map, *decl_opt);
+	mk_edge_vis vis(*m_cg, m_vertex_map, m_callee_map, decl);
 	for (auto it = bb.begin(); it != bb.end(); ++it) {
 	  it->accept(&vis);
 	}
@@ -304,12 +306,12 @@ public:
   void type_check() const {
     for (auto const& kv: m_callee_map) {
       CFG callee_cfg = kv.second.get_cfg();
-      if (!callee_cfg.get_func_decl()) {
+      if (!callee_cfg.has_func_decl()) {
 	CRAB_ERROR("CFG must be wrapped into a function (i.e., function declaration not found)");
       }
       
       const callsite_t& cs = *kv.first;
-      fdecl_t fdecl = *(callee_cfg.get_func_decl());
+      fdecl_t fdecl = callee_cfg.get_func_decl();
       
       if (fdecl.get_num_inputs() != cs.get_num_args()) {
 	crab::errs() << "Callsite: " << cs << "\n";

@@ -2515,19 +2515,19 @@ namespace crab {
       
       typedef typename std::vector<variable_t>::iterator param_iterator;
       typedef typename std::vector<variable_t>::const_iterator const_param_iterator;
+      typedef function_decl<Number, VariableName> this_type;
       
      public:
-      
-      function_decl(std::string func_name,
-                     std::vector<variable_t> inputs,
-		     std::vector<variable_t> outputs)
-	: m_func_name(func_name) {
-	
-        std::copy(inputs.begin(), inputs.end(),
-		  std::back_inserter(m_inputs));	
-        std::copy(outputs.begin(), outputs.end(),
-		  std::back_inserter(m_outputs));
 
+      function_decl(): m_func_name("") {}
+	
+      function_decl(std::string func_name,
+		    std::vector<variable_t> inputs,
+		    std::vector<variable_t> outputs)
+	: m_func_name(func_name)
+	, m_inputs(inputs)
+	, m_outputs(outputs) {
+	
 	// CFG restriction: inputs and outputs must be disjoint,
 	// otherwise we cannot produce meaningful input-output
 	// relations.
@@ -2540,6 +2540,32 @@ namespace crab {
 	}
       }
 
+      function_decl(const this_type& o)
+	: m_func_name(o.m_func_name)
+	, m_inputs(o.m_inputs)
+	, m_outputs(o.m_outputs) { }
+
+      function_decl(const this_type&&o)
+	: m_func_name(std::move(o.m_func_name))
+	, m_inputs(std::move(o.m_inputs))
+	, m_outputs(std::move(o.m_outputs)) { }
+
+      this_type& operator=(const this_type&o) {
+	if (this != &o) {
+	  m_func_name = o.m_func_name;
+	  m_inputs = o.m_inputs;
+	  m_outputs = o.m_outputs;
+	}
+	return *this;
+      }
+
+      this_type& operator=(const this_type&&o) {
+	m_func_name = std::move(o.m_func_name);
+	m_inputs = std::move(o.m_inputs);
+	m_outputs = std::move(o.m_outputs);
+	return *this;
+      }
+      
       std::string get_func_name() const
       { return m_func_name; }
       
@@ -2663,13 +2689,13 @@ namespace crab {
      public:
       
       typedef boost::transform_iterator<get_ref, 
-                                         typename basic_block_map_t::iterator> iterator;
+                      typename basic_block_map_t::iterator> iterator;
       typedef boost::transform_iterator<get_ref, 
-                                         typename basic_block_map_t::const_iterator> const_iterator;
+                      typename basic_block_map_t::const_iterator> const_iterator;
       typedef boost::transform_iterator<get_label, 
-                                         typename basic_block_map_t::iterator> label_iterator;
+                      typename basic_block_map_t::iterator> label_iterator;
       typedef boost::transform_iterator<get_label, 
-                                         typename basic_block_map_t::const_iterator> const_label_iterator;
+                      typename basic_block_map_t::const_iterator> const_label_iterator;
 
       typedef typename std::vector<varname_t>::iterator var_iterator;
       typedef typename std::vector<varname_t>::const_iterator const_var_iterator;
@@ -2680,9 +2706,7 @@ namespace crab {
       boost::optional<BasicBlockLabel> m_exit;
       basic_block_map_t m_blocks;
       tracked_precision m_track_prec;
-      //! we allow to define a cfg without being associated with a
-      //! function
-      boost::optional<fdecl_t> m_func_decl; 
+      fdecl_t m_func_decl; 
       
       
       typedef boost::unordered_set<BasicBlockLabel> visited_t;
@@ -2738,7 +2762,7 @@ namespace crab {
           : m_entry(entry), 
             m_exit(exit), 
             m_track_prec(track_prec),
-            m_func_decl(boost::optional<fdecl_t>(func_decl)) {
+            m_func_decl(func_decl) {
         m_blocks.insert(binding_t(m_entry, 
 				  basic_block_t::create(m_entry, m_track_prec)));
       }
@@ -2763,8 +2787,14 @@ namespace crab {
         }
         return copy_cfg;
       }
+
+      bool has_func_decl() const {
+	return (!(m_func_decl.get_func_name() == "" &&
+		  m_func_decl.get_num_inputs() == 0 &&
+		  m_func_decl.get_num_outputs() == 0));
+      }
       
-      boost::optional<fdecl_t> get_func_decl() const { 
+      fdecl_t get_func_decl() const { 
         return m_func_decl; 
       }
       
@@ -2788,7 +2818,7 @@ namespace crab {
       //! set method to add the function declaration after the cfg has
       //! been created.
       void set_func_decl(fdecl_t decl) { 
-        m_func_decl  = boost::optional<fdecl_t>(decl);
+        m_func_decl = decl;
       }
 
       // --- Begin ikos fixpoint API
@@ -2932,8 +2962,8 @@ namespace crab {
       size_t size() const { return std::distance(begin(), end()); }
      
       void write(crab_os& o) const {
-        if (m_func_decl) {
-          o << *m_func_decl << "\n";
+        if (has_func_decl()) {
+          o << m_func_decl << "\n";
 	}
 
         print_block f(o);	
@@ -3209,11 +3239,15 @@ namespace crab {
         return (*_ref).get().label_end();
       }
 
-      boost::optional<fdecl_t> get_func_decl() const { 
+      bool has_func_decl() const {
+        assert(_ref);
+        return (*_ref).get().has_func_decl();
+      }
+      
+      fdecl_t get_func_decl() const { 
         assert(_ref);
         return (*_ref).get().get_func_decl();
       }
-
       
       bool has_exit() const {
         assert(_ref);
@@ -3433,7 +3467,11 @@ namespace crab {
         return _cfg.label_end();
       }
 
-      boost::optional<fdecl_t> get_func_decl() const { 
+      bool has_func_decl() const { 
+        return _cfg.has_func_decl();
+      }
+      
+      fdecl_t get_func_decl() const { 
         return _cfg.get_func_decl();
       }
       
@@ -3446,10 +3484,9 @@ namespace crab {
       }
 
       void write(crab_os& o) const {
-        if (get_func_decl()) {
-          o << *get_func_decl() << "\n";
+        if (has_func_decl()) {
+          o << get_func_decl() << "\n";
 	}
-
         print_block f(o);	
         dfs(f);
       }
@@ -3953,29 +3990,30 @@ namespace crab {
     // extending boost::hash for cfg class
     template<class B, class V, class N>
     std::size_t hash_value(cfg<B,V,N> const& _cfg) {
-      auto fdecl = _cfg.get_func_decl();            
-      if (!fdecl)
+      if (!_cfg.has_func_decl()) {
         CRAB_ERROR("cannot hash a cfg because function declaration is missing");
-
-      return cfg_hasher<cfg<B,V,N>>::hash(*fdecl);
+      }
+      auto fdecl = _cfg.get_func_decl();                  
+      return cfg_hasher<cfg<B,V,N>>::hash(fdecl);
     }
 
     template<class CFG>
     std::size_t hash_value(cfg_ref<CFG> const& _cfg) {
-      auto fdecl = _cfg.get().get_func_decl();            
-      if (!fdecl)
+      if (!_cfg.has_func_decl()) {
         CRAB_ERROR("cannot hash a cfg because function declaration is missing");
-
-      return cfg_hasher<cfg_ref<CFG>>::hash(*fdecl);
+      }
+      auto fdecl = _cfg.get().get_func_decl();            
+      return cfg_hasher<cfg_ref<CFG>>::hash(fdecl);
     }
 
     template<class CFGRef>
     std::size_t hash_value(cfg_rev<CFGRef> const& _cfg) {
-      auto fdecl = _cfg.get().get_func_decl();            
-      if (!fdecl)
+      if (!_cfg.has_func_decl()) {
         CRAB_ERROR("cannot hash a cfg because function declaration is missing");
-
-      return cfg_hasher<cfg_rev<CFGRef>>::hash(*fdecl);
+      }
+      
+      auto fdecl = _cfg.get().get_func_decl();            
+      return cfg_hasher<cfg_rev<CFGRef>>::hash(fdecl);
     }
 
     template<class B, class V, class N>
