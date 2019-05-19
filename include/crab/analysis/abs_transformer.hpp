@@ -609,9 +609,9 @@ public:
   typedef typename AbsDom::variable_t variable_t;    
   typedef typename AbsDom::number_t number_t;
   
-  static void unify(AbsDom& inv, variable_type ty,
-		    variable_t lhs, variable_t rhs) {
-    switch(ty) {
+  static void unify(AbsDom& inv,  variable_t lhs, variable_t rhs) {
+    assert(lhs.get_type() == rhs.get_type());
+    switch(lhs.get_type()) {
     case BOOL_TYPE:
       inv.assign_bool_var(lhs, rhs, false);
       break;      

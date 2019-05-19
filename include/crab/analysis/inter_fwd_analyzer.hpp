@@ -66,12 +66,7 @@ public:
     // Before a summary is plug-in we rename it with unique variable
     // names so we avoid naming clashes in cases like for instance
     // summary variables have same names as lhs of callsites.
-      
-      
-    // error if cs and function declaration associated with summ are
-    // not type consistent
-    summ.check_type_consistency(cs);
-
+           
     CRAB_LOG("inter", 
 	     crab::outs() << "    Reuse summary at " << cs << "\n";
 	     crab::outs() << "    Summary:" << summ << "\n";); 
@@ -87,7 +82,7 @@ public:
 	CRAB_LOG("inter",
 		 crab::outs() << "\t\tPropagate from caller to callee " 
 		 << p << ":=" << a << "\n");
-	inter_transformer_helpers<abs_dom_t>::unify(caller, cs.get_arg_type(i), p, a);
+	inter_transformer_helpers<abs_dom_t>::unify(caller, p, a);
       }
       ++i;
       actuals.insert(a); formals.insert(p);
@@ -118,7 +113,7 @@ public:
       CRAB_LOG("inter",
 	       crab::outs() << "\t\tPropagate from callee to caller " 
 	       << vt << ":=" << r << "\n");
-      inter_transformer_helpers<abs_dom_t>::unify(caller, vt.get_type(), vt, r);
+      inter_transformer_helpers<abs_dom_t>::unify(caller, vt, r);
       actuals.insert(vt); formals.insert(r);
     }
       
@@ -224,10 +219,6 @@ public:
       CRAB_WARN("The summary table is empty");
     } else if(m_sum_tbl->hasSummary(cs)) {
       auto summ = m_sum_tbl->get(cs);
-
-      // error if cs and function declaration associated with summ
-      // are not type consistent
-      summ.check_type_consistency(cs);
         
       CRAB_LOG("inter", 
 	       crab::outs() << "    Pluging caller context into callee\n"
@@ -245,9 +236,9 @@ public:
       const std::vector<variable_t>& inputs = summ.get_inputs();
       for (variable_t p : inputs) {
 	variable_t a = cs.get_arg_name(i);
-	if (!(a == p))
-	  inter_transformer_helpers<abs_dom_t>::
-	    unify(callee_ctx_inv, cs.get_arg_type(i), p, a);
+	if (!(a == p)) {
+	  inter_transformer_helpers<abs_dom_t>::unify(callee_ctx_inv, p, a);
+	}
 	++i;
       }
 
@@ -376,7 +367,13 @@ public:
     : m_cg(cg), m_live(live),
       m_widening_delay(widening_delay), 
       m_descending_iters(descending_iters),
-      m_jump_set_size(jump_set_size) { }
+      m_jump_set_size(jump_set_size) {
+    CRAB_VERBOSE_IF(1, get_msg_stream() << "Type checking call graph ... ";);
+    crab::CrabStats::resume("CallGraph type checking");
+    cg.type_check();
+    crab::CrabStats::stop("CallGraph type checking");	
+    CRAB_VERBOSE_IF(1, get_msg_stream() << "OK\n";);
+  }
       
   void run(TD_Dom init = TD_Dom::top())  {
 
