@@ -130,6 +130,7 @@ public:
   public:
         
     Summary(fdecl_t fdecl,
+	    // summary defined only in terms of inputs and outputs
 	    abs_domain_t sum, 
 	    const std::vector<variable_t> &inputs,
 	    const std::vector<variable_t> &outputs):
@@ -185,26 +186,6 @@ public:
 
     const std::vector<variable_t>& get_renamed_outputs() const
     { return m_internal_outputs;}
-	
-    // Check type consistency between function declaration and callsite
-    // XXXX: this is needed because we don't type check crab programs.
-    void check_type_consistency(callsite_t cs) const {
-
-      if (m_fdecl.get_num_inputs() != cs.get_num_args()) 
-	CRAB_ERROR("Mismatch between number of callsite and summary parameters");
-      if (m_fdecl.get_num_outputs() != cs.get_lhs().size())
-	CRAB_ERROR("Mismatch between number of callsite and summary return values");
-         
-      for (unsigned i=0; i < cs.get_num_args(); i++){
-	if (m_fdecl.get_input_type(i) != cs.get_arg_type(i))
-	  CRAB_ERROR("Mismatch between type of callsite and summary parameter");
-      }
-
-      for (unsigned i=0; i < cs.get_lhs().size(); i++){
-	if (m_fdecl.get_output_type(i) != cs.get_lhs()[i].get_type())
-	  CRAB_ERROR("Mismatch between type of callsite and summary return value");
-      }
-    }
 
     void write(crab_os &o) const {
       o << m_fdecl.get_func_name() << "(IN:{";

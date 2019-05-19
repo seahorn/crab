@@ -24,7 +24,7 @@ namespace cg {
 //
 // Important: this class assumes that all function calls have been
 // resolved. This must be ensured by the client.
-template <typename CFG>
+template<typename CFG>
 class call_graph: boost::noncopyable {
 
   // Wrapper for call graph nodes
@@ -49,8 +49,8 @@ class call_graph: boost::noncopyable {
     cg_node(CFG cfg, int id): 
       m_cfg(cfg), m_id(id) { }
           
-    CFG get_cfg() { return m_cfg;  }
-          
+    CFG get_cfg() const { return m_cfg;  }
+
     int index() const { return m_id; }
     
     std::string name() const {
@@ -83,7 +83,7 @@ class call_graph: boost::noncopyable {
         
   // Wrapper for call graph edges
   // BGL complains if we use std::pair<cg_node,cg_node>
-  template <typename T>
+  template<typename T>
   struct cg_edge  {
     T m_s;
     T m_d;
@@ -113,11 +113,13 @@ class call_graph: boost::noncopyable {
   typedef typename boost::graph_traits<cg_t>::in_edge_iterator in_edge_iterator;
   /// --- end internal representation of the call graph
 
-  typedef boost::unordered_map<std::size_t, vertex_descriptor_t > vertex_map_t;
-  typedef boost::unordered_map <cg_node, vertex_descriptor_t > node_vertex_id_map_t;
   typedef typename CFG::varname_t varname_t;
   typedef typename CFG::number_t number_t;	
   typedef crab::cfg::statement_visitor<number_t, varname_t> stmt_visitor_t;
+  
+  typedef boost::unordered_map<std::size_t, vertex_descriptor_t > vertex_map_t;
+  typedef boost::unordered_map<typename stmt_visitor_t::callsite_t*, cg_node> callee_map_t;
+  typedef boost::unordered_map<cg_node, vertex_descriptor_t > node_vertex_id_map_t;
 
   struct mk_edge_vis: public stmt_visitor_t {
     typedef typename stmt_visitor_t::bin_op_t   bin_op_t;
@@ -131,11 +133,15 @@ class call_graph: boost::noncopyable {
 
     cg_t& m_cg;
     vertex_map_t& m_vertex_map;
+    callee_map_t& m_callee_map;
     std::size_t m_from;
 
-    mk_edge_vis(cg_t &cg, vertex_map_t &vertex_map, fdecl_t &from): 
-      m_cg(cg), m_vertex_map(vertex_map), 
-      m_from(crab::cfg::cfg_hasher<CFG>::hash(from)) { 
+    mk_edge_vis(cg_t &cg, vertex_map_t &vertex_map,
+		callee_map_t& callee_map, fdecl_t &from): 
+      m_cg(cg)
+      , m_vertex_map(vertex_map)
+      , m_callee_map(callee_map)
+      , m_from(crab::cfg::cfg_hasher<CFG>::hash(from)) { 
     }
           
     void visit(callsite_t& cs) { 
@@ -145,32 +151,30 @@ class call_graph: boost::noncopyable {
 
       CRAB_LOG("cg", crab::outs() << "Visiting call site" << cs << "\n";);
 
-      if (it_from == m_vertex_map.end())
-	{              
-	  CRAB_LOG("cg", crab::outs() << "Not found caller \n";);
-	  return;
-	}
+      if (it_from == m_vertex_map.end()) {
+	CRAB_LOG("cg", crab::outs() << "Not found caller \n";);
+	return;
+      }
 
-      if (it_to == m_vertex_map.end())
-	{
-	  CRAB_LOG("cg", crab::outs() << "Not found callee \n";);
-	  return;
-	}
-            
+      if (it_to == m_vertex_map.end()) {
+	CRAB_LOG("cg", crab::outs() << "Not found callee \n";);
+	return;
+      }
+      
       auto res = add_edge(it_from->second, it_to->second, m_cg);
-      if (res.second)
+      if (res.second) {
 	CRAB_LOG("cg",
 		 crab::outs() << "Added cg edge " <<  it_from->second 
-		 << " --> " <<  it_to->second;); 
-                                 
+		 << " --> " <<  it_to->second;);
+	
+	m_callee_map.insert({&cs, m_cg[it_to->second].func});
+      }
     }
   };
                   
   struct mk_node : 
-    public std::unary_function < vertex_descriptor_t, cg_node > {
-
+    public std::unary_function< vertex_descriptor_t, cg_node > {
     cg_t* _cg;
-          
     mk_node(): _cg(nullptr) { }
     mk_node(cg_t *cg): _cg(cg) { }
     cg_node& operator()(const vertex_descriptor_t& v) const { 
@@ -180,10 +184,8 @@ class call_graph: boost::noncopyable {
   };
         
   struct mk_edge :  
-    public std::unary_function < edge_descriptor_t, cg_edge<cg_node> > {
-
+    public std::unary_function< edge_descriptor_t, cg_edge<cg_node> > {
     cg_t* _cg;
-          
     mk_edge(): _cg(nullptr) {}
     mk_edge(cg_t *cg): _cg(cg) { }
     cg_edge<cg_node> operator()(const edge_descriptor_t& e) const { 
@@ -198,15 +200,24 @@ class call_graph: boost::noncopyable {
 public: 
 
   typedef cg_node node_t;
-  typedef cg_edge <node_t> edge_t;
+  typedef cg_edge<node_t> edge_t;  
   typedef boost::transform_iterator<mk_node, vertex_iterator> node_iterator; 
   typedef boost::transform_iterator<mk_edge, in_edge_iterator> pred_iterator; 
-  typedef boost::transform_iterator<mk_edge, out_edge_iterator> succ_iterator; 
+  typedef boost::transform_iterator<mk_edge, out_edge_iterator> succ_iterator;
 
+  typedef typename node_t::cfg_t cfg_t;  
+  typedef typename stmt_visitor_t::callsite_t callsite_t;
+  typedef typename cfg_t::fdecl_t fdecl_t;  
+  
 private:
 
   // call graph
   std::shared_ptr<cg_t> m_cg;
+  // map from callsite to callee's CFG
+  callee_map_t m_callee_map;
+  
+  //// INTERNAL STATE USED DURING CG CONSTRUCTION
+  
   // map hashed values to internal BGL vertex descriptor
   vertex_map_t m_vertex_map;
   // map cg_node to internal BGL vertex descriptor
@@ -233,9 +244,9 @@ private:
             
       size_t k = crab::cfg::cfg_hasher<CFG>::hash(*decl_opt);
       vertex_descriptor_t v = add_vertex(*m_cg);
-      m_vertex_map.insert(std::make_pair(k,v));
+      m_vertex_map.insert({k,v});
       node_t f(cfg, m_id++);
-      m_node_vertex_id_map.insert(std::make_pair(f, v));
+      m_node_vertex_id_map.insert({f, v});
       (*m_cg)[v].func = f;
 
       CRAB_LOG("cg", 
@@ -248,15 +259,14 @@ private:
     for (auto cfg: boost::make_iterator_range(I,E)) {
       auto decl_opt = cfg.get_func_decl();
       assert(decl_opt);
-            
-      for (auto const &bb : boost::make_iterator_range(cfg.begin(),
-						       cfg.end())) { 
-	mk_edge_vis vis(*m_cg, m_vertex_map, *decl_opt);
-	for (auto it = bb.begin(); it != bb.end(); ++it)
+      for (auto const &bb :
+	     boost::make_iterator_range(cfg.begin(), cfg.end())) { 
+	mk_edge_vis vis(*m_cg, m_vertex_map, m_callee_map, *decl_opt);
+	for (auto it = bb.begin(); it != bb.end(); ++it) {
 	  it->accept(&vis);
+	}
       }
     }
-
 
     if (::crab::CrabSanityCheckFlag) {
       // check each callsite has a corresponding function
@@ -265,8 +275,6 @@ private:
 	for (auto &bb: boost::make_iterator_range(cfg.begin(), cfg.end())) {
 	  for (auto &s: boost::make_iterator_range(bb.begin(), bb.end())) {
 	    if (s.is_callsite()) {
-	      //typedef typename CFG::basic_block_t::statement_t statement_t;
-	      typedef typename CFG::basic_block_t::callsite_t callsite_t;
 	      auto cs = static_cast<callsite_t*>(&s);
 	      size_t hcs = crab::cfg::cfg_hasher<CFG>::hash(*cs);
 	      if (m_vertex_map.find(hcs) == m_vertex_map.end()) {
@@ -278,20 +286,7 @@ private:
       }
     }
   }
-
-  // call_graph(const call_graph& o)
-  //     : m_cg(o.m_cg), // shallow copy
-  //       m_vertex_map(o.m_vertex_map),
-  //       m_node_vertex_id_map(o.m_node_vertex_id_map),
-  //       m_id(o.m_id) { }
-
-  // call_graph(call_graph &&o)
-  //     : m_cg(std::move(o.m_cg)),
-  //       m_vertex_map(std::move(o.m_vertex_map)),
-  //       m_node_vertex_id_map(std::move(o.m_node_vertex_id_map)),
-  //       m_id(o.m_id) { }
-              
-
+                
 public:
         
   call_graph(std::vector<CFG>& cfgs)
@@ -305,6 +300,45 @@ public:
     build_call_graph(I,E);
   }
 
+  // Check type consistency between function declaration and callsite.
+  void type_check() const {
+    for (auto const& kv: m_callee_map) {
+      CFG callee_cfg = kv.second.get_cfg();
+      if (!callee_cfg.get_func_decl()) {
+	CRAB_ERROR("CFG must be wrapped into a function (i.e., function declaration not found)");
+      }
+      
+      const callsite_t& cs = *kv.first;
+      fdecl_t fdecl = *(callee_cfg.get_func_decl());
+      
+      if (fdecl.get_num_inputs() != cs.get_num_args()) {
+	crab::errs() << "Callsite: " << cs << "\n";
+	crab::errs() << "Function declaration: " << fdecl << "\n";
+	crab::errs() << callee_cfg << "\n";
+	CRAB_ERROR("Mismatch between number of callsite and function parameters");
+      }
+      if (fdecl.get_num_outputs() != cs.get_lhs().size()) {
+	crab::errs() << "Callsite: " << cs << "\n";
+	crab::errs() << "Function declaration: " << fdecl << "\n";		
+	CRAB_ERROR("Mismatch between number of callsite and function return values");
+      }
+      for (unsigned i=0; i < cs.get_num_args(); i++){
+	if (fdecl.get_input_type(i) != cs.get_arg_type(i)) {
+	  crab::errs() << "Callsite: " << cs << "\n";
+	  crab::errs() << "Function declaration: " << fdecl << "\n";	
+	  CRAB_ERROR("Mismatch between type of callsite and function parameter");
+	}
+      }
+      for (unsigned i=0; i < cs.get_lhs().size(); i++){
+	if (fdecl.get_output_type(i) != cs.get_lhs()[i].get_type()) {
+	  crab::errs() << "Callsite: " << cs << "\n";
+	  crab::errs() << "Function declaration: " << fdecl << "\n";		  
+	  CRAB_ERROR("Mismatch between type of callsite and function return value");
+	}
+      }
+    }
+  }
+  
   node_t entry() const {
     // Any node without incoming edges should be considered an entry
     // point. In addition, if all nodes have some incoming edges then
@@ -350,6 +384,16 @@ public:
     return out;
   }
 
+  bool has_callee(callsite_t& cs) const {
+    return m_callee_map.find(&cs) != m_callee_map.end();
+  }
+  
+  node_t get_callee(callsite_t& cs) const {
+    auto it = m_callee_map.find(&cs);
+    assert(it != m_callee_map.end());
+    return it->second;
+  }
+  
   std::pair<node_iterator, node_iterator> 
   nodes() const {
     auto p = boost::vertices(*m_cg);
@@ -399,7 +443,7 @@ public:
         
 }; // end class call_graph<CFG>
    
-template <typename CFG>
+template<typename CFG>
 inline crab_os& operator<<(crab_os& o, const call_graph<CFG> &cg) {
   cg.write(o);
   return o;
@@ -407,16 +451,18 @@ inline crab_os& operator<<(crab_os& o, const call_graph<CFG> &cg) {
 
 // A lightweight object that wraps a reference to a call_graph into a
 // copyable, assignable object.
-template <class CG>
+template<class CG>
 class call_graph_ref {
 public:
         
   typedef typename CG::node_t node_t;
+  typedef typename node_t::cfg_t cfg_t;
   typedef typename CG::edge_t edge_t;
   typedef typename CG::node_iterator node_iterator; 
   typedef typename CG::pred_iterator pred_iterator; 
   typedef typename CG::succ_iterator succ_iterator; 
-        
+  typedef typename CG::callsite_t callsite_t;
+  
 private:
 
   boost::optional<std::reference_wrapper<CG> > _ref;
@@ -436,6 +482,11 @@ public:
     return *_ref;
   }
 
+  void type_check() const {
+    assert(_ref);
+    return (*_ref).get().type_check();
+  }
+    
   node_t entry() const {
     assert(_ref);
     return (*_ref).get().entry();
@@ -444,6 +495,16 @@ public:
   std::vector<node_t> entries() const {
     assert(_ref);
     return (*_ref).get().entries();
+  }
+
+  bool has_callee(callsite_t& cs) const {
+    assert(_ref);
+    return (*_ref).get().has_callee(cs);
+  }
+  
+  node_t get_callee(callsite_t& cs) const {
+    assert(_ref);
+    return (*_ref).get().get_callee(cs);
   }
   
   std::pair<node_iterator, node_iterator> 
@@ -485,7 +546,7 @@ public:
   }
 };
   
-template <typename CG>
+template<typename CG>
 inline crab_os& operator<<(crab_os& o, const call_graph_ref<CG> &cg) {
   cg.write(o);
   return o;
