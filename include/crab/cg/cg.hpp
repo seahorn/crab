@@ -309,6 +309,9 @@ public:
       if (!callee_cfg.has_func_decl()) {
 	CRAB_ERROR("CFG must be wrapped into a function (i.e., function declaration not found)");
       }
+      if (!callee_cfg.has_exit()) {
+	CRAB_ERROR("CFG has no exit");
+      }
       
       const callsite_t& cs = *kv.first;
       fdecl_t fdecl = callee_cfg.get_func_decl();
