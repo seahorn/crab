@@ -442,16 +442,11 @@ public:
 	auto fdecl = cfg.get_func_decl();            
 	std::string fun_name = fdecl.get_func_name();
 	if (fun_name != "main" && cfg.has_exit()) {
+
 	  CRAB_VERBOSE_IF(1, get_msg_stream() << "++ Analyzing function "
-			  << fdecl.get_func_name() << "\n";);
-	  // --- run the analysis
-	  auto init_inv = BU_Dom::top();
-	  bu_abs_tr abs_tr(&init_inv, &m_summ_tbl);
-	  bu_analyzer a(cfg, nullptr, &abs_tr, get_live(cfg),
-			m_widening_delay, m_descending_iters, m_jump_set_size);
-	  a.run_forward();
-	      
-	  // --- build the summary
+	        	                      << fdecl.get_func_name() << "\n";);
+	  
+	  // --- collect inputs and outputs
 	  std::vector<variable_t> formals, inputs, outputs;
 	  formals.reserve(fdecl.get_num_inputs() + fdecl.get_num_outputs());
 	  inputs.reserve(fdecl.get_num_inputs());
@@ -465,12 +460,27 @@ public:
 	    outputs.push_back(fdecl.get_output_name(i));
 	    formals.push_back(fdecl.get_output_name(i));
 	  }
+
+	  if (formals.empty()) {
+	    BU_Dom summary;
+	    m_summ_tbl.insert(fdecl, summary, inputs, outputs);
+	    CRAB_VERBOSE_IF(1,
+	    crab::outs() << "\tSkipped summary computation because function "
+			 << "has no parameters.\n";);
+	  } else {
+	    // --- run the analysis
+	    auto init_inv = BU_Dom::top();
+	    bu_abs_tr abs_tr(&init_inv, &m_summ_tbl);
+	    bu_analyzer a(cfg, nullptr, &abs_tr, get_live(cfg),
+			  m_widening_delay, m_descending_iters, m_jump_set_size);
+	    a.run_forward();
 	      
-	  // --- project onto formal parameters and return values
-	  auto inv = a.get_post(cfg.exit());
-	  //crab::CrabStats::count(BU_Dom::getDomainName() + ".count.project");
-	  inv.project(formals);
-	  m_summ_tbl.insert(fdecl, inv, inputs, outputs);
+	    // --- project onto formal parameters and return values
+	    BU_Dom summary = a.get_post(cfg.exit());
+	    //crab::CrabStats::count(BU_Dom::getDomainName() + ".count.project");
+	    summary.project(formals);
+	    m_summ_tbl.insert(fdecl, summary, inputs, outputs);
+	  }	  
 	}
       }
     } 
