@@ -309,9 +309,16 @@ public:
       if (!callee_cfg.has_func_decl()) {
 	CRAB_ERROR("CFG must be wrapped into a function (i.e., function declaration not found)");
       }
-      if (!callee_cfg.has_exit()) {
-	CRAB_ERROR("CFG has no exit");
-      }
+
+      /// Crab only needs a CFG to have an exit block when performing
+      /// inter-procedural or backward analysis. Thus, a CFG without
+      /// exit block is still considered well formed. We delegate to
+      /// the corresponding analysis to deal with a CFG without an
+      /// exit block.
+      
+      // if (!callee_cfg.has_exit()) {
+      //   CRAB_ERROR("CFG has no exit");
+      // }
       
       const callsite_t& cs = *kv.first;
       fdecl_t fdecl = callee_cfg.get_func_decl();

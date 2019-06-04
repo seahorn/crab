@@ -146,8 +146,7 @@ public:
 	reuse_summary(*(this->m_inv), cs, summ);
       }
       else {
-	CRAB_LOG("inter",
-		 crab::outs() << "\tSummary not found for " << cs << "\n");
+	CRAB_WARN("summary not found for ", cs);
 	for (auto vt: cs.get_lhs()) {
 	  *(this->m_inv) -= vt;  // havoc
 	}
@@ -222,7 +221,7 @@ public:
         
       CRAB_LOG("inter", 
 	       crab::outs() << "    Pluging caller context into callee\n"
-	       << "    Summary: " << summ << "\n");
+	                    << "    Summary: " << summ << "\n");
 	
       ///////
       /// Generate the callee context and store it.
@@ -247,7 +246,7 @@ public:
       // --- store the callee context
       CRAB_LOG("inter", 
 	       crab::outs() << "\t\tCallee context stored: " 
-	       << callee_ctx_inv << "\n");
+	                    << callee_ctx_inv << "\n");
 	
       m_call_tbl->insert(cs, callee_ctx_inv);          
         
@@ -273,24 +272,21 @@ public:
       bu_summ_abs_transformer<SumTable>::reuse_summary(caller_ctx_inv, cs, summ);
       CRAB_LOG("inter",
 	       crab::outs() << "\t\tCaller context after plugin summary: " 
-	       << caller_ctx_inv << "\n");
-	
+	                    << caller_ctx_inv << "\n");
+      
       // --- convert back inv to the language of abs_dom_t
       convert_domains(caller_ctx_inv, *(this->m_inv));
       CRAB_LOG("inter",
 	       crab::outs() << "\t\tCaller continuation after " 
-	       <<  cs << "=" <<  *(this->m_inv) << "\n");
+	                    <<  cs << "=" <<  *(this->m_inv) << "\n");
       return;
     } else {
-      // --- no summary found: do nothing
-      if (CrabWarningFlag) {
-	crab::errs() << "CRAB WARNING: no summary found for callsite " << cs << "\n";
-	m_sum_tbl->write(crab::errs());
-      }
+      // --- no summary found: havoc output variables
+      CRAB_WARN("No summary found during top-down pass for ", cs);
     }
-        
-    // We could not reuse a summary so we just havoc lhs of the call
-    // site.      
+    
+    // We could not reuse a summary or summary not found. We havoc
+    // output variables of the callsite.
     for(auto vt: cs.get_lhs()) {
       *(this->m_inv) -= vt;
     }
@@ -441,11 +437,9 @@ public:
 	assert(cfg.has_func_decl());
 	auto fdecl = cfg.get_func_decl();            
 	std::string fun_name = fdecl.get_func_name();
-	if (fun_name != "main" && cfg.has_exit()) {
-
-	  CRAB_VERBOSE_IF(1, get_msg_stream() << "++ Analyzing function "
-	        	                      << fdecl.get_func_name() << "\n";);
-	  
+	if (fun_name != "main") {
+	  CRAB_VERBOSE_IF(1, get_msg_stream() << "++ Computing summary for "
+	        	                      << fdecl.get_func_name() << "...\n";);
 	  // --- collect inputs and outputs
 	  std::vector<variable_t> formals, inputs, outputs;
 	  formals.reserve(fdecl.get_num_inputs() + fdecl.get_num_outputs());
@@ -461,12 +455,14 @@ public:
 	    formals.push_back(fdecl.get_output_name(i));
 	  }
 
-	  if (formals.empty()) {
+	  if (outputs.empty()) {
 	    BU_Dom summary;
 	    m_summ_tbl.insert(fdecl, summary, inputs, outputs);
-	    CRAB_VERBOSE_IF(1,
-	    crab::outs() << "\tSkipped summary computation because function "
-			 << "has no parameters.\n";);
+	    CRAB_WARN("Skipped summary because function ", fdecl.get_func_name(),
+		      " has no output parameters");
+	  } else if (!cfg.has_exit()) {
+	    CRAB_WARN("Skipped summary because function ", fdecl.get_func_name(),
+		      " has no exit block");
 	  } else {
 	    // --- run the analysis
 	    auto init_inv = BU_Dom::top();
@@ -474,8 +470,8 @@ public:
 	    bu_analyzer a(cfg, nullptr, &abs_tr, get_live(cfg),
 			  m_widening_delay, m_descending_iters, m_jump_set_size);
 	    a.run_forward();
-	      
-	    // --- project onto formal parameters and return values
+	    
+	      // --- project onto formal parameters and return values
 	    BU_Dom summary = a.get_post(cfg.exit());
 	    //crab::CrabStats::count(BU_Dom::getDomainName() + ".count.project");
 	    summary.project(formals);

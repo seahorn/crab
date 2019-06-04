@@ -402,6 +402,11 @@ namespace crab {
 	CRAB_LOG("backward",
 		  crab::outs() << "Initial states=" << init_states << "\n");
 
+	if (!only_forward && !m_cfg.has_exit()) {
+	  CRAB_WARN("cannot run backward analysis because CFG has no exit block");
+	  only_forward = true;
+	}
+	
 	crab::CrabStats::count("CombinedForwardBackward.invocations");
 
 	// maximum number of refinement iterations
