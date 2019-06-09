@@ -209,20 +209,20 @@ namespace ikos {
       }
     }
 
-    template<typename VarMap>
-    boost::optional<linear_expression_t> rename (const VarMap& map) const {
+    template<typename RenamingMap>
+    linear_expression_t rename(const RenamingMap& map) const {
       Number cst(this->_cst);
-      linear_expression_t ren_exp(cst);
+      linear_expression_t new_exp(cst);
       for(auto v : this->variables()) {
         auto const it = map.find(v);
         if (it != map.end()) {
           variable_t v_out ((*it).second);
-          ren_exp = ren_exp + this->operator[](v) * v_out;
-        }
-        else
-          return boost::optional<linear_expression_t>();
+          new_exp = new_exp + this->operator[](v) * v_out;
+        } else {
+	  new_exp = new_exp + this->operator[](v) * v;
+	}
       }
-      return ren_exp;
+      return new_exp;
     }
 
     linear_expression_t operator+(Number n) const {
@@ -735,18 +735,12 @@ namespace ikos {
     
     linear_constraint_t negate() const;
 
-    template<typename VarMap>
-    boost::optional<linear_constraint_t> rename(const VarMap& map) const {
-
-      boost::optional<linear_expression_t> e = this->_expr.rename(map);
-      if (e) {
-        return linear_constraint_t(*e, this->_kind, is_signed());
-      } else {
-        return boost::optional<linear_constraint_t>();
-      }
+    template<typename RenamingMap>
+    linear_constraint_t rename(const RenamingMap& map) const {
+      linear_expression_t e = this->_expr.rename(map);
+      return linear_constraint_t(e, this->_kind, is_signed());
     }
 
-    
     void write(crab::crab_os& o) const {
       if (this->is_contradiction()) {
         o << "false";
