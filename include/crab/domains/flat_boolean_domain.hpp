@@ -974,61 +974,62 @@ namespace crab {
       }
       
       void operator+=(linear_constraint_system_t csts) {
-	#if 1
-	_product += csts;
-	for (auto v: csts.variables()) { _unchanged_vars -= v;}
-	#else
-	// We split between boolean and non-boolean constraints.
-	// 
-	// When this operation is called from the fixpoint iterator
-	// csts only contains non-boolean constraints. However, this
-	// is not necessarily the case when this operation is called
-	// from elsewhere.
-	if (csts.is_true()) return;
-
-	// FIXME: this is a very expensive way of doing it. No need of
-	// evaluating all constraints to figure out boolean
-	// constraints
-	
-	typedef interval_domain<number_t, varname_t> interval_domain_t;
-	typedef typename interval_domain_t::interval_t interval_t;
-	interval_domain_t intervals;
-	intervals += csts;
-	if (intervals.is_bottom()) {
-	  *this = bottom(); // make bottom
+	if (csts.is_true() || csts.is_false()) {
 	  return;
 	}
-
-	// -- extract boolean constraints:
-	for(typename interval_domain_t::iterator it = intervals.begin(),
-	      et = intervals.end(); it!=et; ++it) {
-	  variable_t v = it->first;
-	  interval_t i = it->second;
-	  if (v.is_bool_type()) {
-	    // boolean constraint
-	    if (boost::optional<number_t> opt_i = i.singleton()) {
-	      if (*opt_i == number_t(0)) {
-		_product.first().assume_bool(v, true /*is_negated*/);
-	      } else if (*opt_i == number_t(1)) {
-		_product.first().assume_bool(v, false /*is_negated*/);
-	      } 
-	    } 
-	  }
-	}	
-	// -- extract non-boolean constraints
+	
+	bool all_non_boolean = true;
 	for (const linear_constraint_t& cst: csts) {
 	  auto const& variables = cst.variables();
-	  if (std::all_of(variables.begin(), variables.end(),
-			  [](const variable_t& v) { return !v.is_bool_type();})) {
-	    _product.second() += cst; 
+	  if (std::any_of(variables.begin(), variables.end(),
+			  [](const variable_t& v) { return v.is_bool_type();})) {
+	    all_non_boolean = false;
+	    break;
 	  }
 	}
-	
+
+	if (all_non_boolean) {
+	  /// -- Common case: all constraints are non-boolean.
+	  _product.second() += csts;
+	} else {
+	  /// -- We have both boolean and non-boolean constraints.
+	  
+	  // Normalization ensures that inequality pairs x <= k and x >= k
+	  // are replaced with a single equality x = k, where x always
+	  // appears as positive.
+	  linear_constraint_system_t norm_csts = csts.normalize();
+	  linear_constraint_system_t non_boolean_csts;	  
+	  for (const linear_constraint_t& cst: norm_csts) {
+	    auto const& variables = cst.variables();	    
+	    if (cst.is_equality() &&
+		std::all_of(variables.begin(), variables.end(),
+			    [](const variable_t& v) { return v.is_bool_type();})) {
+	      // boolean component
+	      const linear_expression_t exp = cst.expression();
+	      if (exp.size() == 1) {
+		number_t coef = (*(exp.begin())).first;
+		variable_t var = (*(exp.begin())).second;
+		number_t k = exp.constant();
+		if (coef == number_t(1)) { 
+		  if (k == number_t(0)) {
+		    _product.first().assume_bool(var, true /*is_negated*/);
+		  } else if (k == number_t(1)) {
+		    _product.first().assume_bool(var, false /*is_negated*/);		    
+		  }
+		}
+	      }
+	    } else {
+	      // numerical component
+	      non_boolean_csts += cst;
+	    }
+	  }
+	  _product.second() += non_boolean_csts; 
+	}
+		
 	// update unchanged_vars
 	for (auto v: csts.variables()){
 	    _unchanged_vars -= v;
 	}	  
-	#endif 
       }
       
       void set(variable_t x, interval_t intv)
