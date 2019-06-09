@@ -2565,6 +2565,37 @@ namespace crab {
 	m_outputs = std::move(o.m_outputs);
 	return *this;
       }
+
+      bool operator==(const this_type& o) const {
+	if (m_func_name != o.m_func_name) {
+	  return false;
+	}
+
+	unsigned ninputs = get_num_inputs();
+	unsigned noutputs = get_num_outputs();
+	
+	if (ninputs != o.get_num_inputs()) {
+	  return false;
+	}
+	
+	if (noutputs != o.get_num_outputs()) {
+	  return false;
+	}
+	
+	for (unsigned i=0, e=ninputs; i<e; ++i) {
+	  if (get_input_type(i) != o.get_input_type(i)) {
+	    return false;
+	  }
+	}
+
+	for (unsigned i=0, e=noutputs; i<e; ++i) {
+	  if (get_output_type(i) != o.get_output_type(i)) {
+	    return false;
+	  }
+	}
+
+	return true;
+      }
       
       std::string get_func_name() const
       { return m_func_name; }
@@ -3258,7 +3289,6 @@ namespace crab {
         assert(_ref);
         return (*_ref).get().exit();
       }
-
       
       friend crab_os& operator<<(crab_os &o, const cfg_ref<CFG> &cfg) {
         o << cfg.get();
@@ -3993,8 +4023,7 @@ namespace crab {
       if (!_cfg.has_func_decl()) {
         CRAB_ERROR("cannot hash a cfg because function declaration is missing");
       }
-      auto fdecl = _cfg.get_func_decl();                  
-      return cfg_hasher<cfg<B,V,N>>::hash(fdecl);
+      return cfg_hasher<cfg<B,V,N>>::hash(_cfg.get_func_decl());
     }
 
     template<class CFG>
@@ -4002,8 +4031,7 @@ namespace crab {
       if (!_cfg.has_func_decl()) {
         CRAB_ERROR("cannot hash a cfg because function declaration is missing");
       }
-      auto fdecl = _cfg.get().get_func_decl();            
-      return cfg_hasher<cfg_ref<CFG>>::hash(fdecl);
+      return cfg_hasher<cfg_ref<CFG>>::hash(_cfg.get_func_decl());
     }
 
     template<class CFGRef>
@@ -4011,24 +4039,31 @@ namespace crab {
       if (!_cfg.has_func_decl()) {
         CRAB_ERROR("cannot hash a cfg because function declaration is missing");
       }
-      
-      auto fdecl = _cfg.get().get_func_decl();            
-      return cfg_hasher<cfg_rev<CFGRef>>::hash(fdecl);
+      return cfg_hasher<cfg_rev<CFGRef>>::hash(_cfg.get_func_decl());
     }
 
     template<class B, class V, class N>
     bool operator==(cfg<B,V,N> const& a, cfg<B,V,N> const& b) {
-      return hash_value(a) == hash_value(b);
+      if (!a.has_func_decl() || !b.has_func_decl()) {
+        CRAB_ERROR("cannot call operator== of a cfg because function declaration is missing");
+      }
+      return (a.get_func_decl() == b.get_func_decl());
     }
-
+      
     template<class CFG>
     bool operator==(cfg_ref<CFG> const& a, cfg_ref<CFG> const& b) {
-      return hash_value(a) == hash_value(b);
+      if (!a.has_func_decl() || !b.has_func_decl()) {
+        CRAB_ERROR("cannot call operator== of a cfg because function declaration is missing");
+      }
+      return (a.get_func_decl() == b.get_func_decl());
     }
 
     template<class CFGRef>
     bool operator==(cfg_rev<CFGRef> const& a, cfg_rev<CFGRef> const& b) {
-      return hash_value(a) == hash_value(b);
+      if (!a.has_func_decl() || !b.has_func_decl()) {
+        CRAB_ERROR("cannot call operator== of a cfg because function declaration is missing");
+      }
+      return (a.get_func_decl() == b.get_func_decl());
     }
 
   } // end namespace cfg
