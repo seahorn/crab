@@ -394,12 +394,21 @@ namespace crab {
         Wt unbounded_ubcoeff;
         boost::optional<variable_t> unbounded_lbvar;
         boost::optional<variable_t> unbounded_ubvar;
-	bool overflow;
+	bool underflow, overflow;
 	
         Wt exp_ub = -(ntow::convert(exp.constant(), overflow));
 	if (overflow) {
 	  return;
 	}
+
+	// temporary hack
+	ntow::convert(exp.constant() - 1, underflow);
+	if (underflow) {
+	  // We don't like MIN either because the code will compute
+	  // minus MIN and it will silently overflow.
+	  return;
+	}
+	
         std::vector<std::pair<std::pair<Wt, variable_t>, Wt>> pos_terms, neg_terms;
         for(auto p : exp) {
           Wt coeff(ntow::convert(p.first, overflow));
@@ -1896,11 +1905,11 @@ namespace crab {
                   csts += cst;
                 } else {
 		  if (!only_equalities && g_excl.elem(s, d)) {
-		    linear_constraint_t cst(vd - vs <= g_excl.edge_val(s, d));
+		    linear_constraint_t cst(vd - vs <= number_t(g_excl.edge_val(s, d)));
 		    csts += cst;
 		  }
 		  if (!only_equalities && g_excl.elem(d, s)) {
-		    linear_constraint_t cst(vs - vd <= g_excl.edge_val(d, s));
+		    linear_constraint_t cst(vs - vd <= number_t(g_excl.edge_val(d, s)));
 		    csts += cst;
 		  }
 		}
@@ -1986,28 +1995,27 @@ namespace crab {
 
         SubGraph<graph_t> g_excl(g, 0);
 
-        for(vert_id v : g_excl.verts())
-        {
+        for(vert_id v : g_excl.verts()) {
           if(!rev_map[v])
             continue;
           if(g.elem(v, 0))
-            csts += linear_constraint_t(linear_expression_t(*rev_map[v]) >= -g.edge_val(v, 0));
+            csts += linear_constraint_t(
+			 linear_expression_t(*rev_map[v]) >= -number_t(g.edge_val(v, 0)));
           if(g.elem(0, v))
-            csts += linear_constraint_t(linear_expression_t(*rev_map[v]) <= g.edge_val(0, v));
+            csts += linear_constraint_t(
+			 linear_expression_t(*rev_map[v]) <= number_t(g.edge_val(0, v)));
         }
 
-        for(vert_id s : g_excl.verts())
-        {
+        for(vert_id s : g_excl.verts()) {
           if(!rev_map[s])
             continue;
           variable_t vs = *rev_map[s];
-          for(vert_id d : g_excl.succs(s))
-          {
+          for(vert_id d : g_excl.succs(s)) {
             if(!rev_map[d])
               continue;
             variable_t vd = *rev_map[d];
-            csts += linear_constraint_t(linear_expression_t(vd) - linear_expression_t(vs) <=
-					linear_expression_t(g_excl.edge_val(s, d)));
+            csts += linear_constraint_t(vd - vs <= number_t(g_excl.edge_val(s, d)));
+					
           }
         }
 
