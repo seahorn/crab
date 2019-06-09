@@ -49,6 +49,10 @@
 #include <crab/common/types.hpp>
 #include <crab/domains/patricia_trees.hpp>
 
+#include <unordered_set>
+#include <unordered_map>
+#include <vector>
+
 namespace ikos {
   
   template<typename Number, typename VariableName>
@@ -371,9 +375,38 @@ namespace ikos {
 			  
   template<typename Number, typename VariableName>
   inline std::size_t hash_value(const linear_expression<Number,VariableName>& e) {
-    return e.hash ();
+    return e.hash();
   }
 
+
+  template<typename Number, typename VariableName>
+  struct linear_expression_hasher {
+    size_t operator()(const linear_expression<Number, VariableName>&e) const {
+      return e.hash();
+    }
+  };
+
+  template<typename Number, typename VariableName>
+  struct linear_expression_equal {
+    bool operator()(const linear_expression<Number, VariableName>&e1,
+		    const linear_expression<Number, VariableName>&e2) const {
+      return e1.equal(e2);
+    }
+  };
+
+  template<typename Number, typename VariableName>
+  using linear_expression_unordered_set =
+	    std::unordered_set<linear_expression<Number,VariableName>,
+			       linear_expression_hasher<Number, VariableName>,
+			       linear_expression_equal<Number,VariableName>>;
+
+  template<typename Number, typename VariableName, typename Value>
+  using linear_expression_unordered_map =
+	    std::unordered_map<linear_expression<Number, VariableName>,
+			       Value,
+			       linear_expression_hasher<Number,VariableName>,
+			       linear_expression_equal<Number,VariableName>>;
+			       
   template<typename Number, typename VariableName>
   inline linear_expression<Number, VariableName> 
   operator*(Number n, variable<Number, VariableName> x) {
@@ -1385,6 +1418,7 @@ namespace ikos {
   public:
     typedef Number number_t;
     typedef VariableName varname_t;
+    typedef linear_expression<Number, VariableName> linear_expression_t;    
     typedef linear_constraint<Number, VariableName> linear_constraint_t;
     typedef linear_constraint_system<Number, VariableName> linear_constraint_system_t;
     typedef variable<Number, VariableName> variable_t;
@@ -1441,6 +1475,52 @@ namespace ikos {
       r.operator+=(s);
       r.operator+=(*this);
       return r;
+    }
+
+    /**
+       Replace pairs e<=0 and -e<=0 with e==0
+    **/
+    linear_constraint_system_t normalize() const {
+      linear_expression_unordered_set<number_t, varname_t> expr_set;
+      linear_expression_unordered_map<number_t, varname_t, unsigned> index_map;
+      std::vector<bool> toremove(_csts.size(), false); // indexes to be removed
+      linear_constraint_system_t out;
+      
+      for(unsigned i=0,e=_csts.size(); i<e; ++i) {
+	if (_csts[i].is_inequality()) {
+	  linear_expression_t exp = _csts[i].expression();
+	  if (expr_set.find(-exp) == expr_set.end()) {
+	    // remember the index and the expression
+	    index_map.insert({exp,i});
+	    expr_set.insert(exp);
+	  } else {
+	    // we found exp<=0 and -exp<= 0
+	    unsigned j = index_map[-exp];
+	    if (_csts[i].is_signed() == _csts[j].is_signed()) {
+	      toremove[i] = true;	      
+	      toremove[j] = true;
+	      bool insert_pos = true;
+	      if (exp.size() == 1 && (*(exp.begin())).first < 0) {
+		// unary equality: we choose the one with the positive position.
+		insert_pos = false;
+	      }
+	      if (!insert_pos) {
+		out += linear_constraint_t(-exp, linear_constraint_t::EQUALITY);
+	      } else {
+		out += linear_constraint_t(exp, linear_constraint_t::EQUALITY);
+	      }
+	    }
+	  }
+	}
+      }
+
+      for(unsigned i=0,e=_csts.size(); i<e; ++i) {
+	if (!toremove[i])  {
+	  out += _csts[i];
+	}
+      }
+
+      return out;
     }
 
     const_iterator begin() const { return _csts.begin(); }
