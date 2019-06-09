@@ -155,22 +155,40 @@ public:
   }
 }; 
 
-/// Conversion between domains
+/// Conversion between top-down and bottom-up domains.
 template<typename Domain>
 inline void convert_domains(Domain from, Domain& to) { to = from; }
 
 template<typename Domain1, typename Domain2>
 inline void convert_domains(Domain1 from, Domain2& to) {
+  if (from.is_bottom()) {
+    to.set_to_bottom();
+    return;
+  }
+  
   CRAB_LOG("inter",
 	   crab::outs() << "Converting from "
 	                << Domain1::getDomainName() << " to "
 	                << Domain2::getDomainName() << " might lose precision if "
 	                << Domain1::getDomainName() << " is more precise than "
 	                << Domain2::getDomainName() << "\n");
-	     
+  
+  bool pre_bot = false;
+  if (::crab::CrabSanityCheckFlag) {
+    pre_bot = from.is_bottom();
+  }
+
   for (auto cst : from.to_linear_constraint_system()) {
     to += cst;
   }
+  
+  if (::crab::CrabSanityCheckFlag) {
+    bool post_bot = to.is_bottom();
+    if (!(pre_bot || !post_bot)) {
+      CRAB_ERROR("Invariant became bottom after conversion between domains");
+    }
+  }
+  
 }
 
 /**
@@ -247,7 +265,7 @@ public:
       CRAB_LOG("inter", 
 	       crab::outs() << "\t\tCallee context stored: " 
 	                    << callee_ctx_inv << "\n");
-	
+
       m_call_tbl->insert(cs, callee_ctx_inv);          
         
       /////
@@ -522,6 +540,11 @@ public:
 		 crab::outs() << "    Starting analysis of "
 		 << fdecl <<  " with " << init_inv << "\n");
 
+	if (init_inv.is_bottom()) {
+	  crab::outs() << "Top-down analysis for "
+		       << fdecl.get_func_name()
+		       << " started with bottom (i.e., dead function).\n";
+	}
 	auto abs_tr = boost::make_shared<td_abs_tr>(&init_inv, &m_summ_tbl, &m_call_tbl);
 	auto a = boost::make_shared<td_analyzer>(cfg, nullptr, &*abs_tr, get_live(cfg),
 						 m_widening_delay,
