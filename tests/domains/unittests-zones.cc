@@ -74,6 +74,55 @@ int main (int argc, char** argv )
     z_dbm_domain_t dbm3 = dbm2 & dbm1;
     crab::outs() << "DBM1 & DBM2=" << dbm3 << "\n";
   }
+
+  { // linear constraints normalization (should not be here)
+    typedef ikos::linear_constraint_system<ikos::z_number, varname_t>
+      linear_constraint_system_t;
+
+    z_var x(vfac["x"], crab::INT_TYPE, 32);
+    z_var y(vfac["y"], crab::INT_TYPE, 32);
+    z_var z(vfac["z"], crab::INT_TYPE, 32);
+    z_var w(vfac["w"], crab::INT_TYPE, 32);
+    z_var v(vfac["v"], crab::INT_TYPE, 32);    
+    
+    linear_constraint_system_t csts;
+    csts += z_lin_cst_t(x <= 8);
+    csts += z_lin_cst_t(y >= 5);
+    csts += z_lin_cst_t(y <= 6);
+    csts += z_lin_cst_t(x >= 8);
+    csts += z_lin_cst_t(v >= 9888);    
+    csts += z_lin_cst_t(z == 10);
+    csts += z_lin_cst_t(w <= 0);
+    csts += z_lin_cst_t(v <= 9888);        
+    crab::outs() << "Before normalize constraints " << csts << "\n";
+    crab::outs() << "After normalize constraints " << csts.normalize() << "\n";    
+  }
+  
+  { // overflow cases with zones domain
+    typedef SplitDBM<ikos::z_number,
+		     varname_t,
+		     DBM_impl::DefaultParams<ikos::z_number,
+					     DBM_impl::GraphRep::ss>>
+      SplitDBM_t;
+    
+    z_var x(vfac["x"], crab::INT_TYPE, 32);
+
+    SplitDBM_t d1, d2;    
+    z_lin_cst_t c1(x == z_number("-9223372036854775808"));
+    crab::outs () << "Adding constraint 1 " << c1 << "\n";
+    d1 += c1;
+    crab::outs() << "Dom1=" << d1 << "\n";
+    auto csts1 = d1.to_linear_constraint_system();
+    crab::outs() << "Csts1=" << csts1 << "\n";
+    /////////////////////////
+    z_lin_cst_t c2(x == z_number("-9223372036854775807"));
+    crab::outs () << "Adding constraint 2 " << c2 << "\n";
+    d2 += c2;
+    crab::outs() << "Dom2=" << d2 << "\n";
+    auto csts2 = d2.to_linear_constraint_system();
+    crab::outs() << "Csts2=" << csts2 << "\n";
+    
+  }
   
   return 0;
 }

@@ -3788,6 +3788,8 @@ Thresholds per loop
 loop2_header={-oo,0,9,161,+oo}
 loop1_header={-oo,-1,60,+oo}
 
+Before normalize constraints {x <= 8; -y <= -5; y <= 6; -x <= -8; -v <= -9888; z = 10; w <= 0; v <= 9888}
+After normalize constraints {x = 8; v = 9888; -y <= -5; y <= 6; z = 10; w <= 0}
 {A -> [0, +oo], x -> [0, 0], x-A<=0}
 Before x != 0: {x -> [0, 10], y -> [0, 10], z -> [0, 10], y-x<=0, z-x<=0, x-y<=0, z-y<=0, x-z<=0, y-z<=0}
 After x != 0: {x -> [1, 10], y -> [1, 10], z -> [1, 10], y-x<=0, z-x<=0, x-y<=0, z-y<=0, x-z<=0, y-z<=0}
@@ -3796,6 +3798,14 @@ After x != 10: {x -> [0, 9], y -> [0, 9], z -> [0, 9], y-x<=0, z-x<=0, x-y<=0, z
 DBM1={x -> [1, 1], y -> [1, 1], y-x<=0, x-y<=0}
 DBM2={y -> [1, +oo]}
 DBM1 & DBM2={y -> [1, 1], x -> [1, 1], x-y<=0, y-x<=0}
+Before normalize constraints {x <= 8; -y <= -5; y <= 6; -x <= -8; -v <= -9888; z = 10; w <= 0; v <= 9888}
+After normalize constraints {x = 8; v = 9888; -y <= -5; y <= 6; z = 10; w <= 0}
+Adding constraint 1 x = -9223372036854775808
+Dom1={}
+Csts1={}
+Adding constraint 2 x = -9223372036854775807
+Dom2={x -> [-9223372036854775807, -9223372036854775807]}
+Csts2={-x <= 9223372036854775807; x <= -9223372036854775807}
 Bitwidth=3
 5+7=4
 5-7=6
