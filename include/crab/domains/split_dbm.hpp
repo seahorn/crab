@@ -1615,6 +1615,7 @@ namespace crab {
 	      bool overflow;
 	      Wt e_val = eval_expression(e, overflow);
 	      if (overflow) {
+		operator-=(x);
 		return;
 	      }
 	      // Allocate a new vertex for x
