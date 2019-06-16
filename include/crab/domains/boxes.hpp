@@ -162,6 +162,29 @@ namespace crab {
 	void array_assign(variable_t lhs, variable_t rhs)
 	{ CRAB_ERROR(LDD_NOT_FOUND); }
 	
+	void backward_array_init(variable_t a, linear_expression_t elem_size,
+				 linear_expression_t lb_idx, linear_expression_t ub_idx, 
+				 linear_expression_t val, boxes_domain_t invariant)
+	{ CRAB_ERROR(LDD_NOT_FOUND); }
+	
+	void backward_array_load(variable_t lhs,
+				 variable_t a, linear_expression_t elem_size,
+				 linear_expression_t i, boxes_domain_t invariant)
+	{ CRAB_ERROR(LDD_NOT_FOUND); }
+	
+	void backward_array_store(variable_t a, linear_expression_t elem_size,
+				  linear_expression_t i, linear_expression_t v, 
+				  bool is_singleton, boxes_domain_t invariant)
+	{ CRAB_ERROR(LDD_NOT_FOUND); }
+
+	void backward_array_store_range(variable_t a, linear_expression_t elem_size,
+					linear_expression_t i, linear_expression_t j,
+					linear_expression_t v, boxes_domain_t invariant)
+	{ CRAB_ERROR(LDD_NOT_FOUND); }
+	
+	void backward_array_assign(variable_t lhs, variable_t rhs, boxes_domain_t invariant)
+	{ CRAB_ERROR(LDD_NOT_FOUND); }
+	       	
 	void pointer_load(variable_t lhs, variable_t rhs)
 	{ CRAB_ERROR(LDD_NOT_FOUND); }
 	
@@ -1640,7 +1663,14 @@ namespace crab {
 	  CRAB_WARN("boxes backward boolean apply not implemented");
 	}
 
-	/* Begin unimplemented operations */
+	/*
+	  Begin unimplemented operations.
+	  
+	  boxes_domain implements standard abstract operations of a
+	  numerical domain plus boolean operations.  The
+	  implementation of array and pointer operations is empty
+	  because they should never be called.
+	*/
 	// array operations
 	void array_init(variable_t a, linear_expression_t elem_size,
 			linear_expression_t lb_idx, linear_expression_t ub_idx, 
@@ -1655,6 +1685,20 @@ namespace crab {
 			       linear_expression_t i, linear_expression_t j,
 			       linear_expression_t v) {}
 	void array_assign(variable_t lhs, variable_t rhs) {}
+	// backward array operations
+	void backward_array_init(variable_t a, linear_expression_t elem_size,
+				 linear_expression_t lb_idx, linear_expression_t ub_idx, 
+				 linear_expression_t val, boxes_domain_t invariant) {}
+	void backward_array_load(variable_t lhs,
+				 variable_t a, linear_expression_t elem_size,
+				 linear_expression_t i, boxes_domain_t invariant) {}
+	void backward_array_store(variable_t a, linear_expression_t elem_size,
+				  linear_expression_t i, linear_expression_t v, 
+				  bool is_singleton, boxes_domain_t invariant) {}
+	void backward_array_store_range(variable_t a, linear_expression_t elem_size,
+					linear_expression_t i, linear_expression_t j,
+					linear_expression_t v, boxes_domain_t invariant) {}
+	void backward_array_assign(variable_t lhs, variable_t rhs, boxes_domain_t invariant) {}
 	// pointer operations
 	void pointer_load(variable_t lhs, variable_t rhs)  {}
 	void pointer_store(variable_t lhs, variable_t rhs) {} 
@@ -1904,6 +1948,20 @@ namespace crab {
 			      linear_expression_t i, linear_expression_t j,
 			      linear_expression_t v) {}
        void array_assign(variable_t lhs, variable_t rhs) {}
+       // backward array operations
+       void backward_array_init(variable_t a, linear_expression_t elem_size,
+				linear_expression_t lb_idx, linear_expression_t ub_idx, 
+				linear_expression_t val, boxes_domain_t invariant) {}
+       void backward_array_load(variable_t lhs,
+				variable_t a, linear_expression_t elem_size,
+				linear_expression_t i, boxes_domain_t invariant) {}
+       void backward_array_store(variable_t a, linear_expression_t elem_size,
+				  linear_expression_t i, linear_expression_t v, 
+				 bool is_singleton, boxes_domain_t invariant) {}
+       void backward_array_store_range(variable_t a, linear_expression_t elem_size,
+				       linear_expression_t i, linear_expression_t j,
+				       linear_expression_t v, boxes_domain_t invariant) {}
+       void backward_array_assign(variable_t lhs, variable_t rhs, boxes_domain_t invariant) {}
        // pointer operations
        void pointer_load(variable_t lhs, variable_t rhs)  {}
        void pointer_store(variable_t lhs, variable_t rhs) {} 

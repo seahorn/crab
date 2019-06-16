@@ -1729,7 +1729,15 @@ namespace crab {
         set(x, xi);
       }
 
-      /* Begin unimplemented operations */
+      /* 
+	 Begin unimplemented operations 
+	 
+	 SparseDBM implements only standard abstract operations of a
+	 numerical domain.  The implementation of boolean, array, or
+	 pointer operations is empty because they should never be
+	 called.
+      */
+      
       // boolean operations
       void assign_bool_cst(variable_t lhs, linear_constraint_t rhs) {}
       void assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs) {}
@@ -1757,6 +1765,20 @@ namespace crab {
 			     linear_expression_t i, linear_expression_t j,
 			     linear_expression_t v) {}      
       void array_assign(variable_t lhs, variable_t rhs) {}
+      // backward array operations
+      void backward_array_init(variable_t a, linear_expression_t elem_size,
+			       linear_expression_t lb_idx, linear_expression_t ub_idx, 
+			       linear_expression_t val, DBM_t invariant) {}      
+      void backward_array_load(variable_t lhs,
+			       variable_t a, linear_expression_t elem_size,
+			       linear_expression_t i, DBM_t invariant) {}
+      void backward_array_store(variable_t a, linear_expression_t elem_size,
+				linear_expression_t i, linear_expression_t v, 
+				bool is_singleton, DBM_t invariant) {}
+      void backward_array_store_range(variable_t a, linear_expression_t elem_size,
+				      linear_expression_t i, linear_expression_t j,
+				      linear_expression_t v, DBM_t invariant) {}    
+      void backward_array_assign(variable_t lhs, variable_t rhs, DBM_t invariant) {}
       // pointer operations
       void pointer_load(variable_t lhs, variable_t rhs)  {}
       void pointer_store(variable_t lhs, variable_t rhs) {} 
@@ -2221,6 +2243,20 @@ namespace crab {
 			     linear_expression_t i, linear_expression_t j,
 			     linear_expression_t v) {}            
       void array_assign(variable_t lhs, variable_t rhs) {}
+      // backward array operations
+      void backward_array_init(variable_t a, linear_expression_t elem_size,
+			       linear_expression_t lb_idx, linear_expression_t ub_idx, 
+			       linear_expression_t val, DBM_t invariant) {}      
+      void backward_array_load(variable_t lhs,
+			       variable_t a, linear_expression_t elem_size,
+			       linear_expression_t i, DBM_t invariant) {}
+      void backward_array_store(variable_t a, linear_expression_t elem_size,
+				linear_expression_t i, linear_expression_t v, 
+				bool is_singleton, DBM_t invariant) {}
+      void backward_array_store_range(variable_t a, linear_expression_t elem_size,
+				      linear_expression_t i, linear_expression_t j,
+				      linear_expression_t v, DBM_t invariant) {}    
+      void backward_array_assign(variable_t lhs, variable_t rhs, DBM_t invariant) {}
       // pointer operations
       void pointer_load(variable_t lhs, variable_t rhs)  {}
       void pointer_store(variable_t lhs, variable_t rhs) {} 

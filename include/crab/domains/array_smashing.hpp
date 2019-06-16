@@ -420,7 +420,33 @@ namespace crab {
             _inv.pointer_assign(lhs, rhs, number_t(0));
 	  }
         }
-        
+
+	// backward array operations
+	void backward_array_init(variable_t a, linear_expression_t elem_size,
+				 linear_expression_t lb_idx, linear_expression_t ub_idx, 
+				 linear_expression_t val, array_smashing_t invariant) {
+	  CRAB_WARN("backward_array_init in array smashing domain not implemented");	  
+	}	
+	void backward_array_load(variable_t lhs,
+				 variable_t a, linear_expression_t elem_size,
+				 linear_expression_t i, array_smashing_t invariant) {
+	  CRAB_WARN("backward_array_load in array smashing domain not implemented"); 
+	  this->operator-=(lhs);
+	}
+	void backward_array_store(variable_t a, linear_expression_t elem_size,
+				  linear_expression_t i, linear_expression_t v, 
+				  bool is_singleton, array_smashing_t invariant) {
+	  CRAB_WARN("backward_array_store in array smashing domain not implemented"); 
+	}
+	void backward_array_store_range(variable_t a, linear_expression_t elem_size,
+					linear_expression_t i, linear_expression_t j,
+					linear_expression_t v, array_smashing_t invariant) {
+	  CRAB_WARN("backward_array_store_range in array smashing domain not implemented");
+	}
+	void backward_array_assign(variable_t lhs, variable_t rhs, array_smashing_t invariant) {
+	  CRAB_WARN("backward_array_assign in array smashing domain not implemented"); 
+	}
+	
         linear_constraint_system_t to_linear_constraint_system(){
           return _inv.to_linear_constraint_system();
         }

@@ -1439,8 +1439,37 @@ namespace crab {
        virtual void array_assign(variable_t lhs, variable_t rhs) override {
 	 // do nothing
        }
+
+       // backward array operations
+       void backward_array_init(variable_t a, linear_expression_t elem_size,
+				linear_expression_t lb_idx, linear_expression_t ub_idx, 
+				linear_expression_t val, term_domain_t invariant) {
+       }      
+       void backward_array_load(variable_t lhs,
+				variable_t a, linear_expression_t elem_size,
+				linear_expression_t i, term_domain_t invariant) {
+	 *this -= lhs;
+       }
+       void backward_array_store(variable_t a, linear_expression_t elem_size,
+				 linear_expression_t i, linear_expression_t v, 
+				 bool is_singleton, term_domain_t invariant) {
+       }
+       void backward_array_store_range(variable_t a, linear_expression_t elem_size,
+				       linear_expression_t i, linear_expression_t j,
+				       linear_expression_t v, term_domain_t invariant) {
+       }    
+       void backward_array_assign(variable_t lhs, variable_t rhs, term_domain_t invariant) {
+       }
        
-       /* Begin unimplemented operations */
+       /* 
+	  Begin unimplemented operations 
+	  
+	  term_domain implements only standard abstract operations of
+	  a numerical domain plus some array operations.  The
+	  implementation of boolean and pointer operations is empty
+	  because they should never be called.
+       */
+       
        // boolean operations
        void assign_bool_cst(variable_t lhs, linear_constraint_t rhs) {}
        void assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs) {}

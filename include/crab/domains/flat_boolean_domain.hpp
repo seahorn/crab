@@ -464,7 +464,14 @@ namespace crab {
       *this = *this & inv;      
     }
 
-    /* Begin unimplemented operations */    
+    /* 
+       Begin unimplemented operations 
+       
+       flat_boolean_domain implements only boolean operations.  The
+       implementation of the rest of operations is empty because they
+       should never be called.
+    */
+    
     // numerical_domains_api
     // XXX: needed for making a reduced product with a numerical domain
     void apply(operation_t op, variable_t x, variable_t y, variable_t z) {}
@@ -504,6 +511,21 @@ namespace crab {
 			   linear_expression_t i, linear_expression_t j,
 			   linear_expression_t v) {}    
     void array_assign(variable_t lhs, variable_t rhs) {}
+    // backward array operations
+    void backward_array_init(variable_t a, linear_expression_t elem_size,
+			     linear_expression_t lb_idx, linear_expression_t ub_idx, 
+			     linear_expression_t val, flat_boolean_domain_t invariant) {}      
+    void backward_array_load(variable_t lhs,
+			     variable_t a, linear_expression_t elem_size,
+			     linear_expression_t i, flat_boolean_domain_t invariant) {}
+    void backward_array_store(variable_t a, linear_expression_t elem_size,
+			      linear_expression_t i, linear_expression_t v, 
+			      bool is_singleton, flat_boolean_domain_t invariant) {}
+    void backward_array_store_range(variable_t a, linear_expression_t elem_size,
+				    linear_expression_t i, linear_expression_t j,
+				    linear_expression_t v, flat_boolean_domain_t invariant) {}
+    void backward_array_assign(variable_t lhs, variable_t rhs,
+			       flat_boolean_domain_t invariant) {}
     // pointer operations
     void pointer_load(variable_t lhs, variable_t rhs)  {}
     void pointer_store(variable_t lhs, variable_t rhs) {} 
@@ -1341,7 +1363,44 @@ namespace crab {
 	
       virtual void array_assign(variable_t lhs, variable_t rhs) override
       { _product.array_assign(lhs, rhs); }
+
+      // backward array operations
       
+      virtual void backward_array_init(variable_t a,
+				       linear_expression_t elem_size,
+				       linear_expression_t lb_idx,
+				       linear_expression_t ub_idx,
+				       linear_expression_t val,
+				       bool_num_domain_t invariant) override
+      { _product.backward_array_init(a, elem_size, lb_idx, ub_idx, val, invariant._product); }
+      
+      virtual void backward_array_load(variable_t lhs,
+				       variable_t a, linear_expression_t elem_size,
+				       linear_expression_t i,
+				       bool_num_domain_t invariant) override {
+	_product.backward_array_load(lhs, a, elem_size, i, invariant._product);
+	if (a.get_type() == ARR_INT_TYPE || a.get_type() == ARR_REAL_TYPE) {
+	  _unchanged_vars -= variable_t(lhs);
+	}
+      }
+      
+      virtual void backward_array_store(variable_t a, linear_expression_t elem_size,
+					linear_expression_t i,
+					linear_expression_t val, 
+					bool is_singleton,
+					bool_num_domain_t invariant) override
+      { _product.backward_array_store(a, elem_size, i, val, is_singleton, invariant._product); }
+
+      virtual void backward_array_store_range(variable_t a, linear_expression_t elem_size,
+					      linear_expression_t i, linear_expression_t j,
+					      linear_expression_t v,
+					      bool_num_domain_t invariant) override
+      { _product.backward_array_store_range(a, elem_size, i, j, v, invariant._product); }
+	
+      virtual void backward_array_assign(variable_t lhs, variable_t rhs,
+					 bool_num_domain_t invariant) override
+      { _product.backward_array_assign(lhs, rhs, invariant._product); }
+            
       // pointer_operators_api
       virtual void pointer_load(variable_t lhs, variable_t rhs) override
       {  _product.pointer_load(lhs, rhs); }

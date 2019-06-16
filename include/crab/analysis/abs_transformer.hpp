@@ -826,12 +826,9 @@ public:
   // the precondition must contain c so forward and backward are the same.
   void exec(assume_t& stmt) {
     CRAB_LOG("backward-tr",
-	     auto csts = stmt.constraint();
-	     crab::outs() << "** assume(" << csts << ")\n"
-	     << "\tPOST=" << *m_pre << "\n");	       
-      
+	     crab::outs() << "** " << stmt << "\n"
+	                  << "\tPOST=" << *m_pre << "\n");	       
     *m_pre += stmt.constraint();
-
     CRAB_LOG("backward-tr",
 	     crab::outs() << "\tPRE=" << *m_pre << "\n");
       
@@ -841,10 +838,8 @@ public:
   void exec(assert_t& stmt) {
     if (!m_ignore_assert) {
       CRAB_LOG("backward-tr",
-	       auto csts = stmt.constraint();
-	       crab::outs() << "** assert(" << csts << ")\n"
-	       << "\tPOST=" << *m_pre << "\n");	       
-	
+	       crab::outs() << "** " << stmt << "\n"
+	                    << "\tPOST=" << *m_pre << "\n");	       
       if (m_good_states) {
 	// similar to assume(c)
 	*m_pre += stmt.constraint();
@@ -879,7 +874,12 @@ public:
 
   void exec(int_cast_t& stmt) {
     abs_dom_t invariant = (*m_invariants)[&stmt];
+    CRAB_LOG("backward-tr",
+	     crab::outs() << "** " << stmt << "\n"
+	                  << "\tPOST=" << *m_pre << "\n");	                     
     m_pre->backward_assign(stmt.dst(), stmt.src(), invariant);
+    CRAB_LOG("backward-tr",
+	     crab::outs() << "\tPRE=" << *m_pre << "\n");    
   }
     
   void exec(bool_assign_cst_t& stmt)
@@ -893,11 +893,19 @@ public:
     
   void exec(bool_assume_t& stmt) {
     // same as forward
+    CRAB_LOG("backward-tr",
+	     crab::outs() << "** " << stmt << "\n"
+	                  << "\tPOST=" << *m_pre << "\n");	                 
     m_pre->assume_bool(stmt.cond(), stmt.is_negated());
+    CRAB_LOG("backward-tr",
+	     crab::outs() << "\tPRE=" << *m_pre << "\n");
   }
     
   void exec(bool_assert_t& stmt) {
     if (!m_ignore_assert) {
+      CRAB_LOG("backward-tr",
+	       crab::outs() << "** " << stmt << "\n"
+	                    << "\tPOST=" << *m_pre << "\n");	             
       if (m_good_states) {
 	// similar to bool_assume(c)
 	m_pre->assume_bool(stmt.cond(), false /*non-negated*/);
@@ -906,16 +914,71 @@ public:
 	error.assume_bool(stmt.cond(), true /*negated*/);
 	*m_pre |= error;
       }
+      CRAB_LOG("backward-tr",
+  	       crab::outs() << "\tPRE=" << *m_pre << "\n");
     }
   }
 
-  void exec(arr_load_t& stmt)
-  { *m_pre -= stmt.lhs(); }
+  void exec(arr_init_t& stmt) {
+    abs_dom_t invariant = (*m_invariants)[&stmt];
+
+    CRAB_LOG("backward-tr",
+	     crab::outs() << "** " << stmt << "\n"
+	                  << "\tFORWARD INV=" << invariant << "\n"	     
+	                  << "\tPOST=" << *m_pre << "\n");	       
+    m_pre->backward_array_init(stmt.array(), stmt.elem_size(),
+			       stmt.lb_index(), stmt.ub_index(), stmt.val(),
+			       invariant);
+    CRAB_LOG("backward-tr",
+	     crab::outs() << "\tPRE=" << *m_pre << "\n");
+  }
+
+  void exec(arr_load_t& stmt) {
+    abs_dom_t invariant = (*m_invariants)[&stmt];
+
+    CRAB_LOG("backward-tr",
+	     crab::outs() << "** " << stmt << "\n"
+	                  << "\tFORWARD INV=" << invariant << "\n"	     
+	                  << "\tPOST=" << *m_pre << "\n");	           
+    m_pre->backward_array_load(stmt.lhs(), stmt.array(), stmt.elem_size(), stmt.index(),
+			       invariant);
+    CRAB_LOG("backward-tr",
+	     crab::outs() << "\tPRE=" << *m_pre << "\n");    
+  }
   
-  // NOT IMPLEMENTED
-  void exec(arr_init_t& stmt) { }
-  void exec(arr_store_t& stmt) { }
-  void exec(arr_assign_t& stmt) { }
+  
+  void exec(arr_store_t& stmt) {
+    abs_dom_t invariant = (*m_invariants)[&stmt];
+    CRAB_LOG("backward-tr",
+	     crab::outs() << "** " << stmt << "\n"
+	                  << "\tFORWARD INV=" << invariant << "\n"
+	                  << "\tPOST=" << *m_pre << "\n");	               
+    if (stmt.lb_index().equal(stmt.ub_index())) {
+      m_pre->backward_array_store(stmt.array(), stmt.elem_size(),
+				  stmt.lb_index(), stmt.value(), stmt.is_singleton(),
+				  invariant);
+    } else {
+      m_pre->backward_array_store_range(stmt.array(), stmt.elem_size(),
+					stmt.lb_index(), stmt.ub_index(), stmt.value(),
+					invariant);	
+    }
+    CRAB_LOG("backward-tr",
+	     crab::outs() << "\tPRE=" << *m_pre << "\n");        
+  }
+  
+  void exec(arr_assign_t& stmt) {
+    abs_dom_t invariant = (*m_invariants)[&stmt];
+    CRAB_LOG("backward-tr",
+	     crab::outs() << "** " << stmt << "\n"
+	                  << "\tFORWARD INV=" << invariant << "\n"
+	                  << "\tPOST=" << *m_pre << "\n");	                   
+    m_pre->backward_array_assign(stmt.lhs(), stmt.rhs(), invariant);
+    CRAB_LOG("backward-tr",
+	     crab::outs() << "\tPRE=" << *m_pre << "\n");            
+  }
+
+
+  // NOT IMPLEMENTED  
   void exec(ptr_null_t& stmt) { }
   void exec(ptr_object_t& stmt) { }
   void exec(ptr_assign_t& stmt) { }

@@ -2492,14 +2492,40 @@ namespace crab {
       virtual void array_store_range(variable_t a, linear_expression_t elem_size,
 				     linear_expression_t i, linear_expression_t j, 
 				     linear_expression_t val) override {
-	CRAB_WARN("array_store_range in array_sparse_graph is not implemented");
+	CRAB_WARN("array_store_range in array_sparse_graph not implemented");
       }
       
       virtual void array_assign(variable_t lhs, variable_t rhs) override {
-	CRAB_WARN("array_assign in array_sparse_graph is not implemented");
+	CRAB_WARN("array_assign in array_sparse_graph not implemented");
       }
       
-    
+      // backward array operations
+      void backward_array_init(variable_t a, linear_expression_t elem_size,
+			       linear_expression_t lb_idx, linear_expression_t ub_idx, 
+			       linear_expression_t val, array_sgraph_domain_t invariant) {
+	CRAB_WARN("backward_array_init in array_sparse_graph domain not implemented");	  
+      }	
+      void backward_array_load(variable_t lhs,
+			       variable_t a, linear_expression_t elem_size,
+			       linear_expression_t i, array_sgraph_domain_t invariant) {
+	CRAB_WARN("backward_array_load in array_sparse_graph domain not implemented"); 
+	this->operator-=(lhs);
+      }
+      void backward_array_store(variable_t a, linear_expression_t elem_size,
+				linear_expression_t i, linear_expression_t v, 
+				  bool is_singleton, array_sgraph_domain_t invariant) {
+	CRAB_WARN("backward_array_store in array_sparse_graph domain not implemented"); 
+      }
+      void backward_array_store_range(variable_t a, linear_expression_t elem_size,
+				      linear_expression_t i, linear_expression_t j,
+				      linear_expression_t v, array_sgraph_domain_t invariant) {
+	CRAB_WARN("backward_array_store_range in array_sparse_graph domain not implemented");
+      }
+      void backward_array_assign(variable_t lhs, variable_t rhs,
+				 array_sgraph_domain_t invariant) {
+	CRAB_WARN("backward_array_assign in array_sparse_graph domain not implemented"); 
+      }
+      
       void write(crab_os& o) {
         #if 1
         NumDom copy_scalar(_scalar);

@@ -1652,7 +1652,6 @@ public:
     return e;
   }
 
-  /* Begin unimplemented operations */
   // backward arithmetic operations
   void backward_assign(variable_t x, linear_expression_t e,
 		       wrapped_interval_domain_t inv) {
@@ -1673,6 +1672,16 @@ public:
     this->operator-=(x);
     CRAB_WARN("Backward apply for wrapped intervals not implemented");    
   }
+
+  /* 
+     Begin unimplemented operations.
+     
+     wrapped_interval_domain implements only standard abstract operations of a
+     numerical domain.  The implementation of boolean, array, or
+     pointer operations is empty because they should never be
+     called.
+  */
+  
   // boolean operations
   void assign_bool_cst(variable_t lhs, linear_constraint_t rhs) {}
   void assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs) {}
@@ -1680,21 +1689,12 @@ public:
   void assume_bool(variable_t v, bool is_negated) {}
   // backward boolean operations
   void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
-				wrapped_interval_domain_t invariant){
-    this->operator-=(lhs);
-    CRAB_WARN("Backward boolean assign for wrapped intervals not implemented");
-  }
+				wrapped_interval_domain_t invariant){}
   void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
-				wrapped_interval_domain_t invariant) {
-    this->operator-=(lhs);
-    CRAB_WARN("Backward boolean assign for wrapped intervals not implemented");
-  }
+				wrapped_interval_domain_t invariant) {}
   void backward_apply_binary_bool(bool_operation_t op,
 				  variable_t x,variable_t y,variable_t z,
-				  wrapped_interval_domain_t invariant) {
-    this->operator-=(x);
-    CRAB_WARN("Backward boolean apply for wrapped intervals not implemented");
-  }
+				  wrapped_interval_domain_t invariant) {}
   // array operations
   void array_init(variable_t a, linear_expression_t elem_size,
 		  linear_expression_t lb_idx, linear_expression_t ub_idx, 
@@ -1709,6 +1709,22 @@ public:
 			 linear_expression_t i, linear_expression_t j,
 			 linear_expression_t v) {}  
   void array_assign(variable_t lhs, variable_t rhs) {}
+  // array operations
+  void backward_array_init(variable_t a, linear_expression_t elem_size,
+			   linear_expression_t lb_idx, linear_expression_t ub_idx, 
+			   linear_expression_t val, wrapped_interval_domain_t invariant) {}      
+  void backward_array_load(variable_t lhs,
+			   variable_t a, linear_expression_t elem_size,
+			   linear_expression_t i, wrapped_interval_domain_t invariant) {}
+  void backward_array_store(variable_t a, linear_expression_t elem_size,
+			    linear_expression_t i, linear_expression_t v, 
+			    bool is_singleton, wrapped_interval_domain_t invariant) {}
+  void backward_array_store_range(variable_t a, linear_expression_t elem_size,
+				  linear_expression_t i, linear_expression_t j,
+				  linear_expression_t v,
+				  wrapped_interval_domain_t invariant) {}  
+  void backward_array_assign(variable_t lhs, variable_t rhs,
+			     wrapped_interval_domain_t invariant) {}  
   // pointer operations
   void pointer_load(variable_t lhs, variable_t rhs)  {}
   void pointer_store(variable_t lhs, variable_t rhs) {} 
@@ -2456,6 +2472,20 @@ public:
 			 linear_expression_t i, linear_expression_t j,
 			 linear_expression_t v) {}  
   void array_assign(variable_t lhs, variable_t rhs) {}
+  // array operations
+  void backward_array_init(variable_t a, linear_expression_t elem_size,
+			   linear_expression_t lb_idx, linear_expression_t ub_idx, 
+			   linear_expression_t val, this_type invariant) {}      
+  void backward_array_load(variable_t lhs,
+			   variable_t a, linear_expression_t elem_size,
+			   linear_expression_t i, this_type invariant) {}
+  void backward_array_store(variable_t a, linear_expression_t elem_size,
+			    linear_expression_t i, linear_expression_t v, 
+			    bool is_singleton, this_type invariant) {}
+  void backward_array_store_range(variable_t a, linear_expression_t elem_size,
+				  linear_expression_t i, linear_expression_t j,
+				  linear_expression_t v, this_type invariant) {}  
+  void backward_array_assign(variable_t lhs, variable_t rhs, this_type invariant) {}  
   // pointer operations
   void pointer_load(variable_t lhs, variable_t rhs)  {}
   void pointer_store(variable_t lhs, variable_t rhs) {} 
@@ -3160,7 +3190,28 @@ public:
   
   virtual void array_assign(variable_t lhs, variable_t rhs) override
   { _product.array_assign(lhs, rhs); }
-  
+
+  // backward array operations
+  virtual void backward_array_init(variable_t a, linear_expression_t elem_size,
+				   linear_expression_t lb_idx,
+				   linear_expression_t ub_idx,
+				   linear_expression_t val,
+				   wrapped_numerical_domain_t invariant) override {}
+  virtual void backward_array_load(variable_t lhs, variable_t a, linear_expression_t elem_size,
+				   linear_expression_t i,
+				   wrapped_numerical_domain_t invariant) override {}
+  virtual void backward_array_store(variable_t a,
+				    linear_expression_t elem_size,
+				    linear_expression_t i,
+				    linear_expression_t val, 
+				    bool is_singleton,
+				    wrapped_numerical_domain_t invariant) override {}
+  virtual void backward_array_store_range(variable_t a, linear_expression_t elem_size,
+					  linear_expression_t i, linear_expression_t j,
+					  linear_expression_t v,
+					  wrapped_numerical_domain_t invariant) override {}
+  virtual void backward_array_assign(variable_t lhs, variable_t rhs,
+				     wrapped_numerical_domain_t invariant) override {}
   // pointer operations
   virtual void pointer_load(variable_t lhs, variable_t rhs) override
   {  _product.pointer_load(lhs, rhs); }

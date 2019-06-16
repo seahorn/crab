@@ -426,6 +426,64 @@ namespace crab {
         this->_product.second().array_assign(lhs, rhs);
         this->reduce();      
       }
+
+      // backward array operations
+
+      virtual void backward_array_init(variable_t a, linear_expression_t elem_size,
+				       linear_expression_t lb_idx,
+				       linear_expression_t ub_idx, 
+				       linear_expression_t val,
+				       domain_product2_t invariant) override {
+        this->_product.first().
+	  backward_array_init(a, elem_size, lb_idx, ub_idx, val, invariant.first());
+        this->_product.second().
+	  backward_array_init(a, elem_size,  lb_idx, ub_idx, val, invariant.second());
+        this->reduce();
+      }
+      
+      virtual void backward_array_load(variable_t lhs,
+				       variable_t a, linear_expression_t elem_size,
+				       linear_expression_t i,
+				       domain_product2_t invariant) override {
+	
+        this->_product.first().
+	  backward_array_load(lhs, a, elem_size, i, invariant.first());
+        this->_product.second().
+	  backward_array_load(lhs, a, elem_size, i, invariant.second());
+        this->reduce();
+      }
+      
+      virtual void backward_array_store(variable_t a, linear_expression_t elem_size,
+					linear_expression_t i,
+					linear_expression_t val, 
+					bool is_singleton,
+					domain_product2_t invariant) override {
+        this->_product.first().
+	  backward_array_store(a, elem_size, i, val, is_singleton, invariant.first());
+        this->_product.second().
+	  backward_array_store(a, elem_size, i, val, is_singleton, invariant.second());
+        this->reduce();
+      }
+
+      virtual void backward_array_store_range(variable_t a, linear_expression_t elem_size,
+					      linear_expression_t i, linear_expression_t j,
+					      linear_expression_t val,
+					      domain_product2_t invariant) override {
+        this->_product.first().
+	  backward_array_store_range(a, elem_size, i, j, val, invariant.first());
+        this->_product.second().
+	  backward_array_store_range(a, elem_size, i, j, val, invariant.second());
+        this->reduce();
+      }
+      
+      virtual void backward_array_assign(variable_t lhs, variable_t rhs,
+					 domain_product2_t invariant) override {
+        this->_product.first().
+	  backward_array_assign(lhs, rhs, invariant.first());
+        this->_product.second().
+	  backward_array_assign(lhs, rhs, invariant.second());
+        this->reduce();      
+      }
       
       // pointer operators
       virtual void pointer_load(variable_t lhs, variable_t rhs) override {
@@ -965,7 +1023,15 @@ namespace crab {
 	}
       }
 
-      /* Begin unimplemented operations */
+      /* 
+	 Begin unimplemented operations 
+
+	 reduced_numerical_domain_product2 implements only standard
+	 abstract operations of a numerical domain.  The
+	 implementation of boolean, array, or pointer operations is
+	 empty because they should never be called.
+      */
+      
       // boolean operations
       void assign_bool_cst(variable_t lhs, linear_constraint_t rhs) {}
       void assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs) {}
@@ -994,6 +1060,25 @@ namespace crab {
 			     linear_expression_t i, linear_expression_t j,
 			     linear_expression_t val) {}
       void array_assign(variable_t lhs, variable_t rhs) {}
+      // backward array operations
+      void backward_array_init(variable_t a, linear_expression_t elem_size,
+			       linear_expression_t lb_idx, linear_expression_t ub_idx, 
+			       linear_expression_t val,
+			       reduced_numerical_domain_product2_t invariant) {}      
+      void backward_array_load(variable_t lhs,
+			       variable_t a, linear_expression_t elem_size,
+			       linear_expression_t i,
+			       reduced_numerical_domain_product2_t invariant) {}
+      void backward_array_store(variable_t a, linear_expression_t elem_size,
+				linear_expression_t i, linear_expression_t v, 
+				bool is_singleton,
+				reduced_numerical_domain_product2_t invariant) {}
+      void backward_array_store_range(variable_t a, linear_expression_t elem_size,
+				      linear_expression_t i, linear_expression_t j,
+				      linear_expression_t val,
+				      reduced_numerical_domain_product2_t invariant) {}
+      void backward_array_assign(variable_t lhs, variable_t rhs,
+				 reduced_numerical_domain_product2_t invariant) {}
       // pointer operations
       void pointer_load(variable_t lhs, variable_t rhs)  {}
       void pointer_store(variable_t lhs, variable_t rhs) {} 
@@ -1548,7 +1633,15 @@ namespace crab {
         this->reduce_variable(x);
       }
 
-      /* Begin unimplemented operations */
+      /* 
+	 Begin unimplemented operations 
+
+	 numerical_congruence_domain implements only standard abstract
+	 operations of a numerical domain.  The implementation of
+	 boolean, array, or pointer operations is empty because they
+	 should never be called.
+      */
+      
       // boolean operations
       void assign_bool_cst(variable_t lhs, linear_constraint_t rhs) {}
       void assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs) {}
@@ -1577,6 +1670,20 @@ namespace crab {
 			     linear_expression_t i, linear_expression_t j,
 			     linear_expression_t val) {}
       void array_assign(variable_t lhs, variable_t rhs) {}
+      // backward array operations
+      void backward_array_init(variable_t a, linear_expression_t elem_size,
+			       linear_expression_t lb_idx, linear_expression_t ub_idx, 
+			       linear_expression_t val, rnc_domain_t invariant) {}      
+      void backward_array_load(variable_t lhs,
+			       variable_t a, linear_expression_t elem_size,
+			       linear_expression_t i, rnc_domain_t invariant) {}
+      void backward_array_store(variable_t a, linear_expression_t elem_size,
+				linear_expression_t i, linear_expression_t v, 
+				bool is_singleton, rnc_domain_t invariant) {}
+      void backward_array_store_range(variable_t a, linear_expression_t elem_size,
+				      linear_expression_t i, linear_expression_t j,
+				      linear_expression_t val, rnc_domain_t invariant) {}
+      void backward_array_assign(variable_t lhs, variable_t rhs, rnc_domain_t invariant) {}
       // pointer operations
       void pointer_load(variable_t lhs, variable_t rhs)  {}
       void pointer_store(variable_t lhs, variable_t rhs) {} 
@@ -1860,6 +1967,49 @@ namespace crab {
       
       virtual void array_assign(variable_t lhs, variable_t rhs) override {
         this->_product.array_assign(lhs, rhs);
+      }
+
+      // backward array operators
+      
+      virtual void backward_array_init(variable_t a,
+				       linear_expression_t elem_size,
+				       linear_expression_t lb_idx,
+				       linear_expression_t ub_idx,
+				       linear_expression_t val,
+				       nn_domain_t invariant) override {
+        this->_product.backward_array_init
+	  (a, elem_size, lb_idx, ub_idx, val, invariant._product);
+      }
+      
+      virtual void backward_array_load(variable_t lhs,
+				       variable_t a,
+				       linear_expression_t elem_size,
+				       linear_expression_t i,
+				       nn_domain_t invariant) override {
+        this->_product.backward_array_load(lhs, a, elem_size, i, invariant._product);
+      }
+      
+      virtual void backward_array_store(variable_t a,
+					linear_expression_t elem_size,
+					linear_expression_t i,
+					linear_expression_t val, 
+					bool is_singleton,
+					nn_domain_t invariant) override {
+        this->_product.backward_array_store(a, elem_size, i, val, is_singleton,
+					    invariant._product);
+      }
+
+      virtual void backward_array_store_range(variable_t a, linear_expression_t elem_size,
+					      linear_expression_t i, linear_expression_t j,
+					      linear_expression_t val,
+					      nn_domain_t invariant) override {
+	this->_product.backward_array_store_range(a, elem_size, i, j, val,
+						  invariant._product);
+      }
+      
+      virtual void backward_array_assign(variable_t lhs, variable_t rhs,
+					 nn_domain_t invariant) override {
+        this->_product.backward_array_assign(lhs, rhs, invariant._product);
       }
       
       // pointer operators

@@ -1161,14 +1161,66 @@ bb1={}
 bb2={-x <= 0; x <= 100}
 bb4={-x <= 0}
 bb3={-x <= 0}
- --- WARNING -----------------
+ --- SAFE --------------------
 Property : x <= 100
 Invariant: {-x <= -100}
+Note: it was proven by the forward+backward analysis
  -----------------------------
 user-defined assertion checker using Boxes
-0  Number of total safe checks
+1  Number of total safe checks
 0  Number of total error checks
-1  Number of total warning checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+
+entry:
+  x = array_load(M,0,sz=4);
+  goto bb1,bb2;
+bb1:
+  assume(-x <= 0);
+  array_store(M,4,x,sz=4);
+  goto bb3;
+bb3:
+  y = array_load(M,4,sz=4);
+  assume(-y <= -1);
+  assert(x != 0);
+
+bb2:
+  assume(x <= -1);
+  tmp = 0;
+  y = tmp-x;
+  array_store(M,4,y,sz=4);
+  goto bb3;
+
+Invariants using ArrayExpansion(ApronIntervals)
+entry={}
+bb2={}
+bb3={-M[4...7] <= 0}
+bb1={}
+ --- SAFE --------------------
+Property : x != 0
+Invariant: {-y <= -1; -M[4...7] <= 0}
+Note: it was proven by the forward+backward analysis
+ -----------------------------
+user-defined assertion checker using ArrayExpansion(ApronIntervals)
+1  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+
+Invariants using ArrayExpansion(Intervals)
+entry={}
+bb2={}
+bb3={M[4...7] -> [0, +oo]}
+bb1={}
+ --- SAFE --------------------
+Property : x != 0
+Invariant: {y -> [1, +oo]; M[4...7] -> [0, +oo]}
+Note: it was proven by the forward+backward analysis
+ -----------------------------
+user-defined assertion checker using ArrayExpansion(Intervals)
+1  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
 0  Number of total unreachable checks
 
 entry:
@@ -3788,6 +3840,37 @@ Thresholds per loop
 loop2_header={-oo,0,9,161,+oo}
 loop1_header={-oo,-1,60,+oo}
 
+Test using ArrayExpansion(ApronIntervals)
+EXPECTED: {M[4..7] >= 1} 
+RESULT: {-M[4...7] <= -1}
+============================
+Test using ArrayExpansion(ApronIntervals)
+EXPECTED: {z >= 2, ...}
+RESULT: {-x <= -2; -y <= -1; -M[4...7] <= -2}
+============================
+Test using ArrayExpansion(ApronIntervals)
+EXPECTED: _|_
+RESULT: _|_
+============================
+Test using ArrayExpansion(ApronIntervals)
+EXPECTED: {y >= 2, ...}
+RESULT: {-x <= -2; -y <= -2}
+============================
+Test using ArrayExpansion(Intervals)
+EXPECTED: {M[4..7] >= 1} 
+RESULT: {M[4...7] -> [1, +oo]}
+============================
+Test using ArrayExpansion(Intervals)
+EXPECTED: {z >= 2, ...}
+RESULT: {x -> [2, +oo]; y -> [1, +oo]; z -> [2, +oo]}
+============================
+Test using ArrayExpansion(Intervals)
+EXPECTED: _|_
+RESULT: _|_
+============================
+Test using ArrayExpansion(Intervals)
+EXPECTED: {y >= 2, ...}
+RESULT: {x -> [2, +oo]; y -> [2, +oo]}
 Before normalize constraints {x <= 8; -y <= -5; y <= 6; -x <= -8; -v <= -9888; z = 10; w <= 0; v <= 9888}
 After normalize constraints {x = 8; v = 9888; -y <= -5; y <= 6; z = 10; w <= 0}
 {A -> [0, +oo], x -> [0, 0], x-A<=0}
