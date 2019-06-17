@@ -11,14 +11,12 @@ int main(int argc, char** argv) {
   SET_TEST_OPTIONS(argc,argv)
 
   variable_factory_t vfac;
-
-  #ifdef HAVE_APRON
-
   z_var M(vfac["M"], crab::ARR_INT_TYPE);
   z_var x(vfac["x"], crab::INT_TYPE, 32);  
   z_var y(vfac["y"], crab::INT_TYPE, 32);
   z_var z(vfac["z"], crab::INT_TYPE, 32);
 
+  #ifdef HAVE_APRON
   { // backward array load
     z_ae_box_apron_t pre, inv;
     crab::outs() << "Test using " << pre.getDomainName() << "\n";    
