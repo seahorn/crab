@@ -83,7 +83,11 @@ z_cfg_t* prog(variable_factory_t &vfac)  {
 // }
 
 int main (int argc, char** argv) {
-  SET_TEST_OPTIONS(argc,argv)
+
+  bool stats_enabled = false;
+  if (!crab_tests::parse_user_options(argc,argv,stats_enabled)) {
+      return 0;
+  }
 
   typedef intra_fwd_analyzer<z_cfg_ref_t, z_sdbm_domain_t> num_analyzer_t;
   typedef intra_checker<num_analyzer_t> num_checker_t;

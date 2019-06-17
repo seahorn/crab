@@ -517,7 +517,7 @@ z_cfg_t* prog10(variable_factory_t &vfac)
   return cfg;
 }
 
-void test1(){
+void test1(bool stats_enabled){
   variable_factory_t vfac;
   z_cfg_t* cfg = prog1(vfac);
   crab::outs () << "Program 1: forall 0<= i< 10. a[i] = 123456\n";
@@ -526,7 +526,7 @@ void test1(){
   delete cfg;
 }
 
-void test2(){
+void test2(bool stats_enabled){
   variable_factory_t vfac;
   z_cfg_t* cfg = prog3(vfac);
   crab::outs () << "Program 2: forall 0<= i< 10. a[i] = b[i] = x and x = 123456\n";
@@ -535,7 +535,7 @@ void test2(){
   delete cfg;
 }
 
-void test3(){
+void test3(bool stats_enabled){
   variable_factory_t vfac;
   z_cfg_t* cfg = prog4(vfac);
   crab::outs () << "Program 3: forall 0<= i< 10. a[i] = 8 and b[i] = 5\n";
@@ -544,7 +544,7 @@ void test3(){
   delete cfg;
 }
 
-void test4(){
+void test4(bool stats_enabled){
   variable_factory_t vfac;
   z_cfg_t* cfg = prog5(vfac);
   crab::outs () << "Program 4: forall 0<= i < n. a[i] = 123456 (unbounded loop)\n";
@@ -553,7 +553,7 @@ void test4(){
   delete cfg;
 }
 
-void test5(){
+void test5(bool stats_enabled){
   variable_factory_t vfac;
   z_cfg_t* cfg = prog6(vfac);
   crab::outs () << "Program 5: for all 0<= i< 10. a[i] = 123456 (assume elem size of 4 bytes)\n";
@@ -562,7 +562,7 @@ void test5(){
   delete cfg;
 }
 
-void test6(){
+void test6(bool stats_enabled){
   variable_factory_t vfac;
   z_cfg_t* cfg = prog7(vfac);
   crab::outs () << "Program 6: a[0] = 89 and for all 1<= i < n. a[i] = a[i-1]\n";
@@ -571,7 +571,7 @@ void test6(){
   delete cfg;
 }
 
-void test7(){
+void test7(bool stats_enabled){
   variable_factory_t vfac;
   z_cfg_t* cfg = prog8(vfac);
   crab::outs () << "Program 7: forall 0<= i< 10 and i % 2 = 0. a[i] = 123456\n";
@@ -581,7 +581,7 @@ void test7(){
 }
 
 
-void test8(){
+void test8(bool stats_enabled){
   variable_factory_t vfac;
   z_cfg_t* cfg = prog9(vfac);
   crab::outs () << "Program 8: forall 0<= i < n. 1 <= a[i] <= 2\n";
@@ -590,7 +590,7 @@ void test8(){
   delete cfg;
 }
 
-void test9(){
+void test9(bool stats_enabled){
   variable_factory_t vfac;
   z_cfg_t* cfg = prog2(vfac);
   crab::outs () << "Program 9: forall 0<= i < n. a[i] == 123456 (decrementing loop)\n";
@@ -599,7 +599,7 @@ void test9(){
   delete cfg;
 }
 
-void test10(){
+void test10(bool stats_enabled){
   variable_factory_t vfac;
   z_cfg_t* cfg = prog10(vfac); 
   crab::outs () << "Program 10: forall 0<= i < n. is_not_null(a[i]) &&  is_not_null(b[i]) \n";
@@ -607,7 +607,7 @@ void test10(){
   delete cfg;
 }
 
-void test11(){
+void test11(bool stats_enabled){
   variable_factory_t vfac;
   z_cfg_t* cfg = prog4b(vfac);
   crab::outs () << "Program 11: forall 0<= i< 10. a[i] = true and b[i] = false\n";
@@ -615,21 +615,23 @@ void test11(){
   delete cfg;
 }
 
-int main(int argc, char **argv) 
-{
-  SET_TEST_OPTIONS(argc,argv)
-
-  test1 ();
-  test2 ();
-  test3 ();
-  test4 ();
-  test5 ();
-  test6 ();
-  test7 ();
-  test8 ();
-  test9 ();
-  test10 ();
-  test11 ();  
+int main(int argc, char **argv) {
+  bool stats_enabled = false;
+  if (!crab_tests::parse_user_options(argc,argv,stats_enabled)) {
+    return 0;
+  }
+  
+  test1(stats_enabled);
+  test2(stats_enabled);
+  test3(stats_enabled);
+  test4(stats_enabled);
+  test5(stats_enabled);
+  test6(stats_enabled);
+  test7(stats_enabled);
+  test8(stats_enabled);
+  test9(stats_enabled);
+  test10(stats_enabled);
+  test11(stats_enabled);  
 
   return 0;
 }

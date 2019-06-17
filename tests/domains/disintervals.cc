@@ -38,7 +38,10 @@ z_cfg_t* prog (variable_factory_t &vfac)  {
 
 int main (int argc, char**argv){
 
-  SET_TEST_OPTIONS(argc,argv)
+  bool stats_enabled = false;
+  if (!crab_tests::parse_user_options(argc,argv,stats_enabled)) {
+    return 0;
+  }
 
   // typedef dis_interval <z_number> z_dis_interval_t;
   // typedef interval <z_number> interval_t;

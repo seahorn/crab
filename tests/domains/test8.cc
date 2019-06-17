@@ -12,10 +12,11 @@ using namespace crab::cfg;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
-int main (int argc, char** argv )
-{
-  SET_TEST_OPTIONS(argc,argv)
-
+int main (int argc, char** argv) {
+  bool stats_enabled = false;
+  if (!crab_tests::parse_user_options(argc,argv,stats_enabled)) {
+      return 0;
+  }
   variable_factory_t vfac;
 
   z_cfg_t cfg("loop1_entry","ret");

@@ -19,8 +19,10 @@ void check_entailment(Dom inv, const z_lin_cst_t& cst) {
 
 int main (int argc, char**argv) {
 
-  SET_TEST_OPTIONS(argc,argv)
-
+  bool stats_enabled = false;
+  if (!crab_tests::parse_user_options(argc,argv,stats_enabled)) {
+      return 0;
+  }
   variable_factory_t vfac;
   z_var x (vfac ["x"], crab::INT_TYPE, 32);
   z_var y (vfac ["y"], crab::INT_TYPE, 32);

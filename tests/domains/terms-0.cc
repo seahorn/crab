@@ -7,10 +7,12 @@ using namespace crab::cfg;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
-int main (int argc, char** argv )
-{
-  SET_TEST_OPTIONS(argc,argv)
-
+int main (int argc, char** argv) {
+  bool stats_enabled = false;
+  if (!crab_tests::parse_user_options(argc,argv,stats_enabled)) {
+      return 0;
+  }
+  
   variable_factory_t vfac;
 
   z_term_domain_t dom_left = z_term_domain_t::top ();

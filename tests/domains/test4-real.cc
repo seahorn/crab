@@ -9,8 +9,12 @@ using namespace crab::domain_impl;
 
 /* Example of how to infer invariants from the above CFG */
 int main (int argc, char** argv ) {
-  SET_TEST_OPTIONS(argc,argv)
-    
+
+  bool stats_enabled = false;
+  if (!crab_tests::parse_user_options(argc,argv,stats_enabled)) {
+      return 0;
+  }
+  
 #ifdef HAVE_APRON
   crab::outs () << "Running APRON\n\n";
   variable_factory_t vfac;

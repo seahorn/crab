@@ -672,7 +672,7 @@ z_cfg_t* prog13(variable_factory_t &vfac) {
   return cfg;
 }
 
-void test_array_expansion(int test) {
+void test_array_expansion(int test, bool stats_enabled) {
   variable_factory_t vfac;
   z_cfg_t* cfg = nullptr;
   switch(test) {
@@ -701,20 +701,24 @@ void test_array_expansion(int test) {
 }
 
 int main (int argc, char** argv) {
-  SET_TEST_OPTIONS(argc,argv)
 
-  test_array_expansion(1);
-  test_array_expansion(2);
-  test_array_expansion(3);
-  test_array_expansion(4);
-  test_array_expansion(5);
-  test_array_expansion(6);
-  test_array_expansion(7);
-  test_array_expansion(8);
-  test_array_expansion(9);
-  test_array_expansion(10);
-  test_array_expansion(11);
-  test_array_expansion(12);
-  test_array_expansion(13);  
+  bool stats_enabled = false;
+  if (!crab_tests::parse_user_options(argc,argv,stats_enabled)) {
+    return 0;
+  }
+
+  test_array_expansion(1,stats_enabled);
+  test_array_expansion(2,stats_enabled);
+  test_array_expansion(3,stats_enabled);
+  test_array_expansion(4,stats_enabled);
+  test_array_expansion(5,stats_enabled);
+  test_array_expansion(6,stats_enabled);
+  test_array_expansion(7,stats_enabled);
+  test_array_expansion(8,stats_enabled);
+  test_array_expansion(9,stats_enabled);
+  test_array_expansion(10,stats_enabled);
+  test_array_expansion(11,stats_enabled);
+  test_array_expansion(12,stats_enabled);
+  test_array_expansion(13,stats_enabled);  
   return 0;
 }

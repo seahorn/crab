@@ -101,7 +101,11 @@ z_cfg_t* prog2(variable_factory_t &vfac)  {
 
 
 int main(int argc, char** argv) {
-  SET_TEST_OPTIONS(argc,argv)
+
+  bool stats_enabled = false;
+  if (!crab_tests::parse_user_options(argc,argv,stats_enabled)) {
+      return 0;
+  }
 
   variable_factory_t vfac;
   typedef crab::cfg::cfg_ref<z_cfg_t> z_cfg_ref_t;

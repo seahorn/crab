@@ -228,7 +228,11 @@ LddNodePtr assign (LddManager* ldd, const LddNodePtr n,
 int main (int argc, char** argv )
 {
 #ifdef HAVE_LDD
-  SET_TEST_OPTIONS(argc,argv)
+
+  bool stats_enabled = false;
+  if (!crab_tests::parse_user_options(argc,argv,stats_enabled)) {
+      return 0;
+  }
 
   LddManager* man = create_ldd_man (3000);
   Ldd_SanityCheck (man);

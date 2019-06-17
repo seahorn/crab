@@ -125,9 +125,11 @@ void test_sgraph(void)
   cout << gm << "\n";
 
 }
-int main (int argc, char** argv )
-{
-  SET_TEST_OPTIONS(argc,argv)
+int main (int argc, char** argv) {
+  bool stats_enabled = false;
+  if (!crab_tests::parse_user_options(argc,argv,stats_enabled)) {
+      return 0;
+  }
 
   test_sgraph();
   test_sdbm();

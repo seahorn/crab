@@ -231,8 +231,11 @@ z_cfg_t* prog6 (variable_factory_t &vfac)  {
 int main (int argc, char** argv )
 {
 #ifdef HAVE_LDD
-  
-  SET_TEST_OPTIONS(argc,argv)
+
+  bool stats_enabled = false;
+  if (!crab_tests::parse_user_options(argc,argv,stats_enabled)) {
+    return 0;
+  }
 
   variable_factory_t vfac;
 
