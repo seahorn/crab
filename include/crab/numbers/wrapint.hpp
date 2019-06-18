@@ -4,12 +4,8 @@
  *  A class for small, arbitrary-precision unsigned integers.
 **/
 
-#include <climits>
-#include <cstdint>
-#include <sstream>
-#include <boost/functional/hash.hpp>
-#include <crab/common/types.hpp>
 #include <crab/numbers/bignums.hpp>
+#include <cstdint>
 
 namespace crab {
 
@@ -32,427 +28,139 @@ private:
   static const uint64_t mod_16 = 65536;
   static const uint64_t mod_32 = 4294967296;
   
-  void sanity_check_bitwidth() const {
-    if (_width == 0) {
-      CRAB_ERROR("no bitwidth found for a wrapint");
-    }
-    if (_width > 64) {
-      CRAB_ERROR(_width, " is a too big bitwidth for a wrapint");
-    }
-  }
+  void sanity_check_bitwidth() const;
 
-  void sanity_check_bitwidths(const wrapint &other) const {
-    if (_width != other._width) {
-      CRAB_ERROR("two wrapint numbers with different bitwidths");
-    }
-  }
+  void sanity_check_bitwidths(const wrapint &other) const;
 	   
-  void compute_mod() {
-    assert (_width <= 64);
-    switch (_width){
-    case 8:  _mod = mod_8;  break;
-    case 16: _mod = mod_16; break;
-    case 32: _mod = mod_32; break;
-    case 64: break; 
-    default: _mod = (uint64_t) 1 << (uint64_t) _width;
-    }
-  }
-
-  wrapint(uint64_t n, bitwidth_t width, uint64_t mod)
-    : _n(n), _width(width), _mod(mod) {}
+  void compute_mod();
+  
+  wrapint(uint64_t n, bitwidth_t width, uint64_t mod);
   
 public:
 
-  wrapint(uint64_t n, bitwidth_t width) : _n(n), _width(width), _mod(0) {
-    sanity_check_bitwidth();
-    assert(_width <= 64);
-    compute_mod();
+  wrapint(uint64_t n, bitwidth_t width);
 
-    if (_width < 64) {
-      _n = _n % _mod;
-    }
-  }
+  wrapint(ikos::z_number n, bitwidth_t width);
 
-  wrapint(ikos::z_number n, bitwidth_t width)
-    : _n(0), _width(width), _mod(0) {
-    sanity_check_bitwidth();
-    assert(_width <= 64);
-    compute_mod();
-    if (!n.fits_slong()) {
-      // n is a signed integer over 64 bits that cannot be represented
-      // by the signed long type.
-      CRAB_ERROR(n, " does not fit in a signed long integer.");
-    }
-    if (_width == 64) {
-      _n = (long) n;
-    } else {
-      _n = ((long) n) % _mod;
-    }
-  }
-
-  wrapint(ikos::q_number n, bitwidth_t width) : _n(0), _width(width), _mod(0) {
-    sanity_check_bitwidth();
-    assert(_width <= 64);
-    compute_mod();
-    ikos::z_number i = n.round_to_upper();
-    if (!i.fits_slong()) {
-      // n is a signed integer over 64 bits that cannot be represented
-      // by the signed long type.      
-      CRAB_ERROR(n, " does not fit in a signed long integer.");
-    }
-    if (_width == 64) {
-      _n = (long) i;
-    } else {
-      _n = ((long) i) % _mod;
-    }
-    
-  }
+  wrapint(ikos::q_number n, bitwidth_t width);
   
-  wrapint(std::string s, bitwidth_t width): _n(0), _width(width), _mod(0) {
-    sanity_check_bitwidth();
-    assert(_width <= 64);
-    compute_mod();
-    std::istringstream iss(s);
-    iss >> _n;
+  wrapint(std::string s, bitwidth_t width);
 
-    if (_width < 64) {
-      _n = _n % _mod;
-    }
-  }
-
-  bitwidth_t get_bitwidth() const { return _width;}
+  bitwidth_t get_bitwidth() const;
 
   // Needed because wrapint has limited precision
-  static bool fits_wrapint(ikos::z_number n, bitwidth_t width) {
-    if (width > 64) return false;
-    return n.fits_slong();
-  }
+  static bool fits_wrapint(ikos::z_number n, bitwidth_t width);
 
   // Needed because wrapint has limited precision
-  static bool fits_wrapint(ikos::q_number n, bitwidth_t width) {
-    return fits_wrapint(n.round_to_upper(), width);
-  }
+  static bool fits_wrapint(ikos::q_number n, bitwidth_t width); 
 
   // return true iff most significant bit is 1.
-  bool msb() const {
-    return (_n & ((uint64_t)1 << (uint64_t)(_width - 1)));
-  }
+  bool msb() const;
   
   // return 01111...1
-  static wrapint get_signed_max(bitwidth_t w)  {
-    return wrapint(((uint64_t)1 << (uint64_t)(w-1)) - 1, w);
-  }
+  static wrapint get_signed_max(bitwidth_t w);
 
   // return 1000....0
-  static wrapint get_signed_min(bitwidth_t w) {
-    return wrapint((uint64_t)1 << (uint64_t)(w-1), w);
-  }
+  static wrapint get_signed_min(bitwidth_t w);
 
   // return 1111....1
-  static wrapint get_unsigned_max(bitwidth_t w) {
-    switch (w) {
-    case 8:  return wrapint(mod_8 - 1, w);
-    case 16: return wrapint(mod_16 - 1, w);
-    case 32: return wrapint(mod_32 - 1, w);
-    case 64: return wrapint(UINT64_MAX, w);
-    default: return wrapint(((uint64_t) 1 << (uint64_t)w) - 1, w);
-    }
-  }
+  static wrapint get_unsigned_max(bitwidth_t w); 
 
   // return 0000....0
-  static wrapint get_unsigned_min(bitwidth_t w) {
-    return wrapint(0, w);
-  }
+  static wrapint get_unsigned_min(bitwidth_t w);
   
-public:
-
   // return the wrapint as an unsigned number
-  std::string get_unsigned_str () const {
-    return get_unsigned_bignum().get_str();
-  }
+  std::string get_unsigned_str () const;
 
   // return the wrapint as a signed number
-  std::string get_signed_str () const {
-    return get_signed_bignum().get_str();
-  }
+  std::string get_signed_str () const;
   
-  uint64_t get_uint64_t() const {
-    return _n;
-  }
+  uint64_t get_uint64_t() const;
 
   // return the wrapint as an unsigned big number
-  ikos::z_number get_unsigned_bignum() const {
-    // XXX: cannot use here ikos::z_number(_n) because it will cast _n
-    // implicitly to a signed integer.
-    
-    if (ULONG_MAX == UINT64_MAX) {
-      return ikos::z_number::from_ulong(_n);
-    } else {
-      std::stringstream ss;
-      ss << _n;
-      return ikos::z_number(ss.str());
-    }
-  }
+  ikos::z_number get_unsigned_bignum() const;
 
   // return the wrapint as a signed big number
-  ikos::z_number get_signed_bignum() const {
-    if (msb()) {
-      // get two's complement and negate
-      wrapint r = *this ^ get_unsigned_max(get_bitwidth());
-      return ikos::z_number(-(r.get_unsigned_bignum()+1));
-    } else {
-      return get_unsigned_bignum();
-    }
-  }
+  ikos::z_number get_signed_bignum() const;
   
-  bool is_zero() const {
-    return _n == 0;
-  }
+  bool is_zero() const;
   
-  wrapint operator+(wrapint x) const {
-    sanity_check_bitwidths(x);
-    
-    uint64_t r = (_width == 64 ? (_n + x._n) : (_n + x._n) % _mod);
-    return wrapint(r, _width, _mod);
-  }
+  wrapint operator+(wrapint x) const;
 
-  wrapint operator*(wrapint x) const {
-    sanity_check_bitwidths(x);
-    
-    uint64_t r = (_width == 64 ? (_n * x._n) : (_n * x._n) % _mod);
-    return wrapint(r, _width, _mod);
-  }
+  wrapint operator*(wrapint x) const;
 
-  wrapint operator-(wrapint x) const {
-    sanity_check_bitwidths(x);
-    
-    uint64_t r = (_width == 64 ? (_n - x._n) : (_n - x._n) % _mod);
-    return wrapint(r, _width, _mod);
-  }
+  wrapint operator-(wrapint x) const;
 
-  wrapint operator-() const {
-    uint64_t r = (_width == 64 ? -_n : -_n % _mod);
-    return wrapint(r, _width, _mod);
-  }
-
+  wrapint operator-() const;
+  
   // signed division
-  wrapint operator/(wrapint x) const {
-    return sdiv(x);
-  }
+  wrapint operator/(wrapint x) const; 
 
   // signed division: rounding towards 0
-  wrapint sdiv(wrapint x) const {
-    sanity_check_bitwidths(x);    
-    if (x.is_zero()) {
-      CRAB_ERROR("wrapint: signed division by zero ", __LINE__);
-    } else {
-      ikos::z_number dividend = get_signed_bignum();
-      ikos::z_number divisor = x.get_signed_bignum();
-      ikos::z_number r = dividend / divisor;
-      return wrapint(r, get_bitwidth());
-    }
-  }
+  wrapint sdiv(wrapint x) const;
 
   // unsigned division: rounding towards 0
-  wrapint udiv(wrapint x) const {
-    sanity_check_bitwidths(x);    
-    if (x.is_zero()) {
-      CRAB_ERROR("wrapint: unsigned division by zero ", __LINE__);
-    } else {
-      uint64_t r = (_width == 64 ? _n / x._n : (_n / x._n) % _mod);
-      return wrapint(r, _width, _mod);
-    }
-  }
+  wrapint udiv(wrapint x) const;
 
   // signed remainder
-  wrapint operator%(wrapint x) const {
-    return srem(x);
-  }
+  wrapint operator%(wrapint x) const;
 
   // signed rem: is the remainder of the signed division so rounding
   // also towards 0.
-  wrapint srem(wrapint x) const {
-    sanity_check_bitwidths(x);    
-    if (x.is_zero()) {
-      CRAB_ERROR("wrapint: signed division by zero ", __LINE__);
-    } else {
-      ikos::z_number dividend = get_signed_bignum();
-      ikos::z_number divisor = x.get_signed_bignum();
-      ikos::z_number r = dividend % divisor;
-      return wrapint(r, get_bitwidth());
-    }
-  }
+  wrapint srem(wrapint x) const;
 
   // unsigned rem: is the remainder of unsigned division so rounding
   // also towards 0.
-  wrapint urem(wrapint x) const {
-    sanity_check_bitwidths(x);
-    if (x.is_zero()) {
-      CRAB_ERROR("wrapint: unsigned division by zero ", __LINE__);
-    } else {
-      uint64_t r = (_width == 64 ? _n % x._n: (_n % x._n) % _mod);
-      return wrapint(r, _width, _mod);
-    }
-  }
+  wrapint urem(wrapint x) const;
   
-  wrapint& operator+=(wrapint x) {
-    sanity_check_bitwidths(x);
-    _n += x._n;
-    if (_width < 64) _n = _n % _mod;
-    return *this;
-  }
+  wrapint& operator+=(wrapint x);
 
-  wrapint& operator*=(wrapint x) {
-    sanity_check_bitwidths(x);
-    _n *= x._n;
-    if (_width < 64) _n = _n % _mod;
-    return *this;
-  }
+  wrapint& operator*=(wrapint x); 
 
-  wrapint& operator-=(wrapint x) {
-    sanity_check_bitwidths(x);
-    _n -= x._n;
-    if (_width < 64) _n = _n % _mod;
-    return *this;
-  }
+  wrapint& operator-=(wrapint x);
 
+  wrapint& operator--();
 
-  wrapint& operator--() {
-    --(_n);
-    if (_width < 64) _n = _n % _mod;
-    return *this;
-  }
+  wrapint& operator++();
 
-  wrapint& operator++() {
-    ++(_n);
-    if (_width < 64) _n = _n % _mod;
-    return *this;
-  }
+  wrapint operator++(int);
 
-  wrapint operator++(int) {
-    wrapint r(*this);
-    ++(*this);
-    return r;
-  }
+  wrapint operator--(int); 
 
-  wrapint operator--(int) {
-    wrapint r(*this);
-    --(*this);
-    return r;
-  }
+  bool operator==(wrapint x) const;
 
-  bool operator==(wrapint x) const {
-    sanity_check_bitwidths(x);    
-    return _n == x._n;
-  }
+  bool operator!=(wrapint x) const;
 
-  bool operator!=(wrapint x) const {
-    sanity_check_bitwidths(x);        
-    return _n != x._n;
-  }
+  bool operator<(wrapint x) const;
 
-  bool operator<(wrapint x) const {
-    sanity_check_bitwidths(x);            
-    return _n < x._n;
-  }
+  bool operator<=(wrapint x) const;
 
-  bool operator<=(wrapint x) const {
-    sanity_check_bitwidths(x);                
-    return _n <= x._n;
-  }
+  bool operator>(wrapint x) const;
 
-  bool operator>(wrapint x) const {
-    sanity_check_bitwidths(x);                    
-    return _n > x._n;
-  }
+  bool operator>=(wrapint x) const;
 
-  bool operator>=(wrapint x) const {
-    sanity_check_bitwidths(x);                        
-    return _n >= x._n;
-  }
+  wrapint operator&(wrapint x) const; 
 
-  wrapint operator&(wrapint x) const {
-    sanity_check_bitwidths(x);    
-    return wrapint(_n & x._n, _width, _mod);
-  }
+  wrapint operator|(wrapint x) const;
 
-  wrapint operator|(wrapint x) const {
-    sanity_check_bitwidths(x);        
-    return wrapint(_n | x._n, _width, _mod);
-  }
+  wrapint operator^(wrapint x) const;
 
-  wrapint operator^(wrapint x) const {
-    sanity_check_bitwidths(x);            
-    return wrapint(_n ^ x._n, _width, _mod);
-  }
-
-  wrapint operator<<(wrapint x) const {
-    sanity_check_bitwidths(x);
-    
-    uint64_t r = (_width == 64 ? (_n << x._n) : (_n << x._n) % _mod);
-    return wrapint(r, _width, _mod);
-  }
+  wrapint operator<<(wrapint x) const;
 
   // logical right shift: blanks filled by 0's
-  wrapint lshr(wrapint x) const {
-    sanity_check_bitwidths(x);
-    return wrapint(_n >> x._n, _width, _mod);
-  }
+  wrapint lshr(wrapint x) const;
 
   // arithmetic right shift
-  wrapint ashr(wrapint x) const {
-    sanity_check_bitwidths(x);
-    if (!msb()) {
-      return wrapint(_n >> x._n, _width, _mod);      
-    } else {
-      // fill blanks with 1's
-      uint64_t all_ones = (_width < 64
-			   ? ((uint64_t)1 << (uint64_t)_width) - 1
-			   : UINT64_MAX);
-      // 1110..0
-      uint64_t only_upper_bits_ones = all_ones << (uint64_t)(_width - x._n);
-      return wrapint(only_upper_bits_ones | (_n >> x._n), _width, _mod);
-    }
-  }
+  wrapint ashr(wrapint x) const;
   
-  wrapint sext(bitwidth_t bits_to_add) {
-    bitwidth_t new_width = _width + bits_to_add;
-    if (new_width > 64) {
-      CRAB_ERROR("cannot signed extend: ", new_width, " is a too big bitwidth for a wrapint");
-    }
+  wrapint sext(bitwidth_t bits_to_add) const;
 
-    if (msb()) {
-      // -- fill upper bits with ones
-      // 111...1
-      uint64_t all_ones = (new_width < 64
-			   ? ((uint64_t) 1 << (uint64_t) new_width) - 1
-			   : UINT64_MAX);
-      // 1110..0
-      uint64_t only_upper_bits_ones = all_ones << (uint64_t) _width;
-      return wrapint(_n | only_upper_bits_ones, new_width);
-    } else {
-      // -- fill upper bits with zeros
-      return wrapint(_n, _width + bits_to_add);       
-    }
-  }
+  wrapint zext(bitwidth_t bits_to_add) const;
 
-  wrapint zext(bitwidth_t bits_to_add) const {
-    bitwidth_t new_width = _width + bits_to_add;
-    if (new_width > 64) {
-      CRAB_ERROR("cannot unsigned extend: ", new_width, " is a too big bitwidth for a wrapint");
-    }
-    return wrapint(_n, new_width); 
-  }
-
-  wrapint keep_lower(bitwidth_t bits_to_keep) const {
-    if (bits_to_keep >= _width) return *this;
-    return wrapint(_n & (((uint64_t) 1 << (uint64_t) (bits_to_keep+1)) -1),
-		   bits_to_keep);
-  }
+  wrapint keep_lower(bitwidth_t bits_to_keep) const;
   
-  void write(crab::crab_os& o) const {
-    o << get_unsigned_str();
-  }
+  
+  void write(crab::crab_os& o) const;
 
 }; // class wrapint
 
@@ -460,11 +168,6 @@ public:
 inline crab::crab_os& operator<<(crab::crab_os& o, const wrapint& z) {
   z.write(o);
   return o;
-}
-
-inline std::size_t hash_value(const wrapint& n) {
-  boost::hash<std::string> hasher;
-  return hasher(n.get_unsigned_str());
 }
 
 } // end namespace crab

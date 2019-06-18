@@ -352,6 +352,10 @@ namespace ikos {
     
     index_t index() const { return _n.index(); }
 
+    std::size_t hash() const {
+      return (size_t) _n.index();      
+    }
+    
     bool operator==(const variable_t& o) const {
       return _n.index() == o._n.index();
     }
@@ -456,6 +460,11 @@ namespace ikos {
       return m_v->index();
     }
 
+    std::size_t hash() const {
+      assert(!is_null());            
+      return m_v->hash();
+    }
+    
     bool operator==(const variable_ref_t& o) const {
       assert(!is_null());            
       return m_v->operator==(o);
@@ -478,12 +487,12 @@ namespace ikos {
   
   template< typename Number, typename VariableName >
   inline size_t hash_value(const variable<Number, VariableName> &v) {
-    return (size_t) v.index();
+    return v.hash();
   }
 
   template< typename Number, typename VariableName >
   inline size_t hash_value(const variable_ref<Number, VariableName> &v) {
-    return (size_t) v.index();
+    return v.hash();
   }
   
   template< typename Number, typename VariableName >

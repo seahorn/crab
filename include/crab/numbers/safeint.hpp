@@ -4,12 +4,13 @@
  *  Safe signed integers.
 **/
 
-#include <limits>
 #include <cstdint>
+#include <crab/numbers/bignums.hpp>
 
 namespace crab {
 
 class safe_i64 {
+  
   // Current implementation is based on
   // https://blog.regehr.org/archives/1139 using wider integers.
 
@@ -18,153 +19,58 @@ class safe_i64 {
   // architecture is x86/64, but it wont' work with 32 bits.
   typedef __int128 wideint_t;
   
-  inline int64_t get_max() const {
-    return std::numeric_limits<int64_t>::max();
-  }
+  inline int64_t get_max() const;
+  inline int64_t get_min() const;
   
-  inline int64_t get_min() const {
-    return std::numeric_limits<int64_t>::min();
-  }
-  
-  int checked_add(int64_t a, int64_t b, int64_t *rp) const {
-    #if 1
-    wideint_t lr = (wideint_t)a + (wideint_t)b;
-    *rp = lr;
-    return lr > get_max() || lr < get_min();
-    #else
-    // without wider integers
-    if (b > 0 && a > get_max() - b) {
-      return 1;
-    }
-    if (b < 0 && a < get_min() - b) {
-      return 1;
-    }
-    int64_t lr = a + b;
-    *rp = lr;
-    return 0;
-    #endif 
-  }
-  
-  int checked_sub(int64_t a, int64_t b, int64_t *rp) const {
-    wideint_t lr = (wideint_t)a - (wideint_t)b;
-    *rp = lr;
-    return lr > get_max() || lr < get_min();
-  }
-  
-  int checked_mul(int64_t a, int64_t b, int64_t *rp) const {
-    wideint_t lr = (wideint_t)a * (wideint_t)b;
-    *rp = lr;
-    return lr > get_max() || lr < get_min();
-  }
-  
-  int checked_div(int64_t a, int64_t b, int64_t *rp) const {
-    wideint_t lr = (wideint_t)a / (wideint_t)b;
-    *rp = lr;
-    return lr > get_max() || lr < get_min();
-  }
+  int checked_add(int64_t a, int64_t b, int64_t *rp) const;
+  int checked_sub(int64_t a, int64_t b, int64_t *rp) const;
+  int checked_mul(int64_t a, int64_t b, int64_t *rp) const;
+  int checked_div(int64_t a, int64_t b, int64_t *rp) const;
   
 public:
   
-  safe_i64(): m_num(0) {}
+  safe_i64();
   
-  safe_i64(int64_t num): m_num(num) {}
+  safe_i64(int64_t num);
   
-  safe_i64(ikos::z_number n): m_num((long) n) {}
+  safe_i64(ikos::z_number n);
   
-  operator long() const {
-    return (long) m_num;
-  }
+  operator long() const;
 
-  // FIXME: operation should not raise an error.
-  safe_i64 operator+(safe_i64 x) const {
-    int64_t z;
-    int err = checked_add(m_num, x.m_num, &z);
-    if (err) {
-      CRAB_ERROR("Integer overflow during addition");
-    }
-    return safe_i64(z);
-  }
+  // TODO: output parameters whether operation overflows
+  safe_i64 operator+(safe_i64 x) const;
 
-  // FIXME: operation should not raise an error.  
-  safe_i64 operator-(safe_i64 x) const {
-    int64_t z;
-    int err = checked_sub(m_num, x.m_num, &z);
-    if (err) {
-      CRAB_ERROR("Integer overflow during subtraction");
-    }
-    return safe_i64(z);
-  }
+  // TODO: output parameters whether operation overflows  
+  safe_i64 operator-(safe_i64 x) const;
 
-  // FIXME: operation should not raise an error.  
-  safe_i64 operator*(safe_i64 x) const {
-    int64_t z;
-    int err = checked_mul(m_num, x.m_num, &z);
-    if (err) {
-      CRAB_ERROR("Integer overflow during multiplication");
-    }
-    return safe_i64(z);
-  }
+  // TODO: output parameters whether operation overflows  
+  safe_i64 operator*(safe_i64 x) const;
 
-  // FIXME: operation should not raise an error.  
-  safe_i64 operator/(safe_i64 x) const {
-    int64_t z;
-    int err = checked_div(m_num, x.m_num, &z);
-    if (err) {
-      CRAB_ERROR("Integer overflow during multiplication");
-    }
-    return safe_i64(z);
-  }
-
-  // FIXME: operation should not raise an error.  
-  safe_i64 operator-() const {
-    return safe_i64(0) - *this;
-  }
-
-  // FIXME: operation should not raise an error.  
-  safe_i64& operator+=(safe_i64 x) {
-    int err = checked_add(m_num, x.m_num, &m_num);
-    if (err) {
-      CRAB_ERROR("Integer overflow during addition");
-    }
-    return *this;
-  }
-
-  // FIXME: operation should not raise an error.  
-  safe_i64& operator-=(safe_i64 x) {
-    int err = checked_sub(m_num, x.m_num, &m_num);
-    if (err) {
-      CRAB_ERROR("Integer overflow during subtraction");
-    }
-    return *this;
-  }
+  // TODO: output parameters whether operation overflows    
+  safe_i64 operator/(safe_i64 x) const;
   
-  bool operator==(safe_i64 x) const {
-    return m_num == x.m_num;
-  }
+  // TODO: output parameters whether operation overflows    
+  safe_i64 operator-() const;
   
-  bool operator!=(safe_i64 x) const {
-    return m_num != x.m_num;
-  }
-  
-  bool operator<(safe_i64 x) const {
-    return m_num < x.m_num;
-  }
-  
-  bool operator<=(safe_i64 x) const {
-    return m_num <= x.m_num;
-  }
+  // TODO: output parameters whether operation overflows    
+  safe_i64& operator+=(safe_i64 x); 
 
-  bool operator>(safe_i64 x) const {
-    return m_num > x.m_num;
-  }
+  // TODO: output parameters whether operation overflows    
+  safe_i64& operator-=(safe_i64 x);
   
-  bool operator>=(safe_i64 x) const {
-    return m_num >= x.m_num;
-  }
+  bool operator==(safe_i64 x) const;
   
-  void write(crab::crab_os& os) const {
-    os << m_num;
-  }
+  bool operator!=(safe_i64 x) const;
+  
+  bool operator<(safe_i64 x) const;
+  
+  bool operator<=(safe_i64 x) const;
+
+  bool operator>(safe_i64 x) const;
+  
+  bool operator>=(safe_i64 x) const;
+  
+  void write(crab::crab_os& os) const;
   
   friend crab_os& operator<<(crab_os& o, const safe_i64& n) {
     n.write(o);

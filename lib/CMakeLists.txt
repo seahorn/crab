@@ -2,7 +2,17 @@ add_library(Crab ${CRAB_LIBS_TYPE}
   debug.cpp
   stats.cpp
   os.cpp
+  ##numbers 
+  bignums.cpp
+  safeint.cpp
+  wrapint.cpp
+  ##domains
   term.cpp
+  )
+
+target_link_libraries(Crab
+  ${GMPXX_LIB} 
+  ${GMP_LIB}
   )
 
 install(TARGETS Crab
