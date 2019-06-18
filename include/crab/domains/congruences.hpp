@@ -626,33 +626,29 @@ private:
   typedef linear_constraint_system<Number, VariableName>
       linear_constraint_system_t;
 
-private:
   typedef std::vector<linear_constraint_t> cst_table_t;
   typedef typename linear_constraint_t::variable_set_t variable_set_t;
 
-private:
-  class bottom_found {};
+  std::size_t m_max_cycles;
+  bool m_is_contradiction;
+  cst_table_t m_cst_table;
+  variable_set_t m_refined_variables;
+  std::size_t m_op_count;
 
 private:
-  std::size_t _max_cycles;
-  bool _is_contradiction;
-  cst_table_t _cst_table;
-  variable_set_t _refined_variables;
-  std::size_t _op_count;
-
-private:
-  void refine(variable_t v, congruence_t i, 
+  bool refine(variable_t v, congruence_t i, 
               CongruenceCollection& env) {
     congruence_t old_i = env[v];
     congruence_t new_i = old_i & i;
     if (new_i.is_bottom()) {
-      throw bottom_found();
+      return true;
     }
     if (old_i != new_i) {
       env.set(v, new_i);
-      this->_refined_variables += v;
-      ++(this->_op_count);
+      m_refined_variables += v;
+      ++(m_op_count);
     }
+    return false;
   }
 
   congruence_t compute_residual(linear_constraint_t cst,
@@ -665,23 +661,25 @@ private:
       variable_t v = it->second;
       if (!(v == pivot)) {
         residual = residual - (it->first * env[v]);
-        ++(this->_op_count);
+        ++(m_op_count);
       }
     }
     return residual;
   }
 
-  void propagate(linear_constraint_t cst, CongruenceCollection& env) {
+  bool propagate(linear_constraint_t cst, CongruenceCollection& env) {
     for (typename linear_constraint_t::iterator it = cst.begin();
          it != cst.end();
          ++it) {
       Number c = it->first;
       variable_t pivot = it->second;
       congruence_t rhs =
-          this->compute_residual(cst, pivot, env) / congruence_t(c);
+          compute_residual(cst, pivot, env) / congruence_t(c);
 
       if (cst.is_equality()) {
-        this->refine(pivot, rhs, env);
+        if (refine(pivot, rhs, env)) {
+	  return true;
+	}
       } else if (cst.is_inequality() || cst.is_strict_inequality()) {
         // Inequations (>=, <=, >, and <) do not work well with
         // congruences because for any number n there is always x and y
@@ -695,49 +693,51 @@ private:
         // TODO: cst is a disequation 
       }
     }
+    return false;
   }
 
-  void solve_system(CongruenceCollection& env) {
+  bool solve_system(CongruenceCollection& env) {
     std::size_t cycle = 0;
     do {
       ++cycle;
-      this->_refined_variables.clear();
-      for (typename cst_table_t::iterator it = this->_cst_table.begin();
-           it != this->_cst_table.end();
+      m_refined_variables.clear();
+      for (typename cst_table_t::iterator it = m_cst_table.begin();
+           it != m_cst_table.end();
            ++it) {
-        this->propagate(*it, env);
+        if (propagate(*it, env)) {
+	  return true;
+	}
       }
-    } while (this->_refined_variables.size() > 0 && 
-             cycle <= this->_max_cycles);
+    } while (m_refined_variables.size() > 0 && 
+             cycle <= m_max_cycles);
+    return false;
   }
 
 public:
   equality_congruence_solver(linear_constraint_system_t csts,
                              std::size_t max_cycles)
-      : _max_cycles(max_cycles), _is_contradiction(false) {
+      : m_max_cycles(max_cycles), m_is_contradiction(false) {
     for (typename linear_constraint_system_t::iterator it = csts.begin();
          it != csts.end();
          ++it) {
       linear_constraint_t cst = *it;
       if (cst.is_contradiction()) {
-        this->_is_contradiction = true;
+        m_is_contradiction = true;
         return;
       } else if (cst.is_tautology()) {
         continue;
       } else {
-        this->_cst_table.push_back(cst);
+        m_cst_table.push_back(cst);
       }
     }
   }
 
   void run(CongruenceCollection& env) {
-    if (this->_is_contradiction) {
+    if (m_is_contradiction) {
       env.set_to_bottom();
     } else {
-      try {
-        this->solve_system(env);
-      } catch (bottom_found& e) {
-        env.set_to_bottom();
+      if (solve_system(env)) {
+	env.set_to_bottom();
       }
     }
   }

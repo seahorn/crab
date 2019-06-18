@@ -63,7 +63,11 @@ if (NOT BUILD_CRAB_LIBS_SHARED)
 endif ()   
 
 # To remember the last configuration
-message(STATUS "cmake configuration: cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DUSE_APRON=${USE_APRON} -DUSE_ELINA=${USE_ELINA} -DUSE_LDD=${USE_LDD} -DENABLE_TESTS=${ENABLE_TESTS} -DTEST_DIR=${TEST_DIR}")
+if (ENABLE_TESTS)
+  message(STATUS "cmake crab configuration: cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DUSE_APRON=${USE_APRON} -DUSE_ELINA=${USE_ELINA} -DUSE_LDD=${USE_LDD} -DENABLE_TESTS=${ENABLE_TESTS} -DTEST_DIR=${TEST_DIR}")
+else()
+  message(STATUS "cmake crab configuration: cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DUSE_APRON=${USE_APRON} -DUSE_ELINA=${USE_ELINA} -DUSE_LDD=${USE_LDD}")
+endif()  
 
 if (BUILD_CRAB_LIBS_SHARED)
   message (STATUS "All crab libraries will be built dynamically")
@@ -321,6 +325,9 @@ endif ()
 # XXX: do not use add_definition for warning flags. add_definition is
 #      intended for -D...
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+###
+# To avoid annoying warning messages
+###
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-redeclared-class-member")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-covered-switch-default")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-sometimes-uninitialized")

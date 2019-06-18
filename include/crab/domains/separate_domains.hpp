@@ -45,17 +45,17 @@
 
 namespace ikos {
   
-  template < typename Key, typename Value >
+  template <typename Key, typename Value>
   class separate_domain {
     
   private:
-    typedef patricia_tree< Key, Value > patricia_tree_t;
+    typedef patricia_tree<Key, Value> patricia_tree_t;
     typedef typename patricia_tree_t::unary_op_t unary_op_t;
     typedef typename patricia_tree_t::binary_op_t binary_op_t;
     typedef typename patricia_tree_t::partial_order_t partial_order_t;
 
   public:
-    typedef separate_domain< Key, Value > separate_domain_t;
+    typedef separate_domain<Key, Value> separate_domain_t;
     typedef typename patricia_tree_t::iterator iterator;
     typedef Key key_type;
     typedef Value value_type;
@@ -64,34 +64,30 @@ namespace ikos {
     bool _is_bottom;
     patricia_tree_t _tree;
     
-  public: // GKG: Check
-    class bottom_found { };
+  public: 
     
     class join_op: public binary_op_t {
-      
-      boost::optional< Value > apply(Value x, Value y) {
+      std::pair<bool, boost::optional<Value>> apply(Value x, Value y) {
         Value z = x.operator|(y);
         if (z.is_top()) {
-          return boost::optional< Value >();
+          return {false, boost::optional<Value>()};
         } else {
-          return boost::optional< Value >(z);
+          return {false, boost::optional<Value>(z)};
         }
       };
       
       bool default_is_absorbing() {
 	return true;
       }
-
     }; // class join_op
 
     class widening_op: public binary_op_t {
-      
-      boost::optional< Value > apply(Value x, Value y) {
+      std::pair<bool, boost::optional<Value>> apply(Value x, Value y) {
         Value z = x.operator||(y);
         if (z.is_top()) {
-          return boost::optional< Value >();
+          return {false, boost::optional<Value>()};
         } else {
-          return boost::optional< Value >(z);
+          return {false, boost::optional<Value>(z)};
         }
       };
       
@@ -108,13 +104,13 @@ namespace ikos {
 
      public:
       widening_thresholds_op (const Thresholds& ts): m_ts (ts) { }
-
-      boost::optional< Value > apply(Value x, Value y) {
+      
+      std::pair<bool, boost::optional<Value>> apply(Value x, Value y) {
         Value z = x.widening_thresholds(y, m_ts);
         if (z.is_top()) {
-          return boost::optional< Value >();
+          return {false, boost::optional<Value>()};
         } else {
-          return boost::optional< Value >(z);
+          return {false, boost::optional<Value>(z)};
         }
       };
       
@@ -125,13 +121,12 @@ namespace ikos {
     }; // class widening_thresholds_op
     
     class meet_op: public binary_op_t {
-      
-      boost::optional< Value > apply(Value x, Value y) {
+      std::pair<bool, boost::optional<Value>> apply(Value x, Value y) {
         Value z = x.operator&(y);
         if (z.is_bottom()) {
-          throw bottom_found();
+          return {true, boost::optional<Value>()};
         } else {
-          return boost::optional< Value >(z);
+          return {false, boost::optional<Value>(z)};
         }
       };
       
@@ -142,13 +137,12 @@ namespace ikos {
     }; // class meet_op
     
     class narrowing_op: public binary_op_t {
-      
-      boost::optional< Value > apply(Value x, Value y) {
+      std::pair<bool, boost::optional<Value>> apply(Value x, Value y) {
         Value z = x.operator&&(y);
         if (z.is_bottom()) {
-          throw bottom_found();
+          return {true, boost::optional<Value>()};
         } else {
-          return boost::optional< Value >(z);
+          return {false, boost::optional<Value>(z)};
         }
       };
       
@@ -159,7 +153,6 @@ namespace ikos {
     }; // class narrowing_op
     
     class domain_po: public partial_order_t {
-      
       bool leq(Value x, Value y) {
         return x.operator<=(y);
       }
@@ -181,13 +174,13 @@ namespace ikos {
     
    private:
     static patricia_tree_t apply_operation(binary_op_t& o, 
-                                           patricia_tree_t t1, 
-                                           patricia_tree_t t2) {
-      t1.merge_with(t2, o);
+					   patricia_tree_t t1, 
+					   patricia_tree_t t2,
+					   bool& is_bottom) {
+      is_bottom = t1.merge_with(t2, o);
       return t1;
     }
     
-  private:
     separate_domain(patricia_tree_t t): _is_bottom(false), _tree(t) { }
     
     separate_domain(bool b): _is_bottom(!b) { }
@@ -197,6 +190,9 @@ namespace ikos {
 
     separate_domain(const separate_domain_t& e): 
         _is_bottom(e._is_bottom), _tree(e._tree) { }
+
+    separate_domain(const separate_domain_t&& e):
+      _is_bottom(e._is_bottom), _tree(std::move(e._tree)) { }
     
     separate_domain_t& operator=(separate_domain_t e) {
       this->_is_bottom = e._is_bottom;
@@ -251,7 +247,9 @@ namespace ikos {
         return *this;
       } else {
         join_op o;
-        return separate_domain_t(apply_operation(o, this->_tree, e._tree));
+	bool is_bottom;
+	patricia_tree_t res = apply_operation(o, this->_tree, e._tree, is_bottom);
+        return separate_domain_t(std::move(res));
       }
     }
     
@@ -260,13 +258,14 @@ namespace ikos {
       if (this->is_bottom() || e.is_bottom()) {
         return this->bottom();
       } else {
-        try {
-          meet_op o;
-          return separate_domain_t(apply_operation(o, this->_tree, e._tree));
-        }
-        catch (bottom_found& exc) {
-          return this->bottom();
-        }
+	meet_op o;
+	bool is_bottom;	
+	patricia_tree_t res = apply_operation(o, this->_tree, e._tree, is_bottom);
+	if (is_bottom) {
+	  return this->bottom();
+	} else {
+	  return separate_domain_t(std::move(res));
+	}
       }
     }
 
@@ -278,7 +277,9 @@ namespace ikos {
         return *this;
       } else {
         widening_op o;
-        return separate_domain_t(apply_operation(o, this->_tree, e._tree));
+	bool is_bottom;	
+	patricia_tree_t res = apply_operation(o, this->_tree, e._tree, is_bottom);
+	return separate_domain_t(std::move(res));
       }
     }
 
@@ -290,8 +291,10 @@ namespace ikos {
       } else if(e.is_bottom()) {
         return *this;
       } else {
-        widening_thresholds_op<Thresholds> o (ts);
-        return separate_domain_t(apply_operation(o, this->_tree, e._tree));
+        widening_thresholds_op<Thresholds> o(ts);
+	bool is_bottom;
+	patricia_tree_t res = apply_operation(o, this->_tree, e._tree, is_bottom);
+        return separate_domain_t(std::move(res));
       }
     }
     
@@ -300,13 +303,14 @@ namespace ikos {
       if (this->is_bottom() || e.is_bottom()) {
         return separate_domain_t(false);
       } else {
-        try {
-          narrowing_op o;
-          return separate_domain_t(apply_operation(o, this->_tree, e._tree));
-        }
-        catch (bottom_found& exc) {
-          return this->bottom();
-        }	
+	narrowing_op o;
+	bool is_bottom;
+	patricia_tree_t res = apply_operation(o, this->_tree, e._tree, is_bottom);
+	if (is_bottom) {
+	  return this->bottom();
+	} else {
+	  return separate_domain_t(std::move(res));
+	}
       }
     }
     
@@ -339,7 +343,7 @@ namespace ikos {
       if (this->is_bottom()) {
         return Value::bottom();
       } else {
-        boost::optional< Value > v = this->_tree.lookup(k);
+        boost::optional<Value> v = this->_tree.lookup(k);
         if (v) {
           return *v;
         } else {

@@ -164,8 +164,9 @@ namespace domains {
     
     static patricia_tree_t apply_operation(binary_op_t& o, 
 					   patricia_tree_t t1, 
-					   patricia_tree_t t2) {
-      t1.merge_with(t2, o);
+					   patricia_tree_t t2,
+					   bool& is_bottom) {
+      is_bottom = t1.merge_with(t2, o);
       return t1;
     }
     
@@ -175,16 +176,13 @@ namespace domains {
     separate_killgen_domain(bool b)
       : _is_top(b) { }
     
-
-    class bottom_found { };
-    
     class join_op: public binary_op_t {
-      boost::optional<Value> apply(Value x, Value y) {
+      std::pair<bool, boost::optional<Value>> apply(Value x, Value y) {
 	Value z = x.operator|(y);
 	if (z.is_top()) {
-	  return boost::optional<Value>();
+	  return {false, boost::optional<Value>()};
 	} else {
-	  return boost::optional<Value>(z);
+	  return {false, boost::optional<Value>(z)};
 	}
       }
       bool default_is_absorbing() { return false; }
@@ -194,10 +192,10 @@ namespace domains {
       boost::optional< Value > apply(Value x, Value y) {
 	Value z = x.operator&(y);
 	if (z.is_bottom()) {
-	  throw bottom_found();
-	  } else {
-	  return boost::optional<Value>(z);
-	  }
+	  return {true, boost::optional<Value>()};
+	} else {
+	  return {false, boost::optional<Value>(z)};
+	}
       };
       bool default_is_absorbing() { return true; }
     }; // class meet_op
@@ -264,7 +262,9 @@ namespace domains {
 	return separate_killgen_domain_t::top();
       } else {
 	join_op op;
-	return separate_killgen_domain_t(apply_operation(op, _tree, o._tree));
+	bool is_bottom;
+	patricia_tree_t res = apply_operation(op, _tree, o._tree, is_bottom);
+	return separate_killgen_domain_t(std::move(res));
       }
     }
     
@@ -274,12 +274,13 @@ namespace domains {
       } else if (o.is_top()) {
 	return *this;
       } else {
-	try {
-	  meet_op op;
-	  return separate_killgen_domain_t(apply_operation(op, _tree, o._tree));
-	}
-	catch (bottom_found& exc) {
+	meet_op op;
+	bool is_bottom;
+	patricia_tree_t res = apply_operation(op, _tree, o._tree, is_bottom);
+	if (is_bottom) {
 	  return separate_killgen_domain_t::bottom ();
+	} else {
+	  return separate_killgen_domain_t(std::move(res));
 	}
       }
     }

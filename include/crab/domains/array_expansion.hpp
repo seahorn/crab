@@ -310,8 +310,8 @@ namespace domains {
     class join_op: public binary_op_t {
       // apply is called when two bindings (one each from a
       // different map) have the same key(i.e., offset).
-      boost::optional<cell_set_t> apply(cell_set_t x, cell_set_t y) {
-	return cell_set_impl::set_union(x,y);
+      std::pair<bool,boost::optional<cell_set_t>> apply(cell_set_t x, cell_set_t y) {
+	return {false, cell_set_impl::set_union(x,y)};
       }
       // if one map does not have a key in the other map we add it.
       bool default_is_absorbing() {
@@ -320,8 +320,8 @@ namespace domains {
     }; 
 
     class meet_op: public binary_op_t {
-      boost::optional<cell_set_t> apply(cell_set_t x, cell_set_t y) {
-	return cell_set_impl::set_intersection(x,y);	
+      std::pair<bool,boost::optional<cell_set_t>> apply(cell_set_t x, cell_set_t y) {
+	return {false, cell_set_impl::set_intersection(x,y)};	
       }
       // if one map does not have a key in the other map we ignore
       // it.
