@@ -70,7 +70,8 @@ crab_install:
 	mkdir -p crab/build
 	@echo "Installing crab in ${CRAB_INSTALL} ... "
 	cd crab/build \
-	     && cmake -DCMAKE_INSTALL_PREFIX=$(CRAB_INSTALL) -DUSE_LDD=ON -DUSE_APRON=ON ../ \
+	     && cmake -DCMAKE_INSTALL_PREFIX=$(CRAB_INSTALL) -DBUILD_CRAB_LIBS_SHARED=ON \
+	              -DUSE_LDD=ON -DUSE_APRON=ON ../ \
 	     && cmake --build . --target ldd && cmake ../ \
 	     && cmake --build . --target apron && cmake ../ \
 	     && cmake --build . --target install

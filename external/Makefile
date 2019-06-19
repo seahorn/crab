@@ -48,5 +48,6 @@ crab_install:
 	git clone https://github.com/seahorn/crab.git crab
 	mkdir -p crab/build
 	cd crab/build \
-	    && cmake -DCMAKE_INSTALL_PREFIX=$(CRAB_INSTALL)  ../ \
+	    && cmake -DCMAKE_INSTALL_PREFIX=$(CRAB_INSTALL)  \
+	       -DBUILD_CRAB_LIBS_SHARED=ON ../ \
 	    && cmake --build . --target install

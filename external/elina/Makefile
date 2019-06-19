@@ -76,7 +76,8 @@ crab_install:
 	git clone https://github.com/seahorn/crab.git crab
 	mkdir -p crab/build
 	cd crab/build \
-	    && cmake -DCMAKE_INSTALL_PREFIX=$(CRAB_INSTALL) -DUSE_LDD=ON -DUSE_ELINA=ON ../ \
+	    && cmake -DCMAKE_INSTALL_PREFIX=$(CRAB_INSTALL) -DBUILD_CRAB_LIBS_SHARED=ON \
+	             -DUSE_LDD=ON -DUSE_ELINA=ON ../ \
 	    && cmake --build . --target ldd && cmake ../ \
 	    && cmake --build . --target elina && cmake ../ \
 	    && cmake --build . --target install
