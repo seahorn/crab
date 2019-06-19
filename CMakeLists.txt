@@ -43,7 +43,7 @@ option (USE_APRON "Enable Apron library" OFF)
 option (USE_ELINA "Enable Elina library" OFF)
 option (USE_STATS "Enable statistics" ON)
 option (USE_LOG   "Enable logging for debugging purposes" ON)
-option (BUILD_CRAB_LIBS_SHARED "Build all Crab libraries dynamically." ON)
+option (BUILD_CRAB_LIBS_SHARED "Build all Crab libraries dynamically." OFF)
 
 if (USE_APRON AND USE_ELINA)
   message(FATAL_ERROR "Apron and Elina are not compatible: choose one")
