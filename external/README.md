@@ -1,7 +1,6 @@
-# How to use Crab from an external application #
+# How to use Crab as an external library via Makefile #
 
-This directory contains a simple `Makefile` and two minimalistic
-programs:
+This directory contains a sample `Makefile` and two programs:
 
 - `domain.cpp`: use Crab C++ API to create an **abstract domain
   object** and perform some abstract operations.
