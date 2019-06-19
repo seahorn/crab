@@ -72,11 +72,6 @@ int main(int argc, char** argv) {
 
   #ifdef HAVE_ELINA
 
-  z_var M(vfac["M"], crab::ARR_INT_TYPE);
-  z_var x(vfac["x"], crab::INT_TYPE, 32);  
-  z_var y(vfac["y"], crab::INT_TYPE, 32);
-  z_var z(vfac["z"], crab::INT_TYPE, 32);
-
   { // backward array load
     z_ae_zones_elina_t pre, inv;
     crab::outs() << "Test using " << pre.getDomainName() << "\n";    
