@@ -57,6 +57,9 @@ if (ENABLE_TESTS)
   endif()  
 endif()
 
+
+set(CMAKE_FIND_LIBRARY_SUFFIXES .so .dylib .a)
+
 if (NOT BUILD_CRAB_LIBS_SHARED)
    # put static libraries first unless we want dynamic libraries
    set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ${CMAKE_FIND_LIBRARY_SUFFIXES})
