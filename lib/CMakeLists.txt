@@ -1,4 +1,4 @@
-add_library(Crab ${CRAB_LIBS_TYPE} 
+add_library(Crab OBJECT 
   debug.cpp
   stats.cpp
   os.cpp
@@ -8,11 +8,6 @@ add_library(Crab ${CRAB_LIBS_TYPE}
   wrapint.cpp
   ##domains
   term.cpp
-  )
-
-target_link_libraries(Crab
-  ${GMPXX_LIB} 
-  ${GMP_LIB}
   )
 
 install(TARGETS Crab
