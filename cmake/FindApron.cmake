@@ -20,9 +20,10 @@ if (NOT APRON_FOUND)
    find_library(Apron_Box_Lib NAMES libboxMPQ.a PATHS ${APRON_ROOT}/lib)
    find_library(Apron_Itv_Lib NAMES libitvMPQ.a PATHS ${APRON_ROOT}/lib)
    
-   set(APRON_LIBRARY ${Apron_Polka_Lib} ${Apron_Oct_Lib} 
+   set(APRON_LIBRARY ${Apron_Box_Lib} 
+     ${Apron_Polka_Lib} ${Apron_Oct_Lib} 
      ${Apron_Opt_Oct_Lib} ${Apron_Opt_Oct_utils_Lib}
-     ${Apron_Apron_Lib} ${Apron_Box_Lib} ${Apron_Itv_Lib} )
+     ${Apron_Itv_Lib} ${Apron_Apron_Lib})
    
    include (FindPackageHandleStandardArgs)
    find_package_handle_standard_args (Apron
