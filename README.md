@@ -217,7 +217,7 @@ the entry of each basic block, should be something like this:
     bb2={i -> [0, 99], x -> [1, +oo], y -> [0, 99], y-i<=0, y-x<=0, i-x<=0, i-y<=0}
 	ret={i -> [100, 100], x -> [100, +oo], y -> [100, 100], y-i<=0, y-x<=0, i-x<=0, i-y<=0}
 
-# Using Crab in your Verification Tool via Makefile #
+# Using Crab as an External Library via Makefile #
 
 To include Crab in your C++ application you need to:
 
@@ -228,14 +228,14 @@ To include Crab in your C++ application you need to:
 `_INSTALL_DIR_/crab/lib`.
 
 If you compile with Boxes/Apron/Elina you need also to include
-`_INSTALL_DIR_/xxx/include` and link with `_INSTALL_DIR_/xxx/lib`
-where `xxx=apron|elina|ldd`.
+`_INSTALL_DIR_/EXT/include` and link with `_INSTALL_DIR_/EXT/lib`
+where `EXT=apron|elina|ldd`.
 
-Read [this](https://github.com/seahorn/crab/blob/master/external/Makefile) for a sample Makefile.
+For more details, read this sample [Makefile](https://github.com/seahorn/crab/blob/master/external/Makefile).
 
 # Examples of Crab in other analysis tools #
 
-Crab has been integrated in these static analysis tools:
+Crab has been integrated at least in these static analysis tools:
 
 - [Crab-Llvm](https://github.com/seahorn/crab-llvm) is a static
 analyzer that infers invariants from LLVM-based languages using Crab.
@@ -243,11 +243,11 @@ analyzer that infers invariants from LLVM-based languages using Crab.
 - [SeaHorn](https://github.com/seahorn) is a verification framework
 that uses Crab-Llvm to supply invariants to the back-end solvers.
 
-- [eBPF-verifier](https://github.com/vbpf/ebpf-verifier) is a new [eBPF](https://lwn.net/Articles/740157/) verifier using Crab.
+- [eBPF-verifier](https://github.com/vbpf/ebpf-verifier) is a [eBPF](https://lwn.net/Articles/740157/) verifier using Crab.
 
 # References #
 
-- "Simple and Precise Static Analysis of Untrusted Linux Kernel Extensions" by E. Gershuni, N. Amit, A. Gurfinkel, N. Narodytska, J. A. Navas, N. Rinetzky, L. Ryzhyk and M. Sagiv. PLDI'19.
+- "Simple and Precise Static Analysis of Untrusted Linux Kernel Extensions" [(PDF)](https://jorgenavas.github.io/papers/ebpf-pldi19.pdf) by E. Gershuni, N. Amit, A. Gurfinkel, N. Narodytska, J. A. Navas, N. Rinetzky, L. Ryzhyk and M. Sagiv. PLDI'19.
 - "Exploiting Sparsity in Difference-Bounds Matrices" [(PDF)](https://jorgenavas.github.io/papers/zones-SAS16.pdf) by G. Gange, J. A. Navas, P. Schachte, H. Sondergaard, and P. Stuckey. SAS'16.
 - "An Abstract Domain of Uninterpreted Functions" [(PDF)](https://jorgenavas.github.io/papers/terms-vmcai16.pdf) by G. Gange, J. A. Navas, P. Schachte, H. Sondergaard, and P. Stuckey. VMCAI'16.
 - "Signedness-Agnostic Program Analysis: Precise Integer Bounds for Low-Level Code" [(PDF)](https://jorgenavas.github.io/papers/wrapped-intervals-aplas12.pdf) by J. A. Navas, P. Schachte, H. Sondergaard, and P. Stuckey. APLAS'12.
