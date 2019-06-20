@@ -278,18 +278,23 @@ public:
   }
     
   void exec(select_t& stmt) {
-    bool pre_bot = get()->is_bottom();
+    bool pre_bot = false;
+    if (::crab::CrabSanityCheckFlag) {    
+      pre_bot = get()->is_bottom();
+    }
       
     abs_dom_t inv1(*get());
     abs_dom_t inv2(*get());
 
     inv1 += stmt.cond();
     inv2 += stmt.cond().negate();
-      
-    if (!pre_bot &&
-	(inv1.is_bottom() && inv2.is_bottom())) {
-      CRAB_ERROR("select condition and its negation cannot be false simultaneously ",
-		 stmt);
+
+    if (::crab::CrabSanityCheckFlag) {        
+      if (!pre_bot &&
+	  (inv1.is_bottom() && inv2.is_bottom())) {
+	CRAB_ERROR("select condition and its negation cannot be false simultaneously ",
+		   stmt);
+      }
     }
       
     if (inv2.is_bottom()) {
