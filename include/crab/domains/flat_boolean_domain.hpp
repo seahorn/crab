@@ -575,15 +575,16 @@ namespace crab {
     }
     
     void rename(const variable_vector_t &from, const variable_vector_t &to) {
-      if (is_top() || is_bottom()) return;
+      assert(from.size() == to.size());
       
+      if (is_top() || is_bottom()) return;
       // we need to create a new separate_domain since it cannot be
       // modified in-place.
       separate_domain_t new_env;
       for (auto kv: _env) {
-	ptrdiff_t pos = std::distance(std::find(from.begin(), from.end(), kv.first),
-				      from.begin());
-	if (pos < (int) from.size()) {
+	int pos = std::distance(from.begin(),
+				std::find(from.begin(), from.end(), kv.first));
+	if (pos >= 0 && pos < (int)to.size()) {
 	  new_env.set(to[pos], kv.second);
 	} else {
 	  new_env.set(kv.first, kv.second);	    
