@@ -1393,8 +1393,9 @@ namespace crab {
 	 if (this->is_bottom()) {
 	   return;   
 	 } else {
-	   /* We treat the array load as an uninterpreted function
- 	      lhs := array_load(a, i) -->  lhs := f(a,i)
+	   /** 
+	    *  We treat the array load as an uninterpreted function
+ 	    *  lhs := array_load(a, i) -->  lhs := f(a,i)
 	    */
 	   term_id_t t_uf(build_function(term_of_var(a), build_linexpr(i)));
 	   rebind_var(lhs, t_uf);
@@ -1413,17 +1414,23 @@ namespace crab {
 	 if (this->is_bottom()) {
 	   return;   
 	 } else {
-	   /* We treat the array store as an uninterpreted function
-	      array_store(a, i, val) -->  tmp := f(a,i); assume(tmp == val);
-	    */
-	   term_id_t t_uf(build_function(term_of_var(a), build_linexpr(i)));
-
-	   // tmp := f(a,i)
 	   auto &vfac = a.name().get_var_factory();
-	   variable_t a_tmp(vfac.get(a.index()));
-	   rebind_var(a_tmp, t_uf);
-	   // assume(tmp == val)
-	   *this += (val == a_tmp);
+	   /**
+	    *  We treat the array store as an uninterpreted function
+	    *  array_store(a, i, val) -->  tmp := f(a,i); assume(tmp == val);
+	    */
+	   /// -- tmp := f(a,i)
+	   term_id_t t_uf(build_function(term_of_var(a), build_linexpr(i)));
+	   // map always t_uf to the same variable tmp
+	   variable_t tmp(vfac.get(t_uf));
+	   // forget tmp
+	   this->operator-=(tmp);
+	   // forget the old value for t_uf, otherwise we can get
+	   // incorrectly bottom when we add the constraint val == tmp.
+	   _impl -= domvar_of_term(t_uf);
+	   rebind_var(tmp, t_uf);
+	   /// -- assume(tmp == val)
+	   this->operator+=(val == tmp);
 	 }
 	 check_terms(__LINE__);
 	 CRAB_LOG("term",
