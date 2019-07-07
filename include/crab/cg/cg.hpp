@@ -29,10 +29,8 @@ class call_graph: boost::noncopyable {
 
   // Wrapper for call graph nodes
   class cg_node {
-          
     typedef typename CFG::basic_block_t::callsite_t callsite_t;
     typedef typename CFG::fdecl_t fdecl_t;
-          
           
     CFG m_cfg;
     int m_id;
@@ -42,12 +40,10 @@ class call_graph: boost::noncopyable {
     typedef CFG cfg_t;
     typedef typename CFG::varname_t varname_t;
 
-  public:
-
-    cg_node() { } // needed for BGL
+    cg_node() {} // needed for BGL
           
-    cg_node(CFG cfg, int id): 
-      m_cfg(cfg), m_id(id) { }
+    cg_node(CFG cfg, int id)
+      : m_cfg(cfg), m_id(id) { } 
           
     CFG get_cfg() const { return m_cfg;  }
 
@@ -150,7 +146,7 @@ class call_graph: boost::noncopyable {
       auto it_from = m_vertex_map.find(m_from);
       auto it_to = m_vertex_map.find(to);
 
-      CRAB_LOG("cg", crab::outs() << "Visiting call site" << cs << "\n";);
+      CRAB_LOG("cg", crab::outs() << "Visiting call site " << cs << "\n";);
 
       if (it_from == m_vertex_map.end()) {
 	CRAB_LOG("cg", crab::outs() << "Not found caller \n";);
@@ -161,15 +157,17 @@ class call_graph: boost::noncopyable {
 	CRAB_LOG("cg", crab::outs() << "Not found callee \n";);
 	return;
       }
-      
+
+      // -- add edge in the call graph.
       auto res = add_edge(it_from->second, it_to->second, m_cg);
       if (res.second) {
 	CRAB_LOG("cg",
 		 crab::outs() << "Added cg edge " <<  it_from->second 
-		 << " --> " <<  it_to->second;);
-	
-	m_callee_map.insert({&cs, m_cg[it_to->second].func});
+		              << " --> " <<  it_to->second << "\n";);
       }
+	  
+      // -- record the callee's cfg with the callsite
+      m_callee_map.insert({&cs, m_cg[it_to->second].func});
     }
   };
                   
@@ -196,7 +194,6 @@ class call_graph: boost::noncopyable {
       return cg_edge<cg_node>(s,t); 
     }
   };
-
 
 public: 
 
@@ -253,7 +250,7 @@ private:
 
       CRAB_LOG("cg", 
 	       crab::outs() << "Added call graph node " << decl
-	       <<  "--- id=" <<  v << "\n";);
+	                    <<  "--- id=" <<  v << "\n";);
                      
     }
           
@@ -261,29 +258,10 @@ private:
     for (auto cfg: boost::make_iterator_range(I,E)) {
       assert(cfg.has_func_decl());
       auto decl = cfg.get_func_decl();
-      for (auto const &bb :
-	     boost::make_iterator_range(cfg.begin(), cfg.end())) { 
+      for (auto const &bb : boost::make_iterator_range(cfg.begin(), cfg.end())) { 
 	mk_edge_vis vis(*m_cg, m_vertex_map, m_callee_map, decl);
 	for (auto it = bb.begin(); it != bb.end(); ++it) {
 	  it->accept(&vis);
-	}
-      }
-    }
-
-    if (::crab::CrabSanityCheckFlag) {
-      // check each callsite has a corresponding function
-      for (auto &cg_node: boost::make_iterator_range(nodes())) {
-	CFG cfg = cg_node.get_cfg();
-	for (auto &bb: boost::make_iterator_range(cfg.begin(), cfg.end())) {
-	  for (auto &s: boost::make_iterator_range(bb.begin(), bb.end())) {
-	    if (s.is_callsite()) {
-	      auto cs = static_cast<callsite_t*>(&s);
-	      size_t hcs = crab::cfg::cfg_hasher<CFG>::hash(*cs);
-	      if (m_vertex_map.find(hcs) == m_vertex_map.end()) {
-		CRAB_ERROR("Function not found for callsite ", *cs); 
-	      }
-	    }
-	  }
 	}
       }
     }
@@ -307,7 +285,7 @@ public:
     for (auto const& kv: m_callee_map) {
       CFG callee_cfg = kv.second.get_cfg();
       if (!callee_cfg.has_func_decl()) {
-	CRAB_ERROR("CFG must be wrapped into a function (i.e., function declaration not found)");
+	CRAB_ERROR("CFG without function declaration");
       }
 
       /// Crab only needs a CFG to have an exit block when performing
@@ -346,6 +324,21 @@ public:
 	  crab::errs() << "Callsite: " << cs << "\n";
 	  crab::errs() << "Function declaration: " << fdecl << "\n";		  
 	  CRAB_ERROR("Mismatch between type of callsite and function return value");
+	}
+      }
+    }
+
+    // check each callsite has a corresponding function
+    for (auto &cg_node: boost::make_iterator_range(nodes())) {
+      CFG cfg = cg_node.get_cfg();
+      for (auto &bb: boost::make_iterator_range(cfg.begin(), cfg.end())) {
+	for (auto &s: boost::make_iterator_range(bb.begin(), bb.end())) {
+	  if (s.is_callsite()) {
+	    auto cs = static_cast<callsite_t*>(&s);
+	    if (!has_callee(*cs)) {
+	      CRAB_ERROR("Function not found for callsite ", *cs); 
+	    }
+	  }
 	}
       }
     }
