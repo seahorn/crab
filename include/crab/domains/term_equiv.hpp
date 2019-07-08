@@ -188,8 +188,11 @@ namespace crab {
 	   dom.apply(*top, x, y, z);
 	 } else if (auto top = conv_op<bitwise_operation_t>(op)) {
 	   dom.apply(*top, x, y, z);
+	 } else if (op == BINOP_FUNCTION) {
+	   // uninterpreted function: do nothing in the underlying
+	   // numerical domain.
 	 } else {
-	   CRAB_ERROR("unsupported binary operator", op);
+	   CRAB_ERROR("unsupported binary operator ", op);
 	 }
        }
 
