@@ -1,8 +1,8 @@
 #pragma once 
 
 #include <iosfwd>
-#include <boost/shared_ptr.hpp>
 #include <boost/noncopyable.hpp>
+#include <memory>
 
 namespace crab {
   
@@ -10,28 +10,26 @@ namespace crab {
   // files with iostream stuff
   class crab_os: boost::noncopyable {
      
-   private:
+    static std::unique_ptr<crab_os> m_cout;
+    static std::unique_ptr<crab_os> m_cerr;
     
-    static boost::shared_ptr<crab_os> m_cout;
-    static boost::shared_ptr<crab_os> m_cerr;
+  public:
     
-   public:
+    static crab_os& cout();
+    static crab_os& cerr();
     
-    static boost::shared_ptr<crab_os> cout();
-    static boost::shared_ptr<crab_os> cerr();
-
-   private:
+  private:
     
     std::ostream* m_os;
     
-   protected:
-
+  protected:
+    
     crab_os();
-
-   public:
-
+    
+  public:
+    
     crab_os(std::ostream* os);    
-
+    
     virtual ~crab_os();
     
     virtual crab_os& operator<<(char C);
