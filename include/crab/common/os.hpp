@@ -1,14 +1,13 @@
 #pragma once 
 
 #include <iosfwd>
-#include <boost/noncopyable.hpp>
 #include <memory>
 
 namespace crab {
   
   // An adaptor for std::ostream that avoids polluting all crab header
   // files with iostream stuff
-  class crab_os: boost::noncopyable {
+  class crab_os {
      
     static std::unique_ptr<crab_os> m_cout;
     static std::unique_ptr<crab_os> m_cerr;
@@ -29,6 +28,10 @@ namespace crab {
   public:
     
     crab_os(std::ostream* os);    
+
+    crab_os(const crab_os& o) = delete;
+    
+    crab_os& operator=(const crab_os& o) = delete;
     
     virtual ~crab_os();
     

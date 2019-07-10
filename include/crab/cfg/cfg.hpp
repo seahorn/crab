@@ -43,7 +43,6 @@
 #include <boost/iterator/indirect_iterator.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/range/iterator_range.hpp>
-#include <boost/noncopyable.hpp>
 #include <boost/unordered_set.hpp>
 #include <boost/unordered_map.hpp>
 
@@ -1710,7 +1709,7 @@ namespace crab {
     class cfg;
     
     template<class BasicBlockLabel, class VariableName, class Number>
-    class basic_block: public boost::noncopyable {
+    class basic_block {
       friend class cfg<BasicBlockLabel, VariableName, Number>;
 
      public:
@@ -1841,6 +1840,10 @@ namespace crab {
       
      public:
 
+      basic_block(const basic_block_t& o) = delete;
+
+      basic_block_t& operator=(const basic_block_t& o) = delete;
+      
       // The basic block owns the statements
       ~basic_block() {
 	for (unsigned i=0, e=m_stmts.size(); i<e; ++i) {
@@ -2678,7 +2681,7 @@ namespace crab {
     template<class Any> class cfg_ref;
          
     template<class BasicBlockLabel, class VariableName, class Number>
-    class cfg: public boost::noncopyable {
+    class cfg {
      public:
 
       typedef Number number_t; 
@@ -2763,12 +2766,15 @@ namespace crab {
         print_block(crab_os& o) : m_o(o) { }
         void operator()(const basic_block_t& B){ B.write(m_o); }
       };
-      
-      
+            
      public:
       
       // --- needed by crab::cg::call_graph<CFG>::cg_node
-      cfg() { }
+      cfg() {}
+
+      cfg(const cfg_t& o) = delete;
+
+      cfg_t& operator=(const cfg_t& o) = delete;
       
       cfg(BasicBlockLabel entry, tracked_precision track_prec = NUM)
           : m_entry(entry),

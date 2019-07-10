@@ -8,7 +8,6 @@
 #include <boost/graph/graph_traits.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/noncopyable.hpp>
 
 #include <crab/common/debug.hpp>
 #include <crab/common/stats.hpp>
@@ -25,7 +24,7 @@ namespace cg {
 // Important: this class assumes that all function calls have been
 // resolved. This must be ensured by the client.
 template<typename CFG>
-class call_graph: boost::noncopyable {
+class call_graph {
 
   // Wrapper for call graph nodes
   class cg_node {
@@ -266,7 +265,7 @@ private:
       }
     }
   }
-                
+  
 public:
         
   call_graph(std::vector<CFG>& cfgs)
@@ -280,6 +279,10 @@ public:
     build_call_graph(I,E);
   }
 
+  call_graph(const call_graph<CFG>& o) = delete;
+  
+  call_graph<CFG>& operator=(const call_graph<CFG>& o) = delete;
+  
   // Check type consistency between function declaration and callsite.
   void type_check() const {
     for (auto const& kv: m_callee_map) {

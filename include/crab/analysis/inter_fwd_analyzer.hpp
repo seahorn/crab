@@ -17,7 +17,6 @@
 #include <crab/analysis/inter_fwd_analyzer_ds.hpp>
 #include <crab/analysis/dataflow/liveness.hpp>
 
-#include <boost/noncopyable.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/range/iterator_range.hpp>
 #include <boost/shared_ptr.hpp>
@@ -316,11 +315,13 @@ template<typename CallGraph,
 	 typename BU_Dom, 
 	 // abstract domain used for the top-down phase
 	 typename TD_Dom>
-class inter_fwd_analyzer: public boost::noncopyable {
+class inter_fwd_analyzer {
 
   typedef typename CallGraph::node_t cg_node_t;
   typedef typename CallGraph::edge_t cg_edge_t;
 
+  typedef inter_fwd_analyzer<CallGraph, BU_Dom, TD_Dom>  this_type;
+  
 public:
 
   typedef CallGraph cg_t;
@@ -352,7 +353,7 @@ private:
 
   typedef boost::shared_ptr<td_analyzer> td_analyzer_ptr;
   typedef boost::unordered_map<std::size_t, td_analyzer_ptr> invariant_map_t;
-
+  
   CallGraph m_cg;
   const liveness_map_t* m_live;
   invariant_map_t m_inv_map;
@@ -388,7 +389,11 @@ public:
     crab::CrabStats::stop("CallGraph type checking");	
     CRAB_VERBOSE_IF(1, get_msg_stream() << "OK\n";);
   }
-      
+
+  inter_fwd_analyzer(const this_type& other) = delete;
+  
+  this_type& operator=(const this_type& other) = delete;
+  
   void run(TD_Dom init = TD_Dom::top())  {
 
     CRAB_VERBOSE_IF(1, get_msg_stream() << "Started inter-procedural analysis\n";);

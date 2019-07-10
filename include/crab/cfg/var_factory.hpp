@@ -7,7 +7,6 @@
 #include <crab/common/types.hpp>
 
 #include <boost/optional.hpp>
-#include <boost/noncopyable.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/range/iterator_range.hpp>
 
@@ -30,7 +29,7 @@ namespace indexed_string_impl  {
 // The factory uses a counter of type index_t to generate variable
 // id's that always increases.
 template<class T>
-class variable_factory : public boost::noncopyable {
+class variable_factory {
   typedef variable_factory<T> variable_factory_t;
   
 public:
@@ -157,6 +156,10 @@ public:
   variable_factory(): _next_id(1) {}
   
   variable_factory(index_t start_id): _next_id(start_id) { }
+
+  variable_factory(const variable_factory_t& o) = delete;
+  
+  variable_factory_t& operator=(const variable_factory_t& o) = delete;
   
   virtual ~variable_factory() {}
   
@@ -214,11 +217,16 @@ public:
 }; 
 
 //! Specialized factory for integers
-class int_variable_factory : public boost::noncopyable { 
+class int_variable_factory {
 public: 
   typedef int varname_t;
   
-  int_variable_factory() { }
+  int_variable_factory() {}
+  
+  int_variable_factory(const int_variable_factory& o) = delete;
+  
+  int_variable_factory& operator=(const int_variable_factory& o) = delete;
+
   
   varname_t operator[](int v) { return v; }
 }; 

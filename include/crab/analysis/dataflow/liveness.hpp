@@ -8,8 +8,6 @@
 #include <crab/domains/killgen_domain.hpp>
 #include <crab/iterators/killgen_fixpoint_iterator.hpp>
 
-#include <boost/noncopyable.hpp>
-
 namespace crab {
 
   namespace analyzer {
@@ -95,13 +93,15 @@ namespace crab {
     /** Live variable analysis **/
     template<typename CFG>
     class liveness_analysis:
-      boost::noncopyable, 
       public crab::iterators::
       killgen_fixpoint_iterator<CFG,liveness_analysis_operations<CFG>>{
 
       typedef liveness_analysis_operations<CFG> liveness_analysis_operations_t;
       typedef crab::iterators::
       killgen_fixpoint_iterator<CFG,liveness_analysis_operations_t> killgen_fixpoint_iterator_t; 
+
+      liveness_analysis(const liveness_analysis<CFG>& other) = delete;
+      liveness_analysis<CFG>& operator=(const liveness_analysis<CFG>& other) = delete;
       
     public:
       
@@ -163,7 +163,7 @@ namespace crab {
      *        clients.
      **/
     template<typename CFG>
-    class liveness: boost::noncopyable {
+    class liveness {
     public:
       
       typedef typename CFG::basic_block_label_t basic_block_label_t;
@@ -200,8 +200,11 @@ namespace crab {
 	, m_max_live(0)
 	, m_total_live(0)
 	, m_total_blocks (0) { }
-    
-    
+
+      liveness(const liveness<CFG>& other) = delete;
+      
+      liveness<CFG>& operator=(const liveness<CFG>& other) = delete;
+          
       void exec() {
 	/** Remove dead variables locally **/
 	

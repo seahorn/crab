@@ -544,8 +544,10 @@ namespace crab {
       }
 
       template<typename TermTable>
-      class congruence_closure_solver : public boost::noncopyable {
-       
+      class congruence_closure_solver  {
+
+	typedef congruence_closure_solver<TermTable> this_type;
+	
        public:
        
         typedef typename TermTable::term_id_t term_id_t;
@@ -557,17 +559,22 @@ namespace crab {
         typedef std::map <term_id_t, std::vector<term_id_t> > member_map_t;
 
        private:
+	
         TermTable* _ttbl;
         ccpar_map_t _ccpar_map;
         find_map_t _find_map;
         std::vector<equation_t> _eqs;
         term_set_t _terms;
         member_map_t _members;
-
+	
        public:
         
         congruence_closure_solver (TermTable* ttbl): _ttbl (ttbl) { }
-        
+
+	congruence_closure_solver(const this_type& o) = delete;
+	
+	this_type& operator=(const this_type& o) = delete;
+	
         void operator+=(equation_t eq) {
           _terms.insert (eq.first);
           _terms.insert (eq.second);

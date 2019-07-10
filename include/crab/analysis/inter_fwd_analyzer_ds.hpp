@@ -4,7 +4,6 @@
 #include<boost/unordered_map.hpp>
 #include<boost/range/iterator_range.hpp>
 #include<boost/shared_ptr.hpp>
-#include<boost/noncopyable.hpp>
 
 #include<crab/common/types.hpp>
 #include<crab/cfg/cfg.hpp>
@@ -24,7 +23,7 @@ namespace analyzer {
 
 /* Store the calling contexts of each function */  
 template<typename CFG, typename AbsDomain>
-class call_ctx_table: boost::noncopyable {
+class call_ctx_table {
 public:
 
   typedef typename CFG::basic_block_t::callsite_t callsite_t;
@@ -37,7 +36,7 @@ private:
   // a function declaration and callsite are considered equal if
   // they correspond to the same function.
   typedef boost::unordered_map<std::size_t, abs_domain_t> call_table_t;
-      
+  
   call_table_t m_call_table;
 
   // XXX: assume context-insensitive analysis so it will merge all
@@ -56,6 +55,10 @@ public:
       
   call_ctx_table() { }
 
+  call_ctx_table(const call_ctx_table<CFG,AbsDomain>& o) = delete;
+
+  call_ctx_table<CFG,AbsDomain>& operator=(const call_ctx_table<CFG,AbsDomain>& o) = delete;
+  
   void insert(callsite_t cs, AbsDomain inv) {
     insert_helper(crab::cfg::cfg_hasher<CFG>::hash(cs), inv);
   }
@@ -76,7 +79,7 @@ public:
 
 /* Store the summaries for each function*/
 template<typename CFG, typename AbsDomain>
-class summary_table: boost::noncopyable {
+class summary_table {
 
 public:
       
@@ -211,13 +214,17 @@ private:
 
   typedef boost::shared_ptr<Summary> summary_ptr;
   typedef boost::unordered_map<std::size_t, summary_ptr> summary_table_t;
-      
+  
   summary_table_t m_sum_table;
       
 public:
 
-  summary_table() { }
-      
+  summary_table() {}
+
+  summary_table(const summary_table<CFG, AbsDomain>& o) = delete;
+  
+  summary_table<CFG, AbsDomain>& operator=(const summary_table<CFG, AbsDomain>& o) = delete;
+  
   // insert summary information
   void insert(fdecl_t d, 
 	      AbsDomain sum,

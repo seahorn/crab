@@ -10,7 +10,6 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/unordered_map.hpp>
-#include <boost/noncopyable.hpp>
 #include <boost/range/iterator_range.hpp>
 
 #include <algorithm>
@@ -197,7 +196,7 @@ namespace crab {
      * difference is that it can prove more assertions.
      **/
     template<typename CFG, typename AbsDom>
-    class intra_forward_backward_analyzer: public boost::noncopyable {
+    class intra_forward_backward_analyzer {
     public:
 
       typedef CFG cfg_t;
@@ -232,7 +231,7 @@ namespace crab {
       typedef typename fwd_analyzer_t::wto_t wto_t;
 
     private:
-
+      
       // -- the cfg
       CFG m_cfg;
       // we keep the two wto's (from forward and reversed CFGs) to
@@ -367,7 +366,12 @@ namespace crab {
 	if (m_wto) delete m_wto;
 	if (m_b_wto) delete m_b_wto;
       }
-            
+
+      intra_forward_backward_analyzer
+      (const intra_forward_backward_analyzer<CFG,AbsDom>& o) = delete;
+      intra_forward_backward_analyzer<CFG,AbsDom>&
+      operator=(const intra_forward_backward_analyzer<CFG,AbsDom>& o) = delete;
+      
       /**
        * Perform the refining forward-backward loop.
        **/

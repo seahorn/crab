@@ -500,7 +500,6 @@ namespace crab {
       **/
      template<class CFG>
      class assertion_crawler:
-       public boost::noncopyable, 
        public crab::iterators::
        killgen_fixpoint_iterator<CFG,assertion_crawler_operations<CFG> >{
        
@@ -514,7 +513,7 @@ namespace crab {
        typedef crab::iterators::
        killgen_fixpoint_iterator<CFG,
 				 assertion_crawler_operations<CFG> > fixpo_t;
-
+       
       public:
 
        // map assertions to a set of variables
@@ -530,6 +529,10 @@ namespace crab {
        
        assertion_crawler(CFG cfg): fixpo_t(cfg) {}
 
+       assertion_crawler(const assertion_crawler<CFG>& o) = delete;
+       
+       assertion_crawler<CFG>& operator=(const assertion_crawler<CFG>& o) = delete;
+       
        void exec() {	 
          this->run();
 	 for (auto p : boost::make_iterator_range(this->out_begin(), this->out_end())) {

@@ -147,9 +147,8 @@ namespace crab {
      };
    
      template<class CFG>
-     class array_segmentation: public boost::noncopyable, 
-                               public crab::iterators::killgen_fixpoint_iterator
-         <CFG, array_segment_ops<CFG> >{
+     class array_segmentation: public crab::iterators::killgen_fixpoint_iterator
+                                      <CFG, array_segment_ops<CFG>>{
       public:
 
        typedef array_segment_ops<CFG> array_segment_ops_t;
@@ -168,8 +167,11 @@ namespace crab {
        
       public:
        
-       array_segmentation(CFG cfg)
-           : killgen_fixpoint_iterator_t(cfg) { }
+       array_segmentation(CFG cfg): killgen_fixpoint_iterator_t(cfg) { }
+
+       array_segmentation(const array_segmentation<CFG>& o) = delete;
+       
+       array_segmentation<CFG>& operator=(const array_segmentation<CFG>& o) = delete;
        
        void exec() { 
          this->run();
