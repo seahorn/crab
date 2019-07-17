@@ -28,7 +28,6 @@
 #include <string>
 
 namespace crab {
-
 namespace analyzer {
 
 /**
@@ -42,6 +41,7 @@ class bu_summ_abs_transformer final:
 public:
 
   typedef typename SumTable::abs_domain_t summ_abs_domain_t;
+  typedef typename SumTable::summary_t summary_t;
   typedef summ_abs_domain_t abs_dom_t;
   typedef typename abs_dom_t::number_t number_t;    
 
@@ -61,7 +61,7 @@ public:
 
   static void reuse_summary(abs_dom_t& caller, 
 			    const callsite_t& cs,
-			    const typename SumTable::Summary& summ) {
+			    const summary_t& summ) {
     // Before a summary is plug-in we rename it with unique variable
     // names so we avoid naming clashes in cases like for instance
     // summary variables have same names as lhs of callsites.
@@ -130,7 +130,7 @@ public:
 
 public:
     
-  bu_summ_abs_transformer(abs_dom_t* inv, SumTable* sum_tbl)
+  bu_summ_abs_transformer(abs_dom_t inv, SumTable* sum_tbl)
     : intra_abs_transform_t(inv)
     , m_sum_tbl(sum_tbl) { }
 
@@ -140,14 +140,14 @@ public:
     if (!m_sum_tbl) {
       CRAB_WARN("The summary table is empty: ignored analysis of callsite");
     } else {
-      if (m_sum_tbl->hasSummary(cs)) {
+      if (m_sum_tbl->has_summary(cs)) {
 	auto summ = m_sum_tbl->get(cs);
-	reuse_summary(*(this->m_inv), cs, summ);
+	reuse_summary(this->m_inv, cs, summ);
       }
       else {
 	CRAB_WARN("summary not found for ", cs);
 	for (auto vt: cs.get_lhs()) {
-	  *(this->m_inv) -= vt;  // havoc
+	  this->m_inv -= vt;  // havoc
 	}
       }
     }
@@ -222,7 +222,7 @@ private:
         
 public:
     
-  td_summ_abs_transformer(abs_dom_t* inv,
+  td_summ_abs_transformer(abs_dom_t inv,
 			  SumTable* sum_tbl, CallCtxTable* call_tbl)
     : intra_abs_transform_t(inv), 
       m_sum_tbl(sum_tbl),
@@ -233,7 +233,7 @@ public:
   virtual void exec(callsite_t& cs) override {
     if (!m_sum_tbl) {
       CRAB_WARN("The summary table is empty");
-    } else if(m_sum_tbl->hasSummary(cs)) {
+    } else if(m_sum_tbl->has_summary(cs)) {
       auto summ = m_sum_tbl->get(cs);
         
       CRAB_LOG("inter", 
@@ -245,7 +245,7 @@ public:
       ///////
       typedef typename abs_dom_t::variable_t variable_t;
 	
-      abs_dom_t callee_ctx_inv(*(this->m_inv));
+      abs_dom_t callee_ctx_inv(this->m_inv);
       // --- matching formal and actual parameters
       // XXX: propagating down 	
       unsigned i=0;
@@ -273,13 +273,13 @@ public:
         
       // --- convert this->m_inv to the language of summ_abs_dom_t(summ)
       summ_abs_domain_t caller_ctx_inv;
-      convert_domains(*(this->m_inv), caller_ctx_inv);
+      convert_domains(this->m_inv, caller_ctx_inv);
       // forget the variables of the lhs of the callsite, otherwise
       // caller_ctx_inv and m_inv may be inconsistent if the lhs
       // variables are constrained before the callsite (e.g., x=-5;
       // x := abs(x);)
       for (auto vt: cs.get_lhs()) {
-	*(this->m_inv) -= vt;
+	this->m_inv -= vt;
       }
 	
       CRAB_LOG("inter",
@@ -292,10 +292,10 @@ public:
 	                    << caller_ctx_inv << "\n");
       
       // --- convert back inv to the language of abs_dom_t
-      convert_domains(caller_ctx_inv, *(this->m_inv));
+      convert_domains(caller_ctx_inv, this->m_inv);
       CRAB_LOG("inter",
 	       crab::outs() << "\t\tCaller continuation after " 
-	                    <<  cs << "=" <<  *(this->m_inv) << "\n");
+	                    <<  cs << "=" << this->m_inv << "\n");
       return;
     } else {
       // --- no summary found: havoc output variables
@@ -305,7 +305,7 @@ public:
     // We could not reuse a summary or summary not found. We havoc
     // output variables of the callsite.
     for(auto vt: cs.get_lhs()) {
-      *(this->m_inv) -= vt;
+      this->m_inv -= vt;
     }
   }
 }; 
@@ -334,16 +334,16 @@ public:
 
 private:
 
-  typedef summary_table <cfg_t, BU_Dom> summ_tbl_t;
-  typedef call_ctx_table <cfg_t, TD_Dom> call_tbl_t;
+  typedef inter_analyzer_impl::summary_table<cfg_t, BU_Dom> summ_tbl_t;
+  typedef inter_analyzer_impl::call_ctx_table<cfg_t, TD_Dom> call_tbl_t;
 
 public:
 
   typedef bu_summ_abs_transformer<summ_tbl_t> bu_abs_tr;
   typedef td_summ_abs_transformer<summ_tbl_t, call_tbl_t> td_abs_tr;
-  typedef fwd_analyzer<cfg_t, bu_abs_tr> bu_analyzer;
-  typedef fwd_analyzer<cfg_t, td_abs_tr> td_analyzer;
-  typedef typename summ_tbl_t::Summary summary_t;
+  typedef analyzer_internal_impl::fwd_analyzer<cfg_t, bu_abs_tr> bu_analyzer;
+  typedef analyzer_internal_impl::fwd_analyzer<cfg_t, td_abs_tr> td_analyzer;
+  typedef typename summ_tbl_t::summary_t summary_t;
   typedef boost::shared_ptr<summary_t> summary_ptr;
   // for checkers
   typedef TD_Dom abs_dom_t;
@@ -433,8 +433,8 @@ public:
 		 crab::outs() << "++ Analyzing function "
 		 << fdecl.get_func_name() << "\n");
 
-	auto abs_tr = boost::make_shared<td_abs_tr>(&init, &m_summ_tbl, &m_call_tbl);
-	auto a = boost::make_shared<td_analyzer>(cfg, nullptr, &*abs_tr, get_live(cfg),
+	auto abs_tr = boost::make_shared<td_abs_tr>(init, &m_summ_tbl, &m_call_tbl);
+	auto a = boost::make_shared<td_analyzer>(cfg, nullptr, abs_tr, get_live(cfg),
 						 m_widening_delay,
 						 m_descending_iters,
 						 m_jump_set_size);
@@ -463,6 +463,7 @@ public:
 	if (fun_name != "main") {
 	  CRAB_VERBOSE_IF(1, get_msg_stream() << "++ Computing summary for "
 	        	                      << fdecl.get_func_name() << "...\n";);
+	  
 	  // --- collect inputs and outputs
 	  std::vector<variable_t> formals, inputs, outputs;
 	  formals.reserve(fdecl.get_num_inputs() + fdecl.get_num_outputs());
@@ -489,8 +490,8 @@ public:
 	  } else {
 	    // --- run the analysis
 	    auto init_inv = BU_Dom::top();
-	    bu_abs_tr abs_tr(&init_inv, &m_summ_tbl);
-	    bu_analyzer a(cfg, nullptr, &abs_tr, get_live(cfg),
+	    auto abs_tr = boost::make_shared<bu_abs_tr>(std::move(init_inv), &m_summ_tbl);
+	    bu_analyzer a(cfg, nullptr, abs_tr, get_live(cfg),
 			  m_widening_delay, m_descending_iters, m_jump_set_size);
 	    a.run_forward();
 	    
@@ -550,13 +551,13 @@ public:
 		       << fdecl.get_func_name()
 		       << " started with bottom (i.e., dead function).\n";
 	}
-	auto abs_tr = boost::make_shared<td_abs_tr>(&init_inv, &m_summ_tbl, &m_call_tbl);
-	auto a = boost::make_shared<td_analyzer>(cfg, nullptr, &*abs_tr, get_live(cfg),
+	auto abs_tr = boost::make_shared<td_abs_tr>(init_inv, &m_summ_tbl, &m_call_tbl);
+	auto a = boost::make_shared<td_analyzer>(cfg, nullptr, abs_tr, get_live(cfg),
 						 m_widening_delay,
 						 m_descending_iters,
 						 m_jump_set_size);
 	a->run_forward();
-	m_inv_map.insert(std::make_pair(crab::cfg::cfg_hasher<cfg_t>::hash(fdecl), a));
+	m_inv_map.insert({crab::cfg::cfg_hasher<cfg_t>::hash(fdecl), a});
       }
     }
     CRAB_VERBOSE_IF(1,get_msg_stream() << "Finished inter-procedural analysis\n";);	
@@ -597,22 +598,22 @@ public:
   }
       
   //! Propagate inv through statements
-  boost::shared_ptr<abs_tr_t> get_abs_transformer(TD_Dom* inv) {
-    return boost::make_shared<abs_tr_t>(inv, &m_summ_tbl, &m_call_tbl);
+  boost::shared_ptr<abs_tr_t> get_abs_transformer(TD_Dom&& inv) {
+    return boost::make_shared<abs_tr_t>(std::move(inv), &m_summ_tbl, &m_call_tbl);
   }
 
   //! Return true if there is a summary for a function
   bool has_summary(const cfg_t &cfg) const {
     assert(cfg.has_func_decl());
     auto fdecl = cfg.get_func_decl();
-    return m_summ_tbl.hasSummary(fdecl);
+    return m_summ_tbl.has_summary(fdecl);
   }
 
   //! Return the summary for a function
   summary_ptr get_summary(const cfg_t &cfg) const {
     assert(cfg.has_func_decl());
     auto fdecl = cfg.get_func_decl();
-    if (m_summ_tbl.hasSummary(fdecl)) {
+    if (m_summ_tbl.has_summary(fdecl)) {
       summary_t summ = m_summ_tbl.get(fdecl);
       return boost::make_shared<summary_t>(summ);
     } else {

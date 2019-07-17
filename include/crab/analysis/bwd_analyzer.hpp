@@ -56,7 +56,7 @@ namespace crab {
       /**
        * Compute necessary preconditions for a basic block
        **/
-      virtual void analyze(bb_label_t node, AbsDom &precond) override {	
+      virtual AbsDom analyze(bb_label_t node, AbsDom&& precond) override {	
 	auto &bb = m_cfg.get_node(node);
 
 	CRAB_LOG("backward-fixpoint",
@@ -66,13 +66,14 @@ namespace crab {
 	// invariants that hold at the entry of the block
 	AbsDom invariant = m_invariants[node];
 	// rebuild local invariants that hold at each program point.
-	abs_fwd_tr_t F(&invariant);
+	abs_fwd_tr_t F(invariant);
 	pp_abstract_map_t pp_invariants;
 	for(auto &s: boost::make_iterator_range(bb.begin(),bb.end())) {
-	  pp_invariants.insert(std::make_pair(&s, *(F.get())));
+	  auto inv = F.get_abs_value();
+	  pp_invariants.insert(std::make_pair(&s, inv));
 	  CRAB_LOG("backward-fixpoint",
 		   crab::outs() << "\tRebuilding at statement " << s << " inv="
-		                 << *F.get() << "\n");
+		                << inv << "\n");
 	  s.accept(&F);	  	  
 	}
 	
@@ -82,14 +83,15 @@ namespace crab {
 		 << "Starting backward propagation ... \n");
 
 	// compute precondition at the entry of the block
-	abs_bwd_tr_t B(&precond, &pp_invariants, m_good_states); 
+	abs_bwd_tr_t B(std::move(precond), &pp_invariants, m_good_states); 
 	for(auto &s: boost::make_iterator_range(bb.rbegin(),bb.rend())) {
 	  s.accept(&B);
 	}
+	precond = std::move(B.preconditions());
 	CRAB_LOG("backward-fixpoint",
 		 crab::outs() << "Pre at " << cfg_impl::get_label_str(node) << ": "
 		               << precond << "\n");
-	
+	return std::move(precond);
       }
       
       virtual void process_pre(bb_label_t /*node*/, AbsDom /*postcond*/) override { }
@@ -626,8 +628,8 @@ namespace crab {
 	return m_cfg;
       }
 
-      boost::shared_ptr<abs_tr_t> get_abs_transformer(AbsDom* inv) {
-	return boost::make_shared<abs_tr_t>(inv);
+      boost::shared_ptr<abs_tr_t> get_abs_transformer(AbsDom&& inv) {
+	return boost::make_shared<abs_tr_t>(std::move(inv));
       }
 
       void get_safe_assertions(std::set<const stmt_t*>& out) const {

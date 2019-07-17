@@ -114,6 +114,7 @@ namespace crab {
       public crab::cfg::statement_visitor<typename Analyzer::number_t,
 					  typename Analyzer::varname_t> {
    public:
+    typedef Analyzer analyzer_t;
     typedef typename Analyzer::abs_tr_t abs_tr_t;
     typedef typename Analyzer::varname_t varname_t;
     typedef typename Analyzer::number_t number_t;

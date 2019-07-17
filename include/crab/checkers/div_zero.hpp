@@ -27,6 +27,8 @@ namespace crab {
       using typename base_checker_t::bin_op_t;
 
      public:
+
+      using analyzer_t = Analyzer;
       
       div_zero_property_checker(int verbose = 0)
           : base_checker_t(verbose) { }
@@ -41,7 +43,7 @@ namespace crab {
         if (s.op() == BINOP_SDIV || s.op() == BINOP_UDIV ||
             s.op() == BINOP_SREM || s.op() == BINOP_UREM) {
          
-          auto &inv = *(this->m_abs_tr->get());
+          auto inv = this->m_abs_tr->get_abs_value();
           if (inv.is_bottom()) {
             this->m_db.add(_UNREACH);
             return;

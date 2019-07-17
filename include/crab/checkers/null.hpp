@@ -43,8 +43,8 @@ namespace crab {
 
        // Reduced product of an arbitrary abstract domain with nullity
        template<typename Dom, typename Number, typename VariableName>
-       class get_as <crab::domains::domain_product2<Number, 
-                      VariableName, Dom, crab::domains::nullity_domain<Number, VariableName> > > {
+       class get_as<crab::domains::domain_product2<Number, 
+                    VariableName, Dom, crab::domains::nullity_domain<Number, VariableName>>> {
 
          typedef crab::domains::nullity_value nullity_value_t;
          typedef crab::domains::nullity_domain<Number, VariableName> nullity_domain_t;
@@ -109,6 +109,8 @@ namespace crab {
       }
 
      public:
+
+      using analyzer_t = Analyzer;
       
       null_property_checker(int verbose = 0): base_checker_t(verbose) { }
       
@@ -119,7 +121,7 @@ namespace crab {
       void check(ptr_store_t &s) override { 
         if (!this->m_abs_tr) return;        
         
-        auto &inv = *(this->m_abs_tr->get());
+        auto inv = this->m_abs_tr->get_abs_value();
         auto ptr = s.lhs();
         null_detail::get_as<abs_dom_t> null_inv(inv);
         crab::domains::nullity_value val = null_inv [ptr];
@@ -155,7 +157,7 @@ namespace crab {
       void check(ptr_load_t &s) override { 
         if (!this->m_abs_tr) return;        
         
-        auto &inv = *(this->m_abs_tr->get());
+        auto inv = this->m_abs_tr->get_abs_value();
         auto ptr = s.rhs();
         null_detail::get_as<abs_dom_t> null_inv(inv);
         crab::domains::nullity_value val = null_inv [ptr];
@@ -184,11 +186,8 @@ namespace crab {
 	  }
 	  this->add_warning(os.str(), &s);
         }
-        
         s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
       }
-
-      
   }; 
   } // end namespace
 } // end namespace

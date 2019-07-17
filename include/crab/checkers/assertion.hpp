@@ -34,6 +34,8 @@ namespace crab {
       using typename base_checker_t::bool_assert_t;      
 
      public:
+
+      using analyzer_t = Analyzer;
       
       assert_property_checker(int verbose = 0): base_checker_t(verbose) { }
       
@@ -60,36 +62,39 @@ namespace crab {
 	  crab::crab_string_os os;
 	  if (this->m_verbose >= 3) {
 	    os << "Property : " << cst << "\n";
-	    os << "Invariant: " << *(this->m_abs_tr->get()) << "\n";
+	    auto inv = this->m_abs_tr->get_abs_value();
+	    os << "Invariant: " << inv << "\n";
 	    os << "Note: it was proven by the forward+backward analysis";
 	  }
 	  this->add_safe(os.str(), &s);	  
 	} else {
 	  if (cst.is_contradiction()) {	  
-	    if (this->m_abs_tr->get()->is_bottom()) {
+	    if (this->m_abs_tr->get_abs_value().is_bottom()) {
 	      crab::crab_string_os os;
 	      if (this->m_verbose >= 3) {
-		os << "Property : " << cst << "\n"; 
-		os << "Invariant: " << *(this->m_abs_tr->get());
+		os << "Property : " << cst << "\n";
+		auto inv = this->m_abs_tr->get_abs_value();		
+		os << "Invariant: " << inv;
 	      }
 	      this->add_safe(os.str(), &s);
 	    } else {
 	      crab::crab_string_os os;
 	      if (this->m_verbose >= 2) {
-		os << "Property : " << cst << "\n"; 
-		os << "Invariant: " << *(this->m_abs_tr->get());
+		os << "Property : " << cst << "\n";
+		auto inv = this->m_abs_tr->get_abs_value();		
+		os << "Invariant: " << inv;
 	      }	    
 	      this->add_warning(os.str(), &s);
 	    }
 	    return;
 	  }
 	  
-	  if (this->m_abs_tr->get()->is_bottom()) {
+	  if (this->m_abs_tr->get_abs_value().is_bottom()) {
 	    this->m_db.add(_UNREACH);
 	    return;
 	  }
 	  
-	  abs_dom_t inv(*(this->m_abs_tr->get()));
+	  abs_dom_t inv(this->m_abs_tr->get_abs_value());
 	  if (crab::domains::checker_domain_traits<abs_dom_t>::entail(inv, cst)) {
 	    crab::crab_string_os os;
 	    if (this->m_verbose >= 3) {
@@ -142,18 +147,19 @@ namespace crab {
 	  crab::crab_string_os os;
 	  if (this->m_verbose >= 3) {
 	    os << "Property : " << s << "\n";
-	    os << "Invariant: " << *this->m_abs_tr->get() << "\n";
+	    auto inv = this->m_abs_tr->get_abs_value();	    
+	    os << "Invariant: " << inv << "\n";
 	    os << "Note: it was proven by the forward+backward analysis";	    
 	  }
 	  this->add_safe(os.str(), &s);	  
 	} else {
 	  
-	  if (this->m_abs_tr->get()->is_bottom()) {
+	  if (this->m_abs_tr->get_abs_value().is_bottom()) {
 	    this->m_db.add(_UNREACH);
 	    return;
 	  }
 
-	  abs_dom_t inv1(*this->m_abs_tr->get());
+	  abs_dom_t inv1(this->m_abs_tr->get_abs_value());
 	  auto bvar = s.cond();
 	  inv1.assume_bool(bvar, true /*is_negated*/);
 	  if (inv1.is_bottom()) {
@@ -164,7 +170,7 @@ namespace crab {
 	    }
 	    this->add_safe(os.str(), &s);	  
 	  } else  {
-	    abs_dom_t inv2(*this->m_abs_tr->get());
+	    abs_dom_t inv2(this->m_abs_tr->get_abs_value());
 	    inv2.assume_bool(bvar, false /*is_negated*/);
 	    crab::crab_string_os os;
 	    if (this->m_verbose >= 2) {	  

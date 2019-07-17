@@ -46,8 +46,9 @@ namespace ikos {
   public:
 
     using basic_block_label_t = typename CFG::basic_block_label_t;
-    
-    virtual void analyze(basic_block_label_t, AbstractValue&) = 0;
+
+    // use of move semantics to have a functional view
+    virtual AbstractValue analyze(basic_block_label_t, AbstractValue&&) = 0;
     
     virtual void process_pre(basic_block_label_t, AbstractValue) = 0;
     

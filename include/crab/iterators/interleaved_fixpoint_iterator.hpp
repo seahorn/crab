@@ -429,7 +429,7 @@ namespace ikos {
 			                 << crab::cfg_impl::get_label_str(node);
 			 auto &n = this->_iterator->_cfg.get_node(node);
 			 crab::outs() << " size=" << n.size() << "\n";);
-        this->_iterator->analyze(node, post);
+        post = this->_iterator->analyze(node, std::move(post));
         crab::CrabStats::stop ("Fixpo.analyze_block");		
         CRAB_VERBOSE_IF(3, crab::outs() << "POST Invariants:\n" << post << "\n");
         this->_iterator->set_post(node, post);
@@ -496,7 +496,7 @@ namespace ikos {
 			                  << crab::cfg_impl::get_label_str(head);
 			  auto &n = this->_iterator->_cfg.get_node(head);
 			  crab::outs() << " size=" << n.size() << "\n";);
-          this->_iterator->analyze(head, post);
+          post = this->_iterator->analyze(head, std::move(post));
 	  crab::CrabStats::stop("Fixpo.analyze_block");
 	  CRAB_VERBOSE_IF(3, crab::outs() << "POST Invariants:\n" << post << "\n");	  
 	  
@@ -542,7 +542,7 @@ namespace ikos {
 			  << crab::cfg_impl::get_label_str(head);
 			  auto &n = this->_iterator->_cfg.get_node(head);
 			  crab::outs() << " size=" << n.size() << "\n";);
-          this->_iterator->analyze(head, post);
+          post = this->_iterator->analyze(head, std::move(post));
           this->_iterator->set_post(head, post);
 	  crab::CrabStats::stop("Fixpo.analyze_block");	
 	  CRAB_VERBOSE_IF(3, crab::outs() << "POST Invariants:\n" << post << "\n");

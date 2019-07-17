@@ -102,7 +102,7 @@ namespace crab {
 	  if (checker->is_interesting(bb)) {
 	    crab::ScopedCrabStats __st__("Checker." + checker->get_property_name());
 	    abs_dom_t inv = m_analyzer[bb.label()];
-	    boost::shared_ptr<abs_tr_t> abs_tr = m_analyzer.get_abs_transformer(&inv);
+	    boost::shared_ptr<abs_tr_t> abs_tr = m_analyzer.get_abs_transformer(std::move(inv));
 	    // propagate forward the invariants from the block entry 
 	    // while checking the property
 	    checker->set(&*abs_tr, safe_assertions);
@@ -154,7 +154,7 @@ namespace crab {
           for (auto checker: this->m_checkers) {
             crab::ScopedCrabStats __st__("Checker." + checker->get_property_name());
             abs_dom_t inv = m_analyzer.get_pre(cfg, bb.label());
-	    boost::shared_ptr<abs_tr_t> abs_tr = m_analyzer.get_abs_transformer(&inv);
+	    boost::shared_ptr<abs_tr_t> abs_tr = m_analyzer.get_abs_transformer(std::move(inv));
             // propagate forward the invariants from the block entry 
             // while checking the property
             checker->set(&*abs_tr, safe_assertions);
