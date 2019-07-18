@@ -4,7 +4,6 @@
 #include <crab/cfg/var_factory.hpp>
 #include <crab/iterators/interleaved_fixpoint_iterator.hpp>
 #include <crab/analysis/abs_transformer.hpp>
-#include <crab/analysis/inter_fwd_analyzer_ds.hpp>
 #include <crab/analysis/dataflow/liveness.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 

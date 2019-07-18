@@ -14,7 +14,7 @@
 #include <crab/analysis/graphs/topo_order.hpp>
 #include <crab/analysis/fwd_analyzer.hpp>
 #include <crab/analysis/abs_transformer.hpp>
-#include <crab/analysis/inter_fwd_analyzer_ds.hpp>
+#include <crab/analysis/inter/bottom_up_inter_analyzer_ds.hpp>
 #include <crab/analysis/dataflow/liveness.hpp>
 
 #include <boost/unordered_map.hpp>
@@ -315,12 +315,12 @@ template<typename CallGraph,
 	 typename BU_Dom, 
 	 // abstract domain used for the top-down phase
 	 typename TD_Dom>
-class inter_fwd_analyzer {
+class bottom_up_inter_analyzer {
 
   typedef typename CallGraph::node_t cg_node_t;
   typedef typename CallGraph::edge_t cg_edge_t;
 
-  typedef inter_fwd_analyzer<CallGraph, BU_Dom, TD_Dom>  this_type;
+  typedef bottom_up_inter_analyzer<CallGraph, BU_Dom, TD_Dom>  this_type;
   
 public:
 
@@ -374,11 +374,11 @@ private:
       
 public:
       
-  inter_fwd_analyzer(CallGraph cg, const liveness_map_t* live,
-		     // fixpoint parameters
-		     unsigned int widening_delay=1,
-		     unsigned int descending_iters=UINT_MAX,
-		     size_t jump_set_size=0)
+  bottom_up_inter_analyzer(CallGraph cg, const liveness_map_t* live,
+			   // fixpoint parameters
+			   unsigned int widening_delay=1,
+			   unsigned int descending_iters=UINT_MAX,
+			   size_t jump_set_size=0)
     : m_cg(cg), m_live(live),
       m_widening_delay(widening_delay), 
       m_descending_iters(descending_iters),
@@ -390,7 +390,7 @@ public:
     CRAB_VERBOSE_IF(1, get_msg_stream() << "OK\n";);
   }
 
-  inter_fwd_analyzer(const this_type& other) = delete;
+  bottom_up_inter_analyzer(const this_type& other) = delete;
   
   this_type& operator=(const this_type& other) = delete;
   
