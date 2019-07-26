@@ -1052,8 +1052,13 @@ private:
     widening_set_t& m_widening_set;
     find_widening_set_visitor(widening_set_t& widening_set)
       : m_widening_set(widening_set) {}
-    void visit(wto_cycle_t& cycle) { m_widening_set.insert(cycle.head());}
-    void visit(wto_vertex_t& verter) {}
+    void visit(wto_cycle_t& cycle) {
+      m_widening_set.insert(cycle.head());
+      for (auto& wto_component: cycle) {
+	wto_component.accept(this);
+      }
+    }
+    void visit(wto_vertex_t& vertex) {}
   };
 
   AbsDom get_invariant(const global_invariant_map_t& global_map,
@@ -1101,7 +1106,12 @@ public:
     auto& widening_set = m_ctx.get_widening_set();
     find_widening_set_visitor widening_vis(widening_set);
     wto_cg.accept(&widening_vis);
-    CRAB_LOG("inter", crab::outs() << "Call graph WTO=" << wto_cg << "\n";);    
+    CRAB_LOG("inter", crab::outs() << "Call graph WTO=" << wto_cg << "\n";);
+    CRAB_LOG("inter", crab::outs() << "Widening points={";
+	     for(auto &cg_node: widening_set) {
+	       crab::outs() << cg_node.name() << ";";
+	     }
+	     crab::outs() << "}\n";);        
     CRAB_VERBOSE_IF(1, get_msg_stream() << "Done.";);    
 
     std::vector<typename CallGraph::node_t> entries = m_cg.entries();    
