@@ -248,7 +248,8 @@ public:
     
   void exec(bin_op_t& stmt) {      
     bool pre_bot = false;
-    if (::crab::CrabSanityCheckFlag) {
+    if (::crab::CrabSanityCheckFlag &&
+	(!(stmt.op() >= BINOP_SDIV && stmt.op() <= BINOP_UREM))) {
       pre_bot = m_inv.is_bottom();
     }
     
@@ -263,7 +264,8 @@ public:
 	    stmt.lhs(), (*op1.get_variable()), op2.constant());  
     }
     
-    if (::crab::CrabSanityCheckFlag) {
+    if (::crab::CrabSanityCheckFlag &&
+	(!(stmt.op() >= BINOP_SDIV && stmt.op() <= BINOP_UREM))) {
       bool post_bot = m_inv.is_bottom();
       if (!(pre_bot || !post_bot)) {
 	CRAB_ERROR("Invariant became bottom after ", stmt);
