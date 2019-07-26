@@ -369,6 +369,11 @@ public:
     if (num_entries == 0) {
       CRAB_ERROR("cannot find entry point of the call graph");
     } else if (num_entries > 1) {
+      for(unsigned i=0,e=entries.size();i<e;i++) {
+	if (entries[i].name() == "main") {
+	  return entries[i];
+	}
+      }
       CRAB_ERROR("do not support call graphs with multiple entry points");
     } else {
       return entries[0];
