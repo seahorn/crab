@@ -84,12 +84,23 @@ int main(int argc, char** argv) {
     analysis_t analyzer(*cfg, nullptr, final_states, false /*error states*/);
     analyzer.run_backward();    
     crab::outs () << "Necessary preconditions from error states using Polyhedra:\n";
-    // Print preconditions
-    for (z_basic_block_t& bb : *cfg) {
-      std::string bb_name = bb.label();
-      auto inv = analyzer[bb_name];
-      crab::outs () << bb_name << ":" << inv << "\n";
-    }  
+    // Print preconditions in DFS to enforce a fixed order
+    std::set<crab::cfg_impl::basic_block_label_t> visited;
+    std::vector<crab::cfg_impl::basic_block_label_t> worklist;
+    worklist.push_back(cfg->entry());
+    visited.insert(cfg->entry());
+    while (!worklist.empty()) {
+      auto cur_label = worklist.back();
+      worklist.pop_back();
+      auto inv = analyzer[cur_label];
+      crab::outs() << crab::cfg_impl::get_label_str(cur_label) << "=" << inv << "\n";
+      auto const &cur_node = cfg->get_node(cur_label);
+      for (auto const kid_label : boost::make_iterator_range(cur_node.next_blocks())) {
+	if (visited.insert(kid_label).second) {
+	  worklist.push_back(kid_label);
+	}
+      }
+    }
   }
   {
 #ifdef HAVE_APRON
@@ -105,12 +116,23 @@ int main(int argc, char** argv) {
     analysis_t analyzer(*cfg, nullptr, final_states, true /*good states*/);
     analyzer.run_backward();    
     crab::outs () << "Necessary preconditions from safe states using Polyhedra:\n";
-    // Print preconditions
-    for (z_basic_block_t& bb : *cfg) {
-      std::string bb_name = bb.label();
-      auto inv = analyzer[bb_name];
-      crab::outs () << bb_name << ":" << inv << "\n";
-    }  
+    // Print preconditions in DFS to enforce a fixed order    
+    std::set<crab::cfg_impl::basic_block_label_t> visited;
+    std::vector<crab::cfg_impl::basic_block_label_t> worklist;
+    worklist.push_back(cfg->entry());
+    visited.insert(cfg->entry());
+    while (!worklist.empty()) {
+      auto cur_label = worklist.back();
+      worklist.pop_back();
+      auto inv = analyzer[cur_label];
+      crab::outs() << crab::cfg_impl::get_label_str(cur_label) << "=" << inv << "\n";
+      auto const &cur_node = cfg->get_node(cur_label);
+      for (auto const kid_label : boost::make_iterator_range(cur_node.next_blocks())) {
+	if (visited.insert(kid_label).second) {
+	  worklist.push_back(kid_label);
+	}
+      }
+    }
   }    
   // free the CFG
   delete cfg;
