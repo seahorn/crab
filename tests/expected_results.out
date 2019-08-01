@@ -2726,6 +2726,167 @@ bb2={-i <= 0}
 bb5={-i <= -100}
 bb3={i-n <= -1; -i <= 0}
 bb4={-i <= 0}
+z:int declare foo(x:int)
+entry:
+  y = x+1;
+  goto exit;
+exit:
+  z = y+2;
+  return z;
+
+
+y1:int declare bar(a:int)
+entry:
+  x1 = a;
+  w1 = 5;
+  goto exit;
+exit:
+  y1 = call foo(x1:int);
+  assert(-y1 <= -6);
+  assert(y1 <= 17);
+  return y1;
+
+
+t:int declare rec1(s:int)
+entry:
+  r = s-1;
+  goto exit;
+exit:
+  t = call rec2(r:int);
+  return t;
+
+
+t1:int declare rec2(s1:int)
+entry:
+  a = 10;
+  r1 = s1-1;
+  goto exit;
+exit:
+  t1 = call rec1(r1:int);
+  assert(-a <= -5);
+  return t1;
+
+
+w2:int declare main()
+entry:
+  x2 = 3;
+  x3 = 4;
+  x4 = 5;
+  x5 = 6;
+  y2 = call bar(x2:int);
+  assert(y2 = 6);
+  __ = call rec1(y2:int);
+  goto exit;
+exit:
+  z2 = y2+2;
+  y3 = call bar(x2:int);
+  assert(y3 = 6);
+  z3 = y3+z2;
+  w2 = call foo(z3:int);
+  assert(w2 = 17);
+  y4 = call bar(x3:int);
+  assert(y4 = 7);
+  y5 = call bar(x4:int);
+  assert(y5 = 8);
+  y6 = call bar(x5:int);
+  assert(y6 = 9);
+  res = w2+y4;
+  res = res+y5;
+  res = res+y6;
+  assert(res = 41);
+  return res;
+
+
+z:int declare foo(x:int)
+exit:
+	{x -> [3, 14], y -> [4, 15], y-x<=1, x-y<=-1} ==>
+	{x -> [3, 14], y -> [4, 15], z -> [6, 17], y-x<=1, z-x<=3, x-y<=-1, z-y<=2, y-z<=-2, x-z<=-3}
+entry:
+	{x -> [3, 14]} ==>
+	{x -> [3, 14], y -> [4, 15], y-x<=1, x-y<=-1}
+=================================
+y1:int declare bar(a:int)
+exit:
+	{a -> [3, 6], x1 -> [3, 6], w1 -> [5, 5], x1-a<=0, w1-a<=2, a-x1<=0, w1-x1<=2, a-w1<=1, x1-w1<=1} ==>
+	{a -> [3, 6], x1 -> [3, 6], y1 -> [6, 9], w1 -> [5, 5], x1-a<=0, w1-a<=2, y1-a<=3, a-x1<=0, w1-x1<=2, y1-x1<=3, w1-y1<=-1, x1-y1<=-3, a-y1<=-3, a-w1<=1, x1-w1<=1, y1-w1<=4}
+entry:
+	{a -> [3, 6]} ==>
+	{a -> [3, 6], x1 -> [3, 6], w1 -> [5, 5], x1-a<=0, w1-a<=2, a-x1<=0, w1-x1<=2, a-w1<=1, x1-w1<=1}
+=================================
+t:int declare rec1(s:int)
+exit:
+	{s-r<=1, r-s<=-1} ==>
+	{s-r<=1, r-s<=-1}
+entry:
+	{} ==>
+	{s-r<=1, r-s<=-1}
+=================================
+t1:int declare rec2(s1:int)
+exit:
+	{a -> [10, 10], s1-r1<=1, r1-s1<=-1} ==>
+	{a -> [10, 10], s1-r1<=1, r1-s1<=-1}
+entry:
+	{} ==>
+	{a -> [10, 10], s1-r1<=1, r1-s1<=-1}
+=================================
+w2:int declare main()
+exit:
+	{x2 -> [3, 3], x3 -> [4, 4], x4 -> [5, 5], x5 -> [6, 6], y2 -> [6, 6], x3-x2<=1, x4-x2<=2, x5-x2<=3, y2-x2<=3, x2-x3<=-1, x4-x3<=1, x5-x3<=2, y2-x3<=2, x2-x4<=-2, x3-x4<=-1, x5-x4<=1, y2-x4<=1, x2-x5<=-3, x3-x5<=-2, x4-x5<=-1, y2-x5<=0, x4-y2<=-1, x3-y2<=-2, x2-y2<=-3, x5-y2<=0} ==>
+	{x2 -> [3, 3], x3 -> [4, 4], x4 -> [5, 5], x5 -> [6, 6], y2 -> [6, 6], y3 -> [6, 6], y4 -> [7, 7], y5 -> [8, 8], z2 -> [8, 8], z3 -> [14, 14], w2 -> [17, 17], res -> [41, 41], y6 -> [9, 9], x3-x2<=1, x4-x2<=2, x5-x2<=3, y2-x2<=3, z2-x2<=5, y3-x2<=3, z3-x2<=11, w2-x2<=14, y4-x2<=4, y5-x2<=5, y6-x2<=6, res-x2<=38, x2-x3<=-1, x4-x3<=1, x5-x3<=2, y2-x3<=2, z2-x3<=4, y3-x3<=2, z3-x3<=10, w2-x3<=13, y4-x3<=3, y5-x3<=4, y6-x3<=5, res-x3<=37, x2-x4<=-2, x3-x4<=-1, x5-x4<=1, y2-x4<=1, z2-x4<=3, y3-x4<=1, z3-x4<=9, w2-x4<=12, y4-x4<=2, y5-x4<=3, y6-x4<=4, res-x4<=36, x2-x5<=-3, x3-x5<=-2, x4-x5<=-1, y2-x5<=0, z2-x5<=2, y3-x5<=0, z3-x5<=8, w2-x5<=11, y4-x5<=1, y5-x5<=2, y6-x5<=3, res-x5<=35, x4-y2<=-1, x3-y2<=-2, x2-y2<=-3, x5-y2<=0, z2-y2<=2, y3-y2<=0, z3-y2<=8, w2-y2<=11, y4-y2<=1, y5-y2<=2, y6-y2<=3, res-y2<=35, x4-y3<=-1, x3-y3<=-2, x2-y3<=-3, z2-y3<=2, y2-y3<=0, x5-y3<=0, z3-y3<=8, w2-y3<=11, y4-y3<=1, y5-y3<=2, y6-y3<=3, res-y3<=35, x4-y4<=-2, x3-y4<=-3, x2-y4<=-4, w2-y4<=10, z3-y4<=7, y3-y4<=-1, z2-y4<=1, y2-y4<=-1, x5-y4<=-1, y5-y4<=1, y6-y4<=2, res-y4<=34, x4-y5<=-3, x3-y5<=-4, x2-y5<=-5, y4-y5<=-1, w2-y5<=9, z3-y5<=6, y3-y5<=-2, z2-y5<=0, y2-y5<=-2, x5-y5<=-2, y6-y5<=1, res-y5<=33, y2-z2<=-2, x4-z2<=-3, x3-z2<=-4, x2-z2<=-5, x5-z2<=-2, y3-z2<=-2, z3-z2<=6, w2-z2<=9, y4-z2<=-1, y5-z2<=0, y6-z2<=1, res-z2<=33, y3-z3<=-8, z2-z3<=-6, x4-z3<=-9, x3-z3<=-10, x2-z3<=-11, y2-z3<=-8, x5-z3<=-8, w2-z3<=3, y4-z3<=-7, y5-z3<=-6, y6-z3<=-5, res-z3<=27, x4-w2<=-12, x3-w2<=-13, x2-w2<=-14, z3-w2<=-3, y3-w2<=-11, z2-w2<=-9, y2-w2<=-11, x5-w2<=-11, y4-w2<=-10, y5-w2<=-9, y6-w2<=-8, res-w2<=24, y6-res<=-32, x5-res<=-35, x4-res<=-36, x3-res<=-37, x2-res<=-38, y5-res<=-33, y4-res<=-34, w2-res<=-24, z3-res<=-27, y3-res<=-35, z2-res<=-33, y2-res<=-35, x4-y6<=-4, x3-y6<=-5, x2-y6<=-6, y5-y6<=-1, y4-y6<=-2, w2-y6<=8, z3-y6<=5, y3-y6<=-3, z2-y6<=-1, y2-y6<=-3, x5-y6<=-3, res-y6<=32}
+entry:
+	{} ==>
+	{x2 -> [3, 3], x3 -> [4, 4], x4 -> [5, 5], x5 -> [6, 6], y2 -> [6, 6], x3-x2<=1, x4-x2<=2, x5-x2<=3, y2-x2<=3, x2-x3<=-1, x4-x3<=1, x5-x3<=2, y2-x3<=2, x2-x4<=-2, x3-x4<=-1, x5-x4<=1, y2-x4<=1, x2-x5<=-3, x3-x5<=-2, x4-x5<=-1, y2-x5<=0, x4-y2<=-1, x3-y2<=-2, x2-y2<=-3, x5-y2<=0}
+=================================
+16  Number of total safe checks
+ 0  Number of total error checks
+ 0  Number of total warning checks
+ 0  Number of total unreachable checks
+ --- WARNING -----------------
+Property : w2 = 17
+Invariant: {x2 -> [3, 3], x3 -> [4, 4], x4 -> [5, 5], x5 -> [6, 6], y2 -> [6, 6], y3 -> [6, 6], z2 -> [8, 8], z3 -> [14, 14], w2 -> [6, 17], x3-x2<=1, x4-x2<=2, x5-x2<=3, y2-x2<=3, z2-x2<=5, y3-x2<=3, z3-x2<=11, w2-x2<=14, x2-x3<=-1, x4-x3<=1, x5-x3<=2, y2-x3<=2, z2-x3<=4, y3-x3<=2, z3-x3<=10, w2-x3<=13, x2-x4<=-2, x3-x4<=-1, x5-x4<=1, y2-x4<=1, z2-x4<=3, y3-x4<=1, z3-x4<=9, w2-x4<=12, x2-x5<=-3, x3-x5<=-2, x4-x5<=-1, y2-x5<=0, z2-x5<=2, y3-x5<=0, z3-x5<=8, w2-x5<=11, x4-y2<=-1, x3-y2<=-2, x2-y2<=-3, x5-y2<=0, z2-y2<=2, y3-y2<=0, z3-y2<=8, w2-y2<=11, x4-y3<=-1, x3-y3<=-2, x2-y3<=-3, z2-y3<=2, y2-y3<=0, x5-y3<=0, z3-y3<=8, w2-y3<=11, y2-z2<=-2, x4-z2<=-3, x3-z2<=-4, x2-z2<=-5, x5-z2<=-2, y3-z2<=-2, z3-z2<=6, w2-z2<=9, y3-z3<=-8, z2-z3<=-6, x4-z3<=-9, x3-z3<=-10, x2-z3<=-11, y2-z3<=-8, x5-z3<=-8, w2-z3<=3, x4-w2<=-1, x3-w2<=-2, x2-w2<=-3, z3-w2<=8, y3-w2<=0, z2-w2<=2, y2-w2<=0, x5-w2<=0}
+ -----------------------------
+15  Number of total safe checks
+ 0  Number of total error checks
+ 1  Number of total warning checks
+ 0  Number of total unreachable checks
+(x_out:int,y_out:int) declare loop(x_in:int,y_in:int)
+entry:
+  goto rec_case,base_case;
+rec_case:
+  assume(x_in <= 100);
+  x_next = x_in+1;
+  y_next = y_in+1;
+  (x_out,y_out)= call loop(x_next:int,y_next:int);
+  goto exit;
+exit:
+  return (x_out,y_out);
+
+base_case:
+  assume(-x_in <= -101);
+  x_out = x_in;
+  y_out = y_in;
+  goto exit;
+
+(x_res:int,y_res:int) declare main()
+entry:
+  x = 0;
+  y = 0;
+  (x_res,y_res)= call loop(x:int,y:int);
+  goto exit;
+exit:
+  return (x_res,y_res);
+
+
+(x_out:int,y_out:int) declare loop(x_in:int,y_in:int)
+exit={}
+base_case={}
+rec_case={}
+entry={}
+=================================
+(x_res:int,y_res:int) declare main()
+exit={x -> [0, 0], y -> [0, 0], y-x<=0, x-y<=0}
+entry={}
+=================================
 x0:
   k = 50;
   i = 0;
