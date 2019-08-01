@@ -2,6 +2,8 @@ language: cpp
 cache: apt
 env:
   matrix:
+     - UBUNTU_DIST=trusty
+       BUILD_TYPE=Release  
      - UBUNTU_DIST=xenial
        BUILD_TYPE=Release
      - UBUNTU_DIST=bionic

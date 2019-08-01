@@ -65,6 +65,9 @@ RUN cmake -GNinja \
     cmake --build . --target apron  && cmake .. && \
     cmake --build . --target install
 
+# Run tests
+RUN /crab/tests/run_tests.sh /crab/tests/expected_results.out /crab/build
+
 ENV PATH "/crab/build/run/bin:$PATH"
 
 WORKDIR /crab
