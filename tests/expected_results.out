@@ -927,15 +927,6 @@ bb1_t=({n1 -> [1, 1], i -> [0, +oo], n -> [1, +oo], n1-i<=1, i-n<=0},{[0,i)=>{A 
 bb2=({n1 -> [1, 1], i -> [0, +oo], n -> [1, +oo], n1-i<=1, i-n<=-1, n1-n<=0},{[0,i)=>{A -> [123456, 123456]}, [1,i)=>{A -> [123456, 123456]}, [2,i)=>{A -> [123456, 123456]}, [n1,i)=>{A -> [123456, 123456]}})
 Abstract trace: entry (bb1 bb1_t bb2)^{4} bb1_f ret
 
-Program 5: for all 0<= i< 10. a[i] = 123456 (assume elem size of 4 bytes)Invariants using ArraySparseGraph(SplitDBM,Intervals)
-entry=({},{})
-bb1=({i -> [0, 10]},{[0,i)=>{A -> [123456, 123456]}, [1,i)=>{A -> [123456, 123456]}, [8,i)=>{A -> [123456, 123456]}, [9,i)=>{A -> [123456, 123456]}})
-bb1_f=({i -> [0, 10]},{[0,i)=>{A -> [123456, 123456]}, [1,i)=>{A -> [123456, 123456]}, [8,i)=>{A -> [123456, 123456]}, [9,i)=>{A -> [123456, 123456]}})
-ret=({i -> [10, 10]},{[0,i)=>{A -> [123456, 123456]}, [0,8)=>{A -> [123456, 123456]}, [0,1)=>{A -> [123456, 123456]}, [0,9)=>{A -> [123456, 123456]}, [1,i)=>{A -> [123456, 123456]}, [1,8)=>{A -> [123456, 123456]}, [1,9)=>{A -> [123456, 123456]}, [8,i)=>{A -> [123456, 123456]}, [8,9)=>{A -> [123456, 123456]}, [9,i)=>{A -> [123456, 123456]}})
-bb1_t=({i -> [0, 10]},{[0,i)=>{A -> [123456, 123456]}, [1,i)=>{A -> [123456, 123456]}, [8,i)=>{A -> [123456, 123456]}, [9,i)=>{A -> [123456, 123456]}})
-bb2=({i -> [0, 9]},{[0,i)=>{A -> [123456, 123456]}, [1,i)=>{A -> [123456, 123456]}, [8,i)=>{A -> [123456, 123456]}})
-Abstract trace: entry (bb1 bb1_t bb2)^{5} bb1_f ret
-
 Program 6: a[0] = 89 and for all 1<= i < n. a[i] = a[i-1]Invariants using ArraySparseGraph(SplitDBM,Intervals)
 entry=({},{})
 bb1=({n1 -> [1, 1], i -> [1, +oo], n -> [2, +oo], val -> [89, 89], n1-i<=0, i-n<=0},{[0,n1)=>{A -> [89, 89]}, [0,1)=>{A -> [89, 89]}, [0,i)=>{A -> [89, 89]}, [1,i)=>{A -> [89, 89]}, [2,i)=>{A -> [89, 89]}, [n1,i)=>{A -> [89, 89]}})
@@ -2368,64 +2359,6 @@ Summary rec1(IN:{s:int},OUT:{t:int}) ==>
 {}
 Summary rec2(IN:{s1:int},OUT:{t1:int}) ==>
 {}
-Running summary domain=Term(Intervals) and forward domain=Intervals
-z:int declare foo(x:int)
-exit={}
-entry={}
-=================================
-y1:int declare bar(a:int)
-exit={a -> [3, 3]; x1 -> [3, 3]; w1 -> [5, 5]}
-entry={a -> [3, 3]; x1 -> [3, 3]; w1 -> [5, 5]}
-=================================
-t:int declare rec1(s:int)
-exit={}
-entry={}
-=================================
-t1:int declare rec2(s1:int)
-exit={}
-entry={}
-=================================
-w2:int declare main()
-exit={x2 -> [3, 3]}
-entry={x2 -> [3, 3]}
-=================================
-Summary foo(IN:{x:int},OUT:{z:int}) ==>
-{x -> t0[_x2], z -> t4[_x4]}{_x0 -> [1, 1]; _x3 -> [2, 2]}
-Summary bar(IN:{a:int},OUT:{y1:int}) ==>
-{a -> t7[_y0], y1 -> t9[_y4]}{}
-Summary rec1(IN:{s:int},OUT:{t:int}) ==>
-{s -> t4[_y1], t -> t7[_y3]}{}
-Summary rec2(IN:{s1:int},OUT:{t1:int}) ==>
-{s1 -> t0[_x2]}{}
-Running summary domain=ReducedProduct(Term(DisjunctiveIntervals),SplitDBM) and forward domain=ReducedProduct(Term(DisjunctiveIntervals),SplitDBM)
-z:int declare foo(x:int)
-exit=({x -> t0[_y0], y -> t2[_y2], z -> t4[_y4]}{_y0 -> [3, 3] | [8, 8]; _y1 -> [1, 1]; _y2 -> [4, 4] | [9, 9]; _y3 -> [2, 2]; _y4 -> [6, 6] | [11, 11]}, {x -> [3, 8], y -> [4, 9], z -> [6, 11], y-x<=1, z-x<=3, x-y<=-1, z-y<=2, y-z<=-2, x-z<=-3})
-entry=({x -> t0[_y0], y -> t2[_y2]}{_y0 -> [3, 3] | [8, 8]; _y1 -> [1, 1]; _y2 -> [4, 4] | [9, 9]}, {x -> [3, 8], y -> [4, 9], y-x<=1, x-y<=-1})
-=================================
-y1:int declare bar(a:int)
-exit=({a -> t7[_y0], x1 -> t7[_y0], y1 -> t9[_y4], w1 -> t8[_y2]}{_y0 -> [3, 3]; _y1 -> [3, 3]; _y2 -> [5, 5]; _y3 -> [3, 3]; _y4 -> [6, 6]}, {a -> [3, 3], x1 -> [3, 3], w1 -> [5, 5], y1 -> [6, 6], x1-a<=0, y1-a<=3, a-x1<=0, y1-x1<=3, a-y1<=-3, x1-y1<=-3})
-entry=({a -> t0[_x0], x1 -> t0[_x0], w1 -> t1[_x1]}{_x0 -> [3, 3]; _x1 -> [5, 5]}, {x1 -> [3, 3], a -> [3, 3], w1 -> [5, 5], a-x1<=0, x1-a<=0})
-=================================
-t:int declare rec1(s:int)
-exit=({r -> t6[_y0], s -> t4[_y1], t -> t7[_y3]}{}, {s-r<=1, r-s<=-1})
-entry=({r -> t2[_x1], s -> t0[_x2]}{_x0 -> [1, 1]}, {s-r<=1, r-s<=-1})
-=================================
-t1:int declare rec2(s1:int)
-exit=({r1 -> t7[_z0], s1 -> t5[_z1], t1 -> t8[_z3]}{}, {s1-r1<=1, r1-s1<=-1})
-entry=({r1 -> t2[_x1], s1 -> t0[_x2]}{_x0 -> [1, 1]}, {s1-r1<=1, r1-s1<=-1})
-=================================
-w2:int declare main()
-exit=({x2 -> t16[_y0], y2 -> t17[_y1], z2 -> t19[_y2], z3 -> t20[_y3], w2 -> t21[_y5]}{_y0 -> [3, 3]; _y1 -> [6, 6]; _y2 -> [8, 8]; _y4 -> [8, 8]; _y5 -> [11, 11]}, {x2 -> [3, 3], y2 -> [6, 6], z2 -> [8, 8], w2 -> [11, 11], y2-x2<=3, x2-y2<=-3, w2-z2<=3, z2-w2<=-3})
-entry=({x2 -> t7[_x0], y2 -> t8[_x1], z3 -> t9[_x3]}{_x0 -> [3, 3]; _x1 -> [6, 6]; _x2 -> [6, 6]}, {x2 -> [3, 3], y2 -> [6, 6], y2-x2<=3, x2-y2<=-3})
-=================================
-Summary foo(IN:{x:int},OUT:{z:int}) ==>
-({x -> t0[_x2], z -> t4[_x4]}{_x0 -> [1, 1]; _x3 -> [2, 2]}, {z-x<=3, x-z<=-3})
-Summary bar(IN:{a:int},OUT:{y1:int}) ==>
-({a -> t7[_y0], y1 -> t9[_y4]}{}, {y1-a<=3, a-y1<=-3})
-Summary rec1(IN:{s:int},OUT:{t:int}) ==>
-({s -> t4[_y1], t -> t7[_y3]}{}, {})
-Summary rec2(IN:{s1:int},OUT:{t1:int}) ==>
-({s1 -> t0[_x2]}{}, {})
 Join 
 Widening 
 Widening of 
@@ -2749,21 +2682,21 @@ bb2:
   goto bb3;
 
 Necessary preconditions from error states using Polyhedra:
-bb6:_|_
-bb5:_|_
-bb4:{len <= 1; -argc <= -2}
-bb3:{len <= 1; -argc <= -2}
-bb2:{len <= 1; -argc <= -2}
-bb1:{len <= 2; -argc <= -3}
-bb0:{len <= 2; -argc+len <= -1; -argc <= -2}
+bb0={len <= 2; -argc+len <= -1; -argc <= -2}
+bb2={len <= 1; -argc <= -2}
+bb3={len <= 1; -argc <= -2}
+bb5=_|_
+bb6=_|_
+bb4={len <= 1; -argc <= -2}
+bb1={len <= 2; -argc <= -3}
 Necessary preconditions from safe states using Polyhedra:
-bb6:{}
-bb5:{}
-bb4:{-argc <= -2; -len <= -2}
-bb3:{}
-bb2:{}
-bb1:{-argc <= -3; -len <= -3}
-bb0:{}
+bb0={}
+bb2={}
+bb3={}
+bb5={}
+bb6={}
+bb4={-argc <= -2; -len <= -2}
+bb1={-argc <= -3; -len <= -3}
 bb1:
   i = 0;
   goto bb2;
@@ -2782,21 +2715,17 @@ bb5:
 
 
 Necessary preconditions from error states using Polyhedra:
-bb5:_|_
-bb4:{i-n <= 0}
-bb3:{i-n <= 0}
-bb2:{i-n <= 0}
-bb1:{-n <= 0}
+bb1={-n <= 0}
+bb2={i-n <= 0}
+bb5=_|_
+bb3={i-n <= 0}
+bb4={i-n <= 0}
 Necessary preconditions from safe states using Polyhedra:
-bb5:{-i <= -100}
-bb4:{-i <= 0}
-bb3:{i-n <= -1; -i <= 0}
-bb2:{-i <= 0}
-bb1:{}
-{x -> t2[_x2], y -> t0[_x0]}{_x0 -> [8, 8]; _x1 -> [5, 5]; _x2 -> [40, 40]} | {x -> t2[_x1], y -> t0[_x2]}{_x0 -> [5, 5]} = {x -> t2[_y2], y -> t0[_y0]}{_y1 -> [5, 5]}
-{x -> t0[_x0]}{_x0 -> [1, 1]} | {x -> t1[_x1]}{_x0 -> [1, 1]; _x1 -> [2, 2]} = {x -> t0[_y0]}{_y0 -> [1, 2]}
-Before project {x -> t0[_x0], y -> t0[_x0], z -> t1[_x1]}{_x0 -> [5, 5]; _x1 -> [9, 9]}
-After project {x -> t0[_x0], y -> t0[_x0]}{_x0 -> [5, 5]}
+bb1={}
+bb2={-i <= 0}
+bb5={-i <= -100}
+bb3={i-n <= -1; -i <= 0}
+bb4={-i <= 0}
 x0:
   k = 50;
   i = 0;
@@ -2919,25 +2848,6 @@ ret={i -> t0[_y1], x -> t1[_y2], y -> t1[_y2], z -> t2[_y3], w -> t2[_y3], s -> 
 bb1_t={i -> t0[_y1], x -> t1[_y2], y -> t1[_y2], z -> t2[_y3], w -> t2[_y3], s -> t3[_y0], t -> t3[_y0]}{_y1 -> [0, 100]}
 Abstract trace: entry (bb1 bb1_t)^{3} bb1_f ret
 
-Meet
-{x -> t0[_x0], y -> t2[_x2], w -> t0[_x0], z -> t1[_x1]}{_x0 -> [5, 5]; _x1 -> [3, 3]; _x2 -> [8, 8]} 
- {x -> t2[_x2], y -> t0[_x0], w -> t0[_x0], z -> t1[_x1]}{_x0 -> [8, 8]; _x1 -> [2, 2]; _x2 -> [10, 10]}
-Result=_|_
-Meet
-{x -> t0[_x0], y -> t2[_x2], w -> t0[_x0], z -> t1[_x1]}{_x0 -> [5, 8]; _x1 -> [1, 10]; _x2 -> [6, 18]} 
- {x -> t2[_x2], y -> t0[_x0], w -> t0[_x0], z -> t1[_x1]}{_x0 -> [2, 7]; _x1 -> [3, 5]; _x2 -> [5, 12]}
-Result={x -> t8[_y0], y -> t8[_y0], w -> t8[_y0], z -> t7[_y3]}{_y0 -> [5, 8]; _y1 -> [6, 7]; _y2 -> [5, 7]; _y3 -> [3, 5]}
-Added x-y = 0
-{x -> t2[_x2], y -> t3[_x3], v0 -> t0[_x0], v1 -> t1[_x1]}{_x0 -> [0, 0]; _x1 -> [1, 1]; _x2 -> [1, 1]; _x3 -> [1, 1]}
-Result={x -> t6[_x4], y -> t6[_x4], v0 -> t5[_x5], v1 -> t4[_x6]}{_x4 -> [1, 1]; _x5 -> [0, 0]; _x6 -> [1, 1]}
-Added x-y != 0
-Result=_|_
-Test with arrays
-{x -> t1[_x2], y -> t3[_x4], z -> t4[_x3], A -> t0[_x1], @V_8 -> t4[_x3]}{_x3 -> [42, 42]}
-Added z = 42
-Result={x -> t1[_x2], y -> t3[_x4], z -> t4[_x3], A -> t0[_x1], @V_8 -> t4[_x3]}{_x3 -> [42, 42]}
-Added z = 5
-Result=_|_
 x0:
   k = 2147483648;
   i = 0;
