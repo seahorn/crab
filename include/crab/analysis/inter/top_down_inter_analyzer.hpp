@@ -807,11 +807,21 @@ private:
 	top_down_inter_impl::get_inter_analysis
 	  <typename CallGraph::node_t, intra_analyzer_with_call_semantics_t>
 	(m_cg.get_callee(cs), get_shared_ptr());
-      assert(callee_cfg.has_exit());
-      callee_exit = callee_analysis->get_post(callee_cfg.exit());    
-      CRAB_LOG("inter",
-	       crab::outs() << "[INTER] Finished \"" << cs << "\" with exit="
-	                    << callee_exit << "\n";);
+
+      if (callee_cfg.has_exit()) {
+	callee_exit = callee_analysis->get_post(callee_cfg.exit());
+	CRAB_LOG("inter",
+		 crab::outs() << "[INTER] Finished \"" << cs << "\" with exit="
+	                      << callee_exit << "\n";);
+	
+      } else {
+	// if the callee has not exit is because it's a noreturn function.
+	callee_exit = AbsDom::bottom();
+	CRAB_LOG("inter",
+		 crab::outs() << "[INTER] Finished \"" << cs << "\" with exit="
+ 		              << callee_exit << ": the callee has no exit block.\n";);
+      }
+      
       CRAB_LOG("inter2",
 	       callee_analysis->write(crab::outs());
 	       crab::outs() << "\n";);
