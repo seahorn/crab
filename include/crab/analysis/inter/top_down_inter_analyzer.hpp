@@ -288,6 +288,7 @@ public:
       ccs.pop_front();
       ccs.push_front(std::move(cc1->join_with(*cc2)));
       compress = true;
+      crab::CrabStats::count("Interprocedural.num_max_calling_contexts_reached");	      
       CRAB_LOG("inter",
 	       crab::outs() << "[INTER] joining two oldest calling contexts\n";);      
     }
@@ -633,15 +634,12 @@ private:
       ccs.push_back(std::move(cc));
       m_ctx.get_calling_context_table().insert({fun, std::move(ccs)});
     } else {
-      calling_context_collection_t& ccs = it->second;      
-      if (ccs.size() > m_ctx.get_max_call_contexts()) {
-	crab::CrabStats::count("Interprocedural.num_max_calling_contexts_reached");	
-      }
       // the policy decides how to add the new context.
       auto& cs_policy = m_ctx.get_context_sensitivity_policy();
+      calling_context_collection_t& ccs = it->second;      
       cs_policy.add(ccs, std::move(cc));
     }
-    crab::CrabStats::count("Interprocedural.num_calling_contexts");
+    //crab::CrabStats::count("Interprocedural.num_calling_contexts");
   }
   
 
@@ -898,12 +896,12 @@ public:
       CRAB_ERROR("Cannot find callee CFG for ", cs);
     }
 
-    if (!m_ctx.get_is_checking_phase()) {
-      crab::CrabStats::count("Interprocedural.num_callsites");	
-    }
-
     if (this->get_abs_value().is_bottom()) {
       return;
+    }
+
+    if (!m_ctx.get_is_checking_phase()) {
+      crab::CrabStats::count("Interprocedural.num_callsites");	
     }
     
     cg_node_t callee_cg_node = m_cg.get_callee(cs);
