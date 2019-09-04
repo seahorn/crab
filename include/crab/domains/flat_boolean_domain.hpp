@@ -1122,10 +1122,14 @@ namespace crab {
 	    // -- definitely true	  
 	    _product.first().set_bool(x, boolean_value::get_true());
 	  } else {
+	    #if 0
 	    // XXX: before we give up we convert into intervals and
 	    // check again if the negated constraint is bottom.  This
 	    // is useful because e.g., apron domains completely ignore
-	    // disequations. 
+	    // disequations.
+	    // 
+	    // JN: I disable this code because AFIK all domains reason
+	    // now about disequalities, included apron/elina domains.
 	    interval_domain<number_t,varname_t> inv3;
 	    inv3 += cst.negate();	    
 	    for (auto c: _product.second().to_linear_constraint_system())
@@ -1137,6 +1141,10 @@ namespace crab {
 	      // -- inconclusive
 	      _product.first().set_bool(x, boolean_value::top());
 	    }
+	    #else
+	    // -- inconclusive
+	    _product.first().set_bool(x, boolean_value::top());
+	    #endif 
 	  }
 	}
 	_var_to_csts.set(x, lin_cst_set_domain(cst));
