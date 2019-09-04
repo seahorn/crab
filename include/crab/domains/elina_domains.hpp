@@ -1948,6 +1948,9 @@ namespace domains {
     /* End unimplemented operations */
     
     interval_domain_t to_interval_domain() {
+      crab::CrabStats::count(getDomainName() + ".count.to_interval_domain");
+      crab::ScopedCrabStats __st__(getDomainName() + ".to_interval_domain");
+      
       if (is_bottom()) return interval_domain_t::bottom();
       if (is_top())    return interval_domain_t::top();	  
       
@@ -1958,6 +1961,9 @@ namespace domains {
     }
     
     linear_constraint_system_t to_linear_constraint_system() {
+      crab::CrabStats::count(getDomainName() + ".count.to_linear_constraint_system");
+      crab::ScopedCrabStats __st__(getDomainName() + ".to_linear_constraint_system");
+      
       linear_constraint_system_t csts;
       if(is_bottom())  {
 	csts += linear_constraint_t::get_false();
@@ -1990,6 +1996,9 @@ namespace domains {
     }
     
     void rename(const variable_vector_t &from, const variable_vector_t &to) {
+      crab::CrabStats::count(getDomainName() + ".count.rename");
+      crab::ScopedCrabStats __st__(getDomainName() + ".rename");
+      
       if (is_top() || is_bottom()) return;
       
       // renaming m_var_map by creating a new map 
@@ -2018,6 +2027,9 @@ namespace domains {
     }
     
     void expand(variable_t x, variable_t dup) {
+      crab::CrabStats::count(getDomainName() + ".count.expand");
+      crab::ScopedCrabStats __st__(getDomainName() + ".expand");
+      
       if (is_bottom() || is_top()) return;
       
       if (get_var_dim(dup)) {
@@ -2071,6 +2083,9 @@ namespace domains {
     }
     
     void write(crab_os& o) {
+      crab::CrabStats::count(getDomainName() + ".count.write");
+      crab::ScopedCrabStats __st__(getDomainName() + ".write");
+      
       if(is_bottom()){
 	o << "_|_";
 	return;

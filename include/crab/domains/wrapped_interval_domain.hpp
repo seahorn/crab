@@ -1523,6 +1523,8 @@ public:
   // cast operations
   
   void apply(crab::domains::int_conv_operation_t op, variable_t dst, variable_t src){
+    crab::CrabStats::count(getDomainName() + ".count.apply");
+    crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
     wrapped_interval_t src_i = this->_env[src];
     wrapped_interval_t dst_i;
@@ -1776,12 +1778,18 @@ public:
   void minimize() {}
   
   void write(crab::crab_os& o) {
+    crab::CrabStats::count(getDomainName() + ".count.write");
+    crab::ScopedCrabStats __st__(getDomainName() + ".write");
+    
     this->_env.write(o);
   }
 
   // Important: we make the choice here that we interpret wrapint as
   // signed mathematical integers.
   linear_constraint_system_t to_linear_constraint_system() {
+    crab::CrabStats::count(getDomainName() + ".count.to_linear_constraint_system");
+    crab::ScopedCrabStats __st__(getDomainName() + ".to_linear_constraint_system");
+    
     linear_constraint_system_t csts;
     if (this->is_bottom()) {
       csts += linear_constraint_t::get_false();

@@ -1619,19 +1619,28 @@ namespace crab {
       }
 
       // backward arithmetic operators
-      void backward_assign(variable_t x, linear_expression_t e, DBM_t inv) { 
+      void backward_assign(variable_t x, linear_expression_t e, DBM_t inv) {
+        crab::CrabStats::count(getDomainName() + ".count.backward_assign");
+        crab::ScopedCrabStats __st__(getDomainName() + ".backward_assign");
+	
 	crab::domains::BackwardAssignOps<DBM_t>::
 	  assign(*this, x, e, inv);
       }
       
       void backward_apply(operation_t op, variable_t x, variable_t y, number_t z,
 			  DBM_t inv) {
+        crab::CrabStats::count(getDomainName() + ".count.backward_apply");
+        crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
+	
 	crab::domains::BackwardAssignOps<DBM_t>::
 	  apply(*this, op, x, y, z, inv);
       }
       
       void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
 			  DBM_t inv) {
+        crab::CrabStats::count(getDomainName() + ".count.backward_apply");
+        crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
+	
 	crab::domains::BackwardAssignOps<DBM_t>::
 	  apply(*this, op, x, y, z, inv);
       }
@@ -1791,6 +1800,9 @@ namespace crab {
       /* End unimplemented operations */
       
       void rename(const variable_vector_t &from, const variable_vector_t &to) {
+        crab::CrabStats::count(getDomainName() + ".count.rename");
+        crab::ScopedCrabStats __st__(getDomainName() + ".rename");
+	
 	if (is_top() || is_bottom()) return;
 	
 	// renaming vert_map by creating a new vert_map since we are
@@ -1944,6 +1956,8 @@ namespace crab {
 
       // Output function
       void write(crab_os& o) {
+        crab::CrabStats::count(getDomainName() + ".count.write");
+        crab::ScopedCrabStats __st__(getDomainName() + ".write");
 
         normalize();
 
@@ -2004,6 +2018,8 @@ namespace crab {
       }
 
       linear_constraint_system_t to_linear_constraint_system() {
+        crab::CrabStats::count(getDomainName() + ".count.to_linear_constraint_system");
+        crab::ScopedCrabStats __st__(getDomainName() + ".to_linear_constraint_system");
 
         normalize();
 

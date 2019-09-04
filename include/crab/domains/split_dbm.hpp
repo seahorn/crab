@@ -1797,20 +1797,28 @@ namespace crab {
                  crab::outs() << "---"<< x<< ":="<< y<< op<< k<<"\n"<< *this <<"\n");
       }
       
-      void backward_assign(variable_t x, linear_expression_t e,
-			   DBM_t inv) { 
+      void backward_assign(variable_t x, linear_expression_t e, DBM_t inv) {
+        crab::CrabStats::count(getDomainName() + ".count.backward_assign");
+        crab::ScopedCrabStats __st__(getDomainName() + ".backward_assign");
+	
 	crab::domains::BackwardAssignOps<DBM_t>::
 	  assign(*this, x, e, inv);
       }
       
       void backward_apply(operation_t op, variable_t x, variable_t y, number_t z,
 			  DBM_t inv) {
+        crab::CrabStats::count(getDomainName() + ".count.backward_apply");
+        crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
+	
 	crab::domains::BackwardAssignOps<DBM_t>::
 	  apply(*this, op, x, y, z, inv);
       }
       
       void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
 			  DBM_t inv) {
+        crab::CrabStats::count(getDomainName() + ".count.backward_apply");
+        crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
+	
 	crab::domains::BackwardAssignOps<DBM_t>::
 	  apply(*this, op, x, y, z, inv);
       }
@@ -2325,6 +2333,8 @@ namespace crab {
       
       // Output function
       void write(crab_os& o) {
+        crab::CrabStats::count(getDomainName() + ".count.write");
+        crab::ScopedCrabStats __st__(getDomainName() + ".write");
 
         normalize();
         #if 0

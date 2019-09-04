@@ -1419,6 +1419,9 @@ namespace crab {
 	
         void backward_assign(variable_t x, linear_expression_t e,
 			      boxes_domain_t invariant) {
+	  crab::CrabStats::count(getDomainName() + ".count.backward_assign");
+	  crab::ScopedCrabStats __st__(getDomainName() + ".backward_assign");
+	  
 	  CRAB_LOG("boxes",
 		   crab::outs() << "Backward " << x << ":=" << e
  		                 << "\n\tPOST=" << *this << "\n");
@@ -1430,6 +1433,9 @@ namespace crab {
         void backward_apply(operation_t op,
 			     variable_t x, variable_t y, number_t z,
 			     boxes_domain_t invariant) {
+	  crab::CrabStats::count(getDomainName() + ".count.backward_apply");
+	  crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
+	  
 	  CRAB_LOG("boxes",
 		   crab::outs() << "Backward " << x << ":=" << y << op << z 
  		                 << "\n\tPOST=" << *this << "\n");
@@ -1443,6 +1449,9 @@ namespace crab {
         void backward_apply(operation_t op,
 			    variable_t x, variable_t y, variable_t z,
 			    boxes_domain_t invariant)  {
+	  crab::CrabStats::count(getDomainName() + ".count.backward_apply");
+	  crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
+	  
 	  CRAB_LOG("boxes",
 		   crab::outs() << "Backward " << x << ":=" << y << op << z 
  		                 << "\n\tPOST=" << *this << "\n");
@@ -1711,6 +1720,9 @@ namespace crab {
 	/* End unimplemented operations */
 	
         linear_constraint_system_t to_linear_constraint_system() {
+	  crab::CrabStats::count(getDomainName() + ".count.to_linear_constraint_system");
+	  crab::ScopedCrabStats __st__(getDomainName() + ".to_linear_constraint_system");
+	  
           linear_constraint_system_t csts;
     
           if(is_bottom()) {
@@ -1762,6 +1774,9 @@ namespace crab {
 	}
 	
 	void write(crab_os& o) {
+	  crab::CrabStats::count(getDomainName() + ".count.write");
+	  crab::ScopedCrabStats __st__(getDomainName() + ".write");
+	  
           if (is_top()) {
             o << "{}";
 	  } else if(is_bottom())  {

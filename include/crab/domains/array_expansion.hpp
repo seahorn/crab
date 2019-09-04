@@ -1262,6 +1262,8 @@ namespace domains {
 				   linear_expression_t lb_idx,
 				   linear_expression_t ub_idx, 
 				   linear_expression_t val) override {
+      crab::CrabStats::count(getDomainName() + ".count.array_store_range");
+      crab::ScopedCrabStats __st__(getDomainName() + ".array_store_range");
 
       // TODO: this should be an user parameter.
       const number_t max_num_elems = 512;
@@ -1440,7 +1442,9 @@ namespace domains {
 					    linear_expression_t ub_idx, 
 					    linear_expression_t val,
 					    array_expansion_domain_t invariant) override {
-
+      crab::CrabStats::count(getDomainName() + ".count.backward_array_store_range");
+      crab::ScopedCrabStats __st__(getDomainName() + ".count.backward_array_store_range");
+      
       // TODO: this should be an user parameter.
       const number_t max_num_elems = 512;
       
@@ -1476,8 +1480,8 @@ namespace domains {
     }
     
     linear_constraint_system_t to_linear_constraint_system(){
-      crab::CrabStats::count(getDomainName() + ".count.to_linear_constraints");
-      crab::ScopedCrabStats __st__(getDomainName() + ".to_linear_constraints");
+      crab::CrabStats::count(getDomainName() + ".count.to_linear_constraint_system");
+      crab::ScopedCrabStats __st__(getDomainName() + ".to_linear_constraint_system");
       
       return _inv.to_linear_constraint_system();
     }
