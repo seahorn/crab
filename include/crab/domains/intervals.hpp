@@ -323,6 +323,9 @@ namespace ikos {
     // backward arithmetic operations
     void backward_assign(variable_t x, linear_expression_t e,
 			 interval_domain_t inv) {
+      crab::CrabStats::count(getDomainName() + ".count.backward_assign");
+      crab::ScopedCrabStats __st__(getDomainName() + ".backward_assign");
+      
       crab::domains::BackwardAssignOps<interval_domain_t>::
 	assign(*this, x, e, inv);
     }      
@@ -330,6 +333,9 @@ namespace ikos {
     void backward_apply(operation_t op,
 			variable_t x, variable_t y, number_t z,
 			interval_domain_t inv) {
+      crab::CrabStats::count(getDomainName() + ".count.backward_apply");
+      crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
+      
       crab::domains::BackwardAssignOps<interval_domain_t>::
 	apply(*this, op, x, y, z, inv);
     }      
@@ -337,6 +343,9 @@ namespace ikos {
     void backward_apply(operation_t op,
 			variable_t x, variable_t y, variable_t z,
 			interval_domain_t inv) {
+      crab::CrabStats::count(getDomainName() + ".count.backward_apply");
+      crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
+      
       crab::domains::BackwardAssignOps<interval_domain_t>::
 	apply(*this, op, x, y, z, inv);
     }
@@ -528,10 +537,16 @@ namespace ikos {
     void minimize() {}    
     
     void write(crab::crab_os& o) {
+      crab::CrabStats::count(getDomainName() + ".count.write");
+      crab::ScopedCrabStats __st__(getDomainName() + ".write");
+      
       this->_env.write(o);
     }
 
     linear_constraint_system_t to_linear_constraint_system() {
+      crab::CrabStats::count(getDomainName() + ".count.to_linear_constraint_system");
+      crab::ScopedCrabStats __st__(getDomainName() + ".to_linear_constraint_system");
+      
       linear_constraint_system_t csts;
       
       if (this->is_bottom()) {

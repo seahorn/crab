@@ -1195,7 +1195,10 @@ namespace crab {
        }
 
        void backward_assign(variable_t x, linear_expression_t e,
-			     term_domain_t inv) { 
+			     term_domain_t inv) {
+	 crab::CrabStats::count(getDomainName() + ".count.backward_assign");
+	 crab::ScopedCrabStats __st__(getDomainName() + ".backward_assign");
+	 
 	 crab::domains::BackwardAssignOps<term_domain_t>::
 	   assign(*this, x, e, inv);
        }
@@ -1203,6 +1206,9 @@ namespace crab {
        void backward_apply(operation_t op,
 			    variable_t x, variable_t y, number_t z,
 			    term_domain_t inv) {
+	 crab::CrabStats::count(getDomainName() + ".count.backward_apply");
+	 crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
+	 
 	 crab::domains::BackwardAssignOps<term_domain_t>::
 	   apply(*this, op, x, y, z, inv);
        }
@@ -1210,6 +1216,9 @@ namespace crab {
        void backward_apply(operation_t op,
 			   variable_t x, variable_t y, variable_t z,
 			   term_domain_t inv) {
+	 crab::CrabStats::count(getDomainName() + ".count.backward_apply");
+	 crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
+	 
 	 crab::domains::BackwardAssignOps<term_domain_t>::
 	   apply(*this, op, x, y, z, inv);
        }
@@ -1390,8 +1399,8 @@ namespace crab {
        virtual void array_load(variable_t lhs,
 				variable_t a, linear_expression_t /*elem_size*/,
 				linear_expression_t i) override {
-	 crab::CrabStats::count(getDomainName() + ".count.load");
-	 crab::ScopedCrabStats __st__(getDomainName() + ".load");
+	 crab::CrabStats::count(getDomainName() + ".count.array_read");
+	 crab::ScopedCrabStats __st__(getDomainName() + ".array_read");
 
 	 if (this->is_bottom()) {
 	   return;   
@@ -1411,8 +1420,8 @@ namespace crab {
        virtual void array_store(variable_t a, linear_expression_t /*elem_size*/,
 				 linear_expression_t i, linear_expression_t val, 
 				 bool /*is_singleton*/) override {
-	 crab::CrabStats::count(getDomainName() + ".count.store");
-	 crab::ScopedCrabStats __st__(getDomainName() + ".store");
+	 crab::CrabStats::count(getDomainName() + ".count.array_store");
+	 crab::ScopedCrabStats __st__(getDomainName() + ".array_store");
 
 	 if (this->is_bottom()) {
 	   return;   
@@ -1506,6 +1515,9 @@ namespace crab {
        /* End unimplemented operations */
 
       void rename(const variable_vector_t &from, const variable_vector_t &to) {
+	 crab::CrabStats::count(getDomainName() + ".count.rename");
+	 crab::ScopedCrabStats __st__(getDomainName() + ".rename");
+	
 	if (is_top() || is_bottom()) return;
 	
 	// renaming _var_map by creating a new map since we are
@@ -1635,8 +1647,10 @@ namespace crab {
        /// XXX: should be part of array_sgraph_domain_traits
        /// Simplify the term associated with x by given the standard
        /// arithmetic meaning to the functors
-       bool simplify(variable_t x) 
-       {
+       bool simplify(variable_t x)  {
+	 crab::CrabStats::count(getDomainName() + ".count.simplify");
+	 crab::ScopedCrabStats __st__(getDomainName() + ".simplify");
+       
          auto it = _var_map.find (x);
          if(it != _var_map.end())
          {
@@ -1653,7 +1667,10 @@ namespace crab {
        }
 
        // Output function
-       void write(crab_os& o) { 
+       void write(crab_os& o) {
+	 crab::CrabStats::count(getDomainName() + ".count.write");
+	 crab::ScopedCrabStats __st__(getDomainName() + ".write");
+	 
          // Normalization is not enforced in order to maintain accuracy
          // but we force it to display all the relationships.
          normalize();
@@ -1690,6 +1707,9 @@ namespace crab {
        }
 
        linear_constraint_system_t to_linear_constraint_system() {
+	 crab::CrabStats::count(getDomainName() + ".count.to_linear_constraint_system");
+	 crab::ScopedCrabStats __st__(getDomainName() + ".to_linear_constraint_system");
+	 
          // Collect the visible terms
          rev_map_t rev_map;
          std::vector< std::pair<variable_t, variable_t> > equivs;

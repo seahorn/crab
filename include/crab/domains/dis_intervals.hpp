@@ -1487,6 +1487,9 @@ namespace crab {
      void minimize() {}
      
      interval_domain_t approx() const {
+       crab::CrabStats::count(getDomainName() + ".count.approx");
+       crab::ScopedCrabStats __st__(getDomainName() + ".approx");
+       
        if (_env.is_bottom()) 
          return interval_domain_t::bottom();
        else if (_env.is_top())
@@ -1501,6 +1504,9 @@ namespace crab {
      }
      
      linear_constraint_system_t to_linear_constraint_system() {
+       crab::CrabStats::count(getDomainName() + ".count.to_linear_constraint_system");
+       crab::ScopedCrabStats __st__(getDomainName() + ".to_linear_constraint_system");
+       
        interval_domain_t intervals = this->approx();
        return intervals.to_linear_constraint_system();
      }

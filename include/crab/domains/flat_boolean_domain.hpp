@@ -539,9 +539,17 @@ namespace crab {
     
     static std::string getDomainName() {return "Boolean"; }
 
-    void write(crab_os& o) { _env.write(o); }
+    void write(crab_os& o) {
+      crab::CrabStats::count(getDomainName() + ".count.write");
+      crab::ScopedCrabStats __st__(getDomainName() + ".write");
+      
+      _env.write(o);
+    }
 
     linear_constraint_system_t to_linear_constraint_system() {
+      crab::CrabStats::count(getDomainName() + ".count.to_linear_constraint_system");
+      crab::ScopedCrabStats __st__(getDomainName() + ".to_linear_constraint_system");
+      
       if (is_bottom())
 	return linear_constraint_t::get_false();
 
@@ -575,6 +583,9 @@ namespace crab {
     }
     
     void rename(const variable_vector_t &from, const variable_vector_t &to) {
+      crab::CrabStats::count(getDomainName() + ".count.rename");
+      crab::ScopedCrabStats __st__(getDomainName() + ".rename");
+      
       assert(from.size() == to.size());
       
       if (is_top() || is_bottom()) return;
@@ -997,6 +1008,9 @@ namespace crab {
       }
       
       void operator+=(linear_constraint_system_t csts) {
+	crab::CrabStats::count(getDomainName() + ".count.add_constraint");
+	crab::ScopedCrabStats __st__(getDomainName() + ".add_constraint");
+	
 	if (csts.is_true() || csts.is_false()) {
 	  return;
 	}
@@ -1055,14 +1069,14 @@ namespace crab {
 	}	  
       }
       
-      void set(variable_t x, interval_t intv)
-      { // domain_product2 does not define set method
+      void set(variable_t x, interval_t intv) {
+	// domain_product2 does not define set method
 	_product.second().set(x, intv);  // only on the numerical domain
 	_unchanged_vars -= variable_t(x);		
       }
             
-      interval_t operator[](variable_t v)
-      { // domain_product2 does not define [] method
+      interval_t operator[](variable_t v) {
+       // domain_product2 does not define [] method
 	boolean_value bv = _product.first().get_bool(v);
 	interval_t isecond = _product.second()[v];
 
@@ -1085,8 +1099,11 @@ namespace crab {
       
       // boolean_operators
       
-      void assign_bool_cst(variable_t x, linear_constraint_t cst)
-      { /// Reduction from the numerical domain to the flat boolean
+      void assign_bool_cst(variable_t x, linear_constraint_t cst) {
+      	crab::CrabStats::count(getDomainName() + ".count.assign_bool_cst");
+	crab::ScopedCrabStats __st__(getDomainName() + ".assign_bool_cst");
+	
+	/// Reduction from the numerical domain to the flat boolean
 	/// domain
 	
 	if (_product.is_bottom()) return;
@@ -1105,10 +1122,14 @@ namespace crab {
 	    // -- definitely true	  
 	    _product.first().set_bool(x, boolean_value::get_true());
 	  } else {
+	    #if 0
 	    // XXX: before we give up we convert into intervals and
 	    // check again if the negated constraint is bottom.  This
 	    // is useful because e.g., apron domains completely ignore
-	    // disequations. 
+	    // disequations.
+	    // 
+	    // JN: I disable this code because AFIK all domains reason
+	    // now about disequalities, included apron/elina domains.
 	    interval_domain<number_t,varname_t> inv3;
 	    inv3 += cst.negate();	    
 	    for (auto c: _product.second().to_linear_constraint_system())
@@ -1120,6 +1141,10 @@ namespace crab {
 	      // -- inconclusive
 	      _product.first().set_bool(x, boolean_value::top());
 	    }
+	    #else
+	    // -- inconclusive
+	    _product.first().set_bool(x, boolean_value::top());
+	    #endif 
 	  }
 	}
 	_var_to_csts.set(x, lin_cst_set_domain(cst));
@@ -1138,6 +1163,8 @@ namespace crab {
       }
 
       void assign_bool_var(variable_t x, variable_t y, bool is_not_y) {
+	crab::CrabStats::count(getDomainName() + ".count.assign_bool_var");
+	crab::ScopedCrabStats __st__(getDomainName() + ".assign_bool_var");
 	
 	if (is_bottom()) return;
 	
@@ -1164,6 +1191,8 @@ namespace crab {
       }
 
       void apply_binary_bool(bool_operation_t op, variable_t x, variable_t y, variable_t z) {
+	crab::CrabStats::count(getDomainName() + ".count.apply_binary_bool");
+	crab::ScopedCrabStats __st__(getDomainName() + ".apply_binary_bool");
 	
 	if (is_bottom()) return;
  
@@ -1193,8 +1222,10 @@ namespace crab {
 	_var_to_csts -= x;
       }
 
-      void assume_bool(variable_t x, bool is_negated)
-      {
+      void assume_bool(variable_t x, bool is_negated) {
+      	crab::CrabStats::count(getDomainName() + ".count.assume_bool");
+	crab::ScopedCrabStats __st__(getDomainName() + ".assume_bool");
+
 	if (is_bottom()) return;
 	
 	_product.assume_bool(x, is_negated);
@@ -1276,6 +1307,9 @@ namespace crab {
       // cast_operators_api
       
       void apply(int_conv_operation_t op, variable_t dst, variable_t src) {
+	crab::CrabStats::count(getDomainName() + ".count.apply");
+	crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+	
 	CRAB_LOG("flat-boolean",
 		 crab::outs() << src << ":" << src.get_bitwidth() << " " << op << " "
 		               << dst << ":" << dst.get_bitwidth() << " with "
