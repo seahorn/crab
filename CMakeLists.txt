@@ -41,7 +41,6 @@ option (ENABLE_TESTS "Enable tests" OFF)
 option (USE_LDD   "Enable Ldd library" OFF)
 option (USE_APRON "Enable Apron library" OFF)
 option (USE_ELINA "Enable Elina library" OFF)
-option (USE_STATS "Enable statistics" ON)
 option (USE_LOG   "Enable logging for debugging purposes" ON)
 option (BUILD_CRAB_LIBS_SHARED "Build all Crab libraries dynamically." OFF)
 
@@ -57,33 +56,40 @@ if (ENABLE_TESTS)
   endif()  
 endif()
 
+# Save old CMAKE_FIND_LIBRARY_SUFFIXES
+set(_CRAB_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES})
 
-set(CMAKE_FIND_LIBRARY_SUFFIXES .so .dylib .a)
-
+# Support preference of static libs by adjusting CMAKE_FIND_LIBRARY_SUFFIXES
+#set(CMAKE_FIND_LIBRARY_SUFFIXES .so .dylib .a)
 if (NOT BUILD_CRAB_LIBS_SHARED)
-   # put static libraries first unless we want dynamic libraries
    set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ${CMAKE_FIND_LIBRARY_SUFFIXES})
 endif ()   
 
 # To remember the last configuration
 if (ENABLE_TESTS)
-  message(STATUS "cmake crab configuration: cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DUSE_APRON=${USE_APRON} -DUSE_ELINA=${USE_ELINA} -DUSE_LDD=${USE_LDD} -DENABLE_TESTS=${ENABLE_TESTS} -DTEST_DIR=${TEST_DIR}")
+  message(STATUS "cmake crab configuration: cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DUSE_APRON=${USE_APRON} -DUSE_ELINA=${USE_ELINA} -DUSE_LDD=${USE_LDD} -DBUILD_CRAB_LIBS_SHARED=${BUILD_CRAB_LIBS_SHARED} -DENABLE_TESTS=${ENABLE_TESTS} -DTEST_DIR=${TEST_DIR}")
 else()
-  message(STATUS "cmake crab configuration: cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DUSE_APRON=${USE_APRON} -DUSE_ELINA=${USE_ELINA} -DUSE_LDD=${USE_LDD}")
+  message(STATUS "cmake crab configuration: cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DUSE_APRON=${USE_APRON} -DUSE_ELINA=${USE_ELINA} -DUSE_LDD=${USE_LDD} -DBUILD_CRAB_LIBS_SHARED=${BUILD_CRAB_LIBS_SHARED}")
 endif()  
 
 if (BUILD_CRAB_LIBS_SHARED)
-  message (STATUS "All crab libraries will be built dynamically")
+  set(_DYNAMIC_LIBS_EXC_STR "")
+  if(USE_LDD)
+    set(_DYNAMIC_LIBS_EXC_STR "${_DYNAMIC_LIBS_EXC_STR}\n  - except ldd ")
+  endif()
+  if(USE_APRON)
+    set(_DYNAMIC_LIBS_EXC_STR "${_DYNAMIC_LIBS_EXC_STR}\n  - except apron")
+  endif()
+  message (STATUS "Crab libraries and dependencies are built dynamically ${_DYNAMIC_LIBS_EXC_STR}")  
   set(CRAB_LIBS_TYPE SHARED)
 else()
-  message (STATUS "All crab libraries will be built statically")
+  set(_STATIC_LIBS_EXC_STR "")
+  if(USE_ELINA)
+    set(_STATIC_LIBS_EXC_STR "${_STATIC_LIBS_EXC_STR}\n  - except elina")
+  endif()
+  message (STATUS "Crab libraries and dependencies are built statically ${_STATIC_LIBS_EXC_STR}")  
   set(CRAB_LIBS_TYPE STATIC)
 endif ()
-
-######
-# WARNING: crab dependencies (apron and ldd) are currently compiled
-# statically regardless BUILD_CRAB_LIBS_SHARED.
-######
 
 # So that executables outside the build tree can find later dynamic
 # libraries.  Even if CRAB_LIBS_TYPE=STATIC we could have a mix of
@@ -97,18 +103,24 @@ if (NOT CMAKE_INSTALL_RPATH )
   set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/crab/lib")
 endif()
 
-   
-if (NOT BUILD_CRAB_LIBS_SHARED)
-   set (Boost_USE_STATIC_LIBS ON)
-endif ()  
 if (ENABLE_TESTS)
   find_package (Boost 1.55.0 COMPONENTS program_options REQUIRED)
+  set(Boost_USE_STATIC_LIBS ON)
+  if (BUILD_CRAB_LIBS_SHARED)
+    set(Boost_USE_STATIC_LIBS OFF)
+  endif ()
 else ()
   find_package (Boost 1.55.0)
 endif ()
 if (Boost_FOUND)
   include_directories (${Boost_INCLUDE_DIRS})
 endif ()
+
+set(GMP_USE_STATIC_LIBS ON)
+if (BUILD_CRAB_LIBS_SHARED)
+  set(GMP_USE_STATIC_LIBS OFF)
+endif ()
+  
 find_package(GMP REQUIRED)
 if (GMP_FOUND)
   include_directories (${GMP_INCLUDE_DIR})
@@ -233,6 +245,8 @@ if (USE_LDD)
      ExternalProject_Get_Property (ldd INSTALL_DIR)
      set (LDD_ROOT ${INSTALL_DIR} CACHE FILEPATH "Forced location of ldd" FORCE)
      message (WARNING "No ldd found. Run \n\tcmake --build . --target ldd && cmake ${CMAKE_SOURCE_DIR}")
+     # restore old CMAKE_FIND_LIBRARY_SUFFIXES
+     set(CMAKE_FIND_LIBRARY_SUFFIXES ${_CRAB_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES})     
      return()
   endif()
 endif ()
@@ -247,6 +261,8 @@ if (USE_APRON)
     ExternalProject_Get_Property (apron INSTALL_DIR)
     set (APRON_ROOT ${INSTALL_DIR} CACHE FILEPATH "Forced location of apron" FORCE)
     message (WARNING "No apron found. Run \n\tcmake --build . --target apron && cmake ${CMAKE_SOURCE_DIR}")
+    # restore old CMAKE_FIND_LIBRARY_SUFFIXES
+    set(CMAKE_FIND_LIBRARY_SUFFIXES ${_CRAB_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES})     
     return()
   endif()
 endif ()
@@ -264,6 +280,8 @@ if (USE_ELINA)
     ExternalProject_Get_Property (elina INSTALL_DIR)
     set (ELINA_ROOT ${INSTALL_DIR} CACHE FILEPATH "Forced location of elina" FORCE)
     message (WARNING "No elina found. Run \n\tcmake --build . --target elina && cmake ${CMAKE_SOURCE_DIR}")
+    # restore old CMAKE_FIND_LIBRARY_SUFFIXES
+    set(CMAKE_FIND_LIBRARY_SUFFIXES ${_CRAB_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES})         
     return()
   endif()
 endif ()
@@ -386,6 +404,9 @@ if (ENABLE_TESTS)
    message (STATUS "Tests will be compiled")
    add_subdirectory(tests)
 endif ()
+
+# restore old CMAKE_FIND_LIBRARY_SUFFIXES
+set(CMAKE_FIND_LIBRARY_SUFFIXES ${_CRAB_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES})     
 
 install(DIRECTORY include/
         DESTINATION crab/include

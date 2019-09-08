@@ -34,7 +34,7 @@ mark_as_advanced (CUDD_LIBRARY)
 
 include (CheckTypeSize)
 check_type_size (long CMAKE_SIZEOF_LONG)
-message (STATUS "sizeof (long): ${CMAKE_SIZEOF_LONG}")
+#message (STATUS "sizeof (long): ${CMAKE_SIZEOF_LONG}")
 
 set (CUDD_CXXFLAGS "-DBSD -DHAVE_IEEE_754 -DSIZEOF_VOID_P=${CMAKE_SIZEOF_VOID_P} -DSIZEOF_LONG=${CMAKE_SIZEOF_LONG}")
 mark_as_advanced (CMAKE_SIZEOF_LONG CUDD_CXXFLAGS)
