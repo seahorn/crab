@@ -1,16 +1,16 @@
 # GMP_USE_STATIC_LIBS   - Set to ON to force the use of static libraries.
 
 ## To switch between static and dynamic without resetting the cache
-if ("${GMP_USE_STATIC_LIBS}" STREQUAL "${GMP_USE_STATIC_LIBS_LAST}")
-  set(GMP_USE_STATIC_LIBS_CHANGED OFF)
-else ()
-  set(GMP_USE_STATIC_LIBS_CHANGED ON)
-endif()
-set(GMP_USE_STATIC_LIBS_LAST "${GMP_USE_STATIC_LIBS}")
-if (GMP_USE_STATIC_LIBS_CHANGED)
-  set(GMP_LIB "GMP_LIB-NOTFOUND")
-  set(GMPXX_LIB "GMPXX_LIB-NOTFOUND")
-endif()
+# if ("${GMP_USE_STATIC_LIBS}" STREQUAL "${GMP_USE_STATIC_LIBS_LAST}")
+#   set(GMP_USE_STATIC_LIBS_CHANGED OFF)
+# else ()
+#   set(GMP_USE_STATIC_LIBS_CHANGED ON)
+# endif()
+# set(GMP_USE_STATIC_LIBS_LAST "${GMP_USE_STATIC_LIBS}")
+# if (GMP_USE_STATIC_LIBS_CHANGED)
+#   set(GMP_LIB "GMP_LIB-NOTFOUND")
+#   set(GMPXX_LIB "GMPXX_LIB-NOTFOUND")
+# endif()
 
 if (NOT GMP_FOUND)
   # Support preference of static libs by adjusting CMAKE_FIND_LIBRARY_SUFFIXES
