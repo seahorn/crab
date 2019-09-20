@@ -1,5 +1,8 @@
 language: cpp
 cache: apt
+branches:
+  except:
+  - crab_language
 env:
   matrix:
      #- UBUNTU_DIST=trusty
@@ -15,11 +18,11 @@ services:
 install: true
 
 script:
-  - docker build --build-arg UBUNTU=${UBUNTU_DIST} --build-arg BUILD_TYPE=${BUILD_TYPE} -t seahorn/crab_${UBUNTU_DIST}_rel -f docker/crab.Dockerfile .
+  - docker build --build-arg UBUNTU=${UBUNTU_DIST} --build-arg BUILD_TYPE=${BUILD_TYPE} -t seahorn/crab:${UBUNTU_DIST} -f docker/crab.Dockerfile .
   
   - 'if [ "$TRAVIS_EVENT_TYPE" = "cron" ] ;
         then echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-          && docker push seahorn/crab_${UBUNTU_DIST}_rel:latest ;
+          && docker push seahorn/crab:${UBUNTU_DIST};
      fi '
   
 notifications:
