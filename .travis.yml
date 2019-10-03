@@ -11,7 +11,8 @@ env:
        BUILD_TYPE=Release
      - UBUNTU_DIST=bionic
        BUILD_TYPE=Release
-       
+     - UBUNTU_DIST=xenial
+       BUILD_TYPE=Coverage
 services:
   - docker
 
@@ -23,6 +24,13 @@ script:
   - 'if [ "$TRAVIS_EVENT_TYPE" = "cron" ] ;
         then echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
           && docker push seahorn/crab:${UBUNTU_DIST};
+	  
+	  if [ "$BUILD_TYPE" = "Coverage" ] ;
+             docker run  -v $(pwd):/host -it seahorn/crab:${UBUNTU_DIST} /bin/sh -c 
+             "bash /crab/test/run_coverage.sh /crab/build /crab && mv /crab/build/all.info /host"
+             && bash <(curl -s https://codecov.io/bash) -Z -f all.info
+	  fi
+	  
      fi '
   
 notifications:

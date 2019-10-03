@@ -1,6 +1,6 @@
 project(Crab)
 
-cmake_minimum_required (VERSION 2.8.11)
+cmake_minimum_required(VERSION 3.3)
 
 if (CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR ) 
   message (FATAL_ERROR 
@@ -17,7 +17,7 @@ endif()
 # Default is release with debug info
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING
-    "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel." FORCE)
+    "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel Coverage." FORCE)
 endif()
 
 # Add path for custom modules
@@ -133,6 +133,15 @@ endif()
 include(ExternalProject)
 set_property(DIRECTORY PROPERTY EP_STEP_TARGETS configure build test)
 
+# Configuration for Coverage
+if (CMAKE_BUILD_TYPE STREQUAL Coverage)
+  include(Coverage)
+  # We don't want coverage on external things
+  set(EXT_CMAKE_BUILD_TYPE Release)
+else()
+  set(EXT_CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE})
+endif ()
+
 find_package (Git)
 
 if (USE_LDD)
@@ -147,7 +156,7 @@ if (GIT_FOUND)
       INSTALL_DIR ${CMAKE_BINARY_DIR}/run/ldd
       CMAKE_ARGS
       -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-      -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
+      -DCMAKE_BUILD_TYPE:STRING=${EXT_CMAKE_BUILD_TYPE}
       -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>
       # XXX: ldd is always compiled statically.
       # We add -fPIC flag so it can be linked with a shared library

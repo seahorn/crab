@@ -19,8 +19,8 @@ RUN echo "Build type set to: $BUILD_TYPE" && \
     apt-get update && \
     apt-get install -yqq cmake cmake-data g++-5 \
                          ninja-build libstdc++5 \
-                         libgmp-dev libmpfr-dev
-
+                         libgmp-dev libmpfr-dev \
+			 lcov ggcov 
 
 WORKDIR /tmp/dockerutils
 

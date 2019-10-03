@@ -1,8 +1,18 @@
 # Crab: A Language-Agnostic Library for Static Analysis #
 
-<a href="https://travis-ci.org/seahorn/crab"><img src="https://travis-ci.org/seahorn/crab.svg?branch=master" title="Ubuntu 12.04 LTS 64bit, g++-5.0"/></a>
-
 <img src="http://i.imgur.com/IDKhq5h.png" alt="crab logo" width=280 height=200 />
+
+<table>
+  <tr>
+    <th>Windows</th><th>Ubuntu</th><th>OS X</th><th>Coverage</th>
+  </tr>
+    <td>TBD</td>
+    <td> <a href="https://travis-ci.org/seahorn/crab"><img src="https://travis-ci.org/seahorn/crab.svg?branch=master" title="Ubuntu 16.04 and 18.04 LTS 64bit, g++-5.0"/></a> </td>
+    <td>TBD</td>
+    <td><a href="https://codecov.io/gh/seahorn/crab"><img src="https://codecov.io/gh/seahorn/crab/branch/master/graph/badge.svg" /></a></td>
+  </tr>
+</table>
+
 
 # Description #
 
