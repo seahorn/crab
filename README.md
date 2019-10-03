@@ -48,6 +48,17 @@ Open Static Analyzers) developed by NASA Ames Research Center.
 
 ![Crab Architecture](https://github.com/seahorn/crab/blob/master/Crab_arch.jpg?raw=true "Crab Architecture")
 
+# Docker # 
+
+A pre-built and installed version of Crab can be obtained using Docker:
+
+``` shell
+docker pull seahorn/crab:xenial
+docker run -v `pwd`:/host -it seahorn/crab:xenial	
+```
+
+Alternatively, it can be built and installed from source as follows.
+
 # Requirements #
 
 Crab is written in C++ and relies on the Boost library. The main
