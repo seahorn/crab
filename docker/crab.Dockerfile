@@ -30,7 +30,7 @@ WORKDIR /tmp/dockerutils
 RUN echo '#!/bin/sh' > switch.sh && \ 
     echo 'VAL=$1;shift;while test $# -gt 0;do if [ "$1" = "$VAL" ];then echo $2;exit 0;fi;shift;shift;done' >> switch.sh && \
     chmod +x switch.sh && \
-    /tmp/dockerutils/switch.sh $BUILD_TYPE Debug "debug" Release "rel" \
+    /tmp/dockerutils/switch.sh $BUILD_TYPE Debug "debug" Release "rel" Coverage "rel" \
     > /tmp/dockerutils/dt_out.txt && \
     export BT=$(cat /tmp/dockerutils/dt_out.txt) && \
     export UB=$(lsb_release --a 2>&1 | cut -f2 | tail -n 1) && \
