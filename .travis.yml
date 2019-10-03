@@ -27,9 +27,7 @@ script:
      fi '
      
   - 'if [ "$BUILD_TYPE" = "Coverage" ] ; then 
-        docker run  -v $(pwd):/host -it seahorn/crab:${UBUNTU_DIST} /bin/sh -c 
-             "bash /crab/test/run_coverage.sh /crab/build /crab && mv /crab/build/all.info /host"
-             && bash <(curl -s https://codecov.io/bash) -Z -f all.info;
+        docker run  -v $(pwd):/host -it seahorn/crab:${UBUNTU_DIST} /bin/sh -c "bash /crab/tests/run_coverage.sh /crab/build /crab && mv /crab/build/all.info /host" && bash <(curl -s https://codecov.io/bash) -Z -f all.info;
      fi '
    
   
