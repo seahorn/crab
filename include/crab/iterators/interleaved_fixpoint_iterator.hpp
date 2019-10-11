@@ -43,8 +43,6 @@
 
 #pragma once 
 
-#include <boost/shared_ptr.hpp>
-#include <boost/unordered_map.hpp>
 
 #include <crab/common/types.hpp>
 #include <crab/common/debug.hpp>
@@ -53,6 +51,8 @@
 #include <crab/iterators/wto.hpp>
 #include <crab/iterators/fixpoint_iterators_api.hpp>
 #include <crab/iterators/thresholds.hpp>
+
+#include <unordered_map>
 
 namespace ikos {
 
@@ -77,8 +77,8 @@ namespace ikos {
 
     typedef typename CFG::basic_block_label_t basic_block_label_t;
     typedef wto<CFG> wto_t;
-    typedef boost::unordered_map<basic_block_label_t,AbstractValue> assumption_map_t;
-    typedef boost::unordered_map<basic_block_label_t,AbstractValue> invariant_table_t;
+    typedef std::unordered_map<basic_block_label_t,AbstractValue> assumption_map_t;
+    typedef std::unordered_map<basic_block_label_t,AbstractValue> invariant_table_t;
     
   private:
     

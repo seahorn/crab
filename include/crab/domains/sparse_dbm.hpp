@@ -21,8 +21,8 @@
 #include <crab/domains/backward_assign_operations.hpp>
 
 #include <boost/optional.hpp>
-#include <boost/unordered_set.hpp>
 #include <boost/container/flat_map.hpp>
+#include <unordered_set>
 
 //#define CHECK_POTENTIAL
 //#define SDBM_NO_NORMALIZE
@@ -64,13 +64,13 @@ namespace crab {
       typedef typename graph_t::vert_id vert_id;
       typedef boost::container::flat_map<variable_t, vert_id> vert_map_t;
       typedef typename vert_map_t::value_type vmap_elt_t;
-      typedef std::vector< boost::optional<variable_t> > rev_map_t;
+      typedef std::vector< boost::optional<variable_t>> rev_map_t;
       typedef GraphOps<graph_t> GrOps;
       typedef GraphPerm<graph_t> GrPerm;
       typedef typename GrOps::edge_vector edge_vector;
       // < <x, y>, k> == x - y <= k.
       typedef std::pair<std::pair<variable_t, variable_t>, Wt> diffcst_t;
-      typedef boost::unordered_set<vert_id> vert_set_t;
+      typedef std::unordered_set<vert_id> vert_set_t;
 
       protected:
         

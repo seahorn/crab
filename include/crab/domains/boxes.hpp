@@ -250,9 +250,9 @@ namespace crab {
 #include <crab/domains/ldd/ldd_print.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
+
+#include <algorithm>
 #include <boost/bimap.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/range/algorithm/set_algorithm.hpp>
 #include <boost/optional.hpp>
 
 namespace crab {
@@ -1115,7 +1115,8 @@ namespace crab {
 	  variable_vector_t s3;
           for (auto p: m_var_map.left) s1.insert(p.first);
           s2.insert(variables.begin(), variables.end());
-          boost::set_difference(s1,s2,std::back_inserter(s3));
+          std::set_difference(s1.begin(), s1.end(), s2.begin(), s2.end(),
+			      std::back_inserter(s3));
           forget(s3);
         }
 
@@ -1756,7 +1757,7 @@ namespace crab {
 
 	disjunctive_linear_constraint_system_t
 	to_disjunctive_linear_constraint_system(LddNodePtr &ldd) {
-	  LddManager *ldd_man = getLddManager(ldd);
+	  LddManager *ldd_man = get_ldd_man();
 	  
 	  std::vector<int> list;
 	  list.reserve (ldd_man->cudd->size);

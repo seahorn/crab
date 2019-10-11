@@ -7,76 +7,92 @@
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/graph_traits.hpp>
 #include <boost/iterator/transform_iterator.hpp>
-#include <boost/shared_ptr.hpp>
+#include <boost/optional.hpp>
 
 #include <crab/common/debug.hpp>
 #include <crab/common/stats.hpp>
 #include <crab/common/types.hpp>
 #include <crab/cfg/cfg.hpp>
 
-#include <functional> // for wrapper_reference
+#include <functional> // for wrapper_reference and hash
+#include <memory>
+#include <unordered_map>
 
 namespace crab {
 namespace cg {
+// Wrapper for call graph nodes
+template<typename CFG>
+class cg_node {
+  typedef typename CFG::basic_block_t::callsite_t callsite_t;
+  typedef typename CFG::fdecl_t fdecl_t;
+  
+  CFG m_cfg;
+  int m_id;
+  
+public:
+  
+  typedef CFG cfg_t;
+  typedef typename CFG::varname_t varname_t;
+  
+  cg_node() {} // needed for BGL
+  
+  cg_node(CFG cfg, int id)
+    : m_cfg(cfg), m_id(id) { } 
+  
+  CFG get_cfg() const { return m_cfg;  }
+  
+  int index() const { return m_id; }
+  
+  std::string name() const {
+    if (!m_cfg.has_func_decl()) {
+      CRAB_ERROR("No function name found");
+    }
+    return  m_cfg.get_func_decl().get_func_name();
+  }
+  
+  bool operator==(const cg_node& o) const {
+    return index() == o.index();
+  }
 
+  bool operator!=(const cg_node& o) const {
+    return !(*this == o);
+  }
+  
+  size_t hash() const {
+    std::hash<int> hasher;
+    return hasher(m_id);
+  }
+  
+  bool operator<(const cg_node& o) const {
+    return index() < o.index();
+  }
+  
+  friend crab_os& operator<<(crab_os& o, cg_node n) {
+    o << n.name();
+    return o;
+  }
+};
+} // end namespace cg
+} // end namespace crab
+
+/**  specialization of std::hash for callgraph nodes **/
+namespace std {
+template<typename CFG>
+struct hash<crab::cg::cg_node<CFG>> {
+  using cg_node_t = crab::cg::cg_node<CFG>;
+  size_t operator()(const cg_node_t &n) const {
+    return n.hash();
+  }
+};
+} // end namespace std
+
+namespace crab {
+namespace cg {
 // Class to build a call graph
-//
 // Important: this class assumes that all function calls have been
 // resolved. This must be ensured by the client.
 template<typename CFG>
-class call_graph {
-
-  // Wrapper for call graph nodes
-  class cg_node {
-    typedef typename CFG::basic_block_t::callsite_t callsite_t;
-    typedef typename CFG::fdecl_t fdecl_t;
-          
-    CFG m_cfg;
-    int m_id;
-          
-  public:
-
-    typedef CFG cfg_t;
-    typedef typename CFG::varname_t varname_t;
-
-    cg_node() {} // needed for BGL
-          
-    cg_node(CFG cfg, int id)
-      : m_cfg(cfg), m_id(id) { } 
-          
-    CFG get_cfg() const { return m_cfg;  }
-
-    int index() const { return m_id; }
-    
-    std::string name() const {
-      if (!m_cfg.has_func_decl()) {
-	CRAB_ERROR("No function name found");
-      }
-      return  m_cfg.get_func_decl().get_func_name();
-    }
-
-    bool operator==(const cg_node& o) const {
-      return index() == o.index();
-    }
-
-    bool operator!=(const cg_node& o) const {
-      return !(*this == o);
-    }
-
-    bool operator<(const cg_node& o) const {
-      return index() < o.index();
-    }
-    
-    friend crab_os& operator<<(crab_os& o, cg_node n) {
-      o << n.name();
-      return o;
-    }
-          
-    friend size_t hash_value(cg_node n) {
-      return n.index();
-    }
-  };
-        
+class call_graph {  
   // Wrapper for call graph edges
   // BGL complains if we use std::pair<cg_node,cg_node>
   template<typename T>
@@ -96,7 +112,7 @@ class call_graph {
   };
 
   /// --- begin internal representation of the call graph
-  struct  vertex_t { cg_node func; };
+  struct  vertex_t { cg_node<CFG> func; };
   typedef boost::adjacency_list<boost::setS, //disallow parallel edges
 				boost::vecS, boost::bidirectionalS, 
 				boost::property<boost::vertex_color_t, 
@@ -113,9 +129,9 @@ class call_graph {
   typedef typename CFG::number_t number_t;	
   typedef crab::cfg::statement_visitor<number_t, varname_t> stmt_visitor_t;
   
-  typedef boost::unordered_map<std::size_t, vertex_descriptor_t > vertex_map_t;
-  typedef boost::unordered_map<typename stmt_visitor_t::callsite_t*, cg_node> callee_map_t;
-  typedef boost::unordered_map<cg_node, vertex_descriptor_t > node_vertex_id_map_t;
+  typedef std::unordered_map<std::size_t, vertex_descriptor_t> vertex_map_t;
+  typedef std::unordered_map<typename stmt_visitor_t::callsite_t*, cg_node<CFG>> callee_map_t;
+  typedef std::unordered_map<cg_node<CFG>, vertex_descriptor_t> node_vertex_id_map_t;
 
   struct mk_edge_vis: public stmt_visitor_t {
     typedef typename stmt_visitor_t::bin_op_t   bin_op_t;
@@ -171,32 +187,32 @@ class call_graph {
   };
                   
   struct mk_node : 
-    public std::unary_function< vertex_descriptor_t, cg_node > {
+    public std::unary_function< vertex_descriptor_t, cg_node<CFG> > {
     cg_t* _cg;
     mk_node(): _cg(nullptr) { }
     mk_node(cg_t *cg): _cg(cg) { }
-    cg_node& operator()(const vertex_descriptor_t& v) const { 
+    cg_node<CFG>& operator()(const vertex_descriptor_t& v) const { 
       assert(_cg);
       return(*_cg)[v].func; 
     }
   };
         
   struct mk_edge :  
-    public std::unary_function< edge_descriptor_t, cg_edge<cg_node> > {
+    public std::unary_function< edge_descriptor_t, cg_edge<cg_node<CFG>> > {
     cg_t* _cg;
     mk_edge(): _cg(nullptr) {}
     mk_edge(cg_t *cg): _cg(cg) { }
-    cg_edge<cg_node> operator()(const edge_descriptor_t& e) const { 
+    cg_edge<cg_node<CFG>> operator()(const edge_descriptor_t& e) const { 
       assert(_cg);
-      cg_node& s =(*_cg)[boost::source(e,(*_cg))].func;
-      cg_node& t =(*_cg)[boost::target(e,(*_cg))].func;
-      return cg_edge<cg_node>(s,t); 
+      cg_node<CFG>& s =(*_cg)[boost::source(e,(*_cg))].func;
+      cg_node<CFG>& t =(*_cg)[boost::target(e,(*_cg))].func;
+      return cg_edge<cg_node<CFG>>(s,t); 
     }
   };
 
 public: 
 
-  typedef cg_node node_t;
+  typedef cg_node<CFG> node_t;
   typedef cg_edge<node_t> edge_t;  
   typedef boost::transform_iterator<mk_node, vertex_iterator> node_iterator; 
   typedef boost::transform_iterator<mk_edge, in_edge_iterator> pred_iterator; 
@@ -564,7 +580,6 @@ inline crab_os& operator<<(crab_os& o, const call_graph_ref<CG> &cg) {
   cg.write(o);
   return o;
 }
- 
+
 } //end namespace cg
 } // end namespace crab
-

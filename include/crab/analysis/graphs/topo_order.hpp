@@ -4,8 +4,9 @@
 #include <crab/analysis/graphs/sccg_bgl.hpp>
 
 #include <boost/graph/topological_sort.hpp>
-#include <boost/unordered_map.hpp>
 #include <boost/range/iterator_range.hpp>
+
+#include <unordered_map>
 
 /* 
    Topological order of a graph
@@ -20,7 +21,7 @@ namespace graph_algo {
 template<typename G>
 void rev_topo_sort(const G &g, std::vector<typename G::node_t>& res) {
 
-  typedef boost::unordered_map<typename G::node_t,boost::default_color_type> color_map_t;
+  typedef std::unordered_map<typename G::node_t,boost::default_color_type> color_map_t;
   typedef boost::associative_property_map<color_map_t> property_color_map_t;
 
   color_map_t colormap;

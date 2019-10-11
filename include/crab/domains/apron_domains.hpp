@@ -1,6 +1,5 @@
 #pragma once 
 
-#include "boost/range/algorithm/set_algorithm.hpp"
 
 #include <crab/config.h>
 #include <crab/common/debug.hpp>
@@ -8,6 +7,8 @@
 #include <crab/common/types.hpp>
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/intervals.hpp>
+
+#include <algorithm>
 
 namespace crab {
    namespace domains {
@@ -289,7 +290,7 @@ namespace crab {
        private:
         typedef interval_domain<number_t, varname_t> interval_domain_t;
         typedef bound<number_t> bound_t;
-        typedef boost::bimap<variable_t, ap_dim_t > var_map_t;
+        typedef boost::bimap<variable_t, ap_dim_t> var_map_t;
         typedef typename var_map_t::value_type binding_t;
 
         static ap_manager_t* m_apman;
@@ -1141,7 +1142,8 @@ namespace crab {
 	  variable_vector_t s3;
           for (auto p: m_var_map.left) s1.insert(p.first);
           s2.insert(vars.begin(), vars.end());
-          boost::set_difference(s1,s2,std::back_inserter(s3));
+          std::set_difference(s1.begin(), s1.end(), s2.begin(), s2.end(),
+			      std::back_inserter(s3));
           forget(s3);
         }
 

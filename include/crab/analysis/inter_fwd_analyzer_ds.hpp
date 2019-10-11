@@ -1,12 +1,13 @@
 #pragma once 
 
-#include<boost/optional.hpp>
-#include<boost/unordered_map.hpp>
-#include<boost/range/iterator_range.hpp>
-#include<boost/shared_ptr.hpp>
-
 #include<crab/common/types.hpp>
 #include<crab/cfg/cfg.hpp>
+
+#include <boost/optional.hpp>
+#include <boost/range/iterator_range.hpp>
+#include <unordered_map>
+#include <memory>
+
 
 /* 
  * Datastructures needed during inter-procedural analysis
@@ -35,7 +36,7 @@ public:
 private:
   // a function declaration and callsite are considered equal if
   // they correspond to the same function.
-  typedef boost::unordered_map<std::size_t, abs_domain_t> call_table_t;
+  typedef std::unordered_map<std::size_t, abs_domain_t> call_table_t;
   
   call_table_t m_call_table;
 
@@ -212,8 +213,8 @@ public:
 
 private:
 
-  typedef boost::shared_ptr<Summary> summary_ptr;
-  typedef boost::unordered_map<std::size_t, summary_ptr> summary_table_t;
+  typedef std::shared_ptr<Summary> summary_ptr;
+  typedef std::unordered_map<std::size_t, summary_ptr> summary_table_t;
   
   summary_table_t m_sum_table;
       
@@ -233,7 +234,7 @@ public:
 
     std::vector<variable_t> ins(inputs.begin(), inputs.end());
     std::vector<variable_t> outs(outputs.begin(), outputs.end());
-    summary_ptr sum_tuple(new Summary(d, sum, ins, outs));
+    summary_ptr sum_tuple = std::make_shared<Summary>(Summary(d, sum, ins, outs));
     m_sum_table.insert(std::make_pair(crab::cfg::cfg_hasher<CFG>::hash(d), sum_tuple));
   }
 

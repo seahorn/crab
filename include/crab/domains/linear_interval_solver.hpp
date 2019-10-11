@@ -48,7 +48,6 @@
 #include <vector>
 #include <set>
 #include <map>
-#include <boost/optional.hpp>
 #include <crab/common/types.hpp>
 #include <crab/common/debug.hpp>
 #include <crab/common/stats.hpp>

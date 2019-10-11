@@ -10,6 +10,8 @@
 #include <crab/analysis/fwd_analyzer.hpp>
 #include <crab/analysis/inter_fwd_analyzer.hpp>
 
+#include <memory>
+
 namespace crab {
 
   namespace checker {
@@ -29,7 +31,7 @@ namespace crab {
     
    public:
 
-    typedef boost::shared_ptr<property_checker<Analyzer>> prop_checker_ptr;
+    typedef std::shared_ptr<property_checker<Analyzer>> prop_checker_ptr;
     typedef std::vector<prop_checker_ptr> prop_checker_vector;
 
    protected:
@@ -102,7 +104,7 @@ namespace crab {
 	  if (checker->is_interesting(bb)) {
 	    crab::ScopedCrabStats __st__("Checker." + checker->get_property_name());
 	    abs_dom_t inv = m_analyzer[bb.label()];
-	    boost::shared_ptr<abs_tr_t> abs_tr = m_analyzer.get_abs_transformer(&inv);
+	    std::shared_ptr<abs_tr_t> abs_tr = m_analyzer.get_abs_transformer(&inv);
 	    // propagate forward the invariants from the block entry 
 	    // while checking the property
 	    checker->set(&*abs_tr, safe_assertions);
@@ -154,7 +156,7 @@ namespace crab {
           for (auto checker: this->m_checkers) {
             crab::ScopedCrabStats __st__("Checker." + checker->get_property_name());
             abs_dom_t inv = m_analyzer.get_pre(cfg, bb.label());
-	    boost::shared_ptr<abs_tr_t> abs_tr = m_analyzer.get_abs_transformer(&inv);
+	    std::shared_ptr<abs_tr_t> abs_tr = m_analyzer.get_abs_transformer(&inv);
             // propagate forward the invariants from the block entry 
             // while checking the property
             checker->set(&*abs_tr, safe_assertions);

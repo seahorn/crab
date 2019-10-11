@@ -7,7 +7,7 @@
 #include "opt_oct.h"
 #include "pkeq.h"
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 namespace crab {
 
@@ -16,7 +16,7 @@ namespace crab {
      namespace apron {
 
        typedef ap_abstract0_t* ap_state;
-       typedef boost::shared_ptr<ap_abstract0_t> ap_state_ptr;
+       typedef std::shared_ptr<ap_abstract0_t> ap_state_ptr;
 
        /** Custom deleter for ap_state_ptr */
        class ap_state_deleter

@@ -8,13 +8,13 @@
 #include <crab/analysis/dataflow/liveness.hpp>
 #include <crab/analysis/graphs/dominance.hpp>
 
-#include <boost/shared_ptr.hpp>
-#include <boost/unordered_map.hpp>
 #include <boost/range/iterator_range.hpp>
 
 #include <algorithm>
 #include <vector>
 #include <set>
+#include <memory>
+#include <unordered_map>
 
 namespace crab {
   
@@ -35,8 +35,8 @@ namespace crab {
       <crab::cfg::cfg_rev<CFG>, AbsDom> fixpoint_iterator_t;
       typedef typename CFG::basic_block_label_t bb_label_t;
       typedef typename CFG::statement_t stmt_t; 
-      typedef boost::unordered_map<bb_label_t, AbsDom> bb_abstract_map_t;
-      typedef boost::unordered_map<stmt_t*, AbsDom> pp_abstract_map_t;      
+      typedef std::unordered_map<bb_label_t, AbsDom> bb_abstract_map_t;
+      typedef std::unordered_map<stmt_t*, AbsDom> pp_abstract_map_t;      
 
       /// forward and backward transformers
       typedef intra_abs_transformer<AbsDom> abs_fwd_tr_t;
@@ -140,7 +140,7 @@ namespace crab {
 	this->run(m_postcond);
       }
       
-      void run_backward(const boost::unordered_map
+      void run_backward(const std::unordered_map
 			<typename CFG::basic_block_label_t,AbsDom>& fwd_invariants) {
       	m_invariants.insert(fwd_invariants.begin(), fwd_invariants.end());
       	run_backward();
@@ -217,7 +217,7 @@ namespace crab {
       typedef typename bwd_fixpoint_iterator_t::precond_map_t precond_map_t;
       typedef typename bwd_fixpoint_iterator_t::wto_t bwd_wto_t;
       typedef liveness<CFG> liveness_t;
-      typedef boost::unordered_map<bb_label_t, std::set<bb_label_t>> idom_tree_t;
+      typedef std::unordered_map<bb_label_t, std::set<bb_label_t>> idom_tree_t;
       typedef typename bb_t::assert_t assert_t;
       typedef typename bb_t::bool_assert_t bool_assert_t;
       typedef typename bb_t::ptr_assert_t ptr_assert_t;      
@@ -430,7 +430,7 @@ namespace crab {
 
 	if (!m_unproven_assertions.empty() && !only_forward) {
 	  crab::CrabStats::resume("CombinedForwardBackward.DominatorTree");
-	  boost::unordered_map<bb_label_t, bb_label_t> idom_map;
+	  std::unordered_map<bb_label_t, bb_label_t> idom_map;
 	  crab::analyzer::graph_algo::dominator_tree(m_cfg, m_cfg.entry(), idom_map);
 	  // build idom_tree
 	  for (auto &kv: idom_map) {
@@ -626,8 +626,8 @@ namespace crab {
 	return m_cfg;
       }
 
-      boost::shared_ptr<abs_tr_t> get_abs_transformer(AbsDom* inv) {
-	return boost::make_shared<abs_tr_t>(inv);
+      std::shared_ptr<abs_tr_t> get_abs_transformer(AbsDom* inv) {
+	return std::make_shared<abs_tr_t>(inv);
       }
 
       void get_safe_assertions(std::set<const stmt_t*>& out) const {

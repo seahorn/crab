@@ -11,11 +11,10 @@
 #include <crab/cfg/cfg.hpp>
 #include <crab/analysis/dataflow/assertion_crawler.hpp>
 
-#include <boost/shared_ptr.hpp>
-#include <boost/unordered_map.hpp>
-#include <boost/unordered_set.hpp>
 #include <boost/range/iterator_range.hpp>
-
+#include <memory>
+#include <unordered_map>
+#include <unordered_set>
 #include <map>
 
 namespace crab {
@@ -145,15 +144,15 @@ namespace crab {
       typedef typename CFG::statement_t statement_t;
       typedef crab::cfg::assert_stmt<typename CFG::number_t, typename CFG::varname_t> assert_t;
       typedef assumption<CFG> assumption_t;
-      typedef boost::shared_ptr<assumption_t> assumption_ptr;
+      typedef std::shared_ptr<assumption_t> assumption_ptr;
       typedef std::vector<assumption_ptr> vector_assumption_ptr;
 
     protected:
       
       // map an assert statement to its unjustified assumptions
-      typedef boost::unordered_map<const assert_t*, vector_assumption_ptr> assumption_map_t;
+      typedef std::unordered_map<const assert_t*, vector_assumption_ptr> assumption_map_t;
       // map an arbitrary statement to the assumptions originated in that statement
-      typedef boost::unordered_map<const statement_t*, vector_assumption_ptr> assumption_origin_map_t;
+      typedef std::unordered_map<const statement_t*, vector_assumption_ptr> assumption_origin_map_t;
       
       /** the cfg **/
       CFG m_cfg;
@@ -194,7 +193,7 @@ namespace crab {
 
       // create a new overflow assumption
       assumption_ptr new_assumption(const statement_t *s) {
-	assumption_ptr assume = boost::make_shared<overflow_assumption<CFG> >(m_id++, s);
+	assumption_ptr assume = std::make_shared<overflow_assumption<CFG> >(m_id++, s);
 	auto it = m_origin_map.find(s);
 	if (it != m_origin_map.end()) {
 	  it->second.push_back(assume);
@@ -309,7 +308,7 @@ namespace crab {
       using typename assumption_analysis_t::assumption_ptr;
       using typename assumption_analysis_t::vector_assumption_ptr;
       typedef typename CFG::basic_block_label_t bb_label_t;
-      typedef boost::unordered_set<bb_label_t> label_set_t;
+      typedef std::unordered_set<bb_label_t> label_set_t;
       typedef typename CFG::basic_block_t bb_t;
 
       void backward_reachable(bb_label_t r, const assert_t* a, label_set_t &visited){

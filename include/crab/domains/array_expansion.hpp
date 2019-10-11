@@ -34,8 +34,9 @@
 #include <algorithm>
 #include <vector>
 #include <set>
+#include <unordered_map>
+#include <algorithm>
 #include <boost/optional.hpp>
-#include "boost/range/algorithm/set_algorithm.hpp"
 
 namespace crab {
 namespace domains {
@@ -236,21 +237,21 @@ namespace domains {
     template <typename Set>
     inline Set set_intersection(Set& s1, Set& s2) {
       Set s3;
-      boost::set_intersection(s1, s2, std::inserter(s3, s3.end()));
+      std::set_intersection(s1, s2, std::inserter(s3, s3.end()));
       return s3;
     }
     
     template <typename Set>
     inline Set set_union(Set& s1, Set& s2) {
       Set s3;
-      boost::set_union(s1, s2, std::inserter(s3, s3.end()));
+      std::set_union(s1, s2, std::inserter(s3, s3.end()));
       return s3;
     }
     
     template <typename Set>
     inline bool set_inclusion(Set& s1, Set& s2) {
       Set s3;
-      boost::set_difference(s1, s2, std::inserter(s3, s3.end()));
+      std::set_difference(s1, s2, std::inserter(s3, s3.end()));
       return s3.empty();
     }
   }
@@ -728,7 +729,7 @@ namespace domains {
     typedef crab::variable_type type_t;
     typedef offset_map<variable_t> offset_map_t;
     typedef cell<variable_t> cell_t;
-    typedef boost::unordered_map<variable_t, offset_map_t> array_map_t;
+    typedef std::unordered_map<variable_t, offset_map_t> array_map_t;
 
     // scalar domain
     NumDomain _inv; 

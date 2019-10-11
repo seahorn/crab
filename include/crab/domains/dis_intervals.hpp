@@ -17,6 +17,9 @@
 #include <crab/domains/separate_domains.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
 
+#include <boost/optional.hpp>
+#include <boost/range/iterator_range.hpp>
+
 namespace crab {
    namespace domains {
 

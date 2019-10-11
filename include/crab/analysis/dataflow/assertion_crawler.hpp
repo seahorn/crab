@@ -8,9 +8,9 @@
 #include <crab/iterators/killgen_fixpoint_iterator.hpp> 
 #include <crab/analysis/graphs/cdg.hpp>
 
-#include <boost/unordered_map.hpp>
-#include <boost/unordered_set.hpp>
 #include <boost/range/iterator_range.hpp>
+#include <unordered_map>
+#include <unordered_set>
 
 /**
  *  Dataflow analysis that for each block b it computes facts <i,V>
@@ -56,8 +56,8 @@ namespace crab {
       assert_t* a;
       
       /// pointers to some global datastructures
-      typedef boost::unordered_map<assert_t*, this_type > assert_map_t;	        
-      typedef boost::unordered_map <basic_block_label_t,
+      typedef std::unordered_map<assert_t*, this_type > assert_map_t;	        
+      typedef std::unordered_map <basic_block_label_t,
 				    std::vector<basic_block_label_t> > cdg_t;
       // map assertions to their wrappers
       assert_map_t* assert_map_ptr;
@@ -110,11 +110,11 @@ namespace crab {
 
        // map each stmt assertion to a unique identifier
        typedef typename assert_wrapper_t::assert_t assert_t; 
-       typedef boost::unordered_map<assert_t*, assert_wrapper_t > assert_map_t;	 
+       typedef std::unordered_map<assert_t*, assert_wrapper_t > assert_map_t;	 
        
        // control-dependency graph       
        // map a CFG block to the set of blocks which control-dependent on it.
-       typedef boost::unordered_map <basic_block_label_t,
+       typedef std::unordered_map <basic_block_label_t,
 				     std::vector<basic_block_label_t> > cdg_t;
        
        // set of uses and definitions of an instruction
@@ -219,7 +219,7 @@ namespace crab {
 	   // return true if we find a path in cdg from root to target
 	   // FIXME: do caching for the queries
 	   bool reach (basic_block_label_t root, basic_block_label_t target,
-		       boost::unordered_set<basic_block_label_t> &visited) {
+		       std::unordered_set<basic_block_label_t> &visited) {
 	     if (root == target)
 	       return true;
 
@@ -239,7 +239,7 @@ namespace crab {
 	   }
 
 	   bool reach (basic_block_label_t target) {
-	     boost::unordered_set <basic_block_label_t> visited;
+	     std::unordered_set <basic_block_label_t> visited;
 	     for (auto r: roots)
 	       if (reach(r, target,visited))
 		 return true;
@@ -522,7 +522,7 @@ namespace crab {
 
       private:
        
-       boost::unordered_map<basic_block_label_t, separate_domain_t> m_map;
+       std::unordered_map<basic_block_label_t, separate_domain_t> m_map;
 
 
       public:

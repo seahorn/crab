@@ -1,5 +1,6 @@
 #include "program_options.hpp"
 #include <crab/common/debug.hpp>
+#include <crab/common/types.hpp>
 #include <boost/program_options.hpp>
 #include <iostream>
 

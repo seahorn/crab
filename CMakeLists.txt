@@ -30,6 +30,7 @@ set(CMAKE_MODULE_PATH
 enable_testing()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 set (CUSTOM_BOOST_ROOT "" CACHE PATH "Path to custom boost installation.")
 if (CUSTOM_BOOST_ROOT)
@@ -353,8 +354,7 @@ endif ()
 
 
 # XXX: do not use add_definition for warning flags. add_definition is
-#      intended for -D...
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+#      intended for -D flags.
 ###
 # To avoid annoying warning messages
 ###

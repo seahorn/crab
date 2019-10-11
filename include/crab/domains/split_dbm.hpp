@@ -29,8 +29,8 @@
 #include <crab/domains/backward_assign_operations.hpp>
 
 #include <boost/optional.hpp>
-#include <boost/unordered_set.hpp>
 #include <boost/container/flat_map.hpp>
+#include <unordered_set>
 
 //#define CHECK_POTENTIAL
 //#define SDBM_NO_NORMALIZE
@@ -76,7 +76,7 @@ namespace crab {
       typedef typename GrOps::edge_vector edge_vector;
       // < <x, y>, k> == x - y <= k.
       typedef std::pair<std::pair<variable_t, variable_t>, Wt> diffcst_t;
-      typedef boost::unordered_set<vert_id> vert_set_t;
+      typedef std::unordered_set<vert_id> vert_set_t;
 
     protected:
         

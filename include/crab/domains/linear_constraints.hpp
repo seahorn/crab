@@ -41,17 +41,21 @@
 
 #pragma once
 
-#include <boost/optional.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/container/flat_map.hpp>
-#include <boost/iterator/transform_iterator.hpp>
-#include <boost/functional/hash.hpp>
 #include <crab/common/types.hpp>
 #include <crab/domains/patricia_trees.hpp>
+
+#include <boost/optional.hpp>
+#include <boost/container/flat_map.hpp>
+#include <boost/iterator/transform_iterator.hpp>
+#include <boost/functional/hash_fwd.hpp> // for hash_combine
 
 #include <unordered_set>
 #include <unordered_map>
 #include <vector>
+#include <memory>
+#include <functional>
+
+
 
 namespace ikos {
   
@@ -68,7 +72,7 @@ namespace ikos {
     
   private:
     typedef boost::container::flat_map<variable_t, Number> map_t;
-    typedef boost::shared_ptr<map_t> map_ptr;
+    typedef std::shared_ptr<map_t> map_ptr;
     typedef typename map_t::value_type pair_t;
     
     map_ptr _map;
@@ -78,7 +82,7 @@ namespace ikos {
         _map(map), _cst(cst) { }
     
     linear_expression(const map_t& map, Number cst): 
-        _map(map_ptr(new map_t)), _cst(cst) {
+      _map(std::make_shared<map_t>()), _cst(cst) {
       *this->_map = map;
     }
     
@@ -111,21 +115,21 @@ namespace ikos {
     typedef boost::transform_iterator<tr_value_ty, typename map_t::const_iterator> const_iterator;    
     
     linear_expression(): 
-        _map(map_ptr(new map_t)), _cst(0) { }
+        _map(std::make_shared<map_t>()), _cst(0) { }
     
     linear_expression(Number n): 
-        _map(map_ptr(new map_t)), _cst(n) { }
+        _map(std::make_shared<map_t>()), _cst(n) { }
     
     linear_expression(signed long long int n): 
-        _map(map_ptr(new map_t)), _cst(Number(n)) { }
+        _map(std::make_shared<map_t>()), _cst(Number(n)) { }
     
     linear_expression(variable_t x): 
-        _map(map_ptr(new map_t)), _cst(0) {
+        _map(std::make_shared<map_t>()), _cst(0) {
       this->_map->insert(pair_t(x, Number(1)));
     }
     
     linear_expression(Number n, variable_t x): 
-        _map(map_ptr(new map_t)), _cst(0) {
+        _map(std::make_shared<map_t>()), _cst(0) {
       this->_map->insert(pair_t(x, n));
     }
 
@@ -153,12 +157,12 @@ namespace ikos {
       return boost::make_transform_iterator(_map->end(), tr_value_ty());      
     }
 
-    size_t hash () const {
+    size_t hash() const {
       size_t res = 0;
       for (const_iterator it=begin(), et=end (); it!=et; ++it) {
-        boost::hash_combine (res, std::make_pair((*it).second, (*it).first));
+        boost::hash_combine(res, std::make_pair((*it).second, (*it).first));
       }
-      boost::hash_combine (res, _cst);
+      boost::hash_combine(res, _cst);
       return res;
     }
 
@@ -280,7 +284,7 @@ namespace ikos {
       if (n == 0) {
         return linear_expression_t();
       } else {
-        map_ptr map = map_ptr(new map_t);
+        map_ptr map = std::make_shared<map_t>();
         for (typename map_t::const_iterator it = this->_map->begin(); 
              it != this->_map->end(); ++it) {
           Number c = n * it->second;
@@ -371,13 +375,13 @@ namespace ikos {
   operator<<(crab::crab_os& o, const linear_expression<Number, VariableName>& e) {
     e.write(o);
     return o;
-  }
-			  
+  }			  
+
+  /* used by boost::hash_combine */
   template<typename Number, typename VariableName>
   inline std::size_t hash_value(const linear_expression<Number,VariableName>& e) {
     return e.hash();
   }
-
 
   template<typename Number, typename VariableName>
   struct linear_expression_hasher {
@@ -706,18 +710,20 @@ namespace ikos {
 	      _expr.equal(o._expr));
     }
     
-    size_t hash () const {
+    size_t hash() const {
       size_t res = 0;
-      boost::hash_combine (res, _expr);
-      boost::hash_combine (res, _kind);
+      boost::hash_combine(res, _expr);
+      boost::hash_combine(res, _kind);
       if (_kind == INEQUALITY || _kind == STRICT_INEQUALITY) {
-	boost::hash_combine (res, _signedness);
+	boost::hash_combine(res, _signedness);
       }
       return res;
     }
 
     index_t index() const {
-      // XXX: to store linear constraints in patricia trees 
+      // XXX: to store linear constraints in patricia trees
+      // Ufff, the indexes may not be unique. Check that patricia
+      // trees are ok with that.
       return (index_t) hash();
     }
     
@@ -873,11 +879,6 @@ namespace ikos {
 	CRAB_ERROR("Cannot negate linear constraint");       
       }
     }
-  }
-  
-  template<typename Number, typename VariableName>
-  inline std::size_t hash_value(const linear_constraint<Number,VariableName>& e) {
-    return e.hash ();
   }
 
   template<typename Number, typename VariableName>
@@ -1406,6 +1407,12 @@ namespace ikos {
         (e1 - e2, linear_constraint<Number, VariableName>::DISEQUATION);
   }
 
+  /* used by boost::hash_combine */
+  template<typename Number, typename VariableName>
+  inline std::size_t hash_value(const linear_constraint<Number,VariableName>& c) {
+    return c.hash();
+  }
+
   template<typename Number, typename VariableName>
   class linear_constraint_system {
 
@@ -1738,3 +1745,22 @@ namespace ikos {
 
 } // namespace ikos
 
+namespace std {
+/**  specialization of std::hash for linear expressions and constraints **/
+template<typename Number, typename VariableName>
+struct hash<ikos::linear_expression<Number,VariableName>> {
+  using linear_expression_t = ikos::linear_expression<Number,VariableName>;
+  size_t operator()(const linear_expression_t& e) const {
+    return e.hash();
+  }
+};
+
+template<typename Number, typename VariableName>
+struct hash<ikos::linear_constraint<Number,VariableName>> {
+  using linear_constraint_t = ikos::linear_constraint<Number,VariableName>;
+  size_t operator()(const linear_constraint_t& c) const {
+    return c.hash();
+  }
+};
+
+} // end namespace std
