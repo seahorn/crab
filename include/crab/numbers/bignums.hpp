@@ -252,6 +252,7 @@ inline crab::crab_os& operator<<(crab::crab_os& o, const q_number& q) {
   return o;
 }
 
+/** for boost::hash_combine **/
 inline std::size_t hash_value(const z_number& z) {
   return z.hash();
 }
@@ -259,6 +260,21 @@ inline std::size_t hash_value(const z_number& z) {
 inline std::size_t hash_value(const q_number& q) {
   return q.hash();
 }
-
 } //end namespace
 
+/** for specializations of std::hash **/
+namespace std {
+template<>
+struct hash<ikos::z_number> {
+  size_t operator()(const ikos::z_number& z) const {
+    return z.hash();
+  }
+};
+
+template<>
+struct hash<ikos::q_number> {
+  size_t operator()(const ikos::q_number& q) const {
+    return q.hash();
+  }
+};
+}

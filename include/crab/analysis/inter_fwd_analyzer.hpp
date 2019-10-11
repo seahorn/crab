@@ -17,15 +17,14 @@
 #include <crab/analysis/inter_fwd_analyzer_ds.hpp>
 #include <crab/analysis/dataflow/liveness.hpp>
 
-#include <boost/unordered_map.hpp>
 #include <boost/range/iterator_range.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
-#include <boost/range/algorithm/set_algorithm.hpp>
 
 #include <vector>
 #include <set>
 #include <string>
+#include <memory>
+#include <algorithm>
+#include <unordered_map>
 
 namespace crab {
 
@@ -119,7 +118,8 @@ public:
     // --- remove from caller only formal parameters so we can keep
     //     as much context from the caller as possible
     std::vector<variable_t> vs;
-    boost::set_difference(formals, actuals, std::back_inserter(vs));
+    std::set_difference(formals.begin(), formals.end(),
+			actuals.begin(), actuals.end(), std::back_inserter(vs));
     caller.forget(vs);
       
     CRAB_LOG("inter", 
@@ -330,7 +330,7 @@ public:
   typedef typename cfg_t::number_t number_t;
   typedef typename cfg_t::variable_t variable_t;
   typedef liveness<cfg_t> liveness_t;     
-  typedef boost::unordered_map <cfg_t, const liveness_t*> liveness_map_t;
+  typedef std::unordered_map<cfg_t, const liveness_t*> liveness_map_t;
 
 private:
 
@@ -344,15 +344,15 @@ public:
   typedef fwd_analyzer<cfg_t, bu_abs_tr> bu_analyzer;
   typedef fwd_analyzer<cfg_t, td_abs_tr> td_analyzer;
   typedef typename summ_tbl_t::Summary summary_t;
-  typedef boost::shared_ptr<summary_t> summary_ptr;
+  typedef std::shared_ptr<summary_t> summary_ptr;
   // for checkers
   typedef TD_Dom abs_dom_t;
   typedef td_abs_tr abs_tr_t;
       
 private:
 
-  typedef boost::shared_ptr<td_analyzer> td_analyzer_ptr;
-  typedef boost::unordered_map<std::size_t, td_analyzer_ptr> invariant_map_t;
+  typedef std::shared_ptr<td_analyzer> td_analyzer_ptr;
+  typedef std::unordered_map<std::size_t, td_analyzer_ptr> invariant_map_t;
   
   CallGraph m_cg;
   const liveness_map_t* m_live;
@@ -433,11 +433,11 @@ public:
 		 crab::outs() << "++ Analyzing function "
 		 << fdecl.get_func_name() << "\n");
 
-	auto abs_tr = boost::make_shared<td_abs_tr>(&init, &m_summ_tbl, &m_call_tbl);
-	auto a = boost::make_shared<td_analyzer>(cfg, nullptr, &*abs_tr, get_live(cfg),
-						 m_widening_delay,
-						 m_descending_iters,
-						 m_jump_set_size);
+	auto abs_tr = std::make_shared<td_abs_tr>(&init, &m_summ_tbl, &m_call_tbl);
+	auto a = std::make_shared<td_analyzer>(cfg, nullptr, &*abs_tr, get_live(cfg),
+					       m_widening_delay,
+					       m_descending_iters,
+					       m_jump_set_size);
 						      
 	a->run_forward();
 	m_inv_map.insert({crab::cfg::cfg_hasher<cfg_t>::hash(fdecl), a});
@@ -550,11 +550,11 @@ public:
 		       << fdecl.get_func_name()
 		       << " started with bottom (i.e., dead function).\n";
 	}
-	auto abs_tr = boost::make_shared<td_abs_tr>(&init_inv, &m_summ_tbl, &m_call_tbl);
-	auto a = boost::make_shared<td_analyzer>(cfg, nullptr, &*abs_tr, get_live(cfg),
-						 m_widening_delay,
-						 m_descending_iters,
-						 m_jump_set_size);
+	auto abs_tr = std::make_shared<td_abs_tr>(&init_inv, &m_summ_tbl, &m_call_tbl);
+	auto a = std::make_shared<td_analyzer>(cfg, nullptr, &*abs_tr, get_live(cfg),
+					       m_widening_delay,
+					       m_descending_iters,
+					       m_jump_set_size);
 	a->run_forward();
 	m_inv_map.insert(std::make_pair(crab::cfg::cfg_hasher<cfg_t>::hash(fdecl), a));
       }
@@ -597,8 +597,8 @@ public:
   }
       
   //! Propagate inv through statements
-  boost::shared_ptr<abs_tr_t> get_abs_transformer(TD_Dom* inv) {
-    return boost::make_shared<abs_tr_t>(inv, &m_summ_tbl, &m_call_tbl);
+  std::shared_ptr<abs_tr_t> get_abs_transformer(TD_Dom* inv) {
+    return std::make_shared<abs_tr_t>(inv, &m_summ_tbl, &m_call_tbl);
   }
 
   //! Return true if there is a summary for a function
@@ -614,7 +614,7 @@ public:
     auto fdecl = cfg.get_func_decl();
     if (m_summ_tbl.hasSummary(fdecl)) {
       summary_t summ = m_summ_tbl.get(fdecl);
-      return boost::make_shared<summary_t>(summ);
+      return std::make_shared<summary_t>(summ);
     } else {
       CRAB_WARN("Summary not found");
       return nullptr;

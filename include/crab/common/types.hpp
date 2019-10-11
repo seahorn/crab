@@ -4,9 +4,8 @@
 #include <crab/common/debug.hpp>
 
 #include <iosfwd>
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
 #include <boost/optional.hpp>
+#include <memory>
 
 /* Basic type definitions */
 
@@ -388,13 +387,13 @@ namespace ikos {
 
   private:
     
-    boost::shared_ptr<variable_t> m_v;
+    std::shared_ptr<variable_t> m_v;
     
    public:
 
     variable_ref(): m_v(nullptr) {}
       
-    variable_ref(variable_t v): m_v(boost::make_shared<variable_t>(v)) { }
+    variable_ref(variable_t v): m_v(std::make_shared<variable_t>(v)) { }
 
     bool is_null() const {
       return !m_v;
@@ -484,32 +483,32 @@ namespace ikos {
       return m_v->write(o);
     }        
   }; // class variable_ref
-  
+
+  /* used by boost::hash_combine */
   template< typename Number, typename VariableName >
   inline size_t hash_value(const variable<Number, VariableName> &v) {
     return v.hash();
   }
 
+  /* used by boost::hash_combine */
   template< typename Number, typename VariableName >
   inline size_t hash_value(const variable_ref<Number, VariableName> &v) {
     return v.hash();
   }
-  
-  template< typename Number, typename VariableName >
+
+  template<typename Number, typename VariableName>
   inline crab::crab_os& operator<<(crab::crab_os& o,
 				   const variable<Number, VariableName> &v) {
     v.write(o);
     return o;
   }
 
-  template< typename Number, typename VariableName >
+  template<typename Number, typename VariableName>
   inline crab::crab_os& operator<<(crab::crab_os& o,
 				   const variable_ref<Number, VariableName> &v) {
     v.write(o);
     return o;
-  }
-  
-  
+  }  
 } // end namespace ikos
 
 namespace crab {
@@ -518,3 +517,30 @@ namespace crab {
   }
 }
 
+#ifdef BOOST_NO_EXCEPTIONS
+namespace boost {
+template<class E>
+void throw_exception(E const &e) {
+  std::exit(1);
+}
+}
+#endif 
+
+/** specialization for std::hash for variables **/
+namespace std {
+template<typename Number, typename VariableName>
+struct hash<ikos::variable<Number, VariableName>> {
+  using variable_t = ikos::variable<Number, VariableName>;
+  size_t operator()(const variable_t& v) const {
+    return v.hash();
+  }
+};
+
+template<typename Number, typename VariableName>
+struct hash<ikos::variable_ref<Number, VariableName>> {
+  using variable_ref_t = ikos::variable_ref<Number, VariableName>;
+  size_t operator()(const variable_ref_t& v) const {
+    return v.hash();
+  }
+};
+} 

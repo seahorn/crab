@@ -42,6 +42,7 @@
 
 #include <crab/common/types.hpp>
 #include <crab/domains/patricia_trees.hpp>
+#include <boost/optional.hpp>
 
 namespace ikos {
   

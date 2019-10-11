@@ -45,12 +45,13 @@ z_number::operator mpz_class() const {
 
 z_number::z_number(): _n(0) {}
 
-z_number::z_number(std::string s) {
-  try {
-    _n = s;
-  } catch (std::invalid_argument& e) {
-    CRAB_ERROR ("z_number: invalid string in constructor", s);
-  }
+z_number::z_number(std::string s): _n(s) {
+  /// We want to be compiled with -fno_exceptions  
+  // try {
+  //   _n = s;
+  // } catch (std::invalid_argument& e) {
+  //   CRAB_ERROR ("z_number: invalid string in constructor", s);
+  // }
 }
 
 z_number::z_number(signed long long int n) : _n((signed long int) n) {
@@ -221,12 +222,13 @@ q_number::q_number(): _n(0) {}
 
 q_number::q_number(mpq_class n): _n(n) {}
   
-q_number::q_number(std::string s) {
-  try {
-    _n = s;
-    } catch (std::invalid_argument& e) {
-    CRAB_ERROR("q_number: invalid string in constructor ",s);
-  }
+q_number::q_number(std::string s): _n(s) {
+  /// We want to be compiled with -fno_exceptions
+  // try {
+  //   _n = s;
+  //   } catch (std::invalid_argument& e) {
+  //   CRAB_ERROR("q_number: invalid string in constructor ",s);
+  // }
   _n.canonicalize();
 }
 

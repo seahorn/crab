@@ -1,7 +1,5 @@
 #pragma once 
 
-#include "boost/range/algorithm/set_algorithm.hpp"
-
 #include <crab/config.h>
 #include <crab/common/debug.hpp>
 #include <crab/common/stats.hpp>
@@ -252,9 +250,11 @@ namespace crab {
  */
 
 #include <crab/domains/elina/elina.hpp>
-#include <boost/bimap.hpp>
 #include <crab/domains/linear_interval_solver.hpp>
 
+#include <boost/bimap.hpp>
+#include <boost/optional.hpp>
+#include <algorithm>
 #include <type_traits>
 
 /**
@@ -1302,7 +1302,7 @@ namespace domains {
       variable_vector_t s3;
       for (auto p: m_var_map.left) s1.insert(p.first);
       s2.insert(vars.begin(), vars.end());
-      boost::set_difference(s1,s2,std::back_inserter(s3));
+      std::set_difference(s1,s2,std::back_inserter(s3));
       forget(s3);
     }
     

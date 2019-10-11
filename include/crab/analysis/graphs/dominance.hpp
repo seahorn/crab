@@ -3,8 +3,8 @@
 #include <algorithm>
 #include <boost/property_map/property_map.hpp>
 #include <boost/graph/dominator_tree.hpp>
-#include <boost/unordered_map.hpp>
 #include <boost/version.hpp>
+#include <unordered_map>
 
 #include <crab/common/stats.hpp>
 
@@ -117,12 +117,12 @@ namespace crab {
 	 
 	 typedef typename G::node_t node_t; 
 	 // map node to its idom node
-	 boost::unordered_map<node_t, node_t> idom;
+	 std::unordered_map<node_t, node_t> idom;
 	 crab::CrabStats::resume("Dominator Tree");       	 	 
 	 dominator_tree(g, entry, idom);
 	 crab::CrabStats::stop("Dominator Tree");	 
 	 // // map node n to all its immediate dominated nodes
-	 // boost::unordered_map<node_t, std::vector<node_t> > dominated;
+	 // std::unordered_map<node_t, std::vector<node_t> > dominated;
 	 // for (auto v: boost::make_iterator_range(vertices(g))) {
 	 //   if (idom[v] != boost::graph_traits<G>::null_vertex()) {
 	 //     auto &dom_vector = dominated[idom[v]];

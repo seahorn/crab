@@ -7,10 +7,12 @@
 #include <crab/common/types.hpp>
 
 #include <boost/optional.hpp>
-#include <boost/unordered_map.hpp>
 #include <boost/range/iterator_range.hpp>
 
 #include <limits>
+#include <unordered_map>
+#include <vector>
+#include <functional>
 
 namespace crab {
 namespace cfg  {
@@ -114,7 +116,7 @@ public:
     }
     
     friend size_t hash_value(indexed_string  s) {
-      boost::hash<index_t> hasher;
+      std::hash<index_t> hasher;
       return hasher(s.index());
     }
   }; 
@@ -125,8 +127,8 @@ public:
   
 private:
   
-  typedef boost::unordered_map<T, indexed_string>  t_map_t;      
-  typedef boost::unordered_map<index_t, indexed_string> shadow_map_t;      
+  typedef std::unordered_map<T, indexed_string>  t_map_t;      
+  typedef std::unordered_map<index_t, indexed_string> shadow_map_t;      
   
   index_t _next_id;
   t_map_t _map;

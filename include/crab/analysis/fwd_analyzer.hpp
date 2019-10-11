@@ -8,8 +8,8 @@
 #include <crab/analysis/dataflow/liveness.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 
-#include "boost/range/algorithm/set_algorithm.hpp"
-#include "boost/shared_ptr.hpp"
+#include <algorithm>
+#include <memory>
 
 namespace crab {
 
@@ -240,7 +240,7 @@ namespace crab {
     private:
       
       abs_dom_t m_init;      
-      boost::shared_ptr<abs_tr_t> m_abs_tr;
+      std::shared_ptr<abs_tr_t> m_abs_tr;
       fwd_analyzer_t m_analyzer;
       
     public:
@@ -251,7 +251,7 @@ namespace crab {
 				 unsigned int descending_iters=UINT_MAX,
 				 size_t jump_set_size=0)
 	: m_init(AbsDomain::top()),
-	  m_abs_tr(boost::make_shared<abs_tr_t>(&m_init)),
+	  m_abs_tr(std::make_shared<abs_tr_t>(&m_init)),
 	  m_analyzer(cfg, nullptr, &*m_abs_tr, nullptr,
 		     widening_delay, descending_iters, jump_set_size) {}
       
@@ -266,7 +266,7 @@ namespace crab {
 				 unsigned int descending_iters=UINT_MAX,
 				 size_t jump_set_size=0)
 	: m_init(init),
-	  m_abs_tr(boost::make_shared<abs_tr_t>(&m_init)),	  	  
+	  m_abs_tr(std::make_shared<abs_tr_t>(&m_init)),	  	  
 	  m_analyzer(cfg, wto, &*m_abs_tr, live, 
 		     widening_delay, descending_iters, jump_set_size) {}
 
@@ -323,7 +323,7 @@ namespace crab {
 	return m_analyzer.get_cfg();
       }
 
-      boost::shared_ptr<abs_tr_t> get_abs_transformer(abs_dom_t* inv) {
+      std::shared_ptr<abs_tr_t> get_abs_transformer(abs_dom_t* inv) {
 	m_abs_tr->set(inv);
 	return m_abs_tr;
       }

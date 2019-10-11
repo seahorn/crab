@@ -44,7 +44,7 @@
 
 #include <algorithm>
 #include <vector>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <boost/optional.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 
@@ -139,7 +139,7 @@ template<typename Key, typename Value>
 class tree {
 public:
   typedef tree<Key, Value> tree_t;
-  typedef boost::shared_ptr<tree_t> tree_ptr;
+  typedef std::shared_ptr<tree_t> tree_ptr;
   typedef tree_ptr ptr;
   typedef unary_op<Value> unary_op_t;
   typedef binary_op<Value> binary_op_t;
@@ -405,7 +405,7 @@ typename tree<Key, Value>::ptr tree<Key, Value>::make_node(
   tree_ptr n;
   if (left_branch) {
     if (right_branch) {
-      n = tree_ptr(new node<Key, Value>(prefix,
+      n = tree_ptr(std::make_shared<node<Key, Value>>(prefix,
                                           branching_bit,
                                           left_branch,
                                           right_branch));
@@ -426,7 +426,7 @@ template<typename Key, typename Value>
 typename tree<Key, Value>::ptr tree<Key, Value>::make_leaf(
     const Key& key, const Value& value) {
   typedef typename tree<Key, Value>::ptr tree_ptr;
-  return tree_ptr(new leaf<Key, Value>(key, value));
+  return tree_ptr(std::make_shared<leaf<Key, Value>>(key, value));
 }
 
 template<typename Key, typename Value>

@@ -43,8 +43,6 @@
 #include <boost/iterator/indirect_iterator.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/range/iterator_range.hpp>
-#include <boost/unordered_set.hpp>
-#include <boost/unordered_map.hpp>
 
 #include <crab/common/types.hpp>
 #include <crab/numbers/bignums.hpp>
@@ -53,6 +51,8 @@
 #include <crab/domains/discrete_domains.hpp>
 
 #include <functional> // for wrapper_reference
+#include <unordered_set>
+#include <unordered_map>
 
 namespace crab {
 
@@ -2706,7 +2706,7 @@ namespace crab {
      private:
       
       typedef cfg<BasicBlockLabel, VariableName, Number> cfg_t;
-      typedef boost::unordered_map<BasicBlockLabel, basic_block_t*> basic_block_map_t;
+      typedef std::unordered_map<BasicBlockLabel, basic_block_t*> basic_block_map_t;
       typedef typename basic_block_map_t::value_type binding_t;
       typedef typename basic_block_t::live_domain_t live_domain_t;
 
@@ -2743,7 +2743,7 @@ namespace crab {
       fdecl_t m_func_decl; 
       
       
-      typedef boost::unordered_set<BasicBlockLabel> visited_t;
+      typedef std::unordered_set<BasicBlockLabel> visited_t;
       template<typename T>
       void dfs_rec(BasicBlockLabel curId, visited_t &visited, T f) const {
         if (!visited.insert(curId).second) return;
@@ -3350,9 +3350,9 @@ namespace crab {
      private:
 
       struct getRev: public std::unary_function<typename CFGRef::basic_block_t, basic_block_t> {
-        const boost::unordered_map<basic_block_label_t, basic_block_t>& _rev_bbs;
+        const std::unordered_map<basic_block_label_t, basic_block_t>& _rev_bbs;
 
-        getRev(const boost::unordered_map<basic_block_label_t, basic_block_t>& rev_bbs)
+        getRev(const std::unordered_map<basic_block_label_t, basic_block_t>& rev_bbs)
             : _rev_bbs(rev_bbs) { }
 
         const basic_block_t& operator()(typename CFGRef::basic_block_t &bb) const {
@@ -3363,7 +3363,7 @@ namespace crab {
         }
       }; 
 
-      typedef boost::unordered_set<basic_block_label_t> visited_t;
+      typedef std::unordered_set<basic_block_label_t> visited_t;
       
       template<typename T>
       void dfs_rec(basic_block_label_t curId, visited_t &visited, T f) const {
@@ -3399,7 +3399,7 @@ namespace crab {
      private:
 
       CFGRef _cfg;
-      boost::unordered_map<basic_block_label_t, basic_block_t> _rev_bbs;
+      std::unordered_map<basic_block_label_t, basic_block_t> _rev_bbs;
      
      public:
 
@@ -4023,56 +4023,71 @@ namespace crab {
       }; // end class type_checker_visitor
     }; // end class type_checker
       
-    // extending boost::hash for cfg class
-    template<class B, class V, class N>
-    std::size_t hash_value(cfg<B,V,N> const& _cfg) {
-      if (!_cfg.has_func_decl()) {
-        CRAB_ERROR("cannot hash a cfg because function declaration is missing");
-      }
-      return cfg_hasher<cfg<B,V,N>>::hash(_cfg.get_func_decl());
-    }
-
-    template<class CFG>
-    std::size_t hash_value(cfg_ref<CFG> const& _cfg) {
-      if (!_cfg.has_func_decl()) {
-        CRAB_ERROR("cannot hash a cfg because function declaration is missing");
-      }
-      return cfg_hasher<cfg_ref<CFG>>::hash(_cfg.get_func_decl());
-    }
-
-    template<class CFGRef>
-    std::size_t hash_value(cfg_rev<CFGRef> const& _cfg) {
-      if (!_cfg.has_func_decl()) {
-        CRAB_ERROR("cannot hash a cfg because function declaration is missing");
-      }
-      return cfg_hasher<cfg_rev<CFGRef>>::hash(_cfg.get_func_decl());
-    }
-
-    template<class B, class V, class N>
-    bool operator==(cfg<B,V,N> const& a, cfg<B,V,N> const& b) {
-      if (!a.has_func_decl() || !b.has_func_decl()) {
-        CRAB_ERROR("cannot call operator== of a cfg because function declaration is missing");
-      }
-      return (a.get_func_decl() == b.get_func_decl());
-    }
-      
-    template<class CFG>
-    bool operator==(cfg_ref<CFG> const& a, cfg_ref<CFG> const& b) {
-      if (!a.has_func_decl() || !b.has_func_decl()) {
-        CRAB_ERROR("cannot call operator== of a cfg because function declaration is missing");
-      }
-      return (a.get_func_decl() == b.get_func_decl());
-    }
-
-    template<class CFGRef>
-    bool operator==(cfg_rev<CFGRef> const& a, cfg_rev<CFGRef> const& b) {
-      if (!a.has_func_decl() || !b.has_func_decl()) {
-        CRAB_ERROR("cannot call operator== of a cfg because function declaration is missing");
-      }
-      return (a.get_func_decl() == b.get_func_decl());
-    }
-
   } // end namespace cfg
 }  // end namespace crab
 
 
+
+namespace crab {
+namespace cfg {
+template<class B, class V, class N>
+bool operator==(cfg<B,V,N> const& a, cfg<B,V,N> const& b) {
+  if (!a.has_func_decl() || !b.has_func_decl()) {
+    CRAB_ERROR("cannot call operator== of a cfg because function declaration is missing");
+  }
+      return (a.get_func_decl() == b.get_func_decl());
+}
+
+template<class CFG>
+bool operator==(cfg_ref<CFG> const& a, cfg_ref<CFG> const& b) {
+  if (!a.has_func_decl() || !b.has_func_decl()) {
+    CRAB_ERROR("cannot call operator== of a cfg because function declaration is missing");
+  }
+  return (a.get_func_decl() == b.get_func_decl());
+}
+
+template<class CFGRef>
+bool operator==(cfg_rev<CFGRef> const& a, cfg_rev<CFGRef> const& b) {
+  if (!a.has_func_decl() || !b.has_func_decl()) {
+    CRAB_ERROR("cannot call operator== of a cfg because function declaration is missing");
+  }
+      return (a.get_func_decl() == b.get_func_decl());
+}
+}
+}
+
+namespace std {
+/**  specialization of std::hash for cfg variants **/
+template<class B, class V, class N>
+struct hash<crab::cfg::cfg<B,V,N>> {
+  using cfg_t = crab::cfg::cfg<B,V,N>;
+  size_t operator()(const cfg_t& _cfg) const {
+    if (!_cfg.has_func_decl()) {
+      CRAB_ERROR("cannot hash a cfg because function declaration is missing");
+    }
+    return crab::cfg::cfg_hasher<cfg_t>::hash(_cfg.get_func_decl());
+  }
+};
+
+template<class CFG>
+struct hash<crab::cfg::cfg_ref<CFG>> {
+  using cfg_ref_t = crab::cfg::cfg_ref<CFG>;
+  size_t operator()(const cfg_ref_t& _cfg) const {
+    if (!_cfg.has_func_decl()) {
+      CRAB_ERROR("cannot hash a cfg because function declaration is missing");
+    }
+    return crab::cfg::cfg_hasher<cfg_ref_t>::hash(_cfg.get_func_decl());
+  }
+};
+
+template<class CFGRef>
+struct hash<crab::cfg::cfg_rev<CFGRef>> {
+  using cfg_rev_t = crab::cfg::cfg_rev<CFGRef>;
+  size_t operator()(const cfg_rev_t& _cfg) const {
+    if (!_cfg.has_func_decl()) {
+      CRAB_ERROR("cannot hash a cfg because function declaration is missing");
+    }
+    return crab::cfg::cfg_hasher<cfg_rev_t>::hash(_cfg.get_func_decl());
+  }
+};
+} // end namespace std
