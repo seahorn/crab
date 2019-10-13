@@ -556,28 +556,20 @@ namespace domains {
 
     // --- from crab to elina
 
-    inline void convert_crab_number(ikos::z_number n, mpq_class &res) const
-    { res = mpq_class((mpz_class) n); }
-    
-    inline void convert_crab_number(ikos::q_number n, mpq_class &res) const 
-    { res = ((mpq_class) n); }
-
     //// using tree expressions
     inline elina_texpr0_t* var2texpr(variable_t v) { 
       return elina_texpr0_dim(get_var_dim_insert(v));
     }
         
     inline elina_texpr0_t* num2texpr(number_t i) const {  
-      mpq_class n(0);
-      convert_crab_number(i, n);
-      return elina_texpr0_cst_scalar_mpq(n.get_mpq_t());
+      ikos::q_number qi(i);
+      return elina_texpr0_cst_scalar_mpq(qi.get_mpq_t());
     }
     
     inline elina_texpr0_t* intv2texpr(number_t a, number_t b) const {
-      mpq_class n1(0), n2(0);
-      convert_crab_number(a, n1);
-      convert_crab_number(b, n2);
-      return elina_texpr0_cst_interval_mpq(n1.get_mpq_t(), n2.get_mpq_t());
+      ikos::q_number qa(a);
+      ikos::q_number qb(b);
+      return elina_texpr0_cst_interval_mpq(qa.get_mpq_t(), qb.get_mpq_t());
     }
 
     // XXX: we approximate integers and rationals using reals
@@ -623,9 +615,10 @@ namespace domains {
       if (!linexpr) {
 	CRAB_ERROR("elina cannot allocate linear expression");
       }
-      mpq_class n(0);
-      convert_crab_number(e.constant(), n);
-      elina_scalar_set_mpq(linexpr->cst.val.scalar, n.get_mpq_t());
+      
+      q_number q(e.constant());
+      elina_scalar_set_mpq(linexpr->cst.val.scalar, q.get_mpq_t());
+      
       unsigned i=0;
       for(typename linear_expression_t::const_iterator it=e.begin(), et=e.end();
 	  it!=et; ++it, ++i) {
@@ -633,8 +626,8 @@ namespace domains {
 	variable_t crab_var = it->second;
 	elina_linterm_t* linterm = &linexpr->p.linterm[i];
 	linterm->dim = get_var_dim_insert(crab_var);
-	convert_crab_number(crab_coeff, n);
-	elina_scalar_set_mpq(linterm->coeff.val.scalar, n.get_mpq_t());
+	q_number qcoef(crab_coeff);
+	elina_scalar_set_mpq(linterm->coeff.val.scalar, qcoef.get_mpq_t());
       }
       
       return linexpr;
@@ -680,12 +673,13 @@ namespace domains {
     inline void convert_elina_number(double n, ikos::q_number &res) const
     { res = ikos::q_number(n); }
     
-    inline void convert_elina_number(mpq_ptr n, ikos::z_number &res) const
-    { // FIXME: find a better way
-      res = ikos::z_number(mpz_class(mpq_class(n)));
+    inline void convert_elina_number(mpq_ptr mp, ikos::z_number &res) const {
+      ikos::q_number q = ikos::q_number::from_mpq_srcptr(mp);
+      res = q.round_to_lower();
     }
-    inline void convert_elina_number(mpq_ptr n, ikos::q_number &res) const
-    { res = ikos::q_number(mpq_class(n)); }	  
+    inline void convert_elina_number(mpq_ptr mp, ikos::q_number &res) const {
+      res = ikos::q_number::from_mpq_srcptr(mp);
+    }
     
     number_t coeff_to_num(elina_coeff_t* coeff) {
       assert(coeff->discr == ELINA_COEFF_SCALAR);

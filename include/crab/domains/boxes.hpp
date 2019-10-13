@@ -345,13 +345,12 @@ namespace crab {
         }
 
         inline constant_t mk_cst(ikos::z_number k) {
-          mpq_class kk((mpz_class) k); 
-          return (constant_t) tvpi_create_cst(kk.get_mpq_t());
+	  ikos::q_number qk(k);
+          return (constant_t) tvpi_create_cst(qk.get_mpq_t());
         }
 
         inline constant_t mk_cst(ikos::q_number k) {
-          mpq_class kk((mpq_class) k); 
-          return (constant_t) tvpi_create_cst(kk.get_mpq_t());
+          return (constant_t) tvpi_create_cst(k.get_mpq_t());
         }
 	
         // convex approximation
@@ -471,17 +470,15 @@ namespace crab {
         }
 
         void num_from_ldd_cst(constant_t cst, ikos::z_number& res) {
-          mpq_class v;
           // XXX We know that the theory is tvpi, use its method direclty.
-          tvpi_cst_set_mpq(v.get_mpq_t(),(tvpi_cst_t) cst);
-          res = ikos::z_number(static_cast<mpz_class>(v));
+	  q_number q;
+          tvpi_cst_set_mpq(q.get_mpq_t(),(tvpi_cst_t) cst);
+	  res = q.round_to_lower(); 
         }
 
         void num_from_ldd_cst(constant_t cst, ikos::q_number& res) {
-          mpq_class v;
           // XXX We know that the theory is tvpi, use its method direclty.
-          tvpi_cst_set_mpq(v.get_mpq_t(),(tvpi_cst_t) cst);
-	  res = ikos::q_number(v);
+          tvpi_cst_set_mpq(res.get_mpq_t(),(tvpi_cst_t) cst);
         }
 	
         linear_expression_t expr_from_ldd_term(linterm_t term) {

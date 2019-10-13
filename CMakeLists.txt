@@ -125,10 +125,8 @@ endif ()
 find_package(GMP REQUIRED)
 if (GMP_FOUND)
   include_directories (${GMP_INCLUDE_DIR})
-  include_directories (${GMPXX_INCLUDE_DIR})
 else()
   set(GMP_LIB "")
-  set(GMPXX_LIB "")
 endif()
 
 include(ExternalProject)
@@ -377,7 +375,6 @@ set (CRAB_DEPS_LIBS
   ${APRON_LIBRARY}
   ${ELINA_LIBRARY}
   ${MPFR_LIBRARIES} 
-  ${GMPXX_LIB} 
   ${GMP_LIB})
 
 if (TopLevel)

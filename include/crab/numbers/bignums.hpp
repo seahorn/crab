@@ -1,53 +1,12 @@
-/*******************************************************************************
- *
- * Implementation of bignums based on GMP, the Gnu Multiple Precision Arithmetic
- * Library (http://gmplib.org).
- *
- * Author: Arnaud J. Venet (arnaud.j.venet@nasa.gov)
- * 
- * Contributors: Jorge A. Navas (jorge.navas@sri.com)
- * 
- * Notices:
- *
- * Copyright (c) 2011-2014 United States Government as represented by the
- * Administrator of the National Aeronautics and Space Administration.
- * All Rights Reserved.
- *
- * Disclaimers:
- *
- * No Warranty: THE SUBJECT SOFTWARE IS PROVIDED "AS IS" WITHOUT ANY WARRANTY OF
- * ANY KIND, EITHER EXPRESSED, IMPLIED, OR STATUTORY, INCLUDING, BUT NOT LIMITED
- * TO, ANY WARRANTY THAT THE SUBJECT SOFTWARE WILL CONFORM TO SPECIFICATIONS,
- * ANY IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
- * OR FREEDOM FROM INFRINGEMENT, ANY WARRANTY THAT THE SUBJECT SOFTWARE WILL BE
- * ERROR FREE, OR ANY WARRANTY THAT DOCUMENTATION, IF PROVIDED, WILL CONFORM TO
- * THE SUBJECT SOFTWARE. THIS AGREEMENT DOES NOT, IN ANY MANNER, CONSTITUTE AN
- * ENDORSEMENT BY GOVERNMENT AGENCY OR ANY PRIOR RECIPIENT OF ANY RESULTS,
- * RESULTING DESIGNS, HARDWARE, SOFTWARE PRODUCTS OR ANY OTHER APPLICATIONS
- * RESULTING FROM USE OF THE SUBJECT SOFTWARE.  FURTHER, GOVERNMENT AGENCY
- * DISCLAIMS ALL WARRANTIES AND LIABILITIES REGARDING THIRD-PARTY SOFTWARE,
- * IF PRESENT IN THE ORIGINAL SOFTWARE, AND DISTRIBUTES IT "AS IS."
- *
- * Waiver and Indemnity:  RECIPIENT AGREES TO WAIVE ANY AND ALL CLAIMS AGAINST
- * THE UNITED STATES GOVERNMENT, ITS CONTRACTORS AND SUBCONTRACTORS, AS WELL
- * AS ANY PRIOR RECIPIENT.  IF RECIPIENT'S USE OF THE SUBJECT SOFTWARE RESULTS
- * IN ANY LIABILITIES, DEMANDS, DAMAGES, EXPENSES OR LOSSES ARISING FROM SUCH
- * USE, INCLUDING ANY DAMAGES FROM PRODUCTS BASED ON, OR RESULTING FROM,
- * RECIPIENT'S USE OF THE SUBJECT SOFTWARE, RECIPIENT SHALL INDEMNIFY AND HOLD
- * HARMLESS THE UNITED STATES GOVERNMENT, ITS CONTRACTORS AND SUBCONTRACTORS,
- * AS WELL AS ANY PRIOR RECIPIENT, TO THE EXTENT PERMITTED BY LAW.
- * RECIPIENT'S SOLE REMEDY FOR ANY SUCH MATTER SHALL BE THE IMMEDIATE,
- * UNILATERAL TERMINATION OF THIS AGREEMENT.
- *
- ******************************************************************************/
-
 #pragma once 
 
 #include <crab/common/os.hpp>
-
 #include <boost/functional/hash.hpp>
-#include <gmpxx.h>
+#include <gmp.h>
 
+// TODO: replace ikos with crab namespace. This class has nothing to
+// do with the ikos one. Kept for now for compatibility issues with
+// some clients.
 namespace ikos {
 
 // GMP can convert directly from/to signed/unsigned long and
@@ -74,34 +33,35 @@ class z_number {
   friend class q_number;
 
 private:
-  mpz_class _n;
+  mpz_t _n;
 
 public:
-
-  z_number(mpz_class n);
-
-  // The mpz_class constructor can take any standard C++ type except
-  // long long.
-  static z_number from_ulong(unsigned long n);
-
-  // The mpz_class constructor can take any standard C++ type except
-  // long long.
-  static z_number from_slong(signed long n);
   
   // overloaded typecast operators
   explicit operator long() const;
-
   explicit operator int() const;
-
-  explicit operator mpz_class() const;
-
-  z_number();
   
-  z_number(std::string s);
-
+  z_number();
   z_number(signed long long int n);
+  z_number(const std::string& s, unsigned base = 10);
 
-  std::string get_str () const;
+  static z_number from_ulong(unsigned long n);
+  static z_number from_slong(signed long n);
+  static z_number from_mpz_t(mpz_t n);  
+  static z_number from_mpz_srcptr(mpz_srcptr n);
+  
+  z_number(const z_number& o);
+  z_number(z_number&& o);
+  z_number& operator=(const z_number& o);
+  z_number& operator=(z_number&& o);  
+  
+  ~z_number();
+
+  mpz_srcptr get_mpz_t() const { return _n; }
+  
+  mpz_ptr get_mpz_t() { return _n; }
+  
+  std::string get_str(unsigned base = 10) const;
 
   std::size_t hash() const;
   
@@ -170,25 +130,35 @@ public:
 class q_number {
   
 private:
-  mpq_class _n;
+  mpq_t _n;
 
 public:
   
   q_number();
-
-  q_number(mpq_class n);
-  
-  q_number(std::string s);
-
   q_number(double n);
   
-  q_number(z_number n);
+  q_number(const std::string& s, unsigned base = 10);  
+  q_number(const z_number& n);
+  q_number(const z_number& n, const z_number& d);
 
-  q_number(z_number n, z_number d);
+  static q_number from_mpq_t(mpq_t n);
+  static q_number from_mpz_t(mpz_t n);
+  static q_number from_mpq_srcptr(mpq_srcptr q);
+  
+  q_number(const q_number& o);
+  q_number(q_number&& o);
+  q_number& operator=(const q_number& o);
+  q_number& operator=(q_number&& o);  
+  
+  ~q_number();
 
-  explicit operator mpq_class() const;
+  mpq_srcptr get_mpq_t() const { return _n; }
+  
+  mpq_ptr get_mpq_t() { return _n; }
 
-  std::string get_str () const;
+  double get_double() const;
+  
+  std::string get_str(unsigned base = 10) const;
 
   std::size_t hash() const;
   

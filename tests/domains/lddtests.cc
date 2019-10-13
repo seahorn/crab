@@ -135,13 +135,9 @@ linterm_t termForVal(LddManager* man, varname_t v, bool neg = false)
 LddNodePtr assign(LddManager *man, LddNodePtr n, varname_t v, number_t k) {
   if (isBot(man, n)) return n;
 
-  #ifndef RATIONALS
-  mpq_class kk((mpz_class) k);
-  #else
-  mpq_class kk = ((mpq_class) k);
-  #endif 
+  q_number q(k);
   linterm_t t = termForVal(man, v);
-  constant_t kkk = (constant_t) tvpi_create_cst(kk.get_mpq_t());
+  constant_t kkk = (constant_t) tvpi_create_cst(q.get_mpq_t());
   LddNodePtr newVal = 
       lddPtr(man, Ldd_TermReplace(man, &(*n), t, NULL, NULL, kkk, kkk));
   Ldd_GetTheory(man)->destroy_cst(kkk);
@@ -158,21 +154,13 @@ LddNodePtr assign(LddManager* man, LddNodePtr n, varname_t v, interval_t ival) {
   constant_t kmin = NULL, kmax = NULL;
   
   if (boost::optional <number_t> l = ival.lb().number()) {
-    #ifndef RATIONALS    
-    mpq_class val((mpz_class)(*l));
-    #else
-    mpq_class val((mpq_class)(*l));    
-    #endif 
-    kmin = (constant_t)tvpi_create_cst(val.get_mpq_t());
+    q_number q(*l);
+    kmin = (constant_t)tvpi_create_cst(q.get_mpq_t());
   }
 
   if (boost::optional <number_t> u = ival.ub().number()) {
-    #ifndef RATIONALS        
-    mpq_class val((mpz_class)(*u));
-    #else
-    mpq_class val((mpq_class)(*u));    
-    #endif 
-    kmax = (constant_t)tvpi_create_cst(val.get_mpq_t());
+    q_number q(*u);
+    kmax = (constant_t)tvpi_create_cst(q.get_mpq_t());
   }
        
   linterm_t t = termForVal(man, v);
@@ -197,16 +185,11 @@ LddNodePtr apply(LddManager* man,
   linterm_t t = termForVal(man, v);
   linterm_t r = termForVal(man, u);
 
-  #ifndef RATIONALS          
-  mpq_class aa((mpz_class) a); 
-  mpq_class kk((mpz_class) k);
-  #else
-  mpq_class aa((mpq_class) a); 
-  mpq_class kk((mpq_class) k); 
-  #endif   
+  q_number qa(a);
+  q_number qk(k);
   
-  constant_t aaa = (constant_t) tvpi_create_cst (aa.get_mpq_t());
-  constant_t kkk = (constant_t) tvpi_create_cst(kk.get_mpq_t());        
+  constant_t aaa = (constant_t) tvpi_create_cst (qa.get_mpq_t());
+  constant_t kkk = (constant_t) tvpi_create_cst(qk.get_mpq_t());        
   LddNodePtr newVal = 
       lddPtr(man, Ldd_TermReplace(man, &(*n), t, r, aaa, kkk, kkk));
   Ldd_GetTheory(man)->destroy_cst(aaa);
