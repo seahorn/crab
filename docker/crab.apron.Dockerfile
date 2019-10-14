@@ -1,9 +1,9 @@
 #
-# Dockerfile for Crab binary without external domain libraries.
+# Dockerfile for Crab binary with apron and boxes libraries.
 #
 # produces package in /crab/build
 # Arguments:
-#  - UBUNTU:     xenial, bionic
+#  - UBUNTU:     trusty, xenial, bionic
 #  - BUILD_TYPE: debug, release
 #
 
@@ -46,7 +46,7 @@ RUN export PREFIX=$(cat /tmp/dockerutils/prefix.txt) && \
     tar -xf "$PREFIX"_boost_1_68.tar.gz 
 
 RUN cd / && rm -rf /crab && \
-    git clone https://github.com/seahorn/crab crab --depth=10 ; \
+    git clone https://github.com/seahorn/crab -b travis_elina crab --depth=10 ; \
     mkdir -p /crab/build
 WORKDIR /crab/build
 
@@ -58,9 +58,16 @@ RUN cmake -GNinja \
           -DCMAKE_INSTALL_PREFIX=run \
           -DCMAKE_CXX_COMPILER=g++-5 \
           -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+          -DUSE_LDD=ON \
+          -DUSE_APRON=ON \
 	  -DENABLE_TESTS=ON \
           ../ && \
+    cmake --build . --target ldd  && cmake .. && \
+    cmake --build . --target apron  && cmake .. && \
     cmake --build . --target install
+
+# Run tests
+RUN /crab/tests/run_tests.sh /crab/tests/expected_results.apron.out /crab/build
 
 WORKDIR /crab
 
