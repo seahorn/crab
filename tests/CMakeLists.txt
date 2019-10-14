@@ -10,7 +10,7 @@ function (AddTest testSrc dirName)
   #Extract the filename without an extension (NAME_WE)
   get_filename_component(testName ${testSrc} NAME_WE)
   #Add compile target
-  add_executable(${testName} program_options ${testSrc} )
+  add_executable(${testName} ${testSrc} )
   #link with crab libraries
   if (${dirName} MATCHES "inter")
     target_link_libraries(${testName} ${Boost_PROGRAM_OPTIONS_LIBRARY} InterCrab)
