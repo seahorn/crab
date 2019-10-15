@@ -46,7 +46,7 @@ RUN export PREFIX=$(cat /tmp/dockerutils/prefix.txt) && \
     tar -xf "$PREFIX"_boost_1_68.tar.gz 
 
 RUN cd / && rm -rf /crab && \
-    git clone https://github.com/seahorn/crab -b travis_elina crab --depth=10 ; \
+    git clone https://github.com/seahorn/crab crab --depth=10 ; \
     mkdir -p /crab/build
 WORKDIR /crab/build
 
