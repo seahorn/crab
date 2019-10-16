@@ -22,7 +22,7 @@ namespace crab {
 /*
  * Dummy implementation if Apron not found 
  */
-#define APRON_NOT_FOUND "No Apron. Run cmake with -DUSE_APRON=ON"
+#define APRON_NOT_FOUND "No Apron. Run cmake with -DCRAB_USE_APRON=ON"
 
 namespace crab {
    namespace domains {

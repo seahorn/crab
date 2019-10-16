@@ -58,9 +58,9 @@ RUN cmake -GNinja \
           -DCMAKE_INSTALL_PREFIX=run \
           -DCMAKE_CXX_COMPILER=g++-6 \
           -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
-          -DUSE_LDD=ON \
-          -DUSE_ELINA=ON \
-	  -DENABLE_TESTS=ON \
+          -DCRAB_USE_LDD=ON \
+          -DCRAB_USE_ELINA=ON \
+	  -DCRAB_ENABLE_TESTS=ON \
           ../ && \
     cmake --build . --target ldd  && cmake .. && \
     cmake --build . --target elina  && cmake .. && \

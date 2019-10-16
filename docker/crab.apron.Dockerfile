@@ -58,9 +58,9 @@ RUN cmake -GNinja \
           -DCMAKE_INSTALL_PREFIX=run \
           -DCMAKE_CXX_COMPILER=g++-5 \
           -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
-          -DUSE_LDD=ON \
-          -DUSE_APRON=ON \
-	  -DENABLE_TESTS=ON \
+          -DCRAB_USE_LDD=ON \
+          -DCRAB_USE_APRON=ON \
+	  -DCRAB_ENABLE_TESTS=ON \
           ../ && \
     cmake --build . --target ldd  && cmake .. && \
     cmake --build . --target apron  && cmake .. && \

@@ -20,7 +20,7 @@ namespace crab {
 /*
  * Dummy implementation if Elina not found 
  */
-#define ELINA_NOT_FOUND "No Elina. Run cmake with -DUSE_ELINA=ON"
+#define ELINA_NOT_FOUND "No Elina. Run cmake with -DCRAB_USE_ELINA=ON"
 
 namespace crab {
    namespace domains {

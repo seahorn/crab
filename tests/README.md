@@ -33,6 +33,6 @@ If the domain is defined over rational instead of integers then use
 Of course, if you put your test in the rest of the above directories
 you can skip step 4.
 
-**IMPORTANT:** Tests are only compiled if option `-DENABLE_TESTS=ON`
+**IMPORTANT:** Tests are only compiled if option `-DCRAB_ENABLE_TESTS=ON`
 is enabled in the `cmake` command.
 		

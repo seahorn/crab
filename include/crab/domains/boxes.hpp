@@ -16,7 +16,7 @@
 /*
  * Dummy implementation if ldd not found 
  */
-#define LDD_NOT_FOUND "No LDD. Run cmake with -DUSE_LDD=ON"
+#define LDD_NOT_FOUND "No LDD. Run cmake with -DCRAB_USE_LDD=ON"
 namespace crab {
    namespace domains {
       template<typename Number, typename VariableName,int ConvexReduce=-1, size_t LddSize=100>
