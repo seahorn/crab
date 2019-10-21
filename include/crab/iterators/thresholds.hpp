@@ -7,11 +7,11 @@
 #include <crab/cfg/cfg_bgl.hpp> // needed by wto.hpp
 #include <crab/iterators/wto.hpp>
 
-#include <boost/unordered_map.hpp>
 #include <boost/range/iterator_range.hpp>
 
 #include <algorithm>
 #include <climits>
+#include <unordered_map>
 
 namespace crab {
 
@@ -147,7 +147,7 @@ namespace crab {
        typedef ikos::wto_vertex<CFG> wto_vertex_t;
        typedef ikos::wto_cycle<CFG> wto_cycle_t;
        typedef crab::iterators::thresholds<typename CFG::number_t> thresholds_t;
-       typedef boost::unordered_map<basic_block_label_t, thresholds_t> thresholds_map_t;
+       typedef std::unordered_map<basic_block_label_t, thresholds_t> thresholds_map_t;
        
      private:
        

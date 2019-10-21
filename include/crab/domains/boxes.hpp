@@ -16,7 +16,7 @@
 /*
  * Dummy implementation if ldd not found 
  */
-#define LDD_NOT_FOUND "No LDD. Run cmake with -DUSE_LDD=ON"
+#define LDD_NOT_FOUND "No LDD. Run cmake with -DCRAB_USE_LDD=ON"
 namespace crab {
    namespace domains {
       template<typename Number, typename VariableName,int ConvexReduce=-1, size_t LddSize=100>
@@ -250,9 +250,9 @@ namespace crab {
 #include <crab/domains/ldd/ldd_print.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
+
+#include <algorithm>
 #include <boost/bimap.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/range/algorithm/set_algorithm.hpp>
 #include <boost/optional.hpp>
 
 namespace crab {
@@ -345,13 +345,12 @@ namespace crab {
         }
 
         inline constant_t mk_cst(ikos::z_number k) {
-          mpq_class kk((mpz_class) k); 
-          return (constant_t) tvpi_create_cst(kk.get_mpq_t());
+	  ikos::q_number qk(k);
+          return (constant_t) tvpi_create_cst(qk.get_mpq_t());
         }
 
         inline constant_t mk_cst(ikos::q_number k) {
-          mpq_class kk((mpq_class) k); 
-          return (constant_t) tvpi_create_cst(kk.get_mpq_t());
+          return (constant_t) tvpi_create_cst(k.get_mpq_t());
         }
 	
         // convex approximation
@@ -471,17 +470,15 @@ namespace crab {
         }
 
         void num_from_ldd_cst(constant_t cst, ikos::z_number& res) {
-          mpq_class v;
           // XXX We know that the theory is tvpi, use its method direclty.
-          tvpi_cst_set_mpq(v.get_mpq_t(),(tvpi_cst_t) cst);
-          res = ikos::z_number(static_cast<mpz_class>(v));
+	  q_number q;
+          tvpi_cst_set_mpq(q.get_mpq_t(),(tvpi_cst_t) cst);
+	  res = q.round_to_lower(); 
         }
 
         void num_from_ldd_cst(constant_t cst, ikos::q_number& res) {
-          mpq_class v;
           // XXX We know that the theory is tvpi, use its method direclty.
-          tvpi_cst_set_mpq(v.get_mpq_t(),(tvpi_cst_t) cst);
-	  res = ikos::q_number(v);
+          tvpi_cst_set_mpq(res.get_mpq_t(),(tvpi_cst_t) cst);
         }
 	
         linear_expression_t expr_from_ldd_term(linterm_t term) {
@@ -1115,7 +1112,8 @@ namespace crab {
 	  variable_vector_t s3;
           for (auto p: m_var_map.left) s1.insert(p.first);
           s2.insert(variables.begin(), variables.end());
-          boost::set_difference(s1,s2,std::back_inserter(s3));
+          std::set_difference(s1.begin(), s1.end(), s2.begin(), s2.end(),
+			      std::back_inserter(s3));
           forget(s3);
         }
 
@@ -1756,7 +1754,7 @@ namespace crab {
 
 	disjunctive_linear_constraint_system_t
 	to_disjunctive_linear_constraint_system(LddNodePtr &ldd) {
-	  LddManager *ldd_man = getLddManager(ldd);
+	  LddManager *ldd_man = get_ldd_man();
 	  
 	  std::vector<int> list;
 	  list.reserve (ldd_man->cudd->size);

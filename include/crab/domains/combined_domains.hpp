@@ -29,6 +29,8 @@
 #include <crab/domains/interval.hpp>
 #include <crab/domains/nullity.hpp>
 
+#include <boost/optional.hpp>
+
 namespace crab {
   namespace domains {
 

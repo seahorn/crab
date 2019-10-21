@@ -1,8 +1,18 @@
 # Crab: A Language-Agnostic Library for Static Analysis #
 
-<a href="https://travis-ci.org/seahorn/crab"><img src="https://travis-ci.org/seahorn/crab.svg?branch=master" title="Ubuntu 12.04 LTS 64bit, g++-5.0"/></a>
-
 <img src="http://i.imgur.com/IDKhq5h.png" alt="crab logo" width=280 height=200 />
+
+<table>
+  <tr>
+    <th>Windows</th><th>Ubuntu</th><th>OS X</th><th>Coverage</th>
+  </tr>
+    <td>TBD</td>
+    <td> <a href="https://travis-ci.org/seahorn/crab"><img src="https://travis-ci.org/seahorn/crab.svg?branch=master" title="Ubuntu 16.04 and 18.04 LTS 64bit, g++-5.0"/></a> </td>
+    <td>TBD</td>
+    <td><a href="https://codecov.io/gh/seahorn/crab"><img src="https://codecov.io/gh/seahorn/crab/branch/master/graph/badge.svg" /></a></td>
+  </tr>
+</table>
+
 
 # Description #
 
@@ -38,6 +48,17 @@ Open Static Analyzers) developed by NASA Ames Research Center.
 
 ![Crab Architecture](https://github.com/seahorn/crab/blob/master/Crab_arch.jpg?raw=true "Crab Architecture")
 
+# Docker # 
+
+A pre-built and installed version of Crab can be obtained using Docker:
+
+``` shell
+docker pull seahorn/crab:xenial
+docker run -v `pwd`:/host -it seahorn/crab:xenial	
+```
+
+Alternatively, it can be built and installed from source as follows.
+
 # Requirements #
 
 Crab is written in C++ and relies on the Boost library. The main
@@ -46,7 +67,7 @@ requirements are:
 - Modern C++ compiler supporting c++11
 - Boost
 - GMP 
-- MPFR (if `-DUSE_APRON=ON` or `-DUSE_ELINA=ON`)
+- MPFR (if `-DCRAB_USE_APRON=ON` or `-DCRAB_USE_ELINA=ON`)
 
 In linux, you can install requirements typing the commands:
 
@@ -66,21 +87,21 @@ The Boxes/Apron/Elina domains require third-party libraries. To avoid
 the burden to users who are not interested in those domains, the
 installation of the libraries is optional.
 
-- If you want to use the Boxes domain then add `-DUSE_LDD=ON` option.
+- If you want to use the Boxes domain then add `-DCRAB_USE_LDD=ON` option.
 
 - If you want to use the Apron library domains then add
-  `-DUSE_APRON=ON` option.
+  `-DCRAB_USE_APRON=ON` option.
 
 - If you want to use the Elina library domains then add
-  `-DUSE_ELINA=ON` option.
+  `-DCRAB_USE_ELINA=ON` option.
 
 **Important:** Apron and Elina are currently not compatible so you
-cannot enable `-DUSE_APRON=ON` and `-DUSE_ELINA=ON` at the same time. 
+cannot enable `-DCRAB_USE_APRON=ON` and `-DCRAB_USE_ELINA=ON` at the same time. 
 	
 For instance, to install Crab with Boxes and Apron, type:
 
 	mkdir build && cd build
-    cmake -DCMAKE_INSTALL_PREFIX=_INSTALL_DIR_ -DUSE_LDD=ON -DUSE_APRON=ON ../
+    cmake -DCMAKE_INSTALL_PREFIX=_INSTALL_DIR_ -DCRAB_USE_LDD=ON -DCRAB_USE_APRON=ON ../
 	cmake --build . --target ldd && cmake ..
 	cmake --build . --target apron && cmake ..	
     cmake --build . --target install 	
@@ -90,7 +111,7 @@ compute invariants using different abstract domains. To compile these tests
 type:
 
 	mkdir build && cd build
-    cmake -DCMAKE_INSTALL_PREFIX=_INSTALL_DIR_ -DUSE_LDD=ON -DUSE_APRON=ON -DENABLE_TESTS=ON ../
+    cmake -DCMAKE_INSTALL_PREFIX=_INSTALL_DIR_ -DCRAB_USE_LDD=ON -DCRAB_USE_APRON=ON -DCRAB_ENABLE_TESTS=ON ../
 	cmake --build . --target ldd && cmake ..
 	cmake --build . --target apron && cmake ..	
     cmake --build . --target install 	

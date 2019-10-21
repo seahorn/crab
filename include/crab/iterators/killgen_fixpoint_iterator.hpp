@@ -62,7 +62,7 @@ namespace iterators {
     
     typedef typename CFG::basic_block_label_t basic_block_label_t;
     typedef typename AnalysisOps::killgen_domain_t killgen_domain_t;
-    typedef boost::unordered_map<basic_block_label_t,killgen_domain_t> inv_map_t;
+    typedef std::unordered_map<basic_block_label_t,killgen_domain_t> inv_map_t;
     typedef typename inv_map_t::iterator iterator;
     typedef typename inv_map_t::const_iterator const_iterator;
     
@@ -183,11 +183,10 @@ namespace iterators {
       
       CRAB_LOG(m_analysis.name(), 
 	       crab::outs() << m_analysis.name() << " sets:\n";
-	       for (auto n: boost::make_iterator_range(m_cfg.label_begin(),
-						       m_cfg.label_end())) {
-		 crab::outs() << cfg_impl::get_label_str(n) << " "
-			      << "IN="  << m_in_map[n]  << " "
-			      << "OUT=" << m_out_map[n] << "\n"; 
+	       for (auto it = m_cfg.label_begin(), et = m_cfg.label_end(); it!=et; ++it) {
+		 crab::outs() << cfg_impl::get_label_str(*it) << " "
+			      << "IN="  << m_in_map[*it]  << " "
+			      << "OUT=" << m_out_map[*it] << "\n"; 
 	       }
 	       crab::outs() << "\n";);
     }      

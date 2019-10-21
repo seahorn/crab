@@ -18,7 +18,7 @@ endif
 CRAB_LIBS = $(CRAB_INSTALL)/crab/lib/libCrab.${DYLIB}
 
 LDLIBS := \
-     $(CRAB_LIBS) -lgmpxx -lgmp -lm -lstdc++ 
+     $(CRAB_LIBS) -lgmp -lm -lstdc++ 
 
 CXXFLAGS := \
      -Wall -Werror -Wfatal-errors \

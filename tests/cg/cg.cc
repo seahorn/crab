@@ -9,14 +9,14 @@
 #include <crab/analysis/graphs/sccg.hpp>
 #include <crab/analysis/graphs/topo_order.hpp>
 
-using namespace std;
+#include <unordered_map>
+
 using namespace crab::analyzer;
 using namespace crab::analyzer::graph_algo;
 using namespace crab::cfg;
 using namespace crab::cfg_impl;
 using namespace crab::cg;
 using namespace crab::domain_impl;
-using namespace boost;
 
 typedef call_graph<z_cfg_ref_t> call_graph_t;
 typedef call_graph_ref<call_graph_t> call_graph_ref_t;
@@ -95,7 +95,7 @@ z_cfg_t* m(variable_factory_t &vfac)  {
   z_var y(vfac["y"], crab::INT_TYPE, 32);
   z_var z(vfac["z"], crab::INT_TYPE, 32);
   
-  vector<variable_t> inputs, outputs;
+  std::vector<variable_t> inputs, outputs;
   function_decl<z_number, varname_t> decl("main", inputs, outputs);
   // entry and exit block
   z_cfg_t* cfg = new z_cfg_t("entry", "exit", decl);
@@ -112,7 +112,7 @@ z_cfg_t* m(variable_factory_t &vfac)  {
 }
 
 struct print_visitor: public boost::default_dfs_visitor {
-  void discover_vertex(graph_traits<call_graph_t>::vertex_descriptor v, 
+  void discover_vertex(boost::graph_traits<call_graph_t>::vertex_descriptor v, 
                        const call_graph_t& g)  {
     crab::outs() << v.name() << "\n";
   }
@@ -135,7 +135,7 @@ int main(int argc, char** argv) {
   crab::outs() << *t2 << "\n";
   crab::outs() << *t3 << "\n";
 
-  vector<z_cfg_ref_t> cfgs_1({*t1, *t2, *t3});
+  std::vector<z_cfg_ref_t> cfgs_1({*t1, *t2, *t3});
   call_graph_t cg_1(cfgs_1);
   crab::outs() << cg_1 << "\n";
 
@@ -163,11 +163,11 @@ int main(int argc, char** argv) {
   }
 
   /// --- DFS
-  typedef boost::unordered_map< boost::graph_traits<call_graph_t>::vertex_descriptor, 
-                                default_color_type > color_map_t;
+  typedef std::unordered_map<boost::graph_traits<call_graph_t>::vertex_descriptor, 
+			     boost::default_color_type > color_map_t;
   color_map_t color;
   for (auto v : boost::make_iterator_range(vertices(cg_1))) {
-    color[v] = default_color_type();
+    color[v] = boost::default_color_type();
   }
   boost::associative_property_map< color_map_t > cm(color);
 
@@ -183,11 +183,11 @@ int main(int argc, char** argv) {
   
   crab::outs() << "Printing in preorder ...\n";
   print_visitor vis;
-  boost::detail::depth_first_visit_impl(cg_1, root, vis, cm, detail::nontruth2());
+  boost::detail::depth_first_visit_impl(cg_1, root, vis, cm, boost::detail::nontruth2());
 
   /// --- SccGraph 
   scc_graph<call_graph_ref_t> scc_g(cg_1);
-  scc_g.write(crab::outs());
+  //scc_g.write(crab::outs());
   
   std::vector<call_graph_ref_t::node_t> order;
   rev_topo_sort(scc_g, order);
@@ -205,7 +205,7 @@ int main(int argc, char** argv) {
   
   /// --- WTO
 
-  vector<z_cfg_ref_t> cfgs_2({*t1, *t2, *t3, *t4});
+  std::vector<z_cfg_ref_t> cfgs_2({*t1, *t2, *t3, *t4});
   call_graph_t cg_2(cfgs_2);
   typedef wto<call_graph_ref_t>  wto_t;
   wto_t wto(cg_2);

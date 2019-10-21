@@ -71,7 +71,7 @@ int main(int argc, char** argv) {
   #endif 
 
   #ifdef HAVE_ELINA
-
+  #if 0
   { // backward array load
     z_ae_zones_elina_t pre, inv;
     crab::outs() << "Test using " << pre.getDomainName() << "\n";    
@@ -122,7 +122,7 @@ int main(int argc, char** argv) {
     crab::outs() << "RESULT: " << pre << "\n";
   }
   #endif 
-  
+  #endif  
   
   crab::outs() << "============================\n";
   

@@ -37,7 +37,7 @@ APRON_LIBS := \
 
 LDLIBS := \
      $(CRAB_LIBS) $(LDD_LIBS) $(APRON_LIBS) \
-     -lmpfr -lgmpxx -lgmp -lm -lstdc++ 
+     -lmpfr -lgmp -lm -lstdc++ 
 
 CXXFLAGS := \
      -Wall -Werror -Wfatal-errors \
@@ -70,8 +70,8 @@ crab_install:
 	mkdir -p crab/build
 	@echo "Installing crab in ${CRAB_INSTALL} ... "
 	cd crab/build \
-	     && cmake -DCMAKE_INSTALL_PREFIX=$(CRAB_INSTALL) -DBUILD_CRAB_LIBS_SHARED=ON \
-	              -DUSE_LDD=ON -DUSE_APRON=ON ../ \
+	     && cmake -DCMAKE_INSTALL_PREFIX=$(CRAB_INSTALL) -DCRAB_BUILD_LIBS_SHARED=ON \
+	              -DCRAB_USE_LDD=ON -DCRAB_USE_APRON=ON ../ \
 	     && cmake --build . --target ldd && cmake ../ \
 	     && cmake --build . --target apron && cmake ../ \
 	     && cmake --build . --target install

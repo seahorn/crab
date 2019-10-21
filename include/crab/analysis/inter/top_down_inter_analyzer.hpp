@@ -17,13 +17,8 @@
 #include <crab/checkers/assertion.hpp>
 #include <crab/checkers/checker.hpp>
 
-#include <boost/unordered_map.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/make_shared.hpp>
-
 #include <type_traits>
-
+#include <unordered_map>
 #include <vector>
 #include <set>
 #include <deque>
@@ -344,11 +339,11 @@ public:
     default_context_sensitivity_policy<calling_context_t>;
   using calling_context_ptr = std::unique_ptr<calling_context_t>;
   using calling_context_collection_t = std::deque<calling_context_ptr>;  
-  using calling_context_table_t = boost::unordered_map<cfg_t,calling_context_collection_t>;
-  using liveness_map_t = boost::unordered_map<cfg_t, const liveness<cfg_t>*>;
-  using wto_cfg_map_t  = boost::unordered_map<cfg_t, const ikos::wto<cfg_t>*>;
+  using calling_context_table_t = std::unordered_map<cfg_t,calling_context_collection_t>;
+  using liveness_map_t = std::unordered_map<cfg_t, const liveness<cfg_t>*>;
+  using wto_cfg_map_t  = std::unordered_map<cfg_t, const ikos::wto<cfg_t>*>;
   using checks_db_t = checker::checks_db;
-  using global_invariant_map_t = boost::unordered_map<cfg_t, invariant_map_t>;
+  using global_invariant_map_t = std::unordered_map<cfg_t, invariant_map_t>;
   
 private:
   
@@ -488,9 +483,9 @@ public:
 // Wrapper to call the intra-procedural analysis with inter-procedural
 // semantics for call and return statements.
 template<typename CallGraphNode, typename IntraCallSemAnalyzer>
-boost::shared_ptr<IntraCallSemAnalyzer>
+std::shared_ptr<IntraCallSemAnalyzer>
 get_inter_analysis(CallGraphNode cg_node,
-		   boost::shared_ptr<typename IntraCallSemAnalyzer::abs_tr_t> abs_tr) {
+		   std::shared_ptr<typename IntraCallSemAnalyzer::abs_tr_t> abs_tr) {
   
   using cfg_t = typename CallGraphNode::cfg_t;
   // -- intra-procedural checker stuff
@@ -507,7 +502,7 @@ get_inter_analysis(CallGraphNode cg_node,
 		  << cfg.get_func_decl().get_func_name() << "\n";);
 	
   auto& ctx = abs_tr->get_context();
-  boost::shared_ptr<IntraCallSemAnalyzer> analyzer = nullptr;
+  std::shared_ptr<IntraCallSemAnalyzer> analyzer = nullptr;
   
   if (abs_tr->has_analyzer(cg_node)) {
     /// --- 1. reuse the intra-analyzer if already exists
@@ -533,12 +528,12 @@ get_inter_analysis(CallGraphNode cg_node,
       }
     }
     /// -- 2. Create intra analyzer (with inter-procedural semantics for call/return) 
-    analyzer = boost::make_shared<IntraCallSemAnalyzer>(cfg, wto,
-							abs_tr->get_shared_ptr(),
-							live,
-							ctx.get_widening_delay(),
-							ctx.get_descending_iters(),
-							ctx.get_thresholds_size());    
+    analyzer = std::make_shared<IntraCallSemAnalyzer>(cfg, wto,
+						      abs_tr->get_shared_ptr(),
+						      live,
+						      ctx.get_widening_delay(),
+						      ctx.get_descending_iters(),
+						      ctx.get_thresholds_size());    
     abs_tr->add_analyzer(cg_node, analyzer);
   }
   
@@ -580,7 +575,7 @@ get_inter_analysis(CallGraphNode cg_node,
 template<typename CallGraph, typename AbsDom>
 class top_down_inter_transformer final:
     public intra_abs_transformer<AbsDom>,
-    public boost::enable_shared_from_this<top_down_inter_transformer<CallGraph,AbsDom>> {
+    public std::enable_shared_from_this<top_down_inter_transformer<CallGraph,AbsDom>> {
   
   using this_type = top_down_inter_transformer<CallGraph, AbsDom>;
 
@@ -602,7 +597,7 @@ public:
   // -- global context
   // XXX: we cannot use
   // intra_analyzer_with_call_semantics_t::invariant_map_t because cyclic dependencies
-  using invariant_map_t = boost::unordered_map<typename cfg_t::basic_block_label_t,abs_dom_t>;
+  using invariant_map_t = std::unordered_map<typename cfg_t::basic_block_label_t,abs_dom_t>;
   using global_context_t =
 	top_down_inter_impl::global_context<cg_node_t, abs_dom_t, invariant_map_t>;
   // -- calling context stuff
@@ -620,8 +615,8 @@ private:
   // -- to avoid starting from scratch an analyzer:
   //    saving wto computation, type checking, etc.
   // XXX: it cannot be in m_ctx because of cyclic dependencies.
-  boost::unordered_map<cg_node_t,
-		 boost::shared_ptr<intra_analyzer_with_call_semantics_t>> m_intra_analyzer;
+  std::unordered_map<cg_node_t,
+		 std::shared_ptr<intra_analyzer_with_call_semantics_t>> m_intra_analyzer;
    
   calling_context_collection_t& get_calling_contexts(cfg_t fun) {
     return m_ctx.get_calling_context_table()[fun];
@@ -658,6 +653,7 @@ private:
 				 AbsDom caller_dom, AbsDom callee_dom = AbsDom::top()) {
     crab::ScopedCrabStats __st__("Interprocedural.get_callee_entry");
     
+    //caller_dom.normalize();
     if (caller_dom.is_bottom()) {
       return caller_dom;
     }
@@ -670,13 +666,12 @@ private:
 	inter_transformer_helpers<AbsDom>::unify(caller_dom, formal, actual);
       }
     }
-    
     // Meet 
     callee_dom = caller_dom & callee_dom;
     
     // project onto **input** formal parameters
     callee_dom.project(fdecl.get_inputs());
-    
+
     return callee_dom;
   }
 
@@ -801,7 +796,7 @@ private:
 	       crab::outs () << "[INTER] Started \"" << cs << "\" with entry="
 	                     << callee_entry << "\n";); 
       this->set_abs_value(callee_entry);          
-      boost::shared_ptr<intra_analyzer_with_call_semantics_t> callee_analysis = 
+      std::shared_ptr<intra_analyzer_with_call_semantics_t> callee_analysis = 
 	top_down_inter_impl::get_inter_analysis
 	  <typename CallGraph::node_t, intra_analyzer_with_call_semantics_t>
 	(m_cg.get_callee(cs), get_shared_ptr());
@@ -879,7 +874,7 @@ public:
 
   this_type& operator=(const this_type& o) = delete;
   
-  boost::shared_ptr<this_type> get_shared_ptr() {
+  std::shared_ptr<this_type> get_shared_ptr() {
     return this->shared_from_this();
   }
   
@@ -941,7 +936,7 @@ public:
   }
 
   void add_analyzer(cg_node_t cg_node,
-		    boost::shared_ptr<intra_analyzer_with_call_semantics_t> analysis) {
+		    std::shared_ptr<intra_analyzer_with_call_semantics_t> analysis) {
     m_intra_analyzer.insert({cg_node, analysis});
   }
   
@@ -949,7 +944,7 @@ public:
     return m_intra_analyzer.find(cg_node) != m_intra_analyzer.end();
   }
   
-  boost::shared_ptr<intra_analyzer_with_call_semantics_t> get_analyzer(cg_node_t cg_node) {
+  std::shared_ptr<intra_analyzer_with_call_semantics_t> get_analyzer(cg_node_t cg_node) {
     auto it = m_intra_analyzer.find(cg_node);
     if (it == m_intra_analyzer.end()) {
       CRAB_ERROR("cannot find analysis for ",
@@ -974,9 +969,9 @@ struct top_down_inter_analyzer_parameters {
   using cg_node_t = typename CallGraph::node_t;
   using cfg_t = typename cg_node_t::cfg_t;
   using liveness_t = liveness<cfg_t>;
-  using liveness_map_t = boost::unordered_map<cfg_t, const liveness_t*>;
+  using liveness_map_t = std::unordered_map<cfg_t, const liveness_t*>;
   using wto_t = ikos::wto<cfg_t>;
-  using wto_map_t = boost::unordered_map <cfg_t, const wto_t*>;
+  using wto_map_t = std::unordered_map <cfg_t, const wto_t*>;
   
   top_down_inter_analyzer_parameters()
     : run_checker(true)
@@ -1024,10 +1019,10 @@ public:
   using variable_t = typename cfg_t::variable_t;
   
   using liveness_t = liveness<cfg_t>;
-  using liveness_map_t = boost::unordered_map<cfg_t, const liveness_t*>;
+  using liveness_map_t = std::unordered_map<cfg_t, const liveness_t*>;
   
   using wto_t = ikos::wto<cfg_t>;
-  using wto_map_t = boost::unordered_map <cfg_t, const wto_t*>;
+  using wto_map_t = std::unordered_map <cfg_t, const wto_t*>;
   
   using params_t = top_down_inter_analyzer_parameters<CallGraph>;
 
@@ -1128,13 +1123,13 @@ public:
     } else {
       CRAB_VERBOSE_IF(1, get_msg_stream() << "Started inter-procedural analysis\n";);
       auto inter_abs_tr =
-	boost::make_shared<td_inter_abs_tr_t>(m_cg, m_ctx, init);
+	std::make_shared<td_inter_abs_tr_t>(m_cg, m_ctx, init);
       for (auto cg_node: entries) {
 	if (widening_set.count(cg_node) > 0) {
 	  CRAB_ERROR("Entry point cannot be recursive");
 	}
 	cfg_t entry_cfg = cg_node.get_cfg();
-	boost::shared_ptr<intra_analyzer_with_call_semantics_t> entry_analysis = 	
+	std::shared_ptr<intra_analyzer_with_call_semantics_t> entry_analysis = 	
 	  top_down_inter_impl::get_inter_analysis
 	   <cg_node_t, intra_analyzer_with_call_semantics_t>(cg_node, inter_abs_tr);
 	entry_analysis->reset();

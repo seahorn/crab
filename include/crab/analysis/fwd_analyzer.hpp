@@ -7,8 +7,8 @@
 #include <crab/analysis/dataflow/liveness.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 
-#include "boost/range/algorithm/set_algorithm.hpp"
-#include "boost/shared_ptr.hpp"
+#include <algorithm>
+#include <memory>
 
 namespace crab {
 namespace analyzer {
@@ -54,7 +54,7 @@ private:
   
   typedef typename liveness_t::set_t live_set_t;     
 
-  boost::shared_ptr<abs_tr_t>  m_abs_tr;  // the abstract transformer
+  std::shared_ptr<abs_tr_t>  m_abs_tr;  // the abstract transformer
   const liveness_t* m_live;
   live_set_t m_formals;
   bool m_pre_clear_done;
@@ -91,7 +91,7 @@ private:
   
 public:
   
-  fwd_analyzer(CFG cfg, const wto_t *wto, boost::shared_ptr<abs_tr_t> abs_tr,
+  fwd_analyzer(CFG cfg, const wto_t *wto, std::shared_ptr<abs_tr_t> abs_tr,
 	       // live can be nullptr if no live info is available
 	       const liveness_t* live,
 	       // fixpoint parameters
@@ -246,7 +246,7 @@ public:
     return this->_cfg;
   }
   
-  boost::shared_ptr<abs_tr_t> get_abs_transformer(abs_dom_t&& inv) {
+  std::shared_ptr<abs_tr_t> get_abs_transformer(abs_dom_t&& inv) {
     m_abs_tr->set_abs_value(std::move(inv));
     return m_abs_tr;
   }
@@ -311,7 +311,7 @@ public:
 private:
   
   abs_dom_t m_init;      
-  boost::shared_ptr<abs_tr_t> m_abs_tr;
+  std::shared_ptr<abs_tr_t> m_abs_tr;
   fwd_analyzer_t m_analyzer;
   
 public:
@@ -322,7 +322,7 @@ public:
 			     unsigned int descending_iters=UINT_MAX,
 			     size_t jump_set_size=0)
     : m_init(AbsDomain::top()),
-      m_abs_tr(boost::make_shared<abs_tr_t>(m_init)),
+      m_abs_tr(std::make_shared<abs_tr_t>(m_init)),
       m_analyzer(cfg, nullptr, m_abs_tr, nullptr,
 		 widening_delay, descending_iters, jump_set_size) {}
   
@@ -337,7 +337,7 @@ public:
 			     unsigned int descending_iters=UINT_MAX,
 			     size_t jump_set_size=0)
     : m_init(init),
-      m_abs_tr(boost::make_shared<abs_tr_t>(m_init)),	  	  
+      m_abs_tr(std::make_shared<abs_tr_t>(m_init)),	  	  
       m_analyzer(cfg, wto, m_abs_tr, live, 
 		 widening_delay, descending_iters, jump_set_size) {}
   
@@ -363,18 +363,10 @@ public:
     return m_analyzer.get_pre_invariants();
   }
 
-  invariant_map_t& get_pre_invariants() {
-    return m_analyzer.get_pre_invariants();
-  }
-
   const invariant_map_t& get_post_invariants() const {
     return m_analyzer.get_post_invariants();
   }
 
-  invariant_map_t& get_post_invariants() {
-    return m_analyzer.get_post_invariants();
-  }
-  
   abs_dom_t operator[](basic_block_label_t b) const {
     return m_analyzer[b];
   }
@@ -391,46 +383,27 @@ public:
   const wto_t& get_wto() const {
     return m_analyzer.get_wto();
   }
-  
-  void clear_pre() {
-    m_analyzer.clear_pre();
-  }
-  
-  void clear_post() {
-    m_analyzer.clear_post();	
-  }
-  
-  void clear() {
-    clear_pre();
-    clear_post();
-  }
 
-  void reset() {
-    m_analyzer.reset();
+  void clear() {
+    m_analyzer.clear();
   }
   
-  /** Begin extra API for checkers **/
+  
+  /** Extra API for checkers **/
   
   CFG get_cfg() {
     return m_analyzer.get_cfg();
   }
   
-  boost::shared_ptr<abs_tr_t> get_abs_transformer(abs_dom_t&& inv) {
+  std::shared_ptr<abs_tr_t> get_abs_transformer(abs_dom_t&& inv) {
     m_abs_tr->set_abs_value(std::move(inv));
     return m_abs_tr;
   }
   
   void get_safe_assertions(std::set<const stmt_t*>& out) const {}
-
-  /** End extra API for checkers **/
-  
-  void write(crab::crab_os& o) const {
-    m_analyzer.write(o);
-  }
-  
 };
 } // end namespace analyzer_impl
-
+  
 /**
  * External api
  **/

@@ -3,11 +3,11 @@
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/strong_components.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
 #include <boost/range/iterator_range.hpp>
-#include <boost/unordered_map.hpp>
 #include <boost/iterator/transform_iterator.hpp>
+
+#include <memory>
+#include <unordered_map>
 
 #include <crab/common/debug.hpp>
 #include <crab/common/types.hpp>
@@ -36,7 +36,7 @@ private:
 				boost::property<boost::vertex_color_t, 
 						boost::default_color_type, 
 						vertex_t> > scc_graph_t;     
-  typedef boost::shared_ptr<scc_graph_t> scc_graph_ptr;
+  typedef std::shared_ptr<scc_graph_t> scc_graph_ptr;
   typedef typename boost::graph_traits<scc_graph_t>::vertex_descriptor vertex_descriptor_t;
   typedef typename boost::graph_traits<scc_graph_t>::edge_descriptor edge_descriptor_t;
   typedef typename boost::graph_traits<scc_graph_t>::vertex_iterator vertex_iterator;
@@ -44,9 +44,9 @@ private:
   typedef typename boost::graph_traits<scc_graph_t>::in_edge_iterator in_edge_iterator;
   /// --- end internal representation of the scc_graph
 
-  typedef boost::unordered_map< node_t, std::size_t > component_map_t;
-  typedef boost::unordered_map<std::size_t, vertex_descriptor_t> comp_to_vertex_map_t;
-  typedef boost::unordered_map<std::size_t, std::vector<node_t> > comp_members_map_t;
+  typedef std::unordered_map<node_t, std::size_t> component_map_t;
+  typedef std::unordered_map<std::size_t, vertex_descriptor_t> comp_to_vertex_map_t;
+  typedef std::unordered_map<std::size_t, std::vector<node_t>> comp_members_map_t;
 
   // Wrapper for edges
   // XXX: BGL complains if we use std::pair<edge_t,edge_t>
@@ -129,7 +129,7 @@ private:
 
   template<typename OrderVis>
   std::vector<node_t> sort() const {
-    typedef boost::unordered_map< node_t, boost::default_color_type > color_map_t;
+    typedef std::unordered_map< node_t, boost::default_color_type > color_map_t;
     color_map_t color;
     for (auto v : boost::make_iterator_range(vertices(m_g))) {
       color[v] = boost::default_color_type();
@@ -182,12 +182,12 @@ public:
   scc_graph(G g, bool order = false /*default post-order*/)
     : m_g(g), 
       m_same_scc_order(order),
-      m_sccg(boost::make_shared<scc_graph_t>()) {
+      m_sccg(std::make_shared<scc_graph_t>()) {
 
     CRAB_LOG("sccg", crab::outs() << g << "\n");
 
-    typedef boost::unordered_map< node_t, node_t > root_map_t;
-    typedef boost::unordered_map< node_t, boost::default_color_type > color_map_t;
+    typedef std::unordered_map< node_t, node_t > root_map_t;
+    typedef std::unordered_map< node_t, boost::default_color_type > color_map_t;
     typedef boost::associative_property_map< component_map_t > property_component_map_t;
     typedef boost::associative_property_map< root_map_t > property_root_map_t;
     typedef boost::associative_property_map< color_map_t > property_color_map_t;

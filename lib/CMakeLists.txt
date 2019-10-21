@@ -10,10 +10,7 @@ add_library(Crab ${CRAB_LIBS_TYPE}
   term.cpp
   )
 
-target_link_libraries(Crab
-  ${GMPXX_LIB} 
-  ${GMP_LIB}
-  )
+target_link_libraries(Crab ${GMP_LIB})
 
 install(TARGETS Crab
   LIBRARY DESTINATION crab/lib

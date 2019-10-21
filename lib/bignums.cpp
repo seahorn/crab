@@ -1,159 +1,233 @@
 #include <crab/numbers/bignums.hpp>
 #include <crab/common/debug.hpp>
 
-
-#include <gmpxx.h>
 #include <climits>
 #include <string>
 
 namespace ikos {
-
-z_number::z_number(mpz_class n) : _n(n) {}
-
-z_number z_number::from_ulong(unsigned long n) {
-  mpz_class b(n);
-  return z_number(b);
-}
-
-z_number z_number::from_slong(signed long n) {
-  mpz_class b(n);
-  return z_number(b);
-}
-  
-z_number::operator long() const { 
-  if (_n.fits_slong_p ()) {
-    return _n.get_si ();
+namespace bignums_impl {
+struct scoped_cstring {
+  typedef void (*__gmp_freefunc_t)(void *, size_t);
+  char *m_str;
+  scoped_cstring(char *s) { m_str = s; }
+  ~scoped_cstring() {
+    __gmp_freefunc_t freefunc;
+    mp_get_memory_functions(nullptr, nullptr, &freefunc);
+    (*freefunc)(m_str, std::strlen(m_str) + 1);
   }
-    else {
-      CRAB_ERROR("mpz_class ", _n.get_str(), " does not fit into a signed long integer");
-    }
+};
+}
+
+/* Wrapper for mpz */
+
+z_number::operator long() const { 
+  if (fits_slong()) {
+    return mpz_get_si(_n);
+  } else {
+    CRAB_ERROR("z_number ", get_str(),
+	       " does not fit into a signed long integer");
+  }
 } 
 
 z_number::operator int() const { 
-  if (_n.fits_sint_p ()) {
+  if (fits_sint()) {
     // get_si returns a signed long so we cast it to int
-      return (int) _n.get_si ();
-  }
-  else {
-    CRAB_ERROR("mpz_class ", _n.get_str(), " does not fit into a signed integer");
+    return (int) mpz_get_si(_n);
+  } else {
+    CRAB_ERROR("z_number ", get_str(),
+	       " does not fit into a signed integer");
   }
 } 
 
-z_number::operator mpz_class() const { 
-  return _n;
-} 
+z_number::z_number() {
+  mpz_init(_n);
+}
 
-z_number::z_number(): _n(0) {}
+z_number::z_number(signed long long int n) {
+  if (n > LONG_MAX) {
+    CRAB_ERROR(n, " cannot fit into a signed long int: use another z_number constructor");
+  }
+  mpz_init_set_si(_n, n);
+}
 
-z_number::z_number(std::string s) {
-  try {
-    _n = s;
-  } catch (std::invalid_argument& e) {
+z_number::z_number(const std::string& s, unsigned base) {
+  int res = mpz_init_set_str(_n, s.c_str(), base);
+  if (res == -1) {
     CRAB_ERROR ("z_number: invalid string in constructor", s);
   }
 }
 
-z_number::z_number(signed long long int n) : _n((signed long int) n) {
-  if (n > LONG_MAX) {
-    CRAB_ERROR(n, " cannot fit into a signed long int: use another mpz_class constructor");
-  }
+z_number z_number::from_mpz_t(mpz_t n) {
+  z_number z;
+  mpz_set(z._n, n);
+  return z;
 }
 
-std::string z_number::get_str () const {
-  return _n.get_str();
+z_number z_number::from_mpz_srcptr(mpz_srcptr n) {
+  z_number z;
+  mpz_set(z._n, n);
+  return z;
+}
+
+z_number z_number::from_ulong(unsigned long n) {
+  z_number z;
+  mpz_set_ui(z._n, n);
+  return z;
+}
+
+z_number z_number::from_slong(signed long n) {
+  z_number z;
+  mpz_set_si(z._n, n);
+  return z;
+}
+
+z_number::z_number(const z_number& o) {
+  mpz_init_set(_n, o._n);
+}
+
+z_number::z_number(z_number&& o) {
+  *_n = *o._n;
+  mpz_init(o._n);  
+}
+
+z_number &z_number::operator=(const z_number &o) {
+  if (this != &o) {
+    mpz_set(_n, o._n);
+  }
+  return *this;
+}
+
+z_number &z_number::operator=(z_number &&o) {
+  if (this != &o) {
+    std::swap(*_n, *o._n);
+  }
+  return *this;
+}
+
+z_number::~z_number() {
+  mpz_clear(_n);
+}
+
+std::string z_number::get_str(unsigned base) const {
+  bignums_impl::scoped_cstring res(mpz_get_str(0, base, _n));
+  return std::string(res.m_str);  
 }
 
 std::size_t z_number::hash() const {
   boost::hash<std::string> hasher;
-  return hasher(_n.get_str());
+  return hasher(get_str());
 }
 
 bool z_number::fits_sint() const {
-  return _n.fits_sint_p();
+  return mpz_fits_sint_p(_n);
 }
 
 bool z_number::fits_slong() const {
-  return _n.fits_slong_p();
+  return mpz_fits_slong_p(_n);  
 }
 
 z_number z_number::operator+(z_number x) const {
-  mpz_class r = _n + x._n;
-    return z_number(r);
+  mpz_t mp_r;
+  mpz_init(mp_r);
+  mpz_add(mp_r, _n, x._n);
+  z_number res = from_mpz_t(mp_r);
+  mpz_clear(mp_r);
+  return res;
 }
 
 z_number z_number::operator*(z_number x) const {
-  mpz_class r = _n * x._n;
-  return z_number(r);
+  mpz_t mp_r;
+  mpz_init(mp_r);
+  mpz_mul(mp_r, _n, x._n);
+  z_number res = from_mpz_t(mp_r);
+  mpz_clear(mp_r);
+  return res;
 }
 
 z_number z_number::operator-(z_number x) const {
-  mpz_class r = _n - x._n;
-  return z_number(r);
+  mpz_t mp_r;
+  mpz_init(mp_r);
+  mpz_sub(mp_r, _n, x._n);
+  z_number res = from_mpz_t(mp_r);  
+  mpz_clear(mp_r);
+  return res;
 }
 
 z_number z_number::operator-() const {
-  mpz_class r = -_n;
-  return z_number(r);
+  mpz_t mp_r;
+  mpz_init(mp_r);
+  mpz_neg(mp_r, _n);
+  z_number res = from_mpz_t(mp_r);  
+  mpz_clear(mp_r);
+  return res;
 }
 
 z_number z_number::operator/(z_number x) const {
-  if (x._n == 0) {
+  if (x == 0) {
     CRAB_ERROR("z_number: division by zero [1]");
   } else {
-    mpz_class r = _n / x._n;
-    return z_number(r);
+    mpz_t mp_r;
+    mpz_init(mp_r);
+    mpz_tdiv_q(mp_r, _n, x._n);
+    z_number res = from_mpz_t(mp_r);      
+    mpz_clear(mp_r);
+    return res;
   }
 }
 
 z_number z_number::operator%(z_number x) const {
-  if (x._n == 0) {
+  if (x == 0) {
     CRAB_ERROR("z_number: division by zero [2]");
   } else {
-    mpz_class r = _n % x._n;
-    return z_number(r);
+    mpz_t mp_r;
+    mpz_init(mp_r);
+    mpz_tdiv_r(mp_r, _n, x._n);
+    z_number res = from_mpz_t(mp_r);          
+    mpz_clear(mp_r);
+    return res;
   }
 }
 
 z_number& z_number::operator+=(z_number x) {
-  _n += x._n;
+  mpz_add(_n, _n, x._n);
   return *this;
 }
 
 z_number& z_number::operator*=(z_number x) {
-  _n *= x._n;
+  mpz_mul(_n, _n, x._n);
   return *this;
 }
 
 z_number& z_number::operator-=(z_number x) {
-  _n -= x._n;
+  mpz_sub(_n, _n, x._n);  
   return *this;
 }
 
 z_number& z_number::operator/=(z_number x) {
-  if (x._n == 0) {
+  if (x == 0) {
     CRAB_ERROR("z_number: division by zero [3]");
   } else {
-    _n /= x._n;
+    mpz_tdiv_q(_n, _n, x._n);
     return *this;
   }
 }
 
 z_number& z_number::operator%=(z_number x) {
-  if (x._n == 0) {
+  if (x == 0) {
     CRAB_ERROR("z_number: division by zero [4]");
   } else {
-    _n %= x._n;
-      return *this;
+    mpz_tdiv_r(_n, _n, x._n);    
+    return *this;
   }
 }
 
 z_number& z_number::operator--() {
-  --(_n);
+  mpz_sub_ui(_n, _n, 1);  
   return *this;
 }
 
 z_number& z_number::operator++() {
-  ++(_n);
+  mpz_add_ui(_n, _n, 1);    
   return *this;
 }
 
@@ -169,155 +243,324 @@ z_number z_number::operator--(int) {
   return r;
 }
 
-bool z_number::operator==(z_number x) const { return _n == x._n; }
+bool z_number::operator==(z_number x) const {
+  return mpz_cmp(_n, x._n) == 0;
+}
 
-bool z_number::operator!=(z_number x) const { return _n != x._n; }
+bool z_number::operator!=(z_number x) const {
+  return !(*this == x);
+}
 
-bool z_number::operator<(z_number x) const { return _n < x._n; }
+bool z_number::operator<(z_number x) const {
+  return (mpz_cmp(_n, x._n) < 0);
+}
 
-bool z_number::operator<=(z_number x) const { return _n <= x._n; }
+bool z_number::operator<=(z_number x) const {
+  return (mpz_cmp(_n, x._n) <= 0);
+}
 
-bool z_number::operator>(z_number x) const { return _n > x._n; }
+bool z_number::operator>(z_number x) const {
+  return (mpz_cmp(_n, x._n) > 0);
+}
 
-bool z_number::operator>=(z_number x) const { return _n >= x._n; }
+bool z_number::operator>=(z_number x) const {
+  return (mpz_cmp(_n, x._n) >= 0);
+}
+  
+z_number z_number::operator&(z_number x) const {
+  mpz_t mp_r;
+  mpz_init(mp_r);
+  mpz_and(mp_r, _n, x._n);
+  z_number res = from_mpz_t(mp_r);            
+  mpz_clear(mp_r);
+  return res;
+}
 
-z_number z_number::operator&(z_number x) const { return z_number(_n & x._n); }
+z_number z_number::operator|(z_number x) const {
+  mpz_t mp_r;
+  mpz_init(mp_r);
+  mpz_ior(mp_r, _n, x._n);
+  z_number res = from_mpz_t(mp_r);              
+  mpz_clear(mp_r);
+  return res;
+}
 
-z_number z_number::operator|(z_number x) const { return z_number(_n | x._n); }
-
-z_number z_number::operator^(z_number x) const { return z_number(_n ^ x._n); }
+z_number z_number::operator^(z_number x) const {
+  mpz_t mp_r;
+  mpz_init(mp_r);  
+  mpz_xor(mp_r, _n, x._n);
+  z_number res = from_mpz_t(mp_r);                
+  mpz_clear(mp_r);
+  return res;
+}
 
 z_number z_number::operator<<(z_number x) const {
-  mpz_t tmp;
-  mpz_init(tmp);
-  mpz_mul_2exp(tmp, _n.get_mpz_t(), mpz_get_ui(x._n.get_mpz_t()));
-  mpz_class result(tmp);
-  return z_number(result);
+  if (x == 0) {
+    return x;
+  } else {
+    mpz_t mp_r;
+    mpz_init(mp_r);
+    mpz_mul_2exp(mp_r, _n,  mpz_get_ui(x._n));
+    z_number res = from_mpz_t(mp_r);                    
+    mpz_clear(mp_r);
+    return res;
+  }
 }
 
 z_number z_number::operator>>(z_number x) const {
-  mpz_class tmp(_n);
-  return z_number(tmp.operator>>=(mpz_get_ui(x._n.get_mpz_t())));
+  if (x == 0) {
+    return x;
+  } else {
+    mpz_t mp_r;
+    mpz_init(mp_r);
+    mpz_fdiv_q_2exp(mp_r, _n, mpz_get_ui(x._n));
+    z_number res = from_mpz_t(mp_r);                        
+    mpz_clear(mp_r);
+    return res;
+  }
 }
 
 z_number z_number::fill_ones() const {
-  assert(_n >= 0);
-  if (_n == 0) {
-    return z_number(0);
-  }
+  z_number x(*this);
   
-  mpz_class result;
-  for (result = 1; result < _n; result = 2 * result + 1)
+  assert(x >= 0);
+  if (x == 0) {
+    return x;
+  }
+
+  z_number result(1);
+  z_number z1(1);  
+  z_number z2(2);
+  for (; result < x; result = (z2 * result) + z1)
     ;
-  return z_number(result);
+  return result;
 }
 
 void z_number::write(crab::crab_os& o) const {
-  o << _n.get_str();
+  o << get_str();
 }
 
+/* Wrapper for mpq */
 
-q_number::q_number(): _n(0) {}
+q_number::q_number() {
+  mpq_init(_n);
+}
 
-q_number::q_number(mpq_class n): _n(n) {}
-  
-q_number::q_number(std::string s) {
-  try {
-    _n = s;
-    } catch (std::invalid_argument& e) {
-    CRAB_ERROR("q_number: invalid string in constructor ",s);
+q_number::q_number(double d) {
+  mpq_init(_n);
+  mpq_set_d(_n, d);
+}
+
+q_number::q_number(const std::string& s, unsigned base) {
+  mpq_init(_n);
+  int res = mpq_set_str(_n, s.c_str(), base);
+  if (res != 0) {
+    CRAB_ERROR ("q_number: invalid string in constructor", s);
   }
-  _n.canonicalize();
 }
 
-q_number::q_number(double n)
-  : _n(n) {
-  _n.canonicalize();
+q_number::q_number(const z_number& z) {
+  mpq_init(_n);
+  mpq_set_z(_n, z._n);
 }
 
-q_number::q_number(z_number n)
-  : _n(n._n) {
-  _n.canonicalize();
+q_number::q_number(const z_number& num, const z_number& den) {
+  mpz_init_set(mpq_numref(_n), num._n);
+  mpz_init_set(mpq_denref(_n), den._n);
 }
 
-q_number::q_number(z_number n, z_number d)
-  : _n(n._n, d._n) {
-  _n.canonicalize();
+q_number q_number::from_mpq_t(mpq_t mp) {
+  q_number q;
+  mpq_set(q._n, mp);
+  return q;
 }
 
-q_number::operator mpq_class() const { 
-  return _n;
-} 
+q_number q_number::from_mpz_t(mpz_t mp) {
+  q_number q;
+  mpq_set_z(q._n, mp);
+  return q;
+}
 
-std::string q_number::get_str () const {
-  return _n.get_str();
+q_number q_number::from_mpq_srcptr(mpq_srcptr mp) {
+  q_number q;
+  mpz_init_set(mpq_numref(q._n), mpq_numref(mp));
+  mpz_init_set(mpq_denref(q._n), mpq_denref(mp));
+  return q;
+}
+
+q_number::q_number(const q_number& q) {
+  mpz_init_set(mpq_numref(_n), mpq_numref(q._n));
+  mpz_init_set(mpq_denref(_n), mpq_denref(q._n));  
+}
+
+q_number::q_number(q_number&& q) {
+  *_n = *q._n;
+  mpq_init(q._n);  
+}
+
+q_number& q_number::operator=(const q_number& q) {
+  if (this != &q) {
+    mpq_set(_n, q._n);
+  }
+  return *this;   
+}
+
+q_number& q_number::operator=(q_number&& q) {
+  std::swap(_n, q._n);
+  return *this;
+}
+
+q_number::~q_number() {
+  mpq_clear(_n);
+}
+
+double q_number::get_double() const {
+  return mpq_get_d(_n);
+}
+
+std::string q_number::get_str (unsigned base) const {
+  bignums_impl::scoped_cstring res(mpq_get_str(0, base, _n));
+  return std::string(res.m_str);  
 }
 
 std::size_t q_number::hash() const {
   boost::hash<std::string> hasher;
-  return hasher(_n.get_str());
+  return hasher(get_str());
 }
 
+
 q_number q_number::operator+(q_number x) const {
-  mpq_class r = _n + x._n;
-  return q_number(r);
+  // the price to keep const the method
+  mpq_t mp, mp_r;
+  mpq_init(mp);
+  mpq_set(mp, _n);
+  
+  mpq_canonicalize(x._n);
+  mpq_canonicalize(mp);
+  
+  mpq_init(mp_r);
+  mpq_add(mp_r, mp, x._n);
+  q_number res = from_mpq_t(mp_r);  
+  mpq_clear(mp_r);
+  return res;
 }
 
 q_number q_number::operator*(q_number x) const {
-  mpq_class r = _n * x._n;
-  return q_number(r);
+  // the price to keep const the method
+  mpq_t mp, mp_r;
+  mpq_init(mp);
+  mpq_set(mp, _n);
+  
+  mpq_canonicalize(x._n);
+  mpq_canonicalize(mp);
+  
+  mpq_init(mp_r);
+  mpq_mul(mp_r, mp, x._n);
+  q_number res = from_mpq_t(mp_r);    
+  mpq_clear(mp_r);
+  return res;
 }
 
 q_number q_number::operator-(q_number x) const {
-  mpq_class r = _n - x._n;
-  return q_number(r);
+  // the price to keep const the method
+  mpq_t mp, mp_r;
+  mpq_init(mp);
+  mpq_set(mp, _n);
+  
+  mpq_canonicalize(x._n);
+  mpq_canonicalize(mp);
+  
+  mpq_init(mp_r);
+  mpq_sub(mp_r, mp, x._n);
+  q_number res = from_mpq_t(mp_r);      
+  mpq_clear(mp_r);
+  return res;
 }
 
 q_number q_number::operator-() const {
-  mpq_class r = -_n;
-  return q_number(r);
+  // the price to keep const the method
+  mpq_t mp, mp_r;
+  mpq_init(mp);
+  mpq_set(mp, _n);
+  
+  mpq_canonicalize(mp);
+
+  mpq_init(mp_r);
+  mpq_neg(mp_r, mp);
+  q_number res = from_mpq_t(mp_r);        
+  mpq_clear(mp_r);
+  return res;
 }
 
+
 q_number q_number::operator/(q_number x) const {
-  if (x._n == 0) {
+
+  // the price to keep const the method
+  mpq_t mp, mp_r;
+  mpq_init(mp);
+  mpq_set(mp, _n);
+  
+  mpq_canonicalize(x._n);
+  mpq_canonicalize(mp);
+  
+  if (x == 0) {
     CRAB_ERROR("q_number: division by zero [1]");
   } else {
-    mpq_class r = _n / x._n;
-    return q_number(r);
+    mpq_init(mp_r);
+    mpq_div(mp_r, mp, x._n);
+    q_number res = from_mpq_t(mp_r);            
+    mpq_clear(mp_r);
+    return res;
   }
 }
 
 q_number& q_number::operator+=(q_number x) {
-  _n += x._n;
+  mpq_canonicalize(_n);          
+  mpq_canonicalize(x._n);          
+  
+  mpq_add(_n, _n, x._n);
   return *this;
 }
 
 q_number& q_number::operator*=(q_number x) {
-  _n *= x._n;
+  mpq_canonicalize(_n);          
+  mpq_canonicalize(x._n);          
+  
+  mpq_mul(_n, _n, x._n);
   return *this;
 }
 
 q_number& q_number::operator-=(q_number x) {
-  _n -= x._n;
+  mpq_canonicalize(_n);          
+  mpq_canonicalize(x._n);          
+  
+  mpq_sub(_n, _n, x._n);  
   return *this;
 }
 
 q_number& q_number::operator/=(q_number x) {
-  if (x._n == 0) {
-    CRAB_ERROR("q_number: division by zero [2]");
+  mpq_canonicalize(_n);          
+  mpq_canonicalize(x._n);          
+  
+  if (x == 0) {
+    CRAB_ERROR("q_number: division by zero [3]");
   } else {
-    _n /= x._n;
+    mpq_div(_n, _n, x._n);
     return *this;
   }
 }
 
 q_number& q_number::operator--() {
-  --(_n);
+  mpq_canonicalize(_n);          
+
+  mpz_sub(mpq_numref(_n), mpq_numref(_n), mpq_denref(_n));  
   return *this;
 }
 
 q_number& q_number::operator++() {
-  ++(_n);
+  mpq_canonicalize(_n);
+
+  mpz_add(mpq_numref(_n), mpq_numref(_n), mpq_denref(_n));
   return *this;
 }
 
@@ -333,21 +576,37 @@ q_number q_number::operator++(int) {
   return r;
 }
 
-bool q_number::operator==(q_number x) const { return _n == x._n; }
+bool q_number::operator==(q_number x) const {
+  return mpq_cmp(_n, x._n) == 0;
+}
 
-bool q_number::operator!=(q_number x) const { return _n != x._n; }
+bool q_number::operator!=(q_number x) const {
+  return !(*this == x);
+}
 
-bool q_number::operator<(q_number x) const { return _n < x._n; }
+bool q_number::operator<(q_number x) const {
+  return mpq_cmp(_n, x._n) < 0;
+}
 
-bool q_number::operator<=(q_number x) const { return _n <= x._n; }
+bool q_number::operator<=(q_number x) const {
+  return mpq_cmp(_n, x._n) <= 0;
+}
 
-bool q_number::operator>(q_number x) const { return _n > x._n; }
+bool q_number::operator>(q_number x) const {
+  return mpq_cmp(_n, x._n) > 0;
+}
 
-bool q_number::operator>=(q_number x) const { return _n >= x._n; }
+bool q_number::operator>=(q_number x) const {
+  return mpq_cmp(_n, x._n) >= 0;
+}
 
-z_number q_number::numerator() const { return z_number(_n.get_num()); }
+z_number q_number::numerator() const {
+  return z_number::from_mpz_srcptr(mpq_numref(_n));
+}
 
-z_number q_number::denominator() const { return z_number(_n.get_den()); }
+z_number q_number::denominator() const {
+  return z_number::from_mpz_srcptr(mpq_denref(_n));
+}
 
 z_number q_number::round_to_upper() const {
   z_number num = numerator();
@@ -357,7 +616,7 @@ z_number q_number::round_to_upper() const {
   if (r == 0 || *this < 0) {
     return q;
   } else {
-    return q + 1;
+    return q + z_number(1);
   }
 }
 
@@ -369,12 +628,12 @@ z_number q_number::round_to_lower() const {
   if (r == 0 || *this > 0) {
     return q;
   } else {
-    return q - 1;
+    return q - z_number(1);
   }
 }
 
 void q_number::write(crab::crab_os& o) const {
-  o << _n.get_str();
+  o << get_str();
 }
 
 } // end namespace

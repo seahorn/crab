@@ -29,8 +29,8 @@
 #include <crab/domains/backward_assign_operations.hpp>
 
 #include <boost/optional.hpp>
-#include <boost/unordered_set.hpp>
 #include <boost/container/flat_map.hpp>
+#include <unordered_set>
 
 //#define CHECK_POTENTIAL
 //#define SDBM_NO_NORMALIZE
@@ -76,7 +76,7 @@ namespace crab {
       typedef typename GrOps::edge_vector edge_vector;
       // < <x, y>, k> == x - y <= k.
       typedef std::pair<std::pair<variable_t, variable_t>, Wt> diffcst_t;
-      typedef boost::unordered_set<vert_id> vert_set_t;
+      typedef std::unordered_set<vert_id> vert_set_t;
 
     protected:
         
@@ -544,13 +544,14 @@ namespace crab {
       }
 
       // x != n
-      void add_univar_disequation(variable_t x, number_t n) {
+      bool add_univar_disequation(variable_t x, number_t n) {
 	bool overflow;
 	interval_t i = get_interval(x);
 	interval_t new_i =
 	  linear_interval_solver_impl::trim_interval<interval_t>(i, interval_t(n));
 	if (new_i.is_bottom()) {
 	  set_to_bottom();
+	  return false;
 	} else if (!new_i.is_top() && (new_i <= i)) {
 	  vert_id v = get_vert(x);
 	  typename graph_t::mut_val_ref_t w;
@@ -559,14 +560,14 @@ namespace crab {
 	    // strenghten lb
 	    Wt lb_val = ntow::convert(-(*(new_i.lb().number())), overflow);
 	    if (overflow) {
-	      return;
+	      return true;
 	    }
 	    
 	    if(g.lookup(v, 0, &w) && lb_val < w.get()) {
 	      g.set_edge(v, lb_val, 0);
 	      if(!repair_potential(v, 0)) {
 		set_to_bottom();
-		return;
+		return false;
 	      }
 	      check_potential(g, potential, __LINE__);
 	      // Update other bounds
@@ -575,7 +576,7 @@ namespace crab {
 		g.update_edge(e.vert, e.val + lb_val, 0, min_op);
 		if(!repair_potential(e.vert, 0)) {
 		  set_to_bottom();
-		  return;
+		  return false;
 		}
 		check_potential(g, potential, __LINE__);
 	      }
@@ -585,14 +586,14 @@ namespace crab {
 	    // strengthen ub
 	    Wt ub_val = ntow::convert(*(new_i.ub().number()), overflow);
 	    if (overflow) {
-	      return;
+	      return true;
 	    }
 	    
 	    if(g.lookup(0, v, &w) && (ub_val < w.get())) {
 	      g.set_edge(0, ub_val, v);
 	      if(!repair_potential(0, v)) {
 		set_to_bottom();
-		return;
+		return false;
 	      }	      
 	      check_potential(g, potential, __LINE__);
 	      // Update other bounds
@@ -601,13 +602,14 @@ namespace crab {
 		g.update_edge(0, e.val + ub_val, e.vert, min_op);
 		if(!repair_potential(0, e.vert)) {
 		  set_to_bottom();
-		  return;
+		  return false;
 		}
 		check_potential(g, potential, __LINE__);
 	      }
 	    }
 	  }
 	}
+	return true;
       } 
       
       void add_disequation(linear_expression_t e) {
@@ -617,10 +619,14 @@ namespace crab {
 	  variable_t pivot = it->second;
 	  interval_t i = compute_residual(e, pivot) / interval_t(it->first);
 	  if (auto k = i.singleton()) {
-	    add_univar_disequation(pivot, *k);
+	    if (!add_univar_disequation(pivot, *k)) {
+	      // set_to_bottom() was already called
+	      return;
+	    }
 	  }
 	}
-        return;
+
+	
         /*
         // Can only exploit \sum_i c_i x_i \neq k if:
         // (1) exactly one x_i is unfixed

@@ -1,13 +1,23 @@
 language: cpp
 cache: apt
+branches:
+  except:
+  - crab_language
+  - dev
 env:
   matrix:
-     #- UBUNTU_DIST=trusty
-     #  BUILD_TYPE=Release  
      - UBUNTU_DIST=xenial
        BUILD_TYPE=Release
+       EXTERNAL_DOMAIN_LIB=apron
      - UBUNTU_DIST=bionic
        BUILD_TYPE=Release
+       EXTERNAL_DOMAIN_LIB=apron
+     - UBUNTU_DIST=xenial
+       BUILD_TYPE=Coverage
+       EXTERNAL_DOMAIN_LIB=apron              
+     - UBUNTU_DIST=bionic
+       BUILD_TYPE=Release
+       EXTERNAL_DOMAIN_LIB=elina
        
 services:
   - docker
@@ -15,12 +25,17 @@ services:
 install: true
 
 script:
-  - docker build --build-arg UBUNTU=${UBUNTU_DIST} --build-arg BUILD_TYPE=${BUILD_TYPE} -t seahorn/crab_${UBUNTU_DIST}_rel -f docker/crab.Dockerfile .
-  
-  - 'if [ "$TRAVIS_EVENT_TYPE" = "cron" ] ;
-        then echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-          && docker push seahorn/crab_${UBUNTU_DIST}_rel:latest ;
+  - docker build --build-arg UBUNTU=${UBUNTU_DIST} --build-arg BUILD_TYPE=${BUILD_TYPE} -t seahorn/crab_${EXTERNAL_DOMAIN_LIB}:${UBUNTU_DIST} -f docker/crab.${EXTERNAL_DOMAIN_LIB}.Dockerfile .
+     
+  - 'if [ "$TRAVIS_EVENT_TYPE" = "cron" ] ; then 
+        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+          && docker push seahorn/crab_${EXTERNAL_DOMAIN_LIB}:${UBUNTU_DIST};	  	  
      fi '
+     
+  - 'if [ "$BUILD_TYPE" = "Coverage" ] ; then 
+        docker run  -v $(pwd):/host -it seahorn/crab_${EXTERNAL_DOMAIN_LIB}:${UBUNTU_DIST} /bin/sh -c "bash /crab/tests/run_coverage.sh /crab/build /crab && mv /crab/build/all.info /host" && bash <(curl -s https://codecov.io/bash) -Z -f all.info;
+     fi '
+   
   
 notifications:
   email:

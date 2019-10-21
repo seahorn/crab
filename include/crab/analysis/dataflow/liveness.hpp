@@ -8,6 +8,9 @@
 #include <crab/domains/killgen_domain.hpp>
 #include <crab/iterators/killgen_fixpoint_iterator.hpp>
 
+#include <unordered_map>
+#include <boost/range/iterator_range.hpp>
+
 namespace crab {
 
   namespace analyzer {
@@ -34,7 +37,7 @@ namespace crab {
      
      typedef crab::iterators::killgen_operations_api<CFG, varset_domain_t> parent_type;
      typedef std::pair<varset_domain_t, varset_domain_t> binding_t;
-     typedef boost::unordered_map<basic_block_label_t, binding_t> liveness_map_t;
+     typedef std::unordered_map<basic_block_label_t, binding_t> liveness_map_t;
      
      liveness_map_t m_liveness_map;
 
@@ -114,7 +117,7 @@ namespace crab {
       
       // output of the analysis: map basic blocks to set of live
       // variables at the end of the blocks
-      boost::unordered_map<basic_block_label_t, varset_domain_t> _live_map;
+      std::unordered_map<basic_block_label_t, varset_domain_t> _live_map;
       
     public:
       
@@ -182,7 +185,7 @@ namespace crab {
       
       // output of the analysis: map basic blocks to set of dead
       // variables at the end of the blocks
-      boost::unordered_map<basic_block_label_t, varset_domain_t> _dead_map;
+      std::unordered_map<basic_block_label_t, varset_domain_t> _dead_map;
       
       // statistics 
       unsigned m_max_live;

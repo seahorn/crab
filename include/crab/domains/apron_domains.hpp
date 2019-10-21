@@ -1,6 +1,5 @@
 #pragma once 
 
-#include "boost/range/algorithm/set_algorithm.hpp"
 
 #include <crab/config.h>
 #include <crab/common/debug.hpp>
@@ -8,6 +7,8 @@
 #include <crab/common/types.hpp>
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/intervals.hpp>
+
+#include <algorithm>
 
 namespace crab {
    namespace domains {
@@ -21,7 +22,7 @@ namespace crab {
 /*
  * Dummy implementation if Apron not found 
  */
-#define APRON_NOT_FOUND "No Apron. Run cmake with -DUSE_APRON=ON"
+#define APRON_NOT_FOUND "No Apron. Run cmake with -DCRAB_USE_APRON=ON"
 
 namespace crab {
    namespace domains {
@@ -289,7 +290,7 @@ namespace crab {
        private:
         typedef interval_domain<number_t, varname_t> interval_domain_t;
         typedef bound<number_t> bound_t;
-        typedef boost::bimap<variable_t, ap_dim_t > var_map_t;
+        typedef boost::bimap<variable_t, ap_dim_t> var_map_t;
         typedef typename var_map_t::value_type binding_t;
 
         static ap_manager_t* m_apman;
@@ -591,23 +592,15 @@ namespace crab {
           return ap_texpr0_dim(get_var_dim_insert(v));
         }
 
-	inline void convert_crab_number(ikos::z_number n, mpq_class &res) const
-	{ res = mpq_class((mpz_class) n); }
-
-	inline void convert_crab_number(ikos::q_number n, mpq_class &res) const 
-	{ res =((mpq_class) n); }
-		
         inline ap_texpr0_t* num2texpr(number_t i) const {  
-	  mpq_class n(0);
-	  convert_crab_number(i, n);
-          return ap_texpr0_cst_scalar_mpq(n.get_mpq_t());
+	  ikos::q_number qi(i);
+          return ap_texpr0_cst_scalar_mpq(qi.get_mpq_t());
         }
 
         inline ap_texpr0_t* intv2texpr(number_t a, number_t b) const {
-	  mpq_class n1(0), n2(0);
-	  convert_crab_number(a, n1);
-	  convert_crab_number(b, n2);
-          return ap_texpr0_cst_interval_mpq(n1.get_mpq_t(), n2.get_mpq_t());
+	  ikos::q_number qa(a);
+	  ikos::q_number qb(b);
+          return ap_texpr0_cst_interval_mpq(qa.get_mpq_t(), qb.get_mpq_t());
         }
         
         inline ap_texpr0_t* expr2texpr(linear_expression_t e)  {
@@ -636,18 +629,19 @@ namespace crab {
 		
         // --- from apron to crab 
 
-	inline void convert_apron_number(double n, ikos::z_number &res) const
-	{ res = ikos::z_number((long) n); }
+	inline void convert_apron_number(double d, ikos::z_number &res) const
+	{ res = ikos::z_number((long) d); }
 
-	inline void convert_apron_number(double n, ikos::q_number &res) const
-	{ res = ikos::q_number(n); }
+	inline void convert_apron_number(double d, ikos::q_number &res) const
+	{ res = ikos::q_number(d); }
 	
-	inline void convert_apron_number(mpq_ptr n, ikos::z_number &res) const
-	{ // FIXME: find a better way
-	  res = ikos::z_number(mpz_class(mpq_class(n)));
+	inline void convert_apron_number(mpq_ptr mp, ikos::z_number &res) const {
+	  ikos::q_number q = ikos::q_number::from_mpq_srcptr(mp);
+	  res = q.round_to_lower();
 	}
-	inline void convert_apron_number(mpq_ptr n, ikos::q_number &res) const
-	{ res = ikos::q_number(mpq_class(n)); }	  
+	inline void convert_apron_number(mpq_ptr mp, ikos::q_number &res) const {
+	  res = ikos::q_number::from_mpq_srcptr(mp);
+	}
 
         number_t coeff2Num(ap_coeff_t* coeff) {
           assert(coeff->discr == AP_COEFF_SCALAR);
@@ -1141,7 +1135,8 @@ namespace crab {
 	  variable_vector_t s3;
           for (auto p: m_var_map.left) s1.insert(p.first);
           s2.insert(vars.begin(), vars.end());
-          boost::set_difference(s1,s2,std::back_inserter(s3));
+          std::set_difference(s1.begin(), s1.end(), s2.begin(), s2.end(),
+			      std::back_inserter(s3));
           forget(s3);
         }
 

@@ -44,7 +44,7 @@ endif
 
 LDLIBS := \
     $(CRAB_LIBS) $(LDD_LIBS) $(ELINA_LIBS) \
-    -lmpfr -lgmpxx -lgmp -lm -lstdc++ 
+    -lmpfr -lgmp -lm -lstdc++ 
 
 CXXFLAGS := \
     -Wall -Werror -Wfatal-errors \
@@ -76,8 +76,8 @@ crab_install:
 	git clone https://github.com/seahorn/crab.git crab
 	mkdir -p crab/build
 	cd crab/build \
-	    && cmake -DCMAKE_INSTALL_PREFIX=$(CRAB_INSTALL) -DBUILD_CRAB_LIBS_SHARED=ON \
-	             -DUSE_LDD=ON -DUSE_ELINA=ON ../ \
+	    && cmake -DCMAKE_INSTALL_PREFIX=$(CRAB_INSTALL) -DCRAB_BUILD_LIBS_SHARED=ON \
+	             -DCRAB_USE_LDD=ON -DCRAB_USE_ELINA=ON ../ \
 	    && cmake --build . --target ldd && cmake ../ \
 	    && cmake --build . --target elina && cmake ../ \
 	    && cmake --build . --target install

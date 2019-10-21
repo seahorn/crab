@@ -8,6 +8,7 @@
 #include <memory>
 
 #include <boost/optional.hpp>
+#include <boost/container/flat_set.hpp>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsign-compare"

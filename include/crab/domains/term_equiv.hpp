@@ -17,7 +17,6 @@
 #include <set>
 
 #include <boost/range.hpp>
-#include "boost/range/algorithm/set_algorithm.hpp"
 #include <boost/container/flat_map.hpp>
 #include <boost/container/flat_set.hpp>
 #include <boost/optional.hpp>
@@ -1615,7 +1614,8 @@ namespace crab {
 	 variable_vector_t s3;
          for (auto p: _var_map) s1.insert(p.first);
          s2.insert(variables.begin(), variables.end());
-         boost::set_difference(s1,s2,std::back_inserter(s3));
+         std::set_difference(s1.begin(), s1.end(), s2.begin(), s2.end(),
+			     std::back_inserter(s3));
          forget(s3);
        }
 

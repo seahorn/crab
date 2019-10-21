@@ -337,9 +337,9 @@ class SparseWtGraph : public ikos::writeable {
     // Assumption: (x, y) not in mtx
     void add_edge(vert_id x, Wt wt, vert_id y)
     {
-//      assert(x < size() && y < size());
-//      assert(x != y);
-//      assert(!elem(x, y));
+      // assert(x < size() && y < size());
+      // assert(x != y);
+      assert(!elem(x, y));
       succs(x).add(y);
       preds(y).add(x);
       // Allocate a new Wt at the given offset.
@@ -349,7 +349,7 @@ class SparseWtGraph : public ikos::writeable {
 
     void set_edge(vert_id s, Wt w, vert_id d)
     {
-//      assert(s < size() && d < size());
+      //  assert(s < size() && d < size());
       if(!elem(s, d))
         add_edge(s, w, d);
       else
@@ -481,6 +481,16 @@ class SparseWtGraph : public ikos::writeable {
         : g(&_g), d(_d), it(_it)
       { }
 
+      // XXX: to make sure that we always return the same address
+      // for the "empty" iterator, otherwise we can trigger
+      // undefined behavior.
+      static rev_edge_iterator empty_iterator () { 
+	static std::unique_ptr<rev_edge_iterator> it = nullptr;
+	if (!it)
+	  it = std::unique_ptr<rev_edge_iterator>(new rev_edge_iterator ());
+	return *it;
+      }
+      
       edge_ref operator*(void) const { return edge_ref((*it), g->edge_val((*it), d)); }
       rev_edge_iterator& operator++(void) { ++it; return *this; }
       bool operator!=(const rev_edge_iterator& o) { return it != o.it; }
