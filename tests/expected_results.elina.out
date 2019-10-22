@@ -3152,12 +3152,12 @@ Running ELINA
 INITIALLY={}
 ADDING CONSTRAINTS={-x <= -1; x <= 1}
 EXPECTED={x = 1}
-RESULT={false}
+RESULT={-x <= -1; x <= 1}
 ------------------------------------
 INITIALLY={}
 ADDING CONSTRAINTS={-x <= -1/2; x <= 1/2}
 EXPECTED={x = 1/2}
-RESULT=_|_
+RESULT={-x <= -1/2; x <= 1/2}
 ------------------------------------
 INITIALLY={}
 ADDING CONSTRAINTS={-x <= -1/2; x <= 1/2}

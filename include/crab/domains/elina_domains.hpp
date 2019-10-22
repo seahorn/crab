@@ -389,6 +389,9 @@ namespace domains {
 	dimchange = elina_dimchange_alloc(dims, 0);
       } else {
 	assert(is_real());
+	if (ElinaDom == ELINA_PK) {
+	  CRAB_ERROR("Elina polyhedra does not support rational coefficients");
+	}
 	dimchange = elina_dimchange_alloc(0, dims);
       }
       for (unsigned i=0 ; i<dims ; i++)
