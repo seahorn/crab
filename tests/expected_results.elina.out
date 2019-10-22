@@ -1916,16 +1916,16 @@ ret:
 
 Invariants using ElinaZones
 loop1_entry={}
-loop1_bb1={-i <= 0; i <= 10; -k <= -30; k <= 30}
-loop1_bb1_f={-i <= 0; i <= 10; -k <= -30; k <= 30}
-loop2_entry={-i <= -10; i <= 10; -k <= -30; k <= 30}
-loop2_bb1={-j <= 0; j <= 10; -i <= -10; i <= 10; -k <= -30; k <= 30}
-loop2_bb1_f={-j <= 0; j <= 10; -i <= -10; i <= 10; -k <= -30; k <= 30}
-ret={-j <= -10; j <= 10; -i <= -10; i <= 10; -k <= -30; k <= 30}
-loop2_bb1_t={-j <= 0; j <= 10; -i <= -10; i <= 10; -k <= -30; k <= 30}
-loop2_bb2={-j <= 0; j <= 9; -i <= -10; i <= 10; -k <= -30; k <= 30}
-loop1_bb1_t={-i <= 0; i <= 10; -k <= -30; k <= 30}
-loop1_bb2={-i <= 0; i <= 9; -k <= -30; k <= 30}
+loop1_bb1={-k <= -30; k <= 30; -i <= 0; i <= 10}
+loop1_bb1_f={-k <= -30; k <= 30; -i <= 0; i <= 10}
+loop2_entry={-k <= -30; k <= 30; -i <= -10; i <= 10}
+loop2_bb1={-k <= -30; k <= 30; -j <= 0; j <= 10; -i <= -10; i <= 10}
+loop2_bb1_f={-k <= -30; k <= 30; -j <= 0; j <= 10; -i <= -10; i <= 10}
+ret={-k <= -30; k <= 30; -i <= -10; i <= 10; -j <= -10; j <= 10}
+loop2_bb1_t={-k <= -30; k <= 30; -j <= 0; j <= 10; -i <= -10; i <= 10}
+loop2_bb2={-k <= -30; k <= 30; -i <= -10; i <= 10; -j <= 0; j <= 9}
+loop1_bb1_t={-k <= -30; k <= 30; -i <= 0; i <= 10}
+loop1_bb2={-k <= -30; k <= 30; -i <= 0; i <= 9}
 Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t loop1_bb2)^{3} loop1_bb1_f loop2_entry (loop2_bb1 loop2_bb1_t loop2_bb2)^{3} loop2_bb1_f ret
 
 Invariants using ElinaOctagon
@@ -1947,11 +1947,11 @@ loop1_entry={}
 loop1_bb1={-i <= 0; i <= 10; -k = -30}
 loop1_bb1_f={-i <= 0; i <= 10; -k = -30}
 loop2_entry={-i = -10; -k = -30}
-loop2_bb1={-j <= 0; j <= 10; -k = -30; -i = -10}
-loop2_bb1_f={-j <= 0; j <= 10; -k = -30; -i = -10}
-ret={-j = -10; -k = -30; -i = -10}
-loop2_bb1_t={-j <= 0; j <= 10; -k = -30; -i = -10}
-loop2_bb2={-j <= 0; j <= 9; -k = -30; -i = -10}
+loop2_bb1={-j <= 0; j <= 10; -i = -10; -k = -30}
+loop2_bb1_f={-j <= 0; j <= 10; -i = -10; -k = -30}
+ret={-i = -10; -j = -10; -k = -30}
+loop2_bb1_t={-j <= 0; j <= 10; -i = -10; -k = -30}
+loop2_bb2={-i = -10; -j <= 0; j <= 9; -k = -30}
 loop1_bb1_t={-i <= 0; i <= 10; -k = -30}
 loop1_bb2={-i <= 0; i <= 9; -k = -30}
 Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t loop1_bb2)^{3} loop1_bb1_f loop2_entry (loop2_bb1 loop2_bb1_t loop2_bb2)^{3} loop2_bb1_f ret
@@ -2545,11 +2545,11 @@ bb2:
 
 Necessary preconditions from error states using Polyhedra:
 bb0={len <= 2; -argc+len <= -1; -argc <= -2}
-bb2={-argc <= -2; len <= 1}
-bb3={-argc <= -2; len <= 1}
+bb2={len <= 1; -argc <= -2}
+bb3={len <= 1; -argc <= -2}
 bb5=_|_
 bb6=_|_
-bb4={-argc <= -2; len <= 1}
+bb4={len <= 1; -argc <= -2}
 bb1={-argc <= -3; len <= 2}
 Necessary preconditions from safe states using Polyhedra:
 bb0={}
@@ -2557,8 +2557,8 @@ bb2={}
 bb3={}
 bb5={}
 bb6={}
-bb4={-argc <= -2; -len <= -2}
-bb1={-argc <= -3; -len <= -3}
+bb4={-len <= -2; -argc <= -2}
+bb1={-len <= -3; -argc <= -3}
 bb1:
   i = 0;
   goto bb2;
@@ -2588,6 +2588,142 @@ bb2={-i <= 0}
 bb5={-i <= -100}
 bb3={i-n <= -1; -i <= 0}
 bb4={-i <= 0}
+z:int declare foo(x:int)
+entry:
+  y = x+1;
+  goto exit;
+exit:
+  z = y+2;
+  return z;
+
+
+y1:int declare bar(a:int)
+entry:
+  x1 = a;
+  w1 = 5;
+  goto exit;
+exit:
+  y1 = call foo(x1:int);
+  assert(-y1 <= -6);
+  assert(y1 <= 17);
+  return y1;
+
+
+t:int declare rec1(s:int)
+entry:
+  r = s-1;
+  goto exit;
+exit:
+  t = call rec2(r:int);
+  return t;
+
+
+t1:int declare rec2(s1:int)
+entry:
+  a = 10;
+  r1 = s1-1;
+  goto exit;
+exit:
+  t1 = call rec1(r1:int);
+  assert(-a <= -5);
+  return t1;
+
+
+w2:int declare main()
+entry:
+  x2 = 3;
+  x3 = 4;
+  x4 = 5;
+  x5 = 6;
+  y2 = call bar(x2:int);
+  assert(y2 = 6);
+  __ = call rec1(y2:int);
+  goto exit;
+exit:
+  z2 = y2+2;
+  y3 = call bar(x2:int);
+  assert(y3 = 6);
+  z3 = y3+z2;
+  w2 = call foo(z3:int);
+  assert(w2 = 17);
+  y4 = call bar(x3:int);
+  assert(y4 = 7);
+  y5 = call bar(x4:int);
+  assert(y5 = 8);
+  y6 = call bar(x5:int);
+  assert(y6 = 9);
+  res = w2+y4;
+  res = res+y5;
+  res = res+y6;
+  assert(res = 41);
+  return res;
+
+
+Running top-down inter-procedural analysis with SparseDBM
+16  Number of total safe checks
+ 0  Number of total error checks
+ 0  Number of total warning checks
+ 0  Number of total unreachable checks
+15  Number of total safe checks
+ 0  Number of total error checks
+ 1  Number of total warning checks
+ 0  Number of total unreachable checks
+Running top-down inter-procedural analysis with SplitDBM
+16  Number of total safe checks
+ 0  Number of total error checks
+ 0  Number of total warning checks
+ 0  Number of total unreachable checks
+15  Number of total safe checks
+ 0  Number of total error checks
+ 1  Number of total warning checks
+ 0  Number of total unreachable checks
+Running top-down inter-procedural analysis with ElinaOctagon
+16  Number of total safe checks
+ 0  Number of total error checks
+ 0  Number of total warning checks
+ 0  Number of total unreachable checks
+15  Number of total safe checks
+ 0  Number of total error checks
+ 1  Number of total warning checks
+ 0  Number of total unreachable checks
+(x_out:int,y_out:int) declare loop(x_in:int,y_in:int)
+entry:
+  goto rec_case,base_case;
+rec_case:
+  assume(x_in <= 100);
+  x_next = x_in+1;
+  y_next = y_in+1;
+  (x_out,y_out)= call loop(x_next:int,y_next:int);
+  goto exit;
+exit:
+  return (x_out,y_out);
+
+base_case:
+  assume(-x_in <= -101);
+  x_out = x_in;
+  y_out = y_in;
+  goto exit;
+
+(x_res:int,y_res:int) declare main()
+entry:
+  x = 0;
+  y = 0;
+  (x_res,y_res)= call loop(x:int,y:int);
+  goto exit;
+exit:
+  return (x_res,y_res);
+
+
+(x_out:int,y_out:int) declare loop(x_in:int,y_in:int)
+exit={}
+rec_case={}
+base_case={}
+entry={}
+=================================
+(x_res:int,y_res:int) declare main()
+exit={x -> [0, 0], y -> [0, 0], y-x<=0, x-y<=0}
+entry={}
+=================================
 x0:
   k = 50;
   i = 0;
