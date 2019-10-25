@@ -1414,6 +1414,34 @@ namespace ikos {
   }
 
   template<typename Number, typename VariableName>
+  struct linear_constraint_hasher {
+    size_t operator()(const linear_constraint<Number, VariableName>&c) const {
+      return c.hash();
+    }
+  };
+
+  template<typename Number, typename VariableName>
+  struct linear_constraint_equal {
+    bool operator()(const linear_constraint<Number, VariableName>&c1,
+		    const linear_constraint<Number, VariableName>&c2) const {
+      return c1.equal(c2);
+    }
+  };
+
+  template<typename Number, typename VariableName>
+  using linear_constraint_unordered_set =
+	    std::unordered_set<linear_constraint<Number,VariableName>,
+			       linear_constraint_hasher<Number, VariableName>,
+			       linear_constraint_equal<Number,VariableName>>;
+
+  template<typename Number, typename VariableName, typename Value>
+  using linear_constraint_unordered_map =
+	    std::unordered_map<linear_constraint<Number, VariableName>,
+			       Value,
+			       linear_constraint_hasher<Number,VariableName>,
+			       linear_constraint_equal<Number,VariableName>>;
+
+  template<typename Number, typename VariableName>
   class linear_constraint_system {
 
   public:
