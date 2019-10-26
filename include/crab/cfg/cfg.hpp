@@ -1828,7 +1828,7 @@ namespace crab {
 	}
       }
       
-      void insert(statement_t* stmt) {
+      const statement_t* insert(statement_t* stmt) {
         if (m_insert_point_at_front) {
           m_stmts.insert(m_stmts.begin(), stmt);
           m_insert_point_at_front = false;
@@ -1836,6 +1836,7 @@ namespace crab {
           m_stmts.push_back(stmt);
 	}	
 	update_uses_and_defs(stmt);
+	return stmt;
       }
       
      public:
@@ -2045,293 +2046,280 @@ namespace crab {
             
       /// To build statements
       
-      void add(variable_t lhs, variable_t op1, variable_t op2) {
-        insert(new bin_op_t(lhs, BINOP_ADD, op1, op2));
+      const statement_t* add(variable_t lhs, variable_t op1, variable_t op2) {
+        return insert(new bin_op_t(lhs, BINOP_ADD, op1, op2));
       }
       
-      void add(variable_t lhs, variable_t op1, Number op2) {
-        insert(new bin_op_t(lhs, BINOP_ADD, op1,  op2));
+      const statement_t* add(variable_t lhs, variable_t op1, Number op2) {
+        return insert(new bin_op_t(lhs, BINOP_ADD, op1,  op2));
       }
       
-      void sub(variable_t lhs, variable_t op1, variable_t op2) {
-        insert(new bin_op_t(lhs, BINOP_SUB, op1, op2));
+      const statement_t* sub(variable_t lhs, variable_t op1, variable_t op2) {
+        return insert(new bin_op_t(lhs, BINOP_SUB, op1, op2));
       }
       
-      void sub(variable_t lhs, variable_t op1, Number op2) {
-        insert(new bin_op_t(lhs, BINOP_SUB, op1, op2));
+      const statement_t* sub(variable_t lhs, variable_t op1, Number op2) {
+        return insert(new bin_op_t(lhs, BINOP_SUB, op1, op2));
       }
       
-      void mul(variable_t lhs, variable_t op1, variable_t op2) {
-        insert(new bin_op_t(lhs, BINOP_MUL, op1, op2));
+      const statement_t* mul(variable_t lhs, variable_t op1, variable_t op2) {
+        return insert(new bin_op_t(lhs, BINOP_MUL, op1, op2));
       }
       
-      void mul(variable_t lhs, variable_t op1, Number op2) {
-        insert(new bin_op_t(lhs, BINOP_MUL, op1, op2));
+      const statement_t* mul(variable_t lhs, variable_t op1, Number op2) {
+        return insert(new bin_op_t(lhs, BINOP_MUL, op1, op2));
       }
       
       // signed division
-      void div(variable_t lhs, variable_t op1, variable_t op2) {
-        insert(new bin_op_t(lhs, BINOP_SDIV, op1, op2));
+      const statement_t* div(variable_t lhs, variable_t op1, variable_t op2) {
+        return insert(new bin_op_t(lhs, BINOP_SDIV, op1, op2));
       }
       
-      void div(variable_t lhs, variable_t op1, Number op2) {
-        insert(new bin_op_t(lhs, BINOP_SDIV, op1, op2));
+      const statement_t* div(variable_t lhs, variable_t op1, Number op2) {
+        return insert(new bin_op_t(lhs, BINOP_SDIV, op1, op2));
       }
       
       // unsigned division
-      void udiv(variable_t lhs, variable_t op1, variable_t op2) {
-        insert(new bin_op_t(lhs, BINOP_UDIV, op1, op2));
+      const statement_t* udiv(variable_t lhs, variable_t op1, variable_t op2) {
+        return insert(new bin_op_t(lhs, BINOP_UDIV, op1, op2));
       }
       
-      void udiv(variable_t lhs, variable_t op1, Number op2) {
-        insert(new bin_op_t(lhs, BINOP_UDIV, op1, op2));
+      const statement_t* udiv(variable_t lhs, variable_t op1, Number op2) {
+        return insert(new bin_op_t(lhs, BINOP_UDIV, op1, op2));
       }
       
       // signed rem
-      void rem(variable_t lhs, variable_t op1, variable_t op2) {
-        insert(new bin_op_t(lhs, BINOP_SREM, op1, op2));
+      const statement_t* rem(variable_t lhs, variable_t op1, variable_t op2) {
+        return insert(new bin_op_t(lhs, BINOP_SREM, op1, op2));
       }
       
-      void rem(variable_t lhs, variable_t op1, Number op2) {
-        insert(new bin_op_t(lhs, BINOP_SREM, op1, op2));
+      const statement_t* rem(variable_t lhs, variable_t op1, Number op2) {
+        return insert(new bin_op_t(lhs, BINOP_SREM, op1, op2));
       }
       
       // unsigned rem
-      void urem(variable_t lhs, variable_t op1, variable_t op2) {
-        insert(new bin_op_t(lhs, BINOP_UREM, op1, op2));
+      const statement_t* urem(variable_t lhs, variable_t op1, variable_t op2) {
+        return insert(new bin_op_t(lhs, BINOP_UREM, op1, op2));
       }
       
-      void urem(variable_t lhs, variable_t op1, Number op2) {
-        insert(new bin_op_t(lhs, BINOP_UREM, op1, op2));
+      const statement_t* urem(variable_t lhs, variable_t op1, Number op2) {
+        return insert(new bin_op_t(lhs, BINOP_UREM, op1, op2));
       }
       
-      void bitwise_and(variable_t lhs, variable_t op1, variable_t op2) {
-        insert(new bin_op_t(lhs, BINOP_AND, op1, op2));
+      const statement_t* bitwise_and(variable_t lhs, variable_t op1, variable_t op2) {
+        return insert(new bin_op_t(lhs, BINOP_AND, op1, op2));
       }
       
-      void bitwise_and(variable_t lhs, variable_t op1, Number op2) {
-        insert(new bin_op_t(lhs, BINOP_AND, op1, op2));
+      const statement_t* bitwise_and(variable_t lhs, variable_t op1, Number op2) {
+        return insert(new bin_op_t(lhs, BINOP_AND, op1, op2));
       }
       
-      void bitwise_or(variable_t lhs, variable_t op1, variable_t op2) {
-        insert(new bin_op_t(lhs, BINOP_OR, op1, op2));
+      const statement_t* bitwise_or(variable_t lhs, variable_t op1, variable_t op2) {
+        return insert(new bin_op_t(lhs, BINOP_OR, op1, op2));
       }
       
-      void bitwise_or(variable_t lhs, variable_t op1, Number op2) {
-        insert(new bin_op_t(lhs, BINOP_OR, op1, op2));
+      const statement_t* bitwise_or(variable_t lhs, variable_t op1, Number op2) {
+        return insert(new bin_op_t(lhs, BINOP_OR, op1, op2));
       }
       
-      void bitwise_xor(variable_t lhs, variable_t op1, variable_t op2) {
-        insert(new bin_op_t(lhs, BINOP_XOR, op1, op2));
+      const statement_t* bitwise_xor(variable_t lhs, variable_t op1, variable_t op2) {
+        return insert(new bin_op_t(lhs, BINOP_XOR, op1, op2));
       }
       
-      void bitwise_xor(variable_t lhs, variable_t op1, Number op2) {
-        insert(new bin_op_t(lhs, BINOP_XOR, op1, op2));
+      const statement_t* bitwise_xor(variable_t lhs, variable_t op1, Number op2) {
+        return insert(new bin_op_t(lhs, BINOP_XOR, op1, op2));
       }
 
-      void shl(variable_t lhs, variable_t op1, variable_t op2) {
-        insert(new bin_op_t(lhs, BINOP_SHL, op1, op2));
+      const statement_t* shl(variable_t lhs, variable_t op1, variable_t op2) {
+        return insert(new bin_op_t(lhs, BINOP_SHL, op1, op2));
       }
       
-      void shl(variable_t lhs, variable_t op1, Number op2) {
-        insert(new bin_op_t(lhs, BINOP_SHL, op1, op2));
+      const statement_t* shl(variable_t lhs, variable_t op1, Number op2) {
+        return insert(new bin_op_t(lhs, BINOP_SHL, op1, op2));
       }
 
-      void lshr(variable_t lhs, variable_t op1, variable_t op2) {
-        insert(new bin_op_t(lhs, BINOP_LSHR, op1, op2));
+      const statement_t* lshr(variable_t lhs, variable_t op1, variable_t op2) {
+        return insert(new bin_op_t(lhs, BINOP_LSHR, op1, op2));
       }
       
-      void lshr(variable_t lhs, variable_t op1, Number op2) {
-        insert(new bin_op_t(lhs, BINOP_LSHR, op1, op2));
+      const statement_t* lshr(variable_t lhs, variable_t op1, Number op2) {
+        return insert(new bin_op_t(lhs, BINOP_LSHR, op1, op2));
       }
 
-      void ashr(variable_t lhs, variable_t op1, variable_t op2) {
-        insert(new bin_op_t(lhs, BINOP_ASHR, op1, op2));
+      const statement_t* ashr(variable_t lhs, variable_t op1, variable_t op2) {
+        return insert(new bin_op_t(lhs, BINOP_ASHR, op1, op2));
       }
       
-      void ashr(variable_t lhs, variable_t op1, Number op2) {
-        insert(new bin_op_t(lhs, BINOP_ASHR, op1, op2));
+      const statement_t* ashr(variable_t lhs, variable_t op1, Number op2) {
+        return insert(new bin_op_t(lhs, BINOP_ASHR, op1, op2));
       }      
       
-      void assign(variable_t lhs, lin_exp_t rhs) {
-        insert(new assign_t(lhs, rhs));
+      const statement_t* assign(variable_t lhs, lin_exp_t rhs) {
+        return insert(new assign_t(lhs, rhs));
       }
 
-      void assume(lin_cst_t cst) {
-        insert(new assume_t(cst));
+      const statement_t* assume(lin_cst_t cst) {
+        return insert(new assume_t(cst));
       }
       
-      void havoc(variable_t lhs) {
-        insert(new havoc_t(lhs));
+      const statement_t* havoc(variable_t lhs) {
+        return insert(new havoc_t(lhs));
       }
       
-      void unreachable() {
-        insert(new unreach_t());
+      const statement_t* unreachable() {
+        return insert(new unreach_t());
       }
       
-      void select(variable_t lhs, variable_t v, lin_exp_t e1, lin_exp_t e2) {
+      const statement_t* select(variable_t lhs, variable_t v, lin_exp_t e1, lin_exp_t e2) {
         lin_cst_t cond =(v>= Number(1));
-        insert(new select_t(lhs, cond, e1, e2));
+        return insert(new select_t(lhs, cond, e1, e2));
       }
       
-      void select(variable_t lhs, lin_cst_t cond, lin_exp_t e1, lin_exp_t e2) {
-        insert(new select_t(lhs, cond, e1, e2));
+      const statement_t* select(variable_t lhs, lin_cst_t cond, lin_exp_t e1, lin_exp_t e2) {
+        return insert(new select_t(lhs, cond, e1, e2));
       }
 
-      void assertion(lin_cst_t cst, debug_info di = debug_info()) {
-	insert(new assert_t(cst, di));
+      const statement_t* assertion(lin_cst_t cst, debug_info di = debug_info()) {
+	return insert(new assert_t(cst, di));
       }
 
-      void truncate(variable_t src, variable_t dst) {
-	insert(new int_cast_t(CAST_TRUNC,src,dst));
+      const statement_t* truncate(variable_t src, variable_t dst) {
+	return insert(new int_cast_t(CAST_TRUNC,src,dst));
       }
       
-      void sext(variable_t src, variable_t dst) {
-	insert(new int_cast_t(CAST_SEXT,src,dst));
+      const statement_t* sext(variable_t src, variable_t dst) {
+	return insert(new int_cast_t(CAST_SEXT,src,dst));
       }
 
-      void zext(variable_t src, variable_t dst) {
-	insert(new int_cast_t(CAST_ZEXT,src,dst));
+      const statement_t* zext(variable_t src, variable_t dst) {
+	return insert(new int_cast_t(CAST_ZEXT,src,dst));
       }
       
-      void callsite(std::string func, 
-		     const std::vector<variable_t> &lhs, 
-                     const std::vector<variable_t> &args) { 
-        insert(new callsite_t(func, lhs, args));
+      const statement_t* callsite(std::string func, 
+				  const std::vector<variable_t> &lhs, 
+				  const std::vector<variable_t> &args) { 
+        return insert(new callsite_t(func, lhs, args));
       }
             
-      void ret(variable_t var) {
+      const statement_t* ret(variable_t var) {
         std::vector<variable_t> ret_vals{var};
-        insert(new return_t(ret_vals));
+        return insert(new return_t(ret_vals));
       }
 
-      void ret(const std::vector<variable_t> &ret_vals) {
-        insert(new return_t(ret_vals));
+      const statement_t* ret(const std::vector<variable_t> &ret_vals) {
+        return insert(new return_t(ret_vals));
       }
             
-      void array_init(variable_t a, lin_exp_t lb_idx, lin_exp_t ub_idx, 
-		      lin_exp_t v, lin_exp_t elem_size) {
-        if(m_track_prec == ARR) {
-          insert(new arr_init_t(a, elem_size, lb_idx, ub_idx, v));
-	}
+      const statement_t* array_init(variable_t a, lin_exp_t lb_idx, lin_exp_t ub_idx, 
+				    lin_exp_t v, lin_exp_t elem_size) {
+	return ((m_track_prec == ARR) ?
+		insert(new arr_init_t(a, elem_size, lb_idx, ub_idx, v)): nullptr);
       }
 
-      void array_store(variable_t arr, lin_exp_t idx, lin_exp_t v, 
+      const statement_t* array_store(variable_t arr, lin_exp_t idx, lin_exp_t v, 
                         lin_exp_t elem_size, bool is_singleton = false)  {
-        if (m_track_prec == ARR) {
-          insert(new arr_store_t(arr, elem_size, idx, idx, v, is_singleton));
-	}
+        return ((m_track_prec == ARR) ?
+		insert(new arr_store_t(arr, elem_size, idx, idx, v, is_singleton)): nullptr);
       }
 
-      void array_store_range(variable_t arr, lin_exp_t lb_idx, lin_exp_t ub_idx,
+      const statement_t* array_store_range(variable_t arr, lin_exp_t lb_idx, lin_exp_t ub_idx,
 			     lin_exp_t v,  lin_exp_t elem_size)  {
-        if (m_track_prec == ARR) {
-          insert(new arr_store_t(arr, elem_size, lb_idx, ub_idx, v, false));
-	}
+        return ((m_track_prec == ARR) ?
+		insert(new arr_store_t(arr, elem_size, lb_idx, ub_idx, v, false)): nullptr);
       }
       
-      void array_load(variable_t lhs, variable_t arr,
+      const statement_t* array_load(variable_t lhs, variable_t arr,
                        lin_exp_t idx, lin_exp_t elem_size) {
-        if (m_track_prec == ARR) {
-          insert(new arr_load_t(lhs, arr, elem_size, idx));
-	}
+        return ((m_track_prec == ARR) ?
+		insert(new arr_load_t(lhs, arr, elem_size, idx)): nullptr);
       }
 
-      void array_assign(variable_t lhs, variable_t rhs) {
-        if (m_track_prec == ARR) {
-          insert(new arr_assign_t(lhs, rhs));
-	}
+      const statement_t* array_assign(variable_t lhs, variable_t rhs) {
+        return ((m_track_prec == ARR) ?
+		insert(new arr_assign_t(lhs, rhs)): nullptr);
       }
             
-      void ptr_store(variable_t lhs, variable_t rhs) {
-        if (m_track_prec>= PTR) {
-          insert(new ptr_store_t(lhs, rhs));
-	}
+      const statement_t* ptr_store(variable_t lhs, variable_t rhs) {
+        return ((m_track_prec>= PTR) ?
+		insert(new ptr_store_t(lhs, rhs)): nullptr);
       }
       
-      void ptr_load(variable_t lhs, variable_t rhs) {
-        if (m_track_prec >= PTR) {
-          insert(new ptr_load_t(lhs, rhs));
-	}
+      const statement_t* ptr_load(variable_t lhs, variable_t rhs) {
+        return ((m_track_prec >= PTR) ?
+		insert(new ptr_load_t(lhs, rhs)): nullptr);
       }
       
-      void ptr_assign(variable_t lhs, variable_t rhs, lin_exp_t offset) {
-        if (m_track_prec >= PTR) {
-          insert(new ptr_assign_t(lhs, rhs, offset));
-	}
+      const statement_t* ptr_assign(variable_t lhs, variable_t rhs, lin_exp_t offset) {
+        return ((m_track_prec >= PTR) ?
+		insert(new ptr_assign_t(lhs, rhs, offset)): nullptr);
       }
       
-      void ptr_new_object(variable_t lhs, ikos::index_t address) {
-        if (m_track_prec >= PTR) {
-          insert(new ptr_object_t(lhs, address));
-	}
+      const statement_t* ptr_new_object(variable_t lhs, ikos::index_t address) {
+        return ((m_track_prec >= PTR) ?
+		insert(new ptr_object_t(lhs, address)): nullptr);
       }
       
-      void ptr_new_func(variable_t lhs, ikos::index_t func) {
-        if (m_track_prec >= PTR) {
-          insert(new ptr_function_t(lhs, func));
-	}
+      const statement_t* ptr_new_func(variable_t lhs, ikos::index_t func) {
+        return ((m_track_prec >= PTR) ?
+		insert(new ptr_function_t(lhs, func)): nullptr);
       }
 
-      void ptr_null(variable_t lhs) {
-        if (m_track_prec >= PTR) {
-          insert(new ptr_null_t(lhs));
-	}
+      const statement_t* ptr_null(variable_t lhs) {
+        return ((m_track_prec >= PTR) ?
+		insert(new ptr_null_t(lhs)): nullptr);
       }
 
-      void ptr_assume(pointer_constraint<variable_t> cst) {
-        if (m_track_prec >= PTR) {
-          insert(new ptr_assume_t(cst));
-	}
+      const statement_t* ptr_assume(pointer_constraint<variable_t> cst) {
+        return ((m_track_prec >= PTR) ?
+		insert(new ptr_assume_t(cst)): nullptr);
       }
 
-      void ptr_assertion(pointer_constraint<variable_t> cst) {
-        if (m_track_prec >= PTR) {
-          insert(new ptr_assert_t(cst));
-	}
+      const statement_t* ptr_assertion(pointer_constraint<variable_t> cst) {
+        return ((m_track_prec >= PTR) ?
+		insert(new ptr_assert_t(cst)): nullptr);
       }
 
-      void ptr_assertion(pointer_constraint<variable_t> cst, debug_info di) {
-        if (m_track_prec >= PTR) {
-          insert(new ptr_assert_t(cst, di));
-	}
+      const statement_t* ptr_assertion(pointer_constraint<variable_t> cst, debug_info di) {
+        return ((m_track_prec >= PTR) ?
+		insert(new ptr_assert_t(cst, di)): nullptr);
       }
 
-      void bool_assign(variable_t lhs, ikos::linear_constraint<Number, VariableName> rhs) {
-        insert(new bool_assign_cst_t(lhs, rhs));
+      const statement_t* bool_assign(variable_t lhs, lin_cst_t rhs) {
+        return insert(new bool_assign_cst_t(lhs, rhs));
       }
 
 
-      void bool_assign(variable_t lhs, variable_t rhs, bool is_not_rhs = false) {
-        insert(new bool_assign_var_t(lhs, rhs, is_not_rhs));
+      const statement_t* bool_assign(variable_t lhs, variable_t rhs, bool is_not_rhs = false) {
+        return insert(new bool_assign_var_t(lhs, rhs, is_not_rhs));
       }
       
-      void bool_assume(variable_t c) {
-        insert(new bool_assume_t(c, false));
+      const statement_t* bool_assume(variable_t c) {
+        return insert(new bool_assume_t(c, false));
       }
 
-      void bool_not_assume(variable_t c) {
-        insert(new bool_assume_t(c, true));
+      const statement_t* bool_not_assume(variable_t c) {
+        return insert(new bool_assume_t(c, true));
       }
       
-      void bool_assert(variable_t c, debug_info di = debug_info()) {
-        insert(new bool_assert_t(c, di));
+      const statement_t* bool_assert(variable_t c, debug_info di = debug_info()) {
+        return insert(new bool_assert_t(c, di));
       }
 
-      void bool_select(variable_t lhs, variable_t cond, variable_t b1, variable_t b2) {
-        insert(new bool_select_t(lhs, cond, b1, b2));
+      const statement_t* bool_select(variable_t lhs, variable_t cond,
+				     variable_t b1, variable_t b2) {
+        return insert(new bool_select_t(lhs, cond, b1, b2));
       }
       
-      void bool_and(variable_t lhs, variable_t op1, variable_t op2) {
-        insert(new bool_bin_op_t(lhs, BINOP_BAND, op1, op2));
+      const statement_t* bool_and(variable_t lhs, variable_t op1, variable_t op2) {
+        return insert(new bool_bin_op_t(lhs, BINOP_BAND, op1, op2));
       }
 
-      void bool_or(variable_t lhs, variable_t op1, variable_t op2) {
-        insert(new bool_bin_op_t(lhs, BINOP_BOR, op1, op2));
+      const statement_t* bool_or(variable_t lhs, variable_t op1, variable_t op2) {
+        return insert(new bool_bin_op_t(lhs, BINOP_BOR, op1, op2));
       }
 
-      void bool_xor(variable_t lhs, variable_t op1, variable_t op2) {
-        insert(new bool_bin_op_t(lhs, BINOP_BXOR, op1, op2));
+      const statement_t* bool_xor(variable_t lhs, variable_t op1, variable_t op2) {
+        return insert(new bool_bin_op_t(lhs, BINOP_BXOR, op1, op2));
       }
       
       friend crab_os& operator<<(crab_os &o, const basic_block_t &b) {
