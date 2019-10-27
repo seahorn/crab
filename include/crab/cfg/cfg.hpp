@@ -3945,9 +3945,9 @@ namespace crab {
 	  lin_exp_t ub = s.ub_index();
 	  lin_exp_t  v = s.val();
 	  check_array(a, s);
-	  check_num_or_var(e_sz, "element size must be number or variable", s);
-	  check_num_or_var(lb  , "array lower bound must be number or variable", s);
-	  check_num_or_var(ub  , "array upper bound must be number or variable", s);
+	  check_num_or_var(lb  , "array lower bound index must be number or variable", s);
+	  check_num_or_var(ub  , "array upper bound index must be number or variable", s);
+	  check_num_or_var(e_sz, "array element size must be number or variable", s);
 	  check_num_or_var(v   , "array value must be number or variable", s);
 	  if (boost::optional<variable_t> vv = v.get_variable()) {
 	    check_array_and_scalar_type(a, *vv, s);
@@ -3956,7 +3956,6 @@ namespace crab {
 	
 	void visit(arr_store_t& s) {
 	  // TODO: check that e_sz is the same number that v's bitwidth
-	  /// XXX: we allow linear expressions as indexes	  
 	  variable_t a = s.array();
 	  lin_exp_t e_sz = s.elem_size();	  
 	  lin_exp_t  v = s.value();
@@ -3964,13 +3963,21 @@ namespace crab {
 	    if (!(s.lb_index().equal(s.ub_index()))) {
 	      crab::crab_string_os os;
 	      os << "(type checking) "
-		 << "lower and upper indexes must be equal because array is a singleton in "
+		 << "array lower and upper indexes must be equal because singleton array in "
 		 << s;
 	      CRAB_ERROR(os.str());
 	    }
 	  }
 	  check_array(a, s);
-	  check_num_or_var(e_sz, "element size must be number or variable", s);
+	  for (auto iv: s.lb_index().variables()) {
+	    check_int_or_bool(iv, "array index must contain only integer or boolean variables",
+			      s); 
+	  }
+	  for (auto iv: s.lb_index().variables()) {
+	    check_int_or_bool(iv, "array index must contain only integer or boolean variables",
+			      s); 
+	  }	  
+	  check_num_or_var(e_sz, "array element size must be number or variable", s);
 	  check_num_or_var(v   , "array value must be number or variable", s);
 	  if (boost::optional<variable_t> vv = v.get_variable()) {
 	    check_array_and_scalar_type(a, *vv, s);
@@ -3979,12 +3986,15 @@ namespace crab {
 	
 	void visit(arr_load_t& s) {
 	  // TODO: check that e_sz is the same number that lhs's bitwidth
-	  /// XXX: we allow linear expressions as indexes	  	  
 	  variable_t a = s.array();
 	  lin_exp_t e_sz = s.elem_size();	  	  
 	  variable_t lhs = s.lhs();
 	  check_array(a, s);
-	  check_num_or_var(e_sz, "element size must be number or variable", s);	  
+	  for (auto iv: s.index().variables()) {
+	    check_int_or_bool(iv, "array index must contain only integer or boolean variables",
+			      s); 
+	  }
+	  check_num_or_var(e_sz, "array element size must be number or variable", s);	  
 	  check_array_and_scalar_type(a, lhs, s);
 	}
 	  
@@ -3993,8 +4003,8 @@ namespace crab {
 	  variable_t rhs = s.rhs();
 	  check_array(lhs, s);
 	  check_array(rhs, s);
-	  check_same_type(lhs, rhs, "array variables must have same type", s);
-	  check_same_bitwidth(lhs, rhs, "array variables must have same bitwidth", s);
+	  check_same_type(lhs, rhs, "array assign variables must have same type", s);
+	  check_same_bitwidth(lhs, rhs, "array assign variables must have same bitwidth", s);
 	}
 
 	/** TODO: type checking of the following statements: **/
