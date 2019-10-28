@@ -137,7 +137,7 @@ namespace crab {
       // a[i] := v where elem_size is in bytes
       virtual void array_store(variable_t a, linear_expression_t elem_size,
 			       linear_expression_t i, linear_expression_t v, 
-			       bool is_singleton) = 0;
+			       bool is_strong_update) = 0;
       // forall i<=k<j and k % elem_size == 0 :: a[k] := v.
       // elem_size is in bytes
       virtual void array_store_range(variable_t a, linear_expression_t elem_size,
@@ -199,7 +199,7 @@ namespace crab {
 				       linear_expression_t i, Dom invariant) = 0;    
       virtual void backward_array_store(variable_t a, linear_expression_t elem_size,
 					linear_expression_t i, linear_expression_t v, 
-					bool is_singleton, Dom invariant) = 0;
+					bool is_strong_update, Dom invariant) = 0;
       virtual void backward_array_store_range(variable_t a, linear_expression_t elem_size,
 					      linear_expression_t i, linear_expression_t j,
 					      linear_expression_t v, Dom invariant) = 0;

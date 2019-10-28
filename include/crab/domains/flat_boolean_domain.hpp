@@ -506,7 +506,7 @@ namespace crab {
 		    linear_expression_t i) {}
     void array_store(variable_t a, linear_expression_t elem_size,
 		     linear_expression_t i, linear_expression_t v, 
-		     bool is_singleton) {}
+		     bool is_strong_update) {}
     void array_store_range(variable_t a, linear_expression_t elem_size,
 			   linear_expression_t i, linear_expression_t j,
 			   linear_expression_t v) {}    
@@ -520,7 +520,7 @@ namespace crab {
 			     linear_expression_t i, flat_boolean_domain_t invariant) {}
     void backward_array_store(variable_t a, linear_expression_t elem_size,
 			      linear_expression_t i, linear_expression_t v, 
-			      bool is_singleton, flat_boolean_domain_t invariant) {}
+			      bool is_strong_update, flat_boolean_domain_t invariant) {}
     void backward_array_store_range(variable_t a, linear_expression_t elem_size,
 				    linear_expression_t i, linear_expression_t j,
 				    linear_expression_t v, flat_boolean_domain_t invariant) {}
@@ -1388,8 +1388,8 @@ namespace crab {
       virtual void array_store(variable_t a, linear_expression_t elem_size,
                                 linear_expression_t i,
 				linear_expression_t val, 
-                                bool is_singleton) override
-      { _product.array_store(a, elem_size, i, val, is_singleton); }
+                                bool is_strong_update) override
+      { _product.array_store(a, elem_size, i, val, is_strong_update); }
 
       virtual void array_store_range(variable_t a, linear_expression_t elem_size,
 				     linear_expression_t i, linear_expression_t j,
@@ -1422,9 +1422,10 @@ namespace crab {
       virtual void backward_array_store(variable_t a, linear_expression_t elem_size,
 					linear_expression_t i,
 					linear_expression_t val, 
-					bool is_singleton,
+					bool is_strong_update,
 					bool_num_domain_t invariant) override
-      { _product.backward_array_store(a, elem_size, i, val, is_singleton, invariant._product); }
+      { _product.backward_array_store(a, elem_size, i, val, is_strong_update,
+				      invariant._product); }
 
       virtual void backward_array_store_range(variable_t a, linear_expression_t elem_size,
 					      linear_expression_t i, linear_expression_t j,

@@ -755,14 +755,14 @@ namespace crab {
 		       linear_expression_t lb,
 		       linear_expression_t ub,		       
 		       linear_expression_t value,  
-		       bool is_singleton)
+		       bool is_strong_update)
 	: statement_t(ARR_STORE)
 	, m_arr(arr)
 	, m_elem_size(elem_size)
 	, m_lb(lb)
 	, m_ub(ub)
 	, m_value(value)
-	, m_is_singleton(is_singleton) {
+	, m_is_strong_update(is_strong_update) {
 
 	this->m_live.add_def(m_arr);	
         for(auto v: m_elem_size.variables()) {
@@ -791,7 +791,7 @@ namespace crab {
 
       linear_expression_t elem_size() const { return m_elem_size; }
       
-      bool is_singleton() const { return m_is_singleton;}
+      bool is_strong_update() const { return m_is_strong_update;}
       
       virtual void accept(statement_visitor<Number, VariableName> *v) {
         v->visit(*this);
@@ -799,7 +799,7 @@ namespace crab {
       
       virtual statement_t* clone() const {
         return new this_type(m_arr, m_elem_size, m_lb, m_ub, m_value,
-			     m_is_singleton); 
+			     m_is_strong_update); 
       }
       
       virtual void write(crab_os& o) const {
@@ -822,9 +822,10 @@ namespace crab {
       linear_expression_t m_lb;
       linear_expression_t m_ub;      
       linear_expression_t m_value;
-      bool m_is_singleton; // whether the store writes to a singleton
-                           // cell (size one). If unknown set to false.
-                           // Only makes sense if m_lb is equal to m_ub.
+      // whether the store is a strong update. This might help the
+      // abstract domain.
+      // If unknown set to false.  Only makes sense if m_lb is equal to m_ub.
+      bool m_is_strong_update; 
     }; 
 
     template<class Number, class VariableName>
@@ -2217,9 +2218,9 @@ namespace crab {
       }
 
       const statement_t* array_store(variable_t arr, lin_exp_t idx, lin_exp_t v, 
-                        lin_exp_t elem_size, bool is_singleton = false)  {
+                        lin_exp_t elem_size, bool is_strong_update = false)  {
         return ((m_track_prec == ARR) ?
-		insert(new arr_store_t(arr, elem_size, idx, idx, v, is_singleton)): nullptr);
+		insert(new arr_store_t(arr, elem_size, idx, idx, v, is_strong_update)): nullptr);
       }
 
       const statement_t* array_store_range(variable_t arr, lin_exp_t lb_idx, lin_exp_t ub_idx,
@@ -3959,11 +3960,11 @@ namespace crab {
 	  variable_t a = s.array();
 	  lin_exp_t e_sz = s.elem_size();	  
 	  lin_exp_t  v = s.value();
-	  if (s.is_singleton()) {
+	  if (s.is_strong_update()) {
 	    if (!(s.lb_index().equal(s.ub_index()))) {
 	      crab::crab_string_os os;
 	      os << "(type checking) "
-		 << "array lower and upper indexes must be equal because singleton array in "
+		 << "array lower and upper indexes must be equal because strong_update array in "
 		 << s;
 	      CRAB_ERROR(os.str());
 	    }

@@ -409,9 +409,9 @@ namespace crab {
       virtual void array_store(variable_t a, linear_expression_t elem_size,
                                 linear_expression_t i,
 				linear_expression_t val, 
-				bool is_singleton) override {
-        this->_product.first().array_store(a, elem_size, i, val, is_singleton);
-        this->_product.second().array_store(a, elem_size, i, val, is_singleton);
+				bool is_strong_update) override {
+        this->_product.first().array_store(a, elem_size, i, val, is_strong_update);
+        this->_product.second().array_store(a, elem_size, i, val, is_strong_update);
         this->reduce();
       }
 
@@ -458,12 +458,12 @@ namespace crab {
       virtual void backward_array_store(variable_t a, linear_expression_t elem_size,
 					linear_expression_t i,
 					linear_expression_t val, 
-					bool is_singleton,
+					bool is_strong_update,
 					domain_product2_t invariant) override {
         this->_product.first().
-	  backward_array_store(a, elem_size, i, val, is_singleton, invariant.first());
+	  backward_array_store(a, elem_size, i, val, is_strong_update, invariant.first());
         this->_product.second().
-	  backward_array_store(a, elem_size, i, val, is_singleton, invariant.second());
+	  backward_array_store(a, elem_size, i, val, is_strong_update, invariant.second());
         this->reduce();
       }
 
@@ -1057,7 +1057,7 @@ namespace crab {
 		      linear_expression_t i) {}
       void array_store(variable_t a, linear_expression_t elem_size,
 		       linear_expression_t i, linear_expression_t v, 
-		       bool is_singleton) {}
+		       bool is_strong_update) {}
       void array_store_range(variable_t a, linear_expression_t elem_size,
 			     linear_expression_t i, linear_expression_t j,
 			     linear_expression_t val) {}
@@ -1073,7 +1073,7 @@ namespace crab {
 			       reduced_numerical_domain_product2_t invariant) {}
       void backward_array_store(variable_t a, linear_expression_t elem_size,
 				linear_expression_t i, linear_expression_t v, 
-				bool is_singleton,
+				bool is_strong_update,
 				reduced_numerical_domain_product2_t invariant) {}
       void backward_array_store_range(variable_t a, linear_expression_t elem_size,
 				      linear_expression_t i, linear_expression_t j,
@@ -1667,7 +1667,7 @@ namespace crab {
 		      linear_expression_t i) {}
       void array_store(variable_t a, linear_expression_t elem_size,
 		       linear_expression_t i, linear_expression_t v, 
-		       bool is_singleton) {}
+		       bool is_strong_update) {}
       void array_store_range(variable_t a, linear_expression_t elem_size,
 			     linear_expression_t i, linear_expression_t j,
 			     linear_expression_t val) {}
@@ -1681,7 +1681,7 @@ namespace crab {
 			       linear_expression_t i, rnc_domain_t invariant) {}
       void backward_array_store(variable_t a, linear_expression_t elem_size,
 				linear_expression_t i, linear_expression_t v, 
-				bool is_singleton, rnc_domain_t invariant) {}
+				bool is_strong_update, rnc_domain_t invariant) {}
       void backward_array_store_range(variable_t a, linear_expression_t elem_size,
 				      linear_expression_t i, linear_expression_t j,
 				      linear_expression_t val, rnc_domain_t invariant) {}
@@ -1957,8 +1957,8 @@ namespace crab {
 				linear_expression_t elem_size,
                                 linear_expression_t i,
 				linear_expression_t val, 
-				bool is_singleton) override {
-        this->_product.array_store(a, elem_size, i, val, is_singleton);
+				bool is_strong_update) override {
+        this->_product.array_store(a, elem_size, i, val, is_strong_update);
       }
 
       virtual void array_store_range(variable_t a, linear_expression_t elem_size,
@@ -1995,10 +1995,10 @@ namespace crab {
 					linear_expression_t elem_size,
 					linear_expression_t i,
 					linear_expression_t val, 
-					bool is_singleton,
+					bool is_strong_update,
 					nn_domain_t invariant) override {
-        this->_product.backward_array_store(a, elem_size, i, val, is_singleton,
-					    invariant._product);
+        this->_product.backward_array_store(a, elem_size, i, val,
+					    is_strong_update, invariant._product);
       }
 
       virtual void backward_array_store_range(variable_t a, linear_expression_t elem_size,

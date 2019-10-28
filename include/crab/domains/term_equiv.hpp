@@ -1418,7 +1418,7 @@ namespace crab {
 
        virtual void array_store(variable_t a, linear_expression_t /*elem_size*/,
 				 linear_expression_t i, linear_expression_t val, 
-				 bool /*is_singleton*/) override {
+				 bool /*is_strong_update*/) override {
 	 crab::CrabStats::count(getDomainName() + ".count.array_store");
 	 crab::ScopedCrabStats __st__(getDomainName() + ".array_store");
 
@@ -1470,7 +1470,7 @@ namespace crab {
        }
        void backward_array_store(variable_t a, linear_expression_t elem_size,
 				 linear_expression_t i, linear_expression_t v, 
-				 bool is_singleton, term_domain_t invariant) {
+				 bool is_strong_update, term_domain_t invariant) {
        }
        void backward_array_store_range(variable_t a, linear_expression_t elem_size,
 				       linear_expression_t i, linear_expression_t j,

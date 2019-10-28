@@ -2081,7 +2081,7 @@ namespace crab {
 		      linear_expression_t i) {}
       void array_store(variable_t a, linear_expression_t elem_size,
 		       linear_expression_t i, linear_expression_t v, 
-		       bool is_singleton) {}
+		       bool is_strong_update) {}
       void array_store_range(variable_t a, linear_expression_t elem_size,
 			     linear_expression_t i, linear_expression_t j,
 			     linear_expression_t v) {}                  
@@ -2095,7 +2095,7 @@ namespace crab {
 			       linear_expression_t i, DBM_t invariant) {}
       void backward_array_store(variable_t a, linear_expression_t elem_size,
 				linear_expression_t i, linear_expression_t v, 
-				bool is_singleton, DBM_t invariant) {}
+				bool is_strong_update, DBM_t invariant) {}
       void backward_array_store_range(variable_t a, linear_expression_t elem_size,
 				      linear_expression_t i, linear_expression_t j,
 				      linear_expression_t v, DBM_t invariant) {}    
@@ -2659,7 +2659,7 @@ namespace crab {
 		      linear_expression_t i) {}
       void array_store(variable_t a, linear_expression_t elem_size,
 		       linear_expression_t i, linear_expression_t v, 
-		       bool is_singleton) {}
+		       bool is_strong_update) {}
       void array_store_range(variable_t a, linear_expression_t elem_size,
 			     linear_expression_t i, linear_expression_t j,
 			     linear_expression_t v) {}                        
@@ -2673,7 +2673,7 @@ namespace crab {
 			       linear_expression_t i, DBM_t invariant) {}
       void backward_array_store(variable_t a, linear_expression_t elem_size,
 				linear_expression_t i, linear_expression_t v, 
-				bool is_singleton, DBM_t invariant) {}
+				bool is_strong_update, DBM_t invariant) {}
       void backward_array_store_range(variable_t a, linear_expression_t elem_size,
 				      linear_expression_t i, linear_expression_t j,
 				      linear_expression_t v, DBM_t invariant) {}    
