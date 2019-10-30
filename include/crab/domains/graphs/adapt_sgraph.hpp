@@ -7,6 +7,24 @@
 #pragma GCC diagnostic ignored "-Wsign-compare"
 
 namespace crab {
+namespace adapt_sgraph_impl {
+inline void *malloc_fail(size_t size) {
+  void *m = malloc(size);
+  if (!m) {
+      CRAB_ERROR("Allocation failure");
+  }
+  return m;
+}
+
+inline void *realloc_fail(void *ptr, size_t size) {
+  void *m = realloc(ptr, size);    
+  if (!m) {
+    CRAB_ERROR("Allocation failure");      
+  }
+  return m;
+}
+} // end namespace
+  
   // An adaptive sparse-map.
   // Starts off as an unsorted vector, switching to a
   // sparse-set when |S| >= sparse_threshold
@@ -33,9 +51,8 @@ namespace crab {
 
       AdaptSMap(void)
         : sz(0), dense_maxsz(sparse_threshold), sparse_ub(10),
-          dense((elt_t*) malloc(sizeof(elt_t)*sparse_threshold)),
-          sparse(nullptr)
-      { }
+          dense((elt_t*) adapt_sgraph_impl::malloc_fail(sizeof(elt_t)*sparse_threshold)),
+          sparse(nullptr) { }
 
       AdaptSMap(AdaptSMap&& o)
         : sz(o.sz),
@@ -53,14 +70,12 @@ namespace crab {
         : sz(o.sz),
           dense_maxsz(o.dense_maxsz),
 	  sparse_ub(o.sparse_ub),
-          dense((elt_t*) malloc(sizeof(elt_t)*dense_maxsz)),
-          sparse(nullptr)
-      {
+          dense((elt_t*) adapt_sgraph_impl::malloc_fail(sizeof(elt_t)*dense_maxsz)),
+          sparse(nullptr) {
+	
 	memcpy(static_cast<void*>(dense), o.dense, sizeof(elt_t)*sz);
-
-        if(o.sparse)
-        {
-          sparse = (key_t*) malloc(sizeof(key_t)*sparse_ub);
+        if(o.sparse) {
+          sparse = (key_t*) adapt_sgraph_impl::malloc_fail(sizeof(key_t)*sparse_ub);
           for(key_t idx = 0; idx < sz; idx++)
             sparse[dense[idx].key] = idx;
         }
@@ -69,30 +84,26 @@ namespace crab {
       AdaptSMap& operator=(const AdaptSMap& o)
       {
 	if (this != &o) {
-	  if(dense_maxsz < o.dense_maxsz)
-	    {
-	      dense_maxsz = o.dense_maxsz;
-	      dense = (elt_t*) realloc(static_cast<void*>(dense),
-				       sizeof(elt_t)*dense_maxsz);
-	    }
+	  if(dense_maxsz < o.dense_maxsz) {
+	    dense_maxsz = o.dense_maxsz;
+	    dense = (elt_t*) adapt_sgraph_impl::realloc_fail(static_cast<void*>(dense),
+					  sizeof(elt_t)*dense_maxsz);
+	  }
 	  sz = o.sz;
 	  memcpy(static_cast<void*>(dense), o.dense, sizeof(elt_t)*sz);
 	  
-	  if(o.sparse)
-	    {
-	      if(!sparse || sparse_ub < o.sparse_ub)
-		{
-		  sparse_ub = o.sparse_ub;
-		  sparse = (key_t*) realloc(static_cast<void*>(sparse),
-					    sizeof(key_t)*sparse_ub);
-		}
+	  if(o.sparse) {
+	    if(!sparse || sparse_ub < o.sparse_ub) {
+	      sparse_ub = o.sparse_ub;
+	      sparse = (key_t*) adapt_sgraph_impl::realloc_fail(static_cast<void*>(sparse),
+					     sizeof(key_t)*sparse_ub);
 	    }
+	  }
 	  
-	  if(sparse)
-	    {
-	      for(key_t idx = 0; idx < sz; idx++)
-		sparse[dense[idx].key] = idx;
-	    }
+	  if(sparse) {
+	    for(key_t idx = 0; idx < sz; idx++)
+	      sparse[dense[idx].key] = idx;
+	  }
 	}
 	
 	return *this;
@@ -273,10 +284,8 @@ namespace crab {
 
         while(dense_maxsz < new_max)
           dense_maxsz *= 2;
-        elt_t* new_dense = (elt_t*) realloc(static_cast<void*>(dense),
-					    sizeof(elt_t)*dense_maxsz);
-        if(!new_dense)
-          CRAB_ERROR("Allocation failure.");
+        elt_t* new_dense = (elt_t*) adapt_sgraph_impl::realloc_fail(static_cast<void*>(dense),
+								  sizeof(elt_t)*dense_maxsz);
         dense = new_dense; 
 
         if(!sparse)
@@ -287,7 +296,7 @@ namespace crab {
             key_max = std::max(key_max, k);
           
           sparse_ub = key_max+1;
-          sparse = (key_t*) malloc(sizeof(key_t)*sparse_ub);
+          sparse = (key_t*) adapt_sgraph_impl::malloc_fail(sizeof(key_t)*sparse_ub);
           key_t idx = 0;
           for(key_t k : keys())
             sparse[k] = idx++;
@@ -298,9 +307,7 @@ namespace crab {
       {
         while(sparse_ub < new_ub)
           sparse_ub *= 2;
-        key_t* new_sparse = (key_t*) malloc(sizeof(key_t)*(sparse_ub));
-        if(!new_sparse)
-          CRAB_ERROR("Allocation falure.");
+        key_t* new_sparse = (key_t*) adapt_sgraph_impl::malloc_fail(sizeof(key_t)*(sparse_ub));
         free(sparse);
         sparse = new_sparse;
 
