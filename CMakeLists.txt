@@ -317,7 +317,7 @@ else ()
 endif ()
 
 # Enable always logging
-set(NCRABLOG TRUE)
+set(NCRABLOG FALSE)
 
 # check for rt lib. Not needed on OSX.
 # find_library(RT_LIB NAMES rt)
