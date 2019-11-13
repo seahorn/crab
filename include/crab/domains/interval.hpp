@@ -855,7 +855,6 @@ namespace ikos {
       if (boost::optional<z_number> shift = x.singleton()) {
 	z_number k = *shift;
 	if (k < 0) {
-	  //CRAB_ERROR("ashr shift operand cannot be negative");
 	  return top();
 	}	  
 	// Some crazy linux drivers generate ashr instructions with
@@ -882,18 +881,12 @@ namespace ikos {
       if (boost::optional<z_number> shift = x.singleton()) {
 	z_number k = *shift;
 	if (k < 0) {
-	  //CRAB_ERROR("lshr shift operand cannot be negative");
 	  return top();
 	}
-	// Some crazy linux drivers generate lshr instructions with
-	// huge shifts.  We limit the number of times the loop is run
-	// to avoid wasting too much time on it.
-	if (k <= 128) {
-	  if (lb() >= 0 && ub().is_finite() && shift) {
-	    z_number lb = *this->lb().number();
-	    z_number ub = *this->ub().number();
-	    return interval<z_number>(lb >> k, ub >> k);
-	  }
+	if (lb() >= 0 && ub().is_finite()) {
+	  z_number lb = *this->lb().number();
+	  z_number ub = *this->ub().number();
+	  return interval<z_number>(lb >> k, ub >> k);
 	}
       }
       return this->top();
