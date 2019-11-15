@@ -1005,31 +1005,32 @@ namespace domains {
     void print_stats() { elina_abstract0_fprint(stdout, get_man(), &*m_apstate, NULL); }
     
   private:
-    
+
+    #if 0
+    // Disable this constructor to avoid unnecessary copies.
+    // The magic of move semantics should be used instead.
     elina_domain_(elina_state_ptr apState, var_map_t varMap):
       m_apstate(apState), m_var_map(varMap) {
-      
       std::vector<elina_dim_t> dims;
       var_map_t res;
       /// XXX: we must iterate on the dimension id's to preserve
       /// order between them
       for (auto const& p: m_var_map.right) {  
-	if (elina_abstract0_is_dimension_unconstrained(get_man(),
-							&*m_apstate, 
-							p.first)) {
-	  dims.push_back(p.first);
-	}
-	else {
-	  elina_dim_t i = res.size();
-	  res.insert(binding_t(p.second, i));
-	}
+    	if (elina_abstract0_is_dimension_unconstrained(get_man(),
+    							&*m_apstate, 
+    							p.first)) {
+    	  dims.push_back(p.first);
+    	}
+    	else {
+    	  elina_dim_t i = res.size();
+    	  res.insert(binding_t(p.second, i));
+    	}
       }
       remove_dimensions(m_apstate, dims);
       std::swap(m_var_map, res);
-      
       assert(m_var_map.size() == get_dims());
     }
-    
+    #endif 
     
     elina_domain_(elina_state_ptr&& apState, var_map_t&& varMap):
       m_apstate(std::move(apState)), 
@@ -1051,8 +1052,7 @@ namespace domains {
 	}
       }
       remove_dimensions(m_apstate, dims);
-      std::swap(m_var_map, res);
-      
+      std::swap(m_var_map, res);      
       assert(m_var_map.size() == get_dims());
     }
     
@@ -1068,7 +1068,8 @@ namespace domains {
     ~elina_domain_() = default;
     
     elina_domain_(const elina_domain_t& o): 
-      m_apstate(elinaPtr(get_man(), elina_abstract0_copy(get_man(), &*(o.m_apstate)))),
+      m_apstate(elinaPtr(get_man(),
+			 elina_abstract0_copy(get_man(), &*(o.m_apstate)))),
       m_var_map(o.m_var_map) {
       crab::CrabStats::count(getDomainName() + ".count.copy");
       crab::ScopedCrabStats __st__(getDomainName() + ".copy");
@@ -1082,7 +1083,8 @@ namespace domains {
       crab::CrabStats::count(getDomainName() + ".count.copy");
       crab::ScopedCrabStats __st__(getDomainName() + ".copy");
       if(this != &o) {
-	m_apstate = elinaPtr(get_man(), elina_abstract0_copy(get_man(), &*(o.m_apstate)));
+	m_apstate = elinaPtr(get_man(),
+			     elina_abstract0_copy(get_man(), &*(o.m_apstate)));
 	m_var_map = o.m_var_map;
       }
       return *this;
@@ -1129,7 +1131,8 @@ namespace domains {
       else if(is_top() && o.is_top())
 	return true;
       else { 
-	elina_state_ptr x = elinaPtr(get_man(), elina_abstract0_copy(get_man(), &*m_apstate));
+	elina_state_ptr x = elinaPtr(get_man(),
+				     elina_abstract0_copy(get_man(), &*m_apstate));
 	merge_var_map(m_var_map, x, o.m_var_map, o.m_apstate);
 	return elina_abstract0_is_leq(get_man(), &*x, &*o.m_apstate);
       }
@@ -1146,7 +1149,7 @@ namespace domains {
       else {
 	CRAB_LOG("elina",
 		 crab::outs() << "JOIN \n\t" << *this << "\n\t" << o << "\n";);
-	m_var_map = merge_var_map(m_var_map, m_apstate, o.m_var_map, o.m_apstate);
+	m_var_map = std::move(merge_var_map(m_var_map, m_apstate, o.m_var_map, o.m_apstate));
 	m_apstate = elinaPtr(get_man(), 
 			      elina_abstract0_join(get_man(), false, 
 						    &*m_apstate, &*o.m_apstate));
@@ -1168,7 +1171,8 @@ namespace domains {
 	var_map_t  m = merge_var_map(m_var_map, x, o.m_var_map, o.m_apstate);
 	return elina_domain_t(elinaPtr(get_man(), 
 					 elina_abstract0_join(get_man(), false, 
-							       &*x, &*o.m_apstate)), m);
+							       &*x, &*o.m_apstate)),
+			      std::move(m));
       }
     }        
     
@@ -1187,7 +1191,8 @@ namespace domains {
 	var_map_t  m = merge_var_map(m_var_map, x, o.m_var_map, o.m_apstate);
 	return elina_domain_t(elinaPtr(get_man(), 
 					 elina_abstract0_meet(get_man(), false, 
-							       &*x, &*o.m_apstate)), m);
+							       &*x, &*o.m_apstate)),
+			      std::move(m));
       }
     }        
     
@@ -1203,8 +1208,9 @@ namespace domains {
 	elina_state_ptr x = elinaPtr(get_man(), elina_abstract0_copy(get_man(), &*m_apstate));
 	var_map_t  m = merge_var_map(m_var_map, x, o.m_var_map, o.m_apstate);
 	return elina_domain_t(elinaPtr(get_man(), 
-					 elina_abstract0_widening(get_man(), 
-								   &*x, &*o.m_apstate)), m);
+				       elina_abstract0_widening(get_man(), 
+								&*x, &*o.m_apstate)),
+			      std::move(m));
       }
     }        
     
@@ -1240,7 +1246,8 @@ namespace domains {
 	// widening w/o thresholds in the elina domain
 	elina_domain_t res(elinaPtr(get_man(), 
 				      elina_abstract0_widening(get_man(), 
-	    						       &*x, &*o.m_apstate)), m);
+	    						       &*x, &*o.m_apstate)),
+			   std::move(m));
 	// widening w/ thresholds in the interval domain
 	auto intv_this  = this->to_interval_domain();
 	auto intv_o     = o.to_interval_domain();
@@ -1252,8 +1259,9 @@ namespace domains {
         #else
 	elina_lincons0_array_t csts = make_thresholds(o, ts);
 	elina_domain_t res(elinaPtr(get_man(), 
-				      elina_abstract0_widening_threshold
-				     (get_man(), &*x, &*o.m_apstate, &csts)), m);
+				    elina_abstract0_widening_threshold
+				    (get_man(), &*x, &*o.m_apstate, &csts)),
+			   std::move(m));
 	elina_lincons0_array_clear(&csts);
 	return res;
         #endif 
@@ -1276,8 +1284,9 @@ namespace domains {
 	switch (ElinaDom) {
 	case ELINA_OCT:
 	  return elina_domain_t(elinaPtr(get_man(), 
-				   elina_abstract0_opt_oct_narrowing(get_man(),
-								     &*x, &*o.m_apstate)), m);
+				elina_abstract0_opt_oct_narrowing(get_man(),
+								  &*x, &*o.m_apstate)),
+				std::move(m));
 	case ELINA_ZONES:  
 	case ELINA_PK:
 	default:
@@ -1285,7 +1294,8 @@ namespace domains {
 	  //           "make sure only a finite number of descending iterations are run.");
 	  return elina_domain_t(elinaPtr(get_man(), 
 					 elina_abstract0_meet(get_man(), false,
-							      &*x, &*o.m_apstate)), m);
+							      &*x, &*o.m_apstate)),
+				std::move(m));
 	}
       }
     }        
@@ -2324,16 +2334,18 @@ namespace domains {
       detach(); ref().expand(x, y);
     }
     
-    void rename(const variable_vector_t &from, const variable_vector_t &to)
-    { detach(); ref().rename(from, to); }
-    
+    void rename(const variable_vector_t &from, const variable_vector_t &to) {
+      detach(); ref().rename(from, to);
+    }
     
     template <typename NumDomain>
     void push(const variable_t& x, NumDomain&inv){
       detach(); ref().push(x, inv);
     }
     
-    void write(crab_os& o) { ref().write(o); }
+    void write(crab_os& o) {
+      ref().write(o);
+    }
         
     linear_constraint_system_t to_linear_constraint_system() {
       return ref().to_linear_constraint_system();

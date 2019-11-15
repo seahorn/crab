@@ -781,6 +781,9 @@ namespace crab {
 
        private:
 
+	#if 0
+	// Disable this constructor to avoid unnecessary copies.
+	// The magic of move semantics should be used instead.
         apron_domain_(ap_state_ptr apState, var_map_t varMap):
 	  m_apstate(apState), m_var_map(varMap) {
 	  
@@ -804,7 +807,7 @@ namespace crab {
 
           assert(m_var_map.size() == get_dims());
         }
-
+        #endif 
 
         apron_domain_(ap_state_ptr&& apState, var_map_t&& varMap):
 	  m_apstate(std::move(apState)), 
@@ -920,7 +923,7 @@ namespace crab {
           else if (is_top() || o.is_bottom())
             return ;
           else {
-            m_var_map = merge_var_map(m_var_map, m_apstate, o.m_var_map, o.m_apstate);
+            m_var_map = std::move(merge_var_map(m_var_map, m_apstate, o.m_var_map, o.m_apstate));
             m_apstate = apPtr(get_man(), 
                                ap_abstract0_join(get_man(), false, 
                                                   &*m_apstate, &*o.m_apstate));
@@ -940,7 +943,8 @@ namespace crab {
             var_map_t  m = merge_var_map(m_var_map, x, o.m_var_map, o.m_apstate);
             return apron_domain_t(apPtr(get_man(), 
                                           ap_abstract0_join(get_man(), false, 
-                                                             &*x, &*o.m_apstate)), m);
+                                                             &*x, &*o.m_apstate)),
+				  std::move(m));
           }
         }        
         
@@ -959,7 +963,8 @@ namespace crab {
             var_map_t  m = merge_var_map(m_var_map, x, o.m_var_map, o.m_apstate);
             return apron_domain_t(apPtr(get_man(), 
                                           ap_abstract0_meet(get_man(), false, 
-                                                             &*x, &*o.m_apstate)), m);
+                                                             &*x, &*o.m_apstate)),
+				  std::move(m));
           }
         }        
         
@@ -976,7 +981,8 @@ namespace crab {
             var_map_t  m = merge_var_map(m_var_map, x, o.m_var_map, o.m_apstate);
             return apron_domain_t(apPtr(get_man(), 
                                           ap_abstract0_widening(get_man(), 
-                                                                 &*x, &*o.m_apstate)), m);
+                                                                 &*x, &*o.m_apstate)),
+				  std::move(m));
           }
         }        
 
@@ -1012,7 +1018,8 @@ namespace crab {
 	    // widening w/o thresholds in the apron domain
             apron_domain_t res(apPtr(get_man(), 
 	    				 ap_abstract0_widening(get_man(), 
-	    						       &*x, &*o.m_apstate)), m);
+	    						       &*x, &*o.m_apstate)),
+			       std::move(m));
 	    // widening w/ thresholds in the interval domain
 	    auto intv_this  = this->to_interval_domain();
 	    auto intv_o     = o.to_interval_domain();
@@ -1025,7 +1032,8 @@ namespace crab {
 	    ap_lincons0_array_t csts = make_thresholds(o, ts);
             apron_domain_t res(apPtr(get_man(), 
 				       ap_abstract0_widening_threshold
-				      (get_man(), &*x, &*o.m_apstate, &csts)), m);
+				      (get_man(), &*x, &*o.m_apstate, &csts)),
+			       std::move(m));
 	    ap_lincons0_array_clear(&csts);
 	    return res;
 	    #endif 
@@ -1049,7 +1057,8 @@ namespace crab {
               case APRON_OCT:
                 return apron_domain_t(apPtr(get_man(), 
 					    ap_abstract0_oct_narrowing(get_man(),
-								       &*x, &*o.m_apstate)), m);
+								       &*x, &*o.m_apstate)),
+				      std::move(m));
               case APRON_INT:
               case APRON_PK:
               default:
@@ -1057,7 +1066,8 @@ namespace crab {
 	       //           "make sure only a finite number of descending iterations are run.");
                 return apron_domain_t(apPtr(get_man(), 
                                               ap_abstract0_meet(get_man(), false,
-								 &*x, &*o.m_apstate)), m);
+								 &*x, &*o.m_apstate)),
+				      std::move(m));
             }
           }
         }        
