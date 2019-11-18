@@ -248,8 +248,13 @@ namespace crab {
       invariant_map_t m_post_invariants;
       
       void store_analysis_results(fwd_analyzer_t &f) {
-	m_pre_invariants.insert(f.pre_begin(), f.pre_end());
-	m_post_invariants.insert(f.post_begin(), f.post_end());	
+	for (auto &kv: f.get_pre_invariants()) {
+          m_pre_invariants.insert({kv.first, std::move(kv.second)});
+        }
+	
+	for (auto &kv: f.get_post_invariants()) {
+          m_post_invariants.insert({kv.first, std::move(kv.second)});
+        }
       }
 
       void gather_assertions() {
