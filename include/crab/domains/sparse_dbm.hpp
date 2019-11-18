@@ -1659,10 +1659,10 @@ namespace crab {
         crab::CrabStats::count(getDomainName() + ".count.apply");
         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
-        // Convert to intervals and perform the operation
+	if (is_bottom()) return;
         normalize();
-        this->operator-=(x); 
-
+	
+        // Convert to intervals and perform the operation
         interval_t yi = operator[](y);
         interval_t zi = operator[](z);
         interval_t xi = interval_t::bottom();
@@ -1701,8 +1701,10 @@ namespace crab {
         crab::CrabStats::count(getDomainName() + ".count.apply");
         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
-        // Convert to intervals and perform the operation
+	if (is_bottom()) return;
         normalize();
+
+        // Convert to intervals and perform the operation	
         interval_t yi = operator[](y);
         interval_t zi(k);
         interval_t xi = interval_t::bottom();

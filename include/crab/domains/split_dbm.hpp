@@ -1915,7 +1915,7 @@ namespace crab {
         // if (is_top())    return interval_t::top();
 
         if (is_bottom()) {
-            return interval_t::bottom();
+	  return interval_t::bottom();
         } else {
           return get_interval(vert_map, g, x);
         }
@@ -1926,7 +1926,7 @@ namespace crab {
         crab::ScopedCrabStats __st__(getDomainName() + ".assign");
 
         if(is_bottom())
-          return;
+	  return;          
 
 	if (intv.is_bottom()) {
 	  set_to_bottom();
@@ -1972,10 +1972,10 @@ namespace crab {
         crab::CrabStats::count(getDomainName() + ".count.apply");
         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
-        // Convert to intervals and perform the operation
+        if(is_bottom()) return;
         normalize();
-        this->operator-=(x); 
 
+        // Convert to intervals and perform the operation	
         interval_t yi = operator[](y);
         interval_t zi = operator[](z);
         interval_t xi = interval_t::bottom();
@@ -2014,8 +2014,10 @@ namespace crab {
         crab::CrabStats::count(getDomainName() + ".count.apply");
         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
-        // Convert to intervals and perform the operation
+        if(is_bottom()) return;
         normalize();
+	
+        // Convert to intervals and perform the operation
         interval_t yi = operator[](y);
         interval_t zi(k);
         interval_t xi = interval_t::bottom();
