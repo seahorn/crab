@@ -784,56 +784,59 @@ namespace crab {
 	#if 0
 	// Disable this constructor to avoid unnecessary copies.
 	// The magic of move semantics should be used instead.
-        apron_domain_(ap_state_ptr apState, var_map_t varMap):
+        apron_domain_(ap_state_ptr apState, var_map_t varMap, bool compact = true):
 	  m_apstate(apState), m_var_map(varMap) {
-	  
-          std::vector<ap_dim_t> dims;
-          var_map_t res;
-          /// XXX: we must iterate on the dimension id's to preserve
-          /// order between them
-          for (auto const& p: m_var_map.right) {  
-            if (ap_abstract0_is_dimension_unconstrained(get_man(),
-                                                         &*m_apstate, 
-                                                         p.first)) {
-              dims.push_back(p.first);
-            }
-            else {
-              ap_dim_t i = res.size();
-              res.insert(binding_t(p.second, i));
-            }
-          }
-          remove_dimensions(m_apstate, dims);
-          std::swap(m_var_map, res);
 
-          assert(m_var_map.size() == get_dims());
+	  if (compact) {
+	    std::vector<ap_dim_t> dims;
+	    var_map_t res;
+	    /// XXX: we must iterate on the dimension id's to preserve
+	    /// order between them
+	    for (auto const& p: m_var_map.right) {  
+	      if (ap_abstract0_is_dimension_unconstrained(get_man(),
+							  &*m_apstate, 
+							  p.first)) {
+		dims.push_back(p.first);
+	      }
+	      else {
+		ap_dim_t i = res.size();
+		res.insert(binding_t(p.second, i));
+	      }
+	    }
+	    remove_dimensions(m_apstate, dims);
+	    std::swap(m_var_map, res);
+	    
+	    assert(m_var_map.size() == get_dims());
+	  }
         }
         #endif 
 
-        apron_domain_(ap_state_ptr&& apState, var_map_t&& varMap):
+        apron_domain_(ap_state_ptr&& apState, var_map_t&& varMap, bool compact = true):
 	  m_apstate(std::move(apState)), 
 	  m_var_map(std::move(varMap)) { 
 
-          std::vector<ap_dim_t> dims;
-          var_map_t res;
-          /// XXX: we must iterate on the dimension id's to preserve
-          /// order between them
-          for (auto const& p: m_var_map.right) {  
-            if (ap_abstract0_is_dimension_unconstrained(get_man(),
+	  if (compact) {
+	    std::vector<ap_dim_t> dims;
+	    var_map_t res;
+	    /// XXX: we must iterate on the dimension id's to preserve
+	    /// order between them
+	    for (auto const& p: m_var_map.right) {  
+	      if (ap_abstract0_is_dimension_unconstrained(get_man(),
                                                          &*m_apstate, 
-                                                         p.first)) {
+							  p.first)) {
               dims.push_back(p.first);
-            }
-            else {
-              ap_dim_t i = res.size();
-              res.insert(binding_t(p.second, i));
-            }
-          }
-          remove_dimensions(m_apstate, dims);
-          std::swap(m_var_map, res);
-
-          assert(m_var_map.size() == get_dims());
-        }
-
+	      }
+	      else {
+		ap_dim_t i = res.size();
+		res.insert(binding_t(p.second, i));
+	      }
+	    }
+	    remove_dimensions(m_apstate, dims);
+	    std::swap(m_var_map, res);
+	    
+	    assert(m_var_map.size() == get_dims());
+	  }
+	}
 
        public:
 
@@ -972,18 +975,19 @@ namespace crab {
           crab::CrabStats::count(getDomainName() + ".count.widening");
           crab::ScopedCrabStats __st__(getDomainName() + ".widening");
 
-          if (is_bottom())
-            return o;
-          else if (o.is_bottom())
-            return *this;
-          else {
-            ap_state_ptr x = apPtr(get_man(), ap_abstract0_copy(get_man(), &*m_apstate));
-            var_map_t  m = merge_var_map(m_var_map, x, o.m_var_map, o.m_apstate);
-            return apron_domain_t(apPtr(get_man(), 
-                                          ap_abstract0_widening(get_man(), 
-                                                                 &*x, &*o.m_apstate)),
-				  std::move(m));
-          }
+          // if (is_bottom())
+          //   return o;
+          // else if (o.is_bottom())
+          //   return *this;
+          // else {
+	  ap_state_ptr x = apPtr(get_man(), ap_abstract0_copy(get_man(), &*m_apstate));
+	  var_map_t  m = merge_var_map(m_var_map, x, o.m_var_map, o.m_apstate);
+	  return apron_domain_t(apPtr(get_man(), 
+				      ap_abstract0_widening(get_man(), 
+							    &*x, &*o.m_apstate)),
+				std::move(m),
+				false /* do not compact */);
+          //}
         }        
 
 	ap_lincons0_array_t make_thresholds(apron_domain_t o,
@@ -998,46 +1002,47 @@ namespace crab {
           crab::CrabStats::count(getDomainName() + ".count.widening");
           crab::ScopedCrabStats __st__(getDomainName() + ".widening");
 
-          if (is_bottom())
-            return o;
-          else if (o.is_bottom())
-            return *this;
-          else {
-            ap_state_ptr x = apPtr(get_man(), ap_abstract0_copy(get_man(), &*m_apstate));
-            var_map_t  m = merge_var_map(m_var_map, x, o.m_var_map, o.m_apstate);
-	    //////
-	    // We cannot refine the result of widening with
-	    // widening w/ thresholds over intervals because it might
-	    // cause non-termination.
-	    ///// 
-	    // This causes a loss of precision in a couple of tests:
-	    // - tests/domains/test2-rat.cc
-	    // - tests/domains/test3-rat.cc
-	    /////
-	    #if 0
-	    // widening w/o thresholds in the apron domain
-            apron_domain_t res(apPtr(get_man(), 
-	    				 ap_abstract0_widening(get_man(), 
-	    						       &*x, &*o.m_apstate)),
-			       std::move(m));
-	    // widening w/ thresholds in the interval domain
-	    auto intv_this  = this->to_interval_domain();
-	    auto intv_o     = o.to_interval_domain();
-	    auto intv_widen = intv_this.widening_thresholds(intv_o, ts);	    
-	    // refine the apron domain using the widen intervals
-	    apron_domain_t apron_intv_widen;
-	    apron_intv_widen += intv_widen.to_linear_constraint_system();
-	    return res & apron_intv_widen;
-	    #else
-	    ap_lincons0_array_t csts = make_thresholds(o, ts);
-            apron_domain_t res(apPtr(get_man(), 
-				       ap_abstract0_widening_threshold
-				      (get_man(), &*x, &*o.m_apstate, &csts)),
-			       std::move(m));
-	    ap_lincons0_array_clear(&csts);
-	    return res;
-	    #endif 
-          }
+          // if (is_bottom())
+          //   return o;
+          // else if (o.is_bottom())
+          //   return *this;
+          // else {
+	  ap_state_ptr x = apPtr(get_man(), ap_abstract0_copy(get_man(), &*m_apstate));
+	  var_map_t  m = merge_var_map(m_var_map, x, o.m_var_map, o.m_apstate);
+	  //////
+	  // We cannot refine the result of widening with
+	  // widening w/ thresholds over intervals because it might
+	  // cause non-termination.
+	  ///// 
+	  // This causes a loss of precision in a couple of tests:
+	  // - tests/domains/test2-rat.cc
+	  // - tests/domains/test3-rat.cc
+	  /////
+	  #if 0
+	  // widening w/o thresholds in the apron domain
+	  apron_domain_t res(apPtr(get_man(), 
+				   ap_abstract0_widening(get_man(), 
+							 &*x, &*o.m_apstate)),
+			     std::move(m));
+	  // widening w/ thresholds in the interval domain
+	  auto intv_this  = this->to_interval_domain();
+	  auto intv_o     = o.to_interval_domain();
+	  auto intv_widen = intv_this.widening_thresholds(intv_o, ts);	    
+	  // refine the apron domain using the widen intervals
+	  apron_domain_t apron_intv_widen;
+	  apron_intv_widen += intv_widen.to_linear_constraint_system();
+	  return res & apron_intv_widen;
+	  #else
+	  ap_lincons0_array_t csts = make_thresholds(o, ts);
+	  apron_domain_t res(apPtr(get_man(), 
+				   ap_abstract0_widening_threshold
+				   (get_man(), &*x, &*o.m_apstate, &csts)),
+			     std::move(m),
+			     false /* do not compact */);
+	  ap_lincons0_array_clear(&csts);
+	  return res;
+          #endif 
+          //}
         }
 
         apron_domain_t operator&&(apron_domain_t o) {
@@ -1735,8 +1740,7 @@ namespace crab {
             csts += linear_constraint_t::get_true();
           }
           else {
-            normalize();
-
+	    // to_lincons_array calls closure	    
             ap_lincons0_array_t lcons_arr =
 	      ap_abstract0_to_lincons_array(get_man(), &*m_apstate);
             for (unsigned i=0 ; i < lcons_arr.size; i++)

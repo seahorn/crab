@@ -1032,28 +1032,30 @@ namespace domains {
     }
     #endif 
     
-    elina_domain_(elina_state_ptr&& apState, var_map_t&& varMap):
+    elina_domain_(elina_state_ptr&& apState, var_map_t&& varMap, bool&& compact = true):
       m_apstate(std::move(apState)), 
       m_var_map(std::move(varMap)) { 
-      
-      std::vector<elina_dim_t> dims;
-      var_map_t res;
-      /// XXX: we must iterate on the dimension id's to preserve
-      /// order between them
-      for (auto const& p: m_var_map.right) {  
-	if (elina_abstract0_is_dimension_unconstrained(get_man(),
-							&*m_apstate, 
-							p.first)) {
-	  dims.push_back(p.first);
+
+      if (compact) {
+	std::vector<elina_dim_t> dims;
+	var_map_t res;
+	/// XXX: we must iterate on the dimension id's to preserve
+	/// order between them
+	for (auto const& p: m_var_map.right) {  
+	  if (elina_abstract0_is_dimension_unconstrained(get_man(),
+							 &*m_apstate, 
+							 p.first)) {
+	    dims.push_back(p.first);
+	  }
+	  else {
+	    elina_dim_t i = res.size();
+	    res.insert(binding_t(p.second, i));
+	  }
 	}
-	else {
-	  elina_dim_t i = res.size();
-	  res.insert(binding_t(p.second, i));
-	}
+	remove_dimensions(m_apstate, dims);
+	std::swap(m_var_map, res);
+	assert(m_var_map.size() == get_dims());
       }
-      remove_dimensions(m_apstate, dims);
-      std::swap(m_var_map, res);      
-      assert(m_var_map.size() == get_dims());
     }
     
     
@@ -1199,19 +1201,21 @@ namespace domains {
     elina_domain_t operator||(elina_domain_t o) {
       crab::CrabStats::count(getDomainName() + ".count.widening");
       crab::ScopedCrabStats __st__(getDomainName() + ".widening");
-      
-      if (is_bottom())
-	return o;
-      else if (o.is_bottom())
-	return *this;
-      else {
-	elina_state_ptr x = elinaPtr(get_man(), elina_abstract0_copy(get_man(), &*m_apstate));
-	var_map_t  m = merge_var_map(m_var_map, x, o.m_var_map, o.m_apstate);
-	return elina_domain_t(elinaPtr(get_man(), 
-				       elina_abstract0_widening(get_man(), 
-								&*x, &*o.m_apstate)),
-			      std::move(m));
-      }
+      // XXX: is_bottom will close the left operand
+      //if (is_bottom())
+      //	return o;
+      //else
+      //if (o.is_bottom())
+      //return *this;
+      //else {
+      elina_state_ptr x = elinaPtr(get_man(), elina_abstract0_copy(get_man(), &*m_apstate));
+      var_map_t  m = merge_var_map(m_var_map, x, o.m_var_map, o.m_apstate);
+      return elina_domain_t(elinaPtr(get_man(), 
+				     elina_abstract0_widening(get_man(), 
+							      &*x, &*o.m_apstate)),
+			    std::move(m),
+			    false /* do not compact */);
+      //}
     }        
     
     elina_lincons0_array_t make_thresholds(elina_domain_t o,
@@ -1225,47 +1229,50 @@ namespace domains {
 				       const iterators::thresholds<number_t>& ts) {
       crab::CrabStats::count(getDomainName() + ".count.widening");
       crab::ScopedCrabStats __st__(getDomainName() + ".widening");
-      
-      if (is_bottom())
-	return o;
-      else if (o.is_bottom())
-	return *this;
-      else {
-	elina_state_ptr x = elinaPtr(get_man(), elina_abstract0_copy(get_man(), &*m_apstate));
-	var_map_t  m = merge_var_map(m_var_map, x, o.m_var_map, o.m_apstate);
-	//////
-	// We cannot refine the result of widening with
-	// widening w/ thresholds over intervals because it might
-	// cause non-termination.
-	///// 
-	// This causes a loss of precision in a couple of tests:
-	// - tests/domains/test2-rat.cc
-	// - tests/domains/test3-rat.cc
-	/////
-        #if 0
-	// widening w/o thresholds in the elina domain
-	elina_domain_t res(elinaPtr(get_man(), 
-				      elina_abstract0_widening(get_man(), 
-	    						       &*x, &*o.m_apstate)),
-			   std::move(m));
-	// widening w/ thresholds in the interval domain
-	auto intv_this  = this->to_interval_domain();
-	auto intv_o     = o.to_interval_domain();
-	auto intv_widen = intv_this.widening_thresholds(intv_o, ts);	    
-	// refine the elina domain using the widen intervals
-	elina_domain_t elina_intv_widen;
-	elina_intv_widen += intv_widen.to_linear_constraint_system();
-	return res & elina_intv_widen;
-        #else
-	elina_lincons0_array_t csts = make_thresholds(o, ts);
-	elina_domain_t res(elinaPtr(get_man(), 
-				    elina_abstract0_widening_threshold
-				    (get_man(), &*x, &*o.m_apstate, &csts)),
-			   std::move(m));
-	elina_lincons0_array_clear(&csts);
-	return res;
-        #endif 
-      }
+
+      // XXX: is_bottom will close the left operand      
+      //if (is_bottom())
+      //	return o;
+      //else
+      //if (o.is_bottom())
+      //return *this;
+      //else {
+      elina_state_ptr x = elinaPtr(get_man(), elina_abstract0_copy(get_man(), &*m_apstate));
+      var_map_t  m = merge_var_map(m_var_map, x, o.m_var_map, o.m_apstate);
+      //////
+      // We cannot refine the result of widening with
+      // widening w/ thresholds over intervals because it might
+      // cause non-termination.
+      ///// 
+      // This causes a loss of precision in a couple of tests:
+      // - tests/domains/test2-rat.cc
+      // - tests/domains/test3-rat.cc
+      /////
+      #if 0
+      // widening w/o thresholds in the elina domain
+      elina_domain_t res(elinaPtr(get_man(), 
+				  elina_abstract0_widening(get_man(), 
+							   &*x, &*o.m_apstate)),
+			 std::move(m));
+      // widening w/ thresholds in the interval domain
+      auto intv_this  = this->to_interval_domain();
+      auto intv_o     = o.to_interval_domain();
+      auto intv_widen = intv_this.widening_thresholds(intv_o, ts);	    
+      // refine the elina domain using the widen intervals
+      elina_domain_t elina_intv_widen;
+      elina_intv_widen += intv_widen.to_linear_constraint_system();
+      return res & elina_intv_widen;
+      #else
+      elina_lincons0_array_t csts = make_thresholds(o, ts);
+      elina_domain_t res(elinaPtr(get_man(), 
+				  elina_abstract0_widening_threshold
+				  (get_man(), &*x, &*o.m_apstate, &csts)),
+			 std::move(m),
+			 false /* do not compact */);
+      elina_lincons0_array_clear(&csts);
+      return res;
+      #endif 
+      //}
     }
     
     elina_domain_t operator&&(elina_domain_t o) {
@@ -1980,8 +1987,7 @@ namespace domains {
 	csts += linear_constraint_t::get_true();
       }
       else {
-	normalize();
-	
+	// to_lincons_array calls closure
 	elina_lincons0_array_t lcons_arr =
 	  elina_abstract0_to_lincons_array(get_man(), &*m_apstate);
 	for (unsigned i=0 ; i < lcons_arr.size; i++)
