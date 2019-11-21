@@ -652,7 +652,7 @@ namespace domains {
       elina_linexpr0_print(e, &names[0]);
       for (auto n : names) { delete n; }      
     }
-    
+
     elina_lincons0_t crab_linconst_to_elina(const linear_constraint_t& c) {
       const linear_expression_t& e = c.expression();
       if (c.is_equality()) {
@@ -709,21 +709,21 @@ namespace domains {
       assert(cons.scalar == NULL); // Not modulo form
       elina_linexpr0_t* linexp = cons.linexpr0;
       assert(elina_linexpr0_is_linear(linexp));
-      
-      linear_expression_t e(0);
-      for (unsigned i=0; i < get_dims(); ++i) {
-	elina_coeff_t* coeff = elina_linexpr0_coeffref(linexp, i);
-	if (elina_coeff_zero(coeff)) continue;
-	
-	if (!has_variable(i)) continue; // unused dimension
-	
-	e = e + term2expr( coeff, i);
+
+      unsigned i;
+      elina_dim_t dim;
+      elina_coeff_t* coef;
+      linear_expression_t e(0);      
+      elina_linexpr0_ForeachLinterm(linexp, i, dim, coef){
+	if (elina_coeff_zero(coef)) continue;
+	e = e + term2expr(coef, dim);
       }
-      
-      // add possible constant
+
+      // add constant
       elina_coeff_t* cst = elina_linexpr0_cstref(linexp);
       if (!elina_coeff_zero(cst)) 
 	e = e + coeff_to_num(cst);
+      
       linear_constraint_t res;
       switch (cons.constyp) {
       case ELINA_CONS_EQ:
@@ -1990,8 +1990,10 @@ namespace domains {
 	// to_lincons_array calls closure
 	elina_lincons0_array_t lcons_arr =
 	  elina_abstract0_to_lincons_array(get_man(), &*m_apstate);
-	for (unsigned i=0 ; i < lcons_arr.size; i++)
+
+	for (unsigned i=0 ; i < lcons_arr.size; i++) {
 	  csts += tconst2const(lcons_arr.p[i]);
+	}
 	
 	elina_lincons0_array_clear(&lcons_arr);
       }

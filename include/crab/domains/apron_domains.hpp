@@ -670,17 +670,16 @@ namespace crab {
           ap_linexpr0_t* linexp = cons.linexpr0;
           assert(ap_linexpr0_is_linear(linexp));
 
-          linear_expression_t e(0);
-          for (unsigned i=0; i < get_dims(); ++i) {
-            ap_coeff_t* coeff = ap_linexpr0_coeffref(linexp, i);
-            if (ap_coeff_zero(coeff)) continue;
-            
-            if (!has_variable(i)) continue; // unused dimension
-
-            e = e + term2expr( coeff, i);
-          }
-
-          // add possible constant
+	  unsigned i;
+	  ap_dim_t dim;
+	  ap_coeff_t* coef;
+	  linear_expression_t e(0);      
+	  ap_linexpr0_ForeachLinterm(linexp, i, dim, coef){
+	    if (ap_coeff_zero(coef)) continue;
+	    e = e + term2expr(coef, dim);
+	  }
+	  
+          // add constant
           ap_coeff_t* cst = ap_linexpr0_cstref(linexp);
           if (!ap_coeff_zero(cst)) 
             e = e + coeff2Num(cst);
