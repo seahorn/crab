@@ -1000,11 +1000,9 @@ namespace domains {
       elina_lincons0_array_clear(&array);            
     }
     
-  public:
-    
-    void print_stats() { elina_abstract0_fprint(stdout, get_man(), &*m_apstate, NULL); }
-    
-  private:
+  // public:
+  //   void print_stats() { elina_abstract0_fprint(stdout, get_man(), &*m_apstate, NULL); }
+  // private:
 
     #if 0
     // Disable this constructor to avoid unnecessary copies.
@@ -1110,7 +1108,7 @@ namespace domains {
       std::swap(*this, abs);
     }
 
-    bool is_bottom() { 
+    bool is_bottom() {
       return elina_abstract0_is_bottom(get_man(), &*m_apstate);
     }
     
@@ -1121,7 +1119,7 @@ namespace domains {
     bool operator<=(elina_domain_t o) { 
       crab::CrabStats::count(getDomainName() + ".count.leq");
       crab::ScopedCrabStats __st__(getDomainName() + ".leq");
-      
+
       if (is_bottom()) 
 	return true;
       else if(o.is_bottom())
@@ -1143,7 +1141,7 @@ namespace domains {
     void operator|=(elina_domain_t o) {
       crab::CrabStats::count(getDomainName() + ".count.join");
       crab::ScopedCrabStats __st__(getDomainName() + ".join");
-      
+
       if (is_bottom() || o.is_top())
 	*this = o;
       else if (is_top() || o.is_bottom())
@@ -1990,7 +1988,6 @@ namespace domains {
 	// to_lincons_array calls closure
 	elina_lincons0_array_t lcons_arr =
 	  elina_abstract0_to_lincons_array(get_man(), &*m_apstate);
-
 	for (unsigned i=0 ; i < lcons_arr.size; i++) {
 	  csts += tconst2const(lcons_arr.p[i]);
 	}
@@ -2101,22 +2098,19 @@ namespace domains {
     void write(crab_os& o) {
       crab::CrabStats::count(getDomainName() + ".count.write");
       crab::ScopedCrabStats __st__(getDomainName() + ".write");
+
+      #if 0
+      o << "\nElina internal representation:";
+      dump();
+      #endif 
       
       if(is_bottom()){
 	o << "_|_";
-	return;
-      }
-      else if (is_top()){
-	o << "{}";
-	return;
-      }
-      else {
+      } else if (is_top()){
+      	o << "{}";
+      } else {
 	linear_constraint_system_t inv = to_linear_constraint_system();
 	o << inv;
-	#if 0
-	o << "\nElina internal representation:";
-	dump();
-	#endif 
       }
     }          
     
