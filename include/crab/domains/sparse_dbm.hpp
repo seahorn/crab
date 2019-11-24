@@ -1032,8 +1032,9 @@ namespace crab {
           return *this;
         else {
           CRAB_LOG("zones-sparse",
-                    crab::outs() << "Before widening:\n"<<"DBM 1\n"<<*this<<"\n"<<"DBM 2\n"
-		                 << o<<"\n";);
+		   DBM_t left(*this); // to avoid closure on left operand
+		   crab::outs() << "Before widening:\n"<<"DBM 1\n"
+		                << left <<"\n"<<"DBM 2\n" << o<<"\n";);
           o.normalize();
           
           // Figure out the common renaming
@@ -1079,7 +1080,9 @@ namespace crab {
           DBM_t res(std::move(out_vmap), std::move(out_revmap), std::move(widen_g), 
                     std::move(widen_pot), std::move(widen_unstable));
 
-          CRAB_LOG("zones-sparse", crab::outs() << "Result widening:\n"<<res<<"\n";);
+          CRAB_LOG("zones-sparse",
+		   DBM_t res_copy(res);
+		   crab::outs() << "Result widening:\n" << res_copy <<"\n";);
           return res;
         }
       }

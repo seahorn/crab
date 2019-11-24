@@ -161,7 +161,9 @@ namespace ikos {
         return widen_res; 
       } else {
         CRAB_VERBOSE_IF(3,
-                 crab::outs() << "Prev   : " << before << "\n"
+		 // To avoid closure on the left operand
+		 AbstractValue before_copy(before);
+		 crab::outs() << "Prev   : " << before_copy << "\n"
                               << "Current: " << after << "\n");
         
         if (_use_widening_jump_set) {
@@ -172,12 +174,16 @@ namespace ikos {
 	  thresholds_t thresholds = it->second;
 	  auto widen_res = before.widening_thresholds (after, thresholds);
           CRAB_VERBOSE_IF(3,
-			  crab::outs() << "Res    : " << widen_res << "\n");
+			  // To avoid closure on the result
+			  AbstractValue widen_res_copy(widen_res);
+			  crab::outs() << "Res    : " << widen_res_copy << "\n");
           return widen_res;
         } else {
 	  auto widen_res = before || after;
           CRAB_VERBOSE_IF(3,
-			  crab::outs() << "Res    : " << widen_res << "\n");
+			  // To avoid closure on the result
+			  AbstractValue widen_res_copy(widen_res);
+			  crab::outs() << "Res    : " << widen_res_copy << "\n");
           return widen_res;
         }
       }
