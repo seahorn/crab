@@ -122,13 +122,17 @@ namespace crab {
         return (this->_first.is_top() && this->_second.is_top());
       }
       
-      Domain1& first() {
-        this->canonicalize();
+      Domain1& first(bool apply_reduction = true) {
+	if (apply_reduction) {
+	  this->canonicalize();
+	}
         return this->_first;
       }
       
-      Domain2& second() {
-        this->canonicalize();
+      Domain2& second(bool apply_reduction = true) {
+	if (apply_reduction) {
+	  this->canonicalize();
+	}
         return this->_second;
       }
       
@@ -325,10 +329,13 @@ namespace crab {
       
       domain_product2_t widening_thresholds(domain_product2_t other,
 					    const iterators::thresholds<number_t>& ts) {
-        return domain_product2_t(
-		 basic_domain_product2_t(				 
-         std::move(this->_product.first().widening_thresholds(other._product.first(), ts)),
-         std::move(this->_product.second().widening_thresholds(other._product.second(), ts))));
+	bool apply_reduction = false;
+        return domain_product2_t(basic_domain_product2_t(				 
+	     std::move(this->_product.first(apply_reduction).
+		       widening_thresholds(other._product.first(), ts)),
+             std::move(this->_product.second(apply_reduction).
+		       widening_thresholds(other._product.second(), ts)),
+	     std::move(apply_reduction)));
       }
       
       domain_product2_t operator&&(domain_product2_t other) {
