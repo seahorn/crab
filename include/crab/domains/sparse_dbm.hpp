@@ -775,15 +775,6 @@ namespace crab {
           _is_bottom(o._is_bottom)
       { }
 
-      SparseDBM_(vert_map_t& _vert_map, rev_map_t& _rev_map, graph_t& _g,
-		 std::vector<Wt>& _potential, vert_set_t& _unstable)
-        : vert_map(_vert_map), rev_map(_rev_map), g(_g),
-	  potential(_potential), unstable(_unstable), _is_bottom(false)
-      {
-        CRAB_WARN("Non-moving constructor.");
-        assert(g.size() > 0);
-      }
-      
       // Magical rvalue ownership stuff for efficient initialization
       SparseDBM_(vert_map_t&& _vert_map, rev_map_t&& _rev_map, graph_t&& _g,
 		 std::vector<Wt>&& _potential, vert_set_t&& _unstable)
