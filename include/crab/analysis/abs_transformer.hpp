@@ -515,7 +515,7 @@ public:
     
     if (stmt.lb_index().equal(stmt.ub_index())) {
       m_inv.array_store(stmt.array(), stmt.elem_size(),
-			stmt.lb_index(), stmt.value(), stmt.is_singleton());
+			stmt.lb_index(), stmt.value(), stmt.is_strong_update());
     } else {
       m_inv.array_store_range(stmt.array(), stmt.elem_size(),
 			      stmt.lb_index(), stmt.ub_index(), stmt.value());	
@@ -951,7 +951,7 @@ public:
 	                  << "\tPOST=" << m_pre << "\n");	               
     if (stmt.lb_index().equal(stmt.ub_index())) {
       m_pre.backward_array_store(stmt.array(), stmt.elem_size(),
-				 stmt.lb_index(), stmt.value(), stmt.is_singleton(),
+				 stmt.lb_index(), stmt.value(), stmt.is_strong_update(),
 				 std::move(invariant));
     } else {
       m_pre.backward_array_store_range(stmt.array(), stmt.elem_size(),

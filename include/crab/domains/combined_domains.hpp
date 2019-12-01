@@ -50,17 +50,6 @@ namespace crab {
       Domain1 _first;
       Domain2 _second;
       
-     public:
-      
-      static basic_domain_product2_t top() {
-        return basic_domain_product2_t(Domain1::top(), Domain2::top());
-      }
-      
-      static basic_domain_product2_t bottom() {
-        return basic_domain_product2_t(Domain1::bottom(), Domain2::bottom());
-      }
-      
-     private:
       void canonicalize() {
         if (!this->_is_bottom) {
           this->_is_bottom = this->_first.is_bottom() || 
@@ -73,19 +62,30 @@ namespace crab {
       }
       
      public:
+            
       basic_domain_product2(): 
           _is_bottom(false), 
-          _first(Domain1::top()), _second(Domain2::top()) { }
+          _first(Domain1::top()),
+	  _second(Domain2::top()) { }
       
-      basic_domain_product2(Domain1 first, Domain2 second): 
+      basic_domain_product2(Domain1 &&first, Domain2 &&second, bool &&apply_reduction = true): 
           _is_bottom(false), 
-          _first(first), _second(second) {
-        this->canonicalize();
+          _first(std::move(first)),
+	  _second(std::move(second)) {
+	if (apply_reduction) {
+	  this->canonicalize();
+	}
       }
       
       basic_domain_product2(const basic_domain_product2_t& other): 
           _is_bottom(other._is_bottom), 
-          _first(other._first), _second(other._second) { }
+          _first(other._first),
+	  _second(other._second) { }
+
+      basic_domain_product2(const basic_domain_product2_t&& other): 
+	_is_bottom(std::move(other._is_bottom)), 
+	_first(std::move(other._first)),
+	_second(std::move(other._second)) { }
       
       basic_domain_product2_t& operator=(const basic_domain_product2_t& other) {
         if (this != &other) {
@@ -94,6 +94,23 @@ namespace crab {
           this->_second = other._second;
         }
         return *this;
+      }
+
+      basic_domain_product2_t& operator=(const basic_domain_product2_t&& other) {
+        if (this != &other) {
+          this->_is_bottom = std::move(other._is_bottom);
+          this->_first = std::move(other._first);
+          this->_second = std::move(other._second);
+        }
+        return *this;
+      }
+
+      static basic_domain_product2_t top() {
+        return basic_domain_product2_t(Domain1::top(), Domain2::top());
+      }
+      
+      static basic_domain_product2_t bottom() {
+        return basic_domain_product2_t(Domain1::bottom(), Domain2::bottom());
       }
       
       bool is_bottom() {
@@ -105,13 +122,17 @@ namespace crab {
         return (this->_first.is_top() && this->_second.is_top());
       }
       
-      Domain1& first() {
-        this->canonicalize();
+      Domain1& first(bool apply_reduction = true) {
+	if (apply_reduction) {
+	  this->canonicalize();
+	}
         return this->_first;
       }
       
-      Domain2& second() {
-        this->canonicalize();
+      Domain2& second(bool apply_reduction = true) {
+	if (apply_reduction) {
+	  this->canonicalize();
+	}
         return this->_second;
       }
       
@@ -153,14 +174,9 @@ namespace crab {
       }
       
       basic_domain_product2_t operator||(basic_domain_product2_t other) {
-        if (this->is_bottom()) {
-          return other;
-        } else if (other.is_bottom()) {
-          return *this;
-        } else {
-          return basic_domain_product2_t(this->_first || other._first, 
-                                         this->_second || other._second);
-        }
+	return basic_domain_product2_t(this->_first || other._first, 
+				       this->_second || other._second,
+				       false /* do not apply reduction */);
       }
       
       basic_domain_product2_t operator&(basic_domain_product2_t other) {
@@ -224,12 +240,11 @@ namespace crab {
      private:
       typedef basic_domain_product2<Domain1, Domain2> basic_domain_product2_t;
       
-     private:
       basic_domain_product2_t _product;
-      
-     private:
-      domain_product2(basic_domain_product2_t product): _product(product) { }
-      
+
+      domain_product2(basic_domain_product2_t &&product):
+	_product(std::move(product)) { }
+
       void reduce() {
         if (this->_product.first().is_bottom() || 
             this->_product.second().is_bottom()) {
@@ -238,6 +253,7 @@ namespace crab {
       }
       
      public:
+      
       void set_to_top() {
         domain_product2_t abs(basic_domain_product2_t::top());
 	std::swap(*this, abs);
@@ -255,10 +271,19 @@ namespace crab {
       
       domain_product2(const domain_product2_t& other): 
 	_product(other._product) { }
+
+      domain_product2(const domain_product2_t&& other): 
+	_product(std::move(other._product)) { }
       
       domain_product2_t& operator=(const domain_product2_t& other) {
         if (this != &other)
           this->_product = other._product;
+        return *this;
+      }
+
+      domain_product2_t& operator=(const domain_product2_t&& other) {
+        if (this != &other)
+          this->_product = std::move(other._product);
         return *this;
       }
       
@@ -304,9 +329,13 @@ namespace crab {
       
       domain_product2_t widening_thresholds(domain_product2_t other,
 					    const iterators::thresholds<number_t>& ts) {
-        return domain_product2_t(
-            this->_product.first().widening_thresholds(other._product.first(), ts),
-            this->_product.second().widening_thresholds(other._product.second(), ts));
+	bool apply_reduction = false;
+        return domain_product2_t(basic_domain_product2_t(				 
+	     std::move(this->_product.first(apply_reduction).
+		       widening_thresholds(other._product.first(), ts)),
+             std::move(this->_product.second(apply_reduction).
+		       widening_thresholds(other._product.second(), ts)),
+	     std::move(apply_reduction)));
       }
       
       domain_product2_t operator&&(domain_product2_t other) {
@@ -409,9 +438,9 @@ namespace crab {
       virtual void array_store(variable_t a, linear_expression_t elem_size,
                                 linear_expression_t i,
 				linear_expression_t val, 
-				bool is_singleton) override {
-        this->_product.first().array_store(a, elem_size, i, val, is_singleton);
-        this->_product.second().array_store(a, elem_size, i, val, is_singleton);
+				bool is_strong_update) override {
+        this->_product.first().array_store(a, elem_size, i, val, is_strong_update);
+        this->_product.second().array_store(a, elem_size, i, val, is_strong_update);
         this->reduce();
       }
 
@@ -458,12 +487,12 @@ namespace crab {
       virtual void backward_array_store(variable_t a, linear_expression_t elem_size,
 					linear_expression_t i,
 					linear_expression_t val, 
-					bool is_singleton,
+					bool is_strong_update,
 					domain_product2_t invariant) override {
         this->_product.first().
-	  backward_array_store(a, elem_size, i, val, is_singleton, invariant.first());
+	  backward_array_store(a, elem_size, i, val, is_strong_update, invariant.first());
         this->_product.second().
-	  backward_array_store(a, elem_size, i, val, is_singleton, invariant.second());
+	  backward_array_store(a, elem_size, i, val, is_strong_update, invariant.second());
         this->reduce();
       }
 
@@ -1057,7 +1086,7 @@ namespace crab {
 		      linear_expression_t i) {}
       void array_store(variable_t a, linear_expression_t elem_size,
 		       linear_expression_t i, linear_expression_t v, 
-		       bool is_singleton) {}
+		       bool is_strong_update) {}
       void array_store_range(variable_t a, linear_expression_t elem_size,
 			     linear_expression_t i, linear_expression_t j,
 			     linear_expression_t val) {}
@@ -1073,7 +1102,7 @@ namespace crab {
 			       reduced_numerical_domain_product2_t invariant) {}
       void backward_array_store(variable_t a, linear_expression_t elem_size,
 				linear_expression_t i, linear_expression_t v, 
-				bool is_singleton,
+				bool is_strong_update,
 				reduced_numerical_domain_product2_t invariant) {}
       void backward_array_store_range(variable_t a, linear_expression_t elem_size,
 				      linear_expression_t i, linear_expression_t j,
@@ -1667,7 +1696,7 @@ namespace crab {
 		      linear_expression_t i) {}
       void array_store(variable_t a, linear_expression_t elem_size,
 		       linear_expression_t i, linear_expression_t v, 
-		       bool is_singleton) {}
+		       bool is_strong_update) {}
       void array_store_range(variable_t a, linear_expression_t elem_size,
 			     linear_expression_t i, linear_expression_t j,
 			     linear_expression_t val) {}
@@ -1681,7 +1710,7 @@ namespace crab {
 			       linear_expression_t i, rnc_domain_t invariant) {}
       void backward_array_store(variable_t a, linear_expression_t elem_size,
 				linear_expression_t i, linear_expression_t v, 
-				bool is_singleton, rnc_domain_t invariant) {}
+				bool is_strong_update, rnc_domain_t invariant) {}
       void backward_array_store_range(variable_t a, linear_expression_t elem_size,
 				      linear_expression_t i, linear_expression_t j,
 				      linear_expression_t val, rnc_domain_t invariant) {}
@@ -1957,8 +1986,8 @@ namespace crab {
 				linear_expression_t elem_size,
                                 linear_expression_t i,
 				linear_expression_t val, 
-				bool is_singleton) override {
-        this->_product.array_store(a, elem_size, i, val, is_singleton);
+				bool is_strong_update) override {
+        this->_product.array_store(a, elem_size, i, val, is_strong_update);
       }
 
       virtual void array_store_range(variable_t a, linear_expression_t elem_size,
@@ -1995,10 +2024,10 @@ namespace crab {
 					linear_expression_t elem_size,
 					linear_expression_t i,
 					linear_expression_t val, 
-					bool is_singleton,
+					bool is_strong_update,
 					nn_domain_t invariant) override {
-        this->_product.backward_array_store(a, elem_size, i, val, is_singleton,
-					    invariant._product);
+        this->_product.backward_array_store(a, elem_size, i, val,
+					    is_strong_update, invariant._product);
       }
 
       virtual void backward_array_store_range(variable_t a, linear_expression_t elem_size,

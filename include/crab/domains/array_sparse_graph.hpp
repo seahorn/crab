@@ -2520,7 +2520,7 @@ public:
 
   virtual void array_store(variable_t a, linear_expression_t elem_size,
 			   linear_expression_t i, linear_expression_t val, 
-			   bool /*is_singleton*/) override {
+			   bool /*is_strong_update*/) override {
     crab::CrabStats::count(getDomainName() + ".count.store");
     crab::ScopedCrabStats __st__(getDomainName() + ".store");
 
@@ -2580,7 +2580,7 @@ public:
   }
   void backward_array_store(variable_t a, linear_expression_t elem_size,
 			    linear_expression_t i, linear_expression_t v, 
-			    bool is_singleton, array_sgraph_domain_t invariant) {
+			    bool is_strong_update, array_sgraph_domain_t invariant) {
     CRAB_WARN("backward_array_store in array_sparse_graph domain not implemented"); 
   }
   void backward_array_store_range(variable_t a, linear_expression_t elem_size,

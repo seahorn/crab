@@ -54,7 +54,7 @@ namespace crab {
         //! scalar and summarized array variables        
         NumDomain _inv; 
         
-        array_smashing(NumDomain inv): _inv(inv) { }
+        array_smashing(NumDomain &&inv): _inv(std::move(inv)) { }
 	  
         void strong_update(variable_t a, linear_expression_t rhs) {
 	  if (a.get_type() == ARR_BOOL_TYPE) {
@@ -113,21 +113,32 @@ namespace crab {
           array_smashing abs(NumDomain::bottom());
 	  std::swap(*this, abs);
         }
-        
+	  
         array_smashing(const array_smashing_t& other): 
 	  _inv(other._inv) { 
           crab::CrabStats::count(getDomainName() + ".count.copy");
           crab::ScopedCrabStats __st__(getDomainName() + ".copy");
         }
-        
+
+        array_smashing(const array_smashing_t&& other):
+	  _inv(std::move(other._inv)) {}
+	
         array_smashing_t& operator=(const array_smashing_t& other) {
           crab::CrabStats::count(getDomainName() + ".count.copy");
           crab::ScopedCrabStats __st__(getDomainName() + ".copy");
-          if (this != &other)
+          if (this != &other) {
             _inv = other._inv;
+	  }
           return *this;
         }
-        
+
+        array_smashing_t& operator=(const array_smashing_t&& other) {
+          if (this != &other) {
+            _inv = std::move(other._inv);
+	  }
+          return *this;
+        }
+	
         bool is_bottom() { 
           return(_inv.is_bottom());
         }
@@ -384,11 +395,11 @@ namespace crab {
         
         virtual void array_store(variable_t a, linear_expression_t /*elem_size*/,
                                   linear_expression_t i, linear_expression_t val, 
-                                  bool is_singleton) override {
+                                  bool is_strong_update) override {
           crab::CrabStats::count(getDomainName() + ".count.store");
           crab::ScopedCrabStats __st__(getDomainName() + ".store");
 
-          if (is_singleton) {
+          if (is_strong_update) {
             strong_update(a, val);
 	  } else {
             weak_update(a, val);
@@ -435,7 +446,7 @@ namespace crab {
 	}
 	void backward_array_store(variable_t a, linear_expression_t elem_size,
 				  linear_expression_t i, linear_expression_t v, 
-				  bool is_singleton, array_smashing_t invariant) {
+				  bool is_strong_update, array_smashing_t invariant) {
 	  CRAB_WARN("backward_array_store in array smashing domain not implemented"); 
 	}
 	void backward_array_store_range(variable_t a, linear_expression_t elem_size,

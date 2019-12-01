@@ -32,6 +32,7 @@
 #include <boost/container/flat_map.hpp>
 #include <unordered_set>
 
+#define JOIN_CLOSE_AFTER_MEET 
 //#define CHECK_POTENTIAL
 //#define SDBM_NO_NORMALIZE
 
@@ -873,6 +874,24 @@ namespace crab {
         }
       }
       
+      SplitDBM_(vert_map_t&& _vert_map, rev_map_t&& _rev_map, graph_t&& _g,
+		std::vector<Wt>&& _potential, vert_set_t&& _unstable)
+        : vert_map(std::move(_vert_map))
+	, rev_map(std::move(_rev_map))
+	, g(std::move(_g))
+	, potential(std::move(_potential))
+	, unstable(std::move(_unstable))
+	, _is_bottom(false) {
+
+	crab::CrabStats::count(getDomainName() + ".count.copy");
+        crab::ScopedCrabStats __st__(getDomainName() + ".copy");
+
+	CRAB_LOG("zones-split-size",
+                 auto p = size();
+                 crab::outs() << "#nodes = " << p.first << " #edges=" << p.second << "\n";);
+	
+	assert(g.size() > 0);
+      }
       
    public:
       
@@ -911,44 +930,7 @@ namespace crab {
 	crab::CrabStats::count(getDomainName() + ".count.copy");
         crab::ScopedCrabStats __st__(getDomainName() + ".copy");
       }
-
-      // We should probably use the magical rvalue ownership semantics stuff.
-      SplitDBM_(vert_map_t& _vert_map, rev_map_t& _rev_map, graph_t& _g,
-		std::vector<Wt>& _potential, vert_set_t& _unstable)
-        : vert_map(_vert_map)
-	, rev_map(_rev_map)
-	, g(_g)
-	, potential(_potential)
-	, unstable(_unstable)
-	, _is_bottom(false) {
-	
-	crab::CrabStats::count(getDomainName() + ".count.copy");
-        crab::ScopedCrabStats __st__(getDomainName() + ".copy");
-	
-        CRAB_WARN("Non-moving constructor.");
-        assert(g.size() > 0);
-      }
-      
-      SplitDBM_(vert_map_t&& _vert_map, rev_map_t&& _rev_map, graph_t&& _g,
-		std::vector<Wt>&& _potential, vert_set_t&& _unstable)
-        : vert_map(std::move(_vert_map))
-	, rev_map(std::move(_rev_map))
-	, g(std::move(_g))
-	, potential(std::move(_potential))
-	, unstable(std::move(_unstable))
-	, _is_bottom(false) {
-
-	crab::CrabStats::count(getDomainName() + ".count.copy");
-        crab::ScopedCrabStats __st__(getDomainName() + ".copy");
-
-	CRAB_LOG("zones-split-size",
-                 auto p = size();
-                 crab::outs() << "#nodes = " << p.first << " #edges=" << p.second << "\n";);
-	
-	assert(g.size() > 0);
-      }
-
-
+     
       SplitDBM_& operator=(const SplitDBM_& o) {     
         crab::CrabStats::count(getDomainName() + ".count.copy");
         crab::ScopedCrabStats __st__(getDomainName() + ".copy");
@@ -999,12 +981,7 @@ namespace crab {
         unstable.clear();
         _is_bottom = true;
       }
-      
-      // void set_to_bottom() {
-      // 	SplitDBM_ abs(true);
-      // 	std::swap(*this, abs);	
-      // }
-    
+
       bool is_bottom() {
         return _is_bottom;
       }
@@ -1158,10 +1135,8 @@ namespace crab {
           graph_t g_ix_ry;
           g_ix_ry.growTo(sz);
           SubGraph<GrPerm> gy_excl(gy, 0);
-          for(vert_id s : gy_excl.verts())
-          {
-            for(vert_id d : gy_excl.succs(s))
-            {
+          for(vert_id s : gy_excl.verts()) {
+            for(vert_id d : gy_excl.succs(s)) {
               typename graph_t::mut_val_ref_t ws; typename graph_t::mut_val_ref_t wd;
               if(gx.lookup(s, 0, &ws) && gx.lookup(0, d, &wd)) {
                 g_ix_ry.add_edge(s, ws.get() + wd.get(), d);
@@ -1169,46 +1144,47 @@ namespace crab {
             }
           }
           // Apply the deferred relations, and re-close.
-          edge_vector delta;
           bool is_closed;
           graph_t g_rx(GrOps::meet(gx, g_ix_ry, is_closed));
           check_potential(g_rx, pot_rx, __LINE__);
-          if(!is_closed)
-          {
+          #ifdef JOIN_CLOSE_AFTER_MEET
+	  // Conjecture: g_rx is closed
+          if(!is_closed) {
+	    edge_vector delta;	    
             SubGraph<graph_t> g_rx_excl(g_rx, 0);
             GrOps::close_after_meet(g_rx_excl, pot_rx, gx, g_ix_ry, delta);
             GrOps::apply_delta(g_rx, delta);
           }
-
+          #endif
+	  
           graph_t g_rx_iy;
           g_rx_iy.growTo(sz);
-
           SubGraph<GrPerm> gx_excl(gx, 0);
-          for(vert_id s : gx_excl.verts())
-          {
-            for(vert_id d : gx_excl.succs(s))
-            {
+          for(vert_id s : gx_excl.verts()) {
+            for(vert_id d : gx_excl.succs(s)) {
               typename graph_t::mut_val_ref_t ws; typename graph_t::mut_val_ref_t wd;
-              // Assumption: gx.mem(s, d) -> gx.edge_val(s, d) <= ranges[var(s)].ub() - ranges[var(d)].lb()
+              // Assumption: gx.mem(s, d) -> gx.edge_val(s, d) <=
+	      //             ranges[var(s)].ub() - ranges[var(d)].lb()
               // That is, if the relation exists, it's at least as strong as the bounds.
               if(gy.lookup(s, 0, &ws) && gy.lookup(0, d, &wd))
                 g_rx_iy.add_edge(s, ws.get() + wd.get(), d);
             }
           }
-          delta.clear();
           // Similarly, should use a SubGraph view.
           graph_t g_ry(GrOps::meet(gy, g_rx_iy, is_closed));
-          check_potential(g_rx, pot_rx, __LINE__);
-          if(!is_closed)
-          {
-
+          check_potential(g_rx, pot_rx, __LINE__);	  
+	  #ifdef JOIN_CLOSE_AFTER_MEET
+	  // Conjecture: g_ry is closed
+          if(!is_closed) {
+	    edge_vector delta;
             SubGraph<graph_t> g_ry_excl(g_ry, 0);
             GrOps::close_after_meet(g_ry_excl, pot_ry, gy, g_rx_iy, delta);
             GrOps::apply_delta(g_ry, delta);
           }
-           
-          // We now have the relevant set of relations. Because g_rx and g_ry are closed,
-          // the result is also closed.
+          #endif
+	  
+          // We now have the relevant set of relations. Because g_rx
+          // and g_ry are closed, the result is also closed.
           Wt_min min_op;
           graph_t join_g(GrOps::join(g_rx, g_ry));
 
@@ -1221,17 +1197,14 @@ namespace crab {
 
           typename graph_t::mut_val_ref_t wx;
           typename graph_t::mut_val_ref_t wy;
-          for(vert_id v : gx_excl.verts())
-          {
-            if(gx.lookup(0, v, &wx) && gy.lookup(0, v, &wy))
-            {
+          for(vert_id v : gx_excl.verts()) {
+            if(gx.lookup(0, v, &wx) && gy.lookup(0, v, &wy)) {
               if(wx.get() < wy.get())
                 ub_up.push_back(v);
               if(wy.get() < wx.get())
                 ub_down.push_back(v);
             }
-            if(gx.lookup(v, 0, &wx) && gy.lookup(v, 0, &wy))
-            {
+            if(gx.lookup(v, 0, &wx) && gy.lookup(v, 0, &wy)) {
               if(wx.get() < wy.get())
                 lb_down.push_back(v);
               if(wy.get() < wx.get())
@@ -1239,30 +1212,22 @@ namespace crab {
             }
           }
 
-          for(vert_id s : lb_up)
-          {
+          for(vert_id s : lb_up) {
             Wt dx_s = gx.edge_val(s, 0);
             Wt dy_s = gy.edge_val(s, 0);
-            for(vert_id d : ub_up)
-            {
-              if(s == d)
-                continue;
-
+            for(vert_id d : ub_up) {
+              if(s == d) continue;
               join_g.update_edge(s, std::max(dx_s + gx.edge_val(0, d),
 					     dy_s + gy.edge_val(0, d)),
 				 d, min_op);
             }
           }
 
-          for(vert_id s : lb_down)
-          {
+          for(vert_id s : lb_down) {
             Wt dx_s = gx.edge_val(s, 0);
             Wt dy_s = gy.edge_val(s, 0);
-            for(vert_id d : ub_down)
-            {
-              if(s == d)
-                continue;
-
+            for(vert_id d : ub_down) {
+              if(s == d) continue;
               join_g.update_edge(s, std::max(dx_s + gx.edge_val(0, d),
 					     dy_s + gy.edge_val(0, d)),
 				 d, min_op);
@@ -1272,15 +1237,12 @@ namespace crab {
           // Conjecture: join_g remains closed.
           
           // Now garbage collect any unused vertices
-          for(vert_id v : join_g.verts())
-          {
+          for(vert_id v : join_g.verts()) {
             if(v == 0)
               continue;
-            if(join_g.succs(v).size() == 0 && join_g.preds(v).size() == 0)
-            {
+            if(join_g.succs(v).size() == 0 && join_g.preds(v).size() == 0) {
               join_g.forget(v);
-              if(out_revmap[v])
-              {
+              if(out_revmap[v]) {
                 out_vmap.erase(*(out_revmap[v]));
                 out_revmap[v] = boost::none;
               }
@@ -1915,7 +1877,7 @@ namespace crab {
         // if (is_top())    return interval_t::top();
 
         if (is_bottom()) {
-            return interval_t::bottom();
+	  return interval_t::bottom();
         } else {
           return get_interval(vert_map, g, x);
         }
@@ -1926,7 +1888,7 @@ namespace crab {
         crab::ScopedCrabStats __st__(getDomainName() + ".assign");
 
         if(is_bottom())
-          return;
+	  return;          
 
 	if (intv.is_bottom()) {
 	  set_to_bottom();
@@ -1972,10 +1934,10 @@ namespace crab {
         crab::CrabStats::count(getDomainName() + ".count.apply");
         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
-        // Convert to intervals and perform the operation
+        if(is_bottom()) return;
         normalize();
-        this->operator-=(x); 
 
+        // Convert to intervals and perform the operation	
         interval_t yi = operator[](y);
         interval_t zi = operator[](z);
         interval_t xi = interval_t::bottom();
@@ -2014,8 +1976,10 @@ namespace crab {
         crab::CrabStats::count(getDomainName() + ".count.apply");
         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
-        // Convert to intervals and perform the operation
+        if(is_bottom()) return;
         normalize();
+	
+        // Convert to intervals and perform the operation
         interval_t yi = operator[](y);
         interval_t zi(k);
         interval_t xi = interval_t::bottom();
@@ -2081,7 +2045,7 @@ namespace crab {
 		      linear_expression_t i) {}
       void array_store(variable_t a, linear_expression_t elem_size,
 		       linear_expression_t i, linear_expression_t v, 
-		       bool is_singleton) {}
+		       bool is_strong_update) {}
       void array_store_range(variable_t a, linear_expression_t elem_size,
 			     linear_expression_t i, linear_expression_t j,
 			     linear_expression_t v) {}                  
@@ -2095,7 +2059,7 @@ namespace crab {
 			       linear_expression_t i, DBM_t invariant) {}
       void backward_array_store(variable_t a, linear_expression_t elem_size,
 				linear_expression_t i, linear_expression_t v, 
-				bool is_singleton, DBM_t invariant) {}
+				bool is_strong_update, DBM_t invariant) {}
       void backward_array_store_range(variable_t a, linear_expression_t elem_size,
 				      linear_expression_t i, linear_expression_t j,
 				      linear_expression_t v, DBM_t invariant) {}    
@@ -2659,7 +2623,7 @@ namespace crab {
 		      linear_expression_t i) {}
       void array_store(variable_t a, linear_expression_t elem_size,
 		       linear_expression_t i, linear_expression_t v, 
-		       bool is_singleton) {}
+		       bool is_strong_update) {}
       void array_store_range(variable_t a, linear_expression_t elem_size,
 			     linear_expression_t i, linear_expression_t j,
 			     linear_expression_t v) {}                        
@@ -2673,7 +2637,7 @@ namespace crab {
 			       linear_expression_t i, DBM_t invariant) {}
       void backward_array_store(variable_t a, linear_expression_t elem_size,
 				linear_expression_t i, linear_expression_t v, 
-				bool is_singleton, DBM_t invariant) {}
+				bool is_strong_update, DBM_t invariant) {}
       void backward_array_store_range(variable_t a, linear_expression_t elem_size,
 				      linear_expression_t i, linear_expression_t j,
 				      linear_expression_t v, DBM_t invariant) {}    

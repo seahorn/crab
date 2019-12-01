@@ -161,7 +161,9 @@ namespace ikos {
         return widen_res; 
       } else {
         CRAB_VERBOSE_IF(3,
-                 crab::outs() << "Prev   : " << before << "\n"
+		 // To avoid closure on the left operand
+		 AbstractValue before_copy(before);
+		 crab::outs() << "Prev   : " << before_copy << "\n"
                               << "Current: " << after << "\n");
         
         if (_use_widening_jump_set) {
@@ -172,12 +174,16 @@ namespace ikos {
 	  thresholds_t thresholds = it->second;
 	  auto widen_res = before.widening_thresholds (after, thresholds);
           CRAB_VERBOSE_IF(3,
-			  crab::outs() << "Res    : " << widen_res << "\n");
+			  // To avoid closure on the result
+			  AbstractValue widen_res_copy(widen_res);
+			  crab::outs() << "Res    : " << widen_res_copy << "\n");
           return widen_res;
         } else {
 	  auto widen_res = before || after;
           CRAB_VERBOSE_IF(3,
-			  crab::outs() << "Res    : " << widen_res << "\n");
+			  // To avoid closure on the result
+			  AbstractValue widen_res_copy(widen_res);
+			  crab::outs() << "Res    : " << widen_res_copy << "\n");
           return widen_res;
         }
       }
@@ -351,7 +357,8 @@ namespace ikos {
 	basic_block_label_t _node;
 	bool _found;
       public:
-	member_component_visitor(basic_block_label_t node): _node(node), _found(false) {}
+	member_component_visitor(basic_block_label_t node)
+	  : _node(node), _found(false) {}
 	
 	void visit(wto_vertex_t& c) {
 	  if (!_found) { _found = (c.node() == _node); }
@@ -404,7 +411,8 @@ namespace ikos {
         AbstractValue pre;
         if (node == _entry) {
           pre = this->_iterator->get_pre(node);
-	  if (_assumptions) { // no necessary but it might avoid copies
+	  if (_assumptions && !_assumptions->empty()) {
+	    // no necessary but it might avoid copies
 	    pre = strengthen(node, pre);
 	    this->_iterator->set_pre(node, pre);
 	  }
@@ -416,7 +424,8 @@ namespace ikos {
             pre |= this->_iterator->get_post(prev);  
           }
 	  crab::CrabStats::stop("Fixpo.join_predecessors");
-	  if (_assumptions) { //no necessary but it might avoid copies
+	  if (_assumptions && !_assumptions->empty()) {
+	    //no necessary but it might avoid copies
 	    pre = strengthen(node, pre);
 	  }
           this->_iterator->set_pre(node, pre);
@@ -479,7 +488,8 @@ namespace ikos {
 	    }
 	  }
 	}
-	if (_assumptions) { //no necessary but it might avoid copies
+	if (_assumptions && !_assumptions->empty()) {
+	  //no necessary but it might avoid copies
 	  pre = strengthen(head, pre);
 	}
 	

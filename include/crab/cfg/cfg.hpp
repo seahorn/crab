@@ -755,14 +755,14 @@ namespace crab {
 		       linear_expression_t lb,
 		       linear_expression_t ub,		       
 		       linear_expression_t value,  
-		       bool is_singleton)
+		       bool is_strong_update)
 	: statement_t(ARR_STORE)
 	, m_arr(arr)
 	, m_elem_size(elem_size)
 	, m_lb(lb)
 	, m_ub(ub)
 	, m_value(value)
-	, m_is_singleton(is_singleton) {
+	, m_is_strong_update(is_strong_update) {
 
 	this->m_live.add_def(m_arr);	
         for(auto v: m_elem_size.variables()) {
@@ -791,7 +791,7 @@ namespace crab {
 
       linear_expression_t elem_size() const { return m_elem_size; }
       
-      bool is_singleton() const { return m_is_singleton;}
+      bool is_strong_update() const { return m_is_strong_update;}
       
       virtual void accept(statement_visitor<Number, VariableName> *v) {
         v->visit(*this);
@@ -799,7 +799,7 @@ namespace crab {
       
       virtual statement_t* clone() const {
         return new this_type(m_arr, m_elem_size, m_lb, m_ub, m_value,
-			     m_is_singleton); 
+			     m_is_strong_update); 
       }
       
       virtual void write(crab_os& o) const {
@@ -822,9 +822,10 @@ namespace crab {
       linear_expression_t m_lb;
       linear_expression_t m_ub;      
       linear_expression_t m_value;
-      bool m_is_singleton; // whether the store writes to a singleton
-                           // cell (size one). If unknown set to false.
-                           // Only makes sense if m_lb is equal to m_ub.
+      // whether the store is a strong update. This might help the
+      // abstract domain.
+      // If unknown set to false.  Only makes sense if m_lb is equal to m_ub.
+      bool m_is_strong_update; 
     }; 
 
     template<class Number, class VariableName>
@@ -1828,7 +1829,7 @@ namespace crab {
 	}
       }
       
-      void insert(statement_t* stmt) {
+      const statement_t* insert(statement_t* stmt) {
         if (m_insert_point_at_front) {
           m_stmts.insert(m_stmts.begin(), stmt);
           m_insert_point_at_front = false;
@@ -1836,6 +1837,7 @@ namespace crab {
           m_stmts.push_back(stmt);
 	}	
 	update_uses_and_defs(stmt);
+	return stmt;
       }
       
      public:
@@ -2045,293 +2047,280 @@ namespace crab {
             
       /// To build statements
       
-      void add(variable_t lhs, variable_t op1, variable_t op2) {
-        insert(new bin_op_t(lhs, BINOP_ADD, op1, op2));
+      const statement_t* add(variable_t lhs, variable_t op1, variable_t op2) {
+        return insert(new bin_op_t(lhs, BINOP_ADD, op1, op2));
       }
       
-      void add(variable_t lhs, variable_t op1, Number op2) {
-        insert(new bin_op_t(lhs, BINOP_ADD, op1,  op2));
+      const statement_t* add(variable_t lhs, variable_t op1, Number op2) {
+        return insert(new bin_op_t(lhs, BINOP_ADD, op1,  op2));
       }
       
-      void sub(variable_t lhs, variable_t op1, variable_t op2) {
-        insert(new bin_op_t(lhs, BINOP_SUB, op1, op2));
+      const statement_t* sub(variable_t lhs, variable_t op1, variable_t op2) {
+        return insert(new bin_op_t(lhs, BINOP_SUB, op1, op2));
       }
       
-      void sub(variable_t lhs, variable_t op1, Number op2) {
-        insert(new bin_op_t(lhs, BINOP_SUB, op1, op2));
+      const statement_t* sub(variable_t lhs, variable_t op1, Number op2) {
+        return insert(new bin_op_t(lhs, BINOP_SUB, op1, op2));
       }
       
-      void mul(variable_t lhs, variable_t op1, variable_t op2) {
-        insert(new bin_op_t(lhs, BINOP_MUL, op1, op2));
+      const statement_t* mul(variable_t lhs, variable_t op1, variable_t op2) {
+        return insert(new bin_op_t(lhs, BINOP_MUL, op1, op2));
       }
       
-      void mul(variable_t lhs, variable_t op1, Number op2) {
-        insert(new bin_op_t(lhs, BINOP_MUL, op1, op2));
+      const statement_t* mul(variable_t lhs, variable_t op1, Number op2) {
+        return insert(new bin_op_t(lhs, BINOP_MUL, op1, op2));
       }
       
       // signed division
-      void div(variable_t lhs, variable_t op1, variable_t op2) {
-        insert(new bin_op_t(lhs, BINOP_SDIV, op1, op2));
+      const statement_t* div(variable_t lhs, variable_t op1, variable_t op2) {
+        return insert(new bin_op_t(lhs, BINOP_SDIV, op1, op2));
       }
       
-      void div(variable_t lhs, variable_t op1, Number op2) {
-        insert(new bin_op_t(lhs, BINOP_SDIV, op1, op2));
+      const statement_t* div(variable_t lhs, variable_t op1, Number op2) {
+        return insert(new bin_op_t(lhs, BINOP_SDIV, op1, op2));
       }
       
       // unsigned division
-      void udiv(variable_t lhs, variable_t op1, variable_t op2) {
-        insert(new bin_op_t(lhs, BINOP_UDIV, op1, op2));
+      const statement_t* udiv(variable_t lhs, variable_t op1, variable_t op2) {
+        return insert(new bin_op_t(lhs, BINOP_UDIV, op1, op2));
       }
       
-      void udiv(variable_t lhs, variable_t op1, Number op2) {
-        insert(new bin_op_t(lhs, BINOP_UDIV, op1, op2));
+      const statement_t* udiv(variable_t lhs, variable_t op1, Number op2) {
+        return insert(new bin_op_t(lhs, BINOP_UDIV, op1, op2));
       }
       
       // signed rem
-      void rem(variable_t lhs, variable_t op1, variable_t op2) {
-        insert(new bin_op_t(lhs, BINOP_SREM, op1, op2));
+      const statement_t* rem(variable_t lhs, variable_t op1, variable_t op2) {
+        return insert(new bin_op_t(lhs, BINOP_SREM, op1, op2));
       }
       
-      void rem(variable_t lhs, variable_t op1, Number op2) {
-        insert(new bin_op_t(lhs, BINOP_SREM, op1, op2));
+      const statement_t* rem(variable_t lhs, variable_t op1, Number op2) {
+        return insert(new bin_op_t(lhs, BINOP_SREM, op1, op2));
       }
       
       // unsigned rem
-      void urem(variable_t lhs, variable_t op1, variable_t op2) {
-        insert(new bin_op_t(lhs, BINOP_UREM, op1, op2));
+      const statement_t* urem(variable_t lhs, variable_t op1, variable_t op2) {
+        return insert(new bin_op_t(lhs, BINOP_UREM, op1, op2));
       }
       
-      void urem(variable_t lhs, variable_t op1, Number op2) {
-        insert(new bin_op_t(lhs, BINOP_UREM, op1, op2));
+      const statement_t* urem(variable_t lhs, variable_t op1, Number op2) {
+        return insert(new bin_op_t(lhs, BINOP_UREM, op1, op2));
       }
       
-      void bitwise_and(variable_t lhs, variable_t op1, variable_t op2) {
-        insert(new bin_op_t(lhs, BINOP_AND, op1, op2));
+      const statement_t* bitwise_and(variable_t lhs, variable_t op1, variable_t op2) {
+        return insert(new bin_op_t(lhs, BINOP_AND, op1, op2));
       }
       
-      void bitwise_and(variable_t lhs, variable_t op1, Number op2) {
-        insert(new bin_op_t(lhs, BINOP_AND, op1, op2));
+      const statement_t* bitwise_and(variable_t lhs, variable_t op1, Number op2) {
+        return insert(new bin_op_t(lhs, BINOP_AND, op1, op2));
       }
       
-      void bitwise_or(variable_t lhs, variable_t op1, variable_t op2) {
-        insert(new bin_op_t(lhs, BINOP_OR, op1, op2));
+      const statement_t* bitwise_or(variable_t lhs, variable_t op1, variable_t op2) {
+        return insert(new bin_op_t(lhs, BINOP_OR, op1, op2));
       }
       
-      void bitwise_or(variable_t lhs, variable_t op1, Number op2) {
-        insert(new bin_op_t(lhs, BINOP_OR, op1, op2));
+      const statement_t* bitwise_or(variable_t lhs, variable_t op1, Number op2) {
+        return insert(new bin_op_t(lhs, BINOP_OR, op1, op2));
       }
       
-      void bitwise_xor(variable_t lhs, variable_t op1, variable_t op2) {
-        insert(new bin_op_t(lhs, BINOP_XOR, op1, op2));
+      const statement_t* bitwise_xor(variable_t lhs, variable_t op1, variable_t op2) {
+        return insert(new bin_op_t(lhs, BINOP_XOR, op1, op2));
       }
       
-      void bitwise_xor(variable_t lhs, variable_t op1, Number op2) {
-        insert(new bin_op_t(lhs, BINOP_XOR, op1, op2));
+      const statement_t* bitwise_xor(variable_t lhs, variable_t op1, Number op2) {
+        return insert(new bin_op_t(lhs, BINOP_XOR, op1, op2));
       }
 
-      void shl(variable_t lhs, variable_t op1, variable_t op2) {
-        insert(new bin_op_t(lhs, BINOP_SHL, op1, op2));
+      const statement_t* shl(variable_t lhs, variable_t op1, variable_t op2) {
+        return insert(new bin_op_t(lhs, BINOP_SHL, op1, op2));
       }
       
-      void shl(variable_t lhs, variable_t op1, Number op2) {
-        insert(new bin_op_t(lhs, BINOP_SHL, op1, op2));
+      const statement_t* shl(variable_t lhs, variable_t op1, Number op2) {
+        return insert(new bin_op_t(lhs, BINOP_SHL, op1, op2));
       }
 
-      void lshr(variable_t lhs, variable_t op1, variable_t op2) {
-        insert(new bin_op_t(lhs, BINOP_LSHR, op1, op2));
+      const statement_t* lshr(variable_t lhs, variable_t op1, variable_t op2) {
+        return insert(new bin_op_t(lhs, BINOP_LSHR, op1, op2));
       }
       
-      void lshr(variable_t lhs, variable_t op1, Number op2) {
-        insert(new bin_op_t(lhs, BINOP_LSHR, op1, op2));
+      const statement_t* lshr(variable_t lhs, variable_t op1, Number op2) {
+        return insert(new bin_op_t(lhs, BINOP_LSHR, op1, op2));
       }
 
-      void ashr(variable_t lhs, variable_t op1, variable_t op2) {
-        insert(new bin_op_t(lhs, BINOP_ASHR, op1, op2));
+      const statement_t* ashr(variable_t lhs, variable_t op1, variable_t op2) {
+        return insert(new bin_op_t(lhs, BINOP_ASHR, op1, op2));
       }
       
-      void ashr(variable_t lhs, variable_t op1, Number op2) {
-        insert(new bin_op_t(lhs, BINOP_ASHR, op1, op2));
+      const statement_t* ashr(variable_t lhs, variable_t op1, Number op2) {
+        return insert(new bin_op_t(lhs, BINOP_ASHR, op1, op2));
       }      
       
-      void assign(variable_t lhs, lin_exp_t rhs) {
-        insert(new assign_t(lhs, rhs));
+      const statement_t* assign(variable_t lhs, lin_exp_t rhs) {
+        return insert(new assign_t(lhs, rhs));
       }
 
-      void assume(lin_cst_t cst) {
-        insert(new assume_t(cst));
+      const statement_t* assume(lin_cst_t cst) {
+        return insert(new assume_t(cst));
       }
       
-      void havoc(variable_t lhs) {
-        insert(new havoc_t(lhs));
+      const statement_t* havoc(variable_t lhs) {
+        return insert(new havoc_t(lhs));
       }
       
-      void unreachable() {
-        insert(new unreach_t());
+      const statement_t* unreachable() {
+        return insert(new unreach_t());
       }
       
-      void select(variable_t lhs, variable_t v, lin_exp_t e1, lin_exp_t e2) {
+      const statement_t* select(variable_t lhs, variable_t v, lin_exp_t e1, lin_exp_t e2) {
         lin_cst_t cond =(v>= Number(1));
-        insert(new select_t(lhs, cond, e1, e2));
+        return insert(new select_t(lhs, cond, e1, e2));
       }
       
-      void select(variable_t lhs, lin_cst_t cond, lin_exp_t e1, lin_exp_t e2) {
-        insert(new select_t(lhs, cond, e1, e2));
+      const statement_t* select(variable_t lhs, lin_cst_t cond, lin_exp_t e1, lin_exp_t e2) {
+        return insert(new select_t(lhs, cond, e1, e2));
       }
 
-      void assertion(lin_cst_t cst, debug_info di = debug_info()) {
-	insert(new assert_t(cst, di));
+      const statement_t* assertion(lin_cst_t cst, debug_info di = debug_info()) {
+	return insert(new assert_t(cst, di));
       }
 
-      void truncate(variable_t src, variable_t dst) {
-	insert(new int_cast_t(CAST_TRUNC,src,dst));
+      const statement_t* truncate(variable_t src, variable_t dst) {
+	return insert(new int_cast_t(CAST_TRUNC,src,dst));
       }
       
-      void sext(variable_t src, variable_t dst) {
-	insert(new int_cast_t(CAST_SEXT,src,dst));
+      const statement_t* sext(variable_t src, variable_t dst) {
+	return insert(new int_cast_t(CAST_SEXT,src,dst));
       }
 
-      void zext(variable_t src, variable_t dst) {
-	insert(new int_cast_t(CAST_ZEXT,src,dst));
+      const statement_t* zext(variable_t src, variable_t dst) {
+	return insert(new int_cast_t(CAST_ZEXT,src,dst));
       }
       
-      void callsite(std::string func, 
-		     const std::vector<variable_t> &lhs, 
-                     const std::vector<variable_t> &args) { 
-        insert(new callsite_t(func, lhs, args));
+      const statement_t* callsite(std::string func, 
+				  const std::vector<variable_t> &lhs, 
+				  const std::vector<variable_t> &args) { 
+        return insert(new callsite_t(func, lhs, args));
       }
             
-      void ret(variable_t var) {
+      const statement_t* ret(variable_t var) {
         std::vector<variable_t> ret_vals{var};
-        insert(new return_t(ret_vals));
+        return insert(new return_t(ret_vals));
       }
 
-      void ret(const std::vector<variable_t> &ret_vals) {
-        insert(new return_t(ret_vals));
+      const statement_t* ret(const std::vector<variable_t> &ret_vals) {
+        return insert(new return_t(ret_vals));
       }
             
-      void array_init(variable_t a, lin_exp_t lb_idx, lin_exp_t ub_idx, 
-		      lin_exp_t v, lin_exp_t elem_size) {
-        if(m_track_prec == ARR) {
-          insert(new arr_init_t(a, elem_size, lb_idx, ub_idx, v));
-	}
+      const statement_t* array_init(variable_t a, lin_exp_t lb_idx, lin_exp_t ub_idx, 
+				    lin_exp_t v, lin_exp_t elem_size) {
+	return ((m_track_prec == ARR) ?
+		insert(new arr_init_t(a, elem_size, lb_idx, ub_idx, v)): nullptr);
       }
 
-      void array_store(variable_t arr, lin_exp_t idx, lin_exp_t v, 
-                        lin_exp_t elem_size, bool is_singleton = false)  {
-        if (m_track_prec == ARR) {
-          insert(new arr_store_t(arr, elem_size, idx, idx, v, is_singleton));
-	}
+      const statement_t* array_store(variable_t arr, lin_exp_t idx, lin_exp_t v, 
+                        lin_exp_t elem_size, bool is_strong_update = false)  {
+        return ((m_track_prec == ARR) ?
+		insert(new arr_store_t(arr, elem_size, idx, idx, v, is_strong_update)): nullptr);
       }
 
-      void array_store_range(variable_t arr, lin_exp_t lb_idx, lin_exp_t ub_idx,
+      const statement_t* array_store_range(variable_t arr, lin_exp_t lb_idx, lin_exp_t ub_idx,
 			     lin_exp_t v,  lin_exp_t elem_size)  {
-        if (m_track_prec == ARR) {
-          insert(new arr_store_t(arr, elem_size, lb_idx, ub_idx, v, false));
-	}
+        return ((m_track_prec == ARR) ?
+		insert(new arr_store_t(arr, elem_size, lb_idx, ub_idx, v, false)): nullptr);
       }
       
-      void array_load(variable_t lhs, variable_t arr,
+      const statement_t* array_load(variable_t lhs, variable_t arr,
                        lin_exp_t idx, lin_exp_t elem_size) {
-        if (m_track_prec == ARR) {
-          insert(new arr_load_t(lhs, arr, elem_size, idx));
-	}
+        return ((m_track_prec == ARR) ?
+		insert(new arr_load_t(lhs, arr, elem_size, idx)): nullptr);
       }
 
-      void array_assign(variable_t lhs, variable_t rhs) {
-        if (m_track_prec == ARR) {
-          insert(new arr_assign_t(lhs, rhs));
-	}
+      const statement_t* array_assign(variable_t lhs, variable_t rhs) {
+        return ((m_track_prec == ARR) ?
+		insert(new arr_assign_t(lhs, rhs)): nullptr);
       }
             
-      void ptr_store(variable_t lhs, variable_t rhs) {
-        if (m_track_prec>= PTR) {
-          insert(new ptr_store_t(lhs, rhs));
-	}
+      const statement_t* ptr_store(variable_t lhs, variable_t rhs) {
+        return ((m_track_prec>= PTR) ?
+		insert(new ptr_store_t(lhs, rhs)): nullptr);
       }
       
-      void ptr_load(variable_t lhs, variable_t rhs) {
-        if (m_track_prec >= PTR) {
-          insert(new ptr_load_t(lhs, rhs));
-	}
+      const statement_t* ptr_load(variable_t lhs, variable_t rhs) {
+        return ((m_track_prec >= PTR) ?
+		insert(new ptr_load_t(lhs, rhs)): nullptr);
       }
       
-      void ptr_assign(variable_t lhs, variable_t rhs, lin_exp_t offset) {
-        if (m_track_prec >= PTR) {
-          insert(new ptr_assign_t(lhs, rhs, offset));
-	}
+      const statement_t* ptr_assign(variable_t lhs, variable_t rhs, lin_exp_t offset) {
+        return ((m_track_prec >= PTR) ?
+		insert(new ptr_assign_t(lhs, rhs, offset)): nullptr);
       }
       
-      void ptr_new_object(variable_t lhs, ikos::index_t address) {
-        if (m_track_prec >= PTR) {
-          insert(new ptr_object_t(lhs, address));
-	}
+      const statement_t* ptr_new_object(variable_t lhs, ikos::index_t address) {
+        return ((m_track_prec >= PTR) ?
+		insert(new ptr_object_t(lhs, address)): nullptr);
       }
       
-      void ptr_new_func(variable_t lhs, ikos::index_t func) {
-        if (m_track_prec >= PTR) {
-          insert(new ptr_function_t(lhs, func));
-	}
+      const statement_t* ptr_new_func(variable_t lhs, ikos::index_t func) {
+        return ((m_track_prec >= PTR) ?
+		insert(new ptr_function_t(lhs, func)): nullptr);
       }
 
-      void ptr_null(variable_t lhs) {
-        if (m_track_prec >= PTR) {
-          insert(new ptr_null_t(lhs));
-	}
+      const statement_t* ptr_null(variable_t lhs) {
+        return ((m_track_prec >= PTR) ?
+		insert(new ptr_null_t(lhs)): nullptr);
       }
 
-      void ptr_assume(pointer_constraint<variable_t> cst) {
-        if (m_track_prec >= PTR) {
-          insert(new ptr_assume_t(cst));
-	}
+      const statement_t* ptr_assume(pointer_constraint<variable_t> cst) {
+        return ((m_track_prec >= PTR) ?
+		insert(new ptr_assume_t(cst)): nullptr);
       }
 
-      void ptr_assertion(pointer_constraint<variable_t> cst) {
-        if (m_track_prec >= PTR) {
-          insert(new ptr_assert_t(cst));
-	}
+      const statement_t* ptr_assertion(pointer_constraint<variable_t> cst) {
+        return ((m_track_prec >= PTR) ?
+		insert(new ptr_assert_t(cst)): nullptr);
       }
 
-      void ptr_assertion(pointer_constraint<variable_t> cst, debug_info di) {
-        if (m_track_prec >= PTR) {
-          insert(new ptr_assert_t(cst, di));
-	}
+      const statement_t* ptr_assertion(pointer_constraint<variable_t> cst, debug_info di) {
+        return ((m_track_prec >= PTR) ?
+		insert(new ptr_assert_t(cst, di)): nullptr);
       }
 
-      void bool_assign(variable_t lhs, ikos::linear_constraint<Number, VariableName> rhs) {
-        insert(new bool_assign_cst_t(lhs, rhs));
+      const statement_t* bool_assign(variable_t lhs, lin_cst_t rhs) {
+        return insert(new bool_assign_cst_t(lhs, rhs));
       }
 
 
-      void bool_assign(variable_t lhs, variable_t rhs, bool is_not_rhs = false) {
-        insert(new bool_assign_var_t(lhs, rhs, is_not_rhs));
+      const statement_t* bool_assign(variable_t lhs, variable_t rhs, bool is_not_rhs = false) {
+        return insert(new bool_assign_var_t(lhs, rhs, is_not_rhs));
       }
       
-      void bool_assume(variable_t c) {
-        insert(new bool_assume_t(c, false));
+      const statement_t* bool_assume(variable_t c) {
+        return insert(new bool_assume_t(c, false));
       }
 
-      void bool_not_assume(variable_t c) {
-        insert(new bool_assume_t(c, true));
+      const statement_t* bool_not_assume(variable_t c) {
+        return insert(new bool_assume_t(c, true));
       }
       
-      void bool_assert(variable_t c, debug_info di = debug_info()) {
-        insert(new bool_assert_t(c, di));
+      const statement_t* bool_assert(variable_t c, debug_info di = debug_info()) {
+        return insert(new bool_assert_t(c, di));
       }
 
-      void bool_select(variable_t lhs, variable_t cond, variable_t b1, variable_t b2) {
-        insert(new bool_select_t(lhs, cond, b1, b2));
+      const statement_t* bool_select(variable_t lhs, variable_t cond,
+				     variable_t b1, variable_t b2) {
+        return insert(new bool_select_t(lhs, cond, b1, b2));
       }
       
-      void bool_and(variable_t lhs, variable_t op1, variable_t op2) {
-        insert(new bool_bin_op_t(lhs, BINOP_BAND, op1, op2));
+      const statement_t* bool_and(variable_t lhs, variable_t op1, variable_t op2) {
+        return insert(new bool_bin_op_t(lhs, BINOP_BAND, op1, op2));
       }
 
-      void bool_or(variable_t lhs, variable_t op1, variable_t op2) {
-        insert(new bool_bin_op_t(lhs, BINOP_BOR, op1, op2));
+      const statement_t* bool_or(variable_t lhs, variable_t op1, variable_t op2) {
+        return insert(new bool_bin_op_t(lhs, BINOP_BOR, op1, op2));
       }
 
-      void bool_xor(variable_t lhs, variable_t op1, variable_t op2) {
-        insert(new bool_bin_op_t(lhs, BINOP_BXOR, op1, op2));
+      const statement_t* bool_xor(variable_t lhs, variable_t op1, variable_t op2) {
+        return insert(new bool_bin_op_t(lhs, BINOP_BXOR, op1, op2));
       }
       
       friend crab_os& operator<<(crab_os &o, const basic_block_t &b) {
@@ -3957,9 +3946,9 @@ namespace crab {
 	  lin_exp_t ub = s.ub_index();
 	  lin_exp_t  v = s.val();
 	  check_array(a, s);
-	  check_num_or_var(e_sz, "element size must be number or variable", s);
-	  check_num_or_var(lb  , "array lower bound must be number or variable", s);
-	  check_num_or_var(ub  , "array upper bound must be number or variable", s);
+	  check_num_or_var(lb  , "array lower bound index must be number or variable", s);
+	  check_num_or_var(ub  , "array upper bound index must be number or variable", s);
+	  check_num_or_var(e_sz, "array element size must be number or variable", s);
 	  check_num_or_var(v   , "array value must be number or variable", s);
 	  if (boost::optional<variable_t> vv = v.get_variable()) {
 	    check_array_and_scalar_type(a, *vv, s);
@@ -3968,21 +3957,28 @@ namespace crab {
 	
 	void visit(arr_store_t& s) {
 	  // TODO: check that e_sz is the same number that v's bitwidth
-	  /// XXX: we allow linear expressions as indexes	  
 	  variable_t a = s.array();
 	  lin_exp_t e_sz = s.elem_size();	  
 	  lin_exp_t  v = s.value();
-	  if (s.is_singleton()) {
+	  if (s.is_strong_update()) {
 	    if (!(s.lb_index().equal(s.ub_index()))) {
 	      crab::crab_string_os os;
 	      os << "(type checking) "
-		 << "lower and upper indexes must be equal because array is a singleton in "
+		 << "array lower and upper indexes must be equal because strong_update array in "
 		 << s;
 	      CRAB_ERROR(os.str());
 	    }
 	  }
 	  check_array(a, s);
-	  check_num_or_var(e_sz, "element size must be number or variable", s);
+	  for (auto iv: s.lb_index().variables()) {
+	    check_int_or_bool(iv, "array index must contain only integer or boolean variables",
+			      s); 
+	  }
+	  for (auto iv: s.lb_index().variables()) {
+	    check_int_or_bool(iv, "array index must contain only integer or boolean variables",
+			      s); 
+	  }	  
+	  check_num_or_var(e_sz, "array element size must be number or variable", s);
 	  check_num_or_var(v   , "array value must be number or variable", s);
 	  if (boost::optional<variable_t> vv = v.get_variable()) {
 	    check_array_and_scalar_type(a, *vv, s);
@@ -3991,12 +3987,15 @@ namespace crab {
 	
 	void visit(arr_load_t& s) {
 	  // TODO: check that e_sz is the same number that lhs's bitwidth
-	  /// XXX: we allow linear expressions as indexes	  	  
 	  variable_t a = s.array();
 	  lin_exp_t e_sz = s.elem_size();	  	  
 	  variable_t lhs = s.lhs();
 	  check_array(a, s);
-	  check_num_or_var(e_sz, "element size must be number or variable", s);	  
+	  for (auto iv: s.index().variables()) {
+	    check_int_or_bool(iv, "array index must contain only integer or boolean variables",
+			      s); 
+	  }
+	  check_num_or_var(e_sz, "array element size must be number or variable", s);	  
 	  check_array_and_scalar_type(a, lhs, s);
 	}
 	  
@@ -4005,8 +4004,8 @@ namespace crab {
 	  variable_t rhs = s.rhs();
 	  check_array(lhs, s);
 	  check_array(rhs, s);
-	  check_same_type(lhs, rhs, "array variables must have same type", s);
-	  check_same_bitwidth(lhs, rhs, "array variables must have same bitwidth", s);
+	  check_same_type(lhs, rhs, "array assign variables must have same type", s);
+	  check_same_bitwidth(lhs, rhs, "array assign variables must have same bitwidth", s);
 	}
 
 	/** TODO: type checking of the following statements: **/

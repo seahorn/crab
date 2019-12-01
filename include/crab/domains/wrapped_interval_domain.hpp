@@ -1706,7 +1706,7 @@ public:
 		  linear_expression_t i) {}
   void array_store(variable_t a, linear_expression_t elem_size,
 		   linear_expression_t i, linear_expression_t v, 
-		   bool is_singleton) {}
+		   bool is_strong_update) {}
   void array_store_range(variable_t a, linear_expression_t elem_size,
 			 linear_expression_t i, linear_expression_t j,
 			 linear_expression_t v) {}  
@@ -1720,7 +1720,7 @@ public:
 			   linear_expression_t i, wrapped_interval_domain_t invariant) {}
   void backward_array_store(variable_t a, linear_expression_t elem_size,
 			    linear_expression_t i, linear_expression_t v, 
-			    bool is_singleton, wrapped_interval_domain_t invariant) {}
+			    bool is_strong_update, wrapped_interval_domain_t invariant) {}
   void backward_array_store_range(variable_t a, linear_expression_t elem_size,
 				  linear_expression_t i, linear_expression_t j,
 				  linear_expression_t v,
@@ -2475,7 +2475,7 @@ public:
 		  linear_expression_t i) {}
   void array_store(variable_t a, linear_expression_t elem_size,
 		   linear_expression_t i, linear_expression_t v, 
-		   bool is_singleton) {}
+		   bool is_strong_update) {}
   void array_store_range(variable_t a, linear_expression_t elem_size,
 			 linear_expression_t i, linear_expression_t j,
 			 linear_expression_t v) {}  
@@ -2489,7 +2489,7 @@ public:
 			   linear_expression_t i, this_type invariant) {}
   void backward_array_store(variable_t a, linear_expression_t elem_size,
 			    linear_expression_t i, linear_expression_t v, 
-			    bool is_singleton, this_type invariant) {}
+			    bool is_strong_update, this_type invariant) {}
   void backward_array_store_range(variable_t a, linear_expression_t elem_size,
 				  linear_expression_t i, linear_expression_t j,
 				  linear_expression_t v, this_type invariant) {}  
@@ -3188,8 +3188,8 @@ public:
 			    linear_expression_t elem_size,
 			    linear_expression_t i,
 			    linear_expression_t val, 
-			    bool is_singleton) override
-  { _product.array_store(a, elem_size, i, val, is_singleton); }
+			    bool is_strong_update) override
+  { _product.array_store(a, elem_size, i, val, is_strong_update); }
 
   virtual void array_store_range(variable_t a, linear_expression_t elem_size,
 				 linear_expression_t i, linear_expression_t j,
@@ -3212,7 +3212,7 @@ public:
 				    linear_expression_t elem_size,
 				    linear_expression_t i,
 				    linear_expression_t val, 
-				    bool is_singleton,
+				    bool is_strong_update,
 				    wrapped_numerical_domain_t invariant) override {}
   virtual void backward_array_store_range(variable_t a, linear_expression_t elem_size,
 					  linear_expression_t i, linear_expression_t j,

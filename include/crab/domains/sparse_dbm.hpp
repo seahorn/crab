@@ -775,15 +775,6 @@ namespace crab {
           _is_bottom(o._is_bottom)
       { }
 
-      SparseDBM_(vert_map_t& _vert_map, rev_map_t& _rev_map, graph_t& _g,
-		 std::vector<Wt>& _potential, vert_set_t& _unstable)
-        : vert_map(_vert_map), rev_map(_rev_map), g(_g),
-	  potential(_potential), unstable(_unstable), _is_bottom(false)
-      {
-        CRAB_WARN("Non-moving constructor.");
-        assert(g.size() > 0);
-      }
-      
       // Magical rvalue ownership stuff for efficient initialization
       SparseDBM_(vert_map_t&& _vert_map, rev_map_t&& _rev_map, graph_t&& _g,
 		 std::vector<Wt>&& _potential, vert_set_t&& _unstable)
@@ -1032,8 +1023,9 @@ namespace crab {
           return *this;
         else {
           CRAB_LOG("zones-sparse",
-                    crab::outs() << "Before widening:\n"<<"DBM 1\n"<<*this<<"\n"<<"DBM 2\n"
-		                 << o<<"\n";);
+		   DBM_t left(*this); // to avoid closure on left operand
+		   crab::outs() << "Before widening:\n"<<"DBM 1\n"
+		                << left <<"\n"<<"DBM 2\n" << o<<"\n";);
           o.normalize();
           
           // Figure out the common renaming
@@ -1079,7 +1071,9 @@ namespace crab {
           DBM_t res(std::move(out_vmap), std::move(out_revmap), std::move(widen_g), 
                     std::move(widen_pot), std::move(widen_unstable));
 
-          CRAB_LOG("zones-sparse", crab::outs() << "Result widening:\n"<<res<<"\n";);
+          CRAB_LOG("zones-sparse",
+		   DBM_t res_copy(res);
+		   crab::outs() << "Result widening:\n" << res_copy <<"\n";);
           return res;
         }
       }
@@ -1659,10 +1653,10 @@ namespace crab {
         crab::CrabStats::count(getDomainName() + ".count.apply");
         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
-        // Convert to intervals and perform the operation
+	if (is_bottom()) return;
         normalize();
-        this->operator-=(x); 
-
+	
+        // Convert to intervals and perform the operation
         interval_t yi = operator[](y);
         interval_t zi = operator[](z);
         interval_t xi = interval_t::bottom();
@@ -1701,8 +1695,10 @@ namespace crab {
         crab::CrabStats::count(getDomainName() + ".count.apply");
         crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
-        // Convert to intervals and perform the operation
+	if (is_bottom()) return;
         normalize();
+
+        // Convert to intervals and perform the operation	
         interval_t yi = operator[](y);
         interval_t zi(k);
         interval_t xi = interval_t::bottom();
@@ -1769,7 +1765,7 @@ namespace crab {
 		      linear_expression_t i) {}
       void array_store(variable_t a, linear_expression_t elem_size,
 		       linear_expression_t i, linear_expression_t v, 
-		       bool is_singleton) {}
+		       bool is_strong_update) {}
       void array_store_range(variable_t a, linear_expression_t elem_size,
 			     linear_expression_t i, linear_expression_t j,
 			     linear_expression_t v) {}      
@@ -1783,7 +1779,7 @@ namespace crab {
 			       linear_expression_t i, DBM_t invariant) {}
       void backward_array_store(variable_t a, linear_expression_t elem_size,
 				linear_expression_t i, linear_expression_t v, 
-				bool is_singleton, DBM_t invariant) {}
+				bool is_strong_update, DBM_t invariant) {}
       void backward_array_store_range(variable_t a, linear_expression_t elem_size,
 				      linear_expression_t i, linear_expression_t j,
 				      linear_expression_t v, DBM_t invariant) {}    
@@ -2254,7 +2250,7 @@ namespace crab {
 		      linear_expression_t i) {}
       void array_store(variable_t a, linear_expression_t elem_size,
 		       linear_expression_t i, linear_expression_t v, 
-		       bool is_singleton) {}
+		       bool is_strong_update) {}
       void array_store_range(variable_t a, linear_expression_t elem_size,
 			     linear_expression_t i, linear_expression_t j,
 			     linear_expression_t v) {}            
@@ -2268,7 +2264,7 @@ namespace crab {
 			       linear_expression_t i, DBM_t invariant) {}
       void backward_array_store(variable_t a, linear_expression_t elem_size,
 				linear_expression_t i, linear_expression_t v, 
-				bool is_singleton, DBM_t invariant) {}
+				bool is_strong_update, DBM_t invariant) {}
       void backward_array_store_range(variable_t a, linear_expression_t elem_size,
 				      linear_expression_t i, linear_expression_t j,
 				      linear_expression_t v, DBM_t invariant) {}    

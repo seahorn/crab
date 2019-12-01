@@ -160,7 +160,7 @@ namespace crab {
 	
 	void array_store(variable_t a, linear_expression_t elem_size,
 			 linear_expression_t i, linear_expression_t v, 
-			 bool is_singleton)
+			 bool is_strong_update)
 	{ CRAB_ERROR(APRON_NOT_FOUND); }
 
 	void array_store_range(variable_t a, linear_expression_t elem_size,
@@ -183,7 +183,7 @@ namespace crab {
 	
 	void backward_array_store(variable_t a, linear_expression_t elem_size,
 				  linear_expression_t i, linear_expression_t v, 
-				  bool is_singleton, apron_domain_t invariant)
+				  bool is_strong_update, apron_domain_t invariant)
 	{ CRAB_ERROR(APRON_NOT_FOUND); }
 
 	void backward_array_store_range(variable_t a, linear_expression_t elem_size,
@@ -670,17 +670,16 @@ namespace crab {
           ap_linexpr0_t* linexp = cons.linexpr0;
           assert(ap_linexpr0_is_linear(linexp));
 
-          linear_expression_t e(0);
-          for (unsigned i=0; i < get_dims(); ++i) {
-            ap_coeff_t* coeff = ap_linexpr0_coeffref(linexp, i);
-            if (ap_coeff_zero(coeff)) continue;
-            
-            if (!has_variable(i)) continue; // unused dimension
-
-            e = e + term2expr( coeff, i);
-          }
-
-          // add possible constant
+	  unsigned i;
+	  ap_dim_t dim;
+	  ap_coeff_t* coef;
+	  linear_expression_t e(0);      
+	  ap_linexpr0_ForeachLinterm(linexp, i, dim, coef){
+	    if (ap_coeff_zero(coef)) continue;
+	    e = e + term2expr(coef, dim);
+	  }
+	  
+          // add constant
           ap_coeff_t* cst = ap_linexpr0_cstref(linexp);
           if (!ap_coeff_zero(cst)) 
             e = e + coeff2Num(cst);
@@ -781,56 +780,62 @@ namespace crab {
 
        private:
 
-        apron_domain_(ap_state_ptr apState, var_map_t varMap):
+	#if 0
+	// Disable this constructor to avoid unnecessary copies.
+	// The magic of move semantics should be used instead.
+        apron_domain_(ap_state_ptr apState, var_map_t varMap, bool compact = true):
 	  m_apstate(apState), m_var_map(varMap) {
-	  
-          std::vector<ap_dim_t> dims;
-          var_map_t res;
-          /// XXX: we must iterate on the dimension id's to preserve
-          /// order between them
-          for (auto const& p: m_var_map.right) {  
-            if (ap_abstract0_is_dimension_unconstrained(get_man(),
-                                                         &*m_apstate, 
-                                                         p.first)) {
-              dims.push_back(p.first);
-            }
-            else {
-              ap_dim_t i = res.size();
-              res.insert(binding_t(p.second, i));
-            }
-          }
-          remove_dimensions(m_apstate, dims);
-          std::swap(m_var_map, res);
 
-          assert(m_var_map.size() == get_dims());
+	  if (compact) {
+	    std::vector<ap_dim_t> dims;
+	    var_map_t res;
+	    /// XXX: we must iterate on the dimension id's to preserve
+	    /// order between them
+	    for (auto const& p: m_var_map.right) {  
+	      if (ap_abstract0_is_dimension_unconstrained(get_man(),
+							  &*m_apstate, 
+							  p.first)) {
+		dims.push_back(p.first);
+	      }
+	      else {
+		ap_dim_t i = res.size();
+		res.insert(binding_t(p.second, i));
+	      }
+	    }
+	    remove_dimensions(m_apstate, dims);
+	    std::swap(m_var_map, res);
+	    
+	    assert(m_var_map.size() == get_dims());
+	  }
         }
+        #endif 
 
-
-        apron_domain_(ap_state_ptr&& apState, var_map_t&& varMap):
+        apron_domain_(ap_state_ptr&& apState, var_map_t&& varMap, bool compact = true):
 	  m_apstate(std::move(apState)), 
 	  m_var_map(std::move(varMap)) { 
 
-          std::vector<ap_dim_t> dims;
-          var_map_t res;
-          /// XXX: we must iterate on the dimension id's to preserve
-          /// order between them
-          for (auto const& p: m_var_map.right) {  
-            if (ap_abstract0_is_dimension_unconstrained(get_man(),
+	  if (compact) {
+	    std::vector<ap_dim_t> dims;
+	    var_map_t res;
+	    /// XXX: we must iterate on the dimension id's to preserve
+	    /// order between them
+	    for (auto const& p: m_var_map.right) {  
+	      if (ap_abstract0_is_dimension_unconstrained(get_man(),
                                                          &*m_apstate, 
-                                                         p.first)) {
+							  p.first)) {
               dims.push_back(p.first);
-            }
-            else {
-              ap_dim_t i = res.size();
-              res.insert(binding_t(p.second, i));
-            }
-          }
-          remove_dimensions(m_apstate, dims);
-          std::swap(m_var_map, res);
-
-          assert(m_var_map.size() == get_dims());
-        }
-
+	      }
+	      else {
+		ap_dim_t i = res.size();
+		res.insert(binding_t(p.second, i));
+	      }
+	    }
+	    remove_dimensions(m_apstate, dims);
+	    std::swap(m_var_map, res);
+	    
+	    assert(m_var_map.size() == get_dims());
+	  }
+	}
 
        public:
 
@@ -920,7 +925,7 @@ namespace crab {
           else if (is_top() || o.is_bottom())
             return ;
           else {
-            m_var_map = merge_var_map(m_var_map, m_apstate, o.m_var_map, o.m_apstate);
+            m_var_map = std::move(merge_var_map(m_var_map, m_apstate, o.m_var_map, o.m_apstate));
             m_apstate = apPtr(get_man(), 
                                ap_abstract0_join(get_man(), false, 
                                                   &*m_apstate, &*o.m_apstate));
@@ -940,7 +945,8 @@ namespace crab {
             var_map_t  m = merge_var_map(m_var_map, x, o.m_var_map, o.m_apstate);
             return apron_domain_t(apPtr(get_man(), 
                                           ap_abstract0_join(get_man(), false, 
-                                                             &*x, &*o.m_apstate)), m);
+                                                             &*x, &*o.m_apstate)),
+				  std::move(m));
           }
         }        
         
@@ -959,7 +965,8 @@ namespace crab {
             var_map_t  m = merge_var_map(m_var_map, x, o.m_var_map, o.m_apstate);
             return apron_domain_t(apPtr(get_man(), 
                                           ap_abstract0_meet(get_man(), false, 
-                                                             &*x, &*o.m_apstate)), m);
+                                                             &*x, &*o.m_apstate)),
+				  std::move(m));
           }
         }        
         
@@ -967,17 +974,19 @@ namespace crab {
           crab::CrabStats::count(getDomainName() + ".count.widening");
           crab::ScopedCrabStats __st__(getDomainName() + ".widening");
 
-          if (is_bottom())
-            return o;
-          else if (o.is_bottom())
-            return *this;
-          else {
-            ap_state_ptr x = apPtr(get_man(), ap_abstract0_copy(get_man(), &*m_apstate));
-            var_map_t  m = merge_var_map(m_var_map, x, o.m_var_map, o.m_apstate);
-            return apron_domain_t(apPtr(get_man(), 
-                                          ap_abstract0_widening(get_man(), 
-                                                                 &*x, &*o.m_apstate)), m);
-          }
+          // if (is_bottom())
+          //   return o;
+          // else if (o.is_bottom())
+          //   return *this;
+          // else {
+	  ap_state_ptr x = apPtr(get_man(), ap_abstract0_copy(get_man(), &*m_apstate));
+	  var_map_t  m = merge_var_map(m_var_map, x, o.m_var_map, o.m_apstate);
+	  return apron_domain_t(apPtr(get_man(), 
+				      ap_abstract0_widening(get_man(), 
+							    &*x, &*o.m_apstate)),
+				std::move(m),
+				false /* do not compact */);
+          //}
         }        
 
 	ap_lincons0_array_t make_thresholds(apron_domain_t o,
@@ -992,44 +1001,47 @@ namespace crab {
           crab::CrabStats::count(getDomainName() + ".count.widening");
           crab::ScopedCrabStats __st__(getDomainName() + ".widening");
 
-          if (is_bottom())
-            return o;
-          else if (o.is_bottom())
-            return *this;
-          else {
-            ap_state_ptr x = apPtr(get_man(), ap_abstract0_copy(get_man(), &*m_apstate));
-            var_map_t  m = merge_var_map(m_var_map, x, o.m_var_map, o.m_apstate);
-	    //////
-	    // We cannot refine the result of widening with
-	    // widening w/ thresholds over intervals because it might
-	    // cause non-termination.
-	    ///// 
-	    // This causes a loss of precision in a couple of tests:
-	    // - tests/domains/test2-rat.cc
-	    // - tests/domains/test3-rat.cc
-	    /////
-	    #if 0
-	    // widening w/o thresholds in the apron domain
-            apron_domain_t res(apPtr(get_man(), 
-	    				 ap_abstract0_widening(get_man(), 
-	    						       &*x, &*o.m_apstate)), m);
-	    // widening w/ thresholds in the interval domain
-	    auto intv_this  = this->to_interval_domain();
-	    auto intv_o     = o.to_interval_domain();
-	    auto intv_widen = intv_this.widening_thresholds(intv_o, ts);	    
-	    // refine the apron domain using the widen intervals
-	    apron_domain_t apron_intv_widen;
-	    apron_intv_widen += intv_widen.to_linear_constraint_system();
-	    return res & apron_intv_widen;
-	    #else
-	    ap_lincons0_array_t csts = make_thresholds(o, ts);
-            apron_domain_t res(apPtr(get_man(), 
-				       ap_abstract0_widening_threshold
-				      (get_man(), &*x, &*o.m_apstate, &csts)), m);
-	    ap_lincons0_array_clear(&csts);
-	    return res;
-	    #endif 
-          }
+          // if (is_bottom())
+          //   return o;
+          // else if (o.is_bottom())
+          //   return *this;
+          // else {
+	  ap_state_ptr x = apPtr(get_man(), ap_abstract0_copy(get_man(), &*m_apstate));
+	  var_map_t  m = merge_var_map(m_var_map, x, o.m_var_map, o.m_apstate);
+	  //////
+	  // We cannot refine the result of widening with
+	  // widening w/ thresholds over intervals because it might
+	  // cause non-termination.
+	  ///// 
+	  // This causes a loss of precision in a couple of tests:
+	  // - tests/domains/test2-rat.cc
+	  // - tests/domains/test3-rat.cc
+	  /////
+	  #if 0
+	  // widening w/o thresholds in the apron domain
+	  apron_domain_t res(apPtr(get_man(), 
+				   ap_abstract0_widening(get_man(), 
+							 &*x, &*o.m_apstate)),
+			     std::move(m));
+	  // widening w/ thresholds in the interval domain
+	  auto intv_this  = this->to_interval_domain();
+	  auto intv_o     = o.to_interval_domain();
+	  auto intv_widen = intv_this.widening_thresholds(intv_o, ts);	    
+	  // refine the apron domain using the widen intervals
+	  apron_domain_t apron_intv_widen;
+	  apron_intv_widen += intv_widen.to_linear_constraint_system();
+	  return res & apron_intv_widen;
+	  #else
+	  ap_lincons0_array_t csts = make_thresholds(o, ts);
+	  apron_domain_t res(apPtr(get_man(), 
+				   ap_abstract0_widening_threshold
+				   (get_man(), &*x, &*o.m_apstate, &csts)),
+			     std::move(m),
+			     false /* do not compact */);
+	  ap_lincons0_array_clear(&csts);
+	  return res;
+          #endif 
+          //}
         }
 
         apron_domain_t operator&&(apron_domain_t o) {
@@ -1049,7 +1061,8 @@ namespace crab {
               case APRON_OCT:
                 return apron_domain_t(apPtr(get_man(), 
 					    ap_abstract0_oct_narrowing(get_man(),
-								       &*x, &*o.m_apstate)), m);
+								       &*x, &*o.m_apstate)),
+				      std::move(m));
               case APRON_INT:
               case APRON_PK:
               default:
@@ -1057,7 +1070,8 @@ namespace crab {
 	       //           "make sure only a finite number of descending iterations are run.");
                 return apron_domain_t(apPtr(get_man(), 
                                               ap_abstract0_meet(get_man(), false,
-								 &*x, &*o.m_apstate)), m);
+								 &*x, &*o.m_apstate)),
+				      std::move(m));
             }
           }
         }        
@@ -1666,7 +1680,7 @@ namespace crab {
 			linear_expression_t i) {}
 	void array_store(variable_t a, linear_expression_t elem_size,
 			 linear_expression_t i, linear_expression_t v, 
-			 bool is_singleton) {}
+			 bool is_strong_update) {}
 	void array_store_range(variable_t a, linear_expression_t elem_size,
 			       linear_expression_t i, linear_expression_t j,
 			       linear_expression_t v) {} 
@@ -1682,7 +1696,7 @@ namespace crab {
 	
 	void backward_array_store(variable_t a, linear_expression_t elem_size,
 				  linear_expression_t i, linear_expression_t v, 
-				  bool is_singleton, apron_domain_t invariant) {}
+				  bool is_strong_update, apron_domain_t invariant) {}
 
 	void backward_array_store_range(variable_t a, linear_expression_t elem_size,
 					linear_expression_t i, linear_expression_t j,
@@ -1725,8 +1739,7 @@ namespace crab {
             csts += linear_constraint_t::get_true();
           }
           else {
-            normalize();
-
+	    // to_lincons_array calls closure	    
             ap_lincons0_array_t lcons_arr =
 	      ap_abstract0_to_lincons_array(get_man(), &*m_apstate);
             for (unsigned i=0 ; i < lcons_arr.size; i++)
@@ -2046,7 +2059,7 @@ namespace crab {
 			linear_expression_t i) {}
 	void array_store(variable_t a, linear_expression_t elem_size,
 			 linear_expression_t i, linear_expression_t v, 
-			 bool is_singleton) {}
+			 bool is_strong_update) {}
 	void array_store_range(variable_t a, linear_expression_t elem_size,
 			       linear_expression_t i, linear_expression_t j,
 			       linear_expression_t v) {} 
@@ -2060,7 +2073,7 @@ namespace crab {
 				 linear_expression_t i, apron_domain_t invariant) {}
 	void backward_array_store(variable_t a, linear_expression_t elem_size,
 				  linear_expression_t i, linear_expression_t v, 
-				  bool is_singleton, apron_domain_t invariant) {}
+				  bool is_strong_update, apron_domain_t invariant) {}
 	void backward_array_store_range(variable_t a, linear_expression_t elem_size,
 					linear_expression_t i, linear_expression_t j,
 					linear_expression_t v, apron_domain_t invariant) {}

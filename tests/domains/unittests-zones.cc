@@ -124,6 +124,15 @@ int main (int argc, char** argv) {
     crab::outs() << "Csts2=" << csts2 << "\n";
     
   }
-  
+  {
+    z_var x(vfac["x"], crab::INT_TYPE, 32);
+    z_var y(vfac["y"], crab::INT_TYPE, 32);
+    z_var z(vfac["z"], crab::INT_TYPE, 32);
+    
+    z_sdbm_domain_t inv;
+    inv += (y >= 0);
+    inv.apply(OP_AND, x, y, 9223372036854775296);
+    crab::outs () << inv << "\n";
+  }
   return 0;
 }
