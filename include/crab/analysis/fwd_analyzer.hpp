@@ -169,31 +169,12 @@ namespace crab {
       
       //! Return the invariants that hold at the entry of b
       abs_dom_t get_pre(basic_block_label_t b) const {
-        auto it = this->_pre.find(b);
-        if (it == this->_pre.end()) {
-          return abs_dom_t::bottom();
-	  // if the basic block is not in the invariant table it must
-	  // be because it was not reached by the analysis. We
-	  // returned top but it never had real effect because
-	  // process_pre made sure that all unreachable blocks were in
-	  // the invariant table with a bottom invariant. This was
-	  // just a waste of space.
- 	  // 
-	  // return abs_dom_t::top();
-	} else {
-          return it->second;
-	}
+	return this->_pre.at(b);
       }
       
       //! Return the invariants that hold at the exit of b
       abs_dom_t get_post(basic_block_label_t b) const {
-        auto it = this->_post.find(b);
-        if (it == this->_post.end()) {
-          return abs_dom_t::bottom();	  
-          //return abs_dom_t::top();
-	} else {
-          return it->second;
-	}
+	return this->_post.at(b);
       }
 
       //! Return the WTO of the CFG. The WTO contains also how many
