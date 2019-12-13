@@ -49,5 +49,5 @@ crab_install:
 	mkdir -p crab/build
 	cd crab/build \
 	    && cmake -DCMAKE_INSTALL_PREFIX=$(CRAB_INSTALL)  \
-	       -DBUILD_CRAB_LIBS_SHARED=ON ../ \
+	       -DCRAB_BUILD_LIBS_SHARED=ON ../ \
 	    && cmake --build . --target install
