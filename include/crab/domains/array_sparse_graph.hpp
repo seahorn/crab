@@ -2147,6 +2147,7 @@ public:
       return;
     }
     if (variables.empty()) {
+      set_to_top();
       return;
     }
 

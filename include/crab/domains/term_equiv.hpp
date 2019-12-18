@@ -1609,7 +1609,12 @@ namespace crab {
          crab::ScopedCrabStats __st__(getDomainName() + ".project");
 
          if (is_bottom() || is_top()) return;
-         
+
+	 if (variables.empty()) {
+	   set_to_top();
+	   return;
+	 }
+	 
          std::set<variable_t> s1,s2;
 	 variable_vector_t s3;
          for (auto p: _var_map) s1.insert(p.first);

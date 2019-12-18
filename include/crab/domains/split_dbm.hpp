@@ -2082,7 +2082,9 @@ namespace crab {
         if (is_bottom() || is_top()) {
           return;
 	}
+	
         if (variables.empty()) {
+	  set_to_top();
           return;
 	}
 
