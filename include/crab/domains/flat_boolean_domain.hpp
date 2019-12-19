@@ -507,9 +507,17 @@ namespace crab {
     void array_store(variable_t a, linear_expression_t elem_size,
 		     linear_expression_t i, linear_expression_t v, 
 		     bool is_strong_update) {}
+    void array_store(variable_t a_new, variable_t a_old,
+		     linear_expression_t elem_size,
+		     linear_expression_t i, linear_expression_t v, 
+		     bool is_strong_update) {}    
     void array_store_range(variable_t a, linear_expression_t elem_size,
 			   linear_expression_t i, linear_expression_t j,
-			   linear_expression_t v) {}    
+			   linear_expression_t v) {}
+    void array_store_range(variable_t a_new, variable_t a_old,
+			   linear_expression_t elem_size,
+			   linear_expression_t i, linear_expression_t j,
+			   linear_expression_t v) {}        
     void array_assign(variable_t lhs, variable_t rhs) {}
     // backward array operations
     void backward_array_init(variable_t a, linear_expression_t elem_size,
@@ -521,9 +529,17 @@ namespace crab {
     void backward_array_store(variable_t a, linear_expression_t elem_size,
 			      linear_expression_t i, linear_expression_t v, 
 			      bool is_strong_update, flat_boolean_domain_t invariant) {}
+    void backward_array_store(variable_t a_new, variable_t a_old,
+			      linear_expression_t elem_size,
+			      linear_expression_t i, linear_expression_t v, 
+			      bool is_strong_update, flat_boolean_domain_t invariant) {}    
     void backward_array_store_range(variable_t a, linear_expression_t elem_size,
 				    linear_expression_t i, linear_expression_t j,
 				    linear_expression_t v, flat_boolean_domain_t invariant) {}
+    void backward_array_store_range(variable_t a_new, variable_t a_old,
+				    linear_expression_t elem_size,
+				    linear_expression_t i, linear_expression_t j,
+				    linear_expression_t v, flat_boolean_domain_t invariant) {}    
     void backward_array_assign(variable_t lhs, variable_t rhs,
 			       flat_boolean_domain_t invariant) {}
     // pointer operations
@@ -1379,31 +1395,44 @@ namespace crab {
       // array_operators_api
       
       virtual void array_init(variable_t a,
-			       linear_expression_t elem_size,
-			       linear_expression_t lb_idx,
-			       linear_expression_t ub_idx,
-			       linear_expression_t val) override
+			      linear_expression_t elem_size,
+			      linear_expression_t lb_idx,
+			      linear_expression_t ub_idx,
+			      linear_expression_t val) override
       { _product.array_init(a, elem_size, lb_idx, ub_idx, val); }
       
       virtual void array_load(variable_t lhs,
-			       variable_t a, linear_expression_t elem_size,
-                               linear_expression_t i) override {
+			      variable_t a, linear_expression_t elem_size,
+			      linear_expression_t i) override {
 	_product.array_load(lhs, a, elem_size, i);
 	if (a.get_type() == ARR_INT_TYPE || a.get_type() == ARR_REAL_TYPE)
 	  _unchanged_vars -= variable_t(lhs);	      
       }
       
       virtual void array_store(variable_t a, linear_expression_t elem_size,
-                                linear_expression_t i,
-				linear_expression_t val, 
-                                bool is_strong_update) override
+			       linear_expression_t i,
+			       linear_expression_t val, 
+			       bool is_strong_update) override
       { _product.array_store(a, elem_size, i, val, is_strong_update); }
 
+      virtual void array_store(variable_t a_new, variable_t a_old,
+			       linear_expression_t elem_size,
+			       linear_expression_t i,
+			       linear_expression_t val, 
+			       bool is_strong_update) override
+      { _product.array_store(a_new, a_old, elem_size, i, val, is_strong_update); }
+      
       virtual void array_store_range(variable_t a, linear_expression_t elem_size,
 				     linear_expression_t i, linear_expression_t j,
 				     linear_expression_t v) override
       { _product.array_store_range(a, elem_size, i, j, v); }
-	
+
+      virtual void array_store_range(variable_t a_new, variable_t a_old,
+				     linear_expression_t elem_size,
+				     linear_expression_t i, linear_expression_t j,
+				     linear_expression_t v) override
+      { _product.array_store_range(a_new, a_old, elem_size, i, j, v); }
+      
       virtual void array_assign(variable_t lhs, variable_t rhs) override
       { _product.array_assign(lhs, rhs); }
 
@@ -1434,13 +1463,31 @@ namespace crab {
 					bool_num_domain_t invariant) override
       { _product.backward_array_store(a, elem_size, i, val, is_strong_update,
 				      invariant._product); }
+      
+      virtual void backward_array_store(variable_t a_new, variable_t a_old,
+					linear_expression_t elem_size,
+					linear_expression_t i,
+					linear_expression_t val, 
+					bool is_strong_update,
+					bool_num_domain_t invariant) override
+      { _product.backward_array_store(a_new, a_old, elem_size, i, val, is_strong_update,
+				      invariant._product); }
 
       virtual void backward_array_store_range(variable_t a, linear_expression_t elem_size,
 					      linear_expression_t i, linear_expression_t j,
 					      linear_expression_t v,
 					      bool_num_domain_t invariant) override
-      { _product.backward_array_store_range(a, elem_size, i, j, v, invariant._product); }
-	
+      { _product.backward_array_store_range(a, elem_size, i, j, v,
+					    invariant._product); }
+
+      virtual void backward_array_store_range(variable_t a_new, variable_t a_old,
+					      linear_expression_t elem_size,
+					      linear_expression_t i, linear_expression_t j,
+					      linear_expression_t v,
+					      bool_num_domain_t invariant) override
+      { _product.backward_array_store_range(a_new, a_old, elem_size, i, j, v,
+					    invariant._product); }
+      
       virtual void backward_array_assign(variable_t lhs, variable_t rhs,
 					 bool_num_domain_t invariant) override
       { _product.backward_array_assign(lhs, rhs, invariant._product); }

@@ -891,6 +891,17 @@ bb1_t=({A -> true; B -> false; TRUE -> true; FALSE -> false}, {n1 -> [1, 1], i -
 bb2=({A -> true; B -> false; TRUE -> true; FALSE -> false}, {n1 -> [1, 1], i -> [0, 9], i-n1<=8, n1-i<=1})
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
+Program 12 (Memory SSA): forall 0<= i< 10. a[i] >=0 and a[i] <= 123456
+Invariants using ArraySmashing(SplitDBM)
+entry={}
+bb1={i -> [0, 10], A0 -> [0, 0], A1 -> [0, 123456], A1-i<=123455}
+bb1_f={i -> [0, 10], A0 -> [0, 0], A1 -> [0, 123456], A1-i<=123455}
+bb3={i -> [10, 10], A0 -> [0, 0], A1 -> [0, 123456], A1-i<=123455}
+ret={i -> [10, 10], A0 -> [0, 0], A1 -> [0, 123456], A3 -> [0, 123456], A4 -> [0, 500000], x -> [0, 123456], A1-i<=123446, A3-i<=123446, x-i<=123446, A4-i<=499990, A3-A1<=0, x-A1<=0, A4-A1<=500000, A1-A3<=0, A4-A3<=500000, A3-A4<=0, A1-A4<=0, A1-x<=0}
+bb1_t={i -> [0, 10], A0 -> [0, 0], A1 -> [0, 123456], A1-i<=123455}
+bb2={i -> [0, 9], A0 -> [0, 0], A1 -> [0, 123456], A1-i<=123455}
+Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f bb3 ret
+
 Program 1: forall 0<= i< 10. a[i] = 123456Invariants using ArraySparseGraph(SplitDBM,Intervals)
 entry=({},{})
 bb1=({n1 -> [1, 1], i -> [0, 10], i-n1<=9, n1-i<=1},{[0,i)=>{A0 -> [123456, 123456]}, [1,i)=>{A0 -> [123456, 123456]}, [2,i)=>{A0 -> [123456, 123456]}, [n1,i)=>{A0 -> [123456, 123456]}})

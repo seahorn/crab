@@ -517,6 +517,53 @@ z_cfg_t* prog10(variable_factory_t &vfac)
   return cfg;
 }
 
+// Simple loop in memory SSA form
+z_cfg_t* prog11 (variable_factory_t &vfac) 
+{
+  z_var i(vfac["i"], crab::INT_TYPE, 32);
+  z_var i1(vfac["i1"], crab::INT_TYPE, 32);  
+  z_var a0(vfac["A0"], crab::ARR_INT_TYPE, 32);
+  z_var a1(vfac["A1"], crab::ARR_INT_TYPE, 32);
+  z_var a2(vfac["A2"], crab::ARR_INT_TYPE, 32);
+  z_var a3(vfac["A3"], crab::ARR_INT_TYPE, 32);
+  z_var a4(vfac["A4"], crab::ARR_INT_TYPE, 32);        
+  z_var x(vfac["x"], crab::INT_TYPE, 32);  
+  
+  z_cfg_t* cfg = new z_cfg_t("entry","ret", ARR);
+  z_basic_block_t& entry = cfg->insert ("entry");
+  z_basic_block_t& bb1   = cfg->insert ("bb1");
+  z_basic_block_t& bb1_t = cfg->insert ("bb1_t");
+  z_basic_block_t& bb1_f = cfg->insert ("bb1_f");
+  z_basic_block_t& bb2   = cfg->insert ("bb2");
+  z_basic_block_t& bb3   = cfg->insert ("bb3");
+  z_basic_block_t& ret   = cfg->insert ("ret");
+
+  uint64_t elem_size = 4; 
+
+  entry >> bb1;
+  bb1 >> bb1_t; bb1 >> bb1_f;
+  bb1_t >> bb2; bb2 >> bb1; bb1_f >> bb3;
+  bb3 >> ret;
+  
+  ////////
+  entry.assign(i, 0);  
+  entry.array_init (a0, 0, 9, 0, elem_size);
+  entry.array_assign(a1, a0);
+  ///////
+  bb1_t.assume(i <= 9);
+  bb1_f.assume(i >= 10);
+  bb2.array_store(a2, a1, i, 123456, elem_size, false);
+  bb2.add(i1, i, 1);
+  /// 
+  bb2.assign(i, i1);
+  bb2.array_assign(a1, a2);
+  ///////
+  bb3.array_assign(a3, a1);
+  bb3.array_load(x, a3, i-1, elem_size);
+  bb3.array_store(a4, a3, i-1, 500000, elem_size, false);
+  return cfg;
+}
+
 void test1(bool stats_enabled){
   variable_factory_t vfac;
   z_cfg_t* cfg = prog1(vfac);
@@ -615,6 +662,14 @@ void test11(bool stats_enabled){
   delete cfg;
 }
 
+void test12(bool stats_enabled){
+  variable_factory_t vfac;
+  z_cfg_t* cfg = prog11(vfac);
+  crab::outs () << "Program 12 (Memory SSA): forall 0<= i< 10. a[i] >=0 and a[i] <= 123456\n";
+  run<array_smashing<z_sdbm_domain_t>>(cfg,cfg->entry(),false,1,2,20,stats_enabled);
+  delete cfg;
+}
+
 int main(int argc, char **argv) {
   bool stats_enabled = false;
   if (!crab_tests::parse_user_options(argc,argv,stats_enabled)) {
@@ -631,7 +686,8 @@ int main(int argc, char **argv) {
   test8(stats_enabled);
   test9(stats_enabled);
   test10(stats_enabled);
-  test11(stats_enabled);  
+  test11(stats_enabled);
+  test12(stats_enabled);    
 
   return 0;
 }

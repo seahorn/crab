@@ -749,7 +749,8 @@ namespace crab {
       typedef ikos::linear_expression<Number, VariableName> linear_expression_t;
       typedef ikos::variable<Number, VariableName> variable_t;
       typedef typename variable_t::type_t type_t;
-                 
+
+      // Constructor for in-place array stores
       array_store_stmt(variable_t arr,
 		       linear_expression_t elem_size,			
 		       linear_expression_t lb,
@@ -757,6 +758,7 @@ namespace crab {
 		       linear_expression_t value,  
 		       bool is_strong_update)
 	: statement_t(ARR_STORE)
+	, m_new_arr(boost::none)
 	, m_arr(arr)
 	, m_elem_size(elem_size)
 	, m_lb(lb)
@@ -764,7 +766,41 @@ namespace crab {
 	, m_value(value)
 	, m_is_strong_update(is_strong_update) {
 
-	this->m_live.add_def(m_arr);	
+	this->m_live.add_def(m_arr);
+	// XXX: should we also mark m_arr as use?
+        for(auto v: m_elem_size.variables()) {
+          this->m_live.add_use(v);
+	}
+	for(auto v: m_lb.variables()) {
+          this->m_live.add_use(v);
+	}
+	for(auto v: m_ub.variables()) {
+          this->m_live.add_use(v);
+	}	
+	for(auto v: m_value.variables()) {
+	  this->m_live.add_use(v);
+	}
+      }
+
+      // Constructor for array stores that creates new array name
+      array_store_stmt(variable_t new_arr,
+		       variable_t old_arr,
+		       linear_expression_t elem_size,			
+		       linear_expression_t lb,
+		       linear_expression_t ub,		       
+		       linear_expression_t value,  
+		       bool is_strong_update)
+	: statement_t(ARR_STORE)
+	, m_new_arr(new_arr)
+	, m_arr(old_arr)
+	, m_elem_size(elem_size)
+	, m_lb(lb)
+	, m_ub(ub)
+	, m_value(value)
+	, m_is_strong_update(is_strong_update) {
+
+	this->m_live.add_def(*m_new_arr);
+	this->m_live.add_use(m_arr);	
         for(auto v: m_elem_size.variables()) {
           this->m_live.add_use(v);
 	}
@@ -779,6 +815,11 @@ namespace crab {
 	}
       }
       
+      // Return the new array name after the store
+      boost::optional<variable_t> new_array() const { return m_new_arr; }
+
+      // Return the old array name before the store or the current
+      // array name if the store happens in-place.
       variable_t array() const { return m_arr; }
       
       linear_expression_t lb_index() const { return m_lb; }
@@ -798,33 +839,51 @@ namespace crab {
       }
       
       virtual statement_t* clone() const {
-        return new this_type(m_arr, m_elem_size, m_lb, m_ub, m_value,
-			     m_is_strong_update); 
+	if (m_new_arr) {
+	  return new this_type(*m_new_arr, m_arr,
+			       m_elem_size, m_lb, m_ub, m_value,
+			       m_is_strong_update);
+	} else {
+	  return new this_type(m_arr,
+			       m_elem_size, m_lb, m_ub, m_value,
+			       m_is_strong_update);
+	}
       }
       
       virtual void write(crab_os& o) const {
-	if (m_lb.equal(m_ub)) {
-	  o << "array_store(" 
-	    << m_arr << "," << m_lb << "," << m_value  << ",sz=" << elem_size()
-	    << ")";
-	} else {
-	  o << "array_store(" 
-	    << m_arr << "," << m_lb << ".." << m_ub << "," << m_value
-	    << ",sz=" << elem_size()
-	    << ")";
+	if (m_new_arr) {
+	  o << *m_new_arr << " := ";
 	}
+	o << "array_store(";
+	if (m_lb.equal(m_ub)) {
+	  o << m_arr << "," << m_lb << "," << m_value  << ",sz=" << elem_size();
+	} else {
+	  o << m_arr << "," << m_lb << ".." << m_ub << "," << m_value
+	    << ",sz=" << elem_size();
+	}
+	o << ")";
       }
 
      private:
-      
+
+      // -- The new array after the store.  If m_new_arr == none then
+      //    the array store happens in-place and m_arr contains the
+      //    new array.
+      boost::optional<variable_t> m_new_arr;      
+      // -- The old array before the store or the current array if the
+      // -- store doesn't happen in-place.
       variable_t m_arr;
+      // the size of the array element
       linear_expression_t m_elem_size; //! size in bytes
+      // smallest array index 
       linear_expression_t m_lb;
-      linear_expression_t m_ub;      
+      // largest array index
+      linear_expression_t m_ub;
+      // value stored in the array
       linear_expression_t m_value;
       // whether the store is a strong update. This might help the
-      // abstract domain.
-      // If unknown set to false.  Only makes sense if m_lb is equal to m_ub.
+      // abstract domain. If unknown set to false.  Only makes sense
+      // if m_lb is equal to m_ub.
       bool m_is_strong_update; 
     }; 
 
@@ -924,7 +983,7 @@ namespace crab {
       }
       
       virtual void write(crab_os& o) const {
-        o << m_lhs << " = "  << m_rhs;        
+        o << m_lhs << " := "  << m_rhs;        
       }
       
     private:
@@ -2214,19 +2273,54 @@ namespace crab {
       const statement_t* array_init(variable_t a, lin_exp_t lb_idx, lin_exp_t ub_idx, 
 				    lin_exp_t v, lin_exp_t elem_size) {
 	return ((m_track_prec == ARR) ?
-		insert(new arr_init_t(a, elem_size, lb_idx, ub_idx, v)): nullptr);
+		insert(new arr_init_t(a, elem_size, lb_idx, ub_idx, v))
+		: nullptr);
       }
 
       const statement_t* array_store(variable_t arr, lin_exp_t idx, lin_exp_t v, 
-                        lin_exp_t elem_size, bool is_strong_update = false)  {
+				     lin_exp_t elem_size)  { 
         return ((m_track_prec == ARR) ?
-		insert(new arr_store_t(arr, elem_size, idx, idx, v, is_strong_update)): nullptr);
+		insert(new arr_store_t(arr, elem_size, idx, idx, v, false))
+		: nullptr);
       }
 
-      const statement_t* array_store_range(variable_t arr, lin_exp_t lb_idx, lin_exp_t ub_idx,
-			     lin_exp_t v,  lin_exp_t elem_size)  {
+      //// To avoid ambiguity
+      // const statement_t* array_store(variable_t new_arr, variable_t old_arr,
+      // 				lin_exp_t idx, lin_exp_t v, lin_exp_t elem_size)  {
+      //   return ((m_track_prec == ARR) ?
+      // 	   insert(new arr_store_t(new_arr, old_arr, elem_size, idx, idx, v, false))
+      // 	   : nullptr);
+      // }
+
+      const statement_t* array_store(variable_t arr, lin_exp_t idx, lin_exp_t v, 
+				     lin_exp_t elem_size, bool is_strong_update) {
         return ((m_track_prec == ARR) ?
-		insert(new arr_store_t(arr, elem_size, lb_idx, ub_idx, v, false)): nullptr);
+		insert(new arr_store_t(arr, elem_size, idx, idx, v, is_strong_update))
+		: nullptr);
+      }
+      
+      const statement_t* array_store(variable_t new_arr, variable_t old_arr,
+				     lin_exp_t idx, lin_exp_t v, 
+				     lin_exp_t elem_size, bool is_strong_update) {
+        return ((m_track_prec == ARR) ?
+		insert(new arr_store_t(new_arr, old_arr, elem_size, idx, idx, v,
+				       is_strong_update))
+		: nullptr);
+      }
+      
+      const statement_t* array_store_range(variable_t arr, lin_exp_t lb_idx, lin_exp_t ub_idx,
+					   lin_exp_t v,  lin_exp_t elem_size) {
+        return ((m_track_prec == ARR) ?
+		insert(new arr_store_t(arr, elem_size, lb_idx, ub_idx, v, false)):
+		nullptr);
+      }
+
+      const statement_t* array_store_range(variable_t new_arr, variable_t old_arr,
+					   lin_exp_t lb_idx, lin_exp_t ub_idx,
+					   lin_exp_t v,  lin_exp_t elem_size)  {
+        return ((m_track_prec == ARR) ?
+		insert(new arr_store_t(new_arr, old_arr, elem_size, lb_idx, ub_idx, v, false)):
+		nullptr);
       }
       
       const statement_t* array_load(variable_t lhs, variable_t arr,
@@ -3698,6 +3792,14 @@ namespace crab {
 	  }
 	}
 
+	void check_different_name(variable_t v1, variable_t v2, std::string msg, statement_t& s) {
+	  if (v1 == v2) {
+	    crab::crab_string_os os;
+	    os << "(type checking) " << msg << " in " << s;
+	    CRAB_ERROR(os.str());
+	  }
+	}
+	
         void check_same_bitwidth(variable_t v1, variable_t v2, std::string msg,
 				 statement_t& s) {
 	  // assume v1 and v2 have same type
@@ -3718,7 +3820,8 @@ namespace crab {
 	  }
 	}
 
-	void check_array(variable_t v, statement_t& s){
+	// check variable is an array
+	void check_is_array(variable_t v, statement_t& s){
 	  switch(v.get_type()) {
 	  case ARR_BOOL_TYPE:
 	    break;
@@ -3945,7 +4048,7 @@ namespace crab {
 	  lin_exp_t lb = s.lb_index();
 	  lin_exp_t ub = s.ub_index();
 	  lin_exp_t  v = s.val();
-	  check_array(a, s);
+	  check_is_array(a, s);
 	  check_num_or_var(lb  , "array lower bound index must be number or variable", s);
 	  check_num_or_var(ub  , "array upper bound index must be number or variable", s);
 	  check_num_or_var(e_sz, "array element size must be number or variable", s);
@@ -3958,6 +4061,16 @@ namespace crab {
 	void visit(arr_store_t& s) {
 	  // TODO: check that e_sz is the same number that v's bitwidth
 	  variable_t a = s.array();
+	  check_is_array(a, s);
+	  if (auto new_a_opt = s.new_array()) {
+	    variable_t new_a = *new_a_opt;
+	    check_different_name(a, new_a,
+				 "array old and new variables must have different names", s);
+	    check_is_array(new_a, s);
+	    check_same_type(a,new_a,"array old and new variables must have same type",s);
+	    check_same_bitwidth(a,new_a,"array old and new variables must have same bitwidth",s);
+	  }
+	  
 	  lin_exp_t e_sz = s.elem_size();	  
 	  lin_exp_t  v = s.value();
 	  if (s.is_strong_update()) {
@@ -3969,7 +4082,6 @@ namespace crab {
 	      CRAB_ERROR(os.str());
 	    }
 	  }
-	  check_array(a, s);
 	  for (auto iv: s.lb_index().variables()) {
 	    check_int_or_bool(iv, "array index must contain only integer or boolean variables",
 			      s); 
@@ -3990,7 +4102,7 @@ namespace crab {
 	  variable_t a = s.array();
 	  lin_exp_t e_sz = s.elem_size();	  	  
 	  variable_t lhs = s.lhs();
-	  check_array(a, s);
+	  check_is_array(a, s);
 	  for (auto iv: s.index().variables()) {
 	    check_int_or_bool(iv, "array index must contain only integer or boolean variables",
 			      s); 
@@ -4002,8 +4114,8 @@ namespace crab {
 	void visit(arr_assign_t& s) {
 	  variable_t lhs = s.lhs();
 	  variable_t rhs = s.rhs();
-	  check_array(lhs, s);
-	  check_array(rhs, s);
+	  check_is_array(lhs, s);
+	  check_is_array(rhs, s);
 	  check_same_type(lhs, rhs, "array assign variables must have same type", s);
 	  check_same_bitwidth(lhs, rhs, "array assign variables must have same bitwidth", s);
 	}

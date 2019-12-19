@@ -1448,7 +1448,21 @@ namespace crab {
 		  crab::outs() << a << "[" << i << "]:=" << val << " -- " << *this <<"\n";);
        }
 
+       virtual void array_store(variable_t a_new, variable_t a_old,
+				linear_expression_t /*elem_size*/,
+				linear_expression_t i, linear_expression_t val, 
+				bool /*is_strong_update*/) override {
+	 CRAB_WARN("array_store in the term domain not implemented");
+       }
+
        virtual void array_store_range(variable_t a, linear_expression_t elem_size,
+				      linear_expression_t i, linear_expression_t j,
+				      linear_expression_t v) override {
+	 // do nothing
+       }                  
+
+       virtual void array_store_range(variable_t a_new, variable_t a_old,
+				      linear_expression_t elem_size,
 				      linear_expression_t i, linear_expression_t j,
 				      linear_expression_t v) override {
 	 // do nothing
@@ -1472,10 +1486,20 @@ namespace crab {
 				 linear_expression_t i, linear_expression_t v, 
 				 bool is_strong_update, term_domain_t invariant) {
        }
+       void backward_array_store(variable_t a_new, variable_t a_old,
+				 linear_expression_t elem_size,
+				 linear_expression_t i, linear_expression_t v, 
+				 bool is_strong_update, term_domain_t invariant) {
+       }       
        void backward_array_store_range(variable_t a, linear_expression_t elem_size,
 				       linear_expression_t i, linear_expression_t j,
 				       linear_expression_t v, term_domain_t invariant) {
-       }    
+       }
+       void backward_array_store_range(variable_t a_new, variable_t a_old,
+				       linear_expression_t elem_size,
+				       linear_expression_t i, linear_expression_t j,
+				       linear_expression_t v, term_domain_t invariant) {
+       }           
        void backward_array_assign(variable_t lhs, variable_t rhs, term_domain_t invariant) {
        }
        

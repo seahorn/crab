@@ -75,30 +75,45 @@ namespace crab {
 	      _inv.pointer_assign(a,(*rhs_v), number_t(0));
 	  }
         }
-        
-        void weak_update(variable_t a, linear_expression_t rhs) {
-          NumDomain other(_inv);
 
-	  if (a.get_type() == ARR_BOOL_TYPE) {
+	// We perform the strong update on a copy of *this using a_new
+	// while adding the assignment a_new = a_old on *this (if
+	// a_old is defined). Then, we join the copy of *this with
+	// *this.
+        void weak_update(variable_t a_new,
+			 boost::optional<variable_t> a_old,
+			 linear_expression_t rhs) {	  
+          NumDomain other(_inv);
+	  auto ty = a_new.get_type();
+
+	  if (ty == ARR_BOOL_TYPE) {
 	    if (rhs.is_constant()) {
-	      if (rhs.constant() >= number_t(1))
-		other.assign_bool_cst(a, linear_constraint_t::get_true());
-	      else
-		other.assign_bool_cst(a, linear_constraint_t::get_false());
+	      if (rhs.constant() >= number_t(1)) {
+		other.assign_bool_cst(a_new, linear_constraint_t::get_true());
+		if (a_old) _inv.assign_bool_var(a_new, *a_old, false);
+	      } else {
+		other.assign_bool_cst(a_new, linear_constraint_t::get_false());
+		if (a_old) _inv.assign_bool_var(a_new, *a_old, false);
+	      }
 	    } else if (auto rhs_v = rhs.get_variable()) {
-	      other.assign_bool_var(a,(*rhs_v), false);
+	      other.assign_bool_var(a_new,(*rhs_v), false);
+	      if (a_old) _inv.assign_bool_var(a_new, *a_old, false);
 	    }
-	  } else if (a.get_type() == ARR_INT_TYPE || a.get_type() == ARR_REAL_TYPE) {
-            other.assign(a, rhs);
-	  } else if (a.get_type() == ARR_PTR_TYPE) {
-	    if(rhs.is_constant() && rhs.constant() == number_t(0))
-	      other.pointer_mk_null(a);
-	    else if (auto rhs_v = rhs.get_variable())	     
-	      other.pointer_assign(a,(*rhs_v), number_t(0));
+	  } else if (ty == ARR_INT_TYPE || ty == ARR_REAL_TYPE) {
+            other.assign(a_new, rhs);
+	    if (a_old) _inv.assign(a_new, *a_old);
+	  } else if (ty == ARR_PTR_TYPE) {
+	    if(rhs.is_constant() && rhs.constant() == number_t(0)) {
+	      other.pointer_mk_null(a_new);
+	      if (a_old) _inv.pointer_assign(a_new, *a_old, number_t(0));
+	    } else if (auto rhs_v = rhs.get_variable()) {
+	      other.pointer_assign(a_new,(*rhs_v), number_t(0));
+	      if (a_old) _inv.pointer_assign(a_new, *a_old, number_t(0));
+	    }
 	  }
-	  
-          _inv = _inv | other;
+          _inv |= other;
         }
+	
         
        public:
         
@@ -309,7 +324,8 @@ namespace crab {
           _inv.pointer_store(lhs,rhs);
         } 
         
-        virtual void pointer_assign(variable_t lhs, variable_t rhs, linear_expression_t offset) override {
+        virtual void pointer_assign(variable_t lhs, variable_t rhs,
+				    linear_expression_t offset) override {
           _inv.pointer_assign(lhs,rhs,offset);
         }
         
@@ -341,25 +357,33 @@ namespace crab {
 				 linear_expression_t /*lb_idx*/,
 				 linear_expression_t /*ub_idx*/, 
 				 linear_expression_t val) override {
-	  if (a.get_type() == ARR_BOOL_TYPE)  {
+	  auto ty = a.get_type();
+	  switch (ty) {
+	  case ARR_BOOL_TYPE: {
 	    if (val.is_constant()) {
-	      if (val.constant() >= number_t(1))
+	      if (val.constant() >= number_t(1)) {
 		_inv.assign_bool_cst(a, linear_constraint_t::get_true());
-	      else
+	      } else {
 		_inv.assign_bool_cst(a, linear_constraint_t::get_false());
+	      }
 	    } else if (auto var = val.get_variable()) {
 	      _inv.assign_bool_var(a,(*var), false);
 	    }
-	  } else if (a.get_type() == ARR_INT_TYPE || a.get_type() == ARR_REAL_TYPE) {
-            _inv.assign(a, val);
-	  } else if (a.get_type() == ARR_PTR_TYPE) {
-	    if (val.is_constant() && val.constant() == number_t(0))
+	    break;
+	  }
+	  case ARR_INT_TYPE:
+	  case ARR_REAL_TYPE:	    
+	    _inv.assign(a, val);
+	    break;
+	  case ARR_PTR_TYPE:
+	    if (val.is_constant() && val.constant() == number_t(0)) {
 	      _inv.pointer_mk_null(a);
-	    else if (auto var = val.get_variable()) {
+	    } else if (auto var = val.get_variable()) {
 	      _inv.pointer_assign(a,(*var), number_t(0));
 	    }
+	    break;
+	  default:;
 	  }
-          
           CRAB_LOG("smashing",
 		   crab::outs() << "forall i:: " << a << "[i]==" << val
 		                << " -- " << *this <<"\n";);
@@ -377,14 +401,20 @@ namespace crab {
           /* ask for a temp var */
           variable_t a_prime(a.name().get_var_factory().get());
 	  _inv.expand(a, a_prime);
-	  if (a.get_type() == ARR_BOOL_TYPE) {
+	  auto ty = a.get_type();
+	  switch(ty) {
+	  case ARR_BOOL_TYPE:
 	    _inv.assign_bool_var(lhs, a_prime, false);
-	  } else if (a.get_type() == ARR_INT_TYPE || a.get_type() == ARR_REAL_TYPE) {
-            _inv.assign(lhs, a_prime);
-	  } else if (a.get_type() == ARR_PTR_TYPE) {
-            _inv.pointer_assign(lhs, a_prime, number_t(0));
+	    break;
+	  case ARR_INT_TYPE:
+	  case ARR_REAL_TYPE:
+	    _inv.assign(lhs, a_prime);
+	    break;
+	  case ARR_PTR_TYPE:
+	    _inv.pointer_assign(lhs, a_prime, number_t(0));
+	    break;
+	  default:;
 	  }
-
           _inv -= a_prime; 
           
           CRAB_LOG("smashing",
@@ -402,7 +432,7 @@ namespace crab {
           if (is_strong_update) {
             strong_update(a, val);
 	  } else {
-            weak_update(a, val);
+            weak_update(a, boost::none, val);
 	  }
           
           CRAB_LOG("smashing",
@@ -410,25 +440,63 @@ namespace crab {
 		                << val << " -- " << *this <<"\n";);
         }
 
+        virtual void array_store(variable_t a_new, variable_t a_old,
+				 linear_expression_t /*elem_size*/,
+				 linear_expression_t i, linear_expression_t val, 
+				 bool is_strong_update) override {
+          crab::CrabStats::count(getDomainName() + ".count.store");
+          crab::ScopedCrabStats __st__(getDomainName() + ".store");
+
+          if (is_strong_update) {
+            strong_update(a_new, val);
+	    // a_old is unused if strong update
+	  } else {
+            weak_update(a_new, a_old, val);
+	  }
+          
+          CRAB_LOG("smashing",
+		   crab::outs() << a_new << ":= " << a_old << "[" << i << "<-" << val << "]"
+		                << " -- " << *this <<"\n";);
+	  
+	}
+	
         virtual void array_store_range(variable_t a, linear_expression_t /*elem_size*/,
 				       linear_expression_t i, linear_expression_t j,
 				       linear_expression_t val) override {
           crab::CrabStats::count(getDomainName() + ".count.store");
           crab::ScopedCrabStats __st__(getDomainName() + ".store");
-	  weak_update(a, val);
-          
+	  weak_update(a, boost::none, val);
           CRAB_LOG("smashing",
 		   crab::outs() << a << "[" << i << ".." << j << "]:="
 		                << val << " -- " << *this <<"\n";);
         }
+
+        virtual void array_store_range(variable_t a_new, variable_t a_old,
+				       linear_expression_t /*elem_size*/,
+				       linear_expression_t i, linear_expression_t j,
+				       linear_expression_t val) override {
+          crab::CrabStats::count(getDomainName() + ".count.store");
+          crab::ScopedCrabStats __st__(getDomainName() + ".store");
+	  weak_update(a_new, a_old, val);
+          CRAB_LOG("smashing",
+		   crab::outs() << a_new << ":= " << a_old  << "[" << i << ".." << j << "<-"
+		                << val << "] -- " << *this <<"\n";);
+	}
 	
         virtual void array_assign(variable_t lhs, variable_t rhs) override {
-	  if (lhs.get_type() == ARR_BOOL_TYPE) {
+	  auto ty = lhs.get_type();
+	  switch(ty) {
+	  case ARR_BOOL_TYPE:
 	    _inv.assign_bool_var(lhs, rhs, false);
-	  } else if (lhs.get_type() == ARR_INT_TYPE || lhs.get_type() == ARR_REAL_TYPE) {
-            _inv.assign(lhs, rhs);
-	  } else  if (lhs.get_type() == ARR_PTR_TYPE) {
-            _inv.pointer_assign(lhs, rhs, number_t(0));
+	    break;
+	  case ARR_INT_TYPE:
+	  case ARR_REAL_TYPE:	    
+	    _inv.assign(lhs, rhs);
+	    break;
+	  case ARR_PTR_TYPE:
+	    _inv.pointer_assign(lhs, rhs, number_t(0));
+	    break;
+	  default:;
 	  }
         }
 
@@ -449,11 +517,23 @@ namespace crab {
 				  bool is_strong_update, array_smashing_t invariant) {
 	  CRAB_WARN("backward_array_store in array smashing domain not implemented"); 
 	}
+	void backward_array_store(variable_t a_new, variable_t a_old,
+				  linear_expression_t elem_size,
+				  linear_expression_t i, linear_expression_t v, 
+				  bool is_strong_update, array_smashing_t invariant) {
+	  CRAB_WARN("backward_array_store in array smashing domain not implemented"); 
+	}	
 	void backward_array_store_range(variable_t a, linear_expression_t elem_size,
 					linear_expression_t i, linear_expression_t j,
 					linear_expression_t v, array_smashing_t invariant) {
 	  CRAB_WARN("backward_array_store_range in array smashing domain not implemented");
 	}
+	void backward_array_store_range(variable_t a_new, variable_t a_old,
+					linear_expression_t elem_size,
+					linear_expression_t i, linear_expression_t j,
+					linear_expression_t v, array_smashing_t invariant) {
+	  CRAB_WARN("backward_array_store_range in array smashing domain not implemented");
+	}	
 	void backward_array_assign(variable_t lhs, variable_t rhs, array_smashing_t invariant) {
 	  CRAB_WARN("backward_array_assign in array smashing domain not implemented"); 
 	}

@@ -2557,12 +2557,26 @@ public:
 	     << *this <<"\n";);
   }
 
+  virtual void array_store(variable_t a_new, variable_t a_old,
+			   linear_expression_t elem_size,
+			   linear_expression_t i, linear_expression_t val, 
+			   bool /*is_strong_update*/) override {
+    CRAB_WARN("array_store in array_sparse_graph not implemented");
+  }
+  
   virtual void array_store_range(variable_t a, linear_expression_t elem_size,
 				 linear_expression_t i, linear_expression_t j, 
 				 linear_expression_t val) override {
     CRAB_WARN("array_store_range in array_sparse_graph not implemented");
   }
-      
+
+  virtual void array_store_range(variable_t a_new, variable_t a_old,
+				 linear_expression_t elem_size,
+				 linear_expression_t i, linear_expression_t j, 
+				 linear_expression_t val) override {
+    CRAB_WARN("array_store_range in array_sparse_graph not implemented");
+  }
+  
   virtual void array_assign(variable_t lhs, variable_t rhs) override {
     CRAB_WARN("array_assign in array_sparse_graph not implemented");
   }
@@ -2584,11 +2598,23 @@ public:
 			    bool is_strong_update, array_sgraph_domain_t invariant) {
     CRAB_WARN("backward_array_store in array_sparse_graph domain not implemented"); 
   }
+  void backward_array_store(variable_t a_new, variable_t a_old,
+			    linear_expression_t elem_size,
+			    linear_expression_t i, linear_expression_t v, 
+			    bool is_strong_update, array_sgraph_domain_t invariant) {
+    CRAB_WARN("backward_array_store in array_sparse_graph domain not implemented"); 
+  }  
   void backward_array_store_range(variable_t a, linear_expression_t elem_size,
 				  linear_expression_t i, linear_expression_t j,
 				  linear_expression_t v, array_sgraph_domain_t invariant) {
     CRAB_WARN("backward_array_store_range in array_sparse_graph domain not implemented");
   }
+  void backward_array_store_range(variable_t a_new, variable_t a_old,
+				  linear_expression_t elem_size,
+				  linear_expression_t i, linear_expression_t j,
+				  linear_expression_t v, array_sgraph_domain_t invariant) {
+    CRAB_WARN("backward_array_store_range in array_sparse_graph domain not implemented");
+  }  
   void backward_array_assign(variable_t lhs, variable_t rhs,
 			     array_sgraph_domain_t invariant) {
     CRAB_WARN("backward_array_assign in array_sparse_graph domain not implemented"); 

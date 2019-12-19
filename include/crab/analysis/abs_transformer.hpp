@@ -520,13 +520,25 @@ public:
       pre_bot = get()->is_bottom();
     }
 
+    auto new_arr_v = stmt.new_array();
     if (stmt.lb_index().equal(stmt.ub_index())) {
-      get()->array_store(stmt.array(), stmt.elem_size(),
-			 stmt.lb_index(), stmt.value(),
-			 stmt.is_strong_update());
+      if (new_arr_v) {
+	get()->array_store(*new_arr_v, stmt.array(), stmt.elem_size(),
+			   stmt.lb_index(), stmt.value(),
+			   stmt.is_strong_update());
+      } else {
+	get()->array_store(stmt.array(), stmt.elem_size(),
+			   stmt.lb_index(), stmt.value(),
+			   stmt.is_strong_update());	
+      }
     } else {
-      get()->array_store_range(stmt.array(), stmt.elem_size(),
-			       stmt.lb_index(), stmt.ub_index(), stmt.value());	
+      if (new_arr_v) {
+	get()->array_store_range(*new_arr_v, stmt.array(), stmt.elem_size(),
+				 stmt.lb_index(), stmt.ub_index(), stmt.value());	
+      } else {
+	get()->array_store_range(stmt.array(), stmt.elem_size(),
+				 stmt.lb_index(), stmt.ub_index(), stmt.value());
+      }
     } 
 
     if (::crab::CrabSanityCheckFlag) {
@@ -960,15 +972,29 @@ public:
     CRAB_LOG("backward-tr",
 	     crab::outs() << "** " << stmt << "\n"
 	                  << "\tFORWARD INV=" << invariant << "\n"
-	                  << "\tPOST=" << *m_pre << "\n");	               
+	                  << "\tPOST=" << *m_pre << "\n");
+
+    auto new_arr_v = stmt.new_array();
     if (stmt.lb_index().equal(stmt.ub_index())) {
-      m_pre->backward_array_store(stmt.array(), stmt.elem_size(),
-				  stmt.lb_index(), stmt.value(),
-				  stmt.is_strong_update(), invariant);
+      if (new_arr_v) {
+	m_pre->backward_array_store(*new_arr_v, stmt.array(), stmt.elem_size(),
+				    stmt.lb_index(), stmt.value(),
+				    stmt.is_strong_update(), invariant);	
+      } else {
+	m_pre->backward_array_store(stmt.array(), stmt.elem_size(),
+				    stmt.lb_index(), stmt.value(),
+				    stmt.is_strong_update(), invariant);
+      }
     } else {
-      m_pre->backward_array_store_range(stmt.array(), stmt.elem_size(),
-					stmt.lb_index(), stmt.ub_index(), stmt.value(),
-					invariant);	
+      if (new_arr_v) {
+	m_pre->backward_array_store_range(*new_arr_v, stmt.array(), stmt.elem_size(),
+					  stmt.lb_index(), stmt.ub_index(), stmt.value(),
+					  invariant);	
+      } else {
+	m_pre->backward_array_store_range(stmt.array(), stmt.elem_size(),
+					  stmt.lb_index(), stmt.ub_index(), stmt.value(),
+					  invariant);
+      }
     }
     CRAB_LOG("backward-tr",
 	     crab::outs() << "\tPRE=" << *m_pre << "\n");        

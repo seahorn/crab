@@ -138,53 +138,68 @@ namespace crab {
 					variable_t x,variable_t y,variable_t z,
 					boxes_domain_t invariant)
 	{ CRAB_ERROR(LDD_NOT_FOUND); }
-	
+
+	// array ops
 	void array_init(variable_t a, linear_expression_t elem_size,
 			linear_expression_t lb_idx, linear_expression_t ub_idx, 
 			linear_expression_t val)
 	{ CRAB_ERROR(LDD_NOT_FOUND); }
-	
 	void array_load(variable_t lhs,
 			variable_t a, linear_expression_t elem_size,
 			linear_expression_t i)
 	{ CRAB_ERROR(LDD_NOT_FOUND); }
-	
 	void array_store(variable_t a, linear_expression_t elem_size,
 			 linear_expression_t i, linear_expression_t v, 
 			 bool is_strong_update)
 	{ CRAB_ERROR(LDD_NOT_FOUND); }
-
+	void array_store(variable_t a_new, variable_t a_old,
+			 linear_expression_t elem_size,
+			 linear_expression_t i, linear_expression_t v, 
+			 bool is_strong_update)
+	{ CRAB_ERROR(LDD_NOT_FOUND); }	
 	void array_store_range(variable_t a, linear_expression_t elem_size,
 			       linear_expression_t i, linear_expression_t j,
 			       linear_expression_t v)
 	{ CRAB_ERROR(LDD_NOT_FOUND); }
-	
+	void array_store_range(variable_t a_new, variable_t a_old,
+			       linear_expression_t elem_size,
+			       linear_expression_t i, linear_expression_t j,
+			       linear_expression_t v)
+	{ CRAB_ERROR(LDD_NOT_FOUND); }
 	void array_assign(variable_t lhs, variable_t rhs)
 	{ CRAB_ERROR(LDD_NOT_FOUND); }
-	
+
+	// backward array ops
 	void backward_array_init(variable_t a, linear_expression_t elem_size,
 				 linear_expression_t lb_idx, linear_expression_t ub_idx, 
 				 linear_expression_t val, boxes_domain_t invariant)
 	{ CRAB_ERROR(LDD_NOT_FOUND); }
-	
 	void backward_array_load(variable_t lhs,
 				 variable_t a, linear_expression_t elem_size,
 				 linear_expression_t i, boxes_domain_t invariant)
 	{ CRAB_ERROR(LDD_NOT_FOUND); }
-	
 	void backward_array_store(variable_t a, linear_expression_t elem_size,
 				  linear_expression_t i, linear_expression_t v, 
 				  bool is_strong_update, boxes_domain_t invariant)
 	{ CRAB_ERROR(LDD_NOT_FOUND); }
-
+	void backward_array_store(variable_t a_new, variable_t a_old,
+				  linear_expression_t elem_size,
+				  linear_expression_t i, linear_expression_t v, 
+				  bool is_strong_update, boxes_domain_t invariant)
+	{ CRAB_ERROR(LDD_NOT_FOUND); }	
 	void backward_array_store_range(variable_t a, linear_expression_t elem_size,
 					linear_expression_t i, linear_expression_t j,
 					linear_expression_t v, boxes_domain_t invariant)
 	{ CRAB_ERROR(LDD_NOT_FOUND); }
-	
+	void backward_array_store_range(variable_t a_new, variable_t a_old,
+					linear_expression_t elem_size,
+					linear_expression_t i, linear_expression_t j,
+					linear_expression_t v, boxes_domain_t invariant)
+	{ CRAB_ERROR(LDD_NOT_FOUND); }	
 	void backward_array_assign(variable_t lhs, variable_t rhs, boxes_domain_t invariant)
 	{ CRAB_ERROR(LDD_NOT_FOUND); }
-	       	
+
+	// pointer ops
 	void pointer_load(variable_t lhs, variable_t rhs)
 	{ CRAB_ERROR(LDD_NOT_FOUND); }
 	
@@ -1692,10 +1707,18 @@ namespace crab {
 			linear_expression_t i) {}
 	void array_store(variable_t a, linear_expression_t elem_size,
 			 linear_expression_t i, linear_expression_t v, 
-			 bool is_strong_update) {}      
+			 bool is_strong_update) {}
+	void array_store(variable_t a_new, variable_t a_old,
+			 linear_expression_t elem_size,
+			 linear_expression_t i, linear_expression_t v, 
+			 bool is_strong_update) {}      	
 	void array_store_range(variable_t a, linear_expression_t elem_size,
 			       linear_expression_t i, linear_expression_t j,
 			       linear_expression_t v) {}
+	void array_store_range(variable_t a_new, variable_t a_old,
+			       linear_expression_t elem_size,
+			       linear_expression_t i, linear_expression_t j,
+			       linear_expression_t v) {}	
 	void array_assign(variable_t lhs, variable_t rhs) {}
 	// backward array operations
 	void backward_array_init(variable_t a, linear_expression_t elem_size,
@@ -1707,9 +1730,17 @@ namespace crab {
 	void backward_array_store(variable_t a, linear_expression_t elem_size,
 				  linear_expression_t i, linear_expression_t v, 
 				  bool is_strong_update, boxes_domain_t invariant) {}
+	void backward_array_store(variable_t a_new, variable_t a_old,
+				  linear_expression_t elem_size,
+				  linear_expression_t i, linear_expression_t v, 
+				  bool is_strong_update, boxes_domain_t invariant) {}	
 	void backward_array_store_range(variable_t a, linear_expression_t elem_size,
 					linear_expression_t i, linear_expression_t j,
 					linear_expression_t v, boxes_domain_t invariant) {}
+	void backward_array_store_range(variable_t a_new, variable_t a_old,
+					linear_expression_t elem_size,
+					linear_expression_t i, linear_expression_t j,
+					linear_expression_t v, boxes_domain_t invariant) {}	
 	void backward_array_assign(variable_t lhs, variable_t rhs, boxes_domain_t invariant) {}
 	// pointer operations
 	void pointer_load(variable_t lhs, variable_t rhs)  {}
@@ -1961,10 +1992,18 @@ namespace crab {
 		       linear_expression_t i) {}
        void array_store(variable_t a, linear_expression_t elem_size,
 			linear_expression_t i, linear_expression_t v, 
-			bool is_strong_update) {}      
+			bool is_strong_update) {}
+       void array_store(variable_t a_new, variable_t a_old,
+			linear_expression_t elem_size,
+			linear_expression_t i, linear_expression_t v, 
+			bool is_strong_update) {}             
        void array_store_range(variable_t a, linear_expression_t elem_size,
 			      linear_expression_t i, linear_expression_t j,
 			      linear_expression_t v) {}
+       void array_store_range(variable_t a_new, variable_t a_old,
+			      linear_expression_t elem_size,
+			      linear_expression_t i, linear_expression_t j,
+			      linear_expression_t v) {}       
        void array_assign(variable_t lhs, variable_t rhs) {}
        // backward array operations
        void backward_array_init(variable_t a, linear_expression_t elem_size,
@@ -1974,11 +2013,19 @@ namespace crab {
 				variable_t a, linear_expression_t elem_size,
 				linear_expression_t i, boxes_domain_t invariant) {}
        void backward_array_store(variable_t a, linear_expression_t elem_size,
-				  linear_expression_t i, linear_expression_t v, 
+				 linear_expression_t i, linear_expression_t v, 
 				 bool is_strong_update, boxes_domain_t invariant) {}
+       void backward_array_store(variable_t a_new, variable_t a_old,
+				 linear_expression_t elem_size,
+				 linear_expression_t i, linear_expression_t v, 
+				 bool is_strong_update, boxes_domain_t invariant) {}       
        void backward_array_store_range(variable_t a, linear_expression_t elem_size,
 				       linear_expression_t i, linear_expression_t j,
 				       linear_expression_t v, boxes_domain_t invariant) {}
+       void backward_array_store_range(variable_t a_new, variable_t a_old,
+				       linear_expression_t elem_size,
+				       linear_expression_t i, linear_expression_t j,
+				       linear_expression_t v, boxes_domain_t invariant) {}       
        void backward_array_assign(variable_t lhs, variable_t rhs, boxes_domain_t invariant) {}
        // pointer operations
        void pointer_load(variable_t lhs, variable_t rhs)  {}

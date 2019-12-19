@@ -1257,6 +1257,13 @@ namespace domains {
 	                    << val << " -- " << *this <<"\n";);
     }
 
+    virtual void array_store(variable_t a_new, variable_t a_old,
+			     linear_expression_t elem_size,
+			      linear_expression_t i, linear_expression_t val, 
+			      bool /*is_strong_update*/) override {
+      CRAB_WARN("array_store in the array expansion domain not implemented");
+    }
+    
     // Perform array stores over an array segment
     virtual void array_store_range(variable_t a,
 				   linear_expression_t elem_size,
@@ -1311,12 +1318,19 @@ namespace domains {
 	i = i + *n;
       }
     }
+
+    virtual void array_store_range(variable_t a_new, variable_t a_old,
+				   linear_expression_t elem_size,
+				   linear_expression_t lb_idx,
+				   linear_expression_t ub_idx, 
+				   linear_expression_t val) override {
+      CRAB_WARN("array_store_range in the array expansion domain not implemented");      
+    }
     
     virtual void array_assign(variable_t lhs, variable_t rhs) override {
       //_array_map[lhs] = _array_map[rhs];
-      CRAB_ERROR("array_assign in array_expansion domain not implemented");
+      CRAB_WARN("array_assign in array_expansion domain not implemented");
     }
-
 
     // backward array operations
        
@@ -1437,6 +1451,14 @@ namespace domains {
   	                    << val << " -- " << *this <<"\n";);
     }
 
+    virtual void backward_array_store(variable_t a_new, variable_t a_old,
+				      linear_expression_t elem_size,
+				      linear_expression_t i, linear_expression_t val, 
+				      bool /*is_strong_update*/,
+				      array_expansion_domain_t invariant) override {
+      CRAB_WARN("backward_array_store in array_expansion domain not implemented");       
+    }
+    
     virtual void backward_array_store_range(variable_t a,
 					    linear_expression_t elem_size,
 					    linear_expression_t lb_idx,
@@ -1474,10 +1496,19 @@ namespace domains {
       	i = i + *n;
       }
     }
+
+    virtual void backward_array_store_range(variable_t a_new, variable_t a_old,
+					    linear_expression_t elem_size,
+					    linear_expression_t lb_idx,
+					    linear_expression_t ub_idx, 
+					    linear_expression_t val,
+					    array_expansion_domain_t invariant) override {
+      CRAB_WARN("backward_array_store_range in array_expansion domain not implemented"); 
+    }
     
     virtual void backward_array_assign(variable_t lhs, variable_t rhs,
 				       array_expansion_domain_t invariant) override {
-      CRAB_ERROR("backward_array_assign in array_expansion domain not implemented");
+      CRAB_WARN("backward_array_assign in array_expansion domain not implemented");
     }
     
     linear_constraint_system_t to_linear_constraint_system(){
