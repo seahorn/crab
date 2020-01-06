@@ -370,6 +370,10 @@ namespace ikos {
     void write(crab::crab_os& o) const {
       o << _n;
     }
+
+    void dump(crab::crab_os &o) const {
+      o << _n << ":" << get_type() << ":" << get_bitwidth();
+    }
         
   }; // class variable
 
