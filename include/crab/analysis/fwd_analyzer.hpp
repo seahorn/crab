@@ -60,19 +60,18 @@ private:
   bool m_pre_clear_done;
   bool m_post_clear_done;      
   
-  abs_dom_t prune_dead_variables(basic_block_label_t node, abs_dom_t&& inv) {
+  void prune_dead_variables(basic_block_label_t node, abs_dom_t& inv) {
     if (!m_live) {
-      return std::move(inv);
+      return;
     }
     crab::ScopedCrabStats __st__("Pruning dead variables");	
     if (inv.is_bottom() || inv.is_top()) {
-      return std::move(inv);
+      return;
     }	
     auto dead = m_live->dead_exit(node);       
     dead -= m_formals;
     std::vector<variable_t> dead_vec(dead.begin(), dead.end());
     inv.forget(dead_vec);
-    return std::move(inv);
   }
   
   //! Given a basic block and the invariant at the entry it produces
@@ -81,9 +80,9 @@ private:
     auto &b = this->get_cfg().get_node(node);
     m_abs_tr->set_abs_value(std::move(inv));
     for (auto &s : b) { s.accept(&*m_abs_tr); }
-    inv = std::move(m_abs_tr->get_abs_value());
-    inv = std::move(prune_dead_variables(node, std::move(inv)));
-    return std::move(inv);
+    abs_dom_t &res = m_abs_tr->get_abs_value();
+    prune_dead_variables(node, res);
+    return res;
   } 
   
   void process_pre(basic_block_label_t node, abs_dom_t inv) {}
@@ -179,21 +178,8 @@ public:
   abs_dom_t get_pre(basic_block_label_t b) const {
     if (m_pre_clear_done) {
       return abs_dom_t::top();
-    }
-	
-    auto it = this->_pre.find(b);
-    if (it == this->_pre.end()) {
-      return abs_dom_t::bottom();
-      // if the basic block is not in the invariant table it must
-      // be because it was not reached by the analysis. We
-      // returned top but it never had real effect because
-      // process_pre made sure that all unreachable blocks were in
-      // the invariant table with a bottom invariant. This was
-      // just a waste of space.
-      // 
-      // return abs_dom_t::top();
     } else {
-      return it->second;
+      return this->_pre.at(b);
     }
   }
   
@@ -201,14 +187,8 @@ public:
   abs_dom_t get_post(basic_block_label_t b) const {
     if (m_post_clear_done) {
       return abs_dom_t::top();
-    }
-    
-    auto it = this->_post.find(b);
-    if (it == this->_post.end()) {
-      return abs_dom_t::bottom();	  
-      //return abs_dom_t::top();
     } else {
-      return it->second;
+      return this->_post.at(b);
     }
   }
   

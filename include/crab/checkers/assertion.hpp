@@ -62,7 +62,7 @@ namespace crab {
 	  crab::crab_string_os os;
 	  if (this->m_verbose >= 3) {
 	    os << "Property : " << cst << "\n";
-	    auto inv = this->m_abs_tr->get_abs_value();
+	    auto &inv = this->m_abs_tr->get_abs_value();
 	    os << "Invariant: " << inv << "\n";
 	    os << "Note: it was proven by the forward+backward analysis";
 	  }
@@ -73,7 +73,7 @@ namespace crab {
 	      crab::crab_string_os os;
 	      if (this->m_verbose >= 3) {
 		os << "Property : " << cst << "\n";
-		auto inv = this->m_abs_tr->get_abs_value();		
+		auto &inv = this->m_abs_tr->get_abs_value();		
 		os << "Invariant: " << inv;
 	      }
 	      this->add_safe(os.str(), &s);
@@ -81,7 +81,7 @@ namespace crab {
 	      crab::crab_string_os os;
 	      if (this->m_verbose >= 2) {
 		os << "Property : " << cst << "\n";
-		auto inv = this->m_abs_tr->get_abs_value();		
+		auto &inv = this->m_abs_tr->get_abs_value();		
 		os << "Invariant: " << inv;
 	      }	    
 	      this->add_warning(os.str(), &s);
@@ -147,7 +147,7 @@ namespace crab {
 	  crab::crab_string_os os;
 	  if (this->m_verbose >= 3) {
 	    os << "Property : " << s << "\n";
-	    auto inv = this->m_abs_tr->get_abs_value();	    
+	    auto &inv = this->m_abs_tr->get_abs_value();	    
 	    os << "Invariant: " << inv << "\n";
 	    os << "Note: it was proven by the forward+backward analysis";	    
 	  }

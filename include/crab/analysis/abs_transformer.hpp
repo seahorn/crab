@@ -238,11 +238,11 @@ public:
   
   virtual ~intra_abs_transformer() { }
   
-  void set_abs_value(abs_dom_t inv) {
-    m_inv = inv;
+  void set_abs_value(abs_dom_t &&inv) {
+    m_inv = std::move(inv);
   }
-  
-  abs_dom_t get_abs_value() const {
+
+  abs_dom_t& get_abs_value() {
     return m_inv;
   }
     
@@ -333,7 +333,7 @@ public:
   }
   
   void exec(assume_t& stmt) {
-    m_inv += stmt.constraint();
+    m_inv.operator+=(stmt.constraint());
   }
   
   void exec(assert_t& stmt) {
@@ -344,7 +344,7 @@ public:
       pre_bot = m_inv.is_bottom();
     }
     
-    m_inv += stmt.constraint();
+    m_inv.operator+=(stmt.constraint());
     
     if (::crab::CrabSanityCheckFlag) {
       if (!stmt.constraint().is_contradiction()) {
@@ -476,7 +476,7 @@ public:
       pre_bot = m_inv.is_bottom();
     }
     
-    m_inv -= stmt.variable();
+    m_inv.operator-=(stmt.variable());
     
     if (::crab::CrabSanityCheckFlag) {
       bool post_bot = m_inv.is_bottom();
@@ -589,7 +589,7 @@ public:
   
   virtual void exec(callsite_t& cs) {
     for (auto vt: cs.get_lhs()) {
-      m_inv -= vt;  // havoc
+      m_inv.operator-=(vt);  // havoc
     }
   }
 

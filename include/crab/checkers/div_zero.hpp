@@ -43,7 +43,7 @@ namespace crab {
         if (s.op() == BINOP_SDIV || s.op() == BINOP_UDIV ||
             s.op() == BINOP_SREM || s.op() == BINOP_UREM) {
          
-          auto inv = this->m_abs_tr->get_abs_value();
+          auto &inv = this->m_abs_tr->get_abs_value();
           if (inv.is_bottom()) {
             this->m_db.add(_UNREACH);
             return;

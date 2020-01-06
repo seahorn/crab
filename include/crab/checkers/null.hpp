@@ -121,10 +121,10 @@ namespace crab {
       void check(ptr_store_t &s) override { 
         if (!this->m_abs_tr) return;        
         
-        auto inv = this->m_abs_tr->get_abs_value();
+        auto &inv = this->m_abs_tr->get_abs_value();
         auto ptr = s.lhs();
         null_detail::get_as<abs_dom_t> null_inv(inv);
-        crab::domains::nullity_value val = null_inv [ptr];
+        crab::domains::nullity_value val = null_inv[ptr];
 	
         if (val.is_bottom()) {
           this->m_db.add(_UNREACH);
@@ -157,7 +157,7 @@ namespace crab {
       void check(ptr_load_t &s) override { 
         if (!this->m_abs_tr) return;        
         
-        auto inv = this->m_abs_tr->get_abs_value();
+        auto &inv = this->m_abs_tr->get_abs_value();
         auto ptr = s.rhs();
         null_detail::get_as<abs_dom_t> null_inv(inv);
         crab::domains::nullity_value val = null_inv [ptr];

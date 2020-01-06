@@ -794,8 +794,10 @@ private:
       // 4. Run intra analyzer
       CRAB_LOG("inter",
 	       crab::outs () << "[INTER] Started \"" << cs << "\" with entry="
-	                     << callee_entry << "\n";); 
-      this->set_abs_value(callee_entry);          
+	                     << callee_entry << "\n";);
+      
+      abs_dom_t callee_init(callee_entry);
+      this->set_abs_value(std::move(callee_init));          
       std::shared_ptr<intra_analyzer_with_call_semantics_t> callee_analysis = 
 	top_down_inter_impl::get_inter_analysis
 	  <typename CallGraph::node_t, intra_analyzer_with_call_semantics_t>
