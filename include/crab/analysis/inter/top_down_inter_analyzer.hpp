@@ -1133,7 +1133,6 @@ public:
 	if (widening_set.count(cg_node) > 0) {
 	  CRAB_ERROR("Entry point cannot be recursive");
 	}
-	cfg_t entry_cfg = cg_node.get_cfg();
 	std::shared_ptr<intra_analyzer_with_call_semantics_t> entry_analysis = 	
 	  top_down_inter_impl::get_inter_analysis
 	   <cg_node_t, intra_analyzer_with_call_semantics_t>(cg_node, inter_abs_tr);
