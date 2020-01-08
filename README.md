@@ -53,8 +53,8 @@ Open Static Analyzers) developed by NASA Ames Research Center.
 A pre-built and installed version of Crab can be obtained using Docker:
 
 ``` shell
-docker pull seahorn/crab:xenial
-docker run -v `pwd`:/host -it seahorn/crab:xenial	
+docker pull seahorn/crab_elina:bionic
+docker run -v `pwd`:/host -it seahorn/crab_elina:bionic
 ```
 
 Alternatively, it can be built and installed from source as follows.
@@ -264,10 +264,11 @@ analyzer that infers invariants from LLVM-based languages using Crab.
 - [SeaHorn](https://github.com/seahorn) is a verification framework
 that uses Crab-Llvm to supply invariants to the back-end solvers.
 
-- [eBPF-verifier](https://github.com/vbpf/ebpf-verifier) is a [eBPF](https://lwn.net/Articles/740157/) verifier using Crab.
+- [Prevail](https://github.com/vbpf/ebpf-verifier) is a [eBPF](https://lwn.net/Articles/740157/) verifier using Crab.
 
 # References #
 
+- "Dissecting Widening: Separating Termination from Information" [(PDF)](https://jorgenavas.github.io/papers/isolated-widening-APLAS19.pdf) by G. Gange, J. A. Navas, P. Schachte, H. Sondergaard, and P. Stuckey. APLAS'19.
 - "Simple and Precise Static Analysis of Untrusted Linux Kernel Extensions" [(PDF)](https://jorgenavas.github.io/papers/ebpf-pldi19.pdf) by E. Gershuni, N. Amit, A. Gurfinkel, N. Narodytska, J. A. Navas, N. Rinetzky, L. Ryzhyk and M. Sagiv. PLDI'19.
 - "Exploiting Sparsity in Difference-Bounds Matrices" [(PDF)](https://jorgenavas.github.io/papers/zones-SAS16.pdf) by G. Gange, J. A. Navas, P. Schachte, H. Sondergaard, and P. Stuckey. SAS'16.
 - "An Abstract Domain of Uninterpreted Functions" [(PDF)](https://jorgenavas.github.io/papers/terms-vmcai16.pdf) by G. Gange, J. A. Navas, P. Schachte, H. Sondergaard, and P. Stuckey. VMCAI'16.
