@@ -96,16 +96,30 @@ int main (int argc, char** argv) {
   inter_analyzer_t analyzer(cg, params);
   analyzer.run();
 
-  // Print invariants
+  // TODO: fix order of cg traversal
   for (auto &v: boost::make_iterator_range(cg.nodes())) {
     auto cfg = v.get_cfg();
     auto fdecl = cfg.get_func_decl();
-    crab::outs() << fdecl << "\n";      
-    for (auto &b : cfg) {
-      auto inv = analyzer.get_pre(cfg, b.label());
-      crab::outs() <<  crab::cfg_impl::get_label_str(b.label()) << "=" << inv << "\n";
+    crab::outs() << fdecl << "\n";
+
+    // Print invariants in DFS to enforce a fixed order
+    std::set<crab::cfg_impl::basic_block_label_t> visited;
+    std::vector<crab::cfg_impl::basic_block_label_t> worklist;
+    worklist.push_back(cfg.entry());
+    visited.insert(cfg.entry());
+    while (!worklist.empty()) {
+      auto cur_label = worklist.back();
+      worklist.pop_back();
+      auto inv = analyzer.get_pre(cfg, cur_label);
+      crab::outs() << crab::cfg_impl::get_label_str (cur_label) << "=" << inv << "\n";
+      auto const &cur_node = cfg.get_node (cur_label);
+      for (auto const kid_label : boost::make_iterator_range (cur_node.next_blocks ())) {
+	if (visited.insert(kid_label).second) {
+	  worklist.push_back(kid_label);
+	}
+      }
     }
-      crab::outs() << "=================================\n";
+    crab::outs() << "=================================\n";
   }
   
   delete t1;

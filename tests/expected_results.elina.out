@@ -2726,14 +2726,14 @@ exit:
 
 
 (x_out:int,y_out:int) declare loop(x_in:int,y_in:int)
+entry={}
+base_case={}
 exit={}
 rec_case={}
-base_case={}
-entry={}
 =================================
 (x_res:int,y_res:int) declare main()
-exit={x -> [0, 0], y -> [0, 0], y-x<=0, x-y<=0}
 entry={}
+exit={x -> [0, 0], y -> [0, 0], y-x<=0, x-y<=0}
 =================================
 x0:
   k = 50;
