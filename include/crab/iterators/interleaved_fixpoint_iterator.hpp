@@ -347,13 +347,14 @@ namespace ikos {
       
       inline void compute_post(basic_block_label_t node, AbstractValue inv) {
         crab::CrabStats::resume ("Fixpo.analyze_block");	
+        CRAB_VERBOSE_IF(4, crab::outs() << "PRE Invariants:\n" << inv << "\n");	
         CRAB_VERBOSE_IF(1, crab::get_msg_stream() << "Analyzing node "
 			                 << crab::cfg_impl::get_label_str(node);
 			 auto &n = this->_iterator->_cfg.get_node(node);
 			 crab::outs() << " size=" << n.size() << "\n";);
 	
         CRAB_VERBOSE_IF(4, crab::outs() << "PRE Invariants:\n" << inv << "\n");	
-	this->_iterator->analyze(node, inv);
+	inv = this->_iterator->analyze(node, std::move(inv));
         CRAB_VERBOSE_IF(3, crab::outs() << "POST Invariants:\n" << inv << "\n");	
         crab::CrabStats::stop ("Fixpo.analyze_block");
 	

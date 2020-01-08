@@ -8,7 +8,7 @@
 #include <crab/common/stats.hpp>
 #include <crab/checkers/base_property.hpp>
 #include <crab/analysis/fwd_analyzer.hpp>
-#include <crab/analysis/inter_fwd_analyzer.hpp>
+#include <crab/analysis/inter/bottom_up_inter_analyzer.hpp>
 
 #include <memory>
 
@@ -104,7 +104,7 @@ namespace crab {
 	  if (checker->is_interesting(bb)) {
 	    crab::ScopedCrabStats __st__("Checker." + checker->get_property_name());
 	    abs_dom_t inv = m_analyzer[bb.label()];
-	    std::shared_ptr<abs_tr_t> abs_tr = m_analyzer.get_abs_transformer(&inv);
+	    std::shared_ptr<abs_tr_t> abs_tr = m_analyzer.get_abs_transformer(std::move(inv));
 	    // propagate forward the invariants from the block entry 
 	    // while checking the property
 	    checker->set(&*abs_tr, safe_assertions);
@@ -156,7 +156,7 @@ namespace crab {
           for (auto checker: this->m_checkers) {
             crab::ScopedCrabStats __st__("Checker." + checker->get_property_name());
             abs_dom_t inv = m_analyzer.get_pre(cfg, bb.label());
-	    std::shared_ptr<abs_tr_t> abs_tr = m_analyzer.get_abs_transformer(&inv);
+	    std::shared_ptr<abs_tr_t> abs_tr = m_analyzer.get_abs_transformer(std::move(inv));
             // propagate forward the invariants from the block entry 
             // while checking the property
             checker->set(&*abs_tr, safe_assertions);

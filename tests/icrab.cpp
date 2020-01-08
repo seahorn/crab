@@ -1,7 +1,7 @@
 #include "./crab_lang.hpp"
 #include "./crab_dom.hpp"
 
-#include <crab/analysis/inter_fwd_analyzer.hpp>
+#include <crab/analysis/inter/bottom_up_inter_analyzer.hpp>
 #include <crab/analysis/dataflow/liveness.hpp>
 
 // Helper
@@ -59,8 +59,8 @@ void inter_run (crab::cg_impl::z_cg_t* cg,
 		unsigned jump_set_size,
 		bool enable_stats) {
   using namespace crab::analyzer;
-  typedef inter_fwd_analyzer<crab::cg_impl::z_cg_ref_t, BUDom, TDDom> inter_fwd_analyzer_t;
-  inter_run_impl<crab::cg_impl::z_cg_t, BUDom, TDDom, inter_fwd_analyzer_t>
+  typedef bottom_up_inter_analyzer<crab::cg_impl::z_cg_ref_t, BUDom, TDDom> inter_analyzer_t;
+  inter_run_impl<crab::cg_impl::z_cg_t, BUDom, TDDom, inter_analyzer_t>
     (cg, run_liveness, widening, narrowing, jump_set_size, enable_stats);
 }
 

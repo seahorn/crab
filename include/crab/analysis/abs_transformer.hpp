@@ -165,7 +165,7 @@ public: /* visitor api */
  **/
 template<class AbsD>
 class intra_abs_transformer: 
-    public abs_transformer_api<typename AbsD::number_t, typename AbsD::varname_t> {
+      public abs_transformer_api<typename AbsD::number_t, typename AbsD::varname_t> {
     
 public:
   typedef AbsD abs_dom_t;
@@ -188,7 +188,7 @@ public:
   using typename abs_transform_api_t::assert_t;
   using typename abs_transform_api_t::int_cast_t;    
   using typename abs_transform_api_t::callsite_t;
-  using typename abs_transform_api_t::return_t;    
+  using typename abs_transform_api_t::return_t;
   using typename abs_transform_api_t::arr_init_t;
   using typename abs_transform_api_t::arr_load_t;
   using typename abs_transform_api_t::arr_store_t;
@@ -210,16 +210,12 @@ public:
 
     
 protected:
-  
-  /// XXX: the transformer does not own m_inv.
-  /// We keep a pointer to avoid unnecessary copies. We don't use a
-  /// reference because we might reassign m_inv multiple times.
-  abs_dom_t* m_inv;
-  
-  bool m_ignore_assert;
     
+  abs_dom_t m_inv;
+  bool m_ignore_assert;
+  
 private:
-
+  
   template <typename NumOrVar>
   void apply(abs_dom_t &inv, binary_operation_t op, 
 	     variable_t x, variable_t y, NumOrVar z) {
@@ -231,63 +227,62 @@ private:
       CRAB_ERROR("unsupported binary operator", op);
     }
   }
+  
     
 public:
-    
-  intra_abs_transformer(abs_dom_t* inv, bool ignore_assert = false)
+  
+  intra_abs_transformer(abs_dom_t inv, bool ignore_assert = false)
     : m_inv(inv)
     , m_ignore_assert(ignore_assert) { }
-      
+
+  
   virtual ~intra_abs_transformer() { }
-
-  void set(abs_dom_t* inv) {
-    m_inv = inv;
+  
+  void set_abs_value(abs_dom_t &&inv) {
+    m_inv = std::move(inv);
   }
 
-  abs_dom_t* get() {
-    if (!m_inv) {
-      CRAB_ERROR("Invariant passed to transformer cannot be null!");
-    } else {
-      return m_inv;
-    }
+  abs_dom_t& get_abs_value() {
+    return m_inv;
   }
-
+    
   void exec(bin_op_t& stmt) {      
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag &&
 	(!(stmt.op() >= BINOP_SDIV && stmt.op() <= BINOP_UREM))) {
-      pre_bot = get()->is_bottom();
+      pre_bot = m_inv.is_bottom();
     }
-      
+    
     auto op1 = stmt.left();
     auto op2 = stmt.right();
     if (op1.get_variable() && op2.get_variable()) {
-      apply(*get(), stmt.op(), 
+      apply(m_inv, stmt.op(), 
 	    stmt.lhs(), (*op1.get_variable()), (*op2.get_variable()));  
     } else {
       assert(op1.get_variable() && op2.is_constant());
-      apply(*get(), stmt.op(), 
+      apply(m_inv, stmt.op(), 
 	    stmt.lhs(), (*op1.get_variable()), op2.constant());  
     }
     
     if (::crab::CrabSanityCheckFlag &&
 	(!(stmt.op() >= BINOP_SDIV && stmt.op() <= BINOP_UREM))) {
-      bool post_bot = get()->is_bottom();
+      bool post_bot = m_inv.is_bottom();
       if (!(pre_bot || !post_bot)) {
 	CRAB_ERROR("Invariant became bottom after ", stmt);
       }
     }
   }
-    
+
+
   void exec(select_t& stmt) {
     bool pre_bot = false;
-    if (::crab::CrabSanityCheckFlag) {    
-      pre_bot = get()->is_bottom();
+    if (::crab::CrabSanityCheckFlag) {
+      pre_bot = m_inv.is_bottom();
     }
-      
-    abs_dom_t inv1(*get());
-    abs_dom_t inv2(*get());
-
+    
+    abs_dom_t inv1(m_inv);
+    abs_dom_t inv2(m_inv);
+    
     inv1 += stmt.cond();
     inv2 += stmt.cond().negate();
 
@@ -298,62 +293,62 @@ public:
 		   stmt);
       }
     }
-      
+    
     if (inv2.is_bottom()) {
       inv1.assign(stmt.lhs(), stmt.left());
-      *get() = inv1;
+      m_inv = inv1;
     }
     else if (inv1.is_bottom()) {
       inv2.assign(stmt.lhs(), stmt.right());
-      *get() = inv2;
+      m_inv = inv2;
     }
     else {
       inv1.assign(stmt.lhs(), stmt.left());
       inv2.assign(stmt.lhs(), stmt.right());
-      *get() = inv1 | inv2;
+      m_inv = inv1 | inv2;
     }
-
+    
     if (::crab::CrabSanityCheckFlag) {
-      bool post_bot = get()->is_bottom();      
+      bool post_bot = m_inv.is_bottom();      
       if (!(pre_bot || !post_bot)) {
 	CRAB_ERROR("Invariant became bottom after ", stmt);
       }
     }
   }
-    
+  
   void exec(assign_t& stmt) {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
-      pre_bot = get()->is_bottom();
+      pre_bot = m_inv.is_bottom();
     }
-      
-    get()->assign(stmt.lhs(), stmt.rhs());
-      
+    
+    m_inv.assign(stmt.lhs(), stmt.rhs());
+    
     if (::crab::CrabSanityCheckFlag) {
-      bool post_bot = get()->is_bottom();      
+      bool post_bot = m_inv.is_bottom();      
       if (!(pre_bot || !post_bot)) {
 	CRAB_ERROR("Invariant became bottom after ", stmt);
       }
     }
   }
-    
+  
   void exec(assume_t& stmt) {
-    *get() += stmt.constraint();
+    m_inv.operator+=(stmt.constraint());
   }
-    
+  
   void exec(assert_t& stmt) {
     if (m_ignore_assert) return;
-
+    
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
-      pre_bot = get()->is_bottom();
+      pre_bot = m_inv.is_bottom();
     }
-      
-    *get() += stmt.constraint();
-
+    
+    m_inv.operator+=(stmt.constraint());
+    
     if (::crab::CrabSanityCheckFlag) {
       if (!stmt.constraint().is_contradiction()) {
-	bool post_bot = get()->is_bottom();      
+	bool post_bot = m_inv.is_bottom();      
 	if (!(pre_bot || !post_bot)) {
 	  CRAB_WARN("Invariant became bottom after ", stmt, ".",
 		    " This might indicate that the assertion is violated");
@@ -361,255 +356,253 @@ public:
       }
     }      
   }
-
+  
   void exec(int_cast_t &stmt){
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {      
-      pre_bot = get()->is_bottom();
+      pre_bot = m_inv.is_bottom();
     }
-      
     if (auto op = conv_op<crab::domains::int_conv_operation_t>(stmt.op())) {
-      get()->apply(*op, stmt.dst(), stmt.src());
+      m_inv.apply(*op, stmt.dst(), stmt.src());
     } else {
       CRAB_ERROR("unsupported cast operator ", stmt.op());	
     }
-      
+    
     if (::crab::CrabSanityCheckFlag) {      
-      bool post_bot = get()->is_bottom();
+      bool post_bot = m_inv.is_bottom();
       if (!(pre_bot || !post_bot)) {
 	CRAB_ERROR("Invariant became bottom after ", stmt);
       }
     }
   }
-    
+  
   void exec(bool_assign_cst_t& stmt) {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {      
-      pre_bot = get()->is_bottom();
+      pre_bot = m_inv.is_bottom();
     }
-      
-    get()->assign_bool_cst(stmt.lhs(), stmt.rhs());
-      
+    
+    m_inv.assign_bool_cst(stmt.lhs(), stmt.rhs());
+    
     if (::crab::CrabSanityCheckFlag) {      
-      bool post_bot = get()->is_bottom();
+      bool post_bot = m_inv.is_bottom();
       if (!(pre_bot || !post_bot)) {
 	CRAB_ERROR("Invariant became bottom after ", stmt);
       }
     }      
   }
-
+  
   void exec(bool_assign_var_t& stmt) {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {      
-      pre_bot = get()->is_bottom();
-    }
-      
-    get()->assign_bool_var(stmt.lhs(), stmt.rhs(), stmt.is_rhs_negated());
-      
+      pre_bot = m_inv.is_bottom();
+    }      
+    m_inv.assign_bool_var(stmt.lhs(), stmt.rhs(), stmt.is_rhs_negated());
+    
     if (::crab::CrabSanityCheckFlag) {      
-      bool post_bot = get()->is_bottom();
+      bool post_bot = m_inv.is_bottom();
       if (!(pre_bot || !post_bot)) {
 	CRAB_ERROR("Invariant became bottom after ", stmt);
       }
     }            
   }
-
+  
   void exec(bool_bin_op_t& stmt) {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {      
-      pre_bot = get()->is_bottom();
+      pre_bot = m_inv.is_bottom();
     }
-      
+    
     if (auto op = conv_op<domains::bool_operation_t>(stmt.op())) {
-      get()->apply_binary_bool(*op, stmt.lhs(), stmt.left(), stmt.right());
+      m_inv.apply_binary_bool(*op, stmt.lhs(), stmt.left(), stmt.right());
     } else {
       CRAB_WARN("Unsupported statement ", stmt);
     }
-      
+    
     if (::crab::CrabSanityCheckFlag) {      
-      bool post_bot = get()->is_bottom();
+      bool post_bot = m_inv.is_bottom();
       if (!(pre_bot || !post_bot)) {
 	CRAB_ERROR("Invariant became bottom after ", stmt);
       }
     }            
   }
-    
+  
   void exec(bool_assume_t& stmt) {
-    get()->assume_bool(stmt.cond(), stmt.is_negated());
+    m_inv.assume_bool(stmt.cond(), stmt.is_negated());
   }
-
+  
   void exec(bool_select_t& stmt) {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {      
-      pre_bot = get()->is_bottom();
+      pre_bot = m_inv.is_bottom();
     }
-      
-    abs_dom_t inv1(*get());
-    abs_dom_t inv2(*get());
+    
+    abs_dom_t inv1(m_inv);
+    abs_dom_t inv2(m_inv);
     const bool negate = true;
     inv1.assume_bool(stmt.cond(), !negate);
     inv2.assume_bool(stmt.cond(), negate);
     if (inv2.is_bottom()) {
       inv1.assign_bool_var(stmt.lhs(), stmt.left(), !negate);
-      *get() = inv1;
+      m_inv = inv1;
     }
     else if (inv1.is_bottom()) {
       inv2.assign_bool_var(stmt.lhs(), stmt.right(), !negate);
-      *get() = inv2;
+      m_inv = inv2;
     }
     else {
       inv1.assign_bool_var(stmt.lhs(), stmt.left(), !negate);
       inv2.assign_bool_var(stmt.lhs(), stmt.right(), !negate);
-      *get() = inv1 | inv2;
+      m_inv = inv1 | inv2;
     }
-      
+    
     if (::crab::CrabSanityCheckFlag) {      
-      bool post_bot = get()->is_bottom();
+      bool post_bot = m_inv.is_bottom();
       if (!(pre_bot || !post_bot)) {
 	CRAB_ERROR("Invariant became bottom after ", stmt);
       }
     }                  
   }
-
+  
   void exec(bool_assert_t& stmt) {
     if (m_ignore_assert) return;
  
-    get()->assume_bool(stmt.cond(), false);
+    m_inv.assume_bool(stmt.cond(), false);
   }
-    
+  
   void exec(havoc_t& stmt) {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {      
-      pre_bot = get()->is_bottom();
+      pre_bot = m_inv.is_bottom();
     }
-      
-    (*get()) -= stmt.variable();
-
+    
+    m_inv.operator-=(stmt.variable());
+    
     if (::crab::CrabSanityCheckFlag) {
-      bool post_bot = get()->is_bottom();
+      bool post_bot = m_inv.is_bottom();
       if (!(pre_bot || !post_bot)) {
 	CRAB_ERROR("Invariant became bottom after ", stmt);
       }
     }
   }
-    
+
   void exec(unreach_t& stmt) {
-    *get() = abs_dom_t::bottom();
+    m_inv.set_to_bottom();
   }
-    
+  
   void exec(arr_init_t& stmt) {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {      
-      pre_bot = get()->is_bottom();
+      pre_bot = m_inv.is_bottom();
     }
-      
-    get()->array_init(stmt.array(), stmt.elem_size(),
-		      stmt.lb_index(), stmt.ub_index(), stmt.val());
-
+    
+    m_inv.array_init(stmt.array(), stmt.elem_size(),
+		     stmt.lb_index(), stmt.ub_index(), stmt.val());
+    
     if (::crab::CrabSanityCheckFlag) {
-      bool post_bot = get()->is_bottom();
+      bool post_bot = m_inv.is_bottom();
       if (!(pre_bot || !post_bot)) {
-	CRAB_ERROR("Invariant became bottom after ", stmt);
+      CRAB_ERROR("Invariant became bottom after ", stmt);
       }
     }
   }
-    
+
   void exec(arr_store_t& stmt) {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {      
-      pre_bot = get()->is_bottom();
+      pre_bot = m_inv.is_bottom();
     }
 
     auto new_arr_v = stmt.new_array();
     if (stmt.lb_index().equal(stmt.ub_index())) {
       if (new_arr_v) {
-	get()->array_store(*new_arr_v, stmt.array(), stmt.elem_size(),
-			   stmt.lb_index(), stmt.value(),
-			   stmt.is_strong_update());
+	m_inv.array_store(*new_arr_v, stmt.array(), stmt.elem_size(),
+			  stmt.lb_index(), stmt.value(),
+			  stmt.is_strong_update());
       } else {
-	get()->array_store(stmt.array(), stmt.elem_size(),
-			   stmt.lb_index(), stmt.value(),
-			   stmt.is_strong_update());	
+	m_inv.array_store(stmt.array(), stmt.elem_size(),
+			  stmt.lb_index(), stmt.value(),
+			  stmt.is_strong_update());	
       }
     } else {
       if (new_arr_v) {
-	get()->array_store_range(*new_arr_v, stmt.array(), stmt.elem_size(),
-				 stmt.lb_index(), stmt.ub_index(), stmt.value());	
+	m_inv.array_store_range(*new_arr_v, stmt.array(), stmt.elem_size(),
+				stmt.lb_index(), stmt.ub_index(), stmt.value());	
       } else {
-	get()->array_store_range(stmt.array(), stmt.elem_size(),
-				 stmt.lb_index(), stmt.ub_index(), stmt.value());
+	m_inv.array_store_range(stmt.array(), stmt.elem_size(),
+				stmt.lb_index(), stmt.ub_index(), stmt.value());
       }
     } 
-
+    
     if (::crab::CrabSanityCheckFlag) {
-      bool post_bot = get()->is_bottom();
+      bool post_bot = m_inv.is_bottom();
       if (!(pre_bot || !post_bot)) {
 	CRAB_ERROR("Invariant became bottom after ", stmt);
       }
     }
   }
-    
+
   void exec(arr_load_t& stmt) {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {      
-      pre_bot = get()->is_bottom();
+      pre_bot = m_inv.is_bottom();
     }
-      
-    get()->array_load(stmt.lhs(), stmt.array(), stmt.elem_size(), stmt.index());
-
+    
+    m_inv.array_load(stmt.lhs(), stmt.array(), stmt.elem_size(), stmt.index());
+    
     if (::crab::CrabSanityCheckFlag) {
-      bool post_bot = get()->is_bottom();
+      bool post_bot = m_inv.is_bottom();
       if (!(pre_bot || !post_bot)) {
 	CRAB_ERROR("Invariant became bottom after ", stmt);
       }
     }      
   }
-    
+  
   void exec(arr_assign_t& stmt) {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {      
-      pre_bot = get()->is_bottom();
+      pre_bot = m_inv.is_bottom();
     }
-      
-    get()->array_assign(stmt.lhs(), stmt.rhs());
-
+    
+    m_inv.array_assign(stmt.lhs(), stmt.rhs());
+    
     if (::crab::CrabSanityCheckFlag) {
-      bool post_bot = get()->is_bottom();
+      bool post_bot = m_inv.is_bottom();
       if (!(pre_bot || !post_bot)) {
 	CRAB_ERROR("Invariant became bottom after ", stmt);
       }
     }      
   }
-    
+  
   void exec(ptr_null_t& stmt)
-  { get()->pointer_mk_null(stmt.lhs()); }
-    
+  { m_inv.pointer_mk_null(stmt.lhs()); }
+  
   void exec(ptr_object_t& stmt)
-  { get()->pointer_mk_obj(stmt.lhs(), stmt.rhs()); }
-    
+  { m_inv.pointer_mk_obj(stmt.lhs(), stmt.rhs()); }
+  
   void exec(ptr_assign_t& stmt)
-  { get()->pointer_assign(stmt.lhs(), stmt.rhs(), stmt.offset()); }
-    
+  { m_inv.pointer_assign(stmt.lhs(), stmt.rhs(), stmt.offset()); }
+  
   void exec(ptr_function_t& stmt)
-  { get()->pointer_function(stmt.lhs(), stmt.rhs()); }
-    
+  { m_inv.pointer_function(stmt.lhs(), stmt.rhs()); }
+  
   void exec(ptr_load_t& stmt)
-  { get()->pointer_load(stmt.lhs(), stmt.rhs()); }
-    
+  { m_inv.pointer_load(stmt.lhs(), stmt.rhs()); }
+  
   void exec(ptr_store_t& stmt)
-  { get()->pointer_store(stmt.lhs(), stmt.rhs()); }
-    
+  { m_inv.pointer_store(stmt.lhs(), stmt.rhs()); }
+  
   void exec(ptr_assume_t& stmt)
-  { get()->pointer_assume(stmt.constraint()); }
-    
+  { m_inv.pointer_assume(stmt.constraint()); }
+  
   void exec(ptr_assert_t& stmt) {
     if (m_ignore_assert) return;
-    get()->pointer_assert(stmt.constraint());
+    m_inv.pointer_assert(stmt.constraint());
   }
-    
+  
   virtual void exec(callsite_t& cs) {
     for (auto vt: cs.get_lhs()) {
-      (*get()) -= vt;  // havoc
+      m_inv.operator-=(vt);  // havoc
     }
   }
 
@@ -655,6 +648,7 @@ public:
   
 };
 
+
 /////////////////////////////////
 /// For backward analysis
 /////////////////////////////////
@@ -664,10 +658,9 @@ public:
  * Abstract transformer to compute necessary preconditions.
  **/ 
 template<class AbsD, class InvT>
-class intra_necessary_preconditions_abs_transformer: 
+class intra_necessary_preconditions_abs_transformer final: 
     public abs_transformer_api<typename AbsD::number_t, typename AbsD::varname_t> {
 public:
-  
   typedef AbsD abs_dom_t;
   typedef typename abs_dom_t::number_t number_t;
   typedef typename abs_dom_t::varname_t varname_t;
@@ -687,7 +680,7 @@ public:
   using typename abs_transform_api_t::assert_t;
   using typename abs_transform_api_t::int_cast_t;
   using typename abs_transform_api_t::callsite_t;
-  using typename abs_transform_api_t::return_t;  
+  using typename abs_transform_api_t::return_t;
   using typename abs_transform_api_t::arr_init_t;
   using typename abs_transform_api_t::arr_load_t;
   using typename abs_transform_api_t::arr_store_t;
@@ -706,11 +699,11 @@ public:
   using typename abs_transform_api_t::bool_assume_t;
   using typename abs_transform_api_t::bool_select_t;
   using typename abs_transform_api_t::bool_assert_t;
-
+  
 private:
-    
+  
   // used to compute the (necessary) preconditions
-  abs_dom_t* m_pre;
+  abs_dom_t m_pre;
   // used to refine the preconditions: map from statement_t to abs_dom_t.
   InvT* m_invariants;
   // ignore assertions
@@ -719,30 +712,26 @@ private:
   // from good states, otherwise from bad states (by negating the
   // conditions of the assert statements).
   bool m_good_states;
-    
+  
 public:
-
+  
   intra_necessary_preconditions_abs_transformer
-  (abs_dom_t* post, InvT* invars,
+  (abs_dom_t post, InvT* invars,
    bool good_states, bool ignore_assert = false)
     : m_pre(post)
     , m_invariants(invars)
     , m_ignore_assert(ignore_assert)
     , m_good_states(good_states) {
-
+    
     if (!m_invariants) {
       CRAB_ERROR("Invariant table cannot be null");
     }
-      
-    if (!m_pre) {
-      CRAB_ERROR("Postcondition cannot be null");
-    }
   }
-    
+  
   ~intra_necessary_preconditions_abs_transformer() = default;
-
-  abs_dom_t& preconditions() {
-    return *m_pre;
+  
+  abs_dom_t preconditions() {
+    return m_pre;
   }
     
   void exec(bin_op_t& stmt) {
@@ -750,37 +739,37 @@ public:
     if (!op || op >= ikos::OP_UDIV) {
       // ignore UDIV, SREM, UREM
       // CRAB_WARN("backward operation ", stmt.op(), " not implemented");
-      (*m_pre) -= stmt.lhs();
+      m_pre -= stmt.lhs();
       return;
     }
-      
+    
     auto op1 = stmt.left();
     auto op2 = stmt.right();
     abs_dom_t invariant = (*m_invariants)[&stmt];
-
+    
     CRAB_LOG("backward-tr",
 	     crab::outs() << "** " << stmt.lhs() << " := "
-	     << op1 << " " << *op << " " << op2 << "\n"
-	     << "\tFORWARD INV=" << invariant << "\n"
-	     << "\tPOST=" << *m_pre << "\n");	       
+	                  << op1 << " " << *op << " " << op2 << "\n"
+	                  << "\tFORWARD INV=" << invariant << "\n"
+	                  << "\tPOST=" << m_pre << "\n");	       
       
     if (op1.get_variable() && op2.get_variable()) {
-      m_pre->backward_apply(*op, 
-			    stmt.lhs(), 
-			    (*op1.get_variable()), 
-			    (*op2.get_variable()),
-			    invariant);
+      m_pre.backward_apply(*op, 
+			   stmt.lhs(), 
+			   (*op1.get_variable()), 
+			   (*op2.get_variable()),
+			   std::move(invariant));
     } else {
       assert(op1.get_variable() && op2.is_constant());
-      m_pre->backward_apply(*op, 
-			    stmt.lhs(), 
-			    (*op1.get_variable()), 
-			    op2.constant(),
-			    invariant); 
+      m_pre.backward_apply(*op, 
+			   stmt.lhs(), 
+			   (*op1.get_variable()), 
+			   op2.constant(),
+			   std::move(invariant)); 
     }
     CRAB_LOG("backward-tr",
-	     crab::outs() << "\tPRE=" << *m_pre << "\n");
-      
+	     crab::outs() << "\tPRE=" << m_pre << "\n");
+    
   }
     
   // select(x := cond ? e1: e2, post) can be reduced to
@@ -802,44 +791,44 @@ public:
     abs_dom_t then_inv(old_pre);                  
     then_inv += stmt.cond();      
     if (then_inv.is_bottom()) {
-      m_pre->backward_assign(stmt.lhs(),stmt.right(),old_pre);	
-      *m_pre += stmt.cond().negate();
+      m_pre.backward_assign(stmt.lhs(),stmt.right(),std::move(old_pre));	
+      m_pre += stmt.cond().negate();
       return;
     }
-      
+    
     abs_dom_t else_inv(old_pre);
     else_inv += stmt.cond().negate();
     if (else_inv.is_bottom()) {
-      m_pre->backward_assign(stmt.lhs(),stmt.left(),old_pre);	
-      *m_pre += stmt.cond();
+      m_pre.backward_assign(stmt.lhs(),stmt.left(),std::move(old_pre));	
+      m_pre += stmt.cond();
       return;
     }
-
+    
     // -- both branches can be possible so we join them
-    abs_dom_t pre_then(*m_pre);
+    abs_dom_t pre_then(m_pre);
     pre_then.backward_assign(stmt.lhs(),stmt.left(),old_pre);      
     pre_then += stmt.cond();
-      
-    abs_dom_t pre_else(*m_pre);
+    
+    abs_dom_t pre_else(m_pre);
     pre_else.backward_assign(stmt.lhs(),stmt.right(),old_pre);      
     pre_else += stmt.cond().negate();
-      
-    *m_pre = pre_then | pre_else;
+    
+    m_pre = pre_then | pre_else;
   }
-
+  
   // x := e
   void exec(assign_t& stmt) {
     abs_dom_t invariant = (*m_invariants)[&stmt];
-      
+    
     CRAB_LOG("backward-tr",
 	     auto rhs = stmt.rhs();
 	     crab::outs() << "** " << stmt.lhs() << " := " << rhs << "\n"
 	     << "\tFORWARD INV=" << invariant << "\n"
-	     << "\tPOST=" << *m_pre << "\n");	       
-      
-    m_pre->backward_assign(stmt.lhs(), stmt.rhs(), invariant);
+	     << "\tPOST=" << m_pre << "\n");	       
+    
+    m_pre.backward_assign(stmt.lhs(), stmt.rhs(), std::move(invariant));
     CRAB_LOG("backward-tr",
-	     crab::outs() << "\tPRE=" << *m_pre << "\n");
+	     crab::outs() << "\tPRE=" << m_pre << "\n");
   }
 
   // assume(c)
@@ -847,22 +836,22 @@ public:
   void exec(assume_t& stmt) {
     CRAB_LOG("backward-tr",
 	     crab::outs() << "** " << stmt << "\n"
-	                  << "\tPOST=" << *m_pre << "\n");	       
-    *m_pre += stmt.constraint();
+	                  << "\tPOST=" << m_pre << "\n");	       
+    m_pre += stmt.constraint();
     CRAB_LOG("backward-tr",
-	     crab::outs() << "\tPRE=" << *m_pre << "\n");
+	     crab::outs() << "\tPRE=" << m_pre << "\n");
       
   }
-
+  
   // assert(c)
   void exec(assert_t& stmt) {
     if (!m_ignore_assert) {
       CRAB_LOG("backward-tr",
 	       crab::outs() << "** " << stmt << "\n"
-	                    << "\tPOST=" << *m_pre << "\n");	       
+	                    << "\tPOST=" << m_pre << "\n");	       
       if (m_good_states) {
 	// similar to assume(c)
-	*m_pre += stmt.constraint();
+	m_pre += stmt.constraint();
       } else {
 	// here we are interested in computing preconditions of the
 	// error states. Thus, we propagate backwards "not c" which
@@ -873,69 +862,69 @@ public:
 	// error. Otherwise, if we would have two assertions
 	// "assert(x >= -2); assert(x <= 2);" we would have
 	// incorrectly contradictory constraints.
-	*m_pre |= error; 
+	m_pre |= error; 
       }
-	
+      
       CRAB_LOG("backward-tr",
-	       crab::outs() << "\tPRE=" << *m_pre << "\n");
+		 crab::outs() << "\tPRE=" << m_pre << "\n");
     }
   }
-
+  
   // similar to assume(false)    
   void exec(unreach_t& stmt) {
-    *m_pre = abs_dom_t::bottom();
+    m_pre.set_to_bottom();
   }
 
   // x := *
   // x can be anything before the assignment
   void exec(havoc_t& stmt) {
-    *m_pre -= stmt.variable();
+    m_pre -= stmt.variable();
   }
 
   void exec(int_cast_t& stmt) {
     abs_dom_t invariant = (*m_invariants)[&stmt];
     CRAB_LOG("backward-tr",
 	     crab::outs() << "** " << stmt << "\n"
-	                  << "\tPOST=" << *m_pre << "\n");	                     
-    m_pre->backward_assign(stmt.dst(), stmt.src(), invariant);
+	                  << "\tPOST=" << m_pre << "\n");
+    m_pre.backward_assign(stmt.dst(), stmt.src(), std::move(invariant));    
     CRAB_LOG("backward-tr",
-	     crab::outs() << "\tPRE=" << *m_pre << "\n");    
+	     crab::outs() << "\tPRE=" << m_pre << "\n");    
   }
-    
+  
   void exec(bool_assign_cst_t& stmt)
-  { *m_pre -= stmt.lhs(); }
+  { m_pre -= stmt.lhs(); }
   void exec(bool_assign_var_t& stmt)
-  { *m_pre -= stmt.lhs(); }
+  { m_pre -= stmt.lhs(); }
   void exec(bool_bin_op_t& stmt)
-  { *m_pre -= stmt.lhs(); }
+  { m_pre -= stmt.lhs(); }
   void exec(bool_select_t& stmt)
-  { *m_pre -= stmt.lhs(); }
-    
+  { m_pre -= stmt.lhs(); }
+  
   void exec(bool_assume_t& stmt) {
     // same as forward
     CRAB_LOG("backward-tr",
 	     crab::outs() << "** " << stmt << "\n"
-	                  << "\tPOST=" << *m_pre << "\n");	                 
-    m_pre->assume_bool(stmt.cond(), stmt.is_negated());
+	                  << "\tPOST=" << m_pre << "\n");	                 
+    m_pre.assume_bool(stmt.cond(), stmt.is_negated());
     CRAB_LOG("backward-tr",
-	     crab::outs() << "\tPRE=" << *m_pre << "\n");
+	     crab::outs() << "\tPRE=" << m_pre << "\n");
   }
     
   void exec(bool_assert_t& stmt) {
     if (!m_ignore_assert) {
       CRAB_LOG("backward-tr",
 	       crab::outs() << "** " << stmt << "\n"
-	                    << "\tPOST=" << *m_pre << "\n");	             
+	                    << "\tPOST=" << m_pre << "\n");	             
       if (m_good_states) {
 	// similar to bool_assume(c)
-	m_pre->assume_bool(stmt.cond(), false /*non-negated*/);
+	m_pre.assume_bool(stmt.cond(), false /*non-negated*/);
       } else {
 	abs_dom_t error;
 	error.assume_bool(stmt.cond(), true /*negated*/);
-	*m_pre |= error;
+	  m_pre |= error;
       }
       CRAB_LOG("backward-tr",
-  	       crab::outs() << "\tPRE=" << *m_pre << "\n");
+  	       crab::outs() << "\tPRE=" << m_pre << "\n");
     }
   }
 
@@ -945,12 +934,12 @@ public:
     CRAB_LOG("backward-tr",
 	     crab::outs() << "** " << stmt << "\n"
 	                  << "\tFORWARD INV=" << invariant << "\n"	     
-	                  << "\tPOST=" << *m_pre << "\n");	       
-    m_pre->backward_array_init(stmt.array(), stmt.elem_size(),
-			       stmt.lb_index(), stmt.ub_index(), stmt.val(),
-			       invariant);
+	                  << "\tPOST=" << m_pre << "\n");	       
+    m_pre.backward_array_init(stmt.array(), stmt.elem_size(),
+			      stmt.lb_index(), stmt.ub_index(), stmt.val(),
+			      std::move(invariant));
     CRAB_LOG("backward-tr",
-	     crab::outs() << "\tPRE=" << *m_pre << "\n");
+	     crab::outs() << "\tPRE=" << m_pre << "\n");
   }
 
   void exec(arr_load_t& stmt) {
@@ -959,11 +948,11 @@ public:
     CRAB_LOG("backward-tr",
 	     crab::outs() << "** " << stmt << "\n"
 	                  << "\tFORWARD INV=" << invariant << "\n"	     
-	                  << "\tPOST=" << *m_pre << "\n");	           
-    m_pre->backward_array_load(stmt.lhs(), stmt.array(), stmt.elem_size(), stmt.index(),
-			       invariant);
+	                  << "\tPOST=" << m_pre << "\n");	           
+    m_pre.backward_array_load(stmt.lhs(), stmt.array(), stmt.elem_size(), stmt.index(),
+			      std::move(invariant));
     CRAB_LOG("backward-tr",
-	     crab::outs() << "\tPRE=" << *m_pre << "\n");    
+	     crab::outs() << "\tPRE=" << m_pre << "\n");    
   }
   
   
@@ -972,32 +961,32 @@ public:
     CRAB_LOG("backward-tr",
 	     crab::outs() << "** " << stmt << "\n"
 	                  << "\tFORWARD INV=" << invariant << "\n"
-	                  << "\tPOST=" << *m_pre << "\n");
+	                  << "\tPOST=" << m_pre << "\n");
 
     auto new_arr_v = stmt.new_array();
     if (stmt.lb_index().equal(stmt.ub_index())) {
       if (new_arr_v) {
-	m_pre->backward_array_store(*new_arr_v, stmt.array(), stmt.elem_size(),
-				    stmt.lb_index(), stmt.value(),
-				    stmt.is_strong_update(), invariant);	
+	m_pre.backward_array_store(*new_arr_v, stmt.array(), stmt.elem_size(),
+				   stmt.lb_index(), stmt.value(),
+				   stmt.is_strong_update(), std::move(invariant));	
       } else {
-	m_pre->backward_array_store(stmt.array(), stmt.elem_size(),
-				    stmt.lb_index(), stmt.value(),
-				    stmt.is_strong_update(), invariant);
+	m_pre.backward_array_store(stmt.array(), stmt.elem_size(),
+				   stmt.lb_index(), stmt.value(),
+				   stmt.is_strong_update(), std::move(invariant));
       }
     } else {
       if (new_arr_v) {
-	m_pre->backward_array_store_range(*new_arr_v, stmt.array(), stmt.elem_size(),
-					  stmt.lb_index(), stmt.ub_index(), stmt.value(),
-					  invariant);	
+	m_pre.backward_array_store_range(*new_arr_v, stmt.array(), stmt.elem_size(),
+					 stmt.lb_index(), stmt.ub_index(), stmt.value(),
+					 std::move(invariant));	
       } else {
-	m_pre->backward_array_store_range(stmt.array(), stmt.elem_size(),
-					  stmt.lb_index(), stmt.ub_index(), stmt.value(),
-					  invariant);
+	m_pre.backward_array_store_range(stmt.array(), stmt.elem_size(),
+					 stmt.lb_index(), stmt.ub_index(), stmt.value(),
+					 std::move(invariant));
       }
     }
     CRAB_LOG("backward-tr",
-	     crab::outs() << "\tPRE=" << *m_pre << "\n");        
+	     crab::outs() << "\tPRE=" << m_pre << "\n");        
   }
   
   void exec(arr_assign_t& stmt) {
@@ -1005,10 +994,10 @@ public:
     CRAB_LOG("backward-tr",
 	     crab::outs() << "** " << stmt << "\n"
 	                  << "\tFORWARD INV=" << invariant << "\n"
-	                  << "\tPOST=" << *m_pre << "\n");	                   
-    m_pre->backward_array_assign(stmt.lhs(), stmt.rhs(), invariant);
+	                  << "\tPOST=" << m_pre << "\n");	                   
+    m_pre.backward_array_assign(stmt.lhs(), stmt.rhs(), std::move(invariant));
     CRAB_LOG("backward-tr",
-	     crab::outs() << "\tPRE=" << *m_pre << "\n");            
+	     crab::outs() << "\tPRE=" << m_pre << "\n");            
   }
 
 
@@ -1026,11 +1015,11 @@ public:
   
   virtual void exec(callsite_t& cs) {
     for (auto vt: cs.get_lhs()) {
-      *m_pre -= vt;
+      m_pre -= vt;
     }
+
   }  
   virtual void exec(return_t& stmt) { }
-  
 }; 
 
 } // end namespace
