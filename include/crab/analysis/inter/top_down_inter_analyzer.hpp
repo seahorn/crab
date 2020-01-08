@@ -627,7 +627,10 @@ private:
     if (it == m_ctx.get_calling_context_table().end()) {
       calling_context_collection_t ccs;
       ccs.push_back(std::move(cc));
-      m_ctx.get_calling_context_table().insert({fun, std::move(ccs)});
+      // XXX: don't use braced-init-list. For some compiler versions,
+      // initializer_list only allows const access to its elements so
+      // it will try to copy the unique ptr.
+      m_ctx.get_calling_context_table().insert(std::make_pair(fun, std::move(ccs)));
     } else {
       // the policy decides how to add the new context.
       auto& cs_policy = m_ctx.get_context_sensitivity_policy();
