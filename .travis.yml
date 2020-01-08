@@ -12,7 +12,7 @@ env:
      - UBUNTU_DIST=bionic
        BUILD_TYPE=Release
        EXTERNAL_DOMAIN_LIB=apron
-     - UBUNTU_DIST=xenial
+     - UBUNTU_DIST=bionic
        BUILD_TYPE=Coverage
        EXTERNAL_DOMAIN_LIB=apron              
      - UBUNTU_DIST=bionic
