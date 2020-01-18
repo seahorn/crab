@@ -156,7 +156,7 @@ template<typename Number, typename Wt>
 struct NtoW {
 static Wt convert(const Number& n, bool& overflow) {
   overflow = false;
-  return (Wt) n;
+  return static_cast<Wt>(n);
 }
 };
 
