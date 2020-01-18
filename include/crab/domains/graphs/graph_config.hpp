@@ -168,7 +168,7 @@ static long convert(const ikos::z_number& n, bool& overflow) {
     overflow = true;
     return 0;
   }
-  return (long) n;
+  return static_cast<long>(n);
 }
 };
 
@@ -179,14 +179,25 @@ static int convert(const ikos::z_number& n, bool& overflow) {
     overflow = true;
     return 0;
   }
-  return (int) n;
+  return static_cast<int>(n);
+}
+};
+
+template<> struct NtoW<ikos::z_number, int64_t> {
+static int64_t convert(const ikos::z_number& n, bool& overflow) {
+  overflow = false;
+  if (!n.fits_int64()) {
+    overflow = true;
+    return 0;
+  }
+  return static_cast<int64_t>(n);
 }
 };
 
 template<> struct NtoW<ikos::z_number, safe_i64> {
 static safe_i64 convert(const ikos::z_number& n, bool& overflow) {
   overflow = false;
-  if (!n.fits_slong()) {
+  if (!n.fits_int64()) {
     overflow = true;
     return 0;
   }
