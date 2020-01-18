@@ -1,7 +1,7 @@
 #include <crab/numbers/bignums.hpp>
 #include <crab/common/debug.hpp>
 
-#include <climits>
+#include <limits>
 #include <string>
 
 namespace ikos {
@@ -43,11 +43,17 @@ z_number::z_number() {
   mpz_init(_n);
 }
 
-z_number::z_number(signed long long int n) {
-  if (n > LONG_MAX) {
-    CRAB_ERROR(n, " cannot fit into a signed long int: use another z_number constructor");
+z_number::z_number(int64_t n) {
+  if (n >= std::numeric_limits<signed long int>::min() &&
+      n <= std::numeric_limits<signed long int>::max()) {
+    mpz_init_set_si(_n, static_cast<signed long int>(n));
+  } else {
+    mpz_init(_n);
+    mpz_import(_n, 1, 1, sizeof(int64_t), 0, 0, &n);
+    if (n < 0) {
+      mpz_neg(_n, _n);
+    }
   }
-  mpz_init_set_si(_n, n);
 }
 
 z_number::z_number(const std::string& s, unsigned base) {
@@ -69,15 +75,13 @@ z_number z_number::from_mpz_srcptr(mpz_srcptr n) {
   return z;
 }
 
-z_number z_number::from_ulong(unsigned long n) {
+z_number z_number::from_uint64(uint64_t n) {
   z_number z;
-  mpz_set_ui(z._n, n);
-  return z;
-}
-
-z_number z_number::from_slong(signed long n) {
-  z_number z;
-  mpz_set_si(z._n, n);
+  if (n <= std::numeric_limits<unsigned long>::max()) {
+    mpz_set_ui(z._n, static_cast<unsigned long>(n));
+  } else {
+    mpz_import(z._n, 1, 1, sizeof(uint64_t), 0, 0, &n);
+  }
   return z;
 }
 

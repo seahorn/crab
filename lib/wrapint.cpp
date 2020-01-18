@@ -164,14 +164,7 @@ uint64_t wrapint::get_uint64_t() const {
 ikos::z_number wrapint::get_unsigned_bignum() const {
   // XXX: cannot use here ikos::z_number(_n) because it will cast _n
   // implicitly to a signed integer.
-    
-  if (ULONG_MAX == UINT64_MAX) {
-    return ikos::z_number::from_ulong(_n);
-  } else {
-    std::stringstream ss;
-    ss << _n;
-    return ikos::z_number(ss.str());
-  }
+  return ikos::z_number::from_uint64(_n);
 }
 
 // return the wrapint as a signed big number

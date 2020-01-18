@@ -3,31 +3,12 @@
 #include <crab/common/os.hpp>
 #include <boost/functional/hash.hpp>
 #include <gmp.h>
+#include <cstdint>
 
 // TODO: replace ikos with crab namespace. This class has nothing to
 // do with the ikos one. Kept for now for compatibility issues with
 // some clients.
 namespace ikos {
-
-// GMP can convert directly from/to signed/unsigned long and
-// signed/unsigned int. However, the C++11 standard only guarantees:
-//
-//  - unsigned/signed int  >= 16 bits.
-//  - unsigned/signed long >= 32 bits.
-//
-
-// TODO/FIXME:
-//
-// We don't have a conversion from GMP numbers to 64-bit integers,
-// because GMP cannot convert directly from/to int64_t or
-// uint64_t. For that, we need to use mpz_export and mpz_import but
-// they are significantly more expensive.
-// 
-// Note that the actual size of **long** integer varies depending on
-// the architecture and OS (see e.g.,
-// https://en.cppreference.com/w/cpp/language/types). For instance,
-// both Linux and mac OS on an Intel 64, the size of long integers is
-// 8 bytes. But for Windows on Intel 64, the size is 4 bytes.
 
 class z_number {
   friend class q_number;
@@ -42,11 +23,10 @@ public:
   explicit operator int() const;
   
   z_number();
-  z_number(signed long long int n);
+  z_number(int64_t n);
   z_number(const std::string& s, unsigned base = 10);
 
-  static z_number from_ulong(unsigned long n);
-  static z_number from_slong(signed long n);
+  static z_number from_uint64(uint64_t n);
   static z_number from_mpz_t(mpz_t n);  
   static z_number from_mpz_srcptr(mpz_srcptr n);
   
