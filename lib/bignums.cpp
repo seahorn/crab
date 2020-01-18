@@ -39,6 +39,18 @@ z_number::operator int() const {
   }
 } 
 
+z_number::operator int64_t() const {
+  if (fits_sint()) {
+    return (int64_t) mpz_get_si(_n);
+  } else if (fits_int64()) {
+    int64_t res = 0;
+    mpz_export(&res, 0 /*NULL*/, 1, sizeof(int64_t), 0, 0, _n);
+    return ((mpz_sgn(_n) < 0) ? -res : res);    
+  } else {
+    CRAB_ERROR("z_number ", get_str(), " does not fit into int64_t");
+  }
+}
+
 z_number::z_number() {
   mpz_init(_n);
 }
@@ -128,6 +140,11 @@ bool z_number::fits_sint() const {
 
 bool z_number::fits_slong() const {
   return mpz_fits_slong_p(_n);  
+}
+
+bool z_number::fits_int64() const {
+  return  (*this >= std::numeric_limits<int64_t>::min() &&
+	   *this <= std::numeric_limits<int64_t>::max());
 }
 
 z_number z_number::operator+(z_number x) const {

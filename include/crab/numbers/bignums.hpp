@@ -21,6 +21,7 @@ public:
   // overloaded typecast operators
   explicit operator long() const;
   explicit operator int() const;
+  explicit operator int64_t() const;
   
   z_number();
   z_number(int64_t n);
@@ -48,6 +49,8 @@ public:
   bool fits_sint() const;
 
   bool fits_slong() const;
+
+  bool fits_int64() const;  
 
   z_number operator+(z_number x) const; 
 
