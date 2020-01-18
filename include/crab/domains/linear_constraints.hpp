@@ -120,7 +120,7 @@ namespace ikos {
     linear_expression(Number n): 
         _map(std::make_shared<map_t>()), _cst(n) { }
     
-    linear_expression(signed long long int n): 
+    linear_expression(int64_t n): 
         _map(std::make_shared<map_t>()), _cst(Number(n)) { }
     
     linear_expression(variable_t x): 
@@ -234,7 +234,7 @@ namespace ikos {
       return r;
     }
 
-    linear_expression_t operator+(int n) const {
+    linear_expression_t operator+(int64_t n) const {
       return this->operator+(Number(n));
     }
     
@@ -257,7 +257,7 @@ namespace ikos {
       return this->operator+(-n);
     }
 
-    linear_expression_t operator-(int n) const {
+    linear_expression_t operator-(int64_t n) const {
       return this->operator+(-Number(n));
     }
 
@@ -296,7 +296,7 @@ namespace ikos {
       }
     }
     
-    linear_expression_t operator*(int n) const {
+    linear_expression_t operator*(int64_t n) const {
       return operator*(Number(n));
     }
     
@@ -419,7 +419,7 @@ namespace ikos {
   
   template<typename Number, typename VariableName>
   inline linear_expression<Number, VariableName> 
-  operator*(int n, variable<Number, VariableName> x) {
+  operator*(int64_t n, variable<Number, VariableName> x) {
     return linear_expression<Number, VariableName>(Number(n), x);
   }
 
@@ -431,7 +431,7 @@ namespace ikos {
   
   template<typename Number, typename VariableName>
   inline linear_expression<Number, VariableName> 
-  operator*(variable<Number, VariableName> x, int n) {
+  operator*(variable<Number, VariableName> x, int64_t n) {
     return linear_expression<Number, VariableName>(Number(n), x);
   }
 
@@ -443,7 +443,7 @@ namespace ikos {
   
   template<typename Number, typename VariableName>
   inline linear_expression<Number, VariableName> 
-  operator*(int n, const linear_expression<Number, VariableName> &e) {
+  operator*(int64_t n, const linear_expression<Number, VariableName> &e) {
     return e.operator*(n);
   }
 
@@ -455,7 +455,7 @@ namespace ikos {
 
   template<typename Number, typename VariableName>
   inline linear_expression<Number, VariableName> 
-  operator+(variable<Number, VariableName> x, int n) {
+  operator+(variable<Number, VariableName> x, int64_t n) {
     return linear_expression<Number, VariableName>(x).operator+(n);
   }
 
@@ -467,7 +467,7 @@ namespace ikos {
 
   template<typename Number, typename VariableName>
   inline linear_expression<Number, VariableName> 
-  operator+(int n, variable<Number, VariableName> x) {
+  operator+(int64_t n, variable<Number, VariableName> x) {
     return linear_expression<Number, VariableName>(x).operator+(n);
   }
 
@@ -486,7 +486,7 @@ namespace ikos {
   
   template<typename Number, typename VariableName>
   inline linear_expression<Number, VariableName> 
-  operator+(int n, const linear_expression<Number, VariableName> &e) {
+  operator+(int64_t n, const linear_expression<Number, VariableName> &e) {
     return e.operator+(n);
   }
 
@@ -505,7 +505,7 @@ namespace ikos {
 
   template<typename Number, typename VariableName>
   inline linear_expression<Number, VariableName> 
-  operator-(variable<Number, VariableName> x, int n) {
+  operator-(variable<Number, VariableName> x, int64_t n) {
     return linear_expression<Number, VariableName>(x).operator-(n);
   }
 
@@ -517,7 +517,7 @@ namespace ikos {
 
   template<typename Number, typename VariableName>
   inline linear_expression<Number, VariableName> 
-  operator-(int n, variable<Number, VariableName> x) {
+  operator-(int64_t n, variable<Number, VariableName> x) {
     return linear_expression<Number, VariableName>(Number(-1), x).operator+(n);
   }
 
@@ -536,7 +536,7 @@ namespace ikos {
   
   template<typename Number, typename VariableName>
   inline linear_expression<Number, VariableName> 
-  operator-(int n, const linear_expression<Number, VariableName> &e) {
+  operator-(int64_t n, const linear_expression<Number, VariableName> &e) {
     return linear_expression<Number, VariableName>(Number(n)).operator-(e);
   }
 
@@ -890,7 +890,7 @@ namespace ikos {
 
   template<typename Number, typename VariableName>
   inline linear_constraint<Number, VariableName> 
-  operator<=(const linear_expression<Number, VariableName> &e, int n) {
+  operator<=(const linear_expression<Number, VariableName> &e, int64_t n) {
     return linear_constraint<Number, VariableName>
         (e - n, linear_constraint<Number, VariableName>::INEQUALITY);
   }
@@ -904,7 +904,7 @@ namespace ikos {
 
   template<typename Number, typename VariableName>
   inline linear_constraint<Number, VariableName> 
-  operator<=(int n, const linear_expression<Number, VariableName> &e) {
+  operator<=(int64_t n, const linear_expression<Number, VariableName> &e) {
     return linear_constraint<Number, VariableName>
         (n - e, linear_constraint<Number, VariableName>::INEQUALITY);
   }
@@ -934,7 +934,7 @@ namespace ikos {
 
   template<typename Number, typename VariableName>
   inline linear_constraint<Number, VariableName> 
-  operator<=(variable<Number, VariableName> x, int n) {
+  operator<=(variable<Number, VariableName> x, int64_t n) {
     return linear_constraint<Number, VariableName>
         (x - n, linear_constraint<Number, VariableName>::INEQUALITY);
   }
@@ -948,7 +948,7 @@ namespace ikos {
 
   template<typename Number, typename VariableName>
   inline linear_constraint<Number, VariableName> 
-  operator<=(int n, variable<Number, VariableName> x) {
+  operator<=(int64_t n, variable<Number, VariableName> x) {
     return linear_constraint<Number, VariableName>
         (n - x, linear_constraint<Number, VariableName>::INEQUALITY);
   }
@@ -977,7 +977,7 @@ namespace ikos {
 
   template<typename Number, typename VariableName>
   inline linear_constraint<Number, VariableName> 
-  operator>=(const linear_expression<Number, VariableName> &e, int n) {
+  operator>=(const linear_expression<Number, VariableName> &e, int64_t n) {
     return linear_constraint<Number, VariableName>
         (n - e, linear_constraint<Number, VariableName>::INEQUALITY);
   }
@@ -991,7 +991,7 @@ namespace ikos {
 
   template<typename Number, typename VariableName>
   inline linear_constraint<Number, VariableName> 
-  operator>=(int n, const linear_expression<Number, VariableName> &e) {
+  operator>=(int64_t n, const linear_expression<Number, VariableName> &e) {
     return linear_constraint<Number, VariableName>
         (e - n, linear_constraint<Number, VariableName>::INEQUALITY);
   }
@@ -1021,7 +1021,7 @@ namespace ikos {
 
   template<typename Number, typename VariableName>
   inline linear_constraint<Number, VariableName> 
-  operator>=(variable<Number, VariableName> x, int n) {
+  operator>=(variable<Number, VariableName> x, int64_t n) {
     return linear_constraint<Number, VariableName>
         (n - x, linear_constraint<Number, VariableName>::INEQUALITY);
   }
@@ -1035,7 +1035,7 @@ namespace ikos {
 
   template<typename Number, typename VariableName>
   inline linear_constraint<Number, VariableName> 
-  operator>=(int n, variable<Number, VariableName> x) {
+  operator>=(int64_t n, variable<Number, VariableName> x) {
     return linear_constraint<Number, VariableName>
         (x - n, linear_constraint<Number, VariableName>::INEQUALITY);
   }
@@ -1065,7 +1065,7 @@ namespace ikos {
 
   template<typename Number, typename VariableName>
   inline linear_constraint<Number, VariableName> 
-  operator<(const linear_expression<Number, VariableName> &e, int n) {
+  operator<(const linear_expression<Number, VariableName> &e, int64_t n) {
     return linear_constraint<Number, VariableName>
       (e - n, linear_constraint<Number, VariableName>::STRICT_INEQUALITY);
   }
@@ -1079,7 +1079,7 @@ namespace ikos {
 
   template<typename Number, typename VariableName>
   inline linear_constraint<Number, VariableName> 
-  operator<(int n, const linear_expression<Number, VariableName> &e) {
+  operator<(int64_t n, const linear_expression<Number, VariableName> &e) {
     return linear_constraint<Number, VariableName>
       (n - e, linear_constraint<Number, VariableName>::STRICT_INEQUALITY);
   }
@@ -1109,7 +1109,7 @@ namespace ikos {
 
   template<typename Number, typename VariableName>
   inline linear_constraint<Number, VariableName> 
-  operator<(variable<Number, VariableName> x, int n) {
+  operator<(variable<Number, VariableName> x, int64_t n) {
     return linear_constraint<Number, VariableName>
       (x - n, linear_constraint<Number, VariableName>::STRICT_INEQUALITY);
   }
@@ -1123,7 +1123,7 @@ namespace ikos {
 
   template<typename Number, typename VariableName>
   inline linear_constraint<Number, VariableName> 
-  operator<(int n, variable<Number, VariableName> x) {
+  operator<(int64_t n, variable<Number, VariableName> x) {
     return linear_constraint<Number, VariableName>
       (n - x, linear_constraint<Number, VariableName>::STRICT_INEQUALITY);
   }
@@ -1152,7 +1152,7 @@ namespace ikos {
   
   template<typename Number, typename VariableName>
   inline linear_constraint<Number, VariableName> 
-  operator>(const linear_expression<Number, VariableName> &e, int n) {
+  operator>(const linear_expression<Number, VariableName> &e, int64_t n) {
     return linear_constraint<Number, VariableName>
       (n - e, linear_constraint<Number, VariableName>::STRICT_INEQUALITY);
   }
@@ -1166,7 +1166,7 @@ namespace ikos {
 
   template<typename Number, typename VariableName>
   inline linear_constraint<Number, VariableName> 
-  operator>(int n, const linear_expression<Number, VariableName> &e) {
+  operator>(int64_t n, const linear_expression<Number, VariableName> &e) {
     return linear_constraint<Number, VariableName>
       (e - n, linear_constraint<Number, VariableName>::STRICT_INEQUALITY);
   }
@@ -1196,7 +1196,7 @@ namespace ikos {
 
   template<typename Number, typename VariableName>
   inline linear_constraint<Number, VariableName> 
-  operator>(variable<Number, VariableName> x, int n) {
+  operator>(variable<Number, VariableName> x, int64_t n) {
     return linear_constraint<Number, VariableName>
       (n - x, linear_constraint<Number, VariableName>::STRICT_INEQUALITY);
   }
@@ -1210,7 +1210,7 @@ namespace ikos {
 
   template<typename Number, typename VariableName>
   inline linear_constraint<Number, VariableName> 
-  operator>(int n, variable<Number, VariableName> x) {
+  operator>(int64_t n, variable<Number, VariableName> x) {
     return linear_constraint<Number, VariableName>
       (x - n, linear_constraint<Number, VariableName>::STRICT_INEQUALITY);
   }
@@ -1240,7 +1240,7 @@ namespace ikos {
 
   template<typename Number, typename VariableName>
   inline linear_constraint<Number, VariableName> 
-  operator==(const linear_expression<Number, VariableName> &e, int n) {
+  operator==(const linear_expression<Number, VariableName> &e, int64_t n) {
     return linear_constraint<Number, VariableName>
         (e - n, linear_constraint<Number, VariableName>::EQUALITY);
   }
@@ -1254,7 +1254,7 @@ namespace ikos {
 
   template<typename Number, typename VariableName>
   inline linear_constraint<Number, VariableName> 
-  operator==(int n, const linear_expression<Number, VariableName> &e) {
+  operator==(int64_t n, const linear_expression<Number, VariableName> &e) {
     return linear_constraint<Number, VariableName>
         (e - n, linear_constraint<Number, VariableName>::EQUALITY);
   }
@@ -1284,7 +1284,7 @@ namespace ikos {
 
   template<typename Number, typename VariableName>
   inline linear_constraint<Number, VariableName> 
-  operator==(variable<Number, VariableName> x, int n) {
+  operator==(variable<Number, VariableName> x, int64_t n) {
     return linear_constraint<Number, VariableName>
         (x - n, linear_constraint<Number, VariableName>::EQUALITY);
   }
@@ -1298,7 +1298,7 @@ namespace ikos {
 
   template<typename Number, typename VariableName>
   inline linear_constraint<Number, VariableName> 
-  operator==(int n, variable<Number, VariableName> x) {
+  operator==(int64_t n, variable<Number, VariableName> x) {
     return linear_constraint<Number, VariableName>
         (x - n, linear_constraint<Number, VariableName>::EQUALITY);
   }
@@ -1328,7 +1328,7 @@ namespace ikos {
 
   template<typename Number, typename VariableName>
   inline linear_constraint<Number, VariableName> 
-  operator!=(const linear_expression<Number, VariableName> &e, int n) {
+  operator!=(const linear_expression<Number, VariableName> &e, int64_t n) {
     return linear_constraint<Number, VariableName>
         (e - n, linear_constraint<Number, VariableName>::DISEQUATION);
   }
@@ -1342,7 +1342,7 @@ namespace ikos {
 
   template<typename Number, typename VariableName>
   inline linear_constraint<Number, VariableName> 
-  operator!=(int n, const linear_expression<Number, VariableName> &e) {
+  operator!=(int64_t n, const linear_expression<Number, VariableName> &e) {
     return linear_constraint<Number, VariableName>
         (e - n, linear_constraint<Number, VariableName>::DISEQUATION);
   }
@@ -1372,7 +1372,7 @@ namespace ikos {
 
   template<typename Number, typename VariableName>
   inline linear_constraint<Number, VariableName> 
-  operator!=(variable<Number, VariableName> x, int n) {
+  operator!=(variable<Number, VariableName> x, int64_t n) {
     return linear_constraint<Number, VariableName>
         (x - n, linear_constraint<Number, VariableName>::DISEQUATION);
   }
@@ -1386,7 +1386,7 @@ namespace ikos {
 
   template<typename Number, typename VariableName>
   inline linear_constraint<Number, VariableName> 
-  operator!=(int n, variable<Number, VariableName> x) {
+  operator!=(int64_t n, variable<Number, VariableName> x) {
     return linear_constraint<Number, VariableName>
         (x - n, linear_constraint<Number, VariableName>::DISEQUATION);
   }
