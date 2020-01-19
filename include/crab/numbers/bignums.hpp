@@ -16,11 +16,12 @@ class z_number {
 private:
   mpz_t _n;
 
+  bool fits_sint() const;
+  bool fits_slong() const;
+  
 public:
   
   // overloaded typecast operators
-  explicit operator long() const;
-  explicit operator int() const;
   explicit operator int64_t() const;
   
   z_number();
@@ -46,11 +47,7 @@ public:
 
   std::size_t hash() const;
   
-  bool fits_sint() const;
-
-  bool fits_slong() const;
-
-  bool fits_int64() const;  
+  bool fits_int64() const;
 
   z_number operator+(z_number x) const; 
 

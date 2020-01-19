@@ -2473,7 +2473,9 @@ public:
       CRAB_WARN("array_graph ignored array load because element size is not constant");
       return;
     }
-    unsigned num_bytes =(long)*n_elem_size; 
+    assert(static_cast<int64_t>(*n_elem_size) > 0 &&
+	   static_cast<int64_t>(*n_elem_size) <= std::numeric_limits<uint64_t>::max());    
+    int64_t num_bytes = static_cast<int64_t>(*n_elem_size); 
     auto p = normalize_offset(*vi, num_bytes); 
     variable_t norm_idx = p.first;
 
@@ -2541,7 +2543,9 @@ public:
       CRAB_WARN("array_graph ignored array store because element size is not constant");
       return;
     }
-    unsigned num_bytes = (long)*n_elem_size; 
+    assert(static_cast<int64_t>(*n_elem_size) > 0 &&
+	   static_cast<int64_t>(*n_elem_size) <= std::numeric_limits<uint64_t>::max());    
+    int64_t num_bytes = static_cast<int64_t>(*n_elem_size); 
     auto p = normalize_offset(*vi, num_bytes);
     variable_t norm_idx = p.first;
 

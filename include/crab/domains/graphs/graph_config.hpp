@@ -30,7 +30,7 @@ enum GraphRep {
 /** DBM weights (Wt) can be represented using one of the following
  * types:
  * 
- * 1) basic integer type: e.g., long
+ * 1) basic integer type: e.g., int64_t
  * 2) safei64
  * 3) z_number
  * 
@@ -50,7 +50,7 @@ public:
   enum { special_assign = 1 };
   enum { close_bounds_inline = 0 };	 
   
-  typedef long Wt;
+  typedef int64_t Wt;
   
   typedef typename std::conditional< 
     (Graph == ss), 
@@ -129,7 +129,7 @@ public:
   enum { special_assign = 0 };
   enum { close_bounds_inline = 1 };	 	 
   
-  typedef long Wt;
+  typedef int64_t Wt;
   
   typedef typename std::conditional< 
     (Graph == ss), 
@@ -160,28 +160,6 @@ static Wt convert(const Number& n, bool& overflow) {
 }
 };
 
-
-template<> struct NtoW<ikos::z_number, long> {
-static long convert(const ikos::z_number& n, bool& overflow) {
-  overflow = false;
-  if (!n.fits_slong()) {
-    overflow = true;
-    return 0;
-  }
-  return static_cast<long>(n);
-}
-};
-
-template<> struct NtoW<ikos::z_number, int> {
-static int convert(const ikos::z_number& n, bool& overflow) {
-  overflow = false;
-  if (!n.fits_sint()) {
-    overflow = true;
-    return 0;
-  }
-  return static_cast<int>(n);
-}
-};
 
 template<> struct NtoW<ikos::z_number, int64_t> {
 static int64_t convert(const ikos::z_number& n, bool& overflow) {

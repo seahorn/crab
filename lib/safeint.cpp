@@ -56,10 +56,10 @@ safe_i64::safe_i64(): m_num(0) {}
   
 safe_i64::safe_i64(int64_t num): m_num(num) {}
   
-safe_i64::safe_i64(ikos::z_number n): m_num((long) n) {}
+safe_i64::safe_i64(ikos::z_number n): m_num(static_cast<int64_t>(n)) {}
   
-safe_i64::operator long() const {
-  return (long) m_num;
+safe_i64::operator int64_t() const {
+  return m_num;
 }
 
 // FIXME: operation should not raise an error.

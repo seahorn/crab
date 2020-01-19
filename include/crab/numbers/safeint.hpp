@@ -35,7 +35,7 @@ public:
   
   safe_i64(ikos::z_number n);
   
-  operator long() const;
+  operator int64_t() const;
 
   // TODO: output parameters whether operation overflows
   safe_i64 operator+(safe_i64 x) const;

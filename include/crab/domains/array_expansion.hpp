@@ -93,7 +93,7 @@ namespace domains {
     typedef ikos::interval<typename Variable::number_t> interval_t;
     
     offset_t _offset;
-    unsigned _size;
+    uint64_t _size;
     boost::optional<Variable> _scalar;
     
     // Only offset_map<Variable> can create cells
@@ -106,12 +106,12 @@ namespace domains {
       , _size(scalar.get_bitwidth())  
       , _scalar(scalar) { }
     
-    cell(offset_t offset, unsigned size)
+    cell(offset_t offset, uint64_t size)
       : _offset(offset)
       , _size(size)  
       , _scalar(boost::optional<Variable>()) { }
     
-    static interval_t to_interval(const offset_t o, unsigned size)  {
+    static interval_t to_interval(const offset_t o, uint64_t size)  {
       interval_t i(o.index(), o.index() + size - 1);
       return i;
     }
@@ -162,7 +162,7 @@ namespace domains {
 
     // Return true if [o, o+size) definitely overlaps with the cell,
     // where o is a constant expression.
-    bool overlap(const offset_t& o, unsigned size) const {
+    bool overlap(const offset_t& o, uint64_t size) const {
       interval_t x = to_interval();
       interval_t y = to_interval(o, size);
       bool res = (!(x & y).is_bottom());
@@ -372,7 +372,7 @@ namespace domains {
       }
     }
 
-    cell_t get_cell(offset_t o, unsigned size) const {
+    cell_t get_cell(offset_t o, uint64_t size) const {
       if (boost::optional<cell_set_t> cells = _map.lookup(o)) {
 	cell_t tmp(o, size);
 	auto it = (*cells).find(tmp);
@@ -384,7 +384,7 @@ namespace domains {
       return cell_t();
     }
 
-    static std::string mk_scalar_name(Variable a, offset_t o, unsigned size) {
+    static std::string mk_scalar_name(Variable a, offset_t o, uint64_t size) {
       crab::crab_string_os os;
       os << a << "[";
       if (size == 1) {
@@ -411,10 +411,10 @@ namespace domains {
 
     // global state to map the same triple of array, offset and size
     // to same index
-    static std::map<std::pair<ikos::index_t, std::pair<offset_t, unsigned>>,
+    static std::map<std::pair<ikos::index_t, std::pair<offset_t, uint64_t>>,
 		    ikos::index_t> _index_map;
     
-    ikos::index_t get_index(Variable a, offset_t o, unsigned size) {
+    ikos::index_t get_index(Variable a, offset_t o, uint64_t size) {
       auto it = _index_map.find({a.index(), {o, size}});
       if (it != _index_map.end()) {
 	return it->second;
@@ -425,7 +425,7 @@ namespace domains {
       }
     }
     
-    cell_t mk_cell(Variable array, offset_t o, unsigned size) {
+    cell_t mk_cell(Variable array, offset_t o, uint64_t size) {
       // TODO: check array is the array associated to this offset map
       
       cell_t c = get_cell(o, size);
@@ -499,7 +499,7 @@ namespace domains {
     }
     
     // Return in out all cells that might overlap with (o, size).
-    void get_overlap_cells(offset_t o, unsigned size, std::vector<cell_t>& out){
+    void get_overlap_cells(offset_t o, uint64_t size, std::vector<cell_t>& out){
       compare_binding_t comp;
 
       bool added = false;
@@ -684,7 +684,7 @@ namespace domains {
   };
 
   template<typename Var>
-  std::map<std::pair<ikos::index_t, std::pair<offset_t, unsigned>>,
+  std::map<std::pair<ikos::index_t, std::pair<offset_t, uint64_t>>,
 	   ikos::index_t> offset_map<Var>::_index_map;
 
   // /* for debugging */
@@ -1153,10 +1153,12 @@ namespace domains {
       interval_t ii = to_interval(i);
       if (boost::optional<number_t> n = ii.singleton()) {
 	offset_map_t& offset_map = lookup_array_map(a);
-	offset_t o((long) *n);	
+	offset_t o(static_cast<int64_t>(*n));	
 	interval_t i_elem_size = to_interval(elem_size);			
 	if (boost::optional<number_t> n_bytes = i_elem_size.singleton()) {
-	  unsigned size =(long)*n_bytes;	  
+	  assert(static_cast<int64_t>(*n_bytes) > 0 &&
+		 static_cast<int64_t>(*n_bytes) <= std::numeric_limits<uint64_t>::max());
+	  uint64_t size = static_cast<int64_t>(*n_bytes); 
 	  std::vector<cell_t> cells;
 	  offset_map.get_overlap_cells(o, size, cells);
 	  if (!cells.empty()) {
@@ -1209,14 +1211,16 @@ namespace domains {
       if (!n_bytes) {
 	CRAB_ERROR("array expansion domain expects constant array element sizes");	
       }
-      
-      unsigned size = (long)(*n_bytes);
+
+      assert(static_cast<int64_t>(*n_bytes) > 0 &&
+	     static_cast<int64_t>(*n_bytes) <= std::numeric_limits<uint64_t>::max());
+      uint64_t size = static_cast<int64_t>(*n_bytes);
       offset_map_t& offset_map = lookup_array_map(a);
       interval_t ii = to_interval(i);
       if (boost::optional<number_t> n = ii.singleton()) {
 	// -- Constant index: kill overlapping cells + perform strong update
 	std::vector<cell_t> cells;
-	offset_t o((long)*n);	
+	offset_t o(static_cast<int64_t>(*n));	
 	offset_map.get_overlap_cells(o, size, cells);
 	if (cells.size() > 0) {
 	  CRAB_LOG("array-expansion",
@@ -1369,10 +1373,12 @@ namespace domains {
       interval_t ii = to_interval(i, invariant.get_content_domain());
       if (boost::optional<number_t> n = ii.singleton()) {
     	offset_map_t& offset_map = lookup_array_map(a);
-    	offset_t o((long) *n);	
+    	offset_t o(static_cast<int64_t>(*n));	
     	interval_t i_elem_size = to_interval(elem_size, invariant.get_content_domain());
     	if (boost::optional<number_t> n_bytes = i_elem_size.singleton()) {
-    	  unsigned size =(long)*n_bytes;	  
+	  assert(static_cast<int64_t>(*n_bytes) > 0 &&
+		 static_cast<int64_t>(*n_bytes) <= std::numeric_limits<uint64_t>::max());
+	  uint64_t size = static_cast<int64_t>(*n_bytes); 
 	  cell_t c = offset_map.mk_cell(a, o, size);
 	  assert(c.has_scalar());
 	  _inv.backward_assign(lhs, c.get_scalar(), invariant.get_content_domain());
@@ -1411,15 +1417,17 @@ namespace domains {
       if (!n_bytes) {
       	CRAB_ERROR("array expansion domain expects constant array element sizes");	
       }
-      
-      unsigned size = (long)(*n_bytes);
+
+      assert(static_cast<int64_t>(*n_bytes) > 0 &&
+	     static_cast<int64_t>(*n_bytes) <= std::numeric_limits<uint64_t>::max());
+      uint64_t size = static_cast<int64_t>(*n_bytes);
       offset_map_t& offset_map = lookup_array_map(a);
       // XXX: we use the forward invariant to extract the array index            
       interval_t ii = to_interval(i, invariant.get_content_domain());
       if (boost::optional<number_t> n = ii.singleton()) {
       	// -- Constant index and the store updated one single cell:
       	// -- backward assign in the base domain.
-      	offset_t o((long)*n);
+      	offset_t o(static_cast<int64_t>(*n));
 	std::vector<cell_t> cells;	
       	offset_map.get_overlap_cells(o, size, cells);
 	// post: forall c \in cells:: c != [o,size)

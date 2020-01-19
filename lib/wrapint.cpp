@@ -56,15 +56,14 @@ wrapint::wrapint(ikos::z_number n, bitwidth_t width)
   sanity_check_bitwidth();
   assert(_width <= 64);
   compute_mod();
-  if (!n.fits_slong()) {
-    // n is a signed integer over 64 bits that cannot be represented
-    // by the signed long type.
-    CRAB_ERROR(n, " does not fit in a signed long integer.");
+  if (!n.fits_int64()) {
+    CRAB_ERROR(n, " does not fit in an int64_t.");
   }
+  int64_t x = static_cast<int64_t>(n);
   if (_width == 64) {
-    _n = (long) n;
+    _n = static_cast<uint64_t>(x);
   } else {
-    _n = ((long) n) % _mod;
+    _n = static_cast<uint64_t>(x) % _mod;
   }
 }
 
@@ -75,17 +74,15 @@ wrapint::wrapint(ikos::q_number n, bitwidth_t width)
   assert(_width <= 64);
   compute_mod();
   ikos::z_number i = n.round_to_upper();
-  if (!i.fits_slong()) {
-    // n is a signed integer over 64 bits that cannot be represented
-    // by the signed long type.      
-    CRAB_ERROR(n, " does not fit in a signed long integer.");
+  if (!i.fits_int64()) {
+    CRAB_ERROR(n, " does not fit in an int64_t.");    
   }
+  int64_t x = static_cast<int64_t>(i);
   if (_width == 64) {
-    _n = (long) i;
+    _n = static_cast<uint64_t>(x);
   } else {
-    _n = ((long) i) % _mod;
+    _n = static_cast<uint64_t>(x) % _mod;
   }
-    
 }
   
 wrapint::wrapint(std::string s, bitwidth_t width):
@@ -108,7 +105,7 @@ wrapint::bitwidth_t wrapint::get_bitwidth() const {
 
 bool wrapint::fits_wrapint(ikos::z_number n, bitwidth_t width) {
   if (width > 64) return false;
-  return n.fits_slong();
+  return n.fits_int64();
 }
 
 bool wrapint::fits_wrapint(ikos::q_number n, bitwidth_t width) {

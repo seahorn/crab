@@ -20,25 +20,6 @@ struct scoped_cstring {
 
 /* Wrapper for mpz */
 
-z_number::operator long() const { 
-  if (fits_slong()) {
-    return mpz_get_si(_n);
-  } else {
-    CRAB_ERROR("z_number ", get_str(),
-	       " does not fit into a signed long integer");
-  }
-} 
-
-z_number::operator int() const { 
-  if (fits_sint()) {
-    // get_si returns a signed long so we cast it to int
-    return (int) mpz_get_si(_n);
-  } else {
-    CRAB_ERROR("z_number ", get_str(),
-	       " does not fit into a signed integer");
-  }
-} 
-
 z_number::operator int64_t() const {
   if (fits_sint()) {
     return (int64_t) mpz_get_si(_n);
