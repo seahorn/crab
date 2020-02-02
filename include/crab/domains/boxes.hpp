@@ -623,7 +623,7 @@ namespace crab {
 	    get_theory()->destroy_lincons(cons);
 	    return n; 
            } else {
-	    assert(kind == kind_t::DISEQUALITY);
+	    assert(kind == kind_t::DISEQUATION);
             return lddPtr(get_ldd_man(),
 			  Ldd_Not(&*make_unit_constraint(coef, term, kind_t::EQUALITY, k)));
           }
