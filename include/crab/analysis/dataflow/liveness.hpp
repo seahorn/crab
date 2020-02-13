@@ -182,10 +182,12 @@ namespace crab {
       
       // the cfg
       CFG m_cfg;
+      // liveness analysis
+      std::unique_ptr<liveness_analysis_t> m_live;
       
       // output of the analysis: map basic blocks to set of dead
       // variables at the end of the blocks
-      std::unordered_map<basic_block_label_t, varset_domain_t> _dead_map;
+      std::unordered_map<basic_block_label_t, varset_domain_t> m_dead_map;
       
       // statistics 
       unsigned m_max_live;
@@ -200,6 +202,7 @@ namespace crab {
       
       liveness(CFG cfg)
 	: m_cfg(cfg)
+	, m_live(new liveness_analysis_t(m_cfg))
 	, m_max_live(0)
 	, m_total_live(0)
 	, m_total_blocks (0) { }
@@ -209,12 +212,11 @@ namespace crab {
       liveness<CFG>& operator=(const liveness<CFG>& other) = delete;
           
       void exec() {
-	/** Remove dead variables locally **/
+	m_live->exec();
 	
-	liveness_analysis_t live(m_cfg);
-	live.exec();
+	/** Remove dead variables locally **/
 	for (auto &bb: boost::make_iterator_range(m_cfg.begin(), m_cfg.end())) {
-	  varset_domain_t live_set = live.get(bb.label());
+	  varset_domain_t live_set = m_live->get(bb.label());
 	  if (live_set.is_bottom()) continue;
 
 	  varset_domain_t dead_set = m_cfg.get_node(bb.label()).live();
@@ -223,18 +225,23 @@ namespace crab {
 	  CRAB_LOG("liveness",
 		   crab::outs() << cfg_impl::get_label_str(bb.label()) 
 		                << " dead variables=" << dead_set <<"\n";);
-	  _dead_map.insert (std::make_pair(bb.label(), dead_set));
+	  m_dead_map.insert (std::make_pair(bb.label(), dead_set));
 	  // update statistics
 	  m_total_live += live_set.size ();
 	  m_max_live = std::max (m_max_live, live_set.size ());
 	  m_total_blocks ++;
 	}      
       }
-    
+
+      // Return the set of live variables at the exit of block bb
+      varset_domain_t get(basic_block_label_t bb) const {
+	return m_live->get(bb);
+      }
+      
       // Return the set of dead variables at the exit of block bb
       varset_domain_t dead_exit (basic_block_label_t bb) const {
-	auto it = _dead_map.find(bb);
-	if (it == _dead_map.end()) {
+	auto it = m_dead_map.find(bb);
+	if (it == m_dead_map.end()) {
 	  return varset_domain_t();
 	} else {
 	  return it->second;
