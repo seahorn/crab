@@ -168,8 +168,8 @@ public:
   // hook for generating indexed_string's without being
   // associated with a particular T (w/o caching).
   // XXX: do not use it unless strictly necessary.
-  virtual indexed_string get() {
-    indexed_string is(get_and_increment_id(), this);
+  virtual indexed_string get(std::string name = "") {
+    indexed_string is(get_and_increment_id(), this, name);
     _shadow_vars.push_back(is);
     return is;
   }
