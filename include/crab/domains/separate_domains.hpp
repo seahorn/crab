@@ -333,14 +333,14 @@ namespace ikos {
       this->_tree = patricia_tree_t();
     }
 
-    separate_domain_t& operator-=(Key k) {
+    separate_domain_t& operator-=(const Key &k) {
       if (!this->is_bottom()) {
         this->_tree.remove(k);
       }
       return *this;
     }
     
-    Value operator[](Key k) const {
+    Value operator[](const Key& k) const {
       if (this->is_bottom()) {
         return Value::bottom();
       } else {
@@ -352,8 +352,7 @@ namespace ikos {
         }
       }
     }
-
-    
+        
     std::size_t size() const {
       if (is_bottom()) {
 	return 0;
