@@ -1,10 +1,10 @@
 /*******************************************************************************
  * Array smashing domain
  * 
- * FIXME: assume all array accesses are aligned wrt to the size of the
- * array element (e.g., if the size of the array element is 4 bytes
- * then all array accesses must be multiple of 4). Note that this
- * assumption does not hold in real programs.
+ * Assume all array accesses are aligned wrt to the size of the array
+ * element (e.g., if the size of the array element is 4 bytes then all
+ * array accesses must be multiple of 4). Note that this assumption
+ * does not hold in general, so the client must ensure that.
  ******************************************************************************/
 
 #pragma once
@@ -231,7 +231,10 @@ namespace crab {
         array_smashing_t operator&&(array_smashing_t other) {
           return array_smashing_t(_inv && other._inv);
         }
-        
+
+	interval_t operator[](const variable_t& v) {
+	  return _inv[v];
+	}
 
         void forget(const variable_vector_t& variables) {
           _inv.forget(variables);
