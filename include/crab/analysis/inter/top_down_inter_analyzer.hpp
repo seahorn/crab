@@ -660,21 +660,35 @@ private:
     if (caller_dom.is_bottom()) {
       return caller_dom;
     }
-
+    CRAB_LOG("inter-callee",
+	     errs() << "Inv at the caller: " << caller_dom << "\n");
     // propagate from actual to formal parameters
+    CRAB_LOG("inter-callee",
+	     errs() << "Unifying formal and actual parameters\n";);
     for (unsigned i=0, e=fdecl.get_inputs().size(); i<e; ++i) {
       variable_t formal = fdecl.get_inputs()[i];
       variable_t actual = cs.get_args()[i];
       if (!(formal == actual)) {
+	CRAB_LOG("inter-callee",
+		 errs() << "\t" << formal << " and " << actual << "\n";);
 	inter_transformer_helpers<AbsDom>::unify(caller_dom, formal, actual);
       }
     }
+    CRAB_LOG("inter-callee",    
+	     errs() << "Inv after formal/actual unification: " << caller_dom << "\n";);
     // Meet 
     callee_dom = caller_dom & callee_dom;
-    
+    CRAB_LOG("inter-callee",
+	     errs() << "Inv after meet with callee  " << callee_dom << "\n";);    
     // project onto **input** formal parameters
     callee_dom.project(fdecl.get_inputs());
-
+    CRAB_LOG("inter-callee",
+	     errs() << "Inv at the callee after projecting onto formals: ";
+	     for (auto &v: fdecl.get_inputs()) {
+	       errs() << v << ";";
+	     }
+	     errs() << "\n" << callee_dom << "\n";);
+    
     return callee_dom;
   }
 
@@ -773,7 +787,16 @@ private:
     auto it = m_ctx.get_calling_context_table().find(callee_cfg);
     if (it != m_ctx.get_calling_context_table().end()) {
       auto& call_contexts = it->second;
+      CRAB_LOG("inter",
+	       if (call_contexts.empty()) {
+		 crab::outs() << "There is no call contexts stored for " << cs << "\n";
+	       });
       for (unsigned i=0, e=call_contexts.size(); i<e; ++i) {
+	  CRAB_LOG("inter",
+		   crab::outs() << "[INTER] Checking at " << cs << " if\n" << callee_entry
+		   << "\nis subsumed by\n";
+		   call_contexts[i]->write(crab::outs());
+		   crab::outs() << "\n";);
 	if (call_contexts[i]->is_subsumed(callee_entry)) {
 	  CRAB_LOG("inter",
 		   crab::outs () << "[INTER] Reusing call context at \"" << cs
@@ -791,7 +814,7 @@ private:
       }
     } else {
       if (m_ctx.get_is_checking_phase()) {
-	CRAB_ERROR("in checking phase we should not analyze callsites");
+	CRAB_ERROR("in checking phase we should not analyze the callsite ", cs);
       }
       crab::CrabStats::count("Interprocedural.num_analyzed_callsites");	
       // 4. Run intra analyzer
