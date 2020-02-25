@@ -29,7 +29,6 @@
 
 #include <crab/domains/interval.hpp>
 #include <crab/domains/patricia_trees.hpp>
-#include <crab/domains/separate_domains.hpp>
 
 #include <algorithm>
 #include <vector>
@@ -75,15 +74,11 @@ namespace domains {
   };
   
 
-  /* 
-     Conceptually, a cell is tuple of an array, offset, size, and
-     scalar variable such that:
-
-         _scalar = array[_offset, _offset+1,...,_offset+_size-1]
-	 
-     For simplicity, we don't carry the array inside the cell class.
-     Only, offset_map objects can create cells. They will consider the
-     array when generating the scalar variable.
+ /* 
+  *  A synthetic cell is used to give a symbolic name to the byte
+  *  contents of some array segment. The symbolic name is m_scalar
+  *  while the array segment is represented by 
+  *        [m_offset, m_offset+1,...,m_offset+m_size-1]
   */
   template<typename Variable>
   class cell {
@@ -237,21 +232,27 @@ namespace domains {
     template <typename Set>
     inline Set set_intersection(Set& s1, Set& s2) {
       Set s3;
-      std::set_intersection(s1, s2, std::inserter(s3, s3.end()));
+      std::set_intersection(s1.begin(), s1.end(),
+			    s2.begin(), s2.end(),
+			    std::inserter(s3, s3.end()));
       return s3;
     }
     
     template <typename Set>
     inline Set set_union(Set& s1, Set& s2) {
       Set s3;
-      std::set_union(s1, s2, std::inserter(s3, s3.end()));
+      std::set_union(s1.begin(), s1.end(),
+		     s2.begin(), s2.end(),
+		     std::inserter(s3, s3.end()));
       return s3;
     }
     
     template <typename Set>
     inline bool set_inclusion(Set& s1, Set& s2) {
       Set s3;
-      std::set_difference(s1, s2, std::inserter(s3, s3.end()));
+      std::set_difference(s1.begin(), s1.end(),
+			  s2.begin(), s2.end(),
+			  std::inserter(s3, s3.end()));
       return s3.empty();
     }
   }
@@ -341,8 +342,6 @@ namespace domains {
       }
     }; // class domain_po
     
-    offset_map(patricia_tree_t m): _map(m) { }
-
     void remove_cell(const cell_t& c) {
       if (boost::optional<cell_set_t> cells = _map.lookup(c.get_offset())) {
 	if ((*cells).erase(c) > 0) {
@@ -409,21 +408,6 @@ namespace domains {
       }
     }    
 
-    // global state to map the same triple of array, offset and size
-    // to same index
-    static std::map<std::pair<ikos::index_t, std::pair<offset_t, uint64_t>>,
-		    ikos::index_t> _index_map;
-    
-    ikos::index_t get_index(Variable a, offset_t o, uint64_t size) {
-      auto it = _index_map.find({a.index(), {o, size}});
-      if (it != _index_map.end()) {
-	return it->second;
-      } else {
-	ikos::index_t res = _index_map.size();
-	_index_map.insert({{a.index(), {o, size}},res});
-	return res;
-      }
-    }
     
     cell_t mk_cell(Variable array, offset_t o, uint64_t size) {
       // TODO: check array is the array associated to this offset map
@@ -433,11 +417,9 @@ namespace domains {
 	auto& vfac = array.name().get_var_factory();
 	std::string vname = mk_scalar_name(array, o, size);
 	type_t vtype = get_array_element_type(array.get_type());
-	ikos::index_t vindex = get_index(array, o, size);
-	
 	// create a new scalar variable for representing the contents
 	// of bytes array[o,o+1,..., o+size-1]
-	Variable scalar_var(vfac.get(vindex, vname), vtype, size);
+	Variable scalar_var(vfac.get(vname), vtype, size);
 	c = cell_t(o, scalar_var);
 	insert_cell(c);
 	CRAB_LOG("array-expansion", crab::outs() << "**Created cell " << c << "\n";);
@@ -448,6 +430,8 @@ namespace domains {
       }
       return c;
     }
+
+    offset_map(patricia_tree_t &&m): _map(std::move(m)) { }
     
   public:
     
@@ -668,36 +652,22 @@ namespace domains {
       return o;
     }
 
-    /* Operations needed if used as value in a separate_domain */
+    /* Operations needed if used as value in a patricia tree */
     bool operator==(const offset_map_t& o) const
     { return *this <= o && o <= *this; }
     bool is_top() const { return empty(); } 
     bool is_bottom() const { return false; }
     /* 
-       We don't distinguish between bottom and top.
-       This is fine because separate_domain only calls bottom if
-       operator[] is called over a bottom state. Thus, we will make
-       sure that we don't call operator[] in that case.
+       a patricia tree only calls bottom if operator[] is called over
+       a bottom state. Thus, we will make sure that we don't call
+       operator[] in that case.
     */
-    static offset_map_t bottom() { return offset_map_t();}
+    static offset_map_t bottom() {
+      CRAB_ERROR("offset_map::bottom() cannot be called");
+    }
     static offset_map_t top() { return offset_map_t();}       
   };
 
-  template<typename Var>
-  std::map<std::pair<ikos::index_t, std::pair<offset_t, uint64_t>>,
-	   ikos::index_t> offset_map<Var>::_index_map;
-
-  // /* for debugging */
-  // namespace array_expansion_domain_impl{
-  //   template<typename Dom>
-  //   inline void print_size(const Dom& dom) {}
-
-  //   template<typename N, typename V>
-  //   inline void print_size(const crab::domains::SplitDBM<N,V>& dom) {
-  //     crab::outs() << "(" << dom.size().first << "," << dom.size().second << ")";
-  //   }
-  // }
-  
   template<typename NumDomain>
   class array_expansion_domain final:
     public abstract_domain<array_expansion_domain<NumDomain>> {
@@ -784,13 +754,13 @@ namespace domains {
       return to_interval(expr, _inv);
     }
     
-    void kill_cells(const std::vector<cell_t>& cells, offset_map_t& offset_map, NumDomain& dom) {
+    void kill_cells(const std::vector<cell_t>& cells, offset_map_t& offset_map) {
       if (!cells.empty()) {
 	// Forget the scalars from the numerical domain
 	for (unsigned i=0, e=cells.size(); i<e; ++i) {
 	  const cell_t& c = cells[i];
 	  if (c.has_scalar()) {
-	    dom -= c.get_scalar();
+	    _inv -= c.get_scalar();
 	  } else {
 	    CRAB_ERROR("array expansion: cell without scalar variable in array store");
 	  }
@@ -799,7 +769,133 @@ namespace domains {
 	offset_map -= cells;
       }
     }
+
+    // Helper that assign rhs to lhs by switching to the version with
+    // the right type.
+    void do_assign(variable_t lhs, variable_t rhs) {
+      if (lhs.get_type() != rhs.get_type()) {
+	CRAB_ERROR("array_adaptive assignment with different types");
+      }
+      switch(lhs.get_type()) {
+      case BOOL_TYPE:
+	m_inv.assign_bool_var(lhs, rhs, false);
+	break;
+      case INT_TYPE:
+      case REAL_TYPE:
+	m_inv.assign(lhs, rhs);
+	break;
+      case PTR_TYPE:
+	m_inv.pointer_assign(lhs, rhs, number_t(0));
+	break;
+      default:;
+	CRAB_ERROR("array_adaptive assignment with unexpected type");
+      }      
+    }
+
+    // helper to assign a cell into a variable
+    void do_assign(variable_t lhs, cell_t rhs_c) {
+      if (!rhs_c.has_scalar()) {
+	CRAB_ERROR("array_adaptive cell without scalar");
+      }
+      variable_t rhs = rhs_c.get_scalar();
+      do_assign(lhs, rhs);
+    }
+
+    // helper to assign a linear expression into a cell
+    void do_assign(cell_t lhs_c, linear_expression_t v) {
+      if (!lhs_c.has_scalar()) {
+	CRAB_ERROR("array_adaptive cell without scalar");
+      }
+      variable_t lhs = lhs_c.get_scalar();      
+      switch(lhs.get_type()) {
+      case BOOL_TYPE:
+	if (v.is_constant()) {
+	  if (v.constant() >= number_t(1)) {
+	    m_inv.assign_bool_cst(lhs, linear_constraint_t::get_true());
+	  } else {
+	    m_inv.assign_bool_cst(lhs, linear_constraint_t::get_false());
+	  }
+	} else if (auto var = v.get_variable()) {
+	  m_inv.assign_bool_var(lhs, (*var), false);
+	}
+	break;
+      case INT_TYPE:
+      case REAL_TYPE:
+	m_inv.assign(lhs, v);
+	break;
+      case PTR_TYPE:
+	if (v.is_constant() && v.constant() == number_t(0)) {
+	  m_inv.pointer_mk_null(lhs);
+	} else if (auto var = v.get_variable()) {
+	  m_inv.pointer_assign(lhs,(*var), number_t(0));
+	}
+	break;
+      default:;
+	CRAB_ERROR("array_adaptive assignment with unexpected type");
+      }      
+    }
+
+    // Helper that assign backward rhs to lhs by switching to the
+    // version with the right type.
+    void do_backward_assign(variable_t lhs, variable_t rhs, base_domain_t &dom) {
+      if (lhs.get_type() != rhs.get_type()) {
+	CRAB_ERROR("array_adaptive backward assignment with different types");
+      }
+      switch(lhs.get_type()) {
+      case BOOL_TYPE:
+	m_inv.backward_assign_bool_var(lhs, rhs, false, dom);
+	break;
+      case INT_TYPE:
+      case REAL_TYPE:
+	m_inv.backward_assign(lhs, rhs, dom);
+	break;
+      case PTR_TYPE:
+	CRAB_WARN("array_adaptive backward pointer assignment not implemented");      
+	break;
+      default:;
+	CRAB_ERROR("array_adaptive backward_assignment with unexpected type");
+      }      
+    }
     
+    // helper to assign backward a cell into a variable
+    void do_backward_assign(variable_t lhs, cell_t rhs_c, base_domain_t &dom) {
+      if (!rhs_c.has_scalar()) {
+	CRAB_ERROR("array_adaptive cell without scalar");
+      }
+      variable_t rhs = rhs_c.get_scalar();
+      do_backward_assign(lhs, rhs, dom);
+    }
+    
+    // helper to assign backward a linear expression into a cell
+    void do_backward_assign(cell_t lhs_c, linear_expression_t v, base_domain_t &dom) {
+      if (!lhs_c.has_scalar()) {
+	CRAB_ERROR("array_adaptive cell without scalar");
+      }
+      variable_t lhs = lhs_c.get_scalar();      
+      switch(lhs.get_type()) {
+      case BOOL_TYPE:
+	if (v.is_constant()) {
+	  if (v.constant() >= number_t(1)) {
+	  m_inv.backward_assign_bool_cst(lhs, linear_constraint_t::get_true(), dom);
+	  } else {
+	    m_inv.backward_assign_bool_cst(lhs, linear_constraint_t::get_false(), dom);
+	  }
+	} else if (auto var = v.get_variable()) {
+	  m_inv.backward_assign_bool_var(lhs, (*var), false, dom);
+	}
+	break;
+      case INT_TYPE:
+      case REAL_TYPE:
+	m_inv.backward_assign(lhs, v, dom);
+	break;
+      case PTR_TYPE:
+	CRAB_WARN("array_adaptive backward pointer assignment not implemented");            
+	break;
+      default:;
+	CRAB_ERROR("array_adaptive backward assignment with unexpected type");
+      }      
+    }
+        
   public:
        
     array_expansion_domain()
@@ -922,20 +1018,7 @@ namespace domains {
     }
        
     void project(const variable_vector_t& variables) {
-      crab::CrabStats::count(getDomainName() + ".count.project");
-      crab::ScopedCrabStats __st__(getDomainName() + ".project");
-
-      if (is_bottom() || is_top()) {
-	return;
-      }
-      
-      _inv.project(variables);
-      
-      for (variable_t v: variables) {
-	if (v.is_array_type()) {
-	  CRAB_WARN("TODO: project onto an array variable");
-	}
-      }
+      CRAB_WARN("array expansion project not implemented");
     }
 
     void expand(variable_t var, variable_t new_var) {
@@ -1136,7 +1219,7 @@ namespace domains {
       offset_map_t& offset_map = lookup_array_map(a);
       std::vector<cell_t> old_cells = offset_map.get_all_cells();
       if (!old_cells.empty()) {
-	kill_cells(old_cells, offset_map, _inv);
+	kill_cells(old_cells, offset_map);
       }
 
       array_store_range(a, elem_size, lb_idx, ub_idx, val); 
@@ -1177,7 +1260,7 @@ namespace domains {
 	    // Here it's ok to do assignment (instead of expand)
 	    // because c is not a summarized variable. Otherwise, it
 	    // would be unsound.
-	    _inv.assign(lhs, c.get_scalar());
+	    do_assign(lhs, c);
 	    goto array_load_end;
 	  }
 	} else {
@@ -1228,13 +1311,13 @@ namespace domains {
 			     " overlapping cells with ",
 			     "[", o, "...", o.index()+size-1,"]", " before writing."));
 
-	  kill_cells(cells, offset_map, _inv); 
+	  kill_cells(cells, offset_map); 
 	}
 	// Perform scalar update	   
 	// -- create a new cell it there is no one already
 	cell_t c = offset_map.mk_cell(a, o, size);
 	// -- strong update
-	_inv.assign(c.get_scalar(), val);
+	do_assign(c, val);
       } else {
 	// -- Non-constant index: kill overlapping cells
 	CRAB_WARN("array expansion ignored array write with non-constant index ", i);
@@ -1252,7 +1335,7 @@ namespace domains {
 		   }
 		 }
 		 crab::outs() << "}\n";);
-	kill_cells(cells, offset_map, _inv);
+	kill_cells(cells, offset_map);
       }
 
       CRAB_LOG("array-expansion",
@@ -1332,7 +1415,6 @@ namespace domains {
     }
     
     virtual void array_assign(variable_t lhs, variable_t rhs) override {
-      //_array_map[lhs] = _array_map[rhs];
       CRAB_WARN("array_assign in array_expansion domain not implemented");
     }
 
@@ -1353,7 +1435,7 @@ namespace domains {
       offset_map_t& offset_map = lookup_array_map(a);
       std::vector<cell_t> old_cells = offset_map.get_all_cells();
       if (!old_cells.empty()) {
-       	kill_cells(old_cells, offset_map, _inv);
+       	kill_cells(old_cells, offset_map);
       }
 
       // meet with forward invariant
@@ -1381,7 +1463,7 @@ namespace domains {
 	  uint64_t size = static_cast<int64_t>(*n_bytes); 
 	  cell_t c = offset_map.mk_cell(a, o, size);
 	  assert(c.has_scalar());
-	  _inv.backward_assign(lhs, c.get_scalar(), invariant.get_content_domain());
+	  do_backward_assign(lhs, c.get_scalar(), invariant.get_content_domain());
     	} else {
     	  CRAB_ERROR("array expansion domain expects constant array element sizes");
     	}
@@ -1433,12 +1515,12 @@ namespace domains {
 	// post: forall c \in cells:: c != [o,size)
 	// that is, get_overlap_cells returns cells different from [o, size)
 	if (cells.size() >= 1) {
-	  kill_cells(cells, offset_map, _inv);
+	  kill_cells(cells, offset_map);
 	  *this = *this & invariant;	  
 	} else {
 	  // c might be in _inv or not.
 	  cell_t c = offset_map.mk_cell(a, o, size);	
-	  _inv.backward_assign(c.get_scalar(), val, invariant.get_content_domain());
+	  do_backward_assign(c.get_scalar(), val, invariant.get_content_domain());
 	}
       } else {
 	// -- Non-constant index or multiple overlapping cells: kill
@@ -1448,7 +1530,7 @@ namespace domains {
 	std::vector<cell_t> cells;	
 	offset_map.get_overlap_cells_symbolic_offset(invariant.get_content_domain(),
 						     symb_lb, symb_ub, cells);
-	kill_cells(cells, offset_map, _inv);
+	kill_cells(cells, offset_map);
 	*this = *this & invariant;
       }
 
@@ -1549,12 +1631,7 @@ namespace domains {
     }  
        
     void rename(const variable_vector_t& from, const variable_vector_t &to){
-      _inv.rename(from, to);
-      for (auto &v: from) {
-	if (v.is_array_type()) {
-	  CRAB_WARN("TODO: rename array variable");
-	}
-      }
+      CRAB_WARN("TODO: array_expansion rename");
     }
        
   }; // end array_expansion_domain
