@@ -286,6 +286,11 @@ namespace domains {
     typedef typename patricia_tree_t::partial_order_t partial_order_t;
     
     patricia_tree_t _map;
+
+    // global state to map the same triple of array, offset and size
+    // to same index
+    static std::map<std::pair<ikos::index_t, std::pair<offset_t, uint64_t>>,
+		    ikos::index_t> s_index_map;
     
     // for algorithm::lower_bound and algorithm::upper_bound
     struct compare_binding_t {
@@ -408,6 +413,16 @@ namespace domains {
       }
     }    
 
+    ikos::index_t get_index(Variable a, offset_t o, uint64_t size) {
+      auto it = s_index_map.find({a.index(), {o, size}});
+      if (it != s_index_map.end()) {
+	return it->second;
+      } else {
+	ikos::index_t res = s_index_map.size();
+	s_index_map.insert({{a.index(), {o, size}},res});
+	return res;
+      }
+    }
     
     cell_t mk_cell(Variable array, offset_t o, uint64_t size) {
       // TODO: check array is the array associated to this offset map
@@ -419,7 +434,8 @@ namespace domains {
 	type_t vtype = get_array_element_type(array.get_type());
 	// create a new scalar variable for representing the contents
 	// of bytes array[o,o+1,..., o+size-1]
-	Variable scalar_var(vfac.get(vname), vtype, size);
+	ikos::index_t vindex = get_index(array, o, size);	
+	Variable scalar_var(vfac.get(vindex, vname), vtype, size);
 	c = cell_t(o, scalar_var);
 	insert_cell(c);
 	CRAB_LOG("array-expansion", crab::outs() << "**Created cell " << c << "\n";);
@@ -668,6 +684,10 @@ namespace domains {
     static offset_map_t top() { return offset_map_t();}       
   };
 
+  template<typename Var>
+  std::map<std::pair<ikos::index_t, std::pair<offset_t, uint64_t>>,
+	   ikos::index_t> offset_map<Var>::s_index_map;
+
   template<typename NumDomain>
   class array_expansion_domain final:
     public abstract_domain<array_expansion_domain<NumDomain>> {
@@ -778,14 +798,14 @@ namespace domains {
       }
       switch(lhs.get_type()) {
       case BOOL_TYPE:
-	m_inv.assign_bool_var(lhs, rhs, false);
+	_inv.assign_bool_var(lhs, rhs, false);
 	break;
       case INT_TYPE:
       case REAL_TYPE:
-	m_inv.assign(lhs, rhs);
+	_inv.assign(lhs, rhs);
 	break;
       case PTR_TYPE:
-	m_inv.pointer_assign(lhs, rhs, number_t(0));
+	_inv.pointer_assign(lhs, rhs, number_t(0));
 	break;
       default:;
 	CRAB_ERROR("array_adaptive assignment with unexpected type");
@@ -811,23 +831,23 @@ namespace domains {
       case BOOL_TYPE:
 	if (v.is_constant()) {
 	  if (v.constant() >= number_t(1)) {
-	    m_inv.assign_bool_cst(lhs, linear_constraint_t::get_true());
+	    _inv.assign_bool_cst(lhs, linear_constraint_t::get_true());
 	  } else {
-	    m_inv.assign_bool_cst(lhs, linear_constraint_t::get_false());
+	    _inv.assign_bool_cst(lhs, linear_constraint_t::get_false());
 	  }
 	} else if (auto var = v.get_variable()) {
-	  m_inv.assign_bool_var(lhs, (*var), false);
+	  _inv.assign_bool_var(lhs, (*var), false);
 	}
 	break;
       case INT_TYPE:
       case REAL_TYPE:
-	m_inv.assign(lhs, v);
+	_inv.assign(lhs, v);
 	break;
       case PTR_TYPE:
 	if (v.is_constant() && v.constant() == number_t(0)) {
-	  m_inv.pointer_mk_null(lhs);
+	  _inv.pointer_mk_null(lhs);
 	} else if (auto var = v.get_variable()) {
-	  m_inv.pointer_assign(lhs,(*var), number_t(0));
+	  _inv.pointer_assign(lhs,(*var), number_t(0));
 	}
 	break;
       default:;
@@ -837,17 +857,17 @@ namespace domains {
 
     // Helper that assign backward rhs to lhs by switching to the
     // version with the right type.
-    void do_backward_assign(variable_t lhs, variable_t rhs, base_domain_t &dom) {
+    void do_backward_assign(variable_t lhs, variable_t rhs, content_domain_t &dom) {
       if (lhs.get_type() != rhs.get_type()) {
 	CRAB_ERROR("array_adaptive backward assignment with different types");
       }
       switch(lhs.get_type()) {
       case BOOL_TYPE:
-	m_inv.backward_assign_bool_var(lhs, rhs, false, dom);
+	_inv.backward_assign_bool_var(lhs, rhs, false, dom);
 	break;
       case INT_TYPE:
       case REAL_TYPE:
-	m_inv.backward_assign(lhs, rhs, dom);
+	_inv.backward_assign(lhs, rhs, dom);
 	break;
       case PTR_TYPE:
 	CRAB_WARN("array_adaptive backward pointer assignment not implemented");      
@@ -858,7 +878,7 @@ namespace domains {
     }
     
     // helper to assign backward a cell into a variable
-    void do_backward_assign(variable_t lhs, cell_t rhs_c, base_domain_t &dom) {
+    void do_backward_assign(variable_t lhs, cell_t rhs_c, content_domain_t &dom) {
       if (!rhs_c.has_scalar()) {
 	CRAB_ERROR("array_adaptive cell without scalar");
       }
@@ -867,7 +887,7 @@ namespace domains {
     }
     
     // helper to assign backward a linear expression into a cell
-    void do_backward_assign(cell_t lhs_c, linear_expression_t v, base_domain_t &dom) {
+    void do_backward_assign(cell_t lhs_c, linear_expression_t v, content_domain_t &dom) {
       if (!lhs_c.has_scalar()) {
 	CRAB_ERROR("array_adaptive cell without scalar");
       }
@@ -876,17 +896,17 @@ namespace domains {
       case BOOL_TYPE:
 	if (v.is_constant()) {
 	  if (v.constant() >= number_t(1)) {
-	  m_inv.backward_assign_bool_cst(lhs, linear_constraint_t::get_true(), dom);
+	  _inv.backward_assign_bool_cst(lhs, linear_constraint_t::get_true(), dom);
 	  } else {
-	    m_inv.backward_assign_bool_cst(lhs, linear_constraint_t::get_false(), dom);
+	    _inv.backward_assign_bool_cst(lhs, linear_constraint_t::get_false(), dom);
 	  }
 	} else if (auto var = v.get_variable()) {
-	  m_inv.backward_assign_bool_var(lhs, (*var), false, dom);
+	  _inv.backward_assign_bool_var(lhs, (*var), false, dom);
 	}
 	break;
       case INT_TYPE:
       case REAL_TYPE:
-	m_inv.backward_assign(lhs, v, dom);
+	_inv.backward_assign(lhs, v, dom);
 	break;
       case PTR_TYPE:
 	CRAB_WARN("array_adaptive backward pointer assignment not implemented");            
@@ -1463,7 +1483,7 @@ namespace domains {
 	  uint64_t size = static_cast<int64_t>(*n_bytes); 
 	  cell_t c = offset_map.mk_cell(a, o, size);
 	  assert(c.has_scalar());
-	  do_backward_assign(lhs, c.get_scalar(), invariant.get_content_domain());
+	  do_backward_assign(lhs, c, invariant.get_content_domain());
     	} else {
     	  CRAB_ERROR("array expansion domain expects constant array element sizes");
     	}
@@ -1520,7 +1540,7 @@ namespace domains {
 	} else {
 	  // c might be in _inv or not.
 	  cell_t c = offset_map.mk_cell(a, o, size);	
-	  do_backward_assign(c.get_scalar(), val, invariant.get_content_domain());
+	  do_backward_assign(c, val, invariant.get_content_domain());
 	}
       } else {
 	// -- Non-constant index or multiple overlapping cells: kill
