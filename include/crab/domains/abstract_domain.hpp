@@ -125,7 +125,7 @@ namespace crab {
 
       /**************************** Array operations *******************************/      
       // make a fresh array with contents a[j] initialized to val such that 
-      // j \in [lb_idx,ub_idx) and j % elem_size == 0.
+      // j \in [lb_idx,ub_idx] and j % elem_size == 0.
       // elem_size is in bytes.
       virtual void array_init(variable_t a, linear_expression_t elem_size,
 			      linear_expression_t lb_idx, linear_expression_t ub_idx, 
@@ -237,9 +237,7 @@ namespace crab {
       to_disjunctive_linear_constraint_system() = 0;
 
       // Rename in the abstract state the variables "from" with those from "to".
-      virtual void rename(const variable_vector_t &from, const variable_vector_t &to) {
-	CRAB_ERROR("rename operation not implemented");
-      }
+      virtual void rename(const variable_vector_t &from, const variable_vector_t &to) = 0;
 
       // Normalize the abstract domain if such notion exists.
       virtual void normalize() = 0;
