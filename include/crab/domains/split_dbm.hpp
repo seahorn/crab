@@ -874,6 +874,108 @@ namespace crab {
         }
       }
       
+      template<class G1, class G2>
+      graph_t split_widen(G1& l, G2& r, std::vector<vert_id>& unstable) {
+	assert(l.size() == r.size());
+	size_t sz = l.size();
+	graph_t g;
+	g.growTo(sz);
+
+        Wt_min min_op;	
+	typename graph_t::mut_val_ref_t wx,wy;
+
+        auto update_edge_widen_g = [&g](vert_id src, vert_id dst, Wt val) {
+	  typename graph_t::mut_val_ref_t wz;
+	  if (g.lookup(src, dst, &wz)) {
+	    if (wz.get() > val) {
+	      g.set_edge(src, val, dst);
+	      return true;
+	    }
+	  } else {
+	    g.add_edge(src, val, dst);
+	    return true;
+	  }
+	  return false;
+	};
+
+	/**
+	 * Check for stable implicit relationships in r
+	 **/ 
+	for (auto edge_pred: r.e_preds(0)) {
+	  vert_id s = edge_pred.vert;
+	  for (auto edge_succ: r.e_succs(0)) {
+	    vert_id d = edge_succ.vert;
+	    if (s == d) continue;
+	    /* for each edge(s,0,d) in r check if exists edge(s,d) in l */
+	    if (l.lookup(s, d, &wx) && ((edge_pred.val +  edge_succ.val) <= wx.get())) {
+	      bool res = update_edge_widen_g(s, d, wx.get());
+	      if (res) {
+		CRAB_LOG("zones-split-widening",
+			 auto vs = rev_map[s];
+			 auto vd = rev_map[d];
+			 crab::outs() << "Widening 1: added " << *vd << "-" << *vs << "<="
+			              << wx.get() << "\n";);
+	      }
+	    }
+	  }
+	}
+	
+	/**
+	 * Check for stable explicit relationships in r
+	 **/ 
+	for(vert_id s : r.verts()) {
+	  for(auto e : r.e_succs(s)) {
+	    vert_id d = e.vert;
+	    /* for each edge(s,d) in r check if exists edge(s,d) in l */	    
+	    if(l.lookup(s, d, &wx) && e.val <= wx.get()) {
+	      bool res = update_edge_widen_g(s, d, wx.get());
+	      if (res) {
+		CRAB_LOG("zones-split-widening",
+			 auto vs = rev_map[s];
+			 auto vd = rev_map[d];
+			 if (s == 0 && d !=0){
+			   crab::outs() << "Widening 2: added " << *vd << "<="
+					<< wx.get() << "\n";			 
+			 } else if (s != 0 && d ==0){
+			   crab::outs() << "Widening 2: added " << "-" << *vs << "<="
+					<< wx.get() << "\n";			 
+			 } else {
+			   crab::outs() << "Widening 2: added " << *vd << "-" << *vs << "<="
+					<< wx.get() << "\n";
+			 });
+	      }
+	    }
+	  }
+	  
+	  // Check if this vertex is stable
+	  for(vert_id d : l.succs(s)) {
+	    if(!g.elem(s, d)) {
+	      unstable.push_back(s);
+	      CRAB_LOG("zones-split-widening",
+		       if (s == 0) {
+			 crab::outs() << "Widening 5: added v0"
+		                      << " in the normalization queue\n";
+		       } else { 
+			 auto vs = rev_map[s];
+			 crab::outs() << "Widening 5: added " << *vs
+		                      << " in the normalization queue\n";
+		       });
+	      break;
+	    }
+	  }
+	}
+	
+	// for(vert_id s: r.verts()) {
+	//   for(vert_id d : l.succs(s)) {
+	//     if(!g.elem(s, d)) {
+	//       unstable.push_back(s);
+	//       break;
+	//     }
+	//   }
+	// }	
+	return g;
+      }
+
       SplitDBM_(vert_map_t&& _vert_map, rev_map_t&& _rev_map, graph_t&& _g,
 		std::vector<Wt>&& _potential, vert_set_t&& _unstable)
         : vert_map(std::move(_vert_map))
@@ -1259,7 +1361,7 @@ namespace crab {
           return res;
         }
       }
-
+      
       DBM_t operator||(DBM_t o) {	
         crab::CrabStats::count(getDomainName() + ".count.widening");
         crab::ScopedCrabStats __st__(getDomainName() + ".widening");
@@ -1270,8 +1372,10 @@ namespace crab {
           return *this;
         else {
           CRAB_LOG("zones-split",
-                    crab::outs() << "Before widening:\n"<<"DBM 1\n"<<*this<<"\n"<<"DBM 2\n"
-		    <<o <<"\n");
+		   DBM_t left(*this); // to avoid closure on left operand
+		   crab::outs() << "Before widening:\n"<<"DBM 1\n"
+		                << left  <<"\n"<<"DBM 2\n" << o <<"\n");
+		   
           o.normalize();
           
           // Figure out the common renaming
@@ -1310,7 +1414,7 @@ namespace crab {
          
           // Now perform the widening 
           std::vector<vert_id> destabilized;
-          graph_t widen_g(GrOps::widen(gx, gy, destabilized));
+	  graph_t widen_g(split_widen(gx, gy, destabilized));
           for(vert_id v : destabilized)
             widen_unstable.insert(v);
 
@@ -1318,7 +1422,8 @@ namespace crab {
                     std::move(widen_pot), std::move(widen_unstable));
            
           CRAB_LOG("zones-split",
-                    crab::outs() << "Result widening:\n"<<res <<"\n");
+		   DBM_t res_copy(res);
+		   crab::outs() << "Result widening:\n" << res_copy <<"\n");
           return res;
         }
       }
