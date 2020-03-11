@@ -245,6 +245,9 @@ namespace crab {
 
 	void minimize()
 	{ CRAB_ERROR(ELINA_NOT_FOUND); }
+
+	void rename(const variable_vector_t &from, const variable_vector_t &to)
+	{ CRAB_ERROR(ELINA_NOT_FOUND); }
 	
         void write(crab_os& o) 
         { CRAB_ERROR(ELINA_NOT_FOUND); }
@@ -308,7 +311,7 @@ namespace domains {
     typedef boost::bimap<variable_t, elina_dim_t > var_map_t;
     typedef typename var_map_t::value_type binding_t;
     
-    static elina_manager_t* m_apman;
+    static elina_manager_t* s_apman;
     
     elina_state_ptr m_apstate; 
     var_map_t m_var_map;
@@ -322,15 +325,15 @@ namespace domains {
     }
     
     static elina_manager_t* get_man() {
-      if (!m_apman) {
+      if (!s_apman) {
 	switch (ElinaDom) {
-	case ELINA_ZONES: m_apman = opt_zones_manager_alloc(); break;
-	case ELINA_OCT: m_apman = opt_oct_manager_alloc(); break;
-	case ELINA_PK : m_apman = opt_pk_manager_alloc(false); break;
+	case ELINA_ZONES: s_apman = opt_zones_manager_alloc(); break;
+	case ELINA_OCT: s_apman = opt_oct_manager_alloc(); break;
+	case ELINA_PK : s_apman = opt_pk_manager_alloc(false); break;
 	default: CRAB_ERROR("unknown elina domain");
 	}
       }
-      return m_apman;
+      return s_apman;
     }
 
     // Elina assume dimensions [0..intdim-1] correspond to integer
@@ -2416,7 +2419,7 @@ namespace domains {
   
   // --- global datastructures
   template<typename N, typename V, elina_domain_id_t D>
-  elina_manager_t* elina_domain_<N,V,D>::m_apman = nullptr;
+  elina_manager_t* elina_domain_<N,V,D>::s_apman = nullptr;
 
    
 } // namespace domains
