@@ -2,7 +2,7 @@
 
 #include <boost/optional.hpp>
 #include <crab/common/types.hpp>
-
+#include <crab/domains/term/term_expr.hpp>
 /*
    Simplifiers for table terms after giving meaning to functors.
 */

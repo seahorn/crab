@@ -42,6 +42,7 @@
 #pragma once
 
 #include <crab/common/types.hpp>
+#include <crab/numbers/bignums.hpp>
 #include <crab/domains/patricia_trees.hpp>
 
 #include <boost/container/flat_map.hpp>
