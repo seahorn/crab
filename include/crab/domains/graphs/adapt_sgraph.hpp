@@ -612,6 +612,7 @@ inline void *realloc_fail(void *ptr, size_t size) {
 
     void add_edge(vert_id s, Wt w, vert_id d)
     {
+      assert(!elem(s,d));      
       size_t idx;
       if(free_widx.size() > 0)
       {

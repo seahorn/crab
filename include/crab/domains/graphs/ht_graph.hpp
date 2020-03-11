@@ -226,6 +226,7 @@ class HtGraph : public ikos::writeable {
 
     void add_edge(vert_id x, Wt wt, vert_id y)
     {
+      assert(!elem(x,y));        
       succs(x).add(y, wt);
       preds(y).add(x);
       edge_count++;
