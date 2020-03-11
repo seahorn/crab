@@ -43,27 +43,26 @@
 
 #pragma once
 
-#include <crab/common/types.hpp>
 #include <crab/common/stats.hpp>
-#include <crab/domains/separate_domains.hpp>
+#include <crab/common/types.hpp>
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
 #include <crab/domains/interval.hpp>
+#include <crab/domains/separate_domains.hpp>
 
 #include <boost/optional.hpp>
 
 namespace ikos {
 
-template <typename Number> 
-class congruence {
+template <typename Number> class congruence {
   typedef interval<Number> interval_t;
-  
+
 public:
   typedef congruence<Number> congruence_t;
 
 private:
   bool _is_bottom;
-  
+
   /// A congruence is denoted by aZ + b, where b \in Z and a \in N.
   /// The abstract state aZ + b represents all numbers that are
   /// congruent to b modulo a.
@@ -71,28 +70,25 @@ private:
   Number _b; // remainder
 
   // Notes about the % operator
-  // 
+  //
   // The semantics of r = n % d is to set r to "n mod d". The sign of
   // the d is ignored and r is always non-negative.
-  // 
+  //
   // We assume that n % d (also n /d) raises a runtime error if d==0.
-  
+
   void normalize(void) {
     // Set to standard form: 0 <= b < a for a != 0
     if (_a != 0) {
       _b = _b % _a;
     }
   }
-  
+
   // if true then top (1Z + 0) else bottom
-  congruence(bool b): _is_bottom(!b), _a(1), _b(0) {}
+  congruence(bool b) : _is_bottom(!b), _a(1), _b(0) {}
 
-  congruence(int n): _is_bottom(false), _a(0), _b(n) {}
+  congruence(int n) : _is_bottom(false), _a(0), _b(n) {}
 
-  congruence(Number a, Number b)
-    : _is_bottom(false),
-      _a(a),
-      _b(b) {
+  congruence(Number a, Number b) : _is_bottom(false), _a(a), _b(b) {
     normalize();
   }
 
@@ -102,11 +98,11 @@ private:
 
   Number min(Number x, Number y) const { return x.operator<(y) ? x : y; }
 
-  Number gcd(Number x, Number y, Number z) const  { return gcd(x, gcd(y, z)); }
+  Number gcd(Number x, Number y, Number z) const { return gcd(x, gcd(y, z)); }
   // Not to be called explicitly outside of gcd
   Number gcd_helper(Number x, Number y) const {
     return (y == 0) ? x : gcd_helper(y, x % y);
-  }  
+  }
   Number gcd(Number x, Number y) const { return gcd_helper(abs(x), abs(y)); }
 
   Number lcm(Number x, Number y) const {
@@ -114,30 +110,25 @@ private:
     return abs(x * y) / tmp;
   }
 
-  bool is_zero() const {
-    return !is_bottom() && _a == 0 && _b == 0;
-  }
+  bool is_zero() const { return !is_bottom() && _a == 0 && _b == 0; }
 
-  bool all_ones() const {
-    return !is_bottom() && _a == 0 && _b == -1;
-  }
+  bool all_ones() const { return !is_bottom() && _a == 0 && _b == -1; }
 
   interval_t to_interval() const {
     assert(singleton());
     return interval_t(*(singleton()));
   }
-  
+
 public:
-  
   static congruence_t top() { return congruence(true); }
 
   static congruence_t bottom() { return congruence(false); }
 
-  congruence(): _is_bottom(false), _a(1), _b(0) {}
+  congruence() : _is_bottom(false), _a(1), _b(0) {}
 
-  congruence(Number n): _is_bottom(false), _a(0), _b(n) {}
+  congruence(Number n) : _is_bottom(false), _a(0), _b(n) {}
 
-  congruence(const congruence_t& o)
+  congruence(const congruence_t &o)
       : _is_bottom(o._is_bottom), _a(o._a), _b(o._b) {}
 
   congruence_t operator=(congruence_t o) {
@@ -159,25 +150,25 @@ public:
     }
   }
 
-  Number get_modulo() const { return _a;}
+  Number get_modulo() const { return _a; }
 
-  Number get_remainder() const { return _b;}
-  
+  Number get_remainder() const { return _b; }
+
   bool operator==(congruence_t o) const {
-    return (is_bottom() == o.is_bottom() && _a == o._a && _b == o._b) ;
+    return (is_bottom() == o.is_bottom() && _a == o._a && _b == o._b);
   }
 
   bool operator!=(congruence_t x) const { return !this->operator==(x); }
 
   /** Lattice Operations **/
-  
+
   bool operator<=(congruence_t o) {
     if (is_bottom()) {
       return true;
     } else if (o.is_bottom()) {
       return false;
     } else if (_a == 0 && o._a == 0) {
-      return  (_b == o._b);
+      return (_b == o._b);
     } else if (_a == 0) {
       if ((_b % o._a) == (o._b % o._a)) {
         return true;
@@ -215,7 +206,8 @@ public:
         return bottom();
       }
     } else if (_a == 0) {
-      // b & a'Z + b' iff \exists k such that a'*k + b' = b iff ((b - b') %a' == 0)
+      // b & a'Z + b' iff \exists k such that a'*k + b' = b iff ((b - b') %a' ==
+      // 0)
       if ((_b - o._b) % o._a == 0) {
         return *this;
       } else {
@@ -242,7 +234,6 @@ public:
         return congruence_t::bottom();
       }
     }
-
   }
 
   congruence_t operator||(congruence_t o) {
@@ -305,7 +296,7 @@ public:
          aZ+b / 0Z+b':
             if b'|a then  (a/b')Z + b/b'
             else          top
-      */      
+      */
       if (o._a == 0) {
         if (_a % o._b == 0)
           return congruence_t(_a / o._b, _b / o._b);
@@ -378,7 +369,7 @@ public:
           CRAB_ERROR("unreachable");
         }
       }
-      
+
       /*
           general case: no singleton
       */
@@ -386,16 +377,16 @@ public:
     }
   }
 
-  /** 
+  /**
       Bitwise operators.
-      They are very imprecise because we ignore bitwidth. 
-      
+      They are very imprecise because we ignore bitwidth.
+
       Bitwise operation can be implemented more precisely based on
       Stefan Bygde's paper: Static WCET analysis based on abstract
       interpretation and counting of elements, Vasteras : School of
       Innovation, Design and Engineering, Malardalen University (2010).
    **/
-  
+
   congruence_t And(congruence_t o) {
     if (this->is_bottom() || o.is_bottom())
       return congruence_t::bottom();
@@ -403,16 +394,16 @@ public:
       return congruence_t::top();
     else {
       if (is_zero() || o.is_zero()) {
-	return congruence_t(0);
+        return congruence_t(0);
       } else if (all_ones()) {
-	return o;
+        return o;
       } else if (o.all_ones()) {
-	return *this;
+        return *this;
       } else if (_a == 0 && o._a == 0) {
-	return congruence_t(_b & o._b);
+        return congruence_t(_b & o._b);
       } else {
-	return top();
-      }      
+        return top();
+      }
     }
   }
 
@@ -423,17 +414,17 @@ public:
       return congruence_t::top();
     else {
       if (all_ones() || o.all_ones()) {
-	return congruence_t(-1);
+        return congruence_t(-1);
       } else if (is_zero()) {
-	return o;
+        return o;
       } else if (o.is_zero()) {
-	return *this;
+        return *this;
       } else if (_a == 0 && o._a == 0) {
-	return congruence_t(_b | o._b);
+        return congruence_t(_b | o._b);
       } else {
-	return top();
-      }      
-    }    
+        return top();
+      }
+    }
   }
 
   congruence_t Xor(congruence_t o) {
@@ -443,15 +434,15 @@ public:
       return congruence_t::top();
     else {
       if (is_zero()) {
-	return o;
+        return o;
       } else if (o.is_zero()) {
-	return *this;
+        return *this;
       } else if (_a == 0 && o._a == 0) {
-	return congruence_t(_b ^ o._b);
+        return congruence_t(_b ^ o._b);
       } else {
-	return top();
-      }      
-    }    
+        return top();
+      }
+    }
   }
 
   congruence_t Shl(congruence_t o) {
@@ -460,18 +451,18 @@ public:
     else if (this->is_top() || o.is_top())
       return congruence_t::top();
     else {
-      
+
       if (o._a == 0) { // singleton
 
-	if (o._b < 0) {
-	  return bottom();
-	}
-	
+        if (o._b < 0) {
+          return bottom();
+        }
+
         // aZ + b << 0Z + b'  = (a*2^b')Z + b*2^b'
         Number x = Number(1) << o._b;
         return congruence_t(_a * x, _b * x);
       } else {
-	
+
         Number x = Number(1) << o._b;
         Number y = Number(1) << o._a;
         // aZ + b << a'Z + b' = (gcd(a, b * (2^a' - 1)))*(2^b')Z + b*(2^b')
@@ -488,19 +479,19 @@ public:
     else {
 
       if (o._a == 0) { // singleton
-	// aZ + b >> 0Z + b'
-	if (o._b < 0) {
-	  return congruence_t::bottom();
-	}
+        // aZ + b >> 0Z + b'
+        if (o._b < 0) {
+          return congruence_t::bottom();
+        }
       }
 
       if (singleton() && o.singleton()) {
-	interval_t res = to_interval().AShr(o.to_interval());
-	if (boost::optional<Number> n = res.singleton()) {
-	  return congruence(*n);
-	}
+        interval_t res = to_interval().AShr(o.to_interval());
+        if (boost::optional<Number> n = res.singleton()) {
+          return congruence(*n);
+        }
       }
-      
+
       return congruence_t::top();
     }
   }
@@ -512,18 +503,18 @@ public:
       return congruence_t::top();
     else {
 
-      if (o._a == 0) { 
-	// aZ + b >> 0Z + b'
-	if (o._b < 0) {
-	  return congruence_t::bottom();
-	}
+      if (o._a == 0) {
+        // aZ + b >> 0Z + b'
+        if (o._b < 0) {
+          return congruence_t::bottom();
+        }
       }
 
       if (singleton() && o.singleton()) {
-	interval_t res = to_interval().LShr(o.to_interval());
-	if (boost::optional<Number> n = res.singleton()) {
-	  return congruence(*n);
-	}
+        interval_t res = to_interval().LShr(o.to_interval());
+        if (boost::optional<Number> n = res.singleton()) {
+          return congruence(*n);
+        }
       }
 
       return congruence_t::top();
@@ -540,8 +531,7 @@ public:
 
   congruence_t URem(congruence_t x) { return congruence_t::top(); }
 
-
-  void write(crab::crab_os& o) const {
+  void write(crab::crab_os &o) const {
     if (is_bottom()) {
       o << "_|_";
       return;
@@ -551,69 +541,59 @@ public:
       o << _b;
       return;
     }
-    
+
     o << _a << "Z+" << _b;
-    
   }
 }; // end class congruence
 
-template<typename Number>
-inline crab::crab_os& operator<<(crab::crab_os& o, const congruence<Number>& c) {
+template <typename Number>
+inline crab::crab_os &operator<<(crab::crab_os &o,
+                                 const congruence<Number> &c) {
   c.write(o);
   return o;
 }
 
 template <typename Number>
-inline congruence<Number> operator+(
-    Number c, congruence<Number> x) {
+inline congruence<Number> operator+(Number c, congruence<Number> x) {
   return congruence<Number>(c) + x;
 }
 
 template <typename Number>
-inline congruence<Number> operator+(
-    congruence<Number> x, Number c) {
+inline congruence<Number> operator+(congruence<Number> x, Number c) {
   return x + congruence<Number>(c);
 }
 
 template <typename Number>
-inline congruence<Number> operator*(
-    Number c, congruence<Number> x) {
+inline congruence<Number> operator*(Number c, congruence<Number> x) {
   return congruence<Number>(c) * x;
 }
 
 template <typename Number>
-inline congruence<Number> operator*(
-    congruence<Number> x, Number c) {
+inline congruence<Number> operator*(congruence<Number> x, Number c) {
   return x * congruence<Number>(c);
 }
 
 template <typename Number>
-inline congruence<Number> operator/(
-    Number c, congruence<Number> x) {
+inline congruence<Number> operator/(Number c, congruence<Number> x) {
   return congruence<Number>(c) / x;
 }
 
 template <typename Number>
-inline congruence<Number> operator/(
-    congruence<Number> x, Number c) {
+inline congruence<Number> operator/(congruence<Number> x, Number c) {
   return x / congruence<Number>(c);
 }
 
 template <typename Number>
-inline congruence<Number> operator-(
-    Number c, congruence<Number> x) {
+inline congruence<Number> operator-(Number c, congruence<Number> x) {
   return congruence<Number>(c) - x;
 }
 
 template <typename Number>
-inline congruence<Number> operator-(
-    congruence<Number> x, Number c) {
+inline congruence<Number> operator-(congruence<Number> x, Number c) {
   return x - congruence<Number>(c);
 }
 
-template <typename Number,
-	  typename VariableName,
-	  typename CongruenceCollection>
+template <typename Number, typename VariableName, typename CongruenceCollection>
 class equality_congruence_solver {
   // TODO: check correctness of the solver. Granger provides a sound
   // and more precise solver for equality linear congruences (see
@@ -636,8 +616,7 @@ private:
   std::size_t m_op_count;
 
 private:
-  bool refine(variable_t v, congruence_t i, 
-              CongruenceCollection& env) {
+  bool refine(variable_t v, congruence_t i, CongruenceCollection &env) {
     congruence_t old_i = env[v];
     congruence_t new_i = old_i & i;
     if (new_i.is_bottom()) {
@@ -651,13 +630,11 @@ private:
     return false;
   }
 
-  congruence_t compute_residual(linear_constraint_t cst,
-                                variable_t pivot,
-                                CongruenceCollection& env) {
+  congruence_t compute_residual(linear_constraint_t cst, variable_t pivot,
+                                CongruenceCollection &env) {
     congruence_t residual(cst.constant());
     for (typename linear_constraint_t::iterator it = cst.begin();
-         it != cst.end();
-         ++it) {
+         it != cst.end(); ++it) {
       variable_t v = it->second;
       if (!(v == pivot)) {
         residual = residual - (it->first * env[v]);
@@ -667,19 +644,17 @@ private:
     return residual;
   }
 
-  bool propagate(linear_constraint_t cst, CongruenceCollection& env) {
+  bool propagate(linear_constraint_t cst, CongruenceCollection &env) {
     for (typename linear_constraint_t::iterator it = cst.begin();
-         it != cst.end();
-         ++it) {
+         it != cst.end(); ++it) {
       Number c = it->first;
       variable_t pivot = it->second;
-      congruence_t rhs =
-          compute_residual(cst, pivot, env) / congruence_t(c);
+      congruence_t rhs = compute_residual(cst, pivot, env) / congruence_t(c);
 
       if (cst.is_equality()) {
         if (refine(pivot, rhs, env)) {
-	  return true;
-	}
+          return true;
+        }
       } else if (cst.is_inequality() || cst.is_strict_inequality()) {
         // Inequations (>=, <=, >, and <) do not work well with
         // congruences because for any number n there is always x and y
@@ -690,26 +665,24 @@ private:
         // with intervals or constants should get those cases.
         continue;
       } else {
-        // TODO: cst is a disequation 
+        // TODO: cst is a disequation
       }
     }
     return false;
   }
 
-  bool solve_system(CongruenceCollection& env) {
+  bool solve_system(CongruenceCollection &env) {
     std::size_t cycle = 0;
     do {
       ++cycle;
       m_refined_variables.clear();
       for (typename cst_table_t::iterator it = m_cst_table.begin();
-           it != m_cst_table.end();
-           ++it) {
+           it != m_cst_table.end(); ++it) {
         if (propagate(*it, env)) {
-	  return true;
-	}
+          return true;
+        }
       }
-    } while (m_refined_variables.size() > 0 && 
-             cycle <= m_max_cycles);
+    } while (m_refined_variables.size() > 0 && cycle <= m_max_cycles);
     return false;
   }
 
@@ -718,8 +691,7 @@ public:
                              std::size_t max_cycles)
       : m_max_cycles(max_cycles), m_is_contradiction(false) {
     for (typename linear_constraint_system_t::iterator it = csts.begin();
-         it != csts.end();
-         ++it) {
+         it != csts.end(); ++it) {
       linear_constraint_t cst = *it;
       if (cst.is_contradiction()) {
         m_is_contradiction = true;
@@ -732,12 +704,12 @@ public:
     }
   }
 
-  void run(CongruenceCollection& env) {
+  void run(CongruenceCollection &env) {
     if (m_is_contradiction) {
       env.set_to_bottom();
     } else {
       if (solve_system(env)) {
-	env.set_to_bottom();
+        env.set_to_bottom();
       }
     }
   }
@@ -745,24 +717,22 @@ public:
 }; // class equality_congruence_solver
 
 template <typename Number, typename VariableName>
-class congruence_domain final:
-  public crab::domains::abstract_domain<congruence_domain<Number,VariableName>> {
+class congruence_domain final : public crab::domains::abstract_domain<
+                                    congruence_domain<Number, VariableName>> {
 public:
   typedef congruence<Number> congruence_t;
 
 private:
   // note that this is assuming that all variables have the same bit
   // width which is unrealistic.
-  typedef congruence_domain<Number, VariableName>
-  congruence_domain_t;
-  typedef crab::domains::abstract_domain<congruence_domain_t>
-  abstract_domain_t;
+  typedef congruence_domain<Number, VariableName> congruence_domain_t;
+  typedef crab::domains::abstract_domain<congruence_domain_t> abstract_domain_t;
 
 public:
-  using typename abstract_domain_t::linear_expression_t;
-  using typename abstract_domain_t::linear_constraint_t;
+  using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
   using typename abstract_domain_t::linear_constraint_system_t;
-  using typename abstract_domain_t::disjunctive_linear_constraint_system_t;   
+  using typename abstract_domain_t::linear_constraint_t;
+  using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
   typedef Number number_t;
@@ -771,8 +741,8 @@ public:
 
 private:
   typedef separate_domain<variable_t, congruence_t> separate_domain_t;
-  typedef equality_congruence_solver<number_t, varname_t,
-				     separate_domain_t> solver_t;
+  typedef equality_congruence_solver<number_t, varname_t, separate_domain_t>
+      solver_t;
 
 public:
   typedef typename separate_domain_t::iterator iterator;
@@ -796,13 +766,12 @@ public:
 
   congruence_domain() : _env(separate_domain_t::top()) {}
 
-  congruence_domain(const congruence_domain_t& e)
-      : _env(e._env) {
+  congruence_domain(const congruence_domain_t &e) : _env(e._env) {
     crab::CrabStats::count(getDomainName() + ".count.copy");
     crab::ScopedCrabStats __st__(getDomainName() + ".copy");
   }
 
-  congruence_domain_t& operator=(const congruence_domain_t& o) {
+  congruence_domain_t &operator=(const congruence_domain_t &o) {
     crab::CrabStats::count(getDomainName() + ".count.copy");
     crab::ScopedCrabStats __st__(getDomainName() + ".copy");
     if (this != &o)
@@ -818,10 +787,10 @@ public:
 
   bool is_top() { return this->_env.is_top(); }
 
-  bool operator<=(congruence_domain_t e) { 
+  bool operator<=(congruence_domain_t e) {
     crab::CrabStats::count(getDomainName() + ".count.leq");
     crab::ScopedCrabStats __st__(getDomainName() + ".leq");
-    return this->_env <= e._env; 
+    return this->_env <= e._env;
   }
 
   void operator|=(congruence_domain_t e) {
@@ -848,8 +817,9 @@ public:
     return this->_env || e._env;
   }
 
-  congruence_domain_t widening_thresholds(congruence_domain_t other, 
-					  const crab::iterators::thresholds<number_t>&) {
+  congruence_domain_t
+  widening_thresholds(congruence_domain_t other,
+                      const crab::iterators::thresholds<number_t> &) {
     return (*this || other);
   }
 
@@ -859,28 +829,29 @@ public:
     return this->_env && e._env;
   }
 
-  void set(variable_t v, congruence_t i) { 
+  void set(variable_t v, congruence_t i) {
     crab::CrabStats::count(getDomainName() + ".count.assign");
     crab::ScopedCrabStats __st__(getDomainName() + ".assign");
-    this->_env.set(v, i); 
+    this->_env.set(v, i);
   }
 
   void set(variable_t v, number_t n) {
     crab::CrabStats::count(getDomainName() + ".count.assign");
     crab::ScopedCrabStats __st__(getDomainName() + ".assign");
-    this->_env.set(v, congruence_t(n)); 
+    this->_env.set(v, congruence_t(n));
   }
 
-  void operator-=(variable_t v) { 
+  void operator-=(variable_t v) {
     crab::CrabStats::count(getDomainName() + ".count.forget");
     crab::ScopedCrabStats __st__(getDomainName() + ".forget");
-    this->_env -= v; 
+    this->_env -= v;
   }
 
   void operator-=(std::vector<variable_t> vs) {
     for (typename std::vector<variable_t>::iterator it = vs.begin(),
-	   end = vs.end(); it != end; ++it) {
-      this->operator-=* it;
+                                                    end = vs.end();
+         it != end; ++it) {
+      this->operator-= *it;
     }
   }
 
@@ -889,8 +860,7 @@ public:
   congruence_t operator[](linear_expression_t expr) {
     congruence_t r(expr.constant());
     for (typename linear_expression_t::iterator it = expr.begin();
-         it != expr.end();
-         ++it) {
+         it != expr.end(); ++it) {
       congruence_t c(it->first);
       r = r + (c * this->_env[it->second]);
     }
@@ -907,9 +877,7 @@ public:
     }
   }
 
-  void operator+=(linear_constraint_system_t csts) { 
-    this->add(csts); 
-  }
+  void operator+=(linear_constraint_system_t csts) { this->add(csts); }
 
   congruence_domain_t operator+(linear_constraint_system_t csts) {
     congruence_domain_t e(this->_env);
@@ -938,27 +906,27 @@ public:
     congruence_t xi = congruence_t::bottom();
 
     switch (op) {
-      case OP_ADDITION:
-        xi = yi + zi;
-        break;
-      case OP_SUBTRACTION:
-        xi = yi - zi;
-        break;
-      case OP_MULTIPLICATION: 
-        xi = yi * zi;
-        break;
-      case OP_SDIV: 
-        xi = yi / zi;
-        break;
-      case OP_UDIV: 
-        xi = yi.UDiv(zi);
-        break;
-      case OP_SREM: 
-        xi = yi.SRem(zi);
-        break;
-      case OP_UREM: 
-        xi = yi.URem(zi);
-        break;
+    case OP_ADDITION:
+      xi = yi + zi;
+      break;
+    case OP_SUBTRACTION:
+      xi = yi - zi;
+      break;
+    case OP_MULTIPLICATION:
+      xi = yi * zi;
+      break;
+    case OP_SDIV:
+      xi = yi / zi;
+      break;
+    case OP_UDIV:
+      xi = yi.UDiv(zi);
+      break;
+    case OP_SREM:
+      xi = yi.SRem(zi);
+      break;
+    case OP_UREM:
+      xi = yi.URem(zi);
+      break;
     default:
       CRAB_ERROR("Operation ", op, " not supported");
     }
@@ -974,73 +942,71 @@ public:
     congruence_t xi = congruence_t::bottom();
 
     switch (op) {
-      case OP_ADDITION: 
-        xi = yi + zi;
-        break;
-      case OP_SUBTRACTION: 
-        xi = yi - zi;
-        break;
-      case OP_MULTIPLICATION:
-        xi = yi * zi;
-        break;
-      case OP_SDIV:
-        xi = yi / zi;
-        break;
-      case OP_UDIV:
-        xi = yi.UDiv(zi);
-        break;
-      case OP_SREM:
-        xi = yi.SRem(zi);
-        break;
-      case OP_UREM:
-        xi = yi.URem(zi);
-        break;
-      default:
-	CRAB_ERROR("Operation ", op, " not supported");
+    case OP_ADDITION:
+      xi = yi + zi;
+      break;
+    case OP_SUBTRACTION:
+      xi = yi - zi;
+      break;
+    case OP_MULTIPLICATION:
+      xi = yi * zi;
+      break;
+    case OP_SDIV:
+      xi = yi / zi;
+      break;
+    case OP_UDIV:
+      xi = yi.UDiv(zi);
+      break;
+    case OP_SREM:
+      xi = yi.SRem(zi);
+      break;
+    case OP_UREM:
+      xi = yi.URem(zi);
+      break;
+    default:
+      CRAB_ERROR("Operation ", op, " not supported");
     }
     this->_env.set(x, xi);
   }
 
   // backward operations
   void backward_assign(variable_t x, linear_expression_t e,
-		       congruence_domain_t inv) {
+                       congruence_domain_t inv) {
     crab::CrabStats::count(getDomainName() + ".count.backward_assign");
     crab::ScopedCrabStats __st__(getDomainName() + ".backward_assign");
-    
-    crab::domains::BackwardAssignOps<congruence_domain_t>::
-      assign(*this, x, e, inv);
+
+    crab::domains::BackwardAssignOps<congruence_domain_t>::assign(*this, x, e,
+                                                                  inv);
   }
-  
-  void backward_apply(operation_t op,
-		      variable_t x, variable_t y, number_t z,
-		      congruence_domain_t inv) {
+
+  void backward_apply(operation_t op, variable_t x, variable_t y, number_t z,
+                      congruence_domain_t inv) {
     crab::CrabStats::count(getDomainName() + ".count.backward_apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
-    
-    crab::domains::BackwardAssignOps<congruence_domain_t>::
-      apply(*this, op, x, y, z, inv);
+
+    crab::domains::BackwardAssignOps<congruence_domain_t>::apply(*this, op, x,
+                                                                 y, z, inv);
   }
-  
-  void backward_apply(operation_t op,
-		      variable_t x, variable_t y, variable_t z,
-		      congruence_domain_t inv) {
+
+  void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
+                      congruence_domain_t inv) {
     crab::CrabStats::count(getDomainName() + ".count.backward_apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
-    
-    crab::domains::BackwardAssignOps<congruence_domain_t>::
-      apply(*this, op, x, y, z, inv);
+
+    crab::domains::BackwardAssignOps<congruence_domain_t>::apply(*this, op, x,
+                                                                 y, z, inv);
   }
 
   // cast operations
-  
-  void apply(crab::domains::int_conv_operation_t /*op*/,
-	     variable_t dst, variable_t src) {  
+
+  void apply(crab::domains::int_conv_operation_t /*op*/, variable_t dst,
+             variable_t src) {
     // ignore widths
     assign(dst, src);
   }
 
   // bitwise operations
-  
+
   void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {
     crab::CrabStats::count(getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
@@ -1050,31 +1016,33 @@ public:
     congruence_t xi = congruence_t::bottom();
 
     switch (op) {
-      case OP_AND: {
-        xi = yi.And(zi);
-        break;
-      }
-      case OP_OR: {
-        xi = yi.Or(zi);
-        break;
-      }
-      case OP_XOR: {
-        xi = yi.Xor(zi);
-        break;
-      }
-      case OP_SHL: {
-        xi = yi.Shl(zi);
-        break;
-      }
-      case OP_LSHR: {
-        xi = yi.LShr(zi);
-        break;
-      }
-      case OP_ASHR: {
-        xi = yi.AShr(zi);
-        break;
-      }
-      default: { CRAB_ERROR("unreachable"); }
+    case OP_AND: {
+      xi = yi.And(zi);
+      break;
+    }
+    case OP_OR: {
+      xi = yi.Or(zi);
+      break;
+    }
+    case OP_XOR: {
+      xi = yi.Xor(zi);
+      break;
+    }
+    case OP_SHL: {
+      xi = yi.Shl(zi);
+      break;
+    }
+    case OP_LSHR: {
+      xi = yi.LShr(zi);
+      break;
+    }
+    case OP_ASHR: {
+      xi = yi.AShr(zi);
+      break;
+    }
+    default: {
+      CRAB_ERROR("unreachable");
+    }
     }
     this->_env.set(x, xi);
   }
@@ -1088,184 +1056,193 @@ public:
     congruence_t xi = congruence_t::bottom();
 
     switch (op) {
-      case OP_AND: {
-        xi = yi.And(zi);
-        break;
-      }
-      case OP_OR: {
-        xi = yi.Or(zi);
-        break;
-      }
-      case OP_XOR: {
-        xi = yi.Xor(zi);
-        break;
-      }
-      case OP_SHL: {
-        xi = yi.Shl(zi);
-        break;
-      }
-      case OP_LSHR: {
-        xi = yi.LShr(zi);
-        break;
-      }
-      case OP_ASHR: {
-        xi = yi.AShr(zi);
-        break;
-      }
-      default: { CRAB_ERROR("unreachable"); }
+    case OP_AND: {
+      xi = yi.And(zi);
+      break;
+    }
+    case OP_OR: {
+      xi = yi.Or(zi);
+      break;
+    }
+    case OP_XOR: {
+      xi = yi.Xor(zi);
+      break;
+    }
+    case OP_SHL: {
+      xi = yi.Shl(zi);
+      break;
+    }
+    case OP_LSHR: {
+      xi = yi.LShr(zi);
+      break;
+    }
+    case OP_ASHR: {
+      xi = yi.AShr(zi);
+      break;
+    }
+    default: {
+      CRAB_ERROR("unreachable");
+    }
     }
     this->_env.set(x, xi);
   }
-  
-  /* 
-     Begin unimplemented operations 
-     
+
+  /*
+     Begin unimplemented operations
+
      congruence_domain implements only standard abstract operations of
      a numerical domain.  The implementation of boolean, array, or
      pointer operations is empty because they should never be called.
   */
-  
+
   // boolean operations
   void assign_bool_cst(variable_t lhs, linear_constraint_t rhs) {}
   void assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs) {}
-  void apply_binary_bool(crab::domains::bool_operation_t op,
-			 variable_t x,variable_t y,variable_t z) {}
+  void apply_binary_bool(crab::domains::bool_operation_t op, variable_t x,
+                         variable_t y, variable_t z) {}
   void assume_bool(variable_t v, bool is_negated) {}
   // backward boolean operations
   void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
-				congruence_domain_t invariant){}
+                                congruence_domain_t invariant) {}
   void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
-				congruence_domain_t invariant) {}
+                                congruence_domain_t invariant) {}
   void backward_apply_binary_bool(crab::domains::bool_operation_t op,
-				  variable_t x,variable_t y,variable_t z,
-				  congruence_domain_t invariant) {}
+                                  variable_t x, variable_t y, variable_t z,
+                                  congruence_domain_t invariant) {}
   // array operations
   void array_init(variable_t a, linear_expression_t elem_size,
-		  linear_expression_t lb_idx, linear_expression_t ub_idx, 
-		  linear_expression_t val) {}      
-  void array_load(variable_t lhs,
-		  variable_t a, linear_expression_t elem_size,
-		  linear_expression_t i) {}
+                  linear_expression_t lb_idx, linear_expression_t ub_idx,
+                  linear_expression_t val) {}
+  void array_load(variable_t lhs, variable_t a, linear_expression_t elem_size,
+                  linear_expression_t i) {}
   void array_store(variable_t a, linear_expression_t elem_size,
-		   linear_expression_t i, linear_expression_t v, 
-		   bool is_strong_update) {}
+                   linear_expression_t i, linear_expression_t v,
+                   bool is_strong_update) {}
   void array_store(variable_t a_new, variable_t a_old,
-		   linear_expression_t elem_size,
-		   linear_expression_t i, linear_expression_t v, 
-		   bool is_strong_update) {}
+                   linear_expression_t elem_size, linear_expression_t i,
+                   linear_expression_t v, bool is_strong_update) {}
   void array_store_range(variable_t a, linear_expression_t elem_size,
-			 linear_expression_t i, linear_expression_t j,
-			 linear_expression_t v) {}
+                         linear_expression_t i, linear_expression_t j,
+                         linear_expression_t v) {}
   void array_store_range(variable_t a_new, variable_t a_old,
-			 linear_expression_t elem_size,
-			 linear_expression_t i, linear_expression_t j,
-			 linear_expression_t v) {}  
+                         linear_expression_t elem_size, linear_expression_t i,
+                         linear_expression_t j, linear_expression_t v) {}
   void array_assign(variable_t lhs, variable_t rhs) {}
   // backward array operations
   void backward_array_init(variable_t a, linear_expression_t elem_size,
-			   linear_expression_t lb_idx, linear_expression_t ub_idx, 
-			   linear_expression_t val, congruence_domain_t invariant) {}      
-  void backward_array_load(variable_t lhs,
-			   variable_t a, linear_expression_t elem_size,
-			   linear_expression_t i, congruence_domain_t invariant) {}
+                           linear_expression_t lb_idx,
+                           linear_expression_t ub_idx, linear_expression_t val,
+                           congruence_domain_t invariant) {}
+  void backward_array_load(variable_t lhs, variable_t a,
+                           linear_expression_t elem_size, linear_expression_t i,
+                           congruence_domain_t invariant) {}
   void backward_array_store(variable_t a, linear_expression_t elem_size,
-			    linear_expression_t i, linear_expression_t v, 
-			    bool is_strong_update, congruence_domain_t invariant) {}
+                            linear_expression_t i, linear_expression_t v,
+                            bool is_strong_update,
+                            congruence_domain_t invariant) {}
   void backward_array_store(variable_t a_new, variable_t a_old,
-			    linear_expression_t elem_size,
-			    linear_expression_t i, linear_expression_t v, 
-			    bool is_strong_update, congruence_domain_t invariant) {}  
+                            linear_expression_t elem_size,
+                            linear_expression_t i, linear_expression_t v,
+                            bool is_strong_update,
+                            congruence_domain_t invariant) {}
   void backward_array_store_range(variable_t a, linear_expression_t elem_size,
-				  linear_expression_t i, linear_expression_t j,
-				  linear_expression_t v, congruence_domain_t invariant) {}
+                                  linear_expression_t i, linear_expression_t j,
+                                  linear_expression_t v,
+                                  congruence_domain_t invariant) {}
   void backward_array_store_range(variable_t a_new, variable_t a_old,
-				  linear_expression_t elem_size,
-				  linear_expression_t i, linear_expression_t j,
-				  linear_expression_t v, congruence_domain_t invariant) {}  
-  void backward_array_assign(variable_t lhs, variable_t rhs, congruence_domain_t invariant) {}
+                                  linear_expression_t elem_size,
+                                  linear_expression_t i, linear_expression_t j,
+                                  linear_expression_t v,
+                                  congruence_domain_t invariant) {}
+  void backward_array_assign(variable_t lhs, variable_t rhs,
+                             congruence_domain_t invariant) {}
   // pointer operations
-  void pointer_load(variable_t lhs, variable_t rhs)  {}
-  void pointer_store(variable_t lhs, variable_t rhs) {} 
-  void pointer_assign(variable_t lhs, variable_t rhs, linear_expression_t offset) {}
+  void pointer_load(variable_t lhs, variable_t rhs) {}
+  void pointer_store(variable_t lhs, variable_t rhs) {}
+  void pointer_assign(variable_t lhs, variable_t rhs,
+                      linear_expression_t offset) {}
   void pointer_mk_obj(variable_t lhs, ikos::index_t address) {}
   void pointer_function(variable_t lhs, varname_t func) {}
   void pointer_mk_null(variable_t lhs) {}
   void pointer_assume(pointer_constraint_t cst) {}
   void pointer_assert(pointer_constraint_t cst) {}
   /* End unimplemented operations */
-  
-  void forget(const variable_vector_t& variables) {
+
+  void forget(const variable_vector_t &variables) {
     if (is_bottom() || is_top()) {
       return;
     }
-    for (variable_t var: variables){
-      this->operator-=(var); 
+    for (variable_t var : variables) {
+      this->operator-=(var);
     }
   }
 
-  void project(const variable_vector_t& variables){
+  void project(const variable_vector_t &variables) {
     crab::CrabStats::count(getDomainName() + ".count.project");
     crab::ScopedCrabStats __st__(getDomainName() + ".project");
-    
+
     if (is_bottom() || is_top()) {
       return;
     }
-    
+
     separate_domain_t env;
-    for (variable_t var : variables){
-      env.set(var, this->_env[var]); 
+    for (variable_t var : variables) {
+      env.set(var, this->_env[var]);
     }
     std::swap(_env, env);
   }
-  
+
   void expand(variable_t x, variable_t new_x) {
     crab::CrabStats::count(getDomainName() + ".count.expand");
     crab::ScopedCrabStats __st__(getDomainName() + ".expand");
-    
+
     if (is_bottom() || is_top()) {
       return;
     }
-    
-    set(new_x , this->_env[x]);
+
+    set(new_x, this->_env[x]);
   }
 
   void normalize() {}
 
-  void minimize() {}  
+  void minimize() {}
 
   void rename(const variable_vector_t &from, const variable_vector_t &to) {
     crab::CrabStats::count(getDomainName() + ".count.rename");
     crab::ScopedCrabStats __st__(getDomainName() + ".rename");
-    
+
     assert(from.size() == to.size());
-      
-    if (is_top() || is_bottom()) return;
+
+    if (is_top() || is_bottom())
+      return;
     // we need to create a new separate_domain since it cannot be
     // modified in-place.
     separate_domain_t new_env;
-    for (auto kv: _env) {
+    for (auto kv : _env) {
       int pos = std::distance(from.begin(),
-			      std::find(from.begin(), from.end(), kv.first));
+                              std::find(from.begin(), from.end(), kv.first));
       if (pos >= 0 && pos < (int)to.size()) {
-	new_env.set(to[pos], kv.second);
+        new_env.set(to[pos], kv.second);
       } else {
-	new_env.set(kv.first, kv.second);	    
+        new_env.set(kv.first, kv.second);
       }
     }
     std::swap(_env, new_env);
   }
-  
-  void write(crab::crab_os& o) {
+
+  void write(crab::crab_os &o) {
     crab::CrabStats::count(getDomainName() + ".count.write");
     crab::ScopedCrabStats __st__(getDomainName() + ".write");
-    
-    this->_env.write(o); 
+
+    this->_env.write(o);
   }
 
   linear_constraint_system_t to_linear_constraint_system() {
-    crab::CrabStats::count(getDomainName() + ".count.to_linear_constraint_system");
-    crab::ScopedCrabStats __st__(getDomainName() + ".to_linear_constraint_system");
-    
+    crab::CrabStats::count(getDomainName() +
+                           ".count.to_linear_constraint_system");
+    crab::ScopedCrabStats __st__(getDomainName() +
+                                 ".to_linear_constraint_system");
+
     linear_constraint_system_t csts;
     if (is_bottom()) {
       csts += linear_constraint_t::get_false();
@@ -1283,20 +1260,19 @@ public:
     return csts;
   }
 
-  disjunctive_linear_constraint_system_t to_disjunctive_linear_constraint_system() {
+  disjunctive_linear_constraint_system_t
+  to_disjunctive_linear_constraint_system() {
     auto lin_csts = to_linear_constraint_system();
     if (lin_csts.is_false()) {
-      return disjunctive_linear_constraint_system_t(true /*is_false*/); 
+      return disjunctive_linear_constraint_system_t(true /*is_false*/);
     } else if (lin_csts.is_true()) {
       return disjunctive_linear_constraint_system_t(false /*is_false*/);
     } else {
       return disjunctive_linear_constraint_system_t(lin_csts);
     }
   }
-  
-  static std::string getDomainName() {
-    return "Congruences"; 
-  }
+
+  static std::string getDomainName() { return "Congruences"; }
 
 }; // class congruence_domain
 
@@ -1305,12 +1281,11 @@ public:
 namespace crab {
 namespace domains {
 
-  template <typename Number, typename VariableName> 
-  struct abstract_domain_traits<ikos::congruence_domain<Number, VariableName>> {
-    typedef Number number_t;
-    typedef VariableName varname_t;       
-  };
-  
-}
-}
+template <typename Number, typename VariableName>
+struct abstract_domain_traits<ikos::congruence_domain<Number, VariableName>> {
+  typedef Number number_t;
+  typedef VariableName varname_t;
+};
 
+} // namespace domains
+} // namespace crab

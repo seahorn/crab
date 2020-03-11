@@ -37,26 +37,23 @@
  * UNILATERAL TERMINATION OF THIS AGREEMENT.
  *
  ******************************************************************************/
-#pragma once 
+#pragma once
 
 namespace ikos {
 
-  template<typename CFG, typename AbstractValue>
-  class fixpoint_iterator {
-  public:
+template <typename CFG, typename AbstractValue> class fixpoint_iterator {
+public:
+  using basic_block_label_t = typename CFG::basic_block_label_t;
 
-    using basic_block_label_t = typename CFG::basic_block_label_t;
+  // use of move semantics to have a functional view
+  virtual AbstractValue analyze(basic_block_label_t, AbstractValue &&) = 0;
 
-    // use of move semantics to have a functional view
-    virtual AbstractValue analyze(basic_block_label_t, AbstractValue&&) = 0;
-    
-    virtual void process_pre(basic_block_label_t, AbstractValue) = 0;
-    
-    virtual void process_post(basic_block_label_t, AbstractValue) = 0;
-    
-    virtual ~fixpoint_iterator() { }
-    
-  }; // class fixpoint_iterator
-  
+  virtual void process_pre(basic_block_label_t, AbstractValue) = 0;
+
+  virtual void process_post(basic_block_label_t, AbstractValue) = 0;
+
+  virtual ~fixpoint_iterator() {}
+
+}; // class fixpoint_iterator
+
 } // namespace ikos
-
