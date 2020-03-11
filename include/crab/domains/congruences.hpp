@@ -1232,6 +1232,28 @@ public:
   void normalize() {}
 
   void minimize() {}  
+
+  void rename(const variable_vector_t &from, const variable_vector_t &to) {
+    crab::CrabStats::count(getDomainName() + ".count.rename");
+    crab::ScopedCrabStats __st__(getDomainName() + ".rename");
+    
+    assert(from.size() == to.size());
+      
+    if (is_top() || is_bottom()) return;
+    // we need to create a new separate_domain since it cannot be
+    // modified in-place.
+    separate_domain_t new_env;
+    for (auto kv: _env) {
+      int pos = std::distance(from.begin(),
+			      std::find(from.begin(), from.end(), kv.first));
+      if (pos >= 0 && pos < (int)to.size()) {
+	new_env.set(to[pos], kv.second);
+      } else {
+	new_env.set(kv.first, kv.second);	    
+      }
+    }
+    std::swap(_env, new_env);
+  }
   
   void write(crab::crab_os& o) {
     crab::CrabStats::count(getDomainName() + ".count.write");

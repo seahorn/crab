@@ -392,7 +392,7 @@ namespace crab {
     void backward_array_store_range(variable_t a_new, variable_t a_old,
 				    linear_expression_t elem_size,
 				    linear_expression_t i, linear_expression_t j,
-				    linear_expression_t v, nullity_domain_t invariant) {}        
+				    linear_expression_t v, nullity_domain_t invariant) {}
     void backward_array_assign(variable_t lhs, variable_t rhs, nullity_domain_t invariant) {}
     /* End unimplemented operations */    
     
@@ -495,7 +495,29 @@ namespace crab {
     void normalize() {}
 
     void minimize() {}    
-    
+
+    void rename(const variable_vector_t &from, const variable_vector_t &to) {
+      crab::CrabStats::count(getDomainName() + ".count.rename");
+      crab::ScopedCrabStats __st__(getDomainName() + ".rename");
+      
+      assert(from.size() == to.size());
+      
+      if (is_top() || is_bottom()) return;
+      // we need to create a new separate_domain since it cannot be
+      // modified in-place.
+      separate_domain_t new_env;
+      for (auto kv: _env) {
+	int pos = std::distance(from.begin(),
+				std::find(from.begin(), from.end(), kv.first));
+	if (pos >= 0 && pos < (int)to.size()) {
+	  new_env.set(to[pos], kv.second);
+	} else {
+	  new_env.set(kv.first, kv.second);	    
+	}
+      }
+      std::swap(_env, new_env);
+    }
+        
     linear_constraint_system_t to_linear_constraint_system() {
       if (is_bottom())
 	return linear_constraint_t::get_false();
