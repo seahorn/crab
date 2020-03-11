@@ -1,3 +1,4 @@
+#pragma once
 // Here all explicit instantiations
 
 #define Z_BWD_RUNNER(DOM) \

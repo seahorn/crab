@@ -1,3 +1,5 @@
+#pragma once
+
 // Here all explicit instantiations
 
 #define Z_RUNNER(BUDOM,TDDOM)		    \
