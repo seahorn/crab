@@ -728,8 +728,8 @@ namespace crab {
 
      private:
 
-      // forall i \in [lb,ub) % elem_size :: arr[i] := val and
-      // forall j < lb or j >= ub :: arr[j] is undefined.
+      // forall i \in [lb,ub] % elem_size :: arr[i] := val and
+      // forall j < lb or j > ub :: arr[j] is undefined.
       variable_t m_arr; 
       linear_expression_t m_elem_size; //! size in bytes
       linear_expression_t m_lb;
@@ -743,7 +743,7 @@ namespace crab {
       
      public:
 
-      // forall i \in [lb,ub) % elem_size :: arr[i] := val
+      // forall i \in [lb,ub] % elem_size :: arr[i] := val
       
       typedef statement<Number,VariableName> statement_t;                  
       typedef ikos::linear_expression<Number, VariableName> linear_expression_t;
