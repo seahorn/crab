@@ -238,7 +238,10 @@ namespace crab {
 
 	void minimize()
 	{ CRAB_ERROR(LDD_NOT_FOUND); }
-	
+
+	void rename(const variable_vector_t &from, const variable_vector_t &to)
+	{ CRAB_ERROR(LDD_NOT_FOUND); }
+	  
         linear_constraint_system_t to_linear_constraint_system()
         { CRAB_ERROR(LDD_NOT_FOUND); }
 
@@ -317,8 +320,8 @@ namespace crab {
         typedef typename var_map_t::value_type binding_t;
 
         LddNodePtr m_ldd;
-        static LddManager* m_ldd_man;
-        static var_map_t m_var_map;
+        static LddManager* s_ldd_man;
+        static var_map_t s_var_map;
 
 	// -- bool reasoning is mostly based on disjunctions so for
 	//    efficiency we might want to disable it if precision
@@ -326,16 +329,16 @@ namespace crab {
 	const bool m_bool_reasoning = true;
 	
         static LddManager* get_ldd_man() {
-          if (!m_ldd_man) {
+          if (!s_ldd_man) {
             DdManager* cudd = Cudd_Init(0, 0, CUDD_UNIQUE_SLOTS, 127, 0);
             theory_t* theory = ldd::create_box_theory<number_t>(LddSize);
             CRAB_LOG("boxes",
 		      crab::outs() << "Created a ldd of size " << LddSize <<"\n";);
-            m_ldd_man = Ldd_Init(cudd, theory);
+            s_ldd_man = Ldd_Init(cudd, theory);
             //Cudd_AutodynEnable(cudd, CUDD_REORDER_GROUP_SIFT);
 	    Ldd_SanityCheck(get_ldd_man());
           }
-          return m_ldd_man;
+          return s_ldd_man;
         }
 
 	inline theory_t* get_theory() {
@@ -343,20 +346,20 @@ namespace crab {
 	}
 	
         static int num_of_vars() {
-          return m_var_map.left.size();
+          return s_var_map.left.size();
         }
 
         int get_var_dim(variable_t v) const {
-          auto it = m_var_map.left.find(v);
-          if (it != m_var_map.left.end()) {
+          auto it = s_var_map.left.find(v);
+          if (it != s_var_map.left.end()) {
             return it->second;
           } else {
 	    // XXX: reserved dim 0 for SPECIAL variable
-            unsigned int id = m_var_map.size() + 1;
+            unsigned int id = s_var_map.size() + 1;
             if (id >= LddSize) {
               CRAB_ERROR("The Ldd size of ", LddSize, " needs to be larger");
             }
-            m_var_map.insert(binding_t(v, id));
+            s_var_map.insert(binding_t(v, id));
             return id;
           }
         }
@@ -386,7 +389,7 @@ namespace crab {
           std::vector<int> qvars;
 	  // num_of_vars is shared by all ldd's
 	  qvars.reserve(num_of_vars()-1); 
-          for (auto p: m_var_map.left) 
+          for (auto p: s_var_map.left) 
             if (!(p.first == v))
 	      qvars.push_back(get_var_dim(p.first));
 	    
@@ -1058,8 +1061,8 @@ namespace crab {
 	}
 	
         variable_t getVarName(int v) const {
-          auto it = m_var_map.right.find (v);
-          if (it != m_var_map.right.end())
+          auto it = s_var_map.right.find (v);
+          if (it != s_var_map.right.end())
              return it->second;
           else {
              CRAB_ERROR("Index ", v, " cannot be mapped back to a variable name");
@@ -1069,16 +1072,20 @@ namespace crab {
 	
        public:
 
+	static void clear_global_state() {
+	  s_var_map.clear(); 
+	}
+
         boxes_domain_():
 	  m_ldd(lddPtr(get_ldd_man(), Ldd_GetTrue(get_ldd_man()))) {}
         
         ~boxes_domain_() { 
           // DdManager *cudd = nullptr;
           // theory_t *theory = nullptr;
-          // if (m_ldd_man)  {
-	  //   cudd = Ldd_GetCudd(m_ldd_man);
-	  //   theory = Ldd_GetTheory(m_ldd_man);
-	  //   Ldd_Quit(m_ldd_man);
+          // if (s_ldd_man)  {
+	  //   cudd = Ldd_GetCudd(s_ldd_man);
+	  //   theory = Ldd_GetTheory(s_ldd_man);
+	  //   Ldd_Quit(s_ldd_man);
 	  // }
           // if (theory) tvpi_destroy_theory(theory);
           // if (cudd) Cudd_Quit(cudd);
@@ -1264,7 +1271,7 @@ namespace crab {
 	  
           std::set<variable_t> s1,s2;
 	  variable_vector_t s3;
-          for (auto p: m_var_map.left) s1.insert(p.first);
+          for (auto p: s_var_map.left) s1.insert(p.first);
           s2.insert(variables.begin(), variables.end());
           std::set_difference(s1.begin(), s1.end(), s2.begin(), s2.end(),
 			      std::back_inserter(s3));
@@ -1363,6 +1370,17 @@ namespace crab {
 	void normalize() {}
 
 	void minimize() {}
+
+	void rename(const variable_vector_t &from, const variable_vector_t &to) {
+	  crab::CrabStats::count(getDomainName() + ".count.rename");
+	  crab::ScopedCrabStats __st__(getDomainName() + ".rename");
+	  
+	  assert(from.size() == to.size());
+	  
+	  if (is_top() || is_bottom()) return;
+	  
+	  CRAB_WARN(getDomainName(), "::rename not implemented");
+	}
 	
         void operator+=(linear_constraint_system_t csts) {
           if (is_bottom()) return;
@@ -1965,10 +1983,10 @@ namespace crab {
       }; 
 
      template<typename N, typename V, int R, size_t S>
-     LddManager* boxes_domain_<N,V,R,S>::m_ldd_man = nullptr;
+     LddManager* boxes_domain_<N,V,R,S>::s_ldd_man = nullptr;
 
      template<typename N, typename V, int R, size_t S>
-     typename boxes_domain_<N,V,R,S>::var_map_t boxes_domain_<N,V,R,S>::m_var_map;
+     typename boxes_domain_<N,V,R,S>::var_map_t boxes_domain_<N,V,R,S>::s_var_map;
 
      #if 1
      // Without copy-on-write
@@ -2164,7 +2182,7 @@ namespace crab {
        void backward_array_store_range(variable_t a_new, variable_t a_old,
 				       linear_expression_t elem_size,
 				       linear_expression_t i, linear_expression_t j,
-				       linear_expression_t v, boxes_domain_t invariant) {}       
+				       linear_expression_t v, boxes_domain_t invariant) {} 
        void backward_array_assign(variable_t lhs, variable_t rhs, boxes_domain_t invariant) {}
        // pointer operations
        void pointer_load(variable_t lhs, variable_t rhs)  {}
@@ -2189,6 +2207,9 @@ namespace crab {
        void normalize() {}
 
        void minimize() {}       
+
+       void rename(const variable_vector_t &from, const variable_vector_t &to)
+       { detach(); ref().rename(from, to) }
        
        void write(crab_os& o) { ref().write(o); }
        
@@ -2276,7 +2297,15 @@ namespace crab {
       }
       
     };
-     
+
+    template<typename Number, typename VariableName, int ConvexReduce, size_t LddSize>
+    class special_domain_traits<boxes_domain<Number,VariableName,ConvexReduce,LddSize>> {
+    public:
+      static void clear_global_state(void) {
+	boxes_domain<Number,VariableName,ConvexReduce,LddSize>::clear_global_state();
+      }
+    };
+ 
    } // namespace domains
 }// namespace crab
 #endif /* HAVE_LDD */

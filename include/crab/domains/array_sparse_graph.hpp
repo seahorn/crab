@@ -1392,8 +1392,8 @@ private:
 
   /// === Static data
   using  lm_map_t = landmark_ref_unordered_map<variable_t, number_t, landmark_ref_t>;
-  static lm_map_t var_landmarks;
-  static lm_map_t cst_landmarks;
+  static lm_map_t s_var_landmarks;
+  static lm_map_t s_cst_landmarks;
 
   // --- landmark iterators
   struct get_first : public std::unary_function<typename lm_map_t::value_type,
@@ -1416,16 +1416,16 @@ private:
   typedef boost::iterator_range<lm_prime_iterator> lm_prime_range;
 
   lm_prime_iterator var_lm_prime_begin()
-  { return boost::make_transform_iterator(var_landmarks.begin(), get_second());}
+  { return boost::make_transform_iterator(s_var_landmarks.begin(), get_second());}
   lm_prime_iterator var_lm_prime_end()
-  { return boost::make_transform_iterator(var_landmarks.end(), get_second());}
+  { return boost::make_transform_iterator(s_var_landmarks.end(), get_second());}
   lm_prime_range var_lm_primes() 
   { return boost::make_iterator_range(var_lm_prime_begin(), var_lm_prime_end());}
 
   lm_prime_iterator cst_lm_prime_begin()
-  { return boost::make_transform_iterator(cst_landmarks.begin(), get_second());}
+  { return boost::make_transform_iterator(s_cst_landmarks.begin(), get_second());}
   lm_prime_iterator cst_lm_prime_end()
-  { return boost::make_transform_iterator(cst_landmarks.end(), get_second());}
+  { return boost::make_transform_iterator(s_cst_landmarks.end(), get_second());}
   lm_prime_range cst_lm_primes() 
   { return boost::make_iterator_range(cst_lm_prime_begin(), cst_lm_prime_end());}
                                           
@@ -1477,8 +1477,8 @@ public:
   template<class Range, class VarFactory>
   static void set_landmarks(const Range& lms, VarFactory& vfac) {
         
-    var_landmarks.clear();
-    cst_landmarks.clear();
+    s_var_landmarks.clear();
+    s_cst_landmarks.clear();
         
     unsigned num_vl = 0;
     unsigned num_cl = 0;
@@ -1489,7 +1489,7 @@ public:
 	auto v = std::static_pointer_cast<const landmark_var_t>(lm._ref)->get_var();
 	variable_t v_prime(vfac.get(v.index()));
 	landmark_ref_t lm_prime(v_prime, v.name().str());
-	var_landmarks.insert(std::make_pair(lm, lm_prime));
+	s_var_landmarks.insert(std::make_pair(lm, lm_prime));
 	num_vl++;
 	break;
       }
@@ -1497,7 +1497,7 @@ public:
 	auto n = std::static_pointer_cast<const landmark_cst_t>(lm._ref)->get_cst();
 	variable_t v_prime(vfac.get()); 
 	landmark_ref_t lm_prime(v_prime, n.get_str());
-	cst_landmarks.insert(std::make_pair(lm, lm_prime));
+	s_cst_landmarks.insert(std::make_pair(lm, lm_prime));
 	num_cl++;
 	break;
       }
@@ -1509,12 +1509,12 @@ public:
 	     crab::outs() << "Added " << num_vl << " variable landmarks "
 	     << "and " << num_cl << " constant landmarks={";
 	     bool first=true;
-	     for (auto &l: var_landmarks) {
+	     for (auto &l: s_var_landmarks) {
 	       if (!first) crab::outs() << ",";
 	       first=false;
 	       crab::outs() << l.first;
 	     }
-	     for (auto &l: cst_landmarks) {
+	     for (auto &l: s_cst_landmarks) {
 	       if (!first) crab::outs() << ",";
 	       first=false;
 	       crab::outs() << l.first;
@@ -1531,7 +1531,7 @@ public: // public only for tests
     landmark_ref_t lm_v_prime(variable_t(v.name().get_var_factory().get(v.name().index())),
 			      v.name().str());
     // add pair  x -> x'
-    var_landmarks.insert(std::make_pair(lm_v, lm_v_prime));
+    s_var_landmarks.insert(std::make_pair(lm_v, lm_v_prime));
     // x' = x + 1
     _scalar += make_prime_relation(lm_v_prime, lm_v);
 
@@ -1553,7 +1553,7 @@ public: // public only for tests
   void remove_landmark(variable_t v) {
     array_forget(v);
     forget_prime_var(v);
-    var_landmarks.erase(landmark_ref_t(v));
+    s_var_landmarks.erase(landmark_ref_t(v));
 
     CRAB_LOG("array-sgraph-domain-landmark", 
 	     crab::outs() << "Removed landmark " << v << "\n";);
@@ -1565,16 +1565,16 @@ private:
   // By active we mean current variables that are kept track by
   // the scalar domain.
   void get_active_landmarks(NumDom &scalar, std::vector<landmark_ref_t> & landmarks) const {
-    landmarks.reserve(cst_landmarks.size());
-    for (auto p: cst_landmarks) { 
+    landmarks.reserve(s_cst_landmarks.size());
+    for (auto p: s_cst_landmarks) { 
       landmarks.push_back(p.first);
       landmarks.push_back(p.second);
     }
     std::vector<variable_t> active_vars;
     array_sgraph_domain_helper_traits<NumDom>::active_variables(scalar, active_vars);
     for (auto v: active_vars) {
-      auto it = var_landmarks.find(landmark_ref_t(v));
-      if (it != var_landmarks.end()){
+      auto it = s_var_landmarks.find(landmark_ref_t(v));
+      if (it != s_var_landmarks.end()){
 	landmarks.push_back(landmark_ref_t(v)); 
 	landmarks.push_back(it->second);
       }
@@ -1618,22 +1618,22 @@ private:
   // return true if v is a landmark in the graph
   bool is_landmark(variable_t v) const {
     landmark_ref_t lm_v(v);       
-    auto it = var_landmarks.find(lm_v);
-    return (it != var_landmarks.end());
+    auto it = s_var_landmarks.find(lm_v);
+    return (it != s_var_landmarks.end());
   }
 
   // return true if n is a landmark in the graph
   bool is_landmark(z_number n) const {
     landmark_ref_t lm_n(n);       
-    auto it = cst_landmarks.find(lm_n);
-    return (it != cst_landmarks.end());
+    auto it = s_cst_landmarks.find(lm_n);
+    return (it != s_cst_landmarks.end());
   }
 
   // return the prime landmark of v
   landmark_ref_t get_landmark_prime(variable_t v) const {
     landmark_ref_t lm_v(v);
-    auto it = var_landmarks.find(lm_v);
-    assert (it != var_landmarks.end());
+    auto it = s_var_landmarks.find(lm_v);
+    assert (it != s_var_landmarks.end());
     return it->second;
   }
 
@@ -1737,7 +1737,7 @@ private:
     variable_t x_old_prime(x.name().get_var_factory().get()); 
     landmark_ref_t lm_x_old(x_old);
     landmark_ref_t lm_x_old_prime(x_old_prime, x_old.name().str());
-    var_landmarks.insert(std::make_pair(lm_x_old, lm_x_old_prime));
+    s_var_landmarks.insert(std::make_pair(lm_x_old, lm_x_old_prime));
     // x_old = x
     _scalar.assign(x_old, x); 
     // relation between x_old and x' 
@@ -1783,7 +1783,7 @@ private:
     _g -= lm_x_old_prime;
     _scalar -= x_old;
     _scalar -= x_old_prime;
-    var_landmarks.erase(lm_x_old);
+    s_var_landmarks.erase(lm_x_old);
   }
 
   // remove v' from scalar and array graph
@@ -1901,40 +1901,11 @@ private:
       
 public:
 
-  // The reduction consists of detecting dead segments so it is
-  // done only in one direction (scalar -> array graph). Note that
-  // whenever an edge becomes bottom closure is also happening.
-  // Return false if bottom is detected during the reduction.
-  bool reduce(NumDom &scalar, array_sgraph_t &g) {
-    crab::CrabStats::count(getDomainName() + ".count.reduce");
-    crab::ScopedCrabStats __st__(getDomainName() + ".reduce");
-
-    scalar.normalize();
-    g.normalize();
-
-    if (scalar.is_bottom() || g.is_bottom())
-      return false;
-
-    if (!scalar.is_top()) { 
-      std::vector<landmark_ref_t> active_landmarks;
-      get_active_landmarks(scalar, active_landmarks);
-      solver_wrapper solve(scalar);
-      for (auto lm_s : active_landmarks)
-	for (auto lm_d : active_landmarks) {
-	  // XXX: we do not exploit the following facts:
-	  //   - i < i' is always sat
-	  //   - i' < i is always unsat
-	  //   - if i < j  unsat then i' < j unsat.
-	  //   - if i < j' unsat then i' < j unsat.
-	  if ((lm_s == lm_d) || solve.is_unsat(make_lt_cst(lm_s,lm_d))) {
-	    g.update_edge(lm_s, Content::bottom(), lm_d);
-	  }
-	}
-    }        
-    return (!g.is_bottom());
+  static void clear_global_state() {
+    s_var_landmarks.clear();
+    s_cst_landmarks.clear();
   }
-
-
+  
       
   void set_to_top() { 
     array_sgraph_domain_t abs(false);
@@ -2119,6 +2090,40 @@ public:
     }
   }
 
+  // The reduction consists of detecting dead segments so it is
+  // done only in one direction (scalar -> array graph). Note that
+  // whenever an edge becomes bottom closure is also happening.
+  // Return false if bottom is detected during the reduction.
+  bool reduce(NumDom &scalar, array_sgraph_t &g) {
+    crab::CrabStats::count(getDomainName() + ".count.reduce");
+    crab::ScopedCrabStats __st__(getDomainName() + ".reduce");
+
+    scalar.normalize();
+    g.normalize();
+
+    if (scalar.is_bottom() || g.is_bottom())
+      return false;
+
+    if (!scalar.is_top()) { 
+      std::vector<landmark_ref_t> active_landmarks;
+      get_active_landmarks(scalar, active_landmarks);
+      solver_wrapper solve(scalar);
+      for (auto lm_s : active_landmarks)
+	for (auto lm_d : active_landmarks) {
+	  // XXX: we do not exploit the following facts:
+	  //   - i < i' is always sat
+	  //   - i' < i is always unsat
+	  //   - if i < j  unsat then i' < j unsat.
+	  //   - if i < j' unsat then i' < j unsat.
+	  if ((lm_s == lm_d) || solve.is_unsat(make_lt_cst(lm_s,lm_d))) {
+	    g.update_edge(lm_s, Content::bottom(), lm_d);
+	  }
+	}
+    }        
+    return (!g.is_bottom());
+  }
+
+  
   void operator-=(variable_t v) {
     crab::CrabStats::count(getDomainName() + ".count.forget");
     crab::ScopedCrabStats __st__(getDomainName() + ".forget");
@@ -2185,7 +2190,19 @@ public:
   void minimize() {
     _scalar.minimize();
     _expressions.minimize();
-  }          
+  }
+
+  void rename(const variable_vector_t &from, const variable_vector_t &to) {
+    crab::CrabStats::count(getDomainName() + ".count.rename");
+    crab::ScopedCrabStats __st__(getDomainName() + ".rename");
+    
+    assert(from.size() == to.size());
+    
+    if (is_top() || is_bottom()) return;
+    
+    CRAB_WARN(getDomainName(), "::rename not implemented");
+  }
+  
       
   void operator+=(linear_constraint_system_t csts) 
   {
@@ -2684,17 +2701,25 @@ public:
     array_sparse_graph_domain<Dom,Content,IsDistContent>::do_initialization(cfg);
   }    
 };
-  
+
+template<typename Dom, typename Content, bool IsDistContent>
+class special_domain_traits<array_sparse_graph_domain<Dom, Content, IsDistContent>> {
+public:
+  static void clear_global_state(void) {
+    array_sparse_graph_domain<Dom, Content, IsDistContent>::clear_global_state();
+  }
+};
+
 // Static data allocation
 template<class Dom, class Content, bool IsDistContent>
 landmark_ref_unordered_map<typename Dom::variable_t, typename Dom::number_t,
 			   landmark_ref<typename Dom::variable_t, typename Dom::number_t>>
-array_sparse_graph_domain<Dom,Content,IsDistContent>::var_landmarks;
+array_sparse_graph_domain<Dom,Content,IsDistContent>::s_var_landmarks;
 
 template<class Dom, class Content, bool IsDistContent>
 landmark_ref_unordered_map<typename Dom::variable_t, typename Dom::number_t,
 			   landmark_ref<typename Dom::variable_t, typename Dom::number_t>>
-array_sparse_graph_domain<Dom,Content,IsDistContent>::cst_landmarks;
+array_sparse_graph_domain<Dom,Content,IsDistContent>::s_cst_landmarks;
 
 } // end namespace domains
 } // end namespace crab

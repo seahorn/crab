@@ -203,9 +203,19 @@ namespace crab {
      }
    };
 
+   // Some abstract domains have global state that should be reset by
+   // the client if multiple crab instances will be run. This is just
+   // a temporary hack. The proper solution is to avoid global state.
+   template<typename Domain>
+   class special_domain_traits {
+   public:
+     static void clear_global_state(void) {}
+   };
+
+
    // Experimental (TO BE REMOVED):
    // 
-   // Special operations needed by array_sparse_graph domain's
+   // Special operations to be called by array_sparse_graph domain's
    // clients.
    template<typename Domain>
    class array_sgraph_domain_traits {

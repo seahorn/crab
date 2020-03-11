@@ -1687,5 +1687,13 @@ namespace domains {
       
   };
 
+  template<typename BaseDom>
+  class special_domain_traits<array_expansion_domain<BaseDom>> {
+  public:
+    static void clear_global_state(void) {
+      array_expansion_domain<BaseDom>::clear_global_state();
+    }
+  };
+
 } // namespace domains
 }// namespace crab
