@@ -251,6 +251,9 @@ namespace crab {
 
 	void minimize()
 	{ CRAB_ERROR(APRON_NOT_FOUND); }
+
+	void rename(const variable_vector_t &from, const variable_vector_t &to)
+	{ CRAB_ERROR(APRON_NOT_FOUND); }	
 	
         void write(crab_os& o) 
         { CRAB_ERROR(APRON_NOT_FOUND); }
@@ -306,7 +309,7 @@ namespace crab {
         typedef boost::bimap<variable_t, ap_dim_t> var_map_t;
         typedef typename var_map_t::value_type binding_t;
 
-        static ap_manager_t* m_apman;
+        static ap_manager_t* s_apman;
         
         ap_state_ptr m_apstate; 
         var_map_t m_var_map;
@@ -320,15 +323,15 @@ namespace crab {
 	}
 	
         static ap_manager_t* get_man() {
-          if (!m_apman) {
+          if (!s_apman) {
             switch (ApronDom) {
-              case APRON_INT: m_apman = box_manager_alloc(); break;
-              case APRON_OCT: m_apman = oct_manager_alloc(); break;
-              case APRON_PK: m_apman = pk_manager_alloc(false); break;
+              case APRON_INT: s_apman = box_manager_alloc(); break;
+              case APRON_OCT: s_apman = oct_manager_alloc(); break;
+              case APRON_PK: s_apman = pk_manager_alloc(false); break;
               default: CRAB_ERROR("unknown apron domain");
             }
           }
-          return m_apman;
+          return s_apman;
         }
 
 	// Apron assume dimensions [0..intdim-1] correspond to integer
@@ -2163,7 +2166,7 @@ namespace crab {
      
       // --- global datastructures
       template<typename N, typename V, apron_domain_id_t D>
-      ap_manager_t* apron_domain_<N,V,D>::m_apman = nullptr;
+      ap_manager_t* apron_domain_<N,V,D>::s_apman = nullptr;
 
    
    } // namespace domains
