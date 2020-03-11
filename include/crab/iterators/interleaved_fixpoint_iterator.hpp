@@ -275,7 +275,8 @@ namespace ikos {
 	this->_wto.accept(&processor);
       }
       CRAB_VERBOSE_IF(1, crab::get_msg_stream() << "== Fixpoint reached.\n");
-      CRAB_VERBOSE_IF(2, crab::outs() << "Wto:\n" << _wto << "\n");            
+      CRAB_VERBOSE_IF(2, crab::outs() << "Wto:\n" << _wto << "\n");
+      CRAB_LOG("fixpo-trace", crab::outs() << "Fixpoint trace:\n" << _wto << "\n";);
     }
 
     void run(basic_block_label_t entry, AbstractValue init,
@@ -294,6 +295,7 @@ namespace ikos {
       }
       CRAB_VERBOSE_IF(1, crab::get_msg_stream() << "== Fixpoint reached.\n");
       CRAB_VERBOSE_IF(2, crab::outs() << "Wto:\n" << _wto << "\n");      
+      CRAB_LOG("fixpo-trace", crab::outs() << "Fixpoint trace:\n" << _wto << "\n";);
     }
 
     void clear() {
