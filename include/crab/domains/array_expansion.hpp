@@ -1371,7 +1371,7 @@ namespace domains {
       CRAB_WARN("array_store in the array expansion domain not implemented");
     }
     
-    // Perform array stores over an array segment
+    // Perform array stores over an array segment [lb_idx, ub_idx]
     virtual void array_store_range(variable_t a,
 				   linear_expression_t elem_size,
 				   linear_expression_t lb_idx,
@@ -1407,20 +1407,15 @@ namespace domains {
 	return;
       }
 
-      if ((*ub - *lb) % *n != 0) {
-	CRAB_WARN("array expansion store range ignored because ",
-		  "the number of elements must be divisible by ", *n);
-	return;
-      }
-      
-      if (*ub - *lb > max_num_elems) {
+      z_number sz = (*ub - *lb) + 1;      
+      if (sz > max_num_elems) {
 	CRAB_WARN("array expansion store range ignored because ",
 		  "the number of elements is larger than default limit of ",
 		  max_num_elems);
 	return;
       }
 
-      for(number_t i = *lb, e = *ub; i < e; ) {
+      for(number_t i = *lb, e = *ub; i <= e; ) {
 	array_store(a, elem_size, i, val, false);
 	i = i + *n;
       }
@@ -1597,11 +1592,11 @@ namespace domains {
       
       interval_t ub_i = to_interval(ub_idx, invariant.get_content_domain());
       auto ub = ub_i.singleton();
-      if (!ub || ((*ub - *lb) % *n != 0) || (*ub - *lb > max_num_elems)) {
+      if (!ub || ((*ub - *lb)+1) > max_num_elems) {
       	return;
       }
 
-      for(number_t i = *lb, e = *ub; i < e; ) {
+      for(number_t i = *lb, e = *ub; i <= e; ) {
       	backward_array_store(a, elem_size, i, val, false, invariant);
       	i = i + *n;
       }
@@ -1691,6 +1686,6 @@ namespace domains {
     }
       
   };
-  
+
 } // namespace domains
 }// namespace crab
