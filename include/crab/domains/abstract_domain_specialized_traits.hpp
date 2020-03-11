@@ -218,7 +218,7 @@ namespace crab {
    // Special operations to be called by array_sparse_graph domain's
    // clients.
    template<typename Domain>
-   class array_sgraph_domain_traits {
+   class array_graph_domain_traits {
     public:
      template<class CFG>
      static void do_initialization(CFG cfg) {}
@@ -226,7 +226,7 @@ namespace crab {
 
    // Operations needed by the array_sparse_graph domain.
    template<typename Domain>
-   class array_sgraph_domain_helper_traits {
+   class array_graph_domain_helper_traits {
     public:
      typedef typename Domain::linear_constraint_t linear_constraint_t;
      typedef typename Domain::variable_vector_t variable_vector_t;

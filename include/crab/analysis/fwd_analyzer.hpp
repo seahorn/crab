@@ -128,7 +128,7 @@ public:
   void run_forward()  {
     // ugly hook to initialize some global state. This needs to be
     // fixed properly.
-    domains::array_sgraph_domain_traits<abs_dom_t>::do_initialization(this->get_cfg());
+    domains::array_graph_domain_traits<abs_dom_t>::do_initialization(this->get_cfg());
     // XXX: inv was created before the static data is initialized
     //      so it won't contain that data.
     this->run(m_abs_tr->get_abs_value());         
@@ -137,7 +137,7 @@ public:
   void run_forward(basic_block_label_t entry, const assumption_map_t &assumptions)  {
     // ugly hook to initialize some global state. This needs to be
     // fixed properly.
-    domains::array_sgraph_domain_traits<abs_dom_t>::do_initialization(this->get_cfg());
+    domains::array_graph_domain_traits<abs_dom_t>::do_initialization(this->get_cfg());
     // XXX: inv was created before the static data is initialized
     //      so it won't contain that data.	
     this->run(entry, m_abs_tr->get_abs_value(), assumptions);         

@@ -13,7 +13,7 @@
 #include <crab/domains/elina_domains.hpp> 
 #include <crab/domains/dis_intervals.hpp>
 #include <crab/domains/term_equiv.hpp>
-#include <crab/domains/array_sparse_graph.hpp>                      
+#include <crab/domains/array_graph.hpp>                      
 #include <crab/domains/array_smashing.hpp>
 #include <crab/domains/array_expansion.hpp>
 #include <crab/domains/nullity.hpp>
@@ -61,8 +61,8 @@ namespace crab {
     typedef flat_boolean_numerical_domain<z_dbm_domain_t> z_bool_num_domain_t;
     typedef flat_boolean_numerical_domain<z_interval_domain_t> z_bool_interval_domain_t;    
     // Arrays domains
-    typedef array_sparse_graph_domain<z_sdbm_domain_t,z_interval_domain_t> z_ag_sdbm_intv_t;
-    typedef array_sparse_graph_domain<z_num_null_domain_t,z_nullity_domain_t> z_ag_num_null_t;
+    typedef array_graph_domain<z_sdbm_domain_t,z_interval_domain_t> z_ag_sdbm_intv_t;
+    typedef array_graph_domain<z_num_null_domain_t,z_nullity_domain_t> z_ag_num_null_t;
     typedef array_smashing<z_dis_interval_domain_t> z_as_dis_int_t;
     typedef array_smashing<z_sdbm_domain_t> z_as_sdbm_t;
     typedef array_smashing<z_num_null_domain_t> z_as_num_null_t;

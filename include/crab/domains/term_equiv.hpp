@@ -1673,7 +1673,6 @@ namespace crab {
        
       void minimize() {}       
        
-       /// XXX: should be part of array_sgraph_domain_traits
        /// Simplify the term associated with x by given the standard
        /// arithmetic meaning to the functors
        bool simplify(variable_t x)  {

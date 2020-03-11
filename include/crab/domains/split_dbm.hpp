@@ -2249,7 +2249,7 @@ namespace crab {
         }
       }
 
-      // -- begin array_sgraph_domain_helper_traits
+      // -- begin array_graph_domain_helper_traits
 	
       // return true iff cst is unsatisfiable without modifying the DBM
       bool is_unsat(linear_constraint_t cst) {
@@ -2317,7 +2317,7 @@ namespace crab {
 	  }
         }
       }
-      // -- end array_sgraph_domain_helper_traits
+      // -- end array_graph_domain_helper_traits
       
       // Output function
       void write(crab_os& o) {
@@ -2747,7 +2747,7 @@ namespace crab {
     };
   
     template<typename Number, typename VariableName, typename SplitDBMParams>
-    struct array_sgraph_domain_helper_traits <SplitDBM<Number,VariableName, SplitDBMParams>> {
+    struct array_graph_domain_helper_traits <SplitDBM<Number,VariableName, SplitDBMParams>> {
       typedef SplitDBM<Number,VariableName,SplitDBMParams> sdbm_domain_t;
       typedef typename sdbm_domain_t::linear_constraint_t linear_constraint_t;
       typedef ikos::variable<Number, VariableName> variable_t;

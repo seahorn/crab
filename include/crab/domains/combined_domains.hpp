@@ -2259,17 +2259,17 @@ namespace crab {
     };
 
     template<typename Dom>
-    struct array_sgraph_domain_helper_traits<numerical_nullity_domain<Dom>> {
+    struct array_graph_domain_helper_traits<numerical_nullity_domain<Dom>> {
       typedef numerical_nullity_domain<Dom> num_null_domain_t;
       typedef typename num_null_domain_t::linear_constraint_t linear_constraint_t;
       typedef typename Dom::variable_t variable_t;
       
       static bool is_unsat(num_null_domain_t &inv, linear_constraint_t cst) {
-	return array_sgraph_domain_helper_traits<Dom>::is_unsat(inv.first(), cst);
+	return array_graph_domain_helper_traits<Dom>::is_unsat(inv.first(), cst);
       }
       
       static void active_variables(num_null_domain_t &inv, std::vector<variable_t>& out)  {
-	array_sgraph_domain_helper_traits<Dom>::active_variables(inv.first(), out);
+	array_graph_domain_helper_traits<Dom>::active_variables(inv.first(), out);
       }
     };
 
