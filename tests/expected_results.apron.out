@@ -381,11 +381,13 @@ user-defined assertion checker using ArrayExpansion(Term(Intervals))
  Test 2 for array expansion domain 
 ===================================
 Invariants using ArrayExpansion(Term(Intervals))
+CRAB WARNING: Ignored read from cell Mem[4...7] because it overlaps with 1 cells
 bb0={}
 bb2={x -> t0[_x0], y -> t1[_x1], z -> t2[_x2], val -> t3[_x4], Mem[6...9] -> t1[_x1], Mem[10...13] -> t3[_x4]}{_x0 -> [4, 4]; _x1 -> [6, 6]; _x2 -> [10, 10]; _x4 -> [7, 7]}
 bb3={x -> t0[_y0], y -> t1[_y1], z -> t2[_y2], val -> t3[_y3], Mem[6...9] -> t1[_y1], Mem[10...13] -> t3[_y3]}{_y0 -> [4, 4]; _y1 -> [6, 6]; _y2 -> [10, 10]; _y3 -> [7, 7]}
 bb1={x -> t0[_x0], y -> t1[_x1], z -> t2[_x2], val -> t3[_x4], Mem[6...9] -> t1[_x1], Mem[10...13] -> t3[_x4]}{_x0 -> [4, 4]; _x1 -> [6, 6]; _x2 -> [10, 10]; _x4 -> [7, 7]}
 Abstract trace: bb0 bb2 bb1 bb3
+CRAB WARNING: Ignored read from cell Mem[4...7] because it overlaps with 1 cells
  --- WARNING -----------------
 Property : tmp1-tmp2 = -1
 Invariant: {x -> t0[_y0], y -> t1[_y1], z -> t2[_y2], val -> t3[_y3], tmp2 -> t1[_y1], tmp3 -> t3[_y3], Mem[6...9] -> t1[_y1], Mem[10...13] -> t3[_y3]}{_y0 -> [4, 4]; _y1 -> [6, 6]; _y2 -> [10, 10]; _y3 -> [7, 7]}
@@ -404,11 +406,19 @@ user-defined assertion checker using ArrayExpansion(Term(Intervals))
  Test 3 for array expansion domain 
 ===================================
 Invariants using ArrayExpansion(Term(Intervals))
+CRAB WARNING: Ignored read from cell Mem[4...5] because it overlaps with 1 cells
+CRAB WARNING: Ignored read from cell Mem[6...7] because it overlaps with 1 cells
+CRAB WARNING: Ignored read from cell Mem[8...9] because it overlaps with 1 cells
+CRAB WARNING: Ignored read from cell Mem[10...11] because it overlaps with 1 cells
 bb0={}
 bb2={x -> t0[_x0], x1 -> t0[_x0], x2 -> t1[_x1], x3 -> t2[_x2], x4 -> t3[_x3], val -> t4[_x4], Mem[4...11] -> t4[_x4]}{_x0 -> [4, 4]; _x1 -> [6, 6]; _x2 -> [8, 8]; _x3 -> [10, 10]; _x4 -> [0, 0]}
 bb3={x -> t0[_y0], x1 -> t0[_y0], x2 -> t1[_y1], x3 -> t2[_y2], x4 -> t3[_y3], val -> t4[_y4], Mem[4...11] -> t4[_y4]}{_y0 -> [4, 4]; _y1 -> [6, 6]; _y2 -> [8, 8]; _y3 -> [10, 10]; _y4 -> [0, 0]}
 bb1={x -> t0[_x0], x1 -> t0[_x0], x2 -> t1[_x1], x3 -> t2[_x2], x4 -> t3[_x3], val -> t4[_x4], Mem[4...11] -> t4[_x4]}{_x0 -> [4, 4]; _x1 -> [6, 6]; _x2 -> [8, 8]; _x3 -> [10, 10]; _x4 -> [0, 0]}
 Abstract trace: bb0 bb2 bb1 bb3
+CRAB WARNING: Ignored read from cell Mem[4...5] because it overlaps with 1 cells
+CRAB WARNING: Ignored read from cell Mem[6...7] because it overlaps with 1 cells
+CRAB WARNING: Ignored read from cell Mem[8...9] because it overlaps with 1 cells
+CRAB WARNING: Ignored read from cell Mem[10...11] because it overlaps with 1 cells
  --- WARNING -----------------
 Property : tmp1 = 0
 Invariant: {x -> t0[_y0], x1 -> t0[_y0], x2 -> t1[_y1], x3 -> t2[_y2], x4 -> t3[_y3], val -> t4[_y4], Mem[4...11] -> t4[_y4]}{_y0 -> [4, 4]; _y1 -> [6, 6]; _y2 -> [8, 8]; _y3 -> [10, 10]; _y4 -> [0, 0]}
@@ -568,11 +578,11 @@ user-defined assertion checker using ArrayExpansion(Term(Intervals))
 ===================================
 Invariants using ArrayExpansion(Term(Intervals))
 entry={}
-ret={m1_lb -> t0[_x0], m1_ub -> t1[_x1], x -> t3[_x3], y -> t4[_x4], tmp1 -> t2[_x2], tmp2 -> t2[_x2], Mem1[20...23] -> t2[_x2], Mem1[24...27] -> t2[_x2], Mem1[28...31] -> t2[_x2], Mem1[32...35] -> t2[_x2], Mem1[36...39] -> t2[_x2], Mem1[40...43] -> t2[_x2], Mem1[44...47] -> t2[_x2], Mem1[48...51] -> t2[_x2], Mem1[52...55] -> t2[_x2], Mem1[56...59] -> t2[_x2], Mem1[60...63] -> t2[_x2], Mem1[64...67] -> t2[_x2], Mem1[68...71] -> t2[_x2], Mem1[72...75] -> t2[_x2], Mem1[76...79] -> t2[_x2]}{_x0 -> [20, 20]; _x1 -> [80, 80]; _x2 -> [42, 42]; _x3 -> [24, 24]; _x4 -> [76, 76]}
+ret={m1_lb -> t0[_x0], m1_ub -> t1[_x1], x -> t3[_x3], y -> t4[_x4], tmp1 -> t2[_x2], tmp2 -> t2[_x2], Mem1[20...23] -> t2[_x2], Mem1[24...27] -> t2[_x2], Mem1[28...31] -> t2[_x2], Mem1[32...35] -> t2[_x2], Mem1[36...39] -> t2[_x2], Mem1[40...43] -> t2[_x2], Mem1[44...47] -> t2[_x2], Mem1[48...51] -> t2[_x2], Mem1[52...55] -> t2[_x2], Mem1[56...59] -> t2[_x2], Mem1[60...63] -> t2[_x2], Mem1[64...67] -> t2[_x2], Mem1[68...71] -> t2[_x2], Mem1[72...75] -> t2[_x2], Mem1[76...79] -> t2[_x2], Mem1[80...83] -> t2[_x2]}{_x0 -> [20, 20]; _x1 -> [80, 80]; _x2 -> [42, 42]; _x3 -> [24, 24]; _x4 -> [76, 76]}
 Abstract trace: entry ret
  --- SAFE --------------------
 Property : tmp1-tmp2 = 0
-Invariant: {m1_lb -> t0[_x0], m1_ub -> t1[_x1], x -> t3[_x3], y -> t4[_x4], tmp1 -> t2[_x2], tmp2 -> t2[_x2], Mem1[20...23] -> t2[_x2], Mem1[24...27] -> t2[_x2], Mem1[28...31] -> t2[_x2], Mem1[32...35] -> t2[_x2], Mem1[36...39] -> t2[_x2], Mem1[40...43] -> t2[_x2], Mem1[44...47] -> t2[_x2], Mem1[48...51] -> t2[_x2], Mem1[52...55] -> t2[_x2], Mem1[56...59] -> t2[_x2], Mem1[60...63] -> t2[_x2], Mem1[64...67] -> t2[_x2], Mem1[68...71] -> t2[_x2], Mem1[72...75] -> t2[_x2], Mem1[76...79] -> t2[_x2]}{_x0 -> [20, 20]; _x1 -> [80, 80]; _x2 -> [42, 42]; _x3 -> [24, 24]; _x4 -> [76, 76]}
+Invariant: {m1_lb -> t0[_x0], m1_ub -> t1[_x1], x -> t3[_x3], y -> t4[_x4], tmp1 -> t2[_x2], tmp2 -> t2[_x2], Mem1[20...23] -> t2[_x2], Mem1[24...27] -> t2[_x2], Mem1[28...31] -> t2[_x2], Mem1[32...35] -> t2[_x2], Mem1[36...39] -> t2[_x2], Mem1[40...43] -> t2[_x2], Mem1[44...47] -> t2[_x2], Mem1[48...51] -> t2[_x2], Mem1[52...55] -> t2[_x2], Mem1[56...59] -> t2[_x2], Mem1[60...63] -> t2[_x2], Mem1[64...67] -> t2[_x2], Mem1[68...71] -> t2[_x2], Mem1[72...75] -> t2[_x2], Mem1[76...79] -> t2[_x2], Mem1[80...83] -> t2[_x2]}{_x0 -> [20, 20]; _x1 -> [80, 80]; _x2 -> [42, 42]; _x3 -> [24, 24]; _x4 -> [76, 76]}
  -----------------------------
 user-defined assertion checker using ArrayExpansion(Term(Intervals))
 1  Number of total safe checks
@@ -584,12 +594,14 @@ user-defined assertion checker using ArrayExpansion(Term(Intervals))
  Test 10 for array expansion domain 
 ===================================
 Invariants using ArrayExpansion(Term(Intervals))
+CRAB WARNING: array expansion ignored array write with non-constant index i
 bb0={}
 bb2={Mem1[2...5] -> t0[_x0]}{_x0 -> [42, 42]}
 bb3={Mem1[2...5] -> t0[_y0]}{_y0 -> [42, 42]}
 bb4={x -> t0[_y1], Mem1[2...5] -> t0[_y1]}{_y1 -> [42, 42]}
 bb1={Mem1[2...5] -> t0[_x0]}{_x0 -> [42, 42]}
 Abstract trace: bb0 bb2 bb1 bb3 bb4
+CRAB WARNING: array expansion ignored array write with non-constant index i
  --- WARNING -----------------
 Property : x = 42
 Invariant: {x -> t0[_y1], Mem1[2...5] -> t0[_y1]}{}
@@ -604,12 +616,14 @@ user-defined assertion checker using ArrayExpansion(Term(Intervals))
  Test 11 for array expansion domain 
 ===================================
 Invariants using ArrayExpansion(Term(Intervals))
+CRAB WARNING: array expansion ignored array write with non-constant index i
 bb0={}
 bb2={Mem1[2...5] -> t0[_x0], Mem2[2...5] -> t1[_x1], Mem1[6...9] -> t2[_x2]}{_x0 -> [42, 42]; _x1 -> [666, 666]; _x2 -> [50, 50]}
 bb3={i -> t0[_y3], Mem1[2...5] -> t1[_y0], Mem2[2...5] -> t2[_y1], Mem1[6...9] -> t3[_y2]}{_y0 -> [42, 42]; _y1 -> [666, 666]; _y2 -> [50, 50]; _y3 -> [10, +oo]}
 bb4={i -> t0[_y3], x -> t1[_y0], y -> t3[_y2], Mem1[2...5] -> t1[_y0], Mem2[2...5] -> t2[_y1], Mem1[6...9] -> t3[_y2]}{_y0 -> [42, 42]; _y1 -> [666, 666]; _y2 -> [50, 50]; _y3 -> [10, +oo]}
 bb1={Mem1[2...5] -> t0[_x0], Mem2[2...5] -> t1[_x1], Mem1[6...9] -> t2[_x2]}{_x0 -> [42, 42]; _x1 -> [666, 666]; _x2 -> [50, 50]}
 Abstract trace: bb0 bb2 bb1 bb3 bb4
+CRAB WARNING: array expansion ignored array write with non-constant index i
  --- SAFE --------------------
 Property : x = 42
 Invariant: {i -> t0[_y3], x -> t1[_y0], y -> t3[_y2], Mem1[2...5] -> t1[_y0], Mem2[2...5] -> t2[_y1], Mem1[6...9] -> t3[_y2]}{_y0 -> [42, 42]; _y1 -> [666, 666]; _y2 -> [50, 50]; _y3 -> [10, +oo]}
@@ -628,6 +642,8 @@ user-defined assertion checker using ArrayExpansion(Term(Intervals))
  Test 12 for array expansion domain 
 ===================================
 Invariants using ArrayExpansion(Term(Intervals))
+CRAB WARNING: Ignored read from cell Mem1[0...3] because it overlaps with 1 cells
+CRAB WARNING: Ignored read from cell Mem1[4...7] because it overlaps with 2 cells
 bb0={}
 Abstract trace: bb0
  --- SAFE --------------------
@@ -640,19 +656,21 @@ Invariant: {x -> t0[_x0], y -> t1[_x1], Mem1[0...3] -> t0[_x0], Mem1[4...7] -> t
  -----------------------------
  --- SAFE --------------------
 Property : x = 666
-Invariant: {i -> t2[_x2], j -> t3[_x3], x -> t4[_x4], y -> t4[_x4], Mem1[0...3] -> t4[_x4], Mem1[4...7] -> t4[_x4]}{_x2 -> [0, 0]; _x3 -> [8, 8]; _x4 -> [666, 666]}
+Invariant: {i -> t2[_x2], j -> t3[_x3], x -> t4[_x4], y -> t4[_x4], Mem1[0...3] -> t4[_x4], Mem1[4...7] -> t4[_x4], Mem1[8...11] -> t4[_x4]}{_x2 -> [0, 0]; _x3 -> [8, 8]; _x4 -> [666, 666]}
  -----------------------------
  --- SAFE --------------------
 Property : y = 666
-Invariant: {i -> t2[_x2], j -> t3[_x3], x -> t4[_x4], y -> t4[_x4], Mem1[0...3] -> t4[_x4], Mem1[4...7] -> t4[_x4]}{_x2 -> [0, 0]; _x3 -> [8, 8]; _x4 -> [666, 666]}
+Invariant: {i -> t2[_x2], j -> t3[_x3], x -> t4[_x4], y -> t4[_x4], Mem1[0...3] -> t4[_x4], Mem1[4...7] -> t4[_x4], Mem1[8...11] -> t4[_x4]}{_x2 -> [0, 0]; _x3 -> [8, 8]; _x4 -> [666, 666]}
  -----------------------------
+CRAB WARNING: Ignored read from cell Mem1[0...3] because it overlaps with 1 cells
+CRAB WARNING: Ignored read from cell Mem1[4...7] because it overlaps with 2 cells
  --- WARNING -----------------
 Property : y = 666
-Invariant: {i -> t1[_x5], j -> t3[_x3], x -> t2[_x6], y -> t0[_x7], Mem1[0...3] -> t2[_x6], Mem1[4...7] -> t0[_x7]}{_x3 -> [8, 8]; _x5 -> [2, 2]}
+Invariant: {i -> t1[_x5], j -> t3[_x3], Mem1[2...5] -> t2[_x6], Mem1[6...9] -> t2[_x6]}{_x3 -> [8, 8]; _x5 -> [2, 2]; _x6 -> [777, 777]}
  -----------------------------
  --- WARNING -----------------
 Property : x = 666
-Invariant: {i -> t1[_x5], j -> t3[_x3], x -> t2[_x7], y -> t0[_x6], Mem1[0...3] -> t2[_x7], Mem1[4...7] -> t0[_x6]}{_x3 -> [8, 8]; _x5 -> [2, 2]; _x6 -> [666, 666]}
+Invariant: {i -> t1[_x5], j -> t3[_x3], y -> t4[_x7], Mem1[2...5] -> t2[_x6], Mem1[6...9] -> t2[_x6]}{_x3 -> [8, 8]; _x5 -> [2, 2]; _x6 -> [777, 777]; _x7 -> [666, 666]}
  -----------------------------
 user-defined assertion checker using ArrayExpansion(Term(Intervals))
 4  Number of total safe checks
@@ -668,23 +686,23 @@ bb0={}
 Abstract trace: bb0
  --- SAFE --------------------
 Property : x = 42
-Invariant: {i -> t3[_x3], j -> t4[_x4], x -> t0[_x0], Mem1[0...3] -> t0[_x0], Mem1[4...7] -> t5[_x5], Mem1[8...11] -> t5[_x5], Mem1[12...15] -> t5[_x5], Mem1[16...19] -> t2[_x2]}{_x0 -> [42, 42]; _x2 -> [50, 50]; _x3 -> [4, 4]; _x4 -> [16, 16]; _x5 -> [0, 0]}
+Invariant: {i -> t3[_x3], j -> t4[_x4], x -> t0[_x0], Mem1[0...3] -> t0[_x0], Mem1[4...7] -> t5[_x5], Mem1[8...11] -> t5[_x5], Mem1[12...15] -> t5[_x5], Mem1[16...19] -> t2[_x2]}{_x0 -> [42, 42]; _x2 -> [50, 50]; _x3 -> [4, 4]; _x4 -> [12, 12]; _x5 -> [0, 0]}
  -----------------------------
  --- SAFE --------------------
 Property : x = 0
-Invariant: {i -> t3[_x3], j -> t4[_x4], x -> t5[_x5], Mem1[0...3] -> t0[_x0], Mem1[4...7] -> t5[_x5], Mem1[8...11] -> t5[_x5], Mem1[12...15] -> t5[_x5], Mem1[16...19] -> t2[_x2]}{_x0 -> [42, 42]; _x2 -> [50, 50]; _x3 -> [4, 4]; _x4 -> [16, 16]; _x5 -> [0, 0]}
+Invariant: {i -> t3[_x3], j -> t4[_x4], x -> t5[_x5], Mem1[0...3] -> t0[_x0], Mem1[4...7] -> t5[_x5], Mem1[8...11] -> t5[_x5], Mem1[12...15] -> t5[_x5], Mem1[16...19] -> t2[_x2]}{_x0 -> [42, 42]; _x2 -> [50, 50]; _x3 -> [4, 4]; _x4 -> [12, 12]; _x5 -> [0, 0]}
  -----------------------------
  --- SAFE --------------------
 Property : x = 0
-Invariant: {i -> t3[_x3], j -> t4[_x4], x -> t5[_x5], Mem1[0...3] -> t0[_x0], Mem1[4...7] -> t5[_x5], Mem1[8...11] -> t5[_x5], Mem1[12...15] -> t5[_x5], Mem1[16...19] -> t2[_x2]}{_x0 -> [42, 42]; _x2 -> [50, 50]; _x3 -> [4, 4]; _x4 -> [16, 16]; _x5 -> [0, 0]}
+Invariant: {i -> t3[_x3], j -> t4[_x4], x -> t5[_x5], Mem1[0...3] -> t0[_x0], Mem1[4...7] -> t5[_x5], Mem1[8...11] -> t5[_x5], Mem1[12...15] -> t5[_x5], Mem1[16...19] -> t2[_x2]}{_x0 -> [42, 42]; _x2 -> [50, 50]; _x3 -> [4, 4]; _x4 -> [12, 12]; _x5 -> [0, 0]}
  -----------------------------
  --- SAFE --------------------
 Property : x = 0
-Invariant: {i -> t3[_x3], j -> t4[_x4], x -> t5[_x5], Mem1[0...3] -> t0[_x0], Mem1[4...7] -> t5[_x5], Mem1[8...11] -> t5[_x5], Mem1[12...15] -> t5[_x5], Mem1[16...19] -> t2[_x2]}{_x0 -> [42, 42]; _x2 -> [50, 50]; _x3 -> [4, 4]; _x4 -> [16, 16]; _x5 -> [0, 0]}
+Invariant: {i -> t3[_x3], j -> t4[_x4], x -> t5[_x5], Mem1[0...3] -> t0[_x0], Mem1[4...7] -> t5[_x5], Mem1[8...11] -> t5[_x5], Mem1[12...15] -> t5[_x5], Mem1[16...19] -> t2[_x2]}{_x0 -> [42, 42]; _x2 -> [50, 50]; _x3 -> [4, 4]; _x4 -> [12, 12]; _x5 -> [0, 0]}
  -----------------------------
  --- SAFE --------------------
 Property : x = 50
-Invariant: {i -> t3[_x3], j -> t4[_x4], x -> t2[_x2], Mem1[0...3] -> t0[_x0], Mem1[4...7] -> t5[_x5], Mem1[8...11] -> t5[_x5], Mem1[12...15] -> t5[_x5], Mem1[16...19] -> t2[_x2]}{_x0 -> [42, 42]; _x2 -> [50, 50]; _x3 -> [4, 4]; _x4 -> [16, 16]; _x5 -> [0, 0]}
+Invariant: {i -> t3[_x3], j -> t4[_x4], x -> t2[_x2], Mem1[0...3] -> t0[_x0], Mem1[4...7] -> t5[_x5], Mem1[8...11] -> t5[_x5], Mem1[12...15] -> t5[_x5], Mem1[16...19] -> t2[_x2]}{_x0 -> [42, 42]; _x2 -> [50, 50]; _x3 -> [4, 4]; _x4 -> [12, 12]; _x5 -> [0, 0]}
  -----------------------------
 user-defined assertion checker using ArrayExpansion(Term(Intervals))
 5  Number of total safe checks

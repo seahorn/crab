@@ -622,7 +622,7 @@ z_cfg_t* prog12(variable_factory_t &vfac) {
   bb0.assign(i, 2);
   bb0.assign(j, 8);
   // this array initialization should be ignored
-  // and kill m1[0..3] and m1[4..7]
+  // and kill m1[0..3], m1[4..7], and m1[8..11]
   bb0.array_init(m1, i, j, 777, 4);
   bb0.array_load(x, m1, 0, 4);    
   bb0.array_load(y, m1, 4, 4);  
@@ -653,7 +653,7 @@ z_cfg_t* prog13(variable_factory_t &vfac) {
   bb0.array_store(m1, 16, 50, 4);
   
   bb0.assign(i, 4);
-  bb0.assign(j, 16);
+  bb0.assign(j, 12);
   // it will write over a[4], a[8], and a[12]
   bb0.array_store_range(m1, i, j, 0, 4);
   
