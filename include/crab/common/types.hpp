@@ -4,8 +4,9 @@
 #include <crab/common/debug.hpp>
 
 #include <iosfwd>
-#include <boost/optional.hpp>
+#include <functional>
 #include <memory>
+#include <boost/optional.hpp>
 
 /* Basic type definitions */
 
@@ -352,7 +353,9 @@ namespace ikos {
     index_t index() const { return _n.index(); }
 
     std::size_t hash() const {
-      return (size_t) _n.index();      
+      // casting to size_t may overflow but it shouldn't affect
+      // correctness.
+      return std::hash<size_t>{}(static_cast<size_t>(_n.index()));
     }
     
     bool operator==(const variable_t& o) const {
