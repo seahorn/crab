@@ -13,9 +13,10 @@
 #include <crab/domains/elina_domains.hpp> 
 #include <crab/domains/dis_intervals.hpp>
 #include <crab/domains/term_equiv.hpp>
+#include <crab/domains/array_adaptive.hpp>
+#include <crab/domains/array_expansion.hpp>
 #include <crab/domains/array_graph.hpp>                      
 #include <crab/domains/array_smashing.hpp>
-#include <crab/domains/array_expansion.hpp>
 #include <crab/domains/nullity.hpp>
 #include <crab/domains/flat_boolean_domain.hpp>                      
 #include <crab/domains/combined_domains.hpp>                      
@@ -61,17 +62,19 @@ namespace crab {
     typedef flat_boolean_numerical_domain<z_dbm_domain_t> z_bool_num_domain_t;
     typedef flat_boolean_numerical_domain<z_interval_domain_t> z_bool_interval_domain_t;    
     // Arrays domains
+    typedef array_adaptive_domain<z_term_domain_t> z_aa_term_int_t;
+    typedef array_adaptive_domain<z_bool_interval_domain_t> z_aa_bool_int_t;
+    typedef array_expansion_domain<z_interval_domain_t> z_ae_int_t;
+    typedef array_expansion_domain<z_term_domain_t> z_ae_term_int_t;
+    typedef array_expansion_domain<z_sdbm_domain_t> z_ae_sdbm_t;
+    typedef array_expansion_domain<z_box_apron_domain_t> z_ae_box_apron_t;
+    typedef array_expansion_domain<z_zones_elina_domain_t> z_ae_zones_elina_t;
     typedef array_graph_domain<z_sdbm_domain_t,z_interval_domain_t> z_ag_sdbm_intv_t;
     typedef array_graph_domain<z_num_null_domain_t,z_nullity_domain_t> z_ag_num_null_t;
     typedef array_smashing<z_dis_interval_domain_t> z_as_dis_int_t;
     typedef array_smashing<z_sdbm_domain_t> z_as_sdbm_t;
     typedef array_smashing<z_num_null_domain_t> z_as_num_null_t;
     typedef array_smashing<z_bool_num_domain_t> z_as_bool_num_t;
-    typedef array_expansion_domain<z_interval_domain_t> z_ae_int_t;
-    typedef array_expansion_domain<z_term_domain_t> z_ae_term_int_t;
-    typedef array_expansion_domain<z_sdbm_domain_t> z_ae_sdbm_t;
-    typedef array_expansion_domain<z_box_apron_domain_t> z_ae_box_apron_t;
-    typedef array_expansion_domain<z_zones_elina_domain_t> z_ae_zones_elina_t;
     // Machine integer arithmetic domains
     typedef wrapped_interval_domain<z_number, varname_t> z_wrapped_interval_domain_t;
     /// Numerical domains over real

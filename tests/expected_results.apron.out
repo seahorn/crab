@@ -358,6 +358,447 @@ bb1_t={-i+k = 0; -i <= 0}
 bb2={-i+k = 0; -i <= 0}
 Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
 
+Program 1: forall 0<= i< 10. a[i] = 123456
+Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
+entry=({}, {})
+bb1=({}, {n1 -> [1, 1]; i -> [0, 10]; A0_prop -> [0, 0]; smashed(A0) -> [0, 123456]})
+bb1_f=({}, {n1 -> [1, 1]; i -> [0, 10]; A0_prop -> [0, 0]; smashed(A0) -> [0, 123456]})
+ret=({}, {n1 -> [1, 1]; i -> [10, 10]; A0_prop -> [0, 0]; smashed(A0) -> [0, 123456]})
+bb1_t=({}, {n1 -> [1, 1]; i -> [0, 10]; A0_prop -> [0, 0]; smashed(A0) -> [0, 123456]})
+bb2=({}, {n1 -> [1, 1]; i -> [0, 9]; A0_prop -> [0, 0]; smashed(A0) -> [0, 123456]})
+Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
+
+Program 2: forall 0<= i< 10. a[i] = b[i] = x and x = 123456
+Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
+entry=({}, {})
+bb1=({}, {n1 -> [1, 1]; i -> [0, 10]; A_p -> [0, 0]; smashed(B) -> [0, 123456]; smashed(A) -> [0, 123456]})
+bb1_f=({}, {n1 -> [1, 1]; i -> [0, 10]; A_p -> [0, 0]; smashed(B) -> [0, 123456]; smashed(A) -> [0, 123456]})
+ret=({}, {n1 -> [1, 1]; i -> [10, 10]; A_p -> [0, 0]; smashed(B) -> [0, 123456]; smashed(A) -> [0, 123456]})
+bb1_t=({}, {n1 -> [1, 1]; i -> [0, 10]; A_p -> [0, 0]; smashed(B) -> [0, 123456]; smashed(A) -> [0, 123456]})
+bb2=({}, {n1 -> [1, 1]; i -> [0, 9]; A_p -> [0, 0]; smashed(B) -> [0, 123456]; smashed(A) -> [0, 123456]})
+Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
+
+Program 3: forall 0<= i< 10. a[i] = 8 and b[i] = 5
+Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
+entry=({}, {})
+bb1=({}, {n1 -> [1, 1]; i -> [0, 10]; A_p -> [0, 0]; smashed(B) -> [0, 5]; smashed(A) -> [0, 8]})
+bb1_f=({}, {n1 -> [1, 1]; i -> [0, 10]; A_p -> [0, 0]; smashed(B) -> [0, 5]; smashed(A) -> [0, 8]})
+ret=({}, {n1 -> [1, 1]; i -> [10, 10]; A_p -> [0, 0]; smashed(B) -> [0, 5]; smashed(A) -> [0, 8]})
+bb1_t=({}, {n1 -> [1, 1]; i -> [0, 10]; A_p -> [0, 0]; smashed(B) -> [0, 5]; smashed(A) -> [0, 8]})
+bb2=({}, {n1 -> [1, 1]; i -> [0, 9]; A_p -> [0, 0]; smashed(B) -> [0, 5]; smashed(A) -> [0, 8]})
+Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
+
+Program 4: forall 0<= i < n. a[i] = 123456 (unbounded loop)
+Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
+CRAB WARNING: array adaptive store range ignored because upper bound n is not constant
+entry=({}, {})
+bb1=({}, {n1 -> [1, 1]; i -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]})
+bb1_f=({}, {n1 -> [1, 1]; i -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]})
+ret=({}, {n1 -> [1, 1]; i -> [1, +oo]; n -> [1, +oo]; A_p -> [0, 0]})
+bb1_t=({}, {n1 -> [1, 1]; i -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]})
+bb2=({}, {n1 -> [1, 1]; i -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]})
+Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
+
+Program 5: for all 0<= i< 10. a[i] = 123456 (assume elem size=4 bytes)
+Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
+entry=({}, {})
+bb1=({}, {i -> [0, 10]; A_p -> [0, 0]; smashed(A) -> [0, 123456]})
+bb1_f=({}, {i -> [0, 10]; A_p -> [0, 0]; smashed(A) -> [0, 123456]})
+ret=({}, {i -> [10, 10]; A_p -> [0, 0]; smashed(A) -> [0, 123456]})
+bb1_t=({}, {i -> [0, 10]; A_p -> [0, 0]; smashed(A) -> [0, 123456]})
+bb2=({}, {i -> [0, 9]; A_p -> [0, 0]; smashed(A) -> [0, 123456]})
+Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
+
+Program 6: a[0] = 89 and for all 1<= i < n. a[i] = a[i-1]
+Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
+CRAB WARNING: array adaptive store range ignored because upper bound n is not constant
+entry=({}, {})
+bb1=({}, {n1 -> [1, 1]; i -> [1, +oo]; n -> [2, +oo]; A_p -> [0, 0]; val -> [89, 89]})
+bb1_f=({}, {n1 -> [1, 1]; i -> [1, +oo]; n -> [2, +oo]; A_p -> [0, 0]; val -> [89, 89]})
+ret=({}, {n1 -> [1, 1]; i -> [2, +oo]; n -> [2, +oo]; A_p -> [0, 0]; val -> [89, 89]})
+bb1_t=({}, {n1 -> [1, 1]; i -> [1, +oo]; n -> [2, +oo]; A_p -> [0, 0]; val -> [89, 89]})
+bb2=({}, {n1 -> [1, 1]; i -> [1, +oo]; n -> [2, +oo]; A_p -> [0, 0]; val -> [89, 89]})
+Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
+
+Program 7: forall 0<= i< 10 and i % 2 = 0. a[i] = 123456
+Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
+entry=({}, {})
+bb1=({}, {n1 -> [1, 1]; n2 -> [2, 2]; i -> [0, 11]; n -> [1, +oo]; A_p -> [0, 0]; smashed(A) -> [0, 123456]})
+bb1_f=({}, {n1 -> [1, 1]; n2 -> [2, 2]; i -> [0, 11]; n -> [1, +oo]; A_p -> [0, 0]; smashed(A) -> [0, 123456]})
+ret=({}, {n1 -> [1, 1]; n2 -> [2, 2]; i -> [10, 11]; n -> [1, +oo]; A_p -> [0, 0]; smashed(A) -> [0, 123456]})
+bb1_t=({}, {n1 -> [1, 1]; n2 -> [2, 2]; i -> [0, 11]; n -> [1, +oo]; A_p -> [0, 0]; smashed(A) -> [0, 123456]})
+bb2=({}, {n1 -> [1, 1]; n2 -> [2, 2]; i -> [0, 9]; n -> [1, +oo]; A_p -> [0, 0]; smashed(A) -> [0, 123456]})
+Abstract trace: entry (bb1 bb1_t bb2)^{4} bb1_f ret
+
+Program 8: forall 0<= i < n. 1 <= a[i] <= 2
+Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
+CRAB WARNING: array adaptive store range ignored because upper bound n is not constant
+entry=({}, {})
+bb1=({}, {n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]})
+bb1_f2=({}, {n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]})
+bb1_f=({}, {n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]})
+ret=({}, {n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]})
+bb1_f1=({}, {n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]})
+bb1_t=({}, {n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]})
+bb2=({}, {n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]})
+bb2b=({}, {n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]})
+bb2a=({}, {n1 -> [1, 1]; i1 -> [0, +oo]; i2 -> [0, +oo]; n -> [1, +oo]; A_p -> [0, 0]})
+Abstract trace: entry (bb1 bb1_t bb2 bb2b bb2a)^{3} bb1_f2 bb1_f1 bb1_f ret
+
+Program 9: forall 0<= i < n. a[i] == 123456 (decrementing loop)
+Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
+entry=({}, {})
+bb1=({}, {n0 -> [0, 0]; n1 -> [1, 1]; n9 -> [9, 9]; i -> [-1, 9]; A_p -> [0, 0]; smashed(A) -> [0, 123456]})
+bb1_f=({}, {n0 -> [0, 0]; n1 -> [1, 1]; n9 -> [9, 9]; i -> [-1, 9]; A_p -> [0, 0]; smashed(A) -> [0, 123456]})
+ret=({}, {n0 -> [0, 0]; n1 -> [1, 1]; n9 -> [9, 9]; i -> [-1, -1]; A_p -> [0, 0]; smashed(A) -> [0, 123456]})
+bb1_t=({}, {n0 -> [0, 0]; n1 -> [1, 1]; n9 -> [9, 9]; i -> [-1, 9]; A_p -> [0, 0]; smashed(A) -> [0, 123456]})
+bb2=({}, {n0 -> [0, 0]; n1 -> [1, 1]; n9 -> [9, 9]; i -> [0, 9]; A_p -> [0, 0]; smashed(A) -> [0, 123456]})
+Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
+
+Program 11: forall 0<= i< 10. a[i] = true and b[i] = false
+Invariants using ArrayAdaptive(ArraySmashing(Product(Boolean,Intervals)))
+entry=({}, {})
+bb1=({TRUE -> true; FALSE -> false; smashed(B) -> false; smashed(A) -> true}, {n1 -> [1, 1]; i -> [0, 10]})
+bb1_f=({TRUE -> true; FALSE -> false; smashed(B) -> false; smashed(A) -> true}, {n1 -> [1, 1]; i -> [0, 10]})
+ret=({TRUE -> true; FALSE -> false; smashed(B) -> false; smashed(A) -> true}, {n1 -> [1, 1]; i -> [10, 10]})
+bb1_t=({TRUE -> true; FALSE -> false; smashed(B) -> false; smashed(A) -> true}, {n1 -> [1, 1]; i -> [0, 10]})
+bb2=({TRUE -> true; FALSE -> false; smashed(B) -> false; smashed(A) -> true}, {n1 -> [1, 1]; i -> [0, 9]})
+Abstract trace: entry (bb1 bb1_t bb2)^{3} bb1_f ret
+
+===================================
+ Test 1 for array adaptive domain 
+===================================
+Invariants using ArrayAdaptive(ArraySmashing(Term(Intervals)))
+bb0={}
+bb2={x -> t0[_x0], y -> t1[_x1], z -> t2[_x2], val -> t4[_x4], Mem[2...5] -> t3[_x3], Mem[6...9] -> t1[_x1], Mem[10...13] -> t4[_x4]}{_x0 -> [2, 2]; _x1 -> [6, 6]; _x2 -> [10, 10]; _x3 -> [5, 5]; _x4 -> [7, 7]}
+bb3={x -> t0[_y0], y -> t1[_y1], z -> t2[_y2], val -> t3[_y4], Mem[2...5] -> t4[_y3], Mem[6...9] -> t1[_y1], Mem[10...13] -> t3[_y4]}{_y0 -> [2, 2]; _y1 -> [6, 6]; _y2 -> [10, 10]; _y3 -> [5, 5]; _y4 -> [7, 7]}
+bb1={x -> t0[_x0], y -> t1[_x1], z -> t2[_x2], val -> t4[_x4], Mem[2...5] -> t3[_x3], Mem[6...9] -> t1[_x1], Mem[10...13] -> t4[_x4]}{_x0 -> [2, 2]; _x1 -> [6, 6]; _x2 -> [10, 10]; _x3 -> [5, 5]; _x4 -> [7, 7]}
+Abstract trace: bb0 bb2 bb1 bb3
+ --- SAFE --------------------
+Property : tmp1-tmp2 = -2
+Invariant: {x -> t0[_y0], y -> t1[_y1], z -> t2[_y2], val -> t3[_y4], tmp1 -> t4[_y3], tmp2 -> t3[_y4], Mem[2...5] -> t4[_y3], Mem[6...9] -> t1[_y1], Mem[10...13] -> t3[_y4]}{_y0 -> [2, 2]; _y1 -> [6, 6]; _y2 -> [10, 10]; _y3 -> [5, 5]; _y4 -> [7, 7]}
+ -----------------------------
+user-defined assertion checker using ArrayAdaptive(ArraySmashing(Term(Intervals)))
+1  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+
+===================================
+ Test 2 for array adaptive domain 
+===================================
+Invariants using ArrayAdaptive(ArraySmashing(Term(Intervals)))
+bb0={}
+bb2={x -> t0[_x0], y -> t1[_x1], z -> t2[_x2], val -> t3[_x4], Mem[6...9] -> t1[_x1], Mem[10...13] -> t3[_x4]}{_x0 -> [4, 4]; _x1 -> [6, 6]; _x2 -> [10, 10]; _x4 -> [7, 7]}
+bb3={x -> t0[_y0], y -> t1[_y1], z -> t2[_y2], val -> t3[_y3], Mem[6...9] -> t1[_y1], Mem[10...13] -> t3[_y3]}{_y0 -> [4, 4]; _y1 -> [6, 6]; _y2 -> [10, 10]; _y3 -> [7, 7]}
+bb1={x -> t0[_x0], y -> t1[_x1], z -> t2[_x2], val -> t3[_x4], Mem[6...9] -> t1[_x1], Mem[10...13] -> t3[_x4]}{_x0 -> [4, 4]; _x1 -> [6, 6]; _x2 -> [10, 10]; _x4 -> [7, 7]}
+Abstract trace: bb0 bb2 bb1 bb3
+ --- WARNING -----------------
+Property : tmp1-tmp2 = -1
+Invariant: {x -> t0[_y0], y -> t1[_y1], z -> t2[_y2], val -> t3[_y3], tmp2 -> t1[_y1], tmp3 -> t3[_y3], Mem[6...9] -> t1[_y1], Mem[10...13] -> t3[_y3]}{_y0 -> [4, 4]; _y1 -> [6, 6]; _y2 -> [10, 10]; _y3 -> [7, 7]}
+ -----------------------------
+ --- SAFE --------------------
+Property : tmp2-tmp3 = -1
+Invariant: {x -> t0[_y0], y -> t1[_y1], z -> t2[_y2], val -> t3[_y3], tmp1 -> t4[_y4], tmp2 -> t1[_y1], tmp3 -> t3[_y3], Mem[6...9] -> t1[_y1], Mem[10...13] -> t3[_y3]}{_y0 -> [4, 4]; _y1 -> [6, 6]; _y2 -> [10, 10]; _y3 -> [7, 7]; _y4 -> [5, 5]}
+ -----------------------------
+user-defined assertion checker using ArrayAdaptive(ArraySmashing(Term(Intervals)))
+1  Number of total safe checks
+0  Number of total error checks
+1  Number of total warning checks
+0  Number of total unreachable checks
+
+===================================
+ Test 3 for array adaptive domain 
+===================================
+Invariants using ArrayAdaptive(ArraySmashing(Term(Intervals)))
+bb0={}
+bb2={x -> t0[_x0], x1 -> t0[_x0], x2 -> t1[_x1], x3 -> t2[_x2], x4 -> t3[_x3], val -> t4[_x4], Mem[4...11] -> t4[_x4]}{_x0 -> [4, 4]; _x1 -> [6, 6]; _x2 -> [8, 8]; _x3 -> [10, 10]; _x4 -> [0, 0]}
+bb3={x -> t0[_y0], x1 -> t0[_y0], x2 -> t1[_y1], x3 -> t2[_y2], x4 -> t3[_y3], val -> t4[_y4], Mem[4...11] -> t4[_y4]}{_y0 -> [4, 4]; _y1 -> [6, 6]; _y2 -> [8, 8]; _y3 -> [10, 10]; _y4 -> [0, 0]}
+bb1={x -> t0[_x0], x1 -> t0[_x0], x2 -> t1[_x1], x3 -> t2[_x2], x4 -> t3[_x3], val -> t4[_x4], Mem[4...11] -> t4[_x4]}{_x0 -> [4, 4]; _x1 -> [6, 6]; _x2 -> [8, 8]; _x3 -> [10, 10]; _x4 -> [0, 0]}
+Abstract trace: bb0 bb2 bb1 bb3
+ --- WARNING -----------------
+Property : tmp1 = 0
+Invariant: {x -> t0[_y0], x1 -> t0[_y0], x2 -> t1[_y1], x3 -> t2[_y2], x4 -> t3[_y3], val -> t4[_y4], Mem[4...11] -> t4[_y4]}{_y0 -> [4, 4]; _y1 -> [6, 6]; _y2 -> [8, 8]; _y3 -> [10, 10]; _y4 -> [0, 0]}
+ -----------------------------
+ --- WARNING -----------------
+Property : tmp2 = 0
+Invariant: {x -> t0[_y0], x1 -> t0[_y0], x2 -> t1[_y1], x3 -> t2[_y2], x4 -> t3[_y3], tmp1 -> t5[_y5], val -> t4[_y4], Mem[4...11] -> t4[_y4]}{_y0 -> [4, 4]; _y1 -> [6, 6]; _y2 -> [8, 8]; _y3 -> [10, 10]; _y4 -> [0, 0]; _y5 -> [0, 0]}
+ -----------------------------
+ --- WARNING -----------------
+Property : tmp3 = 0
+Invariant: {x -> t0[_y0], x1 -> t0[_y0], x2 -> t1[_y1], x3 -> t2[_y2], x4 -> t3[_y3], tmp1 -> t5[_y5], tmp2 -> t6[_y6], val -> t4[_y4], Mem[4...11] -> t4[_y4]}{_y0 -> [4, 4]; _y1 -> [6, 6]; _y2 -> [8, 8]; _y3 -> [10, 10]; _y4 -> [0, 0]; _y5 -> [0, 0]; _y6 -> [0, 0]}
+ -----------------------------
+ --- WARNING -----------------
+Property : tmp4 = 0
+Invariant: {x -> t0[_y0], x1 -> t0[_y0], x2 -> t1[_y1], x3 -> t2[_y2], x4 -> t3[_y3], tmp1 -> t5[_y5], tmp2 -> t6[_y6], tmp3 -> t7[_y7], val -> t4[_y4], Mem[4...11] -> t4[_y4]}{_y0 -> [4, 4]; _y1 -> [6, 6]; _y2 -> [8, 8]; _y3 -> [10, 10]; _y4 -> [0, 0]; _y5 -> [0, 0]; _y6 -> [0, 0]; _y7 -> [0, 0]}
+ -----------------------------
+user-defined assertion checker using ArrayAdaptive(ArraySmashing(Term(Intervals)))
+0  Number of total safe checks
+0  Number of total error checks
+4  Number of total warning checks
+0  Number of total unreachable checks
+
+===================================
+ Test 4 for array adaptive domain 
+===================================
+Invariants using ArrayAdaptive(ArraySmashing(Term(Intervals)))
+loop1_entry={}
+loop1_bb1={Mem_base -> t0[_y0], i -> t2[_y2], j -> t4[_y4], val0 -> t5[_y5], Mem[108...111] -> t6[_y6]}{_y0 -> [100, 100]; _y1 -> [8, 8]; _y2 -> [108, 108]; _y3 -> [12, 12]; _y4 -> [112, 112]; _y5 -> [0, 0]; _y6 -> [0, 10]}
+loop1_bb1_f={Mem_base -> t0[_y0], i -> t2[_y2], j -> t4[_y4], val0 -> t5[_y5], Mem[108...111] -> t6[_y6]}{_y0 -> [100, 100]; _y1 -> [8, 8]; _y2 -> [108, 108]; _y3 -> [12, 12]; _y4 -> [112, 112]; _y5 -> [0, 0]; _y6 -> [0, 10]}
+loop2_entry={Mem_base -> t0[_y0], i -> t2[_y2], j -> t4[_y4], *i -> t6[_y6], val0 -> t5[_y5], Mem[108...111] -> t6[_y6]}{_y0 -> [100, 100]; _y1 -> [8, 8]; _y2 -> [108, 108]; _y3 -> [12, 12]; _y4 -> [112, 112]; _y5 -> [0, 0]; _y6 -> [10, 10]}
+loop2_bb1={Mem_base -> t0[_x0], i -> t2[_x2], j -> t4[_x4], *i -> t5[_x7], val0 -> t6[_x5], Mem[108...111] -> t5[_x7], Mem[112...115] -> t7[_x6]}{_x0 -> [100, 100]; _x1 -> [8, 8]; _x2 -> [108, 108]; _x3 -> [12, 12]; _x4 -> [112, 112]; _x5 -> [0, 0]; _x6 -> [0, 10]; _x7 -> [10, 10]}
+loop2_bb1_f={Mem_base -> t0[_x0], i -> t2[_x2], j -> t4[_x4], *i -> t5[_x7], val0 -> t6[_x5], Mem[108...111] -> t5[_x7], Mem[112...115] -> t7[_x6]}{_x0 -> [100, 100]; _x1 -> [8, 8]; _x2 -> [108, 108]; _x3 -> [12, 12]; _x4 -> [112, 112]; _x5 -> [0, 0]; _x6 -> [0, 10]; _x7 -> [10, 10]}
+ret={Mem_base -> t0[_x0], i -> t2[_x2], j -> t4[_x4], *i -> t5[_x7], *j -> t7[_x6], val0 -> t6[_x5], Mem[108...111] -> t5[_x7], Mem[112...115] -> t7[_x6]}{_x0 -> [100, 100]; _x1 -> [8, 8]; _x2 -> [108, 108]; _x3 -> [12, 12]; _x4 -> [112, 112]; _x5 -> [0, 0]; _x6 -> [10, 10]; _x7 -> [10, 10]}
+loop2_bb1_t={Mem_base -> t0[_x0], i -> t2[_x2], j -> t4[_x4], *i -> t5[_x7], val0 -> t6[_x5], Mem[108...111] -> t5[_x7], Mem[112...115] -> t7[_x6]}{_x0 -> [100, 100]; _x1 -> [8, 8]; _x2 -> [108, 108]; _x3 -> [12, 12]; _x4 -> [112, 112]; _x5 -> [0, 0]; _x6 -> [0, 10]; _x7 -> [10, 10]}
+loop2_bb2={Mem_base -> t0[_x0], i -> t2[_x2], j -> t4[_x4], *i -> t5[_x7], *j -> t7[_x6], val0 -> t6[_x5], Mem[108...111] -> t5[_x7], Mem[112...115] -> t7[_x6]}{_x0 -> [100, 100]; _x1 -> [8, 8]; _x2 -> [108, 108]; _x3 -> [12, 12]; _x4 -> [112, 112]; _x5 -> [0, 0]; _x6 -> [0, 9]; _x7 -> [10, 10]}
+loop1_bb1_t={Mem_base -> t0[_y0], i -> t2[_y2], j -> t4[_y4], val0 -> t5[_y5], Mem[108...111] -> t6[_y6]}{_y0 -> [100, 100]; _y1 -> [8, 8]; _y2 -> [108, 108]; _y3 -> [12, 12]; _y4 -> [112, 112]; _y5 -> [0, 0]; _y6 -> [0, 10]}
+loop1_bb2={Mem_base -> t0[_y0], i -> t2[_y2], j -> t4[_y4], *i -> t6[_y6], val0 -> t5[_y5], Mem[108...111] -> t6[_y6]}{_y0 -> [100, 100]; _y1 -> [8, 8]; _y2 -> [108, 108]; _y3 -> [12, 12]; _y4 -> [112, 112]; _y5 -> [0, 0]; _y6 -> [0, 9]}
+Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t loop1_bb2)^{3} loop1_bb1_f loop2_entry (loop2_bb1 loop2_bb1_t loop2_bb2)^{3} loop2_bb1_f ret
+ --- SAFE --------------------
+Property : *i = 10
+Invariant: {Mem_base -> t0[_x0], i -> t2[_x2], j -> t4[_x4], *i -> t5[_x7], *j -> t7[_x6], val0 -> t6[_x5], Mem[108...111] -> t5[_x7], Mem[112...115] -> t7[_x6]}{_x0 -> [100, 100]; _x1 -> [8, 8]; _x2 -> [108, 108]; _x3 -> [12, 12]; _x4 -> [112, 112]; _x5 -> [0, 0]; _x6 -> [10, 10]; _x7 -> [10, 10]}
+ -----------------------------
+ --- SAFE --------------------
+Property : *j = 10
+Invariant: {Mem_base -> t0[_x0], i -> t2[_x2], j -> t4[_x4], *i -> t5[_x7], *j -> t7[_x6], val0 -> t6[_x5], Mem[108...111] -> t5[_x7], Mem[112...115] -> t7[_x6]}{_x0 -> [100, 100]; _x1 -> [8, 8]; _x2 -> [108, 108]; _x3 -> [12, 12]; _x4 -> [112, 112]; _x5 -> [0, 0]; _x6 -> [10, 10]; _x7 -> [10, 10]}
+ -----------------------------
+user-defined assertion checker using ArrayAdaptive(ArraySmashing(Term(Intervals)))
+2  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+
+===================================
+ Test 5 for array adaptive domain 
+===================================
+Invariants using ArrayAdaptive(ArraySmashing(Term(Intervals)))
+loop1_entry={}
+loop1_bb1={Mem_base -> t0[_y0], i -> t2[_y3], j -> t4[_y5], ii -> t6[_y8], jj -> t8[_y11], *i -> t11[_y9], val0 -> t12[_y13], Mem[124...127] -> t6[_y8], Mem[128...131] -> t8[_y11], Mem[224...227] -> t13[_y12]}{_y0 -> [100, 100]; _y1 -> [0, 100]; _y2 -> [24, 24]; _y3 -> [124, 124]; _y4 -> [28, 28]; _y5 -> [128, 128]; _y6 -> [124, 124]; _y7 -> [1, 124]; _y8 -> [224, 224]; _y9 -> [1, 224]; _y10 -> [128, 128]; _y11 -> [228, 228]; _y12 -> [0, 10]; _y13 -> [0, 0]}
+loop1_bb1_f={Mem_base -> t0[_y0], i -> t2[_y3], j -> t4[_y5], ii -> t6[_y8], jj -> t8[_y11], *i -> t11[_y9], val0 -> t12[_y13], Mem[124...127] -> t6[_y8], Mem[128...131] -> t8[_y11], Mem[224...227] -> t13[_y12]}{_y0 -> [100, 100]; _y1 -> [0, 100]; _y2 -> [24, 24]; _y3 -> [124, 124]; _y4 -> [28, 28]; _y5 -> [128, 128]; _y6 -> [124, 124]; _y7 -> [1, 124]; _y8 -> [224, 224]; _y9 -> [1, 224]; _y10 -> [128, 128]; _y11 -> [228, 228]; _y12 -> [0, 10]; _y13 -> [0, 0]}
+loop2_entry={Mem_base -> t0[_y0], i -> t2[_y3], j -> t4[_y5], ii -> t6[_y8], jj -> t8[_y11], *i -> t13[_y12], val0 -> t12[_y13], Mem[124...127] -> t6[_y8], Mem[128...131] -> t8[_y11], Mem[224...227] -> t13[_y12]}{_y0 -> [100, 100]; _y2 -> [24, 24]; _y3 -> [124, 124]; _y4 -> [28, 28]; _y5 -> [128, 128]; _y6 -> [124, 124]; _y8 -> [224, 224]; _y10 -> [128, 128]; _y11 -> [228, 228]; _y12 -> [10, 10]; _y13 -> [0, 0]}
+loop2_bb1={Mem_base -> t0[_x0], i -> t2[_x3], j -> t4[_x5], ii -> t6[_x7], jj -> t8[_x10], *i -> t9[_x14], *j -> t12[_x11], val0 -> t13[_x13], Mem[124...127] -> t6[_x7], Mem[128...131] -> t8[_x10], Mem[224...227] -> t9[_x14], Mem[228...231] -> t14[_x12]}{_x0 -> [100, 100]; _x1 -> [0, 100]; _x2 -> [24, 24]; _x3 -> [124, 124]; _x4 -> [28, 28]; _x5 -> [128, 128]; _x6 -> [124, 124]; _x7 -> [224, 224]; _x8 -> [128, 128]; _x9 -> [1, 128]; _x10 -> [228, 228]; _x11 -> [1, 228]; _x12 -> [0, 10]; _x13 -> [0, 0]; _x14 -> [10, 10]}
+loop2_bb1_f={Mem_base -> t0[_x0], i -> t2[_x3], j -> t4[_x5], ii -> t6[_x7], jj -> t8[_x10], *i -> t9[_x14], *j -> t12[_x11], val0 -> t13[_x13], Mem[124...127] -> t6[_x7], Mem[128...131] -> t8[_x10], Mem[224...227] -> t9[_x14], Mem[228...231] -> t14[_x12]}{_x0 -> [100, 100]; _x1 -> [0, 100]; _x2 -> [24, 24]; _x3 -> [124, 124]; _x4 -> [28, 28]; _x5 -> [128, 128]; _x6 -> [124, 124]; _x7 -> [224, 224]; _x8 -> [128, 128]; _x9 -> [1, 128]; _x10 -> [228, 228]; _x11 -> [1, 228]; _x12 -> [0, 10]; _x13 -> [0, 0]; _x14 -> [10, 10]}
+ret={Mem_base -> t0[_x0], i -> t2[_x3], j -> t4[_x5], ii -> t6[_x7], jj -> t8[_x10], *i -> t9[_x14], *j -> t14[_x12], val0 -> t13[_x13], Mem[124...127] -> t6[_x7], Mem[128...131] -> t8[_x10], Mem[224...227] -> t9[_x14], Mem[228...231] -> t14[_x12]}{_x0 -> [100, 100]; _x2 -> [24, 24]; _x3 -> [124, 124]; _x4 -> [28, 28]; _x5 -> [128, 128]; _x6 -> [124, 124]; _x7 -> [224, 224]; _x8 -> [128, 128]; _x10 -> [228, 228]; _x12 -> [10, 10]; _x13 -> [0, 0]; _x14 -> [10, 10]}
+loop2_bb1_t={Mem_base -> t0[_x0], i -> t2[_x3], j -> t4[_x5], ii -> t6[_x7], jj -> t8[_x10], *i -> t9[_x14], *j -> t12[_x11], val0 -> t13[_x13], Mem[124...127] -> t6[_x7], Mem[128...131] -> t8[_x10], Mem[224...227] -> t9[_x14], Mem[228...231] -> t14[_x12]}{_x0 -> [100, 100]; _x1 -> [0, 100]; _x2 -> [24, 24]; _x3 -> [124, 124]; _x4 -> [28, 28]; _x5 -> [128, 128]; _x6 -> [124, 124]; _x7 -> [224, 224]; _x8 -> [128, 128]; _x9 -> [1, 128]; _x10 -> [228, 228]; _x11 -> [1, 228]; _x12 -> [0, 10]; _x13 -> [0, 0]; _x14 -> [10, 10]}
+loop2_bb2={Mem_base -> t0[_x0], i -> t2[_x3], j -> t4[_x5], ii -> t6[_x7], jj -> t8[_x10], *i -> t9[_x14], *j -> t14[_x12], val0 -> t13[_x13], Mem[124...127] -> t6[_x7], Mem[128...131] -> t8[_x10], Mem[224...227] -> t9[_x14], Mem[228...231] -> t14[_x12]}{_x0 -> [100, 100]; _x2 -> [24, 24]; _x3 -> [124, 124]; _x4 -> [28, 28]; _x5 -> [128, 128]; _x6 -> [124, 124]; _x7 -> [224, 224]; _x8 -> [128, 128]; _x10 -> [228, 228]; _x12 -> [0, 9]; _x13 -> [0, 0]; _x14 -> [10, 10]}
+loop1_bb1_t={Mem_base -> t0[_y0], i -> t2[_y3], j -> t4[_y5], ii -> t6[_y8], jj -> t8[_y11], *i -> t11[_y9], val0 -> t12[_y13], Mem[124...127] -> t6[_y8], Mem[128...131] -> t8[_y11], Mem[224...227] -> t13[_y12]}{_y0 -> [100, 100]; _y1 -> [0, 100]; _y2 -> [24, 24]; _y3 -> [124, 124]; _y4 -> [28, 28]; _y5 -> [128, 128]; _y6 -> [124, 124]; _y7 -> [1, 124]; _y8 -> [224, 224]; _y9 -> [1, 224]; _y10 -> [128, 128]; _y11 -> [228, 228]; _y12 -> [0, 10]; _y13 -> [0, 0]}
+loop1_bb2={Mem_base -> t0[_y0], i -> t2[_y3], j -> t4[_y5], ii -> t6[_y8], jj -> t8[_y11], *i -> t13[_y12], val0 -> t12[_y13], Mem[124...127] -> t6[_y8], Mem[128...131] -> t8[_y11], Mem[224...227] -> t13[_y12]}{_y0 -> [100, 100]; _y2 -> [24, 24]; _y3 -> [124, 124]; _y4 -> [28, 28]; _y5 -> [128, 128]; _y6 -> [124, 124]; _y8 -> [224, 224]; _y10 -> [128, 128]; _y11 -> [228, 228]; _y12 -> [0, 9]; _y13 -> [0, 0]}
+Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t loop1_bb2)^{3} loop1_bb1_f loop2_entry (loop2_bb1 loop2_bb1_t loop2_bb2)^{3} loop2_bb1_f ret
+ --- SAFE --------------------
+Property : *i = 10
+Invariant: {Mem_base -> t0[_x0], i -> t2[_x3], j -> t4[_x5], ii -> t6[_x7], jj -> t8[_x10], *i -> t9[_x14], *j -> t14[_x12], val0 -> t13[_x13], Mem[124...127] -> t6[_x7], Mem[128...131] -> t8[_x10], Mem[224...227] -> t9[_x14], Mem[228...231] -> t14[_x12]}{_x0 -> [100, 100]; _x2 -> [24, 24]; _x3 -> [124, 124]; _x4 -> [28, 28]; _x5 -> [128, 128]; _x6 -> [124, 124]; _x7 -> [224, 224]; _x8 -> [128, 128]; _x10 -> [228, 228]; _x12 -> [10, 10]; _x13 -> [0, 0]; _x14 -> [10, 10]}
+ -----------------------------
+ --- SAFE --------------------
+Property : *j = 10
+Invariant: {Mem_base -> t0[_x0], i -> t2[_x3], j -> t4[_x5], ii -> t6[_x7], jj -> t8[_x10], *i -> t9[_x14], *j -> t14[_x12], val0 -> t13[_x13], Mem[124...127] -> t6[_x7], Mem[128...131] -> t8[_x10], Mem[224...227] -> t9[_x14], Mem[228...231] -> t14[_x12]}{_x0 -> [100, 100]; _x2 -> [24, 24]; _x3 -> [124, 124]; _x4 -> [28, 28]; _x5 -> [128, 128]; _x6 -> [124, 124]; _x7 -> [224, 224]; _x8 -> [128, 128]; _x10 -> [228, 228]; _x12 -> [10, 10]; _x13 -> [0, 0]; _x14 -> [10, 10]}
+ -----------------------------
+user-defined assertion checker using ArrayAdaptive(ArraySmashing(Term(Intervals)))
+2  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+
+===================================
+ Test 6 for array adaptive domain 
+===================================
+Invariants using ArrayAdaptive(ArraySmashing(Term(Intervals)))
+loop1_entry={}
+loop1_bb1={Mem_base -> t0[_y0], i -> t2[_y3], j -> t4[_y5], ii -> t6[_y7], jj -> t8[_y10], *i -> t9[_y8], val0 -> t0[_y0], Mem[18446744073709551592...18446744073709551595] -> t6[_y7], Mem[18446744073709551588...18446744073709551591] -> t8[_y10], Mem[18446744073709551492...18446744073709551495] -> t10[_y1]}{_y0 -> [0, 0]; _y1 -> [0, 10]; _y2 -> [24, 24]; _y3 -> [-24, -24]; _y4 -> [28, 28]; _y5 -> [-28, -28]; _y6 -> [124, 124]; _y7 -> [-124, -124]; _y8 -> [-124, 10]; _y9 -> [128, 128]; _y10 -> [-128, -128]}
+loop1_bb1_f={Mem_base -> t0[_y0], i -> t2[_y3], j -> t4[_y5], ii -> t6[_y7], jj -> t8[_y10], *i -> t9[_y8], val0 -> t0[_y0], Mem[18446744073709551592...18446744073709551595] -> t6[_y7], Mem[18446744073709551588...18446744073709551591] -> t8[_y10], Mem[18446744073709551492...18446744073709551495] -> t10[_y1]}{_y0 -> [0, 0]; _y1 -> [0, 10]; _y2 -> [24, 24]; _y3 -> [-24, -24]; _y4 -> [28, 28]; _y5 -> [-28, -28]; _y6 -> [124, 124]; _y7 -> [-124, -124]; _y8 -> [-124, 10]; _y9 -> [128, 128]; _y10 -> [-128, -128]}
+loop2_entry={Mem_base -> t0[_y0], i -> t2[_y3], j -> t4[_y5], ii -> t6[_y7], jj -> t8[_y10], *i -> t10[_y1], val0 -> t0[_y0], Mem[18446744073709551592...18446744073709551595] -> t6[_y7], Mem[18446744073709551588...18446744073709551591] -> t8[_y10], Mem[18446744073709551492...18446744073709551495] -> t10[_y1]}{_y0 -> [0, 0]; _y1 -> [10, 10]; _y2 -> [24, 24]; _y3 -> [-24, -24]; _y4 -> [28, 28]; _y5 -> [-28, -28]; _y6 -> [124, 124]; _y7 -> [-124, -124]; _y9 -> [128, 128]; _y10 -> [-128, -128]}
+loop2_bb1={Mem_base -> t0[_x0], i -> t2[_x3], j -> t4[_x5], ii -> t6[_x7], jj -> t8[_x9], *i -> t9[_x11], *j -> t10[_x10], val0 -> t0[_x0], Mem[18446744073709551592...18446744073709551595] -> t6[_x7], Mem[18446744073709551588...18446744073709551591] -> t8[_x9], Mem[18446744073709551492...18446744073709551495] -> t9[_x11], Mem[18446744073709551488...18446744073709551491] -> t11[_x1]}{_x0 -> [0, 0]; _x1 -> [0, 10]; _x2 -> [24, 24]; _x3 -> [-24, -24]; _x4 -> [28, 28]; _x5 -> [-28, -28]; _x6 -> [124, 124]; _x7 -> [-124, -124]; _x8 -> [128, 128]; _x9 -> [-128, -128]; _x10 -> [-128, 10]; _x11 -> [10, 10]}
+loop2_bb1_f={Mem_base -> t0[_x0], i -> t2[_x3], j -> t4[_x5], ii -> t6[_x7], jj -> t8[_x9], *i -> t9[_x11], *j -> t10[_x10], val0 -> t0[_x0], Mem[18446744073709551592...18446744073709551595] -> t6[_x7], Mem[18446744073709551588...18446744073709551591] -> t8[_x9], Mem[18446744073709551492...18446744073709551495] -> t9[_x11], Mem[18446744073709551488...18446744073709551491] -> t11[_x1]}{_x0 -> [0, 0]; _x1 -> [0, 10]; _x2 -> [24, 24]; _x3 -> [-24, -24]; _x4 -> [28, 28]; _x5 -> [-28, -28]; _x6 -> [124, 124]; _x7 -> [-124, -124]; _x8 -> [128, 128]; _x9 -> [-128, -128]; _x10 -> [-128, 10]; _x11 -> [10, 10]}
+ret={Mem_base -> t0[_x0], i -> t2[_x3], j -> t4[_x5], ii -> t6[_x7], jj -> t8[_x9], *i -> t9[_x11], *j -> t11[_x1], val0 -> t0[_x0], Mem[18446744073709551592...18446744073709551595] -> t6[_x7], Mem[18446744073709551588...18446744073709551591] -> t8[_x9], Mem[18446744073709551492...18446744073709551495] -> t9[_x11], Mem[18446744073709551488...18446744073709551491] -> t11[_x1]}{_x0 -> [0, 0]; _x1 -> [10, 10]; _x2 -> [24, 24]; _x3 -> [-24, -24]; _x4 -> [28, 28]; _x5 -> [-28, -28]; _x6 -> [124, 124]; _x7 -> [-124, -124]; _x8 -> [128, 128]; _x9 -> [-128, -128]; _x11 -> [10, 10]}
+loop2_bb1_t={Mem_base -> t0[_x0], i -> t2[_x3], j -> t4[_x5], ii -> t6[_x7], jj -> t8[_x9], *i -> t9[_x11], *j -> t10[_x10], val0 -> t0[_x0], Mem[18446744073709551592...18446744073709551595] -> t6[_x7], Mem[18446744073709551588...18446744073709551591] -> t8[_x9], Mem[18446744073709551492...18446744073709551495] -> t9[_x11], Mem[18446744073709551488...18446744073709551491] -> t11[_x1]}{_x0 -> [0, 0]; _x1 -> [0, 10]; _x2 -> [24, 24]; _x3 -> [-24, -24]; _x4 -> [28, 28]; _x5 -> [-28, -28]; _x6 -> [124, 124]; _x7 -> [-124, -124]; _x8 -> [128, 128]; _x9 -> [-128, -128]; _x10 -> [-128, 10]; _x11 -> [10, 10]}
+loop2_bb2={Mem_base -> t0[_x0], i -> t2[_x3], j -> t4[_x5], ii -> t6[_x7], jj -> t8[_x9], *i -> t9[_x11], *j -> t11[_x1], val0 -> t0[_x0], Mem[18446744073709551592...18446744073709551595] -> t6[_x7], Mem[18446744073709551588...18446744073709551591] -> t8[_x9], Mem[18446744073709551492...18446744073709551495] -> t9[_x11], Mem[18446744073709551488...18446744073709551491] -> t11[_x1]}{_x0 -> [0, 0]; _x1 -> [0, 9]; _x2 -> [24, 24]; _x3 -> [-24, -24]; _x4 -> [28, 28]; _x5 -> [-28, -28]; _x6 -> [124, 124]; _x7 -> [-124, -124]; _x8 -> [128, 128]; _x9 -> [-128, -128]; _x11 -> [10, 10]}
+loop1_bb1_t={Mem_base -> t0[_y0], i -> t2[_y3], j -> t4[_y5], ii -> t6[_y7], jj -> t8[_y10], *i -> t9[_y8], val0 -> t0[_y0], Mem[18446744073709551592...18446744073709551595] -> t6[_y7], Mem[18446744073709551588...18446744073709551591] -> t8[_y10], Mem[18446744073709551492...18446744073709551495] -> t10[_y1]}{_y0 -> [0, 0]; _y1 -> [0, 10]; _y2 -> [24, 24]; _y3 -> [-24, -24]; _y4 -> [28, 28]; _y5 -> [-28, -28]; _y6 -> [124, 124]; _y7 -> [-124, -124]; _y8 -> [-124, 10]; _y9 -> [128, 128]; _y10 -> [-128, -128]}
+loop1_bb2={Mem_base -> t0[_y0], i -> t2[_y3], j -> t4[_y5], ii -> t6[_y7], jj -> t8[_y10], *i -> t10[_y1], val0 -> t0[_y0], Mem[18446744073709551592...18446744073709551595] -> t6[_y7], Mem[18446744073709551588...18446744073709551591] -> t8[_y10], Mem[18446744073709551492...18446744073709551495] -> t10[_y1]}{_y0 -> [0, 0]; _y1 -> [0, 9]; _y2 -> [24, 24]; _y3 -> [-24, -24]; _y4 -> [28, 28]; _y5 -> [-28, -28]; _y6 -> [124, 124]; _y7 -> [-124, -124]; _y9 -> [128, 128]; _y10 -> [-128, -128]}
+Abstract trace: loop1_entry (loop1_bb1 loop1_bb1_t loop1_bb2)^{3} loop1_bb1_f loop2_entry (loop2_bb1 loop2_bb1_t loop2_bb2)^{3} loop2_bb1_f ret
+ --- SAFE --------------------
+Property : *i = 10
+Invariant: {Mem_base -> t0[_x0], i -> t2[_x3], j -> t4[_x5], ii -> t6[_x7], jj -> t8[_x9], *i -> t9[_x11], *j -> t11[_x1], val0 -> t0[_x0], Mem[18446744073709551592...18446744073709551595] -> t6[_x7], Mem[18446744073709551588...18446744073709551591] -> t8[_x9], Mem[18446744073709551492...18446744073709551495] -> t9[_x11], Mem[18446744073709551488...18446744073709551491] -> t11[_x1]}{_x0 -> [0, 0]; _x1 -> [10, 10]; _x2 -> [24, 24]; _x3 -> [-24, -24]; _x4 -> [28, 28]; _x5 -> [-28, -28]; _x6 -> [124, 124]; _x7 -> [-124, -124]; _x8 -> [128, 128]; _x9 -> [-128, -128]; _x11 -> [10, 10]}
+ -----------------------------
+ --- SAFE --------------------
+Property : *j = 10
+Invariant: {Mem_base -> t0[_x0], i -> t2[_x3], j -> t4[_x5], ii -> t6[_x7], jj -> t8[_x9], *i -> t9[_x11], *j -> t11[_x1], val0 -> t0[_x0], Mem[18446744073709551592...18446744073709551595] -> t6[_x7], Mem[18446744073709551588...18446744073709551591] -> t8[_x9], Mem[18446744073709551492...18446744073709551495] -> t9[_x11], Mem[18446744073709551488...18446744073709551491] -> t11[_x1]}{_x0 -> [0, 0]; _x1 -> [10, 10]; _x2 -> [24, 24]; _x3 -> [-24, -24]; _x4 -> [28, 28]; _x5 -> [-28, -28]; _x6 -> [124, 124]; _x7 -> [-124, -124]; _x8 -> [128, 128]; _x9 -> [-128, -128]; _x11 -> [10, 10]}
+ -----------------------------
+user-defined assertion checker using ArrayAdaptive(ArraySmashing(Term(Intervals)))
+2  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+
+===================================
+ Test 7 for array adaptive domain 
+===================================
+Invariants using ArrayAdaptive(ArraySmashing(Term(Intervals)))
+entry={}
+ret={x -> t0[_x0], y -> t0[_x0], z -> t0[_x0], val -> t3[_x3], tmp1 -> t1[_x1], tmp2 -> t2[_x2], tmp3 -> t3[_x3], Mem1[4...7] -> t1[_x1], Mem2[4...7] -> t2[_x2], Mem3[4...7] -> t3[_x3]}{_x0 -> [4, 4]; _x1 -> [42, 42]; _x2 -> [43, 43]; _x3 -> [44, 44]}
+Abstract trace: entry ret
+ --- SAFE --------------------
+Property : tmp1-tmp2 < 0
+Invariant: {x -> t0[_x0], y -> t0[_x0], z -> t0[_x0], val -> t3[_x3], tmp1 -> t1[_x1], tmp2 -> t2[_x2], tmp3 -> t3[_x3], Mem1[4...7] -> t1[_x1], Mem2[4...7] -> t2[_x2], Mem3[4...7] -> t3[_x3]}{_x0 -> [4, 4]; _x1 -> [42, 42]; _x2 -> [43, 43]; _x3 -> [44, 44]}
+ -----------------------------
+ --- SAFE --------------------
+Property : tmp2-tmp3 < 0
+Invariant: {x -> t0[_x0], y -> t0[_x0], z -> t0[_x0], val -> t3[_x3], tmp1 -> t1[_x1], tmp2 -> t2[_x2], tmp3 -> t3[_x3], Mem1[4...7] -> t1[_x1], Mem2[4...7] -> t2[_x2], Mem3[4...7] -> t3[_x3]}{_x0 -> [4, 4]; _x1 -> [42, 42]; _x2 -> [43, 43]; _x3 -> [44, 44]}
+ -----------------------------
+user-defined assertion checker using ArrayAdaptive(ArraySmashing(Term(Intervals)))
+2  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+
+===================================
+ Test 8 for array adaptive domain 
+===================================
+Invariants using ArrayAdaptive(ArraySmashing(Term(Intervals)))
+entry={}
+ret={x -> t0[_x0], y -> t1[_x1], z -> t2[_x2], val -> t5[_x5], tmp1 -> t3[_x3], tmp2 -> t4[_x4], tmp3 -> t5[_x5], Mem1[4...7] -> t3[_x3], Mem2[5...8] -> t4[_x4], Mem3[6...9] -> t5[_x5]}{_x0 -> [4, 4]; _x1 -> [5, 5]; _x2 -> [6, 6]; _x3 -> [42, 42]; _x4 -> [43, 43]; _x5 -> [44, 44]}
+Abstract trace: entry ret
+ --- SAFE --------------------
+Property : tmp1-tmp2 < 0
+Invariant: {x -> t0[_x0], y -> t1[_x1], z -> t2[_x2], val -> t5[_x5], tmp1 -> t3[_x3], tmp2 -> t4[_x4], tmp3 -> t5[_x5], Mem1[4...7] -> t3[_x3], Mem2[5...8] -> t4[_x4], Mem3[6...9] -> t5[_x5]}{_x0 -> [4, 4]; _x1 -> [5, 5]; _x2 -> [6, 6]; _x3 -> [42, 42]; _x4 -> [43, 43]; _x5 -> [44, 44]}
+ -----------------------------
+ --- SAFE --------------------
+Property : tmp2-tmp3 < 0
+Invariant: {x -> t0[_x0], y -> t1[_x1], z -> t2[_x2], val -> t5[_x5], tmp1 -> t3[_x3], tmp2 -> t4[_x4], tmp3 -> t5[_x5], Mem1[4...7] -> t3[_x3], Mem2[5...8] -> t4[_x4], Mem3[6...9] -> t5[_x5]}{_x0 -> [4, 4]; _x1 -> [5, 5]; _x2 -> [6, 6]; _x3 -> [42, 42]; _x4 -> [43, 43]; _x5 -> [44, 44]}
+ -----------------------------
+user-defined assertion checker using ArrayAdaptive(ArraySmashing(Term(Intervals)))
+2  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+
+===================================
+ Test 9 for array adaptive domain 
+===================================
+Invariants using ArrayAdaptive(ArraySmashing(Term(Intervals)))
+entry={}
+ret={m1_lb -> t0[_x0], m1_ub -> t1[_x1], x -> t3[_x3], y -> t4[_x4], tmp1 -> t2[_x2], tmp2 -> t2[_x2], Mem1[20...23] -> t2[_x2], Mem1[24...27] -> t2[_x2], Mem1[28...31] -> t2[_x2], Mem1[32...35] -> t2[_x2], Mem1[36...39] -> t2[_x2], Mem1[40...43] -> t2[_x2], Mem1[44...47] -> t2[_x2], Mem1[48...51] -> t2[_x2], Mem1[52...55] -> t2[_x2], Mem1[56...59] -> t2[_x2], Mem1[60...63] -> t2[_x2], Mem1[64...67] -> t2[_x2], Mem1[68...71] -> t2[_x2], Mem1[72...75] -> t2[_x2], Mem1[76...79] -> t2[_x2], Mem1[80...83] -> t2[_x2]}{_x0 -> [20, 20]; _x1 -> [80, 80]; _x2 -> [42, 42]; _x3 -> [24, 24]; _x4 -> [76, 76]}
+Abstract trace: entry ret
+ --- SAFE --------------------
+Property : tmp1-tmp2 = 0
+Invariant: {m1_lb -> t0[_x0], m1_ub -> t1[_x1], x -> t3[_x3], y -> t4[_x4], tmp1 -> t2[_x2], tmp2 -> t2[_x2], Mem1[20...23] -> t2[_x2], Mem1[24...27] -> t2[_x2], Mem1[28...31] -> t2[_x2], Mem1[32...35] -> t2[_x2], Mem1[36...39] -> t2[_x2], Mem1[40...43] -> t2[_x2], Mem1[44...47] -> t2[_x2], Mem1[48...51] -> t2[_x2], Mem1[52...55] -> t2[_x2], Mem1[56...59] -> t2[_x2], Mem1[60...63] -> t2[_x2], Mem1[64...67] -> t2[_x2], Mem1[68...71] -> t2[_x2], Mem1[72...75] -> t2[_x2], Mem1[76...79] -> t2[_x2], Mem1[80...83] -> t2[_x2]}{_x0 -> [20, 20]; _x1 -> [80, 80]; _x2 -> [42, 42]; _x3 -> [24, 24]; _x4 -> [76, 76]}
+ -----------------------------
+user-defined assertion checker using ArrayAdaptive(ArraySmashing(Term(Intervals)))
+1  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+
+===================================
+ Test 10 for array adaptive domain 
+===================================
+Invariants using ArrayAdaptive(ArraySmashing(Term(Intervals)))
+bb0={}
+bb2={Mem1[2...5] -> t0[_x0]}{_x0 -> [42, 42]}
+bb3={Mem1[2...5] -> t0[_y0]}{_y0 -> [42, 42]}
+bb4={x -> t0[_y1], Mem1[2...5] -> t0[_y1]}{_y1 -> [42, 42]}
+bb1={Mem1[2...5] -> t0[_x0]}{_x0 -> [42, 42]}
+Abstract trace: bb0 bb2 bb1 bb3 bb4
+ --- WARNING -----------------
+Property : x = 42
+Invariant: {x -> t0[_y1], Mem1[2...5] -> t0[_y1]}{}
+ -----------------------------
+user-defined assertion checker using ArrayAdaptive(ArraySmashing(Term(Intervals)))
+0  Number of total safe checks
+0  Number of total error checks
+1  Number of total warning checks
+0  Number of total unreachable checks
+
+===================================
+ Test 11 for array adaptive domain 
+===================================
+Invariants using ArrayAdaptive(ArraySmashing(Term(Intervals)))
+bb0={}
+bb2={Mem1[2...5] -> t0[_x0], Mem2[2...5] -> t1[_x1], Mem1[6...9] -> t2[_x2]}{_x0 -> [42, 42]; _x1 -> [666, 666]; _x2 -> [50, 50]}
+bb3={i -> t0[_y3], Mem1[2...5] -> t1[_y0], Mem2[2...5] -> t2[_y1], Mem1[6...9] -> t3[_y2]}{_y0 -> [42, 42]; _y1 -> [666, 666]; _y2 -> [50, 50]; _y3 -> [10, +oo]}
+bb4={i -> t0[_y3], x -> t1[_y0], y -> t3[_y2], Mem1[2...5] -> t1[_y0], Mem2[2...5] -> t2[_y1], Mem1[6...9] -> t3[_y2]}{_y0 -> [42, 42]; _y1 -> [666, 666]; _y2 -> [50, 50]; _y3 -> [10, +oo]}
+bb1={Mem1[2...5] -> t0[_x0], Mem2[2...5] -> t1[_x1], Mem1[6...9] -> t2[_x2]}{_x0 -> [42, 42]; _x1 -> [666, 666]; _x2 -> [50, 50]}
+Abstract trace: bb0 bb2 bb1 bb3 bb4
+ --- SAFE --------------------
+Property : x = 42
+Invariant: {i -> t0[_y3], x -> t1[_y0], y -> t3[_y2], Mem1[2...5] -> t1[_y0], Mem2[2...5] -> t2[_y1], Mem1[6...9] -> t3[_y2]}{_y0 -> [42, 42]; _y1 -> [666, 666]; _y2 -> [50, 50]; _y3 -> [10, +oo]}
+ -----------------------------
+ --- SAFE --------------------
+Property : y = 50
+Invariant: {i -> t0[_y3], x -> t1[_y0], y -> t3[_y2], Mem1[2...5] -> t1[_y0], Mem2[2...5] -> t2[_y1], Mem1[6...9] -> t3[_y2]}{_y0 -> [42, 42]; _y1 -> [666, 666]; _y2 -> [50, 50]; _y3 -> [10, +oo]}
+ -----------------------------
+user-defined assertion checker using ArrayAdaptive(ArraySmashing(Term(Intervals)))
+2  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+
+===================================
+ Test 12 for array adaptive domain 
+===================================
+Invariants using ArrayAdaptive(ArraySmashing(Term(Intervals)))
+bb0={}
+Abstract trace: bb0
+ --- SAFE --------------------
+Property : x = 42
+Invariant: {x -> t0[_x0], y -> t1[_x1], Mem1[0...3] -> t0[_x0], Mem1[4...7] -> t1[_x1]}{_x0 -> [42, 42]; _x1 -> [50, 50]}
+ -----------------------------
+ --- SAFE --------------------
+Property : y = 50
+Invariant: {x -> t0[_x0], y -> t1[_x1], Mem1[0...3] -> t0[_x0], Mem1[4...7] -> t1[_x1]}{_x0 -> [42, 42]; _x1 -> [50, 50]}
+ -----------------------------
+ --- SAFE --------------------
+Property : x = 666
+Invariant: {i -> t2[_x2], j -> t3[_x3], x -> t4[_x4], y -> t4[_x4], Mem1[0...3] -> t4[_x4], Mem1[4...7] -> t4[_x4], Mem1[8...11] -> t4[_x4]}{_x2 -> [0, 0]; _x3 -> [8, 8]; _x4 -> [666, 666]}
+ -----------------------------
+ --- SAFE --------------------
+Property : y = 666
+Invariant: {i -> t2[_x2], j -> t3[_x3], x -> t4[_x4], y -> t4[_x4], Mem1[0...3] -> t4[_x4], Mem1[4...7] -> t4[_x4], Mem1[8...11] -> t4[_x4]}{_x2 -> [0, 0]; _x3 -> [8, 8]; _x4 -> [666, 666]}
+ -----------------------------
+ --- WARNING -----------------
+Property : y = 666
+Invariant: {i -> t1[_x5], j -> t3[_x3], Mem1[2...5] -> t2[_x6], Mem1[6...9] -> t2[_x6]}{_x3 -> [8, 8]; _x5 -> [2, 2]; _x6 -> [777, 777]}
+ -----------------------------
+ --- WARNING -----------------
+Property : x = 666
+Invariant: {i -> t1[_x5], j -> t3[_x3], y -> t4[_x7], Mem1[2...5] -> t2[_x6], Mem1[6...9] -> t2[_x6]}{_x3 -> [8, 8]; _x5 -> [2, 2]; _x6 -> [777, 777]; _x7 -> [666, 666]}
+ -----------------------------
+user-defined assertion checker using ArrayAdaptive(ArraySmashing(Term(Intervals)))
+4  Number of total safe checks
+0  Number of total error checks
+2  Number of total warning checks
+0  Number of total unreachable checks
+
+===================================
+ Test 13 for array adaptive domain 
+===================================
+Invariants using ArrayAdaptive(ArraySmashing(Term(Intervals)))
+bb0={}
+Abstract trace: bb0
+ --- SAFE --------------------
+Property : x = 42
+Invariant: {i -> t3[_x3], j -> t4[_x4], x -> t0[_x0], Mem1[0...3] -> t0[_x0], Mem1[4...7] -> t5[_x5], Mem1[8...11] -> t5[_x5], Mem1[12...15] -> t5[_x5], Mem1[16...19] -> t2[_x2]}{_x0 -> [42, 42]; _x2 -> [50, 50]; _x3 -> [4, 4]; _x4 -> [12, 12]; _x5 -> [0, 0]}
+ -----------------------------
+ --- SAFE --------------------
+Property : x = 0
+Invariant: {i -> t3[_x3], j -> t4[_x4], x -> t5[_x5], Mem1[0...3] -> t0[_x0], Mem1[4...7] -> t5[_x5], Mem1[8...11] -> t5[_x5], Mem1[12...15] -> t5[_x5], Mem1[16...19] -> t2[_x2]}{_x0 -> [42, 42]; _x2 -> [50, 50]; _x3 -> [4, 4]; _x4 -> [12, 12]; _x5 -> [0, 0]}
+ -----------------------------
+ --- SAFE --------------------
+Property : x = 0
+Invariant: {i -> t3[_x3], j -> t4[_x4], x -> t5[_x5], Mem1[0...3] -> t0[_x0], Mem1[4...7] -> t5[_x5], Mem1[8...11] -> t5[_x5], Mem1[12...15] -> t5[_x5], Mem1[16...19] -> t2[_x2]}{_x0 -> [42, 42]; _x2 -> [50, 50]; _x3 -> [4, 4]; _x4 -> [12, 12]; _x5 -> [0, 0]}
+ -----------------------------
+ --- SAFE --------------------
+Property : x = 0
+Invariant: {i -> t3[_x3], j -> t4[_x4], x -> t5[_x5], Mem1[0...3] -> t0[_x0], Mem1[4...7] -> t5[_x5], Mem1[8...11] -> t5[_x5], Mem1[12...15] -> t5[_x5], Mem1[16...19] -> t2[_x2]}{_x0 -> [42, 42]; _x2 -> [50, 50]; _x3 -> [4, 4]; _x4 -> [12, 12]; _x5 -> [0, 0]}
+ -----------------------------
+ --- SAFE --------------------
+Property : x = 50
+Invariant: {i -> t3[_x3], j -> t4[_x4], x -> t2[_x2], Mem1[0...3] -> t0[_x0], Mem1[4...7] -> t5[_x5], Mem1[8...11] -> t5[_x5], Mem1[12...15] -> t5[_x5], Mem1[16...19] -> t2[_x2]}{_x0 -> [42, 42]; _x2 -> [50, 50]; _x3 -> [4, 4]; _x4 -> [12, 12]; _x5 -> [0, 0]}
+ -----------------------------
+user-defined assertion checker using ArrayAdaptive(ArraySmashing(Term(Intervals)))
+5  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+
 ===================================
  Test 1 for array expansion domain 
 ===================================
@@ -3910,6 +4351,12 @@ Thresholds per loop
 loop2_header={-oo,0,9,161,+oo}
 loop1_header={-oo,-1,60,+oo}
 
+Unit tests for array adaptive domain
+
+({}, {A[4...7] -> [5, 5]; B[0...3] -> [66, 66]}) | ({}, {A[4...7] -> [10, 10]; C[8...11] -> [32, 32]})=({}, {A[4...7] -> [5, 10]})
+({}, {A[4...7] -> [5, 5]; B[0...3] -> [66, 66]}) |= ({}, {A[4...7] -> [10, 10]; C[8...11] -> [32, 32]})=({}, {A[4...7] -> [5, 10]})
+({}, {A[4...7] -> [5, 5]; B[0...3] -> [66, 66]}) & ({}, {A[4...7] -> [10, 10]; C[8...11] -> [32, 32]})=_|_
+({}, {A[4...7] -> [5, 5]; B[0...3] -> [66, 66]}) & ({}, {A[4...7] -> [5, 5]; C[8...11] -> [32, 32]})=({}, {B[0...3] -> [66, 66]; C[8...11] -> [32, 32]; A[4...7] -> [5, 5]})
 Test using ArrayExpansion(ApronIntervals)
 EXPECTED: {M[4..7] >= 1} 
 RESULT: {-M[4...7] <= -1}
