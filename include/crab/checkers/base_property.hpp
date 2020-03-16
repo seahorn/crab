@@ -157,6 +157,7 @@ public:
   typedef crab::cfg::array_init_stmt<number_t, varname_t> arr_init_t;
   typedef crab::cfg::array_store_stmt<number_t, varname_t> arr_store_t;
   typedef crab::cfg::array_load_stmt<number_t, varname_t> arr_load_t;
+  typedef crab::cfg::array_assign_stmt<number_t, varname_t> arr_assign_t;
   typedef crab::cfg::ptr_store_stmt<number_t, varname_t> ptr_store_t;
   typedef crab::cfg::ptr_load_stmt<number_t, varname_t> ptr_load_t;
   typedef crab::cfg::ptr_assign_stmt<number_t, varname_t> ptr_assign_t;
@@ -294,6 +295,12 @@ protected:
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
+  virtual void check(arr_assign_t &s) {
+    if (!this->m_abs_tr)
+      return;
+    s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
+  }
+  
   virtual void check(arr_store_t &s) {
     if (!this->m_abs_tr)
       return;
@@ -305,7 +312,7 @@ protected:
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
-
+  
   virtual void check(ptr_store_t &s) {
     if (!this->m_abs_tr)
       return;
@@ -403,6 +410,7 @@ public:
   void visit(callsite_t &s) { check(s); }
   void visit(return_t &s) { check(s); }
   void visit(arr_init_t &s) { check(s); }
+  void visit(arr_assign_t &s) { check(s); }  
   void visit(arr_store_t &s) { check(s); }
   void visit(arr_load_t &s) { check(s); }
   void visit(ptr_store_t &s) { check(s); }
