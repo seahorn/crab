@@ -647,7 +647,9 @@ private:
   }
 
   /**
-   *  Produce a new abstract state at the callee for the entry block.
+   *  Restrict operation.
+   * 
+   * Produce a new abstract state at the callee for the entry block.
    *  - caller_dom: abstract state at the caller before the call.
    *  - callee_dom: initial state at the callee (by default top)
    **/
@@ -660,29 +662,29 @@ private:
     if (caller_dom.is_bottom()) {
       return caller_dom;
     }
-    CRAB_LOG("inter-callee",
+    CRAB_LOG("inter-restrict",
              errs() << "Inv at the caller: " << caller_dom << "\n");
     // propagate from actual to formal parameters
-    CRAB_LOG("inter-callee", errs()
+    CRAB_LOG("inter-restrict", errs()
                                  << "Unifying formal and actual parameters\n";);
     for (unsigned i = 0, e = fdecl.get_inputs().size(); i < e; ++i) {
       variable_t formal = fdecl.get_inputs()[i];
       variable_t actual = cs.get_args()[i];
       if (!(formal == actual)) {
-        CRAB_LOG("inter-callee",
+        CRAB_LOG("inter-restrict",
                  errs() << "\t" << formal << " and " << actual << "\n";);
         inter_transformer_helpers<AbsDom>::unify(caller_dom, formal, actual);
       }
     }
-    CRAB_LOG("inter-callee", errs() << "Inv after formal/actual unification: "
+    CRAB_LOG("inter-restrict", errs() << "Inv after formal/actual unification: "
                                     << caller_dom << "\n";);
     // Meet
     callee_dom = caller_dom & callee_dom;
-    CRAB_LOG("inter-callee",
+    CRAB_LOG("inter-restrict",
              errs() << "Inv after meet with callee  " << callee_dom << "\n";);
     // project onto **input** formal parameters
     callee_dom.project(fdecl.get_inputs());
-    CRAB_LOG("inter-callee",
+    CRAB_LOG("inter-restrict",
              errs() << "Inv at the callee after projecting onto formals: ";
              for (auto &v
                   : fdecl.get_inputs()) { errs() << v << ";"; } errs()
@@ -703,6 +705,8 @@ private:
   }
 
   /**
+   * Extend operation
+   *
    * Produce a new abstract state at the caller for the call
    * continuation.
    * - caller_dom: abstract state at the caller before the call
@@ -711,6 +715,9 @@ private:
    * - sum_out_variables is fdecl.get_inputs() U
    *   fdecl.get_outputs(). We pass them explicitly to avoid to
    *   concatenate them again here.
+   * 
+   * This code should work even if callsite lhs variables and actual
+   * parameters are not disjoint.
    **/
   static AbsDom
   get_caller_continuation(callsite_t &cs, fdecl_t &fdecl, AbsDom caller_dom,
@@ -722,23 +729,35 @@ private:
       return caller_dom;
     }
 
+    CRAB_LOG("inter-extend",
+	     crab::outs() << "Caller before " << cs << "=" << caller_dom << "\n";);
+    
     // make sure **output** actual parameters are unconstrained
     caller_dom.forget(cs.get_lhs());
 
+    CRAB_LOG("inter-extend",
+	     crab::outs() << "Caller after forgetting lhs variables=" << caller_dom << "\n";);
+    
     // Meet
     caller_dom = caller_dom & sum_out_dom;
 
-    // a variable that appear both in the formal
-    std::vector<variable_t> duplicated_vars;
+    CRAB_LOG("inter-extend",
+	     crab::outs() << "Caller after meet with callee's summary=" << caller_dom << "\n";);
+    
     // propagate from callee's outputs to caller's lhs of the callsite
     for (unsigned i = 0, e = fdecl.get_outputs().size(); i < e; ++i) {
       variable_t formal = fdecl.get_outputs()[i];
       variable_t actual = cs.get_lhs()[i];
       if (!(formal == actual)) {
+	CRAB_LOG("inter-extend",
+		 crab::outs() << "Unifying " << formal << " and " << actual << "\n";);
         inter_transformer_helpers<AbsDom>::unify(caller_dom, actual, formal);
       }
     }
 
+    CRAB_LOG("inter-extend",
+	     crab::outs() << "Caller after unifying formal/actual paramters=" << caller_dom << "\n";);
+    
     // Remove the callee variables from the caller continuation
     // XXX: don't forget a variable if it appears on cs.get_lhs()
     caller_dom.forget(set_difference(sum_out_variables, cs.get_lhs()));
