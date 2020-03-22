@@ -62,8 +62,15 @@ namespace crab {
     typedef flat_boolean_numerical_domain<z_dbm_domain_t> z_bool_num_domain_t;
     typedef flat_boolean_numerical_domain<z_interval_domain_t> z_bool_interval_domain_t;    
     // Arrays domains
-    typedef array_adaptive_domain<z_term_domain_t> z_aa_term_int_t;
-    typedef array_adaptive_domain<z_bool_interval_domain_t> z_aa_bool_int_t;
+    class ArrayAdaptParams {
+    public:
+      enum { is_smashable = 1 };
+      enum { smash_at_nonzero_offset = 0};
+      enum { max_smashable_cells = 64};
+      enum { max_array_size = 512 };
+    };
+    typedef array_adaptive_domain<z_term_domain_t, ArrayAdaptParams> z_aa_term_int_t;
+    typedef array_adaptive_domain<z_bool_interval_domain_t, ArrayAdaptParams> z_aa_bool_int_t;
     typedef array_expansion_domain<z_interval_domain_t> z_ae_int_t;
     typedef array_expansion_domain<z_term_domain_t> z_ae_term_int_t;
     typedef array_expansion_domain<z_sdbm_domain_t> z_ae_sdbm_t;
