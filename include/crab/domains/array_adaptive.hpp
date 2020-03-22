@@ -55,13 +55,21 @@ namespace array_adaptive_impl {
 
 class DefaultParams {
 public:
+  /* options for array smashing */  
   enum { is_smashable = 1 };
+  enum { smash_at_nonzero_offset = 1};
+  enum { max_smashable_cells = 64};
+  /* options for array expansion */  
   enum { max_array_size = 512 };
 };
 
 class NoSmashableParams {
 public:
+  /* options for array smashing */
   enum { is_smashable = 0 };
+  enum { smash_at_nonzero_offset = 0};
+  enum { max_smashable_cells = 512};
+  /* options for array expansion */
   enum { max_array_size = 512 };
 };
 
@@ -971,20 +979,23 @@ private:
       // array without smashing is always sound.
 
       std::vector<cell_t> cells = get_offset_map().get_all_cells();
+      if (cells.empty()) {
+        return;
+      }
 
-      /// TODOX: this might be relaxed to start at a non-zero offset
-      /// but we would need to adjust array indexes for array reads
-      /// and writes.
-
-      if (cells.empty() || !cells[0].get_offset().is_zero()) {
+      if (cells.size() > Params::max_smashable_cells) {
+	// Smashing is expensive because it will go over all cells
+        // performing one join per weak update even if the smashed
+        // array is already unconstrained. We don't smash if the
+        // number of cells to be smashed is too large.
+	return;
+      }
+      
+      if (!Params::smash_at_nonzero_offset && !cells[0].get_offset().is_zero()) {
         return;
       }
 
       if (boost::optional<uint64_t> sz_opt = elem_sz.get_uint64_val()) {
-        /// TODOX: smashing is expensive because it will go over
-        /// all cells performing one join per weak update even if
-        /// the smashed array is already unconstrained. Need to
-        /// improve this somehow.
         bool can_be_smashed = true;
         variable_t smashed_a =
             array_adaptive_domain_t::get_smashed_variable(a, svm);
@@ -1189,7 +1200,8 @@ private:
         return false;
       }
       std::vector<cell_t> cells = m_offset_map.get_all_cells();
-      return can_be_smashed(cells, elem_sz, false);
+      return can_be_smashed(cells, elem_sz,
+			    Params::smash_at_nonzero_offset);
     }
 
     void write(crab_os &o) const {
@@ -2687,17 +2699,19 @@ public:
                                                 << " with non-constant index "
                                                 << i << "=" << ii << "\n";);
 
+
         bool smashed = false; // whether smashing took place
         if (Params::is_smashable) {
-          if (next_as.can_be_smashed(e_sz)) {
+	  std::vector<cell_t> cells = offset_map.get_all_cells();
+          if (next_as.can_be_smashed(e_sz) &&
+	      // Smashing is expensive because it will go over all cells
+	      // performing one join per weak update even if the smashed
+	      // array is already unconstrained. We don't smash if the
+	      // number of cells to be smashed is too large.
+	      (cells.size() <= Params::max_smashable_cells)) {
             smashed = true;
             CRAB_LOG("array-adaptive-smash",
                      crab::outs() << "Array " << a << " will be smashed\n";);
-            std::vector<cell_t> cells = offset_map.get_all_cells();
-            /// TODOX: smashing is expensive because it will go over
-            /// all cells performing one join per weak update even if
-            /// the smashed array is already unconstrained. Need to
-            /// improve this somehow.
             bool found_cell_without_scalar = false;
             variable_t smashed_a = get_smashed_variable(a, m_smashed_varmap);
             for (unsigned k = 0, num_cells = cells.size(); k < num_cells; ++k) {
