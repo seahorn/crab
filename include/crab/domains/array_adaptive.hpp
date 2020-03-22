@@ -1506,6 +1506,8 @@ private:
           m_inv -= *v_opt;
         }
       }
+    } else {
+      m_inv -= get_smashed_variable(v, m_smashed_varmap);
     }
     m_array_map -= v;
   }
