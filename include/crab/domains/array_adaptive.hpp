@@ -2346,6 +2346,10 @@ public:
     crab::CrabStats::count(getDomainName() + ".count.forget");
     crab::ScopedCrabStats __st__(getDomainName() + ".forget");
 
+    if (is_bottom()) {
+      return;
+    }
+    
     if (var.is_array_type()) {
       forget_array(var);
     } else {
@@ -2850,6 +2854,10 @@ public:
   virtual void array_assign(variable_t lhs, variable_t rhs) override {
     CRAB_LOG("array-adaptive",
 	     crab::outs() << "Array assign " << lhs << " := " << rhs << "\n";);
+
+    if (is_bottom()) {
+      return;
+    }
     
     const array_state &as = lookup_array_state(rhs);
     if (!as.is_smashed()) {
