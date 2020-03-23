@@ -338,7 +338,6 @@ private:
 
   inline void compute_post(basic_block_label_t node, AbstractValue inv) {
     crab::CrabStats::resume("Fixpo.analyze_block");
-    CRAB_VERBOSE_IF(4, crab::outs() << "PRE Invariants:\n" << inv << "\n");
     CRAB_VERBOSE_IF(1, crab::get_msg_stream()
                            << "Analyzing node "
                            << crab::cfg_impl::get_label_str(node);
