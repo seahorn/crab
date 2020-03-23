@@ -1766,7 +1766,7 @@ private:
       if (it != right_svm.end()) {
         variable_t &v2 = it->second;
         if (v1 != v2) {
-          assert(v1.name() == v2.name());
+          assert(v1.name().str() == v2.name().str());
           assert(v1.get_type() == v2.get_type());
           assert(v1.get_bitwidth() == v2.get_bitwidth());
           variable_t outv(vfac.get(v1.name().str()), v1.get_type(),
@@ -1796,7 +1796,7 @@ private:
       if (it != right_cvm.end()) {
         variable_t &v2 = it->second;
         if (v1 != v2) {
-          assert(v1.name() == v2.name());
+          assert(v1.name().str() == v2.name().str());
           assert(v1.get_type() == v2.get_type());
           assert(v1.get_bitwidth() == v2.get_bitwidth());
           variable_t outv(vfac.get(v1.name().str()), v1.get_type(),
@@ -1835,7 +1835,7 @@ private:
         variable_t &v2 = it->second;
         if (v1 != v2) {
           // same key but different scalar -> create a fresh common scalar
-          assert(v1.name() == v2.name());
+          assert(v1.name().str() == v2.name().str());
           assert(v1.get_type() == v2.get_type());
           assert(v1.get_bitwidth() == v2.get_bitwidth());
           variable_t outv(vfac.get(v1.name().str()), v1.get_type(),
@@ -1874,7 +1874,7 @@ private:
         variable_t &v2 = it->second;
         if (v1 != v2) {
           // same key but different scalar -> create a fresh common scalar
-          assert(v1.name() == v2.name());
+          assert(v1.name().str() == v2.name().str());
           assert(v1.get_type() == v2.get_type());
           assert(v1.get_bitwidth() == v2.get_bitwidth());
           variable_t outv(vfac.get(v1.name().str()), v1.get_type(),
@@ -1991,7 +1991,7 @@ public:
         // cell exists in both
         if (it != other.m_smashed_varmap.end()) {
           variable_t &v2 = it->second;
-          assert(v1.name() == v2.name());
+          assert(v1.name().str() == v2.name().str());
           assert(v1.get_type() == v2.get_type());
           assert(v1.get_bitwidth() == v2.get_bitwidth());
           // same name and type but different variable id
@@ -2018,7 +2018,7 @@ public:
         // cell exists in both
         if (it != other.m_cell_varmap.end()) {
           variable_t &v2 = it->second;
-          assert(v1.name() == v2.name());
+          assert(v1.name().str() == v2.name().str());
           assert(v1.get_type() == v2.get_type());
           assert(v1.get_bitwidth() == v2.get_bitwidth());
           // same name and type but different variable id
@@ -2049,13 +2049,17 @@ public:
   void operator|=(array_adaptive_domain_t other) {
     crab::CrabStats::count(getDomainName() + ".count.join");
     crab::ScopedCrabStats __st__(getDomainName() + ".join");
+
+    CRAB_LOG("array-adaptive",
+	     crab::outs() << "Join " << *this << " and " << other << "\n";);
+    
     if (other.is_bottom()) {
+      CRAB_LOG("array-adaptive", crab::outs() << "Res=" << *this << "\n";);      
       return;
     } else if (is_bottom()) {
       *this = other;
+      CRAB_LOG("array-adaptive", crab::outs() << "Res=" << *this << "\n";);      
     } else {
-      CRAB_LOG("array-adaptive",
-               crab::outs() << "Join " << *this << " and " << other << "\n";);
 
       // this must be done before the renaming
       m_array_map = std::move(m_array_map.join(
@@ -2268,8 +2272,12 @@ public:
     scalar_variables.reserve(variables.size());
     for (variable_t v : variables) {
       if (v.is_array_type()) {
+	CRAB_LOG("array-adaptive",
+		 crab::outs() << "Forget array variable " << v << "\n";);
         forget_array(v);
       } else {
+	CRAB_LOG("array-adaptive",
+		 crab::outs() << "Forget scalar variable " << v << "\n";);	
         scalar_variables.push_back(v);
       }
     }
