@@ -131,8 +131,7 @@ public:
     if (m_val.number()) {
       ikos::z_number n = *(m_val.number());
       if (n.fits_int64()) {
-        if (static_cast<int64_t>(n) > 0 &&
-            static_cast<int64_t>(n) <= std::numeric_limits<uint64_t>::max()) {
+        if (static_cast<int64_t>(n) > 0) {
           return (uint64_t) static_cast<int64_t>(n);
         }
       }
