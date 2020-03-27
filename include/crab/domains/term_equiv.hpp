@@ -1508,9 +1508,7 @@ public:
     if (is_top() || is_bottom())
       return;
 
-    // renaming _var_map by creating a new map since we are
-    // modifying the keys.
-    CRAB_LOG("term", crab::outs() << "Replacing {"; for (auto v
+    CRAB_LOG("term", crab::outs() << "Renaming {"; for (auto v
                                                          : from) crab::outs()
                                                     << v << ";";
              crab::outs() << "} with "; for (auto v
@@ -1518,23 +1516,30 @@ public:
                                         << v << ";";
              crab::outs() << "}:\n"; crab::outs() << *this << "\n";);
 
-    var_map_t new_var_map;
-    rev_var_map_t new_rev_var_map;
-    for (auto kv : _var_map) {
-      ptrdiff_t pos = std::distance(
-          from.begin(), std::find(from.begin(), from.end(), kv.first));
-      if (pos < from.size()) {
-        variable_t new_v(to[pos]);
-        new_var_map.insert(std::make_pair(new_v, kv.second));
-        add_rev_var_map(new_rev_var_map, kv.second, new_v);
-      } else {
-        new_var_map.insert(kv);
-        add_rev_var_map(new_rev_var_map, kv.second, kv.first);
+
+    for (unsigned i=0, sz=from.size(); i<sz; ++i) {
+      variable_t v = from[i];
+      variable_t new_v = to[i];
+      if (v == new_v) { // nothing to rename
+        continue;
+      }
+
+      { auto it = _var_map.find(new_v);
+	if (it != _var_map.end()) {
+	  CRAB_ERROR(getDomainName() + "::rename assumes that ", new_v, " does not exist");	  
+	}
+      }
+
+      auto it = _var_map.find(v);
+      if (it != _var_map.end()) {
+	term_id_t id = it->second;
+	_var_map.erase(it);
+	_var_map.insert(std::make_pair(new_v, id));
+	remove_rev_var_map(id, v);
+	add_rev_var_map(_rev_var_map, id, new_v);
       }
     }
-    std::swap(_var_map, new_var_map);
-    std::swap(_rev_var_map, new_rev_var_map);
-
+    
     CRAB_LOG("term", crab::outs() << "RESULT=" << *this << "\n");
   }
 

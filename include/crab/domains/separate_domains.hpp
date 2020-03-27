@@ -360,6 +360,38 @@ public:
     }
   }
 
+  // Assume that from does not have duplicates.
+  void rename(const std::vector<Key>& from, const std::vector<Key>& to) {
+    if (from.size() != to.size()) {
+      CRAB_ERROR("separate_domain::rename received input vectors of different sizes");
+    }
+
+    if (is_top() || is_bottom()) {
+      // nothing to rename
+      return;
+    }
+
+    for (unsigned i=0, sz=from.size(); i<sz; ++i) {
+      Key k = from[i];
+      Key new_k = to[i];
+      if (k == new_k) { // nothing to rename
+        continue;
+      }
+
+      if (_tree.lookup(new_k)) {
+	CRAB_ERROR("separate_domain::rename assumes that  ", new_k, " does not exist");
+      }
+      
+      if (boost::optional<Value> k_val_opt = _tree.lookup(k)) {
+	if (!(*k_val_opt).is_top()) {
+	  _tree.insert(new_k, *k_val_opt);
+	}
+	_tree.remove(k);	
+      }
+    }
+  }
+
+  
   friend crab::crab_os &operator<<(crab::crab_os &o,
                                    const separate_domain<Key, Value> &d) {
     d.write(o);

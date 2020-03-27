@@ -2207,10 +2207,7 @@ public:
     }
 
     for (auto v : variables) {
-      auto it = vert_map.find(v);
-      if (it != vert_map.end()) {
-        operator-=(v);
-      }
+      operator-=(v);
     }
   }
 
@@ -2256,10 +2253,7 @@ public:
     if (is_top() || is_bottom())
       return;
 
-    // renaming vert_map by creating a new vert_map since we are
-    // modifying the keys.
-    // rev_map is modified in-place since we only modify values.
-    CRAB_LOG("zones-split", crab::outs() << "Replacing {";
+    CRAB_LOG("zones-split", crab::outs() << "Renaming {";
              for (auto v
                   : from) crab::outs()
              << v << ";";
@@ -2268,19 +2262,28 @@ public:
                                         << v << ";";
              crab::outs() << "}:\n"; crab::outs() << *this << "\n";);
 
-    vert_map_t new_vert_map;
-    for (auto kv : vert_map) {
-      ptrdiff_t pos = std::distance(
-          from.begin(), std::find(from.begin(), from.end(), kv.first));
-      if (pos < from.size()) {
-        variable_t new_v(to[pos]);
-        new_vert_map.insert(vmap_elt_t(new_v, kv.second));
-        rev_map[kv.second] = new_v;
-      } else {
-        new_vert_map.insert(kv);
+
+    for (unsigned i=0, sz=from.size(); i<sz; ++i) {
+      variable_t v = from[i];
+      variable_t new_v = to[i];
+      if (v == new_v) { // nothing to rename
+        continue;
+      }
+
+      { auto it = vert_map.find(new_v);
+	if (it != vert_map.end()) {
+	  CRAB_ERROR(getDomainName() + "::rename assumes that ", new_v, " does not exist");	  
+	}
+      }
+
+      auto it = vert_map.find(v);
+      if (it != vert_map.end()) {
+	vert_id dim = it->second;
+	vert_map.erase(it);
+	vert_map.insert(vmap_elt_t(new_v, dim));
+        rev_map[dim] = new_v;	
       }
     }
-    std::swap(vert_map, new_vert_map);
 
     CRAB_LOG("zones-split", crab::outs() << "RESULT=" << *this << "\n");
   }

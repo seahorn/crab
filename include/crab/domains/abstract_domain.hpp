@@ -75,22 +75,16 @@ public:
   virtual bool is_top() = 0;
 
   // Inclusion operator: return true if *this is equal or more precise than abs
-  // TODO: add const reference
   virtual bool operator<=(Dom abs) = 0;
   // Join operator: join(*this, abs)
-  // TODO: add const reference and ideally const method
   virtual Dom operator|(Dom abs) = 0;
   // *this = join(*this, abs)
-  // TODO: add const reference
   virtual void operator|=(Dom abs) = 0;
   // Meet operator: meet(*this, abs)
-  // TODO: add const reference and ideally const method
   virtual Dom operator&(Dom abs) = 0;
   // Widening operator: widening(*this, abs)
-  // TODO: add const reference and ideally const method
   virtual Dom operator||(Dom abs) = 0;
   // Narrowing operator: narrowing(*this, abs)
-  // TODO: add const reference and ideally const method
   virtual Dom operator&&(Dom abs) = 0;
   // Widening with thresholds: widening_ts(*this, abs)
   virtual Dom
@@ -253,7 +247,11 @@ public:
   virtual disjunctive_linear_constraint_system_t
   to_disjunctive_linear_constraint_system() = 0;
 
-  // Rename in the abstract state the variables "from" with those from "to".
+  // Rename in the abstract state the variables "from" with those from to.
+  // 
+  // If any variable from "to" exists already in the abstract state
+  // then an error will be raised. This might be a bit restrictive and
+  // it can be relaxed if needed in the future. 
   virtual void rename(const variable_vector_t &from,
                       const variable_vector_t &to) = 0;
 

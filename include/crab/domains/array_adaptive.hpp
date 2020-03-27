@@ -1783,7 +1783,7 @@ private:
 
     left_dom.rename(old_vars_left, new_vars);
     right_dom.rename(old_vars_right, new_vars);
-
+    
     old_vars_left.clear();
     old_vars_right.clear();
     new_vars.clear();
@@ -1858,7 +1858,7 @@ private:
     }
     left_dom.rename(old_vars_left, new_vars);
     right_dom.rename(old_vars_right, new_vars);
-
+ 
     old_vars_left.clear();
     old_vars_right.clear();
     new_vars.clear();
@@ -2006,7 +2006,7 @@ public:
       }
       left_dom.rename(old_vars_left, new_vars);
       other.m_inv.rename(old_vars_right, new_vars);
-
+      
       old_vars_left.clear();
       old_vars_right.clear();
       new_vars.clear();
@@ -2033,7 +2033,7 @@ public:
       }
       left_dom.rename(old_vars_left, new_vars);
       other.m_inv.rename(old_vars_right, new_vars);
-
+      
       // We need to be careful if one array state is smashed and the
       // other is not.
       bool res = (left_dom <= other.m_inv);
@@ -3153,12 +3153,14 @@ public:
   }
 
   void rename(const variable_vector_t &from, const variable_vector_t &to) {
-    m_inv.rename(from, to);
-    for (auto &v : from) {
-      if (v.is_array_type()) {
-        CRAB_WARN("TODO: array_adaptive::rename array variable");
-      }
-    }
+    CRAB_WARN("array_adaptive::rename not implemented");
+    
+    // m_inv.rename(from, to);
+    // for (auto &v : from) {
+    //   if (v.is_array_type()) {
+    //     CRAB_WARN("TODO: array_adaptive::rename array variable");
+    //   }
+    // }
   }
 
 }; // end array_adaptive_domain

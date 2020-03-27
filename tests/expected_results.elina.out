@@ -4222,6 +4222,26 @@ EXPECTED: {y >= 2, ...}
 RESULT: {x -> [2, +oo]; y -> [2, +oo]}
 Before normalize constraints {x <= 8; -y <= -5; y <= 6; -x <= -8; -v <= -9888; z = 10; w <= 0; v <= 9888}
 After normalize constraints {x = 8; v = 9888; -y <= -5; y <= 6; z = 10; w <= 0}
+ ===== Intervals ====
+Before renaming {x -> [-oo, 0]; y -> [5, 5]}
+After rename x with w and y with z={z -> [5, 5]; w -> [-oo, 0]}
+After rename x with w={y -> [5, 5]; w -> [-oo, 0]}
+ ===== ElinaPolyhedra ====
+Before renaming {-y = -5; x <= 0}
+After rename x with w and y with z={w <= 0; -z = -5}
+After rename x with w={w <= 0; -y = -5}
+ ===== SplitDBM ====
+Before renaming {x -> [-oo, 0], y -> [5, 5]}
+After rename x with w and y with z={w -> [-oo, 0], z -> [5, 5]}
+After rename x with w={w -> [-oo, 0], y -> [5, 5]}
+ ===== SparseDBM ====
+Before renaming {x -> [-oo, 0], y -> [5, 5], x-y<=-5}
+After rename x with w and y with z={w -> [-oo, 0], z -> [5, 5], w-z<=-5}
+After rename x with w={w -> [-oo, 0], y -> [5, 5], w-y<=-5}
+ ===== Term(Intervals) ====
+Before renaming {x -> t0[_x0], y -> t1[_x1]}{_x0 -> [-oo, 0]; _x1 -> [5, 5]}
+After rename x with w and y with z={z -> t1[_x1], w -> t0[_x0]}{_x0 -> [-oo, 0]; _x1 -> [5, 5]}
+After rename x with w={y -> t1[_x1], w -> t0[_x0]}{_x0 -> [-oo, 0]; _x1 -> [5, 5]}
 {A -> [0, +oo], x -> [0, 0], x-A<=0}
 Before x != 0: {x -> [0, 10], y -> [0, 10], z -> [0, 10], y-x<=0, z-x<=0, x-y<=0, z-y<=0, x-z<=0, y-z<=0}
 After x != 0: {x -> [1, 10], y -> [1, 10], z -> [1, 10], y-x<=0, z-x<=0, x-y<=0, z-y<=0, x-z<=0, y-z<=0}

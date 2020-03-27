@@ -2124,8 +2124,7 @@ public:
     if (is_top() || is_bottom())
       return;
 
-    // renaming m_var_map by creating a new map
-    CRAB_LOG("elina", crab::outs() << "Replacing {"; for (auto v
+    CRAB_LOG("elina", crab::outs() << "Renaming {"; for (auto v
                                                           : from) crab::outs()
                                                      << v << ";";
              crab::outs() << "} with "; for (auto v
@@ -2133,18 +2132,27 @@ public:
                                         << v << ";";
              crab::outs() << "}:\n"; crab::outs() << *this << "\n";);
 
-    var_map_t new_var_map;
-    for (auto kv : m_var_map.left) {
-      ptrdiff_t pos = std::distance(
-          from.begin(), std::find(from.begin(), from.end(), kv.first));
-      if (pos < (int)from.size()) {
-        new_var_map.insert(binding_t(to[pos], kv.second));
-      } else {
-        new_var_map.insert(binding_t(kv.first, kv.second));
+    for (unsigned i=0, sz=from.size(); i<sz; ++i) {
+      variable_t v = from[i];
+      variable_t new_v = to[i];
+      if (v == new_v) { // nothing to rename
+        continue;
+      }
+
+      { auto it = m_var_map.left.find(new_v);
+	if (it != m_var_map.left.end()) {
+	  CRAB_ERROR(getDomainName() + "::rename assumes that ", new_v, " does not exist");	  
+	}
+      }
+
+      auto it = m_var_map.left.find(v);
+      if (it != m_var_map.left.end()) {
+	elina_dim_t dim = it->second;
+	m_var_map.left.erase(it);
+	m_var_map.insert(binding_t(new_v, dim));
       }
     }
-    std::swap(m_var_map, new_var_map);
-
+    
     CRAB_LOG("elina", crab::outs() << "RESULT=" << *this << "\n");
   }
 
