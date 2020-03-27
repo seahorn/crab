@@ -1636,6 +1636,21 @@ public:
     check_terms(__LINE__);
   }
 
+  /* begin intrinsics operations */    
+  void intrinsic(std::string name,
+		 const variable_vector_t &inputs,
+		 const variable_vector_t &outputs) override {
+    CRAB_WARN("Intrinsics ", name, " not implemented by ", getDomainName());
+  }
+
+  void backward_intrinsic(std::string name,
+			  const variable_vector_t &inputs,
+			  const variable_vector_t &outputs,
+			  term_domain_t invariant) override {
+    CRAB_WARN("Intrinsics ", name, " not implemented by ", getDomainName());    
+  }
+  /* end intrinsics operations */
+  
   // Propagate information from tightened terms to
   // parents/children.
   void normalize() {

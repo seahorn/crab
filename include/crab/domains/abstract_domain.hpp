@@ -269,6 +269,18 @@ public:
 
   // Make a new copy of var without relating var with new_var
   virtual void expand(variable_t var, variable_t new_var) = 0;
+
+  // Function whose semantics is defined by the particular abstract
+  // domain
+  virtual void intrinsic(std::string name,
+			 const variable_vector_t &inputs,
+			 const variable_vector_t &outputs) = 0;
+
+  virtual void backward_intrinsic(std::string name,
+				  const variable_vector_t &inputs,
+				  const variable_vector_t &outputs,
+				  Dom invariant) = 0;
+  
 };
 
 } // end namespace domains

@@ -2339,6 +2339,21 @@ public:
 
   void minimize() { m_inv.minimize(); }
 
+  /* begin intrinsics operations */  
+  void intrinsic(std::string name,
+		 const variable_vector_t &inputs,
+		 const variable_vector_t &outputs) override {
+    CRAB_WARN("Intrinsics ", name, " not implemented by ", getDomainName());
+  }
+
+  void backward_intrinsic(std::string name,
+			  const variable_vector_t &inputs,
+			  const variable_vector_t &outputs,
+			  array_adaptive_domain_t invariant) override {
+    CRAB_WARN("Intrinsics ", name, " not implemented by ", getDomainName());    
+  }
+  /* end intrinsics operations */
+  
   void operator+=(linear_constraint_system_t csts) {
     crab::CrabStats::count(getDomainName() + ".count.add_constraints");
     crab::ScopedCrabStats __st__(getDomainName() + ".add_constraints");

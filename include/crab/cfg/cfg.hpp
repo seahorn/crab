@@ -92,6 +92,7 @@ enum stmt_code {
   // functions calls
   CALLSITE = 50,
   RETURN = 51,
+  CRAB_INTRINSIC = 52,
   // integers/arrays/pointers/boolean
   HAVOC = 60,
   // boolean
@@ -234,7 +235,8 @@ public:
   bool is_bool_select() const { return (m_stmt_code == BOOL_SELECT); }
   bool is_callsite() const { return (m_stmt_code == CALLSITE); }
   bool is_return() const { return (m_stmt_code == RETURN); }
-
+  bool is_intrinsic() const { return (m_stmt_code == CRAB_INTRINSIC); }
+  
   const live_t &get_live() const { return m_live; }
 
   const debug_info &get_debug_info() const { return m_dbg_info; }
@@ -1311,6 +1313,106 @@ private:
   std::vector<variable_t> m_ret;
 };
 
+
+/* An intrinsic function is an "internal" function with semantics
+   defined by the Crab domains */  
+template <class Number, class VariableName>
+class intrinsic_stmt : public statement<Number, VariableName> {
+  typedef intrinsic_stmt<Number, VariableName> this_type;
+
+public:
+  typedef statement<Number, VariableName> statement_t;
+  typedef ikos::variable<Number, VariableName> variable_t;
+  typedef typename variable_t::type_t type_t;
+
+  intrinsic_stmt(std::string intrinsic_name, const std::vector<variable_t> &args)
+    : statement_t(CRAB_INTRINSIC), m_intrinsic_name(intrinsic_name) {
+    
+    std::copy(args.begin(), args.end(), std::back_inserter(m_args));
+    for (auto arg : m_args) {
+      this->m_live.add_use(arg);
+    }
+  }
+
+  intrinsic_stmt(std::string intrinsic_name, const std::vector<variable_t> &lhs,
+		 const std::vector<variable_t> &args)
+    : statement_t(CRAB_INTRINSIC), m_intrinsic_name(intrinsic_name) {
+    
+    std::copy(args.begin(), args.end(), std::back_inserter(m_args));
+    for (auto arg : m_args) {
+      this->m_live.add_use(arg);
+    }
+
+    std::copy(lhs.begin(), lhs.end(), std::back_inserter(m_lhs));
+    for (auto arg : m_lhs) {
+      this->m_live.add_def(arg);
+    }
+  }
+
+  const std::vector<variable_t> &get_lhs() const { return m_lhs; }
+
+  std::string get_intrinsic_name() const { return m_intrinsic_name; }
+
+  const std::vector<variable_t> &get_args() const { return m_args; }
+
+  unsigned get_num_args() const { return m_args.size(); }
+
+  variable_t get_arg_name(unsigned idx) const {
+    if (idx >= m_args.size())
+      CRAB_ERROR("Out-of-bound access to intrinsic parameter");
+
+    return m_args[idx];
+  }
+
+  type_t get_arg_type(unsigned idx) const {
+    if (idx >= m_args.size())
+      CRAB_ERROR("Out-of-bound access to intrinsic parameter");
+
+    return m_args[idx].get_type();
+  }
+
+  virtual void accept(statement_visitor<Number, VariableName> *v) {
+    v->visit(*this);
+  }
+
+  virtual statement_t *clone() const {
+    return new this_type(m_intrinsic_name, m_lhs, m_args);
+  }
+
+  virtual void write(crab_os &o) const {
+    if (m_lhs.empty()) {
+      // do nothing
+    } else if (m_lhs.size() == 1) {
+      o << (*m_lhs.begin()) << " =";
+    } else {
+      o << "(";
+      for (const_iterator It = m_lhs.begin(), Et = m_lhs.end(); It != Et;) {
+        o << (*It);
+        ++It;
+        if (It != Et)
+          o << ",";
+      }
+      o << ")=";
+    }
+    o << " crab_intrinsic(" << m_intrinsic_name << ",";
+    for (const_iterator It = m_args.begin(), Et = m_args.end(); It != Et;) {
+      o << *It << ":" << (*It).get_type();
+      ++It;
+      if (It != Et)
+        o << ",";
+    }
+    o << ")";
+  }
+
+private:
+  std::string m_intrinsic_name;
+  std::vector<variable_t> m_lhs;
+  std::vector<variable_t> m_args;
+
+  typedef typename std::vector<variable_t>::iterator iterator;
+  typedef typename std::vector<variable_t>::const_iterator const_iterator;
+};
+
 /*
    Boolean statements
 */
@@ -1621,6 +1723,8 @@ public:
   // Functions
   typedef callsite_stmt<Number, VariableName> callsite_t;
   typedef return_stmt<Number, VariableName> return_t;
+  // Intrinsics
+  typedef intrinsic_stmt<Number, VariableName> intrinsic_t;
   // Arrays
   typedef array_init_stmt<Number, VariableName> arr_init_t;
   typedef array_store_stmt<Number, VariableName> arr_store_t;
@@ -2042,6 +2146,12 @@ public:
     return insert(new return_t(ret_vals));
   }
 
+  const statement_t *intrinsic(std::string name,
+			       const std::vector<variable_t> &lhs,
+			       const std::vector<variable_t> &args) {
+    return insert(new intrinsic_t(name, lhs, args));
+  }
+  
   const statement_t *array_init(variable_t a, lin_exp_t lb_idx,
                                 lin_exp_t ub_idx, lin_exp_t v,
                                 lin_exp_t elem_size) {
@@ -2295,6 +2405,7 @@ template <class Number, class VariableName> struct statement_visitor {
   typedef unreachable_stmt<Number, VariableName> unreach_t;
   typedef callsite_stmt<Number, VariableName> callsite_t;
   typedef return_stmt<Number, VariableName> return_t;
+  typedef intrinsic_stmt<Number, VariableName> intrinsic_t;  
   typedef array_init_stmt<Number, VariableName> arr_init_t;
   typedef array_store_stmt<Number, VariableName> arr_store_t;
   typedef array_load_stmt<Number, VariableName> arr_load_t;
@@ -2324,6 +2435,7 @@ template <class Number, class VariableName> struct statement_visitor {
   virtual void visit(havoc_t &){};
   virtual void visit(callsite_t &){};
   virtual void visit(return_t &){};
+  virtual void visit(intrinsic_t &){};  
   virtual void visit(arr_init_t &){};
   virtual void visit(arr_store_t &){};
   virtual void visit(arr_load_t &){};
@@ -3418,6 +3530,7 @@ private:
     typedef typename statement_visitor<N, V>::unreach_t unreach_t;
     typedef typename statement_visitor<N, V>::callsite_t callsite_t;
     typedef typename statement_visitor<N, V>::return_t return_t;
+    typedef typename statement_visitor<N, V>::intrinsic_t intrinsic_t;    
     typedef typename statement_visitor<N, V>::arr_init_t arr_init_t;
     typedef typename statement_visitor<N, V>::arr_store_t arr_store_t;
     typedef typename statement_visitor<N, V>::arr_load_t arr_load_t;
@@ -3984,6 +4097,15 @@ private:
       }
     }
 
+    void visit(intrinsic_t &s) {
+      for (auto v : s.get_lhs()) {
+        check_varname(v);
+      }
+      for (auto v : s.get_args()) {
+        check_varname(v);
+      }
+    }
+    
     void visit(return_t &s) {
       // The type consistency with the callsite at the caller is
       // done elsewhere.

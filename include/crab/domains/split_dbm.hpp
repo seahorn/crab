@@ -2332,6 +2332,20 @@ public:
     }
   }
 
+  // intrinsics operations
+  void intrinsic(std::string name,
+		 const variable_vector_t &inputs,
+		 const variable_vector_t &outputs) override {
+    CRAB_WARN("Intrinsics ", name, " not implemented by ", getDomainName());
+  }
+
+  void backward_intrinsic(std::string name,
+			  const variable_vector_t &inputs,
+			  const variable_vector_t &outputs,
+			  DBM_t invariant) override {
+    CRAB_WARN("Intrinsics ", name, " not implemented by ", getDomainName());    
+  }
+  
   // -- begin array_graph_domain_helper_traits
 
   // return true iff cst is unsatisfiable without modifying the DBM
@@ -2805,6 +2819,21 @@ public:
     lock();
     norm().extract(x, csts, only_equalities);
   }
+
+  void intrinsic(std::string name,
+		 const variable_vector_t &inputs,
+		 const variable_vector_t &outputs) override {
+    lock();
+    norm().intrinsic(name, inputs, outputs);
+  }
+
+  void backward_intrinsic(std::string name,
+			  const variable_vector_t &inputs,
+			  const variable_vector_t &outputs,
+			  DBM_t invariant) override {
+    lock();
+    norm().backward_intrinsic(name, inputs, outputs, invariant);
+  }  
 
   void write(crab_os &o) { norm().write(o); }
 

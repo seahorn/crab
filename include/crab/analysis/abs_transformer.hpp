@@ -68,10 +68,11 @@ public:
   typedef crab::cfg::assume_stmt<number_t, VariableName> assume_t;
   typedef crab::cfg::select_stmt<number_t, VariableName> select_t;
   typedef crab::cfg::assert_stmt<number_t, VariableName> assert_t;
-
   typedef crab::cfg::int_cast_stmt<number_t, VariableName> int_cast_t;
+  
   typedef crab::cfg::callsite_stmt<number_t, VariableName> callsite_t;
   typedef crab::cfg::return_stmt<number_t, VariableName> return_t;
+  typedef crab::cfg::intrinsic_stmt<number_t, VariableName> intrinsic_t;  
 
   typedef crab::cfg::array_init_stmt<number_t, VariableName> arr_init_t;
   typedef crab::cfg::array_store_stmt<number_t, VariableName> arr_store_t;
@@ -105,6 +106,7 @@ protected:
   virtual void exec(int_cast_t &) {}
   virtual void exec(callsite_t &) {}
   virtual void exec(return_t &) {}
+  virtual void exec(intrinsic_t &) {}  
   virtual void exec(arr_init_t &) {}
   virtual void exec(arr_store_t &) {}
   virtual void exec(arr_load_t &) {}
@@ -135,6 +137,7 @@ public: /* visitor api */
   void visit(int_cast_t &s) { exec(s); }
   void visit(callsite_t &s) { exec(s); }
   void visit(return_t &s) { exec(s); }
+  void visit(intrinsic_t &s) { exec(s); }  
   void visit(arr_init_t &s) { exec(s); }
   void visit(arr_store_t &s) { exec(s); }
   void visit(arr_load_t &s) { exec(s); }
@@ -188,6 +191,7 @@ public:
   using typename abs_transform_api_t::bool_bin_op_t;
   using typename abs_transform_api_t::bool_select_t;
   using typename abs_transform_api_t::callsite_t;
+  using typename abs_transform_api_t::intrinsic_t;  
   using typename abs_transform_api_t::havoc_t;
   using typename abs_transform_api_t::int_cast_t;
   using typename abs_transform_api_t::lin_cst_sys_t;
@@ -579,13 +583,18 @@ public:
     m_inv.pointer_assert(stmt.constraint());
   }
 
+  void exec(intrinsic_t &cs) {
+    m_inv.intrinsic(cs.get_intrinsic_name(), cs.get_args(), cs.get_lhs());
+  }
+  
   virtual void exec(callsite_t &cs) {
     for (auto vt : cs.get_lhs()) {
       m_inv.operator-=(vt); // havoc
     }
   }
-
+  
   virtual void exec(return_t &ret) {}
+  
 };
 
 ///////////////////////////////////////
@@ -656,6 +665,7 @@ public:
   using typename abs_transform_api_t::bool_bin_op_t;
   using typename abs_transform_api_t::bool_select_t;
   using typename abs_transform_api_t::callsite_t;
+  using typename abs_transform_api_t::intrinsic_t;  
   using typename abs_transform_api_t::havoc_t;
   using typename abs_transform_api_t::int_cast_t;
   using typename abs_transform_api_t::lin_cst_sys_t;
@@ -952,6 +962,13 @@ public:
     }
   }
   virtual void exec(return_t &stmt) {}
+
+  void exec(intrinsic_t &cs) {
+    abs_dom_t invariant = (*m_invariants)[&cs];    
+    m_pre.backward_intrinsic(cs.get_intrinsic_name(), cs.get_args(), cs.get_lhs(),
+			     std::move(invariant));    
+  }
+  
 };
 
 } // namespace analyzer

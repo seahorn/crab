@@ -1865,6 +1865,21 @@ public:
     _env.rename(from, to);            
   }
 
+  /* begin intrinsics operations */    
+  void intrinsic(std::string name,
+		 const variable_vector_t &inputs,
+		 const variable_vector_t &outputs) override {
+    CRAB_WARN("Intrinsics ", name, " not implemented by ", getDomainName());
+  }
+
+  void backward_intrinsic(std::string name,
+			  const variable_vector_t &inputs,
+			  const variable_vector_t &outputs,
+			  wrapped_interval_domain_t invariant) override {
+    CRAB_WARN("Intrinsics ", name, " not implemented by ", getDomainName());    
+  }
+  /* end intrinsics operations */
+  
   void write(crab::crab_os &o) {
     crab::CrabStats::count(getDomainName() + ".count.write");
     crab::ScopedCrabStats __st__(getDomainName() + ".write");
@@ -2641,6 +2656,21 @@ public:
     return "WrappedIntervals+HistoryAbstraction";
   }
 
+  /* begin intrinsics operations */    
+  void intrinsic(std::string name,
+		 const variable_vector_t &inputs,
+		 const variable_vector_t &outputs) override {
+    CRAB_WARN("Intrinsics ", name, " not implemented by ", getDomainName());
+  }
+
+  void backward_intrinsic(std::string name,
+			  const variable_vector_t &inputs,
+			  const variable_vector_t &outputs,
+			  this_type invariant) override {
+    CRAB_WARN("Intrinsics ", name, " not implemented by ", getDomainName());    
+  }
+  /* end intrinsics operations */
+  
   // checker_domain_traits
 
   bool entail(const linear_constraint_t &cst) {
@@ -3440,6 +3470,21 @@ public:
     _product.rename(from, to);
   }
 
+  /* begin intrinsics operations */    
+  void intrinsic(std::string name,
+		 const variable_vector_t &inputs,
+		 const variable_vector_t &outputs) override {
+    _product.intrinsic(name, inputs, outputs);
+  }
+
+  void backward_intrinsic(std::string name,
+			  const variable_vector_t &inputs,
+			  const variable_vector_t &outputs,
+			  wrapped_numerical_domain_t invariant) override {
+    _product.backward_intrinsic(name, inputs, outputs, invariant._product);    
+  }
+  /* end intrinsics operations */
+  
   void normalize() { _product.normalize(); }
 
   void minimize() { _product.minimize(); }

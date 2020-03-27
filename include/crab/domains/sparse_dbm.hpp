@@ -1939,6 +1939,21 @@ public:
     }
   }
 
+  /* begin intrinsics operations */  
+  void intrinsic(std::string name,
+		 const variable_vector_t &inputs,
+		 const variable_vector_t &outputs) override {
+    CRAB_WARN("Intrinsics ", name, " not implemented by ", getDomainName());
+  }
+
+  void backward_intrinsic(std::string name,
+			  const variable_vector_t &inputs,
+			  const variable_vector_t &outputs,
+			  DBM_t invariant) override {
+    CRAB_WARN("Intrinsics ", name, " not implemented by ", getDomainName());    
+  }
+  /* end intrinsics operations */
+  
   // Output function
   void write(crab_os &o) {
     crab::CrabStats::count(getDomainName() + ".count.write");
@@ -2326,6 +2341,23 @@ public:
     norm().extract(x, csts, only_equalities);
   }
 
+  /* begin intrinsics operations */  
+  void intrinsic(std::string name,
+		 const variable_vector_t &inputs,
+		 const variable_vector_t &outputs) override {
+    lock();
+    norm().intrinsic(name, inputs, outputs);
+  }
+
+  void backward_intrinsic(std::string name,
+			  const variable_vector_t &inputs,
+			  const variable_vector_t &outputs,
+			  DBM_t invariant) override {
+    lock();
+    norm().backward_intrinsic(name, inputs, outputs, invariant);
+  }
+  /* end intrinsics operations */
+  
   void write(crab_os &o) { norm().write(o); }
 
   linear_constraint_system_t to_linear_constraint_system() {

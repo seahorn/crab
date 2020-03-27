@@ -295,6 +295,21 @@ public:
     CRAB_ERROR(APRON_NOT_FOUND);
   }
 
+  /* begin intrinsics operations */  
+  void intrinsic(std::string name,
+		 const variable_vector_t &inputs,
+		 const variable_vector_t &outputs) {
+    CRAB_ERROR(APRON_NOT_FOUND);    
+  }
+
+  void backward_intrinsic(std::string name,
+			  const variable_vector_t &inputs,
+			  const variable_vector_t &outputs,
+			  apron_domain_t invariant) {
+    CRAB_ERROR(APRON_NOT_FOUND);    
+  }
+  /* end intrinsics operations */
+  
   void write(crab_os &o) { CRAB_ERROR(APRON_NOT_FOUND); }
 
   static std::string getDomainName() { return "Dummy Apron"; }
@@ -1982,6 +1997,21 @@ public:
     assert(m_var_map.size() == get_dims());
   }
 
+  /* begin intrinsics operations */  
+  void intrinsic(std::string name,
+		 const variable_vector_t &inputs,
+		 const variable_vector_t &outputs) override {
+    CRAB_WARN("Intrinsics ", name, " not implemented by ", getDomainName());
+  }
+
+  void backward_intrinsic(std::string name,
+			  const variable_vector_t &inputs,
+			  const variable_vector_t &outputs,
+			  apron_domain_t invariant) override {
+    CRAB_WARN("Intrinsics ", name, " not implemented by ", getDomainName());    
+  }
+  /* end intrinsics operations */
+  
   void write(crab_os &o) {
     crab::CrabStats::count(getDomainName() + ".count.write");
     crab::ScopedCrabStats __st__(getDomainName() + ".write");
@@ -2271,6 +2301,23 @@ public:
     ref().push(x, inv);
   }
 
+  /* begin intrinsics operations */
+  void intrinsic(std::string name,
+		 const variable_vector_t &inputs,
+		 const variable_vector_t &outputs) {
+    detach();
+    ref().intrinsic(name, inputs, outputs);
+  }
+
+  void backward_intrinsic(std::string name,
+			  const variable_vector_t &inputs,
+			  const variable_vector_t &outputs,
+			  apron_domain_t invariant) {
+    detach();
+    ref().backward_intrinsic(name, inputs, outputs, invariant);
+  }
+  /* end intrinsics operations */
+  
   void write(crab_os &o) { ref().write(o); }
 
   linear_constraint_system_t to_linear_constraint_system() {

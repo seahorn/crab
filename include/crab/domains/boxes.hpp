@@ -268,6 +268,22 @@ public:
     CRAB_ERROR(LDD_NOT_FOUND);
   }
 
+
+  /* begin intrinsics operations */    
+  void intrinsic(std::string name,
+		 const variable_vector_t &inputs,
+		 const variable_vector_t &outputs) override {
+    CRAB_ERROR(LDD_NOT_FOUND);    
+  }
+
+  void backward_intrinsic(std::string name,
+			  const variable_vector_t &inputs,
+			  const variable_vector_t &outputs,
+			  boxes_domain_t invariant) override {
+    CRAB_ERROR(LDD_NOT_FOUND);        
+  }
+  /* end intrinsics operations */
+  
   linear_constraint_system_t to_linear_constraint_system() {
     CRAB_ERROR(LDD_NOT_FOUND);
   }
@@ -1366,6 +1382,21 @@ public:
 
   void minimize() {}
 
+  /* begin intrinsics operations */    
+  void intrinsic(std::string name,
+		 const variable_vector_t &inputs,
+		 const variable_vector_t &outputs) override {
+    CRAB_WARN("Intrinsics ", name, " not implemented by ", getDomainName());
+  }
+
+  void backward_intrinsic(std::string name,
+			  const variable_vector_t &inputs,
+			  const variable_vector_t &outputs,
+			  boxes_domain_t invariant) override {
+    CRAB_WARN("Intrinsics ", name, " not implemented by ", getDomainName());    
+  }
+  /* end intrinsics operations */
+  
   void rename(const variable_vector_t &from, const variable_vector_t &to) {
     crab::CrabStats::count(getDomainName() + ".count.rename");
     crab::ScopedCrabStats __st__(getDomainName() + ".rename");
@@ -2291,6 +2322,23 @@ public:
     ref().rename(from, to)
   }
 
+  /* begin intrinsics operations */  
+  void intrinsic(std::string name,
+		 const variable_vector_t &inputs,
+		 const variable_vector_t &outputs) override {
+    detach();
+    ref().intrinsic(name, inputs, outputs);
+  }
+
+  void backward_intrinsic(std::string name,
+			  const variable_vector_t &inputs,
+			  const variable_vector_t &outputs,
+			  boxes_domain_t invariant) override {
+    detach();
+    ref().backward_intrinsic(name, inputs, outputs, invariant);
+  }
+  /* end intrinsics operations */
+  
   void write(crab_os &o) { ref().write(o); }
 
   linear_constraint_system_t to_linear_constraint_system() {

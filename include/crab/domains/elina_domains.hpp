@@ -287,6 +287,21 @@ public:
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
 
+  /* begin intrinsics operations */    
+  void intrinsic(std::string name,
+		 const variable_vector_t &inputs,
+		 const variable_vector_t &outputs) override {
+    CRAB_ERROR(ELINA_NOT_FOUND);    
+  }
+
+  void backward_intrinsic(std::string name,
+			  const variable_vector_t &inputs,
+			  const variable_vector_t &outputs,
+			  elina_domain_t invariant) override {
+    CRAB_ERROR(ELINA_NOT_FOUND);        
+  }
+  /* end intrinsics operations */
+  
   void write(crab_os &o) { CRAB_ERROR(ELINA_NOT_FOUND); }
 
   static std::string getDomainName() { return "Dummy Elina"; }
@@ -2207,6 +2222,21 @@ public:
     assert(m_var_map.size() == get_dims());
   }
 
+  /* begin intrinsics operations */    
+  void intrinsic(std::string name,
+		 const variable_vector_t &inputs,
+		 const variable_vector_t &outputs) override {
+    CRAB_WARN("Intrinsics ", name, " not implemented by ", getDomainName());
+  }
+
+  void backward_intrinsic(std::string name,
+			  const variable_vector_t &inputs,
+			  const variable_vector_t &outputs,
+			  elina_domain_t invariant) override {
+    CRAB_WARN("Intrinsics ", name, " not implemented by ", getDomainName());    
+  }
+  /* end intrinsics operations */
+  
   void dump() const { dump(m_var_map, m_apstate); }
 
   void write(crab_os &o) {
@@ -2500,6 +2530,23 @@ public:
     ref().push(x, inv);
   }
 
+  /* begin intrinsics operations */    
+  void intrinsic(std::string name,
+		 const variable_vector_t &inputs,
+		 const variable_vector_t &outputs) override {
+    detach();
+    ref().intrinsic(name, inputs, outputs);
+  }
+
+  void backward_intrinsic(std::string name,
+			  const variable_vector_t &inputs,
+			  const variable_vector_t &outputs,
+			  elina_domain_t invariant) override {
+    detach();
+    ref().backward_intrinsic(name, inputs, outputs, invariant);
+  }
+  /* end intrinsics operations */
+  
   void write(crab_os &o) { ref().write(o); }
 
   linear_constraint_system_t to_linear_constraint_system() {

@@ -508,6 +508,21 @@ public:
     _env.rename(from, to);        
   }
 
+  /* begin intrinsics operations */  
+  void intrinsic(std::string name,
+		 const variable_vector_t &inputs,
+		 const variable_vector_t &outputs) override {
+    CRAB_WARN("Intrinsics ", name, " not implemented by ", getDomainName());
+  }
+
+  void backward_intrinsic(std::string name,
+			  const variable_vector_t &inputs,
+			  const variable_vector_t &outputs,
+			  nullity_domain_t invariant) override {
+    CRAB_WARN("Intrinsics ", name, " not implemented by ", getDomainName());    
+  }
+  /* end intrinsics operations */
+  
   linear_constraint_system_t to_linear_constraint_system() {
     if (is_bottom())
       return linear_constraint_t::get_false();

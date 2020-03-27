@@ -1541,6 +1541,21 @@ public:
 
   void minimize() {}
 
+  /* begin intrinsics operations */    
+  void intrinsic(std::string name,
+		 const variable_vector_t &inputs,
+		 const variable_vector_t &outputs) override {
+    CRAB_WARN("Intrinsics ", name, " not implemented by ", getDomainName());
+  }
+
+  void backward_intrinsic(std::string name,
+			  const variable_vector_t &inputs,
+			  const variable_vector_t &outputs,
+			  dis_interval_domain_t invariant) override {
+    CRAB_WARN("Intrinsics ", name, " not implemented by ", getDomainName());    
+  }
+  /* end intrinsics operations */
+  
   void rename(const variable_vector_t &from, const variable_vector_t &to) {
     crab::CrabStats::count(getDomainName() + ".count.rename");
     crab::ScopedCrabStats __st__(getDomainName() + ".rename");

@@ -310,6 +310,20 @@ public:
     this->_env.set(x, xi);
   }
 
+  // intrinsics operations
+  void intrinsic(std::string name,
+		 const variable_vector_t &inputs,
+		 const variable_vector_t &outputs) override {
+    CRAB_WARN("Intrinsics ", name, " not implemented by ", getDomainName());
+  }
+
+  void backward_intrinsic(std::string name,
+			  const variable_vector_t &inputs,
+			  const variable_vector_t &outputs,
+			  interval_domain_t invariant) override {
+    CRAB_WARN("Intrinsics ", name, " not implemented by ", getDomainName());    
+  }
+  
   // backward arithmetic operations
   void backward_assign(variable_t x, linear_expression_t e,
                        interval_domain_t inv) {

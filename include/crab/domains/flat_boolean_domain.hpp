@@ -610,6 +610,21 @@ public:
     _env.rename(from, to);    
   }
 
+  /* begin intrinsics operations */    
+  void intrinsic(std::string name,
+		 const variable_vector_t &inputs,
+		 const variable_vector_t &outputs) override {
+    CRAB_WARN("Intrinsics ", name, " not implemented by ", getDomainName());
+  }
+
+  void backward_intrinsic(std::string name,
+			  const variable_vector_t &inputs,
+			  const variable_vector_t &outputs,
+			  flat_boolean_domain_t invariant) override {
+    CRAB_WARN("Intrinsics ", name, " not implemented by ", getDomainName());    
+  }
+  /* end intrinsics operations */
+  
   void forget(const variable_vector_t &variables) {
     if (is_bottom() || is_top()) {
       return;
@@ -1580,6 +1595,21 @@ public:
     _product.rename(from, to);
   }
 
+  /* begin intrinsics operations */    
+  void intrinsic(std::string name,
+		 const variable_vector_t &inputs,
+		 const variable_vector_t &outputs) override {
+    _product.intrinsic(name, inputs, outputs);
+  }
+
+  void backward_intrinsic(std::string name,
+			  const variable_vector_t &inputs,
+			  const variable_vector_t &outputs,
+			  bool_num_domain_t invariant) override {
+    _product.backward_intrinsic(name, inputs, outputs, invariant._product);    
+  }
+  /* end intrinsics operations */
+  
   void normalize() { _product.normalize(); }
 
   void minimize() { _product.minimize(); }

@@ -2824,6 +2824,32 @@ Summary rec1(IN:{s:int},OUT:{t:int}) ==>
 {}
 Summary rec2(IN:{s1:int},OUT:{t1:int}) ==>
 {}
+x0:
+  k = 2147483648;
+  i = crab_intrinsic(foo1,i:int,k:int);
+  i = 0;
+  goto bb1;
+bb1:
+  goto bb1_t,bb1_f;
+bb1_t:
+  assume(i <= 99);
+  havoc(nd);
+  inc = ite(-nd <= -1,1,2);
+  i = i+inc;
+  i = crab_intrinsic(foo2,i:int,k:int);
+  goto bb1;
+bb1_f:
+  assume(-i <= -100);
+  goto ret;
+ret:
+
+
+{}
+{}
+({}, {})
+({}, {})
+({}, {})
+{}
 Join 
 Widening 
 Widening of 

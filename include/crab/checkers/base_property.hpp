@@ -154,6 +154,7 @@ public:
   typedef crab::cfg::unreachable_stmt<number_t, varname_t> unreach_t;
   typedef crab::cfg::callsite_stmt<number_t, varname_t> callsite_t;
   typedef crab::cfg::return_stmt<number_t, varname_t> return_t;
+  typedef crab::cfg::intrinsic_stmt<number_t, varname_t> intrinsic_t;  
   typedef crab::cfg::array_init_stmt<number_t, varname_t> arr_init_t;
   typedef crab::cfg::array_store_stmt<number_t, varname_t> arr_store_t;
   typedef crab::cfg::array_load_stmt<number_t, varname_t> arr_load_t;
@@ -289,6 +290,12 @@ protected:
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
+  virtual void check(intrinsic_t &s) {
+    if (!this->m_abs_tr)
+      return;
+    s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
+  }
+  
   virtual void check(arr_init_t &s) {
     if (!this->m_abs_tr)
       return;
@@ -407,8 +414,9 @@ public:
   void visit(int_cast_t &s) { check(s); }
   void visit(havoc_t &s) { check(s); }
   void visit(unreach_t &s) { check(s); }
-  void visit(callsite_t &s) { check(s); }
+  void visit(callsite_t &s) { check(s); }  
   void visit(return_t &s) { check(s); }
+  void visit(intrinsic_t &s) { check(s); }  
   void visit(arr_init_t &s) { check(s); }
   void visit(arr_assign_t &s) { check(s); }  
   void visit(arr_store_t &s) { check(s); }

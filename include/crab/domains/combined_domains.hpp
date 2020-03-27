@@ -690,6 +690,23 @@ public:
     this->_product.second().rename(from, to);
   }
 
+  /* begin intrinsics operations */    
+  void intrinsic(std::string name,
+		 const variable_vector_t &inputs,
+		 const variable_vector_t &outputs) override {
+    this->_product.first().intrinsic(name, inputs, outputs);
+    this->_product.second().intrinsic(name, inputs, outputs);    
+  }
+
+  void backward_intrinsic(std::string name,
+			  const variable_vector_t &inputs,
+			  const variable_vector_t &outputs,
+			  domain_product2_t invariant) override {
+    this->_product.first().backward_intrinsic(name, inputs, outputs, invariant.first());
+    this->_product.second().backward_intrinsic(name, inputs, outputs, invariant.second());        
+  }
+  /* end intrinsics operations */
+  
   void write(crab::crab_os &o) { this->_product.write(o); }
 
   static std::string getDomainName() {
@@ -1177,6 +1194,21 @@ public:
     this->_product.rename(from, to);
   }
 
+  /* begin intrinsics operations */    
+  void intrinsic(std::string name,
+		 const variable_vector_t &inputs,
+		 const variable_vector_t &outputs) override {
+    this->_product.intrinsic(name, inputs, outputs);
+  }
+
+  void backward_intrinsic(std::string name,
+			  const variable_vector_t &inputs,
+			  const variable_vector_t &outputs,
+			  reduced_numerical_domain_product2_t invariant) override {
+    this->_product.backward_intrinsic(name, inputs, outputs, invariant._product);
+  }
+  /* end intrinsics operations */
+  
   void forget(const variable_vector_t &variables) {
     this->_product.forget(variables);
   }
@@ -1805,9 +1837,25 @@ public:
   }
 
   void rename(const variable_vector_t &from, const variable_vector_t &to) {
-    this->_product.rename(from, to);
+    this->_product.rename(from, to);    
   }
 
+
+  /* begin intrinsics operations */    
+  void intrinsic(std::string name,
+		 const variable_vector_t &inputs,
+		 const variable_vector_t &outputs) override {
+    this->_product.intrinsic(name, inputs, outputs);
+  }
+
+  void backward_intrinsic(std::string name,
+			  const variable_vector_t &inputs,
+			  const variable_vector_t &outputs,
+			   rnc_domain_t invariant) override {
+    this->_product.backward_intrinsic(name, inputs, outputs, invariant._product);
+  }
+  /* end intrinsics operations */
+  
 }; // class numerical_congruence_domain
 
 // Reduced product of a numerical domain with nullity
@@ -2156,6 +2204,21 @@ public:
     this->_product.rename(from, to);
   }
 
+  /* begin intrinsics operations */    
+  virtual void intrinsic(std::string name,
+			 const variable_vector_t &inputs,
+			 const variable_vector_t &outputs) override {
+    this->_product.intrinsic(name, inputs, outputs);
+  }
+
+  virtual void backward_intrinsic(std::string name,
+				  const variable_vector_t &inputs,
+				  const variable_vector_t &outputs,
+				  nn_domain_t invariant) override {
+    this->_product.backward_intrinsic(name, inputs, outputs, invariant._product);
+  }
+  /* end intrinsics operations */
+  
   void forget(const variable_vector_t &variables) {
     this->_product.forget(variables);
   }
