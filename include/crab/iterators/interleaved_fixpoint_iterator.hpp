@@ -130,9 +130,8 @@ private:
     return table.at(node);
   }
 
-  inline AbstractValue extrapolate(basic_block_label_t node,
-                                   unsigned int iteration, AbstractValue before,
-                                   AbstractValue after) {
+  inline AbstractValue extrapolate(basic_block_label_t node, unsigned int iteration,
+				   AbstractValue &before, AbstractValue &after) {
     crab::CrabStats::count("Fixpo.extrapolate");
     crab::ScopedCrabStats __st__("Fixpo.extrapolate");
 
@@ -178,7 +177,7 @@ private:
   }
 
   inline AbstractValue refine(basic_block_label_t node, unsigned int iteration,
-                              AbstractValue before, AbstractValue after) {
+                              AbstractValue &before, AbstractValue &after) {
     crab::CrabStats::count("Fixpo.refine");
     crab::ScopedCrabStats __st__("Fixpo.refine");
 
