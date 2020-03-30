@@ -2052,10 +2052,10 @@ public:
     CRAB_LOG("array-adaptive",
 	     crab::outs() << "Join " << *this << " and " << other << "\n";);
     
-    if (other.is_bottom()) {
+    if (other.is_bottom() || is_top()) {
       CRAB_LOG("array-adaptive", crab::outs() << "Res=" << *this << "\n";);      
       return;
-    } else if (is_bottom()) {
+    } else if (is_bottom() || other.is_top()) {
       *this = other;
       CRAB_LOG("array-adaptive", crab::outs() << "Res=" << *this << "\n";);      
     } else {
@@ -2081,9 +2081,9 @@ public:
   array_adaptive_domain_t operator|(array_adaptive_domain_t other) {
     crab::CrabStats::count(getDomainName() + ".count.join");
     crab::ScopedCrabStats __st__(getDomainName() + ".join");
-    if (other.is_bottom()) {
+    if (other.is_bottom() || is_top()) {
       return *this;
-    } else if (is_bottom()) {
+    } else if (is_bottom() || other.is_top()) {
       return other;
     } else {
       CRAB_LOG("array-adaptive",
@@ -2094,9 +2094,9 @@ public:
       smashed_varmap_t left_smashed_varmap(m_smashed_varmap);
 
       // Must be done before the renaming.
-      auto out_array_map = m_array_map.join(
+      auto out_array_map = std::move(m_array_map.join(
           other.m_array_map, left_cell_varmap, left_smashed_varmap, left_dom,
-          other.m_cell_varmap, other.m_smashed_varmap, other.m_inv);
+          other.m_cell_varmap, other.m_smashed_varmap, other.m_inv));
 
       smashed_varmap_t out_smashed_varmap;
       cell_varmap_t out_cell_varmap;
@@ -2105,7 +2105,8 @@ public:
                            other.m_cell_varmap, out_smashed_varmap,
                            out_cell_varmap);
 
-      array_adaptive_domain_t res(left_dom | other.m_inv, std::move(out_array_map),
+      array_adaptive_domain_t res(left_dom | other.m_inv,
+				  std::move(out_array_map),
                                   std::move(out_cell_varmap),
                                   std::move(out_smashed_varmap));
 
