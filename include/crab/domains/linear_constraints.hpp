@@ -129,14 +129,14 @@ public:
     this->_map->insert(pair_t(x, n));
   }
 
-  linear_expression_t &operator=(const linear_expression_t &e) {
-    if (this != &e) {
-      this->_map = e._map;
-      this->_cst = e._cst;
-    }
-    return *this;
-  }
+  linear_expression(const linear_expression_t &e) = default;
+  
+  linear_expression(linear_expression_t &&e) = default;
+ 
+  linear_expression_t &operator=(const linear_expression_t &e) = default;
 
+  linear_expression_t &operator=(linear_expression_t &&e) = default;
+  
   const_iterator begin() const {
     return boost::make_transform_iterator(_map->begin(), tr_value_ty());
   }
@@ -564,6 +564,14 @@ public:
     }
   }
 
+  linear_constraint(const linear_constraint_t &c) = default;
+
+  linear_constraint(linear_constraint_t &&c) = default;
+  
+  linear_constraint_t &operator=(const linear_constraint_t &c) = default;
+  
+  linear_constraint_t &operator=(linear_constraint_t &&c) = default;
+  
   static linear_constraint_t get_true() {
     linear_constraint_t res(linear_expression_t(Number(0)), EQUALITY);
     return res;
@@ -1412,12 +1420,14 @@ public:
     _csts.push_back(cst);
   }
 
-  linear_constraint_system(const linear_constraint_system_t &o)
-      : _csts(o._csts) {}
+  linear_constraint_system(const linear_constraint_system_t &o) = default;
 
-  linear_constraint_system(linear_constraint_system_t &&o)
-      : _csts(std::move(o._csts)) {}
+  linear_constraint_system(linear_constraint_system_t &&o) = default;
 
+  linear_constraint_system_t &operator=(const linear_constraint_system_t &o) = default;
+  
+  linear_constraint_system_t &operator=(linear_constraint_system_t &&o) = default;
+  
   linear_constraint_system_t &operator+=(const linear_constraint_t &c) {
     if (!std::any_of(
             _csts.begin(), _csts.end(),
@@ -1587,11 +1597,14 @@ public:
     }
   }
 
-  disjunctive_linear_constraint_system(const this_type &o)
-      : _csts(o._csts), _is_false(o._is_false) {}
+  disjunctive_linear_constraint_system(const this_type &o) = default;
 
-  disjunctive_linear_constraint_system(this_type &&o)
-      : _csts(std::move(o._csts)), _is_false(o._is_false) {}
+  disjunctive_linear_constraint_system(this_type &&o) = default;
+
+  this_type &operator=(const this_type &o) = default;
+
+  this_type &operator=(this_type &&o) = default;
+
 
   bool is_false() const { return _is_false; }
 
