@@ -10,7 +10,10 @@
 /** Define whether elina library is available */
 #cmakedefine HAVE_ELINA ${HAVE_ELINA}
 
-/** Define whether enable logging for debugging purposes */
+/** Define whether disable logging for debugging purposes */
 #cmakedefine NCRABLOG ${NCRABLOG}
+
+/** Define whether collecting statistics */
+#cmakedefine CRAB_STATS ${CRAB_STATS}
 
 #endif

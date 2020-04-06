@@ -43,6 +43,7 @@ option (CRAB_USE_APRON "Enable Apron library" OFF)
 option (CRAB_USE_ELINA "Enable Elina library" OFF)
 option (CRAB_BUILD_LIBS_SHARED "Build all Crab libraries dynamically." OFF)
 option (CRAB_ENABLE_TESTS "Enable tests" OFF)
+option (CRAB_ENABLE_STATS "Enable stats" ON)
 
 if (CRAB_USE_APRON AND CRAB_USE_ELINA)
   message(FATAL_ERROR "Apron and Elina are not compatible: choose one")
@@ -319,6 +320,13 @@ endif ()
 # Enable always logging
 set(NCRABLOG FALSE)
 
+# Enable or disable stats gathering
+if (CRAB_ENABLE_STATS)
+  set(CRAB_STATS TRUE)
+else()
+  set(CRAB_STATS FALSE)
+endif()
+    
 # check for rt lib. Not needed on OSX.
 # find_library(RT_LIB NAMES rt)
 # if (NOT RT_LIB)
