@@ -37,6 +37,7 @@ void CrabStats::PrintBrunch(crab_os &OS) {
 
 ScopedCrabStats::ScopedCrabStats(const std::string &name, bool reset): m_name("") {}
 ScopedCrabStats::~ScopedCrabStats() {}
+}
 #else 
 /* Real implementation stars here */
 #include <sys/resource.h>
