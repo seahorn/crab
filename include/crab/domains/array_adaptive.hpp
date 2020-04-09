@@ -58,7 +58,7 @@ public:
   /* options for array smashing */  
   enum { is_smashable = 1 };
   enum { smash_at_nonzero_offset = 1};
-  enum { max_smashable_cells = 64};
+  enum { max_smashable_cells = 128};
   /* options for array expansion */  
   enum { max_array_size = 512 };
 };
@@ -987,6 +987,8 @@ private:
         // performing one join per weak update even if the smashed
         // array is already unconstrained. We don't smash if the
         // number of cells to be smashed is too large.
+	CRAB_WARN("array adaptive did not smash array because its size is greater than ",
+		  Params::max_smashable_cells);
 	return;
       }
       
@@ -2785,9 +2787,17 @@ public:
                                   << " has been smashed:" << m_inv << "\n";);
           } else {
             CRAB_LOG("array-adaptive",
-                     CRAB_WARN("Array ", a,
-                               " cannot be smashed so array write at index ", i,
-                               "=", ii, " is safely ignored"););
+		     if (cells.size() > Params::max_smashable_cells) {
+		       CRAB_WARN("Array ", a,
+				 " cannot be smashed because too many cells ",
+				 cells.size(),
+				 ". Array write at index ", i, "=", ii,
+				 " is safely ignored");
+		     } else {
+		       CRAB_WARN("Array ", a,
+				 " cannot be smashed so array write at index ", i,
+				 "=", ii, " is safely ignored");
+		     });
           }
         }
 
@@ -2852,15 +2862,21 @@ public:
                 ub_idx, " is not constant");
       return;
     }
-    z_number sz = (*ub - *lb) + 1;
-    if (sz > Params::max_array_size) {
-      CRAB_WARN("array adaptive store range ignored because ",
-                "the number of elements is larger than default limit of ",
-                Params::max_array_size);
+
+    if (!(*lb <= *ub)) {
+      CRAB_WARN("array adaptive store range ignored because lower bound ",
+		*lb, " is not less or equal than upper bound ", *ub);
       return;
     }
+    
+    number_t num_elems = (*ub - *lb) + 1;
+    number_t e = *ub;
+    if (num_elems > Params::max_array_size) {
+      e = *lb + (number_t(Params::max_array_size) - 1);
+      CRAB_WARN("array adaptive store range will ignore indexes greater than ", e);
+    }
 
-    for (number_t i = *lb, e = *ub; i <= e;) {
+    for (number_t i = *lb; i <= e;) {
       array_store(a, elem_size, i, val, false);
       i = i + e_sz;
     }
@@ -3092,11 +3108,21 @@ public:
 
     interval_t ub_i = to_interval(ub_idx, invariant.get_content_domain());
     auto ub = ub_i.singleton();
-    if (!ub || ((*ub - *lb) + 1) > Params::max_array_size) {
+    if (!ub) {
       return;
     }
 
-    for (number_t i = *lb, e = *ub; i <= e;) {
+    if (!(*lb <= *ub)) {
+      return;
+    }
+    
+    number_t num_elems = (*ub - *lb) + 1;
+    number_t e = *ub;
+    if (num_elems > Params::max_array_size) {
+      e = *lb + (number_t(Params::max_array_size) -1);
+    }
+
+    for (number_t i = *lb; i <= e;) {
       backward_array_store(a, elem_size, i, val, false, invariant);
       i = i + e_sz;
     }
