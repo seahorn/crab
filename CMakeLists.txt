@@ -322,8 +322,10 @@ set(NCRABLOG FALSE)
 
 # Enable or disable stats gathering
 if (CRAB_ENABLE_STATS)
+  message (STATUS "Compiled Crab with support for gathering statistics")  
   set(CRAB_STATS TRUE)
 else()
+  message (STATUS "Compiled Crab without support for gathering statistics")    
   set(CRAB_STATS FALSE)
 endif()
     
