@@ -754,14 +754,29 @@ private:
         inter_transformer_helpers<AbsDom>::unify(caller_dom, actual, formal);
       }
     }
-
+    
     CRAB_LOG("inter-extend",
 	     crab::outs() << "Caller after unifying formal/actual paramters=" << caller_dom << "\n";);
     
     // Remove the callee variables from the caller continuation
-    // XXX: don't forget a variable if it appears on cs.get_lhs()
-    caller_dom.forget(set_difference(sum_out_variables, cs.get_lhs()));
-
+    //
+    // Note that we don't forget a callee variable if it appears
+    // either on cs.get_lhs() or cs.get_args().
+    
+    std::set<variable_t> cs_args(cs.get_args().begin(), cs.get_args().end());
+    // Variables that appear both as callsite argument and callee's
+    // formal parameter.
+    std::vector<variable_t> caller_and_callee_vars;
+    caller_and_callee_vars.reserve(fdecl.get_inputs().size());
+    for (unsigned i = 0, e = fdecl.get_inputs().size(); i < e; ++i) {
+      variable_t in_formal = fdecl.get_inputs()[i];
+      if (cs_args.count(in_formal) > 0) {
+	caller_and_callee_vars.push_back(in_formal);
+      }
+    }
+    caller_and_callee_vars.insert(caller_and_callee_vars.end(),
+				  cs.get_lhs().begin(), cs.get_lhs().end());
+    caller_dom.forget(set_difference(sum_out_variables, caller_and_callee_vars));
     return caller_dom;
   }
 

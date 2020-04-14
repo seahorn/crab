@@ -3220,6 +3220,32 @@ rec_case={}
 entry={}
 exit={x -> [0, 0], y -> [0, 0], y-x<=0, x-y<=0}
 =================================
+z:int declare foo(x:int,y:int)
+entry:
+  goto exit;
+exit:
+  z = x;
+  return z;
+
+
+void declare main()
+entry:
+  x = 5;
+  y = 10;
+  z = 8;
+  goto exit;
+exit:
+  z = call foo(x:int,y:int);
+  assert(x = 5);
+  assert(y = 10);
+  assert(z = 5);
+
+
+Running top-down inter-procedural analysis with SplitDBM
+3  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
 x0:
   k = 50;
   i = 0;
