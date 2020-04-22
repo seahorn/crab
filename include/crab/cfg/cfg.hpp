@@ -1383,7 +1383,7 @@ public:
     if (m_lhs.empty()) {
       // do nothing
     } else if (m_lhs.size() == 1) {
-      o << (*m_lhs.begin()) << " =";
+      o << (*m_lhs.begin()) << " = ";
     } else {
       o << "(";
       for (const_iterator It = m_lhs.begin(), Et = m_lhs.end(); It != Et;) {
@@ -1392,9 +1392,12 @@ public:
         if (It != Et)
           o << ",";
       }
-      o << ")=";
+      o << ")= ";
     }
-    o << " crab_intrinsic(" << m_intrinsic_name << ",";
+    o << "crab_intrinsic(" << m_intrinsic_name;
+    if (!m_args.empty()) {
+      o << ",";
+    }
     for (const_iterator It = m_args.begin(), Et = m_args.end(); It != Et;) {
       o << *It << ":" << (*It).get_type();
       ++It;
