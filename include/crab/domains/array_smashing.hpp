@@ -575,14 +575,14 @@ public:
   void intrinsic(std::string name,
 		 const variable_vector_t &inputs,
 		 const variable_vector_t &outputs) override {
-    CRAB_WARN("Intrinsics ", name, " not implemented by ", getDomainName());
+    _inv.intrinsic(name, inputs, outputs);
   }
 
   void backward_intrinsic(std::string name,
 			  const variable_vector_t &inputs,
 			  const variable_vector_t &outputs,
 			  array_smashing_t invariant) override {
-    CRAB_WARN("Intrinsics ", name, " not implemented by ", getDomainName());    
+    _inv.backward_intrinsic(name, inputs, outputs, invariant.get_content_domain()); 
   }
   /* end intrinsics operations */
   

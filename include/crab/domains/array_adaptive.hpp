@@ -2344,11 +2344,30 @@ public:
 
   void minimize() { m_inv.minimize(); }
 
+  interval_t operator[](variable_t v) {
+    if (!v.is_array_type()) {
+      return m_inv[v];
+    } else {
+      return interval_t::top();
+    }
+  }
+  
   /* begin intrinsics operations */  
   void intrinsic(std::string name,
 		 const variable_vector_t &inputs,
 		 const variable_vector_t &outputs) override {
-    CRAB_WARN("Intrinsics ", name, " not implemented by ", getDomainName());
+    if ((std::all_of(inputs.begin(), inputs.end(),
+		    [](const variable_t &v) {
+		      return v.is_int_type() || v.is_bool_type();
+		    })) &&
+	(std::all_of(outputs.begin(), outputs.end(),
+		     [](const variable_t &v) {
+		       return v.is_int_type() || v.is_bool_type();
+		     }))) {
+      m_inv.intrinsic(name, inputs, outputs);
+    } else { 
+      CRAB_WARN("Intrinsics ", name, " not implemented by ", getDomainName());
+    }
   }
 
   void backward_intrinsic(std::string name,
