@@ -51,6 +51,7 @@ Z_CHECKER(crab::domain_impl::z_interval_domain_t)
 Z_CHECKER(crab::domain_impl::z_sdbm_domain_t)
 Z_CHECKER(crab::domain_impl::z_ae_term_int_t)
 Z_CHECKER(crab::domain_impl::z_aa_term_int_t)
+Z_CHECKER(crab::domain_impl::z_pow_aa_int_t)	  
 
 Q_RUNNER(crab::domain_impl::q_interval_domain_t)
 Q_RUNNER(crab::domain_impl::q_oct_apron_domain_t)

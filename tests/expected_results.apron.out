@@ -3153,6 +3153,92 @@ bb1_t={}
 bb2={}
 Abstract trace: entry (bb1 bb1_t bb2)^{2} bb1_f ret
 
+entry:
+  x = 0;
+  y = 1;
+  goto b1;
+b1:
+  goto b1_tt,b1_ff;
+b1_tt:
+  assume(-nd1 <= -1);
+  x = x+1;
+  y = y+2;
+  goto b2;
+b2:
+  goto b2_tt,b2_ff;
+b2_tt:
+  assume(-nd2 <= -1);
+  x = x+2;
+  y = y+3;
+  goto b3;
+b3:
+  goto b3_tt,b3_ff;
+b3_tt:
+  assume(-nd3 <= -1);
+  y = y+1;
+  goto exit;
+exit:
+  assert(x-y <= -1);
+
+b3_ff:
+  assume(nd3 <= 0);
+  goto exit;
+b2_ff:
+  assume(nd2 <= 0);
+  goto b3;
+b1_ff:
+  assume(nd1 <= 0);
+  goto b2;
+
+Invariants using Powerset(ArrayAdaptive(ArraySmashing(Intervals)))
+entry=top
+b1={x -> [0, 0]; y -> [1, 1]}
+b1_ff={x -> [0, 0]; y -> [1, 1]}
+b2={x -> [1, 1]; y -> [3, 3]; nd1 -> [1, +oo]} or 
+{x -> [0, 0]; y -> [1, 1]; nd1 -> [-oo, 0]}
+b2_ff={x -> [1, 1]; y -> [3, 3]; nd1 -> [1, +oo]} or 
+{x -> [0, 0]; y -> [1, 1]; nd1 -> [-oo, 0]}
+b3={x -> [3, 3]; y -> [6, 6]; nd1 -> [1, +oo]; nd2 -> [1, +oo]} or 
+{x -> [2, 2]; y -> [4, 4]; nd1 -> [-oo, 0]; nd2 -> [1, +oo]} or 
+{x -> [1, 1]; y -> [3, 3]; nd1 -> [1, +oo]; nd2 -> [-oo, 0]} or 
+{x -> [0, 0]; y -> [1, 1]; nd1 -> [-oo, 0]; nd2 -> [-oo, 0]}
+b3_ff={x -> [3, 3]; y -> [6, 6]; nd1 -> [1, +oo]; nd2 -> [1, +oo]} or 
+{x -> [2, 2]; y -> [4, 4]; nd1 -> [-oo, 0]; nd2 -> [1, +oo]} or 
+{x -> [1, 1]; y -> [3, 3]; nd1 -> [1, +oo]; nd2 -> [-oo, 0]} or 
+{x -> [0, 0]; y -> [1, 1]; nd1 -> [-oo, 0]; nd2 -> [-oo, 0]}
+exit={x -> [3, 3]; y -> [7, 7]; nd1 -> [1, +oo]; nd2 -> [1, +oo]; nd3 -> [1, +oo]} or 
+{x -> [2, 2]; y -> [5, 5]; nd1 -> [-oo, 0]; nd2 -> [1, +oo]; nd3 -> [1, +oo]} or 
+{x -> [1, 1]; y -> [4, 4]; nd1 -> [1, +oo]; nd2 -> [-oo, 0]; nd3 -> [1, +oo]} or 
+{x -> [0, 0]; y -> [2, 2]; nd1 -> [-oo, 0]; nd2 -> [-oo, 0]; nd3 -> [1, +oo]} or 
+{x -> [3, 3]; y -> [6, 6]; nd1 -> [1, +oo]; nd2 -> [1, +oo]; nd3 -> [-oo, 0]} or 
+{x -> [2, 2]; y -> [4, 4]; nd1 -> [-oo, 0]; nd2 -> [1, +oo]; nd3 -> [-oo, 0]} or 
+{x -> [1, 1]; y -> [3, 3]; nd1 -> [1, +oo]; nd2 -> [-oo, 0]; nd3 -> [-oo, 0]} or 
+{x -> [0, 0]; y -> [1, 1]; nd1 -> [-oo, 0]; nd2 -> [-oo, 0]; nd3 -> [-oo, 0]}
+b3_tt={x -> [3, 3]; y -> [6, 6]; nd1 -> [1, +oo]; nd2 -> [1, +oo]} or 
+{x -> [2, 2]; y -> [4, 4]; nd1 -> [-oo, 0]; nd2 -> [1, +oo]} or 
+{x -> [1, 1]; y -> [3, 3]; nd1 -> [1, +oo]; nd2 -> [-oo, 0]} or 
+{x -> [0, 0]; y -> [1, 1]; nd1 -> [-oo, 0]; nd2 -> [-oo, 0]}
+b2_tt={x -> [1, 1]; y -> [3, 3]; nd1 -> [1, +oo]} or 
+{x -> [0, 0]; y -> [1, 1]; nd1 -> [-oo, 0]}
+b1_tt={x -> [0, 0]; y -> [1, 1]}
+Abstract trace: entry b1 b1_ff b1_tt b2 b2_ff b2_tt b3 b3_ff b3_tt exit
+ --- SAFE --------------------
+Property : x-y <= -1
+Invariant: {x -> [3, 3]; y -> [7, 7]; nd1 -> [1, +oo]; nd2 -> [1, +oo]; nd3 -> [1, +oo]} or 
+{x -> [2, 2]; y -> [5, 5]; nd1 -> [-oo, 0]; nd2 -> [1, +oo]; nd3 -> [1, +oo]} or 
+{x -> [1, 1]; y -> [4, 4]; nd1 -> [1, +oo]; nd2 -> [-oo, 0]; nd3 -> [1, +oo]} or 
+{x -> [0, 0]; y -> [2, 2]; nd1 -> [-oo, 0]; nd2 -> [-oo, 0]; nd3 -> [1, +oo]} or 
+{x -> [3, 3]; y -> [6, 6]; nd1 -> [1, +oo]; nd2 -> [1, +oo]; nd3 -> [-oo, 0]} or 
+{x -> [2, 2]; y -> [4, 4]; nd1 -> [-oo, 0]; nd2 -> [1, +oo]; nd3 -> [-oo, 0]} or 
+{x -> [1, 1]; y -> [3, 3]; nd1 -> [1, +oo]; nd2 -> [-oo, 0]; nd3 -> [-oo, 0]} or 
+{x -> [0, 0]; y -> [1, 1]; nd1 -> [-oo, 0]; nd2 -> [-oo, 0]; nd3 -> [-oo, 0]}
+ -----------------------------
+user-defined assertion checker using Powerset(ArrayAdaptive(ArraySmashing(Intervals)))
+1  Number of total safe checks
+0  Number of total error checks
+0  Number of total warning checks
+0  Number of total unreachable checks
+
 bb0:
   goto bb1,bb2;
 bb1:

@@ -19,7 +19,8 @@
 #include <crab/domains/array_smashing.hpp>
 #include <crab/domains/nullity.hpp>
 #include <crab/domains/flat_boolean_domain.hpp>                      
-#include <crab/domains/combined_domains.hpp>                      
+#include <crab/domains/combined_domains.hpp>
+#include <crab/domains/powerset_domain.hpp>
 
 namespace crab {
 
@@ -69,6 +70,7 @@ namespace crab {
       enum { max_smashable_cells = 64};
       enum { max_array_size = 512 };
     };
+    typedef array_adaptive_domain<z_interval_domain_t, ArrayAdaptParams> z_aa_int_t;
     typedef array_adaptive_domain<z_term_domain_t, ArrayAdaptParams> z_aa_term_int_t;
     typedef array_adaptive_domain<z_bool_interval_domain_t, ArrayAdaptParams> z_aa_bool_int_t;
     typedef array_expansion_domain<z_interval_domain_t> z_ae_int_t;
@@ -82,6 +84,8 @@ namespace crab {
     typedef array_smashing<z_sdbm_domain_t> z_as_sdbm_t;
     typedef array_smashing<z_num_null_domain_t> z_as_num_null_t;
     typedef array_smashing<z_bool_num_domain_t> z_as_bool_num_t;
+    // completion disjunctive domains
+    typedef powerset_domain<z_aa_int_t> z_pow_aa_int_t;        
     // Machine integer arithmetic domains
     typedef wrapped_interval_domain<z_number, varname_t> z_wrapped_interval_domain_t;
     /// Numerical domains over real
@@ -91,6 +95,7 @@ namespace crab {
     typedef apron_domain<q_number,varname_t,APRON_OCT> q_oct_apron_domain_t;
     typedef elina_domain<q_number,varname_t,ELINA_PK> q_pk_elina_domain_t;
     typedef elina_domain<q_number,varname_t,ELINA_OCT> q_oct_elina_domain_t;
+    
   } 
 }
 #endif /*__CRAB_DOMAINS__*/
