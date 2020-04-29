@@ -239,11 +239,11 @@ public:
     CRAB_ERROR(APRON_NOT_FOUND);
   }
 
-  void pointer_load(variable_t lhs, variable_t rhs) {
+  void pointer_load(variable_t lhs, variable_t rhs, linear_expression_t elem_size) {
     CRAB_ERROR(APRON_NOT_FOUND);
   }
 
-  void pointer_store(variable_t lhs, variable_t rhs) {
+  void pointer_store(variable_t lhs, variable_t rhs, linear_expression_t elem_size) {
     CRAB_ERROR(APRON_NOT_FOUND);
   }
 
@@ -1845,10 +1845,9 @@ public:
   void backward_array_assign(variable_t lhs, variable_t rhs,
                              apron_domain_t invariant) {}
   // pointer operations
-  void pointer_load(variable_t lhs, variable_t rhs) {}
-  void pointer_store(variable_t lhs, variable_t rhs) {}
-  void pointer_assign(variable_t lhs, variable_t rhs,
-                      linear_expression_t offset) {}
+  void pointer_load(variable_t lhs, variable_t rhs, linear_expression_t elem_size) {}
+  void pointer_store(variable_t lhs, variable_t rhs, linear_expression_t elem_size) {}
+  void pointer_assign(variable_t lhs, variable_t rhs, linear_expression_t offset) {}
   void pointer_mk_obj(variable_t lhs, ikos::index_t address) {}
   void pointer_function(variable_t lhs, varname_t func) {}
   void pointer_mk_null(variable_t lhs) {}
@@ -2280,10 +2279,9 @@ public:
   void backward_array_assign(variable_t lhs, variable_t rhs,
                              apron_domain_t invariant) {}
   // pointer operations
-  void pointer_load(variable_t lhs, variable_t rhs) {}
-  void pointer_store(variable_t lhs, variable_t rhs) {}
-  void pointer_assign(variable_t lhs, variable_t rhs,
-                      linear_expression_t offset) {}
+  void pointer_load(variable_t lhs, variable_t rhs, linear_expression_t elem_size) {}
+  void pointer_store(variable_t lhs, variable_t rhs, linear_expression_t elem_size) {}
+  void pointer_assign(variable_t lhs, variable_t rhs, linear_expression_t offset) {}
   void pointer_mk_obj(variable_t lhs, ikos::index_t address) {}
   void pointer_function(variable_t lhs, varname_t func) {}
   void pointer_mk_null(variable_t lhs) {}

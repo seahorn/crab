@@ -400,13 +400,13 @@ public:
   /* End unimplemented operations */
 
   // pointer operations
-  void pointer_load(variable_t /*lhs*/, variable_t rhs) {
+  void pointer_load(variable_t /*lhs*/, variable_t rhs, linear_expression_t elem_size) {
     // XXX: assume after the load the rhs must be non-null otherwise
     // the program failed.
     equality(rhs, nullity_value::non_null());
   }
 
-  void pointer_store(variable_t lhs, variable_t /*rhs*/) {
+  void pointer_store(variable_t lhs, variable_t /*rhs*/, linear_expression_t elem_size) {
     // XXX: assume after the store the lhs must be non-null
     // otherwise the program failed.
     equality(lhs, nullity_value::non_null());

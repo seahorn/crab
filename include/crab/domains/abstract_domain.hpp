@@ -162,12 +162,13 @@ public:
 
   /**************************** Pointer operations ************************/
   // p := *q
-  virtual void pointer_load(variable_t p, variable_t q) = 0;
+  // elem_size is the number of bytes read from memory
+  virtual void pointer_load(variable_t p, variable_t q, linear_expression_t elem_size) = 0;
   // *p := q
-  virtual void pointer_store(variable_t p, variable_t q) = 0;
+  // elem_size is the number of bytes written into memory
+  virtual void pointer_store(variable_t p, variable_t q, linear_expression_t elem_size) = 0;
   // p := q + offset
-  virtual void pointer_assign(variable_t p, variable_t q,
-                              linear_expression_t offset) = 0;
+  virtual void pointer_assign(variable_t p, variable_t q, linear_expression_t offset) = 0;
   // p := &a;
   virtual void pointer_mk_obj(variable_t p, ikos::index_t address) = 0;
   // p := &func

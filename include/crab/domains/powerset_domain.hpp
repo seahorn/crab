@@ -508,24 +508,23 @@ public:
 
   
   // pointer_operators_api
-  virtual void pointer_load(variable_t lhs, variable_t rhs) override {
+  virtual void pointer_load(variable_t lhs, variable_t rhs, linear_expression_t elem_size) override {
     if (!is_bottom()) {
       for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
-	m_disjuncts[i].pointer_load(lhs, rhs);
+	m_disjuncts[i].pointer_load(lhs, rhs, elem_size);
       }                        
     }
   }
 
-  virtual void pointer_store(variable_t lhs, variable_t rhs) override {
+  virtual void pointer_store(variable_t lhs, variable_t rhs, linear_expression_t elem_size) override {
     if (!is_bottom()) {
       for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
-	m_disjuncts[i].pointer_store(lhs, rhs);
+	m_disjuncts[i].pointer_store(lhs, rhs, elem_size);
       }                            
     }
   }
 
-  virtual void pointer_assign(variable_t lhs, variable_t rhs,
-                              linear_expression_t offset) override {
+  virtual void pointer_assign(variable_t lhs, variable_t rhs, linear_expression_t offset) override {
     if (!is_bottom()) {
       for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
 	m_disjuncts[i].pointer_assign(lhs, rhs, offset);

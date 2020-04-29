@@ -538,15 +538,15 @@ public:
   }
 
   // pointer operators
-  virtual void pointer_load(variable_t lhs, variable_t rhs) override {
-    this->_product.first().pointer_load(lhs, rhs);
-    this->_product.second().pointer_load(lhs, rhs);
+  virtual void pointer_load(variable_t lhs, variable_t rhs, linear_expression_t elem_size) override {
+    this->_product.first().pointer_load(lhs, rhs, elem_size);
+    this->_product.second().pointer_load(lhs, rhs, elem_size);
     this->reduce();
   }
 
-  virtual void pointer_store(variable_t lhs, variable_t rhs) override {
-    this->_product.first().pointer_store(lhs, rhs);
-    this->_product.second().pointer_store(lhs, rhs);
+  virtual void pointer_store(variable_t lhs, variable_t rhs, linear_expression_t elem_size) override {
+    this->_product.first().pointer_store(lhs, rhs, elem_size);
+    this->_product.second().pointer_store(lhs, rhs, elem_size);
     this->reduce();
   }
 
@@ -1179,10 +1179,9 @@ public:
   void backward_array_assign(variable_t lhs, variable_t rhs,
                              reduced_numerical_domain_product2_t invariant) {}
   // pointer operations
-  void pointer_load(variable_t lhs, variable_t rhs) {}
-  void pointer_store(variable_t lhs, variable_t rhs) {}
-  void pointer_assign(variable_t lhs, variable_t rhs,
-                      linear_expression_t offset) {}
+  void pointer_load(variable_t lhs, variable_t rhs, linear_expression_t elem_size) {}
+  void pointer_store(variable_t lhs, variable_t rhs, linear_expression_t elem_size) {}
+  void pointer_assign(variable_t lhs, variable_t rhs, linear_expression_t offset) {}
   void pointer_mk_obj(variable_t lhs, ikos::index_t address) {}
   void pointer_function(variable_t lhs, varname_t func) {}
   void pointer_mk_null(variable_t lhs) {}
@@ -1794,10 +1793,9 @@ public:
   void backward_array_assign(variable_t lhs, variable_t rhs,
                              rnc_domain_t invariant) {}
   // pointer operations
-  void pointer_load(variable_t lhs, variable_t rhs) {}
-  void pointer_store(variable_t lhs, variable_t rhs) {}
-  void pointer_assign(variable_t lhs, variable_t rhs,
-                      linear_expression_t offset) {}
+  void pointer_load(variable_t lhs, variable_t rhs, linear_expression_t elem_size) {}
+  void pointer_store(variable_t lhs, variable_t rhs, linear_expression_t elem_size) {}
+  void pointer_assign(variable_t lhs, variable_t rhs, linear_expression_t offset) {}
   void pointer_mk_obj(variable_t lhs, ikos::index_t address) {}
   void pointer_function(variable_t lhs, varname_t func) {}
   void pointer_mk_null(variable_t lhs) {}
@@ -2152,16 +2150,15 @@ public:
   }
 
   // pointer operators
-  virtual void pointer_load(variable_t lhs, variable_t rhs) override {
-    this->_product.pointer_load(lhs, rhs);
+  virtual void pointer_load(variable_t lhs, variable_t rhs, linear_expression_t elem_size) override {
+    this->_product.pointer_load(lhs, rhs, elem_size);
   }
 
-  virtual void pointer_store(variable_t lhs, variable_t rhs) override {
-    this->_product.pointer_store(lhs, rhs);
+  virtual void pointer_store(variable_t lhs, variable_t rhs, linear_expression_t elem_size) override {
+    this->_product.pointer_store(lhs, rhs, elem_size);
   }
 
-  virtual void pointer_assign(variable_t lhs, variable_t rhs,
-                              linear_expression_t offset) override {
+  virtual void pointer_assign(variable_t lhs, variable_t rhs, linear_expression_t offset) override {
     this->_product.pointer_assign(lhs, rhs, offset);
   }
 

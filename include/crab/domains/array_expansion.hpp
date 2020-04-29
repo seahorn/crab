@@ -1152,12 +1152,12 @@ public:
   }
 
   // pointer_operators_api
-  virtual void pointer_load(variable_t lhs, variable_t rhs) override {
-    _inv.pointer_load(lhs, rhs);
+  virtual void pointer_load(variable_t lhs, variable_t rhs, linear_expression_t elem_size) override {
+    _inv.pointer_load(lhs, rhs, elem_size);
   }
 
-  virtual void pointer_store(variable_t lhs, variable_t rhs) override {
-    _inv.pointer_store(lhs, rhs);
+  virtual void pointer_store(variable_t lhs, variable_t rhs, linear_expression_t elem_size) override {
+    _inv.pointer_store(lhs, rhs, elem_size);
   }
 
   virtual void pointer_assign(variable_t lhs, variable_t rhs,

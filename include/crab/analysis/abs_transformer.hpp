@@ -557,7 +557,9 @@ public:
     }
   }
 
-  void exec(ptr_null_t &stmt) { m_inv.pointer_mk_null(stmt.lhs()); }
+  void exec(ptr_null_t &stmt) {
+    m_inv.pointer_mk_null(stmt.lhs());
+  }
 
   void exec(ptr_object_t &stmt) {
     m_inv.pointer_mk_obj(stmt.lhs(), stmt.rhs());
@@ -571,11 +573,17 @@ public:
     m_inv.pointer_function(stmt.lhs(), stmt.rhs());
   }
 
-  void exec(ptr_load_t &stmt) { m_inv.pointer_load(stmt.lhs(), stmt.rhs()); }
+  void exec(ptr_load_t &stmt) {
+    m_inv.pointer_load(stmt.lhs(), stmt.rhs(), stmt.elem_size());
+  }
 
-  void exec(ptr_store_t &stmt) { m_inv.pointer_store(stmt.lhs(), stmt.rhs()); }
+  void exec(ptr_store_t &stmt) {
+    m_inv.pointer_store(stmt.lhs(), stmt.rhs(), stmt.elem_size());
+  }
 
-  void exec(ptr_assume_t &stmt) { m_inv.pointer_assume(stmt.constraint()); }
+  void exec(ptr_assume_t &stmt) {
+    m_inv.pointer_assume(stmt.constraint());
+  }
 
   void exec(ptr_assert_t &stmt) {
     if (m_ignore_assert)

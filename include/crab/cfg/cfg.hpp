@@ -4,6 +4,8 @@
  * Build a CFG to interface with the abstract domains and fixpoint
  * iterators.
  *
+ * === Syntax ===
+ * 
  * All the CFG statements are strongly typed. However, only variables
  * need to be typed. The types of constants can be inferred from the
  * context since they always appear together with at least one
@@ -18,26 +20,102 @@
  * - array of reals, and
  * - array of pointers.
  *
- * Crab CFG supports the modelling of:
+ * Crab CFG supports the modeling of:
  *
  *   - arithmetic operations over integers or reals,
  *   - boolean operations,
  *   - C-like pointers,
  *   - uni-dimensional arrays of booleans, integers or pointers
  *     (useful for C-like arrays and heap abstractions),
- *   - and functions
+ *   - and functions declarations and callsites
  *
- * Important notes:
+ * === Semantics === 
+ * 
+ * The semantics of boolean, numerical and pointer statements is
+ * similar to a language like C. For arrays, the main feature is that
+ * arrays are disjoint from each other (i.e., a write in array A
+ * cannot affect the contents of another array B). The semantics of
+ * arrays is similar to SMT arrays.
  *
- * - Objects of the class cfg are not copyable. Instead, we provide a
- *   class cfg_ref that wraps cfg references into copyable and
- *   assignable objects.
+ * === Which subset of Crab CFG statements for representing your program ===
+ * 
+ * The CFG is intended to be expressive enough for representing the
+ * semantics of a variety of programming languages and with different
+ * levels of abstractions. These are the three main configurations:
+ * 
+ * (1) Use boolean, integer and pointer statements. This should be
+ * enough to model C programs.
  *
- * Limitations:
+ * (2) Use boolean, integer, and array statements. This is convenient
+ * for languages where memory is (or will be after abstraction) statically
+ * partitioned. Each memory partitioned is then assigned to an array.
+ *
+ * (3) A hybrid of (1) and (2) that use simultaneously pointer and
+ * array statements.
+ * 
+ * The main difference between (1) and (2) is in how it affects the
+ * Crab abstract domain. If we use (1) then the abstract domain must
+ * reason both pointer aliasing and memory contents. If we use (2)
+ * then the abstract domain does not need to reason about aliasing
+ * since all arrays are disjoint so the abstract domain only needs to
+ * reason about memory contents. For instance, these are examples of
+ * other tools using Crab:
+ *
+ *   - Clam (https://github.com/seahorn/crab-llvm) translates from LLVM
+ *     bitcode using either method (1) or (2). For (2), it uses seadsa
+ *     (https://github.com/seahorn/sea-dsa) to do the memory partitioning.
+ *
+ *   - PREVAIL (https://github.com/vbpf/ebpf-verifier) translates from
+ *     eBPF bytecode using method (2).
+ *
+ * 
+ * === Function calls ===
+ *
+ * In Crab, a function is represented by a CFG with a special function
+ * declaration statement that describes the formal parameters INPUTS
+ * and return parameters OUTPUTS.  Very importantly, Crab will report
+ * an error if INPUTS and OUTPUTS are not disjoint. This assumption
+ * about disjointness makes easier the inter-procedural analyses.
+ *
+ * Crab allows to have multiple CFGs in memory and it combines them in
+ * a call graph where each node is a Crab CFG and there is an edge
+ * from n1 to n2 if n1 has a callsite that calls the function at n2.
+ *
+ * If you want to use Crab's interprocedural analysis is important to
+ * know that the analysis will compute summaries that only express
+ * relationships over INPUT and OUTPUT variables. This affects in how
+ * you should encode your program into the Crab CFG language.
+ * 
+ * For instance, if you have a function `foo(p)` where `p` is a
+ * pointer. If foo updates the content of p then you should write the
+ * CFG for `foo` as follows:
+ *
+ *       function_decl(foo, p_in, p_out);
+ *       ptr_assign(p_out, p_in);
+ *       ... // rest of the CFG reads or writes p_out and keeps intact p_in
+ *
+ * The same things should be done with arrays:
+ *
+ *       function_decl(foo, a_in, a_out);
+ *       array_assign(a_out, a_in);
+ *       ... // rest of the CFG reads or writes a_out and keeps intact a_in
+ *  
+ * === Important notes ===
+ *
+ * 1. Unfortunately, Crab does NOT provide abstract domains to reason
+ *    precisely using configuration (1) but we are working on it so we
+ *    will have one soon. This means that you should use only
+ *    configuration (2) for now.
+ *
+ * 2. Objects of the class cfg are not copyable. Instead, we provide a
+ *    class cfg_ref that wraps cfg references into copyable and
+ *    assignable objects.
+ *
+ * === CFG Limitations ===
  *
  * - The CFG language does not allow to express floating point
  *   operations.
- *
+ * - Integer and reals cannot be mixed.
  */
 
 #include <boost/iterator/indirect_iterator.hpp>
@@ -64,6 +142,8 @@ template <typename T> inline std::string get_label_str(T e);
 namespace cfg {
 
 // The values must be such that NUM <= PTR <= ARR
+// PTR is configuration (1) because it allows pointer but not array statements.
+// ARR is configuration (3) because it allows both pointer and array statements
 enum tracked_precision { NUM = 0, PTR = 1, ARR = 2 };
 
 enum stmt_code {
@@ -881,24 +961,30 @@ class ptr_load_stmt : public statement<Number, VariableName> {
 public:
   typedef statement<Number, VariableName> statement_t;
   typedef ikos::variable<Number, VariableName> variable_t;
-
-  ptr_load_stmt(variable_t lhs, variable_t rhs,
+  typedef ikos::linear_expression<Number, VariableName> linear_expression_t;
+  
+  ptr_load_stmt(variable_t lhs, variable_t rhs, linear_expression_t elem_size,
                 debug_info dbg_info = debug_info())
-      : statement_t(PTR_LOAD, dbg_info), m_lhs(lhs), m_rhs(rhs) {
+    : statement_t(PTR_LOAD, dbg_info), m_lhs(lhs), m_rhs(rhs), m_elem_size(elem_size) {
     this->m_live.add_def(lhs);
     this->m_live.add_use(rhs);
+    for (auto v : m_elem_size.variables()) {
+      this->m_live.add_use(v);
+    }
   }
 
   variable_t lhs() const { return m_lhs; }
 
   variable_t rhs() const { return m_rhs; }
 
+  linear_expression_t elem_size() const { return m_elem_size; }
+
   virtual void accept(statement_visitor<Number, VariableName> *v) {
     v->visit(*this);
   }
 
   virtual statement_t *clone() const {
-    return new this_type(m_lhs, m_rhs, this->m_dbg_info);
+    return new this_type(m_lhs, m_rhs, m_elem_size, this->m_dbg_info);
   }
 
   virtual void write(crab_os &o) const {
@@ -909,6 +995,7 @@ public:
 private:
   variable_t m_lhs;
   variable_t m_rhs;
+  linear_expression_t m_elem_size; // number of bytes read from memory
 };
 
 template <class Number, class VariableName>
@@ -919,23 +1006,30 @@ class ptr_store_stmt : public statement<Number, VariableName> {
 public:
   typedef statement<Number, VariableName> statement_t;
   typedef ikos::variable<Number, VariableName> variable_t;
-
-  ptr_store_stmt(variable_t lhs, variable_t rhs,
+  typedef ikos::linear_expression<Number, VariableName> linear_expression_t;
+  
+  ptr_store_stmt(variable_t lhs, variable_t rhs, linear_expression_t elem_size,
                  debug_info dbg_info = debug_info())
-      : statement_t(PTR_STORE, dbg_info), m_lhs(lhs), m_rhs(rhs) {
+    : statement_t(PTR_STORE, dbg_info), m_lhs(lhs), m_rhs(rhs), m_elem_size(elem_size) {
     this->m_live.add_def(lhs);
     this->m_live.add_use(rhs);
+    for (auto v : m_elem_size.variables()) {
+      this->m_live.add_use(v);
+    }    
   }
 
   variable_t lhs() const { return m_lhs; }
 
   variable_t rhs() const { return m_rhs; }
 
+  linear_expression_t elem_size() const { return m_elem_size; }
+  
   virtual void accept(statement_visitor<Number, VariableName> *v) {
     v->visit(*this);
   }
 
-  virtual statement_t *clone() const { return new this_type(m_lhs, m_rhs); }
+  virtual statement_t *clone() const {
+    return new this_type(m_lhs, m_rhs, m_elem_size, this->m_dbg_info); }
 
   virtual void write(crab_os &o) const {
     o << "*(" << m_lhs << ") = " << m_rhs;
@@ -944,6 +1038,7 @@ public:
 private:
   variable_t m_lhs;
   variable_t m_rhs;
+  linear_expression_t m_elem_size; // number of bytes written into memory
 };
 
 template <class Number, class VariableName>
@@ -1990,7 +2085,7 @@ public:
     return insert(new bin_op_t(lhs, BINOP_ADD, op1, op2));
   }
 
-  const statement_t *add(variable_t lhs, variable_t op1, Number op2) {
+  const statement_t *add(variable_t lhs, variable_t op1, number_t op2) {
     return insert(new bin_op_t(lhs, BINOP_ADD, op1, op2));
   }
 
@@ -1998,7 +2093,7 @@ public:
     return insert(new bin_op_t(lhs, BINOP_SUB, op1, op2));
   }
 
-  const statement_t *sub(variable_t lhs, variable_t op1, Number op2) {
+  const statement_t *sub(variable_t lhs, variable_t op1, number_t op2) {
     return insert(new bin_op_t(lhs, BINOP_SUB, op1, op2));
   }
 
@@ -2006,7 +2101,7 @@ public:
     return insert(new bin_op_t(lhs, BINOP_MUL, op1, op2));
   }
 
-  const statement_t *mul(variable_t lhs, variable_t op1, Number op2) {
+  const statement_t *mul(variable_t lhs, variable_t op1, number_t op2) {
     return insert(new bin_op_t(lhs, BINOP_MUL, op1, op2));
   }
 
@@ -2015,7 +2110,7 @@ public:
     return insert(new bin_op_t(lhs, BINOP_SDIV, op1, op2));
   }
 
-  const statement_t *div(variable_t lhs, variable_t op1, Number op2) {
+  const statement_t *div(variable_t lhs, variable_t op1, number_t op2) {
     return insert(new bin_op_t(lhs, BINOP_SDIV, op1, op2));
   }
 
@@ -2024,7 +2119,7 @@ public:
     return insert(new bin_op_t(lhs, BINOP_UDIV, op1, op2));
   }
 
-  const statement_t *udiv(variable_t lhs, variable_t op1, Number op2) {
+  const statement_t *udiv(variable_t lhs, variable_t op1, number_t op2) {
     return insert(new bin_op_t(lhs, BINOP_UDIV, op1, op2));
   }
 
@@ -2033,7 +2128,7 @@ public:
     return insert(new bin_op_t(lhs, BINOP_SREM, op1, op2));
   }
 
-  const statement_t *rem(variable_t lhs, variable_t op1, Number op2) {
+  const statement_t *rem(variable_t lhs, variable_t op1, number_t op2) {
     return insert(new bin_op_t(lhs, BINOP_SREM, op1, op2));
   }
 
@@ -2042,7 +2137,7 @@ public:
     return insert(new bin_op_t(lhs, BINOP_UREM, op1, op2));
   }
 
-  const statement_t *urem(variable_t lhs, variable_t op1, Number op2) {
+  const statement_t *urem(variable_t lhs, variable_t op1, number_t op2) {
     return insert(new bin_op_t(lhs, BINOP_UREM, op1, op2));
   }
 
@@ -2051,7 +2146,7 @@ public:
     return insert(new bin_op_t(lhs, BINOP_AND, op1, op2));
   }
 
-  const statement_t *bitwise_and(variable_t lhs, variable_t op1, Number op2) {
+  const statement_t *bitwise_and(variable_t lhs, variable_t op1, number_t op2) {
     return insert(new bin_op_t(lhs, BINOP_AND, op1, op2));
   }
 
@@ -2060,7 +2155,7 @@ public:
     return insert(new bin_op_t(lhs, BINOP_OR, op1, op2));
   }
 
-  const statement_t *bitwise_or(variable_t lhs, variable_t op1, Number op2) {
+  const statement_t *bitwise_or(variable_t lhs, variable_t op1, number_t op2) {
     return insert(new bin_op_t(lhs, BINOP_OR, op1, op2));
   }
 
@@ -2069,7 +2164,7 @@ public:
     return insert(new bin_op_t(lhs, BINOP_XOR, op1, op2));
   }
 
-  const statement_t *bitwise_xor(variable_t lhs, variable_t op1, Number op2) {
+  const statement_t *bitwise_xor(variable_t lhs, variable_t op1, number_t op2) {
     return insert(new bin_op_t(lhs, BINOP_XOR, op1, op2));
   }
 
@@ -2077,7 +2172,7 @@ public:
     return insert(new bin_op_t(lhs, BINOP_SHL, op1, op2));
   }
 
-  const statement_t *shl(variable_t lhs, variable_t op1, Number op2) {
+  const statement_t *shl(variable_t lhs, variable_t op1, number_t op2) {
     return insert(new bin_op_t(lhs, BINOP_SHL, op1, op2));
   }
 
@@ -2085,7 +2180,7 @@ public:
     return insert(new bin_op_t(lhs, BINOP_LSHR, op1, op2));
   }
 
-  const statement_t *lshr(variable_t lhs, variable_t op1, Number op2) {
+  const statement_t *lshr(variable_t lhs, variable_t op1, number_t op2) {
     return insert(new bin_op_t(lhs, BINOP_LSHR, op1, op2));
   }
 
@@ -2093,7 +2188,7 @@ public:
     return insert(new bin_op_t(lhs, BINOP_ASHR, op1, op2));
   }
 
-  const statement_t *ashr(variable_t lhs, variable_t op1, Number op2) {
+  const statement_t *ashr(variable_t lhs, variable_t op1, number_t op2) {
     return insert(new bin_op_t(lhs, BINOP_ASHR, op1, op2));
   }
 
@@ -2109,7 +2204,7 @@ public:
 
   const statement_t *select(variable_t lhs, variable_t v, lin_exp_t e1,
                             lin_exp_t e2) {
-    lin_cst_t cond = (v >= Number(1));
+    lin_cst_t cond = (v >= number_t(1));
     return insert(new select_t(lhs, cond, e1, e2));
   }
 
@@ -2227,14 +2322,25 @@ public:
   }
 
   const statement_t *ptr_store(variable_t lhs, variable_t rhs) {
-    return ((m_track_prec >= PTR) ? insert(new ptr_store_t(lhs, rhs))
+    return ((m_track_prec >= PTR) ? insert(new ptr_store_t(lhs, rhs, number_t(4)))
                                   : nullptr);
   }
 
+  // Assume 4 bytes are written into memory  
+  const statement_t *ptr_store(variable_t lhs, variable_t rhs, lin_exp_t elem_size) {
+    return ((m_track_prec >= PTR) ? insert(new ptr_store_t(lhs, rhs, elem_size))
+                                  : nullptr);
+  }
+  
+  // Assume 4 bytes are read from memory
   const statement_t *ptr_load(variable_t lhs, variable_t rhs) {
-    return ((m_track_prec >= PTR) ? insert(new ptr_load_t(lhs, rhs)) : nullptr);
+    return ((m_track_prec >= PTR) ? insert(new ptr_load_t(lhs, rhs, number_t(4))) : nullptr);
   }
 
+  const statement_t *ptr_load(variable_t lhs, variable_t rhs, lin_exp_t elem_size) {
+    return ((m_track_prec >= PTR) ? insert(new ptr_load_t(lhs, rhs, elem_size)) : nullptr);
+  }
+  
   const statement_t *ptr_assign(variable_t lhs, variable_t rhs,
                                 lin_exp_t offset) {
     return ((m_track_prec >= PTR) ? insert(new ptr_assign_t(lhs, rhs, offset))
