@@ -1765,7 +1765,9 @@ public:
                   linear_expression_t lb_idx, linear_expression_t ub_idx,
                   linear_expression_t val) {}
   void array_load(variable_t lhs, variable_t a, linear_expression_t elem_size,
-                  linear_expression_t i) {}
+                  linear_expression_t i) {
+    operator-=(lhs);
+  }
   void array_store(variable_t a, linear_expression_t elem_size,
                    linear_expression_t i, linear_expression_t v,
                    bool is_strong_update) {}
@@ -2587,7 +2589,9 @@ public:
                   linear_expression_t lb_idx, linear_expression_t ub_idx,
                   linear_expression_t val) {}
   void array_load(variable_t lhs, variable_t a, linear_expression_t elem_size,
-                  linear_expression_t i) {}
+                  linear_expression_t i) {
+    operator-=(lhs);
+  }
   void array_store(variable_t a, linear_expression_t elem_size,
                    linear_expression_t i, linear_expression_t v,
                    bool is_strong_update) {}
