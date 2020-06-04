@@ -124,10 +124,12 @@ private:
 
   term_domain(bool is_top) : _is_bottom(!is_top) {}
 
-  term_domain(dom_var_alloc_t alloc, var_map_t vm, rev_var_map_t rvm,
-              ttbl_t tbl, term_map_t tmap, dom_t impl)
-      : _is_bottom((impl.is_bottom()) ? true : false), _ttbl(tbl), _impl(impl),
-        _alloc(alloc), _var_map(vm), _rev_var_map(rvm), _term_map(tmap) {
+  term_domain(dom_var_alloc_t &&alloc, var_map_t &&vm, rev_var_map_t &&rvm,
+              ttbl_t &&tbl, term_map_t &&tmap, dom_t &&impl)
+      : _is_bottom((impl.is_bottom()) ? true : false),
+	_ttbl(std::move(tbl)), _impl(std::move(impl)),
+        _alloc(std::move(alloc)), _var_map(std::move(vm)),
+	_rev_var_map(std::move(rvm)), _term_map(std::move(tmap)) {
     check_terms(__LINE__);
   }
 
@@ -600,9 +602,6 @@ private:
       for (auto p : out_vmap)
         out_tbl.add_ref(p.second);
 
-      term_domain_t res(palloc, out_vmap, out_rvmap, out_tbl, out_map,
-                        x_widen_y);
-
       CRAB_LOG("term", crab::outs()
                            << "============ WIDENING ==================";
                crab::outs() << x_impl << "\n~~~~~~~~~~~~~~~~";
@@ -610,6 +609,9 @@ private:
                crab::outs() << x_widen_y << "\n================"
                             << "\n");
 
+      term_domain_t res(std::move(palloc), std::move(out_vmap),
+			std::move(out_rvmap), std::move(out_tbl),
+			std::move(out_map), std::move(x_widen_y));
       return res;
     }
   }
@@ -952,9 +954,9 @@ public:
       for (auto p : out_vmap)
         out_tbl.add_ref(p.second);
 
-      term_domain_t res(palloc, out_vmap, out_rvmap, out_tbl, out_map,
-                        x_join_y);
-
+      term_domain_t res(std::move(palloc), std::move(out_vmap), std::move(out_rvmap),
+			std::move(out_tbl), std::move(out_map), std::move(x_join_y));
+                        
       CRAB_LOG("term", crab::outs() << "After elimination:\n" << res << "\n");
 
       return res;
@@ -1071,9 +1073,11 @@ public:
       y_impl.project(out_varnames);
 
       dom_t x_meet_y = x_impl & y_impl;
-      term_domain_t res(palloc, out_vmap, out_rvmap, out_ttbl, out_map,
-                        x_meet_y);
 
+      term_domain_t res(std::move(palloc), std::move(out_vmap),
+			std::move(out_rvmap), std::move(out_ttbl),
+			std::move(out_map), std::move(x_meet_y));
+      
       CRAB_LOG("term", crab::outs() << "============ MEET ==================";
                crab::outs() << *this << "\n----------------";
                crab::outs() << o << "\n----------------";
