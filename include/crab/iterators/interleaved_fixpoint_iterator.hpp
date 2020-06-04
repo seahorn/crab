@@ -94,7 +94,11 @@ protected:
 
   CFG _cfg;
   wto_t _wto;
+private:
+  // We don't want derived classes to access directly to _pre and
+  // _post in case we make internal changes
   invariant_table_t _pre, _post;
+protected:  
   // number of iterations until triggering widening
   unsigned int _widening_delay;
   // number of narrowing iterations. If the narrowing operator is
@@ -124,7 +128,7 @@ private:
   }
 
   inline AbstractValue get(const invariant_table_t &table,
-                           basic_block_label_t node) {
+                           basic_block_label_t node) const {
     crab::CrabStats::count("Fixpo.invariant_table.lookup");
     crab::ScopedCrabStats __st__("Fixpo.invariant_table.lookup");
     return table.at(node);
@@ -239,18 +243,27 @@ public:
 
   const wto_t &get_wto() const { return this->_wto; }
 
-  AbstractValue get_pre(basic_block_label_t node) {
+  /* Begin access methods for getting invariants */
+  AbstractValue get_pre(basic_block_label_t node) const {
     return this->get(this->_pre, node);
   }
-
-  AbstractValue get_post(basic_block_label_t node) {
+  AbstractValue get_post(basic_block_label_t node) const {
     return this->get(this->_post, node);
   }
-
   const invariant_table_t &get_pre_invariants() const { return this->_pre; }
-
   const invariant_table_t &get_post_invariants() const { return this->_post; }
-
+  invariant_table_t &get_pre_invariants() { return this->_pre; }
+  invariant_table_t &get_post_invariants() { return this->_post; }
+  iterator pre_begin() { return this->_pre.begin(); }
+  iterator pre_end() { return this->_pre.end(); }
+  const_iterator pre_begin() const { return this->_pre.begin(); }
+  const_iterator pre_end() const { return this->_pre.end(); }
+  iterator post_begin() { return this->_post.begin(); }
+  iterator post_end() { return this->_post.end(); }
+  const_iterator post_begin() const { return this->_post.begin(); }
+  const_iterator post_end() const { return this->_post.end(); }
+  /* End access methods for getting invariants */
+  
   void run(AbstractValue init) {
     crab::ScopedCrabStats __st__("Fixpo");
     CRAB_VERBOSE_IF(1, crab::get_msg_stream() << "== Started fixpoint\n");
@@ -287,9 +300,17 @@ public:
                                          << _wto << "\n";);
   }
 
-  void clear() {
+  void clear_pre() {
     this->_pre.clear();
+  }
+
+  void clear_post() {
     this->_post.clear();
+  }
+  
+  void clear() {
+    clear_pre();
+    clear_post();
   }
 
 }; // class interleaved_fwd_fixpoint_iterator

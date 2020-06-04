@@ -22,8 +22,8 @@ namespace analyzer_internal_impl {
  * operations are modeled.
  **/
 template <typename CFG, typename AbsTr>
-class fwd_analyzer : private ikos::interleaved_fwd_fixpoint_iterator<
-                         CFG, typename AbsTr::abs_dom_t> {
+class fwd_analyzer:
+    public ikos::interleaved_fwd_fixpoint_iterator<CFG, typename AbsTr::abs_dom_t> {
 public:
   typedef CFG cfg_t;
   typedef typename CFG::basic_block_label_t basic_block_label_t;
@@ -36,7 +36,7 @@ public:
 
 private:
   typedef ikos::interleaved_fwd_fixpoint_iterator<CFG, abs_dom_t>
-      fixpo_iterator_t;
+  fixpo_iterator_t;
 
 public:
   typedef typename fixpo_iterator_t::invariant_table_t invariant_map_t;
@@ -72,7 +72,7 @@ private:
   //! Given a basic block and the invariant at the entry it produces
   //! the invariant at the exit of the block.
   abs_dom_t analyze(basic_block_label_t node, abs_dom_t &&inv) {
-    auto &b = this->get_cfg().get_node(node);
+    auto &b = get_cfg().get_node(node);
     m_abs_tr->set_abs_value(std::move(inv));
     for (auto &s : b) {
       s.accept(&*m_abs_tr);
@@ -99,15 +99,15 @@ public:
         m_post_clear_done(false) {
     CRAB_VERBOSE_IF(1, get_msg_stream() << "Type checking CFG ... ";);
     crab::CrabStats::resume("CFG type checking");
-    crab::cfg::type_checker<CFG> tc(this->_cfg);
+    crab::cfg::type_checker<CFG> tc(get_cfg());
     tc.run();
     crab::CrabStats::stop("CFG type checking");
     CRAB_VERBOSE_IF(1, get_msg_stream() << "OK\n";);
 
     if (live) {
       // --- collect input and output parameters
-      if (this->get_cfg().has_func_decl()) {
-        auto fdecl = this->get_cfg().get_func_decl();
+      if (get_cfg().has_func_decl()) {
+        auto fdecl = get_cfg().get_func_decl();
         for (unsigned i = 0; i < fdecl.get_num_inputs(); i++)
           m_formals += fdecl.get_input_name(i);
         for (unsigned i = 0; i < fdecl.get_num_outputs(); i++)
@@ -121,7 +121,7 @@ public:
     // ugly hook to initialize some global state. This needs to be
     // fixed properly.
     domains::array_graph_domain_traits<abs_dom_t>::do_initialization(
-        this->get_cfg());
+        get_cfg());
     // XXX: inv was created before the static data is initialized
     //      so it won't contain that data.
     this->run(m_abs_tr->get_abs_value());
@@ -132,29 +132,11 @@ public:
     // ugly hook to initialize some global state. This needs to be
     // fixed properly.
     domains::array_graph_domain_traits<abs_dom_t>::do_initialization(
-        this->get_cfg());
+        get_cfg());
     // XXX: inv was created before the static data is initialized
     //      so it won't contain that data.
     this->run(entry, m_abs_tr->get_abs_value(), assumptions);
   }
-
-  const invariant_map_t &get_pre_invariants() const { return this->_pre; }
-
-  const invariant_map_t &get_post_invariants() const { return this->_post; }
-
-  invariant_map_t &get_pre_invariants() { return this->_pre; }
-
-  invariant_map_t &get_post_invariants() { return this->_post; }
-
-  iterator pre_begin() { return this->_pre.begin(); }
-  iterator pre_end() { return this->_pre.end(); }
-  const_iterator pre_begin() const { return this->_pre.begin(); }
-  const_iterator pre_end() const { return this->_pre.end(); }
-
-  iterator post_begin() { return this->_post.begin(); }
-  iterator post_end() { return this->_post.end(); }
-  const_iterator post_begin() const { return this->_post.begin(); }
-  const_iterator post_end() const { return this->_post.end(); }
 
   //! Return the invariants that hold at the entry of b
   inline abs_dom_t operator[](basic_block_label_t b) const {
@@ -166,7 +148,7 @@ public:
     if (m_pre_clear_done) {
       return abs_dom_t::top();
     } else {
-      return this->_pre.at(b);
+      return fixpo_iterator_t::get_pre(b);
     }
   }
 
@@ -175,7 +157,7 @@ public:
     if (m_post_clear_done) {
       return abs_dom_t::top();
     } else {
-      return this->_post.at(b);
+      return fixpo_iterator_t::get_post(b);
     }
   }
 
@@ -185,12 +167,12 @@ public:
 
   void clear_pre() {
     m_pre_clear_done = true;
-    this->_pre.clear();
+    fixpo_iterator_t::clear_pre();
   }
 
   void clear_post() {
     m_post_clear_done = true;
-    this->_post.clear();
+    fixpo_iterator_t::clear_post();
   }
 
   // clear all invariants (pre and post)
@@ -219,9 +201,9 @@ public:
   /** End extra API for checkers **/
 
   void write(crab::crab_os &o) {
-    for (auto &kv : this->_pre) {
+    for (auto &kv : this->get_pre_invariants()) {
       auto &pre = kv.second;
-      auto &b = this->get_cfg().get_node(kv.first);
+      auto &b = get_cfg().get_node(kv.first);
       o << cfg_impl::get_label_str(kv.first) << ":\n";
       if (b.size() == 0) {
         o << "/**\n"
