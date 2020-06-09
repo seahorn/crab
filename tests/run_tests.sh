@@ -29,6 +29,7 @@ NEWLOG=results_${timestamp}.out
 ## Run all the tests
 for test in $DIR/test-bin/*
 do
+  echo "Running $test"
   $test >> $NEWLOG
 done
 
