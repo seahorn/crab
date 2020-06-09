@@ -89,7 +89,7 @@ public:
     return in;
   }
 
-  virtual std::string name() { return "liveness"; }
+  virtual std::string name() { return "Liveness"; }
 };
 
 /** Live variable analysis **/
@@ -123,13 +123,18 @@ public:
 
   void exec() {
     this->run();
-    for (auto p :
-         boost::make_iterator_range(this->out_begin(), this->out_end())) {
-      _live_map.insert({p.first, p.second});
-      CRAB_LOG("liveness-live", crab::outs()
-                                    << cfg_impl::get_label_str(p.first)
-                                    << " live variables=" << p.second << "\n";);
-    }
+
+    crab::ScopedCrabStats __st__("Liveness.store_results");    
+    _live_map.insert(make_move_iterator(this->out_begin()),
+		     make_move_iterator(this->out_end()));
+
+    CRAB_LOG("liveness-live",     
+	     for (auto p :
+		    boost::make_iterator_range(this->out_begin(), this->out_end())) {
+	       crab::outs() << cfg_impl::get_label_str(p.first)
+			    << " live variables=" << p.second << "\n";;
+	     });
+    
     this->release_memory();
   }
 
@@ -154,7 +159,7 @@ inline crab_os &operator<<(crab_os &o, const liveness_analysis<CFG> &l) {
 }
 
 /**
- * Dead variable analysis.
+ * Live and Dead variable analysis.
  *
  * FIXME: the name "liveness" is not that great so we should
  *        change it at some point. For that we need to change crab
@@ -176,9 +181,10 @@ private:
   CFG m_cfg;
   // liveness analysis
   std::unique_ptr<liveness_analysis_t> m_live;
-
-  // output of the analysis: map basic blocks to set of dead
-  // variables at the end of the blocks
+  // precompute dead variables might be expensive so user can choose.
+  bool m_ignore_dead;
+  // map basic blocks to set of dead variables at the end of the
+  // blocks
   std::unordered_map<basic_block_label_t, varset_domain_t> m_dead_map;
 
   // statistics
@@ -191,9 +197,13 @@ public:
   // XXX: maybe unused already
   typedef varset_domain_t set_t;
 
-  liveness(CFG cfg)
-      : m_cfg(cfg), m_live(new liveness_analysis_t(m_cfg)), m_max_live(0),
-        m_total_live(0), m_total_blocks(0) {}
+  // If ignore_dead is true then dead symbols are not computed.
+  liveness(CFG cfg, bool ignore_dead = false)
+    : m_cfg(cfg), 
+      m_live(new liveness_analysis_t(m_cfg)),
+      m_ignore_dead(ignore_dead),
+      m_max_live(0),
+      m_total_live(0), m_total_blocks(0) {}
 
   liveness(const liveness<CFG> &other) = delete;
 
@@ -201,24 +211,26 @@ public:
 
   void exec() {
     m_live->exec();
-
-    /** Remove dead variables locally **/
-    for (auto &bb : boost::make_iterator_range(m_cfg.begin(), m_cfg.end())) {
-      varset_domain_t live_set = m_live->get(bb.label());
-      if (live_set.is_bottom())
-        continue;
-
-      varset_domain_t dead_set = m_cfg.get_node(bb.label()).live();
-      // dead variables = (USE(bb) U DEF(bb)) \ live_out(bb)
-      dead_set -= live_set;
-      CRAB_LOG("liveness", crab::outs()
-                               << cfg_impl::get_label_str(bb.label())
-                               << " dead variables=" << dead_set << "\n";);
-      m_dead_map.insert(std::make_pair(bb.label(), dead_set));
-      // update statistics
-      m_total_live += live_set.size();
-      m_max_live = std::max(m_max_live, live_set.size());
-      m_total_blocks++;
+    if (!m_ignore_dead) {
+      crab::ScopedCrabStats __st__("Liveness.precompute_dead_variables");    
+      /** Remove dead variables locally **/
+      for (auto &bb : boost::make_iterator_range(m_cfg.begin(), m_cfg.end())) {
+	varset_domain_t live_set = m_live->get(bb.label());
+	if (live_set.is_bottom())
+	  continue;
+	
+	varset_domain_t dead_set = m_cfg.get_node(bb.label()).live();
+	// dead variables = (USE(bb) U DEF(bb)) \ live_out(bb)
+	dead_set -= live_set;
+	CRAB_LOG("liveness", crab::outs()
+		             << cfg_impl::get_label_str(bb.label())
+		             << " dead variables=" << dead_set << "\n";);
+	m_dead_map.insert(std::make_pair(bb.label(), std::move(dead_set)));
+	// update statistics
+	m_total_live += live_set.size();
+	m_max_live = std::max(m_max_live, live_set.size());
+	m_total_blocks++;
+      }
     }
   }
 
@@ -227,6 +239,9 @@ public:
 
   // Return the set of dead variables at the exit of block bb
   varset_domain_t dead_exit(basic_block_label_t bb) const {
+    if (m_ignore_dead) {
+      CRAB_WARN("Dead variables were not precomputed during liveness analysis");
+    }
     auto it = m_dead_map.find(bb);
     if (it == m_dead_map.end()) {
       return varset_domain_t();
