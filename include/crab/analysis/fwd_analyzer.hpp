@@ -97,6 +97,7 @@ public:
                          jump_set_size, false /*disable processor*/),
         m_abs_tr(abs_tr), m_live(live), m_pre_clear_done(false),
         m_post_clear_done(false) {
+    CRAB_VERBOSE_IF(1, crab::outs() << "CFG with " << get_cfg().size() << " basic blocks\n";);
     CRAB_VERBOSE_IF(1, get_msg_stream() << "Type checking CFG ... ";);
     crab::CrabStats::resume("CFG type checking");
     crab::cfg::type_checker<CFG> tc(get_cfg());
