@@ -173,7 +173,7 @@ private:
   }; // class join_op
 
   class meet_op : public binary_op_t {
-    boost::optional<Value> apply(Value x, Value y) {
+    std::pair<bool, boost::optional<Value>> apply(Value x, Value y) {
       Value z = x.operator&(y);
       if (z.is_bottom()) {
         return {true, boost::optional<Value>()};
@@ -298,7 +298,7 @@ public:
       o << "{...}";
     }
     if (_tree.empty()) {
-      o << "_|_";
+      o << "{}";
     } else {
       o << "{";
       for (typename patricia_tree_t::iterator it = this->_tree.begin();
