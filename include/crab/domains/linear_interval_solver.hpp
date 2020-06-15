@@ -45,12 +45,12 @@
 
 #pragma once
 
-#include <crab/common/types.hpp>
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/numbers/bignums.hpp>
 #include <crab/numbers/wrapint.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
+#include <crab/types/variable.hpp>
 
 #include <map>
 #include <set>
@@ -84,7 +84,7 @@ class linear_interval_solver {
 
 public:
   typedef typename IntervalCollection::value_type Interval;
-  typedef variable<Number, VariableName> variable_t;
+  typedef crab::variable<Number, VariableName> variable_t;
   typedef linear_expression<Number, VariableName> linear_expression_t;
   typedef linear_constraint<Number, VariableName> linear_constraint_t;
   typedef linear_constraint_system<Number, VariableName>

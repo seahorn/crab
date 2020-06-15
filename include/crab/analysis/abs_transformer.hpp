@@ -36,6 +36,7 @@
 #include <crab/support/stats.hpp>
 #include <crab/domains/abstract_domain_operators.hpp>
 #include <crab/domains/linear_constraints.hpp>
+#include <crab/types/variable.hpp>
 
 namespace crab {
 namespace analyzer {
@@ -50,7 +51,7 @@ public:
   typedef Number number_t;
   typedef VariableName varname_t;
 
-  typedef ikos::variable<number_t, VariableName> var_t;
+  typedef variable<number_t, VariableName> var_t;
   typedef ikos::linear_expression<number_t, VariableName> lin_exp_t;
   typedef ikos::linear_constraint<number_t, VariableName> lin_cst_t;
   typedef ikos::linear_constraint_system<number_t, VariableName> lin_cst_sys_t;

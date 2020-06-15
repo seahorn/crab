@@ -2,7 +2,7 @@
 
 #include <crab/support/debug.hpp>
 #include <crab/support/os.hpp>
-#include <crab/common/types.hpp>
+#include <crab/types/variable.hpp>
 
 #include <boost/optional.hpp>
 
@@ -13,7 +13,7 @@ template <typename Number, typename VariableName>
 class reference_constraint {
 public:
   using number_t = Number;
-  using variable_t = ikos::variable<number_t, VariableName>;
+  using variable_t = variable<number_t, VariableName>;
   using reference_constraint_t = reference_constraint<number_t, VariableName> ;
 
 private:

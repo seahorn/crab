@@ -41,9 +41,9 @@
 
 #pragma once
 
-#include <crab/common/types.hpp>
-#include <crab/numbers/bignums.hpp>
 #include <crab/domains/patricia_trees.hpp>
+#include <crab/numbers/bignums.hpp>
+#include <crab/types/variable.hpp>
 #include <crab/support/debug.hpp>
 
 #include <boost/container/flat_map.hpp>
@@ -64,7 +64,7 @@ template <typename Number, typename VariableName> class linear_expression {
 public:
   typedef Number number_t;
   typedef VariableName varname_t;
-  typedef variable<Number, VariableName> variable_t;
+  typedef crab::variable<Number, VariableName> variable_t;
   typedef linear_expression<Number, VariableName> linear_expression_t;
   typedef std::pair<Number, variable_t> component_t;
   typedef patricia_tree_set<variable_t> variable_set_t;
@@ -398,25 +398,25 @@ using linear_expression_unordered_map =
 
 template <typename Number, typename VariableName>
 inline linear_expression<Number, VariableName>
-operator*(Number n, variable<Number, VariableName> x) {
+operator*(Number n, crab::variable<Number, VariableName> x) {
   return linear_expression<Number, VariableName>(n, x);
 }
 
 template <typename Number, typename VariableName>
 inline linear_expression<Number, VariableName>
-operator*(int64_t n, variable<Number, VariableName> x) {
+operator*(int64_t n, crab::variable<Number, VariableName> x) {
   return linear_expression<Number, VariableName>(Number(n), x);
 }
 
 template <typename Number, typename VariableName>
 inline linear_expression<Number, VariableName>
-operator*(variable<Number, VariableName> x, Number n) {
+operator*(crab::variable<Number, VariableName> x, Number n) {
   return linear_expression<Number, VariableName>(n, x);
 }
 
 template <typename Number, typename VariableName>
 inline linear_expression<Number, VariableName>
-operator*(variable<Number, VariableName> x, int64_t n) {
+operator*(crab::variable<Number, VariableName> x, int64_t n) {
   return linear_expression<Number, VariableName>(Number(n), x);
 }
 
@@ -434,31 +434,31 @@ operator*(int64_t n, const linear_expression<Number, VariableName> &e) {
 
 template <typename Number, typename VariableName>
 inline linear_expression<Number, VariableName>
-operator+(variable<Number, VariableName> x, Number n) {
+operator+(crab::variable<Number, VariableName> x, Number n) {
   return linear_expression<Number, VariableName>(x).operator+(n);
 }
 
 template <typename Number, typename VariableName>
 inline linear_expression<Number, VariableName>
-operator+(variable<Number, VariableName> x, int64_t n) {
+operator+(crab::variable<Number, VariableName> x, int64_t n) {
   return linear_expression<Number, VariableName>(x).operator+(n);
 }
 
 template <typename Number, typename VariableName>
 inline linear_expression<Number, VariableName>
-operator+(Number n, variable<Number, VariableName> x) {
+operator+(Number n, crab::variable<Number, VariableName> x) {
   return linear_expression<Number, VariableName>(x).operator+(n);
 }
 
 template <typename Number, typename VariableName>
 inline linear_expression<Number, VariableName>
-operator+(int64_t n, variable<Number, VariableName> x) {
+operator+(int64_t n, crab::variable<Number, VariableName> x) {
   return linear_expression<Number, VariableName>(x).operator+(n);
 }
 
 template <typename Number, typename VariableName>
 inline linear_expression<Number, VariableName>
-operator+(variable<Number, VariableName> x, variable<Number, VariableName> y) {
+operator+(crab::variable<Number, VariableName> x, crab::variable<Number, VariableName> y) {
   return linear_expression<Number, VariableName>(x).operator+(y);
 }
 
@@ -476,38 +476,38 @@ operator+(int64_t n, const linear_expression<Number, VariableName> &e) {
 
 template <typename Number, typename VariableName>
 inline linear_expression<Number, VariableName>
-operator+(variable<Number, VariableName> x,
+operator+(crab::variable<Number, VariableName> x,
           const linear_expression<Number, VariableName> &e) {
   return e.operator+(x);
 }
 
 template <typename Number, typename VariableName>
 inline linear_expression<Number, VariableName>
-operator-(variable<Number, VariableName> x, Number n) {
+operator-(crab::variable<Number, VariableName> x, Number n) {
   return linear_expression<Number, VariableName>(x).operator-(n);
 }
 
 template <typename Number, typename VariableName>
 inline linear_expression<Number, VariableName>
-operator-(variable<Number, VariableName> x, int64_t n) {
+operator-(crab::variable<Number, VariableName> x, int64_t n) {
   return linear_expression<Number, VariableName>(x).operator-(n);
 }
 
 template <typename Number, typename VariableName>
 inline linear_expression<Number, VariableName>
-operator-(Number n, variable<Number, VariableName> x) {
+operator-(Number n, crab::variable<Number, VariableName> x) {
   return linear_expression<Number, VariableName>(Number(-1), x).operator+(n);
 }
 
 template <typename Number, typename VariableName>
 inline linear_expression<Number, VariableName>
-operator-(int64_t n, variable<Number, VariableName> x) {
+operator-(int64_t n, crab::variable<Number, VariableName> x) {
   return linear_expression<Number, VariableName>(Number(-1), x).operator+(n);
 }
 
 template <typename Number, typename VariableName>
 inline linear_expression<Number, VariableName>
-operator-(variable<Number, VariableName> x, variable<Number, VariableName> y) {
+operator-(crab::variable<Number, VariableName> x, crab::variable<Number, VariableName> y) {
   return linear_expression<Number, VariableName>(x).operator-(y);
 }
 
@@ -525,7 +525,7 @@ operator-(int64_t n, const linear_expression<Number, VariableName> &e) {
 
 template <typename Number, typename VariableName>
 inline linear_expression<Number, VariableName>
-operator-(variable<Number, VariableName> x,
+operator-(crab::variable<Number, VariableName> x,
           const linear_expression<Number, VariableName> &e) {
   return linear_expression<Number, VariableName>(Number(1), x).operator-(e);
 }
@@ -536,7 +536,7 @@ public:
   typedef Number number_t;
   typedef VariableName varname_t;
   typedef linear_constraint<Number, VariableName> linear_constraint_t;
-  typedef variable<Number, VariableName> variable_t;
+  typedef crab::variable<Number, VariableName> variable_t;
   typedef linear_expression<Number, VariableName> linear_expression_t;
   typedef patricia_tree_set<variable_t> variable_set_t;
   typedef enum { EQUALITY, DISEQUATION, INEQUALITY, STRICT_INEQUALITY } kind_t;
@@ -866,14 +866,14 @@ operator<=(int64_t n, const linear_expression<Number, VariableName> &e) {
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
 operator<=(const linear_expression<Number, VariableName> &e,
-           variable<Number, VariableName> x) {
+           crab::variable<Number, VariableName> x) {
   return linear_constraint<Number, VariableName>(
       e - x, linear_constraint<Number, VariableName>::INEQUALITY);
 }
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator<=(variable<Number, VariableName> x,
+operator<=(crab::variable<Number, VariableName> x,
            const linear_expression<Number, VariableName> &e) {
   return linear_constraint<Number, VariableName>(
       x - e, linear_constraint<Number, VariableName>::INEQUALITY);
@@ -881,35 +881,35 @@ operator<=(variable<Number, VariableName> x,
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator<=(variable<Number, VariableName> x, Number n) {
+operator<=(crab::variable<Number, VariableName> x, Number n) {
   return linear_constraint<Number, VariableName>(
       x - n, linear_constraint<Number, VariableName>::INEQUALITY);
 }
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator<=(variable<Number, VariableName> x, int64_t n) {
+operator<=(crab::variable<Number, VariableName> x, int64_t n) {
   return linear_constraint<Number, VariableName>(
       x - n, linear_constraint<Number, VariableName>::INEQUALITY);
 }
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator<=(Number n, variable<Number, VariableName> x) {
+operator<=(Number n, crab::variable<Number, VariableName> x) {
   return linear_constraint<Number, VariableName>(
       n - x, linear_constraint<Number, VariableName>::INEQUALITY);
 }
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator<=(int64_t n, variable<Number, VariableName> x) {
+operator<=(int64_t n, crab::variable<Number, VariableName> x) {
   return linear_constraint<Number, VariableName>(
       n - x, linear_constraint<Number, VariableName>::INEQUALITY);
 }
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator<=(variable<Number, VariableName> x, variable<Number, VariableName> y) {
+operator<=(crab::variable<Number, VariableName> x, crab::variable<Number, VariableName> y) {
   return linear_constraint<Number, VariableName>(
       x - y, linear_constraint<Number, VariableName>::INEQUALITY);
 }
@@ -953,14 +953,14 @@ operator>=(int64_t n, const linear_expression<Number, VariableName> &e) {
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
 operator>=(const linear_expression<Number, VariableName> &e,
-           variable<Number, VariableName> x) {
+           crab::variable<Number, VariableName> x) {
   return linear_constraint<Number, VariableName>(
       x - e, linear_constraint<Number, VariableName>::INEQUALITY);
 }
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator>=(variable<Number, VariableName> x,
+operator>=(crab::variable<Number, VariableName> x,
            const linear_expression<Number, VariableName> &e) {
   return linear_constraint<Number, VariableName>(
       e - x, linear_constraint<Number, VariableName>::INEQUALITY);
@@ -968,35 +968,35 @@ operator>=(variable<Number, VariableName> x,
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator>=(variable<Number, VariableName> x, Number n) {
+operator>=(crab::variable<Number, VariableName> x, Number n) {
   return linear_constraint<Number, VariableName>(
       n - x, linear_constraint<Number, VariableName>::INEQUALITY);
 }
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator>=(variable<Number, VariableName> x, int64_t n) {
+operator>=(crab::variable<Number, VariableName> x, int64_t n) {
   return linear_constraint<Number, VariableName>(
       n - x, linear_constraint<Number, VariableName>::INEQUALITY);
 }
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator>=(Number n, variable<Number, VariableName> x) {
+operator>=(Number n, crab::variable<Number, VariableName> x) {
   return linear_constraint<Number, VariableName>(
       x - n, linear_constraint<Number, VariableName>::INEQUALITY);
 }
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator>=(int64_t n, variable<Number, VariableName> x) {
+operator>=(int64_t n, crab::variable<Number, VariableName> x) {
   return linear_constraint<Number, VariableName>(
       x - n, linear_constraint<Number, VariableName>::INEQUALITY);
 }
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator>=(variable<Number, VariableName> x, variable<Number, VariableName> y) {
+operator>=(crab::variable<Number, VariableName> x, crab::variable<Number, VariableName> y) {
   return linear_constraint<Number, VariableName>(
       y - x, linear_constraint<Number, VariableName>::INEQUALITY);
 }
@@ -1040,14 +1040,14 @@ operator<(int64_t n, const linear_expression<Number, VariableName> &e) {
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
 operator<(const linear_expression<Number, VariableName> &e,
-          variable<Number, VariableName> x) {
+          crab::variable<Number, VariableName> x) {
   return linear_constraint<Number, VariableName>(
       e - x, linear_constraint<Number, VariableName>::STRICT_INEQUALITY);
 }
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator<(variable<Number, VariableName> x,
+operator<(crab::variable<Number, VariableName> x,
           const linear_expression<Number, VariableName> &e) {
   return linear_constraint<Number, VariableName>(
       x - e, linear_constraint<Number, VariableName>::STRICT_INEQUALITY);
@@ -1055,35 +1055,35 @@ operator<(variable<Number, VariableName> x,
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator<(variable<Number, VariableName> x, Number n) {
+operator<(crab::variable<Number, VariableName> x, Number n) {
   return linear_constraint<Number, VariableName>(
       x - n, linear_constraint<Number, VariableName>::STRICT_INEQUALITY);
 }
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator<(variable<Number, VariableName> x, int64_t n) {
+operator<(crab::variable<Number, VariableName> x, int64_t n) {
   return linear_constraint<Number, VariableName>(
       x - n, linear_constraint<Number, VariableName>::STRICT_INEQUALITY);
 }
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator<(Number n, variable<Number, VariableName> x) {
+operator<(Number n, crab::variable<Number, VariableName> x) {
   return linear_constraint<Number, VariableName>(
       n - x, linear_constraint<Number, VariableName>::STRICT_INEQUALITY);
 }
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator<(int64_t n, variable<Number, VariableName> x) {
+operator<(int64_t n, crab::variable<Number, VariableName> x) {
   return linear_constraint<Number, VariableName>(
       n - x, linear_constraint<Number, VariableName>::STRICT_INEQUALITY);
 }
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator<(variable<Number, VariableName> x, variable<Number, VariableName> y) {
+operator<(crab::variable<Number, VariableName> x, crab::variable<Number, VariableName> y) {
   return linear_constraint<Number, VariableName>(
       x - y, linear_constraint<Number, VariableName>::STRICT_INEQUALITY);
 }
@@ -1127,14 +1127,14 @@ operator>(int64_t n, const linear_expression<Number, VariableName> &e) {
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
 operator>(const linear_expression<Number, VariableName> &e,
-          variable<Number, VariableName> x) {
+          crab::variable<Number, VariableName> x) {
   return linear_constraint<Number, VariableName>(
       x - e, linear_constraint<Number, VariableName>::STRICT_INEQUALITY);
 }
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator>(variable<Number, VariableName> x,
+operator>(crab::variable<Number, VariableName> x,
           const linear_expression<Number, VariableName> &e) {
   return linear_constraint<Number, VariableName>(
       e - x, linear_constraint<Number, VariableName>::STRICT_INEQUALITY);
@@ -1142,35 +1142,35 @@ operator>(variable<Number, VariableName> x,
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator>(variable<Number, VariableName> x, Number n) {
+operator>(crab::variable<Number, VariableName> x, Number n) {
   return linear_constraint<Number, VariableName>(
       n - x, linear_constraint<Number, VariableName>::STRICT_INEQUALITY);
 }
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator>(variable<Number, VariableName> x, int64_t n) {
+operator>(crab::variable<Number, VariableName> x, int64_t n) {
   return linear_constraint<Number, VariableName>(
       n - x, linear_constraint<Number, VariableName>::STRICT_INEQUALITY);
 }
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator>(Number n, variable<Number, VariableName> x) {
+operator>(Number n, crab::variable<Number, VariableName> x) {
   return linear_constraint<Number, VariableName>(
       x - n, linear_constraint<Number, VariableName>::STRICT_INEQUALITY);
 }
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator>(int64_t n, variable<Number, VariableName> x) {
+operator>(int64_t n, crab::variable<Number, VariableName> x) {
   return linear_constraint<Number, VariableName>(
       x - n, linear_constraint<Number, VariableName>::STRICT_INEQUALITY);
 }
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator>(variable<Number, VariableName> x, variable<Number, VariableName> y) {
+operator>(crab::variable<Number, VariableName> x, crab::variable<Number, VariableName> y) {
   return linear_constraint<Number, VariableName>(
       y - x, linear_constraint<Number, VariableName>::STRICT_INEQUALITY);
 }
@@ -1214,14 +1214,14 @@ operator==(int64_t n, const linear_expression<Number, VariableName> &e) {
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
 operator==(const linear_expression<Number, VariableName> &e,
-           variable<Number, VariableName> x) {
+           crab::variable<Number, VariableName> x) {
   return linear_constraint<Number, VariableName>(
       e - x, linear_constraint<Number, VariableName>::EQUALITY);
 }
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator==(variable<Number, VariableName> x,
+operator==(crab::variable<Number, VariableName> x,
            const linear_expression<Number, VariableName> &e) {
   return linear_constraint<Number, VariableName>(
       e - x, linear_constraint<Number, VariableName>::EQUALITY);
@@ -1229,35 +1229,35 @@ operator==(variable<Number, VariableName> x,
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator==(variable<Number, VariableName> x, Number n) {
+operator==(crab::variable<Number, VariableName> x, Number n) {
   return linear_constraint<Number, VariableName>(
       x - n, linear_constraint<Number, VariableName>::EQUALITY);
 }
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator==(variable<Number, VariableName> x, int64_t n) {
+operator==(crab::variable<Number, VariableName> x, int64_t n) {
   return linear_constraint<Number, VariableName>(
       x - n, linear_constraint<Number, VariableName>::EQUALITY);
 }
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator==(Number n, variable<Number, VariableName> x) {
+operator==(Number n, crab::variable<Number, VariableName> x) {
   return linear_constraint<Number, VariableName>(
       x - n, linear_constraint<Number, VariableName>::EQUALITY);
 }
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator==(int64_t n, variable<Number, VariableName> x) {
+operator==(int64_t n, crab::variable<Number, VariableName> x) {
   return linear_constraint<Number, VariableName>(
       x - n, linear_constraint<Number, VariableName>::EQUALITY);
 }
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator==(variable<Number, VariableName> x, variable<Number, VariableName> y) {
+operator==(crab::variable<Number, VariableName> x, crab::variable<Number, VariableName> y) {
   return linear_constraint<Number, VariableName>(
       x - y, linear_constraint<Number, VariableName>::EQUALITY);
 }
@@ -1301,14 +1301,14 @@ operator!=(int64_t n, const linear_expression<Number, VariableName> &e) {
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
 operator!=(const linear_expression<Number, VariableName> &e,
-           variable<Number, VariableName> x) {
+           crab::variable<Number, VariableName> x) {
   return linear_constraint<Number, VariableName>(
       e - x, linear_constraint<Number, VariableName>::DISEQUATION);
 }
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator!=(variable<Number, VariableName> x,
+operator!=(crab::variable<Number, VariableName> x,
            const linear_expression<Number, VariableName> &e) {
   return linear_constraint<Number, VariableName>(
       e - x, linear_constraint<Number, VariableName>::DISEQUATION);
@@ -1316,35 +1316,35 @@ operator!=(variable<Number, VariableName> x,
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator!=(variable<Number, VariableName> x, Number n) {
+operator!=(crab::variable<Number, VariableName> x, Number n) {
   return linear_constraint<Number, VariableName>(
       x - n, linear_constraint<Number, VariableName>::DISEQUATION);
 }
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator!=(variable<Number, VariableName> x, int64_t n) {
+operator!=(crab::variable<Number, VariableName> x, int64_t n) {
   return linear_constraint<Number, VariableName>(
       x - n, linear_constraint<Number, VariableName>::DISEQUATION);
 }
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator!=(Number n, variable<Number, VariableName> x) {
+operator!=(Number n, crab::variable<Number, VariableName> x) {
   return linear_constraint<Number, VariableName>(
       x - n, linear_constraint<Number, VariableName>::DISEQUATION);
 }
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator!=(int64_t n, variable<Number, VariableName> x) {
+operator!=(int64_t n, crab::variable<Number, VariableName> x) {
   return linear_constraint<Number, VariableName>(
       x - n, linear_constraint<Number, VariableName>::DISEQUATION);
 }
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator!=(variable<Number, VariableName> x, variable<Number, VariableName> y) {
+operator!=(crab::variable<Number, VariableName> x, crab::variable<Number, VariableName> y) {
   return linear_constraint<Number, VariableName>(
       x - y, linear_constraint<Number, VariableName>::DISEQUATION);
 }
@@ -1401,7 +1401,7 @@ public:
   typedef linear_constraint<Number, VariableName> linear_constraint_t;
   typedef linear_constraint_system<Number, VariableName>
       linear_constraint_system_t;
-  typedef variable<Number, VariableName> variable_t;
+  typedef crab::variable<Number, VariableName> variable_t;
   typedef patricia_tree_set<variable_t> variable_set_t;
 
 private:

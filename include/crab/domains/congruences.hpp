@@ -43,13 +43,13 @@
 
 #pragma once
 
-#include <crab/common/types.hpp>
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
 #include <crab/domains/interval.hpp>
 #include <crab/domains/separate_domains.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
+#include <crab/types/variable.hpp>
 
 #include <boost/optional.hpp>
 
@@ -601,7 +601,7 @@ class equality_congruence_solver {
   // Theorem 4.4).
 private:
   typedef congruence<Number> congruence_t;
-  typedef variable<Number, VariableName> variable_t;
+  typedef crab::variable<Number, VariableName> variable_t;
   typedef linear_expression<Number, VariableName> linear_expression_t;
   typedef linear_constraint<Number, VariableName> linear_constraint_t;
   typedef linear_constraint_system<Number, VariableName>

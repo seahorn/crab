@@ -3,10 +3,11 @@
 
 #include <crab/config.h>
 #include <crab/common/types.hpp>
-#include <crab/support/debug.hpp>
 #include <crab/cfg/cfg.hpp>
 #include <crab/cg/cg.hpp>
 #include <crab/cfg/var_factory.hpp>
+#include <crab/support/debug.hpp>
+#include <crab/types/variable.hpp>
 
 namespace crab {
 
@@ -29,7 +30,7 @@ namespace crab {
     typedef cfg::cfg_ref<z_cfg_t> z_cfg_ref_t;
     typedef cfg::cfg_rev<z_cfg_ref_t> z_cfg_rev_t;
     typedef z_cfg_t::basic_block_t z_basic_block_t;
-    typedef ikos::variable<ikos::z_number, varname_t> z_var;
+    typedef variable<ikos::z_number, varname_t> z_var;
     typedef ikos::linear_expression<ikos::z_number, varname_t> z_lin_t;
     typedef ikos::linear_constraint<ikos::z_number, varname_t> z_lin_cst_t;
     typedef reference_constraint<ikos::z_number, varname_t> z_ref_cst_t;
@@ -38,7 +39,7 @@ namespace crab {
     typedef cfg::cfg_ref<q_cfg_t> q_cfg_ref_t;
     typedef cfg::cfg_rev<q_cfg_ref_t> q_cfg_rev_t;
     typedef q_cfg_t::basic_block_t q_basic_block_t;    
-    typedef ikos::variable<ikos::q_number, varname_t> q_var;
+    typedef variable<ikos::q_number, varname_t> q_var;
     typedef ikos::linear_expression<ikos::q_number, varname_t> q_lin_t;
     typedef ikos::linear_constraint<ikos::q_number, varname_t> q_lin_cst_t;
     typedef reference_constraint<ikos::q_number, varname_t> q_ref_cst_t;    

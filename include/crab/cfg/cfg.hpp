@@ -124,12 +124,14 @@
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/range/iterator_range.hpp>
 
-#include <crab/types/types.hpp>
 #include <crab/common/types.hpp>
 #include <crab/domains/discrete_domains.hpp>
 #include <crab/domains/interval.hpp>
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/numbers/bignums.hpp>
+#include <crab/types/memory_regions.hpp>
+#include <crab/types/reference_constraints.hpp>
+#include <crab/types/variable.hpp>
 
 #include <functional> // for wrapper_reference
 #include <unordered_map>
@@ -187,7 +189,7 @@ enum stmt_code {
 
 template <typename Number, typename VariableName> class live {
 public:
-  typedef ikos::variable<Number, VariableName> variable_t;
+  typedef variable<Number, VariableName> variable_t;
 
 private:
   typedef std::vector<variable_t> live_set_t;
@@ -350,7 +352,7 @@ class binary_op : public statement<Number, VariableName> {
 
 public:
   typedef statement<Number, VariableName> statement_t;
-  typedef ikos::variable<Number, VariableName> variable_t;
+  typedef variable<Number, VariableName> variable_t;
   typedef ikos::linear_expression<Number, VariableName> linear_expression_t;
 
   binary_op(variable_t lhs, binary_operation_t op, linear_expression_t op1,
@@ -399,7 +401,7 @@ class assignment : public statement<Number, VariableName> {
 
 public:
   typedef statement<Number, VariableName> statement_t;
-  typedef ikos::variable<Number, VariableName> variable_t;
+  typedef variable<Number, VariableName> variable_t;
   typedef ikos::linear_expression<Number, VariableName> linear_expression_t;
 
   assignment(variable_t lhs, linear_expression_t rhs)
@@ -435,7 +437,7 @@ class assume_stmt : public statement<Number, VariableName> {
 
 public:
   typedef statement<Number, VariableName> statement_t;
-  typedef ikos::variable<Number, VariableName> variable_t;
+  typedef variable<Number, VariableName> variable_t;
   typedef ikos::linear_constraint<Number, VariableName> linear_constraint_t;
 
   assume_stmt(linear_constraint_t cst) : statement_t(ASSUME), m_cst(cst) {
@@ -483,7 +485,7 @@ class havoc_stmt : public statement<Number, VariableName> {
 
 public:
   typedef statement<Number, VariableName> statement_t;
-  typedef ikos::variable<Number, VariableName> variable_t;
+  typedef variable<Number, VariableName> variable_t;
 
   havoc_stmt(variable_t lhs) : statement_t(HAVOC), m_lhs(lhs) {
     this->m_live.add_def(m_lhs);
@@ -517,7 +519,7 @@ class select_stmt : public statement<Number, VariableName> {
 
 public:
   typedef statement<Number, VariableName> statement_t;
-  typedef ikos::variable<Number, VariableName> variable_t;
+  typedef variable<Number, VariableName> variable_t;
   typedef ikos::linear_expression<Number, VariableName> linear_expression_t;
   typedef ikos::linear_constraint<Number, VariableName> linear_constraint_t;
 
@@ -567,7 +569,7 @@ class assert_stmt : public statement<Number, VariableName> {
 
 public:
   typedef statement<Number, VariableName> statement_t;
-  typedef ikos::variable<Number, VariableName> variable_t;
+  typedef variable<Number, VariableName> variable_t;
   typedef ikos::linear_constraint<Number, VariableName> linear_constraint_t;
 
   assert_stmt(linear_constraint_t cst, debug_info dbg_info = debug_info())
@@ -603,7 +605,7 @@ class int_cast_stmt : public statement<Number, VariableName> {
   typedef int_cast_stmt<Number, VariableName> this_type;
 
 public:
-  typedef ikos::variable<Number, VariableName> variable_t;
+  typedef variable<Number, VariableName> variable_t;
   typedef statement<Number, VariableName> statement_t;
   typedef typename variable_t::bitwidth_t bitwidth_t;
 
@@ -671,7 +673,7 @@ class array_init_stmt : public statement<Number, VariableName> {
 public:
   typedef statement<Number, VariableName> statement_t;
   typedef ikos::linear_expression<Number, VariableName> linear_expression_t;
-  typedef ikos::variable<Number, VariableName> variable_t;
+  typedef variable<Number, VariableName> variable_t;
   typedef typename variable_t::type_t type_t;
 
   array_init_stmt(variable_t arr, linear_expression_t elem_size,
@@ -738,7 +740,7 @@ public:
 
   typedef statement<Number, VariableName> statement_t;
   typedef ikos::linear_expression<Number, VariableName> linear_expression_t;
-  typedef ikos::variable<Number, VariableName> variable_t;
+  typedef variable<Number, VariableName> variable_t;
   typedef typename variable_t::type_t type_t;
 
   // Constructor for in-place array stores
@@ -866,7 +868,7 @@ class array_load_stmt : public statement<Number, VariableName> {
 public:
   typedef statement<Number, VariableName> statement_t;
   typedef ikos::linear_expression<Number, VariableName> linear_expression_t;
-  typedef ikos::variable<Number, VariableName> variable_t;
+  typedef variable<Number, VariableName> variable_t;
   typedef typename variable_t::type_t type_t;
 
   array_load_stmt(variable_t lhs, variable_t arr, linear_expression_t elem_size,
@@ -922,7 +924,7 @@ class array_assign_stmt : public statement<Number, VariableName> {
 
 public:
   typedef statement<Number, VariableName> statement_t;
-  typedef ikos::variable<Number, VariableName> variable_t;
+  typedef variable<Number, VariableName> variable_t;
   typedef typename variable_t::type_t type_t;
 
   array_assign_stmt(variable_t lhs, variable_t rhs)
@@ -964,7 +966,7 @@ class region_init_stmt: public statement<Number, VariableName> {
 public:
   
   typedef statement<Number, VariableName> statement_t;
-  typedef ikos::variable<Number, VariableName> variable_t;
+  typedef variable<Number, VariableName> variable_t;
 
   region_init_stmt(memory_region region, debug_info dbg_info = debug_info())
     : statement_t(REGION_INIT, dbg_info), m_region(region) {
@@ -996,7 +998,7 @@ class make_ref_stmt : public statement<Number, VariableName> {
 public:
   
   typedef statement<Number, VariableName> statement_t;
-  typedef ikos::variable<Number, VariableName> variable_t;
+  typedef variable<Number, VariableName> variable_t;
 
   make_ref_stmt(variable_t lhs, memory_region region, 
 		debug_info dbg_info = debug_info())
@@ -1033,7 +1035,7 @@ class load_from_ref_stmt : public statement<Number, VariableName> {
 
 public:
   typedef statement<Number, VariableName> statement_t;
-  typedef ikos::variable<Number, VariableName> variable_t;
+  typedef variable<Number, VariableName> variable_t;
   
   load_from_ref_stmt(variable_t lhs, variable_t ref, memory_region region,
 		     debug_info dbg_info = debug_info())
@@ -1076,7 +1078,7 @@ class store_to_ref_stmt : public statement<Number, VariableName> {
 
 public:
   typedef statement<Number, VariableName> statement_t;
-  typedef ikos::variable<Number, VariableName> variable_t;
+  typedef variable<Number, VariableName> variable_t;
   typedef ikos::linear_expression<Number, VariableName> linear_expression_t;  
   
   store_to_ref_stmt(variable_t ref, memory_region region, linear_expression_t val, 
@@ -1120,7 +1122,7 @@ class gep_ref_stmt : public statement<Number, VariableName> {
 
 public:
   typedef statement<Number, VariableName> statement_t;
-  typedef ikos::variable<Number, VariableName> variable_t;
+  typedef variable<Number, VariableName> variable_t;
   typedef ikos::linear_expression<Number, VariableName> linear_expression_t;
 
   gep_ref_stmt(variable_t lhs, memory_region lhs_region,
@@ -1179,7 +1181,7 @@ class load_from_arr_ref_stmt: public statement<Number, VariableName> {
 public:
   typedef statement<Number, VariableName> statement_t;
   typedef ikos::linear_expression<Number, VariableName> linear_expression_t;
-  typedef ikos::variable<Number, VariableName> variable_t;
+  typedef variable<Number, VariableName> variable_t;
   typedef typename variable_t::type_t type_t;
 
   load_from_arr_ref_stmt(variable_t lhs, variable_t ref, memory_region region,
@@ -1240,7 +1242,7 @@ public:
   
   typedef statement<Number, VariableName> statement_t;
   typedef ikos::linear_expression<Number, VariableName> linear_expression_t;
-  typedef ikos::variable<Number, VariableName> variable_t;
+  typedef variable<Number, VariableName> variable_t;
   typedef typename variable_t::type_t type_t;
 
   store_to_arr_ref_stmt(variable_t ref, memory_region region, 
@@ -1327,7 +1329,7 @@ class assume_ref_stmt : public statement<Number, VariableName> {
 
 public:
   typedef statement<Number, VariableName> statement_t;
-  typedef ikos::variable<Number, VariableName> variable_t;
+  typedef variable<Number, VariableName> variable_t;
   typedef reference_constraint<Number, VariableName> reference_constraint_t;
 
   assume_ref_stmt(reference_constraint_t cst)
@@ -1362,7 +1364,7 @@ class assert_ref_stmt : public statement<Number, VariableName> {
 
 public:
   typedef statement<Number, VariableName> statement_t;
-  typedef ikos::variable<Number, VariableName> variable_t;
+  typedef variable<Number, VariableName> variable_t;
   typedef reference_constraint<Number, VariableName> reference_constraint_t;
 
   assert_ref_stmt(reference_constraint_t cst, debug_info dbg_info = debug_info())
@@ -1403,7 +1405,7 @@ class callsite_stmt : public statement<Number, VariableName> {
 
 public:
   typedef statement<Number, VariableName> statement_t;
-  typedef ikos::variable<Number, VariableName> variable_t;
+  typedef variable<Number, VariableName> variable_t;
   typedef typename variable_t::type_t type_t;
 
   callsite_stmt(std::string func_name, const std::vector<variable_t> &args)
@@ -1500,7 +1502,7 @@ class return_stmt : public statement<Number, VariableName> {
 
 public:
   typedef statement<Number, VariableName> statement_t;
-  typedef ikos::variable<Number, VariableName> variable_t;
+  typedef variable<Number, VariableName> variable_t;
   typedef typename variable_t::type_t type_t;
 
   return_stmt(variable_t var) : statement_t(RETURN) {
@@ -1553,7 +1555,7 @@ class intrinsic_stmt : public statement<Number, VariableName> {
 
 public:
   typedef statement<Number, VariableName> statement_t;
-  typedef ikos::variable<Number, VariableName> variable_t;
+  typedef variable<Number, VariableName> variable_t;
   typedef typename variable_t::type_t type_t;
 
   intrinsic_stmt(std::string intrinsic_name, const std::vector<variable_t> &args)
@@ -1657,7 +1659,7 @@ class bool_assign_cst : public statement<Number, VariableName> {
 
 public:
   typedef statement<Number, VariableName> statement_t;
-  typedef ikos::variable<Number, VariableName> variable_t;
+  typedef variable<Number, VariableName> variable_t;
   typedef ikos::linear_constraint<Number, VariableName> linear_constraint_t;
 
   bool_assign_cst(variable_t lhs, linear_constraint_t rhs)
@@ -1703,7 +1705,7 @@ class bool_assign_var : public statement<Number, VariableName> {
 
 public:
   typedef statement<Number, VariableName> statement_t;
-  typedef ikos::variable<Number, VariableName> variable_t;
+  typedef variable<Number, VariableName> variable_t;
 
   bool_assign_var(variable_t lhs, variable_t rhs, bool is_not_rhs)
       : statement_t(BOOL_ASSIGN_VAR), m_lhs(lhs), m_rhs(rhs),
@@ -1752,7 +1754,7 @@ class bool_binary_op : public statement<Number, VariableName> {
 
 public:
   typedef statement<Number, VariableName> statement_t;
-  typedef ikos::variable<Number, VariableName> variable_t;
+  typedef variable<Number, VariableName> variable_t;
 
   bool_binary_op(variable_t lhs, bool_binary_operation_t op, variable_t op1,
                  variable_t op2, debug_info dbg_info = debug_info())
@@ -1796,7 +1798,7 @@ class bool_assume_stmt : public statement<Number, VariableName> {
 
 public:
   typedef statement<Number, VariableName> statement_t;
-  typedef ikos::variable<Number, VariableName> variable_t;
+  typedef variable<Number, VariableName> variable_t;
 
   bool_assume_stmt(variable_t v, bool is_negated)
       : statement_t(BOOL_ASSUME), m_var(v), m_is_negated(is_negated) {
@@ -1836,7 +1838,7 @@ class bool_select_stmt : public statement<Number, VariableName> {
 
 public:
   typedef statement<Number, VariableName> statement_t;
-  typedef ikos::variable<Number, VariableName> variable_t;
+  typedef variable<Number, VariableName> variable_t;
 
   bool_select_stmt(variable_t lhs, variable_t cond, variable_t b1,
                    variable_t b2)
@@ -1881,7 +1883,7 @@ class bool_assert_stmt : public statement<Number, VariableName> {
 
 public:
   typedef statement<Number, VariableName> statement_t;
-  typedef ikos::variable<Number, VariableName> variable_t;
+  typedef variable<Number, VariableName> variable_t;
 
   bool_assert_stmt(variable_t v, debug_info dbg_info = debug_info())
       : statement_t(BOOL_ASSERT, dbg_info), m_var(v) {
@@ -1916,7 +1918,7 @@ public:
   typedef BasicBlockLabel basic_block_label_t;
 
   // helper types to build statements
-  typedef ikos::variable<Number, VariableName> variable_t;
+  typedef variable<Number, VariableName> variable_t;
   typedef ikos::linear_expression<Number, VariableName> lin_exp_t;
   typedef ikos::linear_constraint<Number, VariableName> lin_cst_t;
   typedef reference_constraint<Number, VariableName> ref_cst_t;
@@ -2694,7 +2696,7 @@ template <class Number, class VariableName> struct statement_visitor {
 
 template <class Number, class VariableName> class function_decl {
 public:
-  typedef ikos::variable<Number, VariableName> variable_t;
+  typedef variable<Number, VariableName> variable_t;
   typedef typename variable_t::type_t type_t;
 
 private:
@@ -2865,7 +2867,7 @@ public:
   typedef BasicBlockLabel basic_block_label_t;
   typedef basic_block_label_t node_t; // for Bgl graphs
   typedef VariableName varname_t;
-  typedef ikos::variable<number_t, varname_t> variable_t;
+  typedef variable<number_t, varname_t> variable_t;
   typedef function_decl<number_t, varname_t> fdecl_t;
   typedef basic_block<BasicBlockLabel, VariableName, number_t> basic_block_t;
   typedef statement<number_t, VariableName> statement_t;
@@ -3769,7 +3771,7 @@ private:
 
     typedef ikos::linear_expression<N, V> lin_exp_t;
     typedef ikos::linear_constraint<N, V> lin_cst_t;
-    typedef ikos::variable<N, V> variable_t;
+    typedef variable<N, V> variable_t;
 
     typedef typename variable_t::type_t variable_type_t;
     typedef typename variable_t::bitwidth_t variable_bitwidth_t;

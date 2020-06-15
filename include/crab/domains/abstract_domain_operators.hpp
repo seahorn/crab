@@ -1,7 +1,6 @@
 #pragma once
 
 #include <crab/common/types.hpp>
-#include <crab/domains/linear_constraints.hpp>
 
 /* Types for abstract domain operations */
 

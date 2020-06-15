@@ -1,8 +1,12 @@
 #pragma once
 
-#include <crab/types/types.hpp>
 #include <crab/domains/abstract_domain_operators.hpp>
+#include <crab/domains/linear_constraints.hpp>
 #include <crab/iterators/thresholds.hpp>
+#include <crab/types/variable.hpp>
+#include <crab/types/memory_regions.hpp>
+#include <crab/types/reference_constraints.hpp>
+
 #include <vector>
 
 namespace crab {
@@ -44,7 +48,7 @@ public:
       linear_constraint_system_t;
   typedef ikos::disjunctive_linear_constraint_system<number_t, varname_t>
       disjunctive_linear_constraint_system_t;
-  typedef ikos::variable<number_t, varname_t> variable_t;
+  typedef variable<number_t, varname_t> variable_t;
   typedef std::vector<variable_t> variable_vector_t;
   typedef reference_constraint<number_t,varname_t> reference_constraint_t;
   

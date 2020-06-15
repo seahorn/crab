@@ -17,7 +17,6 @@
 
 #pragma once
 
-#include <crab/common/types.hpp>
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
@@ -2895,7 +2894,7 @@ struct array_graph_domain_helper_traits<
     SplitDBM<Number, VariableName, SplitDBMParams>> {
   typedef SplitDBM<Number, VariableName, SplitDBMParams> sdbm_domain_t;
   typedef typename sdbm_domain_t::linear_constraint_t linear_constraint_t;
-  typedef ikos::variable<Number, VariableName> variable_t;
+  typedef typename sdbm_domain_t::variable_t variable_t;
 
   static bool is_unsat(sdbm_domain_t &inv, linear_constraint_t cst) {
     return inv.is_unsat(cst);

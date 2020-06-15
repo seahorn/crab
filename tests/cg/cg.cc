@@ -20,7 +20,6 @@ using namespace crab::domain_impl;
 
 typedef call_graph<z_cfg_ref_t> call_graph_t;
 typedef call_graph_ref<call_graph_t> call_graph_ref_t;
-typedef ikos::variable<z_number, varname_t> variable_t;
 
 z_cfg_t* foo(variable_factory_t &vfac) {
   // Defining program variables
@@ -95,7 +94,7 @@ z_cfg_t* m(variable_factory_t &vfac)  {
   z_var y(vfac["y"], crab::INT_TYPE, 32);
   z_var z(vfac["z"], crab::INT_TYPE, 32);
   
-  std::vector<variable_t> inputs, outputs;
+  std::vector<z_var> inputs, outputs;
   function_decl<z_number, varname_t> decl("main", inputs, outputs);
   // entry and exit block
   z_cfg_t* cfg = new z_cfg_t("entry", "exit", decl);
