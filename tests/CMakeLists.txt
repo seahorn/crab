@@ -28,16 +28,25 @@ function (AddTest testSrc dirName)
     COMMAND ${TEST_DIR}/${testName} --disable-warnings)
 endfunction()
 
+set(EXCLUDE_FILES
+  ""
+ )
+
 function (AddTestDir dirName)
   file(GLOB TEST_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${dirName}/*.cc)
   foreach(testSrc ${TEST_SRCS})
-    AddTest (${testSrc} ${dirName})
+    if (${testSrc} IN_LIST EXCLUDE_FILES)
+      message (STATUS " ##### Excluding ${testSrc} from compilation")
+    else()
+      AddTest (${testSrc} ${dirName})      
+    endif()
   endforeach(testSrc)
 endfunction ()  
 
 
 AddTestDir(domains)
 AddTestDir(domains/wrapint)
+AddTestDir(domains/reference)
 AddTestDir(transforms)
 AddTestDir(inter)
 AddTestDir(cg)
