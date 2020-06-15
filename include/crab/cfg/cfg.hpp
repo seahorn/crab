@@ -120,11 +120,8 @@
  * - Integer and reals cannot be mixed.
  */
 
-#include <boost/iterator/indirect_iterator.hpp>
-#include <boost/iterator/transform_iterator.hpp>
-#include <boost/range/iterator_range.hpp>
 
-#include <crab/common/types.hpp>
+#include <crab/cfg/cfg_operators.hpp>
 #include <crab/domains/discrete_domains.hpp>
 #include <crab/domains/interval.hpp>
 #include <crab/numbers/bignums.hpp>
@@ -132,6 +129,10 @@
 #include <crab/types/memory_regions.hpp>
 #include <crab/types/reference_constraints.hpp>
 #include <crab/types/variable.hpp>
+
+#include <boost/iterator/indirect_iterator.hpp>
+#include <boost/iterator/transform_iterator.hpp>
+#include <boost/range/iterator_range.hpp>
 
 #include <functional> // for wrapper_reference
 #include <unordered_map>
@@ -186,7 +187,7 @@ enum stmt_code {
   // casts
   INT_CAST = 80
 };
-
+  
 template <typename Number, typename VariableName> class live {
 public:
   typedef variable<Number, VariableName> variable_t;

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <crab/common/types.hpp>
+#include <crab/support/os.hpp>
 
 /* Types for abstract domain operations */
 
@@ -118,81 +118,4 @@ inline crab::crab_os &operator<<(crab::crab_os &o, bool_operation_t op) {
   return o;
 }
 } // end namespace domains
-
-/**
- * Convert CFG operations into abstract domain operations
- **/
-template <>
-inline boost::optional<ikos::operation_t> conv_op(binary_operation_t op) {
-  switch (op) {
-  case BINOP_ADD:
-    return ikos::OP_ADDITION;
-  case BINOP_SUB:
-    return ikos::OP_SUBTRACTION;
-  case BINOP_MUL:
-    return ikos::OP_MULTIPLICATION;
-  case BINOP_SDIV:
-    return ikos::OP_SDIV;
-  case BINOP_UDIV:
-    return ikos::OP_UDIV;
-  case BINOP_SREM:
-    return ikos::OP_SREM;
-  case BINOP_UREM:
-    return ikos::OP_UREM;
-  default:
-    return boost::optional<ikos::operation_t>();
-  }
-}
-
-template <>
-inline boost::optional<ikos::bitwise_operation_t>
-conv_op(binary_operation_t op) {
-  switch (op) {
-  case BINOP_AND:
-    return ikos::OP_AND;
-  case BINOP_OR:
-    return ikos::OP_OR;
-  case BINOP_XOR:
-    return ikos::OP_XOR;
-  case BINOP_SHL:
-    return ikos::OP_SHL;
-  case BINOP_LSHR:
-    return ikos::OP_LSHR;
-  case BINOP_ASHR:
-    return ikos::OP_ASHR;
-  default:
-    return boost::optional<ikos::bitwise_operation_t>();
-  }
-}
-
-template <>
-inline boost::optional<domains::int_conv_operation_t>
-conv_op(cast_operation_t op) {
-  switch (op) {
-  case CAST_TRUNC:
-    return domains::OP_TRUNC;
-  case CAST_SEXT:
-    return domains::OP_SEXT;
-  case CAST_ZEXT:
-    return domains::OP_ZEXT;
-  default:
-    return boost::optional<domains::int_conv_operation_t>();
-  }
-}
-
-template <>
-inline boost::optional<domains::bool_operation_t>
-conv_op(bool_binary_operation_t op) {
-  switch (op) {
-  case BINOP_BAND:
-    return domains::OP_BAND;
-  case BINOP_BOR:
-    return domains::OP_BOR;
-  case BINOP_BXOR:
-    return domains::OP_BXOR;
-  default:
-    return boost::optional<domains::bool_operation_t>();
-  }
-}
-
 } // end namespace crab

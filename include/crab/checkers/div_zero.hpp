@@ -39,8 +39,8 @@ public:
     if (!this->m_abs_tr)
       return;
 
-    if (s.op() == BINOP_SDIV || s.op() == BINOP_UDIV || s.op() == BINOP_SREM ||
-        s.op() == BINOP_UREM) {
+    if (s.op() == cfg::BINOP_SDIV || s.op() == cfg::BINOP_UDIV ||
+	s.op() == cfg::BINOP_SREM || s.op() == cfg::BINOP_UREM) {
 
       auto &inv = this->m_abs_tr->get_abs_value();
       if (inv.is_bottom()) {

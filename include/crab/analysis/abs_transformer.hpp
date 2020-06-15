@@ -36,7 +36,7 @@
 #include <crab/support/stats.hpp>
 #include <crab/domains/abstract_domain_operators.hpp>
 
-namespace crab {
+namespace crab {  
 namespace analyzer {
 
 /**
@@ -155,6 +155,69 @@ public: /* visitor api */
   void visit(bool_assert_t &s) { exec(s); }
 };
 
+
+/**
+ * Convert CFG operations into abstract domain operations
+ **/
+
+template <typename T>
+inline boost::optional<T> conv_op(cfg::binary_operation_t op);
+template <typename T>
+inline boost::optional<T> conv_op(cfg::bool_binary_operation_t op);
+template <typename T>
+inline boost::optional<T> conv_op(cfg::cast_operation_t op);
+  
+template <>
+inline boost::optional<ikos::operation_t> conv_op(cfg::binary_operation_t op) {
+  switch (op) {
+  case cfg::BINOP_ADD: return ikos::OP_ADDITION;
+  case cfg::BINOP_SUB: return ikos::OP_SUBTRACTION;
+  case cfg::BINOP_MUL: return ikos::OP_MULTIPLICATION;
+  case cfg::BINOP_SDIV:return ikos::OP_SDIV; 
+  case cfg::BINOP_UDIV:return ikos::OP_UDIV; 
+  case cfg::BINOP_SREM:return ikos::OP_SREM;
+  case cfg::BINOP_UREM:return ikos::OP_UREM;
+  default:return boost::optional<ikos::operation_t>();
+  }
+}
+
+template <>
+inline boost::optional<ikos::bitwise_operation_t>
+conv_op(cfg::binary_operation_t op) {
+  switch (op) {
+  case cfg::BINOP_AND: return ikos::OP_AND;
+  case cfg::BINOP_OR:  return ikos::OP_OR;
+  case cfg::BINOP_XOR: return ikos::OP_XOR;
+  case cfg::BINOP_SHL: return ikos::OP_SHL;
+  case cfg::BINOP_LSHR:return ikos::OP_LSHR; 
+  case cfg::BINOP_ASHR:return ikos::OP_ASHR;
+  default: return boost::optional<ikos::bitwise_operation_t>();
+  }
+}
+
+template <>
+inline boost::optional<domains::int_conv_operation_t>
+conv_op(cfg::cast_operation_t op) {
+  switch (op) {
+  case cfg::CAST_TRUNC: return domains::OP_TRUNC;
+  case cfg::CAST_SEXT:  return domains::OP_SEXT;
+  case cfg::CAST_ZEXT:  return domains::OP_ZEXT;
+  default: return boost::optional<domains::int_conv_operation_t>();         
+  }
+}
+
+template <>
+inline boost::optional<domains::bool_operation_t>
+conv_op(cfg::bool_binary_operation_t op) {
+  switch (op) {
+  case cfg::BINOP_BAND: return domains::OP_BAND;
+  case cfg::BINOP_BOR:  return domains::OP_BOR;
+  case cfg::BINOP_BXOR: return domains::OP_BXOR;
+  default: return boost::optional<domains::bool_operation_t>();
+  }
+}
+
+  
 /**
  * Abstract forward transformer for all statements. Function calls
  * can be redefined by derived classes. By default, all function
@@ -212,7 +275,7 @@ protected:
 
 private:
   template <typename NumOrVar>
-  void apply(abs_dom_t &inv, binary_operation_t op, variable_t x, variable_t y,
+  void apply(abs_dom_t &inv, cfg::binary_operation_t op, variable_t x, variable_t y,
              NumOrVar z) {
     if (auto top = conv_op<ikos::operation_t>(op)) {
       inv.apply(*top, x, y, z);
@@ -236,7 +299,7 @@ public:
   void exec(bin_op_t &stmt) {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag &&
-        (!(stmt.op() >= BINOP_SDIV && stmt.op() <= BINOP_UREM))) {
+        (!(stmt.op() >= cfg::BINOP_SDIV && stmt.op() <= cfg::BINOP_UREM))) {
       pre_bot = m_inv.is_bottom();
     }
 
@@ -252,7 +315,7 @@ public:
     }
 
     if (::crab::CrabSanityCheckFlag &&
-        (!(stmt.op() >= BINOP_SDIV && stmt.op() <= BINOP_UREM))) {
+        (!(stmt.op() >= cfg::BINOP_SDIV && stmt.op() <= cfg::BINOP_UREM))) {
       bool post_bot = m_inv.is_bottom();
       if (!(pre_bot || !post_bot)) {
         CRAB_ERROR("Invariant became bottom after ", stmt);
