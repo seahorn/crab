@@ -39,7 +39,7 @@ z_cfg_t* cfg1(variable_factory_t &vfac)  {
   auto mem2 = crab::memory_region::make_int_memory_region(1, 32);
   auto mem3 = crab::memory_region::make_int_memory_region(2, 32);  
   // === Create empty CFG
-  z_cfg_t* cfg = new z_cfg_t("entry","ret",REF);
+  z_cfg_t* cfg = new z_cfg_t("entry","ret");
   // === Adding CFG blocks
   z_basic_block_t& entry = cfg->insert("entry");
   z_basic_block_t& bb1   = cfg->insert("bb1");

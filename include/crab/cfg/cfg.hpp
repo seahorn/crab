@@ -144,8 +144,6 @@ template <typename T> inline std::string get_label_str(T e);
 
 namespace cfg {
 
-enum tracked_precision { NUM = 0, REF = 1, ARR = 2 };
-
 enum stmt_code {
   UNDEF = 0,
   // numerical
@@ -1989,7 +1987,6 @@ private:
   BasicBlockLabel m_bb_id;
   stmt_list_t m_stmts;
   bb_id_set_t m_prev, m_next;
-  tracked_precision m_track_prec;
   // Ideally it should be size_t to indicate any position within the
   // block. For now, we only allow to insert either at front or at
   // the back (default). Note that if insertions at the front are
@@ -2011,12 +2008,12 @@ private:
     }
   }
 
-  basic_block(BasicBlockLabel bb_id, tracked_precision track_prec)
-      : m_bb_id(bb_id), m_track_prec(track_prec),
-        m_insert_point_at_front(false), m_live(live_domain_t::bottom()) {}
+  basic_block(BasicBlockLabel bb_id)
+    : m_bb_id(bb_id),
+      m_insert_point_at_front(false), m_live(live_domain_t::bottom()) {}
 
-  static basic_block_t *create(BasicBlockLabel bb_id, tracked_precision prec) {
-    return new basic_block_t(bb_id, prec);
+  static basic_block_t *create(BasicBlockLabel bb_id) {
+    return new basic_block_t(bb_id);
   }
 
   void update_uses_and_defs(const statement_t *s) {
@@ -2058,7 +2055,7 @@ public:
   basic_block_t *clone() const {
     // The basic block labels (i.e., identifiers) are not cloned.
 
-    basic_block_t *b = new basic_block_t(label(), m_track_prec);
+    basic_block_t *b = new basic_block_t(label());
     for (auto &s : boost::make_iterator_range(begin(), end())) {
       b->m_stmts.push_back(s.clone());
     }
@@ -2397,121 +2394,96 @@ public:
   const statement_t *array_init(variable_t a, lin_exp_t lb_idx,
                                 lin_exp_t ub_idx, lin_exp_t v,
                                 lin_exp_t elem_size) {
-    return ((m_track_prec == ARR)
-                ? insert(new arr_init_t(a, elem_size, lb_idx, ub_idx, v))
-                : nullptr);
+    return insert(new arr_init_t(a, elem_size, lb_idx, ub_idx, v));
   }
 
   const statement_t *array_store(variable_t arr, lin_exp_t idx, lin_exp_t v,
                                  lin_exp_t elem_size) {
-    return ((m_track_prec == ARR)
-                ? insert(new arr_store_t(arr, elem_size, idx, idx, v, false))
-                : nullptr);
+    return insert(new arr_store_t(arr, elem_size, idx, idx, v, false));
   }
 
   //// To avoid ambiguity
   // const statement_t* array_store(variable_t new_arr, variable_t old_arr,
   // 				lin_exp_t idx, lin_exp_t v, lin_exp_t elem_size)
   // {
-  //   return ((m_track_prec == ARR) ?
-  // 	   insert(new arr_store_t(new_arr, old_arr, elem_size, idx, idx, v,
-  // false)) 	   : nullptr);
+  //   return insert(new arr_store_t(new_arr, old_arr, elem_size, idx, idx, v,
+  //                 false));
   // }
 
   const statement_t *array_store(variable_t arr, lin_exp_t idx, lin_exp_t v,
                                  lin_exp_t elem_size, bool is_strong_update) {
-    return ((m_track_prec == ARR)
-                ? insert(new arr_store_t(arr, elem_size, idx, idx, v,
-                                         is_strong_update))
-                : nullptr);
+    return insert(new arr_store_t(arr, elem_size, idx, idx, v, is_strong_update));
   }
 
   const statement_t *array_store(variable_t new_arr, variable_t old_arr,
                                  lin_exp_t idx, lin_exp_t v,
                                  lin_exp_t elem_size, bool is_strong_update) {
-    return ((m_track_prec == ARR)
-                ? insert(new arr_store_t(new_arr, old_arr, elem_size, idx, idx,
-                                         v, is_strong_update))
-                : nullptr);
+    return insert(new arr_store_t(new_arr, old_arr, elem_size, idx, idx,
+				  v, is_strong_update));
   }
 
   const statement_t *array_store_range(variable_t arr, lin_exp_t lb_idx,
                                        lin_exp_t ub_idx, lin_exp_t v,
                                        lin_exp_t elem_size) {
-    return (
-        (m_track_prec == ARR)
-            ? insert(new arr_store_t(arr, elem_size, lb_idx, ub_idx, v, false))
-            : nullptr);
+    return insert(new arr_store_t(arr, elem_size, lb_idx, ub_idx, v, false));
   }
 
   const statement_t *array_store_range(variable_t new_arr, variable_t old_arr,
                                        lin_exp_t lb_idx, lin_exp_t ub_idx,
                                        lin_exp_t v, lin_exp_t elem_size) {
-    return ((m_track_prec == ARR)
-                ? insert(new arr_store_t(new_arr, old_arr, elem_size, lb_idx,
-                                         ub_idx, v, false))
-                : nullptr);
+    return insert(new arr_store_t(new_arr, old_arr, elem_size, lb_idx,
+				  ub_idx, v, false));
   }
 
   const statement_t *array_load(variable_t lhs, variable_t arr, lin_exp_t idx,
                                 lin_exp_t elem_size) {
-    return ((m_track_prec == ARR)
-                ? insert(new arr_load_t(lhs, arr, elem_size, idx))
-                : nullptr);
+    return insert(new arr_load_t(lhs, arr, elem_size, idx)); 
   }
 
   const statement_t *array_assign(variable_t lhs, variable_t rhs) {
-    return ((m_track_prec == ARR) ? insert(new arr_assign_t(lhs, rhs))
-                                  : nullptr);
-  }
-
-  const statement_t *make_ref(variable_t lhs_ref, memory_region region) {
-    return ((m_track_prec == REF) ? insert(new make_ref_t(lhs_ref, region)) : nullptr);    
+    return insert(new arr_assign_t(lhs, rhs));
   }
 
   const statement_t *region_init(memory_region region) {
-    return ((m_track_prec == REF) ? insert(new region_init_t(region)) : nullptr);    
+    return insert(new region_init_t(region));    
+  }
+  
+  const statement_t *make_ref(variable_t lhs_ref, memory_region region) {
+    return insert(new make_ref_t(lhs_ref, region));
   }
   
   const statement_t *load_from_ref(variable_t lhs, variable_t ref, memory_region region) {
-    return ((m_track_prec == REF) ? insert(new load_from_ref_t(lhs, ref, region))
-	    : nullptr);    
+    return insert(new load_from_ref_t(lhs, ref, region));    
   }
 
   const statement_t *store_to_ref(variable_t ref, memory_region region, lin_exp_t val) {
-    return ((m_track_prec == REF) ? insert(new store_to_ref_t(ref, region, val))
-	    : nullptr);    
+    return insert(new store_to_ref_t(ref, region, val));    
   }
 
   const statement_t *gep_ref(variable_t lhs_ref, memory_region lhs_region,
 			     variable_t rhs_ref, memory_region rhs_region,
 			     lin_exp_t offset) {
-    return ((m_track_prec == REF) ? insert(new gep_ref_t(lhs_ref, lhs_region,
-							 rhs_ref, rhs_region, offset))
-	    : nullptr);    
+    return insert(new gep_ref_t(lhs_ref, lhs_region, rhs_ref, rhs_region, offset));    
   }
 
   const statement_t *load_from_arr_ref(variable_t lhs, variable_t ref, memory_region region,
 				       lin_exp_t index, lin_exp_t elem_size) {
-    return ((m_track_prec == REF) ? insert(new load_from_arr_ref_t(lhs, ref, region, index, elem_size))
-	    : nullptr);    
-    
+    return insert(new load_from_arr_ref_t(lhs, ref, region, index, elem_size));
   }
 
   const statement_t *store_to_arr_ref(variable_t ref, memory_region region,
 				      lin_exp_t lb_index, lin_exp_t ub_index,
 				      lin_exp_t elem_size, bool is_strong_update) {
-    return ((m_track_prec == REF) ? insert(new store_to_arr_ref_t(ref, region, lb_index, ub_index,
-								  elem_size, is_strong_update))
-	    : nullptr);    
+    return insert(new store_to_arr_ref_t(ref, region, lb_index, ub_index,
+					 elem_size, is_strong_update));
   }
   
   const statement_t *assume_ref(ref_cst_t cst) {
-    return ((m_track_prec == REF) ? insert(new assume_ref_t(cst)) : nullptr);
+    return insert(new assume_ref_t(cst));
   }
 
   const statement_t *assert_ref(ref_cst_t cst) {
-    return ((m_track_prec == REF) ? insert(new assert_ref_t(cst)) : nullptr);
+    return insert(new assert_ref_t(cst));
   }
 
   const statement_t *bool_assign(variable_t lhs, lin_cst_t rhs) {
@@ -2948,7 +2920,6 @@ private:
   BasicBlockLabel m_entry;
   boost::optional<BasicBlockLabel> m_exit;
   basic_block_map_t m_blocks;
-  tracked_precision m_track_prec;
   fdecl_t m_func_decl;
 
   typedef std::unordered_set<BasicBlockLabel> visited_t;
@@ -2983,25 +2954,22 @@ public:
 
   cfg_t &operator=(const cfg_t &o) = delete;
 
-  cfg(BasicBlockLabel entry, tracked_precision track_prec = NUM)
-      : m_entry(entry), m_exit(boost::none), m_track_prec(track_prec) {
+  cfg(BasicBlockLabel entry)
+      : m_entry(entry), m_exit(boost::none) {
     m_blocks.insert(
-        binding_t(m_entry, basic_block_t::create(m_entry, m_track_prec)));
+        binding_t(m_entry, basic_block_t::create(m_entry)));
   }
 
-  cfg(BasicBlockLabel entry, BasicBlockLabel exit,
-      tracked_precision track_prec = NUM)
-      : m_entry(entry), m_exit(exit), m_track_prec(track_prec) {
+  cfg(BasicBlockLabel entry, BasicBlockLabel exit)
+      : m_entry(entry), m_exit(exit) {
     m_blocks.insert(
-        binding_t(m_entry, basic_block_t::create(m_entry, m_track_prec)));
+        binding_t(m_entry, basic_block_t::create(m_entry)));
   }
 
-  cfg(BasicBlockLabel entry, BasicBlockLabel exit, fdecl_t func_decl,
-      tracked_precision track_prec = NUM)
-      : m_entry(entry), m_exit(exit), m_track_prec(track_prec),
-        m_func_decl(func_decl) {
+  cfg(BasicBlockLabel entry, BasicBlockLabel exit, fdecl_t func_decl)
+    : m_entry(entry), m_exit(exit), m_func_decl(func_decl) {
     m_blocks.insert(
-        binding_t(m_entry, basic_block_t::create(m_entry, m_track_prec)));
+        binding_t(m_entry, basic_block_t::create(m_entry)));
   }
 
   // The cfg owns the basic blocks
@@ -3014,7 +2982,6 @@ public:
   cfg_t *clone() const {
     cfg_t *copy_cfg = new cfg_t();
     copy_cfg->m_entry = m_entry;
-    copy_cfg->m_track_prec = m_track_prec;
     copy_cfg->m_exit = m_exit;
     copy_cfg->m_func_decl = m_func_decl;
 
@@ -3032,8 +2999,6 @@ public:
   }
 
   fdecl_t get_func_decl() const { return m_func_decl; }
-
-  tracked_precision get_track_prec() const { return m_track_prec; }
 
   bool has_exit() const { return (bool)m_exit; }
 
@@ -3100,7 +3065,7 @@ public:
     if (it != m_blocks.end())
       return *(it->second);
 
-    basic_block_t *block = basic_block_t::create(bb_id, m_track_prec);
+    basic_block_t *block = basic_block_t::create(bb_id);
     m_blocks.insert(binding_t(bb_id, block));
     return *block;
   }

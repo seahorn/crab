@@ -12,7 +12,7 @@ z_cfg_t* prog1(variable_factory_t &vfac)
   crab::outs () << "===================================\n";  
   crab::outs () << " Test 1 for array expansion domain \n";
   crab::outs () << "===================================\n";    
-  z_cfg_t* cfg = new z_cfg_t("bb0","bb3",ARR);
+  z_cfg_t* cfg = new z_cfg_t("bb0","bb3");
   z_basic_block_t& bb0 = cfg->insert("bb0");
   z_basic_block_t& bb1 = cfg->insert("bb1");
   z_basic_block_t& bb2 = cfg->insert("bb2");
@@ -54,7 +54,7 @@ z_cfg_t* prog2(variable_factory_t &vfac)
   crab::outs () << "===================================\n";  
   crab::outs () << " Test 2 for array expansion domain \n";
   crab::outs () << "===================================\n";    
-  z_cfg_t* cfg = new z_cfg_t("bb0","bb3",ARR);
+  z_cfg_t* cfg = new z_cfg_t("bb0","bb3");
   z_basic_block_t& bb0 = cfg->insert("bb0");
   z_basic_block_t& bb1 = cfg->insert("bb1");
   z_basic_block_t& bb2 = cfg->insert("bb2");
@@ -99,7 +99,7 @@ z_cfg_t* prog3(variable_factory_t &vfac)
   crab::outs () << "===================================\n";  
   crab::outs () << " Test 3 for array expansion domain \n";
   crab::outs () << "===================================\n";    
-  z_cfg_t* cfg = new z_cfg_t("bb0","bb3",ARR);
+  z_cfg_t* cfg = new z_cfg_t("bb0","bb3");
   z_basic_block_t& bb0 = cfg->insert("bb0");
   z_basic_block_t& bb1 = cfg->insert("bb1");
   z_basic_block_t& bb2 = cfg->insert("bb2");
@@ -153,7 +153,7 @@ z_cfg_t* prog4(variable_factory_t &vfac) {
   crab::outs () << "===================================\n";  
   crab::outs () << " Test 4 for array expansion domain \n";
   crab::outs () << "===================================\n";    
-  z_cfg_t* cfg = new z_cfg_t("loop1_entry","ret",ARR);
+  z_cfg_t* cfg = new z_cfg_t("loop1_entry","ret");
   z_basic_block_t& loop1_entry = cfg->insert ("loop1_entry");
   z_basic_block_t& loop1_bb1   = cfg->insert ("loop1_bb1");
   z_basic_block_t& loop1_bb1_t = cfg->insert ("loop1_bb1_t");
@@ -224,7 +224,7 @@ z_cfg_t* prog5(variable_factory_t &vfac) {
   crab::outs () << "===================================\n";  
   crab::outs () << " Test 5 for array expansion domain \n";
   crab::outs () << "===================================\n";    
-  z_cfg_t* cfg = new z_cfg_t("loop1_entry","ret",ARR);
+  z_cfg_t* cfg = new z_cfg_t("loop1_entry","ret");
   z_basic_block_t& loop1_entry = cfg->insert ("loop1_entry");
   z_basic_block_t& loop1_bb1   = cfg->insert ("loop1_bb1");
   z_basic_block_t& loop1_bb1_t = cfg->insert ("loop1_bb1_t");
@@ -315,7 +315,7 @@ z_cfg_t* prog6(variable_factory_t &vfac) {
   crab::outs () << "===================================\n";  
   crab::outs () << " Test 6 for array expansion domain \n";
   crab::outs () << "===================================\n";    
-  z_cfg_t* cfg = new z_cfg_t("loop1_entry","ret",ARR);
+  z_cfg_t* cfg = new z_cfg_t("loop1_entry","ret");
   z_basic_block_t& loop1_entry = cfg->insert ("loop1_entry");
   z_basic_block_t& loop1_bb1   = cfg->insert ("loop1_bb1");
   z_basic_block_t& loop1_bb1_t = cfg->insert ("loop1_bb1_t");
@@ -407,7 +407,7 @@ z_cfg_t* prog7(variable_factory_t &vfac) {
   crab::outs () << "===================================\n";  
   crab::outs () << " Test 7 for array expansion domain \n";
   crab::outs () << "===================================\n";    
-  z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
+  z_cfg_t* cfg = new z_cfg_t("entry","ret");
   z_basic_block_t& entry = cfg->insert ("entry");
   z_basic_block_t& ret = cfg->insert ("ret");
   z_var m1(vfac["Mem1"], crab::ARR_INT_TYPE);
@@ -448,7 +448,7 @@ z_cfg_t* prog8(variable_factory_t &vfac) {
   crab::outs () << "===================================\n";  
   crab::outs () << " Test 8 for array expansion domain \n";
   crab::outs () << "===================================\n";    
-  z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
+  z_cfg_t* cfg = new z_cfg_t("entry","ret");
   z_basic_block_t& entry = cfg->insert ("entry");
   z_basic_block_t& ret = cfg->insert ("ret");
   z_var m1(vfac["Mem1"], crab::ARR_INT_TYPE);
@@ -489,7 +489,7 @@ z_cfg_t* prog9(variable_factory_t &vfac) {
   crab::outs () << "===================================\n";  
   crab::outs () << " Test 9 for array expansion domain \n";
   crab::outs () << "===================================\n";    
-  z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
+  z_cfg_t* cfg = new z_cfg_t("entry","ret");
   z_basic_block_t& entry = cfg->insert ("entry");
   z_basic_block_t& ret = cfg->insert ("ret");
   z_var m1(vfac["Mem1"], crab::ARR_INT_TYPE);
@@ -522,7 +522,7 @@ z_cfg_t* prog10(variable_factory_t &vfac) {
   crab::outs () << "===================================\n";  
   crab::outs () << " Test 10 for array expansion domain \n";
   crab::outs () << "===================================\n";    
-  z_cfg_t* cfg = new z_cfg_t("bb0","bb4",ARR);
+  z_cfg_t* cfg = new z_cfg_t("bb0","bb4");
   z_basic_block_t& bb0 = cfg->insert ("bb0");
   z_basic_block_t& bb1 = cfg->insert ("bb1");
   z_basic_block_t& bb2 = cfg->insert ("bb2");
@@ -555,7 +555,7 @@ z_cfg_t* prog11(variable_factory_t &vfac) {
   crab::outs () << "===================================\n";  
   crab::outs () << " Test 11 for array expansion domain \n";
   crab::outs () << "===================================\n";    
-  z_cfg_t* cfg = new z_cfg_t("bb0","bb4",ARR);
+  z_cfg_t* cfg = new z_cfg_t("bb0","bb4");
   z_basic_block_t& bb0 = cfg->insert ("bb0");
   z_basic_block_t& bb1 = cfg->insert ("bb1");
   z_basic_block_t& bb2 = cfg->insert ("bb2");
@@ -594,7 +594,7 @@ z_cfg_t* prog12(variable_factory_t &vfac) {
   crab::outs () << "===================================\n";  
   crab::outs () << " Test 12 for array expansion domain \n";
   crab::outs () << "===================================\n";    
-  z_cfg_t* cfg = new z_cfg_t("bb0","bb0",ARR);
+  z_cfg_t* cfg = new z_cfg_t("bb0","bb0");
   z_basic_block_t& bb0 = cfg->insert ("bb0");
   
   z_var m1(vfac["Mem1"], crab::ARR_INT_TYPE);
@@ -637,7 +637,7 @@ z_cfg_t* prog13(variable_factory_t &vfac) {
   crab::outs () << "===================================\n";  
   crab::outs () << " Test 13 for array expansion domain \n";
   crab::outs () << "===================================\n";    
-  z_cfg_t* cfg = new z_cfg_t("bb0","bb0",ARR);
+  z_cfg_t* cfg = new z_cfg_t("bb0","bb0");
   z_basic_block_t& bb0 = cfg->insert ("bb0");
   
   z_var m1(vfac["Mem1"], crab::ARR_INT_TYPE);

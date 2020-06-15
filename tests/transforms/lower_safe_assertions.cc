@@ -44,7 +44,7 @@ z_cfg_t* prog(variable_factory_t &vfac)  {
   z_var p_next(vfac["p_next"], crab::REF_TYPE);  
   z_var q(vfac["q"], crab::REF_TYPE);
   // entry and exit block
-  z_cfg_t* cfg = new z_cfg_t("entry","ret",REF);
+  z_cfg_t* cfg = new z_cfg_t("entry","ret");
   // adding blocks
   z_basic_block_t& entry = cfg->insert("entry");
   z_basic_block_t& bb1   = cfg->insert("bb1");

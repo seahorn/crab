@@ -17,7 +17,7 @@ z_cfg_t* prog1(variable_factory_t &vfac) {
   z_var tmp6(vfac["tmp6"], crab::INT_TYPE, 32);
   z_var val(vfac["val"], crab::INT_TYPE, 32);
 
-  z_cfg_t* cfg = new z_cfg_t("entry","ret", ARR);
+  z_cfg_t* cfg = new z_cfg_t("entry","ret");
   z_basic_block_t& entry = cfg->insert ("entry");
   z_basic_block_t& bb1   = cfg->insert ("bb1");
   z_basic_block_t& bb1_t = cfg->insert ("bb1_t");
@@ -50,7 +50,7 @@ z_cfg_t* prog1(variable_factory_t &vfac) {
 
 
 z_cfg_t* prog2(variable_factory_t &vfac) {
-  z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
+  z_cfg_t* cfg = new z_cfg_t("entry","ret");
   z_basic_block_t& entry = cfg->insert("entry");
   z_basic_block_t& bb1   = cfg->insert("bb1");
   z_basic_block_t& bb1_t = cfg->insert("bb1_t");
@@ -94,7 +94,7 @@ z_cfg_t* prog2(variable_factory_t &vfac) {
 }
 
 z_cfg_t* prog3(variable_factory_t &vfac) {
-  z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
+  z_cfg_t* cfg = new z_cfg_t("entry","ret");
   z_basic_block_t& entry = cfg->insert("entry");
   z_basic_block_t& bb1   = cfg->insert("bb1");
   z_basic_block_t& bb1_t = cfg->insert("bb1_t");
@@ -139,7 +139,7 @@ z_cfg_t* prog3(variable_factory_t &vfac) {
 
 
 z_cfg_t* prog4(variable_factory_t &vfac) {
-  z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
+  z_cfg_t* cfg = new z_cfg_t("entry","ret");
   z_basic_block_t& entry = cfg->insert("entry");
   z_basic_block_t& bb1   = cfg->insert("bb1");
   z_basic_block_t& bb1_t = cfg->insert("bb1_t");
@@ -184,7 +184,7 @@ z_cfg_t* prog4(variable_factory_t &vfac) {
 }
 
 z_cfg_t* prog4b(variable_factory_t &vfac) {
-  z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
+  z_cfg_t* cfg = new z_cfg_t("entry","ret");
   z_basic_block_t& entry = cfg->insert("entry");
   z_basic_block_t& bb1   = cfg->insert("bb1");
   z_basic_block_t& bb1_t = cfg->insert("bb1_t");
@@ -227,7 +227,7 @@ z_cfg_t* prog4b(variable_factory_t &vfac) {
 
 
 z_cfg_t* prog5(variable_factory_t &vfac) {
-  z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
+  z_cfg_t* cfg = new z_cfg_t("entry","ret");
   z_basic_block_t& entry = cfg->insert("entry");
   z_basic_block_t& bb1   = cfg->insert("bb1");
   z_basic_block_t& bb1_t = cfg->insert("bb1_t");
@@ -266,7 +266,7 @@ z_cfg_t* prog5(variable_factory_t &vfac) {
 }
 
 z_cfg_t* prog6(variable_factory_t &vfac) {
-  z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
+  z_cfg_t* cfg = new z_cfg_t("entry","ret");
   z_basic_block_t& entry = cfg->insert("entry");
   z_basic_block_t& bb1   = cfg->insert("bb1");
   z_basic_block_t& bb1_t = cfg->insert("bb1_t");
@@ -303,7 +303,7 @@ z_cfg_t* prog6(variable_factory_t &vfac) {
 }
 
 z_cfg_t* prog7(variable_factory_t &vfac) {
-  z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
+  z_cfg_t* cfg = new z_cfg_t("entry","ret");
   z_basic_block_t& entry = cfg->insert("entry");
   z_basic_block_t& bb1   = cfg->insert("bb1");
   z_basic_block_t& bb1_t = cfg->insert("bb1_t");
@@ -352,7 +352,7 @@ z_cfg_t* prog7(variable_factory_t &vfac) {
 
 // Initialize only even positions
 z_cfg_t* prog8(variable_factory_t &vfac) {
-  z_cfg_t* cfg = new z_cfg_t("entry","ret", ARR);
+  z_cfg_t* cfg = new z_cfg_t("entry","ret");
   z_basic_block_t& entry = cfg->insert("entry");
   z_basic_block_t& bb1   = cfg->insert("bb1");
   z_basic_block_t& bb1_t = cfg->insert("bb1_t");
@@ -402,7 +402,7 @@ z_cfg_t* prog8(variable_factory_t &vfac) {
 
 // this is the program init_rand from Gange et.al paper.
 z_cfg_t* prog9(variable_factory_t &vfac) {
-  z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
+  z_cfg_t* cfg = new z_cfg_t("entry","ret");
   z_basic_block_t& entry   = cfg->insert("entry");
   z_basic_block_t& bb1     = cfg->insert("bb1");
   z_basic_block_t& bb1_t   = cfg->insert("bb1_t");
@@ -471,7 +471,7 @@ z_cfg_t* prog11 (variable_factory_t &vfac) {
   z_var a4(vfac["A4"], crab::ARR_INT_TYPE, 32);        
   z_var x(vfac["x"], crab::INT_TYPE, 32);  
   
-  z_cfg_t* cfg = new z_cfg_t("entry","ret", ARR);
+  z_cfg_t* cfg = new z_cfg_t("entry","ret");
   z_basic_block_t& entry = cfg->insert ("entry");
   z_basic_block_t& bb1   = cfg->insert ("bb1");
   z_basic_block_t& bb1_t = cfg->insert ("bb1_t");

@@ -32,7 +32,7 @@ z_cfg_t* prog1(variable_factory_t &vfac)  {
   z_var p(vfac["p"], crab::REF_TYPE);
   z_var q(vfac["q"], crab::REF_TYPE);    
   // entry and exit block
-  auto cfg = new z_cfg_t("x0","ret",crab::cfg::REF);
+  auto cfg = new z_cfg_t("x0","ret");
   // adding blocks
   z_basic_block_t& x0 = cfg->insert("x0");
   z_basic_block_t& x1 = cfg->insert("x1");
@@ -95,7 +95,7 @@ z_cfg_t* prog2(variable_factory_t &vfac)  {
   z_var p(vfac["p"], crab::REF_TYPE);
   z_var q(vfac["q"], crab::REF_TYPE);    
   // entry and exit block
-  auto cfg = new z_cfg_t("x0","ret",crab::cfg::REF);
+  auto cfg = new z_cfg_t("x0","ret");
   // adding blocks
   z_basic_block_t& x0 = cfg->insert("x0");
   z_basic_block_t& x1 = cfg->insert("x1");

@@ -17,7 +17,7 @@ z_cfg_t* prog (variable_factory_t &vfac)  {
   z_var y(vfac ["y"], crab::INT_TYPE, 32);
   z_var tmp(vfac ["tmp"], crab::INT_TYPE, 32);    
   // entry and exit block
-  auto cfg = new z_cfg_t("entry","bb3",ARR);
+  auto cfg = new z_cfg_t("entry","bb3");
   // adding blocks
   z_basic_block_t& entry = cfg->insert ("entry");
   z_basic_block_t& bb1   = cfg->insert ("bb1");
