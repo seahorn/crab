@@ -6,8 +6,8 @@ add_library(Crab ${CRAB_LIBS_TYPE}
   bignums.cpp
   safeint.cpp
   wrapint.cpp
-  ##domains
-  term.cpp
+  ##variable factory
+  var_factory.cpp
   )
 
 target_link_libraries(Crab ${GMP_LIB})
