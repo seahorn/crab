@@ -43,8 +43,9 @@
 
 #include <crab/domains/patricia_trees.hpp>
 #include <crab/numbers/bignums.hpp>
-#include <crab/types/variable.hpp>
 #include <crab/support/debug.hpp>
+#include <crab/types/variable.hpp>
+#include <crab/types/indexable.hpp>
 
 #include <boost/container/flat_map.hpp>
 #include <boost/functional/hash_fwd.hpp> // for hash_combine
@@ -530,7 +531,8 @@ operator-(crab::variable<Number, VariableName> x,
   return linear_expression<Number, VariableName>(Number(1), x).operator-(e);
 }
 
-template <typename Number, typename VariableName> class linear_constraint {
+template <typename Number, typename VariableName>
+class linear_constraint : public crab::indexable {
 
 public:
   typedef Number number_t;
@@ -680,7 +682,7 @@ public:
     return res;
   }
 
-  index_t index() const {
+  virtual index_t index() const override {
     // XXX: to store linear constraints in patricia trees
     // Ufff, the indexes may not be unique. Check that patricia
     // trees are ok with that.

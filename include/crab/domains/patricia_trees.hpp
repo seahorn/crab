@@ -42,8 +42,8 @@
 
 #pragma once
 
-#include <crab/common/types.hpp>
 #include <crab/support/debug.hpp>
+#include <crab/types/indexable.hpp>
 
 #include <algorithm>
 #include <boost/iterator/iterator_facade.hpp>

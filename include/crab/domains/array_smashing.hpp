@@ -9,7 +9,6 @@
 
 #pragma once
 
-#include <crab/common/types.hpp>
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/support/debug.hpp>
@@ -41,10 +40,10 @@ public:
   using typename abstract_domain_t::variable_vector_t;
   using typename abstract_domain_t::reference_constraint_t;  
   typedef NumDomain content_domain_t;
-  typedef interval<number_t> interval_t;
+  typedef ikos::interval<number_t> interval_t;
 
 private:
-  typedef bound<number_t> bound_t;
+  typedef ikos::bound<number_t> bound_t;
 
   // Contain scalar and summarized array variables.
   //
@@ -225,14 +224,14 @@ public:
                              << "apply " << x << " := " << e << *this << "\n";);
   }
 
-  void apply(operation_t op, variable_t x, variable_t y, number_t z) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, number_t z) {
     _inv.apply(op, x, y, z);
 
     CRAB_LOG("smashing", crab::outs() << "apply " << x << " := " << y << " "
                                       << op << " " << z << *this << "\n";);
   }
 
-  void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, variable_t z) {
     _inv.apply(op, x, y, z);
 
     CRAB_LOG("smashing", crab::outs() << "apply " << x << " := " << y << " "
@@ -244,12 +243,12 @@ public:
     _inv.backward_assign(x, e, inv.get_content_domain());
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, number_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, number_t z,
                       array_smashing_t inv) {
     _inv.backward_apply(op, x, y, z, inv.get_content_domain());
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, variable_t z,
                       array_smashing_t inv) {
     _inv.backward_apply(op, x, y, z, inv.get_content_domain());
   }

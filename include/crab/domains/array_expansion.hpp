@@ -21,13 +21,13 @@
 
 #pragma once
 
-#include <crab/common/types.hpp>
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/interval.hpp>
 #include <crab/domains/patricia_trees.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
+#include <crab/types/indexable.hpp>
 
 #include <algorithm>
 #include <boost/optional.hpp>
@@ -42,14 +42,13 @@ namespace domains {
 template <typename Variable> class offset_map;
 template <typename Domain> class array_expansion_domain;
 
-// wrapper for using ikos::index_t as patricia_tree keys
-class offset_t {
+class offset_t: public indexable {
   ikos::index_t _val;
 
 public:
   explicit offset_t(ikos::index_t v) : _val(v) {}
 
-  ikos::index_t index() const { return _val; }
+  virtual ikos::index_t index() const override { return _val; }
 
   bool operator<(const offset_t &o) const { return _val < o._val; }
 
@@ -250,7 +249,7 @@ private:
     patterns, negative offsets can be used but they are treated
     as large unsigned numbers.
   */
-  typedef patricia_tree<offset_t, cell_set_t> patricia_tree_t;
+  typedef ikos::patricia_tree<offset_t, cell_set_t> patricia_tree_t;
   typedef typename patricia_tree_t::binary_op_t binary_op_t;
   typedef typename patricia_tree_t::partial_order_t partial_order_t;
 
@@ -677,10 +676,10 @@ public:
   using typename abstract_domain_t::variable_vector_t;
   using typename abstract_domain_t::reference_constraint_t;
   typedef NumDomain content_domain_t;
-  typedef interval<number_t> interval_t;
+  typedef ikos::interval<number_t> interval_t;
 
 private:
-  typedef bound<number_t> bound_t;
+  typedef ikos::bound<number_t> bound_t;
   typedef crab::variable_type type_t;
   typedef offset_map<variable_t> offset_map_t;
   typedef cell<variable_t> cell_t;
@@ -1027,7 +1026,7 @@ public:
                                              << " " << *this << "\n";);
   }
 
-  void apply(operation_t op, variable_t x, variable_t y, number_t z) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, number_t z) {
     crab::CrabStats::count(getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1038,7 +1037,7 @@ public:
                                     << " " << z << " " << *this << "\n";);
   }
 
-  void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, variable_t z) {
     crab::CrabStats::count(getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1054,12 +1053,12 @@ public:
     _inv.backward_assign(x, e, inv.get_content_domain());
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, number_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, number_t z,
                       array_expansion_domain_t inv) {
     _inv.backward_apply(op, x, y, z, inv.get_content_domain());
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, variable_t z,
                       array_expansion_domain_t inv) {
     _inv.backward_apply(op, x, y, z, inv.get_content_domain());
   }
@@ -1339,7 +1338,7 @@ public:
       return;
     }
 
-    z_number sz = (*ub - *lb) + 1;
+    ikos::z_number sz = (*ub - *lb) + 1;
     if (sz > max_num_elems) {
       CRAB_WARN("array expansion store range ignored because ",
                 "the number of elements is larger than default limit of ",

@@ -10,7 +10,6 @@
 
 #include <crab/config.h>
 
-#include <crab/common/types.hpp>
 #include <crab/domains/abstract_domain_operators.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
@@ -75,7 +74,7 @@ public:
   }
 
   // x := y op k
-  static void apply(AbsDom &dom, operation_t op, variable_t x, variable_t y,
+  static void apply(AbsDom &dom, arith_operation_t op, variable_t x, variable_t y,
                     number_t k, AbsDom inv) {
     crab::CrabStats::count(AbsDom::getDomainName() + ".count.backward_apply");
     crab::ScopedCrabStats __st__(AbsDom::getDomainName() + ".backward_apply");
@@ -136,7 +135,7 @@ public:
   }
 
   // x = y op z
-  static void apply(AbsDom &dom, operation_t op, variable_t x, variable_t y,
+  static void apply(AbsDom &dom, arith_operation_t op, variable_t x, variable_t y,
                     variable_t z, AbsDom inv) {
     crab::CrabStats::count(AbsDom::getDomainName() + ".count.backward_apply");
     crab::ScopedCrabStats __st__(AbsDom::getDomainName() + ".backward_apply");

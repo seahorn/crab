@@ -5,7 +5,6 @@
  */
 
 #include <crab/checkers/base_property.hpp>
-#include <crab/common/types.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 
 namespace crab {

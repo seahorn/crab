@@ -45,7 +45,6 @@
 
 #pragma once
 
-#include <crab/common/types.hpp>
 #include <crab/domains/interval.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>

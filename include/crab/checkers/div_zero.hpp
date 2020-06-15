@@ -5,7 +5,6 @@
  */
 
 #include <crab/checkers/base_property.hpp>
-#include <crab/common/types.hpp>
 
 namespace crab {
 

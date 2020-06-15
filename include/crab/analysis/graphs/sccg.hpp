@@ -1,6 +1,5 @@
 #pragma once
 
-#include <crab/common/types.hpp>
 #include <crab/support/debug.hpp>
 
 #include <boost/graph/adjacency_list.hpp>

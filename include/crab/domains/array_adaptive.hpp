@@ -27,7 +27,6 @@
 
 #pragma once
 
-#include <crab/common/types.hpp>
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/array_smashing.hpp>
@@ -35,6 +34,7 @@
 #include <crab/domains/patricia_trees.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
+#include <crab/types/indexable.hpp>
 
 #include <algorithm>
 #include <functional>
@@ -76,7 +76,7 @@ public:
 
 // Trivial constant propagation lattice
 class cp_domain_t {
-  typedef bound<ikos::z_number> bound_t;
+  typedef ikos::bound<ikos::z_number> bound_t;
 
   bool m_is_bottom;
   bound_t m_val;
@@ -99,7 +99,7 @@ public:
 
   cp_domain_t(int64_t sz) : m_is_bottom(false), m_val(sz) {}
 
-  cp_domain_t(const interval<ikos::z_number> &sz)
+  cp_domain_t(const ikos::interval<ikos::z_number> &sz)
       : m_is_bottom(false), m_val(bound_t::plus_infinity()) {
 
     if (auto v_opt = sz.singleton()) {
@@ -221,13 +221,13 @@ class offset_map;
 /*
  * Wrapper for using ikos::index_t as patricia_tree keys
  */
-class offset_t {
+  class offset_t: public indexable {
   ikos::index_t m_val;
 
 public:
   explicit offset_t(ikos::index_t v) : m_val(v) {}
 
-  ikos::index_t index() const { return m_val; }
+  virtual ikos::index_t index() const override { return m_val; }
 
   size_t hash() const {
     // casting to size_t may overflow but it shouldn't affect correctness
@@ -478,7 +478,7 @@ private:
     patterns, negative offsets can be used but they are treated
     as large unsigned numbers.
   */
-  typedef patricia_tree<offset_t, cell_set_t> patricia_tree_t;
+  typedef ikos::patricia_tree<offset_t, cell_set_t> patricia_tree_t;
   typedef typename patricia_tree_t::binary_op_t binary_op_t;
   typedef typename patricia_tree_t::partial_order_t partial_order_t;
 
@@ -918,7 +918,7 @@ public:
   using typename abstract_domain_t::reference_constraint_t;  
   typedef typename NumDomain::variable_t variable_t;
   typedef typename NumDomain::variable_vector_t variable_vector_t;
-  typedef interval<number_t> interval_t;
+  typedef ikos::interval<number_t> interval_t;
   typedef array_smashing<NumDomain> base_domain_t;
 
 private:
@@ -1218,7 +1218,7 @@ private:
 
   class array_state_map_t {
   private:
-    typedef patricia_tree<variable_t, array_state> patricia_tree_t;
+    typedef ikos::patricia_tree<variable_t, array_state> patricia_tree_t;
     typedef typename patricia_tree_t::key_binary_op_t key_binary_op_t;
 
   public:
@@ -2394,7 +2394,7 @@ public:
                                             << " " << *this << "\n";);
   }
 
-  void apply(operation_t op, variable_t x, variable_t y, number_t z) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, number_t z) {
     crab::CrabStats::count(getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -2405,7 +2405,7 @@ public:
                                    << " " << z << " " << *this << "\n";);
   }
 
-  void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, variable_t z) {
     crab::CrabStats::count(getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -2421,12 +2421,12 @@ public:
     m_inv.backward_assign(x, e, inv.get_content_domain());
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, number_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, number_t z,
                       array_adaptive_domain_t inv) {
     m_inv.backward_apply(op, x, y, z, inv.get_content_domain());
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, variable_t z,
                       array_adaptive_domain_t inv) {
     m_inv.backward_apply(op, x, y, z, inv.get_content_domain());
   }

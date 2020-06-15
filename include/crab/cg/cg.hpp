@@ -4,15 +4,14 @@
    Build a call graph (CG)
 */
 
+#include <crab/cfg/cfg.hpp>
+#include <crab/support/debug.hpp>
+#include <crab/support/stats.hpp>
+
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/graph_traits.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/optional.hpp>
-
-#include <crab/cfg/cfg.hpp>
-#include <crab/support/debug.hpp>
-#include <crab/support/stats.hpp>
-#include <crab/common/types.hpp>
 
 #include <functional> // for wrapper_reference and hash
 #include <memory>

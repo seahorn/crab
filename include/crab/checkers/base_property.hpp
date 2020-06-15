@@ -6,7 +6,6 @@
 
 #include <crab/cfg/cfg.hpp>
 #include <crab/support/debug.hpp>
-#include <crab/common/types.hpp>
 
 #include <set>
 #include <vector>

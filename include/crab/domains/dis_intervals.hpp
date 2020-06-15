@@ -9,7 +9,6 @@
 
 #include <crab/config.h>
 
-#include <crab/common/types.hpp>
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
 #include <crab/domains/linear_interval_solver.hpp>
@@ -26,8 +25,8 @@ namespace domains {
 template <typename Number> class dis_interval {
 
 public:
-  typedef bound<Number> bound_t;
-  typedef interval<Number> interval_t;
+  typedef ikos::bound<Number> bound_t;
+  typedef ikos::interval<Number> interval_t;
   typedef dis_interval<Number> dis_interval_t;
 
 private:
@@ -1076,13 +1075,13 @@ public:
   using typename abstract_domain_t::variable_vector_t;
   typedef Number number_t;
   typedef VariableName varname_t;
-  typedef interval<number_t> interval_t;
-  typedef interval_domain<number_t, varname_t> interval_domain_t;
+  typedef ikos::interval_domain<number_t, varname_t> interval_domain_t;
   typedef dis_interval<number_t> dis_interval_t;
+  typedef typename dis_interval_t::interval_t interval_t;
 
 private:
-  typedef separate_domain<variable_t, dis_interval_t> separate_domain_t;
-  typedef linear_interval_solver<number_t, varname_t, separate_domain_t>
+  typedef ikos::separate_domain<variable_t, dis_interval_t> separate_domain_t;
+  typedef ikos::linear_interval_solver<number_t, varname_t, separate_domain_t>
       solver_t;
 
 public:
@@ -1253,7 +1252,7 @@ public:
     // crab::outs() << "result=" << *this << "\n";
   }
 
-  void apply(operation_t op, variable_t x, variable_t y, number_t z) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, number_t z) {
     crab::CrabStats::count(getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1289,7 +1288,7 @@ public:
     // crab::outs() << "result=" << *this << "\n";
   }
 
-  void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, variable_t z) {
     crab::CrabStats::count(getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1331,13 +1330,13 @@ public:
                                                                     inv);
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, number_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, number_t z,
                       dis_interval_domain_t inv) {
     crab::domains::BackwardAssignOps<dis_interval_domain_t>::apply(*this, op, x,
                                                                    y, z, inv);
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, variable_t z,
                       dis_interval_domain_t inv) {
     crab::domains::BackwardAssignOps<dis_interval_domain_t>::apply(*this, op, x,
                                                                    y, z, inv);

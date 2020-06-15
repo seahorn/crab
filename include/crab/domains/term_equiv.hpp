@@ -11,8 +11,6 @@
 
 #pragma once
 
-#include <crab/common/types.hpp>
-
 #include <crab/cfg/var_factory.hpp>
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
@@ -76,8 +74,8 @@ class term_domain final : public abstract_domain<term_domain<Info>> {
   typedef typename dom_t::variable_t dom_var_t;
   typedef typename Info::Alloc dom_var_alloc_t;
   typedef typename dom_var_alloc_t::varname_t dom_varname_t;
-  typedef patricia_tree_set<dom_var_t> domvar_set_t;
-  typedef bound<Number> bound_t;
+  typedef ikos::patricia_tree_set<dom_var_t> domvar_set_t;
+  typedef ikos::bound<Number> bound_t;
 
   typedef term_domain<Info> term_domain_t;
   typedef abstract_domain<term_domain_t> abstract_domain_t;
@@ -92,8 +90,7 @@ public:
   typedef VariableName varname_t;
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_vector_t;
-
-  typedef interval<number_t> interval_t;
+  typedef ikos::interval<number_t> interval_t;
 
 private:
   typedef term::term_table<number_t, term::term_operator_t> ttbl_t;
@@ -149,7 +146,7 @@ private:
     return t_itv;
   }
 
-  // term_id_t term_of_expr(operation_t op, term_id_t ty, term_id_t tz)
+  // term_id_t term_of_expr(arith_operation_t op, term_id_t ty, term_id_t tz)
   // {
   //   boost::optional<term_id_t> opt_tx = _ttbl.find_ftor(op, ty, tz);
   //   if(opt_tx)
@@ -166,7 +163,7 @@ private:
   //   }
   // }
 
-  // void apply(operation_t op, variable_t x, variable_t y, bound_t lb, bound_t
+  // void apply(arith_operation_t op, variable_t x, variable_t y, bound_t lb, bound_t
   // ub){
   //   term_id_t t_x = term_of_expr(op, term_of_var(y), term_of_itv(lb, ub));
   //   // JNL: check with Graeme
@@ -219,7 +216,7 @@ private:
       std::vector<term_id_t> &args(term::term_args(t_ptr));
       assert(args.size() == 2);
 
-      if (boost::optional<operation_t> arith_op = conv2arith(op)) {
+      if (boost::optional<arith_operation_t> arith_op = conv2arith(op)) {
         term::InverseOps<dom_number, dom_var_t, dom_t>::apply(
             dom, *arith_op, domvar_of_term(t), domvar_of_term(args[0]),
             domvar_of_term(args[1]));
@@ -233,7 +230,7 @@ private:
     return ret;
   }
 
-  term::term_operator_t conv2termop(operation_t op) {
+  term::term_operator_t conv2termop(arith_operation_t op) {
     switch (op) {
     case OP_ADDITION:
       return term::TERM_OP_ADD;
@@ -252,24 +249,24 @@ private:
     }
   }
 
-  boost::optional<operation_t> conv2arith(term::term_operator_t op) {
+  boost::optional<arith_operation_t> conv2arith(term::term_operator_t op) {
     switch (op) {
     case term::TERM_OP_ADD:
-      return ikos::OP_ADDITION;
+      return OP_ADDITION;
     case term::TERM_OP_SUB:
-      return ikos::OP_SUBTRACTION;
+      return OP_SUBTRACTION;
     case term::TERM_OP_MUL:
-      return ikos::OP_MULTIPLICATION;
+      return OP_MULTIPLICATION;
     case term::TERM_OP_SDIV:
-      return ikos::OP_SDIV;
+      return OP_SDIV;
     case term::TERM_OP_UDIV:
-    return ikos::OP_UDIV;
+    return OP_UDIV;
     case term::TERM_OP_SREM:
-      return ikos::OP_SREM;
+      return OP_SREM;
     case term::TERM_OP_UREM:
-      return ikos::OP_UREM;
+      return OP_UREM;
     default:
-      return boost::optional<ikos::operation_t>();
+      return boost::optional<arith_operation_t>();
     }
   }
   
@@ -293,17 +290,17 @@ private:
   boost::optional<bitwise_operation_t> conv2bitwise(term::term_operator_t op) {
     switch (op) {
     case term::TERM_OP_AND:
-      return ikos::OP_AND;
+      return OP_AND;
     case term::TERM_OP_OR:
-      return ikos::OP_OR;
+      return OP_OR;
     case term::TERM_OP_XOR:
-    return ikos::OP_XOR;
+    return OP_XOR;
     case term::TERM_OP_SHL:
-      return ikos::OP_SHL;
+      return OP_SHL;
     case term::TERM_OP_LSHR:
-      return ikos::OP_LSHR;
+      return OP_LSHR;
     case term::TERM_OP_ASHR:
-      return ikos::OP_ASHR;
+      return OP_ASHR;
     default:
       return boost::optional<bitwise_operation_t>();
     }
@@ -429,7 +426,7 @@ private:
     }
   }
 
-  // OpTy = [operation_t | bitwise_operation_t]
+  // OpTy = [arith_operation_t | bitwise_operation_t]
   template <typename OpTy>
   term_id_t build_term(OpTy op, term_id_t ty, term_id_t tz) {
     // Check if the term already exists
@@ -1178,7 +1175,7 @@ public:
   // Apply operations to variables.
 
   // x = y op z
-  void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, variable_t z) {
     crab::CrabStats::count(getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
     check_terms(__LINE__);
@@ -1194,7 +1191,7 @@ public:
   }
 
   // x = y op k
-  void apply(operation_t op, variable_t x, variable_t y, number_t k) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, number_t k) {
     crab::CrabStats::count(getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1217,7 +1214,7 @@ public:
     crab::domains::BackwardAssignOps<term_domain_t>::assign(*this, x, e, inv);
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, number_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, number_t z,
                       term_domain_t inv) {
     crab::CrabStats::count(getDomainName() + ".count.backward_apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
@@ -1226,7 +1223,7 @@ public:
                                                            inv);
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, variable_t z,
                       term_domain_t inv) {
     crab::CrabStats::count(getDomainName() + ".count.backward_apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
@@ -1987,11 +1984,11 @@ public:
 // GKG: Should modify to work with any independent attribute domain.
 #ifdef USE_TERM_INTERVAL_NORMALIZER
 template <class Info, class Num, class Var>
-class TermNormalizer<Info, interval_domain<Num, Var>> {
+class TermNormalizer<Info, ikos::interval_domain<Num, Var>> {
 public:
   typedef typename term_domain<Info>::term_domain_t term_domain_t;
   typedef typename term_domain_t::term_id_t term_id_t;
-  typedef interval_domain<Num, Var> dom_t;
+  typedef ikos::interval_domain<Num, Var> dom_t;
   typedef typename term_domain_t::dom_var_t var_t;
 
   typedef typename term_domain_t::ttbl_t ttbl_t;

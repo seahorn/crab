@@ -44,7 +44,6 @@
 #pragma once
 
 #include <crab/cfg/cfg_bgl.hpp> // needed by wto
-#include <crab/common/types.hpp>
 #include <crab/iterators/fixpoint_iterators_api.hpp>
 #include <crab/iterators/thresholds.hpp>
 #include <crab/iterators/wto.hpp>

@@ -60,10 +60,10 @@ public:
   typedef VariableName varname_t;
 
   typedef typename linear_constraint_t::kind_t constraint_kind_t;
-  typedef interval<number_t> interval_t;
+  typedef ikos::interval<number_t> interval_t;
 
 private:
-  typedef bound<number_t> bound_t;
+  typedef ikos::bound<number_t> bound_t;
   typedef typename Params::Wt Wt;
   typedef typename Params::graph_t graph_t;
   typedef DBM_impl::NtoW<number_t, Wt> ntow;
@@ -534,7 +534,7 @@ protected:
   bool add_univar_disequation(variable_t x, number_t n) {
     bool overflow;
     interval_t i = get_interval(x);
-    interval_t new_i = linear_interval_solver_impl::trim_interval<interval_t>(
+    interval_t new_i = ikos::linear_interval_solver_impl::trim_interval<interval_t>(
         i, interval_t(n));
     if (new_i.is_bottom()) {
       set_to_bottom();
@@ -1756,7 +1756,7 @@ public:
                                          << *this << "\n");
   }
 
-  void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, variable_t z) {
     crab::CrabStats::count(getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1798,7 +1798,7 @@ public:
                                 << *this << "\n");
   }
 
-  void apply(operation_t op, variable_t x, variable_t y, number_t k) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, number_t k) {
     crab::CrabStats::count(getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1847,7 +1847,7 @@ public:
     crab::domains::BackwardAssignOps<DBM_t>::assign(*this, x, e, inv);
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, number_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, number_t z,
                       DBM_t inv) {
     crab::CrabStats::count(getDomainName() + ".count.backward_apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
@@ -1855,7 +1855,7 @@ public:
     crab::domains::BackwardAssignOps<DBM_t>::apply(*this, op, x, y, z, inv);
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, variable_t z,
                       DBM_t inv) {
     crab::CrabStats::count(getDomainName() + ".count.backward_apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
@@ -1899,7 +1899,7 @@ public:
 
     if (cst.is_strict_inequality()) {
       // We try to convert a strict to non-strict.
-      auto nc = linear_constraint_impl::strict_to_non_strict_inequality(cst);
+      auto nc = ikos::linear_constraint_impl::strict_to_non_strict_inequality(cst);
       if (nc.is_inequality()) {
         // here we succeed
         if (!add_linear_leq(nc.expression())) {
@@ -2367,7 +2367,7 @@ public:
       linear_expression_t exp = cst.expression();
       diffcsts_of_lin_leq(exp, diffcsts, lbs, ubs);
     } else if (cst.is_strict_inequality()) {
-      auto nc = linear_constraint_impl::strict_to_non_strict_inequality(cst);
+      auto nc = ikos::linear_constraint_impl::strict_to_non_strict_inequality(cst);
       if (nc.is_inequality()) {
         linear_expression_t exp = nc.expression();
         diffcsts_of_lin_leq(exp, diffcsts, lbs, ubs);
@@ -2595,7 +2595,7 @@ public:
   typedef Number number_t;
   typedef VariableName varname_t;
   typedef typename linear_constraint_t::kind_t constraint_kind_t;
-  typedef interval<number_t> interval_t;
+  typedef ikos::interval<number_t> interval_t;
 
 public:
   typedef SplitDBM_<number_t, varname_t, Params> dbm_impl_t;
@@ -2696,11 +2696,11 @@ public:
     lock();
     norm().assign(x, e);
   }
-  void apply(operation_t op, variable_t x, variable_t y, number_t k) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, number_t k) {
     lock();
     norm().apply(op, x, y, k);
   }
-  void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, variable_t z) {
     lock();
     norm().apply(op, x, y, z);
   }
@@ -2708,12 +2708,12 @@ public:
     lock();
     norm().backward_assign(x, e, invariant.norm());
   }
-  void backward_apply(operation_t op, variable_t x, variable_t y, number_t k,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, number_t k,
                       DBM_t invariant) {
     lock();
     norm().backward_apply(op, x, y, k, invariant.norm());
   }
-  void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, variable_t z,
                       DBM_t invariant) {
     lock();
     norm().backward_apply(op, x, y, z, invariant.norm());

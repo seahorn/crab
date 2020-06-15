@@ -18,7 +18,6 @@
  * (4) reduced product of an arbitrary numerical domain and congruences.
  **************************************************************************/
 
-#include <crab/common/types.hpp>
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/congruences.hpp>
@@ -327,13 +326,13 @@ public:
     this->_product.second().assign(x, e);
   }
 
-  void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, variable_t z) {
     this->_product.first().apply(op, x, y, z);
     this->_product.second().apply(op, x, y, z);
     this->reduce();
   }
 
-  void apply(operation_t op, variable_t x, variable_t y, Number k) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, Number k) {
     this->_product.first().apply(op, x, y, k);
     this->_product.second().apply(op, x, y, k);
     this->reduce();
@@ -346,14 +345,14 @@ public:
     this->reduce();
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, Number k,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, Number k,
                       domain_product2_t invariant) {
     this->_product.first().backward_apply(op, x, y, k, invariant.first());
     this->_product.second().backward_apply(op, x, y, k, invariant.second());
     this->reduce();
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, variable_t z,
                       domain_product2_t invariant) {
     this->_product.first().backward_apply(op, x, y, z, invariant.first());
     this->_product.second().backward_apply(op, x, y, z, invariant.second());
@@ -771,10 +770,10 @@ public:
   // number_t and varname_t
   typedef typename Domain1::number_t number_t;
   typedef typename Domain1::varname_t varname_t;
-  typedef interval<number_t> interval_t;
+  typedef ikos::interval<number_t> interval_t;
 
 private:
-  typedef patricia_tree_set<variable_t> variable_set_t;
+  typedef ikos::patricia_tree_set<variable_t> variable_set_t;
   typedef domain_product2<number_t, varname_t, Domain1, Domain2>
       domain_product2_t;
 
@@ -1039,7 +1038,7 @@ public:
                                     << x << ":=" << e << "=" << *this << "\n");
   }
 
-  void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, variable_t z) {
     this->_product.apply(op, x, y, z);
     if (!Params::apply_reduction_only_add_constraint) {
       this->reduce_variable(x);
@@ -1048,7 +1047,7 @@ public:
              crab::outs() << x << ":=" << y << op << z << "=" << *this << "\n");
   }
 
-  void apply(operation_t op, variable_t x, variable_t y, number_t k) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, number_t k) {
     this->_product.apply(op, x, y, k);
     if (!Params::apply_reduction_only_add_constraint) {
       this->reduce_variable(x);
@@ -1067,7 +1066,7 @@ public:
     }
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, number_t k,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, number_t k,
                       reduced_numerical_domain_product2_t invariant) {
     this->_product.backward_apply(op, x, y, k, invariant._product);
     if (!Params::apply_reduction_only_add_constraint) {
@@ -1076,7 +1075,7 @@ public:
     }
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, variable_t z,
                       reduced_numerical_domain_product2_t invariant) {
     this->_product.backward_apply(op, x, y, z, invariant._product);
     if (!Params::apply_reduction_only_add_constraint) {
@@ -1121,7 +1120,7 @@ public:
   // boolean operations
   void assign_bool_cst(variable_t lhs, linear_constraint_t rhs) {}
   void assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs) {}
-  void apply_binary_bool(crab::domains::bool_operation_t op, variable_t x,
+  void apply_binary_bool(bool_operation_t op, variable_t x,
                          variable_t y, variable_t z) {}
   void assume_bool(variable_t v, bool is_negated) {}
   // backward boolean operations
@@ -1132,7 +1131,7 @@ public:
                                 reduced_numerical_domain_product2_t invariant) {
   }
   void
-  backward_apply_binary_bool(crab::domains::bool_operation_t op, variable_t x,
+  backward_apply_binary_bool(bool_operation_t op, variable_t x,
                              variable_t y, variable_t z,
                              reduced_numerical_domain_product2_t invariant) {}
   // array operations
@@ -1263,9 +1262,9 @@ public:
   typedef interval_congruence<Number> interval_congruence_t;
 
 private:
-  typedef interval<Number> interval_t;
-  typedef bound<Number> bound_t;
-  typedef congruence<Number> congruence_t;
+  typedef ikos::interval<Number> interval_t;
+  typedef ikos::congruence<Number> congruence_t;
+  typedef ikos::bound<Number> bound_t;
 
 private:
   interval_t _first;
@@ -1547,12 +1546,12 @@ public:
   typedef typename NumAbsDom::number_t number_t;
   typedef typename NumAbsDom::varname_t varname_t;
 
-  typedef congruence_domain<number_t, varname_t> congruence_domain_t;
+  typedef ikos::congruence_domain<number_t, varname_t> congruence_domain_t;
   typedef interval_congruence<number_t> interval_congruence_t;
-  typedef interval<number_t> interval_t;
+  typedef ikos::interval<number_t> interval_t;
 
 private:
-  typedef patricia_tree_set<variable_t> variable_set_t;
+  typedef ikos::patricia_tree_set<variable_t> variable_set_t;
   typedef domain_product2<number_t, varname_t, NumAbsDom, congruence_domain_t>
       domain_product2_t;
 
@@ -1682,12 +1681,12 @@ public:
     this->reduce_variable(x);
   }
 
-  void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, variable_t z) {
     this->_product.apply(op, x, y, z);
     this->reduce_variable(x);
   }
 
-  void apply(operation_t op, variable_t x, variable_t y, number_t k) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, number_t k) {
     this->_product.apply(op, x, y, k);
     this->reduce_variable(x);
   }
@@ -1700,14 +1699,14 @@ public:
       this->reduce_variable(v);
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, number_t k,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, number_t k,
                       rnc_domain_t invariant) {
     this->_product.backward_apply(op, x, y, k, invariant._product);
     // reduce the variables in the right-hand side
     this->reduce_variable(y);
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, variable_t z,
                       rnc_domain_t invariant) {
     this->_product.backward_apply(op, x, y, z, invariant._product);
     // reduce the variables in the right-hand side
@@ -1744,7 +1743,7 @@ public:
   // boolean operations
   void assign_bool_cst(variable_t lhs, linear_constraint_t rhs) {}
   void assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs) {}
-  void apply_binary_bool(crab::domains::bool_operation_t op, variable_t x,
+  void apply_binary_bool(bool_operation_t op, variable_t x,
                          variable_t y, variable_t z) {}
   void assume_bool(variable_t v, bool is_negated) {}
   // backward boolean operations
@@ -1752,7 +1751,7 @@ public:
                                 rnc_domain_t invariant) {}
   void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
                                 rnc_domain_t invariant) {}
-  void backward_apply_binary_bool(crab::domains::bool_operation_t op,
+  void backward_apply_binary_bool(bool_operation_t op,
                                   variable_t x, variable_t y, variable_t z,
                                   rnc_domain_t invariant) {}
   // array operations

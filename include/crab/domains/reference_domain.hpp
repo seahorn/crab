@@ -1,7 +1,6 @@
 #pragma once
 
 #include <crab/cfg/var_factory.hpp>
-#include <crab/common/types.hpp>
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/interval.hpp>
 #include <crab/domains/killgen_domain.hpp>
@@ -262,7 +261,7 @@ public:
   using typename abstract_domain_t::variable_vector_t;
   using number_t = typename Params::number_t;
   using varname_t = typename Params::varname_t;
-  using interval_t = interval<number_t>;
+  using interval_t = ikos::interval<number_t>;
 
 private:
   using base_abstract_domain_t = typename Params::base_abstract_domain_t;
@@ -276,7 +275,7 @@ private:
   using base_varname_allocator_t = typename Params::varname_allocator_t;
 
   // Abstract domains
-  using ref_counting_domain_t = separate_domain<memory_region, small_range>;
+  using ref_counting_domain_t = ikos::separate_domain<memory_region, small_range>;
   using regions_powerset_t = flat_killgen_domain<memory_region>;
   using regions_domain_t =
       separate_killgen_domain<variable_t, regions_powerset_t>;
@@ -1375,7 +1374,7 @@ public:
   }
 
   // arithmetic operations
-  void apply(operation_t op, variable_t x, variable_t y,
+  void apply(arith_operation_t op, variable_t x, variable_t y,
              variable_t z) override {
     crab::CrabStats::count(getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
@@ -1384,7 +1383,7 @@ public:
       m_base_dom.apply(op, rename_var(x), rename_var(y), rename_var(z));
     }
   }
-  void apply(operation_t op, variable_t x, variable_t y, number_t k) override {
+  void apply(arith_operation_t op, variable_t x, variable_t y, number_t k) override {
     crab::CrabStats::count(getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1410,7 +1409,7 @@ public:
                                  invariant.m_base_dom);
     }
   }
-  void backward_apply(operation_t op, variable_t x, variable_t y, number_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, number_t z,
                       reference_domain_t invariant) override {
     crab::CrabStats::count(getDomainName() + ".count.backward_apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
@@ -1420,7 +1419,7 @@ public:
                                 invariant.m_base_dom);
     }
   }
-  void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, variable_t z,
                       reference_domain_t invariant) override {
     crab::CrabStats::count(getDomainName() + ".count.backward_apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");

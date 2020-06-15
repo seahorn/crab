@@ -1,6 +1,5 @@
 #pragma once
 
-#include <crab/common/types.hpp>
 #include <crab/support/os.hpp>
 #include <vector>
 

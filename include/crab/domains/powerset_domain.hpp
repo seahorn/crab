@@ -44,7 +44,7 @@ public:
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
   using typename abstract_domain_t::reference_constraint_t;  
-  using interval_t = interval<number_t>;
+  using interval_t = ikos::interval<number_t>;
   
 private:
 
@@ -291,7 +291,7 @@ public:
     }
   }
 
-  virtual void apply(operation_t op, variable_t x, variable_t y, variable_t z) override {
+  virtual void apply(arith_operation_t op, variable_t x, variable_t y, variable_t z) override {
     if (!is_bottom()) {
       for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
 	m_disjuncts[i].apply(op, x, y, z);
@@ -300,7 +300,7 @@ public:
   }
   
 
-  virtual void apply(operation_t op, variable_t x, variable_t y, number_t k) override {
+  virtual void apply(arith_operation_t op, variable_t x, variable_t y, number_t k) override {
     if (!is_bottom()) {
       for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
 	m_disjuncts[i].apply(op, x, y, k);
@@ -313,12 +313,12 @@ public:
     CRAB_WARN(getDomainName(), " does not implement backward operations");
   }
 
-  virtual void backward_apply(operation_t op, variable_t x, variable_t y, number_t k,
+  virtual void backward_apply(arith_operation_t op, variable_t x, variable_t y, number_t k,
 			      powerset_domain_t invariant) override {
     CRAB_WARN(getDomainName(), " does not implement backward operations");    
   }
 
-  virtual void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
+  virtual void backward_apply(arith_operation_t op, variable_t x, variable_t y, variable_t z,
 			      powerset_domain_t invariant) override {
     CRAB_WARN(getDomainName(), " does not implement backward operations");        
   }

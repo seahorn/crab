@@ -1,5 +1,6 @@
-#include <crab/common/types.hpp>
 #include <crab/numbers/wrapint.hpp>
+#include <crab/support/debug.hpp>
+
 //#include <boost/functional/hash.hpp>
 
 #include <climits>

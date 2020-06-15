@@ -898,7 +898,7 @@ public:
     this->_env.set(x, r);
   }
 
-  void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
+  void apply(crab::domains::arith_operation_t op, variable_t x, variable_t y, variable_t z) {
     crab::CrabStats::count(getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -907,25 +907,25 @@ public:
     congruence_t xi = congruence_t::bottom();
 
     switch (op) {
-    case OP_ADDITION:
+    case crab::domains::OP_ADDITION:
       xi = yi + zi;
       break;
-    case OP_SUBTRACTION:
+    case crab::domains::OP_SUBTRACTION:
       xi = yi - zi;
       break;
-    case OP_MULTIPLICATION:
+    case crab::domains::OP_MULTIPLICATION:
       xi = yi * zi;
       break;
-    case OP_SDIV:
+    case crab::domains::OP_SDIV:
       xi = yi / zi;
       break;
-    case OP_UDIV:
+    case crab::domains::OP_UDIV:
       xi = yi.UDiv(zi);
       break;
-    case OP_SREM:
+    case crab::domains::OP_SREM:
       xi = yi.SRem(zi);
       break;
-    case OP_UREM:
+    case crab::domains::OP_UREM:
       xi = yi.URem(zi);
       break;
     default:
@@ -934,7 +934,7 @@ public:
     this->_env.set(x, xi);
   }
 
-  void apply(operation_t op, variable_t x, variable_t y, number_t k) {
+  void apply(crab::domains::arith_operation_t op, variable_t x, variable_t y, number_t k) {
     crab::CrabStats::count(getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -943,25 +943,25 @@ public:
     congruence_t xi = congruence_t::bottom();
 
     switch (op) {
-    case OP_ADDITION:
+    case crab::domains::OP_ADDITION:
       xi = yi + zi;
       break;
-    case OP_SUBTRACTION:
+    case crab::domains::OP_SUBTRACTION:
       xi = yi - zi;
       break;
-    case OP_MULTIPLICATION:
+    case crab::domains::OP_MULTIPLICATION:
       xi = yi * zi;
       break;
-    case OP_SDIV:
+    case crab::domains::OP_SDIV:
       xi = yi / zi;
       break;
-    case OP_UDIV:
+    case crab::domains::OP_UDIV:
       xi = yi.UDiv(zi);
       break;
-    case OP_SREM:
+    case crab::domains::OP_SREM:
       xi = yi.SRem(zi);
       break;
-    case OP_UREM:
+    case crab::domains::OP_UREM:
       xi = yi.URem(zi);
       break;
     default:
@@ -980,7 +980,7 @@ public:
                                                                   inv);
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, number_t z,
+  void backward_apply(crab::domains::arith_operation_t op, variable_t x, variable_t y, number_t z,
                       congruence_domain_t inv) {
     crab::CrabStats::count(getDomainName() + ".count.backward_apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
@@ -989,7 +989,7 @@ public:
                                                                  y, z, inv);
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
+  void backward_apply(crab::domains::arith_operation_t op, variable_t x, variable_t y, variable_t z,
                       congruence_domain_t inv) {
     crab::CrabStats::count(getDomainName() + ".count.backward_apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
@@ -1008,7 +1008,7 @@ public:
 
   // bitwise operations
 
-  void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {
+  void apply(crab::domains::bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {
     crab::CrabStats::count(getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1017,27 +1017,27 @@ public:
     congruence_t xi = congruence_t::bottom();
 
     switch (op) {
-    case OP_AND: {
+    case crab::domains::OP_AND: {
       xi = yi.And(zi);
       break;
     }
-    case OP_OR: {
+    case crab::domains::OP_OR: {
       xi = yi.Or(zi);
       break;
     }
-    case OP_XOR: {
+    case crab::domains::OP_XOR: {
       xi = yi.Xor(zi);
       break;
     }
-    case OP_SHL: {
+    case crab::domains::OP_SHL: {
       xi = yi.Shl(zi);
       break;
     }
-    case OP_LSHR: {
+    case crab::domains::OP_LSHR: {
       xi = yi.LShr(zi);
       break;
     }
-    case OP_ASHR: {
+    case crab::domains::OP_ASHR: {
       xi = yi.AShr(zi);
       break;
     }
@@ -1048,7 +1048,7 @@ public:
     this->_env.set(x, xi);
   }
 
-  void apply(bitwise_operation_t op, variable_t x, variable_t y, number_t k) {
+  void apply(crab::domains::bitwise_operation_t op, variable_t x, variable_t y, number_t k) {
     crab::CrabStats::count(getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1057,27 +1057,27 @@ public:
     congruence_t xi = congruence_t::bottom();
 
     switch (op) {
-    case OP_AND: {
+    case crab::domains::OP_AND: {
       xi = yi.And(zi);
       break;
     }
-    case OP_OR: {
+    case crab::domains::OP_OR: {
       xi = yi.Or(zi);
       break;
     }
-    case OP_XOR: {
+    case crab::domains::OP_XOR: {
       xi = yi.Xor(zi);
       break;
     }
-    case OP_SHL: {
+    case crab::domains::OP_SHL: {
       xi = yi.Shl(zi);
       break;
     }
-    case OP_LSHR: {
+    case crab::domains::OP_LSHR: {
       xi = yi.LShr(zi);
       break;
     }
-    case OP_ASHR: {
+    case crab::domains::OP_ASHR: {
       xi = yi.AShr(zi);
       break;
     }

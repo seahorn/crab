@@ -35,7 +35,6 @@
 
 #pragma once
 
-#include <crab/common/types.hpp>
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/array_graph/array_graph_ops.hpp>
@@ -833,9 +832,9 @@ namespace array_graph_impl {
 // domains.
 
 template <typename Dom>
-interval<typename Dom::number_t>
+ikos::interval<typename Dom::number_t>
 eval_interval(Dom dom, typename Dom::linear_expression_t e) {
-  interval<typename Dom::number_t> r = e.constant();
+  ikos::interval<typename Dom::number_t> r = e.constant();
   for (auto p : e)
     r += p.first * dom[p.second];
   return r;
@@ -1296,7 +1295,7 @@ public:
 
   typedef typename NumDom::variable_t variable_t;
   typedef typename NumDom::variable_vector_t variable_vector_t;
-  typedef interval<number_t> interval_t;
+  typedef ikos::interval<number_t> interval_t;
 
   typedef landmark_cst<variable_t, number_t> landmark_cst_t;
   typedef landmark_var<variable_t, number_t> landmark_var_t;
@@ -1307,8 +1306,8 @@ public:
   //// XXX: make this a template parameter later
   typedef crab::cfg::var_factory_impl::str_var_alloc_col::varname_t
       str_varname_t;
-  typedef interval_domain<z_number, str_varname_t> str_interval_dom_t;
-  typedef term::TDomInfo<z_number, varname_t, str_interval_dom_t> idom_info;
+  typedef ikos::interval_domain<ikos::z_number, str_varname_t> str_interval_dom_t;
+  typedef term::TDomInfo<ikos::z_number, varname_t, str_interval_dom_t> idom_info;
   typedef term_domain<idom_info> expression_domain_t;
 
 private:
@@ -1583,7 +1582,7 @@ private:
   }
 
   // return true if n is a landmark in the graph
-  bool is_landmark(z_number n) const {
+  bool is_landmark(ikos::z_number n) const {
     landmark_ref_t lm_n(n);
     auto it = s_cst_landmarks.find(lm_n);
     return (it != s_cst_landmarks.end());
@@ -1685,7 +1684,7 @@ private:
 
   // x := x op k
   template <typename VarOrNum>
-  void apply_one_variable(operation_t op, variable_t x, VarOrNum k) {
+  void apply_one_variable(arith_operation_t op, variable_t x, VarOrNum k) {
     if (is_bottom())
       return;
 
@@ -1782,7 +1781,7 @@ private:
 
   // return a pair with the normalized offset and a bool that is
   // true if a new landmark was added in the array graph
-  std::pair<variable_t, bool> normalize_offset(variable_t o, z_number n) {
+  std::pair<variable_t, bool> normalize_offset(variable_t o, ikos::z_number n) {
     CRAB_LOG("array-sgraph-domain-norm",
              crab::outs() << "BEFORE NORMALIZE OFFSET: expressions="
                           << _expressions << "\n");
@@ -1792,7 +1791,7 @@ private:
     _expressions.assign(no, o);
 
     // -- apply no := no / n; in the expressions domain
-    _expressions.apply(operation_t::OP_SDIV, no, no, n);
+    _expressions.apply(arith_operation_t::OP_SDIV, no, no, n);
 
     // -- simplify the expression domain
     bool simp_done = _expressions.simplify(no);
@@ -2244,7 +2243,7 @@ public:
                                         << " ==> " << *this << "\n";);
   }
 
-  void apply(operation_t op, variable_t x, variable_t y, number_t z) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, number_t z) {
     if (x == y) {
       crab::CrabStats::count(getDomainName() + ".count.apply");
       crab::ScopedCrabStats __st__(getDomainName() + ".apply");
@@ -2270,7 +2269,7 @@ public:
     }
   }
 
-  void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, variable_t z) {
     if (x == y) {
       crab::CrabStats::count(getDomainName() + ".count.apply");
       crab::ScopedCrabStats __st__(getDomainName() + ".apply");
@@ -2300,13 +2299,13 @@ public:
     CRAB_WARN("backward assign not implemented");
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, number_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, number_t z,
                       array_graph_domain_t invariant) {
     operator-=(x);
     CRAB_WARN("backward apply not implemented");
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, variable_t z,
                       array_graph_domain_t invariant) {
 
     operator-=(x);

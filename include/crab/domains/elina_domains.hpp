@@ -2,7 +2,6 @@
 
 #include <crab/config.h>
 
-#include <crab/common/types.hpp>
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/intervals.hpp>
 #include <crab/support/debug.hpp>
@@ -38,7 +37,7 @@ public:
   using typename abstract_domain_t::variable_vector_t;
   typedef Number number_t;
   typedef VariableName varname_t;
-  typedef interval<number_t> interval_t;
+  typedef ikos::interval<number_t> interval_t;
 
   elina_domain() {}
 
@@ -92,11 +91,11 @@ public:
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
 
-  void apply(operation_t op, variable_t x, variable_t y, number_t z) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, number_t z) {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
 
-  void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, variable_t z) {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
 
@@ -117,12 +116,12 @@ public:
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, number_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, number_t z,
                       elina_domain_t invariant) {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, variable_t z,
                       elina_domain_t invariant) {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
@@ -359,11 +358,11 @@ public:
   using typename abstract_domain_t::variable_vector_t;
   typedef Number number_t;
   typedef VariableName varname_t;
-  typedef interval<number_t> interval_t;
+  typedef ikos::interval<number_t> interval_t;
 
 private:
-  typedef interval_domain<number_t, varname_t> interval_domain_t;
-  typedef bound<number_t> bound_t;
+  typedef ikos::interval_domain<number_t, varname_t> interval_domain_t;
+  typedef ikos::bound<number_t> bound_t;
   typedef boost::bimap<variable_t, elina_dim_t> var_map_t;
   typedef typename var_map_t::value_type binding_t;
 
@@ -705,7 +704,7 @@ private:
       CRAB_ERROR("elina cannot allocate linear expression");
     }
 
-    q_number q(e.constant());
+    ikos::q_number q(e.constant());
     elina_scalar_set_mpq(linexpr->cst.val.scalar, q.get_mpq_t());
 
     unsigned i = 0;
@@ -716,7 +715,7 @@ private:
       variable_t crab_var = it->second;
       elina_linterm_t *linterm = &linexpr->p.linterm[i];
       linterm->dim = get_var_dim_insert(crab_var);
-      q_number qcoef(crab_coeff);
+      ikos::q_number qcoef(crab_coeff);
       elina_scalar_set_mpq(linterm->coeff.val.scalar, qcoef.get_mpq_t());
     }
 
@@ -875,7 +874,7 @@ private:
   void inequalities_from_disequation(variable_t x, number_t n,
                                      linear_constraint_system_t &out) {
     interval_t i = this->operator[](x);
-    interval_t new_i = linear_interval_solver_impl::trim_interval<interval_t>(
+    interval_t new_i = ikos::linear_interval_solver_impl::trim_interval<interval_t>(
         i, interval_t(n));
     if (new_i.is_bottom()) {
       out += linear_constraint_t::get_false();
@@ -938,7 +937,7 @@ private:
   }
 
   // Using elina tree expressions
-  void apply_texpr(operation_t op, variable_t x, variable_t y, number_t z) {
+  void apply_texpr(arith_operation_t op, variable_t x, variable_t y, number_t z) {
     elina_texpr0_t *a = var2texpr(y);
     elina_texpr0_t *b = num2texpr(z);
     elina_texpr0_t *res = nullptr;
@@ -968,7 +967,7 @@ private:
   }
 
   // Using elina linear expresions
-  void apply_linexpr(operation_t op, variable_t x, variable_t y, number_t z) {
+  void apply_linexpr(arith_operation_t op, variable_t x, variable_t y, number_t z) {
     elina_linexpr0_t *rhs = nullptr;
     switch (op) {
     case OP_ADDITION:
@@ -997,7 +996,7 @@ private:
   }
 
   // Using elina tree expressions
-  void apply_texpr(operation_t op, variable_t x, variable_t y, variable_t z) {
+  void apply_texpr(arith_operation_t op, variable_t x, variable_t y, variable_t z) {
     elina_texpr0_t *a = var2texpr(y);
     elina_texpr0_t *b = var2texpr(z);
     elina_texpr0_t *res = nullptr;
@@ -1027,7 +1026,7 @@ private:
   }
 
   // Using elina linear expresions
-  void apply_linexpr(operation_t op, variable_t x, variable_t y, variable_t z) {
+  void apply_linexpr(arith_operation_t op, variable_t x, variable_t y, variable_t z) {
     elina_linexpr0_t *rhs = nullptr;
     switch (op) {
     case OP_ADDITION:
@@ -1650,7 +1649,7 @@ public:
       }
       if (c.is_strict_inequality()) {
         // We try to convert a strict to non-strict.
-        csts += linear_constraint_impl::strict_to_non_strict_inequality(c);
+        csts += ikos::linear_constraint_impl::strict_to_non_strict_inequality(c);
       } else if (c.is_disequation()) {
         // We try to convert a disequation into conjunctive
         // inequalities
@@ -1707,7 +1706,7 @@ public:
     CRAB_LOG("elina", crab::outs() << *this << "\n";);
   }
 
-  void apply(operation_t op, variable_t x, variable_t y, number_t z) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, number_t z) {
     crab::CrabStats::count(getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1751,7 +1750,7 @@ public:
     }
   }
 
-  void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, variable_t z) {
     crab::CrabStats::count(getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1907,7 +1906,7 @@ public:
                                    << *this << "\n";);
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, number_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, number_t z,
                       elina_domain_t invariant) {
     crab::CrabStats::count(getDomainName() + ".count.backward_apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
@@ -1959,7 +1958,7 @@ public:
     CRAB_LOG("elina", crab::outs() << " --> " << *this << "\n";);
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, variable_t z,
                       elina_domain_t invariant) {
     crab::CrabStats::count(getDomainName() + ".count.backward_apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
@@ -2312,7 +2311,7 @@ public:
   typedef typename linear_constraint_t::kind_t constraint_kind_t;
   typedef Number number_t;
   typedef VariableName varname_t;
-  typedef interval<number_t> interval_t;
+  typedef ikos::interval<number_t> interval_t;
 
 private:
   typedef elina_domain_<number_t, varname_t, ElinaDom> elina_domain_impl_t;
@@ -2407,11 +2406,11 @@ public:
     detach();
     ref().assign(x, e);
   }
-  void apply(operation_t op, variable_t x, variable_t y, number_t k) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, number_t k) {
     detach();
     ref().apply(op, x, y, k);
   }
-  void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, variable_t z) {
     detach();
     ref().apply(op, x, y, z);
   }
@@ -2432,12 +2431,12 @@ public:
     detach();
     ref().backward_assign(x, e, invariant.ref());
   }
-  void backward_apply(operation_t op, variable_t x, variable_t y, number_t k,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, number_t k,
                       elina_domain_t invariant) {
     detach();
     ref().backward_apply(op, x, y, k, invariant.ref());
   }
-  void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, variable_t z,
                       elina_domain_t invariant) {
     detach();
     ref().backward_apply(op, x, y, z, invariant.ref());
@@ -2455,7 +2454,7 @@ public:
                                 elina_domain_t invariant) {}
   void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
                                 elina_domain_t invariant) {}
-  void backward_apply_binary_bool(crab::domains::bool_operation_t op,
+  void backward_apply_binary_bool(bool_operation_t op,
                                   variable_t x, variable_t y, variable_t z,
                                   elina_domain_t invariant) {}
   // array operations

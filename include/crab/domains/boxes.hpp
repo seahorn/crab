@@ -7,7 +7,6 @@
  **************************************************************************/
 #include <crab/config.h>
 
-#include <crab/common/types.hpp>
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
@@ -38,7 +37,7 @@ public:
   using typename abstract_domain_t::variable_vector_t;
   typedef Number number_t;
   typedef VariableName varname_t;
-  typedef interval<number_t> interval_t;
+  typedef ikos::interval<number_t> interval_t;
 
   boxes_domain() {}
 
@@ -84,11 +83,11 @@ public:
     CRAB_ERROR(LDD_NOT_FOUND);
   }
 
-  void apply(operation_t op, variable_t x, variable_t y, number_t z) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, number_t z) {
     CRAB_ERROR(LDD_NOT_FOUND);
   }
 
-  void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, variable_t z) {
     CRAB_ERROR(LDD_NOT_FOUND);
   }
 
@@ -97,12 +96,12 @@ public:
     CRAB_ERROR(LDD_NOT_FOUND);
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, number_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, number_t z,
                       boxes_domain_t invariant) {
     CRAB_ERROR(LDD_NOT_FOUND);
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, variable_t z,
                       boxes_domain_t invariant) {
     CRAB_ERROR(LDD_NOT_FOUND);
   }
@@ -143,7 +142,7 @@ public:
                                 boxes_domain_t invariant) {
     CRAB_ERROR(LDD_NOT_FOUND);
   }
-  void backward_apply_binary_bool(crab::domains::bool_operation_t op,
+  void backward_apply_binary_bool(bool_operation_t op,
                                   variable_t x, variable_t y, variable_t z,
                                   boxes_domain_t invariant) {
     CRAB_ERROR(LDD_NOT_FOUND);
@@ -341,7 +340,7 @@ class boxes_domain_ final
     : public abstract_domain<
           boxes_domain_<Number, VariableName, ConvexReduce, LddSize>> {
 
-  typedef interval_domain<Number, VariableName> interval_domain_t;
+  typedef ikos::interval_domain<Number, VariableName> interval_domain_t;
   typedef boxes_domain_<Number, VariableName, ConvexReduce, LddSize>
       boxes_domain_t;
   typedef abstract_domain<boxes_domain_t> abstract_domain_t;
@@ -356,7 +355,7 @@ public:
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
-  typedef interval<number_t> interval_t;
+  typedef ikos::interval<number_t> interval_t;
 
 private:
   typedef typename linear_constraint_t::kind_t kind_t;
@@ -547,7 +546,7 @@ private:
 
   void num_from_ldd_cst(constant_t cst, ikos::z_number &res) {
     // XXX We know that the theory is tvpi, use its method direclty.
-    q_number q;
+    ikos::q_number q;
     tvpi_cst_set_mpq(q.get_mpq_t(), (tvpi_cst_t)cst);
     res = q.round_to_lower();
   }
@@ -568,20 +567,20 @@ private:
     return e;
   }
 
-  linear_constraint<ikos::z_number, varname_t> cst_from_ldd_strict_cons(
-      const linear_expression<ikos::z_number, varname_t> &l,
-      const linear_expression<ikos::z_number, varname_t> &r) {
+  ikos::linear_constraint<ikos::z_number, varname_t> cst_from_ldd_strict_cons(
+      const ikos::linear_expression<ikos::z_number, varname_t> &l,
+      const ikos::linear_expression<ikos::z_number, varname_t> &r) {
     // l < r <-> l+1 <= r
-    linear_expression<ikos::z_number, varname_t> e = l + 1;
+    ikos::linear_expression<ikos::z_number, varname_t> e = l + 1;
     e = e - r;
-    return linear_constraint<ikos::z_number, varname_t>(
+    return ikos::linear_constraint<ikos::z_number, varname_t>(
         e, linear_constraint_t::INEQUALITY);
   }
 
-  linear_constraint<ikos::q_number, varname_t> cst_from_ldd_strict_cons(
-      const linear_expression<ikos::q_number, varname_t> &l,
-      const linear_expression<ikos::q_number, varname_t> &r) {
-    return linear_constraint<ikos::q_number, varname_t>(
+  ikos::linear_constraint<ikos::q_number, varname_t> cst_from_ldd_strict_cons(
+      const ikos::linear_expression<ikos::q_number, varname_t> &l,
+      const ikos::linear_expression<ikos::q_number, varname_t> &r) {
+    return ikos::linear_constraint<ikos::q_number, varname_t>(
         l - r, linear_constraint_t::STRICT_INEQUALITY);
   }
 
@@ -1479,7 +1478,7 @@ public:
   }
 
   // x := y op k
-  void apply(operation_t op, variable_t x, variable_t y, number_t k) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, number_t k) {
     crab::CrabStats::count(getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1531,7 +1530,7 @@ public:
   }
 
   // x := y op z
-  void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, variable_t z) {
     crab::CrabStats::count(getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1636,7 +1635,7 @@ public:
     CRAB_LOG("boxes", crab::outs() << "\tPRE=" << *this << "\n");
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, number_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, number_t z,
                       boxes_domain_t invariant) {
     crab::CrabStats::count(getDomainName() + ".count.backward_apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
@@ -1647,7 +1646,7 @@ public:
     CRAB_LOG("boxes", crab::outs() << "\tPRE=" << *this << "\n");
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, variable_t z,
                       boxes_domain_t invariant) {
     crab::CrabStats::count(getDomainName() + ".count.backward_apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
@@ -2084,7 +2083,7 @@ public:
   typedef Number number_t;
   typedef VariableName varname_t;
   typedef typename linear_constraint_t::kind_t constraint_kind_t;
-  typedef interval<number_t> interval_t;
+  typedef ikos::interval<number_t> interval_t;
 
 private:
   typedef boxes_domain_<number_t, varname_t, ConvexReduce, LddSize>
@@ -2175,11 +2174,11 @@ public:
     detach();
     ref().assign(x, e);
   }
-  void apply(operation_t op, variable_t x, variable_t y, number_t k) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, number_t k) {
     detach();
     ref().apply(op, x, y, k);
   }
-  void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, variable_t z) {
     detach();
     ref().apply(op, x, y, z);
   }
@@ -2189,12 +2188,12 @@ public:
     detach();
     ref().backward_assign(x, e, invariant.ref());
   }
-  void backward_apply(operation_t op, variable_t x, variable_t y, number_t k,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, number_t k,
                       boxes_domain_t invariant) {
     detach();
     ref().backward_apply(op, x, y, k, invariant.ref());
   }
-  void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, variable_t z,
                       boxes_domain_t invariant) {
     detach();
     ref().backward_apply(op, x, y, z, invariant.ref());

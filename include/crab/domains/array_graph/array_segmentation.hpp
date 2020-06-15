@@ -6,7 +6,6 @@
 */
 
 #include <crab/cfg/cfg.hpp>
-#include <crab/common/types.hpp>
 #include <crab/domains/killgen_domain.hpp>
 #include <crab/iterators/killgen_fixpoint_iterator.hpp>
 #include <crab/support/debug.hpp>

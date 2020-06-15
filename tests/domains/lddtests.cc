@@ -248,7 +248,7 @@ int main(int argc, char** argv )
     // Assertion failed: (level < (unsigned) cuddI(unique,Cudd_Regular(E)->index)), function cuddUniqueInter, file /Users/E30338/Repos/crab/build_crab2/ldd/src/ldd/cudd-2.4.2/cudd/cuddTable.c, line 1143.
     
     typedef boxes_domain< number_t, varname_t > boxes_domain_t;
-    typedef variable <number_t, varname_t> var_t;
+    typedef typename boxes_domain_t::variable_t var_t;
     
     boxes_domain_t s1;
     s1 += linear_constraint_t(var_t(x) >= number_t(0));

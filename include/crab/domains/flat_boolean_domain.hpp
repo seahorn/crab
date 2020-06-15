@@ -5,7 +5,6 @@
    flat bool domain with an arbitrary numerical domain
 */
 
-#include <crab/common/types.hpp>
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/combined_domains.hpp>
@@ -226,9 +225,9 @@ public:
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
 
-  typedef interval<number_t> interval_t;
+  typedef ikos::interval<number_t> interval_t;
   typedef boolean_value bool_t;
-  typedef separate_domain<variable_t, boolean_value> separate_domain_t;
+  typedef ikos::separate_domain<variable_t, boolean_value> separate_domain_t;
   typedef typename separate_domain_t::iterator iterator;
 
 private:
@@ -473,14 +472,14 @@ public:
   */
 
   // numerical_domains_api
-  void apply(operation_t op, variable_t x, variable_t y, variable_t z) {}
-  void apply(operation_t op, variable_t x, variable_t y, number_t k) {}
+  void apply(arith_operation_t op, variable_t x, variable_t y, variable_t z) {}
+  void apply(arith_operation_t op, variable_t x, variable_t y, number_t k) {}
   void assign(variable_t x, linear_expression_t e) {}
   void backward_assign(variable_t x, linear_expression_t e,
                        flat_boolean_domain_t invariant) {}
-  void backward_apply(operation_t op, variable_t x, variable_t y, number_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, number_t z,
                       flat_boolean_domain_t invariant) {}
-  void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, variable_t z,
                       flat_boolean_domain_t invariant) {}
   void operator+=(linear_constraint_system_t csts) {}
   void operator+=(linear_constraint_t cst) {}
@@ -714,15 +713,15 @@ public:
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
 
-  typedef interval<number_t> interval_t;
-  typedef bound<number_t> bound_t;
+  typedef ikos::interval<number_t> interval_t;
+  typedef ikos::bound<number_t> bound_t;
 
 private:
   // This lattice is the dual of a discrete lattice where
   // elements are linear constraints.
   class lin_cst_set_domain {
 
-    typedef discrete_domain<linear_constraint_t> set_t;
+    typedef ikos::discrete_domain<linear_constraint_t> set_t;
     set_t m_set;
 
   public:
@@ -802,7 +801,7 @@ private:
   // Map bool variables to sets of constraints such that if the
   // bool variable is true then the conjunction of the constraints
   // must be satisfiable.
-  typedef separate_domain<variable_t, lin_cst_set_domain> var_lincons_map_t;
+  typedef ikos::separate_domain<variable_t, lin_cst_set_domain> var_lincons_map_t;
   /** we need to keep track which constraints still hold at the
       time the reduction from boolean variables to numerical ones
       is done. For instance,
@@ -830,7 +829,7 @@ private:
     typedef typename linear_constraint_t::variable_set_t variable_set_t;
 
   private:
-    typedef discrete_domain<variable_t> set_t;
+    typedef ikos::discrete_domain<variable_t> set_t;
     set_t m_set;
 
   public:
@@ -1033,12 +1032,12 @@ public:
 
   // numerical_domains_api
 
-  void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, variable_t z) {
     _product.apply(op, x, y, z);
     _unchanged_vars -= variable_t(x);
   }
 
-  void apply(operation_t op, variable_t x, variable_t y, number_t k) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, number_t k) {
     _product.apply(op, x, y, k);
     _unchanged_vars -= variable_t(x);
   }
@@ -1054,13 +1053,13 @@ public:
     _unchanged_vars -= variable_t(x);
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, number_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, number_t z,
                       bool_num_domain_t invariant) override {
     _product.backward_apply(op, x, y, z, invariant._product);
     _unchanged_vars -= variable_t(x);
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, variable_t z,
                       bool_num_domain_t invariant) override {
     _product.backward_apply(op, x, y, z, invariant._product);
     _unchanged_vars -= variable_t(x);

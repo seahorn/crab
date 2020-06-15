@@ -2,11 +2,11 @@
 
 #include <crab/analysis/graphs/cdg.hpp>
 #include <crab/cfg/cfg.hpp>
-#include <crab/support/debug.hpp>
-#include <crab/support/stats.hpp>
-#include <crab/common/types.hpp>
 #include <crab/domains/killgen_domain.hpp>
 #include <crab/iterators/killgen_fixpoint_iterator.hpp>
+#include <crab/support/debug.hpp>
+#include <crab/support/stats.hpp>
+#include <crab/types/indexable.hpp>
 
 #include <boost/range/iterator_range.hpp>
 #include <unordered_map>
@@ -39,7 +39,7 @@ using namespace crab::domains;
 using namespace crab::cfg;
 
 // A wrapper to an assert statement
-template <typename CFG> struct assert_wrapper {
+  template <typename CFG> struct assert_wrapper: public indexable {
 
   typedef
       typename statement_visitor<typename CFG::number_t,
@@ -49,7 +49,7 @@ template <typename CFG> struct assert_wrapper {
 
   // unique identifier for the assert statement needed for being
   // used as key
-  index_t id;
+  ikos::index_t id;
   // basic block where the assert statement is located
   basic_block_label_t bbl;
   // the assert statement
@@ -65,13 +65,13 @@ template <typename CFG> struct assert_wrapper {
   // control-dependency graph
   const cdg_t *cdg_ptr;
 
-  assert_wrapper(index_t _id, basic_block_label_t _bbl, assert_t *_a,
+  assert_wrapper(ikos::index_t _id, basic_block_label_t _bbl, assert_t *_a,
                  assert_map_t *am, const cdg_t *cdg)
       : id(_id), bbl(_bbl), a(_a), assert_map_ptr(am), cdg_ptr(cdg) {}
 
   assert_t *get() { return a; }
   const assert_t *get() const { return a; }
-  index_t index() const { return id; }
+  virtual ikos::index_t index() const override { return id; }
   bool operator==(this_type o) const { return id == o.id; }
   bool operator<(this_type o) const { return id < o.id; }
   void write(crab::crab_os &o) const { o << "\"" << *a << "\""; }

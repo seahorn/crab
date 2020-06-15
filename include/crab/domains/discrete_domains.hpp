@@ -40,7 +40,6 @@
 
 #pragma once
 
-#include <crab/common/types.hpp>
 #include <crab/domains/patricia_trees.hpp>
 #include <crab/domains/separate_domains.hpp>
 #include <crab/support/debug.hpp>

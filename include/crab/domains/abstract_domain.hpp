@@ -98,10 +98,10 @@ public:
 
   /**************************** Arithmetic operations *************************/
   // x := y op z
-  virtual void apply(operation_t op, variable_t x, variable_t y,
+  virtual void apply(arith_operation_t op, variable_t x, variable_t y,
                      variable_t z) = 0;
   // x := y op k
-  virtual void apply(operation_t op, variable_t x, variable_t y,
+  virtual void apply(arith_operation_t op, variable_t x, variable_t y,
                      number_t k) = 0;
   // x := e
   virtual void assign(variable_t x, linear_expression_t e) = 0;
@@ -202,12 +202,12 @@ public:
   // x = y op z
   // Substitute x with y op z in the abstract value
   // The result is meet with invariant.
-  virtual void backward_apply(operation_t op, variable_t x, variable_t y,
+  virtual void backward_apply(arith_operation_t op, variable_t x, variable_t y,
                               variable_t z, Dom invariant) = 0;
   // x = y op k
   // Substitute x with y op k in the abstract value
   // The result is meet with invariant.
-  virtual void backward_apply(operation_t op, variable_t x, variable_t y,
+  virtual void backward_apply(arith_operation_t op, variable_t x, variable_t y,
                               number_t k, Dom invariant) = 0;
   // x = e
   // Substitute x with e in the abstract value

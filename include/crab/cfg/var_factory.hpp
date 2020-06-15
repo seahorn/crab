@@ -4,7 +4,9 @@
  * Factories for variable names.
  */
 
-#include <crab/common/types.hpp>
+#include <crab/types/indexable.hpp>
+#include <crab/support/os.hpp>
+#include <crab/support/debug.hpp>
 
 #include <boost/optional.hpp>
 #include <boost/range/iterator_range.hpp>
@@ -33,7 +35,7 @@ template <class T> class variable_factory {
   typedef variable_factory<T> variable_factory_t;
 
 public:
-  class indexed_string {
+  class indexed_string: public indexable  {
     template <typename Any> friend class variable_factory;
     boost::optional<T> _s;
     ikos::index_t _id;
@@ -65,7 +67,7 @@ public:
       return *this;
     }
 
-    ikos::index_t index() const { return this->_id; }
+    virtual ikos::index_t index() const override { return this->_id; }
 
     std::string str() const {
       if (_s) {

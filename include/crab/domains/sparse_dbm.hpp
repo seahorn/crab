@@ -9,7 +9,6 @@
 
 #pragma once
 
-#include <crab/common/types.hpp>
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
@@ -523,7 +522,7 @@ protected:
   void add_univar_disequation(variable_t x, number_t n) {
     bool overflow;
     interval_t i = get_interval(x);
-    interval_t new_i = linear_interval_solver_impl::trim_interval<interval_t>(
+    interval_t new_i = ikos::linear_interval_solver_impl::trim_interval<interval_t>(
         i, interval_t(n));
     if (new_i.is_bottom()) {
       set_to_bottom();
@@ -1352,7 +1351,7 @@ public:
                                           << *this << "\n";);
   }
 
-  void apply(ikos::operation_t op, variable_t x, variable_t y, variable_t z) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, variable_t z) {
     crab::CrabStats::count(getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1363,26 +1362,26 @@ public:
     normalize();
 
     switch (op) {
-    case ikos::OP_ADDITION:
+    case OP_ADDITION:
       assign(x, y + z);
       break;
-    case ikos::OP_SUBTRACTION:
+    case OP_SUBTRACTION:
       assign(x, y - z);
       break;
     // For the rest of operations, we fall back on intervals.
-    case ikos::OP_MULTIPLICATION:
+    case OP_MULTIPLICATION:
       set(x, get_interval(y) * get_interval(z));
       break;
-    case ikos::OP_SDIV:
+    case OP_SDIV:
       set(x, get_interval(y) / get_interval(z));
       break;
-    case ikos::OP_UDIV:
+    case OP_UDIV:
       set(x, get_interval(y).UDiv(get_interval(z)));
       break;
-    case ikos::OP_SREM:
+    case OP_SREM:
       set(x, get_interval(y).SRem(get_interval(z)));
       break;
-    case ikos::OP_UREM:
+    case OP_UREM:
       set(x, get_interval(y).URem(get_interval(z)));
       break;
     default:
@@ -1393,7 +1392,7 @@ public:
                                  << *this << "\n";);
   }
 
-  void apply(ikos::operation_t op, variable_t x, variable_t y, number_t k) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, number_t k) {
     crab::CrabStats::count(getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1404,26 +1403,26 @@ public:
     normalize();
 
     switch (op) {
-    case ikos::OP_ADDITION:
+    case OP_ADDITION:
       assign(x, y + k);
       break;
-    case ikos::OP_SUBTRACTION:
+    case OP_SUBTRACTION:
       assign(x, y - k);
       break;
     // For the rest of operations, we fall back on intervals.
-    case ikos::OP_MULTIPLICATION:
+    case OP_MULTIPLICATION:
       set(x, get_interval(y) * interval_t(k));
       break;
-    case ikos::OP_SDIV:
+    case OP_SDIV:
       set(x, get_interval(y) / interval_t(k));
       break;
-    case ikos::OP_UDIV:
+    case OP_UDIV:
       set(x, get_interval(y).UDiv(interval_t(k)));
       break;
-    case ikos::OP_SREM:
+    case OP_SREM:
       set(x, get_interval(y).SRem(interval_t(k)));
       break;
-    case ikos::OP_UREM:
+    case OP_UREM:
       set(x, get_interval(y).URem(interval_t(k)));
       break;
     default:
@@ -1472,7 +1471,7 @@ public:
 
     if (cst.is_strict_inequality()) {
       // We try to convert a strict to non-strict.
-      auto nc = linear_constraint_impl::strict_to_non_strict_inequality(cst);
+      auto nc = ikos::linear_constraint_impl::strict_to_non_strict_inequality(cst);
       if (nc.is_inequality()) {
         // here we succeed
         if (!add_linear_leq(nc.expression())) {
@@ -1579,7 +1578,7 @@ public:
     crab::domains::BackwardAssignOps<DBM_t>::assign(*this, x, e, inv);
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, number_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, number_t z,
                       DBM_t inv) {
     crab::CrabStats::count(getDomainName() + ".count.backward_apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
@@ -1587,7 +1586,7 @@ public:
     crab::domains::BackwardAssignOps<DBM_t>::apply(*this, op, x, y, z, inv);
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, variable_t z,
                       DBM_t inv) {
     crab::CrabStats::count(getDomainName() + ".count.backward_apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
@@ -1605,7 +1604,7 @@ public:
 
   // bitwise operators
 
-  void apply(ikos::bitwise_operation_t op, variable_t x, variable_t y,
+  void apply(bitwise_operation_t op, variable_t x, variable_t y,
              variable_t z) {
     crab::CrabStats::count(getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
@@ -1619,27 +1618,27 @@ public:
     interval_t zi = operator[](z);
     interval_t xi = interval_t::bottom();
     switch (op) {
-    case ikos::OP_AND: {
+    case OP_AND: {
       xi = yi.And(zi);
       break;
     }
-    case ikos::OP_OR: {
+    case OP_OR: {
       xi = yi.Or(zi);
       break;
     }
-    case ikos::OP_XOR: {
+    case OP_XOR: {
       xi = yi.Xor(zi);
       break;
     }
-    case ikos::OP_SHL: {
+    case OP_SHL: {
       xi = yi.Shl(zi);
       break;
     }
-    case ikos::OP_LSHR: {
+    case OP_LSHR: {
       xi = yi.LShr(zi);
       break;
     }
-    case ikos::OP_ASHR: {
+    case OP_ASHR: {
       xi = yi.AShr(zi);
       break;
     }
@@ -1649,7 +1648,7 @@ public:
     set(x, xi);
   }
 
-  void apply(ikos::bitwise_operation_t op, variable_t x, variable_t y,
+  void apply(bitwise_operation_t op, variable_t x, variable_t y,
              number_t k) {
     crab::CrabStats::count(getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
@@ -1664,27 +1663,27 @@ public:
     interval_t xi = interval_t::bottom();
 
     switch (op) {
-    case ikos::OP_AND: {
+    case OP_AND: {
       xi = yi.And(zi);
       break;
     }
-    case ikos::OP_OR: {
+    case OP_OR: {
       xi = yi.Or(zi);
       break;
     }
-    case ikos::OP_XOR: {
+    case OP_XOR: {
       xi = yi.Xor(zi);
       break;
     }
-    case ikos::OP_SHL: {
+    case OP_SHL: {
       xi = yi.Shl(zi);
       break;
     }
-    case ikos::OP_LSHR: {
+    case OP_LSHR: {
       xi = yi.LShr(zi);
       break;
     }
-    case ikos::OP_ASHR: {
+    case OP_ASHR: {
       xi = yi.AShr(zi);
       break;
     }
@@ -2213,11 +2212,11 @@ public:
     lock();
     norm().assign(x, e);
   }
-  void apply(ikos::operation_t op, variable_t x, variable_t y, number_t k) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, number_t k) {
     lock();
     norm().apply(op, x, y, k);
   }
-  void apply(ikos::operation_t op, variable_t x, variable_t y, variable_t z) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, variable_t z) {
     lock();
     norm().apply(op, x, y, z);
   }
@@ -2229,22 +2228,22 @@ public:
     lock();
     norm().backward_assign(x, e, invariant.norm());
   }
-  void backward_apply(operation_t op, variable_t x, variable_t y, number_t k,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, number_t k,
                       DBM_t invariant) {
     lock();
     norm().backward_apply(op, x, y, k, invariant.norm());
   }
-  void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, variable_t z,
                       DBM_t invariant) {
     lock();
     norm().backward_apply(op, x, y, z, invariant.norm());
   }
-  void apply(ikos::bitwise_operation_t op, variable_t x, variable_t y,
+  void apply(bitwise_operation_t op, variable_t x, variable_t y,
              number_t k) {
     lock();
     norm().apply(op, x, y, k);
   }
-  void apply(ikos::bitwise_operation_t op, variable_t x, variable_t y,
+  void apply(bitwise_operation_t op, variable_t x, variable_t y,
              variable_t z) {
     lock();
     norm().apply(op, x, y, z);

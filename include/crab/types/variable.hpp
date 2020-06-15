@@ -1,7 +1,7 @@
 #pragma once
 
 #include <crab/support/os.hpp>
-#include <crab/common/types.hpp> // for index_t
+#include <crab/types/indexable.hpp>
 
 namespace crab {
 
@@ -41,6 +41,7 @@ inline crab_os &operator<<(crab_os &o, variable_type t) {
   case ARR_BOOL_TYPE:
     o << "arr(bool)";
     break;
+    
   case ARR_INT_TYPE:
     o << "arr(int)";
     break;
@@ -57,7 +58,8 @@ inline crab_os &operator<<(crab_os &o, variable_type t) {
   return o;
 }
 
-template <typename Number, typename VariableName> class variable {
+template <typename Number, typename VariableName>
+class variable : public indexable {
   // XXX: template parameter Number is required even if the class
   // does not use it.  This allows, e.g., linear_constraint to
   // deduce the kind of Number from constraints like x < y.
@@ -133,7 +135,7 @@ public:
   // VariableName's.
   VariableName &name() { return _n; }
 
-  ikos::index_t index() const { return _n.index(); }
+  virtual ikos::index_t index() const override { return _n.index(); }
 
   std::size_t hash() const {
     // casting to size_t may overflow but it shouldn't affect

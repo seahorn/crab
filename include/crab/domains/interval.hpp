@@ -7,7 +7,6 @@
 
 #pragma once
 
-#include <crab/common/types.hpp>
 #include <crab/domains/linear_interval_solver.hpp>
 #include <crab/numbers/bignums.hpp>
 

@@ -7,7 +7,6 @@
  ** P.J.Stuckey published in APLAS'12.
  **/
 
-#include <crab/common/types.hpp>
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/combined_domains.hpp>
@@ -468,8 +467,8 @@ public:
 
   // Important: we make the choice here that we interpret wrapint as
   // signed mathematical integers.
-  interval<Number> to_interval() const {
-    typedef interval<Number> interval_t;
+  ikos::interval<Number> to_interval() const {
+    typedef ikos::interval<Number> interval_t;
     if (is_bottom()) {
       return interval_t::bottom();
     } else if (is_top() || (cross_signed_limit())) {
@@ -808,7 +807,7 @@ public:
         new_stop = (_stop * wrapint(2, w)) - _start + wrapint(1, w);
       }
       // Apply thresholds
-      typedef typename interval<Number>::bound_t bound_t;
+      typedef typename ikos::interval<Number>::bound_t bound_t;
       bound_t next_stop_bound_guess =
           ts.get_next(bound_t(x._stop.get_unsigned_bignum()));
       if (boost::optional<Number> n = next_stop_bound_guess.number()) {
@@ -1297,7 +1296,7 @@ class wrapped_interval_domain final
           wrapped_interval_domain<Number, VariableName, max_reduction_cycles>> {
   typedef wrapped_interval_domain<Number, VariableName, max_reduction_cycles>
       wrapped_interval_domain_t;
-  typedef crab::domains::abstract_domain<wrapped_interval_domain_t>
+  typedef abstract_domain<wrapped_interval_domain_t>
       abstract_domain_t;
 
 public:
@@ -1310,13 +1309,13 @@ public:
   using typename abstract_domain_t::variable_vector_t;
   typedef Number number_t;
   typedef VariableName varname_t;
-  typedef interval<number_t> interval_t;
+  typedef ikos::interval<number_t> interval_t;
   typedef wrapped_interval<number_t> wrapped_interval_t;
   typedef typename wrapped_interval_t::bitwidth_t bitwidth_t;
 
 private:
-  typedef separate_domain<variable_t, wrapped_interval_t> separate_domain_t;
-  typedef linear_interval_solver<number_t, varname_t, separate_domain_t>
+  typedef ikos::separate_domain<variable_t, wrapped_interval_t> separate_domain_t;
+  typedef ikos::linear_interval_solver<number_t, varname_t, separate_domain_t>
       solver_t;
 
 public:
@@ -1509,7 +1508,7 @@ public:
                                 << x << ":=" << e << "=" << _env[x] << "\n");
   }
 
-  void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, variable_t z) {
     crab::CrabStats::count(getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1547,7 +1546,7 @@ public:
                                          << z << "=" << _env[x] << "\n");
   }
 
-  void apply(operation_t op, variable_t x, variable_t y, number_t k) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, number_t k) {
     crab::CrabStats::count(getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1588,7 +1587,7 @@ public:
 
   // cast operations
 
-  void apply(crab::domains::int_conv_operation_t op, variable_t dst,
+  void apply(int_conv_operation_t op, variable_t dst,
              variable_t src) {
     crab::CrabStats::count(getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
@@ -1600,16 +1599,16 @@ public:
       dst_i = src_i;
     } else {
       switch (op) {
-      case crab::domains::OP_ZEXT:
-      case crab::domains::OP_SEXT: {
+      case OP_ZEXT:
+      case OP_SEXT: {
         if (dst.get_bitwidth() < src.get_bitwidth()) {
           CRAB_ERROR("destination must be larger than source in sext/zext");
         }
         unsigned bits_to_add = dst.get_bitwidth() - src.get_bitwidth();
-        dst_i = (op == crab::domains::OP_SEXT ? src_i.SExt(bits_to_add)
-                                              : src_i.ZExt(bits_to_add));
+        dst_i = (op == OP_SEXT ? src_i.SExt(bits_to_add)
+		 : src_i.ZExt(bits_to_add));
       } break;
-      case crab::domains::OP_TRUNC: {
+      case OP_TRUNC: {
         if (src.get_bitwidth() < dst.get_bitwidth()) {
           CRAB_ERROR("destination must be smaller than source in truncate");
         }
@@ -1725,13 +1724,13 @@ public:
     CRAB_WARN("Backward assign for wrapped intervals not implemented");
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, number_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, number_t z,
                       wrapped_interval_domain_t inv) {
     this->operator-=(x);
     CRAB_WARN("Backward apply for wrapped intervals not implemented");
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, variable_t z,
                       wrapped_interval_domain_t inv) {
     this->operator-=(x);
     CRAB_WARN("Backward apply for wrapped intervals not implemented");
@@ -2184,15 +2183,15 @@ public:
   using typename abstract_domain_t::variable_vector_t;
   typedef Number number_t;
   typedef VariableName varname_t;
-  typedef interval<number_t> interval_t;
+  typedef ikos::interval<number_t> interval_t;
   typedef wrapped_interval<number_t> wrapped_interval_t;
   typedef wrapped_interval_domain<number_t, varname_t, max_reduction_cycles>
       wrapped_interval_domain_t;
 
 private:
-  typedef separate_domain<variable_t, wrapped_interval_limit_value>
+  typedef ikos::separate_domain<variable_t, wrapped_interval_limit_value>
       separate_domain_t;
-  typedef discrete_domain<variable_t> discrete_domain_t;
+  typedef ikos::discrete_domain<variable_t> discrete_domain_t;
   typedef typename linear_constraint_system_t::variable_set_t variable_set_t;
 
   wrapped_interval_domain_t _w_int_dom;
@@ -2457,7 +2456,7 @@ public:
 
   // numerical_domains_api
 
-  void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, variable_t z) {
     wrapped_interval_t old_i = get_wrapped_interval(x);
     _w_int_dom.apply(op, x, y, z);
     wrapped_interval_t new_i = get_wrapped_interval(x);
@@ -2468,7 +2467,7 @@ public:
                                           << z << " => " << *this << "\n";);
   }
 
-  void apply(operation_t op, variable_t x, variable_t y, number_t k) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, number_t k) {
     wrapped_interval_t old_i = get_wrapped_interval(x);
     _w_int_dom.apply(op, x, y, k);
     wrapped_interval_t new_i = get_wrapped_interval(x);
@@ -2503,13 +2502,13 @@ public:
     // XXX: ignore _limit_env
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, number_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, number_t z,
                       this_type invariant) {
     _w_int_dom.backward_apply(op, x, y, z, invariant._w_int_dom);
     // XXX: ignore _limit_env
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, variable_t z,
                       this_type invariant) {
     _w_int_dom.backward_apply(op, x, y, z, invariant._w_int_dom);
     // XXX: ignore _limit_env
@@ -2833,7 +2832,7 @@ public:
   typedef typename linear_constraint_system_t::variable_set_t variable_set_t;
   typedef typename NumDom::number_t number_t;
   typedef typename NumDom::varname_t varname_t;
-  typedef interval<number_t> interval_t;
+  typedef ikos::interval<number_t> interval_t;
   typedef typename variable_t::bitwidth_t bitwidth_t;
 
 private:
@@ -3169,7 +3168,7 @@ public:
 
   // numerical_domains_api
 
-  void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, variable_t z) {
     if (op == OP_SDIV || op == OP_SREM) {
       // signed division/rem
       rectify(y, SIGNED);
@@ -3190,7 +3189,7 @@ public:
     strengthen(x);
   }
 
-  void apply(operation_t op, variable_t x, variable_t y, number_t k) {
+  void apply(arith_operation_t op, variable_t x, variable_t y, number_t k) {
     if (op == OP_SDIV || op == OP_SREM) {
       // signed division/rem
       rectify(y, SIGNED);
@@ -3278,7 +3277,7 @@ public:
     //_product.backward_assign(x,e,invariant._product);
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, number_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, number_t z,
                       wrapped_numerical_domain_t invariant) override {
     CRAB_WARN("backward apply not implemented");
     this->operator-=(x);
@@ -3289,7 +3288,7 @@ public:
     // }
   }
 
-  void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
+  void backward_apply(arith_operation_t op, variable_t x, variable_t y, variable_t z,
                       wrapped_numerical_domain_t invariant) override {
     CRAB_WARN("backward apply not implemented");
     this->operator-=(x);

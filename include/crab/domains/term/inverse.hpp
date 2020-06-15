@@ -26,7 +26,7 @@ public:
   }
 
   // x = y op z
-  static void apply(dom_t &dom, operation_t op, varname_t x, varname_t y,
+  static void apply(dom_t &dom, arith_operation_t op, varname_t x, varname_t y,
                     varname_t z) {
     switch (op) {
     case OP_ADDITION:
@@ -46,7 +46,7 @@ public:
   }
 
   // x = y op k
-  static void apply(dom_t &dom, operation_t op, varname_t x, varname_t y,
+  static void apply(dom_t &dom, arith_operation_t op, varname_t x, varname_t y,
                     num_t k) {
     switch (op) {
     case OP_ADDITION:
@@ -72,12 +72,12 @@ public:
 };
 
 template <class Num, class Var>
-class InverseOps<Num, Var, interval_domain<Num, Var>> {
+class InverseOps<Num, Var, ikos::interval_domain<Num, Var>> {
 public:
   typedef Num num_t;
   typedef Var varname_t;
 
-  typedef interval_domain<num_t, varname_t> dom_t;
+  typedef ikos::interval_domain<num_t, varname_t> dom_t;
   typedef typename dom_t::variable_t var_t;
 
   typedef typename dom_t::linear_constraint_t lincst_t;
@@ -92,7 +92,7 @@ public:
     dom += lincst_t(x_expr, lincst_t::EQUALITY);
   }
 
-  static void apply(dom_t &dom, operation_t op, varname_t x, varname_t y,
+  static void apply(dom_t &dom, arith_operation_t op, varname_t x, varname_t y,
                     varname_t z) {
     switch (op) {
     case OP_ADDITION:
@@ -135,7 +135,7 @@ public:
   }
 
   // x = y op k
-  static void apply(dom_t &dom, operation_t op, varname_t x, varname_t y,
+  static void apply(dom_t &dom, arith_operation_t op, varname_t x, varname_t y,
                     num_t k) {
     switch (op) {
     case OP_ADDITION:

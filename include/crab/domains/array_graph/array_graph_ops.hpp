@@ -1,6 +1,5 @@
 #pragma once
 
-#include <crab/common/types.hpp>
 #include <crab/domains/graphs/graph_ops.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>

@@ -168,30 +168,31 @@ template <typename T>
 inline boost::optional<T> conv_op(cfg::cast_operation_t op);
   
 template <>
-inline boost::optional<ikos::operation_t> conv_op(cfg::binary_operation_t op) {
+inline boost::optional<domains::arith_operation_t>
+conv_op(cfg::binary_operation_t op) {
   switch (op) {
-  case cfg::BINOP_ADD: return ikos::OP_ADDITION;
-  case cfg::BINOP_SUB: return ikos::OP_SUBTRACTION;
-  case cfg::BINOP_MUL: return ikos::OP_MULTIPLICATION;
-  case cfg::BINOP_SDIV:return ikos::OP_SDIV; 
-  case cfg::BINOP_UDIV:return ikos::OP_UDIV; 
-  case cfg::BINOP_SREM:return ikos::OP_SREM;
-  case cfg::BINOP_UREM:return ikos::OP_UREM;
-  default:return boost::optional<ikos::operation_t>();
+  case cfg::BINOP_ADD: return domains::OP_ADDITION;
+  case cfg::BINOP_SUB: return domains::OP_SUBTRACTION;
+  case cfg::BINOP_MUL: return domains::OP_MULTIPLICATION;
+  case cfg::BINOP_SDIV:return domains::OP_SDIV; 
+  case cfg::BINOP_UDIV:return domains::OP_UDIV; 
+  case cfg::BINOP_SREM:return domains::OP_SREM;
+  case cfg::BINOP_UREM:return domains::OP_UREM;
+  default:return boost::optional<domains::arith_operation_t>();
   }
 }
 
 template <>
-inline boost::optional<ikos::bitwise_operation_t>
+inline boost::optional<domains::bitwise_operation_t>
 conv_op(cfg::binary_operation_t op) {
   switch (op) {
-  case cfg::BINOP_AND: return ikos::OP_AND;
-  case cfg::BINOP_OR:  return ikos::OP_OR;
-  case cfg::BINOP_XOR: return ikos::OP_XOR;
-  case cfg::BINOP_SHL: return ikos::OP_SHL;
-  case cfg::BINOP_LSHR:return ikos::OP_LSHR; 
-  case cfg::BINOP_ASHR:return ikos::OP_ASHR;
-  default: return boost::optional<ikos::bitwise_operation_t>();
+  case cfg::BINOP_AND: return domains::OP_AND;
+  case cfg::BINOP_OR:  return domains::OP_OR;
+  case cfg::BINOP_XOR: return domains::OP_XOR;
+  case cfg::BINOP_SHL: return domains::OP_SHL;
+  case cfg::BINOP_LSHR:return domains::OP_LSHR; 
+  case cfg::BINOP_ASHR:return domains::OP_ASHR;
+  default: return boost::optional<domains::bitwise_operation_t>();
   }
 }
 
@@ -277,9 +278,9 @@ private:
   template <typename NumOrVar>
   void apply(abs_dom_t &inv, cfg::binary_operation_t op, variable_t x, variable_t y,
              NumOrVar z) {
-    if (auto top = conv_op<ikos::operation_t>(op)) {
+    if (auto top = conv_op<domains::arith_operation_t>(op)) {
       inv.apply(*top, x, y, z);
-    } else if (auto top = conv_op<ikos::bitwise_operation_t>(op)) {
+    } else if (auto top = conv_op<domains::bitwise_operation_t>(op)) {
       inv.apply(*top, x, y, z);
     } else {
       CRAB_ERROR("unsupported binary operator", op);
@@ -877,8 +878,8 @@ public:
   abs_dom_t preconditions() { return m_pre; }
 
   void exec(bin_op_t &stmt) {
-    auto op = conv_op<ikos::operation_t>(stmt.op());
-    if (!op || op >= ikos::OP_UDIV) {
+    auto op = conv_op<domains::arith_operation_t>(stmt.op());
+    if (!op || op >= domains::OP_UDIV) {
       // ignore UDIV, SREM, UREM
       // CRAB_WARN("backward operation ", stmt.op(), " not implemented");
       m_pre -= stmt.lhs();

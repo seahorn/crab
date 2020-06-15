@@ -2,7 +2,6 @@
 #define __CRAB_LANGUAGE__
 
 #include <crab/config.h>
-#include <crab/common/types.hpp>
 #include <crab/cfg/cfg.hpp>
 #include <crab/cg/cg.hpp>
 #include <crab/cfg/var_factory.hpp>

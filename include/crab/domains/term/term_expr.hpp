@@ -1,7 +1,5 @@
 #pragma once
 
-#include <crab/common/types.hpp>
-
 #include <forward_list>
 #include <map>
 #include <memory>

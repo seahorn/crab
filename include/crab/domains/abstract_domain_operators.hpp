@@ -4,7 +4,9 @@
 
 /* Types for abstract domain operations */
 
-namespace ikos {
+namespace crab {
+namespace domains {
+
 // Enumeration type for basic arithmetic operations
 // Do not modify the order.
 typedef enum {
@@ -15,9 +17,9 @@ typedef enum {
   OP_UDIV,
   OP_SREM,
   OP_UREM
-} operation_t;
+} arith_operation_t;
 
-inline crab::crab_os &operator<<(crab::crab_os &o, operation_t op) {
+inline crab::crab_os &operator<<(crab::crab_os &o, arith_operation_t op) {
   switch (op) {
   case OP_ADDITION:
     o << "+";
@@ -77,11 +79,7 @@ inline crab::crab_os &operator<<(crab::crab_os &o, bitwise_operation_t op) {
   }
   return o;
 }
-} // namespace ikos
-
-namespace crab {
-namespace domains {
-
+  
 // Enumeration type for cast operations
 typedef enum { OP_TRUNC, OP_SEXT, OP_ZEXT } int_conv_operation_t;
 

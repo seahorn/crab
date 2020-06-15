@@ -2,13 +2,13 @@
 
 #include <crab/support/debug.hpp>
 #include <crab/support/os.hpp>
-#include <crab/common/types.hpp> // for ikos::index_t
+#include <crab/types/indexable.hpp> 
 
 #include <functional>
 
 namespace crab {
 
-class memory_region {
+class memory_region: public indexable {
 public:
   
   // A region can contain data with one of these types:
@@ -43,7 +43,7 @@ public:
     return memory_region(id, type_t::REF);
   }
   
-  ikos::index_t index() const { return m_id;}
+  virtual ikos::index_t index() const override { return m_id;}
   type_t get_type() const { return m_type;}
   unsigned get_bitwidth() const { return m_bitwidth;}
   
