@@ -33,7 +33,7 @@ template <class Dom> struct abstract_domain_traits;
  *   typedef VariableName varname_t;
  * };
  **/
-template <class Dom> class abstract_domain : public ikos::writeable {
+template <class Dom> class abstract_domain {
 public:
   typedef typename abstract_domain_traits<Dom>::number_t number_t;
   typedef typename abstract_domain_traits<Dom>::varname_t varname_t;
@@ -47,8 +47,8 @@ public:
   typedef ikos::variable<number_t, varname_t> variable_t;
   typedef std::vector<variable_t> variable_vector_t;
   typedef reference_constraint<number_t,varname_t> reference_constraint_t;
-
-  abstract_domain() : ikos::writeable() {}
+  
+  abstract_domain() {}
 
   virtual ~abstract_domain(){};
 
@@ -295,8 +295,16 @@ public:
 				  const variable_vector_t &inputs,
 				  const variable_vector_t &outputs,
 				  Dom invariant) = 0;
+
+  // Print the internal state of the abstract domain
+  virtual void write(crab::crab_os &o) = 0;
   
+  friend crab::crab_os &operator<<(crab::crab_os &o, abstract_domain<Dom> &dom) {
+    dom.write(o);
+    return o;
+  }
 };
 
 } // end namespace domains
 } // end namespace crab
+

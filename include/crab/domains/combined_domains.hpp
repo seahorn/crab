@@ -34,7 +34,7 @@ namespace domains {
 // Reduced product of two arbitrary domains with only lattice
 // operations.
 template <typename Domain1, typename Domain2>
-class basic_domain_product2 : public writeable {
+class basic_domain_product2 {
 
 public:
   typedef basic_domain_product2<Domain1, Domain2> basic_domain_product2_t;
@@ -192,6 +192,11 @@ public:
     }
   }
 
+  friend crab::crab_os &operator<<(crab::crab_os &o, basic_domain_product2_t &dom) {
+    dom.write(o);
+    return o;
+  }
+  
   static std::string getDomainName() {
     std::string name = "Product(" + Domain1::getDomainName() + "," +
                        Domain2::getDomainName() + ")";

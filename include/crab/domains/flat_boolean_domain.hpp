@@ -720,7 +720,7 @@ public:
 private:
   // This lattice is the dual of a discrete lattice where
   // elements are linear constraints.
-  class lin_cst_set_domain : public writeable {
+  class lin_cst_set_domain {
 
     typedef discrete_domain<linear_constraint_t> set_t;
     set_t m_set;
@@ -787,6 +787,11 @@ private:
       else
         m_set.write(o);
     }
+    
+    friend crab::crab_os &operator<<(crab::crab_os &o, lin_cst_set_domain &dom) {
+      dom.write(o);
+      return o;
+    }
   };
 
   typedef domain_product2<number_t, varname_t, bool_domain_t, NumDom>
@@ -818,7 +823,7 @@ private:
   // analysis that keeps track whether a variable has been
   // modified from any path since the variable was defined up to
   // the current location.
-  class invariance_domain : public writeable {
+  class invariance_domain {
 
   public:
     typedef typename linear_constraint_t::variable_t variable_t;
@@ -912,6 +917,10 @@ private:
       else
         m_set.write(o);
     }
+    friend crab::crab_os &operator<<(crab::crab_os &o, invariance_domain &dom) {
+      dom.write(o);
+      return o;
+    }    
   };
 
   domain_product2_t _product;

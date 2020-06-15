@@ -1,5 +1,7 @@
 #pragma once
 
+#include <crab/support/os.hpp>
+
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -10,7 +12,7 @@
  */
 namespace crab {
 
-template <class Weight> class HtGraph : public ikos::writeable {
+template <class Weight> class HtGraph {
   enum { table_init_sz = 17 };
 
 public:
@@ -473,7 +475,7 @@ public:
     assert(free_id.size() == 0);
   }
 
-  void write(crab_os &o) {
+  void write(crab_os &o) const {
     o << "[|";
     bool first = true;
     for (vert_id v = 0; v < _succs.size(); v++) {
@@ -497,6 +499,11 @@ public:
     o << "|]";
   }
 
+  friend crab::crab_os &operator<<(crab::crab_os &o, const HtGraph<Weight> &g) {
+    g.write(o);
+    return o;
+  }
+  
 protected:
   unsigned int edge_count;
 

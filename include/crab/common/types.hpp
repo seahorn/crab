@@ -176,18 +176,6 @@ template <typename T> inline boost::optional<T> conv_op(cast_operation_t op);
 } // end namespace crab
 
 namespace ikos {
-// Interface for writeable objects
-class writeable {
-public:
-  virtual void write(crab::crab_os &o) = 0;
-  virtual ~writeable() {}
-}; // class writeable
-
-inline crab::crab_os &operator<<(crab::crab_os &o, writeable &x) {
-  x.write(o);
-  return o;
-}
-
 // Container for typed variables used by the crab abstract domains
 // and linear_constraints.
 template <typename Number, typename VariableName> class variable {

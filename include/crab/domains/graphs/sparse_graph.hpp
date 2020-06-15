@@ -1,6 +1,7 @@
 #pragma once
 
 #include <crab/common/types.hpp>
+#include <crab/support/os.hpp>
 #include <vector>
 
 /* A (slightly) cleaner implementation of a sparse weighted graph.
@@ -8,7 +9,7 @@
  */
 namespace crab {
 
-template <class Weight> class SparseWtGraph : public ikos::writeable {
+template <class Weight> class SparseWtGraph {
 public:
   typedef Weight Wt;
   typedef SparseWtGraph<Wt> graph_t;
@@ -575,7 +576,7 @@ public:
     // GKG: Need to be careful about free_ids.
   }
 
-  void write(crab_os &o) {
+  void write(crab_os &o) const {
     o << "[|";
     bool first = true;
     for (vert_id v = 0; v < sz; v++) {
@@ -599,6 +600,11 @@ public:
     o << "|]";
   }
 
+  friend crab::crab_os &operator<<(crab::crab_os &o, const SparseWtGraph<Weight> &g) {
+    g.write(o);
+    return o;
+  }
+  
 protected:
   // Allocate new memory, and duplicate
   // the content.

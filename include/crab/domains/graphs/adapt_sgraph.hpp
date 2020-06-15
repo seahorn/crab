@@ -1,6 +1,8 @@
 #pragma once
 
 #include <crab/domains/graphs/util/Vec.h>
+#include <crab/support/os.hpp>
+
 // Adaptive sparse-set based weighted graph implementation
 
 #pragma GCC diagnostic push
@@ -302,7 +304,7 @@ public:
   key_t *sparse;
 };
 
-template <class Weight> class AdaptGraph : public ikos::writeable {
+template <class Weight> class AdaptGraph {
   typedef AdaptSMap<size_t> smap_t;
 
 public:
@@ -423,7 +425,7 @@ public:
       ++it;
       return *this;
     }
-    bool operator!=(const edge_iter &o) { return it != o.it; }
+    bool operator!=(const edge_iter &o) const { return it != o.it; }
 
     smap_t::elt_iter_t it;
     vec<Wt> *ws;
@@ -438,7 +440,6 @@ public:
     typedef edge_iter iterator;
     edge_range_t(const edge_range_t &o) : r(o.r), ws(o.ws) {}
     edge_range_t(const elt_range_t &_r, vec<Wt> &_ws) : r(_r), ws(_ws) {}
-
     edge_iter begin(void) const { return edge_iter(r.begin(), ws); }
     edge_iter end(void) const { return edge_iter(r.end(), ws); }
     size_t size(void) const { return r.size(); }
@@ -633,7 +634,12 @@ public:
     }
     o << "|]";
   }
-
+  
+  friend crab::crab_os &operator<<(crab::crab_os &o, AdaptGraph<Weight> &g) {
+    g.write(o);
+    return o;
+  }
+  
   // Ick. This'll have another indirection on every operation.
   // We'll see what the performance costs are like.
   vec<smap_t> _preds;

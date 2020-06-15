@@ -49,6 +49,7 @@
 // XXX: for customized propagations between weight and scalar domains
 #include <crab/domains/combined_domains.hpp>
 #include <crab/support/debug.hpp>
+#include <crab/support/os.hpp>
 #include <crab/support/stats.hpp>
 
 #include <boost/container/flat_map.hpp>
@@ -73,7 +74,7 @@ namespace domains {
    i.e., for all i,j,k:: weight(i,j) <= join(weight(i,k), weight(k,j))
 */
 template <typename Vertex, typename Weight, bool IsDistWeight>
-class array_graph_ : public writeable {
+class array_graph_ {
 
 public:
   // XXX: make this a template parameter later
@@ -817,6 +818,12 @@ public:
       o << "}";
     }
   }
+  
+  friend crab::crab_os &operator<<(crab::crab_os &o, array_graph_t &g) {
+    g.write(o);
+    return o;
+  }
+  
 };
 
 namespace array_graph_impl {
@@ -859,7 +866,7 @@ using array_graph = array_graph_<Vertex, Weight, IsDistWeight>;
 #else
 // Wrapper which uses shared references with copy-on-write.
 template <class Vertex, class Weight, bool IsDistWeight>
-class array_graph : public writeable {
+class array_graph {
 public:
   typedef array_graph_<Vertex, Weight, IsDistWeight> array_graph_impl_t;
   typedef std::shared_ptr<array_graph_impl_t> array_graph_ref_t;
@@ -1009,6 +1016,12 @@ public:
   void write(crab_os &o, bool print_bottom_edges) {
     norm().write(o, print_bottom_edges);
   }
+
+  friend crab::crab_os &operator<<(crab::crab_os &o, array_graph_t &g) {
+    g.write(o);
+    return o;
+  }
+  
 
 protected:
   array_graph_ref_t base_ref;

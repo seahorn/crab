@@ -1,6 +1,8 @@
 #pragma once
 
 #include <crab/domains/patricia_trees.hpp>
+#include <crab/support/os.hpp>
+
 #include <vector>
 
 /* Patricia-tree backed sparse weighted graph.
@@ -8,7 +10,7 @@
  */
 namespace crab {
 
-template <class Weight> class PtGraph : public ikos::writeable {
+template <class Weight> class PtGraph {
 public:
   typedef Weight Wt;
   typedef PtGraph<Wt> graph_t;
@@ -494,7 +496,7 @@ public:
     assert(free_id.size() == 0);
   }
 
-  void write(crab_os &o) {
+  void write(crab_os &o) const {
     o << "[|";
     bool first = true;
     for (vert_id v = 0; v < _succs.size(); v++) {
@@ -518,6 +520,11 @@ public:
     o << "|]";
   }
 
+  friend crab::crab_os &operator<<(crab::crab_os &o, const PtGraph<Weight> &g) {
+    g.write(o);
+    return o;
+  }
+  
 protected:
   unsigned int edge_count;
 
