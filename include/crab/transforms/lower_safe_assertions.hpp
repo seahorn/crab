@@ -23,17 +23,17 @@ template <typename CFG> class lower_safe_assertions : public transform<CFG> {
   using statement_t = typename CFG::statement_t;
 
   using assert_t = crab::cfg::assert_stmt<number_t, varname_t>;
-  using ptr_assert_t = crab::cfg::ptr_assert_stmt<number_t, varname_t>;
+  using ref_assert_t = crab::cfg::assert_ref_stmt<number_t, varname_t>;
   using bool_assert_t = crab::cfg::bool_assert_stmt<number_t, varname_t>;
 
   using assume_t = crab::cfg::assume_stmt<number_t, varname_t>;
-  using ptr_assume_t = crab::cfg::ptr_assume_stmt<number_t, varname_t>;
+  using ref_assume_t = crab::cfg::assume_ref_stmt<number_t, varname_t>;
   using bool_assume_t = crab::cfg::bool_assume_stmt<number_t, varname_t>;
 
   using basic_block_t = typename CFG::basic_block_t;
 
   bool is_assert(const statement_t *s) const {
-    return s->is_assert() || s->is_ptr_assert() || s->is_bool_assert();
+    return s->is_assert() || s->is_ref_assert() || s->is_bool_assert();
   }
 
 public:
@@ -70,9 +70,9 @@ public:
         CRAB_LOG("lsa", crab::outs() << "Replacing " << *s << " with " << *new_s
                                      << "\n";);
         parent->replace(s, new_s);
-      } else if (s->is_ptr_assert()) {
+      } else if (s->is_ref_assert()) {
         statement_t *new_s =
-            new ptr_assume_t((static_cast<ptr_assert_t *>(s))->constraint());
+            new ref_assume_t((static_cast<ref_assert_t *>(s))->constraint());
         CRAB_LOG("lsa", crab::outs() << "Replacing " << *s << " with " << *new_s
                                      << "\n";);
         parent->replace(s, new_s);

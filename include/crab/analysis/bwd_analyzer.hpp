@@ -209,7 +209,7 @@ private:
   typedef std::unordered_map<bb_label_t, std::set<bb_label_t>> idom_tree_t;
   typedef typename bb_t::assert_t assert_t;
   typedef typename bb_t::bool_assert_t bool_assert_t;
-  typedef typename bb_t::ptr_assert_t ptr_assert_t;
+  typedef typename bb_t::assert_ref_t assert_ref_t;
 
 public:
   typedef typename fwd_analyzer_t::assumption_map_t assumption_map_t;
@@ -247,7 +247,7 @@ private:
   void gather_assertions() {
     for (auto it = m_cfg.begin(), et = m_cfg.end(); it != et; ++it) {
       for (auto &s : *it) {
-        if (s.is_assert() || s.is_bool_assert() || s.is_ptr_assert()) {
+        if (s.is_assert() || s.is_bool_assert() || s.is_ref_assert()) {
           m_unproven_assertions.push_back({it->label(), &s});
         }
       }

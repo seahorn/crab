@@ -15,18 +15,13 @@
      x := select(cond, y, z);
 
    ARRAYS
-     a[l...u] := v (a,b are arrays and v can be bool/integer/pointer)
+     a[l...u] := v (a,b are arrays and v can be bool or integer)
      a[i] := v;
      v := a[i];
      a := b
 
-   POINTERS
-     *p = q;
-     p = *q;
-     p := q+n
-     p := &obj;
-     p := &fun
-     p := null;
+   REFERENCES
+     TODO
 
    FUNCTIONS
      x := foo(arg1,...,argn);
@@ -78,15 +73,16 @@ public:
   typedef crab::cfg::array_store_stmt<number_t, VariableName> arr_store_t;
   typedef crab::cfg::array_load_stmt<number_t, VariableName> arr_load_t;
   typedef crab::cfg::array_assign_stmt<number_t, VariableName> arr_assign_t;
-  typedef crab::cfg::ptr_store_stmt<number_t, VariableName> ptr_store_t;
-  typedef crab::cfg::ptr_load_stmt<number_t, VariableName> ptr_load_t;
 
-  typedef crab::cfg::ptr_assign_stmt<number_t, VariableName> ptr_assign_t;
-  typedef crab::cfg::ptr_object_stmt<number_t, VariableName> ptr_object_t;
-  typedef crab::cfg::ptr_function_stmt<number_t, VariableName> ptr_function_t;
-  typedef crab::cfg::ptr_null_stmt<number_t, VariableName> ptr_null_t;
-  typedef crab::cfg::ptr_assume_stmt<number_t, VariableName> ptr_assume_t;
-  typedef crab::cfg::ptr_assert_stmt<number_t, VariableName> ptr_assert_t;
+  typedef crab::cfg::region_init_stmt<number_t, varname_t> region_init_t;  
+  typedef crab::cfg::make_ref_stmt<number_t, varname_t>  make_ref_t;
+  typedef crab::cfg::load_from_ref_stmt<number_t, varname_t> load_from_ref_t;
+  typedef crab::cfg::store_to_ref_stmt<number_t, varname_t> store_to_ref_t;
+  typedef crab::cfg::gep_ref_stmt<number_t, varname_t> gep_ref_t;
+  typedef crab::cfg::load_from_arr_ref_stmt<number_t, varname_t> load_from_arr_ref_t;
+  typedef crab::cfg::store_to_arr_ref_stmt<number_t, varname_t> store_to_arr_ref_t;    
+  typedef crab::cfg::assume_ref_stmt<number_t, VariableName> assume_ref_t;
+  typedef crab::cfg::assert_ref_stmt<number_t, VariableName> assert_ref_t;
 
   typedef crab::cfg::bool_binary_op<number_t, VariableName> bool_bin_op_t;
   typedef crab::cfg::bool_assign_cst<number_t, VariableName> bool_assign_cst_t;
@@ -111,14 +107,15 @@ protected:
   virtual void exec(arr_store_t &) {}
   virtual void exec(arr_load_t &) {}
   virtual void exec(arr_assign_t &) {}
-  virtual void exec(ptr_store_t &) {}
-  virtual void exec(ptr_load_t &) {}
-  virtual void exec(ptr_assign_t &) {}
-  virtual void exec(ptr_object_t &) {}
-  virtual void exec(ptr_function_t &) {}
-  virtual void exec(ptr_null_t &) {}
-  virtual void exec(ptr_assume_t &) {}
-  virtual void exec(ptr_assert_t &) {}
+  virtual void exec(region_init_t &) {}  
+  virtual void exec(make_ref_t &) {}
+  virtual void exec(load_from_ref_t &) {}
+  virtual void exec(store_to_ref_t &) {}
+  virtual void exec(gep_ref_t &) {}
+  virtual void exec(load_from_arr_ref_t &) {}
+  virtual void exec(store_to_arr_ref_t &) {}  
+  virtual void exec(assume_ref_t &) {}
+  virtual void exec(assert_ref_t &) {}
   virtual void exec(bool_bin_op_t &) {}
   virtual void exec(bool_assign_cst_t &) {}
   virtual void exec(bool_assign_var_t &) {}
@@ -142,14 +139,15 @@ public: /* visitor api */
   void visit(arr_store_t &s) { exec(s); }
   void visit(arr_load_t &s) { exec(s); }
   void visit(arr_assign_t &s) { exec(s); }
-  void visit(ptr_store_t &s) { exec(s); }
-  void visit(ptr_load_t &s) { exec(s); }
-  void visit(ptr_assign_t &s) { exec(s); }
-  void visit(ptr_object_t &s) { exec(s); }
-  void visit(ptr_function_t &s) { exec(s); }
-  void visit(ptr_null_t &s) { exec(s); }
-  void visit(ptr_assume_t &s) { exec(s); }
-  void visit(ptr_assert_t &s) { exec(s); }
+  void visit(region_init_t &s) { exec(s); }  
+  void visit(make_ref_t &s) { exec(s); }
+  void visit(load_from_ref_t &s) { exec(s); }
+  void visit(store_to_ref_t &s) { exec(s); }
+  void visit(gep_ref_t &s) { exec(s); }
+  void visit(load_from_arr_ref_t &s) { exec(s); }
+  void visit(store_to_arr_ref_t &s) { exec(s); }  
+  void visit(assume_ref_t &s) { exec(s); }
+  void visit(assert_ref_t &s) { exec(s); }
   void visit(bool_bin_op_t &s) { exec(s); }
   void visit(bool_assign_cst_t &s) { exec(s); }
   void visit(bool_assign_var_t &s) { exec(s); }
@@ -165,9 +163,7 @@ public: /* visitor api */
  **/
 template <class AbsD>
 class intra_abs_transformer
-    : public abs_transformer_api<typename AbsD::number_t,
-                                 typename AbsD::varname_t> {
-
+    : public abs_transformer_api<typename AbsD::number_t, typename AbsD::varname_t> {
 public:
   typedef AbsD abs_dom_t;
   typedef typename abs_dom_t::number_t number_t;
@@ -197,14 +193,15 @@ public:
   using typename abs_transform_api_t::lin_cst_sys_t;
   using typename abs_transform_api_t::lin_cst_t;
   using typename abs_transform_api_t::lin_exp_t;
-  using typename abs_transform_api_t::ptr_assert_t;
-  using typename abs_transform_api_t::ptr_assign_t;
-  using typename abs_transform_api_t::ptr_assume_t;
-  using typename abs_transform_api_t::ptr_function_t;
-  using typename abs_transform_api_t::ptr_load_t;
-  using typename abs_transform_api_t::ptr_null_t;
-  using typename abs_transform_api_t::ptr_object_t;
-  using typename abs_transform_api_t::ptr_store_t;
+  using typename abs_transform_api_t::region_init_t;  
+  using typename abs_transform_api_t::make_ref_t;
+  using typename abs_transform_api_t::load_from_ref_t;
+  using typename abs_transform_api_t::store_to_ref_t;
+  using typename abs_transform_api_t::gep_ref_t;
+  using typename abs_transform_api_t::load_from_arr_ref_t;
+  using typename abs_transform_api_t::store_to_arr_ref_t;
+  using typename abs_transform_api_t::assume_ref_t;    
+  using typename abs_transform_api_t::assert_ref_t;
   using typename abs_transform_api_t::return_t;
   using typename abs_transform_api_t::select_t;
   using typename abs_transform_api_t::unreach_t;
@@ -557,38 +554,133 @@ public:
     }
   }
 
-  void exec(ptr_null_t &stmt) {
-    m_inv.pointer_mk_null(stmt.lhs());
+  void exec(make_ref_t &stmt) {
+    bool pre_bot = false;
+    if (::crab::CrabSanityCheckFlag) {
+      pre_bot = m_inv.is_bottom();
+    }
+    
+    m_inv.ref_make(stmt.lhs(), stmt.region());
+    
+    if (::crab::CrabSanityCheckFlag) {
+      bool post_bot = m_inv.is_bottom();
+      if (!(pre_bot || !post_bot)) {
+        CRAB_ERROR("Invariant became bottom after ", stmt);
+      }
+    }    
   }
 
-  void exec(ptr_object_t &stmt) {
-    m_inv.pointer_mk_obj(stmt.lhs(), stmt.rhs());
+  void exec(region_init_t &stmt) {
+    bool pre_bot = false;
+    if (::crab::CrabSanityCheckFlag) {
+      pre_bot = m_inv.is_bottom();
+    }
+    
+    m_inv.region_init(stmt.region());
+    
+    if (::crab::CrabSanityCheckFlag) {
+      bool post_bot = m_inv.is_bottom();
+      if (!(pre_bot || !post_bot)) {
+        CRAB_ERROR("Invariant became bottom after ", stmt);
+      }
+    }    
   }
 
-  void exec(ptr_assign_t &stmt) {
-    m_inv.pointer_assign(stmt.lhs(), stmt.rhs(), stmt.offset());
+  void exec(load_from_ref_t &stmt) {
+    bool pre_bot = false;
+    if (::crab::CrabSanityCheckFlag) {
+      pre_bot = m_inv.is_bottom();
+    }
+    
+    m_inv.ref_load(stmt.ref(), stmt.region(), stmt.lhs());
+    
+    if (::crab::CrabSanityCheckFlag) {
+      bool post_bot = m_inv.is_bottom();
+      if (!(pre_bot || !post_bot)) {
+        CRAB_ERROR("Invariant became bottom after ", stmt);
+      }
+    }    
+  }
+  
+  void exec(store_to_ref_t &stmt) {
+    bool pre_bot = false;
+    if (::crab::CrabSanityCheckFlag) {
+      pre_bot = m_inv.is_bottom();
+    }
+    
+    m_inv.ref_store(stmt.ref(), stmt.region(), stmt.val());
+    
+    if (::crab::CrabSanityCheckFlag) {
+      bool post_bot = m_inv.is_bottom();
+      if (!(pre_bot || !post_bot)) {
+        CRAB_ERROR("Invariant became bottom after ", stmt);
+      }
+    }        
+  }
+  
+  void exec(gep_ref_t &stmt) {
+    bool pre_bot = false;
+    if (::crab::CrabSanityCheckFlag) {
+      pre_bot = m_inv.is_bottom();
+    }
+    
+    m_inv.ref_gep(stmt.rhs(), stmt.rhs_region(), stmt.lhs(), stmt.lhs_region(), stmt.offset());
+    
+    if (::crab::CrabSanityCheckFlag) {
+      bool post_bot = m_inv.is_bottom();
+      if (!(pre_bot || !post_bot)) {
+        CRAB_ERROR("Invariant became bottom after ", stmt);
+      }
+    }        
+  }
+  
+  void exec(load_from_arr_ref_t &stmt) {
+    bool pre_bot = false;
+    if (::crab::CrabSanityCheckFlag) {
+      pre_bot = m_inv.is_bottom();
+    }
+    
+    m_inv.ref_load_from_array(stmt.lhs(), stmt.ref(), stmt.region(),
+			      stmt.index(), stmt.elem_size());
+    
+    if (::crab::CrabSanityCheckFlag) {
+      bool post_bot = m_inv.is_bottom();
+      if (!(pre_bot || !post_bot)) {
+        CRAB_ERROR("Invariant became bottom after ", stmt);
+      }
+    }        
+  }
+  
+  void exec(store_to_arr_ref_t &stmt) {
+    bool pre_bot = false;
+    if (::crab::CrabSanityCheckFlag) {
+      pre_bot = m_inv.is_bottom();
+    }
+
+    if (stmt.lb_index().equal(stmt.ub_index())) {
+      m_inv.ref_store_to_array(stmt.ref(), stmt.region(),
+			       stmt.lb_index(), stmt.elem_size(),
+			       stmt.value());
+    } else {
+      CRAB_ERROR("TODO store_to_array_ref for ranges");
+    }
+    
+    if (::crab::CrabSanityCheckFlag) {
+      bool post_bot = m_inv.is_bottom();
+      if (!(pre_bot || !post_bot)) {
+        CRAB_ERROR("Invariant became bottom after ", stmt);
+      }
+    }        
+  }  
+  
+  void exec(assume_ref_t &stmt) {
+    m_inv.ref_assume(stmt.constraint());
   }
 
-  void exec(ptr_function_t &stmt) {
-    m_inv.pointer_function(stmt.lhs(), stmt.rhs());
-  }
-
-  void exec(ptr_load_t &stmt) {
-    m_inv.pointer_load(stmt.lhs(), stmt.rhs(), stmt.elem_size());
-  }
-
-  void exec(ptr_store_t &stmt) {
-    m_inv.pointer_store(stmt.lhs(), stmt.rhs(), stmt.elem_size());
-  }
-
-  void exec(ptr_assume_t &stmt) {
-    m_inv.pointer_assume(stmt.constraint());
-  }
-
-  void exec(ptr_assert_t &stmt) {
+  void exec(assert_ref_t &stmt) {
     if (m_ignore_assert)
       return;
-    m_inv.pointer_assert(stmt.constraint());
+    m_inv.ref_assume(stmt.constraint());
   }
 
   void exec(intrinsic_t &cs) {
@@ -612,6 +704,7 @@ public:
 template <typename AbsDom> class inter_transformer_helpers {
 public:
   typedef typename AbsDom::linear_expression_t linear_expression_t;
+  typedef typename AbsDom::reference_constraint_t reference_constraint_t;  
   typedef typename AbsDom::variable_t variable_t;
   typedef typename AbsDom::number_t number_t;
 
@@ -625,13 +718,13 @@ public:
     case REAL_TYPE:
       inv.assign(lhs, rhs);
       break;
-    case PTR_TYPE:
-      inv.pointer_assign(lhs, rhs, number_t(0));
+    case REF_TYPE:
+      inv -= lhs;
+      inv.ref_assume(reference_constraint_t::mk_eq(lhs, rhs, number_t(0)));
       break;
     case ARR_BOOL_TYPE:
     case ARR_INT_TYPE:
     case ARR_REAL_TYPE:
-    case ARR_PTR_TYPE:
       inv.array_assign(lhs, rhs);
       break;
     default:
@@ -679,14 +772,15 @@ public:
   using typename abs_transform_api_t::lin_cst_sys_t;
   using typename abs_transform_api_t::lin_cst_t;
   using typename abs_transform_api_t::lin_exp_t;
-  using typename abs_transform_api_t::ptr_assert_t;
-  using typename abs_transform_api_t::ptr_assign_t;
-  using typename abs_transform_api_t::ptr_assume_t;
-  using typename abs_transform_api_t::ptr_function_t;
-  using typename abs_transform_api_t::ptr_load_t;
-  using typename abs_transform_api_t::ptr_null_t;
-  using typename abs_transform_api_t::ptr_object_t;
-  using typename abs_transform_api_t::ptr_store_t;
+  using typename abs_transform_api_t::make_ref_t;
+  using typename abs_transform_api_t::region_init_t;  
+  using typename abs_transform_api_t::load_from_ref_t;
+  using typename abs_transform_api_t::store_to_ref_t;
+  using typename abs_transform_api_t::gep_ref_t;
+  using typename abs_transform_api_t::load_from_arr_ref_t;
+  using typename abs_transform_api_t::store_to_arr_ref_t;
+  using typename abs_transform_api_t::assume_ref_t;  
+  using typename abs_transform_api_t::assert_ref_t;
   using typename abs_transform_api_t::return_t;
   using typename abs_transform_api_t::select_t;
   using typename abs_transform_api_t::unreach_t;
@@ -953,15 +1047,16 @@ public:
   }
 
   // NOT IMPLEMENTED
-  void exec(ptr_null_t &stmt) {}
-  void exec(ptr_object_t &stmt) {}
-  void exec(ptr_assign_t &stmt) {}
-  void exec(ptr_function_t &stmt) {}
-  void exec(ptr_load_t &stmt) {}
-  void exec(ptr_store_t &stmt) {}
-  void exec(ptr_assume_t &stmt) {}
-  void exec(ptr_assert_t &stmt) {}
-
+  void exec(region_init_t &stmt) {}  
+  void exec(make_ref_t &stmt) {}
+  void exec(load_from_ref_t &stmt) {}
+  void exec(store_to_ref_t &stmt) {}
+  void exec(gep_ref_t &stmt) {}
+  void exec(load_from_arr_ref_t &stmt) {}
+  void exec(store_to_arr_ref_t &stmt) {}
+  void exec(assume_ref_t &stmt) {}
+  void exec(assert_ref_t &stmt) {}
+  
   /// -- Call and return can be redefined by derived classes
 
   virtual void exec(callsite_t &cs) {

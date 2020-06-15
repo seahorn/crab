@@ -159,14 +159,15 @@ public:
   typedef crab::cfg::array_store_stmt<number_t, varname_t> arr_store_t;
   typedef crab::cfg::array_load_stmt<number_t, varname_t> arr_load_t;
   typedef crab::cfg::array_assign_stmt<number_t, varname_t> arr_assign_t;
-  typedef crab::cfg::ptr_store_stmt<number_t, varname_t> ptr_store_t;
-  typedef crab::cfg::ptr_load_stmt<number_t, varname_t> ptr_load_t;
-  typedef crab::cfg::ptr_assign_stmt<number_t, varname_t> ptr_assign_t;
-  typedef crab::cfg::ptr_object_stmt<number_t, varname_t> ptr_object_t;
-  typedef crab::cfg::ptr_function_stmt<number_t, varname_t> ptr_function_t;
-  typedef crab::cfg::ptr_null_stmt<number_t, varname_t> ptr_null_t;
-  typedef crab::cfg::ptr_assume_stmt<number_t, varname_t> ptr_assume_t;
-  typedef crab::cfg::ptr_assert_stmt<number_t, varname_t> ptr_assert_t;
+  typedef crab::cfg::region_init_stmt<number_t, varname_t>  region_init_t;  
+  typedef crab::cfg::make_ref_stmt<number_t, varname_t>  make_ref_t;
+  typedef crab::cfg::load_from_ref_stmt<number_t, varname_t> load_from_ref_t;
+  typedef crab::cfg::store_to_ref_stmt<number_t, varname_t> store_to_ref_t;
+  typedef crab::cfg::gep_ref_stmt<number_t, varname_t> gep_ref_t;
+  typedef crab::cfg::load_from_arr_ref_stmt<number_t, varname_t> load_from_arr_ref_t;
+  typedef crab::cfg::store_to_arr_ref_stmt<number_t, varname_t> store_to_arr_ref_t;  
+  typedef crab::cfg::assume_ref_stmt<number_t, varname_t> assume_ref_t;
+  typedef crab::cfg::assert_ref_stmt<number_t, varname_t> assert_ref_t;
   typedef crab::cfg::bool_binary_op<number_t, varname_t> bool_bin_op_t;
   typedef crab::cfg::bool_assign_cst<number_t, varname_t> bool_assign_cst_t;
   typedef crab::cfg::bool_assign_var<number_t, varname_t> bool_assign_var_t;
@@ -319,50 +320,56 @@ protected:
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
+
+  virtual void check(region_init_t &s) {
+    if (!this->m_abs_tr)
+      return;
+    s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
+  }
   
-  virtual void check(ptr_store_t &s) {
+  virtual void check(make_ref_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
-  virtual void check(ptr_load_t &s) {
+  virtual void check(load_from_ref_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
-  virtual void check(ptr_assign_t &s) {
+  virtual void check(store_to_ref_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
-  virtual void check(ptr_object_t &s) {
+  virtual void check(gep_ref_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
-  virtual void check(ptr_function_t &s) {
+  virtual void check(load_from_arr_ref_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
-  virtual void check(ptr_null_t &s) {
+  virtual void check(store_to_arr_ref_t &s) {
+    if (!this->m_abs_tr)
+      return;
+    s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
+  }
+  
+  virtual void check(assume_ref_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
 
-  virtual void check(ptr_assume_t &s) {
-    if (!this->m_abs_tr)
-      return;
-    s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
-  }
-
-  virtual void check(ptr_assert_t &s) {
+  virtual void check(assert_ref_t &s) {
     if (!this->m_abs_tr)
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
@@ -421,13 +428,15 @@ public:
   void visit(arr_assign_t &s) { check(s); }  
   void visit(arr_store_t &s) { check(s); }
   void visit(arr_load_t &s) { check(s); }
-  void visit(ptr_store_t &s) { check(s); }
-  void visit(ptr_load_t &s) { check(s); }
-  void visit(ptr_assign_t &s) { check(s); }
-  void visit(ptr_object_t &s) { check(s); }
-  void visit(ptr_function_t &s) { check(s); }
-  void visit(ptr_null_t &s) { check(s); }
-  void visit(ptr_assert_t &s) { check(s); }
+  void visit(region_init_t &s) { check(s); }  
+  void visit(make_ref_t &s) { check(s); }
+  void visit(load_from_ref_t &s) { check(s); }
+  void visit(store_to_ref_t &s) { check(s); }
+  void visit(gep_ref_t &s) { check(s); }
+  void visit(load_from_arr_ref_t &s) { check(s); }
+  void visit(store_to_arr_ref_t &s) { check(s); }    
+  void visit(assume_ref_t &s) { check(s); }  
+  void visit(assert_ref_t &s) { check(s); }
   void visit(bool_bin_op_t &s) { check(s); }
   void visit(bool_assign_cst_t &s) { check(s); }
   void visit(bool_assign_var_t &s) { check(s); }

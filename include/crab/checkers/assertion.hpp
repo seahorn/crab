@@ -26,8 +26,9 @@ class assert_property_checker : public property_checker<Analyzer> {
   using typename base_checker_t::assign_t;
   using typename base_checker_t::assume_t;
   using typename base_checker_t::basic_block_t;
-  using typename base_checker_t::bin_op_t;
+  using typename base_checker_t::bin_op_t;  
   using typename base_checker_t::bool_assert_t;
+  using typename base_checker_t::assert_ref_t;  
   using typename base_checker_t::lin_cst_sys_t;
   using typename base_checker_t::lin_cst_t;
   using typename base_checker_t::lin_exp_t;
@@ -44,7 +45,7 @@ public:
 
   virtual bool is_interesting(const basic_block_t &bb) const override {
     for (auto &s : bb) {
-      if (s.is_assert() || s.is_bool_assert() || s.is_ptr_assert()) {
+      if (s.is_assert() || s.is_bool_assert() || s.is_ref_assert()) {
         return true;
       }
     }
@@ -181,6 +182,48 @@ public:
     }
     s.accept(&*this->m_abs_tr); // propagate invariants to the next stmt
   }
+
+  virtual void check(assert_ref_t &s) override {
+    if (!this->m_abs_tr) {
+      return;
+    }
+
+    if (this->m_safe_assertions.count(&s) > 0) {
+      crab::crab_string_os os;
+      if (this->m_verbose >= 3) {
+        os << "Property : " << s << "\n";
+        os << "Invariant: " << this->m_abs_tr->get_abs_value() << "\n";
+        os << "Note: it was proven by the forward+backward analysis";
+      }
+      this->add_safe(os.str(), &s);
+    } else {
+
+      if (this->m_abs_tr->get_abs_value().is_bottom()) {
+        this->m_db.add(_UNREACH);
+        return;
+      }
+
+      abs_dom_t inv1(this->m_abs_tr->get_abs_value());
+      inv1.ref_assume(s.constraint().negate());
+      if (inv1.is_bottom()) {
+        crab::crab_string_os os;
+        if (this->m_verbose >= 3) {
+          os << "Property : " << s << "\n";
+          os << "Invariant: " << this->m_abs_tr->get_abs_value();
+        }
+        this->add_safe(os.str(), &s);
+      } else {
+        crab::crab_string_os os;
+        if (this->m_verbose >= 2) {
+          os << "Property : " << s << "\n";
+	  os << "Invariant: " << this->m_abs_tr->get_abs_value();	  
+        }
+        this->add_warning(os.str(), &s);
+      }
+    }
+    s.accept(&*this->m_abs_tr); // propagate invariants to the next stmt
+  }
+  
 };
 } // namespace checker
 } // namespace crab
