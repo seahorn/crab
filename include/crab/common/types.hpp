@@ -10,18 +10,25 @@
 
 /* Basic type definitions */
 
-namespace crab {
+namespace ikos {
+// Numerical type for indexed objects
+typedef uint64_t index_t;
+} // end namespace ikos
 
+namespace crab {
+// XXX: we try to avoid having a type as a generic class that has a
+// subclass for each subtype.
 enum variable_type {
   BOOL_TYPE,
   INT_TYPE,
   REAL_TYPE,
-  PTR_TYPE,
+  REF_TYPE,
+  
   ARR_BOOL_TYPE,
   ARR_INT_TYPE,
   ARR_REAL_TYPE,
-  ARR_PTR_TYPE,
-  UNK_TYPE
+  
+  UNK_TYPE  
 };
 
 inline crab_os &operator<<(crab_os &o, variable_type t) {
@@ -35,21 +42,18 @@ inline crab_os &operator<<(crab_os &o, variable_type t) {
   case REAL_TYPE:
     o << "real";
     break;
-  case PTR_TYPE:
-    o << "ptr";
-    break;
   case ARR_BOOL_TYPE:
-    o << "arr_bool";
+    o << "arr(bool)";
     break;
   case ARR_INT_TYPE:
-    o << "arr_int";
+    o << "arr(int)";
     break;
   case ARR_REAL_TYPE:
-    o << "arr_real";
+    o << "arr(real)";
     break;
-  case ARR_PTR_TYPE:
-    o << "arr_ptr";
-    break;
+  case REF_TYPE:
+    o << "ref";
+    break;    
   default:
     o << "unknown";
     break;
@@ -169,140 +173,9 @@ inline boost::optional<T> conv_op(bool_binary_operation_t op);
 
 template <typename T> inline boost::optional<T> conv_op(cast_operation_t op);
 
-// toy language for pointer constraints
-typedef enum { PTR_EQUALITY, PTR_DISEQUALITY } ptr_cst_kind_t;
-
-template <typename Variable> class pointer_constraint {
-public:
-  typedef pointer_constraint<Variable> ptr_cst_t;
-  typedef boost::optional<Variable> opt_var_t;
-
-private:
-  opt_var_t _lhs;
-  opt_var_t _rhs;
-  ptr_cst_kind_t _kind;
-
-  /*
-     We can only express constraints of the form p {==,!=} q where
-     p,q can be either null or a variable.
-
-     !lhs, !rhs, kind == PTR_EQUALITY    -> null == null -> true
-     !lhs, !rhs, kind == PTR_DISEQUALITY -> null != null -> false
-     !lhs, rhs, kind == PTR_EQUALITY     -> *rhs == null
-     lhs, !rhs, kind == PTR_EQUALITY     -> *lhs == null
-     !lhs, rhs, kind == PTR_DISEQUALITY  -> *rhs != null
-     lhs, !rhs, kind == PTR_DISEQUALITY  -> *lhs != nul
-     lhs, rhs, kind == PTR_EQUALITY      -> *lhs == *rhs
-     lhs, rhs, kind == PTR_DISEQUALITY   -> *lhs != *rhs
-  */
-
-  pointer_constraint(opt_var_t lhs, opt_var_t rhs, ptr_cst_kind_t kind)
-      : _lhs(lhs), _rhs(rhs), _kind(kind) {
-    if (!_lhs && _rhs) { // normalize
-      std::swap(_lhs, _rhs);
-    }
-  }
-
-public:
-  pointer_constraint() : _kind(PTR_EQUALITY) {}
-
-  // return true iff null != null
-  bool is_contradiction() const {
-    return (!_lhs && !_rhs && _kind == PTR_DISEQUALITY);
-  }
-
-  // return true iff null == null
-  bool is_tautology() const {
-    return (!_lhs && !_rhs && _kind == PTR_EQUALITY);
-  }
-
-  bool is_equality() const { return (_kind == PTR_EQUALITY); }
-
-  bool is_disequality() const { return (_kind == PTR_DISEQUALITY); }
-
-  // return true iff  p == null or p != null
-  bool is_unary() const { return (_lhs && !_rhs); }
-
-  // return true iff p == q or p != q
-  bool is_binary() const { return (_lhs && _rhs); }
-
-  Variable lhs() const {
-    if (!_lhs)
-      CRAB_ERROR("pointer constraint lhs is null");
-    return *_lhs;
-  }
-
-  Variable rhs() const {
-    if (!_rhs)
-      CRAB_ERROR("pointer constraint rhs is null");
-    return *_rhs;
-  }
-
-  static ptr_cst_t mk_true() { return ptr_cst_t(); }
-
-  static ptr_cst_t mk_false() {
-    return ptr_cst_t(opt_var_t(), opt_var_t(), PTR_DISEQUALITY);
-  }
-
-  static ptr_cst_t mk_eq_null(Variable v) {
-    return ptr_cst_t(opt_var_t(v), opt_var_t(), PTR_EQUALITY);
-  }
-
-  static ptr_cst_t mk_diseq_null(Variable v) {
-    return ptr_cst_t(opt_var_t(v), opt_var_t(), PTR_DISEQUALITY);
-  }
-
-  static ptr_cst_t mk_eq(Variable v1, Variable v2) {
-    return ptr_cst_t(opt_var_t(v1), opt_var_t(v2), PTR_EQUALITY);
-  }
-
-  static ptr_cst_t mk_diseq(Variable v1, Variable v2) {
-    return ptr_cst_t(opt_var_t(v1), opt_var_t(v2), PTR_DISEQUALITY);
-  }
-
-  void write(crab::crab_os &o) const {
-    if (is_contradiction()) {
-      o << "false";
-    } else if (is_tautology()) {
-      o << "true";
-    } else {
-      assert(_lhs);
-
-      o << lhs();
-
-      if (_kind == PTR_EQUALITY)
-        o << " == ";
-      else
-        o << " != ";
-
-      if (!_rhs)
-        o << "NULL";
-      else
-        o << rhs();
-    }
-  }
-};
-
-inline crab::crab_os &operator<<(crab::crab_os &o, const ptr_cst_kind_t &k) {
-  if (k == PTR_EQUALITY)
-    o << " == ";
-  else
-    o << " != ";
-  return o;
-}
-
-template <typename Variable>
-inline crab::crab_os &operator<<(crab::crab_os &o,
-                                 const pointer_constraint<Variable> &cst) {
-  cst.write(o);
-  return o;
-}
 } // end namespace crab
 
 namespace ikos {
-// Numerical type for indexed objects
-typedef uint64_t index_t;
-
 // Interface for writeable objects
 class writeable {
 public:
@@ -324,7 +197,6 @@ template <typename Number, typename VariableName> class variable {
 
 public:
   typedef variable<Number, VariableName> variable_t;
-  typedef typename VariableName::index_t index_t;
   typedef unsigned bitwidth_t;
   typedef crab::variable_type type_t;
   typedef Number number_t;
@@ -369,15 +241,17 @@ public:
 
   bool is_typed() const { return _type != crab::UNK_TYPE; }
 
-  bool is_array_type() const {
-    return is_typed() && _type >= crab::ARR_BOOL_TYPE;
-  }
-
   bool is_int_type() const { return _type == crab::INT_TYPE; }
 
   bool is_bool_type() const { return _type == crab::BOOL_TYPE; }
 
-  bool is_ptr_type() const { return _type == crab::PTR_TYPE; }
+  bool is_real_type() const { return _type == crab::REAL_TYPE; }  
+
+  bool is_ref_type() const { return _type == crab::REF_TYPE; }
+  
+  bool is_array_type() const {
+    return _type >= crab::ARR_BOOL_TYPE && _type <= crab::ARR_REAL_TYPE;
+  }
 
   type_t get_type() const { return _type; }
 
@@ -392,7 +266,7 @@ public:
   // VariableName's.
   VariableName &name() { return _n; }
 
-  index_t index() const { return _n.index(); }
+  ikos::index_t index() const { return _n.index(); }
 
   std::size_t hash() const {
     // casting to size_t may overflow but it shouldn't affect
@@ -401,16 +275,27 @@ public:
   }
 
   bool operator==(const variable_t &o) const {
-    return _n.index() == o._n.index();
+    return index() == o.index();
   }
 
   bool operator!=(const variable_t &o) const { return (!(operator==(o))); }
 
   bool operator<(const variable_t &o) const {
-    return _n.index() < o._n.index();
+    return index() < o.index();
   }
 
-  void write(crab::crab_os &o) const { o << _n; }
+  void write(crab::crab_os &o) const {
+    o << _n;
+    CRAB_LOG("crab-print-types",
+	     o << ":" << get_type();
+	     switch (get_type()) {
+	     case crab::INT_TYPE:
+	     case crab::ARR_INT_TYPE:
+	       o << ":" << get_bitwidth();
+	       break;
+	     default:;
+	     });
+  }
 
   void dump(crab::crab_os &o) const {
     o << _n << ":" << get_type() << ":" << get_bitwidth();
@@ -418,131 +303,15 @@ public:
 
 }; // class variable
 
-template <typename Number, typename VariableName> class variable_ref {
-public:
-  typedef variable<Number, VariableName> variable_t;
-  typedef typename variable_t::index_t index_t;
-  typedef typename variable_t::bitwidth_t bitwidth_t;
-  typedef typename variable_t::type_t type_t;
-  typedef variable_ref<Number, VariableName> variable_ref_t;
-  typedef Number number_t;
-  typedef VariableName varname_t;
-
-private:
-  std::shared_ptr<variable_t> m_v;
-
-public:
-  variable_ref() : m_v(nullptr) {}
-
-  variable_ref(variable_t v) : m_v(std::make_shared<variable_t>(v)) {}
-
-  bool is_null() const { return !m_v; }
-
-  variable_t get() const {
-    assert(!is_null());
-    return *m_v;
-  }
-
-  bool is_typed() const {
-    assert(!is_null());
-    return m_v->is_typed();
-  }
-
-  bool is_array_type() const {
-    assert(!is_null());
-    return m_v->is_array_type();
-  }
-
-  bool is_int_type() const {
-    assert(!is_null());
-    return m_v->is_int_type();
-  }
-
-  bool is_bool_type() const {
-    assert(!is_null());
-    return m_v->is_bool_type();
-  }
-
-  bool is_ptr_type() const {
-    assert(!is_null());
-    return m_v->is_ptr_type();
-  }
-
-  type_t get_type() const {
-    assert(!is_null());
-    return m_v->get_type();
-  }
-
-  bool has_bitwidth() const {
-    assert(!is_null());
-    return m_v->has_bitwidth();
-  }
-
-  bitwidth_t get_bitwidth() const {
-    assert(!is_null());
-    return m_v->get_bitwidth();
-  }
-
-  const VariableName &name() const {
-    assert(!is_null());
-    return m_v->name();
-  }
-
-  VariableName &name() {
-    assert(!is_null());
-    return m_v->name();
-  }
-
-  index_t index() const {
-    assert(!is_null());
-    return m_v->index();
-  }
-
-  std::size_t hash() const {
-    assert(!is_null());
-    return m_v->hash();
-  }
-
-  bool operator==(const variable_ref_t &o) const {
-    assert(!is_null());
-    return m_v->operator==(o);
-  }
-
-  bool operator!=(const variable_ref_t &o) const {
-    assert(!is_null());
-    return m_v->operator!=(o);
-  }
-
-  bool operator<(const variable_ref_t &o) const {
-    assert(!is_null());
-    return m_v->operator<(o);
-  }
-
-  void write(crab::crab_os &o) const { return m_v->write(o); }
-}; // class variable_ref
-
 /* used by boost::hash_combine */
 template <typename Number, typename VariableName>
 inline size_t hash_value(const variable<Number, VariableName> &v) {
   return v.hash();
 }
 
-/* used by boost::hash_combine */
-template <typename Number, typename VariableName>
-inline size_t hash_value(const variable_ref<Number, VariableName> &v) {
-  return v.hash();
-}
-
 template <typename Number, typename VariableName>
 inline crab::crab_os &operator<<(crab::crab_os &o,
                                  const variable<Number, VariableName> &v) {
-  v.write(o);
-  return o;
-}
-
-template <typename Number, typename VariableName>
-inline crab::crab_os &operator<<(crab::crab_os &o,
-                                 const variable_ref<Number, VariableName> &v) {
   v.write(o);
   return o;
 }
@@ -566,11 +335,5 @@ template <typename Number, typename VariableName>
 struct hash<ikos::variable<Number, VariableName>> {
   using variable_t = ikos::variable<Number, VariableName>;
   size_t operator()(const variable_t &v) const { return v.hash(); }
-};
-
-template <typename Number, typename VariableName>
-struct hash<ikos::variable_ref<Number, VariableName>> {
-  using variable_ref_t = ikos::variable_ref<Number, VariableName>;
-  size_t operator()(const variable_ref_t &v) const { return v.hash(); }
 };
 } // namespace std
