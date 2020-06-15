@@ -2,14 +2,12 @@
 #include "../common.hpp"
 
 using namespace std;
-using namespace crab::analyzer;
 using namespace crab::cfg;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
 // To test array smashing
-z_cfg_t* prog1 (variable_factory_t &vfac) 
-{
+z_cfg_t* prog1(variable_factory_t &vfac) {
   z_var n1(vfac["n1"], crab::INT_TYPE, 32);
   z_var i(vfac["i"], crab::INT_TYPE, 32);
   z_var a(vfac["A0"], crab::ARR_INT_TYPE, 32);
@@ -51,8 +49,7 @@ z_cfg_t* prog1 (variable_factory_t &vfac)
 }
 
 
-z_cfg_t* prog2(variable_factory_t &vfac) 
-{
+z_cfg_t* prog2(variable_factory_t &vfac) {
   z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
   z_basic_block_t& entry = cfg->insert("entry");
   z_basic_block_t& bb1   = cfg->insert("bb1");
@@ -96,8 +93,7 @@ z_cfg_t* prog2(variable_factory_t &vfac)
   return cfg;
 }
 
-z_cfg_t* prog3(variable_factory_t &vfac) 
-{
+z_cfg_t* prog3(variable_factory_t &vfac) {
   z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
   z_basic_block_t& entry = cfg->insert("entry");
   z_basic_block_t& bb1   = cfg->insert("bb1");
@@ -142,9 +138,7 @@ z_cfg_t* prog3(variable_factory_t &vfac)
 }
 
 
-z_cfg_t* prog4(variable_factory_t &vfac) 
-{
-
+z_cfg_t* prog4(variable_factory_t &vfac) {
   z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
   z_basic_block_t& entry = cfg->insert("entry");
   z_basic_block_t& bb1   = cfg->insert("bb1");
@@ -189,9 +183,7 @@ z_cfg_t* prog4(variable_factory_t &vfac)
   return cfg;
 }
 
-z_cfg_t* prog4b(variable_factory_t &vfac) 
-{
-
+z_cfg_t* prog4b(variable_factory_t &vfac) {
   z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
   z_basic_block_t& entry = cfg->insert("entry");
   z_basic_block_t& bb1   = cfg->insert("bb1");
@@ -234,8 +226,7 @@ z_cfg_t* prog4b(variable_factory_t &vfac)
 }
 
 
-z_cfg_t* prog5(variable_factory_t &vfac) 
-{
+z_cfg_t* prog5(variable_factory_t &vfac) {
   z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
   z_basic_block_t& entry = cfg->insert("entry");
   z_basic_block_t& bb1   = cfg->insert("bb1");
@@ -274,8 +265,7 @@ z_cfg_t* prog5(variable_factory_t &vfac)
   return cfg;
 }
 
-z_cfg_t* prog6(variable_factory_t &vfac) 
-{
+z_cfg_t* prog6(variable_factory_t &vfac) {
   z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
   z_basic_block_t& entry = cfg->insert("entry");
   z_basic_block_t& bb1   = cfg->insert("bb1");
@@ -312,8 +302,7 @@ z_cfg_t* prog6(variable_factory_t &vfac)
   return cfg;
 }
 
-z_cfg_t* prog7(variable_factory_t &vfac) 
-{
+z_cfg_t* prog7(variable_factory_t &vfac) {
   z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
   z_basic_block_t& entry = cfg->insert("entry");
   z_basic_block_t& bb1   = cfg->insert("bb1");
@@ -362,8 +351,7 @@ z_cfg_t* prog7(variable_factory_t &vfac)
 }
 
 // Initialize only even positions
-z_cfg_t* prog8(variable_factory_t &vfac) 
-{
+z_cfg_t* prog8(variable_factory_t &vfac) {
   z_cfg_t* cfg = new z_cfg_t("entry","ret", ARR);
   z_basic_block_t& entry = cfg->insert("entry");
   z_basic_block_t& bb1   = cfg->insert("bb1");
@@ -413,8 +401,7 @@ z_cfg_t* prog8(variable_factory_t &vfac)
 
 
 // this is the program init_rand from Gange et.al paper.
-z_cfg_t* prog9(variable_factory_t &vfac) 
-{
+z_cfg_t* prog9(variable_factory_t &vfac) {
   z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
   z_basic_block_t& entry   = cfg->insert("entry");
   z_basic_block_t& bb1     = cfg->insert("bb1");
@@ -473,54 +460,8 @@ z_cfg_t* prog9(variable_factory_t &vfac)
   return cfg;
 }
 
-z_cfg_t* prog10(variable_factory_t &vfac) 
-{
-  z_cfg_t* cfg = new z_cfg_t("entry","ret",ARR);
-  z_basic_block_t& entry = cfg->insert("entry");
-  z_basic_block_t& bb1   = cfg->insert("bb1");
-  z_basic_block_t& bb1_t = cfg->insert("bb1_t");
-  z_basic_block_t& bb1_f = cfg->insert("bb1_f");
-  z_basic_block_t& bb2   = cfg->insert("bb2");
-  z_basic_block_t& ret   = cfg->insert("ret");
-  z_var i(vfac["i"], crab::INT_TYPE, 32);
-  z_var n(vfac["n"], crab::INT_TYPE, 32);
-  z_var a(vfac["A"], crab::ARR_PTR_TYPE);
-  z_var b(vfac["B"], crab::ARR_PTR_TYPE);
-  z_var obj1(vfac["obj1"], crab::PTR_TYPE);
-  z_var tmp1(vfac["tmp1"], crab::PTR_TYPE);
-  z_var tmp2(vfac["tmp2"], crab::PTR_TYPE);
-  z_var tmp3(vfac["tmp3"], crab::INT_TYPE, 32);
-
-  entry >> bb1;
-  bb1 >> bb1_t; bb1 >> bb1_f;
-  bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
-
-
-  uint64_t elem_size = 1;         
-  // forall i :: is_not_null(a[i])
-  // forall i :: is_not_null(b[i])
-  entry.ptr_new_object (obj1, 0);
-  entry.array_init (a, 0, n, obj1, elem_size);
-  entry.array_init (b, 0, n, obj1, elem_size);
-  ///
-  entry.assume(n >= 1);
-  entry.assign(i, 0);
-  ///////
-  bb1_t.assume(i <= n - 1);
-  bb1_f.assume(i >= n);
-  // b[i] := a[i]
-  bb2.array_load(tmp1, a,  i, elem_size);
-  bb2.array_store(b, i, tmp1, elem_size);
-  bb2.add(i, i, 1);
-  ret.sub(tmp3, i, 1);
-  // read b[i-1] 
-  ret.array_load(tmp2, b, tmp3, elem_size); 
-  return cfg;
-}
-
 // Simple loop in memory SSA form
-z_cfg_t* prog11 (variable_factory_t &vfac) 
-{
+z_cfg_t* prog11 (variable_factory_t &vfac) {
   z_var i(vfac["i"], crab::INT_TYPE, 32);
   z_var i1(vfac["i1"], crab::INT_TYPE, 32);  
   z_var a0(vfac["A0"], crab::ARR_INT_TYPE, 32);
@@ -638,15 +579,7 @@ void test9(bool stats_enabled){
   delete cfg;
 }
 
-// void test10(bool stats_enabled){
-//   variable_factory_t vfac;
-//   z_cfg_t* cfg = prog10(vfac); 
-//   crab::outs () << "Program 10: forall 0<= i < n. is_not_null(a[i]) &&  is_not_null(b[i]) \n";
-//   run<array_smashing<z_num_null_domain_t>>(cfg,cfg->entry(),false,1,2,20,stats_enabled);
-//   delete cfg;
-// }
-
-void test11(bool stats_enabled){
+void test10(bool stats_enabled){
   variable_factory_t vfac;
   z_cfg_t* cfg = prog4b(vfac);
   crab::outs () << "Program 11: forall 0<= i< 10. a[i] = true and b[i] = false\n";
@@ -654,7 +587,7 @@ void test11(bool stats_enabled){
   delete cfg;
 }
 
-// void test12(bool stats_enabled){
+// void test11(bool stats_enabled){
 //   variable_factory_t vfac;
 //   z_cfg_t* cfg = prog11(vfac);
 //   crab::outs () << "Program 12 (Memory SSA): forall 0<= i< 10. a[i] >=0 and a[i] <= 123456\n";
@@ -677,9 +610,8 @@ int main(int argc, char **argv) {
   test7(stats_enabled);
   test8(stats_enabled);
   test9(stats_enabled);
-  //test10(stats_enabled);
-  test11(stats_enabled);
-  //test12(stats_enabled);    
+  test10(stats_enabled);
+  //test11(stats_enabled);    
 
   return 0;
 }
