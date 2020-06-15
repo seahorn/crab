@@ -35,27 +35,18 @@ template <class T> class variable_factory {
 public:
   class indexed_string {
     template <typename Any> friend class variable_factory;
-
-  public:
-    // FIXME: we should use some unlimited precision type to avoid
-    // overflow. However, this change is a bit involving since we
-    // need to change the algorithm api's in patricia_trees.hpp because
-    // they assume ikos::index_t.
-    typedef ikos::index_t index_t;
-
-  private:
     boost::optional<T> _s;
-    index_t _id;
+    ikos::index_t _id;
     std::string _name; // optional string name associated with _id
     variable_factory *_vfac;
 
     // NOT IMPLEMENTED
     indexed_string();
 
-    indexed_string(index_t id, variable_factory *vfac, std::string name = "")
+    indexed_string(ikos::index_t id, variable_factory *vfac, std::string name = "")
         : _id(id), _name(name), _vfac(vfac) {}
 
-    indexed_string(T s, index_t id, variable_factory *vfac)
+    indexed_string(T s, ikos::index_t id, variable_factory *vfac)
         : _s(s), _id(id), _name(""), _vfac(vfac) {}
 
   public:
@@ -74,7 +65,7 @@ public:
       return *this;
     }
 
-    index_t index() const { return this->_id; }
+    ikos::index_t index() const { return this->_id; }
 
     std::string str() const {
       if (_s) {
@@ -105,29 +96,26 @@ public:
     }
 
     friend size_t hash_value(indexed_string s) {
-      std::hash<index_t> hasher;
+      std::hash<ikos::index_t> hasher;
       return hasher(s.index());
     }
   };
 
-public:
-  typedef typename indexed_string::index_t index_t;
-
 private:
   typedef std::unordered_map<T, indexed_string> t_map_t;
-  typedef std::unordered_map<index_t, indexed_string> shadow_map_t;
+  typedef std::unordered_map<ikos::index_t, indexed_string> shadow_map_t;
 
-  index_t _next_id;
+  ikos::index_t _next_id;
   t_map_t _map;
   shadow_map_t _shadow_map;
   std::vector<indexed_string> _shadow_vars;
 
-  index_t get_and_increment_id(void) {
-    if (_next_id == std::numeric_limits<index_t>::max()) {
-      CRAB_ERROR("Reached limit of ", std::numeric_limits<index_t>::max(),
+  ikos::index_t get_and_increment_id(void) {
+    if (_next_id == std::numeric_limits<ikos::index_t>::max()) {
+      CRAB_ERROR("Reached limit of ", std::numeric_limits<ikos::index_t>::max(),
                  " variables");
     }
-    index_t res = _next_id;
+    ikos::index_t res = _next_id;
     ++_next_id;
     return res;
   }
@@ -143,7 +131,7 @@ public:
 public:
   variable_factory() : _next_id(1) {}
 
-  variable_factory(index_t start_id) : _next_id(start_id) {}
+  variable_factory(ikos::index_t start_id) : _next_id(start_id) {}
 
   variable_factory(const variable_factory_t &o) = delete;
 
@@ -161,7 +149,7 @@ public:
   }
 
   // generate a shadow indexed_string's associated to some key
-  virtual indexed_string get(index_t key, std::string name = "") {
+  virtual indexed_string get(ikos::index_t key, std::string name = "") {
     auto it = _shadow_map.find(key);
     if (it == _shadow_map.end()) {
       indexed_string is(get_and_increment_id(), this, name);
@@ -197,7 +185,6 @@ class str_variable_factory : public variable_factory<std::string> {
 public:
   typedef variable_factory_t::varname_t varname_t;
   typedef variable_factory_t::const_var_range const_var_range;
-  typedef variable_factory_t::index_t index_t;
 
   str_variable_factory() : variable_factory_t() {}
 };
@@ -205,7 +192,7 @@ public:
 //! Specialized factory for integers
 class int_variable_factory {
 public:
-  typedef int varname_t;
+  typedef ikos::index_t varname_t;
 
   int_variable_factory() {}
 
@@ -213,7 +200,7 @@ public:
 
   int_variable_factory &operator=(const int_variable_factory &o) = delete;
 
-  varname_t operator[](int v) { return v; }
+  varname_t operator[](ikos::index_t v) { return v; }
 };
 
 inline int fresh_colour(int col_x, int col_y) {
@@ -262,12 +249,12 @@ public:
 
 protected:
   int colour;
-  int next_id;
+  ikos::index_t next_id;
 };
 
 class int_var_alloc_col {
 public:
-  typedef int varname_t;
+  typedef ikos::index_t varname_t;
   static int_variable_factory vfac;
 
   int_var_alloc_col() : colour(0), next_id(0) {}
@@ -288,13 +275,13 @@ public:
   }
 
   int_variable_factory::varname_t next() {
-    int id = next_id++;
+    ikos::index_t id = next_id++;
     return 3 * id + colour;
   }
 
 protected:
   int colour;
-  int next_id;
+  ikos::index_t next_id;
 };
 
 } // end namespace var_factory_impl
