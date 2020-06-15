@@ -8,7 +8,8 @@
 #include <crab/domains/separate_domains.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
-#include <crab/types/types.hpp>
+#include <crab/types/memory_regions.hpp>
+#include <crab/types/reference_constraints.hpp>
 
 #include <functional>
 #include <unordered_map>
