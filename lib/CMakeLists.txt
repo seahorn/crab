@@ -8,6 +8,8 @@ add_library(Crab ${CRAB_LIBS_TYPE}
   wrapint.cpp
   ##variable factory
   var_factory.cpp
+  ##disable boost exceptions
+  boost_exception.cpp
   )
 
 target_link_libraries(Crab ${GMP_LIB})

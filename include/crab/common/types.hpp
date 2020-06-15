@@ -136,9 +136,4 @@ using namespace ikos;
 }
 } // namespace crab
 
-#ifdef BOOST_NO_EXCEPTIONS
-namespace boost {
-template <class E> void throw_exception(E const &e) { std::exit(1); }
-} // namespace boost
-#endif
 
