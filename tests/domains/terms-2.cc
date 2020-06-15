@@ -2,13 +2,11 @@
 #include "../common.hpp"
 
 using namespace std;
-using namespace crab::analyzer;
 using namespace crab::cfg;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
-z_cfg_t* prog (variable_factory_t &vfac) 
-{
+z_cfg_t* prog (variable_factory_t &vfac) {
   ////
   // Building the CFG
   ////

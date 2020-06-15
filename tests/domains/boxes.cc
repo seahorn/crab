@@ -2,7 +2,6 @@
 #include "../common.hpp"
 
 using namespace std;
-using namespace crab::analyzer;
 using namespace crab::cfg;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
@@ -37,8 +36,7 @@ z_cfg_t* prog1 (variable_factory_t &vfac)  {
   return cfg;
 }
 
-z_cfg_t* prog2 (variable_factory_t &vfac) 
-{
+z_cfg_t* prog2 (variable_factory_t &vfac) {
 
   z_cfg_t* cfg = new z_cfg_t("loop1_entry","ret"); 
   z_basic_block_t& loop1_entry = cfg->insert ("loop1_entry");
@@ -78,8 +76,7 @@ z_cfg_t* prog2 (variable_factory_t &vfac)
   return cfg;
 }
 
-z_cfg_t* prog3 (variable_factory_t &vfac) 
-{
+z_cfg_t* prog3 (variable_factory_t &vfac) {
 
   z_cfg_t* cfg = new z_cfg_t("entry","ret");
   z_basic_block_t& entry       = cfg->insert ("entry");
@@ -135,8 +132,7 @@ z_cfg_t* prog3 (variable_factory_t &vfac)
   return cfg;
 }
 
-z_cfg_t* prog4 (variable_factory_t &vfac) 
-{
+z_cfg_t* prog4 (variable_factory_t &vfac) {
 
   z_cfg_t* cfg = new z_cfg_t("entry","ret");
   z_basic_block_t& entry      = cfg->insert ("entry");

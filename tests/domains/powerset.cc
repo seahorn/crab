@@ -2,7 +2,6 @@
 #include "../common.hpp"
 
 using namespace std;
-using namespace crab::analyzer;
 using namespace crab::cfg;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
@@ -99,7 +98,8 @@ int main (int argc, char** argv) {
   crab::outs() << *cfg << "\n";
 
   run_and_check<z_pow_aa_int_t>(cfg,cfg->entry(),false,1,2,20,stats_enabled);  
-
+  run_and_check<z_interval_domain_t>(cfg,cfg->entry(),false,1,2,20,stats_enabled);
+  
   // free the CFG
   delete cfg;
 

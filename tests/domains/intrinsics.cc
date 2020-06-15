@@ -2,7 +2,6 @@
 #include "../common.hpp"
 
 using namespace std;
-using namespace crab::analyzer;
 using namespace crab::cfg;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
@@ -86,15 +85,6 @@ int main (int argc, char** argv) {
 
   { 
     z_bool_num_domain_t inv;
-    inv.intrinsic("foo1", {o1,o2}, {i1,i2});
-    inv.intrinsic("foo2", {o1}, {i1});
-    inv.intrinsic("foo2", {}, {i1});
-    inv.intrinsic("foo2", {}, {});
-    crab::outs() << inv << "\n";    
-  }
-
-  { 
-    z_aa_bool_int_t inv;
     inv.intrinsic("foo1", {o1,o2}, {i1,i2});
     inv.intrinsic("foo2", {o1}, {i1});
     inv.intrinsic("foo2", {}, {i1});
