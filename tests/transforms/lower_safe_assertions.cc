@@ -13,42 +13,79 @@ using namespace crab::domain_impl;
 using namespace crab::checker;
 
 z_cfg_t* prog(variable_factory_t &vfac)  {
+  /*
+    i := 0;
+    x := 1;
+    y := 0;
+    p := malloc(...);
+    l := p;
+    while(i <= 99) {
+       x+=y;
+       y++;
+       *p := i;
+       q  := malloc(...)
+       p->next = q;
+       p := p->next;
+       i++;
+    }
+    assume(x <= y);
+    assert(i == 100);
+    assert(i >= 200);
+    assert(x >= y);
+    assert(x >= 200);
+   */
+  
   // Definining program variables
-  z_var i (vfac ["i"], crab::INT_TYPE, 32);
-  z_var x (vfac ["x"], crab::INT_TYPE, 32);
-  z_var y (vfac ["y"], crab::INT_TYPE, 32);
-  z_var p (vfac ["p"], crab::PTR_TYPE);
-  z_var q (vfac ["q"], crab::PTR_TYPE);
+  z_var i(vfac["i"], crab::INT_TYPE, 32);
+  z_var x(vfac["x"], crab::INT_TYPE, 32);
+  z_var y(vfac["y"], crab::INT_TYPE, 32);
+  z_var l(vfac["l"], crab::REF_TYPE);    
+  z_var p(vfac["p"], crab::REF_TYPE);
+  z_var p_next(vfac["p_next"], crab::REF_TYPE);  
+  z_var q(vfac["q"], crab::REF_TYPE);
   // entry and exit block
-  z_cfg_t* cfg = new z_cfg_t("entry","ret",PTR);
+  z_cfg_t* cfg = new z_cfg_t("entry","ret",REF);
   // adding blocks
-  z_basic_block_t& entry = cfg->insert ("entry");
-  z_basic_block_t& bb1   = cfg->insert ("bb1");
-  z_basic_block_t& bb1_t = cfg->insert ("bb1_t");
-  z_basic_block_t& bb1_f = cfg->insert ("bb1_f");
-  z_basic_block_t& bb2   = cfg->insert ("bb2");
-  z_basic_block_t& ret   = cfg->insert ("ret");
+  z_basic_block_t& entry = cfg->insert("entry");
+  z_basic_block_t& bb1   = cfg->insert("bb1");
+  z_basic_block_t& bb1_t = cfg->insert("bb1_t");
+  z_basic_block_t& bb1_f = cfg->insert("bb1_f");
+  z_basic_block_t& bb2   = cfg->insert("bb2");
+  z_basic_block_t& ret   = cfg->insert("ret");
   // adding control flow 
   entry >> bb1;
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
+
+  // create an untyped memory region
+  auto mem = crab::memory_region::make_memory_region(0);
+  
   // adding statements
-  entry.assign (i, 0);
-  entry.assign (x, 1);
-  entry.assign (y, 0);
-  entry.ptr_null (p);
-  bb1_t.assume (i <= 99);
-  bb1_f.assume (i >= 100);
+  entry.assign(i, 0);
+  entry.assign(x, 1);
+  entry.assign(y, 0);
+  entry.make_ref(p, mem);
+  entry.gep_ref(l, mem, p, mem, z_number(0));
+  bb1_t.assume(i <= 99);
+  bb1_f.assume(i >= 100);
   bb2.add(x,x,y);
   bb2.add(y,y,1);
-  bb2.ptr_new_object (q, 1);
-  bb2.ptr_assign (p, q, z_number(4));
+  // *p := i
+  bb2.store_to_ref(p, mem, i);
+  //  q := malloc(...)
+  bb2.make_ref(q, mem);
+  //  p_next := p+4 
+  bb2.gep_ref(p_next, mem, p, mem, z_number(4));
+  //  *p_next := q
+  bb2.store_to_ref(p_next, mem, q);
+  //  p := p_next
+  bb2.gep_ref(p, mem, p_next, mem, z_number(0));
   bb2.add(i, i, 1);
-  ret.assume (x <= y);
-  ret.assertion (i == 100);
-  ret.assertion (i >= 200);
-  ret.assertion (x >= y);
-  ret.assertion (x >= 200);
+  ret.assume(x <= y);
+  ret.assertion(i == 100);
+  ret.assertion(i >= 200);
+  ret.assertion(x >= y);
+  ret.assertion(x >= 200);
 
 
   return cfg;
@@ -82,7 +119,7 @@ z_cfg_t* prog(variable_factory_t &vfac)  {
 
 // }
 
-int main (int argc, char** argv) {
+int main(int argc, char** argv) {
 
   bool stats_enabled = false;
   if (!crab_tests::parse_user_options(argc,argv,stats_enabled)) {
@@ -97,9 +134,9 @@ int main (int argc, char** argv) {
   z_cfg_ref_t cfg_ref(*(prog(vfac)));
 
   // Run numerical analysis
-  num_analyzer_t num_a (cfg_ref, z_sdbm_domain_t::top (), nullptr);
-  num_a.run ();
-  crab::outs() << "Analysis using " << z_sdbm_domain_t::getDomainName () << "\n";
+  num_analyzer_t num_a(cfg_ref, z_sdbm_domain_t::top(), nullptr);
+  num_a.run();
+  crab::outs() << "Analysis using " << z_sdbm_domain_t::getDomainName() << "\n";
   //print_invariants(cfg_ref, num_a);
 
   // Run the checker

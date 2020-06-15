@@ -9,17 +9,30 @@ using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
 z_cfg_t* prog1(variable_factory_t &vfac)  {
-
+  /*
+    k := 2147483648
+    o := 4;
+    p := malloc(...);
+    ..
+    i := 0;
+    while (i <= 99) {
+       nd := *;
+       q := p + o;
+       k := 5;
+       inc := (nd ? 1: 2);
+       i := i + inc;
+    }
+   */
   // Defining program variables
   z_var i(vfac["i"], crab::INT_TYPE, 32);
   z_var k(vfac["k"], crab::INT_TYPE, 32);
   z_var nd(vfac["nd"], crab::INT_TYPE, 32);
   z_var inc(vfac["inc"], crab::INT_TYPE, 32);
   z_var o(vfac["o"], crab::INT_TYPE, 32);  
-  z_var p(vfac["p"], crab::PTR_TYPE);
-  z_var q(vfac["q"], crab::PTR_TYPE);    
+  z_var p(vfac["p"], crab::REF_TYPE);
+  z_var q(vfac["q"], crab::REF_TYPE);    
   // entry and exit block
-  auto cfg = new z_cfg_t("x0","ret",crab::cfg::PTR);
+  auto cfg = new z_cfg_t("x0","ret",crab::cfg::REF);
   // adding blocks
   z_basic_block_t& x0 = cfg->insert("x0");
   z_basic_block_t& x1 = cfg->insert("x1");
@@ -36,15 +49,19 @@ z_cfg_t* prog1(variable_factory_t &vfac)  {
   entry >> bb1;
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
+
+  // create an untyped memory region
+  auto mem = crab::memory_region::make_memory_region(0);
+  
   // adding statements
   x0.assign(k, 2147483648);
   x0.assign(o, 4);  
-  x0.ptr_new_object(p, 1);
+  x0.make_ref(p, mem);
   entry.assign(i, 0);
   bb1_t.assume(i <= 99);
   bb1_f.assume(i >= 100);
   bb2.havoc(nd);
-  bb2.ptr_assign(q, p, o);
+  bb2.gep_ref(q, mem, p, mem, o);
   bb2.assign(k, 5);
   bb2.select(inc,nd,1,2);
   bb2.add(i, i, inc);
@@ -52,6 +69,22 @@ z_cfg_t* prog1(variable_factory_t &vfac)  {
 }
 
 z_cfg_t* prog2(variable_factory_t &vfac)  {
+  /*
+    k := 2147483648
+    o := 4;
+    p := malloc(...);
+    ..
+    i := 0;
+    while (i <= 99) {
+       nd := *;
+       q := p + o;
+       k := 5;
+       inc := (nd ? 1: 2);
+       i := i + inc;
+    }
+    k := *q;
+    return k;
+   */
 
   // Defining program variables
   z_var i(vfac["i"], crab::INT_TYPE, 32);
@@ -59,10 +92,10 @@ z_cfg_t* prog2(variable_factory_t &vfac)  {
   z_var nd(vfac["nd"], crab::INT_TYPE, 32);
   z_var inc(vfac["inc"], crab::INT_TYPE, 32);
   z_var o(vfac["o"], crab::INT_TYPE, 32);  
-  z_var p(vfac["p"], crab::PTR_TYPE);
-  z_var q(vfac["q"], crab::PTR_TYPE);    
+  z_var p(vfac["p"], crab::REF_TYPE);
+  z_var q(vfac["q"], crab::REF_TYPE);    
   // entry and exit block
-  auto cfg = new z_cfg_t("x0","ret",crab::cfg::PTR);
+  auto cfg = new z_cfg_t("x0","ret",crab::cfg::REF);
   // adding blocks
   z_basic_block_t& x0 = cfg->insert("x0");
   z_basic_block_t& x1 = cfg->insert("x1");
@@ -79,23 +112,26 @@ z_cfg_t* prog2(variable_factory_t &vfac)  {
   entry >> bb1;
   bb1 >> bb1_t; bb1 >> bb1_f;
   bb1_t >> bb2; bb2 >> bb1; bb1_f >> ret;
+
+  // create an untyped memory region
+  auto mem = crab::memory_region::make_memory_region(0);
+  
   // adding statements
   x0.assign(k, 2147483648);
   x0.assign(o, 4);  
-  x0.ptr_new_object(p, 1);
+  x0.make_ref(p, mem);
   entry.assign(i, 0);
   bb1_t.assume(i <= 99);
   bb1_f.assume(i >= 100);
   bb2.havoc(nd);
-  bb2.ptr_assign(q, p, o);
+  bb2.gep_ref(q, mem, p, mem, o);
   bb2.assign(k, 5);
   bb2.select(inc,nd,1,2);
   bb2.add(i, i, inc);
   ////////////////
-  ret.ptr_load(k, q);
+  ret.load_from_ref(k, q, mem);
   ret.ret(k);
   ////////////////
-
   return cfg;
 }
 
