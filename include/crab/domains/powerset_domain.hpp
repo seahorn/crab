@@ -42,7 +42,7 @@ public:
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
-  using ptr_cst_t = crab::pointer_constraint<variable_t>;
+  using typename abstract_domain_t::reference_constraint_t;  
   using interval_t = interval<number_t>;
   
 private:
@@ -507,80 +507,79 @@ public:
   }
 
   
-  // pointer_operators_api
-  virtual void pointer_load(variable_t lhs, variable_t rhs, linear_expression_t elem_size) override {
+  // references
+  virtual void region_init(memory_region reg) override {
     if (!is_bottom()) {
       for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
-	m_disjuncts[i].pointer_load(lhs, rhs, elem_size);
+	m_disjuncts[i].region_init(reg);
       }                        
     }
   }
 
-  virtual void pointer_store(variable_t lhs, variable_t rhs, linear_expression_t elem_size) override {
+  
+  virtual void ref_make(variable_t ref, memory_region reg) override {
     if (!is_bottom()) {
       for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
-	m_disjuncts[i].pointer_store(lhs, rhs, elem_size);
+	m_disjuncts[i].ref_make(ref, reg);
+      }                        
+    }
+  }
+
+  virtual void ref_load(variable_t ref, memory_region reg, variable_t res) override {
+    if (!is_bottom()) {
+      for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
+	m_disjuncts[i].ref_load(ref, reg, res);
       }                            
     }
   }
 
-  virtual void pointer_assign(variable_t lhs, variable_t rhs, linear_expression_t offset) override {
+  virtual void ref_store(variable_t ref, memory_region reg, linear_expression_t val) override {
     if (!is_bottom()) {
       for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
-	m_disjuncts[i].pointer_assign(lhs, rhs, offset);
+	m_disjuncts[i].ref_store(ref, reg, val);
       }
     }
   }
 
-  virtual void pointer_mk_obj(variable_t lhs, ikos::index_t address) override {
+  virtual void ref_gep(variable_t ref1, memory_region reg1,
+		       variable_t ref2, memory_region reg2,
+		       linear_expression_t offset) override {
     if (!is_bottom()) {
       for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
-	m_disjuncts[i].pointer_mk_obj(lhs, address);
+	m_disjuncts[i].ref_gep(ref1, reg1, ref2, reg2, offset);
       }
     }
   }
 
-  virtual void pointer_function(variable_t lhs, varname_t func) override {
+  virtual void ref_load_from_array(variable_t lhs, variable_t ref, memory_region region,
+				   linear_expression_t index, linear_expression_t elem_size) override {
     if (!is_bottom()) {
       for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
-	m_disjuncts[i].pointer_function(lhs, func);
+	m_disjuncts[i].ref_load_from_array(lhs, ref, region, index, elem_size);
       }
     }
   }
 
-  virtual void pointer_mk_null(variable_t lhs) override {
+  virtual void ref_store_to_array(variable_t ref, memory_region region,
+				  linear_expression_t index, linear_expression_t elem_size,
+				  linear_expression_t val) override {
     if (!is_bottom()) {
       for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
-	m_disjuncts[i].pointer_mk_null(lhs);
+	m_disjuncts[i].ref_store_to_array(ref, region, index, elem_size, val);
       }
     }
   }
 
-  virtual void pointer_assume(ptr_cst_t cst) override {
+  virtual void ref_assume(reference_constraint_t cst) override {
     if (!is_bottom()) {
       base_dom_vector vec;
       vec.reserve(m_disjuncts.size());
       for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
-	m_disjuncts[i].pointer_assume(cst);
+	m_disjuncts[i].ref_assume(cst);
 	if (m_disjuncts[i].is_bottom()) {
 	  continue;
 	}
 	vec.emplace_back(m_disjuncts[i]);      
-      }
-      std::swap(m_disjuncts, vec);
-    }
-  }
-
-  virtual void pointer_assert(ptr_cst_t cst) override {
-    if (!is_bottom()) {
-      base_dom_vector vec;
-      vec.reserve(m_disjuncts.size());    
-      for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
-	m_disjuncts[i].pointer_assert(cst);
-	if (m_disjuncts[i].is_bottom()) {
-	continue;
-	}
-	vec.emplace_back(m_disjuncts[i]);            
       }
       std::swap(m_disjuncts, vec);
     }

@@ -39,7 +39,7 @@ public:
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
-  typedef crab::pointer_constraint<variable_t> ptr_cst_t;
+  using typename abstract_domain_t::reference_constraint_t;  
   typedef NumDomain content_domain_t;
   typedef interval<number_t> interval_t;
 
@@ -74,13 +74,6 @@ private:
     case ARR_REAL_TYPE:
       _inv.assign(a, rhs);
       break;
-    case ARR_PTR_TYPE:
-      if (rhs.is_constant() && rhs.constant() == number_t(0)) {
-        _inv.pointer_mk_null(a);
-      } else if (auto rhs_v = rhs.get_variable()) {
-        _inv.pointer_assign(a, (*rhs_v), number_t(0));
-      }
-      break;
     default:; /* unreachable */
     }
   }
@@ -114,17 +107,6 @@ private:
       other.assign(a_new, rhs);
       if (a_old)
         _inv.assign(a_new, *a_old);
-      break;
-    case ARR_PTR_TYPE:
-      if (rhs.is_constant() && rhs.constant() == number_t(0)) {
-        other.pointer_mk_null(a_new);
-        if (a_old)
-          _inv.pointer_assign(a_new, *a_old, number_t(0));
-      } else if (auto rhs_v = rhs.get_variable()) {
-        other.pointer_assign(a_new, (*rhs_v), number_t(0));
-        if (a_old)
-          _inv.pointer_assign(a_new, *a_old, number_t(0));
-      }
       break;
     default:; /* unreachable */
     }
@@ -328,40 +310,6 @@ public:
     _inv.backward_apply_binary_bool(op, x, y, z, inv.get_content_domain());
   }
 
-  // pointer_operators_api
-  virtual void pointer_load(variable_t lhs, variable_t rhs, linear_expression_t elem_size) override {
-    _inv.pointer_load(lhs, rhs, elem_size);
-  }
-
-  virtual void pointer_store(variable_t lhs, variable_t rhs, linear_expression_t elem_size) override {
-    _inv.pointer_store(lhs, rhs, elem_size);
-  }
-
-  virtual void pointer_assign(variable_t lhs, variable_t rhs,
-                              linear_expression_t offset) override {
-    _inv.pointer_assign(lhs, rhs, offset);
-  }
-
-  virtual void pointer_mk_obj(variable_t lhs, ikos::index_t address) override {
-    _inv.pointer_mk_obj(lhs, address);
-  }
-
-  virtual void pointer_function(variable_t lhs, varname_t func) override {
-    _inv.pointer_function(lhs, func);
-  }
-
-  virtual void pointer_mk_null(variable_t lhs) override {
-    _inv.pointer_mk_null(lhs);
-  }
-
-  virtual void pointer_assume(ptr_cst_t cst) override {
-    _inv.pointer_assume(cst);
-  }
-
-  virtual void pointer_assert(ptr_cst_t cst) override {
-    _inv.pointer_assert(cst);
-  }
-
   // array_operators_api
 
   // All the array elements are initialized to val
@@ -385,13 +333,6 @@ public:
     case ARR_INT_TYPE:
     case ARR_REAL_TYPE:
       _inv.assign(a, val);
-      break;
-    case ARR_PTR_TYPE:
-      if (val.is_constant() && val.constant() == number_t(0)) {
-        _inv.pointer_mk_null(a);
-      } else if (auto var = val.get_variable()) {
-        _inv.pointer_assign(a, (*var), number_t(0));
-      }
       break;
     default:;
     }
@@ -418,9 +359,6 @@ public:
     case ARR_INT_TYPE:
     case ARR_REAL_TYPE:
       _inv.assign(lhs, a_prime);
-      break;
-    case ARR_PTR_TYPE:
-      _inv.pointer_assign(lhs, a_prime, number_t(0));
       break;
     default:;
     }
@@ -497,9 +435,6 @@ public:
     case ARR_REAL_TYPE:
       _inv.assign(lhs, rhs);
       break;
-    case ARR_PTR_TYPE:
-      _inv.pointer_assign(lhs, rhs, number_t(0));
-      break;
     default:;
     }
   }
@@ -548,6 +483,21 @@ public:
     CRAB_WARN("backward_array_assign in array smashing domain not implemented");
   }
 
+  // reference operations
+  void region_init(memory_region reg) override {}      
+  void ref_make(variable_t ref, memory_region reg) override {}
+  void ref_load(variable_t ref, memory_region reg, variable_t res) override {}
+  void ref_store(variable_t ref, memory_region reg, linear_expression_t val) override {}
+  void ref_gep(variable_t ref1, memory_region reg1,
+	       variable_t ref2, memory_region reg2,
+	       linear_expression_t offset) override {}
+  void ref_load_from_array(variable_t lhs, variable_t ref, memory_region region,
+			   linear_expression_t index, linear_expression_t elem_size) override {}
+  void ref_store_to_array(variable_t ref, memory_region region,
+			  linear_expression_t index, linear_expression_t elem_size,
+			  linear_expression_t val) override {}
+  void ref_assume(reference_constraint_t cst) override {}
+  
   linear_constraint_system_t to_linear_constraint_system() {
     return filter_noninteger_vars(
         std::move(_inv.to_linear_constraint_system()));

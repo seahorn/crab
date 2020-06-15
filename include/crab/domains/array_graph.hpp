@@ -51,7 +51,6 @@
 #include <crab/domains/term_equiv.hpp>
 // XXX: for customized propagations between weight and scalar domains
 #include <crab/domains/combined_domains.hpp>
-#include <crab/domains/nullity.hpp>
 
 #include <boost/container/flat_map.hpp>
 #include <boost/iterator/transform_iterator.hpp>
@@ -852,69 +851,6 @@ void propagate_between_weight_and_scalar(
   }
 }
 
-template <typename BaseDom>
-void propagate_between_weight_and_scalar(
-    numerical_nullity_domain<BaseDom> src,
-    typename BaseDom::linear_expression_t src_e, variable_type ty,
-    numerical_nullity_domain<BaseDom> &dst,
-    typename BaseDom::variable_t dst_var) {
-
-  if (ty == ARR_INT_TYPE || ARR_REAL_TYPE) {
-    // --- XXX: simplification wrt Gange et.al.:
-    //     Only non-relational numerical invariants are
-    //     propagated from the graph domain to the scalar domain.
-    dst.set(dst_var, eval_interval(src, src_e));
-  } else if (ty == ARR_PTR_TYPE) {
-    if (auto src_var = src_e.get_variable()) {
-      auto &null_dom = dst.second();
-      null_dom.set_nullity(dst_var, src.get_nullity(*src_var));
-    }
-  } else {
-    CRAB_WARN("Unsupported array type ", __LINE__, ":",
-              "missing propagation between weight and scalar domains");
-  }
-}
-
-template <typename BaseDom>
-void propagate_between_weight_and_scalar(
-    nullity_domain<typename BaseDom::number_t, typename BaseDom::varname_t> src,
-    typename BaseDom::linear_expression_t src_e, variable_type ty,
-    numerical_nullity_domain<BaseDom> &dst,
-    typename BaseDom::variable_t dst_var) {
-
-  if (ty == ARR_INT_TYPE || ty == ARR_REAL_TYPE) {
-    // do nothing
-  } else if (ty == ARR_PTR_TYPE) {
-    if (auto src_var = src_e.get_variable()) {
-      auto &null_dom = dst.second();
-      null_dom.set_nullity(dst_var, src.get_nullity(*src_var));
-    }
-  } else {
-    CRAB_WARN("Unsupported array type ", __LINE__, ":",
-              "missing propagation between weight and scalar domains");
-  }
-}
-
-template <typename BaseDom>
-void propagate_between_weight_and_scalar(
-    numerical_nullity_domain<BaseDom> src,
-    typename BaseDom::linear_expression_t src_e, variable_type ty,
-    nullity_domain<typename BaseDom::number_t, typename BaseDom::varname_t>
-        &dst,
-    typename BaseDom::variable_t dst_var) {
-
-  if (ty == ARR_INT_TYPE || ty == ARR_REAL_TYPE) {
-    // do nothing
-  } else if (ty == ARR_PTR_TYPE) {
-    if (auto src_var = src_e.get_variable()) {
-      dst.set_nullity(dst_var, src.second().get_nullity(*src_var));
-    }
-  } else {
-    CRAB_WARN("Unsupported array type ", __LINE__, ":",
-              "missing propagation between weight and scalar domains");
-  }
-}
-
 } // namespace array_graph_impl
 
 #if 1
@@ -1344,7 +1280,7 @@ public:
   using typename abstract_domain_t::linear_constraint_system_t;
   using typename abstract_domain_t::linear_constraint_t;
   using typename abstract_domain_t::linear_expression_t;
-  using typename abstract_domain_t::pointer_constraint_t;
+  using typename abstract_domain_t::reference_constraint_t;
 
   typedef typename NumDom::variable_t variable_t;
   typedef typename NumDom::variable_vector_t variable_vector_t;
@@ -2439,40 +2375,21 @@ public:
 
   interval_t operator[](variable_t v) { return _scalar[v]; }
 
-  // pointer_operators_api
-  virtual void pointer_load(variable_t lhs, variable_t rhs, linear_expression_t elem_size) override {
-    _scalar.pointer_load(lhs, rhs, elem_size);
-  }
-
-  virtual void pointer_store(variable_t lhs, variable_t rhs, linear_expression_t elem_size) override {
-    _scalar.pointer_store(lhs, rhs, elem_size);
-  }
-
-  virtual void pointer_assign(variable_t lhs, variable_t rhs,
-                              linear_expression_t offset) override {
-    _scalar.pointer_assign(lhs, rhs, offset);
-  }
-
-  virtual void pointer_mk_obj(variable_t lhs, ikos::index_t address) override {
-    _scalar.pointer_mk_obj(lhs, address);
-  }
-
-  virtual void pointer_function(variable_t lhs, varname_t func) override {
-    _scalar.pointer_function(lhs, func);
-  }
-
-  virtual void pointer_mk_null(variable_t lhs) override {
-    _scalar.pointer_mk_null(lhs);
-  }
-
-  virtual void pointer_assume(pointer_constraint_t cst) override {
-    _scalar.pointer_assume(cst);
-  }
-
-  virtual void pointer_assert(pointer_constraint_t cst) override {
-    _scalar.pointer_assert(cst);
-  }
-
+  // reference operations
+  void region_init(memory_region reg) override {}    
+  void ref_make(variable_t ref, memory_region reg) override {}
+  void ref_load(variable_t ref, memory_region reg, variable_t res) override {}
+  void ref_store(variable_t ref, memory_region reg, linear_expression_t val) override {}
+  void ref_gep(variable_t ref1, memory_region reg1,
+	       variable_t ref2, memory_region reg2,
+	       linear_expression_t offset) override {}
+  void ref_load_from_array(variable_t lhs, variable_t ref, memory_region region,
+			   linear_expression_t index, linear_expression_t elem_size) override {}
+  void ref_store_to_array(variable_t ref, memory_region region,
+			  linear_expression_t index, linear_expression_t elem_size,
+			  linear_expression_t val) override {}
+  void ref_assume(reference_constraint_t cst) override {}
+  
   // array_operators_api
 
   virtual void array_init(variable_t a, linear_expression_t /*elem_size*/,

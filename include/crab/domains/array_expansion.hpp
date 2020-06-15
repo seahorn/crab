@@ -373,12 +373,10 @@ private:
       return BOOL_TYPE;
     } else if (array_type == ARR_INT_TYPE) {
       return INT_TYPE;
-    } else if (array_type == ARR_REAL_TYPE) {
-      return REAL_TYPE;
     } else {
-      assert(array_type == ARR_PTR_TYPE);
-      return PTR_TYPE;
-    }
+      assert(array_type == ARR_REAL_TYPE);
+      return REAL_TYPE;
+    } 
   }
 
   ikos::index_t get_index(Variable a, offset_t o, uint64_t size) {
@@ -678,7 +676,7 @@ public:
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
-  typedef crab::pointer_constraint<variable_t> ptr_cst_t;
+  using typename abstract_domain_t::reference_constraint_t;
   typedef NumDomain content_domain_t;
   typedef interval<number_t> interval_t;
 
@@ -772,11 +770,8 @@ private:
     case REAL_TYPE:
       _inv.assign(lhs, rhs);
       break;
-    case PTR_TYPE:
-      _inv.pointer_assign(lhs, rhs, number_t(0));
-      break;
     default:;
-      CRAB_ERROR("array_adaptive assignment with unexpected type");
+      CRAB_ERROR("array_adaptive assignment with unexpected array element type");
     }
   }
 
@@ -811,15 +806,8 @@ private:
     case REAL_TYPE:
       _inv.assign(lhs, v);
       break;
-    case PTR_TYPE:
-      if (v.is_constant() && v.constant() == number_t(0)) {
-        _inv.pointer_mk_null(lhs);
-      } else if (auto var = v.get_variable()) {
-        _inv.pointer_assign(lhs, (*var), number_t(0));
-      }
-      break;
     default:;
-      CRAB_ERROR("array_adaptive assignment with unexpected type");
+      CRAB_ERROR("array_adaptive assignment with unexpected array element type");
     }
   }
 
@@ -838,11 +826,8 @@ private:
     case REAL_TYPE:
       _inv.backward_assign(lhs, rhs, dom);
       break;
-    case PTR_TYPE:
-      CRAB_WARN("array_adaptive backward pointer assignment not implemented");
-      break;
     default:;
-      CRAB_ERROR("array_adaptive backward_assignment with unexpected type");
+      CRAB_ERROR("array_adaptive backward_assignment with unexpected array element type");
     }
   }
 
@@ -880,11 +865,8 @@ private:
     case REAL_TYPE:
       _inv.backward_assign(lhs, v, dom);
       break;
-    case PTR_TYPE:
-      CRAB_WARN("array_adaptive backward pointer assignment not implemented");
-      break;
     default:;
-      CRAB_ERROR("array_adaptive backward assignment with unexpected type");
+      CRAB_ERROR("array_adaptive backward assignment with unexpected array element type");
     }
   }
 
@@ -1151,40 +1133,21 @@ public:
     _inv.backward_apply_binary_bool(op, x, y, z, inv.get_content_domain());
   }
 
-  // pointer_operators_api
-  virtual void pointer_load(variable_t lhs, variable_t rhs, linear_expression_t elem_size) override {
-    _inv.pointer_load(lhs, rhs, elem_size);
-  }
-
-  virtual void pointer_store(variable_t lhs, variable_t rhs, linear_expression_t elem_size) override {
-    _inv.pointer_store(lhs, rhs, elem_size);
-  }
-
-  virtual void pointer_assign(variable_t lhs, variable_t rhs,
-                              linear_expression_t offset) override {
-    _inv.pointer_assign(lhs, rhs, offset);
-  }
-
-  virtual void pointer_mk_obj(variable_t lhs, ikos::index_t address) override {
-    _inv.pointer_mk_obj(lhs, address);
-  }
-
-  virtual void pointer_function(variable_t lhs, varname_t func) override {
-    _inv.pointer_function(lhs, func);
-  }
-
-  virtual void pointer_mk_null(variable_t lhs) override {
-    _inv.pointer_mk_null(lhs);
-  }
-
-  virtual void pointer_assume(ptr_cst_t cst) override {
-    _inv.pointer_assume(cst);
-  }
-
-  virtual void pointer_assert(ptr_cst_t cst) override {
-    _inv.pointer_assert(cst);
-  }
-
+  // reference operations
+  void region_init(memory_region reg) override {}    
+  void ref_make(variable_t ref, memory_region reg) override {}
+  void ref_load(variable_t ref, memory_region reg, variable_t res) override {}
+  void ref_store(variable_t ref, memory_region reg, linear_expression_t val) override {}
+  void ref_gep(variable_t ref1, memory_region reg1,
+	       variable_t ref2, memory_region reg2,
+	       linear_expression_t offset) override {}
+  void ref_load_from_array(variable_t lhs, variable_t ref, memory_region region,
+			   linear_expression_t index, linear_expression_t elem_size) override {}
+  void ref_store_to_array(variable_t ref, memory_region region,
+			  linear_expression_t index, linear_expression_t elem_size,
+			  linear_expression_t val) override {}
+  void ref_assume(reference_constraint_t cst) override {}
+  
   // array_operators_api
 
   // array_init returns a fresh array where all elements between

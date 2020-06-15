@@ -16,8 +16,6 @@
  *     domains. This is often more precise than (2).
  *
  * (4) reduced product of an arbitrary numerical domain and congruences.
- *
- * (5) reduced product of an arbitrary numerical domain and nullity.
  **************************************************************************/
 
 #include <crab/common/stats.hpp>
@@ -27,7 +25,6 @@
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/congruences.hpp>
 #include <crab/domains/interval.hpp>
-#include <crab/domains/nullity.hpp>
 
 #include <boost/optional.hpp>
 
@@ -221,7 +218,7 @@ public:
   using typename abstract_domain_t::linear_constraint_system_t;
   using typename abstract_domain_t::linear_constraint_t;
   using typename abstract_domain_t::linear_expression_t;
-  using typename abstract_domain_t::pointer_constraint_t;
+  using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
   typedef Number number_t;
@@ -537,55 +534,60 @@ public:
     this->reduce();
   }
 
-  // pointer operators
-  virtual void pointer_load(variable_t lhs, variable_t rhs, linear_expression_t elem_size) override {
-    this->_product.first().pointer_load(lhs, rhs, elem_size);
-    this->_product.second().pointer_load(lhs, rhs, elem_size);
+  // reference  operators
+  virtual void region_init(memory_region reg) override {
+    this->_product.first().region_init(reg);
+    this->_product.second().region_init(reg);
+    this->reduce();
+  }
+  
+  virtual void ref_make(variable_t ref, memory_region reg) override {
+    this->_product.first().ref_make(ref, reg);
+    this->_product.second().ref_make(ref, reg);
     this->reduce();
   }
 
-  virtual void pointer_store(variable_t lhs, variable_t rhs, linear_expression_t elem_size) override {
-    this->_product.first().pointer_store(lhs, rhs, elem_size);
-    this->_product.second().pointer_store(lhs, rhs, elem_size);
+  virtual void ref_load(variable_t ref, memory_region reg, variable_t res) override {
+    this->_product.first().ref_load(ref, reg, res);
+    this->_product.second().ref_load(ref, reg, res);
     this->reduce();
   }
 
-  virtual void pointer_assign(variable_t lhs, variable_t rhs,
-                              linear_expression_t offset) override {
-    this->_product.first().pointer_assign(lhs, rhs, offset);
-    this->_product.second().pointer_assign(lhs, rhs, offset);
+  virtual void ref_store(variable_t ref, memory_region reg, linear_expression_t val) override {
+    this->_product.first().ref_store(ref, reg, val);
+    this->_product.second().ref_store(ref, reg, val);
     this->reduce();
   }
 
-  virtual void pointer_mk_obj(variable_t lhs, ikos::index_t address) override {
-    this->_product.first().pointer_mk_obj(lhs, address);
-    this->_product.second().pointer_mk_obj(lhs, address);
+  virtual void ref_gep(variable_t ref1, memory_region reg1,
+		       variable_t ref2, memory_region reg2,
+		       linear_expression_t offset) override {
+    this->_product.first().ref_gep(ref1, reg1, ref2, reg2, offset);
+    this->_product.second().ref_gep(ref1, reg1, ref2, reg2, offset);
     this->reduce();
   }
 
-  virtual void pointer_function(variable_t lhs, varname_t func) override {
-    this->_product.first().pointer_function(lhs, func);
-    this->_product.second().pointer_function(lhs, func);
+  virtual void ref_load_from_array(variable_t lhs, variable_t ref, memory_region region,
+				   linear_expression_t index, linear_expression_t elem_size) override {
+    this->_product.first().ref_load_from_array(lhs, ref, region, index, elem_size);
+    this->_product.second().ref_load_from_array(lhs, ref, region, index, elem_size);
     this->reduce();
   }
 
-  virtual void pointer_mk_null(variable_t lhs) override {
-    this->_product.first().pointer_mk_null(lhs);
-    this->_product.second().pointer_mk_null(lhs);
+  virtual void ref_store_to_array(variable_t ref, memory_region region,
+				  linear_expression_t index, linear_expression_t elem_size,
+				  linear_expression_t val) override {
+    this->_product.first().ref_store_to_array(ref, region, index, elem_size, val);
+    this->_product.second().ref_store_to_array(ref, region, index, elem_size, val);
     this->reduce();
   }
 
-  virtual void pointer_assume(pointer_constraint_t cst) override {
-    this->_product.first().pointer_assume(cst);
-    this->_product.second().pointer_assume(cst);
+  virtual void ref_assume(reference_constraint_t cst) override {
+    this->_product.first().ref_assume(cst);
+    this->_product.second().ref_assume(cst);
     this->reduce();
   }
 
-  virtual void pointer_assert(pointer_constraint_t cst) override {
-    this->_product.first().pointer_assert(cst);
-    this->_product.second().pointer_assert(cst);
-    this->reduce();
-  }
 
   // boolean operators
   virtual void assign_bool_cst(variable_t lhs,
@@ -758,7 +760,7 @@ public:
   using typename abstract_domain_t::linear_constraint_system_t;
   using typename abstract_domain_t::linear_constraint_t;
   using typename abstract_domain_t::linear_expression_t;
-  using typename abstract_domain_t::pointer_constraint_t;
+  using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
   // Assume that Domain1 and Domain2 have the same types for
@@ -1109,9 +1111,7 @@ public:
      Begin unimplemented operations
 
      reduced_numerical_domain_product2 implements only standard
-     abstract operations of a numerical domain.  The
-     implementation of boolean, array, or pointer operations is
-     empty because they should never be called.
+     abstract operations of a numerical domain.  
   */
 
   // boolean operations
@@ -1178,15 +1178,21 @@ public:
       reduced_numerical_domain_product2_t invariant) {}
   void backward_array_assign(variable_t lhs, variable_t rhs,
                              reduced_numerical_domain_product2_t invariant) {}
-  // pointer operations
-  void pointer_load(variable_t lhs, variable_t rhs, linear_expression_t elem_size) {}
-  void pointer_store(variable_t lhs, variable_t rhs, linear_expression_t elem_size) {}
-  void pointer_assign(variable_t lhs, variable_t rhs, linear_expression_t offset) {}
-  void pointer_mk_obj(variable_t lhs, ikos::index_t address) {}
-  void pointer_function(variable_t lhs, varname_t func) {}
-  void pointer_mk_null(variable_t lhs) {}
-  void pointer_assume(pointer_constraint_t cst) {}
-  void pointer_assert(pointer_constraint_t cst) {}
+  // reference operations
+  void region_init(memory_region reg) override {}       
+  void ref_make(variable_t ref, memory_region reg) override {}
+  void ref_load(variable_t ref, memory_region reg, variable_t res) override {}
+  void ref_store(variable_t ref, memory_region reg, linear_expression_t val) override {}
+  void ref_gep(variable_t ref1, memory_region reg1,
+	       variable_t ref2, memory_region reg2,
+	       linear_expression_t offset) override {}
+  void ref_load_from_array(variable_t lhs, variable_t ref, memory_region region,
+			   linear_expression_t index, linear_expression_t elem_size) override {}
+  void ref_store_to_array(variable_t ref, memory_region region,
+			  linear_expression_t index, linear_expression_t elem_size,
+			  linear_expression_t val) override {}
+  void ref_assume(reference_constraint_t cst) override {}
+
   /* End unimplemented operations */
 
   void rename(const variable_vector_t &from, const variable_vector_t &to) {
@@ -1531,7 +1537,7 @@ public:
   using typename abstract_domain_t::linear_constraint_system_t;
   using typename abstract_domain_t::linear_constraint_t;
   using typename abstract_domain_t::linear_expression_t;
-  using typename abstract_domain_t::pointer_constraint_t;
+  using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
   typedef typename NumAbsDom::number_t number_t;
@@ -1728,9 +1734,7 @@ public:
      Begin unimplemented operations
 
      numerical_congruence_domain implements only standard abstract
-     operations of a numerical domain.  The implementation of
-     boolean, array, or pointer operations is empty because they
-     should never be called.
+     operations of a numerical domain.
   */
 
   // boolean operations
@@ -1792,15 +1796,20 @@ public:
                                   rnc_domain_t invariant) {}
   void backward_array_assign(variable_t lhs, variable_t rhs,
                              rnc_domain_t invariant) {}
-  // pointer operations
-  void pointer_load(variable_t lhs, variable_t rhs, linear_expression_t elem_size) {}
-  void pointer_store(variable_t lhs, variable_t rhs, linear_expression_t elem_size) {}
-  void pointer_assign(variable_t lhs, variable_t rhs, linear_expression_t offset) {}
-  void pointer_mk_obj(variable_t lhs, ikos::index_t address) {}
-  void pointer_function(variable_t lhs, varname_t func) {}
-  void pointer_mk_null(variable_t lhs) {}
-  void pointer_assume(pointer_constraint_t cst) {}
-  void pointer_assert(pointer_constraint_t cst) {}
+  // reference operations
+  void region_init(memory_region reg) override {}          
+  void ref_make(variable_t ref, memory_region reg) override {}
+  void ref_load(variable_t ref, memory_region reg, variable_t res) override {}
+  void ref_store(variable_t ref, memory_region reg, linear_expression_t val) override {}
+  void ref_gep(variable_t ref1, memory_region reg1,
+	       variable_t ref2, memory_region reg2,
+	       linear_expression_t offset) override {}
+  void ref_load_from_array(variable_t lhs, variable_t ref, memory_region region,
+			   linear_expression_t index, linear_expression_t elem_size) override {}
+  void ref_store_to_array(variable_t ref, memory_region region,
+			  linear_expression_t index, linear_expression_t elem_size,
+			  linear_expression_t val) override {}
+  void ref_assume(reference_constraint_t cst) override {}
   /* End unimplemented operations */
 
   void forget(const variable_vector_t &variables) {
@@ -1856,384 +1865,6 @@ public:
   
 }; // class numerical_congruence_domain
 
-// Reduced product of a numerical domain with nullity
-// Reduction is done by as in domain_product2.
-template <typename NumAbsDom>
-class numerical_nullity_domain final
-    : public abstract_domain<numerical_nullity_domain<NumAbsDom>> {
-
-  typedef numerical_nullity_domain<NumAbsDom> nn_domain_t;
-  typedef abstract_domain<nn_domain_t> abstract_domain_t;
-
-public:
-  using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
-  using typename abstract_domain_t::linear_constraint_system_t;
-  using typename abstract_domain_t::linear_constraint_t;
-  using typename abstract_domain_t::linear_expression_t;
-  using typename abstract_domain_t::pointer_constraint_t;
-  using typename abstract_domain_t::variable_t;
-  using typename abstract_domain_t::variable_vector_t;
-  typedef typename NumAbsDom::number_t number_t;
-  typedef typename NumAbsDom::varname_t varname_t;
-  typedef interval<number_t> interval_t;
-
-private:
-  typedef nullity_domain<number_t, varname_t> nullity_domain_t;
-  typedef domain_product2<number_t, varname_t, NumAbsDom, nullity_domain_t>
-      domain_product2_t;
-
-  domain_product2_t _product;
-
-  numerical_nullity_domain(const domain_product2_t &product)
-      : _product(product) {}
-
-public:
-  void set_to_top() {
-    nn_domain_t abs(domain_product2_t::top());
-    std::swap(*this, abs);
-  }
-
-  void set_to_bottom() {
-    nn_domain_t abs(domain_product2_t::bottom());
-    std::swap(*this, abs);
-  }
-
-  numerical_nullity_domain() : _product() {}
-
-  numerical_nullity_domain(const nn_domain_t &other)
-      : _product(other._product) {}
-
-  nn_domain_t &operator=(const nn_domain_t &other) {
-    if (this != &other)
-      this->_product = other._product;
-
-    return *this;
-  }
-
-  bool is_bottom() { return this->_product.is_bottom(); }
-
-  bool is_top() { return this->_product.is_top(); }
-
-  NumAbsDom &first() { return this->_product.first(); }
-
-  nullity_domain_t &second() { return this->_product.second(); }
-
-  bool operator<=(nn_domain_t other) {
-    return this->_product <= other._product;
-  }
-
-  bool operator==(nn_domain_t other) {
-    return this->_product == other._product;
-  }
-
-  void operator|=(nn_domain_t other) { this->_product |= other._product; }
-
-  nn_domain_t operator|(nn_domain_t other) {
-    return nn_domain_t(this->_product | other._product);
-  }
-
-  nn_domain_t operator&(nn_domain_t other) {
-    return nn_domain_t(this->_product & other._product);
-  }
-
-  nn_domain_t operator||(nn_domain_t other) {
-    return nn_domain_t(this->_product || other._product);
-  }
-
-  nn_domain_t widening_thresholds(nn_domain_t other,
-                                  const iterators::thresholds<number_t> &ts) {
-    return nn_domain_t(this->_product.widening_thresholds(other._product, ts));
-  }
-
-  nn_domain_t operator&&(nn_domain_t other) {
-    return nn_domain_t(this->_product && other._product);
-  }
-
-  // numerical_domains
-
-  void apply(operation_t op, variable_t x, variable_t y, variable_t z) {
-    this->_product.apply(op, x, y, z);
-  }
-
-  void apply(operation_t op, variable_t x, variable_t y, number_t k) {
-    this->_product.apply(op, x, y, k);
-  }
-
-  void assign(variable_t x, linear_expression_t e) {
-    this->_product.assign(x, e);
-  }
-
-  void backward_assign(variable_t x, linear_expression_t e,
-                       nn_domain_t invariant) {
-    this->_product.backward_assign(x, e, invariant._product);
-  }
-
-  void backward_apply(operation_t op, variable_t x, variable_t y, number_t k,
-                      nn_domain_t invariant) {
-    this->_product.backward_apply(op, x, y, k, invariant._product);
-  }
-
-  void backward_apply(operation_t op, variable_t x, variable_t y, variable_t z,
-                      nn_domain_t invariant) {
-    this->_product.backward_apply(op, x, y, z, invariant._product);
-  }
-
-  void operator+=(linear_constraint_system_t csts) { this->_product += csts; }
-
-  void operator-=(variable_t v) { this->_product -= v; }
-
-  void set(variable_t v, interval_t intv) {
-    this->_product.first().set(v, intv);
-  }
-
-  interval_t operator[](variable_t v) { return this->_product.first()[v]; }
-
-  // boolean operations
-  void assign_bool_cst(variable_t lhs, linear_constraint_t rhs) {
-    this->_product.assign_bool_cst(lhs, rhs);
-  }
-
-  void assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs) {
-    this->_product.assign_bool_var(lhs, rhs, is_not_rhs);
-  }
-
-  void apply_binary_bool(bool_operation_t op, variable_t x, variable_t y,
-                         variable_t z) {
-    this->_product.apply_binary_bool(op, x, y, z);
-  }
-
-  void assume_bool(variable_t v, bool is_negated) {
-    this->_product.assume_bool(v, is_negated);
-  }
-
-  // backward boolean operations
-  void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
-                                nn_domain_t invariant) {
-    this->_product.backward_assign_bool_cst(lhs, rhs, invariant._product);
-  }
-
-  void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
-                                nn_domain_t invariant) {
-    this->_product.backward_assign_bool_var(lhs, rhs, is_not_rhs,
-                                            invariant._product);
-  }
-
-  void backward_apply_binary_bool(bool_operation_t op, variable_t x,
-                                  variable_t y, variable_t z,
-                                  nn_domain_t invariant) {
-    this->_product.backward_apply_binary_bool(op, x, y, z, invariant._product);
-  }
-
-  // cast operators
-
-  void apply(int_conv_operation_t op, variable_t dst, variable_t src) {
-    this->_product.apply(op, dst, src);
-  }
-
-  // bitwise operators
-
-  void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {
-    this->_product.apply(op, x, y, z);
-  }
-
-  void apply(bitwise_operation_t op, variable_t x, variable_t y, number_t k) {
-    this->_product.apply(op, x, y, k);
-  }
-
-  // array operators
-
-  virtual void array_init(variable_t a, linear_expression_t elem_size,
-                          linear_expression_t lb_idx,
-                          linear_expression_t ub_idx,
-                          linear_expression_t val) override {
-    this->_product.array_init(a, elem_size, lb_idx, ub_idx, val);
-  }
-
-  virtual void array_load(variable_t lhs, variable_t a,
-                          linear_expression_t elem_size,
-                          linear_expression_t i) override {
-    this->_product.array_load(lhs, a, elem_size, i);
-  }
-
-  virtual void array_store(variable_t a, linear_expression_t elem_size,
-                           linear_expression_t i, linear_expression_t val,
-                           bool is_strong_update) override {
-    this->_product.array_store(a, elem_size, i, val, is_strong_update);
-  }
-
-  virtual void array_store(variable_t a_new, variable_t a_old,
-                           linear_expression_t elem_size, linear_expression_t i,
-                           linear_expression_t val,
-                           bool is_strong_update) override {
-    this->_product.array_store(a_new, a_old, elem_size, i, val,
-                               is_strong_update);
-  }
-
-  virtual void array_store_range(variable_t a, linear_expression_t elem_size,
-                                 linear_expression_t i, linear_expression_t j,
-                                 linear_expression_t val) override {
-    this->_product.array_store_range(a, elem_size, i, j, val);
-  }
-
-  virtual void array_store_range(variable_t a_new, variable_t a_old,
-                                 linear_expression_t elem_size,
-                                 linear_expression_t i, linear_expression_t j,
-                                 linear_expression_t val) override {
-    this->_product.array_store_range(a_new, a_old, elem_size, i, j, val);
-  }
-
-  virtual void array_assign(variable_t lhs, variable_t rhs) override {
-    this->_product.array_assign(lhs, rhs);
-  }
-
-  // backward array operators
-
-  virtual void backward_array_init(variable_t a, linear_expression_t elem_size,
-                                   linear_expression_t lb_idx,
-                                   linear_expression_t ub_idx,
-                                   linear_expression_t val,
-                                   nn_domain_t invariant) override {
-    this->_product.backward_array_init(a, elem_size, lb_idx, ub_idx, val,
-                                       invariant._product);
-  }
-
-  virtual void backward_array_load(variable_t lhs, variable_t a,
-                                   linear_expression_t elem_size,
-                                   linear_expression_t i,
-                                   nn_domain_t invariant) override {
-    this->_product.backward_array_load(lhs, a, elem_size, i,
-                                       invariant._product);
-  }
-
-  virtual void backward_array_store(variable_t a, linear_expression_t elem_size,
-                                    linear_expression_t i,
-                                    linear_expression_t val,
-                                    bool is_strong_update,
-                                    nn_domain_t invariant) override {
-    this->_product.backward_array_store(a, elem_size, i, val, is_strong_update,
-                                        invariant._product);
-  }
-
-  virtual void backward_array_store(variable_t a_new, variable_t a_old,
-                                    linear_expression_t elem_size,
-                                    linear_expression_t i,
-                                    linear_expression_t val,
-                                    bool is_strong_update,
-                                    nn_domain_t invariant) override {
-    this->_product.backward_array_store(a_new, a_old, elem_size, i, val,
-                                        is_strong_update, invariant._product);
-  }
-
-  virtual void backward_array_store_range(variable_t a,
-                                          linear_expression_t elem_size,
-                                          linear_expression_t i,
-                                          linear_expression_t j,
-                                          linear_expression_t val,
-                                          nn_domain_t invariant) override {
-    this->_product.backward_array_store_range(a, elem_size, i, j, val,
-                                              invariant._product);
-  }
-
-  virtual void backward_array_store_range(variable_t a_new, variable_t a_old,
-                                          linear_expression_t elem_size,
-                                          linear_expression_t i,
-                                          linear_expression_t j,
-                                          linear_expression_t val,
-                                          nn_domain_t invariant) override {
-    this->_product.backward_array_store_range(a_new, a_old, elem_size, i, j,
-                                              val, invariant._product);
-  }
-
-  virtual void backward_array_assign(variable_t lhs, variable_t rhs,
-                                     nn_domain_t invariant) override {
-    this->_product.backward_array_assign(lhs, rhs, invariant._product);
-  }
-
-  // pointer operators
-  virtual void pointer_load(variable_t lhs, variable_t rhs, linear_expression_t elem_size) override {
-    this->_product.pointer_load(lhs, rhs, elem_size);
-  }
-
-  virtual void pointer_store(variable_t lhs, variable_t rhs, linear_expression_t elem_size) override {
-    this->_product.pointer_store(lhs, rhs, elem_size);
-  }
-
-  virtual void pointer_assign(variable_t lhs, variable_t rhs, linear_expression_t offset) override {
-    this->_product.pointer_assign(lhs, rhs, offset);
-  }
-
-  virtual void pointer_mk_obj(variable_t lhs, ikos::index_t address) override {
-    this->_product.pointer_mk_obj(lhs, address);
-  }
-
-  virtual void pointer_function(variable_t lhs, varname_t func) override {
-    this->_product.pointer_function(lhs, func);
-  }
-
-  virtual void pointer_mk_null(variable_t lhs) override {
-    this->_product.pointer_mk_null(lhs);
-  }
-
-  virtual void pointer_assume(pointer_constraint_t cst) override {
-    this->_product.pointer_assume(cst);
-  }
-
-  virtual void pointer_assert(pointer_constraint_t cst) override {
-    this->_product.pointer_assert(cst);
-  }
-
-  void write(crab_os &o) { this->_product.write(o); }
-
-  linear_constraint_system_t to_linear_constraint_system() {
-    return this->_product.to_linear_constraint_system();
-  }
-
-  disjunctive_linear_constraint_system_t
-  to_disjunctive_linear_constraint_system() {
-    return this->_product.to_disjunctive_linear_constraint_system();
-  }
-
-  static std::string getDomainName() {
-    return domain_product2_t::getDomainName();
-  }
-
-  void rename(const variable_vector_t &from, const variable_vector_t &to) {
-    this->_product.rename(from, to);
-  }
-
-  /* begin intrinsics operations */    
-  virtual void intrinsic(std::string name,
-			 const variable_vector_t &inputs,
-			 const variable_vector_t &outputs) override {
-    this->_product.intrinsic(name, inputs, outputs);
-  }
-
-  virtual void backward_intrinsic(std::string name,
-				  const variable_vector_t &inputs,
-				  const variable_vector_t &outputs,
-				  nn_domain_t invariant) override {
-    this->_product.backward_intrinsic(name, inputs, outputs, invariant._product);
-  }
-  /* end intrinsics operations */
-  
-  void forget(const variable_vector_t &variables) {
-    this->_product.forget(variables);
-  }
-
-  void project(const variable_vector_t &variables) {
-    this->_product.project(variables);
-  }
-
-  void expand(variable_t var, variable_t new_var) {
-    this->_product.expand(var, new_var);
-  }
-
-  void normalize() { this->_product.normalize(); }
-
-  void minimize() { this->_product.minimize(); }
-
-}; // class numerical_nullity_domain
-
 template <typename Number, typename VariableName, typename Domain1,
           typename Domain2>
 struct abstract_domain_traits<
@@ -2255,27 +1886,6 @@ struct abstract_domain_traits<numerical_congruence_domain<NumAbsDom>> {
   typedef typename NumAbsDom::varname_t varname_t;
 };
 
-template <typename Domain>
-struct abstract_domain_traits<numerical_nullity_domain<Domain>> {
-  typedef typename Domain::number_t number_t;
-  typedef typename Domain::varname_t varname_t;
-};
-
-template <typename Dom>
-struct array_graph_domain_helper_traits<numerical_nullity_domain<Dom>> {
-  typedef numerical_nullity_domain<Dom> num_null_domain_t;
-  typedef typename num_null_domain_t::linear_constraint_t linear_constraint_t;
-  typedef typename Dom::variable_t variable_t;
-
-  static bool is_unsat(num_null_domain_t &inv, linear_constraint_t cst) {
-    return array_graph_domain_helper_traits<Dom>::is_unsat(inv.first(), cst);
-  }
-
-  static void active_variables(num_null_domain_t &inv,
-                               std::vector<variable_t> &out) {
-    array_graph_domain_helper_traits<Dom>::active_variables(inv.first(), out);
-  }
-};
 
 } // end namespace domains
 } // namespace crab

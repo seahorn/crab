@@ -1,5 +1,6 @@
 #pragma once
 
+#include <crab/types/types.hpp>
 #include <crab/domains/abstract_domain_operators.hpp>
 #include <crab/iterators/thresholds.hpp>
 #include <vector>
@@ -45,7 +46,7 @@ public:
       disjunctive_linear_constraint_system_t;
   typedef ikos::variable<number_t, varname_t> variable_t;
   typedef std::vector<variable_t> variable_vector_t;
-  typedef pointer_constraint<variable_t> pointer_constraint_t;
+  typedef reference_constraint<number_t,varname_t> reference_constraint_t;
 
   abstract_domain() : ikos::writeable() {}
 
@@ -100,7 +101,7 @@ public:
                      number_t k) = 0;
   // x := e
   virtual void assign(variable_t x, linear_expression_t e) = 0;
-  // forall cst in csts: assume(cst)
+  // add all constraints \in csts 
   virtual void operator+=(linear_constraint_system_t csts) = 0;
   // x := y op z
   virtual void apply(bitwise_operation_t op, variable_t x, variable_t y,
@@ -128,7 +129,7 @@ public:
 
   /**************************** Array operations *****************************/
   // make a fresh array with contents a[j] initialized to val such that
-  // j \in [lb_idx,ub_idx] and j % elem_size == 0.
+  // j \in [lb_idx,ub_idx] and j % elem_size == val.
   // elem_size is in bytes.
   virtual void array_init(variable_t a, linear_expression_t elem_size,
                           linear_expression_t lb_idx,
@@ -138,48 +139,61 @@ public:
   virtual void array_load(variable_t lhs, variable_t a,
                           linear_expression_t elem_size,
                           linear_expression_t i) = 0;
-  // a[i] := v where elem_size is in bytes
+  // a[i] := val where elem_size is in bytes
   virtual void array_store(variable_t a, linear_expression_t elem_size,
-                           linear_expression_t i, linear_expression_t v,
+                           linear_expression_t i, linear_expression_t val,
                            bool is_strong_update) = 0;
-  // a_new = a_old[i <- v] where elem_size is in bytes
+  // a_new = a_old[i <- val] where elem_size is in bytes
   virtual void array_store(variable_t a_new, variable_t a_old,
                            linear_expression_t elem_size, linear_expression_t i,
-                           linear_expression_t v, bool is_strong_update) = 0;
-  // forall i<=k<j and k % elem_size == 0 :: a[k] := v.
+                           linear_expression_t val, bool is_strong_update) = 0;
+  // forall i<=k<j and k % elem_size == 0 :: a[k] := val.
   // elem_size is in bytes
   virtual void array_store_range(variable_t a, linear_expression_t elem_size,
                                  linear_expression_t i, linear_expression_t j,
-                                 linear_expression_t v) = 0;
-  // forall i<=k<j and k % elem_size == 0 :: a_new = a_old[k <- v].
+                                 linear_expression_t val) = 0;
+  // forall i<=k<j and k % elem_size == 0 :: a_new = a_old[k <- val].
   // elem_size is in bytes
   virtual void array_store_range(variable_t a_new, variable_t a_old,
                                  linear_expression_t elem_size,
                                  linear_expression_t i, linear_expression_t j,
-                                 linear_expression_t v) = 0;
+                                 linear_expression_t val) = 0;
   // forall i :: a[i] := b[i]
   virtual void array_assign(variable_t a, variable_t b) = 0;
-
-  /**************************** Pointer operations ************************/
-  // p := *q
-  // elem_size is the number of bytes read from memory
-  virtual void pointer_load(variable_t p, variable_t q, linear_expression_t elem_size) = 0;
-  // *p := q
-  // elem_size is the number of bytes written into memory
-  virtual void pointer_store(variable_t p, variable_t q, linear_expression_t elem_size) = 0;
-  // p := q + offset
-  virtual void pointer_assign(variable_t p, variable_t q, linear_expression_t offset) = 0;
-  // p := &a;
-  virtual void pointer_mk_obj(variable_t p, ikos::index_t address) = 0;
-  // p := &func
-  virtual void pointer_function(variable_t p, varname_t func) = 0;
-  // p := null
-  virtual void pointer_mk_null(variable_t p) = 0;
-  // assume(cst);
-  virtual void pointer_assume(pointer_constraint_t cst) = 0;
-  // assert(cst);
-  virtual void pointer_assert(pointer_constraint_t cst) = 0;
-
+  /**************************** Reference operations ************************/
+  // A reference is a non-deterministic address within a region
+  // 
+  // There are two operations that can create references to a region:
+  // - ref_make
+  // - ref_gep
+  //
+  // The rest of operations (except ref_assume) take a reference to a
+  // region and read/write from/to it.
+  //
+  // Initialize region. If reg already exists then error.
+  virtual void region_init(memory_region reg) = 0;
+  // Create a new reference ref to region reg.
+  virtual void ref_make(variable_t ref, memory_region reg) = 0;
+  // Read the content of reference ref within reg. The content is
+  // stored in res.
+  virtual void ref_load(variable_t ref, memory_region reg, variable_t res) = 0;
+  // Write the content of val to the address pointed by ref in region
+  // reg.
+  virtual void ref_store(variable_t ref, memory_region reg, linear_expression_t val) = 0;
+  // Create a new reference ref2 to region reg2.
+  // The reference ref2 is created by adding offset to ref1.
+  virtual void ref_gep(variable_t ref1, memory_region reg1,
+		       variable_t ref2, memory_region reg2,
+		       linear_expression_t offset) = 0;
+  // Treat memory pointed by ref  as an array and perform an array load.
+  virtual void ref_load_from_array(variable_t lhs, variable_t ref, memory_region region,
+				   linear_expression_t index, linear_expression_t elem_size) = 0;
+  // Treat region as an array and perform an array store.
+  virtual void ref_store_to_array(variable_t ref, memory_region region,
+				  linear_expression_t index, linear_expression_t elem_size,
+				  linear_expression_t val) = 0;
+  // Add constraints between references 
+  virtual void ref_assume(reference_constraint_t cst) = 0;
   /**************************** Backward arithmetic operations ***************/
   // x = y op z
   // Substitute x with y op z in the abstract value
@@ -240,7 +254,7 @@ public:
   // forget v
   virtual void operator-=(variable_t v) = 0;
 
-  // Convert the abstract state into a conjunction of linear constraints
+  // Convert the abstract state into a conjunction of linear constraints.
   virtual linear_constraint_system_t to_linear_constraint_system() = 0;
 
   // Convert the abstract state into a disjunction of conjunction

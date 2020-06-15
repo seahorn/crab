@@ -34,7 +34,7 @@ public:
   using typename abstract_domain_t::linear_constraint_system_t;
   using typename abstract_domain_t::linear_constraint_t;
   using typename abstract_domain_t::linear_expression_t;
-  using typename abstract_domain_t::pointer_constraint_t;
+  using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
   typedef Number number_t;
@@ -239,33 +239,36 @@ public:
     CRAB_ERROR(APRON_NOT_FOUND);
   }
 
-  void pointer_load(variable_t lhs, variable_t rhs, linear_expression_t elem_size) {
-    CRAB_ERROR(APRON_NOT_FOUND);
+  void region_init(memory_region reg) override {
+    CRAB_ERROR(APRON_NOT_FOUND);        
+  }          
+  void ref_make(variable_t ref, memory_region reg) override {
+    CRAB_ERROR(APRON_NOT_FOUND);    
   }
-
-  void pointer_store(variable_t lhs, variable_t rhs, linear_expression_t elem_size) {
-    CRAB_ERROR(APRON_NOT_FOUND);
+  void ref_load(variable_t ref, memory_region reg, variable_t res) override {
+    CRAB_ERROR(APRON_NOT_FOUND);    
   }
-
-  void pointer_assign(variable_t lhs, variable_t rhs,
-                      linear_expression_t offset) {
-    CRAB_ERROR(APRON_NOT_FOUND);
+  void ref_store(variable_t ref, memory_region reg, linear_expression_t val) override {
+    CRAB_ERROR(APRON_NOT_FOUND);    
   }
-
-  void pointer_mk_obj(variable_t lhs, ikos::index_t address) {
-    CRAB_ERROR(APRON_NOT_FOUND);
+  void ref_gep(variable_t ref1, memory_region reg1,
+	       variable_t ref2, memory_region reg2,
+	       linear_expression_t offset) override {
+    CRAB_ERROR(APRON_NOT_FOUND);    
   }
-
-  void pointer_function(variable_t lhs, varname_t func) {
-    CRAB_ERROR(APRON_NOT_FOUND);
+  void ref_load_from_array(variable_t lhs, variable_t ref, memory_region region,
+			   linear_expression_t index, linear_expression_t elem_size) override {
+    CRAB_ERROR(APRON_NOT_FOUND);    
   }
-
-  void pointer_mk_null(variable_t lhs) { CRAB_ERROR(APRON_NOT_FOUND); }
-
-  void pointer_assume(pointer_constraint_t cst) { CRAB_ERROR(APRON_NOT_FOUND); }
-
-  void pointer_assert(pointer_constraint_t cst) { CRAB_ERROR(APRON_NOT_FOUND); }
-
+  void ref_store_to_array(variable_t ref, memory_region region,
+			  linear_expression_t index, linear_expression_t elem_size,
+			  linear_expression_t val) override {
+    CRAB_ERROR(APRON_NOT_FOUND);    
+  }
+  void ref_assume(reference_constraint_t cst) override {
+    CRAB_ERROR(APRON_NOT_FOUND);    
+  }
+  
   linear_constraint_system_t to_linear_constraint_system() {
     CRAB_ERROR(APRON_NOT_FOUND);
   }
@@ -349,7 +352,7 @@ public:
   using typename abstract_domain_t::linear_constraint_system_t;
   using typename abstract_domain_t::linear_constraint_t;
   using typename abstract_domain_t::linear_expression_t;
-  using typename abstract_domain_t::pointer_constraint_t;
+  using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
   typedef Number number_t;
@@ -1780,9 +1783,7 @@ public:
      Begin unimplemented operations.
 
      apron_domain implements only standard abstract operations
-     of a numerical domain.  The implementation of boolean,
-     array, or pointer operations is empty because they should
-     never be called.
+     of a numerical domain. 
   */
 
   // boolean operations
@@ -1846,15 +1847,21 @@ public:
                                   apron_domain_t invariant) {}
   void backward_array_assign(variable_t lhs, variable_t rhs,
                              apron_domain_t invariant) {}
-  // pointer operations
-  void pointer_load(variable_t lhs, variable_t rhs, linear_expression_t elem_size) {}
-  void pointer_store(variable_t lhs, variable_t rhs, linear_expression_t elem_size) {}
-  void pointer_assign(variable_t lhs, variable_t rhs, linear_expression_t offset) {}
-  void pointer_mk_obj(variable_t lhs, ikos::index_t address) {}
-  void pointer_function(variable_t lhs, varname_t func) {}
-  void pointer_mk_null(variable_t lhs) {}
-  void pointer_assume(pointer_constraint_t cst) {}
-  void pointer_assert(pointer_constraint_t cst) {}
+  // reference operations
+  void region_init(memory_region reg) override {}          
+  void ref_make(variable_t ref, memory_region reg) override {}
+  void ref_load(variable_t ref, memory_region reg, variable_t res) override {}
+  void ref_store(variable_t ref, memory_region reg, linear_expression_t val) override {}
+  void ref_gep(variable_t ref1, memory_region reg1,
+	       variable_t ref2, memory_region reg2,
+	       linear_expression_t offset) override {}
+  void ref_load_from_array(variable_t lhs, variable_t ref, memory_region region,
+			   linear_expression_t index, linear_expression_t elem_size) override {}
+  void ref_store_to_array(variable_t ref, memory_region region,
+			  linear_expression_t index, linear_expression_t elem_size,
+			  linear_expression_t val) override {}
+  void ref_assume(reference_constraint_t cst) override {}
+  
   /* End unimplemented operations */
 
   interval_domain_t to_interval_domain() {
@@ -2068,7 +2075,7 @@ public:
   using typename abstract_domain_t::linear_constraint_system_t;
   using typename abstract_domain_t::linear_constraint_t;
   using typename abstract_domain_t::linear_expression_t;
-  using typename abstract_domain_t::pointer_constraint_t;
+  using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
   typedef typename linear_constraint_t::kind_t constraint_kind_t;
@@ -2283,15 +2290,20 @@ public:
                                   apron_domain_t invariant) {}
   void backward_array_assign(variable_t lhs, variable_t rhs,
                              apron_domain_t invariant) {}
-  // pointer operations
-  void pointer_load(variable_t lhs, variable_t rhs, linear_expression_t elem_size) {}
-  void pointer_store(variable_t lhs, variable_t rhs, linear_expression_t elem_size) {}
-  void pointer_assign(variable_t lhs, variable_t rhs, linear_expression_t offset) {}
-  void pointer_mk_obj(variable_t lhs, ikos::index_t address) {}
-  void pointer_function(variable_t lhs, varname_t func) {}
-  void pointer_mk_null(variable_t lhs) {}
-  void pointer_assume(pointer_constraint_t cst) {}
-  void pointer_assert(pointer_constraint_t cst) {}
+  // reference operations
+  void region_init(memory_region reg) override {}
+  void ref_make(variable_t ref, memory_region reg) override {}
+  void ref_load(variable_t ref, memory_region reg, variable_t res) override {}
+  void ref_store(variable_t ref, memory_region reg, linear_expression_t val) override {}
+  void ref_gep(variable_t ref1, memory_region reg1,
+	       variable_t ref2, memory_region reg2,
+	       linear_expression_t offset) override {}
+  void ref_load_from_array(variable_t lhs, variable_t ref, memory_region region,
+			   linear_expression_t index, linear_expression_t elem_size) override {}
+  void ref_store_to_array(variable_t ref, memory_region region,
+			  linear_expression_t index, linear_expression_t elem_size,
+			  linear_expression_t val) override {}
+  void ref_assume(reference_constraint_t cst) override {}
   /* End unimplemented operations */
 
   void rename(const variable_vector_t &from, const variable_vector_t &to) {

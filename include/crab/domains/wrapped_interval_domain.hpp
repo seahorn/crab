@@ -1305,7 +1305,7 @@ public:
   using typename abstract_domain_t::linear_constraint_system_t;
   using typename abstract_domain_t::linear_constraint_t;
   using typename abstract_domain_t::linear_expression_t;
-  using typename abstract_domain_t::pointer_constraint_t;
+  using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
   typedef Number number_t;
@@ -1809,15 +1809,20 @@ public:
                                   wrapped_interval_domain_t invariant) {}
   void backward_array_assign(variable_t lhs, variable_t rhs,
                              wrapped_interval_domain_t invariant) {}
-  // pointer operations
-  void pointer_load(variable_t lhs, variable_t rhs, linear_expression_t elem_size) {}
-  void pointer_store(variable_t lhs, variable_t rhs, linear_expression_t elem_size) {}
-  void pointer_assign(variable_t lhs, variable_t rhs, linear_expression_t offset) {}
-  void pointer_mk_obj(variable_t lhs, ikos::index_t address) {}
-  void pointer_function(variable_t lhs, varname_t func) {}
-  void pointer_mk_null(variable_t lhs) {}
-  void pointer_assume(pointer_constraint_t cst) {}
-  void pointer_assert(pointer_constraint_t cst) {}
+  // reference operations
+  void region_init(memory_region reg) override {}                  
+  void ref_make(variable_t ref, memory_region reg) override {}
+  void ref_load(variable_t ref, memory_region reg, variable_t res) override {}
+  void ref_store(variable_t ref, memory_region reg, linear_expression_t val) override {}
+  void ref_gep(variable_t ref1, memory_region reg1,
+	       variable_t ref2, memory_region reg2,
+	       linear_expression_t offset) override {}
+  void ref_load_from_array(variable_t lhs, variable_t ref, memory_region region,
+			   linear_expression_t index, linear_expression_t elem_size) override {}
+  void ref_store_to_array(variable_t ref, memory_region region,
+			  linear_expression_t index, linear_expression_t elem_size,
+			  linear_expression_t val) override {}
+  void ref_assume(reference_constraint_t cst) override {}
   /* End unimplemented operations */
 
   void forget(const variable_vector_t &variables) {
@@ -2174,7 +2179,7 @@ public:
   using typename abstract_domain_t::linear_constraint_system_t;
   using typename abstract_domain_t::linear_constraint_t;
   using typename abstract_domain_t::linear_expression_t;
-  using typename abstract_domain_t::pointer_constraint_t;
+  using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
   typedef Number number_t;
@@ -2629,15 +2634,20 @@ public:
                                   linear_expression_t v, this_type invariant) {}
   void backward_array_assign(variable_t lhs, variable_t rhs,
                              this_type invariant) {}
-  // pointer operations
-  void pointer_load(variable_t lhs, variable_t rhs, linear_expression_t elem_size) {}
-  void pointer_store(variable_t lhs, variable_t rhs, linear_expression_t elem_size) {}
-  void pointer_assign(variable_t lhs, variable_t rhs, linear_expression_t offset) {}
-  void pointer_mk_obj(variable_t lhs, ikos::index_t address) {}
-  void pointer_function(variable_t lhs, varname_t func) {}
-  void pointer_mk_null(variable_t lhs) {}
-  void pointer_assume(pointer_constraint_t cst) {}
-  void pointer_assert(pointer_constraint_t cst) {}
+  // reference operations
+  void region_init(memory_region reg) override {}          
+  void ref_make(variable_t ref, memory_region reg) override {}
+  void ref_load(variable_t ref, memory_region reg, variable_t res) override {}
+  void ref_store(variable_t ref, memory_region reg, linear_expression_t val) override {}
+  void ref_gep(variable_t ref1, memory_region reg1,
+	       variable_t ref2, memory_region reg2,
+	       linear_expression_t offset) override {}
+  void ref_load_from_array(variable_t lhs, variable_t ref, memory_region region,
+			   linear_expression_t index, linear_expression_t elem_size) override {}
+  void ref_store_to_array(variable_t ref, memory_region region,
+			  linear_expression_t index, linear_expression_t elem_size,
+			  linear_expression_t val) override {}
+  void ref_assume(reference_constraint_t cst) override {}
   /* End unimplemented operations */
 
   void write(crab_os &o) {
@@ -2817,14 +2827,13 @@ public:
   using typename abstract_domain_t::linear_constraint_system_t;
   using typename abstract_domain_t::linear_constraint_t;
   using typename abstract_domain_t::linear_expression_t;
-  using typename abstract_domain_t::pointer_constraint_t;
+  using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
   typedef typename linear_constraint_system_t::variable_set_t variable_set_t;
   typedef typename NumDom::number_t number_t;
   typedef typename NumDom::varname_t varname_t;
   typedef interval<number_t> interval_t;
-  typedef crab::pointer_constraint<variable_t> ptr_cst_t;
   typedef typename variable_t::bitwidth_t bitwidth_t;
 
 private:
@@ -3413,37 +3422,35 @@ public:
   virtual void
   backward_array_assign(variable_t lhs, variable_t rhs,
                         wrapped_numerical_domain_t invariant) override {}
-  // pointer operations
-  virtual void pointer_load(variable_t lhs, variable_t rhs, linear_expression_t elem_size) override {
-    _product.pointer_load(lhs, rhs, elem_size);
+  // reference api
+  void region_init(memory_region reg) override {
+    _product.region_init(reg);      
+  }                  
+  void ref_make(variable_t ref, memory_region reg) override {
+    _product.ref_make(ref, reg);
   }
-
-  virtual void pointer_store(variable_t lhs, variable_t rhs, linear_expression_t elem_size) override {
-    _product.pointer_store(lhs, rhs, elem_size);
+  void ref_load(variable_t ref, memory_region reg, variable_t res) override {
+    _product.ref_load(ref, reg, res);
   }
-
-  virtual void pointer_assign(variable_t lhs, variable_t rhs, linear_expression_t offset) override {
-    _product.pointer_assign(lhs, rhs, offset);
+  void ref_store(variable_t ref, memory_region reg, linear_expression_t val) override {
+    _product.ref_store(ref, reg, val);
   }
-
-  virtual void pointer_mk_obj(variable_t lhs, ikos::index_t address) override {
-    _product.pointer_mk_obj(lhs, address);
+  void ref_gep(variable_t ref1, memory_region reg1,
+		       variable_t ref2, memory_region reg2,
+		       linear_expression_t offset) override {
+    _product.ref_gep(ref1, reg1, ref2, reg2, offset);
   }
-
-  virtual void pointer_function(variable_t lhs, varname_t func) override {
-    _product.pointer_function(lhs, func);
+  void ref_load_from_array(variable_t lhs, variable_t ref, memory_region region,
+				   linear_expression_t index, linear_expression_t elem_size) override {
+    _product.ref_load_from_array(lhs, ref, region, index, elem_size);
   }
-
-  virtual void pointer_mk_null(variable_t lhs) override {
-    _product.pointer_mk_null(lhs);
+  void ref_store_to_array(variable_t ref, memory_region region,
+				  linear_expression_t index, linear_expression_t elem_size,
+				  linear_expression_t val) override {
+    _product.ref_store_to_array(ref, region, index, elem_size, val);
   }
-
-  virtual void pointer_assume(ptr_cst_t cst) override {
-    _product.pointer_assume(cst);
-  }
-
-  virtual void pointer_assert(ptr_cst_t cst) override {
-    _product.pointer_assert(cst);
+  void ref_assume(reference_constraint_t cst) override {
+    _product.ref_assume(cst);
   }
 
   void write(crab_os &o) { _product.write(o); }
