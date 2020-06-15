@@ -2,13 +2,26 @@
 #include "../common.hpp"
 
 using namespace std;
-using namespace crab::analyzer;
 using namespace crab::cfg;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
 z_cfg_t* prog (variable_factory_t &vfac)  {
-
+  /*
+     i := 0;
+     x := 1;
+     y := 0;
+     z := 3;
+     w := 3;
+     while (i < 100) {
+       x  := x + y;
+       y  := y + 1;
+       nd := *;
+       z  := z xor nd;
+       w  := w xor nd;
+       i  := i + 1;
+     }
+   */
   // Definining program variables
   z_var i (vfac ["i"], crab::INT_TYPE, 32);
   z_var x (vfac ["x"], crab::INT_TYPE, 32);

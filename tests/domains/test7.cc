@@ -2,14 +2,27 @@
 #include "../common.hpp"
 
 using namespace std;
-using namespace crab::analyzer;
 using namespace crab::cfg;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
-/* Example of how to build a CFG */
 z_cfg_t* prog (variable_factory_t &vfac)  {
 
+  /*
+    i, n: 64 integer
+    n1  : 32 integer
+
+    i  := 0;
+    n  := *;
+    n1 := truncate(n);
+    b1 := (n1 == 9);
+    assume(b1);
+    while (i <= n) {
+       i++;
+    }
+    assert(i == 10);
+   */
+  
   // Defining program variables
   z_var i(vfac ["i"], crab::INT_TYPE, 64);
   z_var b1(vfac ["b1"], crab::BOOL_TYPE, 1);

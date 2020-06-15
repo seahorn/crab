@@ -2,13 +2,24 @@
 #include "../common.hpp"
 
 using namespace std;
-using namespace crab::analyzer;
 using namespace crab::cfg;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
 z_cfg_t* prog (variable_factory_t &vfac) {
 
+  /*
+     i := 0;
+     while (i<=3) {
+       j:=0;
+       while (j <= 3) {
+         assert (i <= j + 3);
+         i++;
+         j++;
+       }
+       i := i - j + 1;
+     }
+   */ 
   z_cfg_t* cfg = new z_cfg_t("entry");
   z_basic_block_t& entry = cfg->insert ("entry");
   z_basic_block_t& l1 = cfg->insert ("l1");

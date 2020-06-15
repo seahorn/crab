@@ -2,14 +2,36 @@
 #include "../common.hpp"
 
 using namespace std;
-using namespace crab::analyzer;
 using namespace crab::cfg;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 
-/* Example of how to build a CFG */
+/* 
+ * Crab distinguishes between integer and booleans. 
+ * Examples of programs with booleans
+*/
+
+
 z_cfg_t* prog1 (variable_factory_t &vfac)  {
 
+  /*
+        i := 0;
+        b_true  := true;
+        b_false := false;
+        b1 := (i <= 99);
+        while (b1) {
+          assert(b1);
+          i  += ( * ? 1: 2);
+          b3 := (i >= 1);
+          b4 := b3
+          // b4 won't change after these four statements
+          b4 := b4 or b_false
+          b4 := b4 and b_true
+          b4 := b4 xor b_true;
+          b4 := b4 xor b_true;
+          b1 := (i <= 99);
+        }   
+   */
   // Defining program variables
   z_var i(vfac["i"], crab::INT_TYPE, 32);
   z_var nd(vfac["nd"], crab::INT_TYPE, 32);
@@ -59,6 +81,17 @@ z_cfg_t* prog1 (variable_factory_t &vfac)  {
 
 z_cfg_t* prog2 (variable_factory_t &vfac)  {
 
+  /*
+     i := 0;
+     n := *;
+     b := (n == 10);
+     assume(b); 
+     while (i <= n) {
+       i++;
+     }
+     assert(i == 10);
+   */
+  
   // Defining program variables
   z_var i(vfac["i"], crab::INT_TYPE, 32);
   z_var b(vfac["b"], crab::BOOL_TYPE, 1);
@@ -93,6 +126,20 @@ z_cfg_t* prog2 (variable_factory_t &vfac)  {
 
 z_cfg_t* prog3 (variable_factory_t &vfac)  {
 
+  /*
+      i := 0;
+      n := *;
+      b := (n == 10)
+      if (*) {
+        n : = 1;
+      }
+      assume(b);
+      while (i <= n) {
+        i++;
+      }
+      assert(i == 10);
+   */
+  
   // Defining program variables
   z_var i (vfac ["i"], crab::INT_TYPE, 32);
   z_var b (vfac ["b"], crab::BOOL_TYPE, 1);
