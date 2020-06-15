@@ -1,8 +1,9 @@
 #pragma once
 
 #include <boost/optional.hpp>
-#include <crab/common/types.hpp>
 #include <crab/domains/term/term_expr.hpp>
+#include <crab/domains/term/term_operators.hpp>
+
 /*
    Simplifiers for table terms after giving meaning to functors.
 */
@@ -35,26 +36,26 @@ public:
 // Trivial simplifier by giving standard mathematical meaning
 // to arithmetic operators assuming that conmutativity,
 // associativity etc properties hold as expected.
-template <class Num> class NumSimplifier : Simplifier<Num, binary_operation_t> {
-  typedef Simplifier<Num, binary_operation_t> simplifier_t;
+template <class Num> class NumSimplifier : Simplifier<Num, term_operator_t> {
+  typedef Simplifier<Num, term_operator_t> simplifier_t;
 
-  typedef term_table<Num, binary_operation_t> term_table_t;
+  typedef term_table<Num, term_operator_t> term_table_t;
   typedef typename term_table_t::term_id_t term_id_t;
   typedef typename term_table_t::term_t term_t;
 
   // Simplify term f(left,right)
-  boost::optional<term_id_t> simplify_term(binary_operation_t f, term_id_t left,
+  boost::optional<term_id_t> simplify_term(term_operator_t f, term_id_t left,
                                            term_id_t right) {
     // Only consider these two rules:
     //   '/'('*'(x,y),x) = y
     //   '/'('*'(x,y),y) = x
     switch (f) {
-    case BINOP_SDIV:
-    case BINOP_UDIV: {
+    case TERM_OP_SDIV:
+    case TERM_OP_UDIV: {
       term_t *tleft = this->_ttbl.get_term_ptr(left);
       term_t *tright = this->_ttbl.get_term_ptr(right);
 
-      if ((tleft->kind() == TERM_APP) && term_ftor(tleft) == BINOP_MUL) {
+      if ((tleft->kind() == TERM_APP) && term_ftor(tleft) == TERM_OP_MUL) {
         std::vector<term_id_t> &args(term_args(tleft));
         assert(args.size() == 2);
         term_t *tl = this->_ttbl.get_term_ptr(args[0]);

@@ -11,8 +11,9 @@
 
 #pragma once
 
-#include <crab/cfg/var_factory.hpp>
 #include <crab/common/types.hpp>
+
+#include <crab/cfg/var_factory.hpp>
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
@@ -20,6 +21,7 @@
 #include <crab/domains/term/inverse.hpp>
 #include <crab/domains/term/simplify.hpp>
 #include <crab/domains/term/term_expr.hpp>
+#include <crab/domains/term/term_operators.hpp>
 #include <crab/numbers/bignums.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
@@ -94,7 +96,7 @@ public:
   typedef interval<number_t> interval_t;
 
 private:
-  typedef term::term_table<number_t, binary_operation_t> ttbl_t;
+  typedef term::term_table<number_t, term::term_operator_t> ttbl_t;
   typedef typename ttbl_t::term_id_t term_id_t;
 
   // WARNING: assumes the underlying domain uses the same number type.
@@ -174,13 +176,13 @@ private:
   //   check_terms(__LINE__);
   // }
 
-  void apply(dom_t &dom, binary_operation_t op, dom_var_t x, dom_var_t y,
+  void apply(dom_t &dom, term::term_operator_t op, dom_var_t x, dom_var_t y,
              dom_var_t z) {
-    if (auto top = conv_op<operation_t>(op)) {
+    if (auto top = conv2arith(op)) {
       dom.apply(*top, x, y, z);
-    } else if (auto top = conv_op<bitwise_operation_t>(op)) {
+    } else if (auto top = conv2bitwise(op)) {
       dom.apply(*top, x, y, z);
-    } else if (op == BINOP_FUNCTION) {
+    } else if (op == term::TERM_OP_FUNCTION) {
       // uninterpreted function: do nothing in the underlying
       // numerical domain.
     } else {
@@ -198,7 +200,7 @@ private:
 
     // Only apply functors.
     if (t_ptr->kind() == term::TERM_APP) {
-      binary_operation_t op = term::term_ftor(t_ptr);
+      term::term_operator_t op = term::term_ftor(t_ptr);
 
       std::vector<term_id_t> &args(term::term_args(t_ptr));
       assert(args.size() == 2);
@@ -213,11 +215,11 @@ private:
 
     // Only apply functors.
     if (t_ptr->kind() == term::TERM_APP) {
-      binary_operation_t op = term::term_ftor(t_ptr);
+      term::term_operator_t op = term::term_ftor(t_ptr);
       std::vector<term_id_t> &args(term::term_args(t_ptr));
       assert(args.size() == 2);
 
-      if (boost::optional<operation_t> arith_op = conv_op<operation_t>(op)) {
+      if (boost::optional<operation_t> arith_op = conv2arith(op)) {
         term::InverseOps<dom_number, dom_var_t, dom_t>::apply(
             dom, *arith_op, domvar_of_term(t), domvar_of_term(args[0]),
             domvar_of_term(args[1]));
@@ -231,42 +233,84 @@ private:
     return ret;
   }
 
-  binary_operation_t conv2binop(operation_t op) {
+  term::term_operator_t conv2termop(operation_t op) {
     switch (op) {
     case OP_ADDITION:
-      return BINOP_ADD;
+      return term::TERM_OP_ADD;
     case OP_SUBTRACTION:
-      return BINOP_SUB;
+      return term::TERM_OP_SUB;
     case OP_MULTIPLICATION:
-      return BINOP_MUL;
+      return term::TERM_OP_MUL;
     case OP_SDIV:
-      return BINOP_SDIV;
+      return term::TERM_OP_SDIV;
     case OP_UDIV:
-      return BINOP_UDIV;
+      return term::TERM_OP_UDIV;
     case OP_SREM:
-      return BINOP_SREM;
+      return term::TERM_OP_SREM;
     default:
-      return BINOP_UREM;
+      return term::TERM_OP_UREM;
     }
   }
 
-  binary_operation_t conv2binop(bitwise_operation_t op) {
+  boost::optional<operation_t> conv2arith(term::term_operator_t op) {
+    switch (op) {
+    case term::TERM_OP_ADD:
+      return ikos::OP_ADDITION;
+    case term::TERM_OP_SUB:
+      return ikos::OP_SUBTRACTION;
+    case term::TERM_OP_MUL:
+      return ikos::OP_MULTIPLICATION;
+    case term::TERM_OP_SDIV:
+      return ikos::OP_SDIV;
+    case term::TERM_OP_UDIV:
+    return ikos::OP_UDIV;
+    case term::TERM_OP_SREM:
+      return ikos::OP_SREM;
+    case term::TERM_OP_UREM:
+      return ikos::OP_UREM;
+    default:
+      return boost::optional<ikos::operation_t>();
+    }
+  }
+  
+  term::term_operator_t conv2termop(bitwise_operation_t op) {
     switch (op) {
     case OP_AND:
-      return BINOP_AND;
+      return term::TERM_OP_AND;
     case OP_OR:
-      return BINOP_OR;
+      return term::TERM_OP_OR;
     case OP_XOR:
-      return BINOP_XOR;
+      return term::TERM_OP_XOR;
     case OP_SHL:
-      return BINOP_SHL;
+      return term::TERM_OP_SHL;
     case OP_LSHR:
-      return BINOP_LSHR;
+      return term::TERM_OP_LSHR;
     default:
-      return BINOP_ASHR;
+      return term::TERM_OP_ASHR;
     }
   }
 
+  boost::optional<bitwise_operation_t> conv2bitwise(term::term_operator_t op) {
+    switch (op) {
+    case term::TERM_OP_AND:
+      return ikos::OP_AND;
+    case term::TERM_OP_OR:
+      return ikos::OP_OR;
+    case term::TERM_OP_XOR:
+    return ikos::OP_XOR;
+    case term::TERM_OP_SHL:
+      return ikos::OP_SHL;
+    case term::TERM_OP_LSHR:
+      return ikos::OP_LSHR;
+    case term::TERM_OP_ASHR:
+      return ikos::OP_ASHR;
+    default:
+      return boost::optional<bitwise_operation_t>();
+    }
+  }
+  
+
+  
   void check_terms(int line) const {
 #ifdef DEBUG_VARMAP
     for (auto const p : _var_map) {
@@ -389,7 +433,7 @@ private:
   template <typename OpTy>
   term_id_t build_term(OpTy op, term_id_t ty, term_id_t tz) {
     // Check if the term already exists
-    binary_operation_t binop = conv2binop(op);
+    term::term_operator_t binop = conv2termop(op);
     boost::optional<term_id_t> eopt(_ttbl.find_ftor(binop, ty, tz));
     if (eopt) {
       return *eopt;
@@ -412,7 +456,7 @@ private:
   }
 
   term_id_t build_function(term_id_t ty, term_id_t tz) {
-    binary_operation_t op = BINOP_FUNCTION;
+    term::term_operator_t op = term::TERM_OP_FUNCTION;
     // Check if the term already exists
     boost::optional<term_id_t> eopt(_ttbl.find_ftor(op, ty, tz));
     if (eopt) {
