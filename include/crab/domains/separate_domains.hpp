@@ -40,9 +40,11 @@
 
 #pragma once
 
-#include <boost/optional.hpp>
 #include <crab/common/types.hpp>
 #include <crab/domains/patricia_trees.hpp>
+#include <crab/support/debug.hpp>
+
+#include <boost/optional.hpp>
 
 namespace ikos {
 

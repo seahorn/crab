@@ -17,8 +17,6 @@
 
 #pragma once
 
-#include <crab/common/debug.hpp>
-#include <crab/common/stats.hpp>
 #include <crab/common/types.hpp>
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
@@ -27,6 +25,8 @@
 #include <crab/domains/graphs/graph_ops.hpp>
 #include <crab/domains/interval.hpp>
 #include <crab/domains/linear_constraints.hpp>
+#include <crab/support/debug.hpp>
+#include <crab/support/stats.hpp>
 
 #include <boost/container/flat_map.hpp>
 #include <boost/optional.hpp>

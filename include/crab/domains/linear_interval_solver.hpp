@@ -45,12 +45,13 @@
 
 #pragma once
 
-#include <crab/common/debug.hpp>
-#include <crab/common/stats.hpp>
 #include <crab/common/types.hpp>
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/numbers/bignums.hpp>
 #include <crab/numbers/wrapint.hpp>
+#include <crab/support/debug.hpp>
+#include <crab/support/stats.hpp>
+
 #include <map>
 #include <set>
 #include <vector>

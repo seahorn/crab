@@ -9,8 +9,8 @@
 #include <crab/analysis/dataflow/liveness.hpp>
 #include <crab/analysis/fwd_analyzer.hpp>
 #include <crab/cg/cg_bgl.hpp> // for wto of callgraphs
-#include <crab/common/debug.hpp>
-#include <crab/common/stats.hpp>
+#include <crab/support/debug.hpp>
+#include <crab/support/stats.hpp>
 #include <crab/iterators/wto.hpp>
 
 #include <crab/checkers/assertion.hpp>

@@ -2,7 +2,7 @@
 
 /* Logging and debug messages */
 
-#include <crab/common/os.hpp>
+#include <crab/support/os.hpp>
 
 #include <iosfwd>
 #include <set>

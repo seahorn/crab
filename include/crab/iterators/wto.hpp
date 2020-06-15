@@ -45,6 +45,11 @@
 
 #pragma once
 
+#include <crab/common/types.hpp>
+#include <crab/domains/interval.hpp>
+#include <crab/support/debug.hpp>
+#include <crab/support/stats.hpp>
+
 #include <boost/container/slist.hpp>
 #include <boost/iterator/indirect_iterator.hpp>
 #include <memory>
@@ -52,10 +57,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include <crab/common/debug.hpp>
-#include <crab/common/stats.hpp>
-#include <crab/common/types.hpp>
-#include <crab/domains/interval.hpp>
 
 // Define RECURSIVE_WTO to use older, recursive version.  It is
 // retained for a while for performance comparison purposes.

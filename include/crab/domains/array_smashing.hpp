@@ -9,11 +9,11 @@
 
 #pragma once
 
-#include <crab/common/debug.hpp>
-#include <crab/common/stats.hpp>
 #include <crab/common/types.hpp>
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
+#include <crab/support/debug.hpp>
+#include <crab/support/stats.hpp>
 
 namespace crab {
 

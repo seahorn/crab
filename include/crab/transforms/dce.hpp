@@ -1,9 +1,9 @@
 #pragma once
 
 #include <crab/analysis/dataflow/liveness.hpp>
-#include <crab/common/debug.hpp>
-#include <crab/common/stats.hpp>
 #include <crab/common/types.hpp>
+#include <crab/support/debug.hpp>
+#include <crab/support/stats.hpp>
 #include <crab/transforms/transform.hpp>
 
 namespace crab {

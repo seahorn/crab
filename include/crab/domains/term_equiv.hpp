@@ -11,19 +11,7 @@
 
 #pragma once
 
-#include <algorithm>
-#include <set>
-#include <utility>
-#include <vector>
-
-#include <boost/container/flat_map.hpp>
-#include <boost/container/flat_set.hpp>
-#include <boost/optional.hpp>
-#include <boost/range.hpp>
-
 #include <crab/cfg/var_factory.hpp>
-#include <crab/common/debug.hpp>
-#include <crab/common/stats.hpp>
 #include <crab/common/types.hpp>
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
@@ -34,6 +22,19 @@
 #include <crab/domains/term/simplify.hpp>
 #include <crab/domains/term/term_expr.hpp>
 #include <crab/numbers/bignums.hpp>
+#include <crab/support/debug.hpp>
+#include <crab/support/stats.hpp>
+
+#include <algorithm>
+#include <set>
+#include <utility>
+#include <vector>
+
+#include <boost/container/flat_map.hpp>
+#include <boost/container/flat_set.hpp>
+#include <boost/optional.hpp>
+#include <boost/range.hpp>
+
 
 //#define VERBOSE
 //#define DEBUG_VARMAP

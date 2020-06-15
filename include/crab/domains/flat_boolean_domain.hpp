@@ -12,6 +12,8 @@
 #include <crab/domains/discrete_domains.hpp>
 #include <crab/domains/intervals.hpp>
 #include <crab/domains/separate_domains.hpp>
+#include <crab/support/debug.hpp>
+#include <crab/support/stats.hpp>
 
 namespace crab {
 

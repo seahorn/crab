@@ -43,12 +43,13 @@
 
 #pragma once
 
-#include <crab/common/stats.hpp>
 #include <crab/common/types.hpp>
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
 #include <crab/domains/interval.hpp>
 #include <crab/domains/separate_domains.hpp>
+#include <crab/support/debug.hpp>
+#include <crab/support/stats.hpp>
 
 #include <boost/optional.hpp>
 

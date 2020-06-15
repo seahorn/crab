@@ -1,12 +1,12 @@
 #pragma once
 
+#include <crab/support/stats.hpp>
+
 #include <algorithm>
 #include <boost/graph/dominator_tree.hpp>
 #include <boost/property_map/property_map.hpp>
 #include <boost/version.hpp>
 #include <unordered_map>
-
-#include <crab/common/stats.hpp>
 
 /*
 

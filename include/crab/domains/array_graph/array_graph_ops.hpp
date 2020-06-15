@@ -1,10 +1,9 @@
 #pragma once
 
-#include <crab/common/debug.hpp>
-#include <crab/common/stats.hpp>
 #include <crab/common/types.hpp>
-
 #include <crab/domains/graphs/graph_ops.hpp>
+#include <crab/support/debug.hpp>
+#include <crab/support/stats.hpp>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsign-compare"

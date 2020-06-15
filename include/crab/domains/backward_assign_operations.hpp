@@ -8,11 +8,12 @@
  * need under-approximations.
  **/
 
-#include <crab/common/debug.hpp>
-#include <crab/common/stats.hpp>
-#include <crab/common/types.hpp>
 #include <crab/config.h>
+
+#include <crab/common/types.hpp>
 #include <crab/domains/abstract_domain_operators.hpp>
+#include <crab/support/debug.hpp>
+#include <crab/support/stats.hpp>
 
 namespace crab {
 namespace domains {

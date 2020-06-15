@@ -5,12 +5,12 @@
  * Symbolic Abstract Domain of Boxes" by A. Gurfinkel and S. Chaki
  * published in SAS'10.
  **************************************************************************/
-
-#include <crab/common/debug.hpp>
-#include <crab/common/stats.hpp>
-#include <crab/common/types.hpp>
 #include <crab/config.h>
+
+#include <crab/common/types.hpp>
 #include <crab/domains/abstract_domain.hpp>
+#include <crab/support/debug.hpp>
+#include <crab/support/stats.hpp>
 
 #ifndef HAVE_LDD
 /*

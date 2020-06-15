@@ -12,8 +12,8 @@
 #include <crab/analysis/graphs/topo_order.hpp>
 #include <crab/cfg/cfg.hpp>   // hasher of function declarations
 #include <crab/cg/cg_bgl.hpp> // for sccg.hpp
-#include <crab/common/debug.hpp>
-#include <crab/common/stats.hpp>
+#include <crab/support/debug.hpp>
+#include <crab/support/stats.hpp>
 
 #include <boost/range/iterator_range.hpp>
 

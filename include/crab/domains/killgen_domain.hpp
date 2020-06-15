@@ -4,10 +4,9 @@
  * Specialized domains for kill-gen problems.
  **/
 
-#include <crab/common/debug.hpp>
-#include <crab/common/stats.hpp>
 #include <crab/domains/discrete_domains.hpp>
 #include <crab/domains/patricia_trees.hpp>
+#include <crab/support/debug.hpp>
 
 #include <boost/optional.hpp>
 

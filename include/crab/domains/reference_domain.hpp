@@ -6,6 +6,8 @@
 #include <crab/domains/interval.hpp>
 #include <crab/domains/killgen_domain.hpp>
 #include <crab/domains/separate_domains.hpp>
+#include <crab/support/debug.hpp>
+#include <crab/support/stats.hpp>
 #include <crab/types/types.hpp>
 
 #include <functional>

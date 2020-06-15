@@ -18,13 +18,12 @@
  * (4) reduced product of an arbitrary numerical domain and congruences.
  **************************************************************************/
 
-#include <crab/common/stats.hpp>
 #include <crab/common/types.hpp>
 #include <crab/domains/abstract_domain.hpp>
-
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/congruences.hpp>
 #include <crab/domains/interval.hpp>
+#include <crab/support/stats.hpp>
 
 #include <boost/optional.hpp>
 

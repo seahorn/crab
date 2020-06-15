@@ -10,8 +10,8 @@
 #include <boost/optional.hpp>
 
 #include <crab/cfg/cfg.hpp>
-#include <crab/common/debug.hpp>
-#include <crab/common/stats.hpp>
+#include <crab/support/debug.hpp>
+#include <crab/support/stats.hpp>
 #include <crab/common/types.hpp>
 
 #include <functional> // for wrapper_reference and hash

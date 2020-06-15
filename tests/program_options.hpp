@@ -1,6 +1,6 @@
 #pragma once
 
-#include <crab/common/debug.hpp>
+#include <crab/support/debug.hpp>
 #include <crab/common/types.hpp>
 #include <boost/program_options.hpp>
 #include <iostream>

@@ -35,8 +35,6 @@
 
 #pragma once
 
-#include <crab/common/debug.hpp>
-#include <crab/common/stats.hpp>
 #include <crab/common/types.hpp>
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
@@ -46,16 +44,18 @@
 #include <crab/domains/graphs/sparse_graph.hpp>
 #include <crab/domains/intervals.hpp>
 #include <crab/domains/linear_constraints.hpp>
-
 // XXX: if expression domain is a template parameter no need to include
 #include <crab/domains/term_equiv.hpp>
 // XXX: for customized propagations between weight and scalar domains
 #include <crab/domains/combined_domains.hpp>
+#include <crab/support/debug.hpp>
+#include <crab/support/stats.hpp>
 
 #include <boost/container/flat_map.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/optional.hpp>
 #include <boost/range/iterator_range.hpp>
+
 #include <functional>
 #include <memory>
 #include <type_traits>

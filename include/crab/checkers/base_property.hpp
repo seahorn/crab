@@ -5,7 +5,7 @@
  */
 
 #include <crab/cfg/cfg.hpp>
-#include <crab/common/debug.hpp>
+#include <crab/support/debug.hpp>
 #include <crab/common/types.hpp>
 
 #include <set>

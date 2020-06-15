@@ -1,5 +1,8 @@
 #pragma once
 
+#include <crab/common/types.hpp>
+#include <crab/support/debug.hpp>
+
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/strong_components.hpp>
@@ -9,8 +12,6 @@
 #include <memory>
 #include <unordered_map>
 
-#include <crab/common/debug.hpp>
-#include <crab/common/types.hpp>
 
 /*
    Strongly connected component graph

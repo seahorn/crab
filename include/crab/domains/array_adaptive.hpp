@@ -27,15 +27,14 @@
 
 #pragma once
 
-#include <crab/common/debug.hpp>
-#include <crab/common/stats.hpp>
 #include <crab/common/types.hpp>
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
-
 #include <crab/domains/array_smashing.hpp>
 #include <crab/domains/interval.hpp>
 #include <crab/domains/patricia_trees.hpp>
+#include <crab/support/debug.hpp>
+#include <crab/support/stats.hpp>
 
 #include <algorithm>
 #include <functional>

@@ -7,8 +7,8 @@
 
 #include <crab/analysis/dataflow/assertion_crawler.hpp>
 #include <crab/cfg/cfg.hpp>
-#include <crab/common/debug.hpp>
-#include <crab/common/stats.hpp>
+#include <crab/support/debug.hpp>
+#include <crab/support/stats.hpp>
 #include <crab/common/types.hpp>
 
 #include <boost/range/iterator_range.hpp>

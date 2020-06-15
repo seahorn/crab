@@ -1,7 +1,7 @@
 #pragma once
 
-#include <crab/common/debug.hpp>
-#include <crab/common/os.hpp>
+#include <crab/support/debug.hpp>
+#include <crab/support/os.hpp>
 
 #include <boost/optional.hpp>
 #include <functional>

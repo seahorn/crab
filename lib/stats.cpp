@@ -1,5 +1,5 @@
 #include <crab/config.h>
-#include <crab/common/stats.hpp>
+#include <crab/support/stats.hpp>
 
 #ifndef CRAB_STATS
 namespace crab {

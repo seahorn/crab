@@ -49,6 +49,7 @@
 #include <crab/domains/linear_constraints.hpp>
 #include <crab/domains/linear_interval_solver.hpp>
 #include <crab/domains/separate_domains.hpp>
+#include <crab/support/stats.hpp>
 
 namespace ikos {
 

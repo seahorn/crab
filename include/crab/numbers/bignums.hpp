@@ -1,7 +1,7 @@
 #pragma once
 
 #include <boost/functional/hash.hpp>
-#include <crab/common/os.hpp>
+#include <crab/support/os.hpp>
 #include <cstdint>
 #include <gmp.h>
 

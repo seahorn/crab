@@ -44,6 +44,7 @@
 #include <crab/common/types.hpp>
 #include <crab/numbers/bignums.hpp>
 #include <crab/domains/patricia_trees.hpp>
+#include <crab/support/debug.hpp>
 
 #include <boost/container/flat_map.hpp>
 #include <boost/functional/hash_fwd.hpp> // for hash_combine

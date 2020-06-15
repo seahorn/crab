@@ -7,7 +7,7 @@
 #include <crab/analysis/fwd_analyzer.hpp>
 #include <crab/analysis/inter/bottom_up_inter_analyzer.hpp>
 #include <crab/checkers/base_property.hpp>
-#include <crab/common/stats.hpp>
+#include <crab/support/stats.hpp>
 #include <crab/common/types.hpp>
 
 #include <memory>

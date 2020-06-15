@@ -1,5 +1,5 @@
 
-#include <crab/common/debug.hpp>
+#include <crab/support/debug.hpp>
 #include <crab/numbers/safeint.hpp>
 
 #include <cstdint>

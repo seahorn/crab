@@ -44,12 +44,12 @@
 #pragma once
 
 #include <crab/cfg/cfg_bgl.hpp> // needed by wto
-#include <crab/common/debug.hpp>
-#include <crab/common/stats.hpp>
 #include <crab/common/types.hpp>
 #include <crab/iterators/fixpoint_iterators_api.hpp>
 #include <crab/iterators/thresholds.hpp>
 #include <crab/iterators/wto.hpp>
+#include <crab/support/debug.hpp>
+#include <crab/support/stats.hpp>
 
 #include <unordered_map>
 

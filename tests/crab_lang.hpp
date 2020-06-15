@@ -3,7 +3,7 @@
 
 #include <crab/config.h>
 #include <crab/common/types.hpp>
-#include <crab/common/debug.hpp>
+#include <crab/support/debug.hpp>
 #include <crab/cfg/cfg.hpp>
 #include <crab/cg/cg.hpp>
 #include <crab/cfg/var_factory.hpp>

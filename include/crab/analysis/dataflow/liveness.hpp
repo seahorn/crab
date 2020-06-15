@@ -2,8 +2,8 @@
 
 /* Liveness analysis */
 
-#include <crab/common/debug.hpp>
-#include <crab/common/stats.hpp>
+#include <crab/support/debug.hpp>
+#include <crab/support/stats.hpp>
 #include <crab/common/types.hpp>
 #include <crab/domains/killgen_domain.hpp>
 #include <crab/iterators/killgen_fixpoint_iterator.hpp>

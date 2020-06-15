@@ -42,13 +42,15 @@
 
 #pragma once
 
+#include <crab/common/types.hpp>
+#include <crab/support/debug.hpp>
+
 #include <algorithm>
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/optional.hpp>
 #include <memory>
 #include <vector>
 
-#include <crab/common/types.hpp>
 
 namespace ikos {
 

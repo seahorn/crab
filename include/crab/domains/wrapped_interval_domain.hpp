@@ -7,8 +7,6 @@
  ** P.J.Stuckey published in APLAS'12.
  **/
 
-#include <boost/optional.hpp>
-#include <crab/common/stats.hpp>
 #include <crab/common/types.hpp>
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
@@ -19,6 +17,9 @@
 #include <crab/domains/linear_interval_solver.hpp>
 #include <crab/domains/separate_domains.hpp>
 #include <crab/numbers/wrapint.hpp>
+#include <crab/support/stats.hpp>
+
+#include <boost/optional.hpp>
 
 #define PRINT_WRAPINT_AS_SIGNED
 
