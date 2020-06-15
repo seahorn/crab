@@ -45,11 +45,11 @@
 
 #pragma once
 
-#include <crab/domains/linear_constraints.hpp>
 #include <crab/numbers/bignums.hpp>
 #include <crab/numbers/wrapint.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
+#include <crab/types/linear_constraints.hpp>
 #include <crab/types/variable.hpp>
 
 #include <map>

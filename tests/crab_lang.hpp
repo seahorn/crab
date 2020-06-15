@@ -7,7 +7,6 @@
 #include <crab/cg/cg.hpp>
 #include <crab/cfg/var_factory.hpp>
 #include <crab/support/debug.hpp>
-#include <crab/types/variable.hpp>
 
 namespace crab {
 

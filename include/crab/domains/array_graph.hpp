@@ -43,7 +43,6 @@
 #include <crab/domains/graphs/adapt_sgraph.hpp>
 #include <crab/domains/graphs/sparse_graph.hpp>
 #include <crab/domains/intervals.hpp>
-#include <crab/domains/linear_constraints.hpp>
 // XXX: if expression domain is a template parameter no need to include
 #include <crab/domains/term_equiv.hpp>
 // XXX: for customized propagations between weight and scalar domains

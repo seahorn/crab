@@ -3,7 +3,6 @@
 
 #include "./crab_lang.hpp"
 
-#include <crab/domains/linear_constraints.hpp> 
 #include <crab/domains/intervals.hpp>
 #include <crab/domains/wrapped_interval_domain.hpp>
 #include <crab/domains/sparse_dbm.hpp>                      

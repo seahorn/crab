@@ -2,10 +2,10 @@
 
 #include <crab/cfg/cfg.hpp>
 #include <crab/cfg/cfg_bgl.hpp> // needed by wto.hpp
-#include <crab/domains/interval.hpp>
-#include <crab/domains/linear_constraints.hpp>
 #include <crab/iterators/wto.hpp>
+#include <crab/domains/interval.hpp>
 #include <crab/support/debug.hpp>
+#include <crab/types/linear_constraints.hpp>
 
 #include <boost/range/iterator_range.hpp>
 

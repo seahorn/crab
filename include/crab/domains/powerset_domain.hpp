@@ -2,7 +2,6 @@
 
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
-#include <crab/domains/linear_constraints.hpp>
 #include <crab/domains/interval.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>

@@ -1,11 +1,11 @@
 #pragma once
 
 #include <crab/domains/abstract_domain_operators.hpp>
-#include <crab/domains/linear_constraints.hpp>
 #include <crab/iterators/thresholds.hpp>
 #include <crab/types/variable.hpp>
 #include <crab/types/memory_regions.hpp>
 #include <crab/types/reference_constraints.hpp>
+#include <crab/types/linear_constraints.hpp>
 
 #include <vector>
 

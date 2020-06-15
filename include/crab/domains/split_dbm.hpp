@@ -23,7 +23,6 @@
 #include <crab/domains/graphs/graph_config.hpp>
 #include <crab/domains/graphs/graph_ops.hpp>
 #include <crab/domains/interval.hpp>
-#include <crab/domains/linear_constraints.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
 
