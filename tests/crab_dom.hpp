@@ -17,10 +17,10 @@
 #include <crab/domains/array_expansion.hpp>
 #include <crab/domains/array_graph.hpp>                      
 #include <crab/domains/array_smashing.hpp>
-#include <crab/domains/nullity.hpp>
 #include <crab/domains/flat_boolean_domain.hpp>                      
 #include <crab/domains/combined_domains.hpp>
 #include <crab/domains/powerset_domain.hpp>
+#include <crab/domains/reference_domain.hpp>
 
 namespace crab {
 
@@ -30,13 +30,15 @@ namespace crab {
     using namespace crab::domains; 
     using namespace ikos;
 
-    typedef pointer_constraint<variable<z_number, varname_t> > z_ptr_cst_t;
+    typedef reference_constraint<z_number, varname_t> z_ref_cst_t;
     typedef linear_constraint_system<z_number, varname_t> z_lin_cst_sys_t;
     typedef linear_constraint_system<q_number, varname_t> q_lin_cst_sys_t;
     typedef interval<z_number> z_interval_t;
     typedef interval<q_number> q_interval_t;
-    
+
+    /*===================================================================*/            
     // Numerical domains over integers
+    /*===================================================================*/            
     typedef interval_domain<z_number,varname_t> z_interval_domain_t;
     typedef numerical_congruence_domain<z_interval_domain_t> z_ric_domain_t;
     typedef DBM_impl::DefaultParams<z_number,DBM_impl::GraphRep::adapt_ss> z_SparseGraph;
@@ -55,14 +57,12 @@ namespace crab {
     typedef term_domain<term::TDomInfo<z_number,varname_t,z_sdbm_domain_t>> z_term_dbm_t;
     typedef term_domain<term::TDomInfo<z_number,varname_t,z_dis_interval_domain_t>> z_term_dis_int_t;
     typedef reduced_numerical_domain_product2<z_term_dis_int_t,z_sdbm_domain_t> z_num_domain_t;
-    // Pointer domains over integers
-    typedef nullity_domain<z_number, varname_t> z_nullity_domain_t;
-    // Numerical x pointer domains over integers
-    typedef numerical_nullity_domain<z_sdbm_domain_t> z_num_null_domain_t;
     // Boolean-numerical domain over integers
     typedef flat_boolean_numerical_domain<z_dbm_domain_t> z_bool_num_domain_t;
-    typedef flat_boolean_numerical_domain<z_interval_domain_t> z_bool_interval_domain_t;    
+    typedef flat_boolean_numerical_domain<z_interval_domain_t> z_bool_interval_domain_t;
+    /*===================================================================*/            
     // Arrays domains
+    /*===================================================================*/            
     class ArrayAdaptParams {
     public:
       enum { is_smashable = 1 };
@@ -79,16 +79,34 @@ namespace crab {
     typedef array_expansion_domain<z_box_apron_domain_t> z_ae_box_apron_t;
     typedef array_expansion_domain<z_zones_elina_domain_t> z_ae_zones_elina_t;
     typedef array_graph_domain<z_sdbm_domain_t,z_interval_domain_t> z_ag_sdbm_intv_t;
-    typedef array_graph_domain<z_num_null_domain_t,z_nullity_domain_t> z_ag_num_null_t;
     typedef array_smashing<z_dis_interval_domain_t> z_as_dis_int_t;
     typedef array_smashing<z_sdbm_domain_t> z_as_sdbm_t;
-    typedef array_smashing<z_num_null_domain_t> z_as_num_null_t;
     typedef array_smashing<z_bool_num_domain_t> z_as_bool_num_t;
     // completion disjunctive domains
-    typedef powerset_domain<z_aa_int_t> z_pow_aa_int_t;        
+    typedef powerset_domain<z_aa_int_t> z_pow_aa_int_t;
     // Machine integer arithmetic domains
     typedef wrapped_interval_domain<z_number, varname_t> z_wrapped_interval_domain_t;
+    /*===================================================================*/            
+    // Reference domain
+    /*===================================================================*/
+    using var_allocator = crab::cfg::var_factory_impl::str_var_alloc_col;
+    using z_ref_aa_int_params_t =
+      reference_domain_impl::Params<z_number, varname_t,
+		      array_adaptive_domain<
+			 interval_domain<z_number,typename var_allocator::varname_t>,
+			 ArrayAdaptParams>>;
+    using z_ref_int_params_t =
+      reference_domain_impl::Params<z_number, varname_t,
+		      interval_domain<z_number, typename var_allocator::varname_t>>;
+    using z_ref_sdbm_params_t =
+      reference_domain_impl::Params<z_number, varname_t,
+		      SplitDBM<z_number, typename var_allocator::varname_t, z_SplitGraph>>;
+    typedef reference_domain<z_ref_int_params_t> z_ref_int_t;
+    typedef reference_domain<z_ref_sdbm_params_t> z_ref_sdbm_t;        
+    typedef reference_domain<z_ref_aa_int_params_t> z_ref_aa_int_t;
+    /*===================================================================*/        
     /// Numerical domains over real
+    /*===================================================================*/            
     typedef interval_domain<q_number,varname_t> q_interval_domain_t;
     typedef boxes_domain<q_number, varname_t> q_boxes_domain_t;         
     typedef apron_domain<q_number,varname_t,APRON_PK> q_pk_apron_domain_t;
