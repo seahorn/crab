@@ -224,8 +224,7 @@ public:
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
-
-  typedef ikos::interval<number_t> interval_t;
+  using typename abstract_domain_t::interval_t;
   typedef boolean_value bool_t;
   typedef ikos::separate_domain<variable_t, boolean_value> separate_domain_t;
   typedef typename separate_domain_t::iterator iterator;
@@ -712,8 +711,7 @@ public:
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
-
-  typedef ikos::interval<number_t> interval_t;
+  using typename abstract_domain_t::interval_t;
   typedef ikos::bound<number_t> bound_t;
 
 private:

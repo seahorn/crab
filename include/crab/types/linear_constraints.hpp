@@ -352,7 +352,7 @@ public:
   }
 
   // for dgb
-  void dump() { write(crab::outs()); }
+  void dump() const { write(crab::outs()); }
 
 }; // class linear_expression
 
@@ -743,7 +743,7 @@ public:
   }
 
   // for dgb
-  void dump() { write(crab::outs()); }
+  void dump() const { write(crab::outs()); }
 
 }; // class linear_constraint
 

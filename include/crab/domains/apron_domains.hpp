@@ -37,9 +37,9 @@ public:
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
+  using typename abstract_domain_t::interval_t;
   typedef Number number_t;
   typedef VariableName varname_t;
-  typedef ikos::interval<number_t> interval_t;
 
   apron_domain() {}
 
@@ -81,9 +81,9 @@ public:
 
   void operator-=(variable_t var) { CRAB_ERROR(APRON_NOT_FOUND); }
 
-  interval_t operator[](variable_t v) { CRAB_ERROR(APRON_NOT_FOUND); }
-
-  void set(variable_t v, interval_t ival) { CRAB_ERROR(APRON_NOT_FOUND); }
+  virtual interval_t operator[](variable_t v) override {
+    CRAB_ERROR(APRON_NOT_FOUND);
+  }
 
   void operator+=(linear_constraint_system_t csts) {
     CRAB_ERROR(APRON_NOT_FOUND);
@@ -351,9 +351,9 @@ public:
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
+  using typename abstract_domain_t::interval_t;
   typedef Number number_t;
   typedef VariableName varname_t;
-  typedef ikos::interval<number_t> interval_t;
 
 private:
   typedef ikos::interval_domain<number_t, varname_t> interval_domain_t;
@@ -1241,7 +1241,7 @@ public:
     forget(s3);
   }
 
-  interval_t operator[](variable_t v) {
+  virtual interval_t operator[](variable_t v) override {
     crab::CrabStats::count(getDomainName() + ".count.to_intervals");
     crab::ScopedCrabStats __st__(getDomainName() + ".to_intervals");
 
@@ -2074,10 +2074,10 @@ public:
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
+  using typename abstract_domain_t::interval_t;
   typedef typename linear_constraint_t::kind_t constraint_kind_t;
   typedef Number number_t;
   typedef VariableName varname_t;
-  typedef interval<number_t> interval_t;
 
 private:
   typedef apron_domain_<number_t, varname_t, ApronDom> apron_domain_impl_t;
@@ -2162,11 +2162,11 @@ public:
     detach();
     ref() -= v;
   }
-  interval_t operator[](variable_t x) { return ref()[x]; }
-  void set(variable_t x, interval_t intv) {
-    detach();
-    ref().set(x, intv);
+  
+  virtual interval_t operator[](variable_t x) override {
+    return ref()[x];
   }
+  
 
   void forget(const variable_vector_t &vs) {
     detach();

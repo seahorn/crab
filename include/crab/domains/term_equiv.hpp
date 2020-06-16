@@ -86,11 +86,11 @@ public:
   using typename abstract_domain_t::linear_constraint_t;
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::variable_t;
-  typedef Number number_t;
-  typedef VariableName varname_t;
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_vector_t;
-  typedef ikos::interval<number_t> interval_t;
+  using typename abstract_domain_t::interval_t;        
+  typedef Number number_t;
+  typedef VariableName varname_t;
 
 private:
   typedef term::term_table<number_t, term::term_operator_t> ttbl_t;

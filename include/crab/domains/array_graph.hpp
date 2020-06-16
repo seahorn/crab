@@ -1292,10 +1292,9 @@ public:
   using typename abstract_domain_t::linear_constraint_t;
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::reference_constraint_t;
-
+  using typename abstract_domain_t::interval_t;
   typedef typename NumDom::variable_t variable_t;
   typedef typename NumDom::variable_vector_t variable_vector_t;
-  typedef ikos::interval<number_t> interval_t;
 
   typedef landmark_cst<variable_t, number_t> landmark_cst_t;
   typedef landmark_var<variable_t, number_t> landmark_var_t;
@@ -2384,7 +2383,10 @@ public:
     apply_only_scalar(op, x, y, k);
   }
 
-  interval_t operator[](variable_t v) { return _scalar[v]; }
+  
+  virtual interval_t operator[](variable_t v) override {
+    return _scalar[v];
+  }
 
   // reference operations
   void region_init(memory_region reg) override {}    

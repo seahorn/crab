@@ -35,9 +35,9 @@ public:
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
+  using typename abstract_domain_t::interval_t;
   typedef Number number_t;
   typedef VariableName varname_t;
-  typedef ikos::interval<number_t> interval_t;
 
   boxes_domain() {}
 
@@ -71,9 +71,9 @@ public:
 
   void operator-=(variable_t var) { CRAB_ERROR(LDD_NOT_FOUND); }
 
-  interval_t operator[](variable_t v) { CRAB_ERROR(LDD_NOT_FOUND); }
-
-  void set(variable_t v, interval_t ival) { CRAB_ERROR(LDD_NOT_FOUND); }
+  virtual interval_t operator[](variable_t v) override {
+    CRAB_ERROR(LDD_NOT_FOUND);
+  }
 
   void operator+=(linear_constraint_system_t csts) {
     CRAB_ERROR(LDD_NOT_FOUND);
@@ -355,7 +355,7 @@ public:
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
-  typedef ikos::interval<number_t> interval_t;
+  using typename abstract_domain_t::interval_t;
 
 private:
   typedef typename linear_constraint_t::kind_t kind_t;
@@ -1429,7 +1429,7 @@ public:
     m_ldd = apply_interval(v, ival);
   }
 
-  interval_t operator[](variable_t v) {
+  virtual interval_t operator[](variable_t v) override {
     crab::CrabStats::count(getDomainName() + ".count.to_intervals");
     crab::ScopedCrabStats __st__(getDomainName() + ".to_intervals");
 
@@ -2080,10 +2080,10 @@ public:
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
+  using typename abstract_domain_t::interval_t;
   typedef Number number_t;
   typedef VariableName varname_t;
   typedef typename linear_constraint_t::kind_t constraint_kind_t;
-  typedef ikos::interval<number_t> interval_t;
 
 private:
   typedef boxes_domain_<number_t, varname_t, ConvexReduce, LddSize>
@@ -2164,10 +2164,9 @@ public:
     detach();
     ref() -= v;
   }
-  interval_t operator[](variable_t x) { return ref()[x]; }
-  void set(variable_t x, interval_t intv) {
-    detach();
-    ref().set(x, intv);
+
+  virtual interval_t operator[](variable_t x) override {
+    return ref()[x];
   }
 
   void assign(variable_t x, linear_expression_t e) {

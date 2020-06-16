@@ -736,6 +736,7 @@ public:
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
+  using typename abstract_domain_t::interval_t;
   typedef Number number_t;
   typedef VariableName varname_t;
   using typename abstract_domain_t::reference_constraint_t;
@@ -856,14 +857,19 @@ public:
     }
   }
 
-  congruence_t operator[](variable_t v) { return this->_env[v]; }
+  virtual interval_t operator[](variable_t v) override {
+    CRAB_WARN(getDomainName(), "::operator[] not implemented");
+    return interval_t::top();
+  }
 
-  congruence_t operator[](linear_expression_t expr) {
+  congruence_t to_congruence(variable_t v) { return this->_env[v]; }
+  
+  congruence_t to_congruence(linear_expression_t expr) {
     congruence_t r(expr.constant());
     for (typename linear_expression_t::iterator it = expr.begin();
          it != expr.end(); ++it) {
       congruence_t c(it->first);
-      r = r + (c * this->_env[it->second]);
+      r = r + (c * to_congruence(it->second));
     }
     return r;
   }

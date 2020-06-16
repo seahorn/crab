@@ -259,9 +259,9 @@ public:
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
+  using typename abstract_domain_t::interval_t;
   using number_t = typename Params::number_t;
   using varname_t = typename Params::varname_t;
-  using interval_t = ikos::interval<number_t>;
 
 private:
   using base_abstract_domain_t = typename Params::base_abstract_domain_t;

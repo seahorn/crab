@@ -675,8 +675,8 @@ public:
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
   using typename abstract_domain_t::reference_constraint_t;
+  using typename abstract_domain_t::interval_t;
   typedef NumDomain content_domain_t;
-  typedef ikos::interval<number_t> interval_t;
 
 private:
   typedef ikos::bound<number_t> bound_t;
@@ -1570,6 +1570,11 @@ public:
   NumDomain get_content_domain() const { return _inv; }
 
   NumDomain &get_content_domain() { return _inv; }
+
+  virtual interval_t operator[](variable_t v) override {
+    CRAB_WARN(getDomainName(), "::operator[] not implemented");
+    return interval_t::top();
+  }
 
   /* begin intrinsics operations */    
   void intrinsic(std::string name,

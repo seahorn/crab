@@ -224,6 +224,7 @@ public:
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
+  using typename abstract_domain_t::interval_t;
   typedef Number number_t;
   typedef VariableName varname_t;
 
@@ -651,7 +652,7 @@ public:
     this->_product.first().forget(variables);
     this->_product.second().forget(variables);
   }
-
+ 
   virtual void project(const variable_vector_t &variables) {
     this->_product.first().project(variables);
     this->_product.second().project(variables);
@@ -672,6 +673,10 @@ public:
     this->_product.second().minimize();
   }
 
+  virtual interval_t operator[](variable_t v) override {
+    return this->_product.first()[v] & this->_product.second()[v];
+  }
+  
   virtual linear_constraint_system_t to_linear_constraint_system() {
     linear_constraint_system_t csts;
     // XXX: We might add redundant constraints.
@@ -766,12 +771,15 @@ public:
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
-  // Assume that Domain1 and Domain2 have the same types for
-  // number_t and varname_t
+  using typename abstract_domain_t::interval_t;
   typedef typename Domain1::number_t number_t;
   typedef typename Domain1::varname_t varname_t;
-  typedef ikos::interval<number_t> interval_t;
 
+  static_assert(std::is_same<number_t, typename Domain2::number_t>::value,
+		"Domain1 and Domain2 must have same type for number_t");
+  static_assert(std::is_same<varname_t, typename Domain2::varname_t>::value,
+		"Domain1 and Domain2 must have same type for varname_t");
+  
 private:
   typedef ikos::patricia_tree_set<variable_t> variable_set_t;
   typedef domain_product2<number_t, varname_t, Domain1, Domain2>
@@ -1013,9 +1021,8 @@ public:
     this->_product.second().set(v, x);
   }
 
-  interval_t operator[](variable_t v) {
-    // We can choose either first or second domain
-    return this->_product.second()[v];
+  interval_t operator[](variable_t v) override {
+    return this->_product.first()[v] & this->_product.second()[v];
   }
 
   void operator+=(linear_constraint_system_t csts) {
@@ -1543,12 +1550,12 @@ public:
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
+  using typename abstract_domain_t::interval_t;
   typedef typename NumAbsDom::number_t number_t;
   typedef typename NumAbsDom::varname_t varname_t;
 
   typedef ikos::congruence_domain<number_t, varname_t> congruence_domain_t;
   typedef interval_congruence<number_t> interval_congruence_t;
-  typedef ikos::interval<number_t> interval_t;
 
 private:
   typedef ikos::patricia_tree_set<variable_t> variable_set_t;
@@ -1568,7 +1575,7 @@ private:
       return;
 
     auto i = this->_product.first()[v]; // project on intervals
-    auto c = this->_product.second()[v];
+    auto c = this->_product.second().to_congruence(v);
     interval_congruence_t val(i, c);
 
     if (val.is_bottom()) {
@@ -1661,10 +1668,10 @@ public:
 
   interval_congruence_t get(variable_t v) {
     return interval_congruence_t(this->_product.first()[v],
-                                 this->_product.second()[v]);
+                                 this->_product.second().to_congruence(v));
   }
 
-  interval_t operator[](variable_t v) {
+  interval_t operator[](variable_t v) override {
     interval_congruence_t x = get(v);
     return x.first();
   }

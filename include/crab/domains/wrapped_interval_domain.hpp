@@ -1307,9 +1307,9 @@ public:
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
+  using typename abstract_domain_t::interval_t;          
   typedef Number number_t;
   typedef VariableName varname_t;
-  typedef ikos::interval<number_t> interval_t;
   typedef wrapped_interval<number_t> wrapped_interval_t;
   typedef typename wrapped_interval_t::bitwidth_t bitwidth_t;
 
@@ -1485,7 +1485,7 @@ public:
   }
 
   // Return unlimited interval
-  interval_t operator[](variable_t v) const {
+  virtual interval_t operator[](variable_t v) override {
     wrapped_interval_t w_i = this->_env[v];
     return w_i.to_interval();
   }
@@ -2181,9 +2181,9 @@ public:
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
+  using typename abstract_domain_t::interval_t;            
   typedef Number number_t;
   typedef VariableName varname_t;
-  typedef ikos::interval<number_t> interval_t;
   typedef wrapped_interval<number_t> wrapped_interval_t;
   typedef wrapped_interval_domain<number_t, varname_t, max_reduction_cycles>
       wrapped_interval_domain_t;
@@ -2391,7 +2391,9 @@ public:
                                  << x << ":=" << n << " => " << *this << "\n";);
   }
 
-  interval_t operator[](variable_t v) const { return _w_int_dom[v]; }
+  virtual interval_t operator[](variable_t v) override {
+    return _w_int_dom[v];
+  }
 
   wrapped_interval_t get_wrapped_interval(variable_t v) const {
     return _w_int_dom.get_wrapped_interval(v);
@@ -2829,10 +2831,10 @@ public:
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
+  using typename abstract_domain_t::interval_t;            
   typedef typename linear_constraint_system_t::variable_set_t variable_set_t;
   typedef typename NumDom::number_t number_t;
   typedef typename NumDom::varname_t varname_t;
-  typedef ikos::interval<number_t> interval_t;
   typedef typename variable_t::bitwidth_t bitwidth_t;
 
 private:
@@ -3260,9 +3262,8 @@ public:
     _product.second().set(x, intv);
   }
 
-  interval_t operator[](variable_t v) {
-    // domain_product2 does not define [] method
-    return (_product.first()[v] & _product.second()[v]);
+  virtual interval_t operator[](variable_t v) override {
+    return _product[v];
   }
 
   void operator-=(variable_t v) { _product -= v; }

@@ -915,10 +915,10 @@ public:
   using typename abstract_domain_t::linear_constraint_system_t;
   using typename abstract_domain_t::linear_constraint_t;
   using typename abstract_domain_t::linear_expression_t;
-  using typename abstract_domain_t::reference_constraint_t;  
+  using typename abstract_domain_t::reference_constraint_t;
+  using typename abstract_domain_t::interval_t;
   typedef typename NumDomain::variable_t variable_t;
   typedef typename NumDomain::variable_vector_t variable_vector_t;
-  typedef ikos::interval<number_t> interval_t;
   typedef array_smashing<NumDomain> base_domain_t;
 
 private:
@@ -2325,14 +2325,14 @@ public:
 
   void minimize() { m_inv.minimize(); }
 
-  interval_t operator[](variable_t v) {
+  virtual interval_t operator[](variable_t v) override {
     if (!v.is_array_type()) {
       return m_inv[v];
     } else {
       return interval_t::top();
     }
   }
-  
+
   /* begin intrinsics operations */  
   void intrinsic(std::string name,
 		 const variable_vector_t &inputs,

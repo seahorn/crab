@@ -199,7 +199,9 @@ public:
     return array_smashing_t(_inv && other._inv);
   }
 
-  interval_t operator[](const variable_t &v) { return _inv[v]; }
+  virtual interval_t operator[](variable_t v) override {
+    return _inv[v];
+  }
 
   void forget(const variable_vector_t &variables) { _inv.forget(variables); }
 

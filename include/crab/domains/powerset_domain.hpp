@@ -43,8 +43,8 @@ public:
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
-  using typename abstract_domain_t::reference_constraint_t;  
-  using interval_t = ikos::interval<number_t>;
+  using typename abstract_domain_t::reference_constraint_t;
+  using typename abstract_domain_t::interval_t;
   
 private:
 

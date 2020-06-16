@@ -51,6 +51,7 @@ public:
   typedef variable<number_t, varname_t> variable_t;
   typedef std::vector<variable_t> variable_vector_t;
   typedef reference_constraint<number_t,varname_t> reference_constraint_t;
+  typedef ikos::interval<number_t> interval_t;
   
   abstract_domain() {}
 
@@ -255,9 +256,13 @@ public:
                                      Dom invariant) = 0;
 
   /**************************** Miscellaneous operations ****************/
-  // forget v
+  // Forget v
   virtual void operator-=(variable_t v) = 0;
 
+  // Return an interval with the possible values of v if such notion
+  // exists in the abstract domain.
+  virtual interval_t operator[](variable_t v) = 0;
+  
   // Convert the abstract state into a conjunction of linear constraints.
   virtual linear_constraint_system_t to_linear_constraint_system() = 0;
 
