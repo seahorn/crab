@@ -237,6 +237,8 @@ public:
 private:
   template <typename Dom> friend class array_expansion_domain;
 
+  typedef Variable variable_t;
+  typedef typename variable_t::varname_t varname_t;
   typedef offset_map<Variable> offset_map_t;
   typedef std::set<cell_t> cell_set_t;
   typedef crab::variable_type type_t;
@@ -393,7 +395,7 @@ private:
 
     cell_t c = get_cell(o, size);
     if (c.is_null()) {
-      auto &vfac = array.name().get_var_factory();
+      auto &vfac = const_cast<varname_t*>(&(array.name()))->get_var_factory(); 
       std::string vname = mk_scalar_name(array, o, size);
       type_t vtype = get_array_element_type(array.get_type());
       // create a new scalar variable for representing the contents

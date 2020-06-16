@@ -1432,7 +1432,7 @@ private:
     cell_t c = om.mk_cell(o, sz);
     assert(!c.is_null());
     // assign a scalar variable to the cell
-    auto &vfac = a.name().get_var_factory();
+    auto &vfac = const_cast<varname_t*>(&(a.name()))->get_var_factory();           
     std::string vname = mk_scalar_name(a.name(), o, sz);
     type_t vtype = get_array_element_type(a.get_type());
     variable_t scalar_var(vfac.get(vname), vtype, sz);
@@ -1463,7 +1463,7 @@ private:
 
     auto mk_smashed_variable = [](variable_t v) {
       assert(v.is_array_type());
-      auto &vfac = v.name().get_var_factory();
+      auto &vfac = const_cast<varname_t*>(&(v.name()))->get_var_factory();           
       crab::crab_string_os os;
       os << "smashed(" << v << ")";
       return variable_t(vfac.get(os.str()), v.get_type());
@@ -1745,7 +1745,7 @@ private:
     // Common renaming for smashed scalars
     for (auto &kv : left_svm) {
       variable_t &v1 = kv.second;
-      auto &vfac = v1.name().get_var_factory();
+      auto &vfac = const_cast<varname_t*>(&(v1.name()))->get_var_factory();                 
       auto it = right_svm.find(kv.first);
       if (it != right_svm.end()) {
         variable_t &v2 = it->second;
@@ -1775,7 +1775,7 @@ private:
     // Common renaming for cell scalars
     for (auto &kv : left_cvm) {
       variable_t &v1 = kv.second;
-      auto &vfac = v1.name().get_var_factory();
+      auto &vfac = const_cast<varname_t*>(&(v1.name()))->get_var_factory();                       
       auto it = right_cvm.find(kv.first);
       if (it != right_cvm.end()) {
         variable_t &v2 = it->second;
@@ -1813,7 +1813,7 @@ private:
     // Add all mappings from the left operand
     for (auto &kv : left_svm) {
       variable_t &v1 = kv.second;
-      auto &vfac = v1.name().get_var_factory();
+      auto &vfac = const_cast<varname_t*>(&(v1.name()))->get_var_factory();
       auto it = right_svm.find(kv.first);
       if (it != right_svm.end()) {
         variable_t &v2 = it->second;
@@ -1852,7 +1852,7 @@ private:
     // Add all mappings from the left operand
     for (auto &kv : left_cvm) {
       variable_t &v1 = kv.second;
-      auto &vfac = v1.name().get_var_factory();
+      auto &vfac = const_cast<varname_t*>(&(v1.name()))->get_var_factory();      
       auto it = right_cvm.find(kv.first);
       if (it != right_cvm.end()) {
         variable_t &v2 = it->second;
@@ -1970,7 +1970,7 @@ public:
 
       for (auto &kv : m_smashed_varmap) {
         variable_t &v1 = kv.second;
-        auto &vfac = v1.name().get_var_factory();
+	auto &vfac = const_cast<varname_t*>(&(v1.name()))->get_var_factory(); 
         auto it = other.m_smashed_varmap.find(kv.first);
         // cell exists in both
         if (it != other.m_smashed_varmap.end()) {
@@ -1997,7 +1997,7 @@ public:
 
       for (auto &kv : m_cell_varmap) {
         variable_t &v1 = kv.second;
-        auto &vfac = v1.name().get_var_factory();
+	auto &vfac = const_cast<varname_t*>(&(v1.name()))->get_var_factory(); 	
         auto it = other.m_cell_varmap.find(kv.first);
         // cell exists in both
         if (it != other.m_cell_varmap.end()) {
@@ -2613,7 +2613,7 @@ public:
           if (array_state::can_be_smashed(cells, e_sz, true)) {
             // we smash all overlapping cells into a fresh array
             // (summarized) variable
-            auto &vfac = a.name().get_var_factory();
+	    auto &vfac = const_cast<varname_t*>(&(a.name()))->get_var_factory(); 		    
             variable_t fresh_var(vfac.get(), a.get_type());
             bool found_cell_without_scalar = false;
             for (unsigned k = 0, num_cells = cells.size(); k < num_cells; ++k) {

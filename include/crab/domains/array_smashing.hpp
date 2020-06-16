@@ -348,10 +348,10 @@ public:
     crab::ScopedCrabStats __st__(getDomainName() + ".load");
 
     // We need to be careful when assigning a summarized variable a
-    // into a non-summarized variable lhs. Simply _inv.assign(lhs,
-    // a) is not sound.
-    /* ask for a temp var */
-    variable_t a_prime(a.name().get_var_factory().get());
+    // into a non-summarized variable lhs. Simply _inv.assign(lhs,a)
+    // is not sound.
+    auto &vfac = const_cast<varname_t*>(&(a.name()))->get_var_factory();
+    variable_t a_prime(vfac.get());
     _inv.expand(a, a_prime);
     switch (a.get_type()) {
     case ARR_BOOL_TYPE:

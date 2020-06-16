@@ -1435,7 +1435,7 @@ public:
     if (this->is_bottom()) {
       return;
     } else {
-      auto &vfac = a.name().get_var_factory();
+      auto &vfac = const_cast<varname_t*>(&(a.name()))->get_var_factory();       
       /**
        *  We treat the array store as an uninterpreted function
        *  array_store(a, i, val) -->  tmp := f(a,i); assume(tmp == val);

@@ -58,7 +58,7 @@ public:
       return;
 
     if (e.variables() >= x) {
-      auto &vfac = x.name().get_var_factory();
+      auto &vfac = const_cast<varname_t*>(&(x.name()))->get_var_factory();
       variable_t old_x(vfac.get(), x.get_type());
       std::map<variable_t, variable_t> renaming_map;
       renaming_map.insert({x, old_x});

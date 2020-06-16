@@ -89,6 +89,7 @@ template <typename CFG, typename AbsDomain> class summary {
   typedef typename CFG::fdecl_t fdecl_t;
   typedef AbsDomain abs_domain_t;
   typedef typename CFG::variable_t variable_t;
+  typedef typename variable_t::varname_t varname_t;
 
   // --- function info
   fdecl_t m_fdecl;
@@ -135,12 +136,16 @@ public:
 
     m_internal_inputs.reserve(m_inputs.size());
     m_internal_outputs.reserve(m_outputs.size());
+
+    
     for (auto v : m_inputs) {
-      variable_t fresh_v(v.name().get_var_factory().get(), v.get_type());
+      auto &vfac = const_cast<varname_t*>(&(v.name()))->get_var_factory();    
+      variable_t fresh_v(vfac.get(), v.get_type(), v.get_bitwidth());
       m_internal_inputs.push_back(fresh_v);
     }
     for (auto v : m_outputs) {
-      variable_t fresh_v(v.name().get_var_factory().get(), v.get_type());
+      auto &vfac = const_cast<varname_t*>(&(v.name()))->get_var_factory();          
+      variable_t fresh_v(vfac.get(), v.get_type(), v.get_bitwidth());
       m_internal_outputs.push_back(fresh_v);
     }
 

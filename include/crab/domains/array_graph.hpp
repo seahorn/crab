@@ -1408,9 +1408,6 @@ public:
     }
     lms.insert(var_indexes.begin(), var_indexes.end());
 
-    // get variable factory
-    auto &vfac = (*var_indexes.begin()).name().get_var_factory();
-
     // add constants
     // make sure 0 is always considered as an array index
     lms.insert(landmark_ref_t(number_t(0)));
@@ -1425,6 +1422,8 @@ public:
       lms.insert(cst_indexes.begin(), cst_indexes.end());
     }
 
+    // get variable factory
+    auto &vfac = const_cast<varname_t*>(&((*var_indexes.begin()).name()))->get_var_factory();
     set_landmarks(lms, vfac);
   }
 
@@ -1483,8 +1482,9 @@ public:
 public: // public only for tests
   void add_landmark(variable_t v) {
     landmark_ref_t lm_v(v);
+    auto &vfac = const_cast<varname_t*>(&(v.name()))->get_var_factory();    
     landmark_ref_t lm_v_prime(
-        variable_t(v.name().get_var_factory().get(v.name().index())),
+        variable_t(vfac.get(v.name().index())),
         v.name().str());
     // add pair  x -> x'
     s_var_landmarks.insert(std::make_pair(lm_v, lm_v_prime));
@@ -1699,8 +1699,9 @@ private:
 
     /// --- Add x_old and x_old' to store old values of x and x'
 
-    variable_t x_old(x.name().get_var_factory().get());
-    variable_t x_old_prime(x.name().get_var_factory().get());
+    auto &vfac = const_cast<varname_t*>(&(x.name()))->get_var_factory();    
+    variable_t x_old(vfac.get());
+    variable_t x_old_prime(vfac.get());
     landmark_ref_t lm_x_old(x_old);
     landmark_ref_t lm_x_old_prime(x_old_prime, x_old.name().str());
     s_var_landmarks.insert(std::make_pair(lm_x_old, lm_x_old_prime));
@@ -1786,7 +1787,8 @@ private:
                           << _expressions << "\n");
 
     // --- create a fresh variable no such that no := o;
-    variable_t no(o.name().get_var_factory().get());
+    auto &vfac = const_cast<varname_t*>(&(o.name()))->get_var_factory();    
+    variable_t no(vfac.get());
     _expressions.assign(no, o);
 
     // -- apply no := no / n; in the expressions domain

@@ -130,11 +130,6 @@ public:
 
   const VariableName &name() const { return _n; }
 
-  // Cannot be const because from VariableName we might want to
-  // access to its variable factory to create e.g., new
-  // VariableName's.
-  VariableName &name() { return _n; }
-
   virtual ikos::index_t index() const override { return _n.index(); }
 
   std::size_t hash() const {
@@ -178,7 +173,7 @@ public:
   
 }; // class variable
 
-  /** specialization for boost::hash_combine **/
+/** specialization for boost::hash_combine **/
 template <typename Number, typename VariableName>
 inline size_t hash_value(const variable<Number, VariableName> &v) {
   return v.hash();
