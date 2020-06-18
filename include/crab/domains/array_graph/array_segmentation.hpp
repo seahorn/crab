@@ -58,14 +58,14 @@ private:
 
     array_segment_domain_t get_variables(const linear_expression_t &e) const {
       array_segment_domain_t res;
-      for (auto v : e.variables())
+      for (auto const&v : e.variables())
         res += v;
       return res;
     }
 
     array_segment_domain_t get_variables(const linear_constraint_t &c) const {
       array_segment_domain_t res;
-      for (auto v : c.variables())
+      for (auto const&v : c.variables())
         res += v;
       return res;
     }

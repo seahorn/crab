@@ -326,10 +326,10 @@ public:
       : statement_t(BIN_OP, dbg_info), m_lhs(lhs), m_op(op), m_op1(op1),
         m_op2(op2) {
     this->m_live.add_def(m_lhs);
-    for (auto v : m_op1.variables()) {
+    for (auto const& v : m_op1.variables()) {
       this->m_live.add_use(v);
     }
-    for (auto v : m_op2.variables()) {
+    for (auto const& v : m_op2.variables()) {
       this->m_live.add_use(v);
     }
   }
@@ -373,7 +373,7 @@ public:
   assignment(variable_t lhs, linear_expression_t rhs)
       : statement_t(ASSIGN), m_lhs(lhs), m_rhs(rhs) {
     this->m_live.add_def(m_lhs);
-    for (auto v : m_rhs.variables())
+    for (auto const&v : m_rhs.variables())
       this->m_live.add_use(v);
   }
 
@@ -407,7 +407,7 @@ public:
   typedef ikos::linear_constraint<Number, VariableName> linear_constraint_t;
 
   assume_stmt(linear_constraint_t cst) : statement_t(ASSUME), m_cst(cst) {
-    for (auto v : cst.variables())
+    for (auto const&v : cst.variables())
       this->m_live.add_use(v);
   }
 
@@ -493,11 +493,11 @@ public:
               linear_expression_t e2)
       : statement_t(SELECT), m_lhs(lhs), m_cond(cond), m_e1(e1), m_e2(e2) {
     this->m_live.add_def(m_lhs);
-    for (auto v : m_cond.variables())
+    for (auto const&v : m_cond.variables())
       this->m_live.add_use(v);
-    for (auto v : m_e1.variables())
+    for (auto const&v : m_e1.variables())
       this->m_live.add_use(v);
-    for (auto v : m_e2.variables())
+    for (auto const&v : m_e2.variables())
       this->m_live.add_use(v);
   }
 
@@ -540,7 +540,7 @@ public:
 
   assert_stmt(linear_constraint_t cst, debug_info dbg_info = debug_info())
       : statement_t(ASSERT, dbg_info), m_cst(cst) {
-    for (auto v : cst.variables())
+    for (auto const&v : cst.variables())
       this->m_live.add_use(v);
   }
 
@@ -649,16 +649,16 @@ public:
         m_ub(ub), m_val(val) {
 
     this->m_live.add_def(m_arr);
-    for (auto v : m_elem_size.variables()) {
+    for (auto const&v : m_elem_size.variables()) {
       this->m_live.add_use(v);
     }
-    for (auto v : m_lb.variables()) {
+    for (auto const&v : m_lb.variables()) {
       this->m_live.add_use(v);
     }
-    for (auto v : m_ub.variables()) {
+    for (auto const&v : m_ub.variables()) {
       this->m_live.add_use(v);
     }
-    for (auto v : m_val.variables()) {
+    for (auto const&v : m_val.variables()) {
       this->m_live.add_use(v);
     }
   }
@@ -719,16 +719,16 @@ public:
 
     this->m_live.add_def(m_arr);
     // XXX: should we also mark m_arr as use?
-    for (auto v : m_elem_size.variables()) {
+    for (auto const&v : m_elem_size.variables()) {
       this->m_live.add_use(v);
     }
-    for (auto v : m_lb.variables()) {
+    for (auto const&v : m_lb.variables()) {
       this->m_live.add_use(v);
     }
-    for (auto v : m_ub.variables()) {
+    for (auto const&v : m_ub.variables()) {
       this->m_live.add_use(v);
     }
-    for (auto v : m_value.variables()) {
+    for (auto const&v : m_value.variables()) {
       this->m_live.add_use(v);
     }
   }
@@ -802,10 +802,10 @@ public:
 
     this->m_live.add_def(lhs);
     this->m_live.add_use(m_array);
-    for (auto v : m_elem_size.variables()) {
+    for (auto const&v : m_elem_size.variables()) {
       this->m_live.add_use(v);
     }
-    for (auto v : m_index.variables()) {
+    for (auto const&v : m_index.variables()) {
       this->m_live.add_use(v);
     }
   }
@@ -1010,7 +1010,7 @@ public:
     : statement_t(REF_STORE, dbg_info),
       m_ref(ref), m_region(region), m_val(val) {
     this->m_live.add_def(m_ref);
-    for (auto v : val.variables()) {
+    for (auto const&v : val.variables()) {
       this->m_live.add_use(v);
     }
   }
@@ -1058,7 +1058,7 @@ public:
       m_offset(offset) {
     this->m_live.add_def(lhs);
     this->m_live.add_use(rhs);
-    for (auto v : offset.variables()) {
+    for (auto const&v : offset.variables()) {
       this->m_live.add_use(v);
     }
   }
@@ -1118,10 +1118,10 @@ public:
     
     this->m_live.add_def(m_lhs);
     this->m_live.add_use(m_ref);
-    for (auto v : m_elem_size.variables()) {
+    for (auto const&v : m_elem_size.variables()) {
       this->m_live.add_use(v);
     }
-    for (auto v : m_index.variables()) {
+    for (auto const&v : m_index.variables()) {
       this->m_live.add_use(v);
     }
   }
@@ -1179,16 +1179,16 @@ public:
 
     this->m_live.add_def(m_ref);
     // XXX: should we also mark m_ref as use?
-    for (auto v : m_elem_size.variables()) {
+    for (auto const&v : m_elem_size.variables()) {
       this->m_live.add_use(v);
     }
-    for (auto v : m_lb.variables()) {
+    for (auto const&v : m_lb.variables()) {
       this->m_live.add_use(v);
     }
-    for (auto v : m_ub.variables()) {
+    for (auto const&v : m_ub.variables()) {
       this->m_live.add_use(v);
     }
-    for (auto v : m_value.variables()) {
+    for (auto const&v : m_value.variables()) {
       this->m_live.add_use(v);
     }
   }
@@ -1589,7 +1589,7 @@ public:
   bool_assign_cst(variable_t lhs, linear_constraint_t rhs)
       : statement_t(BOOL_ASSIGN_CST), m_lhs(lhs), m_rhs(rhs) {
     this->m_live.add_def(m_lhs);
-    for (auto v : m_rhs.variables())
+    for (auto const&v : m_rhs.variables())
       this->m_live.add_use(v);
   }
 
@@ -3900,8 +3900,7 @@ private:
       check_num(lhs, "lhs must be integer or real", s);
       check_bitwidth_if_int(lhs, "lhs must be have bitwidth > 1", s);
 
-      typename lin_exp_t::variable_set_t vars = rhs.variables();
-      for (auto const &v : vars) {
+      for (auto const &v : rhs.variables()) {
         check_varname(v);
         check_same_type(lhs, v, "variable cannot have different type from lhs",
                         s);
@@ -3911,10 +3910,9 @@ private:
     }
 
     void visit(assume_t &s) {
-      typename lin_exp_t::variable_set_t vars = s.constraint().variables();
       bool first = true;
       const variable_t *first_var = nullptr;
-      for (auto const &v : vars) {
+      for (auto const &v : s.constraint().variables()) {
         check_varname(v);
         check_num(v, "assume variables must be integer or real", s);
         if (first) {
@@ -3930,10 +3928,9 @@ private:
     }
 
     void visit(assert_t &s) {
-      typename lin_exp_t::variable_set_t vars = s.constraint().variables();
       bool first = true;
       const variable_t *first_var;
-      for (auto const &v : vars) {
+      for (auto const &v : s.constraint().variables()) {
         check_varname(v);
         check_num(v, "assert variables must be integer or real", s);
         if (first) {
@@ -3952,16 +3949,14 @@ private:
       check_num(s.lhs(), "lhs must be integer or real", s);
       check_bitwidth_if_int(s.lhs(), "lhs must be have bitwidth > 1", s);
       check_varname(s.lhs());
-      typename lin_exp_t::variable_set_t left_vars = s.left().variables();
-      for (auto const &v : left_vars) {
+      for (auto const &v : s.left().variables()) {
         check_varname(v);
         check_same_type(s.lhs(), v, "inconsistent types in select variables",
                         s);
         check_same_bitwidth(s.lhs(), v,
                             "inconsistent bitwidths in select variables", s);
       }
-      typename lin_exp_t::variable_set_t right_vars = s.right().variables();
-      for (auto const &v : right_vars) {
+      for (auto const &v : s.right().variables()) {
         check_varname(v);
         check_same_type(s.lhs(), v, "inconsistent types in select variables",
                         s);
@@ -3971,10 +3966,9 @@ private:
 
       // -- The condition can have different bitwidth from
       //    lhs/left/right operands but must have same type.
-      typename lin_exp_t::variable_set_t cond_vars = s.cond().variables();
       bool first = true;
       const variable_t *first_var;
-      for (auto const &v : cond_vars) {
+      for (auto const &v : s.cond().variables()) {
         check_varname(v);
         check_num(v, "assume variables must be integer or real", s);
         if (first) {
@@ -4046,10 +4040,9 @@ private:
     void visit(bool_assign_cst_t &s) {
       check_bool(s.lhs(), "lhs must be boolean", s);
       check_varname(s.lhs());
-      typename lin_exp_t::variable_set_t vars = s.rhs().variables();
       bool first = true;
       const variable_t *first_var;
-      for (auto const &v : vars) {
+      for (auto const &v : s.rhs().variables()) {
         check_varname(v);
         check_num(v, "rhs variables must be integer or real", s);
         if (first) {
@@ -4133,13 +4126,13 @@ private:
           CRAB_ERROR(os.str());
         }
       }
-      for (auto iv : s.lb_index().variables()) {
+      for (auto const&iv : s.lb_index().variables()) {
         check_varname(iv);
         check_int_or_bool(
             iv, "array index must contain only integer or boolean variables",
             s);
       }
-      for (auto iv : s.lb_index().variables()) {
+      for (auto const&iv : s.lb_index().variables()) {
         check_varname(iv);
         check_int_or_bool(
             iv, "array index must contain only integer or boolean variables",
@@ -4162,7 +4155,7 @@ private:
       check_varname(lhs);
       check_is_array(a, s);
       check_varname(a);
-      for (auto iv : s.index().variables()) {
+      for (auto const&iv : s.index().variables()) {
         check_varname(iv);
         check_int_or_bool(
             iv, "array index must contain only integer or boolean variables",

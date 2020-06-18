@@ -712,41 +712,41 @@ private:
   // elements are linear constraints.
   class lin_cst_set_domain {
 
-    typedef ikos::discrete_domain<linear_constraint_t> set_t;
-    set_t m_set;
+    typedef ikos::discrete_domain<linear_constraint_t> lincons_domain_t;
+    lincons_domain_t m_lincons_set;
 
   public:
-    typedef typename set_t::iterator iterator;
+    typedef typename lincons_domain_t::iterator iterator;
 
-    lin_cst_set_domain(set_t s) : m_set(s) {}
-    lin_cst_set_domain() : m_set(set_t::bottom()) /*top by default*/ {}
-    lin_cst_set_domain(const lin_cst_set_domain &other) : m_set(other.m_set) {}
+    lin_cst_set_domain(lincons_domain_t s) : m_lincons_set(s) {}
+    lin_cst_set_domain() : m_lincons_set(lincons_domain_t::bottom()) /*top by default*/ {}
+    lin_cst_set_domain(const lin_cst_set_domain &other) : m_lincons_set(other.m_lincons_set) {}
 
-    static lin_cst_set_domain bottom() { return set_t::top(); }
-    static lin_cst_set_domain top() { return set_t::bottom(); }
+    static lin_cst_set_domain bottom() { return lincons_domain_t::top(); }
+    static lin_cst_set_domain top() { return lincons_domain_t::bottom(); }
 
-    bool is_top() { return m_set.is_bottom(); }
-    bool is_bottom() { return m_set.is_top(); }
+    bool is_top() { return m_lincons_set.is_bottom(); }
+    bool is_bottom() { return m_lincons_set.is_top(); }
 
     bool operator<=(lin_cst_set_domain other) {
       if (other.is_top() || is_bottom())
         return true;
       else
-        return other.m_set <= m_set;
+        return other.m_lincons_set <= m_lincons_set;
     }
 
     bool operator==(lin_cst_set_domain other) {
       return (*this <= other && other <= *this);
     }
 
-    void operator|=(lin_cst_set_domain other) { m_set = m_set & other.m_set; }
+    void operator|=(lin_cst_set_domain other) { m_lincons_set = m_lincons_set & other.m_lincons_set; }
 
     lin_cst_set_domain operator|(lin_cst_set_domain other) {
-      return lin_cst_set_domain(m_set & other.m_set);
+      return lin_cst_set_domain(m_lincons_set & other.m_lincons_set);
     }
 
     lin_cst_set_domain operator&(lin_cst_set_domain other) {
-      return lin_cst_set_domain(m_set | other.m_set);
+      return lin_cst_set_domain(m_lincons_set | other.m_lincons_set);
     }
 
     lin_cst_set_domain operator||(lin_cst_set_domain other) {
@@ -758,24 +758,24 @@ private:
     }
 
     lin_cst_set_domain &operator+=(const linear_constraint_t &c) {
-      m_set += c;
+      m_lincons_set += c;
       return *this;
     }
     lin_cst_set_domain &operator-=(const linear_constraint_t &c) {
-      m_set -= c;
+      m_lincons_set -= c;
       return *this;
     }
 
-    std::size_t size() { return m_set.size(); }
-    iterator begin() { return m_set.begin(); }
-    iterator end() { return m_set.end(); }
+    std::size_t size() { return m_lincons_set.size(); }
+    iterator begin() { return m_lincons_set.begin(); }
+    iterator end() { return m_lincons_set.end(); }
     void write(crab::crab_os &o) {
       if (is_bottom())
         o << "_|_";
       else if (is_top())
         o << "top";
       else
-        m_set.write(o);
+        m_lincons_set.write(o);
     }
     
     friend crab::crab_os &operator<<(crab::crab_os &o, lin_cst_set_domain &dom) {
@@ -816,32 +816,28 @@ private:
   class invariance_domain {
 
   public:
-    typedef typename linear_constraint_t::variable_t variable_t;
-    typedef typename linear_constraint_t::variable_set_t variable_set_t;
+    using variable_t = typename linear_constraint_t::variable_t;
+    using var_domain_t = ikos::discrete_domain<variable_t>;
+    using iterator = typename var_domain_t::iterator;
 
   private:
-    typedef ikos::discrete_domain<variable_t> set_t;
-    set_t m_set;
+    var_domain_t m_varset;
 
   public:
-    typedef typename set_t::iterator iterator;
 
-    invariance_domain(set_t s) : m_set(s) {}
-    invariance_domain(variable_set_t s) : m_set(set_t::bottom()) {
-      for (auto v : s) {
-        m_set += v;
-      }
-    }
-    invariance_domain(variable_t v) : m_set(set_t::bottom()) { m_set += v; }
+    invariance_domain()
+      : m_varset(var_domain_t::bottom()) /*top by default*/ {}
+    invariance_domain(var_domain_t s)
+      : m_varset(s) {}
+    invariance_domain(variable_t v)
+      : m_varset(var_domain_t::bottom()) { m_varset += v; }
+    invariance_domain(const invariance_domain &other) : m_varset(other.m_varset) {}
 
-    invariance_domain() : m_set(set_t::bottom()) /*top by default*/ {}
-    invariance_domain(const invariance_domain &other) : m_set(other.m_set) {}
+    static invariance_domain bottom() { return var_domain_t::top(); }
+    static invariance_domain top() { return var_domain_t::bottom(); }
 
-    static invariance_domain bottom() { return set_t::top(); }
-    static invariance_domain top() { return set_t::bottom(); }
-
-    bool is_top() { return m_set.is_bottom(); }
-    bool is_bottom() { return m_set.is_top(); }
+    bool is_top() { return m_varset.is_bottom(); }
+    bool is_bottom() { return m_varset.is_top(); }
 
     /*
              top  = everything might change
@@ -862,17 +858,17 @@ private:
       if (other.is_top() || is_bottom())
         return true;
       else
-        return other.m_set <= m_set;
+        return other.m_varset <= m_varset;
     }
 
-    void operator|=(invariance_domain other) { m_set = m_set & other.m_set; }
+    void operator|=(invariance_domain other) { m_varset = m_varset & other.m_varset; }
 
     invariance_domain operator|(invariance_domain other) {
-      return invariance_domain(m_set & other.m_set);
+      return invariance_domain(m_varset & other.m_varset);
     }
 
     invariance_domain operator&(invariance_domain other) {
-      return invariance_domain(m_set | other.m_set);
+      return invariance_domain(m_varset | other.m_varset);
     }
 
     invariance_domain operator||(invariance_domain other) {
@@ -884,11 +880,11 @@ private:
     }
 
     invariance_domain &operator+=(const variable_t &v) {
-      m_set += v;
+      m_varset += v;
       return *this;
     }
     invariance_domain &operator-=(const variable_t &v) {
-      m_set -= v;
+      m_varset -= v;
       return *this;
     }
 
@@ -896,16 +892,16 @@ private:
       invariance_domain d(v);
       return (d <= *this);
     }
-    std::size_t size() { return m_set.size(); }
-    iterator begin() { return m_set.begin(); }
-    iterator end() { return m_set.end(); }
+    std::size_t size() { return m_varset.size(); }
+    iterator begin() { return m_varset.begin(); }
+    iterator end() { return m_varset.end(); }
     void write(crab::crab_os &o) {
       if (is_bottom())
         o << "_|_";
       else if (is_top())
         o << "top";
       else
-        m_set.write(o);
+        m_varset.write(o);
     }
     friend crab::crab_os &operator<<(crab::crab_os &o, invariance_domain &dom) {
       dom.write(o);
@@ -1070,8 +1066,8 @@ public:
 
     bool all_non_boolean = true;
     for (const linear_constraint_t &cst : csts) {
-      auto const &variables = cst.variables();
-      if (std::any_of(variables.begin(), variables.end(),
+      if (std::any_of(cst.expression().variables_begin(),
+		      cst.expression().variables_end(),
                       [](const variable_t &v) { return v.is_bool_type(); })) {
         all_non_boolean = false;
         break;
@@ -1090,12 +1086,12 @@ public:
       linear_constraint_system_t norm_csts = csts.normalize();
       linear_constraint_system_t non_boolean_csts;
       for (const linear_constraint_t &cst : norm_csts) {
-        auto const &variables = cst.variables();
         if (cst.is_equality() &&
-            std::all_of(variables.begin(), variables.end(),
+            std::all_of(cst.expression().variables_begin(),
+			cst.expression().variables_end(),
                         [](const variable_t &v) { return v.is_bool_type(); })) {
           // boolean component
-          const linear_expression_t exp = cst.expression();
+          const linear_expression_t &exp = cst.expression();
           if (exp.size() == 1) {
             number_t coef = (*(exp.begin())).first;
             const variable_t &var = (*(exp.begin())).second;
@@ -1118,8 +1114,10 @@ public:
 
     #if 0
     // update unchanged_vars
-    for (auto v : csts.variables()) {
+    for (auto const& cst: csts) {
+      for (auto const&v : cst.variables()) {
       _unchanged_vars -= v;
+      }
     }
     #endif 
   }
@@ -1206,7 +1204,7 @@ public:
     _var_to_csts.set(x, lin_cst_set_domain(cst));
     // We assume all variables in cst are unchanged unless the
     // opposite is proven
-    for (auto v : cst.variables()) {
+    for (auto const&v : cst.variables()) {
       _unchanged_vars += v;
     }
 
@@ -1290,6 +1288,14 @@ public:
     if (is_bottom())
       return;
 
+    // return true if cst's variables haven't been modified
+    auto unmodified_constraint = [this](const linear_constraint_t &cst) {
+				   typename invariance_domain::var_domain_t
+				     vars(cst.expression().variables_begin(),
+					  cst.expression().variables_end());
+				   return _unchanged_vars <= vars;
+				 };
+    
     _product.assume_bool(x, is_negated);
 
     CRAB_LOG("flat-boolean",
@@ -1311,7 +1317,7 @@ public:
         // -- we only apply reduction if we know that all the
         // constraint variables have not been modified since they
         // were added into _var_to_csts.
-        if (_unchanged_vars <= cst.variables()) {
+        if (unmodified_constraint(cst)) {
           _product.second() += cst;
           CRAB_LOG("flat-boolean", crab::outs() << "\t"
                                                 << "Applied " << cst << "\n";);
@@ -1326,7 +1332,7 @@ public:
       auto csts = _var_to_csts[x];
       if (csts.size() == 1) {
         auto cst = *(csts.begin());
-        if (_unchanged_vars <= cst.variables()) {
+        if (unmodified_constraint(cst)) {
           _product.second() += cst.negate();
           CRAB_LOG("flat-boolean", crab::outs() << "\t"
                                                 << "Applied " << cst << "\n";);

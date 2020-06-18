@@ -993,8 +993,10 @@ public:
 
   void operator+=(const linear_constraint_system_t &csts) override {
     this->_product += csts;
-    for (auto v : csts.variables()) {
-      reduce_variable(v);
+    for (auto const& cst: csts) {
+      for (auto const&v: cst.variables()) {
+	reduce_variable(v);
+      }
     }
     CRAB_LOG("combined-domain", crab::outs() << "Added constraints " << csts
                                              << "=" << *this << "\n");
@@ -1036,7 +1038,7 @@ public:
     this->_product.backward_assign(x, e, invariant._product);
     if (!Params::apply_reduction_only_add_constraint) {
       // reduce the variables in the right-hand side
-      for (auto v : e.variables())
+      for (auto const&v : e.variables())
         this->reduce_variable(v);
     }
   }
@@ -1547,13 +1549,6 @@ private:
     }
   }
 
-  void reduce_variables(const variable_set_t &variables) {
-    for (typename variable_set_t::iterator it = variables.begin();
-         !is_bottom() && it != variables.end(); ++it) {
-      this->reduce_variable((*it));
-    }
-  }
-
 public:
   void set_to_top() override {
     rnc_domain_t abs(domain_product2_t::top());
@@ -1634,7 +1629,17 @@ public:
 
   void operator+=(const linear_constraint_system_t &csts) override {
     this->_product += csts;
-    this->reduce_variables(csts.variables());
+
+    if (!is_bottom()) {
+      for (auto const& cst: csts) {
+	for (auto const& v: cst.variables()) {
+	  this->reduce_variable(v);
+	  if (is_bottom()) {
+	    return;
+	  }
+	}
+      }
+    }
   }
 
   void operator-=(const variable_t &v) override { this->_product -= v; }
@@ -1660,7 +1665,7 @@ public:
                        rnc_domain_t invariant) override {
     this->_product.backward_assign(x, e, invariant._product);
     // reduce the variables in the right-hand side
-    for (auto v : e.variables())
+    for (auto const&v : e.variables())
       this->reduce_variable(v);
   }
 

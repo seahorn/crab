@@ -2506,25 +2506,29 @@ public:
   }
 
   void operator+=(const linear_constraint_system_t &csts) override {
-    variable_set_t variables = csts.variables();
+    CRAB_WARN(getDomainName(), "::operator+ not implemented");
 
-    std::vector<wrapped_interval_t> old_intervals;
-    old_intervals.reserve(variables.size());
-    for (auto v : variables) {
-      old_intervals.push_back(get_wrapped_interval(v));
-    }
+    // XXX: this code is fine but csts.variables() returns now a range
+    // iterator
+    
+    // variable_set_t variables = csts.variables();
+    // std::vector<wrapped_interval_t> old_intervals;
+    // old_intervals.reserve(variables.size());
+    // for (auto v : variables) {
+    //   old_intervals.push_back(get_wrapped_interval(v));
+    // }
 
-    _w_int_dom += csts;
+    // _w_int_dom += csts;
 
-    std::vector<wrapped_interval_t> new_intervals;
-    new_intervals.reserve(variables.size());
-    for (auto v : variables) {
-      new_intervals.push_back(get_wrapped_interval(v));
-    }
+    // std::vector<wrapped_interval_t> new_intervals;
+    // new_intervals.reserve(variables.size());
+    // for (auto v : variables) {
+    //   new_intervals.push_back(get_wrapped_interval(v));
+    // }
 
-    update_limits(variables, old_intervals, new_intervals);
-    CRAB_LOG("wrapped-int2",
-             crab::outs() << "assume(" << csts << ") => " << *this << "\n";);
+    // update_limits(variables, old_intervals, new_intervals);
+    // CRAB_LOG("wrapped-int2",
+    //          crab::outs() << "assume(" << csts << ") => " << *this << "\n";);
   }
 
   // cast operations
@@ -2959,12 +2963,13 @@ private:
     return false;
   }
 
-  // return true iff all variables in vars have the same bitwidth
-  static bool has_same_bitwidth(const variable_set_t &vars) {
+  // return true iff all variables in the linear constraint cst have
+  // the same bitwidth
+  static bool has_same_bitwidth(const linear_constraint_t &cst) {
     bool first = true;
     typename variable_t::bitwidth_t b;
     bool same_bitwidth = true;
-    for (auto const &v : vars) {
+    for (auto const &v : cst.variables()) {
       if (first) {
         b = v.get_bitwidth();
         first = false;
@@ -3024,8 +3029,7 @@ private:
     // -- filter out constraints that shouldn't be propagated to the
     // -- wrapped interval domain
     for (auto const &c : csts) {
-      variable_set_t vars = c.variables();
-      if (!has_same_bitwidth(vars)) {
+      if (!has_same_bitwidth(c)) {
         continue;
       }
       if (may_overflow(c, signedness)) {

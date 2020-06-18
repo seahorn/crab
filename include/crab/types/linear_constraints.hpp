@@ -71,6 +71,7 @@ public:
   typedef patricia_tree_set<variable_t> variable_set_t;
 
 private:
+  // use associative map to keep variables ordered.
   typedef boost::container::flat_map<variable_t, Number> map_t;
   typedef std::shared_ptr<map_t> map_ptr;
   typedef typename map_t::value_type pair_t;
@@ -108,13 +109,22 @@ private:
       return {kv.second, kv.first};
     }
   };
+  
+  struct get_var
+      : public std::unary_function<typename map_t::value_type, variable_t> {
+    get_var() {}
+    variable_t operator()(const typename map_t::value_type &kv) const {
+      return kv.first;
+    }
+  };
 
 public:
-  typedef boost::transform_iterator<tr_value_ty, typename map_t::iterator>
-      iterator;
-  typedef boost::transform_iterator<tr_value_ty, typename map_t::const_iterator>
-      const_iterator;
-
+  using iterator = boost::transform_iterator<tr_value_ty, typename map_t::iterator>;
+  using const_iterator = boost::transform_iterator<tr_value_ty, typename map_t::const_iterator>;
+  using var_iterator = boost::transform_iterator<get_var, typename map_t::iterator>;
+  using const_var_iterator = boost::transform_iterator<get_var, typename map_t::const_iterator>;
+  using const_var_range = boost::iterator_range<const_var_iterator>;
+  
   linear_expression() : _map(std::make_shared<map_t>()), _cst(0) {}
 
   linear_expression(Number n) : _map(std::make_shared<map_t>()), _cst(n) {}
@@ -210,7 +220,7 @@ public:
   linear_expression_t rename(const RenamingMap &map) const {
     Number cst(this->_cst);
     linear_expression_t new_exp(cst);
-    for (auto v : this->variables()) {
+    for (auto v : variables()) {
       auto const it = map.find(v);
       if (it != map.end()) {
         variable_t v_out((*it).second);
@@ -289,12 +299,25 @@ public:
     return operator*(Number(n));
   }
 
-  variable_set_t variables() const {
-    variable_set_t variables;
-    for (const_iterator it = this->begin(); it != this->end(); ++it) {
-      variables += it->second;
-    }
-    return variables;
+  var_iterator variables_begin() {
+    return boost::make_transform_iterator(_map->begin(), get_var()); 
+  }
+
+  var_iterator variables_end() {
+    return boost::make_transform_iterator(_map->end(), get_var()); 
+  }
+
+  const_var_iterator variables_begin() const {
+    return boost::make_transform_iterator(_map->begin(), get_var()); 
+  }
+
+  const_var_iterator variables_end() const {
+    return boost::make_transform_iterator(_map->end(), get_var()); 
+  }
+
+  // Variables are sorted
+  const_var_range variables() const {
+    return boost::make_iterator_range(variables_begin(), variables_end());
   }
 
   bool is_well_typed() const {
@@ -542,9 +565,9 @@ public:
   typedef linear_expression<Number, VariableName> linear_expression_t;
   typedef patricia_tree_set<variable_t> variable_set_t;
   typedef enum { EQUALITY, DISEQUATION, INEQUALITY, STRICT_INEQUALITY } kind_t;
-  typedef typename linear_expression_t::iterator iterator;
-  typedef typename linear_expression_t::const_iterator const_iterator;
-
+  using iterator = typename linear_expression_t::iterator;
+  using const_iterator = typename linear_expression_t::const_iterator;
+  using const_var_range = typename linear_expression_t::const_var_range;
 private:
   kind_t _kind;
   linear_expression_t _expr;
@@ -690,9 +713,11 @@ public:
   }
 
   Number operator[](variable_t x) const { return this->_expr.operator[](x); }
-
-  variable_set_t variables() const { return this->_expr.variables(); }
-
+ 
+  const_var_range variables() const {
+    return _expr.variables();
+  }
+  
   bool is_well_typed() const { return _expr.is_well_typed(); }
 
   linear_constraint_t negate() const;
@@ -1512,13 +1537,6 @@ public:
   iterator begin() { return _csts.begin(); }
 
   iterator end() { return _csts.end(); }
-
-  variable_set_t variables() const {
-    variable_set_t variables;
-    for (auto c : *this)
-      variables |= c.variables();
-    return variables;
-  }
 
   // TODO: expensive linear operation.
   // XXX: We can keep track of whether the system is false in an

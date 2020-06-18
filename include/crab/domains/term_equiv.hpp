@@ -508,7 +508,7 @@ private:
   dom_linexp_t rename_linear_expr(linear_expression_t exp) {
     number_t cst(exp.constant());
     dom_linexp_t dom_exp(cst);
-    for (auto v : exp.variables()) {
+    for (auto const&v : exp.variables()) {
       dom_exp = dom_exp + exp[v] * domvar_of_var(v);
     }
     return dom_exp;
@@ -526,7 +526,7 @@ private:
   rename_linear_expr_rev(dom_linexp_t exp, rev_map_t rev_map) const {
     number_t cst(exp.constant());
     linear_expression_t rev_exp(cst);
-    for (auto v : exp.variables()) {
+    for (auto const&v : exp.variables()) {
       auto it = rev_map.find(v);
       if (it != rev_map.end()) {
         variable_t v_out((*it).second);
@@ -1291,7 +1291,7 @@ public:
     dom_lincst_t cst_rn(rename_linear_cst(cst));
     _impl += cst_rn;
     // Possibly tightened some variable in cst
-    for (auto v : cst.expression().variables()) {
+    for (auto const&v : cst.variables()) {
       CRAB_LOG("term-normalization",
                crab::outs() << "Added to the normalization queue "
                             << "t" << term_of_var(v) << "["

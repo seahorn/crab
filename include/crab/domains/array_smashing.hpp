@@ -97,11 +97,12 @@ private:
   linear_constraint_system_t
   filter_noninteger_vars(linear_constraint_system_t &&csts) {
     linear_constraint_system_t res;
-    for (auto &cst : csts) {
-      auto vars = cst.variables();
-      if (std::all_of(vars.begin(), vars.end(), [](const variable_t &v) {
-            return v.is_int_type() || v.is_bool_type();
-          })) {
+    for (auto const&cst : csts) {
+      if (std::all_of(cst.expression().variables_begin(),
+		      cst.expression().variables_end(),
+		      [](const variable_t &v) {
+			return v.is_int_type() || v.is_bool_type();
+		      })) {
         res += cst;
       }
     }

@@ -296,10 +296,8 @@ public:
       m_max_op = op_per_cycle * max_cycles;
       for (unsigned int i = 0; i < m_cst_table.size(); ++i) {
         const linear_constraint_t &cst = m_cst_table.at(i);
-        variable_set_t vars = cst.variables();
-        for (typename variable_set_t::iterator it = vars.begin();
-             it != vars.end(); ++it) {
-          m_trigger_table[*it].insert(i);
+        for (const variable_t &v: cst.variables()) {
+          m_trigger_table[v].insert(i);
         }
       }
     }

@@ -189,12 +189,12 @@ public:
   static void extract(Domain &dom, const variable_t &x,
                       linear_constraint_system_t &csts, bool only_equalities) {
     auto all_csts = dom.to_linear_constraint_system();
-    for (auto cst : all_csts) {
+    for (auto const&cst : all_csts) {
       if (only_equalities && (!cst.is_equality())) {
         continue;
       }
-      auto vars = cst.variables();
-      if (vars[x]) {
+      if (std::find(cst.variables_begin(), cst.variables_end(), x) !=
+	  cst.variables_end()) {
         csts += cst;
       }
     }
