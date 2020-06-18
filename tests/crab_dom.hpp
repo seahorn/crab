@@ -41,9 +41,9 @@ namespace crab {
     typedef interval_domain<z_number,varname_t> z_interval_domain_t;
     typedef numerical_congruence_domain<z_interval_domain_t> z_ric_domain_t;
     typedef DBM_impl::DefaultParams<z_number,DBM_impl::GraphRep::adapt_ss> z_SparseGraph;
-    typedef SparseDBM<z_number,varname_t,z_SparseGraph> z_dbm_domain_t;
+    typedef sparse_dbm_domain<z_number,varname_t,z_SparseGraph> z_dbm_domain_t;
     typedef DBM_impl::DefaultParams<z_number,DBM_impl::GraphRep::adapt_ss> z_SplitGraph;
-    typedef SplitDBM<z_number,varname_t,z_SplitGraph> z_sdbm_domain_t;
+    typedef split_dbm_domain<z_number,varname_t,z_SplitGraph> z_sdbm_domain_t;
     typedef boxes_domain<z_number,varname_t> z_boxes_domain_t;
     typedef dis_interval_domain<z_number, varname_t > z_dis_interval_domain_t;
     typedef apron_domain<z_number,varname_t,APRON_INT> z_box_apron_domain_t;
@@ -99,7 +99,7 @@ namespace crab {
 		      interval_domain<z_number, typename var_allocator::varname_t>>;
     using z_ref_sdbm_params_t =
       reference_domain_impl::Params<z_number, varname_t,
-		      SplitDBM<z_number, typename var_allocator::varname_t, z_SplitGraph>>;
+		      split_dbm_domain<z_number, typename var_allocator::varname_t, z_SplitGraph>>;
     typedef reference_domain<z_ref_int_params_t> z_ref_int_t;
     typedef reference_domain<z_ref_sdbm_params_t> z_ref_sdbm_t;        
     typedef reference_domain<z_ref_aa_int_params_t> z_ref_aa_int_t;

@@ -99,15 +99,15 @@ int main (int argc, char** argv) {
   }
   
   { // overflow cases with zones domain
-    typedef SplitDBM<ikos::z_number,
+    typedef split_dbm_domain<ikos::z_number,
 		     varname_t,
 		     DBM_impl::DefaultParams<ikos::z_number,
 					     DBM_impl::GraphRep::ss>>
-      SplitDBM_t;
+      split_dbm_domain_t;
     
     z_var x(vfac["x"], crab::INT_TYPE, 32);
 
-    SplitDBM_t d1, d2;    
+    split_dbm_domain_t d1, d2;    
     z_lin_cst_t c1(x == z_number("-9223372036854775808"));
     crab::outs () << "Adding constraint 1 " << c1 << "\n";
     d1 += c1;

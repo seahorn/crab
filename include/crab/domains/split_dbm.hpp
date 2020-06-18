@@ -43,9 +43,9 @@ namespace domains {
 
 template <class Number, class VariableName,
           class Params = DBM_impl::DefaultParams<Number>>
-class SplitDBM final
-    : public abstract_domain<SplitDBM<Number, VariableName, Params>> {
-  typedef SplitDBM<Number, VariableName, Params> DBM_t;
+class split_dbm_domain final
+    : public abstract_domain<split_dbm_domain<Number, VariableName, Params>> {
+  typedef split_dbm_domain<Number, VariableName, Params> DBM_t;
   typedef abstract_domain<DBM_t> abstract_domain_t;
 
 public:
@@ -525,7 +525,7 @@ protected:
     }
 
     check_potential(g, potential, __LINE__);
-    // CRAB_WARN("SplitDBM::add_linear_leq not yet implemented.");
+    // CRAB_WARN("split_dbm_domain::add_linear_leq not yet implemented.");
     return true;
   }
 
@@ -951,7 +951,7 @@ protected:
     return g;
   }
 
-  SplitDBM(vert_map_t &&_vert_map, rev_map_t &&_rev_map, graph_t &&_g,
+  split_dbm_domain(vert_map_t &&_vert_map, rev_map_t &&_rev_map, graph_t &&_g,
             std::vector<Wt> &&_potential, vert_set_t &&_unstable)
       : vert_map(std::move(_vert_map)), rev_map(std::move(_rev_map)),
         g(std::move(_g)), potential(std::move(_potential)),
@@ -968,14 +968,14 @@ protected:
   }
 
 public:
-  SplitDBM(bool is_bottom = false) : _is_bottom(is_bottom) {
+  split_dbm_domain(bool is_bottom = false) : _is_bottom(is_bottom) {
     g.growTo(1); // Allocate the zero vector
     potential.push_back(Wt(0));
     rev_map.push_back(boost::none);
   }
 
   // FIXME: Rewrite to avoid copying if o is _|_
-  SplitDBM(const DBM_t &o)
+  split_dbm_domain(const DBM_t &o)
       : vert_map(o.vert_map), rev_map(o.rev_map), g(o.g),
         potential(o.potential), unstable(o.unstable), _is_bottom(false) {
     crab::CrabStats::count(getDomainName() + ".count.copy");
@@ -988,7 +988,7 @@ public:
       assert(g.size() > 0);
   }
 
-  SplitDBM(DBM_t &&o)
+  split_dbm_domain(DBM_t &&o)
       : vert_map(std::move(o.vert_map)), rev_map(std::move(o.rev_map)),
         g(std::move(o.g)), potential(std::move(o.potential)),
         unstable(std::move(o.unstable)), _is_bottom(o._is_bottom) {
@@ -996,7 +996,7 @@ public:
     crab::ScopedCrabStats __st__(getDomainName() + ".copy");
   }
 
-  SplitDBM &operator=(const SplitDBM &o) {
+  split_dbm_domain &operator=(const split_dbm_domain &o) {
     crab::CrabStats::count(getDomainName() + ".count.copy");
     crab::ScopedCrabStats __st__(getDomainName() + ".copy");
 
@@ -1016,7 +1016,7 @@ public:
     return *this;
   }
 
-  SplitDBM &operator=(SplitDBM &&o) {
+  split_dbm_domain &operator=(split_dbm_domain &&o) {
     crab::CrabStats::count(getDomainName() + ".count.copy");
     crab::ScopedCrabStats __st__(getDomainName() + ".copy");
 
@@ -1034,7 +1034,7 @@ public:
   }
 
   void set_to_top() override {
-    SplitDBM abs(false);
+    split_dbm_domain abs(false);
     std::swap(*this, abs);
   }
 
@@ -2099,7 +2099,7 @@ public:
   /*
      Begin unimplemented operations
 
-     SplitDBM implements only standard abstract operations of a
+     split_dbm_domain implements only standard abstract operations of a
      numerical domain. 
   */
   // boolean operations
@@ -2557,18 +2557,18 @@ public:
 
   static std::string getDomainName() { return "SplitDBM"; }
 
-}; // class SplitDBM
+}; // class split_dbm_domain
 
-template <typename Number, typename VariableName, typename SplitDBMParams>
-struct abstract_domain_traits<SplitDBM<Number, VariableName, SplitDBMParams>> {
+template <typename Number, typename VariableName, typename Params>
+struct abstract_domain_traits<split_dbm_domain<Number, VariableName, Params>> {
   typedef Number number_t;
   typedef VariableName varname_t;
 };
 
-template <typename Number, typename VariableName, typename SplitDBMParams>
-class reduced_domain_traits<SplitDBM<Number, VariableName, SplitDBMParams>> {
+template <typename Number, typename VariableName, typename Params>
+class reduced_domain_traits<split_dbm_domain<Number, VariableName, Params>> {
 public:
-  typedef SplitDBM<Number, VariableName, SplitDBMParams> sdbm_domain_t;
+  typedef split_dbm_domain<Number, VariableName, Params> sdbm_domain_t;
   typedef typename sdbm_domain_t::variable_t variable_t;
   typedef typename sdbm_domain_t::linear_constraint_system_t
       linear_constraint_system_t;
@@ -2579,10 +2579,10 @@ public:
   }
 };
 
-template <typename Number, typename VariableName, typename SplitDBMParams>
+template <typename Number, typename VariableName, typename Params>
 struct array_graph_domain_helper_traits<
-    SplitDBM<Number, VariableName, SplitDBMParams>> {
-  typedef SplitDBM<Number, VariableName, SplitDBMParams> sdbm_domain_t;
+    split_dbm_domain<Number, VariableName, Params>> {
+  typedef split_dbm_domain<Number, VariableName, Params> sdbm_domain_t;
   typedef typename sdbm_domain_t::linear_constraint_t linear_constraint_t;
   typedef typename sdbm_domain_t::variable_t variable_t;
 

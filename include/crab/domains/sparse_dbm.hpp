@@ -34,9 +34,9 @@ namespace domains {
 
 template <class Number, class VariableName,
           class Params = DBM_impl::DefaultParams<Number>>
-class SparseDBM final
-    : public abstract_domain<SparseDBM<Number, VariableName, Params>> {
-  typedef SparseDBM<Number, VariableName, Params> DBM_t;
+class sparse_dbm_domain final
+    : public abstract_domain<sparse_dbm_domain<Number, VariableName, Params>> {
+  typedef sparse_dbm_domain<Number, VariableName, Params> DBM_t;
   typedef abstract_domain<DBM_t> abstract_domain_t;
 
 public:
@@ -713,14 +713,14 @@ protected:
   */
   
 public:
-  SparseDBM(bool is_bottom = false) : _is_bottom(is_bottom) {
+  sparse_dbm_domain(bool is_bottom = false) : _is_bottom(is_bottom) {
     g.growTo(1); // Allocate the zero vector
     potential.push_back(Wt(0));
     rev_map.push_back(boost::none);
   }
 
   // FIXME: Rewrite to avoid copying if o is _|_
-  SparseDBM(const DBM_t &o)
+  sparse_dbm_domain(const DBM_t &o)
       : vert_map(o.vert_map), rev_map(o.rev_map), g(o.g),
         potential(o.potential), unstable(o.unstable), _is_bottom(false) {
 
@@ -734,13 +734,13 @@ public:
       assert(g.size() > 0);
   }
 
-  SparseDBM(DBM_t &&o)
+  sparse_dbm_domain(DBM_t &&o)
       : vert_map(std::move(o.vert_map)), rev_map(std::move(o.rev_map)),
         g(std::move(o.g)), potential(std::move(o.potential)),
         unstable(std::move(o.unstable)), _is_bottom(o._is_bottom) {}
 
   // Magical rvalue ownership stuff for efficient initialization
-  SparseDBM(vert_map_t &&_vert_map, rev_map_t &&_rev_map, graph_t &&_g,
+  sparse_dbm_domain(vert_map_t &&_vert_map, rev_map_t &&_rev_map, graph_t &&_g,
              std::vector<Wt> &&_potential, vert_set_t &&_unstable)
       : vert_map(std::move(_vert_map)), rev_map(std::move(_rev_map)),
         g(std::move(_g)), potential(std::move(_potential)),
@@ -753,7 +753,7 @@ public:
     assert(g.size() > 0);
   }
 
-  SparseDBM &operator=(const SparseDBM &o) {
+  sparse_dbm_domain &operator=(const sparse_dbm_domain &o) {
     crab::CrabStats::count(getDomainName() + ".count.copy");
     crab::ScopedCrabStats __st__(getDomainName() + ".copy");
 
@@ -773,7 +773,7 @@ public:
     return *this;
   }
 
-  SparseDBM &operator=(SparseDBM &&o) {
+  sparse_dbm_domain &operator=(sparse_dbm_domain &&o) {
     if (o._is_bottom) {
       set_to_bottom();
     } else {
@@ -788,7 +788,7 @@ public:
   }
 
   void set_to_top() override {
-    SparseDBM abs(false);
+    sparse_dbm_domain abs(false);
     std::swap(*this, abs);
   }
 
@@ -1694,7 +1694,7 @@ public:
   /*
      Begin unimplemented operations
 
-     SparseDBM implements only standard abstract operations of a
+     sparse_dbm_domain implements only standard abstract operations of a
      numerical domain.  
   */
 
@@ -2065,18 +2065,18 @@ public:
 
   static std::string getDomainName() { return "SparseDBM"; }
 
-}; // class SparseDBM
+}; // class sparse_dbm_domain
 
 template <typename Number, typename VariableName, typename Params>
-struct abstract_domain_traits<SparseDBM<Number, VariableName, Params>> {
+struct abstract_domain_traits<sparse_dbm_domain<Number, VariableName, Params>> {
   typedef Number number_t;
   typedef VariableName varname_t;
 };
 
 template <typename Number, typename VariableName, typename Params>
-class reduced_domain_traits<SparseDBM<Number, VariableName, Params>> {
+class reduced_domain_traits<sparse_dbm_domain<Number, VariableName, Params>> {
 public:
-  typedef SparseDBM<Number, VariableName, Params> sdbm_domain_t;
+  typedef sparse_dbm_domain<Number, VariableName, Params> sdbm_domain_t;
   typedef typename sdbm_domain_t::variable_t variable_t;
   typedef typename sdbm_domain_t::linear_constraint_system_t
       linear_constraint_system_t;
