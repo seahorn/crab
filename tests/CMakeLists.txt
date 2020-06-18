@@ -55,4 +55,4 @@ AddTestDir(thresholds)
 AddTestDir(checkers)
 AddTestDir(backward)
 AddTestDir(preconditions)
-
+AddTestDir(liveness)
