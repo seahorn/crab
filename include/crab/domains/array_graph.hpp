@@ -72,7 +72,7 @@ namespace domains {
    i.e., for all i,j,k:: weight(i,j) <= join(weight(i,k), weight(k,j))
 */
 template <typename Vertex, typename Weight, bool IsDistWeight>
-class array_graph_ {
+class array_graph {
 
 public:
   // XXX: make this a template parameter later
@@ -95,7 +95,7 @@ private:
   typedef typename vert_map_t::value_type vmap_elt_t;
   typedef std::vector<boost::optional<Vertex>> rev_map_t;
   typedef std::unordered_set<_vert_id> vert_set_t;
-  typedef array_graph_<Vertex, Weight, IsDistWeight> array_graph_t;
+  typedef array_graph<Vertex, Weight, IsDistWeight> array_graph_t;
 
   vert_map_t _vert_map;
   rev_map_t _rev_map;
@@ -240,26 +240,26 @@ public:
   }
 
 public:
-  array_graph_(bool is_bottom = false) : _is_bottom(is_bottom) {}
+  array_graph(bool is_bottom = false) : _is_bottom(is_bottom) {}
 
-  array_graph_(const array_graph_t &o)
+  array_graph(const array_graph_t &o)
       : _vert_map(o._vert_map), _rev_map(o._rev_map), _g(o._g),
         _unstable(o._unstable), _is_bottom(false) {
     if (o._is_bottom)
       set_to_bottom();
   }
 
-  array_graph_(array_graph_t &&o)
+  array_graph(array_graph_t &&o)
       : _vert_map(std::move(o._vert_map)), _rev_map(std::move(o._rev_map)),
         _g(std::move(o._g)), _unstable(std::move(o._unstable)),
         _is_bottom(o._is_bottom) {}
 
-  array_graph_(vert_map_t &vert_map, rev_map_t &rev_map, graph_t &g,
+  array_graph(vert_map_t &vert_map, rev_map_t &rev_map, graph_t &g,
                vert_set_t unstable)
       : _vert_map(vert_map), _rev_map(rev_map), _g(g), _unstable(unstable),
         _is_bottom(false) {}
 
-  array_graph_(vert_map_t &&vert_map, rev_map_t &&rev_map, graph_t &&g,
+  array_graph(vert_map_t &&vert_map, rev_map_t &&rev_map, graph_t &&g,
                vert_set_t &&unstable)
       : _vert_map(std::move(vert_map)), _rev_map(std::move(rev_map)),
         _g(std::move(g)), _unstable(std::move(unstable)), _is_bottom(false) {}
@@ -857,175 +857,6 @@ void propagate_between_weight_and_scalar(
 }
 
 } // namespace array_graph_impl
-
-#if 1
-template <class Vertex, class Weight, bool IsDistWeight>
-using array_graph = array_graph_<Vertex, Weight, IsDistWeight>;
-#else
-// Wrapper which uses shared references with copy-on-write.
-template <class Vertex, class Weight, bool IsDistWeight>
-class array_graph {
-public:
-  typedef array_graph_<Vertex, Weight, IsDistWeight> array_graph_impl_t;
-  typedef std::shared_ptr<array_graph_impl_t> array_graph_ref_t;
-  typedef array_graph<Vertex, Weight, IsDistWeight> array_graph_t;
-
-  typedef typename array_graph_impl_t::Wt Wt;
-  typedef typename array_graph_impl_t::mut_val_ref_t mut_val_ref_t;
-  typedef typename array_graph_impl_t::graph_t graph_t;
-  typedef typename array_graph_impl_t::vert_id vert_id;
-  typedef typename array_graph_impl_t::succ_range succ_range;
-  typedef typename array_graph_impl_t::pred_range pred_range;
-  typedef typename array_graph_impl_t::vert_range vert_range;
-  typedef typename array_graph_impl_t::e_succ_range e_succ_range;
-  typedef typename array_graph_impl_t::e_pred_range e_pred_range;
-
-  array_graph(array_graph_ref_t _ref) : norm_ref(_ref) {}
-
-  array_graph(array_graph_ref_t _base, array_graph_ref_t _norm)
-      : base_ref(_base), norm_ref(_norm) {}
-
-  array_graph_t create(array_graph_impl_t &&t) {
-    return std::make_shared<array_graph_impl_t>(std::move(t));
-  }
-
-  array_graph_t create_base(array_graph_impl_t &&t) {
-    array_graph_ref_t base = std::make_shared<array_graph_impl_t>(t);
-    array_graph_ref_t norm = std::make_shared<array_graph_impl_t>(std::move(t));
-    return array_graph_t(base, norm);
-  }
-
-  void lock(void) { // Allocate a fresh copy.
-    if (!norm_ref.unique())
-      norm_ref = std::make_shared<array_graph_impl_t>(*norm_ref);
-    base_ref.reset();
-  }
-
-public:
-  static array_graph_t top() { return array_graph(false); }
-
-  static array_graph_t bottom() { return array_graph(true); }
-
-  array_graph(bool is_bottom = false)
-      : norm_ref(std::make_shared<array_graph_impl_t>(is_bottom)) {}
-
-  array_graph(const array_graph_t &o)
-      : base_ref(o.base_ref), norm_ref(o.norm_ref) {}
-
-  array_graph_t &operator=(const array_graph_t &o) {
-    base_ref = o.base_ref;
-    norm_ref = o.norm_ref;
-    return *this;
-  }
-
-  array_graph_impl_t &base(void) {
-    if (base_ref)
-      return *base_ref;
-    else
-      return *norm_ref;
-  }
-
-  array_graph_impl_t &norm(void) { return *norm_ref; }
-  const array_graph_impl_t &norm(void) const { return *norm_ref; }
-
-  bool is_bottom() { return norm().is_bottom(); }
-
-  bool is_top() { return norm().is_top(); }
-
-  bool operator<=(array_graph_t &o) { return norm() <= o.norm(); }
-
-  void operator|=(array_graph_t o) {
-    lock();
-    norm() |= o.norm();
-  }
-
-  array_graph_t operator|(array_graph_t o) { return create(norm() | o.norm()); }
-
-  array_graph_t operator||(array_graph_t o) {
-    return create_base(base() || o.norm());
-  }
-
-  array_graph_t operator&(array_graph_t o) { return create(norm() & o.norm()); }
-
-  array_graph_t operator&&(array_graph_t o) {
-    return create(norm() && o.norm());
-  }
-
-  template <typename Thresholds>
-  array_graph_t widening_thresholds(array_graph_t o, const Thresholds &ts) {
-    return create_base(
-        base().template widening_thresholds<Thresholds>(o.norm(), ts));
-  }
-
-  void normalize() {
-    lock();
-    norm().normalize();
-  }
-
-  vert_range verts() { return norm().verts(); }
-
-  succ_range succs(Vertex v) { return norm().succs(v); }
-
-  pred_range preds(Vertex v) { return norm().preds(v); }
-
-  e_succ_range e_succs(Vertex v) { return norm().e_succs(v); }
-
-  e_pred_range e_preds(Vertex v) { return norm().e_preds(v); }
-
-  void set_to_bottom() {
-    lock();
-    norm().set_to_bottom();
-  }
-
-  bool lookup_edge(Vertex s, Vertex d, mut_val_ref_t *w) {
-    lock();
-    return norm().lookup_edge(s, d, w);
-  }
-
-  void expand(Vertex s, Vertex d) {
-    lock();
-    norm().expand(s, d);
-  }
-
-  void update_edge(Vertex s, Weight w, Vertex d) {
-    lock();
-    norm().update_edge(s, w, d);
-  }
-
-  // void full_close() { lock(); norm().full_close(); }
-  // void update_edge_unclosed(Vertex s, Weight w, Vertex d) {
-  // lock(); norm().update_edge_unclosed(s,w,d); }
-  void close_edge(Vertex s, Vertex d) {
-    lock();
-    norm().close_edge(s, d);
-  }
-
-  void remove_from_weights(typename Weight::variable_t v) {
-    lock();
-    norm().remove_from_weights(v);
-  }
-
-  void operator-=(Vertex v) {
-    lock();
-    norm() -= v;
-  }
-
-  void write(crab_os &o) { norm().write(o); }
-  void write(crab_os &o, bool print_bottom_edges) {
-    norm().write(o, print_bottom_edges);
-  }
-
-  friend crab::crab_os &operator<<(crab::crab_os &o, array_graph_t &g) {
-    g.write(o);
-    return o;
-  }
-  
-
-protected:
-  array_graph_ref_t base_ref;
-  array_graph_ref_t norm_ref;
-};
-#endif
 
 // Landmark: another C++ datatype to wrap variables and numbers as
 // graph vertices.

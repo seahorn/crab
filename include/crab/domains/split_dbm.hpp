@@ -43,9 +43,9 @@ namespace domains {
 
 template <class Number, class VariableName,
           class Params = DBM_impl::DefaultParams<Number>>
-class SplitDBM_ final
-    : public abstract_domain<SplitDBM_<Number, VariableName, Params>> {
-  typedef SplitDBM_<Number, VariableName, Params> DBM_t;
+class SplitDBM final
+    : public abstract_domain<SplitDBM<Number, VariableName, Params>> {
+  typedef SplitDBM<Number, VariableName, Params> DBM_t;
   typedef abstract_domain<DBM_t> abstract_domain_t;
 
 public:
@@ -951,7 +951,7 @@ protected:
     return g;
   }
 
-  SplitDBM_(vert_map_t &&_vert_map, rev_map_t &&_rev_map, graph_t &&_g,
+  SplitDBM(vert_map_t &&_vert_map, rev_map_t &&_rev_map, graph_t &&_g,
             std::vector<Wt> &&_potential, vert_set_t &&_unstable)
       : vert_map(std::move(_vert_map)), rev_map(std::move(_rev_map)),
         g(std::move(_g)), potential(std::move(_potential)),
@@ -968,14 +968,14 @@ protected:
   }
 
 public:
-  SplitDBM_(bool is_bottom = false) : _is_bottom(is_bottom) {
+  SplitDBM(bool is_bottom = false) : _is_bottom(is_bottom) {
     g.growTo(1); // Allocate the zero vector
     potential.push_back(Wt(0));
     rev_map.push_back(boost::none);
   }
 
   // FIXME: Rewrite to avoid copying if o is _|_
-  SplitDBM_(const DBM_t &o)
+  SplitDBM(const DBM_t &o)
       : vert_map(o.vert_map), rev_map(o.rev_map), g(o.g),
         potential(o.potential), unstable(o.unstable), _is_bottom(false) {
     crab::CrabStats::count(getDomainName() + ".count.copy");
@@ -988,7 +988,7 @@ public:
       assert(g.size() > 0);
   }
 
-  SplitDBM_(DBM_t &&o)
+  SplitDBM(DBM_t &&o)
       : vert_map(std::move(o.vert_map)), rev_map(std::move(o.rev_map)),
         g(std::move(o.g)), potential(std::move(o.potential)),
         unstable(std::move(o.unstable)), _is_bottom(o._is_bottom) {
@@ -996,7 +996,7 @@ public:
     crab::ScopedCrabStats __st__(getDomainName() + ".copy");
   }
 
-  SplitDBM_ &operator=(const SplitDBM_ &o) {
+  SplitDBM &operator=(const SplitDBM &o) {
     crab::CrabStats::count(getDomainName() + ".count.copy");
     crab::ScopedCrabStats __st__(getDomainName() + ".copy");
 
@@ -1016,7 +1016,7 @@ public:
     return *this;
   }
 
-  SplitDBM_ &operator=(SplitDBM_ &&o) {
+  SplitDBM &operator=(SplitDBM &&o) {
     crab::CrabStats::count(getDomainName() + ".count.copy");
     crab::ScopedCrabStats __st__(getDomainName() + ".copy");
 
@@ -1034,7 +1034,7 @@ public:
   }
 
   void set_to_top() override {
-    SplitDBM_ abs(false);
+    SplitDBM abs(false);
     std::swap(*this, abs);
   }
 
@@ -2557,311 +2557,7 @@ public:
 
   static std::string getDomainName() { return "SplitDBM"; }
 
-}; // class SplitDBM_
-
-#if 1
-template <class Number, class VariableName,
-          class Params = DBM_impl::DefaultParams<Number>>
-using SplitDBM = SplitDBM_<Number, VariableName, Params>;
-#else
-
-template <typename Number, typename VariableName, typename SplitDBMParams>
-struct abstract_domain_traits<SplitDBM_<Number, VariableName, SplitDBMParams>> {
-  typedef Number number_t;
-  typedef VariableName varname_t;
-};
-
-// Quick wrapper which uses shared references with copy-on-write.
-template <class Number, class VariableName,
-          class Params = DBM_impl::DefaultParams<Number>>
-class SplitDBM final
-    : public abstract_domain<SplitDBM<Number, VariableName, Params>> {
-  typedef SplitDBM<Number, VariableName, Params> DBM_t;
-  typedef abstract_domain<DBM_t> abstract_domain_t;
-
-public:
-  using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
-  using typename abstract_domain_t::linear_constraint_system_t;
-  using typename abstract_domain_t::linear_constraint_t;
-  using typename abstract_domain_t::linear_expression_t;
-  using typename abstract_domain_t::reference_constraint_t;
-  using typename abstract_domain_t::variable_t;
-  using typename abstract_domain_t::variable_vector_t;
-  using typename abstract_domain_t::interval_t;      
-  typedef Number number_t;
-  typedef VariableName varname_t;
-  typedef typename linear_constraint_t::kind_t constraint_kind_t;
-
-public:
-  typedef SplitDBM_<number_t, varname_t, Params> dbm_impl_t;
-  typedef std::shared_ptr<dbm_impl_t> dbm_ref_t;
-
-  SplitDBM(dbm_ref_t _ref) : norm_ref(_ref) {}
-
-  SplitDBM(dbm_ref_t _base, dbm_ref_t _norm)
-      : base_ref(_base), norm_ref(_norm) {}
-
-  DBM_t create(dbm_impl_t &&t) {
-    return std::make_shared<dbm_impl_t>(std::move(t));
-  }
-
-  DBM_t create_base(dbm_impl_t &&t) {
-    dbm_ref_t base = std::make_shared<dbm_impl_t>(t);
-    dbm_ref_t norm = std::make_shared<dbm_impl_t>(std::move(t));
-    return DBM_t(base, norm);
-  }
-
-  void lock(void) {
-    // Allocate a fresh copy.
-    if (!norm_ref.unique())
-      norm_ref = std::make_shared<dbm_impl_t>(*norm_ref);
-    base_ref.reset();
-  }
-
-public:
-  void set_to_top() {
-    SplitDBM abs(false);
-    std::swap(*this, abs);
-  }
-
-  void set_to_bottom() {
-    SplitDBM abs(true);
-    std::swap(*this, abs);
-  }
-
-  SplitDBM(bool is_bottom = false)
-      : norm_ref(std::make_shared<dbm_impl_t>(is_bottom)) {}
-
-  SplitDBM(const DBM_t &o) : base_ref(o.base_ref), norm_ref(o.norm_ref) {}
-
-  SplitDBM &operator=(const DBM_t &o) {
-    if (this != &o) {
-      base_ref = o.base_ref;
-      norm_ref = o.norm_ref;
-    }
-    return *this;
-  }
-
-  dbm_impl_t &base(void) {
-    if (base_ref)
-      return *base_ref;
-    else
-      return *norm_ref;
-  }
-  dbm_impl_t &norm(void) { return *norm_ref; }
-
-  bool is_bottom() { return norm().is_bottom(); }
-  bool is_top() { return norm().is_top(); }
-  bool operator<=(DBM_t o) { return norm() <= o.norm(); }
-  void operator|=(DBM_t o) {
-    lock();
-    norm() |= o.norm();
-  }
-  DBM_t operator|(DBM_t o) { return create(norm() | o.norm()); }
-  DBM_t operator||(DBM_t o) { return create_base(base() || o.norm()); }
-  DBM_t operator&(DBM_t o) { return create(norm() & o.norm()); }
-  DBM_t operator&&(DBM_t o) { return create(norm() && o.norm()); }
-
-  DBM_t widening_thresholds(DBM_t o,
-                            const iterators::thresholds<number_t> &ts) {
-    return create_base(base().widening_thresholds(o.norm(), ts));
-  }
-
-  void normalize() {
-    lock();
-    norm().normalize();
-  }
-  void minimize() {}
-
-  void operator+=(linear_constraint_system_t csts) {
-    lock();
-    norm() += csts;
-  }
-  void operator-=(variable_t v) {
-    lock();
-    norm() -= v;
-  }
-  interval_t operator[](variable_t x) { return norm()[x]; }
-  void set(variable_t x, interval_t intv) {
-    lock();
-    norm().set(x, intv);
-  }
-
-  void assign(variable_t x, linear_expression_t e) {
-    lock();
-    norm().assign(x, e);
-  }
-  void apply(arith_operation_t op, variable_t x, variable_t y, number_t k) {
-    lock();
-    norm().apply(op, x, y, k);
-  }
-  void apply(arith_operation_t op, variable_t x, variable_t y, variable_t z) {
-    lock();
-    norm().apply(op, x, y, z);
-  }
-  void backward_assign(variable_t x, linear_expression_t e, DBM_t invariant) {
-    lock();
-    norm().backward_assign(x, e, invariant.norm());
-  }
-  void backward_apply(arith_operation_t op, variable_t x, variable_t y, number_t k,
-                      DBM_t invariant) {
-    lock();
-    norm().backward_apply(op, x, y, k, invariant.norm());
-  }
-  void backward_apply(arith_operation_t op, variable_t x, variable_t y, variable_t z,
-                      DBM_t invariant) {
-    lock();
-    norm().backward_apply(op, x, y, z, invariant.norm());
-  }
-  void apply(int_conv_operation_t op, variable_t dst, variable_t src) {
-    lock();
-    norm().apply(op, dst, src);
-  }
-  void apply(bitwise_operation_t op, variable_t x, variable_t y, number_t k) {
-    lock();
-    norm().apply(op, x, y, k);
-  }
-  void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {
-    lock();
-    norm().apply(op, x, y, z);
-  }
-
-  /* Begin unimplemented operations */
-  // boolean operations
-  void assign_bool_cst(variable_t lhs, linear_constraint_t rhs) {}
-  void assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs) {}
-  void apply_binary_bool(bool_operation_t op, variable_t x, variable_t y,
-                         variable_t z) {}
-  void assume_bool(variable_t v, bool is_negated) {}
-  // backward boolean operations
-  void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
-                                DBM_t invariant) {}
-  void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
-                                DBM_t invariant) {}
-  void backward_apply_binary_bool(bool_operation_t op, variable_t x,
-                                  variable_t y, variable_t z, DBM_t invariant) {
-  }
-  // array operations
-  void array_init(variable_t a, linear_expression_t elem_size,
-                  linear_expression_t lb_idx, linear_expression_t ub_idx,
-                  linear_expression_t val) {}
-  void array_load(variable_t lhs, variable_t a, linear_expression_t elem_size,
-                  linear_expression_t i) {
-    lock();
-    norm.array_load(lhs, a, elem_size, i);
-  }
-  void array_store(variable_t a, linear_expression_t elem_size,
-                   linear_expression_t i, linear_expression_t v,
-                   bool is_strong_update) {}
-  void array_store(variable_t a_new, variable_t a_old,
-                   linear_expression_t elem_size, linear_expression_t i,
-                   linear_expression_t v, bool is_strong_update) {}
-  void array_store_range(variable_t a, linear_expression_t elem_size,
-                         linear_expression_t i, linear_expression_t j,
-                         linear_expression_t v) {}
-  void array_store_range(variable_t a_new, variable_t a_old,
-                         linear_expression_t elem_size, linear_expression_t i,
-                         linear_expression_t j, linear_expression_t v) {}
-  void array_assign(variable_t lhs, variable_t rhs) {}
-  // backward array operations
-  void backward_array_init(variable_t a, linear_expression_t elem_size,
-                           linear_expression_t lb_idx,
-                           linear_expression_t ub_idx, linear_expression_t val,
-                           DBM_t invariant) {}
-  void backward_array_load(variable_t lhs, variable_t a,
-                           linear_expression_t elem_size, linear_expression_t i,
-                           DBM_t invariant) {}
-  void backward_array_store(variable_t a, linear_expression_t elem_size,
-                            linear_expression_t i, linear_expression_t v,
-                            bool is_strong_update, DBM_t invariant) {}
-  void backward_array_store(variable_t a_new, variable_t a_old,
-                            linear_expression_t elem_size,
-                            linear_expression_t i, linear_expression_t v,
-                            bool is_strong_update, DBM_t invariant) {}
-  void backward_array_store_range(variable_t a, linear_expression_t elem_size,
-                                  linear_expression_t i, linear_expression_t j,
-                                  linear_expression_t v, DBM_t invariant) {}
-  void backward_array_store_range(variable_t a_new, variable_t a_old,
-                                  linear_expression_t elem_size,
-                                  linear_expression_t i, linear_expression_t j,
-                                  linear_expression_t v, DBM_t invariant) {}
-  void backward_array_assign(variable_t lhs, variable_t rhs, DBM_t invariant) {}
-  // reference operations
-  void region_init(memory_region reg) override {}            
-  void ref_make(variable_t ref, memory_region reg) override {}
-  void ref_load(variable_t ref, memory_region reg, variable_t res) override {}
-  void ref_store(variable_t ref, memory_region reg, linear_expression_t val) override {}
-  void ref_gep(variable_t ref1, memory_region reg1,
-		       variable_t ref2, memory_region reg2,
-		       linear_expression_t offset) override {}
-  void ref_load_from_array(variable_t lhs, variable_t ref, memory_region region,
-				   linear_expression_t index, linear_expression_t elem_size) override {}
-  void ref_store_to_array(variable_t ref, memory_region region,
-				  linear_expression_t index, linear_expression_t elem_size,
-				  linear_expression_t val) override {}
-  void ref_assume(reference_constraint_t cst) override {}
-  /* End unimplemented operations */
-
-  void expand(variable_t x, variable_t y) {
-    lock();
-    norm().expand(x, y);
-  }
-  void forget(const variable_vector_t &vars) {
-    lock();
-    norm().forget(vars);
-  }
-  void project(const variable_vector_t &vars) {
-    lock();
-    norm().project(vars);
-  }
-  void rename(const variable_vector_t &from, const variable_vector_t &to) {
-    lock();
-    norm().rename(from, to);
-  }
-  void extract(const variable_t &x, linear_constraint_system_t &csts,
-               bool only_equalities) {
-    lock();
-    norm().extract(x, csts, only_equalities);
-  }
-
-  void intrinsic(std::string name,
-		 const variable_vector_t &inputs,
-		 const variable_vector_t &outputs) override {
-    lock();
-    norm().intrinsic(name, inputs, outputs);
-  }
-
-  void backward_intrinsic(std::string name,
-			  const variable_vector_t &inputs,
-			  const variable_vector_t &outputs,
-			  DBM_t invariant) override {
-    lock();
-    norm().backward_intrinsic(name, inputs, outputs, invariant);
-  }  
-
-  void write(crab_os &o) { norm().write(o); }
-
-  linear_constraint_system_t to_linear_constraint_system() {
-    return norm().to_linear_constraint_system();
-  }
-  disjunctive_linear_constraint_system_t
-  to_disjunctive_linear_constraint_system() {
-    return norm().to_disjunctive_linear_constraint_system();
-  }
-
-  static std::string getDomainName() { return dbm_impl_t::getDomainName(); }
-  std::pair<std::size_t, std::size_t> size() const { return norm().size(); }
-  bool is_unsat(linear_constraint_t cst) { return norm().is_unsat(cst); }
-  void active_variables(std::vector<variable_t> &out) {
-    norm().active_variables(out);
-  }
-
-protected:
-  dbm_ref_t base_ref;
-  dbm_ref_t norm_ref;
-};
-
-#endif
+}; // class SplitDBM
 
 template <typename Number, typename VariableName, typename SplitDBMParams>
 struct abstract_domain_traits<SplitDBM<Number, VariableName, SplitDBMParams>> {

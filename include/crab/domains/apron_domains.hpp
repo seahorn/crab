@@ -55,9 +55,9 @@ namespace domains {
 using namespace apron;
 
 template <typename Number, typename VariableName, apron_domain_id_t ApronDom>
-class apron_domain_ final
-    : public abstract_domain<apron_domain_<Number, VariableName, ApronDom>> {
-  typedef apron_domain_<Number, VariableName, ApronDom> apron_domain_t;
+class apron_domain final
+    : public abstract_domain<apron_domain<Number, VariableName, ApronDom>> {
+  typedef apron_domain<Number, VariableName, ApronDom> apron_domain_t;
   typedef abstract_domain<apron_domain_t> abstract_domain_t;
 
 public:
@@ -580,7 +580,7 @@ public:
 
 private:
 
-  apron_domain_(ap_state_ptr &&apState, var_map_t &&varMap, bool compact = true)
+  apron_domain(ap_state_ptr &&apState, var_map_t &&varMap, bool compact = true)
       : m_apstate(std::move(apState)), m_var_map(std::move(varMap)) {
 
     if (compact) {
@@ -605,14 +605,14 @@ private:
   }
 
 public:
-  apron_domain_(bool isBot = false)
+  apron_domain(bool isBot = false)
       : m_apstate(
             apPtr(get_man(), (isBot ? ap_abstract0_bottom(get_man(), 0, 0)
                                     : ap_abstract0_top(get_man(), 0, 0)))) {}
 
-  ~apron_domain_() {}
+  ~apron_domain() {}
 
-  apron_domain_(const apron_domain_t &o)
+  apron_domain(const apron_domain_t &o)
       : m_apstate(
             apPtr(get_man(), ap_abstract0_copy(get_man(), &*(o.m_apstate)))),
         m_var_map(o.m_var_map) {
@@ -620,7 +620,7 @@ public:
     crab::ScopedCrabStats __st__(getDomainName() + ".copy");
   }
 
-  apron_domain_(apron_domain_t &&o)
+  apron_domain(apron_domain_t &&o)
       : m_apstate(std::move(o.m_apstate)), m_var_map(std::move(o.m_var_map)) {}
 
   apron_domain_t &operator=(const apron_domain_t &o) {
@@ -1726,307 +1726,9 @@ public:
   }
 };
 
-#if 1
-// Without copy-on-write
-template <class Number, class VariableName, apron_domain_id_t ApronDom>
-using apron_domain = apron_domain_<Number, VariableName, ApronDom>;
-#else
-
-template <typename Number, typename VariableName, apron_domain_id_t ApronDom>
-struct abstract_domain_traits<apron_domain_<Number, VariableName, ApronDom>> {
-  typedef Number number_t;
-  typedef VariableName varname_t;
-};
-
-// Quick wrapper which uses shared references with copy-on-write.
-template <class Number, class VariableName, apron_domain_id_t ApronDom>
-class apron_domain final
-    : public abstract_domain<apron_domain<Number, VariableName, ApronDom>> {
-  typedef apron_domain<Number, VariableName, ApronDom> apron_domain_t;
-  typedef abstract_domain<apron_domain_t> abstract_domain_t;
-
-public:
-  using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
-  using typename abstract_domain_t::linear_constraint_system_t;
-  using typename abstract_domain_t::linear_constraint_t;
-  using typename abstract_domain_t::linear_expression_t;
-  using typename abstract_domain_t::reference_constraint_t;
-  using typename abstract_domain_t::variable_t;
-  using typename abstract_domain_t::variable_vector_t;
-  using typename abstract_domain_t::interval_t;
-  typedef typename linear_constraint_t::kind_t constraint_kind_t;
-  typedef Number number_t;
-  typedef VariableName varname_t;
-
-private:
-  typedef apron_domain_<number_t, varname_t, ApronDom> apron_domain_impl_t;
-  typedef std::shared_ptr<apron_domain_impl_t> apron_domain_ref_t;
-
-  apron_domain_ref_t _ref;
-
-  apron_domain(apron_domain_ref_t ref) : _ref(ref) {}
-
-  apron_domain_t create(apron_domain_impl_t &&t) {
-    return std::make_shared<apron_domain_impl_t>(std::move(t));
-  }
-
-  void detach(void) {
-    if (!_ref.unique())
-      _ref = std::make_shared<apron_domain_impl_t>(*_ref);
-  }
-
-public:
-  void set_to_top() {
-    apron_domain_t tmp(false);
-    std::swap(*this, tmp);
-  }
-
-  void set_to_bottom() {
-    apron_domain_t tmp(true);
-    std::swap(*this, tmp);
-  }
-
-  apron_domain(bool is_bottom = false)
-      : _ref(std::make_shared<apron_domain_impl_t>(is_bottom)) {}
-
-  apron_domain(const apron_domain_t &o) : _ref(o._ref) {}
-
-  apron_domain &operator=(const apron_domain_t &o) {
-    if (this != &o) {
-      _ref = o._ref;
-    }
-    return *this;
-  }
-
-  apron_domain_impl_t &ref(void) { return *_ref; }
-  const apron_domain_impl_t &ref(void) const { return *_ref; }
-
-  bool is_bottom() { return ref().is_bottom(); }
-  bool is_top() { return ref().is_top(); }
-  bool operator<=(apron_domain_t o) { return ref() <= o.ref(); }
-  void operator|=(apron_domain_t o) {
-    detach();
-    ref() |= o.ref();
-  }
-  apron_domain_t operator|(apron_domain_t o) { return create(ref() | o.ref()); }
-  apron_domain_t operator||(apron_domain_t o) {
-    return create(ref() || o.ref());
-  }
-  apron_domain_t operator&(apron_domain_t o) { return create(ref() & o.ref()); }
-  apron_domain_t operator&&(apron_domain_t o) {
-    return create(ref() && o.ref());
-  }
-
-  apron_domain_t
-  widening_thresholds(apron_domain_t o,
-                      const iterators::thresholds<number_t> &ts) {
-    return create(ref().widening_thresholds(o.ref(), ts));
-  }
-
-  void normalize() {
-    detach();
-    ref().normalize();
-  }
-
-  void minimize() {
-    detach();
-    ref().minimize();
-  }
-
-  void operator+=(linear_constraint_system_t csts) {
-    detach();
-    ref() += csts;
-  }
-  void operator-=(variable_t v) {
-    detach();
-    ref() -= v;
-  }
-  
-  virtual interval_t operator[](variable_t x) override {
-    return ref()[x];
-  }
-  
-
-  void forget(const variable_vector_t &vs) {
-    detach();
-    ref().forget(vs);
-  }
-
-  void project(const variable_vector_t &vs) {
-    detach();
-    ref().project(vs);
-  }
-
-  void expand(variable_t x, variable_t y) {
-    detach();
-    ref().expand(x, y);
-  }
-
-  void assign(variable_t x, linear_expression_t e) {
-    detach();
-    ref().assign(x, e);
-  }
-  void apply(arith_operation_t op, variable_t x, variable_t y, number_t k) {
-    detach();
-    ref().apply(op, x, y, k);
-  }
-  void apply(arith_operation_t op, variable_t x, variable_t y, variable_t z) {
-    detach();
-    ref().apply(op, x, y, z);
-  }
-  void apply(int_conv_operation_t op, variable_t dst, variable_t src) {
-    detach();
-    ref().apply(op, dst, src);
-  }
-  void apply(bitwise_operation_t op, variable_t x, variable_t y, number_t k) {
-    detach();
-    ref().apply(op, x, y, k);
-  }
-  void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {
-    detach();
-    ref().apply(op, x, y, z);
-  }
-  void backward_assign(variable_t x, linear_expression_t e,
-                       apron_domain_t invariant) {
-    detach();
-    ref().backward_assign(x, e, invariant.ref());
-  }
-  void backward_apply(arith_operation_t op, variable_t x, variable_t y, number_t k,
-                      apron_domain_t invariant) {
-    detach();
-    ref().backward_apply(op, x, y, k, invariant.ref());
-  }
-  void backward_apply(arith_operation_t op, variable_t x, variable_t y, variable_t z,
-                      apron_domain_t invariant) {
-    detach();
-    ref().backward_apply(op, x, y, z, invariant.ref());
-  }
-
-  /* Begin unimplemented operations */
-  // boolean operations
-  void assign_bool_cst(variable_t lhs, linear_constraint_t rhs) {}
-  void assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs) {}
-  void apply_binary_bool(bool_operation_t op, variable_t x, variable_t y,
-                         variable_t z) {}
-  void assume_bool(variable_t v, bool is_negated) {}
-  // backward boolean operations
-  void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
-                                apron_domain_t invariant) {}
-  void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
-                                apron_domain_t invariant) {}
-  void backward_apply_binary_bool(bool_operation_t op,
-                                  variable_t x, variable_t y, variable_t z,
-                                  apron_domain_t invariant) {}
-  // array operations
-  void array_init(variable_t a, linear_expression_t elem_size,
-                  linear_expression_t lb_idx, linear_expression_t ub_idx,
-                  linear_expression_t val) {}
-  void array_load(variable_t lhs, variable_t a, linear_expression_t elem_size,
-                  linear_expression_t i) {
-    detach();
-    ref().array_load(lhs, a, elem_size, i);
-  }
-  void array_store(variable_t a, linear_expression_t elem_size,
-                   linear_expression_t i, linear_expression_t v,
-                   bool is_strong_update) {}
-  void array_store(variable_t a_new, variable_t a_old,
-                   linear_expression_t elem_size, linear_expression_t i,
-                   linear_expression_t v, bool is_strong_update) {}
-  void array_store_range(variable_t a, linear_expression_t elem_size,
-                         linear_expression_t i, linear_expression_t j,
-                         linear_expression_t v) {}
-  void array_store_range(variable_t a_new, variable_t a_old,
-                         linear_expression_t elem_size, linear_expression_t i,
-                         linear_expression_t j, linear_expression_t v) {}
-  void array_assign(variable_t lhs, variable_t rhs) {}
-  // backward array operations
-  void backward_array_init(variable_t a, linear_expression_t elem_size,
-                           linear_expression_t lb_idx,
-                           linear_expression_t ub_idx, linear_expression_t val,
-                           apron_domain_t invariant) {}
-  void backward_array_load(variable_t lhs, variable_t a,
-                           linear_expression_t elem_size, linear_expression_t i,
-                           apron_domain_t invariant) {}
-  void backward_array_store(variable_t a, linear_expression_t elem_size,
-                            linear_expression_t i, linear_expression_t v,
-                            bool is_strong_update, apron_domain_t invariant) {}
-  void backward_array_store(variable_t a_new, variable_t a_old,
-                            linear_expression_t elem_size,
-                            linear_expression_t i, linear_expression_t v,
-                            bool is_strong_update, apron_domain_t invariant) {}
-  void backward_array_store_range(variable_t a, linear_expression_t elem_size,
-                                  linear_expression_t i, linear_expression_t j,
-                                  linear_expression_t v,
-                                  apron_domain_t invariant) {}
-  void backward_array_store_range(variable_t a_new, variable_t a_old,
-                                  linear_expression_t elem_size,
-                                  linear_expression_t i, linear_expression_t j,
-                                  linear_expression_t v,
-                                  apron_domain_t invariant) {}
-  void backward_array_assign(variable_t lhs, variable_t rhs,
-                             apron_domain_t invariant) {}
-  // reference operations
-  void region_init(memory_region reg) override {}
-  void ref_make(variable_t ref, memory_region reg) override {}
-  void ref_load(variable_t ref, memory_region reg, variable_t res) override {}
-  void ref_store(variable_t ref, memory_region reg, linear_expression_t val) override {}
-  void ref_gep(variable_t ref1, memory_region reg1,
-	       variable_t ref2, memory_region reg2,
-	       linear_expression_t offset) override {}
-  void ref_load_from_array(variable_t lhs, variable_t ref, memory_region region,
-			   linear_expression_t index, linear_expression_t elem_size) override {}
-  void ref_store_to_array(variable_t ref, memory_region region,
-			  linear_expression_t index, linear_expression_t elem_size,
-			  linear_expression_t val) override {}
-  void ref_assume(reference_constraint_t cst) override {}
-  /* End unimplemented operations */
-
-  void rename(const variable_vector_t &from, const variable_vector_t &to) {
-    detach();
-    ref().rename(from, to);
-  }
-
-  template <typename NumDomain> void push(const variable_t &x, NumDomain &inv) {
-    detach();
-    ref().push(x, inv);
-  }
-
-  /* begin intrinsics operations */
-  void intrinsic(std::string name,
-		 const variable_vector_t &inputs,
-		 const variable_vector_t &outputs) {
-    detach();
-    ref().intrinsic(name, inputs, outputs);
-  }
-
-  void backward_intrinsic(std::string name,
-			  const variable_vector_t &inputs,
-			  const variable_vector_t &outputs,
-			  apron_domain_t invariant) {
-    detach();
-    ref().backward_intrinsic(name, inputs, outputs, invariant);
-  }
-  /* end intrinsics operations */
-  
-  void write(crab_os &o) { ref().write(o); }
-
-  linear_constraint_system_t to_linear_constraint_system() {
-    return ref().to_linear_constraint_system();
-  }
-  disjunctive_linear_constraint_system_t
-  to_disjunctive_linear_constraint_system() {
-    return ref().to_disjunctive_linear_constraint_system();
-  }
-
-  static std::string getDomainName() {
-    return apron_domain_impl_t::getDomainName();
-  }
-};
-#endif
-
 // --- global datastructures
 template <typename N, typename V, apron_domain_id_t D>
-ap_manager_t *apron_domain_<N, V, D>::s_apman = nullptr;
+ap_manager_t *apron_domain<N, V, D>::s_apman = nullptr;
 
 } // namespace domains
 } // namespace crab
