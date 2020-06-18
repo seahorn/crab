@@ -46,11 +46,11 @@ public:
   using basic_block_label_t = typename CFG::basic_block_label_t;
 
   // use of move semantics to have a functional view
-  virtual AbstractValue analyze(basic_block_label_t, AbstractValue &&) = 0;
+  virtual AbstractValue analyze(const basic_block_label_t&, AbstractValue &&) = 0;
 
-  virtual void process_pre(basic_block_label_t, AbstractValue) = 0;
+  virtual void process_pre(const basic_block_label_t&, AbstractValue) = 0;
 
-  virtual void process_post(basic_block_label_t, AbstractValue) = 0;
+  virtual void process_post(const basic_block_label_t&, AbstractValue) = 0;
 
   virtual ~fixpoint_iterator() {}
 

@@ -55,7 +55,7 @@ public:
 
   unsigned size(void) const { return m_thresholds.size(); }
 
-  template <typename N> void add(ikos::bound<N> v1) {
+  template <typename N> void add(const ikos::bound<N> &v1) {
     if (m_thresholds.size() < m_size) {
       bound_t v = convert_bounds_impl<ikos::bound<N>, bound_t>(v1);
       if (std::find(m_thresholds.begin(), m_thresholds.end(), v) ==
@@ -84,7 +84,7 @@ public:
     }
   }
 
-  template <typename N> ikos::bound<N> get_next(ikos::bound<N> v1) const {
+  template <typename N> ikos::bound<N> get_next(const ikos::bound<N> &v1) const {
     if (v1.is_plus_infinity())
       return v1;
     bound_t v = convert_bounds_impl<ikos::bound<N>, bound_t>(v1);
@@ -95,7 +95,7 @@ public:
     return convert_bounds_impl<bound_t, ikos::bound<N>>(t);
   }
 
-  template <typename N> ikos::bound<N> get_prev(ikos::bound<N> v1) const {
+  template <typename N> ikos::bound<N> get_prev(const ikos::bound<N> &v1) const {
     if (v1.is_minus_infinity())
       return v1;
     bound_t v = convert_bounds_impl<ikos::bound<N>, bound_t>(v1);
@@ -173,7 +173,6 @@ private:
     if (e.size() == 1) {
       auto const &kv = *(e.begin());
       number_t coeff = kv.first;
-      variable_t var = kv.second;
       number_t k = -e.constant();
       if (coeff > 0) {
         // e is c*var <= k and c > 0  <---> var <= k/coeff
@@ -193,7 +192,7 @@ private:
     for (auto const &i : boost::make_iterator_range(bb.begin(), bb.end())) {
       if (i.is_assume()) {
         auto a = static_cast<const assume_t *>(&i);
-        linear_constraint_t cst = a->constraint();
+        const linear_constraint_t &cst = a->constraint();
         if (cst.is_inequality() || cst.is_strict_inequality()) {
           extract_bounds(cst.expression(), cst.is_strict_inequality(),
                          lb_bounds, ub_bounds);
@@ -230,7 +229,7 @@ public:
     if (m_stack.empty())
       return;
 
-    basic_block_label_t head = m_stack.back();
+    const basic_block_label_t& head = m_stack.back();
     auto it = m_head_to_thresholds.find(head);
     if (it != m_head_to_thresholds.end()) {
       thresholds_t &thresholds = it->second;

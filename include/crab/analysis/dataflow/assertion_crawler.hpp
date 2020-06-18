@@ -51,7 +51,7 @@ using namespace crab::cfg;
   // used as key
   ikos::index_t id;
   // basic block where the assert statement is located
-  basic_block_label_t bbl;
+  const basic_block_label_t &bbl;
   // the assert statement
   assert_t *a;
 
@@ -65,7 +65,7 @@ using namespace crab::cfg;
   // control-dependency graph
   const cdg_t *cdg_ptr;
 
-  assert_wrapper(ikos::index_t _id, basic_block_label_t _bbl, assert_t *_a,
+  assert_wrapper(ikos::index_t _id, const basic_block_label_t &_bbl, assert_t *_a,
                  assert_map_t *am, const cdg_t *cdg)
       : id(_id), bbl(_bbl), a(_a), assert_map_ptr(am), cdg_ptr(cdg) {}
 
@@ -228,7 +228,7 @@ private:
 
       // return true if we find a path in cdg from root to target
       // FIXME: do caching for the queries
-      bool reach(basic_block_label_t root, basic_block_label_t target,
+      bool reach(const basic_block_label_t &root, const basic_block_label_t &target,
                  std::unordered_set<basic_block_label_t> &visited) {
         if (root == target)
           return true;
@@ -249,7 +249,7 @@ private:
         return false;
       }
 
-      bool reach(basic_block_label_t target) {
+      bool reach(const basic_block_label_t &target) {
         std::unordered_set<basic_block_label_t> visited;
         for (auto r : roots)
           if (reach(r, target, visited))
@@ -287,7 +287,7 @@ private:
       var_dom_t vars;
 
     public:
-      remove_deps(variable_t v) : vars(var_dom_t::bottom()) { vars += v; }
+      remove_deps(const variable_t &v) : vars(var_dom_t::bottom()) { vars += v; }
 
       remove_deps(const std::vector<variable_t> &vs)
           : vars(var_dom_t::bottom()) {
@@ -322,11 +322,11 @@ private:
     const cdg_t &_cdg;
     // parent basic block (XXX: needed because crab statements do
     // not have a back pointer to their basic blocks)
-    basic_block_t &_bb;
+    const basic_block_t &_bb;
 
   public:
     transfer_function(separate_domain_t inv, const cdg_t &g, assert_map_t &am,
-                      basic_block_t &bb)
+                      const basic_block_t &bb)
         : _inv(inv), _assert_map(am), _cdg(g), _bb(bb) {}
 
     separate_domain_t inv() { return _inv; }
@@ -490,7 +490,7 @@ public:
     return d1 | d2;
   }
 
-  virtual separate_domain_t analyze(basic_block_label_t bb_id,
+  virtual separate_domain_t analyze(const basic_block_label_t &bb_id,
                                     separate_domain_t out) override {
     auto &bb = this->m_cfg.get_node(bb_id);
     transfer_function vis(out, _cdg, _assert_map, bb);
@@ -546,7 +546,7 @@ public:
   }
 
   // return the dataflow facts that hold at the exit of block bb
-  const separate_domain_t &get_assertions(basic_block_label_t bb) {
+  const separate_domain_t &get_assertions(const basic_block_label_t &bb) {
     auto it = m_map.find(bb);
     if (it == m_map.end())
       CRAB_ERROR("Basic block ", bb, " not found");
@@ -555,7 +555,7 @@ public:
 
   // return the dataflow facts of the pre-state at each program point in bb
   void get_assertions(
-      basic_block_label_t b,
+      const basic_block_label_t &b,
       std::map<typename CFG::statement_t *, separate_domain_t> &res) {
     auto it = m_map.find(b);
     if (it != m_map.end()) {

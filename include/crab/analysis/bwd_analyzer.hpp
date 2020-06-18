@@ -58,7 +58,7 @@ class necessary_preconditions_fixpoint_iterator
   /**
    * Compute necessary preconditions for a basic block
    **/
-  virtual AbsDom analyze(bb_label_t node, AbsDom &&precond) override {
+  virtual AbsDom analyze(const bb_label_t &node, AbsDom &&precond) override {
     auto &bb = m_cfg.get_node(node);
 
     CRAB_LOG("backward-fixpoint", crab::outs() << "Post at "
@@ -95,12 +95,12 @@ class necessary_preconditions_fixpoint_iterator
     return std::move(precond);
   }
 
-  virtual void process_pre(bb_label_t /*node*/, AbsDom /*postcond*/) override {}
+  virtual void process_pre(const bb_label_t &/*node*/, AbsDom /*postcond*/) override {}
 
   /**
    *  Store necessary preconditions
    **/
-  virtual void process_post(bb_label_t node, AbsDom precond) override {
+  virtual void process_post(const bb_label_t &node, AbsDom precond) override {
     m_preconditions.insert(std::make_pair(node, precond));
   }
 
@@ -150,7 +150,7 @@ public:
   const_iterator end() const { return m_preconditions.end(); }
 
   // return the preconditions at basic block node
-  AbsDom operator[](bb_label_t node) const {
+  AbsDom operator[](const bb_label_t &node) const {
     auto it = m_preconditions.find(node);
     if (it != m_preconditions.end())
       return it->second;
@@ -257,7 +257,7 @@ private:
   // idom induces a tree each key-value pair means that key
   // (block) is an immediate dominator of each element in value
   // (set of basic blocks). TODO: caching
-  bool dominates(bb_label_t u, bb_label_t v, const idom_tree_t &idom) {
+  bool dominates(const bb_label_t &u, const bb_label_t &v, const idom_tree_t &idom) {
     auto it = idom.find(u);
     if (it == idom.end()) {
       // u does not dominate any block
@@ -271,7 +271,7 @@ private:
       return true;
     }
 
-    for (const bb_label_t w : idom_u) {
+    for (const bb_label_t &w : idom_u) {
       // a successor of u dominates v
       if (dominates(w, v, idom)) {
         return true;
@@ -311,7 +311,7 @@ private:
       // assertions were proved by calling safe_assertions method.
 
       for (auto it = m_cfg.begin(), et = m_cfg.end(); it != et; ++it) {
-        bb_label_t n = it->label();
+        const bb_label_t &n = it->label();
         auto jt = refined_assumptions.find(n);
         if (jt == refined_assumptions.end()) {
           continue;
@@ -321,7 +321,7 @@ private:
               std::remove_if(
                   m_unproven_assertions.begin(), m_unproven_assertions.end(),
                   [&n, &idom, this](std::pair<bb_label_t, stmt_t *> &kv) {
-                    bb_label_t m = kv.first;
+                    const bb_label_t &m = kv.first;
                     stmt_t *s = kv.second;
                     bool res = this->dominates(n, m, idom);
                     if (res) {
@@ -382,7 +382,7 @@ public:
         widening_delay, descending_iters, jump_set_size);
   }
 
-  void run(bb_label_t entry, // only used for the forward pass.
+  void run(const bb_label_t &entry, // only used for the forward pass.
            AbsDom init_states,
            // behaves as a standard forward analysis
            bool only_forward,
@@ -587,10 +587,10 @@ public:
   }
 
   // Return the invariants that hold at the entry of b
-  AbsDom operator[](bb_label_t b) const { return get_pre(b); }
+  AbsDom operator[](const bb_label_t &b) const { return get_pre(b); }
 
   // Return the invariants that hold at the entry of b
-  AbsDom get_pre(bb_label_t b) const {
+  AbsDom get_pre(const bb_label_t &b) const {
     auto it = m_pre_invariants.find(b);
     if (it == m_pre_invariants.end())
       return abs_dom_t::top();
@@ -599,7 +599,7 @@ public:
   }
 
   // Return the invariants that hold at the exit of b
-  AbsDom get_post(bb_label_t b) const {
+  AbsDom get_post(const bb_label_t &b) const {
     auto it = m_post_invariants.find(b);
     if (it == m_post_invariants.end())
       return abs_dom_t::top();

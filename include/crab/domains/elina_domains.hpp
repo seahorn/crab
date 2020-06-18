@@ -41,253 +41,252 @@ public:
 
   elina_domain() {}
 
-  void set_to_top() { CRAB_ERROR(ELINA_NOT_FOUND); }
+  void set_to_top() override  { CRAB_ERROR(ELINA_NOT_FOUND); }
 
-  void set_to_bottom() { CRAB_ERROR(ELINA_NOT_FOUND); }
+  void set_to_bottom() override  { CRAB_ERROR(ELINA_NOT_FOUND); }
 
-  elina_domain(const elina_domain_t &other) {}
+  bool is_bottom() override  { CRAB_ERROR(ELINA_NOT_FOUND); }
 
-  bool is_bottom() { CRAB_ERROR(ELINA_NOT_FOUND); }
+  bool is_top() override { CRAB_ERROR(ELINA_NOT_FOUND); }
 
-  bool is_top() { CRAB_ERROR(ELINA_NOT_FOUND); }
+  bool operator<=(elina_domain_t other) override { CRAB_ERROR(ELINA_NOT_FOUND); }
 
-  bool operator<=(elina_domain_t other) { CRAB_ERROR(ELINA_NOT_FOUND); }
+  void operator|=(elina_domain_t other) override { CRAB_ERROR(ELINA_NOT_FOUND); }
 
-  void operator|=(elina_domain_t other) { CRAB_ERROR(ELINA_NOT_FOUND); }
-
-  elina_domain_t operator|(elina_domain_t other) {
+  elina_domain_t operator|(elina_domain_t other) override  {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
 
-  elina_domain_t operator&(elina_domain_t other) {
+  elina_domain_t operator&(elina_domain_t other) override  {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
 
-  elina_domain_t operator||(elina_domain_t other) {
+  elina_domain_t operator||(elina_domain_t other) override {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
 
   elina_domain_t
   widening_thresholds(elina_domain_t e,
-                      const iterators::thresholds<number_t> &ts) {
+                      const iterators::thresholds<number_t> &ts) override  {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
 
-  elina_domain_t operator&&(elina_domain_t other) {
+  elina_domain_t operator&&(elina_domain_t other)  override  {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
 
-  void operator-=(variable_t var) { CRAB_ERROR(ELINA_NOT_FOUND); }
+  void operator-=(const variable_t &var) override  { CRAB_ERROR(ELINA_NOT_FOUND); }
 
-  interval_t operator[](variable_t v) { CRAB_ERROR(ELINA_NOT_FOUND); }
+  interval_t operator[](const variable_t &v) override { CRAB_ERROR(ELINA_NOT_FOUND); }
 
-  void set(variable_t v, interval_t ival) { CRAB_ERROR(ELINA_NOT_FOUND); }
-
-  void operator+=(linear_constraint_system_t csts) {
+  void operator+=(const linear_constraint_system_t &csts) override {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
 
-  void assign(variable_t x, linear_expression_t e) {
+  void assign(const variable_t &x, const linear_expression_t &e) override {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
 
-  void apply(arith_operation_t op, variable_t x, variable_t y, number_t z) {
+  void apply(arith_operation_t op, const variable_t &x, const variable_t &y, number_t z) override {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
 
-  void apply(arith_operation_t op, variable_t x, variable_t y, variable_t z) {
+  void apply(arith_operation_t op, const variable_t &x, const variable_t &y, const variable_t &z) override {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
 
-  void apply(int_conv_operation_t op, variable_t dst, variable_t src) {
+  void apply(int_conv_operation_t op, const variable_t &dst, const variable_t &src) override {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
 
-  void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {
+  void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y, const variable_t &z) override {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
 
-  void apply(bitwise_operation_t op, variable_t x, variable_t y, number_t k) {
+  void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y, number_t k) override {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
 
-  void backward_assign(variable_t x, linear_expression_t e,
-                       elina_domain_t invariant) {
+  void backward_assign(const variable_t &x, const linear_expression_t &e,
+                       elina_domain_t invariant) override {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
 
-  void backward_apply(arith_operation_t op, variable_t x, variable_t y, number_t z,
-                      elina_domain_t invariant) {
+  void backward_apply(arith_operation_t op,
+		      const variable_t &x, const variable_t &y, number_t z,
+                      elina_domain_t invariant) override {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
 
-  void backward_apply(arith_operation_t op, variable_t x, variable_t y, variable_t z,
-                      elina_domain_t invariant) {
+  void backward_apply(arith_operation_t op,
+		      const variable_t &x, const variable_t &y, const variable_t &z,
+                      elina_domain_t invariant) override {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
 
-  void assign_bool_cst(variable_t lhs, linear_constraint_t rhs) {
+  void assign_bool_cst(const variable_t &lhs, const linear_constraint_t &rhs) override {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
 
-  void assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs) {
+  void assign_bool_var(const variable_t &lhs, const variable_t &rhs, bool is_not_rhs) override {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
 
-  void apply_binary_bool(bool_operation_t op, variable_t x, variable_t y,
-                         variable_t z) {
+  void apply_binary_bool(bool_operation_t op,
+			 const variable_t &x, const variable_t &y, const variable_t &z) override {
+                         
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
 
-  void assume_bool(variable_t v, bool is_negated) {
+  void assume_bool(const variable_t &v, bool is_negated) override {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
 
-  void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
-                                elina_domain_t invariant) {
+  void backward_assign_bool_cst(const variable_t &lhs, const linear_constraint_t &rhs,
+                                elina_domain_t invariant) override {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
 
-  void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
-                                elina_domain_t invariant) {
+  void backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs, bool is_not_rhs,
+                                elina_domain_t invariant) override {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
-  void backward_apply_binary_bool(bool_operation_t op, variable_t x,
-                                  variable_t y, variable_t z,
-                                  elina_domain_t invariant) {
+  void backward_apply_binary_bool(bool_operation_t op,
+				  const variable_t &x, const variable_t &y, const variable_t &z,
+                                  elina_domain_t invariant) override {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
 
-  void array_init(variable_t a, linear_expression_t elem_size,
-                  linear_expression_t lb_idx, linear_expression_t ub_idx,
-                  linear_expression_t val) {
+  void array_init(const variable_t &a, const linear_expression_t &elem_size,
+                  const linear_expression_t &lb_idx, const linear_expression_t &ub_idx,
+                  const linear_expression_t &val) override {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
-  void array_load(variable_t lhs, variable_t a, linear_expression_t elem_size,
-                  linear_expression_t i) {
+  void array_load(const variable_t &lhs, const variable_t &a, const linear_expression_t &elem_size,
+                  const linear_expression_t &i) override {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
-  void array_store(variable_t a, linear_expression_t elem_size,
-                   linear_expression_t i, linear_expression_t v,
-                   bool is_strong_update) {
+  void array_store(const variable_t &a, const linear_expression_t &elem_size,
+                   const linear_expression_t &i, const linear_expression_t &v,
+                   bool is_strong_update) override {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
   void array_store(variable_t a_new, variable_t a_old,
                    linear_expression_t elem_size, linear_expression_t i,
-                   linear_expression_t v, bool is_strong_update) {
+                   linear_expression_t v, bool is_strong_update) override {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
-  void array_store_range(variable_t a, linear_expression_t elem_size,
-                         linear_expression_t i, linear_expression_t j,
-                         linear_expression_t v) {
+  void array_store_range(const variable_t &a, const linear_expression_t &elem_size,
+                         const linear_expression_t &i, const linear_expression_t &j,
+                         const linear_expression_t &v) override {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
   void array_store_range(variable_t a_new, variable_t a_old,
                          linear_expression_t elem_size, linear_expression_t i,
-                         linear_expression_t j, linear_expression_t v) {
+                         linear_expression_t j, linear_expression_t v) override {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
-  void array_assign(variable_t lhs, variable_t rhs) {
+  void array_assign(const variable_t &lhs, const variable_t &rhs) override {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
 
-  void backward_array_init(variable_t a, linear_expression_t elem_size,
-                           linear_expression_t lb_idx,
-                           linear_expression_t ub_idx, linear_expression_t val,
-                           elina_domain_t invariant) {
+  void backward_array_init(const variable_t &a, const linear_expression_t &elem_size,
+                           const linear_expression_t &lb_idx,
+                           const linear_expression_t &ub_idx, const linear_expression_t &val,
+                           elina_domain_t invariant) override {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
-  void backward_array_load(variable_t lhs, variable_t a,
-                           linear_expression_t elem_size, linear_expression_t i,
-                           elina_domain_t invariant) {
+  void backward_array_load(const variable_t &lhs, const variable_t &a,
+                           const linear_expression_t &elem_size, const linear_expression_t &i,
+                           elina_domain_t invariant) override {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
-  void backward_array_store(variable_t a, linear_expression_t elem_size,
-                            linear_expression_t i, linear_expression_t v,
-                            bool is_strong_update, elina_domain_t invariant) {
+  void backward_array_store(const variable_t &a, const linear_expression_t &elem_size,
+                            const linear_expression_t &i, const linear_expression_t &v,
+                            bool is_strong_update, elina_domain_t invariant) override {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
   void backward_array_store(variable_t a_new, variable_t a_old,
                             linear_expression_t elem_size,
                             linear_expression_t i, linear_expression_t v,
-                            bool is_strong_update, elina_domain_t invariant) {
+                            bool is_strong_update, elina_domain_t invariant) override {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
-  void backward_array_store_range(variable_t a, linear_expression_t elem_size,
-                                  linear_expression_t i, linear_expression_t j,
-                                  linear_expression_t v,
-                                  elina_domain_t invariant) {
+  void backward_array_store_range(const variable_t &a, const linear_expression_t &elem_size,
+                                  const linear_expression_t &i, const linear_expression_t &j,
+                                  const linear_expression_t &v,
+                                  elina_domain_t invariant) override {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
   void backward_array_store_range(variable_t a_new, variable_t a_old,
                                   linear_expression_t elem_size,
                                   linear_expression_t i, linear_expression_t j,
                                   linear_expression_t v,
-                                  elina_domain_t invariant) {
+                                  elina_domain_t invariant) override {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
-  void backward_array_assign(variable_t lhs, variable_t rhs,
-                             elina_domain_t invariant) {
+  void backward_array_assign(const variable_t &lhs, const variable_t &rhs,
+                             elina_domain_t invariant) override {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
 
   // reference operations
-  void region_init(memory_region reg) override {
+  void region_init(const memory_region &reg) override {
     CRAB_ERROR(ELINA_NOT_FOUND);        
   }          
-  void ref_make(variable_t ref, memory_region reg) override {
+  void ref_make(const variable_t &ref, const memory_region &reg) override {
     CRAB_ERROR(ELINA_NOT_FOUND);    
   }
-  void ref_load(variable_t ref, memory_region reg, variable_t res) override {
+  void ref_load(const variable_t &ref, const memory_region &reg, const variable_t &res) override {
     CRAB_ERROR(ELINA_NOT_FOUND);    
   }
-  void ref_store(variable_t ref, memory_region reg, linear_expression_t val) override {
+  void ref_store(const variable_t &ref, const memory_region &reg, const linear_expression_t &val) override {
     CRAB_ERROR(ELINA_NOT_FOUND);    
   }
-  void ref_gep(variable_t ref1, memory_region reg1,
-	       variable_t ref2, memory_region reg2,
-	       linear_expression_t offset) override {
+  void ref_gep(const variable_t &ref1, const memory_region &reg1,
+	       const variable_t &ref2, const memory_region &reg2,
+	       const linear_expression_t &offset) override {
     CRAB_ERROR(ELINA_NOT_FOUND);    
   }
-  void ref_load_from_array(variable_t lhs, variable_t ref, memory_region region,
-			   linear_expression_t index, linear_expression_t elem_size) override {
+  void ref_load_from_array(const variable_t &lhs, const variable_t &ref, const memory_region &region,
+			   const linear_expression_t &index, const linear_expression_t &elem_size) override {
     CRAB_ERROR(ELINA_NOT_FOUND);    
   }
-  void ref_store_to_array(variable_t ref, memory_region region,
-			  linear_expression_t index, linear_expression_t elem_size,
-			  linear_expression_t val) override {
+  void ref_store_to_array(const variable_t &ref, const memory_region &region,
+			  const linear_expression_t &index, const linear_expression_t &elem_size,
+			  const linear_expression_t &val) override {
     CRAB_ERROR(ELINA_NOT_FOUND);    
   }
-  void ref_assume(reference_constraint_t cst) override {
+  void ref_assume(const reference_constraint_t &cst) override {
     CRAB_ERROR(ELINA_NOT_FOUND);    
   }
   
-  linear_constraint_system_t to_linear_constraint_system() {
+  linear_constraint_system_t to_linear_constraint_system() override {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
 
   disjunctive_linear_constraint_system_t
-  to_disjunctive_linear_constraint_system() {
+  to_disjunctive_linear_constraint_system() override {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
 
-  void forget(const variable_vector_t &variables) {
+  void forget(const variable_vector_t &variables) override {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
 
-  void project(const variable_vector_t &variables) {
+  void project(const variable_vector_t &variables) override {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
 
-  void expand(variable_t var, variable_t new_var) {
+  void expand(const variable_t &var, const variable_t &new_var) override {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
 
-  void normalize() { CRAB_ERROR(ELINA_NOT_FOUND); }
+  void normalize() override  { CRAB_ERROR(ELINA_NOT_FOUND); }
 
-  void minimize() { CRAB_ERROR(ELINA_NOT_FOUND); }
+  void minimize() override { CRAB_ERROR(ELINA_NOT_FOUND); }
 
-  void rename(const variable_vector_t &from, const variable_vector_t &to) {
+  void rename(const variable_vector_t &from, const variable_vector_t &to) override {
     CRAB_ERROR(ELINA_NOT_FOUND);
   }
 
@@ -306,7 +305,7 @@ public:
   }
   /* end intrinsics operations */
   
-  void write(crab_os &o) { CRAB_ERROR(ELINA_NOT_FOUND); }
+  void write(crab_os &o) override  { CRAB_ERROR(ELINA_NOT_FOUND); }
 
   static std::string getDomainName() { return "Dummy Elina"; }
 };
@@ -672,7 +671,7 @@ private:
                               ELINA_RDIR_UP);
   }
 
-  inline elina_texpr0_t *expr2texpr(linear_expression_t e) {
+  inline elina_texpr0_t *expr2texpr(const linear_expression_t &e) {
     number_t cst = e.constant();
     elina_texpr0_t *res = num2texpr(cst);
     for (auto p : e) {
@@ -682,7 +681,7 @@ private:
     return res;
   }
 
-  inline elina_tcons0_t const2tconst(linear_constraint_t cst) {
+  inline elina_tcons0_t const2tconst(const linear_constraint_t &cst) {
     linear_expression_t exp = cst.expression();
     if (cst.is_equality()) {
       return elina_tcons0_make(ELINA_CONS_EQ, expr2texpr(exp), NULL);
@@ -708,11 +707,9 @@ private:
     elina_scalar_set_mpq(linexpr->cst.val.scalar, q.get_mpq_t());
 
     unsigned i = 0;
-    for (typename linear_expression_t::const_iterator it = e.begin(),
-                                                      et = e.end();
-         it != et; ++it, ++i) {
+    for (auto it = e.begin(), et = e.end(); it != et; ++it, ++i) {
       number_t crab_coeff = it->first;
-      variable_t crab_var = it->second;
+      const variable_t &crab_var = it->second;
       elina_linterm_t *linterm = &linexpr->p.linterm[i];
       linterm->dim = get_var_dim_insert(crab_var);
       ikos::q_number qcoef(crab_coeff);
@@ -871,7 +868,7 @@ private:
   }
 
   // x != n
-  void inequalities_from_disequation(variable_t x, number_t n,
+  void inequalities_from_disequation(const variable_t &x, number_t n,
                                      linear_constraint_system_t &out) {
     interval_t i = this->operator[](x);
     interval_t new_i = ikos::linear_interval_solver_impl::trim_interval<interval_t>(
@@ -890,24 +887,22 @@ private:
     }
   }
 
-  interval_t compute_residual(linear_expression_t e, variable_t pivot) {
+  interval_t compute_residual(const linear_expression_t &e, const variable_t &pivot) {
     interval_t residual(-e.constant());
-    for (typename linear_expression_t::iterator it = e.begin(); it != e.end();
-         ++it) {
-      variable_t v = it->second;
+    for (auto kv: e) {
+      const variable_t &v = kv.second;
       if (v.index() != pivot.index()) {
-        residual = residual - (interval_t(it->first) * this->operator[](v));
+        residual = residual - (interval_t(kv.first) * this->operator[](v));
       }
     }
     return residual;
   }
 
-  void inequalities_from_disequation(linear_expression_t e,
+  void inequalities_from_disequation(const linear_expression_t &e,
                                      linear_constraint_system_t &o) {
-    for (typename linear_expression_t::iterator it = e.begin(); it != e.end();
-         ++it) {
-      variable_t pivot = it->second;
-      interval_t i = compute_residual(e, pivot) / interval_t(it->first);
+    for (auto kv: e) {
+      variable_t pivot = kv.second;
+      interval_t i = compute_residual(e, pivot) / interval_t(kv.first);
       if (auto k = i.singleton()) {
         inequalities_from_disequation(pivot, *k, o);
       }
@@ -915,7 +910,7 @@ private:
   }
 
   // Using elina tree expressions
-  void assign_texpr(variable_t x, linear_expression_t e) {
+  void assign_texpr(const variable_t &x, const linear_expression_t &e) {
     elina_texpr0_t *t = expr2texpr(e);
     assert(t);
     auto dim_x = get_var_dim_insert(x);
@@ -926,7 +921,7 @@ private:
   }
 
   // Using elina linear expresions
-  void assign_linexpr(variable_t x, linear_expression_t e) {
+  void assign_linexpr(const variable_t &x, const linear_expression_t &e) {
     elina_linexpr0_t *t = crab_linexpr_to_elina(e);
     assert(t);
     auto dim_x = get_var_dim_insert(x);
@@ -937,7 +932,7 @@ private:
   }
 
   // Using elina tree expressions
-  void apply_texpr(arith_operation_t op, variable_t x, variable_t y, number_t z) {
+  void apply_texpr(arith_operation_t op, const variable_t &x, const variable_t &y, number_t z) {
     elina_texpr0_t *a = var2texpr(y);
     elina_texpr0_t *b = num2texpr(z);
     elina_texpr0_t *res = nullptr;
@@ -967,7 +962,7 @@ private:
   }
 
   // Using elina linear expresions
-  void apply_linexpr(arith_operation_t op, variable_t x, variable_t y, number_t z) {
+  void apply_linexpr(arith_operation_t op, const variable_t &x, const variable_t &y, number_t z) {
     elina_linexpr0_t *rhs = nullptr;
     switch (op) {
     case OP_ADDITION:
@@ -996,7 +991,8 @@ private:
   }
 
   // Using elina tree expressions
-  void apply_texpr(arith_operation_t op, variable_t x, variable_t y, variable_t z) {
+  void apply_texpr(arith_operation_t op,
+		   const variable_t &x, const variable_t &y, const variable_t &z) {
     elina_texpr0_t *a = var2texpr(y);
     elina_texpr0_t *b = var2texpr(z);
     elina_texpr0_t *res = nullptr;
@@ -1026,7 +1022,8 @@ private:
   }
 
   // Using elina linear expresions
-  void apply_linexpr(arith_operation_t op, variable_t x, variable_t y, variable_t z) {
+  void apply_linexpr(arith_operation_t op,
+		     const variable_t &x, const variable_t &y, const variable_t &z) {
     elina_linexpr0_t *rhs = nullptr;
     switch (op) {
     case OP_ADDITION:
@@ -1102,31 +1099,6 @@ private:
   //   &*m_apstate, NULL); }
   // private:
 
-#if 0
-    // Disable this constructor to avoid unnecessary copies.
-    // The magic of move semantics should be used instead.
-    elina_domain_(elina_state_ptr apState, var_map_t varMap):
-      m_apstate(apState), m_var_map(varMap) {
-      std::vector<elina_dim_t> dims;
-      var_map_t res;
-      /// XXX: we must iterate on the dimension id's to preserve
-      /// order between them
-      for (auto const& p: m_var_map.right) {  
-    	if (elina_abstract0_is_dimension_unconstrained(get_man(),
-    							&*m_apstate, 
-    							p.first)) {
-    	  dims.push_back(p.first);
-    	}
-    	else {
-    	  elina_dim_t i = res.size();
-    	  res.insert(binding_t(p.second, i));
-    	}
-      }
-      remove_dimensions(m_apstate, dims);
-      std::swap(m_var_map, res);
-      assert(m_var_map.size() == get_dims());
-    }
-#endif
 
   elina_domain_(elina_state_ptr &&apState, var_map_t &&varMap,
                 bool &&compact = true)
@@ -1190,21 +1162,21 @@ public:
     return *this;
   }
 
-  void set_to_top() {
+  void set_to_top() override {
     elina_domain_t abs(false);
     std::swap(*this, abs);
   }
 
-  void set_to_bottom() {
+  void set_to_bottom() override {
     elina_domain_t abs(true);
     std::swap(*this, abs);
   }
 
-  bool is_bottom() { return elina_abstract0_is_bottom(get_man(), &*m_apstate); }
+  bool is_bottom() override { return elina_abstract0_is_bottom(get_man(), &*m_apstate); }
 
-  bool is_top() { return elina_abstract0_is_top(get_man(), &*m_apstate); }
+  bool is_top() override { return elina_abstract0_is_top(get_man(), &*m_apstate); }
 
-  bool operator<=(elina_domain_t o) {
+  bool operator<=(elina_domain_t o) override {
     crab::CrabStats::count(getDomainName() + ".count.leq");
     crab::ScopedCrabStats __st__(getDomainName() + ".leq");
 
@@ -1226,7 +1198,7 @@ public:
     }
   }
 
-  void operator|=(elina_domain_t o) {
+  void operator|=(elina_domain_t o) override {
     crab::CrabStats::count(getDomainName() + ".count.join");
     crab::ScopedCrabStats __st__(getDomainName() + ".join");
 
@@ -1246,7 +1218,7 @@ public:
     }
   }
 
-  elina_domain_t operator|(elina_domain_t o) {
+  elina_domain_t operator|(elina_domain_t o) override {
     crab::CrabStats::count(getDomainName() + ".count.join");
     crab::ScopedCrabStats __st__(getDomainName() + ".join");
 
@@ -1265,7 +1237,7 @@ public:
     }
   }
 
-  elina_domain_t operator&(elina_domain_t o) {
+  elina_domain_t operator&(elina_domain_t o) override {
     crab::CrabStats::count(getDomainName() + ".count.meet");
     crab::ScopedCrabStats __st__(getDomainName() + ".meet");
 
@@ -1286,7 +1258,7 @@ public:
     }
   }
 
-  elina_domain_t operator||(elina_domain_t o) {
+  elina_domain_t operator||(elina_domain_t o) override {
     crab::CrabStats::count(getDomainName() + ".count.widening");
     crab::ScopedCrabStats __st__(getDomainName() + ".widening");
     // XXX: is_bottom will close the left operand
@@ -1315,7 +1287,7 @@ public:
 
   elina_domain_t
   widening_thresholds(elina_domain_t o,
-                      const iterators::thresholds<number_t> &ts) {
+                      const iterators::thresholds<number_t> &ts) override {
     crab::CrabStats::count(getDomainName() + ".count.widening");
     crab::ScopedCrabStats __st__(getDomainName() + ".widening");
 
@@ -1364,7 +1336,7 @@ public:
     //}
   }
 
-  elina_domain_t operator&&(elina_domain_t o) {
+  elina_domain_t operator&&(elina_domain_t o) override {
     crab::CrabStats::count(getDomainName() + ".count.narrowing");
     crab::ScopedCrabStats __st__(getDomainName() + ".narrowing");
 
@@ -1398,7 +1370,7 @@ public:
     }
   }
 
-  void project(const variable_vector_t &vars) {
+  void project(const variable_vector_t &vars) override {
     crab::CrabStats::count(getDomainName() + ".count.project");
     crab::ScopedCrabStats __st__(getDomainName() + ".project");
 
@@ -1420,7 +1392,7 @@ public:
     forget(s3);
   }
 
-  void forget(const variable_vector_t &vars) {
+  void forget(const variable_vector_t &vars) override {
     crab::CrabStats::count(getDomainName() + ".count.forget");
     crab::ScopedCrabStats __st__(getDomainName() + ".forget");
 
@@ -1471,7 +1443,7 @@ public:
              crab::outs() << *this << "\n";);
   }
 
-  void operator-=(variable_t var) {
+  void operator-=(const variable_t &var) override {
     crab::CrabStats::count(getDomainName() + ".count.forget");
     crab::ScopedCrabStats __st__(getDomainName() + ".forget");
 
@@ -1507,7 +1479,7 @@ public:
     }
   }
 
-  interval_t operator[](variable_t v) {
+  interval_t operator[](const variable_t &v) override {
     crab::CrabStats::count(getDomainName() + ".count.to_intervals");
     crab::ScopedCrabStats __st__(getDomainName() + ".to_intervals");
 
@@ -1585,15 +1557,13 @@ public:
       return interval_t::top();
   }
 
-  void set(variable_t v, interval_t ival) {
+  void set(const variable_t &v, interval_t ival) {
     crab::CrabStats::count(getDomainName() + ".count.assign");
     crab::ScopedCrabStats __st__(getDomainName() + ".assign");
 
     if (is_bottom()) {
       return;
     }
-
-    variable_t vv(v);
 
     // -- forget v
     *this -= v;
@@ -1604,14 +1574,14 @@ public:
     if (lb.is_finite()) {
       // v >= lb <--> -v + lb <= 0
       assert(lb.number());
-      linear_expression_t e = (number_t(-1) * vv) + *(lb.number());
+      linear_expression_t e = (number_t(-1) * v) + *(lb.number());
       csts += (linear_constraint_t(e, linear_constraint_t::kind_t::INEQUALITY));
     }
     auto ub = ival.ub();
     if (ub.is_finite()) {
       // v <= ub <--> v - ub <= 0
       assert(ub.number());
-      linear_expression_t e = (vv - *(ub.number()));
+      linear_expression_t e = (v - *(ub.number()));
       csts += (linear_constraint_t(e, linear_constraint_t::kind_t::INEQUALITY));
     }
 
@@ -1622,7 +1592,7 @@ public:
                                    << *this << "\n";);
   }
 
-  void operator+=(linear_constraint_system_t _csts) {
+  void operator+=(const linear_constraint_system_t &_csts) override {
     crab::CrabStats::count(getDomainName() + ".count.add_constraints");
     crab::ScopedCrabStats __st__(getDomainName() + ".add_constraints");
 
@@ -1682,7 +1652,7 @@ public:
     CRAB_LOG("elina", crab::outs() << *this << "\n";);
   }
 
-  void assign(variable_t x, linear_expression_t e) {
+  void assign(const variable_t &x, const linear_expression_t &e) override {
     crab::CrabStats::count(getDomainName() + ".count.assign");
     crab::ScopedCrabStats __st__(getDomainName() + ".assign");
 
@@ -1706,7 +1676,8 @@ public:
     CRAB_LOG("elina", crab::outs() << *this << "\n";);
   }
 
-  void apply(arith_operation_t op, variable_t x, variable_t y, number_t z) {
+  void apply(arith_operation_t op,
+	     const variable_t &x, const variable_t &y, number_t z) override {
     crab::CrabStats::count(getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1750,7 +1721,8 @@ public:
     }
   }
 
-  void apply(arith_operation_t op, variable_t x, variable_t y, variable_t z) {
+  void apply(arith_operation_t op,
+	     const variable_t &x, const variable_t &y, const variable_t &z) override {
     crab::CrabStats::count(getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1795,13 +1767,15 @@ public:
     }
   }
 
-  void apply(int_conv_operation_t op, variable_t dst, variable_t src) {
+  void apply(int_conv_operation_t op,
+	     const variable_t &dst, const variable_t &src) override {
     // since reasoning about infinite precision we simply assign and
     // ignore the widths.
     assign(dst, src);
   }
 
-  void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) {
+  void apply(bitwise_operation_t op,
+	     const variable_t &x, const variable_t &y, const variable_t &z) override {
     crab::CrabStats::count(getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1838,7 +1812,8 @@ public:
     set(x, xi);
   }
 
-  void apply(bitwise_operation_t op, variable_t x, variable_t y, number_t k) {
+  void apply(bitwise_operation_t op,
+	     const variable_t &x, const variable_t &y, number_t k) override {
     crab::CrabStats::count(getDomainName() + ".count.apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".apply");
 
@@ -1875,8 +1850,8 @@ public:
     set(x, xi);
   }
 
-  void backward_assign(variable_t x, linear_expression_t e,
-                       elina_domain_t invariant) {
+  void backward_assign(const variable_t &x, const linear_expression_t &e,
+                       elina_domain_t invariant) override {
     crab::CrabStats::count(getDomainName() + ".count.backward_assign");
     crab::ScopedCrabStats __st__(getDomainName() + ".backward_assign");
 
@@ -1906,8 +1881,9 @@ public:
                                    << *this << "\n";);
   }
 
-  void backward_apply(arith_operation_t op, variable_t x, variable_t y, number_t z,
-                      elina_domain_t invariant) {
+  void backward_apply(arith_operation_t op,
+		      const variable_t &x, const variable_t &y, const number_t &z,
+                      elina_domain_t invariant) override {
     crab::CrabStats::count(getDomainName() + ".count.backward_apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
 
@@ -1958,8 +1934,9 @@ public:
     CRAB_LOG("elina", crab::outs() << " --> " << *this << "\n";);
   }
 
-  void backward_apply(arith_operation_t op, variable_t x, variable_t y, variable_t z,
-                      elina_domain_t invariant) {
+  void backward_apply(arith_operation_t op,
+		      const variable_t &x, const variable_t &y, const variable_t &z,
+                      elina_domain_t invariant) override {
     crab::CrabStats::count(getDomainName() + ".count.backward_apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
 
@@ -2013,81 +1990,82 @@ public:
   */
 
   // boolean operations
-  void assign_bool_cst(variable_t lhs, linear_constraint_t rhs) {}
-  void assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs) {}
-  void apply_binary_bool(bool_operation_t op, variable_t x, variable_t y,
-                         variable_t z) {}
-  void assume_bool(variable_t v, bool is_negated) {}
+  void assign_bool_cst(const variable_t &lhs, const linear_constraint_t &rhs) override {}
+  void assign_bool_var(const variable_t &lhs, const variable_t &rhs, bool is_not_rhs) override {}
+  void apply_binary_bool(bool_operation_t op,
+			 const variable_t &x, const variable_t &y, const variable_t &z) override {}
+  void assume_bool(const variable_t &v, bool is_negated) override {}
   // backward boolean operations
-  void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
-                                elina_domain_t invariant) {}
-  void backward_assign_bool_var(variable_t lhs, variable_t rhs, bool is_not_rhs,
-                                elina_domain_t invariant) {}
-  void backward_apply_binary_bool(bool_operation_t op, variable_t x,
-                                  variable_t y, variable_t z,
-                                  elina_domain_t invariant) {}
+  void backward_assign_bool_cst(const variable_t &lhs, const linear_constraint_t &rhs,
+                                elina_domain_t invariant) override {}
+  void backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs, bool is_not_rhs,
+                                elina_domain_t invariant) override {}
+  void backward_apply_binary_bool(bool_operation_t op, const variable_t &x,
+                                  const variable_t &y, const variable_t &z,
+                                  elina_domain_t invariant) override {}
   // array operations
-  void array_init(variable_t a, linear_expression_t elem_size,
-                  linear_expression_t lb_idx, linear_expression_t ub_idx,
-                  linear_expression_t val) {}
-  void array_load(variable_t lhs, variable_t a, linear_expression_t elem_size,
-                  linear_expression_t i) {
+  void array_init(const variable_t &a, const linear_expression_t &elem_size,
+                  const linear_expression_t &lb_idx, const linear_expression_t &ub_idx,
+                  const linear_expression_t &val) override {}
+  void array_load(const variable_t &lhs, const variable_t &a, const linear_expression_t &elem_size,
+                  const linear_expression_t &i) override {
     operator-=(lhs);
   }
-  void array_store(variable_t a, linear_expression_t elem_size,
-                   linear_expression_t i, linear_expression_t v,
-                   bool is_strong_update) {}
+  void array_store(const variable_t &a, const linear_expression_t &elem_size,
+                   const linear_expression_t &i, const linear_expression_t &v,
+                   bool is_strong_update) override {}
   void array_store(variable_t a_new, variable_t a_old,
                    linear_expression_t elem_size, linear_expression_t i,
-                   linear_expression_t v, bool is_strong_update) {}
-  void array_store_range(variable_t a, linear_expression_t elem_size,
-                         linear_expression_t i, linear_expression_t j,
-                         linear_expression_t v) {}
+                   linear_expression_t v, bool is_strong_update) override {}
+  void array_store_range(const variable_t &a, const linear_expression_t &elem_size,
+                         const linear_expression_t &i, const linear_expression_t &j,
+                         const linear_expression_t &v) override {}
   void array_store_range(variable_t a_new, variable_t a_old,
                          linear_expression_t elem_size, linear_expression_t i,
-                         linear_expression_t j, linear_expression_t v) {}
-  void array_assign(variable_t lhs, variable_t rhs) {}
+                         linear_expression_t j, linear_expression_t v) override {}
+  void array_assign(const variable_t &lhs, const variable_t &rhs) override {}
   // backward array operations
-  void backward_array_init(variable_t a, linear_expression_t elem_size,
-                           linear_expression_t lb_idx,
-                           linear_expression_t ub_idx, linear_expression_t val,
-                           elina_domain_t invariant) {}
-  void backward_array_load(variable_t lhs, variable_t a,
-                           linear_expression_t elem_size, linear_expression_t i,
-                           elina_domain_t invariant) {}
-  void backward_array_store(variable_t a, linear_expression_t elem_size,
-                            linear_expression_t i, linear_expression_t v,
-                            bool is_strong_update, elina_domain_t invariant) {}
+  void backward_array_init(const variable_t &a, const linear_expression_t &elem_size,
+                           const linear_expression_t &lb_idx,
+                           const linear_expression_t &ub_idx, const linear_expression_t &val,
+                           elina_domain_t invariant) override {}
+  void backward_array_load(const variable_t &lhs, const variable_t &a,
+                           const linear_expression_t &elem_size, const linear_expression_t &i,
+                           elina_domain_t invariant) override {}
+  void backward_array_store(const variable_t &a, const linear_expression_t &elem_size,
+                            const linear_expression_t &i, const linear_expression_t &v,
+                            bool is_strong_update, elina_domain_t invariant) override {}
   void backward_array_store(variable_t a_new, variable_t a_old,
                             linear_expression_t elem_size,
                             linear_expression_t i, linear_expression_t v,
-                            bool is_strong_update, elina_domain_t invariant) {}
-  void backward_array_store_range(variable_t a, linear_expression_t elem_size,
-                                  linear_expression_t i, linear_expression_t j,
-                                  linear_expression_t v,
-                                  elina_domain_t invariant) {}
+                            bool is_strong_update, elina_domain_t invariant) override {}
+  void backward_array_store_range(const variable_t &a, const linear_expression_t &elem_size,
+                                  const linear_expression_t &i, const linear_expression_t &j,
+                                  const linear_expression_t &v,
+                                  elina_domain_t invariant) override {}
   void backward_array_store_range(variable_t a_new, variable_t a_old,
                                   linear_expression_t elem_size,
                                   linear_expression_t i, linear_expression_t j,
                                   linear_expression_t v,
-                                  elina_domain_t invariant) {}
-  void backward_array_assign(variable_t lhs, variable_t rhs,
-                             elina_domain_t invariant) {}
+                                  elina_domain_t invariant) override {}
+  void backward_array_assign(const variable_t &lhs, const variable_t &rhs,
+                             elina_domain_t invariant) override {}
   // reference operations
-  void region_init(memory_region reg) override {}          
-  void ref_make(variable_t ref, memory_region reg) override {}
-  void ref_load(variable_t ref, memory_region reg, variable_t res) override {}
-  void ref_store(variable_t ref, memory_region reg, linear_expression_t val) override {}
-  void ref_gep(variable_t ref1, memory_region reg1,
-	       variable_t ref2, memory_region reg2,
-	       linear_expression_t offset) override {}
-  void ref_load_from_array(variable_t lhs, variable_t ref, memory_region region,
-			   linear_expression_t index, linear_expression_t elem_size) override {}
-  void ref_store_to_array(variable_t ref, memory_region region,
-			  linear_expression_t index, linear_expression_t elem_size,
-			  linear_expression_t val) override {}
-  void ref_assume(reference_constraint_t cst) override {}
-
+  void region_init(const memory_region &reg) override {}          
+  void ref_make(const variable_t &ref, const memory_region &reg) override {}
+  void ref_load(const variable_t &ref, const memory_region &reg, const variable_t &res) override {}
+  void ref_store(const variable_t &ref, const memory_region &reg,
+		 const linear_expression_t &val) override {}
+  void ref_gep(const variable_t &ref1, const memory_region &reg1,
+	       const variable_t &ref2, const memory_region &reg2,
+	       const linear_expression_t &offset) override {}
+  void ref_load_from_array(const variable_t &lhs, const variable_t &ref, const memory_region &region,
+			   const linear_expression_t &index,
+			   const linear_expression_t &elem_size) override {}
+  void ref_store_to_array(const variable_t &ref, const memory_region &region,
+			  const linear_expression_t &index, const linear_expression_t &elem_size,
+			  const linear_expression_t &val) override {}
+  void ref_assume(const reference_constraint_t &cst) override {}
   /* End unimplemented operations */
 
   interval_domain_t to_interval_domain() {
@@ -2105,7 +2083,7 @@ public:
     return res;
   }
 
-  linear_constraint_system_t to_linear_constraint_system() {
+  linear_constraint_system_t to_linear_constraint_system() override {
     crab::CrabStats::count(getDomainName() +
                            ".count.to_linear_constraint_system");
     crab::ScopedCrabStats __st__(getDomainName() +
@@ -2130,7 +2108,7 @@ public:
   }
 
   disjunctive_linear_constraint_system_t
-  to_disjunctive_linear_constraint_system() {
+  to_disjunctive_linear_constraint_system() override {
     auto lin_csts = to_linear_constraint_system();
     if (lin_csts.is_false()) {
       return disjunctive_linear_constraint_system_t(true /*is_false*/);
@@ -2141,7 +2119,7 @@ public:
     }
   }
 
-  void rename(const variable_vector_t &from, const variable_vector_t &to) {
+  void rename(const variable_vector_t &from, const variable_vector_t &to) const {
     crab::CrabStats::count(getDomainName() + ".count.rename");
     crab::ScopedCrabStats __st__(getDomainName() + ".rename");
 
@@ -2180,7 +2158,7 @@ public:
     CRAB_LOG("elina", crab::outs() << "RESULT=" << *this << "\n");
   }
 
-  void expand(variable_t x, variable_t dup) {
+  void expand(const variable_t &x, const variable_t &dup) const {
     crab::CrabStats::count(getDomainName() + ".count.expand");
     crab::ScopedCrabStats __st__(getDomainName() + ".expand");
 
@@ -2203,7 +2181,7 @@ public:
     m_var_map.insert(binding_t(dup, get_dims() - 1));
   }
 
-  void normalize() {
+  void normalize() override {
     crab::CrabStats::count(getDomainName() + ".count.normalize");
     crab::ScopedCrabStats __st__(getDomainName() + ".normalize");
 
@@ -2211,7 +2189,7 @@ public:
   }
 
   // reduce the size of the internal representation
-  void minimize() {
+  void minimize() override {
     crab::CrabStats::count(getDomainName() + ".count.minimize");
     crab::ScopedCrabStats __st__(getDomainName() + ".minimize");
 
@@ -2248,7 +2226,7 @@ public:
   
   void dump() const { dump(m_var_map, m_apstate); }
 
-  void write(crab_os &o) {
+  void write(crab_os &o) override {
     crab::CrabStats::count(getDomainName() + ".count.write");
     crab::ScopedCrabStats __st__(getDomainName() + ".write");
 

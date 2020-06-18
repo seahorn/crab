@@ -70,7 +70,7 @@ private:
   // abstract domain can keep track of relationships between input and
   // outputs.
 
-  fdecl_t m_fdecl;
+  const fdecl_t &m_fdecl;
   abs_dom_t m_input;  // must be projected on m_fdecl inputs
   abs_dom_t m_output; // must be projected on m_fdecl inputs and outputs
 
@@ -97,7 +97,8 @@ private:
   }
 
   // Private constructor used to join calling contexts
-  calling_context(fdecl_t fdecl, abs_dom_t input, abs_dom_t output,
+  calling_context(const fdecl_t &fdecl,
+		  abs_dom_t input, abs_dom_t output,
                   invariant_map_t &&pre_invariants,
                   invariant_map_t &&post_invariants)
       : m_fdecl(fdecl), m_input(input), m_output(output),
@@ -105,10 +106,11 @@ private:
         m_post_invariants(std::move(post_invariants)), m_exact(false) {}
 
 public:
-  calling_context(fdecl_t fdecl, abs_dom_t input, abs_dom_t output,
+  calling_context(const fdecl_t &fdecl, abs_dom_t input, abs_dom_t output,
                   // if true then the calling context maintains only
                   // invariants for the entry and exit blocks.
-                  bool minimize_invariants, invariant_map_t &&pre_invariants,
+                  bool minimize_invariants,
+		  invariant_map_t &&pre_invariants,
                   invariant_map_t &&post_invariants)
       : m_fdecl(fdecl), m_input(input), m_output(output),
         m_pre_invariants(std::move(pre_invariants)),
@@ -117,10 +119,10 @@ public:
     if (minimize_invariants) {
       // XXX: don't remove the invariants, just make them top.
       for (auto &kv : m_pre_invariants) {
-        kv.second = abs_dom_t::top();
+        kv.second.set_to_top();
       }
       for (auto &kv : m_post_invariants) {
-        kv.second = abs_dom_t::top();
+        kv.second.set_to_top();
       }
     }
   }
@@ -133,7 +135,7 @@ public:
   // must be projected only on function input parameters and O must be
   // projected on function's input and output parameters.
 
-  fdecl_t get_fdecl() const { return m_fdecl; }
+  const fdecl_t &get_fdecl() const { return m_fdecl; }
 
   // return I from the pair (I,O)
   abs_dom_t get_input() const { return m_input; }
@@ -169,7 +171,7 @@ public:
   }
 
   // invariants that hold at the entry of basic block bb
-  abs_dom_t get_pre(basic_block_label_t bb) const {
+  abs_dom_t get_pre(const basic_block_label_t &bb) const {
     auto it = m_pre_invariants.find(bb);
     if (it == m_pre_invariants.end()) {
       return abs_dom_t::bottom(); // dead block under particular context
@@ -179,7 +181,7 @@ public:
   }
 
   // invariants that hold at the exit of basic block bb
-  abs_dom_t get_post(basic_block_label_t bb) const {
+  abs_dom_t get_post(const basic_block_label_t &bb) const {
     auto it = m_post_invariants.find(bb);
     if (it == m_post_invariants.end()) {
       return abs_dom_t::bottom(); // dead block under particular context
@@ -638,7 +640,7 @@ private:
     // crab::CrabStats::count("Interprocedural.num_calling_contexts");
   }
 
-  static void get_fdecl_parameters(fdecl_t &fdecl,
+  static void get_fdecl_parameters(const fdecl_t &fdecl,
                                    std::vector<variable_t> &out) {
     out.reserve(fdecl.get_num_inputs() + fdecl.get_num_outputs());
     out.insert(out.end(), fdecl.get_inputs().begin(), fdecl.get_inputs().end());
@@ -653,7 +655,7 @@ private:
    *  - caller_dom: abstract state at the caller before the call.
    *  - callee_dom: initial state at the callee (by default top)
    **/
-  static AbsDom get_callee_entry(callsite_t &cs, fdecl_t &fdecl,
+  static AbsDom get_callee_entry(const callsite_t &cs, const fdecl_t &fdecl,
                                  AbsDom caller_dom,
                                  AbsDom callee_dom = AbsDom::top()) {
     crab::ScopedCrabStats __st__("Interprocedural.get_callee_entry");
@@ -668,8 +670,8 @@ private:
     CRAB_LOG("inter-restrict", errs()
                                  << "Unifying formal and actual parameters\n";);
     for (unsigned i = 0, e = fdecl.get_inputs().size(); i < e; ++i) {
-      variable_t formal = fdecl.get_inputs()[i];
-      variable_t actual = cs.get_args()[i];
+      const variable_t &formal = fdecl.get_inputs()[i];
+      const variable_t &actual = cs.get_args()[i];
       if (!(formal == actual)) {
         CRAB_LOG("inter-restrict",
                  errs() << "\t" << formal << " and " << actual << "\n";);
@@ -720,7 +722,7 @@ private:
    * parameters are not disjoint.
    **/
   static AbsDom
-  get_caller_continuation(callsite_t &cs, fdecl_t &fdecl, AbsDom caller_dom,
+  get_caller_continuation(const callsite_t &cs, const fdecl_t &fdecl, AbsDom caller_dom,
                           const std::vector<variable_t> &sum_out_variables,
                           AbsDom sum_out_dom) {
     crab::ScopedCrabStats __st__("Interprocedural.get_caller_continuation");
@@ -746,8 +748,8 @@ private:
     
     // propagate from callee's outputs to caller's lhs of the callsite
     for (unsigned i = 0, e = fdecl.get_outputs().size(); i < e; ++i) {
-      variable_t formal = fdecl.get_outputs()[i];
-      variable_t actual = cs.get_lhs()[i];
+      const variable_t &formal = fdecl.get_outputs()[i];
+      const variable_t &actual = cs.get_lhs()[i];
       if (!(formal == actual)) {
 	CRAB_LOG("inter-extend",
 		 crab::outs() << "Unifying " << formal << " and " << actual << "\n";);
@@ -769,7 +771,7 @@ private:
     std::vector<variable_t> caller_and_callee_vars;
     caller_and_callee_vars.reserve(fdecl.get_inputs().size());
     for (unsigned i = 0, e = fdecl.get_inputs().size(); i < e; ++i) {
-      variable_t in_formal = fdecl.get_inputs()[i];
+      const variable_t &in_formal = fdecl.get_inputs()[i];
       if (cs_args.count(in_formal) > 0) {
 	caller_and_callee_vars.push_back(in_formal);
       }
@@ -781,13 +783,13 @@ private:
   }
 
   /* Analysis of a callsite */
-  void analyze_callee(callsite_t &cs, cg_node_t callee_cg_node) {
+  void analyze_callee(const callsite_t &cs, cg_node_t callee_cg_node) {
 
     // 1. Get CFG from the callee
     cfg_t callee_cfg = callee_cg_node.get_cfg();
 
     assert(callee_cfg.has_func_decl());
-    fdecl_t fdecl = callee_cfg.get_func_decl();
+    const fdecl_t &fdecl = callee_cfg.get_func_decl();
 
     // 2. Generate initial abstract state for the callee
     AbsDom caller_dom(this->get_abs_value());
@@ -870,7 +872,7 @@ private:
 
       } else {
         // if the callee has not exit is because it's a noreturn function.
-        callee_exit = AbsDom::bottom();
+        callee_exit.set_to_bottom();
         CRAB_LOG("inter", crab::outs() << "[INTER] Finished \"" << cs
                                        << "\" with exit=" << callee_exit
                                        << ": the callee has no exit block.\n";);
@@ -964,7 +966,7 @@ public:
       // call.
       cfg_t callee_cfg = callee_cg_node.get_cfg();
       assert(callee_cfg.has_func_decl());
-      fdecl_t fdecl = callee_cfg.get_func_decl();
+      const fdecl_t &fdecl = callee_cfg.get_func_decl();
       AbsDom caller_dom(this->get_abs_value());
       if (!m_ctx.get_is_checking_phase()) {
         crab::CrabStats::count("Interprocedural.num_recursive_callsites");
@@ -1194,13 +1196,13 @@ public:
 
   // Return the *context-insensitive* invariants that hold at the entry of b in
   // cfg.
-  AbsDom get_pre(const cfg_t &cfg, basic_block_label_t bb) const {
+  AbsDom get_pre(const cfg_t &cfg, const basic_block_label_t &bb) const {
     return get_invariant(m_ctx.get_global_pre_invariants(), cfg, bb);
   }
 
   // Return the *context-insensitive* invariants that hold at the exit of b in
   // cfg.
-  AbsDom get_post(const cfg_t &cfg, basic_block_label_t bb) const {
+  AbsDom get_post(const cfg_t &cfg, const basic_block_label_t &bb) const {
     return get_invariant(m_ctx.get_global_post_invariants(), cfg, bb);
   }
 

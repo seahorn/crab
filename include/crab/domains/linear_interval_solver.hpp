@@ -111,7 +111,7 @@ private:
   static const std::size_t _large_system_op_threshold = 27;
 
   // return true if bottom
-  bool refine(variable_t v, Interval i, IntervalCollection &env) {
+  bool refine(const variable_t &v, Interval i, IntervalCollection &env) {
     crab::ScopedCrabStats __st__("Linear Interval Solver.Solving refinement");
     CRAB_LOG("integer-solver",
              crab::outs() << "\tRefine " << v << " with " << i << "\n";);
@@ -130,7 +130,7 @@ private:
     return false;
   }
 
-  Interval compute_residual(const linear_constraint_t &cst, variable_t pivot,
+  Interval compute_residual(const linear_constraint_t &cst, const variable_t &pivot,
                             IntervalCollection &env) {
     crab::ScopedCrabStats __st__(
         "Linear Interval Solver.Solving computing residual");
@@ -140,7 +140,7 @@ private:
         interval_traits::mk_interval<Interval>(cst.constant(), w);
     for (typename linear_constraint_t::const_iterator it = cst.begin();
          it != cst.end(); ++it) {
-      variable_t v = it->second;
+      const variable_t &v = it->second;
       if (!(v == pivot)) {
         residual =
             residual -
@@ -165,7 +165,7 @@ private:
                                                       et = cst.end();
          it != et; ++it) {
       Number c = it->first;
-      variable_t pivot = it->second;
+      const variable_t &pivot = it->second;
       Interval res = compute_residual(cst, pivot, env);
       Interval rhs = Interval::top();
       if (!res.is_top()) {

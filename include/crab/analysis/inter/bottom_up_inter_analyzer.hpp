@@ -64,15 +64,15 @@ public:
   call_ctx_table<CFG, AbsDomain> &
   operator=(const call_ctx_table<CFG, AbsDomain> &o) = delete;
 
-  void insert(callsite_t cs, AbsDomain inv) {
+  void insert(const callsite_t &cs, AbsDomain inv) {
     insert_helper(crab::cfg::cfg_hasher<CFG>::hash(cs), inv);
   }
 
-  void insert(fdecl_t d, AbsDomain inv) {
+  void insert(const fdecl_t &d, AbsDomain inv) {
     insert_helper(crab::cfg::cfg_hasher<CFG>::hash(d), inv);
   }
 
-  AbsDomain get_call_ctx(fdecl_t d) const {
+  AbsDomain get_call_ctx(const fdecl_t &d) const {
     auto it = m_call_table.find(crab::cfg::cfg_hasher<CFG>::hash(d));
     if (it != m_call_table.end())
       return it->second;
@@ -92,7 +92,7 @@ template <typename CFG, typename AbsDomain> class summary {
   typedef typename variable_t::varname_t varname_t;
 
   // --- function info
-  fdecl_t m_fdecl;
+  const fdecl_t &m_fdecl;
   // --- Summary involving only m_params + m_ret_vals variables
   abs_domain_t m_sum;
   // --- Keep all the input original parameters of the function
@@ -128,7 +128,7 @@ template <typename CFG, typename AbsDomain> class summary {
   }
 
 public:
-  summary(fdecl_t fdecl,
+  summary(const fdecl_t &fdecl,
           // summary defined only in terms of inputs and outputs
           abs_domain_t sum, const std::vector<variable_t> &inputs,
           const std::vector<variable_t> &outputs)
@@ -138,12 +138,12 @@ public:
     m_internal_outputs.reserve(m_outputs.size());
 
     
-    for (auto v : m_inputs) {
+    for (auto const& v : m_inputs) {
       auto &vfac = const_cast<varname_t*>(&(v.name()))->get_var_factory();    
       variable_t fresh_v(vfac.get(), v.get_type(), v.get_bitwidth());
       m_internal_inputs.push_back(fresh_v);
     }
-    for (auto v : m_outputs) {
+    for (auto const& v : m_outputs) {
       auto &vfac = const_cast<varname_t*>(&(v.name()))->get_var_factory();          
       variable_t fresh_v(vfac.get(), v.get_type(), v.get_bitwidth());
       m_internal_outputs.push_back(fresh_v);
@@ -239,7 +239,8 @@ public:
   operator=(const summary_table<CFG, AbsDomain> &o) = delete;
 
   // insert summary information
-  void insert(fdecl_t d, AbsDomain sum, const std::vector<variable_t> &inputs,
+  void insert(const fdecl_t &d, AbsDomain sum,
+	      const std::vector<variable_t> &inputs,
               const std::vector<variable_t> &outputs) {
 
     std::vector<variable_t> ins(inputs.begin(), inputs.end());
@@ -250,25 +251,25 @@ public:
   }
 
   // return true if there is a summary
-  bool has_summary(callsite_t cs) const {
+  bool has_summary(const callsite_t &cs) const {
     auto it = m_sum_table.find(crab::cfg::cfg_hasher<CFG>::hash(cs));
     return (it != m_sum_table.end());
   }
 
-  bool has_summary(fdecl_t d) const {
+  bool has_summary(const fdecl_t &d) const {
     auto it = m_sum_table.find(crab::cfg::cfg_hasher<CFG>::hash(d));
     return (it != m_sum_table.end());
   }
 
   // get the summary
-  summary_t &get(callsite_t cs) const {
+  summary_t &get(const callsite_t &cs) const {
     auto it = m_sum_table.find(crab::cfg::cfg_hasher<CFG>::hash(cs));
     assert(it != m_sum_table.end());
 
     return *(it->second);
   }
 
-  summary_t &get(fdecl_t d) const {
+  summary_t &get(const fdecl_t &d) const {
     auto it = m_sum_table.find(crab::cfg::cfg_hasher<CFG>::hash(d));
     assert(it != m_sum_table.end());
 
@@ -332,8 +333,8 @@ public:
     auto inputs = summ.get_renamed_inputs();
     unsigned i = 0;
     // XXX: propagating down
-    for (auto p : inputs) {
-      auto a = cs.get_arg_name(i);
+    for (auto const &p : inputs) {
+      auto const &a = cs.get_arg_name(i);
       if (!(a == p)) {
         CRAB_LOG("inter", crab::outs() << "\t\tPropagate from caller to callee "
                                        << p << ":=" << a << "\n");
@@ -363,8 +364,8 @@ public:
 
     // XXX: propagating up
     for (; caller_it != caller_et; ++caller_it, ++callee_it) {
-      auto vt = *caller_it;
-      auto r = *callee_it;
+      auto const &vt = *caller_it;
+      auto const &r = *callee_it;
       CRAB_LOG("inter", crab::outs() << "\t\tPropagate from callee to caller "
                                      << vt << ":=" << r << "\n");
       inter_transformer_helpers<abs_dom_t>::unify(caller, vt, r);
@@ -381,7 +382,7 @@ public:
 
     CRAB_LOG("inter", crab::outs()
                           << "\t\tAfter forgetting formal parameters {";
-             for (auto v
+             for (auto const& v
                   : vs) crab::outs()
              << v << ";";
              crab::outs() << "}=" << caller << "\n");
@@ -435,7 +436,7 @@ inline void convert_domains(Domain1 from, Domain2 &to) {
     pre_bot = from.is_bottom();
   }
 
-  for (auto cst : from.to_linear_constraint_system()) {
+  for (auto const& cst: from.to_linear_constraint_system()) {
     to += cst;
   }
 
@@ -501,8 +502,8 @@ public:
       // XXX: propagating down
       unsigned i = 0;
       const std::vector<variable_t> &inputs = summ.get_inputs();
-      for (variable_t p : inputs) {
-        variable_t a = cs.get_arg_name(i);
+      for (const variable_t &p : inputs) {
+        const variable_t &a = cs.get_arg_name(i);
         if (!(a == p)) {
           inter_transformer_helpers<abs_dom_t>::unify(callee_ctx_inv, p, a);
         }
@@ -528,7 +529,7 @@ public:
       // caller_ctx_inv and m_inv may be inconsistent if the lhs
       // variables are constrained before the callsite (e.g., x=-5;
       // x := abs(x);)
-      for (auto vt : cs.get_lhs()) {
+      for (auto const& vt : cs.get_lhs()) {
         this->m_inv -= vt;
       }
 
@@ -554,7 +555,7 @@ public:
 
     // We could not reuse a summary or summary not found. We havoc
     // output variables of the callsite.
-    for (auto vt : cs.get_lhs()) {
+    for (auto const& vt : cs.get_lhs()) {
       this->m_inv -= vt;
     }
   }
@@ -668,8 +669,8 @@ public:
 
         auto cfg = v.get_cfg();
         assert(cfg.has_func_decl());
-        auto fdecl = cfg.get_func_decl();
-        std::string fun_name = fdecl.get_func_name();
+        auto const& fdecl = cfg.get_func_decl();
+        const std::string &fun_name = fdecl.get_func_name();
         if (fun_name != "main")
           continue;
 
@@ -694,19 +695,19 @@ public:
     graph_algo::rev_topo_sort(Scc_g, rev_order);
 
     CRAB_VERBOSE_IF(1, get_msg_stream() << "== Bottom-up phase ...\n";);
-    for (auto n : rev_order) {
+    for (auto const& n : rev_order) {
       crab::ScopedCrabStats __st__("Inter.BottomUp");
       std::vector<cg_node_t> &scc_mems = Scc_g.get_component_members(n);
       for (auto m : scc_mems) {
 
         auto cfg = m.get_cfg();
         assert(cfg.has_func_decl());
-        auto fdecl = cfg.get_func_decl();
-        std::string fun_name = fdecl.get_func_name();
+        auto const& fdecl = cfg.get_func_decl();
+        const std::string &fun_name = fdecl.get_func_name();
         if (fun_name != "main") {
           CRAB_VERBOSE_IF(1, get_msg_stream()
                                  << "++ Computing summary for "
-                                 << fdecl.get_func_name() << "...\n";);
+                                 << fun_name << "...\n";);
 
           // --- collect inputs and outputs
           std::vector<variable_t> formals, inputs, outputs;
@@ -727,10 +728,10 @@ public:
             BU_Dom summary;
             m_summ_tbl.insert(fdecl, summary, inputs, outputs);
             CRAB_WARN("Skipped summary because function ",
-                      fdecl.get_func_name(), " has no output parameters");
+                      fun_name, " has no output parameters");
           } else if (!cfg.has_exit()) {
             CRAB_WARN("Skipped summary because function ",
-                      fdecl.get_func_name(), " has no exit block");
+                      fun_name, " has no exit block");
           } else {
             // --- run the analysis
             auto init_inv = BU_Dom::top();
@@ -768,7 +769,7 @@ public:
       for (auto m : scc_mems) {
         auto cfg = m.get_cfg();
         assert(cfg.has_func_decl());
-        auto fdecl = cfg.get_func_decl();
+        auto const &fdecl = cfg.get_func_decl();
         CRAB_VERBOSE_IF(1, get_msg_stream() << "++ Analyzing function "
                                             << fdecl.get_func_name() << "\n";);
         if (is_recursive) {
@@ -812,7 +813,7 @@ public:
 
   //! Return the invariants that hold at the entry of b in cfg
   TD_Dom get_pre(const cfg_t &cfg,
-                 typename cfg_t::basic_block_label_t b) const {
+                 const typename cfg_t::basic_block_label_t &b) const {
     assert(cfg.has_func_decl());
     auto fdecl = cfg.get_func_decl();
     auto const it = m_inv_map.find(crab::cfg::cfg_hasher<cfg_t>::hash(fdecl));
@@ -825,7 +826,7 @@ public:
 
   //! Return the invariants that hold at the exit of b in cfg
   TD_Dom get_post(const cfg_t &cfg,
-                  typename cfg_t::basic_block_label_t b) const {
+                  const typename cfg_t::basic_block_label_t &b) const {
     assert(cfg.has_func_decl());
     auto fdecl = cfg.get_func_decl();
     auto const it = m_inv_map.find(crab::cfg::cfg_hasher<cfg_t>::hash(fdecl));

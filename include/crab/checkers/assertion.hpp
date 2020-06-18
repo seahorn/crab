@@ -55,7 +55,7 @@ public:
     if (!this->m_abs_tr)
       return;
 
-    lin_cst_t cst = s.constraint();
+    const lin_cst_t &cst = s.constraint();
 
     if (this->m_safe_assertions.count(&s) > 0) {
       crab::crab_string_os os;

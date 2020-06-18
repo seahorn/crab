@@ -58,7 +58,7 @@ public:
 	    // TODO: use the assertion crawler analysis to remove the
 	    // callee if it doesn't have any assertion.
 	    if (s_live_vars.num_defs() == 1) {
-	      variable_t def = *(s_live_vars.defs_begin());
+	      const variable_t &def = *(s_live_vars.defs_begin());
 	      if (!def.is_array_type()) {
 		// XXX: An array variable contain actually multiple
 		// definitions so we conservatively skip it.

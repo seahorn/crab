@@ -1,26 +1,26 @@
 #pragma once
 
 /*
- * ### UPDATE: pointers are gone. welcome to references
- * 
  * Build a CFG to interface with the abstract domains and fixpoint
  * iterators.
  *
  * === Syntax ===
  * 
- * All the CFG statements are strongly typed. However, only variables
- * need to be typed. The types of constants can be inferred from the
- * context since they always appear together with at least one
- * variable. Types form a **flat** lattice consisting of:
+ * The CFG is intended to be expressive enough for representing the
+ * semantics of a variety of programming languages and with different
+ * levels of abstractions.  All the CFG statements are strongly
+ * typed. However, only variables need to be typed. The types of
+ * constants can be inferred from the context since they always appear
+ * together with at least one variable. Types form a **flat** lattice
+ * consisting of:
  *
  * - booleans,
  * - integers,
  * - reals,
- * - pointers,
+ * - references,
  * - array of booleans,
- * - array of integers,
- * - array of reals, and
- * - array of pointers.
+ * - array of integers, and
+ * - array of reals.
  *
  * Crab CFG supports the modeling of:
  *
@@ -33,44 +33,14 @@
  *
  * === Semantics === 
  * 
- * The semantics of boolean, numerical and pointer statements is
- * similar to a language like C. For arrays, the main feature is that
- * arrays are disjoint from each other (i.e., a write in array A
- * cannot affect the contents of another array B). The semantics of
- * arrays is similar to SMT arrays.
- *
- * === Which subset of Crab CFG statements for representing your program ===
+ * The semantics of boolean and numerical is similar to a language
+ * like C. For arrays, the main feature is that arrays are guaranteed
+ * to be disjoint from each other (i.e., a write in array A cannot
+ * affect the contents of another array B). The semantics of arrays
+ * reads and writes are similar to SMT arrays.
  * 
- * The CFG is intended to be expressive enough for representing the
- * semantics of a variety of programming languages and with different
- * levels of abstractions. These are the three main configurations:
- * 
- * (1) Use boolean, integer and pointer statements. This should be
- * enough to model C programs.
+ * TODO: semantics for references and regions
  *
- * (2) Use boolean, integer, and array statements. This is convenient
- * for languages where memory is (or will be after abstraction) statically
- * partitioned. Each memory partitioned is then assigned to an array.
- *
- * (3) A hybrid of (1) and (2) that use simultaneously pointer and
- * array statements.
- * 
- * The main difference between (1) and (2) is in how it affects the
- * Crab abstract domain. If we use (1) then the abstract domain must
- * reason both pointer aliasing and memory contents. If we use (2)
- * then the abstract domain does not need to reason about aliasing
- * since all arrays are disjoint so the abstract domain only needs to
- * reason about memory contents. For instance, these are examples of
- * other tools using Crab:
- *
- *   - Clam (https://github.com/seahorn/crab-llvm) translates from LLVM
- *     bitcode using either method (1) or (2). For (2), it uses seadsa
- *     (https://github.com/seahorn/sea-dsa) to do the memory partitioning.
- *
- *   - PREVAIL (https://github.com/vbpf/ebpf-verifier) translates from
- *     eBPF bytecode using method (2).
- *
- * 
  * === Function calls ===
  *
  * In Crab, a function is represented by a CFG with a special function
@@ -89,11 +59,11 @@
  * you should encode your program into the Crab CFG language.
  * 
  * For instance, if you have a function `foo(p)` where `p` is a
- * pointer. If foo updates the content of p then you should write the
+ * reference. If foo updates the content of p then you should write the
  * CFG for `foo` as follows:
  *
  *       function_decl(foo, p_in, p_out);
- *       ptr_assign(p_out, p_in);
+ *       gep_ref(p_out, p_in);
  *       ... // rest of the CFG reads or writes p_out and keeps intact p_in
  *
  * The same things should be done with arrays:
@@ -102,16 +72,11 @@
  *       array_assign(a_out, a_in);
  *       ... // rest of the CFG reads or writes a_out and keeps intact a_in
  *  
- * === Important notes ===
+ * === Important note ===
  *
- * 1. Unfortunately, Crab does NOT provide abstract domains to reason
- *    precisely using configuration (1) but we are working on it so we
- *    will have one soon. This means that you should use only
- *    configuration (2) for now.
- *
- * 2. Objects of the class cfg are not copyable. Instead, we provide a
- *    class cfg_ref that wraps cfg references into copyable and
- *    assignable objects.
+ * Objects of the class cfg are not copyable. Instead, we provide a
+ * class cfg_ref that wraps cfg references into copyable and
+ * assignable objects.
  *
  * === CFG Limitations ===
  *
@@ -142,7 +107,7 @@ namespace crab {
 
 namespace cfg_impl {
 // To convert a basic block label to a string
-template <typename T> inline std::string get_label_str(T e);
+template <typename T> inline const std::string &get_label_str(const T &bb);
 } // namespace cfg_impl
 
 namespace cfg {
@@ -369,13 +334,13 @@ public:
     }
   }
 
-  variable_t lhs() const { return m_lhs; }
+  const variable_t &lhs() const { return m_lhs; }
 
   binary_operation_t op() const { return m_op; }
 
-  linear_expression_t left() const { return m_op1; }
+  const linear_expression_t &left() const { return m_op1; }
 
-  linear_expression_t right() const { return m_op2; }
+  const linear_expression_t &right() const { return m_op2; }
 
   virtual void accept(statement_visitor<Number, VariableName> *v) {
     v->visit(*this);
@@ -412,9 +377,9 @@ public:
       this->m_live.add_use(v);
   }
 
-  variable_t lhs() const { return m_lhs; }
+  const variable_t &lhs() const { return m_lhs; }
 
-  linear_expression_t rhs() const { return m_rhs; }
+  const linear_expression_t &rhs() const { return m_rhs; }
 
   virtual void accept(statement_visitor<Number, VariableName> *v) {
     v->visit(*this);
@@ -446,7 +411,7 @@ public:
       this->m_live.add_use(v);
   }
 
-  linear_constraint_t constraint() const { return m_cst; }
+  const linear_constraint_t &constraint() const { return m_cst; }
 
   virtual void accept(statement_visitor<Number, VariableName> *v) {
     v->visit(*this);
@@ -492,7 +457,7 @@ public:
     this->m_live.add_def(m_lhs);
   }
 
-  variable_t variable() const { return m_lhs; }
+  const variable_t &variable() const { return m_lhs; }
 
   virtual void accept(statement_visitor<Number, VariableName> *v) {
     v->visit(*this);
@@ -536,13 +501,13 @@ public:
       this->m_live.add_use(v);
   }
 
-  variable_t lhs() const { return m_lhs; }
+  const variable_t &lhs() const { return m_lhs; }
 
-  linear_constraint_t cond() const { return m_cond; }
+  const linear_constraint_t &cond() const { return m_cond; }
 
-  linear_expression_t left() const { return m_e1; }
+  const linear_expression_t &left() const { return m_e1; }
 
-  linear_expression_t right() const { return m_e2; }
+  const linear_expression_t &right() const { return m_e2; }
 
   virtual void accept(statement_visitor<Number, VariableName> *v) {
     v->visit(*this);
@@ -579,7 +544,7 @@ public:
       this->m_live.add_use(v);
   }
 
-  linear_constraint_t constraint() const { return m_cst; }
+  const linear_constraint_t &constraint() const { return m_cst; }
 
   virtual void accept(statement_visitor<Number, VariableName> *v) {
     v->visit(*this);
@@ -618,9 +583,9 @@ public:
   }
 
   cast_operation_t op() const { return m_op; }
-  variable_t src() const { return m_src; }
+  const variable_t &src() const { return m_src; }
   bitwidth_t src_width() const { return m_src.get_bitwidth(); }
-  variable_t dst() const { return m_dst; }
+  const variable_t &dst() const { return m_dst; }
   bitwidth_t dst_width() const { return m_dst.get_bitwidth(); }
 
   virtual void accept(statement_visitor<Number, VariableName> *v) {
@@ -698,17 +663,17 @@ public:
     }
   }
 
-  variable_t array() const { return m_arr; }
+  const variable_t &array() const { return m_arr; }
 
   type_t array_type() const { return m_arr.get_type(); }
 
-  linear_expression_t elem_size() const { return m_elem_size; }
+  const linear_expression_t &elem_size() const { return m_elem_size; }
 
-  linear_expression_t lb_index() const { return m_lb; }
+  const linear_expression_t &lb_index() const { return m_lb; }
 
-  linear_expression_t ub_index() const { return m_ub; }
+  const linear_expression_t &ub_index() const { return m_ub; }
 
-  linear_expression_t val() const { return m_val; }
+  const linear_expression_t &val() const { return m_val; }
 
   virtual void accept(statement_visitor<Number, VariableName> *v) {
     v->visit(*this);
@@ -798,17 +763,17 @@ public:
 
   // Return the old array name before the store or the current
   // array name if the store happens in-place.
-  variable_t array() const { return m_arr; }
+  const variable_t &array() const { return m_arr; }
 
-  linear_expression_t lb_index() const { return m_lb; }
+  const linear_expression_t &lb_index() const { return m_lb; }
 
-  linear_expression_t ub_index() const { return m_ub; }
+  const linear_expression_t &ub_index() const { return m_ub; }
 
-  linear_expression_t value() const { return m_value; }
+  const linear_expression_t &value() const { return m_value; }
 
   type_t array_type() const { return m_arr.get_type(); }
 
-  linear_expression_t elem_size() const { return m_elem_size; }
+  const linear_expression_t &elem_size() const { return m_elem_size; }
 
   bool is_strong_update() const { return m_is_strong_update; }
 
@@ -887,15 +852,15 @@ public:
     }
   }
 
-  variable_t lhs() const { return m_lhs; }
+  const variable_t &lhs() const { return m_lhs; }
 
-  variable_t array() const { return m_array; }
+  const variable_t &array() const { return m_array; }
 
   type_t array_type() const { return m_array.get_type(); }
 
-  linear_expression_t index() const { return m_index; }
+  const linear_expression_t &index() const { return m_index; }
 
-  linear_expression_t elem_size() const { return m_elem_size; }
+  const linear_expression_t &elem_size() const { return m_elem_size; }
 
   virtual void accept(statement_visitor<Number, VariableName> *v) {
     v->visit(*this);
@@ -934,9 +899,9 @@ public:
     this->m_live.add_use(rhs);
   }
 
-  variable_t lhs() const { return m_lhs; }
+  const variable_t &lhs() const { return m_lhs; }
 
-  variable_t rhs() const { return m_rhs; }
+  const variable_t &rhs() const { return m_rhs; }
 
   type_t array_type() const { return m_lhs.get_type(); }
 
@@ -973,7 +938,7 @@ public:
     : statement_t(REGION_INIT, dbg_info), m_region(region) {
   }
   
-  memory_region region() const { return m_region;}
+  const memory_region &region() const { return m_region;}
 
   virtual void accept(statement_visitor<Number, VariableName> *v) {
     v->visit(*this);
@@ -1007,9 +972,9 @@ public:
     this->m_live.add_def(lhs);
   }
   
-  variable_t lhs() const { return m_lhs; }
+  const variable_t &lhs() const { return m_lhs; }
 
-  memory_region region() const { return m_region;}
+  const memory_region &region() const { return m_region;}
 
   virtual void accept(statement_visitor<Number, VariableName> *v) {
     v->visit(*this);
@@ -1046,11 +1011,11 @@ public:
     this->m_live.add_use(m_ref);
   }
 
-  variable_t lhs() const { return m_lhs; }
+  const variable_t &lhs() const { return m_lhs; }
 
-  variable_t ref() const { return m_ref; }
+  const variable_t &ref() const { return m_ref; }
 
-  memory_region region() const { return m_region; }
+  const memory_region &region() const { return m_region; }
   
   virtual void accept(statement_visitor<Number, VariableName> *v) {
     v->visit(*this);
@@ -1092,11 +1057,11 @@ public:
     }
   }
 
-  variable_t ref() const { return m_ref; }
+  const variable_t &ref() const { return m_ref; }
 
-  linear_expression_t val() const { return m_val; }
+  const linear_expression_t &val() const { return m_val; }
 
-  memory_region region() const { return m_region; }
+  const memory_region &region() const { return m_region; }
   
   virtual void accept(statement_visitor<Number, VariableName> *v) {
     v->visit(*this);
@@ -1140,15 +1105,15 @@ public:
     }
   }
 
-  variable_t lhs() const { return m_lhs; }
+  const variable_t &lhs() const { return m_lhs; }
 
-  variable_t rhs() const { return m_rhs; }
+  const variable_t &rhs() const { return m_rhs; }
 
-  linear_expression_t offset() const { return m_offset; }
+  const linear_expression_t &offset() const { return m_offset; }
 
-  memory_region lhs_region() const { return m_lhs_region;}
+  const memory_region &lhs_region() const { return m_lhs_region;}
 
-  memory_region rhs_region() const { return m_rhs_region;}  
+  const memory_region &rhs_region() const { return m_rhs_region;}  
   
   virtual void accept(statement_visitor<Number, VariableName> *v) {
     v->visit(*this);
@@ -1203,15 +1168,15 @@ public:
     }
   }
 
-  variable_t lhs() const { return m_lhs; }
+  const variable_t &lhs() const { return m_lhs; }
 
-  variable_t ref() const { return m_ref; }
+  const variable_t &ref() const { return m_ref; }
 
-  linear_expression_t index() const { return m_index; }
+  const linear_expression_t &index() const { return m_index; }
 
-  linear_expression_t elem_size() const { return m_elem_size; }
+  const linear_expression_t &elem_size() const { return m_elem_size; }
 
-  memory_region region() const { return m_region;}
+  const memory_region &region() const { return m_region;}
   
   virtual void accept(statement_visitor<Number, VariableName> *v) {
     v->visit(*this);
@@ -1270,17 +1235,17 @@ public:
     }
   }
 
-  variable_t ref() const { return m_ref; }
+  const variable_t &ref() const { return m_ref; }
 
-  memory_region region() const { return m_region;}
+  const memory_region &region() const { return m_region;}
   
-  linear_expression_t lb_index() const { return m_lb; }
+  const linear_expression_t &lb_index() const { return m_lb; }
 
-  linear_expression_t ub_index() const { return m_ub; }
+  const linear_expression_t &ub_index() const { return m_ub; }
+  
+  const linear_expression_t &value() const { return m_value; }
 
-  linear_expression_t value() const { return m_value; }
-
-  linear_expression_t elem_size() const { return m_elem_size; }
+  const linear_expression_t &elem_size() const { return m_elem_size; }
 
   bool is_strong_update() const { return m_is_strong_update; }
 
@@ -1345,7 +1310,7 @@ public:
     }
   }
 
-  reference_constraint_t constraint() const { return m_cst; }
+  const reference_constraint_t &constraint() const { return m_cst; }
 
   virtual void accept(statement_visitor<Number, VariableName> *v) {
     v->visit(*this);
@@ -1380,7 +1345,7 @@ public:
     }
   }
 
-  reference_constraint_t constraint() const { return m_cst; }
+  const reference_constraint_t &constraint() const { return m_cst; }
 
   virtual void accept(statement_visitor<Number, VariableName> *v) {
     v->visit(*this);
@@ -1435,13 +1400,13 @@ public:
 
   const std::vector<variable_t> &get_lhs() const { return m_lhs; }
 
-  std::string get_func_name() const { return m_func_name; }
+  const std::string &get_func_name() const { return m_func_name; }
 
   const std::vector<variable_t> &get_args() const { return m_args; }
 
   unsigned get_num_args() const { return m_args.size(); }
 
-  variable_t get_arg_name(unsigned idx) const {
+  const variable_t &get_arg_name(unsigned idx) const {
     if (idx >= m_args.size())
       CRAB_ERROR("Out-of-bound access to call site parameter");
 
@@ -1585,13 +1550,13 @@ public:
 
   const std::vector<variable_t> &get_lhs() const { return m_lhs; }
 
-  std::string get_intrinsic_name() const { return m_intrinsic_name; }
+  const std::string &get_intrinsic_name() const { return m_intrinsic_name; }
 
   const std::vector<variable_t> &get_args() const { return m_args; }
 
   unsigned get_num_args() const { return m_args.size(); }
 
-  variable_t get_arg_name(unsigned idx) const {
+  const variable_t &get_arg_name(unsigned idx) const {
     if (idx >= m_args.size())
       CRAB_ERROR("Out-of-bound access to intrinsic parameter");
 
@@ -1670,9 +1635,9 @@ public:
       this->m_live.add_use(v);
   }
 
-  variable_t lhs() const { return m_lhs; }
+  const variable_t &lhs() const { return m_lhs; }
 
-  linear_constraint_t rhs() const { return m_rhs; }
+  const linear_constraint_t &rhs() const { return m_rhs; }
 
   virtual void accept(statement_visitor<Number, VariableName> *v) {
     v->visit(*this);
@@ -1715,9 +1680,9 @@ public:
     this->m_live.add_use(m_rhs);
   }
 
-  variable_t lhs() const { return m_lhs; }
+  const variable_t &lhs() const { return m_lhs; }
 
-  variable_t rhs() const { return m_rhs; }
+  const variable_t &rhs() const { return m_rhs; }
 
   bool is_rhs_negated() const { return m_is_rhs_negated; }
 
@@ -1766,13 +1731,13 @@ public:
     this->m_live.add_use(m_op2);
   }
 
-  variable_t lhs() const { return m_lhs; }
+  const variable_t &lhs() const { return m_lhs; }
 
   bool_binary_operation_t op() const { return m_op; }
 
-  variable_t left() const { return m_op1; }
+  const variable_t &left() const { return m_op1; }
 
-  variable_t right() const { return m_op2; }
+  const variable_t &right() const { return m_op2; }
 
   virtual void accept(statement_visitor<Number, VariableName> *v) {
     v->visit(*this);
@@ -1806,7 +1771,7 @@ public:
     this->m_live.add_use(v);
   }
 
-  variable_t cond() const { return m_var; }
+  const variable_t &cond() const { return m_var; }
 
   bool is_negated() const { return m_is_negated; }
 
@@ -1850,13 +1815,13 @@ public:
     this->m_live.add_use(m_b2);
   }
 
-  variable_t lhs() const { return m_lhs; }
+  const variable_t &lhs() const { return m_lhs; }
 
-  variable_t cond() const { return m_cond; }
+  const variable_t &cond() const { return m_cond; }
 
-  variable_t left() const { return m_b1; }
+  const variable_t &left() const { return m_b1; }
 
-  variable_t right() const { return m_b2; }
+  const variable_t &right() const { return m_b2; }
 
   virtual void accept(statement_visitor<Number, VariableName> *v) {
     v->visit(*this);
@@ -1891,7 +1856,7 @@ public:
     this->m_live.add_use(v);
   }
 
-  variable_t cond() const { return m_var; }
+  const variable_t &cond() const { return m_var; }
 
   virtual void accept(statement_visitor<Number, VariableName> *v) {
     v->visit(*this);
@@ -2020,7 +1985,7 @@ private:
   }
 
   void update_uses_and_defs(const statement_t *s) {
-    auto ls = s->get_live();
+    auto const& ls = s->get_live();
     for (auto &v : boost::make_iterator_range(ls.uses_begin(), ls.uses_end())) {
       m_live += v;
     }
@@ -2074,9 +2039,9 @@ public:
     return b;
   }
 
-  BasicBlockLabel label() const { return m_bb_id; }
+  const BasicBlockLabel &label() const { return m_bb_id; }
 
-  std::string name() const { return cfg_impl::get_label_str(m_bb_id); }
+  const std::string &name() const { return cfg_impl::get_label_str(m_bb_id); }
 
   iterator begin() { return boost::make_indirect_iterator(m_stmts.begin()); }
   iterator end() { return boost::make_indirect_iterator(m_stmts.end()); }
@@ -2131,11 +2096,11 @@ public:
     return std::make_pair(m_prev.begin(), m_prev.end());
   }
 
-  // Add a cfg edge from *this to b
   void operator>>(basic_block_t &b) {
     add_succ(b);
   }
 
+  // Add a cfg edge from *this to b  
   void add_succ(basic_block_t &b) {
     insert_adjacent(m_next, b.m_bb_id);
     insert_adjacent(b.m_prev, m_bb_id);
@@ -2405,14 +2370,6 @@ public:
     return insert(new arr_store_t(arr, elem_size, idx, idx, v, false));
   }
 
-  //// To avoid ambiguity
-  // const statement_t* array_store(variable_t new_arr, variable_t old_arr,
-  // 				lin_exp_t idx, lin_exp_t v, lin_exp_t elem_size)
-  // {
-  //   return insert(new arr_store_t(new_arr, old_arr, elem_size, idx, idx, v,
-  //                 false));
-  // }
-
   const statement_t *array_store(variable_t arr, lin_exp_t idx, lin_exp_t v,
                                  lin_exp_t elem_size, bool is_strong_update) {
     return insert(new arr_store_t(arr, elem_size, idx, idx, v, is_strong_update));
@@ -2559,9 +2516,9 @@ private:
 public:
   basic_block_rev(BasicBlock &bb) : _bb(bb) {}
 
-  basic_block_label_t label() const { return _bb.label(); }
+  const basic_block_label_t &label() const { return _bb.label(); }
 
-  std::string name() const { return _bb.name(); }
+  const std::string &name() const { return _bb.name(); }
 
   iterator begin() { return _bb.rbegin(); }
 
@@ -2577,7 +2534,7 @@ public:
 
   live_domain_t &live() { return _bb.live(); }
 
-  live_domain_t live() const { return _bb.live(); }
+  const live_domain_t &live() const { return _bb.live(); }
 
   std::pair<succ_iterator, succ_iterator> next_blocks() {
     return _bb.prev_blocks();
@@ -2616,6 +2573,7 @@ public:
   }
 };
 
+/** Visitor class for statements **/
 template <class Number, class VariableName> struct statement_visitor {
   typedef binary_op<Number, VariableName> bin_op_t;
   typedef assignment<Number, VariableName> assign_t;
@@ -2787,7 +2745,7 @@ public:
     return true;
   }
 
-  std::string get_func_name() const { return m_func_name; }
+  const std::string &get_func_name() const { return m_func_name; }
 
   const std::vector<variable_t> &get_inputs() const { return m_inputs; }
 
@@ -2797,7 +2755,7 @@ public:
 
   unsigned get_num_outputs() const { return m_outputs.size(); }
 
-  variable_t get_input_name(unsigned idx) const {
+  const variable_t &get_input_name(unsigned idx) const {
     if (idx >= m_inputs.size())
       CRAB_ERROR("Out-of-bound access to function input parameter");
     return m_inputs[idx];
@@ -2809,7 +2767,7 @@ public:
     return m_inputs[idx].get_type();
   }
 
-  variable_t get_output_name(unsigned idx) const {
+  const variable_t &get_output_name(unsigned idx) const {
     if (idx >= m_outputs.size())
       CRAB_ERROR("Out-of-bound access to function input parameter");
     return m_outputs[idx];
@@ -3001,11 +2959,11 @@ public:
               m_func_decl.get_num_outputs() == 0));
   }
 
-  fdecl_t get_func_decl() const { return m_func_decl; }
+  const fdecl_t &get_func_decl() const { return m_func_decl; }
 
   bool has_exit() const { return (bool)m_exit; }
 
-  BasicBlockLabel exit() const {
+  const BasicBlockLabel &exit() const {
     if (has_exit())
       return *m_exit;
     CRAB_ERROR("cfg does not have an exit block");
@@ -3021,7 +2979,7 @@ public:
 
   // --- Begin ikos fixpoint API
 
-  BasicBlockLabel entry() const { return m_entry; }
+  const BasicBlockLabel &entry() const { return m_entry; }
 
   const_succ_range next_nodes(BasicBlockLabel bb_id) const {
     const basic_block_t &b = get_node(bb_id);
@@ -3354,7 +3312,7 @@ public:
     return *_ref;
   }
 
-  basic_block_label_t entry() const {
+  const basic_block_label_t &entry() const {
     assert(_ref);
     return (*_ref).get().entry();
   }
@@ -3439,7 +3397,7 @@ public:
     return (*_ref).get().has_func_decl();
   }
 
-  fdecl_t get_func_decl() const {
+  const fdecl_t &get_func_decl() const {
     assert(_ref);
     return (*_ref).get().get_func_decl();
   }
@@ -3449,7 +3407,7 @@ public:
     return (*_ref).get().has_exit();
   }
 
-  basic_block_label_t exit() const {
+  const basic_block_label_t &exit() const {
     assert(_ref);
     return (*_ref).get().exit();
   }
@@ -3593,7 +3551,7 @@ public:
     return *this;
   }
 
-  basic_block_label_t entry() const {
+  const basic_block_label_t &entry() const {
     if (!_cfg.has_exit())
       CRAB_ERROR("Entry not found!");
     return _cfg.exit();
@@ -3651,11 +3609,11 @@ public:
 
   bool has_func_decl() const { return _cfg.has_func_decl(); }
 
-  fdecl_t get_func_decl() const { return _cfg.get_func_decl(); }
+  const fdecl_t &get_func_decl() const { return _cfg.get_func_decl(); }
 
   bool has_exit() const { return true; }
 
-  basic_block_label_t exit() const { return _cfg.entry(); }
+  const basic_block_label_t &exit() const { return _cfg.entry(); }
 
   void write(crab_os &o) const {
     if (has_func_decl()) {
@@ -3702,7 +3660,6 @@ template <typename CFG> struct cfg_hasher {
 };
 
 template <class CFG> class type_checker {
-
 public:
   type_checker(CFG cfg) : m_cfg(cfg) {}
 
@@ -3731,11 +3688,12 @@ public:
   }
 
 private:
-  typedef typename CFG::varname_t V;
-  typedef typename CFG::number_t N;
 
   CFG m_cfg;
-
+  
+  typedef typename CFG::varname_t V;
+  typedef typename CFG::number_t N;
+  
   struct type_checker_visitor : public statement_visitor<N, V> {
     typedef typename statement_visitor<N, V>::bin_op_t bin_op_t;
     typedef typename statement_visitor<N, V>::assign_t assign_t;
@@ -3758,7 +3716,7 @@ private:
     typedef typename statement_visitor<N, V>::store_to_ref_t store_to_ref_t;
     typedef typename statement_visitor<N, V>::gep_ref_t gep_ref_t;
     typedef typename statement_visitor<N, V>::load_from_arr_ref_t load_from_arr_ref_t;
-    typedef typename statement_visitor<N, V>::store_to_arr_ref_t store_to_arr_ref_t;                        
+    typedef typename statement_visitor<N, V>::store_to_arr_ref_t store_to_arr_ref_t; 
     typedef typename statement_visitor<N, V>::assume_ref_t assume_ref_t;
     typedef typename statement_visitor<N, V>::assert_ref_t assert_ref_t;
     typedef typename statement_visitor<N, V>::bool_bin_op_t bool_bin_op_t;
@@ -3767,13 +3725,10 @@ private:
     typedef typename statement_visitor<N, V>::bool_assume_t bool_assume_t;
     typedef typename statement_visitor<N, V>::bool_assert_t bool_assert_t;
     typedef typename statement_visitor<N, V>::bool_select_t bool_select_t;
-
     typedef typename CFG::statement_t statement_t;
-
     typedef ikos::linear_expression<N, V> lin_exp_t;
     typedef ikos::linear_constraint<N, V> lin_cst_t;
     typedef variable<N, V> variable_t;
-
     typedef typename variable_t::type_t variable_type_t;
     typedef typename variable_t::bitwidth_t variable_bitwidth_t;
 
@@ -3814,7 +3769,7 @@ private:
     }
 
     // check variable is a number
-    void check_num(variable_t v, std::string msg, statement_t &s) {
+    void check_num(const variable_t &v, std::string msg, statement_t &s) {
       if (v.get_type() != INT_TYPE && v.get_type() != REAL_TYPE) {
         crab::crab_string_os os;
         os << "(type checking) " << msg << " in " << s;
@@ -3823,7 +3778,7 @@ private:
     }
 
     // check variable is an integer or boolean
-    void check_int_or_bool(variable_t v, std::string msg, statement_t &s) {
+    void check_int_or_bool(const variable_t &v, std::string msg, statement_t &s) {
       if (v.get_type() != INT_TYPE && v.get_type() != BOOL_TYPE) {
         crab::crab_string_os os;
         os << "(type checking) " << msg << " in " << s;
@@ -3832,7 +3787,7 @@ private:
     }
 
     // check variable is an integer
-    void check_int(variable_t v, std::string msg, statement_t &s) {
+    void check_int(const variable_t &v, std::string msg, statement_t &s) {
       if ((v.get_type() != INT_TYPE) || (v.get_bitwidth() <= 1)) {
         crab::crab_string_os os;
         os << "(type checking) " << msg << " in " << s;
@@ -3841,7 +3796,7 @@ private:
     }
 
     // check variable is a boolean
-    void check_bool(variable_t v, std::string msg, statement_t &s) {
+    void check_bool(const variable_t &v, std::string msg, statement_t &s) {
       if ((v.get_type() != BOOL_TYPE) || (v.get_bitwidth() != 1)) {
         crab::crab_string_os os;
         os << "(type checking) " << msg << " in " << s;
@@ -3850,7 +3805,7 @@ private:
     }
 
     // check bitwidth if variable is an integer
-    void check_bitwidth_if_int(variable_t v, std::string msg, statement_t &s) {
+    void check_bitwidth_if_int(const variable_t &v, std::string msg, statement_t &s) {
       if (v.get_type() == INT_TYPE) {
         if (v.get_bitwidth() <= 1) {
           crab::crab_string_os os;
@@ -3861,7 +3816,7 @@ private:
     }
 
     // check bitwidth if variable is a boolean
-    void check_bitwidth_if_bool(variable_t v, std::string msg, statement_t &s) {
+    void check_bitwidth_if_bool(const variable_t &v, std::string msg, statement_t &s) {
       if (v.get_type() == BOOL_TYPE) {
         if (v.get_bitwidth() != 1) {
           crab::crab_string_os os;
@@ -3872,8 +3827,8 @@ private:
     }
 
     // check two variables have same types
-    void check_same_type(variable_t v1, variable_t v2, std::string msg,
-                         statement_t &s) {
+    void check_same_type(const variable_t &v1, const variable_t &v2, std::string msg, 
+			 statement_t &s) {
       if (v1.get_type() != v2.get_type()) {
         crab::crab_string_os os;
         os << "(type checking) " << msg << " in " << s;
@@ -3882,7 +3837,7 @@ private:
     }
 
     // check two variables have different names
-    void check_different_name(variable_t v1, variable_t v2, std::string msg,
+    void check_different_name(const variable_t &v1, const variable_t &v2, std::string msg,
                               statement_t &s) {
       if (v1 == v2) {
         crab::crab_string_os os;
@@ -3892,7 +3847,7 @@ private:
     }
 
     // check two variables have same bitwidth
-    void check_same_bitwidth(variable_t v1, variable_t v2, std::string msg,
+    void check_same_bitwidth(const variable_t &v1, const variable_t &v2, std::string msg,
                              statement_t &s) {
       // assume v1 and v2 have same type
       if (v1.get_type() == INT_TYPE || v1.get_type() == BOOL_TYPE) {
@@ -3905,7 +3860,7 @@ private:
     }
 
     // check linear expressinon is just a number or variable
-    void check_num_or_var(lin_exp_t e, std::string msg, statement_t &s) {
+    void check_num_or_var(const lin_exp_t &e, std::string msg, statement_t &s) {
       if (!(e.is_constant() || e.get_variable())) {
         crab::crab_string_os os;
         os << "(type checking) " << msg << " in " << s;
@@ -3914,7 +3869,7 @@ private:
     }
 
     // check variable is an array
-    void check_is_array(variable_t v, statement_t &s) {
+    void check_is_array(const variable_t &v, statement_t &s) {
       switch (v.get_type()) {
       case ARR_BOOL_TYPE:
         break;
@@ -3931,7 +3886,7 @@ private:
     }
 
     // v1 is array type and v2 is a scalar type consistent with v1
-    void check_array_and_scalar_type(variable_t v1, variable_t v2,
+    void check_array_and_scalar_type(const variable_t &v1, const variable_t &v2,
                                      statement_t &s) {
       switch (v1.get_type()) {
       case ARR_BOOL_TYPE:
@@ -3961,9 +3916,9 @@ private:
     // Begin visitor
 
     void visit(bin_op_t &s) {
-      variable_t lhs = s.lhs();
-      lin_exp_t op1 = s.left();
-      lin_exp_t op2 = s.right();
+      const variable_t &lhs = s.lhs();
+      const lin_exp_t &op1 = s.left();
+      const lin_exp_t &op2 = s.right();
 
       check_varname(lhs);
       check_num(lhs, "lhs must be integer or real", s);
@@ -3994,8 +3949,8 @@ private:
     }
 
     void visit(assign_t &s) {
-      variable_t lhs = s.lhs();
-      lin_exp_t rhs = s.rhs();
+      const variable_t &lhs = s.lhs();
+      const lin_exp_t &rhs = s.rhs();
 
       check_varname(lhs);
       check_num(lhs, "lhs must be integer or real", s);
@@ -4094,8 +4049,8 @@ private:
     }
 
     void visit(int_cast_t &s) {
-      variable_t src = s.src();
-      variable_t dst = s.dst();
+      const variable_t &src = s.src();
+      const variable_t &dst = s.dst();
 
       check_varname(src);
       check_varname(dst);
@@ -4194,11 +4149,11 @@ private:
 
     void visit(arr_init_t &s) {
       // TODO: check that e_sz is the same number that v's bitwidth
-      variable_t a = s.array();
-      lin_exp_t e_sz = s.elem_size();
-      lin_exp_t lb = s.lb_index();
-      lin_exp_t ub = s.ub_index();
-      lin_exp_t v = s.val();
+      const variable_t &a = s.array();
+      const lin_exp_t  &e_sz = s.elem_size();
+      const lin_exp_t  &lb = s.lb_index();
+      const lin_exp_t  &ub = s.ub_index();
+      const lin_exp_t  &v = s.val(); 
 
       check_is_array(a, s);
       check_varname(a);
@@ -4218,11 +4173,11 @@ private:
 
     void visit(arr_store_t &s) {
       // TODO: check that e_sz is the same number that v's bitwidth
-      variable_t a = s.array();
+      const variable_t &a = s.array();
       check_is_array(a, s);
       check_varname(a);
       if (auto new_a_opt = s.new_array()) {
-        variable_t new_a = *new_a_opt;
+        const variable_t &new_a = *new_a_opt;
         check_varname(new_a);
         check_different_name(
             a, new_a, "array old and new variables must have different names",
@@ -4234,8 +4189,8 @@ private:
             a, new_a, "array old and new variables must have same bitwidth", s);
       }
 
-      lin_exp_t e_sz = s.elem_size();
-      lin_exp_t v = s.value();
+      const lin_exp_t &e_sz = s.elem_size();
+      const lin_exp_t &v = s.value();
       if (s.is_strong_update()) {
         if (!(s.lb_index().equal(s.ub_index()))) {
           crab::crab_string_os os;
@@ -4269,9 +4224,9 @@ private:
 
     void visit(arr_load_t &s) {
       // TODO: check that e_sz is the same number that lhs's bitwidth
-      variable_t a = s.array();
-      lin_exp_t e_sz = s.elem_size();
-      variable_t lhs = s.lhs();
+      const variable_t &a = s.array();
+      const lin_exp_t &e_sz = s.elem_size();
+      const variable_t &lhs = s.lhs();
       check_varname(lhs);
       check_is_array(a, s);
       check_varname(a);
@@ -4287,8 +4242,8 @@ private:
     }
 
     void visit(arr_assign_t &s) {
-      variable_t lhs = s.lhs();
-      variable_t rhs = s.rhs();
+      const variable_t &lhs = s.lhs();
+      const variable_t &rhs = s.rhs();
       check_is_array(lhs, s);
       check_is_array(rhs, s);
       check_varname(lhs);
@@ -4302,19 +4257,19 @@ private:
     void visit(callsite_t &s) {
       // The type consistency with the callee parameters is done
       // elsewhere.
-      for (auto v : s.get_lhs()) {
+      for (const variable_t &v: s.get_lhs()) {
         check_varname(v);
       }
-      for (auto v : s.get_args()) {
+      for (const variable_t &v: s.get_args()) {
         check_varname(v);
       }
     }
 
     void visit(intrinsic_t &s) {
-      for (auto v : s.get_lhs()) {
+      for (const variable_t &v: s.get_lhs()) {
         check_varname(v);
       }
-      for (auto v : s.get_args()) {
+      for (const variable_t &v : s.get_args()) {
         check_varname(v);
       }
     }
@@ -4322,7 +4277,7 @@ private:
     void visit(return_t &s) {
       // The type consistency with the callsite at the caller is
       // done elsewhere.
-      for (auto v : s.get_ret_vals()) {
+      for (const variable_t &v: s.get_ret_vals()) {
         check_varname(v);
       }
     }

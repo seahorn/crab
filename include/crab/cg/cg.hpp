@@ -39,7 +39,7 @@ public:
 
   int index() const { return m_id; }
 
-  std::string name() const {
+  const std::string &name() const {
     if (!m_cfg.has_func_decl()) {
       CRAB_ERROR("No function name found");
     }
@@ -118,7 +118,7 @@ template <typename CFG> class call_graph {
   typedef crab::cfg::statement_visitor<number_t, varname_t> stmt_visitor_t;
 
   typedef std::unordered_map<std::size_t, vertex_descriptor_t> vertex_map_t;
-  typedef std::unordered_map<typename stmt_visitor_t::callsite_t *,
+  typedef std::unordered_map<const typename stmt_visitor_t::callsite_t *,
                              cg_node<CFG>>
       callee_map_t;
   typedef std::unordered_map<cg_node<CFG>, vertex_descriptor_t>
@@ -140,7 +140,7 @@ template <typename CFG> class call_graph {
     std::size_t m_from;
 
     mk_edge_vis(cg_t &cg, vertex_map_t &vertex_map, callee_map_t &callee_map,
-                fdecl_t &from)
+                const fdecl_t &from)
         : m_cg(cg), m_vertex_map(vertex_map), m_callee_map(callee_map),
           m_from(crab::cfg::cfg_hasher<CFG>::hash(from)) {}
 
@@ -298,7 +298,7 @@ public:
       // }
 
       const callsite_t &cs = *kv.first;
-      fdecl_t fdecl = callee_cfg.get_func_decl();
+      const fdecl_t &fdecl = callee_cfg.get_func_decl();
 
       if (fdecl.get_num_inputs() != cs.get_num_args()) {
         crab::errs() << "Callsite: " << cs << "\n";
@@ -398,11 +398,11 @@ public:
     return out;
   }
 
-  bool has_callee(callsite_t &cs) const {
+  bool has_callee(const callsite_t &cs) const {
     return m_callee_map.find(&cs) != m_callee_map.end();
   }
 
-  node_t get_callee(callsite_t &cs) const {
+  node_t get_callee(const callsite_t &cs) const {
     auto it = m_callee_map.find(&cs);
     assert(it != m_callee_map.end());
     return it->second;
@@ -501,12 +501,12 @@ public:
     return (*_ref).get().entries();
   }
 
-  bool has_callee(callsite_t &cs) const {
+  bool has_callee(const callsite_t &cs) const {
     assert(_ref);
     return (*_ref).get().has_callee(cs);
   }
 
-  node_t get_callee(callsite_t &cs) const {
+  node_t get_callee(const callsite_t &cs) const {
     assert(_ref);
     return (*_ref).get().get_callee(cs);
   }

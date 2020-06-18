@@ -64,7 +64,7 @@ public:
          boost::make_iterator_range(this->m_cfg.begin(), this->m_cfg.end())) {
       varset_domain_t kill, gen;
       for (auto &s : boost::make_iterator_range(b.rbegin(), b.rend())) {
-        auto live = s.get_live();
+        auto const& live = s.get_live();
         for (auto d :
              boost::make_iterator_range(live.defs_begin(), live.defs_end())) {
           kill += d;
@@ -79,7 +79,7 @@ public:
     }
   }
 
-  virtual varset_domain_t analyze(basic_block_label_t bb_id,
+  virtual varset_domain_t analyze(const basic_block_label_t &bb_id,
                                   varset_domain_t in) {
     auto it = m_liveness_map.find(bb_id);
     assert(it != m_liveness_map.end());
@@ -137,7 +137,7 @@ public:
     this->release_memory();
   }
 
-  varset_domain_t get(basic_block_label_t bb) const {
+  varset_domain_t get(const basic_block_label_t &bb) const {
     auto it = _live_map.find(bb);
     if (it != _live_map.end()) {
       return it->second;
@@ -234,10 +234,12 @@ public:
   }
 
   // Return the set of live variables at the exit of block bb
-  varset_domain_t get(basic_block_label_t bb) const { return m_live->get(bb); }
+  varset_domain_t get(const basic_block_label_t &bb) const {
+    return m_live->get(bb);
+  }
 
   // Return the set of dead variables at the exit of block bb
-  varset_domain_t dead_exit(basic_block_label_t bb) const {
+  varset_domain_t dead_exit(const basic_block_label_t &bb) const {
     if (m_ignore_dead) {
       CRAB_WARN("Dead variables were not precomputed during liveness analysis");
     }

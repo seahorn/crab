@@ -276,8 +276,8 @@ protected:
 
 private:
   template <typename NumOrVar>
-  void apply(abs_dom_t &inv, cfg::binary_operation_t op, variable_t x, variable_t y,
-             NumOrVar z) {
+  void apply(abs_dom_t &inv, cfg::binary_operation_t op,
+	     const variable_t &x, const variable_t &y, NumOrVar z) {
     if (auto top = conv_op<domains::arith_operation_t>(op)) {
       inv.apply(*top, x, y, z);
     } else if (auto top = conv_op<domains::bitwise_operation_t>(op)) {
@@ -304,8 +304,8 @@ public:
       pre_bot = m_inv.is_bottom();
     }
 
-    auto op1 = stmt.left();
-    auto op2 = stmt.right();
+    const lin_exp_t &op1 = stmt.left();
+    const lin_exp_t &op2 = stmt.right();
     if (op1.get_variable() && op2.get_variable()) {
       apply(m_inv, stmt.op(), stmt.lhs(), (*op1.get_variable()),
             (*op2.get_variable()));
@@ -557,7 +557,7 @@ public:
       pre_bot = m_inv.is_bottom();
     }
 
-    auto new_arr_v = stmt.new_array();
+    boost::optional<variable_t> new_arr_v = stmt.new_array();
     if (stmt.lb_index().equal(stmt.ub_index())) {
       if (new_arr_v) {
         m_inv.array_store(*new_arr_v, stmt.array(), stmt.elem_size(),
@@ -751,7 +751,7 @@ public:
   }
   
   virtual void exec(callsite_t &cs) {
-    for (auto vt : cs.get_lhs()) {
+    for (const variable_t &vt: cs.get_lhs()) {
       m_inv.operator-=(vt); // havoc
     }
   }
@@ -771,7 +771,7 @@ public:
   typedef typename AbsDom::variable_t variable_t;
   typedef typename AbsDom::number_t number_t;
 
-  static void unify(AbsDom &inv, variable_t lhs, variable_t rhs) {
+  static void unify(AbsDom &inv, const variable_t &lhs, const variable_t &rhs) {
     assert(lhs.get_type() == rhs.get_type());
     switch (lhs.get_type()) {
     case BOOL_TYPE:
@@ -886,8 +886,8 @@ public:
       return;
     }
 
-    auto op1 = stmt.left();
-    auto op2 = stmt.right();
+    const lin_exp_t &op1 = stmt.left();
+    const lin_exp_t &op2 = stmt.right();
     abs_dom_t invariant = (*m_invariants)[&stmt];
 
     CRAB_LOG("backward-tr", crab::outs()
@@ -1074,7 +1074,7 @@ public:
                                 << "\tFORWARD INV=" << invariant << "\n"
                                 << "\tPOST=" << m_pre << "\n");
 
-    auto new_arr_v = stmt.new_array();
+    boost::optional<variable_t> new_arr_v = stmt.new_array();
     if (stmt.lb_index().equal(stmt.ub_index())) {
       if (new_arr_v) {
         m_pre.backward_array_store(
@@ -1123,7 +1123,7 @@ public:
   /// -- Call and return can be redefined by derived classes
 
   virtual void exec(callsite_t &cs) {
-    for (auto vt : cs.get_lhs()) {
+    for (const variable_t &vt : cs.get_lhs()) {
       m_pre -= vt;
     }
   }

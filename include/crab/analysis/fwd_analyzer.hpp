@@ -55,7 +55,7 @@ private:
   bool m_pre_clear_done;
   bool m_post_clear_done;
 
-  void prune_dead_variables(basic_block_label_t node, abs_dom_t &inv) {
+  void prune_dead_variables(const basic_block_label_t &node, abs_dom_t &inv) {
     if (!m_live) {
       return;
     }
@@ -71,7 +71,7 @@ private:
 
   //! Given a basic block and the invariant at the entry it produces
   //! the invariant at the exit of the block.
-  abs_dom_t analyze(basic_block_label_t node, abs_dom_t &&inv) {
+  abs_dom_t analyze(const basic_block_label_t &node, abs_dom_t &&inv) {
     auto &b = get_cfg().get_node(node);
     m_abs_tr->set_abs_value(std::move(inv));
     for (auto &s : b) {
@@ -82,8 +82,8 @@ private:
     return res;
   }
 
-  void process_pre(basic_block_label_t node, abs_dom_t inv) {}
-  void process_post(basic_block_label_t node, abs_dom_t inv) {}
+  void process_pre(const basic_block_label_t &node, abs_dom_t inv) {}
+  void process_post(const basic_block_label_t &node, abs_dom_t inv) {}
 
 public:
   fwd_analyzer(CFG cfg, const wto_t *wto, std::shared_ptr<abs_tr_t> abs_tr,
@@ -108,7 +108,7 @@ public:
     if (live) {
       // --- collect input and output parameters
       if (get_cfg().has_func_decl()) {
-        auto fdecl = get_cfg().get_func_decl();
+        auto const& fdecl = get_cfg().get_func_decl();
         for (unsigned i = 0; i < fdecl.get_num_inputs(); i++)
           m_formals += fdecl.get_input_name(i);
         for (unsigned i = 0; i < fdecl.get_num_outputs(); i++)
@@ -128,7 +128,7 @@ public:
     this->run(m_abs_tr->get_abs_value());
   }
 
-  void run_forward(basic_block_label_t entry,
+  void run_forward(const basic_block_label_t &entry,
                    const assumption_map_t &assumptions) {
     // ugly hook to initialize some global state. This needs to be
     // fixed properly.
@@ -140,12 +140,12 @@ public:
   }
 
   //! Return the invariants that hold at the entry of b
-  inline abs_dom_t operator[](basic_block_label_t b) const {
+  inline abs_dom_t operator[](const basic_block_label_t &b) const {
     return get_pre(b);
   }
 
   //! Return the invariants that hold at the entry of b
-  abs_dom_t get_pre(basic_block_label_t b) const {
+  abs_dom_t get_pre(const basic_block_label_t &b) const {
     if (m_pre_clear_done) {
       return abs_dom_t::top();
     } else {
@@ -154,7 +154,7 @@ public:
   }
 
   //! Return the invariants that hold at the exit of b
-  abs_dom_t get_post(basic_block_label_t b) const {
+  abs_dom_t get_post(const basic_block_label_t &b) const {
     if (m_post_clear_done) {
       return abs_dom_t::top();
     } else {
@@ -282,7 +282,7 @@ public:
 
   void run() { m_analyzer.run_forward(); }
 
-  void run(basic_block_label_t entry, const assumption_map_t &assumptions) {
+  void run(const basic_block_label_t &entry, const assumption_map_t &assumptions) {
     m_analyzer.run_forward(entry, assumptions);
   }
 
@@ -304,13 +304,13 @@ public:
     return m_analyzer.get_post_invariants();
   }
 
-  abs_dom_t operator[](basic_block_label_t b) const { return m_analyzer[b]; }
+  abs_dom_t operator[](const basic_block_label_t &b) const { return m_analyzer[b]; }
 
-  abs_dom_t get_pre(basic_block_label_t b) const {
+  abs_dom_t get_pre(const basic_block_label_t &b) const {
     return m_analyzer.get_pre(b);
   }
 
-  abs_dom_t get_post(basic_block_label_t b) const {
+  abs_dom_t get_post(const basic_block_label_t &b) const {
     return m_analyzer.get_post(b);
   }
 

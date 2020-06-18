@@ -18,8 +18,9 @@ namespace crab {
 
     // CFG basic block labels
     typedef std::string basic_block_label_t;
-    template<> inline std::string get_label_str(std::string e) 
-    { return e; }
+    template<> inline const std::string &get_label_str(const basic_block_label_t &bb) {
+      return bb;
+    }
     /// END MUST BE DEFINED BY CRAB CLIENT    
 
 

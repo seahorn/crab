@@ -305,7 +305,7 @@ class assumption_naive_analysis : public assumption_analysis<CFG> {
   typedef std::unordered_set<bb_label_t> label_set_t;
   typedef typename CFG::basic_block_t bb_t;
 
-  void backward_reachable(bb_label_t r, const assert_t *a,
+  void backward_reachable(const bb_label_t &r, const assert_t *a,
                           label_set_t &visited) {
     auto ret = visited.insert(r);
     if (!ret.second)

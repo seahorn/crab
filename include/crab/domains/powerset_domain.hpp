@@ -283,7 +283,7 @@ public:
     return powerset_domain_t(left && right);
   }
 
-  virtual void assign(variable_t x, linear_expression_t e) override {
+  virtual void assign(const variable_t &x, const linear_expression_t &e) override {
     if (!is_bottom()) {
       for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
 	m_disjuncts[i].assign(x, e);
@@ -291,7 +291,8 @@ public:
     }
   }
 
-  virtual void apply(arith_operation_t op, variable_t x, variable_t y, variable_t z) override {
+  virtual void apply(arith_operation_t op,
+		     const variable_t &x, const variable_t &y, const variable_t &z) override {
     if (!is_bottom()) {
       for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
 	m_disjuncts[i].apply(op, x, y, z);
@@ -300,7 +301,8 @@ public:
   }
   
 
-  virtual void apply(arith_operation_t op, variable_t x, variable_t y, number_t k) override {
+  virtual void apply(arith_operation_t op,
+		     const variable_t &x, const variable_t &y, number_t k) override {
     if (!is_bottom()) {
       for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
 	m_disjuncts[i].apply(op, x, y, k);
@@ -308,22 +310,24 @@ public:
     }
   }
 
-  virtual void backward_assign(variable_t x, linear_expression_t e,
+  virtual void backward_assign(const variable_t &x, const linear_expression_t &e,
 			       powerset_domain_t invariant) override {
     CRAB_WARN(getDomainName(), " does not implement backward operations");
   }
 
-  virtual void backward_apply(arith_operation_t op, variable_t x, variable_t y, number_t k,
+  virtual void backward_apply(arith_operation_t op,
+			      const variable_t &x, const variable_t &y, number_t k,
 			      powerset_domain_t invariant) override {
     CRAB_WARN(getDomainName(), " does not implement backward operations");    
   }
 
-  virtual void backward_apply(arith_operation_t op, variable_t x, variable_t y, variable_t z,
+  virtual void backward_apply(arith_operation_t op,
+			      const variable_t &x, const variable_t &y, const variable_t &z,
 			      powerset_domain_t invariant) override {
     CRAB_WARN(getDomainName(), " does not implement backward operations");        
   }
 
-  virtual void operator+=(linear_constraint_system_t csts) override {
+  virtual void operator+=(const linear_constraint_system_t &csts) override {
     if (is_bottom() || csts.is_true()) {
       return;
     }
@@ -344,7 +348,7 @@ public:
     CRAB_LOG("powerset", crab::outs() << "Res=" << *this << "\n";);
   }
 
-  virtual void operator-=(variable_t v) override {
+  virtual void operator-=(const variable_t &v) override {
     if (!is_bottom()) {
       for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
 	m_disjuncts[i] -= v;
@@ -357,7 +361,8 @@ public:
 
   // cast_operators_api
   
-  virtual void apply(int_conv_operation_t op, variable_t dst, variable_t src) override {
+  virtual void apply(int_conv_operation_t op,
+		     const variable_t &dst, const variable_t &src) override {
     if (!is_bottom()) {
       for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
 	m_disjuncts[i].apply(op, dst, src);
@@ -367,7 +372,8 @@ public:
 
   // bitwise_operators_api
 
-  virtual void apply(bitwise_operation_t op, variable_t x, variable_t y, variable_t z) override {
+  virtual void apply(bitwise_operation_t op,
+		     const variable_t &x, const variable_t &y, const variable_t &z) override {
     if (!is_bottom()) {
       for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
 	m_disjuncts[i].apply(op, x, y, z);
@@ -375,7 +381,8 @@ public:
     }
   }
 
-  virtual void apply(bitwise_operation_t op, variable_t x, variable_t y, number_t k) override {
+  virtual void apply(bitwise_operation_t op,
+		     const variable_t &x, const variable_t &y, number_t k) override {
     if (!is_bottom()) {
       for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
 	m_disjuncts[i].apply(op, x, y, k);
@@ -385,10 +392,10 @@ public:
 
   // array_operators_api
 
-  virtual void array_init(variable_t a, linear_expression_t elem_size,
-                          linear_expression_t lb_idx,
-                          linear_expression_t ub_idx,			  
-                          linear_expression_t val) override {
+  virtual void array_init(const variable_t &a, const linear_expression_t &elem_size,
+                          const linear_expression_t &lb_idx,
+                          const linear_expression_t &ub_idx,			  
+                          const linear_expression_t &val) override {
     if (!is_bottom()) {
       for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
 	m_disjuncts[i].array_init(a, elem_size, lb_idx, ub_idx, val);
@@ -396,9 +403,9 @@ public:
     }
   }
 
-  virtual void array_load(variable_t lhs, variable_t a,
-                          linear_expression_t elem_size,
-                          linear_expression_t idx) override {
+  virtual void array_load(const variable_t &lhs, const variable_t &a,
+                          const linear_expression_t &elem_size,
+                          const linear_expression_t &idx) override {
     if (!is_bottom()) {
       for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
 	m_disjuncts[i].array_load(lhs, a, elem_size, idx);
@@ -406,8 +413,8 @@ public:
     }
   }
 
-  virtual void array_store(variable_t a, linear_expression_t elem_size,
-                           linear_expression_t idx, linear_expression_t val,
+  virtual void array_store(const variable_t &a, const linear_expression_t &elem_size,
+                           const linear_expression_t &idx, const linear_expression_t &val,
                            bool is_strong_update) override {
     if (!is_bottom()) {
       for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
@@ -427,9 +434,9 @@ public:
     }
   }
   
-  virtual void array_store_range(variable_t a, linear_expression_t elem_size,
-                                 linear_expression_t lb_idx, linear_expression_t ub_idx,
-                                 linear_expression_t val) override {
+  virtual void array_store_range(const variable_t &a, const linear_expression_t &elem_size,
+                                 const linear_expression_t &lb_idx, const linear_expression_t &ub_idx,
+                                 const linear_expression_t &val) override {
     if (!is_bottom()) {
       for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
 	m_disjuncts[i].array_store_range(a, elem_size, lb_idx, ub_idx, val);
@@ -448,7 +455,7 @@ public:
     }
   }
 
-  virtual void array_assign(variable_t lhs, variable_t rhs) override {
+  virtual void array_assign(const variable_t &lhs, const variable_t &rhs) override {
     if (!is_bottom()) {
       for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
 	m_disjuncts[i].array_assign(lhs, rhs);
@@ -458,22 +465,24 @@ public:
 
   // backward array operations
 
-  virtual void backward_array_init(variable_t a, linear_expression_t elem_size,
-                                   linear_expression_t lb_idx,
-                                   linear_expression_t ub_idx,
-                                   linear_expression_t val, powerset_domain_t invariant) override {
+  virtual void backward_array_init(const variable_t &a, const linear_expression_t &elem_size,
+                                   const linear_expression_t &lb_idx,
+                                   const linear_expression_t &ub_idx,
+                                   const linear_expression_t &val,
+				   powerset_domain_t invariant) override {
     CRAB_WARN(getDomainName(), " does not implement backward operations");                
   }
   
-  virtual void backward_array_load(variable_t lhs, variable_t a,
-                                   linear_expression_t elem_size,
-                                   linear_expression_t idx, powerset_domain_t invariant) override {
+  virtual void backward_array_load(const variable_t &lhs, const variable_t &a,
+                                   const linear_expression_t &elem_size,
+                                   const linear_expression_t &idx,
+				   powerset_domain_t invariant) override {
     CRAB_WARN(getDomainName(), " does not implement backward operations");                
   }
   
-  virtual void backward_array_store(variable_t a, linear_expression_t elem_size,
-                                    linear_expression_t idx,
-                                    linear_expression_t v,
+  virtual void backward_array_store(const variable_t &a, const linear_expression_t &elem_size,
+                                    const linear_expression_t &idx,
+                                    const linear_expression_t &v,
                                     bool is_strong_update, powerset_domain_t invariant) override {
     CRAB_WARN(getDomainName(), " does not implement backward operations");                
   }
@@ -487,9 +496,10 @@ public:
   }
   
   virtual void
-  backward_array_store_range(variable_t a, linear_expression_t elem_size,
-                             linear_expression_t lb_idx, linear_expression_t ub_idx,
-                             linear_expression_t v, powerset_domain_t invariant) override {
+  backward_array_store_range(const variable_t &a, const linear_expression_t &elem_size,
+                             const linear_expression_t &lb_idx,
+			     const linear_expression_t &ub_idx,
+                             const linear_expression_t &v, powerset_domain_t invariant) override {
     CRAB_WARN(getDomainName(), " does not implement backward operations");                    
   }
   
@@ -502,14 +512,14 @@ public:
     CRAB_WARN(getDomainName(), " does not implement backward operations");                
   }
   
-  virtual void backward_array_assign(variable_t a, variable_t b,
+  virtual void backward_array_assign(const variable_t &a, const variable_t &b,
                                      powerset_domain_t invariant) override {
     CRAB_WARN(getDomainName(), " does not implement backward operations");     
   }
 
   
   // references
-  virtual void region_init(memory_region reg) override {
+  virtual void region_init(const memory_region &reg) override {
     if (!is_bottom()) {
       for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
 	m_disjuncts[i].region_init(reg);
@@ -518,7 +528,7 @@ public:
   }
 
   
-  virtual void ref_make(variable_t ref, memory_region reg) override {
+  virtual void ref_make(const variable_t &ref, const memory_region &reg) override {
     if (!is_bottom()) {
       for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
 	m_disjuncts[i].ref_make(ref, reg);
@@ -526,7 +536,7 @@ public:
     }
   }
 
-  virtual void ref_load(variable_t ref, memory_region reg, variable_t res) override {
+  virtual void ref_load(const variable_t &ref, const memory_region &reg, const variable_t &res) override {
     if (!is_bottom()) {
       for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
 	m_disjuncts[i].ref_load(ref, reg, res);
@@ -534,7 +544,8 @@ public:
     }
   }
 
-  virtual void ref_store(variable_t ref, memory_region reg, linear_expression_t val) override {
+  virtual void ref_store(const variable_t &ref, const memory_region &reg,
+			 const linear_expression_t &val) override {
     if (!is_bottom()) {
       for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
 	m_disjuncts[i].ref_store(ref, reg, val);
@@ -542,9 +553,9 @@ public:
     }
   }
 
-  virtual void ref_gep(variable_t ref1, memory_region reg1,
-		       variable_t ref2, memory_region reg2,
-		       linear_expression_t offset) override {
+  virtual void ref_gep(const variable_t &ref1, const memory_region &reg1,
+		       const variable_t &ref2, const memory_region &reg2,
+		       const linear_expression_t &offset) override {
     if (!is_bottom()) {
       for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
 	m_disjuncts[i].ref_gep(ref1, reg1, ref2, reg2, offset);
@@ -552,8 +563,10 @@ public:
     }
   }
 
-  virtual void ref_load_from_array(variable_t lhs, variable_t ref, memory_region region,
-				   linear_expression_t index, linear_expression_t elem_size) override {
+  virtual void ref_load_from_array(const variable_t &lhs, const variable_t &ref,
+				   const memory_region &region,
+				   const linear_expression_t &index,
+				   const linear_expression_t &elem_size) override {
     if (!is_bottom()) {
       for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
 	m_disjuncts[i].ref_load_from_array(lhs, ref, region, index, elem_size);
@@ -561,9 +574,10 @@ public:
     }
   }
 
-  virtual void ref_store_to_array(variable_t ref, memory_region region,
-				  linear_expression_t index, linear_expression_t elem_size,
-				  linear_expression_t val) override {
+  virtual void ref_store_to_array(const variable_t &ref, const memory_region &region,
+				  const linear_expression_t &index,
+				  const linear_expression_t &elem_size,
+				  const linear_expression_t &val) override {
     if (!is_bottom()) {
       for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
 	m_disjuncts[i].ref_store_to_array(ref, region, index, elem_size, val);
@@ -571,7 +585,7 @@ public:
     }
   }
 
-  virtual void ref_assume(reference_constraint_t cst) override {
+  virtual void ref_assume(const reference_constraint_t &cst) override {
     if (!is_bottom()) {
       base_dom_vector vec;
       vec.reserve(m_disjuncts.size());
@@ -587,8 +601,8 @@ public:
   }
 
   // boolean operators
-  virtual void assign_bool_cst(variable_t lhs,
-                               linear_constraint_t rhs) override {
+  virtual void assign_bool_cst(const variable_t &lhs,
+                               const linear_constraint_t &rhs) override {
     if (!is_bottom()) {
       for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
 	m_disjuncts[i].assign_bool_cst(lhs, rhs);
@@ -596,7 +610,7 @@ public:
     }
   }
 
-  virtual void assign_bool_var(variable_t lhs, variable_t rhs,
+  virtual void assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                                bool is_not_rhs) override {
     if (!is_bottom()) {
       for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
@@ -605,8 +619,8 @@ public:
     }
   }
 
-  virtual void apply_binary_bool(bool_operation_t op, variable_t x,
-                                 variable_t y, variable_t z) override {
+  virtual void apply_binary_bool(bool_operation_t op,
+				 const variable_t &x, const variable_t &y, const variable_t &z) override {
     if (!is_bottom()) {
       for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
 	m_disjuncts[i].apply_binary_bool(op, x, y, z);
@@ -614,7 +628,7 @@ public:
     }
   }
 
-  virtual void assume_bool(variable_t v, bool is_negated) override {
+  virtual void assume_bool(const variable_t &v, bool is_negated) override {
     if (!is_bottom()) {
       base_dom_vector vec;
       vec.reserve(m_disjuncts.size());        
@@ -630,19 +644,19 @@ public:
   }
 
   // backward boolean operators
-  virtual void backward_assign_bool_cst(variable_t lhs, linear_constraint_t rhs,
+  virtual void backward_assign_bool_cst(const variable_t &lhs, const linear_constraint_t &rhs,
                                         powerset_domain_t inv) override {
     CRAB_WARN(getDomainName(), " does not implement backward operations");            
   }
 
-  virtual void backward_assign_bool_var(variable_t lhs, variable_t rhs,
+  virtual void backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                                         bool is_not_rhs,
                                         powerset_domain_t inv) override {
     CRAB_WARN(getDomainName(), " does not implement backward operations");                
   }
 
-  virtual void backward_apply_binary_bool(bool_operation_t op, variable_t x,
-                                          variable_t y, variable_t z,
+  virtual void backward_apply_binary_bool(bool_operation_t op, const variable_t &x,
+                                          const variable_t &y, const variable_t &z,
                                           powerset_domain_t inv) override {
     CRAB_WARN(getDomainName(), " does not implement backward operations");                    
   }
@@ -668,12 +682,12 @@ public:
   
   // Miscellaneous operations 
 
-  interval_t operator[](variable_t v) {
+  interval_t operator[](const variable_t &v) override {
     Domain smashed = smash_disjuncts(*this);
     return smashed[v];
   }
 
-  void set(variable_t v, interval_t intv) {
+  void set(const variable_t &v, interval_t intv) {
     if (!is_bottom()) {
       for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
 	m_disjuncts[i].set(v, intv);
@@ -708,7 +722,7 @@ public:
   }
 
 
-  virtual void expand(variable_t x, variable_t new_x) override {
+  virtual void expand(const variable_t &x, const variable_t &new_x) override {
     if (!is_bottom()) {
       for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
 	m_disjuncts[i].expand(x, new_x);
@@ -735,13 +749,13 @@ public:
     }
   }
   
-  linear_constraint_system_t to_linear_constraint_system() {
+  linear_constraint_system_t to_linear_constraint_system() override {
     Domain smashed = smash_disjuncts(*this);
     return smashed.to_linear_constraint_system();
   }
 
   disjunctive_linear_constraint_system_t
-  to_disjunctive_linear_constraint_system() {
+  to_disjunctive_linear_constraint_system() override {
     if (is_bottom()) {
       disjunctive_linear_constraint_system_t res(true);
       return res;
@@ -757,7 +771,7 @@ public:
     } 
   }
   
-  void write(crab::crab_os &o) {
+  void write(crab::crab_os &o) override {
     if (is_bottom()) {
       o << "_|_";
     } else if (is_top()) {

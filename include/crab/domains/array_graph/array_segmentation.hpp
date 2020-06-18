@@ -56,14 +56,14 @@ private:
     typedef typename bin_op_t::linear_expression_t linear_expression_t;
     typedef typename assume_t::linear_constraint_t linear_constraint_t;
 
-    array_segment_domain_t get_variables(linear_expression_t e) {
+    array_segment_domain_t get_variables(const linear_expression_t &e) const {
       array_segment_domain_t res;
       for (auto v : e.variables())
         res += v;
       return res;
     }
 
-    array_segment_domain_t get_variables(linear_constraint_t c) {
+    array_segment_domain_t get_variables(const linear_constraint_t &c) const {
       array_segment_domain_t res;
       for (auto v : c.variables())
         res += v;
@@ -133,7 +133,7 @@ public:
     return d1 | d2;
   }
 
-  virtual array_segment_domain_t analyze(basic_block_label_t bb_id,
+  virtual array_segment_domain_t analyze(const basic_block_label_t &bb_id,
                                          array_segment_domain_t in) override {
     auto &bb = this->m_cfg.get_node(bb_id);
     array_segment_visitor vis(in);
@@ -186,7 +186,7 @@ public:
     this->release_memory();
   }
 
-  array_segment_domain_t get_variables(basic_block_label_t bb) const {
+  array_segment_domain_t get_variables(const basic_block_label_t &bb) const {
     auto it = _segment_map.find(bb);
     if (it == _segment_map.end())
       return array_segment_domain_t();
