@@ -1174,7 +1174,7 @@ public:
                          const linear_expression_t &val) override {}
   void array_store_range(variable_t a_new, variable_t a_old,
                          linear_expression_t elem_size, linear_expression_t i,
-                         linear_expression_t j, linear_expression_t val) {}
+                         linear_expression_t j, linear_expression_t val) override {}
   void array_assign(const variable_t &lhs, const variable_t &rhs) override {}
   // backward array operations
   void backward_array_init(const variable_t &a, const linear_expression_t &elem_size,
@@ -1201,7 +1201,7 @@ public:
   void backward_array_store_range(
       variable_t a_new, variable_t a_old, linear_expression_t elem_size,
       linear_expression_t i, linear_expression_t j, linear_expression_t val,
-      reduced_numerical_domain_product2_t invariant) {}
+      reduced_numerical_domain_product2_t invariant) override {}
   void backward_array_assign(const variable_t &lhs, const variable_t &rhs,
                              reduced_numerical_domain_product2_t invariant) override {}
   // reference operations

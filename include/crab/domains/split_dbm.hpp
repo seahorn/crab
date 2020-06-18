@@ -2136,7 +2136,7 @@ public:
                          const linear_expression_t &v) override {}
   void array_store_range(variable_t a_new, variable_t a_old,
                          linear_expression_t elem_size, linear_expression_t i,
-                         linear_expression_t j, linear_expression_t v) {}
+                         linear_expression_t j, linear_expression_t v) override {}
   void array_assign(const variable_t &lhs, const variable_t &rhs) override {}
   // backward array operations
   void backward_array_init(const variable_t &a, const linear_expression_t &elem_size,

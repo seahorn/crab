@@ -2033,7 +2033,7 @@ public:
     return to_disjunctive_linear_constraint_system(m_ldd);
   }
 
-  void write(crab_os &o) {
+  void write(crab_os &o) override {
     crab::CrabStats::count(getDomainName() + ".count.write");
     crab::ScopedCrabStats __st__(getDomainName() + ".write");
 

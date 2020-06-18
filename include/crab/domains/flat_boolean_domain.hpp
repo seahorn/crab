@@ -1162,7 +1162,7 @@ public:
       return isecond;
   }
 
-  void operator-=(const variable_t &v) {
+  void operator-=(const variable_t &v) override {
     _product -= v;
     _var_to_csts -= v;
     _unchanged_vars -= variable_t(v);
