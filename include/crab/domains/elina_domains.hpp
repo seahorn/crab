@@ -1601,7 +1601,7 @@ public:
   }
 
   void backward_apply(arith_operation_t op,
-		      const variable_t &x, const variable_t &y, const number_t &z,
+		      const variable_t &x, const variable_t &y, number_t z,
                       elina_domain_t invariant) override {
     crab::CrabStats::count(getDomainName() + ".count.backward_apply");
     crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
@@ -1823,7 +1823,7 @@ public:
     }
   }
 
-  void rename(const variable_vector_t &from, const variable_vector_t &to) const {
+  void rename(const variable_vector_t &from, const variable_vector_t &to) override {
     crab::CrabStats::count(getDomainName() + ".count.rename");
     crab::ScopedCrabStats __st__(getDomainName() + ".rename");
 
@@ -1862,7 +1862,7 @@ public:
     CRAB_LOG("elina", crab::outs() << "RESULT=" << *this << "\n");
   }
 
-  void expand(const variable_t &x, const variable_t &dup) const {
+  void expand(const variable_t &x, const variable_t &dup) override {
     crab::CrabStats::count(getDomainName() + ".count.expand");
     crab::ScopedCrabStats __st__(getDomainName() + ".expand");
 
