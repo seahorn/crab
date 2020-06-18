@@ -328,7 +328,7 @@ public:
   using calling_context_collection_t = std::deque<calling_context_ptr>;
   using calling_context_table_t =
       std::unordered_map<cfg_t, calling_context_collection_t>;
-  using liveness_map_t = std::unordered_map<cfg_t, const liveness<cfg_t> *>;
+  using liveness_map_t = std::unordered_map<cfg_t, const live_and_dead_analysis<cfg_t> *>;
   using wto_cfg_map_t = std::unordered_map<cfg_t, const ikos::wto<cfg_t> *>;
   using checks_db_t = checker::checks_db;
   using global_invariant_map_t = std::unordered_map<cfg_t, invariant_map_t>;
@@ -508,7 +508,7 @@ std::shared_ptr<IntraCallSemAnalyzer> get_inter_analysis(
     analyzer->reset();
   } else {
     // get liveness symbols for cfg if available
-    const liveness<cfg_t> *live = nullptr;
+    const live_and_dead_analysis<cfg_t> *live = nullptr;
     if (ctx.get_live_map()) {
       auto it = ctx.get_live_map()->find(cfg);
       if (it != ctx.get_live_map()->end()) {
@@ -1016,7 +1016,7 @@ namespace analyzer {
 template <typename CallGraph> struct top_down_inter_analyzer_parameters {
   using cg_node_t = typename CallGraph::node_t;
   using cfg_t = typename cg_node_t::cfg_t;
-  using liveness_t = liveness<cfg_t>;
+  using liveness_t = live_and_dead_analysis<cfg_t>;
   using liveness_map_t = std::unordered_map<cfg_t, const liveness_t *>;
   using wto_t = ikos::wto<cfg_t>;
   using wto_map_t = std::unordered_map<cfg_t, const wto_t *>;
@@ -1059,7 +1059,7 @@ public:
   using number_t = typename cfg_t::number_t;
   using variable_t = typename cfg_t::variable_t;
 
-  using liveness_t = liveness<cfg_t>;
+  using liveness_t = live_and_dead_analysis<cfg_t>;
   using liveness_map_t = std::unordered_map<cfg_t, const liveness_t *>;
 
   using wto_t = ikos::wto<cfg_t>;

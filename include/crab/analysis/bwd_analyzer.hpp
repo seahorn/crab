@@ -205,7 +205,7 @@ private:
       bwd_fixpoint_iterator_t;
   typedef typename bwd_fixpoint_iterator_t::precond_map_t precond_map_t;
   typedef typename bwd_fixpoint_iterator_t::wto_t bwd_wto_t;
-  typedef liveness<CFG> liveness_t;
+  typedef live_and_dead_analysis<CFG> liveness_t;
   typedef std::unordered_map<bb_label_t, std::set<bb_label_t>> idom_tree_t;
   typedef typename bb_t::assert_t assert_t;
   typedef typename bb_t::bool_assert_t bool_assert_t;

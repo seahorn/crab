@@ -41,7 +41,7 @@ private:
 public:
   typedef typename fixpo_iterator_t::invariant_table_t invariant_map_t;
   typedef typename fixpo_iterator_t::assumption_map_t assumption_map_t;
-  typedef liveness<CFG> liveness_t;
+  typedef live_and_dead_analysis<CFG> liveness_t;
   typedef typename fixpo_iterator_t::wto_t wto_t;
   typedef typename fixpo_iterator_t::iterator iterator;
   typedef typename fixpo_iterator_t::const_iterator const_iterator;
@@ -239,7 +239,7 @@ class intra_fwd_analyzer_wrapper {
 
 public:
   typedef AbsDomain abs_dom_t;
-  typedef liveness<CFG> liveness_t;
+  typedef live_and_dead_analysis<CFG> liveness_t;
   typedef CFG cfg_t;
   typedef typename CFG::basic_block_label_t basic_block_label_t;
   typedef typename CFG::varname_t varname_t;

@@ -159,12 +159,8 @@ inline crab_os &operator<<(crab_os &o, const liveness_analysis<CFG> &l) {
 
 /**
  * Live and Dead variable analysis.
- *
- * FIXME: the name "liveness" is not that great so we should
- *        change it at some point. For that we need to change crab
- *        clients.
  **/
-template <typename CFG> class liveness {
+template <typename CFG> class live_and_dead_analysis {
 public:
   typedef typename CFG::basic_block_label_t basic_block_label_t;
   typedef typename CFG::basic_block_t basic_block_t;
@@ -197,16 +193,16 @@ public:
   typedef varset_domain_t set_t;
 
   // If ignore_dead is true then dead symbols are not computed.
-  liveness(CFG cfg, bool ignore_dead = false)
+  live_and_dead_analysis(CFG cfg, bool ignore_dead = false)
     : m_cfg(cfg), 
       m_live(new liveness_analysis_t(m_cfg)),
       m_ignore_dead(ignore_dead),
       m_max_live(0),
       m_total_live(0), m_total_blocks(0) {}
 
-  liveness(const liveness<CFG> &other) = delete;
+  live_and_dead_analysis(const live_and_dead_analysis &other) = delete;
 
-  liveness<CFG> &operator=(const liveness<CFG> &other) = delete;
+  live_and_dead_analysis &operator=(const live_and_dead_analysis &other) = delete;
 
   void exec() {
     m_live->exec();
@@ -265,7 +261,7 @@ public:
 };
 
 template <typename CFG>
-inline crab_os &operator<<(crab_os &o, const liveness<CFG> &l) {
+inline crab_os &operator<<(crab_os &o, const live_and_dead_analysis<CFG> &l) {
   l.write(o);
   return o;
 }

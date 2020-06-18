@@ -104,12 +104,10 @@ void check(z_cfg_ref_t cfg, variable_factory_t& vfac) {
   typedef div_zero_property_checker<num_analyzer_t> div_zero_prop_num_checker_t;
   typedef assert_property_checker<num_analyzer_t> assert_prop_num_checker_t;
 
-  // Run liveness (optionally) and print cfg
-  liveness<z_cfg_ref_t> live(cfg);  
   crab::outs() << cfg << "\n";
   
   // Run analyses
-  num_analyzer_t num_a(cfg, z_sdbm_domain_t::top(),  &live);
+  num_analyzer_t num_a(cfg, z_sdbm_domain_t::top(),  nullptr);
   num_a.run();
   crab::outs() << "Analysis using " << z_sdbm_domain_t::getDomainName() << "\n";
   print_invariants(cfg, num_a);

@@ -19,7 +19,7 @@ void intra_run_impl (CFG* cfg,
 		     bool enable_stats,
 		     bool enable_checker){
   typedef crab::cfg::cfg_ref<CFG> cfg_ref_t;
-  crab::analyzer::liveness<cfg_ref_t> live(*cfg);
+  crab::analyzer::live_and_dead_analysis<cfg_ref_t> live(*cfg);
   if (run_liveness) {
     live.exec ();
   }

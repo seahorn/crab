@@ -2,7 +2,6 @@
 #include "./crab_dom.hpp"
 
 #include <crab/analysis/inter/bottom_up_inter_analyzer.hpp>
-#include <crab/analysis/dataflow/liveness.hpp>
 
 // Helper
 template<typename CG, typename BUDom, typename TDDom, typename InterFwdAnalyzer>

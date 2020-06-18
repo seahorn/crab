@@ -580,7 +580,7 @@ public:
   typedef typename cfg_t::varname_t varname_t;
   typedef typename cfg_t::number_t number_t;
   typedef typename cfg_t::variable_t variable_t;
-  typedef liveness<cfg_t> liveness_t;
+  typedef live_and_dead_analysis<cfg_t> liveness_t;
   typedef std::unordered_map<cfg_t, const liveness_t *> liveness_map_t;
 
 private:
