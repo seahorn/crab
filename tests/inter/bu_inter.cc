@@ -157,14 +157,14 @@ int main (int argc, char** argv) {
 
   boost::scoped_ptr<callgraph_t> cg(new callgraph_t(cfgs));
   
-  inter_run<z_dbm_domain_t, z_interval_domain_t>(&*cg,false,2,2,20,stats_enabled);
+  bu_inter_run<z_dbm_domain_t, z_interval_domain_t>(&*cg,false,2,2,20,stats_enabled);
 #ifdef HAVE_APRON  
-  inter_run<z_oct_apron_domain_t, z_interval_domain_t>(&*cg,false,2,2,20,stats_enabled);
+  bu_inter_run<z_oct_apron_domain_t, z_interval_domain_t>(&*cg,false,2,2,20,stats_enabled);
 #endif
   /// nothing wrong with this test but it prints invariants differently
   /// on Linux and mac.
-  //inter_run<z_term_domain_t, z_interval_domain_t>(&*cg,false,2,2,20,stats_enabled);
-  //inter_run<z_num_domain_t, z_num_domain_t>(&*cg,false,2,2,20,stats_enabled);
+  //bu_inter_run<z_term_domain_t, z_interval_domain_t>(&*cg,false,2,2,20,stats_enabled);
+  //bu_inter_run<z_num_domain_t, z_num_domain_t>(&*cg,false,2,2,20,stats_enabled);
 
   delete t1;
   delete t2;

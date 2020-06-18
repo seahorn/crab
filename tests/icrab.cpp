@@ -52,12 +52,12 @@ void inter_run_impl (CG* cg,
 
 // To run abstract domains defined over integers
 template<typename BUDom, typename TDDom>
-void inter_run (crab::cg_impl::z_cg_t* cg, 
-		bool run_liveness,
-		unsigned widening, 
-		unsigned narrowing, 
-		unsigned jump_set_size,
-		bool enable_stats) {
+void bu_inter_run(crab::cg_impl::z_cg_t* cg, 
+		  bool run_liveness,
+		  unsigned widening, 
+		  unsigned narrowing, 
+		  unsigned jump_set_size,
+		  bool enable_stats) {
   using namespace crab::analyzer;
   typedef bottom_up_inter_analyzer<crab::cg_impl::z_cg_ref_t, BUDom, TDDom> inter_analyzer_t;
   inter_run_impl<crab::cg_impl::z_cg_t, BUDom, TDDom, inter_analyzer_t>
