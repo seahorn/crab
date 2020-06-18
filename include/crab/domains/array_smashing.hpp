@@ -56,61 +56,37 @@ private:
 
   array_smashing(NumDomain &&inv) : _inv(std::move(inv)) {}
 
-  void do_strong_update(const variable_t &a, const linear_expression_t &rhs) {
+  void do_strong_update(NumDomain &dom, const variable_t &a, const linear_expression_t &rhs) {
     switch (a.get_type()) {
     case ARR_BOOL_TYPE:
       if (rhs.is_constant()) {
         if (rhs.constant() >= number_t(1)) {
-          _inv.assign_bool_cst(a, linear_constraint_t::get_true());
+          dom.assign_bool_cst(a, linear_constraint_t::get_true());
         } else {
-          _inv.assign_bool_cst(a, linear_constraint_t::get_false());
+          dom.assign_bool_cst(a, linear_constraint_t::get_false());
         }
       } else if (auto rhs_v = rhs.get_variable()) {
-        _inv.assign_bool_var(a, (*rhs_v), false);
+        dom.assign_bool_var(a, (*rhs_v), false);
       }
       break;
     case ARR_INT_TYPE:
     case ARR_REAL_TYPE:
-      _inv.assign(a, rhs);
+      dom.assign(a, rhs);
       break;
     default:; /* unreachable */
     }
   }
+  
+  void do_strong_update(const variable_t &a, const linear_expression_t &rhs) {
+    do_strong_update(_inv, a, rhs);
+  }
 
-  // We perform the strong update on a copy of *this using a_new
-  // while adding the assignment a_new = a_old on *this (if
-  // a_old is defined). Then, we join the copy of *this with *this.
-  void do_weak_update(const variable_t &a_new, boost::optional<variable_t> a_old,
+  // We perform the strong update on a copy of *this. Then, we join
+  // the copy of *this with *this.
+  void do_weak_update(const variable_t &a, 
                       const linear_expression_t &rhs) {
     NumDomain other(_inv);
-    switch (a_new.get_type()) {
-    case ARR_BOOL_TYPE:
-      if (rhs.is_constant()) {
-        if (rhs.constant() >= number_t(1)) {
-          other.assign_bool_cst(a_new, linear_constraint_t::get_true());
-          if (a_old)
-            _inv.assign_bool_var(a_new, *a_old, false);
-        } else {
-          other.assign_bool_cst(a_new, linear_constraint_t::get_false());
-          if (a_old)
-            _inv.assign_bool_var(a_new, *a_old, false);
-        }
-      } else if (auto rhs_v = rhs.get_variable()) {
-        other.assign_bool_var(a_new, (*rhs_v), false);
-        if (a_old)
-          _inv.assign_bool_var(a_new, *a_old, false);
-      }
-      break;
-    case ARR_INT_TYPE:
-    case ARR_REAL_TYPE:
-      other.assign(a_new, rhs);
-      if (a_old)
-        _inv.assign(a_new, *a_old);
-      break;
-    default:; /* unreachable */
-    }
-
-    // join
+    do_strong_update(other, a, rhs);
     _inv |= other;
   }
 
@@ -393,30 +369,11 @@ public:
     if (is_strong_update) {
       do_strong_update(a, val);
     } else {
-      do_weak_update(a, boost::none, val);
+      do_weak_update(a, val);
     }
 
     CRAB_LOG("smashing", crab::outs() << a << "[" << i << "]:=" << val << " -- "
                                       << *this << "\n";);
-  }
-
-  virtual void array_store(variable_t a_new, variable_t a_old,
-                           linear_expression_t /*elem_size*/,
-                           linear_expression_t i, linear_expression_t val,
-                           bool is_strong_update) override {
-    crab::CrabStats::count(getDomainName() + ".count.store");
-    crab::ScopedCrabStats __st__(getDomainName() + ".store");
-
-    if (is_strong_update) {
-      do_strong_update(a_new, val);
-      // a_old is unused if strong update
-    } else {
-      do_weak_update(a_new, a_old, val);
-    }
-
-    CRAB_LOG("smashing", crab::outs() << a_new << ":= " << a_old << "[" << i
-                                      << "<-" << val << "]"
-                                      << " -- " << *this << "\n";);
   }
 
   virtual void array_store_range(const variable_t &a,
@@ -425,21 +382,9 @@ public:
                                  const linear_expression_t &val) override {
     crab::CrabStats::count(getDomainName() + ".count.store");
     crab::ScopedCrabStats __st__(getDomainName() + ".store");
-    do_weak_update(a, boost::none, val);
+    do_weak_update(a, val);
     CRAB_LOG("smashing", crab::outs() << a << "[" << i << ".." << j << "]:="
                                       << val << " -- " << *this << "\n";);
-  }
-
-  virtual void array_store_range(variable_t a_new, variable_t a_old,
-                                 linear_expression_t /*elem_size*/,
-                                 linear_expression_t i, linear_expression_t j,
-                                 linear_expression_t val) override {
-    crab::CrabStats::count(getDomainName() + ".count.store");
-    crab::ScopedCrabStats __st__(getDomainName() + ".store");
-    do_weak_update(a_new, a_old, val);
-    CRAB_LOG("smashing", crab::outs()
-                             << a_new << ":= " << a_old << "[" << i << ".." << j
-                             << "<-" << val << "] -- " << *this << "\n";);
   }
 
   virtual void array_assign(const variable_t &lhs, const variable_t &rhs) override {
@@ -473,23 +418,9 @@ public:
                             bool is_strong_update, array_smashing_t invariant) override {
     CRAB_WARN("backward_array_store in array smashing domain not implemented");
   }
-  void backward_array_store(variable_t a_new, variable_t a_old,
-                            linear_expression_t elem_size,
-                            linear_expression_t i, linear_expression_t v,
-                            bool is_strong_update, array_smashing_t invariant) override {
-    CRAB_WARN("backward_array_store in array smashing domain not implemented");
-  }
   void backward_array_store_range(const variable_t &a, const linear_expression_t &elem_size,
                                   const linear_expression_t &i, const linear_expression_t &j,
                                   const linear_expression_t &v,
-                                  array_smashing_t invariant) override {
-    CRAB_WARN(
-        "backward_array_store_range in array smashing domain not implemented");
-  }
-  void backward_array_store_range(variable_t a_new, variable_t a_old,
-                                  linear_expression_t elem_size,
-                                  linear_expression_t i, linear_expression_t j,
-                                  linear_expression_t v,
                                   array_smashing_t invariant) override {
     CRAB_WARN(
         "backward_array_store_range in array smashing domain not implemented");

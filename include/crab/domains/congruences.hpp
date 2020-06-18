@@ -1113,15 +1113,9 @@ public:
   void array_store(const variable_t &a, const linear_expression_t &elem_size,
                    const linear_expression_t &i, const linear_expression_t &v,
                    bool is_strong_update) override {}
-  void array_store(variable_t a_new, variable_t a_old,
-                   linear_expression_t elem_size, linear_expression_t i,
-                   linear_expression_t v, bool is_strong_update) override {}
   void array_store_range(const variable_t &a, const linear_expression_t &elem_size,
                          const linear_expression_t &i, const linear_expression_t &j,
                          const linear_expression_t &v) override {}
-  void array_store_range(variable_t a_new, variable_t a_old,
-                         linear_expression_t elem_size, linear_expression_t i,
-                         linear_expression_t j, linear_expression_t v) override {}
   void array_assign(const variable_t &lhs, const variable_t &rhs) override {}
   // backward array operations
   void backward_array_init(const variable_t &a, const linear_expression_t &elem_size,
@@ -1135,19 +1129,9 @@ public:
                             const linear_expression_t &i, const linear_expression_t &v,
                             bool is_strong_update,
                             congruence_domain_t invariant) override {}
-  void backward_array_store(variable_t a_new, variable_t a_old,
-                            linear_expression_t elem_size,
-                            linear_expression_t i, linear_expression_t v,
-                            bool is_strong_update,
-                            congruence_domain_t invariant) override {}
   void backward_array_store_range(const variable_t &a, const linear_expression_t &elem_size,
                                   const linear_expression_t &i, const linear_expression_t &j,
                                   const linear_expression_t &v,
-                                  congruence_domain_t invariant) override {}
-  void backward_array_store_range(variable_t a_new, variable_t a_old,
-                                  linear_expression_t elem_size,
-                                  linear_expression_t i, linear_expression_t j,
-                                  linear_expression_t v,
                                   congruence_domain_t invariant) override {}
   void backward_array_assign(const variable_t &lhs, const variable_t &rhs,
                              congruence_domain_t invariant) override {}

@@ -23,11 +23,11 @@ template <class Dom> struct abstract_domain_traits;
  *
  * template<typename Number, typename VariableName>
  * class my_new_domain final: public
- *abstract_domain<my_new_domain<Number,VariableName>> {
- *   ...
- *   bool is_bottom() {...}
- *   bool is_top() {...}
- *   ...
+ *     abstract_domain<my_new_domain<Number,VariableName>> {
+ *     ...
+ *     bool is_bottom() {...}
+ *     bool is_top() {...}
+ *     ...
  * };
  *
  *
@@ -148,21 +148,11 @@ public:
   virtual void array_store(const variable_t &a, const linear_expression_t &elem_size,
                            const linear_expression_t &i, const linear_expression_t &val,
                            bool is_strong_update) = 0;
-  // a_new = a_old[i <- val] where elem_size is in bytes
-  virtual void array_store(variable_t a_new, variable_t a_old,
-                           linear_expression_t elem_size, linear_expression_t i,
-                           linear_expression_t val, bool is_strong_update) = 0;
   // forall i<=k<j and k % elem_size == 0 :: a[k] := val.
   // elem_size is in bytes
   virtual void array_store_range(const variable_t &a, const linear_expression_t &elem_size,
                                  const linear_expression_t &i, const linear_expression_t &j,
                                  const linear_expression_t &val) = 0;
-  // forall i<=k<j and k % elem_size == 0 :: a_new = a_old[k <- val].
-  // elem_size is in bytes
-  virtual void array_store_range(variable_t a_new, variable_t a_old,
-                                 linear_expression_t elem_size,
-                                 linear_expression_t i, linear_expression_t j,
-                                 linear_expression_t val) = 0;
   // forall i :: a[i] := b[i]
   virtual void array_assign(const variable_t &a, const variable_t &b) = 0;
   /**************************** Reference operations ************************/
@@ -243,21 +233,10 @@ public:
                                     const linear_expression_t &i,
 				    const linear_expression_t &v,
                                     bool is_strong_update, Dom invariant) = 0;
-  virtual void backward_array_store(variable_t a_new, variable_t a_old,
-                                    linear_expression_t elem_size,
-                                    linear_expression_t i,
-                                    linear_expression_t v,
-                                    bool is_strong_update, Dom invariant) = 0;
   virtual void
   backward_array_store_range(const variable_t &a, const linear_expression_t &elem_size,
                              const linear_expression_t &i, const linear_expression_t &j,
                              const linear_expression_t &v, Dom invariant) = 0;
-  virtual void backward_array_store_range(variable_t a_new, variable_t a_old,
-                                          linear_expression_t elem_size,
-                                          linear_expression_t i,
-                                          linear_expression_t j,
-                                          linear_expression_t v,
-                                          Dom invariant) = 0;
   virtual void backward_array_assign(const variable_t &a, const variable_t &b,
                                      Dom invariant) = 0;
 

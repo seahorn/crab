@@ -423,17 +423,6 @@ public:
     }
   }
 
-  virtual void array_store(variable_t a_new, variable_t a_old,
-			   linear_expression_t elem_size,
-                           linear_expression_t idx, linear_expression_t val,
-                           bool is_strong_update) override {
-    if (!is_bottom()) {
-      for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
-	m_disjuncts[i].array_store(a_new, a_old, elem_size, idx, val, is_strong_update);
-      }
-    }
-  }
-  
   virtual void array_store_range(const variable_t &a, const linear_expression_t &elem_size,
                                  const linear_expression_t &lb_idx, const linear_expression_t &ub_idx,
                                  const linear_expression_t &val) override {
@@ -444,17 +433,6 @@ public:
     }
   }
   
-  virtual void array_store_range(variable_t a_new, variable_t a_old,
-                                 linear_expression_t elem_size,
-                                 linear_expression_t lb_idx, linear_expression_t ub_idx,
-                                 linear_expression_t val) override {
-    if (!is_bottom()) {
-      for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
-	m_disjuncts[i].array_store_range(a_new, a_old, elem_size, lb_idx, ub_idx, val);
-      }
-    }
-  }
-
   virtual void array_assign(const variable_t &lhs, const variable_t &rhs) override {
     if (!is_bottom()) {
       for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
@@ -487,29 +465,12 @@ public:
     CRAB_WARN(getDomainName(), " does not implement backward operations");                
   }
   
-  virtual void backward_array_store(variable_t a_new, variable_t a_old,
-                                    linear_expression_t elem_size,
-                                    linear_expression_t idx,
-                                    linear_expression_t v,
-                                    bool is_strong_update, powerset_domain_t invariant) override {
-    CRAB_WARN(getDomainName(), " does not implement backward operations");                
-  }
-  
   virtual void
   backward_array_store_range(const variable_t &a, const linear_expression_t &elem_size,
                              const linear_expression_t &lb_idx,
 			     const linear_expression_t &ub_idx,
                              const linear_expression_t &v, powerset_domain_t invariant) override {
     CRAB_WARN(getDomainName(), " does not implement backward operations");                    
-  }
-  
-  virtual void backward_array_store_range(variable_t a_new, variable_t a_old,
-                                          linear_expression_t elem_size,
-                                          linear_expression_t lb_idx,
-                                          linear_expression_t ub_idx,
-                                          linear_expression_t v,
-                                          powerset_domain_t invariant) override {
-    CRAB_WARN(getDomainName(), " does not implement backward operations");                
   }
   
   virtual void backward_array_assign(const variable_t &a, const variable_t &b,

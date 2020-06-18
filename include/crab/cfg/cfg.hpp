@@ -713,7 +713,7 @@ public:
   array_store_stmt(variable_t arr, linear_expression_t elem_size,
                    linear_expression_t lb, linear_expression_t ub,
                    linear_expression_t value, bool is_strong_update)
-      : statement_t(ARR_STORE), m_new_arr(boost::none), m_arr(arr),
+      : statement_t(ARR_STORE), m_arr(arr),
         m_elem_size(elem_size), m_lb(lb), m_ub(ub), m_value(value),
         m_is_strong_update(is_strong_update) {
 
@@ -733,36 +733,7 @@ public:
     }
   }
 
-  // Constructor for array stores that creates new array name
-  array_store_stmt(variable_t new_arr, variable_t old_arr,
-                   linear_expression_t elem_size, linear_expression_t lb,
-                   linear_expression_t ub, linear_expression_t value,
-                   bool is_strong_update)
-      : statement_t(ARR_STORE), m_new_arr(new_arr), m_arr(old_arr),
-        m_elem_size(elem_size), m_lb(lb), m_ub(ub), m_value(value),
-        m_is_strong_update(is_strong_update) {
-
-    this->m_live.add_def(*m_new_arr);
-    this->m_live.add_use(m_arr);
-    for (auto v : m_elem_size.variables()) {
-      this->m_live.add_use(v);
-    }
-    for (auto v : m_lb.variables()) {
-      this->m_live.add_use(v);
-    }
-    for (auto v : m_ub.variables()) {
-      this->m_live.add_use(v);
-    }
-    for (auto v : m_value.variables()) {
-      this->m_live.add_use(v);
-    }
-  }
-
-  // Return the new array name after the store
-  boost::optional<variable_t> new_array() const { return m_new_arr; }
-
-  // Return the old array name before the store or the current
-  // array name if the store happens in-place.
+  // Return the array variable.
   const variable_t &array() const { return m_arr; }
 
   const linear_expression_t &lb_index() const { return m_lb; }
@@ -782,19 +753,11 @@ public:
   }
 
   virtual statement_t *clone() const {
-    if (m_new_arr) {
-      return new this_type(*m_new_arr, m_arr, m_elem_size, m_lb, m_ub, m_value,
-                           m_is_strong_update);
-    } else {
-      return new this_type(m_arr, m_elem_size, m_lb, m_ub, m_value,
-                           m_is_strong_update);
-    }
+    return new this_type(m_arr, m_elem_size, m_lb, m_ub, m_value,
+			 m_is_strong_update);
   }
 
   virtual void write(crab_os &o) const {
-    if (m_new_arr) {
-      o << *m_new_arr << " := ";
-    }
     o << "array_store(";
     if (m_lb.equal(m_ub)) {
       o << m_arr << "," << m_lb << "," << m_value << ",sz=" << elem_size();
@@ -806,12 +769,7 @@ public:
   }
 
 private:
-  // -- The new array after the store.  If m_new_arr == none then
-  //    the array store happens in-place and m_arr contains the
-  //    new array.
-  boost::optional<variable_t> m_new_arr;
-  // -- The old array before the store or the current array if the
-  // -- store doesn't happen in-place.
+  // -- The array variable.
   variable_t m_arr;
   // the size of the array element
   linear_expression_t m_elem_size; //! size in bytes
@@ -2375,24 +2333,10 @@ public:
     return insert(new arr_store_t(arr, elem_size, idx, idx, v, is_strong_update));
   }
 
-  const statement_t *array_store(variable_t new_arr, variable_t old_arr,
-                                 lin_exp_t idx, lin_exp_t v,
-                                 lin_exp_t elem_size, bool is_strong_update) {
-    return insert(new arr_store_t(new_arr, old_arr, elem_size, idx, idx,
-				  v, is_strong_update));
-  }
-
   const statement_t *array_store_range(variable_t arr, lin_exp_t lb_idx,
                                        lin_exp_t ub_idx, lin_exp_t v,
                                        lin_exp_t elem_size) {
     return insert(new arr_store_t(arr, elem_size, lb_idx, ub_idx, v, false));
-  }
-
-  const statement_t *array_store_range(variable_t new_arr, variable_t old_arr,
-                                       lin_exp_t lb_idx, lin_exp_t ub_idx,
-                                       lin_exp_t v, lin_exp_t elem_size) {
-    return insert(new arr_store_t(new_arr, old_arr, elem_size, lb_idx,
-				  ub_idx, v, false));
   }
 
   const statement_t *array_load(variable_t lhs, variable_t arr, lin_exp_t idx,
@@ -4176,18 +4120,6 @@ private:
       const variable_t &a = s.array();
       check_is_array(a, s);
       check_varname(a);
-      if (auto new_a_opt = s.new_array()) {
-        const variable_t &new_a = *new_a_opt;
-        check_varname(new_a);
-        check_different_name(
-            a, new_a, "array old and new variables must have different names",
-            s);
-        check_is_array(new_a, s);
-        check_same_type(a, new_a,
-                        "array old and new variables must have same type", s);
-        check_same_bitwidth(
-            a, new_a, "array old and new variables must have same bitwidth", s);
-      }
 
       const lin_exp_t &e_sz = s.elem_size();
       const lin_exp_t &v = s.value();

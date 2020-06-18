@@ -1310,13 +1310,6 @@ public:
                           << " -- " << *this << "\n";);
   }
 
-  virtual void array_store(variable_t a_new, variable_t a_old,
-                           linear_expression_t elem_size, linear_expression_t i,
-                           linear_expression_t val,
-                           bool /*is_strong_update*/) override {
-    CRAB_WARN("array_store in the array expansion domain not implemented");
-  }
-
   // Perform array stores over an array segment [lb_idx, ub_idx]
   virtual void array_store_range(const variable_t &a, const linear_expression_t &elem_size,
                                  const linear_expression_t &lb_idx,
@@ -1365,15 +1358,6 @@ public:
       array_store(a, elem_size, i, val, false);
       i = i + *n;
     }
-  }
-
-  virtual void array_store_range(variable_t a_new, variable_t a_old,
-                                 linear_expression_t elem_size,
-                                 linear_expression_t lb_idx,
-                                 linear_expression_t ub_idx,
-                                 linear_expression_t val) override {
-    CRAB_WARN(
-        "array_store_range in the array expansion domain not implemented");
   }
 
   virtual void array_assign(const variable_t &lhs, const variable_t &rhs) override {
@@ -1506,14 +1490,6 @@ public:
                           << "]:=" << val << " -- " << *this << "\n";);
   }
 
-  virtual void
-  backward_array_store(variable_t a_new, variable_t a_old,
-                       linear_expression_t elem_size, linear_expression_t i,
-                       linear_expression_t val, bool /*is_strong_update*/,
-                       array_expansion_domain_t invariant) override {
-    CRAB_WARN("backward_array_store in array_expansion domain not implemented");
-  }
-
   virtual void backward_array_store_range(
       const variable_t &a, const linear_expression_t &elem_size, const linear_expression_t &lb_idx,
       const linear_expression_t &ub_idx, const linear_expression_t &val,
@@ -1551,14 +1527,6 @@ public:
       backward_array_store(a, elem_size, i, val, false, invariant);
       i = i + *n;
     }
-  }
-
-  virtual void backward_array_store_range(
-      variable_t a_new, variable_t a_old, linear_expression_t elem_size,
-      linear_expression_t lb_idx, linear_expression_t ub_idx,
-      linear_expression_t val, array_expansion_domain_t invariant) override {
-    CRAB_WARN(
-        "backward_array_store_range in array_expansion domain not implemented");
   }
 
   virtual void

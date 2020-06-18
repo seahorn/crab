@@ -1605,18 +1605,6 @@ public:
                              is_strong_update);
     }
   }
-  void array_store(variable_t a_new, variable_t a_old,
-                   linear_expression_t elem_size, linear_expression_t i,
-                   linear_expression_t v, bool is_strong_update) override {
-    crab::CrabStats::count(getDomainName() + ".count.array_store");
-    crab::ScopedCrabStats __st__(getDomainName() + ".array_store");
-
-    if (!is_bottom()) {
-      m_base_dom.array_store(
-          rename_var(a_new), rename_var(a_old), rename_linear_expr(elem_size),
-          rename_linear_expr(i), rename_linear_expr(v), is_strong_update);
-    }
-  }
   void array_store_range(const variable_t &a, const linear_expression_t &elem_size,
                          const linear_expression_t &i, const linear_expression_t &j,
                          const linear_expression_t &v) override {
@@ -1627,18 +1615,6 @@ public:
       m_base_dom.array_store_range(rename_var(a), rename_linear_expr(elem_size),
                                    rename_linear_expr(i), rename_linear_expr(j),
                                    rename_linear_expr(v));
-    }
-  }
-  void array_store_range(variable_t a_new, variable_t a_old,
-                         linear_expression_t elem_size, linear_expression_t i,
-                         linear_expression_t j,
-                         linear_expression_t v) override {
-    crab::CrabStats::count(getDomainName() + ".count.array_store_range");
-    crab::ScopedCrabStats __st__(getDomainName() + ".array_store_range");
-
-    if (!is_bottom()) {
-      m_base_dom.array_store_range(rename_var(a_new), rename_var(a_old),
-                                   rename_linear_expr(elem_size), i, j, v);
     }
   }
   void array_assign(const variable_t &lhs, const variable_t &rhs) override {
@@ -1689,21 +1665,6 @@ public:
           rename_linear_expr(v), is_strong_update, invariant.m_base_dom);
     }
   }
-  void backward_array_store(variable_t a_new, variable_t a_old,
-                            linear_expression_t elem_size,
-                            linear_expression_t i, linear_expression_t v,
-                            bool is_strong_update,
-                            reference_domain_t invariant) override {
-    crab::CrabStats::count(getDomainName() + ".count.backward_array_store");
-    crab::ScopedCrabStats __st__(getDomainName() + ".backward_array_store");
-
-    if (!is_bottom()) {
-      m_base_dom.backward_array_store(
-          rename_var(a_new), rename_var(a_old), rename_linear_expr(elem_size),
-          rename_linear_expr(i), rename_linear_expr(v), is_strong_update,
-          invariant.m_base_dom);
-    }
-  }
   void backward_array_store_range(const variable_t &a, const linear_expression_t &elem_size,
                                   const linear_expression_t &i, const linear_expression_t &j,
                                   const linear_expression_t &v,
@@ -1717,23 +1678,6 @@ public:
       m_base_dom.backward_array_store_range(
           rename_var(a), rename_linear_expr(elem_size), rename_linear_expr(i),
           rename_linear_expr(j), rename_linear_expr(v), invariant.m_base_dom);
-    }
-  }
-  void backward_array_store_range(variable_t a_new, variable_t a_old,
-                                  linear_expression_t elem_size,
-                                  linear_expression_t i, linear_expression_t j,
-                                  linear_expression_t v,
-                                  reference_domain_t invariant) override {
-    crab::CrabStats::count(getDomainName() +
-                           ".count.backward_array_store_range");
-    crab::ScopedCrabStats __st__(getDomainName() +
-                                 ".backward_array_store_range");
-
-    if (!is_bottom()) {
-      m_base_dom.backward_array_store_range(
-          rename_var(a_new), rename_var(a_old), rename_linear_expr(elem_size),
-          rename_linear_expr(i), rename_linear_expr(j), rename_linear_expr(v),
-          invariant.m_base_dom);
     }
   }
   void backward_array_assign(const variable_t &lhs, const variable_t &rhs,

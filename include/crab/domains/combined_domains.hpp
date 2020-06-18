@@ -427,33 +427,11 @@ public:
     this->reduce();
   }
 
-  virtual void array_store(variable_t a_new, variable_t a_old,
-                           linear_expression_t elem_size, linear_expression_t i,
-                           linear_expression_t val,
-                           bool is_strong_update) override {
-    this->_product.first().array_store(a_new, a_old, elem_size, i, val,
-                                       is_strong_update);
-    this->_product.second().array_store(a_new, a_old, elem_size, i, val,
-                                        is_strong_update);
-    this->reduce();
-  }
-
   virtual void array_store_range(const variable_t &a, const linear_expression_t &elem_size,
                                  const linear_expression_t &i, const linear_expression_t &j,
                                  const linear_expression_t &val) override {
     this->_product.first().array_store_range(a, elem_size, i, j, val);
     this->_product.second().array_store_range(a, elem_size, i, j, val);
-    this->reduce();
-  }
-
-  virtual void array_store_range(variable_t a_new, variable_t a_old,
-                                 linear_expression_t elem_size,
-                                 linear_expression_t i, linear_expression_t j,
-                                 linear_expression_t val) override {
-    this->_product.first().array_store_range(a_new, a_old, elem_size, i, j,
-                                             val);
-    this->_product.second().array_store_range(a_new, a_old, elem_size, i, j,
-                                              val);
     this->reduce();
   }
 
@@ -501,19 +479,6 @@ public:
     this->reduce();
   }
 
-  virtual void backward_array_store(variable_t a_new, variable_t a_old,
-                                    linear_expression_t elem_size,
-                                    linear_expression_t i,
-                                    linear_expression_t val,
-                                    bool is_strong_update,
-                                    domain_product2_t invariant) override {
-    this->_product.first().backward_array_store(
-        a_new, a_old, elem_size, i, val, is_strong_update, invariant.first());
-    this->_product.second().backward_array_store(
-        a_new, a_old, elem_size, i, val, is_strong_update, invariant.second());
-    this->reduce();
-  }
-
   virtual void
   backward_array_store_range(const variable_t &a, const linear_expression_t &elem_size,
                              const linear_expression_t &i, const linear_expression_t &j,
@@ -523,17 +488,6 @@ public:
                                                       invariant.first());
     this->_product.second().backward_array_store_range(a, elem_size, i, j, val,
                                                        invariant.second());
-    this->reduce();
-  }
-
-  virtual void backward_array_store_range(
-      variable_t a_new, variable_t a_old, linear_expression_t elem_size,
-      linear_expression_t i, linear_expression_t j, linear_expression_t val,
-      domain_product2_t invariant) override {
-    this->_product.first().backward_array_store_range(
-        a_new, a_old, elem_size, i, j, val, invariant.first());
-    this->_product.second().backward_array_store_range(
-        a_new, a_old, elem_size, i, j, val, invariant.second());
     this->reduce();
   }
 
@@ -1166,15 +1120,9 @@ public:
   void array_store(const variable_t &a, const linear_expression_t &elem_size,
                    const linear_expression_t &i, const linear_expression_t &v,
                    bool is_strong_update) override {}
-  void array_store(variable_t a_new, variable_t a_old,
-                   linear_expression_t elem_size, linear_expression_t i,
-                   linear_expression_t v, bool is_strong_update) override {}
   void array_store_range(const variable_t &a, const linear_expression_t &elem_size,
                          const linear_expression_t &i, const linear_expression_t &j,
                          const linear_expression_t &val) override {}
-  void array_store_range(variable_t a_new, variable_t a_old,
-                         linear_expression_t elem_size, linear_expression_t i,
-                         linear_expression_t j, linear_expression_t val) override {}
   void array_assign(const variable_t &lhs, const variable_t &rhs) override {}
   // backward array operations
   void backward_array_init(const variable_t &a, const linear_expression_t &elem_size,
@@ -1188,20 +1136,11 @@ public:
                             const linear_expression_t &i, const linear_expression_t &v,
                             bool is_strong_update,
                             reduced_numerical_domain_product2_t invariant) override {}
-  void backward_array_store(variable_t a_new, variable_t a_old,
-                            linear_expression_t elem_size,
-                            linear_expression_t i, linear_expression_t v,
-                            bool is_strong_update,
-                            reduced_numerical_domain_product2_t invariant) override {}
   void
   backward_array_store_range(const variable_t &a, const linear_expression_t &elem_size,
                              const linear_expression_t &i, const linear_expression_t &j,
                              const linear_expression_t &val,
                              reduced_numerical_domain_product2_t invariant) override {}
-  void backward_array_store_range(
-      variable_t a_new, variable_t a_old, linear_expression_t elem_size,
-      linear_expression_t i, linear_expression_t j, linear_expression_t val,
-      reduced_numerical_domain_product2_t invariant) override {}
   void backward_array_assign(const variable_t &lhs, const variable_t &rhs,
                              reduced_numerical_domain_product2_t invariant) override {}
   // reference operations
@@ -1794,15 +1733,9 @@ public:
   void array_store(const variable_t &a, const linear_expression_t &elem_size,
                    const linear_expression_t &i, const linear_expression_t &v,
                    bool is_strong_update) override {}
-  void array_store(variable_t a_new, variable_t a_old,
-                   linear_expression_t elem_size, linear_expression_t i,
-                   linear_expression_t v, bool is_strong_update) override {}
   void array_store_range(const variable_t &a, const linear_expression_t &elem_size,
                          const linear_expression_t &i, const linear_expression_t &j,
                          const linear_expression_t &val) override {}
-  void array_store_range(variable_t a_new, variable_t a_old,
-                         linear_expression_t elem_size, linear_expression_t i,
-                         linear_expression_t j, linear_expression_t val) override {}
   void array_assign(const variable_t &lhs, const variable_t &rhs) override {}
   // backward array operations
   void backward_array_init(const variable_t &a, const linear_expression_t &elem_size,
@@ -1817,18 +1750,9 @@ public:
   void backward_array_store(const variable_t &a, const linear_expression_t &elem_size,
                             const linear_expression_t &i, const linear_expression_t &v,
                             bool is_strong_update, rnc_domain_t invariant) override {}
-  void backward_array_store(variable_t a_new, variable_t a_old,
-                            linear_expression_t elem_size,
-                            linear_expression_t i, linear_expression_t v,
-                            bool is_strong_update, rnc_domain_t invariant) override {}
   void backward_array_store_range(const variable_t &a, const linear_expression_t &elem_size,
                                   const linear_expression_t &i, const linear_expression_t &j,
                                   const linear_expression_t &val,
-                                  rnc_domain_t invariant) override {}
-  void backward_array_store_range(variable_t a_new, variable_t a_old,
-                                  linear_expression_t elem_size,
-                                  linear_expression_t i, linear_expression_t j,
-                                  linear_expression_t val,
                                   rnc_domain_t invariant) override {}
   void backward_array_assign(const variable_t &lhs, const variable_t &rhs,
                              rnc_domain_t invariant) override {}
