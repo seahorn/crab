@@ -522,7 +522,7 @@ public:
       pre_bot = m_inv.is_bottom();
     }
 
-    m_inv.operator-=(stmt.variable());
+    m_inv.operator-=(stmt.get_variable());
 
     if (::crab::CrabSanityCheckFlag) {
       bool post_bot = m_inv.is_bottom();
@@ -991,7 +991,7 @@ public:
 
   // x := *
   // x can be anything before the assignment
-  void exec(havoc_t &stmt) { m_pre -= stmt.variable(); }
+  void exec(havoc_t &stmt) { m_pre -= stmt.get_variable(); }
 
   void exec(int_cast_t &stmt) {
     abs_dom_t invariant = (*m_invariants)[&stmt];

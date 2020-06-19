@@ -457,7 +457,7 @@ public:
     this->m_live.add_def(m_lhs);
   }
 
-  const variable_t &variable() const { return m_lhs; }
+  const variable_t &get_variable() const { return m_lhs; }
 
   virtual void accept(statement_visitor<Number, VariableName> *v) {
     v->visit(*this);

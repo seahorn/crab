@@ -417,7 +417,7 @@ private:
       CRAB_LOG("assertion-crawler-step", crab::outs()
                                              << "*** " << s << "\n"
                                              << "\tBEFORE: " << _inv << "\n");
-      apply_remove_t f(remove_deps(s.variable()));
+      apply_remove_t f(remove_deps(s.get_variable()));
       _inv = f(_inv);
       CRAB_LOG("assertion-crawler-step", crab::outs()
                                              << "\tAFTER " << _inv << "\n";);
