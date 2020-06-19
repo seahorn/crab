@@ -233,7 +233,9 @@ private:
   // keep the results of the first forward iteration.
   invariant_map_t m_pre_invariants;
   invariant_map_t m_post_invariants;
-
+  // to be used by checker
+  std::unique_ptr<abs_tr_t> m_abs_tr;
+  
   void store_analysis_results(fwd_analyzer_t &f) {
     for (auto &kv : f.get_pre_invariants()) {
       m_pre_invariants.insert({kv.first, std::move(kv.second)});
@@ -351,7 +353,8 @@ public:
   typedef typename bwd_fixpoint_iterator_t::const_iterator const_iterator;
 
   intra_forward_backward_analyzer(CFG cfg)
-      : m_cfg(cfg), m_wto(nullptr), m_b_wto(nullptr) {}
+    : m_cfg(cfg), m_wto(nullptr), m_b_wto(nullptr),
+      m_abs_tr(new abs_tr_t(AbsDom::top())) {}
 
   ~intra_forward_backward_analyzer() {
     if (m_wto)
@@ -361,9 +364,9 @@ public:
   }
 
   intra_forward_backward_analyzer(
-      const intra_forward_backward_analyzer<CFG, AbsDom> &o) = delete;
-  intra_forward_backward_analyzer<CFG, AbsDom> &
-  operator=(const intra_forward_backward_analyzer<CFG, AbsDom> &o) = delete;
+      const intra_forward_backward_analyzer&o) = delete;
+  intra_forward_backward_analyzer
+  &operator=(const intra_forward_backward_analyzer &o) = delete;
 
   /**
    * Perform the refining forward-backward loop.
@@ -623,10 +626,11 @@ public:
 
   CFG get_cfg(void) { return m_cfg; }
 
-  std::shared_ptr<abs_tr_t> get_abs_transformer(AbsDom &&inv) {
-    return std::make_shared<abs_tr_t>(std::move(inv));
+  abs_tr_t& get_abs_transformer() {
+    assert(m_abs_tr);
+    return *m_abs_tr;
   }
-
+  
   void get_safe_assertions(std::set<const stmt_t *> &out) const {
     out.insert(m_proved_assertions.begin(), m_proved_assertions.end());
   }

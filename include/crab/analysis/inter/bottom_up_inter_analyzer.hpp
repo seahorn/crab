@@ -225,9 +225,7 @@ public:
   typedef typename CFG::variable_t variable_t;
 
 private:
-  typedef std::shared_ptr<summary_t> summary_ptr;
-  typedef std::unordered_map<std::size_t, summary_ptr> summary_table_t;
-
+  using summary_table_t = std::unordered_map<std::size_t, summary_t>;
   summary_table_t m_sum_table;
 
 public:
@@ -245,9 +243,9 @@ public:
 
     std::vector<variable_t> ins(inputs.begin(), inputs.end());
     std::vector<variable_t> outs(outputs.begin(), outputs.end());
-    summary_ptr sum_tuple(new summary_t(d, sum, ins, outs));
+    summary_t sum_tuple(d, sum, ins, outs);
     m_sum_table.insert(
-        std::make_pair(crab::cfg::cfg_hasher<CFG>::hash(d), sum_tuple));
+       std::make_pair(crab::cfg::cfg_hasher<CFG>::hash(d), std::move(sum_tuple)));
   }
 
   // return true if there is a summary
@@ -262,18 +260,16 @@ public:
   }
 
   // get the summary
-  summary_t &get(const callsite_t &cs) const {
+  summary_t get(const callsite_t &cs) const {
     auto it = m_sum_table.find(crab::cfg::cfg_hasher<CFG>::hash(cs));
     assert(it != m_sum_table.end());
-
-    return *(it->second);
+    return (it->second);
   }
 
-  summary_t &get(const fdecl_t &d) const {
+  summary_t get(const fdecl_t &d) const {
     auto it = m_sum_table.find(crab::cfg::cfg_hasher<CFG>::hash(d));
     assert(it != m_sum_table.end());
-
-    return *(it->second);
+    return (it->second);
   }
 
   void write(crab_os &o) const {
@@ -594,14 +590,13 @@ public:
   typedef analyzer_internal_impl::fwd_analyzer<cfg_t, bu_abs_tr> bu_analyzer;
   typedef analyzer_internal_impl::fwd_analyzer<cfg_t, td_abs_tr> td_analyzer;
   typedef typename summ_tbl_t::summary_t summary_t;
-  typedef std::shared_ptr<summary_t> summary_ptr;
   // for checkers
   typedef TD_Dom abs_dom_t;
   typedef td_abs_tr abs_tr_t;
 
 private:
-  typedef std::shared_ptr<td_analyzer> td_analyzer_ptr;
-  typedef std::unordered_map<std::size_t, td_analyzer_ptr> invariant_map_t;
+  using td_analyzer_ptr = std::unique_ptr<td_analyzer>;
+  using invariant_map_t = std::unordered_map<std::size_t, td_analyzer_ptr>;
 
   CallGraph m_cg;
   const liveness_map_t *m_live;
@@ -611,7 +606,8 @@ private:
   unsigned int m_widening_delay;
   unsigned int m_descending_iters;
   size_t m_jump_set_size; // max size of the jump set (=0 if jump set disabled)
-
+  std::unique_ptr<abs_tr_t> m_abs_tr;
+  
   const liveness_t *get_live(const cfg_t &c) {
     if (m_live) {
       auto it = m_live->find(c);
@@ -628,7 +624,8 @@ public:
                            unsigned int descending_iters = UINT_MAX,
                            size_t jump_set_size = 0)
       : m_cg(cg), m_live(live), m_widening_delay(widening_delay),
-        m_descending_iters(descending_iters), m_jump_set_size(jump_set_size) {
+        m_descending_iters(descending_iters), m_jump_set_size(jump_set_size),
+	m_abs_tr(new abs_tr_t(TD_Dom::top(), &m_summ_tbl, &m_call_tbl)) {
     CRAB_VERBOSE_IF(1, get_msg_stream() << "Type checking call graph ... ";);
     crab::CrabStats::resume("CallGraph type checking");
     cg.type_check();
@@ -677,14 +674,14 @@ public:
         CRAB_LOG("inter", crab::outs() << "++ Analyzing function "
                                        << fdecl.get_func_name() << "\n");
 
-        auto abs_tr =
-            std::make_shared<td_abs_tr>(init, &m_summ_tbl, &m_call_tbl);
-        auto a = std::make_shared<td_analyzer>(
-            cfg, nullptr, abs_tr, get_live(cfg), m_widening_delay,
-            m_descending_iters, m_jump_set_size);
+	TD_Dom dom(init);
+	m_abs_tr->set_abs_value(std::move(dom));
+        td_analyzer_ptr a(new td_analyzer(
+            cfg, nullptr, &*m_abs_tr, get_live(cfg), m_widening_delay,
+            m_descending_iters, m_jump_set_size));
 
         a->run_forward();
-        m_inv_map.insert({crab::cfg::cfg_hasher<cfg_t>::hash(fdecl), a});
+        m_inv_map.insert({crab::cfg::cfg_hasher<cfg_t>::hash(fdecl), std::move(a)});
       }
       return;
     }
@@ -735,9 +732,8 @@ public:
           } else {
             // --- run the analysis
             auto init_inv = BU_Dom::top();
-            auto abs_tr =
-                std::make_shared<bu_abs_tr>(std::move(init_inv), &m_summ_tbl);
-            bu_analyzer a(cfg, nullptr, abs_tr, get_live(cfg), m_widening_delay,
+            bu_abs_tr abs_tr(std::move(init_inv), &m_summ_tbl);
+            bu_analyzer a(cfg, nullptr, &abs_tr, get_live(cfg), m_widening_delay,
                           m_descending_iters, m_jump_set_size);
             a.run_forward();
 
@@ -795,13 +791,13 @@ public:
           crab::outs() << "Top-down analysis for " << fdecl.get_func_name()
                        << " started with bottom (i.e., dead function).\n";
         }
-        auto abs_tr =
-            std::make_shared<td_abs_tr>(init_inv, &m_summ_tbl, &m_call_tbl);
-        auto a = std::make_shared<td_analyzer>(
-            cfg, nullptr, abs_tr, get_live(cfg), m_widening_delay,
-            m_descending_iters, m_jump_set_size);
+	TD_Dom dom(init_inv);
+	m_abs_tr->set_abs_value(std::move(dom));
+        td_analyzer_ptr a(new td_analyzer(
+            cfg, nullptr, &*m_abs_tr, get_live(cfg), m_widening_delay,
+            m_descending_iters, m_jump_set_size));
         a->run_forward();
-        m_inv_map.insert({crab::cfg::cfg_hasher<cfg_t>::hash(fdecl), a});
+        m_inv_map.insert({crab::cfg::cfg_hasher<cfg_t>::hash(fdecl), std::move(a)});
       }
     }
     CRAB_VERBOSE_IF(1, get_msg_stream()
@@ -841,8 +837,9 @@ public:
   void clear() { m_inv_map.clear(); }
 
   //! Propagate inv through statements
-  std::shared_ptr<abs_tr_t> get_abs_transformer(TD_Dom &&inv) {
-    return std::make_shared<abs_tr_t>(std::move(inv), &m_summ_tbl, &m_call_tbl);
+  abs_tr_t& get_abs_transformer() {
+    assert(m_abs_tr);
+    return *m_abs_tr;
   }
 
   //! Return true if there is a summary for a function
@@ -853,15 +850,15 @@ public:
   }
 
   //! Return the summary for a function
-  summary_ptr get_summary(const cfg_t &cfg) const {
+  summary_t get_summary(const cfg_t &cfg) const {
+    assert(has_summary(cfg));
     assert(cfg.has_func_decl());
+    
     auto fdecl = cfg.get_func_decl();
     if (m_summ_tbl.has_summary(fdecl)) {
-      summary_t summ = m_summ_tbl.get(fdecl);
-      return std::make_shared<summary_t>(summ);
+      return m_summ_tbl.get(fdecl);
     } else {
-      CRAB_WARN("Summary not found");
-      return nullptr;
+      CRAB_ERROR("Summary not found for ", cfg.has_func_decl());
     }
   }
 };

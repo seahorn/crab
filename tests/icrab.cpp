@@ -39,7 +39,7 @@ void inter_run_impl (CG* cg,
     auto cfg = v.get_cfg ();
     if (a.has_summary (cfg)) {
       auto sum = a.get_summary (cfg);
-      crab::outs() << "Summary " << *sum << "\n";
+      crab::outs() << "Summary " << sum << "\n";
     }
   }
   

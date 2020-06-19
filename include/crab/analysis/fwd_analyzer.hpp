@@ -49,7 +49,7 @@ public:
 private:
   typedef typename liveness_t::set_t live_set_t;
 
-  std::shared_ptr<abs_tr_t> m_abs_tr; // the abstract transformer
+  abs_tr_t *m_abs_tr; // the abstract transformer owned by the caller
   const liveness_t *m_live;
   live_set_t m_formals;
   bool m_pre_clear_done;
@@ -86,7 +86,7 @@ private:
   void process_post(const basic_block_label_t &node, abs_dom_t inv) {}
 
 public:
-  fwd_analyzer(CFG cfg, const wto_t *wto, std::shared_ptr<abs_tr_t> abs_tr,
+  fwd_analyzer(CFG cfg, const wto_t *wto, abs_tr_t *abs_tr,
                // live can be nullptr if no live info is available
                const liveness_t *live,
                // fixpoint parameters
@@ -97,6 +97,7 @@ public:
                          jump_set_size, false /*disable processor*/),
         m_abs_tr(abs_tr), m_live(live), m_pre_clear_done(false),
         m_post_clear_done(false) {
+    assert(m_abs_tr);
     CRAB_VERBOSE_IF(1, crab::outs() << "CFG with " << get_cfg().size() << " basic blocks\n";);
     CRAB_VERBOSE_IF(1, get_msg_stream() << "Type checking CFG ... ";);
     crab::CrabStats::resume("CFG type checking");
@@ -116,6 +117,10 @@ public:
       }
     }
   }
+
+  fwd_analyzer(const fwd_analyzer& o) = delete;
+  
+  fwd_analyzer &operator=(const fwd_analyzer& o) = delete;
 
   //! Trigger the fixpoint computation
   void run_forward() {
@@ -192,11 +197,10 @@ public:
 
   CFG get_cfg() const { return this->_cfg; }
 
-  std::shared_ptr<abs_tr_t> get_abs_transformer(abs_dom_t &&inv) {
-    m_abs_tr->set_abs_value(std::move(inv));
-    return m_abs_tr;
+  abs_tr_t& get_abs_transformer() {
+    return *m_abs_tr;
   }
-
+  
   void get_safe_assertions(std::set<const stmt_t *> &out) const {}
 
   /** End extra API for checkers **/
@@ -254,7 +258,7 @@ public:
 
 private:
   abs_dom_t m_init;
-  std::shared_ptr<abs_tr_t> m_abs_tr;
+  std::unique_ptr<abs_tr_t> m_abs_tr;
   fwd_analyzer_t m_analyzer;
 
 public:
@@ -263,9 +267,9 @@ public:
                              unsigned int widening_delay = 1,
                              unsigned int descending_iters = UINT_MAX,
                              size_t jump_set_size = 0)
-      : m_init(AbsDomain::top()), m_abs_tr(std::make_shared<abs_tr_t>(m_init)),
-        m_analyzer(cfg, nullptr, m_abs_tr, nullptr, widening_delay,
-                   descending_iters, jump_set_size) {}
+    : m_init(AbsDomain::top()), m_abs_tr(new abs_tr_t(m_init)),
+      m_analyzer(cfg, nullptr, &*m_abs_tr, nullptr, widening_delay,
+		 descending_iters, jump_set_size) {}
 
   intra_fwd_analyzer_wrapper(CFG cfg, AbsDomain init,
                              // live variables
@@ -276,10 +280,14 @@ public:
                              unsigned int widening_delay = 1,
                              unsigned int descending_iters = UINT_MAX,
                              size_t jump_set_size = 0)
-      : m_init(init), m_abs_tr(std::make_shared<abs_tr_t>(m_init)),
-        m_analyzer(cfg, wto, m_abs_tr, live, widening_delay, descending_iters,
-                   jump_set_size) {}
+    : m_init(init), m_abs_tr(new abs_tr_t(m_init)),
+      m_analyzer(cfg, wto, &*m_abs_tr, live, widening_delay, descending_iters,
+		 jump_set_size) {}
 
+  intra_fwd_analyzer_wrapper(const intra_fwd_analyzer_wrapper& o) = delete;
+  
+  intra_fwd_analyzer_wrapper &operator=(const intra_fwd_analyzer_wrapper& o) = delete;
+  
   void run() { m_analyzer.run_forward(); }
 
   void run(const basic_block_label_t &entry, const assumption_map_t &assumptions) {
@@ -322,9 +330,9 @@ public:
 
   CFG get_cfg() { return m_analyzer.get_cfg(); }
 
-  std::shared_ptr<abs_tr_t> get_abs_transformer(abs_dom_t &&inv) {
-    m_abs_tr->set_abs_value(std::move(inv));
-    return m_abs_tr;
+  abs_tr_t& get_abs_transformer() {
+    assert(m_abs_tr);
+    return *m_abs_tr;
   }
 
   void get_safe_assertions(std::set<const stmt_t *> &out) const {}

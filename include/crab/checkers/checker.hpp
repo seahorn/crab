@@ -86,6 +86,7 @@ public:
     // forward/backward refinement loop.
     std::set<const statement_t *> safe_assertions;
     m_analyzer.get_safe_assertions(safe_assertions);
+    abs_tr_t &abs_tr = m_analyzer.get_abs_transformer();    
 
     for (auto &bb : cfg) {
       for (auto checker : this->m_checkers) {
@@ -93,11 +94,10 @@ public:
           crab::ScopedCrabStats __st__("Checker." +
                                        checker->get_property_name());
           abs_dom_t inv = m_analyzer[bb.label()];
-          std::shared_ptr<abs_tr_t> abs_tr =
-              m_analyzer.get_abs_transformer(std::move(inv));
+	  abs_tr.set_abs_value(std::move(inv));
           // propagate forward the invariants from the block entry
           // while checking the property
-          checker->set(&*abs_tr, safe_assertions);
+          checker->set(&abs_tr, safe_assertions);
           for (auto &stmt : bb) {
             stmt.accept(&*checker);
           }
@@ -131,6 +131,8 @@ public:
     CRAB_VERBOSE_IF(1, get_msg_stream() << "Started property checker.\n";);
     crab::ScopedCrabStats __st__("Checker");
     cg_t &cg = m_analyzer.get_call_graph();
+
+    abs_tr_t &abs_tr = m_analyzer.get_abs_transformer();    
     for (auto &v : boost::make_iterator_range(vertices(cg))) {
       cfg_t cfg = v.get_cfg();
 
@@ -142,11 +144,10 @@ public:
           crab::ScopedCrabStats __st__("Checker." +
                                        checker->get_property_name());
           abs_dom_t inv = m_analyzer.get_pre(cfg, bb.label());
-          std::shared_ptr<abs_tr_t> abs_tr =
-              m_analyzer.get_abs_transformer(std::move(inv));
+	  abs_tr.set_abs_value(std::move(inv));
           // propagate forward the invariants from the block entry
           // while checking the property
-          checker->set(&*abs_tr, safe_assertions);
+          checker->set(&abs_tr, safe_assertions);
           for (auto &stmt : bb) {
             stmt.accept(&*checker);
           }

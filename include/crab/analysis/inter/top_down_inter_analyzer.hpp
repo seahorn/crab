@@ -478,9 +478,9 @@ public:
 // Wrapper to call the intra-procedural analysis with inter-procedural
 // semantics for call and return statements.
 template <typename CallGraphNode, typename IntraCallSemAnalyzer>
-std::shared_ptr<IntraCallSemAnalyzer> get_inter_analysis(
+IntraCallSemAnalyzer &get_inter_analysis(
     CallGraphNode cg_node,
-    std::shared_ptr<typename IntraCallSemAnalyzer::abs_tr_t> abs_tr) {
+    typename IntraCallSemAnalyzer::abs_tr_t &abs_tr) {
 
   using cfg_t = typename CallGraphNode::cfg_t;
   // -- intra-procedural checker stuff
@@ -490,20 +490,19 @@ std::shared_ptr<IntraCallSemAnalyzer> get_inter_analysis(
   using checks_db_t = checker::checks_db;
 
   cfg_t cfg = cg_node.get_cfg();
-  assert(abs_tr);
   assert(cfg.has_func_decl());
 
   CRAB_VERBOSE_IF(1, get_msg_stream()
                          << "++ Analyzing function  "
                          << cfg.get_func_decl().get_func_name() << "\n";);
 
-  auto &ctx = abs_tr->get_context();
-  std::shared_ptr<IntraCallSemAnalyzer> analyzer = nullptr;
+  auto &ctx = abs_tr.get_context();
+  IntraCallSemAnalyzer *analyzer = nullptr;
 
-  if (abs_tr->has_analyzer(cg_node)) {
+  if (abs_tr.has_analyzer(cg_node)) {
     /// --- 1. reuse the intra-analyzer if already exists
     // don't create another analyzer if we already created one
-    analyzer = abs_tr->get_analyzer(cg_node);
+    analyzer = &(abs_tr.get_analyzer(cg_node));
     // make sure no results from previous run
     analyzer->reset();
   } else {
@@ -525,10 +524,11 @@ std::shared_ptr<IntraCallSemAnalyzer> get_inter_analysis(
     }
     /// -- 2. Create intra analyzer (with inter-procedural semantics for
     /// call/return)
-    analyzer = std::make_shared<IntraCallSemAnalyzer>(
-        cfg, wto, abs_tr->get_shared_ptr(), live, ctx.get_widening_delay(),
-        ctx.get_descending_iters(), ctx.get_thresholds_size());
-    abs_tr->add_analyzer(cg_node, analyzer);
+    std::unique_ptr<IntraCallSemAnalyzer> new_analyzer
+      (new IntraCallSemAnalyzer
+       (cfg, wto, &abs_tr, live, ctx.get_widening_delay(),
+	ctx.get_descending_iters(), ctx.get_thresholds_size()));
+    analyzer = &(abs_tr.add_analyzer(cg_node, std::move(new_analyzer)));
   }
 
   /// -- 3. Run the analyzer
@@ -557,7 +557,7 @@ std::shared_ptr<IntraCallSemAnalyzer> get_inter_analysis(
     is_checking_phase = false;
   }
 
-  return analyzer;
+  return *analyzer;
 }
 
 /*
@@ -567,9 +567,7 @@ std::shared_ptr<IntraCallSemAnalyzer> get_inter_analysis(
 */
 template <typename CallGraph, typename AbsDom>
 class top_down_inter_transformer final
-    : public intra_abs_transformer<AbsDom>,
-      public std::enable_shared_from_this<
-          top_down_inter_transformer<CallGraph, AbsDom>> {
+    : public intra_abs_transformer<AbsDom> {
 
   using this_type = top_down_inter_transformer<CallGraph, AbsDom>;
 
@@ -607,33 +605,34 @@ public:
 
 private:
   // -- the callgraph
-  CallGraph m_cg;
+  CallGraph *m_cg;
   // -- global parameters of the analysis
-  global_context_t &m_ctx;
+  //    the caller owns the pointer
+  global_context_t *m_ctx;
   // -- to avoid starting from scratch an analyzer:
   //    saving wto computation, type checking, etc.
   // XXX: it cannot be in m_ctx because of cyclic dependencies.
   std::unordered_map<cg_node_t,
-                     std::shared_ptr<intra_analyzer_with_call_semantics_t>>
+                     std::unique_ptr<intra_analyzer_with_call_semantics_t>>
       m_intra_analyzer;
 
   calling_context_collection_t &get_calling_contexts(cfg_t fun) {
-    return m_ctx.get_calling_context_table()[fun];
+    return m_ctx->get_calling_context_table()[fun];
   }
 
   void add_calling_context(cfg_t fun, calling_context_ptr cc) {
-    auto it = m_ctx.get_calling_context_table().find(fun);
-    if (it == m_ctx.get_calling_context_table().end()) {
+    auto it = m_ctx->get_calling_context_table().find(fun);
+    if (it == m_ctx->get_calling_context_table().end()) {
       calling_context_collection_t ccs;
       ccs.push_back(std::move(cc));
       // XXX: don't use braced-init-list. For some compiler versions,
       // initializer_list only allows const access to its elements so
       // it will try to copy the unique ptr.
-      m_ctx.get_calling_context_table().insert(
+      m_ctx->get_calling_context_table().insert(
           std::make_pair(fun, std::move(ccs)));
     } else {
       // the policy decides how to add the new context.
-      auto &cs_policy = m_ctx.get_context_sensitivity_policy();
+      auto &cs_policy = m_ctx->get_context_sensitivity_policy();
       calling_context_collection_t &ccs = it->second;
       cs_policy.add(ccs, std::move(cc));
     }
@@ -802,7 +801,7 @@ private:
     AbsDom callee_entry;
     // If we start the analysis of a recursive procedure we must do it
     // without propagating from caller to callee
-    if (m_ctx.get_widening_set().count(callee_cg_node) <= 0) {
+    if (m_ctx->get_widening_set().count(callee_cg_node) <= 0) {
       callee_entry = get_callee_entry(cs, fdecl, caller_dom);
     }
 
@@ -821,8 +820,8 @@ private:
 
     // 3. Check if the same call context has been seen already
     bool call_context_already_seen = false;
-    auto it = m_ctx.get_calling_context_table().find(callee_cfg);
-    if (it != m_ctx.get_calling_context_table().end()) {
+    auto it = m_ctx->get_calling_context_table().find(callee_cfg);
+    if (it != m_ctx->get_calling_context_table().end()) {
       auto &call_contexts = it->second;
       CRAB_LOG("inter", if (call_contexts.empty()) {
         crab::outs() << "There is no call contexts stored for " << cs << "\n";
@@ -844,11 +843,11 @@ private:
     }
 
     if (call_context_already_seen) {
-      if (!m_ctx.get_is_checking_phase()) {
+      if (!m_ctx->get_is_checking_phase()) {
         crab::CrabStats::count("Interprocedural.num_reused_callsites");
       }
     } else {
-      if (m_ctx.get_is_checking_phase()) {
+      if (m_ctx->get_is_checking_phase()) {
         CRAB_ERROR("in checking phase we should not analyze the callsite ", cs);
       }
       crab::CrabStats::count("Interprocedural.num_analyzed_callsites");
@@ -859,13 +858,13 @@ private:
 
       abs_dom_t callee_init(callee_entry);
       this->set_abs_value(std::move(callee_init));
-      std::shared_ptr<intra_analyzer_with_call_semantics_t> callee_analysis =
+      intra_analyzer_with_call_semantics_t &callee_analysis =
           top_down_inter_impl::get_inter_analysis<
               typename CallGraph::node_t, intra_analyzer_with_call_semantics_t>(
-              m_cg.get_callee(cs), get_shared_ptr());
+              m_cg->get_callee(cs), *this);
 
       if (callee_cfg.has_exit()) {
-        callee_exit = callee_analysis->get_post(callee_cfg.exit());
+        callee_exit = callee_analysis.get_post(callee_cfg.exit());
         CRAB_LOG("inter", crab::outs()
                               << "[INTER] Finished \"" << cs
                               << "\" with exit=" << callee_exit << "\n";);
@@ -878,20 +877,20 @@ private:
                                        << ": the callee has no exit block.\n";);
       }
 
-      CRAB_LOG("inter2", callee_analysis->write(crab::outs());
+      CRAB_LOG("inter2", callee_analysis.write(crab::outs());
                crab::outs() << "\n";);
 
       // project callee_exit onto function input-output parameters
       callee_exit.project(callee_exit_vars);
 
       // 5. Add the new calling context
-      auto &pre_invariants = callee_analysis->get_pre_invariants();
-      auto &post_invariants = callee_analysis->get_post_invariants();
+      auto &pre_invariants = callee_analysis.get_pre_invariants();
+      auto &post_invariants = callee_analysis.get_post_invariants();
       calling_context_ptr cc(new calling_context_t(
-          fdecl, callee_entry, callee_exit, m_ctx.minimize_invariants(),
+          fdecl, callee_entry, callee_exit, m_ctx->minimize_invariants(),
           std::move(pre_invariants), std::move(post_invariants)));
       add_calling_context(callee_cfg, std::move(cc));
-      callee_analysis->reset();
+      callee_analysis.reset();
     }
 
     pre_bot = false;
@@ -918,27 +917,26 @@ private:
   }
 
 public:
-  top_down_inter_transformer(CallGraph cg, global_context_t &ctx, AbsDom init)
-      : intra_abs_transformer_t(init), m_cg(cg), m_ctx(ctx) {}
+  top_down_inter_transformer(CallGraph *cg, global_context_t *ctx, AbsDom init)
+      : intra_abs_transformer_t(init), m_cg(cg), m_ctx(ctx) {
+    assert(cg);
+    assert(ctx);
+  }
 
   top_down_inter_transformer(const this_type &&o)
       : intra_abs_transformer_t(std::move(o.get_abs_value())),
         m_cg(std::move(o.m_cg)), m_ctx(std::move(o.m_ctx)) {}
 
   top_down_inter_transformer(const this_type &o) = delete;
-
+  
   this_type &operator=(const this_type &o) = delete;
 
-  std::shared_ptr<this_type> get_shared_ptr() {
-    return this->shared_from_this();
-  }
+  const global_context_t &get_context() const { return *m_ctx; }
 
-  const global_context_t &get_context() const { return m_ctx; }
-
-  global_context_t &get_context() { return m_ctx; }
+  global_context_t &get_context() { return *m_ctx; }
 
   virtual void exec(callsite_t &cs) override {
-    if (!m_cg.has_callee(cs)) {
+    if (!m_cg->has_callee(cs)) {
       CRAB_ERROR("Cannot find callee CFG for ", cs);
     }
 
@@ -946,19 +944,19 @@ public:
       return;
     }
 
-    if (!m_ctx.get_is_checking_phase()) {
+    if (!m_ctx->get_is_checking_phase()) {
       crab::CrabStats::count("Interprocedural.num_callsites");
     }
 
-    cg_node_t callee_cg_node = m_cg.get_callee(cs);
-    auto &call_stack = m_ctx.get_call_stack();
+    cg_node_t callee_cg_node = m_cg->get_callee(cs);
+    auto &call_stack = m_ctx->get_call_stack();
     if (std::find(call_stack.begin(), call_stack.end(), callee_cg_node) ==
         call_stack.end()) {
-      if (m_ctx.get_widening_set().count(callee_cg_node) > 0) {
+      if (m_ctx->get_widening_set().count(callee_cg_node) > 0) {
         call_stack.push_back(callee_cg_node);
       }
       analyze_callee(cs, callee_cg_node);
-      if (m_ctx.get_widening_set().count(callee_cg_node) > 0) {
+      if (m_ctx->get_widening_set().count(callee_cg_node) > 0) {
         call_stack.pop_back();
       }
     } else {
@@ -968,7 +966,7 @@ public:
       assert(callee_cfg.has_func_decl());
       const fdecl_t &fdecl = callee_cfg.get_func_decl();
       AbsDom caller_dom(this->get_abs_value());
-      if (!m_ctx.get_is_checking_phase()) {
+      if (!m_ctx->get_is_checking_phase()) {
         crab::CrabStats::count("Interprocedural.num_recursive_callsites");
       }
       CRAB_VERBOSE_IF(1, get_msg_stream()
@@ -985,24 +983,25 @@ public:
     }
   }
 
-  void
+  intra_analyzer_with_call_semantics_t&
   add_analyzer(cg_node_t cg_node,
-               std::shared_ptr<intra_analyzer_with_call_semantics_t> analysis) {
-    m_intra_analyzer.insert({cg_node, analysis});
+               std::unique_ptr<intra_analyzer_with_call_semantics_t> analysis) {
+    auto res = m_intra_analyzer.insert({cg_node, std::move(analysis)});
+    return *((res.first)->second);
   }
 
   bool has_analyzer(cg_node_t cg_node) const {
     return m_intra_analyzer.find(cg_node) != m_intra_analyzer.end();
   }
 
-  std::shared_ptr<intra_analyzer_with_call_semantics_t>
+  intra_analyzer_with_call_semantics_t&
   get_analyzer(cg_node_t cg_node) {
     auto it = m_intra_analyzer.find(cg_node);
     if (it == m_intra_analyzer.end()) {
       CRAB_ERROR("cannot find analysis for ",
                  cg_node.get_cfg().get_func_decl().get_func_name());
     }
-    return it->second;
+    return *(it->second);
   }
 };
 } // end namespace top_down_inter_impl
@@ -1126,13 +1125,15 @@ private:
 
   CallGraph m_cg;
   global_context_t m_ctx;
-
+  std::unique_ptr<td_inter_abs_tr_t> m_abs_tr;
+  
 public:
   top_down_inter_analyzer(CallGraph cg, const params_t &params = params_t())
       : m_cg(cg), m_ctx(params.live_map, params.wto_map, params.run_checker,
                         params.checker_verbosity, params.minimize_invariants,
                         params.max_call_contexts, params.widening_delay,
-                        params.descending_iters, params.thresholds_size) {
+                        params.descending_iters, params.thresholds_size),
+	m_abs_tr(new td_inter_abs_tr_t(&m_cg, &m_ctx, abs_dom_t::top())) {
     CRAB_VERBOSE_IF(1, get_msg_stream() << "Type checking call graph ... ";);
     crab::CrabStats::resume("CallGraph type checking");
     cg.type_check();
@@ -1168,17 +1169,17 @@ public:
     } else {
       CRAB_VERBOSE_IF(1, get_msg_stream()
                              << "Started inter-procedural analysis\n";);
-      auto inter_abs_tr =
-          std::make_shared<td_inter_abs_tr_t>(m_cg, m_ctx, init);
+      
+      abs_dom_t dom(init);
+      m_abs_tr->set_abs_value(std::move(dom));
       for (auto cg_node : entries) {
         if (widening_set.count(cg_node) > 0) {
           CRAB_ERROR("Entry point cannot be recursive");
         }
-        std::shared_ptr<intra_analyzer_with_call_semantics_t> entry_analysis =
+        intra_analyzer_with_call_semantics_t &entry_analysis =
             top_down_inter_impl::get_inter_analysis<
-                cg_node_t, intra_analyzer_with_call_semantics_t>(cg_node,
-                                                                 inter_abs_tr);
-        entry_analysis->reset();
+                cg_node_t, intra_analyzer_with_call_semantics_t>(cg_node, *m_abs_tr);
+        entry_analysis.reset();
       }
       CRAB_VERBOSE_IF(1, get_msg_stream()
                              << "Finished inter-procedural analysis\n";);
