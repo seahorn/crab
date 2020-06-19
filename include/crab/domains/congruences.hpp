@@ -608,7 +608,7 @@ private:
       linear_constraint_system_t;
 
   typedef std::vector<linear_constraint_t> cst_table_t;
-  typedef typename linear_constraint_t::variable_set_t variable_set_t;
+  using variable_set_t = std::set<variable_t>;
 
   std::size_t m_max_cycles;
   bool m_is_contradiction;
@@ -625,7 +625,7 @@ private:
     }
     if (old_i != new_i) {
       env.set(v, new_i);
-      m_refined_variables += v;
+      m_refined_variables.insert(v);
       ++(m_op_count);
     }
     return false;
@@ -675,9 +675,8 @@ private:
     do {
       ++cycle;
       m_refined_variables.clear();
-      for (typename cst_table_t::iterator it = m_cst_table.begin();
-           it != m_cst_table.end(); ++it) {
-        if (propagate(*it, env)) {
+      for (const linear_constraint_t& cst: m_cst_table) {
+        if (propagate(cst, env)) {
           return true;
         }
       }

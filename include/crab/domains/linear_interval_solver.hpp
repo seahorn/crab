@@ -95,7 +95,7 @@ private:
   typedef std::vector<linear_constraint_t> cst_table_t;
   typedef std::set<unsigned int> uint_set_t;
   typedef std::map<variable_t, uint_set_t> trigger_table_t;
-  typedef typename linear_constraint_t::variable_set_t variable_set_t;
+  using variable_set_t = std::set<variable_t>;
 
   std::size_t m_max_cycles;
   std::size_t m_max_op;
@@ -124,7 +124,7 @@ private:
     }
     if (!(old_i == new_i)) {
       env.set(v, new_i);
-      m_refined_variables += v;
+      m_refined_variables.insert(v);
       ++(m_op_count);
     }
     return false;
@@ -203,7 +203,7 @@ private:
         }
         if (!(old_i == new_i)) {
           env.set(pivot, new_i);
-          m_refined_variables += pivot;
+          m_refined_variables.insert(pivot);
         }
         ++(m_op_count);
       }
@@ -214,21 +214,18 @@ private:
   bool solve_large_system(IntervalCollection &env) {
     m_op_count = 0;
     m_refined_variables.clear();
-    for (typename cst_table_t::iterator it = m_cst_table.begin();
-         it != m_cst_table.end(); ++it) {
-      if (propagate(*it, env)) {
+    for (const linear_constraint_t &cst: m_cst_table) {
+      if (propagate(cst, env)) {
         return true;
       }
     }
     do {
       variable_set_t vars_to_process(m_refined_variables);
       m_refined_variables.clear();
-      for (typename variable_set_t::iterator it = vars_to_process.begin();
-           it != vars_to_process.end(); ++it) {
-        uint_set_t &csts = m_trigger_table[*it];
-        for (typename uint_set_t::iterator cst_it = csts.begin();
-             cst_it != csts.end(); ++cst_it) {
-          if (propagate(m_cst_table.at(*cst_it), env)) {
+      for (const variable_t &v: vars_to_process) {
+        uint_set_t &csts = m_trigger_table[v];
+        for (unsigned int i: csts) {
+          if (propagate(m_cst_table.at(i), env)) {
             return true;
           }
         }
@@ -242,9 +239,8 @@ private:
     do {
       ++cycle;
       m_refined_variables.clear();
-      for (typename cst_table_t::iterator it = m_cst_table.begin();
-           it != m_cst_table.end(); ++it) {
-        if (propagate(*it, env)) {
+      for (const linear_constraint_t &cst: m_cst_table) {
+        if (propagate(cst, env)) {
           return true;
         }
       }
@@ -261,9 +257,7 @@ public:
     crab::ScopedCrabStats __st_a__("Linear Interval Solver");
     crab::ScopedCrabStats __st_b__("Linear Interval Solver.Preprocessing");
     std::size_t op_per_cycle = 0;
-    for (typename linear_constraint_system_t::const_iterator it = csts.begin();
-         it != csts.end(); ++it) {
-      const linear_constraint_t &cst = *it;
+    for (const linear_constraint_t &cst: csts) {
       if (cst.is_contradiction()) {
         m_is_contradiction = true;
         return;

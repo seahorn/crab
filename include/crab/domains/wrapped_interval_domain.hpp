@@ -2177,7 +2177,6 @@ private:
   typedef ikos::separate_domain<variable_t, wrapped_interval_limit_value>
       separate_domain_t;
   typedef ikos::discrete_domain<variable_t> discrete_domain_t;
-  typedef typename linear_constraint_system_t::variable_set_t variable_set_t;
 
   wrapped_interval_domain_t _w_int_dom;
   // Map each variable to which limit was crossed.
@@ -2246,7 +2245,7 @@ private:
     _limit_env.set(x, old_l | new_l);
   }
 
-  void update_limits(const variable_set_t &vars,
+  void update_limits(const std::vector<variable_t> &vars,
                      const std::vector<wrapped_interval_t> &old_intervals,
                      const std::vector<wrapped_interval_t> &new_intervals) {
     assert(vars.size() == old_intervals.size());
@@ -2821,7 +2820,6 @@ public:
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
   using typename abstract_domain_t::interval_t;            
-  typedef typename linear_constraint_system_t::variable_set_t variable_set_t;
   typedef typename NumDom::number_t number_t;
   typedef typename NumDom::varname_t varname_t;
   typedef typename variable_t::bitwidth_t bitwidth_t;
@@ -3012,7 +3010,7 @@ private:
   // (in)equalities. We quote unsound because the domain is unsound
   // wrt to machine arithmetic although the domain is sound wrt
   // mathematical integers.
-  void strengthen(const variable_set_t rel_vars) {
+  void strengthen(const std::vector<variable_t> &rel_vars) {
     if (is_bottom() || is_top()) {
       return;
     }
@@ -3061,9 +3059,7 @@ private:
   }
 
   void strengthen(const variable_t &x) {
-    variable_set_t vars;
-    vars += x;
-    strengthen(vars);
+    strengthen({x});
   }
 
 public:

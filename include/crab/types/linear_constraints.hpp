@@ -41,7 +41,6 @@
 
 #pragma once
 
-#include <crab/domains/patricia_trees.hpp>
 #include <crab/numbers/bignums.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/types/variable.hpp>
@@ -68,7 +67,6 @@ public:
   typedef crab::variable<Number, VariableName> variable_t;
   typedef linear_expression<Number, VariableName> linear_expression_t;
   typedef std::pair<Number, variable_t> component_t;
-  typedef patricia_tree_set<variable_t> variable_set_t;
 
 private:
   // use associative map to keep variables ordered.
@@ -563,7 +561,6 @@ public:
   typedef linear_constraint<Number, VariableName> linear_constraint_t;
   typedef crab::variable<Number, VariableName> variable_t;
   typedef linear_expression<Number, VariableName> linear_expression_t;
-  typedef patricia_tree_set<variable_t> variable_set_t;
   typedef enum { EQUALITY, DISEQUATION, INEQUALITY, STRICT_INEQUALITY } kind_t;
   using iterator = typename linear_expression_t::iterator;
   using const_iterator = typename linear_expression_t::const_iterator;
@@ -1429,7 +1426,6 @@ public:
   typedef linear_constraint_system<Number, VariableName>
       linear_constraint_system_t;
   typedef crab::variable<Number, VariableName> variable_t;
-  typedef patricia_tree_set<variable_t> variable_set_t;
 
 private:
   typedef std::vector<linear_constraint_t> cst_collection_t;

@@ -747,7 +747,6 @@ public:
 		"Domain1 and Domain2 must have same type for varname_t");
   
 private:
-  typedef ikos::patricia_tree_set<variable_t> variable_set_t;
   typedef domain_product2<number_t, varname_t, Domain1, Domain2>
       domain_product2_t;
 
@@ -1516,7 +1515,6 @@ public:
   typedef interval_congruence<number_t> interval_congruence_t;
 
 private:
-  typedef ikos::patricia_tree_set<variable_t> variable_set_t;
   typedef domain_product2<number_t, varname_t, NumAbsDom, congruence_domain_t>
       domain_product2_t;
 
