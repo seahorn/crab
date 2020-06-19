@@ -138,13 +138,12 @@ private:
     bitwidth_t w = pivot.get_bitwidth();
     Interval residual =
         interval_traits::mk_interval<Interval>(cst.constant(), w);
-    for (typename linear_constraint_t::const_iterator it = cst.begin();
-         it != cst.end(); ++it) {
-      const variable_t &v = it->second;
+    for (auto kv: cst) {
+      const variable_t &v = kv.second;
       if (!(v == pivot)) {
         residual =
             residual -
-            (interval_traits::mk_interval<Interval>(it->first, w) * env[v]);
+            (interval_traits::mk_interval<Interval>(kv.first, w) * env[v]);
         ++(m_op_count);
         if (residual.is_top())
           break;
@@ -161,11 +160,9 @@ private:
     CRAB_LOG("integer-solver", linear_constraint_t tmp(cst);
              crab::outs() << "Integer solver processing " << tmp << "\n";);
 
-    for (typename linear_constraint_t::const_iterator it = cst.begin(),
-                                                      et = cst.end();
-         it != et; ++it) {
-      Number c = it->first;
-      const variable_t &pivot = it->second;
+    for (auto kv: cst) {
+      Number c = kv.first;
+      const variable_t &pivot = kv.second;
       Interval res = compute_residual(cst, pivot, env);
       Interval rhs = Interval::top();
       if (!res.is_top()) {
@@ -300,6 +297,7 @@ public:
   void run(IntervalCollection &env) {
     crab::ScopedCrabStats __st_a__("Linear Interval Solver");
     crab::ScopedCrabStats __st_b__("Linear Interval Solver.Solving");
+
     if (m_is_contradiction) {
       env.set_to_bottom();
     } else {
