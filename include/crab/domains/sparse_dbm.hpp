@@ -171,7 +171,7 @@ protected:
   };
 
   // Evaluate the potential value of a variable.
-  Wt pot_value(variable_t v) {
+  Wt pot_value(const variable_t &v) {
     auto it = vert_map.find(v);
     if (it != vert_map.end())
       return potential[(*it).second];
@@ -179,7 +179,7 @@ protected:
     return ((Wt)0);
   }
 
-  Wt pot_value(variable_t v, std::vector<Wt> &potential) {
+  Wt pot_value(const variable_t &v, std::vector<Wt> &potential) {
     auto it = vert_map.find(v);
     if (it != vert_map.end())
       return potential[(*it).second];
@@ -188,7 +188,7 @@ protected:
   }
 
   // Evaluate an expression under the chosen potentials
-  Wt eval_expression(linear_expression_t e, bool overflow) {
+  Wt eval_expression(const linear_expression_t &e, bool overflow) {
     Wt v(ntow::convert(e.constant(), overflow));
     if (overflow) {
       return Wt(0);
@@ -204,7 +204,7 @@ protected:
     return v;
   }
 
-  interval_t eval_interval(linear_expression_t e) {
+  interval_t eval_interval(const linear_expression_t &e) {
     interval_t r = e.constant();
     for (auto p : e) {
       r += p.first * operator[](p.second);
@@ -212,21 +212,20 @@ protected:
     return r;
   }
 
-  interval_t compute_residual(linear_expression_t e, variable_t pivot) {
+  interval_t compute_residual(const linear_expression_t &e, const variable_t &pivot) {
     interval_t residual(-e.constant());
-    for (typename linear_expression_t::iterator it = e.begin(); it != e.end();
-         ++it) {
-      variable_t v = it->second;
+    for (auto kv: e) {
+      const variable_t &v = kv.second;
       if (v.index() != pivot.index()) {
-        residual = residual - (interval_t(it->first) * this->operator[](v));
+        residual = residual - (interval_t(kv.first) * this->operator[](v));
       }
     }
     return residual;
   }
 
-  interval_t get_interval(variable_t x) { return get_interval(vert_map, g, x); }
+  interval_t get_interval(const variable_t &x) { return get_interval(vert_map, g, x); }
 
-  interval_t get_interval(vert_map_t &m, graph_t &r, variable_t x) {
+  interval_t get_interval(vert_map_t &m, graph_t &r, const variable_t &x) {
     auto it = m.find(x);
     if (it == m.end()) {
       return interval_t::top();
@@ -246,7 +245,7 @@ protected:
   }
 
   // Turn an assignment into a set of difference constraints.
-  void diffcsts_of_assign(variable_t x, linear_expression_t exp,
+  void diffcsts_of_assign(const variable_t &x, const linear_expression_t &exp,
                           std::vector<std::pair<variable_t, Wt>> &lb,
                           std::vector<std::pair<variable_t, Wt>> &ub) {
     {
@@ -519,7 +518,7 @@ protected:
   }
 
   // x != n
-  void add_univar_disequation(variable_t x, number_t n) {
+  void add_univar_disequation(const variable_t &x, number_t n) {
     bool overflow;
     interval_t i = get_interval(x);
     interval_t new_i = ikos::linear_interval_solver_impl::trim_interval<interval_t>(
@@ -585,12 +584,11 @@ protected:
     }
   }
 
-  void add_disequation(linear_expression_t e) {
+  void add_disequation(const linear_expression_t &e) {
     // XXX: similar precision as the interval domain
-    for (typename linear_expression_t::iterator it = e.begin(); it != e.end();
-         ++it) {
-      variable_t pivot = it->second;
-      interval_t i = compute_residual(e, pivot) / interval_t(it->first);
+    for (auto kv: e) {
+      const variable_t &pivot = kv.second;
+      interval_t i = compute_residual(e, pivot) / interval_t(kv.first);
       if (auto k = i.singleton()) {
         add_univar_disequation(pivot, *k);
       }
@@ -1813,7 +1811,7 @@ public:
     if (is_bottom() || is_top())
       return;
 
-    for (auto v : variables) {
+    for (auto const &v : variables) {
       auto it = vert_map.find(v);
       if (it != vert_map.end()) {
         operator-=(v);
@@ -1836,7 +1834,7 @@ public:
     normalize();
 
     std::vector<bool> save(rev_map.size(), false);
-    for (auto x : variables) {
+    for (auto const &x : variables) {
       auto it = vert_map.find(x);
       if (it != vert_map.end()) {
         save[(*it).second] = true;
@@ -1844,8 +1842,10 @@ public:
     }
 
     for (vert_id v = 0; v < rev_map.size(); v++) {
-      if (!save[v] && rev_map[v])
-        operator-=((*rev_map[v]));
+      if (!save[v] && rev_map[v]) {
+	variable_t vv = (*rev_map[v]);
+        operator-=(vv);
+      }
     }
   }
 
@@ -2023,12 +2023,16 @@ public:
     for (vert_id v : g_excl.verts()) {
       if (!rev_map[v])
         continue;
-      if (g.elem(v, 0))
-        csts += linear_constraint_t(linear_expression_t(*rev_map[v]) >=
+      if (g.elem(v, 0)) {
+	variable_t vv = *rev_map[v];
+        csts += linear_constraint_t(linear_expression_t(vv) >=
                                     -number_t(g.edge_val(v, 0)));
-      if (g.elem(0, v))
-        csts += linear_constraint_t(linear_expression_t(*rev_map[v]) <=
+      }
+      if (g.elem(0, v)) {
+	variable_t vv = *rev_map[v];
+        csts += linear_constraint_t(linear_expression_t(vv) <=
                                     number_t(g.edge_val(0, v)));
+      }
     }
 
     for (vert_id s : g_excl.verts()) {
