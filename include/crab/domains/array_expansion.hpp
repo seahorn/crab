@@ -1200,9 +1200,7 @@ public:
       offset_t o(static_cast<int64_t>(*n));
       interval_t i_elem_size = to_interval(elem_size);
       if (boost::optional<number_t> n_bytes = i_elem_size.singleton()) {
-        assert(static_cast<int64_t>(*n_bytes) > 0 &&
-               static_cast<int64_t>(*n_bytes) <=
-                   std::numeric_limits<uint64_t>::max());
+        assert(static_cast<int64_t>(*n_bytes) > 0);
         uint64_t size = static_cast<int64_t>(*n_bytes);
         std::vector<cell_t> cells;
         offset_map.get_overlap_cells(o, size, cells);
@@ -1259,9 +1257,7 @@ public:
       CRAB_ERROR("array expansion domain expects constant array element sizes");
     }
 
-    assert(static_cast<int64_t>(*n_bytes) > 0 &&
-           static_cast<int64_t>(*n_bytes) <=
-               std::numeric_limits<uint64_t>::max());
+    assert(static_cast<int64_t>(*n_bytes) > 0);
     uint64_t size = static_cast<int64_t>(*n_bytes);
     offset_map_t &offset_map = lookup_array_map(a);
     interval_t ii = to_interval(i);
@@ -1406,9 +1402,7 @@ public:
       interval_t i_elem_size =
           to_interval(elem_size, invariant.get_content_domain());
       if (boost::optional<number_t> n_bytes = i_elem_size.singleton()) {
-        assert(static_cast<int64_t>(*n_bytes) > 0 &&
-               static_cast<int64_t>(*n_bytes) <=
-                   std::numeric_limits<uint64_t>::max());
+        assert(static_cast<int64_t>(*n_bytes) > 0);
         uint64_t size = static_cast<int64_t>(*n_bytes);
         cell_t c = offset_map.mk_cell(a, o, size);
         assert(c.has_scalar());
@@ -1450,9 +1444,7 @@ public:
       CRAB_ERROR("array expansion domain expects constant array element sizes");
     }
 
-    assert(static_cast<int64_t>(*n_bytes) > 0 &&
-           static_cast<int64_t>(*n_bytes) <=
-               std::numeric_limits<uint64_t>::max());
+    assert(static_cast<int64_t>(*n_bytes) > 0);
     uint64_t size = static_cast<int64_t>(*n_bytes);
     offset_map_t &offset_map = lookup_array_map(a);
     // XXX: we use the forward invariant to extract the array index

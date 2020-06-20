@@ -1723,9 +1723,7 @@ private:
   uint64_t check_and_get_elem_size(const linear_expression_t &elem_size) {
     interval_t i_elem_size = to_interval(elem_size);
     if (boost::optional<number_t> n_bytes = i_elem_size.singleton()) {
-      if (static_cast<int64_t>(*n_bytes) > 0 &&
-          static_cast<int64_t>(*n_bytes) <=
-              std::numeric_limits<uint64_t>::max()) {
+      if (static_cast<int64_t>(*n_bytes) > 0) {
         return (uint64_t) static_cast<int64_t>(*n_bytes);
       }
     }
