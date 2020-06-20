@@ -15,6 +15,7 @@
 #include <limits>
 #include <unordered_map>
 #include <vector>
+#include <memory>
 
 namespace crab {
 namespace cfg {
@@ -38,15 +39,20 @@ template <class T> class variable_factory {
     template <typename Any> friend class variable_factory;
     boost::optional<T> m_s;
     ikos::index_t m_id;
-    std::string m_name; // optional string name associated with m_id
+    // optional string name associated with m_id
+    std::shared_ptr<std::string> m_name; 
     variable_factory *m_vfac;
     
     // NOT IMPLEMENTED
     indexed_varname();
     indexed_varname(ikos::index_t id, variable_factory *vfac, std::string name="")
-      : m_s(boost::none), m_id(id), m_name(name), m_vfac(vfac) {}
+      : m_s(boost::none),
+	m_id(id),
+	m_name(std::make_shared<std::string>(name))
+      , m_vfac(vfac) {}
     indexed_varname(T s, ikos::index_t id, variable_factory *vfac)
-      : m_s(s), m_id(id), m_name(""), m_vfac(vfac) {}
+      : m_s(s), m_id(id),
+	m_name(nullptr), m_vfac(vfac) {}
     
   public:
     ~indexed_varname() = default;
@@ -61,8 +67,8 @@ template <class T> class variable_factory {
       if (m_s) {
 	return indexed_varname_impl::get_str<T>(*m_s);
       } else {
-	if (m_name != "") {
-	  return m_name;
+	if (m_name) {
+	  return *m_name;
 	} else {
 	  // unlikely prefix
 	  return "@V_" + std::to_string(m_id);
