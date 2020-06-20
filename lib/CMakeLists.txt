@@ -7,7 +7,7 @@ add_library(Crab ${CRAB_LIBS_TYPE}
   safeint.cpp
   wrapint.cpp
   ##variable factory
-  var_factory.cpp
+  varname_factory.cpp
   ##disable boost exceptions
   boost_exception.cpp
   )

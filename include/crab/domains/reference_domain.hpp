@@ -1,6 +1,5 @@
 #pragma once
 
-#include <crab/cfg/var_factory.hpp>
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/interval.hpp>
 #include <crab/domains/killgen_domain.hpp>
@@ -9,6 +8,7 @@
 #include <crab/support/stats.hpp>
 #include <crab/types/memory_regions.hpp>
 #include <crab/types/reference_constraints.hpp>
+#include <crab/types/varname_factory.hpp>
 
 #include <functional>
 #include <unordered_map>

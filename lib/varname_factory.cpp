@@ -1,4 +1,4 @@
-#include <crab/cfg/var_factory.hpp>
+#include <crab/types/varname_factory.hpp>
 
 namespace crab {
 namespace cfg {

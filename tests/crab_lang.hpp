@@ -4,8 +4,8 @@
 #include <crab/config.h>
 #include <crab/cfg/cfg.hpp>
 #include <crab/cg/cg.hpp>
-#include <crab/cfg/var_factory.hpp>
 #include <crab/support/debug.hpp>
+#include <crab/types/varname_factory.hpp>
 
 namespace crab {
 

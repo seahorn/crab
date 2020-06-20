@@ -11,7 +11,6 @@
 
 #pragma once
 
-#include <crab/cfg/var_factory.hpp>
 #include <crab/domains/abstract_domain.hpp>
 #include <crab/domains/abstract_domain_specialized_traits.hpp>
 #include <crab/domains/backward_assign_operations.hpp>
@@ -23,6 +22,7 @@
 #include <crab/numbers/bignums.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
+#include <crab/types/varname_factory.hpp>
 
 #include <algorithm>
 #include <set>
