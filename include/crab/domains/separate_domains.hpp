@@ -201,7 +201,7 @@ public:
     return (!this->is_bottom() && this->_tree.size() == 0);
   }
 
-  bool operator<=(separate_domain_t e) {
+  bool operator<=(const separate_domain_t &e) const {
     if (this->is_bottom()) {
       return true;
     } else if (e.is_bottom()) {
@@ -212,12 +212,12 @@ public:
     }
   }
 
-  bool operator==(separate_domain_t e) {
+  bool operator==(const separate_domain_t &e) const {
     return (this->operator<=(e) && e.operator<=(*this));
   }
 
   // Join
-  separate_domain_t operator|(separate_domain_t e) {
+  separate_domain_t operator|(const separate_domain_t &e) const {
     if (this->is_bottom()) {
       return e;
     } else if (e.is_bottom()) {
@@ -231,7 +231,7 @@ public:
   }
 
   // Meet
-  separate_domain_t operator&(separate_domain_t e) {
+  separate_domain_t operator&(const separate_domain_t &e) const {
     if (this->is_bottom() || e.is_bottom()) {
       return this->bottom();
     } else {
@@ -247,7 +247,7 @@ public:
   }
 
   // Widening
-  separate_domain_t operator||(separate_domain_t e) {
+  separate_domain_t operator||(const separate_domain_t &e) const {
     if (this->is_bottom()) {
       return e;
     } else if (e.is_bottom()) {
@@ -262,8 +262,8 @@ public:
 
   // Widening with thresholds
   template <typename Thresholds>
-  separate_domain_t widening_thresholds(separate_domain_t e,
-                                        const Thresholds &ts) {
+  separate_domain_t widening_thresholds(const separate_domain_t &e,
+                                        const Thresholds &ts) const {
     if (this->is_bottom()) {
       return e;
     } else if (e.is_bottom()) {

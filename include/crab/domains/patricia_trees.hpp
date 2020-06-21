@@ -1413,14 +1413,15 @@ private:
   }; // class subset_po
 
 private:
-  static patricia_tree_t do_union(patricia_tree_t t1, patricia_tree_t t2) {
+  static patricia_tree_t do_union(patricia_tree_t t1,
+				  const patricia_tree_t &t2) {
     union_op o;
     t1.merge_with(t2, o);
     return t1;
   }
 
   static patricia_tree_t do_intersection(patricia_tree_t t1,
-                                         patricia_tree_t t2) {
+                                         const patricia_tree_t &t2) {
     intersection_op o;
     t1.merge_with(t2, o);
     return t1;
