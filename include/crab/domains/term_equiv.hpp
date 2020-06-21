@@ -798,41 +798,43 @@ public:
   }
 
   // Lattice operations
-  bool operator<=(term_domain_t o) override {
+  bool operator<=(const term_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.leq");
     crab::ScopedCrabStats __st__(domain_name() + ".leq");
 
     // Require normalization of the first argument
-    this->normalize();
+    term_domain_t left(*this);
+    left.normalize();
 
-    if (is_bottom()) {
+    if (left.is_bottom()) {
       return true;
     } else if (o.is_bottom()) {
       return false;
     } else {
+      term_domain_t right(o);
       typename ttbl_t::term_map_t gen_map;
-      dom_var_alloc_t palloc(_alloc, o._alloc);
+      dom_var_alloc_t palloc(left._alloc, right._alloc);
 
-      // Build up the mapping of o onto this, variable by variable.
-      // Assumption: the set of variables in x & o are common.
-      for (auto p : _var_map) {
-        if (!_ttbl.map_leq(o._ttbl, term_of_var(p.first),
-                           o.term_of_var(p.first), gen_map))
+      // Build up the mapping of right onto left, variable by variable.
+      // Assumption: the set of variables in left & right are common.
+      for (auto p : left._var_map) {
+        if (!left._ttbl.map_leq(right._ttbl, left.term_of_var(p.first),
+				right.term_of_var(p.first), gen_map))
           return false;
       }
       // We now have a mapping of reachable y-terms to x-terms.
-      // Create copies of _impl and o._impl with a common
+      // Create copies of left._impl and right._impl with a common
       // variable set.
-      dom_t x_impl(_impl);
-      dom_t y_impl(o._impl);
+      dom_t x_impl(std::move(left._impl));
+      dom_t y_impl(std::move(right._impl));
 
       // Perform the mapping
       std::vector<dom_var_t> out_varnames;
       for (auto p : gen_map) {
         // dom_var_t vt = _alloc.next();
         dom_var_t vt(palloc.next());
-        dom_var_t vx = domvar_of_term(p.second);
-        dom_var_t vy = o.domvar_of_term(p.first);
+        dom_var_t vx = left.domvar_of_term(p.second);
+        dom_var_t vy = right.domvar_of_term(p.first);
 
         out_varnames.push_back(vt);
 

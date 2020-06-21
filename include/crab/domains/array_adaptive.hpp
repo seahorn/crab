@@ -1948,7 +1948,7 @@ public:
 
   bool is_top() const override { return (m_inv.is_top()); }
 
-  bool operator<=(array_adaptive_domain_t other) override {
+  bool operator<=(const array_adaptive_domain_t &other) const override {
     crab::CrabStats::count(domain_name() + ".count.leq");
     crab::ScopedCrabStats __st__(domain_name() + ".leq");
 
@@ -1959,20 +1959,23 @@ public:
     } else {
 
       CRAB_LOG("array-adaptive",
-               crab::outs() << "Check if " << *this << " <= " << other << "\n");
+	       array_adaptive_domain_t left(*this);
+	       array_adaptive_domain_t right(other);
+               crab::outs() << "Check if " << left << " <= " << right << "\n");
 
       base_domain_t left_dom(m_inv);
+      base_domain_t right_dom(other.m_inv);
       std::vector<variable_t> old_vars_left, old_vars_right, new_vars;
 
       /* Figure out common renaming */
 
       for (auto &kv : m_smashed_varmap) {
-        variable_t &v1 = kv.second;
+        const variable_t &v1 = kv.second;
 	auto &vfac = const_cast<varname_t*>(&(v1.name()))->get_var_factory(); 
         auto it = other.m_smashed_varmap.find(kv.first);
         // cell exists in both
         if (it != other.m_smashed_varmap.end()) {
-          variable_t &v2 = it->second;
+          const variable_t &v2 = it->second;
           assert(v1.name().str() == v2.name().str());
           assert(v1.get_type() == v2.get_type());
           assert(v1.get_bitwidth() == v2.get_bitwidth());
@@ -1987,19 +1990,19 @@ public:
         }
       }
       left_dom.rename(old_vars_left, new_vars);
-      other.m_inv.rename(old_vars_right, new_vars);
+      right_dom.rename(old_vars_right, new_vars);
       
       old_vars_left.clear();
       old_vars_right.clear();
       new_vars.clear();
 
       for (auto &kv : m_cell_varmap) {
-        variable_t &v1 = kv.second;
+        const variable_t &v1 = kv.second;
 	auto &vfac = const_cast<varname_t*>(&(v1.name()))->get_var_factory(); 	
         auto it = other.m_cell_varmap.find(kv.first);
         // cell exists in both
         if (it != other.m_cell_varmap.end()) {
-          variable_t &v2 = it->second;
+          const variable_t &v2 = it->second;
           assert(v1.name().str() == v2.name().str());
           assert(v1.get_type() == v2.get_type());
           assert(v1.get_bitwidth() == v2.get_bitwidth());
@@ -2014,11 +2017,11 @@ public:
         }
       }
       left_dom.rename(old_vars_left, new_vars);
-      other.m_inv.rename(old_vars_right, new_vars);
+      right_dom.rename(old_vars_right, new_vars);
       
       // We need to be careful if one array state is smashed and the
       // other is not.
-      bool res = (left_dom <= other.m_inv);
+      bool res = (left_dom <= right_dom);
       CRAB_LOG("array-adaptive", crab::outs() << "Res=" << res << "\n";);
       return res;
     }

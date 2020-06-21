@@ -151,7 +151,7 @@ public:
 
   bool is_top() const override { return this->_env.is_top(); }
 
-  bool operator<=(interval_domain_t e) override {
+  bool operator<=(const interval_domain_t &e) const override {
     crab::CrabStats::count(domain_name() + ".count.leq");
     crab::ScopedCrabStats __st__(domain_name() + ".leq");
     return (this->_env <= e._env);

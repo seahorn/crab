@@ -811,7 +811,7 @@ public:
     return g.is_empty();
   }
 
-  bool operator<=(DBM_t o) override {
+  bool operator<=(const DBM_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.leq");
     crab::ScopedCrabStats __st__(domain_name() + ".leq");
 
@@ -825,41 +825,45 @@ public:
     else if (is_top())
       return false;
     else {
-      normalize();
+      DBM_t left(*this);
+      left.normalize();
+      // XXX: we can avoid copy of the right operand but we need to
+      // create const versions of several methods in graph_t.
+      DBM_t right(o);
 
       // CRAB_LOG("zones-sparse",
       //          crab::outs() << "operator<=: "<< *this<< "<=?"<< o << "\n");
 
-      if (vert_map.size() < o.vert_map.size())
+      if (left.vert_map.size() < right.vert_map.size())
         return false;
 
       typename graph_t::mut_val_ref_t wx;
 
       // Set up a mapping from o to this.
-      std::vector<unsigned int> vert_renaming(o.g.size(), -1);
+      std::vector<unsigned int> vert_renaming(right.g.size(), -1);
       vert_renaming[0] = 0;
-      for (auto p : o.vert_map) {
-        auto it = vert_map.find(p.first);
+      for (auto p : right.vert_map) {
+        auto it = left.vert_map.find(p.first);
         // We can't have this <= o if we're missing some
         // vertex.
-        if (it == vert_map.end())
+        if (it == left.vert_map.end())
           return false;
         vert_renaming[p.second] = (*it).second;
       }
 
-      assert(g.size() > 0);
+      assert(left.g.size() > 0);
       // GrPerm g_perm(vert_renaming, g);
 
-      for (vert_id ox : o.g.verts()) {
+      for (vert_id ox : right.g.verts()) {
         assert(vert_renaming[ox] != -1);
         vert_id x = vert_renaming[ox];
-        for (auto edge : o.g.e_succs(ox)) {
+        for (auto edge : right.g.e_succs(ox)) {
           vert_id oy = edge.vert;
           assert(vert_renaming[ox] != -1);
           vert_id y = vert_renaming[oy];
           Wt ow = edge.val;
 
-          if (!g.lookup(x, y, &wx) || (ow < wx))
+          if (!left.g.lookup(x, y, &wx) || (ow < wx))
             return false;
         }
       }

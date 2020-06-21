@@ -130,7 +130,7 @@ public:
     return this->_second;
   }
 
-  bool operator<=(basic_domain_product2_t other) {
+  bool operator<=(const basic_domain_product2_t &other) const {
     if (this->is_bottom()) {
       return true;
     } else if (other.is_bottom()) {
@@ -140,7 +140,7 @@ public:
     }
   }
 
-  bool operator==(basic_domain_product2_t other) {
+  bool operator==(const basic_domain_product2_t &other) const {
     return (this->operator<=(other) && other.operator<=(*this));
   }
 
@@ -288,7 +288,7 @@ public:
 
   Domain2 &second() { return this->_product.second(); }
 
-  bool operator<=(domain_product2_t other) override {
+  bool operator<=(const domain_product2_t &other) const override {
     return (this->_product <= other._product);
   }
 
@@ -922,7 +922,7 @@ public:
 
   Domain2 &second() { return this->_product.second(); }
 
-  bool operator<=(reduced_numerical_domain_product2_t other) override {
+  bool operator<=(const reduced_numerical_domain_product2_t &other) const override {
     return this->_product <= other._product;
   }
 
@@ -1585,7 +1585,7 @@ public:
 
   congruence_domain_t &second() { return this->_product.second(); }
 
-  bool operator<=(rnc_domain_t other) override {
+  bool operator<=(const rnc_domain_t &other) const override {
     return this->_product <= other._product;
   }
 

@@ -874,14 +874,17 @@ public:
 
   bool is_top() const override { return &*m_ldd == Ldd_GetTrue(get_ldd_man()); }
 
-  bool operator<=(boxes_domain_t other) override {
+  bool operator<=(const boxes_domain_t &other) const override {
     crab::CrabStats::count(domain_name() + ".count.leq");
     crab::ScopedCrabStats __st__(domain_name() + ".leq");
 
     bool res = Ldd_TermLeq(get_ldd_man(), &(*m_ldd), &(*other.m_ldd));
 
-    CRAB_LOG("boxes", crab::outs() << "Check if " << *this << " <= " << other
-                                   << " ---> " << res << "\n";);
+    CRAB_LOG("boxes",
+	     boxes_domain_t left(*this);
+	     boxes_domain_t right(other);
+	     crab::outs() << "Check if " << left << " <= " << right
+	                  << " ---> " << res << "\n";);
     return res;
   }
 

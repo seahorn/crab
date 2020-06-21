@@ -90,11 +90,11 @@ public:
 
   bool is_bottom() const { return (!this->_is_top && this->_set.empty()); }
 
-  bool operator<=(discrete_domain_t other) {
+  bool operator<=(const discrete_domain_t &other) const {
     return other._is_top || (!this->_is_top && this->_set <= other._set);
   }
 
-  bool operator==(discrete_domain_t other) {
+  bool operator==(const discrete_domain_t &other) const {
     return (this->_is_top && other._is_top) || (this->_set == other._set);
   }
 

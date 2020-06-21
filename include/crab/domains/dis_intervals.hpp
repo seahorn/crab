@@ -355,7 +355,7 @@ public:
 #endif
   }
 
-  bool operator<=(dis_interval_t o) const {
+  bool operator<=(const dis_interval_t &o) const {
     if (this->is_bottom()) {
       return true;
     } else if (o.is_bottom()) {
@@ -1126,7 +1126,7 @@ public:
 
   iterator end() { return this->_env.end(); }
 
-  bool operator<=(dis_interval_domain_t e) override {
+  bool operator<=(const dis_interval_domain_t &e) const override {
     crab::CrabStats::count(domain_name() + ".count.leq");
     crab::ScopedCrabStats __st__(domain_name() + ".leq");
 

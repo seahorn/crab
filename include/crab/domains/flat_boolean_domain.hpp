@@ -276,7 +276,7 @@ public:
 
   bool is_top() const override { return _env.is_top(); }
 
-  bool operator<=(flat_boolean_domain_t o) override {
+  bool operator<=(const flat_boolean_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.leq");
     crab::ScopedCrabStats __st__(domain_name() + ".leq");
     return (_env <= o._env);
@@ -728,14 +728,14 @@ private:
     bool is_top() const { return m_lincons_set.is_bottom(); }
     bool is_bottom() const { return m_lincons_set.is_top(); }
 
-    bool operator<=(lin_cst_set_domain other) {
+    bool operator<=(const lin_cst_set_domain &other) const {
       if (other.is_top() || is_bottom())
         return true;
       else
         return other.m_lincons_set <= m_lincons_set;
     }
 
-    bool operator==(lin_cst_set_domain other) {
+    bool operator==(const lin_cst_set_domain &other) const {
       return (*this <= other && other <= *this);
     }
 
@@ -854,7 +854,7 @@ private:
                   |
                  bot
      */
-    bool operator<=(invariance_domain other) {
+    bool operator<=(const invariance_domain &other) const {
       if (other.is_top() || is_bottom())
         return true;
       else
@@ -971,7 +971,7 @@ public:
 
   NumDom &second() { return _product.second(); }
 
-  bool operator<=(bool_num_domain_t other) override {
+  bool operator<=(const bool_num_domain_t &other) const override {
     return _product <= other._product;
   }
 

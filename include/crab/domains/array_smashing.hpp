@@ -150,7 +150,7 @@ public:
 
   bool is_top() const override { return (_inv.is_top()); }
 
-  bool operator<=(array_smashing_t other)  override { return (_inv <= other._inv); }
+  bool operator<=(const array_smashing_t &other) const override { return (_inv <= other._inv); }
 
   void operator|=(array_smashing_t other) override { _inv |= other._inv; }
 

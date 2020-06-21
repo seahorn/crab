@@ -542,7 +542,7 @@ public:
     }
   }
 
-  bool operator<=(wrapped_interval_t x) const {
+  bool operator<=(const wrapped_interval_t &x) const {
     if (x.is_top() || is_bottom()) {
       return true;
     } else if (x.is_bottom() || is_top()) {
@@ -1380,7 +1380,7 @@ public:
 
   bool is_top() const override { return this->_env.is_top(); }
 
-  bool operator<=(wrapped_interval_domain_t e) override {
+  bool operator<=(const wrapped_interval_domain_t &e) const override {
     crab::CrabStats::count(domain_name() + ".count.leq");
     crab::ScopedCrabStats __st__(domain_name() + ".leq");
     // CRAB_LOG("wrapped-int",
@@ -2304,7 +2304,7 @@ public:
     return _w_int_dom.is_top();
   }
 
-  bool operator<=(this_type o) override {
+  bool operator<=(const this_type &o) const override {
     return (_w_int_dom <= o._w_int_dom && _limit_env <= o._limit_env);
   }
 
@@ -3094,11 +3094,11 @@ public:
 
   NumDom &second() { return _product.second(); }
 
-  bool operator<=(wrapped_numerical_domain_t other) override {
+  bool operator<=(const wrapped_numerical_domain_t &other) const override {
     return _product <= other._product;
   }
 
-  bool operator==(wrapped_numerical_domain_t other) {
+  bool operator==(const wrapped_numerical_domain_t &other) const {
     return _product == other._product;
   }
 

@@ -507,7 +507,7 @@ private:
 
   // Create a fresh variable in the base domain to shadow reg
   base_variable_t make_base_variable(base_varname_allocator_t &var_allocator,
-                                     const memory_region &reg) {
+                                     const memory_region &reg) const {
     typename base_variable_t::type_t ty = UNK_TYPE;
     unsigned bitwidth = 0;
     switch (reg.get_type()) {
@@ -534,7 +534,7 @@ private:
 
   // Create a fresh variable in the base domain to shadow v
   base_variable_t make_base_variable(base_varname_allocator_t &var_allocator,
-                                     const variable_t &v) {
+                                     const variable_t &v) const {
     if (v.is_ref_type()) {
       base_variable_t v(var_allocator.next(), crab::INT_TYPE, 32);
       return v;
@@ -750,7 +750,7 @@ public:
 
   bool is_top() const override { return m_base_dom.is_top(); }
 
-  bool operator<=(reference_domain_t o) override {
+  bool operator<=(const reference_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.leq");
     crab::ScopedCrabStats __st__(domain_name() + ".leq");
     if (is_bottom() || o.is_top()) {

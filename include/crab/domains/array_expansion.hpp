@@ -917,7 +917,7 @@ public:
 
   bool is_top() const override { return (_inv.is_top()); }
 
-  bool operator<=(array_expansion_domain_t other) override {
+  bool operator<=(const array_expansion_domain_t &other) const override {
     crab::CrabStats::count(domain_name() + ".count.leq");
     crab::ScopedCrabStats __st__(domain_name() + ".leq");
 

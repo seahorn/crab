@@ -397,7 +397,7 @@ public:
 
   void operator|=(array_graph_t &o) { *this = *this | o; }
 
-  bool operator<=(array_graph_t &o) {
+  bool operator<=(const array_graph_t &o) const {
     if (is_bottom())
       return true;
     else if (o.is_bottom())
@@ -407,34 +407,37 @@ public:
     else if (is_top())
       return false;
     else {
-      normalize();
+      array_graph_t left(*this);
+      array_graph_t right(o);
+      
+      left.normalize();
 
-      if (_vert_map.size() < o._vert_map.size())
+      if (left._vert_map.size() < right._vert_map.size())
         return false;
 
       // Set up a mapping from o to this.
-      std::vector<unsigned int> vert_renaming(o._g.size(), -1);
-      for (auto p : o._vert_map) {
-        auto it = _vert_map.find(p.first);
+      std::vector<unsigned int> vert_renaming(right._g.size(), -1);
+      for (auto p : right._vert_map) {
+        auto it = left._vert_map.find(p.first);
         // We can't have this <= o if we're missing some
         // vertex.
-        if (it == _vert_map.end())
+        if (it == left._vert_map.end())
           return false;
         vert_renaming[p.second] = (*it).second;
       }
 
-      assert(_g.size() > 0);
+      assert(left._g.size() > 0);
       mut_val_ref_t wx;
 
-      for (_vert_id ox : o._g.verts()) {
+      for (_vert_id ox : right._g.verts()) {
         assert(vert_renaming[ox] != -1);
         _vert_id x = vert_renaming[ox];
-        for (auto edge : o._g.e_succs(ox)) {
+        for (auto edge : right._g.e_succs(ox)) {
           _vert_id oy = edge.vert;
           assert(vert_renaming[ox] != -1);
           _vert_id y = vert_renaming[oy];
           auto ow = (Weight)edge.val;
-          if (!_g.lookup(x, y, &wx) || (!((Weight)wx <= ow)))
+          if (!left._g.lookup(x, y, &wx) || (!((Weight)wx <= ow)))
             return false;
         }
       }
@@ -1855,12 +1858,14 @@ public:
     return _scalar.is_bottom() || _expressions.is_bottom() || _g.is_bottom();
   }
 
-  bool operator<=(array_graph_domain_t o) override {
+  bool operator<=(const array_graph_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.leq");
     crab::ScopedCrabStats __st__(domain_name() + ".leq");
 
-    CRAB_LOG("array-sgraph-domain", crab::outs() << "Leq " << *this << " and\n"
-                                                 << o << "=\n";);
+    CRAB_LOG("array-sgraph-domain",
+	     array_graph_domain_t left(*this);
+	     array_graph_domain_t right(o);	     
+	     crab::outs() << "Leq " << left << " and\n" << right << "=\n";);
     bool res = (_scalar <= o._scalar) && (_expressions <= o._expressions) &&
                (_g <= o._g);
     CRAB_LOG("array-sgraph-domain", crab::outs() << res << "\n";);

@@ -233,9 +233,11 @@ public:
   }
   
   
-  virtual bool operator<=(powerset_domain_t other) override  {
-    Domain left  = smash_disjuncts(*this);
-    Domain right = smash_disjuncts(other);
+  virtual bool operator<=(const powerset_domain_t &other) const override  {
+    powerset_domain_t pow_left(*this);
+    powerset_domain_t pow_right(other);
+    Domain left  = smash_disjuncts(pow_left);
+    Domain right = smash_disjuncts(pow_right);
     return left <= right;
   }
 

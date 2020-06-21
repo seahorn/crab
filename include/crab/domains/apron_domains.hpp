@@ -219,7 +219,7 @@ private:
 #endif
   }
 
-  bool check_perm(ap_dimperm_t *perm, size_t size) {
+  bool check_perm(const ap_dimperm_t *perm, size_t size) const {
     // it does not check injectivity
     if (perm->size != size)
       return false;
@@ -232,7 +232,7 @@ private:
   }
 
   var_map_t merge_var_map(const var_map_t &m_x, ap_state_ptr &s_x,
-                          const var_map_t &m_y, ap_state_ptr &s_y) {
+                          const var_map_t &m_y, ap_state_ptr &s_y) const {
 
     assert(m_x.size() == get_dims(s_x));
     assert(m_y.size() == get_dims(s_y));
@@ -656,7 +656,7 @@ public:
 
   bool is_top() const override { return ap_abstract0_is_top(get_man(), &*m_apstate); }
 
-  bool operator<=(apron_domain_t o) override {
+  bool operator<=(const apron_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.leq");
     crab::ScopedCrabStats __st__(domain_name() + ".leq");
 
@@ -673,8 +673,10 @@ public:
     else {
       ap_state_ptr x =
           apPtr(get_man(), ap_abstract0_copy(get_man(), &*m_apstate));
-      merge_var_map(m_var_map, x, o.m_var_map, o.m_apstate);
-      return ap_abstract0_is_leq(get_man(), &*x, &*o.m_apstate);
+      ap_state_ptr y =
+          apPtr(get_man(), ap_abstract0_copy(get_man(), &*o.m_apstate));
+      merge_var_map(m_var_map, x, o.m_var_map, y);
+      return ap_abstract0_is_leq(get_man(), &*x, &*y);
     }
   }
 

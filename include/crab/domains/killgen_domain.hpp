@@ -63,15 +63,15 @@ public:
 
   unsigned size() { return _inv.size(); }
 
-  bool is_bottom() { return _inv.is_bottom(); }
+  bool is_bottom() const { return _inv.is_bottom(); }
 
-  bool is_top() { return _inv.is_top(); }
+  bool is_top() const { return _inv.is_top(); }
 
-  bool operator==(flat_killgen_domain_t other) {
+  bool operator==(const flat_killgen_domain_t &other) const {
     return *this <= other && other <= *this;
   }
 
-  bool operator<=(flat_killgen_domain_t other) {
+  bool operator<=(const flat_killgen_domain_t &other) const {
     if (is_bottom())
       return true;
     else if (other.is_top())
@@ -228,7 +228,7 @@ public:
 
   bool is_bottom() const { return (!is_top() && _tree.empty()); }
 
-  bool operator<=(separate_killgen_domain_t o) {
+  bool operator<=(const separate_killgen_domain_t &o) const {
     domain_po po;
     return (o.is_top() || (!is_top() && (_tree.leq(o._tree, po))));
   }

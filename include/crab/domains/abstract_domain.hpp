@@ -88,7 +88,7 @@ public:
   virtual bool is_top() const  = 0;
 
   // Inclusion operator: return true if *this is equal or more precise than abs
-  virtual bool operator<=(Dom abs) = 0;
+  virtual bool operator<=(const Dom &abs) const = 0;
   // Join operator: join(*this, abs)
   virtual Dom operator|(Dom abs) = 0;
   // *this = join(*this, abs)

@@ -163,7 +163,7 @@ public:
 
   /** Lattice Operations **/
 
-  bool operator<=(congruence_t o) {
+  bool operator<=(const congruence_t &o) const {
     if (is_bottom()) {
       return true;
     } else if (o.is_bottom()) {
@@ -784,7 +784,7 @@ public:
 
   bool is_top() const override { return this->_env.is_top(); }
 
-  bool operator<=(congruence_domain_t e) override {
+  bool operator<=(const congruence_domain_t &e) const override {
     crab::CrabStats::count(domain_name() + ".count.leq");
     crab::ScopedCrabStats __st__(domain_name() + ".leq");
     return this->_env <= e._env;
