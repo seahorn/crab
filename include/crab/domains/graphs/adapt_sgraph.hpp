@@ -207,7 +207,7 @@ public:
     }
   }
 
-  bool lookup(key_t k, val_t *v_out) {
+  bool lookup(key_t k, val_t *v_out) const {
     if (sparse) {
       // SEE ABOVE WARNING
       int idx = sparse[k];
@@ -454,8 +454,8 @@ public:
   typedef adj_range_t pred_range;
   typedef adj_range_t succ_range;
 
-  adj_range_t succs(vert_id v) { return _succs[v].keys(); }
-  adj_range_t preds(vert_id v) { return _preds[v].keys(); }
+  adj_range_t succs(vert_id v) const { return _succs[v].keys(); }
+  adj_range_t preds(vert_id v) const { return _preds[v].keys(); }
 
   typedef edge_range_t fwd_edge_range;
   typedef edge_range_t rev_edge_range;

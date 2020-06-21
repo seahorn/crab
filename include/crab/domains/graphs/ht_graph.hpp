@@ -456,11 +456,11 @@ public:
   typedef fwd_edge_range e_succ_range;
   typedef rev_edge_range e_pred_range;
 
-  succ_range succs(vert_id v) { return succ_range(_succs[v]); }
+  succ_range succs(vert_id v) const { return succ_range(_succs[v]); }
 
   e_succ_range e_succs(vert_id v) { return fwd_edge_range(*this, v); }
 
-  pred_range preds(vert_id v) { return pred_range(_preds[v]); }
+  pred_range preds(vert_id v) const { return pred_range(_preds[v]); }
 
   e_pred_range e_preds(vert_id v) { return rev_edge_range(*this, v); }
 
