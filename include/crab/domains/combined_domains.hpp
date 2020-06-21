@@ -63,9 +63,9 @@ public:
                         bool &&apply_reduction = true)
       : _is_bottom(false), _first(std::move(first)),
         _second(std::move(second)) {
-    if (apply_reduction) {
-      this->canonicalize();
-    }
+    //if (apply_reduction) {
+    canonicalize();
+    //}
   }
 
   basic_domain_product2(const basic_domain_product2_t &other)
@@ -102,12 +102,19 @@ public:
     return basic_domain_product2_t(Domain1::bottom(), Domain2::bottom());
   }
 
-  bool is_bottom() {
-    this->canonicalize();
-    return this->_is_bottom;
+  bool is_bottom() const {
+    //this->canonicalize();
+    // return this->_is_bottom;
+    if (_is_bottom) {
+      return true;
+    } else {
+      return _first.is_bottom() || _second.is_bottom();
+    }
   }
 
-  bool is_top() { return (this->_first.is_top() && this->_second.is_top()); }
+  bool is_top() const {
+    return (this->_first.is_top() && this->_second.is_top());
+  }
 
   Domain1 &first(bool apply_reduction = true) {
     if (apply_reduction) {
@@ -273,9 +280,9 @@ public:
     return *this;
   }
 
-  bool is_bottom() override { return this->_product.is_bottom(); }
+  bool is_bottom() const override { return this->_product.is_bottom(); }
 
-  bool is_top() override { return this->_product.is_top(); }
+  bool is_top() const override { return this->_product.is_top(); }
 
   Domain1 &first() { return this->_product.first(); }
 
@@ -907,9 +914,9 @@ public:
     return *this;
   }
 
-  bool is_bottom() override { return this->_product.is_bottom(); }
+  bool is_bottom() const override { return this->_product.is_bottom(); }
 
-  bool is_top() override { return this->_product.is_top(); }
+  bool is_top() const override { return this->_product.is_top(); }
 
   Domain1 &first() { return this->_product.first(); }
 
@@ -1570,9 +1577,9 @@ public:
     return *this;
   }
 
-  bool is_bottom() override { return this->_product.is_bottom(); }
+  bool is_bottom() const override { return this->_product.is_bottom(); }
 
-  bool is_top() override { return this->_product.is_top(); }
+  bool is_top() const override { return this->_product.is_top(); }
 
   NumAbsDom &first() { return this->_product.first(); }
 

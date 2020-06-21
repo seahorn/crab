@@ -66,15 +66,26 @@ private:
 
   powerset_domain(Domain &&dom) {
     m_disjuncts.emplace_back(std::move(dom));
+    normalize_if_top();
   }
   
   powerset_domain(base_dom_vector &&powerset)
     : m_disjuncts(std::move(powerset)) {
+    normalize_if_top();
     if (m_disjuncts.size() > Params::max_disjuncts) {
       smash_disjuncts();
-    }
+    } 
   }
 
+  void normalize_if_top() {
+    for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
+      if (m_disjuncts[i].is_top()) {
+	set_to_top();
+	return;
+      }
+    }
+  }
+  
   // Remove redundant disjuncts.
   // Expensive operation (quadratic in the number of disjunctions)
   void simplify(base_dom_vector &disjuncts) {
@@ -192,7 +203,7 @@ public:
   powerset_domain_t &operator=(const powerset_domain_t &other) = default;
   powerset_domain_t &operator=(powerset_domain_t &&other) = default;  
 
-  virtual bool is_bottom() override {
+  virtual bool is_bottom() const override {
     for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
       if (!m_disjuncts[i].is_bottom()) {
 	return false;
@@ -201,10 +212,10 @@ public:
     return true;
   }
 
-  virtual bool is_top() override {
+  virtual bool is_top() const override {
     for (unsigned i=0, sz=m_disjuncts.size(); i<sz; ++i) {
       if (m_disjuncts[i].is_top()) {
-	set_to_top();
+	//set_to_top();
 	return true;
       }
     }

@@ -870,9 +870,9 @@ public:
     return *this;
   }
 
-  bool is_bottom() override { return &*m_ldd == Ldd_GetFalse(get_ldd_man()); }
+  bool is_bottom() const override { return &*m_ldd == Ldd_GetFalse(get_ldd_man()); }
 
-  bool is_top() override { return &*m_ldd == Ldd_GetTrue(get_ldd_man()); }
+  bool is_top() const override { return &*m_ldd == Ldd_GetTrue(get_ldd_man()); }
 
   bool operator<=(boxes_domain_t other) override {
     crab::CrabStats::count(domain_name() + ".count.leq");

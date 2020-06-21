@@ -891,9 +891,9 @@ public:
     std::swap(*this, abs);
   }
 
-  bool is_bottom() override { return elina_abstract0_is_bottom(get_man(), &*m_apstate); }
+  bool is_bottom() const override { return elina_abstract0_is_bottom(get_man(), &*m_apstate); }
 
-  bool is_top() override { return elina_abstract0_is_top(get_man(), &*m_apstate); }
+  bool is_top() const override { return elina_abstract0_is_top(get_man(), &*m_apstate); }
 
   bool operator<=(elina_domain_t o) override {
     crab::CrabStats::count(domain_name() + ".count.leq");

@@ -1944,9 +1944,9 @@ public:
     return *this;
   }
 
-  bool is_bottom() override { return (m_inv.is_bottom()); }
+  bool is_bottom() const override { return (m_inv.is_bottom()); }
 
-  bool is_top() override { return (m_inv.is_top()); }
+  bool is_top() const override { return (m_inv.is_top()); }
 
   bool operator<=(array_adaptive_domain_t other) override {
     crab::CrabStats::count(domain_name() + ".count.leq");

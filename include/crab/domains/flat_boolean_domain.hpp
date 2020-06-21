@@ -53,15 +53,15 @@ public:
     return *this;
   }
 
-  bool is_bottom() { return (_value == Bottom); }
+  bool is_bottom() const { return (_value == Bottom); }
 
-  bool is_top() { return (_value == Top); }
+  bool is_top() const { return (_value == Top); }
 
   bool is_true() const { return (_value == True); }
 
   bool is_false() const { return (_value == False); }
 
-  bool operator<=(boolean_value other) {
+  bool operator<=(boolean_value other) const {
 
     if (_value == Bottom || other._value == Top)
       return true;
@@ -75,9 +75,9 @@ public:
     return false;
   }
 
-  bool operator==(boolean_value other) { return (_value == other._value); }
+  bool operator==(boolean_value other) const { return (_value == other._value); }
 
-  boolean_value operator|(boolean_value other) {
+  boolean_value operator|(boolean_value other) const {
     if (is_bottom())
       return other;
     if (other.is_bottom())
@@ -91,7 +91,7 @@ public:
     return top();
   }
 
-  boolean_value operator&(boolean_value other) {
+  boolean_value operator&(boolean_value other) const {
     if (is_bottom())
       return *this;
     if (other.is_bottom())
@@ -108,12 +108,12 @@ public:
   }
 
   // the lattice satisfy ACC so join is the widening
-  boolean_value operator||(boolean_value other) {
+  boolean_value operator||(boolean_value other) const {
     return this->operator|(other);
   }
 
   // the lattice satisfy DCC so meet is the narrowing
-  boolean_value operator&&(boolean_value other) {
+  boolean_value operator&&(boolean_value other) const {
     return this->operator&(other);
   }
 
@@ -131,7 +131,7 @@ public:
        * *   *   *    *
   */
 
-  boolean_value And(boolean_value other) {
+  boolean_value And(boolean_value other) const {
     if (is_bottom() || other.is_bottom())
       return bottom();
 
@@ -147,7 +147,7 @@ public:
       return top();
   }
 
-  boolean_value Or(boolean_value other) {
+  boolean_value Or(boolean_value other) const {
     if (is_bottom() || other.is_bottom())
       return bottom();
 
@@ -163,7 +163,7 @@ public:
       return top();
   }
 
-  boolean_value Xor(boolean_value other) {
+  boolean_value Xor(boolean_value other) const {
     if (is_bottom() || other.is_bottom())
       return bottom();
 
@@ -174,7 +174,7 @@ public:
       return top();
   }
 
-  boolean_value Negate() {
+  boolean_value Negate() const {
     if (is_bottom())
       return bottom();
     if (_value == True)
@@ -272,9 +272,9 @@ public:
     return _env.end();
   }
 
-  bool is_bottom() override { return _env.is_bottom(); }
+  bool is_bottom() const override { return _env.is_bottom(); }
 
-  bool is_top() override { return _env.is_top(); }
+  bool is_top() const override { return _env.is_top(); }
 
   bool operator<=(flat_boolean_domain_t o) override {
     crab::CrabStats::count(domain_name() + ".count.leq");
@@ -725,8 +725,8 @@ private:
     static lin_cst_set_domain bottom() { return lincons_domain_t::top(); }
     static lin_cst_set_domain top() { return lincons_domain_t::bottom(); }
 
-    bool is_top() { return m_lincons_set.is_bottom(); }
-    bool is_bottom() { return m_lincons_set.is_top(); }
+    bool is_top() const { return m_lincons_set.is_bottom(); }
+    bool is_bottom() const { return m_lincons_set.is_top(); }
 
     bool operator<=(lin_cst_set_domain other) {
       if (other.is_top() || is_bottom())
@@ -836,8 +836,8 @@ private:
     static invariance_domain bottom() { return var_domain_t::top(); }
     static invariance_domain top() { return var_domain_t::bottom(); }
 
-    bool is_top() { return m_varset.is_bottom(); }
-    bool is_bottom() { return m_varset.is_top(); }
+    bool is_top() const { return m_varset.is_bottom(); }
+    bool is_bottom() const { return m_varset.is_top(); }
 
     /*
              top  = everything might change
@@ -963,9 +963,9 @@ public:
     return *this;
   }
   
-  bool is_bottom() override { return _product.is_bottom(); }
+  bool is_bottom() const override { return _product.is_bottom(); }
 
-  bool is_top() override { return _product.is_top(); }
+  bool is_top() const override { return _product.is_top(); }
 
   bool_domain_t &first() { return _product.first(); }
 

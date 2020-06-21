@@ -86,9 +86,9 @@ public:
     }
   }
 
-  bool is_top() { return this->_is_top; }
+  bool is_top() const { return this->_is_top; }
 
-  bool is_bottom() { return (!this->_is_top && this->_set.empty()); }
+  bool is_bottom() const { return (!this->_is_top && this->_set.empty()); }
 
   bool operator<=(discrete_domain_t other) {
     return other._is_top || (!this->_is_top && this->_set <= other._set);

@@ -307,7 +307,7 @@ public:
 
   bool is_bottom() const { return _is_bottom; }
 
-  bool is_top() {
+  bool is_top() const {
     if (_is_bottom)
       return false;
     return _g.is_empty();
@@ -1847,11 +1847,11 @@ public:
     return *this;
   }
 
-  bool is_top() override {
+  bool is_top() const override {
     return _scalar.is_top() && _expressions.is_top() && _g.is_top();
   }
 
-  bool is_bottom() override {
+  bool is_bottom() const override {
     return _scalar.is_bottom() || _expressions.is_bottom() || _g.is_bottom();
   }
 

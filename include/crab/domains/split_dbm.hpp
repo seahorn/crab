@@ -1045,11 +1045,11 @@ public:
     _is_bottom = true;
   }
 
-  bool is_bottom() override {
+  bool is_bottom() const override {
     return _is_bottom;
   }
 
-  bool is_top() override {
+  bool is_top() const override {
     if (_is_bottom)
       return false;
     return g.is_empty();

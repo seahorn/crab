@@ -780,9 +780,9 @@ public:
 
   iterator end() { return this->_env.end(); }
 
-  bool is_bottom() override { return this->_env.is_bottom(); }
+  bool is_bottom() const override { return this->_env.is_bottom(); }
 
-  bool is_top() override { return this->_env.is_top(); }
+  bool is_top() const override { return this->_env.is_top(); }
 
   bool operator<=(congruence_domain_t e) override {
     crab::CrabStats::count(domain_name() + ".count.leq");

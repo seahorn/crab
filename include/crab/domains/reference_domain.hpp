@@ -118,15 +118,15 @@ public:
   small_range &operator=(const small_range &other) = default;
   small_range &operator=(small_range &&other) = default;
 
-  bool is_bottom() { return (m_value == Bottom); }
+  bool is_bottom() const { return (m_value == Bottom); }
 
-  bool is_top() { return (m_value == ZeroOrMore); }
+  bool is_top() const { return (m_value == ZeroOrMore); }
 
   bool is_zero() const { return (m_value == ExactlyZero); }
 
   bool is_one() const { return (m_value == ExactlyOne); }
 
-  bool operator<=(small_range other) {
+  bool operator<=(small_range other) const {
     if (m_value == Bottom || other.m_value == ZeroOrMore) {
       return true;
     } else if (m_value == ExactlyZero) {
@@ -145,7 +145,7 @@ public:
 
   bool operator==(small_range other) { return m_value == other.m_value; }
 
-  small_range operator|(small_range other) {
+  small_range operator|(small_range other) const {
     if (is_bottom()) {
       return other;
     } else if (other.is_bottom()) {
@@ -171,14 +171,14 @@ public:
     }
   }
 
-  small_range operator||(small_range other) { return *this | other; }
+  small_range operator||(small_range other) const { return *this | other; }
 
-  small_range operator&(small_range other) {
+  small_range operator&(small_range other) const {
     // TODO
     return *this;
   }
 
-  small_range operator&&(small_range other) { return *this & other; }
+  small_range operator&&(small_range other) const { return *this & other; }
 
   small_range increment(void) {
     if (!is_bottom()) {
@@ -746,9 +746,9 @@ public:
     return *this;
   }
 
-  bool is_bottom() override { return m_is_bottom; }
+  bool is_bottom() const override { return m_is_bottom; }
 
-  bool is_top() override { return m_base_dom.is_top(); }
+  bool is_top() const override { return m_base_dom.is_top(); }
 
   bool operator<=(reference_domain_t o) override {
     crab::CrabStats::count(domain_name() + ".count.leq");

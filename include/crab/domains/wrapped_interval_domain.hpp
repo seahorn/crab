@@ -1376,9 +1376,9 @@ public:
 
   iterator end() { return this->_env.end(); }
 
-  bool is_bottom() override { return this->_env.is_bottom(); }
+  bool is_bottom() const override { return this->_env.is_bottom(); }
 
-  bool is_top() override { return this->_env.is_top(); }
+  bool is_top() const override { return this->_env.is_top(); }
 
   bool operator<=(wrapped_interval_domain_t e) override {
     crab::CrabStats::count(domain_name() + ".count.leq");
@@ -2294,12 +2294,12 @@ public:
     return *this;
   }
 
-  bool is_bottom() override {
+  bool is_bottom() const override {
     // XXX: ignore _limit_env
     return _w_int_dom.is_bottom();
   }
 
-  bool is_top() override {
+  bool is_top() const override {
     // XXX: ignore _limit_env
     return _w_int_dom.is_top();
   }
@@ -3086,9 +3086,9 @@ public:
     return *this;
   }
 
-  bool is_bottom() override { return _product.is_bottom(); }
+  bool is_bottom() const override { return _product.is_bottom(); }
 
-  bool is_top() override { return _product.is_top(); }
+  bool is_top() const override { return _product.is_top(); }
 
   wrapped_numerical_domain_t &first() { return _product.first(); }
 

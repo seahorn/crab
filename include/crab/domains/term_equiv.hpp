@@ -788,9 +788,9 @@ public:
     return *this;
   }
 
-  bool is_bottom() override { return _is_bottom; }
+  bool is_bottom() const override { return _is_bottom; }
 
-  bool is_top() override { return !_var_map.size() && !is_bottom(); }
+  bool is_top() const override { return !_var_map.size() && !is_bottom(); }
 
   bool is_normalized() {
     return changed_terms.size() == 0;

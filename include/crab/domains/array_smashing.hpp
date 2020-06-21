@@ -146,9 +146,9 @@ public:
     return *this;
   }
 
-  bool is_bottom() override { return (_inv.is_bottom()); }
+  bool is_bottom() const override { return (_inv.is_bottom()); }
 
-  bool is_top() override { return (_inv.is_top()); }
+  bool is_top() const override { return (_inv.is_top()); }
 
   bool operator<=(array_smashing_t other)  override { return (_inv <= other._inv); }
 

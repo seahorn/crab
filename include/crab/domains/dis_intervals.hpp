@@ -1118,9 +1118,9 @@ public:
     return *this;
   }
 
-  bool is_bottom() override { return this->_env.is_bottom(); }
+  bool is_bottom() const override { return this->_env.is_bottom(); }
 
-  bool is_top() override  { return this->_env.is_top(); }
+  bool is_top() const override  { return this->_env.is_top(); }
 
   iterator begin() { return this->_env.begin(); }
 

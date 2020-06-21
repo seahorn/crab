@@ -83,9 +83,9 @@ public:
   // set *this to bottom
   virtual void set_to_bottom() = 0;
   // return true if the abstract state is bottom
-  virtual bool is_bottom() = 0;
+  virtual bool is_bottom() const = 0;
   // return true if the abstract state is top
-  virtual bool is_top() = 0;
+  virtual bool is_top() const  = 0;
 
   // Inclusion operator: return true if *this is equal or more precise than abs
   virtual bool operator<=(Dom abs) = 0;
