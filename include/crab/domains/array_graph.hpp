@@ -1708,8 +1708,8 @@ private:
   // will lose precision in the array graph. This kind of
   // assignments should be managed by the apply methods instead.
   void assign(variable_t x, linear_expression_t e, bool update_expressions) {
-    crab::CrabStats::count(getDomainName() + ".count.assign");
-    crab::ScopedCrabStats __st__(getDomainName() + ".assign");
+    crab::CrabStats::count(domain_name() + ".count.assign");
+    crab::ScopedCrabStats __st__(domain_name() + ".assign");
 
     if (is_bottom())
       return;
@@ -1749,8 +1749,8 @@ private:
   // whenever an edge becomes bottom closure is also happening.
   // Return false if bottom is detected during the reduction.
   bool reduce(NumDom &scalar, array_graph_t &g) {
-    crab::CrabStats::count(getDomainName() + ".count.reduce");
-    crab::ScopedCrabStats __st__(getDomainName() + ".reduce");
+    crab::CrabStats::count(domain_name() + ".count.reduce");
+    crab::ScopedCrabStats __st__(domain_name() + ".reduce");
 
     scalar.normalize();
     g.normalize();
@@ -1821,8 +1821,8 @@ public:
 
   array_graph_domain(const array_graph_domain_t &o)
       : _scalar(o._scalar), _expressions(o._expressions), _g(o._g) {
-    crab::CrabStats::count(getDomainName() + ".count.copy");
-    crab::ScopedCrabStats __st__(getDomainName() + ".copy");
+    crab::CrabStats::count(domain_name() + ".count.copy");
+    crab::ScopedCrabStats __st__(domain_name() + ".copy");
   }
 
   array_graph_domain(array_graph_domain_t &&o)
@@ -1830,8 +1830,8 @@ public:
         _g(std::move(o._g)) {}
 
   array_graph_domain_t &operator=(const array_graph_domain_t &o) {
-    crab::CrabStats::count(getDomainName() + ".count.copy");
-    crab::ScopedCrabStats __st__(getDomainName() + ".copy");
+    crab::CrabStats::count(domain_name() + ".count.copy");
+    crab::ScopedCrabStats __st__(domain_name() + ".copy");
     if (this != &o) {
       _scalar = o._scalar;
       _expressions = o._expressions;
@@ -1856,8 +1856,8 @@ public:
   }
 
   bool operator<=(array_graph_domain_t o) override {
-    crab::CrabStats::count(getDomainName() + ".count.leq");
-    crab::ScopedCrabStats __st__(getDomainName() + ".leq");
+    crab::CrabStats::count(domain_name() + ".count.leq");
+    crab::ScopedCrabStats __st__(domain_name() + ".leq");
 
     CRAB_LOG("array-sgraph-domain", crab::outs() << "Leq " << *this << " and\n"
                                                  << o << "=\n";);
@@ -1872,8 +1872,8 @@ public:
   }
 
   array_graph_domain_t operator|(array_graph_domain_t o) override {
-    crab::CrabStats::count(getDomainName() + ".count.join");
-    crab::ScopedCrabStats __st__(getDomainName() + ".join");
+    crab::CrabStats::count(domain_name() + ".count.join");
+    crab::ScopedCrabStats __st__(domain_name() + ".join");
 
     CRAB_LOG("array-sgraph-domain",
              crab::outs() << "Join " << *this << " and " << o << "=\n");
@@ -1886,8 +1886,8 @@ public:
   array_graph_domain_t
   widening_thresholds(array_graph_domain_t o,
                       const iterators::thresholds<number_t> &ts) override {
-    crab::CrabStats::count(getDomainName() + ".count.widening");
-    crab::ScopedCrabStats __st__(getDomainName() + ".widening");
+    crab::CrabStats::count(domain_name() + ".count.widening");
+    crab::ScopedCrabStats __st__(domain_name() + ".widening");
 
     CRAB_LOG("array-sgraph-domain", crab::outs()
                                         << "Widening (w/ thresholds) " << *this
@@ -1906,8 +1906,8 @@ public:
   }
 
   array_graph_domain_t operator||(array_graph_domain_t o) override {
-    crab::CrabStats::count(getDomainName() + ".count.widening");
-    crab::ScopedCrabStats __st__(getDomainName() + ".widening");
+    crab::CrabStats::count(domain_name() + ".count.widening");
+    crab::ScopedCrabStats __st__(domain_name() + ".widening");
 
     CRAB_LOG("array-sgraph-domain",
              crab::outs() << "Widening " << *this << " and " << o << "=\n");
@@ -1925,8 +1925,8 @@ public:
   }
 
   array_graph_domain_t operator&(array_graph_domain_t o) override {
-    crab::CrabStats::count(getDomainName() + ".count.meet");
-    crab::ScopedCrabStats __st__(getDomainName() + ".meet");
+    crab::CrabStats::count(domain_name() + ".count.meet");
+    crab::ScopedCrabStats __st__(domain_name() + ".meet");
 
     CRAB_LOG("array-sgraph-domain",
              crab::outs() << "Meet " << *this << " and " << o << "=\n");
@@ -1944,8 +1944,8 @@ public:
   }
 
   array_graph_domain_t operator&&(array_graph_domain_t o) override {
-    crab::CrabStats::count(getDomainName() + ".count.narrowing");
-    crab::ScopedCrabStats __st__(getDomainName() + ".narrowing");
+    crab::CrabStats::count(domain_name() + ".count.narrowing");
+    crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
 
     CRAB_LOG("array-sgraph-domain",
              crab::outs() << "Narrowing " << *this << " and " << o << "=\n");
@@ -1963,8 +1963,8 @@ public:
   }
 
   void operator-=(const variable_t &v) override {
-    crab::CrabStats::count(getDomainName() + ".count.forget");
-    crab::ScopedCrabStats __st__(getDomainName() + ".forget");
+    crab::CrabStats::count(domain_name() + ".count.forget");
+    crab::ScopedCrabStats __st__(domain_name() + ".forget");
 
     if (is_bottom())
       return;
@@ -1982,8 +1982,8 @@ public:
   }
 
   void project(const variable_vector_t &variables) override {
-    crab::CrabStats::count(getDomainName() + ".count.project");
-    crab::ScopedCrabStats __st__(getDomainName() + ".project");
+    crab::CrabStats::count(domain_name() + ".count.project");
+    crab::ScopedCrabStats __st__(domain_name() + ".project");
 
     if (is_bottom() || is_top()) {
       return;
@@ -2034,32 +2034,32 @@ public:
   void intrinsic(std::string name,
 		 const variable_vector_t &inputs,
 		 const variable_vector_t &outputs) override {
-    CRAB_WARN("Intrinsics ", name, " not implemented by ", getDomainName());
+    CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
   }
 
   void backward_intrinsic(std::string name,
 			  const variable_vector_t &inputs,
 			  const variable_vector_t &outputs,
 			  array_graph_domain_t invariant) override {
-    CRAB_WARN("Intrinsics ", name, " not implemented by ", getDomainName());    
+    CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());    
   }
   /* end intrinsics operations */
   
   void rename(const variable_vector_t &from, const variable_vector_t &to) override {
-    crab::CrabStats::count(getDomainName() + ".count.rename");
-    crab::ScopedCrabStats __st__(getDomainName() + ".rename");
+    crab::CrabStats::count(domain_name() + ".count.rename");
+    crab::ScopedCrabStats __st__(domain_name() + ".rename");
 
     assert(from.size() == to.size());
 
     if (is_top() || is_bottom())
       return;
 
-    CRAB_WARN(getDomainName(), "::rename not implemented");
+    CRAB_WARN(domain_name(), "::rename not implemented");
   }
 
   void operator+=(const linear_constraint_system_t &csts) override {
-    crab::CrabStats::count(getDomainName() + ".count.add_constraints");
-    crab::ScopedCrabStats __st__(getDomainName() + ".add_constraints");
+    crab::CrabStats::count(domain_name() + ".count.add_constraints");
+    crab::ScopedCrabStats __st__(domain_name() + ".add_constraints");
 
     if (is_bottom())
       return;
@@ -2082,8 +2082,8 @@ public:
   void apply(arith_operation_t op,
 	     const variable_t &x, const variable_t &y, number_t z) override {
     if (x == y) {
-      crab::CrabStats::count(getDomainName() + ".count.apply");
-      crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+      crab::CrabStats::count(domain_name() + ".count.apply");
+      crab::ScopedCrabStats __st__(domain_name() + ".apply");
       _expressions.apply(op, x, y, z);
       apply_one_variable<number_t>(op, x, z);
       CRAB_LOG("array-sgraph-domain",
@@ -2109,8 +2109,8 @@ public:
   void apply(arith_operation_t op,
 	     const variable_t &x, const variable_t &y, const variable_t &z) override {
     if (x == y) {
-      crab::CrabStats::count(getDomainName() + ".count.apply");
-      crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+      crab::CrabStats::count(domain_name() + ".count.apply");
+      crab::ScopedCrabStats __st__(domain_name() + ".apply");
       _expressions.apply(op, x, y, z);
       apply_one_variable<variable_t>(op, x, z);
       CRAB_LOG("array-sgraph-domain",
@@ -2209,8 +2209,8 @@ public:
 
   void apply(bitwise_operation_t op,
 	     const variable_t &x, const variable_t &y, const variable_t &z) override {
-    crab::CrabStats::count(getDomainName() + ".count.apply");
-    crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+    crab::CrabStats::count(domain_name() + ".count.apply");
+    crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
     _expressions.apply(op, x, y, z);
     // XXX: we give up soundly in the graph domain
@@ -2219,8 +2219,8 @@ public:
 
   void apply(bitwise_operation_t op,
 	     const variable_t &x, const variable_t &y, number_t k) override {
-    crab::CrabStats::count(getDomainName() + ".count.apply");
-    crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+    crab::CrabStats::count(domain_name() + ".count.apply");
+    crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
     _expressions.apply(op, x, y, k);
     // XXX: we give up soundly in the graph domain
@@ -2274,8 +2274,8 @@ public:
   virtual void array_load(const variable_t &lhs, const variable_t &a,
                           const linear_expression_t &elem_size,
                           const linear_expression_t &i) override {
-    crab::CrabStats::count(getDomainName() + ".count.load");
-    crab::ScopedCrabStats __st__(getDomainName() + ".load");
+    crab::CrabStats::count(domain_name() + ".count.load");
+    crab::ScopedCrabStats __st__(domain_name() + ".load");
 
     auto vi = i.get_variable();
     if (!vi) {
@@ -2345,8 +2345,8 @@ public:
   virtual void array_store(const variable_t &a, const linear_expression_t &elem_size,
                            const linear_expression_t &i, const linear_expression_t &val,
                            bool /*is_strong_update*/) override {
-    crab::CrabStats::count(getDomainName() + ".count.store");
-    crab::ScopedCrabStats __st__(getDomainName() + ".store");
+    crab::CrabStats::count(domain_name() + ".count.store");
+    crab::ScopedCrabStats __st__(domain_name() + ".store");
 
     auto vi = i.get_variable();
     if (!vi) {
@@ -2462,7 +2462,7 @@ public:
                "to_disjunctive_linear_constraint_system");
   }
 
-  static std::string getDomainName() {
+  std::string domain_name() const override {
     std::string name("ArrayGraph(" + NumDom::getDomainName() + "," +
                      Content::getDomainName() + ")");
     return name;

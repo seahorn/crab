@@ -228,4 +228,4 @@
       CRAB_ERROR(Msg);                                                         \
     }                                                                          \
     void write(crab_os &o) override { CRAB_ERROR(Msg); }                       \
-    static std::string getDomainName() { return "Unavailable domain"; }        
+    std::string domain_name() const override { return "Unavailable domain"; }        

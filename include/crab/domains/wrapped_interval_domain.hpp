@@ -1360,13 +1360,13 @@ public:
   wrapped_interval_domain() : _env(separate_domain_t::top()) {}
 
   wrapped_interval_domain(const wrapped_interval_domain_t &e) : _env(e._env) {
-    crab::CrabStats::count(getDomainName() + ".count.copy");
-    crab::ScopedCrabStats __st__(getDomainName() + ".copy");
+    crab::CrabStats::count(domain_name() + ".count.copy");
+    crab::ScopedCrabStats __st__(domain_name() + ".copy");
   }
 
   wrapped_interval_domain_t &operator=(const wrapped_interval_domain_t &o) {
-    crab::CrabStats::count(getDomainName() + ".count.copy");
-    crab::ScopedCrabStats __st__(getDomainName() + ".copy");
+    crab::CrabStats::count(domain_name() + ".count.copy");
+    crab::ScopedCrabStats __st__(domain_name() + ".copy");
     if (this != &o)
       this->_env = o._env;
     return *this;
@@ -1381,8 +1381,8 @@ public:
   bool is_top() override { return this->_env.is_top(); }
 
   bool operator<=(wrapped_interval_domain_t e) override {
-    crab::CrabStats::count(getDomainName() + ".count.leq");
-    crab::ScopedCrabStats __st__(getDomainName() + ".leq");
+    crab::CrabStats::count(domain_name() + ".count.leq");
+    crab::ScopedCrabStats __st__(domain_name() + ".leq");
     // CRAB_LOG("wrapped-int",
     //       crab::outs()<< *this << " <= " << e << "=";);
     bool res = (this->_env <= e._env);
@@ -1392,16 +1392,16 @@ public:
   }
 
   void operator|=(wrapped_interval_domain_t e) override {
-    crab::CrabStats::count(getDomainName() + ".count.join");
-    crab::ScopedCrabStats __st__(getDomainName() + ".join");
+    crab::CrabStats::count(domain_name() + ".count.join");
+    crab::ScopedCrabStats __st__(domain_name() + ".join");
     CRAB_LOG("wrapped-int", crab::outs() << *this << " U " << e << " = ");
     this->_env = this->_env | e._env;
     CRAB_LOG("wrapped-int", crab::outs() << *this << "\n";);
   }
 
   wrapped_interval_domain_t operator|(wrapped_interval_domain_t e) override {
-    crab::CrabStats::count(getDomainName() + ".count.join");
-    crab::ScopedCrabStats __st__(getDomainName() + ".join");
+    crab::CrabStats::count(domain_name() + ".count.join");
+    crab::ScopedCrabStats __st__(domain_name() + ".join");
     CRAB_LOG("wrapped-int", crab::outs() << *this << " U " << e << " = ");
     wrapped_interval_domain_t res(this->_env | e._env);
     CRAB_LOG("wrapped-int", crab::outs() << res << "\n";);
@@ -1409,8 +1409,8 @@ public:
   }
 
   wrapped_interval_domain_t operator&(wrapped_interval_domain_t e) override {
-    crab::CrabStats::count(getDomainName() + ".count.meet");
-    crab::ScopedCrabStats __st__(getDomainName() + ".meet");
+    crab::CrabStats::count(domain_name() + ".count.meet");
+    crab::ScopedCrabStats __st__(domain_name() + ".meet");
     CRAB_LOG("wrapped-int", crab::outs() << *this << " n " << e << " = ");
     wrapped_interval_domain_t res(this->_env & e._env);
     CRAB_LOG("wrapped-int", crab::outs() << res << "\n";);
@@ -1418,8 +1418,8 @@ public:
   }
 
   wrapped_interval_domain_t operator||(wrapped_interval_domain_t e) override {
-    crab::CrabStats::count(getDomainName() + ".count.widening");
-    crab::ScopedCrabStats __st__(getDomainName() + ".widening");
+    crab::CrabStats::count(domain_name() + ".count.widening");
+    crab::ScopedCrabStats __st__(domain_name() + ".widening");
     CRAB_LOG("wrapped-int",
              crab::outs() << "WIDENING " << *this << " and " << e << " = ");
     wrapped_interval_domain_t res(this->_env || e._env);
@@ -1430,8 +1430,8 @@ public:
   wrapped_interval_domain_t
   widening_thresholds(wrapped_interval_domain_t e,
                       const iterators::thresholds<number_t> &ts) override {
-    crab::CrabStats::count(getDomainName() + ".count.widening");
-    crab::ScopedCrabStats __st__(getDomainName() + ".widening");
+    crab::CrabStats::count(domain_name() + ".count.widening");
+    crab::ScopedCrabStats __st__(domain_name() + ".widening");
     CRAB_LOG("wrapped-int",
              crab::outs() << "WIDENING " << *this << " and " << e << " = ");
     wrapped_interval_domain_t res(this->_env.widening_thresholds(e._env, ts));
@@ -1440,28 +1440,28 @@ public:
   }
 
   wrapped_interval_domain_t operator&&(wrapped_interval_domain_t e) override {
-    crab::CrabStats::count(getDomainName() + ".count.narrowing");
-    crab::ScopedCrabStats __st__(getDomainName() + ".narrowing");
+    crab::CrabStats::count(domain_name() + ".count.narrowing");
+    crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
     return (this->_env && e._env);
   }
 
   void operator-=(const variable_t &v) override {
-    crab::CrabStats::count(getDomainName() + ".count.forget");
-    crab::ScopedCrabStats __st__(getDomainName() + ".forget");
+    crab::CrabStats::count(domain_name() + ".count.forget");
+    crab::ScopedCrabStats __st__(domain_name() + ".forget");
     this->_env -= v;
   }
 
   void set(const variable_t &v, wrapped_interval_t i) {
-    crab::CrabStats::count(getDomainName() + ".count.assign");
-    crab::ScopedCrabStats __st__(getDomainName() + ".assign");
+    crab::CrabStats::count(domain_name() + ".count.assign");
+    crab::ScopedCrabStats __st__(domain_name() + ".assign");
     this->_env.set(v, i);
     CRAB_LOG("wrapped-int", crab::outs()
                                 << v << ":=" << i << "=" << _env[v] << "\n");
   }
 
   void set(const variable_t &v, interval_t i) {
-    crab::CrabStats::count(getDomainName() + ".count.assign");
-    crab::ScopedCrabStats __st__(getDomainName() + ".assign");
+    crab::CrabStats::count(domain_name() + ".count.assign");
+    crab::ScopedCrabStats __st__(domain_name() + ".assign");
     if (i.lb().is_finite() && i.ub.is_finite()) {
       wrapped_interval_t rhs =
           wrapped_interval_t::mk_winterval(i.lb(), i.ub(), v.get_bitwidth());
@@ -1476,8 +1476,8 @@ public:
   }
 
   void set(const variable_t &v, number_t n) {
-    crab::CrabStats::count(getDomainName() + ".count.assign");
-    crab::ScopedCrabStats __st__(getDomainName() + ".assign");
+    crab::CrabStats::count(domain_name() + ".count.assign");
+    crab::ScopedCrabStats __st__(domain_name() + ".assign");
     this->_env.set(v, wrapped_interval_t::mk_winterval(n, v.get_bitwidth()));
     CRAB_LOG("wrapped-int", crab::outs()
                                 << v << ":=" << n << "=" << _env[v] << "\n");
@@ -1495,8 +1495,8 @@ public:
   }
 
   void assign(const variable_t &x, const linear_expression_t &e) override {
-    crab::CrabStats::count(getDomainName() + ".count.assign");
-    crab::ScopedCrabStats __st__(getDomainName() + ".assign");
+    crab::CrabStats::count(domain_name() + ".count.assign");
+    crab::ScopedCrabStats __st__(domain_name() + ".assign");
     if (boost::optional<variable_t> v = e.get_variable()) {
       this->_env.set(x, this->_env[*v]);
     } else {
@@ -1509,8 +1509,8 @@ public:
 
   void apply(arith_operation_t op,
 	     const variable_t &x, const variable_t &y, const variable_t &z) override {
-    crab::CrabStats::count(getDomainName() + ".count.apply");
-    crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+    crab::CrabStats::count(domain_name() + ".count.apply");
+    crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
     wrapped_interval_t yi = this->_env[y];
     wrapped_interval_t zi = this->_env[z];
@@ -1548,8 +1548,8 @@ public:
 
   void apply(arith_operation_t op,
 	     const variable_t &x, const variable_t &y, number_t k) override {
-    crab::CrabStats::count(getDomainName() + ".count.apply");
-    crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+    crab::CrabStats::count(domain_name() + ".count.apply");
+    crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
     wrapped_interval_t yi = this->_env[y];
     wrapped_interval_t zi =
@@ -1590,8 +1590,8 @@ public:
 
   void apply(int_conv_operation_t op,
 	     const variable_t &dst, const variable_t &src) override {
-    crab::CrabStats::count(getDomainName() + ".count.apply");
-    crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+    crab::CrabStats::count(domain_name() + ".count.apply");
+    crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
     wrapped_interval_t src_i = this->_env[src];
     wrapped_interval_t dst_i;
@@ -1628,8 +1628,8 @@ public:
 
   void apply(bitwise_operation_t op,
 	     const variable_t &x, const variable_t &y, const variable_t &z) override {
-    crab::CrabStats::count(getDomainName() + ".count.apply");
-    crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+    crab::CrabStats::count(domain_name() + ".count.apply");
+    crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
     wrapped_interval_t yi = this->_env[y];
     wrapped_interval_t zi = this->_env[z];
@@ -1668,8 +1668,8 @@ public:
 
   void apply(bitwise_operation_t op,
 	     const variable_t &x, const variable_t &y, number_t k) override {
-    crab::CrabStats::count(getDomainName() + ".count.apply");
-    crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+    crab::CrabStats::count(domain_name() + ".count.apply");
+    crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
     wrapped_interval_t yi = this->_env[y];
     wrapped_interval_t zi =
@@ -1707,8 +1707,8 @@ public:
   }
 
   void operator+=(const linear_constraint_system_t &csts) override {
-    crab::CrabStats::count(getDomainName() + ".count.add_constraints");
-    crab::ScopedCrabStats __st__(getDomainName() + ".add_constraints");
+    crab::CrabStats::count(domain_name() + ".count.add_constraints");
+    crab::ScopedCrabStats __st__(domain_name() + ".add_constraints");
     this->add(csts);
     CRAB_LOG("wrapped-int", crab::outs()
                                 << "Added " << csts << " = " << *this << "\n");
@@ -1819,8 +1819,8 @@ public:
   }
 
   void project(const variable_vector_t &variables) override {
-    crab::CrabStats::count(getDomainName() + ".count.project");
-    crab::ScopedCrabStats __st__(getDomainName() + ".project");
+    crab::CrabStats::count(domain_name() + ".count.project");
+    crab::ScopedCrabStats __st__(domain_name() + ".project");
 
     if (is_bottom() || is_top()) {
       return;
@@ -1834,8 +1834,8 @@ public:
   }
 
   void expand(const variable_t &x, const variable_t &new_x) override {
-    crab::CrabStats::count(getDomainName() + ".count.expand");
-    crab::ScopedCrabStats __st__(getDomainName() + ".expand");
+    crab::CrabStats::count(domain_name() + ".count.expand");
+    crab::ScopedCrabStats __st__(domain_name() + ".expand");
 
     if (is_bottom() || is_top()) {
       return;
@@ -1849,8 +1849,8 @@ public:
   void minimize() override {}
 
   void rename(const variable_vector_t &from, const variable_vector_t &to) override {
-    crab::CrabStats::count(getDomainName() + ".count.rename");
-    crab::ScopedCrabStats __st__(getDomainName() + ".rename");
+    crab::CrabStats::count(domain_name() + ".count.rename");
+    crab::ScopedCrabStats __st__(domain_name() + ".rename");
 
     _env.rename(from, to);            
   }
@@ -1859,20 +1859,20 @@ public:
   void intrinsic(std::string name,
 		 const variable_vector_t &inputs,
 		 const variable_vector_t &outputs) override {
-    CRAB_WARN("Intrinsics ", name, " not implemented by ", getDomainName());
+    CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
   }
 
   void backward_intrinsic(std::string name,
 			  const variable_vector_t &inputs,
 			  const variable_vector_t &outputs,
 			  wrapped_interval_domain_t invariant) override {
-    CRAB_WARN("Intrinsics ", name, " not implemented by ", getDomainName());    
+    CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());    
   }
   /* end intrinsics operations */
   
   void write(crab::crab_os &o) override {
-    crab::CrabStats::count(getDomainName() + ".count.write");
-    crab::ScopedCrabStats __st__(getDomainName() + ".write");
+    crab::CrabStats::count(domain_name() + ".count.write");
+    crab::ScopedCrabStats __st__(domain_name() + ".write");
 
     this->_env.write(o);
   }
@@ -1880,9 +1880,9 @@ public:
   // Important: we make the choice here that we interpret wrapint as
   // signed mathematical integers.
   linear_constraint_system_t to_linear_constraint_system() override {
-    crab::CrabStats::count(getDomainName() +
+    crab::CrabStats::count(domain_name() +
                            ".count.to_linear_constraint_system");
-    crab::ScopedCrabStats __st__(getDomainName() +
+    crab::ScopedCrabStats __st__(domain_name() +
                                  ".to_linear_constraint_system");
 
     linear_constraint_system_t csts;
@@ -1914,7 +1914,7 @@ public:
     }
   }
 
-  static std::string getDomainName() { return "WrappedIntervals"; }
+  std::string domain_name() const override { return "WrappedIntervals"; }
 
 }; // class wrapped_interval_domain
 
@@ -2505,7 +2505,7 @@ public:
   }
 
   void operator+=(const linear_constraint_system_t &csts) override {
-    CRAB_WARN(getDomainName(), "::operator+ not implemented");
+    CRAB_WARN(domain_name(), "::operator+ not implemented");
 
     // XXX: this code is fine but csts.variables() returns now a range
     // iterator
@@ -2653,7 +2653,7 @@ public:
     return _w_int_dom.to_disjunctive_linear_constraint_system();
   }
 
-  static std::string getDomainName() {
+  std::string domain_name() const override {
     return "WrappedIntervals+HistoryAbstraction";
   }
 
@@ -2661,14 +2661,14 @@ public:
   void intrinsic(std::string name,
 		 const variable_vector_t &inputs,
 		 const variable_vector_t &outputs) override {
-    CRAB_WARN("Intrinsics ", name, " not implemented by ", getDomainName());
+    CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
   }
 
   void backward_intrinsic(std::string name,
 			  const variable_vector_t &inputs,
 			  const variable_vector_t &outputs,
 			  this_type invariant) override {
-    CRAB_WARN("Intrinsics ", name, " not implemented by ", getDomainName());    
+    CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());    
   }
   /* end intrinsics operations */
   
@@ -2693,8 +2693,8 @@ public:
   }
 
   void expand(const variable_t &x, const variable_t &new_x) override {
-    crab::CrabStats::count(getDomainName() + ".count.expand");
-    crab::ScopedCrabStats __st__(getDomainName() + ".expand");
+    crab::CrabStats::count(domain_name() + ".count.expand");
+    crab::ScopedCrabStats __st__(domain_name() + ".expand");
 
     if (is_bottom() || is_top()) {
       return;
@@ -2708,8 +2708,8 @@ public:
   }
 
   void project(const variable_vector_t &vars) override {
-    crab::CrabStats::count(getDomainName() + ".count.project");
-    crab::ScopedCrabStats __st__(getDomainName() + ".project");
+    crab::CrabStats::count(domain_name() + ".count.project");
+    crab::ScopedCrabStats __st__(domain_name() + ".project");
 
     if (is_bottom() || is_top()) {
       return;
@@ -2743,15 +2743,15 @@ public:
   void minimize() override {}
 
   void rename(const variable_vector_t &from, const variable_vector_t &to) override {
-    crab::CrabStats::count(getDomainName() + ".count.rename");
-    crab::ScopedCrabStats __st__(getDomainName() + ".rename");
+    crab::CrabStats::count(domain_name() + ".count.rename");
+    crab::ScopedCrabStats __st__(domain_name() + ".rename");
 
     assert(from.size() == to.size());
 
     if (is_top() || is_bottom())
       return;
 
-    CRAB_WARN(getDomainName(), "::rename not implemented");
+    CRAB_WARN(domain_name(), "::rename not implemented");
   }
 };
 
@@ -3463,7 +3463,7 @@ public:
     return res;
   }
 
-  static std::string getDomainName() {
+  std::string domain_name() const override {
     return domain_product2_t::getDomainName();
   }
 

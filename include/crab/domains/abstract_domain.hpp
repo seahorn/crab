@@ -19,6 +19,8 @@ template <class Dom> struct abstract_domain_traits;
  * All abstract domains must derive from the abstract_domain class
  * and expose publicly all its public typedef's.
  *
+ * Use of Curiously Recurring Template Pattern (CRTP).
+ * 
  * This is a sample of how to implement a new abstract domain:
  *
  * template<typename Number, typename VariableName>
@@ -69,6 +71,11 @@ public:
     return abs;
   }
 
+  static std::string getDomainName() {
+    Dom abs;
+    return abs.domain_name();
+  }
+  
   /**************************** Lattice operations ****************************/
 
   // set *this to top
@@ -310,6 +317,9 @@ public:
   // Print the internal state of the abstract domain
   virtual void write(crab::crab_os &o) = 0;
 
+  // Return a string the abstract domain name
+  virtual std::string domain_name(void) const = 0;
+  
   friend crab::crab_os &operator<<(crab::crab_os &o,
                                    abstract_domain<Dom> &dom) {
     dom.write(o);

@@ -764,13 +764,13 @@ public:
   congruence_domain() : _env(separate_domain_t::top()) {}
 
   congruence_domain(const congruence_domain_t &e) : _env(e._env) {
-    crab::CrabStats::count(getDomainName() + ".count.copy");
-    crab::ScopedCrabStats __st__(getDomainName() + ".copy");
+    crab::CrabStats::count(domain_name() + ".count.copy");
+    crab::ScopedCrabStats __st__(domain_name() + ".copy");
   }
 
   congruence_domain_t &operator=(const congruence_domain_t &o) {
-    crab::CrabStats::count(getDomainName() + ".count.copy");
-    crab::ScopedCrabStats __st__(getDomainName() + ".copy");
+    crab::CrabStats::count(domain_name() + ".count.copy");
+    crab::ScopedCrabStats __st__(domain_name() + ".copy");
     if (this != &o)
       this->_env = o._env;
     return *this;
@@ -785,32 +785,32 @@ public:
   bool is_top() override { return this->_env.is_top(); }
 
   bool operator<=(congruence_domain_t e) override {
-    crab::CrabStats::count(getDomainName() + ".count.leq");
-    crab::ScopedCrabStats __st__(getDomainName() + ".leq");
+    crab::CrabStats::count(domain_name() + ".count.leq");
+    crab::ScopedCrabStats __st__(domain_name() + ".leq");
     return this->_env <= e._env;
   }
 
   void operator|=(congruence_domain_t e) override {
-    crab::CrabStats::count(getDomainName() + ".count.join");
-    crab::ScopedCrabStats __st__(getDomainName() + ".join");
+    crab::CrabStats::count(domain_name() + ".count.join");
+    crab::ScopedCrabStats __st__(domain_name() + ".join");
     this->_env = this->_env | e._env;
   }
 
   congruence_domain_t operator|(congruence_domain_t e) override {
-    crab::CrabStats::count(getDomainName() + ".count.join");
-    crab::ScopedCrabStats __st__(getDomainName() + ".join");
+    crab::CrabStats::count(domain_name() + ".count.join");
+    crab::ScopedCrabStats __st__(domain_name() + ".join");
     return this->_env | e._env;
   }
 
   congruence_domain_t operator&(congruence_domain_t e) override {
-    crab::CrabStats::count(getDomainName() + ".count.meet");
-    crab::ScopedCrabStats __st__(getDomainName() + ".meet");
+    crab::CrabStats::count(domain_name() + ".count.meet");
+    crab::ScopedCrabStats __st__(domain_name() + ".meet");
     return this->_env & e._env;
   }
 
   congruence_domain_t operator||(congruence_domain_t e) override {
-    crab::CrabStats::count(getDomainName() + ".count.widening");
-    crab::ScopedCrabStats __st__(getDomainName() + ".widening");
+    crab::CrabStats::count(domain_name() + ".count.widening");
+    crab::ScopedCrabStats __st__(domain_name() + ".widening");
     return this->_env || e._env;
   }
 
@@ -821,31 +821,31 @@ public:
   }
 
   congruence_domain_t operator&&(congruence_domain_t e) override {
-    crab::CrabStats::count(getDomainName() + ".count.narrowing");
-    crab::ScopedCrabStats __st__(getDomainName() + ".narrowing");
+    crab::CrabStats::count(domain_name() + ".count.narrowing");
+    crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
     return this->_env && e._env;
   }
 
   void set(const variable_t &v, congruence_t i) {
-    crab::CrabStats::count(getDomainName() + ".count.assign");
-    crab::ScopedCrabStats __st__(getDomainName() + ".assign");
+    crab::CrabStats::count(domain_name() + ".count.assign");
+    crab::ScopedCrabStats __st__(domain_name() + ".assign");
     this->_env.set(v, i);
   }
 
   void set(const variable_t &v, number_t n) {
-    crab::CrabStats::count(getDomainName() + ".count.assign");
-    crab::ScopedCrabStats __st__(getDomainName() + ".assign");
+    crab::CrabStats::count(domain_name() + ".count.assign");
+    crab::ScopedCrabStats __st__(domain_name() + ".assign");
     this->_env.set(v, congruence_t(n));
   }
 
   void operator-=(const variable_t &v) override {
-    crab::CrabStats::count(getDomainName() + ".count.forget");
-    crab::ScopedCrabStats __st__(getDomainName() + ".forget");
+    crab::CrabStats::count(domain_name() + ".count.forget");
+    crab::ScopedCrabStats __st__(domain_name() + ".forget");
     this->_env -= v;
   }
 
   virtual interval_t operator[](const variable_t &v) override {
-    CRAB_WARN(getDomainName(), "::operator[] not implemented");
+    CRAB_WARN(domain_name(), "::operator[] not implemented");
     return interval_t::top();
   }
 
@@ -863,8 +863,8 @@ public:
   }
 
   void operator+=(const linear_constraint_system_t &csts) override {
-    crab::CrabStats::count(getDomainName() + ".count.add_constraints");
-    crab::ScopedCrabStats __st__(getDomainName() + ".add_constraints");
+    crab::CrabStats::count(domain_name() + ".count.add_constraints");
+    crab::ScopedCrabStats __st__(domain_name() + ".add_constraints");
     const std::size_t threshold = 10;
     if (!this->is_bottom()) {
       solver_t solver(csts, threshold);
@@ -873,8 +873,8 @@ public:
   }
 
   void assign(const variable_t &x, const linear_expression_t &e) override {
-    crab::CrabStats::count(getDomainName() + ".count.assign");
-    crab::ScopedCrabStats __st__(getDomainName() + ".assign");
+    crab::CrabStats::count(domain_name() + ".count.assign");
+    crab::ScopedCrabStats __st__(domain_name() + ".assign");
 
     congruence_t r = e.constant();
     for (auto kv: e) {
@@ -885,8 +885,8 @@ public:
 
   void apply(crab::domains::arith_operation_t op,
 	     const variable_t &x, const variable_t &y, const variable_t &z) override {
-    crab::CrabStats::count(getDomainName() + ".count.apply");
-    crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+    crab::CrabStats::count(domain_name() + ".count.apply");
+    crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
     congruence_t yi = this->_env[y];
     congruence_t zi = this->_env[z];
@@ -922,8 +922,8 @@ public:
 
   void apply(crab::domains::arith_operation_t op,
 	     const variable_t &x, const variable_t &y, number_t k) override {
-    crab::CrabStats::count(getDomainName() + ".count.apply");
-    crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+    crab::CrabStats::count(domain_name() + ".count.apply");
+    crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
     congruence_t yi = this->_env[y];
     congruence_t zi(k);
@@ -960,8 +960,8 @@ public:
   // backward operations
   void backward_assign(const variable_t &x, const linear_expression_t &e,
                        congruence_domain_t inv) override {
-    crab::CrabStats::count(getDomainName() + ".count.backward_assign");
-    crab::ScopedCrabStats __st__(getDomainName() + ".backward_assign");
+    crab::CrabStats::count(domain_name() + ".count.backward_assign");
+    crab::ScopedCrabStats __st__(domain_name() + ".backward_assign");
 
     crab::domains::BackwardAssignOps<congruence_domain_t>::assign(*this, x, e,
                                                                   inv);
@@ -970,8 +970,8 @@ public:
   void backward_apply(crab::domains::arith_operation_t op,
 		      const variable_t &x, const variable_t &y, number_t z,
                       congruence_domain_t inv) override {
-    crab::CrabStats::count(getDomainName() + ".count.backward_apply");
-    crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
+    crab::CrabStats::count(domain_name() + ".count.backward_apply");
+    crab::ScopedCrabStats __st__(domain_name() + ".backward_apply");
 
     crab::domains::BackwardAssignOps<congruence_domain_t>::apply(*this, op, x,
                                                                  y, z, inv);
@@ -980,8 +980,8 @@ public:
   void backward_apply(crab::domains::arith_operation_t op,
 		      const variable_t &x, const variable_t &y, const variable_t &z,
                       congruence_domain_t inv) override {
-    crab::CrabStats::count(getDomainName() + ".count.backward_apply");
-    crab::ScopedCrabStats __st__(getDomainName() + ".backward_apply");
+    crab::CrabStats::count(domain_name() + ".count.backward_apply");
+    crab::ScopedCrabStats __st__(domain_name() + ".backward_apply");
 
     crab::domains::BackwardAssignOps<congruence_domain_t>::apply(*this, op, x,
                                                                  y, z, inv);
@@ -999,8 +999,8 @@ public:
 
   void apply(crab::domains::bitwise_operation_t op,
 	     const variable_t &x, const variable_t &y, const variable_t &z) override {
-    crab::CrabStats::count(getDomainName() + ".count.apply");
-    crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+    crab::CrabStats::count(domain_name() + ".count.apply");
+    crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
     congruence_t yi = this->_env[y];
     congruence_t zi = this->_env[z];
@@ -1040,8 +1040,8 @@ public:
 
   void apply(crab::domains::bitwise_operation_t op,
 	     const variable_t &x, const variable_t &y, number_t k) override {
-    crab::CrabStats::count(getDomainName() + ".count.apply");
-    crab::ScopedCrabStats __st__(getDomainName() + ".apply");
+    crab::CrabStats::count(domain_name() + ".count.apply");
+    crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
     congruence_t yi = this->_env[y];
     congruence_t zi(k);
@@ -1162,8 +1162,8 @@ public:
   }
 
   void project(const variable_vector_t &variables) override {
-    crab::CrabStats::count(getDomainName() + ".count.project");
-    crab::ScopedCrabStats __st__(getDomainName() + ".project");
+    crab::CrabStats::count(domain_name() + ".count.project");
+    crab::ScopedCrabStats __st__(domain_name() + ".project");
 
     if (is_bottom() || is_top()) {
       return;
@@ -1177,8 +1177,8 @@ public:
   }
 
   void expand(const variable_t &x, const variable_t &new_x) override {
-    crab::CrabStats::count(getDomainName() + ".count.expand");
-    crab::ScopedCrabStats __st__(getDomainName() + ".expand");
+    crab::CrabStats::count(domain_name() + ".count.expand");
+    crab::ScopedCrabStats __st__(domain_name() + ".expand");
 
     if (is_bottom() || is_top()) {
       return;
@@ -1192,8 +1192,8 @@ public:
   void minimize() override {}
 
   void rename(const variable_vector_t &from, const variable_vector_t &to) override {
-    crab::CrabStats::count(getDomainName() + ".count.rename");
-    crab::ScopedCrabStats __st__(getDomainName() + ".rename");
+    crab::CrabStats::count(domain_name() + ".count.rename");
+    crab::ScopedCrabStats __st__(domain_name() + ".rename");
 
     _env.rename(from, to);    
   }
@@ -1202,28 +1202,28 @@ public:
   void intrinsic(std::string name,
 		 const variable_vector_t &inputs,
 		 const variable_vector_t &outputs) override {
-    CRAB_WARN("Intrinsics ", name, " not implemented by ", getDomainName());
+    CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
   }
 
   void backward_intrinsic(std::string name,
 			  const variable_vector_t &inputs,
 			  const variable_vector_t &outputs,
 			  congruence_domain_t invariant) override {
-    CRAB_WARN("Intrinsics ", name, " not implemented by ", getDomainName());    
+    CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());    
   }
   /* end intrinsics operations */
   
   void write(crab::crab_os &o) override {
-    crab::CrabStats::count(getDomainName() + ".count.write");
-    crab::ScopedCrabStats __st__(getDomainName() + ".write");
+    crab::CrabStats::count(domain_name() + ".count.write");
+    crab::ScopedCrabStats __st__(domain_name() + ".write");
 
     this->_env.write(o);
   }
 
   linear_constraint_system_t to_linear_constraint_system() override {
-    crab::CrabStats::count(getDomainName() +
+    crab::CrabStats::count(domain_name() +
                            ".count.to_linear_constraint_system");
-    crab::ScopedCrabStats __st__(getDomainName() +
+    crab::ScopedCrabStats __st__(domain_name() +
                                  ".to_linear_constraint_system");
 
     linear_constraint_system_t csts;
@@ -1255,8 +1255,8 @@ public:
     }
   }
 
-  static std::string getDomainName() { return "Congruences"; }
-
+  std::string domain_name() const override { return "Congruences"; }
+  
 }; // class congruence_domain
 
 } // namespace ikos

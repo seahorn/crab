@@ -685,7 +685,7 @@ public:
   
   void write(crab::crab_os &o) override { this->_product.write(o); }
 
-  static std::string getDomainName() {
+  std::string domain_name() const override {
     return basic_domain_product2_t::getDomainName();
   }
 
@@ -778,8 +778,8 @@ private:
   }
 
   void reduce_variable(const variable_t &v) {
-    crab::CrabStats::count(getDomainName() + ".count.reduce");
-    crab::ScopedCrabStats __st__(getDomainName() + ".reduce");
+    crab::CrabStats::count(domain_name() + ".count.reduce");
+    crab::ScopedCrabStats __st__(domain_name() + ".reduce");
 
     if (!is_bottom() && !Params::disable_reduction) {
 
@@ -835,8 +835,8 @@ private:
         }
 
         {
-          std::string k(getDomainName() + ".count.reduce.equalities_from_" +
-                        _product.first().getDomainName());
+          std::string k(domain_name() + ".count.reduce.equalities_from_" +
+                        _product.first().domain_name());
           crab::CrabStats::uset(k, crab::CrabStats::get(k) +
                                        filtered_csts1.size());
         }
@@ -851,8 +851,8 @@ private:
           }
         }
         {
-          std::string k(getDomainName() + ".count.reduce.equalities_from_" +
-                        _product.second().getDomainName());
+          std::string k(domain_name() + ".count.reduce.equalities_from_" +
+                        _product.second().domain_name());
           crab::CrabStats::uset(k, crab::CrabStats::get(k) + csts2.size());
         }
         inv1 += filtered_csts2;
@@ -863,8 +863,8 @@ private:
             !Params::left_propagate_inequalities;
         crab::domains::reduced_domain_traits<Domain1>::extract(
             inv1, v, csts1, propagate_only_equalities);
-        std::string k(getDomainName() + ".count.reduce.equalities_from_" +
-                      _product.first().getDomainName());
+        std::string k(domain_name() + ".count.reduce.equalities_from_" +
+                      _product.first().domain_name());
         crab::CrabStats::uset(k, crab::CrabStats::get(k) + csts1.size());
         inv2 += csts1;
       } else if (Params::right_propagate_equalities ||
@@ -874,8 +874,8 @@ private:
             !Params::right_propagate_inequalities;
         crab::domains::reduced_domain_traits<Domain2>::extract(
             inv2, v, csts2, propagate_only_equalities);
-        std::string k(getDomainName() + ".count.reduce.equalities_from_" +
-                      _product.second().getDomainName());
+        std::string k(domain_name() + ".count.reduce.equalities_from_" +
+                      _product.second().domain_name());
         crab::CrabStats::uset(k, crab::CrabStats::get(k) + csts2.size());
         inv1 += csts2;
       }
@@ -1208,7 +1208,7 @@ public:
     return this->_product.to_disjunctive_linear_constraint_system();
   }
 
-  static std::string getDomainName() {
+  std::string domain_name() const override {
     std::string name = "ReducedProduct(" + Domain1::getDomainName() + "," +
                        Domain2::getDomainName() + ")";
     return name;
@@ -1524,8 +1524,8 @@ private:
       : _product(product) {}
 
   void reduce_variable(const variable_t &v) {
-    crab::CrabStats::count(getDomainName() + ".count.reduce");
-    crab::ScopedCrabStats __st__(getDomainName() + ".reduce");
+    crab::CrabStats::count(domain_name() + ".count.reduce");
+    crab::ScopedCrabStats __st__(domain_name() + ".reduce");
 
     if (is_bottom())
       return;
@@ -1804,7 +1804,7 @@ public:
     return this->_product.to_disjunctive_linear_constraint_system();
   }
 
-  static std::string getDomainName() {
+  std::string domain_name() const override {
     return domain_product2_t::getDomainName();
   }
 

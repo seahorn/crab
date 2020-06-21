@@ -123,16 +123,16 @@ public:
   }
 
   array_smashing(const array_smashing_t &other) : _inv(other._inv) {
-    crab::CrabStats::count(getDomainName() + ".count.copy");
-    crab::ScopedCrabStats __st__(getDomainName() + ".copy");
+    crab::CrabStats::count(domain_name() + ".count.copy");
+    crab::ScopedCrabStats __st__(domain_name() + ".copy");
   }
 
   array_smashing(const array_smashing_t &&other)
       : _inv(std::move(other._inv)) {}
 
   array_smashing_t &operator=(const array_smashing_t &other) {
-    crab::CrabStats::count(getDomainName() + ".count.copy");
-    crab::ScopedCrabStats __st__(getDomainName() + ".copy");
+    crab::CrabStats::count(domain_name() + ".count.copy");
+    crab::ScopedCrabStats __st__(domain_name() + ".copy");
     if (this != &other) {
       _inv = other._inv;
     }
@@ -336,8 +336,8 @@ public:
   virtual void array_load(const variable_t &lhs, const variable_t &a,
                           const linear_expression_t &/*elem_size*/,
                           const linear_expression_t &i) override {
-    crab::CrabStats::count(getDomainName() + ".count.load");
-    crab::ScopedCrabStats __st__(getDomainName() + ".load");
+    crab::CrabStats::count(domain_name() + ".count.load");
+    crab::ScopedCrabStats __st__(domain_name() + ".load");
 
     // We need to be careful when assigning a summarized variable a
     // into a non-summarized variable lhs. Simply _inv.assign(lhs,a)
@@ -364,8 +364,8 @@ public:
   virtual void array_store(const variable_t &a, const linear_expression_t &/*elem_size*/,
                            const linear_expression_t &i, const linear_expression_t &val,
                            bool is_strong_update) override {
-    crab::CrabStats::count(getDomainName() + ".count.store");
-    crab::ScopedCrabStats __st__(getDomainName() + ".store");
+    crab::CrabStats::count(domain_name() + ".count.store");
+    crab::ScopedCrabStats __st__(domain_name() + ".store");
 
     if (is_strong_update) {
       do_strong_update(a, val);
@@ -381,8 +381,8 @@ public:
                                  const linear_expression_t &/*elem_size*/,
                                  const linear_expression_t &i, const linear_expression_t &j,
                                  const linear_expression_t &val) override {
-    crab::CrabStats::count(getDomainName() + ".count.store");
-    crab::ScopedCrabStats __st__(getDomainName() + ".store");
+    crab::CrabStats::count(domain_name() + ".count.store");
+    crab::ScopedCrabStats __st__(domain_name() + ".store");
     do_weak_update(a, val);
     CRAB_LOG("smashing", crab::outs() << a << "[" << i << ".." << j << "]:="
                                       << val << " -- " << *this << "\n";);
@@ -492,7 +492,7 @@ public:
   
   void write(crab_os &o) override { o << _inv; }
 
-  static std::string getDomainName() {
+  std::string domain_name() const override {
     std::string name("ArraySmashing(" + NumDomain::getDomainName() + ")");
     return name;
   }
