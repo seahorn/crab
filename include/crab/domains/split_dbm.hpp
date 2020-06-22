@@ -652,25 +652,18 @@ protected:
     */
   }
 
-  interval_t get_interval(const variable_t &x) { return get_interval(vert_map, g, x); }
+  interval_t get_interval(const variable_t &x) const { return get_interval(vert_map, g, x); }
 
-  interval_t get_interval(vert_map_t &m, graph_t &r, variable_t x) {
+  interval_t get_interval(const vert_map_t &m, const graph_t &g, const variable_t &x) const {
     auto it = m.find(x);
     if (it == m.end()) {
       return interval_t::top();
     }
     vert_id v = (*it).second;
     interval_t x_out = interval_t(
-        r.elem(v, 0) ? -number_t(r.edge_val(v, 0)) : bound_t::minus_infinity(),
-        r.elem(0, v) ? number_t(r.edge_val(0, v)) : bound_t::plus_infinity());
+        g.elem(v, 0) ? -number_t(g.edge_val(v, 0)) : bound_t::minus_infinity(),
+        g.elem(0, v) ? number_t(g.edge_val(0, v)) : bound_t::plus_infinity());
     return x_out;
-    /*
-    boost::optional< interval_t > v = r.lookup(x);
-    if(v)
-      return *v;
-    else
-      return interval_t::top();
-    */
   }
 
   // Resore potential after an edge addition
@@ -2074,6 +2067,9 @@ public:
     crab::CrabStats::count(domain_name() + ".count.to_intervals");
     crab::ScopedCrabStats __st__(domain_name() + ".to_intervals");
 
+    // Needed for accuracy
+    normalize();
+    
     if (is_bottom()) {
       return interval_t::bottom();
     } else {
