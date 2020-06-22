@@ -1331,7 +1331,7 @@ public:
   }
 
   void backward_assign(const variable_t &x, const linear_expression_t &e,
-                       apron_domain_t invariant) override {
+                       const apron_domain_t &invariant) override {
     crab::CrabStats::count(domain_name() + ".count.backward_assign");
     crab::ScopedCrabStats __st__(domain_name() + ".backward_assign");
 
@@ -1350,13 +1350,13 @@ public:
 
     // ensure that m_apstate and invariant.m_apstate have the same
     // dimensions.
-    m_var_map = merge_var_map(m_var_map, m_apstate, invariant.m_var_map,
-                              invariant.m_apstate);
-
+    ap_state_ptr fwd_inv =
+      apPtr(get_man(), ap_abstract0_copy(get_man(), &*invariant.m_apstate));
+    m_var_map = merge_var_map(m_var_map, m_apstate, invariant.m_var_map, fwd_inv);
     m_apstate =
         apPtr(get_man(),
               ap_abstract0_substitute_texpr(get_man(), false, &*m_apstate,
-                                            dim_x, t, &*invariant.m_apstate));
+                                            dim_x, t, &*fwd_inv));
     ap_texpr0_free(t);
     CRAB_LOG("apron", crab::outs() << "--- " << x << " :=_bwd " << e << " --> "
                                    << *this << "\n";);
@@ -1364,7 +1364,7 @@ public:
 
   void backward_apply(arith_operation_t op,
 		      const variable_t &x, const variable_t &y, number_t z,
-                      apron_domain_t invariant) override {
+                      const apron_domain_t &invariant) override {
     crab::CrabStats::count(domain_name() + ".count.backward_apply");
     crab::ScopedCrabStats __st__(domain_name() + ".backward_apply");
 
@@ -1400,12 +1400,12 @@ public:
 
       // ensure that m_apstate and invariant.m_apstate have the same
       // dimensions.
-      m_var_map = merge_var_map(m_var_map, m_apstate, invariant.m_var_map,
-                                invariant.m_apstate);
-
+      ap_state_ptr fwd_inv =
+	apPtr(get_man(), ap_abstract0_copy(get_man(), &*invariant.m_apstate));      
+      m_var_map = merge_var_map(m_var_map, m_apstate, invariant.m_var_map, fwd_inv);     
       m_apstate = apPtr(get_man(), ap_abstract0_substitute_texpr(
                                        get_man(), false, &*m_apstate, dim_x,
-                                       res, &*invariant.m_apstate));
+                                       res, &*fwd_inv));
 
       ap_texpr0_free(res);
       CRAB_LOG("apron", crab::outs() << "--- " << x << " :=_bwd " << y << op
@@ -1418,7 +1418,7 @@ public:
 
   void backward_apply(arith_operation_t op,
 		      const variable_t &x, const variable_t &y, const variable_t &z,
-                      apron_domain_t invariant) override {
+                      const apron_domain_t &invariant) override {
     crab::CrabStats::count(domain_name() + ".count.backward_apply");
     crab::ScopedCrabStats __st__(domain_name() + ".backward_apply");
 
@@ -1454,12 +1454,14 @@ public:
 
       // ensure that m_apstate and invariant.m_apstate have the same
       // dimensions.
-      m_var_map = merge_var_map(m_var_map, m_apstate, invariant.m_var_map,
-                                invariant.m_apstate);
+      ap_state_ptr fwd_inv =
+	apPtr(get_man(), ap_abstract0_copy(get_man(), &*invariant.m_apstate));
+      
+      m_var_map = merge_var_map(m_var_map, m_apstate, invariant.m_var_map, fwd_inv); 
 
       m_apstate = apPtr(get_man(), ap_abstract0_substitute_texpr(
                                        get_man(), false, &*m_apstate, dim_x,
-                                       res, &*invariant.m_apstate));
+                                       res, &*fwd_inv));
       ap_texpr0_free(res);
       CRAB_LOG("apron", crab::outs() << "--- " << x << ":=_bwd " << y << op << z
                                      << " --> " << *this << "\n";);
@@ -1484,12 +1486,12 @@ public:
   void assume_bool(const variable_t &v, bool is_negated) override {}
   // backward boolean operations
   void backward_assign_bool_cst(const variable_t &lhs, const linear_constraint_t &rhs,
-                                apron_domain_t invariant) override {}
+                                const apron_domain_t &invariant) override {}
   void backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs, bool is_not_rhs,
-                                apron_domain_t invariant) override {}
+                                const apron_domain_t &invariant) override {}
   void backward_apply_binary_bool(bool_operation_t op, const variable_t &x,
                                   const variable_t &y, const variable_t &z,
-                                  apron_domain_t invariant) override {}
+                                  const apron_domain_t &invariant) override {}
   // array operations
   void array_init(const variable_t &a, const linear_expression_t &elem_size,
                   const linear_expression_t &lb_idx, const linear_expression_t &ub_idx,
@@ -1509,19 +1511,19 @@ public:
   void backward_array_init(const variable_t &a, const linear_expression_t &elem_size,
                            const linear_expression_t &lb_idx,
                            const linear_expression_t &ub_idx, const linear_expression_t &val,
-                           apron_domain_t invariant) override {}
+                           const apron_domain_t &invariant) override {}
   void backward_array_load(const variable_t &lhs, const variable_t &a,
                            const linear_expression_t &elem_size, const linear_expression_t &i,
-                           apron_domain_t invariant) override {}
+                           const apron_domain_t &invariant) override {}
   void backward_array_store(const variable_t &a, const linear_expression_t &elem_size,
                             const linear_expression_t &i, const linear_expression_t &v,
-                            bool is_strong_update, apron_domain_t invariant) override {}
+                            bool is_strong_update, const apron_domain_t &invariant) override {}
   void backward_array_store_range(const variable_t &a, const linear_expression_t &elem_size,
                                   const linear_expression_t &i, const linear_expression_t &j,
                                   const linear_expression_t &v,
-                                  apron_domain_t invariant) override {}
+                                  const apron_domain_t &invariant) override {}
   void backward_array_assign(const variable_t &lhs, const variable_t &rhs,
-                             apron_domain_t invariant) override {}
+                             const apron_domain_t &invariant) override {}
   // reference operations
   void region_init(const memory_region &reg) override {}          
   void ref_make(const variable_t &ref, const memory_region &reg) override {}
@@ -1692,7 +1694,7 @@ public:
   void backward_intrinsic(std::string name,
 			  const variable_vector_t &inputs,
 			  const variable_vector_t &outputs,
-			  apron_domain_t invariant) override {
+			  const apron_domain_t &invariant) override {
     CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());    
   }
   /* end intrinsics operations */

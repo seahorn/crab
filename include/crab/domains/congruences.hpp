@@ -959,7 +959,7 @@ public:
 
   // backward operations
   void backward_assign(const variable_t &x, const linear_expression_t &e,
-                       congruence_domain_t inv) override {
+                       const congruence_domain_t &inv) override {
     crab::CrabStats::count(domain_name() + ".count.backward_assign");
     crab::ScopedCrabStats __st__(domain_name() + ".backward_assign");
 
@@ -969,7 +969,7 @@ public:
 
   void backward_apply(crab::domains::arith_operation_t op,
 		      const variable_t &x, const variable_t &y, number_t z,
-                      congruence_domain_t inv) override {
+                      const congruence_domain_t &inv) override {
     crab::CrabStats::count(domain_name() + ".count.backward_apply");
     crab::ScopedCrabStats __st__(domain_name() + ".backward_apply");
 
@@ -979,7 +979,7 @@ public:
 
   void backward_apply(crab::domains::arith_operation_t op,
 		      const variable_t &x, const variable_t &y, const variable_t &z,
-                      congruence_domain_t inv) override {
+                      const congruence_domain_t &inv) override {
     crab::CrabStats::count(domain_name() + ".count.backward_apply");
     crab::ScopedCrabStats __st__(domain_name() + ".backward_apply");
 
@@ -1094,12 +1094,12 @@ public:
   void assume_bool(const variable_t &v, bool is_negated) override {}
   // backward boolean operations
   void backward_assign_bool_cst(const variable_t &lhs, const linear_constraint_t &rhs,
-                                congruence_domain_t invariant) override {}
+                                const congruence_domain_t &invariant) override {}
   void backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs, bool is_not_rhs,
-                                congruence_domain_t invariant) override {}
+                                const congruence_domain_t &invariant) override {}
   void backward_apply_binary_bool(crab::domains::bool_operation_t op,
                                   const variable_t &x, const variable_t &y, const variable_t &z,
-                                  congruence_domain_t invariant) override {}
+                                  const congruence_domain_t &invariant) override {}
   // array operations
   void array_init(const variable_t &a, const linear_expression_t &elem_size,
                   const linear_expression_t &lb_idx, const linear_expression_t &ub_idx,
@@ -1120,20 +1120,20 @@ public:
   void backward_array_init(const variable_t &a, const linear_expression_t &elem_size,
                            const linear_expression_t &lb_idx,
                            const linear_expression_t &ub_idx, const linear_expression_t &val,
-                           congruence_domain_t invariant) override {}
+                           const congruence_domain_t &invariant) override {}
   void backward_array_load(const variable_t &lhs, const variable_t &a,
                            const linear_expression_t &elem_size, const linear_expression_t &i,
-                           congruence_domain_t invariant) override {}
+                           const congruence_domain_t &invariant) override {}
   void backward_array_store(const variable_t &a, const linear_expression_t &elem_size,
                             const linear_expression_t &i, const linear_expression_t &v,
                             bool is_strong_update,
-                            congruence_domain_t invariant) override {}
+                            const congruence_domain_t &invariant) override {}
   void backward_array_store_range(const variable_t &a, const linear_expression_t &elem_size,
                                   const linear_expression_t &i, const linear_expression_t &j,
                                   const linear_expression_t &v,
-                                  congruence_domain_t invariant) override {}
+                                  const congruence_domain_t &invariant) override {}
   void backward_array_assign(const variable_t &lhs, const variable_t &rhs,
-                             congruence_domain_t invariant) override {}
+                             const congruence_domain_t &invariant) override {}
   // reference operations
   void region_init(const crab::memory_region &reg) override {}         
   void ref_make(const variable_t &ref, const crab::memory_region &reg) override {}
@@ -1208,7 +1208,7 @@ public:
   void backward_intrinsic(std::string name,
 			  const variable_vector_t &inputs,
 			  const variable_vector_t &outputs,
-			  congruence_domain_t invariant) override {
+			  const congruence_domain_t &invariant) override {
     CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());    
   }
   /* end intrinsics operations */

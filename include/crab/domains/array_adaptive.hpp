@@ -1626,7 +1626,7 @@ private:
 
   // Helper that assign backward rhs to lhs by switching to the
   // version with the right type.
-  void do_backward_assign(const variable_t &lhs, const variable_t &rhs, base_domain_t &dom) {
+  void do_backward_assign(const variable_t &lhs, const variable_t &rhs, const base_domain_t &dom) {
     if (lhs.get_type() != rhs.get_type()) {
       CRAB_ERROR("array_adaptive backward assignment with different types");
     }
@@ -1645,7 +1645,7 @@ private:
 
   // helper to assign backward a cell into a variable
   void do_backward_assign(const variable_t &lhs, const variable_t &a, const cell_t &rhs_c,
-                          base_domain_t &dom) {
+                          const base_domain_t &dom) {
     if (!a.is_array_type()) {
       CRAB_ERROR("array_adaptive assignment 1st argument must be array type");
     }
@@ -1662,7 +1662,7 @@ private:
 
   // helper to assign backward a linear expression into a cell
   void do_backward_assign(const variable_t &a, const cell_t &lhs_c,
-                          const linear_expression_t &v, base_domain_t &dom) {
+                          const linear_expression_t &v, const base_domain_t &dom) {
     if (!a.is_array_type()) {
       CRAB_ERROR("array_adaptive assignment 1st argument must be array type");
     }
@@ -2355,7 +2355,7 @@ public:
   void backward_intrinsic(std::string name,
 			  const variable_vector_t &inputs,
 			  const variable_vector_t &outputs,
-			  array_adaptive_domain_t invariant) override {
+			  const array_adaptive_domain_t &invariant) override {
     CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());    
   }
   /* end intrinsics operations */
@@ -2419,20 +2419,20 @@ public:
   }
 
   void backward_assign(const variable_t &x, const linear_expression_t &e,
-                       array_adaptive_domain_t inv) override {
-    m_inv.backward_assign(x, e, inv.get_content_domain());
+                       const array_adaptive_domain_t &inv) override {
+    m_inv.backward_assign(x, e, inv.m_inv);
   }
 
   void backward_apply(arith_operation_t op,
 		      const variable_t &x, const variable_t &y, number_t z,
-                      array_adaptive_domain_t inv) override {
-    m_inv.backward_apply(op, x, y, z, inv.get_content_domain());
+                      const array_adaptive_domain_t &inv) override {
+    m_inv.backward_apply(op, x, y, z, inv.m_inv);
   }
 
   void backward_apply(arith_operation_t op,
 		      const variable_t &x, const variable_t &y, const variable_t &z,
-                      array_adaptive_domain_t inv) override {
-    m_inv.backward_apply(op, x, y, z, inv.get_content_domain());
+                      const array_adaptive_domain_t &inv) override {
+    m_inv.backward_apply(op, x, y, z, inv.m_inv);
   }
 
   void apply(int_conv_operation_t op,
@@ -2490,21 +2490,20 @@ public:
 
   // backward boolean operators
   virtual void backward_assign_bool_cst(const variable_t &lhs, const linear_constraint_t &rhs,
-                                        array_adaptive_domain_t inv) override {
-    m_inv.backward_assign_bool_cst(lhs, rhs, inv.get_content_domain());
+                                        const array_adaptive_domain_t &inv) override {
+    m_inv.backward_assign_bool_cst(lhs, rhs, inv.m_inv);
   }
 
   virtual void backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                                         bool is_not_rhs,
-                                        array_adaptive_domain_t inv) override {
-    m_inv.backward_assign_bool_var(lhs, rhs, is_not_rhs,
-                                   inv.get_content_domain());
+                                        const array_adaptive_domain_t &inv) override {
+    m_inv.backward_assign_bool_var(lhs, rhs, is_not_rhs, inv.m_inv);
   }
 
   virtual void backward_apply_binary_bool(bool_operation_t op, const variable_t &x,
                                           const variable_t &y, const variable_t &z,
-                                          array_adaptive_domain_t inv) override {
-    m_inv.backward_apply_binary_bool(op, x, y, z, inv.get_content_domain());
+                                          const array_adaptive_domain_t &inv) override {
+    m_inv.backward_apply_binary_bool(op, x, y, z, inv.m_inv);
   }
 
   // reference operations
@@ -2928,7 +2927,7 @@ public:
                                    const linear_expression_t &lb_idx,
                                    const linear_expression_t &ub_idx,
                                    const linear_expression_t &val,
-                                   array_adaptive_domain_t invariant) override {
+                                   const array_adaptive_domain_t &invariant) override {
     crab::CrabStats::count(domain_name() + ".count.backward_array_init");
     crab::ScopedCrabStats __st__(domain_name() + ".backward_array_init");
 
@@ -2951,13 +2950,15 @@ public:
     }
 
     // meet with forward invariant
-    *this = *this & invariant;
+    // TEMPX:
+    array_adaptive_domain_t tmp(invariant);
+    *this = *this & tmp;
   }
 
   virtual void backward_array_load(const variable_t &lhs, const variable_t &a,
                                    const linear_expression_t &elem_size,
                                    const linear_expression_t &i,
-                                   array_adaptive_domain_t invariant) override {
+                                   const array_adaptive_domain_t &invariant) override {
     crab::CrabStats::count(domain_name() + ".count.backward_array_load");
     crab::ScopedCrabStats __st__(domain_name() + ".backward_array_load");
 
@@ -2978,7 +2979,7 @@ public:
         offset_map_t &om = next_as.get_offset_map();
         offset_t o(static_cast<int64_t>(*n));
         cell_t c = mk_cell(a, o, e_sz, om);
-        do_backward_assign(lhs, a, c, invariant.get_content_domain());
+        do_backward_assign(lhs, a, c, invariant.m_inv);
         m_array_map.set(a, next_as);
       } else {
         CRAB_LOG("array-adaptive",
@@ -2986,7 +2987,9 @@ public:
         // -- Forget lhs
         m_inv -= lhs;
         // -- Meet with forward invariant
-        *this = *this & invariant;
+	// TEMPX
+	array_adaptive_domain_t tmp(invariant);
+        *this = *this & tmp;
       }
     }
 
@@ -2999,7 +3002,7 @@ public:
   backward_array_store(const variable_t &a, const linear_expression_t &elem_size,
                        const linear_expression_t &i, const linear_expression_t &val,
                        bool /*is_strong_update*/,
-                       array_adaptive_domain_t invariant) override {
+                       const array_adaptive_domain_t &invariant) override {
     crab::CrabStats::count(domain_name() + ".count.backward_array_store");
     crab::ScopedCrabStats __st__(domain_name() + ".backward_array_store");
 
@@ -3017,7 +3020,7 @@ public:
       array_state next_as(as);
       offset_map_t &om = next_as.get_offset_map();
       // XXX: we use the forward invariant to extract the array index
-      interval_t ii = to_interval(i, invariant.get_content_domain());
+      interval_t ii = to_interval(i, invariant.m_inv);
       if (boost::optional<number_t> n = ii.singleton()) {
         // -- Constant index and the store updated one single cell:
         // -- backward assign in the base domain.
@@ -3028,11 +3031,13 @@ public:
         // that is, get_overlap_cells returns cells different from [o, e_sz)
         if (cells.size() >= 1) {
           kill_cells(a, cells, om);
-          *this = *this & invariant;
+	  // TEMPX:
+	  array_adaptive_domain_t tmp(invariant);
+          *this = *this & tmp;
         } else {
           // c might be in m_inv or not.
           cell_t c = mk_cell(a, o, e_sz, om);
-          do_backward_assign(a, c, val, invariant.get_content_domain());
+          do_backward_assign(a, c, val, invariant.m_inv);
         }
       } else {
         // TODOX: smash the array if needed
@@ -3042,11 +3047,12 @@ public:
         linear_expression_t symb_lb(i);
         linear_expression_t symb_ub(i + number_t(e_sz - 1));
         std::vector<cell_t> cells;
-        om.get_overlap_cells_symbolic_offset(invariant.get_content_domain(),
+        om.get_overlap_cells_symbolic_offset(invariant.m_inv,
                                              symb_lb, symb_ub, cells);
         kill_cells(a, cells, om);
-
-        *this = *this & invariant;
+	// TEMPX
+	array_adaptive_domain_t tmp(invariant);
+        *this = *this & tmp;
       }
       m_array_map.set(a, next_as);
     }
@@ -3059,7 +3065,7 @@ public:
   virtual void backward_array_store_range(
       const variable_t &a, const linear_expression_t &elem_size, const linear_expression_t &lb_idx,
       const linear_expression_t &ub_idx, const linear_expression_t &val,
-      array_adaptive_domain_t invariant) override {
+      const array_adaptive_domain_t &invariant) override {
     crab::CrabStats::count(domain_name() +
                            ".count.backward_array_store_range");
     crab::ScopedCrabStats __st__(domain_name() +
@@ -3070,13 +3076,15 @@ public:
 
     uint64_t e_sz = check_and_get_elem_size(elem_size);
 
-    interval_t lb_i = to_interval(lb_idx, invariant.get_content_domain());
+    // make copy to avoid one extra copy
+    base_domain_t base_dom(invariant.m_inv);
+    interval_t lb_i = to_interval(lb_idx, base_dom);
     auto lb = lb_i.singleton();
     if (!lb) {
       return;
     }
 
-    interval_t ub_i = to_interval(ub_idx, invariant.get_content_domain());
+    interval_t ub_i = to_interval(ub_idx, base_dom);
     auto ub = ub_i.singleton();
     if (!ub) {
       return;
@@ -3100,7 +3108,7 @@ public:
 
   virtual void
   backward_array_assign(const variable_t &lhs, const variable_t &rhs,
-                        array_adaptive_domain_t invariant) override {
+                        const array_adaptive_domain_t &invariant) override {
     CRAB_WARN("backward_array_assign in array_adaptive domain not implemented");
   }
 

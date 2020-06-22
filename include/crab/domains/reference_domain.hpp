@@ -1402,7 +1402,7 @@ public:
     }
   }
   void backward_assign(const variable_t &x, const linear_expression_t &e,
-                       reference_domain_t invariant) override {
+                       const reference_domain_t &invariant) override {
     crab::CrabStats::count(domain_name() + ".count.backward_assign");
     crab::ScopedCrabStats __st__(domain_name() + ".backward_assign");
 
@@ -1413,7 +1413,7 @@ public:
   }
   void backward_apply(arith_operation_t op,
 		      const variable_t &x, const variable_t &y, number_t z,
-                      reference_domain_t invariant) override {
+                      const reference_domain_t &invariant) override {
     crab::CrabStats::count(domain_name() + ".count.backward_apply");
     crab::ScopedCrabStats __st__(domain_name() + ".backward_apply");
 
@@ -1424,7 +1424,7 @@ public:
   }
   void backward_apply(arith_operation_t op,
 		      const variable_t &x, const variable_t &y, const variable_t &z,
-                      reference_domain_t invariant) override {
+                      const reference_domain_t &invariant) override {
     crab::CrabStats::count(domain_name() + ".count.backward_apply");
     crab::ScopedCrabStats __st__(domain_name() + ".backward_apply");
 
@@ -1534,7 +1534,7 @@ public:
     }
   }
   void backward_assign_bool_cst(const variable_t &lhs, const linear_constraint_t &rhs,
-                                reference_domain_t invariant) override {
+                                const reference_domain_t &invariant) override {
     crab::CrabStats::count(domain_name() + ".count.backward_assign_bool_cst");
     crab::ScopedCrabStats __st__(domain_name() + ".backward_assign_bool_cst");
 
@@ -1544,7 +1544,7 @@ public:
     }
   }
   void backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs, bool is_not_rhs,
-                                reference_domain_t invariant) override {
+                                const reference_domain_t &invariant) override {
     crab::CrabStats::count(domain_name() + ".count.backward_assign_bool_var");
     crab::ScopedCrabStats __st__(domain_name() + ".backward_assign_bool_var");
 
@@ -1555,7 +1555,7 @@ public:
   }
   void backward_apply_binary_bool(bool_operation_t op,
 				  const variable_t &x, const variable_t &y, const variable_t &z,
-                                  reference_domain_t invariant) override {
+                                  const reference_domain_t &invariant) override {
     crab::CrabStats::count(domain_name() +
                            ".count.backward_apply_binary_bool");
     crab::ScopedCrabStats __st__(domain_name() +
@@ -1629,7 +1629,7 @@ public:
                            const linear_expression_t &lb_idx,
                            const linear_expression_t &ub_idx,
 			   const linear_expression_t &val,
-                           reference_domain_t invariant) override {
+                           const reference_domain_t &invariant) override {
     crab::CrabStats::count(domain_name() + ".count.backward_array_init");
     crab::ScopedCrabStats __st__(domain_name() + ".backward_array_init");
 
@@ -1642,7 +1642,7 @@ public:
   }
   void backward_array_load(const variable_t &lhs, const variable_t &a,
                            const linear_expression_t &elem_size, const linear_expression_t &i,
-                           reference_domain_t invariant) override {
+                           const reference_domain_t &invariant) override {
     crab::CrabStats::count(domain_name() + ".count.backward_array_load");
     crab::ScopedCrabStats __st__(domain_name() + ".backward_array_load");
 
@@ -1655,7 +1655,7 @@ public:
   void backward_array_store(const variable_t &a, const linear_expression_t &elem_size,
                             const linear_expression_t &i, const linear_expression_t &v,
                             bool is_strong_update,
-                            reference_domain_t invariant) override {
+                            const reference_domain_t &invariant) override {
     crab::CrabStats::count(domain_name() + ".count.backward_array_store");
     crab::ScopedCrabStats __st__(domain_name() + ".backward_array_store");
 
@@ -1668,7 +1668,7 @@ public:
   void backward_array_store_range(const variable_t &a, const linear_expression_t &elem_size,
                                   const linear_expression_t &i, const linear_expression_t &j,
                                   const linear_expression_t &v,
-                                  reference_domain_t invariant) override {
+                                  const reference_domain_t &invariant) override {
     crab::CrabStats::count(domain_name() +
                            ".count.backward_array_store_range");
     crab::ScopedCrabStats __st__(domain_name() +
@@ -1681,7 +1681,7 @@ public:
     }
   }
   void backward_array_assign(const variable_t &lhs, const variable_t &rhs,
-                             reference_domain_t invariant) override {
+                             const reference_domain_t &invariant) override {
     crab::CrabStats::count(domain_name() + ".count.backward_array_assign");
     crab::ScopedCrabStats __st__(domain_name() + ".backward_array_assign");
 
@@ -1753,7 +1753,7 @@ public:
 
   void backward_intrinsic(std::string name, const variable_vector_t &inputs,
                           const variable_vector_t &outputs,
-                          reference_domain_t invariant) override {
+                          const reference_domain_t &invariant) override {
     CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
   }
   /* end intrinsics operations */

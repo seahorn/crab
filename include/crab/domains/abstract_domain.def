@@ -54,17 +54,17 @@
       CRAB_ERROR(Msg);                                                         \
     }                                                                          \
     void backward_assign(const variable_t &x, const linear_expression_t &e,    \
-                         this_type invariant) override {                       \
+                         const this_type &invariant) override {                       \
       CRAB_ERROR(Msg);                                                         \
     }                                                                          \
     void backward_apply(arith_operation_t op, const variable_t &x,             \
                         const variable_t &y, number_t z,                       \
-                        this_type invariant) override {                        \
+                        const this_type &invariant) override {                 \
       CRAB_ERROR(Msg);                                                         \
     }                                                                          \
     void backward_apply(arith_operation_t op, const variable_t &x,             \
                         const variable_t &y, const variable_t &z,              \
-                        this_type invariant) override {                        \
+                        const this_type &invariant) override {                 \
       CRAB_ERROR(Msg);                                                         \
     }                                                                          \
     void assign_bool_cst(const variable_t &lhs,                                \
@@ -85,18 +85,18 @@
     }                                                                          \
     void backward_assign_bool_cst(const variable_t &lhs,                       \
                                   const linear_constraint_t &rhs,              \
-                                  this_type invariant) override {              \
+                                  const this_type &invariant) override {       \
       CRAB_ERROR(Msg);                                                         \
     }                                                                          \
     									       \
   void                                                                         \
     backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs,     \
-                             bool is_not_rhs, this_type invariant) override {  \
+                             bool is_not_rhs, const this_type &invariant) override {  \
       CRAB_ERROR(Msg);                                                         \
     }                                                                          \
     void backward_apply_binary_bool(bool_operation_t op, const variable_t &x,  \
                                     const variable_t &y, const variable_t &z,  \
-                                    this_type invariant) override {            \
+                                    const this_type &invariant) override {     \
       CRAB_ERROR(Msg);                                                         \
     }                                                                          \
     void array_init(const variable_t &a, const linear_expression_t &elem_size, \
@@ -132,13 +132,13 @@
                              const linear_expression_t &lb_idx,                \
                              const linear_expression_t &ub_idx,                \
                              const linear_expression_t &val,                   \
-                             this_type invariant) override {                   \
+                             const this_type &invariant) override {            \
       CRAB_ERROR(Msg);                                                         \
     }                                                                          \
     void backward_array_load(const variable_t &lhs, const variable_t &a,       \
                              const linear_expression_t &elem_size,             \
                              const linear_expression_t &i,                     \
-                             this_type invariant) override {                   \
+                             const this_type &invariant) override {            \
       CRAB_ERROR(Msg);                                                         \
     }                                                                          \
     void backward_array_store(const variable_t &a,                             \
@@ -146,7 +146,7 @@
                               const linear_expression_t &i,                    \
                               const linear_expression_t &v,                    \
                               bool is_strong_update,                           \
-                              this_type invariant) override {                  \
+                              const this_type &invariant) override {           \
       CRAB_ERROR(Msg);                                                         \
     }                                                                          \
     void backward_array_store_range(const variable_t &a,                       \
@@ -154,11 +154,11 @@
                                     const linear_expression_t &i,              \
                                     const linear_expression_t &j,              \
                                     const linear_expression_t &v,              \
-                                    this_type invariant) override {            \
+                                    const this_type &invariant) override {     \
       CRAB_ERROR(Msg);                                                         \
     }                                                                          \
     void backward_array_assign(const variable_t &lhs, const variable_t &rhs,   \
-                               this_type invariant) override {                 \
+                               const this_type &invariant) override {          \
       CRAB_ERROR(Msg);                                                         \
     }                                                                          \
     void region_init(const memory_region &reg) override {                      \
@@ -224,7 +224,7 @@
     }                                                                          \
     void backward_intrinsic(std::string name, const variable_vector_t &inputs, \
                             const variable_vector_t &outputs,                  \
-                            this_type invariant) override {                    \
+                            const this_type &invariant) override {             \
       CRAB_ERROR(Msg);                                                         \
     }                                                                          \
     void write(crab_os &o) const override { CRAB_ERROR(Msg); }                 \

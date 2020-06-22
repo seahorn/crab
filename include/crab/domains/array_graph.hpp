@@ -2079,7 +2079,7 @@ public:
   void backward_intrinsic(std::string name,
 			  const variable_vector_t &inputs,
 			  const variable_vector_t &outputs,
-			  array_graph_domain_t invariant) override {
+			  const array_graph_domain_t &invariant) override {
     CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());    
   }
   /* end intrinsics operations */
@@ -2171,21 +2171,21 @@ public:
   // backward arithmetic operations
 
   void backward_assign(const variable_t &x, const linear_expression_t &e,
-                       array_graph_domain_t invariant) override {
+                       const array_graph_domain_t &invariant) override {
     operator-=(x);
     CRAB_WARN("backward assign not implemented");
   }
 
   void backward_apply(arith_operation_t op,
 		      const variable_t &x, const variable_t &y, number_t z,
-                      array_graph_domain_t invariant) override {
+                      const array_graph_domain_t &invariant) override {
     operator-=(x);
     CRAB_WARN("backward apply not implemented");
   }
 
   void backward_apply(arith_operation_t op,
 		      const variable_t &x, const variable_t &y, const variable_t &z,
-                      array_graph_domain_t invariant) override {
+                      const array_graph_domain_t &invariant) override {
 
     operator-=(x);
     CRAB_WARN("backward apply not implemented");
@@ -2215,14 +2215,14 @@ public:
 
   // backward boolean operations
   void backward_assign_bool_cst(const variable_t &lhs, const linear_constraint_t &rhs,
-                                array_graph_domain_t invariant) override {
+                                const array_graph_domain_t &invariant) override {
     operator-=(lhs);
     CRAB_WARN(
         "backward_assign_bool_cst not implemented in array-sgraph-domain");
   }
 
   void backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs, bool is_not_rhs,
-                                array_graph_domain_t invariant) override {
+                                const array_graph_domain_t &invariant) override {
     operator-=(lhs);
     CRAB_WARN(
         "backward_assign_bool_var not implemented in array-sgraph-domain");
@@ -2230,7 +2230,7 @@ public:
 
   void backward_apply_binary_bool(bool_operation_t op, const variable_t &x,
                                   const variable_t &y, const variable_t &z,
-                                  array_graph_domain_t invariant) override {
+                                  const array_graph_domain_t &invariant) override {
     operator-=(x);
     CRAB_WARN(
         "backward_apply_binary_bool not implemented in array-sgraph-domain");
@@ -2436,30 +2436,30 @@ public:
   void backward_array_init(const variable_t &a, const linear_expression_t &elem_size,
                            const linear_expression_t &lb_idx,
                            const linear_expression_t &ub_idx, const linear_expression_t &val,
-                           array_graph_domain_t invariant) override {
+                           const array_graph_domain_t &invariant) override {
     CRAB_WARN("backward_array_init in array_graph domain not implemented");
   }
   void backward_array_load(const variable_t &lhs, const variable_t &a,
                            const linear_expression_t &elem_size, const linear_expression_t &i,
-                           array_graph_domain_t invariant) override {
+                           const array_graph_domain_t &invariant) override {
     CRAB_WARN("backward_array_load in array_graph domain not implemented");
     this->operator-=(lhs);
   }
   void backward_array_store(const variable_t &a, const linear_expression_t &elem_size,
                             const linear_expression_t &i, const linear_expression_t &v,
                             bool is_strong_update,
-                            array_graph_domain_t invariant) override {
+                            const array_graph_domain_t &invariant) override {
     CRAB_WARN("backward_array_store in array_graph domain not implemented");
   }
   void backward_array_store_range(const variable_t &a, const linear_expression_t &elem_size,
                                   const linear_expression_t &i, const linear_expression_t &j,
                                   const linear_expression_t &v,
-                                  array_graph_domain_t invariant) override {
+                                  const array_graph_domain_t &invariant) override {
     CRAB_WARN(
         "backward_array_store_range in array_graph domain not implemented");
   }
   void backward_array_assign(const variable_t &lhs, const variable_t &rhs,
-                             array_graph_domain_t invariant) override {
+                             const array_graph_domain_t &invariant) override {
     CRAB_WARN("backward_array_assign in array_graph domain not implemented");
   }
 

@@ -1716,21 +1716,21 @@ public:
 
   // backward arithmetic operations
   void backward_assign(const variable_t &x, const linear_expression_t &e,
-                       wrapped_interval_domain_t inv) override {
+                       const wrapped_interval_domain_t &inv) override {
     this->operator-=(x);
     CRAB_WARN("Backward assign for wrapped intervals not implemented");
   }
 
   void backward_apply(arith_operation_t op,
 		      const variable_t &x, const variable_t &y, number_t z,
-                      wrapped_interval_domain_t inv) override {
+                      const wrapped_interval_domain_t &inv) override {
     this->operator-=(x);
     CRAB_WARN("Backward apply for wrapped intervals not implemented");
   }
 
   void backward_apply(arith_operation_t op,
 		      const variable_t &x, const variable_t &y, const variable_t &z,
-                      wrapped_interval_domain_t inv) override {
+                      const wrapped_interval_domain_t &inv) override {
     this->operator-=(x);
     CRAB_WARN("Backward apply for wrapped intervals not implemented");
   }
@@ -1752,12 +1752,12 @@ public:
   void assume_bool(const variable_t &v, bool is_negated) override {}
   // backward boolean operations
   void backward_assign_bool_cst(const variable_t &lhs, const linear_constraint_t &rhs,
-                                wrapped_interval_domain_t invariant) override {}
+                                const wrapped_interval_domain_t &invariant) override {}
   void backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs, bool is_not_rhs,
-                                wrapped_interval_domain_t invariant) override {}
+                                const wrapped_interval_domain_t &invariant) override {}
   void backward_apply_binary_bool(bool_operation_t op, const variable_t &x,
                                   const variable_t &y, const variable_t &z,
-                                  wrapped_interval_domain_t invariant) override {}
+                                  const wrapped_interval_domain_t &invariant) override {}
   // array operations
   void array_init(const variable_t &a, const linear_expression_t &elem_size,
                   const linear_expression_t &lb_idx, const linear_expression_t &ub_idx,
@@ -1777,19 +1777,19 @@ public:
   void backward_array_init(const variable_t &a, const linear_expression_t &elem_size,
                            const linear_expression_t &lb_idx,
                            const linear_expression_t &ub_idx, const linear_expression_t &val,
-                           wrapped_interval_domain_t invariant) override {}
+                           const wrapped_interval_domain_t &invariant) override {}
   void backward_array_load(const variable_t &lhs, const variable_t &a,
                            const linear_expression_t &elem_size, const linear_expression_t &i,
-                           wrapped_interval_domain_t invariant) override {}
+                           const wrapped_interval_domain_t &invariant) override {}
   void backward_array_store(const variable_t &a, const linear_expression_t &elem_size,
                             const linear_expression_t &i, const linear_expression_t &v,
-                            bool is_strong_update, wrapped_interval_domain_t invariant) override {}
+                            bool is_strong_update, const wrapped_interval_domain_t &invariant) override {}
   void backward_array_store_range(const variable_t &a, const linear_expression_t &elem_size,
                                   const linear_expression_t &i, const linear_expression_t &j,
                                   const linear_expression_t &v,
-                                  wrapped_interval_domain_t invariant) override {}
+                                  const wrapped_interval_domain_t &invariant) override {}
   void backward_array_assign(const variable_t &lhs, const variable_t &rhs,
-                             wrapped_interval_domain_t invariant) override {}
+                             const wrapped_interval_domain_t &invariant) override {}
   // reference operations
   void region_init(const memory_region &reg) override {}          
   void ref_make(const variable_t &ref, const memory_region &reg) override {}
@@ -1865,7 +1865,7 @@ public:
   void backward_intrinsic(std::string name,
 			  const variable_vector_t &inputs,
 			  const variable_vector_t &outputs,
-			  wrapped_interval_domain_t invariant) override {
+			  const wrapped_interval_domain_t &invariant) override {
     CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());    
   }
   /* end intrinsics operations */
@@ -2485,21 +2485,21 @@ public:
   }
 
   void backward_assign(const variable_t &x, const linear_expression_t &e,
-                       this_type invariant) override {
+                       const this_type &invariant) override {
     _w_int_dom.backward_assign(x, e, invariant._w_int_dom);
     // XXX: ignore _limit_env
   }
 
   void backward_apply(arith_operation_t op,
 		      const variable_t &x, const variable_t &y, number_t z,
-                      this_type invariant) override {
+                      const this_type &invariant) override {
     _w_int_dom.backward_apply(op, x, y, z, invariant._w_int_dom);
     // XXX: ignore _limit_env
   }
 
   void backward_apply(arith_operation_t op,
 		      const variable_t &x, const variable_t &y, const variable_t &z,
-                      this_type invariant) override {
+                      const this_type &invariant) override {
     _w_int_dom.backward_apply(op, x, y, z, invariant._w_int_dom);
     // XXX: ignore _limit_env
   }
@@ -2579,12 +2579,12 @@ public:
   void assume_bool(const variable_t &v, bool is_negated) override {}
   // backward boolean operations
   void backward_assign_bool_cst(const variable_t &lhs, const linear_constraint_t &rhs,
-                                this_type invariant) override {}
+                                const this_type &invariant) override {}
   void backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs, bool is_not_rhs,
-                                this_type invariant) override {}
+                                const this_type &invariant) override {}
   void backward_apply_binary_bool(bool_operation_t op,
                                   const variable_t &x, const variable_t &y, const variable_t &z,
-                                  this_type invariant) override {}
+                                  const this_type &invariant) override {}
   // array operations
   void array_init(const variable_t &a, const linear_expression_t &elem_size,
                   const linear_expression_t &lb_idx, const linear_expression_t &ub_idx,
@@ -2604,20 +2604,20 @@ public:
   void backward_array_init(const variable_t &a, const linear_expression_t &elem_size,
                            const linear_expression_t &lb_idx,
                            const linear_expression_t &ub_idx, const linear_expression_t &val,
-                           this_type invariant) override {}
+                           const this_type &invariant) override {}
   void backward_array_load(const variable_t &lhs, const variable_t &a,
                            const linear_expression_t &elem_size, const linear_expression_t &i,
-                           this_type invariant) override {}
+                           const this_type &invariant) override {}
   void backward_array_store(const variable_t &a, const linear_expression_t &elem_size,
                             const linear_expression_t &i, const linear_expression_t &v,
                             bool is_strong_update,
-                            this_type invariant) override {}
+                            const this_type &invariant) override {}
   void backward_array_store_range(const variable_t &a, const linear_expression_t &elem_size,
                                   const linear_expression_t &i, const linear_expression_t &j,
                                   const linear_expression_t &v,
-                                  this_type invariant) override {}
+                                  const this_type &invariant) override {}
   void backward_array_assign(const variable_t &lhs, const variable_t &rhs,
-                             this_type invariant) override {}
+                             const this_type &invariant) override {}
   // reference operations
   void region_init(const memory_region &reg) override {}          
   void ref_make(const variable_t &ref, const crab::memory_region &reg) override {}
@@ -2667,7 +2667,7 @@ public:
   void backward_intrinsic(std::string name,
 			  const variable_vector_t &inputs,
 			  const variable_vector_t &outputs,
-			  this_type invariant) override {
+			  const this_type &invariant) override {
     CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());    
   }
   /* end intrinsics operations */
@@ -3256,7 +3256,7 @@ public:
 
   // backward arithmetic operations
   void backward_assign(const variable_t &x, const linear_expression_t &e,
-                       wrapped_numerical_domain_t invariant) override {
+                       const wrapped_numerical_domain_t &invariant) override {
 
     CRAB_WARN("backward assign not implemented");
     this->operator-=(x);
@@ -3266,7 +3266,7 @@ public:
 
   void backward_apply(arith_operation_t op,
 		      const variable_t &x, const variable_t &y, number_t z,
-                      wrapped_numerical_domain_t invariant) override {
+                      const wrapped_numerical_domain_t &invariant) override {
     CRAB_WARN("backward apply not implemented");
     this->operator-=(x);
 
@@ -3278,7 +3278,7 @@ public:
 
   void backward_apply(arith_operation_t op,
 		      const variable_t &x, const variable_t &y, const variable_t &z,
-                      wrapped_numerical_domain_t invariant) override {
+                      const wrapped_numerical_domain_t &invariant) override {
     CRAB_WARN("backward apply not implemented");
     this->operator-=(x);
 
@@ -3321,20 +3321,20 @@ public:
 
   // backward boolean operators
   void backward_assign_bool_cst(const variable_t &lhs, const linear_constraint_t &rhs,
-                                wrapped_numerical_domain_t inv) override {
+                                const wrapped_numerical_domain_t &inv) override {
     CRAB_WARN("backward assign bool constraint not implemented");
     this->operator-=(lhs);
   }
 
   void backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs, bool is_not_rhs,
-                                wrapped_numerical_domain_t inv) override {
+                                const wrapped_numerical_domain_t &inv) override {
     CRAB_WARN("backward assign bool variable not implemented");
     this->operator-=(lhs);
   }
 
   void backward_apply_binary_bool(bool_operation_t op,
 				  const variable_t &x, const variable_t &y, const variable_t &z,
-                                  wrapped_numerical_domain_t inv) override {
+                                  const wrapped_numerical_domain_t &inv) override {
     CRAB_WARN("backward apply binary bool not implemented");
     this->operator-=(x);
   }
@@ -3394,24 +3394,24 @@ public:
   backward_array_init(const variable_t &a, const linear_expression_t &elem_size,
                       const linear_expression_t &lb_idx, const linear_expression_t &ub_idx,
                       const linear_expression_t &val,
-                      wrapped_numerical_domain_t invariant) override {}
+                      const wrapped_numerical_domain_t &invariant) override {}
   virtual void
   backward_array_load(const variable_t &lhs, const variable_t &a,
                       const linear_expression_t &elem_size, const linear_expression_t &i,
-                      wrapped_numerical_domain_t invariant) override {}
+                      const wrapped_numerical_domain_t &invariant) override {}
   virtual void
   backward_array_store(const variable_t &a, const linear_expression_t &elem_size,
                        const linear_expression_t &i, const linear_expression_t &val,
                        bool is_strong_update,
-                       wrapped_numerical_domain_t invariant) override {}
+                       const wrapped_numerical_domain_t &invariant) override {}
   virtual void
   backward_array_store_range(const variable_t &a, const linear_expression_t &elem_size,
                              const linear_expression_t &i, const linear_expression_t &j,
                              const linear_expression_t &v,
-                             wrapped_numerical_domain_t invariant) override {}
+                             const wrapped_numerical_domain_t &invariant) override {}
   virtual void
   backward_array_assign(const variable_t &lhs, const variable_t &rhs,
-                        wrapped_numerical_domain_t invariant) override {}
+                        const wrapped_numerical_domain_t &invariant) override {}
   // reference api
   void region_init(const memory_region &reg) override {
     _product.region_init(reg);      
@@ -3481,7 +3481,7 @@ public:
   void backward_intrinsic(std::string name,
 			  const variable_vector_t &inputs,
 			  const variable_vector_t &outputs,
-			  wrapped_numerical_domain_t invariant) override {
+			  const wrapped_numerical_domain_t &invariant) override {
     _product.backward_intrinsic(name, inputs, outputs, invariant._product);    
   }
   /* end intrinsics operations */

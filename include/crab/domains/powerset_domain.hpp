@@ -323,19 +323,19 @@ public:
   }
 
   virtual void backward_assign(const variable_t &x, const linear_expression_t &e,
-			       powerset_domain_t invariant) override {
+			       const powerset_domain_t &invariant) override {
     CRAB_WARN(domain_name(), " does not implement backward operations");
   }
 
   virtual void backward_apply(arith_operation_t op,
 			      const variable_t &x, const variable_t &y, number_t k,
-			      powerset_domain_t invariant) override {
+			      const powerset_domain_t &invariant) override {
     CRAB_WARN(domain_name(), " does not implement backward operations");    
   }
 
   virtual void backward_apply(arith_operation_t op,
 			      const variable_t &x, const variable_t &y, const variable_t &z,
-			      powerset_domain_t invariant) override {
+			      const powerset_domain_t &invariant) override {
     CRAB_WARN(domain_name(), " does not implement backward operations");        
   }
 
@@ -459,21 +459,21 @@ public:
                                    const linear_expression_t &lb_idx,
                                    const linear_expression_t &ub_idx,
                                    const linear_expression_t &val,
-				   powerset_domain_t invariant) override {
+				   const powerset_domain_t &invariant) override {
     CRAB_WARN(domain_name(), " does not implement backward operations");                
   }
   
   virtual void backward_array_load(const variable_t &lhs, const variable_t &a,
                                    const linear_expression_t &elem_size,
                                    const linear_expression_t &idx,
-				   powerset_domain_t invariant) override {
+				   const powerset_domain_t &invariant) override {
     CRAB_WARN(domain_name(), " does not implement backward operations");                
   }
   
   virtual void backward_array_store(const variable_t &a, const linear_expression_t &elem_size,
                                     const linear_expression_t &idx,
                                     const linear_expression_t &v,
-                                    bool is_strong_update, powerset_domain_t invariant) override {
+                                    bool is_strong_update, const powerset_domain_t &invariant) override {
     CRAB_WARN(domain_name(), " does not implement backward operations");                
   }
   
@@ -481,12 +481,12 @@ public:
   backward_array_store_range(const variable_t &a, const linear_expression_t &elem_size,
                              const linear_expression_t &lb_idx,
 			     const linear_expression_t &ub_idx,
-                             const linear_expression_t &v, powerset_domain_t invariant) override {
+                             const linear_expression_t &v, const powerset_domain_t &invariant) override {
     CRAB_WARN(domain_name(), " does not implement backward operations");                    
   }
   
   virtual void backward_array_assign(const variable_t &a, const variable_t &b,
-                                     powerset_domain_t invariant) override {
+                                     const powerset_domain_t &invariant) override {
     CRAB_WARN(domain_name(), " does not implement backward operations");     
   }
 
@@ -618,19 +618,19 @@ public:
 
   // backward boolean operators
   virtual void backward_assign_bool_cst(const variable_t &lhs, const linear_constraint_t &rhs,
-                                        powerset_domain_t inv) override {
+                                        const powerset_domain_t &inv) override {
     CRAB_WARN(domain_name(), " does not implement backward operations");            
   }
 
   virtual void backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                                         bool is_not_rhs,
-                                        powerset_domain_t inv) override {
+                                        const powerset_domain_t &inv) override {
     CRAB_WARN(domain_name(), " does not implement backward operations");                
   }
 
   virtual void backward_apply_binary_bool(bool_operation_t op, const variable_t &x,
                                           const variable_t &y, const variable_t &z,
-                                          powerset_domain_t inv) override {
+                                          const powerset_domain_t &inv) override {
     CRAB_WARN(domain_name(), " does not implement backward operations");                    
   }
 
@@ -649,7 +649,7 @@ public:
   virtual void backward_intrinsic(std::string name,
 				  const variable_vector_t &inputs,
 				  const variable_vector_t &outputs,
-				  powerset_domain_t invariant) override {
+				  const powerset_domain_t &invariant) override {
     CRAB_WARN(domain_name(), " does not implement backward operations");            
   }
   

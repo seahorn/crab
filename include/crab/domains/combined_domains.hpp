@@ -340,7 +340,7 @@ public:
   }
 
   void backward_assign(const variable_t &x, const linear_expression_t &e,
-                       domain_product2_t invariant) override {
+                       const domain_product2_t &invariant) override {
     this->_product.first().backward_assign(x, e, invariant.first());
     this->_product.second().backward_assign(x, e, invariant.second());
     this->reduce();
@@ -348,7 +348,7 @@ public:
 
   void backward_apply(arith_operation_t op,
 		      const variable_t &x, const variable_t &y, Number k,
-                      domain_product2_t invariant) override {
+                      const domain_product2_t &invariant) override {
     this->_product.first().backward_apply(op, x, y, k, invariant.first());
     this->_product.second().backward_apply(op, x, y, k, invariant.second());
     this->reduce();
@@ -356,7 +356,7 @@ public:
 
   void backward_apply(arith_operation_t op,
 		      const variable_t &x, const variable_t &y, const variable_t &z,
-                      domain_product2_t invariant) override {
+                      const domain_product2_t &invariant) override {
     this->_product.first().backward_apply(op, x, y, z, invariant.first());
     this->_product.second().backward_apply(op, x, y, z, invariant.second());
     this->reduce();
@@ -446,7 +446,7 @@ public:
                                    const linear_expression_t &lb_idx,
                                    const linear_expression_t &ub_idx,
                                    const linear_expression_t &val,
-                                   domain_product2_t invariant) override {
+                                   const domain_product2_t &invariant) override {
     this->_product.first().backward_array_init(a, elem_size, lb_idx, ub_idx,
                                                val, invariant.first());
     this->_product.second().backward_array_init(a, elem_size, lb_idx, ub_idx,
@@ -457,7 +457,7 @@ public:
   virtual void backward_array_load(const variable_t &lhs, const variable_t &a,
                                    const linear_expression_t &elem_size,
                                    const linear_expression_t &i,
-                                   domain_product2_t invariant) override {
+                                   const domain_product2_t &invariant) override {
 
     this->_product.first().backward_array_load(lhs, a, elem_size, i,
                                                invariant.first());
@@ -470,7 +470,7 @@ public:
                                     const linear_expression_t &i,
                                     const linear_expression_t &val,
                                     bool is_strong_update,
-                                    domain_product2_t invariant) override {
+                                    const domain_product2_t &invariant) override {
     this->_product.first().backward_array_store(
         a, elem_size, i, val, is_strong_update, invariant.first());
     this->_product.second().backward_array_store(
@@ -482,7 +482,7 @@ public:
   backward_array_store_range(const variable_t &a, const linear_expression_t &elem_size,
                              const linear_expression_t &i, const linear_expression_t &j,
                              const linear_expression_t &val,
-                             domain_product2_t invariant) override {
+                             const domain_product2_t &invariant) override {
     this->_product.first().backward_array_store_range(a, elem_size, i, j, val,
                                                       invariant.first());
     this->_product.second().backward_array_store_range(a, elem_size, i, j, val,
@@ -491,7 +491,7 @@ public:
   }
 
   virtual void backward_array_assign(const variable_t &lhs, const variable_t &rhs,
-                                     domain_product2_t invariant) override {
+                                     const domain_product2_t &invariant) override {
     this->_product.first().backward_array_assign(lhs, rhs, invariant.first());
     this->_product.second().backward_array_assign(lhs, rhs, invariant.second());
     this->reduce();
@@ -587,7 +587,7 @@ public:
 
   // backward boolean operators
   virtual void backward_assign_bool_cst(const variable_t &lhs, const linear_constraint_t &rhs,
-                                        domain_product2_t inv) override {
+                                        const domain_product2_t &inv) override {
     this->_product.first().backward_assign_bool_cst(lhs, rhs, inv.first());
     this->_product.second().backward_assign_bool_cst(lhs, rhs, inv.second());
     this->reduce();
@@ -595,7 +595,7 @@ public:
 
   virtual void backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
                                         bool is_not_rhs,
-                                        domain_product2_t inv) override {
+                                        const domain_product2_t &inv) override {
     this->_product.first().backward_assign_bool_var(lhs, rhs, is_not_rhs,
                                                     inv.first());
     this->_product.second().backward_assign_bool_var(lhs, rhs, is_not_rhs,
@@ -606,7 +606,7 @@ public:
   virtual void backward_apply_binary_bool(bool_operation_t op,
 					  const variable_t &x,
                                           const variable_t &y, const variable_t &z,
-                                          domain_product2_t inv) override {
+                                          const domain_product2_t &inv) override {
     this->_product.first().backward_apply_binary_bool(op, x, y, z, inv.first());
     this->_product.second().backward_apply_binary_bool(op, x, y, z,
                                                        inv.second());
@@ -676,7 +676,7 @@ public:
   void backward_intrinsic(std::string name,
 			  const variable_vector_t &inputs,
 			  const variable_vector_t &outputs,
-			  domain_product2_t invariant) override {
+			  const domain_product2_t &invariant) override {
     this->_product.first().backward_intrinsic(name, inputs, outputs, invariant.first());
     this->_product.second().backward_intrinsic(name, inputs, outputs, invariant.second());        
   }
@@ -1031,7 +1031,7 @@ public:
   }
 
   void backward_assign(const variable_t &x, const linear_expression_t &e,
-                       reduced_numerical_domain_product2_t invariant) override {
+                       const reduced_numerical_domain_product2_t &invariant) override {
     this->_product.backward_assign(x, e, invariant._product);
     if (!Params::apply_reduction_only_add_constraint) {
       // reduce the variables in the right-hand side
@@ -1042,7 +1042,7 @@ public:
 
   void backward_apply(arith_operation_t op,
 		      const variable_t &x, const variable_t &y, number_t k,
-                      reduced_numerical_domain_product2_t invariant) override {
+                      const reduced_numerical_domain_product2_t &invariant) override {
     this->_product.backward_apply(op, x, y, k, invariant._product);
     if (!Params::apply_reduction_only_add_constraint) {
       // reduce the variables in the right-hand side
@@ -1052,7 +1052,7 @@ public:
 
   void backward_apply(arith_operation_t op,
 		      const variable_t &x, const variable_t &y, const variable_t &z,
-                      reduced_numerical_domain_product2_t invariant) override {
+                      const reduced_numerical_domain_product2_t &invariant) override {
     this->_product.backward_apply(op, x, y, z, invariant._product);
     if (!Params::apply_reduction_only_add_constraint) {
       // reduce the variables in the right-hand side
@@ -1103,13 +1103,13 @@ public:
   void assume_bool(const variable_t &v, bool is_negated) override {}
   // backward boolean operations
   void backward_assign_bool_cst(const variable_t &lhs, const linear_constraint_t &rhs,
-                                reduced_numerical_domain_product2_t invariant) override {}
+                                const reduced_numerical_domain_product2_t &invariant) override {}
   void backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs, bool is_not_rhs,
-                                reduced_numerical_domain_product2_t invariant) override {}
+                                const reduced_numerical_domain_product2_t &invariant) override {}
   void
   backward_apply_binary_bool(bool_operation_t op,
 			     const variable_t &x, const variable_t &y, const variable_t &z,
-                             reduced_numerical_domain_product2_t invariant) override {}
+                             const reduced_numerical_domain_product2_t &invariant) override {}
   // array operations
   void array_init(const variable_t &a, const linear_expression_t &elem_size,
                   const linear_expression_t &lb_idx, const linear_expression_t &ub_idx,
@@ -1127,21 +1127,21 @@ public:
   void backward_array_init(const variable_t &a, const linear_expression_t &elem_size,
                            const linear_expression_t &lb_idx,
                            const linear_expression_t &ub_idx, const linear_expression_t &val,
-                           reduced_numerical_domain_product2_t invariant) override {}
+                           const reduced_numerical_domain_product2_t &invariant) override {}
   void backward_array_load(const variable_t &lhs, const variable_t &a,
                            const linear_expression_t &elem_size, const linear_expression_t &i,
-                           reduced_numerical_domain_product2_t invariant) override {}
+                           const reduced_numerical_domain_product2_t &invariant) override {}
   void backward_array_store(const variable_t &a, const linear_expression_t &elem_size,
                             const linear_expression_t &i, const linear_expression_t &v,
                             bool is_strong_update,
-                            reduced_numerical_domain_product2_t invariant) override {}
+                            const reduced_numerical_domain_product2_t &invariant) override {}
   void
   backward_array_store_range(const variable_t &a, const linear_expression_t &elem_size,
                              const linear_expression_t &i, const linear_expression_t &j,
                              const linear_expression_t &val,
-                             reduced_numerical_domain_product2_t invariant) override {}
+                             const reduced_numerical_domain_product2_t &invariant) override {}
   void backward_array_assign(const variable_t &lhs, const variable_t &rhs,
-                             reduced_numerical_domain_product2_t invariant) override {}
+                             const reduced_numerical_domain_product2_t &invariant) override {}
   // reference operations
   void region_init(const memory_region &reg) override {}         
   void ref_make(const variable_t &ref, const memory_region &reg) override {}
@@ -1174,7 +1174,7 @@ public:
   void backward_intrinsic(std::string name,
 			  const variable_vector_t &inputs,
 			  const variable_vector_t &outputs,
-			  reduced_numerical_domain_product2_t invariant) override {
+			  const reduced_numerical_domain_product2_t &invariant) override {
     this->_product.backward_intrinsic(name, inputs, outputs, invariant._product);
   }
   /* end intrinsics operations */
@@ -1659,7 +1659,7 @@ public:
   }
 
   void backward_assign(const variable_t &x, const linear_expression_t &e,
-                       rnc_domain_t invariant) override {
+                       const rnc_domain_t &invariant) override {
     this->_product.backward_assign(x, e, invariant._product);
     // reduce the variables in the right-hand side
     for (auto const&v : e.variables())
@@ -1668,7 +1668,7 @@ public:
 
   void backward_apply(arith_operation_t op,
 		      const variable_t &x, const variable_t &y, number_t k,
-                      rnc_domain_t invariant) override {
+                      const rnc_domain_t &invariant) override {
     this->_product.backward_apply(op, x, y, k, invariant._product);
     // reduce the variables in the right-hand side
     this->reduce_variable(y);
@@ -1676,7 +1676,7 @@ public:
 
   void backward_apply(arith_operation_t op,
 		      const variable_t &x, const variable_t &y, const variable_t &z,
-                      rnc_domain_t invariant) override {
+                      const rnc_domain_t &invariant) override {
     this->_product.backward_apply(op, x, y, z, invariant._product);
     // reduce the variables in the right-hand side
     this->reduce_variable(y);
@@ -1720,12 +1720,12 @@ public:
   void assume_bool(const variable_t &v, bool is_negated) override {}
   // backward boolean operations
   void backward_assign_bool_cst(const variable_t &lhs, const linear_constraint_t &rhs,
-                                rnc_domain_t invariant) override {}
+                                const rnc_domain_t &invariant) override {}
   void backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs, bool is_not_rhs,
-                                rnc_domain_t invariant) override {}
+                                const rnc_domain_t &invariant) override {}
   void backward_apply_binary_bool(bool_operation_t op,
                                   const variable_t &x, const variable_t &y, const variable_t &z,
-                                  rnc_domain_t invariant) override {}
+                                  const rnc_domain_t &invariant) override {}
   // array operations
   void array_init(const variable_t &a, const linear_expression_t &elem_size,
                   const linear_expression_t &lb_idx, const linear_expression_t &ub_idx,
@@ -1744,20 +1744,20 @@ public:
                            const linear_expression_t &lb_idx,
                            const linear_expression_t &ub_idx,
 			   const linear_expression_t &val,
-                           rnc_domain_t invariant) override {}
+                           const rnc_domain_t &invariant) override {}
   void backward_array_load(const variable_t &lhs, const variable_t &a,
                            const linear_expression_t &elem_size,
 			   const linear_expression_t &i,
-                           rnc_domain_t invariant) override {}
+                           const rnc_domain_t &invariant) override {}
   void backward_array_store(const variable_t &a, const linear_expression_t &elem_size,
                             const linear_expression_t &i, const linear_expression_t &v,
-                            bool is_strong_update, rnc_domain_t invariant) override {}
+                            bool is_strong_update, const rnc_domain_t &invariant) override {}
   void backward_array_store_range(const variable_t &a, const linear_expression_t &elem_size,
                                   const linear_expression_t &i, const linear_expression_t &j,
                                   const linear_expression_t &val,
-                                  rnc_domain_t invariant) override {}
+                                  const rnc_domain_t &invariant) override {}
   void backward_array_assign(const variable_t &lhs, const variable_t &rhs,
-                             rnc_domain_t invariant) override {}
+                             const rnc_domain_t &invariant) override {}
   // reference operations
   void region_init(const memory_region &reg) override {}         
   void ref_make(const variable_t &ref, const memory_region &reg) override {}
@@ -1822,7 +1822,7 @@ public:
   void backward_intrinsic(std::string name,
 			  const variable_vector_t &inputs,
 			  const variable_vector_t &outputs,
-			   rnc_domain_t invariant) override {
+			   const rnc_domain_t &invariant) override {
     this->_product.backward_intrinsic(name, inputs, outputs, invariant._product);
   }
   /* end intrinsics operations */

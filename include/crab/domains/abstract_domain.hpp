@@ -214,31 +214,31 @@ public:
   // The result is meet with invariant.
   virtual void backward_apply(arith_operation_t op, const variable_t &x,
                               const variable_t &y, const variable_t &z,
-                              Dom invariant) = 0;
+                              const Dom &invariant) = 0;
   // x = y op k
   // Substitute x with y op k in the abstract value
   // The result is meet with invariant.
   virtual void backward_apply(arith_operation_t op, const variable_t &x,
                               const variable_t &y, number_t k,
-                              Dom invariant) = 0;
+                              const Dom &invariant) = 0;
   // x = e
   // Substitute x with e in the abstract value
   // The result is meet with invariant.
   virtual void backward_assign(const variable_t &x,
-                               const linear_expression_t &e, Dom invariant) = 0;
+                               const linear_expression_t &e, const Dom &invariant) = 0;
 
   /**************************** Backward boolean operations ******************/
   virtual void backward_assign_bool_cst(const variable_t &lhs,
                                         const linear_constraint_t &rhs,
-                                        Dom invariant) = 0;
+                                        const Dom &invariant) = 0;
   virtual void backward_assign_bool_var(const variable_t &lhs,
                                         const variable_t &rhs, bool is_not_rhs,
-                                        Dom invariant) = 0;
+                                        const Dom &invariant) = 0;
   virtual void backward_apply_binary_bool(bool_operation_t op,
                                           const variable_t &x,
                                           const variable_t &y,
                                           const variable_t &z,
-                                          Dom invariant) = 0;
+                                          const Dom &invariant) = 0;
 
   /**************************** Backward array operations ******************/
   virtual void backward_array_init(const variable_t &a,
@@ -246,24 +246,24 @@ public:
                                    const linear_expression_t &lb_idx,
                                    const linear_expression_t &ub_idx,
                                    const linear_expression_t &val,
-                                   Dom invariant) = 0;
+                                   const Dom &invariant) = 0;
   virtual void backward_array_load(const variable_t &lhs, const variable_t &a,
                                    const linear_expression_t &elem_size,
                                    const linear_expression_t &i,
-                                   Dom invariant) = 0;
+                                   const Dom &invariant) = 0;
   virtual void backward_array_store(const variable_t &a,
                                     const linear_expression_t &elem_size,
                                     const linear_expression_t &i,
                                     const linear_expression_t &v,
-                                    bool is_strong_update, Dom invariant) = 0;
+                                    bool is_strong_update, const Dom &invariant) = 0;
   virtual void backward_array_store_range(const variable_t &a,
                                           const linear_expression_t &elem_size,
                                           const linear_expression_t &i,
                                           const linear_expression_t &j,
                                           const linear_expression_t &v,
-                                          Dom invariant) = 0;
+                                          const Dom &invariant) = 0;
   virtual void backward_array_assign(const variable_t &a, const variable_t &b,
-                                     Dom invariant) = 0;
+                                     const Dom &invariant) = 0;
 
   /**************************** Miscellaneous operations ****************/
   // Forget v
@@ -312,7 +312,7 @@ public:
   virtual void backward_intrinsic(std::string name,
                                   const variable_vector_t &inputs,
                                   const variable_vector_t &outputs,
-                                  Dom invariant) = 0;
+                                  const Dom &invariant) = 0;
 
   // Print the internal state of the abstract domain
   virtual void write(crab::crab_os &o) const = 0;
