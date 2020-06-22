@@ -535,7 +535,7 @@ public:
     edge_count = 0;
   }
 
-  bool elem(vert_id s, vert_id d) { return _succs[s].elem(d); }
+  bool elem(vert_id s, vert_id d) const { return _succs[s].elem(d); }
 
   Wt &edge_val(vert_id s, vert_id d) {
     size_t idx;
@@ -543,6 +543,12 @@ public:
     return _ws[idx];
   }
 
+  const Wt &edge_val(vert_id s, vert_id d) const {
+    size_t idx;
+    _succs[s].lookup(d, &idx);
+    return _ws[idx];
+  }
+  
   class mut_val_ref_t {
   public:
     mut_val_ref_t() : w(nullptr) {}

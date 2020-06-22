@@ -144,7 +144,7 @@ public:
   }
 
   // Check whether an edge is live
-  bool elem(vert_id x, vert_id y) { return succs(x).mem(y); }
+  bool elem(vert_id x, vert_id y) const { return succs(x).mem(y); }
 
   class mut_val_ref_t {
   public:
@@ -177,6 +177,8 @@ public:
   }
 
   Wt &edge_val(vert_id x, vert_id y) { return succs(x).value(y); }
+
+  const Wt &edge_val(vert_id x, vert_id y) const { return succs(x).value(y); }  
 
   // Precondition: elem(x, y) is true.
   Wt operator()(vert_id x, vert_id y) {
