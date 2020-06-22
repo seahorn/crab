@@ -757,6 +757,56 @@ protected:
 
     return csts;
   }
+
+  // Assume dbm is already normalized
+  void write(crab_os &o, const DBM_t &dbm) const {
+    if (dbm.is_bottom()) {
+      o << "_|_";
+      return;
+    } else if (dbm.is_top()) {
+      o << "{}";
+      return;
+    } else {
+      // Intervals
+      bool first = true;
+      o << "{";
+      // Extract all the edges
+      SubGraph<graph_t> g_excl(const_cast<graph_t&>(dbm.g), 0);
+      for (vert_id v : g_excl.verts()) {
+        if (!dbm.rev_map[v])
+          continue;
+        if (!dbm.g.elem(0, v) && !dbm.g.elem(v, 0))
+          continue;
+        interval_t v_out = interval_t(dbm.g.elem(v, 0) ? -number_t(dbm.g.edge_val(v, 0))
+                                                   : bound_t::minus_infinity(),
+                                      dbm.g.elem(0, v) ? number_t(dbm.g.edge_val(0, v))
+                                                   : bound_t::plus_infinity());
+        if (first)
+          first = false;
+        else
+          o << ", ";
+        o << *(dbm.rev_map[v]) << " -> " << v_out;
+      }
+
+      for (vert_id s : g_excl.verts()) {
+        if (!dbm.rev_map[s])
+          continue;
+        variable_t vs = *dbm.rev_map[s];
+        for (vert_id d : g_excl.succs(s)) {
+          if (!dbm.rev_map[d])
+            continue;
+          variable_t vd = *dbm.rev_map[d];
+          if (first)
+            first = false;
+          else
+            o << ", ";
+          o << vd << "-" << vs << "<=" << g_excl.edge_val(s, d);
+        }
+      }
+      o << "}";
+
+    }
+  }
   
 public:
   sparse_dbm_domain(bool is_bottom = false) : _is_bottom(is_bottom) {
@@ -1988,60 +2038,19 @@ public:
   /* end intrinsics operations */
   
   // Output function
-  void write(crab_os &o) override {
+  void write(crab_os &o) const override {
     crab::CrabStats::count(domain_name() + ".count.write");
     crab::ScopedCrabStats __st__(domain_name() + ".write");
 
-    normalize();
+    // linear_constraint_system_t inv = to_linear_constraint_system();
+    // o << inv;
 
-    if (is_bottom()) {
-      o << "_|_";
-      return;
-    } else if (is_top()) {
-      o << "{}";
-      return;
+    if (need_normalization()) {
+      DBM_t tmp(*this);
+      tmp.normalize();
+      write(o, tmp);
     } else {
-      // Intervals
-      bool first = true;
-      o << "{";
-      // Extract all the edges
-      SubGraph<graph_t> g_excl(g, 0);
-      for (vert_id v : g_excl.verts()) {
-        if (!rev_map[v])
-          continue;
-        if (!g.elem(0, v) && !g.elem(v, 0))
-          continue;
-        interval_t v_out = interval_t(g.elem(v, 0) ? -number_t(g.edge_val(v, 0))
-                                                   : bound_t::minus_infinity(),
-                                      g.elem(0, v) ? number_t(g.edge_val(0, v))
-                                                   : bound_t::plus_infinity());
-
-        if (first)
-          first = false;
-        else
-          o << ", ";
-        o << *(rev_map[v]) << " -> " << v_out;
-      }
-
-      for (vert_id s : g_excl.verts()) {
-        if (!rev_map[s])
-          continue;
-        variable_t vs = *rev_map[s];
-        for (vert_id d : g_excl.succs(s)) {
-          if (!rev_map[d])
-            continue;
-          variable_t vd = *rev_map[d];
-          if (first)
-            first = false;
-          else
-            o << ", ";
-          o << vd << "-" << vs << "<=" << g_excl.edge_val(s, d);
-        }
-      }
-      o << "}";
-
-      // linear_constraint_system_t inv = to_linear_constraint_system();
-      // o << inv;
+      write(o, *this);
     }
   }
 

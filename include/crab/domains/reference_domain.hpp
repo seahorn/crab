@@ -1791,7 +1791,7 @@ public:
     return "ReferenceDomain(" + base_abstract_domain_t::getDomainName() + ")";
   }
 
-  void write(crab_os &o) override {
+  void write(crab_os &o) const override {
     if (is_bottom()) {
       o << "_|_";
     } else {

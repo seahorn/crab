@@ -180,7 +180,7 @@ public:
     }
   }
 
-  void write(crab::crab_os &o) {
+  void write(crab::crab_os &o) const {
     if (this->is_bottom()) {
       o << "_|_";
     } else {
@@ -682,7 +682,7 @@ public:
   }
   /* end intrinsics operations */
   
-  void write(crab::crab_os &o) override { this->_product.write(o); }
+  void write(crab::crab_os &o) const override { this->_product.write(o); }
 
   std::string domain_name() const override {
     return basic_domain_product2_t::getDomainName();
@@ -1195,7 +1195,7 @@ public:
 
   void minimize() override { this->_product.minimize(); }
 
-  void write(crab_os &o) override { this->_product.write(o); }
+  void write(crab_os &o) const override { this->_product.write(o); }
 
   linear_constraint_system_t to_linear_constraint_system() const override {
     return this->_product.to_linear_constraint_system();
@@ -1792,7 +1792,7 @@ public:
 
   void minimize() override { this->_product.minimize(); }
 
-  void write(crab_os &o) override { this->_product.write(o); }
+  void write(crab_os &o) const override { this->_product.write(o); }
 
   linear_constraint_system_t to_linear_constraint_system() const override {
     return this->_product.to_linear_constraint_system();

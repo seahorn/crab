@@ -744,7 +744,7 @@ public:
     } 
   }
   
-  void write(crab::crab_os &o) override {
+  void write(crab::crab_os &o) const override {
     if (is_bottom()) {
       o << "_|_";
     } else if (is_top()) {

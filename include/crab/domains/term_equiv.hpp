@@ -1724,41 +1724,46 @@ public:
   }
 
   // Output function
-  void write(crab_os &o) override {
+  void write(crab_os &o) const override {
     crab::CrabStats::count(domain_name() + ".count.write");
     crab::ScopedCrabStats __st__(domain_name() + ".write");
 
+    // XXX: we can avoid the copy as we do in
+    // to_linear_constraint_system but we don't bother for
+    // pretty-printing.
+    term_domain_t tmp(*this);
+    
     // Normalization is not enforced in order to maintain accuracy
     // but we force it to display all the relationships.
-    normalize();
+    tmp.normalize();
 
-    if (is_bottom()) {
+    if (tmp.is_bottom()) {
       o << "_|_";
       return;
     }
-    if (_var_map.empty()) {
+    if (tmp._var_map.empty()) {
       o << "{}";
       return;
     }
 
     bool first = true;
     o << "{";
-    for (auto p : _var_map) {
+    for (auto p : tmp._var_map) {
       if (first)
         first = false;
       else
         o << ", ";
-      o << p.first << " -> t" << p.second << "[" << domvar_of_term(p.second)
+      o << p.first << " -> t" << p.second << "[" << tmp.domvar_of_term(p.second)
         << "]";
     }
     o << "}";
 
     // print underlying domain
-    o << _impl;
+    o << tmp._impl;
 
 #ifdef VERBOSE
     /// For debugging purposes
-    o << " ttbl={" << _ttbl << "}\n";
+    o << " ttbl={" << tmp._ttbl << "}\n";
 #endif
   }
 

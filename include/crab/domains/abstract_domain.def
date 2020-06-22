@@ -227,5 +227,5 @@
                             this_type invariant) override {                    \
       CRAB_ERROR(Msg);                                                         \
     }                                                                          \
-    void write(crab_os &o) override { CRAB_ERROR(Msg); }                       \
+    void write(crab_os &o) const override { CRAB_ERROR(Msg); }                 \
     std::string domain_name() const override { return "Unavailable domain"; }        

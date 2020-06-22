@@ -1870,7 +1870,7 @@ public:
   }
   /* end intrinsics operations */
   
-  void write(crab::crab_os &o) override {
+  void write(crab::crab_os &o) const override {
     crab::CrabStats::count(domain_name() + ".count.write");
     crab::ScopedCrabStats __st__(domain_name() + ".write");
 
@@ -2639,7 +2639,7 @@ public:
 
   /* End unimplemented operations */
 
-  void write(crab_os &o) override {
+  void write(crab_os &o) const override {
     // o << "(" << _w_int_dom << "," << _limit_env << "," << _init_set << ")";
     o << "(" << _w_int_dom << "," << _limit_env << ")";
   }
@@ -3446,7 +3446,7 @@ public:
     _product.ref_assume(cst);
   }
 
-  void write(crab_os &o) override { _product.write(o); }
+  void write(crab_os &o) const override { _product.write(o); }
 
   linear_constraint_system_t to_linear_constraint_system() const override {
     linear_constraint_system_t res;

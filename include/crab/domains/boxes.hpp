@@ -1748,7 +1748,7 @@ public:
     return to_disjunctive_linear_constraint_system(m_ldd);
   }
 
-  void write(crab_os &o) override {
+  void write(crab_os &o) const override {
     crab::CrabStats::count(domain_name() + ".count.write");
     crab::ScopedCrabStats __st__(domain_name() + ".write");
 

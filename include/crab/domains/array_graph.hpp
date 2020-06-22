@@ -1191,10 +1191,18 @@ private:
   };
   typedef boost::transform_iterator<get_first, typename lm_map_t::iterator>
       lm_iterator;
+  typedef boost::transform_iterator<get_first, typename lm_map_t::const_iterator>
+      lm_const_iterator;
+  
   typedef boost::transform_iterator<get_second, typename lm_map_t::iterator>
       lm_prime_iterator;
+  typedef boost::transform_iterator<get_second, typename lm_map_t::const_iterator>
+      lm_prime_const_iterator;
+  
   typedef boost::iterator_range<lm_iterator> lm_range;
+  typedef boost::iterator_range<lm_const_iterator> lm_const_range;  
   typedef boost::iterator_range<lm_prime_iterator> lm_prime_range;
+  typedef boost::iterator_range<lm_prime_const_iterator> lm_prime_const_range;  
 
   lm_prime_iterator var_lm_prime_begin() {
     return boost::make_transform_iterator(s_var_landmarks.begin(),
@@ -1203,10 +1211,23 @@ private:
   lm_prime_iterator var_lm_prime_end() {
     return boost::make_transform_iterator(s_var_landmarks.end(), get_second());
   }
+
+  lm_prime_const_iterator var_lm_prime_begin() const {
+    return boost::make_transform_iterator(s_var_landmarks.begin(),
+                                          get_second());
+  }
+  lm_prime_const_iterator var_lm_prime_end() const {
+    return boost::make_transform_iterator(s_var_landmarks.end(), get_second());
+  }
+  
   lm_prime_range var_lm_primes() {
     return boost::make_iterator_range(var_lm_prime_begin(), var_lm_prime_end());
   }
 
+  lm_prime_const_range var_lm_primes() const {
+    return boost::make_iterator_range(var_lm_prime_begin(), var_lm_prime_end());
+  }
+  
   lm_prime_iterator cst_lm_prime_begin() {
     return boost::make_transform_iterator(s_cst_landmarks.begin(),
                                           get_second());
@@ -1214,10 +1235,23 @@ private:
   lm_prime_iterator cst_lm_prime_end() {
     return boost::make_transform_iterator(s_cst_landmarks.end(), get_second());
   }
+
+  lm_prime_const_iterator cst_lm_prime_begin() const {
+    return boost::make_transform_iterator(s_cst_landmarks.begin(),
+                                          get_second());
+  }
+  lm_prime_const_iterator cst_lm_prime_end() const {
+    return boost::make_transform_iterator(s_cst_landmarks.end(), get_second());
+  }
+  
   lm_prime_range cst_lm_primes() {
     return boost::make_iterator_range(cst_lm_prime_begin(), cst_lm_prime_end());
   }
 
+  lm_prime_const_range cst_lm_primes() const {
+    return boost::make_iterator_range(cst_lm_prime_begin(), cst_lm_prime_end());
+  }
+  
 public:
   template <class CFG> static void do_initialization(CFG cfg) {
 
@@ -2429,7 +2463,7 @@ public:
     CRAB_WARN("backward_array_assign in array_graph domain not implemented");
   }
 
-  void write(crab_os &o) override {
+  void write(crab_os &o) const override {
 #if 1
     NumDom copy_scalar(_scalar);
     array_graph_t copy_g(_g);

@@ -490,7 +490,7 @@ public:
     _inv.rename(from, to);
   }
   
-  void write(crab_os &o) override { o << _inv; }
+  void write(crab_os &o) const override { o << _inv; }
 
   std::string domain_name() const override {
     std::string name("ArraySmashing(" + NumDomain::getDomainName() + ")");

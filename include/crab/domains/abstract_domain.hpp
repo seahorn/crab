@@ -315,13 +315,13 @@ public:
                                   Dom invariant) = 0;
 
   // Print the internal state of the abstract domain
-  virtual void write(crab::crab_os &o) = 0;
+  virtual void write(crab::crab_os &o) const = 0;
 
   // Return a string the abstract domain name
   virtual std::string domain_name(void) const = 0;
   
   friend crab::crab_os &operator<<(crab::crab_os &o,
-                                   abstract_domain<Dom> &dom) {
+                                   const abstract_domain<Dom> &dom) {
     dom.write(o);
     return o;
   }

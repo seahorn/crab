@@ -3131,7 +3131,7 @@ public:
 
   base_domain_t &get_content_domain() { return m_inv; }
 
-  void write(crab_os &o) override {
+  void write(crab_os &o) const override {
     o << m_inv;
     CRAB_LOG("array-adaptive-print-details",
 	     crab::outs() << "\n";

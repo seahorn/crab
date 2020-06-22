@@ -551,7 +551,7 @@ public:
 
   std::string domain_name() const override { return "Boolean"; }
 
-  void write(crab_os &o) override {
+  void write(crab_os &o) const override {
     crab::CrabStats::count(domain_name() + ".count.write");
     crab::ScopedCrabStats __st__(domain_name() + ".write");
 
@@ -1552,7 +1552,7 @@ public:
     _product.ref_assume(cst);
   }
   
-  void write(crab_os &o) override { _product.write(o); }
+  void write(crab_os &o) const override { _product.write(o); }
 
   linear_constraint_system_t to_linear_constraint_system() const override {
     linear_constraint_system_t res;

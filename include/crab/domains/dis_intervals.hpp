@@ -1594,7 +1594,7 @@ public:
         "TODO: to_disjunctive_linear_constraint_system in dis_intervals");
   }
 
-  void write(crab_os &o) override { this->_env.write(o); }
+  void write(crab_os &o) const override { this->_env.write(o); }
 
   std::string domain_name() const override { return "DisjunctiveIntervals"; }
 };
