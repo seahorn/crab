@@ -109,8 +109,7 @@ private:
     std::swap(disjuncts, res);
   }
   
-  // powerset is not modified but it cannot passed as const.
-  Domain smash_disjuncts(powerset_domain_t &pw) const {
+  Domain smash_disjuncts(const powerset_domain_t &pw) const {
     if (pw.is_bottom()) {
       return Domain::bottom();
     } else if (pw.is_top()) {
@@ -723,13 +722,13 @@ public:
     }
   }
   
-  linear_constraint_system_t to_linear_constraint_system() override {
+  linear_constraint_system_t to_linear_constraint_system() const override {
     Domain smashed = smash_disjuncts(*this);
     return smashed.to_linear_constraint_system();
   }
 
   disjunctive_linear_constraint_system_t
-  to_disjunctive_linear_constraint_system() override {
+  to_disjunctive_linear_constraint_system() const override {
     if (is_bottom()) {
       disjunctive_linear_constraint_system_t res(true);
       return res;

@@ -111,7 +111,9 @@ private:
     return s_ldd_man;
   }
 
-  inline theory_t *get_theory() { return Ldd_GetTheory(get_ldd_man()); }
+  theory_t *get_theory() { return Ldd_GetTheory(get_ldd_man()); }
+
+  const theory_t *get_theory() const { return Ldd_GetTheory(get_ldd_man()); }  
 
   static int num_of_vars() { return s_var_map.left.size(); }
 
@@ -269,19 +271,19 @@ private:
     return res;
   }
 
-  void num_from_ldd_cst(constant_t cst, ikos::z_number &res) {
+  void num_from_ldd_cst(constant_t cst, ikos::z_number &res) const {
     // XXX We know that the theory is tvpi, use its method direclty.
     ikos::q_number q;
     tvpi_cst_set_mpq(q.get_mpq_t(), (tvpi_cst_t)cst);
     res = q.round_to_lower();
   }
 
-  void num_from_ldd_cst(constant_t cst, ikos::q_number &res) {
+  void num_from_ldd_cst(constant_t cst, ikos::q_number &res) const {
     // XXX We know that the theory is tvpi, use its method direclty.
     tvpi_cst_set_mpq(res.get_mpq_t(), (tvpi_cst_t)cst);
   }
 
-  linear_expression_t expr_from_ldd_term(linterm_t term) {
+  linear_expression_t expr_from_ldd_term(linterm_t term) const {
     linear_expression_t e(0);
     for (size_t i = 0; i < (size_t)get_theory()->term_size(term); i++) {
       number_t k(0); // any value
@@ -294,7 +296,7 @@ private:
 
   ikos::linear_constraint<ikos::z_number, varname_t> cst_from_ldd_strict_cons(
       const ikos::linear_expression<ikos::z_number, varname_t> &l,
-      const ikos::linear_expression<ikos::z_number, varname_t> &r) {
+      const ikos::linear_expression<ikos::z_number, varname_t> &r) const {
     // l < r <-> l+1 <= r
     ikos::linear_expression<ikos::z_number, varname_t> e = l + 1;
     e = e - r;
@@ -304,12 +306,12 @@ private:
 
   ikos::linear_constraint<ikos::q_number, varname_t> cst_from_ldd_strict_cons(
       const ikos::linear_expression<ikos::q_number, varname_t> &l,
-      const ikos::linear_expression<ikos::q_number, varname_t> &r) {
+      const ikos::linear_expression<ikos::q_number, varname_t> &r) const {
     return ikos::linear_constraint<ikos::q_number, varname_t>(
         l - r, linear_constraint_t::STRICT_INEQUALITY);
   }
 
-  linear_constraint_t cst_from_ldd_cons(lincons_t lincons) {
+  linear_constraint_t cst_from_ldd_cons(lincons_t lincons) const {
 
     linear_expression_t lhs =
         expr_from_ldd_term(get_theory()->get_term(lincons));
@@ -662,7 +664,7 @@ private:
 
   void to_disjunctive_linear_constraint_system_aux(
       LddManager *ldd, LddNode *n, disjunctive_linear_constraint_system_t &e,
-      std::vector<int> &list) {
+      std::vector<int> &list) const {
     /**
      * the latest negative constraint to be printed.
      * is NULL if there isn't one
@@ -1690,7 +1692,7 @@ public:
   void ref_assume(const reference_constraint_t &cst) override {}
   /* End unimplemented operations */
 
-  linear_constraint_system_t to_linear_constraint_system() override {
+  linear_constraint_system_t to_linear_constraint_system() const override {
     crab::CrabStats::count(domain_name() +
                            ".count.to_linear_constraint_system");
     crab::ScopedCrabStats __st__(domain_name() +
@@ -1728,7 +1730,7 @@ public:
   }
 
   disjunctive_linear_constraint_system_t
-  to_disjunctive_linear_constraint_system(LddNodePtr &ldd) {
+  to_disjunctive_linear_constraint_system(const LddNodePtr &ldd) const {
     LddManager *ldd_man = get_ldd_man();
 
     std::vector<int> list;
@@ -1742,7 +1744,7 @@ public:
   }
 
   disjunctive_linear_constraint_system_t
-  to_disjunctive_linear_constraint_system() override {
+  to_disjunctive_linear_constraint_system() const override {
     return to_disjunctive_linear_constraint_system(m_ldd);
   }
 

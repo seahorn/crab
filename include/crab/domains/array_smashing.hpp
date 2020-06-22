@@ -95,7 +95,7 @@ private:
   // domain. This is OK but it shouldn't be exposed outside via
   // linear constraints.
   linear_constraint_system_t
-  filter_noninteger_vars(linear_constraint_system_t &&csts) {
+  filter_noninteger_vars(linear_constraint_system_t &&csts) const {
     linear_constraint_system_t res;
     for (auto const&cst : csts) {
       if (std::all_of(cst.expression().variables_begin(),
@@ -448,13 +448,13 @@ public:
 			  const linear_expression_t &val) override {}
   void ref_assume(const reference_constraint_t &cst) override {}
   
-  linear_constraint_system_t to_linear_constraint_system() override {
+  linear_constraint_system_t to_linear_constraint_system() const override {
     return filter_noninteger_vars(
         std::move(_inv.to_linear_constraint_system()));
   }
 
   disjunctive_linear_constraint_system_t
-  to_disjunctive_linear_constraint_system() override {
+  to_disjunctive_linear_constraint_system() const override {
     disjunctive_linear_constraint_system_t res;
 
     auto disj_csts = _inv.to_disjunctive_linear_constraint_system();

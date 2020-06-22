@@ -495,7 +495,7 @@ private:
     res = ikos::q_number::from_mpq_srcptr(mp);
   }
 
-  number_t coeff_to_num(elina_coeff_t *coeff) {
+  number_t coeff_to_num(elina_coeff_t *coeff) const {
     assert(coeff->discr == ELINA_COEFF_SCALAR);
 
     elina_scalar_t *scalar = coeff->val.scalar;
@@ -512,11 +512,11 @@ private:
     }
   }
 
-  linear_expression_t term2expr(elina_coeff_t *coeff, elina_dim_t i) {
+  linear_expression_t term2expr(elina_coeff_t *coeff, elina_dim_t i) const {
     return variable_t(get_variable(i)) * coeff_to_num(coeff);
   }
 
-  linear_constraint_t tconst2const(elina_lincons0_t cons) {
+  linear_constraint_t tconst2const(elina_lincons0_t cons) const {
     assert(cons.scalar == NULL); // Not modulo form
     elina_linexpr0_t *linexp = cons.linexpr0;
     assert(elina_linexpr0_is_linear(linexp));
@@ -1789,7 +1789,7 @@ public:
     return res;
   }
 
-  linear_constraint_system_t to_linear_constraint_system() override {
+  linear_constraint_system_t to_linear_constraint_system() const override {
     crab::CrabStats::count(domain_name() +
                            ".count.to_linear_constraint_system");
     crab::ScopedCrabStats __st__(domain_name() +
@@ -1814,7 +1814,7 @@ public:
   }
 
   disjunctive_linear_constraint_system_t
-  to_disjunctive_linear_constraint_system() override {
+  to_disjunctive_linear_constraint_system() const override {
     auto lin_csts = to_linear_constraint_system();
     if (lin_csts.is_false()) {
       return disjunctive_linear_constraint_system_t(true /*is_false*/);

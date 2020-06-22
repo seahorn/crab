@@ -949,6 +949,53 @@ protected:
     return g;
   }
 
+  bool need_normalization() const {
+#ifdef SDBM_NO_NORMALIZE
+    return false;
+#endif
+    return unstable.size() > 0;
+  }
+
+  // dbm is already normalized
+  linear_constraint_system_t to_linear_constraint_system(const DBM_t &dbm) const {
+    linear_constraint_system_t csts;
+    
+    if (dbm.is_bottom()) {
+      csts += linear_constraint_t::get_false();
+      return csts;
+    }
+
+    // Extract all the edges
+    SubGraph<graph_t> g_excl(const_cast<graph_t&>(dbm.g), 0);
+    for (vert_id v : g_excl.verts()) {
+      if (!dbm.rev_map[v])
+        continue;
+      if (dbm.g.elem(v, 0)) {
+	variable_t vv = *dbm.rev_map[v];
+	Wt c = dbm.g.edge_val(v, 0);
+        csts += linear_constraint_t(linear_expression_t(vv) >= -number_t(c));
+      }
+      if (dbm.g.elem(0, v)) {
+	variable_t vv = *dbm.rev_map[v];
+	Wt c = dbm.g.edge_val(0, v);
+        csts += linear_constraint_t(linear_expression_t(vv) <= number_t(c));
+      }
+    }
+
+    for (vert_id s : g_excl.verts()) {
+      if (!dbm.rev_map[s])
+        continue;
+      variable_t vs = *dbm.rev_map[s];
+      for (vert_id d : g_excl.succs(s)) {
+        if (!dbm.rev_map[d])
+          continue;
+        variable_t vd = *dbm.rev_map[d];
+        csts += linear_constraint_t(vd - vs <= number_t(g_excl.edge_val(s, d)));
+      }
+    }
+    return csts;
+  }
+  
   split_dbm_domain(vert_map_t &&_vert_map, rev_map_t &&_rev_map, graph_t &&_g,
             std::vector<Wt> &&_potential, vert_set_t &&_unstable)
       : vert_map(std::move(_vert_map)), rev_map(std::move(_rev_map)),
@@ -1547,14 +1594,11 @@ public:
     crab::CrabStats::count(domain_name() + ".count.normalize");
     crab::ScopedCrabStats __st__(domain_name() + ".normalize");
 
-// dbm_canonical(_dbm);
-// Always maintained in normal form, except for widening
-#ifdef SDBM_NO_NORMALIZE
-    return;
-#endif
-    if (unstable.size() == 0)
+    // Always maintained in normal form, except for widening
+    if (!need_normalization()) {
       return;
-
+    }
+    
     edge_vector delta;
     // GrOps::close_after_widen(g, potential, vert_set_wrap_t(unstable), delta);
     // GKG: Check
@@ -2502,54 +2546,22 @@ public:
     }
   }
 
-  linear_constraint_system_t to_linear_constraint_system() override {
+  
+  linear_constraint_system_t to_linear_constraint_system() const override {
     crab::CrabStats::count(domain_name() + ".count.to_linear_constraints");
     crab::ScopedCrabStats __st__(domain_name() + ".to_linear_constraints");
 
-    normalize();
-
-    linear_constraint_system_t csts;
-
-    if (is_bottom()) {
-      csts += linear_constraint_t::get_false();
-      return csts;
+    if (need_normalization()) {
+      DBM_t tmp(*this);
+      tmp.normalize();
+      return to_linear_constraint_system(tmp);
+    } else {
+      return to_linear_constraint_system(*this);
     }
-
-    // Extract all the edges
-
-    SubGraph<graph_t> g_excl(g, 0);
-
-    for (vert_id v : g_excl.verts()) {
-      if (!rev_map[v])
-        continue;
-      if (g.elem(v, 0)) {
-	variable_t vv = *rev_map[v];
-        csts += linear_constraint_t(linear_expression_t(vv) >=
-                                    -number_t(g.edge_val(v, 0)));
-      }
-      if (g.elem(0, v)) {
-	variable_t vv = *rev_map[v];
-        csts += linear_constraint_t(linear_expression_t(vv) <=
-                                    number_t(g.edge_val(0, v)));
-      }
-    }
-
-    for (vert_id s : g_excl.verts()) {
-      if (!rev_map[s])
-        continue;
-      variable_t vs = *rev_map[s];
-      for (vert_id d : g_excl.succs(s)) {
-        if (!rev_map[d])
-          continue;
-        variable_t vd = *rev_map[d];
-        csts += linear_constraint_t(vd - vs <= number_t(g_excl.edge_val(s, d)));
-      }
-    }
-    return csts;
   }
 
   disjunctive_linear_constraint_system_t
-  to_disjunctive_linear_constraint_system() override {
+  to_disjunctive_linear_constraint_system() const override {
     auto lin_csts = to_linear_constraint_system();
     if (lin_csts.is_false()) {
       return disjunctive_linear_constraint_system_t(true /*is_false*/);

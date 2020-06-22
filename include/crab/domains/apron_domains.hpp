@@ -440,7 +440,7 @@ private:
     res = ikos::q_number::from_mpq_srcptr(mp);
   }
 
-  number_t coeff2Num(ap_coeff_t *coeff) {
+  number_t coeff2Num(ap_coeff_t *coeff) const {
     assert(coeff->discr == AP_COEFF_SCALAR);
 
     ap_scalar_t *scalar = coeff->val.scalar;
@@ -456,11 +456,11 @@ private:
       CRAB_ERROR("apron translation only covers double or mpq scalars");
   }
 
-  linear_expression_t term2expr(ap_coeff_t *coeff, ap_dim_t i) {
+  linear_expression_t term2expr(ap_coeff_t *coeff, ap_dim_t i) const {
     return variable_t(get_variable(i)) * coeff2Num(coeff);
   }
 
-  linear_constraint_t tconst2const(ap_lincons0_t cons) {
+  linear_constraint_t tconst2const(ap_lincons0_t cons) const {
     assert(cons.scalar == NULL); // Not modulo form
     ap_linexpr0_t *linexp = cons.linexpr0;
     assert(ap_linexpr0_is_linear(linexp));
@@ -1556,7 +1556,7 @@ public:
     return res;
   }
 
-  linear_constraint_system_t to_linear_constraint_system() override {
+  linear_constraint_system_t to_linear_constraint_system() const override {
     crab::CrabStats::count(domain_name() +
                            ".count.to_linear_constraint_system");
     crab::ScopedCrabStats __st__(domain_name() +
@@ -1580,7 +1580,7 @@ public:
   }
 
   disjunctive_linear_constraint_system_t
-  to_disjunctive_linear_constraint_system() override {
+  to_disjunctive_linear_constraint_system() const override {
     auto lin_csts = to_linear_constraint_system();
     if (lin_csts.is_false()) {
       return disjunctive_linear_constraint_system_t(true /*is_false*/);

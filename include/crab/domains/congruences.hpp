@@ -1220,7 +1220,7 @@ public:
     this->_env.write(o);
   }
 
-  linear_constraint_system_t to_linear_constraint_system() override {
+  linear_constraint_system_t to_linear_constraint_system() const override {
     crab::CrabStats::count(domain_name() +
                            ".count.to_linear_constraint_system");
     crab::ScopedCrabStats __st__(domain_name() +
@@ -1244,7 +1244,7 @@ public:
   }
 
   disjunctive_linear_constraint_system_t
-  to_disjunctive_linear_constraint_system() override {
+  to_disjunctive_linear_constraint_system() const override {
     auto lin_csts = to_linear_constraint_system();
     if (lin_csts.is_false()) {
       return disjunctive_linear_constraint_system_t(true /*is_false*/);

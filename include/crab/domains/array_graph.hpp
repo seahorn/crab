@@ -2457,12 +2457,12 @@ public:
   // XXX: the array domain is disjunctive so it is not really
   // useful to express it through a conjunction of linear
   // constraints
-  linear_constraint_system_t to_linear_constraint_system() override {
+  linear_constraint_system_t to_linear_constraint_system() const override {
     CRAB_ERROR("array-sgraph does not implement to_linear_constraint_system");
   }
 
   disjunctive_linear_constraint_system_t
-  to_disjunctive_linear_constraint_system() override {
+  to_disjunctive_linear_constraint_system() const override {
     CRAB_ERROR("TODO: array-sgraph does not implement "
                "to_disjunctive_linear_constraint_system");
   }

@@ -63,36 +63,16 @@ public:
                         bool &&apply_reduction = true)
       : _is_bottom(false), _first(std::move(first)),
         _second(std::move(second)) {
-    //if (apply_reduction) {
-    canonicalize();
-    //}
-  }
-
-  basic_domain_product2(const basic_domain_product2_t &other)
-      : _is_bottom(other._is_bottom), _first(other._first),
-        _second(other._second) {}
-
-  basic_domain_product2(const basic_domain_product2_t &&other)
-      : _is_bottom(std::move(other._is_bottom)),
-        _first(std::move(other._first)), _second(std::move(other._second)) {}
-
-  basic_domain_product2_t &operator=(const basic_domain_product2_t &other) {
-    if (this != &other) {
-      this->_is_bottom = other._is_bottom;
-      this->_first = other._first;
-      this->_second = other._second;
+    if (apply_reduction) {
+      // we don't apply normalization when widening
+      canonicalize();
     }
-    return *this;
   }
 
-  basic_domain_product2_t &operator=(const basic_domain_product2_t &&other) {
-    if (this != &other) {
-      this->_is_bottom = std::move(other._is_bottom);
-      this->_first = std::move(other._first);
-      this->_second = std::move(other._second);
-    }
-    return *this;
-  }
+  basic_domain_product2(const basic_domain_product2_t &other) = default;
+  basic_domain_product2(basic_domain_product2_t &&other) = default;
+  basic_domain_product2_t &operator=(const basic_domain_product2_t &other)  = default;
+  basic_domain_product2_t &operator=(basic_domain_product2_t &&other) = default;
 
   static basic_domain_product2_t top() {
     return basic_domain_product2_t(Domain1::top(), Domain2::top());
@@ -118,6 +98,7 @@ public:
 
   Domain1 &first(bool apply_reduction = true) {
     if (apply_reduction) {
+      // if called during widening we don't normalize
       this->canonicalize();
     }
     return this->_first;
@@ -125,11 +106,20 @@ public:
 
   Domain2 &second(bool apply_reduction = true) {
     if (apply_reduction) {
+      // if called during widening we don't normalize      
       this->canonicalize();
     }
     return this->_second;
   }
 
+  const Domain1 &first() const {
+    return this->_first;
+  }
+
+  const Domain2 &second() const {
+    return this->_second;
+  }
+  
   bool operator<=(const basic_domain_product2_t &other) const {
     if (this->is_bottom()) {
       return true;
@@ -285,8 +275,10 @@ public:
   bool is_top() const override { return this->_product.is_top(); }
 
   Domain1 &first() { return this->_product.first(); }
+  const Domain1 &first() const { return this->_product.first(); }
 
   Domain2 &second() { return this->_product.second(); }
+  const Domain2 &second() const { return this->_product.second(); }
 
   bool operator<=(const domain_product2_t &other) const override {
     return (this->_product <= other._product);
@@ -650,7 +642,7 @@ public:
     return this->_product.first()[v] & this->_product.second()[v];
   }
   
-  virtual linear_constraint_system_t to_linear_constraint_system() override {
+  virtual linear_constraint_system_t to_linear_constraint_system() const override {
     linear_constraint_system_t csts;
     // XXX: We might add redundant constraints.
     csts += this->_product.first().to_linear_constraint_system();
@@ -659,7 +651,7 @@ public:
   }
 
   virtual disjunctive_linear_constraint_system_t
-  to_disjunctive_linear_constraint_system() override {
+  to_disjunctive_linear_constraint_system() const override {
     disjunctive_linear_constraint_system_t csts;
     // XXX: We might add redundant constraints.
     csts += this->_product.first().to_disjunctive_linear_constraint_system();
@@ -918,9 +910,8 @@ public:
 
   bool is_top() const override { return this->_product.is_top(); }
 
-  Domain1 &first() { return this->_product.first(); }
-
-  Domain2 &second() { return this->_product.second(); }
+  //Domain1 &first() { return this->_product.first(); }
+  //Domain2 &second() { return this->_product.second(); }
 
   bool operator<=(const reduced_numerical_domain_product2_t &other) const override {
     return this->_product <= other._product;
@@ -1206,12 +1197,12 @@ public:
 
   void write(crab_os &o) override { this->_product.write(o); }
 
-  linear_constraint_system_t to_linear_constraint_system() override {
+  linear_constraint_system_t to_linear_constraint_system() const override {
     return this->_product.to_linear_constraint_system();
   }
 
   disjunctive_linear_constraint_system_t
-  to_disjunctive_linear_constraint_system() override {
+  to_disjunctive_linear_constraint_system() const override {
     return this->_product.to_disjunctive_linear_constraint_system();
   }
 
@@ -1310,8 +1301,10 @@ public:
   bool is_top() { return this->_first.is_top() && this->_second.is_top(); }
 
   interval_t &first() { return this->_first; }
+  const interval_t &first() const { return this->_first; }  
 
   congruence_t &second() { return this->_second; }
+  const congruence_t &second() const { return this->_second; }  
 
   /*
      Let (i,c) be a pair of interval and congruence these are the
@@ -1581,9 +1574,8 @@ public:
 
   bool is_top() const override { return this->_product.is_top(); }
 
-  NumAbsDom &first() { return this->_product.first(); }
-
-  congruence_domain_t &second() { return this->_product.second(); }
+  //NumAbsDom &first() { return this->_product.first(); }
+  //congruence_domain_t &second() { return this->_product.second(); }
 
   bool operator<=(const rnc_domain_t &other) const override {
     return this->_product <= other._product;
@@ -1802,12 +1794,12 @@ public:
 
   void write(crab_os &o) override { this->_product.write(o); }
 
-  linear_constraint_system_t to_linear_constraint_system() override {
+  linear_constraint_system_t to_linear_constraint_system() const override {
     return this->_product.to_linear_constraint_system();
   }
 
   disjunctive_linear_constraint_system_t
-  to_disjunctive_linear_constraint_system() override {
+  to_disjunctive_linear_constraint_system() const override {
     return this->_product.to_disjunctive_linear_constraint_system();
   }
 

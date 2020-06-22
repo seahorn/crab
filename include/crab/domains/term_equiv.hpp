@@ -489,7 +489,7 @@ private:
   }
 
   dom_var_t domvar_of_term(term_id_t id) {
-    typename term_map_t::iterator it(_term_map.find(id));
+    auto it = _term_map.find(id);
     if (it != _term_map.end()) {
       return (*it).second;
     } else {
@@ -500,6 +500,17 @@ private:
     }
   }
 
+  // used by to_linear_constraint_system()
+  boost::optional<dom_var_t> domvar_of_term(term_id_t id) const {
+    auto it = _term_map.find(id);
+    if (it != _term_map.end()) {
+      return (*it).second;
+    } else {
+      return boost::none;
+    }
+  }
+  
+  
   dom_var_t domvar_of_var(variable_t v) {
     return domvar_of_term(term_of_var(v));
   }
@@ -1751,7 +1762,7 @@ public:
 #endif
   }
 
-  linear_constraint_system_t to_linear_constraint_system() override {
+  linear_constraint_system_t to_linear_constraint_system() const override {
     crab::CrabStats::count(domain_name() +
                            ".count.to_linear_constraint_system");
     crab::ScopedCrabStats __st__(domain_name() +
@@ -1761,8 +1772,10 @@ public:
     rev_map_t rev_map;
     std::vector<std::pair<variable_t, variable_t>> equivs;
     for (auto p : _var_map) {
-      dom_var_t dv = domvar_of_term(p.second);
-
+      boost::optional<dom_var_t> dv_opt = domvar_of_term(p.second);
+      if (!dv_opt) continue;
+      
+      dom_var_t dv = *dv_opt;
       auto it = rev_map.find(dv);
       if (it == rev_map.end()) {
         // The term has not yet been seen.
@@ -1804,7 +1817,7 @@ public:
   }
 
   disjunctive_linear_constraint_system_t
-  to_disjunctive_linear_constraint_system() override {
+  to_disjunctive_linear_constraint_system() const override {
     auto lin_csts = to_linear_constraint_system();
     if (lin_csts.is_false()) {
       return disjunctive_linear_constraint_system_t(true /*is_false*/);

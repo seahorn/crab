@@ -274,12 +274,12 @@ public:
   virtual interval_t operator[](const variable_t &v) = 0;
 
   // Convert the abstract state into a conjunction of linear constraints.
-  virtual linear_constraint_system_t to_linear_constraint_system() = 0;
+  virtual linear_constraint_system_t to_linear_constraint_system() const = 0;
 
   // Convert the abstract state into a disjunction of conjunction
   // of linear constraints.
   virtual disjunctive_linear_constraint_system_t
-  to_disjunctive_linear_constraint_system() = 0;
+  to_disjunctive_linear_constraint_system() const = 0;
 
   // Rename in the abstract state the variables "from" with those from to.
   //

@@ -1706,7 +1706,7 @@ private:
   // XXX: we should also probably filter out scalar variables
   // originated from cells.
   linear_constraint_system_t
-  filter_nonscalar_vars(linear_constraint_system_t &&csts) {
+  filter_nonscalar_vars(linear_constraint_system_t &&csts) const {
     linear_constraint_system_t res;
     for (auto const&cst : csts) {
       if (std::all_of(cst.expression().variables_begin(),
@@ -3104,7 +3104,7 @@ public:
     CRAB_WARN("backward_array_assign in array_adaptive domain not implemented");
   }
 
-  linear_constraint_system_t to_linear_constraint_system() override {
+  linear_constraint_system_t to_linear_constraint_system() const override {
     crab::CrabStats::count(domain_name() +
                            ".count.to_linear_constraint_system");
     crab::ScopedCrabStats __st__(domain_name() +
@@ -3115,7 +3115,7 @@ public:
   }
 
   disjunctive_linear_constraint_system_t
-  to_disjunctive_linear_constraint_system() override {
+  to_disjunctive_linear_constraint_system() const override {
     disjunctive_linear_constraint_system_t res;
     auto disj_csts = m_inv.to_disjunctive_linear_constraint_system();
     for (auto &csts : disj_csts) {

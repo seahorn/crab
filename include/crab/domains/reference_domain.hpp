@@ -592,7 +592,7 @@ private:
 
   // used only for pretty-printing and to_linear_constraint_system()
   boost::optional<variable_t> rev_rename_var(const base_variable_t &v,
-                                             bool ignore_references) {
+                                             bool ignore_references) const {
     auto it = m_rev_var_map.find(v);
     if (it != m_rev_var_map.end()) {
       if (!ignore_references || !it->second.is_ref_type()) {
@@ -618,7 +618,7 @@ private:
   // used only for pretty-printing and to_linear_constraint_system()
   boost::optional<linear_expression_t>
   rev_rename_linear_expr(const base_linear_expression_t &e,
-                         bool ignore_references) {
+                         bool ignore_references) const {
     linear_expression_t out(e.constant());
     for (auto it = e.begin(), et = e.end(); it != et; ++it) {
       const base_variable_t &v = (*it).second;
@@ -644,7 +644,7 @@ private:
   // used only for pretty-printing and to_linear_constraint_system()
   boost::optional<linear_constraint_t>
   rev_rename_linear_cst(const base_linear_constraint_t &cst,
-                        bool ignore_references) {
+                        bool ignore_references) const {
     if (boost::optional<linear_expression_t> e =
             rev_rename_linear_expr(cst.expression(), ignore_references)) {
       return linear_constraint_t(
@@ -1762,7 +1762,7 @@ public:
   //
   // Variables that shadow memory regions and reference variables are
   // ignored.
-  linear_constraint_system_t to_linear_constraint_system() override {
+  linear_constraint_system_t to_linear_constraint_system() const override {
     if (is_bottom()) {
       return linear_constraint_t::get_false();
     } else if (is_top()) {
@@ -1782,7 +1782,7 @@ public:
   }
 
   disjunctive_linear_constraint_system_t
-  to_disjunctive_linear_constraint_system() override {
+  to_disjunctive_linear_constraint_system() const override {
     CRAB_ERROR("reference_domain::to_disjunctive_linear_constraint_system not "
                "implemented");
   }
