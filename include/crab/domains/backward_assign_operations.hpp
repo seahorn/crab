@@ -70,9 +70,7 @@ public:
       dom += linear_constraint_t(e - x, linear_constraint_t::EQUALITY);
       dom -= x;
     }
-    // TEMPX
-    AbsDom tmp(inv);
-    dom = dom & tmp;
+    dom = dom & inv;
   }
 
   // x := y op k
@@ -129,10 +127,7 @@ public:
       CRAB_WARN("backwards x:= y ", op, " k is not implemented");
       dom -= x;
     }
-
-    // TEMPX
-    AbsDom tmp(inv);    
-    dom = dom & tmp;
+    dom = dom & inv;
 
     CRAB_LOG("backward", crab::outs() << "AFTER " << dom << "\n");
     return;
@@ -169,9 +164,7 @@ public:
       dom -= x;
       break;
     }
-    // TEMPX
-    AbsDom tmp(inv);    
-    dom = dom & tmp;
+    dom = dom & inv;
     CRAB_LOG("backward", crab::outs() << "AFTER " << dom << "\n");
   }
 };

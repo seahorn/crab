@@ -2980,9 +2980,7 @@ public:
     }
 
     // meet with forward invariant
-    // TEMPX:
-    array_adaptive_domain_t tmp(invariant);
-    *this = *this & tmp;
+    *this = *this & invariant;
   }
 
   virtual void backward_array_load(const variable_t &lhs, const variable_t &a,
@@ -3017,9 +3015,7 @@ public:
         // -- Forget lhs
         m_inv -= lhs;
         // -- Meet with forward invariant
-	// TEMPX
-	array_adaptive_domain_t tmp(invariant);
-        *this = *this & tmp;
+        *this = *this & invariant;
       }
     }
 
@@ -3061,9 +3057,7 @@ public:
         // that is, get_overlap_cells returns cells different from [o, e_sz)
         if (cells.size() >= 1) {
           kill_cells(a, cells, om);
-	  // TEMPX:
-	  array_adaptive_domain_t tmp(invariant);
-          *this = *this & tmp;
+          *this = *this & invariant;
         } else {
           // c might be in m_inv or not.
           cell_t c = mk_cell(a, o, e_sz, om);
@@ -3080,9 +3074,7 @@ public:
         om.get_overlap_cells_symbolic_offset(invariant.m_inv,
                                              symb_lb, symb_ub, cells);
         kill_cells(a, cells, om);
-	// TEMPX
-	array_adaptive_domain_t tmp(invariant);
-        *this = *this & tmp;
+        *this = *this & invariant;
       }
       m_array_map.set(a, next_as);
     }
