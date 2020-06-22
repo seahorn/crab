@@ -343,7 +343,7 @@ private:
   }
 
   /* Begin manipulate the reverse variable map */
-  void add_rev_var_map(rev_var_map_t &rvmap, term_id_t t, variable_t v) {
+  void add_rev_var_map(rev_var_map_t &rvmap, term_id_t t, variable_t v) const {
     auto it = rvmap.find(t);
     if (it != rvmap.end()) {
       it->second.insert(v);
@@ -671,7 +671,7 @@ private:
   // Choose one non-var term from the equivalence class
   // associated with t.
   template <typename Range>
-  boost::optional<term_id_t> choose_non_var(ttbl_t &ttbl, const Range &terms) {
+  boost::optional<term_id_t> choose_non_var(ttbl_t &ttbl, const Range &terms) const {
     std::vector<term_id_t> non_var_terms(terms.size());
     auto it = std::copy_if(terms.begin(), terms.end(), non_var_terms.begin(),
                            [&ttbl](term_id_t t) {
@@ -692,7 +692,7 @@ private:
   term_id_t build_dag_term(ttbl_t &ttbl, int t,
                            term::congruence_closure_solver<ttbl_t> &solver,
                            ttbl_t &out_ttbl, std::vector<int> &stack,
-                           std::map<int, term_id_t> &cache) {
+                           std::map<int, term_id_t> &cache) const {
 
     // already processed
     auto it = cache.find(t);
@@ -1029,7 +1029,7 @@ public:
   }
 
   // Meet
-  term_domain_t operator&(term_domain_t o) override {
+  term_domain_t operator&(const term_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.meet");
     crab::ScopedCrabStats __st__(domain_name() + ".meet");
 
@@ -1046,8 +1046,9 @@ public:
       std::map<term_id_t, term_id_t> copy_map;
       // bring all terms to one ttbl
       for (auto p : o._var_map) {
-        const variable_t &v = p.first;
-        term_id_t tx(o.term_of_var(v));
+        //const variable_t &v = p.first;
+        //term_id_t tx(o.term_of_var(v));
+	term_id_t tx = p.second;
         out_ttbl.copy_term(o._ttbl, tx, copy_map);
       }
 
@@ -1057,7 +1058,8 @@ public:
         variable_t v(p.first);
         auto it = o._var_map.find(v);
         if (it != o._var_map.end()) {
-          term_id_t tx(term_of_var(v));
+          //term_id_t tx(term_of_var(v));
+	  term_id_t tx = p.second;
           eqs.push_back(std::make_pair(tx, copy_map[it->second]));
         }
       }
@@ -1073,7 +1075,8 @@ public:
       // new map from variable to an acyclic term
       for (auto p : _var_map) {
         const variable_t &v = p.first;
-        term_id_t t_old(term_of_var(v));
+        //term_id_t t_old(term_of_var(v));
+	term_id_t t_old = p.second;
         term_id_t t_new = build_dag_term(out_ttbl, solver.get_class(t_old),
                                          solver, out_ttbl, stack, cache);
         out_vmap[v] = t_new;
@@ -1083,7 +1086,7 @@ public:
         variable_t v(p.first);
         if (out_vmap.find(v) != out_vmap.end())
           continue;
-        term_id_t t_old(copy_map[o.term_of_var(v)]);
+        term_id_t t_old(copy_map[p.second/*o.term_of_var(v)*/]);
         term_id_t t_new = build_dag_term(out_ttbl, solver.get_class(t_old),
                                          solver, out_ttbl, stack, cache);
         out_vmap[v] = t_new;
@@ -1107,14 +1110,16 @@ public:
         // renaming this's base domain
         auto xit = _var_map.find(v);
         if (xit != _var_map.end()) {
-          dom_var_t vx = domvar_of_term(xit->second);
-          x_impl.assign(vt, vx);
+	  if (boost::optional<dom_var_t> vx = domvar_of_term(xit->second)) {
+	    x_impl.assign(vt, *vx);
+	  }
         }
         // renaming o's base domain
         auto yit = o._var_map.find(v);
         if (yit != o._var_map.end()) {
-          dom_var_t vy = o.domvar_of_term(yit->second);
-          y_impl.assign(vt, vy);
+          if (boost::optional<dom_var_t> vy = o.domvar_of_term(yit->second)) {
+	    y_impl.assign(vt, *vy);
+	  }
         }
         out_varnames.push_back(vt);
       }
@@ -1138,7 +1143,7 @@ public:
   }
 
   // Narrowing
-  term_domain_t operator&&(term_domain_t o) override {
+  term_domain_t operator&&(const term_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.narrowing");
     crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
 

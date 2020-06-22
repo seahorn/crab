@@ -89,17 +89,17 @@ public:
 
   // Inclusion operator: return true if *this is equal or more precise than abs
   virtual bool operator<=(const Dom &abs) const = 0;
-  // Join operator: join(*this, abs)
+  // Join operator: return join(*this, abs)
   virtual Dom operator|(Dom abs) = 0;
   // *this = join(*this, abs)
   virtual void operator|=(Dom abs) = 0;
-  // Meet operator: meet(*this, abs)
-  virtual Dom operator&(Dom abs) = 0;
-  // Widening operator: widening(*this, abs)
+  // Meet operator: return meet(*this, abs)
+  virtual Dom operator&(const Dom &abs) const = 0;
+  // Widening operator: return widening(*this, abs)
   virtual Dom operator||(Dom abs) = 0;
-  // Narrowing operator: narrowing(*this, abs)
-  virtual Dom operator&&(Dom abs) = 0;
-  // Widening with thresholds: widening_ts(*this, abs)
+  // Narrowing operator: return narrowing(*this, abs)
+  virtual Dom operator&&(const Dom &abs) const = 0;
+  // Widening with thresholds: return widening(*this, abs) using thresholds ts
   virtual Dom
   widening_thresholds(Dom abs,
                       const crab::iterators::thresholds<number_t> &ts) = 0;

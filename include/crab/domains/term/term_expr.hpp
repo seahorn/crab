@@ -352,7 +352,7 @@ public:
   }
 
   // Copy term x from table tx
-  term_id_t copy_term(term_table_t &tx, term_id x, term_map_t &ren_map) {
+  term_id_t copy_term(const term_table_t &tx, term_id x, term_map_t &ren_map) {
     auto it = ren_map.find(x);
     if (it != ren_map.end()) {
       return (*it).second;

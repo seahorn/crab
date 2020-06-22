@@ -239,6 +239,7 @@ public:
     return e_pred_range(p, _rev_map);
   }
 
+  
 public:
   array_graph(bool is_bottom = false) : _is_bottom(is_bottom) {}
 
@@ -567,8 +568,8 @@ public:
     }
   }
 
-  array_graph_t meet_or_narrowing(array_graph_t &o, bool is_meet,
-                                  const std::string op) {
+  array_graph_t meet_or_narrowing(const array_graph_t &o, bool is_meet,
+                                  const std::string op) const {
 
     if (is_bottom() || o.is_bottom())
       return bottom();
@@ -583,8 +584,11 @@ public:
                                             << "Graph 2\n"
                                             << o << "\n");
 
-      normalize();
-      o.normalize();
+      array_graph_t left(*this);
+      array_graph_t right(o);
+
+      left.normalize();
+      right.normalize();
 
       // Figure out the common renaming.
       std::vector<_vert_id> perm_x;
@@ -593,7 +597,7 @@ public:
       vert_map_t out_vmap;
       rev_map_t out_revmap;
 
-      for (auto p : _vert_map) {
+      for (auto p : left._vert_map) {
         _vert_id vv = perm_x.size();
         out_vmap.insert(vmap_elt_t(p.first, vv));
         out_revmap.push_back(p.first);
@@ -603,7 +607,7 @@ public:
       }
 
       // Add missing mappings from the right operand.
-      for (auto p : o._vert_map) {
+      for (auto p : right._vert_map) {
         auto it = out_vmap.find(p.first);
         if (it == out_vmap.end()) {
           _vert_id vv = perm_y.size();
@@ -618,8 +622,8 @@ public:
       }
 
       // Build the permuted view of x and y.
-      GrPerm gx(perm_x, _g);
-      GrPerm gy(perm_y, o._g);
+      GrPerm gx(perm_x, left._g);
+      GrPerm gy(perm_y, right._g);
 
       // Compute the syntactic meet/narrowing of the permuted graphs.
       std::vector<_vert_id> changes;
@@ -628,7 +632,7 @@ public:
       for (_vert_id v : changes)
         unstable.insert(v);
 
-      GrOps::close_after_meet_or_narrowing(_g, vert_set_wrap_t(unstable));
+      GrOps::close_after_meet_or_narrowing(out_g, vert_set_wrap_t(unstable));
 
       array_graph_t res(std::move(out_vmap), std::move(out_revmap),
                         std::move(out_g), vert_set_t());
@@ -638,11 +642,11 @@ public:
     }
   }
 
-  array_graph_t operator&(array_graph_t &o) {
+  array_graph_t operator&(const array_graph_t &o) const {
     return meet_or_narrowing(o, true, "meet");
   }
 
-  array_graph_t operator&&(array_graph_t &o) {
+  array_graph_t operator&&(const array_graph_t &o) const {
     return meet_or_narrowing(o, false, "narrowing");
   }
 
@@ -765,16 +769,19 @@ public:
       }
   }
 
-  void write(crab_os &o) { write(o, true); }
+  void write(crab_os &o) const {
+    array_graph_t tmp(*this);
+    write(o, tmp, true);
+  }
 
-  void write(crab_os &o, bool print_bottom_edges) {
+  // used also by array_graph_domain
+  static void write(crab_os &o, array_graph_t &g, bool print_bottom_edges) {
+    g.normalize();
 
-    normalize();
-
-    if (is_bottom()) {
+    if (g.is_bottom()) {
       o << "_|_";
       return;
-    } else if (is_top()) {
+    } else if (g.is_top()) {
       o << "{}";
       return;
     } else {
@@ -783,31 +790,31 @@ public:
 
       // sorting only for helping debugging
       std::vector<_vert_id> verts;
-      for (auto v : _g.verts())
+      for (auto v : g._g.verts())
         verts.push_back(v);
       std::sort(verts.begin(), verts.end());
 
       for (_vert_id s : verts) {
-        if (!_rev_map[s])
+        if (!g._rev_map[s])
           continue;
 
-        auto vs = *_rev_map[s];
+        auto vs = *g._rev_map[s];
 
         // sorting only for helping debugging
         std::vector<_vert_id> succs;
-        for (auto d : _g.succs(s))
+        for (auto d : g._g.succs(s))
           succs.push_back(d);
         std::sort(succs.begin(), succs.end());
 
         for (_vert_id d : succs) {
-          if (!_rev_map[d])
+          if (!g._rev_map[d])
             continue;
 
-          auto w = _g.edge_val(s, d);
+          auto w = g._g.edge_val(s, d);
           if (!print_bottom_edges && w.is_bottom())
             continue; // do not print bottom edges
 
-          auto vd = *_rev_map[d];
+          auto vd = *g._rev_map[d];
 
           if (first)
             first = false;
@@ -820,7 +827,7 @@ public:
     }
   }
   
-  friend crab::crab_os &operator<<(crab::crab_os &o, array_graph_t &g) {
+  friend crab::crab_os &operator<<(crab::crab_os &o, const array_graph_t &g) {
     g.write(o);
     return o;
   }
@@ -1405,7 +1412,7 @@ private:
     }
   }
 
-  linear_expression_t make_expr(landmark_ref_t x) {
+  linear_expression_t make_expr(landmark_ref_t x) const {
     switch (x.kind()) {
     case LMC:
       return std::static_pointer_cast<landmark_cst_t>(x._ref)->get_cst();
@@ -1421,23 +1428,23 @@ private:
   }
 
   // make constraint x < y
-  linear_constraint_t make_lt_cst(landmark_ref_t x, landmark_ref_t y) {
+  linear_constraint_t make_lt_cst(landmark_ref_t x, landmark_ref_t y) const {
     return linear_constraint_t(make_expr(x) <= make_expr(y) - 1);
   }
 
   // make constraint x <= y
-  linear_constraint_t make_leq_cst(landmark_ref_t x, landmark_ref_t y) {
+  linear_constraint_t make_leq_cst(landmark_ref_t x, landmark_ref_t y) const {
     return linear_constraint_t(make_expr(x) <= make_expr(y));
   }
 
   // make constraint x == y
-  linear_constraint_t make_eq_cst(landmark_ref_t x, landmark_ref_t y) {
+  linear_constraint_t make_eq_cst(landmark_ref_t x, landmark_ref_t y) const {
     return linear_constraint_t(make_expr(x) == make_expr(y));
   }
 
   // make constraint x' == x+1
   linear_constraint_t make_prime_relation(landmark_ref_t x_prime,
-                                          landmark_ref_t x) {
+                                          landmark_ref_t x) const {
     return linear_constraint_t(make_expr(x_prime) == make_expr(x) + 1);
   }
 
@@ -1785,7 +1792,7 @@ private:
   // done only in one direction (scalar -> array graph). Note that
   // whenever an edge becomes bottom closure is also happening.
   // Return false if bottom is detected during the reduction.
-  bool reduce(NumDom &scalar, array_graph_t &g) {
+  bool reduce(NumDom &scalar, array_graph_t &g) const {
     crab::CrabStats::count(domain_name() + ".count.reduce");
     crab::ScopedCrabStats __st__(domain_name() + ".reduce");
 
@@ -1963,7 +1970,7 @@ public:
     }
   }
 
-  array_graph_domain_t operator&(array_graph_domain_t o) override {
+  array_graph_domain_t operator&(const array_graph_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.meet");
     crab::ScopedCrabStats __st__(domain_name() + ".meet");
 
@@ -1982,7 +1989,7 @@ public:
     }
   }
 
-  array_graph_domain_t operator&&(array_graph_domain_t o) override {
+  array_graph_domain_t operator&&(const array_graph_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.narrowing");
     crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
 
@@ -2477,7 +2484,7 @@ public:
       copy_g -= lm;
     }
     o << "(" << copy_scalar << ",";
-    copy_g.write(o, false); // we do not print bottom edges
+    array_graph_t::write(o, copy_g, false); // we do not print bottom edges
     o << ")";
     // o << "##" << _expressions;
 #else

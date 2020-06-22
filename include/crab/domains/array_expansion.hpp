@@ -940,7 +940,7 @@ public:
     return array_expansion_domain_t(_inv | other._inv);
   }
 
-  array_expansion_domain_t operator&(array_expansion_domain_t other) override {
+  array_expansion_domain_t operator&(const array_expansion_domain_t &other) const override {
     crab::CrabStats::count(domain_name() + ".count.meet");
     crab::ScopedCrabStats __st__(domain_name() + ".meet");
 
@@ -962,7 +962,7 @@ public:
     return array_expansion_domain_t(_inv.widening_thresholds(other._inv, ts));
   }
 
-  array_expansion_domain_t operator&&(array_expansion_domain_t other) override {
+  array_expansion_domain_t operator&&(const array_expansion_domain_t &other) const override {
     crab::CrabStats::count(domain_name() + ".count.narrowing");
     crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
     return array_expansion_domain_t(_inv && other._inv);

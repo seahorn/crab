@@ -716,7 +716,7 @@ public:
     }
   }
 
-  apron_domain_t operator&(apron_domain_t o) override {
+  apron_domain_t operator&(const apron_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.meet");
     crab::ScopedCrabStats __st__(domain_name() + ".meet");
 
@@ -729,10 +729,13 @@ public:
     else {
       ap_state_ptr x =
           apPtr(get_man(), ap_abstract0_copy(get_man(), &*m_apstate));
-      var_map_t m = merge_var_map(m_var_map, x, o.m_var_map, o.m_apstate);
+      ap_state_ptr y =
+          apPtr(get_man(), ap_abstract0_copy(get_man(), &*o.m_apstate));
+      
+      var_map_t m = merge_var_map(m_var_map, x, o.m_var_map, y);
       return apron_domain_t(
           apPtr(get_man(),
-                ap_abstract0_meet(get_man(), false, &*x, &*o.m_apstate)),
+                ap_abstract0_meet(get_man(), false, &*x, &*y)),
           std::move(m));
     }
   }
@@ -811,7 +814,7 @@ public:
     //}
   }
 
-  apron_domain_t operator&&(apron_domain_t o) override {
+  apron_domain_t operator&&(const apron_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.narrowing");
     crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
 
@@ -824,12 +827,15 @@ public:
     else {
       ap_state_ptr x =
           apPtr(get_man(), ap_abstract0_copy(get_man(), &*m_apstate));
-      var_map_t m = merge_var_map(m_var_map, x, o.m_var_map, o.m_apstate);
+      ap_state_ptr y =
+          apPtr(get_man(), ap_abstract0_copy(get_man(), &*o.m_apstate));
+      
+      var_map_t m = merge_var_map(m_var_map, x, o.m_var_map, y);
       switch (ApronDom) {
       case APRON_OCT:
         return apron_domain_t(
             apPtr(get_man(),
-                  ap_abstract0_oct_narrowing(get_man(), &*x, &*o.m_apstate)),
+                  ap_abstract0_oct_narrowing(get_man(), &*x, &*y)),
             std::move(m));
       case APRON_INT:
       case APRON_PK:
@@ -839,7 +845,7 @@ public:
         //           are run.");
         return apron_domain_t(
             apPtr(get_man(),
-                  ap_abstract0_meet(get_man(), false, &*x, &*o.m_apstate)),
+                  ap_abstract0_meet(get_man(), false, &*x, &*y)),
             std::move(m));
       }
     }

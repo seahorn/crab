@@ -169,7 +169,7 @@ public:
     return (this->_env | e._env);
   }
 
-  interval_domain_t operator&(interval_domain_t e) override {
+  interval_domain_t operator&(const interval_domain_t &e) const override {
     crab::CrabStats::count(domain_name() + ".count.meet");
     crab::ScopedCrabStats __st__(domain_name() + ".meet");
     return (this->_env & e._env);
@@ -189,7 +189,7 @@ public:
     return this->_env.widening_thresholds(e._env, ts);
   }
 
-  interval_domain_t operator&&(interval_domain_t e) override {
+  interval_domain_t operator&&(const interval_domain_t &e) const override {
     crab::CrabStats::count(domain_name() + ".count.narrowing");
     crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
     return (this->_env && e._env);

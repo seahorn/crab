@@ -501,7 +501,7 @@ private:
   };
 
   patricia_tree_t apply_operation(binary_op_t &o, patricia_tree_t t1,
-                                  patricia_tree_t t2) {
+                                  const patricia_tree_t &t2) const {
     bool res = t1.merge_with(t2, o);
     if (res) {
       CRAB_ERROR("array_adaptive::offset_map should not return bottom");
@@ -642,7 +642,7 @@ public:
 
   // set union: if two cells with same offset do not agree on
   // size then they are ignored.
-  offset_map_t operator|(const offset_map_t &o) {
+  offset_map_t operator|(const offset_map_t &o) const {
     join_op op;
     offset_map_t res = offset_map_t(apply_operation(op, m_map, o.m_map));
     CRAB_LOG("array-adaptive-offset-map",
@@ -654,7 +654,7 @@ public:
 
   // set intersection: if two cells with same offset do not agree
   // on size then they are ignored.
-  offset_map_t operator&(const offset_map_t &o) {
+  offset_map_t operator&(const offset_map_t &o) const {
     meet_op op;
     offset_map_t res = offset_map_t(apply_operation(op, m_map, o.m_map));
     CRAB_LOG("array-adaptive-offset-map",
@@ -970,6 +970,7 @@ private:
     }
 
     // Smash the array if it's safe to do so.
+    // Return true if the array ha
     void smash_array(const variable_t &a, const cp_domain_t &elem_sz,
                      cell_varmap_t &cvm, smashed_varmap_t &svm,
                      base_domain_t &base_dom) {
@@ -1093,32 +1094,50 @@ private:
     }
 
     /*** begin mergeable_map API ***/
-    array_state join(const variable_t &v, array_state &o,
+    array_state join(const variable_t &v, const array_state &o,
                      cell_varmap_t &cvm_left, smashed_varmap_t &svm_left,
                      base_domain_t &dom_left, cell_varmap_t &cvm_right,
-                     smashed_varmap_t &svm_right, base_domain_t &dom_right) {
+                     smashed_varmap_t &svm_right, base_domain_t &dom_right) const {
       if (m_is_smashed && !o.m_is_smashed) {
-        o.smash_array(v, get_element_sz(), cvm_right, svm_right, dom_right);
+	array_state right(o);      	
+        right.smash_array(v, get_element_sz(), cvm_right, svm_right, dom_right);
+	return array_state(m_is_smashed | right.m_is_smashed,
+			   m_element_sz | right.m_element_sz,
+			   m_offset_map | right.m_offset_map);
       } else if (!m_is_smashed && o.m_is_smashed) {
-        smash_array(v, o.get_element_sz(), cvm_left, svm_left, dom_left);
+	array_state left(*this);
+        left.smash_array(v, o.get_element_sz(), cvm_left, svm_left, dom_left);
+	return array_state(left.m_is_smashed | o.m_is_smashed,
+			   left.m_element_sz | o.m_element_sz,
+			   left.m_offset_map | o.m_offset_map);
+      } else {
+	return array_state(m_is_smashed | o.m_is_smashed,
+			   m_element_sz | o.m_element_sz,
+			   m_offset_map | o.m_offset_map);
       }
-      return array_state(m_is_smashed | o.m_is_smashed,
-                         m_element_sz | o.m_element_sz,
-                         m_offset_map | o.m_offset_map);
     }
 
-    array_state meet(const variable_t &v, array_state &o,
+    array_state meet(const variable_t &v, const array_state &o,
                      cell_varmap_t &cvm_left, smashed_varmap_t &svm_left,
                      base_domain_t &dom_left, cell_varmap_t &cvm_right,
-                     smashed_varmap_t &svm_right, base_domain_t &dom_right) {
+                     smashed_varmap_t &svm_right, base_domain_t &dom_right) const {
       if (m_is_smashed && !o.m_is_smashed) {
-        o.smash_array(v, get_element_sz(), cvm_right, svm_right, dom_right);
+	array_state right(o);      	
+        right.smash_array(v, get_element_sz(), cvm_right, svm_right, dom_right);
+	return array_state(m_is_smashed & right.m_is_smashed,
+			   m_element_sz & right.m_element_sz,
+			   m_offset_map & right.m_offset_map);
       } else if (!m_is_smashed && o.m_is_smashed) {
-        smash_array(v, o.get_element_sz(), cvm_left, svm_left, dom_left);
+	array_state left(*this);
+        left.smash_array(v, o.get_element_sz(), cvm_left, svm_left, dom_left);
+	return array_state(left.m_is_smashed & o.m_is_smashed,
+			   left.m_element_sz & o.m_element_sz,
+			   left.m_offset_map & o.m_offset_map);
+      } else {
+	return array_state(m_is_smashed & o.m_is_smashed,
+			   m_element_sz & o.m_element_sz,
+			   m_offset_map & o.m_offset_map);
       }
-      return array_state(m_is_smashed & o.m_is_smashed,
-                         m_element_sz & o.m_element_sz,
-                         m_offset_map & o.m_offset_map);
     }
 
     bool operator==(const array_state &o) {
@@ -1242,6 +1261,7 @@ private:
           : m_cvm_left(cvm_left), m_svm_left(svm_left), m_dom_left(dom_left),
             m_cvm_right(cvm_right), m_svm_right(svm_right),
             m_dom_right(dom_right) {}
+      
       std::pair<bool, boost::optional<array_state>>
       apply(const variable_t &k, array_state x, array_state y) {
         array_state z = x.join(k, y, m_cvm_left, m_svm_left, m_dom_left,
@@ -1267,6 +1287,7 @@ private:
           : m_cvm_left(cvm_left), m_svm_left(svm_left), m_dom_left(dom_left),
             m_cvm_right(cvm_right), m_svm_right(svm_right),
             m_dom_right(dom_right) {}
+      
       std::pair<bool, boost::optional<array_state>>
       apply(const variable_t &k, array_state x, array_state y) {
         array_state z = x.meet(k, y, m_cvm_left, m_svm_left, m_dom_left,
@@ -1277,7 +1298,7 @@ private:
     }; // class meet_op
 
     patricia_tree_t apply_operation(key_binary_op_t &o, patricia_tree_t t1,
-                                    patricia_tree_t t2) {
+                                    const patricia_tree_t &t2) const {
       bool res = t1.merge_with(t2, o);
       if (res) {
         CRAB_ERROR(
@@ -1317,22 +1338,22 @@ private:
     size_t size() const { return m_tree.size(); }
 
     // Join
-    array_state_map_t join(array_state_map_t &o, cell_varmap_t &cvm_left,
+    array_state_map_t join(const array_state_map_t &o, cell_varmap_t &cvm_left,
                            smashed_varmap_t &svm_left, base_domain_t &dom_left,
                            cell_varmap_t &cvm_right,
                            smashed_varmap_t &svm_right,
-                           base_domain_t &dom_right) {
+                           base_domain_t &dom_right) const {
       join_op op(cvm_left, svm_left, dom_left, cvm_right, svm_right, dom_right);
       patricia_tree_t res = apply_operation(op, m_tree, o.m_tree);
       return array_state_map_t(std::move(res));
     }
 
     // Meet
-    array_state_map_t meet(array_state_map_t &o, cell_varmap_t &cvm_left,
+    array_state_map_t meet(const array_state_map_t &o, cell_varmap_t &cvm_left,
                            smashed_varmap_t &svm_left, base_domain_t &dom_left,
                            cell_varmap_t &cvm_right,
                            smashed_varmap_t &svm_right,
-                           base_domain_t &dom_right) {
+                           base_domain_t &dom_right) const {
       meet_op op(cvm_left, svm_left, dom_left, cvm_right, svm_right, dom_right);
       patricia_tree_t res = apply_operation(op, m_tree, o.m_tree);
       return array_state_map_t(std::move(res));
@@ -1736,7 +1757,7 @@ private:
                             smashed_varmap_t &left_svm,
                             smashed_varmap_t &right_svm,
                             cell_varmap_t &left_cvm, cell_varmap_t &right_cvm,
-                            smashed_varmap_t &out_svm, cell_varmap_t &out_cvm) {
+                            smashed_varmap_t &out_svm, cell_varmap_t &out_cvm) const {
 
     std::vector<variable_t> old_vars_left, old_vars_right, new_vars;
 
@@ -1802,7 +1823,7 @@ private:
                             smashed_varmap_t &left_svm,
                             smashed_varmap_t &right_svm,
                             cell_varmap_t &left_cvm, cell_varmap_t &right_cvm,
-                            smashed_varmap_t &out_svm, cell_varmap_t &out_cvm) {
+                            smashed_varmap_t &out_svm, cell_varmap_t &out_cvm) const {
 
     std::vector<variable_t> old_vars_left, old_vars_right, new_vars;
 
@@ -2101,7 +2122,7 @@ public:
     }
   }
 
-  array_adaptive_domain_t operator&(array_adaptive_domain_t other) override {
+  array_adaptive_domain_t operator&(const array_adaptive_domain_t &other) const override {
     crab::CrabStats::count(domain_name() + ".count.meet");
     crab::ScopedCrabStats __st__(domain_name() + ".meet");
     if (is_bottom() || other.is_top()) {
@@ -2116,19 +2137,23 @@ public:
       cell_varmap_t left_cell_varmap(m_cell_varmap);
       smashed_varmap_t left_smashed_varmap(m_smashed_varmap);
 
+      base_domain_t right_dom(other.m_inv);
+      cell_varmap_t right_cell_varmap(other.m_cell_varmap);
+      smashed_varmap_t right_smashed_varmap(other.m_smashed_varmap);
+      
       // Must be done before the renaming.
       auto out_array_map = m_array_map.meet(
           other.m_array_map, left_cell_varmap, left_smashed_varmap, left_dom,
-          other.m_cell_varmap, other.m_smashed_varmap, other.m_inv);
+          right_cell_varmap, right_smashed_varmap, right_dom);
 
       smashed_varmap_t out_smashed_varmap;
       cell_varmap_t out_cell_varmap;
-      do_renaming_for_meet(left_dom, other.m_inv, left_smashed_varmap,
-                           other.m_smashed_varmap, left_cell_varmap,
-                           other.m_cell_varmap, out_smashed_varmap,
+      do_renaming_for_meet(left_dom, right_dom, left_smashed_varmap,
+                           right_smashed_varmap, left_cell_varmap,
+                           right_cell_varmap, out_smashed_varmap,
                            out_cell_varmap);
 
-      array_adaptive_domain_t res(left_dom & other.m_inv, std::move(out_array_map),
+      array_adaptive_domain_t res(left_dom & right_dom, std::move(out_array_map),
                                   std::move(out_cell_varmap),
                                   std::move(out_smashed_varmap));
       CRAB_LOG("array-adaptive", crab::outs() << "Res=" << res << "\n";);
@@ -2209,7 +2234,7 @@ public:
     }
   }
 
-  array_adaptive_domain_t operator&&(array_adaptive_domain_t other) override {
+  array_adaptive_domain_t operator&&(const array_adaptive_domain_t &other) const override {
     crab::CrabStats::count(domain_name() + ".count.narrowing");
     crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
     if (is_bottom()) {
@@ -2224,20 +2249,25 @@ public:
       cell_varmap_t left_cell_varmap(m_cell_varmap);
       smashed_varmap_t left_smashed_varmap(m_smashed_varmap);
 
+      base_domain_t right_dom(other.m_inv);
+      cell_varmap_t right_cell_varmap(other.m_cell_varmap);
+      smashed_varmap_t right_smashed_varmap(other.m_smashed_varmap);
+      
+      
       // Must be done before the renaming.
       auto out_array_map = m_array_map.join(
           other.m_array_map, left_cell_varmap, left_smashed_varmap, left_dom,
-          other.m_cell_varmap, other.m_smashed_varmap, other.m_inv);
+          right_cell_varmap, right_smashed_varmap, right_dom);
 
       smashed_varmap_t out_smashed_varmap;
       cell_varmap_t out_cell_varmap;
 
-      do_renaming_for_meet(left_dom, other.m_inv, left_smashed_varmap,
-                           other.m_smashed_varmap, left_cell_varmap,
-                           other.m_cell_varmap, out_smashed_varmap,
+      do_renaming_for_meet(left_dom, right_dom, left_smashed_varmap,
+                           right_smashed_varmap, left_cell_varmap,
+                           right_cell_varmap, out_smashed_varmap,
                            out_cell_varmap);
 
-      array_adaptive_domain_t res(left_dom && other.m_inv, std::move(out_array_map),
+      array_adaptive_domain_t res(left_dom && right_dom, std::move(out_array_map),
                                   std::move(out_cell_varmap),
                                   std::move(out_smashed_varmap));
 

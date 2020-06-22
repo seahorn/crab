@@ -1408,7 +1408,7 @@ public:
     return res;
   }
 
-  wrapped_interval_domain_t operator&(wrapped_interval_domain_t e) override {
+  wrapped_interval_domain_t operator&(const wrapped_interval_domain_t &e) const override {
     crab::CrabStats::count(domain_name() + ".count.meet");
     crab::ScopedCrabStats __st__(domain_name() + ".meet");
     CRAB_LOG("wrapped-int", crab::outs() << *this << " n " << e << " = ");
@@ -1439,7 +1439,7 @@ public:
     return res;
   }
 
-  wrapped_interval_domain_t operator&&(wrapped_interval_domain_t e) override {
+  wrapped_interval_domain_t operator&&(const wrapped_interval_domain_t &e) const override {
     crab::CrabStats::count(domain_name() + ".count.narrowing");
     crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
     return (this->_env && e._env);
@@ -2080,7 +2080,7 @@ public:
     return (_value == o._value && is_bottom() == o.is_bottom());
   }
 
-  wrapped_interval_limit_value operator|(wrapped_interval_limit_value o) {
+  wrapped_interval_limit_value operator|(wrapped_interval_limit_value o) const {
     if (is_bottom()) {
       return o;
     } else if (o.is_bottom()) {
@@ -2094,11 +2094,11 @@ public:
   }
 
   // the lattice satisfy ACC so join is the widening
-  wrapped_interval_limit_value operator||(wrapped_interval_limit_value o) {
+  wrapped_interval_limit_value operator||(wrapped_interval_limit_value o) const {
     return this->operator|(o);
   }
 
-  wrapped_interval_limit_value operator&(wrapped_interval_limit_value o) {
+  wrapped_interval_limit_value operator&(wrapped_interval_limit_value o) const {
     if (is_bottom() || o.is_bottom()) {
       return bottom();
     } else {
@@ -2110,7 +2110,7 @@ public:
   }
 
   // the lattice satisfy DCC so meet is the narrowing
-  wrapped_interval_limit_value operator&&(wrapped_interval_limit_value o) {
+  wrapped_interval_limit_value operator&&(wrapped_interval_limit_value o) const {
     return this->operator&(o);
   }
 
@@ -2321,7 +2321,7 @@ public:
                      _init_set | o._init_set);
   }
 
-  this_type operator&(this_type o) override {
+  this_type operator&(const this_type &o) const override {
     return this_type(_w_int_dom & o._w_int_dom, _limit_env & o._limit_env,
                      _init_set & o._init_set);
   }
@@ -2331,7 +2331,7 @@ public:
                      _init_set || o._init_set);
   }
 
-  this_type operator&&(this_type o) override {
+  this_type operator&&(const this_type &o) const override {
     return this_type(_w_int_dom && o._w_int_dom, _limit_env && o._limit_env,
                      _init_set && o._init_set);
   }
@@ -3117,7 +3117,7 @@ public:
     return res;
   }
 
-  wrapped_numerical_domain_t operator&(wrapped_numerical_domain_t other) override {
+  wrapped_numerical_domain_t operator&(const wrapped_numerical_domain_t &other) const override {
     CRAB_LOG("wrapped-num", crab::outs() << "MEET " << _product << " "
                                          << other._product << " = ");
     wrapped_numerical_domain_t res(_product & other._product);
@@ -3144,7 +3144,7 @@ public:
     return res;
   }
 
-  wrapped_numerical_domain_t operator&&(wrapped_numerical_domain_t other) override {
+  wrapped_numerical_domain_t operator&&(const wrapped_numerical_domain_t &other) const override {
     CRAB_LOG("wrapped-num", crab::outs() << "NARROWING " << _product << "and "
                                          << other._product << " = ");
     wrapped_numerical_domain_t res(_product && other._product);

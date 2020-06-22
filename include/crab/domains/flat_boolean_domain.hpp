@@ -302,7 +302,7 @@ public:
     CRAB_LOG("flat-boolean", crab::outs() << *this << "\n");
   }
 
-  flat_boolean_domain_t operator&(flat_boolean_domain_t o) override {
+  flat_boolean_domain_t operator&(const flat_boolean_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.meet");
     crab::ScopedCrabStats __st__(domain_name() + ".meet");
 
@@ -334,7 +334,7 @@ public:
     return res;
   }
 
-  flat_boolean_domain_t operator&&(flat_boolean_domain_t o) override {
+  flat_boolean_domain_t operator&&(const flat_boolean_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.narrowing");
     crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
     return (_env && o._env);
@@ -739,21 +739,23 @@ private:
       return (*this <= other && other <= *this);
     }
 
-    void operator|=(lin_cst_set_domain other) { m_lincons_set = m_lincons_set & other.m_lincons_set; }
+    void operator|=(const lin_cst_set_domain &other) {
+      m_lincons_set = m_lincons_set & other.m_lincons_set;
+    }
 
-    lin_cst_set_domain operator|(lin_cst_set_domain other) {
+    lin_cst_set_domain operator|(const lin_cst_set_domain &other) const {
       return lin_cst_set_domain(m_lincons_set & other.m_lincons_set);
     }
 
-    lin_cst_set_domain operator&(lin_cst_set_domain other) {
+    lin_cst_set_domain operator&(const lin_cst_set_domain &other) const {
       return lin_cst_set_domain(m_lincons_set | other.m_lincons_set);
     }
 
-    lin_cst_set_domain operator||(lin_cst_set_domain other) {
+    lin_cst_set_domain operator||(const lin_cst_set_domain &other) const {
       return this->operator|(other);
     }
 
-    lin_cst_set_domain operator&&(lin_cst_set_domain other) {
+    lin_cst_set_domain operator&&(const lin_cst_set_domain &other) const {
       return this->operator&(other);
     }
 
@@ -861,21 +863,23 @@ private:
         return other.m_varset <= m_varset;
     }
 
-    void operator|=(invariance_domain other) { m_varset = m_varset & other.m_varset; }
+    void operator|=(const invariance_domain &other) {
+      m_varset = m_varset & other.m_varset;
+    }
 
-    invariance_domain operator|(invariance_domain other) {
+    invariance_domain operator|(const invariance_domain &other) const {
       return invariance_domain(m_varset & other.m_varset);
     }
 
-    invariance_domain operator&(invariance_domain other) {
+    invariance_domain operator&(const invariance_domain &other) const {
       return invariance_domain(m_varset | other.m_varset);
     }
 
-    invariance_domain operator||(invariance_domain other) {
+    invariance_domain operator||(const invariance_domain &other) const {
       return this->operator|(other);
     }
 
-    invariance_domain operator&&(invariance_domain other) {
+    invariance_domain operator&&(const invariance_domain &other) const {
       return this->operator&(other);
     }
 
@@ -991,7 +995,7 @@ public:
                              _unchanged_vars | other._unchanged_vars);
   }
 
-  bool_num_domain_t operator&(bool_num_domain_t other) override {
+  bool_num_domain_t operator&(const bool_num_domain_t &other) const override {
     return bool_num_domain_t(_product & other._product,
                              _var_to_csts & other._var_to_csts,
                              _unchanged_vars & other._unchanged_vars);
@@ -1011,7 +1015,7 @@ public:
                              _unchanged_vars || other._unchanged_vars);
   }
 
-  bool_num_domain_t operator&&(bool_num_domain_t other) override {
+  bool_num_domain_t operator&&(const bool_num_domain_t &other) const override {
     return bool_num_domain_t(_product && other._product,
                              _var_to_csts && other._var_to_csts,
                              _unchanged_vars && other._unchanged_vars);

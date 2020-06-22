@@ -162,7 +162,7 @@ public:
                                    false /* do not apply reduction */);
   }
 
-  basic_domain_product2_t operator&(basic_domain_product2_t other) {
+  basic_domain_product2_t operator&(const basic_domain_product2_t &other) const {
     if (this->is_bottom() || other.is_bottom()) {
       return bottom();
     } else {
@@ -171,7 +171,7 @@ public:
     }
   }
 
-  basic_domain_product2_t operator&&(basic_domain_product2_t other) {
+  basic_domain_product2_t operator&&(const basic_domain_product2_t &other) const {
     if (this->is_bottom() || other.is_bottom()) {
       return bottom();
     } else {
@@ -296,7 +296,7 @@ public:
     return domain_product2_t(this->_product | other._product);
   }
 
-  domain_product2_t operator&(domain_product2_t other) override {
+  domain_product2_t operator&(const domain_product2_t &other) const override {
     return domain_product2_t(this->_product & other._product);
   }
 
@@ -316,7 +316,7 @@ public:
         std::move(apply_reduction)));
   }
 
-  domain_product2_t operator&&(domain_product2_t other) override {
+  domain_product2_t operator&&(const domain_product2_t &other) const override {
     return domain_product2_t(this->_product && other._product);
   }
 
@@ -938,7 +938,7 @@ public:
   }
 
   reduced_numerical_domain_product2_t
-  operator&(reduced_numerical_domain_product2_t other) override {
+  operator&(const reduced_numerical_domain_product2_t &other) const override {
     reduced_numerical_domain_product2_t res(this->_product & other._product);
     CRAB_LOG("combined-domain", crab::outs()
                                     << "============ MEET ==================";
@@ -970,7 +970,7 @@ public:
   }
 
   reduced_numerical_domain_product2_t
-  operator&&(reduced_numerical_domain_product2_t other) override {
+  operator&&(const reduced_numerical_domain_product2_t &other) const override {
     reduced_numerical_domain_product2_t res(this->_product && other._product);
     CRAB_LOG("combined-domain",
              crab::outs() << "============ NARROWING ==================";
@@ -1591,7 +1591,7 @@ public:
     return rnc_domain_t(this->_product | other._product);
   }
 
-  rnc_domain_t operator&(rnc_domain_t other) override {
+  rnc_domain_t operator&(const rnc_domain_t &other) const override {
     return rnc_domain_t(this->_product & other._product);
   }
 
@@ -1604,7 +1604,7 @@ public:
     return rnc_domain_t(this->_product.widening_thresholds(other._product, ts));
   }
 
-  rnc_domain_t operator&&(rnc_domain_t other) override {
+  rnc_domain_t operator&&(const rnc_domain_t &other) const override {
     return rnc_domain_t(this->_product && other._product);
   }
 

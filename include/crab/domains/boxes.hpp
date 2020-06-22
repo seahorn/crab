@@ -899,7 +899,7 @@ public:
     return boxes_domain_t(join(m_ldd, other.m_ldd));
   }
 
-  boxes_domain_t operator&(boxes_domain_t other) override {
+  boxes_domain_t operator&(const boxes_domain_t &other) const override {
     crab::CrabStats::count(domain_name() + ".count.meet");
     crab::ScopedCrabStats __st__(domain_name() + ".meet");
 
@@ -945,7 +945,7 @@ public:
     return (*this || other);
   }
 
-  boxes_domain_t operator&&(boxes_domain_t other) override {
+  boxes_domain_t operator&&(const boxes_domain_t &other) const override {
     crab::CrabStats::count(domain_name() + ".count.narrowing");
     crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
 

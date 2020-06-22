@@ -802,7 +802,7 @@ public:
     return this->_env | e._env;
   }
 
-  congruence_domain_t operator&(congruence_domain_t e) override {
+  congruence_domain_t operator&(const congruence_domain_t &e) const override {
     crab::CrabStats::count(domain_name() + ".count.meet");
     crab::ScopedCrabStats __st__(domain_name() + ".meet");
     return this->_env & e._env;
@@ -820,7 +820,7 @@ public:
     return (*this || other);
   }
 
-  congruence_domain_t operator&&(congruence_domain_t e) override {
+  congruence_domain_t operator&&(const congruence_domain_t &e) const override {
     crab::CrabStats::count(domain_name() + ".count.narrowing");
     crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
     return this->_env && e._env;

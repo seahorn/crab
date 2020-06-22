@@ -958,7 +958,7 @@ public:
     }
   }
 
-  elina_domain_t operator&(elina_domain_t o) override {
+  elina_domain_t operator&(const elina_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.meet");
     crab::ScopedCrabStats __st__(domain_name() + ".meet");
 
@@ -971,10 +971,13 @@ public:
     else {
       elina_state_ptr x =
           elinaPtr(get_man(), elina_abstract0_copy(get_man(), &*m_apstate));
-      var_map_t m = merge_var_map(m_var_map, x, o.m_var_map, o.m_apstate);
+      elina_state_ptr y =
+          elinaPtr(get_man(), elina_abstract0_copy(get_man(), &*o.m_apstate));
+      
+      var_map_t m = merge_var_map(m_var_map, x, o.m_var_map, y);
       return elina_domain_t(
           elinaPtr(get_man(),
-                   elina_abstract0_meet(get_man(), false, &*x, &*o.m_apstate)),
+                   elina_abstract0_meet(get_man(), false, &*x, &*y)),
           std::move(m));
     }
   }
@@ -1057,7 +1060,7 @@ public:
     //}
   }
 
-  elina_domain_t operator&&(elina_domain_t o) override {
+  elina_domain_t operator&&(const elina_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.narrowing");
     crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
 
@@ -1070,12 +1073,14 @@ public:
     else {
       elina_state_ptr x =
           elinaPtr(get_man(), elina_abstract0_copy(get_man(), &*m_apstate));
-      var_map_t m = merge_var_map(m_var_map, x, o.m_var_map, o.m_apstate);
+      elina_state_ptr y =
+          elinaPtr(get_man(), elina_abstract0_copy(get_man(), &*o.m_apstate));
+      
+      var_map_t m = merge_var_map(m_var_map, x, o.m_var_map, y);
       switch (ElinaDom) {
       case ELINA_OCT:
         return elina_domain_t(
-            elinaPtr(get_man(), elina_abstract0_opt_oct_narrowing(
-                                    get_man(), &*x, &*o.m_apstate)),
+            elinaPtr(get_man(), elina_abstract0_opt_oct_narrowing(get_man(), &*x, &*y)),
             std::move(m));
       case ELINA_ZONES:
       case ELINA_PK:
@@ -1084,8 +1089,7 @@ public:
         //           "make sure only a finite number of descending iterations
         //           are run.");
         return elina_domain_t(
-            elinaPtr(get_man(), elina_abstract0_meet(get_man(), false, &*x,
-                                                     &*o.m_apstate)),
+            elinaPtr(get_man(), elina_abstract0_meet(get_man(), false, &*x, &*y)),
             std::move(m));
       }
     }

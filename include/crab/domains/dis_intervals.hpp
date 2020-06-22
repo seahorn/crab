@@ -1148,7 +1148,7 @@ public:
     return res;
   }
 
-  dis_interval_domain_t operator&(dis_interval_domain_t e) override {
+  dis_interval_domain_t operator&(const dis_interval_domain_t &e) const override {
     crab::CrabStats::count(domain_name() + ".count.meet");
     crab::ScopedCrabStats __st__(domain_name() + ".meet");
 
@@ -1181,7 +1181,7 @@ public:
     return res;
   }
 
-  dis_interval_domain_t operator&&(dis_interval_domain_t e) override {
+  dis_interval_domain_t operator&&(const dis_interval_domain_t &e) const override {
     crab::CrabStats::count(domain_name() + ".count.narrowing");
     crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
 

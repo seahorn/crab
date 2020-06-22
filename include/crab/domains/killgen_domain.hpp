@@ -57,11 +57,11 @@ public:
     return *this;
   }
 
-  iterator begin() { return _inv.begin(); }
+  iterator begin() const { return _inv.begin(); }
 
-  iterator end() { return _inv.end(); }
+  iterator end() const { return _inv.end(); }
 
-  unsigned size() { return _inv.size(); }
+  unsigned size() const { return _inv.size(); }
 
   bool is_bottom() const { return _inv.is_bottom(); }
 
@@ -86,12 +86,12 @@ public:
     _inv -= x;
   }
 
-  void operator-=(flat_killgen_domain_t other) {
+  void operator-=(const flat_killgen_domain_t &other) {
     if (is_bottom() || other.is_bottom())
       return;
 
     if (!other._inv.is_top()) {
-      for (auto v : other)
+      for (auto const& v : other)
         _inv -= v;
     }
   }
@@ -102,7 +102,7 @@ public:
     _inv += x;
   }
 
-  void operator+=(flat_killgen_domain_t other) {
+  void operator+=(const flat_killgen_domain_t &other) {
     if (is_top() || other.is_bottom()) {
       return;
     } else if (other.is_top()) {
@@ -112,11 +112,11 @@ public:
     }
   }
 
-  flat_killgen_domain_t operator|(flat_killgen_domain_t other) {
+  flat_killgen_domain_t operator|(const flat_killgen_domain_t &other) const {
     return (_inv | other._inv);
   }
 
-  flat_killgen_domain_t operator&(flat_killgen_domain_t other) {
+  flat_killgen_domain_t operator&(const flat_killgen_domain_t &other) const {
     return (_inv & other._inv);
   }
 
@@ -149,10 +149,11 @@ private:
   bool _is_top;
   patricia_tree_t _tree;
 
-  static patricia_tree_t apply_operation(binary_op_t &o, patricia_tree_t t1,
-                                         patricia_tree_t t2, bool &is_bottom) {
-    is_bottom = t1.merge_with(t2, o);
-    return t1;
+  static patricia_tree_t apply_operation(binary_op_t &o, const patricia_tree_t &t1,
+                                         const patricia_tree_t &t2, bool &is_bottom) {
+    patricia_tree_t res(t1);
+    is_bottom = res.merge_with(t2, o);
+    return res;
   }
 
   separate_killgen_domain(patricia_tree_t t) : _is_top(false), _tree(t) {}
@@ -233,7 +234,7 @@ public:
     return (o.is_top() || (!is_top() && (_tree.leq(o._tree, po))));
   }
 
-  separate_killgen_domain_t operator|(separate_killgen_domain_t o) {
+  separate_killgen_domain_t operator|(const separate_killgen_domain_t &o) const {
     if (is_top() || o.is_top()) {
       return separate_killgen_domain_t::top();
     } else {
@@ -244,7 +245,7 @@ public:
     }
   }
 
-  separate_killgen_domain_t operator&(separate_killgen_domain_t o) {
+  separate_killgen_domain_t operator&(const separate_killgen_domain_t &o) const {
     if (is_top()) {
       return o;
     } else if (o.is_top()) {

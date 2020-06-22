@@ -155,7 +155,7 @@ public:
 
 private:
   static patricia_tree_t apply_operation(binary_op_t &o, patricia_tree_t t1,
-                                         patricia_tree_t t2, bool &is_bottom) {
+                                         const patricia_tree_t &t2, bool &is_bottom) {
     is_bottom = t1.merge_with(t2, o);
     return t1;
   }
@@ -277,7 +277,7 @@ public:
   }
 
   // Narrowing
-  separate_domain_t operator&&(separate_domain_t e) {
+  separate_domain_t operator&&(const separate_domain_t &e) const {
     if (this->is_bottom() || e.is_bottom()) {
       return separate_domain_t(false);
     } else {

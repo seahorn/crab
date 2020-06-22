@@ -169,7 +169,7 @@ private:
     return powerset_domain_t(std::move(res));
   }
 
-  powerset_domain_t powerset_meet_with(powerset_domain_t other) {
+  powerset_domain_t powerset_meet_with(powerset_domain_t other) const {
     if (is_bottom() || other.is_bottom()) {
       powerset_domain_t bot(true);
       return bot;
@@ -266,7 +266,7 @@ public:
     return powerset_join_with(other);
   }
 
-  virtual powerset_domain_t operator&(powerset_domain_t other) override {
+  virtual powerset_domain_t operator&(const powerset_domain_t &other) const override {
     if (Params::exact_meet) {
       return powerset_meet_with(other);
     } else {
@@ -289,7 +289,7 @@ public:
     return powerset_domain_t(left.widening_thresholds(right, ts));
   }
 
-  virtual powerset_domain_t operator&&(powerset_domain_t other) override {
+  virtual powerset_domain_t operator&&(const powerset_domain_t &other) const override {
     Domain left  = smash_disjuncts(*this);
     Domain right = smash_disjuncts(other);
     return powerset_domain_t(left && right);

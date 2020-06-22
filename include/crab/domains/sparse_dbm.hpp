@@ -148,7 +148,7 @@ protected:
     return vert;
   }
 
-  template <class G, class P> inline bool check_potential(G &g, P &p) {
+  template <class G, class P> inline bool check_potential(const G &g, const P &p) const {
 #ifdef CHECK_POTENTIAL
     for (vert_id v : g.verts()) {
       for (vert_id d : g.succs(v)) {
@@ -1121,7 +1121,7 @@ public:
     }
   }
 
-  DBM_t operator&(DBM_t o) override {
+  DBM_t operator&(const DBM_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.meet");
     crab::ScopedCrabStats __st__(domain_name() + ".meet");
 
@@ -1137,8 +1137,11 @@ public:
                                             << *this << "\n"
                                             << "DBM 2\n"
                                             << o << "\n";);
-      normalize();
-      o.normalize();
+      DBM_t left(*this);
+      DBM_t right(o);
+      
+      left.normalize();
+      right.normalize();
 
       // We map vertices in the left operand onto a contiguous range.
       // This will often be the identity map, but there might be gaps.
@@ -1152,18 +1155,18 @@ public:
       perm_y.push_back(0);
       meet_pi.push_back(Wt(0));
       meet_rev.push_back(boost::none);
-      for (auto p : vert_map) {
+      for (auto p : left.vert_map) {
         vert_id vv = perm_x.size();
         meet_verts.insert(vmap_elt_t(p.first, vv));
         meet_rev.push_back(p.first);
 
         perm_x.push_back(p.second);
         perm_y.push_back(-1);
-        meet_pi.push_back(potential[p.second] - potential[0]);
+        meet_pi.push_back(left.potential[p.second] - left.potential[0]);
       }
 
       // Add missing mappings from the right operand.
-      for (auto p : o.vert_map) {
+      for (auto p : right.vert_map) {
         auto it = meet_verts.find(p.first);
 
         if (it == meet_verts.end()) {
@@ -1172,7 +1175,7 @@ public:
 
           perm_y.push_back(p.second);
           perm_x.push_back(-1);
-          meet_pi.push_back(o.potential[p.second] - o.potential[0]);
+          meet_pi.push_back(right.potential[p.second] - right.potential[0]);
           meet_verts.insert(vmap_elt_t(p.first, vv));
         } else {
           perm_y[(*it).second] = p.second;
@@ -1180,10 +1183,10 @@ public:
       }
 
       // Build the permuted view of x and y.
-      assert(g.size() > 0);
-      GrPerm gx(perm_x, g);
-      assert(o.g.size() > 0);
-      GrPerm gy(perm_y, o.g);
+      assert(left.g.size() > 0);
+      GrPerm gx(perm_x, left.g);
+      assert(right.g.size() > 0);
+      GrPerm gy(perm_y, right.g);
 
       // Compute the syntactic meet of the permuted graphs.
       bool is_closed;
@@ -1215,7 +1218,7 @@ public:
     }
   }
 
-  DBM_t operator&&(DBM_t o) override {
+  DBM_t operator&&(const DBM_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.narrowing");
     crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
 
@@ -1232,9 +1235,8 @@ public:
 
       // FIXME: Implement properly
       // Narrowing as a no-op should be sound.
-      normalize();
       DBM_t res(*this);
-
+      res.normalize();
       CRAB_LOG("zones-sparse", crab::outs() << "Result narrowing:\n"
                                             << res << "\n";);
       return res;

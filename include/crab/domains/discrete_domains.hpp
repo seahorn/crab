@@ -98,9 +98,9 @@ public:
     return (this->_is_top && other._is_top) || (this->_set == other._set);
   }
 
-  void operator|=(discrete_domain_t other) { *this = *this | other; }
+  void operator|=(const discrete_domain_t &other) { *this = *this | other; }
 
-  discrete_domain_t operator|(discrete_domain_t other) {
+  discrete_domain_t operator|(const discrete_domain_t &other) const {
     if (this->_is_top || other._is_top) {
       return discrete_domain_t(true);
     } else {
@@ -108,7 +108,7 @@ public:
     }
   }
 
-  discrete_domain_t operator&(discrete_domain_t other) {
+  discrete_domain_t operator&(const discrete_domain_t &other) const {
     if (this->is_bottom() || other.is_bottom()) {
       return discrete_domain_t(false);
     } else if (this->_is_top) {
@@ -120,11 +120,11 @@ public:
     }
   }
 
-  discrete_domain_t operator||(discrete_domain_t other) {
+  discrete_domain_t operator||(const discrete_domain_t &other) const {
     return this->operator|(other);
   }
 
-  discrete_domain_t operator&&(discrete_domain_t other) {
+  discrete_domain_t operator&&(const discrete_domain_t &other) const {
     return this->operator&(other);
   }
 
@@ -180,7 +180,7 @@ public:
     return r;
   }
 
-  std::size_t size() {
+  std::size_t size() const {
     if (this->_is_top) {
       CRAB_ERROR("Size for discrete domain TOP is undefined");
     } else {
@@ -188,7 +188,7 @@ public:
     }
   }
 
-  iterator begin() {
+  iterator begin() const {
     if (this->_is_top) {
       CRAB_ERROR("Iterator for discrete domain TOP is undefined");
     } else {
@@ -196,7 +196,7 @@ public:
     }
   }
 
-  iterator end() {
+  iterator end() const {
     if (this->_is_top) {
       CRAB_ERROR("Iterator for discrete domain TOP is undefined");
     } else {

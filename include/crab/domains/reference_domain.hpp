@@ -406,11 +406,11 @@ private:
     return res;
   }
 
-  reference_domain_t do_meet_or_narrowing(reference_domain_t &left,
-                                          reference_domain_t &right,
+  reference_domain_t do_meet_or_narrowing(const reference_domain_t &left,
+                                          const reference_domain_t &right,
                                           ref_counting_binop_t ref_counting_op,
                                           regions_dom_binop_t regions_dom_op,
-                                          base_dom_binop_t base_dom_op) {
+                                          base_dom_binop_t base_dom_op) const {
 
     ref_counting_domain_t out_ref_counting_dom(
         ref_counting_op(left.m_ref_counting_dom, right.m_ref_counting_dom));
@@ -916,7 +916,7 @@ public:
     return res;
   }
 
-  reference_domain_t operator&(reference_domain_t o) override {
+  reference_domain_t operator&(const reference_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.meet");
     crab::ScopedCrabStats __st__(domain_name() + ".meet");
 
@@ -1008,7 +1008,7 @@ public:
     return res;
   }
 
-  reference_domain_t operator&&(reference_domain_t o) override {
+  reference_domain_t operator&&(const reference_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.narrowing");
     crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
 

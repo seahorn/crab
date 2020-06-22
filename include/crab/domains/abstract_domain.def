@@ -17,14 +17,14 @@
     bool operator<=(const this_type &other) const override { CRAB_ERROR(Msg); }\
     void operator|=(this_type other) override { CRAB_ERROR(Msg); }             \
     this_type operator|(this_type other) override { CRAB_ERROR(Msg); }         \
-    this_type operator&(this_type other) override { CRAB_ERROR(Msg); }         \
+    this_type operator&(const this_type &other) const override { CRAB_ERROR(Msg); }         \
     this_type operator||(this_type other) override { CRAB_ERROR(Msg); }        \
     this_type                                                                  \
     widening_thresholds(this_type e,                                           \
                         const iterators::thresholds<number_t> &ts) override {  \
       CRAB_ERROR(Msg);                                                         \
     }                                                                          \
-    this_type operator&&(this_type other) override { CRAB_ERROR(Msg); }        \
+    this_type operator&&(const this_type &other) const override { CRAB_ERROR(Msg); }        \
     void operator-=(const variable_t &var) override { CRAB_ERROR(Msg); }       \
     interval_t operator[](const variable_t &v) override { CRAB_ERROR(Msg); }   \
     void operator+=(const linear_constraint_system_t &csts) override {         \
