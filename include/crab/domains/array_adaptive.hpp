@@ -2169,7 +2169,7 @@ public:
     }
   }
 
-  array_adaptive_domain_t operator||(array_adaptive_domain_t other) override {
+  array_adaptive_domain_t operator||(const array_adaptive_domain_t &other) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
     if (other.is_bottom()) {
@@ -2184,20 +2184,25 @@ public:
       cell_varmap_t left_cell_varmap(m_cell_varmap);
       smashed_varmap_t left_smashed_varmap(m_smashed_varmap);
 
+      base_domain_t right_dom(other.m_inv);
+      cell_varmap_t right_cell_varmap(other.m_cell_varmap);
+      smashed_varmap_t right_smashed_varmap(other.m_smashed_varmap);
+      
       // Must be done before the renaming.
       auto out_array_map = m_array_map.join(
           other.m_array_map, left_cell_varmap, left_smashed_varmap, left_dom,
-          other.m_cell_varmap, other.m_smashed_varmap, other.m_inv);
+          right_cell_varmap, right_smashed_varmap, right_dom);
 
       smashed_varmap_t out_smashed_varmap;
       cell_varmap_t out_cell_varmap;
 
-      do_renaming_for_join(left_dom, other.m_inv, left_smashed_varmap,
-                           other.m_smashed_varmap, left_cell_varmap,
-                           other.m_cell_varmap, out_smashed_varmap,
+      do_renaming_for_join(left_dom, right_dom, left_smashed_varmap,
+                           right_smashed_varmap, left_cell_varmap,
+                           right_cell_varmap, out_smashed_varmap,
                            out_cell_varmap);
 
-      array_adaptive_domain_t res(left_dom || other.m_inv, std::move(out_array_map),
+      array_adaptive_domain_t res(left_dom || right_dom,
+				  std::move(out_array_map),
                                   std::move(out_cell_varmap),
                                   std::move(out_smashed_varmap));
       CRAB_LOG("array-adaptive", crab::outs() << "Res=" << res << "\n";);
@@ -2206,8 +2211,8 @@ public:
   }
 
   array_adaptive_domain_t
-  widening_thresholds(array_adaptive_domain_t other,
-                      const iterators::thresholds<number_t> &ts) override {
+  widening_thresholds(const array_adaptive_domain_t &other,
+                      const iterators::thresholds<number_t> &ts) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
     if (other.is_bottom()) {
@@ -2222,21 +2227,27 @@ public:
       cell_varmap_t left_cell_varmap(m_cell_varmap);
       smashed_varmap_t left_smashed_varmap(m_smashed_varmap);
 
+      base_domain_t right_dom(other.m_inv);
+      cell_varmap_t right_cell_varmap(other.m_cell_varmap);
+      smashed_varmap_t right_smashed_varmap(other.m_smashed_varmap);
+      
       // Must be done before the renaming.
       auto out_array_map = m_array_map.join(
           other.m_array_map, left_cell_varmap, left_smashed_varmap, left_dom,
-          other.m_cell_varmap, other.m_smashed_varmap, other.m_inv);
+          right_cell_varmap, right_smashed_varmap, right_dom);
 
       smashed_varmap_t out_smashed_varmap;
       cell_varmap_t out_cell_varmap;
-      do_renaming_for_join(left_dom, other.m_inv, left_smashed_varmap,
-                           other.m_smashed_varmap, left_cell_varmap,
-                           other.m_cell_varmap, out_smashed_varmap,
+      do_renaming_for_join(left_dom, right_dom, left_smashed_varmap,
+                           right_smashed_varmap, left_cell_varmap,
+                           right_cell_varmap, out_smashed_varmap,
                            out_cell_varmap);
 
       array_adaptive_domain_t res(
-          left_dom.widening_thresholds(other.m_inv, ts), std::move(out_array_map),
-          std::move(out_cell_varmap), std::move(out_smashed_varmap));
+          left_dom.widening_thresholds(right_dom, ts),
+	  std::move(out_array_map),
+          std::move(out_cell_varmap),
+	  std::move(out_smashed_varmap));
       CRAB_LOG("array-adaptive", crab::outs() << "Res=" << res << "\n";);
       return res;
     }

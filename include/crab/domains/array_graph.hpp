@@ -514,11 +514,11 @@ public:
   }
 
   template <typename Thresholds>
-  array_graph_t widening_thresholds(array_graph_t &o, const Thresholds &) {
+  array_graph_t widening_thresholds(const array_graph_t &o, const Thresholds &) const {
     return (*this || o);
   }
 
-  array_graph_t operator||(array_graph_t &o) {
+  array_graph_t operator||(const array_graph_t &o) const {
     if (is_bottom())
       return o;
     else if (o.is_bottom())
@@ -529,8 +529,9 @@ public:
                                             << *this << "\n"
                                             << "Graph 2\n"
                                             << o << "\n";);
-      o.normalize();
-
+      array_graph_t right(o);
+      right.normalize();
+      
       // Figure out the common renaming
       std::vector<_vert_id> perm_x;
       std::vector<_vert_id> perm_y;
@@ -539,9 +540,9 @@ public:
       vert_set_t widen_unstable(_unstable);
 
       for (auto p : _vert_map) {
-        auto it = o._vert_map.find(p.first);
+        auto it = right._vert_map.find(p.first);
         // Vertex exists in both
-        if (it != o._vert_map.end()) {
+        if (it != right._vert_map.end()) {
           out_vmap.insert(vmap_elt_t(p.first, perm_x.size()));
           out_revmap.push_back(p.first);
 
@@ -550,11 +551,12 @@ public:
         }
       }
 
+      graph_t left_g(_g);
       // Build the permuted view of x and y.
-      // assert(_g.size() > 0);
-      GrPerm gx(perm_x, _g);
-      // assert(o._g.size() > 0);
-      GrPerm gy(perm_y, o._g);
+      // assert(left_g.size() > 0);
+      GrPerm gx(perm_x, left_g);
+      // assert(right._g.size() > 0);
+      GrPerm gy(perm_y, right._g);
 
       // Now perform the widening
       std::vector<_vert_id> destabilized;
@@ -1933,8 +1935,8 @@ public:
   }
 
   array_graph_domain_t
-  widening_thresholds(array_graph_domain_t o,
-                      const iterators::thresholds<number_t> &ts) override {
+  widening_thresholds(const array_graph_domain_t &o,
+                      const iterators::thresholds<number_t> &ts) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
 
@@ -1954,7 +1956,7 @@ public:
     }
   }
 
-  array_graph_domain_t operator||(array_graph_domain_t o) override {
+  array_graph_domain_t operator||(const array_graph_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
 

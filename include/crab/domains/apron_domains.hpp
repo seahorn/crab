@@ -744,7 +744,7 @@ public:
     }
   }
 
-  apron_domain_t operator||(apron_domain_t o) override {
+  apron_domain_t operator||(const apron_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
 
@@ -755,23 +755,26 @@ public:
     // else {
     ap_state_ptr x =
         apPtr(get_man(), ap_abstract0_copy(get_man(), &*m_apstate));
-    var_map_t m = merge_var_map(m_var_map, x, o.m_var_map, o.m_apstate);
+    ap_state_ptr y =
+        apPtr(get_man(), ap_abstract0_copy(get_man(), &*o.m_apstate));
+    
+    var_map_t m = merge_var_map(m_var_map, x, o.m_var_map, y);
     return apron_domain_t(
-        apPtr(get_man(), ap_abstract0_widening(get_man(), &*x, &*o.m_apstate)),
+        apPtr(get_man(), ap_abstract0_widening(get_man(), &*x, &*y)),
         std::move(m), false /* do not compact */);
     //}
   }
 
   ap_lincons0_array_t
-  make_thresholds(apron_domain_t o, const iterators::thresholds<number_t> &ts) {
+  make_thresholds(apron_domain_t o, const iterators::thresholds<number_t> &ts) const {
     // TODO: make some constraints using the constants from ts
     ap_lincons0_array_t csts = ap_lincons0_array_make(0);
     return csts;
   }
 
   apron_domain_t
-  widening_thresholds(apron_domain_t o,
-                      const iterators::thresholds<number_t> &ts) override {
+  widening_thresholds(const apron_domain_t &o,
+                      const iterators::thresholds<number_t> &ts) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
 
@@ -782,7 +785,10 @@ public:
     // else {
     ap_state_ptr x =
         apPtr(get_man(), ap_abstract0_copy(get_man(), &*m_apstate));
-    var_map_t m = merge_var_map(m_var_map, x, o.m_var_map, o.m_apstate);
+    ap_state_ptr y =
+        apPtr(get_man(), ap_abstract0_copy(get_man(), &*o.m_apstate));
+    
+    var_map_t m = merge_var_map(m_var_map, x, o.m_var_map, y);
 //////
 // We cannot refine the result of widening with
 // widening w/ thresholds over intervals because it might
@@ -796,7 +802,7 @@ public:
 	  // widening w/o thresholds in the apron domain
 	  apron_domain_t res(apPtr(get_man(), 
 				   ap_abstract0_widening(get_man(), 
-							 &*x, &*o.m_apstate)),
+							 &*x, &*y)),
 			     std::move(m));
 	  // widening w/ thresholds in the interval domain
 	  auto intv_this  = this->to_interval_domain();
@@ -809,8 +815,7 @@ public:
 #else
     ap_lincons0_array_t csts = make_thresholds(o, ts);
     apron_domain_t res(
-        apPtr(get_man(), ap_abstract0_widening_threshold(get_man(), &*x,
-                                                         &*o.m_apstate, &csts)),
+        apPtr(get_man(), ap_abstract0_widening_threshold(get_man(), &*x, &*y, &csts)),
         std::move(m), false /* do not compact */);
     ap_lincons0_array_clear(&csts);
     return res;

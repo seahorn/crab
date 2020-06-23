@@ -96,13 +96,13 @@ public:
   // Meet operator: return meet(*this, abs)
   virtual Dom operator&(const Dom &abs) const = 0;
   // Widening operator: return widening(*this, abs)
-  virtual Dom operator||(Dom abs) = 0;
+  virtual Dom operator||(const Dom &abs) const = 0;
   // Narrowing operator: return narrowing(*this, abs)
   virtual Dom operator&&(const Dom &abs) const = 0;
   // Widening with thresholds: return widening(*this, abs) using thresholds ts
   virtual Dom
-  widening_thresholds(Dom abs,
-                      const crab::iterators::thresholds<number_t> &ts) = 0;
+  widening_thresholds(const Dom &abs,
+                      const crab::iterators::thresholds<number_t> &ts) const = 0;
 
   /**************************** Arithmetic operations *************************/
   // x := y op z

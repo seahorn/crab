@@ -1160,7 +1160,7 @@ public:
     return res;
   }
 
-  dis_interval_domain_t operator||(dis_interval_domain_t e) override {
+  dis_interval_domain_t operator||(const dis_interval_domain_t &e) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
 
@@ -1171,8 +1171,8 @@ public:
   }
 
   dis_interval_domain_t
-  widening_thresholds(dis_interval_domain_t e,
-                      const iterators::thresholds<number_t> &ts) override {
+  widening_thresholds(const dis_interval_domain_t &e,
+                      const iterators::thresholds<number_t> &ts) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
 

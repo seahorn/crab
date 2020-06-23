@@ -276,14 +276,14 @@ public:
     }
   }
 
-  virtual powerset_domain_t operator||(powerset_domain_t other) override {
+  virtual powerset_domain_t operator||(const powerset_domain_t &other) const override {
     Domain left  = smash_disjuncts(*this);
     Domain right = smash_disjuncts(other);
     return powerset_domain_t(left || right);
   }
 
-  virtual powerset_domain_t widening_thresholds(powerset_domain_t other,
-			    const crab::iterators::thresholds<number_t> &ts) override {
+  virtual powerset_domain_t widening_thresholds(const powerset_domain_t &other,
+			    const crab::iterators::thresholds<number_t> &ts) const override {
     Domain left  = smash_disjuncts(*this);
     Domain right = smash_disjuncts(other);
     return powerset_domain_t(left.widening_thresholds(right, ts));

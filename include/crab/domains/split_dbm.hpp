@@ -957,7 +957,7 @@ protected:
   }
   
   template <class G1, class G2>
-  graph_t split_widen(G1 &l, G2 &r, std::vector<vert_id> &unstable) {
+  graph_t split_widen(G1 &l, G2 &r, std::vector<vert_id> &unstable) const {
     assert(l.size() == r.size());
     size_t sz = l.size();
     graph_t g;
@@ -1540,7 +1540,7 @@ public:
     }
   }
 
-  DBM_t operator||(DBM_t o) override {
+  DBM_t operator||(const DBM_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
 
@@ -1556,8 +1556,9 @@ public:
                             << left << "\n"
                             << "DBM 2\n"
                             << o << "\n");
-
-      o.normalize();
+      // do not normalize left operand
+      DBM_t right(o);
+      right.normalize();
 
       // Figure out the common renaming
       std::vector<vert_id> perm_x;
@@ -1573,9 +1574,9 @@ public:
       perm_y.push_back(0);
       out_revmap.push_back(boost::none);
       for (auto p : vert_map) {
-        auto it = o.vert_map.find(p.first);
+        auto it = right.vert_map.find(p.first);
         // Variable exists in both
-        if (it != o.vert_map.end()) {
+        if (it != right.vert_map.end()) {
           out_vmap.insert(vmap_elt_t(p.first, perm_x.size()));
           out_revmap.push_back(p.first);
 
@@ -1586,10 +1587,11 @@ public:
       }
 
       // Build the permuted view of x and y.
-      assert(g.size() > 0);
-      GrPerm gx(perm_x, g);
-      assert(o.g.size() > 0);
-      GrPerm gy(perm_y, o.g);
+      graph_t left_g(g);
+      assert(left_g.size() > 0);
+      GrPerm gx(perm_x, left_g);
+      assert(right.g.size() > 0);
+      GrPerm gy(perm_y, right.g);
 
       // Now perform the widening
       std::vector<vert_id> destabilized;
@@ -1607,8 +1609,8 @@ public:
     }
   }
 
-  DBM_t widening_thresholds(DBM_t o,
-                            const iterators::thresholds<number_t> &ts) override {
+  DBM_t widening_thresholds(const DBM_t &o,
+                            const iterators::thresholds<number_t> &ts) const override {
     // TODO: use thresholds
     return (*this || o);
   }

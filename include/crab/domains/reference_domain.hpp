@@ -943,7 +943,7 @@ public:
     return res;
   }
 
-  reference_domain_t operator||(reference_domain_t o) override {
+  reference_domain_t operator||(const reference_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
 
@@ -959,13 +959,14 @@ public:
     CRAB_LOG("reference", crab::outs()
                               << "Widening " << *this << " and " << o << "=");
 
-    auto ref_counting_op = [](ref_counting_domain_t v1,
-                              ref_counting_domain_t v2) { return v1 || v2; };
-    auto region_op = [](regions_domain_t v1, regions_domain_t v2) {
+    auto ref_counting_op = [](const ref_counting_domain_t &v1,
+                              const ref_counting_domain_t &v2) { return v1 || v2; };
+    auto region_op = [](const regions_domain_t &v1,
+			const regions_domain_t &v2) {
       return v1 | v2;
     };
-    auto base_dom_op = [](base_abstract_domain_t v1,
-                          base_abstract_domain_t v2) { return v1 || v2; };
+    auto base_dom_op = [](const base_abstract_domain_t &v1,
+                          const base_abstract_domain_t &v2) { return v1 || v2; };
     reference_domain_t res(std::move(do_join_or_widening(
         *this, o, ref_counting_op, region_op, base_dom_op)));
 
@@ -974,8 +975,8 @@ public:
   }
 
   reference_domain_t widening_thresholds(
-      reference_domain_t o,
-      const iterators::thresholds<number_t> &thresholds) override {
+      const reference_domain_t &o,
+      const iterators::thresholds<number_t> &thresholds) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
 
@@ -991,13 +992,14 @@ public:
     CRAB_LOG("reference", crab::outs()
                               << "Widening " << *this << " and " << o << "=");
 
-    auto ref_counting_op = [](ref_counting_domain_t v1,
-                              ref_counting_domain_t v2) { return v1 || v2; };
-    auto region_op = [](regions_domain_t v1, regions_domain_t v2) {
+    auto ref_counting_op = [](const ref_counting_domain_t &v1,
+                              const ref_counting_domain_t &v2) { return v1 || v2; };
+    auto region_op = [](const regions_domain_t &v1,
+			const regions_domain_t &v2) {
       return v1 | v2;
     };
-    auto base_dom_op = [&thresholds](base_abstract_domain_t v1,
-                                     base_abstract_domain_t v2) {
+    auto base_dom_op = [&thresholds](const base_abstract_domain_t &v1,
+                                     const base_abstract_domain_t &v2) {
       return v1.widening_thresholds(v2, thresholds);
     };
 

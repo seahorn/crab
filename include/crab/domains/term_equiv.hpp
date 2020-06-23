@@ -593,17 +593,20 @@ private:
   };
 
   template <typename WidenOp>
-  term_domain_t widening(term_domain_t o, WidenOp widen_op) {
+  term_domain_t widening(const term_domain_t &o, WidenOp widen_op) const {
 
     // The left operand of the widenning cannot be closed, otherwise
     // termination is not ensured. However, if the right operand is
     // close precision may be improved.
-    o.normalize();
+    term_domain_t right(o);
+    right.normalize();
     if (is_bottom()) {
-      return o;
-    } else if (o.is_bottom()) {
+      return right;
+    } else if (right.is_bottom()) {
       return *this;
     } else {
+      term_domain_t left(*this);
+      
       // First, we need to compute the new term table.
       ttbl_t out_tbl;
       // Mapping of (term, term) pairs to terms in the join state
@@ -611,22 +614,23 @@ private:
 
       var_map_t out_vmap;
       rev_var_map_t out_rvmap;
-      dom_var_alloc_t palloc(_alloc, o._alloc);
+      dom_var_alloc_t palloc(left._alloc, right._alloc);
 
       // For each program variable in state, compute a generalization
-      for (auto p : _var_map) {
-        variable_t v(p.first);
-        term_id_t tx(term_of_var(v));
-        term_id_t ty(o.term_of_var(v));
+      for (auto p : left._var_map) {
+        const variable_t &v = p.first;
+        //term_id_t tx(term_of_var(v));
+	term_id_t tx = p.second;
+        term_id_t ty(right.term_of_var(v));
 
-        term_id_t tz = _ttbl.generalize(o._ttbl, tx, ty, out_tbl, gener_map);
+        term_id_t tz = left._ttbl.generalize(right._ttbl, tx, ty, out_tbl, gener_map);
         out_vmap[v] = tz;
         add_rev_var_map(out_rvmap, tz, v);
       }
 
       // Rename the common terms together
-      dom_t x_impl(_impl);
-      dom_t y_impl(o._impl);
+      dom_t x_impl(std::move(left._impl));
+      dom_t y_impl(std::move(right._impl));
 
       // Perform the mapping
       term_map_t out_map;
@@ -637,8 +641,8 @@ private:
         dom_var_t vt(palloc.next());
         out_map.insert(std::make_pair(tz, vt));
 
-        dom_var_t vx = domvar_of_term(txy.first);
-        dom_var_t vy = o.domvar_of_term(txy.second);
+        dom_var_t vx = left.domvar_of_term(txy.first);
+        dom_var_t vy = right.domvar_of_term(txy.second);
 
         out_varnames.push_back(vt);
 
@@ -949,6 +953,7 @@ public:
     } else if (right.is_bottom() || left.is_top()) {
       return left;
     } else {
+
       // First, we need to compute the new term table.
       ttbl_t out_tbl;
       // Mapping of (term, term) pairs to terms in the join state
@@ -972,8 +977,8 @@ public:
       }
 
       // Rename the common terms together
-      dom_t x_impl(left._impl);
-      dom_t y_impl(right._impl);
+      dom_t x_impl(std::move(left._impl));
+      dom_t y_impl(std::move(right._impl));
 
       // Perform the mapping
       term_map_t out_map;
@@ -997,7 +1002,6 @@ public:
                                     << *this << "\n"
                                     << "~~~~~~~~~~~~~~~~" << o << "\n"
                                     << "----------------"
-                                    << "x = " << _impl << "y = " << o._impl
                                     << "ren_0(x) = " << x_impl
                                     << "ren_0(y) = " << y_impl << "\n");
 
@@ -1018,19 +1022,19 @@ public:
     }
   }
 
-  term_domain_t operator||(term_domain_t other) override {
+  term_domain_t operator||(const term_domain_t &other) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
     WidenOp op;
-    return this->widening(other, op);
+    return widening(other, op);
   }
 
-  term_domain_t widening_thresholds(term_domain_t other,
-                                    const iterators::thresholds<number_t> &ts) override {
+  term_domain_t widening_thresholds(const term_domain_t &other,
+                                    const iterators::thresholds<number_t> &ts) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
     WidenWithThresholdsOp<iterators::thresholds<number_t>> op(ts);
-    return this->widening(other, op);
+    return widening(other, op);
   }
 
   // Meet

@@ -162,13 +162,13 @@ public:
     return array_smashing_t(_inv & other._inv);
   }
 
-  array_smashing_t operator||(array_smashing_t other) override {
+  array_smashing_t operator||(const array_smashing_t &other) const override {
     return array_smashing_t(_inv || other._inv);
   }
 
   array_smashing_t
-  widening_thresholds(array_smashing_t other,
-                      const iterators::thresholds<number_t> &ts) override {
+  widening_thresholds(const array_smashing_t &other,
+                      const iterators::thresholds<number_t> &ts) const override {
     return array_smashing_t(_inv.widening_thresholds(other._inv, ts));
   }
 

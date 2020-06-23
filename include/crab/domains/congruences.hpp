@@ -808,15 +808,15 @@ public:
     return this->_env & e._env;
   }
 
-  congruence_domain_t operator||(congruence_domain_t e) override {
+  congruence_domain_t operator||(const congruence_domain_t &e) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
     return this->_env || e._env;
   }
 
   congruence_domain_t
-  widening_thresholds(congruence_domain_t other,
-                      const crab::iterators::thresholds<number_t> &) override {
+  widening_thresholds(const congruence_domain_t &other,
+                      const crab::iterators::thresholds<number_t> &) const override {
     return (*this || other);
   }
 

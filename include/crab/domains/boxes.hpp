@@ -907,7 +907,7 @@ public:
         lddPtr(get_ldd_man(), Ldd_And(get_ldd_man(), &*m_ldd, &*other.m_ldd)));
   }
 
-  boxes_domain_t operator||(boxes_domain_t other) override {
+  boxes_domain_t operator||(const boxes_domain_t &other) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
 
@@ -939,8 +939,8 @@ public:
   }
 
   boxes_domain_t
-  widening_thresholds(boxes_domain_t other,
-                      const iterators::thresholds<number_t> & /*ts*/) override {
+  widening_thresholds(const boxes_domain_t &other,
+                      const iterators::thresholds<number_t> & /*ts*/) const override {
     // CRAB_WARN(" boxes widening operator with thresholds not implemented");
     return (*this || other);
   }

@@ -96,19 +96,13 @@ public:
     return (this->_first.is_top() && this->_second.is_top());
   }
 
-  Domain1 &first(bool apply_reduction = true) {
-    if (apply_reduction) {
-      // if called during widening we don't normalize
-      this->canonicalize();
-    }
+  Domain1 &first() {
+    this->canonicalize();
     return this->_first;
   }
 
-  Domain2 &second(bool apply_reduction = true) {
-    if (apply_reduction) {
-      // if called during widening we don't normalize      
-      this->canonicalize();
-    }
+  Domain2 &second() {
+    this->canonicalize();
     return this->_second;
   }
 
@@ -156,7 +150,7 @@ public:
     }
   }
 
-  basic_domain_product2_t operator||(basic_domain_product2_t other) {
+  basic_domain_product2_t operator||(const basic_domain_product2_t &other) const {
     return basic_domain_product2_t(this->_first || other._first,
                                    this->_second || other._second,
                                    false /* do not apply reduction */);
@@ -300,18 +294,18 @@ public:
     return domain_product2_t(this->_product & other._product);
   }
 
-  domain_product2_t operator||(domain_product2_t other) override {
+  domain_product2_t operator||(const domain_product2_t &other) const override {
     return domain_product2_t(this->_product || other._product);
   }
 
   domain_product2_t
-  widening_thresholds(domain_product2_t other,
-                      const iterators::thresholds<number_t> &ts) override {
+  widening_thresholds(const domain_product2_t &other,
+                      const iterators::thresholds<number_t> &ts) const override {
     bool apply_reduction = false;
     return domain_product2_t(basic_domain_product2_t(
-        std::move(this->_product.first(apply_reduction)
+        std::move(this->_product.first() 
                       .widening_thresholds(other._product.first(), ts)),
-        std::move(this->_product.second(apply_reduction)
+        std::move(this->_product.second()
                       .widening_thresholds(other._product.second(), ts)),
         std::move(apply_reduction)));
   }
@@ -948,7 +942,7 @@ public:
   }
 
   reduced_numerical_domain_product2_t
-  operator||(reduced_numerical_domain_product2_t other) override {
+  operator||(const reduced_numerical_domain_product2_t &other) const override {
     reduced_numerical_domain_product2_t res(this->_product || other._product);
     CRAB_LOG("combined-domain",
              crab::outs() << "============ WIDENING ==================";
@@ -958,8 +952,8 @@ public:
   }
 
   reduced_numerical_domain_product2_t
-  widening_thresholds(reduced_numerical_domain_product2_t other,
-                      const iterators::thresholds<number_t> &ts) override {
+  widening_thresholds(const reduced_numerical_domain_product2_t &other,
+                      const iterators::thresholds<number_t> &ts) const override {
     reduced_numerical_domain_product2_t res(
         this->_product.widening_thresholds(other._product, ts));
     CRAB_LOG("combined-domain",
@@ -1597,12 +1591,12 @@ public:
     return rnc_domain_t(this->_product & other._product);
   }
 
-  rnc_domain_t operator||(rnc_domain_t other) override {
+  rnc_domain_t operator||(const rnc_domain_t &other) const override {
     return rnc_domain_t(this->_product || other._product);
   }
 
-  rnc_domain_t widening_thresholds(rnc_domain_t other,
-                                   const iterators::thresholds<number_t> &ts) override {
+  rnc_domain_t widening_thresholds(const rnc_domain_t &other,
+                                   const iterators::thresholds<number_t> &ts) const override {
     return rnc_domain_t(this->_product.widening_thresholds(other._product, ts));
   }
 

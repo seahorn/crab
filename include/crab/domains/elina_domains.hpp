@@ -986,7 +986,7 @@ public:
     }
   }
 
-  elina_domain_t operator||(elina_domain_t o) override {
+  elina_domain_t operator||(const elina_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
     // XXX: is_bottom will close the left operand
@@ -998,24 +998,27 @@ public:
     // else {
     elina_state_ptr x =
         elinaPtr(get_man(), elina_abstract0_copy(get_man(), &*m_apstate));
-    var_map_t m = merge_var_map(m_var_map, x, o.m_var_map, o.m_apstate);
+    elina_state_ptr y =
+        elinaPtr(get_man(), elina_abstract0_copy(get_man(), &*o.m_apstate));
+    
+    var_map_t m = merge_var_map(m_var_map, x, o.m_var_map, y);
     return elina_domain_t(
         elinaPtr(get_man(),
-                 elina_abstract0_widening(get_man(), &*x, &*o.m_apstate)),
+                 elina_abstract0_widening(get_man(), &*x, &*y)),
         std::move(m), false /* do not compact */);
     //}
   }
 
   elina_lincons0_array_t
-  make_thresholds(elina_domain_t o, const iterators::thresholds<number_t> &ts) {
+  make_thresholds(const elina_domain_t &o, const iterators::thresholds<number_t> &ts) const {
     // TODO: make some constraints using the constants from ts
     elina_lincons0_array_t csts = elina_lincons0_array_make(0);
     return csts;
   }
 
   elina_domain_t
-  widening_thresholds(elina_domain_t o,
-                      const iterators::thresholds<number_t> &ts) override {
+  widening_thresholds(const elina_domain_t &o,
+                      const iterators::thresholds<number_t> &ts) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
 
@@ -1028,7 +1031,10 @@ public:
     // else {
     elina_state_ptr x =
         elinaPtr(get_man(), elina_abstract0_copy(get_man(), &*m_apstate));
-    var_map_t m = merge_var_map(m_var_map, x, o.m_var_map, o.m_apstate);
+    elina_state_ptr y =
+        elinaPtr(get_man(), elina_abstract0_copy(get_man(), &*o.m_apstate));
+    
+    var_map_t m = merge_var_map(m_var_map, x, o.m_var_map, y);
 //////
 // We cannot refine the result of widening with
 // widening w/ thresholds over intervals because it might
@@ -1042,7 +1048,7 @@ public:
       // widening w/o thresholds in the elina domain
       elina_domain_t res(elinaPtr(get_man(), 
 				  elina_abstract0_widening(get_man(), 
-							   &*x, &*o.m_apstate)),
+							   &*x, &*y)),
 			 std::move(m));
       // widening w/ thresholds in the interval domain
       auto intv_this  = this->to_interval_domain();
@@ -1056,7 +1062,7 @@ public:
     elina_lincons0_array_t csts = make_thresholds(o, ts);
     elina_domain_t res(
         elinaPtr(get_man(), elina_abstract0_widening_threshold(
-                                get_man(), &*x, &*o.m_apstate, &csts)),
+                                get_man(), &*x, &*y, &csts)),
         std::move(m), false /* do not compact */);
     elina_lincons0_array_clear(&csts);
     return res;

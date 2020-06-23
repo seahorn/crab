@@ -312,7 +312,7 @@ public:
     return res;
   }
 
-  flat_boolean_domain_t operator||(flat_boolean_domain_t o) override {
+  flat_boolean_domain_t operator||(const flat_boolean_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
 
@@ -324,8 +324,8 @@ public:
   }
 
   flat_boolean_domain_t
-  widening_thresholds(flat_boolean_domain_t o,
-                      const iterators::thresholds<number_t> &) override {
+  widening_thresholds(const flat_boolean_domain_t &o,
+                      const iterators::thresholds<number_t> &) const override {
 
     flat_boolean_domain_t res(_env || o._env);
     CRAB_LOG("flat-boolean", crab::outs()
@@ -1001,15 +1001,15 @@ public:
                              _unchanged_vars & other._unchanged_vars);
   }
 
-  bool_num_domain_t operator||(bool_num_domain_t other) override {
+  bool_num_domain_t operator||(const bool_num_domain_t &other) const override {
     return bool_num_domain_t(_product || other._product,
                              _var_to_csts || other._var_to_csts,
                              _unchanged_vars || other._unchanged_vars);
   }
 
   bool_num_domain_t
-  widening_thresholds(bool_num_domain_t other,
-                      const iterators::thresholds<number_t> &ts) override {
+  widening_thresholds(const bool_num_domain_t &other,
+                      const iterators::thresholds<number_t> &ts) const override {
     return bool_num_domain_t(_product.widening_thresholds(other._product, ts),
                              _var_to_csts || other._var_to_csts,
                              _unchanged_vars || other._unchanged_vars);
