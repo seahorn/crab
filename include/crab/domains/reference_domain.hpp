@@ -340,11 +340,11 @@ private:
   using base_dom_binop_t = std::function<base_abstract_domain_t(
       base_abstract_domain_t, base_abstract_domain_t)>;
 
-  reference_domain_t do_join_or_widening(reference_domain_t &left,
-                                         reference_domain_t &right,
+  reference_domain_t do_join_or_widening(const reference_domain_t &left,
+                                         const reference_domain_t &right,
                                          ref_counting_binop_t ref_counting_op,
                                          regions_dom_binop_t regions_dom_op,
-                                         base_dom_binop_t base_dom_op) {
+                                         base_dom_binop_t base_dom_op) const {
     ref_counting_domain_t out_ref_counting_dom(
         ref_counting_op(left.m_ref_counting_dom, right.m_ref_counting_dom));
 
@@ -805,7 +805,7 @@ public:
     return left_dom <= right_dom;
   }
 
-  void operator|=(reference_domain_t o) override {
+  void operator|=(const reference_domain_t &o) override {
     crab::CrabStats::count(domain_name() + ".count.join");
     crab::ScopedCrabStats __st__(domain_name() + ".join");
 
@@ -884,7 +884,7 @@ public:
     CRAB_LOG("reference", crab::outs() << *this << "\n");
   }
 
-  reference_domain_t operator|(reference_domain_t o) override {
+  reference_domain_t operator|(const reference_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.join");
     crab::ScopedCrabStats __st__(domain_name() + ".join");
 
@@ -902,13 +902,13 @@ public:
     CRAB_LOG("reference", crab::outs()
                               << "Join " << *this << " and " << o << "=");
 
-    auto ref_counting_op = [](ref_counting_domain_t v1,
-                              ref_counting_domain_t v2) { return v1 | v2; };
-    auto region_op = [](regions_domain_t v1, regions_domain_t v2) {
+    auto ref_counting_op = [](const ref_counting_domain_t &v1,
+                              const ref_counting_domain_t &v2) { return v1 | v2; };
+    auto region_op = [](const regions_domain_t &v1, const regions_domain_t &v2) {
       return v1 | v2;
     };
-    auto base_dom_op = [](base_abstract_domain_t v1,
-                          base_abstract_domain_t v2) { return v1 | v2; };
+    auto base_dom_op = [](const base_abstract_domain_t &v1,
+                          const base_abstract_domain_t &v2) { return v1 | v2; };
     reference_domain_t res(std::move(do_join_or_widening(
         *this, o, ref_counting_op, region_op, base_dom_op)));
 
@@ -929,13 +929,13 @@ public:
     CRAB_LOG("reference", crab::outs()
                               << "Meet " << *this << " and " << o << "=");
 
-    auto ref_counting_op = [](ref_counting_domain_t v1,
-                              ref_counting_domain_t v2) { return (v1 & v2); };
-    auto region_op = [](regions_domain_t v1, regions_domain_t v2) {
+    auto ref_counting_op = [](const ref_counting_domain_t &v1,
+                              const ref_counting_domain_t &v2) { return (v1 & v2); };
+    auto region_op = [](const regions_domain_t &v1, const regions_domain_t &v2) {
       return (v1 & v2);
     };
-    auto base_dom_op = [](base_abstract_domain_t v1,
-                          base_abstract_domain_t v2) { return (v1 & v2); };
+    auto base_dom_op = [](const base_abstract_domain_t &v1,
+                          const base_abstract_domain_t &v2) { return (v1 & v2); };
     reference_domain_t res(std::move(do_meet_or_narrowing(
         *this, o, ref_counting_op, region_op, base_dom_op)));
 

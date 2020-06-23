@@ -163,7 +163,7 @@ private:
                                                     &qvars[0], qvars.size()));
   }
 
-  LddNodePtr join(LddNodePtr v1, LddNodePtr v2) {
+  LddNodePtr join(LddNodePtr v1, LddNodePtr v2) const {
     return lddPtr(get_ldd_man(), Ldd_Or(get_ldd_man(), &*v1, &*v2));
   }
 
@@ -890,9 +890,9 @@ public:
     return res;
   }
 
-  void operator|=(boxes_domain_t other) override { *this = *this | other; }
+  void operator|=(const boxes_domain_t &other) override { *this = *this | other; }
 
-  boxes_domain_t operator|(boxes_domain_t other) override {
+  boxes_domain_t operator|(const boxes_domain_t &other) const override {
     crab::CrabStats::count(domain_name() + ".count.join");
     crab::ScopedCrabStats __st__(domain_name() + ".join");
 

@@ -1391,7 +1391,7 @@ public:
     return res;
   }
 
-  void operator|=(wrapped_interval_domain_t e) override {
+  void operator|=(const wrapped_interval_domain_t &e) override {
     crab::CrabStats::count(domain_name() + ".count.join");
     crab::ScopedCrabStats __st__(domain_name() + ".join");
     CRAB_LOG("wrapped-int", crab::outs() << *this << " U " << e << " = ");
@@ -1399,7 +1399,7 @@ public:
     CRAB_LOG("wrapped-int", crab::outs() << *this << "\n";);
   }
 
-  wrapped_interval_domain_t operator|(wrapped_interval_domain_t e) override {
+  wrapped_interval_domain_t operator|(const wrapped_interval_domain_t &e) const override {
     crab::CrabStats::count(domain_name() + ".count.join");
     crab::ScopedCrabStats __st__(domain_name() + ".join");
     CRAB_LOG("wrapped-int", crab::outs() << *this << " U " << e << " = ");
@@ -2080,7 +2080,7 @@ public:
     return (_value == o._value && is_bottom() == o.is_bottom());
   }
 
-  wrapped_interval_limit_value operator|(wrapped_interval_limit_value o) const {
+  wrapped_interval_limit_value operator|(const wrapped_interval_limit_value &o) const {
     if (is_bottom()) {
       return o;
     } else if (o.is_bottom()) {
@@ -2094,11 +2094,11 @@ public:
   }
 
   // the lattice satisfy ACC so join is the widening
-  wrapped_interval_limit_value operator||(wrapped_interval_limit_value o) const {
+  wrapped_interval_limit_value operator||(const wrapped_interval_limit_value &o) const {
     return this->operator|(o);
   }
 
-  wrapped_interval_limit_value operator&(wrapped_interval_limit_value o) const {
+  wrapped_interval_limit_value operator&(const wrapped_interval_limit_value &o) const {
     if (is_bottom() || o.is_bottom()) {
       return bottom();
     } else {
@@ -2110,7 +2110,7 @@ public:
   }
 
   // the lattice satisfy DCC so meet is the narrowing
-  wrapped_interval_limit_value operator&&(wrapped_interval_limit_value o) const {
+  wrapped_interval_limit_value operator&&(const wrapped_interval_limit_value &o) const {
     return this->operator&(o);
   }
 
@@ -2310,13 +2310,13 @@ public:
 
   bool operator==(this_type o) { return (*this <= o && o <= *this); }
 
-  void operator|=(this_type o) override {
+  void operator|=(const this_type &o) override {
     _w_int_dom |= o._w_int_dom;
     _limit_env = _limit_env | o._limit_env;
     _init_set = _init_set | o._init_set;
   }
 
-  this_type operator|(this_type o) override {
+  this_type operator|(const this_type &o) const override {
     return this_type(_w_int_dom | o._w_int_dom, _limit_env | o._limit_env,
                      _init_set | o._init_set);
   }
@@ -3102,14 +3102,14 @@ public:
     return _product == other._product;
   }
 
-  void operator|=(wrapped_numerical_domain_t other) override {
+  void operator|=(const wrapped_numerical_domain_t &other) override {
     CRAB_LOG("wrapped-num",
              crab::outs() << _product << " U " << other._product << " = ");
     _product |= other._product;
     CRAB_LOG("wrapped-num", crab::outs() << _product << "\n";);
   }
 
-  wrapped_numerical_domain_t operator|(wrapped_numerical_domain_t other) override {
+  wrapped_numerical_domain_t operator|(const wrapped_numerical_domain_t &other) const override {
     CRAB_LOG("wrapped-num",
              crab::outs() << _product << " U " << other._product << " = ");
     wrapped_numerical_domain_t res(_product | other._product);

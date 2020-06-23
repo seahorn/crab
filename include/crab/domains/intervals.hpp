@@ -157,13 +157,13 @@ public:
     return (this->_env <= e._env);
   }
 
-  void operator|=(interval_domain_t e) override {
+  void operator|=(const interval_domain_t &e) override {
     crab::CrabStats::count(domain_name() + ".count.join");
     crab::ScopedCrabStats __st__(domain_name() + ".join");
     this->_env = this->_env | e._env;
   }
 
-  interval_domain_t operator|(interval_domain_t e) override {
+  interval_domain_t operator|(const interval_domain_t &e) const override {
     crab::CrabStats::count(domain_name() + ".count.join");
     crab::ScopedCrabStats __st__(domain_name() + ".join");
     return (this->_env | e._env);

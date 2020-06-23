@@ -2052,7 +2052,7 @@ public:
     return (m_inv <= other.m_inv && other.m_inv <= m_inv);
   }
 
-  void operator|=(array_adaptive_domain_t other) override {
+  void operator|=(const array_adaptive_domain_t &other) override {
     crab::CrabStats::count(domain_name() + ".count.join");
     crab::ScopedCrabStats __st__(domain_name() + ".join");
 
@@ -2067,25 +2067,29 @@ public:
       CRAB_LOG("array-adaptive", crab::outs() << "Res=" << *this << "\n";);      
     } else {
 
+      base_domain_t right_dom(other.m_inv);
+      cell_varmap_t right_cell_varmap(other.m_cell_varmap);
+      smashed_varmap_t right_smashed_varmap(other.m_smashed_varmap);
+      
       // this must be done before the renaming
       m_array_map = std::move(m_array_map.join(
           other.m_array_map, m_cell_varmap, m_smashed_varmap, m_inv,
-          other.m_cell_varmap, other.m_smashed_varmap, other.m_inv));
+          right_cell_varmap, right_smashed_varmap, right_dom));
 
       smashed_varmap_t out_smashed_varmap;
       cell_varmap_t out_cell_varmap;
-      do_renaming_for_join(m_inv, other.m_inv, m_smashed_varmap,
-                           other.m_smashed_varmap, m_cell_varmap,
-                           other.m_cell_varmap, out_smashed_varmap,
+      do_renaming_for_join(m_inv, right_dom, m_smashed_varmap,
+                           right_smashed_varmap, m_cell_varmap,
+                           right_cell_varmap, out_smashed_varmap,
                            out_cell_varmap);
-      m_inv |= other.m_inv;
+      m_inv |= right_dom;
       std::swap(m_cell_varmap, out_cell_varmap);
       std::swap(m_smashed_varmap, out_smashed_varmap);
       CRAB_LOG("array-adaptive", crab::outs() << "Res=" << *this << "\n";);
     }
   }
 
-  array_adaptive_domain_t operator|(array_adaptive_domain_t other) override {
+  array_adaptive_domain_t operator|(const array_adaptive_domain_t &other) const override {
     crab::CrabStats::count(domain_name() + ".count.join");
     crab::ScopedCrabStats __st__(domain_name() + ".join");
     if (other.is_bottom() || is_top()) {
@@ -2100,19 +2104,23 @@ public:
       cell_varmap_t left_cell_varmap(m_cell_varmap);
       smashed_varmap_t left_smashed_varmap(m_smashed_varmap);
 
+      base_domain_t right_dom(other.m_inv);
+      cell_varmap_t right_cell_varmap(other.m_cell_varmap);
+      smashed_varmap_t right_smashed_varmap(other.m_smashed_varmap);
+      
       // Must be done before the renaming.
       auto out_array_map = std::move(m_array_map.join(
           other.m_array_map, left_cell_varmap, left_smashed_varmap, left_dom,
-          other.m_cell_varmap, other.m_smashed_varmap, other.m_inv));
+          right_cell_varmap, right_smashed_varmap, right_dom));
 
       smashed_varmap_t out_smashed_varmap;
       cell_varmap_t out_cell_varmap;
-      do_renaming_for_join(left_dom, other.m_inv, left_smashed_varmap,
-                           other.m_smashed_varmap, left_cell_varmap,
-                           other.m_cell_varmap, out_smashed_varmap,
+      do_renaming_for_join(left_dom, right_dom, left_smashed_varmap,
+                           right_smashed_varmap, left_cell_varmap,
+                           right_cell_varmap, out_smashed_varmap,
                            out_cell_varmap);
 
-      array_adaptive_domain_t res(left_dom | other.m_inv,
+      array_adaptive_domain_t res(left_dom | right_dom,
 				  std::move(out_array_map),
                                   std::move(out_cell_varmap),
                                   std::move(out_smashed_varmap));

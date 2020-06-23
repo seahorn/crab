@@ -919,7 +919,7 @@ public:
     }
   }
 
-  void operator|=(elina_domain_t o) override {
+  void operator|=(const elina_domain_t &o) override {
     crab::CrabStats::count(domain_name() + ".count.join");
     crab::ScopedCrabStats __st__(domain_name() + ".join");
 
@@ -930,16 +930,18 @@ public:
     else {
       CRAB_LOG("elina", crab::outs()
                             << "JOIN \n\t" << *this << "\n\t" << o << "\n";);
+      elina_state_ptr x =
+          elinaPtr(get_man(), elina_abstract0_copy(get_man(), &*o.m_apstate));
       m_var_map = std::move(
-          merge_var_map(m_var_map, m_apstate, o.m_var_map, o.m_apstate));
+          merge_var_map(m_var_map, m_apstate, o.m_var_map, x));
       m_apstate =
           elinaPtr(get_man(), elina_abstract0_join(get_man(), false,
-                                                   &*m_apstate, &*o.m_apstate));
+                                                   &*m_apstate, &*x));
       CRAB_LOG("elina", crab::outs() << "RESULT " << *this << "\n");
     }
   }
 
-  elina_domain_t operator|(elina_domain_t o) override {
+  elina_domain_t operator|(const elina_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.join");
     crab::ScopedCrabStats __st__(domain_name() + ".join");
 
@@ -950,10 +952,12 @@ public:
     else {
       elina_state_ptr x =
           elinaPtr(get_man(), elina_abstract0_copy(get_man(), &*m_apstate));
-      var_map_t m = merge_var_map(m_var_map, x, o.m_var_map, o.m_apstate);
+      elina_state_ptr y =
+          elinaPtr(get_man(), elina_abstract0_copy(get_man(), &*o.m_apstate));
+      var_map_t m = merge_var_map(m_var_map, x, o.m_var_map, y);
       return elina_domain_t(
           elinaPtr(get_man(),
-                   elina_abstract0_join(get_man(), false, &*x, &*o.m_apstate)),
+                   elina_abstract0_join(get_man(), false, &*x, &*y)),
           std::move(m));
     }
   }

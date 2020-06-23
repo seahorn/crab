@@ -431,14 +431,14 @@ public:
 
   // set union: if two cells with same offset do not agree on
   // size then they are ignored.
-  offset_map_t operator|(const offset_map_t &o) {
+  offset_map_t operator|(const offset_map_t &o) const {
     join_op op;
     return offset_map_t(apply_operation(op, _map, o._map));
   }
 
   // set intersection: if two cells with same offset do not agree
   // on size then they are ignored.
-  offset_map_t operator&(const offset_map_t &o) {
+  offset_map_t operator&(const offset_map_t &o) const {
     meet_op op;
     return offset_map_t(apply_operation(op, _map, o._map));
   }
@@ -928,13 +928,13 @@ public:
     return (_inv <= other._inv && other._inv <= _inv);
   }
 
-  void operator|=(array_expansion_domain_t other) override {
+  void operator|=(const array_expansion_domain_t &other) override {
     crab::CrabStats::count(domain_name() + ".count.join");
     crab::ScopedCrabStats __st__(domain_name() + ".join");
     _inv |= other._inv;
   }
 
-  array_expansion_domain_t operator|(array_expansion_domain_t other) override {
+  array_expansion_domain_t operator|(const array_expansion_domain_t &other) const override {
     crab::CrabStats::count(domain_name() + ".count.join");
     crab::ScopedCrabStats __st__(domain_name() + ".join");
     return array_expansion_domain_t(_inv | other._inv);

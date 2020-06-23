@@ -790,13 +790,13 @@ public:
     return this->_env <= e._env;
   }
 
-  void operator|=(congruence_domain_t e) override {
+  void operator|=(const congruence_domain_t &e) override {
     crab::CrabStats::count(domain_name() + ".count.join");
     crab::ScopedCrabStats __st__(domain_name() + ".join");
     this->_env = this->_env | e._env;
   }
 
-  congruence_domain_t operator|(congruence_domain_t e) override {
+  congruence_domain_t operator|(const congruence_domain_t &e) const override {
     crab::CrabStats::count(domain_name() + ".count.join");
     crab::ScopedCrabStats __st__(domain_name() + ".join");
     return this->_env | e._env;

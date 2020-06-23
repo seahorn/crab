@@ -964,29 +964,27 @@ public:
     }
   }
 
-  // FIXME: can be done more efficient
-  void operator|=(DBM_t o) override { *this = *this | o; }
-
-  DBM_t operator|(DBM_t o) override {
+  void operator|=(const DBM_t &o) override { 
     crab::CrabStats::count(domain_name() + ".count.join");
     crab::ScopedCrabStats __st__(domain_name() + ".join");
 
-    if (is_bottom() || o.is_top())
-      return o;
-    else if (is_top() || o.is_bottom())
-      return *this;
-    else {
-      CRAB_LOG("zones-sparse", crab::outs() << "Before join:\n"
-                                            << "DBM 1\n"
-                                            << *this << "\n"
-                                            << "DBM 2\n"
-                                            << o << "\n");
-
+    CRAB_LOG("zones-sparse", crab::outs() << "Before join:\n"
+                                          << "DBM 1\n"
+                                          << *this << "\n"
+                                          << "DBM 2\n"
+                                          << o << "\n");
+    
+    if (is_bottom() || o.is_top()) {
+      *this = o;
+    } else if (is_top() || o.is_bottom()) {
+      // do nothing 
+    } else {
       normalize();
-      o.normalize();
+      DBM_t right(o);      
+      right.normalize();
 
       assert(check_potential(g, potential));
-      assert(check_potential(o.g, o.potential));
+      assert(check_potential(right.g, right.potential));
 
       // Figure out the common renaming, initializing the
       // resulting potentials as we go.
@@ -1007,14 +1005,14 @@ public:
       out_revmap.push_back(boost::none);
 
       for (auto p : vert_map) {
-        auto it = o.vert_map.find(p.first);
+        auto it = right.vert_map.find(p.first);
         // Variable exists in both
-        if (it != o.vert_map.end()) {
+        if (it != right.vert_map.end()) {
           out_vmap.insert(vmap_elt_t(p.first, perm_x.size()));
           out_revmap.push_back(p.first);
 
           pot_rx.push_back(potential[p.second] - potential[0]);
-          pot_ry.push_back(o.potential[(*it).second] - o.potential[0]);
+          pot_ry.push_back(right.potential[(*it).second] - right.potential[0]);
           perm_inv.push_back(p.first);
           perm_x.push_back(p.second);
           perm_y.push_back((*it).second);
@@ -1025,8 +1023,101 @@ public:
       // Build the permuted view of x and y.
       assert(g.size() > 0);
       GrPerm gx(perm_x, g);
-      assert(o.g.size() > 0);
-      GrPerm gy(perm_y, o.g);
+      assert(right.g.size() > 0);
+      GrPerm gy(perm_y, right.g);
+
+      // We now have the relevant set of relations. Because g_rx and g_ry are
+      // closed, the result is also closed.
+      Wt_min min_op;
+      graph_t join_g(GrOps::join(gx, gy));
+
+      // Now garbage collect any unused vertices
+      for (vert_id v : join_g.verts()) {
+        if (v == 0)
+          continue;
+        if (join_g.succs(v).size() == 0 && join_g.preds(v).size() == 0) {
+          join_g.forget(v);
+          if (out_revmap[v]) {
+            out_vmap.erase(*(out_revmap[v]));
+            out_revmap[v] = boost::none;
+          }
+        }
+      }
+
+      std::swap(vert_map, out_vmap);
+      std::swap(rev_map, out_revmap);
+      std::swap(g, join_g);
+      std::swap(potential, pot_rx);
+      unstable.clear();
+      _is_bottom = false;      
+    }
+    CRAB_LOG("zones-sparse", crab::outs() << "Result join:\n"
+	                                  << *this << "\n";);
+  }
+
+  DBM_t operator|(const DBM_t &o) const override {
+    crab::CrabStats::count(domain_name() + ".count.join");
+    crab::ScopedCrabStats __st__(domain_name() + ".join");
+
+    if (is_bottom() || o.is_top())
+      return o;
+    else if (is_top() || o.is_bottom())
+      return *this;
+    else {
+      CRAB_LOG("zones-sparse", crab::outs() << "Before join:\n"
+                                            << "DBM 1\n"
+                                            << *this << "\n"
+                                            << "DBM 2\n"
+                                            << o << "\n");
+
+      DBM_t left(*this);
+      DBM_t right(o);
+      
+      left.normalize();
+      right.normalize();
+
+      assert(check_potential(left.g, left.potential));
+      assert(check_potential(right.g, right.potential));
+
+      // Figure out the common renaming, initializing the
+      // resulting potentials as we go.
+      std::vector<vert_id> perm_x;
+      std::vector<vert_id> perm_y;
+      std::vector<variable_t> perm_inv;
+
+      std::vector<Wt> pot_rx;
+      std::vector<Wt> pot_ry;
+      vert_map_t out_vmap;
+      rev_map_t out_revmap;
+      // Add the zero vertex
+      assert(left.potential.size() > 0);
+      pot_rx.push_back(0);
+      pot_ry.push_back(0);
+      perm_x.push_back(0);
+      perm_y.push_back(0);
+      out_revmap.push_back(boost::none);
+
+      for (auto p : left.vert_map) {
+        auto it = right.vert_map.find(p.first);
+        // Variable exists in both
+        if (it != right.vert_map.end()) {
+          out_vmap.insert(vmap_elt_t(p.first, perm_x.size()));
+          out_revmap.push_back(p.first);
+
+          pot_rx.push_back(left.potential[p.second] - left.potential[0]);
+          pot_ry.push_back(right.potential[(*it).second] - right.potential[0]);
+          perm_inv.push_back(p.first);
+          perm_x.push_back(p.second);
+          perm_y.push_back((*it).second);
+        }
+      }
+      // unsigned int sz = perm_x.size();
+
+      // Build the permuted view of x and y.
+      assert(left.g.size() > 0);
+      GrPerm gx(perm_x, left.g);
+      assert(right.g.size() > 0);
+      GrPerm gy(perm_y, right.g);
 
       // We now have the relevant set of relations. Because g_rx and g_ry are
       // closed, the result is also closed.

@@ -143,7 +143,7 @@ private:
     return res;
   }
 
-  void insert(base_dom_vector &vec, Domain dom) {
+  void insert(base_dom_vector &vec, Domain dom) const {
     for (unsigned i=0,sz=vec.size();i<sz;++i) {
       if (dom <= vec[i]) {
 	return;
@@ -152,13 +152,13 @@ private:
     vec.push_back(dom);
   }
 
-  void append(base_dom_vector &vec1, const base_dom_vector &vec2) {
+  void append(base_dom_vector &vec1, const base_dom_vector &vec2) const {
     for (unsigned i=0, sz=vec2.size();i<sz;++i) {
       insert(vec1, vec2[i]);
     }
   }
 
-  powerset_domain_t powerset_join_with(powerset_domain_t other) {
+  powerset_domain_t powerset_join_with(const powerset_domain_t &other) const {
     if (is_bottom() || other.is_top()) {
       return other;
     } else if (other.is_bottom() || is_top()) {
@@ -169,7 +169,7 @@ private:
     return powerset_domain_t(std::move(res));
   }
 
-  powerset_domain_t powerset_meet_with(powerset_domain_t other) const {
+  powerset_domain_t powerset_meet_with(const powerset_domain_t &other) const {
     if (is_bottom() || other.is_bottom()) {
       powerset_domain_t bot(true);
       return bot;
@@ -240,7 +240,7 @@ public:
     return left <= right;
   }
 
-  virtual void operator|=(powerset_domain_t other) override {
+  virtual void operator|=(const powerset_domain_t &other) override {
     CRAB_LOG("powerset", crab::outs() << "JOIN \n" << *this << " and\n" << other << "=\n";);    
     if (is_top() || other.is_bottom()) {
       CRAB_LOG("powerset", crab::outs() << *this << "\n";);      
@@ -262,7 +262,7 @@ public:
     CRAB_LOG("powerset", crab::outs() << *this << "\n";);      
   }
   
-  virtual powerset_domain_t operator|(powerset_domain_t other) override {
+  virtual powerset_domain_t operator|(const powerset_domain_t &other) const override {
     return powerset_join_with(other);
   }
 

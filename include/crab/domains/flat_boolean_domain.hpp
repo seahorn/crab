@@ -282,7 +282,7 @@ public:
     return (_env <= o._env);
   }
 
-  flat_boolean_domain_t operator|(flat_boolean_domain_t o) override {
+  flat_boolean_domain_t operator|(const flat_boolean_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.join");
     crab::ScopedCrabStats __st__(domain_name() + ".join");
 
@@ -292,7 +292,7 @@ public:
     return res;
   }
 
-  void operator|=(flat_boolean_domain_t o) override {
+  void operator|=(const flat_boolean_domain_t &o) override {
     crab::CrabStats::count(domain_name() + ".count.join");
     crab::ScopedCrabStats __st__(domain_name() + ".join");
 
@@ -979,17 +979,17 @@ public:
     return _product <= other._product;
   }
 
-  bool operator==(bool_num_domain_t other) {
+  bool operator==(const bool_num_domain_t &other) const {
     return _product == other._product;
   }
 
-  void operator|=(bool_num_domain_t other) override {
+  void operator|=(const bool_num_domain_t &other) override {
     _product |= other._product;
     _var_to_csts = _var_to_csts | other._var_to_csts;
     _unchanged_vars = _unchanged_vars | other._unchanged_vars;
   }
 
-  bool_num_domain_t operator|(bool_num_domain_t other) override {
+  bool_num_domain_t operator|(const bool_num_domain_t &other) const override {
     return bool_num_domain_t(_product | other._product,
                              _var_to_csts | other._var_to_csts,
                              _unchanged_vars | other._unchanged_vars);

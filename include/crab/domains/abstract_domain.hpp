@@ -90,9 +90,9 @@ public:
   // Inclusion operator: return true if *this is equal or more precise than abs
   virtual bool operator<=(const Dom &abs) const = 0;
   // Join operator: return join(*this, abs)
-  virtual Dom operator|(Dom abs) = 0;
+  virtual Dom operator|(const Dom &abs) const = 0;
   // *this = join(*this, abs)
-  virtual void operator|=(Dom abs) = 0;
+  virtual void operator|=(const Dom &abs) = 0;
   // Meet operator: return meet(*this, abs)
   virtual Dom operator&(const Dom &abs) const = 0;
   // Widening operator: return widening(*this, abs)

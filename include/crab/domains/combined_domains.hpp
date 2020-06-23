@@ -134,7 +134,7 @@ public:
     return (this->operator<=(other) && other.operator<=(*this));
   }
 
-  void operator|=(basic_domain_product2_t other) {
+  void operator|=(const basic_domain_product2_t &other) {
     if (this->is_bottom()) {
       *this = other;
     } else if (other.is_bottom()) {
@@ -145,7 +145,7 @@ public:
     }
   }
 
-  basic_domain_product2_t operator|(basic_domain_product2_t other) {
+  basic_domain_product2_t operator|(const basic_domain_product2_t &other) const {
     if (this->is_bottom()) {
       return other;
     } else if (other.is_bottom()) {
@@ -284,15 +284,15 @@ public:
     return (this->_product <= other._product);
   }
 
-  bool operator==(domain_product2_t other) {
+  bool operator==(const domain_product2_t &other) const {
     return (this->_product == other._product);
   }
 
-  void operator|=(domain_product2_t other) override {
+  void operator|=(const domain_product2_t &other) override {
     this->_product |= other._product;
   }
 
-  domain_product2_t operator|(domain_product2_t other) override {
+  domain_product2_t operator|(const domain_product2_t &other) const override {
     return domain_product2_t(this->_product | other._product);
   }
 
@@ -917,7 +917,7 @@ public:
     return this->_product <= other._product;
   }
 
-  void operator|=(reduced_numerical_domain_product2_t other) override {
+  void operator|=(const reduced_numerical_domain_product2_t &other) override {
     CRAB_LOG("combined-domain", crab::outs()
                                     << "============ JOIN ==================";
              crab::outs() << *this << "\n----------------";
@@ -927,7 +927,7 @@ public:
   }
 
   reduced_numerical_domain_product2_t
-  operator|(reduced_numerical_domain_product2_t other) override {
+  operator|(const reduced_numerical_domain_product2_t &other) const override {
     reduced_numerical_domain_product2_t res(this->_product | other._product);
     CRAB_LOG("combined-domain", crab::outs()
                                     << "============ JOIN ==================";
@@ -1581,13 +1581,15 @@ public:
     return this->_product <= other._product;
   }
 
-  bool operator==(rnc_domain_t other) {
+  bool operator==(const rnc_domain_t &other) const {
     return this->_product == other._product;
   }
 
-  void operator|=(rnc_domain_t other) override { this->_product |= other._product; }
+  void operator|=(const rnc_domain_t &other) override {
+    this->_product |= other._product;
+  }
 
-  rnc_domain_t operator|(rnc_domain_t other) override {
+  rnc_domain_t operator|(const rnc_domain_t &other) const override {
     return rnc_domain_t(this->_product | other._product);
   }
 

@@ -680,7 +680,7 @@ public:
     }
   }
 
-  void operator|=(apron_domain_t o) override {
+  void operator|=(const apron_domain_t &o) override {
     crab::CrabStats::count(domain_name() + ".count.join");
     crab::ScopedCrabStats __st__(domain_name() + ".join");
 
@@ -689,15 +689,18 @@ public:
     else if (is_top() || o.is_bottom())
       return;
     else {
+      ap_state_ptr x =
+          apPtr(get_man(), ap_abstract0_copy(get_man(), &*o.m_apstate));
+      
       m_var_map = std::move(
-          merge_var_map(m_var_map, m_apstate, o.m_var_map, o.m_apstate));
+          merge_var_map(m_var_map, m_apstate, o.m_var_map, x));
       m_apstate =
-          apPtr(get_man(), ap_abstract0_join(get_man(), false, &*m_apstate,
-                                             &*o.m_apstate));
+          apPtr(get_man(), ap_abstract0_join(get_man(), false, &*m_apstate, &*x));
+                                             
     }
   }
 
-  apron_domain_t operator|(apron_domain_t o) override {
+  apron_domain_t operator|(const apron_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.join");
     crab::ScopedCrabStats __st__(domain_name() + ".join");
 
@@ -708,10 +711,11 @@ public:
     else {
       ap_state_ptr x =
           apPtr(get_man(), ap_abstract0_copy(get_man(), &*m_apstate));
-      var_map_t m = merge_var_map(m_var_map, x, o.m_var_map, o.m_apstate);
+      ap_state_ptr y =
+          apPtr(get_man(), ap_abstract0_copy(get_man(), &*o.m_apstate));
+      var_map_t m = merge_var_map(m_var_map, x, o.m_var_map, y);
       return apron_domain_t(
-          apPtr(get_man(),
-                ap_abstract0_join(get_man(), false, &*x, &*o.m_apstate)),
+          apPtr(get_man(), ap_abstract0_join(get_man(), false, &*x, &*y)),
           std::move(m));
     }
   }

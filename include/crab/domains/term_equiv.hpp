@@ -860,18 +860,18 @@ public:
     }
   }
 
-  // Optimized version of | that avoids some unnecessary copies
-  void operator|=(term_domain_t o) override {
+  void operator|=(const term_domain_t &o) override {
     crab::CrabStats::count(domain_name() + ".count.join");
     crab::ScopedCrabStats __st__(domain_name() + ".join");
 
     // Requires normalization of both operands
+    term_domain_t right(o);
     normalize();
-    o.normalize();
+    right.normalize();
 
-    if (is_bottom() || o.is_top()) {
-      *this = o;
-    } else if (o.is_bottom() || is_top()) {
+    if (is_bottom() || right.is_top()) {
+      *this = right;
+    } else if (right.is_bottom() || is_top()) {
       return;
     } else {
       // First, we need to compute the new term table.
@@ -882,15 +882,16 @@ public:
 
       var_map_t out_vmap;
       rev_var_map_t out_rvmap;
-      dom_var_alloc_t palloc(_alloc, o._alloc);
+      dom_var_alloc_t palloc(_alloc, right._alloc);
 
       // For each program variable in state, compute a generalization
       for (auto p : _var_map) {
         const variable_t &v = p.first;
-        term_id_t tx(term_of_var(v));
-        term_id_t ty(o.term_of_var(v));
+        //term_id_t tx(term_of_var(v));
+	term_id_t tx = p.second;
+        term_id_t ty(right.term_of_var(v));
 
-        term_id_t tz = _ttbl.generalize(o._ttbl, tx, ty, out_tbl, gener_map);
+        term_id_t tz = _ttbl.generalize(right._ttbl, tx, ty, out_tbl, gener_map);
         assert(tz < out_tbl.size());
         out_vmap[v] = tz;
         add_rev_var_map(out_rvmap, tz, v);
@@ -907,18 +908,18 @@ public:
         out_map.insert(std::make_pair(tz, vt));
 
         dom_var_t vx = domvar_of_term(txy.first);
-        dom_var_t vy = o.domvar_of_term(txy.second);
+        dom_var_t vy = right.domvar_of_term(txy.second);
 
         out_varnames.push_back(vt);
 
         _impl.assign(vt, vx);
-        o._impl.assign(vt, vy);
+        right._impl.assign(vt, vy);
       }
 
       _impl.project(out_varnames);
-      o._impl.project(out_varnames);
+      right._impl.project(out_varnames);
 
-      _impl |= o._impl;
+      _impl |= right._impl;
 
       for (auto p : out_vmap)
         out_tbl.add_ref(p.second);
@@ -932,18 +933,21 @@ public:
     }
   }
 
-  term_domain_t operator|(term_domain_t o) override {
+  term_domain_t operator|(const term_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.join");
     crab::ScopedCrabStats __st__(domain_name() + ".join");
 
+    term_domain_t left(*this);
+    term_domain_t right(o);
+    
     // Requires normalization of both operands
-    normalize();
-    o.normalize();
+    left.normalize();
+    right.normalize();
 
-    if (is_bottom() || o.is_top()) {
-      return o;
-    } else if (o.is_bottom() || is_top()) {
-      return *this;
+    if (left.is_bottom() || right.is_top()) {
+      return right;
+    } else if (right.is_bottom() || left.is_top()) {
+      return left;
     } else {
       // First, we need to compute the new term table.
       ttbl_t out_tbl;
@@ -952,23 +956,24 @@ public:
 
       var_map_t out_vmap;
       rev_var_map_t out_rvmap;
-      dom_var_alloc_t palloc(_alloc, o._alloc);
+      dom_var_alloc_t palloc(left._alloc, right._alloc);
 
       // For each program variable in state, compute a generalization
-      for (auto p : _var_map) {
+      for (auto p : left._var_map) {
         const variable_t &v = p.first;
-        term_id_t tx(term_of_var(v));
-        term_id_t ty(o.term_of_var(v));
+        //term_id_t tx(term_of_var(v));
+	term_id_t tx = p.second;
+        term_id_t ty = right.term_of_var(v);
 
-        term_id_t tz = _ttbl.generalize(o._ttbl, tx, ty, out_tbl, gener_map);
+        term_id_t tz = left._ttbl.generalize(right._ttbl, tx, ty, out_tbl, gener_map);
         assert(tz < out_tbl.size());
         out_vmap[v] = tz;
         add_rev_var_map(out_rvmap, tz, v);
       }
 
       // Rename the common terms together
-      dom_t x_impl(_impl);
-      dom_t y_impl(o._impl);
+      dom_t x_impl(left._impl);
+      dom_t y_impl(right._impl);
 
       // Perform the mapping
       term_map_t out_map;
@@ -979,8 +984,8 @@ public:
         dom_var_t vt(palloc.next());
         out_map.insert(std::make_pair(tz, vt));
 
-        dom_var_t vx = domvar_of_term(txy.first);
-        dom_var_t vy = o.domvar_of_term(txy.second);
+        dom_var_t vx = left.domvar_of_term(txy.first);
+        dom_var_t vy = right.domvar_of_term(txy.second);
 
         out_varnames.push_back(vt);
 

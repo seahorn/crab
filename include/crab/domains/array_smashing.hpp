@@ -152,9 +152,9 @@ public:
 
   bool operator<=(const array_smashing_t &other) const override { return (_inv <= other._inv); }
 
-  void operator|=(array_smashing_t other) override { _inv |= other._inv; }
+  void operator|=(const array_smashing_t &other) override { _inv |= other._inv; }
 
-  array_smashing_t operator|(array_smashing_t other) override {
+  array_smashing_t operator|(const array_smashing_t &other) const override {
     return array_smashing_t(_inv | other._inv);
   }
 
