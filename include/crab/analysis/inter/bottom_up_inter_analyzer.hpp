@@ -168,6 +168,10 @@ public:
   // -- original variable names.
   abs_domain_t get_sum() const { return m_sum; }
 
+  abs_domain_t make_top() const { return m_sum.make_top(); }
+
+  abs_domain_t make_bottom() const { return m_sum.make_bottom(); }
+  
   // return the input variables of the summary
   const std::vector<variable_t> &get_inputs() const { return m_inputs; }
 
@@ -522,7 +526,7 @@ public:
       /////
 
       // --- convert this->m_inv to the language of summ_abs_dom_t(summ)
-      summ_abs_domain_t caller_ctx_inv;
+      summ_abs_domain_t caller_ctx_inv = summ.make_top();
       convert_domains(this->m_inv, caller_ctx_inv);
       // forget the variables of the lhs of the callsite, otherwise
       // caller_ctx_inv and m_inv may be inconsistent if the lhs
