@@ -1,8 +1,10 @@
 #include "../program_options.hpp"
+#include "../common.hpp"
 
-#include "../crab_lang.hpp"
-#include "../crab_dom.hpp"
+#include <crab/cg/cg_bgl.hpp>
+#include <crab/analysis/graphs/sccg_bgl.hpp>
 
+// For top-down inter-procedural analysis parameters
 #include <crab/analysis/inter/top_down_inter_analyzer.hpp>
 
 /*
@@ -17,6 +19,7 @@ using namespace crab::cfg;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 using namespace crab::cg;
+using namespace crab::cg_impl;
 
 z_cfg_t* foo(z_var x, z_var y, z_var z) {
   function_decl<z_number, varname_t> decl("foo", {x,y}, {z});
@@ -45,37 +48,13 @@ z_cfg_t* m(z_var x, z_var y, z_var z)  {
   return cfg;
 }
 
-typedef call_graph<z_cfg_ref_t> callgraph_t;
-typedef call_graph_ref<callgraph_t> callgraph_ref_t;
-typedef top_down_inter_analyzer_parameters<callgraph_ref_t> inter_analyzer_params_t;
-
-template<typename InterAnalyzer, typename Dom>
-void run(callgraph_t& cg, Dom init) {
-  InterAnalyzer default_analyzer(cg, init);
-  default_analyzer.run(init);
-  // Print invariants
-  #if 0
-  for(auto &v: boost::make_iterator_range(cg.nodes())) {
-    auto cfg = v.get_cfg();
-    auto fdecl = cfg.get_func_decl();
-    crab::outs() << fdecl << "\n";      
-    for(auto &b : cfg) {
-      auto pre_inv = default_analyzer.get_pre(cfg, b.label());
-      auto post_inv = default_analyzer.get_post(cfg, b.label());
-      crab::outs() <<  crab::cfg_impl::get_label_str(b.label()) << ":\n"
-		   << "\t" << pre_inv << " ==>\n\t" << post_inv << "\n";
-    }
-    crab::outs() << "=================================\n";
-  }
-  #endif 
-  default_analyzer.print_checks(crab::outs());
-}
-
 int main(int argc, char** argv) {
   bool stats_enabled = false;
   if(!crab_tests::parse_user_options(argc,argv,stats_enabled)) {
       return 0;
   }
+
+  using inter_params_t = top_down_inter_analyzer_parameters<z_cg_ref_t> ;  
   variable_factory_t vfac;
   // Defining program variables
   z_var x(vfac["x"], crab::INT_TYPE, 32);
@@ -90,14 +69,12 @@ int main(int argc, char** argv) {
 	       << *t2 << "\n";
 
   vector<z_cfg_ref_t> cfgs({*t1, *t2});
-  callgraph_t cg(cfgs);
-  {
-    typedef top_down_inter_analyzer<callgraph_ref_t, z_sdbm_domain_t> inter_analyzer_t;
-    z_sdbm_domain_t init;
-    crab::outs() << "Running top-down inter-procedural analysis with "
-		 << init.domain_name() << "\n";
-    run<inter_analyzer_t>(cg, init);
-  }
+  z_sdbm_domain_t init;
+  crab::outs() << "Running top-down inter-procedural analysis with "
+	       << init.domain_name() << "\n";
+  z_cg_t cg(cfgs);
+  inter_params_t params;
+  td_inter_run(&cg, init, params, true, false, false);
   
   
   delete t1;

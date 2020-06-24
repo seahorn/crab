@@ -1,10 +1,11 @@
 #include "../program_options.hpp"
+#include "../common.hpp"
 
-#include "../crab_lang.hpp"
-#include "../crab_dom.hpp"
+#include <crab/cg/cg_bgl.hpp>
+#include <crab/analysis/graphs/sccg_bgl.hpp>
 
+// For top-down inter-procedural analysis parameters
 #include <crab/analysis/inter/top_down_inter_analyzer.hpp>
-
 
 using namespace std;
 using namespace crab::analyzer;
@@ -164,44 +165,7 @@ z_cfg_t* m(variable_factory_t &vfac)  {
 
 typedef call_graph<z_cfg_ref_t> callgraph_t;
 typedef call_graph_ref<callgraph_t> callgraph_ref_t;
-typedef top_down_inter_analyzer_parameters<callgraph_ref_t> inter_analyzer_params_t;
-
-template<typename InterAnalyzer, typename Dom>
-void run(callgraph_t& cg, Dom init) {
-  //////////////////////////////////////////////////////////  
-  // It should prove all assertions
-  /////////////////////////////////////////////////////////  
-  InterAnalyzer default_analyzer(cg, init);
-  default_analyzer.run(init);
-  // Print invariants
-  #if 0
-  for(auto &v: boost::make_iterator_range(cg.nodes())) {
-    auto cfg = v.get_cfg();
-    auto fdecl = cfg.get_func_decl();
-    crab::outs() << fdecl << "\n";      
-    for(auto &b : cfg) {
-      auto pre_inv = default_analyzer.get_pre(cfg, b.label());
-      auto post_inv = default_analyzer.get_post(cfg, b.label());
-      crab::outs() <<  crab::cfg_impl::get_label_str(b.label()) << ":\n"
-		   << "\t" << pre_inv << " ==>\n\t" << post_inv << "\n";
-    }
-    crab::outs() << "=================================\n";
-  }
-  #endif 
-  default_analyzer.print_checks(crab::outs());
-  
-  //////////////////////////////////////////////////////////
-  // It should NOT prove all assertions
-  //////////////////////////////////////////////////////////  
-  inter_analyzer_params_t params;
-  params.max_call_contexts = 3;  
-  params.checker_verbosity = 1;
-  
-  InterAnalyzer analyzer(cg, init, params);
-  analyzer.run(init);
-  analyzer.print_checks(crab::outs());
-  //////////////////////////////////////////////////////////
-}
+typedef top_down_inter_analyzer_parameters<callgraph_ref_t> inter_params_t;
 
 int main(int argc, char** argv) {
   bool stats_enabled = false;
@@ -224,35 +188,82 @@ int main(int argc, char** argv) {
   vector<z_cfg_ref_t> cfgs({*t1, *t2, *t3, *t4, *t5});
   callgraph_t cg(cfgs);
   {
-    typedef top_down_inter_analyzer<callgraph_ref_t, z_dbm_domain_t> inter_analyzer_t;
     z_dbm_domain_t init; 
     crab::outs() << "Running top-down inter-procedural analysis with "
 		 << init.domain_name() << "\n";
-    run<inter_analyzer_t>(cg, init);
+
+    /////////////////////////////////////////    
+    // it should prove all assertions
+    /////////////////////////////////////////    
+    inter_params_t params1;    
+    td_inter_run(&cg, init, params1, true, false, false);
+    /////////////////////////////////////////
+    // it should not prove all assertions
+    /////////////////////////////////////////    
+    inter_params_t params2;
+    params2.max_call_contexts = 3;  
+    params2.checker_verbosity = 1;
+    td_inter_run(&cg, init, params2, true, false, false);    
   }  
   {
-    typedef top_down_inter_analyzer<callgraph_ref_t, z_sdbm_domain_t> inter_analyzer_t;
-    z_sdbm_domain_t init; 
-    
+    z_sdbm_domain_t init;     
     crab::outs() << "Running top-down inter-procedural analysis with "
 		 << init.domain_name() << "\n";
-    run<inter_analyzer_t>(cg, init);
+
+    /////////////////////////////////////////    
+    // it should prove all assertions
+    /////////////////////////////////////////    
+    inter_params_t params1;    
+    td_inter_run(&cg, init, params1, true, false, false);
+    /////////////////////////////////////////
+    // it should not prove all assertions
+    /////////////////////////////////////////    
+    inter_params_t params2;
+    params2.max_call_contexts = 3;  
+    params2.checker_verbosity = 1;
+    td_inter_run(&cg, init, params2, true, false, false);    
+    
   }
 #ifdef HAVE_APRON   
   {
-    typedef top_down_inter_analyzer<callgraph_ref_t, z_oct_apron_domain_t> inter_analyzer_t;
     z_oct_apron_domain_t init;
     crab::outs() << "Running top-down inter-procedural analysis with "
-		 << init.domain_name() << "\n";    
-    run<inter_analyzer_t>(cg, init);
+		 << init.domain_name() << "\n";
+
+    
+    /////////////////////////////////////////    
+    // it should prove all assertions
+    /////////////////////////////////////////    
+    inter_params_t params1;    
+    td_inter_run(&cg, init, params1, true, false, false);
+    /////////////////////////////////////////
+    // it should not prove all assertions
+    /////////////////////////////////////////    
+    inter_params_t params2;
+    params2.max_call_contexts = 3;  
+    params2.checker_verbosity = 1;
+    td_inter_run(&cg, init, params2, true, false, false);    
+
   }
 #elif defined(HAVE_ELINA)
   {
-    typedef top_down_inter_analyzer<callgraph_ref_t, z_oct_elina_domain_t> inter_analyzer_t;
     z_oct_elina_domain_t init;
     crab::outs() << "Running top-down inter-procedural analysis with "
-		 << init.domain_name() << "\n";        
-    run<inter_analyzer_t>(cg, init);
+		 << init.domain_name() << "\n";
+
+    /////////////////////////////////////////    
+    // it should prove all assertions
+    /////////////////////////////////////////    
+    inter_params_t params1;    
+    td_inter_run(cg, init, params1, false);
+    /////////////////////////////////////////
+    // it should not prove all assertions
+    /////////////////////////////////////////    
+    inter_params_t params2;
+    params2.max_call_contexts = 3;  
+    params2.checker_verbosity = 1;
+    td_inter_run(cg, init, params2, false);    
+    
   }
 #endif
   

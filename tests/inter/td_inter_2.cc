@@ -1,10 +1,11 @@
 #include "../program_options.hpp"
+#include "../common.hpp"
 
-#include "../crab_lang.hpp"
-#include "../crab_dom.hpp"
+#include <crab/cg/cg_bgl.hpp>
+#include <crab/analysis/graphs/sccg_bgl.hpp>
 
+// For top-down inter-procedural analysis parameters
 #include <crab/analysis/inter/top_down_inter_analyzer.hpp>
-
 
 using namespace std;
 using namespace crab::analyzer;
@@ -12,6 +13,7 @@ using namespace crab::cfg;
 using namespace crab::cfg_impl;
 using namespace crab::domain_impl;
 using namespace crab::cg;
+using namespace crab::cg_impl;
 
 z_cfg_t* f_loop (variable_factory_t &vfac) {
   // Defining program variables
@@ -72,11 +74,15 @@ z_cfg_t* m(variable_factory_t &vfac)  {
   return cfg;
 }
 
+
 int main (int argc, char** argv) {
   bool stats_enabled = false;
   if (!crab_tests::parse_user_options(argc,argv,stats_enabled)) {
       return 0;
   }
+
+  using inter_params_t = top_down_inter_analyzer_parameters<z_cg_ref_t> ;
+  
   variable_factory_t vfac;
   z_cfg_t* t1 = f_loop(vfac);
   z_cfg_t* t2 = m(vfac);
@@ -85,43 +91,14 @@ int main (int argc, char** argv) {
 	       << *t2 << "\n";
 
   vector<z_cfg_ref_t> cfgs({*t1, *t2});
-  typedef call_graph<z_cfg_ref_t> callgraph_t;
-  typedef call_graph_ref<callgraph_t> callgraph_ref_t;
-  typedef top_down_inter_analyzer<callgraph_ref_t, z_dbm_domain_t> inter_analyzer_t;
-  typedef top_down_inter_analyzer_parameters<callgraph_ref_t> inter_params_t;        
 
   inter_params_t params;
   params.max_call_contexts = 5;
   z_dbm_domain_t init;
-  callgraph_t cg(cfgs);  
-  inter_analyzer_t analyzer(cg, init, params);
-  analyzer.run(init);
+  z_cg_t cg(cfgs);
 
-  // TODO: fix order of cg traversal
-  for (auto &v: boost::make_iterator_range(cg.nodes())) {
-    auto cfg = v.get_cfg();
-    auto fdecl = cfg.get_func_decl();
-    crab::outs() << fdecl << "\n";
+  td_inter_run(&cg, init, params, false, true, false); 
 
-    // Print invariants in DFS to enforce a fixed order
-    std::set<crab::cfg_impl::basic_block_label_t> visited;
-    std::vector<crab::cfg_impl::basic_block_label_t> worklist;
-    worklist.push_back(cfg.entry());
-    visited.insert(cfg.entry());
-    while (!worklist.empty()) {
-      auto cur_label = worklist.back();
-      worklist.pop_back();
-      auto inv = analyzer.get_pre(cfg, cur_label);
-      crab::outs() << crab::cfg_impl::get_label_str (cur_label) << "=" << inv << "\n";
-      auto const &cur_node = cfg.get_node (cur_label);
-      for (auto const kid_label : boost::make_iterator_range (cur_node.next_blocks ())) {
-	if (visited.insert(kid_label).second) {
-	  worklist.push_back(kid_label);
-	}
-      }
-    }
-    crab::outs() << "=================================\n";
-  }
   
   delete t1;
   delete t2;
