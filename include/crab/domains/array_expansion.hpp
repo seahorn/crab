@@ -760,7 +760,7 @@ private:
   // the right type.
   void do_assign(variable_t lhs, variable_t rhs) {
     if (lhs.get_type() != rhs.get_type()) {
-      CRAB_ERROR("array_adaptive assignment with different types");
+      CRAB_ERROR("array_expansion assignment with different types");
     }
     switch (lhs.get_type()) {
     case BOOL_TYPE:
@@ -771,14 +771,14 @@ private:
       _inv.assign(lhs, rhs);
       break;
     default:;
-      CRAB_ERROR("array_adaptive assignment with unexpected array element type");
+      CRAB_ERROR("array_expansion assignment with unexpected array element type");
     }
   }
 
   // helper to assign a cell into a variable
   void do_assign(variable_t lhs, cell_t rhs_c) {
     if (!rhs_c.has_scalar()) {
-      CRAB_ERROR("array_adaptive cell without scalar");
+      CRAB_ERROR("array_expansion cell without scalar");
     }
     variable_t rhs = rhs_c.get_scalar();
     do_assign(lhs, rhs);
@@ -787,7 +787,7 @@ private:
   // helper to assign a linear expression into a cell
   void do_assign(cell_t lhs_c, linear_expression_t v) {
     if (!lhs_c.has_scalar()) {
-      CRAB_ERROR("array_adaptive cell without scalar");
+      CRAB_ERROR("array_expansion cell without scalar");
     }
     variable_t lhs = lhs_c.get_scalar();
     switch (lhs.get_type()) {
@@ -807,7 +807,7 @@ private:
       _inv.assign(lhs, v);
       break;
     default:;
-      CRAB_ERROR("array_adaptive assignment with unexpected array element type");
+      CRAB_ERROR("array_expansion assignment with unexpected array element type");
     }
   }
 
@@ -816,7 +816,7 @@ private:
   void do_backward_assign(variable_t lhs, variable_t rhs,
                           const content_domain_t &dom) {
     if (lhs.get_type() != rhs.get_type()) {
-      CRAB_ERROR("array_adaptive backward assignment with different types");
+      CRAB_ERROR("array_expansion backward assignment with different types");
     }
     switch (lhs.get_type()) {
     case BOOL_TYPE:
@@ -827,14 +827,14 @@ private:
       _inv.backward_assign(lhs, rhs, dom);
       break;
     default:;
-      CRAB_ERROR("array_adaptive backward_assignment with unexpected array element type");
+      CRAB_ERROR("array_expansion backward_assignment with unexpected array element type");
     }
   }
 
   // helper to assign backward a cell into a variable
   void do_backward_assign(variable_t lhs, cell_t rhs_c, const content_domain_t &dom) {
     if (!rhs_c.has_scalar()) {
-      CRAB_ERROR("array_adaptive cell without scalar");
+      CRAB_ERROR("array_expansion cell without scalar");
     }
     variable_t rhs = rhs_c.get_scalar();
     do_backward_assign(lhs, rhs, dom);
@@ -844,7 +844,7 @@ private:
   void do_backward_assign(cell_t lhs_c, linear_expression_t v,
                           const content_domain_t &dom) {
     if (!lhs_c.has_scalar()) {
-      CRAB_ERROR("array_adaptive cell without scalar");
+      CRAB_ERROR("array_expansion cell without scalar");
     }
     variable_t lhs = lhs_c.get_scalar();
     switch (lhs.get_type()) {
@@ -866,20 +866,36 @@ private:
       _inv.backward_assign(lhs, v, dom);
       break;
     default:;
-      CRAB_ERROR("array_adaptive backward assignment with unexpected array element type");
+      CRAB_ERROR("array_expansion backward assignment with unexpected array element type");
     }
   }
 
 public:
-  array_expansion_domain() : _inv(NumDomain::top()) {}
+  array_expansion_domain() {
+    _inv.set_to_top();
+  }
 
+  array_expansion_domain make_top() const override {
+    NumDomain inv;
+    array_expansion_domain out(inv.make_top());
+    return out;
+  }
+  
+  array_expansion_domain make_bottom() const override {
+    NumDomain inv;
+    array_expansion_domain out(inv.make_bottom());
+    return out;
+  }
+  
   void set_to_top() override {
-    array_expansion_domain abs(NumDomain::top());
+    NumDomain inv;
+    array_expansion_domain abs(inv.make_top());
     std::swap(*this, abs);
   }
 
   void set_to_bottom() override {
-    array_expansion_domain abs(NumDomain::bottom());
+    NumDomain inv;    
+    array_expansion_domain abs(inv.make_bottom());
     std::swap(*this, abs);
   }
 
@@ -1578,7 +1594,7 @@ public:
   void write(crab_os &o) const override { o << _inv; }
 
   std::string domain_name() const override {
-    std::string name("ArrayExpansion(" + NumDomain::getDomainName() + ")");
+    std::string name("ArrayExpansion(" + _inv.domain_name() + ")");
     return name;
   }
 

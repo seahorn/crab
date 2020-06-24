@@ -881,6 +881,16 @@ public:
     return *this;
   }
 
+  elina_domain_t make_top() const override {
+    elina_domain_t out(false);
+    return out;
+  }
+
+  elina_domain_t make_bottom() const override {
+    elina_domain_t out(true);
+    return out;
+  }
+  
   void set_to_top() override {
     elina_domain_t abs(false);
     std::swap(*this, abs);

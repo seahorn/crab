@@ -294,6 +294,7 @@ public:
   }
 
 public:
+
   void set_to_bottom() {
     _vert_map.clear();
     _rev_map.clear();
@@ -302,10 +303,19 @@ public:
     _is_bottom = true;
   }
 
-  static array_graph_t top() { return array_graph_t(false); }
+  void set_to_top() {
+    array_graph_t dom = make_top();
+    std::swap(*this, dom);
+  }
+  
+  array_graph_t make_top() const {
+    return  array_graph_t(false);
+  }
 
-  static array_graph_t bottom() { return array_graph_t(true); }
-
+  array_graph_t make_bottom() const {
+    return  array_graph_t(true);
+  }
+  
   bool is_bottom() const { return _is_bottom; }
 
   bool is_top() const {
@@ -576,13 +586,11 @@ public:
   array_graph_t meet_or_narrowing(const array_graph_t &o, bool is_meet,
                                   const std::string op) const {
 
-    if (is_bottom() || o.is_bottom())
-      return bottom();
-    else if (is_top())
-      return o;
-    else if (o.is_top())
+    if (is_bottom() || o.is_top()) {
       return *this;
-    else {
+    } else if (is_top() || o.is_bottom()) {
+      return o;
+    } else {
       CRAB_LOG("array-sgraph", crab::outs() << "Before " << op << ":\n"
                                             << "Graph 1\n"
                                             << *this << "\n"
@@ -1263,6 +1271,16 @@ private:
   lm_prime_const_range cst_lm_primes() const {
     return boost::make_iterator_range(cst_lm_prime_begin(), cst_lm_prime_end());
   }
+
+  Content make_content_bottom() const {
+    Content dom;
+    return dom.make_bottom();
+  }
+
+  Content make_content_top() const {
+    Content dom;
+    return dom.make_top();
+  }
   
 public:
   template <class CFG> static void do_initialization(CFG cfg) {
@@ -1478,15 +1496,15 @@ private:
   // Return the weight from the edge (i, i') otherwise top
   Content array_edge(variable_t i) {
     if (is_bottom())
-      return Content::bottom();
+      return make_content_bottom();
     if (is_top() || !is_landmark(i))
-      return Content::top();
+      return make_content_top();
 
     mut_val_ref_t wi;
     if (_g.lookup_edge(landmark_ref_t(i), get_landmark_prime(i), &wi))
       return (Content)wi;
     else
-      return Content::top();
+      return make_content_top();
   }
 
   // Remove v from the edge (i,i')
@@ -1597,16 +1615,16 @@ private:
     //// x_old' has all the x' predecessors and successors
     _g.expand(lm_x_prime, lm_x_old_prime);
     //// edges between x and x_old
-    _g.update_edge(lm_x, Content::bottom(), lm_x_old);
-    _g.update_edge(lm_x_old, Content::bottom(), lm_x);
+    _g.update_edge(lm_x, make_content_bottom(), lm_x_old);
+    _g.update_edge(lm_x_old, make_content_bottom(), lm_x);
     //// edges between x' and x_old'
-    _g.update_edge(lm_x_prime, Content::bottom(), lm_x_old_prime);
-    _g.update_edge(lm_x_old_prime, Content::bottom(), lm_x_prime);
+    _g.update_edge(lm_x_prime, make_content_bottom(), lm_x_old_prime);
+    _g.update_edge(lm_x_old_prime, make_content_bottom(), lm_x_prime);
     //// edges between x_old and x_old'
     mut_val_ref_t w;
     if (_g.lookup_edge(lm_x, lm_x_prime, &w))
       _g.update_edge(lm_x_old, (Content)w, lm_x_old_prime);
-    _g.update_edge(lm_x_old_prime, Content::bottom(), lm_x_old);
+    _g.update_edge(lm_x_old_prime, make_content_bottom(), lm_x_old);
 
     /// --- Remove x and x'
     _g -= lm_x;
@@ -1734,7 +1752,7 @@ private:
     landmark_ref_t lm_src(src);
     landmark_ref_t lm_dst(dst);
 
-    Content w = Content::top();
+    Content w; // top
     array_graph_impl::propagate_between_weight_and_scalar(
         _scalar, val, arr.get_type(), w, arr);
     _g.update_edge(lm_src, w, lm_dst);
@@ -1819,7 +1837,7 @@ private:
           //   - if i < j  unsat then i' < j unsat.
           //   - if i < j' unsat then i' < j unsat.
           if ((lm_s == lm_d) || solve.is_unsat(make_lt_cst(lm_s, lm_d))) {
-            g.update_edge(lm_s, Content::bottom(), lm_d);
+            g.update_edge(lm_s, make_content_bottom(), lm_d);
           }
         }
     }
@@ -1832,27 +1850,34 @@ public:
     s_cst_landmarks.clear();
   }
 
+  array_graph_domain_t make_top() const override {
+    array_graph_domain_t out(false);
+    return out;
+  }
+  
+  array_graph_domain_t make_bottom() const override {
+    array_graph_domain_t out(true);
+    return out;
+  }
+
   void set_to_top() override {
-    array_graph_domain_t abs(false);
-    std::swap(*this, abs);
+    _scalar.set_to_top();
+    _expressions.set_to_top();
+    _g.set_to_top();
   }
 
   void set_to_bottom() override {
-    _scalar = NumDom::bottom();
-    _expressions = expression_domain_t::bottom();
+    _scalar.set_to_bottom();
+    _expressions.set_to_bottom();
     _g.set_to_bottom();
   }
 
-  // void set_to_bottom() {
-  //   array_graph_domain_t abs(true);
-  // 	std::swap(*this, abs);
-  // }
-
-  array_graph_domain(bool is_bottom = false)
-      : _scalar(NumDom::top()), _expressions(expression_domain_t::top()),
-        _g(array_graph_t::top()) {
-    if (is_bottom)
+  array_graph_domain(bool is_bottom = false) {
+    if (is_bottom) {
       set_to_bottom();
+    } else {
+      set_to_top();
+    }
   }
 
   array_graph_domain(const NumDom &s, const expression_domain_t &e,
@@ -1948,7 +1973,7 @@ public:
     auto widen_g(_g.widening_thresholds(o._g, ts));
     if (!reduce(widen_scalar, widen_g)) {
       CRAB_LOG("array-sgraph-domain", crab::outs() << "_|_\n";);
-      return array_graph_domain_t::bottom();
+      return make_bottom();
     } else {
       array_graph_domain_t widen(widen_scalar, widen_expr, widen_g);
       CRAB_LOG("array-sgraph-domain", crab::outs() << widen << "\n";);
@@ -1967,7 +1992,7 @@ public:
     auto widen_g(_g || o._g);
     if (!reduce(widen_scalar, widen_g)) {
       CRAB_LOG("array-sgraph-domain", crab::outs() << "_|_\n";);
-      return array_graph_domain_t::bottom();
+      return make_bottom();
     } else {
       array_graph_domain_t widen(widen_scalar, widen_expr, widen_g);
       CRAB_LOG("array-sgraph-domain", crab::outs() << widen << "\n";);
@@ -1986,7 +2011,7 @@ public:
     auto meet_g(_g & o._g);
     if (!reduce(meet_scalar, meet_g)) {
       CRAB_LOG("array-sgraph-domain", crab::outs() << "_|_\n";);
-      return array_graph_domain_t::bottom();
+      return make_bottom();
     } else {
       array_graph_domain_t meet(meet_scalar, meet_expr, meet_g);
       CRAB_LOG("array-sgraph-domain", crab::outs() << meet << "\n";);
@@ -2005,7 +2030,7 @@ public:
     auto narrow_g(_g && o._g);
     if (!reduce(narrow_scalar, narrow_g)) {
       CRAB_LOG("array-sgraph-domain", crab::outs() << "_|_\n";);
-      return array_graph_domain_t::bottom();
+      return make_bottom();
     } else {
       array_graph_domain_t narrow(narrow_scalar, narrow_expr, narrow_g);
       CRAB_LOG("array-sgraph-domain", crab::outs() << narrow << "\n";);
@@ -2405,7 +2430,7 @@ public:
       return;
     }
 
-    Content w = Content::top();
+    Content w; // top
     array_graph_impl::propagate_between_weight_and_scalar(_scalar, val,
                                                           a.get_type(), w, a);
 
@@ -2514,8 +2539,9 @@ public:
   }
 
   std::string domain_name() const override {
-    std::string name("ArrayGraph(" + NumDom::getDomainName() + "," +
-                     Content::getDomainName() + ")");
+    Content content;
+    std::string name("ArrayGraph(" + _scalar.domain_name() + "," +
+                     content.domain_name() + ")");
     return name;
   }
 };

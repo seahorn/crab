@@ -682,6 +682,14 @@ private:
   }
 
 public:
+  reference_domain_t make_top() const override {
+    return reference_domain_t(true);
+  }
+
+  reference_domain_t make_bottom() const override {
+    return reference_domain_t(false);
+  }
+  
   void set_to_top() override {
     reference_domain_t abs(true);
     std::swap(*this, abs);
@@ -1790,7 +1798,7 @@ public:
   }
 
   std::string domain_name() const override {
-    return "ReferenceDomain(" + base_abstract_domain_t::getDomainName() + ")";
+    return "ReferenceDomain(" + m_base_dom.domain_name() + ")";
   }
 
   void write(crab_os &o) const override {

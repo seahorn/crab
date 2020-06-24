@@ -49,15 +49,17 @@ private:
     if (!this->_is_bottom) {
       this->_is_bottom = this->_first.is_bottom() || this->_second.is_bottom();
       if (this->_is_bottom) {
-        this->_first = Domain1::bottom();
-        this->_second = Domain2::bottom();
+        this->_first.set_to_bottom();
+        this->_second.set_to_bottom();
       }
     }
   }
 
 public:
-  basic_domain_product2()
-      : _is_bottom(false), _first(Domain1::top()), _second(Domain2::top()) {}
+  basic_domain_product2(): _is_bottom(false) {
+    _first.set_to_top();
+    _second.set_to_top();
+  }
 
   basic_domain_product2(Domain1 &&first, Domain2 &&second,
                         bool &&apply_reduction = true)
@@ -74,14 +76,34 @@ public:
   basic_domain_product2_t &operator=(const basic_domain_product2_t &other)  = default;
   basic_domain_product2_t &operator=(basic_domain_product2_t &&other) = default;
 
-  static basic_domain_product2_t top() {
-    return basic_domain_product2_t(Domain1::top(), Domain2::top());
+  basic_domain_product2_t make_top() const {
+    Domain1 dom1;
+    Domain2 dom2;
+    dom1.set_to_top();
+    dom2.set_to_top();
+    return basic_domain_product2_t(std::move(dom1), std::move(dom2));
   }
 
-  static basic_domain_product2_t bottom() {
-    return basic_domain_product2_t(Domain1::bottom(), Domain2::bottom());
+  basic_domain_product2_t make_bottom() const {
+    Domain1 dom1;
+    Domain2 dom2;
+    dom1.set_to_bottom();
+    dom2.set_to_bottom();
+    return basic_domain_product2_t(std::move(dom1), std::move(dom2));
   }
 
+  void set_to_top() {
+    _is_bottom = false;
+    _first.set_to_top();
+    _second.set_to_top();
+  }
+  
+  void set_to_bottom() {
+    _is_bottom = true;
+    _first.set_to_bottom();
+    _second.set_to_bottom();
+  }
+  
   bool is_bottom() const {
     //this->canonicalize();
     // return this->_is_bottom;
@@ -157,8 +179,10 @@ public:
   }
 
   basic_domain_product2_t operator&(const basic_domain_product2_t &other) const {
-    if (this->is_bottom() || other.is_bottom()) {
-      return bottom();
+    if (is_bottom() || other.is_top()) {
+      return *this;
+    } else if (other.is_bottom() || is_top()) {
+      return other;
     } else {
       return basic_domain_product2_t(this->_first & other._first,
                                      this->_second & other._second);
@@ -166,8 +190,10 @@ public:
   }
 
   basic_domain_product2_t operator&&(const basic_domain_product2_t &other) const {
-    if (this->is_bottom() || other.is_bottom()) {
-      return bottom();
+    if (is_bottom() || other.is_top()) {
+      return *this;
+    } else if (other.is_bottom() || is_top()) {
+      return other;
     } else {
       return basic_domain_product2_t(this->_first && other._first,
                                      this->_second && other._second);
@@ -186,12 +212,13 @@ public:
     dom.write(o);
     return o;
   }
-  
-  static std::string getDomainName() {
-    std::string name = "Product(" + Domain1::getDomainName() + "," +
-                       Domain2::getDomainName() + ")";
+
+  std::string domain_name() const {
+    std::string name = "Product(" + _first.domain_name() + "," +
+      _second.domain_name() + ")";
     return name;
   }
+  
 }; // class basic_domain_product2
 
 // Provided by Ikos
@@ -230,19 +257,32 @@ private:
   void reduce() {
     if (this->_product.first().is_bottom() ||
         this->_product.second().is_bottom()) {
-      _product = basic_domain_product2_t::bottom();
+      _product.set_to_bottom();
     }
   }
 
 public:
+
+  domain_product2_t make_top() const override {
+    basic_domain_product2_t dom_prod;
+    return domain_product2_t(dom_prod.make_top());
+  }
+
+  domain_product2_t make_bottom() const override {
+    basic_domain_product2_t dom_prod;
+    return domain_product2_t(dom_prod.make_bottom());
+  }
+  
   void set_to_top() override {
-    domain_product2_t abs(basic_domain_product2_t::top());
-    std::swap(*this, abs);
+    basic_domain_product2_t dom_prod;    
+    domain_product2_t dom(dom_prod.make_top());
+    std::swap(*this, dom);
   }
 
   void set_to_bottom() override {
-    domain_product2_t abs(basic_domain_product2_t::bottom());
-    std::swap(*this, abs);
+    basic_domain_product2_t dom_prod;        
+    domain_product2_t dom(dom_prod.make_bottom());
+    std::swap(*this, dom);
   }
 
   domain_product2() : _product() {}
@@ -567,7 +607,8 @@ public:
   }
 
   virtual void apply_binary_bool(bool_operation_t op,
-				 const variable_t &x, const variable_t &y, const variable_t &z) override {
+				 const variable_t &x, const variable_t &y,
+				 const variable_t &z) override {
     this->_product.first().apply_binary_bool(op, x, y, z);
     this->_product.second().apply_binary_bool(op, x, y, z);
     this->reduce();
@@ -679,7 +720,7 @@ public:
   void write(crab::crab_os &o) const override { this->_product.write(o); }
 
   std::string domain_name() const override {
-    return basic_domain_product2_t::getDomainName();
+    return this->_product.domain_name();
   }
 
 }; // class domain_product2
@@ -876,13 +917,26 @@ private:
   }
 
 public:
+
+  reduced_numerical_domain_product2_t make_top() const override {
+    domain_product2_t dom_prod;
+    return reduced_numerical_domain_product2_t(dom_prod.make_top());
+  }
+
+  reduced_numerical_domain_product2_t make_bottom() const override {
+    domain_product2_t dom_prod;
+    return reduced_numerical_domain_product2_t(dom_prod.make_bottom());
+  }
+  
   void set_to_top() override {
-    reduced_numerical_domain_product2_t abs(domain_product2_t::top());
+    domain_product2_t dom_prod;
+    reduced_numerical_domain_product2_t abs(dom_prod.make_top());
     std::swap(*this, abs);
   }
 
   void set_to_bottom() override {
-    reduced_numerical_domain_product2_t abs(domain_product2_t::bottom());
+    domain_product2_t dom_prod;    
+    reduced_numerical_domain_product2_t abs(dom_prod.make_bottom());
     std::swap(*this, abs);
   }
 
@@ -903,9 +957,6 @@ public:
   bool is_bottom() const override { return this->_product.is_bottom(); }
 
   bool is_top() const override { return this->_product.is_top(); }
-
-  //Domain1 &first() { return this->_product.first(); }
-  //Domain2 &second() { return this->_product.second(); }
 
   bool operator<=(const reduced_numerical_domain_product2_t &other) const override {
     return this->_product <= other._product;
@@ -1201,8 +1252,11 @@ public:
   }
 
   std::string domain_name() const override {
-    std::string name = "ReducedProduct(" + Domain1::getDomainName() + "," +
-                       Domain2::getDomainName() + ")";
+    const Domain1 &dom1 = _product.first();
+    const Domain2 &dom2 = _product.second();
+    
+    std::string name = "ReducedProduct(" + dom1.domain_name() + "," +
+      dom2.domain_name() + ")";
     return name;
   }
 
@@ -1542,13 +1596,27 @@ private:
   }
 
 public:
+
+  rnc_domain_t make_top() const override {
+    domain_product2_t dom_prod;
+    return rnc_domain_t(dom_prod.make_top());    
+    
+  }
+  
+  rnc_domain_t make_bottom() const override {
+    domain_product2_t dom_prod;
+    return rnc_domain_t(dom_prod.make_bottom());
+  }
+  
   void set_to_top() override {
-    rnc_domain_t abs(domain_product2_t::top());
+    domain_product2_t dom_prod;
+    rnc_domain_t abs(dom_prod.make_top());
     std::swap(*this, abs);
   }
 
   void set_to_bottom() override {
-    rnc_domain_t abs(domain_product2_t::bottom());
+    domain_product2_t dom_prod;
+    rnc_domain_t abs(dom_prod.make_bottom());
     std::swap(*this, abs);
   }
 
@@ -1567,9 +1635,6 @@ public:
   bool is_bottom() const override { return this->_product.is_bottom(); }
 
   bool is_top() const override { return this->_product.is_top(); }
-
-  //NumAbsDom &first() { return this->_product.first(); }
-  //congruence_domain_t &second() { return this->_product.second(); }
 
   bool operator<=(const rnc_domain_t &other) const override {
     return this->_product <= other._product;
@@ -1800,7 +1865,7 @@ public:
   }
 
   std::string domain_name() const override {
-    return domain_product2_t::getDomainName();
+    return _product.domain_name();
   }
 
   void rename(const variable_vector_t &from, const variable_vector_t &to) override {

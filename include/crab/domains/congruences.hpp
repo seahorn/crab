@@ -751,6 +751,15 @@ private:
   congruence_domain(separate_domain_t env) : _env(env) {}
 
 public:
+
+  congruence_domain_t make_top() const override {
+    return congruence_domain_t(separate_domain_t::top());
+  }
+
+  congruence_domain_t make_bottom() const override {
+    return congruence_domain_t(separate_domain_t::bottom());    
+  }
+  
   void set_to_top() override {
     congruence_domain abs(separate_domain_t::top());
     std::swap(*this, abs);

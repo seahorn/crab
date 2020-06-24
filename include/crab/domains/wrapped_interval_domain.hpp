@@ -1347,6 +1347,16 @@ private:
   }
 
 public:
+
+
+  wrapped_interval_domain_t make_top() const override {
+    return wrapped_interval_domain_t(separate_domain_t::top());
+  }
+
+  wrapped_interval_domain_t make_bottom() const override {
+    return wrapped_interval_domain_t(separate_domain_t::bottom());    
+  }
+  
   void set_to_top() override {
     wrapped_interval_domain abs(separate_domain_t::top());
     std::swap(*this, abs);
@@ -2259,14 +2269,35 @@ private:
   }
 
 public:
+
+
+  this_type make_top() const override {
+    wrapped_interval_domain_t wid; 
+    wid.set_to_top();
+    return this_type(wid, separate_domain_t::top(),
+		     discrete_domain_t::bottom() /*empty set*/);
+  }
+
+  this_type make_bottom() const override {
+    wrapped_interval_domain_t wid; 
+    wid.set_to_bottom();
+    return this_type(wid, separate_domain_t::bottom(),
+		     discrete_domain_t::bottom() /*empty set*/);
+  }
+
   void set_to_top() override {
-    this_type abs(wrapped_interval_domain_t::top(), separate_domain_t::top(),
+    wrapped_interval_domain_t wid;
+    wid.set_to_top();
+    this_type abs(wid, separate_domain_t::top(),
                   discrete_domain_t::bottom() /*empty set*/);
     std::swap(*this, abs);
   }
 
   void set_to_bottom() override {
-    this_type abs(wrapped_interval_domain_t::bottom(),
+    wrapped_interval_domain_t wid;
+    wid.set_to_bottom();
+    
+    this_type abs(wid,
                   separate_domain_t::bottom(),
                   discrete_domain_t::bottom() /*empty set*/);
     std::swap(*this, abs);
@@ -3063,13 +3094,31 @@ private:
   }
 
 public:
+
+
+  wrapped_numerical_domain_t make_top() const override {
+    domain_product2_t dom_prod;
+    dom_prod.set_to_top();
+    return wrapped_numerical_domain_t(dom_prod);
+  }
+
+  wrapped_numerical_domain_t make_bottom() const override {
+    domain_product2_t dom_prod;
+    dom_prod.set_to_bottom();
+    return wrapped_numerical_domain_t(dom_prod);
+  }
+  
   void set_to_top() override {
-    wrapped_numerical_domain_t abs(domain_product2_t::top());
+    domain_product2_t dom_prod;
+    dom_prod.set_to_top();    
+    wrapped_numerical_domain_t abs(dom_prod);
     std::swap(*this, abs);
   }
 
   void set_to_bottom() override {
-    wrapped_numerical_domain_t abs(domain_product2_t::bottom());
+    domain_product2_t dom_prod;
+    dom_prod.set_to_bottom();    
+    wrapped_numerical_domain_t abs(dom_prod);
     std::swap(*this, abs);
   }
 
@@ -3464,7 +3513,7 @@ public:
   }
 
   std::string domain_name() const override {
-    return domain_product2_t::getDomainName();
+    return _product.domain_name();
   }
 
   void rename(const variable_vector_t &from, const variable_vector_t &to) override {

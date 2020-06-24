@@ -110,15 +110,31 @@ private:
   }
 
 public:
-  array_smashing() : _inv(NumDomain::top()) {}
+  array_smashing() {
+    _inv.set_to_top();
+  }
 
+  array_smashing make_top() const override {
+    NumDomain inv;
+    array_smashing out(inv.make_top());
+    return out;
+  }
+  
+  array_smashing make_bottom() const override {
+    NumDomain inv;
+    array_smashing out(inv.make_bottom());
+    return out;
+  }
+  
   void set_to_top() override {
-    array_smashing abs(NumDomain::top());
+    NumDomain inv;    
+    array_smashing abs(inv.make_top());
     std::swap(*this, abs);
   }
 
   void set_to_bottom() override {
-    array_smashing abs(NumDomain::bottom());
+    NumDomain inv;        
+    array_smashing abs(inv.make_bottom());
     std::swap(*this, abs);
   }
 
@@ -492,7 +508,7 @@ public:
   void write(crab_os &o) const override { o << _inv; }
 
   std::string domain_name() const override {
-    std::string name("ArraySmashing(" + NumDomain::getDomainName() + ")");
+    std::string name("ArraySmashing(" + _inv.domain_name() + ")");
     return name;
   }
 

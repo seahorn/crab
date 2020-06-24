@@ -763,6 +763,15 @@ private:
   }
 
 public:
+
+  term_domain_t make_top() const override {
+    return term_domain_t(true);
+  }
+  
+  term_domain_t make_bottom() const override {
+    return term_domain_t(false);
+  }
+   
   void set_to_top() override {
     term_domain abs(true);
     std::swap(*this, abs);
@@ -1043,14 +1052,11 @@ public:
     crab::ScopedCrabStats __st__(domain_name() + ".meet");
 
     // Does not require normalization of any of the two operands
-    if (is_bottom() || o.is_bottom()) {
-      return term_domain_t::bottom();
-    } else if (is_top()) {
-      return o;
-    } else if (o.is_top()) {
+    if (is_bottom() || o.is_top()) {
       return *this;
+    } else if (is_top() || o.is_bottom()) {
+      return o;
     } else {
-
       ttbl_t out_ttbl(_ttbl);
       std::map<term_id_t, term_id_t> copy_map;
       // bring all terms to one ttbl
@@ -1848,7 +1854,7 @@ public:
   }
 
   std::string domain_name() const override {
-    std::string name("Term(" + dom_t::getDomainName() + ")");
+    std::string name("Term(" + _impl.domain_name() + ")");
     return name;
   }
 

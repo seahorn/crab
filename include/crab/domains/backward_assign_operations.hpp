@@ -51,8 +51,8 @@ public:
   // x := e
   static void assign(AbsDom &dom, const variable_t &x, const linear_expression_t &e,
                      const AbsDom &inv) {
-    crab::CrabStats::count(AbsDom::getDomainName() + ".count.backward_assign");
-    crab::ScopedCrabStats __st__(AbsDom::getDomainName() + ".backward_assign");
+    crab::CrabStats::count(dom.domain_name() + ".count.backward_assign");
+    crab::ScopedCrabStats __st__(dom.domain_name() + ".backward_assign");
 
     if (dom.is_bottom())
       return;
@@ -76,8 +76,8 @@ public:
   // x := y op k
   static void apply(AbsDom &dom, arith_operation_t op, const variable_t &x, const variable_t &y,
                     number_t k, const AbsDom &inv) {
-    crab::CrabStats::count(AbsDom::getDomainName() + ".count.backward_apply");
-    crab::ScopedCrabStats __st__(AbsDom::getDomainName() + ".backward_apply");
+    crab::CrabStats::count(dom.domain_name() + ".count.backward_apply");
+    crab::ScopedCrabStats __st__(dom.domain_name() + ".backward_apply");
 
     if (dom.is_bottom()) {
       return;
@@ -137,8 +137,8 @@ public:
   static void apply(AbsDom &dom, arith_operation_t op,
 		    const variable_t &x, const variable_t &y,
                     const variable_t &z, const AbsDom &inv) {
-    crab::CrabStats::count(AbsDom::getDomainName() + ".count.backward_apply");
-    crab::ScopedCrabStats __st__(AbsDom::getDomainName() + ".backward_apply");
+    crab::CrabStats::count(dom.domain_name() + ".count.backward_apply");
+    crab::ScopedCrabStats __st__(dom.domain_name() + ".backward_apply");
 
     if (dom.is_bottom()) {
       return;

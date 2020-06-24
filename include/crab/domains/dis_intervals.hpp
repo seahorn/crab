@@ -1093,6 +1093,15 @@ private:
   dis_interval_domain(separate_domain_t env) : _env(env) {}
 
 public:
+
+  dis_interval_domain_t make_top() const override {
+    return dis_interval_domain_t(separate_domain_t::top());
+  }
+
+  dis_interval_domain_t make_bottom() const override {
+    return dis_interval_domain_t(separate_domain_t::bottom());    
+  }
+  
   void set_to_top() override {
     dis_interval_domain abs(separate_domain_t::top());
     std::swap(*this, abs);

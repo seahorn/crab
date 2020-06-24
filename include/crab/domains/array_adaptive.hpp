@@ -80,7 +80,7 @@ class cp_domain_t {
 
   bool m_is_bottom;
   bound_t m_val;
-
+  
   void set_to_top() {
     m_is_bottom = false;
     m_val = bound_t::plus_infinity();
@@ -1911,9 +1911,25 @@ private:
         m_smashed_varmap(std::move(svarmap)) {}
 
 public:
-  array_adaptive_domain(bool is_bottom = false)
-      : m_inv(is_bottom ? base_domain_t::bottom() : base_domain_t::top()) {}
+  array_adaptive_domain(bool is_bottom = false) {
+    if (is_bottom) {
+      m_inv.set_to_bottom();
+    } else {
+      m_inv.set_to_top();
+    }
+  }
 
+
+  array_adaptive_domain make_top() const override {
+    array_adaptive_domain out(false);
+    return out;
+  }
+  
+  array_adaptive_domain make_bottom() const override {
+    array_adaptive_domain out(true);
+    return out;
+  }
+  
   void set_to_top() override {
     array_adaptive_domain abs(false);
     std::swap(*this, abs);
@@ -3200,7 +3216,7 @@ public:
   }
 
   std::string domain_name() const override {
-    std::string name("ArrayAdaptive(" + base_domain_t::getDomainName() + ")");
+    std::string name("ArrayAdaptive(" + m_inv.domain_name() + ")");
     return name;
   }
 

@@ -1263,6 +1263,14 @@ public:
     return *this;
   }
 
+  DBM_t make_top() const override {
+    return DBM_t(false);
+  }
+
+  DBM_t make_bottom() const override {
+    return DBM_t(true);
+  }
+  
   void set_to_top() override {
     split_dbm_domain abs(false);
     std::swap(*this, abs);
@@ -1619,13 +1627,12 @@ public:
     crab::CrabStats::count(domain_name() + ".count.meet");
     crab::ScopedCrabStats __st__(domain_name() + ".meet");
 
-    if (is_bottom() || o.is_bottom())
-      return DBM_t::bottom();
-    else if (is_top())
-      return o;
-    else if (o.is_top())
+    
+    if (is_bottom() || o.is_top())
       return *this;
-    else {
+    else if (is_top() || o.is_bottom()) {
+      return o;
+    } else {
       CRAB_LOG("zones-split", crab::outs() << "Before meet:\n"
                                            << "DBM 1\n"
                                            << *this << "\n"
@@ -1695,7 +1702,9 @@ public:
       // We've warm-started pi with the operand potentials
       if (!GrOps::select_potentials(meet_g, meet_pi)) {
         // Potentials cannot be selected -- state is infeasible.
-        return DBM_t::bottom();
+	DBM_t res;
+	res.set_to_bottom();
+	return res;
       }
 
       if (!is_closed) {
@@ -1741,11 +1750,11 @@ public:
     crab::CrabStats::count(domain_name() + ".count.narrowing");
     crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
 
-    if (is_bottom() || o.is_bottom())
-      return DBM_t::bottom();
-    else if (is_top())
+    if (is_bottom() || o.is_top())
+      return *this;
+    else if (is_top() || o.is_bottom()) {
       return o;
-    else {
+    } else {
       CRAB_LOG("zones-split", crab::outs() << "Before narrowing:\n"
                                            << "DBM 1\n"
                                            << *this << "\n"

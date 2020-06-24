@@ -78,6 +78,10 @@ public:
   
   /**************************** Lattice operations ****************************/
 
+  // Return a top abstract value
+  virtual Dom make_bottom() const = 0;
+  // Return a bottom abstract value
+  virtual Dom make_top() const = 0;    
   // set *this to top
   virtual void set_to_top() = 0;
   // set *this to bottom

@@ -642,6 +642,16 @@ public:
     return *this;
   }
 
+  apron_domain_t make_top() const override {
+    apron_domain_t out(false);
+    return out;
+  }
+
+  apron_domain_t make_bottom() const override {
+    apron_domain_t out(true);
+    return out;
+  }
+  
   void set_to_top() override {
     apron_domain_t tmp(false);
     std::swap(*this, tmp);
@@ -724,13 +734,11 @@ public:
     crab::CrabStats::count(domain_name() + ".count.meet");
     crab::ScopedCrabStats __st__(domain_name() + ".meet");
 
-    if (is_bottom() || o.is_bottom())
-      return apron_domain_t::bottom();
-    else if (is_top())
-      return o;
-    else if (o.is_top())
+    if (is_bottom() || o.is_top()) {
       return *this;
-    else {
+    } else if (o.is_bottom() || is_top()) {
+      return o;
+    } else {
       ap_state_ptr x =
           apPtr(get_man(), ap_abstract0_copy(get_man(), &*m_apstate));
       ap_state_ptr y =
@@ -827,13 +835,11 @@ public:
     crab::CrabStats::count(domain_name() + ".count.narrowing");
     crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
 
-    if (is_bottom() || o.is_bottom())
-      return apron_domain_t::bottom();
-    else if (is_top())
-      return o;
-    else if (o.is_top())
+    if (is_bottom() || o.is_top()) {
       return *this;
-    else {
+    } else if (o.is_bottom() || is_top()) {
+      return o;
+    } else {
       ap_state_ptr x =
           apPtr(get_man(), ap_abstract0_copy(get_man(), &*m_apstate));
       ap_state_ptr y =
@@ -1562,12 +1568,15 @@ public:
     crab::CrabStats::count(domain_name() + ".count.to_interval_domain");
     crab::ScopedCrabStats __st__(domain_name() + ".to_interval_domain");
 
-    if (is_bottom())
-      return interval_domain_t::bottom();
-    if (is_top())
-      return interval_domain_t::top();
+    interval_domain_t res; // top 
+    if (is_bottom()) {
+      res.set_to_bottom();
+      return res;
+    }
+    if (is_top()) {
+      return res;
+    }
 
-    interval_domain_t res;
     for (auto &px : m_var_map.left)
       res.set(px.first, this->operator[](px.first));
     return res;

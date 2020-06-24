@@ -195,7 +195,8 @@ private:
 public:
 
   powerset_domain() {
-    m_disjuncts.push_back(Domain::top());
+    Domain disjunct; // top by default
+    m_disjuncts.push_back(disjunct);
   }
   powerset_domain(const powerset_domain_t &other) = default;
   powerset_domain(powerset_domain_t &&other) = default;
@@ -221,14 +222,32 @@ public:
     return false;
   }
 
+  virtual powerset_domain_t make_top() const override {
+    base_dom_vector disjuncts;
+    Domain disjunct; // top by default
+    disjuncts.push_back(disjunct);
+    return disjuncts;
+  }
+
+  virtual powerset_domain_t make_bottom() const override {
+    base_dom_vector disjuncts;
+    Domain disjunct; 
+    disjunct.set_to_bottom();
+    disjuncts.push_back(disjunct);
+    return disjuncts;
+  }
+  
   virtual void set_to_top() override {
     m_disjuncts.clear();
-    m_disjuncts.push_back(Domain::top());
+    Domain disjunct; // top by default    
+    m_disjuncts.push_back(disjunct);
   }
 
   virtual void set_to_bottom() override {
     m_disjuncts.clear();
-    m_disjuncts.push_back(Domain::bottom());
+    Domain disjunct; 
+    disjunct.set_to_bottom();    
+    m_disjuncts.push_back(disjunct);
   }
   
   
@@ -772,7 +791,8 @@ public:
   }
   
   std::string domain_name() const override {
-    return std::string("Powerset(") + Domain::getDomainName() + ")";
+    Domain dom;
+    return std::string("Powerset(") + dom.domain_name() + ")";
   }
 
 }; 

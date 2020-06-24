@@ -235,6 +235,16 @@ private:
   flat_boolean_domain(separate_domain_t env) : _env(env) {}
 
 public:
+
+
+  flat_boolean_domain_t make_top() const override {
+    return flat_boolean_domain_t(separate_domain_t::top());
+  }
+
+  flat_boolean_domain_t make_bottom() const override {
+    return flat_boolean_domain_t(separate_domain_t::bottom());    
+  }
+  
   void set_to_top() override {
     flat_boolean_domain abs(separate_domain_t::top());
     std::swap(*this, abs);
@@ -924,14 +934,34 @@ private:
         _unchanged_vars(std::move(unchanged_vars)) {}
 
 public:
+
+  bool_num_domain_t make_top() const override {
+    domain_product2_t prod;
+    prod.set_to_top();
+    return bool_num_domain_t(std::move(prod), var_lincons_map_t::top(),
+			     invariance_domain::top());
+  }
+
+  bool_num_domain_t make_bottom() const override {
+    domain_product2_t prod;
+    prod.set_to_bottom();
+    return bool_num_domain_t(std::move(prod), var_lincons_map_t::bottom(),
+			     invariance_domain::bottom());
+  }
+  
+  
   void set_to_top() override {
-    bool_num_domain_t abs(domain_product2_t::top(), var_lincons_map_t::top(),
+    domain_product2_t prod;
+    prod.set_to_top();
+    bool_num_domain_t abs(std::move(prod), var_lincons_map_t::top(),
                           invariance_domain::top());
     std::swap(*this, abs);
   }
 
   void set_to_bottom() override {
-    bool_num_domain_t abs(domain_product2_t::bottom(),
+    domain_product2_t prod;
+    prod.set_to_bottom();
+    bool_num_domain_t abs(std::move(prod),
                           var_lincons_map_t::bottom(),
                           invariance_domain::bottom());
     std::swap(*this, abs);
@@ -1574,7 +1604,7 @@ public:
   }
 
   std::string domain_name() const override {
-    return domain_product2_t::getDomainName();
+    return _product.domain_name();
   }
 
   void rename(const variable_vector_t &from, const variable_vector_t &to) override {

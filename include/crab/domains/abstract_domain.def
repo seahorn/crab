@@ -12,6 +12,8 @@
   typedef V varname_t;                                                         \
   void set_to_top() override { CRAB_ERROR(Msg); }                              \
   void set_to_bottom() override { CRAB_ERROR(Msg); }                           \
+  this_type make_bottom() const override { CRAB_ERROR(Msg); }                  \
+  this_type make_top() const override { CRAB_ERROR(Msg); }                     \
   bool is_bottom() const override { CRAB_ERROR(Msg); }                         \
   bool is_top() const override { CRAB_ERROR(Msg); }                            \
   bool operator<=(const this_type &other) const override { CRAB_ERROR(Msg); }  \

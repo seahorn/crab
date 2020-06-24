@@ -637,28 +637,33 @@ private:
     crab::CrabStats::count(domain_name() + ".count.to_intervals");
     crab::ScopedCrabStats __st__(domain_name() + ".to_intervals");
 
-    if (&*ldd == Ldd_GetFalse(get_ldd_man()))
-      return interval_domain_t::bottom();
-    if (&*ldd == Ldd_GetTrue(get_ldd_man()))
-      return interval_domain_t::top();
-
+    interval_domain_t res; // top
+    
+    if (&*ldd == Ldd_GetFalse(get_ldd_man())) {
+      res.set_to_bottom();
+      return res;
+    }
+    if (&*ldd == Ldd_GetTrue(get_ldd_man())) {
+      return res;
+    }
+    
     LddNodePtr ldd_copy(ldd);
     ldd_copy = convex_approx(ldd_copy);
 
     auto disjs = to_disjunctive_linear_constraint_system(ldd_copy);
     if (disjs.is_true()) {
-      return interval_domain_t::top();
+      return res;
     } else if (disjs.is_false()) {
-      return interval_domain_t::bottom();
+      res.set_to_bottom();
+      return res;
     } else {
       if (disjs.size() != 1) {
         CRAB_ERROR("Boxes::to_intervals: it should not be disjunctive ", disjs);
       }
-      interval_domain_t intv;
       for (auto c : *(disjs.begin())) {
-        intv += c;
+        res += c;
       }
-      return intv;
+      return res;
     }
   }
 
@@ -843,6 +848,16 @@ public:
     // if (cudd) Cudd_Quit(cudd);
   }
 
+  boxes_domain_t make_top() const override {
+    boxes_domain_t out(lddPtr(get_ldd_man(), Ldd_GetTrue(get_ldd_man())));
+    return out;
+  }
+  
+  boxes_domain_t make_bottom() const override {
+    boxes_domain_t out(lddPtr(get_ldd_man(), Ldd_GetFalse(get_ldd_man())));
+    return out;
+  }
+  
   void set_to_top() override {
     boxes_domain_t abs(lddPtr(get_ldd_man(), Ldd_GetTrue(get_ldd_man())));
     std::swap(*this, abs);
@@ -1794,7 +1809,8 @@ public:
     } else if (lhs.is_top()) {
       return false;
     }
-    this_type inv = this_type::bottom();
+    this_type inv;
+    inv.set_to_bottom();
     for (auto const &csts : rhs) {
       this_type conj;
       conj += csts;
@@ -1815,7 +1831,8 @@ public:
     } else if (lhs.is_true()) {
       return false;
     }
-    this_type inv = this_type::bottom();
+    this_type inv;
+    inv.set_to_bottom();
     for (auto const &csts : lhs) {
       this_type conj;
       conj += csts;

@@ -118,6 +118,15 @@ private:
   }
   
 public:
+
+  interval_domain_t make_top() const override {
+    return interval_domain_t(separate_domain_t::top());
+  }
+
+  interval_domain_t make_bottom() const override {
+    return interval_domain_t(separate_domain_t::bottom());    
+  }
+  
   void set_to_top() override {
     interval_domain abs(separate_domain_t::top());
     std::swap(*this, abs);
