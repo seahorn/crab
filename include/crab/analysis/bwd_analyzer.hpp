@@ -36,7 +36,7 @@ class necessary_preconditions_fixpoint_iterator
   typedef typename CFG::basic_block_label_t bb_label_t;
   typedef typename CFG::statement_t stmt_t;
   typedef std::unordered_map<bb_label_t, AbsDom> bb_abstract_map_t;
-  typedef std::unordered_map<stmt_t *, AbsDom> pp_abstract_map_t;
+  typedef std::unordered_map<const stmt_t *, AbsDom> pp_abstract_map_t;
 
   /// forward and backward transformers
   typedef intra_abs_transformer<AbsDom> abs_fwd_tr_t;
@@ -69,7 +69,11 @@ class necessary_preconditions_fixpoint_iterator
                                                << ": " << precond << "\n");
 
     // invariants that hold at the entry of the block
-    AbsDom invariant = m_invariants[node];
+    AbsDom invariant = make_top();
+    auto it = m_invariants.find(node);
+    if (it != m_invariants.end()) {
+      invariant = it->second;
+    }
     // rebuild local invariants that hold at each program point.
     abs_fwd_tr_t F(invariant);
     pp_abstract_map_t pp_invariants;
@@ -417,6 +421,24 @@ public:
     CRAB_LOG("backward", crab::outs()
                              << "Initial states=" << init_states << "\n");
 
+    // return true if fixpo[node] is strictly more precise than old fixpo[node]
+    auto refine = [](const bb_label_t &node,
+		     const assumption_map_t &old_table,
+		     const bwd_fixpoint_iterator_t &fixpo,
+		     assumption_map_t &new_table) {
+		    AbsDom y = fixpo[node];
+		    auto it = old_table.find(node);
+		    if (it == old_table.end()) {
+		      new_table.insert({node, y});
+		      return true;
+		    } else {
+		      AbsDom x = it->second;
+		      AbsDom x_narrowing_y = x && y;
+		      new_table.insert({node, x_narrowing_y});
+		      return (!(x <= x_narrowing_y));
+		    }
+		  };
+
     if (!only_forward && !m_cfg.has_exit()) {
       CRAB_WARN("cannot run backward analysis because CFG has no exit block");
       only_forward = true;
@@ -560,11 +582,13 @@ public:
       assumption_map_t new_refined_assumptions;
       bool more_refinement = false;
       for (auto it = m_cfg.begin(), et = m_cfg.end(); it != et; ++it) {
-        AbsDom x = refined_assumptions[it->label()];
-        AbsDom y = B[it->label()];
-        AbsDom x_narrowing_y = x && y;
-        more_refinement |= (!(x <= x_narrowing_y));
-        new_refined_assumptions.insert({it->label(), x_narrowing_y});
+        // AbsDom x = refined_assumptions[it->label()];
+        // AbsDom y = B[it->label()];
+        // AbsDom x_narrowing_y = x && y;
+        // more_refinement |= (!(x <= x_narrowing_y));
+        // new_refined_assumptions.insert({it->label(), x_narrowing_y});
+	more_refinement |= refine(it->label(), refined_assumptions, B,
+				  new_refined_assumptions);
       }
       if (more_refinement) {
         refined_assumptions.clear();
