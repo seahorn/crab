@@ -210,10 +210,22 @@ int main(int argc, char** argv ) {
     variable_factory_t vfac;
     z_cfg_t* cfg = prog1(vfac);
     crab::outs() << *cfg << "\n";
-    run<z_interval_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
-    run<z_box_apron_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
-    run<z_oct_apron_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
-    run<z_pk_apron_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
+    {
+      z_interval_domain_t init;
+      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+    }
+    {
+      z_box_apron_domain_t init;
+      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+    }
+    {
+      z_oct_apron_domain_t init;
+      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+    }
+    {
+      z_pk_apron_domain_t init;
+      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+    }
     delete cfg;
   }
 
@@ -221,10 +233,22 @@ int main(int argc, char** argv ) {
     variable_factory_t vfac;
     z_cfg_t* cfg = prog2(vfac);
     crab::outs() << *cfg << "\n";
-    run<z_interval_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
-    run<z_box_apron_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
-    run<z_oct_apron_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
-    run<z_pk_apron_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
+    {
+      z_interval_domain_t init;
+      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+    }
+    {
+      z_box_apron_domain_t init;
+      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+    }
+    {
+      z_oct_apron_domain_t init;
+      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+    }
+    {
+      z_pk_apron_domain_t init;
+      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+    }
     delete cfg;
   }
 
@@ -232,10 +256,22 @@ int main(int argc, char** argv ) {
     variable_factory_t vfac;
     z_cfg_t* cfg = prog3(vfac);
     crab::outs() << *cfg << "\n";
-    run<z_interval_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
-    run<z_box_apron_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
-    run<z_oct_apron_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
-    run<z_pk_apron_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
+    {
+      z_interval_domain_t init;
+      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+    }
+    {
+      z_box_apron_domain_t init;
+      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+    }
+    {
+      z_oct_apron_domain_t init;
+      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+    }
+    {
+      z_pk_apron_domain_t init;
+      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+    }
     delete cfg;
   }
 
@@ -243,10 +279,22 @@ int main(int argc, char** argv ) {
     variable_factory_t vfac;
     z_cfg_t* cfg = prog4(vfac);
     crab::outs() << *cfg << "\n";
-    run<z_interval_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
-    run<z_box_apron_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
-    run<z_oct_apron_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
-    run<z_pk_apron_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
+    {
+      z_interval_domain_t init;
+      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+    }
+    {
+      z_box_apron_domain_t init;
+      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+    }
+    {
+      z_oct_apron_domain_t init;
+      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+    }
+    {
+      z_pk_apron_domain_t init;
+      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+    }
     delete cfg;
   }
 
@@ -254,10 +302,22 @@ int main(int argc, char** argv ) {
     variable_factory_t vfac;
     z_cfg_t* cfg = prog5(vfac);
     crab::outs() << *cfg << "\n";
-    run<z_interval_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
-    run<z_box_apron_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
-    run<z_oct_apron_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
-    run<z_pk_apron_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
+    {
+      z_interval_domain_t init;
+      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+    }
+    {
+      z_box_apron_domain_t init;
+      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+    }
+    {
+      z_oct_apron_domain_t init;
+      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+    }
+    {
+      z_pk_apron_domain_t init;
+      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+    }
     delete cfg;
   }
 #endif 
@@ -300,7 +360,7 @@ int main(int argc, char** argv ) {
   
   { 
     variable_factory_t vfac;
-    z_pk_apron_domain_t inv1 = z_pk_apron_domain_t::top();
+    z_pk_apron_domain_t inv1;
     inv1.assign(vfac ["x"], 5);
     z_lin_cst_sys_t csts;
     csts +=(z_lin_t(vfac ["x"]) == z_lin_t(vfac ["y"]));
@@ -317,7 +377,7 @@ int main(int argc, char** argv ) {
   
   { 
     variable_factory_t vfac;
-    z_pk_apron_domain_t inv1 = z_pk_apron_domain_t::top();
+    z_pk_apron_domain_t inv1;
     inv1.assign(vfac ["x"], 5);
 
     z_pk_apron_domain_t inv2(inv1);
@@ -331,8 +391,8 @@ int main(int argc, char** argv ) {
 
   {
     variable_factory_t vfac;
-    z_oct_apron_domain_t inv1 = z_oct_apron_domain_t::top();
-    z_oct_apron_domain_t inv2 = z_oct_apron_domain_t::top();
+    z_oct_apron_domain_t inv1;
+    z_oct_apron_domain_t inv2;
     z_var i(vfac ["i"], crab::INT_TYPE, 32);
     z_var k(vfac ["k"], crab::INT_TYPE, 32);
 

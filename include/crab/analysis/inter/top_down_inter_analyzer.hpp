@@ -83,6 +83,10 @@ private:
   // other contexts.
   bool m_exact;
 
+  inline abs_dom_t make_bottom() const {
+    return m_input.make_bottom();
+  }
+
   static invariant_map_t join(invariant_map_t &m1, invariant_map_t &m2) {
     invariant_map_t out;
     for (auto &kv : m2) {
@@ -174,7 +178,7 @@ public:
   abs_dom_t get_pre(const basic_block_label_t &bb) const {
     auto it = m_pre_invariants.find(bb);
     if (it == m_pre_invariants.end()) {
-      return abs_dom_t::bottom(); // dead block under particular context
+      return make_bottom(); // dead block under particular context
     } else {
       return it->second;
     }
@@ -184,7 +188,7 @@ public:
   abs_dom_t get_post(const basic_block_label_t &bb) const {
     auto it = m_post_invariants.find(bb);
     if (it == m_post_invariants.end()) {
-      return abs_dom_t::bottom(); // dead block under particular context
+      return make_bottom(); // dead block under particular context
     } else {
       return it->second;
     }
@@ -616,6 +620,17 @@ private:
                      std::unique_ptr<intra_analyzer_with_call_semantics_t>>
       m_intra_analyzer;
 
+
+  inline abs_dom_t make_top() {
+    auto const& dom = this->get_abs_value();
+    return dom.make_top();
+  }
+
+  inline abs_dom_t make_bottom() {
+    auto const& dom = this->get_abs_value();
+    return dom.make_bottom();
+  }
+  
   calling_context_collection_t &get_calling_contexts(cfg_t fun) {
     return m_ctx->get_calling_context_table()[fun];
   }
@@ -656,7 +671,7 @@ private:
    **/
   static AbsDom get_callee_entry(const callsite_t &cs, const fdecl_t &fdecl,
                                  AbsDom caller_dom,
-                                 AbsDom callee_dom = AbsDom::top()) {
+                                 AbsDom callee_dom) {
     crab::ScopedCrabStats __st__("Interprocedural.get_callee_entry");
 
     // caller_dom.normalize();
@@ -798,11 +813,11 @@ private:
       pre_bot = caller_dom.is_bottom();
     }
 
-    AbsDom callee_entry;
+    AbsDom callee_entry = make_top();
     // If we start the analysis of a recursive procedure we must do it
     // without propagating from caller to callee
     if (m_ctx->get_widening_set().count(callee_cg_node) <= 0) {
-      callee_entry = get_callee_entry(cs, fdecl, caller_dom);
+      callee_entry = get_callee_entry(cs, fdecl, caller_dom, make_top());
     }
 
     if (::crab::CrabSanityCheckFlag) {
@@ -814,7 +829,7 @@ private:
       }
     }
 
-    AbsDom callee_exit;
+    AbsDom callee_exit = make_top();
     std::vector<variable_t> callee_exit_vars;
     get_fdecl_parameters(fdecl, callee_exit_vars);
 
@@ -972,7 +987,7 @@ public:
       CRAB_VERBOSE_IF(1, get_msg_stream()
                              << "++ Skipped analysis of recursive callee \""
                              << cs << "\"\n";);
-      AbsDom callee_exit = AbsDom::top();
+      AbsDom callee_exit = make_top();
       std::vector<variable_t> callee_exit_vars;
       get_fdecl_parameters(fdecl, callee_exit_vars);
       AbsDom caller_cont_dom = get_caller_continuation(
@@ -1109,16 +1124,21 @@ private:
     void visit(wto_vertex_t &vertex) {}
   };
 
+  inline AbsDom make_bottom() const {
+    auto const& dom = m_abs_tr->get_abs_value();
+    return dom.make_bottom();
+  }
+  
   AbsDom get_invariant(const global_invariant_map_t &global_map,
                        const cfg_t &cfg, basic_block_label_t bb) const {
     auto g_it = global_map.find(cfg);
     if (g_it == global_map.end()) {
-      return AbsDom::bottom(); // dead function
+      return make_bottom(); // dead function
     }
     const invariant_map_t &m = g_it->second;
     auto it = m.find(bb);
     if (it == m.end()) {
-      return AbsDom::bottom(); // dead block
+      return make_bottom(); // dead block
     }
     return it->second;
   }
@@ -1128,12 +1148,12 @@ private:
   std::unique_ptr<td_inter_abs_tr_t> m_abs_tr;
   
 public:
-  top_down_inter_analyzer(CallGraph cg, const params_t &params = params_t())
+  top_down_inter_analyzer(CallGraph cg, abs_dom_t init, const params_t &params = params_t())
       : m_cg(cg), m_ctx(params.live_map, params.wto_map, params.run_checker,
                         params.checker_verbosity, params.minimize_invariants,
                         params.max_call_contexts, params.widening_delay,
                         params.descending_iters, params.thresholds_size),
-	m_abs_tr(new td_inter_abs_tr_t(&m_cg, &m_ctx, abs_dom_t::top())) {
+	m_abs_tr(new td_inter_abs_tr_t(&m_cg, &m_ctx, std::move(init))) {
     CRAB_VERBOSE_IF(1, get_msg_stream() << "Type checking call graph ... ";);
     crab::CrabStats::resume("CallGraph type checking");
     cg.type_check();
@@ -1145,7 +1165,12 @@ public:
 
   this_type &operator=(const this_type &o) = delete;
 
-  void run(abs_dom_t init = abs_dom_t::top()) {
+  /** ===== Run the inter-procedural analysis
+   * 
+   * The top-down analysis runs multiple analyses, one per callgraph
+   * entry, starting with init. 
+   **/
+  void run(abs_dom_t init) {
     crab::ScopedCrabStats __st__("Inter");
 
     CRAB_VERBOSE_IF(

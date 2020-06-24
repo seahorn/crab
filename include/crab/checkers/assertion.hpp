@@ -39,7 +39,8 @@ public:
   assert_property_checker(int verbose = 0) : base_checker_t(verbose) {}
 
   virtual std::string get_property_name() const override {
-    return "user-defined assertion checker using " + abs_dom_t::getDomainName();
+    auto const& dom = this->m_abs_tr->get_abs_value();
+    return "user-defined assertion checker using " + dom.domain_name();
   }
 
   virtual bool is_interesting(const basic_block_t &bb) const override {

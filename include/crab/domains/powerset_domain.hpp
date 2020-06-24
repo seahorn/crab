@@ -55,12 +55,23 @@ private:
     We don't represent the empty powerset.
    */
   base_dom_vector m_disjuncts;
+
+
+  inline Domain make_base_bottom() const {
+    Domain dom;
+    return dom.make_bottom();
+  }
+
+  inline Domain make_base_top() const {
+    Domain dom;
+    return dom.make_top();
+  }
   
   powerset_domain(bool is_bottom) {
     if (is_bottom) {
-      m_disjuncts.push_back(Domain::bottom());
+      m_disjuncts.push_back(make_base_bottom());
     } else {
-      m_disjuncts.push_back(Domain::top());
+      m_disjuncts.push_back(make_base_top());
     }
   }
 
@@ -111,9 +122,9 @@ private:
   
   Domain smash_disjuncts(const powerset_domain_t &pw) const {
     if (pw.is_bottom()) {
-      return Domain::bottom();
+      return make_base_bottom();
     } else if (pw.is_top()) {
-      return Domain::top();
+      return make_base_top();
     }
 
     assert(!pw.m_disjuncts.empty());

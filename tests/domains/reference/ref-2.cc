@@ -123,7 +123,8 @@ int main(int argc, char** argv) {
   
   z_cfg_t *p1 = cfg1(vfac);
   crab::outs() << *p1 << "\n";
-  run_and_check<z_ref_sdbm_t>(p1,p1->entry(),false,2,2,20,stats_enabled);
+  z_ref_sdbm_t init;
+  run_and_check(p1,p1->entry(),init,false,2,2,20,stats_enabled);
   delete p1;
 
   return 0;

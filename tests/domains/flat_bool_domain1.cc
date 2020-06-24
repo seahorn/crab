@@ -88,11 +88,21 @@ int main (int argc, char** argv) {
   variable_factory_t vfac;  
   z_cfg_t* cfg = prog(vfac);
   crab::outs() << *cfg << "\n";
+
+  {
+    z_interval_domain_t init;
+    run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+  }
+  {
+    z_bool_num_domain_t init;
+    run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+  }
   
-  run<z_interval_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
-  run<z_bool_num_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
   #ifdef HAVE_LDD
-  run<z_boxes_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
+  {
+    z_boxes_domain_t init;
+    run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+  }
   #endif
   delete cfg;    
   return 0;

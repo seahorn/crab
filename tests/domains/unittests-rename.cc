@@ -20,8 +20,8 @@ int main (int argc, char** argv) {
   z_var v(vfac["v"], crab::INT_TYPE, 32);    
 
   {
-    crab::outs() << " ===== " << z_interval_domain_t::getDomainName() << " ====\n";
     z_interval_domain_t inv;
+    crab::outs() << " ===== " << inv.domain_name() << " ====\n";    
     inv += z_lin_cst_t(x <= 0);
     inv += z_lin_cst_t(y == 5);
     crab::outs() << "Before renaming " << inv << "\n";
@@ -47,8 +47,8 @@ int main (int argc, char** argv) {
 
 #ifdef HAVE_APRON  
   {
-    crab::outs() << " ===== " << z_pk_apron_domain_t::getDomainName() << " ====\n";    
-    z_pk_apron_domain_t inv;
+    z_pk_apron_domain_t inv;    
+    crab::outs() << " ===== " << inv.domain_name() << " ====\n";    
     inv += z_lin_cst_t(x <= 0);
     inv += z_lin_cst_t(y == 5);
     crab::outs() << "Before renaming " << inv << "\n";
@@ -74,8 +74,8 @@ int main (int argc, char** argv) {
 #endif   
 #ifdef HAVE_ELINA
   {
-    crab::outs() << " ===== " << z_pk_elina_domain_t::getDomainName() << " ====\n";    
     z_pk_elina_domain_t inv;
+    crab::outs() << " ===== " << inv.domain_name() << " ====\n";    
     inv += z_lin_cst_t(x <= 0);
     inv += z_lin_cst_t(y == 5);
     crab::outs() << "Before renaming " << inv << "\n";
@@ -101,8 +101,8 @@ int main (int argc, char** argv) {
 #endif   
 
   {
-    crab::outs() << " ===== " << z_sdbm_domain_t::getDomainName() << " ====\n";        
     z_sdbm_domain_t inv;
+    crab::outs() << " ===== " << inv.domain_name() << " ====\n";        
     inv += z_lin_cst_t(x <= 0);
     inv += z_lin_cst_t(y == 5);
     crab::outs() << "Before renaming " << inv << "\n";
@@ -127,8 +127,8 @@ int main (int argc, char** argv) {
   }
   
   {
-    crab::outs() << " ===== " << z_dbm_domain_t::getDomainName() << " ====\n";            
     z_dbm_domain_t inv;
+    crab::outs() << " ===== " << inv.domain_name() << " ====\n";                
     inv += z_lin_cst_t(x <= 0);
     inv += z_lin_cst_t(y == 5);
     crab::outs() << "Before renaming " << inv << "\n";
@@ -153,8 +153,8 @@ int main (int argc, char** argv) {
   }
 
   {
-    crab::outs() << " ===== " << z_term_domain_t::getDomainName() << " ====\n";            
-    z_term_domain_t inv;
+    z_term_domain_t inv;    
+    crab::outs() << " ===== " << inv.domain_name() << " ====\n";            
     inv += z_lin_cst_t(x <= 0);
     inv += z_lin_cst_t(y == 5);
     crab::outs() << "Before renaming " << inv << "\n";

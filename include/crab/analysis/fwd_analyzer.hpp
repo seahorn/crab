@@ -54,6 +54,11 @@ private:
   bool m_pre_clear_done;
   bool m_post_clear_done;
 
+  inline abs_dom_t make_top() const {
+    auto const& top_dom = m_abs_tr->get_abs_value();
+    return top_dom.make_top();
+  }
+  
   void prune_dead_variables(const basic_block_label_t &node, abs_dom_t &inv) {
     if (!m_live) {
       return;
@@ -91,9 +96,9 @@ public:
                // fixpoint parameters
                unsigned int widening_delay, unsigned int descending_iters,
                size_t jump_set_size)
-
-      : fixpo_iterator_t(cfg, wto, widening_delay, descending_iters,
-                         jump_set_size, false /*disable processor*/),
+    : fixpo_iterator_t(cfg, abs_tr->get_abs_value(),
+		       wto, widening_delay, descending_iters,
+		       jump_set_size, false /*disable processor*/),
         m_abs_tr(abs_tr), m_live(live), m_pre_clear_done(false),
         m_post_clear_done(false) {
     assert(m_abs_tr);
@@ -151,7 +156,7 @@ public:
   //! Return the invariants that hold at the entry of b
   abs_dom_t get_pre(const basic_block_label_t &b) const {
     if (m_pre_clear_done) {
-      return abs_dom_t::top();
+      return make_top();
     } else {
       return fixpo_iterator_t::get_pre(b);
     }
@@ -160,7 +165,7 @@ public:
   //! Return the invariants that hold at the exit of b
   abs_dom_t get_post(const basic_block_label_t &b) const {
     if (m_post_clear_done) {
-      return abs_dom_t::top();
+      return make_top();
     } else {
       return fixpo_iterator_t::get_post(b);
     }
@@ -261,14 +266,6 @@ private:
   fwd_analyzer_t m_analyzer;
 
 public:
-  intra_fwd_analyzer_wrapper(CFG cfg,
-                             // fixpoint parameters
-                             unsigned int widening_delay = 1,
-                             unsigned int descending_iters = UINT_MAX,
-                             size_t jump_set_size = 0)
-    : m_init(AbsDomain::top()), m_abs_tr(new abs_tr_t(m_init)),
-      m_analyzer(cfg, nullptr, &*m_abs_tr, nullptr, widening_delay,
-		 descending_iters, jump_set_size) {}
 
   intra_fwd_analyzer_wrapper(CFG cfg, AbsDomain init,
                              // live variables
@@ -279,16 +276,25 @@ public:
                              unsigned int widening_delay = 1,
                              unsigned int descending_iters = UINT_MAX,
                              size_t jump_set_size = 0)
-    : m_init(init), m_abs_tr(new abs_tr_t(m_init)),
+    : m_init(std::move(init)),
+      m_abs_tr(new abs_tr_t(m_init)),
       m_analyzer(cfg, wto, &*m_abs_tr, live, widening_delay, descending_iters,
 		 jump_set_size) {}
 
   intra_fwd_analyzer_wrapper(const intra_fwd_analyzer_wrapper& o) = delete;
   
   intra_fwd_analyzer_wrapper &operator=(const intra_fwd_analyzer_wrapper& o) = delete;
-  
+
+  // If you want to call "run" again with a different invariant from
+  // "init" used in the constructor then call
+  // get_abs_transformer().set_abs_value(...)  and change the return
+  // reference.
   void run() { m_analyzer.run_forward(); }
 
+  // If you want to call "run" again with a different invariant from
+  // "init" used in the constructor then call
+  // get_abs_transformer().set_abs_value(...)  and change the return
+  // reference.
   void run(const basic_block_label_t &entry, const assumption_map_t &assumptions) {
     m_analyzer.run_forward(entry, assumptions);
   }

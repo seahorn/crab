@@ -49,10 +49,10 @@ typedef call_graph<z_cfg_ref_t> callgraph_t;
 typedef call_graph_ref<callgraph_t> callgraph_ref_t;
 typedef top_down_inter_analyzer_parameters<callgraph_ref_t> inter_analyzer_params_t;
 
-template<typename InterAnalyzer>
-void run(callgraph_t& cg) {
-  InterAnalyzer default_analyzer(cg);
-  default_analyzer.run();
+template<typename InterAnalyzer, typename Dom>
+void run(callgraph_t& cg, Dom init) {
+  InterAnalyzer default_analyzer(cg, init);
+  default_analyzer.run(init);
   // Print invariants
   #if 0
   for(auto &v: boost::make_iterator_range(cg.nodes())) {
@@ -93,9 +93,10 @@ int main(int argc, char** argv) {
   callgraph_t cg(cfgs);
   {
     typedef top_down_inter_analyzer<callgraph_ref_t, z_sdbm_domain_t> inter_analyzer_t;
+    z_sdbm_domain_t init;
     crab::outs() << "Running top-down inter-procedural analysis with "
-		 << z_sdbm_domain_t::getDomainName() << "\n";
-    run<inter_analyzer_t>(cg);
+		 << init.domain_name() << "\n";
+    run<inter_analyzer_t>(cg, init);
   }
   
   

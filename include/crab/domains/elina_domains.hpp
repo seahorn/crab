@@ -976,13 +976,11 @@ public:
     crab::CrabStats::count(domain_name() + ".count.meet");
     crab::ScopedCrabStats __st__(domain_name() + ".meet");
 
-    if (is_bottom() || o.is_bottom())
-      return elina_domain_t::bottom();
-    else if (is_top())
-      return o;
-    else if (o.is_top())
+    if (is_bottom() || o.is_top()) {
       return *this;
-    else {
+    } else if (is_top() || o.is_bottom()) {
+      return o;
+    } else {
       elina_state_ptr x =
           elinaPtr(get_man(), elina_abstract0_copy(get_man(), &*m_apstate));
       elina_state_ptr y =
@@ -1084,13 +1082,11 @@ public:
     crab::CrabStats::count(domain_name() + ".count.narrowing");
     crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
 
-    if (is_bottom() || o.is_bottom())
-      return elina_domain_t::bottom();
-    else if (is_top())
-      return o;
-    else if (o.is_top())
+    if (is_bottom() || o.is_top()) {
       return *this;
-    else {
+    } else if (is_top() || o.is_bottom()) {
+      return o;
+    } else {
       elina_state_ptr x =
           elinaPtr(get_man(), elina_abstract0_copy(get_man(), &*m_apstate));
       elina_state_ptr y =

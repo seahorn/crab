@@ -155,16 +155,38 @@ int main (int argc, char** argv) {
 
   typedef call_graph<z_cfg_ref_t> callgraph_t;
 
-  boost::scoped_ptr<callgraph_t> cg(new callgraph_t(cfgs));
-  
-  bu_inter_run<z_dbm_domain_t, z_interval_domain_t>(&*cg,false,2,2,20,stats_enabled);
+  std::unique_ptr<callgraph_t> cg(new callgraph_t(cfgs));
+
+  {
+    z_dbm_domain_t bu_top;
+    z_interval_domain_t td_top;
+    bu_inter_run<z_dbm_domain_t, z_interval_domain_t>(&*cg, bu_top, td_top,
+						      false,2,2,20,stats_enabled);
+  }
+
 #ifdef HAVE_APRON  
-  bu_inter_run<z_oct_apron_domain_t, z_interval_domain_t>(&*cg,false,2,2,20,stats_enabled);
+  
+  {
+    z_oct_apron_domain_t bu_top;
+    z_interval_domain_t td_top;
+    bu_inter_run<z_oct_apron_domain_t, z_interval_domain_t>(&*cg, bu_top, td_top, 
+							    false,2,2,20,stats_enabled);
+  }
 #endif
+  
   /// nothing wrong with this test but it prints invariants differently
   /// on Linux and mac.
-  //bu_inter_run<z_term_domain_t, z_interval_domain_t>(&*cg,false,2,2,20,stats_enabled);
-  //bu_inter_run<z_num_domain_t, z_num_domain_t>(&*cg,false,2,2,20,stats_enabled);
+  // {
+  // z_term_domain_t bu_top;
+  // z_interval_domain_t td_top;
+  //bu_inter_run<z_term_domain_t, z_interval_domain_t>(&*cg, bu_top, td_top,
+  //                                                   false,2,2,20,stats_enabled);
+  //}
+  //{
+  // z_num_domain_t top;
+  //bu_inter_run<z_num_domain_t, z_num_domain_t>(&*cg, top, top,
+  //                                             false,2,2,20,stats_enabled);
+  //} 
 
   delete t1;
   delete t2;

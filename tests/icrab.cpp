@@ -6,6 +6,7 @@
 // Helper
 template<typename CG, typename BUDom, typename TDDom, typename InterFwdAnalyzer>
 void inter_run_impl (CG* cg,
+		     BUDom bu_top, TDDom td_top,
 		     bool /*run_liveness*/,
 		     unsigned widening, 
 		     unsigned narrowing, 
@@ -16,11 +17,12 @@ void inter_run_impl (CG* cg,
   cg_ref_t cg_ref (*cg);
   
   crab::outs() << "Running " 
-	       << "summary domain=" << BUDom::getDomainName () 
-	       << " and forward domain=" << TDDom::getDomainName () << "\n";
+	       << "summary domain=" << bu_top.domain_name()
+	       << " and forward domain=" << td_top.domain_name() << "\n";
   
-  InterFwdAnalyzer a (cg_ref, nullptr /*live*/, widening, narrowing, jump_set_size);
-  a.run ();
+  InterFwdAnalyzer a (cg_ref, td_top, bu_top,
+		      nullptr /*live*/, widening, narrowing, jump_set_size);
+  a.run (td_top);
   
   // Print invariants
   for (auto &v: boost::make_iterator_range (cg_ref.nodes())) {
@@ -51,7 +53,8 @@ void inter_run_impl (CG* cg,
 
 // To run abstract domains defined over integers
 template<typename BUDom, typename TDDom>
-void bu_inter_run(crab::cg_impl::z_cg_t* cg, 
+void bu_inter_run(crab::cg_impl::z_cg_t* cg,
+		  BUDom bu_top, TDDom td_top,
 		  bool run_liveness,
 		  unsigned widening, 
 		  unsigned narrowing, 
@@ -60,7 +63,7 @@ void bu_inter_run(crab::cg_impl::z_cg_t* cg,
   using namespace crab::analyzer;
   typedef bottom_up_inter_analyzer<crab::cg_impl::z_cg_ref_t, BUDom, TDDom> inter_analyzer_t;
   inter_run_impl<crab::cg_impl::z_cg_t, BUDom, TDDom, inter_analyzer_t>
-    (cg, run_liveness, widening, narrowing, jump_set_size, enable_stats);
+    (cg, bu_top, td_top, run_liveness, widening, narrowing, jump_set_size, enable_stats);
 }
 
 ///////

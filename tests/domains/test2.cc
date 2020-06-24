@@ -71,12 +71,30 @@ int main (int argc, char** argv) {
   cfg->simplify ();
   crab::outs() << *cfg << "\n";
 
-  run<z_interval_domain_t>(cfg,cfg->entry(),false,1,2,20,stats_enabled);
-  run<z_dbm_domain_t>(cfg,cfg->entry(),false,1,2,20,stats_enabled);
-  run<z_sdbm_domain_t>(cfg,cfg->entry(),false,1,2,20,stats_enabled);
-  run<z_ric_domain_t>(cfg,cfg->entry(),false,1,2,20,stats_enabled);
-  run<z_term_domain_t>(cfg,cfg->entry(),false,1,2,20,stats_enabled);
-  run<z_dis_interval_domain_t>(cfg,cfg->entry(),false,1,2,20,stats_enabled);
+  {
+    z_interval_domain_t init;
+    run(cfg,cfg->entry(),init,false,1,2,20,stats_enabled);
+  }
+  {
+    z_dbm_domain_t init;
+    run(cfg,cfg->entry(),init,false,1,2,20,stats_enabled);
+  }
+  {
+    z_sdbm_domain_t init;
+    run(cfg,cfg->entry(),init,false,1,2,20,stats_enabled);
+  }
+  {
+    z_ric_domain_t init;
+    run(cfg,cfg->entry(),init,false,1,2,20,stats_enabled);
+  }
+  {
+    z_term_domain_t init;
+    run(cfg,cfg->entry(),init,false,1,2,20,stats_enabled);
+  }
+  {
+    z_dis_interval_domain_t init;
+    run(cfg,cfg->entry(),init,false,1,2,20,stats_enabled);
+  }
 
   delete cfg;
   return 0;

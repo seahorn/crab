@@ -107,9 +107,10 @@ void check(z_cfg_ref_t cfg, variable_factory_t& vfac) {
   crab::outs() << cfg << "\n";
   
   // Run analyses
-  num_analyzer_t num_a(cfg, z_sdbm_domain_t::top(),  nullptr);
+  z_sdbm_domain_t init;
+  num_analyzer_t num_a(cfg, init,  nullptr);
   num_a.run();
-  crab::outs() << "Analysis using " << z_sdbm_domain_t::getDomainName() << "\n";
+  crab::outs() << "Analysis using " << init.domain_name() << "\n";
   print_invariants(cfg, num_a);
 
   // for(auto &b : cfg)  {

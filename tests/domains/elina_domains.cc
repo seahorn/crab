@@ -211,8 +211,14 @@ int main (int argc, char** argv ) {
     variable_factory_t vfac;
     z_cfg_t* cfg = prog1 (vfac);
     crab::outs() << *cfg << "\n";
-    run<z_oct_elina_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
-    run<z_pk_elina_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
+    {
+      z_oct_elina_domain_t init;
+      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+    }
+    {
+      z_pk_elina_domain_t init;
+      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+    }
     delete cfg;
   }
 
@@ -220,9 +226,18 @@ int main (int argc, char** argv ) {
     variable_factory_t vfac;
     z_cfg_t* cfg = prog2 (vfac);
     crab::outs() << *cfg << "\n";
-    run<z_zones_elina_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);    
-    run<z_oct_elina_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
-    run<z_pk_elina_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
+    {
+      z_zones_elina_domain_t init;
+      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+    }
+    {
+      z_oct_elina_domain_t init;
+      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+    }
+    {
+      z_pk_elina_domain_t init;
+      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+    }
     delete cfg;
   }
 
@@ -230,9 +245,18 @@ int main (int argc, char** argv ) {
     variable_factory_t vfac;
     z_cfg_t* cfg = prog3 (vfac);
     crab::outs() << *cfg << "\n";
-    run<z_zones_elina_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);        
-    run<z_oct_elina_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
-    run<z_pk_elina_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
+    {
+      z_zones_elina_domain_t init;
+      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+    }
+    {
+      z_oct_elina_domain_t init;
+      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+    }
+    {
+      z_pk_elina_domain_t init;
+      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+    }
     delete cfg;
   }
 
@@ -240,9 +264,18 @@ int main (int argc, char** argv ) {
     variable_factory_t vfac;
     z_cfg_t* cfg = prog4 (vfac);
     crab::outs() << *cfg << "\n";
-    run<z_zones_elina_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);            
-    run<z_oct_elina_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
-    run<z_pk_elina_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
+    {
+      z_zones_elina_domain_t init;
+      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+    }
+    {
+      z_oct_elina_domain_t init;
+      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+    }
+    {
+      z_pk_elina_domain_t init;
+      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+    }
     delete cfg;
   }
 
@@ -250,9 +283,18 @@ int main (int argc, char** argv ) {
     variable_factory_t vfac;
     z_cfg_t* cfg = prog5 (vfac);
     crab::outs() << *cfg << "\n";
-    run<z_zones_elina_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);            
-    run<z_oct_elina_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
-    run<z_pk_elina_domain_t>(cfg, cfg->entry(), false, 1, 2, 20, stats_enabled);
+    {
+      z_zones_elina_domain_t init;
+      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+    }
+    {
+      z_oct_elina_domain_t init;
+      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+    }
+    {
+      z_pk_elina_domain_t init;
+      run(cfg, cfg->entry(), init, false, 1, 2, 20, stats_enabled);
+    }
     delete cfg;
   }
   #endif

@@ -56,12 +56,14 @@ int main(int argc, char** argv) {
 #ifdef HAVE_APRON
     typedef crab::analyzer::necessary_preconditions_fixpoint_iterator
     <z_cfg_ref_t,z_pk_apron_domain_t> analysis_t;  
-    z_pk_apron_domain_t final_states = z_pk_apron_domain_t::bottom();
+    z_pk_apron_domain_t final_states;
+    final_states.set_to_bottom();
 #endif
 #ifdef HAVE_ELINA
     typedef crab::analyzer::necessary_preconditions_fixpoint_iterator
       <z_cfg_ref_t,z_pk_elina_domain_t> analysis_t;  
-    z_pk_elina_domain_t final_states = z_pk_elina_domain_t::bottom();
+    z_pk_elina_domain_t final_states;
+    final_states.set_to_bottom();
 #endif
     analysis_t analyzer(*cfg, nullptr, final_states, false /*error states*/);
     analyzer.run_backward();    
@@ -88,12 +90,12 @@ int main(int argc, char** argv) {
 #ifdef HAVE_APRON
     typedef crab::analyzer::necessary_preconditions_fixpoint_iterator
     <z_cfg_ref_t,z_pk_apron_domain_t> analysis_t;  
-    z_pk_apron_domain_t final_states = z_pk_apron_domain_t::top();
+    z_pk_apron_domain_t final_states; // top
 #endif
 #ifdef HAVE_ELINA
     typedef crab::analyzer::necessary_preconditions_fixpoint_iterator
       <z_cfg_ref_t,z_pk_elina_domain_t> analysis_t;  
-    z_pk_elina_domain_t final_states = z_pk_elina_domain_t::top();
+    z_pk_elina_domain_t final_states; // top
 #endif
     analysis_t analyzer(*cfg, nullptr, final_states, true /*good states*/);
     analyzer.run_backward();    

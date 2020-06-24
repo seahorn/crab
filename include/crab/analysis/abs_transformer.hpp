@@ -974,7 +974,7 @@ public:
         // here we are interested in computing preconditions of the
         // error states. Thus, we propagate backwards "not c" which
         // represents the error states.
-        abs_dom_t error;
+        abs_dom_t error = m_pre.make_top();
         error += stmt.constraint().negate();
         // we need to join to consider all possible preconditions to
         // error. Otherwise, if we would have two assertions
@@ -1023,7 +1023,7 @@ public:
         // similar to bool_assume(c)
         m_pre.assume_bool(stmt.cond(), false /*non-negated*/);
       } else {
-        abs_dom_t error;
+        abs_dom_t error = m_pre.make_top();
         error.assume_bool(stmt.cond(), true /*negated*/);
         m_pre |= error;
       }

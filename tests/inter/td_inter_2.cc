@@ -92,9 +92,10 @@ int main (int argc, char** argv) {
 
   inter_params_t params;
   params.max_call_contexts = 5;
+  z_dbm_domain_t init;
   callgraph_t cg(cfgs);  
-  inter_analyzer_t analyzer(cg, params);
-  analyzer.run();
+  inter_analyzer_t analyzer(cg, init, params);
+  analyzer.run(init);
 
   // TODO: fix order of cg traversal
   for (auto &v: boost::make_iterator_range(cg.nodes())) {

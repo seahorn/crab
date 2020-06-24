@@ -43,7 +43,8 @@ private:
   typedef std::unordered_map<std::size_t, abs_domain_t> call_table_t;
 
   call_table_t m_call_table;
-
+  AbsDomain m_top;
+  
   // XXX: assume context-insensitive analysis so it will merge all
   // calling contexts using abstract domain's join keeping a
   // single calling context per function.
@@ -57,7 +58,9 @@ private:
   }
 
 public:
-  call_ctx_table() {}
+  call_ctx_table(AbsDomain top): m_top(top) {
+    m_top.set_to_top();
+  }
 
   call_ctx_table(const call_ctx_table<CFG, AbsDomain> &o) = delete;
 
@@ -77,7 +80,7 @@ public:
     if (it != m_call_table.end())
       return it->second;
     else
-      return AbsDomain::top();
+      return m_top;
   }
 };
 
@@ -421,11 +424,11 @@ inline void convert_domains(Domain1 from, Domain2 &to) {
   }
 
   CRAB_LOG("inter", crab::outs()
-                        << "Converting from " << Domain1::getDomainName()
-                        << " to " << Domain2::getDomainName()
-                        << " might lose precision if "
-                        << Domain1::getDomainName() << " is more precise than "
-                        << Domain2::getDomainName() << "\n");
+	   << "Converting from " << from.domain_name()
+	   << " to " << to.domain_name()
+	   << " might lose precision if "
+	   << from.domain_name() << " is more precise than "
+	   << to.domain_name() << "\n");
 
   bool pre_bot = false;
   if (::crab::CrabSanityCheckFlag) {
@@ -599,6 +602,10 @@ private:
   using invariant_map_t = std::unordered_map<std::size_t, td_analyzer_ptr>;
 
   CallGraph m_cg;
+  // These two used to call make_top() and make_bottom() since we
+  // cannot assume that TD_Dom and BU_Dom have default constructors.
+  TD_Dom m_td_top;
+  BU_Dom m_bu_top;
   const liveness_map_t *m_live;
   invariant_map_t m_inv_map;
   summ_tbl_t m_summ_tbl;
@@ -617,15 +624,38 @@ private:
     return nullptr;
   }
 
+  inline TD_Dom make_td_bottom() const {
+    return m_td_top.make_bottom();
+  }
+  inline TD_Dom make_td_top() const {
+    return m_td_top.make_top();
+  }
+  inline BU_Dom make_bu_bottom() const {
+    return m_bu_top.make_bottom();
+  }
+  inline BU_Dom make_bu_top() const {
+    return m_bu_top.make_top();    
+  }
+  
 public:
-  bottom_up_inter_analyzer(CallGraph cg, const liveness_map_t *live,
+  bottom_up_inter_analyzer(CallGraph cg,
+			   // Top value
+			   TD_Dom td_top,
+			   // Top value
+			   BU_Dom bu_top,
+			   const liveness_map_t *live,
                            // fixpoint parameters
                            unsigned int widening_delay = 1,
                            unsigned int descending_iters = UINT_MAX,
                            size_t jump_set_size = 0)
-      : m_cg(cg), m_live(live), m_widening_delay(widening_delay),
+      : m_cg(cg),
+	m_td_top(td_top),
+	m_bu_top(bu_top),
+	m_live(live),
+	m_call_tbl(make_td_top()),
+	m_widening_delay(widening_delay),
         m_descending_iters(descending_iters), m_jump_set_size(jump_set_size),
-	m_abs_tr(new abs_tr_t(TD_Dom::top(), &m_summ_tbl, &m_call_tbl)) {
+	m_abs_tr(new abs_tr_t(make_td_top(), &m_summ_tbl, &m_call_tbl)) {
     CRAB_VERBOSE_IF(1, get_msg_stream() << "Type checking call graph ... ";);
     crab::CrabStats::resume("CallGraph type checking");
     cg.type_check();
@@ -637,7 +667,24 @@ public:
 
   this_type &operator=(const this_type &other) = delete;
 
-  void run(TD_Dom init = TD_Dom::top()) {
+  /** =====  Run the inter-procedural analysis   
+   * 
+   * init is the initial abstract state used for the top-down analysis
+   * The bottom-up analysis will start with top (i.e., no
+   * preconditions).
+   *
+   * - During the bottom-up analysis, it computes a summary for each
+   *   function except for main.
+   * - The top-down analysis reuses the callsite's summary each time
+   *   it visits the callsite.
+   * 
+   *   FIXME: the top-down analysis runs only once starting from the
+   *   SCC encountered after topologically ordering all the callgraph
+   *   SCCs. Thus, it's assuming that first SCC has only one
+   *   component. In general, the callgraph might have more than one
+   *   entry point.
+   **/
+  void run(TD_Dom init) {
 
     CRAB_VERBOSE_IF(1, get_msg_stream()
                            << "Started inter-procedural analysis\n";);
@@ -722,7 +769,7 @@ public:
           }
 
           if (outputs.empty()) {
-            BU_Dom summary;
+            BU_Dom summary = make_bu_top();
             m_summ_tbl.insert(fdecl, summary, inputs, outputs);
             CRAB_WARN("Skipped summary because function ",
                       fun_name, " has no output parameters");
@@ -731,7 +778,7 @@ public:
                       fun_name, " has no exit block");
           } else {
             // --- run the analysis
-            auto init_inv = BU_Dom::top();
+            auto init_inv = make_bu_top();
             bu_abs_tr abs_tr(std::move(init_inv), &m_summ_tbl);
             bu_analyzer a(cfg, nullptr, &abs_tr, get_live(cfg), m_widening_delay,
                           m_descending_iters, m_jump_set_size);
@@ -774,7 +821,7 @@ public:
           // to use it. To remedy it, we insert another calling
           // context with top value that approximates all the
           // possible calling contexts during the recursive calls.
-          m_call_tbl.insert(fdecl, TD_Dom::top());
+          m_call_tbl.insert(fdecl, make_td_top());
         }
 
         auto init_inv = init;
@@ -816,7 +863,7 @@ public:
     if (it != m_inv_map.end()) {
       return it->second->get_pre(b);
     } else {
-      return TD_Dom::top();
+      return make_td_top();
     }
   }
 
@@ -829,7 +876,7 @@ public:
     if (it != m_inv_map.end()) {
       return it->second->get_post(b);
     } else {
-      return TD_Dom::top();
+      return make_td_top();
     }
   }
 

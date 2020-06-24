@@ -17,7 +17,7 @@ int main (int argc, char** argv) {
     z_var A(vfac["A"], crab::INT_TYPE, 32);
     z_var x_prime(vfac["x\'"], crab::INT_TYPE, 32);
 
-    z_dbm_domain_t dbm = z_dbm_domain_t::top ();
+    z_dbm_domain_t dbm ;
     // for all i. A[i] >= 0
     dbm += (A >= z_number (0));
     // x = A[..];
@@ -33,7 +33,7 @@ int main (int argc, char** argv) {
     z_var x(vfac["x"], crab::INT_TYPE, 32);
     z_var y(vfac["y"], crab::INT_TYPE, 32);
     z_var z(vfac["z"], crab::INT_TYPE, 32);
-    z_dbm_domain_t dbm = z_dbm_domain_t::top ();
+    z_dbm_domain_t dbm ;
     dbm += (x >= z_number(0));
     dbm += (x <= z_number(10));    
     dbm += (z_lin_t(x) == z_lin_t(y));
@@ -49,7 +49,7 @@ int main (int argc, char** argv) {
     z_var z(vfac["z"], crab::INT_TYPE, 32);
     z_var u(vfac["u"], crab::INT_TYPE, 32);
     z_var v(vfac["v"], crab::INT_TYPE, 32);        
-    z_dbm_domain_t dbm = z_dbm_domain_t::top ();
+    z_dbm_domain_t dbm ;
     dbm += (x >= z_number(0));
     dbm += (x <= z_number(10));    
     dbm += (z_lin_t(x) == z_lin_t(y));
@@ -64,11 +64,11 @@ int main (int argc, char** argv) {
     z_var x(vfac["x"], crab::INT_TYPE, 32);
     z_var y(vfac["y"], crab::INT_TYPE, 32);
     z_var z(vfac["z"], crab::INT_TYPE, 32);
-    z_dbm_domain_t dbm1 = z_dbm_domain_t::top ();
+    z_dbm_domain_t dbm1 ;
     dbm1 += (x == z_lin_t(y));
     dbm1 += (x == z_number(1));
     crab::outs() << "DBM1=" << dbm1 << "\n";
-    z_dbm_domain_t dbm2 = z_dbm_domain_t::top ();
+    z_dbm_domain_t dbm2 ;
     dbm2 += (y >= z_number(1));
     crab::outs() << "DBM2=" << dbm2 << "\n";    
     z_dbm_domain_t dbm3 = dbm2 & dbm1;

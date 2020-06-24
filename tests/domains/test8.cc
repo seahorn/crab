@@ -56,12 +56,13 @@ int main (int argc, char** argv) {
   
   crab::outs() << cfg << "\n";
 
-  crab::outs () << "Starting at the entry of CFG:\n";  
-  run<z_interval_domain_t>(&cfg,cfg.entry(),false,1,2,20,stats_enabled);
+  crab::outs () << "Starting at the entry of CFG:\n";
+  z_interval_domain_t init;
+  run(&cfg,cfg.entry(),init,false,1,2,20,stats_enabled);
   crab::outs () << "Starting at the entry of the second loop:\n";
-  run<z_interval_domain_t>(&cfg,loop2_entry.label(),false,1,2,20,stats_enabled);
+  run(&cfg,loop2_entry.label(),init,false,1,2,20,stats_enabled);
   crab::outs () << "Starting at the middle of the second loop:\n";
-  run<z_interval_domain_t>(&cfg,loop2_bb2.label(),false,1,2,20,stats_enabled);  
+  run(&cfg,loop2_bb2.label(),init,false,1,2,20,stats_enabled);  
   
   return 0;
 }

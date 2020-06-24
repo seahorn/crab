@@ -3,20 +3,20 @@
 // Here all explicit instantiations
 
 #define Z_RUNNER(DOM) \
-  template void run<DOM > \
-  (crab::cfg_impl::z_cfg_t*, crab::cfg_impl::basic_block_label_t, bool, unsigned, unsigned, unsigned, bool);
+template void run<DOM > \
+(crab::cfg_impl::z_cfg_t*, crab::cfg_impl::basic_block_label_t, DOM, bool, unsigned, unsigned, unsigned, bool);
 
 #define Z_CHECKER(DOM) \
-  template void run_and_check<DOM > \
-  (crab::cfg_impl::z_cfg_t*, crab::cfg_impl::basic_block_label_t, bool, unsigned, unsigned, unsigned, bool);
+template void run_and_check<DOM > \
+(crab::cfg_impl::z_cfg_t*, crab::cfg_impl::basic_block_label_t, DOM, bool, unsigned, unsigned, unsigned, bool);
 
 #define Q_RUNNER(DOM) \
 template void run<DOM > \
-(crab::cfg_impl::q_cfg_t*, crab::cfg_impl::basic_block_label_t, bool, unsigned, unsigned, unsigned, bool);
+(crab::cfg_impl::q_cfg_t*, crab::cfg_impl::basic_block_label_t, DOM, bool, unsigned, unsigned, unsigned, bool);
 
 #define Q_CHECKER(DOM) \
 template void run_and_check<DOM > \
-(crab::cfg_impl::q_cfg_t*, crab::cfg_impl::basic_block_label_t, bool, unsigned, unsigned, unsigned, bool);
+(crab::cfg_impl::q_cfg_t*, crab::cfg_impl::basic_block_label_t, DOM, bool, unsigned, unsigned, unsigned, bool);
 
 Z_RUNNER(crab::domain_impl::z_interval_domain_t)
 Z_RUNNER(crab::domain_impl::z_ric_domain_t)

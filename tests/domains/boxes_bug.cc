@@ -18,20 +18,21 @@ int main (int argc, char** argv ) {
     
     csts1 += (q_var (vfac ["x"], crab::REAL_TYPE) >= q_number(2));
     csts1 += (q_var (vfac ["y"], crab::REAL_TYPE) == q_number(2));
-    q_boxes_domain_t inv1_c1 = q_boxes_domain_t::top ();
+    q_boxes_domain_t inv1_c1;
     inv1_c1 += csts1;
 
     csts2 += (q_var (vfac ["x"], crab::REAL_TYPE) == q_number(1));
     csts2 += (q_var (vfac ["y"], crab::REAL_TYPE) == q_number(1));
-    q_boxes_domain_t inv1_c2 = q_boxes_domain_t::top ();
+    q_boxes_domain_t inv1_c2 ;
     inv1_c2 += csts2;
 
     csts3 += (q_var (vfac ["x"], crab::REAL_TYPE) == q_number(1));
     csts3 += (q_var (vfac ["y"], crab::REAL_TYPE) == q_number(0));
-    q_boxes_domain_t inv1_c3 = q_boxes_domain_t::top ();
+    q_boxes_domain_t inv1_c3;
     inv1_c3 += csts3;
 
-    q_boxes_domain_t inv1 = q_boxes_domain_t::bottom();
+    q_boxes_domain_t inv1;
+    inv1.set_to_bottom();
     inv1 |= inv1_c1;
     inv1 |= inv1_c2;
     inv1 |= inv1_c3; 
@@ -42,56 +43,57 @@ int main (int argc, char** argv ) {
     
     csts4 += (q_var (vfac ["x"], crab::REAL_TYPE) > q_number(3));
     csts4 += (q_var (vfac ["y"], crab::REAL_TYPE) == q_number(3));
-    q_boxes_domain_t inv2_c1 = q_boxes_domain_t::top ();
+    q_boxes_domain_t inv2_c1 ;
     inv2_c1 += csts4;
 
     csts5 += (q_var (vfac ["x"], crab::REAL_TYPE) >= q_number(2));
     csts5 += (q_var (vfac ["x"], crab::REAL_TYPE) <= q_number(3));    
     csts5 += (q_var (vfac ["y"], crab::REAL_TYPE) == q_number(3));
-    q_boxes_domain_t inv2_c2 = q_boxes_domain_t::top ();
+    q_boxes_domain_t inv2_c2 ;
     inv2_c2 += csts5;
 
     csts6 += (q_var (vfac ["x"], crab::REAL_TYPE) >= q_number(2));
     csts6 += (q_var (vfac ["x"], crab::REAL_TYPE) <= q_number(3));    
     csts6 += (q_var (vfac ["y"], crab::REAL_TYPE) == q_number(2));
-    q_boxes_domain_t inv2_c3 = q_boxes_domain_t::top ();
+    q_boxes_domain_t inv2_c3 ;
     inv2_c3 += csts6;
 
     csts7 += (q_var (vfac ["x"], crab::REAL_TYPE) >= q_number(2));
     csts7 += (q_var (vfac ["x"], crab::REAL_TYPE) <= q_number(3));    
     csts7 += (q_var (vfac ["y"], crab::REAL_TYPE) == q_number(1));
-    q_boxes_domain_t inv2_c4 = q_boxes_domain_t::top ();
+    q_boxes_domain_t inv2_c4 ;
     inv2_c4 += csts7;
 
     csts8 += (q_var (vfac ["x"], crab::REAL_TYPE) > q_number(1));
     csts8 += (q_var (vfac ["x"], crab::REAL_TYPE) < q_number(2));    
     csts8 += (q_var (vfac ["y"], crab::REAL_TYPE) == q_number(2));
-    q_boxes_domain_t inv2_c5 = q_boxes_domain_t::top ();
+    q_boxes_domain_t inv2_c5 ;
     inv2_c5 += csts8;
 
     csts9 += (q_var (vfac ["x"], crab::REAL_TYPE) > q_number(1));
     csts9 += (q_var (vfac ["x"], crab::REAL_TYPE) < q_number(2));    
     csts9 += (q_var (vfac ["y"], crab::REAL_TYPE) == q_number(1));
-    q_boxes_domain_t inv2_c6 = q_boxes_domain_t::top ();
+    q_boxes_domain_t inv2_c6 ;
     inv2_c6 += csts9;
 
     csts10 += (q_var (vfac ["x"], crab::REAL_TYPE) == q_number(1));
     csts10 += (q_var (vfac ["y"], crab::REAL_TYPE) == q_number(2));
-    q_boxes_domain_t inv2_c7 = q_boxes_domain_t::top ();
+    q_boxes_domain_t inv2_c7 ;
     inv2_c7 += csts10;
 
     csts11 += (q_var (vfac ["x"], crab::REAL_TYPE) == q_number(1));
     csts11 += (q_var (vfac ["y"], crab::REAL_TYPE) == q_number(1));
-    q_boxes_domain_t inv2_c8 = q_boxes_domain_t::top ();
+    q_boxes_domain_t inv2_c8 ;
     inv2_c8 += csts11;
 
     csts12 += (q_var (vfac ["x"], crab::REAL_TYPE) == q_number(1));
     csts12 += (q_var (vfac ["y"], crab::REAL_TYPE) == q_number(0));
-    q_boxes_domain_t inv2_c9 = q_boxes_domain_t::top ();
+    q_boxes_domain_t inv2_c9 ;
     inv2_c9 += csts12;
     
 
-    q_boxes_domain_t inv2 = q_boxes_domain_t::bottom();
+    q_boxes_domain_t inv2;
+    inv2.set_to_bottom();
     inv2 |= inv2_c1;
     inv2 |= inv2_c2;
     inv2 |= inv2_c3;

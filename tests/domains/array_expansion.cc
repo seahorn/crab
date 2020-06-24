@@ -694,7 +694,8 @@ void test_array_expansion(int test, bool stats_enabled) {
   
   if (cfg) {
     z_ae_term_int_t::clear_global_state();
-    run_and_check<z_ae_term_int_t>(cfg,cfg->entry(),false,1,2,20,stats_enabled);
+    z_ae_term_int_t init;
+    run_and_check(cfg,cfg->entry(),init,false,1,2,20,stats_enabled);
     delete cfg;
   }
 }

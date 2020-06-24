@@ -97,8 +97,14 @@ int main (int argc, char** argv) {
   z_cfg_t* cfg = prog1(vfac);
   crab::outs() << *cfg << "\n";
 
-  run_and_check<z_pow_aa_int_t>(cfg,cfg->entry(),false,1,2,20,stats_enabled);  
-  run_and_check<z_interval_domain_t>(cfg,cfg->entry(),false,1,2,20,stats_enabled);
+  {
+    z_pow_aa_int_t init;
+    run_and_check(cfg,cfg->entry(),init,false,1,2,20,stats_enabled);
+  }
+  {
+    z_interval_domain_t init;
+    run_and_check(cfg,cfg->entry(),init,false,1,2,20,stats_enabled);
+  }
   
   // free the CFG
   delete cfg;

@@ -693,7 +693,8 @@ void test_array_adaptive(int test, bool stats_enabled) {
   }
   
   if (cfg) {
-    run_and_check<z_aa_term_int_t>(cfg,cfg->entry(),false,1,2,20,stats_enabled);
+    z_aa_term_int_t init;
+    run_and_check<>(cfg,cfg->entry(),init,false,1,2,20,stats_enabled);
     delete cfg;
   }
 }

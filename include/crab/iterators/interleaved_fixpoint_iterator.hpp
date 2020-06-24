@@ -62,6 +62,7 @@ template <typename CFG, typename AbstractValue> class wto_processor;
 
 } // namespace interleaved_fwd_fixpoint_iterator_impl
 
+
 template <typename CFG, typename AbstractValue>
 class interleaved_fwd_fixpoint_iterator
     : public fixpoint_iterator<CFG, AbstractValue> {
@@ -97,7 +98,11 @@ private:
   // We don't want derived classes to access directly to _pre and
   // _post in case we make internal changes
   invariant_table_t _pre, _post;
-protected:  
+protected:
+  // We need to keep it so that we can call make_top(), make_bottom()
+  // since we cannot assume that AbstractValue has a default
+  // constructor.
+  AbstractValue _init_inv;
   // number of iterations until triggering widening
   unsigned int _widening_delay;
   // number of narrowing iterations. If the narrowing operator is
@@ -218,21 +223,24 @@ private:
   }
 
 public:
-  interleaved_fwd_fixpoint_iterator(CFG cfg, const wto_t *wto,
+  interleaved_fwd_fixpoint_iterator(CFG cfg, AbstractValue init,
+				    const wto_t *wto,
                                     unsigned int widening_delay,
                                     unsigned int descending_iterations,
                                     size_t jump_set_size,
                                     bool enable_processor = true)
-      : _cfg(cfg), _wto(!wto ? cfg : *wto), _widening_delay(widening_delay),
-        _descending_iterations(descending_iterations),
-        _use_widening_jump_set(jump_set_size > 0),
-        _enable_processor(enable_processor) {
-
+    : _cfg(cfg), _wto(!wto ? cfg : *wto),
+      _init_inv(std::move(init)),
+      _widening_delay(widening_delay),
+      _descending_iterations(descending_iterations),
+      _use_widening_jump_set(jump_set_size > 0),
+      _enable_processor(enable_processor) {
+    
     initialize_thresholds(jump_set_size);
     for (auto it = _cfg.label_begin(), et = _cfg.label_end(); it != et; ++it) {
       auto const &label = *it;
-      this->_pre.emplace(label, AbstractValue::bottom());
-      this->_post.emplace(label, AbstractValue::bottom());
+      this->_pre.emplace(label, _init_inv.make_bottom());
+      this->_post.emplace(label, _init_inv.make_bottom());
     }
   }
 
@@ -265,9 +273,11 @@ public:
   
   void run(AbstractValue init) {
     crab::ScopedCrabStats __st__("Fixpo");
+
+    _init_inv = std::move(init);    
     CRAB_VERBOSE_IF(1, crab::get_msg_stream() << "== Started fixpoint\n");
-    this->set_pre(this->_cfg.entry(), init);
-    wto_iterator_t iterator(this);
+    this->set_pre(this->_cfg.entry(), _init_inv);
+    wto_iterator_t iterator(this, _init_inv);
     this->_wto.accept(&iterator);
     if (_enable_processor) {
       wto_processor_t processor(this);
@@ -282,12 +292,14 @@ public:
   void run(basic_block_label_t entry, AbstractValue init,
            const assumption_map_t &assumptions) {
     crab::ScopedCrabStats __st__("Fixpo");
+
+    _init_inv = std::move(init);    
     CRAB_VERBOSE_IF(1, crab::get_msg_stream()
                            << "== Started fixpoint at block "
                            << crab::cfg_impl::get_label_str(entry)
-                           << " with initial value=" << init << "\n";);
-    this->set_pre(entry, init);
-    wto_iterator_t iterator(this, entry, &assumptions);
+                           << " with initial value=" << _init_inv << "\n";);
+    this->set_pre(entry, _init_inv);
+    wto_iterator_t iterator(this, entry, _init_inv, &assumptions);
     this->_wto.accept(&iterator);
     if (_enable_processor) {
       wto_processor_t processor(this);
@@ -333,10 +345,21 @@ private:
   interleaved_iterator_t *_iterator;
   // Initial entry point of the analysis
   basic_block_label_t _entry;
+  // To be able to call make_top and make_bottom since we don't assume
+  // AbstractValue has a default constructor.
+  AbstractValue _init_inv;
   const assumption_map_t *_assumptions;
   // Used to skip the analysis until _entry is found
   bool _skip;
 
+  inline AbstractValue make_top() const {
+    return _init_inv.make_top();
+  }
+
+  inline AbstractValue make_bottom() const {
+    return _init_inv.make_bottom();
+  }
+  
   inline AbstractValue strengthen(basic_block_label_t n, AbstractValue inv) {
     crab::CrabStats::count("Fixpo.strengthen");
     crab::ScopedCrabStats __st__("Fixpo.strengthen");
@@ -404,13 +427,20 @@ private:
   };
 
 public:
-  wto_iterator(interleaved_iterator_t *iterator)
-      : _iterator(iterator), _entry(_iterator->get_cfg().entry()),
-        _assumptions(nullptr), _skip(true) {}
+  wto_iterator(interleaved_iterator_t *iterator, AbstractValue init)
+      : _iterator(iterator),
+	_entry(_iterator->get_cfg().entry()),
+	_init_inv(std::move(init)),
+        _assumptions(nullptr),
+	_skip(true) {}
 
-  wto_iterator(interleaved_iterator_t *iterator, basic_block_label_t entry,
+  wto_iterator(interleaved_iterator_t *iterator,
+	       basic_block_label_t entry, AbstractValue init,
                const assumption_map_t *assumptions)
-      : _iterator(iterator), _entry(entry), _assumptions(assumptions),
+      : _iterator(iterator),
+	_entry(entry),
+	_init_inv(std::move(init)),
+	_assumptions(assumptions),
         _skip(true) {}
 
   void visit(wto_vertex_t &vertex) {
@@ -427,7 +457,7 @@ public:
       return;
     }
 
-    AbstractValue pre;
+    AbstractValue pre = std::move(make_top());
     if (node == _entry) {
       pre = this->_iterator->get_pre(node);
       if (_assumptions && !_assumptions->empty()) {
@@ -438,7 +468,7 @@ public:
     } else {
       auto prev_nodes = this->_iterator->_cfg.prev_nodes(node);
       crab::CrabStats::resume("Fixpo.join_predecessors");
-      pre = AbstractValue::bottom();
+      pre = std::move(make_bottom());
       for (basic_block_label_t prev : prev_nodes) {
         pre |= this->_iterator->get_post(prev);
       }
@@ -480,7 +510,7 @@ public:
                     crab::outs() << " size=" << n.size() << "\n";);
 
     auto prev_nodes = this->_iterator->_cfg.prev_nodes(head);
-    AbstractValue pre = AbstractValue::bottom();
+    AbstractValue pre = std::move(make_bottom());
     wto_nesting_t cycle_nesting = this->_iterator->_wto.nesting(head);
 
     if (entry_in_this_cycle) {
@@ -514,7 +544,7 @@ public:
         it->accept(this);
       }
       crab::CrabStats::resume("Fixpo.join_predecessors");
-      AbstractValue new_pre = AbstractValue::bottom();
+      AbstractValue new_pre = std::move(make_bottom());
       for (basic_block_label_t prev : prev_nodes) {
         new_pre |= this->_iterator->get_post(prev);
       }
@@ -548,7 +578,7 @@ public:
         it->accept(this);
       }
       crab::CrabStats::resume("Fixpo.join_predecessors");
-      AbstractValue new_pre = AbstractValue::bottom();
+      AbstractValue new_pre = std::move(make_bottom());
       for (basic_block_label_t prev : prev_nodes) {
         new_pre |= this->_iterator->get_post(prev);
       }

@@ -27,8 +27,8 @@ template <class Dom> struct abstract_domain_traits;
  * class my_new_domain final: public
  *     abstract_domain<my_new_domain<Number,VariableName>> {
  *     ...
- *     bool is_bottom() {...}
- *     bool is_top() {...}
+ *     bool is_bottom() const override {...}
+ *     bool is_top() const override {...}
  *     ...
  * };
  *
@@ -54,28 +54,10 @@ public:
   typedef std::vector<variable_t> variable_vector_t;
   typedef reference_constraint<number_t, varname_t> reference_constraint_t;
   typedef ikos::interval<number_t> interval_t;
-
-  abstract_domain() {}
-
-  virtual ~abstract_domain(){};
-
-  static Dom top() {
-    Dom abs;
-    abs.set_to_top();
-    return abs;
-  }
-
-  static Dom bottom() {
-    Dom abs;
-    abs.set_to_bottom();
-    return abs;
-  }
-
-  static std::string getDomainName() {
-    Dom abs;
-    return abs.domain_name();
-  }
   
+  abstract_domain() = default;
+  virtual ~abstract_domain() = default;
+
   /**************************** Lattice operations ****************************/
 
   // Return a top abstract value

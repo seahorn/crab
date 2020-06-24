@@ -166,13 +166,13 @@ typedef call_graph<z_cfg_ref_t> callgraph_t;
 typedef call_graph_ref<callgraph_t> callgraph_ref_t;
 typedef top_down_inter_analyzer_parameters<callgraph_ref_t> inter_analyzer_params_t;
 
-template<typename InterAnalyzer>
-void run(callgraph_t& cg) {
+template<typename InterAnalyzer, typename Dom>
+void run(callgraph_t& cg, Dom init) {
   //////////////////////////////////////////////////////////  
   // It should prove all assertions
   /////////////////////////////////////////////////////////  
-  InterAnalyzer default_analyzer(cg);
-  default_analyzer.run();
+  InterAnalyzer default_analyzer(cg, init);
+  default_analyzer.run(init);
   // Print invariants
   #if 0
   for(auto &v: boost::make_iterator_range(cg.nodes())) {
@@ -197,8 +197,8 @@ void run(callgraph_t& cg) {
   params.max_call_contexts = 3;  
   params.checker_verbosity = 1;
   
-  InterAnalyzer analyzer(cg, params);
-  analyzer.run();
+  InterAnalyzer analyzer(cg, init, params);
+  analyzer.run(init);
   analyzer.print_checks(crab::outs());
   //////////////////////////////////////////////////////////
 }
@@ -225,29 +225,34 @@ int main(int argc, char** argv) {
   callgraph_t cg(cfgs);
   {
     typedef top_down_inter_analyzer<callgraph_ref_t, z_dbm_domain_t> inter_analyzer_t;
+    z_dbm_domain_t init; 
     crab::outs() << "Running top-down inter-procedural analysis with "
-		 << z_dbm_domain_t::getDomainName() << "\n";
-    run<inter_analyzer_t>(cg);
+		 << init.domain_name() << "\n";
+    run<inter_analyzer_t>(cg, init);
   }  
   {
     typedef top_down_inter_analyzer<callgraph_ref_t, z_sdbm_domain_t> inter_analyzer_t;
+    z_sdbm_domain_t init; 
+    
     crab::outs() << "Running top-down inter-procedural analysis with "
-		 << z_sdbm_domain_t::getDomainName() << "\n";
-    run<inter_analyzer_t>(cg);
+		 << init.domain_name() << "\n";
+    run<inter_analyzer_t>(cg, init);
   }
 #ifdef HAVE_APRON   
   {
     typedef top_down_inter_analyzer<callgraph_ref_t, z_oct_apron_domain_t> inter_analyzer_t;
+    z_oct_apron_domain_t init;
     crab::outs() << "Running top-down inter-procedural analysis with "
-		 << z_oct_apron_domain_t::getDomainName() << "\n";    
-    run<inter_analyzer_t>(cg);
+		 << init.domain_name() << "\n";    
+    run<inter_analyzer_t>(cg, init);
   }
 #elif defined(HAVE_ELINA)
   {
     typedef top_down_inter_analyzer<callgraph_ref_t, z_oct_elina_domain_t> inter_analyzer_t;
+    z_oct_elina_domain_t init;
     crab::outs() << "Running top-down inter-procedural analysis with "
-		 << z_oct_elina_domain_t::getDomainName() << "\n";        
-    run<inter_analyzer_t>(cg);
+		 << init.domain_name() << "\n";        
+    run<inter_analyzer_t>(cg, init);
   }
 #endif
   

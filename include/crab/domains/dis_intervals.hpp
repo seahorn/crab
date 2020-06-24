@@ -1575,18 +1575,18 @@ public:
     crab::CrabStats::count(domain_name() + ".count.approx");
     crab::ScopedCrabStats __st__(domain_name() + ".approx");
 
-    if (_env.is_bottom())
-      return interval_domain_t::bottom();
-    else if (_env.is_top())
-      return interval_domain_t::top();
-    else {
-      interval_domain_t res;
+    interval_domain_t res;
+    if (_env.is_bottom()) {
+      res.set_to_bottom();
+    } else if (_env.is_top()) {
+      res.set_to_top();
+    } else {
       for (auto const p :
            boost::make_iterator_range(_env.begin(), _env.end())) {
         res.set(p.first, p.second.approx());
       }
-      return res;
     }
+    return res;
   }
 
   linear_constraint_system_t to_linear_constraint_system() const override {

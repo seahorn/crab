@@ -43,9 +43,15 @@ int main (int argc, char** argv) {
   cfg->simplify (); // this is optional
   crab::outs() << *cfg << "\n";
 
-  run<q_interval_domain_t>(cfg,cfg->entry(),false,1,2,20,stats_enabled);
+  {
+    q_interval_domain_t init;
+    run(cfg,cfg->entry(),init,false,1,2,20,stats_enabled);
+  }
   #ifdef HAVE_APRON
-  run<q_pk_apron_domain_t>(cfg,cfg->entry(),false,1,2,20,stats_enabled);
+  {
+    q_pk_apron_domain_t init;
+    run(cfg,cfg->entry(),init,false,1,2,20,stats_enabled);
+  }
   #endif 
 
   return 0;

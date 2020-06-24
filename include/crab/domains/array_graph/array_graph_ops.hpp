@@ -28,6 +28,16 @@ template <class Gr, bool IsDistWt> class ArrayGrOps {
   typedef typename graph_t::mut_val_ref_t mut_val_ref_t;
   typedef std::vector<std::pair<std::pair<vert_id, vert_id>, Wt>> edge_vector;
 
+  static Wt make_wt_top() {
+    Wt w;
+    return w.make_top();
+  }
+
+  static Wt make_wt_bottom() {
+    Wt w;
+    return w.make_bottom();
+  }
+
 public:
   static bool less_than(Wt w1, Wt w2) { return (!(w2 <= w1)); }
 
@@ -200,8 +210,8 @@ public:
         for (vert_id j : g.verts()) {
           bool has_ik = g.lookup(i, k, &w_ik);
           bool has_kj = g.lookup(k, j, &w_kj);
-          change = maybe_extend(g, i, j, (has_ik ? (Wt)w_ik : Wt::top()),
-                                (has_kj ? (Wt)w_kj : Wt::top()));
+          change = maybe_extend(g, i, j, (has_ik ? (Wt)w_ik : make_wt_top()),
+                                (has_kj ? (Wt)w_kj : make_wt_top()));
         }
       }
     }
@@ -272,8 +282,8 @@ public:
 
     std::vector<Wt> dists;
     while (dists.size() < g.size())
-      dists.push_back(Wt::top());
-    dists[s] = Wt::bottom();
+      dists.push_back(make_wt_top());
+    dists[s] = make_wt_bottom();
 
     WtComp comp(dists);
     WtHeap heap(comp);

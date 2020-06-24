@@ -18,7 +18,7 @@ int main (int argc, char** argv ) {
   crab::outs () << "Running APRON\n\n";
   variable_factory_t vfac;
   {
-    q_pk_apron_domain_t inv = q_pk_apron_domain_t::top ();
+    q_pk_apron_domain_t inv;
     q_lin_cst_sys_t csts;
     csts += (q_var (vfac ["x"], crab::REAL_TYPE) >= q_number(1));
     csts += (q_var (vfac ["x"], crab::REAL_TYPE) <= q_number(1));
@@ -30,7 +30,7 @@ int main (int argc, char** argv ) {
   }
   crab::outs () << "------------------------------------\n";
   {
-    q_pk_apron_domain_t inv = q_pk_apron_domain_t::top ();
+    q_pk_apron_domain_t inv;
     q_lin_cst_sys_t csts;
     csts += (q_var (vfac ["x"], crab::REAL_TYPE) >= q_number(0.5));
     csts += (q_var (vfac ["x"], crab::REAL_TYPE) <= q_number(0.5));
@@ -42,7 +42,7 @@ int main (int argc, char** argv ) {
   }
   crab::outs () << "------------------------------------\n";
   {
-    q_oct_apron_domain_t inv = q_oct_apron_domain_t::top ();
+    q_oct_apron_domain_t inv;
     q_lin_cst_sys_t csts;
     csts += (q_var (vfac ["x"], crab::REAL_TYPE) >= q_number(0.5));
     csts += (q_var (vfac ["x"], crab::REAL_TYPE) <= q_number(0.5));
@@ -60,7 +60,7 @@ int main (int argc, char** argv ) {
   crab::outs () << "Running ELINA\n\n";  
   variable_factory_t vfac;
   {
-    q_oct_elina_domain_t inv = q_oct_elina_domain_t::top ();
+    q_oct_elina_domain_t inv;
     q_lin_cst_sys_t csts;
     csts += (q_var (vfac ["x"], crab::REAL_TYPE) >= q_number(1));
     csts += (q_var (vfac ["x"], crab::REAL_TYPE) <= q_number(1));
@@ -72,7 +72,7 @@ int main (int argc, char** argv ) {
   }
   crab::outs () << "------------------------------------\n";
   {
-    q_oct_elina_domain_t inv = q_oct_elina_domain_t::top ();
+    q_oct_elina_domain_t inv;
     q_lin_cst_sys_t csts;
     csts += (q_var (vfac ["x"], crab::REAL_TYPE) >= q_number(0.5));
     csts += (q_var (vfac ["x"], crab::REAL_TYPE) <= q_number(0.5));
@@ -85,7 +85,7 @@ int main (int argc, char** argv ) {
 
   crab::outs () << "------------------------------------\n";
   {
-    q_oct_elina_domain_t inv = q_oct_elina_domain_t::top ();
+    q_oct_elina_domain_t inv;
     q_lin_cst_sys_t csts;
     csts += (q_var (vfac ["x"], crab::REAL_TYPE) >= q_number(0.5));
     csts += (q_var (vfac ["x"], crab::REAL_TYPE) <= q_number(0.5));

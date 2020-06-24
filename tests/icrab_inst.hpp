@@ -4,7 +4,7 @@
 
 #define Z_BU_RUNNER(BUDOM,TDDOM)	    \
 template void bu_inter_run<BUDOM,TDDOM>	    \
-(crab::cg_impl::z_cg_t*, bool, unsigned, unsigned, unsigned, bool);
+(crab::cg_impl::z_cg_t*, BUDOM, TDDOM, bool, unsigned, unsigned, unsigned, bool);
 
 Z_BU_RUNNER(crab::domain_impl::z_dbm_domain_t, crab::domain_impl::z_interval_domain_t)
 #ifdef HAVE_APRON

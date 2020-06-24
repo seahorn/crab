@@ -70,7 +70,8 @@ int main (int argc, char** argv) {
   cfg->simplify ();
   crab::outs() << *cfg << "\n";
 
-  run_and_check<z_interval_domain_t>(cfg,cfg->entry(),false,1,2,20,stats_enabled);
+  z_interval_domain_t init;
+  run_and_check(cfg,cfg->entry(),init,false,1,2,20,stats_enabled);
 
   delete cfg;
   return 0;

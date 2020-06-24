@@ -20,7 +20,7 @@ int main(int argc, char** argv) {
   #ifdef HAVE_APRON
   { // backward array load
     z_ae_box_apron_t pre, inv;
-    crab::outs() << "Test using " << pre.getDomainName() << "\n";    
+    crab::outs() << "Test using " << pre.domain_name() << "\n";    
     pre += (y >= 1);
     pre.backward_array_load(y, M, 4, 4, inv);
     crab::outs() << "EXPECTED: {M[4..7] >= 1} \n";
@@ -31,7 +31,7 @@ int main(int argc, char** argv) {
   
   { // backward array store
     z_ae_box_apron_t pre, inv;
-    crab::outs() << "Test using " << pre.getDomainName() << "\n";        
+    crab::outs() << "Test using " << pre.domain_name() << "\n";        
     pre += (x >= 2);
     pre += (y >= 1);
     ///pre += (z >= -10);
@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
   
   { // backward array store
     z_ae_box_apron_t pre, inv;
-    crab::outs() << "Test using " << pre.getDomainName() << "\n";        
+    crab::outs() << "Test using " << pre.domain_name() << "\n";        
     pre += (x >= 2);
     pre += (y >= 1);
     pre += (z == -10);
@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
   
   { // backward array store
     z_ae_box_apron_t pre, inv;
-    crab::outs() << "Test using " << pre.getDomainName() << "\n";            
+    crab::outs() << "Test using " << pre.domain_name() << "\n";            
     pre += (x >= 2);
     pre += (y >= 1);
     pre.array_store(M, 4, 4, x, false);
@@ -73,7 +73,7 @@ int main(int argc, char** argv) {
   #if 0
   { // backward array load
     z_ae_zones_elina_t pre, inv;
-    crab::outs() << "Test using " << pre.getDomainName() << "\n";    
+    crab::outs() << "Test using " << pre.domain_name() << "\n";    
     pre += (y >= 1);
     pre.backward_array_load(y, M, 4, 4, inv);
     crab::outs() << "EXPECTED: {M[4..7] >= 1} \n";
@@ -84,7 +84,7 @@ int main(int argc, char** argv) {
   
   { // backward array store
     z_ae_zones_elina_t pre, inv;
-    crab::outs() << "Test using " << pre.getDomainName() << "\n";        
+    crab::outs() << "Test using " << pre.domain_name() << "\n";        
     pre += (x >= 2);
     pre += (y >= 1);
     ///pre += (z >= -10);
@@ -98,7 +98,7 @@ int main(int argc, char** argv) {
   
   { // backward array store
     z_ae_zones_elina_t pre, inv;
-    crab::outs() << "Test using " << pre.getDomainName() << "\n";        
+    crab::outs() << "Test using " << pre.domain_name() << "\n";        
     pre += (x >= 2);
     pre += (y >= 1);
     pre += (z == -10);
@@ -112,7 +112,7 @@ int main(int argc, char** argv) {
   
   { // backward array store
     z_ae_zones_elina_t pre, inv;
-    crab::outs() << "Test using " << pre.getDomainName() << "\n";            
+    crab::outs() << "Test using " << pre.domain_name() << "\n";            
     pre += (x >= 2);
     pre += (y >= 1);
     pre.array_store(M, 4, 4, x, false);
@@ -127,7 +127,7 @@ int main(int argc, char** argv) {
   
   { // backward array load
     z_ae_int_t pre, inv;
-    crab::outs() << "Test using " << pre.getDomainName() << "\n";    
+    crab::outs() << "Test using " << pre.domain_name() << "\n";    
     pre += (y >= 1);
     pre.backward_array_load(y, M, 4, 4, inv);
     crab::outs() << "EXPECTED: {M[4..7] >= 1} \n";
@@ -138,7 +138,7 @@ int main(int argc, char** argv) {
   
   { // backward array store
     z_ae_int_t pre, inv;
-    crab::outs() << "Test using " << pre.getDomainName() << "\n";        
+    crab::outs() << "Test using " << pre.domain_name() << "\n";        
     pre += (x >= 2);
     pre += (y >= 1);
     ///pre += (z >= -10);
@@ -152,7 +152,7 @@ int main(int argc, char** argv) {
   
   { // backward array store
     z_ae_int_t pre, inv;
-    crab::outs() << "Test using " << pre.getDomainName() << "\n";        
+    crab::outs() << "Test using " << pre.domain_name() << "\n";        
     pre += (x >= 2);
     pre += (y >= 1);
     pre += (z == -10);
@@ -166,7 +166,7 @@ int main(int argc, char** argv) {
   
   { // backward array store
     z_ae_int_t pre, inv;
-    crab::outs() << "Test using " << pre.getDomainName() << "\n";            
+    crab::outs() << "Test using " << pre.domain_name() << "\n";            
     pre += (x >= 2);
     pre += (y >= 1);
     pre.array_store(M, 4, 4, x, false);

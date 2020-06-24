@@ -16,8 +16,9 @@ void backward_run_internal(CFG* cfg,
 			   bool enable_stats){
   
   // Run backward analysis
-  crab::outs() << "Invariants using " << Dom::getDomainName () << "\n";
-  IntraBwdAnalyzer a(*cfg);
+  crab::outs() << "Invariants using "
+	       << initial_states.domain_name() << "\n";
+  IntraBwdAnalyzer a(*cfg, initial_states);
   typename IntraBwdAnalyzer::assumption_map_t assumptions;
   a.run(entry, initial_states, false, assumptions,
 	nullptr /*liveness*/,

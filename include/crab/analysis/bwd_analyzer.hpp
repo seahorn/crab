@@ -54,6 +54,10 @@ class necessary_preconditions_fixpoint_iterator
   // preconditions from good states, otherwise from bad states
   bool m_good_states;
 
+  inline AbsDom make_top() const {
+    return m_postcond.make_top();
+  }
+  
   /**
    * Compute necessary preconditions for a basic block
    **/
@@ -116,9 +120,10 @@ public:
       /* fixpoint parameters */
       unsigned int widening_delay = 1,
       unsigned int descending_iterations = UINT_MAX, size_t jump_set_size = 0)
-      : fixpoint_iterator_t(crab::cfg::cfg_rev<CFG>(cfg), nullptr,
-                            widening_delay, descending_iterations,
-                            jump_set_size),
+    : fixpoint_iterator_t(crab::cfg::cfg_rev<CFG>(cfg), postcond , nullptr,
+			  widening_delay,
+			  descending_iterations,
+			  jump_set_size),
         m_cfg(cfg), m_postcond(postcond), m_good_states(false) {}
 
   // This constructor computes necessary preconditions from
@@ -128,8 +133,10 @@ public:
       /* fixpoint parameters */
       unsigned int widening_delay = 1,
       unsigned int descending_iterations = UINT_MAX, size_t jump_set_size = 0)
-      : fixpoint_iterator_t(crab::cfg::cfg_rev<CFG>(cfg), wto, widening_delay,
-                            descending_iterations, jump_set_size),
+    : fixpoint_iterator_t(crab::cfg::cfg_rev<CFG>(cfg), postcond, wto,
+			  widening_delay,
+			  descending_iterations,
+			  jump_set_size),
         m_cfg(cfg), m_postcond(postcond), m_good_states(good_states) {}
 
   void run_backward() { this->run(m_postcond); }
@@ -154,7 +161,7 @@ public:
     if (it != m_preconditions.end())
       return it->second;
     else
-      return AbsDom::top();
+      return make_top();
   }
 
   // clear preconditions and forward invariants (if any)
@@ -234,6 +241,16 @@ private:
   invariant_map_t m_post_invariants;
   // to be used by checker
   std::unique_ptr<abs_tr_t> m_abs_tr;
+
+  inline AbsDom make_top() const {
+    auto const& dom = m_abs_tr->get_abs_value();
+    return dom.make_top();
+  }
+
+  inline AbsDom make_bottom() const {
+    auto const& dom = m_abs_tr->get_abs_value();
+    return dom.make_bottom();
+  }
   
   void store_analysis_results(fwd_analyzer_t &f) {
     for (auto &kv : f.get_pre_invariants()) {
@@ -351,9 +368,10 @@ public:
   typedef typename bwd_fixpoint_iterator_t::iterator iterator;
   typedef typename bwd_fixpoint_iterator_t::const_iterator const_iterator;
 
-  intra_forward_backward_analyzer(CFG cfg)
+  // We don't remember init but we need it to call make_top()
+  intra_forward_backward_analyzer(CFG cfg, AbsDom init)
     : m_cfg(cfg), m_wto(nullptr), m_b_wto(nullptr),
-      m_abs_tr(new abs_tr_t(AbsDom::top())) {}
+      m_abs_tr(new abs_tr_t(init.make_top())) {}
 
   ~intra_forward_backward_analyzer() {
     if (m_wto)
@@ -505,7 +523,7 @@ public:
       crab::CrabStats::resume("CombinedForwardBackward.BackwardPass");
       // run backward analysis computing necessary preconditions
       // refined with results from the forward analysis.
-      AbsDom final_states = AbsDom::bottom();
+      AbsDom final_states = make_bottom();;
       bwd_fixpoint_iterator_t B(m_cfg, m_b_wto,
                                 // A final state is safe so here means bottom
                                 final_states,
@@ -595,7 +613,7 @@ public:
   AbsDom get_pre(const bb_label_t &b) const {
     auto it = m_pre_invariants.find(b);
     if (it == m_pre_invariants.end())
-      return abs_dom_t::top();
+      return make_top();
     else
       return it->second;
   }
@@ -604,7 +622,7 @@ public:
   AbsDom get_post(const bb_label_t &b) const {
     auto it = m_post_invariants.find(b);
     if (it == m_post_invariants.end())
-      return abs_dom_t::top();
+      return make_top();
     else
       return it->second;
   }
