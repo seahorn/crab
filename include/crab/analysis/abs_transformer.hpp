@@ -850,6 +850,23 @@ private:
   // conditions of the assert statements).
   bool m_good_states;
 
+  abs_dom_t make_top() const {
+    return m_pre.make_top();
+  }
+  
+  abs_dom_t get_forward_invariant(const statement_t *stmt) const{
+    assert(m_invariants);
+    assert(stmt);
+    
+    auto it = m_invariants->find(stmt);
+    if (it != m_invariants->end()) {
+      return it->second;
+    } else {
+      return make_top();
+    }
+  }
+  
+  
 public:
   intra_necessary_preconditions_abs_transformer(abs_dom_t post, InvT *invars,
                                                 bool good_states,
@@ -877,7 +894,7 @@ public:
 
     const lin_exp_t &op1 = stmt.left();
     const lin_exp_t &op2 = stmt.right();
-    abs_dom_t invariant = (*m_invariants)[&stmt];
+    abs_dom_t invariant = get_forward_invariant(&stmt);
 
     CRAB_LOG("backward-tr", crab::outs()
                                 << "** " << stmt.lhs() << " := " << op1 << " "
@@ -909,7 +926,7 @@ public:
   //     goto post;
   //   post: ....
   void exec(select_t &stmt) {
-    abs_dom_t old_pre = (*m_invariants)[&stmt];
+    abs_dom_t old_pre = get_forward_invariant(&stmt);
 
     // -- one of the two branches is false
     abs_dom_t then_inv(old_pre);
@@ -942,7 +959,7 @@ public:
 
   // x := e
   void exec(assign_t &stmt) {
-    abs_dom_t invariant = (*m_invariants)[&stmt];
+    abs_dom_t invariant = get_forward_invariant(&stmt);
 
     CRAB_LOG("backward-tr", auto rhs = stmt.rhs();
              crab::outs() << "** " << stmt.lhs() << " := " << rhs << "\n"
@@ -995,7 +1012,7 @@ public:
   void exec(havoc_t &stmt) { m_pre -= stmt.get_variable(); }
 
   void exec(int_cast_t &stmt) {
-    abs_dom_t invariant = (*m_invariants)[&stmt];
+    abs_dom_t invariant = get_forward_invariant(&stmt);
     CRAB_LOG("backward-tr", crab::outs() << "** " << stmt << "\n"
                                          << "\tPOST=" << m_pre << "\n");
     m_pre.backward_assign(stmt.dst(), stmt.src(), std::move(invariant));
@@ -1032,7 +1049,7 @@ public:
   }
 
   void exec(arr_init_t &stmt) {
-    abs_dom_t invariant = (*m_invariants)[&stmt];
+    abs_dom_t invariant = get_forward_invariant(&stmt);
 
     CRAB_LOG("backward-tr", crab::outs()
                                 << "** " << stmt << "\n"
@@ -1045,7 +1062,7 @@ public:
   }
 
   void exec(arr_load_t &stmt) {
-    abs_dom_t invariant = (*m_invariants)[&stmt];
+    abs_dom_t invariant = get_forward_invariant(&stmt);
 
     CRAB_LOG("backward-tr", crab::outs()
                                 << "** " << stmt << "\n"
@@ -1057,7 +1074,7 @@ public:
   }
 
   void exec(arr_store_t &stmt) {
-    abs_dom_t invariant = (*m_invariants)[&stmt];
+    abs_dom_t invariant = get_forward_invariant(&stmt);
     CRAB_LOG("backward-tr", crab::outs()
                                 << "** " << stmt << "\n"
                                 << "\tFORWARD INV=" << invariant << "\n"
@@ -1076,7 +1093,7 @@ public:
   }
 
   void exec(arr_assign_t &stmt) {
-    abs_dom_t invariant = (*m_invariants)[&stmt];
+    abs_dom_t invariant = get_forward_invariant(&stmt);
     CRAB_LOG("backward-tr", crab::outs()
                                 << "** " << stmt << "\n"
                                 << "\tFORWARD INV=" << invariant << "\n"
@@ -1106,7 +1123,7 @@ public:
   virtual void exec(return_t &stmt) {}
 
   void exec(intrinsic_t &cs) {
-    abs_dom_t invariant = (*m_invariants)[&cs];    
+    abs_dom_t invariant = get_forward_invariant(&cs);    
     m_pre.backward_intrinsic(cs.get_intrinsic_name(), cs.get_args(), cs.get_lhs(),
 			     std::move(invariant));    
   }
