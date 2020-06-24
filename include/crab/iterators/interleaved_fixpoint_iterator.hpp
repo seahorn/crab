@@ -122,13 +122,28 @@ private:
   inline void set_pre(basic_block_label_t node, const AbstractValue &v) {
     crab::CrabStats::count("Fixpo.invariant_table.update");
     crab::ScopedCrabStats __st__("Fixpo.invariant_table.update");
-    this->_pre[node] = v;
+    // To avoid calling the default constructor
+    //this->_pre[node] = v;
+    
+    auto res = this->_pre.insert({node, v});
+    if (!res.second) {
+      // if the insertion failed then we just update value
+      res.first->second = v;
+    }
   }
 
   inline void set_post(basic_block_label_t node, AbstractValue &&v) {
     crab::CrabStats::count("Fixpo.invariant_table.update");
     crab::ScopedCrabStats __st__("Fixpo.invariant_table.update");
-    this->_post[node] = std::move(v);
+    // To avoid calling the default constructor
+    //this->_post[node] = std::move(v);
+    
+    auto it = this->_post.find(node);
+    if (it == this->_post.end()) {
+      this->_post.insert({node, std::move(v)});
+    } else {
+      it->second = std::move(v);
+    }
   }
 
   inline AbstractValue get(const invariant_table_t &table,
