@@ -133,23 +133,26 @@ template <typename CFG, typename AbsDomain> class summary {
 public:
   summary(const fdecl_t &fdecl,
           // summary defined only in terms of inputs and outputs
-          abs_domain_t sum, const std::vector<variable_t> &inputs,
-          const std::vector<variable_t> &outputs)
+          abs_domain_t sum, std::vector<variable_t> inputs,
+          std::vector<variable_t> outputs)
       : m_fdecl(fdecl), m_sum(sum), m_inputs(inputs), m_outputs(outputs) {
 
     m_internal_inputs.reserve(m_inputs.size());
     m_internal_outputs.reserve(m_outputs.size());
 
-    
-    for (auto const& v : m_inputs) {
+    std::string prefix = "$";
+    unsigned i=0;
+    for (auto v: m_inputs) {
       auto &vfac = const_cast<varname_t*>(&(v.name()))->get_var_factory();    
-      variable_t fresh_v(vfac.get(), v.get_type(), v.get_bitwidth());
+      variable_t fresh_v(vfac.get(prefix + std::to_string(i)), v.get_type(), v.get_bitwidth());
       m_internal_inputs.push_back(fresh_v);
+      i++;
     }
-    for (auto const& v : m_outputs) {
+    for (auto v: m_outputs) {
       auto &vfac = const_cast<varname_t*>(&(v.name()))->get_var_factory();          
-      variable_t fresh_v(vfac.get(), v.get_type(), v.get_bitwidth());
+      variable_t fresh_v(vfac.get(prefix + std::to_string(i)), v.get_type(), v.get_bitwidth());
       m_internal_outputs.push_back(fresh_v);
+      i++;
     }
 
     if (m_fdecl.get_num_inputs() != m_inputs.size())
@@ -245,8 +248,8 @@ public:
 
   // insert summary information
   void insert(const fdecl_t &d, AbsDomain sum,
-	      const std::vector<variable_t> &inputs,
-              const std::vector<variable_t> &outputs) {
+	      std::vector<variable_t> inputs,
+              std::vector<variable_t> outputs) {
 
     std::vector<variable_t> ins(inputs.begin(), inputs.end());
     std::vector<variable_t> outs(outputs.begin(), outputs.end());
@@ -683,10 +686,10 @@ public:
    *   it visits the callsite.
    * 
    *   FIXME: the top-down analysis runs only once starting from the
-   *   SCC encountered after topologically ordering all the callgraph
-   *   SCCs. Thus, it's assuming that first SCC has only one
+   *   _first_ SCC encountered after topologically ordering all the callgraph
+   *   SCCs. It's also assuming that first SCC has only one
    *   component. In general, the callgraph might have more than one
-   *   entry point.
+   *   entry point and an entry SCC can have multiple components.
    **/
   void run(TD_Dom init) {
 
