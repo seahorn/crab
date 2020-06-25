@@ -67,7 +67,7 @@ template <class T> class variable_factory {
       if (m_s) {
 	return indexed_varname_impl::get_str<T>(*m_s);
       } else {
-	if (m_name) {
+	if (m_name && (*m_name != "")) {
 	  return *m_name;
 	} else {
 	  // unlikely prefix
