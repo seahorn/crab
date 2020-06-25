@@ -1,5 +1,4 @@
-#ifndef __CRAB_DOMAINS__
-#define __CRAB_DOMAINS__
+#pragma once
 
 #include "./crab_lang.hpp"
 
@@ -20,6 +19,7 @@
 #include <crab/domains/combined_domains.hpp>
 #include <crab/domains/powerset_domain.hpp>
 #include <crab/domains/reference_domain.hpp>
+#include <crab/domains/generic_abstract_domain.hpp>
 
 namespace crab {
 
@@ -112,7 +112,12 @@ namespace crab {
     typedef apron_domain<q_number,varname_t,APRON_OCT> q_oct_apron_domain_t;
     typedef elina_domain<q_number,varname_t,ELINA_PK> q_pk_elina_domain_t;
     typedef elina_domain<q_number,varname_t,ELINA_OCT> q_oct_elina_domain_t;
-    
+
+
+    /*===================================================================*/            
+    // Wrapper for an arbitrary abstract domains
+    /*===================================================================*/                
+    using z_abs_domain_t = generic_abstract_domain<z_var>;
+    using q_abs_domain_t = generic_abstract_domain<q_var>;    
   } 
 }
-#endif /*__CRAB_DOMAINS__*/

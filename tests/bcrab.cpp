@@ -62,13 +62,13 @@ void backward_run_internal(CFG* cfg,
 
 // To run abstract domains defined over integers
 template<typename Dom>
-void backward_run(crab::cfg_impl::z_cfg_t* cfg,
-		  crab::cfg_impl::basic_block_label_t entry,		   
-		  Dom initial_states,
-		  unsigned widening, 
-		  unsigned narrowing, 
-		  unsigned jump_set_size,
-		  bool enable_stats) {
+void z_backward_run(crab::cfg_impl::z_cfg_t* cfg,
+		    crab::cfg_impl::basic_block_label_t entry,		   
+		    Dom initial_states,
+		    unsigned widening, 
+		    unsigned narrowing, 
+		    unsigned jump_set_size,
+		    bool enable_stats) {
   using namespace crab::analyzer;
   typedef intra_forward_backward_analyzer<crab::cfg_impl::z_cfg_ref_t, Dom>
     backward_analyzer_t;

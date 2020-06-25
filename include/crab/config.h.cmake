@@ -16,4 +16,7 @@
 /** Define whether collecting statistics */
 #cmakedefine CRAB_STATS ${CRAB_STATS}
 
+/** Use a generic wrapper for abstract domains in tests **/
+#cmakedefine USE_GENERIC_WRAPPER ${USE_GENERIC_WRAPPER}
+
 #endif

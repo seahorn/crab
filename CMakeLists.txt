@@ -47,6 +47,8 @@ option(CRAB_BUILD_LIBS_SHARED "Build all Crab libraries dynamically." OFF)
 option(CRAB_ENABLE_STATS "Enable stats" ON)
 ## Relevant only for developers
 option(CRAB_ENABLE_TESTS "Enable tests" OFF)
+option(CRAB_USE_GENERIC_WRAPPER
+  "If tests enabled then use the generic abstract domain" OFF)
 
 if (CRAB_USE_APRON AND CRAB_USE_ELINA)
   message(FATAL_ERROR "Apron and Elina are not compatible: choose one")
@@ -114,6 +116,10 @@ if (CRAB_ENABLE_TESTS)
     set(Boost_USE_STATIC_LIBS OFF)
   endif ()
   add_definitions(-DBOOST_NO_EXCEPTIONS)
+
+  if (CRAB_USE_GENERIC_WRAPPER)
+    set(USE_GENERIC_WRAPPER)
+  endif ()
 else ()
   find_package (Boost 1.65.0)
 endif ()
@@ -416,6 +422,9 @@ add_subdirectory(lib)
 
 if (CRAB_ENABLE_TESTS)
   message (STATUS "Tests will be compiled")
+  if (CRAB_USE_GENERIC_WRAPPER)
+    message(STATUS "Compiling tests using generic wrapper for abstract domains")
+  endif()
   add_subdirectory(tests)
 endif ()
 

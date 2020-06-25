@@ -101,7 +101,7 @@ void td_inter_run_impl(crab::cg_impl::z_cg_t* cg,
 }
 // To run abstract domains defined over integers
 template<typename BUDom, typename TDDom>
-void bu_inter_run(crab::cg_impl::z_cg_t* cg,
+void z_bu_inter_run_and_check(crab::cg_impl::z_cg_t* cg,
 		  BUDom bu_top, TDDom td_top,
 		  bool run_liveness,
 		  unsigned widening, 
@@ -116,7 +116,7 @@ void bu_inter_run(crab::cg_impl::z_cg_t* cg,
 
 
 template<typename Dom>
-void td_inter_run(crab::cg_impl::z_cg_t* cg,
+void z_td_inter_run_and_check(crab::cg_impl::z_cg_t* cg,
 		  Dom init,
 		  td_inter_params_t params,
 		  bool print_checks,

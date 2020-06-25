@@ -81,52 +81,40 @@ void intra_run_impl (CFG* cfg,
 
 }
 
-// To run abstract domains defined over integers
 template<typename Dom>
-void run (crab::cfg_impl::z_cfg_t* cfg,
-	  crab::cfg_impl::basic_block_label_t entry,
-	  Dom init,
-	  bool run_liveness,
-	  unsigned widening, 
-	  unsigned narrowing, 
-	  unsigned jump_set_size,
-	  bool enable_stats) {
+void z_intra_run(crab::cfg_impl::z_cfg_t* cfg,
+		 crab::cfg_impl::basic_block_label_t entry,
+		 Dom init,
+		 bool run_liveness,
+		 unsigned widening, 
+		 unsigned narrowing, 
+		 unsigned jump_set_size,
+		 bool enable_stats,
+		 bool enable_checker) {
   using namespace crab::analyzer;
   typedef intra_fwd_analyzer<crab::cfg_impl::z_cfg_ref_t, Dom> intra_fwd_analyzer_t;
   intra_run_impl<crab::cfg_impl::z_cfg_t, Dom, intra_fwd_analyzer_t>
-    (cfg, entry, init, run_liveness, widening, narrowing, jump_set_size, enable_stats, false);
+    (cfg, entry, init, 
+     run_liveness, widening, narrowing, jump_set_size, enable_stats, enable_checker);
 }
 
 template<typename Dom>
-void run_and_check (crab::cfg_impl::z_cfg_t* cfg,
-		    crab::cfg_impl::basic_block_label_t entry,
-		    Dom init,
-		    bool run_liveness,
-		    unsigned widening, 
-		    unsigned narrowing, 
-		    unsigned jump_set_size,
-		    bool enable_stats) {
+void q_intra_run(crab::cfg_impl::q_cfg_t* cfg,
+		 crab::cfg_impl::basic_block_label_t entry,
+		 Dom init,
+		 bool run_liveness,
+		 unsigned widening, 
+		 unsigned narrowing, 
+		 unsigned jump_set_size,
+		 bool enable_stats,
+		 bool enable_checker) {
   using namespace crab::analyzer;
-  typedef intra_fwd_analyzer<crab::cfg_impl::z_cfg_ref_t, Dom> intra_fwd_analyzer_t;
-  intra_run_impl<crab::cfg_impl::z_cfg_t, Dom, intra_fwd_analyzer_t>
-    (cfg, entry, init, run_liveness, widening, narrowing, jump_set_size, enable_stats, true);
-}
-
-// To run abstract domains defined over rationals
-template<typename Dom>
-void run (crab::cfg_impl::q_cfg_t* cfg,
-	  crab::cfg_impl::basic_block_label_t entry,
-	  Dom init,
-	  bool run_liveness,
-	  unsigned widening, 
-	  unsigned narrowing, 
-	  unsigned jump_set_size,
-	  bool enable_stats) {
-  using namespace crab::analyzer;
-  typedef intra_fwd_analyzer<crab::cfg_impl::q_cfg_ref_t,Dom> intra_fwd_analyzer_t;
+  typedef intra_fwd_analyzer<crab::cfg_impl::q_cfg_ref_t, Dom> intra_fwd_analyzer_t;
   intra_run_impl<crab::cfg_impl::q_cfg_t, Dom, intra_fwd_analyzer_t>
-    (cfg, entry, init, run_liveness, widening, narrowing, jump_set_size, enable_stats, false);
+    (cfg, entry, init, 
+     run_liveness, widening, narrowing, jump_set_size, enable_stats, enable_checker);
 }
+
 
 ////////
 //// Explicit instantiations here

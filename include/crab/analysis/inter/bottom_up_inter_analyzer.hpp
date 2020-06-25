@@ -12,6 +12,7 @@
 #include <crab/analysis/graphs/topo_order.hpp>
 #include <crab/cfg/cfg.hpp>   // hasher of function declarations
 #include <crab/cg/cg_bgl.hpp> // for sccg.hpp
+#include <crab/domains/generic_abstract_domain.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
 
@@ -27,6 +28,12 @@
 namespace crab {
 namespace analyzer {
 namespace inter_analyzer_impl {
+
+// The analysis supports two different domains for the bottom-up and
+// top-down passes, respectively. At some point, we need to convert
+// from one to the other. 
+template <typename Domain1, typename Domain2>
+void convert_domains(Domain1 from, Domain2 &to);
 
 /* Store the calling contexts of each function */
 template <typename CFG, typename AbsDomain> class call_ctx_table {
@@ -416,15 +423,16 @@ public:
     }
   }
 };
-
-/// Conversion between top-down and bottom-up domains.
-template <typename Domain>
-inline void convert_domains(Domain from, Domain &to) {
-  to = from;
-}
-
+  
+//////////////////////////////////////////////////////////////////////  
+/// Generic conversion between top-down and bottom-up domains.
+//////////////////////////////////////////////////////////////////////    
+/// FIXME: the conversion is by converting to linear constraints.
+/// This will lose any array, disjunctive, or non-linear information
+/// that "from" carries on.
+//////////////////////////////////////////////////////////////////////    
 template <typename Domain1, typename Domain2>
-inline void convert_domains(Domain1 from, Domain2 &to) {
+inline void convert_domains_impl(Domain1 from, Domain2 &to) {
   if (from.is_bottom()) {
     to.set_to_bottom();
     return;
@@ -453,6 +461,27 @@ inline void convert_domains(Domain1 from, Domain2 &to) {
     }
   }
 }
+
+template <typename Variable>
+inline void convert_domains(crab::domains::generic_abstract_domain<Variable> from,
+			    crab::domains::generic_abstract_domain<Variable> &to) {
+  // we don't know what is inside "from" or "to" so we do
+  // conservatively the conversion.
+  convert_domains_impl(from, to);
+}
+  
+template <typename Domain>
+inline void convert_domains(Domain from, Domain &to) {
+  // do nothing if they are the same domain but not
+  // generic_abstract_domain.
+  to = from;
+}
+
+template <typename Domain1, typename Domain2>
+inline void convert_domains(Domain1 from, Domain2 &to) {
+  convert_domains_impl(from, to);
+}
+  
 
 /**
  * Abstract transformer specialized for performing top-down forward
