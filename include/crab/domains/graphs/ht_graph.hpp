@@ -280,7 +280,7 @@ public:
 
   class pred_iterator {
   public:
-    using ItP = typename pred_t::iterator;
+    using ItP = typename pred_t::const_iterator;
     using iter_t = pred_iterator;
 
     pred_iterator(const ItP &_it) : it(_it) {}
@@ -298,7 +298,7 @@ public:
 
   class succ_iterator {
   public:
-    using ItS = typename succ_t::iterator;
+    using ItS = typename succ_t::const_iterator;
     using iter_t = succ_iterator;
     succ_iterator(const ItS &_it) : it(_it) {}
     succ_iterator(void) : it() {}
@@ -340,6 +340,18 @@ public:
     pred_t &p;
   };
 
+  class const_pred_range {
+  public:
+    using iterator = pred_iterator;
+    const_pred_range(const pred_t &_p) : p(_p) {}
+    iterator begin(void) const { return iterator(p.begin()); }
+    iterator end(void) const { return iterator(p.end()); }
+    size_t size(void) const { return p.size(); }
+    bool mem(unsigned int v) const { return p.find(v) != p.end(); }
+  protected:
+    const pred_t &p;
+  };
+  
   class succ_range {
   public:
     using iterator = succ_iterator;
@@ -351,7 +363,7 @@ public:
 
     bool mem(unsigned int v) const { return p.find(v) != p.end(); }
     void add(unsigned int v, const Wt &w) { p.insert(succ_elt_t(v, w)); }
-    Wt value(unsigned int v) const { return (*(p.find(v))).second; }
+    const Wt &value(unsigned int v) const { return (*(p.find(v))).second; }
     Wt &value(unsigned int v) { return (*(p.find(v))).second; }
     void remove(unsigned int v) { p.erase(v); }
     void clear() { p.clear(); }
@@ -360,6 +372,20 @@ public:
     succ_t &p;
   };
 
+  class const_succ_range {
+  public:
+    using iterator = succ_iterator;
+    const_succ_range(const succ_t &_p) : p(_p) {}
+    iterator begin(void) const { return iterator(p.begin()); }
+    iterator end(void) const  { return iterator(p.end()); }
+    size_t size(void) const { return p.size(); }
+    bool mem(unsigned int v) const { return p.find(v) != p.end(); }
+    void add(unsigned int v, const Wt &w) { p.insert(succ_elt_t(v, w)); }
+    const Wt &value(unsigned int v) const { return (*(p.find(v))).second; }
+  protected:
+    const succ_t &p;
+  };
+  
   class edge_ref_t {
   public:
     edge_ref_t(vert_id _v, Wt &_w) : vert(_v), val(_w) {}
@@ -426,6 +452,16 @@ public:
     rev_edge_iterator(graph_t &_g, vert_id _d, pred_iterator _it)
         : g(&_g), d(_d), it(_it) {}
 
+    // XXX: to make sure that we always return the same address
+    // for the "empty" iterator, otherwise we can trigger
+    // undefined behavior.
+    static rev_edge_iterator empty_iterator() {
+      static std::unique_ptr<rev_edge_iterator> it = nullptr;
+      if (!it)
+        it = std::unique_ptr<rev_edge_iterator>(new rev_edge_iterator());
+      return *it;
+    }
+    
     edge_ref operator*(void) const {
       return edge_ref((*it), g->edge_val((*it), d));
     }
@@ -458,12 +494,12 @@ public:
   using e_succ_range = fwd_edge_range;
   using e_pred_range = rev_edge_range;
 
-  succ_range succs(vert_id v) const { return succ_range(_succs[v]); }
-
+  succ_range succs(vert_id v) { return succ_range(_succs[v]); }
+  const_succ_range succs(vert_id v) const { return const_succ_range(_succs[v]);}
   e_succ_range e_succs(vert_id v) { return fwd_edge_range(*this, v); }
 
-  pred_range preds(vert_id v) const { return pred_range(_preds[v]); }
-
+  pred_range preds(vert_id v) { return pred_range(_preds[v]); }
+  const_pred_range preds(vert_id v) const { return const_pred_range(_preds[v]); }  
   e_pred_range e_preds(vert_id v) { return rev_edge_range(*this, v); }
 
   // growTo shouldn't be used after forget

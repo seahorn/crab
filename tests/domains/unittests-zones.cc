@@ -130,5 +130,54 @@ int main(int argc, char **argv) {
     inv.apply(OP_AND, x, y, 9223372036854775296);
     crab::outs() << inv << "\n";
   }
+
+  {  // Tests the other graph representations: at least making sure
+     // the code compiles.
+    using ss_graph_t = DBM_impl::DefaultParams<z_number, DBM_impl::GraphRep::ss>;
+    using pt_graph_t = DBM_impl::DefaultParams<z_number, DBM_impl::GraphRep::pt>;
+    using ht_graph_t = DBM_impl::DefaultParams<z_number, DBM_impl::GraphRep::ht>;        
+      
+    using ss_dbm = split_dbm_domain<z_number, varname_t, ss_graph_t>;
+    using pt_dbm = split_dbm_domain<z_number, varname_t, pt_graph_t>;
+    using ht_dbm = split_dbm_domain<z_number, varname_t, ht_graph_t>;    
+
+    z_var x(vfac["x"], crab::INT_TYPE, 32);
+    z_var y(vfac["y"], crab::INT_TYPE, 32);
+
+    z_lin_cst_t cst(z_lin_t(x) == z_lin_t(y));
+    
+    ss_dbm ss_inv_1, ss_inv_2, ss_inv_3, ss_inv_4;
+    ss_inv_1.assign(x, 5);
+    ss_inv_1 += cst;
+    ss_inv_2.assign(x, 10);
+    ss_inv_2 += cst;
+    ss_inv_3 = ss_inv_1 | ss_inv_2;
+    ss_inv_4 = ss_inv_1 & ss_inv_2;    
+    crab::outs() << "Join of " << ss_inv_1 << " and " << ss_inv_2 << "=" << ss_inv_3 << "\n";
+    crab::outs() << "Meet of " << ss_inv_1 << " and " << ss_inv_2 << "=" << ss_inv_4 << "\n";    
+
+    pt_dbm pt_inv_1, pt_inv_2, pt_inv_3, pt_inv_4;
+    pt_inv_1.assign(x, 5);
+    pt_inv_1 += cst;
+    pt_inv_2.assign(x, 10);
+    pt_inv_2 += cst;
+    pt_inv_3 = pt_inv_1 | pt_inv_2;
+    pt_inv_4 = pt_inv_1 & pt_inv_2;    
+    crab::outs() << "Join of " << pt_inv_1 << " and " << pt_inv_2 << "=" << pt_inv_3 << "\n";
+    crab::outs() << "Meet of " << pt_inv_1 << " and " << pt_inv_2 << "=" << pt_inv_4 << "\n";    
+
+    ht_dbm ht_inv_1, ht_inv_2, ht_inv_3, ht_inv_4;
+    ht_inv_1.assign(x, 5);
+    ht_inv_1 += cst;
+    ht_inv_2.assign(x, 10);
+    ht_inv_2 += cst;
+    ht_inv_3 = ht_inv_1 | ht_inv_2;
+    ht_inv_4 = ht_inv_1 & ht_inv_2;    
+    crab::outs() << "Join of " << ht_inv_1 << " and " << ht_inv_2 << "=" << ht_inv_3 << "\n";
+    crab::outs() << "Meet of " << ht_inv_1 << " and " << ht_inv_2 << "=" << ht_inv_4 << "\n";    
+    
+  }
+
+  
   return 0;
 }
