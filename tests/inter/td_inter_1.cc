@@ -255,14 +255,14 @@ int main(int argc, char** argv) {
     // it should prove all assertions
     /////////////////////////////////////////    
     inter_params_t params1;    
-    td_inter_run(cg, init, params1, false);
+    td_inter_run(&cg, init, params1, true, false, false);
     /////////////////////////////////////////
     // it should not prove all assertions
     /////////////////////////////////////////    
     inter_params_t params2;
     params2.max_call_contexts = 3;  
     params2.checker_verbosity = 1;
-    td_inter_run(cg, init, params2, false);    
+    td_inter_run(&cg, init, params2, true, false, false);    
     
   }
 #endif
