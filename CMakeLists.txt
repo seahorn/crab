@@ -39,12 +39,14 @@ if (CUSTOM_BOOST_ROOT)
 endif()
 
 
-option (CRAB_USE_LDD   "Enable Ldd library" OFF)
-option (CRAB_USE_APRON "Enable Apron library" OFF)
-option (CRAB_USE_ELINA "Enable Elina library" OFF)
-option (CRAB_BUILD_LIBS_SHARED "Build all Crab libraries dynamically." OFF)
-option (CRAB_ENABLE_TESTS "Enable tests" OFF)
-option (CRAB_ENABLE_STATS "Enable stats" ON)
+## Relevant for clients
+option(CRAB_USE_LDD   "Enable Ldd library" OFF)
+option(CRAB_USE_APRON "Enable Apron library" OFF)
+option(CRAB_USE_ELINA "Enable Elina library" OFF)
+option(CRAB_BUILD_LIBS_SHARED "Build all Crab libraries dynamically." OFF)
+option(CRAB_ENABLE_STATS "Enable stats" ON)
+## Relevant only for developers
+option(CRAB_ENABLE_TESTS "Enable tests" OFF)
 
 if (CRAB_USE_APRON AND CRAB_USE_ELINA)
   message(FATAL_ERROR "Apron and Elina are not compatible: choose one")
@@ -180,21 +182,23 @@ if (CRAB_USE_APRON OR CRAB_USE_ELINA)
   if (MPFR_FOUND)
     get_filename_component (MPFR_SEARCH_PATH ${MPFR_INCLUDES} PATH)
   endif ()
+endif ()
 
+if (CRAB_USE_ELINA)
   find_package(SSE)
   if (AVX_FOUND)
-     message(STATUS "Building opt-oct with AVX")
-     set (IS_VECTOR "IS_VECTOR=-DVECTOR")
+    #message(STATUS "Building opt-oct with AVX")
+    set (IS_VECTOR "IS_VECTOR=-DVECTOR")
   else ()
-     if (SSE2_FOUND OR SSE3_FOUND OR SSSE3_FOUND OR SSE4_1_FOUND)
-        message(STATUS "Building opt-oct with SSE")
-        set (IS_VECTOR "IS_VECTOR=-DVECTOR")
-        set (IS_SSE "IS_SSE=-DSSE")
-     else ()
-        message(STATUS "Building opt-oct without vectorized operations.")
-     endif ()
+    if (SSE2_FOUND OR SSE3_FOUND OR SSSE3_FOUND OR SSE4_1_FOUND)
+      #message(STATUS "Building opt-oct with SSE")
+      set (IS_VECTOR "IS_VECTOR=-DVECTOR")
+      set (IS_SSE "IS_SSE=-DSSE")
+    else ()
+      message(WARNING "Building opt-oct without vectorized operations.")
+    endif ()
   endif ()
-endif ()
+endif()
 
 if (CRAB_USE_APRON)
 if (GIT_FOUND)
@@ -295,6 +299,7 @@ if (CRAB_USE_ELINA)
     return()
   endif()
 endif ()
+
 
 include_directories (${Crab_SOURCE_DIR}/include)
 
@@ -410,8 +415,8 @@ configure_file(include/crab/config.h.cmake
 add_subdirectory(lib)
 
 if (CRAB_ENABLE_TESTS)
-   message (STATUS "Tests will be compiled")
-   add_subdirectory(tests)
+  message (STATUS "Tests will be compiled")
+  add_subdirectory(tests)
 endif ()
 
 # restore old CMAKE_FIND_LIBRARY_SUFFIXES
