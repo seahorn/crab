@@ -79,7 +79,7 @@ inline crab::crab_os &operator<<(crab::crab_os &o, bitwise_operation_t op) {
   }
   return o;
 }
-  
+
 // Enumeration type for cast operations
 typedef enum { OP_TRUNC, OP_SEXT, OP_ZEXT } int_conv_operation_t;
 

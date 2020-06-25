@@ -31,7 +31,7 @@ namespace inter_analyzer_impl {
 
 // The analysis supports two different domains for the bottom-up and
 // top-down passes, respectively. At some point, we need to convert
-// from one to the other. 
+// from one to the other.
 template <typename Domain1, typename Domain2>
 void convert_domains(Domain1 from, Domain2 &to);
 
@@ -51,7 +51,7 @@ private:
 
   call_table_t m_call_table;
   AbsDomain m_top;
-  
+
   // XXX: assume context-insensitive analysis so it will merge all
   // calling contexts using abstract domain's join keeping a
   // single calling context per function.
@@ -65,9 +65,7 @@ private:
   }
 
 public:
-  call_ctx_table(AbsDomain top): m_top(top) {
-    m_top.set_to_top();
-  }
+  call_ctx_table(AbsDomain top) : m_top(top) { m_top.set_to_top(); }
 
   call_ctx_table(const call_ctx_table<CFG, AbsDomain> &o) = delete;
 
@@ -148,16 +146,18 @@ public:
     m_internal_outputs.reserve(m_outputs.size());
 
     std::string prefix = "$";
-    unsigned i=0;
-    for (auto v: m_inputs) {
-      auto &vfac = const_cast<varname_t*>(&(v.name()))->get_var_factory();    
-      variable_t fresh_v(vfac.get(prefix + std::to_string(i)), v.get_type(), v.get_bitwidth());
+    unsigned i = 0;
+    for (auto v : m_inputs) {
+      auto &vfac = const_cast<varname_t *>(&(v.name()))->get_var_factory();
+      variable_t fresh_v(vfac.get(prefix + std::to_string(i)), v.get_type(),
+                         v.get_bitwidth());
       m_internal_inputs.push_back(fresh_v);
       i++;
     }
-    for (auto v: m_outputs) {
-      auto &vfac = const_cast<varname_t*>(&(v.name()))->get_var_factory();          
-      variable_t fresh_v(vfac.get(prefix + std::to_string(i)), v.get_type(), v.get_bitwidth());
+    for (auto v : m_outputs) {
+      auto &vfac = const_cast<varname_t *>(&(v.name()))->get_var_factory();
+      variable_t fresh_v(vfac.get(prefix + std::to_string(i)), v.get_type(),
+                         v.get_bitwidth());
       m_internal_outputs.push_back(fresh_v);
       i++;
     }
@@ -181,7 +181,7 @@ public:
   abs_domain_t make_top() const { return m_sum.make_top(); }
 
   abs_domain_t make_bottom() const { return m_sum.make_bottom(); }
-  
+
   // return the input variables of the summary
   const std::vector<variable_t> &get_inputs() const { return m_inputs; }
 
@@ -254,15 +254,14 @@ public:
   operator=(const summary_table<CFG, AbsDomain> &o) = delete;
 
   // insert summary information
-  void insert(const fdecl_t &d, AbsDomain sum,
-	      std::vector<variable_t> inputs,
+  void insert(const fdecl_t &d, AbsDomain sum, std::vector<variable_t> inputs,
               std::vector<variable_t> outputs) {
 
     std::vector<variable_t> ins(inputs.begin(), inputs.end());
     std::vector<variable_t> outs(outputs.begin(), outputs.end());
     summary_t sum_tuple(d, sum, ins, outs);
-    m_sum_table.insert(
-       std::make_pair(crab::cfg::cfg_hasher<CFG>::hash(d), std::move(sum_tuple)));
+    m_sum_table.insert(std::make_pair(crab::cfg::cfg_hasher<CFG>::hash(d),
+                                      std::move(sum_tuple)));
   }
 
   // return true if there is a summary
@@ -395,7 +394,7 @@ public:
 
     CRAB_LOG("inter", crab::outs()
                           << "\t\tAfter forgetting formal parameters {";
-             for (auto const& v
+             for (auto const &v
                   : vs) crab::outs()
              << v << ";";
              crab::outs() << "}=" << caller << "\n");
@@ -423,14 +422,14 @@ public:
     }
   }
 };
-  
-//////////////////////////////////////////////////////////////////////  
+
+//////////////////////////////////////////////////////////////////////
 /// Generic conversion between top-down and bottom-up domains.
-//////////////////////////////////////////////////////////////////////    
+//////////////////////////////////////////////////////////////////////
 /// FIXME: the conversion is by converting to linear constraints.
 /// This will lose any array, disjunctive, or non-linear information
 /// that "from" carries on.
-//////////////////////////////////////////////////////////////////////    
+//////////////////////////////////////////////////////////////////////
 template <typename Domain1, typename Domain2>
 inline void convert_domains_impl(Domain1 from, Domain2 &to) {
   if (from.is_bottom()) {
@@ -439,18 +438,17 @@ inline void convert_domains_impl(Domain1 from, Domain2 &to) {
   }
 
   CRAB_LOG("inter", crab::outs()
-	   << "Converting from " << from.domain_name()
-	   << " to " << to.domain_name()
-	   << " might lose precision if "
-	   << from.domain_name() << " is more precise than "
-	   << to.domain_name() << "\n");
+                        << "Converting from " << from.domain_name() << " to "
+                        << to.domain_name() << " might lose precision if "
+                        << from.domain_name() << " is more precise than "
+                        << to.domain_name() << "\n");
 
   bool pre_bot = false;
   if (::crab::CrabSanityCheckFlag) {
     pre_bot = from.is_bottom();
   }
 
-  for (auto const& cst: from.to_linear_constraint_system()) {
+  for (auto const &cst : from.to_linear_constraint_system()) {
     to += cst;
   }
 
@@ -463,13 +461,14 @@ inline void convert_domains_impl(Domain1 from, Domain2 &to) {
 }
 
 template <typename Variable>
-inline void convert_domains(crab::domains::generic_abstract_domain<Variable> from,
-			    crab::domains::generic_abstract_domain<Variable> &to) {
+inline void
+convert_domains(crab::domains::generic_abstract_domain<Variable> from,
+                crab::domains::generic_abstract_domain<Variable> &to) {
   // we don't know what is inside "from" or "to" so we do
   // conservatively the conversion.
   convert_domains_impl(from, to);
 }
-  
+
 template <typename Domain>
 inline void convert_domains(Domain from, Domain &to) {
   // do nothing if they are the same domain but not
@@ -481,7 +480,6 @@ template <typename Domain1, typename Domain2>
 inline void convert_domains(Domain1 from, Domain2 &to) {
   convert_domains_impl(from, to);
 }
-  
 
 /**
  * Abstract transformer specialized for performing top-down forward
@@ -564,7 +562,7 @@ public:
       // caller_ctx_inv and m_inv may be inconsistent if the lhs
       // variables are constrained before the callsite (e.g., x=-5;
       // x := abs(x);)
-      for (auto const& vt : cs.get_lhs()) {
+      for (auto const &vt : cs.get_lhs()) {
         this->m_inv -= vt;
       }
 
@@ -590,7 +588,7 @@ public:
 
     // We could not reuse a summary or summary not found. We havoc
     // output variables of the callsite.
-    for (auto const& vt : cs.get_lhs()) {
+    for (auto const &vt : cs.get_lhs()) {
       this->m_inv -= vt;
     }
   }
@@ -650,7 +648,7 @@ private:
   unsigned int m_descending_iters;
   size_t m_jump_set_size; // max size of the jump set (=0 if jump set disabled)
   std::unique_ptr<abs_tr_t> m_abs_tr;
-  
+
   const liveness_t *get_live(const cfg_t &c) {
     if (m_live) {
       auto it = m_live->find(c);
@@ -660,38 +658,25 @@ private:
     return nullptr;
   }
 
-  inline TD_Dom make_td_bottom() const {
-    return m_td_top.make_bottom();
-  }
-  inline TD_Dom make_td_top() const {
-    return m_td_top.make_top();
-  }
-  inline BU_Dom make_bu_bottom() const {
-    return m_bu_top.make_bottom();
-  }
-  inline BU_Dom make_bu_top() const {
-    return m_bu_top.make_top();    
-  }
-  
+  inline TD_Dom make_td_bottom() const { return m_td_top.make_bottom(); }
+  inline TD_Dom make_td_top() const { return m_td_top.make_top(); }
+  inline BU_Dom make_bu_bottom() const { return m_bu_top.make_bottom(); }
+  inline BU_Dom make_bu_top() const { return m_bu_top.make_top(); }
+
 public:
   bottom_up_inter_analyzer(CallGraph cg,
-			   // Top value
-			   TD_Dom td_top,
-			   // Top value
-			   BU_Dom bu_top,
-			   const liveness_map_t *live,
+                           // Top value
+                           TD_Dom td_top,
+                           // Top value
+                           BU_Dom bu_top, const liveness_map_t *live,
                            // fixpoint parameters
                            unsigned int widening_delay = 1,
                            unsigned int descending_iters = UINT_MAX,
                            size_t jump_set_size = 0)
-      : m_cg(cg),
-	m_td_top(td_top),
-	m_bu_top(bu_top),
-	m_live(live),
-	m_call_tbl(make_td_top()),
-	m_widening_delay(widening_delay),
+      : m_cg(cg), m_td_top(td_top), m_bu_top(bu_top), m_live(live),
+        m_call_tbl(make_td_top()), m_widening_delay(widening_delay),
         m_descending_iters(descending_iters), m_jump_set_size(jump_set_size),
-	m_abs_tr(new abs_tr_t(make_td_top(), &m_summ_tbl, &m_call_tbl)) {
+        m_abs_tr(new abs_tr_t(make_td_top(), &m_summ_tbl, &m_call_tbl)) {
     CRAB_VERBOSE_IF(1, get_msg_stream() << "Type checking call graph ... ";);
     crab::CrabStats::resume("CallGraph type checking");
     cg.type_check();
@@ -703,8 +688,8 @@ public:
 
   this_type &operator=(const this_type &other) = delete;
 
-  /** =====  Run the inter-procedural analysis   
-   * 
+  /** =====  Run the inter-procedural analysis
+   *
    * init is the initial abstract state used for the top-down analysis
    * The bottom-up analysis will start with top (i.e., no
    * preconditions).
@@ -713,7 +698,7 @@ public:
    *   function except for main.
    * - The top-down analysis reuses the callsite's summary each time
    *   it visits the callsite.
-   * 
+   *
    *   FIXME: the top-down analysis runs only once starting from the
    *   _first_ SCC encountered after topologically ordering all the callgraph
    *   SCCs. It's also assuming that first SCC has only one
@@ -749,7 +734,7 @@ public:
 
         auto cfg = v.get_cfg();
         assert(cfg.has_func_decl());
-        auto const& fdecl = cfg.get_func_decl();
+        auto const &fdecl = cfg.get_func_decl();
         const std::string &fun_name = fdecl.get_func_name();
         if (fun_name != "main")
           continue;
@@ -757,14 +742,15 @@ public:
         CRAB_LOG("inter", crab::outs() << "++ Analyzing function "
                                        << fdecl.get_func_name() << "\n");
 
-	TD_Dom dom(init);
-	m_abs_tr->set_abs_value(std::move(dom));
-        td_analyzer_ptr a(new td_analyzer(
-            cfg, nullptr, &*m_abs_tr, get_live(cfg), m_widening_delay,
-            m_descending_iters, m_jump_set_size));
+        TD_Dom dom(init);
+        m_abs_tr->set_abs_value(std::move(dom));
+        td_analyzer_ptr a(new td_analyzer(cfg, nullptr, &*m_abs_tr,
+                                          get_live(cfg), m_widening_delay,
+                                          m_descending_iters, m_jump_set_size));
 
         a->run_forward();
-        m_inv_map.insert({crab::cfg::cfg_hasher<cfg_t>::hash(fdecl), std::move(a)});
+        m_inv_map.insert(
+            {crab::cfg::cfg_hasher<cfg_t>::hash(fdecl), std::move(a)});
       }
       return;
     }
@@ -775,19 +761,18 @@ public:
     graph_algo::rev_topo_sort(Scc_g, rev_order);
 
     CRAB_VERBOSE_IF(1, get_msg_stream() << "== Bottom-up phase ...\n";);
-    for (auto const& n : rev_order) {
+    for (auto const &n : rev_order) {
       crab::ScopedCrabStats __st__("Inter.BottomUp");
       std::vector<cg_node_t> &scc_mems = Scc_g.get_component_members(n);
       for (auto m : scc_mems) {
 
         auto cfg = m.get_cfg();
         assert(cfg.has_func_decl());
-        auto const& fdecl = cfg.get_func_decl();
+        auto const &fdecl = cfg.get_func_decl();
         const std::string &fun_name = fdecl.get_func_name();
         if (fun_name != "main") {
-          CRAB_VERBOSE_IF(1, get_msg_stream()
-                                 << "++ Computing summary for "
-                                 << fun_name << "...\n";);
+          CRAB_VERBOSE_IF(1, get_msg_stream() << "++ Computing summary for "
+                                              << fun_name << "...\n";);
 
           // --- collect inputs and outputs
           std::vector<variable_t> formals, inputs, outputs;
@@ -807,17 +792,18 @@ public:
           if (outputs.empty()) {
             BU_Dom summary = make_bu_top();
             m_summ_tbl.insert(fdecl, summary, inputs, outputs);
-            CRAB_WARN("Skipped summary because function ",
-                      fun_name, " has no output parameters");
+            CRAB_WARN("Skipped summary because function ", fun_name,
+                      " has no output parameters");
           } else if (!cfg.has_exit()) {
-            CRAB_WARN("Skipped summary because function ",
-                      fun_name, " has no exit block");
+            CRAB_WARN("Skipped summary because function ", fun_name,
+                      " has no exit block");
           } else {
             // --- run the analysis
             auto init_inv = make_bu_top();
             bu_abs_tr abs_tr(std::move(init_inv), &m_summ_tbl);
-            bu_analyzer a(cfg, nullptr, &abs_tr, get_live(cfg), m_widening_delay,
-                          m_descending_iters, m_jump_set_size);
+            bu_analyzer a(cfg, nullptr, &abs_tr, get_live(cfg),
+                          m_widening_delay, m_descending_iters,
+                          m_jump_set_size);
             a.run_forward();
 
             // --- project onto formal parameters and return values
@@ -874,13 +860,14 @@ public:
           crab::outs() << "Top-down analysis for " << fdecl.get_func_name()
                        << " started with bottom (i.e., dead function).\n";
         }
-	TD_Dom dom(init_inv);
-	m_abs_tr->set_abs_value(std::move(dom));
-        td_analyzer_ptr a(new td_analyzer(
-            cfg, nullptr, &*m_abs_tr, get_live(cfg), m_widening_delay,
-            m_descending_iters, m_jump_set_size));
+        TD_Dom dom(init_inv);
+        m_abs_tr->set_abs_value(std::move(dom));
+        td_analyzer_ptr a(new td_analyzer(cfg, nullptr, &*m_abs_tr,
+                                          get_live(cfg), m_widening_delay,
+                                          m_descending_iters, m_jump_set_size));
         a->run_forward();
-        m_inv_map.insert({crab::cfg::cfg_hasher<cfg_t>::hash(fdecl), std::move(a)});
+        m_inv_map.insert(
+            {crab::cfg::cfg_hasher<cfg_t>::hash(fdecl), std::move(a)});
       }
     }
     CRAB_VERBOSE_IF(1, get_msg_stream()
@@ -920,7 +907,7 @@ public:
   void clear() { m_inv_map.clear(); }
 
   //! Propagate inv through statements
-  abs_tr_t& get_abs_transformer() {
+  abs_tr_t &get_abs_transformer() {
     assert(m_abs_tr);
     return *m_abs_tr;
   }
@@ -936,7 +923,7 @@ public:
   summary_t get_summary(const cfg_t &cfg) const {
     assert(has_summary(cfg));
     assert(cfg.has_func_decl());
-    
+
     auto fdecl = cfg.get_func_decl();
     if (m_summ_tbl.has_summary(fdecl)) {
       return m_summ_tbl.get(fdecl);

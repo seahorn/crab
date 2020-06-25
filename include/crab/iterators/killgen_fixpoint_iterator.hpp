@@ -43,7 +43,7 @@ public:
   virtual Dom merge(Dom, Dom) = 0;
 
   // analyze a basic block
-  virtual Dom analyze(const basic_block_label_t&, Dom) = 0;
+  virtual Dom analyze(const basic_block_label_t &, Dom) = 0;
 
   // analysis name
   virtual std::string name() = 0;
@@ -93,9 +93,9 @@ private:
     while (change) {
       change = false;
       ++iterations;
-      for (auto const&n : order) {
+      for (auto const &n : order) {
         auto in = m_analysis.entry();
-        for (auto const&p : m_cfg.prev_nodes(n))
+        for (auto const &p : m_cfg.prev_nodes(n))
           in = m_analysis.merge(in, m_out_map[p]);
         auto old_out = m_out_map[n];
         auto out = m_analysis.analyze(n, in);
@@ -118,9 +118,9 @@ private:
     while (change) {
       change = false;
       ++iterations;
-      for (auto const&n : order) {
+      for (auto const &n : order) {
         auto out = m_analysis.entry();
-        for (auto const&p : m_cfg.next_nodes(n))
+        for (auto const &p : m_cfg.next_nodes(n))
           out = m_analysis.merge(out, m_in_map[p]);
         auto old_in = m_in_map[n];
         auto in = m_analysis.analyze(n, out);
@@ -155,14 +155,15 @@ public:
       run_bwd_fixpo(order, iterations);
     }
 
-    CRAB_LOG(m_analysis.name(), crab::outs() << "fixpoint ordering={";
-             bool first = true; for (auto &v
-                                     : order) {
-               if (!first)
-                 crab::outs() << ",";
-               first = false;
-               crab::outs() << cfg_impl::get_label_str(v);
-             } crab::outs() << "}\n";);
+    CRAB_LOG(
+        m_analysis.name(), crab::outs() << "fixpoint ordering={";
+        bool first = true; for (auto &v
+                                : order) {
+          if (!first)
+            crab::outs() << ",";
+          first = false;
+          crab::outs() << cfg_impl::get_label_str(v);
+        } crab::outs() << "}\n";);
 
     CRAB_LOG(m_analysis.name(), crab::outs() << m_analysis.name() << ": "
                                              << "fixpoint reached in "

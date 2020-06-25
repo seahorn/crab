@@ -11,7 +11,6 @@
 #include <memory>
 #include <unordered_map>
 
-
 /*
    Strongly connected component graph
  */
@@ -209,10 +208,11 @@ public:
             .color_map(property_color_map_t(color_map))
             .discover_time_map(property_component_map_t(discover_time)));
 
-    CRAB_LOG("sccg", crab::outs() << "comp map: \n"; for (auto p
-                                                          : m_comp_map) {
-      crab::outs() << "\t" << p.first << " --> " << p.second << "\n";
-    });
+    CRAB_LOG(
+        "sccg", crab::outs() << "comp map: \n"; for (auto p
+                                                     : m_comp_map) {
+          crab::outs() << "\t" << p.first << " --> " << p.second << "\n";
+        });
 
     // build SCC Dag
 
@@ -336,10 +336,11 @@ public:
       }
     }
 
-    CRAB_LOG("sccg", o << "Component map: \n"; for (auto p
-                                                    : m_comp_map) {
-      o << "\t" << p.first << " --> SCC ID " << p.second << "\n";
-    });
+    CRAB_LOG(
+        "sccg", o << "Component map: \n"; for (auto p
+                                               : m_comp_map) {
+          o << "\t" << p.first << " --> SCC ID " << p.second << "\n";
+        });
   }
 };
 

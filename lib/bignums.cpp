@@ -1,5 +1,5 @@
-#include <crab/support/debug.hpp>
 #include <crab/numbers/bignums.hpp>
+#include <crab/support/debug.hpp>
 
 #include <limits>
 #include <string>

@@ -10,7 +10,6 @@ namespace crab {
  * linear_constraints.
  */
 
-  
 // XXX: we try to avoid having a type as a generic class that has a
 // subclass for each subtype.
 enum variable_type {
@@ -23,8 +22,8 @@ enum variable_type {
   ARR_BOOL_TYPE,
   ARR_INT_TYPE,
   ARR_REAL_TYPE,
-  
-  UNK_TYPE  
+
+  UNK_TYPE
 };
 
 inline crab_os &operator<<(crab_os &o, variable_type t) {
@@ -41,7 +40,7 @@ inline crab_os &operator<<(crab_os &o, variable_type t) {
   case ARR_BOOL_TYPE:
     o << "arr(bool)";
     break;
-    
+
   case ARR_INT_TYPE:
     o << "arr(int)";
     break;
@@ -50,7 +49,7 @@ inline crab_os &operator<<(crab_os &o, variable_type t) {
     break;
   case REF_TYPE:
     o << "ref";
-    break;    
+    break;
   default:
     o << "unknown";
     break;
@@ -114,10 +113,10 @@ public:
 
   bool is_bool_type() const { return _type == crab::BOOL_TYPE; }
 
-  bool is_real_type() const { return _type == crab::REAL_TYPE; }  
+  bool is_real_type() const { return _type == crab::REAL_TYPE; }
 
   bool is_ref_type() const { return _type == crab::REF_TYPE; }
-  
+
   bool is_array_type() const {
     return _type >= crab::ARR_BOOL_TYPE && _type <= crab::ARR_REAL_TYPE;
   }
@@ -138,27 +137,22 @@ public:
     return std::hash<size_t>{}(static_cast<size_t>(_n.index()));
   }
 
-  bool operator==(const variable_t &o) const {
-    return index() == o.index();
-  }
+  bool operator==(const variable_t &o) const { return index() == o.index(); }
 
   bool operator!=(const variable_t &o) const { return (!(operator==(o))); }
 
-  bool operator<(const variable_t &o) const {
-    return index() < o.index();
-  }
+  bool operator<(const variable_t &o) const { return index() < o.index(); }
 
   void write(crab::crab_os &o) const {
     o << _n;
-    CRAB_LOG("crab-print-types",
-	     o << ":" << get_type();
-	     switch (get_type()) {
-	     case crab::INT_TYPE:
-	     case crab::ARR_INT_TYPE:
-	       o << ":" << get_bitwidth();
-	       break;
-	     default:;
-	     });
+    CRAB_LOG(
+        "crab-print-types", o << ":" << get_type(); switch (get_type()) {
+          case crab::INT_TYPE:
+          case crab::ARR_INT_TYPE:
+            o << ":" << get_bitwidth();
+            break;
+          default:;
+        });
   }
 
   void dump(crab::crab_os &o) const {
@@ -166,11 +160,11 @@ public:
   }
 
   friend crab::crab_os &operator<<(crab::crab_os &o,
-				   const variable<Number, VariableName> &v) {
+                                   const variable<Number, VariableName> &v) {
     v.write(o);
     return o;
   }
-  
+
 }; // class variable
 
 /** specialization for boost::hash_combine **/
@@ -178,8 +172,8 @@ template <typename Number, typename VariableName>
 inline size_t hash_value(const variable<Number, VariableName> &v) {
   return v.hash();
 }
-  
-} //end namespace crab
+
+} // end namespace crab
 
 /** specialization for std::hash for variables **/
 namespace std {
@@ -187,5 +181,5 @@ template <typename Number, typename VariableName>
 struct hash<crab::variable<Number, VariableName>> {
   using variable_t = crab::variable<Number, VariableName>;
   size_t operator()(const variable_t &v) const { return v.hash(); }
-}; 
+};
 } // end namespace std

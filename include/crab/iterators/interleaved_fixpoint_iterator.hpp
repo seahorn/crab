@@ -62,7 +62,6 @@ template <typename CFG, typename AbstractValue> class wto_processor;
 
 } // namespace interleaved_fwd_fixpoint_iterator_impl
 
-
 template <typename CFG, typename AbstractValue>
 class interleaved_fwd_fixpoint_iterator
     : public fixpoint_iterator<CFG, AbstractValue> {
@@ -94,10 +93,12 @@ protected:
 
   CFG _cfg;
   wto_t _wto;
+
 private:
   // We don't want derived classes to access directly to _pre and
   // _post in case we make internal changes
   invariant_table_t _pre, _post;
+
 protected:
   // We need to keep it so that we can call make_top(), make_bottom()
   // since we cannot assume that AbstractValue has a default
@@ -123,8 +124,8 @@ private:
     crab::CrabStats::count("Fixpo.invariant_table.update");
     crab::ScopedCrabStats __st__("Fixpo.invariant_table.update");
     // To avoid calling the default constructor
-    //this->_pre[node] = v;
-    
+    // this->_pre[node] = v;
+
     auto res = this->_pre.insert({node, v});
     if (!res.second) {
       // if the insertion failed then we just update value
@@ -136,8 +137,8 @@ private:
     crab::CrabStats::count("Fixpo.invariant_table.update");
     crab::ScopedCrabStats __st__("Fixpo.invariant_table.update");
     // To avoid calling the default constructor
-    //this->_post[node] = std::move(v);
-    
+    // this->_post[node] = std::move(v);
+
     auto it = this->_post.find(node);
     if (it == this->_post.end()) {
       this->_post.insert({node, std::move(v)});
@@ -153,8 +154,10 @@ private:
     return table.at(node);
   }
 
-  inline AbstractValue extrapolate(basic_block_label_t node, unsigned int iteration,
-				   AbstractValue &before, AbstractValue &after) {
+  inline AbstractValue extrapolate(basic_block_label_t node,
+                                   unsigned int iteration,
+                                   AbstractValue &before,
+                                   AbstractValue &after) {
     crab::CrabStats::count("Fixpo.extrapolate");
     crab::ScopedCrabStats __st__("Fixpo.extrapolate");
 
@@ -239,18 +242,17 @@ private:
 
 public:
   interleaved_fwd_fixpoint_iterator(CFG cfg, AbstractValue init,
-				    const wto_t *wto,
+                                    const wto_t *wto,
                                     unsigned int widening_delay,
                                     unsigned int descending_iterations,
                                     size_t jump_set_size,
                                     bool enable_processor = true)
-    : _cfg(cfg), _wto(!wto ? cfg : *wto),
-      _init_inv(std::move(init)),
-      _widening_delay(widening_delay),
-      _descending_iterations(descending_iterations),
-      _use_widening_jump_set(jump_set_size > 0),
-      _enable_processor(enable_processor) {
-    
+      : _cfg(cfg), _wto(!wto ? cfg : *wto), _init_inv(std::move(init)),
+        _widening_delay(widening_delay),
+        _descending_iterations(descending_iterations),
+        _use_widening_jump_set(jump_set_size > 0),
+        _enable_processor(enable_processor) {
+
     initialize_thresholds(jump_set_size);
     for (auto it = _cfg.label_begin(), et = _cfg.label_end(); it != et; ++it) {
       auto const &label = *it;
@@ -285,11 +287,11 @@ public:
   const_iterator post_begin() const { return this->_post.begin(); }
   const_iterator post_end() const { return this->_post.end(); }
   /* End access methods for getting invariants */
-  
+
   void run(AbstractValue init) {
     crab::ScopedCrabStats __st__("Fixpo");
 
-    _init_inv = std::move(init);    
+    _init_inv = std::move(init);
     CRAB_VERBOSE_IF(1, crab::get_msg_stream() << "== Started fixpoint\n");
     this->set_pre(this->_cfg.entry(), _init_inv);
     wto_iterator_t iterator(this, _init_inv);
@@ -308,7 +310,7 @@ public:
            const assumption_map_t &assumptions) {
     crab::ScopedCrabStats __st__("Fixpo");
 
-    _init_inv = std::move(init);    
+    _init_inv = std::move(init);
     CRAB_VERBOSE_IF(1, crab::get_msg_stream()
                            << "== Started fixpoint at block "
                            << crab::cfg_impl::get_label_str(entry)
@@ -326,14 +328,10 @@ public:
                                          << _wto << "\n";);
   }
 
-  void clear_pre() {
-    this->_pre.clear();
-  }
+  void clear_pre() { this->_pre.clear(); }
 
-  void clear_post() {
-    this->_post.clear();
-  }
-  
+  void clear_post() { this->_post.clear(); }
+
   void clear() {
     clear_pre();
     clear_post();
@@ -367,14 +365,10 @@ private:
   // Used to skip the analysis until _entry is found
   bool _skip;
 
-  inline AbstractValue make_top() const {
-    return _init_inv.make_top();
-  }
+  inline AbstractValue make_top() const { return _init_inv.make_top(); }
 
-  inline AbstractValue make_bottom() const {
-    return _init_inv.make_bottom();
-  }
-  
+  inline AbstractValue make_bottom() const { return _init_inv.make_bottom(); }
+
   inline AbstractValue strengthen(basic_block_label_t n, AbstractValue inv) {
     crab::CrabStats::count("Fixpo.strengthen");
     crab::ScopedCrabStats __st__("Fixpo.strengthen");
@@ -443,20 +437,13 @@ private:
 
 public:
   wto_iterator(interleaved_iterator_t *iterator, AbstractValue init)
-      : _iterator(iterator),
-	_entry(_iterator->get_cfg().entry()),
-	_init_inv(std::move(init)),
-        _assumptions(nullptr),
-	_skip(true) {}
+      : _iterator(iterator), _entry(_iterator->get_cfg().entry()),
+        _init_inv(std::move(init)), _assumptions(nullptr), _skip(true) {}
 
-  wto_iterator(interleaved_iterator_t *iterator,
-	       basic_block_label_t entry, AbstractValue init,
-               const assumption_map_t *assumptions)
-      : _iterator(iterator),
-	_entry(entry),
-	_init_inv(std::move(init)),
-	_assumptions(assumptions),
-        _skip(true) {}
+  wto_iterator(interleaved_iterator_t *iterator, basic_block_label_t entry,
+               AbstractValue init, const assumption_map_t *assumptions)
+      : _iterator(iterator), _entry(entry), _init_inv(std::move(init)),
+        _assumptions(assumptions), _skip(true) {}
 
   void visit(wto_vertex_t &vertex) {
     basic_block_label_t node = vertex.node();

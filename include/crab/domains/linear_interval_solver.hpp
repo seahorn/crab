@@ -130,15 +130,15 @@ private:
     return false;
   }
 
-  Interval compute_residual(const linear_constraint_t &cst, const variable_t &pivot,
-                            IntervalCollection &env) {
+  Interval compute_residual(const linear_constraint_t &cst,
+                            const variable_t &pivot, IntervalCollection &env) {
     crab::ScopedCrabStats __st__(
         "Linear Interval Solver.Solving computing residual");
     namespace interval_traits = linear_interval_solver_impl;
     bitwidth_t w = pivot.get_bitwidth();
     Interval residual =
         interval_traits::mk_interval<Interval>(cst.constant(), w);
-    for (auto kv: cst) {
+    for (auto kv : cst) {
       const variable_t &v = kv.second;
       if (!(v == pivot)) {
         residual =
@@ -160,7 +160,7 @@ private:
     CRAB_LOG("integer-solver", linear_constraint_t tmp(cst);
              crab::outs() << "Integer solver processing " << tmp << "\n";);
 
-    for (auto kv: cst) {
+    for (auto kv : cst) {
       Number c = kv.first;
       const variable_t &pivot = kv.second;
       Interval res = compute_residual(cst, pivot, env);
@@ -211,7 +211,7 @@ private:
   bool solve_large_system(IntervalCollection &env) {
     m_op_count = 0;
     m_refined_variables.clear();
-    for (const linear_constraint_t &cst: m_cst_table) {
+    for (const linear_constraint_t &cst : m_cst_table) {
       if (propagate(cst, env)) {
         return true;
       }
@@ -219,9 +219,9 @@ private:
     do {
       variable_set_t vars_to_process(m_refined_variables);
       m_refined_variables.clear();
-      for (const variable_t &v: vars_to_process) {
+      for (const variable_t &v : vars_to_process) {
         uint_set_t &csts = m_trigger_table[v];
-        for (unsigned int i: csts) {
+        for (unsigned int i : csts) {
           if (propagate(m_cst_table.at(i), env)) {
             return true;
           }
@@ -236,7 +236,7 @@ private:
     do {
       ++cycle;
       m_refined_variables.clear();
-      for (const linear_constraint_t &cst: m_cst_table) {
+      for (const linear_constraint_t &cst : m_cst_table) {
         if (propagate(cst, env)) {
           return true;
         }
@@ -254,7 +254,7 @@ public:
     crab::ScopedCrabStats __st_a__("Linear Interval Solver");
     crab::ScopedCrabStats __st_b__("Linear Interval Solver.Preprocessing");
     std::size_t op_per_cycle = 0;
-    for (const linear_constraint_t &cst: csts) {
+    for (const linear_constraint_t &cst : csts) {
       if (cst.is_contradiction()) {
         m_is_contradiction = true;
         return;
@@ -287,7 +287,7 @@ public:
       m_max_op = op_per_cycle * max_cycles;
       for (unsigned int i = 0; i < m_cst_table.size(); ++i) {
         const linear_constraint_t &cst = m_cst_table.at(i);
-        for (const variable_t &v: cst.variables()) {
+        for (const variable_t &v : cst.variables()) {
           m_trigger_table[v].insert(i);
         }
       }

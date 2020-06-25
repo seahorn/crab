@@ -4,8 +4,8 @@
 
 namespace crab {
 namespace domains {
-namespace term{
-  
+namespace term {
+
 typedef enum {
   TERM_OP_ADD,
   TERM_OP_SUB,
@@ -75,4 +75,3 @@ inline crab::crab_os &operator<<(crab::crab_os &o, term_operator_t op) {
 } // end namespace term
 } // end namespace domains
 } // end namespace crab
-  

@@ -9,9 +9,9 @@
 #include <crab/analysis/dataflow/liveness.hpp>
 #include <crab/analysis/fwd_analyzer.hpp>
 #include <crab/cg/cg_bgl.hpp> // for wto of callgraphs
+#include <crab/iterators/wto.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
-#include <crab/iterators/wto.hpp>
 
 #include <crab/checkers/assertion.hpp>
 #include <crab/checkers/base_property.hpp>
@@ -83,9 +83,7 @@ private:
   // other contexts.
   bool m_exact;
 
-  inline abs_dom_t make_bottom() const {
-    return m_input.make_bottom();
-  }
+  inline abs_dom_t make_bottom() const { return m_input.make_bottom(); }
 
   static invariant_map_t join(invariant_map_t &m1, invariant_map_t &m2) {
     invariant_map_t out;
@@ -101,8 +99,7 @@ private:
   }
 
   // Private constructor used to join calling contexts
-  calling_context(const fdecl_t &fdecl,
-		  abs_dom_t input, abs_dom_t output,
+  calling_context(const fdecl_t &fdecl, abs_dom_t input, abs_dom_t output,
                   invariant_map_t &&pre_invariants,
                   invariant_map_t &&post_invariants)
       : m_fdecl(fdecl), m_input(input), m_output(output),
@@ -113,8 +110,7 @@ public:
   calling_context(const fdecl_t &fdecl, abs_dom_t input, abs_dom_t output,
                   // if true then the calling context maintains only
                   // invariants for the entry and exit blocks.
-                  bool minimize_invariants,
-		  invariant_map_t &&pre_invariants,
+                  bool minimize_invariants, invariant_map_t &&pre_invariants,
                   invariant_map_t &&post_invariants)
       : m_fdecl(fdecl), m_input(input), m_output(output),
         m_pre_invariants(std::move(pre_invariants)),
@@ -332,7 +328,8 @@ public:
   using calling_context_collection_t = std::deque<calling_context_ptr>;
   using calling_context_table_t =
       std::unordered_map<cfg_t, calling_context_collection_t>;
-  using liveness_map_t = std::unordered_map<cfg_t, const live_and_dead_analysis<cfg_t> *>;
+  using liveness_map_t =
+      std::unordered_map<cfg_t, const live_and_dead_analysis<cfg_t> *>;
   using wto_cfg_map_t = std::unordered_map<cfg_t, const ikos::wto<cfg_t> *>;
   using checks_db_t = checker::checks_db;
   using global_invariant_map_t = std::unordered_map<cfg_t, invariant_map_t>;
@@ -482,9 +479,9 @@ public:
 // Wrapper to call the intra-procedural analysis with inter-procedural
 // semantics for call and return statements.
 template <typename CallGraphNode, typename IntraCallSemAnalyzer>
-IntraCallSemAnalyzer &get_inter_analysis(
-    CallGraphNode cg_node,
-    typename IntraCallSemAnalyzer::abs_tr_t &abs_tr) {
+IntraCallSemAnalyzer &
+get_inter_analysis(CallGraphNode cg_node,
+                   typename IntraCallSemAnalyzer::abs_tr_t &abs_tr) {
 
   using cfg_t = typename CallGraphNode::cfg_t;
   // -- intra-procedural checker stuff
@@ -528,10 +525,9 @@ IntraCallSemAnalyzer &get_inter_analysis(
     }
     /// -- 2. Create intra analyzer (with inter-procedural semantics for
     /// call/return)
-    std::unique_ptr<IntraCallSemAnalyzer> new_analyzer
-      (new IntraCallSemAnalyzer
-       (cfg, wto, &abs_tr, live, ctx.get_widening_delay(),
-	ctx.get_descending_iters(), ctx.get_thresholds_size()));
+    std::unique_ptr<IntraCallSemAnalyzer> new_analyzer(new IntraCallSemAnalyzer(
+        cfg, wto, &abs_tr, live, ctx.get_widening_delay(),
+        ctx.get_descending_iters(), ctx.get_thresholds_size()));
     analyzer = &(abs_tr.add_analyzer(cg_node, std::move(new_analyzer)));
   }
 
@@ -570,8 +566,7 @@ IntraCallSemAnalyzer &get_inter_analysis(
    fully as a black box.
 */
 template <typename CallGraph, typename AbsDom>
-class top_down_inter_transformer final
-    : public intra_abs_transformer<AbsDom> {
+class top_down_inter_transformer final : public intra_abs_transformer<AbsDom> {
 
   using this_type = top_down_inter_transformer<CallGraph, AbsDom>;
 
@@ -620,17 +615,16 @@ private:
                      std::unique_ptr<intra_analyzer_with_call_semantics_t>>
       m_intra_analyzer;
 
-
   inline abs_dom_t make_top() {
-    auto const& dom = this->get_abs_value();
+    auto const &dom = this->get_abs_value();
     return dom.make_top();
   }
 
   inline abs_dom_t make_bottom() {
-    auto const& dom = this->get_abs_value();
+    auto const &dom = this->get_abs_value();
     return dom.make_bottom();
   }
-  
+
   calling_context_collection_t &get_calling_contexts(cfg_t fun) {
     return m_ctx->get_calling_context_table()[fun];
   }
@@ -664,14 +658,13 @@ private:
 
   /**
    *  Restrict operation.
-   * 
+   *
    * Produce a new abstract state at the callee for the entry block.
    *  - caller_dom: abstract state at the caller before the call.
    *  - callee_dom: initial state at the callee (by default top)
    **/
   static AbsDom get_callee_entry(const callsite_t &cs, const fdecl_t &fdecl,
-                                 AbsDom caller_dom,
-                                 AbsDom callee_dom) {
+                                 AbsDom caller_dom, AbsDom callee_dom) {
     crab::ScopedCrabStats __st__("Interprocedural.get_callee_entry");
 
     // caller_dom.normalize();
@@ -681,8 +674,8 @@ private:
     CRAB_LOG("inter-restrict",
              errs() << "Inv at the caller: " << caller_dom << "\n");
     // propagate from actual to formal parameters
-    CRAB_LOG("inter-restrict", errs()
-                                 << "Unifying formal and actual parameters\n";);
+    CRAB_LOG("inter-restrict",
+             errs() << "Unifying formal and actual parameters\n";);
     for (unsigned i = 0, e = fdecl.get_inputs().size(); i < e; ++i) {
       const variable_t &formal = fdecl.get_inputs()[i];
       const variable_t &actual = cs.get_args()[i];
@@ -693,19 +686,20 @@ private:
       }
     }
     CRAB_LOG("inter-restrict", errs() << "Inv after formal/actual unification: "
-                                    << caller_dom << "\n";);
+                                      << caller_dom << "\n";);
     // Meet
     callee_dom = caller_dom & callee_dom;
     CRAB_LOG("inter-restrict",
              errs() << "Inv after meet with callee  " << callee_dom << "\n";);
     // project onto **input** formal parameters
     callee_dom.project(fdecl.get_inputs());
-    CRAB_LOG("inter-restrict",
-             errs() << "Inv at the callee after projecting onto formals: ";
-             for (auto &v
-                  : fdecl.get_inputs()) { errs() << v << ";"; } errs()
-             << "\n"
-             << callee_dom << "\n";);
+    CRAB_LOG(
+        "inter-restrict",
+        errs() << "Inv at the callee after projecting onto formals: ";
+        for (auto &v
+             : fdecl.get_inputs()) { errs() << v << ";"; } errs()
+        << "\n"
+        << callee_dom << "\n";);
 
     return callee_dom;
   }
@@ -731,54 +725,56 @@ private:
    * - sum_out_variables is fdecl.get_inputs() U
    *   fdecl.get_outputs(). We pass them explicitly to avoid to
    *   concatenate them again here.
-   * 
+   *
    * This code should work even if callsite lhs variables and actual
    * parameters are not disjoint.
    **/
-  static AbsDom
-  get_caller_continuation(const callsite_t &cs, const fdecl_t &fdecl, AbsDom caller_dom,
-                          const std::vector<variable_t> &sum_out_variables,
-                          AbsDom sum_out_dom) {
+  static AbsDom get_caller_continuation(
+      const callsite_t &cs, const fdecl_t &fdecl, AbsDom caller_dom,
+      const std::vector<variable_t> &sum_out_variables, AbsDom sum_out_dom) {
     crab::ScopedCrabStats __st__("Interprocedural.get_caller_continuation");
 
     if (caller_dom.is_bottom()) {
       return caller_dom;
     }
 
-    CRAB_LOG("inter-extend",
-	     crab::outs() << "Caller before " << cs << "=" << caller_dom << "\n";);
-    
+    CRAB_LOG("inter-extend", crab::outs() << "Caller before " << cs << "="
+                                          << caller_dom << "\n";);
+
     // make sure **output** actual parameters are unconstrained
     caller_dom.forget(cs.get_lhs());
 
-    CRAB_LOG("inter-extend",
-	     crab::outs() << "Caller after forgetting lhs variables=" << caller_dom << "\n";);
-    
+    CRAB_LOG("inter-extend", crab::outs()
+                                 << "Caller after forgetting lhs variables="
+                                 << caller_dom << "\n";);
+
     // Meet
     caller_dom = caller_dom & sum_out_dom;
 
-    CRAB_LOG("inter-extend",
-	     crab::outs() << "Caller after meet with callee's summary=" << caller_dom << "\n";);
-    
+    CRAB_LOG("inter-extend", crab::outs()
+                                 << "Caller after meet with callee's summary="
+                                 << caller_dom << "\n";);
+
     // propagate from callee's outputs to caller's lhs of the callsite
     for (unsigned i = 0, e = fdecl.get_outputs().size(); i < e; ++i) {
       const variable_t &formal = fdecl.get_outputs()[i];
       const variable_t &actual = cs.get_lhs()[i];
       if (!(formal == actual)) {
-	CRAB_LOG("inter-extend",
-		 crab::outs() << "Unifying " << formal << " and " << actual << "\n";);
+        CRAB_LOG("inter-extend", crab::outs() << "Unifying " << formal
+                                              << " and " << actual << "\n";);
         inter_transformer_helpers<AbsDom>::unify(caller_dom, actual, formal);
       }
     }
-    
+
     CRAB_LOG("inter-extend",
-	     crab::outs() << "Caller after unifying formal/actual paramters=" << caller_dom << "\n";);
-    
+             crab::outs() << "Caller after unifying formal/actual paramters="
+                          << caller_dom << "\n";);
+
     // Remove the callee variables from the caller continuation
     //
     // Note that we don't forget a callee variable if it appears
     // either on cs.get_lhs() or cs.get_args().
-    
+
     std::set<variable_t> cs_args(cs.get_args().begin(), cs.get_args().end());
     // Variables that appear both as callsite argument and callee's
     // formal parameter.
@@ -787,12 +783,13 @@ private:
     for (unsigned i = 0, e = fdecl.get_inputs().size(); i < e; ++i) {
       const variable_t &in_formal = fdecl.get_inputs()[i];
       if (cs_args.count(in_formal) > 0) {
-	caller_and_callee_vars.push_back(in_formal);
+        caller_and_callee_vars.push_back(in_formal);
       }
     }
     caller_and_callee_vars.insert(caller_and_callee_vars.end(),
-				  cs.get_lhs().begin(), cs.get_lhs().end());
-    caller_dom.forget(set_difference(sum_out_variables, caller_and_callee_vars));
+                                  cs.get_lhs().begin(), cs.get_lhs().end());
+    caller_dom.forget(
+        set_difference(sum_out_variables, caller_and_callee_vars));
     return caller_dom;
   }
 
@@ -838,9 +835,11 @@ private:
     auto it = m_ctx->get_calling_context_table().find(callee_cfg);
     if (it != m_ctx->get_calling_context_table().end()) {
       auto &call_contexts = it->second;
-      CRAB_LOG("inter", if (call_contexts.empty()) {
-        crab::outs() << "There is no call contexts stored for " << cs << "\n";
-      });
+      CRAB_LOG(
+          "inter", if (call_contexts.empty()) {
+            crab::outs() << "There is no call contexts stored for " << cs
+                         << "\n";
+          });
       for (unsigned i = 0, e = call_contexts.size(); i < e; ++i) {
         CRAB_LOG("inter", crab::outs()
                               << "[INTER] Checking at " << cs << " if\n"
@@ -943,7 +942,7 @@ public:
         m_cg(std::move(o.m_cg)), m_ctx(std::move(o.m_ctx)) {}
 
   top_down_inter_transformer(const this_type &o) = delete;
-  
+
   this_type &operator=(const this_type &o) = delete;
 
   const global_context_t &get_context() const { return *m_ctx; }
@@ -998,7 +997,7 @@ public:
     }
   }
 
-  intra_analyzer_with_call_semantics_t&
+  intra_analyzer_with_call_semantics_t &
   add_analyzer(cg_node_t cg_node,
                std::unique_ptr<intra_analyzer_with_call_semantics_t> analysis) {
     auto res = m_intra_analyzer.insert({cg_node, std::move(analysis)});
@@ -1009,8 +1008,7 @@ public:
     return m_intra_analyzer.find(cg_node) != m_intra_analyzer.end();
   }
 
-  intra_analyzer_with_call_semantics_t&
-  get_analyzer(cg_node_t cg_node) {
+  intra_analyzer_with_call_semantics_t &get_analyzer(cg_node_t cg_node) {
     auto it = m_intra_analyzer.find(cg_node);
     if (it == m_intra_analyzer.end()) {
       CRAB_ERROR("cannot find analysis for ",
@@ -1125,10 +1123,10 @@ private:
   };
 
   inline AbsDom make_bottom() const {
-    auto const& dom = m_abs_tr->get_abs_value();
+    auto const &dom = m_abs_tr->get_abs_value();
     return dom.make_bottom();
   }
-  
+
   AbsDom get_invariant(const global_invariant_map_t &global_map,
                        const cfg_t &cfg, basic_block_label_t bb) const {
     auto g_it = global_map.find(cfg);
@@ -1146,14 +1144,15 @@ private:
   CallGraph m_cg;
   global_context_t m_ctx;
   std::unique_ptr<td_inter_abs_tr_t> m_abs_tr;
-  
+
 public:
-  top_down_inter_analyzer(CallGraph cg, abs_dom_t init, const params_t &params = params_t())
+  top_down_inter_analyzer(CallGraph cg, abs_dom_t init,
+                          const params_t &params = params_t())
       : m_cg(cg), m_ctx(params.live_map, params.wto_map, params.run_checker,
                         params.checker_verbosity, params.minimize_invariants,
                         params.max_call_contexts, params.widening_delay,
                         params.descending_iters, params.thresholds_size),
-	m_abs_tr(new td_inter_abs_tr_t(&m_cg, &m_ctx, std::move(init))) {
+        m_abs_tr(new td_inter_abs_tr_t(&m_cg, &m_ctx, std::move(init))) {
     CRAB_VERBOSE_IF(1, get_msg_stream() << "Type checking call graph ... ";);
     crab::CrabStats::resume("CallGraph type checking");
     cg.type_check();
@@ -1166,9 +1165,9 @@ public:
   this_type &operator=(const this_type &o) = delete;
 
   /** ===== Run the inter-procedural analysis
-   * 
+   *
    * The top-down analysis runs multiple analyses, one per callgraph
-   * entry, starting with init. 
+   * entry, starting with init.
    **/
   void run(abs_dom_t init) {
     crab::ScopedCrabStats __st__("Inter");
@@ -1194,7 +1193,7 @@ public:
     } else {
       CRAB_VERBOSE_IF(1, get_msg_stream()
                              << "Started inter-procedural analysis\n";);
-      
+
       abs_dom_t dom(init);
       m_abs_tr->set_abs_value(std::move(dom));
       for (auto cg_node : entries) {
@@ -1203,7 +1202,8 @@ public:
         }
         intra_analyzer_with_call_semantics_t &entry_analysis =
             top_down_inter_impl::get_inter_analysis<
-                cg_node_t, intra_analyzer_with_call_semantics_t>(cg_node, *m_abs_tr);
+                cg_node_t, intra_analyzer_with_call_semantics_t>(cg_node,
+                                                                 *m_abs_tr);
         entry_analysis.reset();
       }
       CRAB_VERBOSE_IF(1, get_msg_stream()

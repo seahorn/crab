@@ -54,10 +54,8 @@ class necessary_preconditions_fixpoint_iterator
   // preconditions from good states, otherwise from bad states
   bool m_good_states;
 
-  inline AbsDom make_top() const {
-    return m_postcond.make_top();
-  }
-  
+  inline AbsDom make_top() const { return m_postcond.make_top(); }
+
   /**
    * Compute necessary preconditions for a basic block
    **/
@@ -102,7 +100,8 @@ class necessary_preconditions_fixpoint_iterator
     return std::move(precond);
   }
 
-  virtual void process_pre(const bb_label_t &/*node*/, AbsDom /*postcond*/) override {}
+  virtual void process_pre(const bb_label_t & /*node*/,
+                           AbsDom /*postcond*/) override {}
 
   /**
    *  Store necessary preconditions
@@ -124,10 +123,9 @@ public:
       /* fixpoint parameters */
       unsigned int widening_delay = 1,
       unsigned int descending_iterations = UINT_MAX, size_t jump_set_size = 0)
-    : fixpoint_iterator_t(crab::cfg::cfg_rev<CFG>(cfg), postcond , nullptr,
-			  widening_delay,
-			  descending_iterations,
-			  jump_set_size),
+      : fixpoint_iterator_t(crab::cfg::cfg_rev<CFG>(cfg), postcond, nullptr,
+                            widening_delay, descending_iterations,
+                            jump_set_size),
         m_cfg(cfg), m_postcond(postcond), m_good_states(false) {}
 
   // This constructor computes necessary preconditions from
@@ -137,10 +135,9 @@ public:
       /* fixpoint parameters */
       unsigned int widening_delay = 1,
       unsigned int descending_iterations = UINT_MAX, size_t jump_set_size = 0)
-    : fixpoint_iterator_t(crab::cfg::cfg_rev<CFG>(cfg), postcond, wto,
-			  widening_delay,
-			  descending_iterations,
-			  jump_set_size),
+      : fixpoint_iterator_t(crab::cfg::cfg_rev<CFG>(cfg), postcond, wto,
+                            widening_delay, descending_iterations,
+                            jump_set_size),
         m_cfg(cfg), m_postcond(postcond), m_good_states(good_states) {}
 
   void run_backward() { this->run(m_postcond); }
@@ -247,15 +244,15 @@ private:
   std::unique_ptr<abs_tr_t> m_abs_tr;
 
   inline AbsDom make_top() const {
-    auto const& dom = m_abs_tr->get_abs_value();
+    auto const &dom = m_abs_tr->get_abs_value();
     return dom.make_top();
   }
 
   inline AbsDom make_bottom() const {
-    auto const& dom = m_abs_tr->get_abs_value();
+    auto const &dom = m_abs_tr->get_abs_value();
     return dom.make_bottom();
   }
-  
+
   void store_analysis_results(fwd_analyzer_t &f) {
     for (auto &kv : f.get_pre_invariants()) {
       m_pre_invariants.insert({kv.first, std::move(kv.second)});
@@ -279,7 +276,8 @@ private:
   // idom induces a tree each key-value pair means that key
   // (block) is an immediate dominator of each element in value
   // (set of basic blocks). TODO: caching
-  bool dominates(const bb_label_t &u, const bb_label_t &v, const idom_tree_t &idom) {
+  bool dominates(const bb_label_t &u, const bb_label_t &v,
+                 const idom_tree_t &idom) {
     auto it = idom.find(u);
     if (it == idom.end()) {
       // u does not dominate any block
@@ -374,8 +372,8 @@ public:
 
   // We don't remember init but we need it to call make_top()
   intra_forward_backward_analyzer(CFG cfg, AbsDom init)
-    : m_cfg(cfg), m_wto(nullptr), m_b_wto(nullptr),
-      m_abs_tr(new abs_tr_t(init.make_top())) {}
+      : m_cfg(cfg), m_wto(nullptr), m_b_wto(nullptr),
+        m_abs_tr(new abs_tr_t(init.make_top())) {}
 
   ~intra_forward_backward_analyzer() {
     if (m_wto)
@@ -384,10 +382,10 @@ public:
       delete m_b_wto;
   }
 
-  intra_forward_backward_analyzer(
-      const intra_forward_backward_analyzer&o) = delete;
-  intra_forward_backward_analyzer
-  &operator=(const intra_forward_backward_analyzer &o) = delete;
+  intra_forward_backward_analyzer(const intra_forward_backward_analyzer &o) =
+      delete;
+  intra_forward_backward_analyzer &
+  operator=(const intra_forward_backward_analyzer &o) = delete;
 
   /**
    * Perform the refining forward-backward loop.
@@ -422,22 +420,21 @@ public:
                              << "Initial states=" << init_states << "\n");
 
     // return true if fixpo[node] is strictly more precise than old fixpo[node]
-    auto refine = [](const bb_label_t &node,
-		     const assumption_map_t &old_table,
-		     const bwd_fixpoint_iterator_t &fixpo,
-		     assumption_map_t &new_table) {
-		    AbsDom y = fixpo[node];
-		    auto it = old_table.find(node);
-		    if (it == old_table.end()) {
-		      new_table.insert({node, y});
-		      return true;
-		    } else {
-		      AbsDom x = it->second;
-		      AbsDom x_narrowing_y = x && y;
-		      new_table.insert({node, x_narrowing_y});
-		      return (!(x <= x_narrowing_y));
-		    }
-		  };
+    auto refine = [](const bb_label_t &node, const assumption_map_t &old_table,
+                     const bwd_fixpoint_iterator_t &fixpo,
+                     assumption_map_t &new_table) {
+      AbsDom y = fixpo[node];
+      auto it = old_table.find(node);
+      if (it == old_table.end()) {
+        new_table.insert({node, y});
+        return true;
+      } else {
+        AbsDom x = it->second;
+        AbsDom x_narrowing_y = x && y;
+        new_table.insert({node, x_narrowing_y});
+        return (!(x <= x_narrowing_y));
+      }
+    };
 
     if (!only_forward && !m_cfg.has_exit()) {
       CRAB_WARN("cannot run backward analysis because CFG has no exit block");
@@ -481,16 +478,17 @@ public:
         }
       }
 
-      CRAB_LOG("backward", crab::outs() << "Computed dominance tree:\n";
-               for (auto &kv
-                    : idom_tree) {
-                 crab::outs() << "\t" << cfg_impl::get_label_str(kv.first)
-                              << " dominates={";
-                 for (auto d : kv.second) {
-                   crab::outs() << d << ";";
-                 }
-                 crab::outs() << "}\n";
-               });
+      CRAB_LOG(
+          "backward", crab::outs() << "Computed dominance tree:\n";
+          for (auto &kv
+               : idom_tree) {
+            crab::outs() << "\t" << cfg_impl::get_label_str(kv.first)
+                         << " dominates={";
+            for (auto d : kv.second) {
+              crab::outs() << d << ";";
+            }
+            crab::outs() << "}\n";
+          });
       crab::CrabStats::stop("CombinedForwardBackward.DominatorTree");
     }
 
@@ -545,7 +543,8 @@ public:
       crab::CrabStats::resume("CombinedForwardBackward.BackwardPass");
       // run backward analysis computing necessary preconditions
       // refined with results from the forward analysis.
-      AbsDom final_states = make_bottom();;
+      AbsDom final_states = make_bottom();
+      ;
       bwd_fixpoint_iterator_t B(m_cfg, m_b_wto,
                                 // A final state is safe so here means bottom
                                 final_states,
@@ -587,8 +586,8 @@ public:
         // AbsDom x_narrowing_y = x && y;
         // more_refinement |= (!(x <= x_narrowing_y));
         // new_refined_assumptions.insert({it->label(), x_narrowing_y});
-	more_refinement |= refine(it->label(), refined_assumptions, B,
-				  new_refined_assumptions);
+        more_refinement |= refine(it->label(), refined_assumptions, B,
+                                  new_refined_assumptions);
       }
       if (more_refinement) {
         refined_assumptions.clear();
@@ -667,11 +666,11 @@ public:
 
   CFG get_cfg(void) { return m_cfg; }
 
-  abs_tr_t& get_abs_transformer() {
+  abs_tr_t &get_abs_transformer() {
     assert(m_abs_tr);
     return *m_abs_tr;
   }
-  
+
   void get_safe_assertions(std::set<const stmt_t *> &out) const {
     out.insert(m_proved_assertions.begin(), m_proved_assertions.end());
   }

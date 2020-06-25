@@ -5,7 +5,7 @@
  * iterators.
  *
  * === Syntax ===
- * 
+ *
  * The CFG is intended to be expressive enough for representing the
  * semantics of a variety of programming languages and with different
  * levels of abstractions.  All the CFG statements are strongly
@@ -31,14 +31,14 @@
  *     (useful for C-like arrays and heap abstractions),
  *   - and functions declarations and callsites
  *
- * === Semantics === 
- * 
+ * === Semantics ===
+ *
  * The semantics of boolean and numerical is similar to a language
  * like C. For arrays, the main feature is that arrays are guaranteed
  * to be disjoint from each other (i.e., a write in array A cannot
  * affect the contents of another array B). The semantics of arrays
  * reads and writes are similar to SMT arrays.
- * 
+ *
  * TODO: semantics for references and regions
  *
  * === Function calls ===
@@ -57,7 +57,7 @@
  * know that the analysis will compute summaries that only express
  * relationships over INPUT and OUTPUT variables. This affects in how
  * you should encode your program into the Crab CFG language.
- * 
+ *
  * For instance, if you have a function `foo(p)` where `p` is a
  * reference. If foo updates the content of p then you should write the
  * CFG for `foo` as follows:
@@ -71,7 +71,7 @@
  *       function_decl(foo, a_in, a_out);
  *       array_assign(a_out, a_in);
  *       ... // rest of the CFG reads or writes a_out and keeps intact a_in
- *  
+ *
  * === Important note ===
  *
  * Objects of the class cfg are not copyable. Instead, we provide a
@@ -84,7 +84,6 @@
  *   operations.
  * - Integer and reals cannot be mixed.
  */
-
 
 #include <crab/cfg/cfg_operators.hpp>
 #include <crab/domains/discrete_domains.hpp>
@@ -152,7 +151,7 @@ enum stmt_code {
   // casts
   INT_CAST = 80
 };
-  
+
 template <typename Number, typename VariableName> class live {
 public:
   typedef variable<Number, VariableName> variable_t;
@@ -269,15 +268,15 @@ public:
   bool is_arr_read() const { return (m_stmt_code == ARR_LOAD); }
   bool is_arr_write() const { return (m_stmt_code == ARR_STORE); }
   bool is_arr_assign() const { return (m_stmt_code == ARR_ASSIGN); }
-  bool is_ref_make() const { return m_stmt_code == REF_MAKE;}
-  bool is_ref_load() const { return m_stmt_code == REF_LOAD;}
-  bool is_ref_store() const { return m_stmt_code == REF_STORE;}
-  bool is_ref_gep() const { return m_stmt_code == REF_GEP;}
-  bool is_ref_arr_load() const { return m_stmt_code == REF_ARR_LOAD;}
-  bool is_ref_arr_store() const { return m_stmt_code == REF_ARR_STORE;}  
+  bool is_ref_make() const { return m_stmt_code == REF_MAKE; }
+  bool is_ref_load() const { return m_stmt_code == REF_LOAD; }
+  bool is_ref_store() const { return m_stmt_code == REF_STORE; }
+  bool is_ref_gep() const { return m_stmt_code == REF_GEP; }
+  bool is_ref_arr_load() const { return m_stmt_code == REF_ARR_LOAD; }
+  bool is_ref_arr_store() const { return m_stmt_code == REF_ARR_STORE; }
   bool is_ref_assume() const { return (m_stmt_code == REF_ASSUME); }
   bool is_ref_assert() const { return (m_stmt_code == REF_ASSERT); }
-  bool is_region_init() const { return (m_stmt_code == REGION_INIT);}
+  bool is_region_init() const { return (m_stmt_code == REGION_INIT); }
   bool is_bool_bin_op() const { return (m_stmt_code == BOOL_BIN_OP); }
   bool is_bool_assign_cst() const { return (m_stmt_code == BOOL_ASSIGN_CST); }
   bool is_bool_assign_var() const { return (m_stmt_code == BOOL_ASSIGN_VAR); }
@@ -287,7 +286,7 @@ public:
   bool is_callsite() const { return (m_stmt_code == CALLSITE); }
   bool is_return() const { return (m_stmt_code == RETURN); }
   bool is_intrinsic() const { return (m_stmt_code == CRAB_INTRINSIC); }
-  
+
   const live_t &get_live() const { return m_live; }
 
   const debug_info &get_debug_info() const { return m_dbg_info; }
@@ -326,10 +325,10 @@ public:
       : statement_t(BIN_OP, dbg_info), m_lhs(lhs), m_op(op), m_op1(op1),
         m_op2(op2) {
     this->m_live.add_def(m_lhs);
-    for (auto const& v : m_op1.variables()) {
+    for (auto const &v : m_op1.variables()) {
       this->m_live.add_use(v);
     }
-    for (auto const& v : m_op2.variables()) {
+    for (auto const &v : m_op2.variables()) {
       this->m_live.add_use(v);
     }
   }
@@ -373,7 +372,7 @@ public:
   assignment(variable_t lhs, linear_expression_t rhs)
       : statement_t(ASSIGN), m_lhs(lhs), m_rhs(rhs) {
     this->m_live.add_def(m_lhs);
-    for (auto const&v : m_rhs.variables())
+    for (auto const &v : m_rhs.variables())
       this->m_live.add_use(v);
   }
 
@@ -407,7 +406,7 @@ public:
   typedef ikos::linear_constraint<Number, VariableName> linear_constraint_t;
 
   assume_stmt(linear_constraint_t cst) : statement_t(ASSUME), m_cst(cst) {
-    for (auto const&v : cst.variables())
+    for (auto const &v : cst.variables())
       this->m_live.add_use(v);
   }
 
@@ -493,11 +492,11 @@ public:
               linear_expression_t e2)
       : statement_t(SELECT), m_lhs(lhs), m_cond(cond), m_e1(e1), m_e2(e2) {
     this->m_live.add_def(m_lhs);
-    for (auto const&v : m_cond.variables())
+    for (auto const &v : m_cond.variables())
       this->m_live.add_use(v);
-    for (auto const&v : m_e1.variables())
+    for (auto const &v : m_e1.variables())
       this->m_live.add_use(v);
-    for (auto const&v : m_e2.variables())
+    for (auto const &v : m_e2.variables())
       this->m_live.add_use(v);
   }
 
@@ -540,7 +539,7 @@ public:
 
   assert_stmt(linear_constraint_t cst, debug_info dbg_info = debug_info())
       : statement_t(ASSERT, dbg_info), m_cst(cst) {
-    for (auto const&v : cst.variables())
+    for (auto const &v : cst.variables())
       this->m_live.add_use(v);
   }
 
@@ -649,16 +648,16 @@ public:
         m_ub(ub), m_val(val) {
 
     this->m_live.add_def(m_arr);
-    for (auto const&v : m_elem_size.variables()) {
+    for (auto const &v : m_elem_size.variables()) {
       this->m_live.add_use(v);
     }
-    for (auto const&v : m_lb.variables()) {
+    for (auto const &v : m_lb.variables()) {
       this->m_live.add_use(v);
     }
-    for (auto const&v : m_ub.variables()) {
+    for (auto const &v : m_ub.variables()) {
       this->m_live.add_use(v);
     }
-    for (auto const&v : m_val.variables()) {
+    for (auto const &v : m_val.variables()) {
       this->m_live.add_use(v);
     }
   }
@@ -713,22 +712,21 @@ public:
   array_store_stmt(variable_t arr, linear_expression_t elem_size,
                    linear_expression_t lb, linear_expression_t ub,
                    linear_expression_t value, bool is_strong_update)
-      : statement_t(ARR_STORE), m_arr(arr),
-        m_elem_size(elem_size), m_lb(lb), m_ub(ub), m_value(value),
-        m_is_strong_update(is_strong_update) {
+      : statement_t(ARR_STORE), m_arr(arr), m_elem_size(elem_size), m_lb(lb),
+        m_ub(ub), m_value(value), m_is_strong_update(is_strong_update) {
 
     this->m_live.add_def(m_arr);
     // XXX: should we also mark m_arr as use?
-    for (auto const&v : m_elem_size.variables()) {
+    for (auto const &v : m_elem_size.variables()) {
       this->m_live.add_use(v);
     }
-    for (auto const&v : m_lb.variables()) {
+    for (auto const &v : m_lb.variables()) {
       this->m_live.add_use(v);
     }
-    for (auto const&v : m_ub.variables()) {
+    for (auto const &v : m_ub.variables()) {
       this->m_live.add_use(v);
     }
-    for (auto const&v : m_value.variables()) {
+    for (auto const &v : m_value.variables()) {
       this->m_live.add_use(v);
     }
   }
@@ -754,7 +752,7 @@ public:
 
   virtual statement_t *clone() const {
     return new this_type(m_arr, m_elem_size, m_lb, m_ub, m_value,
-			 m_is_strong_update);
+                         m_is_strong_update);
   }
 
   virtual void write(crab_os &o) const {
@@ -802,10 +800,10 @@ public:
 
     this->m_live.add_def(lhs);
     this->m_live.add_use(m_array);
-    for (auto const&v : m_elem_size.variables()) {
+    for (auto const &v : m_elem_size.variables()) {
       this->m_live.add_use(v);
     }
-    for (auto const&v : m_index.variables()) {
+    for (auto const &v : m_index.variables()) {
       this->m_live.add_use(v);
     }
   }
@@ -878,25 +876,23 @@ private:
   variable_t m_rhs;
 };
 
-/* 
+/*
  * References and Regions
  */
 
 template <class Number, class VariableName>
-class region_init_stmt: public statement<Number, VariableName> {
+class region_init_stmt : public statement<Number, VariableName> {
   // region_init(region);
   typedef region_init_stmt<Number, VariableName> this_type;
 
 public:
-  
   typedef statement<Number, VariableName> statement_t;
   typedef variable<Number, VariableName> variable_t;
 
   region_init_stmt(memory_region region, debug_info dbg_info = debug_info())
-    : statement_t(REGION_INIT, dbg_info), m_region(region) {
-  }
-  
-  const memory_region &region() const { return m_region;}
+      : statement_t(REGION_INIT, dbg_info), m_region(region) {}
+
+  const memory_region &region() const { return m_region; }
 
   virtual void accept(statement_visitor<Number, VariableName> *v) {
     v->visit(*this);
@@ -907,32 +903,31 @@ public:
   }
 
   virtual void write(crab_os &o) const {
-    o << "region_init(" << m_region  << ")";
+    o << "region_init(" << m_region << ")";
   }
 
 private:
   memory_region m_region;
 };
-  
+
 template <class Number, class VariableName>
 class make_ref_stmt : public statement<Number, VariableName> {
   // lhs := make_ref(region)
   typedef make_ref_stmt<Number, VariableName> this_type;
 
 public:
-  
   typedef statement<Number, VariableName> statement_t;
   typedef variable<Number, VariableName> variable_t;
 
-  make_ref_stmt(variable_t lhs, memory_region region, 
-		debug_info dbg_info = debug_info())
-    : statement_t(REF_MAKE, dbg_info), m_lhs(lhs), m_region(region) {
+  make_ref_stmt(variable_t lhs, memory_region region,
+                debug_info dbg_info = debug_info())
+      : statement_t(REF_MAKE, dbg_info), m_lhs(lhs), m_region(region) {
     this->m_live.add_def(lhs);
   }
-  
+
   const variable_t &lhs() const { return m_lhs; }
 
-  const memory_region &region() const { return m_region;}
+  const memory_region &region() const { return m_region; }
 
   virtual void accept(statement_visitor<Number, VariableName> *v) {
     v->visit(*this);
@@ -943,14 +938,14 @@ public:
   }
 
   virtual void write(crab_os &o) const {
-    o << m_lhs << " := " << "make_ref(" << m_region  << ")";
+    o << m_lhs << " := "
+      << "make_ref(" << m_region << ")";
   }
 
 private:
   variable_t m_lhs;
   memory_region m_region;
 };
-
 
 template <class Number, class VariableName>
 class load_from_ref_stmt : public statement<Number, VariableName> {
@@ -960,11 +955,11 @@ class load_from_ref_stmt : public statement<Number, VariableName> {
 public:
   typedef statement<Number, VariableName> statement_t;
   typedef variable<Number, VariableName> variable_t;
-  
+
   load_from_ref_stmt(variable_t lhs, variable_t ref, memory_region region,
-		     debug_info dbg_info = debug_info())
-    : statement_t(REF_LOAD, dbg_info),
-      m_lhs(lhs), m_ref(ref), m_region(region) {
+                     debug_info dbg_info = debug_info())
+      : statement_t(REF_LOAD, dbg_info), m_lhs(lhs), m_ref(ref),
+        m_region(region) {
     this->m_live.add_def(m_lhs);
     this->m_live.add_use(m_ref);
   }
@@ -974,7 +969,7 @@ public:
   const variable_t &ref() const { return m_ref; }
 
   const memory_region &region() const { return m_region; }
-  
+
   virtual void accept(statement_visitor<Number, VariableName> *v) {
     v->visit(*this);
   }
@@ -994,7 +989,6 @@ private:
   memory_region m_region;
 };
 
-
 template <class Number, class VariableName>
 class store_to_ref_stmt : public statement<Number, VariableName> {
   // store_to_ref(ref, region, val);
@@ -1003,14 +997,14 @@ class store_to_ref_stmt : public statement<Number, VariableName> {
 public:
   typedef statement<Number, VariableName> statement_t;
   typedef variable<Number, VariableName> variable_t;
-  typedef ikos::linear_expression<Number, VariableName> linear_expression_t;  
-  
-  store_to_ref_stmt(variable_t ref, memory_region region, linear_expression_t val, 
-		    debug_info dbg_info = debug_info())
-    : statement_t(REF_STORE, dbg_info),
-      m_ref(ref), m_region(region), m_val(val) {
+  typedef ikos::linear_expression<Number, VariableName> linear_expression_t;
+
+  store_to_ref_stmt(variable_t ref, memory_region region,
+                    linear_expression_t val, debug_info dbg_info = debug_info())
+      : statement_t(REF_STORE, dbg_info), m_ref(ref), m_region(region),
+        m_val(val) {
     this->m_live.add_def(m_ref);
-    for (auto const&v : val.variables()) {
+    for (auto const &v : val.variables()) {
       this->m_live.add_use(v);
     }
   }
@@ -1020,7 +1014,7 @@ public:
   const linear_expression_t &val() const { return m_val; }
 
   const memory_region &region() const { return m_region; }
-  
+
   virtual void accept(statement_visitor<Number, VariableName> *v) {
     v->visit(*this);
   }
@@ -1035,7 +1029,7 @@ public:
 
 private:
   variable_t m_ref;
-  memory_region m_region;  
+  memory_region m_region;
   linear_expression_t m_val;
 };
 
@@ -1049,16 +1043,14 @@ public:
   typedef variable<Number, VariableName> variable_t;
   typedef ikos::linear_expression<Number, VariableName> linear_expression_t;
 
-  gep_ref_stmt(variable_t lhs, memory_region lhs_region,
-	       variable_t rhs, memory_region rhs_region, linear_expression_t offset,
-	       debug_info dbg_info = debug_info())
-    : statement_t(REF_GEP, dbg_info),
-      m_lhs(lhs), m_lhs_region(lhs_region),
-      m_rhs(rhs), m_rhs_region(rhs_region),      
-      m_offset(offset) {
+  gep_ref_stmt(variable_t lhs, memory_region lhs_region, variable_t rhs,
+               memory_region rhs_region, linear_expression_t offset,
+               debug_info dbg_info = debug_info())
+      : statement_t(REF_GEP, dbg_info), m_lhs(lhs), m_lhs_region(lhs_region),
+        m_rhs(rhs), m_rhs_region(rhs_region), m_offset(offset) {
     this->m_live.add_def(lhs);
     this->m_live.add_use(rhs);
-    for (auto const&v : offset.variables()) {
+    for (auto const &v : offset.variables()) {
       this->m_live.add_use(v);
     }
   }
@@ -1069,21 +1061,22 @@ public:
 
   const linear_expression_t &offset() const { return m_offset; }
 
-  const memory_region &lhs_region() const { return m_lhs_region;}
+  const memory_region &lhs_region() const { return m_lhs_region; }
 
-  const memory_region &rhs_region() const { return m_rhs_region;}  
-  
+  const memory_region &rhs_region() const { return m_rhs_region; }
+
   virtual void accept(statement_visitor<Number, VariableName> *v) {
     v->visit(*this);
   }
 
   virtual statement_t *clone() const {
-    return new this_type(m_lhs, m_lhs_region, m_rhs, m_rhs_region, m_offset, this->m_dbg_info);
+    return new this_type(m_lhs, m_lhs_region, m_rhs, m_rhs_region, m_offset,
+                         this->m_dbg_info);
   }
 
   virtual void write(crab_os &o) const {
     linear_expression_t off(m_offset); // FIX: write method is not const in ikos
-    o << "(" << m_lhs << ","<< m_lhs_region << ") := "
+    o << "(" << m_lhs << "," << m_lhs_region << ") := "
       << "gep_ref(" << m_rhs_region << "," << m_rhs << " + " << off << ")";
     return;
   }
@@ -1092,13 +1085,12 @@ private:
   variable_t m_lhs;
   memory_region m_lhs_region;
   variable_t m_rhs;
-  memory_region m_rhs_region;  
+  memory_region m_rhs_region;
   linear_expression_t m_offset;
 };
 
-
 template <class Number, class VariableName>
-class load_from_arr_ref_stmt: public statement<Number, VariableName> {
+class load_from_arr_ref_stmt : public statement<Number, VariableName> {
   // lhs := load_from_arr_ref(ref, region, index, elem_size)
   typedef load_from_arr_ref_stmt<Number, VariableName> this_type;
 
@@ -1109,19 +1101,18 @@ public:
   typedef typename variable_t::type_t type_t;
 
   load_from_arr_ref_stmt(variable_t lhs, variable_t ref, memory_region region,
-		    linear_expression_t index,  linear_expression_t elem_size,
-		    debug_info dbg_info = debug_info())
-    : statement_t(REF_ARR_LOAD, dbg_info),
-      m_lhs(lhs), m_ref(ref), m_region(region),
-      m_index(index),
-      m_elem_size(elem_size) {
-    
+                         linear_expression_t index,
+                         linear_expression_t elem_size,
+                         debug_info dbg_info = debug_info())
+      : statement_t(REF_ARR_LOAD, dbg_info), m_lhs(lhs), m_ref(ref),
+        m_region(region), m_index(index), m_elem_size(elem_size) {
+
     this->m_live.add_def(m_lhs);
     this->m_live.add_use(m_ref);
-    for (auto const&v : m_elem_size.variables()) {
+    for (auto const &v : m_elem_size.variables()) {
       this->m_live.add_use(v);
     }
-    for (auto const&v : m_index.variables()) {
+    for (auto const &v : m_index.variables()) {
       this->m_live.add_use(v);
     }
   }
@@ -1134,14 +1125,15 @@ public:
 
   const linear_expression_t &elem_size() const { return m_elem_size; }
 
-  const memory_region &region() const { return m_region;}
-  
+  const memory_region &region() const { return m_region; }
+
   virtual void accept(statement_visitor<Number, VariableName> *v) {
     v->visit(*this);
   }
 
   virtual statement_t *clone() const {
-    return new this_type(m_lhs, m_ref, m_region, m_index,  m_elem_size, this->m_dbg_info);
+    return new this_type(m_lhs, m_ref, m_region, m_index, m_elem_size,
+                         this->m_dbg_info);
   }
 
   virtual void write(crab_os &o) const {
@@ -1154,53 +1146,54 @@ private:
   variable_t m_lhs;
   variable_t m_ref;
   memory_region m_region;
-  linear_expression_t m_index;  
+  linear_expression_t m_index;
   linear_expression_t m_elem_size; //! size in bytes
 };
 
 template <class Number, class VariableName>
-class store_to_arr_ref_stmt: public statement<Number, VariableName> {
+class store_to_arr_ref_stmt : public statement<Number, VariableName> {
   // store_to_arr_ref(ref, region, lb, ub, value, elem_size)
   typedef store_to_arr_ref_stmt<Number, VariableName> this_type;
+
 public:
-  
   typedef statement<Number, VariableName> statement_t;
   typedef ikos::linear_expression<Number, VariableName> linear_expression_t;
   typedef variable<Number, VariableName> variable_t;
   typedef typename variable_t::type_t type_t;
 
-  store_to_arr_ref_stmt(variable_t ref, memory_region region, 
-			linear_expression_t lb, linear_expression_t ub,
-			linear_expression_t value, linear_expression_t elem_size,
-			bool is_strong_update, debug_info dbg_info = debug_info())
-    : statement_t(REF_ARR_STORE, dbg_info), m_ref(ref), m_region(region),
-      m_lb(lb), m_ub(ub), m_value(value), m_elem_size(elem_size), 
-      m_is_strong_update(is_strong_update) {
+  store_to_arr_ref_stmt(variable_t ref, memory_region region,
+                        linear_expression_t lb, linear_expression_t ub,
+                        linear_expression_t value,
+                        linear_expression_t elem_size, bool is_strong_update,
+                        debug_info dbg_info = debug_info())
+      : statement_t(REF_ARR_STORE, dbg_info), m_ref(ref), m_region(region),
+        m_lb(lb), m_ub(ub), m_value(value), m_elem_size(elem_size),
+        m_is_strong_update(is_strong_update) {
 
     this->m_live.add_def(m_ref);
     // XXX: should we also mark m_ref as use?
-    for (auto const&v : m_elem_size.variables()) {
+    for (auto const &v : m_elem_size.variables()) {
       this->m_live.add_use(v);
     }
-    for (auto const&v : m_lb.variables()) {
+    for (auto const &v : m_lb.variables()) {
       this->m_live.add_use(v);
     }
-    for (auto const&v : m_ub.variables()) {
+    for (auto const &v : m_ub.variables()) {
       this->m_live.add_use(v);
     }
-    for (auto const&v : m_value.variables()) {
+    for (auto const &v : m_value.variables()) {
       this->m_live.add_use(v);
     }
   }
 
   const variable_t &ref() const { return m_ref; }
 
-  const memory_region &region() const { return m_region;}
-  
+  const memory_region &region() const { return m_region; }
+
   const linear_expression_t &lb_index() const { return m_lb; }
 
   const linear_expression_t &ub_index() const { return m_ub; }
-  
+
   const linear_expression_t &value() const { return m_value; }
 
   const linear_expression_t &elem_size() const { return m_elem_size; }
@@ -1212,8 +1205,8 @@ public:
   }
 
   virtual statement_t *clone() const {
-    return new this_type(m_ref, m_region, m_lb, m_ub, m_value, m_elem_size, 
-			 m_is_strong_update, this->m_dbg_info);
+    return new this_type(m_ref, m_region, m_lb, m_ub, m_value, m_elem_size,
+                         m_is_strong_update, this->m_dbg_info);
   }
 
   virtual void write(crab_os &o) const {
@@ -1221,8 +1214,8 @@ public:
     if (m_lb.equal(m_ub)) {
       o << m_ref << "," << m_lb << "," << m_value << ",sz " << m_elem_size;
     } else {
-      o << m_ref << "," << m_lb << ".." << m_ub << "," << m_value
-        << ",sz " << m_elem_size;
+      o << m_ref << "," << m_lb << ".." << m_ub << "," << m_value << ",sz "
+        << m_elem_size;
     }
     o << ")";
   }
@@ -1240,13 +1233,13 @@ private:
   linear_expression_t m_value;
   // the size of the array element
   linear_expression_t m_elem_size; //! size in bytes
-  
+
   // whether the store is a strong update. This might help the
   // abstract domain. If unknown set to false.  Only makes sense
   // if m_lb is equal to m_ub.
   bool m_is_strong_update;
 };
-  
+
 template <class Number, class VariableName>
 class assume_ref_stmt : public statement<Number, VariableName> {
   typedef assume_ref_stmt<Number, VariableName> this_type;
@@ -1257,7 +1250,7 @@ public:
   typedef reference_constraint<Number, VariableName> reference_constraint_t;
 
   assume_ref_stmt(reference_constraint_t cst)
-    : statement_t(REF_ASSUME), m_cst(cst) {
+      : statement_t(REF_ASSUME), m_cst(cst) {
     if (!cst.is_tautology() && !cst.is_contradiction()) {
       if (cst.is_unary()) {
         this->m_live.add_use(cst.lhs());
@@ -1291,8 +1284,9 @@ public:
   typedef variable<Number, VariableName> variable_t;
   typedef reference_constraint<Number, VariableName> reference_constraint_t;
 
-  assert_ref_stmt(reference_constraint_t cst, debug_info dbg_info = debug_info())
-    : statement_t(REF_ASSERT, dbg_info), m_cst(cst) {
+  assert_ref_stmt(reference_constraint_t cst,
+                  debug_info dbg_info = debug_info())
+      : statement_t(REF_ASSERT, dbg_info), m_cst(cst) {
     if (!cst.is_tautology() && !cst.is_contradiction()) {
       if (cst.is_unary()) {
         this->m_live.add_use(cst.lhs());
@@ -1470,9 +1464,8 @@ private:
   std::vector<variable_t> m_ret;
 };
 
-
 /* An intrinsic function is an "internal" function with semantics
-   defined by the Crab domains */  
+   defined by the Crab domains */
 template <class Number, class VariableName>
 class intrinsic_stmt : public statement<Number, VariableName> {
   typedef intrinsic_stmt<Number, VariableName> this_type;
@@ -1482,9 +1475,10 @@ public:
   typedef variable<Number, VariableName> variable_t;
   typedef typename variable_t::type_t type_t;
 
-  intrinsic_stmt(std::string intrinsic_name, const std::vector<variable_t> &args)
-    : statement_t(CRAB_INTRINSIC), m_intrinsic_name(intrinsic_name) {
-    
+  intrinsic_stmt(std::string intrinsic_name,
+                 const std::vector<variable_t> &args)
+      : statement_t(CRAB_INTRINSIC), m_intrinsic_name(intrinsic_name) {
+
     std::copy(args.begin(), args.end(), std::back_inserter(m_args));
     for (auto arg : m_args) {
       this->m_live.add_use(arg);
@@ -1492,9 +1486,9 @@ public:
   }
 
   intrinsic_stmt(std::string intrinsic_name, const std::vector<variable_t> &lhs,
-		 const std::vector<variable_t> &args)
-    : statement_t(CRAB_INTRINSIC), m_intrinsic_name(intrinsic_name) {
-    
+                 const std::vector<variable_t> &args)
+      : statement_t(CRAB_INTRINSIC), m_intrinsic_name(intrinsic_name) {
+
     std::copy(args.begin(), args.end(), std::back_inserter(m_args));
     for (auto arg : m_args) {
       this->m_live.add_use(arg);
@@ -1589,7 +1583,7 @@ public:
   bool_assign_cst(variable_t lhs, linear_constraint_t rhs)
       : statement_t(BOOL_ASSIGN_CST), m_lhs(lhs), m_rhs(rhs) {
     this->m_live.add_def(m_lhs);
-    for (auto const&v : m_rhs.variables())
+    for (auto const &v : m_rhs.variables())
       this->m_live.add_use(v);
   }
 
@@ -1894,11 +1888,11 @@ public:
   // References
   typedef region_init_stmt<Number, VariableName> region_init_t;
   typedef make_ref_stmt<Number, VariableName> make_ref_t;
-  typedef load_from_ref_stmt<Number, VariableName>  load_from_ref_t;
+  typedef load_from_ref_stmt<Number, VariableName> load_from_ref_t;
   typedef store_to_ref_stmt<Number, VariableName> store_to_ref_t;
   typedef gep_ref_stmt<Number, VariableName> gep_ref_t;
   typedef load_from_arr_ref_stmt<Number, VariableName> load_from_arr_ref_t;
-  typedef store_to_arr_ref_stmt<Number, VariableName> store_to_arr_ref_t;  
+  typedef store_to_arr_ref_stmt<Number, VariableName> store_to_arr_ref_t;
   typedef assume_ref_stmt<Number, VariableName> assume_ref_t;
   typedef assert_ref_stmt<Number, VariableName> assert_ref_t;
   // Boolean
@@ -1935,15 +1929,15 @@ private:
   }
 
   basic_block(BasicBlockLabel bb_id)
-    : m_bb_id(bb_id),
-      m_insert_point_at_front(false), m_live(live_domain_t::bottom()) {}
+      : m_bb_id(bb_id), m_insert_point_at_front(false),
+        m_live(live_domain_t::bottom()) {}
 
   static basic_block_t *create(BasicBlockLabel bb_id) {
     return new basic_block_t(bb_id);
   }
 
   void update_uses_and_defs(const statement_t *s) {
-    auto const& ls = s->get_live();
+    auto const &ls = s->get_live();
     for (auto &v : boost::make_iterator_range(ls.uses_begin(), ls.uses_end())) {
       m_live += v;
     }
@@ -2054,16 +2048,14 @@ public:
     return std::make_pair(m_prev.begin(), m_prev.end());
   }
 
-  void operator>>(basic_block_t &b) {
-    add_succ(b);
-  }
+  void operator>>(basic_block_t &b) { add_succ(b); }
 
-  // Add a cfg edge from *this to b  
+  // Add a cfg edge from *this to b
   void add_succ(basic_block_t &b) {
     insert_adjacent(m_next, b.m_bb_id);
     insert_adjacent(b.m_prev, m_bb_id);
   }
-  
+
   // Remove a cfg edge from *this to b
   void operator-=(basic_block_t &b) {
     remove_adjacent(m_next, b.m_bb_id);
@@ -2312,11 +2304,11 @@ public:
   }
 
   const statement_t *intrinsic(std::string name,
-			       const std::vector<variable_t> &lhs,
-			       const std::vector<variable_t> &args) {
+                               const std::vector<variable_t> &lhs,
+                               const std::vector<variable_t> &args) {
     return insert(new intrinsic_t(name, lhs, args));
   }
-  
+
   const statement_t *array_init(variable_t a, lin_exp_t lb_idx,
                                 lin_exp_t ub_idx, lin_exp_t v,
                                 lin_exp_t elem_size) {
@@ -2330,7 +2322,8 @@ public:
 
   const statement_t *array_store(variable_t arr, lin_exp_t idx, lin_exp_t v,
                                  lin_exp_t elem_size, bool is_strong_update) {
-    return insert(new arr_store_t(arr, elem_size, idx, idx, v, is_strong_update));
+    return insert(
+        new arr_store_t(arr, elem_size, idx, idx, v, is_strong_update));
   }
 
   const statement_t *array_store_range(variable_t arr, lin_exp_t lb_idx,
@@ -2341,7 +2334,7 @@ public:
 
   const statement_t *array_load(variable_t lhs, variable_t arr, lin_exp_t idx,
                                 lin_exp_t elem_size) {
-    return insert(new arr_load_t(lhs, arr, elem_size, idx)); 
+    return insert(new arr_load_t(lhs, arr, elem_size, idx));
   }
 
   const statement_t *array_assign(variable_t lhs, variable_t rhs) {
@@ -2349,39 +2342,44 @@ public:
   }
 
   const statement_t *region_init(memory_region region) {
-    return insert(new region_init_t(region));    
+    return insert(new region_init_t(region));
   }
-  
+
   const statement_t *make_ref(variable_t lhs_ref, memory_region region) {
     return insert(new make_ref_t(lhs_ref, region));
   }
-  
-  const statement_t *load_from_ref(variable_t lhs, variable_t ref, memory_region region) {
-    return insert(new load_from_ref_t(lhs, ref, region));    
+
+  const statement_t *load_from_ref(variable_t lhs, variable_t ref,
+                                   memory_region region) {
+    return insert(new load_from_ref_t(lhs, ref, region));
   }
 
-  const statement_t *store_to_ref(variable_t ref, memory_region region, lin_exp_t val) {
-    return insert(new store_to_ref_t(ref, region, val));    
+  const statement_t *store_to_ref(variable_t ref, memory_region region,
+                                  lin_exp_t val) {
+    return insert(new store_to_ref_t(ref, region, val));
   }
 
   const statement_t *gep_ref(variable_t lhs_ref, memory_region lhs_region,
-			     variable_t rhs_ref, memory_region rhs_region,
-			     lin_exp_t offset) {
-    return insert(new gep_ref_t(lhs_ref, lhs_region, rhs_ref, rhs_region, offset));    
+                             variable_t rhs_ref, memory_region rhs_region,
+                             lin_exp_t offset) {
+    return insert(
+        new gep_ref_t(lhs_ref, lhs_region, rhs_ref, rhs_region, offset));
   }
 
-  const statement_t *load_from_arr_ref(variable_t lhs, variable_t ref, memory_region region,
-				       lin_exp_t index, lin_exp_t elem_size) {
+  const statement_t *load_from_arr_ref(variable_t lhs, variable_t ref,
+                                       memory_region region, lin_exp_t index,
+                                       lin_exp_t elem_size) {
     return insert(new load_from_arr_ref_t(lhs, ref, region, index, elem_size));
   }
 
   const statement_t *store_to_arr_ref(variable_t ref, memory_region region,
-				      lin_exp_t lb_index, lin_exp_t ub_index,
-				      lin_exp_t elem_size, bool is_strong_update) {
+                                      lin_exp_t lb_index, lin_exp_t ub_index,
+                                      lin_exp_t elem_size,
+                                      bool is_strong_update) {
     return insert(new store_to_arr_ref_t(ref, region, lb_index, ub_index,
-					 elem_size, is_strong_update));
+                                         elem_size, is_strong_update));
   }
-  
+
   const statement_t *assume_ref(ref_cst_t cst) {
     return insert(new assume_ref_t(cst));
   }
@@ -2529,18 +2527,18 @@ template <class Number, class VariableName> struct statement_visitor {
   typedef unreachable_stmt<Number, VariableName> unreach_t;
   typedef callsite_stmt<Number, VariableName> callsite_t;
   typedef return_stmt<Number, VariableName> return_t;
-  typedef intrinsic_stmt<Number, VariableName> intrinsic_t;  
+  typedef intrinsic_stmt<Number, VariableName> intrinsic_t;
   typedef array_init_stmt<Number, VariableName> arr_init_t;
   typedef array_store_stmt<Number, VariableName> arr_store_t;
   typedef array_load_stmt<Number, VariableName> arr_load_t;
   typedef array_assign_stmt<Number, VariableName> arr_assign_t;
   typedef make_ref_stmt<Number, VariableName> make_ref_t;
-  typedef region_init_stmt<Number, VariableName> region_init_t;  
-  typedef load_from_ref_stmt<Number, VariableName>  load_from_ref_t;
+  typedef region_init_stmt<Number, VariableName> region_init_t;
+  typedef load_from_ref_stmt<Number, VariableName> load_from_ref_t;
   typedef store_to_ref_stmt<Number, VariableName> store_to_ref_t;
   typedef gep_ref_stmt<Number, VariableName> gep_ref_t;
   typedef load_from_arr_ref_stmt<Number, VariableName> load_from_arr_ref_t;
-  typedef store_to_arr_ref_stmt<Number, VariableName> store_to_arr_ref_t;  
+  typedef store_to_arr_ref_stmt<Number, VariableName> store_to_arr_ref_t;
   typedef assume_ref_stmt<Number, VariableName> assume_ref_t;
   typedef assert_ref_stmt<Number, VariableName> assert_ref_t;
   typedef bool_binary_op<Number, VariableName> bool_bin_op_t;
@@ -2560,18 +2558,18 @@ template <class Number, class VariableName> struct statement_visitor {
   virtual void visit(havoc_t &){};
   virtual void visit(callsite_t &){};
   virtual void visit(return_t &){};
-  virtual void visit(intrinsic_t &){};  
+  virtual void visit(intrinsic_t &){};
   virtual void visit(arr_init_t &){};
   virtual void visit(arr_store_t &){};
   virtual void visit(arr_load_t &){};
   virtual void visit(arr_assign_t &){};
-  virtual void visit(region_init_t &){}  
-  virtual void visit(make_ref_t &){}
-  virtual void visit(load_from_ref_t &){}
-  virtual void visit(store_to_ref_t &){}
-  virtual void visit(gep_ref_t &){}
-  virtual void visit(load_from_arr_ref_t &){}
-  virtual void visit(store_to_arr_ref_t &){}        
+  virtual void visit(region_init_t &) {}
+  virtual void visit(make_ref_t &) {}
+  virtual void visit(load_from_ref_t &) {}
+  virtual void visit(store_to_ref_t &) {}
+  virtual void visit(gep_ref_t &) {}
+  virtual void visit(load_from_arr_ref_t &) {}
+  virtual void visit(store_to_arr_ref_t &) {}
   virtual void visit(assume_ref_t &){};
   virtual void visit(assert_ref_t &){};
   virtual void visit(bool_bin_op_t &){};
@@ -2859,22 +2857,18 @@ public:
 
   cfg_t &operator=(const cfg_t &o) = delete;
 
-  cfg(BasicBlockLabel entry)
-      : m_entry(entry), m_exit(boost::none) {
-    m_blocks.insert(
-        binding_t(m_entry, basic_block_t::create(m_entry)));
+  cfg(BasicBlockLabel entry) : m_entry(entry), m_exit(boost::none) {
+    m_blocks.insert(binding_t(m_entry, basic_block_t::create(m_entry)));
   }
 
   cfg(BasicBlockLabel entry, BasicBlockLabel exit)
       : m_entry(entry), m_exit(exit) {
-    m_blocks.insert(
-        binding_t(m_entry, basic_block_t::create(m_entry)));
+    m_blocks.insert(binding_t(m_entry, basic_block_t::create(m_entry)));
   }
 
   cfg(BasicBlockLabel entry, BasicBlockLabel exit, fdecl_t func_decl)
-    : m_entry(entry), m_exit(exit), m_func_decl(func_decl) {
-    m_blocks.insert(
-        binding_t(m_entry, basic_block_t::create(m_entry)));
+      : m_entry(entry), m_exit(exit), m_func_decl(func_decl) {
+    m_blocks.insert(binding_t(m_entry, basic_block_t::create(m_entry)));
   }
 
   // The cfg owns the basic blocks
@@ -3632,12 +3626,11 @@ public:
   }
 
 private:
-
   CFG m_cfg;
-  
+
   typedef typename CFG::varname_t V;
   typedef typename CFG::number_t N;
-  
+
   struct type_checker_visitor : public statement_visitor<N, V> {
     typedef typename statement_visitor<N, V>::bin_op_t bin_op_t;
     typedef typename statement_visitor<N, V>::assign_t assign_t;
@@ -3649,23 +3642,27 @@ private:
     typedef typename statement_visitor<N, V>::unreach_t unreach_t;
     typedef typename statement_visitor<N, V>::callsite_t callsite_t;
     typedef typename statement_visitor<N, V>::return_t return_t;
-    typedef typename statement_visitor<N, V>::intrinsic_t intrinsic_t;    
+    typedef typename statement_visitor<N, V>::intrinsic_t intrinsic_t;
     typedef typename statement_visitor<N, V>::arr_init_t arr_init_t;
     typedef typename statement_visitor<N, V>::arr_store_t arr_store_t;
     typedef typename statement_visitor<N, V>::arr_load_t arr_load_t;
     typedef typename statement_visitor<N, V>::arr_assign_t arr_assign_t;
     typedef typename statement_visitor<N, V>::make_ref_t make_ref_t;
-    typedef typename statement_visitor<N, V>::region_init_t region_init_t;    
+    typedef typename statement_visitor<N, V>::region_init_t region_init_t;
     typedef typename statement_visitor<N, V>::load_from_ref_t load_from_ref_t;
     typedef typename statement_visitor<N, V>::store_to_ref_t store_to_ref_t;
     typedef typename statement_visitor<N, V>::gep_ref_t gep_ref_t;
-    typedef typename statement_visitor<N, V>::load_from_arr_ref_t load_from_arr_ref_t;
-    typedef typename statement_visitor<N, V>::store_to_arr_ref_t store_to_arr_ref_t; 
+    typedef typename statement_visitor<N, V>::load_from_arr_ref_t
+        load_from_arr_ref_t;
+    typedef
+        typename statement_visitor<N, V>::store_to_arr_ref_t store_to_arr_ref_t;
     typedef typename statement_visitor<N, V>::assume_ref_t assume_ref_t;
     typedef typename statement_visitor<N, V>::assert_ref_t assert_ref_t;
     typedef typename statement_visitor<N, V>::bool_bin_op_t bool_bin_op_t;
-    typedef typename statement_visitor<N, V>::bool_assign_cst_t bool_assign_cst_t;
-    typedef typename statement_visitor<N, V>::bool_assign_var_t bool_assign_var_t;
+    typedef
+        typename statement_visitor<N, V>::bool_assign_cst_t bool_assign_cst_t;
+    typedef
+        typename statement_visitor<N, V>::bool_assign_var_t bool_assign_var_t;
     typedef typename statement_visitor<N, V>::bool_assume_t bool_assume_t;
     typedef typename statement_visitor<N, V>::bool_assert_t bool_assert_t;
     typedef typename statement_visitor<N, V>::bool_select_t bool_select_t;
@@ -3722,7 +3719,8 @@ private:
     }
 
     // check variable is an integer or boolean
-    void check_int_or_bool(const variable_t &v, std::string msg, statement_t &s) {
+    void check_int_or_bool(const variable_t &v, std::string msg,
+                           statement_t &s) {
       if (v.get_type() != INT_TYPE && v.get_type() != BOOL_TYPE) {
         crab::crab_string_os os;
         os << "(type checking) " << msg << " in " << s;
@@ -3749,7 +3747,8 @@ private:
     }
 
     // check bitwidth if variable is an integer
-    void check_bitwidth_if_int(const variable_t &v, std::string msg, statement_t &s) {
+    void check_bitwidth_if_int(const variable_t &v, std::string msg,
+                               statement_t &s) {
       if (v.get_type() == INT_TYPE) {
         if (v.get_bitwidth() <= 1) {
           crab::crab_string_os os;
@@ -3760,7 +3759,8 @@ private:
     }
 
     // check bitwidth if variable is a boolean
-    void check_bitwidth_if_bool(const variable_t &v, std::string msg, statement_t &s) {
+    void check_bitwidth_if_bool(const variable_t &v, std::string msg,
+                                statement_t &s) {
       if (v.get_type() == BOOL_TYPE) {
         if (v.get_bitwidth() != 1) {
           crab::crab_string_os os;
@@ -3771,8 +3771,8 @@ private:
     }
 
     // check two variables have same types
-    void check_same_type(const variable_t &v1, const variable_t &v2, std::string msg, 
-			 statement_t &s) {
+    void check_same_type(const variable_t &v1, const variable_t &v2,
+                         std::string msg, statement_t &s) {
       if (v1.get_type() != v2.get_type()) {
         crab::crab_string_os os;
         os << "(type checking) " << msg << " in " << s;
@@ -3781,8 +3781,8 @@ private:
     }
 
     // check two variables have different names
-    void check_different_name(const variable_t &v1, const variable_t &v2, std::string msg,
-                              statement_t &s) {
+    void check_different_name(const variable_t &v1, const variable_t &v2,
+                              std::string msg, statement_t &s) {
       if (v1 == v2) {
         crab::crab_string_os os;
         os << "(type checking) " << msg << " in " << s;
@@ -3791,8 +3791,8 @@ private:
     }
 
     // check two variables have same bitwidth
-    void check_same_bitwidth(const variable_t &v1, const variable_t &v2, std::string msg,
-                             statement_t &s) {
+    void check_same_bitwidth(const variable_t &v1, const variable_t &v2,
+                             std::string msg, statement_t &s) {
       // assume v1 and v2 have same type
       if (v1.get_type() == INT_TYPE || v1.get_type() == BOOL_TYPE) {
         if (v1.get_bitwidth() != v2.get_bitwidth()) {
@@ -3919,9 +3919,9 @@ private:
           first_var = &v;
           first = false;
         }
-	assert(first_var);
-        check_same_type(*first_var, v,
-                        "inconsistent types in assume variables", s);
+        assert(first_var);
+        check_same_type(*first_var, v, "inconsistent types in assume variables",
+                        s);
         check_same_bitwidth(*first_var, v,
                             "inconsistent bitwidths in assume variables", s);
       }
@@ -3937,9 +3937,9 @@ private:
           first_var = &v;
           first = false;
         }
-	assert(first_var);
-        check_same_type(*first_var, v,
-                        "inconsistent types in assert variables", s);
+        assert(first_var);
+        check_same_type(*first_var, v, "inconsistent types in assert variables",
+                        s);
         check_same_bitwidth(*first_var, v,
                             "inconsistent bitwidths in assert variables", s);
       }
@@ -3975,7 +3975,7 @@ private:
           first_var = &v;
           first = false;
         }
-	assert(first_var);
+        assert(first_var);
         check_same_type(s.lhs(), v,
                         "inconsistent types in select condition variables", s);
         check_same_type(*first_var, v,
@@ -4049,9 +4049,9 @@ private:
           first_var = &v;
           first = false;
         }
-	assert(first_var);
-        check_same_type(*first_var, v,
-                        "inconsistent types in rhs variables", s);
+        assert(first_var);
+        check_same_type(*first_var, v, "inconsistent types in rhs variables",
+                        s);
         check_same_bitwidth(*first_var, v,
                             "inconsistent bitwidths in rhs variables", s);
       }
@@ -4087,10 +4087,10 @@ private:
     void visit(arr_init_t &s) {
       // TODO: check that e_sz is the same number that v's bitwidth
       const variable_t &a = s.array();
-      const lin_exp_t  &e_sz = s.elem_size();
-      const lin_exp_t  &lb = s.lb_index();
-      const lin_exp_t  &ub = s.ub_index();
-      const lin_exp_t  &v = s.val(); 
+      const lin_exp_t &e_sz = s.elem_size();
+      const lin_exp_t &lb = s.lb_index();
+      const lin_exp_t &ub = s.ub_index();
+      const lin_exp_t &v = s.val();
 
       check_is_array(a, s);
       check_varname(a);
@@ -4126,13 +4126,13 @@ private:
           CRAB_ERROR(os.str());
         }
       }
-      for (auto const&iv : s.lb_index().variables()) {
+      for (auto const &iv : s.lb_index().variables()) {
         check_varname(iv);
         check_int_or_bool(
             iv, "array index must contain only integer or boolean variables",
             s);
       }
-      for (auto const&iv : s.lb_index().variables()) {
+      for (auto const &iv : s.lb_index().variables()) {
         check_varname(iv);
         check_int_or_bool(
             iv, "array index must contain only integer or boolean variables",
@@ -4155,7 +4155,7 @@ private:
       check_varname(lhs);
       check_is_array(a, s);
       check_varname(a);
-      for (auto const&iv : s.index().variables()) {
+      for (auto const &iv : s.index().variables()) {
         check_varname(iv);
         check_int_or_bool(
             iv, "array index must contain only integer or boolean variables",
@@ -4182,33 +4182,33 @@ private:
     void visit(callsite_t &s) {
       // The type consistency with the callee parameters is done
       // elsewhere.
-      for (const variable_t &v: s.get_lhs()) {
-        check_varname(v);
-      }
-      for (const variable_t &v: s.get_args()) {
-        check_varname(v);
-      }
-    }
-
-    void visit(intrinsic_t &s) {
-      for (const variable_t &v: s.get_lhs()) {
+      for (const variable_t &v : s.get_lhs()) {
         check_varname(v);
       }
       for (const variable_t &v : s.get_args()) {
         check_varname(v);
       }
     }
-    
+
+    void visit(intrinsic_t &s) {
+      for (const variable_t &v : s.get_lhs()) {
+        check_varname(v);
+      }
+      for (const variable_t &v : s.get_args()) {
+        check_varname(v);
+      }
+    }
+
     void visit(return_t &s) {
       // The type consistency with the callsite at the caller is
       // done elsewhere.
-      for (const variable_t &v: s.get_ret_vals()) {
+      for (const variable_t &v : s.get_ret_vals()) {
         check_varname(v);
       }
     }
 
     /** TODO: type checking of the following statements: **/
-    void visit(region_init_t &){};    
+    void visit(region_init_t &){};
     void visit(make_ref_t &){};
     void visit(load_from_ref_t &){};
     void visit(store_to_ref_t &){};
@@ -4217,7 +4217,7 @@ private:
     void visit(store_to_arr_ref_t &){};
     void visit(assume_ref_t &){};
     void visit(assert_ref_t &){};
-    
+
   }; // end class type_checker_visitor
 };   // end class type_checker
 

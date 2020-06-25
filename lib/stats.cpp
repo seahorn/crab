@@ -7,15 +7,17 @@ Stopwatch::Stopwatch() {}
 void Stopwatch::start() {}
 void Stopwatch::stop() {}
 void Stopwatch::resume() {}
-long Stopwatch::systemTime() const { return (long)0;}
-long Stopwatch::getTimeElapsed() const { return (long)0;}
-double Stopwatch::toSeconds() { return (double)0;}
+long Stopwatch::systemTime() const { return (long)0; }
+long Stopwatch::getTimeElapsed() const { return (long)0; }
+double Stopwatch::toSeconds() { return (double)0; }
 void Stopwatch::Print(crab_os &out) const {}
 void CrabStats::reset() {}
 void CrabStats::count(const std::string &name) {}
 void CrabStats::count_max(const std::string &name, unsigned v) {}
-unsigned CrabStats::uset(const std::string &n, unsigned v) { return (unsigned)0;}
-unsigned CrabStats::get(const std::string &n) { return (unsigned)0;}
+unsigned CrabStats::uset(const std::string &n, unsigned v) {
+  return (unsigned)0;
+}
+unsigned CrabStats::get(const std::string &n) { return (unsigned)0; }
 void CrabStats::start(const std::string &name) {}
 void CrabStats::stop(const std::string &name) {}
 void CrabStats::resume(const std::string &name) {}
@@ -31,14 +33,15 @@ void CrabStats::Print(crab_os &OS) {
 void CrabStats::PrintBrunch(crab_os &OS) {
   OS << "\n\n************** BRUNCH STATS ***************** \n";
   OS << "Crab compiled with support for gathering stats. "
-     << "Compile Crab with -DCRAB_ENABLE_STATS=ON\n";  
+     << "Compile Crab with -DCRAB_ENABLE_STATS=ON\n";
   OS << "************** BRUNCH STATS END ***************** \n";
 }
 
-ScopedCrabStats::ScopedCrabStats(const std::string &name, bool reset): m_name("") {}
+ScopedCrabStats::ScopedCrabStats(const std::string &name, bool reset)
+    : m_name("") {}
 ScopedCrabStats::~ScopedCrabStats() {}
-}
-#else 
+} // namespace crab
+#else
 /* Real implementation stars here */
 #include <sys/resource.h>
 #include <sys/time.h>
@@ -154,4 +157,4 @@ ScopedCrabStats::ScopedCrabStats(const std::string &name, bool reset)
 ScopedCrabStats::~ScopedCrabStats() { CrabStats::stop(m_name); }
 
 } // namespace crab
-#endif 
+#endif

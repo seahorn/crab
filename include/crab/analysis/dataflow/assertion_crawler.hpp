@@ -39,7 +39,7 @@ using namespace crab::domains;
 using namespace crab::cfg;
 
 // A wrapper to an assert statement
-  template <typename CFG> struct assert_wrapper: public indexable {
+template <typename CFG> struct assert_wrapper : public indexable {
 
   typedef
       typename statement_visitor<typename CFG::number_t,
@@ -65,8 +65,8 @@ using namespace crab::cfg;
   // control-dependency graph
   const cdg_t *cdg_ptr;
 
-  assert_wrapper(ikos::index_t _id, const basic_block_label_t &_bbl, assert_t *_a,
-                 assert_map_t *am, const cdg_t *cdg)
+  assert_wrapper(ikos::index_t _id, const basic_block_label_t &_bbl,
+                 assert_t *_a, assert_map_t *am, const cdg_t *cdg)
       : id(_id), bbl(_bbl), a(_a), assert_map_ptr(am), cdg_ptr(cdg) {}
 
   assert_t *get() { return a; }
@@ -228,7 +228,8 @@ private:
 
       // return true if we find a path in cdg from root to target
       // FIXME: do caching for the queries
-      bool reach(const basic_block_label_t &root, const basic_block_label_t &target,
+      bool reach(const basic_block_label_t &root,
+                 const basic_block_label_t &target,
                  std::unordered_set<basic_block_label_t> &visited) {
         if (root == target)
           return true;
@@ -287,7 +288,9 @@ private:
       var_dom_t vars;
 
     public:
-      remove_deps(const variable_t &v) : vars(var_dom_t::bottom()) { vars += v; }
+      remove_deps(const variable_t &v) : vars(var_dom_t::bottom()) {
+        vars += v;
+      }
 
       remove_deps(const std::vector<variable_t> &vs)
           : vars(var_dom_t::bottom()) {
@@ -368,10 +371,11 @@ private:
         auto it = _cdg.find(/*_bb*/ pred);
         if (it != _cdg.end()) {
           auto const &children = it->second;
-          CRAB_LOG("assertion-crawler-step-control", crab::outs() << "{";
-                   for (auto &c
-                        : children) { crab::outs() << c << ";"; } crab::outs()
-                   << "} control-dependent on " << pred << "\n";);
+          CRAB_LOG(
+              "assertion-crawler-step-control", crab::outs() << "{";
+              for (auto &c
+                   : children) { crab::outs() << c << ";"; } crab::outs()
+              << "} control-dependent on " << pred << "\n";);
           apply_add_control_t cf(
               add_control_deps(_cdg, children, s.get_live()));
           _inv = cf(_inv);

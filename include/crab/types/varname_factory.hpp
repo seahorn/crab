@@ -4,29 +4,28 @@
  * Factories for variable names.
  */
 
-#include <crab/types/indexable.hpp>
-#include <crab/support/os.hpp>
 #include <crab/support/debug.hpp>
+#include <crab/support/os.hpp>
+#include <crab/types/indexable.hpp>
 
 #include <boost/optional.hpp>
 #include <boost/range/iterator_range.hpp>
 
 #include <functional>
 #include <limits>
+#include <memory>
 #include <unordered_map>
 #include <vector>
-#include <memory>
 
 namespace crab {
 namespace cfg {
 namespace var_factory_impl {
-  
-namespace indexed_varname_impl {  
+
+namespace indexed_varname_impl {
 template <typename T> inline std::string get_str(T e);
 template <> inline std::string get_str(std::string e) { return e; }
 } // end namespace indexed_varname_impl
 
-   
 // This variable factory creates a new variable associated to an
 // element of type T. It can also create variables that are not
 // associated to an element of type T. We call them shadow variables.
@@ -35,69 +34,65 @@ template <> inline std::string get_str(std::string e) { return e; }
 // id's that always increases.
 template <class T> class variable_factory {
 
-  class indexed_varname: public indexable  {
+  class indexed_varname : public indexable {
     template <typename Any> friend class variable_factory;
     boost::optional<T> m_s;
     ikos::index_t m_id;
     // optional string name associated with m_id
-    std::shared_ptr<std::string> m_name; 
+    std::shared_ptr<std::string> m_name;
     variable_factory *m_vfac;
-    
+
     // NOT IMPLEMENTED
     indexed_varname();
-    indexed_varname(ikos::index_t id, variable_factory *vfac, std::string name="")
-      : m_s(boost::none),
-	m_id(id),
-	m_name(std::make_shared<std::string>(name))
-      , m_vfac(vfac) {}
+    indexed_varname(ikos::index_t id, variable_factory *vfac,
+                    std::string name = "")
+        : m_s(boost::none), m_id(id),
+          m_name(std::make_shared<std::string>(name)), m_vfac(vfac) {}
     indexed_varname(T s, ikos::index_t id, variable_factory *vfac)
-      : m_s(s), m_id(id),
-	m_name(nullptr), m_vfac(vfac) {}
-    
+        : m_s(s), m_id(id), m_name(nullptr), m_vfac(vfac) {}
+
   public:
     ~indexed_varname() = default;
     indexed_varname(const indexed_varname &is) = default;
     indexed_varname &operator=(const indexed_varname &is) = default;
-    
-    virtual ikos::index_t index() const override {
-      return m_id;
-    }
-    
+
+    virtual ikos::index_t index() const override { return m_id; }
+
     std::string str() const {
       if (m_s) {
-	return indexed_varname_impl::get_str<T>(*m_s);
+        return indexed_varname_impl::get_str<T>(*m_s);
       } else {
-	if (m_name && (*m_name != "")) {
-	  return *m_name;
-	} else {
-	  // unlikely prefix
-	  return "@V_" + std::to_string(m_id);
-	}
+        if (m_name && (*m_name != "")) {
+          return *m_name;
+        } else {
+          // unlikely prefix
+          return "@V_" + std::to_string(m_id);
+        }
       }
     }
-    
+
     boost::optional<T> get() const { return m_s; }
-    
+
     variable_factory &get_var_factory() { return *m_vfac; }
-    
+
     bool operator<(const indexed_varname &s) const { return (m_id < s.m_id); }
-    
+
     bool operator==(const indexed_varname &s) const { return (m_id == s.m_id); }
-    
+
     void write(crab_os &o) const { o << str(); }
-    
+
     friend crab_os &operator<<(crab_os &o, const indexed_varname &s) {
       o << s.str();
       return o;
     }
-    
+
     friend size_t hash_value(const indexed_varname &s) {
       std::hash<ikos::index_t> hasher;
       return hasher(s.index());
     }
   };
-  
-  using variable_factory_t = variable_factory<T> ;
+
+  using variable_factory_t = variable_factory<T>;
   using t_map_t = std::unordered_map<T, indexed_varname>;
   using shadow_map_t = std::unordered_map<ikos::index_t, indexed_varname>;
 
@@ -118,10 +113,11 @@ template <class T> class variable_factory {
 
 public:
   using varname_t = indexed_varname;
-  using var_range = boost::iterator_range<typename std::vector<indexed_varname>::iterator>;
+  using var_range =
+      boost::iterator_range<typename std::vector<indexed_varname>::iterator>;
   using const_var_range = boost::iterator_range<
-    typename std::vector<indexed_varname>::const_iterator>;
-  
+      typename std::vector<indexed_varname>::const_iterator>;
+
 public:
   variable_factory() : m_next_id(1) {}
 
@@ -132,7 +128,6 @@ public:
   variable_factory(const variable_factory_t &o) = delete;
 
   variable_factory_t &operator=(const variable_factory_t &o) = delete;
-
 
   // hook for generating indexed_varname's without being
   // associated with a particular T (w/o caching).
@@ -169,7 +164,8 @@ public:
 
   // return all the shadow variables created by the factory.
   virtual const_var_range get_shadow_vars() const {
-    return boost::make_iterator_range(m_shadow_vars.begin(), m_shadow_vars.end());
+    return boost::make_iterator_range(m_shadow_vars.begin(),
+                                      m_shadow_vars.end());
   }
 };
 
@@ -184,12 +180,14 @@ public:
   str_variable_factory() : variable_factory_t() {}
 };
 
-
 inline int fresh_colour(int col_x, int col_y) {
   switch (col_x) {
-  case 0: return col_y == 1 ? 2 : 1;
-  case 1: return col_y == 0 ? 2 : 0;
-  case 2: return col_y == 0 ? 1 : 0;
+  case 0:
+    return col_y == 1 ? 2 : 1;
+  case 1:
+    return col_y == 0 ? 2 : 0;
+  case 2:
+    return col_y == 0 ? 1 : 0;
   default:
     CRAB_ERROR("Unreachable");
   }

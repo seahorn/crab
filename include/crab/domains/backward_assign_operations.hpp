@@ -49,16 +49,17 @@ public:
    **/
 
   // x := e
-  static void assign(AbsDom &dom, const variable_t &x, const linear_expression_t &e,
-                     const AbsDom &inv) {
+  static void assign(AbsDom &dom, const variable_t &x,
+                     const linear_expression_t &e, const AbsDom &inv) {
     crab::CrabStats::count(dom.domain_name() + ".count.backward_assign");
     crab::ScopedCrabStats __st__(dom.domain_name() + ".backward_assign");
 
     if (dom.is_bottom())
       return;
 
-    if (std::find(e.variables_begin(), e.variables_end(), x) != e.variables_end()) {
-      auto &vfac = const_cast<varname_t*>(&(x.name()))->get_var_factory();
+    if (std::find(e.variables_begin(), e.variables_end(), x) !=
+        e.variables_end()) {
+      auto &vfac = const_cast<varname_t *>(&(x.name()))->get_var_factory();
       variable_t old_x(vfac.get(), x.get_type());
       std::map<variable_t, variable_t> renaming_map;
       renaming_map.insert({x, old_x});
@@ -74,8 +75,8 @@ public:
   }
 
   // x := y op k
-  static void apply(AbsDom &dom, arith_operation_t op, const variable_t &x, const variable_t &y,
-                    number_t k, const AbsDom &inv) {
+  static void apply(AbsDom &dom, arith_operation_t op, const variable_t &x,
+                    const variable_t &y, number_t k, const AbsDom &inv) {
     crab::CrabStats::count(dom.domain_name() + ".count.backward_apply");
     crab::ScopedCrabStats __st__(dom.domain_name() + ".backward_apply");
 
@@ -134,9 +135,9 @@ public:
   }
 
   // x = y op z
-  static void apply(AbsDom &dom, arith_operation_t op,
-		    const variable_t &x, const variable_t &y,
-                    const variable_t &z, const AbsDom &inv) {
+  static void apply(AbsDom &dom, arith_operation_t op, const variable_t &x,
+                    const variable_t &y, const variable_t &z,
+                    const AbsDom &inv) {
     crab::CrabStats::count(dom.domain_name() + ".count.backward_apply");
     crab::ScopedCrabStats __st__(dom.domain_name() + ".backward_apply");
 

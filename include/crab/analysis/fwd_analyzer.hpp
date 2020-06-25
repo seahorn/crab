@@ -21,8 +21,8 @@ namespace analyzer_internal_impl {
  * operations are modeled.
  **/
 template <typename CFG, typename AbsTr>
-class fwd_analyzer:
-    public ikos::interleaved_fwd_fixpoint_iterator<CFG, typename AbsTr::abs_dom_t> {
+class fwd_analyzer : public ikos::interleaved_fwd_fixpoint_iterator<
+                         CFG, typename AbsTr::abs_dom_t> {
 public:
   typedef CFG cfg_t;
   typedef typename CFG::basic_block_label_t basic_block_label_t;
@@ -35,7 +35,7 @@ public:
 
 private:
   typedef ikos::interleaved_fwd_fixpoint_iterator<CFG, abs_dom_t>
-  fixpo_iterator_t;
+      fixpo_iterator_t;
 
 public:
   typedef typename fixpo_iterator_t::invariant_table_t invariant_map_t;
@@ -55,10 +55,10 @@ private:
   bool m_post_clear_done;
 
   inline abs_dom_t make_top() const {
-    auto const& top_dom = m_abs_tr->get_abs_value();
+    auto const &top_dom = m_abs_tr->get_abs_value();
     return top_dom.make_top();
   }
-  
+
   void prune_dead_variables(const basic_block_label_t &node, abs_dom_t &inv) {
     if (!m_live) {
       return;
@@ -96,13 +96,14 @@ public:
                // fixpoint parameters
                unsigned int widening_delay, unsigned int descending_iters,
                size_t jump_set_size)
-    : fixpo_iterator_t(cfg, abs_tr->get_abs_value(),
-		       wto, widening_delay, descending_iters,
-		       jump_set_size, false /*disable processor*/),
+      : fixpo_iterator_t(cfg, abs_tr->get_abs_value(), wto, widening_delay,
+                         descending_iters, jump_set_size,
+                         false /*disable processor*/),
         m_abs_tr(abs_tr), m_live(live), m_pre_clear_done(false),
         m_post_clear_done(false) {
     assert(m_abs_tr);
-    CRAB_VERBOSE_IF(1, crab::outs() << "CFG with " << get_cfg().size() << " basic blocks\n";);
+    CRAB_VERBOSE_IF(1, crab::outs() << "CFG with " << get_cfg().size()
+                                    << " basic blocks\n";);
     CRAB_VERBOSE_IF(1, get_msg_stream() << "Type checking CFG ... ";);
     crab::CrabStats::resume("CFG type checking");
     crab::cfg::type_checker<CFG> tc(get_cfg());
@@ -113,7 +114,7 @@ public:
     if (live) {
       // --- collect input and output parameters
       if (get_cfg().has_func_decl()) {
-        auto const& fdecl = get_cfg().get_func_decl();
+        auto const &fdecl = get_cfg().get_func_decl();
         for (unsigned i = 0; i < fdecl.get_num_inputs(); i++)
           m_formals += fdecl.get_input_name(i);
         for (unsigned i = 0; i < fdecl.get_num_outputs(); i++)
@@ -122,16 +123,15 @@ public:
     }
   }
 
-  fwd_analyzer(const fwd_analyzer& o) = delete;
-  
-  fwd_analyzer &operator=(const fwd_analyzer& o) = delete;
+  fwd_analyzer(const fwd_analyzer &o) = delete;
+
+  fwd_analyzer &operator=(const fwd_analyzer &o) = delete;
 
   //! Trigger the fixpoint computation
   void run_forward() {
     // ugly hook to initialize some global state. This needs to be
     // fixed properly.
-    domains::array_graph_domain_traits<abs_dom_t>::do_initialization(
-        get_cfg());
+    domains::array_graph_domain_traits<abs_dom_t>::do_initialization(get_cfg());
     // XXX: inv was created before the static data is initialized
     //      so it won't contain that data.
     this->run(m_abs_tr->get_abs_value());
@@ -141,8 +141,7 @@ public:
                    const assumption_map_t &assumptions) {
     // ugly hook to initialize some global state. This needs to be
     // fixed properly.
-    domains::array_graph_domain_traits<abs_dom_t>::do_initialization(
-        get_cfg());
+    domains::array_graph_domain_traits<abs_dom_t>::do_initialization(get_cfg());
     // XXX: inv was created before the static data is initialized
     //      so it won't contain that data.
     this->run(entry, m_abs_tr->get_abs_value(), assumptions);
@@ -201,10 +200,8 @@ public:
 
   CFG get_cfg() const { return this->_cfg; }
 
-  abs_tr_t& get_abs_transformer() {
-    return *m_abs_tr;
-  }
-  
+  abs_tr_t &get_abs_transformer() { return *m_abs_tr; }
+
   void get_safe_assertions(std::set<const stmt_t *> &out) const {}
 
   /** End extra API for checkers **/
@@ -266,7 +263,6 @@ private:
   fwd_analyzer_t m_analyzer;
 
 public:
-
   intra_fwd_analyzer_wrapper(CFG cfg, AbsDomain init,
                              // live variables
                              const liveness_t *live = nullptr,
@@ -276,14 +272,14 @@ public:
                              unsigned int widening_delay = 1,
                              unsigned int descending_iters = UINT_MAX,
                              size_t jump_set_size = 0)
-    : m_init(std::move(init)),
-      m_abs_tr(new abs_tr_t(m_init)),
-      m_analyzer(cfg, wto, &*m_abs_tr, live, widening_delay, descending_iters,
-		 jump_set_size) {}
+      : m_init(std::move(init)), m_abs_tr(new abs_tr_t(m_init)),
+        m_analyzer(cfg, wto, &*m_abs_tr, live, widening_delay, descending_iters,
+                   jump_set_size) {}
 
-  intra_fwd_analyzer_wrapper(const intra_fwd_analyzer_wrapper& o) = delete;
-  
-  intra_fwd_analyzer_wrapper &operator=(const intra_fwd_analyzer_wrapper& o) = delete;
+  intra_fwd_analyzer_wrapper(const intra_fwd_analyzer_wrapper &o) = delete;
+
+  intra_fwd_analyzer_wrapper &
+  operator=(const intra_fwd_analyzer_wrapper &o) = delete;
 
   // If you want to call "run" again with a different invariant from
   // "init" used in the constructor then call
@@ -295,7 +291,8 @@ public:
   // "init" used in the constructor then call
   // get_abs_transformer().set_abs_value(...)  and change the return
   // reference.
-  void run(const basic_block_label_t &entry, const assumption_map_t &assumptions) {
+  void run(const basic_block_label_t &entry,
+           const assumption_map_t &assumptions) {
     m_analyzer.run_forward(entry, assumptions);
   }
 
@@ -317,7 +314,9 @@ public:
     return m_analyzer.get_post_invariants();
   }
 
-  abs_dom_t operator[](const basic_block_label_t &b) const { return m_analyzer[b]; }
+  abs_dom_t operator[](const basic_block_label_t &b) const {
+    return m_analyzer[b];
+  }
 
   abs_dom_t get_pre(const basic_block_label_t &b) const {
     return m_analyzer.get_pre(b);
@@ -335,7 +334,7 @@ public:
 
   CFG get_cfg() { return m_analyzer.get_cfg(); }
 
-  abs_tr_t& get_abs_transformer() {
+  abs_tr_t &get_abs_transformer() {
     assert(m_abs_tr);
     return *m_abs_tr;
   }

@@ -4,15 +4,15 @@
 
 // Here all explicit instantiations
 
-#define Z_RUNNER(DOM) \
-template void z_intra_run<DOM> \
- (crab::cfg_impl::z_cfg_t*, crab::cfg_impl::basic_block_label_t, DOM, \
-  bool, unsigned, unsigned, unsigned, bool, bool);
+#define Z_RUNNER(DOM)                                                          \
+  template void z_intra_run<DOM>(                                              \
+      crab::cfg_impl::z_cfg_t *, crab::cfg_impl::basic_block_label_t, DOM,     \
+      bool, unsigned, unsigned, unsigned, bool, bool);
 
-#define Q_RUNNER(DOM) \
-template void q_intra_run<DOM> \
- (crab::cfg_impl::q_cfg_t*, crab::cfg_impl::basic_block_label_t, DOM,\
-  bool, unsigned, unsigned, unsigned, bool, bool);
+#define Q_RUNNER(DOM)                                                          \
+  template void q_intra_run<DOM>(                                              \
+      crab::cfg_impl::q_cfg_t *, crab::cfg_impl::basic_block_label_t, DOM,     \
+      bool, unsigned, unsigned, unsigned, bool, bool);
 
 #ifdef USE_GENERIC_WRAPPER
 Z_RUNNER(crab::domain_impl::z_abs_domain_t)
@@ -46,12 +46,12 @@ Z_RUNNER(crab::domain_impl::z_aa_bool_int_t)
 Z_RUNNER(crab::domain_impl::z_pow_aa_int_t)
 Z_RUNNER(crab::domain_impl::z_ref_aa_int_t)
 Z_RUNNER(crab::domain_impl::z_ref_int_t)
-Z_RUNNER(crab::domain_impl::z_ref_sdbm_t)	  
+Z_RUNNER(crab::domain_impl::z_ref_sdbm_t)
 
 Q_RUNNER(crab::domain_impl::q_interval_domain_t)
 Q_RUNNER(crab::domain_impl::q_oct_apron_domain_t)
 Q_RUNNER(crab::domain_impl::q_pk_apron_domain_t)
 Q_RUNNER(crab::domain_impl::q_oct_elina_domain_t)
 Q_RUNNER(crab::domain_impl::q_pk_elina_domain_t)
-Q_RUNNER(crab::domain_impl::q_boxes_domain_t)  
-#endif 
+Q_RUNNER(crab::domain_impl::q_boxes_domain_t)
+#endif

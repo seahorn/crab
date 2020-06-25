@@ -140,7 +140,7 @@ public:
       ++it;
       return *this;
     }
-    Vertex operator*(void)const {
+    Vertex operator*(void) const {
       if (!rev_map[*it])
         CRAB_ERROR("Reverse map failed");
       return *(rev_map[*it]);
@@ -167,7 +167,7 @@ public:
       ++it;
       return *this;
     }
-    edge_t operator*(void)const {
+    edge_t operator*(void) const {
       edge_ref_t e = *it;
       if (!rev_map[e.vert])
         CRAB_ERROR("Reverse map failed");
@@ -239,7 +239,6 @@ public:
     return e_pred_range(p, _rev_map);
   }
 
-  
 public:
   array_graph(bool is_bottom = false) : _is_bottom(is_bottom) {}
 
@@ -256,12 +255,12 @@ public:
         _is_bottom(o._is_bottom) {}
 
   array_graph(vert_map_t &vert_map, rev_map_t &rev_map, graph_t &g,
-               vert_set_t unstable)
+              vert_set_t unstable)
       : _vert_map(vert_map), _rev_map(rev_map), _g(g), _unstable(unstable),
         _is_bottom(false) {}
 
   array_graph(vert_map_t &&vert_map, rev_map_t &&rev_map, graph_t &&g,
-               vert_set_t &&unstable)
+              vert_set_t &&unstable)
       : _vert_map(std::move(vert_map)), _rev_map(std::move(rev_map)),
         _g(std::move(g)), _unstable(std::move(unstable)), _is_bottom(false) {}
 
@@ -294,7 +293,6 @@ public:
   }
 
 public:
-
   void set_to_bottom() {
     _vert_map.clear();
     _rev_map.clear();
@@ -307,15 +305,11 @@ public:
     array_graph_t dom = make_top();
     std::swap(*this, dom);
   }
-  
-  array_graph_t make_top() const {
-    return  array_graph_t(false);
-  }
 
-  array_graph_t make_bottom() const {
-    return  array_graph_t(true);
-  }
-  
+  array_graph_t make_top() const { return array_graph_t(false); }
+
+  array_graph_t make_bottom() const { return array_graph_t(true); }
+
   bool is_bottom() const { return _is_bottom; }
 
   bool is_top() const {
@@ -420,7 +414,7 @@ public:
     else {
       array_graph_t left(*this);
       array_graph_t right(o);
-      
+
       left.normalize();
 
       if (left._vert_map.size() < right._vert_map.size())
@@ -471,7 +465,7 @@ public:
 
       array_graph_t left(*this);
       array_graph_t right(o);
-      
+
       left.normalize();
       right.normalize();
 
@@ -524,7 +518,8 @@ public:
   }
 
   template <typename Thresholds>
-  array_graph_t widening_thresholds(const array_graph_t &o, const Thresholds &) const {
+  array_graph_t widening_thresholds(const array_graph_t &o,
+                                    const Thresholds &) const {
     return (*this || o);
   }
 
@@ -541,7 +536,7 @@ public:
                                             << o << "\n";);
       array_graph_t right(o);
       right.normalize();
-      
+
       // Figure out the common renaming
       std::vector<_vert_id> perm_x;
       std::vector<_vert_id> perm_y;
@@ -839,12 +834,11 @@ public:
       o << "}";
     }
   }
-  
+
   friend crab::crab_os &operator<<(crab::crab_os &o, const array_graph_t &g) {
     g.write(o);
     return o;
   }
-  
 };
 
 namespace array_graph_impl {
@@ -1142,11 +1136,11 @@ private:
 
 public:
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
+  using typename abstract_domain_t::interval_t;
   using typename abstract_domain_t::linear_constraint_system_t;
   using typename abstract_domain_t::linear_constraint_t;
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::reference_constraint_t;
-  using typename abstract_domain_t::interval_t;
   typedef typename NumDom::variable_t variable_t;
   typedef typename NumDom::variable_vector_t variable_vector_t;
 
@@ -1159,8 +1153,10 @@ public:
   //// XXX: make this a template parameter later
   typedef crab::cfg::var_factory_impl::str_var_alloc_col::varname_t
       str_varname_t;
-  typedef ikos::interval_domain<ikos::z_number, str_varname_t> str_interval_dom_t;
-  typedef term::TDomInfo<ikos::z_number, varname_t, str_interval_dom_t> idom_info;
+  typedef ikos::interval_domain<ikos::z_number, str_varname_t>
+      str_interval_dom_t;
+  typedef term::TDomInfo<ikos::z_number, varname_t, str_interval_dom_t>
+      idom_info;
   typedef term_domain<idom_info> expression_domain_t;
 
 private:
@@ -1211,18 +1207,20 @@ private:
   };
   typedef boost::transform_iterator<get_first, typename lm_map_t::iterator>
       lm_iterator;
-  typedef boost::transform_iterator<get_first, typename lm_map_t::const_iterator>
+  typedef boost::transform_iterator<get_first,
+                                    typename lm_map_t::const_iterator>
       lm_const_iterator;
-  
+
   typedef boost::transform_iterator<get_second, typename lm_map_t::iterator>
       lm_prime_iterator;
-  typedef boost::transform_iterator<get_second, typename lm_map_t::const_iterator>
+  typedef boost::transform_iterator<get_second,
+                                    typename lm_map_t::const_iterator>
       lm_prime_const_iterator;
-  
+
   typedef boost::iterator_range<lm_iterator> lm_range;
-  typedef boost::iterator_range<lm_const_iterator> lm_const_range;  
+  typedef boost::iterator_range<lm_const_iterator> lm_const_range;
   typedef boost::iterator_range<lm_prime_iterator> lm_prime_range;
-  typedef boost::iterator_range<lm_prime_const_iterator> lm_prime_const_range;  
+  typedef boost::iterator_range<lm_prime_const_iterator> lm_prime_const_range;
 
   lm_prime_iterator var_lm_prime_begin() {
     return boost::make_transform_iterator(s_var_landmarks.begin(),
@@ -1239,7 +1237,7 @@ private:
   lm_prime_const_iterator var_lm_prime_end() const {
     return boost::make_transform_iterator(s_var_landmarks.end(), get_second());
   }
-  
+
   lm_prime_range var_lm_primes() {
     return boost::make_iterator_range(var_lm_prime_begin(), var_lm_prime_end());
   }
@@ -1247,7 +1245,7 @@ private:
   lm_prime_const_range var_lm_primes() const {
     return boost::make_iterator_range(var_lm_prime_begin(), var_lm_prime_end());
   }
-  
+
   lm_prime_iterator cst_lm_prime_begin() {
     return boost::make_transform_iterator(s_cst_landmarks.begin(),
                                           get_second());
@@ -1263,7 +1261,7 @@ private:
   lm_prime_const_iterator cst_lm_prime_end() const {
     return boost::make_transform_iterator(s_cst_landmarks.end(), get_second());
   }
-  
+
   lm_prime_range cst_lm_primes() {
     return boost::make_iterator_range(cst_lm_prime_begin(), cst_lm_prime_end());
   }
@@ -1281,7 +1279,7 @@ private:
     Content dom;
     return dom.make_top();
   }
-  
+
 public:
   template <class CFG> static void do_initialization(CFG cfg) {
 
@@ -1321,7 +1319,8 @@ public:
     }
 
     // get variable factory
-    auto &vfac = const_cast<varname_t*>(&((*var_indexes.begin()).name()))->get_var_factory();
+    auto &vfac = const_cast<varname_t *>(&((*var_indexes.begin()).name()))
+                     ->get_var_factory();
     set_landmarks(lms, vfac);
   }
 
@@ -1380,10 +1379,9 @@ public:
 public: // public only for tests
   void add_landmark(variable_t v) {
     landmark_ref_t lm_v(v);
-    auto &vfac = const_cast<varname_t*>(&(v.name()))->get_var_factory();    
-    landmark_ref_t lm_v_prime(
-        variable_t(vfac.get(v.name().index())),
-        v.name().str());
+    auto &vfac = const_cast<varname_t *>(&(v.name()))->get_var_factory();
+    landmark_ref_t lm_v_prime(variable_t(vfac.get(v.name().index())),
+                              v.name().str());
     // add pair  x -> x'
     s_var_landmarks.insert(std::make_pair(lm_v, lm_v_prime));
     // x' = x + 1
@@ -1597,7 +1595,7 @@ private:
 
     /// --- Add x_old and x_old' to store old values of x and x'
 
-    auto &vfac = const_cast<varname_t*>(&(x.name()))->get_var_factory();    
+    auto &vfac = const_cast<varname_t *>(&(x.name()))->get_var_factory();
     variable_t x_old(vfac.get());
     variable_t x_old_prime(vfac.get());
     landmark_ref_t lm_x_old(x_old);
@@ -1685,7 +1683,7 @@ private:
                           << _expressions << "\n");
 
     // --- create a fresh variable no such that no := o;
-    auto &vfac = const_cast<varname_t*>(&(o.name()))->get_var_factory();    
+    auto &vfac = const_cast<varname_t *>(&(o.name()))->get_var_factory();
     variable_t no(vfac.get());
     _expressions.assign(no, o);
 
@@ -1843,7 +1841,7 @@ private:
     }
     return (!g.is_bottom());
   }
-  
+
 public:
   static void clear_global_state() {
     s_var_landmarks.clear();
@@ -1854,7 +1852,7 @@ public:
     array_graph_domain_t out(false);
     return out;
   }
-  
+
   array_graph_domain_t make_bottom() const override {
     array_graph_domain_t out(true);
     return out;
@@ -1933,10 +1931,10 @@ public:
     crab::CrabStats::count(domain_name() + ".count.leq");
     crab::ScopedCrabStats __st__(domain_name() + ".leq");
 
-    CRAB_LOG("array-sgraph-domain",
-	     array_graph_domain_t left(*this);
-	     array_graph_domain_t right(o);	     
-	     crab::outs() << "Leq " << left << " and\n" << right << "=\n";);
+    CRAB_LOG("array-sgraph-domain", array_graph_domain_t left(*this);
+             array_graph_domain_t right(o);
+             crab::outs() << "Leq " << left << " and\n"
+                          << right << "=\n";);
     bool res = (_scalar <= o._scalar) && (_expressions <= o._expressions) &&
                (_g <= o._g);
     CRAB_LOG("array-sgraph-domain", crab::outs() << res << "\n";);
@@ -1959,9 +1957,9 @@ public:
     return join;
   }
 
-  array_graph_domain_t
-  widening_thresholds(const array_graph_domain_t &o,
-                      const iterators::thresholds<number_t> &ts) const override {
+  array_graph_domain_t widening_thresholds(
+      const array_graph_domain_t &o,
+      const iterators::thresholds<number_t> &ts) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
 
@@ -1981,7 +1979,8 @@ public:
     }
   }
 
-  array_graph_domain_t operator||(const array_graph_domain_t &o) const override {
+  array_graph_domain_t
+  operator||(const array_graph_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
 
@@ -2019,7 +2018,8 @@ public:
     }
   }
 
-  array_graph_domain_t operator&&(const array_graph_domain_t &o) const override {
+  array_graph_domain_t
+  operator&&(const array_graph_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.narrowing");
     crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
 
@@ -2106,22 +2106,21 @@ public:
     _expressions.minimize();
   }
 
-  /* begin intrinsics operations */    
-  void intrinsic(std::string name,
-		 const variable_vector_t &inputs,
-		 const variable_vector_t &outputs) override {
+  /* begin intrinsics operations */
+  void intrinsic(std::string name, const variable_vector_t &inputs,
+                 const variable_vector_t &outputs) override {
     CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
   }
 
-  void backward_intrinsic(std::string name,
-			  const variable_vector_t &inputs,
-			  const variable_vector_t &outputs,
-			  const array_graph_domain_t &invariant) override {
-    CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());    
+  void backward_intrinsic(std::string name, const variable_vector_t &inputs,
+                          const variable_vector_t &outputs,
+                          const array_graph_domain_t &invariant) override {
+    CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
   }
   /* end intrinsics operations */
-  
-  void rename(const variable_vector_t &from, const variable_vector_t &to) override {
+
+  void rename(const variable_vector_t &from,
+              const variable_vector_t &to) override {
     crab::CrabStats::count(domain_name() + ".count.rename");
     crab::ScopedCrabStats __st__(domain_name() + ".rename");
 
@@ -2155,8 +2154,8 @@ public:
     assign(x, e, true);
   }
 
-  void apply(arith_operation_t op,
-	     const variable_t &x, const variable_t &y, number_t z) override {
+  void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
+             number_t z) override {
     if (x == y) {
       crab::CrabStats::count(domain_name() + ".count.apply");
       crab::ScopedCrabStats __st__(domain_name() + ".apply");
@@ -2182,8 +2181,8 @@ public:
     }
   }
 
-  void apply(arith_operation_t op,
-	     const variable_t &x, const variable_t &y, const variable_t &z) override {
+  void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
+             const variable_t &z) override {
     if (x == y) {
       crab::CrabStats::count(domain_name() + ".count.apply");
       crab::ScopedCrabStats __st__(domain_name() + ".apply");
@@ -2213,15 +2212,15 @@ public:
     CRAB_WARN("backward assign not implemented");
   }
 
-  void backward_apply(arith_operation_t op,
-		      const variable_t &x, const variable_t &y, number_t z,
+  void backward_apply(arith_operation_t op, const variable_t &x,
+                      const variable_t &y, number_t z,
                       const array_graph_domain_t &invariant) override {
     operator-=(x);
     CRAB_WARN("backward apply not implemented");
   }
 
-  void backward_apply(arith_operation_t op,
-		      const variable_t &x, const variable_t &y, const variable_t &z,
+  void backward_apply(arith_operation_t op, const variable_t &x,
+                      const variable_t &y, const variable_t &z,
                       const array_graph_domain_t &invariant) override {
 
     operator-=(x);
@@ -2229,19 +2228,21 @@ public:
   }
 
   // boolean operations
-  void assign_bool_cst(const variable_t &lhs, const linear_constraint_t &rhs) override {
+  void assign_bool_cst(const variable_t &lhs,
+                       const linear_constraint_t &rhs) override {
     operator-=(lhs);
     CRAB_WARN("assign_bool_cst not implemented in array-sgraph-domain");
   }
 
-  void assign_bool_var(const variable_t &lhs, const variable_t &rhs, bool is_not_rhs) override {
+  void assign_bool_var(const variable_t &lhs, const variable_t &rhs,
+                       bool is_not_rhs) override {
     operator-=(lhs);
     CRAB_WARN("assign_bool_var not implemented in array-sgraph-domain");
   }
 
-  void apply_binary_bool(bool_operation_t op,
-			 const variable_t &x, const variable_t &y, const variable_t &z) override {
-                         
+  void apply_binary_bool(bool_operation_t op, const variable_t &x,
+                         const variable_t &y, const variable_t &z) override {
+
     operator-=(x);
     CRAB_WARN("apply_binary_bool not implemented in array-sgraph-domain");
   }
@@ -2251,23 +2252,28 @@ public:
   }
 
   // backward boolean operations
-  void backward_assign_bool_cst(const variable_t &lhs, const linear_constraint_t &rhs,
-                                const array_graph_domain_t &invariant) override {
+  void
+  backward_assign_bool_cst(const variable_t &lhs,
+                           const linear_constraint_t &rhs,
+                           const array_graph_domain_t &invariant) override {
     operator-=(lhs);
     CRAB_WARN(
         "backward_assign_bool_cst not implemented in array-sgraph-domain");
   }
 
-  void backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs, bool is_not_rhs,
-                                const array_graph_domain_t &invariant) override {
+  void
+  backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
+                           bool is_not_rhs,
+                           const array_graph_domain_t &invariant) override {
     operator-=(lhs);
     CRAB_WARN(
         "backward_assign_bool_var not implemented in array-sgraph-domain");
   }
 
-  void backward_apply_binary_bool(bool_operation_t op, const variable_t &x,
-                                  const variable_t &y, const variable_t &z,
-                                  const array_graph_domain_t &invariant) override {
+  void
+  backward_apply_binary_bool(bool_operation_t op, const variable_t &x,
+                             const variable_t &y, const variable_t &z,
+                             const array_graph_domain_t &invariant) override {
     operator-=(x);
     CRAB_WARN(
         "backward_apply_binary_bool not implemented in array-sgraph-domain");
@@ -2275,7 +2281,8 @@ public:
 
   // cast operations
 
-  void apply(int_conv_operation_t op, const variable_t &dst, const variable_t &src) override {
+  void apply(int_conv_operation_t op, const variable_t &dst,
+             const variable_t &src) override {
     _expressions.apply(op, dst, src);
     // assume unlimited precision so widths are ignored.
     assign(dst, src, false);
@@ -2283,8 +2290,8 @@ public:
 
   // bitwise operations
 
-  void apply(bitwise_operation_t op,
-	     const variable_t &x, const variable_t &y, const variable_t &z) override {
+  void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
+             const variable_t &z) override {
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
@@ -2293,8 +2300,8 @@ public:
     apply_only_scalar(op, x, y, z);
   }
 
-  void apply(bitwise_operation_t op,
-	     const variable_t &x, const variable_t &y, number_t k) override {
+  void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
+             number_t k) override {
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
@@ -2303,31 +2310,34 @@ public:
     apply_only_scalar(op, x, y, k);
   }
 
-  
   virtual interval_t operator[](const variable_t &v) override {
     return _scalar[v];
   }
 
   // reference operations
-  void region_init(const memory_region &reg) override {}          
+  void region_init(const memory_region &reg) override {}
   void ref_make(const variable_t &ref, const memory_region &reg) override {}
-  void ref_load(const variable_t &ref, const memory_region &reg, const variable_t &res) override {}
+  void ref_load(const variable_t &ref, const memory_region &reg,
+                const variable_t &res) override {}
   void ref_store(const variable_t &ref, const memory_region &reg,
-		 const linear_expression_t &val) override {}
+                 const linear_expression_t &val) override {}
   void ref_gep(const variable_t &ref1, const memory_region &reg1,
-	       const variable_t &ref2, const memory_region &reg2,
-	       const linear_expression_t &offset) override {}
-  void ref_load_from_array(const variable_t &lhs, const variable_t &ref, const memory_region &region,
-			   const linear_expression_t &index,
-			   const linear_expression_t &elem_size) override {}
+               const variable_t &ref2, const memory_region &reg2,
+               const linear_expression_t &offset) override {}
+  void ref_load_from_array(const variable_t &lhs, const variable_t &ref,
+                           const memory_region &region,
+                           const linear_expression_t &index,
+                           const linear_expression_t &elem_size) override {}
   void ref_store_to_array(const variable_t &ref, const memory_region &region,
-			  const linear_expression_t &index, const linear_expression_t &elem_size,
-			  const linear_expression_t &val) override {}
+                          const linear_expression_t &index,
+                          const linear_expression_t &elem_size,
+                          const linear_expression_t &val) override {}
   void ref_assume(const reference_constraint_t &cst) override {}
-  
+
   // array_operators_api
 
-  virtual void array_init(const variable_t &a, const linear_expression_t &/*elem_size*/,
+  virtual void array_init(const variable_t &a,
+                          const linear_expression_t & /*elem_size*/,
                           const linear_expression_t &lb_idx,
                           const linear_expression_t &ub_idx,
                           const linear_expression_t &val) override {
@@ -2418,8 +2428,10 @@ public:
                                                  << "] ==> " << *this << "\n";);
   }
 
-  virtual void array_store(const variable_t &a, const linear_expression_t &elem_size,
-                           const linear_expression_t &i, const linear_expression_t &val,
+  virtual void array_store(const variable_t &a,
+                           const linear_expression_t &elem_size,
+                           const linear_expression_t &i,
+                           const linear_expression_t &val,
                            bool /*is_strong_update*/) override {
     crab::CrabStats::count(domain_name() + ".count.store");
     crab::ScopedCrabStats __st__(domain_name() + ".store");
@@ -2459,39 +2471,47 @@ public:
                                                  << " ==> " << *this << "\n";);
   }
 
-  virtual void array_store_range(const variable_t &a, const linear_expression_t &elem_size,
-                                 const linear_expression_t &i, const linear_expression_t &j,
+  virtual void array_store_range(const variable_t &a,
+                                 const linear_expression_t &elem_size,
+                                 const linear_expression_t &i,
+                                 const linear_expression_t &j,
                                  const linear_expression_t &val) override {
     CRAB_WARN("array_store_range in array_graph not implemented");
   }
 
-  virtual void array_assign(const variable_t &lhs, const variable_t &rhs) override {
+  virtual void array_assign(const variable_t &lhs,
+                            const variable_t &rhs) override {
     CRAB_WARN("array_assign in array_graph not implemented");
   }
 
   // backward array operations
-  void backward_array_init(const variable_t &a, const linear_expression_t &elem_size,
+  void backward_array_init(const variable_t &a,
+                           const linear_expression_t &elem_size,
                            const linear_expression_t &lb_idx,
-                           const linear_expression_t &ub_idx, const linear_expression_t &val,
+                           const linear_expression_t &ub_idx,
+                           const linear_expression_t &val,
                            const array_graph_domain_t &invariant) override {
     CRAB_WARN("backward_array_init in array_graph domain not implemented");
   }
   void backward_array_load(const variable_t &lhs, const variable_t &a,
-                           const linear_expression_t &elem_size, const linear_expression_t &i,
+                           const linear_expression_t &elem_size,
+                           const linear_expression_t &i,
                            const array_graph_domain_t &invariant) override {
     CRAB_WARN("backward_array_load in array_graph domain not implemented");
     this->operator-=(lhs);
   }
-  void backward_array_store(const variable_t &a, const linear_expression_t &elem_size,
-                            const linear_expression_t &i, const linear_expression_t &v,
-                            bool is_strong_update,
+  void backward_array_store(const variable_t &a,
+                            const linear_expression_t &elem_size,
+                            const linear_expression_t &i,
+                            const linear_expression_t &v, bool is_strong_update,
                             const array_graph_domain_t &invariant) override {
     CRAB_WARN("backward_array_store in array_graph domain not implemented");
   }
-  void backward_array_store_range(const variable_t &a, const linear_expression_t &elem_size,
-                                  const linear_expression_t &i, const linear_expression_t &j,
-                                  const linear_expression_t &v,
-                                  const array_graph_domain_t &invariant) override {
+  void backward_array_store_range(
+      const variable_t &a, const linear_expression_t &elem_size,
+      const linear_expression_t &i, const linear_expression_t &j,
+      const linear_expression_t &v,
+      const array_graph_domain_t &invariant) override {
     CRAB_WARN(
         "backward_array_store_range in array_graph domain not implemented");
   }

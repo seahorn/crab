@@ -54,10 +54,10 @@ namespace array_adaptive_impl {
 
 class DefaultParams {
 public:
-  /* options for array smashing */  
+  /* options for array smashing */
   enum { is_smashable = 1 };
-  enum { smash_at_nonzero_offset = 1};
-  enum { max_smashable_cells = 512};
+  enum { smash_at_nonzero_offset = 1 };
+  enum { max_smashable_cells = 512 };
   /* options for array expansion */
   // only used for now by array_store_range operation
   enum { max_array_size = 512 };
@@ -67,10 +67,10 @@ class NoSmashableParams {
 public:
   /* options for array smashing */
   enum { is_smashable = 0 };
-  enum { smash_at_nonzero_offset = 0};
-  enum { max_smashable_cells = 512};
+  enum { smash_at_nonzero_offset = 0 };
+  enum { max_smashable_cells = 512 };
   /* options for array expansion */
-  // only used for now by array_store_range operation  
+  // only used for now by array_store_range operation
   enum { max_array_size = 512 };
 };
 
@@ -80,7 +80,7 @@ class cp_domain_t {
 
   bool m_is_bottom;
   bound_t m_val;
-  
+
   void set_to_top() {
     m_is_bottom = false;
     m_val = bound_t::plus_infinity();
@@ -221,7 +221,7 @@ class offset_map;
 /*
  * Wrapper for using ikos::index_t as patricia_tree keys
  */
-  class offset_t: public indexable {
+class offset_t : public indexable {
   ikos::index_t m_val;
 
 public:
@@ -700,7 +700,8 @@ public:
   //
   // It is not marked as const because we insert temporary a cell.
   // However, upon completion this method leaves unmodified the object.
-  void get_overlap_cells(const offset_t &o, uint64_t size, std::vector<cell_t> &out) {
+  void get_overlap_cells(const offset_t &o, uint64_t size,
+                         std::vector<cell_t> &out) {
     compare_binding_t comp;
 
     bool added = false;
@@ -912,11 +913,11 @@ private:
 
 public:
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
+  using typename abstract_domain_t::interval_t;
   using typename abstract_domain_t::linear_constraint_system_t;
   using typename abstract_domain_t::linear_constraint_t;
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::reference_constraint_t;
-  using typename abstract_domain_t::interval_t;
   typedef typename NumDomain::variable_t variable_t;
   typedef typename NumDomain::variable_vector_t variable_vector_t;
   typedef array_smashing<NumDomain> base_domain_t;
@@ -985,16 +986,18 @@ private:
       }
 
       if (cells.size() > Params::max_smashable_cells) {
-	// Smashing is expensive because it will go over all cells
+        // Smashing is expensive because it will go over all cells
         // performing one join per weak update even if the smashed
         // array is already unconstrained. We don't smash if the
         // number of cells to be smashed is too large.
-	CRAB_WARN("array adaptive did not smash array because its size is greater than ",
-		  Params::max_smashable_cells);
-	return;
+        CRAB_WARN("array adaptive did not smash array because its size is "
+                  "greater than ",
+                  Params::max_smashable_cells);
+        return;
       }
-      
-      if (!Params::smash_at_nonzero_offset && !cells[0].get_offset().is_zero()) {
+
+      if (!Params::smash_at_nonzero_offset &&
+          !cells[0].get_offset().is_zero()) {
         return;
       }
 
@@ -1097,46 +1100,48 @@ private:
     array_state join(const variable_t &v, const array_state &o,
                      cell_varmap_t &cvm_left, smashed_varmap_t &svm_left,
                      base_domain_t &dom_left, cell_varmap_t &cvm_right,
-                     smashed_varmap_t &svm_right, base_domain_t &dom_right) const {
+                     smashed_varmap_t &svm_right,
+                     base_domain_t &dom_right) const {
       if (m_is_smashed && !o.m_is_smashed) {
-	array_state right(o);      	
+        array_state right(o);
         right.smash_array(v, get_element_sz(), cvm_right, svm_right, dom_right);
-	return array_state(m_is_smashed | right.m_is_smashed,
-			   m_element_sz | right.m_element_sz,
-			   m_offset_map | right.m_offset_map);
+        return array_state(m_is_smashed | right.m_is_smashed,
+                           m_element_sz | right.m_element_sz,
+                           m_offset_map | right.m_offset_map);
       } else if (!m_is_smashed && o.m_is_smashed) {
-	array_state left(*this);
+        array_state left(*this);
         left.smash_array(v, o.get_element_sz(), cvm_left, svm_left, dom_left);
-	return array_state(left.m_is_smashed | o.m_is_smashed,
-			   left.m_element_sz | o.m_element_sz,
-			   left.m_offset_map | o.m_offset_map);
+        return array_state(left.m_is_smashed | o.m_is_smashed,
+                           left.m_element_sz | o.m_element_sz,
+                           left.m_offset_map | o.m_offset_map);
       } else {
-	return array_state(m_is_smashed | o.m_is_smashed,
-			   m_element_sz | o.m_element_sz,
-			   m_offset_map | o.m_offset_map);
+        return array_state(m_is_smashed | o.m_is_smashed,
+                           m_element_sz | o.m_element_sz,
+                           m_offset_map | o.m_offset_map);
       }
     }
 
     array_state meet(const variable_t &v, const array_state &o,
                      cell_varmap_t &cvm_left, smashed_varmap_t &svm_left,
                      base_domain_t &dom_left, cell_varmap_t &cvm_right,
-                     smashed_varmap_t &svm_right, base_domain_t &dom_right) const {
+                     smashed_varmap_t &svm_right,
+                     base_domain_t &dom_right) const {
       if (m_is_smashed && !o.m_is_smashed) {
-	array_state right(o);      	
+        array_state right(o);
         right.smash_array(v, get_element_sz(), cvm_right, svm_right, dom_right);
-	return array_state(m_is_smashed & right.m_is_smashed,
-			   m_element_sz & right.m_element_sz,
-			   m_offset_map & right.m_offset_map);
+        return array_state(m_is_smashed & right.m_is_smashed,
+                           m_element_sz & right.m_element_sz,
+                           m_offset_map & right.m_offset_map);
       } else if (!m_is_smashed && o.m_is_smashed) {
-	array_state left(*this);
+        array_state left(*this);
         left.smash_array(v, o.get_element_sz(), cvm_left, svm_left, dom_left);
-	return array_state(left.m_is_smashed & o.m_is_smashed,
-			   left.m_element_sz & o.m_element_sz,
-			   left.m_offset_map & o.m_offset_map);
+        return array_state(left.m_is_smashed & o.m_is_smashed,
+                           left.m_element_sz & o.m_element_sz,
+                           left.m_offset_map & o.m_offset_map);
       } else {
-	return array_state(m_is_smashed & o.m_is_smashed,
-			   m_element_sz & o.m_element_sz,
-			   m_offset_map & o.m_offset_map);
+        return array_state(m_is_smashed & o.m_is_smashed,
+                           m_element_sz & o.m_element_sz,
+                           m_offset_map & o.m_offset_map);
       }
     }
 
@@ -1221,8 +1226,7 @@ private:
         return false;
       }
       std::vector<cell_t> cells = m_offset_map.get_all_cells();
-      return can_be_smashed(cells, elem_sz,
-			    Params::smash_at_nonzero_offset);
+      return can_be_smashed(cells, elem_sz, Params::smash_at_nonzero_offset);
     }
 
     void write(crab_os &o) const {
@@ -1261,7 +1265,7 @@ private:
           : m_cvm_left(cvm_left), m_svm_left(svm_left), m_dom_left(dom_left),
             m_cvm_right(cvm_right), m_svm_right(svm_right),
             m_dom_right(dom_right) {}
-      
+
       std::pair<bool, boost::optional<array_state>>
       apply(const variable_t &k, array_state x, array_state y) {
         array_state z = x.join(k, y, m_cvm_left, m_svm_left, m_dom_left,
@@ -1287,7 +1291,7 @@ private:
           : m_cvm_left(cvm_left), m_svm_left(svm_left), m_dom_left(dom_left),
             m_cvm_right(cvm_right), m_svm_right(svm_right),
             m_dom_right(dom_right) {}
-      
+
       std::pair<bool, boost::optional<array_state>>
       apply(const variable_t &k, array_state x, array_state y) {
         array_state z = x.meet(k, y, m_cvm_left, m_svm_left, m_dom_left,
@@ -1425,7 +1429,8 @@ private:
     return *as;
   }
 
-  static std::string mk_scalar_name(const varname_t &a, const offset_t &o, uint64_t size) {
+  static std::string mk_scalar_name(const varname_t &a, const offset_t &o,
+                                    uint64_t size) {
     crab::crab_string_os os;
     os << a << "[";
     if (size == 1) {
@@ -1442,18 +1447,19 @@ private:
       return BOOL_TYPE;
     } else if (array_type == ARR_INT_TYPE) {
       return INT_TYPE;
-    } else  {
+    } else {
       assert(array_type == ARR_REAL_TYPE);
       return REAL_TYPE;
-    } 
+    }
   }
 
-  cell_t mk_cell(const variable_t &a, const offset_t &o, uint64_t sz, offset_map_t &om) {
+  cell_t mk_cell(const variable_t &a, const offset_t &o, uint64_t sz,
+                 offset_map_t &om) {
     // create first an unnamed cell
     cell_t c = om.mk_cell(o, sz);
     assert(!c.is_null());
     // assign a scalar variable to the cell
-    auto &vfac = const_cast<varname_t*>(&(a.name()))->get_var_factory();           
+    auto &vfac = const_cast<varname_t *>(&(a.name()))->get_var_factory();
     std::string vname = mk_scalar_name(a.name(), o, sz);
     type_t vtype = get_array_element_type(a.get_type());
     variable_t scalar_var(vfac.get(vname), vtype, sz);
@@ -1476,7 +1482,8 @@ private:
     }
   }
 
-  static variable_t get_smashed_variable(const variable_t &a, smashed_varmap_t &svm) {
+  static variable_t get_smashed_variable(const variable_t &a,
+                                         smashed_varmap_t &svm) {
     if (!a.is_array_type()) {
       CRAB_ERROR(
           "array_adaptive::get_smashed_variable only takes array variables");
@@ -1484,7 +1491,7 @@ private:
 
     auto mk_smashed_variable = [](variable_t v) {
       assert(v.is_array_type());
-      auto &vfac = const_cast<varname_t*>(&(v.name()))->get_var_factory();           
+      auto &vfac = const_cast<varname_t *>(&(v.name()))->get_var_factory();
       crab::crab_string_os os;
       os << "smashed(" << v << ")";
       return variable_t(vfac.get(os.str()), v.get_type());
@@ -1535,7 +1542,7 @@ private:
 
   interval_t to_interval(const linear_expression_t &expr, base_domain_t inv) {
     interval_t r(expr.constant());
-    for (auto kv: expr) {
+    for (auto kv : expr) {
       interval_t c(kv.first);
       r += c * inv[kv.second];
     }
@@ -1592,12 +1599,14 @@ private:
       m_inv.assign(lhs, rhs);
       break;
     default:;
-      CRAB_ERROR("array_adaptive assignment with unexpected array element type");
+      CRAB_ERROR(
+          "array_adaptive assignment with unexpected array element type");
     }
   }
 
   // helper to assign a cell into a variable
-  void do_assign(const variable_t &lhs, const variable_t &a, const cell_t &rhs_c) {
+  void do_assign(const variable_t &lhs, const variable_t &a,
+                 const cell_t &rhs_c) {
     if (!a.is_array_type()) {
       CRAB_ERROR("array_adaptive assignment 1st argument must be array type");
     }
@@ -1612,7 +1621,8 @@ private:
   }
 
   // helper to assign a linear expression into a cell
-  void do_assign(const variable_t &a, const cell_t &lhs_c, const linear_expression_t &v) {
+  void do_assign(const variable_t &a, const cell_t &lhs_c,
+                 const linear_expression_t &v) {
     if (!a.is_array_type()) {
       CRAB_ERROR("array_adaptive assignment 1st argument must be array type");
     }
@@ -1641,13 +1651,15 @@ private:
       m_inv.assign(lhs, v);
       break;
     default:;
-      CRAB_ERROR("array_adaptive assignment with unexpected array element type");
+      CRAB_ERROR(
+          "array_adaptive assignment with unexpected array element type");
     }
   }
 
   // Helper that assign backward rhs to lhs by switching to the
   // version with the right type.
-  void do_backward_assign(const variable_t &lhs, const variable_t &rhs, const base_domain_t &dom) {
+  void do_backward_assign(const variable_t &lhs, const variable_t &rhs,
+                          const base_domain_t &dom) {
     if (lhs.get_type() != rhs.get_type()) {
       CRAB_ERROR("array_adaptive backward assignment with different types");
     }
@@ -1660,13 +1672,14 @@ private:
       m_inv.backward_assign(lhs, rhs, dom);
       break;
     default:;
-      CRAB_ERROR("array_adaptive backward_assignment with unexpected array element type");
+      CRAB_ERROR("array_adaptive backward_assignment with unexpected array "
+                 "element type");
     }
   }
 
   // helper to assign backward a cell into a variable
-  void do_backward_assign(const variable_t &lhs, const variable_t &a, const cell_t &rhs_c,
-                          const base_domain_t &dom) {
+  void do_backward_assign(const variable_t &lhs, const variable_t &a,
+                          const cell_t &rhs_c, const base_domain_t &dom) {
     if (!a.is_array_type()) {
       CRAB_ERROR("array_adaptive assignment 1st argument must be array type");
     }
@@ -1683,7 +1696,8 @@ private:
 
   // helper to assign backward a linear expression into a cell
   void do_backward_assign(const variable_t &a, const cell_t &lhs_c,
-                          const linear_expression_t &v, const base_domain_t &dom) {
+                          const linear_expression_t &v,
+                          const base_domain_t &dom) {
     if (!a.is_array_type()) {
       CRAB_ERROR("array_adaptive assignment 1st argument must be array type");
     }
@@ -1715,7 +1729,8 @@ private:
       m_inv.backward_assign(lhs, v, dom);
       break;
     default:;
-      CRAB_ERROR("array_adaptive backward assignment with unexpected array element type");
+      CRAB_ERROR("array_adaptive backward assignment with unexpected array "
+                 "element type");
     }
   }
 
@@ -1729,12 +1744,12 @@ private:
   linear_constraint_system_t
   filter_nonscalar_vars(linear_constraint_system_t &&csts) const {
     linear_constraint_system_t res;
-    for (auto const&cst : csts) {
+    for (auto const &cst : csts) {
       if (std::all_of(cst.expression().variables_begin(),
-		      cst.expression().variables_end(),
-		      [](const variable_t &v) {
-			return v.is_int_type() || v.is_bool_type();
-		      })) {
+                      cst.expression().variables_end(),
+                      [](const variable_t &v) {
+                        return v.is_int_type() || v.is_bool_type();
+                      })) {
         res += cst;
       }
     }
@@ -1757,14 +1772,15 @@ private:
                             smashed_varmap_t &left_svm,
                             smashed_varmap_t &right_svm,
                             cell_varmap_t &left_cvm, cell_varmap_t &right_cvm,
-                            smashed_varmap_t &out_svm, cell_varmap_t &out_cvm) const {
+                            smashed_varmap_t &out_svm,
+                            cell_varmap_t &out_cvm) const {
 
     std::vector<variable_t> old_vars_left, old_vars_right, new_vars;
 
     // Common renaming for smashed scalars
     for (auto &kv : left_svm) {
       variable_t &v1 = kv.second;
-      auto &vfac = const_cast<varname_t*>(&(v1.name()))->get_var_factory();                 
+      auto &vfac = const_cast<varname_t *>(&(v1.name()))->get_var_factory();
       auto it = right_svm.find(kv.first);
       if (it != right_svm.end()) {
         variable_t &v2 = it->second;
@@ -1786,7 +1802,7 @@ private:
 
     left_dom.rename(old_vars_left, new_vars);
     right_dom.rename(old_vars_right, new_vars);
-    
+
     old_vars_left.clear();
     old_vars_right.clear();
     new_vars.clear();
@@ -1794,7 +1810,7 @@ private:
     // Common renaming for cell scalars
     for (auto &kv : left_cvm) {
       variable_t &v1 = kv.second;
-      auto &vfac = const_cast<varname_t*>(&(v1.name()))->get_var_factory();                       
+      auto &vfac = const_cast<varname_t *>(&(v1.name()))->get_var_factory();
       auto it = right_cvm.find(kv.first);
       if (it != right_cvm.end()) {
         variable_t &v2 = it->second;
@@ -1823,7 +1839,8 @@ private:
                             smashed_varmap_t &left_svm,
                             smashed_varmap_t &right_svm,
                             cell_varmap_t &left_cvm, cell_varmap_t &right_cvm,
-                            smashed_varmap_t &out_svm, cell_varmap_t &out_cvm) const {
+                            smashed_varmap_t &out_svm,
+                            cell_varmap_t &out_cvm) const {
 
     std::vector<variable_t> old_vars_left, old_vars_right, new_vars;
 
@@ -1832,7 +1849,7 @@ private:
     // Add all mappings from the left operand
     for (auto &kv : left_svm) {
       variable_t &v1 = kv.second;
-      auto &vfac = const_cast<varname_t*>(&(v1.name()))->get_var_factory();
+      auto &vfac = const_cast<varname_t *>(&(v1.name()))->get_var_factory();
       auto it = right_svm.find(kv.first);
       if (it != right_svm.end()) {
         variable_t &v2 = it->second;
@@ -1861,7 +1878,7 @@ private:
     }
     left_dom.rename(old_vars_left, new_vars);
     right_dom.rename(old_vars_right, new_vars);
- 
+
     old_vars_left.clear();
     old_vars_right.clear();
     new_vars.clear();
@@ -1871,7 +1888,7 @@ private:
     // Add all mappings from the left operand
     for (auto &kv : left_cvm) {
       variable_t &v1 = kv.second;
-      auto &vfac = const_cast<varname_t*>(&(v1.name()))->get_var_factory();      
+      auto &vfac = const_cast<varname_t *>(&(v1.name()))->get_var_factory();
       auto it = right_cvm.find(kv.first);
       if (it != right_cvm.end()) {
         variable_t &v2 = it->second;
@@ -1919,17 +1936,16 @@ public:
     }
   }
 
-
   array_adaptive_domain make_top() const override {
     array_adaptive_domain out(false);
     return out;
   }
-  
+
   array_adaptive_domain make_bottom() const override {
     array_adaptive_domain out(true);
     return out;
   }
-  
+
   void set_to_top() override {
     array_adaptive_domain abs(false);
     std::swap(*this, abs);
@@ -1995,9 +2011,8 @@ public:
       return true;
     } else {
 
-      CRAB_LOG("array-adaptive",
-	       array_adaptive_domain_t left(*this);
-	       array_adaptive_domain_t right(other);
+      CRAB_LOG("array-adaptive", array_adaptive_domain_t left(*this);
+               array_adaptive_domain_t right(other);
                crab::outs() << "Check if " << left << " <= " << right << "\n");
 
       base_domain_t left_dom(m_inv);
@@ -2008,7 +2023,7 @@ public:
 
       for (auto &kv : m_smashed_varmap) {
         const variable_t &v1 = kv.second;
-	auto &vfac = const_cast<varname_t*>(&(v1.name()))->get_var_factory(); 
+        auto &vfac = const_cast<varname_t *>(&(v1.name()))->get_var_factory();
         auto it = other.m_smashed_varmap.find(kv.first);
         // cell exists in both
         if (it != other.m_smashed_varmap.end()) {
@@ -2028,14 +2043,14 @@ public:
       }
       left_dom.rename(old_vars_left, new_vars);
       right_dom.rename(old_vars_right, new_vars);
-      
+
       old_vars_left.clear();
       old_vars_right.clear();
       new_vars.clear();
 
       for (auto &kv : m_cell_varmap) {
         const variable_t &v1 = kv.second;
-	auto &vfac = const_cast<varname_t*>(&(v1.name()))->get_var_factory(); 	
+        auto &vfac = const_cast<varname_t *>(&(v1.name()))->get_var_factory();
         auto it = other.m_cell_varmap.find(kv.first);
         // cell exists in both
         if (it != other.m_cell_varmap.end()) {
@@ -2055,7 +2070,7 @@ public:
       }
       left_dom.rename(old_vars_left, new_vars);
       right_dom.rename(old_vars_right, new_vars);
-      
+
       // We need to be careful if one array state is smashed and the
       // other is not.
       bool res = (left_dom <= right_dom);
@@ -2073,20 +2088,20 @@ public:
     crab::ScopedCrabStats __st__(domain_name() + ".join");
 
     CRAB_LOG("array-adaptive",
-	     crab::outs() << "Join " << *this << " and " << other << "\n";);
-    
+             crab::outs() << "Join " << *this << " and " << other << "\n";);
+
     if (other.is_bottom() || is_top()) {
-      CRAB_LOG("array-adaptive", crab::outs() << "Res=" << *this << "\n";);      
+      CRAB_LOG("array-adaptive", crab::outs() << "Res=" << *this << "\n";);
       return;
     } else if (is_bottom() || other.is_top()) {
       *this = other;
-      CRAB_LOG("array-adaptive", crab::outs() << "Res=" << *this << "\n";);      
+      CRAB_LOG("array-adaptive", crab::outs() << "Res=" << *this << "\n";);
     } else {
 
       base_domain_t right_dom(other.m_inv);
       cell_varmap_t right_cell_varmap(other.m_cell_varmap);
       smashed_varmap_t right_smashed_varmap(other.m_smashed_varmap);
-      
+
       // this must be done before the renaming
       m_array_map = std::move(m_array_map.join(
           other.m_array_map, m_cell_varmap, m_smashed_varmap, m_inv,
@@ -2105,7 +2120,8 @@ public:
     }
   }
 
-  array_adaptive_domain_t operator|(const array_adaptive_domain_t &other) const override {
+  array_adaptive_domain_t
+  operator|(const array_adaptive_domain_t &other) const override {
     crab::CrabStats::count(domain_name() + ".count.join");
     crab::ScopedCrabStats __st__(domain_name() + ".join");
     if (other.is_bottom() || is_top()) {
@@ -2123,7 +2139,7 @@ public:
       base_domain_t right_dom(other.m_inv);
       cell_varmap_t right_cell_varmap(other.m_cell_varmap);
       smashed_varmap_t right_smashed_varmap(other.m_smashed_varmap);
-      
+
       // Must be done before the renaming.
       auto out_array_map = std::move(m_array_map.join(
           other.m_array_map, left_cell_varmap, left_smashed_varmap, left_dom,
@@ -2136,17 +2152,17 @@ public:
                            right_cell_varmap, out_smashed_varmap,
                            out_cell_varmap);
 
-      array_adaptive_domain_t res(left_dom | right_dom,
-				  std::move(out_array_map),
-                                  std::move(out_cell_varmap),
-                                  std::move(out_smashed_varmap));
+      array_adaptive_domain_t res(
+          left_dom | right_dom, std::move(out_array_map),
+          std::move(out_cell_varmap), std::move(out_smashed_varmap));
 
       CRAB_LOG("array-adaptive", crab::outs() << "Res=" << res << "\n";);
       return res;
     }
   }
 
-  array_adaptive_domain_t operator&(const array_adaptive_domain_t &other) const override {
+  array_adaptive_domain_t
+  operator&(const array_adaptive_domain_t &other) const override {
     crab::CrabStats::count(domain_name() + ".count.meet");
     crab::ScopedCrabStats __st__(domain_name() + ".meet");
     if (is_bottom() || other.is_top()) {
@@ -2164,7 +2180,7 @@ public:
       base_domain_t right_dom(other.m_inv);
       cell_varmap_t right_cell_varmap(other.m_cell_varmap);
       smashed_varmap_t right_smashed_varmap(other.m_smashed_varmap);
-      
+
       // Must be done before the renaming.
       auto out_array_map = m_array_map.meet(
           other.m_array_map, left_cell_varmap, left_smashed_varmap, left_dom,
@@ -2177,15 +2193,16 @@ public:
                            right_cell_varmap, out_smashed_varmap,
                            out_cell_varmap);
 
-      array_adaptive_domain_t res(left_dom & right_dom, std::move(out_array_map),
-                                  std::move(out_cell_varmap),
-                                  std::move(out_smashed_varmap));
+      array_adaptive_domain_t res(
+          left_dom & right_dom, std::move(out_array_map),
+          std::move(out_cell_varmap), std::move(out_smashed_varmap));
       CRAB_LOG("array-adaptive", crab::outs() << "Res=" << res << "\n";);
       return res;
     }
   }
 
-  array_adaptive_domain_t operator||(const array_adaptive_domain_t &other) const override {
+  array_adaptive_domain_t
+  operator||(const array_adaptive_domain_t &other) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
     if (other.is_bottom()) {
@@ -2203,7 +2220,7 @@ public:
       base_domain_t right_dom(other.m_inv);
       cell_varmap_t right_cell_varmap(other.m_cell_varmap);
       smashed_varmap_t right_smashed_varmap(other.m_smashed_varmap);
-      
+
       // Must be done before the renaming.
       auto out_array_map = m_array_map.join(
           other.m_array_map, left_cell_varmap, left_smashed_varmap, left_dom,
@@ -2217,18 +2234,17 @@ public:
                            right_cell_varmap, out_smashed_varmap,
                            out_cell_varmap);
 
-      array_adaptive_domain_t res(left_dom || right_dom,
-				  std::move(out_array_map),
-                                  std::move(out_cell_varmap),
-                                  std::move(out_smashed_varmap));
+      array_adaptive_domain_t res(
+          left_dom || right_dom, std::move(out_array_map),
+          std::move(out_cell_varmap), std::move(out_smashed_varmap));
       CRAB_LOG("array-adaptive", crab::outs() << "Res=" << res << "\n";);
       return res;
     }
   }
 
-  array_adaptive_domain_t
-  widening_thresholds(const array_adaptive_domain_t &other,
-                      const iterators::thresholds<number_t> &ts) const override {
+  array_adaptive_domain_t widening_thresholds(
+      const array_adaptive_domain_t &other,
+      const iterators::thresholds<number_t> &ts) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
     if (other.is_bottom()) {
@@ -2246,7 +2262,7 @@ public:
       base_domain_t right_dom(other.m_inv);
       cell_varmap_t right_cell_varmap(other.m_cell_varmap);
       smashed_varmap_t right_smashed_varmap(other.m_smashed_varmap);
-      
+
       // Must be done before the renaming.
       auto out_array_map = m_array_map.join(
           other.m_array_map, left_cell_varmap, left_smashed_varmap, left_dom,
@@ -2260,16 +2276,15 @@ public:
                            out_cell_varmap);
 
       array_adaptive_domain_t res(
-          left_dom.widening_thresholds(right_dom, ts),
-	  std::move(out_array_map),
-          std::move(out_cell_varmap),
-	  std::move(out_smashed_varmap));
+          left_dom.widening_thresholds(right_dom, ts), std::move(out_array_map),
+          std::move(out_cell_varmap), std::move(out_smashed_varmap));
       CRAB_LOG("array-adaptive", crab::outs() << "Res=" << res << "\n";);
       return res;
     }
   }
 
-  array_adaptive_domain_t operator&&(const array_adaptive_domain_t &other) const override {
+  array_adaptive_domain_t
+  operator&&(const array_adaptive_domain_t &other) const override {
     crab::CrabStats::count(domain_name() + ".count.narrowing");
     crab::ScopedCrabStats __st__(domain_name() + ".narrowing");
     if (is_bottom()) {
@@ -2287,8 +2302,7 @@ public:
       base_domain_t right_dom(other.m_inv);
       cell_varmap_t right_cell_varmap(other.m_cell_varmap);
       smashed_varmap_t right_smashed_varmap(other.m_smashed_varmap);
-      
-      
+
       // Must be done before the renaming.
       auto out_array_map = m_array_map.join(
           other.m_array_map, left_cell_varmap, left_smashed_varmap, left_dom,
@@ -2302,9 +2316,9 @@ public:
                            right_cell_varmap, out_smashed_varmap,
                            out_cell_varmap);
 
-      array_adaptive_domain_t res(left_dom && right_dom, std::move(out_array_map),
-                                  std::move(out_cell_varmap),
-                                  std::move(out_smashed_varmap));
+      array_adaptive_domain_t res(
+          left_dom && right_dom, std::move(out_array_map),
+          std::move(out_cell_varmap), std::move(out_smashed_varmap));
 
       CRAB_LOG("array-adaptive", crab::outs() << "Res=" << res << "\n";);
       return res;
@@ -2323,12 +2337,12 @@ public:
     scalar_variables.reserve(variables.size());
     for (variable_t v : variables) {
       if (v.is_array_type()) {
-	CRAB_LOG("array-adaptive",
-		 crab::outs() << "Forget array variable " << v << "\n";);
+        CRAB_LOG("array-adaptive",
+                 crab::outs() << "Forget array variable " << v << "\n";);
         forget_array(v);
       } else {
-	CRAB_LOG("array-adaptive",
-		 crab::outs() << "Forget scalar variable " << v << "\n";);	
+        CRAB_LOG("array-adaptive",
+                 crab::outs() << "Forget scalar variable " << v << "\n";);
         scalar_variables.push_back(v);
       }
     }
@@ -2387,7 +2401,9 @@ public:
     CRAB_WARN("array adaptive expand not implemented");
   }
 
-  void normalize() override { CRAB_WARN("array adaptive normalize not implemented"); }
+  void normalize() override {
+    CRAB_WARN("array adaptive normalize not implemented");
+  }
 
   void minimize() override { m_inv.minimize(); }
 
@@ -2399,32 +2415,29 @@ public:
     }
   }
 
-  /* begin intrinsics operations */  
-  void intrinsic(std::string name,
-		 const variable_vector_t &inputs,
-		 const variable_vector_t &outputs) override {
+  /* begin intrinsics operations */
+  void intrinsic(std::string name, const variable_vector_t &inputs,
+                 const variable_vector_t &outputs) override {
     if ((std::all_of(inputs.begin(), inputs.end(),
-		    [](const variable_t &v) {
-		      return v.is_int_type() || v.is_bool_type();
-		    })) &&
-	(std::all_of(outputs.begin(), outputs.end(),
-		     [](const variable_t &v) {
-		       return v.is_int_type() || v.is_bool_type();
-		     }))) {
+                     [](const variable_t &v) {
+                       return v.is_int_type() || v.is_bool_type();
+                     })) &&
+        (std::all_of(outputs.begin(), outputs.end(), [](const variable_t &v) {
+          return v.is_int_type() || v.is_bool_type();
+        }))) {
       m_inv.intrinsic(name, inputs, outputs);
-    } else { 
+    } else {
       CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
     }
   }
 
-  void backward_intrinsic(std::string name,
-			  const variable_vector_t &inputs,
-			  const variable_vector_t &outputs,
-			  const array_adaptive_domain_t &invariant) override {
-    CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());    
+  void backward_intrinsic(std::string name, const variable_vector_t &inputs,
+                          const variable_vector_t &outputs,
+                          const array_adaptive_domain_t &invariant) override {
+    CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
   }
   /* end intrinsics operations */
-  
+
   void operator+=(const linear_constraint_system_t &csts) override {
     crab::CrabStats::count(domain_name() + ".count.add_constraints");
     crab::ScopedCrabStats __st__(domain_name() + ".add_constraints");
@@ -2442,7 +2455,7 @@ public:
     if (is_bottom()) {
       return;
     }
-    
+
     if (var.is_array_type()) {
       forget_array(var);
     } else {
@@ -2460,7 +2473,8 @@ public:
                                             << " " << *this << "\n";);
   }
 
-  void apply(arith_operation_t op, const variable_t &x, const variable_t &y, number_t z) override {
+  void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
+             number_t z) override {
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
@@ -2471,8 +2485,8 @@ public:
                                    << " " << z << " " << *this << "\n";);
   }
 
-  void apply(arith_operation_t op,
-	     const variable_t &x, const variable_t &y, const variable_t &z) override {
+  void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
+             const variable_t &z) override {
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
@@ -2488,28 +2502,28 @@ public:
     m_inv.backward_assign(x, e, inv.m_inv);
   }
 
-  void backward_apply(arith_operation_t op,
-		      const variable_t &x, const variable_t &y, number_t z,
+  void backward_apply(arith_operation_t op, const variable_t &x,
+                      const variable_t &y, number_t z,
                       const array_adaptive_domain_t &inv) override {
     m_inv.backward_apply(op, x, y, z, inv.m_inv);
   }
 
-  void backward_apply(arith_operation_t op,
-		      const variable_t &x, const variable_t &y, const variable_t &z,
+  void backward_apply(arith_operation_t op, const variable_t &x,
+                      const variable_t &y, const variable_t &z,
                       const array_adaptive_domain_t &inv) override {
     m_inv.backward_apply(op, x, y, z, inv.m_inv);
   }
 
-  void apply(int_conv_operation_t op,
-	     const variable_t &dst, const variable_t &src) override {
+  void apply(int_conv_operation_t op, const variable_t &dst,
+             const variable_t &src) override {
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
     m_inv.apply(op, dst, src);
   }
 
-  void apply(bitwise_operation_t op,
-	     const variable_t &x, const variable_t &y, const variable_t &z) override {
+  void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
+             const variable_t &z) override {
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
@@ -2520,8 +2534,8 @@ public:
                                    << " " << z << " " << *this << "\n";);
   }
 
-  void apply(bitwise_operation_t op,
-	     const variable_t &x, const variable_t &y, number_t k) override {
+  void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
+             number_t k) override {
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
@@ -2543,9 +2557,9 @@ public:
     m_inv.assign_bool_var(lhs, rhs, is_not_rhs);
   }
 
-  virtual void apply_binary_bool(bool_operation_t op,
-				 const variable_t &x,
-                                 const variable_t &y, const variable_t &z) override {
+  virtual void apply_binary_bool(bool_operation_t op, const variable_t &x,
+                                 const variable_t &y,
+                                 const variable_t &z) override {
     m_inv.apply_binary_bool(op, x, y, z);
   }
 
@@ -2554,47 +2568,55 @@ public:
   }
 
   // backward boolean operators
-  virtual void backward_assign_bool_cst(const variable_t &lhs, const linear_constraint_t &rhs,
-                                        const array_adaptive_domain_t &inv) override {
+  virtual void
+  backward_assign_bool_cst(const variable_t &lhs,
+                           const linear_constraint_t &rhs,
+                           const array_adaptive_domain_t &inv) override {
     m_inv.backward_assign_bool_cst(lhs, rhs, inv.m_inv);
   }
 
-  virtual void backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
-                                        bool is_not_rhs,
-                                        const array_adaptive_domain_t &inv) override {
+  virtual void
+  backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
+                           bool is_not_rhs,
+                           const array_adaptive_domain_t &inv) override {
     m_inv.backward_assign_bool_var(lhs, rhs, is_not_rhs, inv.m_inv);
   }
 
-  virtual void backward_apply_binary_bool(bool_operation_t op, const variable_t &x,
-                                          const variable_t &y, const variable_t &z,
-                                          const array_adaptive_domain_t &inv) override {
+  virtual void
+  backward_apply_binary_bool(bool_operation_t op, const variable_t &x,
+                             const variable_t &y, const variable_t &z,
+                             const array_adaptive_domain_t &inv) override {
     m_inv.backward_apply_binary_bool(op, x, y, z, inv.m_inv);
   }
 
   // reference operations
-  void region_init(const memory_region &reg) override {}  
+  void region_init(const memory_region &reg) override {}
   void ref_make(const variable_t &ref, const memory_region &reg) override {}
-  void ref_load(const variable_t &ref, const memory_region &reg, const variable_t &res) override {}
+  void ref_load(const variable_t &ref, const memory_region &reg,
+                const variable_t &res) override {}
   void ref_store(const variable_t &ref, const memory_region &reg,
-		 const linear_expression_t &val) override {}
+                 const linear_expression_t &val) override {}
   void ref_gep(const variable_t &ref1, const memory_region &reg1,
-	       const variable_t &ref2, const memory_region &reg2,
-	       const linear_expression_t &offset) override {}
-  void ref_load_from_array(const variable_t &lhs, const variable_t &ref, const memory_region &region,
-			   const linear_expression_t &index,
-			   const linear_expression_t &elem_size) override {}
+               const variable_t &ref2, const memory_region &reg2,
+               const linear_expression_t &offset) override {}
+  void ref_load_from_array(const variable_t &lhs, const variable_t &ref,
+                           const memory_region &region,
+                           const linear_expression_t &index,
+                           const linear_expression_t &elem_size) override {}
   void ref_store_to_array(const variable_t &ref, const memory_region &region,
-			  const linear_expression_t &index, const linear_expression_t &elem_size,
-			  const linear_expression_t &val) override {}
+                          const linear_expression_t &index,
+                          const linear_expression_t &elem_size,
+                          const linear_expression_t &val) override {}
   void ref_assume(const reference_constraint_t &cst) override {}
-  
+
   // array_operators_api
 
   // array_init returns a fresh array where all elements between
   // lb_idx and ub_idx are initialized to val. Thus, the first thing
   // we need to do is to kill existing cells.
-  virtual void array_init(const variable_t &a, const linear_expression_t &elem_size,
-			  const linear_expression_t &lb_idx,
+  virtual void array_init(const variable_t &a,
+                          const linear_expression_t &elem_size,
+                          const linear_expression_t &lb_idx,
                           const linear_expression_t &ub_idx,
                           const linear_expression_t &val) override {
     crab::CrabStats::count(domain_name() + ".count.array_init");
@@ -2649,9 +2671,10 @@ public:
         offset_t o(static_cast<int64_t>(*n));
         std::vector<cell_t> cells;
         offset_map.get_overlap_cells(o, e_sz, cells);
-	CRAB_LOG("array-adaptive",	
-		 crab::outs() << "Number of overlapping cells=" << cells.size() << "\n";);
-	
+        CRAB_LOG("array-adaptive",
+                 crab::outs() << "Number of overlapping cells=" << cells.size()
+                              << "\n";);
+
         if (!cells.empty()) {
           CRAB_LOG("array-adaptive",
                    CRAB_WARN("Ignored read from cell ", a, "[", o, "...",
@@ -2687,18 +2710,20 @@ public:
           if (array_state::can_be_smashed(cells, e_sz, true)) {
             // we smash all overlapping cells into a fresh array
             // (summarized) variable
-	    auto &vfac = const_cast<varname_t*>(&(a.name()))->get_var_factory(); 		    
+            auto &vfac =
+                const_cast<varname_t *>(&(a.name()))->get_var_factory();
             variable_t fresh_var(vfac.get(), a.get_type());
             bool found_cell_without_scalar = false;
             for (unsigned k = 0, num_cells = cells.size(); k < num_cells; ++k) {
               const cell_t &c = cells[k];
               auto c_scalar_opt = get_scalar({a, c});
               if (!c_scalar_opt) {
-		CRAB_LOG("array-adaptive",
-			 CRAB_WARN("array adaptive: ignored array load from ", a,
-				   " because non-constant array index ", i, "=", ii,
-				   " because found unnamed cell ", c););
-		
+                CRAB_LOG("array-adaptive",
+                         CRAB_WARN("array adaptive: ignored array load from ",
+                                   a, " because non-constant array index ", i,
+                                   "=", ii, " because found unnamed cell ",
+                                   c););
+
                 found_cell_without_scalar = true;
                 break;
               }
@@ -2737,8 +2762,10 @@ public:
                           << "]  -- " << *this << "\n";);
   }
 
-  virtual void array_store(const variable_t &a, const linear_expression_t &elem_size,
-                           const linear_expression_t &i, const linear_expression_t &val,
+  virtual void array_store(const variable_t &a,
+                           const linear_expression_t &elem_size,
+                           const linear_expression_t &i,
+                           const linear_expression_t &val,
                            bool is_strong_update) override {
     crab::CrabStats::count(domain_name() + ".count.array_store");
     crab::ScopedCrabStats __st__(domain_name() + ".array_store");
@@ -2787,16 +2814,15 @@ public:
                                                 << " with non-constant index "
                                                 << i << "=" << ii << "\n";);
 
-
         bool smashed = false; // whether smashing took place
         if (Params::is_smashable) {
-	  std::vector<cell_t> cells = offset_map.get_all_cells();
+          std::vector<cell_t> cells = offset_map.get_all_cells();
           if (next_as.can_be_smashed(e_sz) &&
-	      // Smashing is expensive because it will go over all cells
-	      // performing one join per weak update even if the smashed
-	      // array is already unconstrained. We don't smash if the
-	      // number of cells to be smashed is too large.
-	      (cells.size() <= Params::max_smashable_cells)) {
+              // Smashing is expensive because it will go over all cells
+              // performing one join per weak update even if the smashed
+              // array is already unconstrained. We don't smash if the
+              // number of cells to be smashed is too large.
+              (cells.size() <= Params::max_smashable_cells)) {
             smashed = true;
             CRAB_LOG("array-adaptive-smash",
                      crab::outs() << "Array " << a << " will be smashed\n";);
@@ -2843,18 +2869,18 @@ public:
                      crab::outs() << "Array " << a
                                   << " has been smashed:" << m_inv << "\n";);
           } else {
-            CRAB_LOG("array-adaptive",
-		     if (cells.size() > Params::max_smashable_cells) {
-		       CRAB_WARN("Array ", a,
-				 " cannot be smashed because too many cells ",
-				 cells.size(),
-				 ". Array write at index ", i, "=", ii,
-				 " is safely ignored");
-		     } else {
-		       CRAB_WARN("Array ", a,
-				 " cannot be smashed so array write at index ", i,
-				 "=", ii, " is safely ignored");
-		     });
+            CRAB_LOG(
+                "array-adaptive",
+                if (cells.size() > Params::max_smashable_cells) {
+                  CRAB_WARN("Array ", a,
+                            " cannot be smashed because too many cells ",
+                            cells.size(), ". Array write at index ", i, "=", ii,
+                            " is safely ignored");
+                } else {
+                  CRAB_WARN("Array ", a,
+                            " cannot be smashed so array write at index ", i,
+                            "=", ii, " is safely ignored");
+                });
           }
         }
 
@@ -2886,7 +2912,8 @@ public:
   }
 
   // Perform array stores over an array segment [lb_idx, ub_idx]
-  virtual void array_store_range(const variable_t &a, const linear_expression_t &elem_size,
+  virtual void array_store_range(const variable_t &a,
+                                 const linear_expression_t &elem_size,
                                  const linear_expression_t &lb_idx,
                                  const linear_expression_t &ub_idx,
                                  const linear_expression_t &val) override {
@@ -2914,16 +2941,17 @@ public:
     }
 
     if (!(*lb <= *ub)) {
-      CRAB_WARN("array adaptive store range ignored because lower bound ",
-		*lb, " is not less or equal than upper bound ", *ub);
+      CRAB_WARN("array adaptive store range ignored because lower bound ", *lb,
+                " is not less or equal than upper bound ", *ub);
       return;
     }
-    
+
     number_t num_elems = (*ub - *lb) / e_sz;
     number_t e = *ub;
     if (num_elems > Params::max_array_size) {
-      e = *lb + ((number_t(Params::max_array_size) -1) * e_sz);
-      CRAB_WARN("array adaptive store range will ignore indexes greater than ", e);
+      e = *lb + ((number_t(Params::max_array_size) - 1) * e_sz);
+      CRAB_WARN("array adaptive store range will ignore indexes greater than ",
+                e);
     }
 
     for (number_t i = *lb; i <= e;) {
@@ -2932,20 +2960,21 @@ public:
     }
   }
 
-  virtual void array_assign(const variable_t &lhs, const variable_t &rhs) override {
+  virtual void array_assign(const variable_t &lhs,
+                            const variable_t &rhs) override {
     CRAB_LOG("array-adaptive",
-	     crab::outs() << "Array assign " << lhs << " := " << rhs << "\n";);
+             crab::outs() << "Array assign " << lhs << " := " << rhs << "\n";);
 
     if (is_bottom()) {
       return;
     }
-    
+
     const array_state &as = lookup_array_state(rhs);
     if (!as.is_smashed()) {
       offset_map_t lhs_om;
       const offset_map_t &rhs_om = as.get_offset_map();
       std::map<variable_t, variable_t> renmap;
-      CRAB_LOG("array-adaptive-array-assign", crab::outs() << "Not smashed\n";);       
+      CRAB_LOG("array-adaptive-array-assign", crab::outs() << "Not smashed\n";);
       std::vector<cell_t> cells = rhs_om.get_all_cells();
       for (auto &c : cells) {
         variable_opt_t c_scalar_opt = get_scalar({rhs, c});
@@ -2963,21 +2992,21 @@ public:
       m_array_map.set(
           lhs, array_state(false, std::move(elem_sz), std::move(lhs_om)));
 
-      CRAB_LOG("array-adaptive-array-assign",      
-	       crab::outs() << "array variables={";
-	       std::vector<variable_t> array_variables = get_array_variables();
-	       for(unsigned i=0,e=array_variables.size();i<e;++i) {
-		 crab::outs() << array_variables[i] <<";";
-	       }
-	       crab::outs() << "}\n";);
-      
+      CRAB_LOG(
+          "array-adaptive-array-assign", crab::outs() << "array variables={";
+          std::vector<variable_t> array_variables = get_array_variables();
+          for (unsigned i = 0, e = array_variables.size(); i < e;
+               ++i) { crab::outs() << array_variables[i] << ";"; } crab::outs()
+          << "}\n";);
+
       for (auto &kv : renmap) {
-	CRAB_LOG("array-adaptive-array-assign",      	
-		 crab::outs() << "Base domain assign " << kv.first << " := " << kv.second << "\n";);
+        CRAB_LOG("array-adaptive-array-assign",
+                 crab::outs() << "Base domain assign " << kv.first
+                              << " := " << kv.second << "\n";);
         do_assign(kv.first, kv.second);
       }
     } else if (Params::is_smashable) {
-      CRAB_LOG("array-adaptive-array-assign", crab::outs() << "Smashed\n";); 
+      CRAB_LOG("array-adaptive-array-assign", crab::outs() << "Smashed\n";);
       variable_t smashed_lhs = get_smashed_variable(lhs, m_smashed_varmap);
       variable_t smashed_rhs = get_smashed_variable(rhs, m_smashed_varmap);
       m_inv.array_assign(smashed_lhs, smashed_rhs);
@@ -2988,11 +3017,12 @@ public:
 
   // backward array operations
 
-  virtual void backward_array_init(const variable_t &a, const linear_expression_t &elem_size,
-                                   const linear_expression_t &lb_idx,
-                                   const linear_expression_t &ub_idx,
-                                   const linear_expression_t &val,
-                                   const array_adaptive_domain_t &invariant) override {
+  virtual void
+  backward_array_init(const variable_t &a, const linear_expression_t &elem_size,
+                      const linear_expression_t &lb_idx,
+                      const linear_expression_t &ub_idx,
+                      const linear_expression_t &val,
+                      const array_adaptive_domain_t &invariant) override {
     crab::CrabStats::count(domain_name() + ".count.backward_array_init");
     crab::ScopedCrabStats __st__(domain_name() + ".backward_array_init");
 
@@ -3018,10 +3048,11 @@ public:
     *this = *this & invariant;
   }
 
-  virtual void backward_array_load(const variable_t &lhs, const variable_t &a,
-                                   const linear_expression_t &elem_size,
-                                   const linear_expression_t &i,
-                                   const array_adaptive_domain_t &invariant) override {
+  virtual void
+  backward_array_load(const variable_t &lhs, const variable_t &a,
+                      const linear_expression_t &elem_size,
+                      const linear_expression_t &i,
+                      const array_adaptive_domain_t &invariant) override {
     crab::CrabStats::count(domain_name() + ".count.backward_array_load");
     crab::ScopedCrabStats __st__(domain_name() + ".backward_array_load");
 
@@ -3059,11 +3090,11 @@ public:
                           << "..." << ub << "]  -- " << *this << "\n";);
   }
 
-  virtual void
-  backward_array_store(const variable_t &a, const linear_expression_t &elem_size,
-                       const linear_expression_t &i, const linear_expression_t &val,
-                       bool /*is_strong_update*/,
-                       const array_adaptive_domain_t &invariant) override {
+  virtual void backward_array_store(
+      const variable_t &a, const linear_expression_t &elem_size,
+      const linear_expression_t &i, const linear_expression_t &val,
+      bool /*is_strong_update*/,
+      const array_adaptive_domain_t &invariant) override {
     crab::CrabStats::count(domain_name() + ".count.backward_array_store");
     crab::ScopedCrabStats __st__(domain_name() + ".backward_array_store");
 
@@ -3106,8 +3137,8 @@ public:
         linear_expression_t symb_lb(i);
         linear_expression_t symb_ub(i + number_t(e_sz - 1));
         std::vector<cell_t> cells;
-        om.get_overlap_cells_symbolic_offset(invariant.m_inv,
-                                             symb_lb, symb_ub, cells);
+        om.get_overlap_cells_symbolic_offset(invariant.m_inv, symb_lb, symb_ub,
+                                             cells);
         kill_cells(a, cells, om);
         *this = *this & invariant;
       }
@@ -3120,11 +3151,11 @@ public:
   }
 
   virtual void backward_array_store_range(
-      const variable_t &a, const linear_expression_t &elem_size, const linear_expression_t &lb_idx,
-      const linear_expression_t &ub_idx, const linear_expression_t &val,
+      const variable_t &a, const linear_expression_t &elem_size,
+      const linear_expression_t &lb_idx, const linear_expression_t &ub_idx,
+      const linear_expression_t &val,
       const array_adaptive_domain_t &invariant) override {
-    crab::CrabStats::count(domain_name() +
-                           ".count.backward_array_store_range");
+    crab::CrabStats::count(domain_name() + ".count.backward_array_store_range");
     crab::ScopedCrabStats __st__(domain_name() +
                                  ".count.backward_array_store_range");
 
@@ -3150,11 +3181,11 @@ public:
     if (!(*lb <= *ub)) {
       return;
     }
-    
+
     number_t num_elems = (*ub - *lb) / e_sz;
     number_t e = *ub;
     if (num_elems > Params::max_array_size) {
-      e = *lb + ((number_t(Params::max_array_size) -1) * e_sz);
+      e = *lb + ((number_t(Params::max_array_size) - 1) * e_sz);
     }
 
     for (number_t i = *lb; i <= e;) {
@@ -3198,21 +3229,23 @@ public:
 
   void write(crab_os &o) const override {
     o << m_inv;
-    CRAB_LOG("array-adaptive-print-details",
-	     crab::outs() << "\n";
-	     crab::outs () << "=== CELLS PER ARRAY === \n";
-	     for (auto it = m_array_map.begin(), et = m_array_map.end(); it!=et; ++it) {
-	       const variable_t  &v = it->first;
-	       const array_state &as = it->second;
-	       crab::outs() << "ARRAY VAR " <<  v << ":\n";
-	       as.write(crab::outs());
-	       crab::outs() << "\n";
-	     }
-	     crab::outs() << "=== MAP FROM CELLS TO SCALARS === \n";
-	     for (auto const& kv: m_cell_varmap) {
-	       crab::outs() << "\t" << kv.first.first << "#" << kv.first.second << " -> "
-			    << kv.second << "\n";
-	     });
+    CRAB_LOG(
+        "array-adaptive-print-details", crab::outs() << "\n";
+        crab::outs() << "=== CELLS PER ARRAY === \n";
+        for (auto it = m_array_map.begin(), et = m_array_map.end(); it != et;
+             ++it) {
+          const variable_t &v = it->first;
+          const array_state &as = it->second;
+          crab::outs() << "ARRAY VAR " << v << ":\n";
+          as.write(crab::outs());
+          crab::outs() << "\n";
+        } crab::outs()
+        << "=== MAP FROM CELLS TO SCALARS === \n";
+        for (auto const &kv
+             : m_cell_varmap) {
+          crab::outs() << "\t" << kv.first.first << "#" << kv.first.second
+                       << " -> " << kv.second << "\n";
+        });
   }
 
   std::string domain_name() const override {
@@ -3220,9 +3253,10 @@ public:
     return name;
   }
 
-  void rename(const variable_vector_t &from, const variable_vector_t &to) override {
+  void rename(const variable_vector_t &from,
+              const variable_vector_t &to) override {
     CRAB_WARN("array_adaptive::rename not implemented");
-    
+
     // m_inv.rename(from, to);
     // for (auto &v : from) {
     //   if (v.is_array_type()) {

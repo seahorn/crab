@@ -21,13 +21,8 @@ If the domain is defined over rational instead of integers then use
    `CMakeLists.txt`. For instance, if your test is under a
    subdirectory called `domains/wrapint`:
 
-        AddTestDir (domains)        
-        AddTestDir (inter)
-        AddTestDir (cg)
-        AddTestDir (cfg)
-        AddTestDir (thresholds)
-        AddTestDir (checkers)
-        AddTestDir (backward)
+        AddTestDir(domains)        
+		...
         AddTestDir (domains/wrapint) # directory where your test is located
 
 Of course, if you put your test in the rest of the above directories

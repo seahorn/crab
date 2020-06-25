@@ -149,7 +149,7 @@ public:
       return *it;
     }
 
-    key_t operator*(void)const { return (*e).key; }
+    key_t operator*(void) const { return (*e).key; }
     bool operator!=(const key_iter_t &o) const { return e < o.e; }
     key_iter_t &operator++(void) {
       ++e;
@@ -365,7 +365,7 @@ public:
   public:
     vert_iterator(vert_id _v, const std::vector<bool> &_is_free)
         : v(_v), is_free(_is_free) {}
-    vert_id operator*(void)const { return v; }
+    vert_id operator*(void) const { return v; }
     bool operator!=(const vert_iterator &o) {
       while (v < o.v && is_free[v])
         ++v;
@@ -418,7 +418,7 @@ public:
       return *it;
     }
 
-    edge_ref operator*(void)const {
+    edge_ref operator*(void) const {
       return edge_ref((*it).key, (*ws)[(*it).val]);
     }
     edge_iter operator++(void) {
@@ -548,7 +548,7 @@ public:
     _succs[s].lookup(d, &idx);
     return _ws[idx];
   }
-  
+
   class mut_val_ref_t {
   public:
     mut_val_ref_t() : w(nullptr) {}
@@ -640,12 +640,12 @@ public:
     }
     o << "|]";
   }
-  
+
   friend crab::crab_os &operator<<(crab::crab_os &o, AdaptGraph<Weight> &g) {
     g.write(o);
     return o;
   }
-  
+
   // Ick. This'll have another indirection on every operation.
   // We'll see what the performance costs are like.
   vec<smap_t> _preds;

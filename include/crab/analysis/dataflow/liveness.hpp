@@ -2,10 +2,10 @@
 
 /* Liveness analysis */
 
-#include <crab/support/debug.hpp>
-#include <crab/support/stats.hpp>
 #include <crab/domains/killgen_domain.hpp>
 #include <crab/iterators/killgen_fixpoint_iterator.hpp>
+#include <crab/support/debug.hpp>
+#include <crab/support/stats.hpp>
 
 #include <boost/range/iterator_range.hpp>
 #include <unordered_map>
@@ -64,7 +64,7 @@ public:
          boost::make_iterator_range(this->m_cfg.begin(), this->m_cfg.end())) {
       varset_domain_t kill, gen;
       for (auto &s : boost::make_iterator_range(b.rbegin(), b.rend())) {
-        auto const& live = s.get_live();
+        auto const &live = s.get_live();
         for (auto d :
              boost::make_iterator_range(live.defs_begin(), live.defs_end())) {
           kill += d;
@@ -123,17 +123,19 @@ public:
   void exec() {
     this->run();
 
-    crab::ScopedCrabStats __st__("Liveness.store_results");    
+    crab::ScopedCrabStats __st__("Liveness.store_results");
     _live_map.insert(make_move_iterator(this->out_begin()),
-		     make_move_iterator(this->out_end()));
+                     make_move_iterator(this->out_end()));
 
-    CRAB_LOG("liveness-live",     
-	     for (auto p :
-		    boost::make_iterator_range(this->out_begin(), this->out_end())) {
-	       crab::outs() << cfg_impl::get_label_str(p.first)
-			    << " live variables=" << p.second << "\n";;
-	     });
-    
+    CRAB_LOG(
+        "liveness-live",
+        for (auto p
+             : boost::make_iterator_range(this->out_begin(), this->out_end())) {
+          crab::outs() << cfg_impl::get_label_str(p.first)
+                       << " live variables=" << p.second << "\n";
+          ;
+        });
+
     this->release_memory();
   }
 
@@ -194,37 +196,36 @@ public:
 
   // If ignore_dead is true then dead symbols are not computed.
   live_and_dead_analysis(CFG cfg, bool ignore_dead = false)
-    : m_cfg(cfg), 
-      m_live(new liveness_analysis_t(m_cfg)),
-      m_ignore_dead(ignore_dead),
-      m_max_live(0),
-      m_total_live(0), m_total_blocks(0) {}
+      : m_cfg(cfg), m_live(new liveness_analysis_t(m_cfg)),
+        m_ignore_dead(ignore_dead), m_max_live(0), m_total_live(0),
+        m_total_blocks(0) {}
 
   live_and_dead_analysis(const live_and_dead_analysis &other) = delete;
 
-  live_and_dead_analysis &operator=(const live_and_dead_analysis &other) = delete;
+  live_and_dead_analysis &
+  operator=(const live_and_dead_analysis &other) = delete;
 
   void exec() {
     m_live->exec();
     if (!m_ignore_dead) {
-      crab::ScopedCrabStats __st__("Liveness.precompute_dead_variables");    
+      crab::ScopedCrabStats __st__("Liveness.precompute_dead_variables");
       /** Remove dead variables locally **/
       for (auto &bb : boost::make_iterator_range(m_cfg.begin(), m_cfg.end())) {
-	varset_domain_t live_set = m_live->get(bb.label());
-	if (live_set.is_bottom())
-	  continue;
-	
-	varset_domain_t dead_set = m_cfg.get_node(bb.label()).live();
-	// dead variables = (USE(bb) U DEF(bb)) \ live_out(bb)
-	dead_set -= live_set;
-	CRAB_LOG("liveness", crab::outs()
-		             << cfg_impl::get_label_str(bb.label())
-		             << " dead variables=" << dead_set << "\n";);
-	m_dead_map.insert(std::make_pair(bb.label(), std::move(dead_set)));
-	// update statistics
-	m_total_live += live_set.size();
-	m_max_live = std::max(m_max_live, live_set.size());
-	m_total_blocks++;
+        varset_domain_t live_set = m_live->get(bb.label());
+        if (live_set.is_bottom())
+          continue;
+
+        varset_domain_t dead_set = m_cfg.get_node(bb.label()).live();
+        // dead variables = (USE(bb) U DEF(bb)) \ live_out(bb)
+        dead_set -= live_set;
+        CRAB_LOG("liveness", crab::outs()
+                                 << cfg_impl::get_label_str(bb.label())
+                                 << " dead variables=" << dead_set << "\n";);
+        m_dead_map.insert(std::make_pair(bb.label(), std::move(dead_set)));
+        // update statistics
+        m_total_live += live_set.size();
+        m_max_live = std::max(m_max_live, live_set.size());
+        m_total_blocks++;
       }
     }
   }

@@ -91,7 +91,7 @@ public:
       return;
 
     if (!other._inv.is_top()) {
-      for (auto const& v : other)
+      for (auto const &v : other)
         _inv -= v;
     }
   }
@@ -149,8 +149,10 @@ private:
   bool _is_top;
   patricia_tree_t _tree;
 
-  static patricia_tree_t apply_operation(binary_op_t &o, const patricia_tree_t &t1,
-                                         const patricia_tree_t &t2, bool &is_bottom) {
+  static patricia_tree_t apply_operation(binary_op_t &o,
+                                         const patricia_tree_t &t1,
+                                         const patricia_tree_t &t2,
+                                         bool &is_bottom) {
     patricia_tree_t res(t1);
     is_bottom = res.merge_with(t2, o);
     return res;
@@ -234,7 +236,8 @@ public:
     return (o.is_top() || (!is_top() && (_tree.leq(o._tree, po))));
   }
 
-  separate_killgen_domain_t operator|(const separate_killgen_domain_t &o) const {
+  separate_killgen_domain_t
+  operator|(const separate_killgen_domain_t &o) const {
     if (is_top() || o.is_top()) {
       return separate_killgen_domain_t::top();
     } else {
@@ -245,7 +248,8 @@ public:
     }
   }
 
-  separate_killgen_domain_t operator&(const separate_killgen_domain_t &o) const {
+  separate_killgen_domain_t
+  operator&(const separate_killgen_domain_t &o) const {
     if (is_top()) {
       return o;
     } else if (o.is_top()) {

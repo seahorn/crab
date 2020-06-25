@@ -1,7 +1,7 @@
 #pragma once
 
-#include <crab/support/os.hpp>
 #include <crab/support/debug.hpp>
+#include <crab/support/os.hpp>
 
 namespace crab {
 namespace cfg {
@@ -22,14 +22,10 @@ typedef enum {
   BINOP_LSHR,
   BINOP_ASHR,
 } binary_operation_t;
-  
-typedef enum {
-  BINOP_BAND, BINOP_BOR, BINOP_BXOR
-} bool_binary_operation_t;
 
-typedef enum {
-  CAST_TRUNC, CAST_SEXT, CAST_ZEXT
-} cast_operation_t;
+typedef enum { BINOP_BAND, BINOP_BOR, BINOP_BXOR } bool_binary_operation_t;
+
+typedef enum { CAST_TRUNC, CAST_SEXT, CAST_ZEXT } cast_operation_t;
 
 inline crab::crab_os &operator<<(crab::crab_os &o, binary_operation_t op) {
   switch (op) {
@@ -111,6 +107,6 @@ inline crab::crab_os &operator<<(crab::crab_os &o, cast_operation_t op) {
   }
   return o;
 }
-  
-} //end namespace cfg
+
+} // end namespace cfg
 } // end namespace crab

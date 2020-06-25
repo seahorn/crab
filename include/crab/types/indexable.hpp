@@ -10,7 +10,7 @@ typedef uint64_t index_t;
 namespace crab {
 class indexable {
 public:
-  virtual ~indexable() = default;  
+  virtual ~indexable() = default;
   virtual ikos::index_t index() const = 0;
 };
 } // end namespace crab

@@ -36,9 +36,9 @@ public:
   using typename abstract_domain_t::linear_constraint_system_t;
   using typename abstract_domain_t::linear_constraint_t;
   using typename abstract_domain_t::linear_expression_t;
+  using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
-  using typename abstract_domain_t::reference_constraint_t;  
   typedef NumDomain content_domain_t;
   typedef ikos::interval<number_t> interval_t;
 
@@ -56,7 +56,8 @@ private:
 
   array_smashing(NumDomain &&inv) : _inv(std::move(inv)) {}
 
-  void do_strong_update(NumDomain &dom, const variable_t &a, const linear_expression_t &rhs) {
+  void do_strong_update(NumDomain &dom, const variable_t &a,
+                        const linear_expression_t &rhs) {
     switch (a.get_type()) {
     case ARR_BOOL_TYPE:
       if (rhs.is_constant()) {
@@ -76,15 +77,14 @@ private:
     default:; /* unreachable */
     }
   }
-  
+
   void do_strong_update(const variable_t &a, const linear_expression_t &rhs) {
     do_strong_update(_inv, a, rhs);
   }
 
   // We perform the strong update on a copy of *this. Then, we join
   // the copy of *this with *this.
-  void do_weak_update(const variable_t &a, 
-                      const linear_expression_t &rhs) {
+  void do_weak_update(const variable_t &a, const linear_expression_t &rhs) {
     NumDomain other(_inv);
     do_strong_update(other, a, rhs);
     _inv |= other;
@@ -97,12 +97,12 @@ private:
   linear_constraint_system_t
   filter_noninteger_vars(linear_constraint_system_t &&csts) const {
     linear_constraint_system_t res;
-    for (auto const&cst : csts) {
+    for (auto const &cst : csts) {
       if (std::all_of(cst.expression().variables_begin(),
-		      cst.expression().variables_end(),
-		      [](const variable_t &v) {
-			return v.is_int_type() || v.is_bool_type();
-		      })) {
+                      cst.expression().variables_end(),
+                      [](const variable_t &v) {
+                        return v.is_int_type() || v.is_bool_type();
+                      })) {
         res += cst;
       }
     }
@@ -110,30 +110,28 @@ private:
   }
 
 public:
-  array_smashing() {
-    _inv.set_to_top();
-  }
+  array_smashing() { _inv.set_to_top(); }
 
   array_smashing make_top() const override {
     NumDomain inv;
     array_smashing out(inv.make_top());
     return out;
   }
-  
+
   array_smashing make_bottom() const override {
     NumDomain inv;
     array_smashing out(inv.make_bottom());
     return out;
   }
-  
+
   void set_to_top() override {
-    NumDomain inv;    
+    NumDomain inv;
     array_smashing abs(inv.make_top());
     std::swap(*this, abs);
   }
 
   void set_to_bottom() override {
-    NumDomain inv;        
+    NumDomain inv;
     array_smashing abs(inv.make_bottom());
     std::swap(*this, abs);
   }
@@ -166,9 +164,13 @@ public:
 
   bool is_top() const override { return (_inv.is_top()); }
 
-  bool operator<=(const array_smashing_t &other) const override { return (_inv <= other._inv); }
+  bool operator<=(const array_smashing_t &other) const override {
+    return (_inv <= other._inv);
+  }
 
-  void operator|=(const array_smashing_t &other) override { _inv |= other._inv; }
+  void operator|=(const array_smashing_t &other) override {
+    _inv |= other._inv;
+  }
 
   array_smashing_t operator|(const array_smashing_t &other) const override {
     return array_smashing_t(_inv | other._inv);
@@ -182,9 +184,9 @@ public:
     return array_smashing_t(_inv || other._inv);
   }
 
-  array_smashing_t
-  widening_thresholds(const array_smashing_t &other,
-                      const iterators::thresholds<number_t> &ts) const override {
+  array_smashing_t widening_thresholds(
+      const array_smashing_t &other,
+      const iterators::thresholds<number_t> &ts) const override {
     return array_smashing_t(_inv.widening_thresholds(other._inv, ts));
   }
 
@@ -210,15 +212,13 @@ public:
 
   void normalize() override { _inv.normalize(); }
 
-  void minimize() override  { _inv.minimize(); }
+  void minimize() override { _inv.minimize(); }
 
   void operator+=(const linear_constraint_system_t &csts) override {
     _inv += csts;
   }
 
-  void operator-=(const variable_t &var) override {
-    _inv -= var;
-  }
+  void operator-=(const variable_t &var) override { _inv -= var; }
 
   void assign(const variable_t &x, const linear_expression_t &e) override {
     _inv.assign(x, e);
@@ -227,16 +227,16 @@ public:
                              << "apply " << x << " := " << e << *this << "\n";);
   }
 
-  void apply(arith_operation_t op,
-	     const variable_t &x, const variable_t &y, number_t z) override {
+  void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
+             number_t z) override {
     _inv.apply(op, x, y, z);
 
     CRAB_LOG("smashing", crab::outs() << "apply " << x << " := " << y << " "
                                       << op << " " << z << *this << "\n";);
   }
 
-  void apply(arith_operation_t op,
-	     const variable_t &x, const variable_t &y, const variable_t &z) override {
+  void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
+             const variable_t &z) override {
     _inv.apply(op, x, y, z);
 
     CRAB_LOG("smashing", crab::outs() << "apply " << x << " := " << y << " "
@@ -248,33 +248,33 @@ public:
     _inv.backward_assign(x, e, inv._inv);
   }
 
-  void backward_apply(arith_operation_t op,
-		      const variable_t &x, const variable_t &y, number_t z,
+  void backward_apply(arith_operation_t op, const variable_t &x,
+                      const variable_t &y, number_t z,
                       const array_smashing_t &inv) override {
     _inv.backward_apply(op, x, y, z, inv._inv);
   }
 
-  void backward_apply(arith_operation_t op,
-		      const variable_t &x, const variable_t &y, const variable_t &z,
+  void backward_apply(arith_operation_t op, const variable_t &x,
+                      const variable_t &y, const variable_t &z,
                       const array_smashing_t &inv) override {
     _inv.backward_apply(op, x, y, z, inv._inv);
   }
 
-  void apply(int_conv_operation_t op,
-	     const variable_t &dst, const variable_t &src) override {
+  void apply(int_conv_operation_t op, const variable_t &dst,
+             const variable_t &src) override {
     _inv.apply(op, dst, src);
   }
 
-  void apply(bitwise_operation_t op,
-	     const variable_t &x, const variable_t &y, const variable_t &z) override {
+  void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
+             const variable_t &z) override {
     _inv.apply(op, x, y, z);
 
     CRAB_LOG("smashing", crab::outs() << "apply " << x << " := " << y << " "
                                       << op << " " << z << *this << "\n";);
   }
 
-  void apply(bitwise_operation_t op,
-	     const variable_t &x, const variable_t &y, number_t k) override {
+  void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
+             number_t k) override {
     _inv.apply(op, x, y, k);
 
     CRAB_LOG("smashing", crab::outs() << "apply " << x << " := " << y << " "
@@ -293,7 +293,8 @@ public:
   }
 
   virtual void apply_binary_bool(bool_operation_t op, const variable_t &x,
-                                 const variable_t &y, const variable_t &z) override {
+                                 const variable_t &y,
+                                 const variable_t &z) override {
     _inv.apply_binary_bool(op, x, y, z);
   }
 
@@ -302,28 +303,32 @@ public:
   }
 
   // backward boolean operators
-  virtual void backward_assign_bool_cst(const variable_t &lhs, const linear_constraint_t &rhs,
+  virtual void backward_assign_bool_cst(const variable_t &lhs,
+                                        const linear_constraint_t &rhs,
                                         const array_smashing_t &inv) override {
     _inv.backward_assign_bool_cst(lhs, rhs, inv._inv);
   }
 
-  virtual void backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
-                                        bool is_not_rhs, const array_smashing_t &inv) override {
+  virtual void backward_assign_bool_var(const variable_t &lhs,
+                                        const variable_t &rhs, bool is_not_rhs,
+                                        const array_smashing_t &inv) override {
     _inv.backward_assign_bool_var(lhs, rhs, is_not_rhs, inv._inv);
   }
 
-  virtual void backward_apply_binary_bool(bool_operation_t op, const variable_t &x,
-                                          const variable_t &y, const variable_t &z,
-                                          const array_smashing_t &inv) override {
+  virtual void
+  backward_apply_binary_bool(bool_operation_t op, const variable_t &x,
+                             const variable_t &y, const variable_t &z,
+                             const array_smashing_t &inv) override {
     _inv.backward_apply_binary_bool(op, x, y, z, inv._inv);
   }
 
   // array_operators_api
 
   // All the array elements are initialized to val
-  virtual void array_init(const variable_t &a, const linear_expression_t &/*elem_size*/,
-                          const linear_expression_t &/*lb_idx*/,
-                          const linear_expression_t &/*ub_idx*/,
+  virtual void array_init(const variable_t &a,
+                          const linear_expression_t & /*elem_size*/,
+                          const linear_expression_t & /*lb_idx*/,
+                          const linear_expression_t & /*ub_idx*/,
                           const linear_expression_t &val) override {
     switch (a.get_type()) {
     case ARR_BOOL_TYPE: {
@@ -349,7 +354,7 @@ public:
   }
 
   virtual void array_load(const variable_t &lhs, const variable_t &a,
-                          const linear_expression_t &/*elem_size*/,
+                          const linear_expression_t & /*elem_size*/,
                           const linear_expression_t &i) override {
     crab::CrabStats::count(domain_name() + ".count.load");
     crab::ScopedCrabStats __st__(domain_name() + ".load");
@@ -357,7 +362,7 @@ public:
     // We need to be careful when assigning a summarized variable a
     // into a non-summarized variable lhs. Simply _inv.assign(lhs,a)
     // is not sound.
-    auto &vfac = const_cast<varname_t*>(&(a.name()))->get_var_factory();
+    auto &vfac = const_cast<varname_t *>(&(a.name()))->get_var_factory();
     variable_t a_prime(vfac.get());
     _inv.expand(a, a_prime);
     switch (a.get_type()) {
@@ -376,8 +381,10 @@ public:
                                       << "]  -- " << *this << "\n";);
   }
 
-  virtual void array_store(const variable_t &a, const linear_expression_t &/*elem_size*/,
-                           const linear_expression_t &i, const linear_expression_t &val,
+  virtual void array_store(const variable_t &a,
+                           const linear_expression_t & /*elem_size*/,
+                           const linear_expression_t &i,
+                           const linear_expression_t &val,
                            bool is_strong_update) override {
     crab::CrabStats::count(domain_name() + ".count.store");
     crab::ScopedCrabStats __st__(domain_name() + ".store");
@@ -393,8 +400,9 @@ public:
   }
 
   virtual void array_store_range(const variable_t &a,
-                                 const linear_expression_t &/*elem_size*/,
-                                 const linear_expression_t &i, const linear_expression_t &j,
+                                 const linear_expression_t & /*elem_size*/,
+                                 const linear_expression_t &i,
+                                 const linear_expression_t &j,
                                  const linear_expression_t &val) override {
     crab::CrabStats::count(domain_name() + ".count.store");
     crab::ScopedCrabStats __st__(domain_name() + ".store");
@@ -403,7 +411,8 @@ public:
                                       << val << " -- " << *this << "\n";);
   }
 
-  virtual void array_assign(const variable_t &lhs, const variable_t &rhs) override {
+  virtual void array_assign(const variable_t &lhs,
+                            const variable_t &rhs) override {
     switch (lhs.get_type()) {
     case ARR_BOOL_TYPE:
       _inv.assign_bool_var(lhs, rhs, false);
@@ -417,25 +426,32 @@ public:
   }
 
   // backward array operations
-  void backward_array_init(const variable_t &a, const linear_expression_t &elem_size,
+  void backward_array_init(const variable_t &a,
+                           const linear_expression_t &elem_size,
                            const linear_expression_t &lb_idx,
-                           const linear_expression_t &ub_idx, const linear_expression_t &val,
+                           const linear_expression_t &ub_idx,
+                           const linear_expression_t &val,
                            const array_smashing_t &invariant) override {
     CRAB_WARN("backward_array_init in array smashing domain not implemented");
   }
   void backward_array_load(const variable_t &lhs, const variable_t &a,
-                           const linear_expression_t &elem_size, const linear_expression_t &i,
+                           const linear_expression_t &elem_size,
+                           const linear_expression_t &i,
                            const array_smashing_t &invariant) override {
     CRAB_WARN("backward_array_load in array smashing domain not implemented");
     this->operator-=(lhs);
   }
-  void backward_array_store(const variable_t &a, const linear_expression_t &elem_size,
-                            const linear_expression_t &i, const linear_expression_t &v,
-                            bool is_strong_update, const array_smashing_t &invariant) override {
+  void backward_array_store(const variable_t &a,
+                            const linear_expression_t &elem_size,
+                            const linear_expression_t &i,
+                            const linear_expression_t &v, bool is_strong_update,
+                            const array_smashing_t &invariant) override {
     CRAB_WARN("backward_array_store in array smashing domain not implemented");
   }
-  void backward_array_store_range(const variable_t &a, const linear_expression_t &elem_size,
-                                  const linear_expression_t &i, const linear_expression_t &j,
+  void backward_array_store_range(const variable_t &a,
+                                  const linear_expression_t &elem_size,
+                                  const linear_expression_t &i,
+                                  const linear_expression_t &j,
                                   const linear_expression_t &v,
                                   const array_smashing_t &invariant) override {
     CRAB_WARN(
@@ -447,22 +463,25 @@ public:
   }
 
   // reference operations
-  void region_init(const memory_region &reg) override {}          
+  void region_init(const memory_region &reg) override {}
   void ref_make(const variable_t &ref, const memory_region &reg) override {}
-  void ref_load(const variable_t &ref, const memory_region &reg, const variable_t &res) override {}
+  void ref_load(const variable_t &ref, const memory_region &reg,
+                const variable_t &res) override {}
   void ref_store(const variable_t &ref, const memory_region &reg,
-		 const linear_expression_t &val) override {}
+                 const linear_expression_t &val) override {}
   void ref_gep(const variable_t &ref1, const memory_region &reg1,
-	       const variable_t &ref2, const memory_region &reg2,
-	       const linear_expression_t &offset) override {}
-  void ref_load_from_array(const variable_t &lhs, const variable_t &ref, const memory_region &region,
-			   const linear_expression_t &index,
-			   const linear_expression_t &elem_size) override {}
+               const variable_t &ref2, const memory_region &reg2,
+               const linear_expression_t &offset) override {}
+  void ref_load_from_array(const variable_t &lhs, const variable_t &ref,
+                           const memory_region &region,
+                           const linear_expression_t &index,
+                           const linear_expression_t &elem_size) override {}
   void ref_store_to_array(const variable_t &ref, const memory_region &region,
-			  const linear_expression_t &index, const linear_expression_t &elem_size,
-			  const linear_expression_t &val) override {}
+                          const linear_expression_t &index,
+                          const linear_expression_t &elem_size,
+                          const linear_expression_t &val) override {}
   void ref_assume(const reference_constraint_t &cst) override {}
-  
+
   linear_constraint_system_t to_linear_constraint_system() const override {
     return filter_noninteger_vars(
         std::move(_inv.to_linear_constraint_system()));
@@ -486,25 +505,24 @@ public:
 
   NumDomain get_content_domain() const { return _inv; }
 
-  /* begin intrinsics operations */    
-  void intrinsic(std::string name,
-		 const variable_vector_t &inputs,
-		 const variable_vector_t &outputs) override {
+  /* begin intrinsics operations */
+  void intrinsic(std::string name, const variable_vector_t &inputs,
+                 const variable_vector_t &outputs) override {
     _inv.intrinsic(name, inputs, outputs);
   }
 
-  void backward_intrinsic(std::string name,
-			  const variable_vector_t &inputs,
-			  const variable_vector_t &outputs,
-			  const array_smashing_t &invariant) override {
-    _inv.backward_intrinsic(name, inputs, outputs, invariant._inv); 
+  void backward_intrinsic(std::string name, const variable_vector_t &inputs,
+                          const variable_vector_t &outputs,
+                          const array_smashing_t &invariant) override {
+    _inv.backward_intrinsic(name, inputs, outputs, invariant._inv);
   }
   /* end intrinsics operations */
-  
-  void rename(const variable_vector_t &from, const variable_vector_t &to) override {
+
+  void rename(const variable_vector_t &from,
+              const variable_vector_t &to) override {
     _inv.rename(from, to);
   }
-  
+
   void write(crab_os &o) const override { o << _inv; }
 
   std::string domain_name() const override {

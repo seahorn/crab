@@ -21,13 +21,13 @@ class assert_property_checker : public property_checker<Analyzer> {
   typedef typename Analyzer::abs_dom_t abs_dom_t;
   typedef property_checker<Analyzer> base_checker_t;
 
+  using typename base_checker_t::assert_ref_t;
   using typename base_checker_t::assert_t;
   using typename base_checker_t::assign_t;
   using typename base_checker_t::assume_t;
   using typename base_checker_t::basic_block_t;
   using typename base_checker_t::bin_op_t;
   using typename base_checker_t::bool_assert_t;
-  using typename base_checker_t::assert_ref_t;
   using typename base_checker_t::lin_cst_sys_t;
   using typename base_checker_t::lin_cst_t;
   using typename base_checker_t::lin_exp_t;
@@ -178,7 +178,7 @@ public:
         crab::crab_string_os os;
         if (this->m_verbose >= 2) {
           os << "Property : " << s << "\n";
-	  os << "Invariant: " << this->m_abs_tr->get_abs_value();	  
+          os << "Invariant: " << this->m_abs_tr->get_abs_value();
         }
         this->add_warning(os.str(), &s);
       }
@@ -219,14 +219,13 @@ public:
         crab::crab_string_os os;
         if (this->m_verbose >= 2) {
           os << "Property : " << s << "\n";
-	  os << "Invariant: " << this->m_abs_tr->get_abs_value();	  
+          os << "Invariant: " << this->m_abs_tr->get_abs_value();
         }
         this->add_warning(os.str(), &s);
       }
     }
     s.accept(&*this->m_abs_tr); // propagate invariants to the next stmt
   }
-  
 };
 } // namespace checker
 } // namespace crab

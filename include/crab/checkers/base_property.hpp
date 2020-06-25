@@ -153,18 +153,20 @@ public:
   typedef crab::cfg::unreachable_stmt<number_t, varname_t> unreach_t;
   typedef crab::cfg::callsite_stmt<number_t, varname_t> callsite_t;
   typedef crab::cfg::return_stmt<number_t, varname_t> return_t;
-  typedef crab::cfg::intrinsic_stmt<number_t, varname_t> intrinsic_t;  
+  typedef crab::cfg::intrinsic_stmt<number_t, varname_t> intrinsic_t;
   typedef crab::cfg::array_init_stmt<number_t, varname_t> arr_init_t;
   typedef crab::cfg::array_store_stmt<number_t, varname_t> arr_store_t;
   typedef crab::cfg::array_load_stmt<number_t, varname_t> arr_load_t;
   typedef crab::cfg::array_assign_stmt<number_t, varname_t> arr_assign_t;
-  typedef crab::cfg::region_init_stmt<number_t, varname_t>  region_init_t;  
-  typedef crab::cfg::make_ref_stmt<number_t, varname_t>  make_ref_t;
+  typedef crab::cfg::region_init_stmt<number_t, varname_t> region_init_t;
+  typedef crab::cfg::make_ref_stmt<number_t, varname_t> make_ref_t;
   typedef crab::cfg::load_from_ref_stmt<number_t, varname_t> load_from_ref_t;
   typedef crab::cfg::store_to_ref_stmt<number_t, varname_t> store_to_ref_t;
   typedef crab::cfg::gep_ref_stmt<number_t, varname_t> gep_ref_t;
-  typedef crab::cfg::load_from_arr_ref_stmt<number_t, varname_t> load_from_arr_ref_t;
-  typedef crab::cfg::store_to_arr_ref_stmt<number_t, varname_t> store_to_arr_ref_t;  
+  typedef crab::cfg::load_from_arr_ref_stmt<number_t, varname_t>
+      load_from_arr_ref_t;
+  typedef crab::cfg::store_to_arr_ref_stmt<number_t, varname_t>
+      store_to_arr_ref_t;
   typedef crab::cfg::assume_ref_stmt<number_t, varname_t> assume_ref_t;
   typedef crab::cfg::assert_ref_stmt<number_t, varname_t> assert_ref_t;
   typedef crab::cfg::bool_binary_op<number_t, varname_t> bool_bin_op_t;
@@ -295,7 +297,7 @@ protected:
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
-  
+
   virtual void check(arr_init_t &s) {
     if (!this->m_abs_tr)
       return;
@@ -307,7 +309,7 @@ protected:
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
-  
+
   virtual void check(arr_store_t &s) {
     if (!this->m_abs_tr)
       return;
@@ -325,7 +327,7 @@ protected:
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
-  
+
   virtual void check(make_ref_t &s) {
     if (!this->m_abs_tr)
       return;
@@ -361,7 +363,7 @@ protected:
       return;
     s.accept(&*this->m_abs_tr); // propagate m_inv to the next stmt
   }
-  
+
   virtual void check(assume_ref_t &s) {
     if (!this->m_abs_tr)
       return;
@@ -420,21 +422,21 @@ public:
   void visit(int_cast_t &s) { check(s); }
   void visit(havoc_t &s) { check(s); }
   void visit(unreach_t &s) { check(s); }
-  void visit(callsite_t &s) { check(s); }  
+  void visit(callsite_t &s) { check(s); }
   void visit(return_t &s) { check(s); }
-  void visit(intrinsic_t &s) { check(s); }  
+  void visit(intrinsic_t &s) { check(s); }
   void visit(arr_init_t &s) { check(s); }
-  void visit(arr_assign_t &s) { check(s); }  
+  void visit(arr_assign_t &s) { check(s); }
   void visit(arr_store_t &s) { check(s); }
   void visit(arr_load_t &s) { check(s); }
-  void visit(region_init_t &s) { check(s); }  
+  void visit(region_init_t &s) { check(s); }
   void visit(make_ref_t &s) { check(s); }
   void visit(load_from_ref_t &s) { check(s); }
   void visit(store_to_ref_t &s) { check(s); }
   void visit(gep_ref_t &s) { check(s); }
   void visit(load_from_arr_ref_t &s) { check(s); }
-  void visit(store_to_arr_ref_t &s) { check(s); }    
-  void visit(assume_ref_t &s) { check(s); }  
+  void visit(store_to_arr_ref_t &s) { check(s); }
+  void visit(assume_ref_t &s) { check(s); }
   void visit(assert_ref_t &s) { check(s); }
   void visit(bool_bin_op_t &s) { check(s); }
   void visit(bool_assign_cst_t &s) { check(s); }

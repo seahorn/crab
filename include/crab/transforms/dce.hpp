@@ -51,27 +51,27 @@ public:
           auto const &s_live_vars = s.get_live();
 
           // if DEF(s) = {d} and d \not\in out_live then remove s
-	  if (!s.is_callsite()) {
-	    // XXX: if s is a callsite the callee can still have
-	    // side-effects (assertions).
-	    // 
-	    // TODO: use the assertion crawler analysis to remove the
-	    // callee if it doesn't have any assertion.
-	    if (s_live_vars.num_defs() == 1) {
-	      const variable_t &def = *(s_live_vars.defs_begin());
-	      if (!def.is_array_type()) {
-		// XXX: An array variable contain actually multiple
-		// definitions so we conservatively skip it.
-		if (!(varset_domain_t(def) <= out_live)) {
-		  // mark s to be removed
-		  change = true;
-		  apply_dce = true;
-		  to_remove.push_back(&s);
-		  CRAB_LOG("dce", crab::outs() << "DEAD: " << s << "\n";);
-		}
-	      }
-	    }
-	  }
+          if (!s.is_callsite()) {
+            // XXX: if s is a callsite the callee can still have
+            // side-effects (assertions).
+            //
+            // TODO: use the assertion crawler analysis to remove the
+            // callee if it doesn't have any assertion.
+            if (s_live_vars.num_defs() == 1) {
+              const variable_t &def = *(s_live_vars.defs_begin());
+              if (!def.is_array_type()) {
+                // XXX: An array variable contain actually multiple
+                // definitions so we conservatively skip it.
+                if (!(varset_domain_t(def) <= out_live)) {
+                  // mark s to be removed
+                  change = true;
+                  apply_dce = true;
+                  to_remove.push_back(&s);
+                  CRAB_LOG("dce", crab::outs() << "DEAD: " << s << "\n";);
+                }
+              }
+            }
+          }
 
           // update out_live for the next statement:
           //   out_live = (out_live \ DEFS(s)) U USES(s)

@@ -1,6 +1,6 @@
 
-#include <crab/support/debug.hpp>
 #include <crab/numbers/safeint.hpp>
+#include <crab/support/debug.hpp>
 
 #include <cstdint>
 #include <limits>

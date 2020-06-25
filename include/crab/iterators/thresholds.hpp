@@ -2,8 +2,8 @@
 
 #include <crab/cfg/cfg.hpp>
 #include <crab/cfg/cfg_bgl.hpp> // needed by wto.hpp
-#include <crab/iterators/wto.hpp>
 #include <crab/domains/interval.hpp>
+#include <crab/iterators/wto.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/types/linear_constraints.hpp>
 
@@ -84,7 +84,8 @@ public:
     }
   }
 
-  template <typename N> ikos::bound<N> get_next(const ikos::bound<N> &v1) const {
+  template <typename N>
+  ikos::bound<N> get_next(const ikos::bound<N> &v1) const {
     if (v1.is_plus_infinity())
       return v1;
     bound_t v = convert_bounds_impl<ikos::bound<N>, bound_t>(v1);
@@ -95,7 +96,8 @@ public:
     return convert_bounds_impl<bound_t, ikos::bound<N>>(t);
   }
 
-  template <typename N> ikos::bound<N> get_prev(const ikos::bound<N> &v1) const {
+  template <typename N>
+  ikos::bound<N> get_prev(const ikos::bound<N> &v1) const {
     if (v1.is_minus_infinity())
       return v1;
     bound_t v = convert_bounds_impl<ikos::bound<N>, bound_t>(v1);
@@ -229,7 +231,7 @@ public:
     if (m_stack.empty())
       return;
 
-    const basic_block_label_t& head = m_stack.back();
+    const basic_block_label_t &head = m_stack.back();
     auto it = m_head_to_thresholds.find(head);
     if (it != m_head_to_thresholds.end()) {
       thresholds_t &thresholds = it->second;

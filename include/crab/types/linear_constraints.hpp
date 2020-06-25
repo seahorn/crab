@@ -43,8 +43,8 @@
 
 #include <crab/numbers/bignums.hpp>
 #include <crab/support/debug.hpp>
-#include <crab/types/variable.hpp>
 #include <crab/types/indexable.hpp>
+#include <crab/types/variable.hpp>
 
 #include <boost/container/flat_map.hpp>
 #include <boost/functional/hash_fwd.hpp> // for hash_combine
@@ -107,7 +107,7 @@ private:
       return {kv.second, kv.first};
     }
   };
-  
+
   struct get_var
       : public std::unary_function<typename map_t::value_type, variable_t> {
     get_var() {}
@@ -117,12 +117,16 @@ private:
   };
 
 public:
-  using iterator = boost::transform_iterator<tr_value_ty, typename map_t::iterator>;
-  using const_iterator = boost::transform_iterator<tr_value_ty, typename map_t::const_iterator>;
-  using var_iterator = boost::transform_iterator<get_var, typename map_t::iterator>;
-  using const_var_iterator = boost::transform_iterator<get_var, typename map_t::const_iterator>;
+  using iterator =
+      boost::transform_iterator<tr_value_ty, typename map_t::iterator>;
+  using const_iterator =
+      boost::transform_iterator<tr_value_ty, typename map_t::const_iterator>;
+  using var_iterator =
+      boost::transform_iterator<get_var, typename map_t::iterator>;
+  using const_var_iterator =
+      boost::transform_iterator<get_var, typename map_t::const_iterator>;
   using const_var_range = boost::iterator_range<const_var_iterator>;
-  
+
   linear_expression() : _map(std::make_shared<map_t>()), _cst(0) {}
 
   linear_expression(Number n) : _map(std::make_shared<map_t>()), _cst(n) {}
@@ -140,13 +144,13 @@ public:
   }
 
   linear_expression(const linear_expression_t &e) = default;
-  
+
   linear_expression(linear_expression_t &&e) = default;
- 
+
   linear_expression_t &operator=(const linear_expression_t &e) = default;
 
   linear_expression_t &operator=(linear_expression_t &&e) = default;
-  
+
   const_iterator begin() const {
     return boost::make_transform_iterator(_map->begin(), tr_value_ty());
   }
@@ -298,19 +302,19 @@ public:
   }
 
   var_iterator variables_begin() {
-    return boost::make_transform_iterator(_map->begin(), get_var()); 
+    return boost::make_transform_iterator(_map->begin(), get_var());
   }
 
   var_iterator variables_end() {
-    return boost::make_transform_iterator(_map->end(), get_var()); 
+    return boost::make_transform_iterator(_map->end(), get_var());
   }
 
   const_var_iterator variables_begin() const {
-    return boost::make_transform_iterator(_map->begin(), get_var()); 
+    return boost::make_transform_iterator(_map->begin(), get_var());
   }
 
   const_var_iterator variables_end() const {
-    return boost::make_transform_iterator(_map->end(), get_var()); 
+    return boost::make_transform_iterator(_map->end(), get_var());
   }
 
   // Variables are sorted
@@ -480,7 +484,8 @@ operator+(int64_t n, crab::variable<Number, VariableName> x) {
 
 template <typename Number, typename VariableName>
 inline linear_expression<Number, VariableName>
-operator+(crab::variable<Number, VariableName> x, crab::variable<Number, VariableName> y) {
+operator+(crab::variable<Number, VariableName> x,
+          crab::variable<Number, VariableName> y) {
   return linear_expression<Number, VariableName>(x).operator+(y);
 }
 
@@ -529,7 +534,8 @@ operator-(int64_t n, crab::variable<Number, VariableName> x) {
 
 template <typename Number, typename VariableName>
 inline linear_expression<Number, VariableName>
-operator-(crab::variable<Number, VariableName> x, crab::variable<Number, VariableName> y) {
+operator-(crab::variable<Number, VariableName> x,
+          crab::variable<Number, VariableName> y) {
   return linear_expression<Number, VariableName>(x).operator-(y);
 }
 
@@ -565,6 +571,7 @@ public:
   using iterator = typename linear_expression_t::iterator;
   using const_iterator = typename linear_expression_t::const_iterator;
   using const_var_range = typename linear_expression_t::const_var_range;
+
 private:
   kind_t _kind;
   linear_expression_t _expr;
@@ -590,11 +597,11 @@ public:
   linear_constraint(const linear_constraint_t &c) = default;
 
   linear_constraint(linear_constraint_t &&c) = default;
-  
+
   linear_constraint_t &operator=(const linear_constraint_t &c) = default;
-  
+
   linear_constraint_t &operator=(linear_constraint_t &&c) = default;
-  
+
   static linear_constraint_t get_true() {
     linear_constraint_t res(linear_expression_t(Number(0)), EQUALITY);
     return res;
@@ -710,11 +717,9 @@ public:
   }
 
   Number operator[](variable_t x) const { return this->_expr.operator[](x); }
- 
-  const_var_range variables() const {
-    return _expr.variables();
-  }
-  
+
+  const_var_range variables() const { return _expr.variables(); }
+
   bool is_well_typed() const { return _expr.is_well_typed(); }
 
   linear_constraint_t negate() const;
@@ -933,7 +938,8 @@ operator<=(int64_t n, crab::variable<Number, VariableName> x) {
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator<=(crab::variable<Number, VariableName> x, crab::variable<Number, VariableName> y) {
+operator<=(crab::variable<Number, VariableName> x,
+           crab::variable<Number, VariableName> y) {
   return linear_constraint<Number, VariableName>(
       x - y, linear_constraint<Number, VariableName>::INEQUALITY);
 }
@@ -1020,7 +1026,8 @@ operator>=(int64_t n, crab::variable<Number, VariableName> x) {
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator>=(crab::variable<Number, VariableName> x, crab::variable<Number, VariableName> y) {
+operator>=(crab::variable<Number, VariableName> x,
+           crab::variable<Number, VariableName> y) {
   return linear_constraint<Number, VariableName>(
       y - x, linear_constraint<Number, VariableName>::INEQUALITY);
 }
@@ -1107,7 +1114,8 @@ operator<(int64_t n, crab::variable<Number, VariableName> x) {
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator<(crab::variable<Number, VariableName> x, crab::variable<Number, VariableName> y) {
+operator<(crab::variable<Number, VariableName> x,
+          crab::variable<Number, VariableName> y) {
   return linear_constraint<Number, VariableName>(
       x - y, linear_constraint<Number, VariableName>::STRICT_INEQUALITY);
 }
@@ -1194,7 +1202,8 @@ operator>(int64_t n, crab::variable<Number, VariableName> x) {
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator>(crab::variable<Number, VariableName> x, crab::variable<Number, VariableName> y) {
+operator>(crab::variable<Number, VariableName> x,
+          crab::variable<Number, VariableName> y) {
   return linear_constraint<Number, VariableName>(
       y - x, linear_constraint<Number, VariableName>::STRICT_INEQUALITY);
 }
@@ -1281,7 +1290,8 @@ operator==(int64_t n, crab::variable<Number, VariableName> x) {
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator==(crab::variable<Number, VariableName> x, crab::variable<Number, VariableName> y) {
+operator==(crab::variable<Number, VariableName> x,
+           crab::variable<Number, VariableName> y) {
   return linear_constraint<Number, VariableName>(
       x - y, linear_constraint<Number, VariableName>::EQUALITY);
 }
@@ -1368,7 +1378,8 @@ operator!=(int64_t n, crab::variable<Number, VariableName> x) {
 
 template <typename Number, typename VariableName>
 inline linear_constraint<Number, VariableName>
-operator!=(crab::variable<Number, VariableName> x, crab::variable<Number, VariableName> y) {
+operator!=(crab::variable<Number, VariableName> x,
+           crab::variable<Number, VariableName> y) {
   return linear_constraint<Number, VariableName>(
       x - y, linear_constraint<Number, VariableName>::DISEQUATION);
 }
@@ -1448,10 +1459,12 @@ public:
 
   linear_constraint_system(linear_constraint_system_t &&o) = default;
 
-  linear_constraint_system_t &operator=(const linear_constraint_system_t &o) = default;
-  
-  linear_constraint_system_t &operator=(linear_constraint_system_t &&o) = default;
-  
+  linear_constraint_system_t &
+  operator=(const linear_constraint_system_t &o) = default;
+
+  linear_constraint_system_t &
+  operator=(linear_constraint_system_t &&o) = default;
+
   linear_constraint_system_t &operator+=(const linear_constraint_t &c) {
     if (!std::any_of(
             _csts.begin(), _csts.end(),
@@ -1621,7 +1634,6 @@ public:
   this_type &operator=(const this_type &o) = default;
 
   this_type &operator=(this_type &&o) = default;
-
 
   bool is_false() const { return _is_false; }
 

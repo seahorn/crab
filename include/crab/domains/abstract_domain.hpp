@@ -20,7 +20,7 @@ template <class Dom> struct abstract_domain_traits;
  * and expose publicly all its public typedef's.
  *
  * Use of Curiously Recurring Template Pattern (CRTP).
- * 
+ *
  * This is a sample of how to implement a new abstract domain:
  *
  * template<typename Number, typename VariableName>
@@ -54,7 +54,7 @@ public:
   typedef std::vector<variable_t> variable_vector_t;
   typedef reference_constraint<number_t, varname_t> reference_constraint_t;
   typedef ikos::interval<number_t> interval_t;
-  
+
   abstract_domain() = default;
   virtual ~abstract_domain() = default;
 
@@ -63,7 +63,7 @@ public:
   // Return a top abstract value
   virtual Dom make_bottom() const = 0;
   // Return a bottom abstract value
-  virtual Dom make_top() const = 0;    
+  virtual Dom make_top() const = 0;
   // set *this to top
   virtual void set_to_top() = 0;
   // set *this to bottom
@@ -71,7 +71,7 @@ public:
   // return true if the abstract state is bottom
   virtual bool is_bottom() const = 0;
   // return true if the abstract state is top
-  virtual bool is_top() const  = 0;
+  virtual bool is_top() const = 0;
 
   // Inclusion operator: return true if *this is equal or more precise than abs
   virtual bool operator<=(const Dom &abs) const = 0;
@@ -86,9 +86,9 @@ public:
   // Narrowing operator: return narrowing(*this, abs)
   virtual Dom operator&&(const Dom &abs) const = 0;
   // Widening with thresholds: return widening(*this, abs) using thresholds ts
-  virtual Dom
-  widening_thresholds(const Dom &abs,
-                      const crab::iterators::thresholds<number_t> &ts) const = 0;
+  virtual Dom widening_thresholds(
+      const Dom &abs,
+      const crab::iterators::thresholds<number_t> &ts) const = 0;
 
   /**************************** Arithmetic operations *************************/
   // x := y op z
@@ -211,7 +211,8 @@ public:
   // Substitute x with e in the abstract value
   // The result is meet with invariant.
   virtual void backward_assign(const variable_t &x,
-                               const linear_expression_t &e, const Dom &invariant) = 0;
+                               const linear_expression_t &e,
+                               const Dom &invariant) = 0;
 
   /**************************** Backward boolean operations ******************/
   virtual void backward_assign_bool_cst(const variable_t &lhs,
@@ -241,7 +242,8 @@ public:
                                     const linear_expression_t &elem_size,
                                     const linear_expression_t &i,
                                     const linear_expression_t &v,
-                                    bool is_strong_update, const Dom &invariant) = 0;
+                                    bool is_strong_update,
+                                    const Dom &invariant) = 0;
   virtual void backward_array_store_range(const variable_t &a,
                                           const linear_expression_t &elem_size,
                                           const linear_expression_t &i,
@@ -305,7 +307,7 @@ public:
 
   // Return a string the abstract domain name
   virtual std::string domain_name(void) const = 0;
-  
+
   friend crab::crab_os &operator<<(crab::crab_os &o,
                                    const abstract_domain<Dom> &dom) {
     dom.write(o);

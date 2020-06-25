@@ -32,11 +32,11 @@
  */
 
 #include <crab/cfg/cfg.hpp>
+#include <crab/domains/abstract_domain_operators.hpp>
 #include <crab/support/debug.hpp>
 #include <crab/support/stats.hpp>
-#include <crab/domains/abstract_domain_operators.hpp>
 
-namespace crab {  
+namespace crab {
 namespace analyzer {
 
 /**
@@ -63,23 +63,25 @@ public:
   typedef crab::cfg::select_stmt<number_t, VariableName> select_t;
   typedef crab::cfg::assert_stmt<number_t, VariableName> assert_t;
   typedef crab::cfg::int_cast_stmt<number_t, VariableName> int_cast_t;
-  
+
   typedef crab::cfg::callsite_stmt<number_t, VariableName> callsite_t;
   typedef crab::cfg::return_stmt<number_t, VariableName> return_t;
-  typedef crab::cfg::intrinsic_stmt<number_t, VariableName> intrinsic_t;  
+  typedef crab::cfg::intrinsic_stmt<number_t, VariableName> intrinsic_t;
 
   typedef crab::cfg::array_init_stmt<number_t, VariableName> arr_init_t;
   typedef crab::cfg::array_store_stmt<number_t, VariableName> arr_store_t;
   typedef crab::cfg::array_load_stmt<number_t, VariableName> arr_load_t;
   typedef crab::cfg::array_assign_stmt<number_t, VariableName> arr_assign_t;
 
-  typedef crab::cfg::region_init_stmt<number_t, varname_t> region_init_t;  
-  typedef crab::cfg::make_ref_stmt<number_t, varname_t>  make_ref_t;
+  typedef crab::cfg::region_init_stmt<number_t, varname_t> region_init_t;
+  typedef crab::cfg::make_ref_stmt<number_t, varname_t> make_ref_t;
   typedef crab::cfg::load_from_ref_stmt<number_t, varname_t> load_from_ref_t;
   typedef crab::cfg::store_to_ref_stmt<number_t, varname_t> store_to_ref_t;
   typedef crab::cfg::gep_ref_stmt<number_t, varname_t> gep_ref_t;
-  typedef crab::cfg::load_from_arr_ref_stmt<number_t, varname_t> load_from_arr_ref_t;
-  typedef crab::cfg::store_to_arr_ref_stmt<number_t, varname_t> store_to_arr_ref_t;    
+  typedef crab::cfg::load_from_arr_ref_stmt<number_t, varname_t>
+      load_from_arr_ref_t;
+  typedef crab::cfg::store_to_arr_ref_stmt<number_t, varname_t>
+      store_to_arr_ref_t;
   typedef crab::cfg::assume_ref_stmt<number_t, VariableName> assume_ref_t;
   typedef crab::cfg::assert_ref_stmt<number_t, VariableName> assert_ref_t;
 
@@ -101,18 +103,18 @@ protected:
   virtual void exec(int_cast_t &) {}
   virtual void exec(callsite_t &) {}
   virtual void exec(return_t &) {}
-  virtual void exec(intrinsic_t &) {}  
+  virtual void exec(intrinsic_t &) {}
   virtual void exec(arr_init_t &) {}
   virtual void exec(arr_store_t &) {}
   virtual void exec(arr_load_t &) {}
   virtual void exec(arr_assign_t &) {}
-  virtual void exec(region_init_t &) {}  
+  virtual void exec(region_init_t &) {}
   virtual void exec(make_ref_t &) {}
   virtual void exec(load_from_ref_t &) {}
   virtual void exec(store_to_ref_t &) {}
   virtual void exec(gep_ref_t &) {}
   virtual void exec(load_from_arr_ref_t &) {}
-  virtual void exec(store_to_arr_ref_t &) {}  
+  virtual void exec(store_to_arr_ref_t &) {}
   virtual void exec(assume_ref_t &) {}
   virtual void exec(assert_ref_t &) {}
   virtual void exec(bool_bin_op_t &) {}
@@ -133,18 +135,18 @@ public: /* visitor api */
   void visit(int_cast_t &s) { exec(s); }
   void visit(callsite_t &s) { exec(s); }
   void visit(return_t &s) { exec(s); }
-  void visit(intrinsic_t &s) { exec(s); }  
+  void visit(intrinsic_t &s) { exec(s); }
   void visit(arr_init_t &s) { exec(s); }
   void visit(arr_store_t &s) { exec(s); }
   void visit(arr_load_t &s) { exec(s); }
   void visit(arr_assign_t &s) { exec(s); }
-  void visit(region_init_t &s) { exec(s); }  
+  void visit(region_init_t &s) { exec(s); }
   void visit(make_ref_t &s) { exec(s); }
   void visit(load_from_ref_t &s) { exec(s); }
   void visit(store_to_ref_t &s) { exec(s); }
   void visit(gep_ref_t &s) { exec(s); }
   void visit(load_from_arr_ref_t &s) { exec(s); }
-  void visit(store_to_arr_ref_t &s) { exec(s); }  
+  void visit(store_to_arr_ref_t &s) { exec(s); }
   void visit(assume_ref_t &s) { exec(s); }
   void visit(assert_ref_t &s) { exec(s); }
   void visit(bool_bin_op_t &s) { exec(s); }
@@ -154,7 +156,6 @@ public: /* visitor api */
   void visit(bool_select_t &s) { exec(s); }
   void visit(bool_assert_t &s) { exec(s); }
 };
-
 
 /**
  * Convert CFG operations into abstract domain operations
@@ -166,19 +167,27 @@ template <typename T>
 inline boost::optional<T> conv_op(cfg::bool_binary_operation_t op);
 template <typename T>
 inline boost::optional<T> conv_op(cfg::cast_operation_t op);
-  
+
 template <>
 inline boost::optional<domains::arith_operation_t>
 conv_op(cfg::binary_operation_t op) {
   switch (op) {
-  case cfg::BINOP_ADD: return domains::OP_ADDITION;
-  case cfg::BINOP_SUB: return domains::OP_SUBTRACTION;
-  case cfg::BINOP_MUL: return domains::OP_MULTIPLICATION;
-  case cfg::BINOP_SDIV:return domains::OP_SDIV; 
-  case cfg::BINOP_UDIV:return domains::OP_UDIV; 
-  case cfg::BINOP_SREM:return domains::OP_SREM;
-  case cfg::BINOP_UREM:return domains::OP_UREM;
-  default:return boost::optional<domains::arith_operation_t>();
+  case cfg::BINOP_ADD:
+    return domains::OP_ADDITION;
+  case cfg::BINOP_SUB:
+    return domains::OP_SUBTRACTION;
+  case cfg::BINOP_MUL:
+    return domains::OP_MULTIPLICATION;
+  case cfg::BINOP_SDIV:
+    return domains::OP_SDIV;
+  case cfg::BINOP_UDIV:
+    return domains::OP_UDIV;
+  case cfg::BINOP_SREM:
+    return domains::OP_SREM;
+  case cfg::BINOP_UREM:
+    return domains::OP_UREM;
+  default:
+    return boost::optional<domains::arith_operation_t>();
   }
 }
 
@@ -186,13 +195,20 @@ template <>
 inline boost::optional<domains::bitwise_operation_t>
 conv_op(cfg::binary_operation_t op) {
   switch (op) {
-  case cfg::BINOP_AND: return domains::OP_AND;
-  case cfg::BINOP_OR:  return domains::OP_OR;
-  case cfg::BINOP_XOR: return domains::OP_XOR;
-  case cfg::BINOP_SHL: return domains::OP_SHL;
-  case cfg::BINOP_LSHR:return domains::OP_LSHR; 
-  case cfg::BINOP_ASHR:return domains::OP_ASHR;
-  default: return boost::optional<domains::bitwise_operation_t>();
+  case cfg::BINOP_AND:
+    return domains::OP_AND;
+  case cfg::BINOP_OR:
+    return domains::OP_OR;
+  case cfg::BINOP_XOR:
+    return domains::OP_XOR;
+  case cfg::BINOP_SHL:
+    return domains::OP_SHL;
+  case cfg::BINOP_LSHR:
+    return domains::OP_LSHR;
+  case cfg::BINOP_ASHR:
+    return domains::OP_ASHR;
+  default:
+    return boost::optional<domains::bitwise_operation_t>();
   }
 }
 
@@ -200,10 +216,14 @@ template <>
 inline boost::optional<domains::int_conv_operation_t>
 conv_op(cfg::cast_operation_t op) {
   switch (op) {
-  case cfg::CAST_TRUNC: return domains::OP_TRUNC;
-  case cfg::CAST_SEXT:  return domains::OP_SEXT;
-  case cfg::CAST_ZEXT:  return domains::OP_ZEXT;
-  default: return boost::optional<domains::int_conv_operation_t>();         
+  case cfg::CAST_TRUNC:
+    return domains::OP_TRUNC;
+  case cfg::CAST_SEXT:
+    return domains::OP_SEXT;
+  case cfg::CAST_ZEXT:
+    return domains::OP_ZEXT;
+  default:
+    return boost::optional<domains::int_conv_operation_t>();
   }
 }
 
@@ -211,14 +231,17 @@ template <>
 inline boost::optional<domains::bool_operation_t>
 conv_op(cfg::bool_binary_operation_t op) {
   switch (op) {
-  case cfg::BINOP_BAND: return domains::OP_BAND;
-  case cfg::BINOP_BOR:  return domains::OP_BOR;
-  case cfg::BINOP_BXOR: return domains::OP_BXOR;
-  default: return boost::optional<domains::bool_operation_t>();
+  case cfg::BINOP_BAND:
+    return domains::OP_BAND;
+  case cfg::BINOP_BOR:
+    return domains::OP_BOR;
+  case cfg::BINOP_BXOR:
+    return domains::OP_BXOR;
+  default:
+    return boost::optional<domains::bool_operation_t>();
   }
 }
 
-  
 /**
  * Abstract forward transformer for all statements. Function calls
  * can be redefined by derived classes. By default, all function
@@ -226,7 +249,8 @@ conv_op(cfg::bool_binary_operation_t op) {
  **/
 template <class AbsD>
 class intra_abs_transformer
-    : public abs_transformer_api<typename AbsD::number_t, typename AbsD::varname_t> {
+    : public abs_transformer_api<typename AbsD::number_t,
+                                 typename AbsD::varname_t> {
 public:
   typedef AbsD abs_dom_t;
   typedef typename abs_dom_t::number_t number_t;
@@ -239,8 +263,10 @@ public:
   using typename abs_transform_api_t::arr_init_t;
   using typename abs_transform_api_t::arr_load_t;
   using typename abs_transform_api_t::arr_store_t;
+  using typename abs_transform_api_t::assert_ref_t;
   using typename abs_transform_api_t::assert_t;
   using typename abs_transform_api_t::assign_t;
+  using typename abs_transform_api_t::assume_ref_t;
   using typename abs_transform_api_t::assume_t;
   using typename abs_transform_api_t::bin_op_t;
   using typename abs_transform_api_t::bool_assert_t;
@@ -250,23 +276,21 @@ public:
   using typename abs_transform_api_t::bool_bin_op_t;
   using typename abs_transform_api_t::bool_select_t;
   using typename abs_transform_api_t::callsite_t;
-  using typename abs_transform_api_t::intrinsic_t;  
+  using typename abs_transform_api_t::gep_ref_t;
   using typename abs_transform_api_t::havoc_t;
   using typename abs_transform_api_t::int_cast_t;
+  using typename abs_transform_api_t::intrinsic_t;
   using typename abs_transform_api_t::lin_cst_sys_t;
   using typename abs_transform_api_t::lin_cst_t;
   using typename abs_transform_api_t::lin_exp_t;
-  using typename abs_transform_api_t::region_init_t;  
-  using typename abs_transform_api_t::make_ref_t;
-  using typename abs_transform_api_t::load_from_ref_t;
-  using typename abs_transform_api_t::store_to_ref_t;
-  using typename abs_transform_api_t::gep_ref_t;
   using typename abs_transform_api_t::load_from_arr_ref_t;
-  using typename abs_transform_api_t::store_to_arr_ref_t;
-  using typename abs_transform_api_t::assume_ref_t;    
-  using typename abs_transform_api_t::assert_ref_t;
+  using typename abs_transform_api_t::load_from_ref_t;
+  using typename abs_transform_api_t::make_ref_t;
+  using typename abs_transform_api_t::region_init_t;
   using typename abs_transform_api_t::return_t;
   using typename abs_transform_api_t::select_t;
+  using typename abs_transform_api_t::store_to_arr_ref_t;
+  using typename abs_transform_api_t::store_to_ref_t;
   using typename abs_transform_api_t::unreach_t;
   using typename abs_transform_api_t::var_t;
 
@@ -276,8 +300,8 @@ protected:
 
 private:
   template <typename NumOrVar>
-  void apply(abs_dom_t &inv, cfg::binary_operation_t op,
-	     const variable_t &x, const variable_t &y, NumOrVar z) {
+  void apply(abs_dom_t &inv, cfg::binary_operation_t op, const variable_t &x,
+             const variable_t &y, NumOrVar z) {
     if (auto top = conv_op<domains::arith_operation_t>(op)) {
       inv.apply(*top, x, y, z);
     } else if (auto top = conv_op<domains::bitwise_operation_t>(op)) {
@@ -295,7 +319,7 @@ public:
 
   void set_abs_value(abs_dom_t &&inv) { m_inv = std::move(inv); }
 
-  abs_dom_t get_abs_value() const { return m_inv;}
+  abs_dom_t get_abs_value() const { return m_inv; }
   abs_dom_t &get_abs_value() { return m_inv; }
 
   void exec(bin_op_t &stmt) {
@@ -560,10 +584,10 @@ public:
 
     if (stmt.lb_index().equal(stmt.ub_index())) {
       m_inv.array_store(stmt.array(), stmt.elem_size(), stmt.lb_index(),
-			stmt.value(), stmt.is_strong_update());
+                        stmt.value(), stmt.is_strong_update());
     } else {
       m_inv.array_store_range(stmt.array(), stmt.elem_size(), stmt.lb_index(),
-			      stmt.ub_index(), stmt.value());
+                              stmt.ub_index(), stmt.value());
     }
 
     if (::crab::CrabSanityCheckFlag) {
@@ -611,15 +635,15 @@ public:
     if (::crab::CrabSanityCheckFlag) {
       pre_bot = m_inv.is_bottom();
     }
-    
+
     m_inv.ref_make(stmt.lhs(), stmt.region());
-    
+
     if (::crab::CrabSanityCheckFlag) {
       bool post_bot = m_inv.is_bottom();
       if (!(pre_bot || !post_bot)) {
         CRAB_ERROR("Invariant became bottom after ", stmt);
       }
-    }    
+    }
   }
 
   void exec(region_init_t &stmt) {
@@ -627,15 +651,15 @@ public:
     if (::crab::CrabSanityCheckFlag) {
       pre_bot = m_inv.is_bottom();
     }
-    
+
     m_inv.region_init(stmt.region());
-    
+
     if (::crab::CrabSanityCheckFlag) {
       bool post_bot = m_inv.is_bottom();
       if (!(pre_bot || !post_bot)) {
         CRAB_ERROR("Invariant became bottom after ", stmt);
       }
-    }    
+    }
   }
 
   void exec(load_from_ref_t &stmt) {
@@ -643,66 +667,67 @@ public:
     if (::crab::CrabSanityCheckFlag) {
       pre_bot = m_inv.is_bottom();
     }
-    
+
     m_inv.ref_load(stmt.ref(), stmt.region(), stmt.lhs());
-    
+
     if (::crab::CrabSanityCheckFlag) {
       bool post_bot = m_inv.is_bottom();
       if (!(pre_bot || !post_bot)) {
         CRAB_ERROR("Invariant became bottom after ", stmt);
       }
-    }    
+    }
   }
-  
+
   void exec(store_to_ref_t &stmt) {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
       pre_bot = m_inv.is_bottom();
     }
-    
+
     m_inv.ref_store(stmt.ref(), stmt.region(), stmt.val());
-    
+
     if (::crab::CrabSanityCheckFlag) {
       bool post_bot = m_inv.is_bottom();
       if (!(pre_bot || !post_bot)) {
         CRAB_ERROR("Invariant became bottom after ", stmt);
       }
-    }        
+    }
   }
-  
+
   void exec(gep_ref_t &stmt) {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
       pre_bot = m_inv.is_bottom();
     }
-    
-    m_inv.ref_gep(stmt.rhs(), stmt.rhs_region(), stmt.lhs(), stmt.lhs_region(), stmt.offset());
-    
+
+    m_inv.ref_gep(stmt.rhs(), stmt.rhs_region(), stmt.lhs(), stmt.lhs_region(),
+                  stmt.offset());
+
     if (::crab::CrabSanityCheckFlag) {
       bool post_bot = m_inv.is_bottom();
       if (!(pre_bot || !post_bot)) {
         CRAB_ERROR("Invariant became bottom after ", stmt);
       }
-    }        
+    }
   }
-  
+
   void exec(load_from_arr_ref_t &stmt) {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
       pre_bot = m_inv.is_bottom();
     }
-    
+
     m_inv.ref_load_from_array(stmt.lhs(), stmt.ref(), stmt.region(),
-			      stmt.index(), stmt.elem_size());
-    
+                              stmt.index(), stmt.elem_size());
+
     if (::crab::CrabSanityCheckFlag) {
       bool post_bot = m_inv.is_bottom();
       if (!(pre_bot || !post_bot)) {
         CRAB_ERROR("Invariant became bottom after ", stmt);
       }
-    }        
+    }
   }
-  
+
   void exec(store_to_arr_ref_t &stmt) {
     bool pre_bot = false;
     if (::crab::CrabSanityCheckFlag) {
@@ -710,24 +735,21 @@ public:
     }
 
     if (stmt.lb_index().equal(stmt.ub_index())) {
-      m_inv.ref_store_to_array(stmt.ref(), stmt.region(),
-			       stmt.lb_index(), stmt.elem_size(),
-			       stmt.value());
+      m_inv.ref_store_to_array(stmt.ref(), stmt.region(), stmt.lb_index(),
+                               stmt.elem_size(), stmt.value());
     } else {
       CRAB_ERROR("TODO store_to_array_ref for ranges");
     }
-    
+
     if (::crab::CrabSanityCheckFlag) {
       bool post_bot = m_inv.is_bottom();
       if (!(pre_bot || !post_bot)) {
         CRAB_ERROR("Invariant became bottom after ", stmt);
       }
-    }        
-  }  
-  
-  void exec(assume_ref_t &stmt) {
-    m_inv.ref_assume(stmt.constraint());
+    }
   }
+
+  void exec(assume_ref_t &stmt) { m_inv.ref_assume(stmt.constraint()); }
 
   void exec(assert_ref_t &stmt) {
     if (m_ignore_assert)
@@ -738,15 +760,14 @@ public:
   void exec(intrinsic_t &cs) {
     m_inv.intrinsic(cs.get_intrinsic_name(), cs.get_args(), cs.get_lhs());
   }
-  
+
   virtual void exec(callsite_t &cs) {
-    for (const variable_t &vt: cs.get_lhs()) {
+    for (const variable_t &vt : cs.get_lhs()) {
       m_inv.operator-=(vt); // havoc
     }
   }
-  
+
   virtual void exec(return_t &ret) {}
-  
 };
 
 ///////////////////////////////////////
@@ -756,7 +777,7 @@ public:
 template <typename AbsDom> class inter_transformer_helpers {
 public:
   typedef typename AbsDom::linear_expression_t linear_expression_t;
-  typedef typename AbsDom::reference_constraint_t reference_constraint_t;  
+  typedef typename AbsDom::reference_constraint_t reference_constraint_t;
   typedef typename AbsDom::variable_t variable_t;
   typedef typename AbsDom::number_t number_t;
 
@@ -807,8 +828,10 @@ public:
   using typename abs_transform_api_t::arr_init_t;
   using typename abs_transform_api_t::arr_load_t;
   using typename abs_transform_api_t::arr_store_t;
+  using typename abs_transform_api_t::assert_ref_t;
   using typename abs_transform_api_t::assert_t;
   using typename abs_transform_api_t::assign_t;
+  using typename abs_transform_api_t::assume_ref_t;
   using typename abs_transform_api_t::assume_t;
   using typename abs_transform_api_t::bin_op_t;
   using typename abs_transform_api_t::bool_assert_t;
@@ -818,23 +841,21 @@ public:
   using typename abs_transform_api_t::bool_bin_op_t;
   using typename abs_transform_api_t::bool_select_t;
   using typename abs_transform_api_t::callsite_t;
-  using typename abs_transform_api_t::intrinsic_t;  
+  using typename abs_transform_api_t::gep_ref_t;
   using typename abs_transform_api_t::havoc_t;
   using typename abs_transform_api_t::int_cast_t;
+  using typename abs_transform_api_t::intrinsic_t;
   using typename abs_transform_api_t::lin_cst_sys_t;
   using typename abs_transform_api_t::lin_cst_t;
   using typename abs_transform_api_t::lin_exp_t;
-  using typename abs_transform_api_t::make_ref_t;
-  using typename abs_transform_api_t::region_init_t;  
-  using typename abs_transform_api_t::load_from_ref_t;
-  using typename abs_transform_api_t::store_to_ref_t;
-  using typename abs_transform_api_t::gep_ref_t;
   using typename abs_transform_api_t::load_from_arr_ref_t;
-  using typename abs_transform_api_t::store_to_arr_ref_t;
-  using typename abs_transform_api_t::assume_ref_t;  
-  using typename abs_transform_api_t::assert_ref_t;
+  using typename abs_transform_api_t::load_from_ref_t;
+  using typename abs_transform_api_t::make_ref_t;
+  using typename abs_transform_api_t::region_init_t;
   using typename abs_transform_api_t::return_t;
   using typename abs_transform_api_t::select_t;
+  using typename abs_transform_api_t::store_to_arr_ref_t;
+  using typename abs_transform_api_t::store_to_ref_t;
   using typename abs_transform_api_t::unreach_t;
   using typename abs_transform_api_t::var_t;
 
@@ -850,14 +871,12 @@ private:
   // conditions of the assert statements).
   bool m_good_states;
 
-  abs_dom_t make_top() const {
-    return m_pre.make_top();
-  }
-  
-  abs_dom_t get_forward_invariant(const statement_t *stmt) const{
+  abs_dom_t make_top() const { return m_pre.make_top(); }
+
+  abs_dom_t get_forward_invariant(const statement_t *stmt) const {
     assert(m_invariants);
     assert(stmt);
-    
+
     auto it = m_invariants->find(stmt);
     if (it != m_invariants->end()) {
       return it->second;
@@ -865,8 +884,7 @@ private:
       return make_top();
     }
   }
-  
-  
+
 public:
   intra_necessary_preconditions_abs_transformer(abs_dom_t post, InvT *invars,
                                                 bool good_states,
@@ -1081,13 +1099,13 @@ public:
                                 << "\tPOST=" << m_pre << "\n");
 
     if (stmt.lb_index().equal(stmt.ub_index())) {
-      m_pre.backward_array_store(
-            stmt.array(), stmt.elem_size(), stmt.lb_index(), stmt.value(),
-            stmt.is_strong_update(), std::move(invariant));
+      m_pre.backward_array_store(stmt.array(), stmt.elem_size(),
+                                 stmt.lb_index(), stmt.value(),
+                                 stmt.is_strong_update(), std::move(invariant));
     } else {
       m_pre.backward_array_store_range(stmt.array(), stmt.elem_size(),
-				       stmt.lb_index(), stmt.ub_index(),
-				       stmt.value(), std::move(invariant));
+                                       stmt.lb_index(), stmt.ub_index(),
+                                       stmt.value(), std::move(invariant));
     }
     CRAB_LOG("backward-tr", crab::outs() << "\tPRE=" << m_pre << "\n");
   }
@@ -1103,7 +1121,7 @@ public:
   }
 
   // NOT IMPLEMENTED
-  void exec(region_init_t &stmt) {}  
+  void exec(region_init_t &stmt) {}
   void exec(make_ref_t &stmt) {}
   void exec(load_from_ref_t &stmt) {}
   void exec(store_to_ref_t &stmt) {}
@@ -1112,7 +1130,7 @@ public:
   void exec(store_to_arr_ref_t &stmt) {}
   void exec(assume_ref_t &stmt) {}
   void exec(assert_ref_t &stmt) {}
-  
+
   /// -- Call and return can be redefined by derived classes
 
   virtual void exec(callsite_t &cs) {
@@ -1123,11 +1141,10 @@ public:
   virtual void exec(return_t &stmt) {}
 
   void exec(intrinsic_t &cs) {
-    abs_dom_t invariant = get_forward_invariant(&cs);    
-    m_pre.backward_intrinsic(cs.get_intrinsic_name(), cs.get_args(), cs.get_lhs(),
-			     std::move(invariant));    
+    abs_dom_t invariant = get_forward_invariant(&cs);
+    m_pre.backward_intrinsic(cs.get_intrinsic_name(), cs.get_args(),
+                             cs.get_lhs(), std::move(invariant));
   }
-  
 };
 
 } // namespace analyzer

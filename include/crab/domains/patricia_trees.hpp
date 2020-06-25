@@ -51,7 +51,6 @@
 #include <memory>
 #include <vector>
 
-
 namespace ikos {
 
 template <typename Value> class partial_order {
@@ -1414,7 +1413,7 @@ private:
 
 private:
   static patricia_tree_t do_union(patricia_tree_t t1,
-				  const patricia_tree_t &t2) {
+                                  const patricia_tree_t &t2) {
     union_op o;
     t1.merge_with(t2, o);
     return t1;

@@ -29,16 +29,17 @@ void control_dep_graph(G g, VectorMap &cdg) {
     }
   }
 
-  CRAB_LOG("cdg", crab::outs() << "Control-dependence graph \n"; for (auto &kv
-                                                                      : cdg) {
-    crab::outs() << "{";
-    for (auto v : kv.second) {
-      crab::outs() << crab::cfg_impl::get_label_str(v) << ";";
-    }
-    crab::outs() << "} "
-                 << " control-dependent on ";
-    crab::outs() << crab::cfg_impl::get_label_str(kv.first) << "\n";
-  });
+  CRAB_LOG(
+      "cdg", crab::outs() << "Control-dependence graph \n"; for (auto &kv
+                                                                 : cdg) {
+        crab::outs() << "{";
+        for (auto v : kv.second) {
+          crab::outs() << crab::cfg_impl::get_label_str(v) << ";";
+        }
+        crab::outs() << "} "
+                     << " control-dependent on ";
+        crab::outs() << crab::cfg_impl::get_label_str(kv.first) << "\n";
+      });
 }
 
 } // namespace graph_algo

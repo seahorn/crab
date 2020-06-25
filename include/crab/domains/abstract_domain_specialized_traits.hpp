@@ -147,10 +147,11 @@ public:
       res = op(rhs);
     }
 
-    CRAB_LOG("checker-entailment",
-             if (res) { crab::outs() << "\t**entailment holds.\n"; } else {
-               crab::outs() << "\t**entailment does not hold.\n";
-             });
+    CRAB_LOG(
+        "checker-entailment",
+        if (res) { crab::outs() << "\t**entailment holds.\n"; } else {
+          crab::outs() << "\t**entailment does not hold.\n";
+        });
 
     // Note: we cannot convert rhs into Domain and then use the <=
     //       operator. The problem is that we cannot know for sure
@@ -189,12 +190,12 @@ public:
   static void extract(Domain &dom, const variable_t &x,
                       linear_constraint_system_t &csts, bool only_equalities) {
     auto all_csts = dom.to_linear_constraint_system();
-    for (auto const&cst : all_csts) {
+    for (auto const &cst : all_csts) {
       if (only_equalities && (!cst.is_equality())) {
         continue;
       }
       if (std::find(cst.variables_begin(), cst.variables_end(), x) !=
-	  cst.variables_end()) {
+          cst.variables_end()) {
         csts += cst;
       }
     }

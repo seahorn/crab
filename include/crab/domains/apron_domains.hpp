@@ -23,10 +23,9 @@ typedef enum { APRON_INT, APRON_OCT, APRON_PK } apron_domain_id_t;
 namespace crab {
 namespace domains {
 template <typename N, typename V, apron_domain_id_t Dom>
-class apron_domain final
-    : public abstract_domain<apron_domain<N,V,Dom>> {
+class apron_domain final : public abstract_domain<apron_domain<N, V, Dom>> {
 public:
-  using this_type = apron_domain<N,V,Dom>;
+  using this_type = apron_domain<N, V, Dom>;
   apron_domain() {}
   UNAVAILABLE_DOMAIN("No Apron. Run cmake with -DCRAB_USE_APRON=ON")
 };
@@ -62,13 +61,13 @@ class apron_domain final
 
 public:
   using typename abstract_domain_t::disjunctive_linear_constraint_system_t;
+  using typename abstract_domain_t::interval_t;
   using typename abstract_domain_t::linear_constraint_system_t;
   using typename abstract_domain_t::linear_constraint_t;
   using typename abstract_domain_t::linear_expression_t;
   using typename abstract_domain_t::reference_constraint_t;
   using typename abstract_domain_t::variable_t;
   using typename abstract_domain_t::variable_vector_t;
-  using typename abstract_domain_t::interval_t;
   typedef Number number_t;
   typedef VariableName varname_t;
 
@@ -535,8 +534,9 @@ private:
   void inequalities_from_disequation(const variable_t &x, number_t n,
                                      linear_constraint_system_t &out) {
     interval_t i = this->operator[](x);
-    interval_t new_i = ikos::linear_interval_solver_impl::trim_interval<interval_t>(
-        i, interval_t(n));
+    interval_t new_i =
+        ikos::linear_interval_solver_impl::trim_interval<interval_t>(
+            i, interval_t(n));
     if (new_i.is_bottom()) {
       out += linear_constraint_t::get_false();
     } else if (!new_i.is_top() && (new_i <= i)) {
@@ -551,9 +551,10 @@ private:
     }
   }
 
-  interval_t compute_residual(const linear_expression_t &e, const variable_t &pivot) {
+  interval_t compute_residual(const linear_expression_t &e,
+                              const variable_t &pivot) {
     interval_t residual(-e.constant());
-    for (auto kv: e) {
+    for (auto kv : e) {
       variable_t v = kv.second;
       if (v.index() != pivot.index()) {
         residual = residual - (interval_t(kv.first) * this->operator[](v));
@@ -564,7 +565,7 @@ private:
 
   void inequalities_from_disequation(const linear_expression_t &e,
                                      linear_constraint_system_t &o) {
-    for (auto kv: e) {
+    for (auto kv : e) {
       variable_t pivot = kv.second;
       interval_t i = compute_residual(e, pivot) / interval_t(kv.first);
       if (auto k = i.singleton()) {
@@ -579,7 +580,6 @@ public:
   }
 
 private:
-
   apron_domain(ap_state_ptr &&apState, var_map_t &&varMap, bool compact = true)
       : m_apstate(std::move(apState)), m_var_map(std::move(varMap)) {
 
@@ -651,20 +651,24 @@ public:
     apron_domain_t out(true);
     return out;
   }
-  
+
   void set_to_top() override {
     apron_domain_t tmp(false);
     std::swap(*this, tmp);
   }
 
-  void set_to_bottom() override  {
+  void set_to_bottom() override {
     apron_domain_t tmp(true);
     std::swap(*this, tmp);
   }
 
-  bool is_bottom() const override { return ap_abstract0_is_bottom(get_man(), &*m_apstate); }
+  bool is_bottom() const override {
+    return ap_abstract0_is_bottom(get_man(), &*m_apstate);
+  }
 
-  bool is_top() const override { return ap_abstract0_is_top(get_man(), &*m_apstate); }
+  bool is_top() const override {
+    return ap_abstract0_is_top(get_man(), &*m_apstate);
+  }
 
   bool operator<=(const apron_domain_t &o) const override {
     crab::CrabStats::count(domain_name() + ".count.leq");
@@ -701,12 +705,11 @@ public:
     else {
       ap_state_ptr x =
           apPtr(get_man(), ap_abstract0_copy(get_man(), &*o.m_apstate));
-      
-      m_var_map = std::move(
-          merge_var_map(m_var_map, m_apstate, o.m_var_map, x));
-      m_apstate =
-          apPtr(get_man(), ap_abstract0_join(get_man(), false, &*m_apstate, &*x));
-                                             
+
+      m_var_map =
+          std::move(merge_var_map(m_var_map, m_apstate, o.m_var_map, x));
+      m_apstate = apPtr(get_man(),
+                        ap_abstract0_join(get_man(), false, &*m_apstate, &*x));
     }
   }
 
@@ -743,11 +746,10 @@ public:
           apPtr(get_man(), ap_abstract0_copy(get_man(), &*m_apstate));
       ap_state_ptr y =
           apPtr(get_man(), ap_abstract0_copy(get_man(), &*o.m_apstate));
-      
+
       var_map_t m = merge_var_map(m_var_map, x, o.m_var_map, y);
       return apron_domain_t(
-          apPtr(get_man(),
-                ap_abstract0_meet(get_man(), false, &*x, &*y)),
+          apPtr(get_man(), ap_abstract0_meet(get_man(), false, &*x, &*y)),
           std::move(m));
     }
   }
@@ -765,7 +767,7 @@ public:
         apPtr(get_man(), ap_abstract0_copy(get_man(), &*m_apstate));
     ap_state_ptr y =
         apPtr(get_man(), ap_abstract0_copy(get_man(), &*o.m_apstate));
-    
+
     var_map_t m = merge_var_map(m_var_map, x, o.m_var_map, y);
     return apron_domain_t(
         apPtr(get_man(), ap_abstract0_widening(get_man(), &*x, &*y)),
@@ -774,15 +776,16 @@ public:
   }
 
   ap_lincons0_array_t
-  make_thresholds(apron_domain_t o, const iterators::thresholds<number_t> &ts) const {
+  make_thresholds(apron_domain_t o,
+                  const iterators::thresholds<number_t> &ts) const {
     // TODO: make some constraints using the constants from ts
     ap_lincons0_array_t csts = ap_lincons0_array_make(0);
     return csts;
   }
 
-  apron_domain_t
-  widening_thresholds(const apron_domain_t &o,
-                      const iterators::thresholds<number_t> &ts) const override {
+  apron_domain_t widening_thresholds(
+      const apron_domain_t &o,
+      const iterators::thresholds<number_t> &ts) const override {
     crab::CrabStats::count(domain_name() + ".count.widening");
     crab::ScopedCrabStats __st__(domain_name() + ".widening");
 
@@ -795,7 +798,7 @@ public:
         apPtr(get_man(), ap_abstract0_copy(get_man(), &*m_apstate));
     ap_state_ptr y =
         apPtr(get_man(), ap_abstract0_copy(get_man(), &*o.m_apstate));
-    
+
     var_map_t m = merge_var_map(m_var_map, x, o.m_var_map, y);
 //////
 // We cannot refine the result of widening with
@@ -822,9 +825,9 @@ public:
 	  return res & apron_intv_widen;
 #else
     ap_lincons0_array_t csts = make_thresholds(o, ts);
-    apron_domain_t res(
-        apPtr(get_man(), ap_abstract0_widening_threshold(get_man(), &*x, &*y, &csts)),
-        std::move(m), false /* do not compact */);
+    apron_domain_t res(apPtr(get_man(), ap_abstract0_widening_threshold(
+                                            get_man(), &*x, &*y, &csts)),
+                       std::move(m), false /* do not compact */);
     ap_lincons0_array_clear(&csts);
     return res;
 #endif
@@ -844,13 +847,12 @@ public:
           apPtr(get_man(), ap_abstract0_copy(get_man(), &*m_apstate));
       ap_state_ptr y =
           apPtr(get_man(), ap_abstract0_copy(get_man(), &*o.m_apstate));
-      
+
       var_map_t m = merge_var_map(m_var_map, x, o.m_var_map, y);
       switch (ApronDom) {
       case APRON_OCT:
         return apron_domain_t(
-            apPtr(get_man(),
-                  ap_abstract0_oct_narrowing(get_man(), &*x, &*y)),
+            apPtr(get_man(), ap_abstract0_oct_narrowing(get_man(), &*x, &*y)),
             std::move(m));
       case APRON_INT:
       case APRON_PK:
@@ -859,8 +861,7 @@ public:
         //           "make sure only a finite number of descending iterations
         //           are run.");
         return apron_domain_t(
-            apPtr(get_man(),
-                  ap_abstract0_meet(get_man(), false, &*x, &*y)),
+            apPtr(get_man(), ap_abstract0_meet(get_man(), false, &*x, &*y)),
             std::move(m));
       }
     }
@@ -1078,7 +1079,8 @@ public:
       }
       if (c.is_strict_inequality()) {
         // We try to convert a strict to non-strict.
-        csts += ikos::linear_constraint_impl::strict_to_non_strict_inequality(c);
+        csts +=
+            ikos::linear_constraint_impl::strict_to_non_strict_inequality(c);
       } else if (c.is_disequation()) {
         // We try to convert a disequation into conjunctive
         // inequalities
@@ -1153,8 +1155,8 @@ public:
                                    << *this << "\n";);
   }
 
-  void apply(arith_operation_t op,
-	     const variable_t &x, const variable_t &y, number_t z) override {
+  void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
+             number_t z) override {
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
@@ -1215,8 +1217,8 @@ public:
     }
   }
 
-  void apply(arith_operation_t op,
-	     const variable_t &x, const variable_t &y, const variable_t &z) override {
+  void apply(arith_operation_t op, const variable_t &x, const variable_t &y,
+             const variable_t &z) override {
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
@@ -1276,15 +1278,15 @@ public:
     }
   }
 
-  void apply(int_conv_operation_t op,
-	     const variable_t &dst, const variable_t &src) override {
+  void apply(int_conv_operation_t op, const variable_t &dst,
+             const variable_t &src) override {
     // since reasoning about infinite precision we simply assign and
     // ignore the widths.
     assign(dst, src);
   }
 
-  void apply(bitwise_operation_t op,
-	     const variable_t &x, const variable_t &y, const variable_t &z) override {
+  void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
+             const variable_t &z) override {
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
@@ -1317,8 +1319,8 @@ public:
     set(x, xi);
   }
 
-  void apply(bitwise_operation_t op,
-	     const variable_t &x, const variable_t &y, number_t k) override {
+  void apply(bitwise_operation_t op, const variable_t &x, const variable_t &y,
+             number_t k) override {
     crab::CrabStats::count(domain_name() + ".count.apply");
     crab::ScopedCrabStats __st__(domain_name() + ".apply");
 
@@ -1372,19 +1374,19 @@ public:
     // ensure that m_apstate and invariant.m_apstate have the same
     // dimensions.
     ap_state_ptr fwd_inv =
-      apPtr(get_man(), ap_abstract0_copy(get_man(), &*invariant.m_apstate));
-    m_var_map = merge_var_map(m_var_map, m_apstate, invariant.m_var_map, fwd_inv);
-    m_apstate =
-        apPtr(get_man(),
-              ap_abstract0_substitute_texpr(get_man(), false, &*m_apstate,
-                                            dim_x, t, &*fwd_inv));
+        apPtr(get_man(), ap_abstract0_copy(get_man(), &*invariant.m_apstate));
+    m_var_map =
+        merge_var_map(m_var_map, m_apstate, invariant.m_var_map, fwd_inv);
+    m_apstate = apPtr(
+        get_man(), ap_abstract0_substitute_texpr(get_man(), false, &*m_apstate,
+                                                 dim_x, t, &*fwd_inv));
     ap_texpr0_free(t);
     CRAB_LOG("apron", crab::outs() << "--- " << x << " :=_bwd " << e << " --> "
                                    << *this << "\n";);
   }
 
-  void backward_apply(arith_operation_t op,
-		      const variable_t &x, const variable_t &y, number_t z,
+  void backward_apply(arith_operation_t op, const variable_t &x,
+                      const variable_t &y, number_t z,
                       const apron_domain_t &invariant) override {
     crab::CrabStats::count(domain_name() + ".count.backward_apply");
     crab::ScopedCrabStats __st__(domain_name() + ".backward_apply");
@@ -1422,11 +1424,12 @@ public:
       // ensure that m_apstate and invariant.m_apstate have the same
       // dimensions.
       ap_state_ptr fwd_inv =
-	apPtr(get_man(), ap_abstract0_copy(get_man(), &*invariant.m_apstate));      
-      m_var_map = merge_var_map(m_var_map, m_apstate, invariant.m_var_map, fwd_inv);     
-      m_apstate = apPtr(get_man(), ap_abstract0_substitute_texpr(
-                                       get_man(), false, &*m_apstate, dim_x,
-                                       res, &*fwd_inv));
+          apPtr(get_man(), ap_abstract0_copy(get_man(), &*invariant.m_apstate));
+      m_var_map =
+          merge_var_map(m_var_map, m_apstate, invariant.m_var_map, fwd_inv);
+      m_apstate = apPtr(
+          get_man(), ap_abstract0_substitute_texpr(
+                         get_man(), false, &*m_apstate, dim_x, res, &*fwd_inv));
 
       ap_texpr0_free(res);
       CRAB_LOG("apron", crab::outs() << "--- " << x << " :=_bwd " << y << op
@@ -1437,8 +1440,8 @@ public:
     }
   }
 
-  void backward_apply(arith_operation_t op,
-		      const variable_t &x, const variable_t &y, const variable_t &z,
+  void backward_apply(arith_operation_t op, const variable_t &x,
+                      const variable_t &y, const variable_t &z,
                       const apron_domain_t &invariant) override {
     crab::CrabStats::count(domain_name() + ".count.backward_apply");
     crab::ScopedCrabStats __st__(domain_name() + ".backward_apply");
@@ -1476,13 +1479,14 @@ public:
       // ensure that m_apstate and invariant.m_apstate have the same
       // dimensions.
       ap_state_ptr fwd_inv =
-	apPtr(get_man(), ap_abstract0_copy(get_man(), &*invariant.m_apstate));
-      
-      m_var_map = merge_var_map(m_var_map, m_apstate, invariant.m_var_map, fwd_inv); 
+          apPtr(get_man(), ap_abstract0_copy(get_man(), &*invariant.m_apstate));
 
-      m_apstate = apPtr(get_man(), ap_abstract0_substitute_texpr(
-                                       get_man(), false, &*m_apstate, dim_x,
-                                       res, &*fwd_inv));
+      m_var_map =
+          merge_var_map(m_var_map, m_apstate, invariant.m_var_map, fwd_inv);
+
+      m_apstate = apPtr(
+          get_man(), ap_abstract0_substitute_texpr(
+                         get_man(), false, &*m_apstate, dim_x, res, &*fwd_inv));
       ap_texpr0_free(res);
       CRAB_LOG("apron", crab::outs() << "--- " << x << ":=_bwd " << y << op << z
                                      << " --> " << *this << "\n";);
@@ -1496,79 +1500,97 @@ public:
      Begin unimplemented operations.
 
      apron_domain implements only standard abstract operations
-     of a numerical domain. 
+     of a numerical domain.
   */
 
   // boolean operations
-  void assign_bool_cst(const variable_t &lhs, const linear_constraint_t &rhs) override {}
-  void assign_bool_var(const variable_t &lhs, const variable_t &rhs, bool is_not_rhs) override {}
-  void apply_binary_bool(bool_operation_t op,
-			 const variable_t &x, const variable_t &y, const variable_t &z) override {}
+  void assign_bool_cst(const variable_t &lhs,
+                       const linear_constraint_t &rhs) override {}
+  void assign_bool_var(const variable_t &lhs, const variable_t &rhs,
+                       bool is_not_rhs) override {}
+  void apply_binary_bool(bool_operation_t op, const variable_t &x,
+                         const variable_t &y, const variable_t &z) override {}
   void assume_bool(const variable_t &v, bool is_negated) override {}
   // backward boolean operations
-  void backward_assign_bool_cst(const variable_t &lhs, const linear_constraint_t &rhs,
+  void backward_assign_bool_cst(const variable_t &lhs,
+                                const linear_constraint_t &rhs,
                                 const apron_domain_t &invariant) override {}
-  void backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs, bool is_not_rhs,
+  void backward_assign_bool_var(const variable_t &lhs, const variable_t &rhs,
+                                bool is_not_rhs,
                                 const apron_domain_t &invariant) override {}
   void backward_apply_binary_bool(bool_operation_t op, const variable_t &x,
                                   const variable_t &y, const variable_t &z,
                                   const apron_domain_t &invariant) override {}
   // array operations
   void array_init(const variable_t &a, const linear_expression_t &elem_size,
-                  const linear_expression_t &lb_idx, const linear_expression_t &ub_idx,
+                  const linear_expression_t &lb_idx,
+                  const linear_expression_t &ub_idx,
                   const linear_expression_t &val) override {}
-  void array_load(const variable_t &lhs, const variable_t &a, const linear_expression_t &elem_size,
+  void array_load(const variable_t &lhs, const variable_t &a,
+                  const linear_expression_t &elem_size,
                   const linear_expression_t &i) override {
     operator-=(lhs);
   }
   void array_store(const variable_t &a, const linear_expression_t &elem_size,
                    const linear_expression_t &i, const linear_expression_t &v,
                    bool is_strong_update) override {}
-  void array_store_range(const variable_t &a, const linear_expression_t &elem_size,
-                         const linear_expression_t &i, const linear_expression_t &j,
+  void array_store_range(const variable_t &a,
+                         const linear_expression_t &elem_size,
+                         const linear_expression_t &i,
+                         const linear_expression_t &j,
                          const linear_expression_t &v) override {}
   void array_assign(const variable_t &lhs, const variable_t &rhs) override {}
   // backward array operations
-  void backward_array_init(const variable_t &a, const linear_expression_t &elem_size,
+  void backward_array_init(const variable_t &a,
+                           const linear_expression_t &elem_size,
                            const linear_expression_t &lb_idx,
-                           const linear_expression_t &ub_idx, const linear_expression_t &val,
+                           const linear_expression_t &ub_idx,
+                           const linear_expression_t &val,
                            const apron_domain_t &invariant) override {}
   void backward_array_load(const variable_t &lhs, const variable_t &a,
-                           const linear_expression_t &elem_size, const linear_expression_t &i,
+                           const linear_expression_t &elem_size,
+                           const linear_expression_t &i,
                            const apron_domain_t &invariant) override {}
-  void backward_array_store(const variable_t &a, const linear_expression_t &elem_size,
-                            const linear_expression_t &i, const linear_expression_t &v,
-                            bool is_strong_update, const apron_domain_t &invariant) override {}
-  void backward_array_store_range(const variable_t &a, const linear_expression_t &elem_size,
-                                  const linear_expression_t &i, const linear_expression_t &j,
+  void backward_array_store(const variable_t &a,
+                            const linear_expression_t &elem_size,
+                            const linear_expression_t &i,
+                            const linear_expression_t &v, bool is_strong_update,
+                            const apron_domain_t &invariant) override {}
+  void backward_array_store_range(const variable_t &a,
+                                  const linear_expression_t &elem_size,
+                                  const linear_expression_t &i,
+                                  const linear_expression_t &j,
                                   const linear_expression_t &v,
                                   const apron_domain_t &invariant) override {}
   void backward_array_assign(const variable_t &lhs, const variable_t &rhs,
                              const apron_domain_t &invariant) override {}
   // reference operations
-  void region_init(const memory_region &reg) override {}          
+  void region_init(const memory_region &reg) override {}
   void ref_make(const variable_t &ref, const memory_region &reg) override {}
-  void ref_load(const variable_t &ref, const memory_region &reg, const variable_t &res) override {}
+  void ref_load(const variable_t &ref, const memory_region &reg,
+                const variable_t &res) override {}
   void ref_store(const variable_t &ref, const memory_region &reg,
-		 const linear_expression_t &val) override {}
+                 const linear_expression_t &val) override {}
   void ref_gep(const variable_t &ref1, const memory_region &reg1,
-	       const variable_t &ref2, const memory_region &reg2,
-	       const linear_expression_t &offset) override {}
-  void ref_load_from_array(const variable_t &lhs, const variable_t &ref, const memory_region &region,
-			   const linear_expression_t &index,
-			   const linear_expression_t &elem_size) override {}
+               const variable_t &ref2, const memory_region &reg2,
+               const linear_expression_t &offset) override {}
+  void ref_load_from_array(const variable_t &lhs, const variable_t &ref,
+                           const memory_region &region,
+                           const linear_expression_t &index,
+                           const linear_expression_t &elem_size) override {}
   void ref_store_to_array(const variable_t &ref, const memory_region &region,
-			  const linear_expression_t &index, const linear_expression_t &elem_size,
-			  const linear_expression_t &val) override {}
+                          const linear_expression_t &index,
+                          const linear_expression_t &elem_size,
+                          const linear_expression_t &val) override {}
   void ref_assume(const reference_constraint_t &cst) override {}
-  
+
   /* End unimplemented operations */
 
   interval_domain_t to_interval_domain() {
     crab::CrabStats::count(domain_name() + ".count.to_interval_domain");
     crab::ScopedCrabStats __st__(domain_name() + ".to_interval_domain");
 
-    interval_domain_t res; // top 
+    interval_domain_t res; // top
     if (is_bottom()) {
       res.set_to_bottom();
       return res;
@@ -1617,7 +1639,8 @@ public:
     }
   }
 
-  void rename(const variable_vector_t &from, const variable_vector_t &to) override {
+  void rename(const variable_vector_t &from,
+              const variable_vector_t &to) override {
     crab::CrabStats::count(domain_name() + ".count.rename");
     crab::ScopedCrabStats __st__(domain_name() + ".rename");
 
@@ -1625,35 +1648,36 @@ public:
       return;
 
     CRAB_LOG("apron", crab::outs() << "Renaming {"; for (auto v
-                                                          : from) crab::outs()
-                                                     << v << ";";
+                                                         : from) crab::outs()
+                                                    << v << ";";
              crab::outs() << "} with "; for (auto v
                                              : to) crab::outs()
                                         << v << ";";
              crab::outs() << "}:\n"; crab::outs() << *this << "\n";);
 
-
-    for (unsigned i=0, sz=from.size(); i<sz; ++i) {
+    for (unsigned i = 0, sz = from.size(); i < sz; ++i) {
       variable_t v = from[i];
       variable_t new_v = to[i];
       if (v == new_v) { // nothing to rename
         continue;
       }
 
-      { auto it = m_var_map.left.find(new_v);
-	if (it != m_var_map.left.end()) {
-	  CRAB_ERROR(domain_name() + "::rename assumes that ", new_v, " does not exist");	  
-	}
+      {
+        auto it = m_var_map.left.find(new_v);
+        if (it != m_var_map.left.end()) {
+          CRAB_ERROR(domain_name() + "::rename assumes that ", new_v,
+                     " does not exist");
+        }
       }
 
       auto it = m_var_map.left.find(v);
       if (it != m_var_map.left.end()) {
-	ap_dim_t dim = it->second;
-	m_var_map.left.erase(it);
-	m_var_map.insert(binding_t(new_v, dim));
+        ap_dim_t dim = it->second;
+        m_var_map.left.erase(it);
+        m_var_map.insert(binding_t(new_v, dim));
       }
     }
-    
+
     CRAB_LOG("apron", crab::outs() << "RESULT=" << *this << "\n");
   }
 
@@ -1708,21 +1732,19 @@ public:
     assert(m_var_map.size() == get_dims());
   }
 
-  /* begin intrinsics operations */  
-  void intrinsic(std::string name,
-		 const variable_vector_t &inputs,
-		 const variable_vector_t &outputs) override {
+  /* begin intrinsics operations */
+  void intrinsic(std::string name, const variable_vector_t &inputs,
+                 const variable_vector_t &outputs) override {
     CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
   }
 
-  void backward_intrinsic(std::string name,
-			  const variable_vector_t &inputs,
-			  const variable_vector_t &outputs,
-			  const apron_domain_t &invariant) override {
-    CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());    
+  void backward_intrinsic(std::string name, const variable_vector_t &inputs,
+                          const variable_vector_t &outputs,
+                          const apron_domain_t &invariant) override {
+    CRAB_WARN("Intrinsics ", name, " not implemented by ", domain_name());
   }
   /* end intrinsics operations */
-  
+
   void write(crab_os &o) const override {
     crab::CrabStats::count(domain_name() + ".count.write");
     crab::ScopedCrabStats __st__(domain_name() + ".write");

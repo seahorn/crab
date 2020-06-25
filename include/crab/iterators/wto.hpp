@@ -56,7 +56,6 @@
 #include <unordered_map>
 #include <vector>
 
-
 // Define RECURSIVE_WTO to use older, recursive version.  It is
 // retained for a while for performance comparison purposes.
 // #define RECURSIVE_WTO
